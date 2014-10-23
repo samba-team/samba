@@ -23,803 +23,448 @@
 
 #ifdef WITH_PROFILE
 
+#define SMBPROFILE_STATS_ALL_SECTIONS \
+	SMBPROFILE_STATS_START \
+	\
+	SMBPROFILE_STATS_SECTION_START("SMBD loop") \
+	SMBPROFILE_STATS_COUNT(smb_count) \
+	SMBPROFILE_STATS_COUNT(uid_changes) \
+	SMBPROFILE_STATS_BASIC(smbd_idle) \
+	SMBPROFILE_STATS_SECTION_END \
+	\
+	SMBPROFILE_STATS_SECTION_START("System Calls") \
+	SMBPROFILE_STATS_BASIC(syscall_opendir) \
+	SMBPROFILE_STATS_BASIC(syscall_fdopendir) \
+	SMBPROFILE_STATS_BASIC(syscall_readdir) \
+	SMBPROFILE_STATS_BASIC(syscall_seekdir) \
+	SMBPROFILE_STATS_BASIC(syscall_telldir) \
+	SMBPROFILE_STATS_BASIC(syscall_rewinddir) \
+	SMBPROFILE_STATS_BASIC(syscall_mkdir) \
+	SMBPROFILE_STATS_BASIC(syscall_rmdir) \
+	SMBPROFILE_STATS_BASIC(syscall_closedir) \
+	SMBPROFILE_STATS_BASIC(syscall_open) \
+	SMBPROFILE_STATS_BASIC(syscall_createfile) \
+	SMBPROFILE_STATS_BASIC(syscall_close) \
+	SMBPROFILE_STATS_BYTES(syscall_read) \
+	SMBPROFILE_STATS_BYTES(syscall_pread) \
+	SMBPROFILE_STATS_BYTES(syscall_write) \
+	SMBPROFILE_STATS_BYTES(syscall_pwrite) \
+	SMBPROFILE_STATS_BASIC(syscall_lseek) \
+	SMBPROFILE_STATS_BYTES(syscall_sendfile) \
+	SMBPROFILE_STATS_BYTES(syscall_recvfile) \
+	SMBPROFILE_STATS_BASIC(syscall_rename) \
+	SMBPROFILE_STATS_BASIC(syscall_rename_at) \
+	SMBPROFILE_STATS_BASIC(syscall_fsync) \
+	SMBPROFILE_STATS_BASIC(syscall_stat) \
+	SMBPROFILE_STATS_BASIC(syscall_fstat) \
+	SMBPROFILE_STATS_BASIC(syscall_lstat) \
+	SMBPROFILE_STATS_BASIC(syscall_get_alloc_size) \
+	SMBPROFILE_STATS_BASIC(syscall_unlink) \
+	SMBPROFILE_STATS_BASIC(syscall_chmod) \
+	SMBPROFILE_STATS_BASIC(syscall_fchmod) \
+	SMBPROFILE_STATS_BASIC(syscall_chown) \
+	SMBPROFILE_STATS_BASIC(syscall_fchown) \
+	SMBPROFILE_STATS_BASIC(syscall_lchown) \
+	SMBPROFILE_STATS_BASIC(syscall_chdir) \
+	SMBPROFILE_STATS_BASIC(syscall_getwd) \
+	SMBPROFILE_STATS_BASIC(syscall_ntimes) \
+	SMBPROFILE_STATS_BASIC(syscall_ftruncate) \
+	SMBPROFILE_STATS_BASIC(syscall_fallocate) \
+	SMBPROFILE_STATS_BASIC(syscall_fcntl_lock) \
+	SMBPROFILE_STATS_BASIC(syscall_kernel_flock) \
+	SMBPROFILE_STATS_BASIC(syscall_linux_setlease) \
+	SMBPROFILE_STATS_BASIC(syscall_fcntl_getlock) \
+	SMBPROFILE_STATS_BASIC(syscall_readlink) \
+	SMBPROFILE_STATS_BASIC(syscall_symlink) \
+	SMBPROFILE_STATS_BASIC(syscall_link) \
+	SMBPROFILE_STATS_BASIC(syscall_mknod) \
+	SMBPROFILE_STATS_BASIC(syscall_realpath) \
+	SMBPROFILE_STATS_BASIC(syscall_get_quota) \
+	SMBPROFILE_STATS_BASIC(syscall_set_quota) \
+	SMBPROFILE_STATS_BASIC(syscall_get_sd) \
+	SMBPROFILE_STATS_BASIC(syscall_set_sd) \
+	SMBPROFILE_STATS_BASIC(syscall_brl_lock) \
+	SMBPROFILE_STATS_BASIC(syscall_brl_unlock) \
+	SMBPROFILE_STATS_BASIC(syscall_brl_cancel) \
+	SMBPROFILE_STATS_SECTION_END \
+	\
+	SMBPROFILE_STATS_SECTION_START("ACL Calls") \
+	SMBPROFILE_STATS_BASIC(get_nt_acl) \
+	SMBPROFILE_STATS_BASIC(fget_nt_acl) \
+	SMBPROFILE_STATS_BASIC(fset_nt_acl) \
+	SMBPROFILE_STATS_BASIC(chmod_acl) \
+	SMBPROFILE_STATS_BASIC(fchmod_acl) \
+	SMBPROFILE_STATS_SECTION_END \
+	\
+	SMBPROFILE_STATS_SECTION_START("Stat Cache") \
+	SMBPROFILE_STATS_COUNT(statcache_lookups) \
+	SMBPROFILE_STATS_COUNT(statcache_misses) \
+	SMBPROFILE_STATS_COUNT(statcache_hits) \
+	SMBPROFILE_STATS_SECTION_END \
+	\
+	SMBPROFILE_STATS_SECTION_START("Write Cache") \
+	SMBPROFILE_STATS_COUNT(writecache_allocations) \
+	SMBPROFILE_STATS_COUNT(writecache_deallocations) \
+	SMBPROFILE_STATS_COUNT(writecache_cached_reads) \
+	SMBPROFILE_STATS_COUNT(writecache_total_writes) \
+	SMBPROFILE_STATS_COUNT(writecache_init_writes) \
+	SMBPROFILE_STATS_COUNT(writecache_abutted_writes) \
+	SMBPROFILE_STATS_COUNT(writecache_non_oplock_writes) \
+	SMBPROFILE_STATS_COUNT(writecache_direct_writes) \
+	SMBPROFILE_STATS_COUNT(writecache_cached_writes) \
+	SMBPROFILE_STATS_COUNT(writecache_perfect_writes) \
+	SMBPROFILE_STATS_COUNT(writecache_flush_reason_seek) \
+	SMBPROFILE_STATS_COUNT(writecache_flush_reason_read) \
+	SMBPROFILE_STATS_COUNT(writecache_flush_reason_readraw) \
+	SMBPROFILE_STATS_COUNT(writecache_flush_reason_write) \
+	SMBPROFILE_STATS_COUNT(writecache_flush_reason_oplock) \
+	SMBPROFILE_STATS_COUNT(writecache_flush_reason_close) \
+	SMBPROFILE_STATS_COUNT(writecache_flush_reason_sync) \
+	SMBPROFILE_STATS_COUNT(writecache_flush_reason_sizechange) \
+	SMBPROFILE_STATS_SECTION_END \
+	\
+	SMBPROFILE_STATS_SECTION_START("SMB Calls") \
+	SMBPROFILE_STATS_BASIC(SMBmkdir) \
+	SMBPROFILE_STATS_BASIC(SMBrmdir) \
+	SMBPROFILE_STATS_BASIC(SMBopen) \
+	SMBPROFILE_STATS_BASIC(SMBcreate) \
+	SMBPROFILE_STATS_BASIC(SMBclose) \
+	SMBPROFILE_STATS_BASIC(SMBflush) \
+	SMBPROFILE_STATS_BASIC(SMBunlink) \
+	SMBPROFILE_STATS_BASIC(SMBmv) \
+	SMBPROFILE_STATS_BASIC(SMBgetatr) \
+	SMBPROFILE_STATS_BASIC(SMBsetatr) \
+	SMBPROFILE_STATS_BASIC(SMBread) \
+	SMBPROFILE_STATS_BASIC(SMBwrite) \
+	SMBPROFILE_STATS_BASIC(SMBlock) \
+	SMBPROFILE_STATS_BASIC(SMBunlock) \
+	SMBPROFILE_STATS_BASIC(SMBctemp) \
+	SMBPROFILE_STATS_BASIC(SMBmknew) \
+	SMBPROFILE_STATS_BASIC(SMBcheckpath) \
+	SMBPROFILE_STATS_BASIC(SMBexit) \
+	SMBPROFILE_STATS_BASIC(SMBlseek) \
+	SMBPROFILE_STATS_BASIC(SMBlockread) \
+	SMBPROFILE_STATS_BASIC(SMBwriteunlock) \
+	SMBPROFILE_STATS_BASIC(SMBreadbraw) \
+	SMBPROFILE_STATS_BASIC(SMBreadBmpx) \
+	SMBPROFILE_STATS_BASIC(SMBreadBs) \
+	SMBPROFILE_STATS_BASIC(SMBwritebraw) \
+	SMBPROFILE_STATS_BASIC(SMBwriteBmpx) \
+	SMBPROFILE_STATS_BASIC(SMBwriteBs) \
+	SMBPROFILE_STATS_BASIC(SMBwritec) \
+	SMBPROFILE_STATS_BASIC(SMBsetattrE) \
+	SMBPROFILE_STATS_BASIC(SMBgetattrE) \
+	SMBPROFILE_STATS_BASIC(SMBlockingX) \
+	SMBPROFILE_STATS_BASIC(SMBtrans) \
+	SMBPROFILE_STATS_BASIC(SMBtranss) \
+	SMBPROFILE_STATS_BASIC(SMBioctl) \
+	SMBPROFILE_STATS_BASIC(SMBioctls) \
+	SMBPROFILE_STATS_BASIC(SMBcopy) \
+	SMBPROFILE_STATS_BASIC(SMBmove) \
+	SMBPROFILE_STATS_BASIC(SMBecho) \
+	SMBPROFILE_STATS_BASIC(SMBwriteclose) \
+	SMBPROFILE_STATS_BASIC(SMBopenX) \
+	SMBPROFILE_STATS_BASIC(SMBreadX) \
+	SMBPROFILE_STATS_BASIC(SMBwriteX) \
+	SMBPROFILE_STATS_BASIC(SMBtrans2) \
+	SMBPROFILE_STATS_BASIC(SMBtranss2) \
+	SMBPROFILE_STATS_BASIC(SMBfindclose) \
+	SMBPROFILE_STATS_BASIC(SMBfindnclose) \
+	SMBPROFILE_STATS_BASIC(SMBtcon) \
+	SMBPROFILE_STATS_BASIC(SMBtdis) \
+	SMBPROFILE_STATS_BASIC(SMBnegprot) \
+	SMBPROFILE_STATS_BASIC(SMBsesssetupX) \
+	SMBPROFILE_STATS_BASIC(SMBulogoffX) \
+	SMBPROFILE_STATS_BASIC(SMBtconX) \
+	SMBPROFILE_STATS_BASIC(SMBdskattr) \
+	SMBPROFILE_STATS_BASIC(SMBsearch) \
+	SMBPROFILE_STATS_BASIC(SMBffirst) \
+	SMBPROFILE_STATS_BASIC(SMBfunique) \
+	SMBPROFILE_STATS_BASIC(SMBfclose) \
+	SMBPROFILE_STATS_BASIC(SMBnttrans) \
+	SMBPROFILE_STATS_BASIC(SMBnttranss) \
+	SMBPROFILE_STATS_BASIC(SMBntcreateX) \
+	SMBPROFILE_STATS_BASIC(SMBntcancel) \
+	SMBPROFILE_STATS_BASIC(SMBntrename) \
+	SMBPROFILE_STATS_BASIC(SMBsplopen) \
+	SMBPROFILE_STATS_BASIC(SMBsplwr) \
+	SMBPROFILE_STATS_BASIC(SMBsplclose) \
+	SMBPROFILE_STATS_BASIC(SMBsplretq) \
+	SMBPROFILE_STATS_BASIC(SMBsends) \
+	SMBPROFILE_STATS_BASIC(SMBsendb) \
+	SMBPROFILE_STATS_BASIC(SMBfwdname) \
+	SMBPROFILE_STATS_BASIC(SMBcancelf) \
+	SMBPROFILE_STATS_BASIC(SMBgetmac) \
+	SMBPROFILE_STATS_BASIC(SMBsendstrt) \
+	SMBPROFILE_STATS_BASIC(SMBsendend) \
+	SMBPROFILE_STATS_BASIC(SMBsendtxt) \
+	SMBPROFILE_STATS_BASIC(SMBinvalid) \
+	SMBPROFILE_STATS_SECTION_END \
+	\
+	SMBPROFILE_STATS_SECTION_START("Trans2 Calls") \
+	SMBPROFILE_STATS_BASIC(Trans2_open) \
+	SMBPROFILE_STATS_BASIC(Trans2_findfirst) \
+	SMBPROFILE_STATS_BASIC(Trans2_findnext) \
+	SMBPROFILE_STATS_BASIC(Trans2_qfsinfo) \
+	SMBPROFILE_STATS_BASIC(Trans2_setfsinfo) \
+	SMBPROFILE_STATS_BASIC(Trans2_qpathinfo) \
+	SMBPROFILE_STATS_BASIC(Trans2_setpathinfo) \
+	SMBPROFILE_STATS_BASIC(Trans2_qfileinfo) \
+	SMBPROFILE_STATS_BASIC(Trans2_setfileinfo) \
+	SMBPROFILE_STATS_BASIC(Trans2_fsctl) \
+	SMBPROFILE_STATS_BASIC(Trans2_ioctl) \
+	SMBPROFILE_STATS_BASIC(Trans2_findnotifyfirst) \
+	SMBPROFILE_STATS_BASIC(Trans2_findnotifynext) \
+	SMBPROFILE_STATS_BASIC(Trans2_mkdir) \
+	SMBPROFILE_STATS_BASIC(Trans2_session_setup) \
+	SMBPROFILE_STATS_BASIC(Trans2_get_dfs_referral) \
+	SMBPROFILE_STATS_BASIC(Trans2_report_dfs_inconsistancy) \
+	SMBPROFILE_STATS_SECTION_END \
+	\
+	SMBPROFILE_STATS_SECTION_START("NT Transact Calls") \
+	SMBPROFILE_STATS_BASIC(NT_transact_create) \
+	SMBPROFILE_STATS_BASIC(NT_transact_ioctl) \
+	SMBPROFILE_STATS_BASIC(NT_transact_set_security_desc) \
+	SMBPROFILE_STATS_BASIC(NT_transact_notify_change) \
+	SMBPROFILE_STATS_BASIC(NT_transact_rename) \
+	SMBPROFILE_STATS_BASIC(NT_transact_query_security_desc) \
+	SMBPROFILE_STATS_BASIC(NT_transact_get_user_quota) \
+	SMBPROFILE_STATS_BASIC(NT_transact_set_user_quota) \
+	SMBPROFILE_STATS_SECTION_END \
+	\
+	SMBPROFILE_STATS_SECTION_START("SMB2 Calls") \
+	SMBPROFILE_STATS_BASIC(smb2_negprot) \
+	SMBPROFILE_STATS_BASIC(smb2_sesssetup) \
+	SMBPROFILE_STATS_BASIC(smb2_logoff) \
+	SMBPROFILE_STATS_BASIC(smb2_tcon) \
+	SMBPROFILE_STATS_BASIC(smb2_tdis) \
+	SMBPROFILE_STATS_BASIC(smb2_create) \
+	SMBPROFILE_STATS_BASIC(smb2_close) \
+	SMBPROFILE_STATS_BASIC(smb2_flush) \
+	SMBPROFILE_STATS_BASIC(smb2_read) \
+	SMBPROFILE_STATS_BASIC(smb2_write) \
+	SMBPROFILE_STATS_BASIC(smb2_lock) \
+	SMBPROFILE_STATS_BASIC(smb2_ioctl) \
+	SMBPROFILE_STATS_BASIC(smb2_cancel) \
+	SMBPROFILE_STATS_BASIC(smb2_keepalive) \
+	SMBPROFILE_STATS_BASIC(smb2_find) \
+	SMBPROFILE_STATS_BASIC(smb2_notify) \
+	SMBPROFILE_STATS_BASIC(smb2_getinfo) \
+	SMBPROFILE_STATS_BASIC(smb2_setinfo) \
+	SMBPROFILE_STATS_BASIC(smb2_break) \
+	SMBPROFILE_STATS_SECTION_END \
+	\
+	SMBPROFILE_STATS_END
+
 /* this file defines the profile structure in the profile shared
    memory area */
 
 /* time values in the following structure are in microseconds */
 
-#define __profile_stats_value(which, domain) domain[which]
-
-enum profile_stats_values
-{
-	PR_VALUE_SMBD_IDLE = 0,
-#define smbd_idle_count __profile_stats_value(PR_VALUE_SMBD_IDLE, count)
-#define smbd_idle_time __profile_stats_value(PR_VALUE_SMBD_IDLE, time)
-
-/* system call counters */
-	PR_VALUE_SYSCALL_OPENDIR,
-#define syscall_opendir_count __profile_stats_value(PR_VALUE_SYSCALL_OPENDIR, count)
-#define syscall_opendir_time __profile_stats_value(PR_VALUE_SYSCALL_OPENDIR, time)
-
-	PR_VALUE_SYSCALL_FDOPENDIR,
-#define syscall_fdopendir_count __profile_stats_value(PR_VALUE_SYSCALL_FDOPENDIR, count)
-#define syscall_fdopendir_time __profile_stats_value(PR_VALUE_SYSCALL_FDOPENDIR, time)
-
-	PR_VALUE_SYSCALL_READDIR,
-#define syscall_readdir_count __profile_stats_value(PR_VALUE_SYSCALL_READDIR, count)
-#define syscall_readdir_time __profile_stats_value(PR_VALUE_SYSCALL_READDIR, time)
-
-	PR_VALUE_SYSCALL_SEEKDIR,
-#define syscall_seekdir_count __profile_stats_value(PR_VALUE_SYSCALL_SEEKDIR, count)
-#define syscall_seekdir_time __profile_stats_value(PR_VALUE_SYSCALL_SEEKDIR, time)
-
-	PR_VALUE_SYSCALL_TELLDIR,
-#define syscall_telldir_count __profile_stats_value(PR_VALUE_SYSCALL_TELLDIR, count)
-#define syscall_telldir_time __profile_stats_value(PR_VALUE_SYSCALL_TELLDIR, time)
-
-	PR_VALUE_SYSCALL_REWINDDIR,
-#define syscall_rewinddir_count __profile_stats_value(PR_VALUE_SYSCALL_REWINDDIR, count)
-#define syscall_rewinddir_time __profile_stats_value(PR_VALUE_SYSCALL_REWINDDIR, time)
-
-	PR_VALUE_SYSCALL_MKDIR,
-#define syscall_mkdir_count __profile_stats_value(PR_VALUE_SYSCALL_MKDIR, count)
-#define syscall_mkdir_time __profile_stats_value(PR_VALUE_SYSCALL_MKDIR, time)
-
-	PR_VALUE_SYSCALL_RMDIR,
-#define syscall_rmdir_count __profile_stats_value(PR_VALUE_SYSCALL_RMDIR, count)
-#define syscall_rmdir_time __profile_stats_value(PR_VALUE_SYSCALL_RMDIR, time)
-
-	PR_VALUE_SYSCALL_CLOSEDIR,
-#define syscall_closedir_count __profile_stats_value(PR_VALUE_SYSCALL_CLOSEDIR, count)
-#define syscall_closedir_time __profile_stats_value(PR_VALUE_SYSCALL_CLOSEDIR, time)
-
-	PR_VALUE_SYSCALL_OPEN,
-#define syscall_open_count __profile_stats_value(PR_VALUE_SYSCALL_OPEN, count)
-#define syscall_open_time __profile_stats_value(PR_VALUE_SYSCALL_OPEN, time)
-
-	PR_VALUE_SYSCALL_CREATEFILE,
-#define syscall_createfile_count __profile_stats_value(PR_VALUE_SYSCALL_CREATEFILE, count)
-#define syscall_createfile_time __profile_stats_value(PR_VALUE_SYSCALL_CREATEFILE, time)
-
-	PR_VALUE_SYSCALL_CLOSE,
-#define syscall_close_count __profile_stats_value(PR_VALUE_SYSCALL_CLOSE, count)
-#define syscall_close_time __profile_stats_value(PR_VALUE_SYSCALL_CLOSE, time)
-
-	PR_VALUE_SYSCALL_READ,
-#define syscall_read_count __profile_stats_value(PR_VALUE_SYSCALL_READ, count)
-#define syscall_read_time __profile_stats_value(PR_VALUE_SYSCALL_READ, time)
-
-	PR_VALUE_SYSCALL_PREAD,
-#define syscall_pread_count __profile_stats_value(PR_VALUE_SYSCALL_PREAD, count)
-#define syscall_pread_time __profile_stats_value(PR_VALUE_SYSCALL_PREAD, time)
-
-	PR_VALUE_SYSCALL_WRITE,
-#define syscall_write_count __profile_stats_value(PR_VALUE_SYSCALL_WRITE, count)
-#define syscall_write_time __profile_stats_value(PR_VALUE_SYSCALL_WRITE, time)
-
-	PR_VALUE_SYSCALL_PWRITE,
-#define syscall_pwrite_count __profile_stats_value(PR_VALUE_SYSCALL_PWRITE, count)
-#define syscall_pwrite_time __profile_stats_value(PR_VALUE_SYSCALL_PWRITE, time)
-
-	PR_VALUE_SYSCALL_LSEEK,
-#define syscall_lseek_count __profile_stats_value(PR_VALUE_SYSCALL_LSEEK, count)
-#define syscall_lseek_time __profile_stats_value(PR_VALUE_SYSCALL_LSEEK, time)
-
-	PR_VALUE_SYSCALL_SENDFILE,
-#define syscall_sendfile_count __profile_stats_value(PR_VALUE_SYSCALL_SENDFILE, count)
-#define syscall_sendfile_time __profile_stats_value(PR_VALUE_SYSCALL_SENDFILE, time)
-
-	PR_VALUE_SYSCALL_RECVFILE,
-#define syscall_recvfile_count __profile_stats_value(PR_VALUE_SYSCALL_RECVFILE, count)
-#define syscall_recvfile_time __profile_stats_value(PR_VALUE_SYSCALL_RECVFILE, time)
-
-	PR_VALUE_SYSCALL_RENAME,
-#define syscall_rename_count __profile_stats_value(PR_VALUE_SYSCALL_RENAME, count)
-#define syscall_rename_time __profile_stats_value(PR_VALUE_SYSCALL_RENAME, time)
-
-	PR_VALUE_SYSCALL_RENAME_AT,
-#define syscall_rename_at_count __profile_stats_value(PR_VALUE_SYSCALL_RENAME_AT, count)
-#define syscall_rename_at_time __profile_stats_value(PR_VALUE_SYSCALL_RENAME_AT, time)
-
-	PR_VALUE_SYSCALL_FSYNC,
-#define syscall_fsync_count __profile_stats_value(PR_VALUE_SYSCALL_FSYNC, count)
-#define syscall_fsync_time __profile_stats_value(PR_VALUE_SYSCALL_FSYNC, time)
-
-	PR_VALUE_SYSCALL_STAT,
-#define syscall_stat_count __profile_stats_value(PR_VALUE_SYSCALL_STAT, count)
-#define syscall_stat_time __profile_stats_value(PR_VALUE_SYSCALL_STAT, time)
-
-	PR_VALUE_SYSCALL_FSTAT,
-#define syscall_fstat_count __profile_stats_value(PR_VALUE_SYSCALL_FSTAT, count)
-#define syscall_fstat_time __profile_stats_value(PR_VALUE_SYSCALL_FSTAT, time)
-
-	PR_VALUE_SYSCALL_LSTAT,
-#define syscall_lstat_count __profile_stats_value(PR_VALUE_SYSCALL_LSTAT, count)
-#define syscall_lstat_time __profile_stats_value(PR_VALUE_SYSCALL_LSTAT, time)
-
-	PR_VALUE_SYSCALL_GET_ALLOC_SIZE,
-#define syscall_get_alloc_size_count __profile_stats_value(PR_VALUE_SYSCALL_GET_ALLOC_SIZE, count)
-#define syscall_get_alloc_size_time __profile_stats_value(PR_VALUE_SYSCALL_GET_ALLOC_SIZE, time)
-
-	PR_VALUE_SYSCALL_UNLINK,
-#define syscall_unlink_count __profile_stats_value(PR_VALUE_SYSCALL_UNLINK, count)
-#define syscall_unlink_time __profile_stats_value(PR_VALUE_SYSCALL_UNLINK, time)
-
-	PR_VALUE_SYSCALL_CHMOD,
-#define syscall_chmod_count __profile_stats_value(PR_VALUE_SYSCALL_CHMOD, count)
-#define syscall_chmod_time __profile_stats_value(PR_VALUE_SYSCALL_CHMOD, time)
-
-	PR_VALUE_SYSCALL_FCHMOD,
-#define syscall_fchmod_count __profile_stats_value(PR_VALUE_SYSCALL_FCHMOD, count)
-#define syscall_fchmod_time __profile_stats_value(PR_VALUE_SYSCALL_FCHMOD, time)
-
-	PR_VALUE_SYSCALL_CHOWN,
-#define syscall_chown_count __profile_stats_value(PR_VALUE_SYSCALL_CHOWN, count)
-#define syscall_chown_time __profile_stats_value(PR_VALUE_SYSCALL_CHOWN, time)
-
-	PR_VALUE_SYSCALL_FCHOWN,
-#define syscall_fchown_count __profile_stats_value(PR_VALUE_SYSCALL_FCHOWN, count)
-#define syscall_fchown_time __profile_stats_value(PR_VALUE_SYSCALL_FCHOWN, time)
-
-	PR_VALUE_SYSCALL_LCHOWN,
-#define syscall_lchown_count __profile_stats_value(PR_VALUE_SYSCALL_LCHOWN, count)
-#define syscall_lchown_time __profile_stats_value(PR_VALUE_SYSCALL_LCHOWN, time)
-
-	PR_VALUE_SYSCALL_CHDIR,
-#define syscall_chdir_count __profile_stats_value(PR_VALUE_SYSCALL_CHDIR, count)
-#define syscall_chdir_time __profile_stats_value(PR_VALUE_SYSCALL_CHDIR, time)
-
-	PR_VALUE_SYSCALL_GETWD,
-#define syscall_getwd_count __profile_stats_value(PR_VALUE_SYSCALL_GETWD, count)
-#define syscall_getwd_time __profile_stats_value(PR_VALUE_SYSCALL_GETWD, time)
-
-	PR_VALUE_SYSCALL_NTIMES,
-#define syscall_ntimes_count __profile_stats_value(PR_VALUE_SYSCALL_NTIMES, count)
-#define syscall_ntimes_time __profile_stats_value(PR_VALUE_SYSCALL_NTIMES, time)
-
-	PR_VALUE_SYSCALL_FTRUNCATE,
-#define syscall_ftruncate_count __profile_stats_value(PR_VALUE_SYSCALL_FTRUNCATE, count)
-#define syscall_ftruncate_time __profile_stats_value(PR_VALUE_SYSCALL_FTRUNCATE, time)
-
-	PR_VALUE_SYSCALL_FALLOCATE,
-#define syscall_fallocate_count __profile_stats_value(PR_VALUE_SYSCALL_FALLOCATE, count)
-#define syscall_fallocate_time __profile_stats_value(PR_VALUE_SYSCALL_FALLOCATE, time)
-
-	PR_VALUE_SYSCALL_FCNTL_LOCK,
-#define syscall_fcntl_lock_count __profile_stats_value(PR_VALUE_SYSCALL_FCNTL_LOCK, count)
-#define syscall_fcntl_lock_time __profile_stats_value(PR_VALUE_SYSCALL_FCNTL_LOCK, time)
-
-	PR_VALUE_SYSCALL_KERNEL_FLOCK,
-#define syscall_kernel_flock_count __profile_stats_value(PR_VALUE_SYSCALL_KERNEL_FLOCK, count)
-#define syscall_kernel_flock_time __profile_stats_value(PR_VALUE_SYSCALL_KERNEL_FLOCK, time)
-
-	PR_VALUE_SYSCALL_LINUX_SETLEASE,
-#define syscall_linux_setlease_count __profile_stats_value(PR_VALUE_SYSCALL_LINUX_SETLEASE, count)
-#define syscall_linux_setlease_time __profile_stats_value(PR_VALUE_SYSCALL_LINUX_SETLEASE, time)
-
-	PR_VALUE_SYSCALL_FCNTL_GETLOCK,
-#define syscall_fcntl_getlock_count __profile_stats_value(PR_VALUE_SYSCALL_FCNTL_GETLOCK, count)
-#define syscall_fcntl_getlock_time __profile_stats_value(PR_VALUE_SYSCALL_FCNTL_GETLOCK, time)
-
-	PR_VALUE_SYSCALL_READLINK,
-#define syscall_readlink_count __profile_stats_value(PR_VALUE_SYSCALL_READLINK, count)
-#define syscall_readlink_time __profile_stats_value(PR_VALUE_SYSCALL_READLINK, time)
-
-	PR_VALUE_SYSCALL_SYMLINK,
-#define syscall_symlink_count __profile_stats_value(PR_VALUE_SYSCALL_SYMLINK, count)
-#define syscall_symlink_time __profile_stats_value(PR_VALUE_SYSCALL_SYMLINK, time)
-
-	PR_VALUE_SYSCALL_LINK,
-#define syscall_link_count __profile_stats_value(PR_VALUE_SYSCALL_LINK, count)
-#define syscall_link_time __profile_stats_value(PR_VALUE_SYSCALL_LINK, time)
-
-	PR_VALUE_SYSCALL_MKNOD,
-#define syscall_mknod_count __profile_stats_value(PR_VALUE_SYSCALL_MKNOD, count)
-#define syscall_mknod_time __profile_stats_value(PR_VALUE_SYSCALL_MKNOD, time)
-
-	PR_VALUE_SYSCALL_REALPATH,
-#define syscall_realpath_count __profile_stats_value(PR_VALUE_SYSCALL_REALPATH, count)
-#define syscall_realpath_time __profile_stats_value(PR_VALUE_SYSCALL_REALPATH, time)
-
-	PR_VALUE_SYSCALL_GET_QUOTA,
-#define syscall_get_quota_count __profile_stats_value(PR_VALUE_SYSCALL_GET_QUOTA, count)
-#define syscall_get_quota_time __profile_stats_value(PR_VALUE_SYSCALL_GET_QUOTA, time)
-
-	PR_VALUE_SYSCALL_SET_QUOTA,
-#define syscall_set_quota_count __profile_stats_value(PR_VALUE_SYSCALL_SET_QUOTA, count)
-#define syscall_set_quota_time __profile_stats_value(PR_VALUE_SYSCALL_SET_QUOTA, time)
-
-	PR_VALUE_SYSCALL_GET_SD,
-#define syscall_get_sd_count __profile_stats_value(PR_VALUE_SYSCALL_GET_SD, count)
-#define syscall_get_sd_time __profile_stats_value(PR_VALUE_SYSCALL_GET_SD, time)
-
-	PR_VALUE_SYSCALL_SET_SD,
-#define syscall_set_sd_count __profile_stats_value(PR_VALUE_SYSCALL_SET_SD, count)
-#define syscall_set_sd_time __profile_stats_value(PR_VALUE_SYSCALL_SET_SD, time)
-
-	PR_VALUE_SYSCALL_BRL_LOCK,
-#define syscall_brl_lock_count __profile_stats_value(PR_VALUE_SYSCALL_BRL_LOCK, count)
-#define syscall_brl_lock_time __profile_stats_value(PR_VALUE_SYSCALL_BRL_LOCK, time)
-
-	PR_VALUE_SYSCALL_BRL_UNLOCK,
-#define syscall_brl_unlock_count __profile_stats_value(PR_VALUE_SYSCALL_BRL_UNLOCK, count)
-#define syscall_brl_unlock_time __profile_stats_value(PR_VALUE_SYSCALL_BRL_UNLOCK, time)
-
-	PR_VALUE_SYSCALL_BRL_CANCEL,
-#define syscall_brl_cancel_count __profile_stats_value(PR_VALUE_SYSCALL_BRL_CANCEL, count)
-#define syscall_brl_cancel_time __profile_stats_value(PR_VALUE_SYSCALL_BRL_CANCEL, time)
-
-	PR_VALUE_SYSCALL_STRICT_LOCK,
-#define syscall_strict_lock_count __profile_stats_value(PR_VALUE_SYSCALL_STRICT_LOCK, count)
-#define syscall_strict_lock_time __profile_stats_value(PR_VALUE_SYSCALL_STRICT_LOCK, time)
-
-	PR_VALUE_SYSCALL_STRICT_UNLOCK,
-#define syscall_strict_unlock_count __profile_stats_value(PR_VALUE_SYSCALL_STRICT_UNLOCK, count)
-#define syscall_strict_unlock_time __profile_stats_value(PR_VALUE_SYSCALL_STRICT_UNLOCK, time)
-
-/* counters for individual SMB types */
-	PR_VALUE_SMBMKDIR,
-#define SMBmkdir_count __profile_stats_value(PR_VALUE_SMBMKDIR, count)
-#define SMBmkdir_time __profile_stats_value(PR_VALUE_SMBMKDIR, time)
-
-	PR_VALUE_SMBRMDIR,
-#define SMBrmdir_count __profile_stats_value(PR_VALUE_SMBRMDIR, count)
-#define SMBrmdir_time __profile_stats_value(PR_VALUE_SMBRMDIR, time)
-
-	PR_VALUE_SMBOPEN,
-#define SMBopen_count __profile_stats_value(PR_VALUE_SMBOPEN, count)
-#define SMBopen_time __profile_stats_value(PR_VALUE_SMBOPEN, time)
-
-	PR_VALUE_SMBCREATE,
-#define SMBcreate_count __profile_stats_value(PR_VALUE_SMBCREATE, count)
-#define SMBcreate_time __profile_stats_value(PR_VALUE_SMBCREATE, time)
-
-	PR_VALUE_SMBCLOSE,
-#define SMBclose_count __profile_stats_value(PR_VALUE_SMBCLOSE, count)
-#define SMBclose_time __profile_stats_value(PR_VALUE_SMBCLOSE, time)
-
-	PR_VALUE_SMBFLUSH,
-#define SMBflush_count __profile_stats_value(PR_VALUE_SMBFLUSH, count)
-#define SMBflush_time __profile_stats_value(PR_VALUE_SMBFLUSH, time)
-
-	PR_VALUE_SMBUNLINK,
-#define SMBunlink_count __profile_stats_value(PR_VALUE_SMBUNLINK, count)
-#define SMBunlink_time __profile_stats_value(PR_VALUE_SMBUNLINK, time)
-
-	PR_VALUE_SMBMV,
-#define SMBmv_count __profile_stats_value(PR_VALUE_SMBMV, count)
-#define SMBmv_time __profile_stats_value(PR_VALUE_SMBMV, time)
-
-	PR_VALUE_SMBGETATR,
-#define SMBgetatr_count __profile_stats_value(PR_VALUE_SMBGETATR, count)
-#define SMBgetatr_time __profile_stats_value(PR_VALUE_SMBGETATR, time)
-
-	PR_VALUE_SMBSETATR,
-#define SMBsetatr_count __profile_stats_value(PR_VALUE_SMBSETATR, count)
-#define SMBsetatr_time __profile_stats_value(PR_VALUE_SMBSETATR, time)
-
-	PR_VALUE_SMBREAD,
-#define SMBread_count __profile_stats_value(PR_VALUE_SMBREAD, count)
-#define SMBread_time __profile_stats_value(PR_VALUE_SMBREAD, time)
-
-	PR_VALUE_SMBWRITE,
-#define SMBwrite_count __profile_stats_value(PR_VALUE_SMBWRITE, count)
-#define SMBwrite_time __profile_stats_value(PR_VALUE_SMBWRITE, time)
-
-	PR_VALUE_SMBLOCK,
-#define SMBlock_count __profile_stats_value(PR_VALUE_SMBLOCK, count)
-#define SMBlock_time __profile_stats_value(PR_VALUE_SMBLOCK, time)
-
-	PR_VALUE_SMBUNLOCK,
-#define SMBunlock_count __profile_stats_value(PR_VALUE_SMBUNLOCK, count)
-#define SMBunlock_time __profile_stats_value(PR_VALUE_SMBUNLOCK, time)
-
-	PR_VALUE_SMBCTEMP,
-#define SMBctemp_count __profile_stats_value(PR_VALUE_SMBCTEMP, count)
-#define SMBctemp_time __profile_stats_value(PR_VALUE_SMBCTEMP, time)
-
-	/* SMBmknew stats are currently combined with SMBcreate */
-	PR_VALUE_SMBMKNEW,
-#define SMBmknew_count __profile_stats_value(PR_VALUE_SMBMKNEW, count)
-#define SMBmknew_time __profile_stats_value(PR_VALUE_SMBMKNEW, time)
-
-	PR_VALUE_SMBCHECKPATH,
-#define SMBcheckpath_count __profile_stats_value(PR_VALUE_SMBCHECKPATH, count)
-#define SMBcheckpath_time __profile_stats_value(PR_VALUE_SMBCHECKPATH, time)
-
-	PR_VALUE_SMBEXIT,
-#define SMBexit_count __profile_stats_value(PR_VALUE_SMBEXIT, count)
-#define SMBexit_time __profile_stats_value(PR_VALUE_SMBEXIT, time)
-
-	PR_VALUE_SMBLSEEK,
-#define SMBlseek_count __profile_stats_value(PR_VALUE_SMBLSEEK, count)
-#define SMBlseek_time __profile_stats_value(PR_VALUE_SMBLSEEK, time)
-
-	PR_VALUE_SMBLOCKREAD,
-#define SMBlockread_count __profile_stats_value(PR_VALUE_SMBLOCKREAD, count)
-#define SMBlockread_time __profile_stats_value(PR_VALUE_SMBLOCKREAD, time)
-
-	PR_VALUE_SMBWRITEUNLOCK,
-#define SMBwriteunlock_count __profile_stats_value(PR_VALUE_SMBWRITEUNLOCK, count)
-#define SMBwriteunlock_time __profile_stats_value(PR_VALUE_SMBWRITEUNLOCK, time)
-
-	PR_VALUE_SMBREADBRAW,
-#define SMBreadbraw_count __profile_stats_value(PR_VALUE_SMBREADBRAW, count)
-#define SMBreadbraw_time __profile_stats_value(PR_VALUE_SMBREADBRAW, time)
-
-	PR_VALUE_SMBREADBMPX,
-#define SMBreadBmpx_count __profile_stats_value(PR_VALUE_SMBREADBMPX, count)
-#define SMBreadBmpx_time __profile_stats_value(PR_VALUE_SMBREADBMPX, time)
-
-	PR_VALUE_SMBREADBS,
-#define SMBreadBs_count __profile_stats_value(PR_VALUE_SMBREADBS, count)
-#define SMBreadBs_time __profile_stats_value(PR_VALUE_SMBREADBS, time)
-
-	PR_VALUE_SMBWRITEBRAW,
-#define SMBwritebraw_count __profile_stats_value(PR_VALUE_SMBWRITEBRAW, count)
-#define SMBwritebraw_time __profile_stats_value(PR_VALUE_SMBWRITEBRAW, time)
-
-	PR_VALUE_SMBWRITEBMPX,
-#define SMBwriteBmpx_count __profile_stats_value(PR_VALUE_SMBWRITEBMPX, count)
-#define SMBwriteBmpx_time __profile_stats_value(PR_VALUE_SMBWRITEBMPX, time)
-
-	PR_VALUE_SMBWRITEBS,
-#define SMBwriteBs_count __profile_stats_value(PR_VALUE_SMBWRITEBS, count)
-#define SMBwriteBs_time __profile_stats_value(PR_VALUE_SMBWRITEBS, time)
-
-	PR_VALUE_SMBWRITEC,
-#define SMBwritec_count __profile_stats_value(PR_VALUE_SMBWRITEC, count)
-#define SMBwritec_time __profile_stats_value(PR_VALUE_SMBWRITEC, time)
-
-	PR_VALUE_SMBSETATTRE,
-#define SMBsetattrE_count __profile_stats_value(PR_VALUE_SMBSETATTRE, count)
-#define SMBsetattrE_time __profile_stats_value(PR_VALUE_SMBSETATTRE, time)
-
-	PR_VALUE_SMBGETATTRE,
-#define SMBgetattrE_count __profile_stats_value(PR_VALUE_SMBGETATTRE, count)
-#define SMBgetattrE_time __profile_stats_value(PR_VALUE_SMBGETATTRE, time)
-
-	PR_VALUE_SMBLOCKINGX,
-#define SMBlockingX_count __profile_stats_value(PR_VALUE_SMBLOCKINGX, count)
-#define SMBlockingX_time __profile_stats_value(PR_VALUE_SMBLOCKINGX, time)
-
-	PR_VALUE_SMBTRANS,
-#define SMBtrans_count __profile_stats_value(PR_VALUE_SMBTRANS, count)
-#define SMBtrans_time __profile_stats_value(PR_VALUE_SMBTRANS, time)
-
-	PR_VALUE_SMBTRANSS,
-#define SMBtranss_count __profile_stats_value(PR_VALUE_SMBTRANSS, count)
-#define SMBtranss_time __profile_stats_value(PR_VALUE_SMBTRANSS, time)
-
-	PR_VALUE_SMBIOCTL,
-#define SMBioctl_count __profile_stats_value(PR_VALUE_SMBIOCTL, count)
-#define SMBioctl_time __profile_stats_value(PR_VALUE_SMBIOCTL, time)
-
-	PR_VALUE_SMBIOCTLS,
-#define SMBioctls_count __profile_stats_value(PR_VALUE_SMBIOCTLS, count)
-#define SMBioctls_time __profile_stats_value(PR_VALUE_SMBIOCTLS, time)
-
-	PR_VALUE_SMBCOPY,
-#define SMBcopy_count __profile_stats_value(PR_VALUE_SMBCOPY, count)
-#define SMBcopy_time __profile_stats_value(PR_VALUE_SMBCOPY, time)
-
-	PR_VALUE_SMBMOVE,
-#define SMBmove_count __profile_stats_value(PR_VALUE_SMBMOVE, count)
-#define SMBmove_time __profile_stats_value(PR_VALUE_SMBMOVE, time)
-
-	PR_VALUE_SMBECHO,
-#define SMBecho_count __profile_stats_value(PR_VALUE_SMBECHO, count)
-#define SMBecho_time __profile_stats_value(PR_VALUE_SMBECHO, time)
-
-	PR_VALUE_SMBWRITECLOSE,
-#define SMBwriteclose_count __profile_stats_value(PR_VALUE_SMBWRITECLOSE, count)
-#define SMBwriteclose_time __profile_stats_value(PR_VALUE_SMBWRITECLOSE, time)
-
-	PR_VALUE_SMBOPENX,
-#define SMBopenX_count __profile_stats_value(PR_VALUE_SMBOPENX, count)
-#define SMBopenX_time __profile_stats_value(PR_VALUE_SMBOPENX, time)
-
-	PR_VALUE_SMBREADX,
-#define SMBreadX_count __profile_stats_value(PR_VALUE_SMBREADX, count)
-#define SMBreadX_time __profile_stats_value(PR_VALUE_SMBREADX, time)
-
-	PR_VALUE_SMBWRITEX,
-#define SMBwriteX_count __profile_stats_value(PR_VALUE_SMBWRITEX, count)
-#define SMBwriteX_time __profile_stats_value(PR_VALUE_SMBWRITEX, time)
-
-	PR_VALUE_SMBTRANS2,
-#define SMBtrans2_count __profile_stats_value(PR_VALUE_SMBTRANS2, count)
-#define SMBtrans2_time __profile_stats_value(PR_VALUE_SMBTRANS2, time)
-
-	PR_VALUE_SMBTRANSS2,
-#define SMBtranss2_count __profile_stats_value(PR_VALUE_SMBTRANSS2, count)
-#define SMBtranss2_time __profile_stats_value(PR_VALUE_SMBTRANSS2, time)
-
-	PR_VALUE_SMBFINDCLOSE,
-#define SMBfindclose_count __profile_stats_value(PR_VALUE_SMBFINDCLOSE, count)
-#define SMBfindclose_time __profile_stats_value(PR_VALUE_SMBFINDCLOSE, time)
-
-	PR_VALUE_SMBFINDNCLOSE,
-#define SMBfindnclose_count __profile_stats_value(PR_VALUE_SMBFINDNCLOSE, count)
-#define SMBfindnclose_time __profile_stats_value(PR_VALUE_SMBFINDNCLOSE, time)
-
-	PR_VALUE_SMBTCON,
-#define SMBtcon_count __profile_stats_value(PR_VALUE_SMBTCON, count)
-#define SMBtcon_time __profile_stats_value(PR_VALUE_SMBTCON, time)
-
-	PR_VALUE_SMBTDIS,
-#define SMBtdis_count __profile_stats_value(PR_VALUE_SMBTDIS, count)
-#define SMBtdis_time __profile_stats_value(PR_VALUE_SMBTDIS, time)
-
-	PR_VALUE_SMBNEGPROT,
-#define SMBnegprot_count __profile_stats_value(PR_VALUE_SMBNEGPROT, count)
-#define SMBnegprot_time __profile_stats_value(PR_VALUE_SMBNEGPROT, time)
-
-	PR_VALUE_SMBSESSSETUPX,
-#define SMBsesssetupX_count __profile_stats_value(PR_VALUE_SMBSESSSETUPX, count)
-#define SMBsesssetupX_time __profile_stats_value(PR_VALUE_SMBSESSSETUPX, time)
-
-	PR_VALUE_SMBULOGOFFX,
-#define SMBulogoffX_count __profile_stats_value(PR_VALUE_SMBULOGOFFX, count)
-#define SMBulogoffX_time __profile_stats_value(PR_VALUE_SMBULOGOFFX, time)
-
-	PR_VALUE_SMBTCONX,
-#define SMBtconX_count __profile_stats_value(PR_VALUE_SMBTCONX, count)
-#define SMBtconX_time __profile_stats_value(PR_VALUE_SMBTCONX, time)
-
-	PR_VALUE_SMBDSKATTR,
-#define SMBdskattr_count __profile_stats_value(PR_VALUE_SMBDSKATTR, count)
-#define SMBdskattr_time __profile_stats_value(PR_VALUE_SMBDSKATTR, time)
-
-	PR_VALUE_SMBSEARCH,
-#define SMBsearch_count __profile_stats_value(PR_VALUE_SMBSEARCH, count)
-#define SMBsearch_time __profile_stats_value(PR_VALUE_SMBSEARCH, time)
-
-	/* SBMffirst stats combined with SMBsearch */
-	PR_VALUE_SMBFFIRST,
-#define SMBffirst_count __profile_stats_value(PR_VALUE_SMBFFIRST, count)
-#define SMBffirst_time __profile_stats_value(PR_VALUE_SMBFFIRST, time)
-
-	/* SBMfunique stats combined with SMBsearch */
-	PR_VALUE_SMBFUNIQUE,
-#define SMBfunique_count __profile_stats_value(PR_VALUE_SMBFUNIQUE, count)
-#define SMBfunique_time __profile_stats_value(PR_VALUE_SMBFUNIQUE, time)
-
-	PR_VALUE_SMBFCLOSE,
-#define SMBfclose_count __profile_stats_value(PR_VALUE_SMBFCLOSE, count)
-#define SMBfclose_time __profile_stats_value(PR_VALUE_SMBFCLOSE, time)
-
-	PR_VALUE_SMBNTTRANS,
-#define SMBnttrans_count __profile_stats_value(PR_VALUE_SMBNTTRANS, count)
-#define SMBnttrans_time __profile_stats_value(PR_VALUE_SMBNTTRANS, time)
-
-	PR_VALUE_SMBNTTRANSS,
-#define SMBnttranss_count __profile_stats_value(PR_VALUE_SMBNTTRANSS, count)
-#define SMBnttranss_time __profile_stats_value(PR_VALUE_SMBNTTRANSS, time)
-
-	PR_VALUE_SMBNTCREATEX,
-#define SMBntcreateX_count __profile_stats_value(PR_VALUE_SMBNTCREATEX, count)
-#define SMBntcreateX_time __profile_stats_value(PR_VALUE_SMBNTCREATEX, time)
-
-	PR_VALUE_SMBNTCANCEL,
-#define SMBntcancel_count __profile_stats_value(PR_VALUE_SMBNTCANCEL, count)
-#define SMBntcancel_time __profile_stats_value(PR_VALUE_SMBNTCANCEL, time)
-
-	PR_VALUE_SMBNTRENAME,
-#define SMBntrename_count __profile_stats_value(PR_VALUE_SMBNTRENAME, count)
-#define SMBntrename_time __profile_stats_value(PR_VALUE_SMBNTRENAME, time)
-
-	PR_VALUE_SMBSPLOPEN,
-#define SMBsplopen_count __profile_stats_value(PR_VALUE_SMBSPLOPEN, count)
-#define SMBsplopen_time __profile_stats_value(PR_VALUE_SMBSPLOPEN, time)
-
-	PR_VALUE_SMBSPLWR,
-#define SMBsplwr_count __profile_stats_value(PR_VALUE_SMBSPLWR, count)
-#define SMBsplwr_time __profile_stats_value(PR_VALUE_SMBSPLWR, time)
-
-	PR_VALUE_SMBSPLCLOSE,
-#define SMBsplclose_count __profile_stats_value(PR_VALUE_SMBSPLCLOSE, count)
-#define SMBsplclose_time __profile_stats_value(PR_VALUE_SMBSPLCLOSE, time)
-
-	PR_VALUE_SMBSPLRETQ,
-#define SMBsplretq_count __profile_stats_value(PR_VALUE_SMBSPLRETQ, count)
-#define SMBsplretq_time __profile_stats_value(PR_VALUE_SMBSPLRETQ, time)
-
-	PR_VALUE_SMBSENDS,
-#define SMBsends_count __profile_stats_value(PR_VALUE_SMBSENDS, count)
-#define SMBsends_time __profile_stats_value(PR_VALUE_SMBSENDS, time)
-
-	PR_VALUE_SMBSENDB,
-#define SMBsendb_count __profile_stats_value(PR_VALUE_SMBSENDB, count)
-#define SMBsendb_time __profile_stats_value(PR_VALUE_SMBSENDB, time)
-
-	PR_VALUE_SMBFWDNAME,
-#define SMBfwdname_count __profile_stats_value(PR_VALUE_SMBFWDNAME, count)
-#define SMBfwdname_time __profile_stats_value(PR_VALUE_SMBFWDNAME, time)
-
-	PR_VALUE_SMBCANCELF,
-#define SMBcancelf_count __profile_stats_value(PR_VALUE_SMBCANCELF, count)
-#define SMBcancelf_time __profile_stats_value(PR_VALUE_SMBCANCELF, time)
-
-	PR_VALUE_SMBGETMAC,
-#define SMBgetmac_count __profile_stats_value(PR_VALUE_SMBGETMAC, count)
-#define SMBgetmac_time __profile_stats_value(PR_VALUE_SMBGETMAC, time)
-
-	PR_VALUE_SMBSENDSTRT,
-#define SMBsendstrt_count __profile_stats_value(PR_VALUE_SMBSENDSTRT, count)
-#define SMBsendstrt_time __profile_stats_value(PR_VALUE_SMBSENDSTRT, time)
-
-	PR_VALUE_SMBSENDEND,
-#define SMBsendend_count __profile_stats_value(PR_VALUE_SMBSENDEND, count)
-#define SMBsendend_time __profile_stats_value(PR_VALUE_SMBSENDEND, time)
-
-	PR_VALUE_SMBSENDTXT,
-#define SMBsendtxt_count __profile_stats_value(PR_VALUE_SMBSENDTXT, count)
-#define SMBsendtxt_time __profile_stats_value(PR_VALUE_SMBSENDTXT, time)
-
-	PR_VALUE_SMBINVALID,
-#define SMBinvalid_count __profile_stats_value(PR_VALUE_SMBINVALID, count)
-#define SMBinvalid_time __profile_stats_value(PR_VALUE_SMBINVALID, time)
-
-/* These are the TRANS2 sub commands */
-	PR_VALUE_TRANS2_OPEN,
-#define Trans2_open_count __profile_stats_value(PR_VALUE_TRANS2_OPEN, count)
-#define Trans2_open_time __profile_stats_value(PR_VALUE_TRANS2_OPEN, time)
-
-	PR_VALUE_TRANS2_FINDFIRST,
-#define Trans2_findfirst_count __profile_stats_value(PR_VALUE_TRANS2_FINDFIRST, count)
-#define Trans2_findfirst_time __profile_stats_value(PR_VALUE_TRANS2_FINDFIRST, time)
-
-	PR_VALUE_TRANS2_FINDNEXT,
-#define Trans2_findnext_count __profile_stats_value(PR_VALUE_TRANS2_FINDNEXT, count)
-#define Trans2_findnext_time __profile_stats_value(PR_VALUE_TRANS2_FINDNEXT, time)
-
-	PR_VALUE_TRANS2_QFSINFO,
-#define Trans2_qfsinfo_count __profile_stats_value(PR_VALUE_TRANS2_QFSINFO, count)
-#define Trans2_qfsinfo_time __profile_stats_value(PR_VALUE_TRANS2_QFSINFO, time)
-
-	PR_VALUE_TRANS2_SETFSINFO,
-#define Trans2_setfsinfo_count __profile_stats_value(PR_VALUE_TRANS2_SETFSINFO, count)
-#define Trans2_setfsinfo_time __profile_stats_value(PR_VALUE_TRANS2_SETFSINFO, time)
-
-	PR_VALUE_TRANS2_QPATHINFO,
-#define Trans2_qpathinfo_count __profile_stats_value(PR_VALUE_TRANS2_QPATHINFO, count)
-#define Trans2_qpathinfo_time __profile_stats_value(PR_VALUE_TRANS2_QPATHINFO, time)
-
-	PR_VALUE_TRANS2_SETPATHINFO,
-#define Trans2_setpathinfo_count __profile_stats_value(PR_VALUE_TRANS2_SETPATHINFO, count)
-#define Trans2_setpathinfo_time __profile_stats_value(PR_VALUE_TRANS2_SETPATHINFO, time)
-
-	PR_VALUE_TRANS2_QFILEINFO,
-#define Trans2_qfileinfo_count __profile_stats_value(PR_VALUE_TRANS2_QFILEINFO, count)
-#define Trans2_qfileinfo_time __profile_stats_value(PR_VALUE_TRANS2_QFILEINFO, time)
-
-	PR_VALUE_TRANS2_SETFILEINFO,
-#define Trans2_setfileinfo_count __profile_stats_value(PR_VALUE_TRANS2_SETFILEINFO, count)
-#define Trans2_setfileinfo_time __profile_stats_value(PR_VALUE_TRANS2_SETFILEINFO, time)
-
-	PR_VALUE_TRANS2_FSCTL,
-#define Trans2_fsctl_count __profile_stats_value(PR_VALUE_TRANS2_FSCTL, count)
-#define Trans2_fsctl_time __profile_stats_value(PR_VALUE_TRANS2_FSCTL, time)
-
-	PR_VALUE_TRANS2_IOCTL,
-#define Trans2_ioctl_count __profile_stats_value(PR_VALUE_TRANS2_IOCTL, count)
-#define Trans2_ioctl_time __profile_stats_value(PR_VALUE_TRANS2_IOCTL, time)
-
-	PR_VALUE_TRANS2_FINDNOTIFYFIRST,
-#define Trans2_findnotifyfirst_count __profile_stats_value(PR_VALUE_TRANS2_FINDNOTIFYFIRST, count)
-#define Trans2_findnotifyfirst_time __profile_stats_value(PR_VALUE_TRANS2_FINDNOTIFYFIRST, time)
-
-	PR_VALUE_TRANS2_FINDNOTIFYNEXT,
-#define Trans2_findnotifynext_count __profile_stats_value(PR_VALUE_TRANS2_FINDNOTIFYNEXT, count)
-#define Trans2_findnotifynext_time __profile_stats_value(PR_VALUE_TRANS2_FINDNOTIFYNEXT, time)
-
-	PR_VALUE_TRANS2_MKDIR,
-#define Trans2_mkdir_count __profile_stats_value(PR_VALUE_TRANS2_MKDIR, count)
-#define Trans2_mkdir_time __profile_stats_value(PR_VALUE_TRANS2_MKDIR, time)
-
-	PR_VALUE_TRANS2_SESSION_SETUP,
-#define Trans2_session_setup_count __profile_stats_value(PR_VALUE_TRANS2_SESSION_SETUP, count)
-#define Trans2_session_setup_time __profile_stats_value(PR_VALUE_TRANS2_SESSION_SETUP, time)
-
-	PR_VALUE_TRANS2_GET_DFS_REFERRAL,
-#define Trans2_get_dfs_referral_count __profile_stats_value(PR_VALUE_TRANS2_GET_DFS_REFERRAL, count)
-#define Trans2_get_dfs_referral_time __profile_stats_value(PR_VALUE_TRANS2_GET_DFS_REFERRAL, time)
-
-	PR_VALUE_TRANS2_REPORT_DFS_INCONSISTANCY,
-#define Trans2_report_dfs_inconsistancy_count __profile_stats_value(PR_VALUE_TRANS2_REPORT_DFS_INCONSISTANCY, count)
-#define Trans2_report_dfs_inconsistancy_time __profile_stats_value(PR_VALUE_TRANS2_REPORT_DFS_INCONSISTANCY, time)
-
-/* These are the NT transact sub commands. */
-	PR_VALUE_NT_TRANSACT_CREATE,
-#define NT_transact_create_count __profile_stats_value(PR_VALUE_NT_TRANSACT_CREATE, count)
-#define NT_transact_create_time __profile_stats_value(PR_VALUE_NT_TRANSACT_CREATE, time)
-
-	PR_VALUE_NT_TRANSACT_IOCTL,
-#define NT_transact_ioctl_count __profile_stats_value(PR_VALUE_NT_TRANSACT_IOCTL, count)
-#define NT_transact_ioctl_time __profile_stats_value(PR_VALUE_NT_TRANSACT_IOCTL, time)
-
-	PR_VALUE_NT_TRANSACT_SET_SECURITY_DESC,
-#define NT_transact_set_security_desc_count __profile_stats_value(PR_VALUE_NT_TRANSACT_SET_SECURITY_DESC, count)
-#define NT_transact_set_security_desc_time __profile_stats_value(PR_VALUE_NT_TRANSACT_SET_SECURITY_DESC, time)
-
-	PR_VALUE_NT_TRANSACT_NOTIFY_CHANGE,
-#define NT_transact_notify_change_count __profile_stats_value(PR_VALUE_NT_TRANSACT_NOTIFY_CHANGE, count)
-#define NT_transact_notify_change_time __profile_stats_value(PR_VALUE_NT_TRANSACT_NOTIFY_CHANGE, time)
-
-	PR_VALUE_NT_TRANSACT_RENAME,
-#define NT_transact_rename_count __profile_stats_value(PR_VALUE_NT_TRANSACT_RENAME, count)
-#define NT_transact_rename_time __profile_stats_value(PR_VALUE_NT_TRANSACT_RENAME, time)
-
-	PR_VALUE_NT_TRANSACT_QUERY_SECURITY_DESC,
-#define NT_transact_query_security_desc_count __profile_stats_value(PR_VALUE_NT_TRANSACT_QUERY_SECURITY_DESC, count)
-#define NT_transact_query_security_desc_time __profile_stats_value(PR_VALUE_NT_TRANSACT_QUERY_SECURITY_DESC, time)
-
-	PR_VALUE_NT_TRANSACT_GET_USER_QUOTA,
-#define NT_transact_get_user_quota_count __profile_stats_value(PR_VALUE_NT_TRANSACT_GET_USER_QUOTA, count)
-#define NT_transact_get_user_quota_time __profile_stats_value(PR_VALUE_NT_TRANSACT_GET_USER_QUOTA, time)
-
-	PR_VALUE_NT_TRANSACT_SET_USER_QUOTA,
-#define NT_transact_set_user_quota_count __profile_stats_value(PR_VALUE_NT_TRANSACT_SET_USER_QUOTA, count)
-#define NT_transact_set_user_quota_time __profile_stats_value(PR_VALUE_NT_TRANSACT_SET_USER_QUOTA, time)
-
-/* These are ACL manipulation calls */
-	PR_VALUE_GET_NT_ACL,
-#define get_nt_acl_count __profile_stats_value(PR_VALUE_GET_NT_ACL, count)
-#define get_nt_acl_time __profile_stats_value(PR_VALUE_GET_NT_ACL, time)
-
-	PR_VALUE_FGET_NT_ACL,
-#define fget_nt_acl_count __profile_stats_value(PR_VALUE_FGET_NT_ACL, count)
-#define fget_nt_acl_time __profile_stats_value(PR_VALUE_FGET_NT_ACL, time)
-
-	PR_VALUE_FSET_NT_ACL,
-#define fset_nt_acl_count __profile_stats_value(PR_VALUE_FSET_NT_ACL, count)
-#define fset_nt_acl_time __profile_stats_value(PR_VALUE_FSET_NT_ACL, time)
-
-	PR_VALUE_CHMOD_ACL,
-#define chmod_acl_count __profile_stats_value(PR_VALUE_CHMOD_ACL, count)
-#define chmod_acl_time __profile_stats_value(PR_VALUE_CHMOD_ACL, time)
-
-	PR_VALUE_FCHMOD_ACL,
-#define fchmod_acl_count __profile_stats_value(PR_VALUE_FCHMOD_ACL, count)
-#define fchmod_acl_time __profile_stats_value(PR_VALUE_FCHMOD_ACL, time)
-
-	PR_VALUE_SMB2_NEGPROT,
-#define smb2_negprot_count __profile_stats_value(PR_VALUE_SMB2_NEGPROT, count)
-#define smb2_negprot_time __profile_stats_value(PR_VALUE_SMB2_NEGPROT, time)
-
-	PR_VALUE_SMB2_SESSSETUP,
-#define smb2_sesssetup_count __profile_stats_value(PR_VALUE_SMB2_SESSSETUP, count)
-#define smb2_sesssetup_time __profile_stats_value(PR_VALUE_SMB2_SESSSETUP, time)
-
-	PR_VALUE_SMB2_LOGOFF,
-#define smb2_logoff_count __profile_stats_value(PR_VALUE_SMB2_LOGOFF, count)
-#define smb2_logoff_time __profile_stats_value(PR_VALUE_SMB2_LOGOFF, time)
-
-	PR_VALUE_SMB2_TCON,
-#define smb2_tcon_count __profile_stats_value(PR_VALUE_SMB2_TCON, count)
-#define smb2_tcon_time __profile_stats_value(PR_VALUE_SMB2_TCON, time)
-
-	PR_VALUE_SMB2_TDIS,
-#define smb2_tdis_count __profile_stats_value(PR_VALUE_SMB2_TDIS, count)
-#define smb2_tdis_time __profile_stats_value(PR_VALUE_SMB2_TDIS, time)
-
-	PR_VALUE_SMB2_CREATE,
-#define smb2_create_count __profile_stats_value(PR_VALUE_SMB2_CREATE, count)
-#define smb2_create_time __profile_stats_value(PR_VALUE_SMB2_CREATE, time)
-
-	PR_VALUE_SMB2_CLOSE,
-#define smb2_close_count __profile_stats_value(PR_VALUE_SMB2_CLOSE, count)
-#define smb2_close_time __profile_stats_value(PR_VALUE_SMB2_CLOSE, time)
-
-	PR_VALUE_SMB2_FLUSH,
-#define smb2_flush_count __profile_stats_value(PR_VALUE_SMB2_FLUSH, count)
-#define smb2_flush_time __profile_stats_value(PR_VALUE_SMB2_FLUSH, time)
-
-	PR_VALUE_SMB2_READ,
-#define smb2_read_count __profile_stats_value(PR_VALUE_SMB2_READ, count)
-#define smb2_read_time __profile_stats_value(PR_VALUE_SMB2_READ, time)
-
-	PR_VALUE_SMB2_WRITE,
-#define smb2_write_count __profile_stats_value(PR_VALUE_SMB2_WRITE, count)
-#define smb2_write_time __profile_stats_value(PR_VALUE_SMB2_WRITE, time)
-
-	PR_VALUE_SMB2_LOCK,
-#define smb2_lock_count __profile_stats_value(PR_VALUE_SMB2_LOCK, count)
-#define smb2_lock_time __profile_stats_value(PR_VALUE_SMB2_LOCK, time)
-
-	PR_VALUE_SMB2_IOCTL,
-#define smb2_ioctl_count __profile_stats_value(PR_VALUE_SMB2_IOCTL, count)
-#define smb2_ioctl_time __profile_stats_value(PR_VALUE_SMB2_IOCTL, time)
-
-	PR_VALUE_SMB2_CANCEL,
-#define smb2_cancel_count __profile_stats_value(PR_VALUE_SMB2_CANCEL, count)
-#define smb2_cancel_time __profile_stats_value(PR_VALUE_SMB2_CANCEL, time)
-
-	PR_VALUE_SMB2_KEEPALIVE,
-#define smb2_keepalive_count __profile_stats_value(PR_VALUE_SMB2_KEEPALIVE, count)
-#define smb2_keepalive_time __profile_stats_value(PR_VALUE_SMB2_KEEPALIVE, time)
-
-	PR_VALUE_SMB2_FIND,
-#define smb2_find_count __profile_stats_value(PR_VALUE_SMB2_FIND, count)
-#define smb2_find_time __profile_stats_value(PR_VALUE_SMB2_FIND, time)
-
-	PR_VALUE_SMB2_NOTIFY,
-#define smb2_notify_count __profile_stats_value(PR_VALUE_SMB2_NOTIFY, count)
-#define smb2_notify_time __profile_stats_value(PR_VALUE_SMB2_NOTIFY, time)
-
-	PR_VALUE_SMB2_GETINFO,
-#define smb2_getinfo_count __profile_stats_value(PR_VALUE_SMB2_GETINFO, count)
-#define smb2_getinfo_time __profile_stats_value(PR_VALUE_SMB2_GETINFO, time)
-
-	PR_VALUE_SMB2_SETINFO,
-#define smb2_setinfo_count __profile_stats_value(PR_VALUE_SMB2_SETINFO, count)
-#define smb2_setinfo_time __profile_stats_value(PR_VALUE_SMB2_SETINFO, time)
-
-	PR_VALUE_SMB2_BREAK,
-#define smb2_break_count __profile_stats_value(PR_VALUE_SMB2_BREAK, count)
-#define smb2_break_time __profile_stats_value(PR_VALUE_SMB2_BREAK, time)
-
-	/* This must remain the last value. */
-	PR_VALUE_MAX
-}; /* enum profile_stats_values */
-
-const char * profile_value_name(enum profile_stats_values val);
+struct smbprofile_stats_count {
+	uint64_t count;		/* number of events */
+};
+
+struct smbprofile_stats_time {
+	uint64_t time;		/* microseconds */
+};
+
+struct smbprofile_stats_time_async {
+	uint64_t start;
+	struct smbprofile_stats_time *stats;
+};
+
+struct smbprofile_stats_basic {
+	uint64_t count;		/* number of events */
+	uint64_t time;		/* microseconds */
+};
+
+struct smbprofile_stats_basic_async {
+	uint64_t start;
+	struct smbprofile_stats_basic *stats;
+};
+
+struct smbprofile_stats_bytes {
+	uint64_t count;		/* number of events */
+	uint64_t time;		/* microseconds */
+	uint64_t idle;		/* idle time compared to 'time' microseconds */
+	uint64_t bytes;		/* bytes */
+};
+
+struct smbprofile_stats_bytes_async {
+	uint64_t start;
+	uint64_t idle_start;
+	uint64_t idle_time;
+	struct smbprofile_stats_bytes *stats;
+};
+
+struct smbprofile_stats_iobytes {
+	uint64_t count;		/* number of events */
+	uint64_t time;		/* microseconds */
+	uint64_t idle;		/* idle time compared to 'time' microseconds */
+	uint64_t inbytes;	/* bytes read */
+	uint64_t outbytes;	/* bytes written */
+};
+
+struct smbprofile_stats_iobytes_async {
+	uint64_t start;
+	uint64_t idle_start;
+	uint64_t idle_time;
+	struct smbprofile_stats_iobytes *stats;
+};
 
 struct profile_stats {
-/* general counters */
-	unsigned smb_count; /* how many SMB packets we have processed */
-	unsigned uid_changes; /* how many times we change our effective uid */
-
-/* system call and protocol operation counters and cumulative times */
-	unsigned count[PR_VALUE_MAX];
-	unsigned time[PR_VALUE_MAX];
-
-/* cumulative byte counts */
-	unsigned syscall_pread_bytes;
-	unsigned syscall_pwrite_bytes;
-	unsigned syscall_read_bytes;
-	unsigned syscall_write_bytes;
-	unsigned syscall_sendfile_bytes;
-	unsigned syscall_recvfile_bytes;
-
-/* stat cache counters */
-	unsigned statcache_lookups;
-	unsigned statcache_misses;
-	unsigned statcache_hits;
-
-/* write cache counters */
-	unsigned writecache_allocations;
-	unsigned writecache_deallocations;
-	unsigned writecache_cached_reads;
-	unsigned writecache_total_writes;
-	unsigned writecache_init_writes;
-	unsigned writecache_abutted_writes;
-	unsigned writecache_non_oplock_writes;
-	unsigned writecache_direct_writes;
-	unsigned writecache_cached_writes;
-	unsigned writecache_perfect_writes;
-	unsigned writecache_flush_reason_seek;
-	unsigned writecache_flush_reason_read;
-	unsigned writecache_flush_reason_readraw;
-	unsigned writecache_flush_reason_write;
-	unsigned writecache_flush_reason_oplock;
-	unsigned writecache_flush_reason_close;
-	unsigned writecache_flush_reason_sync;
-	unsigned writecache_flush_reason_sizechange;
+#define SMBPROFILE_STATS_START
+#define SMBPROFILE_STATS_SECTION_START(name)
+#define SMBPROFILE_STATS_COUNT(name) \
+	struct smbprofile_stats_count name##_stats;
+#define SMBPROFILE_STATS_TIME(name) \
+	struct smbprofile_stats_time name##_stats;
+#define SMBPROFILE_STATS_BASIC(name) \
+	struct smbprofile_stats_basic name##_stats;
+#define SMBPROFILE_STATS_BYTES(name) \
+	struct smbprofile_stats_bytes name##_stats;
+#define SMBPROFILE_STATS_IOBYTES(name) \
+	struct smbprofile_stats_iobytes name##_stats;
+#define SMBPROFILE_STATS_SECTION_END
+#define SMBPROFILE_STATS_END
+	SMBPROFILE_STATS_ALL_SECTIONS
+#undef SMBPROFILE_STATS_START
+#undef SMBPROFILE_STATS_SECTION_START
+#undef SMBPROFILE_STATS_COUNT
+#undef SMBPROFILE_STATS_TIME
+#undef SMBPROFILE_STATS_BASIC
+#undef SMBPROFILE_STATS_BYTES
+#undef SMBPROFILE_STATS_IOBYTES
+#undef SMBPROFILE_STATS_SECTION_END
+#undef SMBPROFILE_STATS_END
 };
+
+#define _SMBPROFILE_COUNT_INCREMENT(_stats, _area, _v) do { \
+	if (do_profile_flag) { \
+		(_area)->_stats.count += (_v); \
+	} \
+} while(0)
+#define SMBPROFILE_COUNT_INCREMENT(_name, _area, _v) \
+	_SMBPROFILE_COUNT_INCREMENT(_name##_stats, _area, _v)
+
+#define SMBPROFILE_TIME_ASYNC_STATE(_async_name) \
+	struct smbprofile_stats_time_async _async_name;
+#define _SMBPROFILE_TIME_ASYNC_START(_stats, _area, _async) do { \
+	(_async) = (struct smbprofile_stats_time_async) {}; \
+	if (smbprofile_state.config.do_times) { \
+		(_async).stats = &((_area)->_stats), \
+		(_async).start = profile_timestamp(); \
+	} \
+} while(0)
+#define SMBPROFILE_TIME_ASYNC_START(_name, _area, _async) \
+	_SMBPROFILE_TIME_ASYNC_START(_name##_stats, _area, _async)
+#define SMBPROFILE_TIME_ASYNC_END(_async) do { \
+	if ((_async).start != 0) { \
+		(_async).stats->time += profile_timestamp() - (_async).start; \
+		(_async) = (struct smbprofile_stats_basic_async) {}; \
+	} \
+} while(0)
+
+#define SMBPROFILE_BASIC_ASYNC_STATE(_async_name) \
+	struct smbprofile_stats_basic_async _async_name;
+#define _SMBPROFILE_BASIC_ASYNC_START(_stats, _area, _async) do { \
+	(_async) = (struct smbprofile_stats_basic_async) {}; \
+	if (do_profile_flag) { \
+		if (do_profile_times) { \
+			(_async).start = profile_timestamp(); \
+			(_async).stats = &((_area)->_stats); \
+		} \
+		(_area)->_stats.count += 1; \
+	} \
+} while(0)
+#define SMBPROFILE_BASIC_ASYNC_START(_name, _area, _async) \
+	_SMBPROFILE_BASIC_ASYNC_START(_name##_stats, _area, _async)
+#define SMBPROFILE_BASIC_ASYNC_END(_async) do { \
+	if ((_async).start != 0) { \
+		(_async).stats->time += profile_timestamp() - (_async).start; \
+		(_async) = (struct smbprofile_stats_basic_async) {}; \
+	} \
+} while(0)
+
+#define _SMBPROFILE_TIMER_ASYNC_START(_stats, _area, _async) do { \
+	(_async).stats = &((_area)->_stats); \
+	if (do_profile_times) { \
+		(_async).start = profile_timestamp(); \
+	} \
+} while(0)
+#define _SMBPROFILE_TIMER_ASYNC_SET_IDLE(_async) do { \
+	if ((_async).start != 0) { \
+		if ((_async).idle_start == 0) { \
+			(_async).idle_start = profile_timestamp(); \
+		} \
+	} \
+} while(0)
+#define _SMBPROFILE_TIMER_ASYNC_SET_BUSY(_async) do { \
+	if ((_async).idle_start != 0) { \
+		(_async).idle_time += \
+			profile_timestamp() - (_async).idle_start; \
+		(_async).idle_start = 0; \
+	} \
+} while(0)
+#define _SMBPROFILE_TIMER_ASYNC_END(_async) do { \
+	if ((_async).start != 0) { \
+		_SMBPROFILE_TIMER_ASYNC_SET_BUSY(_async); \
+		(_async).stats->time += profile_timestamp() - (_async).start; \
+		(_async).stats->idle += (_async).idle_time; \
+	} \
+} while(0)
+
+#define SMBPROFILE_BYTES_ASYNC_STATE(_async_name) \
+	struct smbprofile_stats_bytes_async _async_name;
+#define _SMBPROFILE_BYTES_ASYNC_START(_stats, _area, _async, _bytes) do { \
+	(_async) = (struct smbprofile_stats_bytes_async) {}; \
+	if (do_profile_flag) { \
+		_SMBPROFILE_TIMER_ASYNC_START(_stats, _area, _async); \
+		(_area)->_stats.count += 1; \
+		(_area)->_stats.bytes += (_bytes); \
+	} \
+} while(0)
+#define SMBPROFILE_BYTES_ASYNC_START(_name, _area, _async, _bytes) \
+	_SMBPROFILE_BYTES_ASYNC_START(_name##_stats, _area, _async, _bytes)
+#define SMBPROFILE_BYTES_ASYNC_SET_IDLE(_async) \
+	_SMBPROFILE_TIMER_ASYNC_SET_IDLE(_async)
+#define SMBPROFILE_BYTES_ASYNC_SET_BUSY(_async) \
+	_SMBPROFILE_TIMER_ASYNC_SET_BUSY(_async)
+#define SMBPROFILE_BYTES_ASYNC_END(_async) do { \
+	if ((_async).stats != NULL) { \
+		_SMBPROFILE_TIMER_ASYNC_END(_async); \
+		(_async) = (struct smbprofile_stats_bytes_async) {}; \
+	} \
+} while(0)
+
+#define SMBPROFILE_IOBYTES_ASYNC_STATE(_async_name) \
+	struct smbprofile_stats_iobytes_async _async_name;
+#define _SMBPROFILE_IOBYTES_ASYNC_START(_stats, _area, _async, _inbytes) do { \
+	(_async) = (struct smbprofile_stats_iobytes_async) {}; \
+	if (do_profile_flag) { \
+		_SMBPROFILE_TIMER_ASYNC_START(_stats, _area, _async); \
+		(_area)->_stats.count += 1; \
+		(_area)->_stats.inbytes += (_inbytes); \
+	} \
+} while(0)
+#define SMBPROFILE_IOBYTES_ASYNC_START(_name, _area, _async, _inbytes) \
+	_SMBPROFILE_IOBYTES_ASYNC_START(_name##_stats, _area, _async, _inbytes)
+#define SMBPROFILE_IOBYTES_ASYNC_SET_IDLE(_async) \
+	_SMBPROFILE_TIMER_ASYNC_SET_IDLE(_async)
+#define SMBPROFILE_IOBYTES_ASYNC_SET_BUSY(_async) \
+	_SMBPROFILE_TIMER_ASYNC_SET_BUSY(_async)
+#define SMBPROFILE_IOBYTES_ASYNC_END(_async, _outbytes) do { \
+	if ((_async).stats != NULL) { \
+		(_async).stats->outbytes += (_outbytes); \
+		_SMBPROFILE_TIMER_ASYNC_END(_async); \
+		(_async) = (struct smbprofile_stats_iobytes_async) {}; \
+	} \
+} while(0)
 
 extern struct profile_stats *profile_p;
 extern bool do_profile_flag;
 extern bool do_profile_times;
-
-/* these are helper macros - do not call them directly in the code
- * use the DO_PROFILE_* START_PROFILE and END_PROFILE ones
- * below which test for the profile flags first
- */
-#define INC_PROFILE_COUNT(x) profile_p->x++
-#define DEC_PROFILE_COUNT(x) profile_p->x--
-#define ADD_PROFILE_COUNT(x,y) profile_p->x += (y)
 
 static inline uint64_t profile_timestamp(void)
 {
@@ -831,72 +476,65 @@ static inline uint64_t profile_timestamp(void)
 	return (ts.tv_sec * 1000000) + (ts.tv_nsec / 1000); /* usec */
 }
 
-/* end of helper macros */
-
 #define DO_PROFILE_INC(x) \
-	if (do_profile_flag) { \
-		INC_PROFILE_COUNT(x); \
-	}
+	_SMBPROFILE_COUNT_INCREMENT(x##_stats, profile_p, 1); \
 
-#define DO_PROFILE_DEC(x) \
-	if (do_profile_flag) { \
-		DEC_PROFILE_COUNT(x); \
-	}
-
-#define DO_PROFILE_DEC_INC(x,y) \
-	if (do_profile_flag) { \
-		DEC_PROFILE_COUNT(x); \
-		INC_PROFILE_COUNT(y); \
-	}
-
-#define DO_PROFILE_ADD(x,n) \
-	if (do_profile_flag) { \
-		ADD_PROFILE_COUNT(x,n); \
-	}
-
-#define START_PROFILE_RAW(x, _stamp, _count) \
-	_stamp = 0; \
-	if (do_profile_flag) { \
-		_stamp = do_profile_times ? profile_timestamp() : 0;\
-		INC_PROFILE_COUNT(_count); \
-	}
-
-#define START_PROFILE_STAMP(x, _stamp) \
-	START_PROFILE_RAW(x, _stamp, x##_count)
+#define START_PROFILE_STAMP(x, _stamp) do { \
+	struct smbprofile_stats_basic_async __profasync_##x = {}; \
+	_SMBPROFILE_BASIC_ASYNC_START(x##_stats, profile_p, __profasync_##x); \
+	_stamp = __profasync_##x.start; \
+} while(0)
 
 #define START_PROFILE(x) \
-	uint64_t __profstamp_##x = 0; \
-	START_PROFILE_RAW(x, __profstamp_##x, x##_count)
+	struct smbprofile_stats_basic_async __profasync_##x = {}; \
+	_SMBPROFILE_BASIC_ASYNC_START(x##_stats, profile_p, __profasync_##x);
 
 #define START_PROFILE_BYTES(x,n) \
-	uint64_t __profstamp_##x = 0; \
-	if (do_profile_flag) { \
-		__profstamp_##x = do_profile_times ? profile_timestamp() : 0;\
-		INC_PROFILE_COUNT(x##_count); \
-		ADD_PROFILE_COUNT(x##_bytes, n); \
-  	}
+	struct smbprofile_stats_bytes_async __profasync_##x = {}; \
+	_SMBPROFILE_BYTES_ASYNC_START(x##_stats, profile_p, __profasync_##x, n);
 
-#define END_PROFILE_RAW(x, _stamp, _time) \
-	if (do_profile_times) { \
-		ADD_PROFILE_COUNT(_time, \
-		    profile_timestamp() - _stamp); \
-	}
-
-#define END_PROFILE_STAMP(x, _stamp) \
-	END_PROFILE_RAW(x, _stamp, x##_time)
+#define END_PROFILE_STAMP(x, _stamp) do { \
+	struct smbprofile_stats_basic_async __profasync_##x = {}; \
+	if (do_profile_flag && do_profile_times) { \
+		__profasync_##x = (struct smbprofile_stats_basic_async) { \
+			.start = (_stamp), \
+			.stats = &(profile_p->x##_stats), \
+		}; \
+	} \
+	SMBPROFILE_BASIC_ASYNC_END(__profasync_##x); \
+} while(0)
 
 #define END_PROFILE(x) \
-	END_PROFILE_RAW(x, __profstamp_##x, x##_time)
+	SMBPROFILE_BASIC_ASYNC_END(__profasync_##x)
 
 #define END_PROFILE_BYTES(x) \
-	END_PROFILE_RAW(x, __profstamp_##x, x##_time)
+	SMBPROFILE_BYTES_ASYNC_END(__profasync_##x)
 
 #else /* WITH_PROFILE */
 
+#define SMBPROFILE_COUNT_INCREMENT(_name, _area, _v)
+
+#define SMBPROFILE_TIME_ASYNC_STATE(_async_name)
+#define SMBPROFILE_TIME_ASYNC_START(_name, _area, _async)
+#define SMBPROFILE_TIME_ASYNC_END(_async)
+
+#define SMBPROFILE_BASIC_ASYNC_STATE(_async_name)
+#define SMBPROFILE_BASIC_ASYNC_START(_name, _area, _async)
+#define SMBPROFILE_BASIC_ASYNC_END(_async)
+
+#define SMBPROFILE_BYTES_ASYNC_STATE(_async_name)
+#define SMBPROFILE_BYTES_ASYNC_START(_name, _area, _async, _inbytes)
+#define SMBPROFILE_BYTES_ASYNC_SET_IDLE(_async)
+#define SMBPROFILE_BYTES_ASYNC_SET_BUSY(_async)
+#define SMBPROFILE_BYTES_ASYNC_END(_async)
+
+#define SMBPROFILE_IOBYTES_ASYNC_STATE(_async_name)
+#define SMBPROFILE_IOBYTES_ASYNC_START(_name, _area, _async, _inbytes)
+#define SMBPROFILE_IOBYTES_ASYNC_SET_IDLE(_async)
+#define SMBPROFILE_IOBYTES_ASYNC_SET_BUSY(_async)
+#define SMBPROFILE_IOBYTES_ASYNC_END(_async, _outbytes)
+
 #define DO_PROFILE_INC(x)
-#define DO_PROFILE_DEC(x)
-#define DO_PROFILE_DEC_INC(x,y)
-#define DO_PROFILE_ADD(x,n)
 #define START_PROFILE_STAMP(x, _stamp)
 #define START_PROFILE(x)
 #define START_PROFILE_BYTES(x,n)
