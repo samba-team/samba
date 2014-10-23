@@ -550,7 +550,7 @@ static ssize_t vfswrap_read(vfs_handle_struct *handle, files_struct *fsp, void *
 
 	START_PROFILE_BYTES(syscall_read, n);
 	result = sys_read(fsp->fh->fd, data, n);
-	END_PROFILE(syscall_read);
+	END_PROFILE_BYTES(syscall_read);
 	return result;
 }
 
@@ -562,7 +562,7 @@ static ssize_t vfswrap_pread(vfs_handle_struct *handle, files_struct *fsp, void 
 #if defined(HAVE_PREAD) || defined(HAVE_PREAD64)
 	START_PROFILE_BYTES(syscall_pread, n);
 	result = sys_pread(fsp->fh->fd, data, n, offset);
-	END_PROFILE(syscall_pread);
+	END_PROFILE_BYTES(syscall_pread);
 
 	if (result == -1 && errno == ESPIPE) {
 		/* Maintain the fiction that pipes can be seeked (sought?) on. */
@@ -604,7 +604,7 @@ static ssize_t vfswrap_write(vfs_handle_struct *handle, files_struct *fsp, const
 
 	START_PROFILE_BYTES(syscall_write, n);
 	result = sys_write(fsp->fh->fd, data, n);
-	END_PROFILE(syscall_write);
+	END_PROFILE_BYTES(syscall_write);
 	return result;
 }
 
@@ -616,7 +616,7 @@ static ssize_t vfswrap_pwrite(vfs_handle_struct *handle, files_struct *fsp, cons
 #if defined(HAVE_PWRITE) || defined(HAVE_PRWITE64)
 	START_PROFILE_BYTES(syscall_pwrite, n);
 	result = sys_pwrite(fsp->fh->fd, data, n, offset);
-	END_PROFILE(syscall_pwrite);
+	END_PROFILE_BYTES(syscall_pwrite);
 
 	if (result == -1 && errno == ESPIPE) {
 		/* Maintain the fiction that pipes can be sought on. */
@@ -886,7 +886,7 @@ static ssize_t vfswrap_sendfile(vfs_handle_struct *handle, int tofd, files_struc
 
 	START_PROFILE_BYTES(syscall_sendfile, n);
 	result = sys_sendfile(tofd, fromfsp->fh->fd, hdr, offset, n);
-	END_PROFILE(syscall_sendfile);
+	END_PROFILE_BYTES(syscall_sendfile);
 	return result;
 }
 
@@ -900,7 +900,7 @@ static ssize_t vfswrap_recvfile(vfs_handle_struct *handle,
 
 	START_PROFILE_BYTES(syscall_recvfile, n);
 	result = sys_recvfile(fromfd, tofsp->fh->fd, offset, n);
-	END_PROFILE(syscall_recvfile);
+	END_PROFILE_BYTES(syscall_recvfile);
 	return result;
 }
 
