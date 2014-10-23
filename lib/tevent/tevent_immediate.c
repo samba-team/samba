@@ -30,6 +30,8 @@
 
 static void tevent_common_immediate_cancel(struct tevent_immediate *im)
 {
+	const char *create_location = im->create_location;
+
 	if (!im->event_ctx) {
 		return;
 	}
@@ -44,13 +46,10 @@ static void tevent_common_immediate_cancel(struct tevent_immediate *im)
 	}
 
 	DLIST_REMOVE(im->event_ctx->immediate_events, im);
-	im->event_ctx		= NULL;
-	im->handler		= NULL;
-	im->private_data	= NULL;
-	im->handler_name	= NULL;
-	im->schedule_location	= NULL;
-	im->cancel_fn		= NULL;
-	im->additional_data	= NULL;
+
+	*im = (struct tevent_immediate) {
+		.create_location	= create_location,
+	};
 
 	talloc_set_destructor(im, NULL);
 }
@@ -74,19 +73,22 @@ void tevent_common_schedule_immediate(struct tevent_immediate *im,
 				      const char *handler_name,
 				      const char *location)
 {
+	const char *create_location = im->create_location;
+
 	tevent_common_immediate_cancel(im);
 
 	if (!handler) {
 		return;
 	}
 
-	im->event_ctx		= ev;
-	im->handler		= handler;
-	im->private_data	= private_data;
-	im->handler_name	= handler_name;
-	im->schedule_location	= location;
-	im->cancel_fn		= NULL;
-	im->additional_data	= NULL;
+	*im = (struct tevent_immediate) {
+		.event_ctx		= ev,
+		.handler		= handler,
+		.private_data		= private_data,
+		.handler_name		= handler_name,
+		.create_location	= create_location,
+		.schedule_location	= location,
+	};
 
 	DLIST_ADD_END(ev->immediate_events, im);
 	talloc_set_destructor(im, tevent_common_immediate_destructor);

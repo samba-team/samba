@@ -449,6 +449,7 @@ void _tevent_threaded_schedule_immediate(struct tevent_threaded_context *tctx,
 					 const char *location)
 {
 #ifdef HAVE_PTHREAD
+	const char *create_location = im->create_location;
 	struct tevent_context *ev;
 	int ret, wakeup_fd;
 
@@ -474,13 +475,14 @@ void _tevent_threaded_schedule_immediate(struct tevent_threaded_context *tctx,
 		abort();
 	}
 
-	im->event_ctx		= ev;
-	im->handler		= handler;
-	im->private_data	= private_data;
-	im->handler_name	= handler_name;
-	im->schedule_location	= location;
-	im->cancel_fn		= NULL;
-	im->additional_data	= NULL;
+	*im = (struct tevent_immediate) {
+		.event_ctx		= ev,
+		.handler		= handler,
+		.private_data		= private_data,
+		.handler_name		= handler_name,
+		.create_location	= create_location,
+		.schedule_location	= location,
+	};
 
 	ret = pthread_mutex_lock(&ev->scheduled_mutex);
 	if (ret != 0) {
