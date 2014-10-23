@@ -273,6 +273,7 @@ static int samba_dsdb_init(struct ldb_module *module)
 					     NULL };
 	/* extended_dn_in or extended_dn_in_openldap goes here */
 	static const char *modules_list1a[] = {"objectclass",
+					     "tombstone_reanimate",
 					     "descriptor",
 					     "acl",
 					     "aclread",
