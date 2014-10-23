@@ -2423,9 +2423,6 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 					      * the open is done. */
 	fsp->posix_open = posix_open;
 
-	/* Ensure no SAMBA_PRIVATE bits can be set. */
-	fsp->oplock_type = (oplock_request & ~SAMBA_PRIVATE_OPLOCK_MASK);
-
 	if (timeval_is_zero(&request_time)) {
 		request_time = fsp->open_time;
 	}
