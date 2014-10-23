@@ -640,6 +640,10 @@ NTSTATUS wbsrv_samba3_pam_auth_crap(struct wbsrv_samba3_call *s3call)
 	DATA_BLOB chal, nt_resp, lm_resp;
 
 	DEBUG(5, ("wbsrv_samba3_pam_auth_crap called\n"));
+	if (s3call->request->flags & WBFLAG_PAM_AUTH_PAC) {
+		DEBUG(3, ("PAC validation not supported in this winbind implementation\n"));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
 	chal.data       = s3call->request->data.auth_crap.chal;
 	chal.length     = sizeof(s3call->request->data.auth_crap.chal);
