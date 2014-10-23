@@ -257,22 +257,23 @@ struct tevent_signal *tevent_common_add_signal(struct tevent_context *ev,
 	se = talloc(mem_ctx?mem_ctx:ev, struct tevent_signal);
 	if (se == NULL) return NULL;
 
-	se->event_ctx		= ev;
-	se->signum              = signum;
-	se->sa_flags            = sa_flags;
-	se->handler		= handler;
-	se->private_data	= private_data;
-	se->handler_name	= handler_name;
-	se->location		= location;
-	se->additional_data	= NULL;
-
 	sl = talloc(se, struct tevent_common_signal_list);
 	if (!sl) {
 		talloc_free(se);
 		return NULL;
 	}
 	sl->se = se;
-	se->additional_data	= sl;
+
+	*se = (struct tevent_signal) {
+		.event_ctx	= ev,
+		.signum		= signum,
+		.sa_flags	= sa_flags,
+		.handler	= handler,
+		.private_data	= private_data,
+		.handler_name	= handler_name,
+		.location	= location,
+		.additional_data= sl,
+	};
 
 	/* Ensure, no matter the destruction order, that we always have a handle on the global sig_state */
 	if (!talloc_reference(se, sig_state)) {
