@@ -2605,7 +2605,7 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 	},{
 	/* not used in w2k3 schema */
 		.name			= "Object(Access-Point)",
-		.ldap_oid		= "1.3.6.1.4.1.1466.115.121.1.2",
+		.ldap_oid		= DSDB_SYNTAX_ACCESS_POINT,
 		.oMSyntax		= 127,
 		.oMObjectClass		= OMOBJECTCLASS("\x2b\x0c\x02\x87\x73\x1c\x00\x85\x3e"),
 		.attributeSyntax_oid	= "2.5.5.14",
