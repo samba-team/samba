@@ -253,7 +253,7 @@
 ^samba.blackbox.wbinfo\(ad_member:local\).wbinfo -G against ad_member
 ^samba.blackbox.wbinfo\(ad_member:local\).wbinfo -U check for sane mapping
 ^samba.blackbox.wbinfo\(ad_member:local\).wbinfo -G check for sane mapping
-^samba4.winbind.struct.show_sequence\(ad_dc_ntvfs\)
+^samba4.winbind.struct.show_sequence\(ad_dc_ntvfs:local\)
 ^samba.wbinfo_simple.\(ad_dc_ntvfs:local\).--allocate-uid
 ^samba.wbinfo_simple.\(ad_dc_ntvfs:local\).--allocate-gid
 ^samba.wbinfo_simple.\(s4member:local\).--allocate-uid
@@ -289,6 +289,11 @@
 #
 ^samba4.winbind.struct.getdcname\(ad_member:local\)
 ^samba4.winbind.struct.lookup_name_sid\(ad_member:local\)
+^samba4.winbind.struct.lookup_name_sid\(ad_dc_ntvfs:local\)
+^samba4.winbind.struct.list_trustdom\(ad_dc_ntvfs:local\)
+^samba4.winbind.struct.domain_info\(ad_dc_ntvfs:local\)
+^samba4.winbind.struct.getdcname\(ad_dc_ntvfs:local\)
+^samba4.winbind.struct.dsgetdcname\(ad_dc_ntvfs:local\)
 ^samba.wbinfo_simple.\(ad_dc_ntvfs:local\).--all-domains.wbinfo\(ad_dc_ntvfs:local\)
 ^samba.wbinfo_simple.\(ad_dc_ntvfs:local\).--trusted-domains.wbinfo\(ad_dc_ntvfs:local\)
 ^samba.wbinfo_simple.\(ad_dc_ntvfs:local\).--online-status.wbinfo\(ad_dc_ntvfs:local\)
@@ -300,6 +305,10 @@
 ^samba.blackbox.wbinfo\(ad_dc_ntvfs:local\).wbinfo  --trusted-domains against ad_dc_ntvfs\(ad_dc_ntvfs:local\)
 ^samba.blackbox.wbinfo\(ad_dc_ntvfs:local\).wbinfo --all-domains against ad_dc_ntvfs\(ad_dc_ntvfs:local\)
 #
+# This will fail against the NTVFS DC, because it requires functionality only in winbindd
+#
+^samba4.winbind.pac.*\(ad_dc_ntvfs:local\) # Not implemented
+#
 # These do not work against winbindd in member mode for unknown reasons
 #
 ^samba.blackbox.wbinfo\(ad_member:local\).wbinfo -U against ad_member\(ad_member:local\)
@@ -308,7 +317,12 @@
 ^samba.blackbox.wbinfo\(ad_member:local\).wbinfo -G check for sane mapping\(ad_member:local\)
 ^samba.ntlm_auth.\(ad_dc_ntvfs:local\).ntlm_auth against winbindd with failed require-membership-of
 ^samba.ntlm_auth.\(ad_dc_ntvfs:local\).ntlm_auth with NTLMSSP gss-spnego-client and gss-spnego server against winbind with failed require-membership-of
+^samba4.winbind.struct.getdcname\(nt4_member:local\) # Works in other modes, just not against the classic/NT4 DC
 #
 # Differences in our KDC compared to windows
 #
 ^samba4.krb5.kdc .*.as-req-pac-request # We should reply to a request for a PAC over UDP with KRB5KRB_ERR_RESPONSE_TOO_BIG unconditionally
+#
+# This will fail against the classic DC, because it requires kerberos
+#
+^samba4.winbind.pac.*\(nt4_member:local\) # No KDC on a classic DC

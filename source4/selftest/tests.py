@@ -372,7 +372,7 @@ wb_opts_default = ["--option=\"torture:strict mode=no\"", "--option=\"torture:ti
 
 winbind_ad_client_tests = smbtorture4_testsuites("winbind.struct") + smbtorture4_testsuites("winbind.pac")
 winbind_wbclient_tests = smbtorture4_testsuites("winbind.wbclient")
-for env in ["ad_dc", "s4member", "ad_member"]:
+for env in ["ad_dc", "ad_dc_ntvfs", "s4member", "ad_member", "nt4_member"]:
     wb_opts = wb_opts_default[:]
     if env in ["ad_member"]:
         wb_opts += ["--option=\"torture:winbindd_domain_without_prefix=$DOMAIN\""]
