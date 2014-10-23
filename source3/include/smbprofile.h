@@ -953,6 +953,9 @@ static inline uint64_t profile_timestamp(void)
 #define END_PROFILE(x) \
 	END_PROFILE_RAW(x, __profstamp_##x, x##_time)
 
+#define END_PROFILE_BYTES(x) \
+	END_PROFILE_RAW(x, __profstamp_##x, x##_time)
+
 #else /* WITH_PROFILE */
 
 #define DO_PROFILE_INC(x)
@@ -964,6 +967,7 @@ static inline uint64_t profile_timestamp(void)
 #define START_PROFILE_BYTES(x,n)
 #define END_PROFILE_STAMP(x, _stamp)
 #define END_PROFILE(x)
+#define END_PROFILE_BYTES(x)
 
 #endif /* WITH_PROFILE */
 
