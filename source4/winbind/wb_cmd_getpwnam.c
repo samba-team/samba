@@ -110,6 +110,7 @@ static void cmd_getpwnam_recv_user_info(struct composite_context *ctx)
 	struct libnet_UserInfo *user_info;
 	struct winbindd_pw *pw;
 	char *username_with_domain;
+	char *lowercase_username;
 
 	DEBUG(5, ("cmd_getpwnam_recv_user_info called\n"));
 
@@ -122,10 +123,15 @@ static void cmd_getpwnam_recv_user_info(struct composite_context *ctx)
 	state->ctx->status = libnet_UserInfo_recv(ctx, state, user_info);
 	if(!composite_is_ok(state->ctx)) return;
 
+	lowercase_username = strlower_talloc(state, user_info->out.account_name);
+	if (composite_nomem(lowercase_username, state->ctx)) {
+		return;
+	}
+
 	username_with_domain = talloc_asprintf(pw, "%s%s%s",
 		state->workgroup_name,
 		lpcfg_winbind_separator(state->service->task->lp_ctx),
-		user_info->out.account_name);
+		lowercase_username);
 	if(composite_nomem(username_with_domain, state->ctx)) return;
 
 	WBSRV_SAMBA3_SET_STRING(pw->pw_name, username_with_domain);
@@ -135,7 +141,7 @@ static void cmd_getpwnam_recv_user_info(struct composite_context *ctx)
 		lpcfg_template_homedir(state->service->task->lp_ctx));
 	all_string_sub(pw->pw_dir, "%D", state->workgroup_name,
 			sizeof(fstring) - 1);
-	all_string_sub(pw->pw_dir, "%U", user_info->out.account_name,
+	all_string_sub(pw->pw_dir, "%U", lowercase_username,
 			sizeof(fstring) - 1);
 	WBSRV_SAMBA3_SET_STRING(pw->pw_shell, 
 		lpcfg_template_shell(state->service->task->lp_ctx));
