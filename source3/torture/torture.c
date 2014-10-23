@@ -416,10 +416,11 @@ bool torture_cli_session_setup2(struct cli_state *cli, uint16 *new_vuid)
 	bool ret;
 
 	cli_state_set_uid(cli, 0);
-	ret = NT_STATUS_IS_OK(cli_session_setup(cli, username,
-						password, passlen,
-						password, passlen,
-						workgroup));
+	status = cli_session_setup(cli, username,
+				   password, passlen,
+				   password, passlen,
+				   workgroup);
+	ret = NT_STATUS_IS_OK(status);
 	*new_vuid = cli_state_get_uid(cli);
 	cli_state_set_uid(cli, old_vuid);
 	return ret;
