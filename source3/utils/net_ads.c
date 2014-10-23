@@ -99,7 +99,9 @@ static int net_ads_cldap_netlogon(struct net_context *c, ADS_STRUCT *ads)
 		   "\tHas a hardware clock:                       %s\n"
 		   "\tIs a non-domain NC serviced by LDAP server: %s\n"
 		   "\tIs NT6 DC that has some secrets:            %s\n"
-		   "\tIs NT6 DC that has all secrets:             %s\n"),
+		   "\tIs NT6 DC that has all secrets:             %s\n"
+		   "\tRuns Active Directory Web Services:         %s\n"
+		   "\tRuns on Windows 2012 or later:              %s\n"),
 		   (reply.server_type & NBT_SERVER_PDC) ? _("yes") : _("no"),
 		   (reply.server_type & NBT_SERVER_GC) ? _("yes") : _("no"),
 		   (reply.server_type & NBT_SERVER_LDAP) ? _("yes") : _("no"),
@@ -111,7 +113,9 @@ static int net_ads_cldap_netlogon(struct net_context *c, ADS_STRUCT *ads)
 		   (reply.server_type & NBT_SERVER_GOOD_TIMESERV) ? _("yes") : _("no"),
 		   (reply.server_type & NBT_SERVER_NDNC) ? _("yes") : _("no"),
 		   (reply.server_type & NBT_SERVER_SELECT_SECRET_DOMAIN_6) ? _("yes") : _("no"),
-		   (reply.server_type & NBT_SERVER_FULL_SECRET_DOMAIN_6) ? _("yes") : _("no"));
+		   (reply.server_type & NBT_SERVER_FULL_SECRET_DOMAIN_6) ? _("yes") : _("no"),
+		   (reply.server_type & NBT_SERVER_ADS_WEB_SERVICE) ? _("yes") : _("no"),
+		   (reply.server_type & NBT_SERVER_DS_8) ? _("yes") : _("no"));
 
 
 	printf(_("Forest:\t\t\t%s\n"), reply.forest);
