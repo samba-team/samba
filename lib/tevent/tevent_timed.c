@@ -224,13 +224,14 @@ static struct tevent_timer *tevent_common_add_timer_internal(
 	te = talloc(mem_ctx?mem_ctx:ev, struct tevent_timer);
 	if (te == NULL) return NULL;
 
-	te->event_ctx		= ev;
-	te->next_event		= next_event;
-	te->handler		= handler;
-	te->private_data	= private_data;
-	te->handler_name	= handler_name;
-	te->location		= location;
-	te->additional_data	= NULL;
+	*te = (struct tevent_timer) {
+		.event_ctx	= ev,
+		.next_event	= next_event,
+		.handler	= handler,
+		.private_data	= private_data,
+		.handler_name	= handler_name,
+		.location	= location,
+	};
 
 	if (ev->timer_events == NULL) {
 		ev->last_zero_timer = NULL;
