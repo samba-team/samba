@@ -191,8 +191,9 @@ static bool test_event_context(struct torture_context *test,
 	while (!finished) {
 		errno = 0;
 		if (tevent_loop_once(ev_ctx) == -1) {
-			talloc_free(ev_ctx);
+			TALLOC_FREE(ev_ctx);
 			torture_fail(test, talloc_asprintf(test, "Failed event loop %s\n", strerror(errno)));
+			return false;
 		}
 	}
 
