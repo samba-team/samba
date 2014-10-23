@@ -837,7 +837,7 @@ interface libnetapi
 	/* DsGetDcName                             */
 	/*******************************************/
 
-	[public] typedef [v1_enum] enum {
+	[public] typedef [bitmap32bit] bitmap {
 		DS_PDC_FLAG			= 0x00000001,
 		DS_GC_FLAG			= 0x00000004,
 		DS_LDAP_FLAG			= 0x00000008,
@@ -850,6 +850,8 @@ interface libnetapi
 		DS_NDNC_FLAG			= 0x00000400,
 		DS_SELECT_SECRET_DOMAIN_6_FLAG	= 0x00000800,
 		DS_FULL_SECRET_DOMAIN_6_FLAG	= 0x00001000,
+		DS_WS_FLAG			= 0x00002000,
+		DS_DS_8_FLAG			= 0x00004000,
 		DS_DNS_CONTROLLER_FLAG		= 0x20000000,
 		DS_DNS_DOMAIN_FLAG		= 0x40000000,
 		DS_DNS_FOREST_FLAG		= 0x80000000

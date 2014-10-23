@@ -149,7 +149,10 @@ static void print_dc_info_flags(uint32_t flags)
 		printf("CLOSE_SITE ");
 	if (flags & DS_FULL_SECRET_DOMAIN_6_FLAG)
 		printf("FULL_SECRET ");
-	/* "WS" */
+	if (flags & DS_WS_FLAG)
+		printf("WS ");
+	if (flags & DS_DS_8_FLAG)
+		printf("DS_8 ");
 	printf("\n");
 }
 
