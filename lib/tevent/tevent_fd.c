@@ -60,16 +60,15 @@ struct tevent_fd *tevent_common_add_fd(struct tevent_context *ev, TALLOC_CTX *me
 	fde = talloc(mem_ctx?mem_ctx:ev, struct tevent_fd);
 	if (!fde) return NULL;
 
-	fde->event_ctx		= ev;
-	fde->fd			= fd;
-	fde->flags		= flags;
-	fde->handler		= handler;
-	fde->close_fn		= NULL;
-	fde->private_data	= private_data;
-	fde->handler_name	= handler_name;
-	fde->location		= location;
-	fde->additional_flags	= 0;
-	fde->additional_data	= NULL;
+	*fde = (struct tevent_fd) {
+		.event_ctx	= ev,
+		.fd		= fd,
+		.flags		= flags,
+		.handler	= handler,
+		.private_data	= private_data,
+		.handler_name	= handler_name,
+		.location	= location,
+	};
 
 	DLIST_ADD(ev->fd_events, fde);
 
