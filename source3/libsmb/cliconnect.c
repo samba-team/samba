@@ -1732,7 +1732,6 @@ static struct tevent_req *cli_session_setup_spnego_send(
 	char *OIDs[ASN1_MAX_OIDS];
 	int i;
 	const DATA_BLOB *server_blob;
-	NTSTATUS status;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct cli_session_setup_spnego_state);
@@ -3371,8 +3370,6 @@ static void cli_full_connection_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
-	struct cli_full_connection_state *state = tevent_req_data(
-		req, struct cli_full_connection_state);
 	NTSTATUS status;
 
 	status = cli_tree_connect_recv(subreq);
