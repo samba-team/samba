@@ -1073,6 +1073,7 @@ sub provision($$$$$$)
 	store dos attributes = yes
 	create mask = 755
 	dos filemode = yes
+	strict rename = yes
 	vfs objects = acl_xattr fake_acls xattr_tdb streams_depot
 
 	printing = vlp
