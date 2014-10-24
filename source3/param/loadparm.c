@@ -206,6 +206,7 @@ static struct loadparm_service sDefault =
 	.follow_symlinks = true,
 	.sync_always = false,
 	.strict_allocate = false,
+	.strict_rename = false,
 	.strict_sync = false,
 	.mangling_char = '~',
 	.copymap = NULL,
