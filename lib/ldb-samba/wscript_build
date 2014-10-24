@@ -5,7 +5,7 @@
 # the symbols of all of ldb_ildap's dependencies. 
 
 bld.SAMBA_LIBRARY('ldbsamba',
-                  source='ldif_handlers.c',
+                  source='ldif_handlers.c ldb_matching_rules.c',
                   autoproto='ldif_handlers_proto.h',
                   public_deps='ldb',
                   deps='samba-security ndr NDR_DRSBLOBS NDR_DNSP ldbwrap samdb-common SAMDB_SCHEMA tdb errors',

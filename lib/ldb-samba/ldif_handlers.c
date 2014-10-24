@@ -1626,6 +1626,12 @@ int ldb_register_samba_handlers(struct ldb_context *ldb)
 
 	}
 
+	ret = ldb_register_samba_matching_rules(ldb);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(ldb);
+		return LDB_SUCCESS;
+	}
+
 	ret = ldb_set_opaque(ldb, "SAMBA_HANDLERS_REGISTERED", (void*)1);
 	if (ret != LDB_SUCCESS) {
 		return ret;
