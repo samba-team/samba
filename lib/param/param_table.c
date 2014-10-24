@@ -1882,6 +1882,15 @@ struct parm_struct parm_table[] = {
 		.flags		= FLAG_ADVANCED | FLAG_SHARE,
 	},
 	{
+		.label		= "strict rename",
+		.type		= P_BOOL,
+		.p_class	= P_LOCAL,
+		.offset		= LOCAL_VAR(strict_rename),
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED | FLAG_SHARE,
+	},
+	{
 		.label		= "strict sync",
 		.type		= P_BOOL,
 		.p_class	= P_LOCAL,
