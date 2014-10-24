@@ -1460,11 +1460,9 @@ main() {
             conf.DEFINE('WITH_QUOTAS', '1')
 
     #
-    # checking for clustering (CTDB)
+    # cluster support (CTDB)
     #
     if not Options.options.with_cluster_support:
-        # configure is called with --without-cluster-support,
-        # so don't check for and build w/o ctdb support.
         Logs.info("building without cluster support (--without-cluster-support)")
         conf.env.with_ctdb = False
     else:
