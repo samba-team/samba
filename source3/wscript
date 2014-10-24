@@ -1451,24 +1451,9 @@ main() {
         Logs.info("building without cluster support (--without-cluster-support)")
         conf.env.with_ctdb = False
     else:
-        srcdir = os.path.realpath(conf.srcdir)
-        if 'EXTRA_INCLUDES' in conf.env:
-            includes = ' '.join(conf.env['EXTRA_INCLUDES']).replace('#', srcdir + '/')
-        else:
-            includes = ''
-
-        CTDB_INCLUDE = conf.srcdir + '/ctdb/include'
-        includes = includes + ' ' + CTDB_INCLUDE
-
-        if not conf.env.USING_SYSTEM_TDB:
-            includes = includes + ' ' + srcdir + '/lib/tdb/include'
-
-        if not conf.env.USING_SYSTEM_TALLOC:
-            includes = includes + ' ' + srcdir + '/lib/talloc'
-
         Logs.info("building with cluster support")
         conf.env['CTDB_CFLAGS'] = '-DCLUSTER_SUPPORT=1'
-        conf.env['CTDB_INCLUDE'] = CTDB_INCLUDE
+        conf.env['CTDB_INCLUDE'] = conf.srcdir + '/ctdb/include'
         conf.env.with_ctdb = True
 
     conf.CHECK_CODE('__attribute__((destructor)) static void cleanup(void) { }',
