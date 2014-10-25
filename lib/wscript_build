@@ -6,7 +6,9 @@ import os, Options
 external_libs = {
     "dns.resolver": "dnspython/dns",
     "subunit": "subunit/python/subunit",
-    "testtools": "testtools/testtools"}
+    "testtools": "testtools/testtools",
+    "extras": "extras/extras",
+    }
 
 list = []
 
