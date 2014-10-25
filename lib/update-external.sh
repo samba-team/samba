@@ -36,4 +36,9 @@ git clone git://github.com/madler/zlib "$WORKDIR/zlib"
 rm -rf "$WORKDIR/zlib/.git"
 rsync --exclude=wscript -avz --delete "$WORKDIR/zlib/" "$THIRD_PARTY_DIR/zlib/"
 
+echo "Updating extra..."
+git clone git://github.com/testing-cabal/extras "$WORKDIR/extras"
+rm -rf "$WORKDIR/extras/.git"
+rsync -avz --delete "$WORKDIR/extras/" "$LIBDIR/extras/"
+
 rm -rf "$WORKDIR"
