@@ -64,6 +64,7 @@ tasks = {
                      ("samba-make", "make", "text/plain"),
                      ("samba-check", "./bin/smbd -b | grep CLUSTER_SUPPORT", "text/plain"),
                      ("samba-install", "make install", "text/plain"),
+                     ("ctdb-check", "test -e ${PREFIX_DIR}/sbin/ctdbd", "text/plain"),
 
                      # clean up:
                      ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
