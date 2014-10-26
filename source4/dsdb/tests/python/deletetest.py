@@ -252,13 +252,21 @@ class BasicDeleteTests(BaseDeleteTests):
 
         print self.base_dn
 
-        usr1="cn=testuser,cn=users," + self.base_dn
-        usr2="cn=testuser2,cn=users," + self.base_dn
-        grp1="cn=testdelgroup1,cn=users," + self.base_dn
-        sit1="cn=testsite1,cn=sites," + self.configuration_dn
-        ss1="cn=NTDS Site Settings,cn=testsite1,cn=sites," + self.configuration_dn
-        srv1="cn=Servers,cn=testsite1,cn=sites," + self.configuration_dn
-        srv2="cn=TESTSRV,cn=Servers,cn=testsite1,cn=sites," + self.configuration_dn
+        # user current time in ms to make unique objects
+        import time
+        marker = str(int(round(time.time()*1000)))
+        usr1_name = "u_" + marker
+        usr2_name = "u2_" + marker
+        grp_name = "g1_" + marker
+        site_name = "s1_" + marker
+
+        usr1 = "cn=%s,cn=users,%s" % (usr1_name, self.base_dn)
+        usr2 = "cn=%s,cn=users,%s" % (usr2_name, self.base_dn)
+        grp1 = "cn=%s,cn=users,%s" % (grp_name, self.base_dn)
+        sit1 = "cn=%s,cn=sites,%s" % (site_name, self.configuration_dn)
+        ss1 = "cn=NTDS Site Settings,cn=%s,cn=sites,%s" % (site_name, self.configuration_dn)
+        srv1 = "cn=Servers,cn=%s,cn=sites,%s" % (site_name, self.configuration_dn)
+        srv2 = "cn=TESTSRV,cn=Servers,cn=%s,cn=sites,%s" % (site_name, self.configuration_dn)
 
         delete_force(self.ldb, usr1)
         delete_force(self.ldb, usr2)
@@ -272,19 +280,19 @@ class BasicDeleteTests(BaseDeleteTests):
             "dn": usr1,
             "objectclass": "user",
             "description": "test user description",
-            "samaccountname": "testuser"})
+            "samaccountname": usr1_name})
 
         self.ldb.add({
             "dn": usr2,
             "objectclass": "user",
             "description": "test user 2 description",
-            "samaccountname": "testuser2"})
+            "samaccountname": usr2_name})
 
         self.ldb.add({
             "dn": grp1,
             "objectclass": "group",
             "description": "test group",
-            "samaccountname": "testdelgroup1",
+            "samaccountname": grp_name,
             "member": [ usr1, usr2 ],
             "isDeleted": "FALSE" })
 
