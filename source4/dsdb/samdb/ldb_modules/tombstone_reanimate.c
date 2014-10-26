@@ -206,6 +206,10 @@ static int tombstone_reanimate_modify(struct ldb_module *module, struct ldb_requ
 	ret = dsdb_module_rename(module, req->op.mod.message->dn, dn_new, DSDB_FLAG_TOP_MODULE | DSDB_SEARCH_SHOW_DELETED, req);
 	if (ret != LDB_SUCCESS) {
 		ldb_debug(ldb, LDB_DEBUG_ERROR, "Renaming object to %s has failed with %s\n", el_dn->values[0].data, ldb_strerror(ret));
+		if (ret != LDB_ERR_ENTRY_ALREADY_EXISTS) {
+			/* Windows returns Operations Error in case we can't rename the object */
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
 		return ret;
 	}
 
