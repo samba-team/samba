@@ -528,10 +528,10 @@ class BasicUndeleteTests(BaseDeleteTests):
 
     def test_undelete_cross_nc(self):
         print "Cross NC undelete"
-        c1 = "cn=ldaptestcontainer," + self.base_dn;
+        c1 = "cn=ldaptestcontainer," + self.base_dn
         c2 = "cn=ldaptestcontainer2," + self.configuration_dn
         c3 = "cn=ldaptestcontainer," + self.configuration_dn
-        c4 = "cn=ldaptestcontainer2," + self.base_dn;
+        c4 = "cn=ldaptestcontainer2," + self.base_dn
         ldb.add({
             "dn": c1,
             "objectclass": "container"})
