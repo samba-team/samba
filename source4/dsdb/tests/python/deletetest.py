@@ -395,19 +395,6 @@ class BasicUndeleteTests(BaseDeleteTests):
         except LdbError, (num, _):
             self.assertEquals(num, ERR_ATTRIBUTE_OR_VALUE_EXISTS)
 
-    def get_ldb_connection(self, target_username, target_password):
-        creds_tmp = Credentials()
-        creds_tmp.set_username(target_username)
-        creds_tmp.set_password(target_password)
-        creds_tmp.set_domain(creds.get_domain())
-        creds_tmp.set_realm(creds.get_realm())
-        creds_tmp.set_workstation(creds.get_workstation())
-        creds_tmp.set_gensec_features(creds_tmp.get_gensec_features()
-                                      | gensec.FEATURE_SEAL)
-        creds_tmp.set_kerberos_state(DONT_USE_KERBEROS) # kinit is too expensive to use in a tight loop
-        ldb_target = SamDB(url=ldaphost, credentials=creds_tmp, lp=lp)
-        return ldb_target
-
     def undelete_deleted(self, olddn, newdn, samldb):
         msg = Message()
         msg.dn = Dn(ldb, olddn)
