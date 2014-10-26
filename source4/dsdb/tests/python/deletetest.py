@@ -519,7 +519,7 @@ class BasicUndeleteTests(BaseDeleteTests):
             self.undelete_deleted(str(objDeleted1.dn), usr1, ldb)
             self.fail()
         except LdbError, (num, _):
-            self.assertEquals(num,ERR_ENTRY_ALREADY_EXISTS)
+            self.assertEquals(num, ERR_ENTRY_ALREADY_EXISTS)
 
     def test_undelete_cross_nc(self):
         print "Cross NC undelete"
