@@ -75,6 +75,8 @@ static int inotify_destructor(struct inotify_private *in)
 static bool filter_match(struct inotify_watch_context *w,
 			 struct inotify_event *e)
 {
+	bool ok;
+
 	DEBUG(10, ("filter_match: e->mask=%x, w->mask=%x, w->filter=%x\n",
 		   e->mask, w->mask, w->filter));
 
@@ -86,28 +88,25 @@ static bool filter_match(struct inotify_watch_context *w,
 
 	/* SMB separates the filters for files and directories */
 	if (e->mask & IN_ISDIR) {
-		if ((w->filter & FILE_NOTIFY_CHANGE_DIR_NAME) == 0) {
-			return False;
-		}
-	} else {
-		if ((e->mask & IN_ATTRIB) &&
-		    (w->filter & (FILE_NOTIFY_CHANGE_ATTRIBUTES|
-				  FILE_NOTIFY_CHANGE_LAST_WRITE|
-				  FILE_NOTIFY_CHANGE_LAST_ACCESS|
-				  FILE_NOTIFY_CHANGE_EA|
-				  FILE_NOTIFY_CHANGE_SECURITY))) {
-			return True;
-		}
-		if ((e->mask & IN_MODIFY) && 
-		    (w->filter & FILE_NOTIFY_CHANGE_ATTRIBUTES)) {
-			return True;
-		}
-		if ((w->filter & FILE_NOTIFY_CHANGE_FILE_NAME) == 0) {
-			return False;
-		}
+		ok = ((w->filter & FILE_NOTIFY_CHANGE_DIR_NAME) != 0);
+		return ok;
 	}
 
-	return True;
+	if ((e->mask & IN_ATTRIB) &&
+	    (w->filter & (FILE_NOTIFY_CHANGE_ATTRIBUTES|
+			  FILE_NOTIFY_CHANGE_LAST_WRITE|
+			  FILE_NOTIFY_CHANGE_LAST_ACCESS|
+			  FILE_NOTIFY_CHANGE_EA|
+			  FILE_NOTIFY_CHANGE_SECURITY))) {
+		return True;
+	}
+	if ((e->mask & IN_MODIFY) &&
+	    (w->filter & FILE_NOTIFY_CHANGE_ATTRIBUTES)) {
+		return True;
+	}
+
+	ok = ((w->filter & FILE_NOTIFY_CHANGE_FILE_NAME) != 0);
+	return ok;
 }
 
 
