@@ -7338,6 +7338,11 @@ WERROR _spoolss_EnumJobs(struct pipes_struct *p,
 		return WERR_INVALID_PARAM;
 	}
 
+	if ((r->in.level != 1) && (r->in.level != 2) && (r->in.level != 3)) {
+		DEBUG(4, ("EnumJobs level %d not supported\n", r->in.level));
+		return WERR_UNKNOWN_LEVEL;
+	}
+
 	DEBUG(4,("_spoolss_EnumJobs\n"));
 
 	*r->out.needed = 0;
@@ -7383,7 +7388,7 @@ WERROR _spoolss_EnumJobs(struct pipes_struct *p,
 					 pinfo2, r->out.info, r->out.count);
 		break;
 	default:
-		result = WERR_UNKNOWN_LEVEL;
+		SMB_ASSERT(false);	/* level checked on entry */
 		break;
 	}
 
