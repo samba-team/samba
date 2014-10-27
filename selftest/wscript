@@ -238,10 +238,11 @@ def cmd_testonly(opt):
         runcmd = EXPAND_VARIABLES(opt, testrcmd)
         RUN_COMMAND(runcmd, env=env)
 
-    if os.path.exists("st/subunit"):
+    subunit_file = "%s/subunit" % env.SELFTEST_PREFIX
+    if os.path.exists(subunit_file):
         nb = Options.options.NB_SLOWEST
         print "TOP %d slowest tests" % nb
-        cmd = "./script/show_testsuite_time %s/subunit %d" % (Options.options.SELFTEST_PREFIX, nb)
+        cmd = "./script/show_testsuite_time %s %d" % (subunit_file, nb)
         runcmd = EXPAND_VARIABLES(opt, cmd)
         RUN_COMMAND(runcmd, env=env)
 
