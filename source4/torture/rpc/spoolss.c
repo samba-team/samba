@@ -3255,6 +3255,7 @@ static bool test_EnumJobs_args(struct torture_context *tctx,
 			       struct dcerpc_binding_handle *b,
 			       struct policy_handle *handle,
 			       uint32_t level,
+			       WERROR werr_expected,
 			       uint32_t *count_p,
 			       union spoolss_JobInfo **info_p)
 {
@@ -3288,13 +3289,15 @@ static bool test_EnumJobs_args(struct torture_context *tctx,
 		status = dcerpc_spoolss_EnumJobs_r(b, tctx, &r);
 
 		torture_assert_ntstatus_ok(tctx, status, "EnumJobs failed");
-		torture_assert_werr_ok(tctx, r.out.result, "EnumJobs failed");
+		torture_assert_werr_equal(tctx, r.out.result, werr_expected,
+					  "EnumJobs failed");
 		torture_assert(tctx, info, "No jobs returned");
 
 		CHECK_NEEDED_SIZE_ENUM_LEVEL(spoolss_EnumJobs, *r.out.info, r.in.level, count, needed, 4);
 
 	} else {
-		torture_assert_werr_ok(tctx, r.out.result, "EnumJobs failed");
+		torture_assert_werr_equal(tctx, r.out.result, werr_expected,
+					  "EnumJobs failed");
 	}
 
 	if (count_p) {
@@ -3520,7 +3523,7 @@ static bool test_DoPrintTest_check_jobs(struct torture_context *tctx,
 		"AddJob failed");
 
 	torture_assert(tctx,
-		test_EnumJobs_args(tctx, b, handle, 1, &count, &info),
+		test_EnumJobs_args(tctx, b, handle, 1, WERR_OK, &count, &info),
 		"EnumJobs level 1 failed");
 
 	torture_assert_int_equal(tctx, count, num_jobs, "unexpected number of jobs in queue");
@@ -8305,7 +8308,8 @@ static bool test_print_test_smbd(struct torture_context *tctx,
 
 	/* check back end spoolss job was created */
 	torture_assert(tctx,
-		test_EnumJobs_args(tctx, b, &t->handle, 1, &count, &info),
+		test_EnumJobs_args(tctx, b, &t->handle, 1, WERR_OK,
+				   &count, &info),
 		"EnumJobs level 1 failed");
 
 	for (i = 0; i < count; i++) {
@@ -8352,7 +8356,8 @@ static bool test_print_test_purge(struct torture_context *tctx,
 	}
 
 	torture_assert(tctx,
-		test_EnumJobs_args(tctx, b, &t->handle, 1, &count, &info),
+		test_EnumJobs_args(tctx, b, &t->handle, 1, WERR_OK,
+				   &count, &info),
 		"EnumJobs level 1 failed");
 
 	torture_assert_int_equal(tctx, count, num_jobs,
@@ -8363,7 +8368,8 @@ static bool test_print_test_purge(struct torture_context *tctx,
 		"failed to purge printer");
 
 	torture_assert(tctx,
-		test_EnumJobs_args(tctx, b, &t->handle, 1, &count, &info),
+		test_EnumJobs_args(tctx, b, &t->handle, 1, WERR_OK,
+				   &count, &info),
 		"EnumJobs level 1 failed");
 
 	torture_assert_int_equal(tctx, count, 0,
