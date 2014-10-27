@@ -2119,6 +2119,9 @@ static NTSTATUS vfswrap_notify_watch(vfs_handle_struct *vfs_handle,
 	 */
 #ifdef HAVE_INOTIFY
 	if (lp_kernel_change_notify(vfs_handle->conn->params)) {
+		if (!lp_parm_bool(-1, "notify", "inotify", True)) {
+			return NT_STATUS_INVALID_SYSTEM_SERVICE;
+		}
 		return inotify_watch(ctx, path, filter, subdir_filter,
 				     callback, private_data, handle);
 	}

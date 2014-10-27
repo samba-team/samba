@@ -255,10 +255,6 @@ static NTSTATUS inotify_setup(struct sys_notify_context *ctx)
 {
 	struct inotify_private *in;
 
-	if (!lp_parm_bool(-1, "notify", "inotify", True)) {
-		return NT_STATUS_INVALID_SYSTEM_SERVICE;
-	}
-
 	in = talloc(ctx, struct inotify_private);
 	NT_STATUS_HAVE_NO_MEMORY(in);
 	in->fd = inotify_init();
