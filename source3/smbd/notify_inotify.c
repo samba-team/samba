@@ -324,17 +324,19 @@ static int watch_destructor(struct inotify_watch_context *w)
 	int wd = w->wd;
 	DLIST_REMOVE(w->in->watches, w);
 
-	/* only rm the watch if its the last one with this wd */
 	for (w=in->watches;w;w=w->next) {
-		if (w->wd == wd) break;
-	}
-	if (w == NULL) {
-		DEBUG(10, ("Deleting inotify watch %d\n", wd));
-		if (inotify_rm_watch(in->fd, wd) == -1) {
-			DEBUG(1, ("inotify_rm_watch returned %s\n",
-				  strerror(errno)));
+		if (w->wd == wd) {
+			/*
+			 * Another inotify_watch_context listens on this path,
+			 * leave the kernel level watch in place
+			 */
+			return 0;
 		}
+	}
 
+	DEBUG(10, ("Deleting inotify watch %d\n", wd));
+	if (inotify_rm_watch(in->fd, wd) == -1) {
+		DEBUG(1, ("inotify_rm_watch returned %s\n", strerror(errno)));
 	}
 	return 0;
 }
