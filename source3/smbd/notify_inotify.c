@@ -346,15 +346,15 @@ static int watch_destructor(struct inotify_watch_context *w)
   add a watch. The watch is removed when the caller calls
   talloc_free() on *handle
 */
-NTSTATUS inotify_watch(struct sys_notify_context *ctx,
-		       const char *path,
-		       uint32_t *filter,
-		       uint32_t *subdir_filter,
-		       void (*callback)(struct sys_notify_context *ctx, 
-					void *private_data,
-					struct notify_event *ev),
-		       void *private_data, 
-		       void *handle_p)
+int inotify_watch(struct sys_notify_context *ctx,
+		  const char *path,
+		  uint32_t *filter,
+		  uint32_t *subdir_filter,
+		  void (*callback)(struct sys_notify_context *ctx,
+				   void *private_data,
+				   struct notify_event *ev),
+		  void *private_data,
+		  void *handle_p)
 {
 	struct inotify_private *in;
 	uint32_t mask;
@@ -367,7 +367,7 @@ NTSTATUS inotify_watch(struct sys_notify_context *ctx,
 		int ret;
 		ret = inotify_setup(ctx);
 		if (ret != 0) {
-			return map_nt_error_from_unix(ret);
+			return ret;
 		}
 	}
 
@@ -376,7 +376,7 @@ NTSTATUS inotify_watch(struct sys_notify_context *ctx,
 	mask = inotify_map(filter);
 	if (mask == 0) {
 		/* this filter can't be handled by inotify */
-		return NT_STATUS_INVALID_PARAMETER;
+		return EINVAL;
 	}
 
 	/* using IN_MASK_ADD allows us to cope with inotify() returning the same
@@ -386,7 +386,7 @@ NTSTATUS inotify_watch(struct sys_notify_context *ctx,
 	w = talloc(in, struct inotify_watch_context);
 	if (w == NULL) {
 		*filter = orig_filter;
-		return NT_STATUS_NO_MEMORY;
+		return ENOMEM;
 	}
 
 	w->in = in;
@@ -398,7 +398,7 @@ NTSTATUS inotify_watch(struct sys_notify_context *ctx,
 	if (w->path == NULL) {
 		*filter = orig_filter;
 		TALLOC_FREE(w);
-		return NT_STATUS_NO_MEMORY;
+		return ENOMEM;
 	}
 
 	/* get a new watch descriptor for this path */
@@ -408,7 +408,7 @@ NTSTATUS inotify_watch(struct sys_notify_context *ctx,
 		*filter = orig_filter;
 		TALLOC_FREE(w);
 		DEBUG(1, ("inotify_add_watch returned %s\n", strerror(err)));
-		return map_nt_error_from_unix(err);
+		return err;
 	}
 
 	DEBUG(10, ("inotify_add_watch for %s mask %x returned wd %d\n",
@@ -421,7 +421,7 @@ NTSTATUS inotify_watch(struct sys_notify_context *ctx,
 	/* the caller frees the handle to stop watching */
 	talloc_set_destructor(w, watch_destructor);
 
-	return NT_STATUS_OK;
+	return 0;
 }
 
 #endif
