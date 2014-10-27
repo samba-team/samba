@@ -355,7 +355,6 @@ NTSTATUS inotify_watch(struct sys_notify_context *ctx,
 		       void *handle_p)
 {
 	struct inotify_private *in;
-	int wd;
 	uint32_t mask;
 	struct inotify_watch_context *w;
 	uint32_t orig_filter = *filter;
@@ -382,37 +381,36 @@ NTSTATUS inotify_watch(struct sys_notify_context *ctx,
 	   watch descriptor for multiple watches on the same path */
 	mask |= (IN_MASK_ADD | IN_ONLYDIR);
 
-	/* get a new watch descriptor for this path */
-	wd = inotify_add_watch(in->fd, path, mask);
-	if (wd == -1) {
-		*filter = orig_filter;
-		DEBUG(1, ("inotify_add_watch returned %s\n", strerror(errno)));
-		return map_nt_error_from_unix(errno);
-	}
-
-	DEBUG(10, ("inotify_add_watch for %s mask %x returned wd %d\n",
-		   path, mask, wd));
-
 	w = talloc(in, struct inotify_watch_context);
 	if (w == NULL) {
-		inotify_rm_watch(in->fd, wd);
 		*filter = orig_filter;
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	w->in = in;
-	w->wd = wd;
 	w->callback = callback;
 	w->private_data = private_data;
 	w->mask = mask;
 	w->filter = orig_filter;
 	w->path = talloc_strdup(w, path);
 	if (w->path == NULL) {
-		inotify_rm_watch(in->fd, wd);
 		*filter = orig_filter;
 		TALLOC_FREE(w);
 		return NT_STATUS_NO_MEMORY;
 	}
+
+	/* get a new watch descriptor for this path */
+	w->wd = inotify_add_watch(in->fd, path, mask);
+	if (w->wd == -1) {
+		int err = errno;
+		*filter = orig_filter;
+		TALLOC_FREE(w);
+		DEBUG(1, ("inotify_add_watch returned %s\n", strerror(err)));
+		return map_nt_error_from_unix(err);
+	}
+
+	DEBUG(10, ("inotify_add_watch for %s mask %x returned wd %d\n",
+		   path, mask, w->wd));
 
 	(*handle) = w;
 
