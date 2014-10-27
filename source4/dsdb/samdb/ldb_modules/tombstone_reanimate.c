@@ -177,14 +177,14 @@ static int tombstone_reanimate_modify(struct ldb_module *module, struct ldb_requ
 		return ldb_next_request(module, req);
 	}
 
-	ac = tr_init_context(module, req);
-	if (ac == NULL) {
-		return ldb_operr(ldb);
-	}
-
 	/* Check if this is a reanimate request */
 	if (!is_tombstone_reanimate_request(req, &el_dn)) {
 		return ldb_next_request(module, req);
+	}
+
+	ac = tr_init_context(module, req);
+	if (ac == NULL) {
+		return ldb_operr(ldb);
 	}
 
 	/* Load original object */
