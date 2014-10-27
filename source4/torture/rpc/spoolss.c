@@ -8849,6 +8849,76 @@ static bool test_driver_info_winreg(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_print_job_enum(struct torture_context *tctx,
+				void *private_data)
+{
+	struct torture_printer_context *t =
+		(struct torture_printer_context *)talloc_get_type_abort(private_data, struct torture_printer_context);
+	struct dcerpc_pipe *p = t->spoolss_pipe;
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	bool ret = true;
+	uint32_t num_jobs = 8;
+	uint32_t *job_ids;
+	int i;
+	union spoolss_JobInfo *info = NULL;
+	uint32_t count;
+
+	torture_assert(tctx,
+		test_PausePrinter(tctx, b, &t->handle),
+		"failed to pause printer");
+
+	/* enum before jobs, valid level */
+	torture_assert(tctx,
+		       test_EnumJobs_args(tctx, b, &t->handle, 1, WERR_OK,
+					  &count, &info),
+		       "EnumJobs with valid level");
+	torture_assert_int_equal(tctx, count, 0, "EnumJobs count");
+	torture_assert(tctx,
+		       test_EnumJobs_args(tctx, b, &t->handle, 2, WERR_OK,
+					  &count, &info),
+		       "EnumJobs with valid level");
+	torture_assert_int_equal(tctx, count, 0, "EnumJobs count");
+	/* enum before jobs, invalid level - expect failure */
+	torture_assert(tctx,
+		       test_EnumJobs_args(tctx, b, &t->handle, 100,
+					  WERR_INVALID_LEVEL,
+					  &count, &info),
+		       "EnumJobs with invalid level");
+
+	job_ids = talloc_zero_array(tctx, uint32_t, num_jobs);
+
+	for (i = 0; i < num_jobs; i++) {
+		ret = test_DoPrintTest_add_one_job(tctx, b, &t->handle,
+						    "TorturePrintJob",
+						    &job_ids[i]);
+		torture_assert(tctx, ret, "failed to add print job");
+	}
+
+	/* enum after jobs, valid level */
+	torture_assert(tctx,
+		       test_EnumJobs_args(tctx, b, &t->handle, 1, WERR_OK,
+					  &count, &info),
+		       "EnumJobs with valid level");
+	torture_assert_int_equal(tctx, count, num_jobs, "EnumJobs count");
+	torture_assert(tctx,
+		       test_EnumJobs_args(tctx, b, &t->handle, 2, WERR_OK,
+					  &count, &info),
+		       "EnumJobs with valid level");
+	torture_assert_int_equal(tctx, count, num_jobs, "EnumJobs count");
+	/* enum after jobs, invalid level - expect failure */
+	torture_assert(tctx,
+		       test_EnumJobs_args(tctx, b, &t->handle, 100,
+					  WERR_INVALID_LEVEL,
+					  &count, &info),
+		       "EnumJobs with invalid level");
+
+	torture_assert(tctx,
+		test_ResumePrinter(tctx, b, &t->handle),
+		"failed to resume printer");
+
+	return true;
+}
+
 void torture_tcase_printer(struct torture_tcase *tcase)
 {
 	torture_tcase_add_simple_test(tcase, "openprinter", test_openprinter_wrap);
@@ -8876,6 +8946,7 @@ void torture_tcase_printer(struct torture_tcase *tcase)
 	torture_tcase_add_simple_test(tcase, "bidi", test_printer_bidi);
 	torture_tcase_add_simple_test(tcase, "publish_toggle",
 				      test_printer_publish_toggle);
+	torture_tcase_add_simple_test(tcase, "print_job_enum", test_print_job_enum);
 }
 
 struct torture_suite *torture_rpc_spoolss_printer(TALLOC_CTX *mem_ctx)
