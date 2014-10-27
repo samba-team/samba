@@ -133,19 +133,6 @@ def plantestsuite_loadlist(name, env, cmdline):
     print "%s $LOADLIST 2>&1 | %s" % (cmdline, add_prefix(name, env, support_list))
 
 
-def plantestsuite_idlist(name, env, cmdline):
-    print "-- TEST-IDLIST --"
-    if env == "none":
-        fullname = name
-    else:
-        fullname = "%s(%s)" % (name, env)
-    print fullname
-    print env
-    if isinstance(cmdline, list):
-        cmdline = " ".join(cmdline)
-    print cmdline
-
-
 def skiptestsuite(name, reason):
     """Indicate that a testsuite was skipped.
 
@@ -178,10 +165,10 @@ def planpythontestsuite(env, module, name=None, extra_path=[]):
             "%s/lib/testtools" % srcdir(),
             "%s/lib/extras" % srcdir(),
             "%s/lib/mimeparse" % srcdir()])
-    args = [python, "-m", "subunit.run", "$LISTOPT", module]
+    args = [python, "-m", "subunit.run", "$LISTOPT", "$LOADLIST", module]
     if pypath:
         args.insert(0, "PYTHONPATH=%s" % ":".join(["$PYTHONPATH"] + pypath))
-    plantestsuite_idlist(name, env, args)
+    plantestsuite_loadlist(name, env, args)
 
 
 def get_env_torture_options():

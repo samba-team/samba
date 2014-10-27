@@ -568,9 +568,8 @@ sub read_testlist($)
 	open(IN, $filename) or die("Unable to open $filename: $!");
 
 	while (<IN>) {
-		if (/-- TEST(-LOADLIST|-IDLIST|) --\n/) {
+		if (/-- TEST(-LOADLIST|) --\n/) {
 			my $supports_loadlist = (defined($1) and $1 eq "-LOADLIST");
-			my $supports_idlist = (defined($1) and $1 eq "-IDLIST");
 			my $name = <IN>;
 			$name =~ s/\n//g;
 			my $env = <IN>;
@@ -578,7 +577,7 @@ sub read_testlist($)
 			my $cmdline = <IN>;
 			$cmdline =~ s/\n//g;
 			if (should_run_test($name) == 1) {
-				push (@ret, [$name, $env, $cmdline, $supports_loadlist, $supports_idlist]);
+				push (@ret, [$name, $env, $cmdline, $supports_loadlist]);
 			}
 		} else {
 			print;
@@ -823,7 +822,6 @@ sub setup_env($$)
 		}
 	}
 
-	
 	return undef unless defined($testenv_vars);
 
 	$running_envs{$envname} = $testenv_vars;
@@ -995,9 +993,8 @@ $envvarstr
 					print $fh substr($test, length($name)+1) . "\n";
 				}
 				$cmd =~ s/\$LOADLIST/--load-list=$listid_file/g;
-			} elsif ($$_[4]) {
-				$cmd =~ s/\s+[^\s]+\s*$//;
-				$cmd .= " " . join(' ', @{$individual_tests->{$name}});
+			} else {
+				warn("Unable to run individual tests in $name, it does not support --loadlist.");
 			}
 		}
 

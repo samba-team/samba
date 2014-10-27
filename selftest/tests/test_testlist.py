@@ -67,14 +67,14 @@ class ReadTestlistTests(TestCase):
     def test_read_list(self):
         inf = StringIO("-- TEST --\nfoo\nbar\nbla\n")
         outf = StringIO()
-        self.assertEquals([('foo', 'bar', 'bla', False, False)],
+        self.assertEquals([('foo', 'bar', 'bla', False)],
                 list(read_testlist(inf, outf)))
         self.assertEquals("", outf.getvalue())
 
     def test_read_list_passes_through(self):
         inf = StringIO("MORENOISE\n-- TEST --\nfoo\nbar\nbla\nNOISE\n")
         outf = StringIO()
-        self.assertEquals([('foo', 'bar', 'bla', False, False)],
+        self.assertEquals([('foo', 'bar', 'bla', False)],
                 list(read_testlist(inf, outf)))
         self.assertEquals("MORENOISE\nNOISE\n", outf.getvalue())
 
