@@ -43,7 +43,7 @@ while(<$fh>)
 	}
 }
 my @sorted = sort { $hash{$b}<=>$hash{$a} } keys(%hash);
-$max = $#sorted unless $max or ($max < $#sorted);
+$max = @sorted if (($max <= 0) or ($max > @sorted));
 for my $l (@sorted[0..($max - 1)]) {
 	print $l."\n";
 }
