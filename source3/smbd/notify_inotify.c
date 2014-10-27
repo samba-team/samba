@@ -253,6 +253,7 @@ static void inotify_handler(struct tevent_context *ev, struct tevent_fd *fde,
 static NTSTATUS inotify_setup(struct sys_notify_context *ctx)
 {
 	struct inotify_private *in;
+	struct tevent_fd *fde;
 
 	in = talloc(ctx, struct inotify_private);
 	NT_STATUS_HAVE_NO_MEMORY(in);
@@ -269,7 +270,13 @@ static NTSTATUS inotify_setup(struct sys_notify_context *ctx)
 	talloc_set_destructor(in, inotify_destructor);
 
 	/* add a event waiting for the inotify fd to be readable */
-	tevent_add_fd(ctx->ev, in, in->fd, TEVENT_FD_READ, inotify_handler, in);
+	fde = tevent_add_fd(ctx->ev, in, in->fd, TEVENT_FD_READ,
+			    inotify_handler, in);
+	if (fde == NULL) {
+		ctx->private_data = NULL;
+		TALLOC_FREE(in);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	return NT_STATUS_OK;
 }
