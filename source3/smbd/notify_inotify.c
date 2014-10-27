@@ -250,18 +250,22 @@ static void inotify_handler(struct tevent_context *ev, struct tevent_fd *fde,
   setup the inotify handle - called the first time a watch is added on
   this context
 */
-static NTSTATUS inotify_setup(struct sys_notify_context *ctx)
+static int inotify_setup(struct sys_notify_context *ctx)
 {
 	struct inotify_private *in;
 	struct tevent_fd *fde;
 
 	in = talloc(ctx, struct inotify_private);
-	NT_STATUS_HAVE_NO_MEMORY(in);
+	if (in == NULL) {
+		return ENOMEM;
+	}
+
 	in->fd = inotify_init();
 	if (in->fd == -1) {
-		DEBUG(0,("Failed to init inotify - %s\n", strerror(errno)));
+		int ret = errno;
+		DEBUG(0, ("Failed to init inotify - %s\n", strerror(ret)));
 		talloc_free(in);
-		return map_nt_error_from_unix(errno);
+		return ret;
 	}
 	in->ctx = ctx;
 	in->watches = NULL;
@@ -275,10 +279,9 @@ static NTSTATUS inotify_setup(struct sys_notify_context *ctx)
 	if (fde == NULL) {
 		ctx->private_data = NULL;
 		TALLOC_FREE(in);
-		return NT_STATUS_NO_MEMORY;
+		return ENOMEM;
 	}
-
-	return NT_STATUS_OK;
+	return 0;
 }
 
 
@@ -360,9 +363,11 @@ NTSTATUS inotify_watch(struct sys_notify_context *ctx,
 
 	/* maybe setup the inotify fd */
 	if (ctx->private_data == NULL) {
-		NTSTATUS status;
-		status = inotify_setup(ctx);
-		NT_STATUS_NOT_OK_RETURN(status);
+		int ret;
+		ret = inotify_setup(ctx);
+		if (ret != 0) {
+			return map_nt_error_from_unix(ret);
+		}
 	}
 
 	in = talloc_get_type(ctx->private_data, struct inotify_private);
