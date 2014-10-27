@@ -17,6 +17,9 @@ if ($#ARGV >= 0) {
 }
 if ($#ARGV >= 1) {
 	$max = $ARGV[1];
+	if ($max =~ /\D/) {
+		die "not a decimal number: '$max'";
+	}
 }
 
 while(<$fh>)
