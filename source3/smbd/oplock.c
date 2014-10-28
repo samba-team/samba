@@ -148,6 +148,53 @@ static void downgrade_file_oplock(files_struct *fsp)
 	TALLOC_FREE(fsp->oplock_timeout);
 }
 
+bool update_num_read_oplocks(files_struct *fsp, struct share_mode_lock *lck)
+{
+	struct share_mode_data *d = lck->data;
+	struct byte_range_lock *br_lck;
+	uint32_t num_read_oplocks = 0;
+	uint32_t i;
+
+	if (EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
+		/*
+		 * If we're the only one, we don't need a brlock entry
+		 */
+		SMB_ASSERT(d->num_share_modes == 1);
+		SMB_ASSERT(EXCLUSIVE_OPLOCK_TYPE(d->share_modes[0].op_type));
+		return true;
+	}
+
+	for (i=0; i<d->num_share_modes; i++) {
+		struct share_mode_entry *e = &d->share_modes[i];
+
+		if (EXCLUSIVE_OPLOCK_TYPE(e->op_type)) {
+			num_read_oplocks += 1;
+			continue;
+		}
+
+		if (LEVEL_II_OPLOCK_TYPE(e->op_type)) {
+			num_read_oplocks += 1;
+			continue;
+		}
+	}
+
+	br_lck = brl_get_locks_readonly(fsp);
+	if (br_lck == NULL) {
+		return false;
+	}
+	if (brl_num_read_oplocks(br_lck) == num_read_oplocks) {
+		return true;
+	}
+
+	br_lck = brl_get_locks(talloc_tos(), fsp);
+	if (br_lck == NULL) {
+		return false;
+	}
+	brl_set_num_read_oplocks(br_lck, num_read_oplocks);
+	TALLOC_FREE(br_lck);
+	return true;
+}
+
 /****************************************************************************
  Remove a file oplock. Copes with level II and exclusive.
  Locks then unlocks the share mode lock. Client can decide to go directly
@@ -170,44 +217,6 @@ bool remove_oplock(files_struct *fsp)
 		return False;
 	}
 
-	if (fsp->oplock_type == LEVEL_II_OPLOCK) {
-
-		/*
-		 * If we're the only LEVEL_II holder, we have to remove the
-		 * have_read_oplocks from the brlock entry
-		 */
-
-		struct share_mode_data *data = lck->data;
-		uint32_t i, num_level2;
-
-		num_level2 = 0;
-		for (i=0; i<data->num_share_modes; i++) {
-			if (data->share_modes[i].op_type == LEVEL_II_OPLOCK) {
-				num_level2 += 1;
-			}
-			if (num_level2 > 1) {
-				/*
-				 * No need to count them all...
-				 */
-				break;
-			}
-		}
-
-		if (num_level2 == 1) {
-			/*
-			 * That's only us. We are dropping that level2 oplock,
-			 * so remove the brlock flag.
-			 */
-			struct byte_range_lock *brl;
-
-			brl = brl_get_locks(talloc_tos(), fsp);
-			if (brl) {
-				brl_set_have_read_oplocks(brl, false);
-				TALLOC_FREE(brl);
-			}
-		}
-	}
-
 	ret = remove_share_oplock(lck, fsp);
 	if (!ret) {
 		DEBUG(0,("remove_oplock: failed to remove share oplock for "
@@ -216,6 +225,15 @@ bool remove_oplock(files_struct *fsp)
 			 file_id_string_tos(&fsp->file_id)));
 	}
 	release_file_oplock(fsp);
+
+	ret = update_num_read_oplocks(fsp, lck);
+	if (!ret) {
+		DEBUG(0, ("%s: update_num_read_oplocks failed for "
+			 "file %s, %s, %s\n",
+			  __func__, fsp_str_dbg(fsp), fsp_fnum_dbg(fsp),
+			 file_id_string_tos(&fsp->file_id)));
+	}
+
 	TALLOC_FREE(lck);
 	return ret;
 }
@@ -227,7 +245,6 @@ bool downgrade_oplock(files_struct *fsp)
 {
 	bool ret;
 	struct share_mode_lock *lck;
-	struct byte_range_lock *brl;
 
 	DEBUG(10, ("downgrade_oplock called for %s\n",
 		   fsp_str_dbg(fsp)));
@@ -245,13 +262,14 @@ bool downgrade_oplock(files_struct *fsp)
 			 fsp_str_dbg(fsp), fsp_fnum_dbg(fsp),
 			 file_id_string_tos(&fsp->file_id)));
 	}
-
 	downgrade_file_oplock(fsp);
 
-	brl = brl_get_locks(talloc_tos(), fsp);
-	if (brl != NULL) {
-		brl_set_have_read_oplocks(brl, true);
-		TALLOC_FREE(brl);
+	ret = update_num_read_oplocks(fsp, lck);
+	if (!ret) {
+		DEBUG(0, ("%s: update_num_read_oplocks failed for "
+			 "file %s, %s, %s\n",
+			  __func__, fsp_str_dbg(fsp), fsp_fnum_dbg(fsp),
+			 file_id_string_tos(&fsp->file_id)));
 	}
 
 	TALLOC_FREE(lck);
@@ -596,6 +614,7 @@ static void contend_level2_oplocks_begin_default(files_struct *fsp,
 	struct tevent_immediate *im;
 	struct break_to_none_state *state;
 	struct byte_range_lock *brl;
+	uint32_t num_read_oplocks = 0;
 
 	/*
 	 * If this file is level II oplocked then we need
@@ -613,7 +632,13 @@ static void contend_level2_oplocks_begin_default(files_struct *fsp,
 	}
 
 	brl = brl_get_locks_readonly(fsp);
-	if ((brl != NULL) && !brl_have_read_oplocks(brl)) {
+	if (brl != NULL) {
+		num_read_oplocks = brl_num_read_oplocks(brl);
+	}
+
+	DEBUG(10, ("num_read_oplocks = %"PRIu32"\n", num_read_oplocks));
+
+	if (num_read_oplocks == 0) {
 		DEBUG(10, ("No read oplocks around\n"));
 		return;
 	}

@@ -1573,17 +1573,10 @@ static NTSTATUS grant_fsp_oplock_type(struct smb_request *req,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (fsp->oplock_type == LEVEL_II_OPLOCK && !got_level2_oplock) {
-		/*
-		 * We're the first level2 oplock. Indicate that in brlock.tdb.
-		 */
-		struct byte_range_lock *brl;
-
-		brl = brl_get_locks(talloc_tos(), fsp);
-		if (brl != NULL) {
-			brl_set_have_read_oplocks(brl, true);
-			TALLOC_FREE(brl);
-		}
+	ok = update_num_read_oplocks(fsp, lck);
+	if (!ok) {
+		del_share_mode(lck, fsp);
+		return NT_STATUS_INTERNAL_ERROR;
 	}
 
 	DEBUG(10,("grant_fsp_oplock_type: oplock type 0x%x on file %s\n",
