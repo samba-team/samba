@@ -25,6 +25,7 @@
 #include "smbd/globals.h"
 #include "../libcli/smb/smb_common.h"
 #include "../librpc/gen_ndr/ndr_security.h"
+#include "../librpc/gen_ndr/ndr_smb2_lease_struct.h"
 #include "../lib/util/tevent_ntstatus.h"
 #include "messages.h"
 
@@ -40,9 +41,7 @@ int map_smb2_oplock_levels_to_samba(uint8_t in_oplock_level)
 	case SMB2_OPLOCK_LEVEL_BATCH:
 		return BATCH_OPLOCK;
 	case SMB2_OPLOCK_LEVEL_LEASE:
-		DEBUG(2,("map_smb2_oplock_levels_to_samba: "
-			"LEASE_OPLOCK_REQUESTED\n"));
-		return NO_OPLOCK;
+		return LEASE_OPLOCK;
 	default:
 		DEBUG(2,("map_smb2_oplock_levels_to_samba: "
 			"unknown level %u\n",
@@ -59,6 +58,8 @@ static uint8_t map_samba_oplock_levels_to_smb2(int oplock_type)
 		return SMB2_OPLOCK_LEVEL_EXCLUSIVE;
 	} else if (oplock_type == LEVEL_II_OPLOCK) {
 		return SMB2_OPLOCK_LEVEL_II;
+	} else if (oplock_type == LEASE_OPLOCK) {
+		return SMB2_OPLOCK_LEVEL_LEASE;
 	} else {
 		return SMB2_OPLOCK_LEVEL_NONE;
 	}
@@ -368,6 +369,11 @@ static void smbd_smb2_request_create_done(struct tevent_req *tsubreq)
 	}
 }
 
+static bool smb2_lease_key_valid(const struct smb2_lease_key *key)
+{
+	return ((key->data[0] != 0) || (key->data[1] != 0));
+}
+
 static NTSTATUS smbd_smb2_create_durable_lease_check(
 	const char *requested_filename, const struct files_struct *fsp,
 	const struct smb2_lease *lease_ptr)
@@ -467,6 +473,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 	struct smb2_create_blob *dh2c = NULL;
 	struct smb2_create_blob *dhnq = NULL;
 	struct smb2_create_blob *dh2q = NULL;
+	struct smb2_create_blob *rqls = NULL;
 	struct smbXsrv_open *op = NULL;
 
 	ZERO_STRUCT(out_context_blobs);
@@ -513,6 +520,10 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 				     SMB2_CREATE_TAG_DH2Q);
 	dh2c = smb2_create_blob_find(&in_context_blobs,
 				     SMB2_CREATE_TAG_DH2C);
+	if (smb2req->xconn->smb2.server.capabilities & SMB2_CAP_LEASING) {
+		rqls = smb2_create_blob_find(&in_context_blobs,
+					     SMB2_CREATE_TAG_RQLS);
+	}
 
 	if ((dhnc && dh2c) || (dhnc && dh2q) || (dh2c && dhnq) ||
 	    (dh2q && dh2c))
@@ -552,6 +563,10 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 			num_blobs_allowed = 1;
 		}
 
+		if (rqls != NULL) {
+			num_blobs_allowed += 1;
+		}
+
 		if (in_context_blobs.num_blobs != num_blobs_allowed) {
 			tevent_req_nterror(req, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 			return tevent_req_post(req, ev);
@@ -583,6 +598,10 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		 */
 
 		num_blobs_allowed = 1;
+
+		if (rqls != NULL) {
+			num_blobs_allowed += 1;
+		}
 
 		if (in_context_blobs.num_blobs != num_blobs_allowed) {
 			tevent_req_nterror(req, NT_STATUS_OBJECT_NAME_NOT_FOUND);
@@ -650,7 +669,9 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		uint32_t durable_timeout_msec = 0;
 		bool do_durable_reconnect = false;
 		uint64_t persistent_id = 0;
+		struct smb2_lease lease;
 		struct smb2_lease *lease_ptr = NULL;
+		ssize_t lease_len = -1;
 
 		exta = smb2_create_blob_find(&in_context_blobs,
 					     SMB2_CREATE_TAG_EXTA);
@@ -850,6 +871,34 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 			}
 		}
 
+		if (rqls) {
+			lease_len = smb2_lease_pull(
+				rqls->data.data, rqls->data.length, &lease);
+			if (lease_len == -1) {
+				tevent_req_nterror(
+					req, NT_STATUS_INVALID_PARAMETER);
+				return tevent_req_post(req, ev);
+			}
+			lease_ptr = &lease;
+
+			if (DEBUGLEVEL >= 10) {
+				DEBUG(10, ("Got lease request size %d\n",
+					   (int)lease_len));
+				NDR_PRINT_DEBUG(smb2_lease, lease_ptr);
+			}
+
+			if (!smb2_lease_key_valid(&lease.lease_key)) {
+				lease_ptr = NULL;
+				requested_oplock_level = SMB2_OPLOCK_LEVEL_NONE;
+			}
+
+			if ((smb2req->xconn->protocol < PROTOCOL_SMB3_00) &&
+			    (lease.lease_version != 1)) {
+				DEBUG(10, ("v2 lease key only for SMB3\n"));
+				lease_ptr = NULL;
+			}
+		}
+
 		/* these are ignored for SMB2 */
 		in_create_options &= ~(0x10);/* NTCREATEX_OPTIONS_SYNC_ALERT */
 		in_create_options &= ~(0x20);/* NTCREATEX_OPTIONS_ASYNC_ALERT */
@@ -935,6 +984,14 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		} else {
 			struct smb_filename *smb_fname = NULL;
 
+			if (requested_oplock_level == SMB2_OPLOCK_LEVEL_LEASE) {
+				if (lease_ptr == NULL) {
+					requested_oplock_level = SMB2_OPLOCK_LEVEL_NONE;
+				}
+			} else {
+				lease_ptr = NULL;
+			}
+
 			/*
 			 * For a DFS path the function parse_dfs_path()
 			 * will do the path processing.
@@ -1005,7 +1062,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 						     in_create_options,
 						     in_file_attributes,
 						     map_smb2_oplock_levels_to_samba(requested_oplock_level),
-						     NULL,
+						     lease_ptr,
 						     allocation_size,
 						     0, /* private_flags */
 						     sec_desc,
@@ -1139,6 +1196,32 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 			status = smb2_create_blob_add(state, &out_context_blobs,
 						      SMB2_CREATE_TAG_QFID,
 						      blob);
+			if (!NT_STATUS_IS_OK(status)) {
+				tevent_req_nterror(req, status);
+				return tevent_req_post(req, ev);
+			}
+		}
+
+		if ((rqls != NULL) && (result->oplock_type == LEASE_OPLOCK)) {
+			uint8_t buf[52];
+
+			lease = result->lease->lease;
+
+			lease_len = sizeof(buf);
+			if (lease.lease_version == 1) {
+				lease_len = 32;
+			}
+
+			if (!smb2_lease_push(&lease, buf, lease_len)) {
+				tevent_req_nterror(
+					req, NT_STATUS_INTERNAL_ERROR);
+				return tevent_req_post(req, ev);
+			}
+
+			status = smb2_create_blob_add(
+				state, &out_context_blobs,
+				SMB2_CREATE_TAG_RQLS,
+				data_blob_const(buf, lease_len));
 			if (!NT_STATUS_IS_OK(status)) {
 				tevent_req_nterror(req, status);
 				return tevent_req_post(req, ev);
