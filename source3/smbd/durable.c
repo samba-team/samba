@@ -724,6 +724,32 @@ NTSTATUS vfs_default_durable_reconnect(struct connection_struct *conn,
 	fsp->aio_write_behind = false;
 	fsp->oplock_type = e->op_type;
 
+	if (fsp->oplock_type == LEASE_OPLOCK) {
+		struct share_mode_lease *l = &lck->data->leases[e->lease_idx];
+		struct smb2_lease_key key;
+
+		key.data[0] = l->lease_key.data[0];
+		key.data[1] = l->lease_key.data[1];
+
+		fsp->lease = find_fsp_lease(fsp, &key, l);
+		if (fsp->lease == NULL) {
+			TALLOC_FREE(lck);
+			fsp_free(fsp);
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		/*
+		 * Ensure the existing client guid matches the
+		 * stored one in the share_mode_lease.
+		 */
+		if (!GUID_equal(fsp_client_guid(fsp),
+				&l->client_guid)) {
+			TALLOC_FREE(lck);
+			fsp_free(fsp);
+			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		}
+	}
+
 	fsp->initial_allocation_size = cookie.initial_allocation_size;
 	fsp->fh->position_information = cookie.position_information;
 	fsp->update_write_time_triggered = cookie.update_write_time_triggered;

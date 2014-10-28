@@ -305,7 +305,9 @@ void smbd_smb2_request_dispatch_immediate(struct tevent_context *ctx,
 struct deferred_open_record;
 
 /* SMB1 -> SMB2 glue. */
-void send_break_message_smb2(files_struct *fsp, int level);
+void send_break_message_smb2(files_struct *fsp,
+			     uint32_t break_from,
+			     uint32_t break_to);
 struct blocking_lock_record *get_pending_smb2req_blr(struct smbd_smb2_request *smb2req);
 bool push_blocking_lock_request_smb2( struct byte_range_lock *br_lck,
 				struct smb_request *req,
