@@ -133,7 +133,7 @@ static struct share_mode_data *parse_share_modes(TALLOC_CTX *mem_ctx,
 	blob.data = dbuf.dptr;
 	blob.length = dbuf.dsize;
 
-	ndr_err = ndr_pull_struct_blob(
+	ndr_err = ndr_pull_struct_blob_all(
 		&blob, d, d, (ndr_pull_flags_fn_t)ndr_pull_share_mode_data);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		DEBUG(1, ("ndr_pull_share_mode_lock failed: %s\n",
@@ -476,7 +476,7 @@ static int share_mode_traverse_fn(struct db_record *rec, void *_state)
 	blob.data = value.dptr;
 	blob.length = value.dsize;
 
-	ndr_err = ndr_pull_struct_blob(
+	ndr_err = ndr_pull_struct_blob_all(
 		&blob, d, d, (ndr_pull_flags_fn_t)ndr_pull_share_mode_data);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		DEBUG(1, ("ndr_pull_share_mode_lock failed\n"));
