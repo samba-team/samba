@@ -106,57 +106,6 @@ static bool is_tombstone_reanimate_request(struct ldb_request *req, struct ldb_m
 	return true;
 }
 
-static int _tr_make_object_category(struct tr_context *ac, struct ldb_message *obj,
-				    TALLOC_CTX *mem_ctx, const char **pobjectcategory)
-{
-	int				ret;
-	struct ldb_context		*ldb;
-	const struct dsdb_class		*objectclass;
-	struct ldb_message_element	*objectclass_element;
-
-	ldb = ldb_module_get_ctx(ac->module);
-
-	objectclass_element = ldb_msg_find_element(obj, "objectClass");
-	if (!objectclass_element) {
-		ldb_asprintf_errstring(ldb, "tombstone_reanimate: Cannot add %s, no objectclass specified!",
-				       ldb_dn_get_linearized(obj->dn));
-		return LDB_ERR_OBJECT_CLASS_VIOLATION;
-	}
-	if (objectclass_element->num_values == 0) {
-		ldb_asprintf_errstring(ldb, "tombstone_reanimate: Cannot add %s, at least one (structural) objectclass has to be specified!",
-				       ldb_dn_get_linearized(obj->dn));
-		return LDB_ERR_CONSTRAINT_VIOLATION;
-	}
-
-	/* Now do the sorting */
-	ret = dsdb_sort_objectClass_attr(ldb, ac->schema,
-					 objectclass_element, obj,
-					 objectclass_element);
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
-
-	/*
-	 * Get the new top-most structural object class and check for
-	 * unrelated structural classes
-	 */
-	objectclass = dsdb_get_last_structural_class(ac->schema,
-						     objectclass_element);
-	if (objectclass == NULL) {
-		ldb_asprintf_errstring(ldb,
-				       "Failed to find a structural class for %s",
-				       ldb_dn_get_linearized(obj->dn));
-		return LDB_ERR_UNWILLING_TO_PERFORM;
-	}
-
-	*pobjectcategory = talloc_strdup(mem_ctx, objectclass->defaultObjectCategory);
-	if (*pobjectcategory == NULL) {
-		return ldb_oom(ldb);
-	}
-
-	return LDB_SUCCESS;
-}
-
 static int tombstone_reanimate_modify(struct ldb_module *module, struct ldb_request *req)
 {
 	int				ret;
@@ -228,7 +177,7 @@ static int tombstone_reanimate_modify(struct ldb_module *module, struct ldb_requ
 	if (objectcategory == NULL) {
 		const char *value;
 
-		ret = _tr_make_object_category(ac, res_obj->msgs[0], msg, &value);
+		ret = dsdb_make_object_category(ldb, ac->schema, res_obj->msgs[0], msg, &value);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
