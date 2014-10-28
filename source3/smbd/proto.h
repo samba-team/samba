@@ -667,6 +667,14 @@ void break_kernel_oplock(struct messaging_context *msg_ctx, files_struct *fsp);
 NTSTATUS set_file_oplock(files_struct *fsp);
 bool remove_oplock(files_struct *fsp);
 bool downgrade_oplock(files_struct *fsp);
+bool fsp_lease_update(struct share_mode_lock *lck,
+		      const struct GUID *client_guid,
+		      struct fsp_lease *lease);
+NTSTATUS downgrade_lease(struct smbXsrv_connection *xconn,
+			uint32_t num_file_ids,
+			const struct file_id *ids,
+			const struct smb2_lease_key *key,
+			uint32_t lease_state);
 void contend_level2_oplocks_begin(files_struct *fsp,
 				  enum level2_contention_type type);
 void contend_level2_oplocks_end(files_struct *fsp,
