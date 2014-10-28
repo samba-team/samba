@@ -1490,38 +1490,37 @@ static bool file_has_brlocks(files_struct *fsp)
 	return (brl_num_locks(br_lck) > 0);
 }
 
-static void grant_fsp_oplock_type(files_struct *fsp,
-				  struct share_mode_lock *lck,
-				  int oplock_request)
+static NTSTATUS grant_fsp_oplock_type(struct smb_request *req,
+				      struct files_struct *fsp,
+				      struct share_mode_lock *lck,
+				      int oplock_request)
 {
 	bool allow_level2 = (global_client_caps & CAP_LEVEL_II_OPLOCKS) &&
 		            lp_level2_oplocks(SNUM(fsp->conn));
 	bool got_level2_oplock, got_a_none_oplock;
 	uint32_t i;
+	bool ok;
+	NTSTATUS status;
 
 	/* Start by granting what the client asked for,
 	   but ensure no SAMBA_PRIVATE bits can be set. */
 	fsp->oplock_type = (oplock_request & ~SAMBA_PRIVATE_OPLOCK_MASK);
 
+	if (fsp->oplock_type == NO_OPLOCK) {
+		goto type_selected;
+	}
+
 	if (oplock_request & INTERNAL_OPEN_ONLY) {
 		/* No oplocks on internal open. */
 		fsp->oplock_type = NO_OPLOCK;
-		DEBUG(10,("grant_fsp_oplock_type: oplock type 0x%x on file %s\n",
-			fsp->oplock_type, fsp_str_dbg(fsp)));
-		return;
+		goto type_selected;
 	}
 
 	if (lp_locking(fsp->conn->params) && file_has_brlocks(fsp)) {
 		DEBUG(10,("grant_fsp_oplock_type: file %s has byte range locks\n",
 			fsp_str_dbg(fsp)));
 		fsp->oplock_type = NO_OPLOCK;
-	}
-
-	if (is_stat_open(fsp->access_mask)) {
-		/* Leave the value already set. */
-		DEBUG(10,("grant_fsp_oplock_type: oplock type 0x%x on file %s\n",
-			fsp->oplock_type, fsp_str_dbg(fsp)));
-		return;
+		goto type_selected;
 	}
 
 	got_level2_oplock = false;
@@ -1555,6 +1554,23 @@ static void grant_fsp_oplock_type(files_struct *fsp,
 	 */
 	if (fsp->oplock_type == LEVEL_II_OPLOCK && !allow_level2) {
 		fsp->oplock_type = NO_OPLOCK;
+		goto type_selected;
+	}
+
+ type_selected:
+	status = set_file_oplock(fsp);
+	if (!NT_STATUS_IS_OK(status)) {
+		/*
+		 * Could not get the kernel oplock
+		 */
+		fsp->oplock_type = NO_OPLOCK;
+	}
+
+	ok = set_share_mode(lck, fsp, get_current_uid(fsp->conn),
+			    req ? req->mid : 0,
+			    fsp->oplock_type);
+	if (!ok) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	if (fsp->oplock_type == LEVEL_II_OPLOCK && !got_level2_oplock) {
@@ -1572,6 +1588,8 @@ static void grant_fsp_oplock_type(files_struct *fsp,
 
 	DEBUG(10,("grant_fsp_oplock_type: oplock type 0x%x on file %s\n",
 		  fsp->oplock_type, fsp_str_dbg(fsp)));
+
+	return NT_STATUS_OK;
 }
 
 static bool request_timed_out(struct timeval request_time,
@@ -2739,8 +2757,6 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		}
 	}
 
-	grant_fsp_oplock_type(fsp, lck, oplock_request);
-
 	/*
 	 * We have the share entry *locked*.....
 	 */
@@ -2800,9 +2816,18 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	}
 
 	if (file_existed) {
-		/* stat opens on existing files don't get oplocks. */
+		/*
+		 * stat opens on existing files don't get oplocks.
+		 *
+		 * Note that we check for stat open on the *open_access_mask*,
+		 * i.e. the access mask we actually used to do the open,
+		 * not the one the client asked for (which is in
+		 * fsp->access_mask). This is due to the fact that
+		 * FILE_OVERWRITE and FILE_OVERWRITE_IF add in O_TRUNC,
+		 * which adds FILE_WRITE_DATA to open_access_mask.
+		 */
 		if (is_stat_open(open_access_mask)) {
-			fsp->oplock_type = NO_OPLOCK;
+			oplock_request = NO_OPLOCK;
 		}
 	}
 
@@ -2824,21 +2849,11 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	 * Setup the oplock info in both the shared memory and
 	 * file structs.
 	 */
-
-	status = set_file_oplock(fsp);
+	status = grant_fsp_oplock_type(req, fsp, lck, oplock_request);
 	if (!NT_STATUS_IS_OK(status)) {
-		/*
-		 * Could not get the kernel oplock
-		 */
-		fsp->oplock_type = NO_OPLOCK;
-	}
-
-	if (!set_share_mode(lck, fsp, get_current_uid(conn),
-			    req ? req->mid : 0,
-			    fsp->oplock_type)) {
 		TALLOC_FREE(lck);
 		fd_close(fsp);
-		return NT_STATUS_NO_MEMORY;
+		return status;
 	}
 
 	/* Handle strange delete on close create semantics. */
