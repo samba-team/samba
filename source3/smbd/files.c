@@ -745,3 +745,11 @@ const struct GUID *fsp_client_guid(const files_struct *fsp)
 {
 	return &fsp->conn->sconn->client->connections->smb2.client.guid;
 }
+
+uint32_t fsp_lease_type(struct files_struct *fsp)
+{
+	if (fsp->oplock_type == LEASE_OPLOCK) {
+		return fsp->lease->lease.lease_state;
+	}
+	return map_oplock_to_lease_type(fsp->oplock_type);
+}
