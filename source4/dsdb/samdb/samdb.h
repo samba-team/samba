@@ -141,6 +141,14 @@ struct dsdb_control_password_change {
  */
 #define DSDB_CONTROL_PERMIT_INTERDOMAIN_TRUST_UAC_OID "1.3.6.1.4.1.7165.4.3.23"
 
+/*
+ * Internal control to mark requests as being part of Tombstone restoring
+ * procedure - it requires slightly special behavior like:
+ *  - a bit different security checks
+ *  - restoring certain attributes to their default values, etc
+ */
+#define DSDB_CONTROL_RESTORE_TOMBSTONE_OID "1.3.6.1.4.1.7165.4.3.24"
+
 #define DSDB_EXTENDED_REPLICATED_OBJECTS_OID "1.3.6.1.4.1.7165.4.4.1"
 struct dsdb_extended_replicated_object {
 	struct ldb_message *msg;
