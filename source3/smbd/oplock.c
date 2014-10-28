@@ -667,14 +667,28 @@ static void contend_level2_oplocks_begin_default(files_struct *fsp,
 	tevent_schedule_immediate(im, sconn->ev_ctx, do_break_to_none, state);
 }
 
+static void send_break_to_none(struct messaging_context *msg_ctx,
+			       const struct share_mode_entry *e)
+{
+	char msg[MSG_SMB_SHARE_MODE_ENTRY_SIZE];
+
+	share_mode_entry_to_message(msg, e);
+	/* Overload entry->op_type */
+	SSVAL(msg, OP_BREAK_MSG_OP_TYPE_OFFSET, NO_OPLOCK);
+
+	messaging_send_buf(msg_ctx, e->pid, MSG_SMB_BREAK_REQUEST,
+			   (uint8 *)msg, sizeof(msg));
+}
+
 static void do_break_to_none(struct tevent_context *ctx,
 			     struct tevent_immediate *im,
 			     void *private_data)
 {
 	struct break_to_none_state *state = talloc_get_type_abort(
 		private_data, struct break_to_none_state);
-	int i;
+	uint32_t i;
 	struct share_mode_lock *lck;
+	struct share_mode_data *d;
 
 	lck = get_existing_share_mode_lock(talloc_tos(), state->id);
 	if (lck == NULL) {
@@ -682,15 +696,15 @@ static void do_break_to_none(struct tevent_context *ctx,
 			  __func__, file_id_string_tos(&state->id)));
 		goto done;
 	}
+	d = lck->data;
 
 	DEBUG(10,("%s: num_share_modes = %d\n", __func__,
 		  lck->data->num_share_modes ));
 
-	for(i = 0; i < lck->data->num_share_modes; i++) {
-		struct share_mode_entry *share_entry = &lck->data->share_modes[i];
-		char msg[MSG_SMB_SHARE_MODE_ENTRY_SIZE];
+	for(i = 0; i < d->num_share_modes; i++) {
+		struct share_mode_entry *e = &d->share_modes[i];
 
-		if (!is_valid_share_mode_entry(share_entry)) {
+		if (!is_valid_share_mode_entry(e)) {
 			continue;
 		}
 
@@ -705,15 +719,15 @@ static void do_break_to_none(struct tevent_context *ctx,
 		 * NO_OPLOCK states. JRA.
 		 */
 
-		DEBUG(10,("%s: share_entry[%i]->op_type == %d\n", __func__,
-			  i, share_entry->op_type ));
+		DEBUG(10, ("%s: share_entry[%i]->op_type == %d\n", __func__,
+			   i, e->op_type ));
 
-		if (share_entry->op_type == NO_OPLOCK) {
+		if (e->op_type == NO_OPLOCK) {
 			continue;
 		}
 
 		/* Paranoia .... */
-		if (EXCLUSIVE_OPLOCK_TYPE(share_entry->op_type)) {
+		if (EXCLUSIVE_OPLOCK_TYPE(e->op_type)) {
 			DEBUG(0,("%s: PANIC. "
 				 "share mode entry %d is an exlusive "
 				 "oplock !\n", __func__, i ));
@@ -721,13 +735,7 @@ static void do_break_to_none(struct tevent_context *ctx,
 			abort();
 		}
 
-		share_mode_entry_to_message(msg, share_entry);
-		/* Overload entry->op_type */
-		SSVAL(msg,OP_BREAK_MSG_OP_TYPE_OFFSET, NO_OPLOCK);
-
-		messaging_send_buf(state->sconn->msg_ctx, share_entry->pid,
-				   MSG_SMB_BREAK_REQUEST,
-				   (uint8 *)msg, sizeof(msg));
+		send_break_to_none(state->sconn->msg_ctx, e);
 	}
 
 	/* We let the message receivers handle removing the oplock state
