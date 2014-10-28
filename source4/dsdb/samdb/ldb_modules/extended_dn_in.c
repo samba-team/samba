@@ -342,18 +342,18 @@ static int extended_dn_filter_callback(struct ldb_parse_tree *tree, void *privat
 {
 	struct extended_dn_filter_ctx *filter_ctx;
 	int ret;
-	struct ldb_dn *dn;
+	struct ldb_dn *dn = NULL;
 	const struct ldb_val *sid_val, *guid_val;
 	const char *no_attrs[] = { NULL };
 	struct ldb_result *res;
-	const struct dsdb_attribute *attribute;
-	bool has_extended_component;
+	const struct dsdb_attribute *attribute = NULL;
+	bool has_extended_component = false;
 	enum ldb_scope scope;
 	struct ldb_dn *base_dn;
 	const char *expression;
 	uint32_t dsdb_flags;
 
-	if (tree->operation != LDB_OP_EQUALITY) {
+	if (tree->operation != LDB_OP_EQUALITY && tree->operation != LDB_OP_EXTENDED) {
 		return LDB_SUCCESS;
 	}
 
@@ -368,7 +368,11 @@ static int extended_dn_filter_callback(struct ldb_parse_tree *tree, void *privat
 		/* Schema not setup yet */
 		return LDB_SUCCESS;
 	}
-	attribute = dsdb_attribute_by_lDAPDisplayName(filter_ctx->schema, tree->u.equality.attr);
+	if (tree->operation == LDB_OP_EQUALITY) {
+		attribute = dsdb_attribute_by_lDAPDisplayName(filter_ctx->schema, tree->u.equality.attr);
+	} else if (tree->operation == LDB_OP_EXTENDED) {
+		attribute = dsdb_attribute_by_lDAPDisplayName(filter_ctx->schema, tree->u.extended.attr);
+	}
 	if (attribute == NULL) {
 		return LDB_SUCCESS;
 	}
@@ -377,8 +381,13 @@ static int extended_dn_filter_callback(struct ldb_parse_tree *tree, void *privat
 		return LDB_SUCCESS;
 	}
 
-	has_extended_component = (memchr(tree->u.equality.value.data, '<',
-					 tree->u.equality.value.length) != NULL);
+	if (tree->operation == LDB_OP_EQUALITY) {
+		has_extended_component = (memchr(tree->u.equality.value.data, '<',
+						 tree->u.equality.value.length) != NULL);
+	} else if (tree->operation == LDB_OP_EXTENDED) {
+		has_extended_component = (memchr(tree->u.extended.value.data, '<',
+						 tree->u.extended.value.length) != NULL);
+	}
 
 	/*
 	 * Don't turn it into an extended DN if we're talking to OpenLDAP.
@@ -391,7 +400,11 @@ static int extended_dn_filter_callback(struct ldb_parse_tree *tree, void *privat
 		return LDB_SUCCESS;
 	}
 
-	dn = ldb_dn_from_ldb_val(filter_ctx, ldb_module_get_ctx(filter_ctx->module), &tree->u.equality.value);
+	if (tree->operation == LDB_OP_EQUALITY) {
+		dn = ldb_dn_from_ldb_val(filter_ctx, ldb_module_get_ctx(filter_ctx->module), &tree->u.equality.value);
+	} else if (tree->operation == LDB_OP_EXTENDED) {
+		dn = ldb_dn_from_ldb_val(filter_ctx, ldb_module_get_ctx(filter_ctx->module), &tree->u.extended.value);
+	}
 	if (dn == NULL) {
 		/* testing against windows shows that we don't raise
 		   an error here */
@@ -467,12 +480,21 @@ static int extended_dn_filter_callback(struct ldb_parse_tree *tree, void *privat
 	}
 
 	/* replace the search expression element with the matching DN */
-	tree->u.equality.value.data = (uint8_t *)talloc_strdup(tree,
-							       ldb_dn_get_extended_linearized(tree, res->msgs[0]->dn, 1));
-	if (tree->u.equality.value.data == NULL) {
-		return ldb_oom(ldb_module_get_ctx(filter_ctx->module));
+	if (tree->operation == LDB_OP_EQUALITY) {
+		tree->u.equality.value.data =
+			(uint8_t *)talloc_strdup(tree, ldb_dn_get_extended_linearized(tree, res->msgs[0]->dn, 1));
+		if (tree->u.equality.value.data == NULL) {
+			return ldb_oom(ldb_module_get_ctx(filter_ctx->module));
+		}
+		tree->u.equality.value.length = strlen((const char *)tree->u.equality.value.data);
+	} else if (tree->operation == LDB_OP_EXTENDED) {
+		tree->u.extended.value.data =
+			(uint8_t *)talloc_strdup(tree, ldb_dn_get_extended_linearized(tree, res->msgs[0]->dn, 1));
+		if (tree->u.extended.value.data == NULL) {
+			return ldb_oom(ldb_module_get_ctx(filter_ctx->module));
+		}
+		tree->u.extended.value.length = strlen((const char *)tree->u.extended.value.data);
 	}
-	tree->u.equality.value.length = strlen((const char *)tree->u.equality.value.data);
 	talloc_free(res);
 
 	filter_ctx->matched = true;
