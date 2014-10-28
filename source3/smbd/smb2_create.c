@@ -368,6 +368,57 @@ static void smbd_smb2_request_create_done(struct tevent_req *tsubreq)
 	}
 }
 
+static NTSTATUS smbd_smb2_create_durable_lease_check(
+	const char *requested_filename, const struct files_struct *fsp,
+	const struct smb2_lease *lease_ptr)
+{
+	struct smb_filename *smb_fname = NULL;
+	NTSTATUS status;
+
+	if (lease_ptr == NULL) {
+		if (fsp->oplock_type != LEASE_OPLOCK) {
+			return NT_STATUS_OK;
+		}
+		DEBUG(10, ("Reopened file has lease, but no lease "
+			   "requested\n"));
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
+	if (fsp->oplock_type != LEASE_OPLOCK) {
+		DEBUG(10, ("Lease requested, but reopened file has no "
+			   "lease\n"));
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
+	if (!smb2_lease_key_equal(&lease_ptr->lease_key,
+				  &fsp->lease->lease.lease_key)) {
+		DEBUG(10, ("Different lease key requested than found "
+			   "in reopened file\n"));
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
+	status = filename_convert(talloc_tos(), fsp->conn, false,
+				  requested_filename, UCF_PREP_CREATEFILE,
+				  NULL, &smb_fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("filename_convert returned %s\n",
+			   nt_errstr(status)));
+		return status;
+	}
+
+	if (!strequal(fsp->fsp_name->base_name, smb_fname->base_name)) {
+		DEBUG(10, ("Lease requested for file %s, reopened file "
+			   "is named %s\n", smb_fname->base_name,
+			   fsp->fsp_name->base_name));
+		TALLOC_FREE(smb_fname);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	TALLOC_FREE(smb_fname);
+
+	return NT_STATUS_OK;
+}
+
 struct smbd_smb2_create_state {
 	struct smbd_smb2_request *smb2req;
 	struct smb_request *smb1req;
@@ -599,6 +650,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		uint32_t durable_timeout_msec = 0;
 		bool do_durable_reconnect = false;
 		uint64_t persistent_id = 0;
+		struct smb2_lease *lease_ptr = NULL;
 
 		exta = smb2_create_blob_find(&in_context_blobs,
 					     SMB2_CREATE_TAG_EXTA);
@@ -854,6 +906,17 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 					  nt_errstr(return_status)));
 
 				tevent_req_nterror(req, return_status);
+				return tevent_req_post(req, ev);
+			}
+
+			DEBUG(10, ("result->oplock_type=%u, lease_ptr==%p\n",
+				   (unsigned)result->oplock_type, lease_ptr));
+
+			status = smbd_smb2_create_durable_lease_check(
+				fname, result, lease_ptr);
+			if (!NT_STATUS_IS_OK(status)) {
+				close_file(smb1req, result, SHUTDOWN_CLOSE);
+				tevent_req_nterror(req, status);
 				return tevent_req_post(req, ev);
 			}
 
