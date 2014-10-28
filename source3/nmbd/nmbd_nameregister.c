@@ -482,17 +482,77 @@ void register_name(struct subnet_record *subrec,
 {
 	struct nmb_name nmbname;
 	nstring nname;
+	size_t converted_size;
 
 	errno = 0;
-	push_ascii_nstring(nname, name);
-        if (errno == E2BIG) {
-		unstring tname;
-		pull_ascii_nstring(tname, sizeof(tname), nname);
-		DEBUG(0,("register_name: NetBIOS name %s is too long. Truncating to %s\n",
-			name, tname));
-		make_nmb_name(&nmbname, tname, type);
-	} else {
+	converted_size = push_ascii_nstring(nname, name);
+	if (converted_size != (size_t)-1) {
+		/* Success. */
 		make_nmb_name(&nmbname, name, type);
+	} else if (errno == E2BIG) {
+		/*
+		 * Name converted to CH_DOS is too large.
+		 * try to truncate.
+		 */
+		char *converted_str_dos = NULL;
+		char *converted_str_unix = NULL;
+		bool ok;
+
+		converted_size = 0;
+
+		ok = convert_string_talloc(talloc_tos(),
+				CH_UNIX,
+				CH_DOS,
+				name,
+				strlen(name)+1,
+				&converted_str_dos,
+				&converted_size);
+		if (!ok) {
+			DEBUG(0,("register_name: NetBIOS name %s cannot be "
+				"converted. Failing to register name.\n",
+				name));
+			return;
+		}
+
+		/*
+		 * As it's now CH_DOS codepage
+		 * we truncate by writing '\0' at
+		 * MAX_NETBIOSNAME_LEN-1 and then
+		 * convert back to CH_UNIX which we
+		 * need for the make_nmb_name() call.
+		 */
+		if (converted_size >= MAX_NETBIOSNAME_LEN) {
+			converted_str_dos[MAX_NETBIOSNAME_LEN-1] = '\0';
+		}
+
+		ok = convert_string_talloc(talloc_tos(),
+				CH_DOS,
+				CH_UNIX,
+				converted_str_dos,
+				strlen(converted_str_dos)+1,
+				&converted_str_unix,
+				&converted_size);
+		if (!ok) {
+			DEBUG(0,("register_name: NetBIOS name %s cannot be "
+				"converted back to CH_UNIX. "
+				"Failing to register name.\n",
+				converted_str_dos));
+			TALLOC_FREE(converted_str_dos);
+			return;
+		}
+
+		make_nmb_name(&nmbname, converted_str_unix, type);
+
+		TALLOC_FREE(converted_str_dos);
+		TALLOC_FREE(converted_str_unix);
+	} else {
+		/*
+		 * Generic conversion error. Fail to register.
+		 */
+		DEBUG(0,("register_name: NetBIOS name %s cannot be "
+			"converted (%s). Failing to register name.\n",
+			name, strerror(errno)));
+		return;
 	}
 
 	/* Always set the NB_ACTIVE flag on the name we are
