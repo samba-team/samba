@@ -626,6 +626,13 @@ void msg_file_was_renamed(struct messaging_context *msg,
 			  DATA_BLOB *data);
 NTSTATUS open_streams_for_delete(connection_struct *conn,
 				 const char *fname);
+int find_share_mode_lease(struct share_mode_data *d,
+			  const struct GUID *client_guid,
+			  const struct smb2_lease_key *key);
+struct share_mode_lease;
+struct fsp_lease *find_fsp_lease(files_struct *new_fsp,
+				 const struct smb2_lease_key *key,
+				 const struct share_mode_lease *l);
 NTSTATUS create_file_default(connection_struct *conn,
 			     struct smb_request *req,
 			     uint16_t root_dir_fid,

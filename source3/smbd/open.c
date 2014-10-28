@@ -35,6 +35,7 @@
 #include "serverid.h"
 #include "messages.h"
 #include "source3/lib/dbwrap/dbwrap_watch.h"
+#include "locking/leases_db.h"
 
 extern const struct generic_mapping file_generic_mapping;
 
@@ -1489,6 +1490,213 @@ static bool file_has_brlocks(files_struct *fsp)
 
 	return (brl_num_locks(br_lck) > 0);
 }
+
+int find_share_mode_lease(struct share_mode_data *d,
+			  const struct GUID *client_guid,
+			  const struct smb2_lease_key *key)
+{
+	uint32_t i;
+
+	for (i=0; i<d->num_leases; i++) {
+		struct share_mode_lease *l = &d->leases[i];
+
+		if (smb2_lease_equal(client_guid,
+				     key,
+				     &l->client_guid,
+				     &l->lease_key)) {
+			return i;
+		}
+	}
+
+	return -1;
+}
+
+struct fsp_lease *find_fsp_lease(struct files_struct *new_fsp,
+				 const struct smb2_lease_key *key,
+				 const struct share_mode_lease *l)
+{
+	struct files_struct *fsp;
+
+	/*
+	 * TODO: Measure how expensive this loop is with thousands of open
+	 * handles...
+	 */
+
+	for (fsp = file_find_di_first(new_fsp->conn->sconn, new_fsp->file_id);
+	     fsp != NULL;
+	     fsp = file_find_di_next(fsp)) {
+
+		if (fsp == new_fsp) {
+			continue;
+		}
+		if (fsp->oplock_type != LEASE_OPLOCK) {
+			continue;
+		}
+		if (smb2_lease_key_equal(&fsp->lease->lease.lease_key, key)) {
+			fsp->lease->ref_count += 1;
+			return fsp->lease;
+		}
+	}
+
+	/* Not found - must be leased in another smbd. */
+	new_fsp->lease = talloc_zero(new_fsp->conn->sconn, struct fsp_lease);
+	if (new_fsp->lease == NULL) {
+		return NULL;
+	}
+	new_fsp->lease->ref_count = 1;
+	new_fsp->lease->sconn = new_fsp->conn->sconn;
+	new_fsp->lease->lease.lease_key = *key;
+	new_fsp->lease->lease.lease_state = l->current_state;
+	/*
+	 * We internally treat all leases as V2 and update
+	 * the epoch, but when sending breaks it matters if
+	 * the requesting lease was v1 or v2.
+	 */
+	new_fsp->lease->lease.lease_version = l->lease_version;
+	new_fsp->lease->lease.lease_epoch = l->epoch;
+	return new_fsp->lease;
+}
+
+#if 0
+static NTSTATUS grant_fsp_lease(struct files_struct *fsp,
+				struct share_mode_lock *lck,
+				const struct smb2_lease *lease,
+				uint32_t *p_lease_idx,
+				uint32_t granted)
+{
+	struct share_mode_data *d = lck->data;
+	const struct GUID *client_guid = fsp_client_guid(fsp);
+	struct share_mode_lease *tmp;
+	NTSTATUS status;
+	int idx;
+
+	idx = find_share_mode_lease(d, client_guid, &lease->lease_key);
+
+	if (idx != -1) {
+		struct share_mode_lease *l = &d->leases[idx];
+		bool do_upgrade;
+		uint32_t existing, requested;
+
+		fsp->lease = find_fsp_lease(fsp, &lease->lease_key, l);
+		if (fsp->lease == NULL) {
+			DEBUG(1, ("Did not find existing lease for file %s\n",
+				  fsp_str_dbg(fsp)));
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		*p_lease_idx = idx;
+
+		/*
+		 * Upgrade only if the requested lease is a strict upgrade.
+		 */
+		existing = l->current_state;
+		requested = lease->lease_state;
+
+		/*
+		 * Tricky: This test makes sure that "requested" is a
+		 * strict bitwise superset of "existing".
+		 */
+		do_upgrade = ((existing & requested) == existing);
+
+		/*
+		 * Upgrade only if there's a change.
+		 */
+		do_upgrade &= (granted != existing);
+
+		/*
+		 * Upgrade only if other leases don't prevent what was asked
+		 * for.
+		 */
+		do_upgrade &= (granted == requested);
+
+		/*
+		 * only upgrade if we are not in breaking state
+		 */
+		do_upgrade &= !l->breaking;
+
+		DEBUG(10, ("existing=%"PRIu32", requested=%"PRIu32", "
+			   "granted=%"PRIu32", do_upgrade=%d\n",
+			   existing, requested, granted, (int)do_upgrade));
+
+		if (do_upgrade) {
+			l->current_state = granted;
+			l->epoch += 1;
+		}
+
+		/* Ensure we're in sync with current lease state. */
+		fsp_lease_update(lck, fsp_client_guid(fsp), fsp->lease);
+		return NT_STATUS_OK;
+	}
+
+	/*
+	 * Create new lease
+	 */
+
+	tmp = talloc_realloc(d, d->leases, struct share_mode_lease,
+			     d->num_leases+1);
+	if (tmp == NULL) {
+		/*
+		 * See [MS-SMB2]
+		 */
+		return NT_STATUS_INSUFFICIENT_RESOURCES;
+	}
+	d->leases = tmp;
+
+	fsp->lease = talloc_zero(fsp->conn->sconn, struct fsp_lease);
+	if (fsp->lease == NULL) {
+		return NT_STATUS_INSUFFICIENT_RESOURCES;
+	}
+	fsp->lease->ref_count = 1;
+	fsp->lease->sconn = fsp->conn->sconn;
+	fsp->lease->lease.lease_version = lease->lease_version;
+	fsp->lease->lease.lease_key = lease->lease_key;
+	fsp->lease->lease.lease_state = granted;
+	fsp->lease->lease.lease_epoch = lease->lease_epoch + 1;
+
+	*p_lease_idx = d->num_leases;
+
+	d->leases[d->num_leases] = (struct share_mode_lease) {
+		.client_guid = *client_guid,
+		.lease_key = fsp->lease->lease.lease_key,
+		.current_state = fsp->lease->lease.lease_state,
+		.lease_version = fsp->lease->lease.lease_version,
+		.epoch = fsp->lease->lease.lease_epoch,
+	};
+
+	status = leases_db_add(client_guid, &lease->lease_key,
+			       &fsp->file_id, fsp->fsp_name->base_name,
+			       fsp->fsp_name->stream_name);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("%s: leases_db_add failed: %s\n", __func__,
+			   nt_errstr(status)));
+		TALLOC_FREE(fsp->lease);
+		return NT_STATUS_INSUFFICIENT_RESOURCES;
+	}
+
+	d->num_leases += 1;
+	d->modified = true;
+
+	return NT_STATUS_OK;
+}
+
+static bool is_same_lease(const files_struct *fsp,
+			  const struct share_mode_data *d,
+			  const struct share_mode_entry *e,
+			  const struct smb2_lease *lease)
+{
+	if (e->op_type != LEASE_OPLOCK) {
+		return false;
+	}
+	if (lease == NULL) {
+		return false;
+	}
+
+	return smb2_lease_equal(fsp_client_guid(fsp),
+				&lease->lease_key,
+				&d->leases[e->lease_idx].client_guid,
+				&d->leases[e->lease_idx].lease_key);
+}
+#endif
 
 static NTSTATUS grant_fsp_oplock_type(struct smb_request *req,
 				      struct files_struct *fsp,
