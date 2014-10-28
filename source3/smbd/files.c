@@ -387,6 +387,24 @@ files_struct *file_find_di_next(files_struct *start_fsp)
 	return NULL;
 }
 
+struct files_struct *file_find_one_fsp_from_lease_key(
+	struct smbd_server_connection *sconn,
+	const struct smb2_lease_key *lease_key)
+{
+	struct files_struct *fsp;
+
+	for (fsp = sconn->files; fsp; fsp=fsp->next) {
+		if ((fsp->lease != NULL) &&
+		    (fsp->lease->lease.lease_key.data[0] ==
+		     lease_key->data[0]) &&
+		    (fsp->lease->lease.lease_key.data[1] ==
+		     lease_key->data[1])) {
+			return fsp;
+		}
+	}
+	return NULL;
+}
+
 /****************************************************************************
  Find any fsp open with a pathname below that of an already open path.
 ****************************************************************************/
