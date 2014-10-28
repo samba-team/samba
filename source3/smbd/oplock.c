@@ -148,6 +148,36 @@ static void downgrade_file_oplock(files_struct *fsp)
 	TALLOC_FREE(fsp->oplock_timeout);
 }
 
+uint32_t map_oplock_to_lease_type(uint16_t op_type)
+{
+	uint32_t ret;
+
+	switch(op_type) {
+	case BATCH_OPLOCK:
+	case BATCH_OPLOCK|EXCLUSIVE_OPLOCK:
+		ret = SMB2_LEASE_READ|SMB2_LEASE_WRITE|SMB2_LEASE_HANDLE;
+		break;
+	case EXCLUSIVE_OPLOCK:
+		ret = SMB2_LEASE_READ|SMB2_LEASE_WRITE;
+		break;
+	case LEVEL_II_OPLOCK:
+		ret = SMB2_LEASE_READ;
+		break;
+	default:
+		ret = SMB2_LEASE_NONE;
+		break;
+	}
+	return ret;
+}
+
+uint32_t get_lease_type(struct share_mode_data *d, struct share_mode_entry *e)
+{
+	if (e->op_type == LEASE_OPLOCK) {
+		return d->leases[e->lease_idx].current_state;
+	}
+	return map_oplock_to_lease_type(e->op_type);
+}
+
 bool update_num_read_oplocks(files_struct *fsp, struct share_mode_lock *lck)
 {
 	struct share_mode_data *d = lck->data;
