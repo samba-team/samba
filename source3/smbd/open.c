@@ -4034,6 +4034,179 @@ static NTSTATUS inherit_new_acl(files_struct *fsp)
 }
 
 /*
+ * If we already have a lease, it must match the new file id. [MS-SMB2]
+ * 3.3.5.9.8 speaks about INVALID_PARAMETER if an already used lease key is
+ * used for a different file name.
+ */
+
+struct lease_fname_match_state {
+	/* Input parameters. */
+	const struct smb_filename *fname;
+	bool file_existed;
+	struct file_id id;
+	/* Return parameters. */
+	uint32_t num_file_ids;
+	struct file_id *ids;
+	NTSTATUS match_status;
+};
+
+static void lease_fname_match_parser(
+	uint32_t num_file_ids,
+	struct file_id *ids, const char *filename, const char *stream_name,
+	void *private_data)
+{
+	struct lease_fname_match_state *state =
+		(struct lease_fname_match_state *)private_data;
+
+	if (!strequal(filename, state->fname->base_name) ||
+	    !strequal(stream_name, state->fname->stream_name))
+	{
+		/* Names don't match lease key. */
+		state->match_status = NT_STATUS_INVALID_PARAMETER;
+		return;
+	}
+
+	if (state->file_existed &&
+	    num_file_ids == 1 &&
+	    file_id_equal(&ids[0],&state->id))
+	{
+		/* Common case - non-dynamic share. We're ok.. */
+		state->match_status = NT_STATUS_OK;
+		return;
+	}
+
+	/*
+	 * More than one file id, or not equal, or new file
+	 * being created and there's already an existing lease
+	 * on this (client_guid, lease id) pair.
+	 * Don't allow leases.
+	 */
+
+	state->match_status = NT_STATUS_OPLOCK_NOT_GRANTED;
+	state->num_file_ids = num_file_ids;
+	state->ids = talloc_memdup(talloc_tos(),
+				ids,
+				num_file_ids * sizeof(struct file_id));
+	if (state->ids == NULL) {
+		state->match_status = NT_STATUS_NO_MEMORY;
+	}
+}
+
+static NTSTATUS lease_match(connection_struct *conn,
+			    struct smb_request *req,
+			    struct smb2_lease_key *lease_key,
+			    const struct smb_filename *fname,
+			    uint16_t *p_version,
+			    uint16_t *p_epoch)
+{
+	struct smbd_server_connection *sconn = req->sconn;
+	struct lease_fname_match_state state = {
+		.fname = fname,
+		.match_status = NT_STATUS_OK
+	};
+	uint32_t i;
+	NTSTATUS status;
+
+	state.file_existed = VALID_STAT(fname->st);
+	if (state.file_existed) {
+		state.id = vfs_file_id_from_sbuf(conn, &fname->st);
+	} else {
+		memset(&state.id, '\0', sizeof(state.id));
+	}
+
+	status = leases_db_parse(&sconn->client->connections->smb2.client.guid,
+				 lease_key, lease_fname_match_parser, &state);
+	if (!NT_STATUS_IS_OK(status)) {
+		/*
+		 * Not found or error means okay: We can make the lease pass
+		 */
+		return NT_STATUS_OK;
+	}
+	if (!NT_STATUS_EQUAL(state.match_status, NT_STATUS_OPLOCK_NOT_GRANTED)) {
+		/*
+		 * Anything but NT_STATUS_OPLOCK_NOT_GRANTED, let the caller
+		 * deal with it.
+		 */
+		return state.match_status;
+	}
+
+	/* We have to break all existing leases. */
+	for (i = 0; i < state.num_file_ids; i++) {
+		struct share_mode_lock *lck;
+		struct share_mode_data *d;
+		uint32_t j;
+
+		if (file_id_equal(&state.ids[i], &state.id)) {
+			/* Don't need to break our own file. */
+			continue;
+		}
+
+		lck = get_existing_share_mode_lock(talloc_tos(), state.ids[i]);
+		if (lck == NULL) {
+			/* Race condition - file already closed. */
+			continue;
+		}
+		d = lck->data;
+		for (j=0; j<d->num_share_modes; j++) {
+			struct share_mode_entry *e = &d->share_modes[j];
+			uint32_t e_lease_type = get_lease_type(d, e);
+			struct share_mode_lease *l = NULL;
+
+			if (share_mode_stale_pid(d, j)) {
+				continue;
+			}
+
+			if (e->op_type == LEASE_OPLOCK) {
+				l = &lck->data->leases[e->lease_idx];
+				if (!smb2_lease_key_equal(&l->lease_key,
+							  lease_key)) {
+					continue;
+				}
+				*p_epoch = l->epoch;
+				*p_version = l->lease_version;
+			}
+
+			if (e_lease_type == SMB2_LEASE_NONE) {
+				continue;
+			}
+
+			send_break_message(conn->sconn->msg_ctx, e,
+					   SMB2_LEASE_NONE);
+
+			/*
+			 * Windows 7 and 8 lease clients
+			 * are broken in that they will not
+			 * respond to lease break requests
+			 * whilst waiting for an outstanding
+			 * open request on that lease handle
+			 * on the same TCP connection, due
+			 * to holding an internal inode lock.
+			 *
+			 * This means we can't reschedule
+			 * ourselves here, but must return
+			 * from the create.
+			 *
+			 * Work around:
+			 *
+			 * Send the breaks and then return
+			 * SMB2_LEASE_NONE in the lease handle
+			 * to cause them to acknowledge the
+			 * lease break. Consulatation with
+			 * Microsoft engineering confirmed
+			 * this approach is safe.
+			 */
+
+		}
+		TALLOC_FREE(lck);
+	}
+	/*
+	 * Ensure we don't grant anything more so we
+	 * never upgrade.
+	 */
+	return NT_STATUS_OPLOCK_NOT_GRANTED;
+}
+
+/*
  * Wrapper around open_file_ntcreate and open_directory
  */
 
@@ -4087,6 +4260,25 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 
 	if (req == NULL) {
 		oplock_request |= INTERNAL_OPEN_ONLY;
+	}
+
+	if (lease != NULL) {
+		uint16_t epoch = lease->lease_epoch;
+		uint16_t version = lease->lease_version;
+		status = lease_match(conn,
+				req,
+				&lease->lease_key,
+				smb_fname,
+				&version,
+				&epoch);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_OPLOCK_NOT_GRANTED)) {
+			/* Dynamic share file. No leases and update epoch... */
+			lease->lease_state = SMB2_LEASE_NONE;
+			lease->lease_epoch = epoch;
+			lease->lease_version = version;
+		} else if (!NT_STATUS_IS_OK(status)) {
+			goto fail;
+		}
 	}
 
 	if ((conn->fs_capabilities & FILE_NAMED_STREAMS)
