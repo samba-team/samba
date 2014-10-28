@@ -175,6 +175,12 @@ bool mark_share_mode_disconnected(struct share_mode_lock *lck,
 				  struct files_struct *fsp);
 bool remove_share_oplock(struct share_mode_lock *lck, files_struct *fsp);
 bool downgrade_share_oplock(struct share_mode_lock *lck, files_struct *fsp);
+struct share_mode_lease;
+NTSTATUS downgrade_share_lease(struct smbd_server_connection *sconn,
+			       struct share_mode_lock *lck,
+			       const struct smb2_lease_key *key,
+			       uint32_t new_lease_state,
+			       struct share_mode_lease **_l);
 bool get_delete_on_close_token(struct share_mode_lock *lck,
 				uint32_t name_hash,
 				const struct security_token **pp_nt_tok,

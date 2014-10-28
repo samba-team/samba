@@ -944,6 +944,86 @@ bool downgrade_share_oplock(struct share_mode_lock *lck, files_struct *fsp)
 	return True;
 }
 
+NTSTATUS downgrade_share_lease(struct smbd_server_connection *sconn,
+			       struct share_mode_lock *lck,
+			       const struct smb2_lease_key *key,
+			       uint32_t new_lease_state,
+			       struct share_mode_lease **_l)
+{
+	struct share_mode_data *d = lck->data;
+	struct share_mode_lease *l;
+	uint32_t i;
+
+	*_l = NULL;
+
+	for (i=0; i<d->num_leases; i++) {
+		if (smb2_lease_equal(&sconn->client->connections->smb2.client.guid,
+				     key,
+				     &d->leases[i].client_guid,
+				     &d->leases[i].lease_key)) {
+			break;
+		}
+	}
+	if (i == d->num_leases) {
+		DEBUG(10, ("lease not found\n"));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	l = &d->leases[i];
+
+	if (!l->breaking) {
+		DEBUG(1, ("Attempt to break from %d to %d - but we're not in breaking state\n",
+			   (int)l->current_state, (int)new_lease_state));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	/*
+	 * Can't upgrade anything: l->breaking_to_requested (and l->current_state)
+	 * must be a strict bitwise superset of new_lease_state
+	 */
+	if ((new_lease_state & l->breaking_to_requested) != new_lease_state) {
+		DEBUG(1, ("Attempt to upgrade from %d to %d - expected %d\n",
+			   (int)l->current_state, (int)new_lease_state,
+			   (int)l->breaking_to_requested));
+		return NT_STATUS_REQUEST_NOT_ACCEPTED;
+	}
+
+	if (l->current_state != new_lease_state) {
+		l->current_state = new_lease_state;
+		d->modified = true;
+	}
+
+	if ((new_lease_state & ~l->breaking_to_required) != 0) {
+		DEBUG(5, ("lease state %d not fully broken from %d to %d\n",
+			   (int)new_lease_state,
+			   (int)l->current_state,
+			   (int)l->breaking_to_required));
+		l->breaking_to_requested = l->breaking_to_required;
+		if (l->current_state & (~SMB2_LEASE_READ)) {
+			/*
+			 * Here we break in steps, as windows does
+			 * see the breaking3 and v2_breaking3 tests.
+			 */
+			l->breaking_to_requested |= SMB2_LEASE_READ;
+		}
+		d->modified = true;
+		*_l = l;
+		return NT_STATUS_OPLOCK_BREAK_IN_PROGRESS;
+	}
+
+	DEBUG(10, ("breaking from %d to %d - expected %d\n",
+		   (int)l->current_state, (int)new_lease_state,
+		   (int)l->breaking_to_requested));
+
+	l->breaking_to_requested = 0;
+	l->breaking_to_required = 0;
+	l->breaking = false;
+
+	d->modified = true;
+
+	return NT_STATUS_OK;
+}
+
 /****************************************************************************
  Adds a delete on close token.
 ****************************************************************************/
