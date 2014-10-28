@@ -490,6 +490,14 @@ void fsp_free(files_struct *fsp)
 		fsp->fh->ref_count--;
 	}
 
+	if (fsp->lease != NULL) {
+		if (fsp->lease->ref_count == 1) {
+			TALLOC_FREE(fsp->lease);
+		} else {
+			fsp->lease->ref_count--;
+		}
+	}
+
 	fsp->conn->num_files_open--;
 
 	/* this is paranoia, just in case someone tries to reuse the

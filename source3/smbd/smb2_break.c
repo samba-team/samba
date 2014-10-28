@@ -24,6 +24,10 @@
 #include "smbd/globals.h"
 #include "../libcli/smb/smb_common.h"
 #include "../lib/util/tevent_ntstatus.h"
+#include "locking/leases_db.h"
+
+static NTSTATUS smbd_smb2_request_process_lease_break(
+	struct smbd_smb2_request *req);
 
 static struct tevent_req *smbd_smb2_oplock_break_send(TALLOC_CTX *mem_ctx,
 						      struct tevent_context *ev,
@@ -45,6 +49,12 @@ NTSTATUS smbd_smb2_request_process_break(struct smbd_smb2_request *req)
 	struct tevent_req *subreq;
 
 	status = smbd_smb2_request_verify_sizes(req, 0x18);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER)) {
+		/*
+		 * Retry as a lease break
+		 */
+		return smbd_smb2_request_process_lease_break(req);
+	}
 	if (!NT_STATUS_IS_OK(status)) {
 		return smbd_smb2_request_error(req, status);
 	}
@@ -222,16 +232,213 @@ static NTSTATUS smbd_smb2_oplock_break_recv(struct tevent_req *req,
 	return NT_STATUS_OK;
 }
 
+static void smbd_smb2_request_lease_break_done(struct tevent_req *subreq);
+
+static struct tevent_req *smbd_smb2_lease_break_send(
+	TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+	struct smbd_smb2_request *smb2_req, struct smb2_lease_key in_lease_key,
+	uint32_t in_lease_state);
+static NTSTATUS smbd_smb2_lease_break_recv(struct tevent_req *req,
+					   uint32_t *out_lease_state);
+
+
+static NTSTATUS smbd_smb2_request_process_lease_break(
+	struct smbd_smb2_request *req)
+{
+	NTSTATUS status;
+	const uint8_t *inbody;
+	struct smb2_lease_key in_lease_key;
+	uint32_t in_lease_state;
+	struct tevent_req *subreq;
+
+	status = smbd_smb2_request_verify_sizes(req, 0x24);
+	if (!NT_STATUS_IS_OK(status)) {
+		return smbd_smb2_request_error(req, status);
+	}
+
+	inbody = SMBD_SMB2_IN_BODY_PTR(req);
+
+	in_lease_key.data[0] = BVAL(inbody, 8);
+	in_lease_key.data[1] = BVAL(inbody, 16);
+	in_lease_state = IVAL(inbody, 24);
+
+	subreq = smbd_smb2_lease_break_send(req, req->sconn->ev_ctx, req,
+					    in_lease_key, in_lease_state);
+	if (subreq == NULL) {
+		return smbd_smb2_request_error(req, NT_STATUS_NO_MEMORY);
+	}
+	tevent_req_set_callback(subreq, smbd_smb2_request_lease_break_done, req);
+
+	return smbd_smb2_request_pending_queue(req, subreq, 500);
+}
+
+static void smbd_smb2_request_lease_break_done(struct tevent_req *subreq)
+{
+	struct smbd_smb2_request *req = tevent_req_callback_data(
+		subreq, struct smbd_smb2_request);
+	const uint8_t *inbody;
+	struct smb2_lease_key in_lease_key;
+	uint32_t out_lease_state = 0;
+	DATA_BLOB outbody;
+	NTSTATUS status;
+	NTSTATUS error; /* transport error */
+
+	status = smbd_smb2_lease_break_recv(subreq, &out_lease_state);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		error = smbd_smb2_request_error(req, status);
+		if (!NT_STATUS_IS_OK(error)) {
+			smbd_server_connection_terminate(req->xconn,
+							 nt_errstr(error));
+			return;
+		}
+		return;
+	}
+
+	inbody = SMBD_SMB2_IN_BODY_PTR(req);
+
+	in_lease_key.data[0] = BVAL(inbody, 8);
+	in_lease_key.data[1] = BVAL(inbody, 16);
+
+	outbody = smbd_smb2_generate_outbody(req, 0x24);
+	if (outbody.data == NULL) {
+		error = smbd_smb2_request_error(req, NT_STATUS_NO_MEMORY);
+		if (!NT_STATUS_IS_OK(error)) {
+			smbd_server_connection_terminate(req->xconn,
+							 nt_errstr(error));
+			return;
+		}
+		return;
+	}
+
+	SSVAL(outbody.data, 0x00, 0x24);	/* struct size */
+	SSVAL(outbody.data, 0x02, 0);		/* reserved */
+	SIVAL(outbody.data, 0x04, 0);		/* flags, must be 0 */
+	SBVAL(outbody.data, 0x08, in_lease_key.data[0]);
+	SBVAL(outbody.data, 0x10, in_lease_key.data[1]);
+	SIVAL(outbody.data, 0x18, out_lease_state);
+	SBVAL(outbody.data, 0x1c, 0);           /* leaseduration, must be 0 */
+
+	error = smbd_smb2_request_done(req, outbody, NULL);
+	if (!NT_STATUS_IS_OK(error)) {
+		smbd_server_connection_terminate(req->xconn,
+						 nt_errstr(error));
+		return;
+	}
+}
+
+struct smbd_smb2_lease_break_state {
+	uint32_t lease_state;
+};
+
+struct lease_lookup_state {
+	TALLOC_CTX *mem_ctx;
+	/* Return parameters. */
+	uint32_t num_file_ids;
+	struct file_id *ids;
+	NTSTATUS status;
+};
+
+static void lease_parser(
+	uint32_t num_file_ids,
+	struct file_id *ids, const char *filename, const char *stream_name,
+	void *private_data)
+{
+	struct lease_lookup_state *lls =
+		(struct lease_lookup_state *)private_data;
+
+	lls->status = NT_STATUS_OK;
+	lls->num_file_ids = num_file_ids;
+	lls->ids = talloc_memdup(lls->mem_ctx,
+				ids,
+				num_file_ids * sizeof(struct file_id));
+	if (lls->ids == NULL) {
+		lls->status = NT_STATUS_NO_MEMORY;
+	}
+}
+
+static struct tevent_req *smbd_smb2_lease_break_send(
+	TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+	struct smbd_smb2_request *smb2_req, struct smb2_lease_key in_lease_key,
+	uint32_t in_lease_state)
+{
+	struct tevent_req *req;
+	struct smbd_smb2_lease_break_state *state;
+	struct lease_lookup_state lls = {.mem_ctx = mem_ctx};
+	NTSTATUS status;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct smbd_smb2_lease_break_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->lease_state = in_lease_state;
+
+	/* Find any file ids with this lease key. */
+	status = leases_db_parse(&smb2_req->xconn->smb2.client.guid,
+				 &in_lease_key,
+				 lease_parser,
+				 &lls);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+			status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+			DEBUG(10, ("No record for lease key found\n"));
+		}
+	} else if (!NT_STATUS_IS_OK(lls.status)) {
+		status = lls.status;
+	} else if (lls.num_file_ids == 0) {
+		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return tevent_req_post(req, ev);
+	}
+
+	status = downgrade_lease(smb2_req->xconn,
+				lls.num_file_ids,
+				lls.ids,
+				&in_lease_key,
+				in_lease_state);
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_OPLOCK_BREAK_IN_PROGRESS)) {
+		tevent_req_done(req);
+		return tevent_req_post(req, ev);
+	}
+	if (tevent_req_nterror(req, status)) {
+		DEBUG(10, ("downgrade_lease returned %s\n",
+			   nt_errstr(status)));
+		return tevent_req_post(req, ev);
+	}
+
+	tevent_req_done(req);
+	return tevent_req_post(req, ev);
+}
+
+static NTSTATUS smbd_smb2_lease_break_recv(struct tevent_req *req,
+					   uint32_t *out_lease_state)
+{
+	struct smbd_smb2_lease_break_state *state = tevent_req_data(
+		req, struct smbd_smb2_lease_break_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
+	*out_lease_state = state->lease_state;
+	return NT_STATUS_OK;
+}
+
 /*********************************************************
  Create and send an asynchronous
  SMB2 OPLOCK_BREAK_NOTIFICATION.
 *********************************************************/
 
-void send_break_message_smb2(files_struct *fsp, int level)
+void send_break_message_smb2(files_struct *fsp,
+			     uint32_t break_from,
+			     uint32_t break_to)
 {
-	uint8_t smb2_oplock_level = (level == OPLOCKLEVEL_II) ?
-				SMB2_OPLOCK_LEVEL_II :
-				SMB2_OPLOCK_LEVEL_NONE;
 	NTSTATUS status;
 	struct smbXsrv_connection *xconn = NULL;
 	struct smbXsrv_session *session = NULL;
@@ -257,7 +464,7 @@ void send_break_message_smb2(files_struct *fsp, int level)
 			"for file %s, %s, smb2 level %u session %llu not found\n",
 			fsp_str_dbg(fsp),
 			fsp_fnum_dbg(fsp),
-			(unsigned int)smb2_oplock_level,
+			(unsigned int)break_to,
 			(unsigned long long)fsp->vuid));
 		return;
 	}
@@ -266,13 +473,35 @@ void send_break_message_smb2(files_struct *fsp, int level)
 		"for file %s, %s, smb2 level %u\n",
 		fsp_str_dbg(fsp),
 		fsp_fnum_dbg(fsp),
-		(unsigned int)smb2_oplock_level ));
+		(unsigned int)break_to ));
 
-	status = smbd_smb2_send_oplock_break(xconn,
-					     session,
-					     fsp->conn->tcon,
-					     fsp->op,
-					     smb2_oplock_level);
+	if (fsp->oplock_type == LEASE_OPLOCK) {
+		uint32_t break_flags = 0;
+		uint16_t new_epoch;
+
+		if (fsp->lease->lease.lease_state != SMB2_LEASE_NONE) {
+			break_flags = SMB2_NOTIFY_BREAK_LEASE_FLAG_ACK_REQUIRED;
+		}
+
+		if (fsp->lease->lease.lease_version > 1) {
+			new_epoch = fsp->lease->lease.lease_epoch;
+		} else {
+			new_epoch = 0;
+		}
+
+		status = smbd_smb2_send_lease_break(xconn, new_epoch, break_flags,
+						    &fsp->lease->lease.lease_key,
+						    break_from, break_to);
+	} else {
+		uint8_t smb2_oplock_level;
+		smb2_oplock_level = (break_to & SMB2_LEASE_READ) ?
+			SMB2_OPLOCK_LEVEL_II : SMB2_OPLOCK_LEVEL_NONE;
+		status = smbd_smb2_send_oplock_break(xconn,
+						     session,
+						     fsp->conn->tcon,
+						     fsp->op,
+						     smb2_oplock_level);
+	}
 	if (!NT_STATUS_IS_OK(status)) {
 		smbd_server_connection_terminate(xconn,
 						 nt_errstr(status));

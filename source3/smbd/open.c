@@ -1258,6 +1258,10 @@ static NTSTATUS send_break_message(struct messaging_context *msg_ctx,
 	share_mode_entry_to_message(msg, exclusive);
 
 	/* Overload entry->op_type */
+	/*
+	 * This is a cut from uint32 to uint16, but so far only the lower 3
+	 * bits (LEASE_WRITE/HANDLE/READ are used anyway.
+	 */
 	SSVAL(msg,OP_BREAK_MSG_OP_TYPE_OFFSET, break_to);
 
 	status = messaging_send_buf(msg_ctx, exclusive->pid,
@@ -1377,56 +1381,19 @@ static bool validate_oplock_types(struct share_mode_lock *lck)
 
 static bool delay_for_oplock(files_struct *fsp,
 			     int oplock_request,
+			     const struct smb2_lease *lease,
 			     struct share_mode_lock *lck,
 			     bool have_sharing_violation,
-			     uint32_t create_disposition)
+			     uint32_t create_disposition,
+			     bool first_open_attempt)
 {
 	struct share_mode_data *d = lck->data;
-	struct share_mode_entry *entry;
-	uint32_t num_non_stat_opens = 0;
 	uint32_t i;
-	uint16_t break_to;
+	bool delay = false;
+	bool will_overwrite;
 
-	if ((oplock_request & INTERNAL_OPEN_ONLY) || is_stat_open(fsp->access_mask)) {
-		return false;
-	}
-	for (i=0; i<d->num_share_modes; i++) {
-		struct share_mode_entry *e = &d->share_modes[i];
-		if (e->op_type == NO_OPLOCK && is_stat_open(e->access_mask)) {
-			continue;
-		}
-		num_non_stat_opens += 1;
-
-		/*
-		 * We found the a non-stat open, which in the exclusive/batch
-		 * case will be inspected further down.
-		 */
-		entry = e;
-	}
-	if (num_non_stat_opens == 0) {
-		/*
-		 * Nothing to wait for around
-		 */
-		return false;
-	}
-	if (num_non_stat_opens != 1) {
-		/*
-		 * More than one open around. There can't be any exclusive or
-		 * batch left, this is all level2.
-		 */
-		return false;
-	}
-
-	if (server_id_is_disconnected(&entry->pid)) {
-		/*
-		 * TODO: clean up.
-		 * This could be achieved by sending a break message
-		 * to ourselves. Special considerations for files
-		 * with delete_on_close flag set!
-		 *
-		 * For now we keep it simple and do not
-		 * allow delete on close for durable handles.
-		 */
+	if ((oplock_request & INTERNAL_OPEN_ONLY) ||
+	    is_stat_open(fsp->access_mask)) {
 		return false;
 	}
 
@@ -1434,50 +1401,98 @@ static bool delay_for_oplock(files_struct *fsp,
 	case FILE_SUPERSEDE:
 	case FILE_OVERWRITE:
 	case FILE_OVERWRITE_IF:
-		break_to = NO_OPLOCK;
+		will_overwrite = true;
 		break;
 	default:
-		break_to = LEVEL_II_OPLOCK;
+		will_overwrite = false;
 		break;
 	}
 
-	if (have_sharing_violation && (entry->op_type & BATCH_OPLOCK)) {
-		if (share_mode_stale_pid(d, 0)) {
-			return false;
+	for (i=0; i<d->num_share_modes; i++) {
+		struct share_mode_entry *e = &d->share_modes[i];
+		struct share_mode_lease *l = NULL;
+		uint32_t e_lease_type = get_lease_type(d, e);
+		uint32_t break_to;
+		uint32_t delay_mask = 0;
+
+		if (e->op_type == LEASE_OPLOCK) {
+			l = &d->leases[e->lease_idx];
 		}
-		send_break_message(fsp->conn->sconn->msg_ctx, entry, break_to);
-		return true;
-	}
-	if (have_sharing_violation) {
-		/*
-		 * Non-batch exclusive is not broken if we have a sharing
-		 * violation
-		 */
-		return false;
-	}
-	if (LEVEL_II_OPLOCK_TYPE(entry->op_type) &&
-	    (break_to == NO_OPLOCK)) {
-		if (share_mode_stale_pid(d, 0)) {
-			return false;
+
+		if (have_sharing_violation) {
+			delay_mask = SMB2_LEASE_HANDLE;
+		} else {
+			delay_mask = SMB2_LEASE_WRITE;
 		}
-		DEBUG(10, ("Asynchronously breaking level2 oplock for "
-			   "create_disposition=%u\n",
-			   (unsigned)create_disposition));
-		send_break_message(fsp->conn->sconn->msg_ctx, entry, break_to);
-		return false;
-	}
-	if (!EXCLUSIVE_OPLOCK_TYPE(entry->op_type)) {
-		/*
-		 * No break for NO_OPLOCK or LEVEL2_OPLOCK oplocks
-		 */
-		return false;
-	}
-	if (share_mode_stale_pid(d, 0)) {
-		return false;
+
+		break_to = e_lease_type & ~delay_mask;
+
+		if (will_overwrite) {
+			/*
+			 * we'll decide about SMB2_LEASE_READ later.
+			 *
+			 * Maybe the break will be defered
+			 */
+			break_to &= ~SMB2_LEASE_HANDLE;
+		}
+
+		DEBUG(10, ("entry %u: e_lease_type %u, will_overwrite: %u\n",
+			   (unsigned)i, (unsigned)e_lease_type,
+			   (unsigned)will_overwrite));
+
+		if (lease != NULL && l != NULL) {
+			bool ign;
+
+			ign = smb2_lease_equal(fsp_client_guid(fsp),
+					       &lease->lease_key,
+					       &l->client_guid,
+					       &l->lease_key);
+			if (ign) {
+				continue;
+			}
+		}
+
+		if ((e_lease_type & ~break_to) == 0) {
+			if (l != NULL && l->breaking) {
+				delay = true;
+			}
+			continue;
+		}
+
+		if (share_mode_stale_pid(d, i)) {
+			continue;
+		}
+
+		if (will_overwrite) {
+			/*
+			 * If we break anyway break to NONE directly.
+			 * Otherwise vfs_set_filelen() will trigger the
+			 * break.
+			 */
+			break_to &= ~(SMB2_LEASE_READ|SMB2_LEASE_WRITE);
+		}
+
+		if (e->op_type != LEASE_OPLOCK) {
+			/*
+			 * Oplocks only support breaking to R or NONE.
+			 */
+			break_to &= ~(SMB2_LEASE_HANDLE|SMB2_LEASE_WRITE);
+		}
+
+		DEBUG(10, ("breaking from %d to %d\n",
+			   (int)e_lease_type, (int)break_to));
+		send_break_message(fsp->conn->sconn->msg_ctx, e,
+				   break_to);
+		if (e_lease_type & delay_mask) {
+			delay = true;
+		}
+		if (l != NULL && l->breaking && !first_open_attempt) {
+			delay = true;
+		}
+		continue;
 	}
 
-	send_break_message(fsp->conn->sconn->msg_ctx, entry, break_to);
-	return true;
+	return delay;
 }
 
 static bool file_has_brlocks(files_struct *fsp)
@@ -1557,7 +1572,6 @@ struct fsp_lease *find_fsp_lease(struct files_struct *new_fsp,
 	return new_fsp->lease;
 }
 
-#if 0
 static NTSTATUS grant_fsp_lease(struct files_struct *fsp,
 				struct share_mode_lock *lck,
 				const struct smb2_lease *lease,
@@ -1696,88 +1710,151 @@ static bool is_same_lease(const files_struct *fsp,
 				&d->leases[e->lease_idx].client_guid,
 				&d->leases[e->lease_idx].lease_key);
 }
-#endif
 
 static NTSTATUS grant_fsp_oplock_type(struct smb_request *req,
 				      struct files_struct *fsp,
 				      struct share_mode_lock *lck,
-				      int oplock_request)
+				      int oplock_request,
+				      struct smb2_lease *lease)
 {
-	bool allow_level2 = (global_client_caps & CAP_LEVEL_II_OPLOCKS) &&
-		            lp_level2_oplocks(SNUM(fsp->conn));
-	bool got_level2_oplock, got_a_none_oplock;
+	struct share_mode_data *d = lck->data;
+	bool got_handle_lease = false;
+	bool got_oplock = false;
 	uint32_t i;
+	uint32_t granted;
+	uint32_t lease_idx = UINT32_MAX;
 	bool ok;
 	NTSTATUS status;
 
-	/* Start by granting what the client asked for,
-	   but ensure no SAMBA_PRIVATE bits can be set. */
-	fsp->oplock_type = (oplock_request & ~SAMBA_PRIVATE_OPLOCK_MASK);
-
-	if (fsp->oplock_type == NO_OPLOCK) {
-		goto type_selected;
-	}
-
 	if (oplock_request & INTERNAL_OPEN_ONLY) {
 		/* No oplocks on internal open. */
-		fsp->oplock_type = NO_OPLOCK;
-		goto type_selected;
+		oplock_request = NO_OPLOCK;
+		DEBUG(10,("grant_fsp_oplock_type: oplock type 0x%x on file %s\n",
+			fsp->oplock_type, fsp_str_dbg(fsp)));
+	}
+
+	if (oplock_request == LEASE_OPLOCK) {
+		if (lease == NULL) {
+			/*
+			 * The SMB2 layer should have checked this
+			 */
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+
+		granted = lease->lease_state;
+
+		if (lp_kernel_oplocks(SNUM(fsp->conn))) {
+			DEBUG(10, ("No lease granted because kernel oplocks are enabled\n"));
+			granted = SMB2_LEASE_NONE;
+		}
+		if ((granted & (SMB2_LEASE_READ|SMB2_LEASE_WRITE)) == 0) {
+			DEBUG(10, ("No read or write lease requested\n"));
+			granted = SMB2_LEASE_NONE;
+		}
+		if (granted == SMB2_LEASE_WRITE) {
+			DEBUG(10, ("pure write lease requested\n"));
+			granted = SMB2_LEASE_NONE;
+		}
+		if (granted == (SMB2_LEASE_WRITE|SMB2_LEASE_HANDLE)) {
+			DEBUG(10, ("write and handle lease requested\n"));
+			granted = SMB2_LEASE_NONE;
+		}
+	} else {
+		granted = map_oplock_to_lease_type(
+			oplock_request & ~SAMBA_PRIVATE_OPLOCK_MASK);
 	}
 
 	if (lp_locking(fsp->conn->params) && file_has_brlocks(fsp)) {
 		DEBUG(10,("grant_fsp_oplock_type: file %s has byte range locks\n",
 			fsp_str_dbg(fsp)));
-		fsp->oplock_type = NO_OPLOCK;
-		goto type_selected;
+		granted &= ~SMB2_LEASE_READ;
 	}
 
-	got_level2_oplock = false;
-	got_a_none_oplock = false;
+	for (i=0; i<d->num_share_modes; i++) {
+		struct share_mode_entry *e = &d->share_modes[i];
+		uint32_t e_lease_type;
 
-	for (i=0; i<lck->data->num_share_modes; i++) {
-		int op_type = lck->data->share_modes[i].op_type;
+		e_lease_type = get_lease_type(d, e);
 
-		if (LEVEL_II_OPLOCK_TYPE(op_type)) {
-			got_level2_oplock = true;
+		if ((granted & SMB2_LEASE_WRITE) &&
+		    !is_same_lease(fsp, d, e, lease) &&
+		    !share_mode_stale_pid(d, i)) {
+			/*
+			 * Can grant only one writer
+			 */
+			granted &= ~SMB2_LEASE_WRITE;
 		}
-		if (op_type == NO_OPLOCK) {
-			got_a_none_oplock = true;
+
+		if ((e_lease_type & SMB2_LEASE_HANDLE) && !got_handle_lease &&
+		    !share_mode_stale_pid(d, i)) {
+			got_handle_lease = true;
+		}
+
+		if ((e->op_type != LEASE_OPLOCK) && !got_oplock &&
+		    !share_mode_stale_pid(d, i)) {
+			got_oplock = true;
 		}
 	}
 
-	/*
-	 * Match what was requested (fsp->oplock_type) with
- 	 * what was found in the existing share modes.
- 	 */
+	if ((granted & SMB2_LEASE_READ) && !(granted & SMB2_LEASE_WRITE)) {
+		bool allow_level2 =
+			(global_client_caps & CAP_LEVEL_II_OPLOCKS) &&
+			lp_level2_oplocks(SNUM(fsp->conn));
 
-	if (got_level2_oplock || got_a_none_oplock) {
-		if (EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
+		if (!allow_level2) {
+			granted = SMB2_LEASE_NONE;
+		}
+	}
+
+	if (oplock_request == LEASE_OPLOCK) {
+		if (got_oplock) {
+			granted &= ~SMB2_LEASE_HANDLE;
+		}
+
+		fsp->oplock_type = LEASE_OPLOCK;
+
+		status = grant_fsp_lease(fsp, lck, lease, &lease_idx,
+					 granted);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+
+		}
+		*lease = fsp->lease->lease;
+		DEBUG(10, ("lease_state=%d\n", lease->lease_state));
+	} else {
+		if (got_handle_lease) {
+			granted = SMB2_LEASE_NONE;
+		}
+
+		switch (granted) {
+		case SMB2_LEASE_READ|SMB2_LEASE_WRITE|SMB2_LEASE_HANDLE:
+			fsp->oplock_type = BATCH_OPLOCK|EXCLUSIVE_OPLOCK;
+			break;
+		case SMB2_LEASE_READ|SMB2_LEASE_WRITE:
+			fsp->oplock_type = EXCLUSIVE_OPLOCK;
+			break;
+		case SMB2_LEASE_READ|SMB2_LEASE_HANDLE:
+		case SMB2_LEASE_READ:
 			fsp->oplock_type = LEVEL_II_OPLOCK;
+			break;
+		default:
+			fsp->oplock_type = NO_OPLOCK;
+			break;
 		}
-	}
 
-	/*
-	 * Don't grant level2 to clients that don't want them
-	 * or if we've turned them off.
-	 */
-	if (fsp->oplock_type == LEVEL_II_OPLOCK && !allow_level2) {
-		fsp->oplock_type = NO_OPLOCK;
-		goto type_selected;
-	}
-
- type_selected:
-	status = set_file_oplock(fsp);
-	if (!NT_STATUS_IS_OK(status)) {
-		/*
-		 * Could not get the kernel oplock
-		 */
-		fsp->oplock_type = NO_OPLOCK;
+		status = set_file_oplock(fsp);
+		if (!NT_STATUS_IS_OK(status)) {
+			/*
+			 * Could not get the kernel oplock
+			 */
+			fsp->oplock_type = NO_OPLOCK;
+		}
 	}
 
 	ok = set_share_mode(lck, fsp, get_current_uid(fsp->conn),
 			    req ? req->mid : 0,
 			    fsp->oplock_type,
-			    UINT32_MAX);
+			    lease_idx);
 	if (!ok) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -2683,8 +2760,10 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 			smb_panic("validate_oplock_types failed");
 		}
 
-		if (delay_for_oplock(fsp, 0, lck, false, create_disposition)) {
-			schedule_defer_open(lck, fsp->file_id, request_time, req);
+		if (delay_for_oplock(fsp, 0, lease, lck, false,
+				     create_disposition, first_open_attempt)) {
+			schedule_defer_open(lck, fsp->file_id, request_time,
+					    req);
 			TALLOC_FREE(lck);
 			DEBUG(10, ("Sent oplock break request to kernel "
 				   "oplock holder\n"));
@@ -2805,9 +2884,9 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 	if ((req != NULL) &&
 	    delay_for_oplock(
-		    fsp, oplock_request, lck,
+		    fsp, oplock_request, lease, lck,
 		    NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION),
-		    create_disposition)) {
+		    create_disposition, first_open_attempt)) {
 		schedule_defer_open(lck, fsp->file_id, request_time, req);
 		TALLOC_FREE(lck);
 		fd_close(fsp);
@@ -3016,7 +3095,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 	if (file_existed) {
 		/*
-		 * stat opens on existing files don't get oplocks.
+		 * stat opens on existing files don't get oplocks or leases.
 		 *
 		 * Note that we check for stat open on the *open_access_mask*,
 		 * i.e. the access mask we actually used to do the open,
@@ -3026,7 +3105,11 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		 * which adds FILE_WRITE_DATA to open_access_mask.
 		 */
 		if (is_stat_open(open_access_mask)) {
-			oplock_request = NO_OPLOCK;
+			if (lease) {
+				lease->lease_state = SMB2_LEASE_NONE;
+			} else {
+				oplock_request = NO_OPLOCK;
+			}
 		}
 	}
 
@@ -3048,7 +3131,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	 * Setup the oplock info in both the shared memory and
 	 * file structs.
 	 */
-	status = grant_fsp_oplock_type(req, fsp, lck, oplock_request);
+	status = grant_fsp_oplock_type(req, fsp, lck, oplock_request, lease);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(lck);
 		fd_close(fsp);
