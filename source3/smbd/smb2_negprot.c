@@ -230,6 +230,14 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 		capabilities |= SMB2_CAP_DFS;
 	}
 
+	if (protocol >= PROTOCOL_SMB2_10 &&
+	    lp_smb2_leases() &&
+	    lp_oplocks(GLOBAL_SECTION_SNUM) &&
+	    !lp_kernel_oplocks(GLOBAL_SECTION_SNUM))
+	{
+		capabilities |= SMB2_CAP_LEASING;
+	}
+
 	if ((protocol >= PROTOCOL_SMB2_24) &&
 	    (lp_smb_encrypt(-1) != SMB_SIGNING_OFF) &&
 	    (in_capabilities & SMB2_CAP_ENCRYPTION)) {
