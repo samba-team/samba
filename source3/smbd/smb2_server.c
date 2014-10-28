@@ -2868,6 +2868,29 @@ NTSTATUS smbd_smb2_send_oplock_break(struct smbXsrv_connection *xconn,
 	return smbd_smb2_send_break(xconn, session, tcon, body, sizeof(body));
 }
 
+NTSTATUS smbd_smb2_send_lease_break(struct smbXsrv_connection *xconn,
+				    uint16_t new_epoch,
+				    uint32_t lease_flags,
+				    struct smb2_lease_key *lease_key,
+				    uint32_t current_lease_state,
+				    uint32_t new_lease_state)
+{
+	uint8_t body[0x2c];
+
+	SSVAL(body, 0x00, sizeof(body));
+	SSVAL(body, 0x02, new_epoch);
+	SIVAL(body, 0x04, lease_flags);
+	SBVAL(body, 0x08, lease_key->data[0]);
+	SBVAL(body, 0x10, lease_key->data[1]);
+	SIVAL(body, 0x18, current_lease_state);
+	SIVAL(body, 0x1c, new_lease_state);
+	SIVAL(body, 0x20, 0);		/* BreakReason, MUST be 0 */
+	SIVAL(body, 0x24, 0);		/* AccessMaskHint, MUST be 0 */
+	SIVAL(body, 0x28, 0);		/* ShareMaskHint, MUST be 0 */
+
+	return smbd_smb2_send_break(xconn, NULL, NULL, body, sizeof(body));
+}
+
 static bool is_smb2_recvfile_write(struct smbd_smb2_request_read_state *state)
 {
 	NTSTATUS status;
