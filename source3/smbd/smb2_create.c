@@ -998,7 +998,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		}
 
 		if (durable_requested &&
-		    BATCH_OPLOCK_TYPE(result->oplock_type))
+		    (fsp_lease_type(result) & SMB2_LEASE_HANDLE))
 		{
 			status = SMB_VFS_DURABLE_COOKIE(result,
 						op,

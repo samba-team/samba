@@ -168,7 +168,7 @@ NTSTATUS vfs_default_durable_disconnect(struct files_struct *fsp,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (!BATCH_OPLOCK_TYPE(fsp->oplock_type)) {
+	if ((fsp_lease_type(fsp) & SMB2_LEASE_HANDLE) == 0) {
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
