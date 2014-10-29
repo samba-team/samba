@@ -2,7 +2,6 @@
 
 bld.SAMBA_MODULE('ntvfs_unixuid',
 	source='vfs_unixuid.c',
-	allow_warnings=True,
 	subsystem='ntvfs',
 	init_function='ntvfs_unixuid_init',
 	deps='auth_unix_token talloc'
