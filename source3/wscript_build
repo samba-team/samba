@@ -190,7 +190,6 @@ bld.SAMBA3_SUBSYSTEM('param',
                    lib/sharesec.c
                    lib/ldap_debug_handler.c
                    lib/util_names.c''',
-                   allow_warnings=True,
                    deps='samba-util PARAM_UTIL ldap lber LOADPARM_CTX samba3core smbconf param_local.h param_global.h cups''')
 
 # this includes only the low level parse code, not stuff
