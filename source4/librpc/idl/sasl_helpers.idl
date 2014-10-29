@@ -1,6 +1,8 @@
 #include "idl_types.h"
 
 [
+  uuid("7512b2f4-5f4f-11e4-bbe6-3c970e8d8226"),
+  version(1.0),
   pointer_default(unique),
   helpstring("SASL helpers")
 ]

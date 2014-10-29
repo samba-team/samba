@@ -19,7 +19,6 @@ bld.SAMBA_SUBSYSTEM('NDR_IRPC',
 
 bld.SAMBA_SUBSYSTEM('NDR_SASL_HELPERS',
 	source='gen_ndr/ndr_sasl_helpers.c',
-	allow_warnings=True,
 	public_deps='ndr'
 	)
 
