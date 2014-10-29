@@ -253,6 +253,52 @@ static WERROR ask_forwarder_recv(
 	return WERR_OK;
 }
 
+static WERROR add_zone_authority_record(struct dns_server *dns,
+					TALLOC_CTX *mem_ctx,
+					const struct dns_name_question *question,
+					struct dns_res_rec **nsrecs, uint16_t *nscount)
+{
+	const char *zone = NULL;
+	struct dnsp_DnssrvRpcRecord *recs;
+	struct dns_res_rec *ns = *nsrecs;
+	uint16_t rec_count, ni = *nscount;
+	struct ldb_dn *dn = NULL;
+	unsigned int ri;
+	WERROR werror;
+
+	zone = dns_get_authoritative_zone(dns, question->name);
+	DEBUG(10, ("Creating zone authority record for '%s'\n", zone));
+
+	werror = dns_name2dn(dns, mem_ctx, zone, &dn);
+	if (!W_ERROR_IS_OK(werror)) {
+		return werror;
+	}
+
+	werror = dns_lookup_records(dns, mem_ctx, dn, &recs, &rec_count);
+	if (!W_ERROR_IS_OK(werror)) {
+		return werror;
+	}
+
+	ns = talloc_realloc(mem_ctx, ns, struct dns_res_rec, rec_count + ni);
+	if (ns == NULL) {
+		return WERR_NOMEM;
+	}
+	for (ri = 0; ri < rec_count; ri++) {
+		if (recs[ri].wType == DNS_TYPE_SOA) {
+			werror = create_response_rr(zone, &recs[ri], &ns, &ni);
+			if (!W_ERROR_IS_OK(werror)) {
+				return werror;
+			}
+		}
+	}
+
+	*nscount = ni;
+	*nsrecs = ns;
+
+	return WERR_OK;
+}
+
+
 static WERROR handle_question(struct dns_server *dns,
 			      TALLOC_CTX *mem_ctx,
 			      const struct dns_name_question *question,
@@ -271,7 +317,11 @@ static WERROR handle_question(struct dns_server *dns,
 	W_ERROR_NOT_OK_RETURN(werror);
 
 	werror = dns_lookup_records(dns, mem_ctx, dn, &recs, &rec_count);
-	W_ERROR_NOT_OK_RETURN(werror);
+	if (!W_ERROR_IS_OK(werror)) {
+		werror_return = werror;
+		add_zone_authority_record(dns, mem_ctx, question, &ns, &ni);
+		goto done;
+	}
 
 	ans = talloc_realloc(mem_ctx, ans, struct dns_res_rec, rec_count + ai);
 	if (ans == NULL) {
