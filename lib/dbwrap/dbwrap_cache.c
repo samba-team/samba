@@ -17,11 +17,12 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
-#include "lib/dbwrap/dbwrap.h"
+#include "replace.h"
+#include "lib/param/loadparm.h"
+#include "lib/dbwrap/dbwrap_cache.h"
 #include "lib/dbwrap/dbwrap_private.h"
 #include "lib/dbwrap/dbwrap_rbt.h"
-#include "lib/dbwrap/dbwrap_cache.h"
+#include "lib/util/talloc_stack.h"
 
 struct db_cache_ctx {
 	int seqnum;
