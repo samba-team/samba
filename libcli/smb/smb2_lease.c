@@ -87,3 +87,9 @@ bool smb2_lease_push(const struct smb2_lease *lease, uint8_t *buf, size_t len)
 
 	return true;
 }
+
+bool smb2_lease_key_equal(const struct smb2_lease_key *k1,
+			  const struct smb2_lease_key *k2)
+{
+	return ((k1->data[0] == k2->data[0]) && (k1->data[1] == k2->data[1]));
+}
