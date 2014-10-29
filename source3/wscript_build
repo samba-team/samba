@@ -221,7 +221,6 @@ bld.SAMBA3_LIBRARY('smbregistry',
                    replace util_reg samba-util samba-security
                    errors3 dbwrap samba3-util''',
                    allow_undefined_symbols=True,
-                   allow_warnings=True,
                    private_library=True)
 
 bld.SAMBA3_SUBSYSTEM('REG_SMBCONF',
