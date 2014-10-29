@@ -123,7 +123,6 @@ bld.SAMBA_LIBRARY('dcerpc',
 	rpc/dcerpc_connect.c rpc/dcerpc_secondary.c''',
 	pc_files='dcerpc.pc',
 	deps='samba_socket LIBCLI_RESOLVE LIBCLI_SMB LIBCLI_SMB2 ndr NDR_DCERPC RPC_NDR_EPMAPPER NDR_SCHANNEL RPC_NDR_NETLOGON RPC_NDR_MGMT gensec LIBCLI_AUTH smbclient-raw LP_RESOLVE tevent-util dcerpc-binding param_options http',
-	allow_warnings=True,
 	autoproto='rpc/dcerpc_proto.h',
 	public_deps='samba-credentials tevent talloc',
 	public_headers='''rpc/dcerpc.h ../../librpc/gen_ndr/mgmt.h
