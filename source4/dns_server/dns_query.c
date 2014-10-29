@@ -328,7 +328,7 @@ static WERROR handle_question(struct dns_server *dns,
 			continue;
 		}
 		if ((question->question_type != DNS_QTYPE_ALL) &&
-		    (recs[ri].wType != question->question_type)) {
+		    (recs[ri].wType != (enum dns_record_type) question->question_type)) {
 			werror_return = WERR_OK;
 			continue;
 		}

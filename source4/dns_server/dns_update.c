@@ -103,7 +103,7 @@ static WERROR check_one_prerequisite(struct dns_server *dns,
 			W_ERROR_NOT_OK_RETURN(werror);
 
 			for (i = 0; i < acount; i++) {
-				if (ans[i].wType == pr->rr_type) {
+				if (ans[i].wType == (enum dns_record_type) pr->rr_type) {
 					found = true;
 					break;
 				}
@@ -145,7 +145,7 @@ static WERROR check_one_prerequisite(struct dns_server *dns,
 			}
 
 			for (i = 0; i < acount; i++) {
-				if (ans[i].wType == pr->rr_type) {
+				if (ans[i].wType == (enum dns_record_type) pr->rr_type) {
 					found = true;
 					break;
 				}
@@ -309,7 +309,7 @@ static WERROR dns_rr_to_dnsp(TALLOC_CTX *mem_ctx,
 
 	ZERO_STRUCTP(r);
 
-	r->wType = rrec->rr_type;
+	r->wType = (enum dns_record_type) rrec->rr_type;
 	r->dwTtlSeconds = rrec->ttl;
 	r->rank = DNS_RANK_ZONE;
 
@@ -605,7 +605,7 @@ static WERROR handle_one_update(struct dns_server *dns,
 			}
 		}
 		for (i = first; i < rcount; i++) {
-			if (recs[i].wType == update->rr_type) {
+			if (recs[i].wType == (enum dns_record_type) update->rr_type) {
 				recs[i] = (struct dnsp_DnssrvRpcRecord) {
 					.wType = DNS_TYPE_TOMBSTONE,
 				};
