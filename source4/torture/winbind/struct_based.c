@@ -52,9 +52,10 @@
 	} \
 } while(0)
 
+#undef _STRUCT_NOOP
+#define _STRUCT_NOOP do {} while(0);
 #define DO_STRUCT_REQ_REP(op,req,rep) do { \
-	bool __noop = false; \
-	DO_STRUCT_REQ_REP_EXT(op,req,rep,NSS_STATUS_SUCCESS,true,__noop=true,NULL); \
+	DO_STRUCT_REQ_REP_EXT(op,req,rep,NSS_STATUS_SUCCESS,true, _STRUCT_NOOP, NULL); \
 } while (0)
 
 static bool torture_winbind_struct_interface_version(struct torture_context *torture)
@@ -853,9 +854,8 @@ static bool torture_winbind_struct_getpwent(struct torture_context *torture)
 	ZERO_STRUCT(rep);
 	req.data.num_entries = 1;
 	if (torture_setting_bool(torture, "samba3", false)) {
-		bool __noop = false;
 		DO_STRUCT_REQ_REP_EXT(WINBINDD_GETPWENT, &req, &rep,
-				      NSS_STATUS_SUCCESS, false, __noop=true,
+				      NSS_STATUS_SUCCESS, false, _STRUCT_NOOP,
 				      NULL);
 	} else {
 		DO_STRUCT_REQ_REP(WINBINDD_GETPWENT, &req, &rep);
