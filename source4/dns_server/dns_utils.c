@@ -199,6 +199,22 @@ bool dns_authorative_for_zone(struct dns_server *dns,
 	return true;
 }
 
+const char *dns_get_authoritative_zone(struct dns_server *dns,
+				       const char *name)
+{
+	const struct dns_server_zone *z;
+	size_t host_part_len = 0;
+
+	for (z = dns->zones; z != NULL; z = z->next) {
+		bool match;
+		match = dns_name_match(z->name, name, &host_part_len);
+		if (match) {
+			return z->name;
+		}
+	}
+	return NULL;
+}
+
 WERROR dns_name2dn(struct dns_server *dns,
 		   TALLOC_CTX *mem_ctx,
 		   const char *name,
