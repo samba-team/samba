@@ -79,7 +79,7 @@ interface smbXsrv
 
 	/* client */
 
-	typedef struct {
+	typedef [public] struct {
 		[ignore] struct tevent_context		*ev_ctx;
 		[ignore] struct messaging_context	*msg_ctx;
 
