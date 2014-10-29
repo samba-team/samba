@@ -454,7 +454,6 @@ bld.SAMBA3_LIBRARY('ads',
                    libads/ldap_schema.c
                    libads/util.c
                    libads/ndr.c''',
-                   allow_warnings=True,
                    deps='cli-ldap-common krb5samba ldap lber KRBCLIENT param LIBNMB libsmb DCUTIL smbldap',
                    private_library=True)
 
