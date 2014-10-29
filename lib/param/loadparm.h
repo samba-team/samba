@@ -30,6 +30,7 @@
 #ifndef _LOADPARM_H
 #define _LOADPARM_H
 
+#include <talloc.h>
 #include "../lib/util/parmlist.h"
 
 /* the following are used by loadparm for option lists */
