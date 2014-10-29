@@ -556,6 +556,11 @@ enum ndr_err_code ndr_push_ ## name(struct ndr_push *ndr, int ndr_flags, type v)
 enum ndr_err_code ndr_pull_ ## name(struct ndr_pull *ndr, int ndr_flags, type *v); \
 void ndr_print_ ## name(struct ndr_print *ndr, const char *var_name, type v); 
 
+#define NDR_SCALAR_PTR_PROTO(name, type) \
+enum ndr_err_code ndr_push_ ## name(struct ndr_push *ndr, int ndr_flags, const type *v); \
+enum ndr_err_code ndr_pull_ ## name(struct ndr_pull *ndr, int ndr_flags, type **v); \
+void ndr_print_ ## name(struct ndr_print *ndr, const char *var_name, const type *v);
+
 #define NDR_BUFFER_PROTO(name, type) \
 enum ndr_err_code ndr_push_ ## name(struct ndr_push *ndr, int ndr_flags, const type *v); \
 enum ndr_err_code ndr_pull_ ## name(struct ndr_pull *ndr, int ndr_flags, type *v); \
