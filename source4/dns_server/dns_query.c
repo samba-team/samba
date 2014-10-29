@@ -40,7 +40,7 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_DNS
 
-static WERROR create_response_rr(const struct dns_name_question *question,
+static WERROR create_response_rr(const char *name,
 				 const struct dnsp_DnssrvRpcRecord *rec,
 				 struct dns_res_rec **answers, uint16_t *ancount)
 {
@@ -116,7 +116,7 @@ static WERROR create_response_rr(const struct dns_name_question *question,
 		return DNS_ERR(NOT_IMPLEMENTED);
 	}
 
-	ans[ai].name = talloc_strdup(ans, question->name);
+	ans[ai].name = talloc_strdup(ans, name);
 	W_ERROR_HAVE_NO_MEMORY(ans[ai].name);
 	ans[ai].rr_type = rec->wType;
 	ans[ai].rr_class = DNS_QCLASS_IN;
@@ -299,7 +299,7 @@ static WERROR handle_question(struct dns_server *dns,
 			}
 
 			/* First put in the CNAME record */
-			werror = create_response_rr(question, &recs[ri], &ans, &ai);
+			werror = create_response_rr(question->name, &recs[ri], &ans, &ai);
 			if (!W_ERROR_IS_OK(werror)) {
 				return werror;
 			}
@@ -329,7 +329,7 @@ static WERROR handle_question(struct dns_server *dns,
 			werror_return = WERR_OK;
 			continue;
 		}
-		werror = create_response_rr(question, &recs[ri], &ans, &ai);
+		werror = create_response_rr(question->name, &recs[ri], &ans, &ai);
 		if (!W_ERROR_IS_OK(werror)) {
 			return werror;
 		}
