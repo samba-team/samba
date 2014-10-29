@@ -333,7 +333,7 @@ NTSTATUS nbt_name_reply_send(struct nbt_name_socket *nbtsock,
 			     struct nbt_name_packet *request);
 
 
-NDR_SCALAR_PROTO(wrepl_nbt_name, const struct nbt_name *)
+NDR_SCALAR_PTR_PROTO(wrepl_nbt_name, struct nbt_name)
 NDR_BUFFER_PROTO(nbt_name, struct nbt_name)
 NTSTATUS nbt_rcode_to_ntstatus(uint8_t rcode);
 
