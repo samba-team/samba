@@ -255,7 +255,6 @@ bld.SAMBA3_LIBRARY('util_cmdline',
 
 bld.SAMBA3_SUBSYSTEM('KRBCLIENT',
                      source='libads/kerberos.c libads/ads_status.c',
-                     allow_warnings=True,
                      public_deps='krb5samba k5crypto gssapi LIBTSOCKET CLDAP LIBNMB')
 
 bld.SAMBA3_SUBSYSTEM('samba3util',
