@@ -476,6 +476,10 @@ char **str_list_make_v3(TALLOC_CTX *mem_ctx, const char *string,
 	const char *sep);
 
 
+const char **str_list_make_v3_const(TALLOC_CTX *mem_ctx,
+				    const char *string,
+				    const char *sep);
+
 /* The following definitions come from lib/util/util_file.c  */
 
 

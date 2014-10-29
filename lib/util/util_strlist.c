@@ -588,3 +588,10 @@ char **str_list_make_v3(TALLOC_CTX *mem_ctx, const char *string,
 	TALLOC_FREE(s);
 	return list;
 }
+
+const char **str_list_make_v3_const(TALLOC_CTX *mem_ctx,
+				    const char *string,
+				    const char *sep)
+{
+	return const_str_list(str_list_make_v3(mem_ctx, string, sep));
+}
