@@ -256,13 +256,15 @@ static WERROR ask_forwarder_recv(
 static WERROR handle_question(struct dns_server *dns,
 			      TALLOC_CTX *mem_ctx,
 			      const struct dns_name_question *question,
-			      struct dns_res_rec **answers, uint16_t *ancount)
+			      struct dns_res_rec **answers, uint16_t *ancount,
+			      struct dns_res_rec **nsrecs, uint16_t *nscount)
 {
 	struct dns_res_rec *ans = *answers;
+	struct dns_res_rec *ns = *nsrecs;
 	WERROR werror, werror_return;
 	unsigned int ri;
 	struct dnsp_DnssrvRpcRecord *recs;
-	uint16_t rec_count, ai = *ancount;
+	uint16_t rec_count, ai = *ancount, ni = *nscount;
 	struct ldb_dn *dn = NULL;
 
 	werror = dns_name2dn(dns, mem_ctx, question->name, &dn);
@@ -315,7 +317,7 @@ static WERROR handle_question(struct dns_server *dns,
 				return WERR_NOMEM;
 			}
 			/* and then call the lookup again */
-			werror = handle_question(dns, mem_ctx, new_q, &ans, &ai);
+			werror = handle_question(dns, mem_ctx, new_q, &ans, &ai, &ns, &ni);
 			if (!W_ERROR_IS_OK(werror)) {
 				return werror;
 			}
@@ -336,8 +338,11 @@ static WERROR handle_question(struct dns_server *dns,
 		werror_return = WERR_OK;
 	}
 
+done:
 	*ancount = ai;
 	*answers = ans;
+	*nscount = ni;
+	*nsrecs = ns;
 
 	return werror_return;
 }
@@ -612,7 +617,8 @@ struct tevent_req *dns_server_process_query_send(
 
 		req_state->flags |= DNS_FLAG_AUTHORITATIVE;
 		err = handle_question(dns, state, &in->questions[0],
-				      &state->answers, &state->ancount);
+				      &state->answers, &state->ancount,
+				      &state->nsrecs, &state->nscount);
 		if (tevent_req_werror(req, err)) {
 			return tevent_req_post(req, ev);
 		}
