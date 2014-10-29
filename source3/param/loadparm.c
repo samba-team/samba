@@ -3954,7 +3954,7 @@ int lp_servicenumber(const char *pszServiceName)
 	for (iService = iNumServices - 1; iService >= 0; iService--) {
 		if (VALID(iService) && ServicePtrs[iService]->szService) {
 			/*
-			 * The substitution here is used to support %U is
+			 * The substitution here is used to support %U in
 			 * service names
 			 */
 			fstrcpy(serviceName, ServicePtrs[iService]->szService);
