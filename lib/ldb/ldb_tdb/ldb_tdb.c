@@ -264,6 +264,7 @@ int ltdb_store(struct ldb_module *module, const struct ldb_message *msg, int flg
 	void *data = ldb_module_get_private(module);
 	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
 	TDB_DATA tdb_key, tdb_data;
+	struct ldb_val ldb_data;
 	int ret = LDB_SUCCESS;
 
 	tdb_key = ltdb_key(module, msg->dn);
@@ -272,11 +273,14 @@ int ltdb_store(struct ldb_module *module, const struct ldb_message *msg, int flg
 	}
 
 	ret = ldb_pack_data(ldb_module_get_ctx(module),
-			    msg, (struct ldb_val *)&tdb_data);
+			    msg, &ldb_data);
 	if (ret == -1) {
 		talloc_free(tdb_key.dptr);
 		return LDB_ERR_OTHER;
 	}
+
+	tdb_data.dptr = ldb_data.data;
+	tdb_data.dsize = ldb_data.length;
 
 	ret = tdb_store(ltdb->tdb, tdb_key, tdb_data, flgs);
 	if (ret != 0) {
@@ -286,7 +290,7 @@ int ltdb_store(struct ldb_module *module, const struct ldb_message *msg, int flg
 
 done:
 	talloc_free(tdb_key.dptr);
-	talloc_free(tdb_data.dptr);
+	talloc_free(ldb_data.data);
 
 	return ret;
 }
@@ -673,6 +677,7 @@ int ltdb_modify_internal(struct ldb_module *module,
 	void *data = ldb_module_get_private(module);
 	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
 	TDB_DATA tdb_key, tdb_data;
+	struct ldb_val ldb_data;
 	struct ldb_message *msg2;
 	unsigned int i, j, k;
 	int ret = LDB_SUCCESS, idx;
@@ -701,7 +706,10 @@ int ltdb_modify_internal(struct ldb_module *module,
 		goto done;
 	}
 
-	ret = ldb_unpack_data(ldb_module_get_ctx(module), (struct ldb_val *)&tdb_data, msg2);
+	ldb_data.data = tdb_data.dptr;
+	ldb_data.length = tdb_data.dsize;
+
+	ret = ldb_unpack_data(ldb_module_get_ctx(module), &ldb_data, msg2);
 	free(tdb_data.dptr);
 	if (ret == -1) {
 		ret = LDB_ERR_OTHER;
