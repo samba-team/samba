@@ -5,6 +5,5 @@ bld.SAMBA_LIBRARY('events',
                   source='tevent_s4.c',
                   deps='samba-util',
                   public_deps='tevent',
-                  allow_warnings=True,
                   private_library=True
                   )
