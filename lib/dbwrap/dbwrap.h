@@ -20,6 +20,9 @@
 #ifndef __DBWRAP_H__
 #define __DBWRAP_H__
 
+#include "replace.h"
+#include <talloc.h>
+#include "libcli/util/ntstatus.h"
 #include "tdb.h"
 
 struct db_record;
