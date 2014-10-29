@@ -31,20 +31,10 @@
  * SUCH DAMAGE.
  */
 
-#include "config.h"
+#include "replace.h"
+#include "system/filesys.h"
+#include "system/wait.h"
 
-#ifndef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-#ifdef HAVE_SYS_WAIT_H
-#include <sys/wait.h>
-#endif
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
 #ifdef HAVE_PTY_H
 #include <pty.h>
 #endif
@@ -60,9 +50,7 @@
 #endif /* STREAMPTY */
 
 #include <popt.h>
-#include <errno.h>
 #include <err.h>
-#include <signal.h>
 
 struct command {
 	enum { CMD_EXPECT = 0, CMD_SEND, CMD_PASSWORD } type;
