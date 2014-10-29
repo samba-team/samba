@@ -559,7 +559,7 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 
 	init_printer_values(lp_ctx, Globals.ctx, &sDefault);
 
-	sDefault.ntvfs_handler = (const char **)str_list_make_v3(NULL, "unixuid default", NULL);
+	sDefault.ntvfs_handler = str_list_make_v3_const(NULL, "unixuid default", NULL);
 
 	DEBUG(3, ("Initialising global parameters\n"));
 
@@ -617,7 +617,7 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 	string_set(Globals.ctx, &Globals.logon_home, "\\\\%N\\%U");
 	string_set(Globals.ctx, &Globals.logon_path, "\\\\%N\\%U\\profile");
 
-	Globals.name_resolve_order = (const char **)str_list_make_v3(NULL, "lmhosts wins host bcast", NULL);
+	Globals.name_resolve_order = str_list_make_v3_const(NULL, "lmhosts wins host bcast", NULL);
 	string_set(Globals.ctx, &Globals.password_server, "*");
 
 	Globals.algorithmic_rid_base = BASE_RID;
@@ -803,7 +803,7 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 	Globals.winbind_trusted_domains_only = false;
 	Globals.winbind_nested_groups = true;
 	Globals.winbind_expand_groups = 0;
-	Globals.winbind_nss_info = (const char **)str_list_make_v3(NULL, "template", NULL);
+	Globals.winbind_nss_info = str_list_make_v3_const(NULL, "template", NULL);
 	Globals.winbind_refresh_tickets = false;
 	Globals.winbind_offline_logon = false;
 
@@ -821,7 +821,7 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 	Globals.server_signing = SMB_SIGNING_DEFAULT;
 
 	Globals.defer_sharing_violations = true;
-	Globals.smb_ports = (const char **)str_list_make_v3(NULL, SMB_PORTS, NULL);
+	Globals.smb_ports = str_list_make_v3_const(NULL, SMB_PORTS, NULL);
 
 	Globals.enable_privileges = true;
 	Globals.host_msdfs        = true;
@@ -858,9 +858,9 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 
 	string_set(Globals.ctx, &Globals.ncalrpc_dir, get_dyn_NCALRPCDIR());
 
-	Globals.server_services = (const char **)str_list_make_v3(NULL, "s3fs rpc nbt wrepl ldap cldap kdc drepl winbindd ntp_signd kcc dnsupdate dns", NULL);
+	Globals.server_services = str_list_make_v3_const(NULL, "s3fs rpc nbt wrepl ldap cldap kdc drepl winbindd ntp_signd kcc dnsupdate dns", NULL);
 
-	Globals.dcerpc_endpoint_servers = (const char **)str_list_make_v3(NULL, "epmapper wkssvc rpcecho samr netlogon lsarpc spoolss drsuapi dssetup unixinfo browser eventlog6 backupkey dnsserver", NULL);
+	Globals.dcerpc_endpoint_servers = str_list_make_v3_const(NULL, "epmapper wkssvc rpcecho samr netlogon lsarpc spoolss drsuapi dssetup unixinfo browser eventlog6 backupkey dnsserver", NULL);
 
 	Globals.tls_enabled = true;
 
@@ -882,26 +882,26 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 	if (s == NULL) {
 		smb_panic("init_globals: ENOMEM");
 	}
-	Globals.samba_kcc_command = (const char **)str_list_make_v3(NULL, s, NULL);
+	Globals.samba_kcc_command = str_list_make_v3_const(NULL, s, NULL);
 	TALLOC_FREE(s);
 
 	s = talloc_asprintf(talloc_tos(), "%s/samba_dnsupdate", get_dyn_SCRIPTSBINDIR());
 	if (s == NULL) {
 		smb_panic("init_globals: ENOMEM");
 	}
-	Globals.dns_update_command = (const char **)str_list_make_v3(NULL, s, NULL);
+	Globals.dns_update_command = str_list_make_v3_const(NULL, s, NULL);
 	TALLOC_FREE(s);
 
 	s = talloc_asprintf(talloc_tos(), "%s/samba_spnupdate", get_dyn_SCRIPTSBINDIR());
 	if (s == NULL) {
 		smb_panic("init_globals: ENOMEM");
 	}
-	Globals.spn_update_command = (const char **)str_list_make_v3(NULL, s, NULL);
+	Globals.spn_update_command = str_list_make_v3_const(NULL, s, NULL);
 	TALLOC_FREE(s);
 
-	Globals.nsupdate_command = (const char **)str_list_make_v3(NULL, "/usr/bin/nsupdate -g", NULL);
+	Globals.nsupdate_command = str_list_make_v3_const(NULL, "/usr/bin/nsupdate -g", NULL);
 
-	Globals.rndc_command = (const char **)str_list_make_v3(NULL, "/usr/sbin/rndc", NULL);
+	Globals.rndc_command = str_list_make_v3_const(NULL, "/usr/sbin/rndc", NULL);
 
 	Globals.cldap_port = 389;
 
@@ -1164,7 +1164,7 @@ const char **lp_parm_string_list(int snum, const char *type, const char *option,
 		data->list = str_list_make_v3(NULL, data->value, NULL);
 	}
 
-	return (const char **)data->list;
+	return discard_const_p(const char *, data->list);
 }
 
 /* Return parametric option from a given service. Type is a part of option before ':' */
