@@ -87,7 +87,7 @@ const char **ldb_modules_list_from_string(struct ldb_context *ldb, TALLOC_CTX *m
 
 	if (modstr[0] == '\0') {
 		modules[0] = NULL;
-		m = (const char **)modules;
+		m = discard_const_p(const char *, modules);
 		return m;
 	}
 
@@ -110,7 +110,7 @@ const char **ldb_modules_list_from_string(struct ldb_context *ldb, TALLOC_CTX *m
 
 	modules[i + 1] = NULL;
 
-	m = (const char **)modules;
+	m = discard_const_p(const char *, modules);
 
 	return m;
 }
