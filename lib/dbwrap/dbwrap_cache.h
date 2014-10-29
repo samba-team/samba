@@ -20,11 +20,7 @@
 #ifndef __DBWRAP_CACHE_H__
 #define __DBWRAP_CACHE_H__
 
-#include <talloc.h>
-
-#include "dbwrap/dbwrap_private.h"
-
-struct db_context;
+#include "dbwrap.h"
 
 struct db_context *db_open_cache(TALLOC_CTX *mem_ctx,
 				 struct db_context *backing);
