@@ -62,7 +62,6 @@ bld.SAMBA_LIBRARY('db-glue',
 
 bld.SAMBA_SUBSYSTEM('MIT_SAMBA',
 	source='mit_samba.c',
-	allow_warnings=True,
 	deps='ldb auth4_sam auth_sam_reply samba-credentials hdb db-glue PAC_GLUE samba-hostconfig com_err'
 	)
 
