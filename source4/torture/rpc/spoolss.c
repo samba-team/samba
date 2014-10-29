@@ -8867,6 +8867,11 @@ static bool test_print_job_enum(struct torture_context *tctx,
 		test_PausePrinter(tctx, b, &t->handle),
 		"failed to pause printer");
 
+	/* purge in case of any jobs from previous tests */
+	torture_assert(tctx,
+		test_printer_purge(tctx, b, &t->handle),
+		"failed to purge printer");
+
 	/* enum before jobs, valid level */
 	torture_assert(tctx,
 		       test_EnumJobs_args(tctx, b, &t->handle, 1, WERR_OK,
@@ -8911,6 +8916,11 @@ static bool test_print_job_enum(struct torture_context *tctx,
 					  WERR_INVALID_LEVEL,
 					  &count, &info),
 		       "EnumJobs with invalid level");
+
+	for (i = 0; i < num_jobs; i++) {
+		test_SetJob(tctx, b, &t->handle, job_ids[i], NULL,
+			    SPOOLSS_JOB_CONTROL_DELETE);
+	}
 
 	torture_assert(tctx,
 		test_ResumePrinter(tctx, b, &t->handle),
