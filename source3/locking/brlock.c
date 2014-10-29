@@ -2026,7 +2026,8 @@ static void brl_get_locks_readonly_parser(TDB_DATA key, TDB_DATA data,
 struct byte_range_lock *brl_get_locks_readonly(files_struct *fsp)
 {
 	struct byte_range_lock *br_lock = NULL;
-	struct byte_range_lock *rw = NULL;
+	struct brl_get_locks_readonly_state state;
+	NTSTATUS status;
 
 	DEBUG(10, ("seqnum=%d, fsp->brlock_seqnum=%d\n",
 		   dbwrap_get_seqnum(brlock_db), fsp->brlock_seqnum));
@@ -2040,60 +2041,39 @@ struct byte_range_lock *brl_get_locks_readonly(files_struct *fsp)
 		return fsp->brlock_rec;
 	}
 
-	if (rw != NULL) {
-		size_t lock_data_size;
+	/*
+	 * Parse the record fresh from the database
+	 */
 
+	state.mem_ctx = fsp;
+	state.br_lock = &br_lock;
+
+	status = dbwrap_parse_record(
+		brlock_db,
+		make_tdb_data((uint8_t *)&fsp->file_id,
+			      sizeof(fsp->file_id)),
+		brl_get_locks_readonly_parser, &state);
+
+	if (NT_STATUS_EQUAL(status,NT_STATUS_NOT_FOUND)) {
 		/*
-		 * Make a copy of the already retrieved and sanitized rw record
+		 * No locks on this file. Return an empty br_lock.
 		 */
-		lock_data_size = rw->num_locks * sizeof(struct lock_struct);
-		br_lock = talloc_pooled_object(
-			fsp, struct byte_range_lock, 1, lock_data_size);
+		br_lock = talloc(fsp, struct byte_range_lock);
 		if (br_lock == NULL) {
-			goto fail;
+			return NULL;
 		}
-		br_lock->have_read_oplocks = rw->have_read_oplocks;
-		br_lock->num_locks = rw->num_locks;
-		br_lock->lock_data = (struct lock_struct *)talloc_memdup(
-			br_lock, rw->lock_data, lock_data_size);
-	} else {
-		struct brl_get_locks_readonly_state state;
-		NTSTATUS status;
 
-		/*
-		 * Parse the record fresh from the database
-		 */
+		br_lock->have_read_oplocks = false;
+		br_lock->num_locks = 0;
+		br_lock->lock_data = NULL;
 
-		state.mem_ctx = fsp;
-		state.br_lock = &br_lock;
-
-		status = dbwrap_parse_record(
-			brlock_db,
-			make_tdb_data((uint8_t *)&fsp->file_id,
-				      sizeof(fsp->file_id)),
-			brl_get_locks_readonly_parser, &state);
-
-		if (NT_STATUS_EQUAL(status,NT_STATUS_NOT_FOUND)) {
-			/*
-			 * No locks on this file. Return an empty br_lock.
-			 */
-			br_lock = talloc(fsp, struct byte_range_lock);
-			if (br_lock == NULL) {
-				goto fail;
-			}
-
-			br_lock->have_read_oplocks = false;
-			br_lock->num_locks = 0;
-			br_lock->lock_data = NULL;
-
-		} else if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(3, ("Could not parse byte range lock record: "
-				  "%s\n", nt_errstr(status)));
-			goto fail;
-		}
-		if (br_lock == NULL) {
-			goto fail;
-		}
+	} else if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(3, ("Could not parse byte range lock record: "
+			  "%s\n", nt_errstr(status)));
+		return NULL;
+	}
+	if (br_lock == NULL) {
+		return NULL;
 	}
 
 	br_lock->fsp = fsp;
@@ -2117,8 +2097,6 @@ struct byte_range_lock *brl_get_locks_readonly(files_struct *fsp)
 		fsp->brlock_seqnum = dbwrap_get_seqnum(brlock_db);
 	}
 
-fail:
-	TALLOC_FREE(rw);
 	return br_lock;
 }
 
