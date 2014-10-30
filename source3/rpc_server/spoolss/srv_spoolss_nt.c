@@ -9310,13 +9310,14 @@ static WERROR getjob_level_1(TALLOC_CTX *mem_ctx,
 			     int count, int snum,
 			     struct spoolss_PrinterInfo2 *pinfo2,
 			     uint32_t jobid,
+			     int sysjob,
 			     struct spoolss_JobInfo1 *r)
 {
 	int i = 0;
 	bool found = false;
 
 	for (i=0; i<count; i++) {
-		if (queue[i].sysjob == (int)jobid) {
+		if (queue[i].sysjob == sysjob) {
 			found = true;
 			break;
 		}
@@ -9343,6 +9344,7 @@ static WERROR getjob_level_2(TALLOC_CTX *mem_ctx,
 			     int count, int snum,
 			     struct spoolss_PrinterInfo2 *pinfo2,
 			     uint32_t jobid,
+			     int sysjob,
 			     struct spoolss_JobInfo2 *r)
 {
 	int i = 0;
@@ -9351,7 +9353,7 @@ static WERROR getjob_level_2(TALLOC_CTX *mem_ctx,
 	WERROR result;
 
 	for (i=0; i<count; i++) {
-		if (queue[i].sysjob == (int)jobid) {
+		if (queue[i].sysjob == sysjob) {
 			found = true;
 			break;
 		}
@@ -9398,8 +9400,11 @@ WERROR _spoolss_GetJob(struct pipes_struct *p,
 {
 	WERROR result = WERR_OK;
 	struct spoolss_PrinterInfo2 *pinfo2 = NULL;
+	const char *svc_name;
+	int sysjob;
 	int snum;
 	int count;
+	struct tdb_print_db *pdb;
 	print_queue_struct 	*queue = NULL;
 	print_status_struct prt_status;
 
@@ -9417,13 +9422,33 @@ WERROR _spoolss_GetJob(struct pipes_struct *p,
 		return WERR_BADFID;
 	}
 
+	svc_name = lp_const_servicename(snum);
+	if (svc_name == NULL) {
+		return WERR_INVALID_PARAM;
+	}
+
 	result = winreg_get_printer_internal(p->mem_ctx,
 				    get_session_info_system(),
 				    p->msg_ctx,
-				    lp_const_servicename(snum),
+				    svc_name,
 				    &pinfo2);
 	if (!W_ERROR_IS_OK(result)) {
 		return result;
+	}
+
+	pdb = get_print_db_byname(svc_name);
+	if (pdb == NULL) {
+		DEBUG(3, ("failed to get print db for svc %s\n", svc_name));
+		TALLOC_FREE(pinfo2);
+		return WERR_INVALID_PARAM;
+	}
+
+	sysjob = jobid_to_sysjob_pdb(pdb, r->in.job_id);
+	release_print_db(pdb);
+	if (sysjob == -1) {
+		DEBUG(3, ("no sysjob for spoolss jobid %u\n", r->in.job_id));
+		TALLOC_FREE(pinfo2);
+		return WERR_INVALID_PARAM;
 	}
 
 	count = print_queue_status(p->msg_ctx, snum, &queue, &prt_status);
@@ -9435,12 +9460,14 @@ WERROR _spoolss_GetJob(struct pipes_struct *p,
 	case 1:
 		result = getjob_level_1(p->mem_ctx,
 					queue, count, snum, pinfo2,
-					r->in.job_id, &r->out.info->info1);
+					r->in.job_id, sysjob,
+					&r->out.info->info1);
 		break;
 	case 2:
 		result = getjob_level_2(p->mem_ctx,
 					queue, count, snum, pinfo2,
-					r->in.job_id, &r->out.info->info2);
+					r->in.job_id, sysjob,
+					&r->out.info->info2);
 		break;
 	default:
 		result = WERR_UNKNOWN_LEVEL;
