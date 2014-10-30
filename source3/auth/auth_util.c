@@ -1521,6 +1521,9 @@ bool is_trusted_domain(const char* dom_name)
 			return false;
 		}
 
+		DEBUG(10, ("wb_is_trusted_domain returned error: %s\n",
+			  wbcErrorString(result)));
+
 		/* The only other possible result is that winbind is not up
 		   and running. We need to update the trustdom_cache
 		   ourselves */
