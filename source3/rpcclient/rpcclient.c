@@ -764,7 +764,9 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 			enum netr_SchannelType sec_chan_type = 0;
 			const char *_account_name = NULL;
 			const char *account_name = NULL;
-			struct samr_Password current_nt_hash;
+			struct samr_Password current_nt_hash = {
+				.hash = { 0 },
+			};
 			struct samr_Password *previous_nt_hash = NULL;
 
 			if (!get_trust_pw_hash(get_cmdline_auth_info_domain(auth_info),
