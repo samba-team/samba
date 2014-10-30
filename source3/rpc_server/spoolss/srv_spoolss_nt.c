@@ -7320,41 +7320,51 @@ static WERROR enumjobs_level3(TALLOC_CTX *mem_ctx,
 	union spoolss_JobInfo *info;
 	int i;
 	WERROR result = WERR_OK;
+	uint32_t num_filled;
+	struct tdb_print_db *pdb;
 
 	info = talloc_array(mem_ctx, union spoolss_JobInfo, num_queues);
-	W_ERROR_HAVE_NO_MEMORY(info);
-
-	*count = num_queues;
-
-	for (i=0; i<*count; i++) {
-		const print_queue_struct *next_queue = NULL;
-
-		if (i+1 < *count) {
-			next_queue = &queue[i+1];
-		}
-
-		result = fill_job_info3(info,
-					&info[i].info3,
-					&queue[i],
-					next_queue,
-					i,
-					snum,
-					pinfo2);
-		if (!W_ERROR_IS_OK(result)) {
-			goto out;
-		}
+	if (info == NULL) {
+		result = WERR_NOMEM;
+		goto err_out;
 	}
 
- out:
-	if (!W_ERROR_IS_OK(result)) {
-		TALLOC_FREE(info);
-		*count = 0;
-		return result;
+	pdb = get_print_db_byname(pinfo2->sharename);
+	if (pdb == NULL) {
+		result = WERR_INVALID_PARAM;
+		goto err_info_free;
 	}
 
+	num_filled = 0;
+	for (i = 0; i < num_queues; i++) {
+		uint32_t jobid = sysjob_to_jobid_pdb(pdb, queue[i].sysjob);
+		if (jobid == (uint32_t)-1) {
+			DEBUG(4, ("skipping sysjob %d\n", queue[i].sysjob));
+			continue;
+		}
+
+		info[num_filled].info3.job_id = jobid;
+		/* next_job_id is overwritten on next iteration */
+		info[num_filled].info3.next_job_id = 0;
+		info[num_filled].info3.reserved = 0;
+
+		if (num_filled > 0) {
+			info[num_filled - 1].info3.next_job_id = jobid;
+		}
+		num_filled++;
+	}
+
+	release_print_db(pdb);
 	*info_p = info;
+	*count = num_filled;
 
 	return WERR_OK;
+
+err_info_free:
+	TALLOC_FREE(info);
+err_out:
+	*count = 0;
+	return result;
 }
 
 /****************************************************************
