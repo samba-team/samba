@@ -296,7 +296,7 @@ static bool test_ldap_netlogon_flags(struct torture_context *tctx,
 	NTSTATUS status;
 	struct cldap_netlogon search;
 	struct netlogon_samlogon_response n1;
-	uint32_t server_type;
+	uint32_t server_type = 0;
 
 	printf("Printing out netlogon server type flags: %s\n", dest);
 
