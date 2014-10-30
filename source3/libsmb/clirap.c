@@ -1424,7 +1424,7 @@ NTSTATUS cli_qpathinfo3(struct cli_state *cli, const char *fname,
 			SMB_INO_T *ino)
 {
 	NTSTATUS status = NT_STATUS_OK;
-	SMB_STRUCT_STAT st;
+	SMB_STRUCT_STAT st = { 0 };
 	uint32_t attr;
 	uint64_t pos;
 
