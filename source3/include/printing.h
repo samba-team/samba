@@ -195,6 +195,7 @@ uint16_t print_spool_rap_jobid(struct print_file_data *print_file);
 
 uint32 sysjob_to_jobid_pdb(struct tdb_print_db *pdb, int sysjob);
 uint32 sysjob_to_jobid(int unix_jobid);
+int jobid_to_sysjob_pdb(struct tdb_print_db *pdb, uint32_t jobid);
 bool print_notify_register_pid(int snum);
 bool print_notify_deregister_pid(int snum);
 bool print_job_exists(const char* sharename, uint32 jobid);
