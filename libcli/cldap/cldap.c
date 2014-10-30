@@ -1020,7 +1020,7 @@ NTSTATUS cldap_netlogon_recv(struct tevent_req *req,
 {
 	struct cldap_netlogon_state *state = tevent_req_data(req,
 					     struct cldap_netlogon_state);
-	NTSTATUS status;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	DATA_BLOB *data;
 
 	if (tevent_req_is_nterror(req, &status)) {
