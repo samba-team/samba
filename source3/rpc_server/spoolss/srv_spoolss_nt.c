@@ -7145,27 +7145,6 @@ static WERROR fill_job_info2(TALLOC_CTX *mem_ctx,
 }
 
 /****************************************************************************
-fill_job_info3
-****************************************************************************/
-
-static WERROR fill_job_info3(TALLOC_CTX *mem_ctx,
-			     struct spoolss_JobInfo3 *r,
-			     const print_queue_struct *queue,
-			     const print_queue_struct *next_queue,
-			     int position, int snum,
-			     struct spoolss_PrinterInfo2 *pinfo2)
-{
-	r->job_id		= queue->sysjob;
-	r->next_job_id		= 0;
-	if (next_queue) {
-		r->next_job_id	= next_queue->sysjob;
-	}
-	r->reserved		= 0;
-
-	return WERR_OK;
-}
-
-/****************************************************************************
  Enumjobs at level 1.
 ****************************************************************************/
 
