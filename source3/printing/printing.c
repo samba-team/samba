@@ -485,19 +485,18 @@ err_out:
 	return pjob;
 }
 
-/* Convert a unix jobid to a smb jobid */
-
-struct unixjob_traverse_state {
+struct job_traverse_state {
 	int sysjob;
-	uint32 sysjob_to_jobid_value;
+	uint32_t jobid;
 };
 
-static int unixjob_traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA key,
-			       TDB_DATA data, void *private_data)
+/* find spoolss jobid based on sysjob */
+static int sysjob_to_jobid_traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA key,
+				       TDB_DATA data, void *private_data)
 {
 	struct printjob *pjob;
-	struct unixjob_traverse_state *state =
-		(struct unixjob_traverse_state *)private_data;
+	struct job_traverse_state *state =
+		(struct job_traverse_state *)private_data;
 
 	if (!data.dptr || data.dsize == 0)
 		return 0;
@@ -507,7 +506,7 @@ static int unixjob_traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA key,
 		return 0;
 
 	if (state->sysjob == pjob->sysjob) {
-		state->sysjob_to_jobid_value = pjob->jobid;
+		state->jobid = pjob->jobid;
 		return 1;
 	}
 
@@ -516,14 +515,14 @@ static int unixjob_traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA key,
 
 uint32 sysjob_to_jobid_pdb(struct tdb_print_db *pdb, int sysjob)
 {
-	struct unixjob_traverse_state state;
+	struct job_traverse_state state;
 
 	state.sysjob = sysjob;
-	state.sysjob_to_jobid_value = (uint32)-1;
+	state.jobid = (uint32_t)-1;
 
-	tdb_traverse(pdb->tdb, unixjob_traverse_fn, &state);
+	tdb_traverse(pdb->tdb, sysjob_to_jobid_traverse_fn, &state);
 
-	return state.sysjob_to_jobid_value;
+	return state.jobid;
 }
 
 /****************************************************************************
@@ -535,10 +534,10 @@ uint32 sysjob_to_jobid(int unix_jobid)
 {
 	int services = lp_numservices();
 	int snum;
-	struct unixjob_traverse_state state;
+	struct job_traverse_state state;
 
 	state.sysjob = unix_jobid;
-	state.sysjob_to_jobid_value = (uint32)-1;
+	state.jobid = (uint32_t)-1;
 
 	for (snum = 0; snum < services; snum++) {
 		struct tdb_print_db *pdb;
@@ -548,12 +547,47 @@ uint32 sysjob_to_jobid(int unix_jobid)
 		if (!pdb) {
 			continue;
 		}
-		tdb_traverse(pdb->tdb, unixjob_traverse_fn, &state);
+		tdb_traverse(pdb->tdb, sysjob_to_jobid_traverse_fn, &state);
 		release_print_db(pdb);
-		if (state.sysjob_to_jobid_value != (uint32)-1)
-			return state.sysjob_to_jobid_value;
+		if (state.jobid != (uint32_t)-1)
+			return state.jobid;
 	}
 	return (uint32)-1;
+}
+
+/* find sysjob based on spoolss jobid */
+static int jobid_to_sysjob_traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA key,
+				       TDB_DATA data, void *private_data)
+{
+	struct printjob *pjob;
+	struct job_traverse_state *state =
+		(struct job_traverse_state *)private_data;
+
+	if (!data.dptr || data.dsize == 0)
+		return 0;
+
+	pjob = (struct printjob *)data.dptr;
+	if (key.dsize != sizeof(uint32_t))
+		return 0;
+
+	if (state->jobid == pjob->jobid) {
+		state->sysjob = pjob->sysjob;
+		return 1;
+	}
+
+	return 0;
+}
+
+int jobid_to_sysjob_pdb(struct tdb_print_db *pdb, uint32_t jobid)
+{
+	struct job_traverse_state state;
+
+	state.sysjob = -1;
+	state.jobid = jobid;
+
+	tdb_traverse(pdb->tdb, jobid_to_sysjob_traverse_fn, &state);
+
+	return state.sysjob;
 }
 
 /****************************************************************************
