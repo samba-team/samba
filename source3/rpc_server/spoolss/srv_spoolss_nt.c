@@ -7083,6 +7083,7 @@ fill_job_info2
 static WERROR fill_job_info2(TALLOC_CTX *mem_ctx,
 			     struct spoolss_JobInfo2 *r,
 			     const print_queue_struct *queue,
+			     uint32_t jobid,
 			     int position, int snum,
 			     struct spoolss_PrinterInfo2 *pinfo2,
 			     struct spoolss_DeviceMode *devmode)
@@ -7091,7 +7092,7 @@ static WERROR fill_job_info2(TALLOC_CTX *mem_ctx,
 
 	t = gmtime(&queue->time);
 
-	r->job_id		= queue->sysjob;
+	r->job_id		= jobid;
 
 	r->printer_name		= lp_servicename(mem_ctx, snum);
 	W_ERROR_HAVE_NO_MEMORY(r->printer_name);
@@ -7234,45 +7235,65 @@ static WERROR enumjobs_level2(TALLOC_CTX *mem_ctx,
 	union spoolss_JobInfo *info;
 	int i;
 	WERROR result = WERR_OK;
+	uint32_t num_filled;
+	struct tdb_print_db *pdb;
 
 	info = talloc_array(mem_ctx, union spoolss_JobInfo, num_queues);
-	W_ERROR_HAVE_NO_MEMORY(info);
+	if (info == NULL) {
+		result = WERR_NOMEM;
+		goto err_out;
+	}
 
-	*count = num_queues;
+	pdb = get_print_db_byname(pinfo2->sharename);
+	if (pdb == NULL) {
+		result = WERR_INVALID_PARAM;
+		goto err_info_free;
+	}
 
-	for (i=0; i<*count; i++) {
+	num_filled = 0;
+	for (i = 0; i< num_queues; i++) {
 		struct spoolss_DeviceMode *devmode;
+		uint32_t jobid = sysjob_to_jobid_pdb(pdb, queue[i].sysjob);
+		if (jobid == (uint32_t)-1) {
+			DEBUG(4, ("skipping sysjob %d\n", queue[i].sysjob));
+			continue;
+		}
 
 		result = spoolss_create_default_devmode(info,
 							pinfo2->printername,
 							&devmode);
 		if (!W_ERROR_IS_OK(result)) {
 			DEBUG(3, ("Can't proceed w/o a devmode!"));
-			goto out;
+			goto err_pdb_drop;
 		}
 
 		result = fill_job_info2(info,
-					&info[i].info2,
+					&info[num_filled].info2,
 					&queue[i],
+					jobid,
 					i,
 					snum,
 					pinfo2,
 					devmode);
 		if (!W_ERROR_IS_OK(result)) {
-			goto out;
+			goto err_pdb_drop;
 		}
+		num_filled++;
 	}
 
- out:
-	if (!W_ERROR_IS_OK(result)) {
-		TALLOC_FREE(info);
-		*count = 0;
-		return result;
-	}
-
+	release_print_db(pdb);
 	*info_p = info;
+	*count = num_filled;
 
 	return WERR_OK;
+
+err_pdb_drop:
+	release_print_db(pdb);
+err_info_free:
+	TALLOC_FREE(info);
+err_out:
+	*count = 0;
+	return result;
 }
 
 /****************************************************************************
@@ -9409,6 +9430,7 @@ static WERROR getjob_level_2(TALLOC_CTX *mem_ctx,
 	return fill_job_info2(mem_ctx,
 			      r,
 			      &queue[i],
+			      jobid,
 			      i,
 			      snum,
 			      pinfo2,
