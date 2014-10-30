@@ -1006,6 +1006,8 @@ static int vfs_gluster_set_offline(struct vfs_handle_struct *handle,
 #define GLUSTER_ACL_HEADER_SIZE    4
 #define GLUSTER_ACL_ENTRY_SIZE     8
 
+#define GLUSTER_ACL_SIZE(n)       (GLUSTER_ACL_HEADER_SIZE + (n * GLUSTER_ACL_ENTRY_SIZE))
+
 static SMB_ACL_T gluster_to_smb_acl(const char *buf, size_t xattr_size,
 				    TALLOC_CTX *mem_ctx)
 {
@@ -1275,7 +1277,7 @@ static SMB_ACL_T vfs_gluster_sys_acl_get_file(struct vfs_handle_struct *handle,
 	struct smb_acl_t *result;
 	char *buf;
 	const char *key;
-	ssize_t ret;
+	ssize_t ret, size = GLUSTER_ACL_SIZE(20);
 
 	switch (type) {
 	case SMB_ACL_TYPE_ACCESS:
@@ -1289,13 +1291,22 @@ static SMB_ACL_T vfs_gluster_sys_acl_get_file(struct vfs_handle_struct *handle,
 		return NULL;
 	}
 
-	ret = glfs_getxattr(handle->data, path_p, key, 0, 0);
-	if (ret <= 0) {
+	buf = alloca(size);
+	if (!buf) {
 		return NULL;
 	}
 
-	buf = alloca(ret);
-	ret = glfs_getxattr(handle->data, path_p, key, buf, ret);
+	ret = glfs_getxattr(handle->data, path_p, key, buf, size);
+	if (ret == -1 && errno == ERANGE) {
+		ret = glfs_getxattr(handle->data, path_p, key, 0, 0);
+		if (ret > 0) {
+			buf = alloca(ret);
+			if (!buf) {
+				return NULL;
+			}
+			ret = glfs_getxattr(handle->data, path_p, key, buf, ret);
+		}
+	}
 	if (ret <= 0) {
 		return NULL;
 	}
@@ -1310,18 +1321,29 @@ static SMB_ACL_T vfs_gluster_sys_acl_get_fd(struct vfs_handle_struct *handle,
 					    TALLOC_CTX *mem_ctx)
 {
 	struct smb_acl_t *result;
-	int ret;
+	ssize_t ret, size = GLUSTER_ACL_SIZE(20);
 	char *buf;
 	glfs_fd_t *glfd;
 
 	glfd = *(glfs_fd_t **)VFS_FETCH_FSP_EXTENSION(handle, fsp);
-	ret = glfs_fgetxattr(glfd, "system.posix_acl_access", 0, 0);
-	if (ret <= 0) {
+
+	buf = alloca(size);
+	if (!buf) {
 		return NULL;
 	}
 
-	buf = alloca(ret);
-	ret = glfs_fgetxattr(glfd, "system.posix_acl_access", buf, ret);
+	ret = glfs_fgetxattr(glfd, "system.posix_acl_access", buf, size);
+	if (ret == -1 && errno == ERANGE) {
+		ret = glfs_fgetxattr(glfd, "system.posix_acl_access", 0, 0);
+		if (ret > 0) {
+			buf = alloca(ret);
+			if (!buf) {
+				return NULL;
+			}
+			ret = glfs_fgetxattr(glfd, "system.posix_acl_access",
+					     buf, ret);
+		}
+	}
 	if (ret <= 0) {
 		return NULL;
 	}
