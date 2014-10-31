@@ -349,6 +349,7 @@ static struct tevent_req *smbd_smb2_lock_send(TALLOC_CTX *mem_ctx,
 
 	if (async) {
 		tevent_req_defer_callback(req, smb2req->sconn->ev_ctx);
+		SMBPROFILE_IOBYTES_ASYNC_SET_IDLE(smb2req->profile);
 		return req;
 	}
 
@@ -702,6 +703,8 @@ static void reprocess_blocked_smb2_lock(struct smbd_smb2_request *smb2req,
 	if (!smb2req->subreq) {
 		return;
 	}
+	SMBPROFILE_IOBYTES_ASYNC_SET_BUSY(smb2req->profile);
+
 	state = tevent_req_data(smb2req->subreq, struct smbd_smb2_lock_state);
 	if (!state) {
 		return;
@@ -778,6 +781,7 @@ static void reprocess_blocked_smb2_lock(struct smbd_smb2_request *smb2req,
 		fsp_str_dbg(fsp),
 		fsp_fnum_dbg(fsp)));
 
+	SMBPROFILE_IOBYTES_ASYNC_SET_IDLE(smb2req->profile);
         return;
 }
 

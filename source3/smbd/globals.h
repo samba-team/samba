@@ -20,6 +20,7 @@
 
 #include "system/select.h"
 #include "librpc/gen_ndr/smbXsrv.h"
+#include "smbprofile.h"
 
 extern int aio_pending_size;
 extern int outstanding_aio_calls;
@@ -650,6 +651,8 @@ struct smbd_smb2_request {
 	DATA_BLOB last_key;
 
 	struct timeval request_time;
+
+	SMBPROFILE_IOBYTES_ASYNC_STATE(profile);
 
 	/* fake smb1 request. */
 	struct smb_request *smb1req;

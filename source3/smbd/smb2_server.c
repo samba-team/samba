@@ -2191,157 +2191,127 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		SMB_ASSERT(call->need_tcon);
 	}
 
+#define _INBYTES(_r) \
+	iov_buflen(SMBD_SMB2_IN_HDR_IOV(_r), SMBD_SMB2_NUM_IOV_PER_REQ-1)
+
 	switch (opcode) {
 	case SMB2_OP_NEGPROT:
-		{
-			START_PROFILE(smb2_negprot);
-			return_value = smbd_smb2_request_process_negprot(req);
-			END_PROFILE(smb2_negprot);
-		}
+		SMBPROFILE_IOBYTES_ASYNC_START(smb2_negprot, profile_p,
+					       req->profile, _INBYTES(req));
+		return_value = smbd_smb2_request_process_negprot(req);
 		break;
 
 	case SMB2_OP_SESSSETUP:
-		{
-			START_PROFILE(smb2_sesssetup);
-			return_value = smbd_smb2_request_process_sesssetup(req);
-			END_PROFILE(smb2_sesssetup);
-		}
+		SMBPROFILE_IOBYTES_ASYNC_START(smb2_sesssetup, profile_p,
+					       req->profile, _INBYTES(req));
+		return_value = smbd_smb2_request_process_sesssetup(req);
 		break;
 
 	case SMB2_OP_LOGOFF:
-		{
-			START_PROFILE(smb2_logoff);
-			return_value = smbd_smb2_request_process_logoff(req);
-			END_PROFILE(smb2_logoff);
-		}
+		SMBPROFILE_IOBYTES_ASYNC_START(smb2_logoff, profile_p,
+					       req->profile, _INBYTES(req));
+		return_value = smbd_smb2_request_process_logoff(req);
 		break;
 
 	case SMB2_OP_TCON:
-		{
-			START_PROFILE(smb2_tcon);
-			return_value = smbd_smb2_request_process_tcon(req);
-			END_PROFILE(smb2_tcon);
-		}
+		SMBPROFILE_IOBYTES_ASYNC_START(smb2_tcon, profile_p,
+					       req->profile, _INBYTES(req));
+		return_value = smbd_smb2_request_process_tcon(req);
 		break;
 
 	case SMB2_OP_TDIS:
-		{
-			START_PROFILE(smb2_tdis);
-			return_value = smbd_smb2_request_process_tdis(req);
-			END_PROFILE(smb2_tdis);
-		}
+		SMBPROFILE_IOBYTES_ASYNC_START(smb2_tdis, profile_p,
+					       req->profile, _INBYTES(req));
+		return_value = smbd_smb2_request_process_tdis(req);
 		break;
 
 	case SMB2_OP_CREATE:
-		{
-			START_PROFILE(smb2_create);
-			return_value = smbd_smb2_request_process_create(req);
-			END_PROFILE(smb2_create);
+		if (req->subreq == NULL) {
+			SMBPROFILE_IOBYTES_ASYNC_START(smb2_create, profile_p,
+						       req->profile, _INBYTES(req));
+		} else {
+			SMBPROFILE_IOBYTES_ASYNC_SET_BUSY(req->profile);
 		}
+		return_value = smbd_smb2_request_process_create(req);
 		break;
 
 	case SMB2_OP_CLOSE:
-		{
-			START_PROFILE(smb2_close);
-			return_value = smbd_smb2_request_process_close(req);
-			END_PROFILE(smb2_close);
-		}
+		SMBPROFILE_IOBYTES_ASYNC_START(smb2_close, profile_p,
+					       req->profile, _INBYTES(req));
+		return_value = smbd_smb2_request_process_close(req);
 		break;
 
 	case SMB2_OP_FLUSH:
-		{
-			START_PROFILE(smb2_flush);
-			return_value = smbd_smb2_request_process_flush(req);
-			END_PROFILE(smb2_flush);
-		}
+		SMBPROFILE_IOBYTES_ASYNC_START(smb2_flush, profile_p,
+					       req->profile, _INBYTES(req));
+		return_value = smbd_smb2_request_process_flush(req);
 		break;
 
 	case SMB2_OP_READ:
-		{
-			START_PROFILE(smb2_read);
-			return_value = smbd_smb2_request_process_read(req);
-			END_PROFILE(smb2_read);
-		}
+		SMBPROFILE_IOBYTES_ASYNC_START(smb2_read, profile_p,
+					       req->profile, _INBYTES(req));
+		return_value = smbd_smb2_request_process_read(req);
 		break;
 
 	case SMB2_OP_WRITE:
-		{
-			START_PROFILE(smb2_write);
-			return_value = smbd_smb2_request_process_write(req);
-			END_PROFILE(smb2_write);
-		}
+		SMBPROFILE_IOBYTES_ASYNC_START(smb2_write, profile_p,
+					       req->profile, _INBYTES(req));
+		return_value = smbd_smb2_request_process_write(req);
 		break;
 
 	case SMB2_OP_LOCK:
-		{
-			START_PROFILE(smb2_lock);
-			return_value = smbd_smb2_request_process_lock(req);
-			END_PROFILE(smb2_lock);
-		}
+		SMBPROFILE_IOBYTES_ASYNC_START(smb2_lock, profile_p,
+					       req->profile, _INBYTES(req));
+		return_value = smbd_smb2_request_process_lock(req);
 		break;
 
 	case SMB2_OP_IOCTL:
-		{
-			START_PROFILE(smb2_ioctl);
-			return_value = smbd_smb2_request_process_ioctl(req);
-			END_PROFILE(smb2_ioctl);
-		}
+		SMBPROFILE_IOBYTES_ASYNC_START(smb2_ioctl, profile_p,
+					       req->profile, _INBYTES(req));
+		return_value = smbd_smb2_request_process_ioctl(req);
 		break;
 
 	case SMB2_OP_CANCEL:
-		{
-			START_PROFILE(smb2_cancel);
-			return_value = smbd_smb2_request_process_cancel(req);
-			END_PROFILE(smb2_cancel);
-		}
+		SMBPROFILE_IOBYTES_ASYNC_START(smb2_cancel, profile_p,
+					       req->profile, _INBYTES(req));
+		return_value = smbd_smb2_request_process_cancel(req);
+		SMBPROFILE_IOBYTES_ASYNC_END(req->profile, 0);
 		break;
 
 	case SMB2_OP_KEEPALIVE:
-		{
-			START_PROFILE(smb2_keepalive);
-			return_value = smbd_smb2_request_process_keepalive(req);
-			END_PROFILE(smb2_keepalive);
-		}
+		SMBPROFILE_IOBYTES_ASYNC_START(smb2_keepalive, profile_p,
+					       req->profile, _INBYTES(req));
+		return_value = smbd_smb2_request_process_keepalive(req);
 		break;
 
 	case SMB2_OP_FIND:
-		{
-			START_PROFILE(smb2_find);
-			return_value = smbd_smb2_request_process_find(req);
-			END_PROFILE(smb2_find);
-		}
+		SMBPROFILE_IOBYTES_ASYNC_START(smb2_find, profile_p,
+					       req->profile, _INBYTES(req));
+		return_value = smbd_smb2_request_process_find(req);
 		break;
 
 	case SMB2_OP_NOTIFY:
-		{
-			START_PROFILE(smb2_notify);
-			return_value = smbd_smb2_request_process_notify(req);
-			END_PROFILE(smb2_notify);
-		}
+		SMBPROFILE_IOBYTES_ASYNC_START(smb2_notify, profile_p,
+					       req->profile, _INBYTES(req));
+		return_value = smbd_smb2_request_process_notify(req);
 		break;
 
 	case SMB2_OP_GETINFO:
-		{
-			START_PROFILE(smb2_getinfo);
-			return_value = smbd_smb2_request_process_getinfo(req);
-			END_PROFILE(smb2_getinfo);
-		}
+		SMBPROFILE_IOBYTES_ASYNC_START(smb2_getinfo, profile_p,
+					       req->profile, _INBYTES(req));
+		return_value = smbd_smb2_request_process_getinfo(req);
 		break;
 
 	case SMB2_OP_SETINFO:
-		{
-			START_PROFILE(smb2_setinfo);
-			return_value = smbd_smb2_request_process_setinfo(req);
-			END_PROFILE(smb2_setinfo);
-		}
+		SMBPROFILE_IOBYTES_ASYNC_START(smb2_setinfo, profile_p,
+					       req->profile, _INBYTES(req));
+		return_value = smbd_smb2_request_process_setinfo(req);
 		break;
 
 	case SMB2_OP_BREAK:
-		{
-			START_PROFILE(smb2_break);
-			return_value = smbd_smb2_request_process_break(req);
-			END_PROFILE(smb2_break);
-		}
+		SMBPROFILE_IOBYTES_ASYNC_START(smb2_break, profile_p,
+					       req->profile, _INBYTES(req));
+		return_value = smbd_smb2_request_process_break(req);
 		break;
 
 	default:
@@ -2439,6 +2409,9 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 	if (req->last_key.length > 0) {
 		data_blob_clear_free(&req->last_key);
 	}
+
+	SMBPROFILE_IOBYTES_ASYNC_END(req->profile,
+		iov_buflen(outhdr, SMBD_SMB2_NUM_IOV_PER_REQ-1));
 
 	req->current_idx += SMBD_SMB2_NUM_IOV_PER_REQ;
 

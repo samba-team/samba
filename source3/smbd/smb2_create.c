@@ -957,6 +957,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 						     &info);
 			if (!NT_STATUS_IS_OK(status)) {
 				if (open_was_deferred(smb1req->xconn, smb1req->mid)) {
+					SMBPROFILE_IOBYTES_ASYNC_SET_IDLE(smb2req->profile);
 					return req;
 				}
 				tevent_req_nterror(req, status);
