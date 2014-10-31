@@ -60,7 +60,15 @@ static bool set_my_netbios_names(const char *name, int i)
 {
 	SAFE_FREE(smb_my_netbios_names[i]);
 
-	smb_my_netbios_names[i] = SMB_STRDUP(name);
+	/*
+	 * Don't include space for terminating '\0' in strndup,
+	 * it is automatically added. This screws up if the name
+	 * is greater than MAX_NETBIOSNAME_LEN-1 in the unix
+	 * charset, but less than or equal to MAX_NETBIOSNAME_LEN-1
+	 * in the DOS charset, but this is so old we have to live
+	 * with that.
+	 */
+	smb_my_netbios_names[i] = SMB_STRNDUP(name, MAX_NETBIOSNAME_LEN-1);
 	if (!smb_my_netbios_names[i])
 		return False;
 	return strupper_m(smb_my_netbios_names[i]);
