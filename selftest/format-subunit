@@ -11,6 +11,8 @@ import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../lib/subunit/python"))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../lib/testtools"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../lib/mimeparse"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../lib/extras"))
 
 import subunithelper
 
