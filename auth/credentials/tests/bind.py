@@ -17,18 +17,12 @@ samba.ensure_external_module("subunit", "subunit/python")
 
 import samba.getopt as options
 
-from ldb import (
-    SCOPE_BASE, SCOPE_SUBTREE, LdbError, ERR_NO_SUCH_OBJECT)
-from samba.dcerpc import security
+from ldb import SCOPE_BASE, SCOPE_SUBTREE
 
-from samba.auth import system_session
 from samba import gensec
-from samba.samdb import SamDB
-from samba.credentials import Credentials
 import samba.tests, unittest
 from samba.tests import delete_force
 from subunit.run import SubunitTestRunner
-from samba.tests import TestCase, TestSkipped
 
 parser = optparse.OptionParser("ldap [options] <host>")
 sambaopts = options.SambaOptions(parser)
