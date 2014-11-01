@@ -1,19 +1,39 @@
-#!/usr/bin/env perl
-#
-use strict;
-my %h;
-open(FH, "subunit-ls --times --no-passthrough|") || die "pb with subunit-ls";
-while(<FH>)
-{
-	chomp();
-	my @l = split(/ /);
-	my $val = @l[scalar(@l)-1];
-	$h{join(' ',@l)} = $val;
-}
+#!/usr/bin/python
 
-my @sorted = sort { $h{$b}<=>$h{$a} } keys(%h);
-use Data::Dumper;
-foreach my $l (@sorted)
-{
-	print "$l\n";
-}
+import optparse
+import os.path
+import subprocess
+import sys
+
+parser = optparse.OptionParser()
+parser.add_option("--limit", dest="limit", type=int,
+                  help="Limit to this number of output entries.", default=0)
+(opts, args) = parser.parse_args()
+
+third_party_path = os.path.join(os.path.dirname(sys.argv[0]), "..", "lib")
+subunit_prefix = "PYTHONPATH="+ ":".join([
+    os.path.join(third_party_path, "testtools"),
+    os.path.join(third_party_path, "mimeparse"),
+    os.path.join(third_party_path, "extras"),
+    os.path.join(third_party_path, "subunit/python")]) + (
+    " " + os.path.join(third_party_path, "subunit"))
+
+durations = {}
+
+cmd = (os.path.join(subunit_prefix, "filters/subunit-1to2") + " | " +
+       os.path.join(subunit_prefix, "filters/subunit-ls") + " --times --no-passthrough")
+
+p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stdin=sys.stdin, shell=True)
+for l in p.stdout:
+    l = l.strip()
+    (name, duration) = l.rsplit(" ", 1)
+    durations[name] = float(duration)
+
+if opts.limit:
+    print "Top %d tests by run time:" % opts.limit
+
+for i, (name, length) in enumerate(sorted(
+    durations.items(), cmp=lambda (k1,v1), (k2, v2): cmp(v1, v2), reverse=True)):
+    if opts.limit and i == opts.limit:
+        break
+    print "%d: %s -> %ds" % (i+1, name, length)
