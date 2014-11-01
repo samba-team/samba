@@ -25,7 +25,8 @@ parser.add_option("--prefix", type="string", default=".",
 opts, args = parser.parse_args()
 
 def handle_sigint(sig, stack):
-	sys.exit(0)
+    sys.exit(0)
+
 signal.signal(signal.SIGINT, handle_sigint)
 
 statistics = {
