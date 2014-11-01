@@ -19,7 +19,12 @@ failed=0
 samba4bindir="$BINDIR"
 wbinfo="$VALGRIND $samba4bindir/wbinfo"
 samba_tool="$VALGRIND $samba4bindir/samba-tool"
-ldbmodify="$samba4bindir/ldbmodify"
+if [ -f "$samba4bindir/ldbmodify" ]; then
+	ldbmodify="$samba4bindir/ldbmodify"
+else
+	# Using system ldbmodify
+	ldbmodify="ldbmodify"
+fi
 
 . `dirname $0`/../../testprogs/blackbox/subunit.sh
 
