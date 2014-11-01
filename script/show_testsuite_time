@@ -22,6 +22,8 @@ if ($#ARGV >= 1) {
 	}
 }
 
+print "TOP $max slowest tests\n";
+
 while(<$fh>)
 {
 	if (m/^testsuite: (.*)/) {
