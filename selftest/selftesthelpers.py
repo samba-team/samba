@@ -133,9 +133,11 @@ def plantestsuite_loadlist(name, env, cmdline, subunit_version=1):
         cmdline = " ".join(cmdline)
     support_list = ("$LISTOPT" in cmdline)
     if not "$LISTOPT" in cmdline:
-        raise AssertionError("test %s supports --load-list, but not --list" % name)
-    print ("%s | %s" % (cmdline, add_prefix(name, env, support_list))).replace("$LISTOPT", "--list")
-    print cmdline + " $LOADLIST 2>&1 " + to_subunit1(subunit_version) + "| " + add_prefix(name, env, support_list)
+        raise AssertionError("loadlist test %s does not support not --list" % name)
+    if not "$LOADLIST" in cmdline:
+        raise AssertionError("loadlist test %s does not support --load-list" % name)
+    print ("%s | %s" % (cmdline.replace("$LOADLIST", ""), add_prefix(name, env, support_list))).replace("$LISTOPT", "--list")
+    print cmdline.replace("$LISTOPT", "") + " 2>&1 " + to_subunit1(subunit_version) + " | " + add_prefix(name, env, False)
 
 
 def skiptestsuite(name, reason):
@@ -207,7 +209,7 @@ def plansmbtorture4testsuite(name, env, options, target, modname=None):
     if isinstance(options, list):
         options = " ".join(options)
     options = " ".join(smbtorture4_options + ["--target=%s" % target]) + " " + options
-    cmdline = "%s $LISTOPT %s %s" % (valgrindify(smbtorture4), options, name)
+    cmdline = "%s $LISTOPT $LOADLIST %s %s" % (valgrindify(smbtorture4), options, name)
     plantestsuite_loadlist(modname, env, cmdline)
 
 
