@@ -102,13 +102,7 @@ def plantestsuite(name, env, cmdline):
     print env
     if isinstance(cmdline, list):
         cmdline = " ".join(cmdline)
-    filter_subunit_args = ["--fail-on-empty"]
-    if "$LISTOPT" in cmdline:
-        filter_subunit_args.append("$LISTOPT")
-    print "%s 2>&1 | %s/selftest/filter-subunit %s --prefix=\"%s.\" --suffix=\"(%s)\"" % (cmdline,
-                                                                        srcdir(),
-                                                                        " ".join(filter_subunit_args),
-                                                                        name, env)
+    print "%s 2>&1 | " + add_prefix(name, env, "$LISTOPT" in cmdline)
 
 
 def add_prefix(prefix, env, support_list=False):
