@@ -485,7 +485,13 @@ class PlainFormatter(TestsuiteEnabledTestResult):
         if not self.verbose:
             self.test_output[name] = ""
 
-        out = "[%d" % self.index
+        total_tests = (self.statistics['TESTS_EXPECTED_OK'] +
+                       self.statistics['TESTS_EXPECTED_FAIL'] +
+                       self.statistics['TESTS_ERROR'] +
+                       self.statistics['TESTS_UNEXPECTED_FAIL'] +
+                       self.statistics['TESTS_UNEXPECTED_OK'])
+
+        out = "[%d(%d)" % (self.index, total_tests)
         if self.totalsuites is not None:
             out += "/%d" % self.totalsuites
         if self.start_time is not None:
