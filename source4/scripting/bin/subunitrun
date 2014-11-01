@@ -81,5 +81,7 @@ opts, args = parser.parse_args()
 if not getattr(opts, "listtests", False):
     lp = sambaopts.get_loadparm()
     samba.tests.cmdline_credentials = credopts.get_credentials(lp)
+if getattr(opts, 'load_list', None):
+    args.insert(0, "--load-list=%s" % opts.load_list)
 
 TestProgram(module=None, args=args, opts=subunitopts)

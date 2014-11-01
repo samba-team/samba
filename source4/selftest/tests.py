@@ -436,7 +436,7 @@ def planoldpythontestsuite(env, module, name=None, extra_path=[], environ={}, ex
     args += extra_args
     if name is None:
         name = module
-    plantestsuite(name, env, args)
+    plantestsuite_loadlist(name, env, args)
 
 planoldpythontestsuite("dc:local", "samba.tests.gensec", extra_args=['-U"$USERNAME%$PASSWORD"'])
 planoldpythontestsuite("none", "simple", extra_path=["%s/lib/tdb/python/tests" % srcdir()], name="tdb.python")
