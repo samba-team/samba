@@ -68,7 +68,8 @@ else:
 python = os.getenv("PYTHON", "python")
 
 # Set a default value, overridden if we find a working one on the system
-tap2subunit = "PYTHONPATH=%s/lib/subunit/python:%s/lib/testtools %s %s/lib/subunit/filters/tap2subunit" % (srcdir(), srcdir(), python, srcdir())
+tap2subunit = "PYTHONPATH=%s/lib/subunit/python:%s/lib/testtools:%s/lib/extras:%s/lib/mimeparse %s %s/lib/subunit/filters/tap2subunit" % (srcdir(), srcdir(), srcdir(), srcdir(), python, srcdir())
+subunit2to1 = "PYTHONPATH=%s/lib/subunit/python:%s/lib/testtools:%s/lib/extras:%s/lib/mimeparse %s %s/lib/subunit/filters/subunit-2to1" % (srcdir(), srcdir(), srcdir(), srcdir(), python, srcdir())
 
 sub = subprocess.Popen("tap2subunit", stdin=subprocess.PIPE,
     stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
@@ -172,8 +173,11 @@ def planpythontestsuite(env, module, name=None, extra_path=[]):
         name = module
     pypath = list(extra_path)
     if not has_system_subunit_run:
-        pypath.extend(["%s/lib/subunit/python" % srcdir(),
-            "%s/lib/testtools" % srcdir()])
+        pypath.extend([
+            "%s/lib/subunit/python" % srcdir(),
+            "%s/lib/testtools" % srcdir(),
+            "%s/lib/extras" % srcdir(),
+            "%s/lib/mimeparse" % srcdir()])
     args = [python, "-m", "subunit.run", "$LISTOPT", module]
     if pypath:
         args.insert(0, "PYTHONPATH=%s" % ":".join(["$PYTHONPATH"] + pypath))
