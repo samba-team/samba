@@ -27,7 +27,7 @@ use Parse::Pidl::Util qw(has_property property_matches make_str);
 use Parse::Pidl::NDR qw(ContainsString GetNextLevel);
 use Parse::Pidl::Dump qw(DumpType DumpFunction);
 use Parse::Pidl::Wireshark::Conformance qw(ReadConformance);
-use File::Basename;	
+use File::Basename;
 
 use vars qw($VERSION);
 $VERSION = '0.01';
@@ -57,12 +57,12 @@ sub StripPrefixes($$)
 
 sub field2name($)
 {
-    my($field) = shift;
+	my($field) = shift;
 
-    $field =~ s/_/ /g;		# Replace underscores with spaces
-    $field =~ s/(\w+)/\u\L$1/g;	# Capitalise each word
-    
-    return $field;
+	$field =~ s/_/ /g;		# Replace underscores with spaces
+	$field =~ s/(\w+)/\u\L$1/g;	# Capitalise each word
+
+	return $field;
 }
 
 sub new($)
@@ -91,7 +91,7 @@ sub pidl_code($$)
 {
 	my ($self, $d) = @_;
 	return if (defined($self->{cur_fn}) and defined($self->{conformance}->{manual}->{$self->{cur_fn}}));
- 
+
 	if ($d) {
 		$self->{res}->{code} .= $self->{tabs};
 		$self->{res}->{code} .= $d;
@@ -143,17 +143,17 @@ sub Enum($$$$)
 
 	return if (defined($self->{conformance}->{noemit}->{StripPrefixes($name, $self->{conformance}->{strip_prefixes})}));
 
-   	foreach (@{$e->{ELEMENTS}}) {
+	foreach (@{$e->{ELEMENTS}}) {
 		if (/([^=]*)=(.*)/) {
 			$self->pidl_hdr("#define $1 ($2)");
 		}
 	}
-	
+
 	$self->pidl_hdr("extern const value_string $valsstring\[];");
 	$self->pidl_hdr("int $dissectorname(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, guint8 *drep _U_, int hf_index _U_, g$e->{BASE_TYPE} *param _U_);");
 
 	$self->pidl_def("const value_string ".$valsstring."[] = {");
-    	foreach (@{$e->{ELEMENTS}}) {
+	foreach (@{$e->{ELEMENTS}}) {
 		next unless (/([^=]*)=(.*)/);
 		$self->pidl_def("\t{ $1, \"$1\" },");
 	}
@@ -212,7 +212,7 @@ sub Bitmap($$$$)
 	$self->pidl_code("proto_item *item = NULL;");
 	$self->pidl_code("proto_tree *tree = NULL;");
 	$self->pidl_code("");
-		
+
 	$self->pidl_code("g$e->{BASE_TYPE} flags;");
 	if ($e->{ALIGN} > 1) {
 		$self->pidl_code("ALIGN_TO_$e->{ALIGN}_BYTES;");
@@ -240,7 +240,7 @@ sub Bitmap($$$$)
 		my $filtername = "$ifname\.$name\.$en";
 
 		$self->{hf_used}->{$hf_bitname} = 1;
-		
+
 		$self->register_hf_field($hf_bitname, field2name($en), $filtername, "FT_BOOLEAN", $e->{ALIGN} * 8, "TFS(&$name\_$en\_tfs)", $ev, "");
 
 		$self->pidl_def("static const true_false_string $name\_$en\_tfs = {");
@@ -253,7 +253,7 @@ sub Bitmap($$$$)
 			$self->pidl_def("   \"$en is NOT SET\",");
 		}
 		$self->pidl_def("};");
-		
+
 		$self->pidl_code("proto_tree_add_boolean(tree, $hf_bitname, tvb, offset-$e->{ALIGN}, $e->{ALIGN}, flags);");
 		$self->pidl_code("if (flags&$ev){");
 		$self->pidl_code("\tproto_item_append_text(item, \"$en\");");
@@ -321,7 +321,7 @@ sub ElementLevel($$$$$$$$)
 
 
 			($bs = 1) if (property_matches($e, "flag", ".*LIBNDR_FLAG_STR_ASCII.*"));
-			
+
 			if (property_matches($e, "flag", ".*LIBNDR_FLAG_STR_SIZE4.*") and property_matches($e, "flag", ".*LIBNDR_FLAG_STR_LEN4.*")) {
 				$self->pidl_code("char *data;\n");
 				$self->pidl_code("offset = dissect_ndr_cvstring(tvb, offset, pinfo, tree, drep, $bs, $hf, FALSE, &data);");
@@ -541,7 +541,7 @@ sub Function($$$)
 	foreach (@{$fn->{ELEMENTS}}) {
 	    $dissectornames{$_->{NAME}} = $self->Element($_, $fn->{NAME}, $ifname, undef) if not defined($dissectornames{$_->{NAME}});
 	}
-	
+
 	my $fn_name = $_->{NAME};
 	$fn_name =~ s/^${ifname}_//;
 
@@ -552,7 +552,7 @@ sub Function($$$)
 	$self->pidl_code("{");
 	$self->indent;
 	if ( not defined($fn->{RETURN_TYPE})) {
-	} elsif ($fn->{RETURN_TYPE} eq "NTSTATUS" or $fn->{RETURN_TYPE} eq "WERROR") 
+	} elsif ($fn->{RETURN_TYPE} eq "NTSTATUS" or $fn->{RETURN_TYPE} eq "WERROR")
 	{
 		$self->pidl_code("guint32 status;\n");
 	} elsif (my $type = getType($fn->{RETURN_TYPE})) {
@@ -561,7 +561,7 @@ sub Function($$$)
 		} elsif ($type->{DATA}->{TYPE} eq "SCALAR") {
 			$self->pidl_code("g$fn->{RETURN_TYPE} status;\n");
 		} else {
-	    	error($fn, "return type `$fn->{RETURN_TYPE}' not yet supported");
+			error($fn, "return type `$fn->{RETURN_TYPE}' not yet supported");
 		}
 	} else {
 		error($fn, "unknown return type `$fn->{RETURN_TYPE}'");
@@ -586,7 +586,7 @@ sub Function($$$)
 		$self->pidl_code("offset = dissect_ndr_uint32(tvb, offset, pinfo, tree, drep, hf\_$ifname\_werror, &status);\n");
 		$self->pidl_code("if (status != 0)");
 		$self->pidl_code("\tcol_append_fstr(pinfo->cinfo, COL_INFO, \", Error: %s\", val_to_str(status, WERR_errors, \"Unknown DOS error 0x%08x\"));\n");
-		
+
 		$return_types{$ifname}->{"werror"} = ["WERROR", "Windows Error"];
 	} elsif (my $type = getType($fn->{RETURN_TYPE})) {
 		if ($type->{DATA}->{TYPE} eq "ENUM") {
@@ -749,7 +749,7 @@ sub Union($$$$)
 	my $dissectorname = "$ifname\_dissect_".StripPrefixes($name, $self->{conformance}->{strip_prefixes});
 
 	return if (defined($self->{conformance}->{noemit}->{StripPrefixes($name, $self->{conformance}->{strip_prefixes})}));
-	
+
 	$self->register_ett("ett_$ifname\_$name");
 
 	my $res = "";
@@ -819,12 +819,12 @@ sub Union($$$$)
 sub Const($$$)
 {
 	my ($self,$const,$ifname) = @_;
-	
+
 	if (!defined($const->{ARRAY_LEN}[0])) {
-    		$self->pidl_hdr("#define $const->{NAME}\t( $const->{VALUE} )\n");
-    	} else {
-    		$self->pidl_hdr("#define $const->{NAME}\t $const->{VALUE}\n");
-    	}
+		$self->pidl_hdr("#define $const->{NAME}\t( $const->{VALUE} )\n");
+	} else {
+		$self->pidl_hdr("#define $const->{NAME}\t $const->{VALUE}\n");
+	}
 }
 
 sub Typedef($$$$)
@@ -860,35 +860,35 @@ sub RegisterInterface($$)
 
 	$self->{res}->{code}.=$self->DumpHfList()."\n";
 	$self->{res}->{code}.="\n".DumpEttList($self->{ett})."\n";
-	
+
 	if (defined($x->{UUID})) {
-	    # These can be changed to non-pidl_code names if the old dissectors
-	    # in epan/dissctors are deleted.
-    
-	    my $name = uc($x->{NAME}) . " (pidl)";
-	    my $short_name = uc($x->{NAME});
-	    my $filter_name = $x->{NAME};
+		# These can be changed to non-pidl_code names if the old
+		# dissectors in epan/dissectors are deleted.
 
-	    if (has_property($x, "helpstring")) {
-	    	$name = $x->{PROPERTIES}->{helpstring};
-	    }
+		my $name = uc($x->{NAME}) . " (pidl)";
+		my $short_name = uc($x->{NAME});
+		my $filter_name = $x->{NAME};
 
-	    if (defined($self->{conformance}->{protocols}->{$x->{NAME}})) {
+		if (has_property($x, "helpstring")) {
+			$name = $x->{PROPERTIES}->{helpstring};
+		}
+
+		if (defined($self->{conformance}->{protocols}->{$x->{NAME}})) {
 		$short_name = $self->{conformance}->{protocols}->{$x->{NAME}}->{SHORTNAME};
 		$name = $self->{conformance}->{protocols}->{$x->{NAME}}->{LONGNAME};
 		$filter_name = $self->{conformance}->{protocols}->{$x->{NAME}}->{FILTERNAME};
-	    }
+		}
 
-	    $self->pidl_code("proto_dcerpc_$x->{NAME} = proto_register_protocol(".make_str($name).", ".make_str($short_name).", ".make_str($filter_name).");");
-	    
-	    $self->pidl_code("proto_register_field_array(proto_dcerpc_$x->{NAME}, hf, array_length (hf));");
-	    $self->pidl_code("proto_register_subtree_array(ett, array_length(ett));");
+		$self->pidl_code("proto_dcerpc_$x->{NAME} = proto_register_protocol(".make_str($name).", ".make_str($short_name).", ".make_str($filter_name).");");
+
+		$self->pidl_code("proto_register_field_array(proto_dcerpc_$x->{NAME}, hf, array_length (hf));");
+		$self->pidl_code("proto_register_subtree_array(ett, array_length(ett));");
 	} else {
-	    $self->pidl_code("proto_dcerpc = proto_get_id_by_filter_name(\"dcerpc\");");
-	    $self->pidl_code("proto_register_field_array(proto_dcerpc, hf, array_length(hf));");
-	    $self->pidl_code("proto_register_subtree_array(ett, array_length(ett));");
+		$self->pidl_code("proto_dcerpc = proto_get_id_by_filter_name(\"dcerpc\");");
+		$self->pidl_code("proto_register_field_array(proto_dcerpc, hf, array_length(hf));");
+		$self->pidl_code("proto_register_subtree_array(ett, array_length(ett));");
 	}
-	    
+
 	$self->deindent;
 	$self->pidl_code("}\n");
 	$self->pidl_fn_end("proto_register_dcerpc_$x->{NAME}");
@@ -900,14 +900,14 @@ sub RegisterInterfaceHandoff($$)
 
 	if (defined($x->{UUID})) {
 		$self->pidl_fn_start("proto_reg_handoff_dcerpc_$x->{NAME}");
-	    $self->pidl_code("void proto_reg_handoff_dcerpc_$x->{NAME}(void)");
-	    $self->pidl_code("{");
-	    $self->indent;
-	    $self->pidl_code("dcerpc_init_uuid(proto_dcerpc_$x->{NAME}, ett_dcerpc_$x->{NAME},");
-	    $self->pidl_code("\t&uuid_dcerpc_$x->{NAME}, ver_dcerpc_$x->{NAME},");
-	    $self->pidl_code("\t$x->{NAME}_dissectors, hf_$x->{NAME}_opnum);");
-	    $self->deindent;
-	    $self->pidl_code("}");
+		$self->pidl_code("void proto_reg_handoff_dcerpc_$x->{NAME}(void)");
+		$self->pidl_code("{");
+		$self->indent;
+		$self->pidl_code("dcerpc_init_uuid(proto_dcerpc_$x->{NAME}, ett_dcerpc_$x->{NAME},");
+		$self->pidl_code("\t&uuid_dcerpc_$x->{NAME}, ver_dcerpc_$x->{NAME},");
+		$self->pidl_code("\t$x->{NAME}_dissectors, hf_$x->{NAME}_opnum);");
+		$self->deindent;
+		$self->pidl_code("}");
 		$self->pidl_fn_end("proto_reg_handoff_dcerpc_$x->{NAME}");
 
 		$self->{hf_used}->{"hf_$x->{NAME}_opnum"} = 1;
@@ -955,26 +955,26 @@ sub ProcessInterface($$)
 	if (defined($x->{UUID})) {
 		my $if_uuid = $x->{UUID};
 
-	    $self->pidl_def("/* Version information */\n\n");
-	    
-	    $self->pidl_def("static e_uuid_t uuid_dcerpc_$x->{NAME} = {");
-	    $self->pidl_def("\t0x" . substr($if_uuid, 1, 8) 
-  		. ", 0x" . substr($if_uuid, 10, 4)
-	    . ", 0x" . substr($if_uuid, 15, 4) . ",");
-	    $self->pidl_def("\t{ 0x" . substr($if_uuid, 20, 2) 
+		$self->pidl_def("/* Version information */\n\n");
+
+		$self->pidl_def("static e_uuid_t uuid_dcerpc_$x->{NAME} = {");
+		$self->pidl_def("\t0x" . substr($if_uuid, 1, 8)
+		. ", 0x" . substr($if_uuid, 10, 4)
+		. ", 0x" . substr($if_uuid, 15, 4) . ",");
+		$self->pidl_def("\t{ 0x" . substr($if_uuid, 20, 2)
 		. ", 0x" . substr($if_uuid, 22, 2)
-	    . ", 0x" . substr($if_uuid, 25, 2)
-	    . ", 0x" . substr($if_uuid, 27, 2)
-	    . ", 0x" . substr($if_uuid, 29, 2)
-	    . ", 0x" . substr($if_uuid, 31, 2)
-	    . ", 0x" . substr($if_uuid, 33, 2)
-	    . ", 0x" . substr($if_uuid, 35, 2) . " }");
-	    $self->pidl_def("};");
-	
-	    my $maj = 0x0000FFFF & $x->{VERSION};
-	    $maj =~ s/\.(.*)$//g;
-	    $self->pidl_def("static guint16 ver_dcerpc_$x->{NAME} = $maj;");
-	    $self->pidl_def("");
+		. ", 0x" . substr($if_uuid, 25, 2)
+		. ", 0x" . substr($if_uuid, 27, 2)
+		. ", 0x" . substr($if_uuid, 29, 2)
+		. ", 0x" . substr($if_uuid, 31, 2)
+		. ", 0x" . substr($if_uuid, 33, 2)
+		. ", 0x" . substr($if_uuid, 35, 2) . " }");
+		$self->pidl_def("};");
+
+		my $maj = 0x0000FFFF & $x->{VERSION};
+		$maj =~ s/\.(.*)$//g;
+		$self->pidl_def("static guint16 ver_dcerpc_$x->{NAME} = $maj;");
+		$self->pidl_def("");
 	}
 
 	$return_types{$x->{NAME}} = {};
@@ -1027,17 +1027,17 @@ sub Initialize($$)
 
 	$self->{conformance} = {
 		imports => {},
-		header_fields=> {} 
+		header_fields=> {}
 	};
 
 	ReadConformance($cnf_file, $self->{conformance}) or print STDERR "warning: No conformance file `$cnf_file'\n";
-	
+
 	foreach my $bytes (qw(1 2 4 8)) {
 		my $bits = $bytes * 8;
 		$self->register_type("uint$bits", "offset = PIDL_dissect_uint$bits(tvb, offset, pinfo, tree, drep, \@HF\@, \@PARAM\@);", "FT_UINT$bits", "BASE_DEC", 0, "NULL", $bytes);
 		$self->register_type("int$bits", "offset = PIDL_dissect_uint$bits(tvb, offset, pinfo, tree, drep, \@HF\@, \@PARAM\@);", "FT_INT$bits", "BASE_DEC", 0, "NULL", $bytes);
 	}
-		
+
 	$self->register_type("uint3264", "offset = dissect_ndr_uint3264(tvb, offset, pinfo, tree, drep, \@HF\@, NULL);", "FT_UINT32", "BASE_DEC", 0, "NULL", 8);
 	$self->register_type("hyper", "offset = dissect_ndr_uint64(tvb, offset, pinfo, tree, drep, \@HF\@, NULL);", "FT_UINT64", "BASE_DEC", 0, "NULL", 8);
 	$self->register_type("udlong", "offset = dissect_ndr_duint32(tvb, offset, pinfo, tree, drep, \@HF\@, NULL);", "FT_UINT64", "BASE_DEC", 0, "NULL", 4);
@@ -1064,9 +1064,9 @@ sub Initialize($$)
 
 		offset = dissect_ndr_nt_SID_with_options(tvb, offset, pinfo, tree, drep, param);
 	}", "FT_STRING", "BASE_NONE", 0, "NULL", 4);
-	$self->register_type("WERROR", 
+	$self->register_type("WERROR",
 		"offset = PIDL_dissect_uint32(tvb, offset, pinfo, tree, drep, \@HF\@, \@PARAM\@);","FT_UINT32", "BASE_DEC", 0, "VALS(WERR_errors)", 4);
-	$self->register_type("NTSTATUS", 
+	$self->register_type("NTSTATUS",
 		"offset = PIDL_dissect_uint32(tvb, offset, pinfo, tree, drep, \@HF\@, \@PARAM\@);","FT_UINT32", "BASE_DEC", 0, "VALS(NT_errors)", 4);
 	$self->register_type("ipv6address", "proto_tree_add_item(tree, \@HF\@, tvb, offset, 16, ENC_NA); offset += 16;", "FT_IPv6", "BASE_NONE", 0, "NULL", 16);
 	$self->register_type("ipv4address", "proto_tree_add_item(tree, \@HF\@, tvb, offset, 4, ENC_BIG_ENDIAN); offset += 4;", "FT_IPv4", "BASE_NONE", 0, "NULL", 4);
@@ -1083,7 +1083,7 @@ sub Parse($$$$$)
 
 	return (undef, undef) if defined($self->{conformance}->{noemit_dissector});
 
-	my $notice = 
+	my $notice =
 "/* DO NOT EDIT
 	This filter was automatically generated
 	from $idl_file and $cnf_file.
@@ -1150,7 +1150,7 @@ sub Parse($$$$$)
 	$header.=$self->{res}->{hdr};
 
 	$self->CheckUsed($self->{conformance});
-    
+
 	return ($parser,$header);
 }
 
@@ -1162,7 +1162,7 @@ sub register_ett($$)
 {
 	my ($self, $name) = @_;
 
-	push (@{$self->{ett}}, $name);	
+	push (@{$self->{ett}}, $name);
 }
 
 sub DumpEttList
@@ -1191,7 +1191,7 @@ sub DumpEttDeclaration
 # HF
 ###############################################################################
 
-sub register_hf_field($$$$$$$$$) 
+sub register_hf_field($$$$$$$$$)
 {
 	my ($self,$index,$name,$filter_name,$ft_type,$base_type,$valsstring,$mask,$blurb) = @_;
 
@@ -1211,9 +1211,9 @@ sub register_hf_field($$$$$$$$$)
 		BLURB => $blurb
 	};
 
-	if ((not defined($blurb) or $blurb eq "") and 
+	if ((not defined($blurb) or $blurb eq "") and
 			defined($self->{conformance}->{fielddescription}->{$index})) {
-		$self->{conformance}->{header_fields}->{$index}->{BLURB} = 
+		$self->{conformance}->{header_fields}->{$index}->{BLURB} =
 			$self->{conformance}->{fielddescription}->{$index}->{DESCRIPTION};
 		$self->{conformance}->{fielddescription}->{$index}->{USED} = 1;
 	}
@@ -1255,16 +1255,16 @@ sub DumpHfDeclaration($)
 
 sub make_str_or_null($)
 {
-      my $str = shift;
-      if (substr($str, 0, 1) eq "\"") {
-              $str = substr($str, 1, length($str)-2);
-      }
-      $str =~ s/^\s*//;
-      $str =~ s/\s*$//;
-      if ($str eq "") {
-              return "NULL";
-      }
-      return make_str($str);
+	my $str = shift;
+	if (substr($str, 0, 1) eq "\"") {
+		$str = substr($str, 1, length($str)-2);
+	}
+	$str =~ s/^\s*//;
+	$str =~ s/\s*$//;
+	if ($str eq "") {
+		return "NULL";
+	}
+	return make_str($str);
 }
 
 sub DumpHfList($)
@@ -1293,7 +1293,7 @@ sub DumpFunctionTable($)
 
 	my $res = "static dcerpc_sub_dissector $if->{NAME}\_dissectors[] = {\n";
 	foreach (@{$if->{FUNCTIONS}}) {
-	        my $fn_name = $_->{NAME};
+		my $fn_name = $_->{NAME};
 		$fn_name =~ s/^$if->{NAME}_//;
 		$res.= "\t{ $_->{OPNUM}, \"$fn_name\",\n";
 		$res.= "\t   $if->{NAME}_dissect_${fn_name}_request, $if->{NAME}_dissect_${fn_name}_response},\n";

@@ -269,9 +269,9 @@ sub handle_noemit($$$)
 	my ($pos,$data,$type) = @_;
 
 	if (defined($type)) {
-	    $data->{noemit}->{$type} = 1;
+		$data->{noemit}->{$type} = 1;
 	} else {
-	    $data->{noemit_dissector} = 1;
+		$data->{noemit_dissector} = 1;
 	}
 }
 
@@ -284,7 +284,7 @@ sub handle_manual($$$)
 		return;
 	}
 
-    $data->{manual}->{$fn} = 1;
+	$data->{manual}->{$fn} = 1;
 }
 
 sub handle_protocol($$$$$$)
