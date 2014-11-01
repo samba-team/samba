@@ -37,7 +37,12 @@ if have_man_pages_support:
     planpythontestsuite("none", "samba.tests.docs")
 
 planpythontestsuite("none", "selftest.tests.test_suite", extra_path=[srcdir()])
-planpythontestsuite("none", "subunit")
+try:
+    import testscenarios
+except ImportError:
+    skiptestsuite("subunit", "testscenarios not available")
+else:
+    planpythontestsuite("none", "subunit.tests.test_suite")
 planpythontestsuite("none", "samba.tests.blackbox.ndrdump")
 planpythontestsuite("none", "api", name="ldb.python", extra_path=['lib/ldb/tests/python'])
 planpythontestsuite("none", "samba.tests.credentials")
