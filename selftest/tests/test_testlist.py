@@ -67,14 +67,14 @@ class ReadTestlistTests(TestCase):
     def test_read_list(self):
         inf = StringIO("-- TEST --\nfoo\nbar\nbla\n")
         outf = StringIO()
-        self.assertEquals([('foo', 'bar', 'bla', False)],
+        self.assertEquals([('foo', 'bar', 'bla', None)],
                 list(read_testlist(inf, outf)))
         self.assertEquals("", outf.getvalue())
 
     def test_read_list_passes_through(self):
         inf = StringIO("MORENOISE\n-- TEST --\nfoo\nbar\nbla\nNOISE\n")
         outf = StringIO()
-        self.assertEquals([('foo', 'bar', 'bla', False)],
+        self.assertEquals([('foo', 'bar', 'bla', None)],
                 list(read_testlist(inf, outf)))
         self.assertEquals("MORENOISE\nNOISE\n", outf.getvalue())
 
@@ -143,6 +143,6 @@ class ReadTestListFileTests(TestCase):
             f.close()
         outf = StringIO()
         self.assertEquals(
-            [('data', 'env', 'cmd', False, False)],
+            [('data', 'env', 'cmd', None)],
             list(read_testlist_file(p, outf)))
         self.assertEquals("noise\n", outf.getvalue())

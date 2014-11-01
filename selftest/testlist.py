@@ -81,8 +81,12 @@ def read_testlist(inf, outf):
             supports_loadlist = l.startswith("-- TEST-LOADLIST")
             name = inf.readline().rstrip("\n")
             env = inf.readline().rstrip("\n")
+            if supports_loadlist:
+                loadlist = inf.readline().rstrip("\n")
+            else:
+                loadlist = None
             cmdline = inf.readline().rstrip("\n")
-            yield (name, env, cmdline, supports_loadlist)
+            yield (name, env, cmdline, loadlist)
         else:
             outf.write(l)
 

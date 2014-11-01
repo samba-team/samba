@@ -82,6 +82,12 @@ if sub.returncode == 0:
     if sub.returncode == 0:
         tap2subunit = "tap2subunit"
 
+def to_subunit1(subunit_version):
+    if subunit_version == 1:
+        return ""
+    return " | " + subunit2to1
+
+
 def valgrindify(cmdline):
     """Run a command under valgrind, if $VALGRIND was set."""
     valgrind = os.getenv("VALGRIND")
@@ -90,7 +96,7 @@ def valgrindify(cmdline):
     return valgrind + " " + cmdline
 
 
-def plantestsuite(name, env, cmdline):
+def plantestsuite(name, env, cmdline, subunit_version=1):
     """Plan a test suite.
 
     :param name: Testsuite name
@@ -102,7 +108,9 @@ def plantestsuite(name, env, cmdline):
     print env
     if isinstance(cmdline, list):
         cmdline = " ".join(cmdline)
-    print "%s 2>&1 | " + add_prefix(name, env, "$LISTOPT" in cmdline)
+    if "$LISTOPT" in cmdline:
+        raise AssertionError("test %s supports --list, but not --load-list" % name)
+    print cmdline + " 2>&1 " + to_subunit1(subunit_version) + " | " + add_prefix(name, env)
 
 
 def add_prefix(prefix, env, support_list=False):
@@ -113,7 +121,7 @@ def add_prefix(prefix, env, support_list=False):
     return "%s/selftest/filter-subunit %s--fail-on-empty --prefix=\"%s.\" --suffix=\"(%s)\"" % (srcdir(), listopt, prefix, env)
 
 
-def plantestsuite_loadlist(name, env, cmdline):
+def plantestsuite_loadlist(name, env, cmdline, subunit_version=1):
     print "-- TEST-LOADLIST --"
     if env == "none":
         fullname = name
@@ -124,7 +132,10 @@ def plantestsuite_loadlist(name, env, cmdline):
     if isinstance(cmdline, list):
         cmdline = " ".join(cmdline)
     support_list = ("$LISTOPT" in cmdline)
-    print "%s $LOADLIST 2>&1 | %s" % (cmdline, add_prefix(name, env, support_list))
+    if not "$LISTOPT" in cmdline:
+        raise AssertionError("test %s supports --load-list, but not --list" % name)
+    print ("%s | %s" % (cmdline, add_prefix(name, env, support_list))).replace("$LISTOPT", "--list")
+    print cmdline + " $LOADLIST 2>&1 " + to_subunit1(subunit_version) + "| " + add_prefix(name, env, support_list)
 
 
 def skiptestsuite(name, reason):
