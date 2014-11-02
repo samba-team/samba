@@ -713,6 +713,7 @@ static NTSTATUS idmap_autorid_initialize(struct idmap_domain *dom)
 	struct idmap_tdb_common_context *commonconfig;
 	struct autorid_global_config *config;
 	NTSTATUS status;
+	char *db_path;
 
 	if (!strequal(dom->name, "*")) {
 		DEBUG(0, ("idmap_autorid_initialize: Error: autorid configured "
@@ -779,9 +780,16 @@ static NTSTATUS idmap_autorid_initialize(struct idmap_domain *dom)
 	commonconfig->rw_ops->get_new_id = idmap_autorid_allocate_id;
 	commonconfig->rw_ops->set_mapping = idmap_tdb_common_set_mapping;
 
-	status = idmap_autorid_db_open(state_path("autorid.tdb"),
+	db_path = state_path("autorid.tdb");
+	if (db_path == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto error;
+	}
+
+	status = idmap_autorid_db_open(db_path,
 				       NULL, /* TALLOC_CTX */
 				       &autorid_db);
+	TALLOC_FREE(db_path);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto error;
 	}
