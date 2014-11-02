@@ -129,10 +129,11 @@ static int net_idmap_dump_one_tdb_entry(struct db_record *rec,
 	return 0;
 }
 
-static const char* net_idmap_dbfile(struct net_context *c,
-				    struct net_idmap_ctx *ctx)
+/* returns db path for idmap backend alloced on talloc_tos */
+static char *net_idmap_dbfile(struct net_context *c,
+			      struct net_idmap_ctx *ctx)
 {
-	const char* dbfile = NULL;
+	char *dbfile = NULL;
 	const char *backend = NULL;
 
 	backend = lp_idmap_default_backend();
@@ -187,7 +188,7 @@ static bool net_idmap_opendb_autorid(TALLOC_CTX *mem_ctx,
 				     struct db_context **db)
 {
 	bool ret = false;
-	const char *dbfile;
+	char *dbfile = NULL;
 	struct net_idmap_ctx ctx = { .backend = AUTORID };
 
 	if (c == NULL) {
@@ -227,6 +228,7 @@ static bool net_idmap_opendb_autorid(TALLOC_CTX *mem_ctx,
 	ret = true;
 
 done:
+	talloc_free(dbfile);
 	return ret;
 }
 
@@ -1305,9 +1307,10 @@ static int net_idmap_get(struct net_context *c, int argc, const char **argv)
 
 static int net_idmap_check(struct net_context *c, int argc, const char **argv)
 {
-	const char* dbfile;
+	char *dbfile;
 	struct check_options opts;
 	struct net_idmap_ctx ctx = { .backend = TDB };
+	int ret;
 
 	if ( argc > 1 || c->display_usage) {
 		d_printf("%s\n%s",
@@ -1324,7 +1327,11 @@ static int net_idmap_check(struct net_context *c, int argc, const char **argv)
 		return c->display_usage ? 0 : -1;
 	}
 
-	dbfile = (argc > 0) ? argv[0] : net_idmap_dbfile(c, &ctx);
+	if (argc > 0) {
+		dbfile = talloc_strdup(talloc_tos(), argv[0]);
+	} else {
+		dbfile = net_idmap_dbfile(c, &ctx);
+	}
 	if (dbfile == NULL) {
 		return -1;
 	}
@@ -1332,6 +1339,7 @@ static int net_idmap_check(struct net_context *c, int argc, const char **argv)
 	if (ctx.backend != TDB) {
 		d_fprintf(stderr, _("Sorry, checking of non-TDB databases is "
 				    "currently not supported\n"));
+		talloc_free(dbfile);
 		return -1;
 	}
 
@@ -1346,7 +1354,9 @@ static int net_idmap_check(struct net_context *c, int argc, const char **argv)
 		.repair = c->opt_repair || c->opt_reboot,
 	};
 
-	return net_idmap_check_db(dbfile, &opts);
+	ret = net_idmap_check_db(dbfile, &opts);
+	talloc_free(dbfile);
+	return ret;
 }
 
 /***********************************************************
