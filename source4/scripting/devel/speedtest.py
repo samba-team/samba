@@ -35,10 +35,8 @@ samba.ensure_external_module("subunit", "subunit/python")
 
 import samba.getopt as options
 
-from ldb import (
-            SCOPE_BASE, SCOPE_SUBTREE, LdbError, ERR_NO_SUCH_OBJECT,
-                ERR_UNWILLING_TO_PERFORM, ERR_INSUFFICIENT_ACCESS_RIGHTS)
-from samba.ndr import ndr_pack, ndr_unpack
+from ldb import SCOPE_BASE, SCOPE_SUBTREE
+from samba.ndr import ndr_unpack
 from samba.dcerpc import security
 
 from samba.auth import system_session
@@ -233,9 +231,11 @@ ldb_options = ["modules:paged_searches"]
 ldb = SamDB(host, credentials=creds, session_info=system_session(), lp=lp, options=ldb_options)
 
 runner = SubunitTestRunner()
-rc = 0
-if not runner.run(unittest.makeSuite(SpeedTestAddDel)).wasSuccessful():
+suite = unittest.TestSuite()
+suite.addTests(unittest.makeSuite(SpeedTestAddDel))
+suite.addTests(unittest.makeSuite(AclSearchSpeedTest))
+if not runner.run(suite).wasSuccessful():
     rc = 1
-if not runner.run(unittest.makeSuite(AclSearchSpeedTest)).wasSuccessful():
-    rc = 1
+else:
+    rc = 0
 sys.exit(rc)
