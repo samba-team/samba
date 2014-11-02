@@ -39,9 +39,8 @@ sys.path.insert(0, "bin/python")
 
 import optparse
 import samba
-samba.ensure_external_module("testtools", "testtools")
-samba.ensure_external_module("subunit", "subunit/python")
-from subunit.run import SubunitTestRunner
+from samba.tests.subunitrun import TestProgram
+
 import samba.getopt as options
 import samba.tests
 
@@ -74,14 +73,6 @@ credopts = options.CredentialsOptions(parser)
 sambaopts = options.SambaOptions(parser)
 parser.add_option_group(credopts)
 parser.add_option_group(sambaopts)
-try:
-    from subunit.run import TestProgram
-except ImportError:
-    from unittest import TestProgram
-else:
-    parser.add_option('-l', '--list', dest='listtests', default=False,
-                      help='List tests rather than running them.',
-                      action="store_true")
 
 opts, args = parser.parse_args()
 
@@ -91,5 +82,4 @@ else:
     lp = sambaopts.get_loadparm()
     samba.tests.cmdline_credentials = credopts.get_credentials(lp)
 
-runner = SubunitTestRunner()
-program = TestProgram(module=None, argv=[sys.argv[0]] + args, testRunner=runner)
+TestProgram(module=None, argv=[sys.argv[0]] + args)
