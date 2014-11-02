@@ -594,14 +594,22 @@ bool initialise_wins(void)
 	time_t time_now = time(NULL);
 	XFILE *fp;
 	char line[1024];
+	char *db_path;
+	char *list_path;
 
 	if(!lp_we_are_a_wins_server()) {
 		return True;
 	}
 
+	db_path = state_path("wins.tdb");
+	if (db_path == NULL) {
+		return false;
+	}
+
 	/* Open the wins.tdb. */
-	wins_tdb = tdb_open_log(state_path("wins.tdb"), 0, TDB_DEFAULT|TDB_CLEAR_IF_FIRST|TDB_INCOMPATIBLE_HASH,
+	wins_tdb = tdb_open_log(db_path, 0, TDB_DEFAULT|TDB_CLEAR_IF_FIRST|TDB_INCOMPATIBLE_HASH,
 			O_CREAT|O_RDWR, 0600);
+	TALLOC_FREE(db_path);
 	if (!wins_tdb) {
 		DEBUG(0,("initialise_wins: failed to open wins.tdb. Error was %s\n",
 			strerror(errno) ));
@@ -612,7 +620,15 @@ bool initialise_wins(void)
 
 	add_samba_names_to_subnet(wins_server_subnet);
 
-	if((fp = x_fopen(state_path(WINS_LIST),O_RDONLY,0)) == NULL) {
+	list_path = state_path(WINS_LIST);
+	if (list_path == NULL) {
+		tdb_close(wins_tdb);
+		return false;
+	}
+
+	fp = x_fopen(list_path, O_RDONLY, 0);
+	TALLOC_FREE(list_path);
+	if (fp == NULL) {
 		DEBUG(2,("initialise_wins: Can't open wins database file %s. Error was %s\n",
 			WINS_LIST, strerror(errno) ));
 		return True;
