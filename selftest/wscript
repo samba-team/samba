@@ -214,6 +214,7 @@ def cmd_testonly(opt):
     env.OPTIONS += " --socket_wrapper_so_path=" + CONFIG_GET(opt, 'LIBSOCKET_WRAPPER_SO_PATH')
     env.OPTIONS += " --uid_wrapper_so_path=" + CONFIG_GET(opt, 'LIBUID_WRAPPER_SO_PATH')
 
+    subunit_cache = None
     # We use the full path rather than relative path to avoid problems on some platforms (ie. solaris 8).
     env.CORE_COMMAND = '${PERL} ${srcdir}/selftest/selftest.pl --target=${SELFTEST_TARGET} --prefix=${SELFTEST_PREFIX} --srcdir=${srcdir} --exclude=${srcdir}/selftest/skip ${TESTLISTS} ${OPTIONS} ${TESTS}'
     if Options.options.LIST:
@@ -223,7 +224,8 @@ def cmd_testonly(opt):
         cmd = '(${CORE_COMMAND} && touch ${SELFTEST_PREFIX}/st_done) | ${FILTER_OPTIONS}'
         if (os.environ.get('RUN_FROM_BUILD_FARM') is None and
             not Options.options.FILTERED_SUBUNIT):
-            cmd += ' | tee ${SELFTEST_PREFIX}/subunit | ${FORMAT_TEST_OUTPUT}'
+            subunit_cache = os.path.join(Options.options.SELFTEST_PREFIX, "subunit")
+            cmd += ' | tee %s | ${FORMAT_TEST_OUTPUT}' % subunit_cache
         else:
             cmd += ' | ${FILTER_OPTIONS}'
     runcmd = EXPAND_VARIABLES(opt, cmd)
@@ -233,15 +235,15 @@ def cmd_testonly(opt):
 
     if (os.path.exists(".testrepository") and
         not Options.options.LIST and
-        not Options.options.LOAD_LIST):
-        testrcmd = 'testr load -q < ${SELFTEST_PREFIX}/subunit > /dev/null'
+        not Options.options.LOAD_LIST and
+        subunit_cache is not None):
+        testrcmd = 'testr load -q < %s > /dev/null' % subunit_cache
         runcmd = EXPAND_VARIABLES(opt, testrcmd)
         RUN_COMMAND(runcmd, env=env)
 
-    subunit_file = "%s/subunit" % env.SELFTEST_PREFIX
-    if os.path.exists(subunit_file):
+    if subunit_cache is not None:
         nb = Options.options.NB_SLOWEST
-        cmd = "./script/show_testsuite_time %s %d" % (subunit_file, nb)
+        cmd = "./script/show_testsuite_time %s %d" % (subunit_cache, nb)
         runcmd = EXPAND_VARIABLES(opt, cmd)
         RUN_COMMAND(runcmd, env=env)
 
