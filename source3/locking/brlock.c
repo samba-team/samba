@@ -342,6 +342,7 @@ static NTSTATUS brl_lock_failed(files_struct *fsp,
 void brl_init(bool read_only)
 {
 	int tdb_flags;
+	char *db_path;
 
 	if (brlock_db) {
 		return;
@@ -358,15 +359,23 @@ void brl_init(bool read_only)
 		tdb_flags |= TDB_SEQNUM;
 	}
 
-	brlock_db = db_open(NULL, lock_path("brlock.tdb"),
+	db_path = lock_path("brlock.tdb");
+	if (db_path == NULL) {
+		DEBUG(0, ("out of memory!\n"));
+		return;
+	}
+
+	brlock_db = db_open(NULL, db_path,
 			    SMB_OPEN_DATABASE_TDB_HASH_SIZE, tdb_flags,
 			    read_only?O_RDONLY:(O_RDWR|O_CREAT), 0644,
 			    DBWRAP_LOCK_ORDER_2, DBWRAP_FLAG_NONE);
 	if (!brlock_db) {
 		DEBUG(0,("Failed to open byte range locking database %s\n",
-			lock_path("brlock.tdb")));
+			 db_path));
+		TALLOC_FREE(db_path);
 		return;
 	}
+	TALLOC_FREE(db_path);
 }
 
 /****************************************************************************
