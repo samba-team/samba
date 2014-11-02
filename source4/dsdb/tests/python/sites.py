@@ -22,8 +22,8 @@ import optparse
 import sys
 sys.path.insert(0, "bin/python")
 import samba
-samba.ensure_external_module("testtools", "testtools")
-samba.ensure_external_module("subunit", "subunit/python")
+
+from samba.tests.subunitrun import TestProgram, SubunitOptions
 
 import samba.getopt as options
 from samba import sites
@@ -31,8 +31,6 @@ from samba.auth import system_session
 from samba.samdb import SamDB
 import samba.tests
 from samba.dcerpc import security
-from subunit.run import SubunitTestRunner
-import unittest
 
 parser = optparse.OptionParser("dirsync.py [options] <host>")
 sambaopts = options.SambaOptions(parser)
@@ -42,6 +40,9 @@ parser.add_option_group(options.VersionOptions(parser))
 # use command line creds if available
 credopts = options.CredentialsOptions(parser)
 parser.add_option_group(credopts)
+subunitopts = SubunitOptions(parser)
+parser.add_option_group(subunitopts)
+
 opts, args = parser.parse_args()
 
 if len(args) < 1:
@@ -116,10 +117,4 @@ class SimpleSitesTests(SitesBaseTests):
 
 ldb = SamDB(ldapshost, credentials=creds, session_info=system_session(lp), lp=lp)
 
-runner = SubunitTestRunner()
-rc = 0
-
-if not runner.run(unittest.makeSuite(SimpleSitesTests)).wasSuccessful():
-    rc = 1
-
-sys.exit(rc)
+TestProgram(module=__name__, opts=subunitopts)
