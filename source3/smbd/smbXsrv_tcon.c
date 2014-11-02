@@ -47,7 +47,7 @@ static struct db_context *smbXsrv_tcon_global_db_ctx = NULL;
 
 NTSTATUS smbXsrv_tcon_global_init(void)
 {
-	const char *global_path = NULL;
+	char *global_path = NULL;
 	struct db_context *db_ctx = NULL;
 
 	if (smbXsrv_tcon_global_db_ctx != NULL) {
@@ -55,6 +55,9 @@ NTSTATUS smbXsrv_tcon_global_init(void)
 	}
 
 	global_path = lock_path("smbXsrv_tcon_global.tdb");
+	if (global_path == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	db_ctx = db_open(NULL, global_path,
 			 0, /* hash_size */
@@ -64,6 +67,7 @@ NTSTATUS smbXsrv_tcon_global_init(void)
 			 O_RDWR | O_CREAT, 0600,
 			 DBWRAP_LOCK_ORDER_1,
 			 DBWRAP_FLAG_NONE);
+	TALLOC_FREE(global_path);
 	if (db_ctx == NULL) {
 		NTSTATUS status;
 
