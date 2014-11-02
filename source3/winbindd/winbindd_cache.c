@@ -3184,6 +3184,8 @@ bool wcache_invalidate_cache_noinit(void)
 
 bool init_wcache(void)
 {
+	char *db_path;
+
 	if (wcache == NULL) {
 		wcache = SMB_XMALLOC_P(struct winbind_cache);
 		ZERO_STRUCTP(wcache);
@@ -3192,13 +3194,18 @@ bool init_wcache(void)
 	if (wcache->tdb != NULL)
 		return true;
 
+	db_path = state_path("winbindd_cache.tdb");
+	if (db_path == NULL) {
+		return false;
+	}
+
 	/* when working offline we must not clear the cache on restart */
-	wcache->tdb = tdb_open_log(state_path("winbindd_cache.tdb"),
+	wcache->tdb = tdb_open_log(db_path,
 				WINBINDD_CACHE_TDB_DEFAULT_HASH_SIZE, 
 				TDB_INCOMPATIBLE_HASH |
 					(lp_winbind_offline_logon() ? TDB_DEFAULT : (TDB_DEFAULT | TDB_CLEAR_IF_FIRST)),
 				O_RDWR|O_CREAT, 0600);
-
+	TALLOC_FREE(db_path);
 	if (wcache->tdb == NULL) {
 		DEBUG(0,("Failed to open winbindd_cache.tdb!\n"));
 		return false;
@@ -3230,6 +3237,8 @@ bool initialize_winbindd_cache(void)
 	}
 
 	if (cache_bad) {
+		char *db_path;
+
 		DEBUG(0,("initialize_winbindd_cache: clearing cache "
 			"and re-creating with version number %d\n",
 			WINBINDD_CACHE_VERSION ));
@@ -3237,12 +3246,19 @@ bool initialize_winbindd_cache(void)
 		tdb_close(wcache->tdb);
 		wcache->tdb = NULL;
 
-		if (unlink(state_path("winbindd_cache.tdb")) == -1) {
-			DEBUG(0,("initialize_winbindd_cache: unlink %s failed %s ",
-				state_path("winbindd_cache.tdb"),
-				strerror(errno) ));
+		db_path = state_path("winbindd_cache.tdb");
+		if (db_path == NULL) {
 			return false;
 		}
+
+		if (unlink(db_path) == -1) {
+			DEBUG(0,("initialize_winbindd_cache: unlink %s failed %s ",
+				db_path,
+				strerror(errno) ));
+			TALLOC_FREE(db_path);
+			return false;
+		}
+		TALLOC_FREE(db_path);
 		if (!init_wcache()) {
 			DEBUG(0,("initialize_winbindd_cache: re-initialization "
 					"init_wcache failed.\n"));
@@ -3355,6 +3371,8 @@ static int traverse_fn_cleanup(TDB_CONTEXT *the_tdb, TDB_DATA kbuf,
 /* flush the cache */
 void wcache_flush_cache(void)
 {
+	char *db_path;
+
 	if (!wcache)
 		return;
 	if (wcache->tdb) {
@@ -3365,13 +3383,18 @@ void wcache_flush_cache(void)
 		return;
 	}
 
+	db_path = state_path("winbindd_cache.tdb");
+	if (db_path == NULL) {
+		return;
+	}
+
 	/* when working offline we must not clear the cache on restart */
-	wcache->tdb = tdb_open_log(state_path("winbindd_cache.tdb"),
-				WINBINDD_CACHE_TDB_DEFAULT_HASH_SIZE, 
+	wcache->tdb = tdb_open_log(db_path,
+				WINBINDD_CACHE_TDB_DEFAULT_HASH_SIZE,
 				TDB_INCOMPATIBLE_HASH |
 				(lp_winbind_offline_logon() ? TDB_DEFAULT : (TDB_DEFAULT | TDB_CLEAR_IF_FIRST)),
 				O_RDWR|O_CREAT, 0600);
-
+	TALLOC_FREE(db_path);
 	if (!wcache->tdb) {
 		DEBUG(0,("Failed to open winbindd_cache.tdb!\n"));
 		return;
@@ -4245,7 +4268,7 @@ static bool wbcache_upgrade_v1_to_v2(TDB_CONTEXT *tdb)
 int winbindd_validate_cache(void)
 {
 	int ret = -1;
-	const char *tdb_path = state_path("winbindd_cache.tdb");
+	char *tdb_path = NULL;
 	TDB_CONTEXT *tdb = NULL;
 	uint32_t vers_id;
 	bool ok;
@@ -4253,13 +4276,18 @@ int winbindd_validate_cache(void)
 	DEBUG(10, ("winbindd_validate_cache: replacing panic function\n"));
 	smb_panic_fn = validate_panic;
 
-	tdb = tdb_open_log(tdb_path, 
+	tdb_path = state_path("winbindd_cache.tdb");
+	if (tdb_path == NULL) {
+		goto done;
+	}
+
+	tdb = tdb_open_log(tdb_path,
 			   WINBINDD_CACHE_TDB_DEFAULT_HASH_SIZE,
 			   TDB_INCOMPATIBLE_HASH |
-			   ( lp_winbind_offline_logon() 
-			     ? TDB_DEFAULT 
+			   ( lp_winbind_offline_logon()
+			     ? TDB_DEFAULT
 			     : TDB_DEFAULT | TDB_CLEAR_IF_FIRST ),
-			   O_RDWR|O_CREAT, 
+			   O_RDWR|O_CREAT,
 			   0600);
 	if (!tdb) {
 		DEBUG(0, ("winbindd_validate_cache: "
@@ -4301,6 +4329,7 @@ int winbindd_validate_cache(void)
 	}
 
 done:
+	TALLOC_FREE(tdb_path);
 	DEBUG(10, ("winbindd_validate_cache: restoring panic function\n"));
 	smb_panic_fn = smb_panic;
 	return ret;
@@ -4313,11 +4342,15 @@ done:
 int winbindd_validate_cache_nobackup(void)
 {
 	int ret = -1;
-	const char *tdb_path = state_path("winbindd_cache.tdb");
+	char *tdb_path;
 
 	DEBUG(10, ("winbindd_validate_cache: replacing panic function\n"));
 	smb_panic_fn = validate_panic;
 
+	tdb_path = state_path("winbindd_cache.tdb");
+	if (tdb_path == NULL) {
+		goto err_panic_restore;
+	}
 
 	if (wcache == NULL || wcache->tdb == NULL) {
 		ret = tdb_validate_open(tdb_path, cache_traverse_validate_fn);
@@ -4330,6 +4363,8 @@ int winbindd_validate_cache_nobackup(void)
 			   "successful.\n"));
 	}
 
+	TALLOC_FREE(tdb_path);
+err_panic_restore:
 	DEBUG(10, ("winbindd_validate_cache_nobackup: restoring panic "
 		   "function\n"));
 	smb_panic_fn = smb_panic;
