@@ -5,24 +5,20 @@
 import optparse
 import sys
 import base64
-import re
-import os
 import copy
 import time
 
 sys.path.insert(0, "bin/python")
 import samba
-samba.ensure_external_module("testtools", "testtools")
-samba.ensure_external_module("subunit", "subunit/python")
+from samba.tests.subunitrun import SubunitOptions, TestProgram
 
 import samba.getopt as options
 
 from ldb import SCOPE_BASE, SCOPE_SUBTREE
 
 from samba import gensec
-import samba.tests, unittest
+import samba.tests
 from samba.tests import delete_force
-from subunit.run import SubunitTestRunner
 
 parser = optparse.OptionParser("ldap [options] <host>")
 sambaopts = options.SambaOptions(parser)
@@ -31,6 +27,8 @@ parser.add_option_group(sambaopts)
 # use command line creds if available
 credopts = options.CredentialsOptions(parser)
 parser.add_option_group(credopts)
+subunitopts = SubunitOptions(parser)
+parser.add_option_group(subunitopts)
 opts, args = parser.parse_args()
 
 if len(args) < 1:
@@ -53,8 +51,11 @@ class BindTests(samba.tests.TestCase):
     def setUp(self):
         super(BindTests, self).setUp()
         # fetch rootDSEs
+
+        self.ldb = samba.tests.connect_samdb(host, credentials=creds, lp=lp, ldap_only=True)
+
         if self.info_dc is None:
-            res = ldb.search(base="", expression="", scope=SCOPE_BASE, attrs=["*"])
+            res = self.ldb.search(base="", expression="", scope=SCOPE_BASE, attrs=["*"])
             self.assertEquals(len(res), 1)
             BindTests.info_dc = res[0]
         # cache some of RootDSE props
@@ -70,8 +71,8 @@ class BindTests(samba.tests.TestCase):
 
     def test_computer_account_bind(self):
         # create a computer acocount for the test
-        delete_force(ldb, self.computer_dn)
-        ldb.add_ldif("""
+        delete_force(self.ldb, self.computer_dn)
+        self.ldb.add_ldif("""
 dn: """ + self.computer_dn + """
 cn: CENTOS53
 displayName: CENTOS53$
@@ -89,7 +90,7 @@ dNSHostName: centos53.alabala.test
 operatingSystemVersion: 5.2 (3790)
 operatingSystem: Windows Server 2003
 """)
-        ldb.modify_ldif("""
+        self.ldb.modify_ldif("""
 dn: """ + self.computer_dn + """
 changetype: modify
 replace: unicodePwd
@@ -106,8 +107,8 @@ unicodePwd:: """ + base64.b64encode("\"P@ssw0rd\"".encode('utf-16-le')) + """
 
     def test_user_account_bind(self):
         # create user
-        ldb.newuser(username=self.username, password=self.password)
-        ldb_res = ldb.search(base=self.domain_dn,
+        self.ldb.newuser(username=self.username, password=self.password)
+        ldb_res = self.ldb.search(base=self.domain_dn,
                                       scope=SCOPE_SUBTREE,
                                       expression="(samAccountName=%s)" % self.username)
         self.assertEquals(len(ldb_res), 1)
@@ -138,11 +139,4 @@ unicodePwd:: """ + base64.b64encode("\"P@ssw0rd\"".encode('utf-16-le')) + """
         res = ldb_user3.search(base="", expression="", scope=SCOPE_BASE, attrs=["*"])
 
 
-ldb = samba.tests.connect_samdb(host, credentials=creds, lp=lp, ldap_only=True)
-
-runner = SubunitTestRunner()
-rc = 0
-if not runner.run(unittest.makeSuite(BindTests)).wasSuccessful():
-    rc = 1
-
-sys.exit(rc)
+TestProgram(module=__name__, opts=subunitopts)
