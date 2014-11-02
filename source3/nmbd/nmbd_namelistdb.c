@@ -642,17 +642,24 @@ static void dump_subnet_namelist( struct subnet_record *subrec, XFILE *fp)
 
 void dump_all_namelists(void)
 {
-	XFILE *fp; 
+	XFILE *fp;
 	struct subnet_record *subrec;
+	char *dump_path;
 
-	fp = x_fopen(lock_path("namelist.debug"),O_WRONLY|O_CREAT|O_TRUNC, 0644);
-     
-	if (!fp) { 
+	dump_path = lock_path("namelist.debug");
+	if (dump_path == NULL) {
+		DEBUG(0, ("out of memory!\n"));
+		return;
+	}
+
+	fp = x_fopen(dump_path, (O_WRONLY | O_CREAT | O_TRUNC), 0644);
+	TALLOC_FREE(dump_path);
+	if (!fp) {
 		DEBUG(0,("dump_all_namelists: Can't open file %s. Error was %s\n",
 			"namelist.debug",strerror(errno)));
 		return;
 	}
-      
+
 	for (subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_INCLUDING_UNICAST(subrec)) {
 		dump_subnet_namelist( subrec, fp );
 	}
