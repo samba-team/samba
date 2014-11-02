@@ -5,18 +5,13 @@ import optparse
 import sys
 sys.path.insert(0, "bin/python")
 import samba
-samba.ensure_external_module("testtools", "testtools")
-samba.ensure_external_module("subunit", "subunit/python")
+from samba.tests.subunitrun import TestProgram, SubunitOptions
 
 from ldb import (LdbError, ERR_NO_SUCH_OBJECT, Message,
     MessageElement, Dn, FLAG_MOD_REPLACE)
 import samba.tests
 import samba.dsdb as dsdb
 import samba.getopt as options
-
-from subunit.run import SubunitTestRunner
-
-import unittest
 
 parser = optparse.OptionParser("urgent_replication.py [options] <host>")
 sambaopts = options.SambaOptions(parser)
@@ -26,6 +21,8 @@ parser.add_option_group(options.VersionOptions(parser))
 # use command line creds if available
 credopts = options.CredentialsOptions(parser)
 parser.add_option_group(credopts)
+subunitopts = SubunitOptions(parser)
+parser.add_option_group(subunitopts)
 opts, args = parser.parse_args()
 
 if len(args) < 1:
@@ -342,10 +339,4 @@ rIDAvailablePool: 133001-1073741823""", ["relax:0"])
         self.assertNotEquals(res["uSNHighest"], res["uSNUrgent"])
 
 
-runner = SubunitTestRunner()
-rc = 0
-#
-if not runner.run(unittest.makeSuite(UrgentReplicationTests)).wasSuccessful():
-    rc = 1
-
-sys.exit(rc)
+TestProgram(module=__name__, opts=subunitopts)
