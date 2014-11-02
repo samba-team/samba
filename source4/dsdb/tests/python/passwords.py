@@ -16,8 +16,8 @@ import os
 
 sys.path.insert(0, "bin/python")
 import samba
-samba.ensure_external_module("testtools", "testtools")
-samba.ensure_external_module("subunit", "subunit/python")
+
+from samba.tests.subunitrun import SubunitOptions, TestProgram
 
 import samba.getopt as options
 
@@ -34,8 +34,6 @@ from samba import gensec
 from samba.samdb import SamDB
 import samba.tests
 from samba.tests import delete_force
-from subunit.run import SubunitTestRunner
-import unittest
 
 parser = optparse.OptionParser("passwords.py [options] <host>")
 sambaopts = options.SambaOptions(parser)
@@ -44,6 +42,9 @@ parser.add_option_group(options.VersionOptions(parser))
 # use command line creds if available
 credopts = options.CredentialsOptions(parser)
 parser.add_option_group(credopts)
+subunitopts = SubunitOptions(parser)
+parser.add_option_group(subunitopts)
+
 opts, args = parser.parse_args()
 
 if len(args) < 1:
@@ -66,8 +67,32 @@ class PasswordTests(samba.tests.TestCase):
 
     def setUp(self):
         super(PasswordTests, self).setUp()
-        self.ldb = ldb
-        self.base_dn = ldb.domain_dn()
+        self.ldb = SamDB(url=host, session_info=system_session(lp), credentials=creds, lp=lp)
+
+        # Gets back the basedn
+        base_dn = self.ldb.domain_dn()
+
+        # Gets back the configuration basedn
+        configuration_dn = self.ldb.get_config_basedn().get_linearized()
+
+        # Get the old "dSHeuristics" if it was set
+        dsheuristics = self.ldb.get_dsheuristics()
+
+        # Set the "dSHeuristics" to activate the correct "userPassword" behaviour
+        self.ldb.set_dsheuristics("000000001")
+
+        # Reset the "dSHeuristics" as they were before
+        self.addCleanup(self.ldb.set_dsheuristics, dsheuristics)
+
+        # Get the old "minPwdAge"
+        minPwdAge = self.ldb.get_minPwdAge()
+
+        # Set it temporarely to "0"
+        self.ldb.set_minPwdAge("0")
+        self.base_dn = self.ldb.domain_dn()
+
+        # Reset the "minPwdAge" as it was before
+        self.addCleanup(self.ldb.set_minPwdAge, minPwdAge)
 
         # (Re)adds the test user "testuser" with no password atm
         delete_force(self.ldb, "cn=testuser,cn=users," + self.base_dn)
@@ -136,21 +161,21 @@ add: userPassword
         self.ldb2 = SamDB(url=host, credentials=creds2, lp=lp)
 
     def test_unicodePwd_hash_set(self):
-        print "Performs a password hash set operation on 'unicodePwd' which should be prevented"
+        """Performs a password hash set operation on 'unicodePwd' which should be prevented"""
         # Notice: Direct hash password sets should never work
 
         m = Message()
-        m.dn = Dn(ldb, "cn=testuser,cn=users," + self.base_dn)
+        m.dn = Dn(self.ldb, "cn=testuser,cn=users," + self.base_dn)
         m["unicodePwd"] = MessageElement("XXXXXXXXXXXXXXXX", FLAG_MOD_REPLACE,
           "unicodePwd")
         try:
-            ldb.modify(m)
+            self.ldb.modify(m)
             self.fail()
         except LdbError, (num, _):
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
     def test_unicodePwd_hash_change(self):
-        print "Performs a password hash change operation on 'unicodePwd' which should be prevented"
+        """Performs a password hash change operation on 'unicodePwd' which should be prevented"""
         # Notice: Direct hash password changes should never work
 
         # Hash password changes should never work
@@ -168,16 +193,16 @@ unicodePwd: YYYYYYYYYYYYYYYY
             self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
 
     def test_unicodePwd_clear_set(self):
-        print "Performs a password cleartext set operation on 'unicodePwd'"
+        """Performs a password cleartext set operation on 'unicodePwd'"""
 
         m = Message()
-        m.dn = Dn(ldb, "cn=testuser,cn=users," + self.base_dn)
+        m.dn = Dn(self.ldb, "cn=testuser,cn=users," + self.base_dn)
         m["unicodePwd"] = MessageElement("\"thatsAcomplPASS2\"".encode('utf-16-le'),
           FLAG_MOD_REPLACE, "unicodePwd")
-        ldb.modify(m)
+        self.ldb.modify(m)
 
     def test_unicodePwd_clear_change(self):
-        print "Performs a password cleartext change operation on 'unicodePwd'"
+        """Performs a password cleartext change operation on 'unicodePwd'"""
 
         self.ldb2.modify_ldif("""
 dn: cn=testuser,cn=users,""" + self.base_dn + """
@@ -219,21 +244,21 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
             self.assertTrue('0000052D' in msg)
 
     def test_dBCSPwd_hash_set(self):
-        print "Performs a password hash set operation on 'dBCSPwd' which should be prevented"
+        """Performs a password hash set operation on 'dBCSPwd' which should be prevented"""
         # Notice: Direct hash password sets should never work
 
         m = Message()
-        m.dn = Dn(ldb, "cn=testuser,cn=users," + self.base_dn)
+        m.dn = Dn(self.ldb, "cn=testuser,cn=users," + self.base_dn)
         m["dBCSPwd"] = MessageElement("XXXXXXXXXXXXXXXX", FLAG_MOD_REPLACE,
           "dBCSPwd")
         try:
-            ldb.modify(m)
+            self.ldb.modify(m)
             self.fail()
         except LdbError, (num, _):
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
     def test_dBCSPwd_hash_change(self):
-        print "Performs a password hash change operation on 'dBCSPwd' which should be prevented"
+        """Performs a password hash change operation on 'dBCSPwd' which should be prevented"""
         # Notice: Direct hash password changes should never work
 
         try:
@@ -250,18 +275,18 @@ dBCSPwd: YYYYYYYYYYYYYYYY
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
     def test_userPassword_clear_set(self):
-        print "Performs a password cleartext set operation on 'userPassword'"
+        """Performs a password cleartext set operation on 'userPassword'"""
         # Notice: This works only against Windows if "dSHeuristics" has been set
         # properly
 
         m = Message()
-        m.dn = Dn(ldb, "cn=testuser,cn=users," + self.base_dn)
+        m.dn = Dn(self.ldb, "cn=testuser,cn=users," + self.base_dn)
         m["userPassword"] = MessageElement("thatsAcomplPASS2", FLAG_MOD_REPLACE,
           "userPassword")
-        ldb.modify(m)
+        self.ldb.modify(m)
 
     def test_userPassword_clear_change(self):
-        print "Performs a password cleartext change operation on 'userPassword'"
+        """Performs a password cleartext change operation on 'userPassword'"""
         # Notice: This works only against Windows if "dSHeuristics" has been set
         # properly
 
@@ -305,15 +330,15 @@ userPassword: thatsAcomplPASS2
             self.assertTrue('0000052D' in msg)
 
     def test_clearTextPassword_clear_set(self):
-        print "Performs a password cleartext set operation on 'clearTextPassword'"
+        """Performs a password cleartext set operation on 'clearTextPassword'"""
         # Notice: This never works against Windows - only supported by us
 
         try:
             m = Message()
-            m.dn = Dn(ldb, "cn=testuser,cn=users," + self.base_dn)
+            m.dn = Dn(self.ldb, "cn=testuser,cn=users," + self.base_dn)
             m["clearTextPassword"] = MessageElement("thatsAcomplPASS2".encode('utf-16-le'),
               FLAG_MOD_REPLACE, "clearTextPassword")
-            ldb.modify(m)
+            self.ldb.modify(m)
             # this passes against s4
         except LdbError, (num, msg):
             # "NO_SUCH_ATTRIBUTE" is returned by Windows -> ignore it
@@ -321,7 +346,7 @@ userPassword: thatsAcomplPASS2
                 raise LdbError(num, msg)
 
     def test_clearTextPassword_clear_change(self):
-        print "Performs a password cleartext change operation on 'clearTextPassword'"
+        """Performs a password cleartext change operation on 'clearTextPassword'"""
         # Notice: This never works against Windows - only supported by us
 
         try:
@@ -374,10 +399,10 @@ clearTextPassword:: """ + base64.b64encode("thatsAcomplPASS2".encode('utf-16-le'
                 self.assertTrue('0000052D' in msg)
 
     def test_failures(self):
-        print "Performs some failure testing"
+        """Performs some failure testing"""
 
         try:
-            ldb.modify_ldif("""
+            self.ldb.modify_ldif("""
 dn: cn=testuser,cn=users,""" + self.base_dn + """
 changetype: modify
 delete: userPassword
@@ -399,7 +424,7 @@ userPassword: thatsAcomplPASS1
             self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
 
         try:
-            ldb.modify_ldif("""
+            self.ldb.modify_ldif("""
 dn: cn=testuser,cn=users,""" + self.base_dn + """
 changetype: modify
 delete: userPassword
@@ -419,7 +444,7 @@ delete: userPassword
             self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
 
         try:
-            ldb.modify_ldif("""
+            self.ldb.modify_ldif("""
 dn: cn=testuser,cn=users,""" + self.base_dn + """
 changetype: modify
 add: userPassword
@@ -441,7 +466,7 @@ userPassword: thatsAcomplPASS1
             self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
 
         try:
-            ldb.modify_ldif("""
+            self.ldb.modify_ldif("""
 dn: cn=testuser,cn=users,""" + self.base_dn + """
 changetype: modify
 delete: userPassword
@@ -469,7 +494,7 @@ userPassword: thatsAcomplPASS2
             self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
 
         try:
-            ldb.modify_ldif("""
+            self.ldb.modify_ldif("""
 dn: cn=testuser,cn=users,""" + self.base_dn + """
 changetype: modify
 delete: userPassword
@@ -497,7 +522,7 @@ userPassword: thatsAcomplPASS2
             self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
 
         try:
-            ldb.modify_ldif("""
+            self.ldb.modify_ldif("""
 dn: cn=testuser,cn=users,""" + self.base_dn + """
 changetype: modify
 delete: userPassword
@@ -527,7 +552,7 @@ userPassword: thatsAcomplPASS2
             self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
 
         try:
-            ldb.modify_ldif("""
+            self.ldb.modify_ldif("""
 dn: cn=testuser,cn=users,""" + self.base_dn + """
 changetype: modify
 delete: userPassword
@@ -557,7 +582,7 @@ userPassword: thatsAcomplPASS2
             self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
 
         try:
-            ldb.modify_ldif("""
+            self.ldb.modify_ldif("""
 dn: cn=testuser,cn=users,""" + self.base_dn + """
 changetype: modify
 delete: userPassword
@@ -623,7 +648,7 @@ userPassword: thatsAcomplPASS4
             self.assertEquals(num, ERR_NO_SUCH_ATTRIBUTE)
 
         # Several password changes at once are allowed
-        ldb.modify_ldif("""
+        self.ldb.modify_ldif("""
 dn: cn=testuser,cn=users,""" + self.base_dn + """
 changetype: modify
 replace: userPassword
@@ -632,7 +657,7 @@ userPassword: thatsAcomplPASS2
 """)
 
         # Several password changes at once are allowed
-        ldb.modify_ldif("""
+        self.ldb.modify_ldif("""
 dn: cn=testuser,cn=users,""" + self.base_dn + """
 changetype: modify
 replace: userPassword
@@ -701,111 +726,111 @@ userPassword: thatsAcomplPASS4
         delete_force(self.ldb, "cn=testuser2,cn=users," + self.base_dn)
 
         m = Message()
-        m.dn = Dn(ldb, "cn=testuser,cn=users," + self.base_dn)
+        m.dn = Dn(self.ldb, "cn=testuser,cn=users," + self.base_dn)
         m["unicodePwd"] = MessageElement([], FLAG_MOD_ADD, "unicodePwd")
         try:
-            ldb.modify(m)
+            self.ldb.modify(m)
             self.fail()
         except LdbError, (num, _):
             self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
 
         m = Message()
-        m.dn = Dn(ldb, "cn=testuser,cn=users," + self.base_dn)
+        m.dn = Dn(self.ldb, "cn=testuser,cn=users," + self.base_dn)
         m["dBCSPwd"] = MessageElement([], FLAG_MOD_ADD, "dBCSPwd")
         try:
-            ldb.modify(m)
+            self.ldb.modify(m)
             self.fail()
         except LdbError, (num, _):
             self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
 
         m = Message()
-        m.dn = Dn(ldb, "cn=testuser,cn=users," + self.base_dn)
+        m.dn = Dn(self.ldb, "cn=testuser,cn=users," + self.base_dn)
         m["userPassword"] = MessageElement([], FLAG_MOD_ADD, "userPassword")
         try:
-            ldb.modify(m)
+            self.ldb.modify(m)
             self.fail()
         except LdbError, (num, _):
             self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
 
         m = Message()
-        m.dn = Dn(ldb, "cn=testuser,cn=users," + self.base_dn)
+        m.dn = Dn(self.ldb, "cn=testuser,cn=users," + self.base_dn)
         m["clearTextPassword"] = MessageElement([], FLAG_MOD_ADD, "clearTextPassword")
         try:
-            ldb.modify(m)
+            self.ldb.modify(m)
             self.fail()
         except LdbError, (num, _):
             self.assertTrue(num == ERR_CONSTRAINT_VIOLATION or
                             num == ERR_NO_SUCH_ATTRIBUTE) # for Windows
 
         m = Message()
-        m.dn = Dn(ldb, "cn=testuser,cn=users," + self.base_dn)
+        m.dn = Dn(self.ldb, "cn=testuser,cn=users," + self.base_dn)
         m["unicodePwd"] = MessageElement([], FLAG_MOD_REPLACE, "unicodePwd")
         try:
-            ldb.modify(m)
+            self.ldb.modify(m)
             self.fail()
         except LdbError, (num, _):
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
         m = Message()
-        m.dn = Dn(ldb, "cn=testuser,cn=users," + self.base_dn)
+        m.dn = Dn(self.ldb, "cn=testuser,cn=users," + self.base_dn)
         m["dBCSPwd"] = MessageElement([], FLAG_MOD_REPLACE, "dBCSPwd")
         try:
-            ldb.modify(m)
+            self.ldb.modify(m)
             self.fail()
         except LdbError, (num, _):
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
         m = Message()
-        m.dn = Dn(ldb, "cn=testuser,cn=users," + self.base_dn)
+        m.dn = Dn(self.ldb, "cn=testuser,cn=users," + self.base_dn)
         m["userPassword"] = MessageElement([], FLAG_MOD_REPLACE, "userPassword")
         try:
-            ldb.modify(m)
+            self.ldb.modify(m)
             self.fail()
         except LdbError, (num, _):
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
         m = Message()
-        m.dn = Dn(ldb, "cn=testuser,cn=users," + self.base_dn)
+        m.dn = Dn(self.ldb, "cn=testuser,cn=users," + self.base_dn)
         m["clearTextPassword"] = MessageElement([], FLAG_MOD_REPLACE, "clearTextPassword")
         try:
-            ldb.modify(m)
+            self.ldb.modify(m)
             self.fail()
         except LdbError, (num, _):
             self.assertTrue(num == ERR_UNWILLING_TO_PERFORM or
                             num == ERR_NO_SUCH_ATTRIBUTE) # for Windows
 
         m = Message()
-        m.dn = Dn(ldb, "cn=testuser,cn=users," + self.base_dn)
+        m.dn = Dn(self.ldb, "cn=testuser,cn=users," + self.base_dn)
         m["unicodePwd"] = MessageElement([], FLAG_MOD_DELETE, "unicodePwd")
         try:
-            ldb.modify(m)
+            self.ldb.modify(m)
             self.fail()
         except LdbError, (num, _):
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
         m = Message()
-        m.dn = Dn(ldb, "cn=testuser,cn=users," + self.base_dn)
+        m.dn = Dn(self.ldb, "cn=testuser,cn=users," + self.base_dn)
         m["dBCSPwd"] = MessageElement([], FLAG_MOD_DELETE, "dBCSPwd")
         try:
-            ldb.modify(m)
+            self.ldb.modify(m)
             self.fail()
         except LdbError, (num, _):
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
         m = Message()
-        m.dn = Dn(ldb, "cn=testuser,cn=users," + self.base_dn)
+        m.dn = Dn(self.ldb, "cn=testuser,cn=users," + self.base_dn)
         m["userPassword"] = MessageElement([], FLAG_MOD_DELETE, "userPassword")
         try:
-            ldb.modify(m)
+            self.ldb.modify(m)
             self.fail()
         except LdbError, (num, _):
             self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
 
         m = Message()
-        m.dn = Dn(ldb, "cn=testuser,cn=users," + self.base_dn)
+        m.dn = Dn(self.ldb, "cn=testuser,cn=users," + self.base_dn)
         m["clearTextPassword"] = MessageElement([], FLAG_MOD_DELETE, "clearTextPassword")
         try:
-            ldb.modify(m)
+            self.ldb.modify(m)
             self.fail()
         except LdbError, (num, _):
             self.assertTrue(num == ERR_CONSTRAINT_VIOLATION or
@@ -815,96 +840,96 @@ userPassword: thatsAcomplPASS4
         print "Performs testing about the standard 'userPassword' behaviour"
 
         # Delete the "dSHeuristics"
-        ldb.set_dsheuristics(None)
+        self.ldb.set_dsheuristics(None)
 
         time.sleep(1) # This switching time is strictly needed!
 
         m = Message()
-        m.dn = Dn(ldb, "cn=testuser,cn=users," + self.base_dn)
+        m.dn = Dn(self.ldb, "cn=testuser,cn=users," + self.base_dn)
         m["userPassword"] = MessageElement("myPassword", FLAG_MOD_ADD,
           "userPassword")
-        ldb.modify(m)
+        self.ldb.modify(m)
 
-        res = ldb.search("cn=testuser,cn=users," + self.base_dn,
+        res = self.ldb.search("cn=testuser,cn=users," + self.base_dn,
                          scope=SCOPE_BASE, attrs=["userPassword"])
         self.assertTrue(len(res) == 1)
         self.assertTrue("userPassword" in res[0])
         self.assertEquals(res[0]["userPassword"][0], "myPassword")
 
         m = Message()
-        m.dn = Dn(ldb, "cn=testuser,cn=users," + self.base_dn)
+        m.dn = Dn(self.ldb, "cn=testuser,cn=users," + self.base_dn)
         m["userPassword"] = MessageElement("myPassword2", FLAG_MOD_REPLACE,
           "userPassword")
-        ldb.modify(m)
+        self.ldb.modify(m)
 
-        res = ldb.search("cn=testuser,cn=users," + self.base_dn,
+        res = self.ldb.search("cn=testuser,cn=users," + self.base_dn,
                          scope=SCOPE_BASE, attrs=["userPassword"])
         self.assertTrue(len(res) == 1)
         self.assertTrue("userPassword" in res[0])
         self.assertEquals(res[0]["userPassword"][0], "myPassword2")
 
         m = Message()
-        m.dn = Dn(ldb, "cn=testuser,cn=users," + self.base_dn)
+        m.dn = Dn(self.ldb, "cn=testuser,cn=users," + self.base_dn)
         m["userPassword"] = MessageElement([], FLAG_MOD_DELETE,
           "userPassword")
-        ldb.modify(m)
+        self.ldb.modify(m)
 
-        res = ldb.search("cn=testuser,cn=users," + self.base_dn,
+        res = self.ldb.search("cn=testuser,cn=users," + self.base_dn,
                          scope=SCOPE_BASE, attrs=["userPassword"])
         self.assertTrue(len(res) == 1)
         self.assertFalse("userPassword" in res[0])
 
         # Set the test "dSHeuristics" to deactivate "userPassword" pwd changes
-        ldb.set_dsheuristics("000000000")
+        self.ldb.set_dsheuristics("000000000")
 
         m = Message()
-        m.dn = Dn(ldb, "cn=testuser,cn=users," + self.base_dn)
+        m.dn = Dn(self.ldb, "cn=testuser,cn=users," + self.base_dn)
         m["userPassword"] = MessageElement("myPassword3", FLAG_MOD_REPLACE,
           "userPassword")
-        ldb.modify(m)
+        self.ldb.modify(m)
 
-        res = ldb.search("cn=testuser,cn=users," + self.base_dn,
+        res = self.ldb.search("cn=testuser,cn=users," + self.base_dn,
                          scope=SCOPE_BASE, attrs=["userPassword"])
         self.assertTrue(len(res) == 1)
         self.assertTrue("userPassword" in res[0])
         self.assertEquals(res[0]["userPassword"][0], "myPassword3")
 
         # Set the test "dSHeuristics" to deactivate "userPassword" pwd changes
-        ldb.set_dsheuristics("000000002")
+        self.ldb.set_dsheuristics("000000002")
 
         m = Message()
-        m.dn = Dn(ldb, "cn=testuser,cn=users," + self.base_dn)
+        m.dn = Dn(self.ldb, "cn=testuser,cn=users," + self.base_dn)
         m["userPassword"] = MessageElement("myPassword4", FLAG_MOD_REPLACE,
           "userPassword")
-        ldb.modify(m)
+        self.ldb.modify(m)
 
-        res = ldb.search("cn=testuser,cn=users," + self.base_dn,
+        res = self.ldb.search("cn=testuser,cn=users," + self.base_dn,
                          scope=SCOPE_BASE, attrs=["userPassword"])
         self.assertTrue(len(res) == 1)
         self.assertTrue("userPassword" in res[0])
         self.assertEquals(res[0]["userPassword"][0], "myPassword4")
 
         # Reset the test "dSHeuristics" (reactivate "userPassword" pwd changes)
-        ldb.set_dsheuristics("000000001")
+        self.ldb.set_dsheuristics("000000001")
 
     def test_zero_length(self):
         # Get the old "minPwdLength"
-        minPwdLength = ldb.get_minPwdLength()
+        minPwdLength = self.ldb.get_minPwdLength()
         # Set it temporarely to "0"
-        ldb.set_minPwdLength("0")
+        self.ldb.set_minPwdLength("0")
 
         # Get the old "pwdProperties"
-        pwdProperties = ldb.get_pwdProperties()
+        pwdProperties = self.ldb.get_pwdProperties()
         # Set them temporarely to "0" (to deactivate eventually the complexity)
-        ldb.set_pwdProperties("0")
+        self.ldb.set_pwdProperties("0")
 
-        ldb.setpassword("(sAMAccountName=testuser)", "")
+        self.ldb.setpassword("(sAMAccountName=testuser)", "")
 
         # Reset the "pwdProperties" as they were before
-        ldb.set_pwdProperties(pwdProperties)
+        self.ldb.set_pwdProperties(pwdProperties)
 
         # Reset the "minPwdLength" as it was before
-        ldb.set_minPwdLength(minPwdLength)
+        self.ldb.set_minPwdLength(minPwdLength)
 
     def tearDown(self):
         super(PasswordTests, self).tearDown()
@@ -919,35 +944,4 @@ if not "://" in host:
     else:
         host = "ldap://%s" % host
 
-ldb = SamDB(url=host, session_info=system_session(lp), credentials=creds, lp=lp)
-
-# Gets back the basedn
-base_dn = ldb.domain_dn()
-
-# Gets back the configuration basedn
-configuration_dn = ldb.get_config_basedn().get_linearized()
-
-# Get the old "dSHeuristics" if it was set
-dsheuristics = ldb.get_dsheuristics()
-
-# Set the "dSHeuristics" to activate the correct "userPassword" behaviour
-ldb.set_dsheuristics("000000001")
-
-# Get the old "minPwdAge"
-minPwdAge = ldb.get_minPwdAge()
-
-# Set it temporarely to "0"
-ldb.set_minPwdAge("0")
-
-runner = SubunitTestRunner()
-rc = 0
-if not runner.run(unittest.makeSuite(PasswordTests)).wasSuccessful():
-    rc = 1
-
-# Reset the "dSHeuristics" as they were before
-ldb.set_dsheuristics(dsheuristics)
-
-# Reset the "minPwdAge" as it was before
-ldb.set_minPwdAge(minPwdAge)
-
-sys.exit(rc)
+TestProgram(module=__name__, opts=subunitopts)
