@@ -702,4 +702,4 @@ if getattr(opts, 'load_list', None):
     args.insert(0, "--load-list=%s" % opts.load_list)
 
 
-TestProgram(module=__name__, argv=[sys.argv[0]] + args)
+TestProgram(module=__name__)
