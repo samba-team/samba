@@ -237,5 +237,5 @@ def connect_samdb_ex(samdb_url, lp=None, session_info=None, credentials=None,
 def delete_force(samdb, dn):
     try:
         samdb.delete(dn)
-    except ldb.LdbError, (num, _):
-        assert(num == ldb.ERR_NO_SUCH_OBJECT)
+    except ldb.LdbError, (num, errstr):
+        assert num == ldb.ERR_NO_SUCH_OBJECT, "ldb.delete() failed: %s" % errstr
