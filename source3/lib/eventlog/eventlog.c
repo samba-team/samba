@@ -73,7 +73,7 @@ char *elog_tdbname(TALLOC_CTX *ctx, const char *name )
 	char *file;
 	char *tdbname;
 
-	path = talloc_strdup(ctx, state_path("eventlog"));
+	path = state_path("eventlog");
 	if (!path) {
 		return NULL;
 	}
@@ -84,7 +84,7 @@ char *elog_tdbname(TALLOC_CTX *ctx, const char *name )
 		return NULL;
 	}
 
-	tdbname = talloc_asprintf(path, "%s/%s", state_path("eventlog"), file);
+	tdbname = talloc_asprintf(ctx, "%s/%s", path, file);
 	if (!tdbname) {
 		talloc_free(path);
 		return NULL;
@@ -372,8 +372,12 @@ ELOG_TDB *elog_open_tdb( const char *logname, bool force_clear, bool read_only )
 
 	/* make sure that the eventlog dir exists */
 
-	eventlogdir = state_path( "eventlog" );
+	eventlogdir = state_path("eventlog");
+	if (eventlogdir == NULL) {
+		return NULL;
+	}
 	ok = directory_create_or_exist(eventlogdir, 0755);
+	TALLOC_FREE(eventlogdir);
 	if (!ok) {
 		return NULL;
 	}
