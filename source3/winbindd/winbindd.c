@@ -1110,6 +1110,7 @@ static bool winbindd_setup_listeners(void)
 	struct winbindd_listen_state *priv_state = NULL;
 	struct tevent_fd *fde;
 	int rc;
+	char *socket_path;
 
 	pub_state = talloc(winbind_event_context(),
 			   struct winbindd_listen_state);
@@ -1143,9 +1144,15 @@ static bool winbindd_setup_listeners(void)
 		goto failed;
 	}
 
+	socket_path = get_winbind_priv_pipe_dir();
+	if (socket_path == NULL) {
+		goto failed;
+	}
+
 	priv_state->privileged = true;
 	priv_state->fd = create_pipe_sock(
-		get_winbind_priv_pipe_dir(), WINBINDD_SOCKET_NAME, 0750);
+		socket_path, WINBINDD_SOCKET_NAME, 0750);
+	TALLOC_FREE(socket_path);
 	if (priv_state->fd == -1) {
 		goto failed;
 	}
