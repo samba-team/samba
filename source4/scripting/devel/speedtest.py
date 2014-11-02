@@ -30,8 +30,7 @@ from decimal import Decimal
 
 sys.path.insert(0, "bin/python")
 import samba
-samba.ensure_external_module("testtools", "testtools")
-samba.ensure_external_module("subunit", "subunit/python")
+from samba.tests.subunitrun import TestProgram, SubunitOptions
 
 import samba.getopt as options
 
@@ -45,18 +44,17 @@ from samba.samdb import SamDB
 from samba.credentials import Credentials
 import samba.tests
 from samba.tests import delete_force
-from subunit.run import SubunitTestRunner
-import unittest
 
 parser = optparse.OptionParser("speedtest.py [options] <host>")
 sambaopts = options.SambaOptions(parser)
 parser.add_option_group(sambaopts)
 parser.add_option_group(options.VersionOptions(parser))
 
-
 # use command line creds if available
 credopts = options.CredentialsOptions(parser)
 parser.add_option_group(credopts)
+subunitopts = SubunitOptions(parser)
+parser.add_option_group(subunitopts)
 opts, args = parser.parse_args()
 
 if len(args) < 1:
@@ -230,12 +228,4 @@ if not "://" in host:
 ldb_options = ["modules:paged_searches"]
 ldb = SamDB(host, credentials=creds, session_info=system_session(), lp=lp, options=ldb_options)
 
-runner = SubunitTestRunner()
-suite = unittest.TestSuite()
-suite.addTests(unittest.makeSuite(SpeedTestAddDel))
-suite.addTests(unittest.makeSuite(AclSearchSpeedTest))
-if not runner.run(suite).wasSuccessful():
-    rc = 1
-else:
-    rc = 0
-sys.exit(rc)
+TestProgram(module=__name__, opts=subunitopts)
