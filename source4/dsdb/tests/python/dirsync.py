@@ -22,8 +22,7 @@ import optparse
 import sys
 sys.path.insert(0, "bin/python")
 import samba
-samba.ensure_external_module("testtools", "testtools")
-samba.ensure_external_module("subunit", "subunit/python")
+from samba.tests.subunitrun import TestProgram
 
 import samba.getopt as options
 import base64
@@ -40,8 +39,6 @@ from samba.samdb import SamDB
 from samba.credentials import Credentials, DONT_USE_KERBEROS
 import samba.tests
 from samba.tests import delete_force
-from subunit.run import SubunitTestRunner
-import unittest
 
 parser = optparse.OptionParser("dirsync.py [options] <host>")
 sambaopts = options.SambaOptions(parser)
@@ -57,7 +54,7 @@ if len(args) < 1:
     parser.print_usage()
     sys.exit(1)
 
-host = args[0]
+host = args.pop()
 if not "://" in host:
     ldaphost = "ldap://%s" % host
     ldapshost = "ldaps://%s" % host
@@ -696,13 +693,13 @@ class ExtendedDirsyncTests(SimpleDirsyncTests):
         self.assertEqual(str(res[0].dn), "")
 
 
-runner = SubunitTestRunner()
-suite = unittest.TestSuite()
-suite.addTests(unittest.makeSuite(SimpleDirsyncTests))
-suite.addTests(unittest.makeSuite(ExtendedDirsyncTests))
-if not runner.run(suite).wasSuccessful():
-    rc = 1
+if getattr(opts, "listtests", False):
+    args.insert(0, "--list")
 else:
-    rc = 0
+    lp = sambaopts.get_loadparm()
+    samba.tests.cmdline_credentials = credopts.get_credentials(lp)
+if getattr(opts, 'load_list', None):
+    args.insert(0, "--load-list=%s" % opts.load_list)
 
-sys.exit(rc)
+
+TestProgram(module=__name__, argv=[sys.argv[0]] + args)
