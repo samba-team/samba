@@ -8,8 +8,8 @@ import os
 
 sys.path.insert(0, "bin/python")
 import samba
-samba.ensure_external_module("testtools", "testtools")
-samba.ensure_external_module("subunit", "subunit/python")
+
+from samba.tests.subunitrun import SubunitOptions, TestProgram
 
 import samba.getopt as options
 
@@ -21,8 +21,6 @@ from samba.ndr import ndr_unpack
 from samba import gensec
 from samba.credentials import Credentials
 
-from subunit.run import SubunitTestRunner
-import unittest
 import samba.tests
 
 from samba.auth import AUTH_SESSION_INFO_DEFAULT_GROUPS, AUTH_SESSION_INFO_AUTHENTICATED, AUTH_SESSION_INFO_SIMPLE_PRIVILEGES
@@ -35,6 +33,8 @@ parser.add_option_group(options.VersionOptions(parser))
 # use command line creds if available
 credopts = options.CredentialsOptions(parser)
 parser.add_option_group(credopts)
+subunitopts = SubunitOptions(parser)
+parser.add_option_group(subunitopts)
 opts, args = parser.parse_args()
 
 if len(args) < 1:
@@ -106,7 +106,7 @@ class TokenTest(samba.tests.TestCase):
             print("token sids don't match")
             print("difference : %s" % sidset1.difference(sidset2))
             self.fail(msg="calculated groups don't match against user DN tokenGroups")
-        
+
     def test_pac_groups(self):
         settings = {}
         settings["lp_ctx"] = lp
@@ -131,8 +131,8 @@ class TokenTest(samba.tests.TestCase):
         client_finished = False
         server_finished = False
         server_to_client = ""
-        
-        """Run the actual call loop"""
+
+        # Run the actual call loop.
         while client_finished == False and server_finished == False:
             if not client_finished:
                 print "running client gensec_update"
@@ -164,8 +164,4 @@ if not "://" in url:
 
 samdb = SamDB(url, credentials=creds, session_info=system_session(lp), lp=lp)
 
-runner = SubunitTestRunner()
-rc = 0
-if not runner.run(unittest.makeSuite(TokenTest)).wasSuccessful():
-    rc = 1
-sys.exit(rc)
+TestProgram(module=__name__, opts=subunitopts)
