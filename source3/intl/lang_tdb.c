@@ -103,7 +103,9 @@ bool lang_tdb_init(const char *lang)
 	struct stat st;
 	static int initialised;
 	time_t loadtime;
-	bool result = False;
+	bool result = false;
+	char *dpath = NULL;
+	char *lpath = NULL;
 
 	/* we only want to init once per process, unless given
 	   an override */
@@ -130,8 +132,12 @@ bool lang_tdb_init(const char *lang)
 	if (!lang) 
 		return True;
 
-	if (asprintf(&msg_path, "%s.msg",
-		     data_path(talloc_tos(), (const char *)lang)) == -1) {
+	dpath = data_path(talloc_tos(), (const char *)lang);
+	if (dpath == NULL) {
+		goto done;
+	}
+
+	if (asprintf(&msg_path, "%s.msg", dpath) == -1) {
 		DEBUG(0, ("asprintf failed\n"));
 		goto done;
 	}
@@ -141,8 +147,13 @@ bool lang_tdb_init(const char *lang)
 			   strerror(errno)));
 		goto done;
 	}
-	
-	if (asprintf(&path, "%s%s.tdb", lock_path("lang_"), lang) == -1) {
+
+	lpath = lock_path("lang_");
+	if (lpath == NULL) {
+		goto done;
+	}
+
+	if (asprintf(&path, "%s%s.tdb", lpath, lang) == -1) {
 		DEBUG(0, ("asprintf failed\n"));
 		goto done;
 	}
@@ -175,6 +186,8 @@ bool lang_tdb_init(const char *lang)
  done:
 	SAFE_FREE(msg_path);
 	SAFE_FREE(path);
+	TALLOC_FREE(lpath);
+	TALLOC_FREE(dpath);
 
 	return result;
 }
