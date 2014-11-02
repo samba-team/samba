@@ -2,6 +2,23 @@
 # -*- coding: utf-8 -*-
 # This is a port of the original in testprogs/ejs/ldap.js
 
+# Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2008-2011
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
+
 import optparse
 import sys
 import time
@@ -10,8 +27,7 @@ import os
 
 sys.path.insert(0, "bin/python")
 import samba
-samba.ensure_external_module("testtools", "testtools")
-samba.ensure_external_module("subunit", "subunit/python")
+from samba.tests.subunitrun import TestProgram, SubunitOptions
 
 import samba.getopt as options
 
@@ -26,9 +42,6 @@ from samba.samdb import SamDB
 from samba.dsdb import DS_DOMAIN_FUNCTION_2003
 from samba.tests import delete_force
 
-from subunit.run import SubunitTestRunner
-import unittest
-
 parser = optparse.OptionParser("ldap_schema.py [options] <host>")
 sambaopts = options.SambaOptions(parser)
 parser.add_option_group(sambaopts)
@@ -36,6 +49,8 @@ parser.add_option_group(options.VersionOptions(parser))
 # use command line creds if available
 credopts = options.CredentialsOptions(parser)
 parser.add_option_group(credopts)
+subunitopts = SubunitOptions(parser)
+parser.add_option_group(subunitopts)
 opts, args = parser.parse_args()
 
 if len(args) < 1:
@@ -52,9 +67,10 @@ class SchemaTests(samba.tests.TestCase):
 
     def setUp(self):
         super(SchemaTests, self).setUp()
-        self.ldb = ldb
-        self.base_dn = ldb.domain_dn()
-        self.schema_dn = ldb.get_schema_basedn().get_linearized()
+        self.ldb = SamDB(host, credentials=creds,
+            session_info=system_session(lp), lp=lp, options=ldb_options)
+        self.base_dn = self.ldb.domain_dn()
+        self.schema_dn = self.ldb.get_schema_basedn().get_linearized()
 
     def test_generated_schema(self):
         """Testing we can read the generated schema via LDAP"""
@@ -264,8 +280,9 @@ class SchemaTests_msDS_IntId(samba.tests.TestCase):
 
     def setUp(self):
         super(SchemaTests_msDS_IntId, self).setUp()
-        self.ldb = ldb
-        res = ldb.search(base="", expression="", scope=SCOPE_BASE,
+        self.ldb = SamDB(host, credentials=creds,
+            session_info=system_session(lp), lp=lp, options=ldb_options)
+        res = self.ldb.search(base="", expression="", scope=SCOPE_BASE,
                          attrs=["schemaNamingContext", "defaultNamingContext",
                                 "forestFunctionality"])
         self.assertEquals(len(res), 1)
@@ -540,8 +557,9 @@ class SchemaTests_msDS_isRODC(samba.tests.TestCase):
 
     def setUp(self):
         super(SchemaTests_msDS_isRODC, self).setUp()
-        self.ldb = ldb
-        res = ldb.search(base="", expression="", scope=SCOPE_BASE, attrs=["defaultNamingContext"])
+        self.ldb =  SamDB(host, credentials=creds,
+            session_info=system_session(lp), lp=lp, options=ldb_options)
+        res = self.ldb.search(base="", expression="", scope=SCOPE_BASE, attrs=["defaultNamingContext"])
         self.assertEquals(len(res), 1)
         self.base_dn = res[0]["defaultNamingContext"][0]
 
@@ -585,15 +603,4 @@ if host.startswith("ldap://"):
     # user 'paged_search' module when connecting remotely
     ldb_options = ["modules:paged_searches"]
 
-ldb = SamDB(host, credentials=creds, session_info=system_session(lp), lp=lp, options=ldb_options)
-
-runner = SubunitTestRunner()
-rc = 0
-if not runner.run(unittest.makeSuite(SchemaTests)).wasSuccessful():
-    rc = 1
-if not runner.run(unittest.makeSuite(SchemaTests_msDS_IntId)).wasSuccessful():
-    rc = 1
-if not runner.run(unittest.makeSuite(SchemaTests_msDS_isRODC)).wasSuccessful():
-    rc = 1
-
-sys.exit(rc)
+TestProgram(module=__name__, opts=subunitopts)
