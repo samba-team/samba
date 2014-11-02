@@ -722,6 +722,7 @@ WERROR regdb_init(void)
 	int32_t vers_id;
 	WERROR werr;
 	NTSTATUS status;
+	char *db_path;
 
 	if (regdb) {
 		DEBUG(10, ("regdb_init: incrementing refcount (%d->%d)\n",
@@ -730,17 +731,23 @@ WERROR regdb_init(void)
 		return WERR_OK;
 	}
 
-	regdb = db_open(NULL, state_path("registry.tdb"), 0,
+	db_path = state_path("registry.tdb");
+	if (db_path == NULL) {
+		return WERR_NOMEM;
+	}
+
+	regdb = db_open(NULL, db_path, 0,
 			REG_TDB_FLAGS, O_RDWR, 0600,
 			DBWRAP_LOCK_ORDER_1, REG_DBWRAP_FLAGS);
 	if (!regdb) {
-		regdb = db_open(NULL, state_path("registry.tdb"), 0,
+		regdb = db_open(NULL, db_path, 0,
 				REG_TDB_FLAGS, O_RDWR|O_CREAT, 0600,
 				DBWRAP_LOCK_ORDER_1, REG_DBWRAP_FLAGS);
 		if (!regdb) {
 			werr = ntstatus_to_werror(map_nt_error_from_unix(errno));
 			DEBUG(1,("regdb_init: Failed to open registry %s (%s)\n",
-				state_path("registry.tdb"), strerror(errno) ));
+				db_path, strerror(errno) ));
+			TALLOC_FREE(db_path);
 			return werr;
 		}
 
@@ -748,11 +755,13 @@ WERROR regdb_init(void)
 		if (!W_ERROR_IS_OK(werr)) {
 			DEBUG(1, ("regdb_init: Failed to store version: %s\n",
 				  win_errstr(werr)));
+			TALLOC_FREE(db_path);
 			return werr;
 		}
 
 		DEBUG(10,("regdb_init: Successfully created registry tdb\n"));
 	}
+	TALLOC_FREE(db_path);
 
 	regdb_refcount = 1;
 	DEBUG(10, ("regdb_init: registry db openend. refcount reset (%d)\n",
@@ -840,6 +849,8 @@ WERROR regdb_init(void)
 WERROR regdb_open( void )
 {
 	WERROR result = WERR_OK;
+	char *db_path;
+	int saved_errno;
 
 	if ( regdb ) {
 		DEBUG(10, ("regdb_open: incrementing refcount (%d->%d)\n",
@@ -848,24 +859,32 @@ WERROR regdb_open( void )
 		return WERR_OK;
 	}
 
-	become_root();
-
-	regdb = db_open(NULL, state_path("registry.tdb"), 0,
-			REG_TDB_FLAGS, O_RDWR, 0600,
-			DBWRAP_LOCK_ORDER_1, REG_DBWRAP_FLAGS);
-	if ( !regdb ) {
-		result = ntstatus_to_werror( map_nt_error_from_unix( errno ) );
-		DEBUG(0,("regdb_open: Failed to open %s! (%s)\n",
-			state_path("registry.tdb"), strerror(errno) ));
+	db_path = state_path("registry.tdb");
+	if (db_path == NULL) {
+		return WERR_NOMEM;
 	}
 
+	become_root();
+
+	regdb = db_open(NULL, db_path, 0,
+			REG_TDB_FLAGS, O_RDWR, 0600,
+			DBWRAP_LOCK_ORDER_1, REG_DBWRAP_FLAGS);
+	saved_errno = errno;
 	unbecome_root();
+	if ( !regdb ) {
+		result = ntstatus_to_werror(map_nt_error_from_unix(saved_errno));
+		DEBUG(0,("regdb_open: Failed to open %s! (%s)\n",
+			 db_path, strerror(saved_errno)));
+		TALLOC_FREE(db_path);
+		return result;
+	}
+	TALLOC_FREE(db_path);
 
 	regdb_refcount = 1;
 	DEBUG(10, ("regdb_open: registry db opened. refcount reset (%d)\n",
 		   regdb_refcount));
 
-	return result;
+	return WERR_OK;
 }
 
 /***********************************************************************
