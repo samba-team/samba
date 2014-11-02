@@ -186,16 +186,29 @@ static NTSTATUS migrate_internal(TALLOC_CTX *mem_ctx,
 
 bool nt_printing_tdb_migrate(struct messaging_context *msg_ctx)
 {
-	const char *drivers_path = state_path("ntdrivers.tdb");
-	const char *printers_path = state_path("ntprinters.tdb");
-	const char *forms_path = state_path("ntforms.tdb");
-	bool drivers_exists = file_exist(drivers_path);
-	bool printers_exists = file_exist(printers_path);
-	bool forms_exists = file_exist(forms_path);
+	const char *drivers_path;
+	const char *printers_path;
+	const char *forms_path;
+	bool drivers_exists;
+	bool printers_exists;
+	bool forms_exists;
 	struct auth_session_info *session_info;
 	struct rpc_pipe_client *winreg_pipe = NULL;
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 	NTSTATUS status;
+
+	/* paths talloced on new stackframe */
+	drivers_path = state_path("ntdrivers.tdb");
+	printers_path = state_path("ntprinters.tdb");
+	forms_path = state_path("ntforms.tdb");
+	if ((drivers_path == NULL) || (printers_path == NULL)
+						|| (forms_path == NULL)) {
+		talloc_free(tmp_ctx);
+		return false;
+	}
+	drivers_exists = file_exist(drivers_path);
+	printers_exists = file_exist(printers_path);
+	forms_exists = file_exist(forms_path);
 
 	if (!drivers_exists && !printers_exists && !forms_exists) {
 		talloc_free(tmp_ctx);
