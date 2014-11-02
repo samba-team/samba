@@ -365,6 +365,7 @@ int main(int argc, const char *argv[])
 	TALLOC_CTX *frame = talloc_stackframe();
 	int ret = 0;
 	struct messaging_context *msg_ctx;
+	char *db_path;
 
 	sec_init();
 	load_case_tables();
@@ -486,7 +487,14 @@ int main(int argc, const char *argv[])
 
 	if ( show_shares ) {
 		if (verbose) {
-			d_printf("Opened %s\n", lock_path("connections.tdb"));
+			db_path = lock_path("connections.tdb");
+			if (db_path == NULL) {
+				d_printf("Out of memory - exiting\n");
+				ret = -1;
+				goto done;
+			}
+			d_printf("Opened %s\n", db_path);
+			TALLOC_FREE(db_path);
 		}
 
 		if (brief) {
@@ -508,18 +516,27 @@ int main(int argc, const char *argv[])
 	if ( show_locks ) {
 		int result;
 		struct db_context *db;
-		db = db_open(NULL, lock_path("locking.tdb"), 0,
+
+		db_path = lock_path("locking.tdb");
+		if (db_path == NULL) {
+			d_printf("Out of memory - exiting\n");
+			ret = -1;
+			goto done;
+		}
+
+		db = db_open(NULL, db_path, 0,
 			     TDB_CLEAR_IF_FIRST|TDB_INCOMPATIBLE_HASH, O_RDONLY, 0,
 			     DBWRAP_LOCK_ORDER_1, DBWRAP_FLAG_NONE);
 
 		if (!db) {
-			d_printf("%s not initialised\n",
-				 lock_path("locking.tdb"));
+			d_printf("%s not initialised\n", db_path);
 			d_printf("This is normal if an SMB client has never "
 				 "connected to your server.\n");
+			TALLOC_FREE(db_path);
 			exit(0);
 		} else {
 			TALLOC_FREE(db);
+			TALLOC_FREE(db_path);
 		}
 
 		if (!locking_init_readonly()) {
