@@ -41,24 +41,31 @@ struct PERF_OBJECT_TYPE *_reg_perfcount_find_obj(struct PERF_DATA_BLOCK *block, 
 /*********************************************************************
 *********************************************************************/
 
+/* returns perfcount path for dbname allocated on talloc_tos */
 static char *counters_directory(const char *dbname)
 {
-	char *path = NULL;
+	char *dir_path = NULL;
+	char *db_subpath = NULL;
 	char *ret = NULL;
-	TALLOC_CTX *ctx = talloc_tos();
 
-	path = state_path(PERFCOUNTDIR);
-	if (!directory_create_or_exist(path, 0755)) {
+	dir_path = state_path(PERFCOUNTDIR);
+	if (dir_path == NULL) {
 		return NULL;
 	}
 
-	path = talloc_asprintf(ctx, "%s/%s", PERFCOUNTDIR, dbname);
-	if (!path) {
+	if (!directory_create_or_exist(dir_path, 0755)) {
+		TALLOC_FREE(dir_path);
 		return NULL;
 	}
 
-	ret = talloc_strdup(ctx, state_path(path));
-	TALLOC_FREE(path);
+	db_subpath = talloc_asprintf(dir_path, "%s/%s", PERFCOUNTDIR, dbname);
+	if (db_subpath == NULL) {
+		TALLOC_FREE(dir_path);
+		return NULL;
+	}
+
+	ret = state_path(db_subpath);
+	TALLOC_FREE(dir_path);
 	return ret;
 }
 
@@ -67,19 +74,25 @@ static char *counters_directory(const char *dbname)
 
 uint32 reg_perfcount_get_base_index(void)
 {
-	const char *fname = counters_directory( NAMES_DB );
+	char *fname;
 	TDB_CONTEXT *names;
 	TDB_DATA kbuf, dbuf;
 	char key[] = "1";
 	uint32 retval = 0;
 	char buf[PERFCOUNT_MAX_LEN];
 
+	fname = counters_directory(NAMES_DB);
+	if (fname == NULL) {
+		return 0;
+	}
+
 	names = tdb_open_log(fname, 0, TDB_DEFAULT, O_RDONLY, 0444);
 
 	if ( !names ) {
 		DEBUG(2, ("reg_perfcount_get_base_index: unable to open [%s].\n", fname));
+		TALLOC_FREE(fname);
 		return 0;
-	}    
+	}
 	/* needs to read the value of key "1" from the counter_names.tdb file, as that is
 	   where the total number of counters is stored. We're assuming no holes in the
 	   enumeration.
@@ -100,18 +113,17 @@ uint32 reg_perfcount_get_base_index(void)
 	{
 		DEBUG(1, ("reg_perfcount_get_base_index: failed to find key \'1\' in [%s].\n", fname));
 		tdb_close(names);
+		TALLOC_FREE(fname);
 		return 0;
 	}
-	else
-	{
-		tdb_close(names);
-		memset(buf, 0, PERFCOUNT_MAX_LEN);
-		memcpy(buf, dbuf.dptr, dbuf.dsize);
-		retval = (uint32)atoi(buf);
-		SAFE_FREE(dbuf.dptr);
-		return retval;
-	}
-	return 0;
+
+	tdb_close(names);
+	TALLOC_FREE(fname);
+	memset(buf, 0, PERFCOUNT_MAX_LEN);
+	memcpy(buf, dbuf.dptr, dbuf.dsize);
+	retval = (uint32)atoi(buf);
+	SAFE_FREE(dbuf.dptr);
+	return retval;
 }
 
 /*********************************************************************
@@ -217,19 +229,26 @@ uint32 reg_perfcount_get_counter_help(uint32 base_index, char **retbuf)
 	char *buf1 = NULL;
 	uint32 buffer_size = 0;
 	TDB_CONTEXT *names;
-	const char *fname = counters_directory( NAMES_DB );
+	char *fname;
 	int i;
 
-	if(base_index == 0)
+	if (base_index == 0) {
 		return 0;
+	}
+
+	fname = counters_directory(NAMES_DB);
+	if (fname == NULL) {
+		return 0;
+	}
 
 	names = tdb_open_log(fname, 0, TDB_DEFAULT, O_RDONLY, 0444);
 
-	if(names == NULL)
-	{
+	if (names == NULL) {
 		DEBUG(1, ("reg_perfcount_get_counter_help: unable to open [%s].\n", fname));
+		TALLOC_FREE(fname);
 		return 0;
-	}    
+	}
+	TALLOC_FREE(fname);
 
 	for(i = 1; i <= base_index; i++)
 	{
@@ -260,19 +279,26 @@ uint32 reg_perfcount_get_counter_names(uint32 base_index, char **retbuf)
 	char *buf1 = NULL;
 	uint32 buffer_size = 0;
 	TDB_CONTEXT *names;
-	const char *fname = counters_directory( NAMES_DB );
+	char *fname;
 	int i;
 
-	if(base_index == 0)
+	if (base_index == 0) {
 		return 0;
+	}
+
+	fname = counters_directory(NAMES_DB);
+	if (fname == NULL) {
+		return 0;
+	}
 
 	names = tdb_open_log(fname, 0, TDB_DEFAULT, O_RDONLY, 0444);
 
-	if(names == NULL)
-	{
+	if (names == NULL) {
 		DEBUG(1, ("reg_perfcount_get_counter_names: unable to open [%s].\n", fname));
+		TALLOC_FREE(fname);
 		return 0;
-	}    
+	}
+	TALLOC_FREE(fname);
 
 	buffer_size = _reg_perfcount_multi_sz_from_tdb(names, 1, retbuf, buffer_size);
 
@@ -420,15 +446,21 @@ static bool _reg_perfcount_add_object(struct PERF_DATA_BLOCK *block,
 static bool _reg_perfcount_get_counter_data(TDB_DATA key, TDB_DATA *data)
 {
 	TDB_CONTEXT *counters;
-	const char *fname = counters_directory( DATA_DB );
+	char *fname;
+
+	fname = counters_directory(DATA_DB);
+	if (fname == NULL) {
+		return false;
+	}
 
 	counters = tdb_open_log(fname, 0, TDB_DEFAULT, O_RDONLY, 0444);
 
-	if(counters == NULL)
-	{
+	if (counters == NULL) {
 		DEBUG(1, ("reg_perfcount_get_counter_data: unable to open [%s].\n", fname));
+		TALLOC_FREE(fname);
 		return False;
-	}    
+	}
+	TALLOC_FREE(fname);
 
 	*data = tdb_fetch_compat(counters, key);
 
@@ -865,15 +897,21 @@ static bool _reg_perfcount_init_data_block_perf(struct PERF_DATA_BLOCK *block,
 	uint64_t PerfFreq, PerfTime, PerfTime100nSec;
 	TDB_CONTEXT *counters;
 	bool status = False;
-	const char *fname = counters_directory( DATA_DB );
+	char *fname;
+
+	fname = counters_directory(DATA_DB);
+	if (fname == NULL) {
+		return false;
+	}
 
 	counters = tdb_open_log(fname, 0, TDB_DEFAULT, O_RDONLY, 0444);
 
-	if(counters == NULL)
-	{
+	if (counters == NULL) {
 		DEBUG(1, ("reg_perfcount_init_data_block_perf: unable to open [%s].\n", fname));
+		TALLOC_FREE(fname);
 		return False;
-	}    
+	}
+	TALLOC_FREE(fname);
 
 	status = _reg_perfcount_get_64(&PerfFreq, names, 0, "PerfFreq");
 	if(status == False)
@@ -1080,17 +1118,24 @@ static uint32 reg_perfcount_get_perf_data_block(uint32 base_index,
 						bool bigendian_data)
 {
 	uint32 buffer_size = 0;
-	const char *fname = counters_directory( NAMES_DB );
+	char *fname;
 	TDB_CONTEXT *names;
 	int retval = 0;
+
+	fname = counters_directory(NAMES_DB);
+	if (fname == NULL) {
+		return 0;
+	}
 
 	names = tdb_open_log(fname, 0, TDB_DEFAULT, O_RDONLY, 0444);
 
 	if(names == NULL)
 	{
 		DEBUG(1, ("reg_perfcount_get_perf_data_block: unable to open [%s].\n", fname));
+		TALLOC_FREE(fname);
 		return 0;
 	}
+	TALLOC_FREE(fname);
 
 	if (!_reg_perfcount_init_data_block(block, mem_ctx, names, bigendian_data)) {
 		DEBUG(0, ("_reg_perfcount_init_data_block failed\n"));
