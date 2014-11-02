@@ -125,6 +125,7 @@ struct notify_context *notify_init(TALLOC_CTX *mem_ctx,
 {
 	struct loadparm_context *lp_ctx;
 	struct notify_context *notify;
+	char *db_path;
 
 	notify = talloc(mem_ctx, struct notify_context);
 	if (notify == NULL) {
@@ -134,18 +135,32 @@ struct notify_context *notify_init(TALLOC_CTX *mem_ctx,
 	notify->list = NULL;
 
 	lp_ctx = loadparm_init_s3(notify, loadparm_s3_helpers());
+
+	db_path = lock_path("notify.tdb");
+	if (db_path == NULL) {
+		goto fail;
+	}
+
 	notify->db_notify = db_open_tdb(
-		notify, lp_ctx, lock_path("notify.tdb"),
+		notify, lp_ctx, db_path,
 		0, TDB_CLEAR_IF_FIRST|TDB_INCOMPATIBLE_HASH,
 		O_RDWR|O_CREAT, 0644, DBWRAP_LOCK_ORDER_2, DBWRAP_FLAG_NONE);
-		talloc_unlink(notify, lp_ctx);
+	talloc_unlink(notify, lp_ctx);
+	TALLOC_FREE(db_path);
 	if (notify->db_notify == NULL) {
 		goto fail;
 	}
+
+	db_path = lock_path("notify_index.tdb");
+	if (db_path == NULL) {
+		goto fail;
+	}
+
 	notify->db_index = db_open(
-		notify, lock_path("notify_index.tdb"),
+		notify, db_path,
 		0, TDB_SEQNUM|TDB_CLEAR_IF_FIRST|TDB_INCOMPATIBLE_HASH,
 		O_RDWR|O_CREAT, 0644, DBWRAP_LOCK_ORDER_3, DBWRAP_FLAG_NONE);
+	TALLOC_FREE(db_path);
 	if (notify->db_index == NULL) {
 		goto fail;
 	}
