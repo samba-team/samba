@@ -63,8 +63,13 @@ class SubunitOptions(optparse.OptionGroup):
 
 class TestProgram(BaseTestProgram):
 
-    def __init__(self, module=None, argv=None):
-        if argv is None:
-            argv = [sys.argv[0]]
+    def __init__(self, module=None, args=None, opts=None):
+        if args is None:
+            args = []
+        if getattr(opts, "listtests", False):
+            args.insert(0, "--list")
+        if getattr(opts, 'load_list', None):
+            args.insert(0, "--load-list=%s" % opts.load_list)
+        argv = [sys.argv[0]] + args
         super(TestProgram, self).__init__(module=module, argv=argv,
             testRunner=subunit.run.SubunitTestRunner())

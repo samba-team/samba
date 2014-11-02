@@ -2,7 +2,7 @@
 #
 # Unit tests for dirsync control
 # Copyright (C) Matthieu Patou <mat@matws.net> 2011
-#
+# Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2014
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -22,7 +22,7 @@ import optparse
 import sys
 sys.path.insert(0, "bin/python")
 import samba
-from samba.tests.subunitrun import TestProgram
+from samba.tests.subunitrun import TestProgram, SubunitOptions
 
 import samba.getopt as options
 import base64
@@ -48,6 +48,8 @@ parser.add_option_group(options.VersionOptions(parser))
 # use command line creds if available
 credopts = options.CredentialsOptions(parser)
 parser.add_option_group(credopts)
+subunitopts = SubunitOptions(parser)
+parser.add_option_group(subunitopts)
 opts, args = parser.parse_args()
 
 if len(args) < 1:
@@ -693,13 +695,9 @@ class ExtendedDirsyncTests(SimpleDirsyncTests):
         self.assertEqual(str(res[0].dn), "")
 
 
-if getattr(opts, "listtests", False):
-    args.insert(0, "--list")
-else:
+if not getattr(opts, "listtests", False):
     lp = sambaopts.get_loadparm()
     samba.tests.cmdline_credentials = credopts.get_credentials(lp)
-if getattr(opts, 'load_list', None):
-    args.insert(0, "--load-list=%s" % opts.load_list)
 
 
-TestProgram(module=__name__)
+TestProgram(module=__name__, opts=subunitopts)
