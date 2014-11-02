@@ -58,17 +58,24 @@ static struct db_context *lock_db;
 
 static bool locking_init_internal(bool read_only)
 {
+	char *db_path;
+
 	brl_init(read_only);
 
 	if (lock_db)
 		return True;
 
-	lock_db = db_open(NULL, lock_path("locking.tdb"),
+	db_path = lock_path("locking.tdb");
+	if (db_path == NULL) {
+		return false;
+	}
+
+	lock_db = db_open(NULL, db_path,
 			  SMB_OPEN_DATABASE_TDB_HASH_SIZE,
 			  TDB_DEFAULT|TDB_VOLATILE|TDB_CLEAR_IF_FIRST|TDB_INCOMPATIBLE_HASH,
 			  read_only?O_RDONLY:O_RDWR|O_CREAT, 0644,
 			  DBWRAP_LOCK_ORDER_1, DBWRAP_FLAG_NONE);
-
+	TALLOC_FREE(db_path);
 	if (!lock_db) {
 		DEBUG(0,("ERROR: Failed to initialise locking database\n"));
 		return False;
