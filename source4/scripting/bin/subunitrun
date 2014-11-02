@@ -39,7 +39,7 @@ sys.path.insert(0, "bin/python")
 
 import optparse
 import samba
-from samba.tests.subunitrun import TestProgram
+from samba.tests.subunitrun import TestProgram, SubunitOptions
 
 import samba.getopt as options
 import samba.tests
@@ -71,8 +71,10 @@ parser = optparse.OptionParser(usage=usage, description=description)
 parser.format_description = format_description
 credopts = options.CredentialsOptions(parser)
 sambaopts = options.SambaOptions(parser)
+subunitopts = SubunitOptions(parser)
 parser.add_option_group(credopts)
 parser.add_option_group(sambaopts)
+parser.add_option_group(subunitopts)
 
 opts, args = parser.parse_args()
 

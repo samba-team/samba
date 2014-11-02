@@ -28,18 +28,15 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import sys
-
 # make sure the script dies immediately when hitting control-C,
 # rather than raising KeyboardInterrupt. As we do all database
 # operations using transactions, this is safe.
 import signal
 signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-# Find right directory when running from source tree
-sys.path.insert(0, "bin/python")
-
+import optparse
 import samba
+import sys
 samba.ensure_external_module("mimeparse", "mimeparse")
 samba.ensure_external_module("extras", "extras")
 samba.ensure_external_module("testtools", "testtools")
@@ -47,13 +44,27 @@ samba.ensure_external_module("subunit", "subunit/python")
 import subunit.run
 
 try:
-   from subunit.run import TestProgram
+   from subunit.run import TestProgram as BaseTestProgram
 except ImportError:
-   from unittest import TestProgram
+   from unittest import TestProgram as BaseTestProgram
 
 
-class TestProgram(TestProgram):
+class SubunitOptions(optparse.OptionGroup):
+    """Command line options for subunit test runners."""
+
+    def __init__(self, parser):
+        optparse.OptionGroup.__init__(self, parser, "Subunit Options")
+        self.add_option('-l', '--list', dest='listtests', default=False,
+                  help='List tests rather than running them.',
+                  action="store_true")
+        self.add_option('--load-list', dest='load_list', default=None,
+                  help='Specify a filename containing the test ids to use.')
+
+
+class TestProgram(BaseTestProgram):
 
     def __init__(self, module=None, argv=None):
+        if argv is None:
+            argv = [sys.argv[0]]
         super(TestProgram, self).__init__(module=module, argv=argv,
             testRunner=subunit.run.SubunitTestRunner())
