@@ -24,7 +24,6 @@
 #include "util_tdb.h"
 #include "printer_list.h"
 
-#define PL_DB_NAME() lock_path("printer_list.tdb")
 #define PL_KEY_PREFIX "PRINTERLIST/PRN/"
 #define PL_KEY_FORMAT PL_KEY_PREFIX"%s"
 #define PL_TIMESTAMP_KEY "PRINTERLIST/GLOBAL/LAST_REFRESH"
@@ -34,14 +33,22 @@
 static struct db_context *get_printer_list_db(void)
 {
 	static struct db_context *db;
+	char *db_path;
 
 	if (db != NULL) {
 		return db;
 	}
-	db = db_open(NULL, PL_DB_NAME(), 0,
+
+	db_path = lock_path("printer_list.tdb");
+	if (db_path == NULL) {
+		return NULL;
+	}
+
+	db = db_open(NULL, db_path, 0,
 		     TDB_DEFAULT|TDB_CLEAR_IF_FIRST|TDB_INCOMPATIBLE_HASH,
 		     O_RDWR|O_CREAT, 0644, DBWRAP_LOCK_ORDER_1,
 		     DBWRAP_FLAG_NONE);
+	TALLOC_FREE(db_path);
 	return db;
 }
 
