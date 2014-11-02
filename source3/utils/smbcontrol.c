@@ -1021,22 +1021,30 @@ static bool do_winbind_online(struct tevent_context *ev_ctx,
 			      const int argc, const char **argv)
 {
 	TDB_CONTEXT *tdb;
+	char *db_path;
 
 	if (argc != 1) {
 		fprintf(stderr, "Usage: smbcontrol winbindd online\n");
 		return False;
 	}
 
+	db_path = state_path("winbindd_cache.tdb");
+	if (db_path == NULL) {
+		return false;
+	}
+
 	/* Remove the entry in the winbindd_cache tdb to tell a later
 	   starting winbindd that we're online. */
 
-	tdb = tdb_open_log(state_path("winbindd_cache.tdb"), 0, TDB_DEFAULT, O_RDWR, 0600);
+	tdb = tdb_open_log(db_path, 0, TDB_DEFAULT, O_RDWR, 0600);
 	if (!tdb) {
 		fprintf(stderr, "Cannot open the tdb %s for writing.\n",
-			state_path("winbindd_cache.tdb"));
+			db_path);
+		TALLOC_FREE(db_path);
 		return False;
 	}
 
+	TALLOC_FREE(db_path);
 	tdb_delete_bystring(tdb, "WINBINDD_OFFLINE");
 	tdb_close(tdb);
 
@@ -1051,26 +1059,34 @@ static bool do_winbind_offline(struct tevent_context *ev_ctx,
 	TDB_CONTEXT *tdb;
 	bool ret = False;
 	int retry = 0;
+	char *db_path;
 
 	if (argc != 1) {
 		fprintf(stderr, "Usage: smbcontrol winbindd offline\n");
 		return False;
 	}
 
+	db_path = state_path("winbindd_cache.tdb");
+	if (db_path == NULL) {
+		return false;
+	}
+
 	/* Create an entry in the winbindd_cache tdb to tell a later
 	   starting winbindd that we're offline. We may actually create
 	   it here... */
 
-	tdb = tdb_open_log(state_path("winbindd_cache.tdb"),
+	tdb = tdb_open_log(db_path,
 				WINBINDD_CACHE_TDB_DEFAULT_HASH_SIZE,
 				TDB_DEFAULT|TDB_INCOMPATIBLE_HASH /* TDB_CLEAR_IF_FIRST */,
 				O_RDWR|O_CREAT, 0600);
 
 	if (!tdb) {
 		fprintf(stderr, "Cannot open the tdb %s for writing.\n",
-			state_path("winbindd_cache.tdb"));
+			db_path);
+		TALLOC_FREE(db_path);
 		return False;
 	}
+	TALLOC_FREE(db_path);
 
 	/* There's a potential race condition that if a child
 	   winbindd detects a domain is online at the same time
