@@ -142,19 +142,27 @@ bool share_info_db_init(void)
 	int32 vers_id = 0;
 	bool upgrade_ok = true;
 	NTSTATUS status;
+	char *db_path;
 
 	if (share_db != NULL) {
 		return True;
 	}
 
-	share_db = db_open(NULL, state_path("share_info.tdb"), 0,
+	db_path = state_path("share_info.tdb");
+	if (db_path == NULL) {
+		return false;
+	}
+
+	share_db = db_open(NULL, db_path, 0,
 			   TDB_DEFAULT, O_RDWR|O_CREAT, 0600,
 			   DBWRAP_LOCK_ORDER_1, DBWRAP_FLAG_NONE);
 	if (share_db == NULL) {
 		DEBUG(0,("Failed to open share info database %s (%s)\n",
-			state_path("share_info.tdb"), strerror(errno) ));
+			 db_path, strerror(errno)));
+		TALLOC_FREE(db_path);
 		return False;
 	}
+	TALLOC_FREE(db_path);
 
 	status = dbwrap_fetch_int32_bystring(share_db, vstring, &vers_id);
 	if (!NT_STATUS_IS_OK(status)) {
