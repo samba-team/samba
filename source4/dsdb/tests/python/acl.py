@@ -8,8 +8,8 @@ import base64
 import re
 sys.path.insert(0, "bin/python")
 import samba
-samba.ensure_external_module("testtools", "testtools")
-samba.ensure_external_module("subunit", "subunit/python")
+
+from samba.tests.subunitrun import SubunitOptions, TestProgram
 
 import samba.getopt as options
 from samba.join import dc_join
@@ -29,8 +29,6 @@ from samba.samdb import SamDB
 from samba.credentials import Credentials, DONT_USE_KERBEROS
 import samba.tests
 from samba.tests import delete_force
-from subunit.run import SubunitTestRunner
-import unittest
 import samba.dsdb
 
 parser = optparse.OptionParser("acl.py [options] <host>")
@@ -41,6 +39,9 @@ parser.add_option_group(options.VersionOptions(parser))
 # use command line creds if available
 credopts = options.CredentialsOptions(parser)
 parser.add_option_group(credopts)
+subunitopts = SubunitOptions(parser)
+parser.add_option_group(subunitopts)
+
 opts, args = parser.parse_args()
 
 if len(args) < 1:
@@ -1902,18 +1903,4 @@ class AclSPNTests(AclTests):
 
 ldb = SamDB(ldaphost, credentials=creds, session_info=system_session(lp), lp=lp)
 
-runner = SubunitTestRunner()
-suite = unittest.TestSuite()
-suite.addTests(unittest.makeSuite(AclAddTests))
-suite.addTests(unittest.makeSuite(AclModifyTests))
-suite.addTests(unittest.makeSuite(AclDeleteTests))
-suite.addTests(unittest.makeSuite(AclRenameTests))
-suite.addTests(unittest.makeSuite(AclCARTests))
-suite.addTests(unittest.makeSuite(AclSearchTests))
-suite.addTests(unittest.makeSuite(AclExtendedTests))
-suite.addTests(unittest.makeSuite(AclSPNTests))
-if not runner.run(suite).wasSuccessful():
-    rc = 1
-else:
-    rc = 0
-sys.exit(rc)
+TestProgram(module=__name__, opts=subunitopts)
