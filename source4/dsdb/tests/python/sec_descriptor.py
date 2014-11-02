@@ -10,8 +10,8 @@ import random
 
 sys.path.insert(0, "bin/python")
 import samba
-samba.ensure_external_module("testtools", "testtools")
-samba.ensure_external_module("subunit", "subunit/python")
+
+from samba.tests.subunitrun import SubunitOptions, TestProgram
 
 import samba.getopt as options
 
@@ -29,10 +29,8 @@ from samba.auth import system_session
 from samba.dsdb import DS_DOMAIN_FUNCTION_2008
 from samba.dcerpc.security import (
     SECINFO_OWNER, SECINFO_GROUP, SECINFO_DACL, SECINFO_SACL)
-from subunit.run import SubunitTestRunner
 import samba.tests
 from samba.tests import delete_force
-import unittest
 
 parser = optparse.OptionParser("sec_descriptor.py [options] <host>")
 sambaopts = options.SambaOptions(parser)
@@ -42,6 +40,9 @@ parser.add_option_group(options.VersionOptions(parser))
 # use command line creds if available
 credopts = options.CredentialsOptions(parser)
 parser.add_option_group(credopts)
+subunitopts = SubunitOptions(parser)
+parser.add_option_group(subunitopts)
+
 opts, args = parser.parse_args()
 
 if len(args) < 1:
@@ -2174,15 +2175,4 @@ if not "://" in host:
 if host.lower().startswith("ldap://"):
     ldb_options = ["modules:paged_searches"]
 
-runner = SubunitTestRunner()
-suite = unittest.TestSuite()
-suite.addTests(unittest.makeSuite(OwnerGroupDescriptorTests))
-suite.addTests(unittest.makeSuite(DaclDescriptorTests))
-suite.addTests(unittest.makeSuite(SdFlagsDescriptorTests))
-suite.addTests(unittest.makeSuite(RightsAttributesTests))
-suite.addTests(unittest.makeSuite(SdAutoInheritTests))
-if not runner.run(suite).wasSuccessful():
-    rc = 1
-else:
-    rc = 0
-sys.exit(rc)
+TestProgram(module=__name__, opts=subunitopts)
