@@ -77,12 +77,12 @@ class DirsyncBaseTests(samba.tests.TestCase):
 
     def setUp(self):
         super(DirsyncBaseTests, self).setUp()
-        self.ldb_admin = ldb
-        self.base_dn = ldb.domain_dn()
-        self.domain_sid = security.dom_sid(ldb.get_domain_sid())
+        self.ldb_admin = SamDB(ldapshost, credentials=creds, session_info=system_session(lp), lp=lp)
+        self.base_dn = self.ldb_admin.domain_dn()
+        self.domain_sid = security.dom_sid(self.ldb_admin.get_domain_sid())
         self.user_pass = "samba123@AAA"
         self.configuration_dn = self.ldb_admin.get_config_basedn().get_linearized()
-        self.sd_utils = sd_utils.SDUtils(ldb)
+        self.sd_utils = sd_utils.SDUtils(self.ldb_admin)
         #used for anonymous login
         print "baseDN: %s" % self.base_dn
 
@@ -141,7 +141,6 @@ class SimpleDirsyncTests(DirsyncBaseTests):
             pass
 
     #def test_dirsync_errors(self):
-
 
     def test_dirsync_supported(self):
         """Test the basic of the dirsync is supported"""
@@ -221,9 +220,6 @@ class SimpleDirsyncTests(DirsyncBaseTests):
         except LdbError,l:
             print l
             self.assertTrue(str(l).find("LDAP_UNWILLING_TO_PERFORM") != -1)
-
-
-
 
     def test_dirsync_attributes(self):
         """Check behavior with some attributes """
@@ -590,7 +586,9 @@ class SimpleDirsyncTests(DirsyncBaseTests):
                                     expression="(&(objectClass=organizationalUnit)(!(isDeleted=*)))",
                                     controls=controls)
 
+
 class ExtendedDirsyncTests(SimpleDirsyncTests):
+
     def test_dirsync_linkedattributes(self):
         flag_incr_linked = 2147483648
         self.ldb_simple = self.get_ldb_connection(self.simple_user, self.user_pass)
@@ -698,14 +696,13 @@ class ExtendedDirsyncTests(SimpleDirsyncTests):
         self.assertEqual(str(res[0].dn), "")
 
 
-ldb = SamDB(ldapshost, credentials=creds, session_info=system_session(lp), lp=lp)
-
 runner = SubunitTestRunner()
-rc = 0
-#
-if not runner.run(unittest.makeSuite(SimpleDirsyncTests)).wasSuccessful():
+suite = unittest.TestSuite()
+suite.addTests(unittest.makeSuite(SimpleDirsyncTests))
+suite.addTests(unittest.makeSuite(ExtendedDirsyncTests))
+if not runner.run(suite).wasSuccessful():
     rc = 1
-if not runner.run(unittest.makeSuite(ExtendedDirsyncTests)).wasSuccessful():
-    rc = 1
+else:
+    rc = 0
 
 sys.exit(rc)
