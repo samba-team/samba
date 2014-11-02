@@ -11,31 +11,25 @@ import optparse
 import sys
 import base64
 import time
-import os
 
 sys.path.insert(0, "bin/python")
 import samba
-samba.ensure_external_module("testtools", "testtools")
-samba.ensure_external_module("subunit", "subunit/python")
+
+from samba.tests.subunitrun import TestProgram, SubunitOptions
 
 import samba.getopt as options
 
 from samba.auth import system_session
 from samba.credentials import Credentials, DONT_USE_KERBEROS, MUST_USE_KERBEROS
 from ldb import SCOPE_BASE, LdbError
-from ldb import ERR_ATTRIBUTE_OR_VALUE_EXISTS
-from ldb import ERR_UNWILLING_TO_PERFORM, ERR_INSUFFICIENT_ACCESS_RIGHTS
-from ldb import ERR_NO_SUCH_ATTRIBUTE
 from ldb import ERR_CONSTRAINT_VIOLATION
 from ldb import ERR_INVALID_CREDENTIALS
 from ldb import Message, MessageElement, Dn
-from ldb import FLAG_MOD_ADD, FLAG_MOD_REPLACE, FLAG_MOD_DELETE
+from ldb import FLAG_MOD_REPLACE
 from samba import gensec, dsdb
 from samba.samdb import SamDB
 import samba.tests
 from samba.tests import delete_force
-from subunit.run import SubunitTestRunner
-import unittest
 from samba.dcerpc import security, samr
 from samba.ndr import ndr_unpack
 
@@ -46,6 +40,8 @@ parser.add_option_group(options.VersionOptions(parser))
 # use command line creds if available
 credopts = options.CredentialsOptions(parser)
 parser.add_option_group(credopts)
+subunitopts = SubunitOptions(parser)
+parser.add_option_group(subunitopts)
 opts, args = parser.parse_args()
 
 if len(args) < 1:
@@ -182,7 +178,7 @@ userAccountControl: %d
         # 10 micro second
         time.sleep(0.01)
 
-        res = ldb.search(dn, scope=SCOPE_BASE, attrs=attrs)
+        res = self.ldb.search(dn, scope=SCOPE_BASE, attrs=attrs)
         self.assertTrue(len(res) == 1)
         self._check_attribute(res, "badPwdCount", badPwdCount)
         self._check_attribute(res, "badPasswordTime", badPasswordTime)
@@ -229,7 +225,7 @@ userAccountControl: %d
 
         # check LDAP again and make sure the samr.QueryUserInfo
         # doesn't have any impact.
-        res2 = ldb.search(dn, scope=SCOPE_BASE, attrs=attrs)
+        res2 = self.ldb.search(dn, scope=SCOPE_BASE, attrs=attrs)
         self.assertEquals(res[0], res2[0])
 
         # in order to prevent some time resolution problems we sleep for
@@ -239,8 +235,84 @@ userAccountControl: %d
 
     def setUp(self):
         super(PasswordTests, self).setUp()
-        self.ldb = ldb
-        self.base_dn = ldb.domain_dn()
+
+        self.ldb = SamDB(url=host_url, session_info=system_session(lp), credentials=creds, lp=lp)
+
+        # Gets back the basedn
+        base_dn = self.ldb.domain_dn()
+
+        # Gets back the configuration basedn
+        configuration_dn = self.ldb.get_config_basedn().get_linearized()
+
+        # Get the old "dSHeuristics" if it was set
+        dsheuristics = self.ldb.get_dsheuristics()
+
+        # Reset the "dSHeuristics" as they were before
+        self.addCleanup(self.ldb.set_dsheuristics, dsheuristics)
+
+        res = self.ldb.search(base_dn,
+                         scope=SCOPE_BASE, attrs=["lockoutDuration", "lockOutObservationWindow", "lockoutThreshold"])
+
+        if "lockoutDuration" in res[0]:
+            lockoutDuration = res[0]["lockoutDuration"][0]
+        else:
+            lockoutDuration = 0
+
+        if "lockoutObservationWindow" in res[0]:
+            lockoutObservationWindow = res[0]["lockoutObservationWindow"][0]
+        else:
+            lockoutObservationWindow = 0
+
+        if "lockoutThreshold" in res[0]:
+            lockoutThreshold = res[0]["lockoutThreshold"][0]
+        else:
+            lockoutTreshold = 0
+
+        self.addCleanup(self.ldb.modify_ldif, """
+dn: """ + base_dn + """
+changetype: modify
+replace: lockoutDuration
+lockoutDuration: """ + str(lockoutDuration) + """
+replace: lockoutObservationWindow
+lockoutObservationWindow: """ + str(lockoutObservationWindow) + """
+replace: lockoutThreshold
+lockoutThreshold: """ + str(lockoutThreshold) + """
+""")
+
+        m = Message()
+        m.dn = Dn(self.ldb, base_dn)
+
+        self.account_lockout_duration = 10
+        account_lockout_duration_ticks = -int(self.account_lockout_duration * (1e7))
+
+        m["lockoutDuration"] = MessageElement(str(account_lockout_duration_ticks),
+                                              FLAG_MOD_REPLACE, "lockoutDuration")
+
+        account_lockout_threshold = 3
+        m["lockoutThreshold"] = MessageElement(str(account_lockout_threshold),
+                                               FLAG_MOD_REPLACE, "lockoutThreshold")
+
+        self.lockout_observation_window = 5
+        lockout_observation_window_ticks = -int(self.lockout_observation_window * (1e7))
+
+        m["lockOutObservationWindow"] = MessageElement(str(lockout_observation_window_ticks),
+                                                       FLAG_MOD_REPLACE, "lockOutObservationWindow")
+
+        self.ldb.modify(m)
+
+        # Set the "dSHeuristics" to activate the correct "userPassword" behaviour
+        self.ldb.set_dsheuristics("000000001")
+
+        # Get the old "minPwdAge"
+        minPwdAge = self.ldb.get_minPwdAge()
+
+        # Reset the "minPwdAge" as it was before
+        self.addCleanup(self.ldb.set_minPwdAge, minPwdAge)
+
+        # Set it temporarely to "0"
+        self.ldb.set_minPwdAge("0")
+
+        self.base_dn = self.ldb.domain_dn()
 
         self.domain_sid = security.dom_sid(self.ldb.get_domain_sid())
         self.samr = samr.samr("ncacn_ip_tcp:%s[sign]" % host, lp, creds)
@@ -670,7 +742,7 @@ userPassword: thatsAcomplPASS2x
                                   msDSUserAccountControlComputed=dsdb.UF_LOCKOUT)
 
         m = Message()
-        m.dn = Dn(ldb, "cn=testuser,cn=users," + self.base_dn)
+        m.dn = Dn(self.ldb, "cn=testuser,cn=users," + self.base_dn)
         m["userAccountControl"] = MessageElement(
           str(dsdb.UF_LOCKOUT),
           FLAG_MOD_REPLACE, "userAccountControl")
@@ -1106,7 +1178,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
         badPasswordTime = int(res[0]["badPasswordTime"][0])
         lockoutTime = int(res[0]["lockoutTime"][0])
 
-        time.sleep(account_lockout_duration + 1)
+        time.sleep(self.account_lockout_duration + 1)
 
         res = self._check_account("cn=testuser,cn=users," + self.base_dn,
                                   badPwdCount=3, effective_bad_password_count=0,
@@ -1289,7 +1361,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
                                     dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=dsdb.UF_LOCKOUT)
 
-        time.sleep(account_lockout_duration + 1)
+        time.sleep(self.account_lockout_duration + 1)
 
         res = self._check_account("cn=testuser,cn=users," + self.base_dn,
                                   badPwdCount=3, effective_bad_password_count=0,
@@ -1345,7 +1417,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
                                   msDSUserAccountControlComputed=0)
         badPasswordTime = int(res[0]["badPasswordTime"][0])
 
-        time.sleep(lockout_observation_window + 1)
+        time.sleep(self.lockout_observation_window + 1)
 
         res = self._check_account("cn=testuser,cn=users," + self.base_dn,
                                   badPwdCount=2, effective_bad_password_count=0,
@@ -1400,85 +1472,4 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
 
 host_url = "ldap://%s" % host
 
-ldb = SamDB(url=host_url, session_info=system_session(lp), credentials=creds, lp=lp)
-
-# Gets back the basedn
-base_dn = ldb.domain_dn()
-
-# Gets back the configuration basedn
-configuration_dn = ldb.get_config_basedn().get_linearized()
-
-# Get the old "dSHeuristics" if it was set
-dsheuristics = ldb.get_dsheuristics()
-
-res = ldb.search(base_dn,
-                 scope=SCOPE_BASE, attrs=["lockoutDuration", "lockOutObservationWindow", "lockoutThreshold"])
-
-if "lockoutDuration" in res[0]:
-    lockoutDuration = res[0]["lockoutDuration"][0]
-else:
-    lockoutDuration = 0
-
-if "lockoutObservationWindow" in res[0]:
-    lockoutObservationWindow = res[0]["lockoutObservationWindow"][0]
-else:
-    lockoutObservationWindow = 0
-
-if "lockoutThreshold" in res[0]:
-    lockoutThreshold = res[0]["lockoutThreshold"][0]
-else:
-    lockoutTreshold = 0
-
-m = Message()
-m.dn = Dn(ldb, base_dn)
-
-account_lockout_duration = 10
-account_lockout_duration_ticks = -int(account_lockout_duration * (1e7))
-
-m["lockoutDuration"] = MessageElement(str(account_lockout_duration_ticks),
-                                      FLAG_MOD_REPLACE, "lockoutDuration")
-
-account_lockout_threshold = 3
-m["lockoutThreshold"] = MessageElement(str(account_lockout_threshold),
-                                       FLAG_MOD_REPLACE, "lockoutThreshold")
-
-lockout_observation_window = 5
-lockout_observation_window_ticks = -int(lockout_observation_window * (1e7))
-
-m["lockOutObservationWindow"] = MessageElement(str(lockout_observation_window_ticks),
-                                               FLAG_MOD_REPLACE, "lockOutObservationWindow")
-
-ldb.modify(m)
-
-# Set the "dSHeuristics" to activate the correct "userPassword" behaviour
-ldb.set_dsheuristics("000000001")
-
-# Get the old "minPwdAge"
-minPwdAge = ldb.get_minPwdAge()
-
-# Set it temporarely to "0"
-ldb.set_minPwdAge("0")
-
-runner = SubunitTestRunner()
-rc = 0
-if not runner.run(unittest.makeSuite(PasswordTests)).wasSuccessful():
-    rc = 1
-
-# Reset the "dSHeuristics" as they were before
-ldb.set_dsheuristics(dsheuristics)
-
-# Reset the "minPwdAge" as it was before
-ldb.set_minPwdAge(minPwdAge)
-
-ldb.modify_ldif("""
-dn: """ + base_dn + """
-changetype: modify
-replace: lockoutDuration
-lockoutDuration: """ + str(lockoutDuration) + """
-replace: lockoutObservationWindow
-lockoutObservationWindow: """ + str(lockoutObservationWindow) + """
-replace: lockoutThreshold
-lockoutThreshold: """ + str(lockoutThreshold) + """
-""")
-
-sys.exit(rc)
+TestProgram(module=__name__, opts=subunitopts)
