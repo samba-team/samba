@@ -353,7 +353,7 @@ static bool test_dlz_bind9_lookup(struct torture_context *tctx)
 	expected1->records[0].type = "soa";
 	expected1->records[0].ttl = 3600;
 	expected1->records[0].data = talloc_asprintf(expected1->records,
-				"%s.%s hostmaster.%s 1 900 600 86400 3600",
+				"%s.%s. hostmaster.%s. 1 900 600 86400 3600",
 				torture_setting_string(tctx, "host", NULL),
 				lpcfg_dnsdomain(tctx->lp_ctx),
 				lpcfg_dnsdomain(tctx->lp_ctx));
@@ -362,7 +362,7 @@ static bool test_dlz_bind9_lookup(struct torture_context *tctx)
 	expected1->records[1].name = expected1->query_name;
 	expected1->records[1].type = "ns";
 	expected1->records[1].ttl = 900;
-	expected1->records[1].data = talloc_asprintf(expected1->records, "%s.%s",
+	expected1->records[1].data = talloc_asprintf(expected1->records, "%s.%s.",
 				torture_setting_string(tctx, "host", NULL),
 				lpcfg_dnsdomain(tctx->lp_ctx));
 	torture_assert(tctx, expected1->records[1].data != NULL, "talloc failed");
@@ -471,40 +471,44 @@ static bool test_dlz_bind9_zonedump(struct torture_context *tctx)
 					       expected1->num_records);
 	torture_assert(tctx, expected1->records != NULL, "talloc failed");
 
-	expected1->records[0].name = lpcfg_dnsdomain(tctx->lp_ctx);
+	expected1->records[0].name = talloc_asprintf(expected1->records,
+				"%s.", lpcfg_dnsdomain(tctx->lp_ctx));
 	expected1->records[0].type = "soa";
 	expected1->records[0].ttl = 3600;
 	expected1->records[0].data = talloc_asprintf(expected1->records,
-				"%s.%s hostmaster.%s 1 900 600 86400 3600",
+				"%s.%s. hostmaster.%s. 1 900 600 86400 3600",
 				torture_setting_string(tctx, "host", NULL),
 				lpcfg_dnsdomain(tctx->lp_ctx),
 				lpcfg_dnsdomain(tctx->lp_ctx));
 	torture_assert(tctx, expected1->records[0].data != NULL, "talloc failed");
 
-	expected1->records[1].name = lpcfg_dnsdomain(tctx->lp_ctx);
+	expected1->records[1].name = talloc_asprintf(expected1->records,
+				"%s.", lpcfg_dnsdomain(tctx->lp_ctx));
 	expected1->records[1].type = "ns";
 	expected1->records[1].ttl = 900;
-	expected1->records[1].data = talloc_asprintf(expected1->records, "%s.%s",
+	expected1->records[1].data = talloc_asprintf(expected1->records, "%s.%s.",
 				torture_setting_string(tctx, "host", NULL),
 				lpcfg_dnsdomain(tctx->lp_ctx));
 	torture_assert(tctx, expected1->records[1].data != NULL, "talloc failed");
 
-	expected1->records[2].name = lpcfg_dnsdomain(tctx->lp_ctx);
+	expected1->records[2].name = talloc_asprintf(expected1->records,
+				"%s.", lpcfg_dnsdomain(tctx->lp_ctx));
 	expected1->records[2].type = "aaaa";
 	expected1->records[2].ttl = 900;
 
-	expected1->records[3].name = lpcfg_dnsdomain(tctx->lp_ctx);
+	expected1->records[3].name = talloc_asprintf(expected1->records,
+				"%s.", lpcfg_dnsdomain(tctx->lp_ctx));
 	expected1->records[3].type = "a";
 	expected1->records[3].ttl = 900;
 
-	expected1->records[4].name = talloc_asprintf(expected1->records, "%s.%s",
+	expected1->records[4].name = talloc_asprintf(expected1->records, "%s.%s.",
 				torture_setting_string(tctx, "host", NULL),
 				lpcfg_dnsdomain(tctx->lp_ctx));
 	torture_assert(tctx, expected1->records[4].name != NULL, "unknown host");
 	expected1->records[4].type = "aaaa";
 	expected1->records[4].ttl = 900;
 
-	expected1->records[5].name = talloc_asprintf(expected1->records, "%s.%s",
+	expected1->records[5].name = talloc_asprintf(expected1->records, "%s.%s.",
 				torture_setting_string(tctx, "host", NULL),
 				lpcfg_dnsdomain(tctx->lp_ctx));
 	torture_assert(tctx, expected1->records[5].name != NULL, "unknown host");
