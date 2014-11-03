@@ -69,6 +69,7 @@ static bool init_group_mapping(void)
 
 	ldb_path = state_path("group_mapping.ldb");
 	if (ldb_path == NULL) {
+		talloc_free(tdb_path);
 		return false;
 	}
 	if (file_exist(ldb_path) && !mapping_switch(ldb_path)) {
