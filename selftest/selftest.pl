@@ -56,6 +56,7 @@ my $opt_libnss_wrapper_so_path = "";
 my $opt_libresolv_wrapper_so_path = "";
 my $opt_libsocket_wrapper_so_path = "";
 my $opt_libuid_wrapper_so_path = "";
+my $opt_use_dns_faking = 0;
 my @testlists = ();
 
 my $srcdir = ".";
@@ -205,6 +206,10 @@ Preload cwrap:
  --socket_wrapper_so_path=FILE the socket_wrapper library to preload
  --uid_wrapper_so_path=FILE the uid_wrapper library to preload
 
+DNS:
+  --use-dns-faking          Fake DNS entries rather than talking to our
+                            DNS implementation.
+
 Target Specific:
  --socket-wrapper-pcap      save traffic to pcap directories
  --socket-wrapper-keep-pcap keep all pcap files, not just those for tests that 
@@ -247,7 +252,8 @@ my $result = GetOptions (
 		'nss_wrapper_so_path=s' => \$opt_libnss_wrapper_so_path,
 		'resolv_wrapper_so_path=s' => \$opt_libresolv_wrapper_so_path,
 		'socket_wrapper_so_path=s' => \$opt_libsocket_wrapper_so_path,
-		'uid_wrapper_so_path=s' => \$opt_libuid_wrapper_so_path
+		'uid_wrapper_so_path=s' => \$opt_libuid_wrapper_so_path,
+		'use-dns-faking' => \$opt_use_dns_faking
 	    );
 
 exit(1) if (not $result);
@@ -397,6 +403,11 @@ if ($opt_socket_wrapper) {
 	 unless ($< == 0) { 
 		 warn("not using socket wrapper, but also not running as root. Will not be able to listen on proper ports");
 	 }
+}
+
+if ($opt_use_dns_faking) {
+	print "DNS: Faking namerserver\n";
+	$ENV{SAMBA_DNS_FAKING} = 1;
 }
 
 my $target;
