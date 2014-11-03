@@ -110,6 +110,27 @@ static void b9_add_helper(struct dlz_bind9_data *state, const char *helper_name,
 }
 
 /*
+ * Add a trailing '.' if it's missing
+ */
+static const char *b9_format_fqdn(TALLOC_CTX *mem_ctx, const char *str)
+{
+	size_t len;
+	const char *tmp;
+
+	if (str == NULL || str[0] == '\0') {
+		return str;
+	}
+
+	len = strlen(str);
+	if (str[len-1] != '.') {
+		tmp = talloc_asprintf(mem_ctx, "%s.", str);
+	} else {
+		tmp = str;
+	}
+	return tmp;
+}
+
+/*
   format a record for bind9
  */
 static bool b9_format(struct dlz_bind9_data *state,
@@ -119,6 +140,7 @@ static bool b9_format(struct dlz_bind9_data *state,
 {
 	uint32_t i;
 	char *tmp;
+	const char *fqdn;
 
 	switch (rec->wType) {
 	case DNS_TYPE_A:
@@ -133,7 +155,7 @@ static bool b9_format(struct dlz_bind9_data *state,
 
 	case DNS_TYPE_CNAME:
 		*type = "cname";
-		*data = rec->data.cname;
+		*data = b9_format_fqdn(mem_ctx, rec->data.cname);
 		break;
 
 	case DNS_TYPE_TXT:
@@ -147,23 +169,30 @@ static bool b9_format(struct dlz_bind9_data *state,
 
 	case DNS_TYPE_PTR:
 		*type = "ptr";
-		*data = rec->data.ptr;
+		*data = b9_format_fqdn(mem_ctx, rec->data.ptr);
 		break;
 
 	case DNS_TYPE_SRV:
 		*type = "srv";
+		fqdn = b9_format_fqdn(mem_ctx, rec->data.srv.nameTarget);
+		if (fqdn == NULL) {
+			return false;
+		}
 		*data = talloc_asprintf(mem_ctx, "%u %u %u %s",
 					rec->data.srv.wPriority,
 					rec->data.srv.wWeight,
 					rec->data.srv.wPort,
-					rec->data.srv.nameTarget);
+					fqdn);
 		break;
 
 	case DNS_TYPE_MX:
 		*type = "mx";
+		fqdn = b9_format_fqdn(mem_ctx, rec->data.mx.nameTarget);
+		if (fqdn == NULL) {
+			return false;
+		}
 		*data = talloc_asprintf(mem_ctx, "%u %s",
-					rec->data.mx.wPriority,
-					rec->data.mx.nameTarget);
+					rec->data.mx.wPriority, fqdn);
 		break;
 
 	case DNS_TYPE_HINFO:
@@ -175,7 +204,7 @@ static bool b9_format(struct dlz_bind9_data *state,
 
 	case DNS_TYPE_NS:
 		*type = "ns";
-		*data = rec->data.ns;
+		*data = b9_format_fqdn(mem_ctx, rec->data.ns);
 		break;
 
 	case DNS_TYPE_SOA: {
@@ -186,8 +215,9 @@ static bool b9_format(struct dlz_bind9_data *state,
 		 * point at ourselves. This is how AD DNS servers
 		 * force clients to send updates to the right local DC
 		 */
-		mname = talloc_asprintf(mem_ctx, "%s.%s",
-					lpcfg_netbios_name(state->lp), lpcfg_dnsdomain(state->lp));
+		mname = talloc_asprintf(mem_ctx, "%s.%s.",
+					lpcfg_netbios_name(state->lp),
+					lpcfg_dnsdomain(state->lp));
 		if (mname == NULL) {
 			return false;
 		}
@@ -196,11 +226,15 @@ static bool b9_format(struct dlz_bind9_data *state,
 			return false;
 		}
 
+		fqdn = b9_format_fqdn(mem_ctx, rec->data.soa.rname);
+		if (fqdn == NULL) {
+			return false;
+		}
+
 		state->soa_serial = rec->data.soa.serial;
 
 		*data = talloc_asprintf(mem_ctx, "%s %s %u %u %u %u %u",
-					mname,
-					rec->data.soa.rname,
+					mname, fqdn,
 					rec->data.soa.serial,
 					rec->data.soa.refresh,
 					rec->data.soa.retry,
@@ -957,6 +991,7 @@ _PUBLIC_ isc_result_t dlz_allnodes(const char *zone, void *dbdata,
 		} else {
 			name = talloc_asprintf(el_ctx, "%s.%s", rdn, zone);
 		}
+		name = b9_format_fqdn(el_ctx, name);
 		if (name == NULL) {
 			talloc_free(tmp_ctx);
 			return ISC_R_NOMEMORY;
