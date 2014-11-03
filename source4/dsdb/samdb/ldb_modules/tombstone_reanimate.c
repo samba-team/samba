@@ -34,7 +34,7 @@
  *
  *	Usually we don't allow distinguishedName modifications (see rdn_name.c)
  *	Reanimating Tombstones is described here:
- *	  - TBD
+ *	  - http://msdn.microsoft.com/en-us/library/cc223467.aspx
  *
  *  Author: Kamen Mazdrashki
  */
