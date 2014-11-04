@@ -245,23 +245,29 @@ static NTSTATUS btrfs_get_compression(struct vfs_handle_struct *handle,
 	int fd;
 	bool opened = false;
 	NTSTATUS status;
+	DIR *dir = NULL;
 
 	if ((fsp != NULL) && (fsp->fh->fd != -1)) {
 		fd = fsp->fh->fd;
 	} else if (smb_fname != NULL) {
 		if (S_ISDIR(smb_fname->st.st_ex_mode)) {
-			DIR *dir = opendir(smb_fname->base_name);
+			dir = opendir(smb_fname->base_name);
 			if (dir == NULL) {
 				return NT_STATUS_UNSUCCESSFUL;
 			}
+			opened = true;
 			fd = dirfd(dir);
+			if (fd < 0) {
+				status = NT_STATUS_UNSUCCESSFUL;
+				goto err_close;
+			}
 		} else {
 			fd = open(smb_fname->base_name, O_RDONLY);
+			if (fd < 0) {
+				return NT_STATUS_UNSUCCESSFUL;
+			}
+			opened = true;
 		}
-		if (fd < 0) {
-			return NT_STATUS_UNSUCCESSFUL;
-		}
-		opened = true;
 	} else {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -281,7 +287,11 @@ static NTSTATUS btrfs_get_compression(struct vfs_handle_struct *handle,
 	status = NT_STATUS_OK;
 err_close:
 	if (opened) {
-		close(fd);
+		if (dir != NULL) {
+			closedir(dir);
+		} else {
+			close(fd);
+		}
 	}
 
 	return status;
