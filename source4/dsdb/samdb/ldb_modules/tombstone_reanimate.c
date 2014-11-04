@@ -138,7 +138,7 @@ static int _tr_do_rename(struct ldb_module *module, struct ldb_request *parent_r
 		return ret;
 	}
 
-	ret = dsdb_request_add_controls(req, DSDB_SEARCH_SHOW_DELETED);
+	ret = ldb_request_add_control(req, LDB_CONTROL_SHOW_DELETED_OID, false, NULL);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
@@ -155,7 +155,7 @@ static int _tr_do_rename(struct ldb_module *module, struct ldb_request *parent_r
 	 * Run request from the top module
 	 * so we get show_deleted control OID resolved
 	 */
-	ret = ldb_request(ldb_module_get_ctx(module), req);
+	ret = ldb_next_request(module, req);
 	if (ret == LDB_SUCCESS) {
 		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
 	}
@@ -263,7 +263,7 @@ static int tombstone_reanimate_modify(struct ldb_module *module, struct ldb_requ
 	ret = _tr_do_rename(module, req, req->op.mod.message->dn, dn_new);
 	if (ret != LDB_SUCCESS) {
 		ldb_debug(ldb, LDB_DEBUG_ERROR, "Renaming object to %s has failed with %s\n", el_dn->values[0].data, ldb_strerror(ret));
-		if (ret != LDB_ERR_ENTRY_ALREADY_EXISTS) {
+		if (ret != LDB_ERR_ENTRY_ALREADY_EXISTS && ret != LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS ) {
 			/* Windows returns Operations Error in case we can't rename the object */
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
@@ -298,7 +298,7 @@ static int tombstone_reanimate_modify(struct ldb_module *module, struct ldb_requ
 	}
 	ret = _tr_do_modify(module, req, msg);
 	if (ret != LDB_SUCCESS) {
-		return ldb_operr(ldb);
+		return ret;
 	}
 
 	return ldb_module_done(ac->req, NULL, NULL, LDB_SUCCESS);
