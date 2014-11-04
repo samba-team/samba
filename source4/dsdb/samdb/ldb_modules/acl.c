@@ -1028,6 +1028,7 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 	struct security_descriptor *sd;
 	struct dom_sid *sid = NULL;
 	struct ldb_control *as_system;
+	struct ldb_control *is_undelete;
 	bool userPassword;
 	TALLOC_CTX *tmp_ctx;
 	const struct ldb_message *msg = req->op.mod.message;
@@ -1046,6 +1047,8 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 	if (as_system != NULL) {
 		as_system->critical = 0;
 	}
+
+	is_undelete = ldb_request_get_control(req, DSDB_CONTROL_RESTORE_TOMBSTONE_OID);
 
 	/* Don't print this debug statement if elements[0].name is going to be NULL */
 	if (msg->num_elements > 0) {
@@ -1193,6 +1196,14 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 			if (ret != LDB_SUCCESS) {
 				goto fail;
 			}
+		} else if (is_undelete != NULL && (ldb_attr_cmp("isDeleted", el->name) == 0)) {
+			/*
+			 * in case of undelete op permissions on
+			 * isDeleted are irrelevant and
+			 * distinguishedName is removed by the
+			 * tombstone_reanimate module
+			 */
+			continue;
 		} else {
 			ret = acl_check_access_on_attribute(module,
 							    tmp_ctx,
@@ -1346,6 +1357,42 @@ static int acl_delete(struct ldb_module *module, struct ldb_request *req)
 
 	return ldb_next_request(module, req);
 }
+static int acl_check_reanimate_tombstone(TALLOC_CTX *mem_ctx,
+					 struct ldb_module *module,
+					 struct ldb_request *req,
+					 struct ldb_dn *nc_root)
+{
+	int ret;
+	struct ldb_result *acl_res;
+	struct security_descriptor *sd = NULL;
+	struct dom_sid *sid = NULL;
+	static const char *acl_attrs[] = {
+		"nTSecurityDescriptor",
+		"objectClass",
+		"objectSid",
+		NULL
+	};
+
+	ret = dsdb_module_search_dn(module, mem_ctx, &acl_res,
+				    nc_root, acl_attrs,
+				    DSDB_FLAG_NEXT_MODULE |
+				    DSDB_FLAG_AS_SYSTEM |
+				    DSDB_SEARCH_SHOW_RECYCLED, req);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(10,("acl: failed to find object %s\n",
+			  ldb_dn_get_linearized(nc_root)));
+		return ret;
+	}
+
+	ret = dsdb_get_sd_from_ldb_message(mem_ctx, req, acl_res->msgs[0], &sd);
+	sid = samdb_result_dom_sid(mem_ctx, acl_res->msgs[0], "objectSid");
+	if (ret != LDB_SUCCESS || !sd) {
+		return ldb_operr(ldb_module_get_ctx(module));
+	}
+	return acl_check_extended_right(mem_ctx, sd, acl_user_token(module),
+					GUID_DRS_REANIMATE_TOMBSTONE,
+					SEC_ADS_CONTROL_ACCESS, sid);
+}
 
 static int acl_rename(struct ldb_module *module, struct ldb_request *req)
 {
@@ -1361,6 +1408,7 @@ static int acl_rename(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_result *acl_res;
 	struct ldb_dn *nc_root;
 	struct ldb_control *as_system;
+	struct ldb_control *is_undelete;
 	TALLOC_CTX *tmp_ctx;
 	const char *rdn_name;
 	static const char *acl_attrs[] = {
@@ -1412,6 +1460,17 @@ static int acl_rename(struct ldb_module *module, struct ldb_request *req)
 		/* Windows returns "ERR_UNWILLING_TO_PERFORM */
 		return ldb_module_done(req, NULL, NULL,
 				       LDB_ERR_UNWILLING_TO_PERFORM);
+	}
+
+	/* special check for undelete operation */
+	is_undelete = ldb_request_get_control(req, DSDB_CONTROL_RESTORE_TOMBSTONE_OID);
+	if (is_undelete != NULL) {
+		is_undelete->critical = 0;
+		ret = acl_check_reanimate_tombstone(tmp_ctx, module, req, nc_root);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(tmp_ctx);
+			return ret;
+		}
 	}
 	talloc_free(nc_root);
 
@@ -1526,25 +1585,27 @@ static int acl_rename(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	/* do we have delete object on the object? */
-	ret = acl_check_access_on_objectclass(module, tmp_ctx, sd, sid,
-					      SEC_STD_DELETE,
-					      objectclass);
-	if (ret == LDB_SUCCESS) {
-		talloc_free(tmp_ctx);
-		return ldb_next_request(module, req);
+	/* this access is not necessary for undelete ops */
+	if (is_undelete == NULL) {
+		ret = acl_check_access_on_objectclass(module, tmp_ctx, sd, sid,
+						      SEC_STD_DELETE,
+						      objectclass);
+		if (ret == LDB_SUCCESS) {
+			talloc_free(tmp_ctx);
+			return ldb_next_request(module, req);
+		}
+		/* what about delete child on the current parent */
+		ret = dsdb_module_check_access_on_dn(module, req, oldparent,
+						     SEC_ADS_DELETE_CHILD,
+						     &objectclass->schemaIDGUID,
+						     req);
+		if (ret != LDB_SUCCESS) {
+			ldb_asprintf_errstring(ldb_module_get_ctx(module),
+					       "acl:access_denied renaming %s", ldb_dn_get_linearized(req->op.rename.olddn));
+			talloc_free(tmp_ctx);
+			return ldb_module_done(req, NULL, NULL, ret);
+		}
 	}
-	/* what about delete child on the current parent */
-	ret = dsdb_module_check_access_on_dn(module, req, oldparent,
-					     SEC_ADS_DELETE_CHILD,
-					     &objectclass->schemaIDGUID,
-					     req);
-	if (ret != LDB_SUCCESS) {
-		ldb_asprintf_errstring(ldb_module_get_ctx(module),
-				       "acl:access_denied renaming %s", ldb_dn_get_linearized(req->op.rename.olddn));
-		talloc_free(tmp_ctx);
-		return ldb_module_done(req, NULL, NULL, ret);
-	}
-
 	talloc_free(tmp_ctx);
 
 	return ldb_next_request(module, req);

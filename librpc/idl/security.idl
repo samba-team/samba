@@ -688,6 +688,7 @@ interface security
         const string GUID_DRS_ENABLE_PER_USER_REVERSIBLY_ENCRYPTED_PASSWORD
 	                                              = "05c74c5e-4deb-43b4-bd9f-86664c2a7fd5";
         const string GUID_DRS_DS_INSTALL_REPLICA      = "9923a32a-3607-11d2-b9be-0000f87a36b2";
+	const string GUID_DRS_REANIMATE_TOMBSTONE     = "45ec5156-db7e-47bb-b53f-dbeb2d03c40f";
 
 
 	/***************************************************************/
