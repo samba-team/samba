@@ -182,11 +182,11 @@ static bool copy_registry_tree( REGF_FILE *infile, REGF_NK_REC *nk,
 		}
 	}
 
-	/* values is a talloc()'d child of subkeys here so just throw it all away */
-
-	TALLOC_FREE( subkeys );
 
 	verbose_output("[%s]\n", path);
+
+	/* values is a talloc()'d child of subkeys here so just throw it all away */
+	TALLOC_FREE(subkeys);
 
 	return True;
 }
