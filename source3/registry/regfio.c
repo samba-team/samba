@@ -1741,7 +1741,7 @@ static bool create_vk_record(REGF_FILE *file, REGF_VK_REC *vk,
 		/* make sure we don't try to copy from a NULL value pointer */
 
 		if ( vk->data_size != 0 ) 
-			memcpy( &vk->data_off, regval_data_p(value), sizeof(uint32) );
+			memcpy( &vk->data_off, regval_data_p(value), vk->data_size);
 		vk->data_size |= VK_DATA_IN_OFFSET;		
 	}
 
@@ -1806,7 +1806,7 @@ static int hashrec_cmp( REGF_HASH_REC *h1, REGF_HASH_REC *h2 )
 		REGF_HASH_REC *hash = &parent->subkeys.hashes[parent->subkey_index];
 
 		hash->nk_off = prs_offset( &nk->hbin->ps ) + nk->hbin->first_hbin_off - HBIN_HDR_SIZE;
-		memcpy( hash->keycheck, name, sizeof(uint32) );
+		memcpy(hash->keycheck, name, MIN(strlen(name),sizeof(uint32)));
 		hash->fullname = talloc_strdup( file->mem_ctx, name );
 		parent->subkey_index++;
 
