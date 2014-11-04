@@ -24,18 +24,14 @@ import time
 import os
 
 sys.path.insert(0, "bin/python")
-import samba
+import samba.tests
 from samba import dsdb
-samba.ensure_external_module("testtools", "testtools")
-samba.ensure_external_module("subunit", "subunit/python")
 
 from ldb import (
     SCOPE_BASE,
     Message,
     FLAG_MOD_REPLACE,
     )
-
-import samba.tests
 
 
 class DrsBaseTestCase(samba.tests.BlackboxTestCase):
