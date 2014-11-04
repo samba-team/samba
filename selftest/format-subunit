@@ -9,10 +9,12 @@ import os
 import signal
 import sys
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../lib/subunit/python"))
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../lib/testtools"))
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../lib/mimeparse"))
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../lib/extras"))
+sys.path.insert(0, "bin/python")
+import samba
+samba.ensure_external_module("mimeparse", "mimeparse")
+samba.ensure_external_module("extras", "extras")
+samba.ensure_external_module("testtools", "testtools")
+samba.ensure_external_module("subunit", "subunit/python")
 
 import subunithelper
 

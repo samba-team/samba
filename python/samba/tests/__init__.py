@@ -26,6 +26,8 @@ from samba.samdb import SamDB
 import subprocess
 import tempfile
 
+samba.ensure_external_module("mimeparse", "mimeparse")
+samba.ensure_external_module("extras", "extras")
 samba.ensure_external_module("testtools", "testtools")
 
 # Other modules import these two classes from here, for convenience:
