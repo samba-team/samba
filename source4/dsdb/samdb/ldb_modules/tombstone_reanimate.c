@@ -144,6 +144,13 @@ static int _tr_do_rename(struct ldb_module *module, struct ldb_request *parent_r
 		return ret;
 	}
 
+	/* mark request as part of Tombstone reanimation */
+	ret = ldb_request_add_control(req, DSDB_CONTROL_RESTORE_TOMBSTONE_OID, false, NULL);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
 	/*
 	 * Run request from the top module
 	 * so we get show_deleted control OID resolved
@@ -182,6 +189,13 @@ static int _tr_do_modify(struct ldb_module *module, struct ldb_request *parent_r
 				ldb_modify_default_callback,
 				parent_req);
 	LDB_REQ_SET_LOCATION(mod_req);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	/* mark request as part of Tombstone reanimation */
+	ret = ldb_request_add_control(mod_req, DSDB_CONTROL_RESTORE_TOMBSTONE_OID, false, NULL);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
