@@ -232,6 +232,14 @@ static bool tdb_mutex_open_ok(struct tdb_context *tdb,
 {
 	int locked;
 
+	if (tdb->flags & TDB_NOLOCK) {
+		/*
+		 * We don't look at locks, so it does not matter to have a
+		 * compatible mutex implementation. Allow the open.
+		 */
+		return true;
+	}
+
 	locked = tdb_nest_lock(tdb, ACTIVE_LOCK, F_WRLCK,
 			       TDB_LOCK_NOWAIT|TDB_LOCK_PROBE);
 
@@ -259,14 +267,6 @@ static bool tdb_mutex_open_ok(struct tdb_context *tdb,
 			 "failed to release ACTIVE_LOCK on %s: %s\n",
 			 tdb->name, strerror(errno)));
 		return false;
-	}
-
-	if (tdb->flags & TDB_NOLOCK) {
-		/*
-		 * We don't look at locks, so it does not matter to have a
-		 * compatible mutex implementation. Allow the open.
-		 */
-		return true;
 	}
 
 check_local_settings:
@@ -399,7 +399,7 @@ _PUBLIC_ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int td
 		tdb->read_only = 1;
 		/* read only databases don't do locking or clear if first */
 		tdb->flags |= TDB_NOLOCK;
-		tdb->flags &= ~TDB_CLEAR_IF_FIRST;
+		tdb->flags &= ~(TDB_CLEAR_IF_FIRST|TDB_MUTEX_LOCKING);
 	}
 
 	if ((tdb->flags & TDB_ALLOW_NESTING) &&
