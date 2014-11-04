@@ -768,8 +768,10 @@ static bool hbin_prs_sk_rec( const char *desc, REGF_HBIN *hbin, int depth, REGF_
 			if (!prs_copy_data_in(&hbin->ps, (const char *)blob.data, blob.length))
 				return False;
 		} else {
-			blob = data_blob_const(prs_data_p(&hbin->ps),
-					       prs_data_size(&hbin->ps));
+			blob = data_blob_const(
+				prs_data_p(&hbin->ps) + prs_offset(&hbin->ps),
+				prs_data_size(&hbin->ps) - prs_offset(&hbin->ps)
+			       );
 			status = unmarshall_sec_desc(mem_ctx,
 						     blob.data, blob.length,
 						     &sk->sec_desc);
