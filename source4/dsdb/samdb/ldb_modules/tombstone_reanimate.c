@@ -106,6 +106,100 @@ static bool is_tombstone_reanimate_request(struct ldb_request *req, struct ldb_m
 	return true;
 }
 
+/**
+ * Local rename implementation based on dsdb_module_rename()
+ * so we could fine tune it and add more controls
+ */
+static int _tr_do_rename(struct ldb_module *module, struct ldb_request *parent_req,
+			 struct ldb_dn *dn_from, struct ldb_dn *dn_to)
+{
+	int			ret;
+	struct ldb_request	*req;
+	struct ldb_context	*ldb = ldb_module_get_ctx(module);
+	TALLOC_CTX		*tmp_ctx = talloc_new(parent_req);
+	struct ldb_result	*res;
+
+	res = talloc_zero(tmp_ctx, struct ldb_result);
+	if (!res) {
+		talloc_free(tmp_ctx);
+		return ldb_oom(ldb_module_get_ctx(module));
+	}
+
+	ret = ldb_build_rename_req(&req, ldb, tmp_ctx,
+				   dn_from,
+				   dn_to,
+				   NULL,
+				   res,
+				   ldb_modify_default_callback,
+				   parent_req);
+	LDB_REQ_SET_LOCATION(req);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	ret = dsdb_request_add_controls(req, DSDB_SEARCH_SHOW_DELETED);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	/*
+	 * Run request from the top module
+	 * so we get show_deleted control OID resolved
+	 */
+	ret = ldb_request(ldb_module_get_ctx(module), req);
+	if (ret == LDB_SUCCESS) {
+		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
+	}
+
+	talloc_free(tmp_ctx);
+	return ret;
+}
+
+/**
+ * Local rename implementation based on dsdb_module_modify()
+ * so we could fine tune it and add more controls
+ */
+static int _tr_do_modify(struct ldb_module *module, struct ldb_request *parent_req, struct ldb_message *msg)
+{
+	int			ret;
+	struct ldb_request	*mod_req;
+	struct ldb_context	*ldb = ldb_module_get_ctx(module);
+	TALLOC_CTX		*tmp_ctx = talloc_new(parent_req);
+	struct ldb_result	*res;
+
+	res = talloc_zero(tmp_ctx, struct ldb_result);
+	if (!res) {
+		talloc_free(tmp_ctx);
+		return ldb_oom(ldb_module_get_ctx(module));
+	}
+
+	ret = ldb_build_mod_req(&mod_req, ldb, tmp_ctx,
+				msg,
+				NULL,
+				res,
+				ldb_modify_default_callback,
+				parent_req);
+	LDB_REQ_SET_LOCATION(mod_req);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	/* Run request from Next module */
+	ret = ldb_next_request(module, mod_req);
+	if (ret == LDB_SUCCESS) {
+		ret = ldb_wait(mod_req->handle, LDB_WAIT_ALL);
+	}
+
+	talloc_free(tmp_ctx);
+	return ret;
+}
+
+/**
+ * Handle special LDAP modify request to restore deleted objects
+ */
 static int tombstone_reanimate_modify(struct ldb_module *module, struct ldb_request *req)
 {
 	int				ret;
@@ -152,7 +246,7 @@ static int tombstone_reanimate_modify(struct ldb_module *module, struct ldb_requ
 	if (dn_new == NULL) {
 		return ldb_oom(ldb);
 	}
-	ret = dsdb_module_rename(module, req->op.mod.message->dn, dn_new, DSDB_FLAG_TOP_MODULE | DSDB_SEARCH_SHOW_DELETED, req);
+	ret = _tr_do_rename(module, req, req->op.mod.message->dn, dn_new);
 	if (ret != LDB_SUCCESS) {
 		ldb_debug(ldb, LDB_DEBUG_ERROR, "Renaming object to %s has failed with %s\n", el_dn->values[0].data, ldb_strerror(ret));
 		if (ret != LDB_ERR_ENTRY_ALREADY_EXISTS) {
@@ -188,7 +282,7 @@ static int tombstone_reanimate_modify(struct ldb_module *module, struct ldb_requ
 		}
 		msg->elements[msg->num_elements-1].flags = LDB_FLAG_MOD_ADD;
 	}
-	ret = dsdb_module_modify(module, msg, DSDB_FLAG_NEXT_MODULE, req);
+	ret = _tr_do_modify(module, req, msg);
 	if (ret != LDB_SUCCESS) {
 		return ldb_operr(ldb);
 	}
