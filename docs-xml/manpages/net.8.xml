@@ -357,7 +357,7 @@
 
 		<varlistentry>
 		<term>--wipe</term>
-		<listitem><para>Createa a new database from scratch
+		<listitem><para>Create a new database from scratch
 				(used in "net registry check").
 		</para></listitem>
 		</varlistentry>
