@@ -62,7 +62,7 @@ class SDUtils(object):
     def dacl_add_ace(self, object_dn, ace):
         """Add an ACE to an objects security descriptor
         """
-        desc = self.read_sd_on_dn(object_dn)
+        desc = self.read_sd_on_dn(object_dn,["show_deleted:1"])
         desc_sddl = desc.as_sddl(self.domain_sid)
         if ace in desc_sddl:
             return
@@ -71,10 +71,10 @@ class SDUtils(object):
                          desc_sddl[desc_sddl.index("("):])
         else:
             desc_sddl = desc_sddl + ace
-        self.modify_sd_on_dn(object_dn, desc_sddl)
+        self.modify_sd_on_dn(object_dn, desc_sddl, ["show_deleted:1"])
 
-    def get_sd_as_sddl(self, object_dn, controls=None):
+    def get_sd_as_sddl(self, object_dn, controls=[]):
         """Return object nTSecutiryDescriptor in SDDL format
         """
-        desc = self.read_sd_on_dn(object_dn, controls=controls)
+        desc = self.read_sd_on_dn(object_dn, controls + ["show_deleted:1"])
         return desc.as_sddl(self.domain_sid)
