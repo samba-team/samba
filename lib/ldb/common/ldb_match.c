@@ -33,6 +33,7 @@
  */
 
 #include "ldb_private.h"
+#include "dlinklist.h"
 
 /*
   check if the scope matches in a search result
@@ -342,7 +343,7 @@ static int ldb_match_substring(struct ldb_context *ldb,
 
 
 /*
-  bitwise-and comparator
+  bitwise and/or comparator depending on oid
 */
 static int ldb_comparator_bitmask(const char *oid, const struct ldb_val *v1, const struct ldb_val *v2,
 				  bool *matched)
@@ -385,14 +386,69 @@ static int ldb_comparator_bitmask(const char *oid, const struct ldb_val *v1, con
 	return LDB_SUCCESS;
 }
 
+static int ldb_match_bitmask(struct ldb_context *ldb,
+			     const char *oid,
+			     const struct ldb_message *msg,
+			     const char *attribute_to_match,
+			     const struct ldb_val *value_to_match,
+			     bool *matched)
+{
+	unsigned int i;
+	struct ldb_message_element *el;
+
+	/* find the message element */
+	el = ldb_msg_find_element(msg, attribute_to_match);
+	if (el == NULL) {
+		*matched = false;
+		return LDB_SUCCESS;
+	}
+
+	for (i=0;i<el->num_values;i++) {
+		int ret;
+		struct ldb_val *v = &el->values[i];
+
+		ret = ldb_comparator_bitmask(oid, v, value_to_match, matched);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+		if (*matched) {
+			return LDB_SUCCESS;
+		}
+	}
+
+	*matched = false;
+	return LDB_SUCCESS;
+}
+
 /*
   always return false
 */
-static int ldb_comparator_false(const char *oid, const struct ldb_val *v1, const struct ldb_val *v2,
+static int ldb_comparator_false(struct ldb_context *ldb,
+				const char *oid,
+				const struct ldb_message *msg,
+				const char *attribute_to_match,
+				const struct ldb_val *value_to_match,
 				bool *matched)
 {
 	*matched = false;
 	return LDB_SUCCESS;
+}
+
+
+static const struct ldb_extended_match_rule *ldb_find_extended_match_rule(struct ldb_context *ldb,
+									  const char *oid)
+{
+	struct ldb_extended_match_entry *extended_match_rule;
+
+	for (extended_match_rule = ldb->extended_match_rules;
+	     extended_match_rule;
+	     extended_match_rule = extended_match_rule->next) {
+		if (strcmp(extended_match_rule->rule->oid, oid) == 0) {
+			return extended_match_rule->rule;
+		}
+	}
+
+	return NULL;
 }
 
 
@@ -404,17 +460,7 @@ static int ldb_match_extended(struct ldb_context *ldb,
 			      const struct ldb_parse_tree *tree,
 			      enum ldb_scope scope, bool *matched)
 {
-	unsigned int i;
-	const struct {
-		const char *oid;
-		int (*comparator)(const char *, const struct ldb_val *, const struct ldb_val *, bool *);
-	} rules[] = {
-		{ LDB_OID_COMPARATOR_AND, ldb_comparator_bitmask},
-		{ LDB_OID_COMPARATOR_OR, ldb_comparator_bitmask},
-		{ SAMBA_LDAP_MATCH_ALWAYS_FALSE, ldb_comparator_false}
-	};
-	int (*comp)(const char *,const struct ldb_val *, const struct ldb_val *, bool *) = NULL;
-	struct ldb_message_element *el;
+	const struct ldb_extended_match_rule *rule;
 
 	if (tree->u.extended.dnAttributes) {
 		/* FIXME: We really need to find out what this ":dn" part in
@@ -432,33 +478,16 @@ static int ldb_match_extended(struct ldb_context *ldb,
 		return LDB_ERR_INAPPROPRIATE_MATCHING;
 	}
 
-	for (i=0;i<ARRAY_SIZE(rules);i++) {
-		if (strcmp(rules[i].oid, tree->u.extended.rule_id) == 0) {
-			comp = rules[i].comparator;
-			break;
-		}
-	}
-	if (comp == NULL) {
+	rule = ldb_find_extended_match_rule(ldb, tree->u.extended.rule_id);
+	if (rule == NULL) {
 		ldb_debug(ldb, LDB_DEBUG_ERROR, "ldb: unknown extended rule_id %s",
 			  tree->u.extended.rule_id);
 		return LDB_ERR_INAPPROPRIATE_MATCHING;
 	}
 
-	/* find the message element */
-	el = ldb_msg_find_element(msg, tree->u.extended.attr);
-	if (el == NULL) {
-		*matched = false;
-		return LDB_SUCCESS;
-	}
-
-	for (i=0;i<el->num_values;i++) {
-		int ret = comp(tree->u.extended.rule_id, &el->values[i], &tree->u.extended.value, matched);
-		if (ret != LDB_SUCCESS) return ret;
-		if (*matched) return LDB_SUCCESS;
-	}
-
-	*matched = false;
-	return LDB_SUCCESS;
+	return rule->callback(ldb, rule->oid, msg,
+			      tree->u.extended.attr,
+			      &tree->u.extended.value, matched);
 }
 
 /*
@@ -587,5 +616,81 @@ int ldb_match_msg_objectclass(const struct ldb_message *msg,
 	return 0;
 }
 
+_PRIVATE_ int ldb_register_extended_match_rules(struct ldb_context *ldb)
+{
+	struct ldb_extended_match_rule *bitmask_and;
+	struct ldb_extended_match_rule *bitmask_or;
+	struct ldb_extended_match_rule *always_false;
+	int ret;
 
-			      
+	/* Register bitmask-and match */
+	bitmask_and = talloc_zero(ldb, struct ldb_extended_match_rule);
+	if (bitmask_and == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	bitmask_and->oid = LDB_OID_COMPARATOR_AND;
+	bitmask_and->callback = ldb_match_bitmask;
+
+	ret = ldb_register_extended_match_rule(ldb, bitmask_and);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	/* Register bitmask-or match */
+	bitmask_or = talloc_zero(ldb, struct ldb_extended_match_rule);
+	if (bitmask_or == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	bitmask_or->oid = LDB_OID_COMPARATOR_OR;
+	bitmask_or->callback = ldb_match_bitmask;
+
+	ret = ldb_register_extended_match_rule(ldb, bitmask_or);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	/* Register always-false match */
+	always_false = talloc_zero(ldb, struct ldb_extended_match_rule);
+	if (always_false == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	always_false->oid = SAMBA_LDAP_MATCH_ALWAYS_FALSE;
+	always_false->callback = ldb_comparator_false;
+
+	ret = ldb_register_extended_match_rule(ldb, always_false);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	return LDB_SUCCESS;
+}
+
+/*
+  register a new ldb backend
+
+  if override is true, then override any existing backend for this prefix
+*/
+int ldb_register_extended_match_rule(struct ldb_context *ldb,
+				     const struct ldb_extended_match_rule *rule)
+{
+	const struct ldb_extended_match_rule *lookup_rule;
+	struct ldb_extended_match_entry *entry;
+
+	lookup_rule = ldb_find_extended_match_rule(ldb, rule->oid);
+	if (lookup_rule) {
+		return LDB_ERR_ENTRY_ALREADY_EXISTS;
+	}
+
+	entry = talloc_zero(ldb, struct ldb_extended_match_entry);
+	if (!entry) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	entry->rule = rule;
+	DLIST_ADD_END(ldb->extended_match_rules, entry, struct ldb_extended_match_entry);
+
+	return LDB_SUCCESS;
+}
+

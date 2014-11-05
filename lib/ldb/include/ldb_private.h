@@ -100,6 +100,12 @@ struct ldb_context {
 	/* debugging operations */
 	struct ldb_debug_ops debug_ops;
 
+	/* extended matching rules */
+	struct ldb_extended_match_entry {
+		const struct ldb_extended_match_rule *rule;
+		struct ldb_extended_match_entry *prev, *next;
+	} *extended_match_rules;
+
 	/* custom utf8 functions */
 	struct ldb_utf8_fns utf8_fns;
 
