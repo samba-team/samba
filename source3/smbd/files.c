@@ -740,3 +740,8 @@ NTSTATUS fsp_set_smb_fname(struct files_struct *fsp,
 			smb_fname_str_dbg(fsp->fsp_name),
 			&fsp->name_hash);
 }
+
+const struct GUID *fsp_client_guid(const files_struct *fsp)
+{
+	return &fsp->conn->sconn->client->connections->smb2.client.guid;
+}
