@@ -23,6 +23,7 @@ import samba
 import samba.auth
 from samba import param
 from samba.samdb import SamDB
+from samba import credentials
 import subprocess
 import tempfile
 
@@ -232,6 +233,26 @@ def connect_samdb_ex(samdb_url, lp=None, session_info=None, credentials=None,
     res = sam_db.search(base="", expression="", scope=ldb.SCOPE_BASE,
                         attrs=["*"])
     return (sam_db, res[0])
+
+
+def connect_samdb_env(env_url, env_username, env_password, lp=None):
+    """Connect to SamDB by getting URL and Credentials from environment
+
+    :param env_url: Environment variable name to get lsb url from
+    :param env_username: Username environment variable
+    :param env_password: Password environment variable
+    :return: sam_db_connection
+    """
+    samdb_url = env_get_var_value(env_url)
+    creds = credentials.Credentials()
+    if lp is None:
+        # guess Credentials parameters here. Otherwise workstation
+        # and domain fields are NULL and gencache code segfalts
+        lp = param.LoadParm()
+        creds.guess(lp)
+    creds.set_username(env_get_var_value(env_username))
+    creds.set_password(env_get_var_value(env_password))
+    return connect_samdb(samdb_url, credentials=creds, lp=lp)
 
 
 def delete_force(samdb, dn):
