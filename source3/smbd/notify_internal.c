@@ -831,9 +831,13 @@ static void notify_handler(struct messaging_context *msg_ctx,
 	}
 
 	m = (struct notify_msg *)data->data;
-	e.action = m->action;
-	e.path = m->path;
-	e.private_data = m->private_data;
+
+	e = (struct notify_event) {
+		.action = m->action,
+		.path = m->path,
+		.private_data = m->private_data,
+		.dir = discard_const_p(char, "")
+	};
 
 	for (listel=notify->list;listel;listel=listel->next) {
 		if (listel->private_data == m->private_data) {

@@ -65,6 +65,7 @@ interface notify
 	/* structure sent between servers in notify messages */
 	typedef [public] struct {
 		uint32 action;
+		utf8string dir;
 		utf8string path;
 		pointer private_data;
 	} notify_event;

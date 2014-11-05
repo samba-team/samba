@@ -550,6 +550,7 @@ static void notify_send(struct notify_context *notify, struct notify_entry *e,
 	TALLOC_CTX *tmp_ctx;
 
 	ev.action = action;
+	ev.dir = discard_const_p(char, "");
 	ev.path = path;
 	ev.private_data = e->private_data;
 
