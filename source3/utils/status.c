@@ -123,7 +123,7 @@ static int print_share_mode(const struct share_mode_entry *e,
 	static int count;
 
 	if (do_checks && !is_valid_share_mode_entry(e)) {
-		return;
+		return 0;
 	}
 
 	if (count==0) {
