@@ -23,6 +23,7 @@
 #ifndef _LIBCLI_SMB_SMB2_LEASE_H_
 #define _LIBCLI_SMB_SMB2_LEASE_H_
 
+#include "librpc/gen_ndr/ndr_misc.h"
 #include "librpc/gen_ndr/smb2_lease_struct.h"
 
 /*
@@ -34,5 +35,9 @@ ssize_t smb2_lease_pull(const uint8_t *buf, size_t len,
 bool smb2_lease_push(const struct smb2_lease *lease, uint8_t *buf, size_t len);
 bool smb2_lease_key_equal(const struct smb2_lease_key *k1,
 			  const struct smb2_lease_key *k2);
+bool smb2_lease_equal(const struct GUID *g1,
+		      const struct smb2_lease_key *k1,
+		      const struct GUID *g2,
+		      const struct smb2_lease_key *k2);
 
 #endif /* _LIBCLI_SMB_SMB2_LEASE_H_ */

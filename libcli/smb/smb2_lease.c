@@ -93,3 +93,11 @@ bool smb2_lease_key_equal(const struct smb2_lease_key *k1,
 {
 	return ((k1->data[0] == k2->data[0]) && (k1->data[1] == k2->data[1]));
 }
+
+bool smb2_lease_equal(const struct GUID *g1,
+		      const struct smb2_lease_key *k1,
+		      const struct GUID *g2,
+		      const struct smb2_lease_key *k2)
+{
+	return GUID_equal(g1, g2) && smb2_lease_key_equal(k1, k2);
+}
