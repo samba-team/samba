@@ -2123,7 +2123,14 @@ static NTSTATUS vfswrap_notify_watch(vfs_handle_struct *vfs_handle,
 		if (!lp_parm_bool(-1, "notify", "inotify", True)) {
 			return NT_STATUS_INVALID_SYSTEM_SERVICE;
 		}
-		ret = inotify_watch(ctx, path, filter, subdir_filter,
+		/*
+		 * "ctx->private_data" is not obvious as a talloc context
+		 * here. Without modifying the VFS we don't have a mem_ctx
+		 * available here, and ctx->private_data was used by
+		 * inotify_watch before it got a real talloc parent.
+		 */
+		ret = inotify_watch(ctx->private_data, ctx,
+				    path, filter, subdir_filter,
 				    callback, private_data, handle);
 		if (ret != 0) {
 			return map_nt_error_from_unix(ret);

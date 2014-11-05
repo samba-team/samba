@@ -348,7 +348,8 @@ static int watch_destructor(struct inotify_watch_context *w)
   add a watch. The watch is removed when the caller calls
   talloc_free() on *handle
 */
-int inotify_watch(struct sys_notify_context *ctx,
+int inotify_watch(TALLOC_CTX *mem_ctx,
+		  struct sys_notify_context *ctx,
 		  const char *path,
 		  uint32_t *filter,
 		  uint32_t *subdir_filter,
@@ -385,7 +386,7 @@ int inotify_watch(struct sys_notify_context *ctx,
 	   watch descriptor for multiple watches on the same path */
 	mask |= (IN_MASK_ADD | IN_ONLYDIR);
 
-	w = talloc(in, struct inotify_watch_context);
+	w = talloc(mem_ctx, struct inotify_watch_context);
 	if (w == NULL) {
 		*filter = orig_filter;
 		return ENOMEM;
