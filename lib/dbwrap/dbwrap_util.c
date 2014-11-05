@@ -595,3 +595,169 @@ NTSTATUS dbwrap_fetch_bystring_upper(struct db_context *db, TALLOC_CTX *mem_ctx,
 	talloc_free(key_upper);
 	return status;
 }
+
+struct dbwrap_marshall_state {
+	uint8_t *buf;
+	size_t bufsize;
+	size_t dbsize;
+};
+
+static int dbwrap_marshall_fn(struct db_record *rec, void *private_data)
+{
+	struct dbwrap_marshall_state *state = private_data;
+	TDB_DATA key, value;
+	size_t new_dbsize;
+
+	key = dbwrap_record_get_key(rec);
+	value = dbwrap_record_get_value(rec);
+
+	new_dbsize = state->dbsize;
+	new_dbsize += 8 + key.dsize;
+	new_dbsize += 8 + value.dsize;
+
+	if (new_dbsize <= state->bufsize) {
+		uint8_t *p = state->buf + state->dbsize;
+
+		SBVAL(p, 0, key.dsize);
+		p += 8;
+		memcpy(p, key.dptr, key.dsize);
+		p += key.dsize;
+
+		SBVAL(p, 0, value.dsize);
+		p += 8;
+		memcpy(p, value.dptr, value.dsize);
+	}
+	state->dbsize = new_dbsize;
+	return 0;
+}
+
+size_t dbwrap_marshall(struct db_context *db, uint8_t *buf, size_t bufsize)
+{
+	struct dbwrap_marshall_state state;
+
+	state.bufsize = bufsize;
+	state.buf = buf;
+	state.dbsize = 0;
+
+	dbwrap_traverse_read(db, dbwrap_marshall_fn, &state, NULL);
+
+	return state.dbsize;
+}
+
+static ssize_t dbwrap_unmarshall_get_data(const uint8_t *buf, size_t buflen,
+					  size_t ofs, TDB_DATA *pdata)
+{
+	uint64_t space, len;
+	const uint8_t *p;
+
+	if (ofs == buflen) {
+		return 0;
+	}
+	if (ofs > buflen) {
+		return -1;
+	}
+
+	space = buflen - ofs;
+	if (space < 8) {
+		return -1;
+	}
+
+	p = buf + ofs;
+	len = BVAL(p, 0);
+
+	p += 8;
+	space -= 8;
+
+	if (len > space) {
+		return -1;
+	}
+
+	*pdata = (TDB_DATA) { .dptr = discard_const_p(uint8_t, p),
+			      .dsize = len };
+	return len + 8;
+}
+
+NTSTATUS dbwrap_parse_marshall_buf(const uint8_t *buf, size_t buflen,
+				   bool (*fn)(TDB_DATA key, TDB_DATA value,
+					      void *private_data),
+				   void *private_data)
+{
+	size_t ofs = 0;
+
+	while (true) {
+		ssize_t len;
+		TDB_DATA key, value;
+		bool ok;
+
+		len = dbwrap_unmarshall_get_data(buf, buflen, ofs, &key);
+		if (len == 0) {
+			break;
+		}
+		if (len == -1) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		ofs += len;
+
+		len = dbwrap_unmarshall_get_data(buf, buflen, ofs, &value);
+		if (len == 0) {
+			break;
+		}
+		if (len == -1) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		ofs += len;
+
+		ok = fn(key, value, private_data);
+		if (!ok) {
+			break;
+		}
+	}
+
+	return NT_STATUS_OK;
+}
+
+struct dbwrap_unmarshall_state {
+	struct db_context *db;
+	NTSTATUS ret;
+};
+
+static bool dbwrap_unmarshall_fn(TDB_DATA key, TDB_DATA value,
+				 void *private_data)
+{
+	struct dbwrap_unmarshall_state *state = private_data;
+	struct db_record *rec;
+	NTSTATUS status;
+
+	rec = dbwrap_fetch_locked(state->db, state->db, key);
+	if (rec == NULL) {
+		DEBUG(10, ("%s: dbwrap_fetch_locked failed\n",
+			   __func__));
+		state->ret = NT_STATUS_NO_MEMORY;
+		return false;
+	}
+
+	status = dbwrap_record_store(rec, value, 0);
+	TALLOC_FREE(rec);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("%s: dbwrap_record_store failed: %s\n",
+			   __func__, nt_errstr(status)));
+		state->ret = status;
+		return false;
+	}
+
+	return true;
+}
+
+NTSTATUS dbwrap_unmarshall(struct db_context *db, const uint8_t *buf,
+			   size_t buflen)
+{
+	struct dbwrap_unmarshall_state state = { .db = db };
+	NTSTATUS status;
+
+	status = dbwrap_parse_marshall_buf(buf, buflen,
+					   dbwrap_unmarshall_fn, &state);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	return state.ret;
+}
