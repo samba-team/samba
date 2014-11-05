@@ -162,6 +162,8 @@ int ldb_match_msg_error(struct ldb_context *ldb,
 int ldb_match_msg_objectclass(const struct ldb_message *msg,
 			      const char *objectclass);
 
+int ldb_register_extended_match_rules(struct ldb_context *ldb);
+
 /* The following definitions come from lib/ldb/common/ldb_modules.c  */
 
 struct ldb_module *ldb_module_new(TALLOC_CTX *memctx,
@@ -368,5 +370,16 @@ int ldb_parse_tree_walk(struct ldb_parse_tree *tree,
 bool ldb_msg_element_equal_ordered(const struct ldb_message_element *el1,
 				   const struct ldb_message_element *el2);
 
+
+struct ldb_extended_match_rule
+{
+	const char *oid;
+	int (*callback)(struct ldb_context *, const char *oid,
+			const struct ldb_message *, const char *,
+			const struct ldb_val *, bool *);
+};
+
+int ldb_register_extended_match_rule(struct ldb_context *ldb,
+				     const struct ldb_extended_match_rule *rule);
 
 #endif
