@@ -22,7 +22,6 @@
 
 #include "includes.h"
 #include "nmbd/nmbd.h"
-#include "smbprofile.h"
 
 /* Election parameters. */
 extern time_t StartupTime;
@@ -167,11 +166,8 @@ void run_elections(time_t t)
   
 	struct subnet_record *subrec;
   
-	START_PROFILE(run_elections);
-
 	/* Send election packets once every 2 seconds - note */
 	if (lastime && (t - lastime < 2)) {
-		END_PROFILE(run_elections);
 		return;
 	}
   
@@ -211,7 +207,6 @@ yet registered on subnet %s\n", nmb_namestr(&nmbname), subrec->subnet_name ));
 			}
 		}
 	}
-	END_PROFILE(run_elections);
 }
 
 /*******************************************************************
@@ -271,8 +266,6 @@ void process_election(struct subnet_record *subrec, struct packet_struct *p, con
 	struct work_record *work;
 	unstring workgroup_name;
 
-	START_PROFILE(election);
-
 	pull_ascii_nstring(server_name, sizeof(server_name), buf+13);
 	pull_ascii_nstring(workgroup_name, sizeof(workgroup_name), dgram->dest_name.name);
 
@@ -319,8 +312,7 @@ is not my workgroup.\n", work->work_group, subrec->subnet_name ));
 		}
 	}
 done:
-
-	END_PROFILE(election);
+	return;
 }
 
 /****************************************************************************

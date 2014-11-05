@@ -31,7 +31,6 @@
 #include "nmbd/nmbd.h"
 #include "libsmb/libsmb.h"
 #include "libsmb/clirap.h"
-#include "smbprofile.h"
 #include "../libcli/smb/smbXcli_base.h"
 
 struct sync_record {
@@ -139,12 +138,10 @@ void sync_browse_lists(struct work_record *work,
 	struct sync_record *s;
 	static int counter;
 
-	START_PROFILE(sync_browse_lists);
 	/* Check we're not trying to sync with ourselves. This can
 	   happen if we are a domain *and* a local master browser. */
 	if (ismyip_v4(ip)) {
 done:
-		END_PROFILE(sync_browse_lists);
 		return;
 	}
 
@@ -167,7 +164,7 @@ done:
 	DLIST_ADD(syncs, s);
 
 	/* the parent forks and returns, leaving the child to do the
-	   actual sync and call END_PROFILE*/
+	   actual sync */
 	CatchChild();
 	if ((s->pid = fork())) return;
 
@@ -178,7 +175,6 @@ done:
 
 	fp = x_fopen(s->fname,O_WRONLY|O_CREAT|O_TRUNC, 0644);
 	if (!fp) {
-		END_PROFILE(sync_browse_lists);
 		_exit(1);
 	}
 
@@ -186,7 +182,6 @@ done:
 		   s->fname);
 
 	x_fclose(fp);
-	END_PROFILE(sync_browse_lists);
 	_exit(0);
 }
 

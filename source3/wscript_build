@@ -860,7 +860,7 @@ bld.SAMBA3_BINARY('nmbd/nmbd',
                  param
                  libsmb
                  popt_samba3
-                 PROFILE''',
+                 ''',
                  install_path='${SBINDIR}')
 
 
