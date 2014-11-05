@@ -167,6 +167,7 @@
 ^samba4.smb2.oplock.batch1\(.*\)$ # samba 4 oplocks are a mess
 ^samba4.smb2.oplock.batch6\(.*\)$ # samba 4 oplocks are a mess
 ^samba4.smb2.oplock.batch9\(.*\)$ # samba 4 oplocks are a mess
+^samba4.smb2.oplock.batch9a\(.*\)$ # samba 4 oplocks are a mess
 ^samba4.smb2.oplock.batch10\(.*\)$ # samba 4 oplocks are a mess
 ^samba4.smb2.oplock.batch20\(.*\)$ # samba 4 oplocks are a mess
 ^samba4.smb2.oplock.batch26\(.*\)$
