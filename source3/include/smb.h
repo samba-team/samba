@@ -819,7 +819,6 @@ enum flush_reason_enum {
     SAMBA_CLOSE_FLUSH,
     SAMBA_SYNC_FLUSH,
     SAMBA_SIZECHANGE_FLUSH,
-    /* NUM_FLUSH_REASONS must remain the last value in the enumeration. */
-    SAMBA_NUM_FLUSH_REASONS};
+};
 
 #endif /* _SMB_H */

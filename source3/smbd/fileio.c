@@ -53,7 +53,7 @@ static bool read_from_write_cache(files_struct *fsp,char *data,off_t pos,size_t 
 
 	memcpy(data, wcp->data + (pos - wcp->offset), n);
 
-	DO_PROFILE_INC(writecache_read_hits);
+	DO_PROFILE_INC(writecache_cached_reads);
 
 	return True;
 }
@@ -799,6 +799,7 @@ n = %u, wcp->offset=%.0f, wcp->data_size=%u\n",
 	 */
 
 	if (n) {
+		DO_PROFILE_INC(writecache_cached_writes);
 		if (wcp->data_size) {
 			DO_PROFILE_INC(writecache_abutted_writes);
 		} else {
@@ -827,7 +828,6 @@ n = %u, wcp->offset=%.0f, wcp->data_size=%u\n",
 		memcpy(wcp->data+wcp->data_size, data, n);
 		if (wcp->data_size == 0) {
 			wcp->offset = pos;
-			DO_PROFILE_INC(writecache_num_write_caches);
 		}
 		wcp->data_size += n;
 
@@ -866,7 +866,7 @@ void delete_write_cache(files_struct *fsp)
 		return;
 	}
 
-	DO_PROFILE_DEC(writecache_allocated_write_caches);
+	DO_PROFILE_INC(writecache_deallocations);
 	allocated_write_caches--;
 
 	SMB_ASSERT(wcp->data_size == 0);
@@ -914,7 +914,7 @@ static bool setup_write_cache(files_struct *fsp, off_t file_size)
 	memset(wcp->data, '\0', wcp->alloc_size );
 
 	fsp->wcp = wcp;
-	DO_PROFILE_INC(writecache_allocated_write_caches);
+	DO_PROFILE_INC(writecache_allocations);
 	allocated_write_caches++;
 
 	DEBUG(10,("setup_write_cache: File %s allocated write cache size %lu\n",
@@ -963,13 +963,40 @@ ssize_t flush_write_cache(files_struct *fsp, enum flush_reason_enum reason)
 	data_size = wcp->data_size;
 	wcp->data_size = 0;
 
-	DO_PROFILE_DEC_INC(writecache_num_write_caches,writecache_flushed_writes[reason]);
+	switch (reason) {
+	case SAMBA_SEEK_FLUSH:
+		DO_PROFILE_INC(writecache_flush_reason_seek);
+		break;
+	case SAMBA_READ_FLUSH:
+		DO_PROFILE_INC(writecache_flush_reason_read);
+		break;
+	case SAMBA_WRITE_FLUSH:
+		DO_PROFILE_INC(writecache_flush_reason_write);;
+		break;
+	case SAMBA_READRAW_FLUSH:
+		DO_PROFILE_INC(writecache_flush_reason_readraw);
+		break;
+	case SAMBA_OPLOCK_RELEASE_FLUSH:
+		DO_PROFILE_INC(writecache_flush_reason_oplock);
+		break;
+	case SAMBA_CLOSE_FLUSH:
+		DO_PROFILE_INC(writecache_flush_reason_close);
+		break;
+	case SAMBA_SYNC_FLUSH:
+		DO_PROFILE_INC(writecache_flush_reason_sync);
+		break;
+	case SAMBA_SIZECHANGE_FLUSH:
+		DO_PROFILE_INC(writecache_flush_reason_sizechange);
+		break;
+	default:
+		break;
+	}
 
 	DEBUG(9,("flushing write cache: fd = %d, off=%.0f, size=%u\n",
 		fsp->fh->fd, (double)wcp->offset, (unsigned int)data_size));
 
 	if(data_size == wcp->alloc_size) {
-		DO_PROFILE_INC(writecache_num_perfect_writes);
+		DO_PROFILE_INC(writecache_perfect_writes);
 	}
 
 	ret = real_write_file(NULL, fsp, wcp->data, wcp->offset, data_size);

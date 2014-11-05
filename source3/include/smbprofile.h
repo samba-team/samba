@@ -789,16 +789,24 @@ struct profile_stats {
 	unsigned statcache_hits;
 
 /* write cache counters */
-	unsigned writecache_read_hits;
-	unsigned writecache_abutted_writes;
+	unsigned writecache_allocations;
+	unsigned writecache_deallocations;
+	unsigned writecache_cached_reads;
 	unsigned writecache_total_writes;
+	unsigned writecache_init_writes;
+	unsigned writecache_abutted_writes;
 	unsigned writecache_non_oplock_writes;
 	unsigned writecache_direct_writes;
-	unsigned writecache_init_writes;
-	unsigned writecache_flushed_writes[SAMBA_NUM_FLUSH_REASONS];
-	unsigned writecache_num_perfect_writes;
-	unsigned writecache_num_write_caches;
-	unsigned writecache_allocated_write_caches;
+	unsigned writecache_cached_writes;
+	unsigned writecache_perfect_writes;
+	unsigned writecache_flush_reason_seek;
+	unsigned writecache_flush_reason_read;
+	unsigned writecache_flush_reason_readraw;
+	unsigned writecache_flush_reason_write;
+	unsigned writecache_flush_reason_oplock;
+	unsigned writecache_flush_reason_close;
+	unsigned writecache_flush_reason_sync;
+	unsigned writecache_flush_reason_sizechange;
 };
 
 extern struct profile_stats *profile_p;

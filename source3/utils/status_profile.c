@@ -199,40 +199,42 @@ bool status_profile_dump(bool verbose)
 		 profile_p->statcache_hits);
 
 	profile_separator("Write Cache");
-	d_printf("read_hits:                      %u\n",
-		 profile_p->writecache_read_hits);
-	d_printf("abutted_writes:                 %u\n",
-		 profile_p->writecache_abutted_writes);
+	d_printf("allocations:                    %u\n",
+		 profile_p->writecache_allocations);
+	d_printf("deallocations:                  %u\n",
+		 profile_p->writecache_deallocations);
+	d_printf("cached_reads:                   %u\n",
+		 profile_p->writecache_cached_reads);
 	d_printf("total_writes:                   %u\n",
 		 profile_p->writecache_total_writes);
+	d_printf("init_writes:                    %u\n",
+		 profile_p->writecache_init_writes);
+	d_printf("abutted_writes:                 %u\n",
+		 profile_p->writecache_abutted_writes);
 	d_printf("non_oplock_writes:              %u\n",
 		 profile_p->writecache_non_oplock_writes);
 	d_printf("direct_writes:                  %u\n",
 		 profile_p->writecache_direct_writes);
-	d_printf("init_writes:                    %u\n",
-		 profile_p->writecache_init_writes);
-	d_printf("flushed_writes[SEEK]:           %u\n",
-		 profile_p->writecache_flushed_writes[SAMBA_SEEK_FLUSH]);
-	d_printf("flushed_writes[READ]:           %u\n",
-		 profile_p->writecache_flushed_writes[SAMBA_READ_FLUSH]);
-	d_printf("flushed_writes[WRITE]:          %u\n",
-		 profile_p->writecache_flushed_writes[SAMBA_WRITE_FLUSH]);
-	d_printf("flushed_writes[READRAW]:        %u\n",
-		 profile_p->writecache_flushed_writes[SAMBA_READRAW_FLUSH]);
-	d_printf("flushed_writes[OPLOCK_RELEASE]: %u\n",
-		 profile_p->writecache_flushed_writes[SAMBA_OPLOCK_RELEASE_FLUSH]);
-	d_printf("flushed_writes[CLOSE]:          %u\n",
-		 profile_p->writecache_flushed_writes[SAMBA_CLOSE_FLUSH]);
-	d_printf("flushed_writes[SYNC]:           %u\n",
-		 profile_p->writecache_flushed_writes[SAMBA_SYNC_FLUSH]);
-	d_printf("flushed_writes[SIZECHANGE]:     %u\n",
-		 profile_p->writecache_flushed_writes[SAMBA_SIZECHANGE_FLUSH]);
-	d_printf("num_perfect_writes:             %u\n",
-		 profile_p->writecache_num_perfect_writes);
-	d_printf("num_write_caches:               %u\n",
-		 profile_p->writecache_num_write_caches);
-	d_printf("allocated_write_caches:         %u\n",
-		 profile_p->writecache_allocated_write_caches);
+	d_printf("cached_writes:                  %u\n",
+		 profile_p->writecache_cached_writes);
+	d_printf("perfect_writes:                 %u\n",
+		 profile_p->writecache_perfect_writes);
+	d_printf("flush_reason_seek:              %u\n",
+		 profile_p->writecache_flush_reason_seek);
+	d_printf("flush_reason_read:              %u\n",
+		 profile_p->writecache_flush_reason_read);
+	d_printf("flush_reason_readraw:           %u\n",
+		 profile_p->writecache_flush_reason_readraw);
+	d_printf("flush_reason_write:             %u\n",
+		 profile_p->writecache_flush_reason_write);
+	d_printf("flush_reason_oplock:            %u\n",
+		 profile_p->writecache_flush_reason_oplock);
+	d_printf("flush_reason_close:             %u\n",
+		 profile_p->writecache_flush_reason_close);
+	d_printf("flush_reason_sync:              %u\n",
+		 profile_p->writecache_flush_reason_sync);
+	d_printf("flush_reason_sizechange:        %u\n",
+		 profile_p->writecache_flush_reason_sizechange);
 
 	profile_separator("SMB Calls");
 	d_printf("mkdir_count:                    %u\n",
