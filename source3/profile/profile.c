@@ -27,7 +27,7 @@
 
 #define PROF_SHMEM_KEY ((key_t)0x07021999)
 #define PROF_SHM_MAGIC 0x6349985
-#define PROF_SHM_VERSION 13
+#define PROF_SHM_VERSION 14
 
 #define IPC_PERMS ((S_IRUSR | S_IWUSR) | S_IRGRP | S_IROTH)
 
@@ -355,24 +355,6 @@ bool profile_setup(struct messaging_context *msg_ctx, bool rdonly)
 	    "fset_nt_acl",		/* PR_VALUE_FSET_NT_ACL */
 	    "chmod_acl",		/* PR_VALUE_CHMOD_ACL */
 	    "fchmod_acl",		/* PR_VALUE_FCHMOD_ACL */
-	    "name_release",		/* PR_VALUE_NAME_RELEASE */
-	    "name_refresh",		/* PR_VALUE_NAME_REFRESH */
-	    "name_registration",	/* PR_VALUE_NAME_REGISTRATION */
-	    "node_status",		/* PR_VALUE_NODE_STATUS */
-	    "name_query",		/* PR_VALUE_NAME_QUERY */
-	    "host_announce",		/* PR_VALUE_HOST_ANNOUNCE */
-	    "workgroup_announce",	/* PR_VALUE_WORKGROUP_ANNOUNCE */
-	    "local_master_announce",	/* PR_VALUE_LOCAL_MASTER_ANNOUNCE */
-	    "master_browser_announce",	/* PR_VALUE_MASTER_BROWSER_ANNOUNCE */
-	    "lm_host_announce",		/* PR_VALUE_LM_HOST_ANNOUNCE */
-	    "get_backup_list",		/* PR_VALUE_GET_BACKUP_LIST */
-	    "reset_browser",		/* PR_VALUE_RESET_BROWSER */
-	    "announce_request",		/* PR_VALUE_ANNOUNCE_REQUEST */
-	    "lm_announce_request",	/* PR_VALUE_LM_ANNOUNCE_REQUEST */
-	    "domain_logon",		/* PR_VALUE_DOMAIN_LOGON */
-	    "sync_browse_lists",	/* PR_VALUE_SYNC_BROWSE_LISTS */
-	    "run_elections",		/* PR_VALUE_RUN_ELECTIONS */
-	    "election",			/* PR_VALUE_ELECTION */
 	    "smb2_negprot",		/* PR_VALUE_SMB2_NEGPROT */
 	    "smb2_sesssetup",		/* PR_VALUE_SMB2_SESSETUP */
 	    "smb2_logoff",		/* PR_VALUE_SMB2_LOGOFF */
