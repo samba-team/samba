@@ -387,6 +387,7 @@ NTSTATUS file_name_hash(connection_struct *conn,
 			const char *name, uint32_t *p_name_hash);
 NTSTATUS fsp_set_smb_fname(struct files_struct *fsp,
 			   const struct smb_filename *smb_fname_in);
+const struct GUID *fsp_client_guid(const files_struct *fsp);
 
 /* The following definitions come from smbd/ipc.c  */
 
