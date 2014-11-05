@@ -317,12 +317,8 @@ static int delete_marshall_traverse_first(void *param, void *data)
 	uint32_t hash = ctdb_hash(&(dd->key));
 	int res;
 
-	res = tdb_chainlock(ctdb_db->ltdb->tdb, dd->key);
+	res = tdb_chainlock_nonblock(ctdb_db->ltdb->tdb, dd->key);
 	if (res != 0) {
-		DEBUG(DEBUG_ERR,
-		      (__location__ " Error getting chainlock on record with "
-		       "key hash [0x%08x] on database db[%s].\n",
-		       hash, ctdb_db->db_name));
 		recs->vdata->count.delete_list.skipped++;
 		recs->vdata->count.delete_list.left--;
 		talloc_free(dd);
