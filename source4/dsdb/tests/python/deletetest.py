@@ -434,7 +434,7 @@ class BasicUndeleteTests(BaseDeleteTests):
         objDeleted1 = self.search_guid(guid1)
         self.undelete_deleted(str(objDeleted1.dn), usr1, ldb)
         objLive2 = self.search_dn(usr1)
-        self.assertEqual(str(objLive2.dn),str(objLive1.dn))
+        self.assertEqual(str(objLive2.dn).lower(),str(objLive1.dn).lower())
         delete_force(self.ldb, usr1)
 
     def test_rename(self):
