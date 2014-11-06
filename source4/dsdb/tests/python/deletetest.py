@@ -394,70 +394,70 @@ class BasicUndeleteTests(BaseDeleteTests):
 
     def enable_recycle_bin(self):
         msg = Message()
-        msg.dn = Dn(ldb, "")
+        msg.dn = Dn(self.ldb, "")
         msg["enableOptionalFeature"] = MessageElement(
             "CN=Partitions," +  self.configuration_dn + ":766ddcd8-acd0-445e-f3b9-a7f9b6744f2a",
             FLAG_MOD_ADD, "enableOptionalFeature")
         try:
-            ldb.modify(msg)
+            self.ldb.modify(msg)
         except LdbError, (num, _):
             self.assertEquals(num, ERR_ATTRIBUTE_OR_VALUE_EXISTS)
 
     def undelete_deleted(self, olddn, newdn, samldb):
         msg = Message()
-        msg.dn = Dn(ldb, olddn)
+        msg.dn = Dn(samldb, olddn)
         msg["isDeleted"] = MessageElement([], FLAG_MOD_DELETE, "isDeleted")
         msg["distinguishedName"] = MessageElement([newdn], FLAG_MOD_REPLACE, "distinguishedName")
-        res = samldb.modify(msg, ["show_deleted:1"])
+        samldb.modify(msg, ["show_deleted:1"])
 
     def undelete_deleted_with_mod(self, olddn, newdn):
         msg = Message()
-        msg.dn = Dn(ldb, olddn)
+        msg.dn = Dn(self.ldb, olddn)
         msg["isDeleted"] = MessageElement([], FLAG_MOD_DELETE, "isDeleted")
         msg["distinguishedName"] = MessageElement([newdn], FLAG_MOD_REPLACE, "distinguishedName")
         msg["url"] = MessageElement(["www.samba.org"], FLAG_MOD_REPLACE, "url")
-        res = ldb.modify(msg, ["show_deleted:1"])
+        self.ldb.modify(msg, ["show_deleted:1"])
 
 
     def test_undelete(self):
         print "Testing standard undelete operation"
         usr1="cn=testuser,cn=users," + self.base_dn
         delete_force(self.ldb, usr1)
-        ldb.add({
+        self.ldb.add({
             "dn": usr1,
             "objectclass": "user",
             "description": "test user description",
             "samaccountname": "testuser"})
         objLive1 = self.search_dn(usr1)
         guid1=objLive1["objectGUID"][0]
-        ldb.delete(usr1)
+        self.ldb.delete(usr1)
         objDeleted1 = self.search_guid(guid1)
-        self.undelete_deleted(str(objDeleted1.dn), usr1, ldb)
+        self.undelete_deleted(str(objDeleted1.dn), usr1, self.ldb)
         objLive2 = self.search_dn(usr1)
         self.assertEqual(str(objLive2.dn).lower(),str(objLive1.dn).lower())
         delete_force(self.ldb, usr1)
 
-    def test_rename(self):
+    def __test_rename(self):
         print "Testing attempt to rename deleted object"
         usr1="cn=testuser,cn=users," + self.base_dn
-        ldb.add({
+        self.ldb.add({
             "dn": usr1,
             "objectclass": "user",
             "description": "test user description",
             "samaccountname": "testuser"})
         objLive1 = self.search_dn(usr1)
         guid1=objLive1["objectGUID"][0]
-        ldb.delete(usr1)
+        self.ldb.delete(usr1)
         objDeleted1 = self.search_guid(guid1)
         #just to make sure we get the correct error if the show deleted is missing
         try:
-            ldb.rename(str(objDeleted1.dn), usr1)
+            self.ldb.rename(str(objDeleted1.dn), usr1)
             self.fail()
         except LdbError, (num, _):
             self.assertEquals(num,ERR_NO_SUCH_OBJECT)
 
         try:
-            ldb.rename(str(objDeleted1.dn), usr1, ["show_deleted:1"])
+            self.ldb.rename(str(objDeleted1.dn), usr1, ["show_deleted:1"])
             self.fail()
         except LdbError, (num, _):
             self.assertEquals(num,ERR_UNWILLING_TO_PERFORM)
@@ -465,14 +465,14 @@ class BasicUndeleteTests(BaseDeleteTests):
     def test_undelete_with_mod(self):
         print "Testing standard undelete operation with modification of additional attributes"
         usr1="cn=testuser,cn=users," + self.base_dn
-        ldb.add({
+        self.ldb.add({
             "dn": usr1,
             "objectclass": "user",
             "description": "test user description",
             "samaccountname": "testuser"})
         objLive1 = self.search_dn(usr1)
         guid1=objLive1["objectGUID"][0]
-        ldb.delete(usr1)
+        self.ldb.delete(usr1)
         objDeleted1 = self.search_guid(guid1)
         self.undelete_deleted_with_mod(str(objDeleted1.dn), usr1)
         objLive2 = self.search_dn(usr1)
@@ -484,16 +484,16 @@ class BasicUndeleteTests(BaseDeleteTests):
         usr1="cn=testuser,cn=users," + self.base_dn
         usr2="cn=testuser2,cn=users," + self.base_dn
         delete_force(self.ldb, usr1)
-        ldb.add({
+        self.ldb.add({
             "dn": usr1,
             "objectclass": "user",
             "description": "test user description",
             "samaccountname": "testuser"})
         objLive1 = self.search_dn(usr1)
         guid1=objLive1["objectGUID"][0]
-        ldb.delete(usr1)
+        self.ldb.delete(usr1)
         objDeleted1 = self.search_guid(guid1)
-        self.undelete_deleted(str(objDeleted1.dn), usr2, ldb)
+        self.undelete_deleted(str(objDeleted1.dn), usr2, self.ldb)
         objLive2 = self.search_dn(usr2)
         delete_force(self.ldb, usr1)
         delete_force(self.ldb, usr2)
@@ -501,22 +501,22 @@ class BasicUndeleteTests(BaseDeleteTests):
     def test_undelete_existing(self):
         print "Testing undelete user after a user with the same dn has been created"
         usr1="cn=testuser,cn=users," + self.base_dn
-        ldb.add({
+        self.ldb.add({
             "dn": usr1,
             "objectclass": "user",
             "description": "test user description",
             "samaccountname": "testuser"})
         objLive1 = self.search_dn(usr1)
         guid1=objLive1["objectGUID"][0]
-        ldb.delete(usr1)
-        ldb.add({
+        self.ldb.delete(usr1)
+        self.ldb.add({
             "dn": usr1,
             "objectclass": "user",
             "description": "test user description",
             "samaccountname": "testuser"})
         objDeleted1 = self.search_guid(guid1)
         try:
-            self.undelete_deleted(str(objDeleted1.dn), usr1, ldb)
+            self.undelete_deleted(str(objDeleted1.dn), usr1, self.ldb)
             self.fail()
         except LdbError, (num, _):
             self.assertEquals(num, ERR_ENTRY_ALREADY_EXISTS)
@@ -527,35 +527,35 @@ class BasicUndeleteTests(BaseDeleteTests):
         c2 = "cn=ldaptestcontainer2," + self.configuration_dn
         c3 = "cn=ldaptestcontainer," + self.configuration_dn
         c4 = "cn=ldaptestcontainer2," + self.base_dn
-        ldb.add({
+        self.ldb.add({
             "dn": c1,
             "objectclass": "container"})
-        ldb.add({
+        self.ldb.add({
             "dn": c2,
             "objectclass": "container"})
         objLive1 = self.search_dn(c1)
         objLive2 = self.search_dn(c2)
         guid1=objLive1["objectGUID"][0]
         guid2=objLive2["objectGUID"][0]
-        ldb.delete(c1)
-        ldb.delete(c2)
+        self.ldb.delete(c1)
+        self.ldb.delete(c2)
         objDeleted1 = self.search_guid(guid1)
         objDeleted2 = self.search_guid(guid2)
         #try to undelete from base dn to config
         try:
-            self.undelete_deleted(str(objDeleted1.dn), c3, ldb)
+            self.undelete_deleted(str(objDeleted1.dn), c3, self.ldb)
             self.fail()
         except LdbError, (num, _):
             self.assertEquals(num, ERR_OPERATIONS_ERROR)
         #try to undelete from config to base dn
         try:
-            self.undelete_deleted(str(objDeleted2.dn), c4, ldb)
+            self.undelete_deleted(str(objDeleted2.dn), c4, self.ldb)
             self.fail()
         except LdbError, (num, _):
             self.assertEquals(num, ERR_OPERATIONS_ERROR)
         #assert undeletion will work in same nc
-        self.undelete_deleted(str(objDeleted1.dn), c4, ldb)
-        self.undelete_deleted(str(objDeleted2.dn), c3, ldb)
+        self.undelete_deleted(str(objDeleted1.dn), c4, self.ldb)
+        self.undelete_deleted(str(objDeleted2.dn), c3, self.ldb)
         delete_force(self.ldb, c3)
         delete_force(self.ldb, c4)
 
