@@ -246,7 +246,7 @@ The module does not provide complete WORM functions, like some archiving
 products do! It is not audit-proof, because the WORM function is only
 available on the client side, when accessing a share through SMB! If
 the same folder is shared by other services like NFS, the access only
-depents on the underlaying filesystem ACLs. Equally if you access the
+depends on the underlying filesystem ACLs. Equally if you access the
 content directly on the server.
 
 For additional information, see
@@ -265,6 +265,16 @@ access with Netatalk 3.
 
 The modules behaviour is fully configurable, please refer to the
 manpage vfs_fruit for further details.
+
+smbclient archival improvements
+===============================
+
+Archive creation and extraction support in smbclient has been rewritten
+to use libarchive. This fixes a number of outstanding bugs in Samba's
+previous custom tar implementation and also adds support for the
+extraction of zipped archives.
+smbclient archive support can be enabled or disabled at build time with
+corresponding --with[out]-libarchive configure parameters.
 
 
 ######################################################################
