@@ -90,6 +90,7 @@ char *elog_tdbname(TALLOC_CTX *ctx, const char *name )
 		return NULL;
 	}
 
+	talloc_free(path);
 	return tdbname;
 }
 
