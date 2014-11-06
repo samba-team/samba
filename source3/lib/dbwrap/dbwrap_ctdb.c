@@ -1607,7 +1607,8 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 	result->lock_order = lock_order;
 
 	/* only pass through specific flags */
-	tdb_flags &= TDB_SEQNUM|TDB_VOLATILE;
+	tdb_flags &= TDB_SEQNUM|TDB_VOLATILE|
+		TDB_MUTEX_LOCKING|TDB_CLEAR_IF_FIRST;
 
 	/* honor permissions if user has specified O_CREAT */
 	if (open_flags & O_CREAT) {
