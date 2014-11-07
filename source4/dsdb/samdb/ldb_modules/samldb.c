@@ -2781,6 +2781,7 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_context *ldb;
 	struct samldb_ctx *ac;
 	struct ldb_message_element *el, *el2;
+	struct ldb_control *is_undelete;
 	bool modified = false;
 	int ret;
 
@@ -2791,6 +2792,13 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 
 	ldb = ldb_module_get_ctx(module);
 
+	/*
+	 * we are going to need some special handling if in Undelete call.
+	 * Since tombstone_reanimate module will restore certain attributes,
+	 * we need to relax checks for: sAMAccountType, primaryGroupID
+	 */
+	is_undelete = ldb_request_get_control(req, DSDB_CONTROL_RESTORE_TOMBSTONE_OID);
+
 	/* make sure that "objectSid" is not specified */
 	el = ldb_msg_find_element(req->op.mod.message, "objectSid");
 	if (el != NULL) {
@@ -2800,12 +2808,14 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 			return LDB_ERR_UNWILLING_TO_PERFORM;
 		}
 	}
-	/* make sure that "sAMAccountType" is not specified */
-	el = ldb_msg_find_element(req->op.mod.message, "sAMAccountType");
-	if (el != NULL) {
-		ldb_set_errstring(ldb,
-				  "samldb: sAMAccountType must not be specified!");
-		return LDB_ERR_UNWILLING_TO_PERFORM;
+	if (is_undelete == NULL) {
+		/* make sure that "sAMAccountType" is not specified */
+		el = ldb_msg_find_element(req->op.mod.message, "sAMAccountType");
+		if (el != NULL) {
+			ldb_set_errstring(ldb,
+					  "samldb: sAMAccountType must not be specified!");
+			return LDB_ERR_UNWILLING_TO_PERFORM;
+		}
 	}
 	/* make sure that "isCriticalSystemObject" is not specified */
 	el = ldb_msg_find_element(req->op.mod.message, "isCriticalSystemObject");
@@ -2849,11 +2859,13 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 		return ldb_operr(ldb);
 	}
 
-	el = ldb_msg_find_element(ac->msg, "primaryGroupID");
-	if (el != NULL) {
-		ret = samldb_prim_group_trigger(ac);
-		if (ret != LDB_SUCCESS) {
-			return ret;
+	if (is_undelete == NULL) {
+		el = ldb_msg_find_element(ac->msg, "primaryGroupID");
+		if (el != NULL) {
+			ret = samldb_prim_group_trigger(ac);
+			if (ret != LDB_SUCCESS) {
+				return ret;
+			}
 		}
 	}
 
