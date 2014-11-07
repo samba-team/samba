@@ -195,6 +195,13 @@ static int _tr_do_modify(struct ldb_module *module, struct ldb_request *parent_r
 		return ret;
 	}
 
+	/* We need this since object is 'delete' atm */
+	ret = ldb_request_add_control(mod_req, LDB_CONTROL_SHOW_DELETED_OID, false, NULL);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
 	/* mark request as part of Tombstone reanimation */
 	ret = ldb_request_add_control(mod_req, DSDB_CONTROL_RESTORE_TOMBSTONE_OID, false, NULL);
 	if (ret != LDB_SUCCESS) {
