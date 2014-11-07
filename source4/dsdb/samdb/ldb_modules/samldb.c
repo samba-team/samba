@@ -1855,7 +1855,7 @@ static int samldb_user_account_control_change(struct samldb_ctx *ac)
 						     "lockoutTime", 0);
 	old_is_critical = ldb_msg_find_attr_as_bool(res->msgs[0],
 						    "isCriticalSystemObject", 0);
-	/* When we do not have objectclass "omputer" we cannot switch to a (read-only) DC */
+	/* When we do not have objectclass "computer" we cannot switch to a (read-only) DC */
 	el = ldb_msg_find_element(res->msgs[0], "objectClass");
 	if (el == NULL) {
 		return ldb_operr(ldb);
