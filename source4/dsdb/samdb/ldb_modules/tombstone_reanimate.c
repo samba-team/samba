@@ -50,6 +50,7 @@
 #include "param/param.h"
 #include "../libds/common/flags.h"
 #include "dsdb/samdb/ldb_modules/util.h"
+#include "libds/common/flag_mapping.h"
 
 struct tr_context {
 
@@ -209,6 +210,95 @@ static int _tr_do_modify(struct ldb_module *module, struct ldb_request *parent_r
 
 	talloc_free(tmp_ctx);
 	return ret;
+}
+
+static int _tr_restore_attributes(struct ldb_context *ldb, struct ldb_message *cur_msg, struct ldb_message *new_msg)
+{
+	int				ret;
+	struct ldb_message_element	*el;
+	uint32_t			account_type, user_account_control;
+
+
+	/* remove isRecycled */
+	ret = ldb_msg_add_empty(new_msg, "isRecycled", LDB_FLAG_MOD_DELETE, NULL);
+	if (ret != LDB_SUCCESS) {
+		ldb_asprintf_errstring(ldb, "Failed to reset isRecycled attribute: %s", ldb_strerror(ret));
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	/* objectClass is USER */
+	if (samdb_find_attribute(ldb, cur_msg, "objectclass", "user") != NULL) {
+		/* restoring 'user' instance attribute is heavily borrowed from samldb.c */
+
+		/* Default values */
+		ret = samdb_find_or_add_attribute(ldb, new_msg,
+						  "accountExpires", "9223372036854775807");
+		if (ret != LDB_SUCCESS) return ret;
+		ret = samdb_find_or_add_attribute(ldb, new_msg,
+						  "badPasswordTime", "0");
+		if (ret != LDB_SUCCESS) return ret;
+		ret = samdb_find_or_add_attribute(ldb, new_msg,
+						  "badPwdCount", "0");
+		if (ret != LDB_SUCCESS) return ret;
+		ret = samdb_find_or_add_attribute(ldb, new_msg,
+						  "codePage", "0");
+		if (ret != LDB_SUCCESS) return ret;
+		ret = samdb_find_or_add_attribute(ldb, new_msg,
+						  "countryCode", "0");
+		if (ret != LDB_SUCCESS) return ret;
+		ret = samdb_find_or_add_attribute(ldb, new_msg,
+						  "lastLogoff", "0");
+		if (ret != LDB_SUCCESS) return ret;
+		ret = samdb_find_or_add_attribute(ldb, new_msg,
+						  "lastLogon", "0");
+		if (ret != LDB_SUCCESS) return ret;
+		ret = samdb_find_or_add_attribute(ldb, new_msg,
+						  "logonCount", "0");
+		if (ret != LDB_SUCCESS) return ret;
+		ret = samdb_find_or_add_attribute(ldb, new_msg,
+						  "pwdLastSet", "0");
+		if (ret != LDB_SUCCESS) return ret;
+		ret = samdb_find_or_add_attribute(ldb, new_msg,
+						  "adminCount", "0");
+		if (ret != LDB_SUCCESS) return ret;
+		ret = samdb_find_or_add_attribute(ldb, new_msg,
+						  "operatorCount", "0");
+		if (ret != LDB_SUCCESS) return ret;
+
+		/* restore "sAMAccountType" */
+		user_account_control = ldb_msg_find_attr_as_uint(cur_msg, "userAccountControl", (uint32_t)-1);
+		if (user_account_control == (uint32_t)-1) {
+			return ldb_error(ldb, LDB_ERR_OPERATIONS_ERROR,
+					 "reanimate: No 'userAccountControl' attribute found!");
+		}
+		account_type = ds_uf2atype(user_account_control);
+		if (account_type == 0) {
+			ldb_set_errstring(ldb, "reanimate: Unrecognized account type!");
+			return LDB_ERR_UNWILLING_TO_PERFORM;
+		}
+		ret = samdb_msg_add_uint(ldb, new_msg, new_msg, "sAMAccountType", account_type);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+		el = ldb_msg_find_element(new_msg, "sAMAccountType");
+		el->flags = LDB_FLAG_MOD_REPLACE;
+
+		/* "userAccountControl" -> "primaryGroupID" mapping */
+		if (!ldb_msg_find_element(new_msg, "primaryGroupID")) {
+			uint32_t rid = ds_uf2prim_group_rid(user_account_control);
+
+			ret = samdb_msg_add_uint(ldb, new_msg, new_msg,
+						 "primaryGroupID", rid);
+			if (ret != LDB_SUCCESS) {
+				return ret;
+			}
+			el = ldb_msg_find_element(new_msg, "primaryGroupID");
+			el->flags = LDB_FLAG_MOD_REPLACE;
+		}
+
+	}
+
+	return LDB_SUCCESS;
 }
 
 /**
