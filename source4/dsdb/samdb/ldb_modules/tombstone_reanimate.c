@@ -352,29 +352,20 @@ static int tombstone_reanimate_modify(struct ldb_module *module, struct ldb_requ
 	}
 
 	/* Simple implementation */
-	/* Rename request to modify distinguishedName */
-	dn_new = ldb_dn_from_ldb_val(req, ldb, &el_dn->values[0]);
-	if (dn_new == NULL) {
-		return ldb_oom(ldb);
-	}
-	ret = _tr_do_rename(module, req, req->op.mod.message->dn, dn_new);
-	if (ret != LDB_SUCCESS) {
-		ldb_debug(ldb, LDB_DEBUG_ERROR, "Renaming object to %s has failed with %s\n", el_dn->values[0].data, ldb_strerror(ret));
-		if (ret != LDB_ERR_ENTRY_ALREADY_EXISTS && ret != LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS ) {
-			/* Windows returns Operations Error in case we can't rename the object */
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-		return ret;
-	}
 
 	/* Modify request to: */
 	msg = ldb_msg_copy_shallow(ac, req->op.mod.message);
 	if (msg == NULL) {
 		return ldb_module_oom(ac->module);
 	}
-	msg->dn = dn_new;
-	/* - delete isDeleted */
+	/* - remove distinguishedName - we don't need it */
 	ldb_msg_remove_attr(msg, "distinguishedName");
+
+	/* restore attributed depending on objectClass */
+	ret = _tr_restore_attributes(ldb, res_obj->msgs[0], msg);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
 
 	/* - restore objectCategory if not present */
 	objectcategory = ldb_msg_find_attr_as_dn(ldb, ac, msg,
@@ -395,6 +386,21 @@ static int tombstone_reanimate_modify(struct ldb_module *module, struct ldb_requ
 	}
 	ret = _tr_do_modify(module, req, msg);
 	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	/* Rename request to modify distinguishedName */
+	dn_new = ldb_dn_from_ldb_val(req, ldb, &el_dn->values[0]);
+	if (dn_new == NULL) {
+		return ldb_oom(ldb);
+	}
+	ret = _tr_do_rename(module, req, req->op.mod.message->dn, dn_new);
+	if (ret != LDB_SUCCESS) {
+		ldb_debug(ldb, LDB_DEBUG_ERROR, "Renaming object to %s has failed with %s\n", el_dn->values[0].data, ldb_strerror(ret));
+		if (ret != LDB_ERR_ENTRY_ALREADY_EXISTS && ret != LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS ) {
+			/* Windows returns Operations Error in case we can't rename the object */
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
 		return ret;
 	}
 
