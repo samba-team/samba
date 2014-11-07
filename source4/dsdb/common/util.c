@@ -774,6 +774,7 @@ struct ldb_message_element *samdb_find_attribute(struct ldb_context *ldb,
 
 int samdb_find_or_add_attribute(struct ldb_context *ldb, struct ldb_message *msg, const char *name, const char *set_value)
 {
+	int ret;
 	struct ldb_message_element *el;
 
        	el = ldb_msg_find_element(msg, name);
@@ -781,7 +782,12 @@ int samdb_find_or_add_attribute(struct ldb_context *ldb, struct ldb_message *msg
 		return LDB_SUCCESS;
 	}
 
-	return ldb_msg_add_string(msg, name, set_value);
+	ret = ldb_msg_add_string(msg, name, set_value);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	msg->elements[msg->num_elements - 1].flags = LDB_FLAG_MOD_ADD;
+	return LDB_SUCCESS;
 }
 
 /*
