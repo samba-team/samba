@@ -47,7 +47,7 @@ from samba.auth import system_session
 from samba.samdb import SamDB
 from samba.dcerpc import netlogon, winbind
 
-samba.ensure_external_module("dns", "dnspython")
+samba.ensure_third_party_module("dns", "dnspython")
 import dns.resolver
 import dns.exception
 

@@ -67,7 +67,7 @@ from samba.provision.sambadns import (
     create_named_txt )
 from samba.dcerpc import security
 
-samba.ensure_external_module("dns", "dnspython")
+samba.ensure_third_party_module("dns", "dnspython")
 import dns.zone, dns.rdatatype
 
 __docformat__ = 'restructuredText'
