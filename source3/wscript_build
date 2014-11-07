@@ -1202,7 +1202,6 @@ bld.SAMBA3_BINARY('smbtree',
                  libsmb
                  msrpc3
                  popt_samba3
-                 PROFILE
                  RPC_NDR_SRVSVC''')
 
 bld.SAMBA3_BINARY('smbpasswd',
