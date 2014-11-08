@@ -339,6 +339,11 @@ ssize_t write_file(struct smb_request *req,
 	if (!fsp->modified &&
 	    EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type) &&
 	    (wcp == NULL)) {
+		/*
+		 * Note: no write cache with leases!
+		 * as the handles would have to share the write cache
+		 * that's possible but an improvement for another day...
+		 */
 		setup_write_cache(fsp, fsp->fsp_name->st.st_ex_size);
 		wcp = fsp->wcp;
 	}

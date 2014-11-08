@@ -16,6 +16,8 @@
 	and <smbconfoption name="kernel oplocks">no</smbconfoption>.
 	</para>
 
+	<para>Note that the write cache won't be used for file handles with a smb2 write lease.</para>
+
 	<para>
 	The Samba implementation of leases is currently marked as experimental!
 	</para>
@@ -24,5 +26,6 @@
 <related>oplocks</related>
 <related>kernel oplocks</related>
 <related>level2 oplocks</related>
+<related>write cache size</related>
 <value type="default">no</value>
 </samba:parameter>
