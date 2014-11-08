@@ -347,11 +347,7 @@ static void ctdb_conn_msg_write_done(struct tevent_req *subreq)
 
 int ctdb_conn_msg_write_recv(struct tevent_req *req)
 {
-	int err;
-	if (tevent_req_is_unix_error(req, &err)) {
-		return err;
-	}
-	return 0;
+	return tevent_req_simple_recv_unix(req);
 }
 
 struct ctdb_msg_channel {

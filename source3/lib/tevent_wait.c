@@ -74,10 +74,5 @@ static void tevent_wait_trigger(struct tevent_context *ctx,
 
 int tevent_wait_recv(struct tevent_req *req)
 {
-	int err;
-
-	if (tevent_req_is_unix_error(req, &err)) {
-		return err;
-	}
-	return 0;
+	return tevent_req_simple_recv_unix(req);
 }

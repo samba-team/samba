@@ -1251,10 +1251,5 @@ static void notify_cluster_proxy_trigger(struct notify_context *notify,
 
 int notify_cluster_proxy_recv(struct tevent_req *req)
 {
-	int err;
-
-	if (tevent_req_is_unix_error(req, &err)) {
-		return err;
-	}
-	return 0;
+	return tevent_req_simple_recv_unix(req);
 }
