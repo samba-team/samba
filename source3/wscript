@@ -77,7 +77,7 @@ def configure(conf):
         conf.ADD_LDFLAGS("-Wl,--export-dynamic", testflags=True)
 
     conf.CHECK_HEADERS('execinfo.h libexc.h libunwind.h netdb.h')
-    conf.CHECK_HEADERS('linux/falloc.h')
+    conf.CHECK_HEADERS('linux/falloc.h linux/ioctl.h')
 
     conf.CHECK_FUNCS('getcwd fchown chmod fchmod mknod')
     conf.CHECK_FUNCS('strtol strchr strupr chflags')
