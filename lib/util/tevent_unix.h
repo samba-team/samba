@@ -27,5 +27,6 @@
 #include <tevent.h>
 
 bool tevent_req_is_unix_error(struct tevent_req *req, int *perrno);
+int tevent_req_simple_recv_unix(struct tevent_req *req);
 
 #endif
