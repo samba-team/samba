@@ -25,6 +25,8 @@
     <para>Note that the write cache won't be used for file handles with a smb2 write lease.</para>
 </description>
 
+<related>aio read size</related>
+<related>aio write size</related>
 <related>smb2 leases</related>
 <value type="default">0</value>
 <value type="example">262144<comment> for a 256k cache size per file</comment></value>
