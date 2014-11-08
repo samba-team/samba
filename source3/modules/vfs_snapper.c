@@ -25,7 +25,9 @@
  */
 
 #include <dbus/dbus.h>
+#ifdef HAVE_LINUX_IOCTL_H
 #include <linux/ioctl.h>
+#endif
 #include <sys/ioctl.h>
 #include <dirent.h>
 #include <libgen.h>
