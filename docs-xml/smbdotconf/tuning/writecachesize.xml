@@ -21,8 +21,11 @@
 
     <para>The integer parameter specifies the size of this cache 
 		(per oplocked file) in bytes.</para>
+
+    <para>Note that the write cache won't be used for file handles with a smb2 write lease.</para>
 </description>
 
+<related>smb2 leases</related>
 <value type="default">0</value>
 <value type="example">262144<comment> for a 256k cache size per file</comment></value>
 </samba:parameter>
