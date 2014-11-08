@@ -639,10 +639,10 @@ removeea setea
 
     if conf.CHECK_CFLAGS('-fvisibility=hidden'):
         conf.env.VISIBILITY_CFLAGS = '-fvisibility=hidden'
-        conf.CHECK_CODE('''void vis_foo1(void) {}
+        conf.CHECK_CODE('''int main(void) { return 0; }
                            __attribute__((visibility("default"))) void vis_foo2(void) {}''',
                         cflags=conf.env.VISIBILITY_CFLAGS,
-                        define='HAVE_VISIBILITY_ATTR')
+                        define='HAVE_VISIBILITY_ATTR', addmain=False)
 
     # look for a method of finding the list of network interfaces
     for method in ['HAVE_IFACE_GETIFADDRS', 'HAVE_IFACE_AIX', 'HAVE_IFACE_IFCONF', 'HAVE_IFACE_IFREQ']:
