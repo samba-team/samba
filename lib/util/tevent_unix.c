@@ -48,3 +48,16 @@ bool tevent_req_is_unix_error(struct tevent_req *req, int *perrno)
 	}
 	return true;
 }
+
+int tevent_req_simple_recv_unix(struct tevent_req *req)
+{
+	int err = 0;
+
+	/*
+	 * Ignore result of tevent_req_is_unix_error, we're only interested in
+	 * the status
+	 */
+	tevent_req_is_unix_error(req, &err);
+	tevent_req_received(req);
+	return err;
+}
