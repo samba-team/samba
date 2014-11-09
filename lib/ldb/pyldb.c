@@ -1629,6 +1629,11 @@ static PyObject *py_ldb_schema_format_value(PyLdbObject *self, PyObject *args)
 	old_val.data = (uint8_t *)PyString_AsString(val);
 	old_val.length = PyString_Size(val);
 
+	if (old_val.data == NULL) {
+		PyErr_SetString(PyExc_RuntimeError, "Failed to convert passed value to String");
+		return NULL;
+	}
+
 	a = ldb_schema_attribute_by_name(pyldb_Ldb_AsLdbContext(self), element_name);
 
 	if (a == NULL) {
