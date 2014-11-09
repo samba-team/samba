@@ -292,14 +292,6 @@ do { \
 #define ADD_TO_LARGE_ARRAY(mem_ctx, type, elem, array, num, size) \
 	add_to_large_array((mem_ctx), sizeof(type), &(elem), (void *)(array), (num), (size));
 
-#ifndef toupper_ascii_fast
-/* Warning - this must only be called with 0 <= c < 128. IT WILL
- * GIVE GARBAGE if c > 128 or c < 0. JRA.
- */
-extern const char toupper_ascii_fast_table[];
-#define toupper_ascii_fast(c) toupper_ascii_fast_table[(unsigned int)(c)];
-#endif
-
 #define trans_oob(bufsize, offset, length) \
 	smb_buffer_oob(bufsize, offset, length)
 
