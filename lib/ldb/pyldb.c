@@ -1624,8 +1624,6 @@ static PyObject *py_ldb_schema_format_value(PyLdbObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "sO", &element_name, &val))
 		return NULL;
 
-	mem_ctx = talloc_new(NULL);
-
 	old_val.data = (uint8_t *)PyString_AsString(val);
 	old_val.length = PyString_Size(val);
 
@@ -1638,6 +1636,12 @@ static PyObject *py_ldb_schema_format_value(PyLdbObject *self, PyObject *args)
 
 	if (a == NULL) {
 		Py_RETURN_NONE;
+	}
+
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		PyErr_NoMemory();
+		return NULL;
 	}
 
 	if (a->syntax->ldif_write_fn(pyldb_Ldb_AsLdbContext(self), mem_ctx, &old_val, &new_val) != 0) {
