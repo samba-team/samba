@@ -145,6 +145,19 @@ The default values for "smb2 max read", "smb2 max write" and "smb2 max trans"
 have been changed to 8388608 (8MiB) in order to match the default of
 Windows 2012R2.
 
+SMB2 leases
+===========
+
+The SMB2 protocol allows clients to aggressively cache files
+locally above and beyond the caching allowed by SMB1 and SMB2 oplocks.
+
+Called SMB2 leases, this can greatly reduce traffic on an SMB2
+connection. Samba 4.2 now implements SMB2 leases.
+
+It can be turned on by setting the parameter "smb2 leases = yes"
+in the [global] section of your smb.conf. This parameter is set
+to off by default until the SMB2 leasing code is declared fully stable.
+
 Improved DCERPC man in the middle detection
 ===========================================
 
