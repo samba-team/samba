@@ -547,7 +547,7 @@ static bool tdb_data_is_cstr(TDB_DATA d) {
 	if (tdb_data_is_empty(d) || (d.dptr[d.dsize-1] != '\0')) {
 		return false;
 	}
-	return strchr((char *)d.dptr, '\0') == (char *)&d.dptr[d.dsize-1];
+	return strlen((char *)d.dptr) == (d.dsize-1);
 }
 
 static bool upgrade_v2_to_v3_check_subkeylist(struct db_context *db,
