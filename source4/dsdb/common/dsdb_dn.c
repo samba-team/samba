@@ -211,6 +211,7 @@ struct dsdb_dn *dsdb_dn_parse(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 		
 	dsdb_dn = dsdb_dn_construct(mem_ctx, dn, bval, dn_oid);
 		
+	talloc_free(tmp_ctx);
 	return dsdb_dn;
 
 failed:
