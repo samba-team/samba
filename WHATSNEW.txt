@@ -159,16 +159,9 @@ versions as existed previously.
 
 To build the Samba file server with cluster support, use the configure
 command line option --with-cluster-support.  This will build clustered
-file server against the in-tree ctdb.  Building clustered samba with
-previous versions of CTDB is no longer supported.
-
-CTDB is built separately from the ctdb/ sub-directory.  To build CTDB,
-use the following steps:
-
-  $ cd ctdb
-  $ ./configure
-  $ make
-  # make install
+file server against the in-tree CTDB and will also build CTDB.
+Building clustered samba with previous versions of CTDB is no longer
+supported.
 
 Samba Registry Editor
 =====================
