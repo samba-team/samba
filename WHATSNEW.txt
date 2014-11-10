@@ -9,6 +9,39 @@ system at https://bugzilla.samba.org/.
 Samba 4.2 will be the next version of the Samba suite.
 
 
+IMPORTANT NOTE ABOUT THE SUPPORT END OF SAMBA 3
+=================================================
+
+With the final release of Samba 4.2, the last series of Samba 3 has
+been discontinued! People still running 3.6.x or earlier,should
+consider moving to a more recent and maintained version (4.0 - 4.2).
+One of the common misconceptions is that Samba 4.x automatically
+means "Active Directory only": This is wrong!
+
+Acting as an Active Directory Domain Controller is just one of the
+enhancements included in Samba 4.0 and later. Version 4.0 was just the
+next release after the 3.6 series and contains all the features of the
+previous ones - including the NT4-style (classic) domain support. This
+means you can update a Samba 3.x NT4-style PDC to 4.x, just as you've
+updated in the past (e.g. from 3.4.x to 3.5.x). You don't have to move
+your NT4-style domain to an Active Directory!
+
+And of course the possibility remains unchanged, to setup a new NT4-style
+PDC with Samba 4.x, like done in the past (e.g. with openLDAP backend).
+Active Directory support in Samba 4 is additional and does not replace
+any of these features. We do understand the difficulty presented by
+existing LDAP structures and for that reason there isn't a plan to
+decommission the classic PDC support. It remains tested by the continuous
+integration system.
+
+The code that supports the classic Domain Controller is also the same
+code that supports the internal 'Domain' of standalone servers and
+Domain Member Servers. This means that we still use this code, even
+when not acting as an AD Domain Controller. It is also the basis for
+some of the features of FreeIPA and so it gets development attention
+from that direction as well.
+
+
 UPGRADING
 =========
 
