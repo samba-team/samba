@@ -2352,6 +2352,8 @@ static struct ldb_message_element *PyObject_AsMessageElement(
 				(uint8_t *)PyString_AsString(obj), me->values[i].length+1);
 		}
 	} else {
+		PyErr_Format(PyExc_TypeError,
+			     "String or List type expected for '%s' attribute", attr_name);
 		talloc_free(me);
 		me = NULL;
 	}
