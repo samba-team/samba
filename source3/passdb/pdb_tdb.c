@@ -599,7 +599,7 @@ static NTSTATUS tdbsam_getsampwnam (struct pdb_methods *my_methods,
 
 	if (!init_samu_from_buffer(user, SAMU_BUFFER_LATEST, data.dptr, data.dsize)) {
 		DEBUG(0,("pdb_getsampwent: Bad struct samu entry returned from TDB!\n"));
-		SAFE_FREE(data.dptr);
+		TALLOC_FREE(data.dptr);
 		return NT_STATUS_NO_MEMORY;
 	}
 
