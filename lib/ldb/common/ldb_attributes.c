@@ -116,8 +116,14 @@ static const struct ldb_schema_attribute ldb_attribute_default = {
 };
 
 /*
-  return the attribute handlers for a given attribute
-*/
+ * Return the attribute handlers for a given attribute
+ *
+ * @param ldb	ldb context
+ * @param name	attribute name to search for
+ * @return	Always return valid pointer to schema attribute.
+ * 		In case there is no attribute with name,
+ * 		ldb_attribute_default is returned
+ */
 static const struct ldb_schema_attribute *ldb_schema_attribute_by_name_internal(
 	struct ldb_context *ldb,
 	const char *name)
@@ -126,6 +132,11 @@ static const struct ldb_schema_attribute *ldb_schema_attribute_by_name_internal(
 	unsigned int i, e, b = 0;
 	int r;
 	const struct ldb_schema_attribute *def = &ldb_attribute_default;
+
+	/* fallback to default attribute implementation */
+	if (name == NULL) {
+		return def;
+	}
 
 	/* as handlers are sorted, '*' must be the first if present */
 	if (strcmp(ldb->schema.attributes[0].name, "*") == 0) {
