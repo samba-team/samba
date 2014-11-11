@@ -398,6 +398,7 @@ static void smb2_transport_break_handler(struct tevent_req *subreq)
 		struct smb2_lease_break lb;
 
 		ZERO_STRUCT(lb);
+		lb.new_epoch =			SVAL(body, 0x2);
 		lb.break_flags =		SVAL(body, 0x4);
 		memcpy(&lb.current_lease.lease_key, body+0x8,
 		    sizeof(struct smb2_lease_key));
