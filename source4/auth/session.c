@@ -233,6 +233,11 @@ struct auth_session_info *auth_session_info_from_transport(TALLOC_CTX *mem_ctx,
 {
 	struct auth_session_info *session_info;
 	session_info = talloc_steal(mem_ctx, session_info_transport->session_info);
+	/*
+	 * This is to allow us to check the type of this pointer using
+	 * talloc_get_type()
+	 */
+	talloc_set_name(session_info, "struct auth_session_info");
 #ifdef HAVE_GSS_IMPORT_CRED
 	if (session_info_transport->exported_gssapi_credentials.length) {
 		struct cli_credentials *creds;
