@@ -602,6 +602,12 @@ static NTSTATUS tdbsam_getsampwnam (struct pdb_methods *my_methods,
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
+	if (data.dsize == 0) {
+		DEBUG(5, ("%s: Got 0-sized record for key %s\n", __func__,
+			  keystr));
+		return NT_STATUS_NO_SUCH_USER;
+	}
+
   	/* unpack the buffer */
 
 	if (!init_samu_from_buffer(user, SAMU_BUFFER_LATEST, data.dptr, data.dsize)) {
