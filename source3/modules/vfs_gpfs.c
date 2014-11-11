@@ -438,6 +438,14 @@ static int gpfs_get_nfs4_acl(TALLOC_CTX *mem_ctx, const char *fname, SMB4ACL_T *
 	if (gacl == NULL) {
 		DEBUG(9, ("gpfs_getacl failed for %s with %s\n",
 			   fname, strerror(errno)));
+		if (errno == ENODATA) {
+			/*
+			 * GPFS returns ENODATA for snapshot
+			 * directories. Retry with POSIX ACLs check.
+			 */
+			return 1;
+		}
+
 		return -1;
 	}
 
