@@ -156,13 +156,13 @@ defaulttasks = list(builddirs.keys())
 if os.environ.get("AUTOBUILD_SKIP_SAMBA_O3", "0") == "1":
     defaulttasks.remove("samba-o3")
 
-ctdb_configure_params = " --enable-developer --picky-developer ${PREFIX}"
-samba_configure_params = " ${ENABLE_COVERAGE} --picky-developer ${PREFIX} --with-profiling-data"
+ctdb_configure_params = " --enable-developer ${PREFIX}"
+samba_configure_params = " ${ENABLE_COVERAGE} ${PREFIX} --with-profiling-data"
 
 samba_libs_envvars = "PYTHONPATH=${PYTHON_PREFIX}:$PYTHONPATH"
 samba_libs_envvars += " PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX_DIR}/lib/pkgconfig"
 samba_libs_envvars += " ADDITIONAL_CFLAGS='-Wmissing-prototypes'"
-samba_libs_configure_base = samba_libs_envvars + " ./configure --abi-check ${ENABLE_COVERAGE} --enable-debug --picky-developer -C ${PREFIX}"
+samba_libs_configure_base = samba_libs_envvars + " ./configure --abi-check ${ENABLE_COVERAGE} --enable-debug -C ${PREFIX}"
 samba_libs_configure_libs = samba_libs_configure_base + " --bundled-libraries=cmocka,popt,NONE"
 samba_libs_configure_bundled_libs = " --bundled-libraries=!talloc,!pytalloc-util,!tdb,!pytdb,!ldb,!pyldb,!pyldb-util,!tevent,!pytevent,!popt"
 samba_libs_configure_samba = samba_libs_configure_base + samba_libs_configure_bundled_libs
@@ -459,7 +459,7 @@ tasks = {
         ("tdb-install", "cd lib/tdb && make install"),
 
         # build samba with cluster support (also building ctdb):
-        ("samba-configure", "PYTHONPATH=${PYTHON_PREFIX}:$PYTHONPATH PKG_CONFIG_PATH=${PREFIX_DIR}/lib/pkgconfig:${PKG_CONFIG_PATH} ./configure.developer --picky-developer ${PREFIX} --with-selftest-prefix=./bin/ab --with-cluster-support --bundled-libraries=!tdb"),
+        ("samba-configure", "PYTHONPATH=${PYTHON_PREFIX}:$PYTHONPATH PKG_CONFIG_PATH=${PREFIX_DIR}/lib/pkgconfig:${PKG_CONFIG_PATH} ./configure.developer ${PREFIX} --with-selftest-prefix=./bin/ab --with-cluster-support --bundled-libraries=!tdb"),
         ("samba-make", "make"),
         ("samba-check", "./bin/smbd -b | grep CLUSTER_SUPPORT"),
         ("samba-install", "make install"),
@@ -549,7 +549,7 @@ tasks = {
     # shipping a minimal smbd.
     "samba-nopython": [
         ("random-sleep", random_sleep(300, 900)),
-        ("configure", "./configure.developer ${ENABLE_COVERAGE} --picky-developer ${PREFIX} --with-profiling-data --disable-python --without-ad-dc"),
+        ("configure", "./configure.developer ${ENABLE_COVERAGE} ${PREFIX} --with-profiling-data --disable-python --without-ad-dc"),
         ("make", "make -j"),
         ("install", "make install"),
         ("find-python", "script/find_python.sh ${PREFIX}"),
@@ -585,7 +585,7 @@ tasks = {
     # check we can do the same thing using python2
     "samba-nopython-py2": [
         ("random-sleep", random_sleep(300, 900)),
-        ("configure", "PYTHON=python2 ./configure.developer ${ENABLE_COVERAGE} --picky-developer ${PREFIX} --with-profiling-data --disable-python --without-ad-dc"),
+        ("configure", "PYTHON=python2 ./configure.developer ${ENABLE_COVERAGE} ${PREFIX} --with-profiling-data --disable-python --without-ad-dc"),
         ("make", "PYTHON=python2 make -j"),
         ("install", "PYTHON=python2 make install"),
         ("find-python", "script/find_python.sh ${PREFIX}"),
