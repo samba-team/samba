@@ -406,14 +406,35 @@ static struct {
 	int oplock_failures;
 } break_info;
 
+#define CHECK_NO_BREAK(tctx)	\
+	do {								\
+		torture_wait_for_lease_break(tctx);			\
+		CHECK_VAL(break_info.failures, 0);			\
+		CHECK_VAL(break_info.count, 0);				\
+		CHECK_VAL(break_info.oplock_failures, 0);		\
+		CHECK_VAL(break_info.oplock_count, 0);			\
+	} while(0)
+
+#define CHECK_OPLOCK_BREAK(__brokento)	\
+	do {								\
+		torture_wait_for_lease_break(tctx);			\
+		CHECK_VAL(break_info.oplock_count, 1);			\
+		CHECK_VAL(break_info.oplock_failures, 0);		\
+		CHECK_VAL(break_info.oplock_level,			\
+			  smb2_util_oplock_level(__brokento)); \
+		break_info.held_oplock_level = break_info.oplock_level; \
+	} while(0)
+
 #define CHECK_BREAK_INFO(__oldstate, __state, __key)			\
 	do {								\
+		torture_wait_for_lease_break(tctx);			\
 		CHECK_VAL(break_info.failures, 0);			\
 		CHECK_VAL(break_info.count, 1);				\
 		CHECK_LEASE_BREAK(&break_info.lease_break, (__oldstate), \
 		    (__state), (__key));				\
 		if (break_info.lease_break.break_flags &		\
 		    SMB2_NOTIFY_BREAK_LEASE_FLAG_ACK_REQUIRED) {	\
+			torture_wait_for_lease_break(tctx);		\
 			CHECK_LEASE_BREAK_ACK(&break_info.lease_break_ack, \
 				              (__state), (__key));	\
 		}							\
@@ -819,9 +840,7 @@ static bool test_lease_nobreakself(struct torture_context *tctx,
 	/* Make sure we don't break ourselves on write */
 
 	status = smb2_util_write(tree, h1, &c, 0, 1);
-	torture_wait_for_lease_break(tctx);
-	CHECK_VAL(break_info.count, 1);
-	CHECK_VAL(break_info.failures, 0);
+	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_BREAK_INFO("R", "", LEASE2);
 
 	/* Try the other way round. First, upgrade LEASE2 to R again */
@@ -837,18 +856,14 @@ static bool test_lease_nobreakself(struct torture_context *tctx,
 
 	ZERO_STRUCT(break_info);
 	status = smb2_util_write(tree, h2, &c, 0, 1);
-	torture_wait_for_lease_break(tctx);
-	CHECK_VAL(break_info.count, 1);
-	CHECK_VAL(break_info.failures, 0);
+	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_BREAK_INFO("R", "", LEASE1);
 
 	/* .. and break LEASE2 via h1 */
 
 	ZERO_STRUCT(break_info);
 	status = smb2_util_write(tree, h1, &c, 0, 1);
-	torture_wait_for_lease_break(tctx);
-	CHECK_VAL(break_info.count, 1);
-	CHECK_VAL(break_info.failures, 0);
+	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_BREAK_INFO("R", "", LEASE2);
 
 done:
@@ -992,8 +1007,7 @@ static bool test_lease_oplock(struct torture_context *tctx,
 		if (smb2_util_lease_state(held) != smb2_util_lease_state(brokento)) {
 			CHECK_BREAK_INFO(held, brokento, LEASE1);
 		} else {
-			CHECK_VAL(break_info.count, 0);
-			CHECK_VAL(break_info.failures, 0);
+			CHECK_NO_BREAK(tctx);
 		}
 
 		smb2_util_close(tree, h);
@@ -1033,13 +1047,9 @@ static bool test_lease_oplock(struct torture_context *tctx,
 		CHECK_LEASE(&io, granted, true, LEASE1);
 
 		if (smb2_util_oplock_level(held) != smb2_util_oplock_level(brokento)) {
-			CHECK_VAL(break_info.oplock_count, 1);
-			CHECK_VAL(break_info.oplock_failures, 0);
-			CHECK_VAL(break_info.oplock_level, smb2_util_oplock_level(brokento));
-			break_info.held_oplock_level = break_info.oplock_level;
+			CHECK_OPLOCK_BREAK(brokento);
 		} else {
-			CHECK_VAL(break_info.oplock_count, 0);
-			CHECK_VAL(break_info.oplock_failures, 0);
+			CHECK_NO_BREAK(tctx);
 		}
 
 		smb2_util_close(tree, h);
@@ -1141,8 +1151,7 @@ static bool test_lease_multibreak(struct torture_context *tctx,
 	break_info.held_oplock_level = io.out.oplock_level;
 
 	/* Verify no breaks. */
-	CHECK_VAL(break_info.count, 0);
-	CHECK_VAL(break_info.failures, 0);
+	CHECK_NO_BREAK(tctx);
 
 	/* Open for truncate, force a break. */
 	smb2_generic_create(&io, NULL, false, fname,
@@ -1165,9 +1174,7 @@ static bool test_lease_multibreak(struct torture_context *tctx,
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	/* Verify one oplock break, one lease break. */
-	CHECK_VAL(break_info.oplock_count, 1);
-	CHECK_VAL(break_info.oplock_failures, 0);
-	CHECK_VAL(break_info.oplock_level, smb2_util_oplock_level(""));
+	CHECK_OPLOCK_BREAK("");
 	CHECK_BREAK_INFO("R", "", LEASE1);
 
  done:
@@ -1384,9 +1391,7 @@ static bool test_lease_v2_request(struct torture_context *tctx,
 	CHECK_LEASE_V2(&io, "RHW", true, LEASE3,
 		       SMB2_LEASE_FLAG_PARENT_LEASE_KEY_SET, LEASE2);
 
-	torture_wait_for_lease_break(tctx);
-	CHECK_VAL(break_info.count, 0);
-	CHECK_VAL(break_info.failures, 0);
+	CHECK_NO_BREAK(tctx);
 
 	ZERO_STRUCT(io);
 	smb2_lease_v2_create_share(&io, &ls, false, dnamefname2,
@@ -1400,10 +1405,7 @@ static bool test_lease_v2_request(struct torture_context *tctx,
 	CHECK_CREATED(&io, CREATED, FILE_ATTRIBUTE_ARCHIVE);
 	CHECK_LEASE_V2(&io, "RHW", true, LEASE4, 0, 0);
 
-	torture_wait_for_lease_break(tctx);
-	torture_wait_for_lease_break(tctx);
 	CHECK_BREAK_INFO("RH", "", LEASE2);
-	torture_wait_for_lease_break(tctx);
 
 	ZERO_STRUCT(break_info);
 
@@ -1429,16 +1431,19 @@ static bool test_lease_v2_request(struct torture_context *tctx,
 	status = smb2_write(tree, &w);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	smb_msleep(2000);
-	torture_wait_for_lease_break(tctx);
-	CHECK_VAL(break_info.count, 0);
-	CHECK_VAL(break_info.failures, 0);
+	/*
+	 * Wait 4 seconds in order to check if the write time
+	 * was updated (after 2 seconds).
+	 */
+	smb_msleep(4000);
+	CHECK_NO_BREAK(tctx);
 
+	/*
+	 * only the close on the modified file break the
+	 * directory lease.
+	 */
 	smb2_util_close(tree, h4);
-	torture_wait_for_lease_break(tctx);
-	torture_wait_for_lease_break(tctx);
 	CHECK_BREAK_INFO("RH", "", LEASE2);
-	torture_wait_for_lease_break(tctx);
 
  done:
 	smb2_util_close(tree, h1);
