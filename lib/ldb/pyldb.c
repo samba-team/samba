@@ -2775,20 +2775,38 @@ static PyObject *py_ldb_msg_add(PyLdbMessageObject *self, PyObject *args)
 {
 	struct ldb_message *msg = pyldb_Message_AsMessage(self);
 	PyLdbMessageElementObject *py_element;
-	int ret;
+	int i, ret;
 	struct ldb_message_element *el;
+	struct ldb_message_element *el_new;
 
 	if (!PyArg_ParseTuple(args, "O!", &PyLdbMessageElement, &py_element))
 		return NULL;
 
-	el = talloc_reference(msg, py_element->el);
+	el = py_element->el;
 	if (el == NULL) {
-		PyErr_NoMemory();
+		PyErr_SetString(PyExc_ValueError, "Invalid MessageElement object");
 		return NULL;
 	}
 
-	ret = ldb_msg_add(msg, el, el->flags);
+	ret = ldb_msg_add_empty(msg, el->name, el->flags, &el_new);
 	PyErr_LDB_ERROR_IS_ERR_RAISE(PyExc_LdbError, ret, NULL);
+
+	/* now deep copy all attribute values */
+	el_new->values = talloc_array(msg->elements, struct ldb_val, el->num_values);
+	if (el_new->values == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+	el_new->num_values = el->num_values;
+
+	for (i = 0; i < el->num_values; i++) {
+		el_new->values[i] = ldb_val_dup(el_new->values, &el->values[i]);
+		if (el_new->values[i].data == NULL
+				&& el->values[i].length != 0) {
+			PyErr_NoMemory();
+			return NULL;
+		}
+	}
 
 	Py_RETURN_NONE;
 }
