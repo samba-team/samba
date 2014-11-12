@@ -377,10 +377,18 @@ static bool test_lease_upgrade2(struct torture_context *tctx,
 
 #define CHECK_LEASE_BREAK(__lb, __oldstate, __state, __key)		\
 	do {								\
-		CHECK_VAL((__lb)->new_lease_state, smb2_util_lease_state(__state));	\
-		CHECK_VAL((__lb)->current_lease.lease_state, smb2_util_lease_state(__oldstate)); \
+		uint16_t __new = smb2_util_lease_state(__state); \
+		uint16_t __old = smb2_util_lease_state(__oldstate); \
+		CHECK_VAL((__lb)->new_lease_state, __new);	\
+		CHECK_VAL((__lb)->current_lease.lease_state, __old); \
 		CHECK_VAL((__lb)->current_lease.lease_key.data[0], (__key)); \
 		CHECK_VAL((__lb)->current_lease.lease_key.data[1], ~(__key)); \
+		if (__old & (SMB2_LEASE_WRITE | SMB2_LEASE_HANDLE)) { \
+			CHECK_VAL((__lb)->break_flags, \
+				  SMB2_NOTIFY_BREAK_LEASE_FLAG_ACK_REQUIRED);	\
+		} else { \
+			CHECK_VAL((__lb)->break_flags, 0); \
+		} \
 	} while(0)
 
 #define CHECK_LEASE_BREAK_ACK(__lba, __state, __key)			\
