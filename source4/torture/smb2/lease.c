@@ -406,9 +406,10 @@ static bool test_lease_upgrade2(struct torture_context *tctx,
 		CHECK_VAL((__lba)->out.lease.lease_duration, 0);	\
 	} while(0)
 
-static struct {
+static struct torture_lease_break {
 	struct smb2_lease_break lease_break;
 	struct smb2_transport *lease_transport;
+	bool lease_skip_ack;
 	struct smb2_lease_break_ack lease_break_ack;
 	int count;
 	int failures;
@@ -446,8 +447,10 @@ static struct {
 		CHECK_VAL(break_info.count, 1);				\
 		CHECK_LEASE_BREAK(&break_info.lease_break, (__oldstate), \
 		    (__state), (__key));				\
-		if (break_info.lease_break.break_flags &		\
-		    SMB2_NOTIFY_BREAK_LEASE_FLAG_ACK_REQUIRED) {	\
+		if (!break_info.lease_skip_ack && \
+		    (break_info.lease_break.break_flags &		\
+		     SMB2_NOTIFY_BREAK_LEASE_FLAG_ACK_REQUIRED))	\
+		{	\
 			torture_wait_for_lease_break(tctx);		\
 			CHECK_LEASE_BREAK_ACK(&break_info.lease_break_ack, \
 				              (__state), (__key));	\
@@ -493,6 +496,10 @@ static bool torture_lease_handler(struct smb2_transport *transport,
 	break_info.lease_transport = transport;
 	break_info.lease_break = *lb;
 	break_info.count++;
+
+	if (break_info.lease_skip_ack) {
+		return true;
+	}
 
 	if (lb->break_flags & SMB2_NOTIFY_BREAK_LEASE_FLAG_ACK_REQUIRED) {
 		ZERO_STRUCT(io);
