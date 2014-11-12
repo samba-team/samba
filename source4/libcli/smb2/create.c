@@ -385,9 +385,11 @@ NTSTATUS smb2_create_recv(struct smb2_request *req, TALLOC_CTX *mem_ctx, struct 
 			switch (io->out.blobs.blobs[i].data.length) {
 			case 32:
 				ls = &io->out.lease_response;
+				ls->lease_version = 1;
 				break;
 			case 52:
 				ls = &io->out.lease_response_v2;
+				ls->lease_version = 2;
 				break;
 			default:
 				smb2_request_destroy(req);
