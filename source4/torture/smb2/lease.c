@@ -116,10 +116,10 @@ static bool test_lease_request(struct torture_context *tctx,
 	struct smb2_lease ls;
 	struct smb2_handle h1, h2;
 	NTSTATUS status;
-	const char *fname = "lease.dat";
-	const char *fname2 = "lease2.dat";
-	const char *sname = "lease.dat:stream";
-	const char *dname = "lease.dir";
+	const char *fname = "lease_request.dat";
+	const char *fname2 = "lease_request.2.dat";
+	const char *sname = "lease_request.dat:stream";
+	const char *dname = "lease_request.dir";
 	bool ret = true;
 	int i;
 	uint32_t caps;
@@ -204,7 +204,7 @@ static bool test_lease_upgrade(struct torture_context *tctx,
 	struct smb2_lease ls;
 	struct smb2_handle h, hnew;
 	NTSTATUS status;
-	const char *fname = "lease.dat";
+	const char *fname = "lease_upgrade.dat";
 	bool ret = true;
 	uint32_t caps;
 
@@ -328,7 +328,7 @@ static bool test_lease_upgrade2(struct torture_context *tctx,
 	NTSTATUS status;
 	struct smb2_create io;
 	struct smb2_lease ls;
-	const char *fname = "lease.dat";
+	const char *fname = "lease_upgrade2.dat";
 	bool ret = true;
 	int i;
 	uint32_t caps;
@@ -545,7 +545,7 @@ static bool test_lease_upgrade3(struct torture_context *tctx,
 	NTSTATUS status;
 	struct smb2_create io;
 	struct smb2_lease ls;
-	const char *fname = "upgrade3.dat";
+	const char *fname = "lease_upgrade3.dat";
 	bool ret = true;
 	int i;
 	uint32_t caps;
@@ -711,7 +711,7 @@ static bool test_lease_break(struct torture_context *tctx,
 	struct smb2_lease ls;
 	struct smb2_handle h, h2, h3;
 	NTSTATUS status;
-	const char *fname = "lease.dat";
+	const char *fname = "lease_break.dat";
 	bool ret = true;
 	int i;
 	uint32_t caps;
@@ -803,7 +803,7 @@ static bool test_lease_nobreakself(struct torture_context *tctx,
 	struct smb2_lease ls;
 	struct smb2_handle h1, h2;
 	NTSTATUS status;
-	const char *fname = "lease.dat";
+	const char *fname = "lease_nobreakself.dat";
 	bool ret = true;
 	uint32_t caps;
 	char c = 0;
@@ -958,7 +958,7 @@ static bool test_lease_oplock(struct torture_context *tctx,
 	struct smb2_lease ls;
 	struct smb2_handle h, h2;
 	NTSTATUS status;
-	const char *fname = "lease.dat";
+	const char *fname = "lease_oplock.dat";
 	bool ret = true;
 	int i;
 	uint32_t caps;
@@ -1079,7 +1079,7 @@ static bool test_lease_multibreak(struct torture_context *tctx,
 	struct smb2_handle h, h2, h3;
 	struct smb2_write w;
 	NTSTATUS status;
-	const char *fname = "lease.dat";
+	const char *fname = "lease_multibreak.dat";
 	bool ret = true;
 	uint32_t caps;
 
@@ -1198,7 +1198,7 @@ static bool test_lease_v2_request_parent(struct torture_context *tctx,
 	struct smb2_handle h1;
 	uint64_t parent = LEASE2;
 	NTSTATUS status;
-	const char *fname = "lease.dat";
+	const char *fname = "lease_v2_request_parent.dat";
 	bool ret = true;
 	uint32_t caps;
 	enum protocol_types protocol;
@@ -1251,7 +1251,7 @@ static bool test_lease_break_twice(struct torture_context *tctx,
 	struct smb2_lease ls;
 	struct smb2_handle h1;
 	NTSTATUS status;
-	const char *fname = "lease.dat";
+	const char *fname = "lease_break_twice.dat";
 	bool ret = true;
 	uint32_t caps;
 	enum protocol_types protocol;
@@ -1322,10 +1322,10 @@ static bool test_lease_v2_request(struct torture_context *tctx,
 	struct smb2_handle h1, h2, h3, h4, h5;
 	struct smb2_write w;
 	NTSTATUS status;
-	const char *fname = "lease.dat";
-	const char *dname = "lease.dir";
-	const char *dnamefname = "lease.dir\\lease.dat";
-	const char *dnamefname2 = "lease.dir\\lease2.dat";
+	const char *fname = "lease_v2_request.dat";
+	const char *dname = "lease_v2_request.dir";
+	const char *dnamefname = "lease_v2_request.dir\\lease.dat";
+	const char *dnamefname2 = "lease_v2_request.dir\\lease2.dat";
 	bool ret = true;
 	uint32_t caps;
 	enum protocol_types protocol;
@@ -1467,7 +1467,7 @@ static bool test_lease_v2_epoch1(struct torture_context *tctx,
 	struct smb2_create io;
 	struct smb2_lease ls;
 	struct smb2_handle h;
-	const char *fname = "lease.dat";
+	const char *fname = "lease_v2_epoch1.dat";
 	bool ret = true;
 	NTSTATUS status;
 	uint32_t caps;
