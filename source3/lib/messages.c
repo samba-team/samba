@@ -489,16 +489,17 @@ NTSTATUS messaging_send_buf(struct messaging_context *msg_ctx,
 	return messaging_send(msg_ctx, server, msg_type, &blob);
 }
 
-NTSTATUS messaging_send_iov(struct messaging_context *msg_ctx,
-			    struct server_id server, uint32_t msg_type,
-			    const struct iovec *iov, int iovlen,
-			    const int *fds, size_t num_fds)
+NTSTATUS messaging_send_iov_from(struct messaging_context *msg_ctx,
+				 struct server_id src, struct server_id dst,
+				 uint32_t msg_type,
+				 const struct iovec *iov, int iovlen,
+				 const int *fds, size_t num_fds)
 {
 	int ret;
 	struct messaging_hdr hdr;
 	struct iovec iov2[iovlen+1];
 
-	if (server_id_is_disconnected(&server)) {
+	if (server_id_is_disconnected(&dst)) {
 		return NT_STATUS_INVALID_PARAMETER_MIX;
 	}
 
@@ -506,12 +507,12 @@ NTSTATUS messaging_send_iov(struct messaging_context *msg_ctx,
 		return NT_STATUS_INVALID_PARAMETER_MIX;
 	}
 
-	if (!procid_is_local(&server)) {
+	if (!procid_is_local(&dst)) {
 		if (num_fds > 0) {
 			return NT_STATUS_NOT_SUPPORTED;
 		}
 
-		ret = msg_ctx->remote->send_fn(msg_ctx->id, server,
+		ret = msg_ctx->remote->send_fn(src, dst,
 					       msg_type, iov, iovlen,
 					       NULL, 0,
 					       msg_ctx->remote);
@@ -524,20 +525,29 @@ NTSTATUS messaging_send_iov(struct messaging_context *msg_ctx,
 	ZERO_STRUCT(hdr);
 	hdr = (struct messaging_hdr) {
 		.msg_type = msg_type,
-		.dst = server,
-		.src = msg_ctx->id
+		.dst = dst,
+		.src = src
 	};
 	iov2[0] = (struct iovec){ .iov_base = &hdr, .iov_len = sizeof(hdr) };
 	memcpy(&iov2[1], iov, iovlen * sizeof(*iov));
 
 	become_root();
-	ret = messaging_dgm_send(server.pid, iov2, iovlen+1, fds, num_fds);
+	ret = messaging_dgm_send(dst.pid, iov2, iovlen+1, fds, num_fds);
 	unbecome_root();
 
 	if (ret != 0) {
 		return map_nt_error_from_unix(ret);
 	}
 	return NT_STATUS_OK;
+}
+
+NTSTATUS messaging_send_iov(struct messaging_context *msg_ctx,
+			    struct server_id dst, uint32_t msg_type,
+			    const struct iovec *iov, int iovlen,
+			    const int *fds, size_t num_fds)
+{
+	return messaging_send_iov_from(msg_ctx, msg_ctx->id, dst, msg_type,
+				       iov, iovlen, fds, num_fds);
 }
 
 static struct messaging_rec *messaging_rec_dup(TALLOC_CTX *mem_ctx,

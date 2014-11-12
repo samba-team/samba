@@ -123,6 +123,11 @@ NTSTATUS messaging_send(struct messaging_context *msg_ctx,
 NTSTATUS messaging_send_buf(struct messaging_context *msg_ctx,
 			    struct server_id server, uint32_t msg_type,
 			    const uint8_t *buf, size_t len);
+NTSTATUS messaging_send_iov_from(struct messaging_context *msg_ctx,
+				 struct server_id src, struct server_id dst,
+				 uint32_t msg_type,
+				 const struct iovec *iov, int iovlen,
+				 const int *fds, size_t num_fds);
 NTSTATUS messaging_send_iov(struct messaging_context *msg_ctx,
 			    struct server_id server, uint32_t msg_type,
 			    const struct iovec *iov, int iovlen,
