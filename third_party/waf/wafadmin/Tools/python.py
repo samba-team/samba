@@ -170,10 +170,10 @@ def check_python_headers(conf, mandatory=True):
 
 	try:
 		# Get some python configuration variables using distutils
-		v = 'prefix SO SYSLIBS LDFLAGS SHLIBS LIBDIR LIBPL INCLUDEPY Py_ENABLE_SHARED MACOSX_DEPLOYMENT_TARGET'.split()
+		v = 'prefix SO SYSLIBS LDFLAGS SHLIBS LIBDIR LIBPL INCLUDEPY Py_ENABLE_SHARED MACOSX_DEPLOYMENT_TARGET LDVERSION'.split()
 		(python_prefix, python_SO, python_SYSLIBS, python_LDFLAGS, python_SHLIBS,
 		 python_LIBDIR, python_LIBPL, INCLUDEPY, Py_ENABLE_SHARED,
-		 python_MACOSX_DEPLOYMENT_TARGET) = \
+		 python_MACOSX_DEPLOYMENT_TARGET, python_LDVERSION) = \
 			_get_python_variables(python, ["get_config_var('%s') or ''" % x for x in v],
 					      ['from distutils.sysconfig import get_config_var'])
 	except RuntimeError:
@@ -190,8 +190,10 @@ python_LIBPL = %r
 INCLUDEPY = %r
 Py_ENABLE_SHARED = %r
 MACOSX_DEPLOYMENT_TARGET = %r
+LDVERSION = %r
 """ % (python, python_prefix, python_SO, python_SYSLIBS, python_LDFLAGS, python_SHLIBS,
-	python_LIBDIR, python_LIBPL, INCLUDEPY, Py_ENABLE_SHARED, python_MACOSX_DEPLOYMENT_TARGET))
+	python_LIBDIR, python_LIBPL, INCLUDEPY, Py_ENABLE_SHARED, python_MACOSX_DEPLOYMENT_TARGET,
+	python_LDVERSION))
 
 	# Allow some python overrides from env vars for cross-compiling
 	os_env = dict(os.environ)
@@ -230,7 +232,9 @@ MACOSX_DEPLOYMENT_TARGET = %r
 		parse_flags(python_LDFLAGS, 'PYEMBED', env)
 
 	result = False
-	name = 'python' + env['PYTHON_VERSION']
+	if not python_LDVERSION:
+		python_LDVERSION = env['PYTHON_VERSION']
+	name = 'python' + python_LDVERSION
 
 	if python_LIBDIR is not None:
 		path = [python_LIBDIR]
@@ -245,7 +249,7 @@ MACOSX_DEPLOYMENT_TARGET = %r
 	if not result:
 		conf.log.write("\n\n# try again with -L$prefix/libs, and pythonXY name rather than pythonX.Y (win32)\n")
 		path = [os.path.join(python_prefix, "libs")]
-		name = 'python' + env['PYTHON_VERSION'].replace('.', '')
+		name = 'python' + python_LDVERSION.replace('.', '')
 		result = conf.check(lib=name, uselib='PYEMBED', libpath=path)
 
 	if result:
