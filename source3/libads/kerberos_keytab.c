@@ -664,14 +664,13 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 		goto done;
 	}
 
-	oldEntries = talloc_array(frame, char *, found);
+	oldEntries = talloc_zero_array(frame, char *, found + 1);
 	if (!oldEntries) {
 		DEBUG(1, (__location__ ": Failed to allocate space to store "
 			  "the old keytab entries (talloc failed?).\n"));
 		ret = -1;
 		goto done;
 	}
-	memset(oldEntries, '\0', found * sizeof(char *));
 
 	ret = krb5_kt_start_seq_get(context, keytab, &cursor);
 	if (ret == KRB5_KT_END || ret == ENOENT) {
