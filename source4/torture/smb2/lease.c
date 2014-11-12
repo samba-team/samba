@@ -25,6 +25,7 @@
 #include "libcli/smb2/smb2_calls.h"
 #include "torture/torture.h"
 #include "torture/smb2/proto.h"
+#include "torture/util.h"
 #include "libcli/smb/smbXcli_base.h"
 
 #define CHECK_VAL(v, correct) do { \
@@ -463,8 +464,10 @@ static struct {
 	do {								\
 		_CHECK_BREAK_INFO(__oldstate, __state, __key);		\
 		CHECK_VAL(break_info.lease_break.new_epoch, __epoch);	\
-		CHECK_VAL((uintptr_t)break_info.lease_transport, \
-			  (uintptr_t)__transport);	\
+		if (!TARGET_IS_SAMBA3(tctx)) {				\
+			CHECK_VAL((uintptr_t)break_info.lease_transport, \
+				  (uintptr_t)__transport);		\
+		} \
 	} while(0)
 
 static void torture_lease_break_callback(struct smb2_request *req)
