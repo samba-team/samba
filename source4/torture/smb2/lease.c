@@ -142,12 +142,14 @@ static bool test_lease_request(struct torture_context *tctx,
 	CHECK_LEASE(&io, "RHW", true, LEASE1);
 
 	/* But will reject leases on directories. */
-	smb2_lease_create(&io, &ls, true, dname, LEASE2, smb2_util_lease_state("RHW"));
-	status = smb2_create(tree, mem_ctx, &io);
-	CHECK_STATUS(status, NT_STATUS_OK);
-	CHECK_CREATED(&io, CREATED, FILE_ATTRIBUTE_DIRECTORY);
-	CHECK_LEASE(&io, "", false, 0);
-	smb2_util_close(tree, io.out.file.handle);
+	if (!(caps & SMB2_CAP_DIRECTORY_LEASING)) {
+		smb2_lease_create(&io, &ls, true, dname, LEASE2, smb2_util_lease_state("RHW"));
+		status = smb2_create(tree, mem_ctx, &io);
+		CHECK_STATUS(status, NT_STATUS_OK);
+		CHECK_CREATED(&io, CREATED, FILE_ATTRIBUTE_DIRECTORY);
+		CHECK_LEASE(&io, "", false, 0);
+		smb2_util_close(tree, io.out.file.handle);
+	}
 
 	/* Also rejects multiple files leased under the same key. */
 	smb2_lease_create(&io, &ls, true, fname2, LEASE1, smb2_util_lease_state("RHW"));
@@ -1191,6 +1193,21 @@ static bool test_lease_v2_request_parent(struct torture_context *tctx,
 	NTSTATUS status;
 	const char *fname = "lease.dat";
 	bool ret = true;
+	uint32_t caps;
+	enum protocol_types protocol;
+
+	caps = smb2cli_conn_server_capabilities(tree->session->transport->conn);
+	if (!(caps & SMB2_CAP_LEASING)) {
+		torture_skip(tctx, "leases are not supported");
+	}
+	if (!(caps & SMB2_CAP_DIRECTORY_LEASING)) {
+		torture_skip(tctx, "directory leases are not supported");
+	}
+
+	protocol = smbXcli_conn_protocol(tree->session->transport->conn);
+	if (protocol < PROTOCOL_SMB3_00) {
+		torture_skip(tctx, "v2 leases are not supported");
+	}
 
 	smb2_util_unlink(tree, fname);
 
@@ -1230,11 +1247,17 @@ static bool test_lease_break_twice(struct torture_context *tctx,
 	const char *fname = "lease.dat";
 	bool ret = true;
 	uint32_t caps;
+	enum protocol_types protocol;
 
 	caps = smb2cli_conn_server_capabilities(
 		tree->session->transport->conn);
 	if (!(caps & SMB2_CAP_LEASING)) {
 		torture_skip(tctx, "leases are not supported");
+	}
+
+	protocol = smbXcli_conn_protocol(tree->session->transport->conn);
+	if (protocol < PROTOCOL_SMB3_00) {
+		torture_skip(tctx, "v2 leases are not supported");
 	}
 
 	smb2_util_unlink(tree, fname);
@@ -1297,6 +1320,21 @@ static bool test_lease_v2_request(struct torture_context *tctx,
 	const char *dnamefname = "lease.dir\\lease.dat";
 	const char *dnamefname2 = "lease.dir\\lease2.dat";
 	bool ret = true;
+	uint32_t caps;
+	enum protocol_types protocol;
+
+	caps = smb2cli_conn_server_capabilities(tree->session->transport->conn);
+	if (!(caps & SMB2_CAP_LEASING)) {
+		torture_skip(tctx, "leases are not supported");
+	}
+	if (!(caps & SMB2_CAP_DIRECTORY_LEASING)) {
+		torture_skip(tctx, "directory leases are not supported");
+	}
+
+	protocol = smbXcli_conn_protocol(tree->session->transport->conn);
+	if (protocol < PROTOCOL_SMB3_00) {
+		torture_skip(tctx, "v2 leases are not supported");
+	}
 
 	smb2_util_unlink(tree, fname);
 	smb2_deltree(tree, dname);
@@ -1427,6 +1465,18 @@ static bool test_lease_v2_epoch1(struct torture_context *tctx,
 	const char *fname = "lease.dat";
 	bool ret = true;
 	NTSTATUS status;
+	uint32_t caps;
+	enum protocol_types protocol;
+
+	caps = smb2cli_conn_server_capabilities(tree->session->transport->conn);
+	if (!(caps & SMB2_CAP_LEASING)) {
+		torture_skip(tctx, "leases are not supported");
+	}
+
+	protocol = smbXcli_conn_protocol(tree->session->transport->conn);
+	if (protocol < PROTOCOL_SMB3_00) {
+		torture_skip(tctx, "v2 leases are not supported");
+	}
 
 	smb2_util_unlink(tree, fname);
 
