@@ -212,9 +212,7 @@ class builder(object):
         self.cmd = self.cmd.replace("${PYTHON_PREFIX}", get_python_lib(standard_lib=1, prefix=self.prefix))
         self.cmd = self.cmd.replace("${PREFIX}", "--prefix=%s" % self.prefix)
         self.cmd = self.cmd.replace("${PREFIX_DIR}", "%s" % self.prefix)
-        perl_vendor_lib = "--with-perl-arch-install-dir=%s/share/perl5 " % self.prefix
-        perl_vendor_lib += "--with-perl-lib-install-dir=%s/lib/perl5" % self.prefix
-        self.cmd = self.cmd.replace("${PERL_VENDOR_LIB}", perl_vendor_lib)
+        self.cmd = self.cmd.replace("${PERL_VENDOR_LIB}", "--with-perl-vendorlib=%s/share/perl5" % self.prefix)
 #        if self.output_mime_type == "text/x-subunit":
 #            self.cmd += " | %s --immediate" % (os.path.join(os.path.dirname(__file__), "selftest/format-subunit"))
         print '%s: [%s] Running %s' % (self.name, self.stage, self.cmd)
