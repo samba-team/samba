@@ -577,7 +577,7 @@ def map_shlib_extension(ctx, name, python=False):
         return name
     (root1, ext1) = os.path.splitext(name)
     if python:
-        (root2, ext2) = os.path.splitext(ctx.env.pyext_PATTERN)
+        return ctx.env.pyext_PATTERN % root1
     else:
         (root2, ext2) = os.path.splitext(ctx.env.shlib_PATTERN)
     return root1+ext2
