@@ -136,6 +136,163 @@ static NTSTATUS fss_vfs_conn_create(TALLOC_CTX *mem_ctx,
 				    struct messaging_context *msg_ctx,
 				    struct auth_session_info *session_info,
 				    int snum,
+				    struct connection_struct **conn_out);
+static void fss_vfs_conn_destroy(struct connection_struct *conn);
+
+/* test if system path exists */
+static bool snap_path_exists(TALLOC_CTX *ctx, struct messaging_context *msg_ctx,
+			     struct fss_sc *sc)
+{
+	SMB_STRUCT_STAT st;
+	struct connection_struct *conn = NULL;
+	struct smb_filename *smb_fname = NULL;
+	char *service = NULL;
+	char *share;
+	int snum;
+	int ret;
+	NTSTATUS status;
+	bool result = false;
+
+	ZERO_STRUCT(st);
+
+	if ((sc->smaps_count == 0) || (sc->sc_path == NULL)) {
+		goto out;
+	}
+
+	share = sc->smaps->share_name;
+	snum = find_service(ctx, share, &service);
+
+	if ((snum == -1) || (service == NULL)) {
+		goto out;
+	}
+
+	status = fss_vfs_conn_create(ctx, server_event_context(),
+				     msg_ctx, NULL, snum, &conn);
+
+	if(!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+
+	smb_fname = synthetic_smb_fname(service, sc->sc_path, NULL, NULL);
+	if (smb_fname == NULL) {
+		goto out;
+	}
+
+	ret = SMB_VFS_STAT(conn, smb_fname);
+	if ((ret == -1) && (errno == ENOENT)) {
+		goto out;
+	}
+	result = true;
+out:
+	if (conn) {
+		fss_vfs_conn_destroy(conn);
+	}
+	TALLOC_FREE(service);
+	return result;
+}
+
+static NTSTATUS sc_smap_unexpose(struct messaging_context *msg_ctx,
+				 struct fss_sc_smap *sc_smap, bool delete_all);
+
+static NTSTATUS fss_prune_stale(struct messaging_context *msg_ctx,
+				const char *db_path)
+{
+	struct fss_sc_set *sc_sets;
+	uint32_t sc_sets_count = 0;
+	struct fss_sc_set *sc_set;
+	struct fss_sc_smap *prunable_sc_smaps = NULL;
+	bool is_modified = false;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	TALLOC_CTX *ctx = talloc_new(NULL);
+
+	if (!ctx) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* work with temporary state for simple cleanup on failure */
+	become_root();
+	status = fss_state_retrieve(ctx, &sc_sets, &sc_sets_count, db_path);
+	unbecome_root();
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("failed to retrieve fss server state: %s\n",
+			  nt_errstr(status)));
+		goto out;
+	}
+
+	/* walk the cache and pick up any entries to be deleted */
+	sc_set = sc_sets;
+	DEBUG(10, ("pruning shared shadow copies\n"));
+	while (sc_set) {
+		struct fss_sc *sc;
+		struct fss_sc_set *sc_set_next = sc_set->next;
+		char *set_id = GUID_string(ctx, &sc_set->id);
+		if (set_id == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto out;
+		}
+		DEBUGADD(10, ("\tprocessing shadow set id %s\n", set_id));
+		sc = sc_set->scs;
+		while (sc) {
+			struct fss_sc_smap *sc_smap;
+			struct fss_sc *sc_next = sc->next;
+			DEBUGADD(10, ("\tprocessing shadow copy path %s\n",
+				 sc->sc_path));
+			if (snap_path_exists(ctx, msg_ctx, sc)) {
+				sc = sc_next;
+				continue;
+			}
+
+			/* move missing snapshot state to purge list */
+			sc_smap = sc->smaps;
+			while (sc_smap != NULL) {
+				struct fss_sc_smap *smap_next = sc_smap->next;
+				DLIST_REMOVE(sc->smaps, sc_smap);
+				DLIST_ADD_END(prunable_sc_smaps, sc_smap,
+					      struct fss_sc_smap *);
+				sc->smaps_count--;
+				sc_smap = smap_next;
+			}
+
+			DLIST_REMOVE(sc_set->scs, sc);
+			sc_set->scs_count--;
+			is_modified = true;
+			sc = sc_next;
+		}
+		if (sc_set->scs_count == 0) {
+			DLIST_REMOVE(sc_sets, sc_set);
+			sc_sets_count--;
+		}
+		sc_set = sc_set_next;
+	}
+
+	if (is_modified) {
+		/* unexpose all shares in a single transaction */
+		status = sc_smap_unexpose(msg_ctx, prunable_sc_smaps, true);
+		if (!NT_STATUS_IS_OK(status)) {
+			/* exit without storing updated state */
+			goto out;
+		}
+
+		become_root();
+		status = fss_state_store(ctx, sc_sets, sc_sets_count, db_path);
+		unbecome_root();
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(1, ("pruning failed to store fss server state: %s\n",
+				  nt_errstr(status)));
+			goto out;
+		}
+	}
+	status = NT_STATUS_OK;
+out:
+	TALLOC_FREE(ctx);
+	return status;
+}
+
+static NTSTATUS fss_vfs_conn_create(TALLOC_CTX *mem_ctx,
+				    struct tevent_context *ev,
+				    struct messaging_context *msg_ctx,
+				    struct auth_session_info *session_info,
+				    int snum,
 				    struct connection_struct **conn_out)
 {
 	struct connection_struct *conn = NULL;
@@ -246,10 +403,9 @@ void srv_fssa_cleanup(void)
 	ZERO_STRUCT(fss_global);
 }
 
-NTSTATUS srv_fssa_start(void)
+NTSTATUS srv_fssa_start(struct messaging_context *msg_ctx)
 {
 	NTSTATUS status;
-
 	fss_global.mem_ctx = talloc_named_const(NULL, 0,
 						"parent fss rpc server ctx");
 	if (fss_global.mem_ctx == NULL) {
@@ -268,6 +424,9 @@ NTSTATUS srv_fssa_start(void)
 	 * The server MUST populate the GlobalShadowCopySetTable with the
 	 * ShadowCopySet entries read from the configuration store.
 	 */
+	if (lp_parm_bool(GLOBAL_SECTION_SNUM, "fss", "prune stale", false)) {
+		fss_prune_stale(msg_ctx, fss_global.db_path);
+	}
 	become_root();
 	status = fss_state_retrieve(fss_global.mem_ctx, &fss_global.sc_sets,
 				    &fss_global.sc_sets_count,
@@ -1353,11 +1512,12 @@ uint32_t _fss_GetShareMapping(struct pipes_struct *p,
 }
 
 static NTSTATUS sc_smap_unexpose(struct messaging_context *msg_ctx,
-				 struct fss_sc_smap *sc_smap)
+				 struct fss_sc_smap *sc_smap, bool delete_all)
 {
 	NTSTATUS ret;
 	struct smbconf_ctx *conf_ctx;
 	sbcErr cerr;
+	bool is_modified = false;
 	TALLOC_CTX *tmp_ctx = talloc_new(sc_smap);
 	if (tmp_ctx == NULL) {
 		return NT_STATUS_NO_MEMORY;
@@ -1374,12 +1534,6 @@ static NTSTATUS sc_smap_unexpose(struct messaging_context *msg_ctx,
 	/* registry IO must be done as root */
 	become_root();
 
-	if (!smbconf_share_exists(conf_ctx, sc_smap->sc_share_name)) {
-		DEBUG(2, ("no such share: %s\n", sc_smap->sc_share_name));
-		ret = NT_STATUS_OK;
-		goto done;
-	}
-
 	cerr = smbconf_transaction_start(conf_ctx);
 	if (!SBC_ERROR_IS_OK(cerr)) {
 		DEBUG(0, ("error starting transaction: %s\n",
@@ -1388,26 +1542,48 @@ static NTSTATUS sc_smap_unexpose(struct messaging_context *msg_ctx,
 		goto err_conf;
 	}
 
-	cerr = smbconf_delete_share(conf_ctx, sc_smap->sc_share_name);
-	if (!SBC_ERROR_IS_OK(cerr)) {
-		DEBUG(0, ("error deleting share: %s\n",
-			 sbcErrorString(cerr)));
-		ret = NT_STATUS_UNSUCCESSFUL;
+	while (sc_smap) {
+		struct fss_sc_smap *sc_map_next = sc_smap->next;
+		if (!smbconf_share_exists(conf_ctx, sc_smap->sc_share_name)) {
+			DEBUG(2, ("no such share: %s\n", sc_smap->sc_share_name));
+			if (!delete_all) {
+				ret = NT_STATUS_OK;
+				goto err_cancel;
+			}
+			sc_smap = sc_map_next;
+			continue;
+		}
+
+		cerr = smbconf_delete_share(conf_ctx, sc_smap->sc_share_name);
+		if (!SBC_ERROR_IS_OK(cerr)) {
+			DEBUG(0, ("error deleting share: %s\n",
+				 sbcErrorString(cerr)));
+			ret = NT_STATUS_UNSUCCESSFUL;
+			goto err_cancel;
+		}
+		is_modified = true;
+		sc_smap->is_exposed = false;
+		if (delete_all) {
+			sc_smap = sc_map_next;
+		} else {
+			sc_smap = NULL; /* only process single sc_map entry */
+		}
+	}
+	if (is_modified) {
+		cerr = smbconf_transaction_commit(conf_ctx);
+		if (!SBC_ERROR_IS_OK(cerr)) {
+			DEBUG(0, ("error committing transaction: %s\n",
+				  sbcErrorString(cerr)));
+			ret = NT_STATUS_UNSUCCESSFUL;
+			goto err_cancel;
+		}
+		message_send_all(msg_ctx, MSG_SMB_CONF_UPDATED, NULL, 0, NULL);
+	} else {
+		ret = NT_STATUS_OK;
 		goto err_cancel;
 	}
-
-	cerr = smbconf_transaction_commit(conf_ctx);
-	if (!SBC_ERROR_IS_OK(cerr)) {
-		DEBUG(0, ("error committing transaction: %s\n",
-			  sbcErrorString(cerr)));
-		ret = NT_STATUS_UNSUCCESSFUL;
-		goto err_cancel;
-	}
-	message_send_all(msg_ctx, MSG_SMB_CONF_UPDATED, NULL, 0, NULL);
-done:
-	sc_smap->is_exposed = false;
-
 	ret = NT_STATUS_OK;
+
 err_conf:
 	talloc_free(conf_ctx);
 	unbecome_root();
@@ -1477,7 +1653,7 @@ uint32_t _fss_DeleteShareMapping(struct pipes_struct *p,
 		goto err_tmp_free;
 	}
 
-	status = sc_smap_unexpose(p->msg_ctx, sc_smap);
+	status = sc_smap_unexpose(p->msg_ctx, sc_smap, false);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("failed to remove share %s: %s\n",
 			  sc_smap->sc_share_name, nt_errstr(status)));

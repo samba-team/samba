@@ -20,7 +20,7 @@
 #ifndef _SRV_FSS_AGENT_H_
 #define _SRV_FSS_AGENT_H_
 
-NTSTATUS srv_fssa_start(void);
+NTSTATUS srv_fssa_start(struct messaging_context *msg_ctx);
 void srv_fssa_cleanup(void);
 
 #endif /*_SRV_FSS_AGENT_H_ */

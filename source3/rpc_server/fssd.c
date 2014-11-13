@@ -135,7 +135,10 @@ static bool fss_shutdown_cb(void *ptr)
 static bool fss_init_cb(void *ptr)
 {
 	NTSTATUS status;
-	status = srv_fssa_start();
+        struct messaging_context *msg_ctx;
+
+	msg_ctx = talloc_get_type_abort(ptr, struct messaging_context);
+	status = srv_fssa_start(msg_ctx);
 	return NT_STATUS_IS_OK(status);
 }
 
@@ -150,7 +153,7 @@ void start_fssd(struct tevent_context *ev_ctx,
 
 	fss_cb.init = fss_init_cb;
 	fss_cb.shutdown = fss_shutdown_cb;
-	fss_cb.private_data = NULL;
+	fss_cb.private_data = msg_ctx;
 
 	DEBUG(1, ("Forking File Server Shadow-copy Daemon\n"));
 
