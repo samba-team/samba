@@ -792,6 +792,87 @@ int messaging_read_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 	return 0;
 }
 
+struct messaging_handler_state {
+	struct tevent_context *ev;
+	struct messaging_context *msg_ctx;
+	uint32_t msg_type;
+	bool (*handler)(struct messaging_context *msg_ctx,
+			struct messaging_rec **rec, void *private_data);
+	void *private_data;
+};
+
+static void messaging_handler_got_msg(struct tevent_req *subreq);
+
+struct tevent_req *messaging_handler_send(
+	TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+	struct messaging_context *msg_ctx, uint32_t msg_type,
+	bool (*handler)(struct messaging_context *msg_ctx,
+			struct messaging_rec **rec, void *private_data),
+	void *private_data)
+{
+	struct tevent_req *req, *subreq;
+	struct messaging_handler_state *state;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct messaging_handler_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->ev = ev;
+	state->msg_ctx = msg_ctx;
+	state->msg_type = msg_type;
+	state->handler = handler;
+	state->private_data = private_data;
+
+	subreq = messaging_read_send(state, state->ev, state->msg_ctx,
+				     state->msg_type);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, messaging_handler_got_msg, req);
+	return req;
+}
+
+static void messaging_handler_got_msg(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct messaging_handler_state *state = tevent_req_data(
+		req, struct messaging_handler_state);
+	struct messaging_rec *rec;
+	int ret;
+	bool ok;
+
+	ret = messaging_read_recv(subreq, state, &rec);
+	TALLOC_FREE(subreq);
+	if (tevent_req_error(req, ret)) {
+		return;
+	}
+
+	subreq = messaging_read_send(state, state->ev, state->msg_ctx,
+				     state->msg_type);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, messaging_handler_got_msg, req);
+
+	ok = state->handler(state->msg_ctx, &rec, state->private_data);
+	TALLOC_FREE(rec);
+	if (ok) {
+		/*
+		 * Next round
+		 */
+		return;
+	}
+	TALLOC_FREE(subreq);
+	tevent_req_done(req);
+}
+
+int messaging_handler_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_unix(req);
+}
+
 static bool messaging_append_new_waiters(struct messaging_context *msg_ctx)
 {
 	if (msg_ctx->num_new_waiters == 0) {

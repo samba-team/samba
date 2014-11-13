@@ -150,6 +150,14 @@ struct tevent_req *messaging_read_send(TALLOC_CTX *mem_ctx,
 int messaging_read_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 			struct messaging_rec **presult);
 
+struct tevent_req *messaging_handler_send(
+	TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+	struct messaging_context *msg_ctx, uint32_t msg_type,
+	bool (*handler)(struct messaging_context *msg_ctx,
+			struct messaging_rec **rec, void *private_data),
+	void *private_data);
+int messaging_handler_recv(struct tevent_req *req);
+
 int messaging_cleanup(struct messaging_context *msg_ctx, pid_t pid);
 
 bool messaging_parent_dgm_cleanup_init(struct messaging_context *msg);
