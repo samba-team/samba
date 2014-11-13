@@ -1263,13 +1263,13 @@ static int init_fruit_config(vfs_handle_struct *handle)
 static int adouble_path(TALLOC_CTX *ctx, const char *path_in, char **path_out)
 {
 	char *parent;
-	const char *basename;
+	const char *base;
 
-	if (!parent_dirname(ctx, path_in, &parent, &basename)) {
+	if (!parent_dirname(ctx, path_in, &parent, &base)) {
 		return -1;
 	}
 
-	*path_out = talloc_asprintf(ctx, "%s/._%s", parent, basename);
+	*path_out = talloc_asprintf(ctx, "%s/._%s", parent, base);
 	if (*path_out == NULL) {
 		return -1;
 	}
@@ -1451,7 +1451,7 @@ static void update_btime(vfs_handle_struct *handle,
 /**
  * Map an access mask to a Netatalk single byte byte range lock
  **/
-static off_t access_to_netatalk_brl(enum apple_fork fork,
+static off_t access_to_netatalk_brl(enum apple_fork fork_type,
 				    uint32_t access_mask)
 {
 	off_t offset;
@@ -1471,7 +1471,7 @@ static off_t access_to_netatalk_brl(enum apple_fork fork,
 		break;
 	}
 
-	if (fork == APPLE_FORK_RSRC) {
+	if (fork_type == APPLE_FORK_RSRC) {
 		if (offset == AD_FILELOCK_OPEN_NONE) {
 			offset = AD_FILELOCK_RSRC_OPEN_NONE;
 		} else {
@@ -1485,7 +1485,7 @@ static off_t access_to_netatalk_brl(enum apple_fork fork,
 /**
  * Map a deny mode to a Netatalk brl
  **/
-static off_t denymode_to_netatalk_brl(enum apple_fork fork,
+static off_t denymode_to_netatalk_brl(enum apple_fork fork_type,
 				      uint32_t deny_mode)
 {
 	off_t offset;
@@ -1503,7 +1503,7 @@ static off_t denymode_to_netatalk_brl(enum apple_fork fork,
 		smb_panic("denymode_to_netatalk_brl: bad deny mode\n");
 	}
 
-	if (fork == APPLE_FORK_RSRC) {
+	if (fork_type == APPLE_FORK_RSRC) {
 		offset += 2;
 	}
 
@@ -1548,7 +1548,7 @@ static NTSTATUS fruit_check_access(vfs_handle_struct *handle,
 	off_t off;
 
 	/* FIXME: hardcoded data fork, add resource fork */
-	enum apple_fork fork = APPLE_FORK_DATA;
+	enum apple_fork fork_type = APPLE_FORK_DATA;
 
 	DEBUG(10, ("fruit_check_access: %s, am: %s/%s, dm: %s/%s\n",
 		  fsp_str_dbg(fsp),
@@ -1563,10 +1563,10 @@ static NTSTATUS fruit_check_access(vfs_handle_struct *handle,
 	if ((access_mask & FILE_READ_DATA) || (deny_mode & DENY_READ)) {
 		/* Check access */
 		open_for_reading = test_netatalk_lock(
-			fsp, access_to_netatalk_brl(fork, FILE_READ_DATA));
+			fsp, access_to_netatalk_brl(fork_type, FILE_READ_DATA));
 
 		deny_read = test_netatalk_lock(
-			fsp, denymode_to_netatalk_brl(fork, DENY_READ));
+			fsp, denymode_to_netatalk_brl(fork_type, DENY_READ));
 
 		DEBUG(10, ("read: %s, deny_write: %s\n",
 			  open_for_reading == true ? "yes" : "no",
@@ -1579,7 +1579,7 @@ static NTSTATUS fruit_check_access(vfs_handle_struct *handle,
 
 		/* Set locks */
 		if (access_mask & FILE_READ_DATA) {
-			off = access_to_netatalk_brl(fork, FILE_READ_DATA);
+			off = access_to_netatalk_brl(fork_type, FILE_READ_DATA);
 			br_lck = do_lock(
 				handle->conn->sconn->msg_ctx, fsp,
 				fsp->op->global->open_persistent_id, 1, off,
@@ -1593,7 +1593,7 @@ static NTSTATUS fruit_check_access(vfs_handle_struct *handle,
 		}
 
 		if (deny_mode & DENY_READ) {
-			off = denymode_to_netatalk_brl(fork, DENY_READ);
+			off = denymode_to_netatalk_brl(fork_type, DENY_READ);
 			br_lck = do_lock(
 				handle->conn->sconn->msg_ctx, fsp,
 				fsp->op->global->open_persistent_id, 1, off,
@@ -1613,10 +1613,10 @@ static NTSTATUS fruit_check_access(vfs_handle_struct *handle,
 	if ((access_mask & FILE_WRITE_DATA) || (deny_mode & DENY_WRITE)) {
 		/* Check access */
 		open_for_writing = test_netatalk_lock(
-			fsp, access_to_netatalk_brl(fork, FILE_WRITE_DATA));
+			fsp, access_to_netatalk_brl(fork_type, FILE_WRITE_DATA));
 
 		deny_write = test_netatalk_lock(
-			fsp, denymode_to_netatalk_brl(fork, DENY_WRITE));
+			fsp, denymode_to_netatalk_brl(fork_type, DENY_WRITE));
 
 		DEBUG(10, ("write: %s, deny_write: %s\n",
 			  open_for_writing == true ? "yes" : "no",
@@ -1629,7 +1629,7 @@ static NTSTATUS fruit_check_access(vfs_handle_struct *handle,
 
 		/* Set locks */
 		if (access_mask & FILE_WRITE_DATA) {
-			off = access_to_netatalk_brl(fork, FILE_WRITE_DATA);
+			off = access_to_netatalk_brl(fork_type, FILE_WRITE_DATA);
 			br_lck = do_lock(
 				handle->conn->sconn->msg_ctx, fsp,
 				fsp->op->global->open_persistent_id, 1, off,
@@ -1643,7 +1643,7 @@ static NTSTATUS fruit_check_access(vfs_handle_struct *handle,
 
 		}
 		if (deny_mode & DENY_WRITE) {
-			off = denymode_to_netatalk_brl(fork, DENY_WRITE);
+			off = denymode_to_netatalk_brl(fork_type, DENY_WRITE);
 			br_lck = do_lock(
 				handle->conn->sconn->msg_ctx, fsp,
 				fsp->op->global->open_persistent_id, 1, off,
