@@ -67,7 +67,7 @@ int main(int argc, char *argv[])
 {
 	int log_fd, write_fd;
 	pid_t pid;
-	int status, output;
+	int status, output, ret;
 
 	progname = argv[0];
 
@@ -99,33 +99,47 @@ int main(int argc, char *argv[])
 
 	pid = fork();
 	if (pid < 0) {
+		int save_errno = errno;
 		fprintf(stderr, "Failed to fork - %s\n", strerror(errno));
-		exit(errno);
+		sys_write(write_fd, &save_errno, sizeof(save_errno));
+		exit(1);
 	}
 
 	if (pid == 0) {
-		int save_errno;
-
-		execv(argv[3], &argv[3]);
-		if (errno == EACCES) {
-			save_errno = check_executable(argv[3]);
-		} else {
-			save_errno = errno;
+		ret = check_executable(argv[3]);
+		if (ret != 0) {
+			_exit(ret);
+		}
+		ret = execv(argv[3], &argv[3]);
+		if (ret != 0) {
+			int save_errno = errno;
 			fprintf(stderr, "Error executing '%s' - %s\n",
-				argv[3], strerror(errno));
+				argv[3], strerror(save_errno));
 		}
-		_exit(save_errno);
+		/* This should never happen */
+		_exit(ENOEXEC);
 	}
 
-	waitpid(pid, &status, 0);
-	if (WIFEXITED(status)) {
-		output = WEXITSTATUS(status);
-		if (output == ENOENT || output == ENOEXEC) {
-			output = -output;
-		}
+	ret = waitpid(pid, &status, 0);
+	if (ret == -1) {
+		output = -errno;
+		fprintf(stderr, "waitpid() failed - %s\n", strerror(errno));
 		sys_write(write_fd, &output, sizeof(output));
-		exit(output);
+		exit(1);
+	}
+	if (WIFEXITED(status)) {
+		output = -WEXITSTATUS(status);
+		sys_write(write_fd, &output, sizeof(output));
+		exit(0);
+	}
+	if (WIFSIGNALED(status)) {
+		output = -EINTR;
+		fprintf(stderr, "Process terminated with signal - %d\n",
+			WTERMSIG(status));
+		sys_write(write_fd, &output, sizeof(output));
+		exit(0);
 	}
 
+	fprintf(stderr, "waitpid() status=%d\n", status);
 	exit(1);
 }
