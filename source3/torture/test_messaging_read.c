@@ -122,7 +122,7 @@ bool run_messaging_read1(int dummy)
 		goto fail;
 	}
 
-	for (i=0; i<2; i++) {
+	for (i=0; i<3; i++) {
 		if (tevent_loop_once(ev) != 0) {
 			fprintf(stderr, "tevent_loop_once failed\n");
 			goto fail;

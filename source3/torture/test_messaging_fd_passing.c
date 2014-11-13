@@ -63,7 +63,7 @@ bool run_messaging_fdpass1(int dummy)
 
 	status = messaging_send_iov(msg_ctx, dst, MSG_PING, NULL, 0,
 				    pass_fds, 1);
-	if (!NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)) {
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_OK)) {
 		fprintf(stderr,
 			"messaging_send_iov gave: %s\n", nt_errstr(status));
 		goto fail;

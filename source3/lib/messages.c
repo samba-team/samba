@@ -507,36 +507,6 @@ NTSTATUS messaging_send_iov(struct messaging_context *msg_ctx,
 		return NT_STATUS_OK;
 	}
 
-	if (server_id_same_process(&msg_ctx->id, &server)) {
-		struct messaging_rec rec;
-		uint8_t *buf;
-
-		/*
-		 * Self-send, directly dispatch
-		 */
-
-		if (num_fds > 0) {
-			return NT_STATUS_NOT_SUPPORTED;
-		}
-
-		buf = iov_buf(talloc_tos(), iov, iovlen);
-		if (buf == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
-
-		rec = (struct messaging_rec) {
-			.msg_version = MESSAGE_VERSION,
-			.msg_type = msg_type & MSG_TYPE_MASK,
-			.dest = server,
-			.src = msg_ctx->id,
-			.buf = data_blob_const(buf, talloc_get_size(buf)),
-		};
-
-		messaging_dispatch_rec(msg_ctx, &rec);
-		TALLOC_FREE(buf);
-		return NT_STATUS_OK;
-	}
-
 	ZERO_STRUCT(hdr);
 	hdr = (struct messaging_hdr) {
 		.msg_type = msg_type,
@@ -826,68 +796,6 @@ static bool messaging_append_new_waiters(struct messaging_context *msg_ctx)
 	return true;
 }
 
-struct messaging_defer_callback_state {
-	struct messaging_context *msg_ctx;
-	struct messaging_rec *rec;
-	void (*fn)(struct messaging_context *msg, void *private_data,
-		   uint32_t msg_type, struct server_id server_id,
-		   DATA_BLOB *data);
-	void *private_data;
-};
-
-static void messaging_defer_callback_trigger(struct tevent_context *ev,
-					     struct tevent_immediate *im,
-					     void *private_data);
-
-static void messaging_defer_callback(
-	struct messaging_context *msg_ctx, struct messaging_rec *rec,
-	void (*fn)(struct messaging_context *msg, void *private_data,
-		   uint32_t msg_type, struct server_id server_id,
-		   DATA_BLOB *data),
-	void *private_data)
-{
-	struct messaging_defer_callback_state *state;
-	struct tevent_immediate *im;
-
-	state = talloc(msg_ctx, struct messaging_defer_callback_state);
-	if (state == NULL) {
-		DEBUG(1, ("talloc failed\n"));
-		return;
-	}
-	state->msg_ctx = msg_ctx;
-	state->fn = fn;
-	state->private_data = private_data;
-
-	state->rec = messaging_rec_dup(state, rec);
-	if (state->rec == NULL) {
-		DEBUG(1, ("talloc failed\n"));
-		TALLOC_FREE(state);
-		return;
-	}
-
-	im = tevent_create_immediate(state);
-	if (im == NULL) {
-		DEBUG(1, ("tevent_create_immediate failed\n"));
-		TALLOC_FREE(state);
-		return;
-	}
-	tevent_schedule_immediate(im, msg_ctx->event_ctx,
-				  messaging_defer_callback_trigger, state);
-}
-
-static void messaging_defer_callback_trigger(struct tevent_context *ev,
-					     struct tevent_immediate *im,
-					     void *private_data)
-{
-	struct messaging_defer_callback_state *state = talloc_get_type_abort(
-		private_data, struct messaging_defer_callback_state);
-	struct messaging_rec *rec = state->rec;
-
-	state->fn(state->msg_ctx, state->private_data, rec->msg_type, rec->src,
-		  &rec->buf);
-	TALLOC_FREE(state);
-}
-
 /*
   Dispatch one messaging_rec
 */
@@ -914,24 +822,9 @@ void messaging_dispatch_rec(struct messaging_context *msg_ctx,
 		rec->num_fds = 0;
 		rec->fds = NULL;
 
-		if (server_id_same_process(&rec->src, &rec->dest)) {
-			/*
-			 * This is a self-send. We are called here from
-			 * messaging_send(), and we don't want to directly
-			 * recurse into the callback but go via a
-			 * tevent_loop_once
-			 */
-			messaging_defer_callback(msg_ctx, rec, cb->fn,
-						 cb->private_data);
-		} else {
-			/*
-			 * This comes from a different process. we are called
-			 * from the event loop, so we should call back
-			 * directly.
-			 */
-			cb->fn(msg_ctx, cb->private_data, rec->msg_type,
-			       rec->src, &rec->buf);
-		}
+		cb->fn(msg_ctx, cb->private_data, rec->msg_type,
+		       rec->src, &rec->buf);
+
 		/*
 		 * we continue looking for matching messages after finding
 		 * one. This matters for subsystems like the internal notify
