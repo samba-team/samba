@@ -2735,14 +2735,19 @@ static NTSTATUS smbd_smb2_send_break(struct smbXsrv_connection *xconn,
 				     size_t body_len)
 {
 	struct smbd_smb2_send_break_state *state;
-	bool do_encryption = session->global->encryption_required;
+	bool do_encryption = false;
+	uint64_t session_wire_id = 0;
 	uint64_t nonce_high = 0;
 	uint64_t nonce_low = 0;
 	NTSTATUS status;
 	size_t statelen;
 
-	if (tcon->global->encryption_required) {
-		do_encryption = true;
+	if (session != NULL) {
+		session_wire_id = session->global->session_wire_id;
+		do_encryption = session->global->encryption_required;
+		if (tcon->global->encryption_required) {
+			do_encryption = true;
+		}
 	}
 
 	statelen = offsetof(struct smbd_smb2_send_break_state, body) +
@@ -2768,7 +2773,7 @@ static NTSTATUS smbd_smb2_send_break(struct smbXsrv_connection *xconn,
 	SIVAL(state->tf, SMB2_TF_PROTOCOL_ID, SMB2_TF_MAGIC);
 	SBVAL(state->tf, SMB2_TF_NONCE+0, nonce_low);
 	SBVAL(state->tf, SMB2_TF_NONCE+8, nonce_high);
-	SBVAL(state->tf, SMB2_TF_SESSION_ID, session->global->session_wire_id);
+	SBVAL(state->tf, SMB2_TF_SESSION_ID, session_wire_id);
 
 	SIVAL(state->hdr, 0,				SMB2_MAGIC);
 	SSVAL(state->hdr, SMB2_HDR_LENGTH,		SMB2_HDR_BODY);
