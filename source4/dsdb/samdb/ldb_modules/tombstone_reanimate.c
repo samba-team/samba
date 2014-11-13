@@ -302,7 +302,43 @@ static int _tr_restore_attributes(struct ldb_context *ldb, struct ldb_message *c
 			el = ldb_msg_find_element(new_msg, "primaryGroupID");
 			el->flags = LDB_FLAG_MOD_REPLACE;
 		}
+	}
 
+	/* objectClass is GROUP */
+	if (samdb_find_attribute(ldb, cur_msg, "objectclass", "group") != NULL) {
+		/* "groupType" -> "sAMAccountType" */
+		uint32_t group_type;
+
+		el = ldb_msg_find_element(cur_msg, "groupType");
+		if (el == NULL) {
+			return ldb_error(ldb, LDB_ERR_OPERATIONS_ERROR,
+					 "reanimate: Unexpected: missing groupType attribute.");
+		}
+
+		group_type = ldb_msg_find_attr_as_uint(cur_msg,
+						       "groupType", 0);
+
+		account_type = ds_gtype2atype(group_type);
+		if (account_type == 0) {
+			return ldb_error(ldb, LDB_ERR_UNWILLING_TO_PERFORM,
+					 "reanimate: Unrecognized account type!");
+		}
+		ret = samdb_msg_add_uint(ldb, new_msg, new_msg,
+					 "sAMAccountType", account_type);
+		if (ret != LDB_SUCCESS) {
+			return ldb_error(ldb, LDB_ERR_OPERATIONS_ERROR,
+					 "reanimate: Failed to add sAMAccountType to restored object.");
+		}
+		el = ldb_msg_find_element(new_msg, "sAMAccountType");
+		el->flags = LDB_FLAG_MOD_REPLACE;
+
+		/* Default values set by Windows */
+		ret = samdb_find_or_add_attribute(ldb, new_msg,
+						  "adminCount", "0");
+		if (ret != LDB_SUCCESS) return ret;
+		ret = samdb_find_or_add_attribute(ldb, new_msg,
+						  "operatorCount", "0");
+		if (ret != LDB_SUCCESS) return ret;
 	}
 
 	return LDB_SUCCESS;
