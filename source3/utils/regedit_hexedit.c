@@ -459,7 +459,7 @@ static void erase_at(struct hexedit *buf, size_t pos)
 static void do_backspace(struct hexedit *buf)
 {
 	size_t off;
-	bool erase = true;
+	bool do_erase = true;
 
 	if (buf->cursor_offset == 0) {
 		return;
@@ -479,11 +479,11 @@ static void do_backspace(struct hexedit *buf)
 		calc_cursor_offset(buf);
 	} else {
 		if (buf->cursor_x < ASCII_COL && buf->nibble) {
-			erase = false;
+			do_erase = false;
 		}
 		cursor_left(buf);
 	}
-	if (erase) {
+	if (do_erase) {
 		erase_at(buf, off - 1);
 	}
 }

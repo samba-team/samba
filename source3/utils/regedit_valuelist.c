@@ -169,11 +169,11 @@ fail:
 	return NULL;
 }
 
-void value_list_set_selected(struct value_list *vl, bool select)
+void value_list_set_selected(struct value_list *vl, bool reverse)
 {
 	attr_t attr = A_NORMAL;
 
-	if (select) {
+	if (reverse) {
 		attr = A_REVERSE;
 	}
 	mvwchgat(vl->window, 0, HEADING_X, 5, attr, 0, NULL);

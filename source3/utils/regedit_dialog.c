@@ -969,7 +969,7 @@ WERROR dialog_section_text_field_set_lines(TALLOC_CTX *ctx,
 					   const char **array)
 {
 	int rows, cols, max;
-	size_t padding, length, index;
+	size_t padding, length, idx;
 	const char **arrayp;
 	char *buf = NULL;
 	struct dialog_section_text_field *text_field =
@@ -979,7 +979,7 @@ WERROR dialog_section_text_field_set_lines(TALLOC_CTX *ctx,
 	/* try to fit each string on it's own line. each line
 	   needs to be padded with whitespace manually, since
 	   ncurses fields do not have newlines. */
-	for (index = 0, arrayp = array; *arrayp != NULL; ++arrayp) {
+	for (idx = 0, arrayp = array; *arrayp != NULL; ++arrayp) {
 		length = MIN(strlen(*arrayp), cols);
 		padding = cols - length;
 		buf = talloc_realloc(ctx, buf, char,
@@ -988,11 +988,11 @@ WERROR dialog_section_text_field_set_lines(TALLOC_CTX *ctx,
 		if (buf == NULL) {
 			return WERR_NOMEM;
 		}
-		memcpy(&buf[index], *arrayp, length);
-		index += length;
-		memset(&buf[index], ' ', padding);
-		index += padding;
-		buf[index] = '\0';
+		memcpy(&buf[idx], *arrayp, length);
+		idx += length;
+		memset(&buf[idx], ' ', padding);
+		idx += padding;
+		buf[idx] = '\0';
 	}
 
 	set_field_buffer(text_field->field[0], 0, buf);

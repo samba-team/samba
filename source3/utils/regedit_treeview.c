@@ -481,11 +481,11 @@ void tree_view_driver(struct tree_view *view, int c)
 	multilist_driver(view->list, c);
 }
 
-void tree_view_set_selected(struct tree_view *view, bool select)
+void tree_view_set_selected(struct tree_view *view, bool reverse)
 {
 	attr_t attr = A_NORMAL;
 
-	if (select) {
+	if (reverse) {
 		attr = A_REVERSE;
 	}
 	mvwchgat(view->window, 0, HEADING_X, 3, attr, 0, NULL);
@@ -649,7 +649,7 @@ void tree_view_resize(struct tree_view *view, int nlines, int ncols,
 const char **tree_node_get_path(TALLOC_CTX *ctx, struct tree_node *node)
 {
 	const char **array;
-	size_t nitems, index;
+	size_t nitems, idx;
 	struct tree_node *p;
 
 	for (nitems = 0, p = node; !tree_node_is_root(p); p = p->parent) {
@@ -661,11 +661,11 @@ const char **tree_node_get_path(TALLOC_CTX *ctx, struct tree_node *node)
 		return NULL;
 	}
 
-	for (index = nitems - 1, p = node;
+	for (idx = nitems - 1, p = node;
 	     !tree_node_is_root(p);
-	     p = p->parent, --index) {
-		array[index] = talloc_strdup(array, p->name);
-		if (array[index] == NULL) {
+	     p = p->parent, --idx) {
+		array[idx] = talloc_strdup(array, p->name);
+		if (array[idx] == NULL) {
 			talloc_free(discard_const(array));
 			return NULL;
 		}
