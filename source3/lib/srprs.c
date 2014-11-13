@@ -125,26 +125,22 @@ fail:
 
 bool srprs_hex(const char** ptr, size_t len, unsigned* u)
 {
-	static const char* FMT[] = {
-		"%1x","%2x","%3x","%4x","%5x","%6x","%7x","%8x",
-		"%9x","%10x","%11x","%12x","%13x","%14x","%15x","%16x"
-	};
-
-	const char* pos = *ptr;
+	const char *str = *ptr;
+	const char *pos = *ptr;
 	int ret;
 	int i;
+	char buf[8+1] = {};
 
-	assert((len > 0)
-	       && (len <= 2*sizeof(unsigned))
-	       && (len <= sizeof(FMT)/sizeof(const char*)));
+	assert((len >= 1) && (len <= 8));
 
 	for (i=0; i<len; i++) {
 		if (!srprs_charset(&pos, "0123456789abcdefABCDEF", NULL)) {
 			break;
 		}
+		buf[i] = str[i];
 	}
 
-	ret = sscanf(*ptr, FMT[len-1], u);
+	ret = sscanf(buf, "%8x", u);
 
 	if ( ret != 1 ) {
 		return false;
