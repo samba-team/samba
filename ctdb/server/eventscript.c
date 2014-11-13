@@ -367,6 +367,8 @@ static void ctdb_event_script_handler(struct event_context *ev, struct fd_event 
 	r = sys_read(state->fd[0], &current->status, sizeof(current->status));
 	if (r < 0) {
 		current->status = -errno;
+	} else if (r == 0) {
+		current->status = -EINTR;
 	} else if (r != sizeof(current->status)) {
 		current->status = -EIO;
 	}
@@ -384,8 +386,12 @@ static void ctdb_event_script_handler(struct event_context *ev, struct fd_event 
 
 	/* Aborted or finished all scripts?  We're done. */
 	if (status != 0 || state->current+1 == state->scripts->num_scripts) {
-		DEBUG(DEBUG_INFO,(__location__ " Eventscript %s %s finished with state %d\n",
-				  ctdb_eventscript_call_names[state->call], state->options, status));
+		if (status != 0) {
+			DEBUG(DEBUG_INFO,
+			      ("Eventscript %s %s finished with state %d\n",
+			       ctdb_eventscript_call_names[state->call],
+			       state->options, status));
+		}
 
 		ctdb->event_script_timeouts = 0;
 		talloc_free(state);
