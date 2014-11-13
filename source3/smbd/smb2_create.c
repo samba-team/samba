@@ -241,13 +241,7 @@ NTSTATUS smbd_smb2_request_process_create(struct smbd_smb2_request *smb2req)
 	}
 	tevent_req_set_callback(tsubreq, smbd_smb2_request_create_done, smb2req);
 
-	/*
-	 * For now we keep the logic that we do not send STATUS_PENDING
-	 * for sharing violations, so we just wait 2 seconds.
-	 *
-	 * TODO: we need more tests for this.
-	 */
-	return smbd_smb2_request_pending_queue(smb2req, tsubreq, 2000000);
+	return smbd_smb2_request_pending_queue(smb2req, tsubreq, 500);
 }
 
 static uint64_t get_mid_from_smb2req(struct smbd_smb2_request *smb2req)
