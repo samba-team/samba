@@ -1971,7 +1971,6 @@ ADS_STATUS ads_get_service_principal_names(TALLOC_CTX *mem_ctx,
 {
 	ADS_STATUS status;
 	LDAPMessage *res = NULL;
-	char *dn;
 	int count;
 
 	status = ads_find_machine_acct(ads,
@@ -1986,12 +1985,6 @@ ADS_STATUS ads_get_service_principal_names(TALLOC_CTX *mem_ctx,
 	count = ads_count_replies(ads, res);
 	if (count != 1) {
 		status = ADS_ERROR(LDAP_NO_SUCH_OBJECT);
-		goto done;
-	}
-
-	dn = ads_get_dn(ads, mem_ctx, res);
-	if (dn == NULL) {
-		status = ADS_ERROR_LDAP(LDAP_NO_MEMORY);
 		goto done;
 	}
 
