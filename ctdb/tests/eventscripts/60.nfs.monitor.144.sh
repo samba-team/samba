@@ -6,7 +6,7 @@ define_test "statd down, 10 iterations"
 
 # statd fails and attempts to restart it fail.
 
-setup_nfs_ganesha
+setup_nfs
 rpc_services_down "status"
 
 ok_null
