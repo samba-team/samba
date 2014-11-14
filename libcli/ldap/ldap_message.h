@@ -104,7 +104,7 @@ struct ldap_SearchRequest {
 	uint32_t sizelimit;
 	bool attributesonly;
 	struct ldb_parse_tree *tree;
-	int num_attributes;
+	size_t num_attributes;
 	const char * const *attributes;
 };
 

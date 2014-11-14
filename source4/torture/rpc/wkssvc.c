@@ -530,7 +530,7 @@ static bool test_NetrEnumerateComputerNames_level(struct torture_context *tctx,
 						  struct dcerpc_pipe *p,
 						  uint16_t level,
 						  const char ***names,
-						  int *num_names)
+						  size_t *num_names)
 {
 	NTSTATUS status;
 	struct wkssvc_NetrEnumerateComputerNames r;
@@ -666,7 +666,7 @@ static bool test_NetrAddAlternateComputerName(struct torture_context *tctx,
 	NTSTATUS status;
 	struct wkssvc_NetrAddAlternateComputerName r;
 	const char **names = NULL;
-	int num_names = 0;
+	size_t num_names = 0;
 	int i;
 	struct dcerpc_binding_handle *b = p->binding_handle;
 
@@ -708,7 +708,7 @@ static bool test_NetrRemoveAlternateComputerName(struct torture_context *tctx,
 	NTSTATUS status;
 	struct wkssvc_NetrRemoveAlternateComputerName r;
 	const char **names = NULL;
-	int num_names = 0;
+	size_t num_names = 0;
 	int i;
 	struct dcerpc_binding_handle *b = p->binding_handle;
 
@@ -781,7 +781,7 @@ static bool test_NetrSetPrimaryComputername(struct torture_context *tctx,
 	*/
 
 	const char **names_o = NULL, **names = NULL;
-	int num_names_o = 0, num_names = 0;
+	size_t num_names_o = 0, num_names = 0;
 
 	torture_comment(tctx, "Testing NetrSetPrimaryComputername\n");
 
@@ -887,7 +887,7 @@ static bool test_NetrRenameMachineInDomain2(struct torture_context *tctx,
 					    struct dcerpc_pipe *p)
 {
 	const char **names_o = NULL, **names = NULL;
-	int num_names_o = 0, num_names = 0;
+	size_t num_names_o = 0, num_names = 0;
 
 	torture_comment(tctx, "Testing NetrRenameMachineInDomain2\n");
 

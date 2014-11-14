@@ -3300,7 +3300,7 @@ ADS_STATUS ads_get_joinable_ous(ADS_STRUCT *ads,
 
 		if (!add_string_to_array(mem_ctx, dn,
 					 (const char ***)ous,
-					 (int *)num_ous)) {
+					 num_ous)) {
 			TALLOC_FREE(dn);
 			ads_msgfree(ads, res);
 			return ADS_ERROR(LDAP_NO_MEMORY);

@@ -421,7 +421,7 @@ static ADS_STATUS libnet_join_set_machine_spn(TALLOC_CTX *mem_ctx,
 	ok = ads_element_in_array(spn_array, num_spns, spn);
 	if (!ok) {
 		ok = add_string_to_array(spn_array, spn,
-					 &spn_array, (int *)&num_spns);
+					 &spn_array, &num_spns);
 		if (!ok) {
 			return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
 		}
@@ -446,7 +446,7 @@ static ADS_STATUS libnet_join_set_machine_spn(TALLOC_CTX *mem_ctx,
 		ok = ads_element_in_array(spn_array, num_spns, spn);
 		if (!ok) {
 			ok = add_string_to_array(spn_array, spn,
-						 &spn_array, (int *)&num_spns);
+						 &spn_array, &num_spns);
 			if (!ok) {
 				return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
 			}

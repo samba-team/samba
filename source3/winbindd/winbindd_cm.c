@@ -1443,7 +1443,7 @@ static bool find_new_dc(TALLOC_CTX *mem_ctx,
 	int num_dcs = 0;
 
 	const char **dcnames = NULL;
-	int num_dcnames = 0;
+	size_t num_dcnames = 0;
 
 	struct sockaddr_storage *addrs = NULL;
 	int num_addrs = 0;

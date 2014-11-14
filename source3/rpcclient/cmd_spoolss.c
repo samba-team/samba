@@ -1659,7 +1659,7 @@ static bool init_drv_info_3_members(TALLOC_CTX *mem_ctx, struct spoolss_AddDrive
                                     char *args)
 {
 	char	*str, *str2;
-	int count = 0;
+	size_t count = 0;
 	char *saveptr = NULL;
 	struct spoolss_StringArray *deps;
 	const char **file_array = NULL;
@@ -2636,7 +2636,8 @@ static WERROR cmd_spoolss_setprinterdata(struct rpc_pipe_client *cli,
 		data.binary = strhex_to_data_blob(mem_ctx, argv[4]);
 		break;
 	case REG_MULTI_SZ: {
-		int i, num_strings;
+		int i;
+		size_t num_strings;
 		const char **strings = NULL;
 
 		num_strings = 0;

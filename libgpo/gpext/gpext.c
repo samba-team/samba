@@ -524,7 +524,7 @@ static NTSTATUS gp_glob_ext_list(TALLOC_CTX *mem_ctx,
 		name[PTR_DIFF(p, dirent->d_name)] = 0;
 
 		if (!add_string_to_array(mem_ctx, name, ext_list,
-					 (int *)ext_list_len)) {
+					 ext_list_len)) {
 			closedir(dir);
 			return NT_STATUS_NO_MEMORY;
 		}
