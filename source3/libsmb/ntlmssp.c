@@ -422,9 +422,12 @@ static NTSTATUS ntlmssp3_client_challenge(struct ntlmssp_state *ntlmssp_state,
 			goto noccache;
 		}
 
-		*next_request = data_blob(wbc_next->data, wbc_next->length);
-		ntlmssp_state->session_key = data_blob(
-			wbc_session_key->data, wbc_session_key->length);
+		*next_request = data_blob_talloc(ntlmssp_state,
+						 wbc_next->data,
+						 wbc_next->length);
+		ntlmssp_state->session_key = data_blob_talloc(ntlmssp_state,
+							      wbc_session_key->data,
+							      wbc_session_key->length);
 
 		wbcFreeMemory(info);
 		goto done;
