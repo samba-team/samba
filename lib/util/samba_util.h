@@ -316,7 +316,7 @@ _PUBLIC_ char *rfc1738_escape_part(TALLOC_CTX *mem_ctx, const char *url);
  * number of elements in strings. It will be updated by this function.
  */
 _PUBLIC_ bool add_string_to_array(TALLOC_CTX *mem_ctx,
-			 const char *str, const char ***strings, int *num);
+			 const char *str, const char ***strings, size_t *num);
 
 /**
   varient of strcmp() that handles NULL ptrs
