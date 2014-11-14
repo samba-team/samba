@@ -397,7 +397,7 @@ NTSTATUS _netr_NetrEnumerateTrustedDomains(struct pipes_struct *p,
 	NTSTATUS status;
 	NTSTATUS result = NT_STATUS_OK;
 	DATA_BLOB blob;
-	int num_domains = 0;
+	size_t num_domains = 0;
 	const char **trusted_domains = NULL;
 	struct lsa_DomainList domain_list;
 	struct dcerpc_binding_handle *h = NULL;
