@@ -211,6 +211,27 @@ get_proc ()
 }
 
 ######################################################
+# Print up to $_max kernel stack traces for processes named $_program
+program_stack_traces ()
+{
+    _prog="$1"
+    _max="${2:-1}"
+
+    _count=1
+    for _pid in $(pidof "$_prog") ; do
+	[ $_count -le $_max ] || break
+
+	# Do this first to avoid racing with process exit
+	_stack=$(get_proc "${_pid}/stack" 2>/dev/null)
+	if [ -n "$_stack" ] ; then
+	    echo "Stack trace for ${_prog}[${_pid}]:"
+	    echo "$_stack"
+	    _count=$(($_count + 1))
+	fi
+    done
+}
+
+######################################################
 # Check that an RPC service is healthy -
 # this includes allowing a certain number of failures
 # before marking the NFS service unhealthy.
@@ -745,23 +766,10 @@ startstop_nfs() {
 # Dump up to the configured number of nfsd thread backtraces.
 nfs_dump_some_threads ()
 {
-    [ -n "$CTDB_NFS_DUMP_STUCK_THREADS" ] || CTDB_NFS_DUMP_STUCK_THREADS=5
+    _num="${CTDB_NFS_DUMP_STUCK_THREADS:-5}"
+    [ $_num -gt 0 ] || return 0
 
-    # Optimisation to avoid running an unnecessary pidof
-    [ $CTDB_NFS_DUMP_STUCK_THREADS -gt 0 ] || return 0
-
-    _count=0
-    for _pid in $(pidof nfsd) ; do
-	[ $_count -le $CTDB_NFS_DUMP_STUCK_THREADS ] || break
-
-	# Do this first to avoid racing with thread exit
-	_stack=$(get_proc "${_pid}/stack" 2>/dev/null)
-	if [ -n "$_stack" ] ; then
-	    echo "Stack trace for stuck nfsd thread [${_pid}]:"
-	    echo "$_stack"
-	    _count=$(($_count + 1))
-	fi
-    done
+    program_stack_traces "nfsd" $_num
 }
 
 ########################################################

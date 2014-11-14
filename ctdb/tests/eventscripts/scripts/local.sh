@@ -861,7 +861,7 @@ Trying to restart NFS service"
 				    for _pid in $FAKE_NFSD_THREAD_PIDS ; do
 					_t="\
 $_t
-${_bg}Stack trace for stuck nfsd thread [${_pid}]:
+${_bg}Stack trace for nfsd[${_pid}]:
 ${_bg}[<ffffffff87654321>] fake_stack_trace_for_pid_${_pid}/stack+0x0/0xff"
 				    done
 				fi
