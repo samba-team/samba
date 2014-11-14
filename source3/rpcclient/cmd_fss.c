@@ -56,7 +56,11 @@ static const struct {
 	{
 		FSRVP_E_UNSUPPORTED_CONTEXT,
 		"The specified context value is invalid."
-	}
+	},
+	{
+		FSRVP_E_SHADOWCOPYSET_ID_MISMATCH,
+		"The provided ShadowCopySetId does not exist."
+	},
 };
 
 struct fss_context_map {

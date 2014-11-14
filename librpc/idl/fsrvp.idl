@@ -22,6 +22,7 @@ import "misc.idl";
 	const uint32 FSRVP_E_OBJECT_NOT_FOUND = 0x80042308;
 	const uint32 FSRVP_E_UNSUPPORTED_CONTEXT = 0x8004231B;
 	const uint32 FSRVP_E_BAD_ID = 0x80042302;	/* wire, not documented */
+	const uint32 FSRVP_E_SHADOWCOPYSET_ID_MISMATCH = 0x80042501;
 	typedef struct {
 		GUID ShadowCopySetId;
 		GUID ShadowCopyId;
