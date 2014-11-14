@@ -453,7 +453,7 @@ _PUBLIC_ const char **str_list_append_const(const char **list1,
  * number of elements in strings. It will be updated by this function.
  */
 _PUBLIC_ bool add_string_to_array(TALLOC_CTX *mem_ctx,
-			 const char *str, const char ***strings, int *num)
+			 const char *str, const char ***strings, size_t *num)
 {
 	char *dup_str = talloc_strdup(mem_ctx, str);
 
