@@ -2866,6 +2866,135 @@ static bool test_lease_v2_complex1(struct torture_context *tctx,
 	return ret;
 }
 
+static bool test_lease_timeout(struct torture_context *tctx,
+                               struct smb2_tree *tree)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	struct smb2_create io;
+	struct smb2_lease ls1;
+	struct smb2_lease ls2;
+	struct smb2_handle h, hnew, h1b;
+	NTSTATUS status;
+	const char *fname = "lease_timeout.dat";
+	bool ret = true;
+	struct smb2_lease_break_ack ack = {};
+	struct smb2_request *req2 = NULL;
+	struct smb2_write w;
+	uint32_t caps;
+
+	caps = smb2cli_conn_server_capabilities(tree->session->transport->conn);
+	if (!(caps & SMB2_CAP_LEASING)) {
+		torture_skip(tctx, "leases are not supported");
+	}
+
+	smb2_util_unlink(tree, fname);
+
+	/* Grab a RWH lease. */
+	smb2_lease_create(&io, &ls1, false, fname, LEASE1, smb2_util_lease_state("RWH"));
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_CREATED(&io, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_LEASE(&io, "RWH", true, LEASE1, 0);
+	h = io.out.file.handle;
+
+	tree->session->transport->lease.handler	= torture_lease_handler;
+	tree->session->transport->lease.private_data = tree;
+	tree->session->transport->oplock.handler = torture_oplock_handler;
+	tree->session->transport->oplock.private_data = tree;
+
+	/*
+	 * Just don't ack the lease break.
+	 */
+	ZERO_STRUCT(break_info);
+	break_info.lease_skip_ack = true;
+
+	/* Break with a RWH request. */
+	smb2_lease_create(&io, &ls2, false, fname, LEASE2, smb2_util_lease_state("RWH"));
+	req2 = smb2_create_send(tree, &io);
+	torture_assert(tctx, req2 != NULL, "smb2_create_send");
+	torture_assert(tctx, req2->state == SMB2_REQUEST_RECV, "req2 pending");
+
+	CHECK_BREAK_INFO("RWH", "RH", LEASE1);
+
+	/* Copy the break request. */
+	ack.in.lease.lease_key =
+		break_info.lease_break.current_lease.lease_key;
+	ack.in.lease.lease_state =
+		break_info.lease_break.new_lease_state;
+
+	/* Now wait for the timeout and get the reply. */
+	status = smb2_create_recv(req2, tctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_CREATED(&io, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_LEASE(&io, "RH", true, LEASE2, 0);
+	hnew = io.out.file.handle;
+
+	/* Ack the break after the timeout... */
+	status = smb2_lease_break_ack(tree, &ack);
+	CHECK_STATUS(status, NT_STATUS_UNSUCCESSFUL);
+
+	/* Get state of the original handle. */
+	smb2_lease_create(&io, &ls1, false, fname, LEASE1, smb2_util_lease_state(""));
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_LEASE(&io, "", true, LEASE1, 0);
+	smb2_util_close(tree, io.out.file.handle);
+
+	/* Write on the original handle and make sure it's still valid. */
+	ZERO_STRUCT(break_info);
+	ZERO_STRUCT(w);
+	w.in.file.handle = h;
+	w.in.offset      = 0;
+	w.in.data        = data_blob_talloc(mem_ctx, NULL, 4096);
+	memset(w.in.data.data, '1', w.in.data.length);
+	status = smb2_write(tree, &w);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* Causes new handle to break to NONE. */
+	CHECK_BREAK_INFO("RH", "", LEASE2);
+
+	/* Write on the new handle. */
+	ZERO_STRUCT(break_info);
+	ZERO_STRUCT(w);
+	w.in.file.handle = hnew;
+	w.in.offset      = 0;
+	w.in.data        = data_blob_talloc(mem_ctx, NULL, 1024);
+	memset(w.in.data.data, '2', w.in.data.length);
+	status = smb2_write(tree, &w);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	/* No break - original handle was already NONE. */
+	CHECK_NO_BREAK(tctx);
+	smb2_util_close(tree, hnew);
+
+	/* Upgrade to R on LEASE1. */
+	smb2_lease_create(&io, &ls1, false, fname, LEASE1, smb2_util_lease_state("R"));
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_LEASE(&io, "R", true, LEASE1, 0);
+	h1b = io.out.file.handle;
+	smb2_util_close(tree, h1b);
+
+	/* Upgrade to RWH on LEASE1. */
+	smb2_lease_create(&io, &ls1, false, fname, LEASE1, smb2_util_lease_state("RWH"));
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_LEASE(&io, "RWH", true, LEASE1, 0);
+	h1b = io.out.file.handle;
+	smb2_util_close(tree, h1b);
+
+ done:
+	smb2_util_close(tree, h);
+	smb2_util_close(tree, hnew);
+	smb2_util_close(tree, h1b);
+
+	smb2_util_unlink(tree, fname);
+
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+
+
 struct torture_suite *torture_smb2_lease_init(void)
 {
 	struct torture_suite *suite =
@@ -2896,6 +3025,7 @@ struct torture_suite *torture_smb2_lease_init(void)
 	torture_suite_add_1smb2_test(suite, "v2_epoch2", test_lease_v2_epoch2);
 	torture_suite_add_1smb2_test(suite, "v2_epoch3", test_lease_v2_epoch3);
 	torture_suite_add_1smb2_test(suite, "v2_complex1", test_lease_v2_complex1);
+	torture_suite_add_1smb2_test(suite, "timeout", test_lease_timeout);
 
 	suite->description = talloc_strdup(suite, "SMB2-LEASE tests");
 
