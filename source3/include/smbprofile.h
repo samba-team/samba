@@ -32,6 +32,8 @@ struct tevent_context;
 	SMBPROFILE_STATS_COUNT(connect) \
 	SMBPROFILE_STATS_COUNT(disconnect) \
 	SMBPROFILE_STATS_BASIC(idle) \
+	SMBPROFILE_STATS_TIME(cpu_user) \
+	SMBPROFILE_STATS_TIME(cpu_system) \
 	SMBPROFILE_STATS_COUNT(request) \
 	SMBPROFILE_STATS_BASIC(push_sec_ctx) \
 	SMBPROFILE_STATS_BASIC(set_sec_ctx) \

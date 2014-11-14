@@ -1484,6 +1484,7 @@ main() {
 
     if Options.options.with_profiling_data:
         conf.DEFINE('WITH_PROFILE', 1);
+        conf.CHECK_FUNCS('getrusage', headers="sys/time.h sys/resource.h")
 
     if Options.options.with_pthreadpool:
         if conf.CONFIG_SET('HAVE_PTHREAD'):

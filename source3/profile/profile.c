@@ -22,11 +22,16 @@
 #include "includes.h"
 #include "system/shmem.h"
 #include "system/filesys.h"
+#include "system/time.h"
 #include "messages.h"
 #include "smbprofile.h"
 #include "lib/tdb_wrap/tdb_wrap.h"
 #include <tevent.h>
 #include "../lib/crypto/crypto.h"
+
+#ifdef HAVE_SYS_RESOURCE_H
+#include <sys/resource.h>
+#endif
 
 struct profile_stats *profile_p;
 struct smbprofile_global_state smbprofile_state;
@@ -260,12 +265,29 @@ void smbprofile_dump(void)
 	TDB_DATA key = { .dptr = (uint8_t *)&pid, .dsize = sizeof(pid) };
 	struct profile_stats s = {};
 	int ret;
+#ifdef HAVE_GETRUSAGE
+	struct rusage rself;
+#endif /* HAVE_GETRUSAGE */
 
 	TALLOC_FREE(smbprofile_state.internal.te);
 
 	if (smbprofile_state.internal.db == NULL) {
 		return;
 	}
+
+#ifdef HAVE_GETRUSAGE
+	ret = getrusage(RUSAGE_SELF, &rself);
+	if (ret != 0) {
+		ZERO_STRUCT(rself);
+	}
+
+	profile_p->values.cpu_user_stats.time =
+		(rself.ru_utime.tv_sec * 1000000) +
+		rself.ru_utime.tv_usec;
+	profile_p->values.cpu_system_stats.time =
+		(rself.ru_stime.tv_sec * 1000000) +
+		rself.ru_stime.tv_usec;
+#endif /* HAVE_GETRUSAGE */
 
 	ret = tdb_chainlock(smbprofile_state.internal.db->tdb, key);
 	if (ret != 0) {
