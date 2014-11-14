@@ -718,9 +718,6 @@ int ipstr_list_parse(const char *ipstr_list, struct ip_service **ip_list);
 void ipstr_list_free(char* ipstr_list);
 uint64_t STR_TO_SMB_BIG_UINT(const char *nptr, const char **entptr);
 uint64_t conv_str_size(const char * str);
-bool add_string_to_array(TALLOC_CTX *mem_ctx,
-			 const char *str, const char ***strings,
-			 int *num);
 void sprintf_append(TALLOC_CTX *mem_ctx, char **string, ssize_t *len,
 		    size_t *bufsize, const char *fmt, ...);
 int asprintf_strupper_m(char **strp, const char *fmt, ...);
