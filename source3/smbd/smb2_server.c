@@ -1945,6 +1945,8 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 
 	inhdr = SMBD_SMB2_IN_HDR_PTR(req);
 
+	DO_PROFILE_INC(request);
+
 	/* TODO: verify more things */
 
 	flags = IVAL(inhdr, SMB2_HDR_FLAGS);
@@ -3025,6 +3027,15 @@ void smbd_smb2_first_negprot(struct smbXsrv_connection *xconn,
 		return;
 	}
 
+#ifdef WITH_PROFILE
+	/*
+	 * this was already counted at the SMB1 layer =>
+	 * smbd_smb2_request_dispatch() should not count it twice.
+	 */
+	if (profile_p->request_stats.count > 0) {
+		profile_p->request_stats.count--;
+	}
+#endif
 	status = smbd_smb2_request_dispatch(req);
 	if (!NT_STATUS_IS_OK(status)) {
 		smbd_server_connection_terminate(xconn, nt_errstr(status));

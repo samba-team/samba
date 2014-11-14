@@ -1871,7 +1871,7 @@ static void process_smb(struct smbXsrv_connection *xconn,
 	struct smbd_server_connection *sconn = xconn->client->sconn;
 	int msg_type = CVAL(inbuf,0);
 
-	DO_PROFILE_INC(smb_count);
+	DO_PROFILE_INC(request);
 
 	DEBUG( 6, ( "got message type 0x%x of len 0x%x\n", msg_type,
 		    smb_len(inbuf) ) );
