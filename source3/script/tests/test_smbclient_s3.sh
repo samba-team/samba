@@ -602,7 +602,7 @@ test_ccache_access()
 	return
     fi
 
-    $SMBCLIENT //$SERVER_IP/tmp -C -U "${USERNAME}%" \
+    $SMBCLIENT //$SERVER_IP/tmp -C -U "${USERNAME}" \
 	-c quit 2>&1
     ret=$?
 
@@ -621,7 +621,7 @@ test_ccache_access()
 	return
     fi
 
-    $SMBCLIENT //$SERVER_IP/tmp -C -U "${USERNAME}%" \
+    $SMBCLIENT //$SERVER_IP/tmp -C -U "${USERNAME}" \
 	-c quit 2>&1
     ret=$?
 

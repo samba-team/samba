@@ -251,7 +251,8 @@ void set_cmdline_auth_info_getpass(struct user_auth_info *auth_info)
 	TALLOC_CTX *frame;
 
 	if (get_cmdline_auth_info_got_pass(auth_info) ||
-			get_cmdline_auth_info_use_kerberos(auth_info)) {
+	    get_cmdline_auth_info_use_ccache(auth_info) ||
+	    get_cmdline_auth_info_use_kerberos(auth_info)) {
 		/* Already got one... */
 		return;
 	}
