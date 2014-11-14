@@ -402,11 +402,13 @@ _nfs_restart_rpc_service ()
 	mountd)
 	    echo "Trying to restart $_prog_name [${_p}]"
 	    killall -q -9 "$_p"
+	    nfs_dump_some_threads "$_p"
 	    $_maybe_background $_p ${MOUNTD_PORT:+-p} $MOUNTD_PORT
 	    ;;
 	rquotad)
 	    echo "Trying to restart $_prog_name [${_p}]"
 	    killall -q -9 "$_p"
+	    nfs_dump_some_threads "$_p"
 	    $_maybe_background $_p ${RQUOTAD_PORT:+-p} $RQUOTAD_PORT
 	    ;;
 	lockd)
@@ -416,6 +418,7 @@ _nfs_restart_rpc_service ()
 	statd)
 	    echo "Trying to restart $_prog_name [${_p}]"
 	    killall -q -9 "$_p"
+	    nfs_dump_some_threads "$_p"
 	    $_maybe_background $_p \
 		${STATD_HOSTNAME:+-n} $STATD_HOSTNAME \
 		${STATD_PORT:+-p} $STATD_PORT \
