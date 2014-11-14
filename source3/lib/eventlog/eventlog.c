@@ -581,7 +581,7 @@ bool parse_logentry( TALLOC_CTX *mem_ctx, char *line, struct eventlog_Record_tdb
 		}
 	} else if ( 0 == strncmp( start, "STR", stop - start ) ) {
 		size_t tmp_len;
-		int num_of_strings;
+		size_t num_of_strings;
 		/* skip past initial ":" */
 		stop++;
 		/* now skip any other leading whitespace */

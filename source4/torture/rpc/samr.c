@@ -7258,7 +7258,7 @@ static bool test_GroupList(struct dcerpc_binding_handle *b,
 	uint32_t returned_size;
 	union samr_DispInfo info;
 
-	int num_names = 0;
+	size_t num_names = 0;
 	const char **names = NULL;
 
 	bool builtin_domain = dom_sid_compare(domain_sid,

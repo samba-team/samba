@@ -3335,7 +3335,7 @@ static NTSTATUS init_lsa_right_set(TALLOC_CTX *mem_ctx,
 	uint32 i;
 	const char *privname;
 	const char **privname_array = NULL;
-	int num_priv = 0;
+	size_t num_priv = 0;
 
 	for (i=0; i<privileges->count; i++) {
 		if (privileges->set[i].luid.high) {
