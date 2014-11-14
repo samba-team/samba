@@ -702,7 +702,9 @@ startstop_ganesha()
 	    service "$_service_name" stop
 	    ;;
 	restart)
-	    service "$_service_name" restart
+	    service "$_service_name" stop
+	    nfs_dump_some_threads "rpc.statd"
+	    service "$_service_name" start
 	    ;;
     esac
 }
