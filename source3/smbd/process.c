@@ -3573,6 +3573,8 @@ NTSTATUS smbd_add_connection(struct smbXsrv_client *client, int sock_fd,
 
 	*_xconn = NULL;
 
+	DO_PROFILE_INC(connect);
+
 	xconn = talloc_zero(client, struct smbXsrv_connection);
 	if (xconn == NULL) {
 		DEBUG(0,("talloc_zero(struct smbXsrv_connection)\n"));

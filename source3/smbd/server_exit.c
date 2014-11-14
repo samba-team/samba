@@ -224,6 +224,7 @@ static void exit_server_common(enum server_exit_reason how,
 			next = xconn->next;
 			DLIST_REMOVE(client->connections, xconn);
 			talloc_free(xconn);
+			DO_PROFILE_INC(disconnect);
 		}
 		TALLOC_FREE(client->sconn);
 	}
