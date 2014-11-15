@@ -687,6 +687,8 @@ struct vfswrap_asys_state {
 	struct tevent_req *req;
 	ssize_t ret;
 	int err;
+	SMBPROFILE_BASIC_ASYNC_STATE(profile_basic);
+	SMBPROFILE_BYTES_ASYNC_STATE(profile_bytes);
 };
 
 static int vfswrap_asys_state_destructor(struct vfswrap_asys_state *s)
@@ -717,6 +719,8 @@ static struct tevent_req *vfswrap_pread_send(struct vfs_handle_struct *handle,
 	state->asys_ctx = handle->conn->sconn->asys_ctx;
 	state->req = req;
 
+	SMBPROFILE_BYTES_ASYNC_START(syscall_asys_pread, profile_p,
+				     state->profile_bytes, n);
 	ret = asys_pread(state->asys_ctx, fsp->fh->fd, data, n, offset, req);
 	if (ret != 0) {
 		tevent_req_error(req, ret);
@@ -749,6 +753,8 @@ static struct tevent_req *vfswrap_pwrite_send(struct vfs_handle_struct *handle,
 	state->asys_ctx = handle->conn->sconn->asys_ctx;
 	state->req = req;
 
+	SMBPROFILE_BYTES_ASYNC_START(syscall_asys_pwrite, profile_p,
+				     state->profile_bytes, n);
 	ret = asys_pwrite(state->asys_ctx, fsp->fh->fd, data, n, offset, req);
 	if (ret != 0) {
 		tevent_req_error(req, ret);
@@ -779,6 +785,8 @@ static struct tevent_req *vfswrap_fsync_send(struct vfs_handle_struct *handle,
 	state->asys_ctx = handle->conn->sconn->asys_ctx;
 	state->req = req;
 
+	SMBPROFILE_BASIC_ASYNC_START(syscall_asys_fsync, profile_p,
+				     state->profile_basic);
 	ret = asys_fsync(state->asys_ctx, fsp->fh->fd, req);
 	if (ret != 0) {
 		tevent_req_error(req, ret);
@@ -822,6 +830,8 @@ static void vfswrap_asys_finished(struct tevent_context *ev,
 
 		talloc_set_destructor(state, NULL);
 
+		SMBPROFILE_BASIC_ASYNC_END(state->profile_basic);
+		SMBPROFILE_BYTES_ASYNC_END(state->profile_bytes);
 		state->ret = result->ret;
 		state->err = result->err;
 		tevent_req_defer_callback(req, ev);
