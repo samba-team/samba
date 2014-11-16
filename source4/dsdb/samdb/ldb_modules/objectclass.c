@@ -246,8 +246,6 @@ static int fix_dn(struct ldb_context *ldb,
 }
 
 
-static int objectclass_do_add(struct oc_context *ac);
-
 static int objectclass_add(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_context *ldb;
