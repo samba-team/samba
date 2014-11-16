@@ -32,6 +32,9 @@ gdbtestenv:
 quicktest:
 	$(WAF) test --quick $(TEST_OPTIONS)
 
+randomized-test:
+	$(WAF) test --random-order $(TEST_OPTIONS)
+
 dist:
 	touch .tmplock
 	WAFLOCK=.tmplock $(WAF) dist
