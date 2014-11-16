@@ -1153,7 +1153,7 @@ class BasicTests(samba.tests.TestCase):
         # what the rDN length constraints are
     def DISABLED_test_largeRDN(self):
         """Testing large rDN (limit 64 characters)"""
-        rdn = "CN=a012345678901234567890123456789012345678901234567890123456789012";
+        rdn = "CN=a012345678901234567890123456789012345678901234567890123456789012"
         delete_force(self.ldb, "%s,%s" % (rdn, self.base_dn))
         ldif = """
 dn: %s,%s""" % (rdn,self.base_dn) + """
@@ -1162,7 +1162,7 @@ objectClass: container
         self.ldb.add_ldif(ldif)
         delete_force(self.ldb, "%s,%s" % (rdn, self.base_dn))
 
-        rdn = "CN=a0123456789012345678901234567890123456789012345678901234567890120";
+        rdn = "CN=a0123456789012345678901234567890123456789012345678901234567890120"
         delete_force(self.ldb, "%s,%s" % (rdn, self.base_dn))
         try:
             ldif = """
@@ -1338,20 +1338,20 @@ objectGUID: bd3480c9-58af-4cd8-92df-bc4a18b6e44d
         self.ldb.add({
             "dn": "cn=parentguidtest,cn=users," + self.base_dn,
             "objectclass":"user",
-            "samaccountname":"parentguidtest"});
+            "samaccountname":"parentguidtest"})
         res1 = ldb.search(base="cn=parentguidtest,cn=users," + self.base_dn, scope=SCOPE_BASE,
-                          attrs=["parentGUID", "samaccountname"]);
+                          attrs=["parentGUID", "samaccountname"])
         res2 = ldb.search(base="cn=users," + self.base_dn,scope=SCOPE_BASE,
-                          attrs=["objectGUID"]);
+                          attrs=["objectGUID"])
         res3 = ldb.search(base=self.base_dn, scope=SCOPE_BASE,
-                          attrs=["parentGUID"]);
+                          attrs=["parentGUID"])
         res4 = ldb.search(base=self.configuration_dn, scope=SCOPE_BASE,
-                          attrs=["parentGUID"]);
+                          attrs=["parentGUID"])
         res5 = ldb.search(base=self.schema_dn, scope=SCOPE_BASE,
-                          attrs=["parentGUID"]);
+                          attrs=["parentGUID"])
 
         """Check if the parentGUID is valid """
-        self.assertEquals(res1[0]["parentGUID"], res2[0]["objectGUID"]);
+        self.assertEquals(res1[0]["parentGUID"], res2[0]["objectGUID"])
 
         """Check if it returns nothing when there is no parent object - default NC"""
         has_parentGUID = False
@@ -1359,7 +1359,7 @@ objectGUID: bd3480c9-58af-4cd8-92df-bc4a18b6e44d
             if key == "parentGUID":
                 has_parentGUID = True
                 break
-        self.assertFalse(has_parentGUID);
+        self.assertFalse(has_parentGUID)
 
         """Check if it returns nothing when there is no parent object - configuration NC"""
         has_parentGUID = False
@@ -1367,7 +1367,7 @@ objectGUID: bd3480c9-58af-4cd8-92df-bc4a18b6e44d
             if key == "parentGUID":
                 has_parentGUID = True
                 break
-        self.assertFalse(has_parentGUID);
+        self.assertFalse(has_parentGUID)
 
         """Check if it returns nothing when there is no parent object - schema NC"""
         has_parentGUID = False
@@ -1375,7 +1375,7 @@ objectGUID: bd3480c9-58af-4cd8-92df-bc4a18b6e44d
             if key == "parentGUID":
                 has_parentGUID = True
                 break
-        self.assertFalse(has_parentGUID);
+        self.assertFalse(has_parentGUID)
 
         """Ensures that if you look for another object attribute after the constructed
             parentGUID, it will return correctly"""
@@ -1386,21 +1386,21 @@ objectGUID: bd3480c9-58af-4cd8-92df-bc4a18b6e44d
                 break
         self.assertTrue(has_another_attribute)
         self.assertTrue(len(res1[0]["samaccountname"]) == 1)
-        self.assertEquals(res1[0]["samaccountname"][0], "parentguidtest");
+        self.assertEquals(res1[0]["samaccountname"][0], "parentguidtest")
 
         # Testing parentGUID behaviour on rename\
 
         self.ldb.add({
             "dn": "cn=testotherusers," + self.base_dn,
-            "objectclass":"container"});
+            "objectclass":"container"})
         res1 = ldb.search(base="cn=testotherusers," + self.base_dn,scope=SCOPE_BASE,
-                          attrs=["objectGUID"]);
+                          attrs=["objectGUID"])
         ldb.rename("cn=parentguidtest,cn=users," + self.base_dn,
-                   "cn=parentguidtest,cn=testotherusers," + self.base_dn);
+                   "cn=parentguidtest,cn=testotherusers," + self.base_dn)
         res2 = ldb.search(base="cn=parentguidtest,cn=testotherusers," + self.base_dn,
                           scope=SCOPE_BASE,
-                          attrs=["parentGUID"]);
-        self.assertEquals(res1[0]["objectGUID"], res2[0]["parentGUID"]);
+                          attrs=["parentGUID"])
+        self.assertEquals(res1[0]["objectGUID"], res2[0]["parentGUID"])
 
         delete_force(self.ldb, "cn=parentguidtest,cn=testotherusers," + self.base_dn)
         delete_force(self.ldb, "cn=testotherusers," + self.base_dn)
@@ -1563,10 +1563,10 @@ delete: description
         """Test groupType (int32) behaviour (should appear to be casted to a 32 bit signed integer before comparsion)"""
 
         res1 = ldb.search(base=self.base_dn, scope=SCOPE_SUBTREE,
-                          attrs=["groupType"], expression="groupType=2147483653");
+                          attrs=["groupType"], expression="groupType=2147483653")
 
         res2 = ldb.search(base=self.base_dn, scope=SCOPE_SUBTREE,
-                          attrs=["groupType"], expression="groupType=-2147483643");
+                          attrs=["groupType"], expression="groupType=-2147483643")
 
         self.assertEquals(len(res1), len(res2))
 
@@ -1742,23 +1742,23 @@ delete: description
                  })
 
         # Testing ldb.search for (&(cn=ldaptestcomputer3)(objectClass=user))
-        res = ldb.search(self.base_dn, expression="(&(cn=ldaptestcomputer3)(objectClass=user))");
+        res = ldb.search(self.base_dn, expression="(&(cn=ldaptestcomputer3)(objectClass=user))")
         self.assertEquals(len(res), 1, "Found only %d for (&(cn=ldaptestcomputer3)(objectClass=user))" % len(res))
 
-        self.assertEquals(str(res[0].dn), ("CN=ldaptestcomputer3,CN=Computers," + self.base_dn));
-        self.assertEquals(res[0]["cn"][0], "ldaptestcomputer3");
-        self.assertEquals(res[0]["name"][0], "ldaptestcomputer3");
-        self.assertEquals(res[0]["objectClass"][0], "top");
-        self.assertEquals(res[0]["objectClass"][1], "person");
-        self.assertEquals(res[0]["objectClass"][2], "organizationalPerson");
-        self.assertEquals(res[0]["objectClass"][3], "user");
-        self.assertEquals(res[0]["objectClass"][4], "computer");
+        self.assertEquals(str(res[0].dn), ("CN=ldaptestcomputer3,CN=Computers," + self.base_dn))
+        self.assertEquals(res[0]["cn"][0], "ldaptestcomputer3")
+        self.assertEquals(res[0]["name"][0], "ldaptestcomputer3")
+        self.assertEquals(res[0]["objectClass"][0], "top")
+        self.assertEquals(res[0]["objectClass"][1], "person")
+        self.assertEquals(res[0]["objectClass"][2], "organizationalPerson")
+        self.assertEquals(res[0]["objectClass"][3], "user")
+        self.assertEquals(res[0]["objectClass"][4], "computer")
         self.assertTrue("objectGUID" in res[0])
         self.assertTrue("whenCreated" in res[0])
         self.assertEquals(res[0]["objectCategory"][0], ("CN=Computer,%s" % ldb.get_schema_basedn()))
-        self.assertEquals(int(res[0]["primaryGroupID"][0]), 513);
-        self.assertEquals(int(res[0]["sAMAccountType"][0]), ATYPE_NORMAL_ACCOUNT);
-        self.assertEquals(int(res[0]["userAccountControl"][0]), UF_NORMAL_ACCOUNT | UF_PASSWD_NOTREQD | UF_ACCOUNTDISABLE);
+        self.assertEquals(int(res[0]["primaryGroupID"][0]), 513)
+        self.assertEquals(int(res[0]["sAMAccountType"][0]), ATYPE_NORMAL_ACCOUNT)
+        self.assertEquals(int(res[0]["userAccountControl"][0]), UF_NORMAL_ACCOUNT | UF_PASSWD_NOTREQD | UF_ACCOUNTDISABLE)
 
         delete_force(self.ldb, "cn=ldaptestcomputer3,cn=computers," + self.base_dn)
 
