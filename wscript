@@ -202,7 +202,7 @@ def configure(conf):
                 need_pie = False
         if conf.check_cc(cflags='-fPIE', ldflags='-pie', mandatory=need_pie,
                          msg="Checking compiler for PIE support"):
-		conf.env['ENABLE_PIE'] = True
+            conf.env['ENABLE_PIE'] = True
 
     if Options.options.enable_relro != False:
         if Options.options.enable_relro == True:
@@ -255,7 +255,6 @@ def ctags(ctx):
 def build(bld):
     '''build all targets'''
     samba_version.load_version(env=bld.env, is_install=bld.is_install)
-    pass
 
 
 def pydoctor(ctx):
