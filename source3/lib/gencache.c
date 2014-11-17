@@ -25,6 +25,7 @@
 #include "system/filesys.h"
 #include "system/glob.h"
 #include "util_tdb.h"
+#include "tdb_wrap/tdb_wrap.h"
 #include "../lib/util/memcache.h"
 
 #undef  DBGC_CLASS
@@ -37,7 +38,7 @@
 #define BLOB_TYPE_LEN 9
 
 static struct tdb_context *cache;
-static struct tdb_context *cache_notrans;
+static struct tdb_wrap *cache_notrans;
 static int cache_notrans_seqnum;
 
 /**
@@ -111,12 +112,12 @@ static bool gencache_init(void)
 
 	DEBUG(5, ("Opening cache file at %s\n", cache_fname));
 
-	cache_notrans = tdb_open_log(cache_fname, 0,
-				     TDB_CLEAR_IF_FIRST|
-				     TDB_INCOMPATIBLE_HASH|
-				     TDB_SEQNUM|
-				     TDB_NOSYNC,
-				     open_flags, 0644);
+	cache_notrans = tdb_wrap_open(NULL, cache_fname, 0,
+				      TDB_CLEAR_IF_FIRST|
+				      TDB_INCOMPATIBLE_HASH|
+				      TDB_SEQNUM|
+				      TDB_NOSYNC,
+				      open_flags, 0644);
 	if (cache_notrans == NULL) {
 		DEBUG(5, ("Opening %s failed: %s\n", cache_fname,
 			  strerror(errno)));
@@ -309,7 +310,7 @@ bool gencache_set_data_blob(const char *keystr, const DATA_BLOB *blob,
 		   timeout > time(NULL) ? "ahead" : "in the past"));
 
 	ret = tdb_store_bystring(
-		cache_notrans, keystr,
+		cache_notrans->tdb, keystr,
 		make_tdb_data((uint8_t *)val, talloc_array_length(val)),
 		0);
 	TALLOC_FREE(val);
@@ -337,7 +338,7 @@ bool gencache_set_data_blob(const char *keystr, const DATA_BLOB *blob,
 
 	last_stabilize = 0;
 
-	tdb_parse_record(cache_notrans, last_stabilize_key(),
+	tdb_parse_record(cache_notrans->tdb, last_stabilize_key(),
 			 last_stabilize_parser, &last_stabilize);
 
 	if ((last_stabilize
@@ -486,7 +487,7 @@ bool gencache_parse(const char *keystr,
 		 * Make sure that nobody has changed the gencache behind our
 		 * back.
 		 */
-		int current_seqnum = tdb_get_seqnum(cache_notrans);
+		int current_seqnum = tdb_get_seqnum(cache_notrans->tdb);
 		if (current_seqnum == cache_notrans_seqnum) {
 			/*
 			 * Ok, our memcache is still current, use it without
@@ -504,7 +505,8 @@ bool gencache_parse(const char *keystr,
 
 	state.is_memcache = false;
 
-	ret = tdb_parse_record(cache_notrans, key, gencache_parse_fn, &state);
+	ret = tdb_parse_record(cache_notrans->tdb, key,
+			       gencache_parse_fn, &state);
 	if (ret == 0) {
 		return true;
 	}
@@ -643,26 +645,26 @@ bool gencache_stabilize(void)
 		return false;
 	}
 
-	res = tdb_lockall(cache_notrans);
+	res = tdb_lockall(cache_notrans->tdb);
 	if (res != 0) {
 		tdb_transaction_cancel(cache);
 		DEBUG(10, ("Could not get allrecord lock on "
 			   "gencache_notrans.tdb: %s\n",
-			   tdb_errorstr_compat(cache_notrans)));
+			   tdb_errorstr_compat(cache_notrans->tdb)));
 		return false;
 	}
 
 	state.written = false;
 
-	res = tdb_traverse(cache_notrans, stabilize_fn, &state);
+	res = tdb_traverse(cache_notrans->tdb, stabilize_fn, &state);
 	if (res < 0) {
-		tdb_unlockall(cache_notrans);
+		tdb_unlockall(cache_notrans->tdb);
 		tdb_transaction_cancel(cache);
 		return false;
 	}
 
 	if (!state.written) {
-		tdb_unlockall(cache_notrans);
+		tdb_unlockall(cache_notrans->tdb);
 		tdb_transaction_cancel(cache);
 		return true;
 	}
@@ -671,19 +673,20 @@ bool gencache_stabilize(void)
 	if (res != 0) {
 		DEBUG(10, ("tdb_transaction_commit on gencache.tdb failed: "
 			   "%s\n", tdb_errorstr_compat(cache)));
-		tdb_unlockall(cache_notrans);
+		tdb_unlockall(cache_notrans->tdb);
 		return false;
 	}
 
-	res = tdb_traverse(cache_notrans, wipe_fn, NULL);
+	res = tdb_traverse(cache_notrans->tdb, wipe_fn, NULL);
 	if (res != 0) {
 		DEBUG(10, ("tdb_traverse with wipe_fn on gencache_notrans.tdb "
-			  "failed: %s\n", tdb_errorstr_compat(cache_notrans)));
-		tdb_unlockall(cache_notrans);
+			  "failed: %s\n",
+			   tdb_errorstr_compat(cache_notrans->tdb)));
+		tdb_unlockall(cache_notrans->tdb);
 		return false;
 	}
 
-	res = tdb_unlockall(cache_notrans);
+	res = tdb_unlockall(cache_notrans->tdb);
 	if (res != 0) {
 		DEBUG(10, ("tdb_unlockall on gencache.tdb failed: "
 			   "%s\n", tdb_errorstr_compat(cache)));
@@ -692,7 +695,7 @@ bool gencache_stabilize(void)
 
 	now = talloc_asprintf(talloc_tos(), "%d", (int)time(NULL));
 	if (now != NULL) {
-		tdb_store(cache_notrans, last_stabilize_key(),
+		tdb_store(cache_notrans->tdb, last_stabilize_key(),
 			  string_term_tdb_data(now), 0);
 		TALLOC_FREE(now);
 	}
@@ -759,7 +762,7 @@ static int wipe_fn(struct tdb_context *tdb, TDB_DATA key, TDB_DATA val,
 	res = tdb_delete(tdb, key);
 	if (res != 0) {
 		DEBUG(10, ("tdb_delete from gencache_notrans.tdb failed: "
-			   "%s\n", tdb_errorstr_compat(cache_notrans)));
+			   "%s\n", tdb_errorstr_compat(cache_notrans->tdb)));
 		return -1;
 	}
 
@@ -850,7 +853,7 @@ static int gencache_iterate_blobs_fn(struct tdb_context *tdb, TDB_DATA key,
 	if (tdb_data_cmp(key, last_stabilize_key()) == 0) {
 		return 0;
 	}
-	if (state->in_persistent && tdb_exists(cache_notrans, key)) {
+	if (state->in_persistent && tdb_exists(cache_notrans->tdb, key)) {
 		return 0;
 	}
 
@@ -905,7 +908,7 @@ void gencache_iterate_blobs(void (*fn)(const char *key, DATA_BLOB value,
 	state.private_data = private_data;
 
 	state.in_persistent = false;
-	tdb_traverse(cache_notrans, gencache_iterate_blobs_fn, &state);
+	tdb_traverse(cache_notrans->tdb, gencache_iterate_blobs_fn, &state);
 
 	state.in_persistent = true;
 	tdb_traverse(cache, gencache_iterate_blobs_fn, &state);
