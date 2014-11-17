@@ -3500,7 +3500,7 @@ NTSTATUS smbXsrv_connection_init_tables(struct smbXsrv_connection *conn,
 
 struct smbd_tevent_trace_state {
 	TALLOC_CTX *frame;
-	uint64_t smbd_idle_profstamp;
+	SMBPROFILE_BASIC_ASYNC_STATE(profile_idle);
 };
 
 static void smbd_tevent_trace_callback(enum tevent_trace_point point,
@@ -3511,15 +3511,10 @@ static void smbd_tevent_trace_callback(enum tevent_trace_point point,
 
 	switch (point) {
 	case TEVENT_TRACE_BEFORE_WAIT:
-		/*
-		 * This just removes compiler warning
-		 * without profile support
-		 */
-		state->smbd_idle_profstamp = 0;
-		START_PROFILE_STAMP(smbd_idle, state->smbd_idle_profstamp);
+		SMBPROFILE_BASIC_ASYNC_START(idle, profile_p, state->profile_idle);
 		break;
 	case TEVENT_TRACE_AFTER_WAIT:
-		END_PROFILE_STAMP(smbd_idle, state->smbd_idle_profstamp);
+		SMBPROFILE_BASIC_ASYNC_END(state->profile_idle);
 		break;
 	case TEVENT_TRACE_BEFORE_LOOP_ONCE:
 		TALLOC_FREE(state->frame);
