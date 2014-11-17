@@ -66,7 +66,6 @@ static bool become_uid(uid_t uid)
 
 	set_effective_uid(uid);
 
-	DO_PROFILE_INC(uid_changes);
 	return True;
 }
 
@@ -196,6 +195,8 @@ bool push_sec_ctx(void)
 {
 	struct sec_ctx *ctx_p;
 
+	START_PROFILE(push_sec_ctx);
+
 	/* Check we don't overflow our stack */
 
 	if (sec_ctx_stack_ndx == MAX_SEC_CTX_DEPTH) {
@@ -231,6 +232,8 @@ bool push_sec_ctx(void)
 	} else {
 		ctx_p->ut.groups = NULL;
 	}
+
+	END_PROFILE(push_sec_ctx);
 
 	return True;
 }
@@ -306,7 +309,9 @@ static void set_unix_security_ctx(uid_t uid, gid_t gid, int ngroups, gid_t *grou
  Set the current security context to a given user.
 ****************************************************************************/
 
-void set_sec_ctx(uid_t uid, gid_t gid, int ngroups, gid_t *groups, const struct security_token *token)
+static void set_sec_ctx_internal(uid_t uid, gid_t gid,
+				 int ngroups, gid_t *groups,
+				 const struct security_token *token)
 {
 	struct sec_ctx *ctx_p = &sec_ctx_stack[sec_ctx_stack_ndx];
 
@@ -358,6 +363,13 @@ void set_sec_ctx(uid_t uid, gid_t gid, int ngroups, gid_t *groups, const struct 
 	current_user.nt_user_token = ctx_p->token;
 }
 
+void set_sec_ctx(uid_t uid, gid_t gid, int ngroups, gid_t *groups, const struct security_token *token)
+{
+	START_PROFILE(set_sec_ctx);
+	set_sec_ctx_internal(uid, gid, ngroups, groups, token);
+	END_PROFILE(set_sec_ctx);
+}
+
 /****************************************************************************
  Become root context.
 ****************************************************************************/
@@ -366,7 +378,9 @@ void set_root_sec_ctx(void)
 {
 	/* May need to worry about supplementary groups at some stage */
 
-	set_sec_ctx(0, 0, 0, NULL, NULL);
+	START_PROFILE(set_root_sec_ctx);
+	set_sec_ctx_internal(0, 0, 0, NULL, NULL);
+	END_PROFILE(set_root_sec_ctx);
 }
 
 /****************************************************************************
@@ -377,6 +391,8 @@ bool pop_sec_ctx(void)
 {
 	struct sec_ctx *ctx_p;
 	struct sec_ctx *prev_ctx_p;
+
+	START_PROFILE(pop_sec_ctx);
 
 	/* Check for stack underflow */
 
@@ -416,6 +432,8 @@ bool pop_sec_ctx(void)
 	current_user.ut.ngroups = prev_ctx_p->ut.ngroups;
 	current_user.ut.groups = prev_ctx_p->ut.groups;
 	current_user.nt_user_token = prev_ctx_p->token;
+
+	END_PROFILE(pop_sec_ctx);
 
 	DEBUG(4, ("pop_sec_ctx (%u, %u) - sec_ctx_stack_ndx = %d\n", 
 		(unsigned int)geteuid(), (unsigned int)getegid(), sec_ctx_stack_ndx));
