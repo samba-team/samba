@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# This script only works on Linux.  Please modify (and submit patches)
+# for other operating systems.
+
 [ -n "$CTDB_BASE" ] || \
     export CTDB_BASE=$(cd -P $(dirname "$0") ; echo "$PWD")
 
@@ -28,12 +31,12 @@ fi
     # Check for processes matching a regular expression and print
     # stack staces.  This could help confirm that certain processes
     # are stuck in certain places such as the cluster filesystem.  The
-    # regexp should separate items with "\|" and should not contain
+    # regexp must separate items with "|" and must not contain
     # parentheses.  The default pattern can be replaced for testing.
-    default_pat='exportfs\|rpcinfo'
+    default_pat='exportfs|rpcinfo'
     pat="${CTDB_DEBUG_HUNG_SCRIPT_STACKPAT:-${default_pat}}"
     echo "$out" |
-    sed -n "s@.*-\(.*${pat}.*\),\([0-9]*\).*@\2 \1@p" |
+    sed -r -n "s@.*-(.*(${pat}).*),([0-9]*).*@\3 \1@p" |
     while read pid name ; do
 	trace=$(cat "/proc/${pid}/stack" 2>/dev/null)
 	if [ $? -eq 0 ] ; then

@@ -1521,11 +1521,13 @@ CTDB_SET_MonitorInterval=20
 	  <para>
 	    REGEXP specifies interesting processes for which stack
 	    traces should be logged when debugging hung eventscripts
-	    and those processes are matched in pstree output.  See
-	    also <citetitle>CTDB_DEBUG_HUNG_SCRIPT</citetitle>.
+	    and those processes are matched in pstree output.  REGEXP
+	    is an extended regexp so choices are separated by pipes
+	    ('|').  However, REGEXP should not contain parentheses.
+	    See also <citetitle>CTDB_DEBUG_HUNG_SCRIPT</citetitle>.
 	  </para>
 	  <para>
-	    Default is "exportfs\|rpcinfo".
+	    Default is "exportfs|rpcinfo".
 	  </para>
 	</listitem>
       </varlistentry>

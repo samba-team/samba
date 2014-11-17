@@ -58,7 +58,7 @@ ctdb_test_exit_hook_add "onnode $test_node rm -f $debug_output"
 try_command_on_node -i $test_node tee "$rc_local_f" <<<"\
 CTDB_RUN_TIMEOUT_MONITOR=yes
 CTDB_DEBUG_HUNG_SCRIPT_LOGFILE=\"$debug_output\"
-CTDB_DEBUG_HUNG_SCRIPT_STACKPAT='exportfs\|rpcinfo\|sleep'"
+CTDB_DEBUG_HUNG_SCRIPT_STACKPAT='exportfs|rpcinfo|sleep'"
 
 try_command_on_node $test_node chmod +x "$rc_local_f"
 
