@@ -27,6 +27,7 @@
 #include "torture/smb2/proto.h"
 #include "torture/util.h"
 #include "libcli/smb/smbXcli_base.h"
+#include "lib/param/param.h"
 
 #define CHECK_VAL(v, correct) do { \
 	if ((v) != (correct)) { \
@@ -2994,6 +2995,194 @@ static bool test_lease_timeout(struct torture_context *tctx,
 	return ret;
 }
 
+static bool test_lease_dynamic_share(struct torture_context *tctx,
+				   struct smb2_tree *tree1a)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	struct smb2_create io;
+	struct smb2_lease ls1;
+	struct smb2_handle h, h1, h2;
+	struct smb2_write w;
+	NTSTATUS status;
+	const char *fname = "dynamic_path.dat";
+	bool ret = true;
+	uint32_t caps;
+	struct smb2_tree *tree_2_1 = NULL;
+	struct smb2_tree *tree_3_0 = NULL;
+	struct smbcli_options options2_1;
+	struct smbcli_options options3_0;
+	const char *orig_share = NULL;
+
+	if (!TARGET_IS_SAMBA3(tctx)) {
+		torture_skip(tctx, "dynamic shares are not supported");
+		return true;
+	}
+
+	options2_1 = tree1a->session->transport->options;
+	options3_0 = tree1a->session->transport->options;
+
+	caps = smb2cli_conn_server_capabilities(tree1a->session->transport->conn);
+	if (!(caps & SMB2_CAP_LEASING)) {
+		torture_skip(tctx, "leases are not supported");
+	}
+
+	/*
+	 * Save off original share name and change it to dynamic_share.
+	 * This must have been pre-created with a dynamic path containing
+	 * %R.
+	 */
+
+	orig_share = lpcfg_parm_string(tctx->lp_ctx, NULL, "torture", "share");
+	orig_share = talloc_strdup(tctx->lp_ctx, orig_share);
+	if (orig_share == NULL) {
+		torture_result(tctx, TORTURE_FAIL, __location__ "no memory\n");
+                ret = false;
+                goto done;
+	}
+	lpcfg_set_cmdline(tctx->lp_ctx, "torture:share", "dynamic_share");
+
+	/* Set max protocol to SMB2.1 */
+	options2_1.max_protocol = PROTOCOL_SMB2_10;
+	/* create a new connection (same client_guid) */
+	if (!torture_smb2_connection_ext(tctx, 0, &options2_1, &tree_2_1)) {
+		torture_warning(tctx, "couldn't reconnect max protocol 2.1, bailing\n");
+		ret = false;
+		goto done;
+	}
+
+	tree_2_1->session->transport->lease.handler = torture_lease_handler;
+	tree_2_1->session->transport->lease.private_data = tree_2_1;
+	tree_2_1->session->transport->oplock.handler = torture_oplock_handler;
+	tree_2_1->session->transport->oplock.private_data = tree_2_1;
+
+	smb2_util_unlink(tree_2_1, fname);
+
+	/* Set max protocol to SMB3.0 */
+	options3_0.max_protocol = PROTOCOL_SMB3_00;
+	/* create a new connection (same client_guid) */
+	if (!torture_smb2_connection_ext(tctx, 0, &options3_0, &tree_3_0)) {
+		torture_warning(tctx, "couldn't reconnect max protocol 3.0, bailing\n");
+		ret = false;
+		goto done;
+	}
+
+	tree_3_0->session->transport->lease.handler = torture_lease_handler;
+	tree_3_0->session->transport->lease.private_data = tree_3_0;
+	tree_3_0->session->transport->oplock.handler = torture_oplock_handler;
+	tree_3_0->session->transport->oplock.private_data = tree_3_0;
+
+	smb2_util_unlink(tree_3_0, fname);
+
+	ZERO_STRUCT(break_info);
+
+	/* Get RWH lease over connection 2_1 */
+	smb2_lease_create(&io, &ls1, false, fname, LEASE1, smb2_util_lease_state("RWH"));
+	status = smb2_create(tree_2_1, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_CREATED(&io, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_LEASE(&io, "RWH", true, LEASE1, 0);
+	h = io.out.file.handle;
+
+	/* Write some data into it. */
+	w.in.file.handle = h;
+	w.in.offset      = 0;
+	w.in.data        = data_blob_talloc(mem_ctx, NULL, 4096);
+	memset(w.in.data.data, '1', w.in.data.length);
+	status = smb2_write(tree_2_1, &w);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* Open the same name over connection 3_0. */
+	smb2_lease_create(&io, &ls1, false, fname, LEASE1, smb2_util_lease_state("RWH"));
+	status = smb2_create(tree_3_0, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h1 = io.out.file.handle;
+	CHECK_CREATED(&io, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+
+	/* h1 should have replied with NONE. */
+	CHECK_LEASE(&io, "", true, LEASE1, 0);
+
+	/* We should have broken h to NONE. */
+	CHECK_BREAK_INFO("RWH", "", LEASE1);
+
+	/* Try to upgrade to RWH over connection 2_1 */
+	smb2_lease_create(&io, &ls1, false, fname, LEASE1, smb2_util_lease_state("RWH"));
+	status = smb2_create(tree_2_1, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h2 = io.out.file.handle;
+	CHECK_VAL(io.out.create_action, NTCREATEX_ACTION_EXISTED);
+	CHECK_VAL(io.out.size, 4096);
+	CHECK_VAL(io.out.file_attr, FILE_ATTRIBUTE_ARCHIVE);
+	/* Should have been denied. */
+	CHECK_LEASE(&io, "", true, LEASE1, 0);
+	smb2_util_close(tree_2_1, h2);
+
+	/* Try to upgrade to RWH over connection 3_0 */
+	smb2_lease_create(&io, &ls1, false, fname, LEASE1, smb2_util_lease_state("RWH"));
+	status = smb2_create(tree_3_0, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h2 = io.out.file.handle;
+	CHECK_VAL(io.out.create_action, NTCREATEX_ACTION_EXISTED);
+	CHECK_VAL(io.out.size, 0);
+	CHECK_VAL(io.out.file_attr, FILE_ATTRIBUTE_ARCHIVE);
+	/* Should have been denied. */
+	CHECK_LEASE(&io, "", true, LEASE1, 0);
+	smb2_util_close(tree_3_0, h2);
+
+	/* Write some data into it. */
+	w.in.file.handle = h1;
+	w.in.offset      = 0;
+	w.in.data        = data_blob_talloc(mem_ctx, NULL, 1024);
+	memset(w.in.data.data, '2', w.in.data.length);
+	status = smb2_write(tree_3_0, &w);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* Close everything.. */
+	smb2_util_close(tree_2_1, h);
+	smb2_util_close(tree_3_0, h1);
+
+	/* And ensure we can get a lease ! */
+	smb2_lease_create(&io, &ls1, false, fname, LEASE1, smb2_util_lease_state("RWH"));
+	status = smb2_create(tree_2_1, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VAL(io.out.create_action, NTCREATEX_ACTION_EXISTED);
+	CHECK_VAL(io.out.file_attr, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_LEASE(&io, "RWH", true, LEASE1, 0);
+	h = io.out.file.handle;
+	/* And the file is the right size. */
+	CHECK_VAL(io.out.size, 4096);				\
+	/* Close it. */
+	smb2_util_close(tree_2_1, h);
+
+	/* And ensure we can get a lease ! */
+	smb2_lease_create(&io, &ls1, false, fname, LEASE1, smb2_util_lease_state("RWH"));
+	status = smb2_create(tree_3_0, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VAL(io.out.create_action, NTCREATEX_ACTION_EXISTED);
+	CHECK_VAL(io.out.file_attr, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_LEASE(&io, "RWH", true, LEASE1, 0);
+	h = io.out.file.handle;
+	/* And the file is the right size. */
+	CHECK_VAL(io.out.size, 1024);				\
+	/* Close it. */
+	smb2_util_close(tree_3_0, h);
+
+ done:
+
+	smb2_util_close(tree_2_1, h);
+	smb2_util_close(tree_3_0, h1);
+	smb2_util_close(tree_3_0, h2);
+
+	smb2_util_unlink(tree_2_1, fname);
+	smb2_util_unlink(tree_3_0, fname);
+
+	/* Set sharename back. */
+	lpcfg_set_cmdline(tctx->lp_ctx, "torture:share", orig_share);
+
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+
 
 struct torture_suite *torture_smb2_lease_init(void)
 {
@@ -3025,6 +3214,7 @@ struct torture_suite *torture_smb2_lease_init(void)
 	torture_suite_add_1smb2_test(suite, "v2_epoch2", test_lease_v2_epoch2);
 	torture_suite_add_1smb2_test(suite, "v2_epoch3", test_lease_v2_epoch3);
 	torture_suite_add_1smb2_test(suite, "v2_complex1", test_lease_v2_complex1);
+	torture_suite_add_1smb2_test(suite, "dynamic_share", test_lease_dynamic_share);
 	torture_suite_add_1smb2_test(suite, "timeout", test_lease_timeout);
 
 	suite->description = talloc_strdup(suite, "SMB2-LEASE tests");
