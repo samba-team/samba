@@ -119,7 +119,8 @@ static bool gencache_init(void)
 				      TDB_CLEAR_IF_FIRST|
 				      TDB_INCOMPATIBLE_HASH|
 				      TDB_SEQNUM|
-				      TDB_NOSYNC,
+				      TDB_NOSYNC|
+				      TDB_MUTEX_LOCKING,
 				      open_flags, 0644);
 	if (cache_notrans == NULL) {
 		DEBUG(5, ("Opening %s failed: %s\n", cache_fname,
