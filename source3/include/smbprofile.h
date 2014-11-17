@@ -482,12 +482,6 @@ static inline uint64_t profile_timestamp(void)
 #define DO_PROFILE_INC(x) \
 	_SMBPROFILE_COUNT_INCREMENT(x##_stats, profile_p, 1); \
 
-#define START_PROFILE_STAMP(x, _stamp) do { \
-	struct smbprofile_stats_basic_async __profasync_##x = {}; \
-	_SMBPROFILE_BASIC_ASYNC_START(x##_stats, profile_p, __profasync_##x); \
-	_stamp = __profasync_##x.start; \
-} while(0)
-
 #define START_PROFILE(x) \
 	struct smbprofile_stats_basic_async __profasync_##x = {}; \
 	_SMBPROFILE_BASIC_ASYNC_START(x##_stats, profile_p, __profasync_##x);
@@ -495,17 +489,6 @@ static inline uint64_t profile_timestamp(void)
 #define START_PROFILE_BYTES(x,n) \
 	struct smbprofile_stats_bytes_async __profasync_##x = {}; \
 	_SMBPROFILE_BYTES_ASYNC_START(x##_stats, profile_p, __profasync_##x, n);
-
-#define END_PROFILE_STAMP(x, _stamp) do { \
-	struct smbprofile_stats_basic_async __profasync_##x = {}; \
-	if (do_profile_flag && do_profile_times) { \
-		__profasync_##x = (struct smbprofile_stats_basic_async) { \
-			.start = (_stamp), \
-			.stats = &(profile_p->x##_stats), \
-		}; \
-	} \
-	SMBPROFILE_BASIC_ASYNC_END(__profasync_##x); \
-} while(0)
 
 #define END_PROFILE(x) \
 	SMBPROFILE_BASIC_ASYNC_END(__profasync_##x)
@@ -538,10 +521,8 @@ static inline uint64_t profile_timestamp(void)
 #define SMBPROFILE_IOBYTES_ASYNC_END(_async, _outbytes)
 
 #define DO_PROFILE_INC(x)
-#define START_PROFILE_STAMP(x, _stamp)
 #define START_PROFILE(x)
 #define START_PROFILE_BYTES(x,n)
-#define END_PROFILE_STAMP(x, _stamp)
 #define END_PROFILE(x)
 #define END_PROFILE_BYTES(x)
 
