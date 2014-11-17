@@ -37,7 +37,7 @@
 #define BLOB_TYPE "DATA_BLOB"
 #define BLOB_TYPE_LEN 9
 
-static struct tdb_context *cache;
+static struct tdb_wrap *cache;
 static struct tdb_wrap *cache_notrans;
 static int cache_notrans_seqnum;
 
@@ -69,12 +69,14 @@ static bool gencache_init(void)
 
 	DEBUG(5, ("Opening cache file at %s\n", cache_fname));
 
-	cache = tdb_open_log(cache_fname, 0, TDB_DEFAULT|TDB_INCOMPATIBLE_HASH, open_flags, 0644);
+	cache = tdb_wrap_open(NULL, cache_fname, 0,
+			      TDB_DEFAULT|TDB_INCOMPATIBLE_HASH,
+			      open_flags, 0644);
 	if (cache) {
 		int ret;
-		ret = tdb_check(cache, NULL, NULL);
+		ret = tdb_check(cache->tdb, NULL, NULL);
 		if (ret != 0) {
-			tdb_close(cache);
+			TALLOC_FREE(cache);
 
 			/*
 			 * Retry with CLEAR_IF_FIRST.
@@ -86,18 +88,19 @@ static bool gencache_init(void)
 			 * CLEAR_IF_FIRST databases, so lets use it here to
 			 * clean up a broken database.
 			 */
-			cache = tdb_open_log(cache_fname, 0,
-					     TDB_DEFAULT|
-					     TDB_INCOMPATIBLE_HASH|
-					     TDB_CLEAR_IF_FIRST,
-					     open_flags, 0644);
+			cache = tdb_wrap_open(NULL, cache_fname, 0,
+					      TDB_DEFAULT|
+					      TDB_INCOMPATIBLE_HASH|
+					      TDB_CLEAR_IF_FIRST,
+					      open_flags, 0644);
 		}
 	}
 
 	if (!cache && (errno == EACCES)) {
 		open_flags = O_RDONLY;
-		cache = tdb_open_log(cache_fname, 0, TDB_DEFAULT|TDB_INCOMPATIBLE_HASH, open_flags,
-				     0644);
+		cache = tdb_wrap_open(NULL, cache_fname, 0,
+				      TDB_DEFAULT|TDB_INCOMPATIBLE_HASH,
+				      open_flags, 0644);
 		if (cache) {
 			DEBUG(5, ("gencache_init: Opening cache file %s read-only.\n", cache_fname));
 		}
@@ -121,8 +124,7 @@ static bool gencache_init(void)
 	if (cache_notrans == NULL) {
 		DEBUG(5, ("Opening %s failed: %s\n", cache_fname,
 			  strerror(errno)));
-		tdb_close(cache);
-		cache = NULL;
+		TALLOC_FREE(cache);
 		return false;
 	}
 
@@ -510,7 +512,7 @@ bool gencache_parse(const char *keystr,
 	if (ret == 0) {
 		return true;
 	}
-	ret = tdb_parse_record(cache, key, gencache_parse_fn, &state);
+	ret = tdb_parse_record(cache->tdb, key, gencache_parse_fn, &state);
 	return (ret == 0);
 }
 
@@ -629,9 +631,9 @@ bool gencache_stabilize(void)
 		return false;
 	}
 
-	res = tdb_transaction_start_nonblock(cache);
+	res = tdb_transaction_start_nonblock(cache->tdb);
 	if (res != 0) {
-		if (tdb_error(cache) == TDB_ERR_NOLOCK)
+		if (tdb_error(cache->tdb) == TDB_ERR_NOLOCK)
 		{
 			/*
 			 * Someone else already does the stabilize,
@@ -641,13 +643,13 @@ bool gencache_stabilize(void)
 		}
 
 		DEBUG(10, ("Could not start transaction on gencache.tdb: "
-			   "%s\n", tdb_errorstr_compat(cache)));
+			   "%s\n", tdb_errorstr_compat(cache->tdb)));
 		return false;
 	}
 
 	res = tdb_lockall(cache_notrans->tdb);
 	if (res != 0) {
-		tdb_transaction_cancel(cache);
+		tdb_transaction_cancel(cache->tdb);
 		DEBUG(10, ("Could not get allrecord lock on "
 			   "gencache_notrans.tdb: %s\n",
 			   tdb_errorstr_compat(cache_notrans->tdb)));
@@ -659,20 +661,20 @@ bool gencache_stabilize(void)
 	res = tdb_traverse(cache_notrans->tdb, stabilize_fn, &state);
 	if (res < 0) {
 		tdb_unlockall(cache_notrans->tdb);
-		tdb_transaction_cancel(cache);
+		tdb_transaction_cancel(cache->tdb);
 		return false;
 	}
 
 	if (!state.written) {
 		tdb_unlockall(cache_notrans->tdb);
-		tdb_transaction_cancel(cache);
+		tdb_transaction_cancel(cache->tdb);
 		return true;
 	}
 
-	res = tdb_transaction_commit(cache);
+	res = tdb_transaction_commit(cache->tdb);
 	if (res != 0) {
 		DEBUG(10, ("tdb_transaction_commit on gencache.tdb failed: "
-			   "%s\n", tdb_errorstr_compat(cache)));
+			   "%s\n", tdb_errorstr_compat(cache->tdb)));
 		tdb_unlockall(cache_notrans->tdb);
 		return false;
 	}
@@ -689,7 +691,7 @@ bool gencache_stabilize(void)
 	res = tdb_unlockall(cache_notrans->tdb);
 	if (res != 0) {
 		DEBUG(10, ("tdb_unlockall on gencache.tdb failed: "
-			   "%s\n", tdb_errorstr_compat(cache)));
+			   "%s\n", tdb_errorstr_compat(cache->tdb)));
 		return false;
 	}
 
@@ -719,14 +721,14 @@ static int stabilize_fn(struct tdb_context *tdb, TDB_DATA key, TDB_DATA val,
 		return 0;
 	}
 	if ((timeout < time(NULL)) || (val.dsize == 0)) {
-		res = tdb_delete(cache, key);
+		res = tdb_delete(cache->tdb, key);
 		if (res == 0) {
 			state->written = true;
-		} else if (tdb_error(cache) == TDB_ERR_NOEXIST) {
+		} else if (tdb_error(cache->tdb) == TDB_ERR_NOEXIST) {
 			res = 0;
 		}
 	} else {
-		res = tdb_store(cache, key, val, 0);
+		res = tdb_store(cache->tdb, key, val, 0);
 		if (res == 0) {
 			state->written = true;
 		}
@@ -734,7 +736,7 @@ static int stabilize_fn(struct tdb_context *tdb, TDB_DATA key, TDB_DATA val,
 
 	if (res != 0) {
 		DEBUG(10, ("Transfer to gencache.tdb failed: %s\n",
-			   tdb_errorstr_compat(cache)));
+			   tdb_errorstr_compat(cache->tdb)));
 		return -1;
 	}
 
@@ -911,7 +913,7 @@ void gencache_iterate_blobs(void (*fn)(const char *key, DATA_BLOB value,
 	tdb_traverse(cache_notrans->tdb, gencache_iterate_blobs_fn, &state);
 
 	state.in_persistent = true;
-	tdb_traverse(cache, gencache_iterate_blobs_fn, &state);
+	tdb_traverse(cache->tdb, gencache_iterate_blobs_fn, &state);
 }
 
 /**
