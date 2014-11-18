@@ -42,8 +42,9 @@ struct passwd *tcopy_passwd(TALLOC_CTX *mem_ctx,
 
 	ret = talloc_pooled_object(mem_ctx, struct passwd, 5, len);
 
-	if (ret == NULL)
+	if (ret == NULL) {
 		return NULL;
+	}
 
 	ret->pw_name = talloc_strdup(ret, from->pw_name);
 	ret->pw_passwd = talloc_strdup(ret, from->pw_passwd);
