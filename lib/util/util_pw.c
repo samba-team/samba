@@ -31,7 +31,16 @@
 struct passwd *tcopy_passwd(TALLOC_CTX *mem_ctx,
 			    const struct passwd *from)
 {
-	struct passwd *ret = talloc_zero(mem_ctx, struct passwd);
+	struct passwd *ret;
+	size_t len = 0;
+
+	len += strlen(from->pw_name)+1;
+	len += strlen(from->pw_passwd)+1;
+	len += strlen(from->pw_gecos)+1;
+	len += strlen(from->pw_dir)+1;
+	len += strlen(from->pw_shell)+1;
+
+	ret = talloc_pooled_object(mem_ctx, struct passwd, 5, len);
 
 	if (ret == NULL)
 		return NULL;
