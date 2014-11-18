@@ -506,6 +506,11 @@ bld.SAMBA3_SUBSYSTEM('sysquotas',
                      allow_warnings=True,
                      deps='samba3-util samba-util')
 
+NOTIFY_SOURCES=''
+
+if bld.CONFIG_SET("HAVE_INOTIFY"):
+    NOTIFY_SOURCES += ' smbd/notify_inotify.c'
+
 bld.SAMBA3_LIBRARY('smbd_base',
                    source='''
                    smbd/server_reload.c
@@ -595,9 +600,8 @@ bld.SAMBA3_LIBRARY('smbd_base',
                    smbd/oplock_irix.c
                    smbd/oplock_linux.c
                    smbd/notify.c
-                   smbd/notify_inotify.c
                    smbd/notify_internal.c
-                   smbd/build_options.c''',
+                   smbd/build_options.c''' + NOTIFY_SOURCES,
                    deps='''
                    talloc
                    tevent

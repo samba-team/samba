@@ -26,8 +26,6 @@
 #include "smbd/smbd.h"
 #include "lib/sys_rw_data.h"
 
-#ifdef HAVE_INOTIFY
-
 #include <sys/inotify.h>
 
 /* glibc < 2.5 headers don't have these defines */
@@ -426,5 +424,3 @@ int inotify_watch(TALLOC_CTX *mem_ctx,
 
 	return 0;
 }
-
-#endif
