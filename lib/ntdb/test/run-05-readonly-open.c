@@ -70,4 +70,10 @@ fail:
 	failtest_suppress = true;
 	ntdb_close(ntdb);
 	failtest_exit(exit_status());
+
+	/*
+	 * We will never reach this but the compiler complains if we do not
+	 * return in this function.
+	 */
+	return EFAULT;
 }

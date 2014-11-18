@@ -31,4 +31,10 @@ int main(int argc, char *argv[])
 			break;
 	}
 	failtest_exit(exit_status());
+
+	/*
+	 * We will never reach this but the compiler complains if we do not
+	 * return in this function.
+	 */
+	return EFAULT;
 }

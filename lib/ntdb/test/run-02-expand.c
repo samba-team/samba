@@ -59,4 +59,10 @@ int main(int argc, char *argv[])
 
 	ok1(tap_log_messages == 0);
 	failtest_exit(exit_status());
+
+	/*
+	 * We will never reach this but the compiler complains if we do not
+	 * return in this function.
+	 */
+	return EFAULT;
 }
