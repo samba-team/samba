@@ -97,7 +97,7 @@ ssize_t write_data_iov(int fd, const struct iovec *orig_iov, int iovcnt)
  on socket calls.
 ****************************************************************************/
 
-ssize_t write_data(int fd, const char *buffer, size_t n)
+ssize_t write_data(int fd, const void *buffer, size_t n)
 {
 	struct iovec iov;
 
