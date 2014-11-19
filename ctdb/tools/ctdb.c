@@ -69,6 +69,20 @@ static int control_version(struct ctdb_context *ctdb, int argc, const char **arg
 	return 0;
 }
 
+/* Like printf(3) but substitute for separator in format */
+static int printm(const char *format, ...) PRINTF_ATTRIBUTE(1,2);
+static int printm(const char *format, ...)
+{
+	va_list ap;
+	int ret;
+
+	va_start(ap, format);
+	ret = vprintf(format, ap);
+	va_end(ap);
+
+	return ret;
+}
+
 #define CTDB_NOMEM_ABORT(p) do { if (!(p)) {				\
 		DEBUG(DEBUG_ALERT,("ctdb fatal error: %s\n",		\
 				   "Out of memory in " __location__ ));	\
@@ -452,64 +466,64 @@ static void show_statistics(struct ctdb_statistics *s, int show_header)
 
 	if (options.machinereadable){
 		if (show_header) {
-			printf("CTDB version:");
-			printf("Current time of statistics:");
-			printf("Statistics collected since:");
+			printm("CTDB version:");
+			printm("Current time of statistics:");
+			printm("Statistics collected since:");
 			for (i=0;i<ARRAY_SIZE(fields);i++) {
-				printf("%s:", fields[i].name);
+				printm("%s:", fields[i].name);
 			}
-			printf("num_reclock_ctdbd_latency:");
-			printf("min_reclock_ctdbd_latency:");
-			printf("avg_reclock_ctdbd_latency:");
-			printf("max_reclock_ctdbd_latency:");
+			printm("num_reclock_ctdbd_latency:");
+			printm("min_reclock_ctdbd_latency:");
+			printm("avg_reclock_ctdbd_latency:");
+			printm("max_reclock_ctdbd_latency:");
 
-			printf("num_reclock_recd_latency:");
-			printf("min_reclock_recd_latency:");
-			printf("avg_reclock_recd_latency:");
-			printf("max_reclock_recd_latency:");
+			printm("num_reclock_recd_latency:");
+			printm("min_reclock_recd_latency:");
+			printm("avg_reclock_recd_latency:");
+			printm("max_reclock_recd_latency:");
 
-			printf("num_call_latency:");
-			printf("min_call_latency:");
-			printf("avg_call_latency:");
-			printf("max_call_latency:");
+			printm("num_call_latency:");
+			printm("min_call_latency:");
+			printm("avg_call_latency:");
+			printm("max_call_latency:");
 
-			printf("num_lockwait_latency:");
-			printf("min_lockwait_latency:");
-			printf("avg_lockwait_latency:");
-			printf("max_lockwait_latency:");
+			printm("num_lockwait_latency:");
+			printm("min_lockwait_latency:");
+			printm("avg_lockwait_latency:");
+			printm("max_lockwait_latency:");
 
-			printf("num_childwrite_latency:");
-			printf("min_childwrite_latency:");
-			printf("avg_childwrite_latency:");
-			printf("max_childwrite_latency:");
-			printf("\n");
+			printm("num_childwrite_latency:");
+			printm("min_childwrite_latency:");
+			printm("avg_childwrite_latency:");
+			printm("max_childwrite_latency:");
+			printm("\n");
 		}
-		printf("%d:", CTDB_PROTOCOL);
-		printf("%d:", (int)s->statistics_current_time.tv_sec);
-		printf("%d:", (int)s->statistics_start_time.tv_sec);
+		printm("%d:", CTDB_PROTOCOL);
+		printm("%d:", (int)s->statistics_current_time.tv_sec);
+		printm("%d:", (int)s->statistics_start_time.tv_sec);
 		for (i=0;i<ARRAY_SIZE(fields);i++) {
-			printf("%d:", *(uint32_t *)(fields[i].offset+(uint8_t *)s));
+			printm("%d:", *(uint32_t *)(fields[i].offset+(uint8_t *)s));
 		}
-		printf("%d:", s->reclock.ctdbd.num);
-		printf("%.6f:", s->reclock.ctdbd.min);
-		printf("%.6f:", s->reclock.ctdbd.num?s->reclock.ctdbd.total/s->reclock.ctdbd.num:0.0);
-		printf("%.6f:", s->reclock.ctdbd.max);
+		printm("%d:", s->reclock.ctdbd.num);
+		printm("%.6f:", s->reclock.ctdbd.min);
+		printm("%.6f:", s->reclock.ctdbd.num?s->reclock.ctdbd.total/s->reclock.ctdbd.num:0.0);
+		printm("%.6f:", s->reclock.ctdbd.max);
 
-		printf("%d:", s->reclock.recd.num);
-		printf("%.6f:", s->reclock.recd.min);
-		printf("%.6f:", s->reclock.recd.num?s->reclock.recd.total/s->reclock.recd.num:0.0);
-		printf("%.6f:", s->reclock.recd.max);
+		printm("%d:", s->reclock.recd.num);
+		printm("%.6f:", s->reclock.recd.min);
+		printm("%.6f:", s->reclock.recd.num?s->reclock.recd.total/s->reclock.recd.num:0.0);
+		printm("%.6f:", s->reclock.recd.max);
 
-		printf("%d:", s->call_latency.num);
-		printf("%.6f:", s->call_latency.min);
-		printf("%.6f:", s->call_latency.num?s->call_latency.total/s->call_latency.num:0.0);
-		printf("%.6f:", s->call_latency.max);
+		printm("%d:", s->call_latency.num);
+		printm("%.6f:", s->call_latency.min);
+		printm("%.6f:", s->call_latency.num?s->call_latency.total/s->call_latency.num:0.0);
+		printm("%.6f:", s->call_latency.max);
 
-		printf("%d:", s->childwrite_latency.num);
-		printf("%.6f:", s->childwrite_latency.min);
-		printf("%.6f:", s->childwrite_latency.num?s->childwrite_latency.total/s->childwrite_latency.num:0.0);
-		printf("%.6f:", s->childwrite_latency.max);
-		printf("\n");
+		printm("%d:", s->childwrite_latency.num);
+		printm("%.6f:", s->childwrite_latency.min);
+		printm("%.6f:", s->childwrite_latency.num?s->childwrite_latency.total/s->childwrite_latency.num:0.0);
+		printm("%.6f:", s->childwrite_latency.max);
+		printm("\n");
 	} else {
 		printf("CTDB version %u\n", CTDB_PROTOCOL);
 		printf("Current time of statistics  :                %s", ctime(&s->statistics_current_time.tv_sec));
@@ -771,8 +785,8 @@ static int control_uptime(struct ctdb_context *ctdb, int argc, const char **argv
 	}
 
 	if (options.machinereadable){
-		printf(":Current Node Time:Ctdb Start Time:Last Recovery/Failover Time:Last Recovery/IPFailover Duration:\n");
-		printf(":%u:%u:%u:%lf\n",
+		printm(":Current Node Time:Ctdb Start Time:Last Recovery/Failover Time:Last Recovery/IPFailover Duration:\n");
+		printm(":%u:%u:%u:%lf\n",
 			(unsigned int)uptime->current_time.tv_sec,
 			(unsigned int)uptime->ctdbd_start_time.tv_sec,
 			(unsigned int)uptime->last_recovery_finished.tv_sec,
@@ -970,14 +984,14 @@ static bool is_partially_online(struct ctdb_context *ctdb, struct ctdb_node_and_
 
 static void control_status_header_machine(void)
 {
-	printf(":Node:IP:Disconnected:Banned:Disabled:Unhealthy:Stopped"
+	printm(":Node:IP:Disconnected:Banned:Disabled:Unhealthy:Stopped"
 	       ":Inactive:PartiallyOnline:ThisNode:\n");
 }
 
 static int control_status_1_machine(struct ctdb_context *ctdb, int mypnn,
 				    struct ctdb_node_and_flags *node)
 {
-	printf(":%d:%s:%d:%d:%d:%d:%d:%d:%d:%c:\n", node->pnn,
+	printm(":%d:%s:%d:%d:%d:%d:%d:%d:%d:%c:\n", node->pnn,
 	       ctdb_addr_to_str(&node->addr),
 	       !!(node->flags&NODE_FLAGS_DISCONNECTED),
 	       !!(node->flags&NODE_FLAGS_BANNED),
@@ -1363,8 +1377,8 @@ static int control_natgwlist(struct ctdb_context *ctdb, int argc, const char **a
 	}
 
 	if (options.machinereadable) {
-		printf(":Node:IP:\n");
-		printf(":%d:%s:\n", pnn, ip);
+		printm(":Node:IP:\n");
+		printm(":%d:%s:\n", pnn, ip);
 	} else {
 		printf("%d %s\n", pnn, ip);
 	}
@@ -1445,7 +1459,7 @@ static int control_one_scriptstatus(struct ctdb_context *ctdb,
 			break;
 		}
 		if (options.machinereadable) {
-			printf(":%s:%s:%i:%s:%lu.%06lu:%lu.%06lu:%s:\n",
+			printm(":%s:%s:%i:%s:%lu.%06lu:%lu.%06lu:%s:\n",
 			       ctdb_eventscript_call_names[type],
 			       script_status->scripts[i].name,
 			       script_status->scripts[i].status,
@@ -1521,7 +1535,7 @@ static int control_scriptstatus(struct ctdb_context *ctdb,
 	}
 
 	if (options.machinereadable) {
-		printf(":Type:Name:Code:Status:Start:End:Error Output...:\n");
+		printm(":Type:Name:Code:Status:Start:End:Error Output...:\n");
 	}
 
 	for (type = min; type < max; type++) {
@@ -1702,13 +1716,13 @@ static int control_get_tickles(struct ctdb_context *ctdb, int argc, const char *
 	}
 
 	if (options.machinereadable){
-		printf(":source ip:port:destination ip:port:\n");
+		printm(":source ip:port:destination ip:port:\n");
 		for (i=0;i<list->tickles.num;i++) {
 			if (port && port != ntohs(list->tickles.connections[i].dst_addr.ip.sin_port)) {
 				continue;
 			}
-			printf(":%s:%u", ctdb_addr_to_str(&list->tickles.connections[i].src_addr), ntohs(list->tickles.connections[i].src_addr.ip.sin_port));
-			printf(":%s:%u:\n", ctdb_addr_to_str(&list->tickles.connections[i].dst_addr), ntohs(list->tickles.connections[i].dst_addr.ip.sin_port));
+			printm(":%s:%u", ctdb_addr_to_str(&list->tickles.connections[i].src_addr), ntohs(list->tickles.connections[i].src_addr.ip.sin_port));
+			printm(":%s:%u:\n", ctdb_addr_to_str(&list->tickles.connections[i].dst_addr), ntohs(list->tickles.connections[i].dst_addr.ip.sin_port));
 		}
 	} else {
 		printf("Tickles for ip:%s\n", ctdb_addr_to_str(&list->addr));
@@ -2955,11 +2969,11 @@ static int control_ip(struct ctdb_context *ctdb, int argc, const char **argv)
 	}
 
 	if (options.machinereadable){
-		printf(":Public IP:Node:");
+		printm(":Public IP:Node:");
 		if (options.verbose){
-			printf("ActiveInterface:AvailableInterfaces:ConfiguredInterfaces:");
+			printm("ActiveInterface:AvailableInterfaces:ConfiguredInterfaces:");
 		}
-		printf("\n");
+		printm("\n");
 	} else {
 		if (options.pnn == CTDB_BROADCAST_ALL) {
 			printf("Public IPs on ALL nodes\n");
@@ -3019,11 +3033,11 @@ static int control_ip(struct ctdb_context *ctdb, int argc, const char **argv)
 		}
 
 		if (options.machinereadable){
-			printf(":%s:%d:",
+			printm(":%s:%d:",
 				ctdb_addr_to_str(&ips->ips[ips->num-i].addr),
 				ips->ips[ips->num-i].pnn);
 			if (options.verbose){
-				printf("%s:%s:%s:",
+				printm("%s:%s:%s:",
 					aciface?aciface:"",
 					avifaces?avifaces:"",
 					cifaces?cifaces:"");
@@ -3122,14 +3136,14 @@ static int control_ifaces(struct ctdb_context *ctdb, int argc, const char **argv
 	}
 
 	if (options.machinereadable){
-		printf(":Name:LinkStatus:References:\n");
+		printm(":Name:LinkStatus:References:\n");
 	} else {
 		printf("Interfaces on node %u\n", options.pnn);
 	}
 
 	for (i=0; i<ifaces->num; i++) {
 		if (options.machinereadable){
-			printf(":%s:%s:%u\n",
+			printm(":%s:%s:%u\n",
 			       ifaces->ifaces[i].name,
 			       ifaces->ifaces[i].link_state?"1":"0",
 			       (unsigned int)ifaces->ifaces[i].references);
@@ -3532,8 +3546,8 @@ static int control_getmonmode(struct ctdb_context *ctdb, int argc, const char **
 	if (!options.machinereadable){
 		printf("Monitoring mode:%s (%d)\n",monmode==CTDB_MONITORING_ACTIVE?"ACTIVE":"DISABLED",monmode);
 	} else {
-		printf(":mode:\n");
-		printf(":%d:\n",monmode);
+		printm(":mode:\n");
+		printm(":%d:\n",monmode);
 	}
 	return 0;
 }
@@ -3559,8 +3573,8 @@ static int control_getcapabilities(struct ctdb_context *ctdb, int argc, const ch
 		printf("LVS: %s\n", (capabilities&CTDB_CAP_LVS)?"YES":"NO");
 		printf("NATGW: %s\n", (capabilities&CTDB_CAP_NATGW)?"YES":"NO");
 	} else {
-		printf(":RECMASTER:LMASTER:LVS:NATGW:\n");
-		printf(":%d:%d:%d:%d:\n",
+		printm(":RECMASTER:LMASTER:LVS:NATGW:\n");
+		printm(":%d:%d:%d:%d:\n",
 			!!(capabilities&CTDB_CAP_RECMASTER),
 			!!(capabilities&CTDB_CAP_LMASTER),
 			!!(capabilities&CTDB_CAP_LVS),
@@ -3670,9 +3684,11 @@ static int control_lvsmaster(struct ctdb_context *ctdb, int argc, const char **a
 			}
 			if (n->num > 0) {
 				ret = 0;
-				printf(options.machinereadable ?
-				       "%d\n" : "Node %d is LVS master\n",
-				       n->nodes[0].pnn);
+				if (options.machinereadable) {
+					printm("%d\n", n->nodes[0].pnn);
+				} else {
+					printf("Node %d is LVS master\n", n->nodes[0].pnn);
+				}
 				goto done;
 			}
 		}
@@ -4594,7 +4610,7 @@ static int control_getdbmap(struct ctdb_context *ctdb, int argc, const char **ar
 	}
 
 	if(options.machinereadable){
-		printf(":ID:Name:Path:Persistent:Sticky:Unhealthy:ReadOnly:\n");
+		printm(":ID:Name:Path:Persistent:Sticky:Unhealthy:ReadOnly:\n");
 		for(i=0;i<dbmap->num;i++){
 			const char *path;
 			const char *name;
@@ -4612,7 +4628,7 @@ static int control_getdbmap(struct ctdb_context *ctdb, int argc, const char **ar
 			persistent = dbmap->dbs[i].flags & CTDB_DB_FLAGS_PERSISTENT;
 			readonly   = dbmap->dbs[i].flags & CTDB_DB_FLAGS_READONLY;
 			sticky     = dbmap->dbs[i].flags & CTDB_DB_FLAGS_STICKY;
-			printf(":0x%08X:%s:%s:%d:%d:%d:%d:\n",
+			printm(":0x%08X:%s:%s:%d:%d:%d:%d:\n",
 			       dbmap->dbs[i].dbid, name, path,
 			       !!(persistent), !!(sticky),
 			       !!(health), !!(readonly));
@@ -4859,8 +4875,8 @@ static int control_getdebug(struct ctdb_context *ctdb, int argc, const char **ar
 			desc = "Unknown";
 		}
 		if (options.machinereadable){
-			printf(":Name:Level:\n");
-			printf(":%s:%d:\n", desc, level);
+			printm(":Name:Level:\n");
+			printm(":%s:%d:\n", desc, level);
 		} else {
 			printf("Node %u is at debug level %s (%d)\n",
 			       options.pnn, desc, level);
@@ -4884,7 +4900,7 @@ static int control_getreclock(struct ctdb_context *ctdb, int argc, const char **
 	} else {
 		if (options.machinereadable){
 			if (reclock != NULL) {
-				printf("%s", reclock);
+				printm("%s", reclock);
 			}
 		} else {
 			if (reclock == NULL) {
@@ -6144,7 +6160,7 @@ static int control_listnodes(struct ctdb_context *ctdb, int argc, const char **a
 	for(pnn_node=pnn_nodes;pnn_node;pnn_node=pnn_node->next) {
 		const char *addr = ctdb_addr_to_str(&pnn_node->addr);
 		if (options.machinereadable){
-			printf(":%d:%s:\n", pnn_node->pnn, addr);
+			printm(":%d:%s:\n", pnn_node->pnn, addr);
 		} else {
 			printf("%s\n", addr);
 		}
