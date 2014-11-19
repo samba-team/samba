@@ -18,6 +18,7 @@
  */
 
 #include "includes.h"
+#include "lib/sys_rw.h"
 
 /**
  Load from a pipe into memory.

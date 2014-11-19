@@ -24,6 +24,7 @@
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
 #include "lib/util/tevent_unix.h"
+#include "lib/sys_rw.h"
 #include <sys/eventfd.h>
 #include <libaio.h>
 

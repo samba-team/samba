@@ -32,6 +32,7 @@
 #include "lib/util/tevent_unix.h"
 #include "lib/asys/asys.h"
 #include "lib/util/tevent_ntstatus.h"
+#include "lib/sys_rw.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS

@@ -22,6 +22,7 @@
 #include "../lib/util/tevent_ntstatus.h"
 #include "lib/async_req/async_sock.h"
 #include "libsmb/nmblib.h"
+#include "lib/sys_rw.h"
 
 static const char *nmbd_socket_dir(void)
 {

@@ -29,6 +29,7 @@
 #include "messages.h"
 #include "libcli/security/security.h"
 #include "../libcli/smb/smb2_create_ctx.h"
+#include "lib/sys_rw.h"
 
 /*
  * Enhanced OS X and Netatalk compatibility

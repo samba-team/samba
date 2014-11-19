@@ -26,6 +26,7 @@
 #include "smbd/scavenger.h"
 #include "locking/proto.h"
 #include "lib/util/util_process.h"
+#include "lib/sys_rw.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_SCAVENGER

@@ -26,6 +26,7 @@
 #include "smbd/globals.h"
 #include "lib/async_req/async_sock.h"
 #include "lib/util/tevent_unix.h"
+#include "lib/sys_rw.h"
 
 #if !defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL) && !defined(HAVE_STRUCT_MSGHDR_MSG_ACCRIGHTS)
 # error Can not pass file descriptors

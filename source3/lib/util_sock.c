@@ -28,6 +28,7 @@
 #include "../lib/util/tevent_unix.h"
 #include "../lib/util/tevent_ntstatus.h"
 #include "../lib/tsocket/tsocket.h"
+#include "lib/sys_rw.h"
 
 const char *client_addr(int fd, char *addr, size_t addrlen)
 {

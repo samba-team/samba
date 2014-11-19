@@ -22,6 +22,7 @@
 
 #include <includes.h>
 #include "transfer_file.h"
+#include "lib/sys_rw.h"
 
 /****************************************************************************
  Transfer some data between two fd's.

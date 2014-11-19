@@ -242,11 +242,6 @@ int sys_set_nfs_quota(const char *path, const char *bdev,
 
 /* The following definitions come from lib/system.c  */
 
-ssize_t sys_read(int fd, void *buf, size_t count);
-ssize_t sys_write(int fd, const void *buf, size_t count);
-ssize_t sys_writev(int fd, const struct iovec *iov, int iovcnt);
-ssize_t sys_pread(int fd, void *buf, size_t count, off_t off);
-ssize_t sys_pwrite(int fd, const void *buf, size_t count, off_t off);
 ssize_t sys_send(int s, const void *msg, size_t len, int flags);
 ssize_t sys_recvfrom(int s, void *buf, size_t len, int flags, struct sockaddr *from, socklen_t *fromlen);
 int sys_fcntl_ptr(int fd, int cmd, void *arg);

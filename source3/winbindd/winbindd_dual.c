@@ -38,6 +38,7 @@
 #include "messages.h"
 #include "../lib/util/tevent_unix.h"
 #include "lib/param/loadparm.h"
+#include "lib/sys_rw.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND

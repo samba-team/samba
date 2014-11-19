@@ -31,6 +31,7 @@
 #include <ccan/hash/hash.h>
 #include "libcli/security/security.h"
 #include "serverid.h"
+#include "lib/sys_rw.h"
 
 #ifdef HAVE_SYS_PRCTL_H
 #include <sys/prctl.h>
