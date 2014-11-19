@@ -6378,6 +6378,7 @@ int main(int argc, const char *argv[])
 {
 	struct ctdb_context *ctdb;
 	char *nodestring = NULL;
+	int machineparsable = 0;
 	struct poptOption popt_options[] = {
 		POPT_AUTOHELP
 		POPT_CTDB_CMDLINE
@@ -6385,6 +6386,7 @@ int main(int argc, const char *argv[])
 		{ "node",      'n', POPT_ARG_STRING, &nodestring, 0, "node", "integer|all" },
 		{ "machinereadable", 'Y', POPT_ARG_NONE, &options.machinereadable, 0, "enable machine readable output", NULL },
 		{ NULL, 'x', POPT_ARG_STRING, &options.machineseparator, 0, "specify separator for machine readable output", "char" },
+		{ NULL, 'X', POPT_ARG_NONE, &machineparsable, 0, "enable machine parsable output with separator |", NULL },
 		{ "verbose",    'v', POPT_ARG_NONE, &options.verbose, 0, "enable verbose output", NULL },
 		{ "maxruntime", 'T', POPT_ARG_INT, &options.maxruntime, 0, "die if runtime exceeds this limit (in seconds)", "integer" },
 		{ "print-emptyrecords", 0, POPT_ARG_NONE, &options.printemptyrecords, 0, "print the empty records when dumping databases (catdb, cattdb, dumpdbbackup)", NULL },
@@ -6442,6 +6444,9 @@ int main(int argc, const char *argv[])
 		}
 	}
 
+	if (machineparsable) {
+		options.machineseparator = "|";
+	}
 	if (options.machineseparator != NULL) {
 		if (strlen(options.machineseparator) != 1) {
 			printf("Invalid separator \"%s\" - "
