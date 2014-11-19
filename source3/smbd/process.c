@@ -39,6 +39,7 @@
 #include "../libcli/security/dom_sid.h"
 #include "../libcli/security/security_token.h"
 #include "lib/id_cache.h"
+#include "lib/sys_rw_data.h"
 #include "serverid.h"
 #include "system/threads.h"
 

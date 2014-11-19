@@ -32,6 +32,7 @@
 #include "libcli/security/security.h"
 #include "serverid.h"
 #include "lib/sys_rw.h"
+#include "lib/sys_rw_data.h"
 
 #ifdef HAVE_SYS_PRCTL_H
 #include <sys/prctl.h>

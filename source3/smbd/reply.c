@@ -43,6 +43,7 @@
 #include "../lib/tsocket/tsocket.h"
 #include "lib/tevent_wait.h"
 #include "libcli/smb/smb_signing.h"
+#include "lib/sys_rw_data.h"
 
 /****************************************************************************
  Ensure we check the path in *exactly* the same way as W2K for a findfirst/findnext

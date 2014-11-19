@@ -23,6 +23,7 @@
 #include "serverid.h"
 #include "ctdbd_conn.h"
 #include "system/select.h"
+#include "lib/sys_rw_data.h"
 
 #include "messages.h"
 

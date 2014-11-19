@@ -29,6 +29,7 @@
 #include "../librpc/gen_ndr/ndr_netlogon.h"
 #include "auth.h"
 #include "../lib/tsocket/tsocket.h"
+#include "lib/sys_rw_data.h"
 
 /* abstraction for the send_over_network function */
 enum sock_type {INTERNET_SOCKET = 0, UNIX_DOMAIN_SOCKET};

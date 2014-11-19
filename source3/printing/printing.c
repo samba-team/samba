@@ -36,6 +36,7 @@
 #include "messages.h"
 #include "util_tdb.h"
 #include "lib/param/loadparm.h"
+#include "lib/sys_rw_data.h"
 
 extern struct current_user current_user;
 extern userdom_struct current_user_info;

@@ -21,6 +21,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "smbd/smbd.h"
+#include "lib/sys_rw_data.h"
 
 struct preopen_state;
 

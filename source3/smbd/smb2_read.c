@@ -26,6 +26,7 @@
 #include "libcli/security/security.h"
 #include "../lib/util/tevent_ntstatus.h"
 #include "rpc_server/srv_pipe_hnd.h"
+#include "lib/sys_rw_data.h"
 
 static struct tevent_req *smbd_smb2_read_send(TALLOC_CTX *mem_ctx,
 					      struct tevent_context *ev,

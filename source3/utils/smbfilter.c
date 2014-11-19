@@ -22,6 +22,7 @@
 #include "system/select.h"
 #include "../lib/util/select.h"
 #include "libsmb/nmblib.h"
+#include "lib/sys_rw_data.h"
 
 #define SECURITY_MASK 0
 #define SECURITY_SET  0

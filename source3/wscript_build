@@ -254,8 +254,8 @@ bld.SAMBA3_SUBSYSTEM('KRBCLIENT',
                      public_deps='krb5samba k5crypto gssapi LIBTSOCKET CLDAP LIBNMB')
 
 bld.SAMBA3_LIBRARY('sys_rw',
-                   source='lib/sys_rw.c',
-                   deps='replace',
+                   source='lib/sys_rw.c lib/sys_rw_data.c',
+                   deps='replace iov_buf',
                    private_library=True)
 
 bld.SAMBA3_LIBRARY('iov_buf',
