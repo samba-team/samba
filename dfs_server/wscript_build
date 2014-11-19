@@ -3,5 +3,5 @@
 bld.SAMBA_LIBRARY('dfs_server_ad',
                   source='dfs_server_ad.c',
                   deps='talloc samdb samba-util LIBTSOCKET',
-                  private_library=True
-                  )
+                  private_library=True,
+                  enabled=bld.AD_DC_BUILD_IS_ENABLED())
