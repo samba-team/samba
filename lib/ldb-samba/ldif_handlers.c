@@ -960,6 +960,18 @@ static int ldif_write_trustAuthInOutBlob(struct ldb_context *ldb, void *mem_ctx,
 }
 
 /*
+  convert a NDR formatted blob to a ldif formatted msDS-TrustForestTrustInfo
+*/
+static int ldif_write_ForestTrustInfo(struct ldb_context *ldb, void *mem_ctx,
+				      const struct ldb_val *in, struct ldb_val *out)
+{
+	return ldif_write_NDR(ldb, mem_ctx, in, out,
+			      sizeof(struct ForestTrustInfo),
+			      (ndr_pull_flags_fn_t)ndr_pull_ForestTrustInfo,
+			      (ndr_print_fn_t)ndr_print_ForestTrustInfo,
+			      true);
+}
+/*
   convert a NDR formatted blob of a partialAttributeSet into text
 */
 static int ldif_write_partialAttributeSet(struct ldb_context *ldb, void *mem_ctx,
@@ -1332,6 +1344,13 @@ static const struct ldb_schema_syntax samba_syntaxes[] = {
 		.comparison_fn	  = ldb_comparison_binary,
 		.operator_fn      = samba_syntax_operator_fn
 	},{
+		.name		  = LDB_SYNTAX_SAMBA_FORESTTRUSTINFO,
+		.ldif_read_fn	  = ldb_handler_copy,
+		.ldif_write_fn	  = ldif_write_ForestTrustInfo,
+		.canonicalise_fn  = ldb_handler_copy,
+		.comparison_fn	  = ldb_comparison_binary,
+		.operator_fn      = samba_syntax_operator_fn
+	},{
 		.name		  = DSDB_SYNTAX_BINARY_DN,
 		.ldif_read_fn	  = ldb_handler_copy,
 		.ldif_write_fn	  = ldb_handler_copy,
@@ -1460,6 +1479,7 @@ static const struct {
 	{ "replUpToDateVector",         LDB_SYNTAX_SAMBA_REPLUPTODATEVECTOR },
 	{ "trustAuthIncoming",          LDB_SYNTAX_SAMBA_TRUSTAUTHINOUTBLOB },
 	{ "trustAuthOutgoing",          LDB_SYNTAX_SAMBA_TRUSTAUTHINOUTBLOB },
+	{ "msDS-TrustForestTrustInfo",  LDB_SYNTAX_SAMBA_FORESTTRUSTINFO },
 	{ "rIDAllocationPool",		LDB_SYNTAX_SAMBA_RANGE64 },
 	{ "rIDPreviousAllocationPool",	LDB_SYNTAX_SAMBA_RANGE64 },
 	{ "rIDAvailablePool",		LDB_SYNTAX_SAMBA_RANGE64 },
