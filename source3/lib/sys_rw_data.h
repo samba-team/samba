@@ -29,5 +29,6 @@ struct iovec;
 
 ssize_t write_data_iov(int fd, const struct iovec *iov, int iovcnt);
 ssize_t write_data(int fd, const void *buffer, size_t n);
+ssize_t read_data(int fd, void *buffer, size_t n);
 
 #endif

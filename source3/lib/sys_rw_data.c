@@ -105,3 +105,25 @@ ssize_t write_data(int fd, const void *buffer, size_t n)
 	iov.iov_len = n;
 	return write_data_iov(fd, &iov, 1);
 }
+
+/*
+ * Blocking read n bytes from a fd
+ */
+
+ssize_t read_data(int fd, void *buffer, size_t n)
+{
+	ssize_t nread;
+
+	nread = 0;
+
+	while (nread < n) {
+		ssize_t ret;
+		ret = sys_read(fd, ((char *)buffer) + nread, n - nread);
+		if (ret <= 0) {
+			return ret;
+		}
+		nread += ret;
+	}
+
+	return nread;
+}
