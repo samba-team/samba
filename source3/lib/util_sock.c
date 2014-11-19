@@ -197,7 +197,7 @@ NTSTATUS read_fd_with_timeout(int fd, char *buf,
  on socket calls.
 ****************************************************************************/
 
-NTSTATUS read_data(int fd, char *buffer, size_t N)
+NTSTATUS read_data_ntstatus(int fd, char *buffer, size_t N)
 {
 	return read_fd_with_timeout(fd, buffer, N, N, 0, NULL);
 }

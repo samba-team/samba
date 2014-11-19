@@ -565,7 +565,7 @@ NTSTATUS read_fd_with_timeout(int fd, char *buf,
 				  size_t mincnt, size_t maxcnt,
 				  unsigned int time_out,
 				  size_t *size_ret);
-NTSTATUS read_data(int fd, char *buffer, size_t N);
+NTSTATUS read_data_ntstatus(int fd, char *buffer, size_t N);
 ssize_t write_data(int fd, const char *buffer, size_t N);
 ssize_t iov_buflen(const struct iovec *iov, int iovlen);
 uint8_t *iov_buf(TALLOC_CTX *mem_ctx, const struct iovec *iov, int iovcnt);

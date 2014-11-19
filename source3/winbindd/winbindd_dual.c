@@ -53,7 +53,7 @@ static NTSTATUS child_read_request(int sock, struct winbindd_request *wreq)
 {
 	NTSTATUS status;
 
-	status = read_data(sock, (char *)wreq, sizeof(*wreq));
+	status = read_data_ntstatus(sock, (char *)wreq, sizeof(*wreq));
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("child_read_request: read_data failed: %s\n",
 			  nt_errstr(status)));
@@ -76,7 +76,8 @@ static NTSTATUS child_read_request(int sock, struct winbindd_request *wreq)
 	/* Ensure null termination */
 	wreq->extra_data.data[wreq->extra_len] = '\0';
 
-	status = read_data(sock, wreq->extra_data.data, wreq->extra_len);
+	status = read_data_ntstatus(sock, wreq->extra_data.data,
+				    wreq->extra_len);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Could not read extra data: %s\n",
 			  nt_errstr(status)));

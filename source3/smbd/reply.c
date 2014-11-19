@@ -4366,7 +4366,8 @@ void reply_writebraw(struct smb_request *req)
 				(int)tcount,(int)nwritten,(int)numtowrite));
 		}
 
-		status = read_data(xconn->transport.sock, buf+4, numtowrite);
+		status = read_data_ntstatus(xconn->transport.sock, buf+4,
+					    numtowrite);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			/* Try and give an error message

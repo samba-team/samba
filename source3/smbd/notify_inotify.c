@@ -219,7 +219,7 @@ static void inotify_handler(struct tevent_context *ev, struct tevent_fd *fde,
 	if (e == NULL) return;
 	((uint8_t *)e)[bufsize] = '\0';
 
-	status = read_data(in->fd, (char *)e0, bufsize);
+	status = read_data_ntstatus(in->fd, (char *)e0, bufsize);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Failed to read all inotify data - %s\n",
 			nt_errstr(status)));

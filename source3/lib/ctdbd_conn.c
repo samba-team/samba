@@ -379,7 +379,7 @@ static NTSTATUS ctdb_read_packet(int fd, TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	status = read_data(fd, (char *)&msglen, sizeof(msglen));
+	status = read_data_ntstatus(fd, (char *)&msglen, sizeof(msglen));
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -396,8 +396,8 @@ static NTSTATUS ctdb_read_packet(int fd, TALLOC_CTX *mem_ctx,
 
 	req->length = msglen;
 
-	status = read_data(fd, ((char *)req) + sizeof(msglen),
-			   msglen - sizeof(msglen));
+	status = read_data_ntstatus(fd, ((char *)req) + sizeof(msglen),
+				    msglen - sizeof(msglen));
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
