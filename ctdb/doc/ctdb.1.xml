@@ -152,6 +152,20 @@
       </listitem>
       </varlistentry>
 
+      <varlistentry><term>-X</term>
+      <listitem>
+	<para>
+	  Produce output in machine readable form for easier parsing
+	  by scripts. This uses a field delimiter of '|'.  Not all
+	  commands support this option.
+	</para>
+	<para>
+	  This is equivalent to "-x|" and avoids some shell quoting
+	  issues.
+	</para>
+      </listitem>
+      </varlistentry>
+
       <varlistentry><term>-t <parameter>TIMEOUT</parameter></term>
       <listitem>
 	<para>
