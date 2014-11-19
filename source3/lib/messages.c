@@ -52,6 +52,7 @@
 #include "lib/util/tevent_unix.h"
 #include "lib/background.h"
 #include "lib/messages_dgm.h"
+#include "lib/iov_buf.h"
 
 struct messaging_callback {
 	struct messaging_callback *prev, *next;

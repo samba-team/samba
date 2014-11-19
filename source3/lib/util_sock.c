@@ -29,6 +29,7 @@
 #include "../lib/util/tevent_ntstatus.h"
 #include "../lib/tsocket/tsocket.h"
 #include "lib/sys_rw.h"
+#include "lib/iov_buf.h"
 
 const char *client_addr(int fd, char *addr, size_t addrlen)
 {
@@ -200,49 +201,6 @@ NTSTATUS read_fd_with_timeout(int fd, char *buf,
 NTSTATUS read_data_ntstatus(int fd, char *buffer, size_t N)
 {
 	return read_fd_with_timeout(fd, buffer, N, N, 0, NULL);
-}
-
-ssize_t iov_buflen(const struct iovec *iov, int iovcnt)
-{
-	size_t buflen = 0;
-	int i;
-
-	for (i=0; i<iovcnt; i++) {
-		size_t thislen = iov[i].iov_len;
-		size_t tmp = buflen + thislen;
-
-		if ((tmp < buflen) || (tmp < thislen)) {
-			/* overflow */
-			return -1;
-		}
-		buflen = tmp;
-	}
-	return buflen;
-}
-
-uint8_t *iov_buf(TALLOC_CTX *mem_ctx, const struct iovec *iov, int iovcnt)
-{
-	int i;
-	ssize_t buflen;
-	uint8_t *buf, *p;
-
-	buflen = iov_buflen(iov, iovcnt);
-	if (buflen == -1) {
-		return NULL;
-	}
-	buf = talloc_array(mem_ctx, uint8_t, buflen);
-	if (buf == NULL) {
-		return NULL;
-	}
-
-	p = buf;
-	for (i=0; i<iovcnt; i++) {
-		size_t len = iov[i].iov_len;
-
-		memcpy(p, iov[i].iov_base, len);
-		p += len;
-	}
-	return buf;
 }
 
 /****************************************************************************

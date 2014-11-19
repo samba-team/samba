@@ -258,6 +258,11 @@ bld.SAMBA3_LIBRARY('sys_rw',
                    deps='replace',
                    private_library=True)
 
+bld.SAMBA3_LIBRARY('iov_buf',
+                   source='lib/iov_buf.c',
+                   deps='replace talloc',
+                   private_library=True)
+
 bld.SAMBA3_SUBSYSTEM('samba3util',
                    source='''lib/system.c
                    lib/sendfile.c
@@ -269,7 +274,7 @@ bld.SAMBA3_SUBSYSTEM('samba3util',
                    lib/util_sock.c
                    lib/util_transfer_file.c
                    lib/sock_exec.c''',
-                   deps='ndr samba-security NDR_SECURITY samba-util util_tdb ccan-hash sys_rw')
+                   deps='ndr samba-security NDR_SECURITY samba-util util_tdb ccan-hash sys_rw iov_buf')
 
 if bld.CONFIG_GET("CTDB_CFLAGS") and bld.CONFIG_GET("CTDB_INCLUDE"):
     SAMBA_CLUSTER_SUPPORT_SOURCES='''
