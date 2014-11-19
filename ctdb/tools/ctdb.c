@@ -43,6 +43,7 @@ static struct {
 	uint32_t pnn;
 	uint32_t *nodes;
 	int machinereadable;
+	const char *machineseparator;
 	int verbose;
 	int maxruntime;
 	int printemptyrecords;
@@ -75,9 +76,18 @@ static int printm(const char *format, ...)
 {
 	va_list ap;
 	int ret;
+	size_t len = strlen(format);
+	char new_format[len+1];
+
+	strcpy(new_format, format);
+
+	if (options.machineseparator[0] != ':') {
+		all_string_sub(new_format,
+			       ":", options.machineseparator, len + 1);
+	}
 
 	va_start(ap, format);
-	ret = vprintf(format, ap);
+	ret = vprintf(new_format, ap);
 	va_end(ap);
 
 	return ret;
@@ -6346,7 +6356,8 @@ static void usage(void)
 "Usage: ctdb [options] <control>\n" \
 "Options:\n" \
 "   -n <node>          choose node number, or 'all' (defaults to local node)\n"
-"   -Y                 generate machinereadable output\n"
+"   -Y                 generate machine readable output\n"
+"   -x <char>          specify delimiter for machine readable output\n"
 "   -v                 generate verbose output\n"
 "   -t <timelimit>     set timelimit for control in seconds (default %u)\n", options.timelimit);
 	printf("Controls:\n");
@@ -6378,7 +6389,8 @@ int main(int argc, const char *argv[])
 		POPT_CTDB_CMDLINE
 		{ "timelimit", 't', POPT_ARG_INT, &options.timelimit, 0, "timelimit", "integer" },
 		{ "node",      'n', POPT_ARG_STRING, &nodestring, 0, "node", "integer|all" },
-		{ "machinereadable", 'Y', POPT_ARG_NONE, &options.machinereadable, 0, "enable machinereadable output", NULL },
+		{ "machinereadable", 'Y', POPT_ARG_NONE, &options.machinereadable, 0, "enable machine readable output", NULL },
+		{ NULL, 'x', POPT_ARG_STRING, &options.machineseparator, 0, "specify separator for machine readable output", "char" },
 		{ "verbose",    'v', POPT_ARG_NONE, &options.verbose, 0, "enable verbose output", NULL },
 		{ "maxruntime", 'T', POPT_ARG_INT, &options.maxruntime, 0, "die if runtime exceeds this limit (in seconds)", "integer" },
 		{ "print-emptyrecords", 0, POPT_ARG_NONE, &options.printemptyrecords, 0, "print the empty records when dumping databases (catdb, cattdb, dumpdbbackup)", NULL },
@@ -6434,6 +6446,20 @@ int main(int argc, const char *argv[])
 			/* default timeout is 120 seconds */
 			options.maxruntime = 120;
 		}
+	}
+
+	if (options.machineseparator != NULL) {
+		if (strlen(options.machineseparator) != 1) {
+			printf("Invalid separator \"%s\" - "
+			       "must be single character\n",
+			       options.machineseparator);
+			exit(1);
+		}
+
+		/* -x implies -Y */
+		options.machinereadable = true;
+	} else if (options.machinereadable) {
+		options.machineseparator = ":";
 	}
 
 	signal(SIGALRM, ctdb_alarm);
