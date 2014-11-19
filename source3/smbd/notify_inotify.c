@@ -24,6 +24,7 @@
 #include "includes.h"
 #include "../librpc/gen_ndr/notify.h"
 #include "smbd/smbd.h"
+#include "lib/sys_rw_data.h"
 
 #ifdef HAVE_INOTIFY
 
@@ -201,7 +202,7 @@ static void inotify_handler(struct tevent_context *ev, struct tevent_fd *fde,
 	struct inotify_event *e0, *e;
 	uint32_t prev_cookie=0;
 	int prev_wd = -1;
-	NTSTATUS status;
+	ssize_t ret;
 
 	/*
 	  we must use FIONREAD as we cannot predict the length of the
@@ -219,10 +220,10 @@ static void inotify_handler(struct tevent_context *ev, struct tevent_fd *fde,
 	if (e == NULL) return;
 	((uint8_t *)e)[bufsize] = '\0';
 
-	status = read_data_ntstatus(in->fd, (char *)e0, bufsize);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("Failed to read all inotify data - %s\n",
-			nt_errstr(status)));
+	ret = read_data(in->fd, e0, bufsize);
+	if (ret != bufsize) {
+		DEBUG(0, ("Failed to read all inotify data - %s\n",
+			  strerror(errno)));
 		talloc_free(e0);
 		/* the inotify fd will now be out of sync,
 		 * can't keep reading data off it */
