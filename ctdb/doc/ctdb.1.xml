@@ -137,7 +137,17 @@
       <listitem>
 	<para>
 	  Produce output in machine readable form for easier parsing
-	  by scripts. Not all commands support this option.
+	  by scripts. This uses a field delimiter of ':'.  Not all
+	  commands support this option.
+	</para>
+      </listitem>
+      </varlistentry>
+
+      <varlistentry><term>-x <parameter>SEPARATOR</parameter></term>
+      <listitem>
+	<para>
+	  Use SEPARATOR to delimit fields in machine readable output.
+	  This implies -Y.
 	</para>
       </listitem>
       </varlistentry>
