@@ -4,7 +4,7 @@ bld.SAMBA_LIBRARY('dnsserver_common',
         source='dnsserver_common.c',
         deps='samba-util errors ldbsamba clidns',
         private_library=True,
-        )
+        enabled=bld.AD_DC_BUILD_IS_ENABLED())
 
 bld.SAMBA_MODULE('service_dns',
         source='dns_server.c dns_query.c dns_update.c dns_utils.c dns_crypto.c',
