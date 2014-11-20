@@ -55,6 +55,14 @@ struct smb2_transport *smb2_transport_init(struct smbcli_socket *sock,
 	transport->ev = sock->event.ctx;
 	transport->options = *options;
 
+	if (transport->options.max_protocol == PROTOCOL_DEFAULT) {
+		transport->options.max_protocol = PROTOCOL_LATEST;
+	}
+
+	if (transport->options.max_protocol < PROTOCOL_SMB2_02) {
+		transport->options.max_protocol = PROTOCOL_LATEST;
+	}
+
 	TALLOC_FREE(sock->event.fde);
 	TALLOC_FREE(sock->event.te);
 
