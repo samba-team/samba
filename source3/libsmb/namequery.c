@@ -2307,7 +2307,6 @@ static NTSTATUS resolve_hosts(const char *name, int name_type,
 	struct addrinfo *res = NULL;
 	int ret = -1;
 	int i = 0;
-	const char *dns_hosts_file;
 
 	if ( name_type != 0x20 && name_type != 0x0) {
 		DEBUG(5, ("resolve_hosts: not appropriate "
@@ -2331,32 +2330,6 @@ static NTSTATUS resolve_hosts(const char *name, int name_type,
 	/* Unless we have IPv6, we really only want IPv4 addresses back. */
 	hints.ai_family = AF_INET;
 #endif
-
-	dns_hosts_file = lp_parm_const_string(-1, "resolv", "host file", NULL);
-	if (dns_hosts_file) {
-		struct sockaddr_storage *ss_list;
-		NTSTATUS status;
-		TALLOC_CTX *ctx = talloc_stackframe();
-		if (!ctx) {
-			return NT_STATUS_NO_MEMORY;
-		}
-
-		status = resolve_dns_hosts_file_as_sockaddr(dns_hosts_file, name, false,
-							    ctx, &ss_list, return_count);
-		if (NT_STATUS_IS_OK(status)) {
-			if (convert_ss2service(return_iplist,
-					       ss_list,
-					       return_count)) {
-				talloc_free(ctx);
-				return NT_STATUS_OK;
-			} else {
-				talloc_free(ctx);
-				return NT_STATUS_NO_MEMORY;
-			}
-		}
-		talloc_free(ctx);
-		return NT_STATUS_UNSUCCESSFUL;
-	}
 
 	ret = getaddrinfo(name,
 			NULL,
