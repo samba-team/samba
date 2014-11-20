@@ -53,7 +53,7 @@ case "$1" in
 
         # Wait until we no longer serve any ip addresses at all
         PNN=`ctdb pnn | cut -d: -f2`
-        while `ctdb -Y ip | cut -d: -f3 | egrep "^$PNN$" >/dev/null`; do
+        while `ctdb -X ip | cut -d'|' -f3 | egrep "^$PNN$" >/dev/null`; do
                 sleep 1
         done
         ;;

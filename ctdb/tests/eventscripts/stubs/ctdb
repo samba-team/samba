@@ -13,7 +13,7 @@ not_implemented_exit_code=1
 usage ()
 {
     cat >&2 <<EOF
-Usage: $prog [-Y] cmd
+Usage: $prog [-X] cmd
 
 A fake CTDB stub that prints items depending on the variables
 FAKE_CTDB_PNN (default 0) depending on command-line options.
@@ -28,7 +28,7 @@ not_implemented ()
 }
 
 # Don't set $POSIXLY_CORRECT here.
-_temp=$(getopt -n "$prog" -o "Yvhn:" -l help -- "$@") || \
+_temp=$(getopt -n "$prog" -o "Xvhn:" -l help -- "$@") || \
     usage
 
 eval set -- "$_temp"
@@ -41,7 +41,7 @@ args="$*"
 
 while true ; do
     case "$1" in
-	-Y) machine_readable=true ; shift ;;
+	-X) machine_readable=true ; shift ;;
 	-v) verbose=true ; shift ;;
 	-n) nodespec="$2" ; shift 2 ;;
 	--) shift ; break ;;
@@ -173,9 +173,9 @@ ctdb_ip ()
 	    if [ "$_pnn" = "$_mypnn" ]; then
 		_my_iface="$_first_iface"
 	    fi
-	    echo ":${_ip}:${_pnn}:${_my_iface}:${_first_iface}:${_ifaces}:"
+	    echo "|${_ip}|${_pnn}|${_my_iface}|${_first_iface}|${_ifaces}|"
 	else
-	    echo ":${_ip}:${_pnn}:"
+	    echo "|${_ip}|${_pnn}|"
 	fi
     done
 }
@@ -307,9 +307,9 @@ ctdb_natgwlist ()
 case "$1" in
     gettickles)
 	setup_tickles
-	echo ":source ip:port:destination ip:port:"
+	echo "|source ip|port|destination ip|port|"
 	while read src dst ; do
-	    echo ":${src}:${dst}:"
+	    echo "|${src}|${dst}|"
 	done <"$tickles_file"
 	;;
     addtickle)
@@ -331,7 +331,7 @@ case "$1" in
 	;;
     ifaces)
 	# Assume -Y.
-	echo ":Name:LinkStatus:References:"
+	echo "|Name|LinkStatus|References|"
 	_f="${CTDB_PUBLIC_ADDRESSES:-${CTDB_BASE}/public_addresses}"
 	if [ -r "$_f" ] ; then
 	    while read _ip _iface ; do
@@ -344,7 +344,7 @@ case "$1" in
 			    _status=0
 			fi
 			# Nobody looks at references
-			echo ":${_iface}:${_status}:0"
+			echo "|${_iface}|${_status}|0|"
 		esac
 	    done <"$_f" |
 	    sort -u
@@ -374,7 +374,7 @@ case "$1" in
 	$machine_readable || not_implemented "$1, without -Y"
 	[ "$2" != "all" ] || not_implemented "scriptstatus all"
 	# For now just assume everything is good.
-	echo ":Type:Name:Code:Status:Start:End:Error Output...:"
+	echo "|Type|Name|Code|Status|Start|End|Error Output...|"
 	for _i in "$CTDB_BASE/events.d/"*.* ; do
 	    _d1=$(date '+%s.%N')
 	    _b="${_i##*/}" # basename
@@ -392,7 +392,7 @@ case "$1" in
 		_err_out=""
 	    fi
 	    _d2=$(date '+%s.%N')
-	    echo ":${2:-monitor}:${_b}:${_code}:${_status}:${_d1}:${_d2}:${_err_out}:"
+	    echo "|${2:-monitor}|${_b}|${_code}|${_status}|${_d1}|${_d2}|${_err_out}|"
 	done
 	;;
     gratiousarp) : ;;  # Do nothing for now

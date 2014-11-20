@@ -36,7 +36,7 @@ case "$1" in
 	# start the iscsi daemon
 	tgtd >/dev/null 2>/dev/null
 
-	ips=$(ctdb -Y ip | awk -F: -v pnn=$this_node '$3 == pnn {print $2}')
+	ips=$(ctdb -X ip | awk -F'|' -v pnn=$this_node '$3 == pnn {print $2}')
 	for ip in $ips ; do
 	    script="${CTDB_START_ISCSI_SCRIPTS}/${ip}.sh"
 	    if [ -x "$script" ] ; then

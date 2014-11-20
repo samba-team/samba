@@ -46,7 +46,7 @@ get_all_interfaces ()
 
     # Get the interfaces for which CTDB has public IPs configured.
     # That is, for all but the 1st line, get the 1st field.
-    ctdb_ifaces=$(ctdb -Y ifaces | sed -e '1d' -e 's@^:@@' -e 's@:.*@@')
+    ctdb_ifaces=$(ctdb -X ifaces | sed -e '1d' -e 's@^|@@' -e 's@|.*@@')
 
     # Add $ctdb_interfaces and uniquify
     all_interfaces=$(echo $all_interfaces $ctdb_ifaces | tr ' ' '\n' | sort -u)

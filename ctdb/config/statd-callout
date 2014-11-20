@@ -37,12 +37,12 @@ case "$1" in
 	cip="$2"
 	pnn=$(ctdb xpnn | sed -e 's/.*://')
 	date=$(date '+%s')
-	ctdb ip -Y |
+	ctdb ip -X |
 	tail -n +2 | {
 	    # This all needs to be in the end of the pipe so it
 	    # doesn't get lost
 	    items=""
-	    while IFS=":" read x sip node x ; do
+	    while IFS="|" read x sip node x ; do
 		[ "$node" = "$pnn" ] || continue # not us
 		key="statd-state@${sip}@${cip}"
 		item="\"${key}\" \"${date}\""
@@ -58,12 +58,12 @@ case "$1" in
 	# so we must add it to all the IPs that we serve
 	cip="$2"
 	pnn=$(ctdb xpnn | sed -e 's/.*://')
-	ctdb ip -Y |
+	ctdb ip -X |
 	tail -n +2 | {
 	    # This all needs to be in the end of the pipe so it
 	    # doesn't get lost
 	    items=""
-	    while IFS=":" read x sip node x ; do
+	    while IFS="|" read x sip node x ; do
 		[ "$node" = "$pnn" ] || continue # not us
 		key="statd-state@${sip}@${cip}"
 		item="\"${key}\" \"\""
