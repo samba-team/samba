@@ -58,6 +58,14 @@ struct smbcli_transport *smbcli_transport_init(struct smbcli_socket *sock,
 	transport->ev = sock->event.ctx;
 	transport->options = *options;
 
+	if (transport->options.max_protocol == PROTOCOL_DEFAULT) {
+		transport->options.max_protocol = PROTOCOL_NT1;
+	}
+
+	if (transport->options.max_protocol > PROTOCOL_NT1) {
+		transport->options.max_protocol = PROTOCOL_NT1;
+	}
+
 	TALLOC_FREE(sock->event.fde);
 	TALLOC_FREE(sock->event.te);
 
