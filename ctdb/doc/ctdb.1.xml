@@ -535,12 +535,12 @@ name:eth4 link:down references:0
 name:eth3 link:up references:1
 name:eth2 link:up references:1
 
-# ctdb ifaces -Y
-:Name:LinkStatus:References:
-:eth5:1:2:
-:eth4:0:0:
-:eth3:1:1:
-:eth2:1:1:
+# ctdb -X ifaces
+|Name|LinkStatus|References|
+|eth5|1|2|
+|eth4|0|0|
+|eth3|1|1|
+|eth2|1|1|
 	</screen>
       </refsect3>
     </refsect2>
@@ -553,7 +553,7 @@ name:eth2 link:up references:1
       <refsect3>
 	<title>Example</title>
 	<screen>
-# ctdb ip
+# ctdb ip -v
 Public IPs on node 0
 172.31.91.82 node[1] active[] available[eth2,eth3] configured[eth2,eth3]
 172.31.91.83 node[0] active[eth3] available[eth2,eth3] configured[eth2,eth3]
@@ -564,16 +564,16 @@ Public IPs on node 0
 172.31.92.84 node[1] active[] available[eth5] configured[eth4,eth5]
 172.31.92.85 node[0] active[eth5] available[eth5] configured[eth4,eth5]
 
-# ctdb ip -Y
-:Public IP:Node:ActiveInterface:AvailableInterfaces:ConfiguredInterfaces:
-:172.31.91.82:1::eth2,eth3:eth2,eth3:
-:172.31.91.83:0:eth3:eth2,eth3:eth2,eth3:
-:172.31.91.84:1::eth2,eth3:eth2,eth3:
-:172.31.91.85:0:eth2:eth2,eth3:eth2,eth3:
-:172.31.92.82:1::eth5:eth4,eth5:
-:172.31.92.83:0:eth5:eth5:eth4,eth5:
-:172.31.92.84:1::eth5:eth4,eth5:
-:172.31.92.85:0:eth5:eth5:eth4,eth5:
+# ctdb -X ip -v
+|Public IP|Node|ActiveInterface|AvailableInterfaces|ConfiguredInterfaces|
+|172.31.91.82|1||eth2,eth3|eth2,eth3|
+|172.31.91.83|0|eth3|eth2,eth3|eth2,eth3|
+|172.31.91.84|1||eth2,eth3|eth2,eth3|
+|172.31.91.85|0|eth2|eth2,eth3|eth2,eth3|
+|172.31.92.82|1||eth5|eth4,eth5|
+|172.31.92.83|0|eth5|eth5|eth4,eth5|
+|172.31.92.84|1||eth5|eth4,eth5|
+|172.31.92.85|0|eth5|eth5|eth4,eth5|
 	</screen>
       </refsect3>
     </refsect2>
@@ -1172,9 +1172,9 @@ dbid:0x7bbbd26c name:passdb.tdb path:/var/ctdb/persistent/passdb.tdb.0 PERSISTEN
 Number of databases:1
 dbid:0xb775fff6 name:secrets.tdb path:/var/ctdb/persistent/secrets.tdb.0 PERSISTENT UNHEALTHY
 
-# ctdb -Y getdbmap
-:ID:Name:Path:Persistent:Unhealthy:
-:0x7bbbd26c:passdb.tdb:/var/ctdb/persistent/passdb.tdb.0:1:0:
+# ctdb -X getdbmap
+|ID|Name|Path|Persistent|Unhealthy|
+|0x7bbbd26c|passdb.tdb|/var/ctdb/persistent/passdb.tdb.0|1|0|
 	</screen>
       </refsect3>
     </refsect2>
