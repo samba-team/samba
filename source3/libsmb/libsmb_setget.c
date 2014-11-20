@@ -467,14 +467,14 @@ smbc_setOptionNoAutoAnonymousLogin(SMBCCTX *c, smbc_bool b)
         }
 }
 
-/** Get whether to enable use of kerberos */
+/** Get whether to enable use of the winbind ccache */
 smbc_bool
 smbc_getOptionUseCCache(SMBCCTX *c)
 {
         return c->flags & SMB_CTX_FLAG_USE_CCACHE ? True : False;
 }
 
-/** Set whether to enable use of kerberos */
+/** Set whether to enable use of the winbind ccache */
 void
 smbc_setOptionUseCCache(SMBCCTX *c, smbc_bool b)
 {
@@ -485,7 +485,7 @@ smbc_setOptionUseCCache(SMBCCTX *c, smbc_bool b)
         }
 }
 
-/** Get whether to enable use of the winbind ccache */
+/** Get indication whether the password supplied is the NT hash */
 smbc_bool
 smbc_getOptionUseNTHash(SMBCCTX *c)
 {
