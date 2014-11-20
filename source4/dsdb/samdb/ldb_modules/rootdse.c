@@ -142,10 +142,8 @@ static int expand_dn_in_message(struct ldb_module *module, struct ldb_message *m
 			return ret;
 		}
 
-
-		ret = ldb_request_add_control(req2,
-					LDB_CONTROL_EXTENDED_DN_OID,
-					edn_control->critical, edn);
+		ret = dsdb_request_add_controls(req2, DSDB_FLAG_AS_SYSTEM |
+						DSDB_SEARCH_SHOW_EXTENDED_DN);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(tmp_ctx);
 			return ldb_error(ldb, ret, "Failed to add control");
