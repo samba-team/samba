@@ -537,10 +537,10 @@ name:eth2 link:up references:1
 
 # ctdb ifaces -Y
 :Name:LinkStatus:References:
-:eth5:1:2
-:eth4:0:0
-:eth3:1:1
-:eth2:1:1
+:eth5:1:2:
+:eth4:0:0:
+:eth3:1:1:
+:eth2:1:1:
 	</screen>
       </refsect3>
     </refsect2>
