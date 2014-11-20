@@ -60,7 +60,7 @@ bld.SAMBA_SUBSYSTEM('LIBCLI_RESOLVE',
 
 
 bld.SAMBA_SUBSYSTEM('LP_RESOLVE',
-	source='resolve/bcast.c resolve/nbtlist.c resolve/wins.c resolve/dns_ex.c resolve/file.c resolve/host.c resolve/lmhosts.c resolve/resolve_lp.c',
+	source='resolve/bcast.c resolve/nbtlist.c resolve/wins.c resolve/dns_ex.c resolve/host.c resolve/lmhosts.c resolve/resolve_lp.c',
 	autoproto='resolve/lp_proto.h',
 	deps='cli-nbt samba-hostconfig netif addns'
 	)

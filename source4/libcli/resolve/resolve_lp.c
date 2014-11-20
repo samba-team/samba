@@ -39,8 +39,6 @@ struct resolve_context *lpcfg_resolve_context(struct loadparm_context *lp_ctx)
 			if (lpcfg_disable_netbios(lp_ctx) == false) {
 				resolve_context_add_bcast_method_lp(ret, lp_ctx);
 			}
-		} else if (!strcmp(methods[i], "file")) {
-			resolve_context_add_file_method_lp(ret, lp_ctx);
 		} else if (!strcmp(methods[i], "lmhosts")) {
 			resolve_context_add_lmhosts_method(ret);
 		} else if (!strcmp(methods[i], "host")) {
