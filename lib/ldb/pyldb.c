@@ -2831,7 +2831,7 @@ static PyMethodDef py_ldb_msg_methods[] = {
 	{ "items", (PyCFunction)py_ldb_msg_items, METH_NOARGS, NULL },
 	{ "elements", (PyCFunction)py_ldb_msg_elements, METH_NOARGS, NULL },
 	{ "add", (PyCFunction)py_ldb_msg_add, METH_VARARGS,
-		"S.append(element)\n\n"
+		"S.add(element)\n\n"
 		"Add an element to this message." },
 	{ NULL },
 };
