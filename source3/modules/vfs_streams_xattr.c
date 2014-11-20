@@ -687,11 +687,26 @@ static NTSTATUS walk_xattr_streams(vfs_handle_struct *handle, files_struct *fsp,
 	for (i=0; i<num_names; i++) {
 		struct ea_struct ea;
 
+		/*
+		 * We want to check with samba_private_attr_name()
+		 * whether the xattr name is a private one,
+		 * unfortunately it flags xattrs that begin with the
+		 * default streams prefix as private.
+		 *
+		 * By only calling samba_private_attr_name() in case
+		 * the xattr does NOT begin with the default prefix,
+		 * we know that if it returns 'true' it definitely one
+		 * of our internal xattr like "user.DOSATTRIB".
+		 */
+		if (strncasecmp_m(names[i], SAMBA_XATTR_DOSSTREAM_PREFIX,
+				  strlen(SAMBA_XATTR_DOSSTREAM_PREFIX)) != 0) {
+			if (samba_private_attr_name(names[i])) {
+				continue;
+			}
+		}
+
 		if (strncmp(names[i], config->prefix,
 			    config->prefix_len) != 0) {
-			continue;
-		}
-		if (samba_private_attr_name(names[i])) {
 			continue;
 		}
 
