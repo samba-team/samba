@@ -15,7 +15,7 @@ Steps:
 2. Run 'ctdb ip' on one of the nodes and verify the list of IP
    addresses displayed (cross check the result with the output of
    'ip addr show' on the node).
-3. Verify that colon-separated output is generated with the -Y option.
+3. Verify that pipe-separated output is generated with the -X option.
 
 Expected results:
 
@@ -37,14 +37,14 @@ ips=$(echo "$out" | sed \
 	-e 's@ node\[@ @' \
 	-e 's@\].*$@@')
 machineout=$(echo "$out" | sed -r \
-	-e 's@^| |$@:@g' \
+	-e 's@^| |$@\|@g' \
 	-e 's@[[:alpha:]]+\[@@g' \
 	-e 's@\]@@g')
 
 if [ -z "$TEST_LOCAL_DAEMONS" ]; then
     while read ip pnn ; do
         try_command_on_node $pnn "ip addr show"
-        if [ "${out/inet ${ip}\/}" != "$out" ] ; then
+        if [ "${out/inet* ${ip}\/}" != "$out" ] ; then
             echo "GOOD: node $pnn appears to have $ip assigned"
         else
             echo "BAD:  node $pnn does not appear to have $ip assigned"
@@ -55,7 +55,7 @@ fi
 
 [ "$testfailures" != 1 ] && echo "Looks good!"
 
-cmd="$CTDB -Y ip -n all | tail -n +2"
+cmd="$CTDB -X ip -n all | tail -n +2"
 echo "Checking that \"$cmd\" produces expected output..."
 
 try_command_on_node 1 "$cmd"

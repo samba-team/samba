@@ -163,13 +163,13 @@ all_ips_on_node()
 {
     local node="$1"
     try_command_on_node $node \
-	"$CTDB ip -Y | awk -F: 'NR > 1 { print \$2, \$3 }'"
+	"$CTDB ip -X | awk -F'|' 'NR > 1 { print \$2, \$3 }'"
 }
 
 _select_test_node_and_ips ()
 {
     try_command_on_node any \
-	"$CTDB ip -Y -n all | awk -F: 'NR > 1 { print \$2, \$3 }'"
+	"$CTDB ip -X -n all | awk -F'|' 'NR > 1 { print \$2, \$3 }'"
 
     test_node=""  # this matches no PNN
     test_node_ips=""
@@ -209,7 +209,7 @@ select_test_node_and_ips ()
 get_test_ip_mask_and_iface ()
 {
     # Find the interface
-    try_command_on_node $test_node "$CTDB ip -v -Y | awk -F: -v ip=$test_ip '\$2 == ip { print \$4 }'"
+    try_command_on_node $test_node "$CTDB ip -v -X | awk -F'|' -v ip=$test_ip '\$2 == ip { print \$4 }'"
     iface="$out"
 
     if [ -z "$TEST_LOCAL_DAEMONS" ] ; then
@@ -334,16 +334,16 @@ node_has_status ()
 
     local bits fpat mpat rpat
     case "$status" in
-	(unhealthy)    bits="?:?:?:1:*" ;;
-	(healthy)      bits="?:?:?:0:*" ;;
-	(disconnected) bits="1:*" ;;
-	(connected)    bits="0:*" ;;
-	(banned)       bits="?:1:*" ;;
-	(unbanned)     bits="?:0:*" ;;
-	(disabled)     bits="?:?:1:*" ;;
-	(enabled)      bits="?:?:0:*" ;;
-	(stopped)      bits="?:?:?:?:1:*" ;;
-	(notstopped)   bits="?:?:?:?:0:*" ;;
+	(unhealthy)    bits="?|?|?|1|*" ;;
+	(healthy)      bits="?|?|?|0|*" ;;
+	(disconnected) bits="1|*" ;;
+	(connected)    bits="0|*" ;;
+	(banned)       bits="?|1|*" ;;
+	(unbanned)     bits="?|0|*" ;;
+	(disabled)     bits="?|?|1|*" ;;
+	(enabled)      bits="?|?|0|*" ;;
+	(stopped)      bits="?|?|?|?|1|*" ;;
+	(notstopped)   bits="?|?|?|?|0|*" ;;
 	(frozen)       fpat='^[[:space:]]+frozen[[:space:]]+1$' ;;
 	(unfrozen)     fpat='^[[:space:]]+frozen[[:space:]]+0$' ;;
 	(monon)        mpat='^Monitoring mode:ACTIVE \(0\)$' ;;
@@ -357,13 +357,13 @@ node_has_status ()
     if [ -n "$bits" ] ; then
 	local out x line
 
-	out=$($CTDB -Y status 2>&1) || return 1
+	out=$($CTDB -X status 2>&1) || return 1
 
 	{
             read x
             while read line ; do
 		# This needs to be done in 2 steps to avoid false matches.
-		local line_bits="${line#:${pnn}:*:}"
+		local line_bits="${line#|${pnn}|*|}"
 		[ "$line_bits" = "$line" ] && continue
 		[ "${line_bits#${bits}}" != "$line_bits" ] && return 0
             done
@@ -566,7 +566,7 @@ restart_ctdb ()
 	# Cluster is still healthy.  Good, we're done!
 	if ! onnode 0 $CTDB_TEST_WRAPPER _cluster_is_healthy ; then
 	    echo "Cluster became UNHEALTHY again [$(date)]"
-	    onnode -p all ctdb status -Y 2>&1
+	    onnode -p all ctdb status -X 2>&1
 	    onnode -p all ctdb scriptstatus 2>&1
 	    echo "Restarting..."
 	    continue
@@ -580,7 +580,7 @@ restart_ctdb ()
     done
 
     echo "Cluster UNHEALTHY...  too many attempts..."
-    onnode -p all ctdb status -Y 2>&1
+    onnode -p all ctdb status -X 2>&1
     onnode -p all ctdb scriptstatus 2>&1
 
     # Try to make the calling test fail

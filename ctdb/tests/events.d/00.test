@@ -26,9 +26,9 @@ case $cmd in
 	;;
      startup)
 	echo "ctdb startup event"
-	IFACES=`ctdb ifaces -Y | grep -v '^:Name:LinkStatus:References:'`
+	IFACES=`ctdb ifaces -X | grep -v '^|Name|LinkStatus|References|'`
 	for I in $IFACES; do
-		IFACE=`echo -n "$I" | cut -d ':' -f2`
+		IFACE=`echo -n "$I" | cut -d '|' -f2`
 		ctdb setifacelink $IFACE up
 	done
 	exit 0;
