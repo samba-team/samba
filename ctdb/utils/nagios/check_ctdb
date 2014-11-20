@@ -177,7 +177,7 @@ sub safe_close_command {
 
 if ($info eq "scriptstatus") {
     $result = OK;
-    safe_open_command('ctdb', '-Y', 'scriptstatus');
+    safe_open_command('ctdb', '-X', 'scriptstatus');
     if ($result == OK) {
         my $script_count = 0;
         my $ok_script_count = 0;
@@ -187,7 +187,7 @@ if ($info eq "scriptstatus") {
             next if $. == 1; # Header
             $script_count++;
             chop;
-            my ($col0, $type, $name, $code, $status, $start, $end, @error) = split(":");
+            my ($col0, $type, $name, $code, $status, $start, $end, @error) = split("|");
             if ($col0 ne '') {
               # Old version, before 30 Aug 2011 and commit a779d83a6213
               ($type, $name, $code, $status, $start, $end, @error) = ($col0, $type, $name, $code, $status, $start, $end, @error);
