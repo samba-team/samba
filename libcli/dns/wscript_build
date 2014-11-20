@@ -3,7 +3,3 @@
 bld.SAMBA_SUBSYSTEM('clidns',
         source='dns.c',
         public_deps='LIBTSOCKET tevent-util')
-
-bld.SAMBA_SUBSYSTEM('dnshostsfile',
-        source='dns_hosts_file.c',
-        public_deps='samba-util errors')
