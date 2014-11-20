@@ -25,40 +25,33 @@
 /* The following definitions come from libads/dns.c  */
 
 NTSTATUS ads_dns_lookup_srv(TALLOC_CTX *ctx,
-				const char *dns_hosts_file,
 				const char *name,
 				struct dns_rr_srv **dclist,
 				int *numdcs);
 NTSTATUS ads_dns_lookup_ns(TALLOC_CTX *ctx,
-				const char *dns_hosts_file,
 				const char *dnsdomain,
 				struct dns_rr_ns **nslist,
 				int *numns);
 NTSTATUS ads_dns_query_dcs(TALLOC_CTX *ctx,
-			   const char *dns_hosts_file,
 			   const char *realm,
 			   const char *sitename,
 			   struct dns_rr_srv **dclist,
 			   int *numdcs );
 NTSTATUS ads_dns_query_gcs(TALLOC_CTX *ctx,
-			   const char *dns_hosts_file,
 			   const char *realm,
 			   const char *sitename,
 			   struct dns_rr_srv **dclist,
 			   int *numdcs );
 NTSTATUS ads_dns_query_kdcs(TALLOC_CTX *ctx,
-			    const char *dns_hosts_file,
 			    const char *dns_forest_name,
 			    const char *sitename,
 			    struct dns_rr_srv **dclist,
 			    int *numdcs );
 NTSTATUS ads_dns_query_pdc(TALLOC_CTX *ctx,
-			   const char *dns_hosts_file,
 			   const char *dns_domain_name,
 			   struct dns_rr_srv **dclist,
 			   int *numdcs );
 NTSTATUS ads_dns_query_dcs_guid(TALLOC_CTX *ctx,
-				const char *dns_hosts_file,
 				const char *dns_forest_name,
 				const char *domain_guid,
 				struct dns_rr_srv **dclist,

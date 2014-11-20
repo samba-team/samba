@@ -106,7 +106,6 @@ static int net_lookup_ldap(struct net_context *c, int argc, const char **argv)
 	NTSTATUS status;
 	int ret;
 	char h_name[MAX_DNS_NAME_LENGTH];
-	const char *dns_hosts_file;
 
 	if (argc > 0)
 		domain = argv[0];
@@ -123,9 +122,11 @@ static int net_lookup_ldap(struct net_context *c, int argc, const char **argv)
 
 	DEBUG(9, ("Lookup up ldap for domain %s\n", domain));
 
-	dns_hosts_file = lp_parm_const_string(-1, "resolv", "host file", NULL);
-	status = ads_dns_query_dcs(ctx, dns_hosts_file, domain, sitename,
-				   &dcs, &numdcs);
+	status = ads_dns_query_dcs(ctx,
+				   domain,
+				   sitename,
+				   &dcs,
+				   &numdcs);
 	if ( NT_STATUS_IS_OK(status) && numdcs ) {
 		print_ldap_srvlist(dcs, numdcs);
 		TALLOC_FREE( ctx );
@@ -159,8 +160,11 @@ static int net_lookup_ldap(struct net_context *c, int argc, const char **argv)
 
 	DEBUG(9, ("Looking up ldap for domain %s\n", domain));
 
-	status = ads_dns_query_dcs(ctx, dns_hosts_file, domain, sitename,
-				   &dcs, &numdcs);
+	status = ads_dns_query_dcs(ctx,
+				   domain,
+				   sitename,
+				   &dcs,
+				   &numdcs);
 	if ( NT_STATUS_IS_OK(status) && numdcs ) {
 		print_ldap_srvlist(dcs, numdcs);
 		TALLOC_FREE( ctx );

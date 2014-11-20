@@ -539,7 +539,6 @@ ADS_STATUS ads_connect_gc(ADS_STRUCT *ads)
 	int i;
 	bool done = false;
 	char *sitename = NULL;
-	const char *dns_hosts_file;
 
 	if (!realm)
 		realm = lp_realm();
@@ -549,7 +548,6 @@ ADS_STATUS ads_connect_gc(ADS_STRUCT *ads)
 		sitename = sitename_fetch(frame, realm);
 	}
 
-	dns_hosts_file = lp_parm_const_string(-1, "resolv", "host file", NULL);
 	do {
 		/* We try once with a sitename and once without
 		   (unless we don't have a sitename and then we're
@@ -558,9 +556,11 @@ ADS_STATUS ads_connect_gc(ADS_STRUCT *ads)
 		if (sitename == NULL)
 			done = true;
 
-		nt_status = ads_dns_query_gcs(frame, dns_hosts_file,
-					      realm, sitename,
-					      &gcs_list, &num_gcs);
+		nt_status = ads_dns_query_gcs(frame,
+					      realm,
+					      sitename,
+					      &gcs_list,
+					      &num_gcs);
 
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			ads_status = ADS_ERROR_NT(nt_status);

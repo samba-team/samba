@@ -2424,7 +2424,6 @@ static NTSTATUS resolve_ads(const char *name,
 	struct dns_rr_srv	*dcs = NULL;
 	int			numdcs = 0;
 	int			numaddrs = 0;
-	const char *dns_hosts_file;
 
 	if ((name_type != 0x1c) && (name_type != KDC_NAME_TYPE) &&
 	    (name_type != 0x1b)) {
@@ -2437,28 +2436,32 @@ static NTSTATUS resolve_ads(const char *name,
 	}
 
 	/* The DNS code needs fixing to find IPv6 addresses... JRA. */
-
-	dns_hosts_file = lp_parm_const_string(-1, "resolv", "host file", NULL);
 	switch (name_type) {
 		case 0x1b:
 			DEBUG(5,("resolve_ads: Attempting to resolve "
 				 "PDC for %s using DNS\n", name));
-			status = ads_dns_query_pdc(ctx, dns_hosts_file,
-						   name, &dcs, &numdcs);
+			status = ads_dns_query_pdc(ctx,
+						   name,
+						   &dcs,
+						   &numdcs);
 			break;
 
 		case 0x1c:
 			DEBUG(5,("resolve_ads: Attempting to resolve "
 				 "DCs for %s using DNS\n", name));
-			status = ads_dns_query_dcs(ctx, dns_hosts_file,
-						   name, sitename, &dcs,
+			status = ads_dns_query_dcs(ctx,
+						   name,
+						   sitename,
+						   &dcs,
 						   &numdcs);
 			break;
 		case KDC_NAME_TYPE:
 			DEBUG(5,("resolve_ads: Attempting to resolve "
 				 "KDCs for %s using DNS\n", name));
-			status = ads_dns_query_kdcs(ctx, dns_hosts_file,
-						    name, sitename, &dcs,
+			status = ads_dns_query_kdcs(ctx,
+						    name,
+						    sitename,
+						    &dcs,
 						    &numdcs);
 			break;
 		default:
