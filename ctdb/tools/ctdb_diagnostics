@@ -17,7 +17,7 @@ EOF
 
 }
 
-nodes=$(ctdb listnodes -Y | cut -d: -f2)
+nodes=$(ctdb listnodes -X | cut -d'|' -f2)
 bad_nodes=""
 diff_opts=
 no_ads=false
