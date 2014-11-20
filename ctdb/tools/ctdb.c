@@ -3149,7 +3149,7 @@ static int control_ifaces(struct ctdb_context *ctdb, int argc, const char **argv
 
 	for (i=0; i<ifaces->num; i++) {
 		if (options.machinereadable){
-			printm(":%s:%s:%u\n",
+			printm(":%s:%s:%u:\n",
 			       ifaces->ifaces[i].name,
 			       ifaces->ifaces[i].link_state?"1":"0",
 			       (unsigned int)ifaces->ifaces[i].references);
