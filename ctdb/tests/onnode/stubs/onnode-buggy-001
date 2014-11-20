@@ -141,10 +141,10 @@ get_nodes_with_status ()
     local bits
     case "$status" in
 	healthy)
-	    bits="0:0:0:0:0:0"
+	    bits="0|0|0|0|0|0"
 	    ;;
 	connected)
-	    bits="0:[0-1]:[0-1]:[0-1]:[0-1]:[0-1]"
+	    bits="0|[0-1]|[0-1]|[0-1]|[0-1]|[0-1]"
 	    ;;
 	*)
 	    invalid_nodespec
@@ -152,7 +152,7 @@ get_nodes_with_status ()
 
     if [ -z "$ctdb_status_output" ] ; then
 	# FIXME: need to do something if $CTDB_NODES_SOCKETS is set.
-	ctdb_status_output=$(ctdb -Y status 2>/dev/null)
+	ctdb_status_output=$(ctdb -X status 2>/dev/null)
 	if [ $? -ne 0 ] ; then
 	    echo "${prog}: unable to get status of CTDB nodes" >&2
 	    exit 1
@@ -164,14 +164,14 @@ get_nodes_with_status ()
     local i
     for i in $ctdb_status_output ; do
 	# Try removing bits from end.
-	local t="${i%:${bits}:}"
+	local t="${i%|${bits}|}"
 	if [ "$t" != "$i" ] ; then
 	    # Succeeded.  Get address.  NOTE: this is an optimisation.
 	    # It might be better to get the node number and then get
 	    # the nth node to get the address.  This would make things
 	    # more consistent if $ctdb_base/nodes actually contained
 	    # hostnames.
-	    nodes="${nodes} ${t#:*:}"
+	    nodes="${nodes} ${t#|*|}"
 	fi
     done
 
@@ -186,7 +186,7 @@ get_node_with_property ()
 
     local prop_node=""
     if [ "${ctdb_props##:${prop}:}" = "$ctdb_props" ] ; then
-	prop_node=$(ctdb "$prop" -Y 2>/dev/null)
+	prop_node=$(ctdb "$prop" -X 2>/dev/null)
 	# We only want the first line.
 	local nl="
 "

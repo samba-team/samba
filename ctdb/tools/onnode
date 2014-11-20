@@ -145,7 +145,7 @@ get_nodes_with_status ()
     local status="$2"
 
     if [ -z "$ctdb_status_output" ] ; then
-	ctdb_status_output=$(ctdb -Y status 2>&1)
+	ctdb_status_output=$(ctdb -X status 2>&1)
 	if [ $? -ne 0 ] ; then
 	    echo "${prog}: unable to get status of CTDB nodes" >&2
 	    echo "$ctdb_status_output" >&2
@@ -158,7 +158,7 @@ get_nodes_with_status ()
 
     (
 	local i
-	IFS="${IFS}:"
+	IFS="${IFS}|"
 	while IFS="" read i ; do
 
 	    set -- $i # split line on colons
@@ -196,7 +196,7 @@ get_node_with_property ()
     local prop_node=""
     if [ "${ctdb_props##:${prop}:}" = "$ctdb_props" ] ; then
 	# Not in cache.
-	prop_node=$(ctdb "$prop" -Y 2>/dev/null)
+	prop_node=$(ctdb "$prop" -X 2>/dev/null)
 	if [ $? -eq 0 ] ; then
 	    if [ "$prop" = "natgwlist" ] ; then
 		prop_node="${prop_node%% *}" # 1st word
