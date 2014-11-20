@@ -290,7 +290,7 @@ flush_rules_and_routes ()
 # routes.
 add_missing_routes ()
 {
-    ctdb ip -v -Y | {
+    ctdb ip -v -X | {
 	read _x # skip header line
 
 	# Read the rest of the lines.  We're only interested in the
@@ -299,7 +299,7 @@ add_missing_routes ()
 	# non-local addresses.  For each IP local address we check if
 	# the relevant routing table is populated and populate it if
 	# not.
-	while IFS=":" read _x _ip _x _iface _x ; do
+	while IFS="|" read _x _ip _x _iface _x ; do
 	    [ -n "$_iface" ] || continue
 	    
 	    _table_id="${table_id_prefix}${_ip}"
@@ -317,7 +317,7 @@ add_missing_routes ()
 remove_bogus_routes ()
 {
     # Get a IPs current hosted by this node, each anchored with '@'.
-    _ips=$(ctdb ip -v -Y | awk -F: 'NR > 1 && $4 != "" {printf "@%s@\n", $2}')
+    _ips=$(ctdb ip -v -X | awk -F'|' 'NR > 1 && $4 != "" {printf "@%s@\n", $2}')
 
     ip rule show |
     while read _p _x _i _x _t ; do

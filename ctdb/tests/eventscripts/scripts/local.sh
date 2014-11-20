@@ -354,7 +354,7 @@ Swap:         5719        246       5473"
 ctdb_get_interfaces ()
 {
     # The echo/subshell forces all the output onto 1 line.
-    echo $(ctdb ifaces -Y | awk -F: 'FNR > 1 {print $2}')
+    echo $(ctdb ifaces -X | awk -F'|' 'FNR > 1 {print $2}')
 }
 
 ctdb_get_1_interface ()
@@ -377,10 +377,10 @@ ctdb_get_all_public_addresses ()
 # Each line is suitable for passing to takeip/releaseip
 ctdb_get_my_public_addresses ()
 {
-    ctdb ip -v -Y | {
+    ctdb ip -v -X | {
 	read _x # skip header line
 
-	while IFS=":" read _x _ip _x _iface _x ; do
+	while IFS="|" read _x _ip _x _iface _x ; do
 	    [ -n "$_iface" ] || continue
 	    while IFS="/$IFS" read _i _maskbits _x ; do
 		if [ "$_ip" = "$_i" ] ; then

@@ -1095,19 +1095,19 @@ ctdb_reconfigure_release_lock ()
 ctdb_replay_monitor_status ()
 {
     echo "Replaying previous status for this script due to reconfigure..."
-    # Leading colon (':') is missing in some versions...
-    _out=$(ctdb scriptstatus -Y | grep -E "^:?monitor:${script_name}:")
+    # Leading separator ('|') is missing in some versions...
+    _out=$(ctdb scriptstatus -X | grep -E "^\|?monitor\|${script_name}\|")
     # Output looks like this:
-    # :monitor:60.nfs:1:ERROR:1314764004.030861:1314764004.035514:foo bar:
+    # |monitor|60.nfs|1|ERROR|1314764004.030861|1314764004.035514|foo bar|
     # This is the cheapest way of getting fields in the middle.
-    set -- $(IFS=":" ; echo $_out)
+    set -- $(IFS="|" ; echo $_out)
     _code="$3"
     _status="$4"
     # The error output field can include colons so we'll try to
     # preserve them.  The weak checking at the beginning tries to make
-    # this work for both broken (no leading ':') and fixed output.
-    _out="${_out%:}"
-    _err_out="${_out#*monitor:${script_name}:*:*:*:*:}"
+    # this work for both broken (no leading '|') and fixed output.
+    _out="${_out%|}"
+    _err_out="${_out#*monitor|${script_name}|*|*|*|*|}"
     case "$_status" in
 	OK) : ;;  # Do nothing special.
 	TIMEDOUT)
@@ -1370,7 +1370,7 @@ update_tickles ()
 	_pnn=$(ctdb pnn) ; _pnn=${_pnn#PNN:}
 
 	# What public IPs do I hold?
-	_ips=$(ctdb -Y ip | awk -F: -v pnn=$_pnn '$3 == pnn {print $2}')
+	_ips=$(ctdb -X ip | awk -F'|' -v pnn=$_pnn '$3 == pnn {print $2}')
 
 	# IPs as a regexp choice
 	_ipschoice="($(echo $_ips | sed -e 's/ /|/g' -e 's/\./\\\\./g'))"
@@ -1387,8 +1387,8 @@ update_tickles ()
 	_my_tickles="${tickledir}/${_port}.tickles"
 	rm -f "$_my_tickles"
 	for _i in $_ips ; do
-		ctdb -Y gettickles $_i $_port | 
-		awk -F: 'NR > 1 { printf "%s:%s %s:%s\n", $2, $3, $4, $5 }'
+		ctdb -X gettickles $_i $_port |
+		awk -F'|' 'NR > 1 { printf "%s:%s %s:%s\n", $2, $3, $4, $5 }'
 	done |
 	sort >"$_my_tickles"
 
