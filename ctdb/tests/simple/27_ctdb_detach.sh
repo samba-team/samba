@@ -35,7 +35,7 @@ ctdb_restart_when_done
 
 ######################################################################
 
-try_command_on_node 0 "$CTDB listnodes -Y"
+try_command_on_node 0 "$CTDB listnodes -X"
 listnodes_output="$out"
 numnodes=$(wc -l <<<"$listnodes_output")
 

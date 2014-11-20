@@ -45,7 +45,7 @@ monitor_interval="${out#*= }"
 #echo "Monitor interval on node $test_node is $monitor_interval seconds."
 
 select_test_node_and_ips
-try_command_on_node $test_node "$CTDB listnodes -Y"
+try_command_on_node $test_node "$CTDB listnodes -X"
 listnodes_output="$out"
 numnodes=$(wc -l <<<"$listnodes_output")
 
@@ -67,7 +67,7 @@ echo "Wait until NFS connection is tracked by CTDB on test node ..."
 wait_until 10 check_tickles $test_node $test_ip $test_port $src_socket
 
 echo "Select a node to restart ctdbd"
-rn=$(awk -F: -v test_node=$test_node \
+rn=$(awk -F'|' -v test_node=$test_node \
     '$2 != test_node { print $2 ; exit }' <<<"$listnodes_output")
 
 echo "Restarting CTDB on node ${rn}"

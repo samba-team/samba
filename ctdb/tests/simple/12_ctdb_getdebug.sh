@@ -13,7 +13,7 @@ Steps:
 
 1. Verify that the status on all of the ctdb nodes is 'OK'.
 2. Get the current debug level on a node, using 'ctdb getdebug -n <node>'.
-3. Verify that colon-separated output is generated with the -Y option.
+3. Verify that pipe-separated output is generated with the -X option.
 4. Verify that the '-n all' option shows the debug level on all nodes.
 
 Expected results:
@@ -61,19 +61,19 @@ else
     testfailures=1
 fi
 
-colons=""
+seps=""
 nl="
 "
 while read line ; do
-    t=$(echo "$line" | sed -r -e 's@Node [[:digit:]]+ is at debug level ([[:alpha:]]+) \((-?[[:digit:]]+)\)$@:\1:\2:@')
-    colons="${colons}${colons:+${nl}}:Name:Level:${nl}${t}"
+    t=$(echo "$line" | sed -r -e 's@Node [[:digit:]]+ is at debug level ([[:alpha:]]+) \((-?[[:digit:]]+)\)$@\|\1\|\2|@')
+    seps="${seps}${seps:+${nl}}|Name|Level|${nl}${t}"
 done <<<"$getdebug_onnode"
 
-cmd="$CTDB -Y getdebug -n all"
+cmd="$CTDB -X getdebug -n all"
 echo "Checking that \"$cmd\" produces expected output..."
 
 try_command_on_node 1 "$cmd"
-if [ "$out" = "$colons" ] ; then
+if [ "$out" = "$seps" ] ; then
     echo "Yep, looks good!"
 else
     echo "Nope, it looks like this:"

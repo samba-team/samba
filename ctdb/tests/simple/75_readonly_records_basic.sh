@@ -113,8 +113,8 @@ check_readonly ()
 ######################################################################
 
 echo "Get list of nodes..."
-try_command_on_node any $CTDB -Y listnodes
-all_nodes=$(awk -F: '{print $2}' <<<"$out")
+try_command_on_node any $CTDB -X listnodes
+all_nodes=$(awk -F'|' '{print $2}' <<<"$out")
 
 ######################################################################
 

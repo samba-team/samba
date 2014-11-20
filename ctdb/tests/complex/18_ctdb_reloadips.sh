@@ -50,8 +50,8 @@ select_test_node_and_ips
 # the provided prefix.  Note that this is an IPv4-specific test.
 
 echo "Getting public IP information from CTDB..."
-try_command_on_node any "$CTDB ip -Y -v -n all"
-ctdb_ip_info=$(echo "$out" | awk -F: 'NR > 1 { print $2, $3, $5 }')
+try_command_on_node any "$CTDB ip -X -v -n all"
+ctdb_ip_info=$(echo "$out" | awk -F'|' 'NR > 1 { print $2, $3, $5 }')
 
 echo "Getting IP information from interfaces..."
 try_command_on_node all "ip addr show"
