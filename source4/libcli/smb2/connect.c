@@ -149,7 +149,8 @@ static void smb2_connect_socket_done(struct composite_context *creq)
 
 	subreq = smbXcli_negprot_send(state, state->ev,
 				      state->transport->conn, timeout_msec,
-				      PROTOCOL_SMB2_02, PROTOCOL_LATEST);
+				      PROTOCOL_SMB2_02,
+				      state->transport->options.max_protocol);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
