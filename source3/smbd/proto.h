@@ -543,6 +543,18 @@ int inotify_watch(TALLOC_CTX *mem_ctx,
 		  void *private_data,
 		  void *handle_p);
 
+int _fam_watch(TALLOC_CTX *mem_ctx,
+	      struct sys_notify_context *ctx,
+	      const char *path,
+	      uint32_t *filter,
+	      uint32_t *subdir_filter,
+	      void (*callback)(struct sys_notify_context *ctx,
+			       void *private_data,
+			       struct notify_event *ev),
+	      void *private_data,
+	      void *handle_p);
+
+
 /* The following definitions come from smbd/notify_internal.c  */
 
 struct notify_context *notify_init(TALLOC_CTX *mem_ctx,
