@@ -2863,8 +2863,9 @@ static int py_ldb_msg_setitem(PyLdbMessageObject *self, PyObject *name, PyObject
 		int ret;
 		struct ldb_message_element *el = PyObject_AsMessageElement(self->msg,
 									   value, 0, attr_name);
-		if (el == NULL)
+		if (el == NULL) {
 			return -1;
+		}
 		ldb_msg_remove_attr(pyldb_Message_AsMessage(self), attr_name);
 		ret = ldb_msg_add(pyldb_Message_AsMessage(self), el, el->flags);
 		if (ret != LDB_SUCCESS) {
