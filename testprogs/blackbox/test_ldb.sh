@@ -37,6 +37,8 @@ export PATH="$BINDIR:$PATH"
 ldbsearch="$VALGRIND ldbsearch"
 
 check "RootDSE" $ldbsearch $CONFIGURATION $options --basedn='' -H $p://$SERVER -s base DUMMY=x dnsHostName highestCommittedUSN || failed=`expr $failed + 1`
+check "RootDSE (full)" $ldbsearch $CONFIGURATION $options --basedn='' -H $p://$SERVER -s base '(objectClass=*)' || failed=`expr $failed + 1`
+check "RootDSE (extended)" $ldbsearch $CONFIGURATION $options --basedn='' -H $p://$SERVER -s base '(objectClass=*)' --extended-dn || failed=`expr $failed + 1`
 
 echo "Getting defaultNamingContext"
 BASEDN=`$ldbsearch $CONFIGURATION $options --basedn='' -H $p://$SERVER -s base DUMMY=x defaultNamingContext | grep defaultNamingContext | awk '{print $2}'`
