@@ -24,7 +24,78 @@
 #include "rpc_server/common/common.h"
 #include "dsdb/samdb/samdb.h"
 #include "lib/socket/netif.h"
+#include "lib/util/util_net.h"
 
+static struct DNS_ADDR_ARRAY *fill_dns_addr_array(TALLOC_CTX *mem_ctx,
+					   struct loadparm_context *lp_ctx,
+					   bool listen_only)
+{
+	struct interface *ifaces;
+	int num_interfaces, i;
+	struct DNS_ADDR_ARRAY *dns_addr_array;
+	const char *ipstr;
+	bool have_ipv4, have_ipv6;
+	uint16_t family;
+
+	have_ipv4 = have_ipv6 = false;
+
+	if (!listen_only) {
+		/*
+		  Return all interfaces from kernel
+		  Not implemented!
+		*/
+		return NULL;
+	}
+
+	/* Only the used interfaces */
+	load_interface_list(mem_ctx, lp_ctx, &ifaces);
+	num_interfaces = iface_list_count(ifaces);
+
+	dns_addr_array = talloc_zero(mem_ctx, struct DNS_ADDR_ARRAY);
+	if (dns_addr_array == NULL) {
+		goto nomem;
+	}
+	dns_addr_array->MaxCount = num_interfaces;
+	dns_addr_array->AddrCount = num_interfaces;
+	if (num_interfaces == 0) {
+		goto nomem;
+	}
+
+	dns_addr_array->AddrArray = talloc_zero_array(mem_ctx, struct DNS_ADDR,
+						      num_interfaces);
+	if (!dns_addr_array->AddrArray) {
+		TALLOC_FREE(dns_addr_array);
+		goto nomem;
+	}
+
+	for (i = 0; i < num_interfaces; i++) {
+		ipstr = iface_list_n_ip(ifaces, i);
+		if (is_ipaddress_v4(ipstr)) {
+			have_ipv4 = true;
+			dns_addr_array->AddrArray[i].MaxSa[0] = 0x02;
+			inet_pton(AF_INET, ipstr,
+				  &dns_addr_array->AddrArray[i].MaxSa[4]);
+		} else {
+			have_ipv6 = true;
+			dns_addr_array->AddrArray[i].MaxSa[0] = 0x17;
+			inet_pton(AF_INET6, ipstr,
+				  &dns_addr_array->AddrArray[i].MaxSa[8]);
+		}
+	}
+
+	if (have_ipv4 && have_ipv6) {
+		family = 0;   /* mixed: MS-DNSP */
+	} else if (have_ipv4 && !have_ipv6) {
+		family = AF_INET;
+	} else {
+		family = AF_INET6;
+	}
+	dns_addr_array->Family = family;
+
+nomem:
+	talloc_free(ifaces);
+	return dns_addr_array;
+}
 
 struct dnsserver_serverinfo *dnsserver_init_serverinfo(TALLOC_CTX *mem_ctx,
 							struct loadparm_context *lp_ctx,
@@ -33,8 +104,6 @@ struct dnsserver_serverinfo *dnsserver_init_serverinfo(TALLOC_CTX *mem_ctx,
 	struct dnsserver_serverinfo *serverinfo;
 	struct dcerpc_server_info *dinfo;
 	struct ldb_dn *domain_dn, *forest_dn;
-	struct interface *ifaces;
-	int num_interfaces, i;
 
 	serverinfo = talloc_zero(mem_ctx, struct dnsserver_serverinfo);
 	if (serverinfo == NULL) {
@@ -80,31 +149,14 @@ struct dnsserver_serverinfo *dnsserver_init_serverinfo(TALLOC_CTX *mem_ctx,
 	serverinfo->pszForestDirectoryPartition = talloc_asprintf(mem_ctx,
 							"DC=ForestDnsZones,%s",
 							ldb_dn_get_linearized(forest_dn));
+	/* IP addresses on which the DNS server listens for DNS requests */
+	serverinfo->aipListenAddrs = fill_dns_addr_array(mem_ctx, lp_ctx, true);
 
-	load_interface_list(mem_ctx, lp_ctx, &ifaces);
-	num_interfaces = iface_list_count(ifaces);
-
-	serverinfo->aipServerAddrs = talloc_zero(mem_ctx, struct IP4_ARRAY);
-
-	if (serverinfo->aipServerAddrs) {
-		serverinfo->aipServerAddrs->AddrCount = num_interfaces;
-		if (num_interfaces > 0) {
-			serverinfo->aipServerAddrs->AddrArray = talloc_zero_array(mem_ctx,
-									unsigned int,
-									num_interfaces);
-			if (serverinfo->aipServerAddrs->AddrArray) {
-				for (i=0; i<num_interfaces; i++) {
-					serverinfo->aipServerAddrs->AddrArray[i] = inet_addr(iface_list_n_ip(ifaces, i));
-				}
-			} else {
-				serverinfo->aipServerAddrs->AddrCount = 0;
-			}
-		}
-	}
-	talloc_free(ifaces);
-
-	/* Assume listen addresses are same as server addresses */
-	serverinfo->aipListenAddrs = serverinfo->aipServerAddrs;
+	/* All IP addresses available on the server
+	 * Not implemented!
+	 * Use same as listen addresses
+	 */
+	serverinfo->aipServerAddrs = serverinfo->aipListenAddrs;
 
 	serverinfo->aipForwarders = NULL;
 
