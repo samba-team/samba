@@ -46,8 +46,8 @@ struct dnsserver_serverinfo {
 	char *		pszDomainDirectoryPartition;
 	char *		pszForestDirectoryPartition;
 
-	struct IP4_ARRAY * aipServerAddrs;
-	struct IP4_ARRAY * aipListenAddrs;
+	struct DNS_ADDR_ARRAY * aipServerAddrs;
+	struct DNS_ADDR_ARRAY * aipListenAddrs;
 	struct IP4_ARRAY * aipForwarders;
 
 	struct IP4_ARRAY * aipLogFilter;
@@ -179,6 +179,8 @@ struct dns_tree {
 
 struct IP4_ARRAY *ip4_array_copy(TALLOC_CTX *mem_ctx, struct IP4_ARRAY *ip4);
 struct DNS_ADDR_ARRAY *ip4_array_to_dns_addr_array(TALLOC_CTX *mem_ctx, struct IP4_ARRAY *ip4);
+struct IP4_ARRAY *dns_addr_array_to_ip4_array(TALLOC_CTX *mem_ctx,
+					      struct DNS_ADDR_ARRAY *ip);
 struct DNS_ADDR_ARRAY *dns_addr_array_copy(TALLOC_CTX *mem_ctx, struct DNS_ADDR_ARRAY *addr);
 
 int dns_split_name_components(TALLOC_CTX *mem_ctx, const char *name, char ***components);
@@ -216,7 +218,6 @@ struct dnsserver_zone *dnsserver_find_zone(struct dnsserver_zone *zones,
 struct ldb_dn *dnsserver_name_to_dn(TALLOC_CTX *mem_ctx, struct dnsserver_zone *z,
 					const char *name);
 uint32_t dnsserver_zone_to_request_filter(const char *zone);
-
 
 /* Database functions from dnsdb.c */
 

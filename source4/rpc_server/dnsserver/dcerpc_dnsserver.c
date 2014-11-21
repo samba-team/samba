@@ -196,8 +196,10 @@ static WERROR dnsserver_query_server(struct dnsserver_state *dsstate,
 			r->ServerInfoW2K->fDsAvailable = serverinfo->fDsAvailable;
 			r->ServerInfoW2K->pszServerName = talloc_strdup(mem_ctx, serverinfo->pszServerName);
 			r->ServerInfoW2K->pszDsContainer = talloc_strdup(mem_ctx, serverinfo->pszDsContainer);
-			r->ServerInfoW2K->aipServerAddrs = ip4_array_copy(mem_ctx, serverinfo->aipServerAddrs);
-			r->ServerInfoW2K->aipListenAddrs = ip4_array_copy(mem_ctx, serverinfo->aipListenAddrs);
+			r->ServerInfoW2K->aipServerAddrs = dns_addr_array_to_ip4_array(mem_ctx,
+										       serverinfo->aipServerAddrs);
+			r->ServerInfoW2K->aipListenAddrs = dns_addr_array_to_ip4_array(mem_ctx,
+										       serverinfo->aipListenAddrs);
 			r->ServerInfoW2K->aipForwarders = ip4_array_copy(mem_ctx, serverinfo->aipForwarders);
 			r->ServerInfoW2K->dwLogLevel = serverinfo->dwLogLevel;
 			r->ServerInfoW2K->dwDebugLevel = serverinfo->dwDebugLevel;
@@ -238,8 +240,10 @@ static WERROR dnsserver_query_server(struct dnsserver_state *dsstate,
 			r->ServerInfoDotNet->fDsAvailable = serverinfo->fDsAvailable;
 			r->ServerInfoDotNet->pszServerName = talloc_strdup(mem_ctx, serverinfo->pszServerName);
 			r->ServerInfoDotNet->pszDsContainer = talloc_strdup(mem_ctx, serverinfo->pszDsContainer);
-			r->ServerInfoDotNet->aipServerAddrs = ip4_array_copy(mem_ctx, serverinfo->aipServerAddrs);
-			r->ServerInfoDotNet->aipListenAddrs = ip4_array_copy(mem_ctx, serverinfo->aipListenAddrs);
+			r->ServerInfoDotNet->aipServerAddrs = dns_addr_array_to_ip4_array(mem_ctx,
+											  serverinfo->aipServerAddrs);
+			r->ServerInfoDotNet->aipListenAddrs = dns_addr_array_to_ip4_array(mem_ctx,
+											  serverinfo->aipListenAddrs);
 			r->ServerInfoDotNet->aipForwarders = ip4_array_copy(mem_ctx, serverinfo->aipForwarders);
 			r->ServerInfoDotNet->aipLogFilter = ip4_array_copy(mem_ctx, serverinfo->aipLogFilter);
 			r->ServerInfoDotNet->pwszLogFilePath = talloc_strdup(mem_ctx, serverinfo->pwszLogFilePath);
@@ -293,8 +297,8 @@ static WERROR dnsserver_query_server(struct dnsserver_state *dsstate,
 			r->ServerInfo->fDsAvailable = serverinfo->fDsAvailable;
 			r->ServerInfo->pszServerName = talloc_strdup(mem_ctx, serverinfo->pszServerName);
 			r->ServerInfo->pszDsContainer = talloc_strdup(mem_ctx, serverinfo->pszDsContainer);
-			r->ServerInfo->aipServerAddrs = ip4_array_to_dns_addr_array(mem_ctx, serverinfo->aipServerAddrs);
-			r->ServerInfo->aipListenAddrs = ip4_array_to_dns_addr_array(mem_ctx, serverinfo->aipListenAddrs);
+			r->ServerInfo->aipServerAddrs = serverinfo->aipServerAddrs;
+			r->ServerInfo->aipListenAddrs = serverinfo->aipListenAddrs;
 			r->ServerInfo->aipForwarders = ip4_array_to_dns_addr_array(mem_ctx, serverinfo->aipForwarders);
 			r->ServerInfo->aipLogFilter = ip4_array_to_dns_addr_array(mem_ctx, serverinfo->aipLogFilter);
 			r->ServerInfo->pwszLogFilePath = talloc_strdup(mem_ctx, serverinfo->pwszLogFilePath);
@@ -694,9 +698,9 @@ static WERROR dnsserver_query_server(struct dnsserver_state *dsstate,
 		is_addresses = 1;
 	} else if (strcasecmp(operation, "ListenAddresses") == 0) {
 		if (client_version == DNS_CLIENT_VERSION_LONGHORN) {
-			answer_addrarray = ip4_array_to_dns_addr_array(mem_ctx, serverinfo->aipListenAddrs);
+			answer_addrarray = serverinfo->aipListenAddrs;
 		} else {
-			answer_iparray = ip4_array_copy(mem_ctx, serverinfo->aipListenAddrs);
+			answer_iparray = dns_addr_array_to_ip4_array(mem_ctx, serverinfo->aipListenAddrs);
 		}
 		is_addresses = 1;
 	} else if (strcasecmp(operation, "BreakOnReceiveFrom") == 0) {
