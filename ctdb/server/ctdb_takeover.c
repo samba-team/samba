@@ -996,30 +996,7 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb,
 		return -1;
 	}
 
-	if (ctdb->do_checkpublicip) {
-		iface = ctdb_sys_find_ifname(&pip->addr);
-		if (iface == NULL) {
-			DEBUG(DEBUG_ERR, ("Could not find which interface the ip address is hosted on. can not release it\n"));
-			return 0;
-		}
-		if (vnn->iface == NULL) {
-			DEBUG(DEBUG_WARNING,
-			      ("Public IP %s is hosted on interface %s but we have no VNN\n",
-			       ctdb_addr_to_str(&pip->addr),
-			       iface));
-		} else if (strcmp(iface, ctdb_vnn_iface_string(vnn)) != 0) {
-			DEBUG(DEBUG_WARNING,
-			      ("Public IP %s is hosted on inteterface %s but VNN says %s\n",
-			       ctdb_addr_to_str(&pip->addr),
-			       iface,
-			       ctdb_vnn_iface_string(vnn)));
-			/* Should we fix vnn->iface?  If we do, what
-			 * happens to reference counts?
-			 */
-		}
-	} else {
-		iface = strdup(ctdb_vnn_iface_string(vnn));
-	}
+	iface = strdup(ctdb_vnn_iface_string(vnn));
 
 	DEBUG(DEBUG_NOTICE,("Release of IP %s/%u on interface %s  node:%d\n",
 		ctdb_addr_to_str(&pip->addr),
