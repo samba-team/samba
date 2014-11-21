@@ -533,7 +533,7 @@ static int streams_xattr_unlink(vfs_handle_struct *handle,
 {
 	NTSTATUS status;
 	int ret = -1;
-	char *xattr_name;
+	char *xattr_name = NULL;
 
 	if (!is_ntfs_stream_smb_fname(smb_fname)) {
 		return SMB_VFS_NEXT_UNLINK(handle, smb_fname);
