@@ -844,6 +844,29 @@ add_ip_to_iface ()
 	echo "Failed to add $_ip/$_maskbits on dev $_iface"
 	return 1
     }
+
+    # Wait 5 seconds for IPv6 addresses to stop being tentative...
+    if [ -z "$_bcast" ] ; then
+	for _x in $(seq 1 10) ; do
+	    ip addr show to "${_ip}/128" | grep -q "tentative" || break
+	    sleep 0.5
+	done
+
+	# If the address was a duplicate then it won't be on the
+	# interface so flag an error.
+	_t=$(ip addr show to "${_ip}/128")
+	case "$_t" in
+	    "")
+		echo "Failed to add $_ip/$_maskbits on dev $_iface"
+		return 1
+		;;
+	    *tentative*|*dadfailed*)
+		echo "Failed to add $_ip/$_maskbits on dev $_iface"
+		ip addr del "$_ip/$_maskbits" dev "$_iface"
+		return 1
+		;;
+	esac
+    fi
 }
 
 delete_ip_from_iface()
