@@ -9,9 +9,6 @@ setup_ctdb
 public_address=$(ctdb_get_1_public_address)
 ip="${public_address% *}" ; ip="${ip#* }"
 
-required_result 1 <<EOF
-RTNETLINK answers: Cannot assign requested address
-Failed to del ${ip} on dev ${public_address%% *}
-EOF
+required_result 1 "ERROR: Unable to determine interface for IP ${ip}"
 
 simple_test $public_address

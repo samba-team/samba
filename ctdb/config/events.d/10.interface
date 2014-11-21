@@ -137,6 +137,34 @@ monitor_interfaces()
 	return 1
 }
 
+# Sets: iface, ip, maskbits, family
+get_iface_ip_maskbits_family ()
+{
+    _iface_in="$1"
+    ip="$2"
+    _maskbits_in="$3"
+
+    set -- $(ip_maskbits_iface "$ip")
+    if [ -n "$1" ] ; then
+	maskbits="$1"
+	iface="$2"
+	family="$3"
+
+	if [ "$iface" != "$_iface_in" ] ; then
+	    printf \
+		'WARNING: Public IP %s hosted on interface %s but VNN says %s\n' \
+		"$ip" "$iface" "$_iface_in"
+	fi
+	if [ "$maskbits" != "$_maskbits_in" ] ; then
+	    printf \
+		'WARNING: Public IP %s has %s bit netmask but VNN says %s\n' \
+		    "$ip" "$maskbits" "$_maskbits_in"
+	fi
+    else
+	die "ERROR: Unable to determine interface for IP ${ip}"
+    fi
+}
+
 ctdb_check_args "$@"
 
 case "$1" in 
@@ -174,10 +202,13 @@ case "$1" in
 	}
 
 	# cope with the script being killed while we have the interface blocked
-	iptables -D INPUT -i $iface -d $ip -j DROP 2> /dev/null
+	case "$ip" in
+	    *:*) family="inet6" ;;
+	    *)   family="inet"  ;;
+	esac
+	iptables_wrapper $family -D INPUT -i $iface -d $ip -j DROP 2> /dev/null
 
-	# flush our route cache
-	set_proc sys/net/ipv4/route/flush 1
+	flush_route_cache
 	;;
 
 
@@ -194,25 +225,23 @@ case "$1" in
 	# 2) use netstat -tn to find existing connections, and kill them 
 	# 3) remove the IP from the interface
 	# 4) remove the firewall rule
-	iface=$2
-	ip=$3
-	maskbits=$4
+	shift
+	get_iface_ip_maskbits_family "$@"
 
-	failed=0
 	# we do an extra delete to cope with the script being killed
-	iptables -D INPUT -i $iface -d $ip -j DROP 2> /dev/null
-	iptables -I INPUT -i $iface -d $ip -j DROP
+	iptables_wrapper $family -D INPUT -i $iface -d $ip -j DROP 2> /dev/null
+	iptables_wrapper $family -I INPUT -i $iface -d $ip -j DROP
 	kill_tcp_connections $ip
 
 	delete_ip_from_iface $iface $ip $maskbits || {
-		iptables -D INPUT -i $iface -d $ip -j DROP 2> /dev/null
-		exit 1;
+	    iptables_wrapper $family \
+			     -D INPUT -i $iface -d $ip -j DROP 2> /dev/null
+		exit 1
 	}
 
-	iptables -D INPUT -i $iface -d $ip -j DROP 2> /dev/null
+	iptables_wrapper $family -D INPUT -i $iface -d $ip -j DROP 2> /dev/null
 
-	# flush our route cache
-	set_proc sys/net/ipv4/route/flush 1
+	flush_route_cache
 	;;
 
      ##################################################
@@ -224,34 +253,36 @@ case "$1" in
 	# we finally remove it from the old interface.
 	#
 	# 1) firewall this IP, so no new external packets arrive for it
-	# 2) add the IP to the new interface
-	# 3) remove the IP from the old interface
+	# 2) remove the IP from the old interface (and new interface, to be sure)
+	# 3) add the IP to the new interface
 	# 4) remove the firewall rule
 	# 5) use ctdb gratiousarp to propagate the new mac address
 	# 6) use netstat -tn to find existing connections, and tickle them
-	oiface=$2
+	_oiface=$2
 	niface=$3
-	ip=$4
-	maskbits=$5
+	_ip=$4
+	_maskbits=$5
 
-	failed=0
+	get_iface_ip_maskbits_family "$_oiface" "$ip" "$maskbits"
+	oiface="$iface"
+
 	# we do an extra delete to cope with the script being killed
-	iptables -D INPUT -i $oiface -d $ip -j DROP 2> /dev/null
-	iptables -I INPUT -i $oiface -d $ip -j DROP
+	iptables_wrapper $family -D INPUT -i $oiface -d $ip -j DROP 2> /dev/null
+	iptables_wrapper $family -I INPUT -i $oiface -d $ip -j DROP
 
 	delete_ip_from_iface $oiface $ip $maskbits 2>/dev/null
 	delete_ip_from_iface $niface $ip $maskbits 2>/dev/null
 
 	add_ip_to_iface $niface $ip $maskbits || {
-		iptables -D INPUT -i $oiface -d $ip -j DROP 2> /dev/null
-		exit 1;
+	    iptables_wrapper $family \
+			     -D INPUT -i $oiface -d $ip -j DROP 2> /dev/null
+	    exit 1
 	}
 
 	# cope with the script being killed while we have the interface blocked
-	iptables -D INPUT -i $oiface -d $ip -j DROP 2> /dev/null
+	iptables_wrapper $family -D INPUT -i $oiface -d $ip -j DROP 2> /dev/null
 
-	# flush our route cache
-	set_proc sys/net/ipv4/route/flush 1
+	flush_route_cache
 
 	# propagate the new mac address
 	ctdb gratiousarp $ip $niface
