@@ -239,7 +239,6 @@ static struct loadparm_service sDefault =
 	.acl_map_full_control = true,
 	.acl_group_control = false,
 	.acl_allow_execute_always = false,
-	.kernel_change_notify = true,
 	.allocation_roundup_size = SMB_ROUNDUP_ALLOCATION_SIZE,
 	.aio_read_size = 0,
 	.aio_write_size = 0,
@@ -722,6 +721,7 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 	Globals.hostname_lookups = false;
 
 	Globals.change_notify = true,
+	Globals.kernel_change_notify = true,
 
 	string_set(Globals.ctx, &Globals.passdb_backend, "tdbsam");
 	string_set(Globals.ctx, &Globals.ldap_suffix, "");

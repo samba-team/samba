@@ -1676,8 +1676,8 @@ struct parm_struct parm_table[] = {
 	{
 		.label		= "kernel change notify",
 		.type		= P_BOOL,
-		.p_class	= P_LOCAL,
-		.offset		= LOCAL_VAR(kernel_change_notify),
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(kernel_change_notify),
 		.special	= NULL,
 		.enum_list	= NULL,
 	},
