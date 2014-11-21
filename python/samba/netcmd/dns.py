@@ -89,7 +89,7 @@ def zone_type_string(zone_type):
 
 
 def zone_update_string(zone_update):
-    enum_defs = [ 'DNS_ZONE_UPDATE_OFF', 'DNS_ZONE_UPDATE_SECURE',
+    enum_defs = [ 'DNS_ZONE_UPDATE_OFF', 'DNS_ZONE_UPDATE_UNSECURE',
                     'DNS_ZONE_UPDATE_SECURE' ]
     return enum_string(dnsp, enum_defs, zone_update)
 
