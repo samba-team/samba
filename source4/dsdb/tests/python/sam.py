@@ -2594,9 +2594,9 @@ class SamTests(samba.tests.TestCase):
 
         self.ldb.add({
             "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
-            "description": "desc2",
             "objectclass": "group",
-            "description": "desc1"})
+            "description": "desc1"
+        })
 
         res = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
                          scope=SCOPE_BASE, attrs=["description"])
