@@ -236,15 +236,6 @@ static void notify_callback(void *private_data, struct timespec when,
 	notify_fsp(fsp, when, e->action, e->path);
 }
 
-static void sys_notify_callback(struct sys_notify_context *ctx,
-				void *private_data,
-				struct notify_event *e)
-{
-	files_struct *fsp = (files_struct *)private_data;
-	DEBUG(10, ("sys_notify_callback called for %s\n", fsp_str_dbg(fsp)));
-	notify_fsp(fsp, timespec_current(), e->action, e->path);
-}
-
 NTSTATUS change_notify_create(struct files_struct *fsp, uint32_t filter,
 			      bool recursive)
 {
@@ -283,19 +274,6 @@ NTSTATUS change_notify_create(struct files_struct *fsp, uint32_t filter,
 	}
 
 	subdir_filter = recursive ? filter : 0;
-
-	if (fsp->conn->sconn->sys_notify_ctx != NULL) {
-		void *sys_notify_handle = NULL;
-
-		status = SMB_VFS_NOTIFY_WATCH(
-			fsp->conn, fsp->conn->sconn->sys_notify_ctx,
-			fullpath, &filter, &subdir_filter,
-			sys_notify_callback, fsp, &sys_notify_handle);
-
-		if (NT_STATUS_IS_OK(status)) {
-			talloc_steal(fsp->notify, sys_notify_handle);
-		}
-	}
 
 	if ((filter != 0) || (subdir_filter != 0)) {
 		status = notify_add(fsp->conn->sconn->notify_ctx,
