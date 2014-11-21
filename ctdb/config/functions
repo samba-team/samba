@@ -920,6 +920,12 @@ drop_all_public_ips ()
     done <"${CTDB_PUBLIC_ADDRESSES:-/dev/null}"
 }
 
+flush_route_cache ()
+{
+    set_proc sys/net/ipv4/route/flush 1
+    set_proc sys/net/ipv6/route/flush 1
+}
+
 ########################################################
 # Simple counters
 _ctdb_counter_common () {
