@@ -114,6 +114,12 @@ static NTSTATUS streams_xattr_get_name(vfs_handle_struct *handle,
 
 	stype = strchr_m(stream_name + 1, ':');
 
+	if (stype) {
+		if (strcasecmp_m(stype, ":$DATA") != 0) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+	}
+
 	*xattr_name = talloc_asprintf(ctx, "%s%s",
 				      config->prefix,
 				      stream_name + 1);
