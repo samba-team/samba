@@ -889,8 +889,15 @@ ip_maskbits_iface ()
 {
     _addr="$1"
 
-    ip addr show to "${_addr}/32" 2>/dev/null | \
-	awk '$1 == "inet" { print gensub(".*/", "", 1, $2), $NF }'
+    case "$_addr" in
+	*:*) _family="inet6" ; _bits=128 ;;
+	*)   _family="inet"  ; _bits=32  ;;
+    esac
+
+    ip addr show to "${_addr}/${_bits}" 2>/dev/null | \
+	awk -v family="${_family}" \
+	    'NR == 1 { iface = gensub(":$", "", 1, $2) } \
+             $1 ~ /inet/ { print gensub(".*/", "", 1, $2), iface, family }'
 }
 
 drop_ip ()
