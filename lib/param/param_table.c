@@ -1660,8 +1660,8 @@ struct parm_struct parm_table[] = {
 	{
 		.label		= "change notify",
 		.type		= P_BOOL,
-		.p_class	= P_LOCAL,
-		.offset		= LOCAL_VAR(change_notify),
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(change_notify),
 		.special	= NULL,
 		.enum_list	= NULL,
 	},

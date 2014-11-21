@@ -678,7 +678,7 @@ static NTSTATUS make_connection_snum(struct smbXsrv_connection *xconn,
 	on_err_call_dis_hook = true;
 
 	if ((!conn->printer) && (!conn->ipc) &&
-	    lp_change_notify(conn->params)) {
+	    lp_change_notify()) {
 		if (sconn->notify_ctx == NULL) {
 			sconn->notify_ctx = notify_init(
 				sconn, sconn->msg_ctx, sconn->ev_ctx);
