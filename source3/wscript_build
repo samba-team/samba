@@ -638,6 +638,7 @@ bld.SAMBA3_LIBRARY('smbd_base',
                    NDR_SMB_ACL
                    netapi
                    NDR_IOCTL
+                   notifyd
                    ''' + bld.env['dmapi_lib']
                    + (bld.CONFIG_GET('SAMBA_FAM_LIBS')
                          if bld.CONFIG_SET('SAMBA_FAM_LIBS') else ''),

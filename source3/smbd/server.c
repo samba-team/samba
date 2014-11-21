@@ -49,6 +49,7 @@
 #include "scavenger.h"
 #include "locking/leases_db.h"
 #include "../../ctdb/include/ctdb_protocol.h"
+#include "smbd/notifyd/notifyd.h"
 
 struct smbd_open_socket;
 struct smbd_child_pid;
@@ -407,6 +408,97 @@ static void smb_tell_num_children(struct messaging_context *ctx, void *data,
 	}
 }
 
+static void notifyd_stopped(struct tevent_req *req);
+
+static struct tevent_req *notifyd_req(struct messaging_context *msg_ctx,
+				      struct tevent_context *ev)
+{
+	struct tevent_req *req;
+	sys_notify_watch_fn sys_notify_watch = NULL;
+	struct sys_notify_context *sys_notify_ctx = NULL;
+
+	if (lp_kernel_change_notify()) {
+
+#ifdef HAVE_INOTIFY
+		if (lp_parm_bool(-1, "notify", "inotify", true)) {
+			sys_notify_watch = inotify_watch;
+		}
+#endif
+
+#ifdef HAVE_FAM
+		if (lp_parm_bool(-1, "notify", "fam",
+				 (sys_notify_watch == NULL))) {
+			sys_notify_watch = fam_watch;
+		}
+#endif
+	}
+
+	if (sys_notify_watch != NULL) {
+		sys_notify_ctx = sys_notify_context_create(msg_ctx, ev);
+		if (sys_notify_ctx == NULL) {
+			return NULL;
+		}
+	}
+
+	req = notifyd_send(msg_ctx, ev, msg_ctx,
+			   messaging_ctdbd_connection(),
+			   sys_notify_watch, sys_notify_ctx);
+	if (req == NULL) {
+		TALLOC_FREE(sys_notify_ctx);
+		return NULL;
+	}
+	tevent_req_set_callback(req, notifyd_stopped, msg_ctx);
+
+	return req;
+}
+
+static void notifyd_stopped(struct tevent_req *req)
+{
+	int ret;
+
+	ret = notifyd_recv(req);
+	TALLOC_FREE(req);
+	DEBUG(1, ("notifyd stopped: %s\n", strerror(ret)));
+}
+
+static bool smbd_notifyd_init(struct messaging_context *msg, bool interactive)
+{
+	struct tevent_context *ev = messaging_tevent_context(msg);
+	struct tevent_req *req;
+	pid_t pid;
+	NTSTATUS status;
+
+	if (interactive) {
+		req = notifyd_req(msg, ev);
+		return (req != NULL);
+	}
+
+	pid = fork();
+	if (pid == -1) {
+		DEBUG(1, ("%s: fork failed: %s\n", __func__,
+			  strerror(errno)));
+		return false;
+	}
+
+	if (pid != 0) {
+		return true;
+	}
+
+	status = reinit_after_fork(msg, ev, true);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("%s: reinit_after_fork failed: %s\n",
+			  __func__, nt_errstr(status)));
+		exit(1);
+	}
+
+	req = notifyd_req(msg, ev);
+	if (req == NULL) {
+		exit(1);
+	}
+	tevent_req_set_callback(req, notifyd_stopped, msg);
+	tevent_req_poll(req, ev);
+	return true;
+}
 
 /*
   at most every smbd:cleanuptime seconds (default 20), we scan the BRL
@@ -1486,6 +1578,9 @@ extern void build_options(bool screen);
 	}
 
 	if (!smbd_parent_notify_init(NULL, msg_ctx, ev_ctx)) {
+		exit_daemon("Samba cannot init notification", EACCES);
+	}
+	if (!smbd_notifyd_init(msg_ctx, interactive)) {
 		exit_daemon("Samba cannot init notification", EACCES);
 	}
 
