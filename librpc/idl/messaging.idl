@@ -99,6 +99,13 @@ interface messaging
 		/* Cancel a notify, directory got deleted */
 		MSG_SMB_NOTIFY_CANCEL_DELETED   = 0x0319,
 
+		/* notifyd messages */
+		MSG_SMB_NOTIFY_REC_CHANGE	= 0x031A,
+		MSG_SMB_NOTIFY_TRIGGER		= 0x031B,
+		MSG_SMB_NOTIFY_GET_DB		= 0x031C,
+		MSG_SMB_NOTIFY_DB		= 0x031D,
+		MSG_SMB_NOTIFY_REC_CHANGES	= 0x031E,
+
 		/* winbind messages */
 		MSG_WINBIND_FINISHED		= 0x0401,
 		MSG_WINBIND_FORGET_STATE	= 0x0402,
@@ -152,4 +159,10 @@ interface messaging
 		uint8 num_fds;
 		dlong fds[num_fds];
 	} messaging_rec;
+
+	typedef [public] struct {
+		hyper rec_index;
+		uint32 num_recs;
+		messaging_rec *recs[num_recs];
+	} messaging_reclog;
 }
