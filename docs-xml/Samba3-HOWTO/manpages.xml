@@ -58,7 +58,6 @@
 	<xi:include href="../manpages/vfs_full_audit.8.xml"/>
 	<xi:include href="../manpages/vfs_gpfs.8.xml"/>
 	<xi:include href="../manpages/vfs_netatalk.8.xml"/>
-	<xi:include href="../manpages/vfs_notify_fam.8.xml"/>
 	<xi:include href="../manpages/vfs_prealloc.8.xml"/>
 	<xi:include href="../manpages/vfs_readahead.8.xml"/>
 	<xi:include href="../manpages/vfs_readonly.8.xml"/>
