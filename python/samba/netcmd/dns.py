@@ -19,6 +19,9 @@
 import samba.getopt as options
 from struct import pack
 from socket import inet_ntoa
+from socket import inet_ntop
+from socket import AF_INET
+from socket import AF_INET6
 import shlex
 
 from samba.netcmd import (
@@ -126,7 +129,7 @@ def ip4_array_string(array):
     if not array:
         return ret
     for i in xrange(array.AddrCount):
-        addr = '%s' % inet_ntoa(pack('i', array.AddrArray[i]))
+        addr = inet_ntop(AF_INET, pack('I', array.AddrArray[i]))
         ret.append(addr)
     return ret
 
@@ -137,11 +140,11 @@ def dns_addr_array_string(array):
         return ret
     for i in xrange(array.AddrCount):
         if array.AddrArray[i].MaxSa[0] == 0x02:
-            addr = '%d.%d.%d.%d (%d)' % \
-                tuple(array.AddrArray[i].MaxSa[4:8] + [array.AddrArray[i].MaxSa[3]])
+            x = "".join([chr(b) for b in array.AddrArray[i].MaxSa])[4:8]
+            addr = inet_ntop(AF_INET, x)
         elif array.AddrArray[i].MaxSa[0] == 0x17:
-            addr = '%x%x:%x%x:%x%x:%x%x:%x%x:%x%x:%x%x:%x%x (%d)' % \
-                tuple(array.AddrArray[i].MaxSa[4:20] + [array.AddrArray[i].MaxSa[3]])
+            x = "".join([chr(b) for b in array.AddrArray[i].MaxSa])[8:24]
+            addr = inet_ntop(AF_INET6, x)
         else:
             addr = 'UNKNOWN'
         ret.append(addr)
