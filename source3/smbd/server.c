@@ -283,103 +283,6 @@ static void smbd_parent_ctdb_reconfigured(
 			   MSG_SMB_BRL_VALIDATE, NULL, 0);
 }
 
-struct smbd_parent_notify_state {
-	struct tevent_context *ev;
-	struct messaging_context *msg;
-	uint32_t msgtype;
-	struct notify_context *notify;
-};
-
-static int smbd_parent_notify_cleanup(void *private_data);
-static void smbd_parent_notify_cleanup_done(struct tevent_req *req);
-static void smbd_parent_notify_proxy_done(struct tevent_req *req);
-
-static bool smbd_parent_notify_init(TALLOC_CTX *mem_ctx,
-				    struct messaging_context *msg,
-				    struct tevent_context *ev)
-{
-	struct smbd_parent_notify_state *state;
-	struct tevent_req *req;
-
-	state = talloc(mem_ctx, struct smbd_parent_notify_state);
-	if (state == NULL) {
-		return false;
-	}
-	state->msg = msg;
-	state->ev = ev;
-	state->msgtype = MSG_SMB_NOTIFY_CLEANUP;
-
-	state->notify = notify_init(state, msg, ev);
-	if (state->notify == NULL) {
-		goto fail;
-	}
-	req = background_job_send(
-		state, state->ev, state->msg, &state->msgtype, 1,
-		lp_parm_int(-1, "smbd", "notify cleanup interval", 60),
-		smbd_parent_notify_cleanup, state->notify);
-	if (req == NULL) {
-		goto fail;
-	}
-	tevent_req_set_callback(req, smbd_parent_notify_cleanup_done, state);
-
-	if (!lp_clustering()) {
-		return true;
-	}
-
-	req = notify_cluster_proxy_send(state, ev, state->notify);
-	if (req == NULL) {
-		goto fail;
-	}
-	tevent_req_set_callback(req, smbd_parent_notify_proxy_done, state);
-
-	return true;
-fail:
-	TALLOC_FREE(state);
-	return false;
-}
-
-static int smbd_parent_notify_cleanup(void *private_data)
-{
-	struct notify_context *notify = talloc_get_type_abort(
-		private_data, struct notify_context);
-	notify_cleanup(notify);
-	return lp_parm_int(-1, "smbd", "notify cleanup interval", 60);
-}
-
-static void smbd_parent_notify_cleanup_done(struct tevent_req *req)
-{
-	struct smbd_parent_notify_state *state = tevent_req_callback_data(
-		req, struct smbd_parent_notify_state);
-	NTSTATUS status;
-
-	status = background_job_recv(req);
-	TALLOC_FREE(req);
-	DEBUG(1, ("notify cleanup job ended with %s\n", nt_errstr(status)));
-
-	/*
-	 * Provide self-healing: Whatever the error condition was, it
-	 * will have printed it into log.smbd. Just retrying and
-	 * spamming log.smbd once a minute should be fine.
-	 */
-	req = background_job_send(
-		state, state->ev, state->msg, &state->msgtype, 1, 60,
-		smbd_parent_notify_cleanup, state->notify);
-	if (req == NULL) {
-		DEBUG(1, ("background_job_send failed\n"));
-		return;
-	}
-	tevent_req_set_callback(req, smbd_parent_notify_cleanup_done, state);
-}
-
-static void smbd_parent_notify_proxy_done(struct tevent_req *req)
-{
-	int ret;
-
-	ret = notify_cluster_proxy_recv(req);
-	TALLOC_FREE(req);
-	DEBUG(1, ("notify proxy job ended with %s\n", strerror(ret)));
-}
-
 static void add_child_pid(struct smbd_parent_context *parent,
 			  pid_t pid)
 {
@@ -1577,9 +1480,6 @@ extern void build_options(bool screen);
 		exit_daemon("Samba cannot init leases", EACCES);
 	}
 
-	if (!smbd_parent_notify_init(NULL, msg_ctx, ev_ctx)) {
-		exit_daemon("Samba cannot init notification", EACCES);
-	}
 	if (!smbd_notifyd_init(msg_ctx, interactive)) {
 		exit_daemon("Samba cannot init notification", EACCES);
 	}
