@@ -54,6 +54,7 @@ struct ctdbd_connection {
 	uint32_t reqid;
 	uint32_t our_vnn;
 	uint64_t rand_srvid;
+	uint64_t *srvids;
 	int fd;
 	struct tevent_fd *fde;
 
@@ -109,10 +110,43 @@ static void ctdb_packet_dump(struct ctdb_req_header *hdr)
 NTSTATUS register_with_ctdbd(struct ctdbd_connection *conn, uint64_t srvid)
 {
 
+	NTSTATUS status;
 	int cstatus;
-	return ctdbd_control(conn, CTDB_CURRENT_NODE,
-			     CTDB_CONTROL_REGISTER_SRVID, srvid, 0,
-			     tdb_null, NULL, NULL, &cstatus);
+	size_t num_srvids;
+	uint64_t *tmp;
+
+	status = ctdbd_control(conn, CTDB_CURRENT_NODE,
+			       CTDB_CONTROL_REGISTER_SRVID, srvid, 0,
+			       tdb_null, NULL, NULL, &cstatus);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	num_srvids = talloc_array_length(conn->srvids);
+
+	tmp = talloc_realloc(conn, conn->srvids, uint64_t,
+			     num_srvids + 1);
+	if (tmp == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	conn->srvids = tmp;
+
+	conn->srvids[num_srvids] = srvid;
+	return NT_STATUS_OK;
+}
+
+static bool ctdb_is_our_srvid(struct ctdbd_connection *conn, uint64_t srvid)
+{
+	size_t i, num_srvids;
+
+	num_srvids = talloc_array_length(conn->srvids);
+
+	for (i=0; i<num_srvids; i++) {
+		if (srvid == conn->srvids[i]) {
+			return true;
+		}
+	}
+	return false;
 }
 
 /*
@@ -661,8 +695,7 @@ static NTSTATUS ctdb_handle_message(struct messaging_context *msg_ctx,
 		return NT_STATUS_OK;
 	}
 
-	/* only messages to our pid or the broadcast are valid here */
-	if (msg->srvid != getpid() && msg->srvid != MSG_SRVID_SAMBA) {
+	if (!ctdb_is_our_srvid(conn, msg->srvid)) {
 		DEBUG(0,("Got unexpected message with srvid=%llu\n", 
 			 (unsigned long long)msg->srvid));
 		return NT_STATUS_OK;
