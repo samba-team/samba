@@ -582,11 +582,6 @@ void notify_walk(struct notify_context *notify,
 		 void *private_data);
 void notify_cleanup(struct notify_context *notify);
 
-struct tevent_req *notify_cluster_proxy_send(
-	TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-	struct notify_context *notify);
-int notify_cluster_proxy_recv(struct tevent_req *req);
-
 /* The following definitions come from smbd/ntquotas.c  */
 
 int vfs_get_ntquota(files_struct *fsp, enum SMB_QUOTA_TYPE qtype, struct dom_sid *psid, SMB_NTQUOTA_STRUCT *qt);
