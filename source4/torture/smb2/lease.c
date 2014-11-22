@@ -2596,6 +2596,178 @@ done:
 	return ret;
 }
 
+static bool test_lease_lock1(struct torture_context *tctx,
+			     struct smb2_tree *tree1a,
+			     struct smb2_tree *tree2)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	struct smb2_create io1 = {};
+	struct smb2_create io2 = {};
+	struct smb2_create io3 = {};
+	struct smb2_lease ls1 = {};
+	struct smb2_lease ls2 = {};
+	struct smb2_lease ls3 = {};
+	struct smb2_handle h1 = {};
+	struct smb2_handle h2 = {};
+	struct smb2_handle h3 = {};
+	struct smb2_lock lck;
+	struct smb2_lock_element el[1];
+	const char *fname = "locktest.dat";
+	bool ret = true;
+	NTSTATUS status;
+	uint32_t caps;
+	struct smbcli_options options1;
+	struct smb2_tree *tree1b = NULL;
+
+	options1 = tree1a->session->transport->options;
+
+	caps = smb2cli_conn_server_capabilities(tree1a->session->transport->conn);
+	if (!(caps & SMB2_CAP_LEASING)) {
+		torture_skip(tctx, "leases are not supported");
+	}
+
+	/* Set up handlers. */
+	tree2->session->transport->lease.handler = torture_lease_handler;
+	tree2->session->transport->lease.private_data = tree2;
+	tree2->session->transport->oplock.handler = torture_oplock_handler;
+	tree2->session->transport->oplock.private_data = tree2;
+
+	tree1a->session->transport->lease.handler = torture_lease_handler;
+	tree1a->session->transport->lease.private_data = tree1a;
+	tree1a->session->transport->oplock.handler = torture_oplock_handler;
+	tree1a->session->transport->oplock.private_data = tree1a;
+
+	/* create a new connection (same client_guid) */
+	if (!torture_smb2_connection_ext(tctx, 0, &options1, &tree1b)) {
+		torture_warning(tctx, "couldn't reconnect, bailing\n");
+		ret = false;
+		goto done;
+	}
+
+	tree1b->session->transport->lease.handler = torture_lease_handler;
+	tree1b->session->transport->lease.private_data = tree1b;
+	tree1b->session->transport->oplock.handler = torture_oplock_handler;
+	tree1b->session->transport->oplock.private_data = tree1b;
+
+	smb2_util_unlink(tree1a, fname);
+
+	ZERO_STRUCT(break_info);
+	ZERO_STRUCT(lck);
+
+	/* Open a handle on tree1a. */
+	smb2_lease_create_share(&io1, &ls1, false, fname,
+				smb2_util_share_access("RWD"),
+				LEASE1,
+				smb2_util_lease_state("RWH"));
+	status = smb2_create(tree1a, mem_ctx, &io1);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h1 = io1.out.file.handle;
+	CHECK_CREATED(&io1, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_LEASE(&io1, "RWH", true, LEASE1, 0);
+
+	/* Open a second handle on tree1b. */
+	smb2_lease_create_share(&io2, &ls2, false, fname,
+				smb2_util_share_access("RWD"),
+				LEASE2,
+				smb2_util_lease_state("RWH"));
+	status = smb2_create(tree1b, mem_ctx, &io2);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h2 = io2.out.file.handle;
+	CHECK_CREATED(&io2, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_LEASE(&io2, "RH", true, LEASE2, 0);
+	/* And LEASE1 got broken to RH. */
+	CHECK_BREAK_INFO("RWH", "RH", LEASE1);
+	ZERO_STRUCT(break_info);
+
+	/* Now open a lease on a different client guid. */
+	smb2_lease_create_share(&io3, &ls3, false, fname,
+				smb2_util_share_access("RWD"),
+				LEASE3,
+				smb2_util_lease_state("RWH"));
+	status = smb2_create(tree2, mem_ctx, &io3);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h3 = io3.out.file.handle;
+	CHECK_CREATED(&io3, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_LEASE(&io3, "RH", true, LEASE3, 0);
+	/* Doesn't break. */
+	CHECK_NO_BREAK(tctx);
+
+	lck.in.locks		= el;
+	/*
+	 * Try and get get an exclusive byte
+	 * range lock on H1 (LEASE1).
+	 */
+
+	lck.in.lock_count	= 1;
+	lck.in.lock_sequence	= 1;
+	lck.in.file.handle	= h1;
+	el[0].offset		= 0;
+	el[0].length		= 1;
+	el[0].reserved		= 0;
+	el[0].flags		= SMB2_LOCK_FLAG_EXCLUSIVE;
+	status = smb2_lock(tree1a, &lck);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* LEASE2 and LEASE3 should get broken to NONE. */
+	torture_wait_for_lease_break(tctx);
+	torture_wait_for_lease_break(tctx);
+	torture_wait_for_lease_break(tctx);
+	torture_wait_for_lease_break(tctx);
+
+	CHECK_VAL(break_info.failures, 0);                      \
+	CHECK_VAL(break_info.count, 2);                         \
+
+	/* Get state of the H1 (LEASE1) */
+	smb2_lease_create(&io1, &ls1, false, fname, LEASE1, smb2_util_lease_state(""));
+	status = smb2_create(tree1a, mem_ctx, &io1);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	/* Should still be RH. */
+	CHECK_LEASE(&io1, "RH", true, LEASE1, 0);
+	smb2_util_close(tree1a, io1.out.file.handle);
+
+	/* Get state of the H2 (LEASE2) */
+	smb2_lease_create(&io2, &ls2, false, fname, LEASE2, smb2_util_lease_state(""));
+	status = smb2_create(tree1b, mem_ctx, &io2);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_LEASE(&io2, "", true, LEASE2, 0);
+	smb2_util_close(tree1b, io2.out.file.handle);
+
+	/* Get state of the H3 (LEASE3) */
+	smb2_lease_create(&io3, &ls3, false, fname, LEASE3, smb2_util_lease_state(""));
+	status = smb2_create(tree2, mem_ctx, &io3);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_LEASE(&io3, "", true, LEASE3, 0);
+	smb2_util_close(tree2, io3.out.file.handle);
+
+	ZERO_STRUCT(break_info);
+
+	/*
+	 * Try and get get an exclusive byte
+	 * range lock on H3 (LEASE3).
+	 */
+	lck.in.lock_count	= 1;
+	lck.in.lock_sequence	= 2;
+	lck.in.file.handle	= h3;
+	el[0].offset		= 100;
+	el[0].length		= 1;
+	el[0].reserved		= 0;
+	el[0].flags		= SMB2_LOCK_FLAG_EXCLUSIVE;
+	status = smb2_lock(tree2, &lck);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	/* LEASE1 got broken to NONE. */
+	CHECK_BREAK_INFO("RH", "", LEASE1);
+	ZERO_STRUCT(break_info);
+
+done:
+	smb2_util_close(tree1a, h1);
+	smb2_util_close(tree1b, h2);
+	smb2_util_close(tree2, h3);
+
+	smb2_util_unlink(tree1a, fname);
+	talloc_free(mem_ctx);
+	return ret;
+}
+
 static bool test_lease_complex1(struct torture_context *tctx,
 				struct smb2_tree *tree1a)
 {
@@ -3206,6 +3378,7 @@ struct torture_suite *torture_smb2_lease_init(void)
 	torture_suite_add_1smb2_test(suite, "breaking4", test_lease_breaking4);
 	torture_suite_add_1smb2_test(suite, "breaking5", test_lease_breaking5);
 	torture_suite_add_1smb2_test(suite, "breaking6", test_lease_breaking6);
+	torture_suite_add_2smb2_test(suite, "lock1", test_lease_lock1);
 	torture_suite_add_1smb2_test(suite, "complex1", test_lease_complex1);
 	torture_suite_add_1smb2_test(suite, "v2_request_parent",
 				     test_lease_v2_request_parent);
