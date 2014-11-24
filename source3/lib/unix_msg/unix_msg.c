@@ -741,7 +741,9 @@ static int unix_dgram_send(struct unix_dgram_ctx *ctx,
 	if (ret >= 0) {
 		return 0;
 	}
-	if ((errno != EWOULDBLOCK) && (errno != EAGAIN) && (errno != EINTR)) {
+	if ((errno != EWOULDBLOCK) &&
+	    (errno != EAGAIN) &&
+	    (errno != EINTR)) {
 		return errno;
 	}
 
