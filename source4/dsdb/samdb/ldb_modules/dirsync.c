@@ -571,7 +571,6 @@ skip:
 							if (tmpel->values == NULL) {
 								return ldb_oom(ldb);
 							}
-							tmpel = tmpel;
 						}
 						tmpel->values[tmpel->num_values -1].data =talloc_steal(tmpel->values, el->values[k].data);
 						tmpel->values[tmpel->num_values -1].length = el->values[k].length;
