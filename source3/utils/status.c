@@ -365,6 +365,7 @@ int main(int argc, const char *argv[])
 	TALLOC_CTX *frame = talloc_stackframe();
 	int ret = 0;
 	struct messaging_context *msg_ctx;
+	bool ok;
 
 	sec_init();
 	load_case_tables();
@@ -464,10 +465,12 @@ int main(int argc, const char *argv[])
 	switch (profile_only) {
 		case 'P':
 			/* Dump profile data */
-			return status_profile_dump(verbose);
+			ok = status_profile_dump(verbose);
+			return ok ? 0 : 1;
 		case 'R':
 			/* Continuously display rate-converted data */
-			return status_profile_rates(verbose);
+			ok = status_profile_rates(verbose);
+			return ok ? 0 : 1;
 		default:
 			break;
 	}
