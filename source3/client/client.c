@@ -5307,7 +5307,7 @@ static int do_host_query(const char *query_host)
 
 	if (cli == NULL) {
 		d_printf("NetBIOS over TCP disabled -- no workgroup available\n");
-		return 1;
+		return 0;
 	}
 
 	cli_set_timeout(cli, io_timeout*1000);
