@@ -743,6 +743,10 @@ static int unix_dgram_send(struct unix_dgram_ctx *ctx,
 	}
 	if ((errno != EWOULDBLOCK) &&
 	    (errno != EAGAIN) &&
+#ifdef ENOBUFS
+	    /* FreeBSD can give this for large messages */
+	    (errno != ENOBUFS) &&
+#endif
 	    (errno != EINTR)) {
 		return errno;
 	}
