@@ -363,6 +363,7 @@ static void print_notify_recs(const char *path,
 	TALLOC_CTX *frame = talloc_stackframe();
 	int ret = 0;
 	struct messaging_context *msg_ctx;
+	bool ok;
 
 	sec_init();
 	load_case_tables();
@@ -462,10 +463,12 @@ static void print_notify_recs(const char *path,
 	switch (profile_only) {
 		case 'P':
 			/* Dump profile data */
-			return status_profile_dump(verbose);
+			ok = status_profile_dump(verbose);
+			return ok ? 0 : 1;
 		case 'R':
 			/* Continuously display rate-converted data */
-			return status_profile_rates(verbose);
+			ok = status_profile_rates(verbose);
+			return ok ? 0 : 1;
 		default:
 			break;
 	}
