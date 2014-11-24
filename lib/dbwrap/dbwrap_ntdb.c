@@ -313,7 +313,7 @@ static enum NTDB_ERROR db_ntdb_parser(NTDB_DATA key, NTDB_DATA data,
 				      struct db_ntdb_parse_state *state)
 {
 	state->parser(key, data, state->private_data);
-	return TDB_SUCCESS;
+	return NTDB_SUCCESS;
 }
 
 static NTSTATUS db_ntdb_parse(struct db_context *db, TDB_DATA key,
