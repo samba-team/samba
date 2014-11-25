@@ -24,7 +24,7 @@ domsid = domsid.split(' ')[0]
 
 sids=[ domsid + '-512', 'S-1-5-32-545', domsid + '-513' ]
 
-flush_cache
+flush_cache()
 
 sids2xids = subprocess.Popen([wbinfo, '--sids-to-unix-ids=' +  ','.join(sids)],
                              stdout=subprocess.PIPE).communicate()[0].strip()
@@ -58,7 +58,7 @@ def check_singular(sids, gids):
 check_singular(sids, gids)
 
 # second round: with empty cache
-flush_cache
+flush_cache()
 check_singular(sids, gids)
 
 sys.exit(0)
