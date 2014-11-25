@@ -100,12 +100,20 @@ int ctdb_parse_address(struct ctdb_context *ctdb,
 		       struct ctdb_address *address)
 {
 	struct servent *se;
+	ctdb_sock_addr addr;
 
 	setservent(0);
 	se = getservbyname("ctdb", "tcp");
 	endservent();
-	
-	address->address = talloc_strdup(mem_ctx, str);
+
+	/* Parse IP address and re-convert to string.  This ensure correct
+	 * string form for IPv6 addresses.
+	 */
+	if (! parse_ip(str, NULL, 0, &addr)) {
+		return -1;
+	}
+
+	address->address = talloc_strdup(mem_ctx, ctdb_addr_to_str(&addr));
 	CTDB_NO_MEMORY(ctdb, address->address);
 
 	if (se == NULL) {
