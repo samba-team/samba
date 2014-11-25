@@ -415,9 +415,10 @@ enum pdb_policy_type {
  * Changed to 21, set/enum_upn_suffixes. AB.
  * Changed to 22, idmap control functions
  * Changed to 23, new idmap control functions
+ * Changed to 24, removed uid_to_sid and gid_to_sid, replaced with id_to_sid
  */
 
-#define PASSDB_INTERFACE_VERSION 23
+#define PASSDB_INTERFACE_VERSION 24
 
 struct pdb_methods 
 {
@@ -560,10 +561,16 @@ struct pdb_methods
 			       struct pdb_search *search,
 			       const struct dom_sid *sid);
 
-	bool (*uid_to_sid)(struct pdb_methods *methods, uid_t uid,
-			   struct dom_sid *sid);
-	bool (*gid_to_sid)(struct pdb_methods *methods, gid_t gid,
-			   struct dom_sid *sid);
+	/* 
+	 * Instead of passing down a gid or uid, this function sends down a pointer
+	 * to a unixid. 
+	 *
+	 * This acts as an in-out variable so that the idmap functions can correctly
+	 * receive ID_TYPE_BOTH, filling in cache details correctly rather than forcing
+	 * the cache to store ID_TYPE_UID or ID_TYPE_GID. 
+	 */
+	bool (*id_to_sid)(struct pdb_methods *methods, struct unixid *id,
+			  struct dom_sid *sid);
 	bool (*sid_to_id)(struct pdb_methods *methods, const struct dom_sid *sid,
 			  struct unixid *id);
 
@@ -889,8 +896,15 @@ NTSTATUS pdb_lookup_names(const struct dom_sid *domain_sid,
 bool pdb_get_account_policy(enum pdb_policy_type type, uint32_t *value);
 bool pdb_set_account_policy(enum pdb_policy_type type, uint32_t value);
 bool pdb_get_seq_num(time_t *seq_num);
-bool pdb_uid_to_sid(uid_t uid, struct dom_sid *sid);
-bool pdb_gid_to_sid(gid_t gid, struct dom_sid *sid);
+/* 
+ * Instead of passing down a gid or uid, this function sends down a pointer
+ * to a unixid. 
+ *
+ * This acts as an in-out variable so that the idmap functions can correctly
+ * receive ID_TYPE_BOTH, filling in cache details correctly rather than forcing
+ * the cache to store ID_TYPE_UID or ID_TYPE_GID. 
+ */
+bool pdb_id_to_sid(struct unixid *id, struct dom_sid *sid);
 bool pdb_sid_to_id(const struct dom_sid *sid, struct unixid *id);
 uint32_t pdb_capabilities(void);
 bool pdb_new_rid(uint32_t *rid);

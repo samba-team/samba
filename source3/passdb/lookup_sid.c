@@ -1029,11 +1029,15 @@ bool lookup_sid(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
 static void legacy_uid_to_sid(struct dom_sid *psid, uid_t uid)
 {
 	bool ret;
+	struct unixid id;
 
 	ZERO_STRUCTP(psid);
 
+	id.id = uid;
+	id.type = ID_TYPE_UID;
+
 	become_root();
-	ret = pdb_uid_to_sid(uid, psid);
+	ret = pdb_id_to_sid(&id, psid);
 	unbecome_root();
 
 	if (ret) {
@@ -1059,11 +1063,15 @@ static void legacy_uid_to_sid(struct dom_sid *psid, uid_t uid)
 static void legacy_gid_to_sid(struct dom_sid *psid, gid_t gid)
 {
 	bool ret;
+	struct unixid id;
 
 	ZERO_STRUCTP(psid);
 
+	id.id = gid;
+	id.type = ID_TYPE_GID;
+
 	become_root();
-	ret = pdb_gid_to_sid(gid, psid);
+	ret = pdb_id_to_sid(&id, psid);
 	unbecome_root();
 
 	if (ret) {
@@ -1527,8 +1535,13 @@ NTSTATUS get_primary_group_sid(TALLOC_CTX *mem_ctx,
 			}
 		} else {
 			/* Try group mapping */
+			struct unixid id;
+
+			id.id = pwd->pw_gid;
+			id.type = ID_TYPE_GID;
+
 			ZERO_STRUCTP(group_sid);
-			if (pdb_gid_to_sid(pwd->pw_gid, group_sid)) {
+			if (pdb_id_to_sid(&id, group_sid)) {
 				need_lookup_sid = true;
 			}
 		}

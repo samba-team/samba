@@ -1204,35 +1204,23 @@ bool pdb_get_seq_num(time_t *seq_num)
 	return NT_STATUS_IS_OK(pdb->get_seq_num(pdb, seq_num));
 }
 
-bool pdb_uid_to_sid(uid_t uid, struct dom_sid *sid)
+/* 
+ * Instead of passing down a gid or uid, this function sends down a pointer
+ * to a unixid. 
+ *
+ * This acts as an in-out variable so that the idmap functions can correctly
+ * receive ID_TYPE_BOTH, filling in cache details correctly rather than forcing
+ * the cache to store ID_TYPE_UID or ID_TYPE_GID. 
+ */
+bool pdb_id_to_sid(struct unixid *id, struct dom_sid *sid)
 {
 	struct pdb_methods *pdb = pdb_get_methods();
 	bool ret;
 
-	ret = pdb->uid_to_sid(pdb, uid, sid);
+	ret = pdb->id_to_sid(pdb, id, sid);
 
 	if (ret == true) {
-		struct unixid id;
-		id.id = uid;
-		id.type = ID_TYPE_UID;
-		idmap_cache_set_sid2unixid(sid, &id);
-	}
-
-	return ret;
-}
-
-bool pdb_gid_to_sid(gid_t gid, struct dom_sid *sid)
-{
-	struct pdb_methods *pdb = pdb_get_methods();
-	bool ret;
-
-	ret = pdb->gid_to_sid(pdb, gid, sid);
-
-	if (ret == true) {
-		struct unixid id;
-		id.id = gid;
-		id.type = ID_TYPE_GID;
-		idmap_cache_set_sid2unixid(sid, &id);
+		idmap_cache_set_sid2unixid(sid, id);
 	}
 
 	return ret;
@@ -1458,6 +1446,20 @@ static bool pdb_default_gid_to_sid(struct pdb_methods *methods, gid_t gid,
 	return true;
 }
 
+static bool pdb_default_id_to_sid(struct pdb_methods *methods, struct unixid *id,
+				   struct dom_sid *sid)
+{
+	switch (id->type) {
+	case ID_TYPE_UID:
+		return pdb_default_uid_to_sid(methods, id->id, sid);
+
+	case ID_TYPE_GID:
+		return pdb_default_gid_to_sid(methods, id->id, sid);
+
+	default:
+		return false;
+	}
+}
 /**
  * The "Unix User" and "Unix Group" domains have a special
  * id mapping that is a rid-algorithm with range starting at 0.
@@ -2614,8 +2616,7 @@ NTSTATUS make_pdb_method( struct pdb_methods **methods )
 	(*methods)->get_account_policy = pdb_default_get_account_policy;
 	(*methods)->set_account_policy = pdb_default_set_account_policy;
 	(*methods)->get_seq_num = pdb_default_get_seq_num;
-	(*methods)->uid_to_sid = pdb_default_uid_to_sid;
-	(*methods)->gid_to_sid = pdb_default_gid_to_sid;
+	(*methods)->id_to_sid = pdb_default_id_to_sid;
 	(*methods)->sid_to_id = pdb_default_sid_to_id;
 
 	(*methods)->search_groups = pdb_default_search_groups;

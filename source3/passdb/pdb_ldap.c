@@ -3017,6 +3017,7 @@ static NTSTATUS ldapsam_add_group_mapping_entry(struct pdb_methods *methods,
 	NTSTATUS result;
 
 	struct dom_sid sid;
+	struct unixid id;
 
 	int rc;
 
@@ -3082,7 +3083,10 @@ static NTSTATUS ldapsam_add_group_mapping_entry(struct pdb_methods *methods,
 		goto done;
 	}
 
-	if (pdb_gid_to_sid(map->gid, &sid)) {
+	id.id = map->gid;
+	id.type = ID_TYPE_GID;
+
+	if (pdb_id_to_sid(&id, &sid)) {
 		DEBUG(3, ("Gid %u is already mapped to SID %s, refusing to "
 			  "add\n", (unsigned int)map->gid, sid_string_dbg(&sid)));
 		result = NT_STATUS_GROUP_EXISTS;
@@ -5128,6 +5132,21 @@ static bool ldapsam_gid_to_sid(struct pdb_methods *methods, gid_t gid,
 	return ret;
 }
 
+static bool ldapsam_id_to_sid(struct pdb_methods *methods, struct unixid *id,
+				   struct dom_sid *sid)
+{
+	switch (id->type) {
+	case ID_TYPE_UID:
+		return ldapsam_uid_to_sid(methods, id->id, sid);
+
+	case ID_TYPE_GID:
+		return ldapsam_gid_to_sid(methods, id->id, sid);
+
+	default:
+		return false;
+	}
+}
+
 
 /*
  * The following functions are called only if
@@ -6487,8 +6506,7 @@ NTSTATUS pdb_ldapsam_init_common(struct pdb_methods **pdb_method,
 			ldapsam_enum_group_memberships;
 		(*pdb_method)->lookup_rids = ldapsam_lookup_rids;
 		(*pdb_method)->sid_to_id = ldapsam_sid_to_id;
-		(*pdb_method)->uid_to_sid = ldapsam_uid_to_sid;
-		(*pdb_method)->gid_to_sid = ldapsam_gid_to_sid;
+		(*pdb_method)->id_to_sid = ldapsam_id_to_sid;
 
 		if (lp_parm_bool(-1, "ldapsam", "editposix", False)) {
 			(*pdb_method)->create_user = ldapsam_create_user;

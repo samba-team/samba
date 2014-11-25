@@ -2042,8 +2042,16 @@ static bool pdb_samba_dsdb_search_aliases(struct pdb_methods *m,
 	return true;
 }
 
-static bool pdb_samba_dsdb_uid_to_sid(struct pdb_methods *m, uid_t uid,
-			       struct dom_sid *sid)
+/* 
+ * Instead of taking a gid or uid, this function takes a pointer to a 
+ * unixid. 
+ *
+ * This acts as an in-out variable so that the idmap functions can correctly
+ * receive ID_TYPE_BOTH, and this function ensures cache details are filled
+ * correctly rather than forcing the cache to store ID_TYPE_UID or ID_TYPE_GID. 
+ */
+static bool pdb_samba_dsdb_id_to_sid(struct pdb_methods *m, struct unixid *id,
+				     struct dom_sid *sid)
 {
 	struct pdb_samba_dsdb_state *state = talloc_get_type_abort(
 		m->private_data, struct pdb_samba_dsdb_state);
@@ -2055,8 +2063,7 @@ static bool pdb_samba_dsdb_uid_to_sid(struct pdb_methods *m, uid_t uid,
 		return false;
 	}
 
-	id_map.xid.id = uid;
-	id_map.xid.type = ID_TYPE_UID;
+	id_map.xid = *id;
 	id_maps[0] = &id_map;
 	id_maps[1] = NULL;
 
@@ -2065,33 +2072,9 @@ static bool pdb_samba_dsdb_uid_to_sid(struct pdb_methods *m, uid_t uid,
 		talloc_free(tmp_ctx);
 		return false;
 	}
-	*sid = *id_map.sid;
-	talloc_free(tmp_ctx);
-	return true;
-}
 
-static bool pdb_samba_dsdb_gid_to_sid(struct pdb_methods *m, gid_t gid,
-			       struct dom_sid *sid)
-{
-	struct pdb_samba_dsdb_state *state = talloc_get_type_abort(
-		m->private_data, struct pdb_samba_dsdb_state);
-	NTSTATUS status;
-	struct id_map id_map;
-	struct id_map *id_maps[2];
-	TALLOC_CTX *tmp_ctx = talloc_stackframe();
-	if (!tmp_ctx) {
-		return false;
-	}
-
-	id_map.xid.id = gid;
-	id_map.xid.type = ID_TYPE_GID;
-	id_maps[0] = &id_map;
-	id_maps[1] = NULL;
-
-	status = idmap_xids_to_sids(state->idmap_ctx, tmp_ctx, id_maps);
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(tmp_ctx);
-		return false;
+	if (id_map.xid.type != ID_TYPE_NOT_SPECIFIED) {
+		id->type = id_map.xid.type;
 	}
 	*sid = *id_map.sid;
 	talloc_free(tmp_ctx);
@@ -2341,8 +2324,7 @@ static void pdb_samba_dsdb_init_methods(struct pdb_methods *m)
 	m->search_users = pdb_samba_dsdb_search_users;
 	m->search_groups = pdb_samba_dsdb_search_groups;
 	m->search_aliases = pdb_samba_dsdb_search_aliases;
-	m->uid_to_sid = pdb_samba_dsdb_uid_to_sid;
-	m->gid_to_sid = pdb_samba_dsdb_gid_to_sid;
+	m->id_to_sid = pdb_samba_dsdb_id_to_sid;
 	m->sid_to_id = pdb_samba_dsdb_sid_to_id;
 	m->capabilities = pdb_samba_dsdb_capabilities;
 	m->new_rid = pdb_samba_dsdb_new_rid;

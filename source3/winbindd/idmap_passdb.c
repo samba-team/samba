@@ -44,23 +44,11 @@ static NTSTATUS idmap_pdb_unixids_to_sids(struct idmap_domain *dom, struct id_ma
 	int i;
 
 	for (i = 0; ids[i]; i++) {
-
 		/* unmapped by default */
 		ids[i]->status = ID_UNMAPPED;
 
-		switch (ids[i]->xid.type) {
-		case ID_TYPE_UID:
-			if (pdb_uid_to_sid((uid_t)ids[i]->xid.id, ids[i]->sid)) {
-				ids[i]->status = ID_MAPPED;
-			}
-			break;
-		case ID_TYPE_GID:
-			if (pdb_gid_to_sid((gid_t)ids[i]->xid.id, ids[i]->sid)) {
-				ids[i]->status = ID_MAPPED;
-			}
-			break;
-		default: /* ?? */
-			ids[i]->status = ID_UNKNOWN;
+		if (pdb_id_to_sid(&ids[i]->xid, ids[i]->sid)) {
+			ids[i]->status = ID_MAPPED;
 		}
 	}
 

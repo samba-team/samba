@@ -40,6 +40,7 @@
 #include "passdb.h"
 #include "lib/winbind_util.h"
 #include "passdb/pdb_wbc_sam.h"
+#include "idmap.h"
 
 /***************************************************************************
   Default implementations of some functions.
@@ -72,16 +73,19 @@ static NTSTATUS pdb_wbc_sam_getsampwsid(struct pdb_methods *methods, struct samu
 	return _pdb_wbc_sam_getsampw(methods, user, winbind_getpwsid(sid));
 }
 
-static bool pdb_wbc_sam_uid_to_sid(struct pdb_methods *methods, uid_t uid,
-				   struct dom_sid *sid)
+static bool pdb_wbc_sam_id_to_sid(struct pdb_methods *methods, struct unixid *id,
+				  struct dom_sid *sid)
 {
-	return winbind_uid_to_sid(sid, uid);
-}
+	switch (id->type) {
+	case ID_TYPE_UID:
+		return winbind_uid_to_sid(sid, id->id);
 
-static bool pdb_wbc_sam_gid_to_sid(struct pdb_methods *methods, gid_t gid,
-				   struct dom_sid *sid)
-{
-	return winbind_gid_to_sid(sid, gid);
+	case ID_TYPE_GID:
+		return winbind_gid_to_sid(sid, id->id);
+
+	default:
+		return false;
+	}
 }
 
 static NTSTATUS pdb_wbc_sam_enum_group_members(struct pdb_methods *methods,
@@ -426,8 +430,7 @@ static NTSTATUS pdb_init_wbc_sam(struct pdb_methods **pdb_method, const char *lo
 	(*pdb_method)->lookup_rids = pdb_wbc_sam_lookup_rids;
 	(*pdb_method)->get_account_policy = pdb_wbc_sam_get_account_policy;
 	(*pdb_method)->set_account_policy = pdb_wbc_sam_set_account_policy;
-	(*pdb_method)->uid_to_sid = pdb_wbc_sam_uid_to_sid;
-	(*pdb_method)->gid_to_sid = pdb_wbc_sam_gid_to_sid;
+	(*pdb_method)->id_to_sid = pdb_wbc_sam_id_to_sid;
 
 	(*pdb_method)->search_groups = pdb_wbc_sam_search_groups;
 	(*pdb_method)->search_aliases = pdb_wbc_sam_search_aliases;
