@@ -2143,7 +2143,6 @@ WERROR _srvsvc_NetShareDel(struct pipes_struct *p,
 	int ret;
 	int snum;
 	bool is_disk_op;
-	struct share_params *params;
 	TALLOC_CTX *ctx = p->mem_ctx;
 
 	DEBUG(5,("_srvsvc_NetShareDel: %d\n", __LINE__));
@@ -2168,10 +2167,6 @@ WERROR _srvsvc_NetShareDel(struct pipes_struct *p,
 		return WERR_NO_SUCH_SHARE;
 	}
 
-	if (!(params = get_share_params(p->mem_ctx, share_name))) {
-		return WERR_NO_SUCH_SHARE;
-	}
-
 	/* No change to printer shares. */
 	if (lp_printable(snum))
 		return WERR_ACCESS_DENIED;
@@ -2190,7 +2185,7 @@ WERROR _srvsvc_NetShareDel(struct pipes_struct *p,
 			"%s \"%s\" \"%s\"",
 			lp_delete_share_command(talloc_tos()),
 			get_dyn_CONFIGFILE(),
-			lp_servicename(talloc_tos(), snum));
+			share_name);
 	if (!command) {
 		return WERR_NOMEM;
 	}
@@ -2219,9 +2214,9 @@ WERROR _srvsvc_NetShareDel(struct pipes_struct *p,
 		return WERR_ACCESS_DENIED;
 
 	/* Delete the SD in the database. */
-	delete_share_security(lp_servicename(talloc_tos(), params->service));
+	delete_share_security(share_name);
 
-	lp_killservice(params->service);
+	lp_killservice(snum);
 
 	return WERR_OK;
 }
