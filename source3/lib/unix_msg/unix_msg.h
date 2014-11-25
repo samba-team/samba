@@ -16,8 +16,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __UNIX_DGRAM_H__
-#define __UNIX_DGRAM_H__
+#ifndef __UNIX_MSG_H__
+#define __UNIX_MSG_H__
 
 #include "replace.h"
 #include "poll_funcs/poll_funcs.h"
