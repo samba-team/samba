@@ -592,6 +592,20 @@ class LdbMsgTests(TestCase):
         err_rec = {"a1": ["a1-val1", "a1-val1"]}
         self.assertRaises(TypeError, ldb.Message.from_dict, l, err_rec, ldb.FLAG_MOD_REPLACE)
 
+    def test_copy_add_message_element(self):
+        m = ldb.Message()
+        m["1"] = ldb.MessageElement(["val 111"], ldb.FLAG_MOD_ADD, "1")
+        m["2"] = ldb.MessageElement(["val 222"], ldb.FLAG_MOD_ADD, "2")
+        mto = ldb.Message()
+        mto["1"] = m["1"]
+        mto["2"] = m["2"]
+        self.assertEqual(mto["1"], m["1"])
+        self.assertEqual(mto["2"], m["2"])
+        mto = ldb.Message()
+        mto.add(m["1"])
+        mto.add(m["2"])
+        self.assertEqual(mto["1"], m["1"])
+        self.assertEqual(mto["2"], m["2"])
 
 
 class MessageElementTests(TestCase):
