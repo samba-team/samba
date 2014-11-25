@@ -136,7 +136,21 @@ private_pdb_match = private_pdb_match + ldapsam_pdb_match
 
 private_pdb_match = private_pdb_match + map(lambda x: '!pdb_%s_init' % x, static_pdb_match)
 
-bld.SAMBA3_LIBRARY('pdb',
+bld.SAMBA3_LIBRARY('samba-passdb',
+                   source='',
+                   deps='pdb',
+                   private_library=False,
+                   pc_files=[],
+                   public_headers_install=True,
+                   public_headers='''
+                   include/passdb.h
+                   passdb/machine_sid.h
+                   passdb/lookup_sid.h''',
+                   abi_match=private_pdb_match,
+                   abi_directory='passdb/ABI',
+                   vnum='0.2.0')
+
+bld.SAMBA3_SUBSYSTEM('pdb',
                    source='''passdb/pdb_get_set.c
                    passdb/passdb.c
                    lib/util_wellknown.c
@@ -154,17 +168,7 @@ bld.SAMBA3_LIBRARY('pdb',
                    passdb/pdb_interface.c
                    passdb/pdb_secrets.c
                    passdb/pdb_unixid.c''',
-                   deps='secrets3 GROUPDB SERVER_MUTEX wbclient LIBCLI_AUTH flag_mapping samba-credentials',
-                   private_library=False,
-                   pc_files=[],
-                   public_headers_install=True,
-                   public_headers='''
-                   include/passdb.h
-                   passdb/machine_sid.h
-                   passdb/lookup_sid.h''',
-                   abi_match=private_pdb_match,
-                   abi_directory='passdb/ABI',
-                   vnum='0.1.2')
+                   deps='secrets3 GROUPDB SERVER_MUTEX wbclient LIBCLI_AUTH flag_mapping samba-credentials')
 
 bld.SAMBA3_LIBRARY('smbldaphelper',
                    source='passdb/pdb_ldap_schema.c passdb/pdb_ldap_util.c',
@@ -758,7 +762,7 @@ bld.SAMBA3_SUBSYSTEM('DCUTIL',
 
 bld.SAMBA3_LIBRARY('trusts_util',
                    source='libsmb/trusts_util.c',
-                   deps='libcli_netlogon3 msrpc3 pdb',
+                   deps='libcli_netlogon3 msrpc3 samba-passdb',
                    private_library=True)
 
 bld.SAMBA3_SUBSYSTEM('tdb-wrap3',

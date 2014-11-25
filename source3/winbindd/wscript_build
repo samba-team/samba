@@ -52,7 +52,7 @@ bld.SAMBA3_MODULE('idmap_rid',
 bld.SAMBA3_MODULE('idmap_passdb',
                  subsystem='idmap',
                  source='idmap_passdb.c',
-                 deps='samba-util pdb',
+                 deps='samba-util samba-passdb',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('idmap_passdb'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('idmap_passdb'))
