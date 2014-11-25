@@ -25,6 +25,7 @@
 #include "librpc/gen_ndr/idmap.h"
 #include "passdb.h"
 #include "secrets.h"
+#include "idmap.h"
 
 /* There's no Py_ssize_t in 2.4, apparently */
 #if PY_MAJOR_VERSION == 2 && PY_MINOR_VERSION < 5
@@ -2678,6 +2679,7 @@ static PyObject *py_pdb_uid_to_sid(pytalloc_Object *self, PyObject *args)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct pdb_methods *methods;
+	struct unixid id;
 	unsigned int uid;
 	struct dom_sid user_sid, *copy_user_sid;
 	PyObject *py_user_sid;
@@ -2689,7 +2691,10 @@ static PyObject *py_pdb_uid_to_sid(pytalloc_Object *self, PyObject *args)
 
 	methods = pytalloc_get_ptr(self);
 
-	if (!methods->uid_to_sid(methods, uid, &user_sid)) {
+	id.id = uid;
+	id.type = ID_TYPE_UID;
+
+	if (!methods->id_to_sid(methods, &id, &user_sid)) {
 		PyErr_Format(py_pdb_error, "Unable to get sid for uid=%d", uid);
 		talloc_free(frame);
 		return NULL;
@@ -2713,6 +2718,7 @@ static PyObject *py_pdb_gid_to_sid(pytalloc_Object *self, PyObject *args)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct pdb_methods *methods;
+	struct unixid id;
 	unsigned int gid;
 	struct dom_sid group_sid, *copy_group_sid;
 	PyObject *py_group_sid;
@@ -2722,9 +2728,12 @@ static PyObject *py_pdb_gid_to_sid(pytalloc_Object *self, PyObject *args)
 		return NULL;
 	}
 
+	id.id = gid;
+	id.type = ID_TYPE_GID;
+
 	methods = pytalloc_get_ptr(self);
 
-	if (!methods->gid_to_sid(methods, gid, &group_sid)) {
+	if (!methods->id_to_sid(methods, &id, &group_sid)) {
 		PyErr_Format(py_pdb_error, "Unable to get sid for gid=%d", gid);
 		talloc_free(frame);
 		return NULL;
