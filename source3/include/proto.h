@@ -1084,8 +1084,6 @@ int lp_numservices(void);
 void lp_dump(FILE *f, bool show_defaults, int maxtoprint);
 void lp_dump_one(FILE * f, bool show_defaults, int snum);
 int lp_servicenumber(const char *pszServiceName);
-struct share_params *get_share_params(TALLOC_CTX *mem_ctx,
-				      const char *sharename);
 const char *volume_label(TALLOC_CTX *ctx, int snum);
 bool lp_domain_master(void);
 bool lp_preferred_master(void);

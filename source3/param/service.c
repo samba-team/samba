@@ -251,25 +251,3 @@ int find_service(TALLOC_CTX *ctx, const char *service_in, char **p_service_out)
 
 	return (iService);
 }
-
-
-struct share_params *get_share_params(TALLOC_CTX *mem_ctx,
-				      const char *sharename)
-{
-	struct share_params *result;
-	char *sname = NULL;
-	int snum;
-
-	snum = find_service(mem_ctx, sharename, &sname);
-	if (snum < 0 || sname == NULL) {
-		return NULL;
-	}
-
-	if (!(result = talloc(mem_ctx, struct share_params))) {
-		DEBUG(0, ("talloc failed\n"));
-		return NULL;
-	}
-
-	result->service = snum;
-	return result;
-}
