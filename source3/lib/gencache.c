@@ -251,6 +251,17 @@ static bool gencache_have_val(const char *keystr, const DATA_BLOB *data,
 	return state.gotit;
 }
 
+static int last_stabilize_parser(TDB_DATA key, TDB_DATA data,
+				 void *private_data)
+{
+	time_t *last_stabilize = private_data;
+
+	if ((data.dsize != 0) && (data.dptr[data.dsize-1] == '\0')) {
+		*last_stabilize = atoi((char *)data.dptr);
+	}
+	return 0;
+}
+
 /**
  * Set an entry in the cache file. If there's no such
  * one, then add it.
@@ -267,7 +278,6 @@ bool gencache_set_data_blob(const char *keystr, const DATA_BLOB *blob,
 			    time_t timeout)
 {
 	int ret;
-	TDB_DATA databuf;
 	char* val;
 	time_t last_stabilize;
 	static int writecount;
@@ -337,12 +347,10 @@ bool gencache_set_data_blob(const char *keystr, const DATA_BLOB *blob,
 	 */
 
 	last_stabilize = 0;
-	databuf = tdb_fetch_compat(cache_notrans, last_stabilize_key());
-	if ((databuf.dptr != NULL)
-	    && (databuf.dptr[databuf.dsize-1] == '\0')) {
-		last_stabilize = atoi((char *)databuf.dptr);
-		SAFE_FREE(databuf.dptr);
-	}
+
+	tdb_parse_record(cache_notrans, last_stabilize_key(),
+			 last_stabilize_parser, &last_stabilize);
+
 	if ((last_stabilize
 	     + lp_parm_int(-1, "gencache", "stabilize_interval", 300))
 	    < time(NULL)) {
