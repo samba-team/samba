@@ -778,6 +778,9 @@ static bool smbacl4_fill_ace4(
 			ace_v4->who.gid = gid;
 		} else if (sid_to_uid(&ace_nt->trustee, &uid)) {
 			ace_v4->who.uid = uid;
+		} else if (dom_sid_compare_domain(&ace_nt->trustee,
+						  &global_sid_Unix_NFS) == 0) {
+			return false;
 		} else {
 			DEBUG(1, ("nfs4_acls.c: file [%s]: could not "
 				  "convert %s to uid or gid\n",

@@ -775,6 +775,15 @@ static NTSTATUS fset_nt_acl_common(vfs_handle_struct *handle, files_struct *fsp,
 		psd->group_sid = orig_psd->group_sid;
 	}
 	if (security_info_sent & SECINFO_DACL) {
+		if (security_descriptor_with_ms_nfs(orig_psd)) {
+			/*
+			 * If the sd contains a MS NFS SID, do
+			 * nothing, it's a chmod() request from OS X
+			 * with AAPL context.
+			 */
+			TALLOC_FREE(frame);
+			return NT_STATUS_OK;
+		}
 		psd->dacl = orig_psd->dacl;
 		psd->type |= SEC_DESC_DACL_PRESENT;
 	}
