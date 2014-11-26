@@ -174,7 +174,9 @@ static NTSTATUS skel_create_file(struct vfs_handle_struct *handle,
 				 uint32_t private_flags,
 				 struct security_descriptor *sd,
 				 struct ea_list *ea_list,
-				 files_struct **result, int *pinfo)
+				 files_struct **result, int *pinfo,
+				 const struct smb2_create_blobs *in_context_blobs,
+				 struct smb2_create_blobs *out_context_blobs)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }

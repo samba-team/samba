@@ -3703,7 +3703,8 @@ NTSTATUS create_directory(connection_struct *conn, struct smb_request *req,
 		NULL,					/* sd */
 		NULL,					/* ea_list */
 		&fsp,					/* result */
-		NULL);					/* pinfo */
+		NULL,					/* pinfo */
+		NULL, NULL);				/* create context */
 
 	if (NT_STATUS_IS_OK(status)) {
 		close_file(req, fsp, NORMAL_CLOSE);
@@ -3882,7 +3883,8 @@ NTSTATUS open_streams_for_delete(connection_struct *conn,
 			 NULL,			/* sd */
 			 NULL,			/* ea_list */
 			 &streams[i],		/* result */
-			 NULL);			/* pinfo */
+			 NULL,			/* pinfo */
+			 NULL, NULL);		/* create context */
 
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(10, ("Could not open stream %s: %s\n",
@@ -4831,7 +4833,9 @@ NTSTATUS create_file_default(connection_struct *conn,
 			     struct security_descriptor *sd,
 			     struct ea_list *ea_list,
 			     files_struct **result,
-			     int *pinfo)
+			     int *pinfo,
+			     const struct smb2_create_blobs *in_context_blobs,
+			     struct smb2_create_blobs *out_context_blobs)
 {
 	int info = FILE_WAS_OPENED;
 	files_struct *fsp = NULL;

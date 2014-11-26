@@ -502,7 +502,9 @@ static NTSTATUS smb_time_audit_create_file(vfs_handle_struct *handle,
 					   struct security_descriptor *sd,
 					   struct ea_list *ea_list,
 					   files_struct **result_fsp,
-					   int *pinfo)
+					   int *pinfo,
+					   const struct smb2_create_blobs *in_context_blobs,
+					   struct smb2_create_blobs *out_context_blobs)
 {
 	NTSTATUS result;
 	struct timespec ts1,ts2;
@@ -526,7 +528,8 @@ static NTSTATUS smb_time_audit_create_file(vfs_handle_struct *handle,
 		sd,					/* sd */
 		ea_list,				/* ea_list */
 		result_fsp,				/* result */
-		pinfo);
+		pinfo,
+		in_context_blobs, out_context_blobs);   /* create context */
 	clock_gettime_mono(&ts2);
 	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 

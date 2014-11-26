@@ -648,9 +648,11 @@ NTSTATUS create_file_default(connection_struct *conn,
 			     uint32_t private_flags,
 			     struct security_descriptor *sd,
 			     struct ea_list *ea_list,
-
 			     files_struct **result,
-			     int *pinfo);
+			     int *pinfo,
+			     const struct smb2_create_blobs *in_context_blobs,
+			     struct smb2_create_blobs *out_context_blobs);
+
 NTSTATUS get_relative_fid_filename(connection_struct *conn,
 				   struct smb_request *req,
 				   uint16_t root_dir_fid,

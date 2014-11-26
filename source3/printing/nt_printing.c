@@ -537,7 +537,8 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 		NULL,					/* sd */
 		NULL,					/* ea_list */
 		&fsp,					/* result */
-		NULL);					/* pinfo */
+		NULL,					/* pinfo */
+		NULL, NULL);                            /* create context */
 
 	if (!NT_STATUS_IS_OK(status)) {
 		/* Old file not found, so by definition new file is in fact newer */
@@ -591,7 +592,8 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 		NULL,					/* sd */
 		NULL,					/* ea_list */
 		&fsp,					/* result */
-		NULL);					/* pinfo */
+		NULL,					/* pinfo */
+		NULL, NULL);				/* create context */
 
 	if (!NT_STATUS_IS_OK(status)) {
 		/* New file not found, this shouldn't occur if the caller did its job */
@@ -770,7 +772,8 @@ static uint32 get_correct_cversion(struct auth_session_info *session_info,
 		NULL,					/* sd */
 		NULL,					/* ea_list */
 		&fsp,					/* result */
-		NULL);					/* pinfo */
+		NULL,					/* pinfo */
+		NULL, NULL);				/* create context */
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(3,("get_correct_cversion: Can't open file [%s], errno = "

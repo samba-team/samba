@@ -2364,7 +2364,8 @@ WERROR _srvsvc_NetGetFileSecurity(struct pipes_struct *p,
 		NULL,					/* sd */
 		NULL,					/* ea_list */
 		&fsp,					/* result */
-		NULL);					/* pinfo */
+		NULL,					/* pinfo */
+		NULL, NULL);				/* create context */
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(3,("_srvsvc_NetGetFileSecurity: can't open %s\n",
@@ -2512,7 +2513,8 @@ WERROR _srvsvc_NetSetFileSecurity(struct pipes_struct *p,
 		NULL,					/* sd */
 		NULL,					/* ea_list */
 		&fsp,					/* result */
-		NULL);					/* pinfo */
+		NULL,					/* pinfo */
+		NULL, NULL);				/* create context */
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(3,("_srvsvc_NetSetFileSecurity: can't open %s\n",

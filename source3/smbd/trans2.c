@@ -1227,7 +1227,8 @@ static void call_trans2open(connection_struct *conn,
 		NULL,					/* sd */
 		ea_list,				/* ea_list */
 		&fsp,					/* result */
-		&smb_action);				/* psbuf */
+		&smb_action,				/* psbuf */
+		NULL, NULL);				/* create context */
 
 	if (!NT_STATUS_IS_OK(status)) {
 		if (open_was_deferred(req->xconn, req->mid)) {
@@ -5995,7 +5996,8 @@ static NTSTATUS smb_set_file_size(connection_struct *conn,
 		NULL,					/* sd */
 		NULL,					/* ea_list */
 		&new_fsp,				/* result */
-		NULL);					/* pinfo */
+		NULL,					/* pinfo */
+		NULL, NULL);				/* create context */
 
 	TALLOC_FREE(smb_fname_tmp);
 
@@ -6981,7 +6983,8 @@ static NTSTATUS smb_set_file_allocation_info(connection_struct *conn,
 		NULL,					/* sd */
 		NULL,					/* ea_list */
 		&new_fsp,				/* result */
-		NULL);					/* pinfo */
+		NULL,					/* pinfo */
+		NULL, NULL);				/* create context */
 
 	if (!NT_STATUS_IS_OK(status)) {
 		/* NB. We check for open_was_deferred in the caller. */
@@ -7497,7 +7500,8 @@ static NTSTATUS smb_posix_mkdir(connection_struct *conn,
 		NULL,					/* sd */
 		NULL,					/* ea_list */
 		&fsp,					/* result */
-		&info);					/* pinfo */
+		&info,					/* pinfo */
+		NULL, NULL);				/* create context */
 
         if (NT_STATUS_IS_OK(status)) {
                 close_file(req, fsp, NORMAL_CLOSE);
@@ -7730,7 +7734,8 @@ static NTSTATUS smb_posix_open(connection_struct *conn,
 		NULL,					/* sd */
 		NULL,					/* ea_list */
 		&fsp,					/* result */
-		&info);					/* pinfo */
+		&info,					/* pinfo */
+		NULL, NULL);				/* create context */
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -7861,7 +7866,8 @@ static NTSTATUS smb_posix_unlink(connection_struct *conn,
 		NULL,					/* sd */
 		NULL,					/* ea_list */
 		&fsp,					/* result */
-		&info);					/* pinfo */
+		&info,					/* pinfo */
+		NULL, NULL);				/* create context */
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;

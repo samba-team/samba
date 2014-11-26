@@ -1545,7 +1545,9 @@ NTSTATUS smb_vfs_call_create_file(struct vfs_handle_struct *handle,
 				  struct security_descriptor *sd,
 				  struct ea_list *ea_list,
 				  files_struct **result,
-				  int *pinfo)
+				  int *pinfo,
+				  const struct smb2_create_blobs *in_context_blobs,
+				  struct smb2_create_blobs *out_context_blobs)
 {
 	VFS_FIND(create_file);
 	return handle->fns->create_file_fn(
@@ -1553,7 +1555,7 @@ NTSTATUS smb_vfs_call_create_file(struct vfs_handle_struct *handle,
 		share_access, create_disposition, create_options,
 		file_attributes, oplock_request, lease, allocation_size,
 		private_flags, sd, ea_list,
-		result, pinfo);
+		result, pinfo, in_context_blobs, out_context_blobs);
 }
 
 int smb_vfs_call_close(struct vfs_handle_struct *handle,

@@ -531,7 +531,9 @@ static NTSTATUS vfswrap_create_file(vfs_handle_struct *handle,
 				    struct security_descriptor *sd,
 				    struct ea_list *ea_list,
 				    files_struct **result,
-				    int *pinfo)
+				    int *pinfo,
+				    const struct smb2_create_blobs *in_context_blobs,
+				    struct smb2_create_blobs *out_context_blobs)
 {
 	return create_file_default(handle->conn, req, root_dir_fid, smb_fname,
 				   access_mask, share_access,
@@ -539,7 +541,7 @@ static NTSTATUS vfswrap_create_file(vfs_handle_struct *handle,
 				   file_attributes, oplock_request, lease,
 				   allocation_size, private_flags,
 				   sd, ea_list, result,
-				   pinfo);
+				   pinfo, in_context_blobs, out_context_blobs);
 }
 
 static int vfswrap_close(vfs_handle_struct *handle, files_struct *fsp)

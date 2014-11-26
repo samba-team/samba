@@ -1210,7 +1210,9 @@ static NTSTATUS mh_create_file(vfs_handle_struct *handle,
 		struct security_descriptor *sd,
 		struct ea_list *ea_list,
 		files_struct **result_fsp,
-		int *pinfo)
+		int *pinfo,
+		const struct smb2_create_blobs *in_context_blobs,
+		struct smb2_create_blobs *out_context_blobs)
 {
 	NTSTATUS status;
 	struct smb_filename *clientFname;
@@ -1238,7 +1240,9 @@ static NTSTATUS mh_create_file(vfs_handle_struct *handle,
 			sd,
 			ea_list,
 			result_fsp,
-			pinfo);
+			pinfo,
+			in_context_blobs,
+			out_context_blobs);
 		goto out;
 	}
 
@@ -1275,7 +1279,9 @@ static NTSTATUS mh_create_file(vfs_handle_struct *handle,
 		sd,
 		ea_list,
 		result_fsp,
-		pinfo);
+		pinfo,
+		in_context_blobs,
+		out_context_blobs);
 err:
 	TALLOC_FREE(clientFname);
 out:
