@@ -160,6 +160,7 @@
 /* Version 32 - Add "lease" to CREATE_FILE operation */
 /* Version 32 - Add "lease" to struct files_struct */
 /* Version 32 - Add SMB_VFS_READDIR_ATTR() */
+/* Version 32 - Add in and our create context blobs to create_file */
 
 #define SMB_VFS_INTERFACE_VERSION 32
 
@@ -553,7 +554,9 @@ struct vfs_fn_pointers {
 				   struct security_descriptor *sd,
 				   struct ea_list *ea_list,
 				   files_struct **result,
-				   int *pinfo);
+				   int *pinfo,
+				   const struct smb2_create_blobs *in_context_blobs,
+				   struct smb2_create_blobs *out_context_blobs);
 	int (*close_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp);
 	ssize_t (*read_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, void *data, size_t n);
 	ssize_t (*pread_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, void *data, size_t n, off_t offset);
@@ -964,7 +967,9 @@ NTSTATUS smb_vfs_call_create_file(struct vfs_handle_struct *handle,
 				  struct security_descriptor *sd,
 				  struct ea_list *ea_list,
 				  files_struct **result,
-				  int *pinfo);
+				  int *pinfo,
+				  const struct smb2_create_blobs *in_context_blobs,
+				  struct smb2_create_blobs *out_context_blobs);
 int smb_vfs_call_close(struct vfs_handle_struct *handle,
 		       struct files_struct *fsp);
 ssize_t smb_vfs_call_read(struct vfs_handle_struct *handle,

@@ -169,7 +169,9 @@ static NTSTATUS skel_create_file(struct vfs_handle_struct *handle,
 				 uint32_t private_flags,
 				 struct security_descriptor *sd,
 				 struct ea_list *ea_list,
-				 files_struct ** result, int *pinfo)
+				 files_struct ** result, int *pinfo,
+				 const struct smb2_create_blobs *in_context_blobs,
+				 struct smb2_create_blobs *out_context_blobs)
 {
 	return SMB_VFS_NEXT_CREATE_FILE(handle,
 					req,
@@ -184,7 +186,8 @@ static NTSTATUS skel_create_file(struct vfs_handle_struct *handle,
 					lease,
 					allocation_size,
 					private_flags,
-					sd, ea_list, result, pinfo);
+					sd, ea_list, result, pinfo,
+					in_context_blobs, out_context_blobs);
 }
 
 static int skel_close_fn(vfs_handle_struct *handle, files_struct *fsp)

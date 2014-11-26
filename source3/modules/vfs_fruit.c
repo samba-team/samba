@@ -2874,7 +2874,9 @@ static NTSTATUS fruit_create_file(vfs_handle_struct *handle,
 				  struct security_descriptor *sd,
 				  struct ea_list *ea_list,
 				  files_struct **result,
-				  int *pinfo)
+				  int *pinfo,
+				  const struct smb2_create_blobs *in_context_blobs,
+				  struct smb2_create_blobs *out_context_blobs)
 {
 	NTSTATUS status;
 	struct fruit_config_data *config = NULL;
@@ -2887,7 +2889,8 @@ static NTSTATUS fruit_create_file(vfs_handle_struct *handle,
 		lease,
 		allocation_size, private_flags,
 		sd, ea_list, result,
-		pinfo);
+		pinfo,
+		in_context_blobs, out_context_blobs);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;

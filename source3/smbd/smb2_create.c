@@ -1071,7 +1071,9 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 						     sec_desc,
 						     ea_list,
 						     &result,
-						     &info);
+						     &info,
+						     &in_context_blobs,
+						     state->out_context_blobs);
 			if (!NT_STATUS_IS_OK(status)) {
 				if (open_was_deferred(smb1req->xconn, smb1req->mid)) {
 					return req;

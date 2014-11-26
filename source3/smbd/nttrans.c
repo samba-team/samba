@@ -579,7 +579,8 @@ void reply_ntcreate_and_X(struct smb_request *req)
 		NULL,					/* sd */
 		NULL,					/* ea_list */
 		&fsp,					/* result */
-		&info);					/* pinfo */
+		&info,					/* pinfo */
+		NULL, NULL);				/* create context */
 
 	if (!NT_STATUS_IS_OK(status)) {
 		if (open_was_deferred(req->xconn, req->mid)) {
@@ -1186,7 +1187,8 @@ static void call_nt_transact_create(connection_struct *conn,
 		sd,					/* sd */
 		ea_list,				/* ea_list */
 		&fsp,					/* result */
-		&info);					/* pinfo */
+		&info,					/* pinfo */
+		NULL, NULL);				/* create context */
 
 	if(!NT_STATUS_IS_OK(status)) {
 		if (open_was_deferred(req->xconn, req->mid)) {
@@ -1430,7 +1432,8 @@ static NTSTATUS copy_internals(TALLOC_CTX *ctx,
 		NULL,					/* sd */
 		NULL,					/* ea_list */
 		&fsp1,					/* result */
-		&info);					/* pinfo */
+		&info,					/* pinfo */
+		NULL, NULL);				/* create context */
 
 	if (!NT_STATUS_IS_OK(status)) {
 		goto out;
@@ -1455,7 +1458,8 @@ static NTSTATUS copy_internals(TALLOC_CTX *ctx,
 		NULL,					/* sd */
 		NULL,					/* ea_list */
 		&fsp2,					/* result */
-		&info);					/* pinfo */
+		&info,					/* pinfo */
+		NULL, NULL);				/* create context */
 
 	if (!NT_STATUS_IS_OK(status)) {
 		close_file(NULL, fsp1, ERROR_CLOSE);

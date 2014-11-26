@@ -2009,7 +2009,8 @@ void reply_open(struct smb_request *req)
 		NULL,					/* sd */
 		NULL,					/* ea_list */
 		&fsp,					/* result */
-		&info);					/* pinfo */
+		&info,					/* pinfo */
+		NULL, NULL);				/* create context */
 
 	if (!NT_STATUS_IS_OK(status)) {
 		if (open_was_deferred(req->xconn, req->mid)) {
@@ -2178,7 +2179,8 @@ void reply_open_and_X(struct smb_request *req)
 		NULL,					/* sd */
 		NULL,					/* ea_list */
 		&fsp,					/* result */
-		&smb_action);				/* pinfo */
+		&smb_action,				/* pinfo */
+		NULL, NULL);				/* create context */
 
 	if (!NT_STATUS_IS_OK(status)) {
 		if (open_was_deferred(req->xconn, req->mid)) {
@@ -2426,7 +2428,8 @@ void reply_mknew(struct smb_request *req)
 		NULL,					/* sd */
 		NULL,					/* ea_list */
 		&fsp,					/* result */
-		NULL);					/* pinfo */
+		NULL,					/* pinfo */
+		NULL, NULL);				/* create context */
 
 	if (!NT_STATUS_IS_OK(status)) {
 		if (open_was_deferred(req->xconn, req->mid)) {
@@ -2554,7 +2557,8 @@ void reply_ctemp(struct smb_request *req)
 			NULL,					/* sd */
 			NULL,					/* ea_list */
 			&fsp,					/* result */
-			NULL);					/* pinfo */
+			NULL,					/* pinfo */
+			NULL, NULL);				/* create context */
 
 		if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_COLLISION)) {
 			TALLOC_FREE(fname);
@@ -2772,7 +2776,8 @@ static NTSTATUS do_unlink(connection_struct *conn,
 		 NULL,			/* sd */
 		 NULL,			/* ea_list */
 		 &fsp,			/* result */
-		 NULL);			/* pinfo */
+		 NULL,			/* pinfo */
+		 NULL, NULL);		/* create context */
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("SMB_VFS_CREATEFILE failed: %s\n",
@@ -6043,7 +6048,8 @@ void reply_rmdir(struct smb_request *req)
 		NULL,                                   /* sd */
 		NULL,                                   /* ea_list */
 		&fsp,                                   /* result */
-		&info);                                 /* pinfo */
+		&info,                                  /* pinfo */
+		NULL, NULL);				/* create context */
 
 	if (!NT_STATUS_IS_OK(status)) {
 		if (open_was_deferred(req->xconn, req->mid)) {
@@ -6811,7 +6817,8 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 			NULL,				/* sd */
 			NULL,				/* ea_list */
 			&fsp,				/* result */
-			NULL);				/* pinfo */
+			NULL,				/* pinfo */
+			NULL, NULL);			/* create context */
 
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(3, ("Could not open rename source %s: %s\n",
@@ -6958,7 +6965,8 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 			NULL,				/* sd */
 			NULL,				/* ea_list */
 			&fsp,				/* result */
-			NULL);				/* pinfo */
+			NULL,				/* pinfo */
+			NULL, NULL);			/* create context */
 
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(3,("rename_internals: SMB_VFS_CREATE_FILE "
@@ -7228,7 +7236,8 @@ NTSTATUS copy_file(TALLOC_CTX *ctx,
 		NULL,					/* sd */
 		NULL,					/* ea_list */
 		&fsp1,					/* result */
-		NULL);					/* psbuf */
+		NULL,					/* psbuf */
+		NULL, NULL);				/* create context */
 
 	if (!NT_STATUS_IS_OK(status)) {
 		goto out;
@@ -7258,7 +7267,8 @@ NTSTATUS copy_file(TALLOC_CTX *ctx,
 		NULL,					/* sd */
 		NULL,					/* ea_list */
 		&fsp2,					/* result */
-		NULL);					/* psbuf */
+		NULL,					/* psbuf */
+		NULL, NULL);				/* create context */
 
 	if (!NT_STATUS_IS_OK(status)) {
 		close_file(NULL, fsp1, ERROR_CLOSE);

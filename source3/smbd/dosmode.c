@@ -1147,7 +1147,8 @@ static NTSTATUS get_file_handle_for_metadata(connection_struct *conn,
 		NULL,                                   /* sd */
 		NULL,                                   /* ea_list */
 		ret_fsp,                                /* result */
-		NULL);                                  /* pinfo */
+		NULL,                                   /* pinfo */
+		NULL, NULL);				/* create context */
 
 	if (NT_STATUS_IS_OK(status)) {
 		*need_close = true;

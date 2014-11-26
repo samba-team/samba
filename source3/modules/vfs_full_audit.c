@@ -871,7 +871,9 @@ static NTSTATUS smb_full_audit_create_file(vfs_handle_struct *handle,
 				      struct security_descriptor *sd,
 				      struct ea_list *ea_list,
 				      files_struct **result_fsp,
-				      int *pinfo)
+				      int *pinfo,
+				      const struct smb2_create_blobs *in_context_blobs,
+				      struct smb2_create_blobs *out_context_blobs)
 {
 	NTSTATUS result;
 	const char* str_create_disposition;
@@ -916,7 +918,8 @@ static NTSTATUS smb_full_audit_create_file(vfs_handle_struct *handle,
 		sd,					/* sd */
 		ea_list,				/* ea_list */
 		result_fsp,				/* result */
-		pinfo);					/* pinfo */
+		pinfo,					/* pinfo */
+		in_context_blobs, out_context_blobs);	/* create context */
 
 	do_log(SMB_VFS_OP_CREATE_FILE, (NT_STATUS_IS_OK(result)), handle,
 	       "0x%x|%s|%s|%s", access_mask,

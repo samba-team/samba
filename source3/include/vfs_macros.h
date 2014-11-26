@@ -136,13 +136,15 @@
 	smb_vfs_call_open((handle)->next, (fname), (fsp), (flags), (mode))
 
 #define SMB_VFS_CREATE_FILE(conn, req, root_dir_fid, smb_fname, access_mask, share_access, create_disposition, \
-	create_options, file_attributes, oplock_request, lease, allocation_size, private_flags, sd, ea_list, result, pinfo) \
-	smb_vfs_call_create_file((conn)->vfs_handles, (req), (root_dir_fid), (smb_fname), (access_mask), (share_access), (create_disposition), \
-	(create_options), (file_attributes), (oplock_request), (lease), (allocation_size), (private_flags), (sd), (ea_list), (result), (pinfo))
+        create_options, file_attributes, oplock_request, lease, allocation_size, private_flags, sd, ea_list, result, pinfo, in_context_blobs, out_context_blobs) \
+        smb_vfs_call_create_file((conn)->vfs_handles, (req), (root_dir_fid), (smb_fname), (access_mask), (share_access), (create_disposition), \
+        (create_options), (file_attributes), (oplock_request), (lease), (allocation_size), (private_flags), (sd), (ea_list), (result), (pinfo), \
+	(in_context_blobs), (out_context_blobs))
 #define SMB_VFS_NEXT_CREATE_FILE(handle, req, root_dir_fid, smb_fname, access_mask, share_access, create_disposition, \
-	create_options, file_attributes, oplock_request, lease, allocation_size, private_flags, sd, ea_list, result, pinfo) \
+	create_options, file_attributes, oplock_request, lease, allocation_size, private_flags, sd, ea_list, result, pinfo, in_context_blobs, out_context_blobs) \
 	smb_vfs_call_create_file((handle)->next, (req), (root_dir_fid), (smb_fname), (access_mask), (share_access), (create_disposition), \
-	(create_options), (file_attributes), (oplock_request), (lease), (allocation_size), (private_flags), (sd), (ea_list), (result), (pinfo))
+        (create_options), (file_attributes), (oplock_request), (lease), (allocation_size), (private_flags), (sd), (ea_list), (result), (pinfo), \
+	(in_context_blobs), (out_context_blobs))
 
 #define SMB_VFS_CLOSE(fsp) \
 	smb_vfs_call_close((fsp)->conn->vfs_handles, (fsp))
