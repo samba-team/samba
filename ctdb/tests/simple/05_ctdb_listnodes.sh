@@ -35,9 +35,11 @@ try_command_on_node -v 0 "$CTDB listnodes"
 num_nodes=$(echo "$out" | wc -l)
 
 # Each line should look like an IP address.
+ipv4_pat='[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+'
+ipv6_pat='[[:xdigit:]]+:[[:xdigit:]:]+[[:xdigit:]]+'
 sanity_check_output \
     2 \
-    '^[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+$' \
+    "^${ipv4_pat}|${ipv6_pat}\$" \
     "$out"
 
 out_0="$out"
