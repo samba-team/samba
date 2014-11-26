@@ -31,6 +31,7 @@
 #include "../libcli/smb/read_smb.h"
 #include "smbXcli_base.h"
 #include "librpc/ndr/libndr.h"
+#include "local.h"
 
 struct smbXcli_conn;
 struct smbXcli_req;
@@ -3829,6 +3830,16 @@ struct tevent_req *smbXcli_negprot_send(TALLOC_CTX *mem_ctx,
 		 * SMB2 only...
 		 */
 		conn->dispatch_incoming = smb2cli_conn_dispatch_incoming;
+
+		/*
+		 * As we're starting with an SMB2 negprot, emulate Windows
+		 * and ask for 31 credits in the initial SMB2 negprot.
+		 * If we don't and leave requested credits at
+		 * zero, MacOSX servers return zero credits on
+		 * the negprot reply and we fail to connect.
+		 */
+		smb2cli_conn_set_max_credits(conn,
+			WINDOWS_CLIENT_PURE_SMB2_NEGPROT_INITIAL_CREDIT_ASK);
 
 		subreq = smbXcli_negprot_smb2_subreq(state);
 		if (tevent_req_nomem(subreq, req)) {
