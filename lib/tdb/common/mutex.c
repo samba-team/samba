@@ -814,17 +814,17 @@ _PUBLIC_ bool tdb_runtime_check_for_robust_mutexes(void)
 		ret = pthread_mutex_lock(m);
 		nwritten = write(pipe_up[1], &ret, sizeof(ret));
 		if (nwritten != sizeof(ret)) {
-			exit(1);
+			_exit(1);
 		}
 		if (ret != 0) {
-			exit(1);
+			_exit(1);
 		}
 		nread = read(pipe_down[0], &c, 1);
 		if (nread != 1) {
-			exit(1);
+			_exit(1);
 		}
 		/* leave locked */
-		exit(0);
+		_exit(0);
 	}
 	if (tdb_robust_mutex_pid == -1) {
 		goto cleanup_sig_child;
