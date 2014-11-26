@@ -88,6 +88,11 @@ def configure(conf):
                                'int ioctl(int s, int r, ...)',
                                define='HAVE_IOCTL_INT', headers='unistd.h sys/ioctl.h')
 
+        if conf.CONFIG_SET("HAVE_EVENTFD"):
+            conf.CHECK_C_PROTOTYPE('eventfd',
+                                   'int eventfd(unsigned int count, int flags)',
+                                   define='HAVE_EVENTFD_UNSIGNED_INT', headers='sys/eventfd.h')
+
         # Create full path to socket_wrapper
         srcdir = os.path.realpath(conf.srcdir)
         libsocket_wrapper_so_path = srcdir + '/bin/default/lib/socket_wrapper/libsocket-wrapper.so'
