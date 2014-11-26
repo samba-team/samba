@@ -50,5 +50,6 @@ NTSTATUS smb2_negotiate_context_add(TALLOC_CTX *mem_ctx, struct smb2_negotiate_c
  */
 struct smb2_negotiate_context *smb2_negotiate_context_find(const struct smb2_negotiate_contexts *b,
 							   uint16_t type);
+#define WINDOWS_CLIENT_PURE_SMB2_NEGPROT_INITIAL_CREDIT_ASK	31
 
 #endif /* _LIBCLI_SMB_SMB2_NEGOTIATE_BLOB_H_ */
