@@ -208,7 +208,7 @@ struct idmap_context *idmap_init(TALLOC_CTX *mem_ctx,
 
 static NTSTATUS idmap_xid_to_sid(struct idmap_context *idmap_ctx,
 				 TALLOC_CTX *mem_ctx,
-				 const struct unixid *unixid,
+				 struct unixid *unixid,
 				 struct dom_sid **sid)
 {
 	int ret;
@@ -321,6 +321,9 @@ static NTSTATUS idmap_xid_to_sid(struct idmap_context *idmap_ctx,
 	}
 
 	if (res->count == 1) {
+		const char *type = ldb_msg_find_attr_as_string(res->msgs[0],
+							       "type", NULL);
+
 		*sid = idmap_msg_get_dom_sid(mem_ctx, res->msgs[0],
 					     "objectSid");
 		if (*sid == NULL) {
@@ -328,6 +331,21 @@ static NTSTATUS idmap_xid_to_sid(struct idmap_context *idmap_ctx,
 			status = NT_STATUS_NONE_MAPPED;
 			goto failed;
 		}
+
+		if (type == NULL) {
+			DEBUG(1, ("Invalid type for mapping entry.\n"));
+			talloc_free(tmp_ctx);
+			return NT_STATUS_NONE_MAPPED;
+		}
+
+		if (strcmp(type, "ID_TYPE_BOTH") == 0) {
+			unixid->type = ID_TYPE_BOTH;
+		} else if (strcmp(type, "ID_TYPE_UID") == 0) {
+			unixid->type = ID_TYPE_UID;
+		} else {
+			unixid->type = ID_TYPE_GID;
+		}
+
 		talloc_free(tmp_ctx);
 		return NT_STATUS_OK;
 	}
