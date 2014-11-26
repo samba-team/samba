@@ -131,7 +131,7 @@ class SmbDotConfTests(TestCase):
                          'queuepause command','lpresume command', 'lppause command',
                          'lprm command', 'lpq command', 'print command', 'template homedir',
                          'spoolss: os_major', 'spoolss: os_minor', 'spoolss: os_build',
-                         'max open files'])
+                         'max open files', 'fss: prune stale', 'fss: sequence timeout'])
 
     def setUp(self):
         super(SmbDotConfTests, self).setUp()
