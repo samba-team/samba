@@ -40,6 +40,7 @@
 #include "rpc_server/srv_pipe_hnd.h"
 #include "printing.h"
 #include "lib/util_ea.h"
+#include "lib/readdir_attr.h"
 
 #define DIR_ENTRY_SAFETY_MARGIN 4096
 
@@ -1627,6 +1628,7 @@ static NTSTATUS smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 	int off;
 	int pad = 0;
 	NTSTATUS status;
+	struct readdir_attr_data *readdir_attr_data = NULL;
 
 	ZERO_STRUCT(mdate_ts);
 	ZERO_STRUCT(adate_ts);
@@ -1637,6 +1639,13 @@ static NTSTATUS smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 		file_size = get_file_size_stat(&smb_fname->st);
 	}
 	allocation_size = SMB_VFS_GET_ALLOC_SIZE(conn, NULL, &smb_fname->st);
+
+	status = SMB_VFS_READDIR_ATTR(conn, smb_fname, ctx, &readdir_attr_data);
+	if (!NT_STATUS_IS_OK(status)) {
+		if (!NT_STATUS_EQUAL(NT_STATUS_NOT_SUPPORTED, status)) {
+			return status;
+		}
+	}
 
 	file_index = get_FileIndex(conn, &smb_fname->st);
 
@@ -2098,17 +2107,41 @@ static NTSTATUS smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 		q = p; p += 4; /* q is placeholder for name length */
 		if (mode & FILE_ATTRIBUTE_REPARSE_POINT) {
 			SIVAL(p, 0, IO_REPARSE_TAG_DFS);
+		} else if (readdir_attr_data &&
+			   readdir_attr_data->type == RDATTR_AAPL) {
+			/*
+			 * OS X specific SMB2 extension negotiated via
+			 * AAPL create context: return max_access in
+			 * ea_size field.
+			 */
+			SIVAL(p, 0, readdir_attr_data->attr_data.aapl.max_access);
 		} else {
 			unsigned int ea_size = estimate_ea_size(conn, NULL,
 								smb_fname);
 			SIVAL(p,0,ea_size); /* Extended attributes */
 		}
 		p += 4;
-		/* Clear the short name buffer. This is
-		 * IMPORTANT as not doing so will trigger
-		 * a Win2k client bug. JRA.
-		 */
-		if (!was_8_3 && check_mangled_names) {
+
+		if (readdir_attr_data &&
+		    readdir_attr_data->type == RDATTR_AAPL) {
+			/*
+			 * OS X specific SMB2 extension negotiated via
+			 * AAPL create context: return resource fork
+			 * length and compressed FinderInfo in
+			 * shortname field.
+			 *
+			 * According to documentation short_name_len
+			 * should be 0, but on the wire behaviour
+			 * shows its set to 24 by clients.
+			 */
+			SSVAL(p, 0, 24);
+
+			/* Resourefork length */
+			SBVAL(p, 2, readdir_attr_data->attr_data.aapl.rfork_size);
+
+			/* Compressed FinderInfo */
+			memcpy(p + 10, &readdir_attr_data->attr_data.aapl.finder_info, 16);
+		} else if (!was_8_3 && check_mangled_names) {
 			char mangled_name[13]; /* mangled 8.3 name. */
 			if (!name_to_8_3(fname,mangled_name,True,
 					conn->params)) {
@@ -2128,10 +2161,29 @@ static NTSTATUS smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 			}
 			SSVAL(p, 0, len);
 		} else {
+			/* Clear the short name buffer. This is
+			 * IMPORTANT as not doing so will trigger
+			 * a Win2k client bug. JRA.
+			 */
 			memset(p,'\0',26);
 		}
 		p += 26;
-		SSVAL(p,0,0); p += 2; /* Reserved ? */
+
+		/* Reserved ? */
+		if (readdir_attr_data &&
+		    readdir_attr_data->type == RDATTR_AAPL) {
+			/*
+			 * OS X specific SMB2 extension negotiated via
+			 * AAPL create context: return UNIX mode in
+			 * reserved field.
+			 */
+			uint16_t aapl_mode = (uint16_t)readdir_attr_data->attr_data.aapl.unix_mode;
+			SSVAL(p, 0, aapl_mode);
+		} else {
+			SSVAL(p, 0, 0);
+		}
+		p += 2;
+
 		SBVAL(p,0,file_index); p += 8;
 		status = srvstr_push(base_data, flags2, p,
 				  fname, PTR_DIFF(end_data, p),
