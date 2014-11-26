@@ -28,6 +28,7 @@
 #include "smbd/globals.h"
 #include "messages.h"
 #include "libcli/security/security.h"
+#include "../libcli/smb/smb2_create_ctx.h"
 
 /*
  * Enhanced OS X and Netatalk compatibility
@@ -121,6 +122,20 @@ struct fruit_config_data {
 	enum fruit_meta meta;
 	enum fruit_locking locking;
 	enum fruit_encoding encoding;
+	bool use_aapl;
+	bool readdir_attr_enabled;
+	bool unix_info_enabled;
+
+	/*
+	 * Additional undocumented options, all enabled by default,
+	 * possibly useful for analyzing performance. The associated
+	 * operations with each of them may be expensive, so having
+	 * the chance to disable them individually gives a chance
+	 * tweaking the setup for the particular usecase.
+	 */
+	bool readdir_attr_rsize;
+	bool readdir_attr_finder_info;
+	bool readdir_attr_max_access;
 };
 
 static const struct enum_list fruit_rsrc[] = {
@@ -1250,6 +1265,25 @@ static int init_fruit_config(vfs_handle_struct *handle)
 	}
 	config->encoding = (enum fruit_encoding)enumval;
 
+	if (lp_parm_bool(-1, FRUIT_PARAM_TYPE_NAME, "aapl", true)) {
+		config->use_aapl = true;
+	}
+
+	if (lp_parm_bool(SNUM(handle->conn),
+			 "readdir_attr", "aapl_rsize", true)) {
+		config->readdir_attr_rsize = true;
+	}
+
+	if (lp_parm_bool(SNUM(handle->conn),
+			 "readdir_attr", "aapl_finder_info", true)) {
+		config->readdir_attr_finder_info = true;
+	}
+
+	if (lp_parm_bool(SNUM(handle->conn),
+			 "readdir_attr", "aapl_max_access", true)) {
+		config->readdir_attr_max_access = true;
+	}
+
 	SMB_VFS_HANDLE_SET_DATA(handle, config,
 				NULL, struct fruit_config_data,
 				return -1);
@@ -1660,6 +1694,231 @@ static NTSTATUS fruit_check_access(vfs_handle_struct *handle,
 	TALLOC_FREE(br_lck);
 
 	return status;
+}
+
+static NTSTATUS check_aapl(vfs_handle_struct *handle,
+			   struct smb_request *req,
+			   const struct smb2_create_blobs *in_context_blobs,
+			   struct smb2_create_blobs *out_context_blobs)
+{
+	struct fruit_config_data *config;
+	NTSTATUS status;
+	struct smb2_create_blob *aapl = NULL;
+	uint32_t cmd;
+	bool ok;
+	uint8_t p[16];
+	DATA_BLOB blob = data_blob_talloc(req, NULL, 0);
+	uint64_t req_bitmap, client_caps;
+	uint64_t server_caps = SMB2_CRTCTX_AAPL_UNIX_BASED;
+	smb_ucs2_t *model;
+	size_t modellen;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config, struct fruit_config_data,
+				return NT_STATUS_UNSUCCESSFUL);
+
+	if (!config->use_aapl
+	    || in_context_blobs == NULL
+	    || out_context_blobs == NULL) {
+		return NT_STATUS_OK;
+	}
+
+	aapl = smb2_create_blob_find(in_context_blobs,
+				     SMB2_CREATE_TAG_AAPL);
+	if (aapl == NULL) {
+		return NT_STATUS_OK;
+	}
+
+	if (aapl->data.length != 24) {
+		DEBUG(1, ("unexpected AAPL ctxt legnth: %ju\n",
+			  (uintmax_t)aapl->data.length));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	cmd = IVAL(aapl->data.data, 0);
+	if (cmd != SMB2_CRTCTX_AAPL_SERVER_QUERY) {
+		DEBUG(1, ("unsupported AAPL cmd: %d\n", cmd));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	req_bitmap = BVAL(aapl->data.data, 8);
+	client_caps = BVAL(aapl->data.data, 16);
+
+	SIVAL(p, 0, SMB2_CRTCTX_AAPL_SERVER_QUERY);
+	SIVAL(p, 4, 0);
+	SBVAL(p, 8, req_bitmap);
+	ok = data_blob_append(req, &blob, p, 16);
+	if (!ok) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	if (req_bitmap & SMB2_CRTCTX_AAPL_SERVER_CAPS) {
+		if ((client_caps & SMB2_CRTCTX_AAPL_SUPPORTS_READ_DIR_ATTR) &&
+		    (handle->conn->tcon->compat->fs_capabilities & FILE_NAMED_STREAMS)) {
+			server_caps |= SMB2_CRTCTX_AAPL_SUPPORTS_READ_DIR_ATTR;
+			config->readdir_attr_enabled = true;
+		}
+
+		/*
+		 * The client doesn't set the flag, so we can't check
+		 * for it and just set it unconditionally
+		 */
+		server_caps |= SMB2_CRTCTX_AAPL_SUPPORTS_NFS_ACE;
+		config->unix_info_enabled = true;
+
+		SBVAL(p, 0, server_caps);
+		ok = data_blob_append(req, &blob, p, 8);
+		if (!ok) {
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+	}
+
+	if (req_bitmap & SMB2_CRTCTX_AAPL_VOLUME_CAPS) {
+		SBVAL(p, 0,
+		      lp_case_sensitive(SNUM(handle->conn->tcon->compat)) ?
+		      SMB2_CRTCTX_AAPL_CASE_SENSITIVE : 0);
+		ok = data_blob_append(req, &blob, p, 8);
+		if (!ok) {
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+	}
+
+	if (req_bitmap & SMB2_CRTCTX_AAPL_MODEL_INFO) {
+		ok = convert_string_talloc(req,
+					   CH_UNIX, CH_UTF16LE,
+					   "Samba", strlen("Samba"),
+					   &model, &modellen);
+		if (!ok) {
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+
+		SIVAL(p, 0, 0);
+		SIVAL(p + 4, 0, modellen);
+		ok = data_blob_append(req, &blob, p, 8);
+		if (!ok) {
+			talloc_free(model);
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+
+		ok = data_blob_append(req, &blob, model, modellen);
+		talloc_free(model);
+		if (!ok) {
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+	}
+
+	status = smb2_create_blob_add(out_context_blobs,
+				      out_context_blobs,
+				      SMB2_CREATE_TAG_AAPL,
+				      blob);
+
+	return status;
+}
+
+static NTSTATUS readdir_attr_macmeta(struct vfs_handle_struct *handle,
+				     const struct smb_filename *smb_fname,
+				     struct readdir_attr_data *attr_data)
+{
+	NTSTATUS status = NT_STATUS_OK;
+	uint32_t date_added;
+	struct adouble *ad = NULL;
+	struct fruit_config_data *config = NULL;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct fruit_config_data,
+				return NT_STATUS_UNSUCCESSFUL);
+
+
+	/* Ensure we return a default value in the creation_date field */
+	RSIVAL(&attr_data->attr_data.aapl.finder_info, 12, AD_DATE_START);
+
+	/*
+	 * Resource fork length
+	 */
+
+	if (config->readdir_attr_rsize) {
+		ad = ad_get(talloc_tos(), handle, smb_fname->base_name,
+			    ADOUBLE_RSRC);
+		if (ad) {
+			attr_data->attr_data.aapl.rfork_size = ad_getentrylen(
+				ad, ADEID_RFORK);
+			TALLOC_FREE(ad);
+		}
+	}
+
+	/*
+	 * FinderInfo
+	 */
+
+	if (config->readdir_attr_finder_info) {
+		ad = ad_get(talloc_tos(), handle, smb_fname->base_name,
+			    ADOUBLE_META);
+		if (ad) {
+			if (S_ISREG(smb_fname->st.st_ex_mode)) {
+				/* finder_type */
+				memcpy(&attr_data->attr_data.aapl.finder_info[0],
+				       ad_entry(ad, ADEID_FINDERI), 4);
+
+				/* finder_creator */
+				memcpy(&attr_data->attr_data.aapl.finder_info[0] + 4,
+				       ad_entry(ad, ADEID_FINDERI) + 4, 4);
+			}
+
+			/* finder_flags */
+			memcpy(&attr_data->attr_data.aapl.finder_info[0] + 8,
+			       ad_entry(ad, ADEID_FINDERI) + 8, 2);
+
+			/* finder_ext_flags */
+			memcpy(&attr_data->attr_data.aapl.finder_info[0] + 10,
+			       ad_entry(ad, ADEID_FINDERI) + 24, 2);
+
+			/* creation date */
+			date_added = convert_time_t_to_uint32_t(
+				smb_fname->st.st_ex_btime.tv_sec - AD_DATE_DELTA);
+			RSIVAL(&attr_data->attr_data.aapl.finder_info[0], 12, date_added);
+
+			TALLOC_FREE(ad);
+		}
+	}
+
+	TALLOC_FREE(ad);
+	return status;
+}
+
+/* Search MS NFS style ACE with UNIX mode */
+static NTSTATUS check_ms_nfs(vfs_handle_struct *handle,
+			     files_struct *fsp,
+			     const struct security_descriptor *psd,
+			     mode_t *pmode,
+			     bool *pdo_chmod)
+{
+	int i;
+	struct fruit_config_data *config = NULL;
+
+	*pdo_chmod = false;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct fruit_config_data,
+				return NT_STATUS_UNSUCCESSFUL);
+
+	if (psd->dacl == NULL || !config->unix_info_enabled) {
+		return NT_STATUS_OK;
+	}
+
+	for (i = 0; i < psd->dacl->num_aces; i++) {
+		if (dom_sid_compare_domain(
+			    &global_sid_Unix_NFS_Mode,
+			    &psd->dacl->aces[i].trustee) == 0) {
+			*pmode = (mode_t)psd->dacl->aces[i].trustee.sub_auths[2];
+			*pmode &= (S_IRWXU | S_IRWXG | S_IRWXO);
+			*pdo_chmod = true;
+
+			DEBUG(10, ("MS NFS chmod request %s, %04o\n",
+				   fsp_str_dbg(fsp), *pmode));
+			break;
+		}
+	}
+
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
@@ -2881,6 +3140,14 @@ static NTSTATUS fruit_create_file(vfs_handle_struct *handle,
 	NTSTATUS status;
 	struct fruit_config_data *config = NULL;
 
+	status = check_aapl(handle, req, in_context_blobs, out_context_blobs);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config, struct fruit_config_data,
+				return NT_STATUS_UNSUCCESSFUL);
+
 	status = SMB_VFS_NEXT_CREATE_FILE(
 		handle, req, root_dir_fid, smb_fname,
 		access_mask, share_access,
@@ -2889,9 +3156,7 @@ static NTSTATUS fruit_create_file(vfs_handle_struct *handle,
 		lease,
 		allocation_size, private_flags,
 		sd, ea_list, result,
-		pinfo,
-		in_context_blobs, out_context_blobs);
-
+		pinfo, in_context_blobs, out_context_blobs);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -2901,9 +3166,6 @@ static NTSTATUS fruit_create_file(vfs_handle_struct *handle,
 	    || ((*result)->is_directory)) {
 		return status;
 	}
-
-	SMB_VFS_HANDLE_GET_DATA(handle, config, struct fruit_config_data,
-				return NT_STATUS_UNSUCCESSFUL);
 
 	if (config->locking == FRUIT_LOCKING_NETATALK) {
 		status = fruit_check_access(
@@ -2928,6 +3190,186 @@ fail:
 	return status;
 }
 
+static NTSTATUS fruit_readdir_attr(struct vfs_handle_struct *handle,
+				   const struct smb_filename *fname,
+				   TALLOC_CTX *mem_ctx,
+				   struct readdir_attr_data **pattr_data)
+{
+	struct fruit_config_data *config = NULL;
+	struct readdir_attr_data *attr_data;
+	NTSTATUS status;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct fruit_config_data,
+				return NT_STATUS_UNSUCCESSFUL);
+
+	if (!config->use_aapl) {
+		return SMB_VFS_NEXT_READDIR_ATTR(handle, fname, mem_ctx, pattr_data);
+	}
+
+	DEBUG(10, ("fruit_readdir_attr %s\n", fname->base_name));
+
+	*pattr_data = talloc_zero(mem_ctx, struct readdir_attr_data);
+	if (*pattr_data == NULL) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	attr_data = *pattr_data;
+	attr_data->type = RDATTR_AAPL;
+
+	/*
+	 * Mac metadata: compressed FinderInfo, resource fork length
+	 * and creation date
+	 */
+	status = readdir_attr_macmeta(handle, fname, attr_data);
+	if (!NT_STATUS_IS_OK(status)) {
+		/*
+		 * Error handling is tricky: if we return failure from
+		 * this function, the corresponding directory entry
+		 * will to be passed to the client, so we really just
+		 * want to error out on fatal errors.
+		 */
+		if  (!NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+			goto fail;
+		}
+	}
+
+	/*
+	 * UNIX mode
+	 */
+	if (config->unix_info_enabled) {
+		attr_data->attr_data.aapl.unix_mode = fname->st.st_ex_mode;
+	}
+
+	/*
+	 * max_access
+	 */
+	if (!config->readdir_attr_max_access) {
+		attr_data->attr_data.aapl.max_access = FILE_GENERIC_ALL;
+	} else {
+		status = smbd_calculate_access_mask(
+			handle->conn,
+			fname,
+			false,
+			SEC_FLAG_MAXIMUM_ALLOWED,
+			&attr_data->attr_data.aapl.max_access);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto fail;
+		}
+	}
+
+	return NT_STATUS_OK;
+
+fail:
+	DEBUG(1, ("fruit_readdir_attr %s, error: %s\n",
+		  fname->base_name, nt_errstr(status)));
+	TALLOC_FREE(*pattr_data);
+	return status;
+}
+
+static NTSTATUS fruit_fget_nt_acl(vfs_handle_struct *handle,
+				  files_struct *fsp,
+				  uint32 security_info,
+				  TALLOC_CTX *mem_ctx,
+				  struct security_descriptor **ppdesc)
+{
+	NTSTATUS status;
+	struct security_ace ace;
+	struct dom_sid sid;
+	struct fruit_config_data *config;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct fruit_config_data,
+				return NT_STATUS_UNSUCCESSFUL);
+
+	status = SMB_VFS_NEXT_FGET_NT_ACL(handle, fsp, security_info,
+					  mem_ctx, ppdesc);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	/*
+	 * Add MS NFS style ACEs with uid, gid and mode
+	 */
+	if (!config->unix_info_enabled) {
+		return NT_STATUS_OK;
+	}
+
+	/* MS NFS style mode */
+	sid_compose(&sid, &global_sid_Unix_NFS_Mode, fsp->fsp_name->st.st_ex_mode);
+	init_sec_ace(&ace, &sid, SEC_ACE_TYPE_ACCESS_DENIED, 0, 0);
+	status = security_descriptor_dacl_add(*ppdesc, &ace);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1,("failed to add MS NFS style ACE\n"));
+		return status;
+	}
+
+	/* MS NFS style uid */
+	sid_compose(&sid, &global_sid_Unix_NFS_Users, fsp->fsp_name->st.st_ex_uid);
+	init_sec_ace(&ace, &sid, SEC_ACE_TYPE_ACCESS_DENIED, 0, 0);
+	status = security_descriptor_dacl_add(*ppdesc, &ace);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1,("failed to add MS NFS style ACE\n"));
+		return status;
+	}
+
+	/* MS NFS style gid */
+	sid_compose(&sid, &global_sid_Unix_NFS_Groups, fsp->fsp_name->st.st_ex_gid);
+	init_sec_ace(&ace, &sid, SEC_ACE_TYPE_ACCESS_DENIED, 0, 0);
+	status = security_descriptor_dacl_add(*ppdesc, &ace);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1,("failed to add MS NFS style ACE\n"));
+		return status;
+	}
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS fruit_fset_nt_acl(vfs_handle_struct *handle,
+				  files_struct *fsp,
+				  uint32 security_info_sent,
+				  const struct security_descriptor *psd)
+{
+	NTSTATUS status;
+	bool do_chmod;
+	mode_t ms_nfs_mode;
+	int result;
+
+	DEBUG(1, ("fruit_fset_nt_acl: %s\n", fsp_str_dbg(fsp)));
+
+	status = check_ms_nfs(handle, fsp, psd, &ms_nfs_mode, &do_chmod);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("fruit_fset_nt_acl: check_ms_nfs failed%s\n", fsp_str_dbg(fsp)));
+		return status;
+	}
+
+	status = SMB_VFS_NEXT_FSET_NT_ACL(handle, fsp, security_info_sent, psd);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("fruit_fset_nt_acl: SMB_VFS_NEXT_FSET_NT_ACL failed%s\n", fsp_str_dbg(fsp)));
+		return status;
+	}
+
+	if (do_chmod) {
+		if (fsp->fh->fd != -1) {
+			DEBUG(1, ("fchmod: %s\n", fsp_str_dbg(fsp)));
+			result = SMB_VFS_FCHMOD(fsp, ms_nfs_mode);
+		} else {
+			DEBUG(1, ("chmod: %s\n", fsp_str_dbg(fsp)));
+			result = SMB_VFS_CHMOD(fsp->conn,
+					       fsp->fsp_name->base_name,
+					       ms_nfs_mode);
+		}
+
+		if (result != 0) {
+			DEBUG(1, ("chmod: %s, result: %d, %04o error %s\n", fsp_str_dbg(fsp),
+				  result, ms_nfs_mode, strerror(errno)));
+			status = map_nt_error_from_unix(errno);
+			return status;
+		}
+	}
+
+	return NT_STATUS_OK;
+}
+
 static struct vfs_fn_pointers vfs_fruit_fns = {
 	.connect_fn = fruit_connect,
 
@@ -2949,6 +3391,11 @@ static struct vfs_fn_pointers vfs_fruit_fns = {
 	.ftruncate_fn = fruit_ftruncate,
 	.fallocate_fn = fruit_fallocate,
 	.create_file_fn = fruit_create_file,
+	.readdir_attr_fn = fruit_readdir_attr,
+
+	/* NT ACL operations */
+	.fget_nt_acl_fn = fruit_fget_nt_acl,
+	.fset_nt_acl_fn = fruit_fset_nt_acl,
 };
 
 NTSTATUS vfs_fruit_init(void);
