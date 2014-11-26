@@ -159,6 +159,7 @@
 /* Bump to version 32 - Samba 4.2 will ship with that. */
 /* Version 32 - Add "lease" to CREATE_FILE operation */
 /* Version 32 - Add "lease" to struct files_struct */
+/* Version 32 - Add SMB_VFS_READDIR_ATTR() */
 
 #define SMB_VFS_INTERFACE_VERSION 32
 
@@ -789,6 +790,11 @@ struct vfs_fn_pointers {
 					 TALLOC_CTX *mem_ctx,
 					 struct files_struct **fsp,
 					 DATA_BLOB *new_cookie);
+
+	NTSTATUS (*readdir_attr_fn)(struct vfs_handle_struct *handle,
+				    const struct smb_filename *fname,
+				    TALLOC_CTX *mem_ctx,
+				    struct readdir_attr_data **attr_data);
 };
 
 /*
@@ -1234,6 +1240,10 @@ NTSTATUS smb_vfs_call_durable_reconnect(struct vfs_handle_struct *handle,
 					TALLOC_CTX *mem_ctx,
 					struct files_struct **fsp,
 					DATA_BLOB *new_cookie);
+NTSTATUS smb_vfs_call_readdir_attr(struct vfs_handle_struct *handle,
+				   const struct smb_filename *fname,
+				   TALLOC_CTX *mem_ctx,
+				   struct readdir_attr_data **attr_data);
 
 NTSTATUS smb_register_vfs(int version, const char *name,
 			  const struct vfs_fn_pointers *fns);
