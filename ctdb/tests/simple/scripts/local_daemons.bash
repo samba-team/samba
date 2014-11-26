@@ -67,10 +67,18 @@ setup_ctdb ()
     local i
     for i in $(seq 1 $TEST_LOCAL_DAEMONS) ; do
 	if [ "${CTDB_USE_IPV6}x" != "x" ]; then
-	    echo ::$i >>"$CTDB_NODES"
-	    ip addr add ::$i/128 dev lo
+	    j=$((printf "%02x" $i))
+	    echo "fd00::5357:5f${j}" >>"$CTDB_NODES"
+	    # FIXME: need to add addresses to lo as root before running :-(
+	    # ip addr add "fc00:10::${i}/64" dev lo
+	    # 2 public addresses on most nodes, just to make things interesting.
+	    if [ $(($i - 1)) -ne $no_public_ips ] ; then
+		echo "fc00:10::1:${i}/64 lo" >>"$public_addresses_all"
+		echo "fc00:10::1:$(($i + $TEST_LOCAL_DAEMONS))/64 lo" >>"$public_addresses_all"
+	    fi
 	else
-	    echo 127.0.0.$i >>"$CTDB_NODES"
+	    j=$(( $i + 10))
+	    echo 127.0.0.$j >>"$CTDB_NODES"
 	    # 2 public addresses on most nodes, just to make things interesting.
 	    if [ $(($i - 1)) -ne $no_public_ips ] ; then
 		echo "192.168.234.$i/24 lo" >>"$public_addresses_all"
