@@ -152,6 +152,7 @@ struct sys_notify_context {
 /* Include VFS stuff */
 
 #include "smb_acls.h"
+#include "lib/readdir_attr.h"
 #include "vfs.h"
 
 struct current_user {

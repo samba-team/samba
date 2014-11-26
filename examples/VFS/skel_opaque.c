@@ -633,6 +633,14 @@ static NTSTATUS skel_fsctl(struct vfs_handle_struct *handle,
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
+static NTSTATUS skel_readdir_attr(struct vfs_handle_struct *handle,
+				  const struct smb_filename *fname,
+				  TALLOC_CTX *mem_ctx,
+				  struct readdir_attr_data **pattr_data)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
 static NTSTATUS skel_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 				 uint32 security_info,
 				 TALLOC_CTX *mem_ctx,
@@ -896,6 +904,7 @@ struct vfs_fn_pointers skel_opaque_fns = {
 	.strict_unlock_fn = skel_strict_unlock,
 	.translate_name_fn = skel_translate_name,
 	.fsctl_fn = skel_fsctl,
+	.readdir_attr_fn = skel_readdir_attr,
 
 	/* NT ACL operations. */
 

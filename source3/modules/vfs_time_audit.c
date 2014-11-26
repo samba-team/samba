@@ -1802,6 +1802,27 @@ static NTSTATUS smb_time_audit_set_compression(vfs_handle_struct *handle,
 	return result;
 }
 
+static NTSTATUS smb_time_audit_readdir_attr(struct vfs_handle_struct *handle,
+					    const struct smb_filename *fname,
+					    TALLOC_CTX *mem_ctx,
+					    struct readdir_attr_data **pattr_data)
+{
+	NTSTATUS status;
+	struct timespec ts1,ts2;
+	double timediff;
+
+	clock_gettime_mono(&ts1);
+	status = SMB_VFS_NEXT_READDIR_ATTR(handle, fname, mem_ctx, pattr_data);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
+
+	if (timediff > audit_timeout) {
+		smb_time_audit_log_smb_fname("readdir_attr", timediff, fname);
+	}
+
+	return status;
+}
+
 static NTSTATUS smb_time_audit_fget_nt_acl(vfs_handle_struct *handle,
 					   files_struct *fsp,
 					   uint32 security_info,
@@ -2423,6 +2444,7 @@ static struct vfs_fn_pointers vfs_time_audit_fns = {
 	.copy_chunk_recv_fn = smb_time_audit_copy_chunk_recv,
 	.get_compression_fn = smb_time_audit_get_compression,
 	.set_compression_fn = smb_time_audit_set_compression,
+	.readdir_attr_fn = smb_time_audit_readdir_attr,
 	.fget_nt_acl_fn = smb_time_audit_fget_nt_acl,
 	.get_nt_acl_fn = smb_time_audit_get_nt_acl,
 	.fset_nt_acl_fn = smb_time_audit_fset_nt_acl,

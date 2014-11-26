@@ -171,6 +171,7 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_COPY_CHUNK_RECV,
 	SMB_VFS_OP_GET_COMPRESSION,
 	SMB_VFS_OP_SET_COMPRESSION,
+	SMB_VFS_OP_READDIR_ATTR,
 
 	/* NT ACL operations. */
 
@@ -295,6 +296,7 @@ static struct {
 	{ SMB_VFS_OP_COPY_CHUNK_RECV,	"copy_chunk_recv" },
 	{ SMB_VFS_OP_GET_COMPRESSION,	"get_compression" },
 	{ SMB_VFS_OP_SET_COMPRESSION,	"set_compression" },
+	{ SMB_VFS_OP_READDIR_ATTR,      "readdir_attr" },
 	{ SMB_VFS_OP_FGET_NT_ACL,	"fget_nt_acl" },
 	{ SMB_VFS_OP_GET_NT_ACL,	"get_nt_acl" },
 	{ SMB_VFS_OP_FSET_NT_ACL,	"fset_nt_acl" },
@@ -1834,6 +1836,21 @@ static NTSTATUS smb_full_audit_set_compression(vfs_handle_struct *handle,
 	return result;
 }
 
+static NTSTATUS smb_full_audit_readdir_attr(struct vfs_handle_struct *handle,
+					    const struct smb_filename *fname,
+					    TALLOC_CTX *mem_ctx,
+					    struct readdir_attr_data **pattr_data)
+{
+	NTSTATUS status;
+
+	status = SMB_VFS_NEXT_READDIR_ATTR(handle, fname, mem_ctx, pattr_data);
+
+	do_log(SMB_VFS_OP_READDIR_ATTR, NT_STATUS_IS_OK(status), handle, "%s",
+	       smb_fname_str_do_log(fname));
+
+	return status;
+}
+
 static NTSTATUS smb_full_audit_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 					   uint32 security_info,
 					   TALLOC_CTX *mem_ctx,
@@ -2249,6 +2266,7 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.copy_chunk_recv_fn = smb_full_audit_copy_chunk_recv,
 	.get_compression_fn = smb_full_audit_get_compression,
 	.set_compression_fn = smb_full_audit_set_compression,
+	.readdir_attr_fn = smb_full_audit_readdir_attr,
 	.fget_nt_acl_fn = smb_full_audit_fget_nt_acl,
 	.get_nt_acl_fn = smb_full_audit_get_nt_acl,
 	.fset_nt_acl_fn = smb_full_audit_fset_nt_acl,
