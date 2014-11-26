@@ -241,16 +241,12 @@ struct parmlist_entry *get_parametric_helper(struct loadparm_service *service,
 					     const char *type, const char *option,
 					     struct parmlist_entry *global_opts)
 {
-	char* param_key;
+	size_t type_len = strlen(type);
+	size_t option_len = strlen(option);
+	char param_key[type_len + option_len + 2];
 	struct parmlist_entry *data = NULL;
-	TALLOC_CTX *mem_ctx = talloc_stackframe();
 
-	param_key = talloc_asprintf(mem_ctx, "%s:%s", type, option);
-	if (param_key == NULL) {
-		DEBUG(0,("asprintf failed!\n"));
-		TALLOC_FREE(mem_ctx);
-		return NULL;
-	}
+	snprintf(param_key, sizeof(param_key), "%s:%s", type, option);
 
 	/*
 	 * Try to fetch the option from the data.
@@ -259,7 +255,6 @@ struct parmlist_entry *get_parametric_helper(struct loadparm_service *service,
 		data = service->param_opt;
 		while (data != NULL) {
 			if (strwicmp(data->key, param_key) == 0) {
-				TALLOC_FREE(mem_ctx);
 				return data;
 			}
 			data = data->next;
@@ -272,18 +267,12 @@ struct parmlist_entry *get_parametric_helper(struct loadparm_service *service,
 	data = global_opts;
 	while (data != NULL) {
 		if (strwicmp(data->key, param_key) == 0) {
-			TALLOC_FREE(mem_ctx);
 			return data;
 		}
 		data = data->next;
 	}
 
-
-	TALLOC_FREE(mem_ctx);
-
 	return NULL;
-
-
 }
 
 const char *lpcfg_get_parametric(struct loadparm_context *lp_ctx,
