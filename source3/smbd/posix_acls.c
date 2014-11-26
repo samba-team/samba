@@ -3666,6 +3666,16 @@ NTSTATUS set_nt_acl(files_struct *fsp, uint32 security_info_sent, const struct s
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
+	/*
+	 * MS NFS mode, here's the deal: the client merely wants to
+	 * modify the mode, but roundtripping get_acl/set/acl would
+	 * add additional POSIX ACEs.  So in case we get a request
+	 * containing a MS NFS mode SID, we do nothing here.
+	 */
+	if (security_descriptor_with_ms_nfs(psd_orig)) {
+		return NT_STATUS_OK;
+	}
+
 	psd = security_descriptor_copy(talloc_tos(), psd_orig);
 	if (psd == NULL) {
 		return NT_STATUS_NO_MEMORY;
