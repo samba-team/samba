@@ -126,7 +126,6 @@ class RestoredObjectAttributesBaseTestCase(samba.tests.TestCase):
 
 
 class BaseRestoreObjectTestCase(RestoredObjectAttributesBaseTestCase):
-
     def setUp(self):
         super(BaseRestoreObjectTestCase, self).setUp()
 
@@ -134,7 +133,7 @@ class BaseRestoreObjectTestCase(RestoredObjectAttributesBaseTestCase):
         msg = Message()
         msg.dn = Dn(self.samdb, "")
         msg["enableOptionalFeature"] = MessageElement(
-            "CN=Partitions," +  self.configuration_dn + ":766ddcd8-acd0-445e-f3b9-a7f9b6744f2a",
+            "CN=Partitions," + self.configuration_dn + ":766ddcd8-acd0-445e-f3b9-a7f9b6744f2a",
             FLAG_MOD_ADD, "enableOptionalFeature")
         try:
             self.samdb.modify(msg)
@@ -159,7 +158,7 @@ class BaseRestoreObjectTestCase(RestoredObjectAttributesBaseTestCase):
 
     def test_undelete(self):
         print "Testing standard undelete operation"
-        usr1="cn=testuser,cn=users," + self.base_dn
+        usr1 = "cn=testuser,cn=users," + self.base_dn
         samba.tests.delete_force(self.samdb, usr1)
         self.samdb.add({
             "dn": usr1,
@@ -167,32 +166,32 @@ class BaseRestoreObjectTestCase(RestoredObjectAttributesBaseTestCase):
             "description": "test user description",
             "samaccountname": "testuser"})
         objLive1 = self.search_dn(usr1)
-        guid1=objLive1["objectGUID"][0]
+        guid1 = objLive1["objectGUID"][0]
         self.samdb.delete(usr1)
         objDeleted1 = self.search_guid(guid1)
         self.undelete_deleted(str(objDeleted1.dn), usr1, self.samdb)
         objLive2 = self.search_dn(usr1)
-        self.assertEqual(str(objLive2.dn).lower(),str(objLive1.dn).lower())
+        self.assertEqual(str(objLive2.dn).lower(), str(objLive1.dn).lower())
         samba.tests.delete_force(self.samdb, usr1)
 
     def test_rename(self):
         print "Testing attempt to rename deleted object"
-        usr1="cn=testuser,cn=users," + self.base_dn
+        usr1 = "cn=testuser,cn=users," + self.base_dn
         self.samdb.add({
             "dn": usr1,
             "objectclass": "user",
             "description": "test user description",
             "samaccountname": "testuser"})
         objLive1 = self.search_dn(usr1)
-        guid1=objLive1["objectGUID"][0]
+        guid1 = objLive1["objectGUID"][0]
         self.samdb.delete(usr1)
         objDeleted1 = self.search_guid(guid1)
-        #just to make sure we get the correct error if the show deleted is missing
+        # just to make sure we get the correct error if the show deleted is missing
         try:
             self.samdb.rename(str(objDeleted1.dn), usr1)
             self.fail()
         except LdbError, (num, _):
-            self.assertEquals(num,ERR_NO_SUCH_OBJECT)
+            self.assertEquals(num, ERR_NO_SUCH_OBJECT)
 
         try:
             self.samdb.rename(str(objDeleted1.dn), usr1, ["show_deleted:1"])
@@ -202,25 +201,25 @@ class BaseRestoreObjectTestCase(RestoredObjectAttributesBaseTestCase):
 
     def test_undelete_with_mod(self):
         print "Testing standard undelete operation with modification of additional attributes"
-        usr1="cn=testuser,cn=users," + self.base_dn
+        usr1 = "cn=testuser,cn=users," + self.base_dn
         self.samdb.add({
             "dn": usr1,
             "objectclass": "user",
             "description": "test user description",
             "samaccountname": "testuser"})
         objLive1 = self.search_dn(usr1)
-        guid1=objLive1["objectGUID"][0]
+        guid1 = objLive1["objectGUID"][0]
         self.samdb.delete(usr1)
         objDeleted1 = self.search_guid(guid1)
         self.undelete_deleted_with_mod(str(objDeleted1.dn), usr1)
         objLive2 = self.search_dn(usr1)
-        self.assertEqual(objLive2["url"][0],"www.samba.org")
+        self.assertEqual(objLive2["url"][0], "www.samba.org")
         samba.tests.delete_force(self.samdb, usr1)
 
     def test_undelete_newuser(self):
         print "Testing undelete user with a different dn"
-        usr1="cn=testuser,cn=users," + self.base_dn
-        usr2="cn=testuser2,cn=users," + self.base_dn
+        usr1 = "cn=testuser,cn=users," + self.base_dn
+        usr2 = "cn=testuser2,cn=users," + self.base_dn
         samba.tests.delete_force(self.samdb, usr1)
         self.samdb.add({
             "dn": usr1,
@@ -228,7 +227,7 @@ class BaseRestoreObjectTestCase(RestoredObjectAttributesBaseTestCase):
             "description": "test user description",
             "samaccountname": "testuser"})
         objLive1 = self.search_dn(usr1)
-        guid1=objLive1["objectGUID"][0]
+        guid1 = objLive1["objectGUID"][0]
         self.samdb.delete(usr1)
         objDeleted1 = self.search_guid(guid1)
         self.undelete_deleted(str(objDeleted1.dn), usr2, self.samdb)
@@ -238,14 +237,14 @@ class BaseRestoreObjectTestCase(RestoredObjectAttributesBaseTestCase):
 
     def test_undelete_existing(self):
         print "Testing undelete user after a user with the same dn has been created"
-        usr1="cn=testuser,cn=users," + self.base_dn
+        usr1 = "cn=testuser,cn=users," + self.base_dn
         self.samdb.add({
             "dn": usr1,
             "objectclass": "user",
             "description": "test user description",
             "samaccountname": "testuser"})
         objLive1 = self.search_dn(usr1)
-        guid1=objLive1["objectGUID"][0]
+        guid1 = objLive1["objectGUID"][0]
         self.samdb.delete(usr1)
         self.samdb.add({
             "dn": usr1,
@@ -273,13 +272,13 @@ class BaseRestoreObjectTestCase(RestoredObjectAttributesBaseTestCase):
             "objectclass": "container"})
         objLive1 = self.search_dn(c1)
         objLive2 = self.search_dn(c2)
-        guid1=objLive1["objectGUID"][0]
-        guid2=objLive2["objectGUID"][0]
+        guid1 = objLive1["objectGUID"][0]
+        guid2 = objLive2["objectGUID"][0]
         self.samdb.delete(c1)
         self.samdb.delete(c2)
         objDeleted1 = self.search_guid(guid1)
         objDeleted2 = self.search_guid(guid2)
-        #try to undelete from base dn to config
+        # try to undelete from base dn to config
         try:
             self.undelete_deleted(str(objDeleted1.dn), c3, self.samdb)
             self.fail()
