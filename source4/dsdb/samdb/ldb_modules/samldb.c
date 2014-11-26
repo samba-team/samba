@@ -3073,9 +3073,6 @@ static int check_rename_constraints(struct ldb_message *msg,
 	if (ldb_request_get_control(ac->req, LDB_CONTROL_RELAX_OID) != NULL) {
 		return LDB_SUCCESS;
 	}
-	if (ldb_msg_find_attr_as_bool(msg, "isDeleted", false)) {
-		return LDB_SUCCESS;
-	}
 
 	/* Objects under CN=System */
 
