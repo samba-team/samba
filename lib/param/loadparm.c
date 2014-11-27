@@ -1049,7 +1049,7 @@ bool lp_set_enum_parm( struct parm_struct *parm, const char *pszParmValue,
 	int i;
 
 	for (i = 0; parm->enum_list[i].name; i++) {
-		if ( strequal(pszParmValue, parm->enum_list[i].name)) {
+		if (strwicmp(pszParmValue, parm->enum_list[i].name) == 0) {
 			*ptr = parm->enum_list[i].value;
 			return true;
 		}
