@@ -154,7 +154,17 @@ static struct share_mode_data *parse_share_modes(TALLOC_CTX *mem_ctx,
 	 */
 
 	for (i=0; i<d->num_share_modes; i++) {
-		d->share_modes[i].stale = false;
+		struct share_mode_entry *e = &d->share_modes[i];
+
+		e->stale = false;
+		e->lease = NULL;
+		if (e->op_type != LEASE_OPLOCK) {
+			continue;
+		}
+		if (e->lease_idx >= d->num_leases) {
+			continue;
+		}
+		e->lease = &d->leases[e->lease_idx];
 	}
 	d->modified = false;
 	d->fresh = false;

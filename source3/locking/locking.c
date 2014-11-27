@@ -608,6 +608,7 @@ bool is_valid_share_mode_entry(const struct share_mode_entry *e)
 	num_props += ((e->op_type == NO_OPLOCK) ? 1 : 0);
 	num_props += (EXCLUSIVE_OPLOCK_TYPE(e->op_type) ? 1 : 0);
 	num_props += (LEVEL_II_OPLOCK_TYPE(e->op_type) ? 1 : 0);
+	num_props += (e->op_type == LEASE_OPLOCK);
 
 	if ((num_props > 1) && serverid_exists(&e->pid)) {
 		smb_panic("Invalid share mode entry");
@@ -693,11 +694,21 @@ void remove_stale_share_mode_entries(struct share_mode_data *d)
 	}
 }
 
-bool set_share_mode(struct share_mode_lock *lck, files_struct *fsp,
-		    uid_t uid, uint64_t mid, uint16 op_type)
+bool set_share_mode(struct share_mode_lock *lck, struct files_struct *fsp,
+		    uid_t uid, uint64_t mid, uint16_t op_type,
+		    uint32_t lease_idx)
 {
 	struct share_mode_data *d = lck->data;
 	struct share_mode_entry *tmp, *e;
+	struct share_mode_lease *lease = NULL;
+
+	if (lease_idx == UINT32_MAX) {
+		lease = NULL;
+	} else if (lease_idx >= d->num_leases) {
+		return false;
+	} else {
+		lease = &d->leases[lease_idx];
+	}
 
 	tmp = talloc_realloc(d, d->share_modes, struct share_mode_entry,
 			     d->num_share_modes+1);
@@ -716,6 +727,8 @@ bool set_share_mode(struct share_mode_lock *lck, files_struct *fsp,
 	e->access_mask = fsp->access_mask;
 	e->op_mid = mid;
 	e->op_type = op_type;
+	e->lease_idx = lease_idx;
+	e->lease = lease;
 	e->time.tv_sec = fsp->open_time.tv_sec;
 	e->time.tv_usec = fsp->open_time.tv_usec;
 	e->id = fsp->file_id;

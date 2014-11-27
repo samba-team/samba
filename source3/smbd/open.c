@@ -1568,7 +1568,8 @@ static NTSTATUS grant_fsp_oplock_type(struct smb_request *req,
 
 	ok = set_share_mode(lck, fsp, get_current_uid(fsp->conn),
 			    req ? req->mid : 0,
-			    fsp->oplock_type);
+			    fsp->oplock_type,
+			    UINT32_MAX);
 	if (!ok) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -3080,6 +3081,7 @@ static NTSTATUS open_directory(connection_struct *conn,
 	NTSTATUS status;
 	struct timespec mtimespec;
 	int info = 0;
+	bool ok;
 
 	if (is_ntfs_stream_smb_fname(smb_dname)) {
 		DEBUG(2, ("open_directory: %s is a stream name!\n",
@@ -3336,8 +3338,10 @@ static NTSTATUS open_directory(connection_struct *conn,
 		return status;
 	}
 
-	if (!set_share_mode(lck, fsp, get_current_uid(conn),
-			    req ? req->mid : 0, NO_OPLOCK)) {
+	ok = set_share_mode(lck, fsp, get_current_uid(conn),
+			    req ? req->mid : 0, NO_OPLOCK,
+			    UINT32_MAX);
+	if (!ok) {
 		TALLOC_FREE(lck);
 		fd_close(fsp);
 		file_free(req, fsp);
