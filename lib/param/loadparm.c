@@ -2073,10 +2073,11 @@ void lpcfg_dump_a_service(struct loadparm_service * pService, struct loadparm_se
 		    (i == 0 || (parm_table[i].offset != parm_table[i - 1].offset)))
 		{
 			if (pService == sDefault) {
-				if (flags && (flags[i] & FLAG_DEFAULT)) {
-					continue;
-				}
 				if (!show_defaults) {
+					if (flags && (flags[i] & FLAG_DEFAULT)) {
+						continue;
+					}
+
 					if (is_default(sDefault, i)) {
 						continue;
 					}
