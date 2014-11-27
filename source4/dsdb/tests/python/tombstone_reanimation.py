@@ -112,16 +112,21 @@ class RestoredObjectAttributesBaseTestCase(samba.tests.TestCase):
             self.assertEqual(orig_ldif.lower(), rest_ldif.lower())
 
     @staticmethod
-    def restore_deleted_object(samdb, del_dn, new_dn):
+    def restore_deleted_object(samdb, del_dn, new_dn, new_attrs=None):
         """Restores a deleted object
         :param samdb: SamDB connection to SAM
         :param del_dn: str Deleted object DN
         :param new_dn: str Where to restore the object
+        :param new_attrs: dict Additional attributes to set
         """
         msg = Message()
         msg.dn = Dn(samdb, str(del_dn))
         msg["isDeleted"] = MessageElement([], FLAG_MOD_DELETE, "isDeleted")
         msg["distinguishedName"] = MessageElement([str(new_dn)], FLAG_MOD_REPLACE, "distinguishedName")
+        if new_attrs is not None:
+            assert isinstance(new_attrs, dict)
+            for attr in new_attrs:
+                msg[attr] = MessageElement(new_attrs[attr], FLAG_MOD_REPLACE, attr)
         samdb.modify(msg, ["show_deleted:1"])
 
 
@@ -140,22 +145,6 @@ class BaseRestoreObjectTestCase(RestoredObjectAttributesBaseTestCase):
         except LdbError, (num, _):
             self.assertEquals(num, ERR_ATTRIBUTE_OR_VALUE_EXISTS)
 
-    def undelete_deleted(self, olddn, newdn, samldb):
-        msg = Message()
-        msg.dn = Dn(samldb, olddn)
-        msg["isDeleted"] = MessageElement([], FLAG_MOD_DELETE, "isDeleted")
-        msg["distinguishedName"] = MessageElement([newdn], FLAG_MOD_REPLACE, "distinguishedName")
-        samldb.modify(msg, ["show_deleted:1"])
-
-    def undelete_deleted_with_mod(self, olddn, newdn):
-        msg = Message()
-        msg.dn = Dn(self.samdb, olddn)
-        msg["isDeleted"] = MessageElement([], FLAG_MOD_DELETE, "isDeleted")
-        msg["distinguishedName"] = MessageElement([newdn], FLAG_MOD_REPLACE, "distinguishedName")
-        msg["url"] = MessageElement(["www.samba.org"], FLAG_MOD_REPLACE, "url")
-        self.samdb.modify(msg, ["show_deleted:1"])
-
-
     def test_undelete(self):
         print "Testing standard undelete operation"
         usr1 = "cn=testuser,cn=users," + self.base_dn
@@ -169,7 +158,7 @@ class BaseRestoreObjectTestCase(RestoredObjectAttributesBaseTestCase):
         guid1 = objLive1["objectGUID"][0]
         self.samdb.delete(usr1)
         objDeleted1 = self.search_guid(guid1)
-        self.undelete_deleted(str(objDeleted1.dn), usr1, self.samdb)
+        self.restore_deleted_object(self.samdb, objDeleted1.dn, usr1)
         objLive2 = self.search_dn(usr1)
         self.assertEqual(str(objLive2.dn).lower(), str(objLive1.dn).lower())
         samba.tests.delete_force(self.samdb, usr1)
@@ -211,7 +200,7 @@ class BaseRestoreObjectTestCase(RestoredObjectAttributesBaseTestCase):
         guid1 = objLive1["objectGUID"][0]
         self.samdb.delete(usr1)
         objDeleted1 = self.search_guid(guid1)
-        self.undelete_deleted_with_mod(str(objDeleted1.dn), usr1)
+        self.restore_deleted_object(self.samdb, objDeleted1.dn, usr1, {"url": "www.samba.org"})
         objLive2 = self.search_dn(usr1)
         self.assertEqual(objLive2["url"][0], "www.samba.org")
         samba.tests.delete_force(self.samdb, usr1)
@@ -230,7 +219,7 @@ class BaseRestoreObjectTestCase(RestoredObjectAttributesBaseTestCase):
         guid1 = objLive1["objectGUID"][0]
         self.samdb.delete(usr1)
         objDeleted1 = self.search_guid(guid1)
-        self.undelete_deleted(str(objDeleted1.dn), usr2, self.samdb)
+        self.restore_deleted_object(self.samdb, objDeleted1.dn, usr2)
         objLive2 = self.search_dn(usr2)
         samba.tests.delete_force(self.samdb, usr1)
         samba.tests.delete_force(self.samdb, usr2)
@@ -253,7 +242,7 @@ class BaseRestoreObjectTestCase(RestoredObjectAttributesBaseTestCase):
             "samaccountname": "testuser"})
         objDeleted1 = self.search_guid(guid1)
         try:
-            self.undelete_deleted(str(objDeleted1.dn), usr1, self.samdb)
+            self.restore_deleted_object(self.samdb, objDeleted1.dn, usr1)
             self.fail()
         except LdbError, (num, _):
             self.assertEquals(num, ERR_ENTRY_ALREADY_EXISTS)
@@ -284,19 +273,19 @@ class BaseRestoreObjectTestCase(RestoredObjectAttributesBaseTestCase):
         objDeleted2 = self.search_guid(guid2)
         # try to undelete from base dn to config
         try:
-            self.undelete_deleted(str(objDeleted1.dn), c3, self.samdb)
+            self.restore_deleted_object(self.samdb, objDeleted1.dn, c3)
             self.fail()
         except LdbError, (num, _):
             self.assertEquals(num, ERR_OPERATIONS_ERROR)
         #try to undelete from config to base dn
         try:
-            self.undelete_deleted(str(objDeleted2.dn), c4, self.samdb)
+            self.restore_deleted_object(self.samdb, objDeleted2.dn, c4)
             self.fail()
         except LdbError, (num, _):
             self.assertEquals(num, ERR_OPERATIONS_ERROR)
         #assert undeletion will work in same nc
-        self.undelete_deleted(str(objDeleted1.dn), c4, self.samdb)
-        self.undelete_deleted(str(objDeleted2.dn), c3, self.samdb)
+        self.restore_deleted_object(self.samdb, objDeleted1.dn, c4)
+        self.restore_deleted_object(self.samdb, objDeleted2.dn, c3)
 
 
 class RestoreUserObjectTestCase(RestoredObjectAttributesBaseTestCase):
