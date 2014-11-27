@@ -1722,8 +1722,8 @@ static bool test_chained_ntcreatex_readx(struct torture_context *tctx, struct sm
 
 	/* readx parameters */
 	io.ntcreatexreadx.in.offset = 0;
-	io.ntcreatexreadx.in.mincnt = sizeof(buf);
-	io.ntcreatexreadx.in.maxcnt = sizeof(buf);
+	io.ntcreatexreadx.in.mincnt = sizeof(buf2);
+	io.ntcreatexreadx.in.maxcnt = sizeof(buf2);
 	io.ntcreatexreadx.in.remaining = 0;
 	io.ntcreatexreadx.out.data = (uint8_t *)buf2;
 
