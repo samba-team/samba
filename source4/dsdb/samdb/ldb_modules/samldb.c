@@ -3074,6 +3074,17 @@ static int check_rename_constraints(struct ldb_message *msg,
 		return LDB_SUCCESS;
 	}
 
+	if (ldb_msg_find_attr_as_bool(msg, "isDeleted", false)) {
+		/*
+		 * check originating request if we are supposed
+		 * to "see" this record in first place.
+		 */
+		if (ldb_request_get_control(ac->req, LDB_CONTROL_SHOW_DELETED_OID) == NULL) {
+			return LDB_ERR_NO_SUCH_OBJECT;
+		}
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+
 	/* Objects under CN=System */
 
 	dn1 = ldb_dn_copy(ac, ldb_get_default_basedn(ldb));
