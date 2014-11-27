@@ -1386,8 +1386,8 @@ static bool test_chained(struct torture_context *tctx, struct smbcli_state *cli)
 	io.openxreadx.in.timeout = 0;
 	
 	io.openxreadx.in.offset = 0;
-	io.openxreadx.in.mincnt = sizeof(buf);
-	io.openxreadx.in.maxcnt = sizeof(buf);
+	io.openxreadx.in.mincnt = sizeof(buf2);
+	io.openxreadx.in.maxcnt = sizeof(buf2);
 	io.openxreadx.in.remaining = 0;
 	io.openxreadx.out.data = (uint8_t *)buf2;
 
