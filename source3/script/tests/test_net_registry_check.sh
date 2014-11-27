@@ -55,7 +55,7 @@ regchecknrepair()
 
 	regcheck
 	checkerr "$EXPERR"
-	test "x$?" = "x$ERRCNT" || {
+	test "$?" -eq "$ERRCNT" || {
 		echo "Expected $EXPERRCNT of error $EXPERR. Received $ERRCNT"
 		return 1
 	}
