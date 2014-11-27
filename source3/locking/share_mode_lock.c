@@ -47,6 +47,7 @@
 #include "util_tdb.h"
 #include "../librpc/gen_ndr/ndr_open_files.h"
 #include "source3/lib/dbwrap/dbwrap_watch.h"
+#include "locking/leases_db.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_LOCKING
@@ -638,6 +639,16 @@ bool share_mode_cleanup_disconnected(struct file_id fid,
 		}
 	}
 
+	for (n=0; n < data->num_leases; n++) {
+		struct share_mode_lease *l = &data->leases[n];
+		NTSTATUS status;
+
+		status = leases_db_del(&l->client_guid, &l->lease_key, &fid);
+
+		DEBUG(10, ("%s: leases_db_del returned %s\n", __func__,
+			   nt_errstr(status)));
+	}
+
 	ok = brl_cleanup_disconnected(fid, open_persistent_id);
 	if (!ok) {
 		DEBUG(10, ("share_mode_cleanup_disconnected: "
@@ -672,6 +683,7 @@ bool share_mode_cleanup_disconnected(struct file_id fid,
 		   (unsigned long long)open_persistent_id));
 
 	data->num_share_modes = 0;
+	data->num_leases = 0;
 	data->modified = true;
 
 	ret = true;
