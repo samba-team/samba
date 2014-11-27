@@ -264,6 +264,10 @@ class BaseRestoreObjectTestCase(RestoredObjectAttributesBaseTestCase):
         c2 = "cn=ldaptestcontainer2," + self.configuration_dn
         c3 = "cn=ldaptestcontainer," + self.configuration_dn
         c4 = "cn=ldaptestcontainer2," + self.base_dn
+        samba.tests.delete_force(self.samdb, c1)
+        samba.tests.delete_force(self.samdb, c2)
+        samba.tests.delete_force(self.samdb, c3)
+        samba.tests.delete_force(self.samdb, c4)
         self.samdb.add({
             "dn": c1,
             "objectclass": "container"})
@@ -293,8 +297,6 @@ class BaseRestoreObjectTestCase(RestoredObjectAttributesBaseTestCase):
         #assert undeletion will work in same nc
         self.undelete_deleted(str(objDeleted1.dn), c4, self.samdb)
         self.undelete_deleted(str(objDeleted2.dn), c3, self.samdb)
-        samba.tests.delete_force(self.samdb, c3)
-        samba.tests.delete_force(self.samdb, c4)
 
 
 class RestoreUserObjectTestCase(RestoredObjectAttributesBaseTestCase):
