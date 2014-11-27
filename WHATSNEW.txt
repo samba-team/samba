@@ -1,4 +1,94 @@
                    ==============================
+                   Release Notes for Samba 4.1.14
+                          December 1, 2014
+                   ==============================
+
+
+This is the latest stable release of Samba 4.1.
+
+
+Changes since 4.1.13:
+---------------------
+
+o   Michael Adam <obnox@samba.org>
+    * BUG 10472: Revert buildtools/wafadmin/Tools/perl.py back to upstream
+      state.
+
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 10711: nmbd fails to accept "--piddir" option.
+    * BUG 10896: s3-nmbd: Fix netbios name truncation.
+    * BUG 10904: s3: libsmbclient-smb2. MacOSX 10 SMB2 server doesn't set
+      STATUS_NO_MORE_FILES when handed a non-wildcard path.
+    * BUG 10920: s3: nmbd: Ensure NetBIOS names are only 15 characters stored.
+
+
+o   Günther Deschner <gd@samba.org>
+    * BUG 10942: Cleanup add_string_to_array and usage.
+
+
+o   David Disseldorp <ddiss@samba.org>
+    * BUG 10898: spoolss: Fix handling of bad EnumJobs levels.
+    * BUG 10905: spoolss: Fix jobid in level 3 EnumJobs response.
+
+
+o   Amitay Isaacs <amitay@gmail.com>
+    * BUG 10620: s4-dns: Add support for BIND 9.10.
+
+
+o   Björn Jacke <bj@sernet.de>
+    * BUG 10835: nss_winbind: Add getgroupmembership for FreeBSD.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 10932: pdb_tdb: Fix a TALLOC/SAFE_FREE mixup.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 10472: pidl/wscript: Remove --with-perl-* options.
+    * BUG 10921: s3:smbd: Fix file corruption using "write cache size != 0".
+
+
+o   Jose A. Rivera <jarrpa@redhat.com>
+    * BUG 10889: vfs_glusterfs: Remove "integer fd" code and store the glfs
+      pointers.
+
+
+o   Matt Rogers <mrogers@redhat.com>
+    * BUG 10933: s3-keytab: Fix keytab array NULL termination.
+
+
+o   Richard Sharpe <realrichardsharpe@gmail.com>
+    * BUG 10880: S3: source3/smbd/process.c::srv_send_smb() returns true on the
+      error path.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+======================================================================
+
+                   ==============================
                    Release Notes for Samba 4.1.13
                          October 20, 2014
                    ==============================
@@ -80,10 +170,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
 
-======================================================================
 
                    ==============================
                    Release Notes for Samba 4.1.12
