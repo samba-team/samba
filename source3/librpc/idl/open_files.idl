@@ -3,6 +3,8 @@
 import "server_id.idl";
 import "security.idl";
 import "file_id.idl";
+import "smb2_lease_struct.idl";
+import "misc.idl";
 
 [
 	pointer_default(unique)
@@ -10,10 +12,41 @@ import "file_id.idl";
 
 interface open_files
 {
+	typedef [public,flag(NDR_PAHEX)] struct {
+		GUID			client_guid;
+		smb2_lease_key		lease_key;
+		smb2_lease_state	current_state;
+		/*
+		 * 'breaking' indicates that we're waiting
+		 * for a lease break ack from the client
+		 * and breaking_to_requested and breaking_to_required
+		 * have a meaning.
+		 *
+		 * breaking_to_requested is the value already sent to
+		 * the client, the client needs to ack to this (or less).
+		 *
+		 * breaking_to_required is the internal value that needs to
+		 * be reached before we can reset breaking = false, this
+		 * may requires multiple roundtrips to the client, e.g.
+		 * when the lease broken to a more reduced value, while
+		 * the lease break is still in progress.
+		 *
+		 * The following can be assumed (if breaking == true):
+		 *
+		 * current_state > breaking_to_requested >= breaking_to_required
+		 */
+		boolean8		breaking;
+		smb2_lease_state	breaking_to_requested;
+		smb2_lease_state	breaking_to_required;
+		uint16			lease_version;
+		uint16			epoch;
+	} share_mode_lease;
+
 	typedef [public] struct {
 		server_id	pid;
 		hyper		op_mid;
 		uint16		op_type;
+		uint32		lease_idx;
 		uint32		access_mask;
 		uint32		share_access;
 		uint32		private_options;
@@ -29,6 +62,7 @@ interface open_files
 		 * to store this share_mode_entry on disk.
 		 */
 		[skip] boolean8	stale;
+		[skip] share_mode_lease *lease;
 	} share_mode_entry;
 
 	typedef [public] struct {
@@ -43,6 +77,8 @@ interface open_files
 		[string,charset(UTF8)] char *stream_name;
 		uint32 num_share_modes;
 		[size_is(num_share_modes)] share_mode_entry share_modes[];
+		uint32 num_leases;
+		[size_is(num_leases)] share_mode_lease leases[];
 		uint32 num_delete_tokens;
 		[size_is(num_delete_tokens)] delete_token delete_tokens[];
 		timespec old_write_time;

@@ -577,6 +577,7 @@ enum remote_arch_types {RA_UNKNOWN, RA_WFWG, RA_OS2, RA_WIN95, RA_WINNT,
 #define EXCLUSIVE_OPLOCK 		OPLOCK_EXCLUSIVE
 #define BATCH_OPLOCK 			OPLOCK_BATCH
 #define LEVEL_II_OPLOCK 		OPLOCK_LEVEL_II
+#define LEASE_OPLOCK			0x100
 
 /* The following are Samba-private. */
 #define INTERNAL_OPEN_ONLY 		0x8

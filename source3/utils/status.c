@@ -177,6 +177,15 @@ static int print_share_mode(const struct share_mode_entry *e,
 			d_printf("BATCH           ");
 		} else if (e->op_type & LEVEL_II_OPLOCK) {
 			d_printf("LEVEL_II        ");
+		} else if (e->op_type == LEASE_OPLOCK) {
+			uint32_t lstate = e->lease->current_state;
+			d_printf("LEASE(%s%s%s)%s%s%s      ",
+				 (lstate & SMB2_LEASE_READ)?"R":"",
+				 (lstate & SMB2_LEASE_WRITE)?"W":"",
+				 (lstate & SMB2_LEASE_HANDLE)?"H":"",
+				 (lstate & SMB2_LEASE_READ)?"":" ",
+				 (lstate & SMB2_LEASE_WRITE)?"":" ",
+				 (lstate & SMB2_LEASE_HANDLE)?"":" ");
 		} else {
 			d_printf("NONE            ");
 		}
