@@ -27,5 +27,6 @@ export KRB5CCNAME
 
 testit "ntlm_auth with krb5 gss-spnego-client and gss-spnego server" $PYTHON $SRC3DIR/torture/test_ntlm_auth.py $NTLM_AUTH $ADDARGS --target-hostname=$SERVER --target-service=host --client-helper=gss-spnego-client --server-helper=gss-spnego --server-use-winbindd || failed=`expr $failed + 1`
 
+echo YR| testit "ntlm_auth with krb5 and an invalid keytab" $NTLM_AUTH --helper-protocol=gss-spnego --option=security=ads --option=kerberosmethod='dedicatedkeytab' --option=dedicatedkeytabfile=FILE:`pwd`/$CCACHE.keytab-does-not-exist || failed=`expr $failed + 1`
 
 testok $0 $failed

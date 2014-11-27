@@ -494,15 +494,12 @@ static krb5_error_code fill_mem_keytab_from_dedicated_keytab(krb5_context krbctx
 	krb5_kt_cursor kt_cursor;
 	krb5_keytab_entry kt_entry;
 
-	ZERO_STRUCT(kt_entry);
-	ZERO_STRUCT(kt_cursor);
-
 	ret = smb_krb5_open_keytab(krbctx, lp_dedicated_keytab_file(),
 				   false, &keytab);
 	if (ret) {
 		DEBUG(1, (__location__ ": smb_krb5_open_keytab failed (%s)\n",
 			  error_message(ret)));
-		goto out;
+		return ret;
 	}
 
 	/*
@@ -522,43 +519,21 @@ static krb5_error_code fill_mem_keytab_from_dedicated_keytab(krb5_context krbctx
 				   &kt_entry, &kt_cursor) == 0)) {
 
 		ret = krb5_kt_add_entry(krbctx, *mkeytab, &kt_entry);
-		if (ret) {
-			DEBUG(1, (__location__ ": smb_krb5_unparse_name "
-				  "failed (%s)\n", error_message(ret)));
-			goto out;
-		}
 
 		/* Free the entry we just read. */
 		smb_krb5_kt_free_entry(krbctx, &kt_entry);
-		ZERO_STRUCT(kt_entry);
+
+		if (ret) {
+			DEBUG(1, (__location__ ": smb_krb5_unparse_name "
+				  "failed (%s)\n", error_message(ret)));
+			break;
+		}
 	}
 	krb5_kt_end_seq_get(krbctx, keytab, &kt_cursor);
 
-	ZERO_STRUCT(kt_cursor);
-
 out:
-
-	{
-		krb5_keytab_entry zero_kt_entry;
-		ZERO_STRUCT(zero_kt_entry);
-		if (memcmp(&zero_kt_entry, &kt_entry,
-			   sizeof(krb5_keytab_entry))) {
-			smb_krb5_kt_free_entry(krbctx, &kt_entry);
-		}
-	}
-
-	{
-		krb5_kt_cursor zero_csr;
-		ZERO_STRUCT(zero_csr);
-		if ((memcmp(&kt_cursor, &zero_csr,
-			    sizeof(krb5_kt_cursor)) != 0) && keytab) {
-			krb5_kt_end_seq_get(krbctx, keytab, &kt_cursor);
-		}
-	}
-
-	if (keytab) {
-		krb5_kt_close(krbctx, keytab);
-	}
+	
+	krb5_kt_close(krbctx, keytab);
 
 	return ret;
 }
