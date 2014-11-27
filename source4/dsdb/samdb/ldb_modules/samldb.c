@@ -3169,7 +3169,8 @@ static int check_rename_constraints(struct ldb_message *msg,
 				talloc_free(dn2);
 			}
 
-			if (!limited_move) {
+			if (!limited_move
+			    && ldb_request_get_control(ac->req, DSDB_CONTROL_RESTORE_TOMBSTONE_OID) == NULL) {
 				ldb_asprintf_errstring(ldb,
 						       "subtree_rename: Cannot move %s to %s in config partition",
 						       ldb_dn_get_linearized(olddn), ldb_dn_get_linearized(newdn));
