@@ -53,7 +53,7 @@ bool status_profile_dump(bool verbose)
 		 (uintmax_t)profile_p->_stats.field); \
 } while(0);
 #define SMBPROFILE_STATS_START
-#define SMBPROFILE_STATS_SECTION_START(name) profile_separator(#name);
+#define SMBPROFILE_STATS_SECTION_START(name, display) profile_separator(#display);
 #define SMBPROFILE_STATS_COUNT(name) do { \
 	__PRINT_FIELD_LINE(#name, name##_stats,  count); \
 } while(0);
@@ -243,7 +243,7 @@ static uint64_t print_count_samples(
 	}
 
 #define SMBPROFILE_STATS_START
-#define SMBPROFILE_STATS_SECTION_START(name)
+#define SMBPROFILE_STATS_SECTION_START(name, display)
 #define SMBPROFILE_STATS_COUNT(name) do { \
 	count += print_count_count_samples(buf, sizeof(buf), \
 					   #name, \
