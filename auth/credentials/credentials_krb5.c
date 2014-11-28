@@ -257,10 +257,12 @@ _PUBLIC_ bool cli_credentials_failed_kerberos_login(struct cli_credentials *cred
 	ret = krb5_cc_retrieve_cred(ccc->smb_krb5_context->krb5_context, ccc->ccache, KRB5_TC_MATCH_SRV_NAMEONLY, &creds, &creds2);
 	if (ret != 0) {
 		/* don't retry - we didn't find these credentials to remove */
+		krb5_free_cred_contents(ccc->smb_krb5_context->krb5_context, &creds);
 		return false;
 	}
 
 	ret = krb5_cc_remove_cred(ccc->smb_krb5_context->krb5_context, ccc->ccache, KRB5_TC_MATCH_SRV_NAMEONLY, &creds);
+	krb5_free_cred_contents(ccc->smb_krb5_context->krb5_context, &creds);
 	krb5_free_cred_contents(ccc->smb_krb5_context->krb5_context, &creds2);
 	if (ret != 0) {
 		/* don't retry - we didn't find these credentials to
