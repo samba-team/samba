@@ -445,7 +445,7 @@ struct smbd_smb2_create_state {
 	uint32_t out_file_attributes;
 	uint64_t out_file_id_persistent;
 	uint64_t out_file_id_volatile;
-	struct smb2_create_blobs out_context_blobs;
+	struct smb2_create_blobs *out_context_blobs;
 };
 
 static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
@@ -467,7 +467,6 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 	struct smb_request *smb1req = NULL;
 	files_struct *result = NULL;
 	int info;
-	struct smb2_create_blobs out_context_blobs;
 	int requested_oplock_level;
 	struct smb2_create_blob *dhnc = NULL;
 	struct smb2_create_blob *dh2c = NULL;
@@ -475,8 +474,6 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 	struct smb2_create_blob *dh2q = NULL;
 	struct smb2_create_blob *rqls = NULL;
 	struct smbXsrv_open *op = NULL;
-
-	ZERO_STRUCT(out_context_blobs);
 
 	if(lp_fake_oplocks(SNUM(smb2req->tcon->compat))) {
 		requested_oplock_level = SMB2_OPLOCK_LEVEL_NONE;
@@ -508,8 +505,14 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		state = tevent_req_data(req,
 				struct smbd_smb2_create_state);
 		smb1req = state->smb1req;
+		TALLOC_FREE(state->out_context_blobs);
 		DEBUG(10,("smbd_smb2_create_send: reentrant for file %s\n",
 			in_name ));
+	}
+
+	state->out_context_blobs = talloc_zero(state, struct smb2_create_blobs);
+	if (tevent_req_nomem(state->out_context_blobs, req)) {
+		return tevent_req_post(req, ev);
 	}
 
 	dhnq = smb2_create_blob_find(&in_context_blobs,
@@ -1105,10 +1108,11 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 				SIVAL(p, 0, NT_STATUS_V(status));
 				SIVAL(p, 4, max_access_granted);
 
-				status = smb2_create_blob_add(state,
-							&out_context_blobs,
-							SMB2_CREATE_TAG_MXAC,
-							blob);
+				status = smb2_create_blob_add(
+				    state->out_context_blobs,
+				    state->out_context_blobs,
+				    SMB2_CREATE_TAG_MXAC,
+				    blob);
 				if (!NT_STATUS_IS_OK(status)) {
 					tevent_req_nterror(req, status);
 					return tevent_req_post(req, ev);
@@ -1150,8 +1154,8 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 			uint8_t p[8] = { 0, };
 			DATA_BLOB blob = data_blob_const(p, sizeof(p));
 
-			status = smb2_create_blob_add(state,
-						      &out_context_blobs,
+			status = smb2_create_blob_add(state->out_context_blobs,
+						      state->out_context_blobs,
 						      SMB2_CREATE_TAG_DHNQ,
 						      blob);
 			if (!NT_STATUS_IS_OK(status)) {
@@ -1168,7 +1172,8 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 			SIVAL(p, 0, op->global->durable_timeout_msec);
 			SIVAL(p, 4, durable_v2_response_flags);
 
-			status = smb2_create_blob_add(state, &out_context_blobs,
+			status = smb2_create_blob_add(state->out_context_blobs,
+						      state->out_context_blobs,
 						      SMB2_CREATE_TAG_DH2Q,
 						      blob);
 			if (!NT_STATUS_IS_OK(status)) {
@@ -1192,7 +1197,8 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 			SBVAL(p, 0, file_index);
 			SIVAL(p, 8, result->fsp_name->st.st_ex_dev);/* FileIndexHigh */
 
-			status = smb2_create_blob_add(state, &out_context_blobs,
+			status = smb2_create_blob_add(state->out_context_blobs,
+						      state->out_context_blobs,
 						      SMB2_CREATE_TAG_QFID,
 						      blob);
 			if (!NT_STATUS_IS_OK(status)) {
@@ -1218,7 +1224,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 			}
 
 			status = smb2_create_blob_add(
-				state, &out_context_blobs,
+				state, state->out_context_blobs,
 				SMB2_CREATE_TAG_RQLS,
 				data_blob_const(buf, lease_len));
 			if (!NT_STATUS_IS_OK(status)) {
@@ -1260,7 +1266,6 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 	}
 	state->out_file_id_persistent = result->op->global->open_persistent_id;
 	state->out_file_id_volatile = result->op->global->open_volatile_id;
-	state->out_context_blobs = out_context_blobs;
 
 	DEBUG(10,("smbd_smb2_create_send: %s - %s\n",
 		  fsp_str_dbg(result), fsp_fnum_dbg(result)));
@@ -1304,9 +1309,9 @@ static NTSTATUS smbd_smb2_create_recv(struct tevent_req *req,
 	*out_file_attributes	= state->out_file_attributes;
 	*out_file_id_persistent	= state->out_file_id_persistent;
 	*out_file_id_volatile	= state->out_file_id_volatile;
-	*out_context_blobs	= state->out_context_blobs;
+	*out_context_blobs	= *(state->out_context_blobs);
 
-	talloc_steal(mem_ctx, state->out_context_blobs.blobs);
+	talloc_steal(mem_ctx, state->out_context_blobs->blobs);
 
 	tevent_req_received(req);
 	return NT_STATUS_OK;
