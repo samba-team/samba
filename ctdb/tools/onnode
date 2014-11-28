@@ -320,8 +320,8 @@ push()
     for f in $files ; do
         $verbose && echo "Pushing $f"
         case "$f" in
-	    /*) rsync "$f" "${host}:${f}" ;;
-	    *)  rsync "${PWD}/${f}" "${host}:${PWD}/${f}" ;;
+	    /*) rsync "$f" "[${host}]:${f}" ;;
+	    *)  rsync "${PWD}/${f}" "[${host}]:${PWD}/${f}" ;;
 	esac
     done
 }
