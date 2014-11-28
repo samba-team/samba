@@ -153,6 +153,41 @@
 	    </listitem>
 	  </varlistentry>
 
+	  <varlistentry>
+	    <term>fruit:aapl = yes | no</term>
+	    <listitem>
+	      <para>A global option whether to enable Apple's SMB2+
+	      extension codenamed AAPL. Default
+	      <emphasis>yes</emphasis>. This extension enhances
+	      several deficiencies when connecting from Macs:</para>
+
+	      <itemizedlist>
+		<listitem><para>directory enumeration is enriched with
+		Mac relevant filesystem metadata (UNIX mode,
+		FinderInfo, resource fork size and effective
+		permission), as a result the Mac client doesn't need
+		to fetch this metadata individuallly per directory
+		entry resulting in an often tremendous performance
+		increase.</para></listitem>
+
+		<listitem><para>The ability to query and modify the
+		UNIX mode of directory entries.</para></listitem>
+	      </itemizedlist>
+
+	      <para>There's a set of per share options that can be
+	      used to disable the computation of specific Mac metadata
+	      in the directory enumeration context, all are enabled by
+	      default:</para>
+
+	      <itemizedlist>
+		<listitem><para>readdir_attr:aapl_rsize = true | false</para></listitem>
+		<listitem><para>readdir_attr:aapl_finder_info = true | false</para></listitem>
+		<listitem><para>readdir_attr:aapl_max_access = true | false</para></listitem>
+	      </itemizedlist>
+
+	    </listitem>
+	  </varlistentry>
+
 	</variablelist>
 </refsect1>
 
