@@ -140,6 +140,10 @@ typedef nss_status_t NSS_STATUS;
 
 #define ZERO_STRUCTP(x) do { if ((x) != NULL) memset((char *)(x), 0, sizeof(*(x))); } while(0)
 
+#ifndef SAFE_FREE
+#define SAFE_FREE(x) do { if ((x) != NULL) {free(x); (x)=NULL;} } while(0)
+#endif
+
 enum nwrap_dbglvl_e {
 	NWRAP_LOG_ERROR = 0,
 	NWRAP_LOG_WARN,
@@ -1078,8 +1082,7 @@ static void *nwrap_load_module_fn(struct nwrap_backend *b,
 			  "Cannot find function %s in %s",
 			  s, b->so_path);
 	}
-	free(s);
-	s = NULL;
+	SAFE_FREE(s);
 	return res;
 }
 
@@ -1380,7 +1383,7 @@ done:
 	return true;
 
 failed:
-	if (buf) free(buf);
+	SAFE_FREE(buf);
 	return false;
 }
 
@@ -1388,9 +1391,7 @@ static void nwrap_files_cache_unload(struct nwrap_cache *nwrap)
 {
 	nwrap->unload(nwrap);
 
-	if (nwrap->buf) free(nwrap->buf);
-
-	nwrap->buf = NULL;
+	SAFE_FREE(nwrap->buf);
 }
 
 static void nwrap_files_cache_reload(struct nwrap_cache *nwrap)
@@ -1626,9 +1627,7 @@ static void nwrap_pw_unload(struct nwrap_cache *nwrap)
 	struct nwrap_pw *nwrap_pw;
 	nwrap_pw = (struct nwrap_pw *)nwrap->private_data;
 
-	if (nwrap_pw->list) free(nwrap_pw->list);
-
-	nwrap_pw->list = NULL;
+	SAFE_FREE(nwrap_pw->list);
 	nwrap_pw->num = 0;
 	nwrap_pw->idx = 0;
 }
@@ -1813,14 +1812,11 @@ static void nwrap_gr_unload(struct nwrap_cache *nwrap)
 
 	if (nwrap_gr->list) {
 		for (i=0; i < nwrap_gr->num; i++) {
-			if (nwrap_gr->list[i].gr_mem) {
-				free(nwrap_gr->list[i].gr_mem);
-			}
+			SAFE_FREE(nwrap_gr->list[i].gr_mem);
 		}
-		free(nwrap_gr->list);
+		SAFE_FREE(nwrap_gr->list);
 	}
 
-	nwrap_gr->list = NULL;
 	nwrap_gr->num = 0;
 	nwrap_gr->idx = 0;
 }
@@ -2044,17 +2040,12 @@ static void nwrap_he_unload(struct nwrap_cache *nwrap)
 
 	if (nwrap_he->list != NULL) {
 		for (i = 0; i < nwrap_he->num; i++) {
-			if (nwrap_he->list[i].ht.h_aliases != NULL) {
-				free(nwrap_he->list[i].ht.h_aliases);
-			}
-			if (nwrap_he->list[i].addr != NULL) {
-				free(nwrap_he->list[i].addr);
-			}
+			SAFE_FREE(nwrap_he->list[i].ht.h_aliases);
+			SAFE_FREE(nwrap_he->list[i].addr);
 		}
-		free(nwrap_he->list);
+		SAFE_FREE(nwrap_he->list);
 	}
 
-	nwrap_he->list = NULL;
 	nwrap_he->num = 0;
 	nwrap_he->idx = 0;
 }
@@ -2550,9 +2541,6 @@ static void nwrap_files_endhostent(void)
  * module backend
  */
 
-#ifndef SAFE_FREE
-#define SAFE_FREE(x) do { if ((x) != NULL) {free(x); (x)=NULL;} } while(0)
-#endif
 
 static struct passwd *nwrap_module_getpwnam(struct nwrap_backend *b,
 					    const char *name)
