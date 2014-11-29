@@ -47,8 +47,8 @@ ctdb_restart_when_done
 
 select_test_node_and_ips
 
-echo "Removing ${test_ip} from the local ARP table..."
-arp -d $test_ip >/dev/null 2>&1 || true
+echo "Removing ${test_ip} from the local neighbor table..."
+ip neigh flush "$test_prefix" >/dev/null 2>&1 || true
 
 echo "Pinging ${test_ip}..."
 ping_wrapper -q -n -c 1 $test_ip
@@ -61,8 +61,8 @@ wait_until_node_has_status $test_node disabled
 
 gratarp_sniff_wait_show
 
-echo "Removing ${test_ip} from the local ARP table again..."
-arp -d $test_ip >/dev/null 2>&1 || true
+echo "Removing ${test_ip} from the local neighbor table again..."
+ip neigh flush "$test_prefix" >/dev/null 2>&1 || true
 
 echo "Pinging ${test_ip} again..."
 ping_wrapper -q -n -c 1 $test_ip

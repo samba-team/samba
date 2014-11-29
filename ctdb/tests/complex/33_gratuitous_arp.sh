@@ -54,14 +54,14 @@ ctdb_restart_when_done
 select_test_node_and_ips
 
 echo "Removing ${test_ip} from the local ARP table..."
-arp -d $test_ip >/dev/null 2>&1 || true
+ip neigh flush "$test_prefix" >/dev/null 2>&1 || true
 
 echo "Pinging ${test_ip}..."
 ping_wrapper -q -n -c 1 $test_ip
 
 echo "Getting MAC address associated with ${test_ip}..."
-original_mac=$(arp -n $test_ip | awk '$2 == "ether" {print $3}')
-[ $? -eq 0 ]
+original_mac=$(ip neigh show $test_prefix | awk '$4 == "lladdr" {print $5}')
+[ -n "$original_mac" ] || die "Couldn't get MAC address for ${test_prefix}"
 
 echo "MAC address is: ${original_mac}"
 
@@ -74,8 +74,8 @@ wait_until_node_has_status $test_node disabled
 gratarp_sniff_wait_show
 
 echo "Getting MAC address associated with ${test_ip} again..."
-new_mac=$(arp -n $test_ip | awk '$2 == "ether" {print $3}')
-[ $? -eq 0 ]
+new_mac=$(ip neigh show $test_prefix | awk '$4 == "lladdr" {print $5}')
+[ -n "$new_mac" ] || die "Couldn't get MAC address for ${test_prefix}"
 
 echo "MAC address is: ${new_mac}"
 
