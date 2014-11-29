@@ -186,6 +186,11 @@ _select_test_node_and_ips ()
     echo "Selected node ${test_node} with IPs: ${test_node_ips}."
     test_ip="${test_node_ips%% *}"
 
+    case "$test_ip" in
+	*:*) test_prefix="${test_ip}/128" ;;
+	*)   test_prefix="${test_ip}/32"  ;;
+    esac
+
     [ -n "$test_node" ] || return 1
 }
 

@@ -47,8 +47,8 @@ ctdb_restart_when_done
 
 select_test_node_and_ips
 
-echo "Removing ${test_ip} from the local ARP table..."
-arp -d $test_ip >/dev/null 2>&1 || true
+echo "Removing ${test_ip} from the local neighbor table..."
+ip neigh flush "$test_prefix" >/dev/null 2>&1 || true
 
 echo "SSHing to ${test_ip} and running hostname..."
 original_hostname=$(ssh -o "StrictHostKeyChecking no" $test_ip hostname)
