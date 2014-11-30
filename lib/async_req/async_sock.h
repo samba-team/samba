@@ -57,4 +57,9 @@ struct tevent_req *wait_for_read_send(TALLOC_CTX *mem_ctx,
 				      bool check_errors);
 bool wait_for_read_recv(struct tevent_req *req, int *perr);
 
+struct tevent_req *accept_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+			       int listen_sock);
+int accept_recv(struct tevent_req *req, struct sockaddr_storage *paddr,
+		socklen_t *paddrlen, int *perr);
+
 #endif

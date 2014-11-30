@@ -635,3 +635,86 @@ bool wait_for_read_recv(struct tevent_req *req, int *perr)
 
 	return true;
 }
+
+struct accept_state {
+	struct tevent_fd *fde;
+	int listen_sock;
+	socklen_t addrlen;
+	struct sockaddr_storage addr;
+	int sock;
+};
+
+static void accept_handler(struct tevent_context *ev, struct tevent_fd *fde,
+			   uint16_t flags, void *private_data);
+
+struct tevent_req *accept_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+			       int listen_sock)
+{
+	struct tevent_req *req;
+	struct accept_state *state;
+
+	req = tevent_req_create(mem_ctx, &state, struct accept_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	state->listen_sock = listen_sock;
+
+	state->fde = tevent_add_fd(ev, state, listen_sock, TEVENT_FD_READ,
+				   accept_handler, req);
+	if (tevent_req_nomem(state->fde, req)) {
+		return tevent_req_post(req, ev);
+	}
+	return req;
+}
+
+static void accept_handler(struct tevent_context *ev, struct tevent_fd *fde,
+			   uint16_t flags, void *private_data)
+{
+	struct tevent_req *req = talloc_get_type_abort(
+		private_data, struct tevent_req);
+	struct accept_state *state = tevent_req_data(req, struct accept_state);
+	int ret;
+
+	TALLOC_FREE(state->fde);
+
+	if ((flags & TEVENT_FD_READ) == 0) {
+		tevent_req_error(req, EIO);
+		return;
+	}
+	state->addrlen = sizeof(state->addr);
+
+	ret = accept(state->listen_sock, (struct sockaddr *)&state->addr,
+		     &state->addrlen);
+	if ((ret == -1) && (errno == EINTR)) {
+		/* retry */
+		return;
+	}
+	if (ret == -1) {
+		tevent_req_error(req, errno);
+		return;
+	}
+	state->sock = ret;
+	tevent_req_done(req);
+}
+
+int accept_recv(struct tevent_req *req, struct sockaddr_storage *paddr,
+		socklen_t *paddrlen, int *perr)
+{
+	struct accept_state *state = tevent_req_data(req, struct accept_state);
+	int err;
+
+	if (tevent_req_is_unix_error(req, &err)) {
+		if (perr != NULL) {
+			*perr = err;
+		}
+		return -1;
+	}
+	if (paddr != NULL) {
+		memcpy(paddr, &state->addr, state->addrlen);
+	}
+	if (paddrlen != NULL) {
+		*paddrlen = state->addrlen;
+	}
+	return state->sock;
+}
