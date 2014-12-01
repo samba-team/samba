@@ -171,6 +171,8 @@ _service ()
 
   if [ -x /sbin/service ]; then
       $_nice /sbin/service "$_service_name" "$_op"
+  elif [ -x /usr/sbin/service ]; then
+      $_nice /usr/sbin/service "$_service_name" "$_op"
   elif [ -x $CTDB_ETCDIR/init.d/$_service_name ]; then
       $_nice $CTDB_ETCDIR/init.d/$_service_name "$_op"
   elif [ -x $CTDB_ETCDIR/rc.d/init.d/$_service_name ]; then
