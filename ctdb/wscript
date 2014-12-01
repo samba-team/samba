@@ -436,9 +436,10 @@ def build(bld):
         bld.INSTALL_FILES('${CTDB_PMDADIR}', 'utils/pmda/README',
                           destname='README')
 
-    bld.MANPAGES('''doc/onnode.1 doc/ctdbd_wrapper.1 doc/ctdbd.conf.5
-                    doc/ctdb.7 doc/ctdb-statistics.7 doc/ctdb-tunables.7''',
-                 True)
+    if 'XSLTPROC_MANPAGES' in bld.env and bld.env['XSLTPROC_MANPAGES']:
+        bld.MANPAGES('''doc/onnode.1 doc/ctdbd_wrapper.1 doc/ctdbd.conf.5
+                        doc/ctdb.7 doc/ctdb-statistics.7 doc/ctdb-tunables.7''',
+                     True)
 
     bld.INSTALL_FILES('${BINDIR}', 'tools/onnode',
                       destname='onnode', chmod=0755)
