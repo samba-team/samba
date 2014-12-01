@@ -75,9 +75,14 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 	struct ether_header *eh;
 	struct arphdr *ah;
 	struct ip6_hdr *ip6;
-	struct nd_neighbor_solicit *nd_ns;
+	struct nd_neighbor_advert *nd_na;
+	struct nd_opt_hdr *nd_oh;
 	struct ifreq if_hwaddr;
-	unsigned char buffer[78]; /* ipv6 neigh solicitation size */
+	/* Size of IPv6 neighbor advertisement (with option) */
+	unsigned char buffer[sizeof(struct ether_header) +
+			     sizeof(struct ip6_hdr) +
+			     sizeof(struct nd_neighbor_advert) +
+			     sizeof(struct nd_opt_hdr) + ETH_ALEN];
 	char *ptr;
 	char bdcast[] = {0xff,0xff,0xff,0xff,0xff,0xff};
 	struct ifreq ifr;
@@ -219,31 +224,45 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 
 		memset(buffer, 0 , sizeof(buffer));
 		eh = (struct ether_header *)buffer;
-		memset(eh->ether_dhost, 0xff, ETH_ALEN);
+		/* Ethernet multicast: 33:33:00:00:00:01 (see RFC2464,
+		 * section 7) - note zeroes above! */
+		eh->ether_dhost[0] = eh->ether_dhost[1] = 0x33;
+		eh->ether_dhost[5] = 0x01;
 		memcpy(eh->ether_shost, if_hwaddr.ifr_hwaddr.sa_data, ETH_ALEN);
 		eh->ether_type = htons(ETHERTYPE_IP6);
 
 		ip6 = (struct ip6_hdr *)(eh+1);
 		ip6->ip6_vfc  = 0x60;
-		ip6->ip6_plen = htons(sizeof(*nd_ns));
+		ip6->ip6_plen = htons(sizeof(*nd_na) +
+				      sizeof(struct nd_opt_hdr) +
+				      ETH_ALEN);
 		ip6->ip6_nxt  = IPPROTO_ICMPV6;
 		ip6->ip6_hlim = 255;
-		ip6->ip6_dst  = addr->ip6.sin6_addr;
+		ip6->ip6_src  = addr->ip6.sin6_addr;
+		/* all-nodes multicast */
+		inet_pton(AF_INET6, "ff02::1", &ip6->ip6_dst);
 
-		nd_ns = (struct nd_neighbor_solicit *)(ip6+1);
-		nd_ns->nd_ns_type = ND_NEIGHBOR_SOLICIT;
-		nd_ns->nd_ns_code = 0;
-		nd_ns->nd_ns_reserved = 0;
-		nd_ns->nd_ns_target = addr->ip6.sin6_addr;
+		nd_na = (struct nd_neighbor_advert *)(ip6+1);
+		nd_na->nd_na_type = ND_NEIGHBOR_ADVERT;
+		nd_na->nd_na_code = 0;
+		nd_na->nd_na_flags_reserved = ND_NA_FLAG_OVERRIDE;
+		nd_na->nd_na_target = addr->ip6.sin6_addr;
+		/* Option: Target link-layer address */
+		nd_oh = (struct nd_opt_hdr *)(nd_na+1);
+		nd_oh->nd_opt_type = ND_OPT_TARGET_LINKADDR;
+		nd_oh->nd_opt_len = 1;
+		memcpy(&(nd_oh+1)[0], if_hwaddr.ifr_hwaddr.sa_data, ETH_ALEN);
 
-		nd_ns->nd_ns_cksum = tcp_checksum6((uint16_t *)nd_ns, ntohs(ip6->ip6_plen), ip6);
+		nd_na->nd_na_cksum = tcp_checksum6((uint16_t *)nd_na,
+						   ntohs(ip6->ip6_plen), ip6);
 
 		sall.sll_family = AF_PACKET;
 		sall.sll_halen = 6;
-		memcpy(&sall.sll_addr[0], bdcast, sall.sll_halen);
+		memcpy(&sall.sll_addr[0], &eh->ether_dhost[0], sall.sll_halen);
 		sall.sll_protocol = htons(ETH_P_ALL);
 		sall.sll_ifindex = ifr.ifr_ifindex;
-		ret = sendto(s, buffer, 78, 0, (struct sockaddr *)&sall, sizeof(sall));
+		ret = sendto(s, buffer, sizeof(buffer),
+			     0, (struct sockaddr *)&sall, sizeof(sall));
 		if (ret < 0 ){
 			close(s);
 			DEBUG(DEBUG_CRIT,(__location__ " failed sendto\n"));
