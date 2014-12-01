@@ -1,5 +1,35 @@
 # Hey Emacs, this is a -*- shell-script -*- !!!  :-)
 
+# Thanks/blame to Stephen Rothwell for suggesting that this can be
+# done in the shell.  ;-)
+ipv6_to_hex ()
+{
+    local addr="$1"
+
+    # Replace "::" by something special.
+    local foo="${addr/::/:@:}"
+
+    # Join the groups of digits together, 0-padding each group of
+    # digits out to 4 digits, and count the number of (non-@) groups
+    local out=""
+    local count=0
+    local i
+    for i in $(IFS=":" ; echo $foo ) ; do
+	if [ "$i" = "@" ] ; then
+	    out="${out}@"
+	else
+	    out="${out}$(printf '%04x' 0x${i})"
+	    count=$(($count + 4))
+	fi
+    done
+
+    # Replace '@' with correct number of zeroes
+    local zeroes=$(printf "%0$((32 - $count))x" 0)
+    echo "${out/@/${zeroes}}"
+}
+
+#######################################
+
 get_src_socket ()
 {
     local proto="$1"
@@ -119,19 +149,46 @@ tcpdump_show ()
     tcpdump -n -r $tcpdump_filename  "$filter" 2>/dev/null
 }
 
-tcptickle_sniff_start ()
+tcp4tickle_sniff_start ()
 {
     local src="$1"
     local dst="$2"
 
     local in="src host ${dst%:*} and tcp src port ${dst##*:} and dst host ${src%:*} and tcp dst port ${src##*:}"
     local out="src host ${src%:*} and tcp src port ${src##*:} and dst host ${dst%:*} and tcp dst port ${dst##*:}"
-    local tickle_ack="${in} and (tcp[tcpflags] & tcp-ack != 0) and (tcp[14] == 4) and (tcp[15] == 210)" # win == 1234
+    local tickle_ack="${in} and (tcp[tcpflags] & tcp-ack != 0) and (tcp[14:2] == 1234)" # win == 1234
     local ack_ack="${out} and (tcp[tcpflags] & tcp-ack != 0)"
     tcptickle_reset="${in} and tcp[tcpflags] & tcp-rst != 0"
     local filter="(${tickle_ack}) or (${ack_ack}) or (${tcptickle_reset})"
 
     tcpdump_start "$filter"
+}
+
+# tcp[] does not work for IPv6 (in some versions of tcpdump)
+tcp6tickle_sniff_start ()
+{
+    local src="$1"
+    local dst="$2"
+
+    local in="src host ${dst%:*} and tcp src port ${dst##*:} and dst host ${src%:*} and tcp dst port ${src##*:}"
+    local out="src host ${src%:*} and tcp src port ${src##*:} and dst host ${dst%:*} and tcp dst port ${dst##*:}"
+    local tickle_ack="${in} and (ip6[53] & tcp-ack != 0) and (ip6[54:2] == 1234)" # win == 1234
+    local ack_ack="${out} and (ip6[53] & tcp-ack != 0)"
+    tcptickle_reset="${in} and ip6[53] & tcp-rst != 0"
+    local filter="(${tickle_ack}) or (${ack_ack}) or (${tcptickle_reset})"
+
+    tcpdump_start "$filter"
+}
+
+tcptickle_sniff_start ()
+{
+    local src="$1"
+    local dst="$2"
+
+    case "$dst" in
+	*:*) tcp6tickle_sniff_start "$src" "$dst" ;;
+	*)   tcp4tickle_sniff_start "$src" "$dst" ;;
+    esac
 }
 
 tcptickle_sniff_wait_show ()
@@ -142,9 +199,26 @@ tcptickle_sniff_wait_show ()
     tcpdump_show
 }
 
-gratarp_sniff_start ()
+gratarp4_sniff_start ()
 {
     tcpdump_start "arp host ${test_ip}"
+}
+
+gratarp6_sniff_start ()
+{
+    local neighbor_advertisement="icmp6 and ip6[40] == 136"
+    local hex=$(ipv6_to_hex "$test_ip")
+    local match_target="ip6[48:4] == 0x${hex:0:8} and ip6[52:4] == 0x${hex:8:8} and ip6[56:4] == 0x${hex:16:8} and ip6[60:4] == 0x${hex:24:8}"
+
+    tcpdump_start "${neighbor_advertisement} and ${match_target}"
+}
+
+gratarp_sniff_start ()
+{
+    case "$test_ip" in
+	*:*) gratarp6_sniff_start ;;
+	*)   gratarp4_sniff_start ;;
+    esac
 }
 
 gratarp_sniff_wait_show ()
