@@ -146,7 +146,7 @@ tcpdump_show ()
 {
     local filter="${1:-${tcpdump_filter}}"
 
-    tcpdump -n -r $tcpdump_filename  "$filter" 2>/dev/null
+    tcpdump -n -e -vv -XX -r $tcpdump_filename  "$filter" 2>/dev/null
 }
 
 tcp4tickle_sniff_start ()
