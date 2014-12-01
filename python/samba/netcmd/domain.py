@@ -873,7 +873,7 @@ class cmd_domain_demote(Command):
             except ldb.LdbError, l:
                 pass
 
-        self.errf.write("Demote successfull\n")
+        self.errf.write("Demote successful\n")
 
 
 class cmd_domain_level(Command):
