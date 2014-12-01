@@ -51,7 +51,7 @@ echo "Removing ${test_ip} from the local ARP table..."
 arp -d $test_ip >/dev/null 2>&1 || true
 
 echo "Pinging ${test_ip}..."
-ping -q -n -c 1 $test_ip
+ping_wrapper -q -n -c 1 $test_ip
 
 gratarp_sniff_start
 
@@ -65,4 +65,4 @@ echo "Removing ${test_ip} from the local ARP table again..."
 arp -d $test_ip >/dev/null 2>&1 || true
 
 echo "Pinging ${test_ip} again..."
-ping -q -n -c 1 $test_ip
+ping_wrapper -q -n -c 1 $test_ip

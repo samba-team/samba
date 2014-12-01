@@ -170,3 +170,10 @@ ctdb_test_check_real_cluster ()
     done
 }
 
+ping_wrapper ()
+{
+    case "$*" in
+	*:*) ping6 "$@"   ;;
+	*)   ping  "$@"   ;;
+    esac
+}
