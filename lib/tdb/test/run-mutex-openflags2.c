@@ -75,8 +75,9 @@ static int do_child(int fd)
 			  TDB_CLEAR_IF_FIRST |
 			  TDB_MUTEX_LOCKING,
 			  O_RDONLY, 0755, &nolog_ctx, NULL);
-	ok((tdb == NULL) && (errno == EINVAL), "TDB_MUTEX_LOCKING with "
-	   "O_RDONLY should fail with EINVAL - %d", errno);
+	ok((tdb != NULL), "TDB_MUTEX_LOCKING with "
+	   "O_RDONLY should work - %d", errno);
+	tdb_close(tdb);
 
 	tdb = tdb_open_ex("mutex-openflags2.tdb", 0,
 			  TDB_CLEAR_IF_FIRST |
