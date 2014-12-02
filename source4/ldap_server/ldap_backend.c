@@ -459,7 +459,7 @@ static int ldapsrv_rename_with_controls(struct ldapsrv_call *call,
 	ret = ldb_build_rename_req(&req, ldb, ldb,
 					olddn,
 					newdn,
-					NULL,
+					controls,
 					res,
 					ldb_modify_default_callback,
 					NULL);
