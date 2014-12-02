@@ -91,7 +91,7 @@ def env_loadparm():
     try:
         lp.load(os.environ["SMB_CONF_PATH"])
     except KeyError:
-        raise Exception("SMB_CONF_PATH not set")
+        raise KeyError("SMB_CONF_PATH not set")
     return lp
 
 
