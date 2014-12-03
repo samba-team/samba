@@ -719,6 +719,13 @@ static int rwrap_get_record(const char *hostfile, unsigned recursion,
 							 value, rr + 1);
 			}
 			break;
+		} else if (TYPE_MATCH(type, ns_t_a, rec_type, "CNAME", key, query)) {
+			rc = rwrap_create_fake_cname_rr(key, value, rr);
+			if (rc == 0) {
+				rc = rwrap_cname_recurse(hostfile, recursion+1,
+							 value, rr + 1);
+			}
+			break;
 		}
 	}
 
