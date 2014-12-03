@@ -59,7 +59,7 @@ ctdb_test_exit_hook_add rm -f "$local_f"
 dd if=/dev/urandom of=$local_f bs=1k count=1
 local_sum=$(sum $local_f)
 
-scp -p "$local_f" "${test_ip}:${nfs_remote_file}"
+scp -p "$local_f" "[${test_ip}]:${nfs_remote_file}"
 try_command_on_node $test_node "chmod 644 $nfs_remote_file"
 
 nfs_sum=$(sum $nfs_local_file)

@@ -669,7 +669,7 @@ nfs_test_setup ()
 
     echo "Mounting ${test_ip}:${nfs_first_export} on ${nfs_mnt_d} ..."
     mount -o timeo=1,hard,intr,vers=3 \
-	${test_ip}:${nfs_first_export} ${nfs_mnt_d}
+	"[${test_ip}]:${nfs_first_export}" ${nfs_mnt_d}
 }
 
 nfs_test_cleanup ()
