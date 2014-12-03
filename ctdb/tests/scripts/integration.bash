@@ -687,6 +687,44 @@ nfs_test_cleanup ()
 
 #######################################
 
+# If the given IP is hosted then print 2 items: maskbits and iface
+ip_maskbits_iface ()
+{
+    _addr="$1"
+
+    case "$_addr" in
+	*:*) _family="inet6" ; _bits=128 ;;
+	*)   _family="inet"  ; _bits=32  ;;
+    esac
+
+    ip addr show to "${_addr}/${_bits}" 2>/dev/null | \
+	awk -v family="${_family}" \
+	    'NR == 1 { iface = gensub(":$", "", 1, $2) } \
+             $1 ~ /inet/ { print gensub(".*/", "", 1, $2), iface, family }'
+}
+
+drop_ip ()
+{
+    _addr="${1%/*}"  # Remove optional maskbits
+
+    set -- $(ip_maskbits_iface $_addr)
+    if [ -n "$1" ] ; then
+	_maskbits="$1"
+	_iface="$2"
+	echo "Removing public address $_addr/$_maskbits from device $_iface"
+	ip addr del "$_ip/$_maskbits" dev "$_iface" >/dev/null 2>&1 || true
+    fi
+}
+
+drop_ips ()
+{
+    for _ip ; do
+	drop_ip "$_ip"
+    done
+}
+
+#######################################
+
 # $1: pnn, $2: DB name
 db_get_path ()
 {
