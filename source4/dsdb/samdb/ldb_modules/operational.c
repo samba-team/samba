@@ -84,6 +84,12 @@ struct operational_data {
 	struct ldb_dn *aggregate_dn;
 };
 
+enum search_type {
+	TOKEN_GROUPS,
+	TOKEN_GROUPS_GLOBAL_AND_UNIVERSAL,
+	TOKEN_GROUPS_NO_GC_ACCEPTABLE
+};
+
 /*
   construct a canonical name from a message
 */
@@ -127,9 +133,11 @@ static int construct_primary_group_token(struct ldb_module *module,
 /*
   construct the token groups for SAM objects from a message
 */
-static int construct_token_groups(struct ldb_module *module,
-				  struct ldb_message *msg, enum ldb_scope scope,
-				  struct ldb_request *parent)
+static int construct_generic_token_groups(struct ldb_module *module,
+					  struct ldb_message *msg, enum ldb_scope scope,
+					  struct ldb_request *parent,
+					  const char *attribute_string,
+					  enum search_type type)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	TALLOC_CTX *tmp_ctx = talloc_new(msg);
@@ -189,8 +197,18 @@ static int construct_token_groups(struct ldb_module *module,
 	}
 
 	/* only return security groups */
-	filter = talloc_asprintf(tmp_ctx, "(&(objectClass=group)(groupType:1.2.840.113556.1.4.803:=%u))",
-				 GROUP_TYPE_SECURITY_ENABLED);
+	switch(type) {
+	case TOKEN_GROUPS_GLOBAL_AND_UNIVERSAL:
+		filter = talloc_asprintf(tmp_ctx, "(&(objectClass=group)(groupType:1.2.840.113556.1.4.803:=%u)(|(groupType:1.2.840.113556.1.4.803:=%u)(groupType:1.2.840.113556.1.4.803:=%u)))",
+					 GROUP_TYPE_SECURITY_ENABLED, GROUP_TYPE_ACCOUNT_GROUP, GROUP_TYPE_UNIVERSAL_GROUP);
+		break;
+	case TOKEN_GROUPS_NO_GC_ACCEPTABLE:
+	case TOKEN_GROUPS:
+		filter = talloc_asprintf(tmp_ctx, "(&(objectClass=group)(groupType:1.2.840.113556.1.4.803:=%u))",
+					 GROUP_TYPE_SECURITY_ENABLED);
+		break;
+	}
+
 	if (!filter) {
 		talloc_free(tmp_ctx);
 		return ldb_oom(ldb);
@@ -253,7 +271,7 @@ static int construct_token_groups(struct ldb_module *module,
 	}
 
 	for (i=0; i < num_groupSIDs; i++) {
-		ret = samdb_msg_add_dom_sid(ldb, msg, msg, "tokenGroups", &groupSIDs[i]);
+		ret = samdb_msg_add_dom_sid(ldb, msg, msg, attribute_string, &groupSIDs[i]);
 		if (ret) {
 			talloc_free(tmp_ctx);
 			return ret;
@@ -263,6 +281,40 @@ static int construct_token_groups(struct ldb_module *module,
 	return LDB_SUCCESS;
 }
 
+static int construct_token_groups(struct ldb_module *module,
+				  struct ldb_message *msg, enum ldb_scope scope,
+				  struct ldb_request *parent)
+{
+	/**
+	 * TODO: Add in a limiting domain when we start to support
+	 * trusted domains.
+	 */
+	return construct_generic_token_groups(module, msg, scope, parent,
+					      "tokenGroups",
+					      TOKEN_GROUPS);
+}
+
+static int construct_token_groups_no_gc(struct ldb_module *module,
+					struct ldb_message *msg, enum ldb_scope scope,
+					struct ldb_request *parent)
+{
+	/**
+	 * TODO: Add in a limiting domain when we start to support
+	 * trusted domains.
+	 */
+	return construct_generic_token_groups(module, msg, scope, parent,
+					      "tokenGroupsNoGCAcceptable",
+					      TOKEN_GROUPS);
+}
+
+static int construct_global_universal_token_groups(struct ldb_module *module,
+						   struct ldb_message *msg, enum ldb_scope scope,
+						   struct ldb_request *parent)
+{
+	return construct_generic_token_groups(module, msg, scope, parent,
+					      "tokenGroupsGlobalAndUniversal",
+					      TOKEN_GROUPS_GLOBAL_AND_UNIVERSAL);
+}
 /*
   construct the parent GUID for an entry from a message
 */
@@ -649,6 +701,8 @@ static const struct op_attributes_replace search_sub[] = {
 	{ "canonicalName", NULL, NULL , construct_canonical_name },
 	{ "primaryGroupToken", "objectClass", "objectSid", construct_primary_group_token },
 	{ "tokenGroups", "primaryGroupID", "objectSid", construct_token_groups },
+	{ "tokenGroupsNoGCAcceptable", "primaryGroupID", "objectSid", construct_token_groups_no_gc},
+	{ "tokenGroupsGlobalAndUniversal", "primaryGroupID", "objectSid", construct_global_universal_token_groups },
 	{ "parentGUID", NULL, NULL, construct_parent_guid },
 	{ "subSchemaSubEntry", NULL, NULL, construct_subschema_subentry },
 	{ "msDS-isRODC", "objectClass", "objectCategory", construct_msds_isrodc },
