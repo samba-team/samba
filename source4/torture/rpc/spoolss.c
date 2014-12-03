@@ -3446,6 +3446,9 @@ static bool test_DoPrintTest_add_one_job_common(struct torture_context *tctx,
 	torture_assert_werr_ok(tctx, s.out.result, "StartDocPrinter failed");
 
 	for (i=1; i < 4; i++) {
+		union spoolss_JobInfo ginfo;
+		bool ok;
+
 		torture_comment(tctx, "Testing StartPagePrinter: Page[%d], JobId[%d]\n", i, *job_id);
 
 		sp.in.handle		= handle;
@@ -3454,6 +3457,11 @@ static bool test_DoPrintTest_add_one_job_common(struct torture_context *tctx,
 		torture_assert_ntstatus_ok(tctx, status,
 					   "dcerpc_spoolss_StartPagePrinter failed");
 		torture_assert_werr_ok(tctx, sp.out.result, "StartPagePrinter failed");
+
+		ok = test_GetJob_args(tctx, b, handle, *job_id, 1, &ginfo);
+		if (!ok) {
+			torture_comment(tctx, "test_GetJob failed for JobId[%d]\n", *job_id);
+		}
 
 		torture_comment(tctx, "Testing WritePrinter: Page[%d], JobId[%d]\n", i, *job_id);
 
