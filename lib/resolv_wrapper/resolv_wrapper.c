@@ -558,6 +558,8 @@ static int rwrap_res_fake_hosts(const char *hostfile,
 	int rc = ENOENT;
 	char *key = NULL;
 	char *value = NULL;
+	char *query_name = NULL;
+	size_t qlen = strlen(query);
 
 	RWRAP_LOG(RWRAP_LOG_TRACE,
 		  "Searching in fake hosts file %s\n", hostfile);
@@ -567,6 +569,15 @@ static int rwrap_res_fake_hosts(const char *hostfile,
 		RWRAP_LOG(RWRAP_LOG_ERROR,
 			  "Opening %s failed: %s",
 			  hostfile, strerror(errno));
+		return -1;
+	}
+
+	if (qlen > 0 && query[qlen-1] == '.') {
+		qlen--;
+	}
+
+	query_name = strndup(query, qlen);
+	if (query_name == NULL) {
 		return -1;
 	}
 
@@ -593,23 +604,23 @@ static int rwrap_res_fake_hosts(const char *hostfile,
 			continue;
 		}
 
-		if (TYPE_MATCH(type, ns_t_a, rec_type, "A", key, query)) {
+		if (TYPE_MATCH(type, ns_t_a, rec_type, "A", key, query_name)) {
 			rc = rwrap_fake_a(key, value, answer, anslen);
 			break;
 		} else if (TYPE_MATCH(type, ns_t_aaaa,
-				      rec_type, "AAAA", key, query)) {
+				      rec_type, "AAAA", key, query_name)) {
 			rc = rwrap_fake_aaaa(key, value, answer, anslen);
 			break;
 		} else if (TYPE_MATCH(type, ns_t_srv,
-				      rec_type, "SRV", key, query)) {
+				      rec_type, "SRV", key, query_name)) {
 			rc = rwrap_fake_srv(key, value, answer, anslen);
 			break;
 		} else if (TYPE_MATCH(type, ns_t_soa,
-				      rec_type, "SOA", key, query)) {
+				      rec_type, "SOA", key, query_name)) {
 			rc = rwrap_fake_soa(key, value, answer, anslen);
 			break;
 		} else if (TYPE_MATCH(type, ns_t_cname,
-				      rec_type, "CNAME", key, query)) {
+				      rec_type, "CNAME", key, query_name)) {
 			rc = rwrap_fake_cname(key, value, answer, anslen);
 			break;
 		}
@@ -618,19 +629,20 @@ static int rwrap_res_fake_hosts(const char *hostfile,
 	switch (rc) {
 	case 0:
 		RWRAP_LOG(RWRAP_LOG_TRACE,
-				"Successfully faked answer for [%s]\n", query);
+				"Successfully faked answer for [%s]\n", query_name);
 		break;
 	case -1:
 		RWRAP_LOG(RWRAP_LOG_ERROR,
-				"Error faking answer for [%s]\n", query);
+				"Error faking answer for [%s]\n", query_name);
 		break;
 	case ENOENT:
 		RWRAP_LOG(RWRAP_LOG_TRACE,
-				"Record for [%s] not found\n", query);
+				"Record for [%s] not found\n", query_name);
 		rc = rwrap_fake_empty_query(key, type, answer, anslen);
 		break;
 	}
 
+	free(query_name);
 	fclose(fp);
 	return rc;
 }
