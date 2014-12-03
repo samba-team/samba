@@ -677,6 +677,23 @@ static int rwrap_srv_recurse(const char *hostfile, unsigned recursion,
 	return rc;
 }
 
+static int rwrap_cname_recurse(const char *hostfile, unsigned recursion,
+			       const char *query, struct rwrap_fake_rr *rr)
+{
+	int rc;
+
+	rc = rwrap_get_record(hostfile, recursion, query, ns_t_a, rr);
+	if (rc == 0) return 0;
+
+	rc = rwrap_get_record(hostfile, recursion, query, ns_t_aaaa, rr);
+	if (rc == 0) return 0;
+
+	rc = rwrap_get_record(hostfile, recursion, query, ns_t_cname, rr);
+	if (rc == ENOENT) rc = 0;
+
+	return rc;
+}
+
 static int rwrap_get_record(const char *hostfile, unsigned recursion,
 			    const char *query, int type,
 			    struct rwrap_fake_rr *rr)
@@ -749,6 +766,10 @@ static int rwrap_get_record(const char *hostfile, unsigned recursion,
 		} else if (TYPE_MATCH(type, ns_t_cname,
 				      rec_type, "CNAME", key, query)) {
 			rc = rwrap_create_fake_cname_rr(key, value, rr);
+			if (rc == 0) {
+				rc = rwrap_cname_recurse(hostfile, recursion+1,
+							 value, rr + 1);
+			}
 			break;
 		}
 	}
