@@ -732,7 +732,7 @@ _PUBLIC_ void dump_data_pw(const char *msg, const uint8_t * data, size_t len)
  */
 _PUBLIC_ bool all_zero(const uint8_t *ptr, size_t size)
 {
-	int i;
+	size_t i;
 	if (!ptr) return true;
 	for (i=0;i<size;i++) {
 		if (ptr[i]) return false;
