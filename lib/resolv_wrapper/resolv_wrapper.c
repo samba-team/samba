@@ -457,100 +457,73 @@ static ssize_t rwrap_fake_common(uint16_t type,
 	return total;
 }
 
-static ssize_t rwrap_fake_a(const char *key,
-			    const char *value,
+static ssize_t rwrap_fake_a(struct rwrap_fake_rr *rr,
 			    uint8_t *answer_ptr,
 			    size_t anslen)
 {
 	uint8_t *a = answer_ptr;
-	struct in_addr a_rec;
 	ssize_t resp_size;
-	int ok;
 
-	if (value == NULL) {
-		RWRAP_LOG(RWRAP_LOG_ERROR, "Malformed record, no value!\n");
+	if (rr == NULL || rr->type != ns_t_a) {
+		RWRAP_LOG(RWRAP_LOG_ERROR,
+			  "Malformed record, no or wrong value!\n");
 		return -1;
 	}
 
-	resp_size = rwrap_fake_common(ns_t_a, key, sizeof(a_rec), &a, anslen);
+	resp_size = rwrap_fake_common(ns_t_a, rr->key, sizeof(struct in_addr),
+				      &a, anslen);
 	if (resp_size < 0) {
 		return -1;
 	}
 
-	ok = inet_pton(AF_INET, value, &a_rec);
-	if (!ok) {
-		RWRAP_LOG(RWRAP_LOG_ERROR,
-			  "Failed to convert [%s] to binary\n", value);
-		return -1;
-	}
-	memcpy(a, &a_rec, sizeof(struct in_addr));
+	memcpy(a, &rr->rrdata.a_rec, sizeof(struct in_addr));
 
 	return resp_size;
 }
 
-static ssize_t rwrap_fake_aaaa(const char *key,
-			       const char *value,
+static ssize_t rwrap_fake_aaaa(struct rwrap_fake_rr *rr,
 			       uint8_t *answer,
 			       size_t anslen)
 {
 	uint8_t *a = answer;
-	struct in6_addr aaaa_rec;
 	ssize_t resp_size;
-	int ok;
 
-	if (value == NULL) {
-		RWRAP_LOG(RWRAP_LOG_ERROR, "Malformed record, no value!\n");
+	if (rr == NULL || rr->type != ns_t_aaaa) {
+		RWRAP_LOG(RWRAP_LOG_ERROR,
+			  "Malformed record, no or wrong value!\n");
 		return -1;
 	}
 
-	resp_size = rwrap_fake_common(ns_t_aaaa, key, sizeof(aaaa_rec), &a, anslen);
+	resp_size = rwrap_fake_common(ns_t_aaaa, rr->key,
+				      sizeof(struct in6_addr), &a, anslen);
 	if (resp_size < 0) {
 		return -1;
 	}
 
-	ok = inet_pton(AF_INET6, value, &aaaa_rec);
-	if (!ok) {
-		RWRAP_LOG(RWRAP_LOG_ERROR,
-			  "Failed to convert [%s] to binary\n", value);
-		return -1;
-	}
-	memcpy(a, &aaaa_rec, sizeof(struct in6_addr));
+	memcpy(a, &rr->rrdata.aaaa_rec, sizeof(struct in6_addr));
 
 	return resp_size;
 }
 
-static ssize_t rwrap_fake_srv(const char *key,
-			      const char *value,
+static ssize_t rwrap_fake_srv(struct rwrap_fake_rr *rr,
 			      uint8_t *answer,
 			      size_t anslen)
 {
 	uint8_t *a = answer;
 	ssize_t resp_size;
 	size_t rdata_size;
-	char *str_prio;
-	char *str_weight;
-	char *str_port;
-	const char *hostname;
 	unsigned char hostname_compressed[MAXDNAME];
 	ssize_t compressed_len;
 
-	/*
-	 * Parse the value into priority, weight, port and hostname
-	 * and check the validity.
-	 */
-	hostname = value;
-	NEXT_KEY(hostname, str_port);
-	NEXT_KEY(str_port, str_prio);
-	NEXT_KEY(str_prio, str_weight);
-	if (str_port == NULL || hostname == NULL) {
+	if (rr == NULL || rr->type != ns_t_srv) {
 		RWRAP_LOG(RWRAP_LOG_ERROR,
-			  "Malformed SRV entry [%s]\n", value);
+			  "Malformed record, no or wrong value!\n");
 		return -1;
 	}
 	rdata_size = 3 * sizeof(uint16_t);
 
 	/* Prepare the data to write */
-	compressed_len = ns_name_compress(hostname,
+	compressed_len = ns_name_compress(rr->rrdata.srv_rec.hostname,
 					  hostname_compressed, MAXDNAME,
 					  NULL, NULL);
 	if (compressed_len < 0) {
@@ -558,83 +531,55 @@ static ssize_t rwrap_fake_srv(const char *key,
 	}
 	rdata_size += compressed_len;
 
-	resp_size = rwrap_fake_common(ns_t_srv, key, rdata_size, &a, anslen);
+	resp_size = rwrap_fake_common(ns_t_srv, rr->key, rdata_size, &a, anslen);
 	if (resp_size < 0) {
 		return -1;
 	}
 
-	if (str_prio) {
-		NS_PUT16(atoi(str_prio), a);
-	} else {
-		NS_PUT16(DFL_SRV_PRIO, a);
-	}
-	if (str_weight) {
-		NS_PUT16(atoi(str_weight), a);
-	} else {
-		NS_PUT16(DFL_SRV_WEIGHT, a);
-	}
-	NS_PUT16(atoi(str_port), a);
+	NS_PUT16(rr->rrdata.srv_rec.prio, a);
+	NS_PUT16(rr->rrdata.srv_rec.weight, a);
+	NS_PUT16(rr->rrdata.srv_rec.port, a);
 	memcpy(a, hostname_compressed, compressed_len);
 
 	return resp_size;
 }
 
-static ssize_t rwrap_fake_soa(const char *key,
-			      const char *value,
+static ssize_t rwrap_fake_soa(struct rwrap_fake_rr *rr,
 			      uint8_t *answer,
 			      size_t anslen)
 {
 	uint8_t *a = answer;
 	ssize_t resp_size;
-	const char *nameserver;
-	char *mailbox;
-	char *str_serial;
-	char *str_refresh;
-	char *str_retry;
-	char *str_expire;
-	char *str_minimum;
 	size_t rdata_size;
 	unsigned char nameser_compressed[MAXDNAME];
 	ssize_t compressed_ns_len;
 	unsigned char mailbox_compressed[MAXDNAME];
 	ssize_t compressed_mb_len;
 
-	/*
-	 * parse the value into nameserver, mailbox, serial, refresh,
-	 * retry, expire, minimum and check the validity
-	 */
-	nameserver = value;
-	NEXT_KEY(nameserver, mailbox);
-	NEXT_KEY(mailbox, str_serial);
-	NEXT_KEY(str_serial, str_refresh);
-	NEXT_KEY(str_refresh, str_retry);
-	NEXT_KEY(str_retry, str_expire);
-	NEXT_KEY(str_expire, str_minimum);
-	if (nameserver == NULL || mailbox == NULL || str_serial == NULL ||
-	    str_refresh == NULL || str_retry == NULL || str_expire == NULL ||
-	    str_minimum == NULL)
-	{
+	if (rr == NULL || rr->type != ns_t_soa) {
 		RWRAP_LOG(RWRAP_LOG_ERROR,
-			  "Malformed SOA entry [%s]\n", value);
+			  "Malformed record, no or wrong value!\n");
 		return -1;
 	}
 	rdata_size = 5 * sizeof(uint16_t);
 
-	compressed_ns_len = ns_name_compress(nameserver, nameser_compressed,
+	compressed_ns_len = ns_name_compress(rr->rrdata.soa_rec.nameserver,
+					     nameser_compressed,
 					     MAXDNAME, NULL, NULL);
 	if (compressed_ns_len < 0) {
 		return -1;
 	}
 	rdata_size += compressed_ns_len;
 
-	compressed_mb_len = ns_name_compress(mailbox, mailbox_compressed,
+	compressed_mb_len = ns_name_compress(rr->rrdata.soa_rec.mailbox,
+					     mailbox_compressed,
 					     MAXDNAME, NULL, NULL);
 	if (compressed_mb_len < 0) {
 		return -1;
 	}
 	rdata_size += compressed_mb_len;
 
-	resp_size = rwrap_fake_common(ns_t_soa, key, rdata_size, &a, anslen);
+	resp_size = rwrap_fake_common(ns_t_soa, rr->key, rdata_size, &a, anslen);
 	if (resp_size < 0) {
 		return -1;
 	}
@@ -643,17 +588,16 @@ static ssize_t rwrap_fake_soa(const char *key,
 	a += compressed_ns_len;
 	memcpy(a, mailbox_compressed, compressed_mb_len);
 	a += compressed_mb_len;
-	NS_PUT32(atoi(str_serial), a);
-	NS_PUT32(atoi(str_refresh), a);
-	NS_PUT32(atoi(str_retry), a);
-	NS_PUT32(atoi(str_expire), a);
-	NS_PUT32(atoi(str_minimum), a);
+	NS_PUT32(rr->rrdata.soa_rec.serial, a);
+	NS_PUT32(rr->rrdata.soa_rec.refresh, a);
+	NS_PUT32(rr->rrdata.soa_rec.retry, a);
+	NS_PUT32(rr->rrdata.soa_rec.expire, a);
+	NS_PUT32(rr->rrdata.soa_rec.minimum, a);
 
 	return resp_size;
 }
 
-static ssize_t rwrap_fake_cname(const char *key,
-				const char *value,
+static ssize_t rwrap_fake_cname(struct rwrap_fake_rr *rr,
 				uint8_t *answer,
 				size_t anslen)
 {
@@ -662,20 +606,22 @@ static ssize_t rwrap_fake_cname(const char *key,
 	unsigned char hostname_compressed[MAXDNAME];
 	ssize_t rdata_size;
 
-	if (value == NULL) {
-		RWRAP_LOG(RWRAP_LOG_ERROR, "Malformed record, no value!\n");
+	if (rr == NULL || rr->type != ns_t_cname) {
+		RWRAP_LOG(RWRAP_LOG_ERROR,
+			  "Malformed record, no or wrong value!\n");
 		return -1;
 	}
 
 	/* Prepare the data to write */
-	rdata_size = ns_name_compress(value,
+	rdata_size = ns_name_compress(rr->rrdata.cname_rec,
 				      hostname_compressed, MAXDNAME,
 				      NULL, NULL);
 	if (rdata_size < 0) {
 		return -1;
 	}
 
-	resp_size = rwrap_fake_common(ns_t_cname, key, rdata_size, &a, anslen);
+	resp_size = rwrap_fake_common(ns_t_cname, rr->key, rdata_size,
+				      &a, anslen);
 	if (resp_size < 0) {
 		return -1;
 	}
@@ -711,25 +657,15 @@ static ssize_t rwrap_fake_empty_query(const char *key,
 	 (strcasecmp(key, query)) == 0)
 
 
-/* Reads in a file in the following format:
- * TYPE RDATA
- *
- * Malformed entried are silently skipped.
- * Allocates answer buffer of size anslen that has to be freed after use.
- */
-static ssize_t rwrap_res_fake_hosts(const char *hostfile,
-				    const char *query,
-				    int type,
-				    unsigned char *answer,
-				    size_t anslen)
+static int rwrap_get_record(const char *hostfile,
+			    const char *query, int type,
+			    struct rwrap_fake_rr *rr)
 {
 	FILE *fp = NULL;
 	char buf[BUFSIZ];
 	char *key = NULL;
 	char *value = NULL;
-	char *query_name = NULL;
-	size_t qlen = strlen(query);
-	ssize_t resp_size = 0;
+	int rc = 0;
 
 	RWRAP_LOG(RWRAP_LOG_TRACE,
 		  "Searching in fake hosts file %s\n", hostfile);
@@ -739,15 +675,6 @@ static ssize_t rwrap_res_fake_hosts(const char *hostfile,
 		RWRAP_LOG(RWRAP_LOG_ERROR,
 			  "Opening %s failed: %s",
 			  hostfile, strerror(errno));
-		return -1;
-	}
-
-	if (qlen > 0 && query[qlen-1] == '.') {
-		qlen--;
-	}
-
-	query_name = strndup(query, qlen);
-	if (query_name == NULL) {
 		return -1;
 	}
 
@@ -774,46 +701,126 @@ static ssize_t rwrap_res_fake_hosts(const char *hostfile,
 			continue;
 		}
 
-		if (TYPE_MATCH(type, ns_t_a, rec_type, "A", key, query_name)) {
-			resp_size = rwrap_fake_a(key, value, answer, anslen);
+		if (TYPE_MATCH(type, ns_t_a, rec_type, "A", key, query)) {
+			rc = rwrap_create_fake_a_rr(key, value, rr);
 			break;
 		} else if (TYPE_MATCH(type, ns_t_aaaa,
-				      rec_type, "AAAA", key, query_name)) {
-			resp_size = rwrap_fake_aaaa(key, value, answer, anslen);
+				      rec_type, "AAAA", key, query)) {
+			rc = rwrap_create_fake_aaaa_rr(key, value, rr);
 			break;
 		} else if (TYPE_MATCH(type, ns_t_srv,
-				      rec_type, "SRV", key, query_name)) {
-			resp_size = rwrap_fake_srv(key, value, answer, anslen);
+				      rec_type, "SRV", key, query)) {
+			rc = rwrap_create_fake_srv_rr(key, value, rr);
 			break;
 		} else if (TYPE_MATCH(type, ns_t_soa,
-				      rec_type, "SOA", key, query_name)) {
-			resp_size = rwrap_fake_soa(key, value, answer, anslen);
+				      rec_type, "SOA", key, query)) {
+			rc = rwrap_create_fake_soa_rr(key, value, rr);
 			break;
 		} else if (TYPE_MATCH(type, ns_t_cname,
-				      rec_type, "CNAME", key, query_name)) {
-			resp_size = rwrap_fake_cname(key, value, answer, anslen);
+				      rec_type, "CNAME", key, query)) {
+			rc = rwrap_create_fake_cname_rr(key, value, rr);
 			break;
 		}
 	}
 
-	switch (resp_size) {
-	case 0:
-		RWRAP_LOG(RWRAP_LOG_TRACE,
-				"Record for [%s] not found\n", query_name);
-		resp_size = rwrap_fake_empty_query(key, type, answer, anslen);
+	if (rc == 0 && rr->type == ns_t_invalid) {
+		RWRAP_LOG(RWRAP_LOG_TRACE, "Record for [%s] not found\n", query);
+		memcpy(rr->key, key, strlen(key) + 1);
+	}
+
+	fclose(fp);
+	return rc;
+}
+
+static ssize_t rwrap_fake_answer(struct rwrap_fake_rr *rrs,
+				 int type,
+				 uint8_t *answer,
+				 size_t anslen)
+
+{
+	ssize_t resp_data;
+
+	switch (rrs->type) {
+	case ns_t_a:
+		resp_data = rwrap_fake_a(rrs, answer, anslen);
 		break;
+	case ns_t_aaaa:
+		resp_data = rwrap_fake_aaaa(rrs, answer, anslen);
+		break;
+	case ns_t_srv:
+		resp_data = rwrap_fake_srv(rrs, answer, anslen);
+		break;
+	case ns_t_soa:
+		resp_data = rwrap_fake_soa(rrs, answer, anslen);
+		break;
+	case ns_t_cname:
+		resp_data = rwrap_fake_cname(rrs, answer, anslen);
+		break;
+	case ns_t_invalid:
+		resp_data = rwrap_fake_empty_query(rrs->key, type,
+						   answer, anslen);
+		break;
+	default:
+		return -1;
+	}
+
+	return resp_data;
+}
+
+/* Reads in a file in the following format:
+ * TYPE RDATA
+ *
+ * Malformed entried are silently skipped.
+ * Allocates answer buffer of size anslen that has to be freed after use.
+ */
+static int rwrap_res_fake_hosts(const char *hostfile,
+				const char *query,
+				int type,
+				unsigned char *answer,
+				size_t anslen)
+{
+	int rc = ENOENT;
+	char *query_name = NULL;
+	size_t qlen = strlen(query);
+	struct rwrap_fake_rr rr;
+	ssize_t resp_size;
+
+	RWRAP_LOG(RWRAP_LOG_TRACE,
+		  "Searching in fake hosts file %s\n", hostfile);
+
+	if (qlen > 0 && query[qlen-1] == '.') {
+		qlen--;
+	}
+
+	query_name = strndup(query, qlen);
+	if (query_name == NULL) {
+		return -1;
+	}
+
+	rwrap_fake_rr_init(&rr, 1);
+
+	rc = rwrap_get_record(hostfile, query_name, type, &rr);
+	if (rc != 0) {
+		RWRAP_LOG(RWRAP_LOG_ERROR,
+				"Error searching for [%s]\n", query_name);
+		free(query_name);
+		return -1;
+	}
+
+	resp_size = rwrap_fake_answer(&rr, type, answer, anslen);
+	switch (resp_size) {
 	case -1:
 		RWRAP_LOG(RWRAP_LOG_ERROR,
 				"Error faking answer for [%s]\n", query_name);
 		break;
 	default:
 		RWRAP_LOG(RWRAP_LOG_TRACE,
-				"Successfully faked answer for [%s]\n", query_name);
+				"Successfully faked answer for [%s]\n",
+				query_name);
 		break;
 	}
 
 	free(query_name);
-	fclose(fp);
 	return resp_size;
 }
 
