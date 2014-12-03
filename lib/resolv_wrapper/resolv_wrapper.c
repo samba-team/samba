@@ -240,7 +240,7 @@ static ssize_t rwrap_fake_rdata_common(uint16_t type,
 	}
 
 	*rdata_ptr = rd;
-	return written + 3 * sizeof(uint16_t) + sizeof(uint32_t);
+	return written + 3 * sizeof(uint16_t) + sizeof(uint32_t) + rdata_size;
 }
 
 static ssize_t rwrap_fake_common(uint16_t type,
@@ -251,6 +251,7 @@ static ssize_t rwrap_fake_common(uint16_t type,
 {
 	uint8_t *a = *answer_ptr;
 	ssize_t written;
+	ssize_t total = 0;
 	size_t remaining;
 
 	remaining = anslen;
@@ -259,6 +260,7 @@ static ssize_t rwrap_fake_common(uint16_t type,
 	if (written < 0) {
 		return -1;
 	}
+	total += written;
 	remaining -= written;
 
 	written = rwrap_fake_question(question, type, &a, remaining);
@@ -266,6 +268,7 @@ static ssize_t rwrap_fake_common(uint16_t type,
 		return -1;
 	}
 	remaining -= written;
+	total += written;
 
 	/* rdata_size = 0 denotes an empty answer */
 	if (rdata_size > 0) {
@@ -274,20 +277,21 @@ static ssize_t rwrap_fake_common(uint16_t type,
 		if (written < 0) {
 			return -1;
 		}
+		total += written;
 	}
 
 	*answer_ptr = a;
-	return written;
+	return total;
 }
 
-static int rwrap_fake_a(const char *key,
-			const char *value,
-			uint8_t *answer_ptr,
-			size_t anslen)
+static ssize_t rwrap_fake_a(const char *key,
+			    const char *value,
+			    uint8_t *answer_ptr,
+			    size_t anslen)
 {
 	uint8_t *a = answer_ptr;
 	struct in_addr a_rec;
-	int rc;
+	ssize_t resp_size;
 	int ok;
 
 	if (value == NULL) {
@@ -295,8 +299,8 @@ static int rwrap_fake_a(const char *key,
 		return -1;
 	}
 
-	rc = rwrap_fake_common(ns_t_a, key, sizeof(a_rec), &a, anslen);
-	if (rc < 0) {
+	resp_size = rwrap_fake_common(ns_t_a, key, sizeof(a_rec), &a, anslen);
+	if (resp_size < 0) {
 		return -1;
 	}
 
@@ -308,17 +312,17 @@ static int rwrap_fake_a(const char *key,
 	}
 	memcpy(a, &a_rec, sizeof(struct in_addr));
 
-	return 0;
+	return resp_size;
 }
 
-static int rwrap_fake_aaaa(const char *key,
-			   const char *value,
-			   uint8_t *answer,
-			   size_t anslen)
+static ssize_t rwrap_fake_aaaa(const char *key,
+			       const char *value,
+			       uint8_t *answer,
+			       size_t anslen)
 {
 	uint8_t *a = answer;
 	struct in6_addr aaaa_rec;
-	int rc;
+	ssize_t resp_size;
 	int ok;
 
 	if (value == NULL) {
@@ -326,8 +330,8 @@ static int rwrap_fake_aaaa(const char *key,
 		return -1;
 	}
 
-	rc = rwrap_fake_common(ns_t_aaaa, key, sizeof(aaaa_rec), &a, anslen);
-	if (rc < 0) {
+	resp_size = rwrap_fake_common(ns_t_aaaa, key, sizeof(aaaa_rec), &a, anslen);
+	if (resp_size < 0) {
 		return -1;
 	}
 
@@ -339,7 +343,7 @@ static int rwrap_fake_aaaa(const char *key,
 	}
 	memcpy(a, &aaaa_rec, sizeof(struct in6_addr));
 
-	return 0;
+	return resp_size;
 }
 
 /*
@@ -349,13 +353,13 @@ static int rwrap_fake_aaaa(const char *key,
 #define DFL_SRV_PRIO	1
 #define DFL_SRV_WEIGHT	100
 
-static int rwrap_fake_srv(const char *key,
-			  const char *value,
-			  uint8_t *answer,
-			  size_t anslen)
+static ssize_t rwrap_fake_srv(const char *key,
+			      const char *value,
+			      uint8_t *answer,
+			      size_t anslen)
 {
 	uint8_t *a = answer;
-	int rv;
+	ssize_t resp_size;
 	size_t rdata_size;
 	char *str_prio;
 	char *str_weight;
@@ -388,8 +392,8 @@ static int rwrap_fake_srv(const char *key,
 	}
 	rdata_size += compressed_len;
 
-	rv = rwrap_fake_common(ns_t_srv, key, rdata_size, &a, anslen);
-	if (rv < 0) {
+	resp_size = rwrap_fake_common(ns_t_srv, key, rdata_size, &a, anslen);
+	if (resp_size < 0) {
 		return -1;
 	}
 
@@ -406,16 +410,16 @@ static int rwrap_fake_srv(const char *key,
 	NS_PUT16(atoi(str_port), a);
 	memcpy(a, hostname_compressed, compressed_len);
 
-	return 0;
+	return resp_size;
 }
 
-static int rwrap_fake_soa(const char *key,
-			  const char *value,
-			  uint8_t *answer,
-			  size_t anslen)
+static ssize_t rwrap_fake_soa(const char *key,
+			      const char *value,
+			      uint8_t *answer,
+			      size_t anslen)
 {
 	uint8_t *a = answer;
-	int rv;
+	ssize_t resp_size;
 	const char *nameserver;
 	char *mailbox;
 	char *str_serial;
@@ -464,8 +468,8 @@ static int rwrap_fake_soa(const char *key,
 	}
 	rdata_size += compressed_mb_len;
 
-	rv = rwrap_fake_common(ns_t_soa, key, rdata_size, &a, anslen);
-	if (rv < 0) {
+	resp_size = rwrap_fake_common(ns_t_soa, key, rdata_size, &a, anslen);
+	if (resp_size < 0) {
 		return -1;
 	}
 
@@ -479,16 +483,16 @@ static int rwrap_fake_soa(const char *key,
 	NS_PUT32(atoi(str_expire), a);
 	NS_PUT32(atoi(str_minimum), a);
 
-	return 0;
+	return resp_size;
 }
 
-static int rwrap_fake_cname(const char *key,
-			    const char *value,
-			    uint8_t *answer,
-			    size_t anslen)
+static ssize_t rwrap_fake_cname(const char *key,
+				const char *value,
+				uint8_t *answer,
+				size_t anslen)
 {
 	uint8_t *a = answer;
-	int rv;
+	ssize_t resp_size;
 	unsigned char hostname_compressed[MAXDNAME];
 	ssize_t rdata_size;
 
@@ -505,29 +509,29 @@ static int rwrap_fake_cname(const char *key,
 		return -1;
 	}
 
-	rv = rwrap_fake_common(ns_t_cname, key, rdata_size, &a, anslen);
-	if (rv < 0) {
+	resp_size = rwrap_fake_common(ns_t_cname, key, rdata_size, &a, anslen);
+	if (resp_size < 0) {
 		return -1;
 	}
 
 	memcpy(a, hostname_compressed, rdata_size);
 
-	return 0;
+	return resp_size;
 }
 
-static int rwrap_fake_empty_query(const char *key,
-				  uint16_t type,
-				  uint8_t *answer,
-				  size_t anslen)
+static ssize_t rwrap_fake_empty_query(const char *key,
+				      uint16_t type,
+				      uint8_t *answer,
+				      size_t anslen)
 {
-	int rc;
+	ssize_t resp_size;
 
-	rc = rwrap_fake_common(type, key, 0, &answer, anslen);
-	if (rc < 0) {
+	resp_size = rwrap_fake_common(type, key, 0, &answer, anslen);
+	if (resp_size < 0) {
 		return -1;
 	}
 
-	return 0;
+	return resp_size;
 }
 
 #define RESOLV_MATCH(line, name) \
@@ -547,19 +551,19 @@ static int rwrap_fake_empty_query(const char *key,
  * Malformed entried are silently skipped.
  * Allocates answer buffer of size anslen that has to be freed after use.
  */
-static int rwrap_res_fake_hosts(const char *hostfile,
-				const char *query,
-				int type,
-				unsigned char *answer,
-				size_t anslen)
+static ssize_t rwrap_res_fake_hosts(const char *hostfile,
+				    const char *query,
+				    int type,
+				    unsigned char *answer,
+				    size_t anslen)
 {
 	FILE *fp = NULL;
 	char buf[BUFSIZ];
-	int rc = ENOENT;
 	char *key = NULL;
 	char *value = NULL;
 	char *query_name = NULL;
 	size_t qlen = strlen(query);
+	ssize_t resp_size = 0;
 
 	RWRAP_LOG(RWRAP_LOG_TRACE,
 		  "Searching in fake hosts file %s\n", hostfile);
@@ -605,46 +609,46 @@ static int rwrap_res_fake_hosts(const char *hostfile,
 		}
 
 		if (TYPE_MATCH(type, ns_t_a, rec_type, "A", key, query_name)) {
-			rc = rwrap_fake_a(key, value, answer, anslen);
+			resp_size = rwrap_fake_a(key, value, answer, anslen);
 			break;
 		} else if (TYPE_MATCH(type, ns_t_aaaa,
 				      rec_type, "AAAA", key, query_name)) {
-			rc = rwrap_fake_aaaa(key, value, answer, anslen);
+			resp_size = rwrap_fake_aaaa(key, value, answer, anslen);
 			break;
 		} else if (TYPE_MATCH(type, ns_t_srv,
 				      rec_type, "SRV", key, query_name)) {
-			rc = rwrap_fake_srv(key, value, answer, anslen);
+			resp_size = rwrap_fake_srv(key, value, answer, anslen);
 			break;
 		} else if (TYPE_MATCH(type, ns_t_soa,
 				      rec_type, "SOA", key, query_name)) {
-			rc = rwrap_fake_soa(key, value, answer, anslen);
+			resp_size = rwrap_fake_soa(key, value, answer, anslen);
 			break;
 		} else if (TYPE_MATCH(type, ns_t_cname,
 				      rec_type, "CNAME", key, query_name)) {
-			rc = rwrap_fake_cname(key, value, answer, anslen);
+			resp_size = rwrap_fake_cname(key, value, answer, anslen);
 			break;
 		}
 	}
 
-	switch (rc) {
+	switch (resp_size) {
 	case 0:
 		RWRAP_LOG(RWRAP_LOG_TRACE,
-				"Successfully faked answer for [%s]\n", query_name);
+				"Record for [%s] not found\n", query_name);
+		resp_size = rwrap_fake_empty_query(key, type, answer, anslen);
 		break;
 	case -1:
 		RWRAP_LOG(RWRAP_LOG_ERROR,
 				"Error faking answer for [%s]\n", query_name);
 		break;
-	case ENOENT:
+	default:
 		RWRAP_LOG(RWRAP_LOG_TRACE,
-				"Record for [%s] not found\n", query_name);
-		rc = rwrap_fake_empty_query(key, type, answer, anslen);
+				"Successfully faked answer for [%s]\n", query_name);
 		break;
 	}
 
 	free(query_name);
 	fclose(fp);
-	return rc;
+	return resp_size;
 }
 
 /*********************************************************
