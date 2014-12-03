@@ -427,6 +427,7 @@ static ssize_t rwrap_fake_a(struct rwrap_fake_rr *rr,
 			  "Malformed record, no or wrong value!\n");
 		return -1;
 	}
+	RWRAP_LOG(RWRAP_LOG_TRACE, "Adding A RR");
 
 	resp_size = rwrap_fake_rdata_common(ns_t_a, sizeof(struct in_addr), rr->key,
 					    anslen, &a);
@@ -451,6 +452,7 @@ static ssize_t rwrap_fake_aaaa(struct rwrap_fake_rr *rr,
 			  "Malformed record, no or wrong value!\n");
 		return -1;
 	}
+	RWRAP_LOG(RWRAP_LOG_TRACE, "Adding AAAA RR");
 
 	resp_size = rwrap_fake_rdata_common(ns_t_aaaa, sizeof(struct in6_addr),
 					    rr->key, anslen, &a);
@@ -478,6 +480,7 @@ static ssize_t rwrap_fake_srv(struct rwrap_fake_rr *rr,
 			  "Malformed record, no or wrong value!\n");
 		return -1;
 	}
+	RWRAP_LOG(RWRAP_LOG_TRACE, "Adding SRV RR");
 	rdata_size = 3 * sizeof(uint16_t);
 
 	/* Prepare the data to write */
@@ -520,6 +523,7 @@ static ssize_t rwrap_fake_soa(struct rwrap_fake_rr *rr,
 			  "Malformed record, no or wrong value!\n");
 		return -1;
 	}
+	RWRAP_LOG(RWRAP_LOG_TRACE, "Adding SOA RR");
 	rdata_size = 5 * sizeof(uint16_t);
 
 	compressed_ns_len = ns_name_compress(rr->rrdata.soa_rec.nameserver,
@@ -571,6 +575,7 @@ static ssize_t rwrap_fake_cname(struct rwrap_fake_rr *rr,
 			  "Malformed record, no or wrong value!\n");
 		return -1;
 	}
+	RWRAP_LOG(RWRAP_LOG_TRACE, "Adding CNAME RR");
 
 	/* Prepare the data to write */
 	rdata_size = ns_name_compress(rr->rrdata.cname_rec,
@@ -755,15 +760,105 @@ static ssize_t rwrap_fake_empty(int type,
 	return resp_data;
 }
 
+static inline bool rwrap_known_type(int type)
+{
+	switch (type) {
+	case ns_t_a:
+	case ns_t_aaaa:
+	case ns_t_srv:
+	case ns_t_soa:
+	case ns_t_cname:
+		return true;
+	}
+
+	return false;
+}
+
+static int rwrap_ancount(struct rwrap_fake_rr *rrs, int qtype)
+{
+	int i;
+	int ancount = 0;
+
+	/* Include all RRs in the stack until the sought type
+	 * in the answer section. This is the case i.e. when looking
+	 * up an A record but the name points to a CNAME
+	 */
+	for (i = 0; i < RWRAP_MAX_RECURSION; i++) {
+		ancount++;
+
+		if (rwrap_known_type(rrs[i].type) &&
+		    rrs[i].type == qtype) {
+			break;
+		}
+	}
+
+	/* Return 0 records if the sought type wasn't in the stack */
+	return i < RWRAP_MAX_RECURSION ? ancount : 0;
+}
+
+static int rwrap_arcount(struct rwrap_fake_rr *rrs, int ancount)
+{
+	int i;
+	int arcount = 0;
+
+	/* start from index ancount */
+	for (i = ancount; i < RWRAP_MAX_RECURSION; i++) {
+		if (rwrap_known_type(rrs[i].type)) {
+			arcount++;
+		}
+	}
+
+	return arcount;
+}
+
+static ssize_t rwrap_add_rr(struct rwrap_fake_rr *rr,
+			    uint8_t *answer,
+			    size_t anslen)
+{
+	ssize_t resp_data;
+
+	switch (rr->type) {
+	case ns_t_a:
+		resp_data = rwrap_fake_a(rr, answer, anslen);
+		break;
+	case ns_t_aaaa:
+		resp_data = rwrap_fake_aaaa(rr, answer, anslen);
+		break;
+	case ns_t_srv:
+		resp_data = rwrap_fake_srv(rr, answer, anslen);
+		break;
+	case ns_t_soa:
+		resp_data = rwrap_fake_soa(rr, answer, anslen);
+		break;
+	case ns_t_cname:
+		resp_data = rwrap_fake_cname(rr, answer, anslen);
+		break;
+	default:
+		return -1;
+	}
+
+	return resp_data;
+}
+
 static ssize_t rwrap_fake_answer(struct rwrap_fake_rr *rrs,
+				 int type,
 				 uint8_t *answer,
 				 size_t anslen)
 
 {
 	ssize_t resp_data;
+	ssize_t rrlen;
 	size_t remaining = anslen;
+	int ancount;
+	int arcount;
+	int i;
 
-	resp_data = rwrap_fake_header(&answer, remaining, 1, 0);
+	ancount = rwrap_ancount(rrs, type);
+	arcount = rwrap_arcount(rrs, ancount);
+	RWRAP_LOG(RWRAP_LOG_TRACE,
+		  "Got %d answers and %d additional records\n", ancount, arcount);
+
+	resp_data = rwrap_fake_header(&answer, remaining, ancount, arcount);
 	if (resp_data < 0) {
 		return -1;
 	}
@@ -775,24 +870,28 @@ static ssize_t rwrap_fake_answer(struct rwrap_fake_rr *rrs,
 	}
 	remaining -= resp_data;
 
-	switch (rrs->type) {
-	case ns_t_a:
-		resp_data += rwrap_fake_a(rrs, answer, anslen);
-		break;
-	case ns_t_aaaa:
-		resp_data += rwrap_fake_aaaa(rrs, answer, anslen);
-		break;
-	case ns_t_srv:
-		resp_data += rwrap_fake_srv(rrs, answer, anslen);
-		break;
-	case ns_t_soa:
-		resp_data += rwrap_fake_soa(rrs, answer, anslen);
-		break;
-	case ns_t_cname:
-		resp_data += rwrap_fake_cname(rrs, answer, anslen);
-		break;
-	default:
-		return -1;
+	/* answer */
+	for (i = 0; i < ancount; i++) {
+		rrlen = rwrap_add_rr(&rrs[i], answer, remaining);
+		if (rrlen < 0) {
+			return -1;
+		}
+		remaining -= rrlen;
+		answer += rrlen;
+		resp_data += rrlen;
+	}
+
+	/* add authoritative NS here? */
+
+	/* additional records */
+	for (i = ancount; i < ancount + arcount; i++) {
+		rrlen = rwrap_add_rr(&rrs[i], answer, remaining);
+		if (rrlen < 0) {
+			return -1;
+		}
+		remaining -= rrlen;
+		answer += rrlen;
+		resp_data += rrlen;
 	}
 
 	return resp_data;
@@ -835,7 +934,7 @@ static int rwrap_res_fake_hosts(const char *hostfile,
 	case 0:
 		RWRAP_LOG(RWRAP_LOG_TRACE,
 				"Found record for [%s]\n", query_name);
-		resp_size = rwrap_fake_answer(rrs, answer, anslen);
+		resp_size = rwrap_fake_answer(rrs, type, answer, anslen);
 		break;
 	case ENOENT:
 		RWRAP_LOG(RWRAP_LOG_TRACE,
