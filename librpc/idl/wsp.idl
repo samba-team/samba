@@ -1,0 +1,1345 @@
+#include "idl_types.h"
+import "wsp_data.idl";
+import "misc.idl";
+
+[
+	version(1.0),
+	endpoint("ncacn_np:[\\pipe\\MsFteWds]"),
+	helpstring("Windows Search WSP Protocol"),
+	helper("../librpc/wsp/wsp_helper.h"),
+	pointer_default(unique)
+]
+
+interface msftewds
+{
+	typedef [public] struct {
+		/*
+		 * hack to allow wsp_cbasestoragevariant to be used before
+		 * it is defined
+		 */
+		wsp_cbasestoragevariant variant[SINGLE_ITEM];
+	} vt_variant_wrap;
+
+	/* MS-WSP 2.2.1.1.1.1 DECIMAL */
+	typedef [public] struct {
+		uint32 hi32;
+		uint32 mid32;
+		uint32 lo32;
+	} vt_decimal;
+
+	/* MS-WSP 2.2.1.1.1.2 VT_VECTOR (VT_DECIMAL) */
+	typedef [public] struct {
+		uint32 vvector_elements;
+		vt_decimal vvector_data[vvector_elements];
+	} vt_decimal_vec;
+
+	/*
+	 * variant elements in a vector (and presumably safearray also)
+	 * must be aligned to 4-byte boundary, think this is automatic for
+	 * elements which are structures
+	 */
+
+	/* MS-WSP see vValue details in 2.2.1.1 (VT_BSTR) */
+	typedef [public] struct {
+		[value(strlen_m_term(value)*2)] uint32 	nbytes;
+		[flag(STR_NULLTERM)] string value;
+	} vt_bstr;
+
+	/* MS-WSP 2.2.1.1.1.2 VT_VECTOR (VT_BSTR) */
+	typedef [public] struct {
+		uint32 vvector_elements;
+		vt_bstr vvector_data[vvector_elements];
+	} vt_bstr_vec;
+
+	/* MS-WSP see vValue details in 2.2.1.1 (VT_LPWSTR) */
+	typedef [public] struct {
+		[value(strlen_m_term(value))] uint32 nbytes;
+		[flag(STR_NULLTERM)] string value;
+	} vt_lpwstr;
+
+	/* MS-WSP 2.2.1.1.1.2 VT_VECTOR (VT_LPWSTR) */
+	typedef [public] struct {
+		uint32 vvector_elements;
+		vt_lpwstr vvector_data[vvector_elements];
+	} vt_lpwstr_vec;
+
+	/* MS-WSP see vValue details in 2.2.1.1 (VT_COMPRESSED_LPWSTR) */
+	typedef [public] struct {
+		uint32 cclen;
+		uint8 bytes[cclen];
+	} vt_compressed_lpwstr;
+
+	/* MS-WSP 2.2.1.1.1.2 VT_VECTOR (VT_COMPRESSED_LPWSTR) */
+	typedef [public] struct {
+		uint32 vvector_elements;
+		vt_compressed_lpwstr vvector_data[vvector_elements];
+	} vt_compressed_lpwstr_vec;
+
+
+	/* MS-WSP 2.2.1.1.1.2 VT_VECTOR (VT_I1) */
+	typedef [public] struct {
+		uint32 vvector_elements;
+		int8 vvector_data[vvector_elements];
+	} vt_i1_vec;
+
+	/* MS-WSP 2.2.1.1.1.2 VT_VECTOR (VT_UI1) */
+	typedef [public] struct {
+		uint32 vvector_elements;
+		uint8 vvector_data[vvector_elements];
+	} vt_ui1_vec;
+
+	/* MS-WSP 2.2.1.1.1.2 VT_VECTOR (VT_I2) */
+	typedef [public] struct {
+		uint32 vvector_elements;
+		int16 vvector_data[vvector_elements];
+	} vt_i2_vec;
+
+	/* MS-WSP 2.2.1.1.1.2 VT_VECTOR (VT_UI2) */
+	typedef [public] struct {
+		uint32 vvector_elements;
+		uint16 vvector_data[vvector_elements];
+	} vt_ui2_vec;
+
+	/* MS-WSP 2.2.1.1.1.2 VT_VECTOR (VT_I4) */
+	typedef [public] struct {
+		uint32 vvector_elements;
+		int32 vvector_data[vvector_elements];
+	} vt_i4_vec;
+
+	/* MS-WSP 2.2.1.1.1.2 VT_VECTOR (VT_UI4) */
+	typedef [public] struct {
+		uint32 vvector_elements;
+		uint32 vvector_data[vvector_elements];
+	} vt_ui4_vec;
+
+	/* MS-WSP 2.2.1.1.1.2 VT_VECTOR (VT_I8) */
+	typedef [public] struct {
+		uint32 vvector_elements;
+		dlong vvector_data[vvector_elements];
+	} vt_dlong_vec;
+
+	/* MS-WSP 2.2.1.1.1.2 VT_VECTOR (VT_UI8) */
+	typedef [public] struct {
+		uint32 vvector_elements;
+		udlong vvector_data[vvector_elements];
+	} vt_udlong_vec;
+
+	/* MS-WSP 2.2.1.1.1.2 VT_VECTOR (VT_CLSID) */
+	typedef [public] struct {
+		uint32 vvector_elements;
+		GUID vvector_data[vvector_elements];
+	} vt_clsid_vec;
+
+	/* MS-WSP 2.2.1.1.1.2 VT_VECTOR (VT_VARIANT) wrapped version */
+	typedef [public] struct {
+		uint32 vvector_elements;
+		vt_variant_wrap vvector_data[vvector_elements];
+	} vt_variant_wrap_vec;
+
+/*
+ * would be great if there some way to specify the above like below
+ * instead of having a vector
+ * for each element type e.g. see vt_lpwstr_vec, vt_bstr_vec & vt_i4_vec?
+ * typedef [public] struct {
+ *	uint32 num;
+ *	variant_types vec[num];
+ *} vt_vector;
+ */
+
+	/* MS-WSP 2.2.1.1.1.4 SAFEARRAYBOUND */
+	typedef [public] struct {
+		uint32 celements;
+		uint32 ilbound;
+	} safearraybound;
+
+	/* MS-WSP 2.2.1.1.1.4 SAFEARRAY (VT_I4) */
+	typedef [public] struct {
+		uint16 cdims;
+		uint16 ffeatures;
+		uint32 cbelements;
+		safearraybound rgsabound[cdims];
+		int32 vdata[calc_array_size(rgsabound, cdims)];
+	} vt_i4_safe_array;
+
+	/* MS-WSP 2.2.1.1.1.4 SAFEARRAY (VT_UI4) */
+	typedef [public] struct {
+		uint16 cdims;
+		uint16 ffeatures;
+		uint32 cbelements;
+		safearraybound rgsabound[cdims];
+		uint32 vdata[calc_array_size(rgsabound, cdims)];
+	} vt_ui4_safe_array;
+
+	/* MS-WSP 2.2.1.1.1.4 SAFEARRAY (VT_BSTR) */
+	typedef [public] struct {
+		uint16 cdims;
+		uint16 ffeatures;
+		uint32 cbelements;
+		safearraybound rgsabound[cdims];
+		vt_bstr vdata[calc_array_size(rgsabound, cdims)];
+	} vt_bstr_safe_array;
+
+
+	/* MS-WSP 2.2.1.1.1.4 SAFEARRAY (VT_I1) */
+	typedef [public] struct {
+		uint16 cdims;
+		uint16 ffeatures;
+		uint32 cbelements;
+		safearraybound rgsabound[cdims];
+		int8 vdata[calc_array_size(rgsabound, cdims)];
+	} vt_i1_safe_array;
+
+	/* MS-WSP 2.2.1.1.1.4 SAFEARRAY (VT_UI1) */
+	typedef [public] struct {
+		uint16 cdims;
+		uint16 ffeatures;
+		uint32 cbelements;
+		safearraybound rgsabound[cdims];
+		uint8 vdata[calc_array_size(rgsabound, cdims)];
+	} vt_ui1_safe_array;
+
+
+	/* MS-WSP 2.2.1.1.1.4 SAFEARRAY (VT_I2) */
+	typedef [public] struct {
+		uint16 cdims;
+		uint16 ffeatures;
+		uint32 cbelements;
+		safearraybound rgsabound[cdims];
+		int16 vdata[calc_array_size(rgsabound, cdims)];
+	} vt_i2_safe_array;
+
+
+	/* MS-WSP 2.2.1.1.1.4 SAFEARRAY (VT_UI2) */
+	typedef [public] struct {
+		uint16 cdims;
+		uint16 ffeatures;
+		uint32 cbelements;
+		safearraybound rgsabound[cdims];
+		uint16 vdata[calc_array_size(rgsabound, cdims)];
+	} vt_ui2_safe_array;
+
+	/* MS-WSP 2.2.1.1.1.4 SAFEARRAY (VT_I8) */
+	typedef [public] struct {
+		uint16 cdims;
+		uint16 ffeatures;
+		uint32 cbelements;
+		safearraybound rgsabound[cdims];
+		dlong vdata[calc_array_size(rgsabound, cdims)];
+	} vt_dlong_safe_array;
+
+	/* MS-WSP 2.2.1.1.1.4 SAFEARRAY (VT_VARIANT) */
+	typedef [public] struct {
+		uint16 cdims;
+		uint16 ffeatures;
+		uint32 cbelements;
+		safearraybound rgsabound[cdims];
+		vt_variant_wrap vdata[calc_array_size(rgsabound, cdims)];
+	} vt_variant_wrap_safearray;
+
+	typedef [public,nodiscriminant,switch_type(uint16)] union {
+		[case(VT_I1)] int8 vt_i1;
+		[case(VT_I1 | VT_ARRAY)]  vt_i1_safe_array vt_i1_array;
+		[case(VT_I1 | VT_VECTOR)] vt_i1_vec vt_i1_vec;
+
+		[case(VT_UI1)] uint8 vt_ui1;
+		[case(VT_UI1 | VT_ARRAY)]  vt_ui1_safe_array vt_ui1_array;
+		[case(VT_UI1 | VT_VECTOR)] vt_ui1_vec vt_ui1_vec;
+
+		[case(VT_I2)] int16 vt_i2;
+		[case(VT_I2 | VT_ARRAY)]  vt_i2_safe_array vt_i2_array;
+		[case(VT_I2 | VT_VECTOR)] vt_i2_vec vt_i2_vec;
+
+		[case(VT_UI2)] uint16 vt_ui2;
+		[case(VT_UI2 | VT_ARRAY)]  vt_ui2_safe_array vt_ui2_array;
+		[case(VT_UI2 | VT_VECTOR)] vt_ui2_vec vt_ui2_vec;
+
+		[case(VT_BOOL)] uint16 vt_bool;
+		[case(VT_BOOL | VT_ARRAY)]  vt_ui2_safe_array vt_bool_array;
+		[case(VT_BOOL | VT_VECTOR)] vt_ui2_vec vt_bool_vec;
+
+		[case(VT_I4)] int32 vt_i4;
+		[case(VT_I4 | VT_VECTOR)] vt_i4_vec vt_i4_vec;
+		[case(VT_I4 | VT_ARRAY)] vt_i4_safe_array vt_i4_array;
+
+		[case(VT_UI4)] uint32 vt_ui4;
+		[case(VT_UI4 | VT_VECTOR)] vt_ui4_vec vt_ui4_vec;
+		[case(VT_UI4 | VT_ARRAY)] vt_ui4_safe_array vt_ui4_array;
+
+		[case(VT_R4)] uint32 vt_r4;
+		[case(VT_R4 | VT_VECTOR)] vt_i4_vec vt_r4_vec;
+		[case(VT_R4 | VT_ARRAY)] vt_i4_safe_array vt_r4_array;
+
+		[case(VT_INT)] int32 vt_int;
+		[case(VT_INT | VT_ARRAY)] vt_i4_safe_array vt_int_array;
+
+		[case(VT_UINT)] uint32 vt_uint;
+		[case(VT_UINT | VT_ARRAY)] vt_ui4_safe_array vt_uint_array;
+
+		[case(VT_ERROR)] uint32 vt_error;
+		[case(VT_ERROR | VT_VECTOR)] vt_ui4_vec vt_error_vec;
+		[case(VT_ERROR | VT_ARRAY)] vt_ui4_safe_array vt_error_array;
+
+		[case(VT_I8)] dlong vt_i8;
+		[case(VT_I8 | VT_VECTOR)] vt_dlong_vec vt_i8_vec;
+
+		[case(VT_UI8)] udlong vt_ui8;
+		[case(VT_UI8 | VT_VECTOR)] vt_udlong_vec vt_ui8_vec;
+
+		[case(VT_R8)] dlong vt_r8;
+		[case(VT_R8 | VT_VECTOR)] vt_dlong_vec vt_r8_vec;
+		[case(VT_R8 | VT_ARRAY)] vt_dlong_safe_array vt_r8_array;
+
+		[case(VT_CY)] dlong vt_cy;
+		[case(VT_CY | VT_VECTOR)] vt_dlong_vec vt_cy_vec;
+		[case(VT_CY | VT_ARRAY)] vt_dlong_safe_array vt_cy_array;
+
+		[case(VT_DATE)] dlong vt_date;
+		[case(VT_DATE | VT_VECTOR)] vt_dlong_vec vt_date_vec;
+		[case(VT_DATE| VT_ARRAY)] vt_dlong_safe_array vt_date_array;
+
+		[case(VT_FILETIME)] udlong vt_filetime;
+		[case(VT_FILETIME | VT_VECTOR)] vt_udlong_vec vt_filetime_vec;
+
+		[case(VT_BSTR)] vt_bstr vt_bstr;
+		[case(VT_BSTR | VT_VECTOR)] vt_bstr_vec vt_bstr_v;
+		[case(VT_BSTR | VT_ARRAY)] vt_bstr_safe_array vt_bstr_array;
+
+		[case(VT_LPWSTR)] vt_lpwstr vt_lpwstr;
+		[case(VT_LPWSTR | VT_VECTOR)] vt_lpwstr_vec vt_lpwstr_v;
+
+		[case(VT_COMPRESSED_LPWSTR)] vt_compressed_lpwstr vt_compressed_lpwstr;
+		[case(VT_COMPRESSED_LPWSTR | VT_VECTOR)] vt_compressed_lpwstr_vec vt_compresseed_lpwstr_v;
+
+		[case(VT_DECIMAL)] vt_decimal vt_decimal;
+		[case(VT_DECIMAL | VT_VECTOR)] vt_decimal_vec vt_decimal_v;
+
+		[case(VT_CLSID)] GUID vt_clid;
+		[case(VT_CLSID | VT_VECTOR)] vt_clsid_vec vt_clsid_v;
+
+		[case(VT_BLOB)] DATA_BLOB vt_blob;
+		[case(VT_BLOB_OBJECT)] DATA_BLOB vt_blob_object;
+
+		[case(VT_NULL)];
+		[case(VT_EMPTY)];
+		[case(VT_VARIANT)] vt_variant_wrap vt_variant_wrap;
+
+		[case(VT_VARIANT | VT_VECTOR)] vt_variant_wrap_vec vt_variant_wrap_vec;
+		[case(VT_VARIANT | VT_ARRAY)]  vt_variant_wrap_safearray vt_variant_wrap_array;
+	} variant_types;
+
+	/*
+	 * MS-WSP 2.2.1.1 CBaseStorageVariant
+	 */
+	typedef [public] struct {
+		uint16 vtype;
+		uint8 vdata1;
+		uint8 vdata2;
+		[max_recursion(102), switch_is(vtype)] variant_types vvalue;
+	} wsp_cbasestoragevariant;
+
+	typedef [public, nodiscriminant, switch_type(uint32)] union {
+		[case(DBKIND_GUID_NAME)] string vstring;
+		[default];
+	} wsp_cdbcolid_opt_name;
+
+	/* MS-WSP 2.2.1.29 CDbColId */
+	typedef [public] struct {
+		uint32 ekind;
+		[flag(NDR_ALIGN8)]    DATA_BLOB _pad1;
+		GUID guid;
+		uint32 uiid;
+		[switch_is(ekind)] wsp_cdbcolid_opt_name vstring;
+	} wsp_cdbcolid;
+
+
+	/* MS-WSP 2.2.2 Message Headers */
+	typedef [public] struct {
+		uint32 msg;
+		uint32 status;
+		uint32 checksum;
+		uint32 ulreserved2;
+	} wsp_header;
+
+	/* MS-WSP 2.2.1.30 CDbProp */
+	typedef [public,flag(NDR_ALIGN4)] struct {
+		uint32 dbpropid;
+		uint32 dbpropoptions;
+		uint32 dbpropstatus;
+		wsp_cdbcolid colid;
+		wsp_cbasestoragevariant vvalue;
+	} wsp_cdbprop;
+
+	/* MS-WSP 2.2.1.31 CDbPropSet */
+	typedef [flag(NDR_NOALIGN),public] struct {
+		GUID guidpropertyset;
+		[flag(NDR_ALIGN4)]    DATA_BLOB _pad1;
+		uint32 cproperties;
+		wsp_cdbprop aprops[cproperties];
+	} wsp_cdbpropset;
+
+	/* MS-WSP 2.2.1.10 CSort */
+	typedef [public] struct {
+		uint32 pidcolimn;
+		uint32 dworder;
+		uint32 dwindividual;
+		uint32 locale;
+	} wsp_csort;
+
+	/* MS-WSP 2.2.1.42 CSortSet */
+	typedef [public] struct {
+		uint32 count;
+		wsp_csort sortarray[count];
+	} wsp_csortset;
+
+	/*
+	 * cPropSets, PropterySet1 & PropertySet2 (parts of CPMConnectIn)
+	 */
+	typedef [public] struct {
+		uint32 cpropsets;
+		wsp_cdbpropset propertyset1;
+		wsp_cdbpropset propertyset2;
+	} connectin_propsets;
+
+	/*
+	 * cExtPropSet, aPropertySets (parts of CPMConnectIn)
+	 */
+	typedef [public] struct {
+		uint32 cextpropset;
+		wsp_cdbpropset apropertysets[cextpropset];
+	} connectin_extpropsets;
+
+	/* MS-WSP 2.2.3.2 CPMConnectIn */
+	typedef [public] struct {
+		uint32 iclientversion;
+		uint32 fclientisremote;
+		uint32 cbblob1;
+		uint32 paddingcbblob2;
+		uint32 cbblob2;
+		uint8  padding[12];
+		[flag(STR_NULLTERM)] string machinename;
+		[flag(STR_NULLTERM)] string username;
+		[flag(NDR_ALIGN8)]    DATA_BLOB _pad1;
+		uint8 propsets[cbblob1];
+		[flag(NDR_ALIGN8)]    DATA_BLOB _pad2;
+		uint8 extpropsets[cbblob2];
+	} wsp_cpmconnectin;
+
+	typedef [public] struct {
+		uint32 reserved;
+		uint32 dwwinvermajor;
+		uint32 dwwinverminor;
+		uint32 dwnlsvermajor;
+		uint32 dwnlsverminor;
+	} version_info;
+
+	typedef [public, nodiscriminant, switch_type(uint32)] union {
+		[case(WINDOWS_7)] version_info version_info;
+		[case(WINDOWS_2008)] version_info version_info;
+		[default] uint32 reserved[4];
+	} version_dependant;
+
+	/* MS-WSP 2.2.3.3 CPMConnectOut */
+	typedef [public] struct {
+		uint32 server_version;
+		[switch_is(server_version)] version_dependant version_dependant;
+	} wsp_cpmconnectout;
+
+	/* MS-WSP 2.2.1.18 CColumnSet */
+	typedef [public] struct {
+		uint32 count;
+		uint32 indexes[count];
+	} wsp_ccolumnset;
+
+
+	/* MS-WSP 2.2.1.6 CNodeRestriction */
+	typedef [public] struct {
+		uint32 cnode;
+		[max_recursion(100)] wsp_crestriction panode[cnode];
+	} wsp_cnoderestriction;
+
+	typedef [public] struct {
+		uint32 len;
+		[charset(UTF16)] uint8 vstring[len*2];
+	} wsp_len_string_pair;
+
+	typedef [public, nodiscriminant, switch_type(uint32)] union {
+		[case(PRSPEC_LPWSTR)] wsp_len_string_pair propname;
+		[case(PRSPEC_PROPID)] uint32 prspec;
+	} wsp_propname_or_propid;
+
+	typedef [public] struct {
+		uint32 cclabel;
+		[charset(UTF16)] uint8 vstring[cclabel*2];
+	} wsp_labeldata;
+
+	typedef [public, nodiscriminant, switch_type(uint8)] union {
+		[case(0)];
+		[case(1)] wsp_labeldata data;
+	} opt_labeldata;
+
+	/* MS-WSP 2.2.1.23 RANGEBOUNDARY */
+	typedef [public] struct {
+		uint32 ultype;
+		wsp_cbasestoragevariant prval;
+		uint8 labelpresent;
+		[switch_is(labelpresent)] opt_labeldata opt_data;
+	} wsp_rangeboundary;
+
+	/* MS-WSP 2.2.1.22 CRangeCategSpec */
+	typedef [public] struct {
+		uint32 lcid;
+		uint32 crange;
+		wsp_rangeboundary arangebegin[crange + 1];
+	} wsp_crangecategspec;
+
+	typedef [public, nodiscriminant, switch_type(uint32)] union {
+		[case(0)];
+		[default] wsp_crangecategspec crangecategspec;
+	} opt_crangecatespec;
+
+	/* MS-WSP 2.2.1.21 CCategSpec */
+	typedef [public] struct {
+		uint32 ulcategtype;
+		wsp_csort sortkey;
+		[switch_is(ulcategtype)] opt_crangecatespec opt;
+	} wsp_ccategspec;
+
+	typedef [public] struct {
+		uint32 ulmaxnumtoret;
+		uint32 idrepresentitive;
+	} wsp_repofdata;
+
+	typedef [public,nodiscriminant,switch_type(uint8)] union {
+		[case(DBAGGTTYPE_FIRST)] uint32 firstmaxnumret;
+		[case(DBAGGTTYPE_BYFREQ)] uint32 firstbyfreq;
+		[case(DBAGGTTYPE_REPRESENTATIVEOF)] wsp_repofdata repofdata;
+		[default];
+	} opt_type_data;
+
+	/* MS-WSP 2.2.1.25 CAggregSpec */
+	typedef [public] struct {
+		uint8 type;
+		[flag(NDR_ALIGN4)] DATA_BLOB _pad1;
+		uint32 ccalias;
+		[charset(UTF16)] uint8 alias[ccalias*2];
+		uint32 idcolumn;
+		[switch_is(type)] opt_type_data opt_data;
+	} wsp_caggregspec;
+
+	/* MS-WSP 2.2.1.24 CAggregSet */
+	typedef [public] struct {
+		uint32 ccount;
+		wsp_caggregspec aggregspecs[ccount];
+	} wsp_caggregset;
+
+	/* MS-WSP 2.2.1.27 CAggregSortKey */
+	typedef [public] struct {
+		uint32 order;
+		wsp_caggregspec columnspec;
+	} wsp_caggregsortkey;
+
+	/* MS-WSP 2.2.1.26 CSortAggregSet */
+	typedef [public] struct {
+		uint32 ccount;
+		wsp_caggregsortkey sortkeys[ccount];
+	} wsp_csortaggregset;
+
+	typedef [public, nodiscriminant, switch_type(uint8)] union {
+		/*
+		 * if type == GroupIdValue then wsp_cbasestoragevariant
+		 * ingroupid is present
+		 */
+		[case(0x03)] wsp_cbasestoragevariant ingroupid;
+		[default];
+	} wsp_opt_ingroupid;
+
+	typedef [public] struct {
+		uint8 type;
+		[flag(NDR_ALIGN4)]    DATA_BLOB _pad1;
+		[switch_is(type)] wsp_opt_ingroupid opt_groupid;
+		wsp_csortset sortaggregset;
+	} wsp_cingroupsortaggregset;
+
+	/* MS-WSP 2.2.1.28 CInGroupSortAggregSets */
+	typedef [public] struct {
+		uint32 ccount;
+		wsp_cingroupsortaggregset sortsets[ccount];
+	} wsp_cingroupsortaggregsets;
+
+	/* MS-WSP 2.2.1.20 CCategorizationSpec */
+	typedef [public] struct {
+		wsp_ccolumnset cscolumns;
+		wsp_ccategspec spec;
+		wsp_caggregset aggregset;
+		wsp_csortaggregset sortaggregset;
+		wsp_cingroupsortaggregsets ingroupsortaggset;
+		uint32 cmaxresults;
+	} wsp_ccategorizationspec;
+
+	/* MS-WSP 2.2.1.19 CCategorizationSet */
+	typedef [public] struct {
+		uint32 size;
+		wsp_ccategorizationspec	categories[size];
+	} wsp_ccategorizationset;
+
+	/* MS-WSP 2.2.1.2 CFullPropSpec */
+	typedef [flag(NDR_NOALIGN),public] struct {
+		[flag(NDR_ALIGN8)] DATA_BLOB _pad1;
+		GUID guidpropset;
+		uint32 ulkind;
+		[switch_is(ulkind)] wsp_propname_or_propid name_or_id;
+	} wsp_cfullpropspec;
+
+	/* MS-WSP 2.2.1.3 CContentRestriction */
+	typedef [public] struct {
+		wsp_cfullpropspec property;
+		[flag(NDR_ALIGN4)]    DATA_BLOB _pad1;
+		uint32 cc;
+		[charset(UTF16)] uint8 pwcsphrase[cc*2];
+		[flag(NDR_ALIGN4)]    DATA_BLOB _pad2;
+		uint32 lcid;
+		uint32 ulgeneratemethod;
+	} wsp_ccontentrestriction;
+
+	/* MS-WSP 2.2.1.7 CPropertyRestriction */
+	typedef [public] struct {
+		uint32 relop;
+		wsp_cfullpropspec property;
+		wsp_cbasestoragevariant prval;
+		[flag(NDR_ALIGN4)]    DATA_BLOB _pad1;
+		uint32 lcid;
+	} wsp_cpropertyrestriction;
+
+	/* MS-WSP 2.2.1.5 CNatLanguageRestriction */
+	typedef [public] struct {
+		wsp_cfullpropspec property;
+		[flag(NDR_ALIGN4)]    DATA_BLOB _pad1;
+		uint32 cc;
+		[charset(UTF16)] uint8 pwcsphrase[cc*2];
+		[flag(NDR_ALIGN4)]    DATA_BLOB _pad2;
+		uint32 lcid;
+	} wsp_cnatlanguagerestriction;
+
+	typedef [public] struct {
+		wsp_crestriction restriction[SINGLE_ITEM];
+	} wsp_wrap_crestriction;
+
+
+	/* MS-WSP 2.2.1.12 CCoercionRestriction*/
+	typedef [public] struct {
+		/* no IEEE 754 implementation for float ?? */
+		/* float ffvalue; */
+		uint32 ffvalue;
+		wsp_crestriction childres[SINGLE_ITEM];
+	} wsp_ccoercionrestriction;
+
+	/* MS-WSP 2.2.1.11 CVectorRestriction */
+	typedef [public] struct {
+		uint32 pres;
+		[flag(NDR_ALIGN4)]    DATA_BLOB padding;
+		uint32 uirankmethod;
+	} wsp_cvectorrestriction;
+
+	/* MS-WSP 2.2.1.9 CScopeRestriction */
+	typedef [public] struct {
+		uint32 cclowerpath;
+		[charset(UTF16)] uint8 lowerpath[cclowerpath*2];
+		[flag(NDR_ALIGN4)]    DATA_BLOB padding;
+		uint32 length;
+		uint32 frecursive;
+		uint32 fvirtual;
+	} wsp_cscoperestriction;
+
+	/* MS-WSP 2.2.1.8 CReuseWhere */
+	typedef [public] struct {
+		uint32 whereid;
+	} wsp_creusewhere;
+
+	/* MS-WSP 2.2.1.4 CInternalPropertyRestriction */
+	typedef [public] struct {
+		uint32 relop;
+		uint32 pid;
+		wsp_cbasestoragevariant prval;
+		uint32 lcid;
+		uint8  restrictionpresent;
+		wsp_crestriction nextrestriction[SINGLE_ITEM];
+	} wsp_cinternalpropertyrestriction;
+
+
+	/* MS-WSP 2.2.1.14 CProbRestriction */
+	typedef [public] struct {
+		wsp_cfullpropspec property;
+		uint32 fik1;
+		uint32 fik2;
+		uint32 fik3;
+		uint32 flb;
+		uint32 cfeedbackdoc;
+		uint32 probquerypid;
+	} wsp_cprobrestriction;
+
+	/* MS-WSP 2.2.1.15 CFeedbackRestriction */
+	typedef [public] struct {
+		uint32 feedbackdoc;
+		wsp_cfullpropspec property;
+	} wsp_cfeedbackrestriction;
+
+	/* MS-WSP 2.2.1.13 CRelDocRestriction */
+	typedef [public] struct {
+		wsp_cbasestoragevariant vdocument;
+	} wsp_creldocrestriction;
+
+	typedef [public,nodiscriminant,switch_type(uint32)] union {
+		[case(RTNONE)];
+		[case(RTNOT)] wsp_wrap_crestriction restriction;
+		[case(RTAND)] wsp_cnoderestriction cnoderestriction;
+		[case(RTOR)]  wsp_cnoderestriction orcnoderestriction;
+		[case(RTCONTENT)] wsp_ccontentrestriction ccontentrestriction;
+		[case(RTPROPERTY)] wsp_cpropertyrestriction cpropertyrestriction;
+		[case(RTPROXIMITY)] wsp_cnoderestriction proximityrestriction;
+		[case(RTVECTOR)] wsp_cvectorrestriction vectorrestriction;
+		[case(RTNATLANGUAGE)] wsp_cnatlanguagerestriction cnatlanguagerestriction;
+		[case(RTSCOPE)] wsp_cscoperestriction scoperestriction;
+		[case(RTREUSEWHERE)] wsp_creusewhere reusewhere;
+		[case(RTINTERNALPROP)] wsp_cinternalpropertyrestriction internalpropertyrestriction;
+		[case(RTPHRASE)] wsp_cnoderestriction phraserestriction;
+		[case(RTCOERCE_ABSOLUTE)] wsp_ccoercionrestriction ccoercionrestriction_abs;
+		[case(RTCOERCE_ADD)] wsp_ccoercionrestriction ccoercionrestriction_add;
+		[case(RTCOERCE_MULTIPLY)] wsp_ccoercionrestriction ccoercionrestriction_mul;
+		[case(RTPROB)] wsp_cprobrestriction probrestriction;
+		[case(RTFEEDBACK)] wsp_cfeedbackrestriction feedbackrestriction;
+		[case(RTRELDOC)] wsp_creldocrestriction reldocrestriction;
+
+	} wsp_crestrictions;
+
+
+	/* MS-WSP 2.2.1.17 CRestriction */
+	typedef [public] struct {
+		uint32 ultype;
+		uint32 weight;
+		[switch_is(ultype)] wsp_crestrictions restriction;
+	} wsp_crestriction;
+
+	/* MS-WSP 2.2.1.16 CRestrictionArray */
+	typedef [flag(NDR_NOALIGN),public] struct {
+		uint8 count;
+		uint8 ispresent;
+		[flag(NDR_ALIGN4)] DATA_BLOB _pad1;
+		wsp_crestriction restrictions[count];
+	} wsp_crestrictionarray;
+
+	/* MS-WSP 2.2.1.40 CRowsetProperties */
+	typedef [public] struct {
+		uint32 ubooleanoptions;
+		uint32 ulmaxopenrows;
+		uint32 ulmemoryusage;
+		uint32 cmaxresults;
+		uint32 ccmdtimeout;
+	} wsp_crowsetproperties;
+
+	/* MS-WSP 2.2.1.32 CPidMapper */
+	typedef [public] struct {
+		uint32 count;
+		[flag(NDR_ALIGN4)] DATA_BLOB _pad2;
+		wsp_cfullpropspec apropspec[count];
+	} wsp_cpidmapper;
+
+	/* MS-WSP 2.2.1.35 SProperty */
+	typedef [public] struct {
+		uint32 pid;
+		uint32 weight;
+	} wsp_sproperty;
+
+	/* MS-WSP 2.2.1.34 CColumnGroup */
+	typedef [public] struct {
+		uint32 count;
+		uint32 grouppid;
+		wsp_sproperty props[count];
+	} wsp_ccolumngroup;
+
+	/* MS-WSP 2.2.1.33 CColumnGroupArray */
+	typedef [public] struct {
+		uint32 count;
+		wsp_ccolumngroup agrouparray[count];
+	} wsp_ccolumngrouparray;
+
+	typedef [public,nodiscriminant,switch_type(uint8)] union {
+		[case(0)];
+		[default] wsp_cingroupsortaggregsets groupsortaggregsets;
+	}opt_wsp_cingroupsortaggregsets;
+
+	typedef [public,nodiscriminant,switch_type(uint8)] union {
+		[case(0)];
+		[default] wsp_crestrictionarray restrictionarray;
+	}opt_wsp_crestrictionarray;
+
+	typedef [public,nodiscriminant,switch_type(uint8)] union {
+		[case(0)];
+		[default] wsp_ccolumnset columnset;
+	}opt_wsp_ccolumnset;
+
+	typedef [public,nodiscriminant,switch_type(uint8)] union {
+		[case(0)];
+		[default] wsp_ccategorizationset ccategorizationset;
+	}opt_wsp_ccategorizationset;
+
+	typedef [public] struct {
+		uint32 size;
+		uint8 ccolumnsetpresent;
+		/* padding is not needed here (and below)
+		 * as structures are default aligned to 4 byte
+		 * boundaries.
+                 * commented out valued left for documentation
+                 * and to match the actual structure definition
+		 */
+		/*[flag(NDR_ALIGN4)] DATA_BLOB paddingCColumnSetPresent;*/
+		[switch_is(ccolumnsetpresent)] opt_wsp_ccolumnset columnset;
+		uint8 crestrictionpresent;
+		[switch_is(crestrictionpresent)] opt_wsp_crestrictionarray restrictionarray;
+		uint8 csortsetpresent;
+		/*[flag(NDR_ALIGN4)] DATA_BLOB paddingCSortSetPresent;*/
+		[switch_is(csortsetpresent)] opt_wsp_cingroupsortaggregsets sortset;
+		uint8 ccategorizationsetpresent;
+		/*[flag(NDR_ALIGN4)] DATA_BLOB paddingCCategorizationSetPresent;*/
+		[switch_is(ccategorizationsetpresent)] opt_wsp_ccategorizationset ccategorizationset;
+		wsp_crowsetproperties rowsetproperties;
+		wsp_cpidmapper pidmapper;
+		wsp_ccolumngrouparray grouparray;
+		uint32 lcid;
+	} wsp_cpmcreatequeryin;
+
+	/* MS-WSP 2.2.3.5 CPMCreateQueryOut */
+	typedef [public] struct {
+		uint32 ftruesequential;
+		uint32 fWorkIdUnique;
+		/*
+		 * uint32 acursors[SIZE];
+		 *
+		 * after fWorkIdUnique is an array of uint32 cursors,
+		 * actually there is always at least 1 item in the array,
+		 * SIZE is determined by the optional ccategorizationset field in
+		 * the request
+		 */
+	} wsp_cpmcreatequeryout;
+
+	typedef [public, nodiscriminant, switch_type(uint8)] union {
+		[case(1)] uint8 value;
+		[case(0)];
+	} aggregatetype;
+
+	typedef [public, nodiscriminant, switch_type(uint8)] union {
+		[case(1)] uint16 value;
+		[case(0)];
+	} valueoffset;
+
+	typedef [public, nodiscriminant, switch_type(uint8)] union {
+		[case(1)] uint16 value;
+		[case(0)];
+	} valuesize;
+
+	typedef [public, nodiscriminant, switch_type(uint8)] union {
+		[case(1)] uint16 value;
+		[case(0)];
+	} lengthoffset;
+
+	typedef [public, nodiscriminant, switch_type(uint8)] union {
+		[case(1)] uint16 value;
+		[case(0)];
+	} statusoffset;
+
+	/* MS-WSP 2.2.1.43 CTableColumn */
+	typedef [public] struct {
+		wsp_cfullpropspec propspec;
+		uint32 vtype;
+		uint8 aggregateused;
+		[switch_is(aggregateused)] aggregatetype aggregatetype;
+		uint8 valueused;
+		[switch_is(valueused)] valueoffset valueoffset; /* auto aligned to 2 byte boundary */
+		[switch_is(valueused)] valuesize valuesize; /* auto aligned to 2 byte boundary */
+		uint8 statusused;
+		[switch_is(statusused)] statusoffset statusoffset; /* auto aligned to 2 byte boundary */
+		uint8 lengthused;
+		[switch_is(lengthused)] lengthoffset lengthoffset; /* auto aligned to 2 byte boundary */
+		} wsp_ctablecolumn;
+
+	/*
+         * struct below is included for completeness but
+         * isn't currently referenced.
+         * MS-WSP 2.2.1.45 CCompletionCategSpec
+         */
+	typedef [public] struct {
+		uint32 type;
+		uint32 lcid;
+		uint32 ccomplstrings;
+		wsp_serializedpropertyvalue apszcomplstrings[ccomplstrings];
+		uint32 ccomplpids;
+		uint32 acomplpids[ccomplpids];
+	} wsp_ccompletioncategspec;
+
+	/* MS-WSP 2.2.3.10 CPMSetBindingsIn */
+	typedef [public] struct {
+		uint32 hcursor;
+		uint32 brow;
+		uint32 bbindingdesc;
+		uint32 dummy;
+		uint32 ccolumns;
+		wsp_ctablecolumn acolumns[ccolumns];
+	} wsp_cpmsetbindingsin;
+
+	/* MS-WSP 2.2.1.39 CRowSeekNext */
+	typedef [public] struct {
+		uint32 cskip;
+	} wsp_crowseeknext;
+
+	/* MS-WSP 2.2.1.36 CRowSeekAt */
+	typedef [public] struct {
+		uint32 bmkoffset;
+		uint32 cskip;
+		uint32 hregion;
+	} wsp_crowseekat;
+
+	/* MS-WSP 2.2.1.37 CRowSeekAtRatio */
+	typedef [public] struct {
+		uint32 ulnumerator;
+		uint32 uldenominator;
+		uint32 hregion;
+	} wsp_crowseekatratio;
+
+	/* MS-WSP 2.2.1.38 CRowSeekByBookmark */
+	typedef [public] struct {
+		uint32 cbookmarks;
+		uint32 abookmarks[cbookmarks];
+		uint32 maxret;
+		uint32 ascret[maxret];
+	} wsp_crowseekbybookmark;
+
+	typedef [public,nodiscriminant,switch_type(uint32)] union {
+		[case(EROWSEEKNONE)];
+		[case(EROWSEEKNEXT)] wsp_crowseeknext crowseeknext;
+		[case(EROWSEEKAT)] wsp_crowseekat crowseekat;
+		[case(EROWSEEKATRATIO)] wsp_crowseekatratio crowseekatratio;
+		[case(EROWSEEKBYBOOKMARK)] wsp_crowseekbybookmark crowseekbybookmark;
+	} wsp_seekdescription;
+
+	/* MS-WSP 2.2.3.11 CPMGetRowsIn */
+	typedef [public] struct {
+		uint32 hcursor;
+		uint32 crowstotransfer;
+		uint32 cbrowWidth;
+		uint32 cbseek;
+		uint32 cbreserved;
+		uint32 cbreadbuffer;
+		uint32 ulclientbase;
+		uint32 fbwdfetch;
+		uint32 etype;
+		uint32 chapt;
+		[switch_is(etype)] wsp_seekdescription seekdescription;
+	} wsp_cpmgetrowsin;
+
+	/* MS-WSP 2.2.1.42 */
+	typedef [public] struct {
+		uint16 vtype;
+		uint16 reserved1;
+		uint32 reserved2;
+		/* followed by offset either 4 or 8 byte count (if VT_VECTOR) */
+		/* followed by offset either 4 or 8 byte offset (if variable size value)*/
+		/* followed by fixed value (if fixed size value) */
+	} wsp_ctablevariant;
+
+	/* MS-WSP 2.2.3.12 CPMGetRowsOut */
+	typedef [public] struct {
+		uint32 rowsreturned;
+		uint32 etype;
+		uint32 chapt;
+		[switch_is(etype)] wsp_seekdescription seekdescription;
+		/*
+		 * following rows data is not defined here, size is unknown
+		 * in the context of this structure but is the size of
+		 * breadbuffer defined in cpmgetrowsin.
+		 */
+	} wsp_cpmgetrowsout;
+
+	/* MS-WSP 2.2.3.24 CPMFreeCursorIn */
+	typedef [public] struct {
+		uint32 hcursor;
+	} wsp_cpmfreecursorin;
+
+	/* MS-WSP 2.2.3.25 CPMFreeCursorOut */
+	typedef [public] struct {
+		uint32 ccursorsremaining;
+	} wsp_cpmfreecursorout;
+
+	/* MS-WSP 2.2.3.6 CPMGetQueryStatusIn */
+	typedef [public] struct {
+		uint32 hcursor;
+	} wsp_cpmgetquerystatusin;
+
+	/* MS-WSP 2.2.3.7 CPMGetQueryStatusOut */
+	typedef [public] struct {
+		uint32 qstatus;
+	} wsp_cpmgetquerystatusout;
+
+	/* MS-WSP 2.2.3.8 CPMGetQueryStatusExIn */
+	typedef [public] struct {
+		uint32 hcursor;
+		uint32 bmk;
+	} wsp_cpmgetquerystatusexin;
+
+	/* MS-WSP 2.2.3.9 CPMGetQueryStatusExOut */
+	typedef [public] struct {
+		uint32 qstatus;
+		uint32 cfiltereddocuments;
+		uint32 cdocumentstofilter;
+		uint32 dwratiofinisheddenominator;
+		uint32 dwratiofinishednumerator;
+		uint32 irowbmk;
+		uint32 crowstotal;
+		uint32 maxrank;
+		uint32 resultsfound;
+		uint32 whereid;
+	} wsp_cpmgetquerystatusexout;
+
+	/* MS-WSP 2.2.3.23 CPMRestartPositionIn */
+	typedef [public] struct {
+		uint32 hcursor;
+		uint32 chapter;
+	} wsp_cpmrestartpositionin;
+
+	/* MS-WSP 2.2.3.13 CPMRatioFinishedIn */
+	typedef [public] struct {
+		uint32 hcursor;
+		uint32 fquick;
+	} wsp_cpmratiofinishedin;
+
+	/* MS-WSP 2.2.3.14 CPMRatioFinishedOut */
+	typedef [public] struct {
+		uint32 ulnumerator;
+		uint32 uldenominator;
+		uint32 crows;
+		uint32 fnewrows;
+	} wsp_cpmratiofinishedout;
+
+	/* MS-WSP 2.2.3.15 CPMRatioFinishedOut */
+	typedef [public] struct {
+		uint32 wid;
+		uint32 cbsofar;
+		uint32 cbpropspec;
+		uint32 cbchunk;
+		wsp_cfullpropspec propspec;
+	} wsp_cpmfetchvaluein;
+
+	typedef [public] struct {
+		uint16 cdims;
+		safearraybound rgsabound[cdims];
+		int8 vdata[calc_array_size(rgsabound, cdims)];
+	} vt_i1_safe2_array;
+
+	typedef [public] struct {
+		uint16 cdims;
+		safearraybound rgsabound[cdims];
+		uint8 vdata[calc_array_size(rgsabound, cdims)];
+	} vt_ui1_safe2_array;
+
+	typedef [public] struct {
+		uint16 cdims;
+		safearraybound rgsabound[cdims];
+		int16 vdata[calc_array_size(rgsabound, cdims)];
+	} vt_i2_safe2_array;
+
+	typedef [public] struct {
+		uint16 cdims;
+		safearraybound rgsabound[cdims];
+		uint16 vdata[calc_array_size(rgsabound, cdims)];
+	} vt_ui2_safe2_array;
+
+	typedef [public] struct {
+		uint16 cdims;
+		safearraybound rgsabound[cdims];
+		int32 vdata[calc_array_size(rgsabound, cdims)];
+	} vt_i4_safe2_array;
+
+	typedef [public] struct {
+		uint16 cdims;
+		safearraybound rgsabound[cdims];
+		uint32 vdata[calc_array_size(rgsabound, cdims)];
+	} vt_ui4_safe2_array;
+
+	typedef [public] struct {
+		uint16 cdims;
+		safearraybound rgsabound[cdims];
+		dlong vdata[calc_array_size(rgsabound, cdims)];
+	} vt_dlong_safe2_array;
+
+	typedef [public] struct {
+		uint16 cdims;
+		safearraybound rgsabound[cdims];
+		vt_bstr vdata[calc_array_size(rgsabound, cdims)];
+	} vt_bstr_safe2_array;
+
+	typedef [public] struct {
+		uint16 cdims;
+		safearraybound rgsabound[cdims];
+		vt_variant_wrap vdata[calc_array_size(rgsabound, cdims)];
+	} vt_variant_wrap_safearray2;
+
+	typedef [public,nodiscriminant,switch_type(uint32)] union {
+		[case(VT_I1)] int8 vt_i1;
+		[case(VT_I1 | VT_ARRAY)]  vt_i1_safe2_array vt_i1_array;
+		[case(VT_I1 | VT_VECTOR)] vt_i1_vec vt_i1_vec;
+
+		[case(VT_UI1)] uint8 vt_ui1;
+		[case(VT_UI1 | VT_ARRAY)]  vt_ui1_safe2_array vt_ui1_array;
+		[case(VT_UI1 | VT_VECTOR)] vt_ui1_vec vt_ui1_vec;
+
+		[case(VT_I2)] int16 vt_i2;
+		[case(VT_I2 | VT_ARRAY)]  vt_i2_safe2_array vt_i2_array;
+		[case(VT_I2 | VT_VECTOR)] vt_i2_vec vt_i2_vec;
+
+		[case(VT_UI2)] uint16 vt_ui2;
+		[case(VT_UI2 | VT_ARRAY)]  vt_ui2_safe2_array vt_ui2_array;
+		[case(VT_UI2 | VT_VECTOR)] vt_ui2_vec vt_ui2_vec;
+
+		[case(VT_BOOL)] uint16 vt_bool;
+		[case(VT_BOOL | VT_ARRAY)]  vt_ui2_safe2_array vt_bool_array;
+		[case(VT_BOOL | VT_VECTOR)] vt_ui2_vec vt_bool_vec;
+
+		[case(VT_I4)] int32 vt_i4;
+		[case(VT_I4 | VT_VECTOR)] vt_i4_vec vt_i4_vec;
+		[case(VT_I4 | VT_ARRAY)] vt_i4_safe2_array vt_i4_array;
+
+		[case(VT_UI4)] uint32 vt_ui4;
+		[case(VT_UI4 | VT_VECTOR)] vt_ui4_vec vt_ui4_vec;
+		[case(VT_UI4 | VT_ARRAY)] vt_ui4_safe2_array vt_ui4_array;
+
+		[case(VT_R4)] uint32 vt_r4;
+		[case(VT_R4 | VT_VECTOR)] vt_i4_vec vt_r4_vec;
+		[case(VT_R4 | VT_ARRAY)] vt_i4_safe2_array vt_r4_array;
+
+		[case(VT_INT)] int32 vt_int;
+		[case(VT_INT | VT_ARRAY)] vt_i4_safe2_array vt_int_array;
+
+		[case(VT_UINT)] uint32 vt_uint;
+		[case(VT_UINT | VT_ARRAY)] vt_ui4_safe2_array vt_uint_array;
+
+		[case(VT_ERROR)] uint32 vt_error;
+		[case(VT_ERROR | VT_VECTOR)] vt_ui4_vec vt_error_vec;
+		[case(VT_ERROR | VT_ARRAY)] vt_ui4_safe2_array vt_error_array;
+
+		[case(VT_I8)] dlong vt_i8;
+		[case(VT_I8 | VT_VECTOR)] vt_dlong_vec vt_i8_vec;
+
+		[case(VT_UI8)] udlong vt_ui8;
+		[case(VT_UI8 | VT_VECTOR)] vt_udlong_vec vt_ui8_vec;
+
+		[case(VT_R8)] dlong vt_r8;
+		[case(VT_R8 | VT_VECTOR)] vt_dlong_vec vt_r8_vec;
+		[case(VT_R8 | VT_ARRAY)] vt_dlong_safe2_array vt_r8_array;
+
+		[case(VT_CY)] dlong vt_cy;
+		[case(VT_CY | VT_VECTOR)] vt_dlong_vec vt_cy_vec;
+		[case(VT_CY | VT_ARRAY)] vt_dlong_safe2_array vt_cy_array;
+
+		[case(VT_DATE)] dlong vt_date;
+		[case(VT_DATE | VT_VECTOR)] vt_dlong_vec vt_date_vec;
+		[case(VT_DATE| VT_ARRAY)] vt_dlong_safe2_array vt_date_array;
+
+		[case(VT_FILETIME)] udlong vt_filetime;
+		[case(VT_FILETIME | VT_VECTOR)] vt_udlong_vec vt_filetime_vec;
+
+		[case(VT_BSTR)] vt_bstr vt_bstr;
+		[case(VT_BSTR | VT_VECTOR)] vt_bstr_vec vt_bstr_v;
+		[case(VT_BSTR | VT_ARRAY)] vt_bstr_safe2_array vt_bstr_array;
+
+		[case(VT_LPWSTR)] vt_lpwstr vt_lpwstr;
+		[case(VT_LPWSTR | VT_VECTOR)] vt_lpwstr_vec vt_lpwstr_v;
+
+		[case(VT_COMPRESSED_LPWSTR)] vt_compressed_lpwstr vt_compressed_lpwstr;
+		[case(VT_COMPRESSED_LPWSTR | VT_VECTOR)] vt_compressed_lpwstr_vec vt_compresseed_lpwstr_v;
+
+		[case(VT_DECIMAL)] vt_decimal vt_decimal;
+		[case(VT_DECIMAL | VT_VECTOR)] vt_decimal_vec vt_decimal_v;
+
+		[case(VT_CLSID)] GUID vt_clid;
+		[case(VT_CLSID | VT_VECTOR)] vt_clsid_vec vt_clsid_v;
+
+		[case(VT_BLOB)] DATA_BLOB vt_blob;
+		[case(VT_BLOB_OBJECT)] DATA_BLOB vt_blob_object;
+
+		[case(VT_NULL)];
+		[case(VT_EMPTY)];
+
+		[case(VT_VARIANT)] vt_variant_wrap vt_variant_wrap;
+		[case(VT_VARIANT | VT_VECTOR)] vt_variant_wrap_vec vt_variant_wrap_vec;
+		[case(VT_VARIANT | VT_ARRAY)]  vt_variant_wrap_safearray2 vt_variant_wrap_array;
+	} serialised_types;
+
+	/* MS-WSP 2.2.1.44 SERIALIZEDPROPERTYVALUE */
+	typedef [public] struct {
+		uint32 dwtype;
+		[switch_is(dwtype)] serialised_types rgb;
+	} wsp_serializedpropertyvalue;
+
+	/* MS-WSP 2.2.3.16 CPMFetchValueOut */
+	typedef [public] struct {
+		uint32 cbvalue;
+		uint32 fmoreexists;
+		uint32 fvalueexists;
+		/*
+		 * very nearly the same as wsp_cbasestoragevariant, only
+		 * different in how array types are represented, also only
+		 * a portion of the value (serializedpropertyvalue) is here
+		 *
+		 * Additionally if the property doesn't exist (e.g.
+		 * fvalueexists == 0) cbvalue can still have value
+		 * so we can't define the 'vvalue' element below
+		 *
+		 * uint8 value[cbvalue];
+		 */
+	} wsp_cpmfetchvalueout;
+
+	/* MS-WSP 2.2.3.31 CPMSetScopePrioritizationIn */
+	typedef [public] struct {
+		uint32 priority;
+		uint32 eventfrequency;
+	} wsp_cpmsetscopeprioritizationin;
+
+	/* MS-WSP 2.2.3.18 CPMSendNotifyOut */
+	typedef [public] struct {
+		uint32 watchnotify;
+	} wsp_cpmsendnotifyout;
+
+	/* MS-WSP 2.2.3.30 CPMGetRowsetNotifyOut */
+	typedef [public] struct {
+		uint32 wid;
+		uint8 eventinfo;
+		uint8 rowitemstate;
+		uint8 changeditemstate;
+		uint8 rowsetevent;
+		dlong rowseteventdata1;
+		dlong rowseteventdata2;
+	} wsp_cpmgetrowsetnotifyout;
+
+	/* MS-WSP 2.2.3.34 CPMGetScopeStatisticsOut */
+	typedef [public] struct {
+		uint32 dwindexeditems;
+		uint32 dwoutstandingadds;
+		uint32 dwoustandingmodifies;
+	} wsp_cpmgetscopestatisticsout;
+
+	/* MS-WSP 2.2.3.19 CPMGetApproximatePositionIn */
+	typedef [public] struct {
+		uint32 hcursor;
+		uint32 chapt;
+		uint32 bmk;
+	} wsp_cpmgetapproximatepositionin;
+
+	/* MS-WSP 2.2.3.20 CPMGetApproximatePositionOut */
+	typedef [public] struct {
+		uint32 numerator;
+		uint32 denominator;
+	} wsp_cpmgetapproximatepositionout;
+
+	/* MS-WSP 2.2.3.21 CPMCompareBmkIn */
+	typedef [public] struct {
+		uint32 hcursor;
+		uint32 chapt;
+		uint32 bmkfirst;
+		uint32 bmksecond;
+	} wsp_cpmcomparebmkin;
+
+	/* MS-WSP 2.2.3.22 CPMCompareBmkOut */
+	typedef [public] struct {
+		uint32 dwcomparison;
+	} wsp_cpmcomparebmkout;
+
+	/* MS-WSP 2.2.3.1 CPMCiStateInOut */
+	typedef [public] struct {
+		uint32 cbstruct;
+		uint32 cwordlist;
+		uint32 cpersistentindex;
+		uint32 cqueries;
+		uint32 cdocuments;
+		uint32 cfreshtest;
+		uint32 dwmergeprogress;
+		uint32 estate;
+		uint32 cfiltereddocuments;
+		uint32 ctotaldocuments;
+		uint32 cpendingscans;
+		uint32 dwindexsize;
+		uint32 cuniquekeys;
+		uint32 csecqdocuments;
+		uint32 dwpropcachesize;
+	} wsp_cpmcistateinout;
+
+	/* MS-WSP 2.2.3.27 CPMFindIndicesIn */
+	typedef [public] struct {
+		uint32 cwids;
+		uint32 cdepthprev;
+		uint32 pwids[cwids];
+		uint32 prgirowprev[cdepthprev];
+	} wsp_findindicesin;
+
+	/* MS-WSP 2.2.3.28 CPMFindIndicesOut */
+	typedef [public] struct {
+		uint32 cdepthnext;
+		uint32 prgirownext[cdepthnext];
+	} wsp_findindicesout;
+
+	typedef [public] struct {
+		uint32 hcursor;
+		uint32 chapt;
+	} wsp_cpmsresetstartpos;
+
+	typedef [public, nodiscriminant, switch_type(uint32)] union {
+		[case(CPMCONNECT)] wsp_cpmconnectin cpmconnect;
+		[case(CPMCREATEQUERY)] wsp_cpmcreatequeryin cpmcreatequery;
+		[case(CPMFREECURSOR)] wsp_cpmfreecursorin cpmfreecursor;
+		[case(CPMGETROWS)] wsp_cpmgetrowsin cpmgetrows;
+		[case(CPMSETBINDINGSIN)] wsp_cpmsetbindingsin cpmsetbindings;
+		[case(CPMRESTARTPOSITIONIN)] wsp_cpmsresetstartpos cpmresetstartpos;
+		[case(CPMGETQUERYSTATUS)] wsp_cpmgetquerystatusin cpmgetquerystatus;
+		[case(CPMGETQUERYSTATUSEX)] wsp_cpmgetquerystatusexin cpmgetquerystatusex;
+		[case(CPMSETSCOPEPRIORITIZATION)]  wsp_cpmsetscopeprioritizationin cpmsetscopeprioritizationin;
+		[case(CPMGETNOTIFY)]; /*header only*/
+		[case(CPMGETROWSETNOTIFY)]; /*header only*/
+		[case(CPMDISCONNECT)]; /*header only*/
+		[case(CPMGETSCOPESTATISTICS)]; /*header only*/
+		[case(CPMGETAPPROXIMATEPOSITION)] wsp_cpmgetapproximatepositionin getapproximateposition;
+		[case(CPMCOMPAREBMK)] wsp_cpmcomparebmkin cpmcomparebmk;
+		[case(CPMCISTATEOUT)] wsp_cpmcistateinout wsp_cpmcistate;
+		[case(CPMFINDINDICES)] wsp_findindicesin wsp_findindices;
+		[case(CPMRATIOFINISHED)] wsp_cpmratiofinishedin wsp_cpmratiofinished;
+		[case(CPMFETCHVALUE)] wsp_cpmfetchvaluein cpmfetchvalue;
+	} req_message;
+
+	typedef [public, nodiscriminant, switch_type(uint32)] union {
+		[case(CPMCONNECT)] wsp_cpmconnectout cpmconnect;
+		[case(CPMCREATEQUERY)] wsp_cpmcreatequeryout cpmcreatequery;
+		[case(CPMFREECURSOR)] wsp_cpmfreecursorout cpmfreecursor;
+		[case(CPMGETROWS)] wsp_cpmgetrowsout cpmgetrows;
+		[case(CPMSETBINDINGSIN)]; /* just has header */
+		[case(CPMRESTARTPOSITIONIN)]; /* just has header */
+		[case(CPMGETQUERYSTATUS)] wsp_cpmgetquerystatusout cpmgetquerystatus;
+		[case(CPMSENDNOTIFYOUT)] wsp_cpmsendnotifyout cpmsendnotifyoutcpmgetquerystatus;
+		[case(CPMGETQUERYSTATUSEX)] wsp_cpmgetquerystatusexout cpmgetquerystatusex;
+		[case(CPMSETSCOPEPRIORITIZATION)]; /* just had header */
+		[case(CPMGETROWSETNOTIFY)] wsp_cpmgetrowsetnotifyout cpmgetrowsetnotifyout;
+		[case(CPMGETAPPROXIMATEPOSITION)] wsp_cpmgetapproximatepositionout getapproximateposition;
+		[case(CPMCOMPAREBMK)] wsp_cpmcomparebmkout cpmcomparebmk;
+		[case(CPMCISTATEOUT)] wsp_cpmcistateinout wsp_cpmcistate;
+		[case(CPMFINDINDICES)] wsp_findindicesout wsp_findindices;
+		[case(CPMGETSCOPESTATISTICS)] wsp_cpmgetscopestatisticsout cpmgetscopestatistics;
+		[case(CPMRATIOFINISHED)] wsp_cpmratiofinishedout wsp_cpmratiofinished;
+		[case(CPMFETCHVALUE)] wsp_cpmfetchvalueout cpmfetchvalue;
+	} resp_message;
+
+	typedef [public] struct {
+		wsp_header header;
+		[switch_is(header.msg)] req_message message;
+	} wsp_request;
+
+	typedef [public] struct {
+		wsp_header header;
+		[switch_is(header.msg)] resp_message message;
+	} wsp_response;
+};
+

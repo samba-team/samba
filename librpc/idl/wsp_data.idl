@@ -1,0 +1,308 @@
+#include "idl_types.h"
+[
+	pointer_default(unique)
+]
+
+interface constants
+{
+	/*
+	 * Use en-us as default locale
+	 * see MS-LCID 'Section 2.2 LCID Structure;
+	 * for details of this and other language id(s)
+	 */
+	const uint32_t WSP_DEFAULT_LCID = 0x00000409;
+
+	/* values for guidPropertySet */
+	const char* DBPROPSET_FSCIFRMWRK_EXT = "A9BD1526-6A80-11D0-8C9D-0020AF1D740E";
+	const char* DBPROPSET_QUERYEXT = "A7AC77ED-F8D7-11CE-A798-0020F8008025";
+	const char* DBPROPSET_CIFRMWRKCORE_EXT = "AFAFACA5-B5D1-11D0-8C62-00C04FC2DB8D";
+	const char* DBPROPSET_MSIDXS_ROWSETEXT = "AA6EE6B0-E828-11D0-B23E-00AA0047FC01";
+
+	/* Chapter and bookmark handle well known values */
+	const uint32_t DB_NULL_HCHAPTER			= 0x00000000;
+	const uint32_t DBBMK_FIRST			= 0xFFFFFFFC;
+	const uint32_t DBBMK_LAST			= 0xFFFFFFFD;
+	/* properties of DBPROPSET_FSCIFRMWRK_EXT propertyset */
+	const uint32_t DBPROP_CI_CATALOG_NAME		= 0x00000002;
+	const uint32_t DBPROP_CI_INCLUDE_SCOPES		= 0x00000003;
+	const uint32_t DBPROP_CI_SCOPE_FLAGS		= 0x00000004;
+	const uint32_t DBPROP_CI_QUERY_TYPE		= 0x00000007;
+	const uint32_t DBPROP_GENERICOPTIONS_STRING	= 0x00000006;
+	const uint32_t DBPROP_USECONTENTINDEX		= 0x00000002;
+	const uint32_t DBPROP_IGNORENOISEONLYCLAUSES	= 0x00000005;
+	const uint32_t DBPROP_DEFERCATALOGVERIFICATION	= 0x00000008;
+	const uint32_t DBPROP_IGNORESBRI		= 0x0000000E;
+	const uint32_t DBPROP_GENERATEPARSETREE		= 0x0000000A;
+	const uint32_t DBPROP_FREETEXTANYTERM		= 0x0000000C;
+	const uint32_t DBPROP_FREETEXTUSESTEMMING	= 0x0000000D;
+
+	/* properties of DBPROPSET_QUERYEXT propertyset */
+	const uint32_t DBPROP_DEFERNONINDEXEDTRIMMING	= 0x00000003;
+	const uint32_t DBPROP_USEEXTENDEDDBTYPES	= 0x00000004;
+	const uint32_t DBPROP_FIRSTROWS			= 0x00000007;
+	const uint32_t DBPROP_ENABLEROWSETEVENTS	= 0x00000010;
+
+	/* properties of DBPROPSET_MSIDXS_ROWSETEXT */
+
+	const uint32_t MSIDXSPROP_ROWSETQUERYSTATUS	= 0x02;
+	const uint32_t MSIDXSPROP_COMMAND_LOCALE_STRING	= 0x03;
+	const uint32_t MSIDXSPROP_QUERY_RESTRICTION	= 0x04;
+	const uint32_t MSIDXSPROP_PARSE_TREE		= 0x05;
+	const uint32_t MSIDXSPROP_MAX_RANK		= 0x06;
+	const uint32_t MSIDXSPROP_RESULTS_FOUND		= 0x07;
+
+	/* flags of DBPROP_CI_SCOPE_FLAGS property */
+	const uint32_t QUERY_DEEP			= 0x01;
+	const uint32_t QUERY_VIRTUAL_PATH		= 0x02;
+
+	/* query type for BPROP_CI_QUERY_TYPE property */
+	const uint32_t CINORMAL			= 0x00000000;
+
+	/* properties of DBPROPSET_CIFRMWRKCORE_EXT propertyset */
+
+	const uint32_t DBPROP_MACHINE			= 0x00000002;
+	const uint32_t DBPROP_CLIENT_CLSID		= 0x00000003;
+
+	/*
+	 * STAT bit constants
+	 */
+
+	/* The asynchronous query is still running. */
+	const uint32_t STAT_BUSY			= 0x00000000;
+	/* The query is in an error state. */
+	const uint32_t STAT_ERROR			= 0x00000001;
+	/* The query is complete and rows can be requested. */
+	const uint32_t STAT_DONE			= 0x00000002;
+	/* The query is comp*/
+	const uint32_t STAT_REFRESH			= 0x00000003;
+	/*
+	 * Noise words were replaced by wildcard characters in the
+	 * content query.
+	 */
+	const uint32_t STAT_NOISE_WORDS			= 0x00000010;
+	/*
+	 * The results of the query might be incorrect because the
+	 * query involved modified but unindexed files.
+	 */
+	const uint32_t STAT_CONTENT_OUT_OF_DATE		= 0x00000020;
+	/*
+	 * The content query was too complex to complete or
+	 * required enumeration instead of use of the content index.
+	 */
+	const uint32_t STAT_CONTENT_QUERY_INCOMPLETE	= 0x00000080;
+	/*
+	 * The results of the query might be incorrect because the
+	 * query execution reached the maximum allowable time.
+	 */
+	const uint32_t STAT_TIME_LIMIT_EXCEEDED		= 0x00000100;
+
+	/*
+	 * a const to force an inline array to be evaluated at runtime to
+	 * to get around an incomplete type error
+	 */
+	const uint32 SINGLE_ITEM = 1;
+
+	/* WSP message types */
+
+	/* CPMConnectIn or CPMConnectOut */
+	const uint32 CPMCONNECT = 0x000000C8;
+	/* CPMDisconnect */
+	const uint32 CPMDISCONNECT = 0x000000C9;
+	/* CPMCreateQueryIn or CPMCreateQueryOut */
+	const uint32 CPMCREATEQUERY = 0x000000CA;
+	/* CPMFreeCursorIn or CPMFreeCursorOut */
+	const uint32 CPMFREECURSOR = 0x000000CB;
+	/* CPMGetRowsIn or CPMGetRowsOut */
+	const uint32 CPMGETROWS = 0x000000CC;
+	/* CPMRatioFinishedIn or CPMRatioFinishedOut */
+	const uint32 CPMRATIOFINISHED = 0x000000CD;
+	/* CPMCompareBmkIn or CPMCompareBmkOut */
+	const uint32 CPMCOMPAREBMK = 0x000000CE;
+	/* CPMGetApproximatePositionIn or CPMGetApproximatePositionOut */
+	const uint32 CPMGETAPPROXIMATEPOSITION = 0x000000CF;
+	/* CPMSetBindingsIn */
+	const uint32 CPMSETBINDINGSIN = 0x000000D0;
+	/* CPMGetNotify */
+	const uint32 CPMGETNOTIFY = 0x000000D1;
+	/* CPMSendNotifyOut */
+	const uint32 CPMSENDNOTIFYOUT = 0x000000D2;
+	/* CPMGetQueryStatusIn or CPMGetQueryStatusOut */
+	const uint32 CPMGETQUERYSTATUS = 0x000000D7;
+	/* CPMCiStateInOut */
+	const uint32 CPMCISTATEOUT = 0x000000D9;
+	/* CPMFetchValueIn or CPMFetchValueOut */
+	const uint32 CPMFETCHVALUE = 0x000000E4;
+	/* CPMGetQueryStatusExIn or CPMGetQueryStatusExOut */
+	const uint32 CPMGETQUERYSTATUSEX = 0x000000E7;
+	/* CPMRestartPositionIn */
+	const uint32 CPMRESTARTPOSITIONIN = 0x000000E8;
+	/* CPMSetCatStateIn (not supported) */
+	const uint32 CPMSETCATSTATEIN = 0x000000EC;
+	/* CPMGetRowsetNotifyIn or CPMGetRowsetNotifyOut */
+	const uint32 CPMGETROWSETNOTIFY = 0x000000F1;
+	/* CPMFindIndicesIn, or CPMFindIndicesOut */
+	const uint32 CPMFINDINDICES = 0x000000F2;
+	/* CPMSetScopePrioritizationIn or CPMSetScopePrioritizationOut */
+	const uint32 CPMSETSCOPEPRIORITIZATION = 0x000000F3;
+	/* CPMGetScopeStatisticsIn or CPMGetScopeStatisticsOut */
+	const uint32 CPMGETSCOPESTATISTICS = 0x000000F4;
+
+	const uint32 DBKIND_GUID_NAME		= 0x00000000;
+	const uint32 DBKIND_GUID_PROPID		= 0x00000001;
+	const uint32 PRSPEC_LPWSTR		= 0x00000000;
+	const uint32 PRSPEC_PROPID		= 0x00000001;
+	/* type constants for variant types */
+
+	const uint32 VT_EMPTY			= 0x0000;
+	const uint32 VT_NULL			= 0x0001;
+	const uint32 VT_I2			= 0x0002;
+	const uint32 VT_I4			= 0x0003;
+	const uint32 VT_R4			= 0x0004;
+	const uint32 VT_R8			= 0x0005;
+	const uint32 VT_CY			= 0x0006;
+	const uint32 VT_DATE			= 0x0007;
+	const uint32 VT_BSTR			= 0x0008;
+	const uint32 VT_I1			= 0x0010;
+	const uint32 VT_UI1			= 0x0011;
+	const uint32 VT_UI2			= 0x0012;
+	const uint32 VT_UI4			= 0x0013;
+	const uint32 VT_I8			= 0x0014;
+	const uint32 VT_UI8			= 0x0015;
+	const uint32 VT_INT			= 0x0016;
+	const uint32 VT_UINT			= 0x0017;
+	const uint32 VT_ERROR			= 0x000A;
+	const uint32 VT_BOOL			= 0x000B;
+	const uint32 VT_VARIANT			= 0x000C;
+	const uint32 VT_DECIMAL			= 0x000E;
+	const uint32 VT_FILETIME		= 0x0040;
+	const uint32 VT_BLOB			= 0x0041;
+	const uint32 VT_BLOB_OBJECT		= 0x0046;
+	const uint32 VT_CLSID			= 0x0048;
+	const uint32 VT_LPSTR			= 0x001E;
+	const uint32 VT_LPWSTR			= 0x001F;
+	const uint32 VT_COMPRESSED_LPWSTR	= 0x0023;
+	const uint32 VT_VECTOR			= 0x1000;
+	const uint32 VT_ARRAY			= 0x2000;
+
+	/* restriction types */
+	const uint32 RTNONE			= 0x00000000;
+	const uint32 RTAND			= 0x00000001;
+	const uint32 RTOR			= 0x00000002;
+	const uint32 RTNOT			= 0x00000003;
+	const uint32 RTCONTENT			= 0x00000004;
+	const uint32 RTPROPERTY			= 0x00000005;
+	const uint32 RTPROXIMITY		= 0x00000006;
+	const uint32 RTVECTOR 			= 0x00000007;
+	const uint32 RTNATLANGUAGE		= 0x00000008;
+	const uint32 RTSCOPE			= 0x00000009;
+	const uint32 RTREUSEWHERE		= 0x00000011;
+	const uint32 RTINTERNALPROP		= 0x00FFFFFA;
+	const uint32 RTPHRASE			= 0x00FFFFFD;
+	const uint32 RTCOERCE_ADD	 	= 0x0000000A;
+	const uint32 RTCOERCE_MULTIPLY		= 0x0000000B;
+	const uint32 RTCOERCE_ABSOLUTE		= 0x0000000C;
+	const uint32 RTPROB			= 0x0000000D;
+	const uint32 RTFEEDBACK			= 0x0000000E;
+	const uint32 RTRELDOC			= 0x0000000F;
+
+
+	/* Row seek types */
+	const uint32 EROWSEEKNONE		= 0x00000000;
+	const uint32 EROWSEEKNEXT		= 0x00000001;
+	const uint32 EROWSEEKAT			= 0x00000002;
+	const uint32 EROWSEEKATRATIO		= 0x00000003;
+	const uint32 EROWSEEKBYBOOKMARK		= 0x00000004;
+
+	const uint32 WINDOWS_7			= 0x00000700;
+	const uint32 WINDOWS_2008		= 0x00010700;
+
+	/* Relops */
+	const uint32 PRLT 	= 0x00000000;
+	const uint32 PRLE 	= 0x00000001;
+	const uint32 PRGT 	= 0x00000002;
+	const uint32 PRGE 	= 0x00000003;
+	const uint32 PREQ 	= 0x00000004;
+	const uint32 PRNE 	= 0x00000005;
+	const uint32 PRRE 	= 0x00000006;
+	const uint32 PRALLBITS	= 0x00000007;
+	const uint32 PRSOMEBITS = 0x00000008;
+	const uint32 PRALL 	= 0x00000100;
+	const uint32 PRANY 	= 0x00000200;
+
+	const uint32 PROPAGATE_NONE	= 0;
+	const uint32 PROPAGATE_ADD	= 1;
+	const uint32 PROPAGATE_DELETE	= 2;
+	const uint32 PROPAGATE_MODIFY	= 3;
+	const uint32 PROPAGATE_ROWSET	= 4;
+
+	const uint32 ROWSETEVENT_ITEMSTATE_NOTINROWSET	= 0;
+	const uint32 ROWSETEVENT_ITEMSTATE_INROWSET	= 1;
+	const uint32 ROWSETEVENT_ITEMSTATE_UNKNOWN	= 2;
+
+	const uint32 ROWSETEVENT_TYPE_DATAEXPIRED	= 0;
+	const uint32 ROWSETEVENT_TYPE_FOREGROUNDLOST	= 1;
+	const uint32 ROWSETEVENT_TYPE_SCOPESTATISTICS	= 2;
+
+	const uint32 DBCOMPARE_LT 		= 0x00000000;
+	const uint32 DBCOMPARE_EQ 		= 0x00000001;
+	const uint32 DBCOMPARE_GT 		= 0x00000002;
+	const uint32 DBCOMPARE_NE 		= 0x00000003;
+	const uint32 DBCOMPARE_NOTCOMPARABLE 	= 0x00000004;
+
+	const uint32 VECTOR_RANK_MIN 		= 0x00000000;
+	const uint32 VECTOR_RANK_MAX 		= 0x00000001;
+	const uint32 VECTOR_RANK_INNER 		= 0x00000002;
+	const uint32 VECTOR_RANK_DICE 		= 0x00000003;
+	const uint32 VECTOR_RANK_JACCARD	= 0x00000004;
+
+	const uint32 DBAGGTTYPE_BYNONE 		= 0x00000000;
+	const uint32 DBAGGTTYPE_SUM 		= 0x00000001;
+	const uint32 DBAGGTTYPE_MAX 		= 0x00000002;
+	const uint32 DBAGGTTYPE_MIN 		= 0x00000003;
+	const uint32 DBAGGTTYPE_AVG 		= 0x00000004;
+	const uint32 DBAGGTTYPE_COUNT 		= 0x00000005;
+	const uint32 DBAGGTTYPE_CHILDCOUNT	= 0x00000006;
+	const uint32 DBAGGTTYPE_BYFREQ 		= 0x00000007;
+	const uint32 DBAGGTTYPE_FIRST 		= 0x00000008;
+	const uint32 DBAGGTTYPE_DATERANGE 	= 0x00000009;
+	const uint32 DBAGGTTYPE_REPRESENTATIVEOF= 0x0000000a;
+	const uint32 DBAGGTTYPE_EDITDISTANCE 	= 0x0000000b;
+
+	const uint32 ESEQUENTIAL 			= 0x00000001;
+	const uint32 ELOCATEABLE 			= 0x00000003;
+	const uint32 ESCROLLABLE 			= 0x00000007;
+	const uint32 EASYNCHRONOUS 			= 0x00000008;
+	const uint32 EFIRSTROWS				= 0x00000080;
+	const uint32 EHOLDROWS				= 0x00000200;
+	const uint32 ECHAPTERED				= 0x00000800;
+	const uint32 EUSECI				= 0x00001000;
+	const uint32 EDEFERTRIMMING			= 0x00002000;
+	const uint32 ENABLEROWSETEVENTS			= 0x00800000;
+	const uint32 EDONOTCOMPUTEEXPENSIVEPROPS	= 0x00400000;
+
+	const uint32 CI_STATE_SHADOW_MERGE 		= 0x00000001;
+	const uint32 CI_STATE_MASTER_MERGE 		= 0x00000002;
+	const uint32 CI_STATE_ANNEALING_MERGE 		= 0x00000008;
+	const uint32 CI_STATE_SCANNING 			= 0x00000010;
+	const uint32 CI_STATE_LOW_MEMORY 		= 0x00000080;
+	const uint32 CI_STATE_HIGH_IO 			= 0x00000100;
+	const uint32 CI_STATE_MASTER_MERGE_PAUSED 	= 0x00000200;
+	const uint32 CI_STATE_READ_ONLY 		= 0x00000400;
+	const uint32 CI_STATE_BATTERY_POWER 		= 0x00000800;
+	const uint32 CI_STATE_USER_ACTIVE 		= 0x00001000;
+	const uint32 CI_STATE_LOW_DISK  		= 0x00010000;
+	const uint32 CI_STATE_HIGH_CPU	 		= 0x00020000;
+
+	const uint32 STORESTATUSOK			= 0x00000000;
+	const uint32 STORESTATUSDEFERRED		= 0x00000001;
+	const uint32 STORESTATUSNULL			= 0x00000002;
+
+	const uint32 DB_S_ENDOFROWSET			= 0x00040EC6;
+
+	const uint32 XOR_CONST				= 0x59533959;
+	const uint32 E_UNEXPECTED			= 0x8000FFFF;
+	const uint32 WIN_UPDATE_ERR			= 0x80070003;
+
+	const uint32 QUERY_SORTASCEND			= 0x00000000;
+	const uint32 QUERY_DESCEND			= 0x00000001;
+}

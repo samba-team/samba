@@ -305,6 +305,16 @@ bld.SAMBA_SUBSYSTEM('NDR_FSRVP',
 	public_deps='ndr'
 	)
 
+bld.SAMBA_SUBSYSTEM('NDR_WSP',
+	source='gen_ndr/ndr_wsp.c wsp/wsp_helper.c',
+	public_deps='ndr'
+	)
+
+bld.SAMBA_SUBSYSTEM('NDR_WSP_DATA',
+	source='gen_ndr/ndr_wsp_data.c',
+	public_deps='ndr'
+	)
+
 bld.SAMBA_SUBSYSTEM('NDR_WITNESS',
     source='gen_ndr/ndr_witness.c ndr/ndr_witness.c',
     public_deps='ndr'
@@ -612,7 +622,7 @@ bld.SAMBA_LIBRARY('ndr-samba',
     NDR_DNSSERVER NDR_EPMAPPER NDR_XATTR NDR_UNIXINFO NDR_NAMED_PIPE_AUTH
     NDR_NTPRINTING NDR_FSRVP NDR_WITNESS NDR_MDSSVC NDR_OPEN_FILES NDR_SMBXSRV
     NDR_SMB3POSIX
-    NDR_KRB5CCACHE''',
+    NDR_KRB5CCACHE NDR_WSP''',
     private_library=True,
     grouping_library=True
     )
