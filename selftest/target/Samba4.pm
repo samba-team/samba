@@ -703,8 +703,13 @@ $ctx->{unix_name}:x:$ctx->{unix_gid}:
 
 	my $hostname = lc($ctx->{hostname});
 	open(HOSTS, ">>$ctx->{nsswrap_hosts}");
-	print HOSTS "$ctx->{ipv4} ${hostname}.$ctx->{dnsname} ${hostname}\n";
-	print HOSTS "$ctx->{ipv6} ${hostname}.$ctx->{dnsname} ${hostname}\n";
+	if ($hostname eq "localdc") {
+		print HOSTS "$ctx->{ipv4} ${hostname}.$ctx->{dnsname} $ctx->{dnsname} ${hostname}\n";
+		print HOSTS "$ctx->{ipv6} ${hostname}.$ctx->{dnsname} $ctx->{dnsname} ${hostname}\n";
+	} else {
+		print HOSTS "$ctx->{ipv4} ${hostname}.$ctx->{dnsname} ${hostname}\n";
+		print HOSTS "$ctx->{ipv6} ${hostname}.$ctx->{dnsname} ${hostname}\n";
+	}
 	close(HOSTS);
 
 	my $configuration = "--configfile=$ctx->{smb_conf}";
