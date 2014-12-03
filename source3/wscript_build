@@ -140,6 +140,7 @@ bld.SAMBA3_LIBRARY('samba-passdb',
                    source='',
                    deps='pdb',
                    private_library=False,
+                   grouping_library=True,
                    pc_files=[],
                    public_headers_install=True,
                    public_headers='''
