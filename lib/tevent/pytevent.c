@@ -57,12 +57,12 @@ typedef struct {
 	struct tevent_fd *fd;
 } TeventFd_Object;
 
-staticforward PyTypeObject TeventContext_Type;
-staticforward PyTypeObject TeventReq_Type;
-staticforward PyTypeObject TeventQueue_Type;
-staticforward PyTypeObject TeventSignal_Type;
-staticforward PyTypeObject TeventTimer_Type;
-staticforward PyTypeObject TeventFd_Type;
+static PyTypeObject TeventContext_Type;
+static PyTypeObject TeventReq_Type;
+static PyTypeObject TeventQueue_Type;
+static PyTypeObject TeventSignal_Type;
+static PyTypeObject TeventTimer_Type;
+static PyTypeObject TeventFd_Type;
 
 static int py_context_init(struct tevent_context *ev)
 {

@@ -33,7 +33,7 @@ void init_ldb(void);
 
 static PyObject *pyldb_module;
 static PyObject *py_ldb_error;
-staticforward PyTypeObject PySambaLdb;
+static PyTypeObject PySambaLdb;
 
 static void PyErr_SetLdbError(PyObject *error, int ret, struct ldb_context *ldb_ctx)
 {
