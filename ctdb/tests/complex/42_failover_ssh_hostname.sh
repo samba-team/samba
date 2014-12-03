@@ -51,8 +51,9 @@ echo "Removing ${test_ip} from the local neighbor table..."
 ip neigh flush "$test_prefix" >/dev/null 2>&1 || true
 
 echo "SSHing to ${test_ip} and running hostname..."
-original_hostname=$(ssh -o "StrictHostKeyChecking no" $test_ip hostname)
-[ $? -eq 0 ]
+if ! original_hostname=$(ssh -o "StrictHostKeyChecking no" $test_ip hostname) ; then
+    die "Failed to get original hostname via SSH..."
+fi
 
 echo "Hostname is: ${original_hostname}"
 
@@ -65,8 +66,12 @@ wait_until_node_has_status $test_node disabled
 gratarp_sniff_wait_show
 
 echo "SSHing to ${test_ip} and running hostname (again)..."
-new_hostname=$(ssh -o "StrictHostKeyChecking no" $test_ip hostname)
-[ $? -eq 0 ]
+if ! new_hostname=$(ssh -o "StrictHostKeyChecking no" $test_ip hostname) ; then
+    echo "Failed to get new hostname via SSH..."
+    echo "DEBUG:"
+    ip neigh show
+    exit 1
+fi
 
 echo "Hostname is: ${new_hostname}"
 
