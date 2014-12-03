@@ -319,14 +319,10 @@ static int rwrap_create_fake_cname_rr(const char *key,
 
 /* Prepares a fake header with a single response. Advances header_blob */
 static ssize_t rwrap_fake_header(uint8_t **header_blob, size_t remaining,
-				 size_t rdata_size)
+			         size_t ancount, size_t arcount)
 {
 	uint8_t *hb;
 	HEADER *h;
-	int answers;
-
-	/* If rdata_size is zero, the answer is empty */
-	answers = rdata_size > 0 ? 1 : 0;
 
 	if (remaining < NS_HFIXEDSZ) {
 		RWRAP_LOG(RWRAP_LOG_ERROR, "Buffer too small!\n");
@@ -343,7 +339,8 @@ static ssize_t rwrap_fake_header(uint8_t **header_blob, size_t remaining,
 	h->ra = 1;			/* resursion available */
 
 	h->qdcount = htons(1);		/* no. of questions */
-	h->ancount = htons(answers);	/* no. of answers */
+	h->ancount = htons(ancount);	/* no. of answers */
+	h->arcount = htons(arcount);	/* no. of add'tl records */
 
 	hb += NS_HFIXEDSZ;		/* move past the header */
 	*header_blob = hb;
@@ -418,47 +415,6 @@ static ssize_t rwrap_fake_rdata_common(uint16_t type,
 	return written + 3 * sizeof(uint16_t) + sizeof(uint32_t) + rdata_size;
 }
 
-static ssize_t rwrap_fake_common(uint16_t type,
-				 const char *question,
-				 size_t rdata_size,
-				 uint8_t **answer_ptr,
-				 size_t anslen)
-{
-	uint8_t *a = *answer_ptr;
-	ssize_t written;
-	ssize_t total = 0;
-	size_t remaining;
-
-	remaining = anslen;
-
-	written = rwrap_fake_header(&a, remaining, rdata_size);
-	if (written < 0) {
-		return -1;
-	}
-	total += written;
-	remaining -= written;
-
-	written = rwrap_fake_question(question, type, &a, remaining);
-	if (written < 0) {
-		return -1;
-	}
-	remaining -= written;
-	total += written;
-
-	/* rdata_size = 0 denotes an empty answer */
-	if (rdata_size > 0) {
-		written = rwrap_fake_rdata_common(type, rdata_size, question,
-						remaining, &a);
-		if (written < 0) {
-			return -1;
-		}
-		total += written;
-	}
-
-	*answer_ptr = a;
-	return total;
-}
-
 static ssize_t rwrap_fake_a(struct rwrap_fake_rr *rr,
 			    uint8_t *answer_ptr,
 			    size_t anslen)
@@ -472,8 +428,8 @@ static ssize_t rwrap_fake_a(struct rwrap_fake_rr *rr,
 		return -1;
 	}
 
-	resp_size = rwrap_fake_common(ns_t_a, rr->key, sizeof(struct in_addr),
-				      &a, anslen);
+	resp_size = rwrap_fake_rdata_common(ns_t_a, sizeof(struct in_addr), rr->key,
+					    anslen, &a);
 	if (resp_size < 0) {
 		return -1;
 	}
@@ -496,8 +452,8 @@ static ssize_t rwrap_fake_aaaa(struct rwrap_fake_rr *rr,
 		return -1;
 	}
 
-	resp_size = rwrap_fake_common(ns_t_aaaa, rr->key,
-				      sizeof(struct in6_addr), &a, anslen);
+	resp_size = rwrap_fake_rdata_common(ns_t_aaaa, sizeof(struct in6_addr),
+					    rr->key, anslen, &a);
 	if (resp_size < 0) {
 		return -1;
 	}
@@ -533,7 +489,8 @@ static ssize_t rwrap_fake_srv(struct rwrap_fake_rr *rr,
 	}
 	rdata_size += compressed_len;
 
-	resp_size = rwrap_fake_common(ns_t_srv, rr->key, rdata_size, &a, anslen);
+	resp_size = rwrap_fake_rdata_common(ns_t_srv, rdata_size,
+					    rr->key, anslen, &a);
 	if (resp_size < 0) {
 		return -1;
 	}
@@ -581,7 +538,8 @@ static ssize_t rwrap_fake_soa(struct rwrap_fake_rr *rr,
 	}
 	rdata_size += compressed_mb_len;
 
-	resp_size = rwrap_fake_common(ns_t_soa, rr->key, rdata_size, &a, anslen);
+	resp_size = rwrap_fake_rdata_common(ns_t_soa, rdata_size,
+					    rr->key, anslen, &a);
 	if (resp_size < 0) {
 		return -1;
 	}
@@ -622,28 +580,13 @@ static ssize_t rwrap_fake_cname(struct rwrap_fake_rr *rr,
 		return -1;
 	}
 
-	resp_size = rwrap_fake_common(ns_t_cname, rr->key, rdata_size,
-				      &a, anslen);
+	resp_size = rwrap_fake_rdata_common(ns_t_cname, rdata_size,
+					    rr->key, anslen, &a);
 	if (resp_size < 0) {
 		return -1;
 	}
 
 	memcpy(a, hostname_compressed, rdata_size);
-
-	return resp_size;
-}
-
-static ssize_t rwrap_fake_empty_query(const char *key,
-				      uint16_t type,
-				      uint8_t *answer,
-				      size_t anslen)
-{
-	ssize_t resp_size;
-
-	resp_size = rwrap_fake_common(type, key, 0, &answer, anslen);
-	if (resp_size < 0) {
-		return -1;
-	}
 
 	return resp_size;
 }
@@ -783,33 +726,70 @@ static int rwrap_get_record(const char *hostfile, unsigned recursion,
 	return rc;
 }
 
+static ssize_t rwrap_fake_empty(int type,
+				const char *question,
+				uint8_t *answer,
+				size_t anslen)
+{
+	ssize_t resp_data;
+	size_t remaining = anslen;
+
+	resp_data = rwrap_fake_header(&answer, remaining, 0, 0);
+	if (resp_data < 0) {
+		return -1;
+	}
+	remaining -= resp_data;
+
+	resp_data += rwrap_fake_question(question, type, &answer, remaining);
+	if (resp_data < 0) {
+		return -1;
+	}
+	remaining -= resp_data;
+
+	resp_data += rwrap_fake_rdata_common(type, 0, question,
+					    remaining, &answer);
+	if (resp_data < 0) {
+		return -1;
+	}
+
+	return resp_data;
+}
+
 static ssize_t rwrap_fake_answer(struct rwrap_fake_rr *rrs,
-				 int type,
 				 uint8_t *answer,
 				 size_t anslen)
 
 {
 	ssize_t resp_data;
+	size_t remaining = anslen;
+
+	resp_data = rwrap_fake_header(&answer, remaining, 1, 0);
+	if (resp_data < 0) {
+		return -1;
+	}
+	remaining -= resp_data;
+
+	resp_data += rwrap_fake_question(rrs->key, rrs->type, &answer, remaining);
+	if (resp_data < 0) {
+		return -1;
+	}
+	remaining -= resp_data;
 
 	switch (rrs->type) {
 	case ns_t_a:
-		resp_data = rwrap_fake_a(rrs, answer, anslen);
+		resp_data += rwrap_fake_a(rrs, answer, anslen);
 		break;
 	case ns_t_aaaa:
-		resp_data = rwrap_fake_aaaa(rrs, answer, anslen);
+		resp_data += rwrap_fake_aaaa(rrs, answer, anslen);
 		break;
 	case ns_t_srv:
-		resp_data = rwrap_fake_srv(rrs, answer, anslen);
+		resp_data += rwrap_fake_srv(rrs, answer, anslen);
 		break;
 	case ns_t_soa:
-		resp_data = rwrap_fake_soa(rrs, answer, anslen);
+		resp_data += rwrap_fake_soa(rrs, answer, anslen);
 		break;
 	case ns_t_cname:
-		resp_data = rwrap_fake_cname(rrs, answer, anslen);
-		break;
-	case ns_t_invalid:
-		resp_data = rwrap_fake_empty_query(rrs->key, type,
-						   answer, anslen);
+		resp_data += rwrap_fake_cname(rrs, answer, anslen);
 		break;
 	default:
 		return -1;
@@ -855,10 +835,12 @@ static int rwrap_res_fake_hosts(const char *hostfile,
 	case 0:
 		RWRAP_LOG(RWRAP_LOG_TRACE,
 				"Found record for [%s]\n", query_name);
+		resp_size = rwrap_fake_answer(rrs, answer, anslen);
 		break;
 	case ENOENT:
 		RWRAP_LOG(RWRAP_LOG_TRACE,
 				"No record for [%s]\n", query_name);
+		resp_size = rwrap_fake_empty(type, rrs->key, answer, anslen);
 		break;
 	default:
 		RWRAP_LOG(RWRAP_LOG_ERROR,
@@ -867,7 +849,6 @@ static int rwrap_res_fake_hosts(const char *hostfile,
 		return -1;
 	}
 
-	resp_size = rwrap_fake_answer(rrs, type, answer, anslen);
 	switch (resp_size) {
 	case -1:
 		RWRAP_LOG(RWRAP_LOG_ERROR,
