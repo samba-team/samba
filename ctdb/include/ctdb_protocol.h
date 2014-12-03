@@ -20,6 +20,8 @@
 #ifndef _CTDB_PROTOCOL_H
 #define _CTDB_PROTOCOL_H
 
+#include <sys/socket.h>
+
 /* location of daemon socket, set at configure time */
 #ifdef SOCKPATH
 #define CTDB_SOCKET 	SOCKPATH
