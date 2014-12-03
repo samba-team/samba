@@ -538,7 +538,7 @@ static int rwrap_fake_empty_query(const char *key,
 #define TYPE_MATCH(type, ns_type, rec_type, str_type, key, query) \
 	((type) == (ns_type) && \
 	 (strncmp((rec_type), (str_type), sizeof(str_type)) == 0) && \
-	 (strcmp(key, query)) == 0)
+	 (strcasecmp(key, query)) == 0)
 
 
 /* Reads in a file in the following format:
