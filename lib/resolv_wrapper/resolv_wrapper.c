@@ -141,6 +141,8 @@ static void rwrap_log(enum rwrap_dbglvl_e dbglvl,
 	}							\
 } while(0);
 
+#define RWRAP_MAX_RECURSION 5
+
 /* Priority and weight can be omitted from the hosts file, but need to be part
  * of the output
  */
@@ -657,7 +659,25 @@ static ssize_t rwrap_fake_empty_query(const char *key,
 	 (strcasecmp(key, query)) == 0)
 
 
-static int rwrap_get_record(const char *hostfile,
+static int rwrap_get_record(const char *hostfile, unsigned recursion,
+			    const char *query, int type,
+			    struct rwrap_fake_rr *rr);
+
+static int rwrap_srv_recurse(const char *hostfile, unsigned recursion,
+			     const char *query, struct rwrap_fake_rr *rr)
+{
+	int rc;
+
+	rc = rwrap_get_record(hostfile, recursion, query, ns_t_a, rr);
+	if (rc == 0) return 0;
+
+	rc = rwrap_get_record(hostfile, recursion, query, ns_t_aaaa, rr);
+	if (rc == ENOENT) rc = 0;
+
+	return rc;
+}
+
+static int rwrap_get_record(const char *hostfile, unsigned recursion,
 			    const char *query, int type,
 			    struct rwrap_fake_rr *rr)
 {
@@ -665,7 +685,12 @@ static int rwrap_get_record(const char *hostfile,
 	char buf[BUFSIZ];
 	char *key = NULL;
 	char *value = NULL;
-	int rc = 0;
+	int rc = ENOENT;
+
+	if (recursion >= RWRAP_MAX_RECURSION) {
+		RWRAP_LOG(RWRAP_LOG_ERROR, "Recursed too deep!\n");
+		return -1;
+	}
 
 	RWRAP_LOG(RWRAP_LOG_TRACE,
 		  "Searching in fake hosts file %s\n", hostfile);
@@ -711,6 +736,11 @@ static int rwrap_get_record(const char *hostfile,
 		} else if (TYPE_MATCH(type, ns_t_srv,
 				      rec_type, "SRV", key, query)) {
 			rc = rwrap_create_fake_srv_rr(key, value, rr);
+			if (rc == 0) {
+				rc = rwrap_srv_recurse(hostfile, recursion+1,
+						rr->rrdata.srv_rec.hostname,
+						rr + 1);
+			}
 			break;
 		} else if (TYPE_MATCH(type, ns_t_soa,
 				      rec_type, "SOA", key, query)) {
@@ -723,7 +753,7 @@ static int rwrap_get_record(const char *hostfile,
 		}
 	}
 
-	if (rc == 0 && rr->type == ns_t_invalid) {
+	if (rc == ENOENT && recursion == 0) {
 		RWRAP_LOG(RWRAP_LOG_TRACE, "Record for [%s] not found\n", query);
 		memcpy(rr->key, key, strlen(key) + 1);
 	}
@@ -782,7 +812,7 @@ static int rwrap_res_fake_hosts(const char *hostfile,
 	int rc = ENOENT;
 	char *query_name = NULL;
 	size_t qlen = strlen(query);
-	struct rwrap_fake_rr rr;
+	struct rwrap_fake_rr rrs[RWRAP_MAX_RECURSION];
 	ssize_t resp_size;
 
 	RWRAP_LOG(RWRAP_LOG_TRACE,
@@ -797,17 +827,26 @@ static int rwrap_res_fake_hosts(const char *hostfile,
 		return -1;
 	}
 
-	rwrap_fake_rr_init(&rr, 1);
+	rwrap_fake_rr_init(rrs, RWRAP_MAX_RECURSION);
 
-	rc = rwrap_get_record(hostfile, query_name, type, &rr);
-	if (rc != 0) {
+	rc = rwrap_get_record(hostfile, 0, query_name, type, rrs);
+	switch (rc) {
+	case 0:
+		RWRAP_LOG(RWRAP_LOG_TRACE,
+				"Found record for [%s]\n", query_name);
+		break;
+	case ENOENT:
+		RWRAP_LOG(RWRAP_LOG_TRACE,
+				"No record for [%s]\n", query_name);
+		break;
+	default:
 		RWRAP_LOG(RWRAP_LOG_ERROR,
 				"Error searching for [%s]\n", query_name);
 		free(query_name);
 		return -1;
 	}
 
-	resp_size = rwrap_fake_answer(&rr, type, answer, anslen);
+	resp_size = rwrap_fake_answer(rrs, type, answer, anslen);
 	switch (resp_size) {
 	case -1:
 		RWRAP_LOG(RWRAP_LOG_ERROR,
