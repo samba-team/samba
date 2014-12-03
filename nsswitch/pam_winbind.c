@@ -475,6 +475,9 @@ config_from_pam:
 			ctrl |= WINBIND_CACHED_LOGIN;
 		else if (!strcasecmp(*v, "mkhomedir"))
 			ctrl |= WINBIND_MKHOMEDIR;
+		else if (!strncasecmp(*v, "warn_pwd_expire",
+				      strlen("warn_pwd_expire")))
+			ctrl |= WINBIND_WARN_PWD_EXPIRE;
 		else {
 			__pam_log(pamh, ctrl, LOG_ERR,
 				 "pam_parse: unknown option: %s", *v);
@@ -2351,7 +2354,7 @@ static int get_warn_pwd_expire_from_config(struct pwb_context *ctx)
 	ret = get_config_item_int(ctx, "warn_pwd_expire",
 				  WINBIND_WARN_PWD_EXPIRE);
 	/* no or broken setting */
-	if (ret <= 0) {
+	if (ret < 0) {
 		return DEFAULT_DAYS_TO_WARN_BEFORE_PWD_EXPIRES;
 	}
 	return ret;
