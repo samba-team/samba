@@ -89,9 +89,12 @@ wait_until $(($update_interval * 2)) \
 tcptickle_sniff_start $src_socket "${test_ip}:${test_port}"
 
 # We need to be nasty to make that the node being failed out doesn't
-# get a chance to send any tickles and confuse our sniff.
+# get a chance to send any tickles and confuse our sniff.  IPs also
+# need to be dropped because we're simulating a dead node rather than
+# a CTDB failure.  To properly handle a CTDB failure we would need a
+# watchdog to drop the IPs when CTDB disappears.
 echo "Killing ctdbd on ${test_node}..."
-try_command_on_node $test_node killall -9 ctdbd
+try_command_on_node -v $test_node "killall -9 ctdbd ; $CTDB_TEST_WRAPPER drop_ips ${test_node_ips}"
 
 wait_until_node_has_status $test_node disconnected
 
