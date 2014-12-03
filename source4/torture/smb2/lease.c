@@ -3040,12 +3040,12 @@ static bool test_lease_complex1(struct torture_context *tctx,
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	/* Contend with LEASE2. */
-	smb2_lease_create(&io2, &ls2, false, fname, LEASE2, smb2_util_lease_state("RHW"));
+	smb2_lease_create(&io2, &ls2, false, fname, LEASE2, smb2_util_lease_state("R"));
 	status = smb2_create(tree1b, mem_ctx, &io2);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	h3 = io2.out.file.handle;
 	CHECK_CREATED(&io2, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
-	CHECK_LEASE(&io2, "RH", true, LEASE2, 0);
+	CHECK_LEASE(&io2, "R", true, LEASE2, 0);
 
 	/* Verify that we were only sent one break. */
 	CHECK_BREAK_INFO("RHW", "RH", LEASE1);
@@ -3073,7 +3073,7 @@ static bool test_lease_complex1(struct torture_context *tctx,
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	ls2.lease_epoch += 1;
-	CHECK_BREAK_INFO("RH", "", LEASE2);
+	CHECK_BREAK_INFO("R", "", LEASE2);
 
 	ZERO_STRUCT(break_info);
 
@@ -3178,13 +3178,13 @@ static bool test_lease_v2_complex1(struct torture_context *tctx,
 
 	/* Contend with LEASE2. */
 	smb2_lease_v2_create(&io2, &ls2, false, fname, LEASE2, NULL,
-			     smb2_util_lease_state("RWH"), 0x11);
+			     smb2_util_lease_state("R"), 0x11);
 	status = smb2_create(tree1b, mem_ctx, &io2);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	h3 = io2.out.file.handle;
 	CHECK_CREATED(&io2, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
 	ls2.lease_epoch += 1;
-	CHECK_LEASE_V2(&io2, "RH", true, LEASE2,
+	CHECK_LEASE_V2(&io2, "R", true, LEASE2,
 		       0, 0, ls2.lease_epoch);
 
 	/* Verify that we were only sent one break. */
@@ -3217,7 +3217,7 @@ static bool test_lease_v2_complex1(struct torture_context *tctx,
 
 	ls2.lease_epoch += 1;
 	CHECK_BREAK_INFO_V2(tree1a->session->transport,
-			    "RH", "", LEASE2, ls2.lease_epoch);
+			    "R", "", LEASE2, ls2.lease_epoch);
 
 	ZERO_STRUCT(break_info);
 
