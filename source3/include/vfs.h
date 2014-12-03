@@ -205,6 +205,8 @@ struct fd_handle {
 
 struct fsp_lease {
 	size_t ref_count;
+	struct smbd_server_connection *sconn;
+	struct tevent_timer *timeout;
 	struct smb2_lease lease;
 };
 
