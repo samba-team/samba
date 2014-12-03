@@ -141,6 +141,179 @@ static void rwrap_log(enum rwrap_dbglvl_e dbglvl,
 	}							\
 } while(0);
 
+/* Priority and weight can be omitted from the hosts file, but need to be part
+ * of the output
+ */
+#define DFL_SRV_PRIO	1
+#define DFL_SRV_WEIGHT	100
+
+struct rwrap_srv_rrdata {
+	uint16_t port;
+	uint16_t prio;
+	uint16_t weight;
+	char hostname[MAXDNAME];
+};
+
+struct rwrap_soa_rrdata {
+	uint32_t serial;
+	uint32_t refresh;
+	uint32_t retry;
+	uint32_t expire;
+	uint32_t minimum;
+	char nameserver[MAXDNAME];
+	char mailbox[MAXDNAME];
+};
+
+struct rwrap_fake_rr {
+	union fake_rrdata {
+		struct in_addr a_rec;
+		struct in6_addr aaaa_rec;
+		struct rwrap_srv_rrdata srv_rec;
+		struct rwrap_soa_rrdata soa_rec;
+		char cname_rec[MAXDNAME];
+	} rrdata;
+
+	char key[MAXDNAME];
+	int type; /* ns_t_* */
+};
+
+static void rwrap_fake_rr_init(struct rwrap_fake_rr *rr, size_t len)
+{
+	size_t i;
+
+	for (i = 0; i < len; i++) {
+		rr[i].type = ns_t_invalid;
+	}
+}
+
+static int rwrap_create_fake_a_rr(const char *key,
+				  const char *value,
+				  struct rwrap_fake_rr *rr)
+{
+	int ok;
+
+	ok = inet_pton(AF_INET, value, &rr->rrdata.a_rec);
+	if (!ok) {
+		RWRAP_LOG(RWRAP_LOG_ERROR,
+			  "Failed to convert [%s] to binary\n", value);
+		return -1;
+	}
+
+	memcpy(rr->key, key, strlen(key) + 1);
+	rr->type = ns_t_a;
+	return 0;
+}
+
+static int rwrap_create_fake_aaaa_rr(const char *key,
+				     const char *value,
+				     struct rwrap_fake_rr *rr)
+{
+	int ok;
+
+	ok = inet_pton(AF_INET6, value, &rr->rrdata.aaaa_rec);
+	if (!ok) {
+		RWRAP_LOG(RWRAP_LOG_ERROR,
+			  "Failed to convert [%s] to binary\n", value);
+		return -1;
+	}
+
+	memcpy(rr->key, key, strlen(key) + 1);
+	rr->type = ns_t_aaaa;
+	return 0;
+}
+
+static int rwrap_create_fake_srv_rr(const char *key,
+				    const char *value,
+				    struct rwrap_fake_rr *rr)
+{
+	char *str_prio;
+	char *str_weight;
+	char *str_port;
+	const char *hostname;
+
+	/* parse the value into priority, weight, port and hostname
+	 * and check the validity */
+	hostname = value;
+	NEXT_KEY(hostname, str_port);
+	NEXT_KEY(str_port, str_prio);
+	NEXT_KEY(str_prio, str_weight);
+	if (str_port == NULL || hostname == NULL) {
+		RWRAP_LOG(RWRAP_LOG_ERROR,
+			  "Malformed SRV entry [%s]\n", value);
+		return -1;
+	}
+
+	if (str_prio) {
+		rr->rrdata.srv_rec.prio = atoi(str_prio);
+	} else {
+		rr->rrdata.srv_rec.prio = DFL_SRV_PRIO;
+	}
+	if (str_weight) {
+		rr->rrdata.srv_rec.weight = atoi(str_weight);
+	} else {
+		rr->rrdata.srv_rec.weight = DFL_SRV_WEIGHT;
+	}
+	rr->rrdata.srv_rec.port = atoi(str_port);
+	memcpy(rr->rrdata.srv_rec.hostname , hostname, strlen(hostname) + 1);
+
+	memcpy(rr->key, key, strlen(key) + 1);
+	rr->type = ns_t_srv;
+	return 0;
+}
+
+static int rwrap_create_fake_soa_rr(const char *key,
+				    const char *value,
+				    struct rwrap_fake_rr *rr)
+{
+	const char *nameserver;
+	char *mailbox;
+	char *str_serial;
+	char *str_refresh;
+	char *str_retry;
+	char *str_expire;
+	char *str_minimum;
+
+	/* parse the value into nameserver, mailbox, serial, refresh,
+	 * retry, expire, minimum and check the validity
+	 */
+	nameserver = value;
+	NEXT_KEY(nameserver, mailbox);
+	NEXT_KEY(mailbox, str_serial);
+	NEXT_KEY(str_serial, str_refresh);
+	NEXT_KEY(str_refresh, str_retry);
+	NEXT_KEY(str_retry, str_expire);
+	NEXT_KEY(str_expire, str_minimum);
+	if (nameserver == NULL || mailbox == NULL || str_serial == NULL ||
+	    str_refresh == NULL || str_retry == NULL || str_expire == NULL ||
+	    str_minimum == NULL) {
+		RWRAP_LOG(RWRAP_LOG_ERROR,
+			  "Malformed SOA entry [%s]\n", value);
+		return -1;
+	}
+
+	memcpy(rr->rrdata.soa_rec.nameserver, nameserver, strlen(nameserver)+1);
+	memcpy(rr->rrdata.soa_rec.mailbox, mailbox, strlen(mailbox)+1);
+
+	rr->rrdata.soa_rec.serial = atoi(str_serial);
+	rr->rrdata.soa_rec.refresh = atoi(str_refresh);
+	rr->rrdata.soa_rec.retry = atoi(str_retry);
+	rr->rrdata.soa_rec.expire = atoi(str_expire);
+	rr->rrdata.soa_rec.minimum = atoi(str_minimum);
+
+	memcpy(rr->key, key, strlen(key) + 1);
+	rr->type = ns_t_soa;
+	return 0;
+}
+
+static int rwrap_create_fake_cname_rr(const char *key,
+				      const char *value,
+				      struct rwrap_fake_rr *rr)
+{
+	memcpy(rr->rrdata.cname_rec , value, strlen(value) + 1);
+	memcpy(rr->key, key, strlen(key) + 1);
+	rr->type = ns_t_cname;
+	return 0;
+}
 
 /* Prepares a fake header with a single response. Advances header_blob */
 static ssize_t rwrap_fake_header(uint8_t **header_blob, size_t remaining,
@@ -345,13 +518,6 @@ static ssize_t rwrap_fake_aaaa(const char *key,
 
 	return resp_size;
 }
-
-/*
- * Priority and weight can be omitted from the hosts file, but need to be part
- * of the output
- */
-#define DFL_SRV_PRIO	1
-#define DFL_SRV_WEIGHT	100
 
 static ssize_t rwrap_fake_srv(const char *key,
 			      const char *value,
