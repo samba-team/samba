@@ -71,6 +71,7 @@ bld.RECURSE('source4/lib/events')
 bld.RECURSE('source4/lib/cmdline')
 bld.RECURSE('source4/lib/http')
 bld.RECURSE('lib/socket_wrapper')
+bld.RECURSE('lib/resolv_wrapper')
 bld.RECURSE('lib/nss_wrapper')
 bld.RECURSE('lib/uid_wrapper')
 if bld.CHECK_FOR_THIRD_PARTY():

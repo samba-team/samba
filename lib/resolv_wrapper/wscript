@@ -1,0 +1,94 @@
+#!/usr/bin/env python
+
+import os
+
+VERSION="1.0.0"
+
+def configure(conf):
+    if conf.CHECK_BUNDLED_SYSTEM('resolv_wrapper', minversion=VERSION, set_target=False):
+        conf.DEFINE('USING_SYSTEM_RESOLV_WRAPPER', 1)
+        libresolv_wrapper_so_path = 'libresolv_wrapper.so'
+    else:
+        # check HAVE_GCC_THREAD_LOCAL_STORAGE
+        conf.CHECK_CODE('''
+            __thread int tls;
+
+            int main(void) {
+                return 0;
+            }
+            ''',
+            'HAVE_GCC_THREAD_LOCAL_STORAGE',
+            addmain=False,
+            msg='Checking for thread local storage')
+
+        # check HAVE_DESTRUCTOR_ATTRIBUTE
+        conf.CHECK_CODE('''
+            void test_destructor_attribute(void) __attribute__ ((destructor));
+
+            void test_destructor_attribute(void)
+            {
+                return;
+            }
+
+            int main(void) {
+                return 0;
+            }
+            ''',
+            'HAVE_DESTRUCTOR_ATTRIBUTE',
+            addmain=False,
+            msg='Checking for library destructor support')
+
+        # check HAVE_FUNCTION_ATTRIBUTE_FORMAT
+        conf.CHECK_CODE('''
+            void log_fn(const char *format, ...) __attribute__ ((format (printf, 1, 2)));
+
+            int main(void) {
+                return 0;
+            }
+            ''',
+            'HAVE_FUNCTION_ATTRIBUTE_FORMAT',
+            addmain=False,
+            msg='Checking for printf format validation support')
+
+        conf.CHECK_HEADERS('resolv.h')
+
+        conf.CHECK_STRUCTURE_MEMBER('struct _res_state',
+                                    '_u._ext.nsaddrs',
+                                    headers='resolv.h',
+                                    define='HAVE_RESOLV_IPV6_NSADDRS')
+
+        conf.CHECK_FUNCS_IN('res_ninit', 'resolv')
+        if conf.CONFIG_SET('HAVE_RES_NINIT'):
+            conf.DEFINE('HAVE_RES_NINIT_IN_LIBRESOLV', 1)
+
+        conf.CHECK_FUNCS_IN('res_nclose', 'resolv')
+        if conf.CONFIG_SET('HAVE_RES_NCLOSE'):
+            conf.DEFINE('HAVE_RES_NCLOSE_IN_LIBRESOLV', 1)
+
+        conf.CHECK_FUNCS_IN('res_init __res_init', 'resolv', checklibc=True)
+        conf.CHECK_FUNCS_IN('res_ninit __res_ninit', 'resolv', checklibc=True)
+        conf.CHECK_FUNCS_IN('res_close __res_close', 'resolv', checklibc=True)
+        conf.CHECK_FUNCS_IN('res_nclose __res_nclose', 'resolv', checklibc=True)
+        conf.CHECK_FUNCS_IN('res_query __res_query', 'resolv', checklibc=True)
+        conf.CHECK_FUNCS_IN('res_nquery __res_nquery', 'resolv', checklibc=True)
+        conf.CHECK_FUNCS_IN('res_search __res_search', 'resolv', checklibc=True)
+        conf.CHECK_FUNCS_IN('res_nsearch __res_nsearch', 'resolv', checklibc=True)
+
+        # Create full path to resolv_wrapper
+        srcdir = os.path.realpath(conf.srcdir)
+        libresolv_wrapper_so_path = srcdir + '/bin/default/lib/resolv_wrapper/libresolv-wrapper.so'
+
+    conf.DEFINE('LIBRESOLV_WRAPPER_SO_PATH', libresolv_wrapper_so_path)
+    conf.DEFINE('RESOLV_WRAPPER', 1)
+
+def build(bld):
+    if bld.CONFIG_SET("HAVE_RESOLV_H") and not bld.CONFIG_SET("USING_SYSTEM_RESOLV_WRAPPER"):
+        # We need to do it this way or the library wont work.
+        # Using private_library=True will add symbol version which
+        # breaks preloading!
+        bld.SAMBA_LIBRARY('resolv_wrapper',
+                          source='resolv_wrapper.c',
+                          cflags='-DNDEBUG',
+                          deps='dl resolv',
+                          install=False,
+                          realname='libresolv-wrapper.so')
