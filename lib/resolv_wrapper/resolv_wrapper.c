@@ -678,18 +678,18 @@ static int rwrap_get_record(const char *hostfile, unsigned recursion,
 		NEXT_KEY(rec_type, key);
 		NEXT_KEY(key, value);
 
-		q = value;
-		while(q[0] != '\n' && q[0] != '\0') {
-			q++;
-		}
-		q[0] = '\0';
-
 		if (key == NULL || value == NULL) {
 			RWRAP_LOG(RWRAP_LOG_WARN,
 				"Malformed line: not enough parts, use \"rec_type key data\n"
 				"For example \"A cwrap.org 10.10.10.10\"");
 			continue;
 		}
+
+		q = value;
+		while(q[0] != '\n' && q[0] != '\0') {
+			q++;
+		}
+		q[0] = '\0';
 
 		if (TYPE_MATCH(type, ns_t_a, rec_type, "A", key, query)) {
 			rc = rwrap_create_fake_a_rr(key, value, rr);
