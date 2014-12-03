@@ -51,9 +51,9 @@ static PyTypeObject *dom_sid_Type = NULL;
 static PyTypeObject *security_Type = NULL;
 static PyTypeObject *guid_Type = NULL;
 
-staticforward PyTypeObject PySamu;
-staticforward PyTypeObject PyGroupmap;
-staticforward PyTypeObject PyPDB;
+static PyTypeObject PySamu;
+static PyTypeObject PyGroupmap;
+static PyTypeObject PyPDB;
 
 static PyObject *py_pdb_error;
 

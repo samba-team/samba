@@ -355,7 +355,7 @@ sub PythonStruct($$$$$$)
 		$self->pidl("");
 	}
 
-	$self->pidl_hdr("staticforward PyTypeObject $name\_Type;\n");
+	$self->pidl_hdr("static PyTypeObject $name\_Type;\n");
 	$self->pidl("");
 	my $docstring = $self->DocString($d, $name);
 	my $typeobject = "$name\_Type";
@@ -691,7 +691,7 @@ sub Interface($$$)
 	}
 
 	if (defined $interface->{PROPERTIES}->{uuid}) {
-		$self->pidl_hdr("staticforward PyTypeObject $interface->{NAME}_InterfaceType;\n");
+		$self->pidl_hdr("static PyTypeObject $interface->{NAME}_InterfaceType;\n");
 		$self->pidl("");
 
 		my @fns = ();

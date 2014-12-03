@@ -36,16 +36,16 @@ void initldb(void);
 static PyObject *PyLdbMessage_FromMessage(struct ldb_message *msg);
 static PyObject *PyExc_LdbError;
 
-staticforward PyTypeObject PyLdbControl;
-staticforward PyTypeObject PyLdbResult;
-staticforward PyTypeObject PyLdbMessage;
+static PyTypeObject PyLdbControl;
+static PyTypeObject PyLdbResult;
+static PyTypeObject PyLdbMessage;
 #define PyLdbMessage_Check(ob) PyObject_TypeCheck(ob, &PyLdbMessage)
-staticforward PyTypeObject PyLdbModule;
-staticforward PyTypeObject PyLdbDn;
+static PyTypeObject PyLdbModule;
+static PyTypeObject PyLdbDn;
 #define pyldb_Dn_Check(ob) PyObject_TypeCheck(ob, &PyLdbDn)
-staticforward PyTypeObject PyLdb;
+static PyTypeObject PyLdb;
 #define PyLdb_Check(ob) PyObject_TypeCheck(ob, &PyLdb)
-staticforward PyTypeObject PyLdbMessageElement;
+static PyTypeObject PyLdbMessageElement;
 #define pyldb_MessageElement_Check(ob) PyObject_TypeCheck(ob, &PyLdbMessageElement)
 
 staticforward PyTypeObject PyLdbTree;

@@ -38,7 +38,7 @@ typedef struct {
 	bool closed;
 } PyNtdbObject;
 
-staticforward PyTypeObject PyNtdb;
+static PyTypeObject PyNtdb;
 
 static void PyErr_SetTDBError(enum NTDB_ERROR e)
 {

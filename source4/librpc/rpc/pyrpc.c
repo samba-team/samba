@@ -30,7 +30,7 @@
 
 void initbase(void);
 
-staticforward PyTypeObject dcerpc_InterfaceType;
+static PyTypeObject dcerpc_InterfaceType;
 
 static PyTypeObject *ndr_syntax_id_Type;
 
