@@ -168,23 +168,25 @@ static void inotify_dispatch(struct inotify_private *in,
 		}
 	}
 
-	/* SMB expects a file rename to generate three events, two for
-	   the rename and the other for a modify of the
-	   destination. Strange! */
-	if (ne.action != NOTIFY_ACTION_NEW_NAME ||
-	    (e->mask & IN_ISDIR) != 0) {
-		return;
-	}
+	if ((ne.action == NOTIFY_ACTION_NEW_NAME) &&
+	    ((e->mask & IN_ISDIR) == 0)) {
 
-	ne.action = NOTIFY_ACTION_MODIFIED;
-	e->mask = IN_ATTRIB;
+		/*
+		 * SMB expects a file rename to generate three events, two for
+		 * the rename and the other for a modify of the
+		 * destination. Strange!
+		 */
 
-	for (w=in->watches;w;w=next) {
-		next = w->next;
-		if (w->wd == e->wd && filter_match(w, e) &&
-		    !(w->filter & FILE_NOTIFY_CHANGE_CREATION)) {
-			ne.dir = w->path;
-			w->callback(in->ctx, w->private_data, &ne);
+		ne.action = NOTIFY_ACTION_MODIFIED;
+		e->mask = IN_ATTRIB;
+
+		for (w=in->watches;w;w=next) {
+			next = w->next;
+			if (w->wd == e->wd && filter_match(w, e) &&
+			    !(w->filter & FILE_NOTIFY_CHANGE_CREATION)) {
+				ne.dir = w->path;
+				w->callback(in->ctx, w->private_data, &ne);
+			}
 		}
 	}
 }
