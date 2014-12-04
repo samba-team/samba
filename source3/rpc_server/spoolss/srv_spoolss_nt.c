@@ -9484,7 +9484,8 @@ WERROR _spoolss_GetJob(struct pipes_struct *p,
 	/* that's an [in out] buffer */
 
 	if (!r->in.buffer && (r->in.offered != 0)) {
-		return WERR_INVALID_PARAM;
+		result = WERR_INVALID_PARAM;
+		goto err_jinfo_free;
 	}
 
 	DEBUG(5,("_spoolss_GetJob\n"));
@@ -9492,12 +9493,14 @@ WERROR _spoolss_GetJob(struct pipes_struct *p,
 	*r->out.needed = 0;
 
 	if (!get_printer_snum(p, r->in.handle, &snum, NULL)) {
-		return WERR_BADFID;
+		result = WERR_BADFID;
+		goto err_jinfo_free;
 	}
 
 	svc_name = lp_const_servicename(snum);
 	if (svc_name == NULL) {
-		return WERR_INVALID_PARAM;
+		result = WERR_INVALID_PARAM;
+		goto err_jinfo_free;
 	}
 
 	result = winreg_get_printer_internal(p->mem_ctx,
@@ -9506,22 +9509,22 @@ WERROR _spoolss_GetJob(struct pipes_struct *p,
 				    svc_name,
 				    &pinfo2);
 	if (!W_ERROR_IS_OK(result)) {
-		return result;
+		goto err_jinfo_free;
 	}
 
 	pdb = get_print_db_byname(svc_name);
 	if (pdb == NULL) {
 		DEBUG(3, ("failed to get print db for svc %s\n", svc_name));
-		TALLOC_FREE(pinfo2);
-		return WERR_INVALID_PARAM;
+		result = WERR_INVALID_PARAM;
+		goto err_pinfo_free;
 	}
 
 	sysjob = jobid_to_sysjob_pdb(pdb, r->in.job_id);
 	release_print_db(pdb);
 	if (sysjob == -1) {
 		DEBUG(3, ("no sysjob for spoolss jobid %u\n", r->in.job_id));
-		TALLOC_FREE(pinfo2);
-		return WERR_INVALID_PARAM;
+		result = WERR_INVALID_PARAM;
+		goto err_pinfo_free;
 	}
 
 	count = print_queue_status(p->msg_ctx, snum, &queue, &prt_status);
@@ -9551,8 +9554,7 @@ WERROR _spoolss_GetJob(struct pipes_struct *p,
 	TALLOC_FREE(pinfo2);
 
 	if (!W_ERROR_IS_OK(result)) {
-		TALLOC_FREE(r->out.info);
-		return result;
+		goto err_jinfo_free;
 	}
 
 	*r->out.needed	= SPOOLSS_BUFFER_UNION(spoolss_JobInfo, r->out.info,
@@ -9560,6 +9562,12 @@ WERROR _spoolss_GetJob(struct pipes_struct *p,
 	r->out.info	= SPOOLSS_BUFFER_OK(r->out.info, NULL);
 
 	return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
+
+err_pinfo_free:
+	TALLOC_FREE(pinfo2);
+err_jinfo_free:
+	TALLOC_FREE(r->out.info);
+	return result;
 }
 
 /****************************************************************
