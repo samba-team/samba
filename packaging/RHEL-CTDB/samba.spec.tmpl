@@ -171,7 +171,6 @@ CFLAGS="$RPM_OPT_FLAGS $EXTRA -D_GNU_SOURCE" ./configure \
 	--enable-fhs \
 	--with-pam_smbpass \
 	--with-libsmbclient \
-	--with-libsmbsharemodes \
 	--without-smbwrapper \
 	--with-pam \
 	--with-quotas \
@@ -544,8 +543,6 @@ exit 0
 %{_includedir}/libsmbclient.h
 %{_libarchdir}/libsmbclient.*
 %{_includedir}/smb_share_modes.h
-%{_libarchdir}/libsmbsharemodes.so
-%{_libarchdir}/libsmbsharemodes.so.0
 
 %{_includedir}/netapi.h
 %{_includedir}/wbclient.h

@@ -53,7 +53,6 @@ CC="$CC" CFLAGS="-Wall -g -D_GNU_SOURCE -O3" ./configure -C \
 	--enable-fhs \
 	--with-pam_smbpass \
 	--with-libsmbclient \
-	--with-libsmbsharemodes \
 	--without-smbwrapper \
 	--with-pam \
 	--with-quotas \
