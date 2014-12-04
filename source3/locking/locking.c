@@ -471,7 +471,7 @@ bool rename_share_filename(struct messaging_context *msg_ctx,
 	size_t sn_len;
 	size_t msg_len;
 	char *frm = NULL;
-	int i;
+	uint32_t i;
 	bool strip_two_chars = false;
 	bool has_stream = smb_fname_dst->stream_name != NULL;
 	struct server_id self_pid = messaging_server_id(msg_ctx);
@@ -563,6 +563,29 @@ bool rename_share_filename(struct messaging_context *msg_ctx,
 
 		messaging_send_buf(msg_ctx, se->pid, MSG_SMB_FILE_RENAME,
 				   (uint8 *)frm, msg_len);
+	}
+
+	for (i=0; i<d->num_leases; i++) {
+		/* Update the filename in leases_db. */
+		NTSTATUS status;
+		struct share_mode_lease *l;
+
+		l = &d->leases[i];
+
+		status = leases_db_rename(&l->client_guid,
+					&l->lease_key,
+					&id,
+					d->base_name,
+					d->stream_name);
+		if (!NT_STATUS_IS_OK(status)) {
+			/* Any error recovery possible here ? */
+			DEBUG(1,("Failed to rename lease key for "
+				"renamed file %s:%s. %s\n",
+				d->base_name,
+				d->stream_name,
+				nt_errstr(status)));
+			continue;
+		}
 	}
 
 	return True;
