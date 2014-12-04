@@ -674,14 +674,21 @@ interface security
 	const string GUID_DRS_CHANGE_RID_MASTER       = "d58d5f36-0a98-11d1-adbb-00c04fd8d5cd";
 	const string GUID_DRS_CHANGE_SCHEMA_MASTER    = "e12b56b6-0a95-11d1-adbb-00c04fd8d5cd";
 	const string GUID_DRS_GET_CHANGES             = "1131f6aa-9c07-11d1-f79f-00c04fc2dcd2";
-	const string GUID_DRS_GET_ALL_CHANGES         = "1131f6ad-9c07-11d1-f79f-00c04fc2dcd2";
-	const string GUID_DRS_GET_FILTERED_ATTRIBUTES = "89e95b76-444d-4c62-991a-0facbeda640c";
-	const string GUID_DRS_MANAGE_TOPOLOGY         = "1131f6ac-9c07-11d1-f79f-00c04fc2dcd2";
-	const string GUID_DRS_MONITOR_TOPOLOGY        = "f98340fb-7c5b-4cdb-a00b-2ebdfa115a96";
 	const string GUID_DRS_REPL_SYNCRONIZE         = "1131f6ab-9c07-11d1-f79f-00c04fc2dcd2";
+	const string GUID_DRS_MANAGE_TOPOLOGY         = "1131f6ac-9c07-11d1-f79f-00c04fc2dcd2";
+	const string GUID_DRS_GET_ALL_CHANGES         = "1131f6ad-9c07-11d1-f79f-00c04fc2dcd2";
 	const string GUID_DRS_RO_REPL_SECRET_SYNC     = "1131f6ae-9c07-11d1-f79f-00c04fc2dcd2";
+	const string GUID_DRS_GET_FILTERED_ATTRIBUTES = "89e95b76-444d-4c62-991a-0facbeda640c";
+	const string GUID_DRS_MONITOR_TOPOLOGY        = "f98340fb-7c5b-4cdb-a00b-2ebdfa115a96";
 	const string GUID_DRS_USER_CHANGE_PASSWORD    = "ab721a53-1e2f-11d0-9819-00aa0040529b";
 	const string GUID_DRS_FORCE_CHANGE_PASSWORD   = "00299570-246d-11d0-a768-00aa006e0529";
+        const string GUID_DRS_UPDATE_PASSWORD_NOT_REQUIRED_BIT
+	                                              = "280f369c-67c7-438e-ae98-1d46f3c6f541";
+        const string GUID_DRS_UNEXPIRE_PASSWORD       = "ccc2dc7d-a6ad-4a7a-8846-c04e3cc53501";
+        const string GUID_DRS_ENABLE_PER_USER_REVERSIBLY_ENCRYPTED_PASSWORD
+	                                              = "05c74c5e-4deb-43b4-bd9f-86664c2a7fd5";
+        const string GUID_DRS_DS_INSTALL_REPLICA      = "9923a32a-3607-11d2-b9be-0000f87a36b2";
+
 
 	/***************************************************************/
 	/* validated writes guids */
