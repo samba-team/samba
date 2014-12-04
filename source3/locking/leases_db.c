@@ -385,3 +385,25 @@ NTSTATUS leases_db_parse(const struct GUID *client_guid,
 	}
 	return state.status;
 }
+
+NTSTATUS leases_db_rename(const struct GUID *client_guid,
+		       const struct smb2_lease_key *lease_key,
+		       const struct file_id *id,
+		       const char *filename_new,
+		       const char *stream_name_new)
+{
+	NTSTATUS status;
+
+	status = leases_db_del(client_guid,
+				lease_key,
+				id);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	return leases_db_add(client_guid,
+				lease_key,
+				id,
+				filename_new,
+				stream_name_new);
+}

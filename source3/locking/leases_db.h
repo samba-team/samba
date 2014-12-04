@@ -42,5 +42,9 @@ NTSTATUS leases_db_parse(const struct GUID *client_guid,
 					const char *stream_name,
 					void *private_data),
 			 void *private_data);
-
+NTSTATUS leases_db_rename(const struct GUID *client_guid,
+			const struct smb2_lease_key *lease_key,
+			const struct file_id *id,
+			const char *filename_new,
+			const char *stream_name_new);
 #endif /* _LEASES_DB_H_ */
