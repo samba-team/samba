@@ -55,14 +55,6 @@ bld.SAMBA3_LIBRARY('netapi',
                     pc_files='libnet/netapi.pc',
                     vnum='0')
 
-bld.SAMBA3_LIBRARY('smbsharemodes',
-                    source='libsmb/smb_share_modes.c',
-                    public_deps='''talloc tdb_compat''',
-                    deps='''ccan-hash''',
-                    public_headers='include/smb_share_modes.h',
-                    pc_files='libsmb/smbsharemodes.pc',
-                    vnum='0')
-
 bld.SAMBA3_LIBRARY('nss_wins',
                   source='../nsswitch/wins.c',
                   deps='''param libsmb LIBTSOCKET''',

@@ -2,6 +2,14 @@
    Samba share mode database library external interface library.
    Used by non-Samba products needing access to the Samba share mode db.
 
+   NOTICE FOR SAMBA 4.2.0
+
+   THIS CODE IS NON-FUNCTIONAL IN SAMBA 4.2.0 AND ABOVE DUE TO THE CHANGES IN
+   SHARE MODE DATABASE SCHEMA FOR SMB2 LEASES.
+
+   CONTACT THE AUTHOR jra@samba.org IF YOU WISH TO RE-ENABLE
+   THIS CODE.
+
    Copyright (C) Jeremy Allison 2005 - 2006
 
    sharemodes_procid functions (C) Copyright (C) Volker Lendecke 2005
