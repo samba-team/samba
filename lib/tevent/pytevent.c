@@ -177,13 +177,17 @@ static PyObject *py_register_backend(PyObject *self, PyObject *args)
 
 	if (!PyString_Check(name)) {
 		PyErr_SetNone(PyExc_TypeError);
+		Py_DECREF(name);
 		return NULL;
 	}
 
 	if (!tevent_register_backend(PyString_AsString(name), &py_tevent_ops)) { /* FIXME: What to do with backend */
 		PyErr_SetNone(PyExc_RuntimeError);
+		Py_DECREF(name);
 		return NULL;
 	}
+
+	Py_DECREF(name);
 
 	Py_RETURN_NONE;
 }
@@ -684,9 +688,10 @@ static PyObject *py_set_default_backend(PyObject *self, PyObject *args)
 
 static PyObject *py_backend_list(PyObject *self)
 {
-	PyObject *ret;
-	int i;
-	const char **backends;
+	PyObject *ret = NULL;
+	PyObject *string = NULL;
+	int i, result;
+	const char **backends = NULL;
 
 	ret = PyList_New(0);
 	if (ret == NULL) {
@@ -696,16 +701,30 @@ static PyObject *py_backend_list(PyObject *self)
 	backends = tevent_backend_list(NULL);
 	if (backends == NULL) {
 		PyErr_SetNone(PyExc_RuntimeError);
-		Py_DECREF(ret);
-		return NULL;
+		goto err;
 	}
 	for (i = 0; backends[i]; i++) {
-		PyList_Append(ret, PyString_FromString(backends[i]));
+		string = PyString_FromString(backends[i]);
+		if (!string) {
+			goto err;
+		}
+		result = PyList_Append(ret, string);
+		if (result) {
+			goto err;
+		}
+		Py_DECREF(string);
+		string = NULL;
 	}
 
 	talloc_free(backends);
 
 	return ret;
+
+err:
+	Py_XDECREF(ret);
+	Py_XDECREF(string);
+	talloc_free(backends);
+	return NULL;
 }
 
 static PyMethodDef tevent_methods[] = {
