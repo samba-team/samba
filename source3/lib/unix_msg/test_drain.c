@@ -18,6 +18,7 @@ static void recv_cb(struct unix_msg_ctx *ctx,
 int main(int argc, const char *argv[])
 {
 	struct poll_funcs *funcs;
+	void *handle;
 	struct sockaddr_un addr;
 	struct unix_msg_ctx *ctx;
 	struct tevent_context *ev;
@@ -43,6 +44,12 @@ int main(int argc, const char *argv[])
 	if (funcs == NULL) {
 		fprintf(stderr, "poll_funcs_init_tevent failed\n");
 		return 1;
+	}
+
+	handle = poll_funcs_tevent_register(ev, funcs, ev);
+	if (handle == NULL) {
+		fprintf(stderr, "poll_funcs_tevent_register failed\n");
+		exit(1);
 	}
 
 	ret = unix_msg_init(&addr, funcs, 256, 1, recv_cb, &state, &ctx);
