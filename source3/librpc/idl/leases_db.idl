@@ -22,9 +22,7 @@ interface leases_db
 	} leases_db_file;
 
 	typedef [public] struct {
-		uint32 num_file_ids;
-		[size_is(num_file_ids)] file_id ids[];
-		[string,charset(UTF8)] char *filename;
-		[string,charset(UTF8)] char *stream_name;
+		uint32 num_files;
+		[size_is(num_files)] leases_db_file files[];
 	} leases_db_value;
 }

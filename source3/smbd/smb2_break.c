@@ -340,21 +340,19 @@ struct lease_lookup_state {
 };
 
 static void lease_parser(
-	uint32_t num_file_ids,
-	struct file_id *ids, const char *filename, const char *stream_name,
+	uint32_t num_files,
+	const struct leases_db_file *files,
 	void *private_data)
 {
 	struct lease_lookup_state *lls =
 		(struct lease_lookup_state *)private_data;
 
 	lls->status = NT_STATUS_OK;
-	lls->num_file_ids = num_file_ids;
-	lls->ids = talloc_memdup(lls->mem_ctx,
-				ids,
-				num_file_ids * sizeof(struct file_id));
-	if (lls->ids == NULL) {
-		lls->status = NT_STATUS_NO_MEMORY;
-	}
+	lls->num_file_ids = num_files;
+	lls->status = leases_db_copy_file_ids(lls->mem_ctx,
+				num_files,
+				files,
+				&lls->ids);
 }
 
 static struct tevent_req *smbd_smb2_lease_break_send(
