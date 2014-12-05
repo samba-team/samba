@@ -727,7 +727,7 @@ NTSTATUS file_name_hash(connection_struct *conn,
 {
 	char tmpbuf[PATH_MAX];
 	char *fullpath, *to_free;
-	size_t len;
+	ssize_t len;
 
 	/* Set the hash of the full pathname. */
 

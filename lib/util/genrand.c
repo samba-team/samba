@@ -526,7 +526,7 @@ _PUBLIC_ char** generate_unique_strs(TALLOC_CTX *mem_ctx, size_t len,
 {
 	const char *c_list = "abcdefghijklmnopqrstuvwxyz0123456789+_-#.,";
 	const unsigned c_size = 42;
-	int i, j;
+	size_t i, j;
 	unsigned rem;
 	char ** strs = NULL;
 
