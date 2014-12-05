@@ -85,6 +85,7 @@ static bool leases_db_key(TALLOC_CTX *mem_ctx,
 NTSTATUS leases_db_add(const struct GUID *client_guid,
 		       const struct smb2_lease_key *lease_key,
 		       const struct file_id *id,
+		       const char *servicepath,
 		       const char *filename,
 		       const char *stream_name)
 {
@@ -405,6 +406,7 @@ NTSTATUS leases_db_rename(const struct GUID *client_guid,
 	return leases_db_add(client_guid,
 				lease_key,
 				id,
+				servicename_new,
 				filename_new,
 				stream_name_new);
 }

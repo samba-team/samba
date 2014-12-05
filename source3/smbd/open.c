@@ -1677,8 +1677,11 @@ static NTSTATUS grant_fsp_lease(struct files_struct *fsp,
 		.epoch = fsp->lease->lease.lease_epoch,
 	};
 
-	status = leases_db_add(client_guid, &lease->lease_key,
-			       &fsp->file_id, fsp->fsp_name->base_name,
+	status = leases_db_add(client_guid,
+			       &lease->lease_key,
+			       &fsp->file_id,
+			       fsp->conn->connectpath,
+			       fsp->fsp_name->base_name,
 			       fsp->fsp_name->stream_name);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("%s: leases_db_add failed: %s\n", __func__,
