@@ -118,6 +118,7 @@ static bool filter_match(struct inotify_watch_context *w,
 */
 static void inotify_dispatch(struct inotify_private *in, 
 			     struct inotify_event *e, 
+			     int prev_wd,
 			     uint32_t prev_cookie,
 			     struct inotify_event *e2)
 {
@@ -140,13 +141,14 @@ static void inotify_dispatch(struct inotify_private *in,
 	} else if (e->mask & IN_DELETE) {
 		ne.action = NOTIFY_ACTION_REMOVED;
 	} else if (e->mask & IN_MOVED_FROM) {
-		if (e2 != NULL && e2->cookie == e->cookie) {
+		if (e2 != NULL && e2->cookie == e->cookie &&
+		    e2->wd == e->wd) {
 			ne.action = NOTIFY_ACTION_OLD_NAME;
 		} else {
 			ne.action = NOTIFY_ACTION_REMOVED;
 		}
 	} else if (e->mask & IN_MOVED_TO) {
-		if (e->cookie == prev_cookie) {
+		if ((e->cookie == prev_cookie) && (e->wd == prev_wd)) {
 			ne.action = NOTIFY_ACTION_NEW_NAME;
 		} else {
 			ne.action = NOTIFY_ACTION_ADDED;
@@ -198,6 +200,7 @@ static void inotify_handler(struct tevent_context *ev, struct tevent_fd *fde,
 	int bufsize = 0;
 	struct inotify_event *e0, *e;
 	uint32_t prev_cookie=0;
+	int prev_wd = -1;
 	NTSTATUS status;
 
 	/*
@@ -234,7 +237,8 @@ static void inotify_handler(struct tevent_context *ev, struct tevent_fd *fde,
 		if (bufsize >= sizeof(*e)) {
 			e2 = (struct inotify_event *)(e->len + sizeof(*e) + (char *)e);
 		}
-		inotify_dispatch(in, e, prev_cookie, e2);
+		inotify_dispatch(in, e, prev_wd, prev_cookie, e2);
+		prev_wd = e->wd;
 		prev_cookie = e->cookie;
 		e = e2;
 	}
