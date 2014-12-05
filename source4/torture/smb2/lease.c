@@ -3483,6 +3483,139 @@ static bool test_lease_timeout(struct torture_context *tctx,
 	return ret;
 }
 
+static bool test_lease_v2_rename(struct torture_context *tctx,
+				 struct smb2_tree *tree)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	struct smb2_create io;
+	struct smb2_lease ls1;
+	struct smb2_lease ls2;
+	struct smb2_handle h, h1, h2;
+	union smb_setfileinfo sinfo;
+	const char *fname = "lease_v2_rename_src.dat";
+	const char *fname_dst = "lease_v2_rename_dst.dat";
+	bool ret = true;
+	NTSTATUS status;
+	uint32_t caps;
+	enum protocol_types protocol;
+
+	caps = smb2cli_conn_server_capabilities(tree->session->transport->conn);
+	if (!(caps & SMB2_CAP_LEASING)) {
+		torture_skip(tctx, "leases are not supported");
+	}
+
+	protocol = smbXcli_conn_protocol(tree->session->transport->conn);
+	if (protocol < PROTOCOL_SMB3_00) {
+		torture_skip(tctx, "v2 leases are not supported");
+	}
+
+	smb2_util_unlink(tree, fname);
+	smb2_util_unlink(tree, fname_dst);
+
+	tree->session->transport->lease.handler	= torture_lease_handler;
+	tree->session->transport->lease.private_data = tree;
+	tree->session->transport->oplock.handler = torture_oplock_handler;
+	tree->session->transport->oplock.private_data = tree;
+
+	ZERO_STRUCT(break_info);
+
+	ZERO_STRUCT(io);
+	smb2_lease_v2_create_share(&io, &ls1, false, fname,
+				   smb2_util_share_access("RWD"),
+				   LEASE1, NULL,
+				   smb2_util_lease_state("RHW"),
+				   0x4711);
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h = io.out.file.handle;
+	CHECK_CREATED(&io, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	ls1.lease_epoch += 1;
+	CHECK_LEASE_V2(&io, "RHW", true, LEASE1, 0, 0, ls1.lease_epoch);
+
+	/* Now rename - what happens ? */
+        ZERO_STRUCT(sinfo);
+	sinfo.rename_information.level = RAW_SFILEINFO_RENAME_INFORMATION;
+	sinfo.rename_information.in.file.handle = h;
+	sinfo.rename_information.in.overwrite = true;
+	sinfo.rename_information.in.new_name = fname_dst;
+	status = smb2_setinfo_file(tree, &sinfo);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* No lease break. */
+	CHECK_NO_BREAK(tctx);
+
+	/* Check we can open another handle on the new name. */
+	smb2_lease_v2_create_share(&io, &ls1, false, fname_dst,
+				   smb2_util_share_access("RWD"),
+				   LEASE1, NULL,
+				   smb2_util_lease_state(""),
+				   ls1.lease_epoch);
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h1 = io.out.file.handle;
+	CHECK_CREATED(&io, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_LEASE_V2(&io, "RHW", true, LEASE1, 0, 0, ls1.lease_epoch);
+	smb2_util_close(tree, h1);
+
+	/* Try another lease key. */
+	smb2_lease_v2_create_share(&io, &ls2, false, fname_dst,
+				   smb2_util_share_access("RWD"),
+				   LEASE2, NULL,
+				   smb2_util_lease_state("RWH"),
+				   0x44);
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h2 = io.out.file.handle;
+	CHECK_CREATED(&io, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
+	ls2.lease_epoch += 1;
+	CHECK_LEASE_V2(&io, "RH", true, LEASE2, 0, 0, ls2.lease_epoch );
+	CHECK_BREAK_INFO_V2(tree->session->transport,
+			    "RWH", "RH", LEASE1, ls1.lease_epoch + 1);
+	ls1.lease_epoch += 1;
+	ZERO_STRUCT(break_info);
+
+	/* Now rename back. */
+	ZERO_STRUCT(sinfo);
+	sinfo.rename_information.level = RAW_SFILEINFO_RENAME_INFORMATION;
+	sinfo.rename_information.in.file.handle = h;
+	sinfo.rename_information.in.overwrite = true;
+	sinfo.rename_information.in.new_name = fname;
+	status = smb2_setinfo_file(tree, &sinfo);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* Breaks to R on LEASE2. */
+	CHECK_BREAK_INFO_V2(tree->session->transport,
+			    "RH", "R", LEASE2, ls2.lease_epoch + 1);
+	ls2.lease_epoch += 1;
+
+	/* Check we can open another handle on the current name. */
+	smb2_lease_v2_create_share(&io, &ls1, false, fname,
+				   smb2_util_share_access("RWD"),
+				   LEASE1, NULL,
+				   smb2_util_lease_state(""),
+				   ls1.lease_epoch);
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h1 = io.out.file.handle;
+	CHECK_CREATED(&io, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_LEASE_V2(&io, "RH", true, LEASE1, 0, 0, ls1.lease_epoch);
+	smb2_util_close(tree, h1);
+
+done:
+
+	smb2_util_close(tree, h);
+	smb2_util_close(tree, h1);
+	smb2_util_close(tree, h2);
+
+	smb2_util_unlink(tree, fname);
+	smb2_util_unlink(tree, fname_dst);
+
+	smb2_util_unlink(tree, fname);
+	talloc_free(mem_ctx);
+	return ret;
+}
+
+
 static bool test_lease_dynamic_share(struct torture_context *tctx,
 				   struct smb2_tree *tree1a)
 {
@@ -3704,6 +3837,7 @@ struct torture_suite *torture_smb2_lease_init(void)
 	torture_suite_add_1smb2_test(suite, "v2_epoch3", test_lease_v2_epoch3);
 	torture_suite_add_1smb2_test(suite, "v2_complex1", test_lease_v2_complex1);
 	torture_suite_add_1smb2_test(suite, "v2_complex2", test_lease_v2_complex2);
+	torture_suite_add_1smb2_test(suite, "v2_rename", test_lease_v2_rename);
 	torture_suite_add_1smb2_test(suite, "dynamic_share", test_lease_dynamic_share);
 	torture_suite_add_1smb2_test(suite, "timeout", test_lease_timeout);
 
