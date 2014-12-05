@@ -1103,11 +1103,12 @@ static int streams_xattr_fallocate(struct vfs_handle_struct *handle,
 	}
 
 	if (!streams_xattr_recheck(sio)) {
-		return errno;
+		return -1;
 	}
 
 	/* Let the pwrite code path handle it. */
-	return ENOSYS;
+	errno = ENOSYS;
+	return -1;
 }
 
 

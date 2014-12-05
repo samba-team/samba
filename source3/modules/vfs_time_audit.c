@@ -1216,18 +1216,24 @@ static int smb_time_audit_fallocate(vfs_handle_struct *handle,
 				    off_t len)
 {
 	int result;
+	int saved_errno = 0;
 	struct timespec ts1,ts2;
 	double timediff;
 
 	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_FALLOCATE(handle, fsp, mode, offset, len);
+	if (result == -1) {
+		saved_errno = errno;
+	}
 	clock_gettime_mono(&ts2);
 	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log_fsp("fallocate", timediff, fsp);
 	}
-
+	if (result == -1) {
+		errno = saved_errno;
+	}
 	return result;
 }
 

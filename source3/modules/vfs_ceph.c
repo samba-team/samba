@@ -795,15 +795,14 @@ static int strict_allocate_ftruncate(struct vfs_handle_struct *handle, files_str
 	   return ENOTSUP or EINVAL in cases like that. */
 	ret = SMB_VFS_FALLOCATE(fsp, VFS_FALLOCATE_EXTEND_SIZE,
 				pst->st_ex_size, space_to_write);
-	if (ret == ENOSPC) {
-		errno = ENOSPC;
+	if (ret == -1 && errno == ENOSPC) {
 		return -1;
 	}
 	if (ret == 0) {
 		return 0;
 	}
 	DEBUG(10,("[CEPH] strict_allocate_ftruncate: SMB_VFS_FALLOCATE failed with "
-		"error %d. Falling back to slow manual allocation\n", ret));
+		"error %d. Falling back to slow manual allocation\n", errno));
 
 	/* available disk space is enough or not? */
 	space_avail = get_dfree_info(fsp->conn,
@@ -817,13 +816,7 @@ static int strict_allocate_ftruncate(struct vfs_handle_struct *handle, files_str
 	}
 
 	/* Write out the real space on disk. */
-	ret = vfs_slow_fallocate(fsp, pst->st_ex_size, space_to_write);
-	if (ret != 0) {
-		errno = ret;
-		ret = -1;
-	}
-
-	return 0;
+	return vfs_slow_fallocate(fsp, pst->st_ex_size, space_to_write);
 }
 
 static int cephwrap_ftruncate(struct vfs_handle_struct *handle, files_struct *fsp, off_t len)
