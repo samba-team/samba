@@ -15,6 +15,13 @@ interface leases_db
 	} leases_db_key;
 
 	typedef [public] struct {
+		file_id id;
+		[string,charset(UTF8)] char *servicepath;
+		[string,charset(UTF8)] char *base_name;
+		[string,charset(UTF8)] char *stream_name;
+	} leases_db_file;
+
+	typedef [public] struct {
 		uint32 num_file_ids;
 		[size_is(num_file_ids)] file_id ids[];
 		[string,charset(UTF8)] char *filename;
