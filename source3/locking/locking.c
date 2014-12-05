@@ -575,6 +575,7 @@ bool rename_share_filename(struct messaging_context *msg_ctx,
 		status = leases_db_rename(&l->client_guid,
 					&l->lease_key,
 					&id,
+					d->servicepath,
 					d->base_name,
 					d->stream_name);
 		if (!NT_STATUS_IS_OK(status)) {
