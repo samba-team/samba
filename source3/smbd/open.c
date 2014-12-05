@@ -1244,7 +1244,7 @@ static NTSTATUS open_mode_check(connection_struct *conn,
  * our client.
  */
 
-static NTSTATUS send_break_message(struct messaging_context *msg_ctx,
+NTSTATUS send_break_message(struct messaging_context *msg_ctx,
 				   const struct share_mode_entry *exclusive,
 				   uint16_t break_to)
 {
