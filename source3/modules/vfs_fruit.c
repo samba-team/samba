@@ -3049,11 +3049,12 @@ static int fruit_fallocate(struct vfs_handle_struct *handle,
 	}
 
 	if (!fruit_fsp_recheck(ad, fsp)) {
-		return errno;
+		return -1;
 	}
 
 	/* Let the pwrite code path handle it. */
-	return ENOSYS;
+	errno = ENOSYS;
+	return -1;
 }
 
 static int fruit_ftruncate(struct vfs_handle_struct *handle,
