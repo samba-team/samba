@@ -36,6 +36,7 @@
 #include "messages.h"
 #include "source3/lib/dbwrap/dbwrap_watch.h"
 #include "locking/leases_db.h"
+#include "librpc/gen_ndr/ndr_leases_db.h"
 
 extern const struct generic_mapping file_generic_mapping;
 
@@ -4127,8 +4128,10 @@ static NTSTATUS inherit_new_acl(files_struct *fsp)
  * used for a different file name.
  */
 
-struct lease_fname_match_state {
+struct lease_match_state {
 	/* Input parameters. */
+	TALLOC_CTX *mem_ctx;
+	const char *servicepath;
 	const struct smb_filename *fname;
 	bool file_existed;
 	struct file_id id;
@@ -4138,57 +4141,139 @@ struct lease_fname_match_state {
 	NTSTATUS match_status;
 };
 
-static void lease_fname_match_parser(
-	uint32_t num_file_ids,
-	struct file_id *ids, const char *filename, const char *stream_name,
-	void *private_data)
-{
-	struct lease_fname_match_state *state =
-		(struct lease_fname_match_state *)private_data;
+/*************************************************************
+ File doesn't exist but this lease key+guid is already in use.
 
-	if (!strequal(filename, state->fname->base_name) ||
-	    !strequal(stream_name, state->fname->stream_name))
-	{
-		/* Names don't match lease key. */
-		state->match_status = NT_STATUS_INVALID_PARAMETER;
+ This is only allowable in the dynamic share case where the
+ service path must be different.
+
+ There is a small race condition here in the multi-connection
+ case where a client sends two create calls on different connections,
+ where the file doesn't exist and one smbd creates the leases_db
+ entry first, but this will get fixed by the multichannel cleanup
+ when all identical client_guids get handled by a single smbd.
+**************************************************************/
+
+static void lease_match_parser_new_file(
+	uint32_t num_files,
+	const struct leases_db_file *files,
+	struct lease_match_state *state)
+{
+	uint32_t i;
+
+	for (i = 0; i < num_files; i++) {
+		const struct leases_db_file *f = &files[i];
+		if (strequal(state->servicepath, f->servicepath)) {
+			state->match_status = NT_STATUS_INVALID_PARAMETER;
+			return;
+		}
+	}
+
+	/* Dynamic share case. Break leases on all other files. */
+	state->match_status = leases_db_copy_file_ids(state->mem_ctx,
+					num_files,
+					files,
+					&state->ids);
+	if (!NT_STATUS_IS_OK(state->match_status)) {
 		return;
 	}
 
-	if (state->file_existed &&
-	    num_file_ids == 1 &&
-	    file_id_equal(&ids[0],&state->id))
-	{
-		/* Common case - non-dynamic share. We're ok.. */
-		state->match_status = NT_STATUS_OK;
+	state->num_file_ids = num_files;
+	state->match_status = NT_STATUS_OPLOCK_NOT_GRANTED;
+	return;
+}
+
+static void lease_match_parser(
+	uint32_t num_files,
+	const struct leases_db_file *files,
+	void *private_data)
+{
+	struct lease_match_state *state =
+		(struct lease_match_state *)private_data;
+	uint32_t i;
+
+	if (!state->file_existed) {
+		/*
+		 * Deal with name mismatch or
+		 * possible dynamic share case separately
+		 * to make code clearer.
+		 */
+		lease_match_parser_new_file(num_files,
+						files,
+						state);
+		return;
+	}
+
+	/* File existed. */
+	state->match_status = NT_STATUS_OK;
+
+	for (i = 0; i < num_files; i++) {
+		const struct leases_db_file *f = &files[i];
+
+		/* Everything should be the same. */
+		if (!file_id_equal(&state->id, &f->id)) {
+			/* This should catch all dynamic share cases. */
+			state->match_status = NT_STATUS_OPLOCK_NOT_GRANTED;
+			break;
+		}
+		if (!strequal(f->servicepath, state->servicepath)) {
+			state->match_status = NT_STATUS_INVALID_PARAMETER;
+			break;
+		}
+		if (!strequal(f->base_name, state->fname->base_name)) {
+			state->match_status = NT_STATUS_INVALID_PARAMETER;
+			break;
+		}
+		if (!strequal(f->stream_name, state->fname->stream_name)) {
+			state->match_status = NT_STATUS_INVALID_PARAMETER;
+			break;
+		}
+	}
+
+	if (NT_STATUS_IS_OK(state->match_status)) {
+		/*
+		 * Common case - just opening another handle on a
+		 * file on a non-dynamic share.
+		 */
+		return;
+	}
+
+	if (NT_STATUS_EQUAL(state->match_status, NT_STATUS_INVALID_PARAMETER)) {
+		/* Mismatched path. Error back to client. */
 		return;
 	}
 
 	/*
-	 * More than one file id, or not equal, or new file
-	 * being created and there's already an existing lease
-	 * on this (client_guid, lease id) pair.
+	 * File id mismatch. Dynamic share case NT_STATUS_OPLOCK_NOT_GRANTED.
 	 * Don't allow leases.
 	 */
 
-	state->match_status = NT_STATUS_OPLOCK_NOT_GRANTED;
-	state->num_file_ids = num_file_ids;
-	state->ids = talloc_memdup(talloc_tos(),
-				ids,
-				num_file_ids * sizeof(struct file_id));
-	if (state->ids == NULL) {
-		state->match_status = NT_STATUS_NO_MEMORY;
+	state->match_status = leases_db_copy_file_ids(state->mem_ctx,
+					num_files,
+					files,
+					&state->ids);
+	if (!NT_STATUS_IS_OK(state->match_status)) {
+		return;
 	}
+
+	state->num_file_ids = num_files;
+	state->match_status = NT_STATUS_OPLOCK_NOT_GRANTED;
+	return;
 }
 
 static NTSTATUS lease_match(connection_struct *conn,
 			    struct smb_request *req,
 			    struct smb2_lease_key *lease_key,
+			    const char *servicepath,
 			    const struct smb_filename *fname,
 			    uint16_t *p_version,
 			    uint16_t *p_epoch)
 {
 	struct smbd_server_connection *sconn = req->sconn;
-	struct lease_fname_match_state state = {
+	TALLOC_CTX *tos = talloc_tos();
+	struct lease_match_state state = {
+		.mem_ctx = tos,
+		.servicepath = servicepath,
 		.fname = fname,
 		.match_status = NT_STATUS_OK
 	};
@@ -4203,7 +4288,7 @@ static NTSTATUS lease_match(connection_struct *conn,
 	}
 
 	status = leases_db_parse(&sconn->client->connections->smb2.client.guid,
-				 lease_key, lease_fname_match_parser, &state);
+				 lease_key, lease_match_parser, &state);
 	if (!NT_STATUS_IS_OK(status)) {
 		/*
 		 * Not found or error means okay: We can make the lease pass
@@ -4356,6 +4441,7 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 		status = lease_match(conn,
 				req,
 				&lease->lease_key,
+				conn->connectpath,
 				smb_fname,
 				&version,
 				&epoch);

@@ -38,10 +38,8 @@ NTSTATUS leases_db_del(const struct GUID *client_guid,
 		       const struct file_id *id);
 NTSTATUS leases_db_parse(const struct GUID *client_guid,
 			 const struct smb2_lease_key *lease_key,
-			 void (*parser)(uint32_t num_file_ids,
-					struct file_id *ids,
-					const char *filename,
-					const char *stream_name,
+			 void (*parser)(uint32_t num_files,
+					const struct leases_db_file *files,
 					void *private_data),
 			 void *private_data);
 NTSTATUS leases_db_rename(const struct GUID *client_guid,
