@@ -408,3 +408,23 @@ NTSTATUS leases_db_rename(const struct GUID *client_guid,
 				filename_new,
 				stream_name_new);
 }
+
+NTSTATUS leases_db_copy_file_ids(TALLOC_CTX *mem_ctx,
+			uint32_t num_files,
+			const struct leases_db_file *files,
+			struct file_id **pp_ids)
+{
+	uint32_t i;
+	struct file_id *ids = talloc_array(mem_ctx,
+				struct file_id,
+				num_files);
+	if (ids == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	for (i = 0; i < num_files; i++) {
+		ids[i] = files[i].id;
+	}
+	*pp_ids = ids;
+	return NT_STATUS_OK;
+}

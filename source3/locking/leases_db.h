@@ -24,6 +24,7 @@
 struct GUID;
 struct smb2_lease_key;
 struct file_id;
+struct leases_db_file;
 
 bool leases_db_init(bool read_only);
 NTSTATUS leases_db_add(const struct GUID *client_guid,
@@ -48,4 +49,8 @@ NTSTATUS leases_db_rename(const struct GUID *client_guid,
 			const char *servicepath_new,
 			const char *filename_new,
 			const char *stream_name_new);
+NTSTATUS leases_db_copy_file_ids(TALLOC_CTX *mem_ctx,
+			uint32_t num_files,
+			const struct leases_db_file *files,
+			struct file_id **pp_ids);
 #endif /* _LEASES_DB_H_ */
