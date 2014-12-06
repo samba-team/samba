@@ -23,43 +23,33 @@
 
 ssize_t iov_buflen(const struct iovec *iov, int iovcnt)
 {
-	size_t buflen = 0;
+	return iov_buf(iov, iovcnt, NULL, 0);
+}
+
+ssize_t iov_buf(const struct iovec *iov, int iovcnt,
+		uint8_t *buf, size_t buflen)
+{
+	size_t needed = 0;
+	uint8_t *p = buf;
 	int i;
 
 	for (i=0; i<iovcnt; i++) {
 		size_t thislen = iov[i].iov_len;
-		size_t tmp = buflen + thislen;
+		size_t tmp;
 
-		if ((tmp < buflen) || (tmp < thislen)) {
+		tmp = needed + thislen;
+
+		if ((tmp < needed) || (tmp < thislen)) {
 			/* overflow */
 			return -1;
 		}
-		buflen = tmp;
-	}
-	return buflen;
-}
+		needed = tmp;
 
-uint8_t *iov_buf(TALLOC_CTX *mem_ctx, const struct iovec *iov, int iovcnt)
-{
-	int i;
-	ssize_t buflen;
-	uint8_t *buf, *p;
-
-	buflen = iov_buflen(iov, iovcnt);
-	if (buflen == -1) {
-		return NULL;
-	}
-	buf = talloc_array(mem_ctx, uint8_t, buflen);
-	if (buf == NULL) {
-		return NULL;
+		if (needed <= buflen) {
+			memcpy(p, iov[i].iov_base, thislen);
+			p += thislen;
+		}
 	}
 
-	p = buf;
-	for (i=0; i<iovcnt; i++) {
-		size_t len = iov[i].iov_len;
-
-		memcpy(p, iov[i].iov_base, len);
-		p += len;
-	}
-	return buf;
+	return needed;
 }

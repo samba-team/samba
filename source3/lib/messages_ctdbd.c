@@ -100,16 +100,23 @@ static int messaging_ctdb_send(struct server_id src,
 		backend->private_data, struct messaging_ctdbd_context);
 	struct messaging_rec msg;
 	uint8_t *buf;
+	ssize_t buflen;
 	NTSTATUS status;
 
 	if (num_fds > 0) {
 		return ENOSYS;
 	}
 
-	buf = iov_buf(talloc_tos(), iov, iovlen);
-	if (buf == NULL) {
+	buflen = iov_buflen(iov, iovlen);
+	if (buflen == -1) {
+		return EMSGSIZE;
+	}
+
+	buf = talloc_array(talloc_tos(), uint8_t, buflen);
+	if (buflen == NULL) {
 		return ENOMEM;
 	}
+	iov_buf(iov, iovlen, buf, buflen);
 
 	msg = (struct messaging_rec) {
 		.msg_version	= MESSAGE_VERSION,

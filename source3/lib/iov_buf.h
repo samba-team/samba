@@ -22,8 +22,10 @@
 
 #include <unistd.h>
 #include <talloc.h>
+#include <stdint.h>
 
 ssize_t iov_buflen(const struct iovec *iov, int iovlen);
-uint8_t *iov_buf(TALLOC_CTX *mem_ctx, const struct iovec *iov, int iovcnt);
+ssize_t iov_buf(const struct iovec *iov, int iovcnt,
+		uint8_t *buf, size_t buflen);
 
 #endif

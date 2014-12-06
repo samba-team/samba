@@ -260,7 +260,7 @@ bld.SAMBA3_LIBRARY('sys_rw',
 
 bld.SAMBA3_LIBRARY('iov_buf',
                    source='lib/iov_buf.c',
-                   deps='replace talloc',
+                   deps='replace',
                    private_library=True)
 
 bld.SAMBA3_SUBSYSTEM('samba3util',
