@@ -59,7 +59,7 @@ tasks = {
                      ("tdb-install", "cd lib/tdb && make install", "text/plain"),
 
 
-                     # build samba with cluster support against this ctdb:
+                     # build samba with cluster support (also building ctdb):
                      ("samba-configure", "PYTHONPATH=${PYTHON_PREFIX}/site-packages:$PYTHONPATH PKG_CONFIG_PATH=${PREFIX_DIR}/lib/pkgconfig:${PKG_CONFIG_PATH} ./configure.developer --picky-developer ${PREFIX} --with-selftest-prefix=./bin/ab --with-cluster-support --bundled-libraries=!tdb", "text/plain"),
                      ("samba-make", "make", "text/plain"),
                      ("samba-check", "./bin/smbd -b | grep CLUSTER_SUPPORT", "text/plain"),
