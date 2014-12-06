@@ -23,6 +23,7 @@
 #include "system/network.h"
 #include "dlinklist.h"
 #include "pthreadpool/pthreadpool.h"
+#include "lib/iov_buf.h"
 #include <fcntl.h>
 
 /*
@@ -77,7 +78,6 @@ struct unix_dgram_ctx {
 	char path[];
 };
 
-static ssize_t iov_buflen(const struct iovec *iov, int iovlen);
 static void unix_dgram_recv_handler(struct poll_watch *w, int fd, short events,
 				    void *private_data);
 
@@ -583,10 +583,7 @@ static int queue_msg(struct unix_dgram_send_queue *q,
 	}
 #endif /*  HAVE_STRUCT_MSGHDR_MSG_CONTROL */
 
-	for (i=0; i<iovlen; i++) {
-		memcpy(data_buf, iov[i].iov_base, iov[i].iov_len);
-		data_buf += iov[i].iov_len;
-	}
+	iov_buf(iov, iovlen, data_buf, data_len);
 
 	DLIST_ADD_END(q->msgs, msg, struct unix_dgram_msg);
 	return 0;
@@ -1105,22 +1102,4 @@ int unix_msg_free(struct unix_msg_ctx *ctx)
 
 	free(ctx);
 	return 0;
-}
-
-static ssize_t iov_buflen(const struct iovec *iov, int iovlen)
-{
-	size_t buflen = 0;
-	int i;
-
-	for (i=0; i<iovlen; i++) {
-		size_t thislen = iov[i].iov_len;
-		size_t tmp = buflen + thislen;
-
-		if ((tmp < buflen) || (tmp < thislen)) {
-			/* overflow */
-			return -1;
-		}
-		buflen = tmp;
-	}
-	return buflen;
 }
