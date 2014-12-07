@@ -1,4 +1,98 @@
                    ==============================
+                   Release Notes for Samba 4.0.23
+                         December 08, 2014
+                   ==============================
+
+
+This is the latest stable release of Samba 4.0.
+
+
+Changes since 4.0.22:
+---------------------
+
+o   Michael Adam <obnox@samba.org>
+    * BUG 10472: Revert buildtools/wafadmin/Tools/perl.py back to upstream
+      state.
+
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 10711: s3:daemons: Ensure nmbd and winbindd are consistent in
+      command line processing by adding POPT_COMMON_DYNCONFIG.
+    * BUG 10779: pthreadpool: Slightly serialize jobs.
+    * BUG 10830: s3:nmbd: Ensure the main nmbd process doesn't create zombies.
+    * BUG 10831: SIGCLD Signal handler not correctly reinstalled on old library
+      code use - smbrun etc.
+    * BUG 10848: s3:smb2cli: Query info return length check was reversed.
+    * BUG 10896: s3:nmbd: Fix netbios name truncation.
+
+
+o   Günther Deschner <gd@samba.org>
+    * BUG 9984: s3-libnet: Make sure we do not overwrite precreated SPNs.
+
+
+o   David Disseldorp <ddiss@samba.org>
+    * BUG 10898: spoolss: Fix handling of bad EnumJobs levels.
+    * BUG 10905: spoolss: Fix print job enumeration.
+
+
+o   Björn Jacke <bj@sernet.de>
+    * BUG docs: Mention incompatibility between kernel oplocks and
+      streams_xattr.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 10860: registry: Don't leave dangling transactions.
+    * BUG 10932: pdb_tdb: Fix a TALLOC/SAFE_FREE mixup.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 10472: Revert buildtools/wafadmin/Tools/perl.py back to upstream
+      state.
+    * BUG 10921: s3:smbd: Fix file corruption using "write cache size != 0".
+
+
+o   Christof Schmitt <cs@samba.org>
+    * BUG 10838: s3-winbindd: Do not use domain SID from LookupSids for
+    * Sids2UnixIDs call.
+
+
+o   Andreas Schneider <asn@samba.org>
+    * BUG 9984: s3-libnet: Add libnet_join_get_machine_spns().
+    * BUG 9985: s3-libads: Add all machine account principals to the keytab.
+    * BUG 10472: wafsamba: If perl can't provide defaults, define them.
+    * BUG 10824: nsswitch: Skip groups we were not able to map.
+    * BUG 10829: s3-libads: Improve service principle guessing.
+
+
+o   Richard Sharpe <realrichardsharpe@gmail.com>
+    * BUG: source3/smbd/process.c::srv_send_smb() returns true on the error
+      path.
+
+
+######################################################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.0 product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   ==============================
                    Release Notes for Samba 4.0.22
                          September 15, 2014
                    ==============================
@@ -106,8 +200,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    ==============================
                    Release Notes for Samba 4.0.21
