@@ -4,17 +4,17 @@
  * Copyright (C) Andrew Tridgell 1992-1998 Modified by Jeremy Allison 1995.
  *
  * Added afdgets() Jelmer Vernooij 2005
- * 
+ *
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free
  * Software Foundation; either version 3 of the License, or (at your option)
  * any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
  * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
  * more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License along with
  * this program; if not, see <http://www.gnu.org/licenses/>.
  */
@@ -32,7 +32,7 @@
  */
 
 /**
-read a line from a file with possible \ continuation chars. 
+read a line from a file with possible \ continuation chars.
 Blanks at the start or end of a line are stripped.
 The string will be allocated if s2 is NULL
 **/
@@ -78,7 +78,7 @@ _PUBLIC_ char *fgets_slash(char *s2,int maxlen,XFILE *f)
 	    }
 	  return(s);
 	case EOF:
-	  if (len <= 0 && !s2) 
+	  if (len <= 0 && !s2)
 	    SAFE_FREE(s);
 	  return(len>0?s:NULL);
 	case ' ':
@@ -93,7 +93,7 @@ _PUBLIC_ char *fgets_slash(char *s2,int maxlen,XFILE *f)
       if (!s2 && len > maxlen-3)
 	{
 	  char *t;
-	  
+
 	  maxlen *= 2;
 	  t = realloc_p(s, char, maxlen);
 	  if (!t) {
@@ -107,7 +107,7 @@ _PUBLIC_ char *fgets_slash(char *s2,int maxlen,XFILE *f)
 }
 
 /**
- * Read one line (data until next newline or eof) and allocate it 
+ * Read one line (data until next newline or eof) and allocate it
  */
 _PUBLIC_ char *afdgets(int fd, TALLOC_CTX *mem_ctx, size_t hint)
 {
@@ -200,7 +200,7 @@ _PUBLIC_ char *file_load(const char *fname, size_t *size, size_t maxsize, TALLOC
 	char *p;
 
 	if (!fname || !*fname) return NULL;
-	
+
 	fd = open(fname,O_RDONLY);
 	if (fd == -1) return NULL;
 
@@ -256,7 +256,7 @@ bool unmap_file(void *start, size_t size)
 #ifdef HAVE_MMAP
 	if (munmap( start, size ) != 0) {
 		DEBUG( 1, ("map_file: Failed to unmap address %p "
-			"of size %u - %s\n", 
+			"of size %u - %s\n",
 			start, (unsigned int)size, strerror(errno) ));
 		return false;
 	}
@@ -286,10 +286,10 @@ char **file_lines_parse(char *p, size_t size, int *numlines, TALLOC_CTX *mem_ctx
 	if (!ret) {
 		talloc_free(p);
 		return NULL;
-	}	
-	
+	}
+
 	talloc_steal(ret, p);
-	
+
 	memset(ret, 0, sizeof(ret[0])*(i+2));
 
 	ret[0] = p;
@@ -315,7 +315,7 @@ char **file_lines_parse(char *p, size_t size, int *numlines, TALLOC_CTX *mem_ctx
 
 /**
 load a file into memory and return an array of pointers to lines in the file
-must be freed with talloc_free(). 
+must be freed with talloc_free().
 **/
 _PUBLIC_ char **file_lines_load(const char *fname, int *numlines, size_t maxsize, TALLOC_CTX *mem_ctx)
 {
