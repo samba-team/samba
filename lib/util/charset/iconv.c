@@ -219,7 +219,7 @@ _PUBLIC_ smb_iconv_t smb_iconv_open_ex(TALLOC_CTX *mem_ctx, const char *tocode,
 	}
 
 #ifdef HAVE_NATIVE_ICONV
-	/* the from and to varaibles indicate a samba module or
+	/* the from and to variables indicate a samba module or
 	 * internal conversion, ret->pull and ret->push are
 	 * initialised only in this block for iconv based
 	 * conversions */
