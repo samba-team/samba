@@ -47,15 +47,16 @@ This is the function that should be called from library code.
 ********************************************************************/
 void load_case_tables_library(void)
 {
-	TALLOC_CTX *mem_ctx;
+	const char *codepagedir = get_dyn_CODEPAGEDIR();
+	size_t codepagedir_len = strlen(codepagedir);
+	char buf[codepagedir_len+13];
 
-	mem_ctx = talloc_init("load_case_tables");
-	if (!mem_ctx) {
-		smb_panic("No memory for case_tables");
-	}
-	upcase_table = map_file(talloc_asprintf(mem_ctx, "%s/upcase.dat", get_dyn_CODEPAGEDIR()), 0x20000);
-	lowcase_table = map_file(talloc_asprintf(mem_ctx, "%s/lowcase.dat", get_dyn_CODEPAGEDIR()), 0x20000);
-	talloc_free(mem_ctx);
+	snprintf(buf, sizeof(buf), "%s/upcase.dat", codepagedir);
+	upcase_table = map_file(buf, 0x20000);
+
+	snprintf(buf, sizeof(buf), "%s/lowcase.dat", codepagedir);
+	lowcase_table = map_file(buf, 0x20000);
+
 	if (upcase_table == NULL) {
 		DEBUG(1, ("Failed to load upcase.dat, will use lame ASCII-only case sensitivity rules\n"));
 		upcase_table = (void *)-1;
