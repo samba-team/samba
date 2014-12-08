@@ -60,7 +60,7 @@ tasks = {
 
 
                      # build samba with cluster support against this ctdb:
-                     ("samba-configure", "PYTHONPATH=${PYTHON_PREFIX}/site-packages:$PYTHONPATH PKG_CONFIG_PATH=${PREFIX_DIR}/lib/pkgconfig:${PKG_CONFIG_PATH} ./configure.developer ${PREFIX} --with-selftest-prefix=./bin/ab --with-cluster-support --bundled-libraries=!tdb", "text/plain"),
+                     ("samba-configure", "PYTHONPATH=${PYTHON_PREFIX}/site-packages:$PYTHONPATH PKG_CONFIG_PATH=${PREFIX_DIR}/lib/pkgconfig:${PKG_CONFIG_PATH} ./configure.developer --picky-developer ${PREFIX} --with-selftest-prefix=./bin/ab --with-cluster-support --bundled-libraries=!tdb", "text/plain"),
                      ("samba-make", "make", "text/plain"),
                      ("samba-check", "./bin/smbd -b | grep CLUSTER_SUPPORT", "text/plain"),
                      ("samba-install", "make install", "text/plain"),
