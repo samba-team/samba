@@ -287,7 +287,8 @@ clients and interoperability with a Netatalk 3 AFP fileserver.
 The module features enhanced performance with reliable named streams
 support, interoperability with special characters commonly used by OS
 X client (eg '*', '/'), integrated file locking and Mac metadata
-access with Netatalk 3.
+access with Netatalk 3 and enhanced performance by implementing
+Apple's SMB2 extension codenamed "AAPL".
 
 The modules behaviour is fully configurable, please refer to the
 manpage vfs_fruit for further details.
