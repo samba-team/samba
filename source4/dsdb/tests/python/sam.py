@@ -22,12 +22,14 @@ from ldb import ERR_OTHER, ERR_NO_SUCH_ATTRIBUTE
 from ldb import ERR_OBJECT_CLASS_VIOLATION
 from ldb import ERR_CONSTRAINT_VIOLATION
 from ldb import ERR_UNDEFINED_ATTRIBUTE_TYPE
+from ldb import ERR_INSUFFICIENT_ACCESS_RIGHTS
 from ldb import Message, MessageElement, Dn
 from ldb import FLAG_MOD_ADD, FLAG_MOD_REPLACE, FLAG_MOD_DELETE
 from samba.samdb import SamDB
 from samba.dsdb import (UF_NORMAL_ACCOUNT, UF_ACCOUNTDISABLE,
     UF_WORKSTATION_TRUST_ACCOUNT, UF_SERVER_TRUST_ACCOUNT,
     UF_PARTIAL_SECRETS_ACCOUNT, UF_TEMP_DUPLICATE_ACCOUNT,
+    UF_INTERDOMAIN_TRUST_ACCOUNT,
     UF_PASSWD_NOTREQD, UF_LOCKOUT, UF_PASSWORD_EXPIRED, ATYPE_NORMAL_ACCOUNT,
     GTYPE_SECURITY_BUILTIN_LOCAL_GROUP, GTYPE_SECURITY_DOMAIN_LOCAL_GROUP,
     GTYPE_SECURITY_GLOBAL_GROUP, GTYPE_SECURITY_UNIVERSAL_GROUP,
@@ -1440,16 +1442,11 @@ class SamTests(samba.tests.TestCase):
         self.assertTrue(int(res1[0]["userAccountControl"][0]) & UF_PASSWD_NOTREQD == 0)
         delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 
-# This has to wait until s4 supports it (needs a password module change)
-#        try:
-#            ldb.add({
-#                "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
-#                "objectclass": "user",
-#                "userAccountControl": str(UF_NORMAL_ACCOUNT)})
-#            self.fail()
-#        except LdbError, (num, _):
-#            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
-#        delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        ldb.add({
+            "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
+            "objectclass": "user",
+            "userAccountControl": str(UF_NORMAL_ACCOUNT)})
+        delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 
         ldb.add({
             "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
@@ -1519,16 +1516,15 @@ class SamTests(samba.tests.TestCase):
             self.assertEquals(num, ERR_OBJECT_CLASS_VIOLATION)
         delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 
-# This isn't supported yet in s4 - needs ACL module adaption
-#        try:
-#            ldb.add({
-#                "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
-#                "objectclass": "user",
-#                "userAccountControl": str(UF_INTERDOMAIN_TRUST_ACCOUNT)})
-#            self.fail()
-#        except LdbError, (num, _):
-#            self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
-#        delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        try:
+            ldb.add({
+                "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
+                "objectclass": "user",
+                "userAccountControl": str(UF_INTERDOMAIN_TRUST_ACCOUNT)})
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+        delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 
         # Modify operation
 
@@ -1561,16 +1557,15 @@ class SamTests(samba.tests.TestCase):
         except LdbError, (num, _):
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
-# This has to wait until s4 supports it (needs a password module change)
-#        try:
-#            m = Message()
-#            m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
-#            m["userAccountControl"] = MessageElement(
-#              str(UF_NORMAL_ACCOUNT),
-#              FLAG_MOD_REPLACE, "userAccountControl")
-#            ldb.modify(m)
-#        except LdbError, (num, _):
-#            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+        try:
+            m = Message()
+            m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+            m["userAccountControl"] = MessageElement(
+              str(UF_NORMAL_ACCOUNT),
+              FLAG_MOD_REPLACE, "userAccountControl")
+            ldb.modify(m)
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
@@ -1686,17 +1681,16 @@ class SamTests(samba.tests.TestCase):
         self.assertEquals(int(res1[0]["sAMAccountType"][0]),
           ATYPE_NORMAL_ACCOUNT)
 
-# This isn't supported yet in s4 - needs ACL module adaption
-#        try:
-#            m = Message()
-#            m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
-#            m["userAccountControl"] = MessageElement(
-#              str(UF_INTERDOMAIN_TRUST_ACCOUNT),
-#              FLAG_MOD_REPLACE, "userAccountControl")
-#            ldb.modify(m)
-#            self.fail()
-#        except LdbError, (num, _):
-#            self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+        try:
+            m = Message()
+            m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+            m["userAccountControl"] = MessageElement(
+              str(UF_INTERDOMAIN_TRUST_ACCOUNT),
+              FLAG_MOD_REPLACE, "userAccountControl")
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
 
         # With a computer object
 
@@ -1722,16 +1716,11 @@ class SamTests(samba.tests.TestCase):
         self.assertTrue(int(res1[0]["userAccountControl"][0]) & UF_PASSWD_NOTREQD == 0)
         delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
 
-# This has to wait until s4 supports it (needs a password module change)
-#        try:
-#            ldb.add({
-#                "dn": "cn=ldaptestcomputer,cn=computers," + self.base_dn,
-#                "objectclass": "computer",
-#                "userAccountControl": str(UF_NORMAL_ACCOUNT)})
-#            self.fail()
-#        except LdbError, (num, _):
-#            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
-#        delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+        ldb.add({
+            "dn": "cn=ldaptestcomputer,cn=computers," + self.base_dn,
+            "objectclass": "computer",
+            "userAccountControl": str(UF_NORMAL_ACCOUNT)})
+        delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
 
         ldb.add({
             "dn": "cn=ldaptestcomputer,cn=computers," + self.base_dn,
@@ -1794,16 +1783,15 @@ class SamTests(samba.tests.TestCase):
             self.assertEquals(num, ERR_OBJECT_CLASS_VIOLATION)
         delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
 
-# This isn't supported yet in s4 - needs ACL module adaption
-#        try:
-#            ldb.add({
-#                "dn": "cn=ldaptestcomputer,cn=computers," + self.base_dn,
-#                "objectclass": "computer",
-#                "userAccountControl": str(UF_INTERDOMAIN_TRUST_ACCOUNT)})
-#            self.fail()
-#        except LdbError, (num, _):
-#            self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
-#        delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+        try:
+            ldb.add({
+                "dn": "cn=ldaptestcomputer,cn=computers," + self.base_dn,
+                "objectclass": "computer",
+                "userAccountControl": str(UF_INTERDOMAIN_TRUST_ACCOUNT)})
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+        delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
 
         # Modify operation
 
@@ -1837,16 +1825,15 @@ class SamTests(samba.tests.TestCase):
         except LdbError, (num, _):
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
-# This has to wait until s4 supports it (needs a password module change)
-#        try:
-#            m = Message()
-#            m.dn = Dn(ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
-#            m["userAccountControl"] = MessageElement(
-#              str(UF_NORMAL_ACCOUNT),
-#              FLAG_MOD_REPLACE, "userAccountControl")
-#            ldb.modify(m)
-#        except LdbError, (num, _):
-#            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+        try:
+            m = Message()
+            m.dn = Dn(ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+            m["userAccountControl"] = MessageElement(
+              str(UF_NORMAL_ACCOUNT),
+              FLAG_MOD_REPLACE, "userAccountControl")
+            ldb.modify(m)
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
@@ -1992,17 +1979,16 @@ class SamTests(samba.tests.TestCase):
         self.assertEquals(int(res1[0]["sAMAccountType"][0]),
           ATYPE_WORKSTATION_TRUST)
 
-# This isn't supported yet in s4 - needs ACL module adaption
-#        try:
-#            m = Message()
-#            m.dn = Dn(ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
-#            m["userAccountControl"] = MessageElement(
-#              str(UF_INTERDOMAIN_TRUST_ACCOUNT),
-#              FLAG_MOD_REPLACE, "userAccountControl")
-#            ldb.modify(m)
-#            self.fail()
-#        except LdbError, (num, _):
-#            self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+        try:
+            m = Message()
+            m.dn = Dn(ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+            m["userAccountControl"] = MessageElement(
+              str(UF_INTERDOMAIN_TRUST_ACCOUNT),
+              FLAG_MOD_REPLACE, "userAccountControl")
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
 
         # "primaryGroupID" does not change if account type remains the same
 
