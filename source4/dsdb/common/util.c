@@ -1101,8 +1101,8 @@ int samdb_msg_set_uint(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx,
 /*
  * Handle ldb_request in transaction
  */
-static int dsdb_autotransaction_request(struct ldb_context *sam_ldb,
-					struct ldb_request *req)
+int dsdb_autotransaction_request(struct ldb_context *sam_ldb,
+				 struct ldb_request *req)
 {
 	int ret;
 
