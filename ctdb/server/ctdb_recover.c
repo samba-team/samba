@@ -784,6 +784,15 @@ bool ctdb_recovery_lock(struct ctdb_context *ctdb, bool keep)
 	return true;
 }
 
+void ctdb_recovery_unlock(struct ctdb_context *ctdb)
+{
+	if (ctdb->recovery_lock_fd != -1) {
+		DEBUG(DEBUG_NOTICE, ("Releasing recovery lock\n"));
+		close(ctdb->recovery_lock_fd);
+		ctdb->recovery_lock_fd = -1;
+	}
+}
+
 /*
   delete a record as part of the vacuum process
   only delete if we are not lmaster or dmaster, and our rsn is <= the provided rsn

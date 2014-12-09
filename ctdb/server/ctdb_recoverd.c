@@ -2688,9 +2688,7 @@ static void election_handler(struct ctdb_context *ctdb, uint64_t srvid,
 		/* Release the recovery lock file */
 		if (em->pnn != ctdb->pnn &&
 		    ctdb_recovery_have_lock(ctdb)) {
-			DEBUG(DEBUG_NOTICE, ("Release the recovery lock\n"));
-			close(ctdb->recovery_lock_fd);
-			ctdb->recovery_lock_fd = -1;
+			ctdb_recovery_unlock(ctdb);
 			unban_all_nodes(ctdb);
 		}
 	}
@@ -3478,10 +3476,7 @@ static int update_recovery_lock_file(struct ctdb_context *ctdb)
 			DEBUG(DEBUG_ERR,("Reclock file disabled\n"));
 			talloc_free(ctdb->recovery_lock_file);
 			ctdb->recovery_lock_file = NULL;
-			if (ctdb->recovery_lock_fd != -1) {
-				close(ctdb->recovery_lock_fd);
-				ctdb->recovery_lock_fd = -1;
-			}
+			ctdb_recovery_unlock(ctdb);
 		}
 		talloc_free(tmp_ctx);
 		return 0;
@@ -3489,10 +3484,7 @@ static int update_recovery_lock_file(struct ctdb_context *ctdb)
 
 	if (ctdb->recovery_lock_file == NULL) {
 		ctdb->recovery_lock_file = talloc_strdup(ctdb, reclockfile);
-		if (ctdb->recovery_lock_fd != -1) {
-			close(ctdb->recovery_lock_fd);
-			ctdb->recovery_lock_fd = -1;
-		}
+		ctdb_recovery_unlock(ctdb);
 		talloc_free(tmp_ctx);
 		return 0;
 	}
@@ -3505,10 +3497,7 @@ static int update_recovery_lock_file(struct ctdb_context *ctdb)
 
 	talloc_free(ctdb->recovery_lock_file);
 	ctdb->recovery_lock_file = talloc_strdup(ctdb, reclockfile);
-	if (ctdb->recovery_lock_fd != -1) {
-		close(ctdb->recovery_lock_fd);
-		ctdb->recovery_lock_fd = -1;
-	}
+	ctdb_recovery_unlock(ctdb);
 
 	talloc_free(tmp_ctx);
 	return 0;
@@ -3575,10 +3564,7 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 	   we close the file
 	*/
         if (ctdb->recovery_lock_file == NULL) {
-		if (ctdb->recovery_lock_fd != -1) {
-			close(ctdb->recovery_lock_fd);
-			ctdb->recovery_lock_fd = -1;
-		}
+		ctdb_recovery_unlock(ctdb);
 	}
 
 	pnn = ctdb_get_pnn(ctdb);
