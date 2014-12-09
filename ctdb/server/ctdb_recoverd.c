@@ -1809,29 +1809,35 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	}
 
         if (ctdb->recovery_lock_file != NULL) {
-		DEBUG(DEBUG_ERR, ("Taking out recovery lock from recovery daemon (%s)\n", ctdb->recovery_lock_file));
-		start_time = timeval_current();
-		ctdb_recovery_unlock(ctdb);
-		DEBUG(DEBUG_NOTICE, ("Attempting to take recovery lock\n"));
-		if (!ctdb_recovery_lock(ctdb)) {
-			if (ctdb->runstate == CTDB_RUNSTATE_FIRST_RECOVERY) {
-				/* If ctdb is trying first recovery, it's
-				 * possible that current node does not know yet
-				 * who the recmaster is.
-				 */
-				DEBUG(DEBUG_ERR, ("Unable to get recovery lock"
-						" - retrying recovery\n"));
+		if (ctdb_recovery_have_lock(ctdb)) {
+			DEBUG(DEBUG_NOTICE, ("Already holding recovery lock\n"));
+		} else {
+			start_time = timeval_current();
+			DEBUG(DEBUG_NOTICE, ("Attempting to take recovery lock (%s)\n",
+					     ctdb->recovery_lock_file));
+			if (!ctdb_recovery_lock(ctdb)) {
+				if (ctdb->runstate == CTDB_RUNSTATE_FIRST_RECOVERY) {
+					/* If ctdb is trying first recovery, it's
+					 * possible that current node does not know
+					 * yet who the recmaster is.
+					 */
+					DEBUG(DEBUG_ERR, ("Unable to get recovery lock"
+							  " - retrying recovery\n"));
+					return -1;
+				}
+
+				DEBUG(DEBUG_ERR,("Unable to get recovery lock - aborting recovery "
+						 "and ban ourself for %u seconds\n",
+						 ctdb->tunable.recovery_ban_period));
+				ctdb_ban_node(rec, pnn, ctdb->tunable.recovery_ban_period);
 				return -1;
 			}
-
-			DEBUG(DEBUG_ERR,("Unable to get recovery lock - aborting recovery "
-					 "and ban ourself for %u seconds\n",
-					 ctdb->tunable.recovery_ban_period));
-			ctdb_ban_node(rec, pnn, ctdb->tunable.recovery_ban_period);
-			return -1;
+			ctdb_ctrl_report_recd_lock_latency(ctdb,
+							   CONTROL_TIMEOUT(),
+							   timeval_elapsed(&start_time));
+			DEBUG(DEBUG_NOTICE,
+			      ("Recovery lock taken successfully by recovery daemon\n"));
 		}
-		ctdb_ctrl_report_recd_lock_latency(ctdb, CONTROL_TIMEOUT(), timeval_elapsed(&start_time));
-		DEBUG(DEBUG_NOTICE,("Recovery lock taken successfully by recovery daemon\n"));
 	}
 
 	DEBUG(DEBUG_NOTICE, (__location__ " Recovery initiated due to problem with node %u\n", rec->last_culprit_node));
