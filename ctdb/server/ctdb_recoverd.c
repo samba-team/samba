@@ -2679,7 +2679,7 @@ static void election_handler(struct ctdb_context *ctdb, uint64_t srvid,
 		/*unban_all_nodes(ctdb);*/
 		return;
 	}
-	
+
 	/* we didn't win */
 	talloc_free(rec->send_election_te);
 	rec->send_election_te = NULL;
@@ -2687,7 +2687,7 @@ static void election_handler(struct ctdb_context *ctdb, uint64_t srvid,
         if (ctdb->recovery_lock_file != NULL) {
 		/* Release the recovery lock file */
 		if (em->pnn != ctdb->pnn &&
-		    ctdb->recovery_lock_fd != -1) {
+		    ctdb_recovery_have_lock(ctdb)) {
 			DEBUG(DEBUG_NOTICE, ("Release the recovery lock\n"));
 			close(ctdb->recovery_lock_fd);
 			ctdb->recovery_lock_fd = -1;

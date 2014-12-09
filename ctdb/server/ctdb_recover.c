@@ -721,6 +721,11 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 }
 
 
+bool ctdb_recovery_have_lock(struct ctdb_context *ctdb)
+{
+	return ctdb->recovery_lock_fd != -1;
+}
+
 /*
   try and get the recovery lock in shared storage - should only work
   on the recovery master recovery daemon. Anywhere else is a bug
