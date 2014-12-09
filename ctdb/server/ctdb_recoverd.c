@@ -1809,9 +1809,11 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	}
 
         if (ctdb->recovery_lock_file != NULL) {
-		DEBUG(DEBUG_ERR,("Taking out recovery lock from recovery daemon\n"));
+		DEBUG(DEBUG_ERR, ("Taking out recovery lock from recovery daemon (%s)\n", ctdb->recovery_lock_file));
 		start_time = timeval_current();
-		if (!ctdb_recovery_lock(ctdb, true)) {
+		ctdb_recovery_unlock(ctdb);
+		DEBUG(DEBUG_NOTICE, ("Attempting to take recovery lock\n"));
+		if (!ctdb_recovery_lock(ctdb)) {
 			if (ctdb->runstate == CTDB_RUNSTATE_FIRST_RECOVERY) {
 				/* If ctdb is trying first recovery, it's
 				 * possible that current node does not know yet

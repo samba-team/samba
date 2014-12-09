@@ -1260,7 +1260,7 @@ void set_nonblocking(int fd);
 void set_close_on_exec(int fd);
 
 bool ctdb_recovery_have_lock(struct ctdb_context *ctdb);
-bool ctdb_recovery_lock(struct ctdb_context *ctdb, bool keep);
+bool ctdb_recovery_lock(struct ctdb_context *ctdb);
 void ctdb_recovery_unlock(struct ctdb_context *ctdb);
 
 int ctdb_set_recovery_lock_file(struct ctdb_context *ctdb, const char *file);

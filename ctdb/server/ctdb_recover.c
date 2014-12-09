@@ -675,8 +675,9 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 		/* we should not be able to get the lock on the reclock file, 
 		  as it should  be held by the recovery master 
 		*/
-		if (ctdb_recovery_lock(ctdb, false)) {
+		if (ctdb_recovery_lock(ctdb)) {
 			DEBUG(DEBUG_CRIT,("ERROR: recovery lock file %s not locked when recovering!\n", ctdb->recovery_lock_file));
+			ctdb_recovery_unlock(ctdb);
 			cc = 1;
 		}
 
@@ -730,22 +731,16 @@ bool ctdb_recovery_have_lock(struct ctdb_context *ctdb)
   try and get the recovery lock in shared storage - should only work
   on the recovery master recovery daemon. Anywhere else is a bug
  */
-bool ctdb_recovery_lock(struct ctdb_context *ctdb, bool keep)
+bool ctdb_recovery_lock(struct ctdb_context *ctdb)
 {
 	struct flock lock;
 
-	if (keep) {
-		DEBUG(DEBUG_ERR, ("Take the recovery lock\n"));
-	}
-	if (ctdb->recovery_lock_fd != -1) {
-		close(ctdb->recovery_lock_fd);
-		ctdb->recovery_lock_fd = -1;
-	}
-
-	ctdb->recovery_lock_fd = open(ctdb->recovery_lock_file, O_RDWR|O_CREAT, 0600);
+	ctdb->recovery_lock_fd = open(ctdb->recovery_lock_file,
+				      O_RDWR|O_CREAT, 0600);
 	if (ctdb->recovery_lock_fd == -1) {
-		DEBUG(DEBUG_ERR,("ctdb_recovery_lock: Unable to open %s - (%s)\n", 
-			 ctdb->recovery_lock_file, strerror(errno)));
+		DEBUG(DEBUG_ERR,
+		      ("ctdb_recovery_lock: Unable to open %s - (%s)\n",
+		       ctdb->recovery_lock_file, strerror(errno)));
 		return false;
 	}
 
@@ -761,25 +756,18 @@ bool ctdb_recovery_lock(struct ctdb_context *ctdb, bool keep)
 		int saved_errno = errno;
 		close(ctdb->recovery_lock_fd);
 		ctdb->recovery_lock_fd = -1;
-		if (keep) {
-			DEBUG(DEBUG_CRIT,("ctdb_recovery_lock: Failed to get "
-					  "recovery lock on '%s' - (%s)\n",
-					  ctdb->recovery_lock_file,
-					  strerror(saved_errno)));
+		/* Fail silently on these errors, since they indicate
+		 * lock contention, but log an error for any other
+		 * failure. */
+		if (saved_errno != EACCES &&
+		    saved_errno != EAGAIN) {
+			DEBUG(DEBUG_ERR,("ctdb_recovery_lock: Failed to get "
+					 "recovery lock on '%s' - (%s)\n",
+					 ctdb->recovery_lock_file,
+					 strerror(saved_errno)));
 		}
 		return false;
 	}
-
-	if (!keep) {
-		close(ctdb->recovery_lock_fd);
-		ctdb->recovery_lock_fd = -1;
-	}
-
-	if (keep) {
-		DEBUG(DEBUG_NOTICE, ("Recovery lock taken successfully\n"));
-	}
-
-	DEBUG(DEBUG_NOTICE,("ctdb_recovery_lock: Got recovery lock on '%s'\n", ctdb->recovery_lock_file));
 
 	return true;
 }
