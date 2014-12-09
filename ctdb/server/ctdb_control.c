@@ -519,17 +519,35 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 			outdata->dsize = strlen(ctdb->recovery_lock_file) + 1;
 		}
 		return 0;
-	case CTDB_CONTROL_SET_RECLOCK_FILE:
-		ctdb->tunable.verify_recovery_lock = 0;
-		if (ctdb->recovery_lock_file != NULL) {
-			talloc_free(ctdb->recovery_lock_file);
-			ctdb->recovery_lock_file = NULL;
+	case CTDB_CONTROL_SET_RECLOCK_FILE: {
+		char *t;
+
+		if (indata.dsize == 0) {
+			TALLOC_FREE(ctdb->recovery_lock_file);
+			return 0;
 		}
-		if (indata.dsize > 0) {
-			ctdb->recovery_lock_file = talloc_strdup(ctdb, discard_const(indata.dptr));
-			ctdb->tunable.verify_recovery_lock = 1;
+
+		/* Return silent success if unchanged.  Recovery
+		 * master updates all nodes on each recovery - we
+		 * don't need the extra memory allocation or log
+		 * message each time. */
+		if (strcmp(discard_const(indata.dptr),
+			   ctdb->recovery_lock_file) == 0) {
+			return 0;
 		}
+
+		t = talloc_strdup(ctdb, discard_const(indata.dptr));
+		if (t == NULL) {
+			DEBUG(DEBUG_ERR, ("Out of memory in SET_RECLOCK_FILE\n"));
+			return -1;
+		}
+
+		talloc_free(ctdb->recovery_lock_file);
+		ctdb->recovery_lock_file = t;
+		DEBUG(DEBUG_NOTICE, ("Updated recovery lock file to %s\n", t));
+
 		return 0;
+	}
 
 	case CTDB_CONTROL_STOP_NODE:
 		CHECK_CONTROL_DATA_SIZE(0);
