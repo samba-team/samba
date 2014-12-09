@@ -1808,7 +1808,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 		return -1;
 	}
 
-        if (ctdb->tunable.verify_recovery_lock != 0) {
+        if (ctdb->recovery_lock_file != NULL) {
 		DEBUG(DEBUG_ERR,("Taking out recovery lock from recovery daemon\n"));
 		start_time = timeval_current();
 		if (!ctdb_recovery_lock(ctdb, true)) {
@@ -2684,8 +2684,8 @@ static void election_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	talloc_free(rec->send_election_te);
 	rec->send_election_te = NULL;
 
-        if (ctdb->tunable.verify_recovery_lock != 0) {
-		/* release the recmaster lock */
+        if (ctdb->recovery_lock_file != NULL) {
+		/* Release the recovery lock file */
 		if (em->pnn != ctdb->pnn &&
 		    ctdb->recovery_lock_fd != -1) {
 			DEBUG(DEBUG_NOTICE, ("Release the recovery lock\n"));
@@ -3483,7 +3483,6 @@ static int update_recovery_lock_file(struct ctdb_context *ctdb)
 				ctdb->recovery_lock_fd = -1;
 			}
 		}
-		ctdb->tunable.verify_recovery_lock = 0;
 		talloc_free(tmp_ctx);
 		return 0;
 	}
@@ -3506,7 +3505,6 @@ static int update_recovery_lock_file(struct ctdb_context *ctdb)
 
 	talloc_free(ctdb->recovery_lock_file);
 	ctdb->recovery_lock_file = talloc_strdup(ctdb, reclockfile);
-	ctdb->tunable.verify_recovery_lock = 0;
 	if (ctdb->recovery_lock_fd != -1) {
 		close(ctdb->recovery_lock_fd);
 		ctdb->recovery_lock_fd = -1;
@@ -3576,7 +3574,7 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 	/* Make sure that if recovery lock verification becomes disabled when
 	   we close the file
 	*/
-        if (ctdb->tunable.verify_recovery_lock == 0) {
+        if (ctdb->recovery_lock_file == NULL) {
 		if (ctdb->recovery_lock_fd != -1) {
 			close(ctdb->recovery_lock_fd);
 			ctdb->recovery_lock_fd = -1;
@@ -3841,7 +3839,7 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 	}
 
 
-        if (ctdb->tunable.verify_recovery_lock != 0) {
+        if (ctdb->recovery_lock_file != NULL) {
 		/* we should have the reclock - check its not stale */
 		ret = check_recovery_lock(ctdb);
 		if (ret != 0) {

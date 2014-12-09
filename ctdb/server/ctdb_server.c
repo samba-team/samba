@@ -67,7 +67,6 @@ int ctdb_set_recovery_lock_file(struct ctdb_context *ctdb, const char *file)
 
 	if (file == NULL) {
 		DEBUG(DEBUG_ALERT,("Recovery lock file set to \"\". Disabling recovery lock checking\n"));
-		ctdb->tunable.verify_recovery_lock = 0;
 		return 0;
 	}
 

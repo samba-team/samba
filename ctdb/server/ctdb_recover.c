@@ -640,8 +640,8 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 		ctdb_process_deferred_attach(ctdb);
 	}
 
-	if (ctdb->tunable.verify_recovery_lock == 0) {
-		/* dont need to verify the reclock file */
+	if (ctdb->recovery_lock_file == NULL) {
+		/* Not using recovery lock file */
 		ctdb->recovery_mode = recmode;
 		return 0;
 	}

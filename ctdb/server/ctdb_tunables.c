@@ -57,7 +57,7 @@ static const struct {
 	{ "LogLatencyMs",         0,  offsetof(struct ctdb_tunable, log_latency_ms), false },
 	{ "RecLockLatencyMs",  1000,  offsetof(struct ctdb_tunable, reclock_latency_ms), false },
 	{ "RecoveryDropAllIPs", 120,  offsetof(struct ctdb_tunable, recovery_drop_all_ips), false },
-	{ "VerifyRecoveryLock",   1,  offsetof(struct ctdb_tunable, verify_recovery_lock), false },
+	{ "VerifyRecoveryLock",   1,  offsetof(struct ctdb_tunable, verify_recovery_lock), true },
 	{ "VacuumInterval",   10,  offsetof(struct ctdb_tunable, vacuum_interval), false },
 	{ "VacuumMaxRunTime",     120,  offsetof(struct ctdb_tunable, vacuum_max_run_time), false },
 	{ "RepackLimit",      10000,  offsetof(struct ctdb_tunable, repack_limit), false },
@@ -145,7 +145,7 @@ int32_t ctdb_control_get_tunable(struct ctdb_context *ctdb, TDB_DATA indata,
  */
 int32_t ctdb_control_set_tunable(struct ctdb_context *ctdb, TDB_DATA indata)
 {
-	struct ctdb_control_set_tunable *t = 
+	struct ctdb_control_set_tunable *t =
 		(struct ctdb_control_set_tunable *)indata.dptr;
 	char *name;
 	int i;
@@ -163,15 +163,8 @@ int32_t ctdb_control_set_tunable(struct ctdb_context *ctdb, TDB_DATA indata)
 		if (strcasecmp(name, tunable_map[i].name) == 0) break;
 	}
 
-	if (!strcmp(name, "VerifyRecoveryLock") && t->value != 0
-	&& ctdb->recovery_lock_file == NULL) {
-		DEBUG(DEBUG_ERR,("Can not activate tunable \"VerifyRecoveryLock\" since there is no recovery lock file set.\n"));
-		talloc_free(name);
-		return -1;
-	}
-
 	talloc_free(name);
-	
+
 	if (i == ARRAY_SIZE(tunable_map)) {
 		return -1;
 	}
