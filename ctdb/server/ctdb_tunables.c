@@ -171,6 +171,12 @@ int32_t ctdb_control_set_tunable(struct ctdb_context *ctdb, TDB_DATA indata)
 
 	*(uint32_t *)(tunable_map[i].offset + (uint8_t*)&ctdb->tunable) = t->value;
 
+	if (tunable_map[i].obsolete) {
+		DEBUG(DEBUG_WARNING,
+		      ("Setting obsolete tunable \"%s\"\n",
+		       tunable_map[i].name));
+	}
+
 	return 0;
 }
 
