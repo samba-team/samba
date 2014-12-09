@@ -3473,7 +3473,7 @@ static int update_recovery_lock_file(struct ctdb_context *ctdb)
 
 	if (reclockfile == NULL) {
 		if (ctdb->recovery_lock_file != NULL) {
-			DEBUG(DEBUG_ERR,("Reclock file disabled\n"));
+			DEBUG(DEBUG_NOTICE,("Recovery lock file disabled\n"));
 			talloc_free(ctdb->recovery_lock_file);
 			ctdb->recovery_lock_file = NULL;
 			ctdb_recovery_unlock(ctdb);
@@ -3483,6 +3483,8 @@ static int update_recovery_lock_file(struct ctdb_context *ctdb)
 	}
 
 	if (ctdb->recovery_lock_file == NULL) {
+		DEBUG(DEBUG_NOTICE,
+		      ("Recovery lock file enabled (%s)\n", reclockfile));
 		ctdb->recovery_lock_file = talloc_strdup(ctdb, reclockfile);
 		ctdb_recovery_unlock(ctdb);
 		talloc_free(tmp_ctx);
@@ -3495,6 +3497,8 @@ static int update_recovery_lock_file(struct ctdb_context *ctdb)
 		return 0;
 	}
 
+	DEBUG(DEBUG_NOTICE,
+	      ("Recovery lock file changed (now %s)\n", reclockfile));
 	talloc_free(ctdb->recovery_lock_file);
 	ctdb->recovery_lock_file = talloc_strdup(ctdb, reclockfile);
 	ctdb_recovery_unlock(ctdb);
