@@ -945,10 +945,10 @@ static int samldb_schema_info_update(struct samldb_ctx *ac)
 }
 
 static int samldb_prim_group_tester(struct samldb_ctx *ac, uint32_t rid);
-static int samldb_check_user_account_control_acl(struct samldb_ctx *ac,
-						 struct dom_sid *sid,
-						 uint32_t user_account_control,
-						 uint32_t user_account_control_old);
+static int samldb_check_user_account_control_rules(struct samldb_ctx *ac,
+						   struct dom_sid *sid,
+						   uint32_t user_account_control,
+						   uint32_t user_account_control_old);
 
 /*
  * "Objectclass" trigger (MS-SAMR 3.1.1.8.1)
@@ -1066,9 +1066,10 @@ static int samldb_objectclass_trigger(struct samldb_ctx *ac)
 				uac_generated = true;
 			}
 
-			/* Temporary duplicate accounts aren't allowed */
-			if ((user_account_control & UF_TEMP_DUPLICATE_ACCOUNT) != 0) {
-				return LDB_ERR_OTHER;
+			ret = samldb_check_user_account_control_rules(ac, NULL,
+								      user_account_control, 0);
+			if (ret != LDB_SUCCESS) {
+				return ret;
 			}
 
 			/* Workstation and (read-only) DC objects do need objectclass "computer" */
@@ -1160,11 +1161,6 @@ static int samldb_objectclass_trigger(struct samldb_ctx *ac)
 				}
 			}
 
-			ret = samldb_check_user_account_control_acl(ac, NULL,
-								    user_account_control, 0);
-			if (ret != LDB_SUCCESS) {
-				return ret;
-			}
 		}
 		break;
 	}
@@ -1452,6 +1448,110 @@ static int samldb_prim_group_trigger(struct samldb_ctx *ac)
 	return ret;
 }
 
+static int samldb_check_user_account_control_invariants(struct samldb_ctx *ac,
+						    uint32_t user_account_control)
+{
+	int i, ret = 0;
+	bool need_check = false;
+	const struct uac_to_guid {
+		uint32_t uac;
+		bool never;
+		uint32_t needs;
+		uint32_t not_with;
+		const char *error_string;
+	} map[] = {
+		{
+			.uac = UF_TEMP_DUPLICATE_ACCOUNT,
+			.never = true,
+			.error_string = "Updating the UF_TEMP_DUPLICATE_ACCOUNT flag is never allowed"
+		},
+		{
+			.uac = UF_PARTIAL_SECRETS_ACCOUNT,
+			.needs = UF_WORKSTATION_TRUST_ACCOUNT,
+			.error_string = "Setting UF_PARTIAL_SECRETS_ACCOUNT only permitted with UF_WORKSTATION_TRUST_ACCOUNT"
+		},
+		{
+			.uac = UF_TRUSTED_FOR_DELEGATION,
+			.not_with = UF_PARTIAL_SECRETS_ACCOUNT,
+			.error_string = "Setting UF_TRUSTED_FOR_DELEGATION not allowed with UF_PARTIAL_SECRETS_ACCOUNT"
+		},
+		{
+			.uac = UF_NORMAL_ACCOUNT,
+			.not_with = UF_ACCOUNT_TYPE_MASK & ~UF_NORMAL_ACCOUNT,
+			.error_string = "Setting more than one account type not permitted"
+		},
+		{
+			.uac = UF_WORKSTATION_TRUST_ACCOUNT,
+			.not_with = UF_ACCOUNT_TYPE_MASK & ~UF_WORKSTATION_TRUST_ACCOUNT,
+			.error_string = "Setting more than one account type not permitted"
+		},
+		{
+			.uac = UF_INTERDOMAIN_TRUST_ACCOUNT,
+			.not_with = UF_ACCOUNT_TYPE_MASK & ~UF_INTERDOMAIN_TRUST_ACCOUNT,
+			.error_string = "Setting more than one account type not permitted"
+		},
+		{
+			.uac = UF_SERVER_TRUST_ACCOUNT,
+			.not_with = UF_ACCOUNT_TYPE_MASK & ~UF_SERVER_TRUST_ACCOUNT,
+			.error_string = "Setting more than one account type not permitted"
+		},
+		{
+			.uac = UF_TRUSTED_FOR_DELEGATION,
+			.not_with = UF_PARTIAL_SECRETS_ACCOUNT,
+			.error_string = "Setting UF_TRUSTED_FOR_DELEGATION not allowed with UF_PARTIAL_SECRETS_ACCOUNT"
+		}
+	};
+
+	for (i = 0; i < ARRAY_SIZE(map); i++) {
+		if (user_account_control & map[i].uac) {
+			need_check = true;
+			break;
+		}
+	}
+	if (need_check == false) {
+		return LDB_SUCCESS;
+	}
+
+	for (i = 0; i < ARRAY_SIZE(map); i++) {
+		uint32_t this_uac = user_account_control & map[i].uac;
+		if (this_uac != 0) {
+			if (map[i].never) {
+				ret = LDB_ERR_OTHER;
+				break;
+			} else if (map[i].needs != 0) {
+				if ((map[i].needs & user_account_control) == 0) {
+					ret = LDB_ERR_OTHER;
+					break;
+				}
+			} else if (map[i].not_with != 0) {
+				if ((map[i].not_with & user_account_control) != 0) {
+					ret = LDB_ERR_OTHER;
+					break;
+				}
+			}
+		}
+	}
+	if (ret != LDB_SUCCESS) {
+		switch (ac->req->operation) {
+		case LDB_ADD:
+			ldb_asprintf_errstring(ldb_module_get_ctx(ac->module),
+					       "Failed to add %s: %s",
+					       ldb_dn_get_linearized(ac->msg->dn),
+					       map[i].error_string);
+			break;
+		case LDB_MODIFY:
+			ldb_asprintf_errstring(ldb_module_get_ctx(ac->module),
+					       "Failed to modify %s: %s",
+					       ldb_dn_get_linearized(ac->msg->dn),
+					       map[i].error_string);
+			break;
+		default:
+			return ldb_module_operr(ac->module);
+		}
+	}
+	return ret;
+}
+
 /**
  * Validate that the restriction in point 5 of MS-SAMR 3.1.1.8.10 userAccountControl is honoured
  *
@@ -1619,6 +1719,24 @@ static int samldb_check_user_account_control_acl(struct samldb_ctx *ac,
 	return ret;
 }
 
+static int samldb_check_user_account_control_rules(struct samldb_ctx *ac,
+						   struct dom_sid *sid,
+						   uint32_t user_account_control,
+						   uint32_t user_account_control_old)
+{
+	int ret;
+	ret = samldb_check_user_account_control_invariants(ac, user_account_control);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	ret = samldb_check_user_account_control_acl(ac, sid, user_account_control, user_account_control_old);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	return ret;
+}
+
+
 /**
  * This function is called on LDB modify operations. It performs some additions/
  * replaces on the current LDB message when "userAccountControl" changes.
@@ -1725,11 +1843,21 @@ static int samldb_user_account_control_change(struct samldb_ctx *ac)
 	if (new_ufa == 0) {
 		/*
 		 * When there is no account type embedded in "userAccountControl"
-		 * fall back to the old.
+		 * fall back to UF_NORMAL_ACCOUNT.
 		 */
-		new_ufa = old_ufa;
+		new_ufa = UF_NORMAL_ACCOUNT;
 		new_uac |= new_ufa;
 	}
+	sid = samdb_result_dom_sid(res, res->msgs[0], "objectSid");
+	if (sid == NULL) {
+		return ldb_module_operr(ac->module);
+	}
+
+	ret = samldb_check_user_account_control_rules(ac, sid, new_uac, old_uac);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
 	new_atype = ds_uf2atype(new_ufa);
 	new_pgrid = ds_uf2prim_group_rid(new_uac);
 
@@ -1846,16 +1974,6 @@ static int samldb_user_account_control_change(struct samldb_ctx *ac)
 		el->values[0].length = strlen(tempstr);
 	} else {
 		ldb_msg_remove_attr(ac->msg, "userAccountControl");
-	}
-
-	sid = samdb_result_dom_sid(res, res->msgs[0], "objectSid");
-	if (sid == NULL) {
-		return ldb_module_operr(ac->module);
-	}
-
-	ret = samldb_check_user_account_control_acl(ac, sid, new_uac, old_uac);
-	if (ret != LDB_SUCCESS) {
-		return ret;
 	}
 
 	return LDB_SUCCESS;

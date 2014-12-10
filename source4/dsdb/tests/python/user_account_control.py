@@ -319,6 +319,16 @@ class UserAccountControlTests(samba.tests.TestCase):
 
         m = ldb.Message()
         m.dn = res[0].dn
+        m["userAccountControl"] = ldb.MessageElement(str(UF_WORKSTATION_TRUST_ACCOUNT|UF_PARTIAL_SECRETS_ACCOUNT|UF_TRUSTED_FOR_DELEGATION),
+                                                     ldb.FLAG_MOD_REPLACE, "userAccountControl")
+        try:
+            self.admin_samdb.modify(m)
+            self.fail("Unexpectedly able to set userAccountControl to UF_WORKSTATION_TRUST_ACCOUNT|UF_PARTIAL_SECRETS_ACCOUNT|UF_TRUSTED_FOR_DELEGATION on %s" % m.dn)
+        except LdbError, (enum, estr):
+            self.assertEqual(ldb.ERR_OTHER, enum)
+
+        m = ldb.Message()
+        m.dn = res[0].dn
         m["userAccountControl"] = ldb.MessageElement(str(UF_WORKSTATION_TRUST_ACCOUNT|UF_PARTIAL_SECRETS_ACCOUNT),
                                                      ldb.FLAG_MOD_REPLACE, "userAccountControl")
         self.admin_samdb.modify(m)
@@ -340,7 +350,7 @@ class UserAccountControlTests(samba.tests.TestCase):
                                       scope=SCOPE_SUBTREE,
                                       attrs=["userAccountControl"])
 
-        self.assertEqual(int(res[0]["userAccountControl"][0]), UF_WORKSTATION_TRUST_ACCOUNT| UF_ACCOUNTDISABLE)
+        self.assertEqual(int(res[0]["userAccountControl"][0]), UF_NORMAL_ACCOUNT| UF_ACCOUNTDISABLE)
 
 
     def test_uac_bits_set(self):
@@ -372,10 +382,9 @@ class UserAccountControlTests(samba.tests.TestCase):
 
         # These bits really are privileged
         priv_bits = set([UF_INTERDOMAIN_TRUST_ACCOUNT, UF_SERVER_TRUST_ACCOUNT,
-                         UF_TRUSTED_FOR_DELEGATION, UF_TRUSTED_TO_AUTHENTICATE_FOR_DELEGATION,
-                         UF_PARTIAL_SECRETS_ACCOUNT])
+                         UF_TRUSTED_FOR_DELEGATION, UF_TRUSTED_TO_AUTHENTICATE_FOR_DELEGATION])
 
-        invalid_bits = set([UF_TEMP_DUPLICATE_ACCOUNT])
+        invalid_bits = set([UF_TEMP_DUPLICATE_ACCOUNT, UF_PARTIAL_SECRETS_ACCOUNT])
 
         for bit in bits:
             m = ldb.Message()
@@ -420,7 +429,7 @@ class UserAccountControlTests(samba.tests.TestCase):
             "description")
         self.samdb.modify(m)
 
-        invalid_bits = set([UF_TEMP_DUPLICATE_ACCOUNT])
+        invalid_bits = set([UF_TEMP_DUPLICATE_ACCOUNT, UF_PARTIAL_SECRETS_ACCOUNT])
 
         super_priv_bits = set([UF_INTERDOMAIN_TRUST_ACCOUNT])
 
@@ -483,7 +492,7 @@ class UserAccountControlTests(samba.tests.TestCase):
 
         self.sd_utils.dacl_add_ace("OU=test_computer_ou1," + self.base_dn, mod)
 
-        invalid_bits = set([UF_TEMP_DUPLICATE_ACCOUNT])
+        invalid_bits = set([UF_TEMP_DUPLICATE_ACCOUNT, UF_PARTIAL_SECRETS_ACCOUNT])
 
         # These bits are privileged, but authenticated users have that CAR by default, so this is a pain to test
         priv_to_auth_users_bits = set([UF_PASSWD_NOTREQD, UF_ENCRYPTED_TEXT_PASSWORD_ALLOWED,
@@ -491,8 +500,7 @@ class UserAccountControlTests(samba.tests.TestCase):
 
         # These bits really are privileged
         priv_bits = set([UF_INTERDOMAIN_TRUST_ACCOUNT, UF_SERVER_TRUST_ACCOUNT,
-                         UF_TRUSTED_FOR_DELEGATION, UF_TRUSTED_TO_AUTHENTICATE_FOR_DELEGATION,
-                         UF_PARTIAL_SECRETS_ACCOUNT])
+                         UF_TRUSTED_FOR_DELEGATION, UF_TRUSTED_TO_AUTHENTICATE_FOR_DELEGATION])
 
         for bit in bits:
             try:
