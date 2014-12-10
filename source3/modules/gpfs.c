@@ -189,6 +189,17 @@ int gpfswrap_lib_init(int flags)
 	return gpfs_lib_init_fn(flags);
 }
 
+int gpfswrap_set_times_path(char *pathname, int flags,
+			    gpfs_timestruc_t times[4])
+{
+	if (gpfs_set_times_path_fn == NULL) {
+		errno = ENOSYS;
+		return -1;
+	}
+
+	return gpfs_set_times_path_fn(pathname, flags, times);
+}
+
 bool set_gpfs_sharemode(files_struct *fsp, uint32 access_mask,
 			uint32 share_access)
 {
@@ -350,11 +361,6 @@ int smbd_gpfs_set_times_path(char *path, struct smb_file_time *ft)
 	int flags = 0;
 	int rc;
 
-	if (!gpfs_set_times_path_fn) {
-		errno = ENOSYS;
-		return -1;
-	}
-
 	ZERO_ARRAY(gpfs_times);
 	timespec_to_gpfs_time(ft->atime, gpfs_times, 0, &flags);
 	timespec_to_gpfs_time(ft->mtime, gpfs_times, 1, &flags);
@@ -366,9 +372,9 @@ int smbd_gpfs_set_times_path(char *path, struct smb_file_time *ft)
 		return 0;
 	}
 
-	rc = gpfs_set_times_path_fn(path, flags, gpfs_times);
+	rc = gpfswrap_set_times_path(path, flags, gpfs_times);
 
-	if (rc != 0) {
+	if (rc != 0 && errno != ENOSYS) {
 		DEBUG(1,("gpfs_set_times() returned with error %s\n",
 			strerror(errno)));
 	}
