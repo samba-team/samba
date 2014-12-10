@@ -1110,7 +1110,7 @@ static int vfs_gluster_get_real_filename(struct vfs_handle_struct *handle,
 	}
 
 	snprintf(key_buf, NAME_MAX + 64,
-		 "user.glusterfs.get_real_filename:%s", name);
+		 "glusterfs.get_real_filename:%s", name);
 
 	ret = glfs_getxattr(handle->data, path, key_buf, val_buf, NAME_MAX + 1);
 	if (ret == -1) {
