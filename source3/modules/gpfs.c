@@ -44,7 +44,7 @@ static int (*gpfs_set_times_path_fn)(char *pathname, int flags,
 				     gpfs_timestruc_t times[4]);
 static int (*gpfs_quotactl_fn)(char *pathname, int cmd, int id, void *bufp);
 static int (*gpfs_fcntl_fn)(int fd, void *argp);
-static int (*gpfs_getfilesetid_fn)(char *pathname, char *name, int *idP);
+static int (*gpfs_getfilesetid_fn)(char *pathname, char *name, int *idp);
 
 int gpfswrap_init(void)
 {
@@ -220,6 +220,16 @@ int gpfswrap_fcntl(int fd, void *argp)
 	return gpfs_fcntl_fn(fd, argp);
 }
 
+int gpfswrap_getfilesetid(char *pathname, char *name, int *idp)
+{
+	if (gpfs_getfilesetid_fn == NULL) {
+		errno = ENOSYS;
+		return -1;
+	}
+
+	return gpfs_getfilesetid_fn(pathname, name, idp);
+}
+
 bool set_gpfs_sharemode(files_struct *fsp, uint32 access_mask,
 			uint32 share_access)
 {
@@ -321,11 +331,6 @@ int get_gpfs_fset_id(const char *pathname, int *fset_id)
 		gpfsGetFilesetName_t fsn;
 	} arg;
 
-	if (!gpfs_getfilesetid_fn) {
-		errno = ENOSYS;
-		return -1;
-	}
-
 	arg.hdr.totalLength = sizeof(arg);
 	arg.hdr.fcntlVersion = GPFS_FCNTL_CURRENT_VERSION;
 	arg.hdr.fcntlReserved = 0;
@@ -352,9 +357,9 @@ int get_gpfs_fset_id(const char *pathname, int *fset_id)
 		return err;
 	}
 
-	err = gpfs_getfilesetid_fn(discard_const_p(char, pathname),
-				   arg.fsn.buffer, fset_id);
-	if (err) {
+	err = gpfswrap_getfilesetid(discard_const_p(char, pathname),
+				    arg.fsn.buffer, fset_id);
+	if (err && errno != ENOSYS) {
 		DEBUG(1, ("gpfs_getfilesetid for %s failed: %s\n",
 			  pathname, strerror(errno)));
 	}
