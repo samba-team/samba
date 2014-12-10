@@ -27,7 +27,7 @@
 #include "vfs_gpfs.h"
 
 static int (*gpfs_set_share_fn)(int fd, unsigned int allow, unsigned int deny);
-static int (*gpfs_set_lease_fn)(int fd, unsigned int leaseType);
+static int (*gpfs_set_lease_fn)(int fd, unsigned int type);
 static int (*gpfs_getacl_fn)(char *pathname, int flags, void *acl);
 static int (*gpfs_putacl_fn)(char *pathname, int flags, void *acl);
 static int (*gpfs_get_realfilename_path_fn)(char *pathname, char *filenamep,
@@ -86,6 +86,16 @@ int gpfswrap_set_share(int fd, unsigned int allow, unsigned int deny)
 	return gpfs_set_share_fn(fd, allow, deny);
 }
 
+int gpfswrap_set_lease(int fd, unsigned int type)
+{
+	if (gpfs_set_lease_fn == NULL) {
+		errno = ENOSYS;
+		return -1;
+	}
+
+	return gpfs_set_lease_fn(fd, type);
+}
+
 bool set_gpfs_sharemode(files_struct *fsp, uint32 access_mask,
 			uint32 share_access)
 {
@@ -135,11 +145,6 @@ int set_gpfs_lease(int fd, int leasetype)
 {
 	int gpfs_type = GPFS_LEASE_NONE;
 
-	if (gpfs_set_lease_fn == NULL) {
-		errno = EINVAL;
-		return -1;
-	}
-
 	if (leasetype == F_RDLCK) {
 		gpfs_type = GPFS_LEASE_READ;
 	}
@@ -153,7 +158,7 @@ int set_gpfs_lease(int fd, int leasetype)
 	   each time we try this with the wrong capabilities set
 	*/
 	linux_set_lease_capability();
-	return gpfs_set_lease_fn(fd, gpfs_type);
+	return gpfswrap_set_lease(fd, gpfs_type);
 }
 
 int smbd_gpfs_getacl(char *pathname, int flags, void *acl)
