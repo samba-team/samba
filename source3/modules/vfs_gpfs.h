@@ -32,11 +32,10 @@ int gpfswrap_set_share(int fd, unsigned int allow, unsigned int deny);
 int gpfswrap_set_lease(int fd, unsigned int type);
 int gpfswrap_getacl(char *pathname, int flags, void *acl);
 int gpfswrap_putacl(char *pathname, int flags, void *acl);
+int gpfswrap_get_realfilename_path(char *pathname, char *filenamep, int *len);
 bool set_gpfs_sharemode(files_struct *fsp, uint32 access_mask,
 			uint32 share_access);
 int set_gpfs_lease(int fd, int leasetype);
-int smbd_gpfs_get_realfilename_path(char *pathname, char *filenamep,
-				    int *buflen);
 int smbd_fget_gpfs_winattrs(int fd, struct gpfs_winattr *attrs);
 int get_gpfs_winattrs(char * pathname,struct gpfs_winattr *attrs);
 int set_gpfs_winattrs(char * pathname,int flags,struct gpfs_winattr *attrs);

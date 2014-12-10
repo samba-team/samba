@@ -181,8 +181,8 @@ static int vfs_gpfs_get_real_filename(struct vfs_handle_struct *handle,
 
 	buflen = sizeof(real_pathname) - 1;
 
-	result = smbd_gpfs_get_realfilename_path(full_path, real_pathname,
-						 &buflen);
+	result = gpfswrap_get_realfilename_path(full_path, real_pathname,
+						&buflen);
 
 	TALLOC_FREE(full_path);
 
