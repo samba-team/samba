@@ -43,7 +43,7 @@ static int (*gpfs_lib_init_fn)(int flags);
 static int (*gpfs_set_times_path_fn)(char *pathname, int flags,
 				     gpfs_timestruc_t times[4]);
 static int (*gpfs_quotactl_fn)(char *pathname, int cmd, int id, void *bufp);
-static int (*gpfs_fcntl_fn)(gpfs_file_t fileDesc, void *fcntlArgP);
+static int (*gpfs_fcntl_fn)(int fd, void *argp);
 static int (*gpfs_getfilesetid_fn)(char *pathname, char *name, int *idP);
 
 int gpfswrap_init(void)
@@ -210,6 +210,16 @@ int gpfswrap_quotactl(char *pathname, int cmd, int id, void *bufp)
 	return gpfs_quotactl_fn(pathname, cmd, id, bufp);
 }
 
+int gpfswrap_fcntl(int fd, void *argp)
+{
+	if (gpfs_fcntl_fn == NULL) {
+		errno = ENOSYS;
+		return -1;
+	}
+
+	return gpfs_fcntl_fn(fd, argp);
+}
+
 bool set_gpfs_sharemode(files_struct *fsp, uint32 access_mask,
 			uint32 share_access)
 {
@@ -311,7 +321,7 @@ int get_gpfs_fset_id(const char *pathname, int *fset_id)
 		gpfsGetFilesetName_t fsn;
 	} arg;
 
-	if (!gpfs_fcntl_fn || !gpfs_getfilesetid_fn) {
+	if (!gpfs_getfilesetid_fn) {
 		errno = ENOSYS;
 		return -1;
 	}
@@ -329,14 +339,16 @@ int get_gpfs_fset_id(const char *pathname, int *fset_id)
 		return fd;
 	}
 
-	err = gpfs_fcntl_fn(fd, &arg);
+	err = gpfswrap_fcntl(fd, &arg);
 	errno_fcntl = errno;
 	close(fd);
 
 	if (err) {
 		errno = errno_fcntl;
-		DEBUG(1, ("GPFS_FCNTL_GET_FILESETNAME for %s failed: %s\n",
-			  pathname, strerror(errno)));
+		if (errno != ENOSYS) {
+			DEBUG(1, ("GPFS_FCNTL_GET_FILESETNAME for %s failed: "
+				  "%s\n", pathname, strerror(errno)));
+		}
 		return err;
 	}
 
