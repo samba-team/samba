@@ -149,6 +149,16 @@ int gpfswrap_get_winattrs_path(char *pathname, struct gpfs_winattr *attrs)
 	return gpfs_get_winattrs_path_fn(pathname, attrs);
 }
 
+int gpfswrap_get_winattrs(int fd, struct gpfs_winattr *attrs)
+{
+	if (gpfs_get_winattrs_fn == NULL) {
+		errno = ENOSYS;
+		return -1;
+	}
+
+	return gpfs_get_winattrs_fn(fd, attrs);
+}
+
 bool set_gpfs_sharemode(files_struct *fsp, uint32 access_mask,
 			uint32 share_access)
 {
@@ -222,16 +232,6 @@ int smbd_gpfs_ftruncate(int fd, gpfs_off64_t length)
 	}
 
 	return gpfs_ftruncate_fn(fd, length);
-}
-
-int smbd_fget_gpfs_winattrs(int fd, struct gpfs_winattr *attrs)
-{
-	if (gpfs_get_winattrs_fn == NULL) {
-                errno = ENOSYS;
-                return -1;
-        }
-        DEBUG(10, ("gpfs_get_winattrs:open call %d\n", fd));
-        return gpfs_get_winattrs_fn(fd, attrs);
 }
 
 int smbd_gpfs_prealloc(int fd, gpfs_off64_t start, gpfs_off64_t bytes)

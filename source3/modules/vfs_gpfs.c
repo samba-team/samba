@@ -1616,7 +1616,7 @@ static int vfs_gpfs_fstat(struct vfs_handle_struct *handle,
 		return 0;
 	}
 
-	ret = smbd_fget_gpfs_winattrs(fsp->fh->fd, &attrs);
+	ret = gpfswrap_get_winattrs(fsp->fh->fd, &attrs);
 	if (ret == 0) {
 		sbuf->st_ex_calculated_birthtime = false;
 		sbuf->st_ex_btime.tv_sec = attrs.creationTime.tv_sec;
