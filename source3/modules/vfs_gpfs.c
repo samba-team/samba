@@ -27,10 +27,10 @@
 #include "modules/non_posix_acls.h"
 #include "libcli/security/security.h"
 #include "nfs4_acls.h"
-#include "vfs_gpfs.h"
 #include "system/filesys.h"
 #include "auth.h"
 #include "lib/util/tevent_unix.h"
+#include "gpfswrap.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS

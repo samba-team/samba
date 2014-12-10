@@ -19,7 +19,7 @@
  */
 
 #include "replace.h"
-#include "vfs_gpfs.h"
+#include "gpfswrap.h"
 
 static int (*gpfs_set_share_fn)(int fd, unsigned int allow, unsigned int deny);
 static int (*gpfs_set_lease_fn)(int fd, unsigned int type);

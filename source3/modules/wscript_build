@@ -275,7 +275,7 @@ bld.SAMBA3_MODULE('vfs_commit',
 
 bld.SAMBA3_MODULE('vfs_gpfs',
                  subsystem='vfs',
-                 source='vfs_gpfs.c gpfs.c',
+                 source='vfs_gpfs.c gpfswrap.c',
                  deps='NFS4_ACLS non_posix_acls',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_gpfs'),
