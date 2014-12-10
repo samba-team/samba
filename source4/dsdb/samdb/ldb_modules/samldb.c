@@ -1048,9 +1048,9 @@ static int samldb_objectclass_trigger(struct samldb_ctx *ac)
 			user_account_control = ldb_msg_find_attr_as_uint(ac->msg,
 									 "userAccountControl",
 									 0);
-			/* "userAccountControl" = 0 means "UF_NORMAL_ACCOUNT" */
-			if (user_account_control == 0) {
-				user_account_control = UF_NORMAL_ACCOUNT;
+			/* "userAccountControl" = 0 or missing one of the types means "UF_NORMAL_ACCOUNT" */
+			if ((user_account_control & UF_ACCOUNT_TYPE_MASK) == 0) {
+				user_account_control = UF_NORMAL_ACCOUNT | user_account_control;
 				uac_generated = true;
 			}
 
