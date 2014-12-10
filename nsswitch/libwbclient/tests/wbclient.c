@@ -57,23 +57,59 @@ static bool test_wbc_ping(struct torture_context *tctx)
 
 static bool test_wbc_pingdc(struct torture_context *tctx)
 {
-	torture_assert_wbc_equal(tctx, wbcPingDc("random_string", NULL), WBC_ERR_NOT_IMPLEMENTED,
+	struct wbcInterfaceDetails *details;
+
+	torture_assert_wbc_equal(tctx, wbcPingDc("random_string", NULL), WBC_ERR_DOMAIN_NOT_FOUND,
 				 "%s", "wbcPingDc failed");
 	torture_assert_wbc_ok(tctx, wbcPingDc(NULL, NULL),
 		"%s", "wbcPingDc failed");
 
+	torture_assert_wbc_ok(tctx, wbcInterfaceDetails(&details),
+		"%s", "wbcInterfaceDetails failed");
+	torture_assert(tctx, details,
+		       "wbcInterfaceDetails returned NULL pointer");
+	torture_assert(tctx, details->netbios_domain,
+		       "wbcInterfaceDetails returned NULL netbios_domain");
+
+	torture_assert_wbc_ok(tctx, wbcPingDc(details->netbios_domain, NULL),
+		"wbcPingDc(%s) failed", details->netbios_domain);
+
+	torture_assert_wbc_ok(tctx, wbcPingDc("BUILTIN", NULL),
+		"%s", "wbcPingDc(BUILTIN) failed");
+
+	wbcFreeMemory(details);
 	return true;
 }
 
 static bool test_wbc_pingdc2(struct torture_context *tctx)
 {
+	struct wbcInterfaceDetails *details;
 	char *name = NULL;
 
 	torture_assert_wbc_equal(tctx, wbcPingDc2("random_string", NULL, &name),
-				 WBC_ERR_NOT_IMPLEMENTED, "%s",
+				 WBC_ERR_DOMAIN_NOT_FOUND, "%s",
 				 "wbcPingDc2 failed");
 	torture_assert_wbc_ok(tctx, wbcPingDc2(NULL, NULL, &name), "%s",
 			      "wbcPingDc2 failed");
+
+	wbcFreeMemory(name);
+
+	torture_assert_wbc_ok(tctx, wbcInterfaceDetails(&details),
+		"%s", "wbcInterfaceDetails failed");
+	torture_assert(tctx, details,
+		       "wbcInterfaceDetails returned NULL pointer");
+	torture_assert(tctx, details->netbios_domain,
+		       "wbcInterfaceDetails returned NULL netbios_domain");
+
+	torture_assert_wbc_ok(tctx, wbcPingDc2(details->netbios_domain, NULL, &name),
+		"wbcPingDc2(%s) failed", details->netbios_domain);
+	wbcFreeMemory(name);
+
+	torture_assert_wbc_ok(tctx, wbcPingDc2("BUILTIN", NULL, &name),
+		"%s", "wbcPingDc2(BUILTIN) failed");
+	wbcFreeMemory(name);
+
+	wbcFreeMemory(details);
 
 	return true;
 }
