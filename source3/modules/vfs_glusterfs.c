@@ -78,13 +78,14 @@ static void smb_stat_ex_from_stat(struct stat_ex *dst, const struct stat *src)
 
 static struct glfs_preopened {
 	char *volume;
+	char *connectpath;
 	glfs_t *fs;
 	int ref;
 	struct glfs_preopened *next, *prev;
 } *glfs_preopened;
 
 
-static int glfs_set_preopened(const char *volume, glfs_t *fs)
+static int glfs_set_preopened(const char *volume, const char *connectpath, glfs_t *fs)
 {
 	struct glfs_preopened *entry = NULL;
 
@@ -101,6 +102,13 @@ static int glfs_set_preopened(const char *volume, glfs_t *fs)
 		return -1;
 	}
 
+	entry->connectpath = talloc_strdup(entry, connectpath);
+	if (entry->connectpath == NULL) {
+		talloc_free(entry);
+		errno = ENOMEM;
+		return -1;
+	}
+
 	entry->fs = fs;
 	entry->ref = 1;
 
@@ -109,12 +117,14 @@ static int glfs_set_preopened(const char *volume, glfs_t *fs)
 	return 0;
 }
 
-static glfs_t *glfs_find_preopened(const char *volume)
+static glfs_t *glfs_find_preopened(const char *volume, const char *connectpath)
 {
 	struct glfs_preopened *entry = NULL;
 
 	for (entry = glfs_preopened; entry; entry = entry->next) {
-		if (strcmp(entry->volume, volume) == 0) {
+		if (strcmp(entry->volume, volume) == 0 &&
+		    strcmp(entry->connectpath, connectpath) == 0)
+		{
 			entry->ref++;
 			return entry->fs;
 		}
@@ -176,7 +186,7 @@ static int vfs_gluster_connect(struct vfs_handle_struct *handle,
 		volume = service;
 	}
 
-	fs = glfs_find_preopened(volume);
+	fs = glfs_find_preopened(volume, handle->conn->connectpath);
 	if (fs) {
 		goto done;
 	}
@@ -214,7 +224,7 @@ static int vfs_gluster_connect(struct vfs_handle_struct *handle,
 		goto done;
 	}
 
-	ret = glfs_set_preopened(volume, fs);
+	ret = glfs_set_preopened(volume, handle->conn->connectpath, fs);
 	if (ret < 0) {
 		DEBUG(0, ("%s: Failed to register volume (%s)\n",
 			  volume, strerror(errno)));
