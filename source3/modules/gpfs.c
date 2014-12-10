@@ -229,33 +229,6 @@ int gpfswrap_getfilesetid(char *pathname, char *name, int *idp)
 	return gpfs_getfilesetid_fn(pathname, name, idp);
 }
 
-int get_gpfs_quota(const char *pathname, int type, int id,
-		   struct gpfs_quotaInfo *qi)
-{
-	int ret;
-
-	ZERO_STRUCTP(qi);
-	ret = gpfswrap_quotactl(discard_const_p(char, pathname),
-				GPFS_QCMD(Q_GETQUOTA, type), id, qi);
-
-	if (ret) {
-		if (errno == GPFS_E_NO_QUOTA_INST) {
-			DEBUG(10, ("Quotas disabled on GPFS filesystem.\n"));
-		} else if (errno != ENOSYS) {
-			DEBUG(0, ("Get quota failed, type %d, id, %d, "
-				  "errno %d.\n", type, id, errno));
-		}
-
-		return ret;
-	}
-
-	DEBUG(10, ("quota type %d, id %d, blk u:%lld h:%lld s:%lld gt:%u\n",
-		   type, id, qi->blockUsage, qi->blockHardLimit,
-		   qi->blockSoftLimit, qi->blockGraceTime));
-
-	return ret;
-}
-
 int get_gpfs_fset_id(const char *pathname, int *fset_id)
 {
 	int err, fd, errno_fcntl;

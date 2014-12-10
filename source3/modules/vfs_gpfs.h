@@ -45,7 +45,5 @@ int gpfswrap_set_times_path(char *pathname, int flags,
 int gpfswrap_quotactl(char *pathname, int cmd, int id, void *bufp);
 int gpfswrap_fcntl(int fd, void *argp);
 int gpfswrap_getfilesetid(char *pathname, char *name, int *idp);
-int get_gpfs_quota(const char *pathname, int type, int id,
-		   struct gpfs_quotaInfo *qi);
 int get_gpfs_fset_id(const char *pathname, int *fset_id);
 int smbd_gpfs_set_times_path(char *path, struct smb_file_time *ft);
