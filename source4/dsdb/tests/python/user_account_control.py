@@ -520,6 +520,116 @@ class UserAccountControlTests(samba.tests.TestCase):
                 else:
                     self.fail("Unable to set userAccountControl bit 0x%08X on %s: %s" % (bit, computername, estr))
 
+    def test_primarygroupID_cc_add(self):
+        computername=self.computernames[0]
+
+        user_sid = self.sd_utils.get_object_sid(self.unpriv_user_dn)
+        mod = "(OA;;CC;bf967a86-0de6-11d0-a285-00aa003049e2;;%s)" % str(user_sid)
+
+        old_sd = self.sd_utils.read_sd_on_dn("OU=test_computer_ou1," + self.base_dn)
+
+        self.sd_utils.dacl_add_ace("OU=test_computer_ou1," + self.base_dn, mod)
+        try:
+            # When creating a new object, you can not ever set the primaryGroupID
+            self.add_computer_ldap(computername, others={"primaryGroupID": [str(security.DOMAIN_RID_ADMINS)]})
+            self.fail("Unexpectedly able to set primaryGruopID to be an admin on %s" % computername)
+        except LdbError, (enum, estr):
+            self.assertEqual(enum, ldb.ERR_UNWILLING_TO_PERFORM)
+
+
+    def test_primarygroupID_priv_DC_modify(self):
+        computername=self.computernames[0]
+
+        self.add_computer_ldap(computername,
+                               others={"userAccountControl": [str(UF_SERVER_TRUST_ACCOUNT)]},
+                               samdb=self.admin_samdb)
+        res = self.admin_samdb.search("%s" % self.base_dn,
+                                      expression="(&(objectClass=computer)(samAccountName=%s$))" % computername,
+                                      scope=SCOPE_SUBTREE,
+                                      attrs=[""])
+
+
+        m = ldb.Message()
+        m.dn = ldb.Dn(self.admin_samdb, "<SID=%s-%d>" % (str(self.domain_sid),
+                                                         security.DOMAIN_RID_USERS))
+        m["member"]= ldb.MessageElement(
+            [str(res[0].dn)], ldb.FLAG_MOD_ADD,
+            "member")
+        self.admin_samdb.modify(m)
+
+        m = ldb.Message()
+        m.dn = res[0].dn
+        m["primaryGroupID"]= ldb.MessageElement(
+            [str(security.DOMAIN_RID_USERS)], ldb.FLAG_MOD_REPLACE,
+            "primaryGroupID")
+        try:
+            self.admin_samdb.modify(m)
+
+            # When creating a new object, you can not ever set the primaryGroupID
+            self.fail("Unexpectedly able to set primaryGroupID to be other than DCS on %s" % computername)
+        except LdbError, (enum, estr):
+            self.assertEqual(enum, ldb.ERR_UNWILLING_TO_PERFORM)
+
+    def test_primarygroupID_priv_member_modify(self):
+        computername=self.computernames[0]
+
+        self.add_computer_ldap(computername,
+                               others={"userAccountControl": [str(UF_WORKSTATION_TRUST_ACCOUNT|UF_PARTIAL_SECRETS_ACCOUNT)]},
+                               samdb=self.admin_samdb)
+        res = self.admin_samdb.search("%s" % self.base_dn,
+                                      expression="(&(objectClass=computer)(samAccountName=%s$))" % computername,
+                                      scope=SCOPE_SUBTREE,
+                                      attrs=[""])
+
+
+        m = ldb.Message()
+        m.dn = ldb.Dn(self.admin_samdb, "<SID=%s-%d>" % (str(self.domain_sid),
+                                                         security.DOMAIN_RID_USERS))
+        m["member"]= ldb.MessageElement(
+            [str(res[0].dn)], ldb.FLAG_MOD_ADD,
+            "member")
+        self.admin_samdb.modify(m)
+
+        m = ldb.Message()
+        m.dn = res[0].dn
+        m["primaryGroupID"]= ldb.MessageElement(
+            [str(security.DOMAIN_RID_USERS)], ldb.FLAG_MOD_REPLACE,
+            "primaryGroupID")
+        try:
+            self.admin_samdb.modify(m)
+
+            # When creating a new object, you can not ever set the primaryGroupID
+            self.fail("Unexpectedly able to set primaryGroupID to be other than DCS on %s" % computername)
+        except LdbError, (enum, estr):
+            self.assertEqual(enum, ldb.ERR_UNWILLING_TO_PERFORM)
+
+
+    def test_primarygroupID_priv_user_modify(self):
+        computername=self.computernames[0]
+
+        self.add_computer_ldap(computername,
+                               others={"userAccountControl": [str(UF_WORKSTATION_TRUST_ACCOUNT)]},
+                               samdb=self.admin_samdb)
+        res = self.admin_samdb.search("%s" % self.base_dn,
+                                      expression="(&(objectClass=computer)(samAccountName=%s$))" % computername,
+                                      scope=SCOPE_SUBTREE,
+                                      attrs=[""])
+
+
+        m = ldb.Message()
+        m.dn = ldb.Dn(self.admin_samdb, "<SID=%s-%d>" % (str(self.domain_sid),
+                                                         security.DOMAIN_RID_ADMINS))
+        m["member"]= ldb.MessageElement(
+            [str(res[0].dn)], ldb.FLAG_MOD_ADD,
+            "member")
+        self.admin_samdb.modify(m)
+
+        m = ldb.Message()
+        m.dn = res[0].dn
+        m["primaryGroupID"]= ldb.MessageElement(
+            [str(security.DOMAIN_RID_ADMINS)], ldb.FLAG_MOD_REPLACE,
+            "primaryGroupID")
+        self.admin_samdb.modify(m)
 
 
 runner = SubunitTestRunner()
