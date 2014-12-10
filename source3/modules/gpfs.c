@@ -32,7 +32,8 @@ static int (*gpfs_getacl_fn)(char *pathname, int flags, void *acl);
 static int (*gpfs_putacl_fn)(char *pathname, int flags, void *acl);
 static int (*gpfs_get_realfilename_path_fn)(char *pathname, char *filenamep,
 					    int *len);
-static int (*gpfs_set_winattrs_path_fn)(char *pathname, int flags, struct gpfs_winattr *attrs);
+static int (*gpfs_set_winattrs_path_fn)(char *pathname, int flags,
+					struct gpfs_winattr *attrs);
 static int (*gpfs_get_winattrs_path_fn)(char *pathname, struct gpfs_winattr *attrs);
 static int (*gpfs_get_winattrs_fn)(int fd, struct gpfs_winattr *attrs);
 static int (*gpfs_prealloc_fn)(int fd, gpfs_off64_t startOffset, gpfs_off64_t bytesToPrealloc);
@@ -124,6 +125,17 @@ int gpfswrap_get_realfilename_path(char *pathname, char *filenamep, int *len)
 	}
 
 	return gpfs_get_realfilename_path_fn(pathname, filenamep, len);
+}
+
+int gpfswrap_set_winattrs_path(char *pathname, int flags,
+			       struct gpfs_winattr *attrs)
+{
+	if (gpfs_set_winattrs_path_fn == NULL) {
+		errno = ENOSYS;
+		return -1;
+	}
+
+	return gpfs_set_winattrs_path_fn(pathname, flags, attrs);
 }
 
 bool set_gpfs_sharemode(files_struct *fsp, uint32 access_mask,
@@ -229,17 +241,6 @@ int smbd_gpfs_prealloc(int fd, gpfs_off64_t start, gpfs_off64_t bytes)
 	}
 
 	return gpfs_prealloc_fn(fd, start, bytes);
-}
-
-int set_gpfs_winattrs(char *pathname,int flags,struct gpfs_winattr *attrs)
-{
-	if (gpfs_set_winattrs_path_fn == NULL) {
-                errno = ENOSYS;
-                return -1;
-        }
-
-        DEBUG(10, ("gpfs_set_winattrs_path:open call %s\n",pathname));
-        return gpfs_set_winattrs_path_fn(pathname,flags, attrs);
 }
 
 int get_gpfs_quota(const char *pathname, int type, int id,

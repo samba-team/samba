@@ -1425,8 +1425,8 @@ static int gpfs_set_xattr(struct vfs_handle_struct *handle,  const char *path,
 	}
 
 
-        ret = set_gpfs_winattrs(discard_const_p(char, path),
-				GPFS_WINATTR_SET_ATTRS, &attrs);
+	ret = gpfswrap_set_winattrs_path(discard_const_p(char, path),
+					 GPFS_WINATTR_SET_ATTRS, &attrs);
         if ( ret == -1){
 		if (errno == ENOSYS) {
 			return SMB_VFS_NEXT_SETXATTR(handle, path, name, value,
@@ -1726,8 +1726,9 @@ static int vfs_gpfs_ntimes(struct vfs_handle_struct *handle,
         attrs.creationTime.tv_sec = ft->create_time.tv_sec;
         attrs.creationTime.tv_nsec = ft->create_time.tv_nsec;
 
-        ret = set_gpfs_winattrs(discard_const_p(char, path),
-                                GPFS_WINATTR_SET_CREATION_TIME, &attrs);
+	ret = gpfswrap_set_winattrs_path(discard_const_p(char, path),
+					 GPFS_WINATTR_SET_CREATION_TIME,
+					 &attrs);
         if(ret == -1 && errno != ENOSYS){
                 DEBUG(1,("vfs_gpfs_ntimes: set GPFS ntimes failed %d\n",ret));
 	        return -1;
