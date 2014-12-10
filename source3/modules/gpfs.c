@@ -229,50 +229,6 @@ int gpfswrap_getfilesetid(char *pathname, char *name, int *idp)
 	return gpfs_getfilesetid_fn(pathname, name, idp);
 }
 
-int get_gpfs_fset_id(const char *pathname, int *fset_id)
-{
-	int err, fd, errno_fcntl;
-
-	struct {
-		gpfsFcntlHeader_t hdr;
-		gpfsGetFilesetName_t fsn;
-	} arg;
-
-	arg.hdr.totalLength = sizeof(arg);
-	arg.hdr.fcntlVersion = GPFS_FCNTL_CURRENT_VERSION;
-	arg.hdr.fcntlReserved = 0;
-	arg.fsn.structLen = sizeof(arg.fsn);
-	arg.fsn.structType = GPFS_FCNTL_GET_FILESETNAME;
-
-	fd = open(pathname, O_RDONLY);
-	if (fd == -1) {
-		DEBUG(1, ("Could not open %s: %s\n",
-			  pathname, strerror(errno)));
-		return fd;
-	}
-
-	err = gpfswrap_fcntl(fd, &arg);
-	errno_fcntl = errno;
-	close(fd);
-
-	if (err) {
-		errno = errno_fcntl;
-		if (errno != ENOSYS) {
-			DEBUG(1, ("GPFS_FCNTL_GET_FILESETNAME for %s failed: "
-				  "%s\n", pathname, strerror(errno)));
-		}
-		return err;
-	}
-
-	err = gpfswrap_getfilesetid(discard_const_p(char, pathname),
-				    arg.fsn.buffer, fset_id);
-	if (err && errno != ENOSYS) {
-		DEBUG(1, ("gpfs_getfilesetid for %s failed: %s\n",
-			  pathname, strerror(errno)));
-	}
-	return err;
-}
-
 static void timespec_to_gpfs_time(struct timespec ts, gpfs_timestruc_t *gt,
 				  int idx, int *flags)
 {
