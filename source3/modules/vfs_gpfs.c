@@ -1858,7 +1858,7 @@ static int vfs_gpfs_connect(struct vfs_handle_struct *handle,
 	struct gpfs_config_data *config;
 	int ret;
 
-	smbd_gpfs_lib_init();
+	gpfswrap_lib_init(0);
 
 	config = talloc_zero(handle->conn, struct gpfs_config_data);
 	if (!config) {

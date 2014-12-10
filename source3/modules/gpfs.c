@@ -179,6 +179,16 @@ int gpfswrap_ftruncate(int fd, gpfs_off64_t length)
 	return gpfs_ftruncate_fn(fd, length);
 }
 
+int gpfswrap_lib_init(int flags)
+{
+	if (gpfs_lib_init_fn == NULL) {
+		errno = ENOSYS;
+		return -1;
+	}
+
+	return gpfs_lib_init_fn(flags);
+}
+
 bool set_gpfs_sharemode(files_struct *fsp, uint32 access_mask,
 			uint32 share_access)
 {
@@ -321,17 +331,6 @@ int get_gpfs_fset_id(const char *pathname, int *fset_id)
 			  pathname, strerror(errno)));
 	}
 	return err;
-}
-
-void smbd_gpfs_lib_init()
-{
-	if (gpfs_lib_init_fn) {
-		int rc = gpfs_lib_init_fn(0);
-		DEBUG(10, ("gpfs_lib_init() finished with rc %d "
-			   "and errno %d\n", rc, errno));
-	} else {
-		DEBUG(10, ("libgpfs lacks gpfs_lib_init\n"));
-	}
 }
 
 static void timespec_to_gpfs_time(struct timespec ts, gpfs_timestruc_t *gt,
