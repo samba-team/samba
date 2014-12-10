@@ -1746,17 +1746,16 @@ static int samldb_user_account_control_change(struct samldb_ctx *ac)
 
 	case UF_WORKSTATION_TRUST_ACCOUNT:
 		new_is_critical = false;
-		break;
-
-	case (UF_WORKSTATION_TRUST_ACCOUNT|UF_PARTIAL_SECRETS_ACCOUNT):
-		if (!is_computer) {
-			ldb_asprintf_errstring(ldb,
-				"%08X: samldb: UF_PARTIAL_SECRETS_ACCOUNT "
-				"requires objectclass 'computer'!",
-				W_ERROR_V(WERR_DS_MACHINE_ACCOUNT_CREATED_PRENT4));
-			return LDB_ERR_UNWILLING_TO_PERFORM;
+		if (new_uac & UF_PARTIAL_SECRETS_ACCOUNT) {
+			if (!is_computer) {
+				ldb_asprintf_errstring(ldb,
+						       "%08X: samldb: UF_PARTIAL_SECRETS_ACCOUNT "
+						       "requires objectclass 'computer'!",
+						       W_ERROR_V(WERR_DS_MACHINE_ACCOUNT_CREATED_PRENT4));
+				return LDB_ERR_UNWILLING_TO_PERFORM;
+			}
+			new_is_critical = true;
 		}
-		new_is_critical = true;
 		break;
 
 	case UF_SERVER_TRUST_ACCOUNT:
