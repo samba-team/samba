@@ -1787,7 +1787,7 @@ static int vfs_gpfs_ftruncate(vfs_handle_struct *handle, files_struct *fsp,
 		return SMB_VFS_NEXT_FTRUNCATE(handle, fsp, len);
 	}
 
-	result = smbd_gpfs_ftruncate(fsp->fh->fd, len);
+	result = gpfswrap_ftruncate(fsp->fh->fd, len);
 	if ((result == -1) && (errno == ENOSYS)) {
 		return SMB_VFS_NEXT_FTRUNCATE(handle, fsp, len);
 	}

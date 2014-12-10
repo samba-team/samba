@@ -169,6 +169,16 @@ int gpfswrap_prealloc(int fd, gpfs_off64_t start, gpfs_off64_t bytes)
 	return gpfs_prealloc_fn(fd, start, bytes);
 }
 
+int gpfswrap_ftruncate(int fd, gpfs_off64_t length)
+{
+	if (gpfs_ftruncate_fn == NULL) {
+		errno = ENOSYS;
+		return -1;
+	}
+
+	return gpfs_ftruncate_fn(fd, length);
+}
+
 bool set_gpfs_sharemode(files_struct *fsp, uint32 access_mask,
 			uint32 share_access)
 {
@@ -232,16 +242,6 @@ int set_gpfs_lease(int fd, int leasetype)
 	*/
 	linux_set_lease_capability();
 	return gpfswrap_set_lease(fd, gpfs_type);
-}
-
-int smbd_gpfs_ftruncate(int fd, gpfs_off64_t length)
-{
-	if (gpfs_ftruncate_fn == NULL) {
-		errno = ENOSYS;
-		return -1;
-	}
-
-	return gpfs_ftruncate_fn(fd, length);
 }
 
 int get_gpfs_quota(const char *pathname, int type, int id,

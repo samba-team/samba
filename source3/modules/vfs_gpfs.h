@@ -38,10 +38,10 @@ int gpfswrap_set_winattrs_path(char *pathname, int flags,
 int gpfswrap_get_winattrs_path(char *pathname, struct gpfs_winattr *attrs);
 int gpfswrap_get_winattrs(int fd, struct gpfs_winattr *attrs);
 int gpfswrap_prealloc(int fd, gpfs_off64_t start, gpfs_off64_t bytes);
+int gpfswrap_ftruncate(int fd, gpfs_off64_t length);
 bool set_gpfs_sharemode(files_struct *fsp, uint32 access_mask,
 			uint32 share_access);
 int set_gpfs_lease(int fd, int leasetype);
-int smbd_gpfs_ftruncate(int fd, gpfs_off64_t length);
 int get_gpfs_quota(const char *pathname, int type, int id,
 		   struct gpfs_quotaInfo *qi);
 int get_gpfs_fset_id(const char *pathname, int *fset_id);
