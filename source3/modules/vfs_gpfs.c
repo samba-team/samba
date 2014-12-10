@@ -1736,6 +1736,44 @@ static int vfs_gpfs_lstat(struct vfs_handle_struct *handle,
 	return 0;
 }
 
+static void timespec_to_gpfs_time(struct timespec ts, gpfs_timestruc_t *gt,
+				  int idx, int *flags)
+{
+	if (!null_timespec(ts)) {
+		*flags |= 1 << idx;
+		gt[idx].tv_sec = ts.tv_sec;
+		gt[idx].tv_nsec = ts.tv_nsec;
+		DEBUG(10, ("Setting GPFS time %d, flags 0x%x\n", idx, *flags));
+	}
+}
+
+static int smbd_gpfs_set_times_path(char *path, struct smb_file_time *ft)
+{
+	gpfs_timestruc_t gpfs_times[4];
+	int flags = 0;
+	int rc;
+
+	ZERO_ARRAY(gpfs_times);
+	timespec_to_gpfs_time(ft->atime, gpfs_times, 0, &flags);
+	timespec_to_gpfs_time(ft->mtime, gpfs_times, 1, &flags);
+	/* No good mapping from LastChangeTime to ctime, not storing */
+	timespec_to_gpfs_time(ft->create_time, gpfs_times, 3, &flags);
+
+	if (!flags) {
+		DEBUG(10, ("nothing to do, return to avoid EINVAL\n"));
+		return 0;
+	}
+
+	rc = gpfswrap_set_times_path(path, flags, gpfs_times);
+
+	if (rc != 0 && errno != ENOSYS) {
+		DEBUG(1,("gpfs_set_times() returned with error %s\n",
+			strerror(errno)));
+	}
+
+	return rc;
+}
+
 static int vfs_gpfs_ntimes(struct vfs_handle_struct *handle,
                         const struct smb_filename *smb_fname,
 			struct smb_file_time *ft)
