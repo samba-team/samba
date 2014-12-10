@@ -113,7 +113,7 @@ static int messaging_ctdb_send(struct server_id src,
 	}
 
 	buf = talloc_array(talloc_tos(), uint8_t, buflen);
-	if (buflen == NULL) {
+	if (buf == NULL) {
 		return ENOMEM;
 	}
 	iov_buf(iov, iovlen, buf, buflen);
