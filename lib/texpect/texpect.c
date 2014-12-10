@@ -41,7 +41,9 @@
 #ifdef HAVE_UTIL_H
 #include <util.h>
 #endif
-#ifdef HAVE_LIBUTIL_H
+#ifdef HAVE_BSD_LIBUTIL_H
+#include <bsd/libutil.h>
+#elif defined HAVE_LIBUTIL_H
 #include <libutil.h>
 #endif
 
