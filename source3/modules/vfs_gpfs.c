@@ -1466,7 +1466,7 @@ static ssize_t gpfs_get_xattr(struct vfs_handle_struct *handle,  const char *pat
                 return SMB_VFS_NEXT_GETXATTR(handle,path,name,value,size);
         }
 
-        ret = get_gpfs_winattrs(discard_const_p(char, path), &attrs);
+	ret = gpfswrap_get_winattrs_path(discard_const_p(char, path), &attrs);
         if ( ret == -1){
 		int dbg_lvl;
 
@@ -1584,7 +1584,7 @@ static int vfs_gpfs_stat(struct vfs_handle_struct *handle,
 		errno = map_errno_from_nt_status(status);
 		return -1;
 	}
-	ret = get_gpfs_winattrs(discard_const_p(char, fname), &attrs);
+	ret = gpfswrap_get_winattrs_path(discard_const_p(char, fname), &attrs);
 	TALLOC_FREE(fname);
 	if (ret == 0) {
 		smb_fname->st.st_ex_calculated_birthtime = false;
@@ -1660,7 +1660,7 @@ static int vfs_gpfs_lstat(struct vfs_handle_struct *handle,
 		errno = map_errno_from_nt_status(status);
 		return -1;
 	}
-	ret = get_gpfs_winattrs(discard_const_p(char, path), &attrs);
+	ret = gpfswrap_get_winattrs_path(discard_const_p(char, path), &attrs);
 	TALLOC_FREE(path);
 	if (ret == 0) {
 		smb_fname->st.st_ex_calculated_birthtime = false;
@@ -1818,7 +1818,7 @@ static bool vfs_gpfs_is_offline(struct vfs_handle_struct *handle,
 		return -1;
 	}
 
-	ret = get_gpfs_winattrs(path, &attrs);
+	ret = gpfswrap_get_winattrs_path(path, &attrs);
 	if (ret == -1) {
 		TALLOC_FREE(path);
 		return false;
