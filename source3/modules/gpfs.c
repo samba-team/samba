@@ -96,6 +96,16 @@ int gpfswrap_set_lease(int fd, unsigned int type)
 	return gpfs_set_lease_fn(fd, type);
 }
 
+int gpfswrap_getacl(char *pathname, int flags, void *acl)
+{
+	if (gpfs_getacl_fn == NULL) {
+		errno = ENOSYS;
+		return -1;
+	}
+
+	return gpfs_getacl_fn(pathname, flags, acl);
+}
+
 bool set_gpfs_sharemode(files_struct *fsp, uint32 access_mask,
 			uint32 share_access)
 {
@@ -159,16 +169,6 @@ int set_gpfs_lease(int fd, int leasetype)
 	*/
 	linux_set_lease_capability();
 	return gpfswrap_set_lease(fd, gpfs_type);
-}
-
-int smbd_gpfs_getacl(char *pathname, int flags, void *acl)
-{
-	if (gpfs_getacl_fn == NULL) {
-		errno = ENOSYS;
-		return -1;
-	}
-
-	return gpfs_getacl_fn(pathname, flags, acl);
 }
 
 int smbd_gpfs_putacl(char *pathname, int flags, void *acl)

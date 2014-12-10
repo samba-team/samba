@@ -327,7 +327,7 @@ again:
 	*len = size;
 
 	errno = 0;
-	ret = smbd_gpfs_getacl(discard_const_p(char, fname), flags, aclbuf);
+	ret = gpfswrap_getacl(discard_const_p(char, fname), flags, aclbuf);
 	if ((ret != 0) && (errno == ENOSPC)) {
 		/*
 		 * get the size needed to accommodate the complete buffer
