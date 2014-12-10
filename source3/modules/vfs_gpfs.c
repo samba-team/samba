@@ -646,8 +646,8 @@ static bool gpfsacl_process_smbacl(vfs_handle_struct *handle,
 	if (gacl == NULL) { /* out of memory */
 		return False;
 	}
-	ret = smbd_gpfs_putacl(fsp->fsp_name->base_name,
-			       GPFS_PUTACL_STRUCT | GPFS_ACL_SAMBA, gacl);
+	ret = gpfswrap_putacl(fsp->fsp_name->base_name,
+			      GPFS_PUTACL_STRUCT | GPFS_ACL_SAMBA, gacl);
 
 	if ((ret != 0) && (errno == EINVAL)) {
 		DEBUG(10, ("Retry without nfs41 control flags\n"));
@@ -656,9 +656,9 @@ static bool gpfsacl_process_smbacl(vfs_handle_struct *handle,
 		if (gacl == NULL) { /* out of memory */
 			return False;
 		}
-		ret = smbd_gpfs_putacl(fsp->fsp_name->base_name,
-				       GPFS_PUTACL_STRUCT | GPFS_ACL_SAMBA,
-				       gacl);
+		ret = gpfswrap_putacl(fsp->fsp_name->base_name,
+				      GPFS_PUTACL_STRUCT | GPFS_ACL_SAMBA,
+				      gacl);
 	}
 
 	if (ret != 0) {
@@ -1127,8 +1127,8 @@ static int gpfsacl_sys_acl_set_file(vfs_handle_struct *handle,
 		return -1;
 	}
 
-	result = smbd_gpfs_putacl(discard_const_p(char, name),
-				  GPFS_PUTACL_STRUCT|GPFS_ACL_SAMBA, gpfs_acl);
+	result = gpfswrap_putacl(discard_const_p(char, name),
+				 GPFS_PUTACL_STRUCT|GPFS_ACL_SAMBA, gpfs_acl);
 
 	SAFE_FREE(gpfs_acl);
 	return result;
