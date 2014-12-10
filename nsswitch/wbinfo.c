@@ -826,15 +826,24 @@ static bool wbinfo_change_secret(const char *domain)
 
 /* Check DC connection */
 
-static bool wbinfo_ping_dc(void)
+static bool wbinfo_ping_dc(const char *domain)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
 	struct wbcAuthErrorInfo *error = NULL;
 	char *dcname = NULL;
 
-	wbc_status = wbcPingDc2(NULL, &error, &dcname);
+	const char *domain_name;
 
-	d_printf("checking the NETLOGON dc connection to \"%s\" %s\n",
+	if (domain) {
+		domain_name = domain;
+	} else {
+		domain_name = get_winbind_domain();
+	}
+
+	wbc_status = wbcPingDc2(domain_name, &error, &dcname);
+
+	d_printf("checking the NETLOGON for domain[%s] dc connection to \"%s\" %s\n",
+		 domain_name ? domain_name : "",
 		 dcname ? dcname : "",
 		 WBC_ERROR_IS_OK(wbc_status) ? "succeeded" : "failed");
 
@@ -2424,7 +2433,7 @@ int main(int argc, const char **argv, char **envp)
 			}
 			break;
 		case 'P':
-			if (!wbinfo_ping_dc()) {
+			if (!wbinfo_ping_dc(opt_domain_name)) {
 				goto done;
 			}
 			break;
