@@ -42,7 +42,7 @@ static int (*gpfs_ftruncate_fn)(int fd, gpfs_off64_t length);
 static int (*gpfs_lib_init_fn)(int flags);
 static int (*gpfs_set_times_path_fn)(char *pathname, int flags,
 				     gpfs_timestruc_t times[4]);
-static int (*gpfs_quotactl_fn)(char *pathname, int cmd, int id, void *bufferP);
+static int (*gpfs_quotactl_fn)(char *pathname, int cmd, int id, void *bufp);
 static int (*gpfs_fcntl_fn)(gpfs_file_t fileDesc, void *fcntlArgP);
 static int (*gpfs_getfilesetid_fn)(char *pathname, char *name, int *idP);
 
@@ -200,6 +200,16 @@ int gpfswrap_set_times_path(char *pathname, int flags,
 	return gpfs_set_times_path_fn(pathname, flags, times);
 }
 
+int gpfswrap_quotactl(char *pathname, int cmd, int id, void *bufp)
+{
+	if (gpfs_quotactl_fn == NULL) {
+		errno = ENOSYS;
+		return -1;
+	}
+
+	return gpfs_quotactl_fn(pathname, cmd, id, bufp);
+}
+
 bool set_gpfs_sharemode(files_struct *fsp, uint32 access_mask,
 			uint32 share_access)
 {
@@ -270,19 +280,14 @@ int get_gpfs_quota(const char *pathname, int type, int id,
 {
 	int ret;
 
-	if (!gpfs_quotactl_fn) {
-		errno = ENOSYS;
-		return -1;
-	}
-
 	ZERO_STRUCTP(qi);
-	ret = gpfs_quotactl_fn(discard_const_p(char, pathname),
-			       GPFS_QCMD(Q_GETQUOTA, type), id, qi);
+	ret = gpfswrap_quotactl(discard_const_p(char, pathname),
+				GPFS_QCMD(Q_GETQUOTA, type), id, qi);
 
 	if (ret) {
 		if (errno == GPFS_E_NO_QUOTA_INST) {
 			DEBUG(10, ("Quotas disabled on GPFS filesystem.\n"));
-		} else {
+		} else if (errno != ENOSYS) {
 			DEBUG(0, ("Get quota failed, type %d, id, %d, "
 				  "errno %d.\n", type, id, errno));
 		}

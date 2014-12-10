@@ -42,6 +42,7 @@ int gpfswrap_ftruncate(int fd, gpfs_off64_t length);
 int gpfswrap_lib_init(int flags);
 int gpfswrap_set_times_path(char *pathname, int flags,
 			    gpfs_timestruc_t times[4]);
+int gpfswrap_quotactl(char *pathname, int cmd, int id, void *bufp);
 bool set_gpfs_sharemode(files_struct *fsp, uint32 access_mask,
 			uint32 share_access);
 int set_gpfs_lease(int fd, int leasetype);
