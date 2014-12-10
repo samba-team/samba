@@ -23,7 +23,6 @@
 
 #include <fcntl.h>
 #include <gpfs_fcntl.h>
-#include "libcli/security/security.h"
 #include "vfs_gpfs.h"
 
 static int (*gpfs_set_share_fn)(int fd, unsigned int allow, unsigned int deny);
@@ -228,51 +227,6 @@ int gpfswrap_getfilesetid(char *pathname, char *name, int *idp)
 	}
 
 	return gpfs_getfilesetid_fn(pathname, name, idp);
-}
-
-bool set_gpfs_sharemode(files_struct *fsp, uint32 access_mask,
-			uint32 share_access)
-{
-	unsigned int allow = GPFS_SHARE_NONE;
-	unsigned int deny = GPFS_DENY_NONE;
-	int result;
-
-	if ((fsp == NULL) || (fsp->fh == NULL) || (fsp->fh->fd < 0)) {
-		/* No real file, don't disturb */
-		return True;
-	}
-
-	allow |= (access_mask & (FILE_WRITE_DATA|FILE_APPEND_DATA|
-				 DELETE_ACCESS)) ? GPFS_SHARE_WRITE : 0;
-	allow |= (access_mask & (FILE_READ_DATA|FILE_EXECUTE)) ?
-		GPFS_SHARE_READ : 0;
-
-	if (allow == GPFS_SHARE_NONE) {
-		DEBUG(10, ("special case am=no_access:%x\n",access_mask));
-	}
-	else {	
-		deny |= (share_access & FILE_SHARE_WRITE) ?
-			0 : GPFS_DENY_WRITE;
-		deny |= (share_access & (FILE_SHARE_READ)) ?
-			0 : GPFS_DENY_READ;
-	}
-	DEBUG(10, ("am=%x, allow=%d, sa=%x, deny=%d\n",
-		   access_mask, allow, share_access, deny));
-
-	result = gpfswrap_set_share(fsp->fh->fd, allow, deny);
-	if (result != 0) {
-		if (errno == ENOSYS) {
-			DEBUG(5, ("VFS module vfs_gpfs loaded, but gpfs "
-				  "set_share function support not available. "
-				  "Allowing access\n"));
-			return True;
-		} else {
-			DEBUG(10, ("gpfs_set_share failed: %s\n",
-				   strerror(errno)));
-		}
-	}
-
-	return (result == 0);
 }
 
 int set_gpfs_lease(int fd, int leasetype)
