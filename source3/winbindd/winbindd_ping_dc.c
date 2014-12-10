@@ -54,10 +54,32 @@ struct tevent_req *winbindd_ping_dc_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 	if (domain->internal) {
+		const char *d = lp_dnsdomain();
+		const char *n = lp_netbios_name();
+
 		/*
 		 * Internal domains are passdb based, we can always
 		 * contact them.
 		 */
+
+		if (d != NULL) {
+			char *h;
+			h = strlower_talloc(mem_ctx, n);
+			if (tevent_req_nomem(h, req)) {
+				return tevent_req_post(req, ev);
+			}
+
+			state->dcname = talloc_asprintf(state, "%s.%s", h, d);
+			if (tevent_req_nomem(state->dcname, req)) {
+				return tevent_req_post(req, ev);
+			}
+		} else {
+			state->dcname = talloc_strdup(state, n);
+			if (tevent_req_nomem(state->dcname, req)) {
+				return tevent_req_post(req, ev);
+			}
+		}
+
 		tevent_req_done(req);
 		return tevent_req_post(req, ev);
 	}
