@@ -37,7 +37,7 @@ static int (*gpfs_set_winattrs_path_fn)(char *pathname, int flags,
 static int (*gpfs_get_winattrs_path_fn)(char *pathname,
 					struct gpfs_winattr *attrs);
 static int (*gpfs_get_winattrs_fn)(int fd, struct gpfs_winattr *attrs);
-static int (*gpfs_prealloc_fn)(int fd, gpfs_off64_t startOffset, gpfs_off64_t bytesToPrealloc);
+static int (*gpfs_prealloc_fn)(int fd, gpfs_off64_t start, gpfs_off64_t bytes);
 static int (*gpfs_ftruncate_fn)(int fd, gpfs_off64_t length);
 static int (*gpfs_lib_init_fn)(int flags);
 static int (*gpfs_set_times_path_fn)(char *pathname, int flags,
@@ -159,6 +159,16 @@ int gpfswrap_get_winattrs(int fd, struct gpfs_winattr *attrs)
 	return gpfs_get_winattrs_fn(fd, attrs);
 }
 
+int gpfswrap_prealloc(int fd, gpfs_off64_t start, gpfs_off64_t bytes)
+{
+	if (gpfs_prealloc_fn == NULL) {
+		errno = ENOSYS;
+		return -1;
+	}
+
+	return gpfs_prealloc_fn(fd, start, bytes);
+}
+
 bool set_gpfs_sharemode(files_struct *fsp, uint32 access_mask,
 			uint32 share_access)
 {
@@ -232,16 +242,6 @@ int smbd_gpfs_ftruncate(int fd, gpfs_off64_t length)
 	}
 
 	return gpfs_ftruncate_fn(fd, length);
-}
-
-int smbd_gpfs_prealloc(int fd, gpfs_off64_t start, gpfs_off64_t bytes)
-{
-	if (gpfs_prealloc_fn == NULL) {
-		errno = ENOSYS;
-		return -1;
-	}
-
-	return gpfs_prealloc_fn(fd, start, bytes);
 }
 
 int get_gpfs_quota(const char *pathname, int type, int id,

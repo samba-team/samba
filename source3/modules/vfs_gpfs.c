@@ -1760,7 +1760,7 @@ static int vfs_gpfs_fallocate(struct vfs_handle_struct *handle,
 		return -1;
 	}
 
-	ret = smbd_gpfs_prealloc(fsp->fh->fd, offset, len);
+	ret = gpfswrap_prealloc(fsp->fh->fd, offset, len);
 
 	if (ret == -1 && errno != ENOSYS) {
 		DEBUG(0, ("GPFS prealloc failed: %s\n", strerror(errno)));
