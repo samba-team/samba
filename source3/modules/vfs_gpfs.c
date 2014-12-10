@@ -161,6 +161,26 @@ static int vfs_gpfs_close(vfs_handle_struct *handle, files_struct *fsp)
 	return SMB_VFS_NEXT_CLOSE(handle, fsp);
 }
 
+static int set_gpfs_lease(int fd, int leasetype)
+{
+	int gpfs_type = GPFS_LEASE_NONE;
+
+	if (leasetype == F_RDLCK) {
+		gpfs_type = GPFS_LEASE_READ;
+	}
+	if (leasetype == F_WRLCK) {
+		gpfs_type = GPFS_LEASE_WRITE;
+	}
+
+	/* we unconditionally set CAP_LEASE, rather than looking for
+	   -1/EACCES as there is a bug in some versions of
+	   libgpfs_gpl.so which results in a leaked fd on /dev/ss0
+	   each time we try this with the wrong capabilities set
+	*/
+	linux_set_lease_capability();
+	return gpfswrap_set_lease(fd, gpfs_type);
+}
+
 static int vfs_gpfs_setlease(vfs_handle_struct *handle, files_struct *fsp, 
 			     int leasetype)
 {
