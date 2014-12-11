@@ -22,7 +22,7 @@ import os
 import sys
 import signal
 import subprocess
-import subunit
+from samba import subunit
 import traceback
 import warnings
 
