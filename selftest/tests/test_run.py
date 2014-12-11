@@ -33,7 +33,7 @@ from selftest.run import (
     run_testsuite_command,
     )
 
-from selftest.tests import TestCase
+from unittest import TestCase
 
 
 class ExpandEnvironmentStringsTests(TestCase):

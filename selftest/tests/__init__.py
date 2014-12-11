@@ -19,8 +19,6 @@
 
 """Tests for selftest."""
 
-from testtools import TestCase
-
 import unittest
 
 def test_suite():

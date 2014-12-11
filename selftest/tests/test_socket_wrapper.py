@@ -19,7 +19,7 @@
 
 """Tests for selftest/socket_wrapper."""
 
-from selftest.tests import TestCase
+from unittest import TestCase
 
 from selftest import socket_wrapper
 
