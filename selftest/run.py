@@ -18,10 +18,9 @@
 """Test command running."""
 
 import datetime
-from subunit import iso8601
 import os
 import subprocess
-import subunit
+from samba import subunit
 import sys
 import tempfile
 import warnings
@@ -89,7 +88,7 @@ def exported_envvars_str(vars, names):
 def now():
     """Return datetime instance for current time in UTC.
     """
-    return datetime.datetime.utcnow().replace(tzinfo=iso8601.Utc())
+    return datetime.datetime.utcnow().replace(tzinfo=subunit.UTC())
 
 
 def run_testsuite_command(name, cmd, subunit_ops, env=None, outf=None):

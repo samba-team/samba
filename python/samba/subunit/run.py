@@ -24,31 +24,14 @@
   $ python -m samba.subunit.run mylib.tests.test_suite
 """
 
+from samba.subunit import UTC
+
 import datetime
 import os
 import sys
 import traceback
 import unittest
 
-
-# From http://docs.python.org/library/datetime.html
-_ZERO = datetime.timedelta(0)
-
-# A UTC class.
-
-class UTC(datetime.tzinfo):
-    """UTC"""
-
-    def utcoffset(self, dt):
-        return _ZERO
-
-    def tzname(self, dt):
-        return "UTC"
-
-    def dst(self, dt):
-        return _ZERO
-
-utc = UTC()
 
 # Whether or not to hide layers of the stack trace that are
 # unittest/testtools internal code.  Defaults to True since the

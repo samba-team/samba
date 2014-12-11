@@ -16,3 +16,31 @@
 #
 
 """Subunit test protocol."""
+
+import datetime
+
+
+PROGRESS_SET = 0
+PROGRESS_CUR = 1
+PROGRESS_PUSH = 2
+PROGRESS_POP = 3
+
+
+# From http://docs.python.org/library/datetime.html
+_ZERO = datetime.timedelta(0)
+
+# A UTC class.
+
+class UTC(datetime.tzinfo):
+    """UTC"""
+
+    def utcoffset(self, dt):
+        return _ZERO
+
+    def tzname(self, dt):
+        return "UTC"
+
+    def dst(self, dt):
+        return _ZERO
+
+utc = UTC()
