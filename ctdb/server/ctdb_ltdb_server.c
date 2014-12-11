@@ -844,7 +844,7 @@ static int ctdb_local_attach(struct ctdb_context *ctdb, const char *db_name,
 #ifdef TDB_MUTEX_LOCKING
 	if (ctdb->tunable.mutex_enabled && mutexes &&
 	    tdb_runtime_check_for_robust_mutexes()) {
-		tdb_flags |= TDB_MUTEX_LOCKING;
+		tdb_flags |= (TDB_MUTEX_LOCKING | TDB_CLEAR_IF_FIRST);
 	}
 #endif
 
@@ -1138,7 +1138,7 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 	   that tdb_flags is passed in via the (otherwise unused)
 	   srvid to the attach control */
 #ifdef TDB_MUTEX_LOCKING
-	tdb_flags &= (TDB_NOSYNC|TDB_INCOMPATIBLE_HASH|TDB_MUTEX_LOCKING);
+	tdb_flags &= (TDB_NOSYNC|TDB_INCOMPATIBLE_HASH|TDB_MUTEX_LOCKING|TDB_CLEAR_IF_FIRST);
 #else
 	tdb_flags &= (TDB_NOSYNC|TDB_INCOMPATIBLE_HASH);
 #endif
