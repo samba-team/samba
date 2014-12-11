@@ -127,6 +127,10 @@ class TestSource(TestCase):
             if "wafsamba" in fname:
                 # FIXME: License to wafsamba hasn't been clarified yet
                 continue
+            if fname.endswith("/python/samba/subunit/run.py"):
+                # Imported from subunit/testtools, which are dual
+                # Apache2/BSD-3.
+                continue
             if not gpl_re.search(text):
                 incorrect.append(fname)
 
