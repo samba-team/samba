@@ -544,9 +544,21 @@ static int db_count_handler(struct ctdb_db_context *ctdb_db, uint32_t priority,
 {
 	int *count = (int *)private_data;
 
-	(*count)++;
+	(*count) += 2;
 
 	return 0;
+}
+
+static int db_flags(struct ctdb_db_context *ctdb_db)
+{
+	int tdb_flags = TDB_DEFAULT;
+
+#ifdef TDB_MUTEX_LOCKING
+	if (!ctdb_db->persistent && ctdb_db->ctdb->tunable.mutex_enabled) {
+		tdb_flags = (TDB_MUTEX_LOCKING | TDB_CLEAR_IF_FIRST);
+	}
+#endif
+	return tdb_flags;
 }
 
 struct db_namelist {
@@ -560,7 +572,9 @@ static int db_name_handler(struct ctdb_db_context *ctdb_db, uint32_t priority,
 	struct db_namelist *list = (struct db_namelist *)private_data;
 
 	list->names[list->n] = talloc_strdup(list->names, ctdb_db->db_path);
-	list->n++;
+	list->names[list->n+1] = talloc_asprintf(list->names, "0x%x",
+						 db_flags(ctdb_db));
+	list->n += 2;
 
 	return 0;
 }
@@ -577,11 +591,11 @@ static bool lock_helper_args(TALLOC_CTX *mem_ctx,
 
 	switch (lock_ctx->type) {
 	case LOCK_RECORD:
-		nargs = 5;
+		nargs = 6;
 		break;
 
 	case LOCK_DB:
-		nargs = 4;
+		nargs = 5;
 		break;
 
 	case LOCK_ALLDB_PRIO:
@@ -612,16 +626,20 @@ static bool lock_helper_args(TALLOC_CTX *mem_ctx,
 	case LOCK_RECORD:
 		args[2] = talloc_strdup(args, "RECORD");
 		args[3] = talloc_strdup(args, lock_ctx->ctdb_db->db_path);
+		args[4] = talloc_asprintf(args, "0x%x",
+					  db_flags(lock_ctx->ctdb_db));
 		if (lock_ctx->key.dsize == 0) {
-			args[4] = talloc_strdup(args, "NULL");
+			args[5] = talloc_strdup(args, "NULL");
 		} else {
-			args[4] = hex_encode_talloc(args, lock_ctx->key.dptr, lock_ctx->key.dsize);
+			args[5] = hex_encode_talloc(args, lock_ctx->key.dptr, lock_ctx->key.dsize);
 		}
 		break;
 
 	case LOCK_DB:
 		args[2] = talloc_strdup(args, "DB");
 		args[3] = talloc_strdup(args, lock_ctx->ctdb_db->db_path);
+		args[4] = talloc_asprintf(args, "0x%x",
+					  db_flags(lock_ctx->ctdb_db));
 		break;
 
 	case LOCK_ALLDB_PRIO:

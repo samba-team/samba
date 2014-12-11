@@ -1928,7 +1928,7 @@ int ctdb_ctrl_createdb(struct ctdb_context *ctdb, struct timeval timeout, uint32
 
 #ifdef TDB_MUTEX_LOCKING
 	if (!persistent && ctdb->tunable.mutex_enabled == 1) {
-		tdb_flags |= TDB_MUTEX_LOCKING;
+		tdb_flags |= (TDB_MUTEX_LOCKING | TDB_CLEAR_IF_FIRST);
 	}
 #endif
 
@@ -2055,6 +2055,9 @@ struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb,
 	TDB_DATA data;
 	int ret;
 	int32_t res;
+#ifdef TDB_MUTEX_LOCKING
+	uint32_t mutex_enabled = 0;
+#endif
 
 	ctdb_db = ctdb_db_handle(ctdb, name);
 	if (ctdb_db) {
@@ -2080,8 +2083,18 @@ struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb,
 	}
 
 #ifdef TDB_MUTEX_LOCKING
-	if (!persistent && ctdb->tunable.mutex_enabled == 1) {
-		tdb_flags |= TDB_MUTEX_LOCKING;
+	if (!persistent) {
+		ret = ctdb_ctrl_get_tunable(ctdb, timeval_current_ofs(3,0),
+					    CTDB_CURRENT_NODE,
+					    "TDBMutexEnabled",
+					    &mutex_enabled);
+		if (ret != 0) {
+			DEBUG(DEBUG_WARNING, ("Assuming no mutex support.\n"));
+		}
+
+		if (mutex_enabled == 1) {
+			tdb_flags |= (TDB_MUTEX_LOCKING | TDB_CLEAR_IF_FIRST);
+		}
 	}
 #endif
 
@@ -2105,7 +2118,16 @@ struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb,
 		return NULL;
 	}
 
-	tdb_flags = persistent?TDB_DEFAULT:TDB_NOSYNC;
+	if (persistent) {
+		tdb_flags = TDB_DEFAULT;
+	} else {
+		tdb_flags = TDB_NOSYNC;
+#ifdef TDB_MUTEX_LOCKING
+		if (mutex_enabled) {
+			tdb_flags |= (TDB_MUTEX_LOCKING | TDB_CLEAR_IF_FIRST);
+		}
+#endif
+	}
 	if (ctdb->valgrinding) {
 		tdb_flags |= TDB_NOMMAP;
 	}
