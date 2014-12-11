@@ -149,7 +149,7 @@ bld.SAMBA3_LIBRARY('samba-passdb',
                    passdb/lookup_sid.h''',
                    abi_match=private_pdb_match,
                    abi_directory='passdb/ABI',
-                   vnum='0.2.0')
+                   vnum='0.24.1')
 
 bld.SAMBA3_SUBSYSTEM('pdb',
                    source='''passdb/pdb_get_set.c
