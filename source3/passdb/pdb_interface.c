@@ -2145,6 +2145,13 @@ bool pdb_get_trusteddom_pw(const char *domain, char** pwd, struct dom_sid *sid,
 			pass_last_set_time);
 }
 
+NTSTATUS pdb_get_trusteddom_creds(const char *domain, TALLOC_CTX *mem_ctx,
+				  struct cli_credentials **creds)
+{
+	struct pdb_methods *pdb = pdb_get_methods();
+	return pdb->get_trusteddom_creds(pdb, domain, mem_ctx, creds);
+}
+
 bool pdb_set_trusteddom_pw(const char* domain, const char* pwd,
 			   const struct dom_sid *sid)
 {
@@ -2180,6 +2187,15 @@ static bool pdb_default_get_trusteddom_pw(struct pdb_methods *methods,
 	return secrets_fetch_trusted_domain_password(domain, pwd,
 				sid, pass_last_set_time);
 
+}
+
+static NTSTATUS pdb_default_get_trusteddom_creds(struct pdb_methods *methods,
+						 const char *domain,
+						 TALLOC_CTX *mem_ctx,
+						 struct cli_credentials **creds)
+{
+	*creds = NULL;
+	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
 static bool pdb_default_set_trusteddom_pw(struct pdb_methods *methods, 
@@ -2623,6 +2639,7 @@ NTSTATUS make_pdb_method( struct pdb_methods **methods )
 	(*methods)->search_aliases = pdb_default_search_aliases;
 
 	(*methods)->get_trusteddom_pw = pdb_default_get_trusteddom_pw;
+	(*methods)->get_trusteddom_creds = pdb_default_get_trusteddom_creds;
 	(*methods)->set_trusteddom_pw = pdb_default_set_trusteddom_pw;
 	(*methods)->del_trusteddom_pw = pdb_default_del_trusteddom_pw;
 	(*methods)->enum_trusteddoms  = pdb_default_enum_trusteddoms;

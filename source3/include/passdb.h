@@ -34,6 +34,7 @@
 #include "../librpc/gen_ndr/lsa.h"
 #include <tevent.h>
 struct unixid;
+struct cli_credentials;
 
 /* group mapping headers */
 
@@ -416,6 +417,7 @@ enum pdb_policy_type {
  * Changed to 22, idmap control functions
  * Changed to 23, new idmap control functions
  * Changed to 24, removed uid_to_sid and gid_to_sid, replaced with id_to_sid
+ * Leave at 24, add optional get_trusteddom_creds()
  */
 
 #define PASSDB_INTERFACE_VERSION 24
@@ -581,6 +583,10 @@ struct pdb_methods
 	bool (*get_trusteddom_pw)(struct pdb_methods *methods,
 				  const char *domain, char** pwd, 
 				  struct dom_sid *sid, time_t *pass_last_set_time);
+	NTSTATUS (*get_trusteddom_creds)(struct pdb_methods *methods,
+					 const char *domain,
+					 TALLOC_CTX *mem_ctx,
+					 struct cli_credentials **creds);
 	bool (*set_trusteddom_pw)(struct pdb_methods *methods, 
 				  const char* domain, const char* pwd,
 				  const struct dom_sid *sid);
@@ -919,6 +925,8 @@ uint32_t pdb_search_entries(struct pdb_search *search,
 			  struct samr_displayentry **result);
 bool pdb_get_trusteddom_pw(const char *domain, char** pwd, struct dom_sid *sid,
 			   time_t *pass_last_set_time);
+NTSTATUS pdb_get_trusteddom_creds(const char *domain, TALLOC_CTX *mem_ctx,
+				  struct cli_credentials **creds);
 bool pdb_set_trusteddom_pw(const char* domain, const char* pwd,
 			   const struct dom_sid *sid);
 bool pdb_del_trusteddom_pw(const char *domain);
