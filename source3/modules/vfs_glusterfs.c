@@ -26,8 +26,6 @@
  * @brief  Samba VFS module for glusterfs
  *
  * @todo
- *   - AIO support\n
- *     See, for example \c vfs_aio_linux.c in the \c sourc3/modules directory
  *   - sendfile/recvfile support
  *
  * A Samba VFS module for GlusterFS, based on Gluster's libgfapi.
@@ -42,8 +40,23 @@
 #include <stdio.h>
 #include "api/glfs.h"
 #include "lib/util/dlinklist.h"
+#include "lib/util/tevent_unix.h"
+#ifdef HAVE_SYS_EVENTFD_H
+#include <sys/eventfd.h>
+#endif
+#include <pthread.h>
+#include "smbd/globals.h"
 
 #define DEFAULT_VOLFILE_SERVER "localhost"
+
+#ifdef HAVE_EVENTFD
+static pthread_mutex_t lock_req_list = PTHREAD_MUTEX_INITIALIZER;
+static int event_fd = -1;
+static struct tevent_fd *aio_read_event = NULL;
+static struct tevent_req **req_producer_list = NULL;
+static struct tevent_req **req_consumer_list = NULL;
+static uint64_t req_counter = 0;
+#endif
 
 /**
  * Helper to convert struct stat to struct stat_ex.
@@ -482,20 +495,174 @@ static ssize_t vfs_gluster_pread(struct vfs_handle_struct *handle,
 	return glfs_pread(*(glfs_fd_t **)VFS_FETCH_FSP_EXTENSION(handle, fsp), data, n, offset, 0);
 }
 
+struct glusterfs_aio_state {
+	ssize_t ret;
+	int err;
+};
+
+/*
+ * This function is the callback that will be called on glusterfs
+ * threads once the async IO submitted is complete. To notify
+ * Samba of the completion we use eventfd mechanism.
+ */
+static void aio_glusterfs_done(glfs_fd_t *fd, ssize_t ret, void *data)
+{
+#if HAVE_EVENTFD
+	struct tevent_req *req = NULL;
+	struct glusterfs_aio_state *state = NULL;
+	int i, sts = 0;
+	uint64_t u = 1;
+
+	req = talloc_get_type_abort(data, struct tevent_req);
+	state = tevent_req_data(req, struct glusterfs_aio_state);
+
+	if (ret < 0) {
+		state->ret = -1;
+		state->err = errno;
+	} else {
+		state->ret = ret;
+		state->err = 0;
+	}
+
+	/*
+	 * Store the reqs that needs to be completed by calling
+	 * tevent_req_done(). tevent_req_done() cannot be called
+	 * here, as it is not designed to be executed in the
+	 * multithread environment, tevent_req_done() should be
+	 * executed from the smbd main thread.
+	 */
+	pthread_mutex_lock (&lock_req_list);
+	{
+		for (i = 0 ; i < aio_pending_size ; i++) {
+			if(!req_producer_list[i]) {
+				req_producer_list[i] = req;
+				req_counter = req_counter + 1;
+				break;
+			}
+		}
+	}
+	pthread_mutex_unlock (&lock_req_list);
+
+	/*
+	 * For a bunch of fops notify only once
+	 */
+	if (req_counter == 1) {
+		sts = write (event_fd, &u, sizeof(uint64_t));
+		if (sts < 0 && errno == EAGAIN)
+			DEBUG(0,("\nWRITE: reached max value"));
+	}
+	return;
+#endif
+}
+
+#ifdef HAVE_EVENTFD
+static void aio_tevent_fd_done(struct tevent_context *event_ctx,
+				struct tevent_fd *fde,
+				uint16 flags, void *data)
+{
+	struct tevent_req *req = NULL;
+	struct tevent_req **temp = NULL;
+	int i = 0, sts = 0;
+	uint64_t u = 0;
+
+	sts = read (event_fd, &u, sizeof(uint64_t));
+	if (sts < 0 && errno == EAGAIN)
+		DEBUG(0,("\nREAD: eventfd read failed (%s)",strerror(errno)));
+
+	pthread_mutex_lock (&lock_req_list);
+	{
+		temp = req_producer_list;
+		req_producer_list = req_consumer_list;
+		req_consumer_list = temp;
+		req_counter = 0;
+	}
+	pthread_mutex_unlock (&lock_req_list);
+
+	for (i = 0 ; i < aio_pending_size ; i++) {
+		req = req_consumer_list[i];
+		if (req) {
+			tevent_req_done(req);
+			req_consumer_list[i] = 0;
+		}
+	}
+	return;
+}
+#endif
+
+static bool init_gluster_aio(struct vfs_handle_struct *handle)
+{
+#ifdef HAVE_EVENTFD
+	if (event_fd != -1) {
+		/*
+		 * Already initialized.
+		 */
+		return true;
+	}
+
+	event_fd = eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
+	if (event_fd == -1) {
+		goto fail;
+	}
+
+	aio_read_event = tevent_add_fd(handle->conn->sconn->ev_ctx,
+					NULL,
+					event_fd,
+					TEVENT_FD_READ,
+					aio_tevent_fd_done,
+					NULL);
+	if (aio_read_event == NULL) {
+		goto fail;
+	}
+
+	req_producer_list = talloc_zero_array(NULL, struct tevent_req *,
+						aio_pending_size);
+	req_consumer_list = talloc_zero_array(NULL, struct tevent_req *,
+						aio_pending_size);
+
+	return true;
+fail:
+	TALLOC_FREE(aio_read_event);
+	if (event_fd != -1) {
+		close(event_fd);
+		event_fd = -1;
+	}
+#endif
+	return false;
+}
+
 static struct tevent_req *vfs_gluster_pread_send(struct vfs_handle_struct
 						 *handle, TALLOC_CTX *mem_ctx,
 						 struct tevent_context *ev,
 						 files_struct *fsp, void *data,
 						 size_t n, off_t offset)
 {
+	struct tevent_req *req = NULL;
+	struct glusterfs_aio_state *state = NULL;
+	int ret = 0;
+
+#ifndef HAVE_EVENTFD
 	errno = ENOTSUP;
 	return NULL;
-}
+#endif
 
-static ssize_t vfs_gluster_pread_recv(struct tevent_req *req, int *err)
-{
-	errno = ENOTSUP;
-	return -1;
+	req = tevent_req_create(mem_ctx, &state, struct glusterfs_aio_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	if (!init_gluster_aio(handle)) {
+		tevent_req_error(req, EIO);
+		return tevent_req_post(req, ev);
+	}
+	ret = glfs_pread_async(*(glfs_fd_t **)VFS_FETCH_FSP_EXTENSION(handle,
+				fsp), data, n, offset, 0, aio_glusterfs_done,
+				req);
+	if (ret < 0) {
+		tevent_req_error(req, -ret);
+		return tevent_req_post(req, ev);
+	}
+
+	return req;
 }
 
 static ssize_t vfs_gluster_write(struct vfs_handle_struct *handle,
@@ -518,14 +685,53 @@ static struct tevent_req *vfs_gluster_pwrite_send(struct vfs_handle_struct
 						  const void *data, size_t n,
 						  off_t offset)
 {
+	struct tevent_req *req = NULL;
+	struct glusterfs_aio_state *state = NULL;
+	int ret = 0;
+
+#ifndef HAVE_EVENTFD
 	errno = ENOTSUP;
 	return NULL;
+#endif
+
+	req = tevent_req_create(mem_ctx, &state, struct glusterfs_aio_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	if (!init_gluster_aio(handle)) {
+		tevent_req_error(req, EIO);
+		return tevent_req_post(req, ev);
+	}
+	ret = glfs_pwrite_async(*(glfs_fd_t **)VFS_FETCH_FSP_EXTENSION(handle,
+				fsp), data, n, offset, 0, aio_glusterfs_done,
+				req);
+	if (ret < 0) {
+		tevent_req_error(req, -ret);
+		return tevent_req_post(req, ev);
+	}
+	return req;
 }
 
-static ssize_t vfs_gluster_pwrite_recv(struct tevent_req *req, int *err)
+static ssize_t vfs_gluster_recv(struct tevent_req *req, int *err)
 {
+	struct glusterfs_aio_state *state = NULL;
+
+#ifndef HAVE_EVENTFD
 	errno = ENOTSUP;
 	return -1;
+#endif
+	state = tevent_req_data(req, struct glusterfs_aio_state);
+	if (state == NULL) {
+		return -1;
+	}
+
+	if (tevent_req_is_unix_error(req, err)) {
+		return -1;
+	}
+	if (state->ret == -1) {
+		*err = state->err;
+	}
+	return state->ret;
 }
 
 static off_t vfs_gluster_lseek(struct vfs_handle_struct *handle,
@@ -570,14 +776,38 @@ static struct tevent_req *vfs_gluster_fsync_send(struct vfs_handle_struct
 						 struct tevent_context *ev,
 						 files_struct *fsp)
 {
+	struct tevent_req *req = NULL;
+	struct glusterfs_aio_state *state = NULL;
+	int ret = 0;
+
+#ifndef HAVE_EVENTFD
 	errno = ENOTSUP;
 	return NULL;
+#endif
+
+	req = tevent_req_create(mem_ctx, &state, struct glusterfs_aio_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	if (!init_gluster_aio(handle)) {
+		tevent_req_error(req, EIO);
+		return tevent_req_post(req, ev);
+	}
+	ret = glfs_fsync_async(*(glfs_fd_t **)VFS_FETCH_FSP_EXTENSION(handle,
+				fsp), aio_glusterfs_done, req);
+	if (ret < 0) {
+		tevent_req_error(req, -ret);
+		return tevent_req_post(req, ev);
+	}
+	return req;
 }
 
 static int vfs_gluster_fsync_recv(struct tevent_req *req, int *err)
 {
-	errno = ENOTSUP;
-	return -1;
+	/*
+	 * Use implicit conversion ssize_t->int
+	 */
+	return vfs_gluster_recv(req, err);
 }
 
 static int vfs_gluster_stat(struct vfs_handle_struct *handle,
@@ -1530,11 +1760,11 @@ static struct vfs_fn_pointers glusterfs_fns = {
 	.read_fn = vfs_gluster_read,
 	.pread_fn = vfs_gluster_pread,
 	.pread_send_fn = vfs_gluster_pread_send,
-	.pread_recv_fn = vfs_gluster_pread_recv,
+	.pread_recv_fn = vfs_gluster_recv,
 	.write_fn = vfs_gluster_write,
 	.pwrite_fn = vfs_gluster_pwrite,
 	.pwrite_send_fn = vfs_gluster_pwrite_send,
-	.pwrite_recv_fn = vfs_gluster_pwrite_recv,
+	.pwrite_recv_fn = vfs_gluster_recv,
 	.lseek_fn = vfs_gluster_lseek,
 	.sendfile_fn = vfs_gluster_sendfile,
 	.recvfile_fn = vfs_gluster_recvfile,
