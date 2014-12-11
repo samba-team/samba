@@ -411,6 +411,11 @@ for s in signseal_options:
 plantestsuite("samba3.blackbox.rpcclient_samlogon", "s3member:local", [os.path.join(samba3srcdir, "script/tests/test_rpcclient_samlogon.sh"),
 								       "$DC_USERNAME", "$DC_PASSWORD", "ncacn_np:$DC_SERVER", configuration])
 
+plantestsuite("samba3.blackbox.net_dom_join_fail_dc", "s3dc",
+              [os.path.join(samba3srcdir, "script/tests/test_net_dom_join_fail_dc.sh"),
+               "$USERNAME", "$PASSWORD", "$SERVER", "$PREFIX/net_dom_join_fail_dc",
+               configuration])
+
 options_list = ["", "-e"]
 for options in options_list:
     plantestsuite("samba3.blackbox.smbclient_krb5 old ccache %s" % options, "ktest:local",
