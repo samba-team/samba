@@ -58,13 +58,6 @@ if subprocess.call(perl + ["-e", "eval require Test::More;"]) == 0:
 else:
     has_perl_test_more = False
 
-try:
-    from subunit.run import TestProgram
-except ImportError:
-    has_system_subunit_run = False
-else:
-    has_system_subunit_run = True
-
 python = os.getenv("PYTHON", "python")
 
 # Set a default value, overridden if we find a working one on the system
@@ -166,13 +159,7 @@ def planpythontestsuite(env, module, name=None, extra_path=[]):
     if name is None:
         name = module
     pypath = list(extra_path)
-    if not has_system_subunit_run:
-        pypath.extend([
-            "%s/lib/subunit/python" % srcdir(),
-            "%s/lib/testtools" % srcdir(),
-            "%s/lib/extras" % srcdir(),
-            "%s/lib/mimeparse" % srcdir()])
-    args = [python, "-m", "subunit.run", "$LISTOPT", "$LOADLIST", module]
+    args = [python, "-m", "samba.subunit.run", "$LISTOPT", "$LOADLIST", module]
     if pypath:
         args.insert(0, "PYTHONPATH=%s" % ":".join(["$PYTHONPATH"] + pypath))
     plantestsuite_loadlist(name, env, args)
