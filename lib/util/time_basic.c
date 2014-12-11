@@ -66,7 +66,7 @@ char *timeval_str_buf(const struct timeval *tp, bool rfc5424, bool hires,
 		       (rfc5424 ?
 			"%04d-%02d-%02dT%02d:%02d:%02d" :
 			"%04d/%02d/%02d %02d:%02d:%02d"),
-		       1900 + tm->tm_year, tm->tm_mon, tm->tm_mday,
+		       1900 + tm->tm_year, tm->tm_mon + 1, tm->tm_mday,
 		       tm->tm_hour, tm->tm_min, tm->tm_sec);
 
 	if ((rfc5424 || hires) && (len < sizeof(dst->buf))) {
