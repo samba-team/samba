@@ -211,7 +211,7 @@ struct netr_SamInfo3 *netsamlogon_cache_get(TALLOC_CTX *mem_ctx, const struct do
 {
 	struct netr_SamInfo3 *info3 = NULL;
 	TDB_DATA data;
-	fstring keystr, tmp;
+	fstring keystr;
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct netsamlogoncache_entry r;
@@ -223,7 +223,7 @@ struct netr_SamInfo3 *netsamlogon_cache_get(TALLOC_CTX *mem_ctx, const struct do
 	}
 
 	/* Prepare key as DOMAIN-SID/USER-RID string */
-	slprintf(keystr, sizeof(keystr), "%s", sid_to_fstring(tmp, user_sid));
+	sid_to_fstring(keystr, user_sid);
 	DEBUG(10,("netsamlogon_cache_get: SID [%s]\n", keystr));
 	data = tdb_fetch_bystring( netsamlogon_tdb, keystr );
 
