@@ -2132,51 +2132,6 @@ static char *vfswrap_realpath(vfs_handle_struct *handle, const char *path)
 	return result;
 }
 
-static NTSTATUS vfswrap_notify_watch(vfs_handle_struct *vfs_handle,
-				     struct sys_notify_context *ctx,
-				     const char *path,
-				     uint32_t *filter,
-				     uint32_t *subdir_filter,
-				     void (*callback)(struct sys_notify_context *ctx, 
-						      void *private_data,
-						      struct notify_event *ev),
-				     void *private_data, void *handle)
-{
-	/*
-	 * So far inotify is the only supported default notify mechanism. If
-	 * another platform like the the BSD's or a proprietary Unix comes
-	 * along and wants another default, we can play the same trick we
-	 * played with Posix ACLs.
-	 *
-	 * Until that is the case, hard-code inotify here.
-	 */
-#ifdef HAVE_INOTIFY
-	if (lp_kernel_change_notify()) {
-		int ret;
-		if (!lp_parm_bool(-1, "notify", "inotify", True)) {
-			return NT_STATUS_INVALID_SYSTEM_SERVICE;
-		}
-		/*
-		 * "ctx->private_data" is not obvious as a talloc context
-		 * here. Without modifying the VFS we don't have a mem_ctx
-		 * available here, and ctx->private_data was used by
-		 * inotify_watch before it got a real talloc parent.
-		 */
-		ret = inotify_watch(ctx->private_data, ctx,
-				    path, filter, subdir_filter,
-				    callback, private_data, handle);
-		if (ret != 0) {
-			return map_nt_error_from_unix(ret);
-		}
-		return NT_STATUS_OK;
-	}
-#endif
-	/*
-	 * Do nothing, leave everything to notify_internal.c
-	 */
-	return NT_STATUS_OK;
-}
-
 static int vfswrap_chflags(vfs_handle_struct *handle, const char *path,
 			   unsigned int flags)
 {
@@ -2643,7 +2598,6 @@ static struct vfs_fn_pointers vfs_default_fns = {
 	.link_fn = vfswrap_link,
 	.mknod_fn = vfswrap_mknod,
 	.realpath_fn = vfswrap_realpath,
-	.notify_watch_fn = vfswrap_notify_watch,
 	.chflags_fn = vfswrap_chflags,
 	.file_id_create_fn = vfswrap_file_id_create,
 	.streaminfo_fn = vfswrap_streaminfo,

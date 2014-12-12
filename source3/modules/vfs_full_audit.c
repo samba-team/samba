@@ -158,7 +158,6 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_LINK,
 	SMB_VFS_OP_MKNOD,
 	SMB_VFS_OP_REALPATH,
-	SMB_VFS_OP_NOTIFY_WATCH,
 	SMB_VFS_OP_CHFLAGS,
 	SMB_VFS_OP_FILE_ID_CREATE,
 	SMB_VFS_OP_STREAMINFO,
@@ -286,7 +285,6 @@ static struct {
 	{ SMB_VFS_OP_LINK,	"link" },
 	{ SMB_VFS_OP_MKNOD,	"mknod" },
 	{ SMB_VFS_OP_REALPATH,	"realpath" },
-	{ SMB_VFS_OP_NOTIFY_WATCH, "notify_watch" },
 	{ SMB_VFS_OP_CHFLAGS,	"chflags" },
 	{ SMB_VFS_OP_FILE_ID_CREATE,	"file_id_create" },
 	{ SMB_VFS_OP_STREAMINFO,	"streaminfo" },
@@ -1630,27 +1628,6 @@ static char *smb_full_audit_realpath(vfs_handle_struct *handle,
 	return result;
 }
 
-static NTSTATUS smb_full_audit_notify_watch(struct vfs_handle_struct *handle,
-			struct sys_notify_context *ctx,
-			const char *path,
-			uint32_t *filter,
-			uint32_t *subdir_filter,
-			void (*callback)(struct sys_notify_context *ctx,
-					void *private_data,
-					struct notify_event *ev),
-			void *private_data, void *handle_p)
-{
-	NTSTATUS result;
-
-	result = SMB_VFS_NEXT_NOTIFY_WATCH(handle, ctx, path,
-					   filter, subdir_filter, callback,
-					   private_data, handle_p);
-
-	do_log(SMB_VFS_OP_NOTIFY_WATCH, NT_STATUS_IS_OK(result), handle, "");
-
-	return result;
-}
-
 static int smb_full_audit_chflags(vfs_handle_struct *handle,
 			    const char *path, unsigned int flags)
 {
@@ -2305,7 +2282,6 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.link_fn = smb_full_audit_link,
 	.mknod_fn = smb_full_audit_mknod,
 	.realpath_fn = smb_full_audit_realpath,
-	.notify_watch_fn = smb_full_audit_notify_watch,
 	.chflags_fn = smb_full_audit_chflags,
 	.file_id_create_fn = smb_full_audit_file_id_create,
 	.streaminfo_fn = smb_full_audit_streaminfo,

@@ -1039,18 +1039,6 @@ static int vfs_gluster_mknod(struct vfs_handle_struct *handle, const char *path,
 	return glfs_mknod(handle->data, path, mode, dev);
 }
 
-static NTSTATUS vfs_gluster_notify_watch(struct vfs_handle_struct *handle,
-					 struct sys_notify_context *ctx,
-					 const char *path, uint32_t *filter,
-					 uint32_t *subdir_filter,
-					 void (*callback) (struct sys_notify_context *ctx,
-							   void *private_data,
-							   struct notify_event *ev),
-					 void *private_data, void *handle_p)
-{
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
 static int vfs_gluster_chflags(struct vfs_handle_struct *handle,
 			       const char *path, unsigned int flags)
 {
@@ -1760,7 +1748,6 @@ static struct vfs_fn_pointers glusterfs_fns = {
 	.link_fn = vfs_gluster_link,
 	.mknod_fn = vfs_gluster_mknod,
 	.realpath_fn = vfs_gluster_realpath,
-	.notify_watch_fn = vfs_gluster_notify_watch,
 	.chflags_fn = vfs_gluster_chflags,
 	.file_id_create_fn = NULL,
 	.copy_chunk_send_fn = NULL,

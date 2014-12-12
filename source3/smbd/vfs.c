@@ -2053,22 +2053,6 @@ char *smb_vfs_call_realpath(struct vfs_handle_struct *handle, const char *path)
 	return handle->fns->realpath_fn(handle, path);
 }
 
-NTSTATUS smb_vfs_call_notify_watch(struct vfs_handle_struct *handle,
-				   struct sys_notify_context *ctx,
-				   const char *path,
-				   uint32_t *filter,
-				   uint32_t *subdir_filter,
-				   void (*callback)(struct sys_notify_context *ctx,
-						    void *private_data,
-						    struct notify_event *ev),
-				   void *private_data, void *handle_p)
-{
-	VFS_FIND(notify_watch);
-	return handle->fns->notify_watch_fn(handle, ctx, path,
-					    filter, subdir_filter, callback,
-					    private_data, handle_p);
-}
-
 int smb_vfs_call_chflags(struct vfs_handle_struct *handle, const char *path,
 			 unsigned int flags)
 {

@@ -490,19 +490,6 @@ static char *skel_realpath(vfs_handle_struct *handle, const char *path)
 	return NULL;
 }
 
-static NTSTATUS skel_notify_watch(struct vfs_handle_struct *handle,
-				  struct sys_notify_context *ctx,
-				  const char *path,
-				  uint32_t *filter,
-				  uint32_t *subdir_filter,
-				  void (*callback) (struct sys_notify_context *
-						    ctx, void *private_data,
-						    struct notify_event *ev),
-				  void *private_data, void *handle_p)
-{
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
 static int skel_chflags(vfs_handle_struct *handle, const char *path,
 			uint flags)
 {
@@ -918,7 +905,6 @@ struct vfs_fn_pointers skel_opaque_fns = {
 	.link_fn = skel_link,
 	.mknod_fn = skel_mknod,
 	.realpath_fn = skel_realpath,
-	.notify_watch_fn = skel_notify_watch,
 	.chflags_fn = skel_chflags,
 	.file_id_create_fn = skel_file_id_create,
 	.copy_chunk_send_fn = skel_copy_chunk_send,

@@ -1483,34 +1483,6 @@ static char *smb_time_audit_realpath(vfs_handle_struct *handle,
 	return result;
 }
 
-static NTSTATUS smb_time_audit_notify_watch(struct vfs_handle_struct *handle,
-			struct sys_notify_context *ctx,
-			const char *path,
-			uint32_t *filter,
-			uint32_t *subdir_filter,
-			void (*callback)(struct sys_notify_context *ctx,
-					void *private_data,
-					struct notify_event *ev),
-			void *private_data, void *handle_p)
-{
-	NTSTATUS result;
-	struct timespec ts1,ts2;
-	double timediff;
-
-	clock_gettime_mono(&ts1);
-	result = SMB_VFS_NEXT_NOTIFY_WATCH(handle, ctx, path,
-					   filter, subdir_filter, callback,
-					   private_data, handle_p);
-	clock_gettime_mono(&ts2);
-	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
-
-	if (timediff > audit_timeout) {
-		smb_time_audit_log_fname("notify_watch", timediff, path);
-	}
-
-	return result;
-}
-
 static int smb_time_audit_chflags(vfs_handle_struct *handle,
 				  const char *path, unsigned int flags)
 {
@@ -2507,7 +2479,6 @@ static struct vfs_fn_pointers vfs_time_audit_fns = {
 	.link_fn = smb_time_audit_link,
 	.mknod_fn = smb_time_audit_mknod,
 	.realpath_fn = smb_time_audit_realpath,
-	.notify_watch_fn = smb_time_audit_notify_watch,
 	.chflags_fn = smb_time_audit_chflags,
 	.file_id_create_fn = smb_time_audit_file_id_create,
 	.streaminfo_fn = smb_time_audit_streaminfo,

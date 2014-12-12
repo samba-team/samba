@@ -166,6 +166,7 @@
 /* Version 33 - change fallocate mode flags param from enum->uint32_t */
 /* Version 33 - Add snapshot create/delete calls */
 /* Version 33 - Add OS X SMB2 AAPL copyfile extension flag to fsp */
+/* Version 33 - Remove notify_watch_fn */
 
 #define SMB_VFS_INTERFACE_VERSION 33
 
@@ -626,16 +627,6 @@ struct vfs_fn_pointers {
 	int (*link_fn)(struct vfs_handle_struct *handle, const char *oldpath, const char *newpath);
 	int (*mknod_fn)(struct vfs_handle_struct *handle, const char *path, mode_t mode, SMB_DEV_T dev);
 	char *(*realpath_fn)(struct vfs_handle_struct *handle, const char *path);
-	NTSTATUS (*notify_watch_fn)(struct vfs_handle_struct *handle,
-				    struct sys_notify_context *ctx,
-				    const char *path,
-				    uint32_t *filter,
-				    uint32_t *subdir_filter,
-				    void (*callback)(struct sys_notify_context *ctx,
-						     void *private_data,
-						     struct notify_event *ev),
-				    void *private_data, 
-				    void *handle_p);
 	int (*chflags_fn)(struct vfs_handle_struct *handle, const char *path, unsigned int flags);
 	struct file_id (*file_id_create_fn)(struct vfs_handle_struct *handle,
 					    const SMB_STRUCT_STAT *sbuf);
@@ -1093,15 +1084,6 @@ int smb_vfs_call_link(struct vfs_handle_struct *handle, const char *oldpath,
 int smb_vfs_call_mknod(struct vfs_handle_struct *handle, const char *path,
 		       mode_t mode, SMB_DEV_T dev);
 char *smb_vfs_call_realpath(struct vfs_handle_struct *handle, const char *path);
-NTSTATUS smb_vfs_call_notify_watch(struct vfs_handle_struct *handle,
-				   struct sys_notify_context *ctx,
-				   const char *name,
-				   uint32_t *filter,
-				   uint32_t *subdir_filter,
-				   void (*callback)(struct sys_notify_context *ctx,
-						    void *private_data,
-						    struct notify_event *ev),
-				   void *private_data, void *handle_p);
 int smb_vfs_call_chflags(struct vfs_handle_struct *handle, const char *path,
 			 unsigned int flags);
 struct file_id smb_vfs_call_file_id_create(struct vfs_handle_struct *handle,

@@ -1011,23 +1011,6 @@ static char *cephwrap_realpath(struct vfs_handle_struct *handle,  const char *pa
 	return result;
 }
 
-static NTSTATUS cephwrap_notify_watch(struct vfs_handle_struct *vfs_handle,
-				     struct sys_notify_context *ctx,
-				     const char *path,
-				     uint32_t *filter,
-				     uint32_t *subdir_filter,
-				     void (*callback)(struct sys_notify_context *ctx,
-						      void *private_data,
-						      struct notify_event *ev),
-				     void *private_data,
-				     void *handle_p)
-{
-	/*
-	 * We cannot call inotify on files the kernel does not know about
-	 */
-	return NT_STATUS_OK;
-}
-
 static int cephwrap_chflags(struct vfs_handle_struct *handle, const char *path,
 			   unsigned int flags)
 {
@@ -1303,7 +1286,6 @@ static struct vfs_fn_pointers ceph_fns = {
 	.link_fn = cephwrap_link,
 	.mknod_fn = cephwrap_mknod,
 	.realpath_fn = cephwrap_realpath,
-	.notify_watch_fn = cephwrap_notify_watch,
 	.chflags_fn = cephwrap_chflags,
 	.get_real_filename_fn = cephwrap_get_real_filename,
 	.connectpath_fn = cephwrap_connectpath,
