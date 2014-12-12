@@ -1029,6 +1029,39 @@ static int vfs_gluster_set_offline(struct vfs_handle_struct *handle,
 
 #define GLUSTER_ACL_SIZE(n)       (GLUSTER_ACL_HEADER_SIZE + (n * GLUSTER_ACL_ENTRY_SIZE))
 
+static SMB_ACL_T mode_to_smb_acls(const struct stat *mode, TALLOC_CTX *mem_ctx)
+{
+	struct smb_acl_t *result;
+	int count;
+
+	count = 3;
+	result = sys_acl_init(mem_ctx);
+	if (!result) {
+		errno = ENOMEM;
+		return NULL;
+	}
+
+	result->acl = talloc_array(result, struct smb_acl_entry, count);
+	if (!result->acl) {
+		errno = ENOMEM;
+		talloc_free(result);
+		return NULL;
+	}
+
+	result->count = count;
+
+	result->acl[0].a_type = SMB_ACL_USER_OBJ;
+	result->acl[0].a_perm = (mode->st_mode & S_IRWXU) >> 6;;
+
+	result->acl[1].a_type = SMB_ACL_GROUP_OBJ;
+	result->acl[1].a_perm = (mode->st_mode & S_IRWXG) >> 3;;
+
+	result->acl[2].a_type = SMB_ACL_OTHER;
+	result->acl[2].a_perm = mode->st_mode & S_IRWXO;;
+
+	return result;
+}
+
 static SMB_ACL_T gluster_to_smb_acl(const char *buf, size_t xattr_size,
 				    TALLOC_CTX *mem_ctx)
 {
@@ -1296,6 +1329,7 @@ static SMB_ACL_T vfs_gluster_sys_acl_get_file(struct vfs_handle_struct *handle,
 					      TALLOC_CTX *mem_ctx)
 {
 	struct smb_acl_t *result;
+	struct stat st;
 	char *buf;
 	const char *key;
 	ssize_t ret, size = GLUSTER_ACL_SIZE(20);
@@ -1328,6 +1362,18 @@ static SMB_ACL_T vfs_gluster_sys_acl_get_file(struct vfs_handle_struct *handle,
 			ret = glfs_getxattr(handle->data, path_p, key, buf, ret);
 		}
 	}
+
+	/* retrieving the ACL from the xattr has finally failed, do a
+	 * mode-to-acl mapping */
+
+	if (ret == -1 && errno == ENODATA) {
+		ret = glfs_stat(handle->data, path_p, &st);
+		if (ret == 0) {
+			result = mode_to_smb_acls(&st, mem_ctx);
+			return result;
+		}
+	}
+
 	if (ret <= 0) {
 		return NULL;
 	}
@@ -1342,6 +1388,7 @@ static SMB_ACL_T vfs_gluster_sys_acl_get_fd(struct vfs_handle_struct *handle,
 					    TALLOC_CTX *mem_ctx)
 {
 	struct smb_acl_t *result;
+	struct stat st;
 	ssize_t ret, size = GLUSTER_ACL_SIZE(20);
 	char *buf;
 	glfs_fd_t *glfd;
@@ -1365,6 +1412,18 @@ static SMB_ACL_T vfs_gluster_sys_acl_get_fd(struct vfs_handle_struct *handle,
 					     buf, ret);
 		}
 	}
+
+	/* retrieving the ACL from the xattr has finally failed, do a
+	 * mode-to-acl mapping */
+
+	if (ret == -1 && errno == ENODATA) {
+		ret = glfs_fstat(glfd, &st);
+		if (ret == 0) {
+			result = mode_to_smb_acls(&st, mem_ctx);
+			return result;
+		}
+	}
+
 	if (ret <= 0) {
 		return NULL;
 	}
