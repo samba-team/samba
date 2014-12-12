@@ -101,6 +101,7 @@ NTSTATUS winbindd_dsgetdcname_recv(struct tevent_req *req,
 {
 	struct winbindd_dsgetdcname_state *state = tevent_req_data(
 		req, struct winbindd_dsgetdcname_state);
+	struct GUID_txt_buf guid_str_buf;
 	char *guid_str;
 	NTSTATUS status;
 
@@ -109,10 +110,6 @@ NTSTATUS winbindd_dsgetdcname_recv(struct tevent_req *req,
 		return status;
 	}
 
-	guid_str = GUID_string(talloc_tos(), &state->dc_info->domain_guid);
-	if (guid_str == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
 
 	fstrcpy(response->data.dsgetdcname.dc_unc,
 		state->dc_info->dc_unc);
@@ -120,8 +117,11 @@ NTSTATUS winbindd_dsgetdcname_recv(struct tevent_req *req,
 		state->dc_info->dc_address);
 	response->data.dsgetdcname.dc_address_type =
 		state->dc_info->dc_address_type;
+
+	guid_str = GUID_buf_string(&state->dc_info->domain_guid,
+				   &guid_str_buf);
 	fstrcpy(response->data.dsgetdcname.domain_guid, guid_str);
-	TALLOC_FREE(guid_str);
+
 	fstrcpy(response->data.dsgetdcname.domain_name,
 		state->dc_info->domain_name);
 	fstrcpy(response->data.dsgetdcname.forest_name,
