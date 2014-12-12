@@ -241,15 +241,15 @@ struct netr_SamInfo3 *netsamlogon_cache_get(TALLOC_CTX *mem_ctx, const struct do
 	ndr_err = ndr_pull_struct_blob(&blob, mem_ctx, &r,
 				      (ndr_pull_flags_fn_t)ndr_pull_netsamlogoncache_entry);
 
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_DEBUG(netsamlogoncache_entry, &r);
-	}
-
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		DEBUG(0,("netsamlogon_cache_get: failed to pull entry from cache\n"));
 		tdb_delete_bystring(netsamlogon_tdb, keystr);
 		TALLOC_FREE(info3);
 		goto done;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_DEBUG(netsamlogoncache_entry, &r);
 	}
 
 	info3 = (struct netr_SamInfo3 *)talloc_memdup(mem_ctx, &r.info3,
