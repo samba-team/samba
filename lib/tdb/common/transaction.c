@@ -421,7 +421,7 @@ static int _tdb_transaction_start(struct tdb_context *tdb,
 				  enum tdb_lock_flags lockflags)
 {
 	/* some sanity checks */
-	if (tdb->read_only || (tdb->flags & (TDB_INTERNAL|TDB_MUTEX_LOCKING))
+	if (tdb->read_only || (tdb->flags & TDB_INTERNAL)
 	    || tdb->traverse_read) {
 		TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_transaction_start: cannot start a transaction on a read-only or internal db\n"));
 		tdb->ecode = TDB_ERR_EINVAL;
