@@ -1990,11 +1990,6 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 	if (x != NULL) {
 		signing_required = x->global->signing_required;
 		encryption_required = x->global->encryption_required;
-
-		if (opcode == SMB2_OP_SESSSETUP &&
-		    x->global->signing_key.length > 0) {
-			signing_required = true;
-		}
 	}
 
 	req->do_signing = false;

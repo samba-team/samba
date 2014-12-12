@@ -422,6 +422,10 @@ static NTSTATUS smbd_smb2_reauth_generic_return(struct smbXsrv_session *session,
 
 	conn_clear_vuid_caches(smb2req->sconn, session->compat->vuid);
 
+	if (security_session_user_level(session_info, NULL) >= SECURITY_USER) {
+		smb2req->do_signing = true;
+	}
+
 	*out_session_id = session->global->session_wire_id;
 
 	return NT_STATUS_OK;
