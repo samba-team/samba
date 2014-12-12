@@ -46,6 +46,7 @@ tdb1_unit_tests = [
     'run-mutex-allrecord-bench',
     'run-mutex-allrecord-trylock',
     'run-mutex-allrecord-block',
+    'run-mutex-transaction1',
     'run-mutex-die',
     'run-mutex1',
 ]
