@@ -120,7 +120,6 @@ static void addrec_db(void)
 
 #if TRANSACTION_PROB
 	if (in_transaction == 0 &&
-	    ((tdb_get_flags(db) & TDB_MUTEX_LOCKING) == 0) &&
 	    (always_transaction || random() % TRANSACTION_PROB == 0)) {
 		if (tdb_transaction_start(db) != 0) {
 			fatal("tdb_transaction_start failed");
