@@ -2655,7 +2655,12 @@ struct tevent_req *smb2cli_req_create(TALLOC_CTX *mem_ctx,
 		state->smb2.should_encrypt = session->smb2->should_encrypt;
 
 		if (cmd == SMB2_OP_SESSSETUP &&
-		    session->smb2->signing_key.length != 0) {
+		    session->smb2_channel.signing_key.length == 0 &&
+		    session->smb2->signing_key.length != 0)
+		{
+			/*
+			 * a session bind needs to be signed
+			 */
 			state->smb2.should_sign = true;
 		}
 
