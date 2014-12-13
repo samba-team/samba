@@ -19,7 +19,22 @@
 
 #include "includes.h"
 #include "lib/torture/torture.h"
-#include <subunit/child.h>
+
+static void subunit_send_event(char const * const event,
+		char const * const name,
+		char const * const details)
+{
+	if (NULL == details) {
+		printf("%s: %s\n", event, name);
+	} else {
+		printf("%s: %s [\n", event, name);
+		printf("%s", details);
+		if (details[strlen(details) - 1] != '\n')
+			puts("");
+		puts("]");
+	}
+	fflush(stdout);
+}
 
 static void torture_subunit_suite_start(struct torture_context *ctx,
 				struct torture_suite *suite)
@@ -66,7 +81,7 @@ static void torture_subunit_test_start(struct torture_context *context,
 			       struct torture_test *test)
 {
 	char *fullname = torture_subunit_test_name(context, context->active_tcase, context->active_test);
-	subunit_test_start(fullname);
+	subunit_send_event("test", fullname, NULL);
 	torture_subunit_report_time(context);
 	talloc_free(fullname);
 }
@@ -75,21 +90,23 @@ static void torture_subunit_test_result(struct torture_context *context,
 				enum torture_result res, const char *reason)
 {
 	char *fullname = torture_subunit_test_name(context, context->active_tcase, context->active_test);
+	const char *result_str = "unknown";
 	torture_subunit_report_time(context);
 	switch (res) {
 	case TORTURE_OK:
-		subunit_test_pass(fullname);
+		result_str = "success";
 		break;
 	case TORTURE_FAIL:
-		subunit_test_fail(fullname, reason);
+		result_str = "failure";
 		break;
 	case TORTURE_ERROR:
-		subunit_test_error(fullname, reason);
+		result_str = "error";
 		break;
 	case TORTURE_SKIP:
-		subunit_test_skip(fullname, reason);
+		result_str = "skip";
 		break;
 	}
+	subunit_send_event(result_str, fullname, reason);
 	talloc_free(fullname);
 }
 

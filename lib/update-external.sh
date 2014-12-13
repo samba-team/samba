@@ -12,8 +12,6 @@ WORKDIR="`mktemp -d`"
 echo "Updating subunit..."
 git clone git://github.com/testing-cabal/subunit "$WORKDIR/subunit"
 rm -rf "$WORKDIR/subunit/.git"
-# Preserve wscript file
-cp "$LIBDIR/subunit/c/wscript" "$WORKDIR/subunit/c/wscript"
 rsync -avz --delete "$WORKDIR/subunit/" "$LIBDIR/subunit/"
 
 echo "Updating testtools..."

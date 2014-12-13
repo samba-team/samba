@@ -157,7 +157,6 @@ def configure(conf):
     conf.RECURSE('lib/util/charset')
     conf.RECURSE('source4/auth')
     conf.RECURSE('nsswitch')
-    conf.RECURSE('lib/subunit/c')
     conf.RECURSE('libcli/smbreadline')
     conf.RECURSE('lib/crypto')
     conf.RECURSE('pidl')
