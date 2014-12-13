@@ -570,8 +570,7 @@ static struct messaging_rec *messaging_rec_dup(TALLOC_CTX *mem_ctx,
 
 	result->fds = NULL;
 	if (result->num_fds > 0) {
-		result->fds = talloc_array(result, int64_t, result->num_fds);
-		memcpy(result->fds, rec->fds, fds_size);
+		result->fds = talloc_memdup(result, rec->fds, fds_size);
 	}
 
 	return result;
