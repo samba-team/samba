@@ -9,8 +9,6 @@ import os
 sys.path.insert(0, "bin/python")
 import samba
 from samba.tests.subunitrun import SubunitOptions, TestProgram
-samba.ensure_external_module("testtools", "testtools")
-samba.ensure_external_module("subunit", "subunit/python")
 
 import samba.getopt as options
 
