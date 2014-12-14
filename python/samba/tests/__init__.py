@@ -26,19 +26,16 @@ from samba.samdb import SamDB
 from samba import credentials
 import subprocess
 import tempfile
+import unittest
 
-samba.ensure_external_module("mimeparse", "mimeparse")
-samba.ensure_external_module("extras", "extras")
-samba.ensure_external_module("testtools", "testtools")
-
-# Other modules import these two classes from here, for convenience:
-from testtools.testcase import (
-    TestCase as TesttoolsTestCase,
-    TestSkipped,
-    )
+try:
+    from unittest import SkipTest as TestSkipped
+except ImportError:
+    class TestSkipped(Exception):
+        """Test skipped."""
 
 
-class TestCase(TesttoolsTestCase):
+class TestCase(unittest.TestCase):
     """A Samba test case."""
 
     def setUp(self):
@@ -57,7 +54,7 @@ class TestCase(TesttoolsTestCase):
         return cmdline_credentials
 
 
-class LdbTestCase(TesttoolsTestCase):
+class LdbTestCase(unittest.TestCase):
     """Trivial test case for running tests against a LDB."""
 
     def setUp(self):
