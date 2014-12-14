@@ -21,9 +21,7 @@
 
 import samba
 import samba.tests
-from samba.tests import TestSkipped, TestCaseInTempDir
 
-import errno
 import os
 import re
 import subprocess
@@ -35,6 +33,7 @@ class TestCase(samba.tests.TestCaseInTempDir):
         parameters = list(parameters)
         parameters.sort()
         return message + '\n\n    %s' % ('\n    '.join(parameters))
+
 
 def get_documented_parameters(sourcedir):
     path = os.path.join(sourcedir, "bin", "default", "docs-xml", "smbdotconf")

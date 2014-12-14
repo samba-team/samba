@@ -29,9 +29,9 @@ import tempfile
 import unittest
 
 try:
-    from unittest import SkipTest as TestSkipped
+    from unittest import SkipTest
 except ImportError:
-    class TestSkipped(Exception):
+    class SkipTest(Exception):
         """Test skipped."""
 
 
