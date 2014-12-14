@@ -537,6 +537,8 @@ class TestProgram(object):
             argv = sys.argv
         if stdout is None:
             stdout = sys.stdout
+        if testRunner is None:
+            testRunner = SubunitTestRunner()
 
         self.exit = exit
         self.failfast = failfast
@@ -729,5 +731,4 @@ class TestProgram(object):
 
 
 if __name__ == '__main__':
-    TestProgram(module=None, argv=sys.argv, testRunner=SubunitTestRunner(),
-        stdout=sys.stdout)
+    TestProgram(module=None, argv=sys.argv, stdout=sys.stdout)
