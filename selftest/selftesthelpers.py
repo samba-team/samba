@@ -60,25 +60,7 @@ else:
 
 python = os.getenv("PYTHON", "python")
 
-# Set a default value, overridden if we find a working one on the system
-tap2subunit = "PYTHONPATH=%s/lib/subunit/python:%s/lib/testtools:%s/lib/extras:%s/lib/mimeparse %s %s/lib/subunit/filters/tap2subunit" % (srcdir(), srcdir(), srcdir(), srcdir(), python, srcdir())
-subunit2to1 = "PYTHONPATH=%s/lib/subunit/python:%s/lib/testtools:%s/lib/extras:%s/lib/mimeparse %s %s/lib/subunit/filters/subunit-2to1" % (srcdir(), srcdir(), srcdir(), srcdir(), python, srcdir())
-
-sub = subprocess.Popen("tap2subunit", stdin=subprocess.PIPE,
-    stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-sub.communicate("")
-
-if sub.returncode == 0:
-    cmd = "echo -ne \"1..1\nok 1 # skip doesn't seem to work yet\n\" | tap2subunit | grep skip"
-    sub = subprocess.Popen(cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE,
-        stderr=subprocess.PIPE, shell=True)
-    if sub.returncode == 0:
-        tap2subunit = "tap2subunit"
-
-def to_subunit1(subunit_version):
-    if subunit_version == 1:
-        return ""
-    return " | " + subunit2to1
+tap2subunit = python + " " + os.path.join(srcdir(), "selftest", "tap2subunit")
 
 
 def valgrindify(cmdline):
@@ -89,7 +71,7 @@ def valgrindify(cmdline):
     return valgrind + " " + cmdline
 
 
-def plantestsuite(name, env, cmdline, subunit_version=1):
+def plantestsuite(name, env, cmdline):
     """Plan a test suite.
 
     :param name: Testsuite name
@@ -103,7 +85,7 @@ def plantestsuite(name, env, cmdline, subunit_version=1):
         cmdline = " ".join(cmdline)
     if "$LISTOPT" in cmdline:
         raise AssertionError("test %s supports --list, but not --load-list" % name)
-    print cmdline + " 2>&1 " + to_subunit1(subunit_version) + " | " + add_prefix(name, env)
+    print cmdline + " 2>&1 " + " | " + add_prefix(name, env)
 
 
 def add_prefix(prefix, env, support_list=False):
@@ -114,7 +96,7 @@ def add_prefix(prefix, env, support_list=False):
     return "%s/selftest/filter-subunit %s--fail-on-empty --prefix=\"%s.\" --suffix=\"(%s)\"" % (srcdir(), listopt, prefix, env)
 
 
-def plantestsuite_loadlist(name, env, cmdline, subunit_version=1):
+def plantestsuite_loadlist(name, env, cmdline):
     print "-- TEST-LOADLIST --"
     if env == "none":
         fullname = name
@@ -130,7 +112,7 @@ def plantestsuite_loadlist(name, env, cmdline, subunit_version=1):
     if not "$LOADLIST" in cmdline:
         raise AssertionError("loadlist test %s does not support --load-list" % name)
     print ("%s | %s" % (cmdline.replace("$LOADLIST", ""), add_prefix(name, env, support_list))).replace("$LISTOPT", "--list")
-    print cmdline.replace("$LISTOPT", "") + " 2>&1 " + to_subunit1(subunit_version) + " | " + add_prefix(name, env, False)
+    print cmdline.replace("$LISTOPT", "") + " 2>&1 " + " | " + add_prefix(name, env, False)
 
 
 def skiptestsuite(name, reason):
