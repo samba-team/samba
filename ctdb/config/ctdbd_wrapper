@@ -155,7 +155,7 @@ kill_ctdbd ()
 start()
 {
     if _session=$(ctdbd_is_running) ; then
-	echo $"CTDB is already running"
+	echo "CTDB is already running"
 	return 0
     fi
 
