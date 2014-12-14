@@ -17,6 +17,11 @@
 
 """Subunit test protocol."""
 
+import samba
+
+samba.ensure_third_party_module("iso8601", "pyiso8601")
+import iso8601
+
 import unittest
 
 
