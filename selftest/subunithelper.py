@@ -21,7 +21,7 @@ import re
 import sys
 from samba import subunit
 from samba.subunit.run import TestProtocolClient
-from subunit import iso8601
+import iso8601
 import unittest
 
 VALID_RESULTS = ['success', 'successful', 'failure', 'fail', 'skip', 'knownfail', 'error', 'xfail', 'skip-testsuite', 'testsuite-failure', 'testsuite-xfail', 'testsuite-success', 'testsuite-error', 'uxsuccess', 'testsuite-uxsuccess']
