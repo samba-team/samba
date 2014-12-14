@@ -9,11 +9,6 @@ THIRD_PARTY_DIR="`dirname $0`/../third_party"
 LIBDIR="`dirname $0`"
 WORKDIR="`mktemp -d`"
 
-echo "Updating testtools..."
-git clone git://github.com/testing-cabal/testtools "$WORKDIR/testtools"
-rm -rf "$WORKDIR/testtools/.git"
-rsync -avz --delete "$WORKDIR/testtools/" "$LIBDIR/testtools/"
-
 echo "Updating dnspython..."
 git clone git://www.dnspython.org/dnspython.git "$WORKDIR/dnspython"
 rm -rf "$WORKDIR/dnspython/.git"
