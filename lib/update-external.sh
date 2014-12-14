@@ -24,11 +24,6 @@ git clone git://github.com/madler/zlib "$WORKDIR/zlib"
 rm -rf "$WORKDIR/zlib/.git"
 rsync --exclude=wscript -avz --delete "$WORKDIR/zlib/" "$THIRD_PARTY_DIR/zlib/"
 
-echo "Updating mimeparse..."
-svn co http://mimeparse.googlecode.com/svn/trunk/ "$WORKDIR/mimeparse"
-rm -rf "$WORKDIR/mimeparse/.svn"
-rsync -avz --delete "$WORKDIR/mimeparse/" "$LIBDIR/mimeparse/"
-
 echo "Updating pyiso8601..."
 hg clone https://bitbucket.org/micktwomey/pyiso8601 "$WORKDIR/pyiso8601"
 rm -rf "$WORKDIR/pyiso8601/.hg"
