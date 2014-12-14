@@ -194,7 +194,14 @@ def parse_results(msg_ops, statistics, fh):
 class SubunitOps(TestProtocolClient,TestsuiteEnabledTestResult):
 
     def progress(self, count, whence):
-        pass
+        if whence == subunit.PROGRESS_POP:
+            self._stream.write("progress: pop\n")
+        elif whence == subunit.PROGRESS_PUSH:
+            self._stream.write("progress: push\n")
+        elif whence == subunit.PROGRESS_SET:
+            self._stream.write("progress: %d\n" % count)
+        elif whence == subunit.PROGRESS_CUR:
+            raise NotImplementedError
 
     # The following are Samba extensions:
     def start_testsuite(self, name):
