@@ -9,11 +9,6 @@ THIRD_PARTY_DIR="`dirname $0`/../third_party"
 LIBDIR="`dirname $0`"
 WORKDIR="`mktemp -d`"
 
-echo "Updating subunit..."
-git clone git://github.com/testing-cabal/subunit "$WORKDIR/subunit"
-rm -rf "$WORKDIR/subunit/.git"
-rsync -avz --delete "$WORKDIR/subunit/" "$LIBDIR/subunit/"
-
 echo "Updating testtools..."
 git clone git://github.com/testing-cabal/testtools "$WORKDIR/testtools"
 rm -rf "$WORKDIR/testtools/.git"
