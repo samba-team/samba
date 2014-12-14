@@ -354,22 +354,6 @@ def ensure_third_party_module(modulename, location):
             namespace="samba.third_party")
 
 
-def ensure_external_module(modulename, location):
-    """Add a location to sys.path if an external dependency can't be found.
-
-    :param modulename: Module name to import
-    :param location: Location to add to sys.path (can be relative to
-        ${srcdir}/lib)
-    """
-    # This is deprecated - please use ensure_third_party_module for
-    # new modules instead, and put them in third_party/.
-    try:
-        __import__(modulename)
-    except ImportError:
-        import_bundled_package(modulename, location,
-            source_tree_container="lib", namespace="samba.external")
-
-
 def dn_from_dns_name(dnsdomain):
     """return a DN from a DNS name domain/forest root"""
     return "DC=" + ",DC=".join(dnsdomain.split("."))
