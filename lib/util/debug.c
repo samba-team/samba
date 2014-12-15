@@ -708,18 +708,16 @@ void check_log_size( void )
 		(void)reopen_logs_internal();
 		if (state.fd > 2 && (fstat(state.fd, &st) == 0
 				     && st.st_size > maxlog)) {
-			char *name = NULL;
+			char name[strlen(state.debugf) + 5];
 
-			if (asprintf(&name, "%s.old", state.debugf ) < 0) {
-				return;
-			}
+			snprintf(name, sizeof(name), "%s.old", state.debugf);
+
 			(void)rename(state.debugf, name);
 
 			if (!reopen_logs_internal()) {
 				/* We failed to reopen a log - continue using the old name. */
 				(void)rename(name, state.debugf);
 			}
-			SAFE_FREE(name);
 		}
 	}
 
