@@ -40,6 +40,8 @@
 #include "librpc/gen_ndr/ndr_lsa.h"
 #include "librpc/gen_ndr/ndr_samr.h"
 #include "librpc/gen_ndr/ndr_irpc.h"
+#include "librpc/gen_ndr/ndr_winbind.h"
+#include "librpc/gen_ndr/ndr_winbind_c.h"
 #include "lib/socket/netif.h"
 
 static struct memcache *global_challenge_table;
@@ -1263,16 +1265,267 @@ static WERROR dcesrv_netr_GetDcName(struct dcesrv_call_state *dce_call, TALLOC_C
 	return WERR_OK;
 }
 
+struct dcesrv_netr_LogonControl_base_state {
+	struct dcesrv_call_state *dce_call;
 
-/*
-  netr_LogonControl2Ex
-*/
-static WERROR dcesrv_netr_LogonControl2Ex(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct netr_LogonControl2Ex *r)
+	TALLOC_CTX *mem_ctx;
+
+	struct netr_LogonControl2Ex r;
+
+	struct {
+		struct netr_LogonControl *l;
+		struct netr_LogonControl2 *l2;
+		struct netr_LogonControl2Ex *l2ex;
+	} _r;
+};
+
+static void dcesrv_netr_LogonControl_base_done(struct tevent_req *subreq);
+
+static WERROR dcesrv_netr_LogonControl_base_call(struct dcesrv_netr_LogonControl_base_state *state)
 {
-	return WERR_NOT_SUPPORTED;
+	struct dcesrv_connection *conn = state->dce_call->conn;
+	struct loadparm_context *lp_ctx = state->dce_call->conn->dce_ctx->lp_ctx;
+	struct auth_session_info *session_info = conn->auth_state.session_info;
+	enum security_user_level security_level;
+	struct dcerpc_binding_handle *irpc_handle;
+	struct tevent_req *subreq;
+	bool ok;
+
+	/* TODO: check for WERR_INVALID_COMPUTERNAME ? */
+
+	if (state->_r.l != NULL) {
+		/*
+		 * netr_LogonControl
+		 */
+		if (state->r.in.level == 0x00000002) {
+			return WERR_NOT_SUPPORTED;
+		} else if (state->r.in.level != 0x00000001) {
+			return WERR_INVALID_LEVEL;
+		}
+
+		switch (state->r.in.function_code) {
+		case NETLOGON_CONTROL_QUERY:
+		case NETLOGON_CONTROL_REPLICATE:
+		case NETLOGON_CONTROL_SYNCHRONIZE:
+		case NETLOGON_CONTROL_PDC_REPLICATE:
+		case NETLOGON_CONTROL_BREAKPOINT:
+		case NETLOGON_CONTROL_BACKUP_CHANGE_LOG:
+		case NETLOGON_CONTROL_TRUNCATE_LOG:
+			break;
+		default:
+			return WERR_NOT_SUPPORTED;
+		}
+	}
+
+	if (state->r.in.level < 0x00000001) {
+		return WERR_INVALID_LEVEL;
+	}
+
+	if (state->r.in.level > 0x00000004) {
+		return WERR_INVALID_LEVEL;
+	}
+
+	if (state->r.in.function_code == NETLOGON_CONTROL_QUERY) {
+		struct netr_NETLOGON_INFO_1 *info1 = NULL;
+		struct netr_NETLOGON_INFO_3 *info3 = NULL;
+
+		switch (state->r.in.level) {
+		case 0x00000001:
+			info1 = talloc_zero(state->mem_ctx,
+					    struct netr_NETLOGON_INFO_1);
+			if (info1 == NULL) {
+				return WERR_NOMEM;
+			}
+			state->r.out.query->info1 = info1;
+			return WERR_OK;
+
+		case 0x00000003:
+			info3 = talloc_zero(state->mem_ctx,
+					    struct netr_NETLOGON_INFO_3);
+			if (info3 == NULL) {
+				return WERR_NOMEM;
+			}
+			state->r.out.query->info3 = info3;
+			return WERR_OK;
+
+		default:
+			return WERR_INVALID_PARAMETER;
+		}
+	}
+
+	/*
+	 * Some validations are done before the access check
+	 * and some after the access check
+	 */
+	security_level = security_session_user_level(session_info, NULL);
+	if (security_level < SECURITY_ADMINISTRATOR) {
+		return WERR_ACCESS_DENIED;
+	}
+
+	if (state->_r.l2 != NULL) {
+		/*
+		 * netr_LogonControl2
+		 */
+		if (state->r.in.level == 0x00000004) {
+			return WERR_INVALID_LEVEL;
+		}
+	}
+
+	switch (state->r.in.level) {
+	case 0x00000001:
+		break;
+
+	case 0x00000002:
+		switch (state->r.in.function_code) {
+		case NETLOGON_CONTROL_REDISCOVER:
+		case NETLOGON_CONTROL_TC_QUERY:
+		case NETLOGON_CONTROL_TC_VERIFY:
+			break;
+		default:
+			return WERR_INVALID_PARAMETER;
+		}
+
+		break;
+
+	case 0x00000003:
+		break;
+
+	case 0x00000004:
+		if (state->r.in.function_code != NETLOGON_CONTROL_FIND_USER) {
+			return WERR_INVALID_PARAMETER;
+		}
+
+		break;
+
+	default:
+		return WERR_INVALID_LEVEL;
+	}
+
+	switch (state->r.in.function_code) {
+	case NETLOGON_CONTROL_REDISCOVER:
+	case NETLOGON_CONTROL_TC_QUERY:
+	case NETLOGON_CONTROL_TC_VERIFY:
+		if (state->r.in.level != 2) {
+			return WERR_INVALID_PARAMETER;
+		}
+
+		if (state->r.in.data == NULL) {
+			return WERR_INVALID_PARAMETER;
+		}
+
+		if (state->r.in.data->domain == NULL) {
+			return WERR_INVALID_PARAMETER;
+		}
+
+		break;
+
+	case NETLOGON_CONTROL_CHANGE_PASSWORD:
+		if (state->r.in.level != 1) {
+			return WERR_INVALID_PARAMETER;
+		}
+
+		if (state->r.in.data == NULL) {
+			return WERR_INVALID_PARAMETER;
+		}
+
+		if (state->r.in.data->domain == NULL) {
+			return WERR_INVALID_PARAMETER;
+		}
+
+		ok = lpcfg_is_my_domain_or_realm(lp_ctx,
+						 state->r.in.data->domain);
+		if (!ok) {
+			struct ldb_context *sam_ctx;
+
+			sam_ctx = samdb_connect(state, state->dce_call->event_ctx,
+						lp_ctx, system_session(lp_ctx), 0);
+			if (sam_ctx == NULL) {
+				return WERR_DS_UNAVAILABLE;
+			}
+
+			/*
+			 * Secrets for trusted domains can only be triggered on
+			 * the PDC.
+			 */
+			ok = samdb_is_pdc(sam_ctx);
+			TALLOC_FREE(sam_ctx);
+			if (!ok) {
+				return WERR_INVALID_DOMAIN_ROLE;
+			}
+		}
+
+		break;
+	default:
+		return WERR_NOT_SUPPORTED;
+	}
+
+	irpc_handle = irpc_binding_handle_by_name(state,
+						  state->dce_call->msg_ctx,
+						  "winbind_server",
+						  &ndr_table_winbind);
+	if (irpc_handle == NULL) {
+		DEBUG(0,("Failed to get binding_handle for winbind_server task\n"));
+		state->dce_call->fault_code = DCERPC_FAULT_CANT_PERFORM;
+		return WERR_SERVICE_NOT_FOUND;
+	}
+
+	/*
+	 * 60 seconds timeout should be enough
+	 */
+	dcerpc_binding_handle_set_timeout(irpc_handle, 60);
+
+	subreq = dcerpc_winbind_LogonControl_send(state,
+						  state->dce_call->event_ctx,
+						  irpc_handle,
+						  state->r.in.function_code,
+						  state->r.in.level,
+						  state->r.in.data,
+						  state->r.out.query);
+	if (subreq == NULL) {
+		return WERR_NOMEM;
+	}
+	state->dce_call->state_flags |= DCESRV_CALL_STATE_FLAG_ASYNC;
+	tevent_req_set_callback(subreq,
+				dcesrv_netr_LogonControl_base_done,
+				state);
+
+	return WERR_OK;
 }
 
+static void dcesrv_netr_LogonControl_base_done(struct tevent_req *subreq)
+{
+	struct dcesrv_netr_LogonControl_base_state *state =
+		tevent_req_callback_data(subreq,
+		struct dcesrv_netr_LogonControl_base_state);
+	NTSTATUS status;
+
+	status = dcerpc_winbind_LogonControl_recv(subreq, state->mem_ctx,
+						  &state->r.out.result);
+	TALLOC_FREE(subreq);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
+		state->r.out.result = WERR_TIMEOUT;
+	} else if (!NT_STATUS_IS_OK(status)) {
+		state->dce_call->fault_code = DCERPC_FAULT_CANT_PERFORM;
+		DEBUG(0,(__location__ ": IRPC callback failed %s\n",
+			 nt_errstr(status)));
+	}
+
+	if (state->_r.l2ex != NULL) {
+		struct netr_LogonControl2Ex *r = state->_r.l2ex;
+		r->out.result = state->r.out.result;
+	} else if (state->_r.l2 != NULL) {
+		struct netr_LogonControl2 *r = state->_r.l2;
+		r->out.result = state->r.out.result;
+	} else if (state->_r.l != NULL) {
+		struct netr_LogonControl *r = state->_r.l;
+		r->out.result = state->r.out.result;
+	}
+
+	status = dcesrv_reply(state->dce_call);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,(__location__ ": dcesrv_reply() failed - %s\n", nt_errstr(status)));
+	}
+}
 
 /*
   netr_LogonControl
@@ -1280,28 +1533,33 @@ static WERROR dcesrv_netr_LogonControl2Ex(struct dcesrv_call_state *dce_call, TA
 static WERROR dcesrv_netr_LogonControl(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_LogonControl *r)
 {
-	struct netr_LogonControl2Ex r2;
+	struct dcesrv_netr_LogonControl_base_state *state;
 	WERROR werr;
 
-	if (r->in.level == 0x00000001) {
-		ZERO_STRUCT(r2);
+	state = talloc_zero(mem_ctx, struct dcesrv_netr_LogonControl_base_state);
+	if (state == NULL) {
+		return WERR_NOMEM;
+	}
 
-		r2.in.logon_server = r->in.logon_server;
-		r2.in.function_code = r->in.function_code;
-		r2.in.level = r->in.level;
-		r2.in.data = NULL;
-		r2.out.query = r->out.query;
+	state->dce_call = dce_call;
+	state->mem_ctx = mem_ctx;
 
-		werr = dcesrv_netr_LogonControl2Ex(dce_call, mem_ctx, &r2);
-	} else if (r->in.level == 0x00000002) {
-		werr = WERR_NOT_SUPPORTED;
-	} else {
-		werr = WERR_UNKNOWN_LEVEL;
+	state->r.in.logon_server = r->in.logon_server;
+	state->r.in.function_code = r->in.function_code;
+	state->r.in.level = r->in.level;
+	state->r.in.data = NULL;
+	state->r.out.query = r->out.query;
+
+	state->_r.l = r;
+
+	werr = dcesrv_netr_LogonControl_base_call(state);
+
+	if (dce_call->state_flags & DCESRV_CALL_STATE_FLAG_ASYNC) {
+		return werr;
 	}
 
 	return werr;
 }
-
 
 /*
   netr_LogonControl2
@@ -1309,18 +1567,59 @@ static WERROR dcesrv_netr_LogonControl(struct dcesrv_call_state *dce_call, TALLO
 static WERROR dcesrv_netr_LogonControl2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_LogonControl2 *r)
 {
-	struct netr_LogonControl2Ex r2;
+	struct dcesrv_netr_LogonControl_base_state *state;
 	WERROR werr;
 
-	ZERO_STRUCT(r2);
+	state = talloc_zero(mem_ctx, struct dcesrv_netr_LogonControl_base_state);
+	if (state == NULL) {
+		return WERR_NOMEM;
+	}
 
-	r2.in.logon_server = r->in.logon_server;
-	r2.in.function_code = r->in.function_code;
-	r2.in.level = r->in.level;
-	r2.in.data = r->in.data;
-	r2.out.query = r->out.query;
+	state->dce_call = dce_call;
+	state->mem_ctx = mem_ctx;
 
-	werr = dcesrv_netr_LogonControl2Ex(dce_call, mem_ctx, &r2);
+	state->r.in.logon_server = r->in.logon_server;
+	state->r.in.function_code = r->in.function_code;
+	state->r.in.level = r->in.level;
+	state->r.in.data = r->in.data;
+	state->r.out.query = r->out.query;
+
+	state->_r.l2 = r;
+
+	werr = dcesrv_netr_LogonControl_base_call(state);
+
+	if (dce_call->state_flags & DCESRV_CALL_STATE_FLAG_ASYNC) {
+		return werr;
+	}
+
+	return werr;
+}
+
+/*
+  netr_LogonControl2Ex
+*/
+static WERROR dcesrv_netr_LogonControl2Ex(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct netr_LogonControl2Ex *r)
+{
+	struct dcesrv_netr_LogonControl_base_state *state;
+	WERROR werr;
+
+	state = talloc_zero(mem_ctx, struct dcesrv_netr_LogonControl_base_state);
+	if (state == NULL) {
+		return WERR_NOMEM;
+	}
+
+	state->dce_call = dce_call;
+	state->mem_ctx = mem_ctx;
+
+	state->r = *r;
+	state->_r.l2ex = r;
+
+	werr = dcesrv_netr_LogonControl_base_call(state);
+
+	if (dce_call->state_flags & DCESRV_CALL_STATE_FLAG_ASYNC) {
+		return werr;
+	}
 
 	return werr;
 }
