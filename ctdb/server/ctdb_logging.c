@@ -310,6 +310,10 @@ int ctdb_set_child_logging(struct ctdb_context *ctdb)
 static void ctdb_tevent_logging(void *private_data,
 				enum tevent_debug_level level,
 				const char *fmt,
+				va_list ap) PRINTF_ATTRIBUTE(3, 0);
+static void ctdb_tevent_logging(void *private_data,
+				enum tevent_debug_level level,
+				const char *fmt,
 				va_list ap)
 {
 	enum debug_level lvl = DEBUG_CRIT;
@@ -330,7 +334,7 @@ static void ctdb_tevent_logging(void *private_data,
 	}
 
 	if (lvl <= DEBUGLEVEL) {
-		dbgtext(fmt, ap);
+		dbgtext_va(fmt, ap);
 	}
 }
 
