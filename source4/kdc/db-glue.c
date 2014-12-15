@@ -858,17 +858,27 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 	struct loadparm_context *lp_ctx = kdc_db_ctx->lp_ctx;
 	const char *dnsdomain;
 	const char *realm = lpcfg_realm(lp_ctx);
-	DATA_BLOB password_utf16;
-	struct samr_Password password_hash;
+	DATA_BLOB password_utf16 = data_blob_null;
+	DATA_BLOB password_utf8 = data_blob_null;
+	struct samr_Password _password_hash;
+	const struct samr_Password *password_hash = NULL;
 	const struct ldb_val *password_val;
 	struct trustAuthInOutBlob password_blob;
 	struct samba_kdc_entry *p;
 	bool use_previous;
 	uint32_t current_kvno;
+	uint32_t num_keys = 0;
 	enum ndr_err_code ndr_err;
 	int ret, trust_direction_flags;
 	unsigned int i;
 	struct AuthenticationInformationArray *auth_array;
+	uint32_t supported_enctypes = ENCTYPE_ARCFOUR_HMAC;
+
+	if (dsdb_functional_level(kdc_db_ctx->samdb) >= DS_DOMAIN_FUNCTION_2008) {
+		supported_enctypes = ldb_msg_find_attr_as_uint(msg,
+					"msDS-SupportedEncryptionTypes",
+					supported_enctypes);
+	}
 
 	p = talloc(mem_ctx, struct samba_kdc_entry);
 	if (!p) {
@@ -895,6 +905,29 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 			    &entry_ex->entry.created_by.principal,
 			    realm, "kadmin", NULL);
 
+	entry_ex->entry.principal = malloc(sizeof(*(entry_ex->entry.principal)));
+	if (entry_ex->entry.principal == NULL) {
+		krb5_clear_error_message(context);
+		ret = ENOMEM;
+		goto out;
+	}
+
+	ret = copy_Principal(principal, entry_ex->entry.principal);
+	if (ret) {
+		krb5_clear_error_message(context);
+		goto out;
+	}
+
+	/*
+	 * While we have copied the client principal, tests
+	 * show that Win2k3 returns the 'corrected' realm, not
+	 * the client-specified realm.  This code attempts to
+	 * replace the client principal's realm with the one
+	 * we determine from our records
+	 */
+
+	krb5_principal_set_realm(context, entry_ex->entry.principal, realm);
+
 	entry_ex->entry.valid_start = NULL;
 
 	trust_direction_flags = ldb_msg_find_attr_as_int(msg, "trustDirection", 0);
@@ -910,13 +943,15 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 	}
 
 	if (!password_val || !(trust_direction_flags & direction)) {
-		ret = ENOENT;
+		krb5_clear_error_message(context);
+		ret = HDB_ERR_NOENTRY;
 		goto out;
 	}
 
 	ndr_err = ndr_pull_struct_blob(password_val, mem_ctx, &password_blob,
 					   (ndr_pull_flags_fn_t)ndr_pull_trustAuthInOutBlob);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		krb5_clear_error_message(context);
 		ret = EINVAL;
 		goto out;
 	}
@@ -952,7 +987,8 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 	} else {
 		DEBUG(1,(__location__ ": Request for unknown kvno %u - current kvno is %u\n",
 			 kvno, current_kvno));
-		ret = ENOENT;
+		krb5_clear_error_message(context);
+		ret = HDB_ERR_NOENTRY;
 		goto out;
 	}
 
@@ -971,38 +1007,124 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 
 	for (i=0; i < auth_array->count; i++) {
 		if (auth_array->array[i].AuthType == TRUST_AUTH_TYPE_CLEAR) {
+			bool ok;
+
 			password_utf16 = data_blob_const(auth_array->array[i].AuthInfo.clear.password,
 							 auth_array->array[i].AuthInfo.clear.size);
-			/* In the future, generate all sorts of
-			 * hashes, but for now we can't safely convert
-			 * the random strings windows uses into
-			 * utf8 */
+			if (password_utf16.length == 0) {
+				break;
+			}
 
-			/* but as it is utf16 already, we can get the NT password/arcfour-hmac-md5 key */
-			mdfour(password_hash.hash, password_utf16.data, password_utf16.length);
+			if (supported_enctypes & ENCTYPE_ARCFOUR_HMAC) {
+				mdfour(_password_hash.hash, password_utf16.data, password_utf16.length);
+				if (password_hash == NULL) {
+					num_keys += 1;
+				}
+				password_hash = &_password_hash;
+			}
+
+			if (!(supported_enctypes & (ENC_HMAC_SHA1_96_AES128|ENC_HMAC_SHA1_96_AES256))) {
+				break;
+			}
+
+			ok = convert_string_talloc(mem_ctx,
+						   CH_UTF16MUNGED, CH_UTF8,
+						   password_utf16.data,
+						   password_utf16.length,
+						   (void *)&password_utf8.data,
+						   &password_utf8.length);
+			if (!ok) {
+				krb5_clear_error_message(context);
+				ret = ENOMEM;
+				goto out;
+			}
+
+			if (supported_enctypes & ENC_HMAC_SHA1_96_AES128) {
+				num_keys += 1;
+			}
+			if (supported_enctypes & ENC_HMAC_SHA1_96_AES256) {
+				num_keys += 1;
+			}
 			break;
 		} else if (auth_array->array[i].AuthType == TRUST_AUTH_TYPE_NT4OWF) {
-			password_hash = auth_array->array[i].AuthInfo.nt4owf.password;
-			break;
+			if (supported_enctypes & ENCTYPE_ARCFOUR_HMAC) {
+				password_hash = &auth_array->array[i].AuthInfo.nt4owf.password;
+				num_keys += 1;
+			}
 		}
 	}
 
-	if (i < auth_array->count) {
-		Key key;
-		/* Must have found a cleartext or MD4 password */
-		entry_ex->entry.keys.val = calloc(1, sizeof(Key));
+	/* Must have found a cleartext or MD4 password */
+	if (num_keys == 0) {
+		DEBUG(1,(__location__ ": no usable key found\n"));
+		krb5_clear_error_message(context);
+		ret = HDB_ERR_NOENTRY;
+		goto out;
+	}
 
-		key.mkvno = 0;
-		key.salt = NULL; /* No salt for this enc type */
+	entry_ex->entry.keys.val = calloc(num_keys, sizeof(Key));
+	if (entry_ex->entry.keys.val == NULL) {
+		krb5_clear_error_message(context);
+		ret = ENOMEM;
+		goto out;
+	}
 
-		if (entry_ex->entry.keys.val == NULL) {
-			ret = ENOMEM;
+	if (password_utf8.length != 0) {
+		Key key = {};
+		krb5_const_principal salt_principal = principal;
+		krb5_salt salt;
+		krb5_data cleartext_data;
+
+		cleartext_data.data = password_utf8.data;
+		cleartext_data.length = password_utf8.length;
+
+		ret = krb5_get_pw_salt(context,
+				       salt_principal,
+				       &salt);
+		if (ret != 0) {
 			goto out;
 		}
 
+		if (supported_enctypes & ENCTYPE_AES256_CTS_HMAC_SHA1_96) {
+			ret = krb5_string_to_key_data_salt(context,
+							   ENCTYPE_AES256_CTS_HMAC_SHA1_96,
+							   cleartext_data,
+							   salt,
+							   &key.key);
+			if (ret != 0) {
+				krb5_free_salt(context, salt);
+				goto out;
+			}
+
+			entry_ex->entry.keys.val[entry_ex->entry.keys.len] = key;
+			entry_ex->entry.keys.len++;
+		}
+
+		if (supported_enctypes & ENCTYPE_AES128_CTS_HMAC_SHA1_96) {
+			ret = krb5_string_to_key_data_salt(context,
+							   ENCTYPE_AES128_CTS_HMAC_SHA1_96,
+							   cleartext_data,
+							   salt,
+							   &key.key);
+			if (ret != 0) {
+				krb5_free_salt(context, salt);
+				goto out;
+			}
+
+			entry_ex->entry.keys.val[entry_ex->entry.keys.len] = key;
+			entry_ex->entry.keys.len++;
+		}
+
+		krb5_free_salt(context, salt);
+	}
+
+	if (password_hash != NULL) {
+		Key key = {};
+
 		ret = krb5_keyblock_init(context,
 					 ENCTYPE_ARCFOUR_HMAC,
-					 password_hash.hash, sizeof(password_hash.hash),
+					 password_hash->hash,
+					 sizeof(password_hash->hash),
 					 &key.key);
 		if (ret != 0) {
 			goto out;
@@ -1012,21 +1134,6 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 		entry_ex->entry.keys.len++;
 	}
 
-	entry_ex->entry.principal = malloc(sizeof(*(entry_ex->entry.principal)));
-
-	ret = copy_Principal(principal, entry_ex->entry.principal);
-	if (ret) {
-		krb5_clear_error_message(context);
-		goto out;
-	}
-
-	/* While we have copied the client principal, tests
-	 * show that Win2k3 returns the 'corrected' realm, not
-	 * the client-specified realm.  This code attempts to
-	 * replace the client principal's realm with the one
-	 * we determine from our records */
-
-	krb5_principal_set_realm(context, entry_ex->entry.principal, realm);
 	entry_ex->entry.flags = int2HDBFlags(0);
 	entry_ex->entry.flags.immutable = 1;
 	entry_ex->entry.flags.invalid = 0;
@@ -1307,7 +1414,11 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 						    principal, direction,
 						    realm_dn, flags, kvno, msg, entry_ex);
 		if (ret != 0) {
-			krb5_warnx(context, "samba_kdc_fetch: trust_message2entry failed");
+			krb5_warnx(context, "samba_kdc_fetch: trust_message2entry failed for %s",
+				   ldb_dn_get_linearized(msg->dn));
+			krb5_set_error_message(context, ret, "samba_kdc_fetch: "
+					       "trust_message2entry failed for %s",
+					       ldb_dn_get_linearized(msg->dn));
 		}
 		return ret;
 	}
