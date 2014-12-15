@@ -259,6 +259,10 @@ class ImmediateFail(Exception):
 
 class FilterOps(unittest.TestResult):
 
+    def __init__(self, *args, **kwargs):
+        super(FilterOps, self).__init__(*args, **kwargs)
+        self.failfast = False
+
     def control_msg(self, msg):
         pass # We regenerate control messages, so ignore this
 
