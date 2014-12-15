@@ -53,6 +53,10 @@ class TestCase(unittest.TestCase):
     def get_credentials(self):
         return cmdline_credentials
 
+    if not getattr(unittest.TestCase, "skipTest", None):
+        def skipTest(self, reason):
+            raise SkipTest(reason)
+
 
 class LdbTestCase(unittest.TestCase):
     """Trivial test case for running tests against a LDB."""
