@@ -102,8 +102,6 @@ class TestProtocolClient(unittest.TestResult):
             exc_info tuple.
         """
         self._addOutcome("error", test, error=error)
-        if self.failfast:
-            self.stop()
 
     def addExpectedFailure(self, test, error=None):
         """Report an expected failure in test test.
@@ -120,8 +118,6 @@ class TestProtocolClient(unittest.TestResult):
             exc_info tuple.
         """
         self._addOutcome("failure", test, error=error)
-        if self.failfast:
-            self.stop()
 
     def _addOutcome(self, outcome, test, error=None, error_permitted=True):
         """Report a failure in test test.
@@ -165,8 +161,6 @@ class TestProtocolClient(unittest.TestResult):
         """Report an unexpected success in test test.
         """
         self._addOutcome("uxsuccess", test, error_permitted=False)
-        if self.failfast:
-            self.stop()
 
     def _test_id(self, test):
         result = test.id()
@@ -279,7 +273,6 @@ else:
 #  - http://bugs.python.org/issue16709 is worked around, by sorting tests when
 #    discover is used.
 
-FAILFAST     = "  -f, --failfast   Stop on first failure\n"
 CATCHBREAK   = "  -c, --catch      Catch control-C and display results\n"
 BUFFEROUTPUT = "  -b, --buffer     Buffer stdout and stderr during test runs\n"
 
@@ -293,7 +286,7 @@ Options:
   -l, --list       List tests rather than executing them.
   --load-list      Specifies a file containing test ids, only tests matching
                    those ids are executed.
-%(failfast)s%(catchbreak)s%(buffer)s
+%(catchbreak)s%(buffer)s
 Examples:
   %(progName)s test_module               - run tests from test_module
   %(progName)s module.TestClass          - run tests from module.TestClass
@@ -306,7 +299,7 @@ Alternative Usage: %(progName)s discover [options]
 
 Options:
   -v, --verbose    Verbose output
-%(failfast)s%(catchbreak)s%(buffer)s  -s directory     Directory to start discovery ('.' default)
+s%(catchbreak)s%(buffer)s  -s directory     Directory to start discovery ('.' default)
   -p pattern       Pattern to match test files ('test*.py' default)
   -t directory     Top level directory of project (default to
                    start directory)
@@ -364,13 +357,6 @@ class TestResultDecorator(object):
 
     def addUnexpectedSuccess(self, test):
         return self.decorated.addUnexpectedSuccess(test)
-
-    def _get_failfast(self):
-        return getattr(self.decorated, 'failfast', False)
-
-    def _set_failfast(self, value):
-        self.decorated.failfast = value
-    failfast = property(_get_failfast, _set_failfast)
 
     def wasSuccessful(self):
         return self.decorated.wasSuccessful()
@@ -492,22 +478,18 @@ class AutoTimingTestResultDecorator(HookedTestResultDecorator):
 
 class SubunitTestRunner(object):
 
-    def __init__(self, verbosity=None, failfast=None, buffer=None, stream=None):
+    def __init__(self, verbosity=None, buffer=None, stream=None):
         """Create a SubunitTestRunner.
 
         :param verbosity: Ignored.
-        :param failfast: Stop running tests at the first failure.
         :param buffer: Ignored.
         """
-        self.failfast = failfast
         self.stream = stream or sys.stdout
 
     def run(self, test):
         "Run the given test case or test suite."
         result = TestProtocolClient(self.stream)
         result = AutoTimingTestResultDecorator(result)
-        if self.failfast is not None:
-            result.failfast = self.failfast
         test(result)
         return result
 
@@ -519,11 +501,11 @@ class TestProgram(object):
     USAGE = USAGE_AS_MAIN
 
     # defaults for testing
-    failfast = catchbreak = buffer = progName = None
+    catchbreak = buffer = progName = None
 
     def __init__(self, module=__name__, defaultTest=None, argv=None,
                     testRunner=None, testLoader=defaultTestLoader,
-                    exit=True, verbosity=1, failfast=None, catchbreak=None,
+                    exit=True, verbosity=1, catchbreak=None,
                     buffer=None, stdout=None):
         if module == __name__:
             self.module = None
@@ -541,7 +523,6 @@ class TestProgram(object):
             testRunner = SubunitTestRunner()
 
         self.exit = exit
-        self.failfast = failfast
         self.catchbreak = catchbreak
         self.verbosity = verbosity
         self.buffer = buffer
@@ -586,7 +567,7 @@ class TestProgram(object):
             return
 
         import getopt
-        long_opts = ['help', 'verbose', 'quiet', 'failfast', 'catch', 'buffer',
+        long_opts = ['help', 'verbose', 'quiet', 'catch', 'buffer',
             'list', 'load-list=']
         try:
             options, args = getopt.getopt(argv[1:], 'hHvqfcbl', long_opts)
@@ -597,10 +578,6 @@ class TestProgram(object):
                     self.verbosity = 0
                 if opt in ('-v','--verbose'):
                     self.verbosity = 2
-                if opt in ('-f','--failfast'):
-                    if self.failfast is None:
-                        self.failfast = True
-                    # Should this raise an exception if -f is not valid?
                 if opt in ('-c','--catch'):
                     if self.catchbreak is None:
                         self.catchbreak = True
@@ -642,10 +619,6 @@ class TestProgram(object):
         parser.prog = self.progName
         parser.add_option('-v', '--verbose', dest='verbose', default=False,
                           help='Verbose output', action='store_true')
-        if self.failfast != False:
-            parser.add_option('-f', '--failfast', dest='failfast', default=False,
-                              help='Stop on first fail or error',
-                              action='store_true')
         if self.catchbreak != False:
             parser.add_option('-c', '--catch', dest='catchbreak', default=False,
                               help='Catch ctrl-C and display results so far',
@@ -674,8 +647,6 @@ class TestProgram(object):
 
         # only set options from the parsing here
         # if they weren't set explicitly in the constructor
-        if self.failfast is None:
-            self.failfast = options.failfast
         if self.catchbreak is None:
             self.catchbreak = options.catchbreak
         if self.buffer is None:
@@ -714,10 +685,8 @@ class TestProgram(object):
     def usageExit(self, msg=None):
         if msg:
             print (msg)
-        usage = {'progName': self.progName, 'catchbreak': '', 'failfast': '',
+        usage = {'progName': self.progName, 'catchbreak': '',
                  'buffer': ''}
-        if self.failfast != False:
-            usage['failfast'] = FAILFAST
         if self.catchbreak != False:
             usage['catchbreak'] = CATCHBREAK
         if self.buffer != False:
