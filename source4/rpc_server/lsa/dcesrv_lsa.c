@@ -1600,13 +1600,12 @@ static NTSTATUS update_trust_user(TALLOC_CTX *mem_ctx,
 
 
 static NTSTATUS setInfoTrustedDomain_base(struct dcesrv_call_state *dce_call,
-					  struct dcesrv_handle *p_handle,
+					  struct lsa_policy_state *p_state,
 					  TALLOC_CTX *mem_ctx,
 					  struct ldb_message *dom_msg,
 					  enum lsa_TrustDomInfoEnum level,
 					  union lsa_TrustedDomainInfo *info)
 {
-	struct lsa_policy_state *p_state = p_handle->data;
 	uint32_t *posix_offset = NULL;
 	struct lsa_TrustDomainInfoInfoEx *info_ex = NULL;
 	struct lsa_TrustDomainInfoAuthInfo *auth_info = NULL;
@@ -1942,7 +1941,7 @@ static NTSTATUS dcesrv_lsa_SetInformationTrustedDomain(
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	return setInfoTrustedDomain_base(dce_call, h, mem_ctx,
+	return setInfoTrustedDomain_base(dce_call, td_state->policy, mem_ctx,
 					 msgs[0], r->in.level, r->in.info);
 }
 
@@ -2160,7 +2159,7 @@ static NTSTATUS dcesrv_lsa_SetTrustedDomainInfoByName(struct dcesrv_call_state *
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	return setInfoTrustedDomain_base(dce_call, policy_handle, mem_ctx,
+	return setInfoTrustedDomain_base(dce_call, policy_state, mem_ctx,
 					 msgs[0], r->in.level, r->in.info);
 }
 
