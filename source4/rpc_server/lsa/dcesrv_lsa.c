@@ -1779,10 +1779,14 @@ static NTSTATUS setInfoTrustedDomain_base(struct dcesrv_call_state *dce_call,
 		}
 
 		if (info_ex->trust_direction & LSA_TRUST_DIRECTION_INBOUND) {
-			add_incoming = true;
+			if (auth_info != NULL && trustAuthIncoming.length > 0) {
+				add_incoming = true;
+			}
 		}
 		if (info_ex->trust_direction & LSA_TRUST_DIRECTION_OUTBOUND) {
-			add_outgoing = true;
+			if (auth_info != NULL && trustAuthOutgoing.length > 0) {
+				add_outgoing = true;
+			}
 		}
 
 		if ((origdir & LSA_TRUST_DIRECTION_INBOUND) &&
@@ -1830,28 +1834,32 @@ static NTSTATUS setInfoTrustedDomain_base(struct dcesrv_call_state *dce_call,
 		}
 	}
 
-	if (add_incoming && trustAuthIncoming.data) {
+	if (add_incoming || del_incoming) {
 		ret = ldb_msg_add_empty(msg, "trustAuthIncoming",
 					LDB_FLAG_MOD_REPLACE, NULL);
 		if (ret != LDB_SUCCESS) {
 			return NT_STATUS_NO_MEMORY;
 		}
-		ret = ldb_msg_add_value(msg, "trustAuthIncoming",
-					&trustAuthIncoming, NULL);
-		if (ret != LDB_SUCCESS) {
-			return NT_STATUS_NO_MEMORY;
+		if (add_incoming) {
+			ret = ldb_msg_add_value(msg, "trustAuthIncoming",
+						&trustAuthIncoming, NULL);
+			if (ret != LDB_SUCCESS) {
+				return NT_STATUS_NO_MEMORY;
+			}
 		}
 	}
-	if (add_outgoing && trustAuthOutgoing.data) {
+	if (add_outgoing || del_outgoing) {
 		ret = ldb_msg_add_empty(msg, "trustAuthOutgoing",
 					LDB_FLAG_MOD_REPLACE, NULL);
 		if (ret != LDB_SUCCESS) {
 			return NT_STATUS_NO_MEMORY;
 		}
-		ret = ldb_msg_add_value(msg, "trustAuthOutgoing",
-					&trustAuthOutgoing, NULL);
-		if (ret != LDB_SUCCESS) {
-			return NT_STATUS_NO_MEMORY;
+		if (add_outgoing) {
+			ret = ldb_msg_add_value(msg, "trustAuthOutgoing",
+						&trustAuthOutgoing, NULL);
+			if (ret != LDB_SUCCESS) {
+				return NT_STATUS_NO_MEMORY;
+			}
 		}
 	}
 
