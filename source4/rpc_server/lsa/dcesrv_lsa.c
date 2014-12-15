@@ -4159,6 +4159,7 @@ static NTSTATUS check_ft_info(TALLOC_CTX *mem_ctx,
 
 		nrec = &new_fti->records[new_fti_idx].record;
 		dns_name = NULL;
+		nb_name = NULL;
 		tln_conflict = false;
 		sid_conflict = false;
 		nb_conflict = false;
@@ -4237,6 +4238,7 @@ static NTSTATUS check_ft_info(TALLOC_CTX *mem_ctx,
 				sid_conflict = true;
 			}
 			if (!(trec->flags & LSA_NB_DISABLED_ADMIN) &&
+			    (nb_name != NULL) &&
 			    strcasecmp_m(trec->data.info.netbios_name.string,
 					 nb_name) == 0) {
 				nb_conflict = true;
