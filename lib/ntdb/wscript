@@ -211,13 +211,13 @@ def build(bld):
                                  deps='ntdb-test-helpers ntdb-api-helpers ntdb-testing',
                                  install=False)
 
-        if not bld.CONFIG_SET('USING_SYSTEM_PYNTDB'):
-            bld.SAMBA_PYTHON('pyntdb',
-                             source='pyntdb.c',
-                             deps='ntdb',
-                             enabled=not bld.env.disable_python,
-                             realname='ntdb.so',
-                             cflags='-DPACKAGE_VERSION=\"%s\"' % VERSION)
+    if not bld.CONFIG_SET('USING_SYSTEM_PYNTDB'):
+        bld.SAMBA_PYTHON('pyntdb',
+                         source='pyntdb.c',
+                         deps='ntdb',
+                         enabled=not bld.env.disable_python,
+                         realname='ntdb.so',
+                         cflags='-DPACKAGE_VERSION=\"%s\"' % VERSION)
 
 def testonly(ctx):
     '''run ntdb testsuite'''
