@@ -1302,11 +1302,18 @@ static struct tevent_req *cli_session_setup_kerberos_send(
 	rc = spnego_gen_krb5_negTokenInit(state, principal, 0, &state->negTokenTarg,
 				     &state->session_key_krb5, 0, NULL, NULL);
 	if (rc) {
-		DEBUG(1, ("cli_session_setup_kerberos: "
-			  "spnego_gen_krb5_negTokenInit failed: %s\n",
-			  error_message(rc)));
+		NTSTATUS status;
+
 		state->ads_status = ADS_ERROR_KRB5(rc);
-		tevent_req_nterror(req, NT_STATUS_UNSUCCESSFUL);
+		status = ads_ntstatus(state->ads_status);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_UNSUCCESSFUL)) {
+			status = NT_STATUS_LOGON_FAILURE;
+			state->ads_status = ADS_ERROR_NT(status);
+		}
+		DEBUG(1, ("cli_session_setup_kerberos: "
+			  "spnego_gen_krb5_negTokenInit failed: %s - %s\n",
+			  error_message(rc), nt_errstr(status)));
+		tevent_req_nterror(req, status);
 		return tevent_req_post(req, ev);
 	}
 
@@ -1384,9 +1391,18 @@ static ADS_STATUS cli_session_setup_kerberos_recv(struct tevent_req *req)
 	NTSTATUS status;
 
 	if (tevent_req_is_nterror(req, &status)) {
-		return ADS_ERROR_NT(status);
+		ADS_STATUS ads = state->ads_status;
+
+		if (!ADS_ERR_OK(state->ads_status)) {
+			ads = state->ads_status;
+		} else {
+			ads = ADS_ERROR_NT(status);
+		}
+		tevent_req_received(req);
+		return ads;
 	}
-	return state->ads_status;
+	tevent_req_received(req);
+	return ADS_SUCCESS;
 }
 
 #endif	/* HAVE_KRB5 */
