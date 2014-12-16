@@ -175,12 +175,15 @@ static bool torture_decode_compare_pac(struct torture_context *tctx,
 	return true;
 }
 
-static bool torture_winbind_pac(struct torture_context *tctx)
+static bool torture_winbind_pac(struct torture_context *tctx,
+				const char *sasl_mech,
+				const char *mech)
 {
 	NTSTATUS status;
 
 	struct gensec_security *gensec_client_context;
 	struct gensec_security *gensec_server_context;
+	struct cli_credentials *machine_credentials;
 
 	DATA_BLOB client_to_server, server_to_client;	
 
@@ -191,6 +194,14 @@ static bool torture_winbind_pac(struct torture_context *tctx)
 	TALLOC_CTX *tmp_ctx = talloc_new(tctx);
 	torture_assert(tctx, tmp_ctx != NULL, "talloc_new() failed");
 
+	machine_credentials = cli_credentials_init(tmp_ctx);
+	torture_assert(tctx, machine_credentials != NULL, "cli_credentials_init() failed");
+
+	cli_credentials_set_conf(machine_credentials, tctx->lp_ctx);
+
+	status = cli_credentials_set_machine_account(machine_credentials, tctx->lp_ctx);
+	torture_assert_ntstatus_ok(tctx, status, " cli_credentials_set_machine_account() (for server) failed");
+	
 	auth_context = talloc_zero(tmp_ctx, struct auth4_context);
 	torture_assert(tctx, auth_context != NULL, "talloc_new() failed");
 
@@ -200,25 +211,36 @@ static bool torture_winbind_pac(struct torture_context *tctx)
 				     lpcfg_gensec_settings(tctx, tctx->lp_ctx));
 	torture_assert_ntstatus_ok(tctx, status, "gensec_client_start (client) failed");
 
-	status = gensec_set_target_hostname(gensec_client_context, cli_credentials_get_workstation(cmdline_credentials));
+	status = gensec_set_target_hostname(gensec_client_context, cli_credentials_get_workstation(machine_credentials));
 	torture_assert_ntstatus_ok(tctx, status, "gensec_set_target_hostname (client) failed");
 
 	status = gensec_set_credentials(gensec_client_context, cmdline_credentials);
 	torture_assert_ntstatus_ok(tctx, status, "gensec_set_credentials (client) failed");
 
-	status = gensec_start_mech_by_sasl_name(gensec_client_context, "GSSAPI");
-	torture_assert_ntstatus_ok(tctx, status, "gensec_start_mech_by_sasl_name (client) failed");
+	if (sasl_mech) {
+		status = gensec_start_mech_by_sasl_name(gensec_client_context, sasl_mech);
+		torture_assert_ntstatus_ok(tctx, status, "gensec_start_mech_by_sasl_name (client) failed");
+	} else {
+		status = gensec_start_mech_by_name(gensec_client_context, mech);
+		torture_assert_ntstatus_ok(tctx, status, "gensec_start_mech_by_name (client) failed");
+	}
+
 
 	status = gensec_server_start(tctx,
 				     lpcfg_gensec_settings(tctx, tctx->lp_ctx),
 				     auth_context, &gensec_server_context);
 	torture_assert_ntstatus_ok(tctx, status, "gensec_server_start (server) failed");
 
-	status = gensec_set_credentials(gensec_server_context, cmdline_credentials);
+	status = gensec_set_credentials(gensec_server_context, machine_credentials);
 	torture_assert_ntstatus_ok(tctx, status, "gensec_set_credentials (server) failed");
 
-	status = gensec_start_mech_by_sasl_name(gensec_server_context, "GSSAPI");
-	torture_assert_ntstatus_ok(tctx, status, "gensec_start_mech_by_sasl_name (server) failed");
+	if (sasl_mech) {
+		status = gensec_start_mech_by_sasl_name(gensec_server_context, sasl_mech);
+		torture_assert_ntstatus_ok(tctx, status, "gensec_start_mech_by_sasl_name (server) failed");
+	} else {
+		status = gensec_start_mech_by_name(gensec_server_context, mech);
+		torture_assert_ntstatus_ok(tctx, status, "gensec_start_mech_by_name (server) failed");
+	}
 
 	server_to_client = data_blob(NULL, 0);
 	
@@ -253,14 +275,39 @@ static bool torture_winbind_pac(struct torture_context *tctx)
 	return true;
 }
 
+static bool torture_winbind_pac_gssapi(struct torture_context *tctx)
+{
+	return torture_winbind_pac(tctx, "GSSAPI", NULL);
+}	
+
+static bool torture_winbind_pac_gss_spnego(struct torture_context *tctx)
+{
+	return torture_winbind_pac(tctx, "GSS-SPNEGO", NULL);
+}	
+
+static bool torture_winbind_pac_krb5(struct torture_context *tctx)
+{
+	return torture_winbind_pac(tctx, NULL, "krb5");
+}	
+
 NTSTATUS torture_winbind_init(void)
 {
 	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "winbind");
-
+	struct torture_suite *pac_suite;
 	torture_suite_add_suite(suite, torture_winbind_struct_init());
 	torture_suite_add_suite(suite, torture_wbclient());
-	torture_suite_add_simple_test(suite,
-				      "pac", torture_winbind_pac);
+
+	pac_suite = torture_suite_create(talloc_autofree_context(), "pac");
+	torture_suite_add_simple_test(pac_suite,
+				      "GSSAPI", torture_winbind_pac_gssapi);
+	torture_suite_add_simple_test(pac_suite,
+				      "GSS-SPNEGO", torture_winbind_pac_gss_spnego);
+	torture_suite_add_simple_test(pac_suite,
+				      "krb5", torture_winbind_pac_krb5);
+
+	pac_suite->description = talloc_strdup(suite, "Winbind Kerberos PAC tests");
+
+	torture_suite_add_suite(suite, pac_suite);
 
 	suite->description = talloc_strdup(suite, "WINBIND tests");
 
