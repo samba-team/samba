@@ -191,6 +191,9 @@ enum netr_SchannelType cli_credentials_get_secure_channel_type(struct cli_creden
 time_t cli_credentials_get_password_last_changed_time(struct cli_credentials *cred);
 void cli_credentials_set_kvno(struct cli_credentials *cred,
 			      int kvno);
+bool cli_credentials_set_utf16_password(struct cli_credentials *cred,
+					const DATA_BLOB *password_utf16,
+					enum credentials_obtained obtained);
 bool cli_credentials_set_nt_hash(struct cli_credentials *cred,
 				 const struct samr_Password *nt_hash, 
 				 enum credentials_obtained obtained);
