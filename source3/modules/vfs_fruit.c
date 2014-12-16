@@ -3389,7 +3389,6 @@ static struct vfs_fn_pointers vfs_fruit_fns = {
 	.fstat_fn = fruit_fstat,
 	.streaminfo_fn = fruit_streaminfo,
 	.ntimes_fn = fruit_ntimes,
-	.unlink_fn = fruit_unlink,
 	.ftruncate_fn = fruit_ftruncate,
 	.fallocate_fn = fruit_fallocate,
 	.create_file_fn = fruit_create_file,
