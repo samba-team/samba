@@ -902,10 +902,24 @@ static NTSTATUS get_trust_credentials(struct winbindd_domain *domain,
 	const struct winbindd_domain *creds_domain = NULL;
 	struct cli_credentials *creds;
 	NTSTATUS status;
+	bool force_machine_account = false;
 
 	/* If we are a DC and this is not our own domain */
 
-	if (IS_DC && netlogon) {
+	if (!domain->active_directory) {
+		if (!netlogon) {
+			/*
+			 * For non active directory domains
+			 * we can only use NTLMSSP for SMB.
+			 *
+			 * But the trust account is not allowed
+			 * to use SMB with NTLMSSP.
+			 */
+			force_machine_account = true;
+		}
+	}
+
+	if (IS_DC && !force_machine_account) {
 		creds_domain = domain;
 	} else {
 		creds_domain = find_our_domain();
@@ -922,15 +936,13 @@ static NTSTATUS get_trust_credentials(struct winbindd_domain *domain,
 		goto ipc_fallback;
 	}
 
-	if (lp_server_role() == ROLE_ACTIVE_DIRECTORY_DC) {
-		cli_credentials_set_kerberos_state(creds,
-						   CRED_MUST_USE_KERBEROS);
-	}
-
 	if (domain->primary && lp_security() == SEC_ADS) {
 		cli_credentials_set_kerberos_state(creds,
 						   CRED_AUTO_USE_KERBEROS);
-	} else if (!domain->active_directory) {
+	} else if (domain->active_directory) {
+		cli_credentials_set_kerberos_state(creds,
+						   CRED_MUST_USE_KERBEROS);
+	} else {
 		cli_credentials_set_kerberos_state(creds,
 						   CRED_DONT_USE_KERBEROS);
 	}
