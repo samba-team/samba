@@ -1063,22 +1063,36 @@ full:
 
 ***************************************************************************/
 
- bool dbgtext( const char *format_str, ... )
+static inline bool __dbgtext_va(const char *format_str, va_list ap) PRINTF_ATTRIBUTE(1,0);
+static inline bool __dbgtext_va(const char *format_str, va_list ap)
 {
-	va_list ap;
 	char *msgbuf = NULL;
 	bool ret = true;
 	int res;
 
-	va_start(ap, format_str);
 	res = vasprintf(&msgbuf, format_str, ap);
-	va_end(ap);
-
 	if (res != -1) {
 		format_debug_text(msgbuf);
 	} else {
 		ret = false;
 	}
 	SAFE_FREE(msgbuf);
+	return ret;
+}
+
+bool dbgtext_va(const char *format_str, va_list ap)
+{
+	return __dbgtext_va(format_str, ap);
+}
+
+bool dbgtext(const char *format_str, ... )
+{
+	va_list ap;
+	bool ret;
+
+	va_start(ap, format_str);
+	ret = __dbgtext_va(format_str, ap);
+	va_end(ap);
+
 	return ret;
 }
