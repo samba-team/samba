@@ -302,7 +302,8 @@ static int samba_dsdb_init(struct ldb_module *module)
 	const char *extended_dn_module_openldap = "extended_dn_out_openldap";
 	const char *extended_dn_in_module = "extended_dn_in";
 
-	static const char *modules_list2[] = {"show_deleted",
+	static const char *modules_list2[] = {"dns_notify",
+					      "show_deleted",
 					      "new_partition",
 					      "partition",
 					      NULL };

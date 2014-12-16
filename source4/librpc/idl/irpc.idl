@@ -207,4 +207,15 @@ import "misc.idl", "security.idl", "nbt.idl", "netlogon.idl", "server_id.idl";
 		[in] uint32 dns_ttl,
 		[in,out,ref] NL_DNS_NAME_INFO_ARRAY *dns_names
 		);
+
+	/******************************************************
+	 * Management calls for the dns server
+	 ******************************************************/
+	/**
+	 * Force internal DNS server to reload the DNS zones.
+	 *
+	 * Called when zones are added or deleted through RPC
+	 * or replicated by DRS.
+	 */
+	NTSTATUS dnssrv_reload_dns_zones();
 }

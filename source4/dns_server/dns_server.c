@@ -45,6 +45,8 @@
 #include "lib/util/tevent_werror.h"
 #include "auth/auth.h"
 #include "auth/credentials/credentials.h"
+#include "librpc/gen_ndr/ndr_irpc.h"
+#include "lib/messaging/irpc.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_DNS
@@ -761,16 +763,90 @@ static struct dns_server_tkey_store *tkey_store_init(TALLOC_CTX *mem_ctx,
 	return buffer;
 }
 
+static NTSTATUS dns_server_reload_zones(struct dns_server *dns)
+{
+	int ret;
+	static const char * const attrs[] = { "name", NULL};
+	struct ldb_result *res;
+	int i;
+	struct dns_server_zone *new_list = NULL;
+	struct dns_server_zone *old_list = NULL;
+	struct dns_server_zone *old_zone;
+
+	// TODO: this search does not work against windows
+	ret = dsdb_search(dns->samdb, dns, &res, NULL, LDB_SCOPE_SUBTREE,
+			  attrs, DSDB_SEARCH_SEARCH_ALL_PARTITIONS, "(objectClass=dnsZone)");
+	if (ret != LDB_SUCCESS) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	TYPESAFE_QSORT(res->msgs, res->count, dns_server_sort_zones);
+
+	for (i=0; i < res->count; i++) {
+		struct dns_server_zone *z;
+
+		z = talloc_zero(dns, struct dns_server_zone);
+		if (z == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		z->name = ldb_msg_find_attr_as_string(res->msgs[i], "name", NULL);
+		z->dn = talloc_move(z, &res->msgs[i]->dn);
+		/*
+		 * Ignore the RootDNSServers zone and zones that we don't support yet
+		 * RootDNSServers should never be returned (Windows DNS server don't)
+		 * ..TrustAnchors should never be returned as is, (Windows returns
+		 * TrustAnchors) and for the moment we don't support DNSSEC so we'd better
+		 * not return this zone.
+		 */
+		if ((strcmp(z->name, "RootDNSServers") == 0) ||
+		    (strcmp(z->name, "..TrustAnchors") == 0))
+		{
+			DEBUG(10, ("Ignoring zone %s\n", z->name));
+			talloc_free(z);
+			continue;
+		}
+		DLIST_ADD_END(new_list, z, NULL);
+	}
+
+	old_list = dns->zones;
+	dns->zones = new_list;
+	while ((old_zone = DLIST_TAIL(old_list)) != NULL) {
+		DLIST_REMOVE(old_list, old_zone);
+		talloc_free(old_zone);
+	}
+
+	return NT_STATUS_OK;
+}
+
+/**
+ * Called when the internal DNS server should reload the zones from DB, for
+ * example, when zones are added or deleted through RPC or replicated by
+ * inbound DRS.
+ */
+static NTSTATUS dns_reload_zones(struct irpc_message *msg,
+				 struct dnssrv_reload_dns_zones *r)
+{
+	struct dns_server *dns;
+
+	dns = talloc_get_type(msg->private_data, struct dns_server);
+	if (dns == NULL) {
+		r->out.result = NT_STATUS_INTERNAL_ERROR;
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	r->out.result = dns_server_reload_zones(dns);
+
+	return NT_STATUS_OK;
+}
+
 static void dns_task_init(struct task_server *task)
 {
 	struct dns_server *dns;
 	NTSTATUS status;
 	struct interface *ifaces = NULL;
 	int ret;
-	struct ldb_result *res;
-	static const char * const attrs[] = { "name", NULL};
 	static const char * const attrs_none[] = { NULL};
-	unsigned int i;
 	struct ldb_message *dns_acc;
 	char *hostname_lower;
 	char *dns_spn;
@@ -866,48 +942,29 @@ static void dns_task_init(struct task_server *task)
 		return;
 	}
 
-	// TODO: this search does not work against windows
-	ret = dsdb_search(dns->samdb, dns, &res, NULL, LDB_SCOPE_SUBTREE,
-			  attrs, DSDB_SEARCH_SEARCH_ALL_PARTITIONS, "(objectClass=dnsZone)");
-	if (ret != LDB_SUCCESS) {
-		task_server_terminate(task,
-				      "dns: failed to look up root DNS zones",
-				      true);
+	status = dns_server_reload_zones(dns);
+	if (!NT_STATUS_IS_OK(status)) {
+		task_server_terminate(task, "dns: failed to load DNS zones", true);
 		return;
-	}
-
-	TYPESAFE_QSORT(res->msgs, res->count, dns_server_sort_zones);
-
-	for (i=0; i < res->count; i++) {
-		struct dns_server_zone *z;
-
-		z = talloc_zero(dns, struct dns_server_zone);
-		if (z == NULL) {
-			task_server_terminate(task, "dns failed to allocate memory", true);
-		}
-
-		z->name = ldb_msg_find_attr_as_string(res->msgs[i], "name", NULL);
-		z->dn = talloc_move(z, &res->msgs[i]->dn);
-		/*
-		 * Ignore the RootDNSServers zone and zones that we don't support yet
-		 * RootDNSServers should never be returned (Windows DNS server don't)
-		 * ..TrustAnchors should never be returned as is, (Windows returns
-		 * TrustAnchors) and for the moment we don't support DNSSEC so we'd better
-		 * not return this zone.
-		 */
-		if ((strcmp(z->name, "RootDNSServers") == 0) ||
-		    (strcmp(z->name, "..TrustAnchors") == 0))
-		{
-			DEBUG(10, ("Ignoring zone %s\n", z->name));
-			talloc_free(z);
-			continue;
-		}
-		DLIST_ADD_END(dns->zones, z, NULL);
 	}
 
 	status = dns_startup_interfaces(dns, ifaces);
 	if (!NT_STATUS_IS_OK(status)) {
 		task_server_terminate(task, "dns failed to setup interfaces", true);
+		return;
+	}
+
+	/* Setup the IRPC interface and register handlers */
+	status = irpc_add_name(task->msg_ctx, "dnssrv");
+	if (!NT_STATUS_IS_OK(status)) {
+		task_server_terminate(task, "dns: failed to register IRPC name", true);
+		return;
+	}
+
+	status = IRPC_REGISTER(task->msg_ctx, irpc, DNSSRV_RELOAD_DNS_ZONES,
+			       dns_reload_zones, dns);
+	if (!NT_STATUS_IS_OK(status)) {
+		task_server_terminate(task, "dns: failed to setup reload handler", true);
 		return;
 	}
 }
