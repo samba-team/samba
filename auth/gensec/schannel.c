@@ -459,7 +459,7 @@ static NTSTATUS schannel_update(struct gensec_security *gensec_security, TALLOC_
 		struct schannel_state);
 	NTSTATUS status;
 	enum ndr_err_code ndr_err;
-	struct NL_AUTH_MESSAGE bind_schannel;
+	struct NL_AUTH_MESSAGE bind_schannel = {};
 	struct NL_AUTH_MESSAGE bind_schannel_ack;
 	struct netlogon_creds_CredentialState *creds;
 	const char *workstation;
@@ -486,26 +486,19 @@ static NTSTATUS schannel_update(struct gensec_security *gensec_security, TALLOC_
 		}
 
 		bind_schannel.MessageType = NL_NEGOTIATE_REQUEST;
-#if 0
-		/* to support this we'd need to have access to the full domain name */
-		/* 0x17, 23 */
-		bind_schannel.Flags = NL_FLAG_OEM_NETBIOS_DOMAIN_NAME |
-				      NL_FLAG_OEM_NETBIOS_COMPUTER_NAME |
-				      NL_FLAG_UTF8_DNS_DOMAIN_NAME |
-				      NL_FLAG_UTF8_NETBIOS_COMPUTER_NAME;
-		bind_schannel.oem_netbios_domain.a = cli_credentials_get_domain(gensec_security->credentials);
-		bind_schannel.oem_netbios_computer.a = creds->computer_name;
-		bind_schannel.utf8_dns_domain = cli_credentials_get_realm(gensec_security->credentials);
-		/* w2k3 refuses us if we use the full DNS workstation?
-		 why? perhaps because we don't fill in the dNSHostName
-		 attribute in the machine account? */
-		bind_schannel.utf8_netbios_computer = creds->computer_name;
-#else
+
 		bind_schannel.Flags = NL_FLAG_OEM_NETBIOS_DOMAIN_NAME |
 				      NL_FLAG_OEM_NETBIOS_COMPUTER_NAME;
 		bind_schannel.oem_netbios_domain.a = cli_credentials_get_domain(gensec_security->credentials);
 		bind_schannel.oem_netbios_computer.a = creds->computer_name;
-#endif
+
+		if (creds->secure_channel_type == SEC_CHAN_DNS_DOMAIN) {
+			bind_schannel.Flags |= NL_FLAG_UTF8_DNS_DOMAIN_NAME;
+			bind_schannel.utf8_dns_domain.u = cli_credentials_get_realm(gensec_security->credentials);
+
+			bind_schannel.Flags |= NL_FLAG_UTF8_NETBIOS_COMPUTER_NAME;
+			bind_schannel.utf8_netbios_computer.u = creds->computer_name;
+		}
 
 		ndr_err = ndr_push_struct_blob(out, out_mem_ctx, &bind_schannel,
 					       (ndr_push_flags_fn_t)ndr_push_NL_AUTH_MESSAGE);
