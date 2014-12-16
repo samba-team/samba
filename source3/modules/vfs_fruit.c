@@ -526,7 +526,7 @@ static bool ad_pack(struct adouble *ad)
 	offset += ADEDLEN_NENTRIES;
 
 	for (eid = 0, nent = 0; eid < ADEID_MAX; eid++) {
-		if ((ad->ad_eid[eid].ade_off == 0)) {
+		if (ad->ad_eid[eid].ade_off == 0) {
 			/*
 			 * ade_off is also used as indicator whether a
 			 * specific entry is used or not
