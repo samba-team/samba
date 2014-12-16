@@ -386,6 +386,13 @@ int main(int argc, const char *argv[])
 		goto done;
 	}
 
+	if (getuid() != 0) {
+		d_printf("smbstatus only works as root!\n");
+		ret = 1;
+		goto done;
+	}
+
+
 	pc = poptGetContext(NULL, argc, argv, long_options,
 			    POPT_CONTEXT_KEEP_FIRST);
 
