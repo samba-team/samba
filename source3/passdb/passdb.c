@@ -2523,27 +2523,6 @@ NTSTATUS pdb_get_trust_credentials(const char *netbios_domain,
 	struct cli_credentials *creds = NULL;
 	bool ok;
 
-	lp_ctx = loadparm_init_s3(frame, loadparm_s3_helpers());
-	if (lp_ctx == NULL) {
-		DEBUG(1, ("loadparm_init_s3 failed\n"));
-		status = NT_STATUS_INTERNAL_ERROR;
-		goto fail;
-	}
-
-	creds = cli_credentials_init(mem_ctx);
-	if (creds == NULL) {
-		status = NT_STATUS_NO_MEMORY;
-		goto fail;
-	}
-
-	cli_credentials_set_conf(creds, lp_ctx);
-
-	ok = cli_credentials_set_domain(creds, netbios_domain, CRED_SPECIFIED);
-	if (!ok) {
-		status = NT_STATUS_NO_MEMORY;
-		goto fail;
-	}
-
 	/*
 	 * If this is our primary trust relationship, use the common
 	 * code to read the secrets.ldb or secrets.tdb file.
@@ -2554,6 +2533,27 @@ NTSTATUS pdb_get_trust_credentials(const char *netbios_domain,
 			DEBUG(1, ("failed to open secrets.tdb to obtain our trust credentials for %s\n",
 				  netbios_domain));
 			status = NT_STATUS_INTERNAL_ERROR;
+			goto fail;
+		}
+
+		lp_ctx = loadparm_init_s3(frame, loadparm_s3_helpers());
+		if (lp_ctx == NULL) {
+			DEBUG(1, ("loadparm_init_s3 failed\n"));
+			status = NT_STATUS_INTERNAL_ERROR;
+			goto fail;
+		}
+
+		creds = cli_credentials_init(mem_ctx);
+		if (creds == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto fail;
+		}
+
+		cli_credentials_set_conf(creds, lp_ctx);
+
+		ok = cli_credentials_set_domain(creds, netbios_domain, CRED_SPECIFIED);
+		if (!ok) {
+			status = NT_STATUS_NO_MEMORY;
 			goto fail;
 		}
 
@@ -2570,6 +2570,14 @@ NTSTATUS pdb_get_trust_credentials(const char *netbios_domain,
 			  "as we are not a DC\n",
 			  netbios_domain, lp_workgroup()));
 		status = NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+		goto fail;
+	}
+
+	status = pdb_get_trusteddom_creds(netbios_domain, mem_ctx, &creds);
+	if (NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED)) {
 		goto fail;
 	}
 
@@ -2599,6 +2607,21 @@ NTSTATUS pdb_get_trust_credentials(const char *netbios_domain,
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
 	}
+
+	lp_ctx = loadparm_init_s3(frame, loadparm_s3_helpers());
+	if (lp_ctx == NULL) {
+		DEBUG(1, ("loadparm_init_s3 failed\n"));
+		status = NT_STATUS_INTERNAL_ERROR;
+		goto fail;
+	}
+
+	creds = cli_credentials_init(mem_ctx);
+	if (creds == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	cli_credentials_set_conf(creds, lp_ctx);
 
 	cli_credentials_set_secure_channel_type(creds, channel);
 	cli_credentials_set_password_last_changed_time(creds, last_set_time);
