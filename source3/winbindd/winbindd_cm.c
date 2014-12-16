@@ -3264,6 +3264,11 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 {
 	NTSTATUS status;
 
+	status = init_dc_connection_rpc(domain, true);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
 	if (domain->active_directory && domain->can_do_ncacn_ip_tcp) {
 		status = cm_connect_netlogon_transport(domain, NCACN_IP_TCP, cli);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED) ||
