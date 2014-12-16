@@ -44,7 +44,7 @@ tasks = {
                ("clean", "make clean", "text/plain") ],
 
     # We have 'test' before 'install' because, 'test' should work without 'install'
-    "samba" : [ ("configure", "./configure.developer --picky-developer ${PREFIX} --with-selftest-prefix=./bin/ab  --with-profiling-data", "text/plain"),
+    "samba" : [ ("configure", "./configure.developer --picky-developer ${PREFIX} --with-selftest-prefix=./bin/ab", "text/plain"),
                 ("make", "make -j", "text/plain"),
                 ("test", "make test FAIL_IMMEDIATELY=1", "text/plain"),
                 ("install", "make install", "text/plain"),
