@@ -2296,8 +2296,10 @@ static NTSTATUS pdb_samba_dsdb_get_trusteddom_creds(struct pdb_methods *m,
 	bool ok;
 	const char *my_netbios_name = NULL;
 	const char *my_netbios_domain = NULL;
+	const char *my_dns_domain = NULL;
 	const char *netbios_domain = NULL;
 	char *account_name = NULL;
+	char *principal_name = NULL;
 	const char *dns_domain = NULL;
 
 	status = sam_get_results_trust(state->ldb, tmp_ctx, domain,
@@ -2389,6 +2391,7 @@ static NTSTATUS pdb_samba_dsdb_get_trusteddom_creds(struct pdb_methods *m,
 
 	my_netbios_name = lpcfg_netbios_name(state->lp_ctx);
 	my_netbios_domain = lpcfg_workgroup(state->lp_ctx);
+	my_dns_domain = lpcfg_dnsdomain(state->lp_ctx);
 
 	creds = cli_credentials_init(tmp_ctx);
 	if (creds == NULL) {
@@ -2413,18 +2416,42 @@ static NTSTATUS pdb_samba_dsdb_get_trusteddom_creds(struct pdb_methods *m,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	cli_credentials_set_secure_channel_type(creds, SEC_CHAN_DOMAIN);
-
-	account_name = talloc_asprintf(tmp_ctx, "%s$", my_netbios_domain);
-	if (account_name == NULL) {
-		TALLOC_FREE(tmp_ctx);
-		return NT_STATUS_NO_MEMORY;
+	if (my_dns_domain != NULL && dns_domain != NULL) {
+		cli_credentials_set_secure_channel_type(creds, SEC_CHAN_DNS_DOMAIN);
+		account_name = talloc_asprintf(tmp_ctx, "%s.", my_dns_domain);
+		if (account_name == NULL) {
+			TALLOC_FREE(tmp_ctx);
+			return NT_STATUS_NO_MEMORY;
+		}
+		principal_name = talloc_asprintf(tmp_ctx, "%s$@%s", my_netbios_domain,
+						 cli_credentials_get_realm(creds));
+		if (principal_name == NULL) {
+			TALLOC_FREE(tmp_ctx);
+			return NT_STATUS_NO_MEMORY;
+		}
+	} else {
+		cli_credentials_set_secure_channel_type(creds, SEC_CHAN_DOMAIN);
+		account_name = talloc_asprintf(tmp_ctx, "%s$", my_netbios_domain);
+		if (account_name == NULL) {
+			TALLOC_FREE(tmp_ctx);
+			return NT_STATUS_NO_MEMORY;
+		}
+		principal_name = NULL;
 	}
 
 	ok = cli_credentials_set_username(creds, account_name, CRED_SPECIFIED);
 	if (!ok) {
 		TALLOC_FREE(tmp_ctx);
 		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (principal_name != NULL) {
+		ok = cli_credentials_set_principal(creds, principal_name,
+						   CRED_SPECIFIED);
+		if (!ok) {
+			TALLOC_FREE(tmp_ctx);
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
 
 	if (password_nt.length == 16) {
