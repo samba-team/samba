@@ -725,6 +725,8 @@ static bool test_S2U4Self(struct torture_context *tctx,
 							 &r.out.return_authenticator->cred),
 		       "Credential chaining failed");
 
+	torture_assert_ntstatus_ok(tctx, r.out.result, "LogonSamLogon failed");
+
 	status = make_user_info_dc_netlogon_validation(tmp_ctx,
 						      ninfo.identity_info.account_name.string,
 						      r.in.validation_level,
