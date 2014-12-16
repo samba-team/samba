@@ -1229,16 +1229,6 @@ static NTSTATUS cm_prepare_connection(struct winbindd_domain *domain,
 		goto done;
 	}
 
-	creds = cli_credentials_init_anon(talloc_tos());
-	if (creds == NULL) {
-		result = NT_STATUS_NO_MEMORY;
-		goto done;
-	}
-
-	machine_account = cli_credentials_get_username(creds);
-	machine_password = cli_credentials_get_password(creds);
-	machine_domain = cli_credentials_get_domain(creds);
-
 	/* Fall back to anonymous connection, this might fail later */
 	DEBUG(10,("cm_prepare_connection: falling back to anonymous "
 		"connection for DC %s\n",
@@ -1246,14 +1236,7 @@ static NTSTATUS cm_prepare_connection(struct winbindd_domain *domain,
 
 	(*cli)->use_kerberos = False;
 
-	result = cli_session_setup(*cli,
-				   machine_account,
-				   machine_password,
-				   strlen(machine_password)+1,
-				   machine_password,
-				   strlen(machine_password)+1,
-				   machine_domain);
-
+	result = cli_session_setup(*cli, "", "", 0, "", 0, "");
 	if (NT_STATUS_IS_OK(result)) {
 		DEBUG(5, ("Connected anonymously\n"));
 		goto session_setup_done;
