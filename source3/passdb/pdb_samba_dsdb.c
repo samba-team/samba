@@ -38,6 +38,7 @@
 #include "source4/dsdb/common/util.h"
 #include "source3/include/secrets.h"
 #include "source4/auth/auth_sam.h"
+#include "auth/credentials/credentials.h"
 
 struct pdb_samba_dsdb_state {
 	struct tevent_context *ev;
@@ -2131,6 +2132,7 @@ static bool pdb_samba_dsdb_get_trusteddom_pw(struct pdb_methods *m,
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 	const char * const attrs[] = {
 		"securityIdentifier",
+		"flatName",
 		"trustPartner",
 		"trustAuthOutgoing",
 		"whenCreated",
@@ -2152,6 +2154,7 @@ static bool pdb_samba_dsdb_get_trusteddom_pw(struct pdb_methods *m,
 	size_t password_len;
 	enum ndr_err_code ndr_err;
 	NTSTATUS status;
+	const char *netbios_domain = NULL;
 
 	status = sam_get_results_trust(state->ldb, tmp_ctx, domain,
 				       NULL, attrs, &msg);
@@ -2162,6 +2165,14 @@ static bool pdb_samba_dsdb_get_trusteddom_pw(struct pdb_methods *m,
 		 */
 		DEBUG(2, ("Failed to get trusted domain password for %s.  "
 			  "It may not be a trusted domain.\n", domain));
+		TALLOC_FREE(tmp_ctx);
+		return false;
+	}
+
+	netbios_domain = ldb_msg_find_attr_as_string(msg, "flatName", NULL);
+	if (netbios_domain == NULL) {
+		DEBUG(2, ("Trusted domain %s has to flatName defined.\n",
+			  domain));
 		TALLOC_FREE(tmp_ctx);
 		return false;
 	}
@@ -2230,7 +2241,7 @@ static bool pdb_samba_dsdb_get_trusteddom_pw(struct pdb_methods *m,
 	 * utf8.
 	 */
 	if (!convert_string_talloc(tmp_ctx,
-				   CH_UTF16, CH_UTF8,
+				   CH_UTF16MUNGED, CH_UTF8,
 				   password_utf16.data, password_utf16.length,
 				   (void *)&password_talloc,
 				   &password_len)) {
@@ -2247,6 +2258,218 @@ static bool pdb_samba_dsdb_get_trusteddom_pw(struct pdb_methods *m,
 
 	TALLOC_FREE(tmp_ctx);
 	return true;
+}
+
+static NTSTATUS pdb_samba_dsdb_get_trusteddom_creds(struct pdb_methods *m,
+						    const char *domain,
+						    TALLOC_CTX *mem_ctx,
+						    struct cli_credentials **_creds)
+{
+	struct pdb_samba_dsdb_state *state = talloc_get_type_abort(
+		m->private_data, struct pdb_samba_dsdb_state);
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+	const char * const attrs[] = {
+		"securityIdentifier",
+		"flatName",
+		"trustPartner",
+		"trustAuthOutgoing",
+		"whenCreated",
+		"msDS-SupportedEncryptionTypes",
+		"trustAttributes",
+		"trustDirection",
+		"trustType",
+		NULL
+	};
+	struct ldb_message *msg;
+	const struct ldb_val *password_val;
+	int trust_direction_flags;
+	int trust_type;
+	int i;
+	DATA_BLOB password_utf16 = {};
+	DATA_BLOB password_nt = {};
+	struct trustAuthInOutBlob password_blob;
+	struct AuthenticationInformationArray *auth_array = NULL;
+	enum ndr_err_code ndr_err;
+	NTSTATUS status;
+	time_t last_set_time = 0;
+	struct cli_credentials *creds = NULL;
+	bool ok;
+	const char *my_netbios_name = NULL;
+	const char *my_netbios_domain = NULL;
+	const char *netbios_domain = NULL;
+	char *account_name = NULL;
+	const char *dns_domain = NULL;
+
+	status = sam_get_results_trust(state->ldb, tmp_ctx, domain,
+				       NULL, attrs, &msg);
+	if (!NT_STATUS_IS_OK(status)) {
+		/*
+		 * This can be called to work out of a domain is
+		 * trusted, rather than just to get the password
+		 */
+		DEBUG(2, ("Failed to get trusted domain password for %s.  "
+			  "It may not be a trusted domain.\n", domain));
+		TALLOC_FREE(tmp_ctx);
+		return status;
+	}
+
+	netbios_domain = ldb_msg_find_attr_as_string(msg, "flatName", NULL);
+	if (netbios_domain == NULL) {
+		DEBUG(2, ("Trusted domain %s has to flatName defined.\n",
+			  domain));
+		TALLOC_FREE(tmp_ctx);
+		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+	}
+
+	dns_domain = ldb_msg_find_attr_as_string(msg, "trustPartner", NULL);
+
+	trust_direction_flags = ldb_msg_find_attr_as_int(msg, "trustDirection", 0);
+	if (!(trust_direction_flags & LSA_TRUST_DIRECTION_OUTBOUND)) {
+		DEBUG(2, ("Trusted domain %s is is not an outbound trust.\n",
+			  domain));
+		TALLOC_FREE(tmp_ctx);
+		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+	}
+
+	trust_type = ldb_msg_find_attr_as_int(msg, "trustType", 0);
+	if (trust_type == LSA_TRUST_TYPE_MIT) {
+		DEBUG(1, ("Trusted domain %s is is not an AD trust "
+			  "(trustType == LSA_TRUST_TYPE_MIT).\n",
+			  domain));
+		TALLOC_FREE(tmp_ctx);
+		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+	}
+
+	password_val = ldb_msg_find_ldb_val(msg, "trustAuthOutgoing");
+	if (password_val == NULL) {
+		DEBUG(2, ("Failed to get trusted domain password for %s, "
+			  "attribute trustAuthOutgoing not returned.\n", domain));
+		TALLOC_FREE(tmp_ctx);
+		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+	}
+
+	ndr_err = ndr_pull_struct_blob(password_val, tmp_ctx, &password_blob,
+				(ndr_pull_flags_fn_t)ndr_pull_trustAuthInOutBlob);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DEBUG(0, ("Failed to get trusted domain password for %s, "
+			  "attribute trustAuthOutgoing coult not be parsed %s.\n",
+			  domain,
+			  ndr_map_error2string(ndr_err)));
+		TALLOC_FREE(tmp_ctx);
+		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+	}
+
+	auth_array = &password_blob.current;
+
+	for (i=0; i < auth_array->count; i++) {
+		if (auth_array->array[i].AuthType == TRUST_AUTH_TYPE_CLEAR) {
+			last_set_time = nt_time_to_unix(auth_array->array[i].LastUpdateTime);
+
+			password_utf16 = data_blob_const(auth_array->array[i].AuthInfo.clear.password,
+							 auth_array->array[i].AuthInfo.clear.size);
+			password_nt = data_blob_null;
+			break;
+		}
+
+		if (auth_array->array[i].AuthType == TRUST_AUTH_TYPE_NT4OWF) {
+			last_set_time = nt_time_to_unix(auth_array->array[i].LastUpdateTime);
+
+			password_nt = data_blob_const(auth_array->array[i].AuthInfo.clear.password,
+						      auth_array->array[i].AuthInfo.clear.size);
+		}
+	}
+
+	if (password_utf16.length == 0 && password_nt.length == 0) {
+		DEBUG(0, ("Trusted domain %s does not have a "
+			  "clear-text nor nt password stored\n",
+			  domain));
+		TALLOC_FREE(tmp_ctx);
+		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+	}
+
+	my_netbios_name = lpcfg_netbios_name(state->lp_ctx);
+	my_netbios_domain = lpcfg_workgroup(state->lp_ctx);
+
+	creds = cli_credentials_init(tmp_ctx);
+	if (creds == NULL) {
+		TALLOC_FREE(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ok = cli_credentials_set_workstation(creds, my_netbios_name, CRED_SPECIFIED);
+	if (!ok) {
+		TALLOC_FREE(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ok = cli_credentials_set_domain(creds, netbios_domain, CRED_SPECIFIED);
+	if (!ok) {
+		TALLOC_FREE(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+	ok = cli_credentials_set_realm(creds, dns_domain, CRED_SPECIFIED);
+	if (!ok) {
+		TALLOC_FREE(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	cli_credentials_set_secure_channel_type(creds, SEC_CHAN_DOMAIN);
+
+	account_name = talloc_asprintf(tmp_ctx, "%s$", my_netbios_domain);
+	if (account_name == NULL) {
+		TALLOC_FREE(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ok = cli_credentials_set_username(creds, account_name, CRED_SPECIFIED);
+	if (!ok) {
+		TALLOC_FREE(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (password_nt.length == 16) {
+		struct samr_Password nt_hash;
+
+		memcpy(nt_hash.hash, password_nt.data, 16);
+
+		ok = cli_credentials_set_nt_hash(creds, &nt_hash,
+						 CRED_SPECIFIED);
+		ZERO_STRUCT(nt_hash);
+		if (!ok) {
+			TALLOC_FREE(tmp_ctx);
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
+	if (password_utf16.length > 0) {
+		ok = cli_credentials_set_utf16_password(creds,
+							&password_utf16,
+							CRED_SPECIFIED);
+		if (!ok) {
+			TALLOC_FREE(tmp_ctx);
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
+	cli_credentials_set_password_last_changed_time(creds, last_set_time);
+
+	if (password_utf16.length > 0 && dns_domain != NULL) {
+		/*
+		 * Force kerberos if this is an active directory domain
+		 */
+		cli_credentials_set_kerberos_state(creds,
+						   CRED_MUST_USE_KERBEROS);
+	} else  {
+		/*
+		 * TODO: we should allow krb5 with the raw nt hash.
+		 */
+		cli_credentials_set_kerberos_state(creds,
+						   CRED_DONT_USE_KERBEROS);
+	}
+
+	*_creds = talloc_move(mem_ctx, &creds);
+	TALLOC_FREE(tmp_ctx);
+	return NT_STATUS_OK;
 }
 
 static bool pdb_samba_dsdb_set_trusteddom_pw(struct pdb_methods *m,
@@ -2329,6 +2552,7 @@ static void pdb_samba_dsdb_init_methods(struct pdb_methods *m)
 	m->capabilities = pdb_samba_dsdb_capabilities;
 	m->new_rid = pdb_samba_dsdb_new_rid;
 	m->get_trusteddom_pw = pdb_samba_dsdb_get_trusteddom_pw;
+	m->get_trusteddom_creds = pdb_samba_dsdb_get_trusteddom_creds;
 	m->set_trusteddom_pw = pdb_samba_dsdb_set_trusteddom_pw;
 	m->del_trusteddom_pw = pdb_samba_dsdb_del_trusteddom_pw;
 	m->enum_trusteddoms = pdb_samba_dsdb_enum_trusteddoms;
