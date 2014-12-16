@@ -3127,7 +3127,7 @@ static NTSTATUS cm_connect_netlogon_transport(struct winbindd_domain *domain,
 
 	*cli = NULL;
 
-	result = init_dc_connection_rpc(domain, true);
+	result = init_dc_connection_rpc(domain, domain->rodc);
 	if (!NT_STATUS_IS_OK(result)) {
 		return result;
 	}
@@ -3264,7 +3264,7 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 {
 	NTSTATUS status;
 
-	status = init_dc_connection_rpc(domain, true);
+	status = init_dc_connection_rpc(domain, domain->rodc);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
