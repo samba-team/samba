@@ -3210,6 +3210,92 @@ done:
 	return NT_STATUS_OK;
 }
 
+NTSTATUS cli_rpc_pipe_open_schannel_with_creds(struct cli_state *cli,
+					       const struct ndr_interface_table *table,
+					       enum dcerpc_transport_t transport,
+					       struct cli_credentials *cli_creds,
+					       struct netlogon_creds_cli_context *netlogon_creds,
+					       struct rpc_pipe_client **_rpccli)
+{
+	struct rpc_pipe_client *rpccli;
+	struct pipe_auth_data *rpcauth;
+	const char *target_service = table->authservices->names[0];
+	struct netlogon_creds_CredentialState *ncreds = NULL;
+	enum dcerpc_AuthLevel auth_level;
+	NTSTATUS status;
+	int rpc_pipe_bind_dbglvl = 0;
+
+	status = cli_rpc_pipe_open(cli, transport, table, &rpccli);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = netlogon_creds_cli_lock(netlogon_creds, rpccli, &ncreds);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("netlogon_creds_cli_get returned %s\n",
+			  nt_errstr(status)));
+		TALLOC_FREE(rpccli);
+		return status;
+	}
+
+	auth_level = netlogon_creds_cli_auth_level(netlogon_creds);
+
+	cli_credentials_set_netlogon_creds(cli_creds, ncreds);
+
+	status = rpccli_generic_bind_data_from_creds(rpccli,
+						     DCERPC_AUTH_TYPE_SCHANNEL,
+						     auth_level,
+						     rpccli->desthost,
+						     target_service,
+						     cli_creds,
+						     &rpcauth);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("rpccli_generic_bind_data_from_creds returned %s\n",
+			  nt_errstr(status)));
+		TALLOC_FREE(rpccli);
+		return status;
+	}
+
+	status = rpc_pipe_bind(rpccli, rpcauth);
+	cli_credentials_set_netlogon_creds(cli_creds, NULL);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_ACCESS_DENIED)) {
+		rpc_pipe_bind_dbglvl = 1;
+		netlogon_creds_cli_delete(netlogon_creds, &ncreds);
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(rpc_pipe_bind_dbglvl,
+		      ("%s: rpc_pipe_bind failed with error %s\n",
+		       __func__, nt_errstr(status)));
+		TALLOC_FREE(rpccli);
+		return status;
+	}
+
+	TALLOC_FREE(ncreds);
+
+	if (!ndr_syntax_id_equal(&table->syntax_id, &ndr_table_netlogon.syntax_id)) {
+		goto done;
+	}
+
+	status = netlogon_creds_cli_check(netlogon_creds,
+					  rpccli->binding_handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("netlogon_creds_cli_check failed with %s\n",
+			  nt_errstr(status)));
+		TALLOC_FREE(rpccli);
+		return status;
+	}
+
+
+done:
+	DEBUG(10,("%s: opened pipe %s to machine %s "
+		  "for domain %s and bound using schannel.\n",
+		  __func__, table->name,
+		  rpccli->desthost, cli_credentials_get_domain(cli_creds)));
+
+	*_rpccli = rpccli;
+	return NT_STATUS_OK;
+}
+
 NTSTATUS cli_get_session_key(TALLOC_CTX *mem_ctx,
 			     struct rpc_pipe_client *cli,
 			     DATA_BLOB *session_key)
