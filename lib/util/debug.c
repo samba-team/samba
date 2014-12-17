@@ -305,7 +305,7 @@ int debug_add_class(const char *classname)
  Utility to translate names to debug class index's (public version).
 ****************************************************************************/
 
-int debug_lookup_classname(const char *classname)
+static int debug_lookup_classname(const char *classname)
 {
 	int ndx;
 

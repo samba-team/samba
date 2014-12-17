@@ -236,10 +236,8 @@ struct debug_settings {
 
 void setup_logging(const char *prog_name, enum debug_logtype new_logtype);
 
-void debug_close_dbf(void);
 void gfree_debugsyms(void);
 int debug_add_class(const char *classname);
-int debug_lookup_classname(const char *classname);
 bool debug_parse_levels(const char *params_str);
 void debug_setup_talloc_log(void);
 void debug_set_logfile(const char *name);
@@ -250,7 +248,6 @@ bool need_to_check_log_size( void );
 void check_log_size( void );
 void dbgflush( void );
 bool dbghdrclass(int level, int cls, const char *location, const char *func);
-bool dbghdr(int level, const char *location, const char *func);
 bool debug_get_output_is_stderr(void);
 bool debug_get_output_is_stdout(void);
 void debug_schedule_reopen_logs(void);
