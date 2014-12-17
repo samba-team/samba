@@ -528,16 +528,17 @@ static void set_recmode_handler(struct event_context *ev, struct fd_event *fde,
 	state->te = NULL;
 
 
-	/* read the childs status when trying to lock the reclock file.
-	   child wrote 0 if everything is fine and 1 if it did manage
-	   to lock the file, which would be a problem since that means
-	   we got a request to exit from recovery but we could still lock
-	   the file   which at this time SHOULD be locked by the recovery
-	   daemon on the recmaster
-	*/		
+	/* If, as expected, the child was unable to take the recovery
+	 * lock then it will have written 0 into the pipe, so
+	 * continue.  However, any other value (e.g. 1) indicates that
+	 * it was able to take the recovery lock when it should have
+	 * been held by the recovery daemon on the recovery master.
+	*/
 	ret = sys_read(state->fd[0], &c, 1);
 	if (ret != 1 || c != 0) {
-		ctdb_request_control_reply(state->ctdb, state->c, NULL, -1, "managed to lock reclock file from inside daemon");
+		ctdb_request_control_reply(
+			state->ctdb, state->c, NULL, -1,
+			"Took recovery lock from daemon during recovery - probably a cluster filesystem lock coherence problem");
 		talloc_free(state);
 		return;
 	}
@@ -672,11 +673,12 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 
 		ctdb_set_process_name("ctdb_recmode");
 		debug_extra = talloc_asprintf(NULL, "set_recmode:");
-		/* we should not be able to get the lock on the reclock file, 
-		  as it should  be held by the recovery master 
-		*/
+		/* Daemon should not be able to get the recover lock,
+		 * as it should be held by the recovery master */
 		if (ctdb_recovery_lock(ctdb)) {
-			DEBUG(DEBUG_CRIT,("ERROR: recovery lock file %s not locked when recovering!\n", ctdb->recovery_lock_file));
+			DEBUG(DEBUG_ERR,
+			      ("ERROR: Daemon able to take recovery lock on \"%s\" during recovery\n",
+			       ctdb->recovery_lock_file));
 			ctdb_recovery_unlock(ctdb);
 			cc = 1;
 		}
