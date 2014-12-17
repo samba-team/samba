@@ -207,7 +207,7 @@ NTSTATUS hdb_samba4_create_kdc(struct samba_kdc_base_context *base_ctx,
 
 	(*db)->hdb_master_key_set = 0;
 	(*db)->hdb_db = NULL;
-	(*db)->hdb_capability_flags = 0;
+	(*db)->hdb_capability_flags = HDB_CAP_F_HANDLE_ENTERPRISE_PRINCIPAL;
 
 	nt_status = samba_kdc_setup_db_ctx(*db, base_ctx, &kdc_db_ctx);
 	if (!NT_STATUS_IS_OK(nt_status)) {
