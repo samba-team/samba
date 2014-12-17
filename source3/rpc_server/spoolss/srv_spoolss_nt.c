@@ -10146,7 +10146,8 @@ WERROR _spoolss_GetPrintProcessorDirectory(struct pipes_struct *p,
 	/* that's an [in out] buffer */
 
 	if (!r->in.buffer && (r->in.offered != 0)) {
-		return WERR_INVALID_PARAM;
+		result = WERR_INVALID_PARAM;
+		goto err_info_free;
 	}
 
 	DEBUG(5,("_spoolss_GetPrintProcessorDirectory: level %d\n",
@@ -10162,7 +10163,8 @@ WERROR _spoolss_GetPrintProcessorDirectory(struct pipes_struct *p,
 
 	snum = find_service(talloc_tos(), "prnproc$", &prnproc_share);
 	if (!prnproc_share) {
-		return WERR_NOMEM;
+		result = WERR_NOMEM;
+		goto err_info_free;
 	}
 	if (snum != -1) {
 		prnproc_share_exists = true;
@@ -10173,8 +10175,7 @@ WERROR _spoolss_GetPrintProcessorDirectory(struct pipes_struct *p,
 						    r->in.environment,
 						    &r->out.info->info1);
 	if (!W_ERROR_IS_OK(result)) {
-		TALLOC_FREE(r->out.info);
-		return result;
+		goto err_info_free;
 	}
 
 	*r->out.needed	= SPOOLSS_BUFFER_UNION(spoolss_PrintProcessorDirectoryInfo,
@@ -10182,6 +10183,10 @@ WERROR _spoolss_GetPrintProcessorDirectory(struct pipes_struct *p,
 	r->out.info	= SPOOLSS_BUFFER_OK(r->out.info, NULL);
 
 	return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
+
+err_info_free:
+	TALLOC_FREE(r->out.info);
+	return result;
 }
 
 /*******************************************************************
