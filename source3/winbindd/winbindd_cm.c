@@ -3118,10 +3118,6 @@ static NTSTATUS cm_connect_netlogon_transport(struct winbindd_domain *domain,
 	struct winbindd_cm_conn *conn;
 	NTSTATUS result;
 	enum netr_SchannelType sec_chan_type;
-	const char *account_name;
-	const char *domain_name;
-	const struct samr_Password *current_nt_hash = NULL;
-	const struct samr_Password *previous_nt_hash = NULL;
 	struct netlogon_creds_CredentialState *netlogon_creds = NULL;
 	struct cli_credentials *creds = NULL;
 
@@ -3162,20 +3158,11 @@ static NTSTATUS cm_connect_netlogon_transport(struct winbindd_domain *domain,
 		goto no_schannel;
 	}
 
-	account_name = cli_credentials_get_username(creds);
-	domain_name = cli_credentials_get_domain(creds);
-	current_nt_hash = cli_credentials_get_nt_hash(creds, talloc_tos());
-	if (current_nt_hash == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	result = rpccli_create_netlogon_creds(domain->dcname,
-					      domain_name,
-					      account_name,
-					      sec_chan_type,
-					      msg_ctx,
-					      domain,
-					      &conn->netlogon_creds);
+	result = rpccli_create_netlogon_creds_with_creds(creds,
+							 domain->dcname,
+							 msg_ctx,
+							 domain,
+							 &conn->netlogon_creds);
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(1, ("rpccli_create_netlogon_creds failed for %s, "
 			  "unable to create NETLOGON credentials: %s\n",
@@ -3183,11 +3170,10 @@ static NTSTATUS cm_connect_netlogon_transport(struct winbindd_domain *domain,
 		return result;
 	}
 
-	result = rpccli_setup_netlogon_creds(conn->cli, transport,
-					     conn->netlogon_creds,
-					     conn->netlogon_force_reauth,
-					     *current_nt_hash,
-					     previous_nt_hash);
+	result = rpccli_setup_netlogon_creds_with_creds(conn->cli, transport,
+						conn->netlogon_creds,
+						conn->netlogon_force_reauth,
+						creds);
 	conn->netlogon_force_reauth = false;
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(1, ("rpccli_setup_netlogon_creds failed for %s, "
