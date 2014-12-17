@@ -2701,7 +2701,7 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 
 	result = get_trust_credentials(domain, talloc_tos(), false, &creds);
 	if (!NT_STATUS_IS_OK(result)) {
-		DEBUG(10, ("cm_connect_sam: No no user available for "
+		DEBUG(10, ("cm_connect_sam: No user available for "
 			   "domain %s, trying schannel\n", domain->name));
 		goto schannel;
 	}
@@ -2767,9 +2767,17 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 			nt_errstr(status) ));
 		goto anonymous;
 	}
-	status = cli_rpc_pipe_open_schannel_with_key
+	TALLOC_FREE(creds);
+	result = get_trust_credentials(domain, talloc_tos(), true, &creds);
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(10, ("cm_connect_sam: No user available for "
+			   "domain %s (error %s), trying anon\n", domain->name,
+			   nt_errstr(result)));
+		goto anonymous;
+	}
+	status = cli_rpc_pipe_open_schannel_with_creds
 		(conn->cli, &ndr_table_samr, NCACN_NP,
-		 domain->name, p_creds, &conn->samr_pipe);
+		 creds, p_creds, &conn->samr_pipe);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10,("cm_connect_sam: failed to connect to SAMR pipe for "
@@ -2879,7 +2887,8 @@ static NTSTATUS cm_connect_lsa_tcp(struct winbindd_domain *domain,
 				   struct rpc_pipe_client **cli)
 {
 	struct winbindd_cm_conn *conn;
-	struct netlogon_creds_cli_context *creds;
+	struct netlogon_creds_cli_context *p_creds = NULL;
+	struct cli_credentials *creds = NULL;
 	NTSTATUS status;
 
 	DEBUG(10,("cm_connect_lsa_tcp\n"));
@@ -2900,17 +2909,22 @@ static NTSTATUS cm_connect_lsa_tcp(struct winbindd_domain *domain,
 
 	TALLOC_FREE(conn->lsa_pipe_tcp);
 
-	status = cm_get_schannel_creds(domain, &creds);
+	status = cm_get_schannel_creds(domain, &p_creds);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
 
-	status = cli_rpc_pipe_open_schannel_with_key(conn->cli,
-						     &ndr_table_lsarpc,
-						     NCACN_IP_TCP,
-						     domain->name,
-						     creds,
-						     &conn->lsa_pipe_tcp);
+	status = get_trust_credentials(domain, talloc_tos(), true, &creds);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+	status = cli_rpc_pipe_open_schannel_with_creds(conn->cli,
+						       &ndr_table_lsarpc,
+						       NCACN_IP_TCP,
+						       creds,
+						       p_creds,
+						       &conn->lsa_pipe_tcp);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10,("cli_rpc_pipe_open_schannel_with_key failed: %s\n",
 			nt_errstr(status)));
@@ -2950,7 +2964,7 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 
 	result = get_trust_credentials(domain, talloc_tos(), false, &creds);
 	if (!NT_STATUS_IS_OK(result)) {
-		DEBUG(10, ("cm_connect_sam: No no user available for "
+		DEBUG(10, ("cm_connect_lsa: No user available for "
 			   "domain %s, trying schannel\n", domain->name));
 		goto schannel;
 	}
@@ -3009,9 +3023,18 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 			nt_errstr(result) ));
 		goto anonymous;
 	}
-	result = cli_rpc_pipe_open_schannel_with_key
+
+	TALLOC_FREE(creds);
+	result = get_trust_credentials(domain, talloc_tos(), true, &creds);
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(10, ("cm_connect_lsa: No user available for "
+			   "domain %s (error %s), trying anon\n", domain->name,
+			   nt_errstr(result)));
+		goto anonymous;
+	}
+	result = cli_rpc_pipe_open_schannel_with_creds
 		(conn->cli, &ndr_table_lsarpc, NCACN_NP,
-		 domain->name, p_creds, &conn->lsa_pipe);
+		 creds, p_creds, &conn->lsa_pipe);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(10,("cm_connect_lsa: failed to connect to LSA pipe for "
@@ -3141,7 +3164,7 @@ static NTSTATUS cm_connect_netlogon_transport(struct winbindd_domain *domain,
 
 	result = get_trust_credentials(domain, talloc_tos(), true, &creds);
 	if (!NT_STATUS_IS_OK(result)) {
-		DEBUG(10, ("cm_connect_sam: No no user available for "
+		DEBUG(10, ("cm_connect_sam: No user available for "
 			   "domain %s when trying schannel\n", domain->name));
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
@@ -3224,9 +3247,9 @@ static NTSTATUS cm_connect_netlogon_transport(struct winbindd_domain *domain,
 	   part of the new pipe auth struct.
 	*/
 
-	result = cli_rpc_pipe_open_schannel_with_key(
+	result = cli_rpc_pipe_open_schannel_with_creds(
 		conn->cli, &ndr_table_netlogon, transport,
-		domain->name,
+		creds,
 		conn->netlogon_creds,
 		&conn->netlogon_pipe);
 	if (!NT_STATUS_IS_OK(result)) {
