@@ -86,9 +86,8 @@ _kdc_db_fetch(krb5_context context,
 	    continue;
 	}
 
-        if (config->db[i]->hdb_capability_flags & HDB_CAP_F_HANDLE_ENTERPRISE_PRINCIPAL)
-            princ = principal;
-        else if (enterprise_principal)
+        princ = principal;
+        if (!(config->db[i]->hdb_capability_flags & HDB_CAP_F_HANDLE_ENTERPRISE_PRINCIPAL) && enterprise_principal)
             princ = enterprise_principal;
 
 	ret = config->db[i]->hdb_fetch_kvno(context,
