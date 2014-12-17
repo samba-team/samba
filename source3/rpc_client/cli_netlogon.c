@@ -124,6 +124,32 @@ NTSTATUS rpccli_create_netlogon_creds(const char *server_computer,
 	return NT_STATUS_OK;
 }
 
+NTSTATUS rpccli_create_netlogon_creds_with_creds(struct cli_credentials *creds,
+						 const char *server_computer,
+						 struct messaging_context *msg_ctx,
+						 TALLOC_CTX *mem_ctx,
+						 struct netlogon_creds_cli_context **netlogon_creds)
+{
+	enum netr_SchannelType sec_chan_type;
+	const char *server_netbios_domain;
+	const char *client_account;
+
+	sec_chan_type = cli_credentials_get_secure_channel_type(creds);
+	if (sec_chan_type == SEC_CHAN_NULL) {
+		return NT_STATUS_INVALID_PARAMETER_MIX;
+	}
+
+	client_account = cli_credentials_get_username(creds);
+	server_netbios_domain = cli_credentials_get_domain(creds);
+
+	return rpccli_create_netlogon_creds(server_computer,
+					    server_netbios_domain,
+					    client_account,
+					    sec_chan_type,
+					    msg_ctx, mem_ctx,
+					    netlogon_creds);
+}
+
 NTSTATUS rpccli_setup_netlogon_creds(struct cli_state *cli,
 				     enum dcerpc_transport_t transport,
 				     struct netlogon_creds_cli_context *netlogon_creds,
@@ -192,6 +218,34 @@ NTSTATUS rpccli_setup_netlogon_creds(struct cli_state *cli,
 		 smbXcli_conn_remote_name(cli->conn)));
 
 	TALLOC_FREE(frame);
+	return NT_STATUS_OK;
+}
+
+NTSTATUS rpccli_setup_netlogon_creds_with_creds(struct cli_state *cli,
+						enum dcerpc_transport_t transport,
+						struct netlogon_creds_cli_context *netlogon_creds,
+						bool force_reauth,
+						struct cli_credentials *creds)
+{
+	struct samr_Password *current_nt_hash = NULL;
+	struct samr_Password *previous_nt_hash = NULL;
+	NTSTATUS status;
+
+	current_nt_hash = cli_credentials_get_nt_hash(creds, talloc_tos());
+	if (current_nt_hash == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = rpccli_setup_netlogon_creds(cli, transport,
+					     netlogon_creds,
+					     force_reauth,
+					     *current_nt_hash,
+					     previous_nt_hash);
+	TALLOC_FREE(current_nt_hash);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
 	return NT_STATUS_OK;
 }
 
