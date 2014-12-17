@@ -628,6 +628,8 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 	entry_ex->entry.principal = malloc(sizeof(*(entry_ex->entry.principal)));
 	if (ent_type == SAMBA_KDC_ENT_TYPE_ANY && principal == NULL) {
 		krb5_make_principal(context, &entry_ex->entry.principal, lpcfg_realm(lp_ctx), samAccountName, NULL);
+	} else if (principal->name.name_type == KRB5_NT_ENTERPRISE_PRINCIPAL) {
+		krb5_make_principal(context, &entry_ex->entry.principal, lpcfg_realm(lp_ctx), samAccountName, NULL);
 	} else {
 		ret = copy_Principal(principal, entry_ex->entry.principal);
 		if (ret) {
@@ -1216,18 +1218,29 @@ static krb5_error_code samba_kdc_lookup_client(krb5_context context,
 						struct ldb_message **msg) {
 	NTSTATUS nt_status;
 	char *principal_string;
-	krb5_error_code ret;
 
-	ret = krb5_unparse_name(context, principal, &principal_string);
-
-	if (ret != 0) {
-		return ret;
+	if (principal->name.name_type == KRB5_NT_ENTERPRISE_PRINCIPAL) {
+		principal_string = smb_krb5_principal_get_comp_string(mem_ctx, context,
+								      principal, 0);
+		if (principal_string == NULL) {
+			return ENOMEM;
+		}
+		nt_status = sam_get_results_principal(kdc_db_ctx->samdb,
+						      mem_ctx, principal_string, attrs,
+						      realm_dn, msg);
+		TALLOC_FREE(principal_string);
+	} else {
+		krb5_error_code ret;
+		ret = krb5_unparse_name(context, principal, &principal_string);
+		if (ret != 0) {
+			return ret;
+		}
+		nt_status = sam_get_results_principal(kdc_db_ctx->samdb,
+						      mem_ctx, principal_string, attrs,
+						      realm_dn, msg);
+		free(principal_string);
 	}
 
-	nt_status = sam_get_results_principal(kdc_db_ctx->samdb,
-					      mem_ctx, principal_string, attrs,
-					      realm_dn, msg);
-	free(principal_string);
 	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_SUCH_USER)) {
 		return HDB_ERR_NOENTRY;
 	} else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_MEMORY)) {
@@ -1236,7 +1249,7 @@ static krb5_error_code samba_kdc_lookup_client(krb5_context context,
 		return EINVAL;
 	}
 
-	return ret;
+	return 0;
 }
 
 static krb5_error_code samba_kdc_fetch_client(krb5_context context,
