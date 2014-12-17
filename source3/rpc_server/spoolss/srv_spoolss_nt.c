@@ -5681,14 +5681,16 @@ WERROR _spoolss_GetPrinterDriver2(struct pipes_struct *p,
 	/* that's an [in out] buffer */
 
 	if (!r->in.buffer && (r->in.offered != 0)) {
-		return WERR_INVALID_PARAM;
+		result = WERR_INVALID_PARAM;
+		goto err_info_free;
 	}
 
 	DEBUG(4,("_spoolss_GetPrinterDriver2\n"));
 
 	if (!(printer = find_printer_index_by_hnd(p, r->in.handle))) {
 		DEBUG(0,("_spoolss_GetPrinterDriver2: invalid printer handle!\n"));
-		return WERR_INVALID_PRINTER_NAME;
+		result = WERR_INVALID_PRINTER_NAME;
+		goto err_info_free;
 	}
 
 	*r->out.needed = 0;
@@ -5696,7 +5698,8 @@ WERROR _spoolss_GetPrinterDriver2(struct pipes_struct *p,
 	*r->out.server_minor_version = 0;
 
 	if (!get_printer_snum(p, r->in.handle, &snum, NULL)) {
-		return WERR_BADFID;
+		result = WERR_BADFID;
+		goto err_info_free;
 	}
 
 	if (r->in.client_major_version == SPOOLSS_DRIVER_VERSION_2012) {
@@ -5713,8 +5716,7 @@ WERROR _spoolss_GetPrinterDriver2(struct pipes_struct *p,
 						     r->in.architecture,
 						     version);
 	if (!W_ERROR_IS_OK(result)) {
-		TALLOC_FREE(r->out.info);
-		return result;
+		goto err_info_free;
 	}
 
 	*r->out.needed	= SPOOLSS_BUFFER_UNION(spoolss_DriverInfo,
@@ -5722,6 +5724,10 @@ WERROR _spoolss_GetPrinterDriver2(struct pipes_struct *p,
 	r->out.info	= SPOOLSS_BUFFER_OK(r->out.info, NULL);
 
 	return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
+
+err_info_free:
+	TALLOC_FREE(r->out.info);
+	return result;
 }
 
 
