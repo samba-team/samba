@@ -4773,17 +4773,20 @@ WERROR _spoolss_GetPrinter(struct pipes_struct *p,
 	/* that's an [in out] buffer */
 
 	if (!r->in.buffer && (r->in.offered != 0)) {
-		return WERR_INVALID_PARAM;
+		result = WERR_INVALID_PARAM;
+		goto err_info_free;
 	}
 
 	*r->out.needed = 0;
 
 	if (Printer == NULL) {
-		return WERR_BADFID;
+		result = WERR_BADFID;
+		goto err_info_free;
 	}
 
 	if (!get_printer_snum(p, r->in.handle, &snum, NULL)) {
-		return WERR_BADFID;
+		result = WERR_BADFID;
+		goto err_info_free;
 	}
 
 	result = winreg_get_printer_internal(p->mem_ctx,
@@ -4792,7 +4795,7 @@ WERROR _spoolss_GetPrinter(struct pipes_struct *p,
 				    lp_const_servicename(snum),
 				    &info2);
 	if (!W_ERROR_IS_OK(result)) {
-		goto out;
+		goto err_info_free;
 	}
 
 	switch (r->in.level) {
@@ -4852,12 +4855,10 @@ WERROR _spoolss_GetPrinter(struct pipes_struct *p,
 	}
 	TALLOC_FREE(info2);
 
- out:
 	if (!W_ERROR_IS_OK(result)) {
 		DEBUG(0, ("_spoolss_GetPrinter: failed to construct printer info level %d - %s\n",
 			  r->in.level, win_errstr(result)));
-		TALLOC_FREE(r->out.info);
-		return result;
+		goto err_info_free;
 	}
 
 	*r->out.needed	= SPOOLSS_BUFFER_UNION(spoolss_PrinterInfo,
@@ -4865,6 +4866,10 @@ WERROR _spoolss_GetPrinter(struct pipes_struct *p,
 	r->out.info	= SPOOLSS_BUFFER_OK(r->out.info, NULL);
 
 	return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
+
+err_info_free:
+	TALLOC_FREE(r->out.info);
+	return result;
 }
 
 /********************************************************************
