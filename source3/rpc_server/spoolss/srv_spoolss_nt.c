@@ -7853,6 +7853,7 @@ WERROR _spoolss_GetForm(struct pipes_struct *p,
 	/* that's an [in out] buffer */
 
 	if (!r->in.buffer && (r->in.offered != 0)) {
+		TALLOC_FREE(r->out.info);
 		return WERR_INVALID_PARAM;
 	}
 
