@@ -124,7 +124,7 @@ def SAMBA_LIBRARY(bld, libname, source,
                   pyembed=False,
                   pyext=False,
                   target_type='LIBRARY',
-                  bundled_extension=True,
+                  bundled_extension=False,
                   link_name=None,
                   abi_directory=None,
                   abi_match=None,
@@ -218,8 +218,11 @@ def SAMBA_LIBRARY(bld, libname, source,
         else:
             bundled_name = libname.replace('_', '-')
     else:
-        bundled_name = PRIVATE_NAME(bld, libname, bundled_extension,
-            private_library)
+        assert (private_library == True and realname is None)
+        if abi_directory or vnum or soname:
+            bundled_extension=True
+        bundled_name = PRIVATE_NAME(bld, libname.replace('_', '-'),
+                                    bundled_extension, private_library)
 
     ldflags = TO_LIST(ldflags)
 

@@ -7,11 +7,25 @@ from samba_utils import *
 def PRIVATE_NAME(bld, name, private_extension, private_library):
     '''possibly rename a library to include a bundled extension'''
 
+    if not private_library:
+        return name
+
     # we now use the same private name for libraries as the public name.
     # see http://git.samba.org/?p=tridge/junkcode.git;a=tree;f=shlib for a
     # demonstration that this is the right thing to do
     # also see http://lists.samba.org/archive/samba-technical/2011-January/075816.html
-    return name
+    if private_extension:
+        return name
+
+    extension = bld.env.PRIVATE_EXTENSION
+
+    if extension and name.startswith('%s' % extension):
+        return name
+
+    if extension and name.endswith('%s' % extension):
+        return name
+
+    return "%s-%s" % (name, extension)
 
 
 def target_in_list(target, lst, default):
