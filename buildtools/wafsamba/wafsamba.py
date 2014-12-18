@@ -109,6 +109,7 @@ def SAMBA_LIBRARY(bld, libname, source,
                   ldflags='',
                   external_library=False,
                   realname=None,
+                  keep_underscore=False,
                   autoproto=None,
                   autoproto_extra_source='',
                   group='libraries',
@@ -209,7 +210,10 @@ def SAMBA_LIBRARY(bld, libname, source,
                        libname)
 
     if target_type == 'PYTHON' or realname or not private_library:
-        bundled_name = libname.replace('_', '-')
+        if keep_underscore:
+            bundled_name = libname
+        else:
+            bundled_name = libname.replace('_', '-')
     else:
         bundled_name = PRIVATE_NAME(bld, libname, bundled_extension,
             private_library)
