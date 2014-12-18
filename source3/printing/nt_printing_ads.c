@@ -35,32 +35,32 @@
 /*****************************************************************
  ****************************************************************/
 
-static void store_printer_guid(struct messaging_context *msg_ctx,
-			       const char *printer, struct GUID guid)
+WERROR nt_printer_guid_store(struct messaging_context *msg_ctx,
+			     const char *printer, struct GUID guid)
 {
 	TALLOC_CTX *tmp_ctx;
-	struct auth_session_info *session_info = NULL;
+	const struct auth_session_info *session_info;
 	const char *guid_str;
 	DATA_BLOB blob;
-	NTSTATUS status;
 	WERROR result;
 
 	tmp_ctx = talloc_new(NULL);
 	if (!tmp_ctx) {
-		DEBUG(0, ("store_printer_guid: Out of memory?!\n"));
-		return;
+		DEBUG(0, ("Out of memory?!\n"));
+		return WERR_NOMEM;
 	}
 
-	status = make_session_info_system(tmp_ctx, &session_info);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("store_printer_guid: "
-			  "Could not create system session_info\n"));
+	session_info = get_session_info_system();
+	if (session_info == NULL) {
+		DEBUG(0, ("Could not get system session_info\n"));
+		result = WERR_NOMEM;
 		goto done;
 	}
 
 	guid_str = GUID_string(tmp_ctx, &guid);
 	if (!guid_str) {
-		DEBUG(0, ("store_printer_guid: Out of memory?!\n"));
+		DEBUG(0, ("Out of memory?!\n"));
+		result = WERR_NOMEM;
 		goto done;
 	}
 
@@ -68,9 +68,9 @@ static void store_printer_guid(struct messaging_context *msg_ctx,
 	   Vista to whine */
 
 	if (!push_reg_sz(tmp_ctx, &blob, guid_str)) {
-		DEBUG(0, ("store_printer_guid: "
-			  "Could not marshall string %s for objectGUID\n",
+		DEBUG(0, ("Could not marshall string %s for objectGUID\n",
 			  guid_str));
+		result = WERR_NOMEM;
 		goto done;
 	}
 
@@ -79,12 +79,15 @@ static void store_printer_guid(struct messaging_context *msg_ctx,
 					   SPOOL_DSSPOOLER_KEY, "objectGUID",
 					   REG_SZ, blob.data, blob.length);
 	if (!W_ERROR_IS_OK(result)) {
-		DEBUG(0, ("store_printer_guid: "
-			  "Failed to store GUID for printer %s\n", printer));
+		DEBUG(0, ("Failed to store GUID for printer %s\n", printer));
+		goto done;
 	}
 
+	result = WERR_OK;
 done:
 	talloc_free(tmp_ctx);
+
+	return result;
 }
 
 static WERROR nt_printer_dn_lookup(TALLOC_CTX *mem_ctx,
@@ -468,6 +471,7 @@ static WERROR nt_printer_publish_ads(struct messaging_context *msg_ctx,
 	if (!ADS_ERR_OK(ads_rc)) {
 		DEBUG(3, ("error publishing %s: %s\n",
 			  printer, ads_errstr(ads_rc)));
+		/* XXX failed to publish, so no guid to retrieve */
 	}
 
 	win_rc = nt_printer_guid_retrieve_internal(ads, printer_dn, &guid);
@@ -476,8 +480,13 @@ static WERROR nt_printer_publish_ads(struct messaging_context *msg_ctx,
 		return win_rc;
 	}
 
-	/* TODO add a return value */
-	store_printer_guid(msg_ctx, printer, guid);
+	win_rc = nt_printer_guid_store(msg_ctx, printer, guid);
+	if (!W_ERROR_IS_OK(win_rc)) {
+		DEBUG(3, ("failed to store printer %s guid\n",
+			  printer));
+		/* not catastrophic, retrieve on next use */
+		win_rc = WERR_OK;
+	}
 
 	TALLOC_FREE(ctx);
 
@@ -717,6 +726,12 @@ bool is_printer_published(TALLOC_CTX *mem_ctx,
 	return true;
 }
 #else
+WERROR nt_printer_guid_store(struct messaging_context *msg_ctx,
+			   const char *printer, struct GUID guid)
+{
+	return WERR_NOT_SUPPORTED;
+}
+
 WERROR nt_printer_guid_retrieve(TALLOC_CTX *mem_ctx, const char *printer,
 				struct GUID *pguid)
 {
