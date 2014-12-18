@@ -209,6 +209,58 @@ static WERROR nt_printer_guid_retrieve_internal(ADS_STRUCT *ads,
 	return WERR_OK;
 }
 
+WERROR nt_printer_guid_retrieve(TALLOC_CTX *mem_ctx, const char *printer,
+				struct GUID *pguid)
+{
+	ADS_STRUCT *ads = NULL;
+	char *old_krb5ccname = NULL;
+	char *printer_dn;
+	WERROR result;
+	ADS_STATUS ads_status;
+	TALLOC_CTX *tmp_ctx;
+
+	tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		return WERR_NOMEM;
+	}
+
+	ads = ads_init(lp_realm(), lp_workgroup(), NULL);
+	if (ads == NULL) {
+		result = WERR_SERVER_UNAVAILABLE;
+		goto out;
+	}
+
+	old_krb5ccname = getenv(KRB5_ENV_CCNAME);
+	setenv(KRB5_ENV_CCNAME, "MEMORY:prtpub_cache", 1);
+	SAFE_FREE(ads->auth.password);
+	ads->auth.password = secrets_fetch_machine_password(lp_workgroup(),
+							    NULL, NULL);
+
+	ads_status = ads_connect(ads);
+	if (!ADS_ERR_OK(ads_status)) {
+		DEBUG(3, ("ads_connect failed: %s\n", ads_errstr(ads_status)));
+		result = WERR_ACCESS_DENIED;
+		goto out;
+	}
+
+	result = nt_printer_dn_lookup(tmp_ctx, ads, printer, &printer_dn);
+	if (!W_ERROR_IS_OK(result)) {
+		goto out;
+	}
+
+	result = nt_printer_guid_retrieve_internal(ads, printer_dn, pguid);
+out:
+	TALLOC_FREE(tmp_ctx);
+	ads_destroy(&ads);
+	ads_kdestroy("MEMORY:prtpub_cache");
+	unsetenv(KRB5_ENV_CCNAME);
+	if (old_krb5ccname != NULL) {
+		setenv(KRB5_ENV_CCNAME, old_krb5ccname, 0);
+	}
+
+	return result;
+}
+
 WERROR nt_printer_guid_get(TALLOC_CTX *mem_ctx,
 			   const struct auth_session_info *session_info,
 			   struct messaging_context *msg_ctx,
@@ -665,6 +717,12 @@ bool is_printer_published(TALLOC_CTX *mem_ctx,
 	return true;
 }
 #else
+WERROR nt_printer_guid_retrieve(TALLOC_CTX *mem_ctx, const char *printer,
+				struct GUID *pguid)
+{
+	return WERR_NOT_SUPPORTED;
+}
+
 WERROR nt_printer_guid_get(TALLOC_CTX *mem_ctx,
 			   const struct auth_session_info *session_info,
 			   struct messaging_context *msg_ctx,
