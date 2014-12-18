@@ -6,8 +6,9 @@
 
 # overall this makes some build tasks quite a bit faster
 
+import os
 import Build, Utils, Node
-from TaskGen import feature, after
+from TaskGen import feature, after, before
 import preproc, Task
 
 @feature('cc', 'cxx')
@@ -308,3 +309,25 @@ def apply_lib_vars(self):
             val = self.env[v + '_' + x]
             if val:
                 self.env.append_value(v, val)
+
+@feature('cprogram', 'cshlib', 'cstaticlib')
+@after('apply_lib_vars')
+@before('apply_obj_vars')
+def samba_before_apply_obj_vars(self):
+    """before apply_obj_vars for uselib, this removes the standard pathes"""
+
+    def is_standard_libpath(env, path):
+        for _path in env.STANDARD_LIBPATH:
+            if _path == os.path.normpath(path):
+                return True
+        return False
+
+    v = self.env
+
+    for i in v['RPATH']:
+        if is_standard_libpath(v, i):
+            v['RPATH'].remove(i)
+
+    for i in v['LIBPATH']:
+        if is_standard_libpath(v, i):
+            v['LIBPATH'].remove(i)
