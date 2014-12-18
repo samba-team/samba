@@ -68,8 +68,8 @@ test_smbclient() {
 
 enctype="-e $ENCTYPE"
 
-PWSETCONFIG="-H ldap://$SERVER -U$USERNAME%$PASSWORD"
-export PWSETCONFIG
+ADMIN_LDBMODIFY_CONFIG="-H ldap://$SERVER -U$USERNAME%$PASSWORD"
+export ADMIN_LDBMODIFY_CONFIG
 
 KRB5CCNAME_PATH="$PREFIX/tmpccache"
 KRB5CCNAME="FILE:$KRB5CCNAME_PATH"
@@ -77,7 +77,7 @@ ADMIN_KRB5CCNAME="FILE:$KRB5CCNAME_PATH"
 export KRB5CCNAME
 rm -rf $KRB5CCNAME_PATH
 
-testit "reset password policies beside of minimum password age of 0 days" $VALGRIND $samba_tool domain passwordsettings $PWSETCONFIG set --complexity=default --history-length=default --min-pwd-length=default --min-pwd-age=0 --max-pwd-age=default || failed=`expr $failed + 1`
+testit "reset password policies beside of minimum password age of 0 days" $VALGRIND $samba_tool domain passwordsettings $ADMIN_LDBMODIFY_CONFIG set --complexity=default --history-length=default --min-pwd-length=default --min-pwd-age=0 --max-pwd-age=default || failed=`expr $failed + 1`
 
 echo $PASSWORD > $PREFIX/tmppassfile
 #testit "kinit with keytab" $samba4kinit $enctype --keytab=$PREFIX/dc/private/secrets.keytab $SERVER\$@$REALM   || failed=`expr $failed + 1`
@@ -149,6 +149,19 @@ rm -f $KRB5CCNAME_PATH
 testit "kinit with password (windows style) using UPN" $samba4kinit $enctype  --renewable --windows --password-file=$PREFIX/tmpuserpassfile --request-pac nettest@$REALM   || failed=`expr $failed + 1`
 test_smbclient "Test login with user kerberos ccache from windows UPN" 'ls' -k yes || failed=`expr $failed + 1`
 
+cat > $PREFIX/tmpldbmodify <<EOF
+dn: cn=nettestuser,cn=users,$BASEDN
+changetype: modify
+replace: userPrincipalName
+userPrincipalName: nettest@$REALM.org
+EOF
+
+testit "modify userPrincipalName to be a different domain" $VALGRIND $ldbmodify $ADMIN_LDBMODIFY_CONFIG $PREFIX/tmpldbmodify $PREFIX/tmpldbmodify -k yes $@ || failed=`expr $failed + 1`
+
+rm -f $KRB5CCNAME_PATH
+testit "kinit with password (enterprise style) using UPN" $samba4kinit $enctype --enterprise --password-file=$PREFIX/tmpuserpassfile --request-pac nettest@$REALM.org   || failed=`expr $failed + 1`
+test_smbclient "Test login with user kerberos ccache from enterprise UPN, different domain" 'ls' -k yes || failed=`expr $failed + 1`
+
 
 USERPASS=$NEWUSERPASS
 NEWUSERPASS=testPaSS@56%
@@ -216,7 +229,7 @@ EOF
 USERPASS=$NEWUSERPASS
 NEWUSERPASS=testPaSS@911%
 
-testit "modify pwdLastSet" $VALGRIND $ldbmodify $PWSETCONFIG $PREFIX/tmpldbmodify $PREFIX/tmpldbmodify -k yes $@ || failed=`expr $failed + 1`
+testit "modify pwdLastSet" $VALGRIND $ldbmodify $ADMIN_LDBMODIFY_CONFIG $PREFIX/tmpldbmodify $PREFIX/tmpldbmodify -k yes $@ || failed=`expr $failed + 1`
 
 cat > $PREFIX/tmppasswordchange <<EOF
 expect nettestuser@${REALM}'s Password: 
@@ -255,7 +268,7 @@ rm -f $KRB5CCNAME_PATH
 testit "kinit with machineaccountccache script" $machineaccountccache $CONFIGURATION $KRB5CCNAME || failed=`expr $failed + 1`
 test_smbclient "Test machine account login with kerberos ccache" 'ls' -k yes || failed=`expr $failed + 1`
 
-testit "reset password policies" $VALGRIND $samba_tool domain passwordsettings $PWSETCONFIG set --complexity=default --history-length=default --min-pwd-length=default --min-pwd-age=default --max-pwd-age=default || failed=`expr $failed + 1`
+testit "reset password policies" $VALGRIND $samba_tool domain passwordsettings $ADMIN_LDBMODIFY_CONFIG set --complexity=default --history-length=default --min-pwd-length=default --min-pwd-age=default --max-pwd-age=default || failed=`expr $failed + 1`
 
 rm -f $PREFIX/tmpccache tmpccfile tmppassfile tmpuserpassfile tmpuserccache tmpkpasswdscript
 exit $failed
