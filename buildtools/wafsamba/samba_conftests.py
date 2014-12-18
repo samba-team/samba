@@ -4,6 +4,7 @@
 import os, shutil, re
 import Build, Configure, Utils
 from Configure import conf
+import config_c
 from samba_utils import *
 
 
@@ -506,3 +507,55 @@ def CHECK_XSLTPROC_MANPAGES(conf):
     if not conf.CONFIG_SET('XSLTPROC_MANPAGES'):
         print "A local copy of the docbook.xsl wasn't found on your system" \
               " consider installing package like docbook-xsl"
+
+
+waf_config_c_parse_flags = config_c.parse_flags;
+def samba_config_c_parse_flags(line1, uselib, env):
+    #
+    # We do a special treatment of the rpath components
+    # in the linkflags line, because currently the upstream
+    # parse_flags function is incomplete with respect to
+    # treatment of the rpath. The remainder of the linkflags
+    # line is later passed to the original funcion.
+    #
+    lst1 = shlex.split(line1)
+    lst2 = []
+    while lst1:
+        x = lst1.pop(0)
+
+        #
+        # NOTE on special treatment of -Wl,-R and -Wl,-rpath:
+        #
+        # It is important to not put a library provided RPATH
+        # into the LINKFLAGS but in the RPATH instead, since
+        # the provided LINKFLAGS get prepended to our own internal
+        # RPATH later, and hence can potentially lead to linking
+        # in too old versions of our internal libs.
+        #
+        # We do this filtering here on our own because of some
+        # bugs in the real parse_flags() function.
+        #
+        if x == '-Wl,-rpath' or x == '-Wl,-R':
+            linkflags.remove(x)
+            x = lst1.pop(0)
+            if x.startswith('-Wl,'):
+                rpath = x[4:]
+            else:
+                rpath = x
+        elif x.startswith('-Wl,-R,'):
+            rpath = x[7:]
+        elif x.startswith('-Wl,-R'):
+            rpath = x[6:]
+        elif x.startswith('-Wl,-rpath,'):
+            rpath = x[11:]
+        else:
+            lst2.append(x)
+            continue
+
+        env.append_value('RPATH_' + uselib, rpath)
+
+    line2 = ' '.join(lst2)
+    waf_config_c_parse_flags(line2, uselib, env)
+
+    return
+config_c.parse_flags = samba_config_c_parse_flags
