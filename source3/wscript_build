@@ -55,13 +55,6 @@ bld.SAMBA3_LIBRARY('netapi',
                     pc_files='libnet/netapi.pc',
                     vnum='0')
 
-bld.SAMBA3_LIBRARY('nss_wins',
-                  source='../nsswitch/wins.c',
-                  deps='''param libsmb LIBTSOCKET''',
-                  realname='libnss_wins.so.2',
-                  soname='libnss_wins.so',
-                  vnum='2')
-
 bld.SAMBA3_LIBRARY('gse',
                    source='librpc/crypto/gse_krb5.c librpc/crypto/gse.c',
                    deps='krb5samba gensec param KRBCLIENT secrets3',
