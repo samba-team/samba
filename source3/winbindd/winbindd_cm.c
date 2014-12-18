@@ -1149,6 +1149,7 @@ static NTSTATUS cm_prepare_connection(struct winbindd_domain *domain,
 	 */
 	if (NT_STATUS_EQUAL(result, NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT)
 	    || NT_STATUS_EQUAL(result, NT_STATUS_TRUSTED_DOMAIN_FAILURE)
+	    || NT_STATUS_EQUAL(result, NT_STATUS_INVALID_ACCOUNT_NAME)
 	    || NT_STATUS_EQUAL(result, NT_STATUS_LOGON_FAILURE))
 	{
 		if (cli_credentials_is_anonymous(creds)) {
