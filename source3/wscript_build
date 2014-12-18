@@ -653,13 +653,6 @@ bld.SAMBA3_LIBRARY('smbsharemodes',
                     vnum='0',
                     vars=locals())
 
-bld.SAMBA3_LIBRARY('nss_wins',
-                  source=WINBIND_WINS_NSS_SRC,
-                  deps='''param libsmb LIBTSOCKET''',
-                  realname='libnss_wins.so.2',
-                  soname='libnss_wins.so',
-                  vnum='2')
-
 bld.SAMBA3_LIBRARY('gse',
                    source='librpc/crypto/gse_krb5.c librpc/crypto/gse.c',
                    deps='krb5samba gensec param KRBCLIENT secrets3',
