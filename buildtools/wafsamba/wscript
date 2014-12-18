@@ -295,6 +295,10 @@ def configure(conf):
                     headers='stdio.h',
                     msg='Checking simple C program')
 
+    # check which compiler/linker flags are needed for rpath support
+    if not conf.CHECK_LDFLAGS(['-Wl,-rpath,.']) and conf.CHECK_LDFLAGS(['-Wl,-R,.']):
+        conf.env['RPATH_ST'] = '-Wl,-R,%s'
+
     # check for rpath
     if conf.CHECK_LIBRARY_SUPPORT(rpath=True):
         support_rpath = True
