@@ -132,6 +132,9 @@ bool print_access_check(const struct auth_session_info *server_info,
 			struct messaging_context *msg_ctx, int snum,
 			int access_type);
 
+WERROR nt_printer_guid_retrieve(TALLOC_CTX *mem_ctx, const char *printer,
+				struct GUID *pguid);
+
 WERROR nt_printer_guid_get(TALLOC_CTX *mem_ctx,
 			   const struct auth_session_info *session_info,
 			   struct messaging_context *msg_ctx,
