@@ -64,7 +64,6 @@ conf.CHECK_FUNCS_IN('res_search res_nsearch res_ndestroy dns_search dn_expand', 
                     checklibc=True, headers='netinet/in.h arpa/nameser.h resolv.h dns.h')
 conf.CHECK_VARIABLE('_res', headers='netinet/in.h arpa/nameser.h resolv.h')
 conf.CHECK_DECLS('_res', headers='netinet/in.h arpa/nameser.h resolv.h')
-conf.CHECK_FUNCS_IN('openpty', 'util', checklibc=True, headers='pty.h util.h libutil.h')
 
 conf.DEFINE('HAVE_KRB5',1)
 
