@@ -4237,7 +4237,25 @@ static WERROR construct_printer_info7(TALLOC_CTX *mem_ctx,
 		werr = nt_printer_guid_get(tmp_ctx, session_info, msg_ctx,
 					   printer, &guid);
 		if (!W_ERROR_IS_OK(werr)) {
-			goto out_tmp_free;
+			/*
+			 * If we do not have a GUID entry in the registry, then
+			 * try to retrieve it from AD and store it now.
+			 */
+			werr = nt_printer_guid_retrieve(tmp_ctx, printer,
+							&guid);
+			if (!W_ERROR_IS_OK(werr)) {
+				DEBUG(1, ("Failed to retrieve GUID for "
+					  "printer [%s] from AD - "
+					  "Is the the printer still "
+					  "published ?\n", printer));
+				goto out_tmp_free;
+			}
+
+			werr = nt_printer_guid_store(msg_ctx, printer, guid);
+			if (!W_ERROR_IS_OK(werr)) {
+				DEBUG(3, ("failed to store printer %s guid\n",
+					  printer));
+			}
 		}
 		r->guid = talloc_strdup_upper(mem_ctx, GUID_string2(mem_ctx, &guid));
 		r->action = DSPRINT_PUBLISH;
