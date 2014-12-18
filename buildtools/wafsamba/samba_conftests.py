@@ -508,6 +508,35 @@ def CHECK_XSLTPROC_MANPAGES(conf):
         print "A local copy of the docbook.xsl wasn't found on your system" \
               " consider installing package like docbook-xsl"
 
+#
+# Determine the standard libpath for the used compiler,
+# so we can later use that to filter out these standard
+# library paths when some tools like cups-config or
+# python-config report standard lib paths with their
+# ldflags (-L...)
+#
+@conf
+def CHECK_STANDARD_LIBPATH(conf):
+    # at least gcc and clang support this:
+    try:
+        cmd = conf.env.CC + ['-print-search-dirs']
+        out = Utils.cmd_output(cmd).split('\n')
+    except ValueError:
+        # option not supported by compiler - use a standard list of directories
+        dirlist = [ '/usr/lib', '/usr/lib64' ]
+    except:
+        raise Utils.WafError('Unexpected error running "%s"' % (cmd))
+    else:
+        dirlist = []
+        for line in out:
+            line = line.strip()
+            if line.startswith("libraries: ="):
+                dirliststr = line[len("libraries: ="):]
+                dirlist = [ os.path.normpath(x) for x in dirliststr.split(':') ]
+                break
+
+    conf.env.STANDARD_LIBPATH = dirlist
+
 
 waf_config_c_parse_flags = config_c.parse_flags;
 def samba_config_c_parse_flags(line1, uselib, env):
