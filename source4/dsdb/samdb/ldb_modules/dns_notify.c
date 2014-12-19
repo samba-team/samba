@@ -180,6 +180,7 @@ static int dns_notify_modify(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_result *res;
 	struct dsdb_schema *schema;
 	const struct dsdb_class *objectclass;
+	const char * const attrs[] = { "objectClass", NULL };
 	int ret;
 
 	if (ldb_dn_is_special(req->op.mod.message->dn)) {
@@ -206,7 +207,7 @@ static int dns_notify_modify(struct ldb_module *module, struct ldb_request *req)
 		if (ldb_dn_compare_base(w->dn, req->op.add.message->dn) == 0) {
 			dn = ldb_dn_copy(tmp_ctx, req->op.mod.message->dn);
 
-			ret = dsdb_module_search_dn(module, tmp_ctx, &res, dn, NULL,
+			ret = dsdb_module_search_dn(module, tmp_ctx, &res, dn, attrs,
 						    DSDB_FLAG_NEXT_MODULE |
 						    DSDB_SEARCH_SHOW_RECYCLED |
 						    DSDB_SEARCH_REVEAL_INTERNALS |
@@ -254,6 +255,7 @@ static int dns_notify_delete(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_result *res;
 	struct dsdb_schema *schema;
 	const struct dsdb_class *objectclass;
+	const char * const attrs[] = { "objectClass", NULL };
 	int ret;
 
 	if (ldb_dn_is_special(req->op.del.dn)) {
@@ -279,7 +281,7 @@ static int dns_notify_delete(struct ldb_module *module, struct ldb_request *req)
 	for (w = data->watched; w; w = w->next) {
 		if (ldb_dn_compare_base(w->dn, req->op.add.message->dn) == 0) {
 			old_dn = ldb_dn_copy(tmp_ctx, req->op.del.dn);
-			ret = dsdb_module_search_dn(module, tmp_ctx, &res, old_dn, NULL,
+			ret = dsdb_module_search_dn(module, tmp_ctx, &res, old_dn, attrs,
 						    DSDB_FLAG_NEXT_MODULE |
 						    DSDB_SEARCH_SHOW_RECYCLED |
 						    DSDB_SEARCH_REVEAL_INTERNALS |
