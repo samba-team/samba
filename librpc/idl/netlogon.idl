@@ -871,7 +871,7 @@ interface netlogon
 		[string,charset(UTF16)] uint16 *trusted_domain_name;
 	} netr_NETLOGON_INFO_4;
 
-	typedef union {
+	typedef [public] union {
 		[case(1)]  netr_NETLOGON_INFO_1 *info1;
 		[case(2)]  netr_NETLOGON_INFO_2 *info2;
 		[case(3)]  netr_NETLOGON_INFO_3 *info3;
@@ -880,7 +880,7 @@ interface netlogon
 	} netr_CONTROL_QUERY_INFORMATION;
 
 	/* function_code values */
-	typedef [v1_enum] enum {
+	typedef [v1_enum,public] enum {
 		NETLOGON_CONTROL_QUERY			= 0x00000001,
 		NETLOGON_CONTROL_REPLICATE		= 0x00000002,
 		NETLOGON_CONTROL_SYNCHRONIZE		= 0x00000003,
@@ -920,7 +920,7 @@ interface netlogon
 	/*****************/
 	/* Function 0x0E */
 
-	typedef union {
+	typedef [public,switch_type(netr_LogonControlCode)] union {
 		[case(NETLOGON_CONTROL_REDISCOVER)]        [string,charset(UTF16)] uint16 *domain;
 		[case(NETLOGON_CONTROL_TC_QUERY)]          [string,charset(UTF16)] uint16 *domain;
 		[case(NETLOGON_CONTROL_TRANSPORT_NOTIFY)]  [string,charset(UTF16)] uint16 *domain;

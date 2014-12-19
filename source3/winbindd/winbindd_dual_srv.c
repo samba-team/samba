@@ -870,3 +870,16 @@ NTSTATUS _winbind_SamLogon(struct pipes_struct *p,
 				       lm_response, nt_response, &r->out.validation.sam3);
 	return status;
 }
+
+WERROR _winbind_LogonControl(struct pipes_struct *p,
+			     struct winbind_LogonControl *r)
+{
+	struct winbindd_domain *domain;
+
+	domain = wb_child_domain();
+	if (domain == NULL) {
+		return WERR_NO_SUCH_DOMAIN;
+	}
+
+	return WERR_NOT_SUPPORTED;
+}
