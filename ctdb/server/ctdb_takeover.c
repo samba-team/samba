@@ -37,6 +37,7 @@
 struct ctdb_ipflags {
 	bool noiptakeover;
 	bool noiphost;
+	enum ctdb_runstate runstate;
 };
 
 struct ctdb_iface {
@@ -2474,6 +2475,8 @@ set_ipflags_internal(struct ctdb_context *ctdb,
 		if (nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE) {
 			ipflags[i].noiphost = true;
 		}
+		/* Remember the runstate */
+		ipflags[i].runstate = runstate[i];
 	}
 
 	if (all_nodes_are_disabled(nodemap)) {
@@ -2663,6 +2666,7 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap,
 	struct takeover_callback_data *takeover_data;
 	struct iprealloc_callback_data iprealloc_data;
 	bool *retry_data;
+	bool can_host_ips;
 
 	/*
 	 * ip failover is completely disabled, just send out the 
@@ -2677,6 +2681,19 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap,
 		DEBUG(DEBUG_ERR,("Failed to set IP flags - aborting takeover run\n"));
 		talloc_free(tmp_ctx);
 		return -1;
+	}
+
+	/* Short-circuit IP allocation if no nodes are in the RUNNING
+	 * runstate yet, since no nodes will be able to host IPs */
+	can_host_ips = false;
+	for (i=0; i<nodemap->num; i++) {
+		if (ipflags[i].runstate == CTDB_RUNSTATE_RUNNING) {
+			can_host_ips = true;
+		}
+	}
+	if (!can_host_ips) {
+		DEBUG(DEBUG_WARNING,("No nodes available to host public IPs yet\n"));
+		return 0;
 	}
 
 	/* Do the IP reassignment calculations */
