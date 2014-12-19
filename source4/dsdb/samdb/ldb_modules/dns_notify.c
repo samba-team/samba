@@ -213,13 +213,12 @@ static int dns_notify_modify(struct ldb_module *module, struct ldb_request *req)
 						    DSDB_SEARCH_REVEAL_INTERNALS |
 						    DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT, req);
 			if (ret != LDB_SUCCESS) {
-				ldb_asprintf_errstring(ldb_module_get_ctx(module),
-						       "%s: Failed to modify %s, because we failed to find it: %s\n",
-						       __func__,
-						       ldb_dn_get_linearized(dn),
-						       ldb_errstring(ldb_module_get_ctx(module)));
-				talloc_free(tmp_ctx);
-				return ret;
+				/* 
+				 * We want the give the caller the
+				 * error from trying the actual
+				 * request, below 
+				 */
+				break;
 			}
 
 			schema = dsdb_get_schema(ldb, req);
@@ -287,13 +286,12 @@ static int dns_notify_delete(struct ldb_module *module, struct ldb_request *req)
 						    DSDB_SEARCH_REVEAL_INTERNALS |
 						    DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT, req);
 			if (ret != LDB_SUCCESS) {
-				ldb_asprintf_errstring(ldb_module_get_ctx(module),
-						       "%s: Failed to delete %s, because we failed to find it: %s\n",
-						       __func__,
-						       ldb_dn_get_linearized(old_dn),
-						       ldb_errstring(ldb_module_get_ctx(module)));
-				talloc_free(tmp_ctx);
-				return ret;
+				/* 
+				 * We want the give the caller the
+				 * error from trying the actual
+				 * request, below 
+				 */
+				break;
 			}
 
 			schema = dsdb_get_schema(ldb, req);
