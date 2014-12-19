@@ -209,6 +209,16 @@ class MatchRulesTests(samba.tests.TestCase):
         # |-> c1
         # |   |->c2
         # |   |  |->u1
+
+        #
+        # While appropriate for this test, this is NOT a good practice
+        # in general.  This is only done here because the alternative
+        # is to make a schema modification.
+        #
+        # IF/WHEN Samba protects this attribute better, this
+        # particular part of the test can be removed, as the same code
+        # is covered by the addressBookRoots2 case well enough.
+        #
         m = Message()
         m.dn = Dn(self.ldb, "")
         m["e1"] = MessageElement("1", FLAG_MOD_REPLACE, "schemaUpgradeInProgress")
