@@ -94,6 +94,11 @@ def ADD_INIT_FUNCTION(bld, subsystem, target, init_function):
 Build.BuildContext.ADD_INIT_FUNCTION = ADD_INIT_FUNCTION
 
 
+def generate_empty_file(task):
+    target_fname = installed_location=task.outputs[0].bldpath(task.env)
+    target_file = open(installed_location, 'w')
+    target_file.close()
+    return 0
 
 #################################################################
 def SAMBA_LIBRARY(bld, libname, source,
@@ -149,9 +154,15 @@ def SAMBA_LIBRARY(bld, libname, source,
         source = bld.SUBDIR(subdir, source)
 
     # remember empty libraries, so we can strip the dependencies
-    if ((source == '') or (source == [])) and deps == '' and public_deps == '':
-        SET_TARGET_TYPE(bld, libname, 'EMPTY')
-        return
+    if ((source == '') or (source == [])):
+        if deps == '' and public_deps == '':
+            SET_TARGET_TYPE(bld, libname, 'EMPTY')
+            return
+        empty_c = libname + '.empty.c'
+        bld.SAMBA_GENERATOR('%s_empty_c' % libname,
+                            rule=generate_empty_file,
+                            target=empty_c)
+        source=empty_c
 
     if BUILTIN_LIBRARY(bld, libname):
         obj_target = libname
@@ -537,9 +548,15 @@ def SAMBA_SUBSYSTEM(bld, modname, source,
         return
 
     # remember empty subsystems, so we can strip the dependencies
-    if ((source == '') or (source == [])) and deps == '' and public_deps == '':
-        SET_TARGET_TYPE(bld, modname, 'EMPTY')
-        return
+    if ((source == '') or (source == [])):
+        if deps == '' and public_deps == '':
+            SET_TARGET_TYPE(bld, modname, 'EMPTY')
+            return
+        empty_c = modname + '.empty.c'
+        bld.SAMBA_GENERATOR('%s_empty_c' % modname,
+                            rule=generate_empty_file,
+                            target=empty_c)
+        source=empty_c
 
     if not SET_TARGET_TYPE(bld, modname, 'SUBSYSTEM'):
         return
