@@ -160,7 +160,7 @@ static int dns_notify_add(struct ldb_module *module, struct ldb_request *req)
 				return ldb_operr(ldb);
 			}
 
-			if (strcasecmp(objectclass->lDAPDisplayName, "dnsZone") == 0) {
+			if (ldb_attr_cmp(objectclass->lDAPDisplayName, "dnsZone") == 0) {
 				data->reload_zones = true;
 				break;
 			}
@@ -233,7 +233,7 @@ static int dns_notify_modify(struct ldb_module *module, struct ldb_request *req)
 				return ldb_operr(ldb);
 			}
 
-			if (strcasecmp(objectclass->lDAPDisplayName, "dnsZone") == 0) {
+			if (ldb_attr_cmp(objectclass->lDAPDisplayName, "dnsZone") == 0) {
 				data->reload_zones = true;
 				break;
 			}
@@ -306,7 +306,7 @@ static int dns_notify_delete(struct ldb_module *module, struct ldb_request *req)
 				return ldb_operr(ldb);
 			}
 
-			if (strcasecmp(objectclass->lDAPDisplayName, "dnsZone") == 0) {
+			if (ldb_attr_cmp(objectclass->lDAPDisplayName, "dnsZone") == 0) {
 				data->reload_zones = true;
 				break;
 			}
