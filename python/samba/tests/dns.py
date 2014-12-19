@@ -888,6 +888,14 @@ class TestZones(DNSTest):
         self.rpc_conn = dnsserver.dnsserver("ncacn_ip_tcp:%s" % (self.server),
                                             self.lp, self.creds)
 
+    def tearDown(self):
+        super(TestZones, self).tearDown()
+        try:
+            self.delete_zone(self.zone)
+        except RuntimeError, (num, string):
+            if num != 9601: #WERR_DNS_ERROR_ZONE_DOES_NOT_EXIST
+                raise
+
     def create_zone(self, zone):
         zone_create = dnsserver.DNS_RPC_ZONE_CREATE_INFO_LONGHORN()
         zone_create.pszZoneName = zone
