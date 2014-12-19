@@ -56,7 +56,7 @@ ctdb_ip_info=$(echo "$out" | awk -F'|' 'NR > 1 { print $2, $3, $5 }')
 echo "Getting IP information from interfaces..."
 try_command_on_node all "ip addr show"
 ip_addr_info=$(echo "$out" | \
-    awk '$1 == "inet" { print gensub(/\/.*/, "", "", $2)}')
+    awk '$1 == "inet" { ip = $2; sub(/\/.*/, "", ip); print ip }')
 
 prefix=""
 for b in $(seq 0 255) ; do

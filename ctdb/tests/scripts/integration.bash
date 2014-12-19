@@ -699,8 +699,9 @@ ip_maskbits_iface ()
 
     ip addr show to "${_addr}/${_bits}" 2>/dev/null | \
 	awk -v family="${_family}" \
-	    'NR == 1 { iface = gensub(":$", "", 1, $2) } \
-             $1 ~ /inet/ { print gensub(".*/", "", 1, $2), iface, family }'
+	    'NR == 1 { iface = $2; sub(":$", "", iface) } \
+             $1 ~ /inet/ { mask = $2; sub(".*/", "", mask); \
+                           print mask, iface, family }'
 }
 
 drop_ip ()

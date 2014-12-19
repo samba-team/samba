@@ -145,7 +145,9 @@ case "$1" in
 	#   server-IP client-IP
 	# but only for the server-IPs that are hosted on this node.
 	sed_expr=$(ctdb ip | tail -n +2 |
-	    awk -v pnn=$pnn 'pnn == $2 { printf "s/^key.*=.*statd-state@\\(%s\\)@\\([^\"]*\\).*/\\1 \\2/p\n", gensub(/\./, "\\\\.", "g", $1) }')
+	    awk -v pnn=$pnn 'pnn == $2 { \
+                ip = $1; gsub(/\./, "\\\\.", ip); \
+                printf "s/^key.*=.*statd-state@\\(%s\\)@\\([^\"]*\\).*/\\1 \\2/p\n", ip }')
 
 	statd_state=$(ctdb catdb ctdb.tdb | sed -n "$sed_expr" | sort)
 	[ -n "$statd_state" ] || exit 0
