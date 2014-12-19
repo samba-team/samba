@@ -395,9 +395,13 @@ static int extended_dn_filter_callback(struct ldb_parse_tree *tree, void *privat
 	 * pointer and a boolean to tell us the exact same thing.
 	 */
 	if (!has_extended_component) {
-		if (!attribute->one_way_link ||
-		    ldb_module_get_ops(filter_ctx->module) == &ldb_extended_dn_in_openldap_module_ops)
-		return LDB_SUCCESS;
+		if (!attribute->one_way_link) {
+			return LDB_SUCCESS;
+		}
+
+		if (ldb_module_get_ops(filter_ctx->module) == &ldb_extended_dn_in_openldap_module_ops) {
+			return LDB_SUCCESS;
+		}
 	}
 
 	if (tree->operation == LDB_OP_EQUALITY) {
