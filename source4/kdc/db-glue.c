@@ -1229,27 +1229,28 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 	if (password_utf8.length != 0) {
 		Key key = {};
 		krb5_const_principal salt_principal = principal;
-		krb5_salt salt;
+		krb5_data salt;
 		krb5_data cleartext_data;
 
 		cleartext_data.data = password_utf8.data;
 		cleartext_data.length = password_utf8.length;
 
-		ret = krb5_get_pw_salt(context,
-				       salt_principal,
-				       &salt);
+		ret = smb_krb5_get_pw_salt(context,
+					   salt_principal,
+					   &salt);
 		if (ret != 0) {
 			goto out;
 		}
 
 		if (supported_enctypes & ENC_HMAC_SHA1_96_AES256) {
-			ret = krb5_string_to_key_data_salt(context,
-							   ENCTYPE_AES256_CTS_HMAC_SHA1_96,
-							   cleartext_data,
-							   salt,
-							   &key.key);
+			ret = smb_krb5_create_key_from_string(context,
+							      salt_principal,
+							      &salt,
+							      &cleartext_data,
+							      ENCTYPE_AES256_CTS_HMAC_SHA1_96,
+							      &key.key);
 			if (ret != 0) {
-				krb5_free_salt(context, salt);
+				kerberos_free_data_contents(context, &salt);
 				goto out;
 			}
 
@@ -1258,13 +1259,14 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 		}
 
 		if (supported_enctypes & ENC_HMAC_SHA1_96_AES128) {
-			ret = krb5_string_to_key_data_salt(context,
-							   ENCTYPE_AES128_CTS_HMAC_SHA1_96,
-							   cleartext_data,
-							   salt,
-							   &key.key);
+			ret = smb_krb5_create_key_from_string(context,
+							      salt_principal,
+							      &salt,
+							      &cleartext_data,
+							      ENCTYPE_AES128_CTS_HMAC_SHA1_96,
+							      &key.key);
 			if (ret != 0) {
-				krb5_free_salt(context, salt);
+				kerberos_free_data_contents(context, &salt);
 				goto out;
 			}
 
@@ -1272,7 +1274,7 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 			entry_ex->entry.keys.len++;
 		}
 
-		krb5_free_salt(context, salt);
+		kerberos_free_data_contents(context, &salt);
 	}
 
 	if (password_hash != NULL) {
