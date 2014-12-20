@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the second release candidate of Samba 4.2.  This is *not*
+This is the third release candidate of Samba 4.2.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -336,6 +336,122 @@ smb.conf changes
    smb2 max write                       Changed default 8388608
    smb2 max trans                       Changed default 8388608
    winbind expand groups                Changed default 0
+
+
+CHANGES SINCE 4.2.0rc2
+======================
+
+o   Michael Adam <obnox@samba.org>
+    * BUG 10892: Integrate CTDB into top-level Samba build.
+
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 10851: lib: uid_wrapper: Fix setgroups and syscall detection on a
+      system without native uid_wrapper library.
+    * BUG 10896: s3-nmbd: Fix netbios name truncation.
+    * BUG 10904: Fix smbclient loops doing a directory listing against Mac OS X 10
+      server with a non-wildcard path.
+    * BUG 10911: Add support for SMB2 leases.
+    * BUG 10920: s3: nmbd: Ensure NetBIOS names are only 15 characters stored.
+    * BUG 10966: libcli: SMB2: Pure SMB2-only negprot fix to make us behave as a
+      Windows client does.
+    * BUG 10982: s3: smbd: Fix *allocate* calls to follow POSIX error return
+      convention.
+
+
+o   Christian Ambach <ambi@samba.org>
+    * BUG 9629: Make 'profiles' work again.
+
+
+o   Björn Baumbach <bb@sernet.de>
+    * BUG 11014: ctdb-build: Fix build without xsltproc.
+
+
+o   Ralph Boehme <slow@samba.org>
+    * BUG 10834: Don't build vfs_snapper on FreeBSD.
+    * BUG 10971: vfs_streams_xattr: Check stream type.
+    * BUG 10983: vfs_fruit: Add support for AAPL.
+    * BUG 11005: vfs_streams_xattr: Add missing call to SMB_VFS_NEXT_CONNECT.
+
+
+o   Günther Deschner <gd@samba.org>
+    * BUG 9056: pam_winbind: fix warn_pwd_expire implementation.
+    * BUG 10942: Cleanup add_string_to_array and usage.
+
+
+o   David Disseldorp <ddiss@samba.org>
+    * BUG 10898: spoolss: Fix handling of bad EnumJobs levels.
+    * BUG 10905: Fix print job enumeration.
+
+
+o   Amitay Isaacs <amitay@gmail.com>
+    * BUG 10620: s4-dns: Add support for BIND 9.10.
+    * BUG 10892: Integrate CTDB into top-level Samba build.
+    * BUG 10996: Fix IPv6 support in CTDB.
+    * BUG 11014: packaging: Include CTDB man pages in the tarball.
+
+
+o   Björn Jacke <bj@sernet.de>
+    * BUG 10835: nss_winbind: Add getgroupmembership for FreeBSD.
+
+
+o   Guenter Kukkukk <linux@kukkukk.com>
+    * BUG 10952: Fix 'samba-tool dns serverinfo <server>' for IPv6.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 10932: pdb_tdb: Fix a TALLOC/SAFE_FREE mixup.
+    * BUG 10942: dbwrap_ctdb: Pass on mutex flags to tdb_open.
+
+
+o   Justin Maggard <jmaggard10@gmail.com>
+    * BUG 10852: winbind3: Fix pwent variable substitution.
+
+
+o   Kamen Mazdrashki <kamenim@samba.org>
+    * BUG 10975: ldb: version 1.1.18
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 10781: tdb: version 1.3.3
+    * BUG 10911: Add support for SMB2 leases.
+    * BUG 10921: s3:smbd: Fix file corruption using "write cache size != 0".
+    * BUG 10949: Fix RootDSE search with extended dn control.
+    * BUG 10958: libcli/smb: only force signing of smb2 session setups when
+      binding a new session.
+    * BUG 10975: ldb: version 1.1.18
+    * BUG 11016: pdb_get_trusteddom_pw() fails with non valid UTF16 random
+      passwords.
+
+
+o   Marc Muehlfeld <mmuehlfeld@samba.org>
+    * BUG 10895: samba-tool group add: Add option '--nis-domain' and '--gid'.
+
+
+o   Noel Power <noel.power@suse.com>
+    * BUG 10918: btrfs: Don't leak opened directory handle.
+
+
+o   Matt Rogers <mrogers@redhat.com>
+    * BUG 10933: s3-keytab: fix keytab array NULL termination.
+
+
+o   Garming Sam <garming@catalyst.net.nz>
+    * BUG 10355: pdb: Fix build issues with shared modules.
+    * BUG 10720: idmap: Return the correct id type to *id_to_sid methods.
+    * BUG 10864: Fix testparm to show hidden share defaults.
+
+
+o   Andreas Schneider <asn@samba.org>
+    * BUG 10279: Make 'smbclient' use cached creds.
+    * BUG 10960: s3-smbclient: Return success if we listed the shares.
+    * BUG 10961: s3-smbstatus: Fix exit code of profile output.
+    * BUG 10965: socket_wrapper: Add missing prototype check for eventfd.
+
+
+o   Martin Schwenke <martin@meltin.net>
+    * BUG 10892: Integrate CTDB into top-level Samba build.
+    * BUG 10996: Fix IPv6 support in CTDB.
 
 
 CHANGES SINCE 4.2.0rc1
