@@ -185,7 +185,7 @@ tcptickle_sniff_start ()
     local src="$1"
     local dst="$2"
 
-    case "$dst" in
+    case "${dst%:*}" in
 	*:*) tcp6tickle_sniff_start "$src" "$dst" ;;
 	*)   tcp4tickle_sniff_start "$src" "$dst" ;;
     esac
