@@ -39,8 +39,8 @@ ssize_t iov_buf(const struct iovec *iov, int iovcnt,
 
 		tmp = needed + thislen;
 
-		if ((tmp < needed) || (tmp < thislen)) {
-			/* overflow */
+		if (tmp < needed) {
+			/* wrap */
 			return -1;
 		}
 		needed = tmp;
