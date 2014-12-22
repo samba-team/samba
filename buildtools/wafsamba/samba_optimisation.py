@@ -124,33 +124,6 @@ def hash_constraints(self):
     return sum
 Task.TaskBase.hash_constraints = hash_constraints
 
-
-# import cc
-# from TaskGen import extension
-# import Utils
-
-# @extension(cc.EXT_CC)
-# def c_hook(self, node):
-#     task = self.create_task('cc', node, node.change_ext('.o'))
-#     try:
-#         self.compiled_tasks.append(task)
-#     except AttributeError:
-#         raise Utils.WafError('Have you forgotten to set the feature "cc" on %s?' % str(self))
-
-#     bld = self.bld
-#     try:
-#         dc = bld.dc
-#     except AttributeError:
-#         dc = bld.dc = {}
-
-#     if task.outputs[0].id in dc:
-#         raise Utils.WafError('Samba, you are doing it wrong %r %s %s' % (task.outputs, task.generator, dc[task.outputs[0].id].generator))
-#     else:
-#         dc[task.outputs[0].id] = task
-
-#     return task
-
-
 def hash_env_vars(self, env, vars_lst):
     idx = str(id(env)) + str(vars_lst)
     try:
