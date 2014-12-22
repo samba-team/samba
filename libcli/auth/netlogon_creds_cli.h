@@ -164,4 +164,17 @@ NTSTATUS netlogon_creds_cli_ServerGetTrustInfo(
 				struct samr_Password *old_owf_password,
 				struct netr_TrustInfo **trust_info);
 
+struct tevent_req *netlogon_creds_cli_GetForestTrustInformation_send(TALLOC_CTX *mem_ctx,
+					struct tevent_context *ev,
+					struct netlogon_creds_cli_context *context,
+					struct dcerpc_binding_handle *b);
+NTSTATUS netlogon_creds_cli_GetForestTrustInformation_recv(struct tevent_req *req,
+			TALLOC_CTX *mem_ctx,
+			struct lsa_ForestTrustInformation **forest_trust_info);
+NTSTATUS netlogon_creds_cli_GetForestTrustInformation(
+			struct netlogon_creds_cli_context *context,
+			struct dcerpc_binding_handle *b,
+			TALLOC_CTX *mem_ctx,
+			struct lsa_ForestTrustInformation **forest_trust_info);
+
 #endif /* NETLOGON_CREDS_CLI_H */
