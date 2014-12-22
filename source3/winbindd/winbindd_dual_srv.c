@@ -687,12 +687,14 @@ NTSTATUS _wbint_PingDc(struct pipes_struct *p, struct wbint_PingDc *r)
 	WERROR werr;
 	fstring logon_server;
 	struct dcerpc_binding_handle *b;
+	bool retry = false;
 
 	domain = wb_child_domain();
 	if (domain == NULL) {
 		return NT_STATUS_REQUEST_NOT_ACCEPTED;
 	}
 
+reconnect:
 	status = cm_connect_netlogon(domain, &netlogon_pipe);
 	reset_cm_connection_on_error(domain, status);
         if (!NT_STATUS_IS_OK(status)) {
@@ -719,6 +721,14 @@ NTSTATUS _wbint_PingDc(struct pipes_struct *p, struct wbint_PingDc *r)
 	status = dcerpc_netr_LogonControl(b, p->mem_ctx,
 					  logon_server, NETLOGON_CONTROL_QUERY,
 					  2, &info, &werr);
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_DEVICE_ERROR) && !retry) {
+		DEBUG(10, ("Session might have expired. "
+			   "Reconnect and retry once.\n"));
+		invalidate_cm_connection(&domain->conn);
+		retry = true;
+		goto reconnect;
+	}
 
 	reset_cm_connection_on_error(domain, status);
 	if (!NT_STATUS_IS_OK(status)) {
