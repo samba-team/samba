@@ -2712,7 +2712,158 @@ static NTSTATUS dcesrv_netr_GetForestTrustInformation(struct dcesrv_call_state *
 static NTSTATUS dcesrv_netr_ServerGetTrustInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_ServerGetTrustInfo *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct loadparm_context *lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
+	struct netlogon_creds_CredentialState *creds = NULL;
+	struct ldb_context *sam_ctx = NULL;
+	const char * const attrs[] = {
+		"unicodePwd",
+		"sAMAccountName",
+		"userAccountControl",
+		NULL
+	};
+	struct ldb_message **res = NULL;
+	struct samr_Password *curNtHash = NULL, *prevNtHash = NULL;
+	NTSTATUS nt_status;
+	int ret;
+	const char *asid = NULL;
+	uint32_t uac = 0;
+	const char *aname = NULL;
+	struct ldb_message *tdo_msg = NULL;
+	const char * const tdo_attrs[] = {
+		"trustAuthIncoming",
+		"trustAttributes",
+		NULL
+	};
+	struct netr_TrustInfo *trust_info = NULL;
+
+	ZERO_STRUCTP(r->out.new_owf_password);
+	ZERO_STRUCTP(r->out.old_owf_password);
+
+	nt_status = dcesrv_netr_creds_server_step_check(dce_call,
+							mem_ctx,
+							r->in.computer_name,
+							r->in.credential,
+							r->out.return_authenticator,
+							&creds);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return nt_status;
+	}
+
+	/* TODO: check r->in.server_name is our name */
+
+	if (strcasecmp_m(r->in.account_name, creds->account_name) != 0) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (r->in.secure_channel_type != creds->secure_channel_type) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (strcasecmp_m(r->in.computer_name, creds->computer_name) != 0) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	sam_ctx = samdb_connect(mem_ctx, dce_call->event_ctx,
+				lp_ctx, system_session(lp_ctx), 0);
+	if (sam_ctx == NULL) {
+		return NT_STATUS_INVALID_SYSTEM_SERVICE;
+	}
+
+	asid = ldap_encode_ndr_dom_sid(mem_ctx, creds->sid);
+	if (asid == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ret = gendb_search(sam_ctx, mem_ctx, NULL, &res, attrs,
+			   "(&(objectClass=user)(objectSid=%s))",
+			   asid);
+	if (ret != 1) {
+		return NT_STATUS_ACCOUNT_DISABLED;
+	}
+
+	switch (creds->secure_channel_type) {
+	case SEC_CHAN_DNS_DOMAIN:
+	case SEC_CHAN_DOMAIN:
+		uac = ldb_msg_find_attr_as_uint(res[0], "userAccountControl", 0);
+
+		if (uac & UF_ACCOUNTDISABLE) {
+			return NT_STATUS_ACCOUNT_DISABLED;
+		}
+
+		if (!(uac & UF_INTERDOMAIN_TRUST_ACCOUNT)) {
+			return NT_STATUS_ACCOUNT_DISABLED;
+		}
+
+		aname = ldb_msg_find_attr_as_string(res[0], "sAMAccountName", NULL);
+		if (aname == NULL) {
+			return NT_STATUS_ACCOUNT_DISABLED;
+		}
+
+		nt_status = dsdb_trust_search_tdo_by_type(sam_ctx,
+						SEC_CHAN_DOMAIN, aname,
+						tdo_attrs, mem_ctx, &tdo_msg);
+		if (NT_STATUS_EQUAL(nt_status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+			return NT_STATUS_ACCOUNT_DISABLED;
+		}
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			return nt_status;
+		}
+
+		nt_status = dsdb_trust_get_incoming_passwords(tdo_msg, mem_ctx,
+							      &curNtHash,
+							      &prevNtHash);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			return nt_status;
+		}
+
+		trust_info = talloc_zero(mem_ctx, struct netr_TrustInfo);
+		if (trust_info == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		trust_info->count = 1;
+		trust_info->data = talloc_array(trust_info, uint32_t,
+						trust_info->count);
+		if (trust_info->data == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		trust_info->data[0] = ldb_msg_find_attr_as_uint(tdo_msg,
+							"trustAttributes",
+							0);
+		break;
+
+	default:
+		nt_status = samdb_result_passwords_no_lockout(mem_ctx, lp_ctx,
+							      res[0],
+							      NULL, &curNtHash);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			return nt_status;
+		}
+
+		prevNtHash = talloc(mem_ctx, struct samr_Password);
+		if (prevNtHash == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		E_md4hash("", prevNtHash->hash);
+		break;
+	}
+
+	if (curNtHash != NULL) {
+		*r->out.new_owf_password = *curNtHash;
+		netlogon_creds_des_encrypt(creds, r->out.new_owf_password);
+	}
+	if (prevNtHash != NULL) {
+		*r->out.old_owf_password = *prevNtHash;
+		netlogon_creds_des_encrypt(creds, r->out.old_owf_password);
+	}
+
+	if (trust_info != NULL) {
+		*r->out.trust_info = trust_info;
+	}
+
+	return NT_STATUS_OK;
 }
 
 /*
