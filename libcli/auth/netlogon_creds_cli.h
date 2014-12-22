@@ -147,4 +147,21 @@ NTSTATUS netlogon_creds_cli_DsrUpdateReadOnlyServerDnsRecords(
 				uint32_t dns_ttl,
 				struct NL_DNS_NAME_INFO_ARRAY *dns_names);
 
+struct tevent_req *netlogon_creds_cli_ServerGetTrustInfo_send(TALLOC_CTX *mem_ctx,
+					struct tevent_context *ev,
+					struct netlogon_creds_cli_context *context,
+					struct dcerpc_binding_handle *b);
+NTSTATUS netlogon_creds_cli_ServerGetTrustInfo_recv(struct tevent_req *req,
+					TALLOC_CTX *mem_ctx,
+					struct samr_Password *new_owf_password,
+					struct samr_Password *old_owf_password,
+					struct netr_TrustInfo **trust_info);
+NTSTATUS netlogon_creds_cli_ServerGetTrustInfo(
+				struct netlogon_creds_cli_context *context,
+				struct dcerpc_binding_handle *b,
+				TALLOC_CTX *mem_ctx,
+				struct samr_Password *new_owf_password,
+				struct samr_Password *old_owf_password,
+				struct netr_TrustInfo **trust_info);
+
 #endif /* NETLOGON_CREDS_CLI_H */
