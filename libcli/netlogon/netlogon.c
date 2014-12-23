@@ -91,9 +91,18 @@ NTSTATUS pull_netlogon_samlogon_response(DATA_BLOB *data, TALLOC_CTX *mem_ctx,
 			ndr, NDR_SCALARS|NDR_BUFFERS, &response->data.nt5_ex,
 			ntver);
 		if (ndr->offset < ndr->data_size) {
-			ndr_err = ndr_pull_error(ndr, NDR_ERR_UNREAD_BYTES,
-						 "not all bytes consumed ofs[%u] size[%u]",
-						 ndr->offset, ndr->data_size);
+			TALLOC_FREE(ndr);
+			/*
+			 * We need to handle a bug in FreeIPA (at least <= 4.1.2).
+			 *
+			 * They include the ip address information without setting
+			 * NETLOGON_NT_VERSION_5EX_WITH_IP, while using
+			 * ndr_push_NETLOGON_SAM_LOGON_RESPONSE_EX instead of
+			 * ndr_push_NETLOGON_SAM_LOGON_RESPONSE_EX_with_flags.
+			 */
+			ndr_err = ndr_pull_struct_blob_all(data, mem_ctx,
+						   &response->data.nt5,
+						   (ndr_pull_flags_fn_t)ndr_pull_NETLOGON_SAM_LOGON_RESPONSE_EX);
 		}
 		response->ntver = NETLOGON_NT_VERSION_5EX;
 		if (NDR_ERR_CODE_IS_SUCCESS(ndr_err) && DEBUGLEVEL >= 10) {
