@@ -1381,7 +1381,9 @@ static bool dcip_to_name(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	const char *dc_name;
 	fstring nbtname;
-
+#ifdef HAVE_ADS
+	bool is_ad_domain = false;
+#endif
 	ip_list.ss = *pss;
 	ip_list.port = 0;
 
@@ -1390,6 +1392,12 @@ static bool dcip_to_name(TALLOC_CTX *mem_ctx,
 	   None of these failures should be considered critical for now */
 
 	if ((lp_security() == SEC_ADS) && (domain->alt_name != NULL)) {
+		is_ad_domain = true;
+	} else if (lp_server_role() == ROLE_ACTIVE_DIRECTORY_DC) {
+		is_ad_domain = domain->active_directory;
+	}
+
+	if (is_ad_domain) {
 		ADS_STRUCT *ads;
 		ADS_STATUS ads_status;
 		char addr[INET6_ADDRSTRLEN];
