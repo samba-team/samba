@@ -30,6 +30,7 @@
 #include <system/network.h>
 #include <hx509.h>
 #include <der.h>
+#include <hcrypto/rsa.h>
 
 
 /* Our very special and valued secret */
@@ -1034,6 +1035,77 @@ static bool test_RestoreGUID_badhashaccesscheck(struct torture_context *tctx,
 	return true;
 }
 
+/* 
+ * Check that the RSA modulus in the certificate of the DCs has 2048 bits.
+ */
+static bool test_RetreiveBackupKeyGUID_2048bits(struct torture_context *tctx,
+					struct dcerpc_pipe *p)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	DATA_BLOB out_blob;
+	struct bkrp_BackupKey *r = createRetreiveBackupKeyGUIDStruct(tctx, p, 2, &out_blob);
+	enum dcerpc_AuthType auth_type;
+	enum dcerpc_AuthLevel auth_level;
+
+	hx509_context hctx;
+	int hret;
+	hx509_cert cert;
+	SubjectPublicKeyInfo spki;
+	RSA *rsa;
+	int RSA_returned_bits;
+
+	hx509_context_init(&hctx);
+
+	if (r == NULL) {
+		return false;
+	}
+
+	dcerpc_binding_handle_auth_info(b, &auth_type, &auth_level);
+
+	if (auth_level == DCERPC_AUTH_LEVEL_PRIVACY) {
+		const unsigned char *spki_spk_data;
+		torture_assert_ntstatus_ok(tctx,
+				dcerpc_bkrp_BackupKey_r(b, tctx, r),
+				"Get GUID");
+
+		out_blob.length = *r->out.data_out_len;
+
+		hret = hx509_cert_init_data(hctx, out_blob.data, out_blob.length, &cert);
+		torture_assert_int_equal(tctx, hret, 0, "hx509_cert_init_data failed");
+
+		hret = hx509_cert_get_SPKI(hctx, cert , &spki);
+		torture_assert_int_equal(tctx, hret, 0, "hx509_cert_get_SPKI failed");
+
+		/* We must take a copy, as d2i_RSAPublicKey *changes* the input parameter */
+		spki_spk_data = spki.subjectPublicKey.data;
+		rsa = d2i_RSAPublicKey(NULL, &spki_spk_data, spki.subjectPublicKey.length / 8);
+		torture_assert_int_equal(tctx, rsa != NULL, 1, "d2i_RSAPublicKey failed");
+
+		RSA_returned_bits = BN_num_bits(rsa->n);
+		torture_assert_int_equal(tctx,
+						RSA_returned_bits,
+						2048,
+						"RSA Key doesn't have 2048 bits");
+
+		RSA_free(rsa);
+
+		/* 
+		 * Because we prevented spki from being changed above,
+		 * we can now safely call this to free it 
+		 */
+		free_SubjectPublicKeyInfo(&spki);
+		hx509_cert_free(cert);
+		hx509_context_free(&hctx);
+
+	} else {
+		torture_assert_ntstatus_equal(tctx,
+						dcerpc_bkrp_BackupKey_r(b, tctx, r),
+						NT_STATUS_ACCESS_DENIED,
+						"Get GUID");
+	}
+	return true;
+}
+
 struct torture_suite *torture_rpc_backupkey(TALLOC_CTX *mem_ctx)
 {
 	struct torture_rpc_tcase *tcase;
@@ -1079,6 +1151,9 @@ struct torture_suite *torture_rpc_backupkey(TALLOC_CTX *mem_ctx)
 
 	torture_rpc_tcase_add_test(tcase, "empty_request_restore_guid",
 				   test_RestoreGUID_emptyrequest);
+
+	torture_rpc_tcase_add_test(tcase, "retreive_backup_key_guid_2048_bits",
+		test_RetreiveBackupKeyGUID_2048bits);
 
 	return suite;
 }
