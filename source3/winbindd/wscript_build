@@ -160,3 +160,11 @@ bld.SAMBA3_MODULE('nss_info_sfu',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('idmap_ad'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('idmap_ad') and bld.CONFIG_SET("HAVE_LDAP"))
+
+bld.SAMBA3_MODULE('idmap_script',
+                 subsystem='idmap',
+                 allow_undefined_symbols=True,
+                 source='idmap_script.c',
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('idmap_script'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('idmap_script'))
