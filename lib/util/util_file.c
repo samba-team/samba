@@ -282,15 +282,13 @@ char **file_lines_parse(char *p, size_t size, int *numlines, TALLOC_CTX *mem_ctx
 		if (s[0] == '\n') i++;
 	}
 
-	ret = talloc_array(mem_ctx, char *, i+2);
+	ret = talloc_zero_array(mem_ctx, char *, i+2);
 	if (!ret) {
 		talloc_free(p);
 		return NULL;
 	}
 
 	talloc_steal(ret, p);
-
-	memset(ret, 0, sizeof(ret[0])*(i+2));
 
 	ret[0] = p;
 	for (s = p, i=0; s < p+size; s++) {
