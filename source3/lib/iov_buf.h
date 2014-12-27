@@ -21,7 +21,6 @@
 #define __LIB_IOV_BUF_H__
 
 #include <unistd.h>
-#include <talloc.h>
 #include <stdint.h>
 
 ssize_t iov_buflen(const struct iovec *iov, int iovlen);
