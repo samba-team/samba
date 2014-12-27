@@ -3,7 +3,7 @@
 
 bld.SAMBA_SUBSYSTEM('LIBASYNC_REQ',
 	source='async_sock.c',
-	public_deps='talloc tevent',
+	public_deps='talloc tevent iov_buf',
 	deps='tevent-util socket-blocking'
 	)
 

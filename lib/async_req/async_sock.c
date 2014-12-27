@@ -27,6 +27,7 @@
 #include <talloc.h>
 #include <tevent.h>
 #include "lib/async_req/async_sock.h"
+#include "lib/iov_buf.h"
 
 /* Note: lib/util/ is currently GPL */
 #include "lib/util/tevent_unix.h"
@@ -470,10 +471,8 @@ static void writev_handler(struct tevent_context *ev, struct tevent_fd *fde,
 		private_data, struct tevent_req);
 	struct writev_state *state =
 		tevent_req_data(req, struct writev_state);
-	size_t to_write, written;
-	int i;
-
-	to_write = 0;
+	size_t written;
+	bool ok;
 
 	if ((state->flags & TEVENT_FD_READ) && (flags & TEVENT_FD_READ)) {
 		int ret, value;
@@ -507,10 +506,6 @@ static void writev_handler(struct tevent_context *ev, struct tevent_fd *fde,
 		}
 	}
 
-	for (i=0; i<state->count; i++) {
-		to_write += state->iov[i].iov_len;
-	}
-
 	written = writev(state->fd, state->iov, state->count);
 	if ((written == -1) && (errno == EINTR)) {
 		/* retry */
@@ -526,26 +521,15 @@ static void writev_handler(struct tevent_context *ev, struct tevent_fd *fde,
 	}
 	state->total_size += written;
 
-	if (written == to_write) {
-		tevent_req_done(req);
+	ok = iov_advance(&state->iov, &state->count, written);
+	if (!ok) {
+		tevent_req_error(req, EIO);
 		return;
 	}
 
-	/*
-	 * We've written less than we were asked to, drop stuff from
-	 * state->iov.
-	 */
-
-	while (written > 0) {
-		if (written < state->iov[0].iov_len) {
-			state->iov[0].iov_base =
-				(char *)state->iov[0].iov_base + written;
-			state->iov[0].iov_len -= written;
-			break;
-		}
-		written -= state->iov[0].iov_len;
-		state->iov += 1;
-		state->count -= 1;
+	if (state->count == 0) {
+		tevent_req_done(req);
+		return;
 	}
 }
 
