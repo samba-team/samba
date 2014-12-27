@@ -63,22 +63,12 @@ ssize_t write_data_iov(int fd, const struct iovec *orig_iov, int iovcnt)
 	iov = iov_copy;
 
 	while (sent < to_send) {
-		/*
-		 * We have to discard "thistime" bytes from the beginning
-		 * iov array, "thistime" contains the number of bytes sent
-		 * via writev last.
-		 */
-		while (thistime > 0) {
-			if (thistime < iov[0].iov_len) {
-				char *new_base =
-					(char *)iov[0].iov_base + thistime;
-				iov[0].iov_base = (void *)new_base;
-				iov[0].iov_len -= thistime;
-				break;
-			}
-			thistime -= iov[0].iov_len;
-			iov += 1;
-			iovcnt -= 1;
+		bool ok;
+
+		ok = iov_advance(&iov, &iovcnt, thistime);
+		if (!ok) {
+			errno = EIO;
+			return -1;
 		}
 
 		thistime = sys_writev(fd, iov, iovcnt);
