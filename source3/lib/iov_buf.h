@@ -22,9 +22,11 @@
 
 #include <unistd.h>
 #include <stdint.h>
+#include <stdbool.h>
 
 ssize_t iov_buflen(const struct iovec *iov, int iovlen);
 ssize_t iov_buf(const struct iovec *iov, int iovcnt,
 		uint8_t *buf, size_t buflen);
+bool iov_advance(struct iovec **iov, int *iovcnt, size_t n);
 
 #endif

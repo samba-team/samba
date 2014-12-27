@@ -53,3 +53,36 @@ ssize_t iov_buf(const struct iovec *iov, int iovcnt,
 
 	return needed;
 }
+
+bool iov_advance(struct iovec **iov, int *iovcnt, size_t n)
+{
+	struct iovec *v = *iov;
+	int cnt = *iovcnt;
+
+	while (n > 0) {
+		if (cnt == 0) {
+			return false;
+		}
+		if (n < v->iov_len) {
+			v->iov_base = (char *)v->iov_base + n;
+			v->iov_len -= n;
+			break;
+		}
+		n -= v->iov_len;
+		v += 1;
+		cnt -= 1;
+	}
+
+	/*
+	 * Skip 0-length iovec's
+	 */
+
+	while ((cnt > 0) && (v->iov_len == 0)) {
+		v += 1;
+		cnt -= 1;
+	}
+
+	*iov = v;
+	*iovcnt = cnt;
+	return true;
+}
