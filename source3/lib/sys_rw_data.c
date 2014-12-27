@@ -54,9 +54,7 @@ ssize_t write_data_iov(int fd, const struct iovec *orig_iov, int iovcnt)
 
 	/*
 	 * We could not send everything in one call. Make a copy of iov that
-	 * we can mess with. We keep a copy of the array start in iov_copy for
-	 * the TALLOC_FREE, because we're going to modify iov later on,
-	 * discarding elements.
+	 * we can mess with.
 	 */
 
 	memcpy(iov_copy, orig_iov, sizeof(struct iovec) * iovcnt);
