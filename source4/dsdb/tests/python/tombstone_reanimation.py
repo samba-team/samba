@@ -19,14 +19,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import sys
-import optparse
 import unittest
 
 sys.path.insert(0, "bin/python")
 import samba
 
 import samba.tests
-import samba.getopt as options
 from ldb import (SCOPE_BASE, FLAG_MOD_ADD, FLAG_MOD_DELETE, FLAG_MOD_REPLACE, Dn, Message,
                  MessageElement, LdbError,
                  ERR_ATTRIBUTE_OR_VALUE_EXISTS, ERR_NO_SUCH_OBJECT, ERR_ENTRY_ALREADY_EXISTS,
@@ -40,9 +38,7 @@ class RestoredObjectAttributesBaseTestCase(samba.tests.TestCase):
 
     def setUp(self):
         super(RestoredObjectAttributesBaseTestCase, self).setUp()
-        # load LoadParm
-        lp = options.SambaOptions(optparse.OptionParser()).get_loadparm()
-        self.samdb = samba.tests.connect_samdb_env("TEST_SERVER", "TEST_USERNAME", "TEST_PASSWORD", lp=lp)
+        self.samdb = samba.tests.connect_samdb_env("TEST_SERVER", "TEST_USERNAME", "TEST_PASSWORD")
         self.base_dn = self.samdb.domain_dn()
         self.schema_dn = self.samdb.get_schema_basedn().get_linearized()
         self.configuration_dn = self.samdb.get_config_basedn().get_linearized()
