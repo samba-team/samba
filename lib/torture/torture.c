@@ -460,6 +460,7 @@ static bool internal_torture_run_test(struct torture_context *context,
 			       context->last_reason);
 
 	talloc_free(context->last_reason);
+	context->last_reason = NULL;
 
 	context->active_test = NULL;
 	context->active_tcase = NULL;
