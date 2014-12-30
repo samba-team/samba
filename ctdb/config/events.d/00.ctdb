@@ -100,27 +100,6 @@ EOF
     done
 }
 
-update_config_from_tdb() {
-
-    # Pull optional ctdb configuration data out of config.tdb
-    ctdb_get_pnn
-    _key="public_addresses:node#${pnn}"
-    _t="$service_state_dir/public_addresses"
-    rm -f "$_t"
-
-    if ctdb pfetch config.tdb "$_key" "$_t" 2>/dev/null && \
-	[ -s "$_t" -a -n "$CTDB_PUBLIC_ADDRESSES"] && \
-	! cmp -s "$_t" "$CTDB_PUBLIC_ADDRESSES" ; then
-
-	echo "CTDB public address configuration has changed."
-	echo "Extracting new configuration from database."
-	diff "$_t" "$CTDB_PUBLIC_ADDRESSES"
-	cp "$_t" "$CTDB_PUBLIC_ADDRESSES"
-	echo "Restarting CTDB"
-	service ctdb restart &
-    fi
-}
-
 set_ctdb_variables ()
 {
     # set any tunables from the config file
@@ -211,7 +190,6 @@ case "$1" in
 
     startup)
 	ctdb attach ctdb.tdb persistent
-	update_config_from_tdb &
 	;;
     monitor)
 	monitor_system_memory
