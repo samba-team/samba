@@ -47,10 +47,7 @@ EOF
 	killall -9 tgtd >/dev/null 2>/dev/null
 
 	this_node=$(ctdb xpnn | sed -e 's@PNN:@@')
-	if [ -z "$this_node" ] ; then
-		echo "Failed to get node pnn"
-		exit 0
-	fi
+	[ -n "$this_node" ] || die "Failed to get node pnn"
 
 	# start the iscsi daemon
 	tgtd >/dev/null 2>/dev/null
