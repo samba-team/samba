@@ -24,6 +24,7 @@
 #include "dlinklist.h"
 #include "pthreadpool/pthreadpool.h"
 #include "lib/iov_buf.h"
+#include "lib/msghdr.h"
 #include <fcntl.h>
 
 /*
@@ -43,8 +44,6 @@ struct unix_dgram_msg {
 	int sock;
 	ssize_t sent;
 	int sys_errno;
-	struct msghdr msg;
-	struct iovec iov;
 };
 
 struct unix_dgram_send_queue {
@@ -162,6 +161,22 @@ static void extract_fd_array_from_msghdr(struct msghdr *msg, int **fds,
 #endif
 }
 
+static size_t unix_dgram_msg_size(void)
+{
+	size_t msgsize = sizeof(struct unix_dgram_msg);
+	msgsize = (msgsize + 15) & ~15; /* align to 16 */
+	return msgsize;
+}
+
+static struct msghdr_buf *unix_dgram_msghdr(struct unix_dgram_msg *msg)
+{
+	/*
+	 * Not portable in C99, but "msg" is aligned and so is
+	 * unix_dgram_msg_size()
+	 */
+	return (struct msghdr_buf *)(((char *)msg) + unix_dgram_msg_size());
+}
+
 static void close_fd_array(int *fds, size_t num_fds)
 {
 	size_t i;
@@ -176,8 +191,10 @@ static void close_fd_array(int *fds, size_t num_fds)
 	}
 }
 
-static void close_fd_array_cmsg(struct msghdr *msg)
+static void close_fd_array_dgram_msg(struct unix_dgram_msg *dmsg)
 {
+	struct msghdr_buf *hdr = unix_dgram_msghdr(dmsg);
+	struct msghdr *msg = msghdr_buf_msghdr(hdr);
 	int *fds = NULL;
 	size_t num_fds = 0;
 
@@ -448,7 +465,7 @@ static void unix_dgram_send_queue_free(struct unix_dgram_send_queue *q)
 		struct unix_dgram_msg *msg;
 		msg = q->msgs;
 		DLIST_REMOVE(q->msgs, msg);
-		close_fd_array_cmsg(&msg->msg);
+		close_fd_array_dgram_msg(msg);
 		free(msg);
 	}
 	close(q->sock);
@@ -470,55 +487,17 @@ static struct unix_dgram_send_queue *find_send_queue(
 }
 
 static int queue_msg(struct unix_dgram_send_queue *q,
-		     const struct iovec *iov, int iovlen,
+		     const struct iovec *iov, int iovcnt,
 		     const int *fds, size_t num_fds)
 {
 	struct unix_dgram_msg *msg;
-	ssize_t data_len;
-	uint8_t *data_buf;
-	size_t msglen = sizeof(struct unix_dgram_msg);
-	int i;
-	size_t tmp;
-	int ret = -1;
-#ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
-	size_t fds_size = sizeof(int) * MIN(num_fds, INT8_MAX);
+	struct msghdr_buf *hdr;
+	size_t msglen, needed;
+	ssize_t msghdrlen;
 	int fds_copy[MIN(num_fds, INT8_MAX)];
-	size_t cmsg_len = CMSG_LEN(fds_size);
-	size_t cmsg_space = CMSG_SPACE(fds_size);
-	char *cmsg_buf;
+	int i, ret;
 
-	/*
-	 * Note: No need to check for overflow here,
-	 * since cmsg will store <= INT8_MAX fds.
-	 */
-	msglen += cmsg_space;
-
-#endif /*  HAVE_STRUCT_MSGHDR_MSG_CONTROL */
-
-	if (num_fds > INT8_MAX) {
-		return EINVAL;
-	}
-
-#ifndef HAVE_STRUCT_MSGHDR_MSG_CONTROL
-	if (num_fds > 0) {
-		return ENOSYS;
-	}
-#endif
-
-	data_len = iov_buflen(iov, iovlen);
-	if (data_len == -1) {
-		return EINVAL;
-	}
-
-	tmp = msglen + data_len;
-	if ((tmp < msglen) || (tmp < data_len)) {
-		/* overflow */
-		return EINVAL;
-	}
-	msglen = tmp;
-
-#ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
-	for (i = 0; i < num_fds; i++) {
+	for (i=0; i<num_fds; i++) {
 		fds_copy[i] = -1;
 	}
 
@@ -529,67 +508,37 @@ static int queue_msg(struct unix_dgram_send_queue *q,
 			goto fail;
 		}
 	}
-#endif
 
-	msg = malloc(msglen);
+	msglen = unix_dgram_msg_size();
+
+	msghdrlen = msghdr_copy(NULL, 0, NULL, 0, iov, iovcnt,
+				fds_copy, num_fds);
+	if (msghdrlen == -1) {
+		ret = EMSGSIZE;
+		goto fail;
+	}
+
+	needed = msglen + msghdrlen;
+	if (needed < msglen) {
+		ret = EMSGSIZE;
+		goto fail;
+	}
+
+	msg = malloc(needed);
 	if (msg == NULL) {
 		ret = ENOMEM;
 		goto fail;
 	}
+	hdr = unix_dgram_msghdr(msg);
 
 	msg->sock = q->sock;
-
-	data_buf = (uint8_t *)(msg + 1);
-
-#ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
-	if (num_fds > 0) {
-		cmsg_buf = (char *)data_buf;
-		memset(cmsg_buf, 0, cmsg_space);
-		data_buf += cmsg_space;
-	} else {
-		cmsg_buf = NULL;
-		cmsg_space = 0;
-	}
-#endif
-
-	msg->iov = (struct iovec) {
-		.iov_base = (void *)data_buf,
-		.iov_len = data_len,
-	};
-
-	msg->msg = (struct msghdr) {
-		.msg_iov = &msg->iov,
-		.msg_iovlen = 1,
-#ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
-		.msg_control = cmsg_buf,
-		.msg_controllen = cmsg_space,
-#endif
-	};
-
-#ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
-	if (num_fds > 0) {
-		struct cmsghdr *cmsg;
-		void *fdptr;
-
-		cmsg = CMSG_FIRSTHDR(&msg->msg);
-		cmsg->cmsg_level = SOL_SOCKET;
-		cmsg->cmsg_type = SCM_RIGHTS;
-		cmsg->cmsg_len = cmsg_len;
-		fdptr = CMSG_DATA(cmsg);
-		memcpy(fdptr, fds_copy, fds_size);
-		msg->msg.msg_controllen = cmsg->cmsg_len;
-	}
-#endif /*  HAVE_STRUCT_MSGHDR_MSG_CONTROL */
-
-	iov_buf(iov, iovlen, data_buf, data_len);
+	msghdr_copy(hdr, msghdrlen, NULL, 0, iov, iovcnt,
+		    fds_copy, num_fds);
 
 	DLIST_ADD_END(q->msgs, msg, struct unix_dgram_msg);
 	return 0;
-
 fail:
-#ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
 	close_fd_array(fds_copy, num_fds);
-#endif
 	return ret;
 }
 
@@ -598,7 +547,9 @@ static void unix_dgram_send_job(void *private_data)
 	struct unix_dgram_msg *dmsg = private_data;
 
 	do {
-		dmsg->sent = sendmsg(dmsg->sock, &dmsg->msg, 0);
+		struct msghdr_buf *hdr = unix_dgram_msghdr(dmsg);
+		struct msghdr *msg = msghdr_buf_msghdr(hdr);
+		dmsg->sent = sendmsg(dmsg->sock, msg, 0);
 	} while ((dmsg->sent == -1) && (errno == EINTR));
 
 	if (dmsg->sent == -1) {
@@ -632,7 +583,7 @@ static void unix_dgram_job_finished(struct poll_watch *w, int fd, short events,
 
 	msg = q->msgs;
 	DLIST_REMOVE(q->msgs, msg);
-	close_fd_array_cmsg(&msg->msg);
+	close_fd_array_dgram_msg(msg);
 	free(msg);
 
 	if (q->msgs != NULL) {
@@ -653,13 +604,7 @@ static int unix_dgram_send(struct unix_dgram_ctx *ctx,
 {
 	struct unix_dgram_send_queue *q;
 	struct msghdr msg;
-#ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
-	struct cmsghdr *cmsg;
-	size_t fds_size = sizeof(int) * num_fds;
-	size_t cmsg_len = CMSG_LEN(fds_size);
-	size_t cmsg_space = CMSG_SPACE(fds_size);
-	char cmsg_buf[cmsg_space];
-#endif /* HAVE_STRUCT_MSGHDR_MSG_CONTROL */
+	ssize_t fdlen;
 	int ret;
 	int i;
 
@@ -714,25 +659,19 @@ static int unix_dgram_send(struct unix_dgram_ctx *ctx,
 		.msg_iov = discard_const_p(struct iovec, iov),
 		.msg_iovlen = iovlen
 	};
-#ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
-	if (num_fds > 0) {
-		void *fdptr;
 
-		memset(cmsg_buf, 0, cmsg_space);
-
-		msg.msg_control = cmsg_buf;
-		msg.msg_controllen = cmsg_space;
-		cmsg = CMSG_FIRSTHDR(&msg);
-		cmsg->cmsg_level = SOL_SOCKET;
-		cmsg->cmsg_type = SCM_RIGHTS;
-		cmsg->cmsg_len = cmsg_len;
-		fdptr = CMSG_DATA(cmsg);
-		memcpy(fdptr, fds, fds_size);
-		msg.msg_controllen = cmsg->cmsg_len;
+	fdlen = msghdr_prep_fds(&msg, NULL, 0, fds, num_fds);
+	if (fdlen == -1) {
+		return EINVAL;
 	}
-#endif /*  HAVE_STRUCT_MSGHDR_MSG_CONTROL */
 
-	ret = sendmsg(ctx->sock, &msg, 0);
+	{
+		uint8_t buf[fdlen];
+		msghdr_prep_fds(&msg, buf, 0, fds, num_fds);
+
+		ret = sendmsg(ctx->sock, &msg, 0);
+	}
+
 	if (ret >= 0) {
 		return 0;
 	}
