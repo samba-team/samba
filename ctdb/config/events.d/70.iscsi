@@ -1,5 +1,6 @@
 #!/bin/sh
-# ctdb event script for TGTD based iSCSI
+
+# CTDB event script for TGTD based iSCSI
 
 [ -n "$CTDB_BASE" ] || \
     export CTDB_BASE=$(cd -P $(dirname "$0") ; dirname "$PWD")
@@ -19,7 +20,7 @@ is_ctdb_managed_service || exit 0
 	exit 0
 }
 
-case "$1" in 
+case "$1" in
     ipreallocated)
 	all_ips=$(ctdb -X ip | tail -n +2)
 
@@ -43,21 +44,22 @@ EOF
 	    ip6tables -I INPUT 1 -p tcp --dport 3260 -j DROP
 	fi
 
-	# shut down the iscsi service
+	# Stop iSCSI daemon
 	killall -9 tgtd >/dev/null 2>/dev/null
 
+	# What node is this?
 	this_node=$(ctdb xpnn | sed -e 's@PNN:@@')
 	[ -n "$this_node" ] || die "Failed to get node pnn"
 
-	# start the iscsi daemon
-	tgtd >/dev/null 2>/dev/null
+	# Start iSCSI daemon
+	tgtd >/dev/null 2>&1
 
 	# Run a script for each currently hosted public IP address
 	ips=$(echo "$all_ips" | awk -F'|' -v pnn=$this_node '$3 == pnn {print $2}')
 	for ip in $ips ; do
 	    script="${CTDB_START_ISCSI_SCRIPTS}/${ip}.sh"
 	    if [ -x "$script" ] ; then
-		echo "Starting iscsi service for public address ${ip}"
+		echo "Starting iSCSI service for public address ${ip}"
 		"$script"
 	    fi
 	done
@@ -74,8 +76,8 @@ EOF
 	;;
 
     shutdown)
-	# shutdown iscsi when ctdb goes down
-	killall -9 tgtd >/dev/null 2>/dev/null
+	# Shutdown iSCSI daemon when ctdb goes down
+	killall -9 tgtd >/dev/null 2>&1
 	;;
 
     monitor)
