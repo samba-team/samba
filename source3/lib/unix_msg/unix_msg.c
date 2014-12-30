@@ -43,7 +43,6 @@ struct unix_dgram_msg {
 	int sock;
 	ssize_t sent;
 	int sys_errno;
-	size_t num_fds;
 	struct msghdr msg;
 	struct iovec iov;
 };
@@ -539,7 +538,6 @@ static int queue_msg(struct unix_dgram_send_queue *q,
 	}
 
 	msg->sock = q->sock;
-	msg->num_fds = num_fds;
 
 	data_buf = (uint8_t *)(msg + 1);
 
