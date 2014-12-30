@@ -1393,23 +1393,17 @@ ctdb_standard_event_handler ()
     esac
 }
 
-# iptables doesn't like being re-entered, so flock-wrap it.
-iptables ()
-{
-	flock -w 30 $CTDB_VARDIR/iptables-ctdb.flock /sbin/iptables "$@"
-}
-ip6tables ()
-{
-	flock -w 30 $CTDB_VARDIR/iptables-ctdb.flock /sbin/ip6tables "$@"
-}
 iptables_wrapper ()
 {
     _family="$1" ; shift
     if [ "$_family" = "inet6" ] ; then
-	ip6tables "$@"
+	_iptables_cmd="ip6tables"
     else
-	iptables "$@"
+	_iptables_cmd="iptables"
     fi
+
+    # iptables doesn't like being re-entered, so flock-wrap it.
+    flock -w 30 "${CTDB_VARDIR}/iptables-ctdb.flock" "$_iptables_cmd" "$@"
 }
 
 # AIX (and perhaps others?) doesn't have mktemp

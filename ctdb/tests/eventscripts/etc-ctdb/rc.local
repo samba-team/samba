@@ -51,8 +51,10 @@ get_proc ()
     esac
 }
 
-# Always succeeds
+# Always succeed
 iptables () { : ; }
+ip6tables () { : ; }
+iptables_wrapper () { : ; }
 
 # Do not actually background - we want to see the output
 background_with_logging ()
