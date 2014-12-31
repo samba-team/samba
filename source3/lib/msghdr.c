@@ -125,3 +125,31 @@ struct msghdr *msghdr_buf_msghdr(struct msghdr_buf *msg)
 {
 	return &msg->msg;
 }
+
+size_t msghdr_extract_fds(struct msghdr *msg, int *fds, size_t fds_size)
+{
+	struct cmsghdr *cmsg;
+	size_t num_fds;
+
+	for(cmsg = CMSG_FIRSTHDR(msg);
+	    cmsg != NULL;
+	    cmsg = CMSG_NXTHDR(msg, cmsg))
+	{
+		if ((cmsg->cmsg_type == SCM_RIGHTS) &&
+		    (cmsg->cmsg_level == SOL_SOCKET)) {
+			break;
+		}
+	}
+
+	if (cmsg == NULL) {
+		return 0;
+	}
+
+	num_fds = (cmsg->cmsg_len - CMSG_LEN(0)) / sizeof(int);
+
+	if ((num_fds != 0) && (fds_size >= num_fds)) {
+		memcpy(fds, CMSG_DATA(cmsg), num_fds * sizeof(int));
+	}
+
+	return num_fds;
+}
