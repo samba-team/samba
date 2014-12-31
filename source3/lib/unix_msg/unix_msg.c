@@ -272,9 +272,8 @@ static void unix_dgram_recv_handler(struct poll_watch *w, int fd, short events,
 	int flags = 0;
 	struct msghdr msg;
 	struct iovec iov;
-#ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
-	char buf[CMSG_SPACE(sizeof(int)*INT8_MAX)] = { 0, };
-#endif /* HAVE_STRUCT_MSGHDR_MSG_CONTROL */
+	size_t bufsize = msghdr_prep_recv_fds(NULL, NULL, 0, INT8_MAX);
+	uint8_t buf[bufsize];
 
 	iov = (struct iovec) {
 		.iov_base = (void *)ctx->recv_buf,
@@ -284,11 +283,9 @@ static void unix_dgram_recv_handler(struct poll_watch *w, int fd, short events,
 	msg = (struct msghdr) {
 		.msg_iov = &iov,
 		.msg_iovlen = 1,
-#ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
-		.msg_control = buf,
-		.msg_controllen = sizeof(buf),
-#endif
 	};
+
+	msghdr_prep_recv_fds(&msg, buf, bufsize, INT8_MAX);
 
 #ifdef MSG_CMSG_CLOEXEC
 	flags |= MSG_CMSG_CLOEXEC;
