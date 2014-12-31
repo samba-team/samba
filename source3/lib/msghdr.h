@@ -35,6 +35,8 @@ ssize_t msghdr_copy(struct msghdr_buf *msg, size_t msgsize,
 		    const int *fds, size_t num_fds);
 struct msghdr *msghdr_buf_msghdr(struct msghdr_buf *msg);
 
+size_t msghdr_prep_recv_fds(struct msghdr *msg, uint8_t *buf, size_t bufsize,
+			    size_t num_fds);
 size_t msghdr_extract_fds(struct msghdr *msg, int *fds, size_t num_fds);
 
 #endif

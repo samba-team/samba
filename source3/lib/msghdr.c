@@ -126,6 +126,26 @@ struct msghdr *msghdr_buf_msghdr(struct msghdr_buf *msg)
 	return &msg->msg;
 }
 
+size_t msghdr_prep_recv_fds(struct msghdr *msg, uint8_t *buf, size_t bufsize,
+			    size_t num_fds)
+{
+	size_t ret = CMSG_SPACE(sizeof(int) * num_fds);
+
+	if (bufsize < ret) {
+		return ret;
+	}
+	if (msg != NULL) {
+		if (num_fds != 0) {
+			msg->msg_control = buf;
+			msg->msg_controllen = ret;
+		} else {
+			msg->msg_control = NULL;
+			msg->msg_controllen = 0;
+		}
+	}
+	return ret;
+}
+
 size_t msghdr_extract_fds(struct msghdr *msg, int *fds, size_t fds_size)
 {
 	struct cmsghdr *cmsg;
