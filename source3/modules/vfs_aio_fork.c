@@ -157,26 +157,10 @@ static ssize_t read_fd(int fd, void *ptr, size_t nbytes, int *recvfd)
 	struct msghdr msg;
 	struct iovec iov[1];
 	ssize_t n;
-#ifndef HAVE_STRUCT_MSGHDR_MSG_CONTROL
-	int newfd;
+	size_t bufsize = msghdr_prep_recv_fds(NULL, NULL, 0, 1);
+	uint8_t buf[bufsize];
 
-	ZERO_STRUCT(msg);
-	msg.msg_accrights = (caddr_t) &newfd;
-	msg.msg_accrightslen = sizeof(int);
-#else
-
-	union {
-	  struct cmsghdr	cm;
-	  char				control[CMSG_SPACE(sizeof(int))];
-	} control_un;
-	struct cmsghdr	*cmptr;
-
-	ZERO_STRUCT(msg);
-	ZERO_STRUCT(control_un);
-
-	msg.msg_control = control_un.control;
-	msg.msg_controllen = sizeof(control_un.control);
-#endif
+	msghdr_prep_recv_fds(&msg, buf, bufsize, 1);
 
 	msg.msg_name = NULL;
 	msg.msg_namelen = 0;
@@ -190,31 +174,25 @@ static ssize_t read_fd(int fd, void *ptr, size_t nbytes, int *recvfd)
 		return(n);
 	}
 
-#ifdef	HAVE_STRUCT_MSGHDR_MSG_CONTROL
-	if ((cmptr = CMSG_FIRSTHDR(&msg)) != NULL
-	    && cmptr->cmsg_len == CMSG_LEN(sizeof(int))) {
-		if (cmptr->cmsg_level != SOL_SOCKET) {
-			DEBUG(10, ("control level != SOL_SOCKET"));
-			errno = EINVAL;
-			return -1;
+	{
+		size_t num_fds = msghdr_extract_fds(&msg, NULL, 0);
+		int fds[num_fds];
+
+		msghdr_extract_fds(&msg, fds, num_fds);
+
+		if (num_fds != 1) {
+			size_t i;
+
+			for (i=0; i<num_fds; i++) {
+				close(fds[i]);
+			}
+
+			*recvfd = -1;
+			return n;
 		}
-		if (cmptr->cmsg_type != SCM_RIGHTS) {
-			DEBUG(10, ("control type != SCM_RIGHTS"));
-			errno = EINVAL;
-			return -1;
-		}
-		memcpy(recvfd, CMSG_DATA(cmptr), sizeof(*recvfd));
-	} else {
-		*recvfd = -1;		/* descriptor was not passed */
+
+		*recvfd = fds[0];
 	}
-#else
-	if (msg.msg_accrightslen == sizeof(int)) {
-		*recvfd = newfd;
-	}
-	else {
-		*recvfd = -1;		/* descriptor was not passed */
-	}
-#endif
 
 	return(n);
 }
