@@ -170,8 +170,12 @@ static ssize_t read_fd(int fd, void *ptr, size_t nbytes, int *recvfd)
 	msg.msg_iov = iov;
 	msg.msg_iovlen = 1;
 
-	if ( (n = recvmsg(fd, &msg, 0)) <= 0) {
-		return(n);
+	do {
+		n = recvmsg(fd, &msg, 0);
+	} while ((n == -1) && (errno == EINTR));
+
+	if (n <= 0) {
+		return n;
 	}
 
 	{
@@ -203,6 +207,7 @@ static ssize_t write_fd(int fd, void *ptr, size_t nbytes, int sendfd)
 	size_t bufsize = msghdr_prep_fds(NULL, NULL, 0, &sendfd, 1);
 	uint8_t buf[bufsize];
 	struct iovec iov;
+	ssize_t sent;
 
 	msghdr_prep_fds(&msg, buf, bufsize, &sendfd, 1);
 	msg.msg_name = NULL;
@@ -213,7 +218,11 @@ static ssize_t write_fd(int fd, void *ptr, size_t nbytes, int sendfd)
 	msg.msg_iov = &iov;
 	msg.msg_iovlen = 1;
 
-	return (sendmsg(fd, &msg, 0));
+	do {
+		sent = sendmsg(fd, &msg, 0);
+	} while ((sent == -1) && (errno == EINTR));
+
+	return sent;
 }
 
 static void aio_child_cleanup(struct tevent_context *event_ctx,
