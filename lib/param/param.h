@@ -213,27 +213,6 @@ struct dcerpc_server_info *lpcfg_dcerpc_server_info(TALLOC_CTX *mem_ctx, struct 
 struct gensec_settings *lpcfg_gensec_settings(TALLOC_CTX *, struct loadparm_context *);
 
 
-/* The following definitions come from param/generic.c  */
-
-struct param_section *param_get_section(struct param_context *ctx, const char *name);
-struct parmlist_entry *param_section_get(struct param_section *section, 
-				    const char *name);
-struct parmlist_entry *param_get (struct param_context *ctx, const char *name, const char *section_name);
-struct param_section *param_add_section(struct param_context *ctx, const char *section_name);
-struct parmlist_entry *param_get_add(struct param_context *ctx, const char *name, const char *section_name);
-const char *param_get_string(struct param_context *ctx, const char *param, const char *section);
-int param_set_string(struct param_context *ctx, const char *param, const char *value, const char *section);
-const char **param_get_string_list(struct param_context *ctx, const char *param, const char *separator, const char *section);
-int param_set_string_list(struct param_context *ctx, const char *param, const char **list, const char *section);
-int param_get_int(struct param_context *ctx, const char *param, int default_v, const char *section);
-void param_set_int(struct param_context *ctx, const char *param, int value, const char *section);
-unsigned long param_get_ulong(struct param_context *ctx, const char *param, unsigned long default_v, const char *section);
-void param_set_ulong(struct param_context *ctx, const char *name, unsigned long value, const char *section);
-struct param_context *param_init(TALLOC_CTX *mem_ctx);
-int param_read(struct param_context *ctx, const char *fn);
-int param_use(struct loadparm_context *lp_ctx, struct param_context *ctx);
-int param_write(struct param_context *ctx, const char *fn);
-
 /* The following definitions come from param/util.c  */
 
 

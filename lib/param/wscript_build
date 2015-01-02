@@ -30,7 +30,7 @@ bld.SAMBA_LIBRARY('server-role',
                   private_library=True)
 
 bld.SAMBA_LIBRARY('samba-hostconfig',
-	source='loadparm.c generic.c util.c param_table.c',
+	source='loadparm.c util.c param_table.c',
 	pc_files='samba-hostconfig.pc',
 	vnum='0.0.1',
 	deps='DYNCONFIG server-role tdb',
