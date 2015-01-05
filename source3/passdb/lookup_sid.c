@@ -1049,6 +1049,13 @@ static void legacy_uid_to_sid(struct dom_sid *psid, uid_t uid)
 
 	uid_to_unix_users_sid(uid, psid);
 
+	{
+		struct unixid xid = {
+			.id = uid, .type = ID_TYPE_UID
+		};
+		idmap_cache_set_sid2unixid(psid, &xid);
+	}
+
  done:
 	DEBUG(10,("LEGACY: uid %u -> sid %s\n", (unsigned int)uid,
 		  sid_string_dbg(psid)));
@@ -1082,6 +1089,13 @@ static void legacy_gid_to_sid(struct dom_sid *psid, gid_t gid)
 	/* This is an unmapped group */
 
 	gid_to_unix_groups_sid(gid, psid);
+
+	{
+		struct unixid xid = {
+			.id = gid, .type = ID_TYPE_GID
+		};
+		idmap_cache_set_sid2unixid(psid, &xid);
+	}
 
  done:
 	DEBUG(10,("LEGACY: gid %u -> sid %s\n", (unsigned int)gid,
