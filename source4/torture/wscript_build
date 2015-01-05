@@ -89,6 +89,7 @@ bld.SAMBA_MODULE('TORTURE_AUTH',
 	)
 
 bld.RECURSE('local')
+bld.RECURSE('krb5')
 
 bld.SAMBA_MODULE('TORTURE_NBENCH',
 	source='nbench/nbio.c nbench/nbench.c',
