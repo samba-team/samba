@@ -549,7 +549,10 @@ for env in ["dc", "s4member", "rodc", "promoted_dc", "plugin_s4_dc", "s3member"]
     plantestsuite("samba.blackbox.wbinfo(%s:local)" % env, "%s:local" % env, [os.path.join(samba4srcdir, "../nsswitch/tests/test_wbinfo.sh"), '$DOMAIN', '$DC_USERNAME', '$DC_PASSWORD', env])
 
 for env in ["dc", "rodc", "promoted_dc", "plugin_s4_dc"]:
-    plansmbtorture4testsuite('krb5.kdc', env, ['ncacn_np:$SERVER', "-k", "yes", '-U$USERNAME@$REALM%$PASSWORD', '--workgroup=$DOMAIN'])
+    plansmbtorture4testsuite('krb5.kdc', env, ['ncacn_np:$SERVER', "-k", "yes", '-U$USERNAME@$REALM%$PASSWORD', '--workgroup=$DOMAIN'],
+                             "samba4.krb5.kdc with specified account")
+    plansmbtorture4testsuite('krb5.kdc', "%s:local" % env, ['ncacn_np:$SERVER', "-k", "yes", '-P', '--workgroup=$DOMAIN'],
+                             "samba4.krb5.kdc with machine account")
 
 
 # TODO: Verifying the databases really should be a part of the

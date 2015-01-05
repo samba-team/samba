@@ -53,7 +53,8 @@ static bool torture_krb5_init_context(struct torture_context *tctx,
 	return true;
 }
 
-static bool torture_krb5_as_req_1(struct torture_context *tctx)
+static bool torture_krb5_as_req_creds(struct torture_context *tctx,
+				      struct cli_credentials *credentials)
 {
 	krb5_error_code k5ret;
 	bool ok;
@@ -62,12 +63,12 @@ static bool torture_krb5_as_req_1(struct torture_context *tctx)
 	struct smb_krb5_context *smb_krb5_context;
 	enum credentials_obtained obtained;
 	const char *error_string;
-	const char *password = cli_credentials_get_password(cmdline_credentials);
+	const char *password = cli_credentials_get_password(credentials);
 	
 	ok = torture_krb5_init_context(tctx, &smb_krb5_context);
 	torture_assert(tctx, ok, "torture_krb5_init_context failed");
 	
-	k5ret = principal_from_credentials(tctx, cmdline_credentials, smb_krb5_context, &principal, &obtained,  &error_string);
+	k5ret = principal_from_credentials(tctx, credentials, smb_krb5_context, &principal, &obtained,  &error_string);
 	torture_assert_int_equal(tctx, k5ret, 0, error_string);
 
 	k5ret = krb5_get_init_creds_password(smb_krb5_context->krb5_context, &my_creds, principal,
@@ -100,6 +101,11 @@ static bool torture_krb5_as_req_1(struct torture_context *tctx)
 	return true;
 }
 
+static bool torture_krb5_as_req_cmdline(struct torture_context *tctx)
+{
+	return torture_krb5_as_req_creds(tctx, cmdline_credentials);
+}
+
 NTSTATUS torture_krb5_init(void);
 NTSTATUS torture_krb5_init(void)
 {
@@ -108,8 +114,8 @@ NTSTATUS torture_krb5_init(void)
 	suite->description = talloc_strdup(suite, "Kerberos tests");
 	kdc_suite->description = talloc_strdup(kdc_suite, "Kerberos KDC tests");
 
-	torture_suite_add_simple_test(kdc_suite, "as-req-1", 
-				      torture_krb5_as_req_1);
+	torture_suite_add_simple_test(kdc_suite, "as-req-cmdline", 
+				      torture_krb5_as_req_cmdline);
 
 	torture_suite_add_suite(suite, kdc_suite);
 
