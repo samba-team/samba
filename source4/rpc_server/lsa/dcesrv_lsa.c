@@ -1366,7 +1366,10 @@ static NTSTATUS get_tdo(struct ldb_context *sam, TALLOC_CTX *mem_ctx,
 				"securityIdentifier", "trustDirection",
 				"trustType", "trustAttributes",
 				"trustPosixOffset",
-				"msDs-supportedEncryptionTypes", NULL };
+				"msDs-supportedEncryptionTypes",
+				"msDS-TrustForestTrustInfo",
+				NULL
+	};
 	char *dns = NULL;
 	char *nbn = NULL;
 	char *sidstr = NULL;
@@ -1621,6 +1624,7 @@ static NTSTATUS setInfoTrustedDomain_base(struct dcesrv_call_state *dce_call,
 	bool add_incoming = false;
 	bool del_outgoing = false;
 	bool del_incoming = false;
+	bool del_forest_info = false;
 	bool in_transaction = false;
 	int ret;
 	bool am_rodc;
@@ -1832,6 +1836,18 @@ static NTSTATUS setInfoTrustedDomain_base(struct dcesrv_call_state *dce_call,
 				  (unsigned)info_ex->trust_attributes));
 			return NT_STATUS_INVALID_PARAMETER;
 		}
+
+		if (!(info_ex->trust_attributes &
+		      LSA_TRUST_ATTRIBUTE_FOREST_TRANSITIVE))
+		{
+			struct ldb_message_element *orig_forest_el = NULL;
+
+			orig_forest_el = ldb_msg_find_element(dom_msg,
+						"msDS-TrustForestTrustInfo");
+			if (orig_forest_el != NULL) {
+				del_forest_info = true;
+			}
+		}
 	}
 
 	if (enc_types) {
@@ -1870,6 +1886,13 @@ static NTSTATUS setInfoTrustedDomain_base(struct dcesrv_call_state *dce_call,
 			if (ret != LDB_SUCCESS) {
 				return NT_STATUS_NO_MEMORY;
 			}
+		}
+	}
+	if (del_forest_info) {
+		ret = ldb_msg_add_empty(msg, "msDS-TrustForestTrustInfo",
+					LDB_FLAG_MOD_REPLACE, NULL);
+		if (ret != LDB_SUCCESS) {
+			return NT_STATUS_NO_MEMORY;
 		}
 	}
 
