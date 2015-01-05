@@ -1766,6 +1766,7 @@ static NTSTATUS setInfoTrustedDomain_base(struct dcesrv_call_state *dce_call,
 
 	if (info_ex) {
 		uint32_t origattrs;
+		uint32_t changed_attrs;
 		uint32_t origdir;
 		int origtype;
 
@@ -1815,11 +1816,20 @@ static NTSTATUS setInfoTrustedDomain_base(struct dcesrv_call_state *dce_call,
 		}
 		/* TODO: check forestFunctionality from ldb opaque */
 		/* TODO: check what is set makes sense */
-		/* for now refuse changes */
-		if (origattrs == -1 ||
-		    origattrs != info_ex->trust_attributes) {
-			DEBUG(1, ("Attempted to change trust attributes! "
-				  "Operation not handled\n"));
+
+		changed_attrs = origattrs ^ info_ex->trust_attributes;
+		if (changed_attrs & ~LSA_TRUST_ATTRIBUTE_FOREST_TRANSITIVE) {
+			/*
+			 * For now we only allow
+			 * LSA_TRUST_ATTRIBUTE_FOREST_TRANSITIVE to be changed.
+			 *
+			 * TODO: we may need to support more attribute changes
+			 */
+			DEBUG(1, ("Attempted to change trust attributes "
+				  "(0x%08x != 0x%08x)! "
+				  "Operation not handled yet...\n",
+				  (unsigned)origattrs,
+				  (unsigned)info_ex->trust_attributes));
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 	}
