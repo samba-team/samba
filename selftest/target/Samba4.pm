@@ -814,6 +814,27 @@ sub provision_raw_step2($$$)
 		return undef;
 	}
 
+	my $samba_tool_cmd = Samba::bindir_path($self, "samba-tool") 
+	    . " user add --configfile=$ctx->{smb_conf} testallowed $ctx->{password}";
+	unless (system($samba_tool_cmd) == 0) {
+		warn("Unable to add testallowed user: \n$samba_tool_cmd\n");
+		return undef;
+	}
+
+	$samba_tool_cmd = Samba::bindir_path($self, "samba-tool") 
+	    . " user add --configfile=$ctx->{smb_conf} testdenied $ctx->{password}";
+	unless (system($samba_tool_cmd) == 0) {
+		warn("Unable to add testdenied user: \n$samba_tool_cmd\n");
+		return undef;
+	}
+
+	$samba_tool_cmd = Samba::bindir_path($self, "samba-tool") 
+	    . " group addmembers --configfile=$ctx->{smb_conf} 'Allowed RODC Password Replication Group' testallowed";
+	unless (system($samba_tool_cmd) == 0) {
+		warn("Unable to add testallowed user to 'Allowed RODC Password Replication Group': \n$samba_tool_cmd\n");
+		return undef;
+	}
+
 	return $ret;
 }
 

@@ -551,6 +551,10 @@ for env in ["dc", "s4member", "rodc", "promoted_dc", "plugin_s4_dc", "s3member"]
 for env in ["dc", "rodc", "promoted_dc", "plugin_s4_dc"]:
     plansmbtorture4testsuite('krb5.kdc', env, ['ncacn_np:$SERVER', "-k", "yes", '-U$USERNAME@$REALM%$PASSWORD', '--workgroup=$DOMAIN'],
                              "samba4.krb5.kdc with specified account")
+    plansmbtorture4testsuite('krb5.kdc', env, ['ncacn_np:$SERVER', "-k", "yes", '-Utestallowed@$REALM%$PASSWORD', '--workgroup=$DOMAIN'],
+                             "samba4.krb5.kdc with account ALLOWED permission to replicate to an RODC")
+    plansmbtorture4testsuite('krb5.kdc', env, ['ncacn_np:$SERVER', "-k", "yes", '-Utestdenied@$REALM%$PASSWORD', '--workgroup=$DOMAIN'],
+                             "samba4.krb5.kdc with account DENIED permission to replicate to an RODC")
     plansmbtorture4testsuite('krb5.kdc', "%s:local" % env, ['ncacn_np:$SERVER', "-k", "yes", '-P', '--workgroup=$DOMAIN'],
                              "samba4.krb5.kdc with machine account")
 
