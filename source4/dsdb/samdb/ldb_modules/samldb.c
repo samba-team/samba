@@ -1825,12 +1825,17 @@ static int samldb_user_account_control_change(struct samldb_ctx *ac)
 	new_acb = samdb_result_acct_flags(tmp_msg, NULL);
 	talloc_free(tmp_msg);
 	/*
-	 * UF_LOCKOUT and UF_PASSWORD_EXPIRED are only generated
-	 * and not stored. We ignore them almost completely.
+	 * UF_LOCKOUT, UF_PASSWD_CANT_CHANGE and UF_PASSWORD_EXPIRED
+	 * are only generated and not stored. We ignore them almost
+	 * completely, along with unknown bits and UF_SCRIPT.
 	 *
-	 * The only exception is the resulting ACB_AUTOLOCK in clear_acb.
+	 * The only exception is ACB_AUTOLOCK, which features in
+	 * clear_acb when the bit is cleared in this modify operation.
+	 *
+	 * MS-SAMR 2.2.1.13 UF_FLAG Codes states that some bits are
+	 * ignored by clients and servers
 	 */
-	new_uac = raw_uac & ~(UF_LOCKOUT|UF_PASSWORD_EXPIRED);
+	new_uac = raw_uac & UF_SETTABLE_BITS;
 
 	/* Fetch the old "userAccountControl" and "objectClass" */
 	ret = dsdb_module_search_dn(ac->module, ac, &res, ac->msg->dn, attrs,
