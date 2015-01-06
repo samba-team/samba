@@ -82,6 +82,8 @@ bits = [UF_SCRIPT, UF_ACCOUNTDISABLE, UF_00000004, UF_HOMEDIR_REQUIRED,
         UF_PARTIAL_SECRETS_ACCOUNT, UF_USE_AES_KEYS,
         int("0x10000000", 16), int("0x20000000", 16), int("0x40000000", 16), int("0x80000000", 16)]
 
+account_types = set([UF_NORMAL_ACCOUNT, UF_WORKSTATION_TRUST_ACCOUNT, UF_SERVER_TRUST_ACCOUNT])
+
 
 class UserAccountControlTests(samba.tests.TestCase):
     def add_computer_ldap(self, computername, others=None, samdb=None):
@@ -406,7 +408,7 @@ class UserAccountControlTests(samba.tests.TestCase):
                     self.fail("Unable to set userAccountControl bit 0x%08X on %s: %s" % (bit, m.dn, estr))
 
 
-    def test_uac_bits_unrelated_modify(self):
+    def uac_bits_unrelated_modify_helper(self, account_type):
         user_sid = self.sd_utils.get_object_sid(self.unpriv_user_dn)
         mod = "(OA;;CC;bf967a86-0de6-11d0-a285-00aa003049e2;;%s)" % str(user_sid)
 
@@ -415,12 +417,13 @@ class UserAccountControlTests(samba.tests.TestCase):
         self.sd_utils.dacl_add_ace("OU=test_computer_ou1," + self.base_dn, mod)
 
         computername=self.computernames[0]
-        self.add_computer_ldap(computername)
+        self.add_computer_ldap(computername, others={"userAccountControl": [str(account_type)]})
 
         res = self.admin_samdb.search("%s" % self.base_dn,
                                       expression="(&(objectClass=computer)(samAccountName=%s$))" % computername,
                                       scope=SCOPE_SUBTREE,
-                                      attrs=[])
+                                      attrs=["userAccountControl"])
+        self.assertEqual(int(res[0]["userAccountControl"][0]), account_type)
 
         m = ldb.Message()
         m.dn = res[0].dn
@@ -431,11 +434,35 @@ class UserAccountControlTests(samba.tests.TestCase):
 
         invalid_bits = set([UF_TEMP_DUPLICATE_ACCOUNT, UF_PARTIAL_SECRETS_ACCOUNT])
 
+        # UF_LOCKOUT isn't actually ignored, it changes other
+        # attributes but does not stick here.  See MS-SAMR 2.2.1.13
+        # UF_FLAG Codes clarification that UF_SCRIPT and
+        # UF_PASSWD_CANT_CHANGE are simply ignored by both clients and
+        # servers.  Other bits are ignored as they are undefined, or
+        # are not set into the attribute (instead triggering other
+        # events).
+        ignored_bits = set([UF_SCRIPT, UF_00000004, UF_LOCKOUT, UF_PASSWD_CANT_CHANGE,
+                            UF_00000400, UF_00004000, UF_00008000, UF_PASSWORD_EXPIRED,
+                            int("0x10000000", 16), int("0x20000000", 16), int("0x40000000", 16), int("0x80000000", 16)])
         super_priv_bits = set([UF_INTERDOMAIN_TRUST_ACCOUNT])
 
         priv_to_remove_bits = set([UF_TRUSTED_FOR_DELEGATION, UF_TRUSTED_TO_AUTHENTICATE_FOR_DELEGATION])
 
         for bit in bits:
+            # Reset this to the initial position, just to be sure
+            m = ldb.Message()
+            m.dn = res[0].dn
+            m["userAccountControl"] = ldb.MessageElement(str(account_type),
+                                                         ldb.FLAG_MOD_REPLACE, "userAccountControl")
+            self.admin_samdb.modify(m)
+
+            res = self.admin_samdb.search("%s" % self.base_dn,
+                                          expression="(&(objectClass=computer)(samAccountName=%s$))" % computername,
+                                          scope=SCOPE_SUBTREE,
+                                          attrs=["userAccountControl"])
+
+            self.assertEqual(int(res[0]["userAccountControl"][0]), account_type)
+
             m = ldb.Message()
             m.dn = res[0].dn
             m["userAccountControl"] = ldb.MessageElement(str(bit|UF_PASSWD_NOTREQD),
@@ -456,6 +483,19 @@ class UserAccountControlTests(samba.tests.TestCase):
                     continue
                 else:
                     self.fail("Unable to set userAccountControl bit 0x%08X on %s: %s" % (bit, m.dn, estr))
+
+            res = self.admin_samdb.search("%s" % self.base_dn,
+                                          expression="(&(objectClass=computer)(samAccountName=%s$))" % computername,
+                                          scope=SCOPE_SUBTREE,
+                                          attrs=["userAccountControl"])
+
+            if bit in ignored_bits:
+                self.assertEqual(int(res[0]["userAccountControl"][0]), UF_NORMAL_ACCOUNT|UF_PASSWD_NOTREQD, "Bit 0x%08x shouldn't stick" % bit)
+            else:
+                if bit in account_types:
+                    self.assertEqual(int(res[0]["userAccountControl"][0]), bit|UF_PASSWD_NOTREQD, "Bit 0x%08x didn't stick" % bit)
+                else:
+                    self.assertEqual(int(res[0]["userAccountControl"][0]), bit|UF_NORMAL_ACCOUNT|UF_PASSWD_NOTREQD, "Bit 0x%08x didn't stick" % bit)
 
             try:
                 m = ldb.Message()
@@ -481,6 +521,26 @@ class UserAccountControlTests(samba.tests.TestCase):
                     self.assertEqual(enum, ldb.ERR_INSUFFICIENT_ACCESS_RIGHTS)
                 else:
                     self.fail("Unexpectedly able to remove userAccountControl bit 0x%08X on %s: %s" % (bit, m.dn, estr))
+
+            res = self.admin_samdb.search("%s" % self.base_dn,
+                                          expression="(&(objectClass=computer)(samAccountName=%s$))" % computername,
+                                          scope=SCOPE_SUBTREE,
+                                          attrs=["userAccountControl"])
+
+            if bit in priv_to_remove_bits:
+                self.assertEqual(int(res[0]["userAccountControl"][0]),
+                                 bit|UF_NORMAL_ACCOUNT|UF_ACCOUNTDISABLE|UF_PASSWD_NOTREQD,
+                                 "bit 0X%08x should not have been removed" % bit)
+            else:
+                self.assertEqual(int(res[0]["userAccountControl"][0]),
+                                 UF_NORMAL_ACCOUNT|UF_ACCOUNTDISABLE|UF_PASSWD_NOTREQD,
+                                 "bit 0X%08x should have been removed" % bit)
+
+    def test_uac_bits_unrelated_modify_normal(self):
+        self.uac_bits_unrelated_modify_helper(UF_NORMAL_ACCOUNT)
+
+    def test_uac_bits_unrelated_modify_workstation(self):
+        self.uac_bits_unrelated_modify_helper(UF_WORKSTATION_TRUST_ACCOUNT)
 
     def test_uac_bits_add(self):
         computername=self.computernames[0]
