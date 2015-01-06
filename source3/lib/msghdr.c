@@ -40,7 +40,7 @@ ssize_t msghdr_prep_fds(struct msghdr *msg, uint8_t *buf, size_t bufsize,
 	if (num_fds > INT8_MAX) {
 		return -1;
 	}
-	if (cmsg_space > bufsize) {
+	if ((msg == NULL) || (cmsg_space > bufsize)) {
 		return cmsg_space;
 	}
 
@@ -167,7 +167,7 @@ size_t msghdr_extract_fds(struct msghdr *msg, int *fds, size_t fds_size)
 
 	num_fds = (cmsg->cmsg_len - CMSG_LEN(0)) / sizeof(int);
 
-	if ((num_fds != 0) && (fds_size >= num_fds)) {
+	if ((num_fds != 0) && (fds != NULL) && (fds_size >= num_fds)) {
 		memcpy(fds, CMSG_DATA(cmsg), num_fds * sizeof(int));
 	}
 
