@@ -1048,7 +1048,11 @@ static int samldb_objectclass_trigger(struct samldb_ctx *ac)
 			user_account_control = ldb_msg_find_attr_as_uint(ac->msg,
 									 "userAccountControl",
 									 0);
-			/* "userAccountControl" = 0 or missing one of the types means "UF_NORMAL_ACCOUNT" */
+			/*
+			 * "userAccountControl" = 0 or missing one of
+			 * the types means "UF_NORMAL_ACCOUNT".  See
+			 * MS-SAMR 3.1.1.8.10 point 8
+			 */
 			if ((user_account_control & UF_ACCOUNT_TYPE_MASK) == 0) {
 				user_account_control = UF_NORMAL_ACCOUNT | user_account_control;
 				uac_generated = true;
@@ -1871,8 +1875,9 @@ static int samldb_user_account_control_change(struct samldb_ctx *ac)
 	new_ufa = new_uac & UF_ACCOUNT_TYPE_MASK;
 	if (new_ufa == 0) {
 		/*
-		 * When there is no account type embedded in "userAccountControl"
-		 * fall back to UF_NORMAL_ACCOUNT.
+		 * "userAccountControl" = 0 or missing one of the
+		 * types means "UF_NORMAL_ACCOUNT".  See MS-SAMR
+		 * 3.1.1.8.10 point 8
 		 */
 		new_ufa = UF_NORMAL_ACCOUNT;
 		new_uac |= new_ufa;
