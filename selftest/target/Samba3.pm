@@ -1016,7 +1016,7 @@ sub provision($$$$$$$$)
 	my $nss_wrapper_group = "$privatedir/group";
 	my $nss_wrapper_hosts = "$ENV{SELFTEST_PREFIX}/hosts";
 	my $resolv_conf = "$privatedir/resolv.conf";
-	my $dns_host_file = "$$ENV{SELFTEST_PREFIX}/dns_host_file";
+	my $dns_host_file = "$ENV{SELFTEST_PREFIX}/dns_host_file";
 
 	my $mod_printer_pl = "$ENV{PERL} $self->{srcdir}/source3/script/tests/printing/modprinter.pl";
 
