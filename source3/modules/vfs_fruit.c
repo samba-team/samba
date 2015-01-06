@@ -2876,7 +2876,7 @@ static int fruit_fstat(vfs_handle_struct *handle, files_struct *fsp,
 		   smb_fname_str_dbg(fsp->fsp_name)));
 
 	if (fsp->base_fsp) {
-		tmp_base_name = fsp->fsp_name->base_name;
+		tmp_base_name = fsp->base_fsp->fsp_name->base_name;
 		/* fsp_name is not converted with vfs_catia */
 		status = SMB_VFS_TRANSLATE_NAME(
 			handle->conn,
