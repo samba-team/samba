@@ -1777,9 +1777,8 @@ static int samldb_user_account_control_change(struct samldb_ctx *ac)
 	uint32_t raw_uac;
 	uint32_t old_ufa;
 	uint32_t new_ufa;
-	uint32_t old_acb;
-	uint32_t new_acb;
-	uint32_t clear_acb;
+	uint32_t old_uac_computed;
+	uint32_t clear_uac;
 	uint32_t old_atype;
 	uint32_t new_atype;
 	uint32_t old_pgrid;
@@ -1826,7 +1825,6 @@ static int samldb_user_account_control_change(struct samldb_ctx *ac)
 	raw_uac = ldb_msg_find_attr_as_uint(tmp_msg,
 					    "userAccountControl",
 					    0);
-	new_acb = samdb_result_acct_flags(tmp_msg, NULL);
 	talloc_free(tmp_msg);
 	/*
 	 * UF_LOCKOUT, UF_PASSWD_CANT_CHANGE and UF_PASSWORD_EXPIRED
@@ -1851,8 +1849,8 @@ static int samldb_user_account_control_change(struct samldb_ctx *ac)
 	if (old_uac == 0) {
 		return ldb_operr(ldb);
 	}
-	old_acb = samdb_result_acct_flags(res->msgs[0],
-					  "msDS-User-Account-Control-Computed");
+	old_uac_computed = ldb_msg_find_attr_as_uint(res->msgs[0],
+						     "msDS-User-Account-Control-Computed", 0);
 	old_lockoutTime = ldb_msg_find_attr_as_int64(res->msgs[0],
 						     "lockoutTime", 0);
 	old_is_critical = ldb_msg_find_attr_as_bool(res->msgs[0],
@@ -1895,7 +1893,7 @@ static int samldb_user_account_control_change(struct samldb_ctx *ac)
 	new_atype = ds_uf2atype(new_ufa);
 	new_pgrid = ds_uf2prim_group_rid(new_uac);
 
-	clear_acb = old_acb & ~new_acb;
+	clear_uac = (old_uac | old_uac_computed) & ~raw_uac;
 
 	switch (new_ufa) {
 	case UF_NORMAL_ACCOUNT:
@@ -1949,7 +1947,7 @@ static int samldb_user_account_control_change(struct samldb_ctx *ac)
 	}
 
 	/* As per MS-SAMR 3.1.1.8.10 these flags have not to be set */
-	if ((clear_acb & ACB_AUTOLOCK) && (old_lockoutTime != 0)) {
+	if ((clear_uac & UF_LOCKOUT) && (old_lockoutTime != 0)) {
 		/* "pwdLastSet" reset as password expiration has been forced  */
 		ldb_msg_remove_attr(ac->msg, "lockoutTime");
 		ret = samdb_msg_add_uint64(ldb, ac->msg, ac->msg, "lockoutTime",
