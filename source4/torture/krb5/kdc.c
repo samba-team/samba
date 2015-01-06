@@ -32,7 +32,10 @@
 
 enum torture_krb5_test {
 	TORTURE_KRB5_TEST_PLAIN,
-	TORTURE_KRB5_TEST_BREAK_PW
+	TORTURE_KRB5_TEST_WIN2K,
+	TORTURE_KRB5_TEST_PAC_REQUEST,
+	TORTURE_KRB5_TEST_BREAK_PW,
+	TORTURE_KRB5_TEST_CLOCK_SKEW,
 };
 
 struct torture_krb5_context {
@@ -50,7 +53,10 @@ static bool torture_krb5_pre_send_test(struct torture_krb5_context *test_context
 	switch (test_context->test)
 	{
 	case TORTURE_KRB5_TEST_PLAIN:
+	case TORTURE_KRB5_TEST_WIN2K:
+	case TORTURE_KRB5_TEST_PAC_REQUEST:
 	case TORTURE_KRB5_TEST_BREAK_PW:
+	case TORTURE_KRB5_TEST_CLOCK_SKEW:
 		torture_assert_int_equal(test_context->tctx,
 					 decode_AS_REQ(send_buf->data, send_buf->length, &test_context->as_req, &used), 0,
 					 "decode_AS_REQ failed");
@@ -68,6 +74,7 @@ static bool torture_krb5_post_recv_test(struct torture_krb5_context *test_contex
 	switch (test_context->test)
 	{
 	case TORTURE_KRB5_TEST_PLAIN:
+	case TORTURE_KRB5_TEST_WIN2K:
 		if (test_context->packet_count == 0) {
 			torture_assert_int_equal(test_context->tctx,
 						 decode_KRB_ERROR(recv_buf->data, recv_buf->length, &error, &used), 0,
@@ -79,6 +86,43 @@ static bool torture_krb5_post_recv_test(struct torture_krb5_context *test_contex
 			free_KRB_ERROR(&error);
 		} else if ((decode_KRB_ERROR(recv_buf->data, recv_buf->length, &error, &used) == 0)
 			   && (test_context->packet_count == 1)) {
+			torture_assert_int_equal(test_context->tctx, used, recv_buf->length, "length mismatch");
+			torture_assert_int_equal(test_context->tctx, error.pvno, 5, "Got wrong error.pvno");
+			torture_assert_int_equal(test_context->tctx, error.error_code, KRB5KRB_ERR_RESPONSE_TOO_BIG - KRB5KDC_ERR_NONE,
+						 "Got wrong error.error_code");
+			free_KRB_ERROR(&error);
+		} else {
+			torture_assert_int_equal(test_context->tctx,
+						 decode_AS_REP(recv_buf->data, recv_buf->length, &test_context->as_rep, &used), 0,
+						 "decode_AS_REP failed");
+			torture_assert_int_equal(test_context->tctx, used, recv_buf->length, "length mismatch");
+			torture_assert_int_equal(test_context->tctx, test_context->as_rep.pvno, 5, "Got wrong as_rep->pvno");
+			free_AS_REP(&test_context->as_rep);
+		}
+		torture_assert(test_context->tctx, test_context->packet_count < 3, "too many packets");
+		free_AS_REQ(&test_context->as_req);
+		break;
+	case TORTURE_KRB5_TEST_PAC_REQUEST:
+		if (test_context->packet_count == 0) {
+			torture_assert_int_equal(test_context->tctx,
+						 decode_KRB_ERROR(recv_buf->data, recv_buf->length, &error, &used), 0,
+						 "decode_AS_REP failed");
+			torture_assert_int_equal(test_context->tctx, used, recv_buf->length, "length mismatch");
+			torture_assert_int_equal(test_context->tctx, error.pvno, 5, "Got wrong error.pvno");
+			torture_assert_int_equal(test_context->tctx, error.error_code, KRB5KRB_ERR_RESPONSE_TOO_BIG - KRB5KDC_ERR_NONE,
+						 "Got wrong error.error_code");
+			free_KRB_ERROR(&error);
+		} else if (test_context->packet_count == 1) {
+			torture_assert_int_equal(test_context->tctx,
+						 decode_KRB_ERROR(recv_buf->data, recv_buf->length, &error, &used), 0,
+						 "decode_AS_REP failed");
+			torture_assert_int_equal(test_context->tctx, used, recv_buf->length, "length mismatch");
+			torture_assert_int_equal(test_context->tctx, error.pvno, 5, "Got wrong error.pvno");
+			torture_assert_int_equal(test_context->tctx, error.error_code, KRB5KDC_ERR_PREAUTH_REQUIRED - KRB5KDC_ERR_NONE,
+						 "Got wrong error.error_code");
+			free_KRB_ERROR(&error);
+		} else if ((decode_KRB_ERROR(recv_buf->data, recv_buf->length, &error, &used) == 0)
+			   && (test_context->packet_count == 2)) {
 			torture_assert_int_equal(test_context->tctx, used, recv_buf->length, "length mismatch");
 			torture_assert_int_equal(test_context->tctx, error.pvno, 5, "Got wrong error.pvno");
 			torture_assert_int_equal(test_context->tctx, error.error_code, KRB5KRB_ERR_RESPONSE_TOO_BIG - KRB5KDC_ERR_NONE,
@@ -112,6 +156,29 @@ static bool torture_krb5_post_recv_test(struct torture_krb5_context *test_contex
 			torture_assert_int_equal(test_context->tctx, used, recv_buf->length, "length mismatch");
 			torture_assert_int_equal(test_context->tctx, error.pvno, 5, "Got wrong error.pvno");
 			torture_assert_int_equal(test_context->tctx, error.error_code, KRB5KDC_ERR_PREAUTH_FAILED - KRB5KDC_ERR_NONE,
+						 "Got wrong error.error_code");
+			free_KRB_ERROR(&error);
+		}
+		torture_assert(test_context->tctx, test_context->packet_count < 2, "too many packets");
+		free_AS_REQ(&test_context->as_req);
+		break;
+	case TORTURE_KRB5_TEST_CLOCK_SKEW:
+		if (test_context->packet_count == 0) {
+			torture_assert_int_equal(test_context->tctx,
+						 decode_KRB_ERROR(recv_buf->data, recv_buf->length, &error, &used), 0,
+						 "decode_AS_REP failed");
+			torture_assert_int_equal(test_context->tctx, used, recv_buf->length, "length mismatch");
+			torture_assert_int_equal(test_context->tctx, error.pvno, 5, "Got wrong error.pvno");
+			torture_assert_int_equal(test_context->tctx, error.error_code, KRB5KDC_ERR_PREAUTH_REQUIRED - KRB5KDC_ERR_NONE,
+						 "Got wrong error.error_code");
+			free_KRB_ERROR(&error);
+		} else if (test_context->packet_count == 1) {
+			torture_assert_int_equal(test_context->tctx,
+						 decode_KRB_ERROR(recv_buf->data, recv_buf->length, &error, &used), 0,
+						 "decode_AS_REP failed");
+			torture_assert_int_equal(test_context->tctx, used, recv_buf->length, "length mismatch");
+			torture_assert_int_equal(test_context->tctx, error.pvno, 5, "Got wrong error.pvno");
+			torture_assert_int_equal(test_context->tctx, error.error_code, KRB5KRB_AP_ERR_SKEW - KRB5KDC_ERR_NONE,
 						 "Got wrong error.error_code");
 			free_KRB_ERROR(&error);
 		}
@@ -203,24 +270,73 @@ static bool torture_krb5_as_req_creds(struct torture_context *tctx,
 	enum credentials_obtained obtained;
 	const char *error_string;
 	const char *password = cli_credentials_get_password(credentials);
+	krb5_get_init_creds_opt *krb_options = NULL;
 	
 	ok = torture_krb5_init_context(tctx, test, &smb_krb5_context);
 	torture_assert(tctx, ok, "torture_krb5_init_context failed");
 	
-	k5ret = principal_from_credentials(tctx, credentials, smb_krb5_context, &principal, &obtained,  &error_string);
+	k5ret = principal_from_credentials(tctx, credentials, smb_krb5_context,
+					   &principal, &obtained,  &error_string);
 	torture_assert_int_equal(tctx, k5ret, 0, error_string);
 
-	if (test == TORTURE_KRB5_TEST_BREAK_PW) {
+	switch (test)
+	{
+	case TORTURE_KRB5_TEST_PLAIN:
+		break;
+
+	case TORTURE_KRB5_TEST_WIN2K:
+		torture_assert_int_equal(tctx,
+					 krb5_get_init_creds_opt_alloc(smb_krb5_context->krb5_context, &krb_options),
+					 0, "krb5_get_init_creds_opt_alloc failed");
+		
+		torture_assert_int_equal(tctx,
+					 krb5_get_init_creds_opt_set_win2k(smb_krb5_context->krb5_context, krb_options, true),
+					 0, "krb5_get_init_creds_opt_set_win2k failed");
+		break;
+		
+	case TORTURE_KRB5_TEST_PAC_REQUEST:
+		torture_assert_int_equal(tctx,
+					 krb5_get_init_creds_opt_alloc(smb_krb5_context->krb5_context, &krb_options),
+					 0, "krb5_get_init_creds_opt_alloc failed");
+		
+		torture_assert_int_equal(tctx,
+					 krb5_get_init_creds_opt_set_pac_request(smb_krb5_context->krb5_context, krb_options, true),
+					 0, "krb5_get_init_creds_opt_set_pac_request failed");
+		break;
+		
+	case TORTURE_KRB5_TEST_BREAK_PW:
 		password = "NOT the password";
+		break;
+
+	case TORTURE_KRB5_TEST_CLOCK_SKEW:
+		torture_assert_int_equal(tctx,
+					 krb5_set_real_time(smb_krb5_context->krb5_context, time(NULL) + 3600, 0),
+					 0, "krb5_set_real_time failed");
+		break;
+
+	break;
 	}
 	k5ret = krb5_get_init_creds_password(smb_krb5_context->krb5_context, &my_creds, principal,
 					     password, NULL, NULL, 0,
-					     NULL, NULL);
-	if (test == TORTURE_KRB5_TEST_BREAK_PW) {
+					     NULL, krb_options);
+	krb5_get_init_creds_opt_free(smb_krb5_context->krb5_context, krb_options);
+	
+	switch (test)
+	{
+	case TORTURE_KRB5_TEST_PLAIN:
+	case TORTURE_KRB5_TEST_WIN2K:
+	case TORTURE_KRB5_TEST_PAC_REQUEST:
+		torture_assert_int_equal(tctx, k5ret, 0, "krb5_get_init_creds_password failed");
+		break;
+
+	case TORTURE_KRB5_TEST_BREAK_PW:
 		torture_assert_int_equal(tctx, k5ret, KRB5KDC_ERR_PREAUTH_FAILED, "krb5_get_init_creds_password should have failed");
 		return true;
-	} else {
-		torture_assert_int_equal(tctx, k5ret, 0, "krb5_get_init_creds_password failed");
+
+	case TORTURE_KRB5_TEST_CLOCK_SKEW:
+		torture_assert_int_equal(tctx, k5ret, KRB5KRB_AP_ERR_SKEW, "krb5_get_init_creds_password should have failed");
+		return true;
+
 	}
 
 	torture_assert_int_equal(tctx,
@@ -253,9 +369,24 @@ static bool torture_krb5_as_req_cmdline(struct torture_context *tctx)
 	return torture_krb5_as_req_creds(tctx, cmdline_credentials, TORTURE_KRB5_TEST_PLAIN);
 }
 
+static bool torture_krb5_as_req_win2k(struct torture_context *tctx)
+{
+	return torture_krb5_as_req_creds(tctx, cmdline_credentials, TORTURE_KRB5_TEST_WIN2K);
+}
+
+static bool torture_krb5_as_req_pac_request(struct torture_context *tctx)
+{
+	return torture_krb5_as_req_creds(tctx, cmdline_credentials, TORTURE_KRB5_TEST_PAC_REQUEST);
+}
+
 static bool torture_krb5_as_req_break_pw(struct torture_context *tctx)
 {
 	return torture_krb5_as_req_creds(tctx, cmdline_credentials, TORTURE_KRB5_TEST_BREAK_PW);
+}
+
+static bool torture_krb5_as_req_clock_skew(struct torture_context *tctx)
+{
+	return torture_krb5_as_req_creds(tctx, cmdline_credentials, TORTURE_KRB5_TEST_CLOCK_SKEW);
 }
 
 NTSTATUS torture_krb5_init(void);
@@ -269,8 +400,17 @@ NTSTATUS torture_krb5_init(void)
 	torture_suite_add_simple_test(kdc_suite, "as-req-cmdline", 
 				      torture_krb5_as_req_cmdline);
 
+	torture_suite_add_simple_test(kdc_suite, "as-req-win2k", 
+				      torture_krb5_as_req_win2k);
+
+	torture_suite_add_simple_test(kdc_suite, "as-req-pac-request", 
+				      torture_krb5_as_req_pac_request);
+
 	torture_suite_add_simple_test(kdc_suite, "as-req-break-pw", 
 				      torture_krb5_as_req_break_pw);
+
+	torture_suite_add_simple_test(kdc_suite, "as-req-clock-skew", 
+				      torture_krb5_as_req_clock_skew);
 
 	torture_suite_add_suite(suite, kdc_suite);
 

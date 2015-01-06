@@ -296,3 +296,7 @@
 ^samba.blackbox.wbinfo\(s3member:local\).wbinfo -G check for sane mapping\(s3member:local\)
 ^samba.ntlm_auth.\(dc:local\).ntlm_auth against winbindd with failed require-membership-of
 ^samba.ntlm_auth.\(dc:local\).ntlm_auth with NTLMSSP gss-spnego-client and gss-spnego server against winbind with failed require-membership-of
+#
+# Differences in our KDC compared to windows
+#
+^samba4.krb5.kdc .*.as-req-pac-request # We should reply to a request for a PAC over UDP with KRB5KRB_ERR_RESPONSE_TOO_BIG unconditionally
