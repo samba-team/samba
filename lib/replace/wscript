@@ -36,19 +36,6 @@ def configure(conf):
         conf.ADD_CFLAGS('-fstack-protector')
         conf.ADD_LDFLAGS('-fstack-protector')
 
-    # Try to find the right extra flags for -Werror behaviour
-    for f in ["-Werror",       # GCC
-              "-errwarn=%all", # Sun Studio
-              "-qhalt=w",     # IBM xlc
-              "-w2",           # Tru64
-             ]:
-        if conf.CHECK_CFLAGS([f], '''
-'''):
-            if not 'WERROR_CFLAGS' in conf.env:
-                conf.env['WERROR_CFLAGS'] = []
-            conf.env['WERROR_CFLAGS'].extend([f])
-            break
-
     conf.CHECK_HEADERS('linux/types.h crypt.h locale.h acl/libacl.h compat.h')
     conf.CHECK_HEADERS('acl/libacl.h attr/xattr.h compat.h ctype.h dustat.h')
     conf.CHECK_HEADERS('fcntl.h fnmatch.h glob.h history.h krb5.h langinfo.h')

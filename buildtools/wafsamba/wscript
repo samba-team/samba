@@ -295,6 +295,19 @@ def configure(conf):
                     headers='stdio.h',
                     msg='Checking simple C program')
 
+    # Try to find the right extra flags for -Werror behaviour
+    for f in ["-Werror",       # GCC
+              "-errwarn=%all", # Sun Studio
+              "-qhalt=w",     # IBM xlc
+              "-w2",           # Tru64
+             ]:
+        if conf.CHECK_CFLAGS([f], '''
+'''):
+            if not 'WERROR_CFLAGS' in conf.env:
+                conf.env['WERROR_CFLAGS'] = []
+            conf.env['WERROR_CFLAGS'].extend([f])
+            break
+
     # check which compiler/linker flags are needed for rpath support
     if not conf.CHECK_LDFLAGS(['-Wl,-rpath,.']) and conf.CHECK_LDFLAGS(['-Wl,-R,.']):
         conf.env['RPATH_ST'] = '-Wl,-R,%s'
