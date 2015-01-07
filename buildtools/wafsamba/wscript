@@ -341,7 +341,7 @@ def configure(conf):
     else:
         conf.env.HAVE_LD_VERSION_SCRIPT = False
 
-    if conf.CHECK_CFLAGS('-fvisibility=hidden'):
+    if conf.CHECK_CFLAGS(['-fvisibility=hidden'] + conf.env.WERROR_CFLAGS):
         conf.env.VISIBILITY_CFLAGS = '-fvisibility=hidden'
         conf.CHECK_CODE('''int main(void) { return 0; }
                            __attribute__((visibility("default"))) void vis_foo2(void) {}''',
