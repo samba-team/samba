@@ -59,17 +59,17 @@ static NTSTATUS kerberos_fetch_pac(struct auth4_context *auth_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (pac_blob) {
+	if (pac_blob != NULL) {
 		status = kerberos_pac_logon_info(tmp_ctx, *pac_blob, NULL, NULL,
 						 NULL, NULL, 0, &logon_info);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto done;
 		}
+
+		talloc_set_name_const(logon_info, "struct PAC_LOGON_INFO");
+
+		auth_ctx->private_data = talloc_steal(auth_ctx, logon_info);
 	}
-
-	talloc_set_name_const(logon_info, "struct PAC_LOGON_INFO");
-
-	auth_ctx->private_data = talloc_steal(auth_ctx, logon_info);
 	*session_info = talloc_zero(mem_ctx, struct auth_session_info);
 	if (!*session_info) {
 		status = NT_STATUS_NO_MEMORY;
