@@ -1501,13 +1501,7 @@ static bool test_aapl(struct torture_context *tctx,
 			       __location__);
 		goto done;
 	}
-	if (strncmp(model, "Samba", 5) != 0) {
-		torture_result(tctx, TORTURE_FAIL,
-			       "(%s) expected model \"Samba\", got: \"%s\"",
-			       __location__, model);
-		ret = false;
-		goto done;
-	}
+	torture_comment(tctx, "Got server model: \"%s\"\n", model);
 
 	/*
 	 * Now that Requested AAPL extensions are enabled, setup some
