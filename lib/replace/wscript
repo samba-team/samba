@@ -32,27 +32,6 @@ def configure(conf):
     conf.DEFINE('HAVE_LIBREPLACE', 1)
     conf.DEFINE('LIBREPLACE_NETWORK_CHECKS', 1)
 
-    # on Tru64 certain features are only available with _OSF_SOURCE set to 1
-    # and _XOPEN_SOURCE set to 600
-    if conf.env['SYSTEM_UNAME_SYSNAME'] == 'OSF1':
-        conf.DEFINE('_OSF_SOURCE', 1, add_to_cflags=True)
-        conf.DEFINE('_XOPEN_SOURCE', 600, add_to_cflags=True)
-
-    # SCM_RIGHTS is only avail if _XOPEN_SOURCE iѕ defined on IRIX
-    if conf.env['SYSTEM_UNAME_SYSNAME'] == 'IRIX':
-        conf.DEFINE('_XOPEN_SOURCE', 600, add_to_cflags=True)
-        conf.DEFINE('_BSD_TYPES', 1, add_to_cflags=True)
-
-    # Try to find the right extra flags for C99 initialisers
-    for f in ["", "-AC99", "-qlanglvl=extc99", "-qlanglvl=stdc99", "-c99"]:
-        if conf.CHECK_CFLAGS([f], '''
-struct foo {int x;char y;};
-struct foo bar = { .y = 'X', .x = 1 };
-'''):
-            if f != "":
-                conf.ADD_CFLAGS(f)
-            break
-
     if conf.CHECK_CFLAGS(['-fstack-protector']) and conf.CHECK_LDFLAGS(['-fstack-protector']):
         conf.ADD_CFLAGS('-fstack-protector')
         conf.ADD_LDFLAGS('-fstack-protector')
