@@ -341,6 +341,13 @@ def configure(conf):
     else:
         conf.env.HAVE_LD_VERSION_SCRIPT = False
 
+    if conf.CHECK_CFLAGS('-fvisibility=hidden'):
+        conf.env.VISIBILITY_CFLAGS = '-fvisibility=hidden'
+        conf.CHECK_CODE('''int main(void) { return 0; }
+                           __attribute__((visibility("default"))) void vis_foo2(void) {}''',
+                        cflags=conf.env.VISIBILITY_CFLAGS,
+                        define='HAVE_VISIBILITY_ATTR', addmain=False)
+
     if sys.platform.startswith('aix'):
         conf.DEFINE('_ALL_SOURCE', 1, add_to_cflags=True)
         # Might not be needed if ALL_SOURCE is defined
