@@ -781,7 +781,7 @@ def CURRENT_CFLAGS(bld, target, cflags, allow_warnings=False, hide_symbols=False
         list = bld.env['PICKY_CFLAGS'];
         ret.extend(list)
     if hide_symbols and bld.env.HAVE_VISIBILITY_ATTR:
-        ret.append('-fvisibility=hidden')
+        ret.append(bld.env.VISIBILITY_CFLAGS)
     return ret
 
 
