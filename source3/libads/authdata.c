@@ -61,7 +61,7 @@ static NTSTATUS kerberos_fetch_pac(struct auth4_context *auth_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (pac_blob) {
+	if (pac_blob != NULL) {
 		status = kerberos_decode_pac(tmp_ctx,
 					     *pac_blob,
 					     NULL,
@@ -73,22 +73,22 @@ static NTSTATUS kerberos_fetch_pac(struct auth4_context *auth_ctx,
 		if (!NT_STATUS_IS_OK(status)) {
 			goto done;
 		}
+
+		pac_data_ctr = talloc(mem_ctx, struct PAC_DATA_CTR);
+		if (pac_data_ctr == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
+
+		talloc_set_name_const(pac_data_ctr, "struct PAC_DATA_CTR");
+
+		pac_data_ctr->pac_data = talloc_steal(pac_data_ctr, pac_data);
+		pac_data_ctr->pac_blob = data_blob_talloc(pac_data_ctr,
+							  pac_blob->data,
+							  pac_blob->length);
+
+		auth_ctx->private_data = talloc_steal(auth_ctx, pac_data_ctr);
 	}
-
-	pac_data_ctr = talloc(mem_ctx, struct PAC_DATA_CTR);
-	if (pac_data_ctr == NULL) {
-		status = NT_STATUS_NO_MEMORY;
-		goto done;
-	}
-
-	talloc_set_name_const(pac_data_ctr, "struct PAC_DATA_CTR");
-
-	pac_data_ctr->pac_data = talloc_steal(pac_data_ctr, pac_data);
-	pac_data_ctr->pac_blob = data_blob_talloc(pac_data_ctr,
-						  pac_blob->data,
-						  pac_blob->length);
-
-	auth_ctx->private_data = talloc_steal(auth_ctx, pac_data_ctr);
 
 	*session_info = talloc_zero(mem_ctx, struct auth_session_info);
 	if (!*session_info) {
