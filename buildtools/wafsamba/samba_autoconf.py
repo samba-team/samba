@@ -703,6 +703,19 @@ int main(void) {
     if Options.options.pedantic:
         conf.ADD_CFLAGS('-W', testflags=True)
 
+
+    # Let people pass an additional ADDITIONAL_{CFLAGS,LDFLAGS}
+    # environment variables which are only used the for final build.
+    #
+    # The CFLAGS and LDFLAGS environment variables are also
+    # used for the configure checks which might impact their results.
+    conf.add_os_flags('ADDITIONAL_CFLAGS')
+    if conf.env.ADDITIONAL_CFLAGS and conf.CHECK_CFLAGS(conf.env['ADDITIONAL_CFLAGS']):
+        conf.env['EXTRA_CFLAGS'].extend(conf.env['ADDITIONAL_CFLAGS'])
+    conf.add_os_flags('ADDITIONAL_LDFLAGS')
+    if conf.env.ADDITIONAL_LDFLAGS and conf.CHECK_LDFLAGS(conf.env['ADDITIONAL_LDFLAGS']):
+        conf.env['EXTRA_LDFLAGS'].extend(conf.env['ADDITIONAL_LDFLAGS'])
+
     if path is None:
         conf.write_config_header('config.h', top=True)
     else:
