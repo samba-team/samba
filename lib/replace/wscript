@@ -32,10 +32,6 @@ def configure(conf):
     conf.DEFINE('HAVE_LIBREPLACE', 1)
     conf.DEFINE('LIBREPLACE_NETWORK_CHECKS', 1)
 
-    if conf.CHECK_CFLAGS(['-fstack-protector']) and conf.CHECK_LDFLAGS(['-fstack-protector']):
-        conf.ADD_CFLAGS('-fstack-protector')
-        conf.ADD_LDFLAGS('-fstack-protector')
-
     conf.CHECK_HEADERS('linux/types.h crypt.h locale.h acl/libacl.h compat.h')
     conf.CHECK_HEADERS('acl/libacl.h attr/xattr.h compat.h ctype.h dustat.h')
     conf.CHECK_HEADERS('fcntl.h fnmatch.h glob.h history.h krb5.h langinfo.h')

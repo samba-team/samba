@@ -646,6 +646,10 @@ def SAMBA_CONFIG_H(conf, path=None):
     if not IN_LAUNCH_DIR(conf):
         return
 
+    if conf.CHECK_CFLAGS(['-fstack-protector']) and conf.CHECK_LDFLAGS(['-fstack-protector']):
+        conf.ADD_CFLAGS('-fstack-protector')
+        conf.ADD_LDFLAGS('-fstack-protector')
+
     if Options.options.debug:
         conf.ADD_CFLAGS('-g', testflags=True)
 
