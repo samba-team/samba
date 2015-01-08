@@ -552,6 +552,13 @@ static int winbindd_read_reply(struct winbindd_response *response)
 
 	result1 = winbind_read_sock(response,
 				    sizeof(struct winbindd_response));
+
+	/* We actually send the pointer value of the extra_data field from
+	   the server.  This has no meaning in the client's address space
+	   so we clear it out. */
+
+	response->extra_data.data = NULL;
+
 	if (result1 == -1) {
 		return -1;
 	}
@@ -559,12 +566,6 @@ static int winbindd_read_reply(struct winbindd_response *response)
 	if (response->length < sizeof(struct winbindd_response)) {
 		return -1;
 	}
-
-	/* We actually send the pointer value of the extra_data field from
-	   the server.  This has no meaning in the client's address space
-	   so we clear it out. */
-
-	response->extra_data.data = NULL;
 
 	/* Read variable length response */
 
