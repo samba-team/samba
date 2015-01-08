@@ -20,8 +20,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef _DEBUG_H
-#define _DEBUG_H
+#ifndef _SAMBA_DEBUG_H
+#define _SAMBA_DEBUG_H
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -262,4 +262,4 @@ typedef void (*debug_callback_fn)(void *private_ptr, int level, const char *msg)
  */
 void debug_set_callback(void *private_ptr, debug_callback_fn fn);
 
-#endif
+#endif /* _SAMBA_DEBUG_H */
