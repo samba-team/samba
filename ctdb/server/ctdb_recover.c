@@ -753,10 +753,14 @@ bool ctdb_recovery_lock(struct ctdb_context *ctdb, bool keep)
 	lock.l_pid = 0;
 
 	if (fcntl(ctdb->recovery_lock_fd, F_SETLK, &lock) != 0) {
+		int saved_errno = errno;
 		close(ctdb->recovery_lock_fd);
 		ctdb->recovery_lock_fd = -1;
 		if (keep) {
-			DEBUG(DEBUG_CRIT,("ctdb_recovery_lock: Failed to get recovery lock on '%s'\n", ctdb->recovery_lock_file));
+			DEBUG(DEBUG_CRIT,("ctdb_recovery_lock: Failed to get "
+					  "recovery lock on '%s' - (%s)\n",
+					  ctdb->recovery_lock_file,
+					  strerror(saved_errno)));
 		}
 		return false;
 	}
