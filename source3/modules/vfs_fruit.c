@@ -652,7 +652,7 @@ static int ad_convert(struct adouble *ad, int fd)
 		ad_getentrylen(ad, ADEID_RFORK);
 
 	/* FIXME: direct use of mmap(), vfs_aio_fork does it too */
-	map = mmap(NULL, origlen, PROT_WRITE, MAP_SHARED, fd, 0);
+	map = mmap(NULL, origlen, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
 	if (map == MAP_FAILED) {
 		DEBUG(2, ("mmap AppleDouble: %s\n", strerror(errno)));
 		rc = -1;
