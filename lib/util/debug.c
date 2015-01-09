@@ -131,6 +131,13 @@ static int debug_level_to_priority(int level)
  * all active backends.
  */
 
+static void debug_file_log(int msg_level,
+			   const char *msg, const char *msg_no_nl)
+{
+	check_log_size();
+	write(state.fd, msg, strlen(msg));
+}
+
 static struct debug_backend {
 	const char *name;
 	int log_level;
@@ -138,6 +145,10 @@ static struct debug_backend {
 	void (*reload)(bool enabled, bool prev_enabled, const char *prog_name);
 	void (*log)(int msg_level, const char *msg, const char *msg_no_nl);
 } debug_backends[] = {
+	{
+		.name = "file",
+		.log = debug_file_log,
+	},
 };
 
 static struct debug_backend *debug_find_backend(const char *name)
