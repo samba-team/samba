@@ -569,11 +569,6 @@ NTSTATUS notify_remove(struct notify_context *notify, void *private_data);
 void notify_trigger(struct notify_context *notify,
 		    uint32_t action, uint32_t filter,
 		    const char *dir, const char *path);
-void notify_walk_idx(struct notify_context *notify,
-		     void (*fn)(const char *path,
-				uint32_t *vnns, size_t num_vnns,
-				void *private_data),
-		     void *private_data);
 
 struct notify_instance;
 NTSTATUS notify_walk(struct notify_context *notify,
@@ -581,8 +576,6 @@ NTSTATUS notify_walk(struct notify_context *notify,
 				const struct notify_instance *instance,
 				void *private_data),
 		     void *private_data);
-
-void notify_cleanup(struct notify_context *notify);
 
 /* The following definitions come from smbd/ntquotas.c  */
 

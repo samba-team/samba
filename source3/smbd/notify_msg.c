@@ -243,15 +243,6 @@ void notify_trigger(struct notify_context *ctx,
 		iov, ARRAY_SIZE(iov), NULL, 0);
 }
 
-void notify_walk_idx(struct notify_context *notify,
-		     void (*fn)(const char *path,
-				uint32_t *vnns, size_t num_vnns,
-				void *private_data),
-		     void *private_data)
-{
-	return;
-}
-
 NTSTATUS notify_walk(struct notify_context *notify,
 		     bool (*fn)(const char *path, struct server_id server,
 				const struct notify_instance *instance,
@@ -318,9 +309,4 @@ NTSTATUS notify_walk(struct notify_context *notify,
 
 	TALLOC_FREE(ev);
 	return NT_STATUS_OK;
-}
-
-void notify_cleanup(struct notify_context *notify)
-{
-	return;
 }
