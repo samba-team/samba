@@ -546,6 +546,20 @@ void debug_set_callback(void *private_ptr, debug_callback_fn fn)
 	}
 }
 
+static void debug_callback_log(const char *msg, int msg_level)
+{
+	size_t msg_len = strlen(msg);
+	char msg_copy[msg_len];
+
+	if ((msg_len > 0) && (msg[msg_len-1] == '\n')) {
+		memcpy(msg_copy, msg, msg_len-1);
+		msg_copy[msg_len-1] = '\0';
+		msg = msg_copy;
+	}
+
+	state.callback(state.callback_private, msg_level, msg);
+}
+
 /**************************************************************************
  reopen the log files
  note that we now do this unconditionally
@@ -764,16 +778,7 @@ static int Debug1(const char *msg)
 	debug_count++;
 
 	if (state.logtype == DEBUG_CALLBACK) {
-		size_t msg_len = strlen(msg);
-		char msg_copy[msg_len];
-
-		if ((msg_len > 0) && (msg[msg_len-1] == '\n')) {
-			memcpy(msg_copy, msg, msg_len-1);
-			msg_copy[msg_len-1] = '\0';
-			msg = msg_copy;
-		}
-
-		state.callback(state.callback_private, current_msg_level, msg);
+		debug_callback_log(msg, current_msg_level);
 		goto done;
 	}
 
