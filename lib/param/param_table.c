@@ -1206,6 +1206,15 @@ struct parm_struct parm_table[] = {
 		.flags		= FLAG_ADVANCED,
 	},
 	{
+		.label		= "logging",
+		.type		= P_STRING,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(logging),
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
+	},
+	{
 		.label		= "max log size",
 		.type		= P_BYTES,
 		.p_class	= P_GLOBAL,
