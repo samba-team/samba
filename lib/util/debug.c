@@ -127,6 +127,152 @@ static int debug_level_to_priority(int level)
 #endif
 
 /* -------------------------------------------------------------------------- **
+ * Debug backends. When logging to DEBUG_FILE, send the log entries to
+ * all active backends.
+ */
+
+static struct debug_backend {
+	const char *name;
+	int log_level;
+	int new_log_level;
+	void (*reload)(bool enabled, bool prev_enabled, const char *prog_name);
+	void (*log)(int msg_level, const char *msg, const char *msg_no_nl);
+} debug_backends[] = {
+};
+
+static struct debug_backend *debug_find_backend(const char *name)
+{
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(debug_backends); i++) {
+		if (strcmp(name, debug_backends[i].name) == 0) {
+			return &debug_backends[i];
+		}
+	}
+
+	return NULL;
+}
+
+/*
+ * parse "backend[:option][@loglevel]
+ */
+static void debug_backend_parse_token(char *tok)
+{
+	char *backend_name_option, *backend_name,*backend_level, *saveptr;
+	struct debug_backend *b;
+
+	/*
+	 * First parse into backend[:option] and loglevel
+	 */
+	backend_name_option = strtok_r(tok, "@\0", &saveptr);
+	if (backend_name_option == NULL) {
+		return;
+	}
+
+	backend_level = strtok_r(NULL, "\0", &saveptr);
+
+	/*
+	 * Now parse backend[:option]
+	 */
+	backend_name = strtok_r(backend_name_option, ":\0", &saveptr);
+	if (backend_name == NULL) {
+		return;
+	}
+
+	/*
+	 * No backend is using the option yet.
+	 */
+#if 0
+	backend_option = strtok_r(NULL, "\0", &saveptr);
+#endif
+
+	/*
+	 * Find and update backend
+	 */
+	b = debug_find_backend(backend_name);
+	if (b == NULL) {
+		return;
+	}
+
+	if (backend_level == NULL) {
+		b->new_log_level = MAX_DEBUG_LEVEL;
+	} else {
+		b->new_log_level = atoi(backend_level);
+	}
+}
+
+/*
+ * parse "backend1[:option1][@loglevel1] backend2[option2][@loglevel2] ... "
+ * and enable/disable backends accordingly
+ */
+static void debug_set_backends(const char *param)
+{
+	size_t str_len = strlen(param);
+	char str[str_len+1];
+	char *tok, *saveptr;
+	int i;
+
+	/*
+	 * initialize new_log_level to detect backends that have been
+	 * disabled
+	 */
+	for (i = 0; i < ARRAY_SIZE(debug_backends); i++) {
+		debug_backends[i].new_log_level = -1;
+	}
+
+	memcpy(str, param, str_len + 1);
+
+	tok = strtok_r(str, LIST_SEP, &saveptr);
+	if (tok == NULL) {
+		return;
+	}
+
+	while (tok != NULL) {
+		debug_backend_parse_token(tok);
+		tok = strtok_r(NULL, LIST_SEP, &saveptr);
+	}
+
+	/*
+	 * Let backends react to config changes
+	 */
+	for (i = 0; i < ARRAY_SIZE(debug_backends); i++) {
+		struct debug_backend *b = &debug_backends[i];
+
+		if (b->reload) {
+			bool enabled = b->new_log_level > -1;
+			bool previously_enabled = b->log_level > -1;
+
+			b->reload(enabled, previously_enabled, state.prog_name);
+		}
+		b->log_level = b->new_log_level;
+	}
+}
+
+static void debug_backends_log(const char *msg, int msg_level)
+{
+	char msg_no_nl[FORMAT_BUFR_SIZE];
+	int i, len;
+
+	/*
+	 * Some backends already add an extra newline, so also provide
+	 * a buffer without the newline character.
+	 */
+	len = MIN(strlen(msg), FORMAT_BUFR_SIZE - 1);
+	if (msg[len - 1] == '\n') {
+		len--;
+	}
+
+	memcpy(msg_no_nl, msg, len);
+	msg_no_nl[len] = '\0';
+
+	for (i = 0; i < ARRAY_SIZE(debug_backends); i++) {
+		if (msg_level <= debug_backends[i].log_level) {
+			debug_backends[i].log(msg_level, msg, msg_no_nl);
+		}
+	}
+}
+
+/* -------------------------------------------------------------------------- **
  * External variables.
  */
 
@@ -464,6 +610,7 @@ Init debugging (one time stuff)
 
 static void debug_init(void)
 {
+	int i;
 	const char **p;
 
 	if (state.initialized)
@@ -475,6 +622,11 @@ static void debug_init(void)
 
 	for(p = default_classname_table; *p; p++) {
 		debug_add_class(*p);
+	}
+
+	for (i = 0; i < ARRAY_SIZE(debug_backends); i++) {
+		debug_backends[i].log_level = -1;
+		debug_backends[i].new_log_level = -1;
 	}
 }
 
