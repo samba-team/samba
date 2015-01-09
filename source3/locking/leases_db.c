@@ -243,7 +243,7 @@ NTSTATUS leases_db_del(const struct GUID *client_guid,
 		goto out;
 	}
 
-	value = talloc(talloc_tos(), struct leases_db_value);
+	value = talloc(rec, struct leases_db_value);
 	if (value == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto out;
@@ -308,7 +308,6 @@ NTSTATUS leases_db_del(const struct GUID *client_guid,
 
   out:
 
-	TALLOC_FREE(value);
 	TALLOC_FREE(rec);
 	return status;
 }
