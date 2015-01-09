@@ -252,14 +252,72 @@ void notify_walk_idx(struct notify_context *notify,
 	return;
 }
 
-void notify_walk(struct notify_context *notify,
-		 void (*fn)(const char *path,
-			    struct notify_db_entry *entries,
-			    size_t num_entries,
-			    time_t deleted_time, void *private_data),
-		 void *private_data)
+NTSTATUS notify_walk(struct notify_context *notify,
+		     bool (*fn)(const char *path, struct server_id server,
+				const struct notify_instance *instance,
+				void *private_data),
+		     void *private_data)
 {
-	return;
+	struct tevent_context *ev;
+	struct tevent_req *req;
+	struct messaging_rec *rec;
+	uint64_t log_idx;
+	NTSTATUS status;
+	int ret;
+	bool ok;
+
+	ev = samba_tevent_context_init(notify);
+	if (ev == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	req = messaging_read_send(ev, ev, notify->msg_ctx, MSG_SMB_NOTIFY_DB);
+	if (req == NULL) {
+		TALLOC_FREE(ev);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ok = tevent_req_set_endtime(req, ev, timeval_current_ofs(10, 0));
+	if (!ok) {
+		TALLOC_FREE(ev);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = messaging_send_buf(notify->msg_ctx, notify->notifyd,
+				    MSG_SMB_NOTIFY_GET_DB, NULL, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("%s: messaging_send_buf failed\n",
+			   nt_errstr(status)));
+		TALLOC_FREE(ev);
+		return status;
+	}
+
+	ok = tevent_req_poll(req, ev);
+	if (!ok) {
+		DEBUG(10, ("%s: tevent_req_poll failed\n", __func__));
+		TALLOC_FREE(ev);
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	ret = messaging_read_recv(req, ev, &rec);
+	if (ret != 0) {
+		DEBUG(10, ("%s: messaging_read_recv failed: %s\n",
+			   __func__, strerror(ret)));
+		TALLOC_FREE(ev);
+		return map_nt_error_from_unix(ret);
+	}
+
+	ret = notifyd_parse_db(rec->buf.data, rec->buf.length, &log_idx,
+			       fn, private_data);
+	if (ret != 0) {
+		DEBUG(10, ("%s: notifyd_parse_db failed: %s\n",
+			   __func__, strerror(ret)));
+		TALLOC_FREE(ev);
+		return map_nt_error_from_unix(ret);
+	}
+
+	TALLOC_FREE(ev);
+	return NT_STATUS_OK;
 }
 
 void notify_cleanup(struct notify_context *notify)

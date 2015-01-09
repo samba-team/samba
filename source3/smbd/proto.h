@@ -574,12 +574,14 @@ void notify_walk_idx(struct notify_context *notify,
 				uint32_t *vnns, size_t num_vnns,
 				void *private_data),
 		     void *private_data);
-void notify_walk(struct notify_context *notify,
-		 void (*fn)(const char *path,
-			    struct notify_db_entry *entries,
-			    size_t num_entries,
-			    time_t deleted_time, void *private_data),
-		 void *private_data);
+
+struct notify_instance;
+NTSTATUS notify_walk(struct notify_context *notify,
+		     bool (*fn)(const char *path, struct server_id server,
+				const struct notify_instance *instance,
+				void *private_data),
+		     void *private_data);
+
 void notify_cleanup(struct notify_context *notify);
 
 /* The following definitions come from smbd/ntquotas.c  */

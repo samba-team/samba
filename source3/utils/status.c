@@ -45,6 +45,7 @@
 #include "lib/conn_tdb.h"
 #include "serverid.h"
 #include "status_profile.h"
+#include "smbd/notifyd/notifyd.h"
 
 #define SMB_MAXPIDS		2048
 static uid_t 		Ucrit_uid = 0;               /* added by OH */
@@ -326,27 +327,17 @@ static int traverse_sessionid(const char *key, struct sessionid *session,
 }
 
 
-static void print_notify_recs(const char *path,
-			      struct notify_db_entry *entries,
-			      size_t num_entries,
-			      time_t deleted_time, void *private_data)
+static bool print_notify_rec(const char *path, struct server_id server,
+			     const struct notify_instance *instance,
+			     void *private_data)
 {
-	size_t i;
-	d_printf("%s\n", path);
+	struct server_id_buf idbuf;
 
-	if (num_entries == 0) {
-		d_printf("deleted %s\n", time_to_asc(deleted_time));
-	}
+	d_printf("%s\\%s\\%x\\%x\n", path, server_id_str_buf(server, &idbuf),
+		 (unsigned)instance->filter,
+		 (unsigned)instance->subdir_filter);
 
-	for (i=0; i<num_entries; i++) {
-		struct notify_db_entry *e = &entries[i];
-		struct server_id_buf idbuf;
-
-		printf("%s %x %x\n", server_id_str_buf(e->server, &idbuf),
-		       (unsigned)e->filter,
-		       (unsigned)e->subdir_filter);
-	}
-	printf("\n");
+	return true;
 }
 
 int main(int argc, const char *argv[])
@@ -375,7 +366,7 @@ int main(int argc, const char *argv[])
 	};
 	TALLOC_CTX *frame = talloc_stackframe();
 	int ret = 0;
-	struct messaging_context *msg_ctx;
+	struct messaging_context *msg_ctx = NULL;
 	char *db_path;
 	bool ok;
 
@@ -586,11 +577,22 @@ int main(int argc, const char *argv[])
 	if (show_notify) {
 		struct notify_context *n;
 
-		n = notify_init(talloc_tos(), NULL, NULL);
+		if (msg_ctx == NULL) {
+			msg_ctx = messaging_init(
+				NULL, samba_tevent_context_init(NULL));
+			if (msg_ctx == NULL) {
+				fprintf(stderr, "messaging_init failed\n");
+				ret = -1;
+				goto done;
+			}
+		}
+
+		n = notify_init(talloc_tos(), msg_ctx,
+				messaging_tevent_context(msg_ctx));
 		if (n == NULL) {
 			goto done;
 		}
-		notify_walk(n, print_notify_recs, NULL);
+		notify_walk(n, print_notify_rec, NULL);
 		TALLOC_FREE(n);
 	}
 
