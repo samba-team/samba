@@ -241,7 +241,9 @@ int debug_add_class(const char *classname);
 bool debug_parse_levels(const char *params_str);
 void debug_setup_talloc_log(void);
 void debug_set_logfile(const char *name);
-void debug_set_settings(struct debug_settings *settings);
+void debug_set_settings(struct debug_settings *settings,
+			const char *logging_param,
+			int syslog_level, bool syslog_only);
 bool reopen_logs_internal( void );
 void force_check_log_size( void );
 bool need_to_check_log_size( void );

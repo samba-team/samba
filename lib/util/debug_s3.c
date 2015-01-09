@@ -34,15 +34,14 @@ bool reopen_logs(void)
 
 		ZERO_STRUCT(settings);
 		settings.max_log_size = lp_max_log_size();
-		settings.syslog = lp_syslog();
-		settings.syslog_only = lp_syslog_only();
 		settings.timestamp_logs = lp_timestamp_logs();
 		settings.debug_prefix_timestamp = lp_debug_prefix_timestamp();
 		settings.debug_hires_timestamp = lp_debug_hires_timestamp();
 		settings.debug_pid = lp_debug_pid();
 		settings.debug_uid = lp_debug_uid();
 		settings.debug_class = lp_debug_class();
-		debug_set_settings(&settings);
+		debug_set_settings(&settings, lp_logging(talloc_tos()),
+				   lp_syslog(), lp_syslog_only());
 	}
 	return reopen_logs_internal();
 }

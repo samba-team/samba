@@ -684,12 +684,40 @@ static void debug_init(void)
 	}
 }
 
-/* This forces in some smb.conf derived values into the debug system.
- * There are no pointers in this structure, so we can just
- * structure-assign it in */
-void debug_set_settings(struct debug_settings *settings)
+void debug_set_settings(struct debug_settings *settings,
+			const char *logging_param,
+			int syslog_level, bool syslog_only)
 {
+	char fake_param[20];
+
+	/*
+	 * This forces in some smb.conf derived values into the debug
+	 * system. There are no pointers in this structure, so we can
+	 * just structure-assign it in
+	 */
 	state.settings = *settings;
+
+	state.settings.syslog = syslog_level;
+	state.settings.syslog_only = syslog_only;
+
+	/*
+	 * If 'logging' is not set, create backend settings from
+	 * deprecated 'syslog' and 'syslog only' paramters
+	 */
+	if (!logging_param) {
+		if (syslog_only) {
+			snprintf(fake_param, sizeof(fake_param),
+				 "syslog:%d", syslog_level - 1);
+		} else {
+			snprintf(fake_param, sizeof(fake_param),
+				 "syslog:%d file:%d", syslog_level -1,
+				 MAX_DEBUG_LEVEL);
+		}
+
+		logging_param = fake_param;
+	}
+
+	debug_set_backends(logging_param);
 }
 
 /**
@@ -718,12 +746,6 @@ void setup_logging(const char *prog_name, enum debug_logtype new_logtype)
 		state.prog_name = prog_name;
 	}
 	reopen_logs_internal();
-
-#ifdef WITH_SYSLOG
-	if (state.logtype == DEBUG_FILE) {
-		debug_syslog_reload(true, false, state.prog_name);
-	}
-#endif
 }
 
 /***************************************************************************
