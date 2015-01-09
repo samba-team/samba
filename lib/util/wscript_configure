@@ -127,3 +127,17 @@ if (conf.CONFIG_SET('HAVE_SYSTEMD_SD_JOURNAL_H') and
 else:
     conf.SET_TARGET_TYPE('systemd-journal', 'EMPTY')
     conf.undefine('HAVE_SYSTEMD_JOURNAL')
+
+if Options.options.enable_lttng != False:
+    conf.check_cfg(package='lttng-ust', args='--cflags --libs',
+                   msg='Checking for lttng-ust', uselib_store="LTTNG-UST")
+    conf.CHECK_HEADERS('lttng/tracef.h', lib='lttng-st')
+    conf.CHECK_LIB('lttng-ust', shlib=True)
+
+if (conf.CONFIG_SET('HAVE_LTTNG_TRACEF_H') and
+    conf.CONFIG_SET('HAVE_LTTNG_UST')):
+    conf.DEFINE('HAVE_LTTNG_TRACEF', '1')
+    conf.env['HAVE_LTTNG_TRACEF'] = True
+else:
+    conf.SET_TARGET_TYPE('lttng-ust', 'EMPTY')
+    conf.undefine('HAVE_LTTNG_TRACEF')

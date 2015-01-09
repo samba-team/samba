@@ -186,6 +186,15 @@ static void debug_systemd_log(int msg_level,
 }
 #endif
 
+#ifdef HAVE_LTTNG_TRACEF
+#include <lttng/tracef.h>
+static void debug_lttng_log(int msg_level,
+			    const char *msg, const char *msg_no_nl)
+{
+	tracef(msg_no_nl);
+}
+#endif /* WITH_LTTNG_TRACEF */
+
 static struct debug_backend {
 	const char *name;
 	int log_level;
@@ -211,6 +220,14 @@ static struct debug_backend {
 		.log = debug_systemd_log,
 	},
 #endif
+
+#ifdef HAVE_LTTNG_TRACEF
+	{
+		.name = "lttng",
+		.log = debug_lttng_log,
+	},
+#endif
+
 };
 
 static struct debug_backend *debug_find_backend(const char *name)

@@ -9,3 +9,11 @@ def set_options(opt):
     opt.add_option('--without-systemd',
                    help=("Disable systemd integration"),
                    action='store_false', dest='enable_systemd')
+
+    opt.add_option('--with-lttng',
+                   help=("Enable lttng integration"),
+                   action='store_true', dest='enable_lttng')
+
+    opt.add_option('--without-lttng',
+                   help=("Disable lttng integration"),
+                   action='store_false', dest='enable_lttng')
