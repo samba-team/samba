@@ -1037,23 +1037,6 @@ static int Debug1(const char *msg)
 	}
 
 #ifdef WITH_SYSLOG
-	if( !state.settings.syslog_only)
-#endif
-	{
-		if( state.fd <= 0 ) {
-			mode_t oldumask = umask( 022 );
-			int fd = open( state.debugf, O_WRONLY|O_APPEND|O_CREAT, 0644 );
-			(void)umask( oldumask );
-			if(fd == -1) {
-				goto done;
-			}
-			smb_set_close_on_exec(fd);
-			state.fd = fd;
-		}
-	}
-
-
-#ifdef WITH_SYSLOG
 	if( current_msg_level < state.settings.syslog ) {
 		int priority = debug_level_to_priority(current_msg_level);
 
