@@ -283,7 +283,7 @@ NTSTATUS leases_db_del(const struct GUID *client_guid,
 	} else {
 		DEBUG(10, ("%s: updating record\n", __func__));
 		ndr_err = ndr_push_struct_blob(
-			&blob, talloc_tos(), value,
+			&blob, rec, value,
 			(ndr_push_flags_fn_t)ndr_push_leases_db_value);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			DEBUG(10, ("%s: ndr_push_struct_blob_failed: %s\n",
