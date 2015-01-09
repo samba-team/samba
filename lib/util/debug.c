@@ -1018,32 +1018,31 @@ void check_log_size( void )
  This is called by dbghdr() and format_debug_text().
 ************************************************************************/
 
-static int Debug1(const char *msg)
+static void Debug1(const char *msg)
 {
 	int old_errno = errno;
 
 	debug_count++;
 
-	if (state.logtype == DEBUG_CALLBACK) {
+	switch(state.logtype) {
+	case DEBUG_CALLBACK:
 		debug_callback_log(msg, current_msg_level);
-		goto done;
-	}
-
-	if ( state.logtype != DEBUG_FILE ) {
+		break;
+	case DEBUG_STDOUT:
+	case DEBUG_STDERR:
+	case DEBUG_DEFAULT_STDOUT:
+	case DEBUG_DEFAULT_STDERR:
 		if (state.fd > 0) {
 			write(state.fd, msg, strlen(msg));
 		}
-		goto done;
-	}
+		break;
+	case DEBUG_FILE:
+		debug_backends_log(msg, current_msg_level);
+		break;
+	};
 
-	debug_backends_log(msg, current_msg_level);
-
- done:
 	errno = old_errno;
-
-	return( 0 );
 }
-
 
 /**************************************************************************
  Print the buffer content via Debug1(), then reset the buffer.
