@@ -102,6 +102,30 @@ static struct {
 	.fd = 2 /* stderr by default */
 };
 
+#ifdef WITH_SYSLOG
+static int debug_level_to_priority(int level)
+{
+	/*
+	 * map debug levels to syslog() priorities note that not all
+	 * DEBUG(0, ...) calls are necessarily errors
+	 */
+	static const int priority_map[4] = {
+		LOG_ERR,     /* 0 */
+		LOG_WARNING, /* 1 */
+		LOG_NOTICE,  /* 2 */
+		LOG_INFO,    /* 3 */
+	};
+	int priority;
+
+	if( level >= ARRAY_SIZE(priority_map) || level < 0)
+		priority = LOG_DEBUG;
+	else
+		priority = priority_map[level];
+
+	return priority;
+}
+#endif
+
 /* -------------------------------------------------------------------------- **
  * External variables.
  */
@@ -808,21 +832,7 @@ static int Debug1(const char *msg)
 
 #ifdef WITH_SYSLOG
 	if( current_msg_level < state.settings.syslog ) {
-		/* map debug levels to syslog() priorities
-		 * note that not all DEBUG(0, ...) calls are
-		 * necessarily errors */
-		static const int priority_map[4] = {
-			LOG_ERR,     /* 0 */
-			LOG_WARNING, /* 1 */
-			LOG_NOTICE,  /* 2 */
-			LOG_INFO,    /* 3 */
-		};
-		int     priority;
-
-		if( current_msg_level >= ARRAY_SIZE(priority_map) || current_msg_level < 0)
-			priority = LOG_DEBUG;
-		else
-			priority = priority_map[current_msg_level];
+		int priority = debug_level_to_priority(current_msg_level);
 
 		/*
 		 * Specify the facility to interoperate with other syslog
