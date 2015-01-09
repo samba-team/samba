@@ -1185,7 +1185,7 @@ struct parm_struct parm_table[] = {
 		.offset		= GLOBAL_VAR(syslog),
 		.special	= NULL,
 		.enum_list	= NULL,
-		.flags		= FLAG_ADVANCED,
+		.flags		= FLAG_ADVANCED | FLAG_DEPRECATED,
 	},
 	{
 		.label		= "syslog only",
@@ -1194,7 +1194,7 @@ struct parm_struct parm_table[] = {
 		.offset		= GLOBAL_VAR(syslog_only),
 		.special	= NULL,
 		.enum_list	= NULL,
-		.flags		= FLAG_ADVANCED,
+		.flags		= FLAG_ADVANCED | FLAG_DEPRECATED,
 	},
 	{
 		.label		= "log file",

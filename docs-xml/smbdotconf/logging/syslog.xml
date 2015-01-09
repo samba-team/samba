@@ -16,6 +16,10 @@
     level less than this value will be sent to syslog. There still will be some
     logging to log.[sn]mbd even if <emphasis>syslog only</emphasis> is enabled.
     </para>
+
+    <para>The <smbconfoption name="logging"/> parameter should be used
+      instead. When <smbconfoption name="logging"/> is set, it
+      overrides the <smbconfoption name="syslog"/> parameter.</para>
 </description>
 <value type="default">1</value>
 </samba:parameter>
