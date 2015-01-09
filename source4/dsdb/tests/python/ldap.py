@@ -106,6 +106,7 @@ class BasicTests(samba.tests.TestCase):
         delete_force(self.ldb, "description=xyz,cn=users," + self.base_dn)
         delete_force(self.ldb, "ou=testou,cn=users," + self.base_dn)
         delete_force(self.ldb, "cn=Test Secret,cn=system," + self.base_dn)
+        delete_force(self.ldb, "cn=testtimevaluesuser1,cn=users," + self.base_dn)
 
     def test_objectclasses(self):
         """Test objectClass behaviour"""
@@ -2858,6 +2859,45 @@ nTSecurityDescriptor:: """ + desc_base64
         self.assertTrue("structuralObjectClass" in res[0])
         self.assertTrue("whenCreated" in res[0])
         self.assertTrue("whenChanged" in res[0])
+
+    def test_timevalues1(self):
+        """Tests possible syntax of time attributes"""
+
+        user_name = "testtimevaluesuser1"
+        user_dn = "CN=%s,CN=Users,%s" % (user_name, self.base_dn)
+
+        delete_force(self.ldb, user_dn)
+        self.ldb.add({ "dn": user_dn,
+                       "objectClass": "user",
+                       "sAMAccountName": user_name })
+
+        #
+        # We check the following values:
+        #
+        #   370101000000Z     => 20370101000000.0Z
+        # 20370102000000.*Z   => 20370102000000.0Z
+        #
+        ext = [ "Z", ".0Z", ".Z", ".000Z", ".RandomIgnoredCharacters...987654321Z" ]
+        for i in range(0, len(ext)):
+            v_raw = "203701%02d000000" % (i + 1)
+            if ext[i] == "Z":
+                v_set = v_raw[2:] + ext[i]
+            else:
+                v_set = v_raw + ext[i]
+            v_get = v_raw + ".0Z"
+
+            m = Message()
+            m.dn = Dn(ldb, user_dn)
+            m["msTSExpireDate"] = MessageElement([v_set],
+                                                 FLAG_MOD_REPLACE,
+                                                 "msTSExpireDate")
+            self.ldb.modify(m)
+
+            res = self.ldb.search(base=user_dn, scope=SCOPE_BASE, attrs=["msTSExpireDate"])
+            self.assertTrue(len(res) == 1)
+            self.assertTrue("msTSExpireDate" in res[0])
+            self.assertTrue(len(res[0]["msTSExpireDate"]) == 1)
+            self.assertEquals(res[0]["msTSExpireDate"][0], v_get)
 
 class BaseDnTests(samba.tests.TestCase):
 
