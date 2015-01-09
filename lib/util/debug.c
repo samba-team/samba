@@ -697,9 +697,6 @@ void debug_set_settings(struct debug_settings *settings,
 	 */
 	state.settings = *settings;
 
-	state.settings.syslog = syslog_level;
-	state.settings.syslog_only = syslog_only;
-
 	/*
 	 * If 'logging' is not set, create backend settings from
 	 * deprecated 'syslog' and 'syslog only' paramters

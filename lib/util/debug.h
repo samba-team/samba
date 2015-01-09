@@ -224,8 +224,6 @@ enum debug_logtype {
 
 struct debug_settings {
 	size_t max_log_size;
-	int syslog;
-	bool syslog_only;
 	bool timestamp_logs;
 	bool debug_prefix_timestamp;
 	bool debug_hires_timestamp;
