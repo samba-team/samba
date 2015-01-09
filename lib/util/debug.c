@@ -1036,30 +1036,7 @@ static int Debug1(const char *msg)
 		goto done;
 	}
 
-#ifdef WITH_SYSLOG
-	if( current_msg_level < state.settings.syslog ) {
-		int priority = debug_level_to_priority(current_msg_level);
-
-		/*
-		 * Specify the facility to interoperate with other syslog
-		 * callers (vfs_full_audit for example).
-		 */
-		priority |= SYSLOG_FACILITY;
-
-		syslog(priority, "%s", msg);
-	}
-#endif
-
-	check_log_size();
-
-#ifdef WITH_SYSLOG
-	if( !state.settings.syslog_only)
-#endif
-	{
-		if (state.fd > 0) {
-			write(state.fd, msg, strlen(msg));
-		}
-	}
+	debug_backends_log(msg, current_msg_level);
 
  done:
 	errno = old_errno;
