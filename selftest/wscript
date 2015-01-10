@@ -232,7 +232,7 @@ def cmd_testonly(opt):
         cmd = '(${CORE_COMMAND} && touch ${SELFTEST_PREFIX}/st_done) | ${FILTER_OPTIONS}'
         if (os.environ.get('RUN_FROM_BUILD_FARM') is None and
             not Options.options.FILTERED_SUBUNIT):
-            subunit_cache = os.path.join(Options.options.SELFTEST_PREFIX, "subunit")
+            subunit_cache = os.path.join(env.SELFTEST_PREFIX, "subunit")
             cmd += ' | tee %s | ${FORMAT_TEST_OUTPUT}' % subunit_cache
         else:
             cmd += ' | ${FILTER_OPTIONS}'
