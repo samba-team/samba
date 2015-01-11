@@ -1,4 +1,89 @@
                    ==============================
+                   Release Notes for Samba 4.1.15
+                          January 12, 2015
+                   ==============================
+
+
+This is the latest stable release of Samba 4.1.
+
+
+Changes since 4.1.14:
+---------------------
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 10966: libcli: SMB2: Pure SMB2-only negprot fix to make us behave as a
+      Windows client does.
+    * BUG 10982 s3: smbd/modules: Fix *allocate* calls to follow POSIX error
+      return convention.
+
+
+o   Christian Ambach <ambi@samba.org>
+    * BUG 9629: Fix profiles tool.
+
+
+o   Samuel Cabrero <scabrero@zentyal.com>
+    * BUG 11006: idl:drsuapi: Manage all possible lengths of drsuapi_DsBindInfo.
+
+
+o   Günther Deschner <gd@samba.org>
+    * BUG 9056: pam_winbind: Fix warn_pwd_expire implementation.
+
+
+o   Guenter Kukkukk <linux@kukkukk.com>
+    * BUG 10952: s4-rpc: dnsserver: Fix enumeration of IPv4 and IPv6 addresses.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 9299: nsswitch: Fix soname of linux nss_*.so.2 modules.
+    * BUG 10949: s4:dsdb/rootdse: Expand extended dn values with the AS_SYSTEM
+      control.
+    * BUG 10958: s3:smb2_server: Allow reauthentication without signing.
+    * BUG 11006: Fix 'domain join' by adding 'drsuapi.DsBindInfoFallBack'
+      attribute 'supported_extensions'.
+
+
+o   Matthieu Patou <mat@matws.net>
+    * BUG 11006: Fix 'domain join' by adding 'drsuapi.DsBindInfoFallBack'
+      attribute 'supported_extensions'.
+
+
+o   Christof Schmitt <cs@samba.org>
+    * BUG 11034: winbind: Retry LogonControl RPC in ping-dc after session
+      expiration.
+
+
+o   Andreas Schneider <asn@samba.org>
+    * BUG 10279: s3-lib: Do not require a password with --use-ccache.
+    * BUG 10960: s3-smbclient: Return success if we listed the shares.
+    * BUG 10961: s3-smbstatus: Fix exit code of profile output.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+======================================================================
+
+                   ==============================
                    Release Notes for Samba 4.1.14
                           December 1, 2014
                    ==============================
@@ -83,10 +168,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
 
-======================================================================
 
                    ==============================
                    Release Notes for Samba 4.1.13
