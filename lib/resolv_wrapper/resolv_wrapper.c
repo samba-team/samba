@@ -733,7 +733,7 @@ static int rwrap_get_record(const char *hostfile, unsigned recursion,
 		}
 	}
 
-	if (rc == ENOENT && recursion == 0) {
+	if (rc == ENOENT && recursion == 0 && key != NULL) {
 		RWRAP_LOG(RWRAP_LOG_TRACE, "Record for [%s] not found\n", query);
 		memcpy(rr->key, key, strlen(key) + 1);
 	}
