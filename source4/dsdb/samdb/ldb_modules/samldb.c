@@ -999,32 +999,7 @@ static int samldb_objectclass_trigger(struct samldb_ctx *ac)
 		bool uac_generated = false, uac_add_flags = false;
 
 		/* Step 1.2: Default values */
-		ret = samdb_find_or_add_attribute(ldb, ac->msg,
-			"accountExpires", "9223372036854775807");
-		if (ret != LDB_SUCCESS) return ret;
-		ret = samdb_find_or_add_attribute(ldb, ac->msg,
-			"badPasswordTime", "0");
-		if (ret != LDB_SUCCESS) return ret;
-		ret = samdb_find_or_add_attribute(ldb, ac->msg,
-			"badPwdCount", "0");
-		if (ret != LDB_SUCCESS) return ret;
-		ret = samdb_find_or_add_attribute(ldb, ac->msg,
-			"codePage", "0");
-		if (ret != LDB_SUCCESS) return ret;
-		ret = samdb_find_or_add_attribute(ldb, ac->msg,
-			"countryCode", "0");
-		if (ret != LDB_SUCCESS) return ret;
-		ret = samdb_find_or_add_attribute(ldb, ac->msg,
-			"lastLogoff", "0");
-		if (ret != LDB_SUCCESS) return ret;
-		ret = samdb_find_or_add_attribute(ldb, ac->msg,
-			"lastLogon", "0");
-		if (ret != LDB_SUCCESS) return ret;
-		ret = samdb_find_or_add_attribute(ldb, ac->msg,
-			"logonCount", "0");
-		if (ret != LDB_SUCCESS) return ret;
-		ret = samdb_find_or_add_attribute(ldb, ac->msg,
-			"pwdLastSet", "0");
+		ret = dsdb_user_obj_set_defaults(ldb, ac->msg);
 		if (ret != LDB_SUCCESS) return ret;
 
 		/* On add operations we might need to generate a

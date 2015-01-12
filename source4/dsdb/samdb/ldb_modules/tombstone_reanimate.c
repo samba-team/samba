@@ -238,33 +238,10 @@ static int _tr_restore_attributes(struct ldb_context *ldb, struct ldb_message *c
 		/* restoring 'user' instance attribute is heavily borrowed from samldb.c */
 
 		/* Default values */
-		ret = samdb_find_or_add_attribute(ldb, new_msg,
-						  "accountExpires", "9223372036854775807");
+		ret = dsdb_user_obj_set_defaults(ldb, new_msg);
 		if (ret != LDB_SUCCESS) return ret;
-		ret = samdb_find_or_add_attribute(ldb, new_msg,
-						  "badPasswordTime", "0");
-		if (ret != LDB_SUCCESS) return ret;
-		ret = samdb_find_or_add_attribute(ldb, new_msg,
-						  "badPwdCount", "0");
-		if (ret != LDB_SUCCESS) return ret;
-		ret = samdb_find_or_add_attribute(ldb, new_msg,
-						  "codePage", "0");
-		if (ret != LDB_SUCCESS) return ret;
-		ret = samdb_find_or_add_attribute(ldb, new_msg,
-						  "countryCode", "0");
-		if (ret != LDB_SUCCESS) return ret;
-		ret = samdb_find_or_add_attribute(ldb, new_msg,
-						  "lastLogoff", "0");
-		if (ret != LDB_SUCCESS) return ret;
-		ret = samdb_find_or_add_attribute(ldb, new_msg,
-						  "lastLogon", "0");
-		if (ret != LDB_SUCCESS) return ret;
-		ret = samdb_find_or_add_attribute(ldb, new_msg,
-						  "logonCount", "0");
-		if (ret != LDB_SUCCESS) return ret;
-		ret = samdb_find_or_add_attribute(ldb, new_msg,
-						  "pwdLastSet", "0");
-		if (ret != LDB_SUCCESS) return ret;
+
+		/* Following are set only while reanimating objects */
 		ret = samdb_find_or_add_attribute(ldb, new_msg,
 						  "adminCount", "0");
 		if (ret != LDB_SUCCESS) return ret;

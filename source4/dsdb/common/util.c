@@ -4844,3 +4844,45 @@ NTSTATUS dsdb_update_bad_pwd_count(TALLOC_CTX *mem_ctx,
 	*_mod_msg = mod_msg;
 	return NT_STATUS_OK;
 }
+
+/**
+ * Sets defaults for a User object
+ * List of default attributes set:
+ * 	accountExpires, badPasswordTime, badPwdCount,
+ * 	codePage, countryCode, lastLogoff, lastLogon
+ * 	logonCount, pwdLastSet
+ */
+int dsdb_user_obj_set_defaults(struct ldb_context *ldb, struct ldb_message *usr_obj)
+{
+	int ret;
+
+	ret = samdb_find_or_add_attribute(ldb, usr_obj,
+		"accountExpires", "9223372036854775807");
+	if (ret != LDB_SUCCESS) return ret;
+	ret = samdb_find_or_add_attribute(ldb, usr_obj,
+		"badPasswordTime", "0");
+	if (ret != LDB_SUCCESS) return ret;
+	ret = samdb_find_or_add_attribute(ldb, usr_obj,
+		"badPwdCount", "0");
+	if (ret != LDB_SUCCESS) return ret;
+	ret = samdb_find_or_add_attribute(ldb, usr_obj,
+		"codePage", "0");
+	if (ret != LDB_SUCCESS) return ret;
+	ret = samdb_find_or_add_attribute(ldb, usr_obj,
+		"countryCode", "0");
+	if (ret != LDB_SUCCESS) return ret;
+	ret = samdb_find_or_add_attribute(ldb, usr_obj,
+		"lastLogoff", "0");
+	if (ret != LDB_SUCCESS) return ret;
+	ret = samdb_find_or_add_attribute(ldb, usr_obj,
+		"lastLogon", "0");
+	if (ret != LDB_SUCCESS) return ret;
+	ret = samdb_find_or_add_attribute(ldb, usr_obj,
+		"logonCount", "0");
+	if (ret != LDB_SUCCESS) return ret;
+	ret = samdb_find_or_add_attribute(ldb, usr_obj,
+		"pwdLastSet", "0");
+	if (ret != LDB_SUCCESS) return ret;
+
+	return LDB_SUCCESS;
+}
