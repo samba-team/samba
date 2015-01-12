@@ -249,23 +249,18 @@ static int _tr_restore_attributes(struct ldb_context *ldb, struct ldb_message *c
 						  "operatorCount", "0");
 		if (ret != LDB_SUCCESS) return ret;
 
-		/* restore "sAMAccountType" */
+		/* "userAccountControl" must exists on deleted object */
 		user_account_control = ldb_msg_find_attr_as_uint(cur_msg, "userAccountControl", (uint32_t)-1);
 		if (user_account_control == (uint32_t)-1) {
 			return ldb_error(ldb, LDB_ERR_OPERATIONS_ERROR,
 					 "reanimate: No 'userAccountControl' attribute found!");
 		}
-		account_type = ds_uf2atype(user_account_control);
-		if (account_type == 0) {
-			ldb_set_errstring(ldb, "reanimate: Unrecognized account type!");
-			return LDB_ERR_UNWILLING_TO_PERFORM;
-		}
-		ret = samdb_msg_add_uint(ldb, new_msg, new_msg, "sAMAccountType", account_type);
+
+		/* restore "sAMAccountType" */
+		ret = dsdb_user_obj_set_account_type(ldb, new_msg, user_account_control, NULL);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
-		el = ldb_msg_find_element(new_msg, "sAMAccountType");
-		el->flags = LDB_FLAG_MOD_REPLACE;
 
 		/* "userAccountControl" -> "primaryGroupID" mapping */
 		if (!ldb_msg_find_element(new_msg, "primaryGroupID")) {

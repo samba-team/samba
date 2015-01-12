@@ -1018,7 +1018,7 @@ static int samldb_objectclass_trigger(struct samldb_ctx *ac)
 
 		el = ldb_msg_find_element(ac->msg, "userAccountControl");
 		if (el != NULL) {
-			uint32_t user_account_control, account_type;
+			uint32_t user_account_control;
 			/* Step 1.3: "userAccountControl" -> "sAMAccountType" mapping */
 			user_account_control = ldb_msg_find_attr_as_uint(ac->msg,
 									 "userAccountControl",
@@ -1061,19 +1061,11 @@ static int samldb_objectclass_trigger(struct samldb_ctx *ac)
 				return LDB_ERR_OBJECT_CLASS_VIOLATION;
 			}
 
-			account_type = ds_uf2atype(user_account_control);
-			if (account_type == 0) {
-				ldb_set_errstring(ldb, "samldb: Unrecognized account type!");
-				return LDB_ERR_UNWILLING_TO_PERFORM;
-			}
-			ret = samdb_msg_add_uint(ldb, ac->msg, ac->msg,
-						 "sAMAccountType",
-						 account_type);
+			/* add "sAMAccountType" attribute */
+			ret = dsdb_user_obj_set_account_type(ldb, ac->msg, user_account_control, NULL);
 			if (ret != LDB_SUCCESS) {
 				return ret;
 			}
-			el2 = ldb_msg_find_element(ac->msg, "sAMAccountType");
-			el2->flags = LDB_FLAG_MOD_REPLACE;
 
 			/* "isCriticalSystemObject" might be set */
 			if (user_account_control &
