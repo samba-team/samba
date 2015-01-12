@@ -65,6 +65,10 @@
 #define RWRAP_DEFAULT_FAKE_TTL 600
 #endif  /* RWRAP_DEFAULT_FAKE_TTL */
 
+#ifndef HAVE_NS_NAME_COMPRESS
+#define ns_name_compress dn_comp
+#endif
+
 enum rwrap_dbglvl_e {
 	RWRAP_LOG_ERROR = 0,
 	RWRAP_LOG_WARN,

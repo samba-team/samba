@@ -74,6 +74,8 @@ def configure(conf):
         conf.CHECK_FUNCS_IN('res_search __res_search', 'resolv', checklibc=True)
         conf.CHECK_FUNCS_IN('res_nsearch __res_nsearch', 'resolv', checklibc=True)
 
+        conf.CHECK_FUNCS_IN('ns_name_compress', 'resolv', checklibc=True)
+
         # Create full path to resolv_wrapper
         srcdir = os.path.realpath(conf.srcdir)
         libresolv_wrapper_so_path = srcdir + '/bin/default/lib/resolv_wrapper/libresolv-wrapper.so'
