@@ -35,16 +35,23 @@ static struct db_context *leases_db;
 
 bool leases_db_init(bool read_only)
 {
+	char *db_path;
+
 	if (leases_db) {
 		return true;
 	}
 
-	leases_db = db_open(NULL, lock_path("leases.tdb"), 0,
+	db_path = lock_path("leases.tdb");
+	if (db_path == NULL) {
+		return false;
+	}
+
+	leases_db = db_open(NULL, db_path, 0,
 			    TDB_DEFAULT|TDB_VOLATILE|TDB_CLEAR_IF_FIRST|
 			    TDB_INCOMPATIBLE_HASH,
 			    read_only ? O_RDONLY : O_RDWR|O_CREAT, 0644,
 			    DBWRAP_LOCK_ORDER_2, DBWRAP_FLAG_NONE);
-
+	TALLOC_FREE(db_path);
 	if (leases_db == NULL) {
 		DEBUG(1, ("ERROR: Failed to initialise leases database\n"));
 		return false;
