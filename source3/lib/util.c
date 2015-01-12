@@ -1192,7 +1192,9 @@ bool is_myname(const char *s)
 	bool ret = False;
 
 	for (n=0; my_netbios_names(n); n++) {
-		if (strequal(my_netbios_names(n), s)) {
+		const char *nbt_name = my_netbios_names(n);
+
+		if (strncasecmp_m(nbt_name, s, strlen(nbt_name)) == 0) {
 			ret=True;
 			break;
 		}
