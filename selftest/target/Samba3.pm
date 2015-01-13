@@ -1136,6 +1136,10 @@ sub provision($$$$$$)
 	path = $shrdir
         force user = $unix_name
         guest ok = yes
+[forceuser_unixonly]
+	path = $shrdir
+	force user = pdbtest
+	guest ok = yes
 [forcegroup]
 	path = $shrdir
         force group = nogroup
