@@ -1216,10 +1216,12 @@ static int net_sam_addmem(struct net_context *c, int argc, const char **argv)
 
 	if ((grouptype == SID_NAME_ALIAS) || (grouptype == SID_NAME_WKN_GRP)) {
 		if ((membertype != SID_NAME_USER) &&
+		    (membertype != SID_NAME_ALIAS) &&
 		    (membertype != SID_NAME_DOM_GRP)) {
-			d_fprintf(stderr, _("%s is a local group, only users "
-				  "and domain groups can be added.\n"
-				  "%s is a %s\n"), argv[0], argv[1],
+			d_fprintf(stderr, _("Can't add %s: only users, domain "
+					    "groups and domain local groups "
+					    "can be added. %s is a %s\n"),
+				  argv[0], argv[1],
 				  sid_type_lookup(membertype));
 			return -1;
 		}
