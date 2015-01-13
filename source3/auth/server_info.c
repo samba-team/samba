@@ -330,6 +330,76 @@ NTSTATUS create_info3_from_pac_logon_info(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+/*
+ * Check if this is a "Unix Users" domain user, or a
+ * "Unix Groups" domain group, we need to handle it
+ * in a special way if that's the case.
+ */
+
+static NTSTATUS SamInfo3_handle_sids(const char *username,
+			const struct dom_sid *user_sid,
+			const struct dom_sid *group_sid,
+			struct netr_SamInfo3 *info3,
+			struct dom_sid *domain_sid,
+			struct extra_auth_info *extra)
+{
+	if (sid_check_is_in_unix_users(user_sid)) {
+		/* in info3 you can only set rids for the user and the
+		 * primary group, and the domain sid must be that of
+		 * the sam domain.
+		 *
+		 * Store a completely bogus value here.
+		 * The real SID is stored in the extra sids.
+		 * Other code will know to look there if (-1) is found
+		 */
+		info3->base.rid = (uint32_t)(-1);
+		sid_copy(&extra->user_sid, user_sid);
+
+		DEBUG(10, ("Unix User found. Rid marked as "
+			"special and sid (%s) saved as extra sid\n",
+			sid_string_dbg(user_sid)));
+	} else {
+		sid_copy(domain_sid, user_sid);
+		sid_split_rid(domain_sid, &info3->base.rid);
+	}
+
+	if (is_null_sid(domain_sid)) {
+		sid_copy(domain_sid, get_global_sam_sid());
+	}
+
+	/* check if this is a "Unix Groups" domain group,
+	 * if so we need special handling */
+	if (sid_check_is_in_unix_groups(group_sid)) {
+		/* in info3 you can only set rids for the user and the
+		 * primary group, and the domain sid must be that of
+		 * the sam domain.
+		 *
+		 * Store a completely bogus value here.
+		 * The real SID is stored in the extra sids.
+		 * Other code will know to look there if (-1) is found
+		 */
+		info3->base.primary_gid = (uint32_t)(-1);
+		sid_copy(&extra->pgid_sid, group_sid);
+
+		DEBUG(10, ("Unix Group found. Rid marked as "
+			"special and sid (%s) saved as extra sid\n",
+			sid_string_dbg(group_sid)));
+	} else {
+		bool ok = sid_peek_check_rid(domain_sid, group_sid,
+					&info3->base.primary_gid);
+		if (!ok) {
+			DEBUG(1, ("The primary group domain sid(%s) does not "
+				"match the domain sid(%s) for %s(%s)\n",
+				sid_string_dbg(group_sid),
+				sid_string_dbg(domain_sid),
+				username,
+				sid_string_dbg(user_sid)));
+			return NT_STATUS_INVALID_SID;
+		}
+	}
+	return NT_STATUS_OK;
+}
+
 #define RET_NOMEM(ptr) do { \
 	if (!ptr) { \
 		TALLOC_FREE(info3); \
