@@ -421,7 +421,6 @@ NTSTATUS samu_to_SamInfo3(TALLOC_CTX *mem_ctx,
 	const char *tmp;
 	gid_t *gids;
 	NTSTATUS status;
-	bool ok;
 
 	user_sid = pdb_get_user_sid(samu);
 	group_sid = pdb_get_group_sid(samu);
@@ -438,63 +437,16 @@ NTSTATUS samu_to_SamInfo3(TALLOC_CTX *mem_ctx,
 
 	ZERO_STRUCT(domain_sid);
 
-	/* check if this is a "Unix Users" domain user,
-	 * we need to handle it in a special way if that's the case */
-	if (sid_check_is_in_unix_users(user_sid)) {
-		/* in info3 you can only set rids for the user and the
-		 * primary group, and the domain sid must be that of
-		 * the sam domain.
-		 *
-		 * Store a completely bogus value here.
-		 * The real SID is stored in the extra sids.
-		 * Other code will know to look there if (-1) is found
-		 */
-		info3->base.rid = (uint32_t)(-1);
-		sid_copy(&extra->user_sid, user_sid);
+	status = SamInfo3_handle_sids(pdb_get_username(samu),
+				user_sid,
+				group_sid,
+				info3,
+				&domain_sid,
+				extra);
 
-		DEBUG(10, ("Unix User found in struct samu. Rid marked as "
-			   "special and sid (%s) saved as extra sid\n",
-			   sid_string_dbg(user_sid)));
-	} else {
-		sid_copy(&domain_sid, user_sid);
-		sid_split_rid(&domain_sid, &info3->base.rid);
-	}
-
-	if (is_null_sid(&domain_sid)) {
-		sid_copy(&domain_sid, get_global_sam_sid());
-	}
-
-	/* check if this is a "Unix Groups" domain group,
-	 * if so we need special handling */
-	if (sid_check_is_in_unix_groups(group_sid)) {
-		/* in info3 you can only set rids for the user and the
-		 * primary group, and the domain sid must be that of
-		 * the sam domain.
-		 *
-		 * Store a completely bogus value here.
-		 * The real SID is stored in the extra sids.
-		 * Other code will know to look there if (-1) is found
-		 */
-		info3->base.primary_gid = (uint32_t)(-1);
-		sid_copy(&extra->pgid_sid, group_sid);
-
-		DEBUG(10, ("Unix Group found in struct samu. Rid marked as "
-			   "special and sid (%s) saved as extra sid\n",
-			   sid_string_dbg(group_sid)));
-
-	} else {
-		ok = sid_peek_check_rid(&domain_sid, group_sid,
-					&info3->base.primary_gid);
-		if (!ok) {
-			DEBUG(1, ("The primary group domain sid(%s) does not "
-				  "match the domain sid(%s) for %s(%s)\n",
-				  sid_string_dbg(group_sid),
-				  sid_string_dbg(&domain_sid),
-				  pdb_get_username(samu),
-				  sid_string_dbg(user_sid)));
-			TALLOC_FREE(info3);
-			return NT_STATUS_UNSUCCESSFUL;
-		}
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(info3);
+		return status;
 	}
 
 	unix_to_nt_time(&info3->base.logon_time, pdb_get_logon_time(samu));
