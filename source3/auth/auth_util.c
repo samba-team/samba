@@ -671,7 +671,8 @@ NTSTATUS make_server_info_pw(TALLOC_CTX *mem_ctx,
 	status = passwd_to_SamInfo3(result,
 				    unix_username,
 				    pwd,
-				    &result->info3);
+				    &result->info3,
+				    &result->extra);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}

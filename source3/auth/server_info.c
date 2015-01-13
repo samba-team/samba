@@ -539,7 +539,8 @@ NTSTATUS samu_to_SamInfo3(TALLOC_CTX *mem_ctx,
 NTSTATUS passwd_to_SamInfo3(TALLOC_CTX *mem_ctx,
 			    const char *unix_username,
 			    const struct passwd *pwd,
-			    struct netr_SamInfo3 **pinfo3)
+			    struct netr_SamInfo3 **pinfo3,
+			    struct extra_auth_info *extra)
 {
 	struct netr_SamInfo3 *info3;
 	NTSTATUS status;
@@ -635,8 +636,17 @@ NTSTATUS passwd_to_SamInfo3(TALLOC_CTX *mem_ctx,
 
 	ZERO_STRUCT(domain_sid);
 
-	sid_copy(&domain_sid, &user_sid);
-	sid_split_rid(&domain_sid, &info3->base.rid);
+	status = SamInfo3_handle_sids(unix_username,
+				&user_sid,
+				&group_sid,
+				info3,
+				&domain_sid,
+				extra);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
 	info3->base.domain_sid = dom_sid_dup(info3, &domain_sid);
 
 	ok = sid_peek_check_rid(&domain_sid, &group_sid,
