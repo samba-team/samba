@@ -648,6 +648,10 @@ NTSTATUS passwd_to_SamInfo3(TALLOC_CTX *mem_ctx,
 	}
 
 	info3->base.domain_sid = dom_sid_dup(info3, &domain_sid);
+	if (info3->base.domain_sid == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
 
 	ok = sid_peek_check_rid(&domain_sid, &group_sid,
 				&info3->base.primary_gid);
