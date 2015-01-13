@@ -226,16 +226,23 @@ int net_time(struct net_context *c, int argc, const char **argv)
 		return 0;
 	}
 
-	if (!c->opt_host && !c->opt_have_ip &&
-	    !find_master_ip(c->opt_target_workgroup, &c->opt_dest_ip)) {
-		d_fprintf(stderr, _("Could not locate a time server.  Try "
-				    "specifying a target host.\n"));
-		net_time_usage(c, argc,argv);
-		return -1;
+	if (c->opt_host == NULL && !c->opt_have_ip) {
+		bool ok;
+
+		ok = find_master_ip(c->opt_target_workgroup, &c->opt_dest_ip);
+		if (!ok) {
+			d_fprintf(stderr,
+				  _("Could not locate a time server.  "
+				    "Try specifying a target host.\n"));
+			net_time_usage(c, argc, argv);
+			return -1;
+		}
+		c->opt_have_ip = true;
 	}
 
 	/* default - print the time */
-	t = cli_servertime(c->opt_host, c->opt_have_ip? &c->opt_dest_ip : NULL,
+	t = cli_servertime(c->opt_host,
+			   c->opt_have_ip? &c->opt_dest_ip : NULL,
 			   NULL);
 	if (t == 0) return -1;
 
