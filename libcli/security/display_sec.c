@@ -1,19 +1,19 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Samba utility functions
    Copyright (C) Andrew Tridgell 1992-1999
    Copyright (C) Luke Kenneth Casson Leighton 1996 - 1999
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
-   This program is distributed in the hope that it will be useful, 
+
+   This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -237,7 +237,7 @@ void display_sec_acl(struct security_acl *sec_acl)
 	uint32_t i;
 
 	printf("\tACL\tNum ACEs:\t%u\trevision:\t%x\n",
-			 sec_acl->num_aces, sec_acl->revision); 
+	       sec_acl->num_aces, sec_acl->revision);
 	printf("\t---\n");
 
 	if (sec_acl->size != 0 && sec_acl->num_aces != 0) {
@@ -283,7 +283,7 @@ void display_acl_type(uint16_t type)
 		printf("SEC_DESC_RM_CONTROL_VALID ");
 	if (type & SEC_DESC_SELF_RELATIVE)	/* 0x8000 */
 		printf("SEC_DESC_SELF_RELATIVE ");
-	
+
 	printf("\n");
 }
 
