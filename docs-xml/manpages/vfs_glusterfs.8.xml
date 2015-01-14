@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE refentry PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
+<refentry id="vfs_glusterfs.8">
+
+<refmeta>
+	<refentrytitle>vfs_glusterfs</refentrytitle>
+	<manvolnum>8</manvolnum>
+	<refmiscinfo class="source">Samba</refmiscinfo>
+	<refmiscinfo class="manual">System Administration tools</refmiscinfo>
+	<refmiscinfo class="version">4.2</refmiscinfo>
+</refmeta>
+
+
+<refnamediv>
+	<refname>vfs_glusterfs</refname>
+	<refpurpose>
+		Utilize features provided by GlusterFS
+	</refpurpose>
+</refnamediv>
+
+<refsynopsisdiv>
+	<cmdsynopsis>
+		<command>vfs objects = glusterfs</command>
+	</cmdsynopsis>
+</refsynopsisdiv>
+
+<refsect1>
+	<title>DESCRIPTION</title>
+
+	<para>This VFS module is part of the
+	<citerefentry><refentrytitle>samba</refentrytitle>
+	<manvolnum>8</manvolnum></citerefentry> suite.</para>
+
+	<para>
+		The <command>vfs_glusterfs</command> VFS module exposes
+		GlusterFS specific features for use by Samba.
+	</para>
+
+	<para>
+		GlusterFS is a clustered file system, capable of scaling
+		to several peta-bytes. It aggregates various storage bricks
+		over Infiniband RDMA or TCP/IP and interconnect into one large
+		parallel network file system. Storage bricks can be made of any
+		commodity hardware, such as x86-64 server with SATA-II RAID and
+		Infiniband HBA.
+
+		GlusterFS is fully POSIX compliant file system. It supports
+		standard clients running standard applications over any standard
+		IP network and also FUSE. It works seemlessly on
+		different operating systems, currently supported on GNU/Linux
+		and Solaris.
+	</para>
+
+	<para>
+		This module is stackable, provided glusterfs lies in the bottom
+		of the stack.
+	</para>
+</refsect1>
+
+<refsect1>
+	<title>CONFIGURATION</title>
+
+	<para>
+		<command>vfs_glusterfs</command> requires that the underlying share
+		path is a Gluster filesystem.
+	</para>
+
+	<programlisting>
+		<smbconfsection name="[share]"/>
+		<smbconfoption name="vfs objects">glusterfs</smbconfoption>
+	</programlisting>
+</refsect1>
+
+<refsect1>
+	<title>OPTIONS</title>
+
+	<variablelist>
+
+		<varlistentry>
+		<term>glusterfs:logfile = path</term>
+		<listitem>
+		<para>
+			Defines whether and where to store a vfs_glusterfs specific
+			logfile. Client variable substitution is supported (i.e.
+			%M, %m, %I), hence per client log file can be
+			%specified.
+		</para>
+		<para>
+			Example: glusterfs:logfile =
+			%/var/log/samba/glusterfs-vol2.%M.log
+		</para>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>glusterfs:loglevel = 0-9</term>
+		<listitem>
+		<para>
+			Defines the level of logging, with higher numbers corresponding to more verbosity.
+			0 - No logs; 9 - Trace log level; 7 being the info log level is preferred.
+		</para>
+		<para>
+			If this option is not defined with an explicit loglevel,
+			the glusterfs default is used (currently loglevel 7).
+		</para>
+		</listitem>
+		</varlistentry>
+
+
+		<varlistentry>
+		<term>glusterfs:volfile_server = servername</term>
+		<listitem>
+		<para>
+			Defines which volfile server to use, defaults to
+			localhost.
+		</para>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>glusterfs:volume = volumename</term>
+		<listitem>
+		<para>
+			Defines the glusterfs volumename to use for this share.
+		</para>
+		</listitem>
+
+		</varlistentry>
+	</variablelist>
+
+</refsect1>
+
+<refsect1>
+	<title>VERSION</title>
+
+	<para>
+		This man page is correct for version 4.2.0 of the Samba suite.
+	</para>
+</refsect1>
+
+<refsect1>
+	<title>AUTHOR</title>
+
+	<para>The original Samba software and related utilities
+	were created by Andrew Tridgell. Samba is now developed
+	by the Samba Team as an Open Source project similar
+	to the way the Linux kernel is developed.</para>
+
+</refsect1>
+
+</refentry>
