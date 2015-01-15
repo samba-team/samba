@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the third release candidate of Samba 4.2.  This is *not*
+This is the fourth release candidate of Samba 4.2.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -336,6 +336,52 @@ smb.conf changes
    smb2 max write                       Changed default 8388608
    smb2 max trans                       Changed default 8388608
    winbind expand groups                Changed default 0
+
+
+CHANGES SINCE 4.2.0rc3
+======================
+
+o   Andrew Bartlett <abartlet@samba.org>
+    * BUG 10993: CVE-2014-8143: dsdb-samldb: Check for extended access
+      rights before we allow changes to userAccountControl.
+
+
+o   Günther Deschner <gd@samba.org>
+    * BUG 10240: vfs: Add glusterfs manpage.
+
+
+o   David Disseldorp <ddiss@samba.org>
+    * BUG 10984: Fix spoolss IDL response marshalling when returning error
+      without clearing info.
+
+
+o   Amitay Isaacs <amitay@gmail.com>
+    * BUG 11000: ctdb-daemon: Use correct tdb flags when enabling robust mutex
+      support.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 11032: tdb_wrap: Make mutexes easier to use.
+    * BUG 11039: vfs_fruit: Fix base_fsp name conversion.
+    * BUG 11040: vfs_fruit: mmap under FreeBSD needs PROT_READ.
+    * BUG 11051: net: Fix sam addgroupmem.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 10940: s3:passdb: fix logic in pdb_set_pw_history().
+    * BUG 11004: tdb: version 1.3.4.
+
+
+o   Christof Schmitt <cs@samba.org>
+    * BUG 11034: winbind: Retry after SESSION_EXPIRED error in ping-dc.
+
+
+o   Andreas Schneider <asn@samba.org>
+    * BUG 11008: s3-util: Fix authentication with long hostnames.
+    * BUG 11026: nss_wrapper: check for nss.h.
+    * BUG 11033: lib/util: Avoid collision which alread defined consumer DEBUG
+      macro.
+    * BUG 11037: s3-libads: Fix a possible segfault in kerberos_fetch_pac().
 
 
 CHANGES SINCE 4.2.0rc2
