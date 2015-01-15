@@ -791,6 +791,7 @@ static NTSTATUS add_trust_user(TALLOC_CTX *mem_ctx,
 			       struct trustAuthInOutBlob *in,
 			       struct ldb_dn **user_dn)
 {
+	struct ldb_request *req;
 	struct ldb_message *msg;
 	struct ldb_dn *dn;
 	uint32_t i;
@@ -851,7 +852,19 @@ static NTSTATUS add_trust_user(TALLOC_CTX *mem_ctx,
 	}
 
 	/* create the trusted_domain user account */
-	ret = ldb_add(sam_ldb, msg);
+	ret = ldb_build_add_req(&req, sam_ldb, mem_ctx, msg, NULL, NULL,
+				ldb_op_default_callback, NULL);
+	if (ret != LDB_SUCCESS) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ret = ldb_request_add_control(req, DSDB_CONTROL_PERMIT_INTERDOMAIN_TRUST_UAC_OID,
+				      false, NULL);
+	if (ret != LDB_SUCCESS) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ret = dsdb_autotransaction_request(sam_ldb, req);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0,("Failed to create user record %s: %s\n",
 			 ldb_dn_get_linearized(msg->dn),
