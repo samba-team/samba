@@ -1129,11 +1129,11 @@ void close_cnum(connection_struct *conn, uint64_t vuid)
 							talloc_tos()),
 				 lp_servicename(talloc_tos(), SNUM(conn))));
 
-	/* Call VFS disconnect hook */    
-	SMB_VFS_DISCONNECT(conn);
-
 	/* make sure we leave the directory available for unmount */
 	vfs_ChDir(conn, "/");
+
+	/* Call VFS disconnect hook */
+	SMB_VFS_DISCONNECT(conn);
 
 	/* execute any "postexec = " line */
 	if (*lp_postexec(talloc_tos(), SNUM(conn)) &&
