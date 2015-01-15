@@ -20,7 +20,7 @@ statfs_types = [
 
     ( 'STAT_STATFS3_OSF1',
       '3-argument statfs function (DEC OSF/1)',
-      'struct statfs fsd; fsd.f_fsize = 0; exit(statfs(".", &fsd, sizeof(struct statfs)))'
+      'struct statfs fsd; fsd.f_fsize = 0; exit(statfs(".", &fsd, sizeof(struct statfs)))',
       'sys/param.h sys/mount.h' ),
 
     ( 'STAT_STATFS2_BSIZE',
@@ -35,7 +35,7 @@ statfs_types = [
 
     ( 'STAT_STATFS2_FSIZE',
       'two-argument statfs with statfs.fsize',
-      'struct statfs fsd; fsd.f_fsize = 0; exit(statfs(".", &fsd))'
+      'struct statfs fsd; fsd.f_fsize = 0; exit(statfs(".", &fsd))',
       'sys/param.h sys/mount.h' ),
 
     ( 'STAT_STATFS2_FS_DATA',
