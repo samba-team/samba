@@ -104,25 +104,56 @@ static PyTypeObject DObject_Type = {
 	.tp_doc = "test talloc object that calls a function when underlying data is freed\n",
 };
 
-#define MODULE_DOC "Test utility module for pytalloc"
+#define MODULE_DOC PyDoc_STR("Test utility module for pytalloc")
 
-void init_test_pytalloc(void);
-void init_test_pytalloc(void)
+#if PY_MAJOR_VERSION >= 3
+static struct PyModuleDef moduledef = {
+    PyModuleDef_HEAD_INIT,
+    .m_name = "_test_pytalloc",
+    .m_doc = PyDoc_STR("Test utility module for pytalloc"),
+    .m_size = -1,
+    .m_methods = test_talloc_methods,
+};
+#endif
+
+static PyObject *module_init(void);
+static PyObject *module_init(void)
 {
 	PyObject *m;
 
 	DObject_Type.tp_base = pytalloc_GetObjectType();
 	if (PyType_Ready(&DObject_Type) < 0) {
-		return;
+		return NULL;
 	}
 
+#if PY_MAJOR_VERSION >= 3
+	m = PyModule_Create(&moduledef);
+#else
 	m = Py_InitModule3("_test_pytalloc", test_talloc_methods, MODULE_DOC);
+#endif
 
 	if (m == NULL) {
-		return;
+		return NULL;
 	}
 
 	Py_INCREF(&DObject_Type);
 	Py_INCREF(DObject_Type.tp_base);
 	PyModule_AddObject(m, "DObject", (PyObject *)&DObject_Type);
+
+	return m;
 }
+
+
+#if PY_MAJOR_VERSION >= 3
+PyMODINIT_FUNC PyInit__test_pytalloc(void);
+PyMODINIT_FUNC PyInit__test_pytalloc(void)
+{
+	return module_init();
+}
+#else
+void init_test_pytalloc(void);
+void init_test_pytalloc(void)
+{
+	module_init();
+}
+#endif

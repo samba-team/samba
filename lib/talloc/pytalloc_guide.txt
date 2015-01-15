@@ -20,6 +20,14 @@ for objects that wrap talloc-maintained memory in C. It won't write your
 bindings for you but it will make it easier to write C bindings that involve
 talloc, and take away some of the boiler plate.
 
+Python 3
+--------
+
+pytalloc can be used with Python 3. Usage from Python extension remains
+the same, but for the C utilities, the library to link to is tagged with
+Python's PEP3149 ABI tag, for example "pytalloc.cpython34m".
+To make a build for Python 3, configure with PYTHON=/usr/bin/python3.
+.
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 pytalloc_Object
 
@@ -125,6 +133,8 @@ Create a new pytalloc_Object for an abitrary talloc-maintained C pointer. This w
 use a generic VoidPtr Python type, which just provides an opaque object in
 Python. The caller is responsible for incrementing the talloc reference count before calling
 this function - it will dereference the talloc pointer when it is garbage collected.
+
+This function is only available on Python 2.
 
 Debug function for talloc in Python
 -----------------------------------

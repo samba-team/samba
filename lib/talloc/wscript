@@ -60,9 +60,7 @@ def configure(conf):
 
     if not conf.env.disable_python:
         # also disable if we don't have the python libs installed
-        conf.find_program('python', var='PYTHON')
-        conf.check_tool('python')
-        conf.check_python_version((2,4,2))
+        conf.SAMBA_CHECK_PYTHON(mandatory=False, version=(2,4,2))
         conf.SAMBA_CHECK_PYTHON_HEADERS(mandatory=False)
         if not conf.env.HAVE_PYTHON_H:
             Logs.warn('Disabling pytalloc-util as python devel libs not found')
@@ -118,7 +116,9 @@ def build(bld):
                           manpages='man/talloc.3')
 
     if not bld.CONFIG_SET('USING_SYSTEM_PYTALLOC_UTIL') and not bld.env.disable_python:
-        bld.SAMBA_LIBRARY('pytalloc-util',
+        name = bld.pyembed_libname('pytalloc-util')
+
+        bld.SAMBA_LIBRARY(name,
             source='pytalloc_util.c',
             public_deps='talloc',
             pyembed=True,
@@ -132,7 +132,7 @@ def build(bld):
             )
         bld.SAMBA_PYTHON('pytalloc',
                          'pytalloc.c',
-                         deps='talloc pytalloc-util',
+                         deps='talloc ' + name,
                          enabled=True,
                          realname='talloc.so')
 
