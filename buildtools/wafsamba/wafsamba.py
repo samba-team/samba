@@ -217,10 +217,10 @@ def SAMBA_LIBRARY(bld, libname, source,
         if vnum is None and soname is None:
             raise Utils.WafError("public library '%s' must have a vnum" %
                     libname)
-        if pc_files is None:
+        if pc_files is None and not bld.env['IS_EXTRA_PYTHON']:
             raise Utils.WafError("public library '%s' must have pkg-config file" %
                        libname)
-        if public_headers is None:
+        if public_headers is None and not bld.env['IS_EXTRA_PYTHON']:
             raise Utils.WafError("public library '%s' must have header files" %
                        libname)
 

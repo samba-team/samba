@@ -195,6 +195,12 @@ def set_options(opt):
                    help='tag release in git at the same time',
                    type='string', action='store', dest='TAG_RELEASE')
 
+    opt.add_option('--extra-python', type=str,
+                    help=("build selected libraries for the specified "
+                          "additional version of Python "
+                          "(example: --extra-python=/usr/bin/python3)"),
+                    metavar="PYTHON", dest='EXTRA_PYTHON', default=None)
+
 
 @wafsamba.runonce
 def configure(conf):
@@ -265,6 +271,8 @@ def configure(conf):
     conf.env.AUTOCONF_BUILD = Options.options.AUTOCONF_BUILD
     conf.env.AUTOCONF_HOST  = Options.options.AUTOCONF_HOST
     conf.env.AUTOCONF_PROGRAM_PREFIX = Options.options.AUTOCONF_PROGRAM_PREFIX
+
+    conf.env.EXTRA_PYTHON = Options.options.EXTRA_PYTHON
 
     if (conf.env.AUTOCONF_HOST and
         conf.env.AUTOCONF_BUILD and

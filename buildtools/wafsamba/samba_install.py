@@ -59,6 +59,10 @@ def install_library(self):
 
     bld = self.bld
 
+    default_env = bld.all_envs['default']
+    if self.env['IS_EXTRA_PYTHON']:
+        bld.all_envs['default'] = bld.all_envs['extrapython']
+
     install_ldflags = install_rpath(self)
     build_ldflags   = build_rpath(bld)
 
@@ -83,7 +87,7 @@ def install_library(self):
         # install link. That stops us from overwriting the existing build
         # target, which has different ldflags
         self.done_install_library = True
-        t = self.clone('default')
+        t = self.clone(self.env)
         t.posted = False
         t.target += '.inst'
         self.env.RPATH = build_ldflags
@@ -143,6 +147,8 @@ def install_library(self):
         bld.symlink_as(os.path.join(install_path, install_link), os.path.basename(install_name))
     if dev_link:
         bld.symlink_as(os.path.join(install_path, dev_link), os.path.basename(install_name))
+
+    bld.all_envs['default'] = default_env
 
 
 @feature('cshlib')
