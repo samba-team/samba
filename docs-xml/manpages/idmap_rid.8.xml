@@ -65,8 +65,6 @@
 			This means SIDs with a RID less than the base rid are filtered.
 			The default is not to restrict the allowed rids at all,
 			i.e. a base_rid value of 0.
-			A good value for the base_rid can be 1000, since user
-			RIDs by default start at 1000 (512 hexadecimal).
 		</para>
 		<para>
 			Use of this parameter is deprecated.
@@ -114,7 +112,6 @@
 
 	idmap config TRUSTED : backend  = rid
 	idmap config TRUSTED : range    = 50000 - 99999
-	idmap config TRUSTED : base_rid = 1000
 	</programlisting>
 </refsect1>
 
