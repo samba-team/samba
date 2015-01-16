@@ -84,6 +84,7 @@
 ^samba4.rpc.frsapi							# Not provided by Samba 4
 ^samba4.rpc.ntsvcs							# Not provided by Samba 4
 ^samba4.rpc.dfs								# Not provided by Samba 4
+^samba4.rpc.witness							# Not provided by Samba 4
 ^samba4.rpc.clusapi							# clusapi server support not yet provided
 ^samba4.*.base.samba3.*						# Samba3-specific test
 ^samba4.*.raw.samba3.*						# Samba3-specific test
