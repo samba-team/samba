@@ -130,6 +130,7 @@ def SAMBA_LIBRARY(bld, libname, source,
                   pyext=False,
                   target_type='LIBRARY',
                   bundled_extension=False,
+                  bundled_name=None,
                   link_name=None,
                   abi_directory=None,
                   abi_match=None,
@@ -223,7 +224,9 @@ def SAMBA_LIBRARY(bld, libname, source,
             raise Utils.WafError("public library '%s' must have header files" %
                        libname)
 
-    if target_type == 'PYTHON' or realname or not private_library:
+    if bundled_name is not None:
+        pass
+    elif target_type == 'PYTHON' or realname or not private_library:
         if keep_underscore:
             bundled_name = libname
         else:
