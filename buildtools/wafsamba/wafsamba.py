@@ -477,8 +477,6 @@ def SAMBA_MODULE(bld, modname, source,
     if GET_TARGET_TYPE(bld, subsystem) == 'DISABLED':
         return
 
-    obj_target = modname + '.objlist'
-
     realname = modname
     deps += ' ' + subsystem
     while realname.startswith("lib"+subsystem+"_"):
