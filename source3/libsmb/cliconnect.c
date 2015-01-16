@@ -2995,21 +2995,29 @@ static struct tevent_req *cli_connect_nb_send(
 {
 	struct tevent_req *req, *subreq;
 	struct cli_connect_nb_state *state;
-	char *p;
 
 	req = tevent_req_create(mem_ctx, &state, struct cli_connect_nb_state);
 	if (req == NULL) {
 		return NULL;
 	}
-	state->desthost = host;
 	state->signing_state = signing_state;
 	state->flags = flags;
 
-	p = strchr(host, '#');
-	if (p != NULL) {
-		name_type = strtol(p+1, NULL, 16);
-		host = talloc_strndup(state, host, p - host);
-		if (tevent_req_nomem(host, req)) {
+	if (host != NULL) {
+		char *p = strchr(host, '#');
+
+		if (p != NULL) {
+			name_type = strtol(p+1, NULL, 16);
+			host = talloc_strndup(state, host, p - host);
+			if (tevent_req_nomem(host, req)) {
+				return tevent_req_post(req, ev);
+			}
+		}
+
+		state->desthost = host;
+	} else {
+		state->desthost = print_canonical_sockaddr(state, dest_ss);
+		if (tevent_req_nomem(state->desthost, req)) {
 			return tevent_req_post(req, ev);
 		}
 	}
