@@ -1056,6 +1056,10 @@ int ldb_global_init(void);
   \param mem_ctx pointer to a talloc memory context. Pass NULL if there is
   no suitable context available.
 
+  \note The LDB modules will be loaded from directory specified by the environment
+  variable LDB_MODULES_PATH. If the variable is not specified, the compiled-in default
+  is used.
+
   \return pointer to ldb_context that should be free'd (using talloc_free())
   at the end of the program.
 */
