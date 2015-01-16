@@ -111,6 +111,7 @@ static NTSTATUS do_connect(TALLOC_CTX *ctx,
 	char *newserver, *newshare;
 	const char *username;
 	const char *password;
+	const char *domain;
 	NTSTATUS status;
 	int flags = 0;
 
@@ -184,11 +185,15 @@ static NTSTATUS do_connect(TALLOC_CTX *ctx,
 
 	username = get_cmdline_auth_info_username(auth_info);
 	password = get_cmdline_auth_info_password(auth_info);
+	domain = get_cmdline_auth_info_domain(auth_info);
+	if ((domain == NULL) || (domain[0] == '\0')) {
+		domain = lp_workgroup();
+	}
 
 	status = cli_session_setup(c, username,
 				   password, strlen(password),
 				   password, strlen(password),
-				   lp_workgroup());
+				   domain);
 	if (!NT_STATUS_IS_OK(status)) {
 		/* If a password was not supplied then
 		 * try again with a null username. */
@@ -237,7 +242,7 @@ static NTSTATUS do_connect(TALLOC_CTX *ctx,
 				force_encrypt,
 				username,
 				password,
-				lp_workgroup())) {
+				domain)) {
 		cli_shutdown(c);
 		return do_connect(ctx, newserver,
 				newshare, auth_info, false,
@@ -259,7 +264,7 @@ static NTSTATUS do_connect(TALLOC_CTX *ctx,
 		status = cli_cm_force_encryption(c,
 					username,
 					password,
-					lp_workgroup(),
+					domain,
 					sharename);
 		if (!NT_STATUS_IS_OK(status)) {
 			cli_shutdown(c);
