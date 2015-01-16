@@ -484,6 +484,8 @@ def SAMBA_MODULE(bld, modname, source,
     while realname.startswith(subsystem+"_"):
         realname = realname[len(subsystem+"_"):]
 
+    build_name = "%s_module_%s" % (subsystem, realname)
+
     realname = bld.make_libname(realname)
     while realname.startswith("lib"):
         realname = realname[len("lib"):]
@@ -503,6 +505,7 @@ def SAMBA_MODULE(bld, modname, source,
                       local_include=local_include,
                       global_include=global_include,
                       vars=vars,
+                      bundled_name=build_name,
                       link_name=build_link_name,
                       install_path="${MODULESDIR}/%s" % subsystem,
                       pyembed=pyembed,
