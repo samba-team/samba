@@ -45,14 +45,14 @@ interface witness
 		[size_is(num_interfaces)] witness_interfaceInfo *interfaces;
 	} witness_interfaceList;
 
-	WERROR witness_GetInterfaceList(
+	[public] WERROR witness_GetInterfaceList(
 		[out] witness_interfaceList **interface_list
 		);
 
 	/*****************/
 	/* Function 0x01 */
 
-	WERROR witness_Register(
+	[public] WERROR witness_Register(
 		[out,ref] policy_handle *context_handle,
 		[in] witness_version version,
 		[in,unique,string,charset(UTF16)] uint16 *net_name,
@@ -63,7 +63,7 @@ interface witness
 	/*****************/
 	/* Function 0x02 */
 
-	WERROR witness_UnRegister(
+	[public] WERROR witness_UnRegister(
 		[in] policy_handle context_handle
 		);
 
@@ -125,7 +125,7 @@ interface witness
 		[subcontext(4), subcontext_size(length), flag(NDR_REMAINING)] DATA_BLOB *messages;
 	} witness_notifyResponse;
 
-	WERROR witness_AsyncNotify(
+	[public] WERROR witness_AsyncNotify(
 		[in] policy_handle context_handle,
 		[out] witness_notifyResponse **response
 		);
