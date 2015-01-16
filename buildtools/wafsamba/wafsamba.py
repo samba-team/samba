@@ -445,13 +445,15 @@ def SAMBA_MODULE(bld, modname, source,
                  ):
     '''define a Samba module.'''
 
+    bld.ASSERT(subsystem, "You must specify a subsystem for SAMBA_MODULE(%s)" % modname)
+
     source = bld.EXPAND_VARIABLES(source, vars=vars)
     if subdir:
         source = bld.SUBDIR(subdir, source)
 
     if internal_module or BUILTIN_LIBRARY(bld, modname):
         # Do not create modules for disabled subsystems
-        if subsystem and GET_TARGET_TYPE(bld, subsystem) == 'DISABLED':
+        if GET_TARGET_TYPE(bld, subsystem) == 'DISABLED':
             return
         bld.SAMBA_SUBSYSTEM(modname, source,
                     deps=deps,
@@ -472,18 +474,17 @@ def SAMBA_MODULE(bld, modname, source,
         return
 
     # Do not create modules for disabled subsystems
-    if subsystem and GET_TARGET_TYPE(bld, subsystem) == 'DISABLED':
+    if GET_TARGET_TYPE(bld, subsystem) == 'DISABLED':
         return
 
     obj_target = modname + '.objlist'
 
     realname = modname
-    if subsystem is not None:
-        deps += ' ' + subsystem
-        while realname.startswith("lib"+subsystem+"_"):
-            realname = realname[len("lib"+subsystem+"_"):]
-        while realname.startswith(subsystem+"_"):
-            realname = realname[len(subsystem+"_"):]
+    deps += ' ' + subsystem
+    while realname.startswith("lib"+subsystem+"_"):
+        realname = realname[len("lib"+subsystem+"_"):]
+    while realname.startswith(subsystem+"_"):
+        realname = realname[len(subsystem+"_"):]
 
     realname = bld.make_libname(realname)
     while realname.startswith("lib"):
