@@ -111,13 +111,7 @@ static void wb_next_pwent_fetch_done(struct tevent_req *subreq)
 	}
 
 	if (state->gstate->num_users == 0) {
-		state->gstate->domain = state->gstate->domain->next;
-
-		if ((state->gstate->domain != NULL)
-		    && sid_check_is_our_sam(&state->gstate->domain->sid)) {
-			state->gstate->domain = state->gstate->domain->next;
-		}
-
+		state->gstate->domain = wb_next_find_domain(state->gstate->domain);
 		if (state->gstate->domain == NULL) {
 			tevent_req_nterror(req, NT_STATUS_NO_MORE_ENTRIES);
 			return;
