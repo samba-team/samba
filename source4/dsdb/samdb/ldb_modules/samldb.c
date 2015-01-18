@@ -1091,8 +1091,12 @@ static int samldb_objectclass_trigger(struct samldb_ctx *ac)
 
 			/* Step 1.4: "userAccountControl" -> "primaryGroupID" mapping */
 			if (!ldb_msg_find_element(ac->msg, "primaryGroupID")) {
-				uint32_t rid = ds_uf2prim_group_rid(user_account_control);
+				uint32_t rid;
 
+				ret = dsdb_user_obj_set_primary_group_id(ldb, ac->msg, user_account_control, &rid);
+				if (ret != LDB_SUCCESS) {
+					return ret;
+				}
 				/*
 				 * Older AD deployments don't know about the
 				 * RODC group
@@ -1103,15 +1107,6 @@ static int samldb_objectclass_trigger(struct samldb_ctx *ac)
 						return ret;
 					}
 				}
-
-				ret = samdb_msg_add_uint(ldb, ac->msg, ac->msg,
-							 "primaryGroupID", rid);
-				if (ret != LDB_SUCCESS) {
-					return ret;
-				}
-				el2 = ldb_msg_find_element(ac->msg,
-							   "primaryGroupID");
-				el2->flags = LDB_FLAG_MOD_REPLACE;
 			}
 
 			/* Step 1.5: Add additional flags when needed */

@@ -235,6 +235,7 @@ static int _tr_restore_attributes(struct ldb_context *ldb, struct ldb_message *c
 
 	/* objectClass is USER */
 	if (samdb_find_attribute(ldb, cur_msg, "objectclass", "user") != NULL) {
+		uint32_t primary_group_rid;
 		/* restoring 'user' instance attribute is heavily borrowed from samldb.c */
 
 		/* Default values */
@@ -263,17 +264,18 @@ static int _tr_restore_attributes(struct ldb_context *ldb, struct ldb_message *c
 		}
 
 		/* "userAccountControl" -> "primaryGroupID" mapping */
-		if (!ldb_msg_find_element(new_msg, "primaryGroupID")) {
-			uint32_t rid = ds_uf2prim_group_rid(user_account_control);
-
-			ret = samdb_msg_add_uint(ldb, new_msg, new_msg,
-						 "primaryGroupID", rid);
-			if (ret != LDB_SUCCESS) {
-				return ret;
-			}
-			el = ldb_msg_find_element(new_msg, "primaryGroupID");
-			el->flags = LDB_FLAG_MOD_REPLACE;
+		ret = dsdb_user_obj_set_primary_group_id(ldb, new_msg, user_account_control, &primary_group_rid);
+		if (ret != LDB_SUCCESS) {
+			return ret;
 		}
+		/*
+		 * Older AD deployments don't know about the
+		 * RODC group
+		 */
+		if (primary_group_rid == DOMAIN_RID_READONLY_DCS) {
+			/* TODO:  check group exists */
+		}
+
 	}
 
 	/* objectClass is GROUP */
