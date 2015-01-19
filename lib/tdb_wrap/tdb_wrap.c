@@ -130,10 +130,16 @@ struct tdb_wrap *tdb_wrap_open(TALLOC_CTX *mem_ctx,
 	struct tdb_wrap *result;
 	struct tdb_wrap_private *w;
 
+	if (name == NULL) {
+		errno = EINVAL;
+		return NULL;
+	}
+
 	/* If they specify a .ntdb extension, but the code hasn't been
 	 * converted, we want to complain. */
-	if (name && strends(name, ".ntdb")) {
+	if (strends(name, ".ntdb")) {
 		DEBUG(2, ("tdb(%s): This code does not yet understand ntdb.  Please report.\n", name));
+		errno = EINVAL;
 		return NULL;
 	}
 
