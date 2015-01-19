@@ -1137,7 +1137,7 @@ bool cli_check_msdfs_proxy(TALLOC_CTX *ctx,
 		status = cli_cm_force_encryption(cli,
 					username,
 					password,
-					lp_workgroup(),
+					domain,
 					"IPC$");
 		if (!NT_STATUS_IS_OK(status)) {
 			return false;
