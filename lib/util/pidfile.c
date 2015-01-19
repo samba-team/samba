@@ -34,19 +34,17 @@
  */
 pid_t pidfile_pid(const char *piddir, const char *name)
 {
+	size_t len = strlen(piddir) + strlen(name) + 6;
+	char pidFile[len];
 	int fd;
 	char pidstr[20];
 	pid_t ret = -1;
-	char *pidFile;
 
-	if (asprintf(&pidFile, "%s/%s.pid", piddir, name) < 0) {
-		return 0;
-	}
+	snprintf(pidFile, sizeof(pidFile), "%s/%s.pid", piddir, name);
 
 	fd = open(pidFile, O_NONBLOCK | O_RDONLY, 0644);
 
 	if (fd == -1) {
-		SAFE_FREE(pidFile);
 		return 0;
 	}
 
@@ -76,7 +74,6 @@ pid_t pidfile_pid(const char *piddir, const char *name)
 	}
 
 	close(fd);
-	SAFE_FREE(pidFile);
 	DEBUG(10, ("Process with PID=%d is running.\n", (int)ret));
 	return ret;
 
@@ -85,7 +82,6 @@ pid_t pidfile_pid(const char *piddir, const char *name)
 	DEBUG(10, ("Deleting %s, since %d is not a Samba process.\n", pidFile,
 		(int)ret));
 	unlink(pidFile);
-	SAFE_FREE(pidFile);
 	return 0;
 }
 
@@ -94,15 +90,13 @@ pid_t pidfile_pid(const char *piddir, const char *name)
  */
 void pidfile_create(const char *piddir, const char *name)
 {
+	size_t len = strlen(piddir) + strlen(name) + 6;
+	char pidFile[len];
 	int     fd;
 	char    buf[20];
-	char *pidFile;
 	pid_t pid;
 
-	if (asprintf(&pidFile, "%s/%s.pid", piddir, name) < 0) {
-		DEBUG(0,("ERROR: Out of memory\n"));
-		exit(1);
-	}
+	snprintf(pidFile, sizeof(pidFile), "%s/%s.pid", piddir, name);
 
 	pid = pidfile_pid(piddir, name);
 	if (pid != 0) {
@@ -135,7 +129,6 @@ void pidfile_create(const char *piddir, const char *name)
 	}
 
 	/* Leave pid file open & locked for the duration... */
-	SAFE_FREE(pidFile);
 }
 
 void pidfile_unlink(const char *piddir, const char *name)
