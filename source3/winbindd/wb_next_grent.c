@@ -168,9 +168,58 @@ static void wb_next_grent_getgrsid_done(struct tevent_req *subreq)
 	status = wb_getgrsid_recv(subreq, talloc_tos(), &domname, &name,
 				  &state->gr->gr_gid, &state->members);
 	TALLOC_FREE(subreq);
-	if (tevent_req_nterror(req, status)) {
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NONE_MAPPED)) {
+		state->gstate->next_group += 1;
+
+		if (state->gstate->next_group >= state->gstate->num_groups) {
+			TALLOC_FREE(state->gstate->groups);
+
+			if (state->gstate->domain == NULL) {
+				state->gstate->domain = domain_list();
+			} else {
+				state->gstate->domain = state->gstate->domain->next;
+			}
+
+			if ((state->gstate->domain != NULL) &&
+			    sid_check_is_our_sam(&state->gstate->domain->sid))
+			{
+				state->gstate->domain = state->gstate->domain->next;
+			}
+
+			if (state->gstate->domain == NULL) {
+				tevent_req_nterror(req,
+						   NT_STATUS_NO_MORE_ENTRIES);
+				return;
+			}
+
+			subreq = dcerpc_wbint_QueryGroupList_send(
+				state, state->ev,
+				dom_child_handle(state->gstate->domain),
+				&state->next_groups);
+			if (tevent_req_nomem(subreq, req)) {
+				return;
+			}
+
+			tevent_req_set_callback(subreq,
+						wb_next_grent_fetch_done, req);
+			return;
+		}
+
+		subreq = wb_getgrsid_send(
+			state, state->ev,
+			&state->gstate->groups[state->gstate->next_group].sid,
+			state->max_nesting);
+		if (tevent_req_nomem(subreq, req)) {
+			return;
+		}
+		tevent_req_set_callback(subreq, wb_next_grent_getgrsid_done,
+					req);
+		return;
+	} else if (tevent_req_nterror(req, status)) {
 		return;
 	}
+
 	if (!fill_grent(talloc_tos(), state->gr, domname, name,
 			state->gr->gr_gid)) {
 		DEBUG(5, ("fill_grent failed\n"));
