@@ -872,7 +872,7 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 	int ret, trust_direction_flags;
 	unsigned int i;
 	struct AuthenticationInformationArray *auth_array;
-	uint32_t supported_enctypes = ENCTYPE_ARCFOUR_HMAC;
+	uint32_t supported_enctypes = ENC_RC4_HMAC_MD5;
 
 	if (dsdb_functional_level(kdc_db_ctx->samdb) >= DS_DOMAIN_FUNCTION_2008) {
 		supported_enctypes = ldb_msg_find_attr_as_uint(msg,
@@ -1015,7 +1015,7 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 				break;
 			}
 
-			if (supported_enctypes & ENCTYPE_ARCFOUR_HMAC) {
+			if (supported_enctypes & ENC_RC4_HMAC_MD5) {
 				mdfour(_password_hash.hash, password_utf16.data, password_utf16.length);
 				if (password_hash == NULL) {
 					num_keys += 1;
@@ -1047,7 +1047,7 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 			}
 			break;
 		} else if (auth_array->array[i].AuthType == TRUST_AUTH_TYPE_NT4OWF) {
-			if (supported_enctypes & ENCTYPE_ARCFOUR_HMAC) {
+			if (supported_enctypes & ENC_RC4_HMAC_MD5) {
 				password_hash = &auth_array->array[i].AuthInfo.nt4owf.password;
 				num_keys += 1;
 			}
@@ -1085,7 +1085,7 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 			goto out;
 		}
 
-		if (supported_enctypes & ENCTYPE_AES256_CTS_HMAC_SHA1_96) {
+		if (supported_enctypes & ENC_HMAC_SHA1_96_AES256) {
 			ret = krb5_string_to_key_data_salt(context,
 							   ENCTYPE_AES256_CTS_HMAC_SHA1_96,
 							   cleartext_data,
@@ -1100,7 +1100,7 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 			entry_ex->entry.keys.len++;
 		}
 
-		if (supported_enctypes & ENCTYPE_AES128_CTS_HMAC_SHA1_96) {
+		if (supported_enctypes & ENC_HMAC_SHA1_96_AES128) {
 			ret = krb5_string_to_key_data_salt(context,
 							   ENCTYPE_AES128_CTS_HMAC_SHA1_96,
 							   cleartext_data,
