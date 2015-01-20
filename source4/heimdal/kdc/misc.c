@@ -98,18 +98,33 @@ _kdc_db_fetch(krb5_context context,
 					    ent);
 	config->db[i]->hdb_close(context, config->db[i]);
 
-	if (ret == 0) {
+	switch (ret) {
+	case 0:
 	    if (db)
 		*db = config->db[i];
 	    *h = ent;
             ent = NULL;
             goto out;
+
+	case HDB_ERR_NOENTRY:
+	    /* Check the other databases */
+	    continue;
+
+	default:
+	    /* 
+	     * This is really important, because errors like
+	     * HDB_ERR_NOT_FOUND_HERE (used to indicate to Samba that
+	     * the RODC on which this code is running does not have
+	     * the key we need, and so a proxy to the KDC is required)
+	     * have specific meaning, and need to be propogated up.
+	     */
+	    goto out;
 	}
     }
 
-    ret = HDB_ERR_NOENTRY;
-    krb5_set_error_message(context, ret, "no such entry found in hdb");
-
+    if (ret == HDB_ERR_NOENTRY) {
+	krb5_set_error_message(context, ret, "no such entry found in hdb");
+    }
 out:
     krb5_free_principal(context, enterprise_principal);
     free(ent);
