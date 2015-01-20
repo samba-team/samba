@@ -34,11 +34,27 @@ struct ldbtest_ctx {
 	struct ldb_context *ldb;
 
 	const char *dbfile;
-	const char *lockfile;
+	const char *lockfile;   /* lockfile is separate */
 
 	const char *dbpath;
-	const char *lockpath;   /* lockfile is separate */
 };
+
+static void unlink_old_db(struct ldbtest_ctx *test_ctx)
+{
+	int ret;
+
+	errno = 0;
+	ret = unlink(test_ctx->lockfile);
+	if (ret == -1 && errno != ENOENT) {
+		fail();
+	}
+
+	errno = 0;
+	ret = unlink(test_ctx->dbfile);
+	if (ret == -1 && errno != ENOENT) {
+		fail();
+	}
+}
 
 static int ldbtest_noconn_setup(void **state)
 {
@@ -56,18 +72,15 @@ static int ldbtest_noconn_setup(void **state)
 	test_ctx->dbfile = talloc_strdup(test_ctx, "apitest.ldb");
 	assert_non_null(test_ctx->dbfile);
 
-	test_ctx->lockfile = talloc_asprintf(test_ctx,
-					     "%s-lock", test_ctx->dbfile);
+	test_ctx->lockfile = talloc_asprintf(test_ctx, "%s-lock",
+					     test_ctx->dbfile);
 	assert_non_null(test_ctx->lockfile);
 
 	test_ctx->dbpath = talloc_asprintf(test_ctx,
-					  TEST_BE"://%s", test_ctx->dbfile);
+			TEST_BE"://%s", test_ctx->dbfile);
 	assert_non_null(test_ctx->dbpath);
 
-	test_ctx->lockpath = talloc_asprintf(test_ctx,
-					     "%s-lock", test_ctx->dbpath);
-	assert_non_null(test_ctx->lockpath);
-
+	unlink_old_db(test_ctx);
 	*state = test_ctx;
 	return 0;
 }
@@ -77,10 +90,7 @@ static int ldbtest_noconn_teardown(void **state)
 	struct ldbtest_ctx *test_ctx = talloc_get_type_abort(*state,
 							struct ldbtest_ctx);
 
-	unlink(test_ctx->lockfile);
-
-	unlink(test_ctx->dbfile);
-
+	unlink_old_db(test_ctx);
 	talloc_free(test_ctx);
 	return 0;
 }
@@ -212,6 +222,98 @@ static void test_ldb_search(void **state)
 	talloc_free(tmp_ctx);
 }
 
+static int base_search_count(struct ldbtest_ctx *test_ctx, const char *entry_dn)
+{
+	TALLOC_CTX *tmp_ctx;
+	struct ldb_dn *basedn;
+	struct ldb_result *result = NULL;
+	int ret;
+	int count;
+
+	tmp_ctx = talloc_new(test_ctx);
+	assert_non_null(tmp_ctx);
+
+	basedn = ldb_dn_new_fmt(tmp_ctx, test_ctx->ldb, "%s", entry_dn);
+	assert_non_null(basedn);
+
+	ret = ldb_search(test_ctx->ldb, tmp_ctx, &result, basedn,
+			 LDB_SCOPE_BASE, NULL, NULL);
+	assert_int_equal(ret, LDB_SUCCESS);
+	assert_non_null(result);
+
+	count = result->count;
+	talloc_free(tmp_ctx);
+	return count;
+}
+
+static void assert_dn_exists(struct ldbtest_ctx *test_ctx,
+			     const char *entry_dn)
+{
+	int count;
+
+	count = base_search_count(test_ctx, entry_dn);
+	assert_int_equal(count, 1);
+}
+
+static void assert_dn_doesnt_exist(struct ldbtest_ctx *test_ctx,
+				   const char *entry_dn)
+{
+	int count;
+
+	count = base_search_count(test_ctx, entry_dn);
+	assert_int_equal(count, 0);
+}
+
+static void test_ldb_del(void **state)
+{
+	int ret;
+	struct ldb_message *msg;
+	struct ldbtest_ctx *test_ctx = talloc_get_type_abort(*state,
+							struct ldbtest_ctx);
+	TALLOC_CTX *tmp_ctx;
+	const char *basedn = "dc=ldb_del_test";
+
+	tmp_ctx = talloc_new(test_ctx);
+	assert_non_null(tmp_ctx);
+
+	assert_dn_doesnt_exist(test_ctx, basedn);
+
+	msg = ldb_msg_new(tmp_ctx);
+	assert_non_null(msg);
+
+	msg->dn = ldb_dn_new_fmt(tmp_ctx, test_ctx->ldb, "%s", basedn);
+	assert_non_null(msg->dn);
+
+	ret = ldb_msg_add_string(msg, "cn", "test_del_cn_val");
+	assert_int_equal(ret, LDB_SUCCESS);
+
+	ret = ldb_add(test_ctx->ldb, msg);
+	assert_int_equal(ret, LDB_SUCCESS);
+
+	assert_dn_exists(test_ctx, basedn);
+
+	ret = ldb_delete(test_ctx->ldb, msg->dn);
+	assert_int_equal(ret, LDB_SUCCESS);
+
+	assert_dn_doesnt_exist(test_ctx, basedn);
+
+	talloc_free(tmp_ctx);
+}
+
+static void test_ldb_del_noexist(void **state)
+{
+	struct ldbtest_ctx *test_ctx = talloc_get_type_abort(*state,
+							     struct ldbtest_ctx);
+	struct ldb_dn *basedn;
+	int ret;
+
+	basedn = ldb_dn_new(test_ctx, test_ctx->ldb, "dc=nosuchplace");
+	assert_non_null(basedn);
+
+	ret = ldb_delete(test_ctx->ldb, basedn);
+	assert_int_equal(ret, LDB_ERR_NO_SUCH_OBJECT);
+}
+
 int main(int argc, const char **argv)
 {
 	const struct CMUnitTest tests[] = {
@@ -222,6 +324,12 @@ int main(int argc, const char **argv)
 						ldbtest_setup,
 						ldbtest_teardown),
 		cmocka_unit_test_setup_teardown(test_ldb_search,
+						ldbtest_setup,
+						ldbtest_teardown),
+		cmocka_unit_test_setup_teardown(test_ldb_del,
+						ldbtest_setup,
+						ldbtest_teardown),
+		cmocka_unit_test_setup_teardown(test_ldb_del_noexist,
 						ldbtest_setup,
 						ldbtest_teardown),
 	};
