@@ -110,6 +110,7 @@ static void wb_next_grent_fetch_done(struct tevent_req *subreq)
 	state->gstate->num_groups = state->next_groups.num_principals;
 	state->gstate->groups = talloc_move(
 		state->gstate, &state->next_groups.principals);
+	state->gstate->next_group = 0;
 
 	if (state->gstate->num_groups == 0) {
 		state->gstate->domain = wb_next_domain(state->gstate->domain);
@@ -126,8 +127,6 @@ static void wb_next_grent_fetch_done(struct tevent_req *subreq)
 		tevent_req_set_callback(subreq, wb_next_grent_fetch_done, req);
 		return;
 	}
-
-	state->gstate->next_group = 0;
 
 	subreq = wb_getgrsid_send(
 		state, state->ev,
