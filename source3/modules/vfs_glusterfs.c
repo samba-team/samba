@@ -41,22 +41,15 @@
 #include "api/glfs.h"
 #include "lib/util/dlinklist.h"
 #include "lib/util/tevent_unix.h"
-#ifdef HAVE_SYS_EVENTFD_H
-#include <sys/eventfd.h>
-#endif
-#include <pthread.h>
+#include "lib/tevent/tevent_internal.h"
 #include "smbd/globals.h"
+#include "lib/sys_rw.h"
 
 #define DEFAULT_VOLFILE_SERVER "localhost"
 
-#ifdef HAVE_EVENTFD
-static pthread_mutex_t lock_req_list = PTHREAD_MUTEX_INITIALIZER;
-static int event_fd = -1;
+static int read_fd = -1;
+static int write_fd = -1;
 static struct tevent_fd *aio_read_event = NULL;
-static struct tevent_req **req_producer_list = NULL;
-static struct tevent_req **req_consumer_list = NULL;
-static uint64_t req_counter = 0;
-#endif
 
 /**
  * Helper to convert struct stat to struct stat_ex.
@@ -503,15 +496,13 @@ struct glusterfs_aio_state {
 /*
  * This function is the callback that will be called on glusterfs
  * threads once the async IO submitted is complete. To notify
- * Samba of the completion we use eventfd mechanism.
+ * Samba of the completion we use a pipe pased queue.
  */
 static void aio_glusterfs_done(glfs_fd_t *fd, ssize_t ret, void *data)
 {
-#if HAVE_EVENTFD
 	struct tevent_req *req = NULL;
 	struct glusterfs_aio_state *state = NULL;
-	int i, sts = 0;
-	uint64_t u = 1;
+	int sts = 0;
 
 	req = talloc_get_type_abort(data, struct tevent_req);
 	state = tevent_req_data(req, struct glusterfs_aio_state);
@@ -525,88 +516,65 @@ static void aio_glusterfs_done(glfs_fd_t *fd, ssize_t ret, void *data)
 	}
 
 	/*
-	 * Store the reqs that needs to be completed by calling
-	 * tevent_req_done(). tevent_req_done() cannot be called
-	 * here, as it is not designed to be executed in the
-	 * multithread environment, tevent_req_done() should be
+	 * Write the pointer to each req that needs to be completed
+	 * by calling tevent_req_done(). tevent_req_done() cannot
+	 * be called here, as it is not designed to be executed
+	 * in the multithread environment, tevent_req_done() must be
 	 * executed from the smbd main thread.
 	 */
-	pthread_mutex_lock (&lock_req_list);
-	{
-		for (i = 0 ; i < aio_pending_size ; i++) {
-			if(!req_producer_list[i]) {
-				req_producer_list[i] = req;
-				req_counter = req_counter + 1;
-				break;
-			}
-		}
-	}
-	pthread_mutex_unlock (&lock_req_list);
 
-	/*
-	 * For a bunch of fops notify only once
-	 */
-	if (req_counter == 1) {
-		sts = write (event_fd, &u, sizeof(uint64_t));
-		if (sts < 0 && errno == EAGAIN)
-			DEBUG(0,("\nWRITE: reached max value"));
+        sts = sys_write (write_fd, &req, sizeof(struct tevent_req *));
+        if (sts < 0) {
+                DEBUG(0,("\nWrite to pipe failed (%s)", strerror(errno)));
 	}
+
 	return;
-#endif
 }
 
-#ifdef HAVE_EVENTFD
+/*
+ * Read each req off the pipe and process it.
+ */
 static void aio_tevent_fd_done(struct tevent_context *event_ctx,
 				struct tevent_fd *fde,
 				uint16 flags, void *data)
 {
 	struct tevent_req *req = NULL;
-	struct tevent_req **temp = NULL;
-	int i = 0, sts = 0;
-	uint64_t u = 0;
+	int sts = 0;
 
-	sts = read (event_fd, &u, sizeof(uint64_t));
-	if (sts < 0 && errno == EAGAIN)
-		DEBUG(0,("\nREAD: eventfd read failed (%s)",strerror(errno)));
-
-	pthread_mutex_lock (&lock_req_list);
-	{
-		temp = req_producer_list;
-		req_producer_list = req_consumer_list;
-		req_consumer_list = temp;
-		req_counter = 0;
+	sts = sys_read(read_fd, &req, sizeof(struct tevent_req *));
+	if (sts < 0) {
+		DEBUG(0,("\nRead from pipe failed (%s)", strerror(errno)));
 	}
-	pthread_mutex_unlock (&lock_req_list);
 
-	for (i = 0 ; i < aio_pending_size ; i++) {
-		req = req_consumer_list[i];
-		if (req) {
-			tevent_req_done(req);
-			req_consumer_list[i] = 0;
-		}
+	if (req) {
+		tevent_req_done(req);
 	}
 	return;
 }
-#endif
 
 static bool init_gluster_aio(struct vfs_handle_struct *handle)
 {
-#ifdef HAVE_EVENTFD
-	if (event_fd != -1) {
+	int fds[2];
+	int ret = -1;
+
+	if (read_fd != -1) {
 		/*
 		 * Already initialized.
 		 */
 		return true;
 	}
 
-	event_fd = eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
-	if (event_fd == -1) {
+	ret = pipe(fds);
+	if (ret == -1) {
 		goto fail;
 	}
 
+	read_fd = fds[0];
+	write_fd = fds[1];
+
 	aio_read_event = tevent_add_fd(handle->conn->sconn->ev_ctx,
 					NULL,
-					event_fd,
+					read_fd,
 					TEVENT_FD_READ,
 					aio_tevent_fd_done,
 					NULL);
@@ -614,19 +582,15 @@ static bool init_gluster_aio(struct vfs_handle_struct *handle)
 		goto fail;
 	}
 
-	req_producer_list = talloc_zero_array(NULL, struct tevent_req *,
-						aio_pending_size);
-	req_consumer_list = talloc_zero_array(NULL, struct tevent_req *,
-						aio_pending_size);
-
 	return true;
 fail:
 	TALLOC_FREE(aio_read_event);
-	if (event_fd != -1) {
-		close(event_fd);
-		event_fd = -1;
+	if (read_fd != -1) {
+		close(read_fd);
+		close(write_fd);
+		read_fd = -1;
+		write_fd = -1;
 	}
-#endif
 	return false;
 }
 
@@ -639,11 +603,6 @@ static struct tevent_req *vfs_gluster_pread_send(struct vfs_handle_struct
 	struct tevent_req *req = NULL;
 	struct glusterfs_aio_state *state = NULL;
 	int ret = 0;
-
-#ifndef HAVE_EVENTFD
-	errno = ENOTSUP;
-	return NULL;
-#endif
 
 	req = tevent_req_create(mem_ctx, &state, struct glusterfs_aio_state);
 	if (req == NULL) {
@@ -689,11 +648,6 @@ static struct tevent_req *vfs_gluster_pwrite_send(struct vfs_handle_struct
 	struct glusterfs_aio_state *state = NULL;
 	int ret = 0;
 
-#ifndef HAVE_EVENTFD
-	errno = ENOTSUP;
-	return NULL;
-#endif
-
 	req = tevent_req_create(mem_ctx, &state, struct glusterfs_aio_state);
 	if (req == NULL) {
 		return NULL;
@@ -716,10 +670,6 @@ static ssize_t vfs_gluster_recv(struct tevent_req *req, int *err)
 {
 	struct glusterfs_aio_state *state = NULL;
 
-#ifndef HAVE_EVENTFD
-	errno = ENOTSUP;
-	return -1;
-#endif
 	state = tevent_req_data(req, struct glusterfs_aio_state);
 	if (state == NULL) {
 		return -1;
@@ -779,11 +729,6 @@ static struct tevent_req *vfs_gluster_fsync_send(struct vfs_handle_struct
 	struct tevent_req *req = NULL;
 	struct glusterfs_aio_state *state = NULL;
 	int ret = 0;
-
-#ifndef HAVE_EVENTFD
-	errno = ENOTSUP;
-	return NULL;
-#endif
 
 	req = tevent_req_create(mem_ctx, &state, struct glusterfs_aio_state);
 	if (req == NULL) {
