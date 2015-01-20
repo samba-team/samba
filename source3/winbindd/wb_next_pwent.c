@@ -95,6 +95,8 @@ static void wb_next_pwent_fetch_done(struct tevent_req *subreq)
 		state->gstate->num_users = 0;
 	}
 
+	state->gstate->next_user = 0;
+
 	if (state->gstate->num_users == 0) {
 		state->gstate->domain = wb_next_domain(state->gstate->domain);
 		if (state->gstate->domain == NULL) {
@@ -109,8 +111,6 @@ static void wb_next_pwent_fetch_done(struct tevent_req *subreq)
 		tevent_req_set_callback(subreq, wb_next_pwent_fetch_done, req);
 		return;
 	}
-
-	state->gstate->next_user = 0;
 
 	subreq = wb_fill_pwent_send(
 		state, state->ev,
