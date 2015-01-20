@@ -31,7 +31,7 @@ struct wb_next_pwent_state {
 static void wb_next_pwent_fetch_done(struct tevent_req *subreq);
 static void wb_next_pwent_fill_done(struct tevent_req *subreq);
 
-static struct winbindd_domain *wb_next_find_domain(struct winbindd_domain *domain)
+static struct winbindd_domain *wb_next_domain(struct winbindd_domain *domain)
 {
 	if (domain == NULL) {
 		domain = domain_list();
@@ -65,7 +65,7 @@ struct tevent_req *wb_next_pwent_send(TALLOC_CTX *mem_ctx,
 	if (state->gstate->next_user >= state->gstate->num_users) {
 		TALLOC_FREE(state->gstate->users);
 
-		state->gstate->domain = wb_next_find_domain(state->gstate->domain);
+		state->gstate->domain = wb_next_domain(state->gstate->domain);
 		if (state->gstate->domain == NULL) {
 			tevent_req_nterror(req, NT_STATUS_NO_MORE_ENTRIES);
 			return tevent_req_post(req, ev);
@@ -111,7 +111,7 @@ static void wb_next_pwent_fetch_done(struct tevent_req *subreq)
 	}
 
 	if (state->gstate->num_users == 0) {
-		state->gstate->domain = wb_next_find_domain(state->gstate->domain);
+		state->gstate->domain = wb_next_domain(state->gstate->domain);
 		if (state->gstate->domain == NULL) {
 			tevent_req_nterror(req, NT_STATUS_NO_MORE_ENTRIES);
 			return;
@@ -157,7 +157,7 @@ static void wb_next_pwent_fill_done(struct tevent_req *subreq)
 		if (state->gstate->next_user >= state->gstate->num_users) {
 			TALLOC_FREE(state->gstate->users);
 
-			state->gstate->domain = wb_next_find_domain(state->gstate->domain);
+			state->gstate->domain = wb_next_domain(state->gstate->domain);
 			if (state->gstate->domain == NULL) {
 				tevent_req_nterror(req, NT_STATUS_NO_MORE_ENTRIES);
 				return;
