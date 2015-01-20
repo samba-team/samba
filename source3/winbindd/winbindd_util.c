@@ -73,6 +73,25 @@ static void free_domain_list(void)
 	}
 }
 
+/**
+ * Iterator for winbindd's domain list.
+ * To be used (e.g.) in tevent based loops.
+ */
+struct winbindd_domain *wb_next_domain(struct winbindd_domain *domain)
+{
+	if (domain == NULL) {
+		domain = domain_list();
+	} else {
+		domain = domain->next;
+	}
+
+	if ((domain != NULL)
+	    && sid_check_is_our_sam(&domain->sid)) {
+		domain = domain->next;
+	}
+	return domain;
+}
+
 static bool is_internal_domain(const struct dom_sid *sid)
 {
 	if (sid == NULL)

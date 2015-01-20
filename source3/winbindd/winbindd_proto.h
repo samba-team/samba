@@ -404,6 +404,7 @@ NTSTATUS winbind_dual_SamLogon(struct winbindd_domain *domain,
 /* The following definitions come from winbindd/winbindd_util.c  */
 
 struct winbindd_domain *domain_list(void);
+struct winbindd_domain *wb_next_domain(struct winbindd_domain *domain);
 bool domain_is_forest_root(const struct winbindd_domain *domain);
 void rescan_trusted_domains(struct tevent_context *ev, struct tevent_timer *te,
 			    struct timeval now, void *private_data);

@@ -31,21 +31,6 @@ struct wb_next_pwent_state {
 static void wb_next_pwent_fetch_done(struct tevent_req *subreq);
 static void wb_next_pwent_fill_done(struct tevent_req *subreq);
 
-static struct winbindd_domain *wb_next_domain(struct winbindd_domain *domain)
-{
-	if (domain == NULL) {
-		domain = domain_list();
-	} else {
-		domain = domain->next;
-	}
-
-	if ((domain != NULL)
-	    && sid_check_is_our_sam(&domain->sid)) {
-		domain = domain->next;
-	}
-	return domain;
-}
-
 struct tevent_req *wb_next_pwent_send(TALLOC_CTX *mem_ctx,
 				      struct tevent_context *ev,
 				      struct getpwent_state *gstate,
