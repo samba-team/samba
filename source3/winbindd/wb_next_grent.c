@@ -55,17 +55,7 @@ struct tevent_req *wb_next_grent_send(TALLOC_CTX *mem_ctx,
 	if (state->gstate->next_group >= state->gstate->num_groups) {
 		TALLOC_FREE(state->gstate->groups);
 
-		if (state->gstate->domain == NULL) {
-			state->gstate->domain = domain_list();
-		} else {
-			state->gstate->domain = state->gstate->domain->next;
-		}
-
-		if ((state->gstate->domain != NULL)
-		    && sid_check_is_our_sam(&state->gstate->domain->sid)) {
-			state->gstate->domain = state->gstate->domain->next;
-		}
-
+		state->gstate->domain = wb_next_domain(state->gstate->domain);
 		if (state->gstate->domain == NULL) {
 			tevent_req_nterror(req, NT_STATUS_NO_MORE_ENTRIES);
 			return tevent_req_post(req, ev);
@@ -122,13 +112,7 @@ static void wb_next_grent_fetch_done(struct tevent_req *subreq)
 		state->gstate, &state->next_groups.principals);
 
 	if (state->gstate->num_groups == 0) {
-		state->gstate->domain = state->gstate->domain->next;
-
-		if ((state->gstate->domain != NULL)
-		    && sid_check_is_our_sam(&state->gstate->domain->sid)) {
-			state->gstate->domain = state->gstate->domain->next;
-		}
-
+		state->gstate->domain = wb_next_domain(state->gstate->domain);
 		if (state->gstate->domain == NULL) {
 			tevent_req_nterror(req, NT_STATUS_NO_MORE_ENTRIES);
 			return;
@@ -175,18 +159,8 @@ static void wb_next_grent_getgrsid_done(struct tevent_req *subreq)
 		if (state->gstate->next_group >= state->gstate->num_groups) {
 			TALLOC_FREE(state->gstate->groups);
 
-			if (state->gstate->domain == NULL) {
-				state->gstate->domain = domain_list();
-			} else {
-				state->gstate->domain = state->gstate->domain->next;
-			}
 
-			if ((state->gstate->domain != NULL) &&
-			    sid_check_is_our_sam(&state->gstate->domain->sid))
-			{
-				state->gstate->domain = state->gstate->domain->next;
-			}
-
+			state->gstate->domain = wb_next_domain(state->gstate->domain);
 			if (state->gstate->domain == NULL) {
 				tevent_req_nterror(req,
 						   NT_STATUS_NO_MORE_ENTRIES);
