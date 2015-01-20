@@ -516,7 +516,6 @@ return acl_get_perm_np(permset_d, perm);
         conf.DEFINE('HAVE_NO_AIO', '1')
 
     if host_os.rfind('linux') > -1:
-	conf.CHECK_FUNCS('eventfd')
 	conf.CHECK_FUNCS_IN('io_submit', 'aio')
 	conf.CHECK_CODE('''
 struct io_event ioev;
