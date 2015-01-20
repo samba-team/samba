@@ -280,8 +280,8 @@ Good Examples:
 		int ret = 0;
 
 		if (y < 10) {
-			z = malloc(sizeof(int)*y);
-			if (!z) {
+			z = malloc(sizeof(int) * y);
+			if (z == NULL) {
 				ret = 1;
 				goto done;
 			}
@@ -290,7 +290,7 @@ Good Examples:
 		print("Allocated %d elements.\n", y);
 
 	 done:
-		if (z) {
+		if (z != NULL) {
 			free(z);
 		}
 
@@ -352,7 +352,7 @@ debugger.
 Good example:
 
 	x = malloc(sizeof(short)*10);
-	if (!x) {
+	if (x == NULL) {
 		fprintf(stderr, "Unable to alloc memory!\n");
 	}
 
