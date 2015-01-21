@@ -253,6 +253,41 @@
 	<para>Promote an existing domain member or NT4 PDC to an AD DC.</para>
 </refsect3>
 
+<refsect3>
+	<title>domain trust</title>
+	<para>Domain and forest trust management.</para>
+</refsect3>
+
+<refsect3>
+	<title>domain trust create <replaceable>DOMAIN</replaceable> <replaceable>options</replaceable> [options]</title>
+	<para>Create a domain or forest trust.</para>
+</refsect3>
+
+<refsect3>
+	<title>domain trust delete <replaceable>DOMAIN</replaceable> <replaceable>options</replaceable> [options]</title>
+	<para>Delete a domain trust.</para>
+</refsect3>
+
+<refsect3>
+	<title>domain trust list <replaceable>options</replaceable> [options]</title>
+	<para>List domain trusts.</para>
+</refsect3>
+
+<refsect3>
+	<title>domain trust namespaces [<replaceable>DOMAIN</replaceable>] <replaceable>options</replaceable> [options]</title>
+	<para>Manage forest trust namespaces.</para>
+</refsect3>
+
+<refsect3>
+	<title>domain trust show <replaceable>DOMAIN</replaceable> <replaceable>options</replaceable> [options]</title>
+	<para>Show trusted domain details.</para>
+</refsect3>
+
+<refsect3>
+	<title>domain trust validate <replaceable>DOMAIN</replaceable> <replaceable>options</replaceable> [options]</title>
+	<para>Validate a domain trust.</para>
+</refsect3>
+
 <refsect2>
 	<title>drs</title>
 	<para>Manage Directory Replication Services (DRS).</para>
