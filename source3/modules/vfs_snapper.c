@@ -91,6 +91,130 @@ static NTSTATUS snapper_err_ntstatus_map(const char *snapper_err_str)
 	return NT_STATUS_UNSUCCESSFUL;
 }
 
+/*
+ * Strings are UTF-8. Other characters must be encoded hexadecimal as "\x??".
+ * As a consequence "\" must be encoded as "\\".
+ */
+static NTSTATUS snapper_dbus_str_encode(TALLOC_CTX *mem_ctx, const char *in_str,
+					char **_out_str)
+{
+	size_t in_len;
+	char *out_str;
+	int i;
+	int out_off;
+	int out_len;
+
+	if (in_str == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	in_len = strlen(in_str);
+
+	/* output can be max 4 times the length of @in_str, +1 for terminator */
+	out_len = (in_len * 4) + 1;
+
+	out_str = talloc_array(mem_ctx, char, out_len);
+	if (out_str == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	out_off = 0;
+	for (i = 0; i < in_len; i++) {
+		size_t pushed;
+
+		if (in_str[i] == '\\') {
+			pushed = snprintf(out_str + out_off, out_len - out_off,
+					  "\\\\");
+		} else if ((unsigned char)in_str[i] > 127) {
+			pushed = snprintf(out_str + out_off, out_len - out_off,
+					  "\\x%02x", (unsigned char)in_str[i]);
+		} else {
+			/* regular character */
+			*(out_str + out_off) = in_str[i];
+			pushed = sizeof(char);
+		}
+		if (pushed >= out_len - out_off) {
+			/* truncated, should never happen */
+			talloc_free(out_str);
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+		out_off += pushed;
+	}
+
+	*(out_str + out_off) = '\0';
+	*_out_str = out_str;
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS snapper_dbus_str_decode(TALLOC_CTX *mem_ctx, const char *in_str,
+					char **_out_str)
+{
+	size_t in_len;
+	char *out_str;
+	int i;
+	int out_off;
+	int out_len;
+
+	if (in_str == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	in_len = strlen(in_str);
+
+	/* output cannot be larger than input, +1 for terminator */
+	out_len = in_len + 1;
+
+	out_str = talloc_array(mem_ctx, char, out_len);
+	if (out_str == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	out_off = 0;
+	for (i = 0; i < in_len; i++) {
+		int j;
+		char hex_buf[3];
+		unsigned int non_ascii_byte;
+
+		if (in_str[i] != '\\') {
+			out_str[out_off] = in_str[i];
+			out_off++;
+			continue;
+		}
+
+		i++;
+		if (in_str[i] == '\\') {
+			out_str[out_off] = '\\';
+			out_off++;
+			continue;
+		} else if (in_str[i] != 'x') {
+			goto err_invalid_src_encoding;
+		}
+
+		/* non-ASCII, encoded as two hex chars */
+		for (j = 0; j < 2; j++) {
+			i++;
+			if ((in_str[i] == '\0') || !isxdigit(in_str[i])) {
+				goto err_invalid_src_encoding;
+			}
+			hex_buf[j] = in_str[i];
+		}
+		hex_buf[2] = '\0';
+
+		sscanf(hex_buf, "%x", &non_ascii_byte);
+		out_str[out_off] = (unsigned char)non_ascii_byte;
+		out_off++;
+	}
+
+	out_str[out_off] = '\0';
+	*_out_str = out_str;
+
+	return NT_STATUS_OK;
+err_invalid_src_encoding:
+	DEBUG(0, ("invalid encoding %s\n", in_str));
+	return NT_STATUS_INVALID_PARAMETER;
+}
+
 static DBusConnection *snapper_dbus_conn_create(void)
 {
 	DBusError err;
