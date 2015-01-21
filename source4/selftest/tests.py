@@ -549,18 +549,18 @@ for env in ["dc", "s4member", "rodc", "promoted_dc", "plugin_s4_dc", "s3member"]
     plantestsuite("samba.blackbox.wbinfo(%s:local)" % env, "%s:local" % env, [os.path.join(samba4srcdir, "../nsswitch/tests/test_wbinfo.sh"), '$DOMAIN', '$DC_USERNAME', '$DC_PASSWORD', env])
 
 for env in ["dc", "rodc", "promoted_dc", "plugin_s4_dc", "fl2000dc", "fl2003dc", "fl2008r2dc"]:
-    plansmbtorture4testsuite('krb5.kdc', env, ['ncacn_np:$SERVER_IP', "-k", "yes", '-U$USERNAME@$REALM%$PASSWORD', '--workgroup=$DOMAIN'],
+    plansmbtorture4testsuite('krb5.kdc', env, ['ncacn_np:$SERVER_IP', "-k", "yes", '-U$USERNAME%$PASSWORD', '--workgroup=$DOMAIN', '--realm=$REALM'],
                              "samba4.krb5.kdc with specified account")
-    plansmbtorture4testsuite('krb5.kdc', env, ['ncacn_np:$SERVER_IP', "-k", "yes", '-Utestdenied@$REALM%$PASSWORD', '--workgroup=$DOMAIN'],
+    plansmbtorture4testsuite('krb5.kdc', env, ['ncacn_np:$SERVER_IP', "-k", "yes", '-Utestdenied%$PASSWORD', '--workgroup=$DOMAIN', '--realm=$REALM'],
                              "samba4.krb5.kdc with account DENIED permission to replicate to an RODC")
     if env == "rodc":
         extra_options = ['--option=torture:expect_rodc=true']
     else:
         extra_options = []
 
-    plansmbtorture4testsuite('krb5.kdc', "%s:local" % env, ['ncacn_np:$SERVER_IP', "-k", "yes", '-P', '--workgroup=$DOMAIN'] + extra_options,
+    plansmbtorture4testsuite('krb5.kdc', "%s:local" % env, ['ncacn_np:$SERVER_IP', "-k", "yes", '-P', '--workgroup=$DOMAIN', '--realm=$REALM'] + extra_options,
                              "samba4.krb5.kdc with machine account")
-    plansmbtorture4testsuite('krb5.kdc', env, ['ncacn_np:$SERVER_IP', "-k", "yes", '-Utestallowed@$REALM%$PASSWORD', '--workgroup=$DOMAIN'] + extra_options,
+    plansmbtorture4testsuite('krb5.kdc', env, ['ncacn_np:$SERVER_IP', "-k", "yes", '-Utestallowed%$PASSWORD', '--workgroup=$DOMAIN', '--realm=$REALM'] + extra_options,
                              "samba4.krb5.kdc with account ALLOWED permission to replicate to an RODC")
 
 # TODO: Verifying the databases really should be a part of the

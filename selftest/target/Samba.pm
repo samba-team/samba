@@ -124,7 +124,8 @@ sub mk_krb5_conf($$)
 sub mk_realms_stanza($$$$)
 {
 	my ($realm, $dnsname, $domain, $kdc_ipv4) = @_;
-
+	my $lc_domain = lc($domain);
+	
 	my $realms_stanza = "
  $realm = {
   kdc = $kdc_ipv4:88
@@ -137,6 +138,11 @@ sub mk_realms_stanza($$$$)
   default_domain = $dnsname
  }
  $domain = {
+  kdc = $kdc_ipv4:88
+  admin_server = $kdc_ipv4:88
+  default_domain = $dnsname
+ }
+ $lc_domain = {
   kdc = $kdc_ipv4:88
   admin_server = $kdc_ipv4:88
   default_domain = $dnsname

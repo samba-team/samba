@@ -24,6 +24,7 @@
 #include "system/kerberos.h"
 #include "torture/smbtorture.h"
 #include "torture/winbind/proto.h"
+#include "torture/krb5/proto.h"
 #include "auth/credentials/credentials.h"
 #include "lib/cmdline/popt_common.h"
 #include "source4/auth/kerberos/kerberos.h"
@@ -406,7 +407,6 @@ static bool torture_krb5_as_req_clock_skew(struct torture_context *tctx)
 	return torture_krb5_as_req_creds(tctx, cmdline_credentials, TORTURE_KRB5_TEST_CLOCK_SKEW);
 }
 
-NTSTATUS torture_krb5_init(void);
 NTSTATUS torture_krb5_init(void)
 {
 	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "krb5");
@@ -429,6 +429,7 @@ NTSTATUS torture_krb5_init(void)
 	torture_suite_add_simple_test(kdc_suite, "as-req-clock-skew", 
 				      torture_krb5_as_req_clock_skew);
 
+	torture_suite_add_suite(kdc_suite, torture_krb5_canon(kdc_suite));
 	torture_suite_add_suite(suite, kdc_suite);
 
 	torture_register_suite(suite);
