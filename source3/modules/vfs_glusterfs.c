@@ -522,9 +522,9 @@ static void aio_glusterfs_done(glfs_fd_t *fd, ssize_t ret, void *data)
 	 * executed from the smbd main thread.
 	 */
 
-        sts = sys_write (write_fd, &req, sizeof(struct tevent_req *));
-        if (sts < 0) {
-                DEBUG(0,("\nWrite to pipe failed (%s)", strerror(errno)));
+	sts = sys_write(write_fd, &req, sizeof(struct tevent_req *));
+	if (sts < 0) {
+		DEBUG(0,("\nWrite to pipe failed (%s)", strerror(errno)));
 	}
 
 	return;
