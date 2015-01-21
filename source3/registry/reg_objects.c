@@ -188,7 +188,7 @@ static WERROR regsubkey_ctr_index_for_keyname(struct regsubkey_ctr *ctr,
 	}
 
 	if (idx != NULL) {
-		*idx = *(uint32_t *)data.dptr;
+		memcpy(idx, data.dptr, sizeof(*idx));
 	}
 
 	talloc_free(data.dptr);
