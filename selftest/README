@@ -42,12 +42,6 @@ repository at http://github.com/testing-cabal/subunit.
 
 The following commands are Samba extensions to Subunit:
 
-testsuite-count
-~~~~~~~~~~~~~~~
-testsuite-count: number
-
-Announce the number of tests that is going to be run.
-
 start-testsuite
 ~~~~~~~~~~~~~~~
 start-testsuite: name
