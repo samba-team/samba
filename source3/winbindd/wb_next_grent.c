@@ -34,13 +34,48 @@ struct wb_next_grent_state {
 static void wb_next_grent_fetch_done(struct tevent_req *subreq);
 static void wb_next_grent_getgrsid_done(struct tevent_req *subreq);
 
+static void wb_next_grent_send_do(struct tevent_req *req,
+				  struct wb_next_grent_state *state)
+{
+	struct tevent_req *subreq;
+
+	if (state->gstate->next_group >= state->gstate->num_groups) {
+		TALLOC_FREE(state->gstate->groups);
+
+		state->gstate->domain = wb_next_domain(state->gstate->domain);
+		if (state->gstate->domain == NULL) {
+			tevent_req_nterror(req, NT_STATUS_NO_MORE_ENTRIES);
+			return;
+		}
+
+		subreq = dcerpc_wbint_QueryGroupList_send(
+			state, state->ev,
+			dom_child_handle(state->gstate->domain),
+			&state->next_groups);
+		if (tevent_req_nomem(subreq, req)) {
+			return;
+		}
+		tevent_req_set_callback(subreq, wb_next_grent_fetch_done, req);
+		return;
+	}
+
+	subreq = wb_getgrsid_send(
+		state, state->ev,
+		&state->gstate->groups[state->gstate->next_group].sid,
+		state->max_nesting);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, wb_next_grent_getgrsid_done, req);
+}
+
 struct tevent_req *wb_next_grent_send(TALLOC_CTX *mem_ctx,
 				      struct tevent_context *ev,
 				      int max_nesting,
 				      struct getgrent_state *gstate,
 				      struct winbindd_gr *gr)
 {
-	struct tevent_req *req, *subreq;
+	struct tevent_req *req;
 	struct wb_next_grent_state *state;
 
 	req = tevent_req_create(mem_ctx, &state, struct wb_next_grent_state);
@@ -52,32 +87,11 @@ struct tevent_req *wb_next_grent_send(TALLOC_CTX *mem_ctx,
 	state->gr = gr;
 	state->max_nesting = max_nesting;
 
-	if (state->gstate->next_group >= state->gstate->num_groups) {
-		TALLOC_FREE(state->gstate->groups);
-
-		state->gstate->domain = wb_next_domain(state->gstate->domain);
-		if (state->gstate->domain == NULL) {
-			tevent_req_nterror(req, NT_STATUS_NO_MORE_ENTRIES);
-			return tevent_req_post(req, ev);
-		}
-		subreq = dcerpc_wbint_QueryGroupList_send(
-			state, state->ev, dom_child_handle(state->gstate->domain),
-			&state->next_groups);
-		if (tevent_req_nomem(subreq, req)) {
-			return tevent_req_post(req, ev);
-		}
-		tevent_req_set_callback(subreq, wb_next_grent_fetch_done, req);
-		return req;
-	}
-
-	subreq = wb_getgrsid_send(
-		state, state->ev,
-		&state->gstate->groups[state->gstate->next_group].sid,
-		state->max_nesting);
-	if (tevent_req_nomem(subreq, req)) {
+	wb_next_grent_send_do(req, state);
+	if (!tevent_req_is_in_progress(req)) {
 		return tevent_req_post(req, ev);
 	}
-	tevent_req_set_callback(subreq, wb_next_grent_getgrsid_done, req);
+
 	return req;
 }
 
@@ -112,31 +126,7 @@ static void wb_next_grent_fetch_done(struct tevent_req *subreq)
 		state->gstate, &state->next_groups.principals);
 	state->gstate->next_group = 0;
 
-	if (state->gstate->num_groups == 0) {
-		state->gstate->domain = wb_next_domain(state->gstate->domain);
-		if (state->gstate->domain == NULL) {
-			tevent_req_nterror(req, NT_STATUS_NO_MORE_ENTRIES);
-			return;
-		}
-		subreq = dcerpc_wbint_QueryGroupList_send(
-			state, state->ev, dom_child_handle(state->gstate->domain),
-			&state->next_groups);
-		if (tevent_req_nomem(subreq, req)) {
-			return;
-		}
-		tevent_req_set_callback(subreq, wb_next_grent_fetch_done, req);
-		return;
-	}
-
-	subreq = wb_getgrsid_send(
-		state, state->ev,
-		&state->gstate->groups[state->gstate->next_group].sid,
-		state->max_nesting);
-	if (tevent_req_nomem(subreq, req)) {
-		return;
-	}
-	tevent_req_set_callback(subreq, wb_next_grent_getgrsid_done, req);
-	return;
+	wb_next_grent_send_do(req, state);
 }
 
 static void wb_next_grent_getgrsid_done(struct tevent_req *subreq)
@@ -155,39 +145,8 @@ static void wb_next_grent_getgrsid_done(struct tevent_req *subreq)
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NONE_MAPPED)) {
 		state->gstate->next_group += 1;
 
-		if (state->gstate->next_group >= state->gstate->num_groups) {
-			TALLOC_FREE(state->gstate->groups);
+		wb_next_grent_send_do(req, state);
 
-
-			state->gstate->domain = wb_next_domain(state->gstate->domain);
-			if (state->gstate->domain == NULL) {
-				tevent_req_nterror(req,
-						   NT_STATUS_NO_MORE_ENTRIES);
-				return;
-			}
-
-			subreq = dcerpc_wbint_QueryGroupList_send(
-				state, state->ev,
-				dom_child_handle(state->gstate->domain),
-				&state->next_groups);
-			if (tevent_req_nomem(subreq, req)) {
-				return;
-			}
-
-			tevent_req_set_callback(subreq,
-						wb_next_grent_fetch_done, req);
-			return;
-		}
-
-		subreq = wb_getgrsid_send(
-			state, state->ev,
-			&state->gstate->groups[state->gstate->next_group].sid,
-			state->max_nesting);
-		if (tevent_req_nomem(subreq, req)) {
-			return;
-		}
-		tevent_req_set_callback(subreq, wb_next_grent_getgrsid_done,
-					req);
 		return;
 	} else if (tevent_req_nterror(req, status)) {
 		return;
