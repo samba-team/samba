@@ -1607,6 +1607,17 @@ sub provision_rodc($$$)
 		return undef;
 	}
 
+        # This ensures deterministic behaviour for tests that want to have the testallowed
+        # user password verified on the RODC
+	$cmd = "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
+	$cmd .= "$samba_tool rodc preload testallowed $ret->{CONFIGURATION}";
+	$cmd .= " --server=$dcvars->{DC_SERVER}";
+
+	unless (system($cmd) == 0) {
+		warn("RODC join failed\n$cmd");
+		return undef;
+	}
+
 	# we overwrite the kdc after the RODC join
 	# so that use the RODC as kdc and test
 	# the proxy code

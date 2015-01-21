@@ -96,7 +96,24 @@ static bool torture_krb5_post_recv_test(struct torture_krb5_context *test_contex
 						 decode_AS_REP(recv_buf->data, recv_buf->length, &test_context->as_rep, &used), 0,
 						 "decode_AS_REP failed");
 			torture_assert_int_equal(test_context->tctx, used, recv_buf->length, "length mismatch");
-			torture_assert_int_equal(test_context->tctx, test_context->as_rep.pvno, 5, "Got wrong as_rep->pvno");
+			torture_assert_int_equal(test_context->tctx,
+						 test_context->as_rep.pvno, 5,
+						 "Got wrong as_rep->pvno");
+			torture_assert_int_equal(test_context->tctx,
+						 test_context->as_rep.ticket.tkt_vno, 5,
+						 "Got wrong as_rep->ticket.tkt_vno");
+			torture_assert(test_context->tctx,
+				       test_context->as_rep.ticket.enc_part.kvno,
+				       "Did not get a KVNO in test_context->as_rep.ticket.enc_part.kvno");
+			if (torture_setting_bool(test_context->tctx, "expect_rodc", false)) {
+				torture_assert_int_not_equal(test_context->tctx,
+							     *test_context->as_rep.ticket.enc_part.kvno & 0xFFFF0000,
+							     0, "Did not get a RODC number in the KVNO");
+			} else {
+				torture_assert_int_equal(test_context->tctx,
+							 *test_context->as_rep.ticket.enc_part.kvno & 0xFFFF0000,
+							 0, "Unexpecedly got a RODC number in the KVNO");
+			}
 			free_AS_REP(&test_context->as_rep);
 		}
 		torture_assert(test_context->tctx, test_context->packet_count < 3, "too many packets");
