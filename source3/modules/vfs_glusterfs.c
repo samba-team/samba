@@ -495,7 +495,7 @@ struct glusterfs_aio_state {
 /*
  * This function is the callback that will be called on glusterfs
  * threads once the async IO submitted is complete. To notify
- * Samba of the completion we use a pipe pased queue.
+ * Samba of the completion we use a pipe based queue.
  */
 static void aio_glusterfs_done(glfs_fd_t *fd, ssize_t ret, void *data)
 {
