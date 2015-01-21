@@ -472,6 +472,7 @@ static NTSTATUS snapper_list_snaps_pack(char *snapper_conf,
 	dbus_message_iter_init_append(msg, &args);
 	if (!dbus_message_iter_append_basic(&args, DBUS_TYPE_STRING,
 					    &snapper_conf)) {
+		dbus_message_unref(msg);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -690,16 +691,19 @@ static NTSTATUS snapper_list_snaps_at_time_pack(const char *snapper_conf,
 	dbus_message_iter_init_append(msg, &args);
 	if (!dbus_message_iter_append_basic(&args, DBUS_TYPE_STRING,
 					    &snapper_conf)) {
+		dbus_message_unref(msg);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	if (!dbus_message_iter_append_basic(&args, DBUS_TYPE_INT64,
 					    &time_lower)) {
+		dbus_message_unref(msg);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	if (!dbus_message_iter_append_basic(&args, DBUS_TYPE_INT64,
 					    &time_upper)) {
+		dbus_message_unref(msg);
 		return NT_STATUS_NO_MEMORY;
 	}
 
