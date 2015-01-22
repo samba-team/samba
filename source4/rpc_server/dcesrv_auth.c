@@ -80,10 +80,24 @@ bool dcesrv_auth_bind(struct dcesrv_call_state *call)
 					   server_credentials,
 					   NULL,
 					   &auth->gensec_security);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Failed to call samba_server_gensec_start %s\n",
+			  nt_errstr(status)));
+		return false;
+	}
+
+	if (call->conn->remote_address != NULL) {
+		status = gensec_set_remote_address(auth->gensec_security,
+						call->conn->remote_address);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(1, ("Failed to call gensec_set_remote_address() %s\n",
+				  nt_errstr(status)));
+			return false;
+		}
+	}
 
 	status = gensec_start_mech_by_authtype(auth->gensec_security, auth->auth_info->auth_type, 
 					       auth->auth_info->auth_level);
-
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("Failed to start GENSEC mechanism for DCERPC server: auth_type=%d, auth_level=%d: %s\n",
 			  (int)auth->auth_info->auth_type,
