@@ -3404,6 +3404,13 @@ static NTSTATUS fruit_create_file(vfs_handle_struct *handle,
 			 */
 			fsp->aapl_copyfile_supported = true;
 		}
+
+		if (fsp->is_directory) {
+			/*
+			 * Enable POSIX directory rename behaviour
+			 */
+			fsp->posix_flags |= FSP_POSIX_FLAGS_RENAME;
+		}
 	}
 
 	/*
