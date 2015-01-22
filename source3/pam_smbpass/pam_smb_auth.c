@@ -41,14 +41,21 @@
 
 #include "support.h"
 
+static void ret_data_cleanup(pam_handle_t *pamh, void *data, int error_status)
+{
+	free(data);
+}
+
 #define AUTH_RETURN						\
 do {								\
 	/* Restore application signal handler */		\
 	CatchSignal(SIGPIPE, oldsig_handler);			\
 	if(ret_data) {						\
 		*ret_data = retval;				\
-		pam_set_data( pamh, "smb_setcred_return"	\
-		              , (void *) ret_data, NULL );	\
+		pam_set_data(pamh,				\
+			"smb_setcred_return",			\
+			(void *)ret_data,			\
+			ret_data_cleanup);			\
 	}							\
 	TALLOC_FREE(frame);					\
 	return retval;						\
