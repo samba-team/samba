@@ -151,7 +151,14 @@ main(int argc,			/* I - Number of command-line arguments */
 		perror("ERROR: Unable to open print file");
 		goto done;
 	} else {
-		copies = atoi(argv[4]);
+		char *p = argv[4];
+		char *endp;
+
+		copies = strtol(p, &endp, 10);
+		if (p == endp) {
+			perror("ERROR: Unable to determine number of copies");
+			goto done;
+		}
 	}
 
 	/*
