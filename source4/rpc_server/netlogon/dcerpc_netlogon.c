@@ -1828,15 +1828,16 @@ static WERROR dcesrv_netr_DsRGetDCNameEx2(struct dcesrv_call_state *dce_call,
 	struct ldb_context *sam_ctx;
 	struct netr_DsRGetDCNameInfo *info;
 	struct loadparm_context *lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
+	const struct tsocket_address *local_address;
+	char *local_addr = NULL;
 	const struct tsocket_address *remote_address;
-	char *addr = NULL;
+	char *remote_addr = NULL;
 	const char *server_site_name;
 	char *guid_str;
 	struct netlogon_samlogon_response response;
 	NTSTATUS status;
 	const char *dc_name = NULL;
 	const char *domain_name = NULL;
-	struct interface *ifaces;
 	const char *pdc_ip;
 
 	ZERO_STRUCTP(r->out.info);
@@ -1847,10 +1848,16 @@ static WERROR dcesrv_netr_DsRGetDCNameEx2(struct dcesrv_call_state *dce_call,
 		return WERR_DS_UNAVAILABLE;
 	}
 
+	local_address = dcesrv_connection_get_local_address(dce_call->conn);
+	if (tsocket_address_is_inet(local_address, "ip")) {
+		local_addr = tsocket_address_inet_addr_string(local_address, mem_ctx);
+		W_ERROR_HAVE_NO_MEMORY(local_addr);
+	}
+
 	remote_address = dcesrv_connection_get_remote_address(dce_call->conn);
 	if (tsocket_address_is_inet(remote_address, "ip")) {
-		addr = tsocket_address_inet_addr_string(remote_address, mem_ctx);
-		W_ERROR_HAVE_NO_MEMORY(addr);
+		remote_addr = tsocket_address_inet_addr_string(remote_address, mem_ctx);
+		W_ERROR_HAVE_NO_MEMORY(remote_addr);
 	}
 
 	/* "server_unc" is ignored by w2k3 */
@@ -1908,7 +1915,7 @@ static WERROR dcesrv_netr_DsRGetDCNameEx2(struct dcesrv_call_state *dce_call,
 						 r->in.domain_name,
 						 NULL, guid_str,
 						 r->in.client_account,
-						 r->in.mask, addr,
+						 r->in.mask, remote_addr,
 						 NETLOGON_NT_VERSION_5EX_WITH_IP,
 						 lp_ctx, &response, true);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1956,12 +1963,11 @@ static WERROR dcesrv_netr_DsRGetDCNameEx2(struct dcesrv_call_state *dce_call,
 	info = talloc(mem_ctx, struct netr_DsRGetDCNameInfo);
 	W_ERROR_HAVE_NO_MEMORY(info);
 	info->dc_unc = talloc_asprintf(mem_ctx, "%s%s",
-			dc_name[0] == '\\'? "\\\\":"",
+			dc_name[0] != '\\'? "\\\\":"",
 			talloc_strdup(mem_ctx, dc_name));
 	W_ERROR_HAVE_NO_MEMORY(info->dc_unc);
 
-	load_interface_list(mem_ctx, lp_ctx, &ifaces);
-	pdc_ip = iface_list_best_ip(ifaces, addr);
+	pdc_ip = local_addr;
 	if (pdc_ip == NULL) {
 		pdc_ip = "127.0.0.1";
 	}
