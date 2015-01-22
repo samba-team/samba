@@ -73,7 +73,7 @@ class NamingContext(object):
                                scope=ldb.SCOPE_BASE, attrs=attrs)
 
         except ldb.LdbError, (enum, estr):
-            raise Exception("Unable to find naming context (%s)" %
+            raise Exception("Unable to find naming context (%s) - (%s)" %
                             (self.nc_dnstr, estr))
         msg = res[0]
         if "objectGUID" in msg:
@@ -375,7 +375,7 @@ class NCReplica(NamingContext):
 
         except ldb.LdbError, estr:
             raise Exception("Could not set repsFrom for (%s) - (%s)" %
-                            (self.dsa_dnstr, estr))
+                            (self.nc_dnstr, estr))
 
     def dumpstr_to_be_deleted(self):
         text=""
@@ -906,7 +906,7 @@ class NTDSConnection(object):
             self.load_connection_transport(samdb, str(dsdn.dn))
 
         if "schedule" in msg:
-            self.schedule = ndr_unpack(drsblobs.replSchedule, msg["schedule"][0])
+            self.schedule = ndr_unpack(drsblobs.schedule, msg["schedule"][0])
 
         if "whenCreated" in msg:
             self.whenCreated = ldb.string_to_time(msg["whenCreated"][0])
@@ -928,7 +928,7 @@ class NTDSConnection(object):
                                scope=ldb.SCOPE_BASE, attrs=attrs)
 
         except ldb.LdbError, (enum, estr):
-            raise Exception("Unable to find transport (%s)" %
+            raise Exception("Unable to find transport (%s) - (%s)" %
                             (tdnstr, estr))
 
         if "objectGUID" in res[0]:
@@ -1783,7 +1783,7 @@ class GraphNode(object):
             flags = dsdb.SYSTEM_FLAG_CONFIG_ALLOW_RENAME + \
                      dsdb.SYSTEM_FLAG_CONFIG_ALLOW_MOVE
 
-            dsa.create_connection(opt, flags, None, edge_dnstr, None)
+            dsa.new_connection(opt, flags, None, edge_dnstr, None)
 
     def has_sufficient_edges(self):
         '''Return True if we have met the maximum "from edges" criteria'''

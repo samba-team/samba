@@ -654,7 +654,7 @@ class KCC(object):
 
                     res = self.samdb.search(base=pdnstr, scope=ldb.SCOPE_BASE,
                                             attrs=attrs)
-                except ldb.ldbError, (enum, estr):
+                except ldb.LdbError, (enum, estr):
                     raise Exception(
                         "Unable to find attr (%s) for (%s) - (%s)" %
                          (x_transport.address_attr, pdnstr, estr))
@@ -1027,7 +1027,7 @@ class KCC(object):
 
                     res = self.samdb.search(base=pdnstr, scope=ldb.SCOPE_BASE,
                                             attrs=attrs)
-                except ldb.ldbError, (enum, estr):
+                except ldb.LdbError, (enum, estr):
                     continue
 
                 msg = res[0]
@@ -1272,7 +1272,7 @@ class KCC(object):
             #     NTDSCONN_OPT_USE_NOTIFY in opt
             if (link_opt & dsdb.NTDSSITELINK_OPT_USE_NOTIFY) != 0:
                 opt |= (dsdb.NTDSCONN_OPT_OVERRIDE_NOTIFY_DEFAULT |
-                        dsdb.NTDSCONN_USE_NOTIFY)
+                        dsdb.NTDSCONN_OPT_USE_NOTIFY)
 
             # IF bit NTDSSITELINK_OPT_TWOWAY_SYNC is set in ri.Options
             #     SET bit NTDSCONN_OPT_TWOWAY_SYNC opt
