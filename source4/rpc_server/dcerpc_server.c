@@ -1198,6 +1198,7 @@ _PUBLIC_ NTSTATUS dcesrv_init_context(TALLOC_CTX *mem_ctx,
 
 	dce_ctx = talloc(mem_ctx, struct dcesrv_context);
 	NT_STATUS_HAVE_NO_MEMORY(dce_ctx);
+	dce_ctx->initial_euid = geteuid();
 	dce_ctx->endpoint_list	= NULL;
 	dce_ctx->lp_ctx = lp_ctx;
 	dce_ctx->assoc_groups_idr = idr_init(dce_ctx);
@@ -1546,6 +1547,37 @@ static void dcesrv_sock_accept(struct stream_connection *srv_conn)
 
 	dcesrv_conn->local_address = srv_conn->local_address;
 	dcesrv_conn->remote_address = srv_conn->remote_address;
+
+	if (transport == NCALRPC) {
+		uid_t uid;
+		gid_t gid;
+
+		ret = getpeereid(socket_get_fd(srv_conn->socket), &uid, &gid);
+		if (ret == -1) {
+			status = map_nt_error_from_unix_common(errno);
+			DEBUG(0, ("dcesrv_sock_accept: "
+				  "getpeereid() failed for NCALRPC: %s\n",
+				  nt_errstr(status)));
+			stream_terminate_connection(srv_conn, nt_errstr(status));
+			return;
+		}
+		if (uid == dcesrv_conn->dce_ctx->initial_euid) {
+			struct tsocket_address *r = NULL;
+
+			ret = tsocket_address_unix_from_path(dcesrv_conn,
+							     "/root/ncalrpc_as_system",
+							     &r);
+			if (ret == -1) {
+				status = map_nt_error_from_unix_common(errno);
+				DEBUG(0, ("dcesrv_sock_accept: "
+					  "tsocket_address_unix_from_path() failed for NCALRPC: %s\n",
+					  nt_errstr(status)));
+				stream_terminate_connection(srv_conn, nt_errstr(status));
+				return;
+			}
+			dcesrv_conn->remote_address = r;
+		}
+	}
 
 	srv_conn->private_data = dcesrv_conn;
 

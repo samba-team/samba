@@ -273,6 +273,13 @@ struct dcesrv_assoc_group {
 
 /* server-wide context information for the dcerpc server */
 struct dcesrv_context {
+	/*
+	 * The euid at startup time.
+	 *
+	 * This is required for DCERPC_AUTH_TYPE_NCALRPC_AS_SYSTEM
+	 */
+	uid_t initial_euid;
+
 	/* the list of endpoints that have registered 
 	 * by the configured endpoint servers 
 	 */
