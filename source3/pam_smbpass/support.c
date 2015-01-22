@@ -162,7 +162,10 @@ int make_remark( pam_handle_t * pamh, unsigned int ctrl
 
 /* set the control flags for the SMB module. */
 
-int set_ctrl( pam_handle_t *pamh, int flags, int argc, const char **argv )
+unsigned int set_ctrl(pam_handle_t *pamh,
+		      int flags,
+		      int argc,
+		      const char **argv)
 {
     int i = 0;
     const char *service_file = NULL;
