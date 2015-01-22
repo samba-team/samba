@@ -170,6 +170,7 @@ unsigned int set_ctrl(pam_handle_t *pamh,
     int i = 0;
     const char *service_file = NULL;
     unsigned int ctrl;
+    bool ok;
 
     ctrl = SMB_DEFAULTS;	/* the default selection of options */
 
@@ -210,7 +211,10 @@ unsigned int set_ctrl(pam_handle_t *pamh,
 	_log_err(pamh, LOG_ERR, "Error loading service file %s", service_file);
     }
 
-    secrets_init();
+	ok = secrets_init();
+	if (!ok) {
+		_log_err(pamh, LOG_ERR, "Error loading secrets database");
+	}
 
     if (lp_null_passwords()) {
         set( SMB__NULLOK, ctrl );
