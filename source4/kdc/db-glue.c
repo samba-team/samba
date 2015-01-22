@@ -625,10 +625,22 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 		userAccountControl |= msDS_User_Account_Control_Computed;
 	}
 
+	/* 
+	 * If we are set to canonicalize, we get back the fixed UPPER
+	 * case realm, and the real username (ie matching LDAP
+	 * samAccountName) 
+	 *
+	 * Otherwise, if we are set to enterprise, we
+	 * get back the whole principal as-sent 
+	 *
+	 * Finally, if we are not set to canonicalize, we get back the
+	 * fixed UPPER case realm, but the as-sent username
+	 */
+
 	entry_ex->entry.principal = malloc(sizeof(*(entry_ex->entry.principal)));
 	if (ent_type == SAMBA_KDC_ENT_TYPE_ANY && principal == NULL) {
 		krb5_make_principal(context, &entry_ex->entry.principal, lpcfg_realm(lp_ctx), samAccountName, NULL);
-	} else if (principal->name.name_type == KRB5_NT_ENTERPRISE_PRINCIPAL) {
+	} else if (flags & HDB_F_CANON) {
 		krb5_make_principal(context, &entry_ex->entry.principal, lpcfg_realm(lp_ctx), samAccountName, NULL);
 	} else {
 		ret = copy_Principal(principal, entry_ex->entry.principal);
@@ -637,14 +649,16 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 			goto out;
 		}
 
-		/* While we have copied the client principal, tests
-		 * show that Win2k3 returns the 'corrected' realm, not
-		 * the client-specified realm.  This code attempts to
-		 * replace the client principal's realm with the one
-		 * we determine from our records */
-
-		/* this has to be with malloc() */
-		krb5_principal_set_realm(context, entry_ex->entry.principal, lpcfg_realm(lp_ctx));
+		if (principal->name.name_type != KRB5_NT_ENTERPRISE_PRINCIPAL) {
+			/* While we have copied the client principal, tests
+			 * show that Win2k3 returns the 'corrected' realm, not
+			 * the client-specified realm.  This code attempts to
+			 * replace the client principal's realm with the one
+			 * we determine from our records */
+			
+			/* this has to be with malloc() */
+			krb5_principal_set_realm(context, entry_ex->entry.principal, lpcfg_realm(lp_ctx));
+		}
 	}
 
 	/* First try and figure out the flags based on the userAccountControl */
