@@ -172,6 +172,7 @@ static struct idmap_domain *idmap_init_domain(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	char *config_option = NULL;
 	const char *range;
+	unsigned low_id, high_id;
 
 	result = talloc_zero(mem_ctx, struct idmap_domain);
 	if (result == NULL) {
@@ -230,22 +231,23 @@ static struct idmap_domain *idmap_init_domain(TALLOC_CTX *mem_ctx,
 				  result->name));
 			goto fail;
 		}
-	} else if (sscanf(range, "%u - %u", &result->low_id,
-			  &result->high_id) != 2)
+	} else if (sscanf(range, "%u - %u", &low_id, &high_id) != 2)
 	{
 		DEBUG(1, ("invalid range '%s' specified for domain "
 			  "'%s'\n", range, result->name));
 		if (check_range) {
 			goto fail;
 		}
-	} else if (result->low_id > result->high_id) {
-		DEBUG(1, ("Error: invalid idmap range detected: %lu - %lu\n",
-			  (unsigned long)result->low_id,
-			  (unsigned long)result->high_id));
+	} else if (low_id > high_id) {
+		DEBUG(1, ("Error: invalid idmap range detected: %u - %u\n",
+			  low_id, high_id));
 		if (check_range) {
 			goto fail;
 		}
 	}
+
+	result->low_id = low_id;
+	result->high_id = high_id;
 
 	status = result->methods->init(result);
 	if (!NT_STATUS_IS_OK(status)) {
