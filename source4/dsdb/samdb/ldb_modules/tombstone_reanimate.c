@@ -111,7 +111,7 @@ static bool is_tombstone_reanimate_request(struct ldb_request *req, struct ldb_m
  * Local rename implementation based on dsdb_module_rename()
  * so we could fine tune it and add more controls
  */
-static int _tr_do_rename(struct ldb_module *module, struct ldb_request *parent_req,
+static int tr_do_rename(struct ldb_module *module, struct ldb_request *parent_req,
 			 struct ldb_dn *dn_from, struct ldb_dn *dn_to)
 {
 	int			ret;
@@ -169,7 +169,7 @@ static int _tr_do_rename(struct ldb_module *module, struct ldb_request *parent_r
  * Local rename implementation based on dsdb_module_modify()
  * so we could fine tune it and add more controls
  */
-static int _tr_do_modify(struct ldb_module *module, struct ldb_request *parent_req, struct ldb_message *msg)
+static int tr_do_modify(struct ldb_module *module, struct ldb_request *parent_req, struct ldb_message *msg)
 {
 	int			ret;
 	struct ldb_request	*mod_req;
@@ -219,7 +219,7 @@ static int _tr_do_modify(struct ldb_module *module, struct ldb_request *parent_r
 	return ret;
 }
 
-static int _tr_restore_attributes(struct ldb_context *ldb, struct ldb_message *cur_msg, struct ldb_message *new_msg)
+static int tr_restore_attributes(struct ldb_context *ldb, struct ldb_message *cur_msg, struct ldb_message *new_msg)
 {
 	int				ret;
 	struct ldb_message_element	*el;
@@ -372,7 +372,7 @@ static int tombstone_reanimate_modify(struct ldb_module *module, struct ldb_requ
 	ldb_msg_remove_attr(msg, "distinguishedName");
 
 	/* restore attributed depending on objectClass */
-	ret = _tr_restore_attributes(ldb, res_obj->msgs[0], msg);
+	ret = tr_restore_attributes(ldb, res_obj->msgs[0], msg);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -394,7 +394,7 @@ static int tombstone_reanimate_modify(struct ldb_module *module, struct ldb_requ
 		}
 		msg->elements[msg->num_elements-1].flags = LDB_FLAG_MOD_ADD;
 	}
-	ret = _tr_do_modify(module, req, msg);
+	ret = tr_do_modify(module, req, msg);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -404,7 +404,7 @@ static int tombstone_reanimate_modify(struct ldb_module *module, struct ldb_requ
 	if (dn_new == NULL) {
 		return ldb_oom(ldb);
 	}
-	ret = _tr_do_rename(module, req, req->op.mod.message->dn, dn_new);
+	ret = tr_do_rename(module, req, req->op.mod.message->dn, dn_new);
 	if (ret != LDB_SUCCESS) {
 		ldb_debug(ldb, LDB_DEBUG_ERROR, "Renaming object to %s has failed with %s\n", el_dn->values[0].data, ldb_strerror(ret));
 		if (ret != LDB_ERR_ENTRY_ALREADY_EXISTS && ret != LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS ) {
