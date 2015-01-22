@@ -24,6 +24,7 @@ __docformat__ = "restructuredText"
 
 import os
 import sys
+import time
 import samba.param
 
 
@@ -357,6 +358,9 @@ def ensure_third_party_module(modulename, location):
 def dn_from_dns_name(dnsdomain):
     """return a DN from a DNS name domain/forest root"""
     return "DC=" + ",DC=".join(dnsdomain.split("."))
+
+def current_unix_time():
+    return int(time.time())
 
 import _glue
 version = _glue.version
