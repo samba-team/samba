@@ -122,7 +122,7 @@ int converse( pam_handle_t * pamh, int ctrl, int nargs
 	      , struct pam_response **response )
 {
 	int retval;
-	struct pam_conv *conv;
+	struct pam_conv *conv = NULL;
 
 	retval = _pam_get_item(pamh, PAM_CONV, &conv);
 	if (retval == PAM_SUCCESS) {
@@ -370,7 +370,7 @@ int _smb_verify_password( pam_handle_t * pamh, struct samu *sampass,
         { /* this means we've succeeded */
             return PAM_SUCCESS;
         } else {
-            const char *service;
+            const char *service = NULL;
 
             _pam_get_item( pamh, PAM_SERVICE, &service );
             _log_err(pamh, LOG_NOTICE, "failed auth request by %s for service %s as %s",
@@ -402,7 +402,7 @@ int _smb_verify_password( pam_handle_t * pamh, struct samu *sampass,
         }
     } else {
 
-        const char *service;
+        const char *service = NULL;
 
         _pam_get_item( pamh, PAM_SERVICE, &service );
 
