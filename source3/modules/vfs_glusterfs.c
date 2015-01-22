@@ -521,6 +521,13 @@ static void aio_glusterfs_done(glfs_fd_t *fd, ssize_t ret, void *data)
 	 * be called here, as it is not designed to be executed
 	 * in the multithread environment, tevent_req_done() must be
 	 * executed from the smbd main thread.
+	 *
+	 * write(2) on pipes with sizes under _POSIX_PIPE_BUF
+	 * in size is atomic, without this, the use op pipes in this
+	 * code would not work.
+	 *
+	 * sys_write is a thin enough wrapper around write(2)
+	 * that we can trust it here.
 	 */
 
 	sts = sys_write(write_fd, &req, sizeof(struct tevent_req *));
@@ -540,6 +547,16 @@ static void aio_tevent_fd_done(struct tevent_context *event_ctx,
 {
 	struct tevent_req *req = NULL;
 	int sts = 0;
+
+	/*
+	 * read(2) on pipes is atomic if the needed data is available
+	 * in the pipe, per SUS and POSIX.  Because we always write
+	 * to the pipe in sizeof(struct tevent_req *) chunks, we can
+	 * always read in those chunks, atomically.
+	 *
+	 * sys_read is a thin enough wrapper around read(2) that we
+	 * can trust it here.
+	 */
 
 	sts = sys_read(read_fd, &req, sizeof(struct tevent_req *));
 	if (sts < 0) {
