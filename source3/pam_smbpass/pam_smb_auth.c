@@ -214,9 +214,6 @@ static int _smb_add_user(pam_handle_t *pamh, unsigned int ctrl,
 			, "pam_get_item returned error to pam_sm_authenticate" );
 		TALLOC_FREE(frame);
 		return PAM_AUTHTOK_RECOVER_ERR;
-	} else if (pass == NULL) {
-		TALLOC_FREE(frame);
-		return PAM_AUTHTOK_RECOVER_ERR;
 	}
 
 	/* Add the user to the db if they aren't already there. */
