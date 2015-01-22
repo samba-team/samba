@@ -411,6 +411,8 @@ int _smb_verify_password( pam_handle_t * pamh, struct samu *sampass,
 
         const char *service = NULL;
 
+        retval = PAM_AUTH_ERR;
+
         _pam_get_item( pamh, PAM_SERVICE, &service );
 
         if (data_name != NULL) {
@@ -460,7 +462,6 @@ int _smb_verify_password( pam_handle_t * pamh, struct samu *sampass,
                   "failed auth request by %s for service %s as %s(%d)",
                   uidtoname(getuid()),
                   service ? service : "**unknown**", name);
-        retval = PAM_AUTH_ERR;
     }
 
     _pam_delete( data_name );
