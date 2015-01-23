@@ -55,8 +55,10 @@
 # define UWRAP_LOCK_ALL \
 	UWRAP_LOCK(uwrap_id); \
 	UWRAP_LOCK(libc_symbol_binding); \
+	UWRAP_LOCK(libpthread_symbol_binding)
 
 # define UWRAP_UNLOCK_ALL \
+	UWRAP_UNLOCK(libpthread_symbol_binding); \
 	UWRAP_UNLOCK(libc_symbol_binding); \
 	UWRAP_UNLOCK(uwrap_id)
 
@@ -281,6 +283,29 @@ struct uwrap_libc_symbols {
 	UWRAP_SYMBOL_ENTRY(syscall);
 #endif
 };
+#undef UWRAP_SYMBOL_ENTRY
+
+/*****************
+ * LIBPTHREAD
+ *****************/
+/* Yeah... I'm pig. I overloading macro here... So what? */
+#define UWRAP_SYMBOL_ENTRY(i) \
+	union { \
+		__libpthread_##i f; \
+		void *obj; \
+	} _libpthread_##i
+
+typedef int (*__libpthread_pthread_create)(pthread_t *thread,
+				    const pthread_attr_t *attr,
+				    void *(*start_routine) (void *),
+				    void *arg);
+typedef void (*__libpthread_pthread_exit)(void *retval);
+
+struct uwrap_libpthread_symbols {
+	UWRAP_SYMBOL_ENTRY(pthread_create);
+	UWRAP_SYMBOL_ENTRY(pthread_exit);
+};
+#undef UWRAP_SYMBOL_ENTRY
 
 /*
  * We keep the virtualised euid/egid/groups information here
@@ -311,6 +336,11 @@ struct uwrap {
 		void *handle;
 		struct uwrap_libc_symbols symbols;
 	} libc;
+
+	struct {
+		void *handle;
+		struct uwrap_libpthread_symbols symbols;
+	} libpthread;
 
 	bool initialised;
 	bool enabled;
@@ -344,6 +374,9 @@ static pthread_mutex_t uwrap_id_mutex = PTHREAD_MUTEX_INITIALIZER;
 /* The mutex for accessing the global libc.symbols */
 static pthread_mutex_t libc_symbol_binding_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+/* The mutex for accessing the global libpthread.symbols */
+static pthread_mutex_t libpthread_symbol_binding_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 /*********************************************************
  * UWRAP PROTOTYPES
  *********************************************************/
@@ -360,6 +393,7 @@ enum uwrap_lib {
     UWRAP_LIBC,
     UWRAP_LIBNSL,
     UWRAP_LIBSOCKET,
+    UWRAP_LIBPTHREAD,
 };
 
 static void *uwrap_load_lib_handle(enum uwrap_lib lib)
@@ -391,6 +425,15 @@ static void *uwrap_load_lib_handle(enum uwrap_lib lib)
 			}
 
 			uwrap.libc.handle = handle;
+		}
+		break;
+	case UWRAP_LIBPTHREAD:
+		handle = uwrap.libpthread.handle;
+		if (handle == NULL) {
+			handle = dlopen("libpthread.so.0", flags);
+			if (handle != NULL) {
+				break;
+			}
 		}
 		break;
 	}
@@ -427,13 +470,21 @@ static void *_uwrap_bind_symbol(enum uwrap_lib lib, const char *fn_name)
 	return func;
 }
 
-#define uwrap_bind_symbol(lib, sym_name) \
+#define uwrap_bind_symbol_libc(sym_name) \
 	UWRAP_LOCK(libc_symbol_binding); \
 	if (uwrap.libc.symbols._libc_##sym_name.obj == NULL) { \
 		uwrap.libc.symbols._libc_##sym_name.obj = \
-			_uwrap_bind_symbol(lib, #sym_name); \
+			_uwrap_bind_symbol(UWRAP_LIBC, #sym_name); \
 	} \
 	UWRAP_UNLOCK(libc_symbol_binding)
+
+#define uwrap_bind_symbol_libpthread(sym_name) \
+	UWRAP_LOCK(libpthread_symbol_binding); \
+	if (uwrap.libpthread.symbols._libpthread_##sym_name.obj == NULL) { \
+		uwrap.libpthread.symbols._libpthread_##sym_name.obj = \
+			_uwrap_bind_symbol(UWRAP_LIBPTHREAD, #sym_name); \
+	} \
+	UWRAP_UNLOCK(libpthread_symbol_binding)
 
 /*
  * IMPORTANT
@@ -445,14 +496,14 @@ static void *_uwrap_bind_symbol(enum uwrap_lib lib, const char *fn_name)
  */
 static int libc_setuid(uid_t uid)
 {
-	uwrap_bind_symbol(UWRAP_LIBC, setuid);
+	uwrap_bind_symbol_libc(setuid);
 
 	return uwrap.libc.symbols._libc_setuid.f(uid);
 }
 
 static uid_t libc_getuid(void)
 {
-	uwrap_bind_symbol(UWRAP_LIBC, getuid);
+	uwrap_bind_symbol_libc(getuid);
 
 	return uwrap.libc.symbols._libc_getuid.f();
 }
@@ -460,7 +511,7 @@ static uid_t libc_getuid(void)
 #ifdef HAVE_SETEUID
 static int libc_seteuid(uid_t euid)
 {
-	uwrap_bind_symbol(UWRAP_LIBC, seteuid);
+	uwrap_bind_symbol_libc(seteuid);
 
 	return uwrap.libc.symbols._libc_seteuid.f(euid);
 }
@@ -469,7 +520,7 @@ static int libc_seteuid(uid_t euid)
 #ifdef HAVE_SETREUID
 static int libc_setreuid(uid_t ruid, uid_t euid)
 {
-	uwrap_bind_symbol(UWRAP_LIBC, setreuid);
+	uwrap_bind_symbol_libc(setreuid);
 
 	return uwrap.libc.symbols._libc_setreuid.f(ruid, euid);
 }
@@ -478,7 +529,7 @@ static int libc_setreuid(uid_t ruid, uid_t euid)
 #ifdef HAVE_SETRESUID
 static int libc_setresuid(uid_t ruid, uid_t euid, uid_t suid)
 {
-	uwrap_bind_symbol(UWRAP_LIBC, setresuid);
+	uwrap_bind_symbol_libc(setresuid);
 
 	return uwrap.libc.symbols._libc_setresuid.f(ruid, euid, suid);
 }
@@ -487,7 +538,7 @@ static int libc_setresuid(uid_t ruid, uid_t euid, uid_t suid)
 #ifdef HAVE_GETRESUID
 static int libc_getresuid(uid_t *ruid, uid_t *euid, uid_t *suid)
 {
-	uwrap_bind_symbol(UWRAP_LIBC, getresuid);
+	uwrap_bind_symbol_libc(getresuid);
 
 	return uwrap.libc.symbols._libc_getresuid.f(ruid, euid, suid);
 }
@@ -495,21 +546,21 @@ static int libc_getresuid(uid_t *ruid, uid_t *euid, uid_t *suid)
 
 static uid_t libc_geteuid(void)
 {
-	uwrap_bind_symbol(UWRAP_LIBC, geteuid);
+	uwrap_bind_symbol_libc(geteuid);
 
 	return uwrap.libc.symbols._libc_geteuid.f();
 }
 
 static int libc_setgid(gid_t gid)
 {
-	uwrap_bind_symbol(UWRAP_LIBC, setgid);
+	uwrap_bind_symbol_libc(setgid);
 
 	return uwrap.libc.symbols._libc_setgid.f(gid);
 }
 
 static gid_t libc_getgid(void)
 {
-	uwrap_bind_symbol(UWRAP_LIBC, getgid);
+	uwrap_bind_symbol_libc(getgid);
 
 	return uwrap.libc.symbols._libc_getgid.f();
 }
@@ -517,7 +568,7 @@ static gid_t libc_getgid(void)
 #ifdef HAVE_SETEGID
 static int libc_setegid(gid_t egid)
 {
-	uwrap_bind_symbol(UWRAP_LIBC, setegid);
+	uwrap_bind_symbol_libc(setegid);
 
 	return uwrap.libc.symbols._libc_setegid.f(egid);
 }
@@ -526,7 +577,7 @@ static int libc_setegid(gid_t egid)
 #ifdef HAVE_SETREGID
 static int libc_setregid(gid_t rgid, gid_t egid)
 {
-	uwrap_bind_symbol(UWRAP_LIBC, setregid);
+	uwrap_bind_symbol_libc(setregid);
 
 	return uwrap.libc.symbols._libc_setregid.f(rgid, egid);
 }
@@ -535,7 +586,7 @@ static int libc_setregid(gid_t rgid, gid_t egid)
 #ifdef HAVE_SETRESGID
 static int libc_setresgid(gid_t rgid, gid_t egid, gid_t sgid)
 {
-	uwrap_bind_symbol(UWRAP_LIBC, setresgid);
+	uwrap_bind_symbol_libc(setresgid);
 
 	return uwrap.libc.symbols._libc_setresgid.f(rgid, egid, sgid);
 }
@@ -544,7 +595,7 @@ static int libc_setresgid(gid_t rgid, gid_t egid, gid_t sgid)
 #ifdef HAVE_GETRESGID
 static int libc_getresgid(gid_t *rgid, gid_t *egid, gid_t *sgid)
 {
-	uwrap_bind_symbol(UWRAP_LIBC, setresgid);
+	uwrap_bind_symbol_libc(setresgid);
 
 	return uwrap.libc.symbols._libc_getresgid.f(rgid, egid, sgid);
 }
@@ -552,21 +603,21 @@ static int libc_getresgid(gid_t *rgid, gid_t *egid, gid_t *sgid)
 
 static gid_t libc_getegid(void)
 {
-	uwrap_bind_symbol(UWRAP_LIBC, getegid);
+	uwrap_bind_symbol_libc(getegid);
 
 	return uwrap.libc.symbols._libc_getegid.f();
 }
 
 static int libc_getgroups(int size, gid_t list[])
 {
-	uwrap_bind_symbol(UWRAP_LIBC, getgroups);
+	uwrap_bind_symbol_libc(getgroups);
 
 	return uwrap.libc.symbols._libc_getgroups.f(size, list);
 }
 
 static int libc_setgroups(size_t size, const gid_t *list)
 {
-	uwrap_bind_symbol(UWRAP_LIBC, setgroups);
+	uwrap_bind_symbol_libc(setgroups);
 
 	return uwrap.libc.symbols._libc_setgroups.f(size, list);
 }
@@ -579,7 +630,7 @@ static long int libc_vsyscall(long int sysno, va_list va)
 	long int rc;
 	int i;
 
-	uwrap_bind_symbol(UWRAP_LIBC, syscall);
+	uwrap_bind_symbol_libc(syscall);
 
 	for (i = 0; i < 8; i++) {
 		args[i] = va_arg(va, long int);
@@ -598,6 +649,72 @@ static long int libc_vsyscall(long int sysno, va_list va)
 	return rc;
 }
 #endif
+
+/*
+ * This part is "optimistic".
+ * Thread can ends without pthread_exit call.
+ */
+static void libpthread_pthread_exit(void *retval)
+{
+	uwrap_bind_symbol_libpthread(pthread_exit);
+
+	uwrap.libpthread.symbols._libpthread_pthread_exit.f(retval);
+}
+
+static void uwrap_pthread_exit(void *retval)
+{
+	libpthread_pthread_exit(retval);
+}
+
+void pthread_exit(void *retval)
+{
+	if (!uid_wrapper_enabled()) {
+		libpthread_pthread_exit(retval);
+	};
+
+	uwrap_pthread_exit(retval);
+
+	/* Calm down gcc warning. */
+	exit(666);
+}
+
+static int libpthread_pthread_create(pthread_t *thread,
+				const pthread_attr_t *attr,
+				void *(*start_routine) (void *),
+				void *arg)
+{
+	uwrap_bind_symbol_libpthread(pthread_create);
+	return uwrap.libpthread.symbols._libpthread_pthread_create.f(thread,
+								     attr,
+								     start_routine,
+								     arg);
+}
+
+static int uwrap_pthread_create(pthread_t *thread,
+				 const pthread_attr_t *attr,
+				 void *(*start_routine) (void *),
+				 void *arg)
+{
+	return libpthread_pthread_create(thread, attr, start_routine, arg);
+}
+
+int pthread_create(pthread_t *thread,
+		    const pthread_attr_t *attr,
+		    void *(*start_routine) (void *),
+		    void *arg)
+{
+	if (!uid_wrapper_enabled()) {
+		return libpthread_pthread_create(thread,
+					   attr,
+					   start_routine,
+					   arg);
+	};
+
+	return uwrap_pthread_create(thread,
+				    attr,
+				    start_routine,
+				    arg);
+}
 
 /*********************************************************
  * UWRAP ID HANDLING
@@ -1647,6 +1764,10 @@ void uwrap_destructor(void)
 
 	if (uwrap.libc.handle != NULL) {
 		dlclose(uwrap.libc.handle);
+	}
+
+	if (uwrap.libpthread.handle != NULL) {
+		dlclose(uwrap.libpthread.handle);
 	}
 
 	UWRAP_UNLOCK_ALL;
