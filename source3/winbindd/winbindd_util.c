@@ -27,6 +27,8 @@
 #include "../libcli/auth/pam_errors.h"
 #include "passdb/machine_sid.h"
 #include "passdb.h"
+#include "source4/lib/messaging/messaging.h"
+#include "librpc/gen_ndr/ndr_lsa.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
@@ -631,10 +633,76 @@ enum winbindd_result winbindd_dual_init_connection(struct winbindd_domain *domai
 	return WINBINDD_OK;
 }
 
+static void wb_imsg_new_trusted_domain(struct imessaging_context *msg,
+				       void *private_data,
+				       uint32_t msg_type,
+				       struct server_id server_id,
+				       DATA_BLOB *data)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct lsa_TrustDomainInfoInfoEx info;
+	enum ndr_err_code ndr_err;
+	struct winbindd_domain *d = NULL;
+
+	DEBUG(5, ("wb_imsg_new_trusted_domain\n"));
+
+	if (data == NULL) {
+		TALLOC_FREE(frame);
+		return;
+	}
+
+	ndr_err = ndr_pull_struct_blob_all(data, frame, &info,
+			(ndr_pull_flags_fn_t)ndr_pull_lsa_TrustDomainInfoInfoEx);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		TALLOC_FREE(frame);
+		return;
+	}
+
+	d = find_domain_from_name_noinit(info.netbios_name.string);
+	if (d != NULL) {
+		TALLOC_FREE(frame);
+		return;
+	}
+
+	d = add_trusted_domain(info.netbios_name.string,
+			       info.domain_name.string,
+			       &cache_methods,
+			       info.sid);
+	if (d == NULL) {
+		TALLOC_FREE(frame);
+		return;
+	}
+
+	if (d->internal) {
+		TALLOC_FREE(frame);
+		return;
+	}
+
+	if (d->primary) {
+		TALLOC_FREE(frame);
+		return;
+	}
+
+	if (info.trust_direction & LSA_TRUST_DIRECTION_INBOUND) {
+		d->domain_flags |= NETR_TRUST_FLAG_INBOUND;
+	}
+	if (info.trust_direction & LSA_TRUST_DIRECTION_OUTBOUND) {
+		d->domain_flags |= NETR_TRUST_FLAG_OUTBOUND;
+	}
+	if (info.trust_attributes & LSA_TRUST_ATTRIBUTE_WITHIN_FOREST) {
+		d->domain_flags |= NETR_TRUST_FLAG_IN_FOREST;
+	}
+	d->domain_type = info.trust_type;
+	d->domain_trust_attribs = info.trust_attributes;
+
+	TALLOC_FREE(frame);
+}
+
 /* Look up global info for the winbind daemon */
 bool init_domain_list(void)
 {
 	int role = lp_server_role();
+	NTSTATUS status;
 
 	/* Free existing list */
 	free_domain_list();
@@ -701,6 +769,15 @@ bool init_domain_list(void)
 			   early here. */
 			set_domain_online_request(domain);
 		}
+	}
+
+	status = imessaging_register(winbind_imessaging_context(), NULL,
+				     MSG_WINBIND_NEW_TRUSTED_DOMAIN,
+				     wb_imsg_new_trusted_domain);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("imessaging_register(MSG_WINBIND_NEW_TRUSTED_DOMAIN) - %s\n",
+			  nt_errstr(status)));
+		return false;
 	}
 
 	return True;
