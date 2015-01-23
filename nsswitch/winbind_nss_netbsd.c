@@ -228,7 +228,8 @@ netbsdwinbind_getgroupmembership(void *nsrv, void *nscb, va_list ap)
 	ZERO_STRUCT(response);
 	strncpy(request.data.username, uname,
 				sizeof(request.data.username) - 1);
-	i = winbindd_request_response(WINBINDD_GETGROUPS, &request, &response);
+	i = winbindd_request_response(NULL, WINBINDD_GETGROUPS,
+				      &request, &response);
 	if (i != NSS_STATUS_SUCCESS)
 		return NS_NOTFOUND;
 	wblistv = (gid_t *)response.extra_data.data;

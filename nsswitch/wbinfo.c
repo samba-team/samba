@@ -688,7 +688,7 @@ static bool wbinfo_getdcname(const char *domain_name)
 
 	/* Send request */
 
-	if (winbindd_request_response(WINBINDD_GETDCNAME, &request,
+	if (winbindd_request_response(NULL, WINBINDD_GETDCNAME, &request,
 				      &response) != NSS_STATUS_SUCCESS) {
 		d_fprintf(stderr, "Could not get dc name for %s\n",domain_name);
 		return false;
@@ -1898,7 +1898,7 @@ static bool wbinfo_klog(char *username)
 
 	request.flags |= WBFLAG_PAM_AFS_TOKEN;
 
-	result = winbindd_request_response(WINBINDD_PAM_AUTH, &request,
+	result = winbindd_request_response(NULL, WINBINDD_PAM_AUTH, &request,
 					   &response);
 
 	/* Display response */

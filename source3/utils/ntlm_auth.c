@@ -269,7 +269,7 @@ static char winbind_separator(void)
 
 	/* Send off request */
 
-	if (winbindd_request_response(WINBINDD_INFO, NULL, &response) !=
+	if (winbindd_request_response(NULL, WINBINDD_INFO, NULL, &response) !=
 	    NSS_STATUS_SUCCESS) {
 		d_printf("could not obtain winbind separator!\n");
 		return *lp_winbind_separator();
@@ -299,7 +299,7 @@ const char *get_winbind_domain(void)
 
 	/* Send off request */
 
-	if (winbindd_request_response(WINBINDD_DOMAIN_NAME, NULL, &response) !=
+	if (winbindd_request_response(NULL, WINBINDD_DOMAIN_NAME, NULL, &response) !=
 	    NSS_STATUS_SUCCESS) {
 		DEBUG(1, ("could not obtain winbind domain name!\n"));
 		return lp_workgroup();
@@ -325,7 +325,7 @@ const char *get_winbind_netbios_name(void)
 
 	/* Send off request */
 
-	if (winbindd_request_response(WINBINDD_NETBIOS_NAME, NULL, &response) !=
+	if (winbindd_request_response(NULL, WINBINDD_NETBIOS_NAME, NULL, &response) !=
 	    NSS_STATUS_SUCCESS) {
 		DEBUG(1, ("could not obtain winbind netbios name!\n"));
 		return lp_netbios_name();
@@ -393,7 +393,7 @@ static bool get_require_membership_sid(void) {
 		return False;
 	}
 
-	if (winbindd_request_response(WINBINDD_LOOKUPNAME, &request, &response) !=
+	if (winbindd_request_response(NULL, WINBINDD_LOOKUPNAME, &request, &response) !=
 	    NSS_STATUS_SUCCESS) {
 		DEBUG(0, ("Winbindd lookupname failed to resolve %s into a SID!\n", 
 			  require_membership_of));
@@ -463,7 +463,7 @@ static bool check_plaintext_auth(const char *user, const char *pass,
 			sizeof(request.data.auth.require_membership_of_sid));
 	}
 
-	result = winbindd_request_response(WINBINDD_PAM_AUTH, &request, &response);
+	result = winbindd_request_response(NULL, WINBINDD_PAM_AUTH, &request, &response);
 
 	/* Display response */
 
@@ -558,7 +558,7 @@ NTSTATUS contact_winbind_auth_crap(const char *username,
                 request.data.auth_crap.nt_resp_len = nt_response->length;
 	}
 
-	result = winbindd_request_response(WINBINDD_PAM_AUTH_CRAP, &request, &response);
+	result = winbindd_request_response(NULL, WINBINDD_PAM_AUTH_CRAP, &request, &response);
 	SAFE_FREE(request.extra_data.data);
 
 	/* Display response */
@@ -653,7 +653,7 @@ static NTSTATUS contact_winbind_change_pswd_auth_crap(const char *username,
 		request.data.chng_pswd_auth_crap.old_lm_hash_enc_len = old_lm_hash_enc.length;
 	}
 
-	result = winbindd_request_response(WINBINDD_PAM_CHNG_PSWD_AUTH_CRAP, &request, &response);
+	result = winbindd_request_response(NULL, WINBINDD_PAM_CHNG_PSWD_AUTH_CRAP, &request, &response);
 
 	/* Display response */
 
@@ -1194,7 +1194,7 @@ static NTSTATUS do_ccache_ntlm_auth(DATA_BLOB initial_msg, DATA_BLOB challenge_m
 			challenge_msg.data, challenge_msg.length);
 	}
 
-	result = winbindd_request_response(WINBINDD_CCACHE_NTLMAUTH, &wb_request, &wb_response);
+	result = winbindd_request_response(NULL, WINBINDD_CCACHE_NTLMAUTH, &wb_request, &wb_response);
 	SAFE_FREE(wb_request.extra_data.data);
 
 	if (result != NSS_STATUS_SUCCESS) {

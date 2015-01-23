@@ -515,7 +515,8 @@ _nss_winbind_ipnodes_getbyname(nss_backend_t* be, void *args)
 	strncpy(request.data.winsreq, argp->key.name, sizeof(request.data.winsreq) - 1);
 	request.data.winsreq[sizeof(request.data.winsreq) - 1] = '\0';
 
-	if( (ret = winbindd_request_response(WINBINDD_WINS_BYNAME, &request, &response))
+	if( (ret = winbindd_request_response(NULL, WINBINDD_WINS_BYNAME,
+					     &request, &response))
 		== NSS_STATUS_SUCCESS ) {
 	  ret = parse_response(af, argp, &response);
 	}
@@ -538,7 +539,8 @@ _nss_winbind_hosts_getbyname(nss_backend_t* be, void *args)
 	strncpy(request.data.winsreq, argp->key.name, sizeof(request.data.winsreq) - 1);
 	request.data.winsreq[sizeof(request.data.winsreq) - 1] = '\0';
 
-	if( (ret = winbindd_request_response(WINBINDD_WINS_BYNAME, &request, &response))
+	if( (ret = winbindd_request_response(NULL, WINBINDD_WINS_BYNAME,
+					     &request, &response))
 		== NSS_STATUS_SUCCESS ) {
 	  ret = parse_response(AF_INET, argp, &response);
 	}
@@ -577,7 +579,8 @@ _nss_winbind_hosts_getbyaddr(nss_backend_t* be, void *args)
                 ((unsigned char *)argp->key.hostaddr.addr)[3]);
 #endif
 
-	ret = winbindd_request_response(WINBINDD_WINS_BYIP, &request, &response);
+	ret = winbindd_request_response(NULL, WINBINDD_WINS_BYIP,
+					&request, &response);
 
 	if( ret == NSS_STATUS_SUCCESS) {
 	  parse_response(argp->key.hostaddr.type, argp, &response);

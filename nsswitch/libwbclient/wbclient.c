@@ -27,10 +27,12 @@
 
 /* From wb_common.c */
 
-NSS_STATUS winbindd_request_response(int req_type,
+NSS_STATUS winbindd_request_response(struct winbindd_context *wbctx,
+				     int req_type,
 				     struct winbindd_request *request,
 				     struct winbindd_response *response);
-NSS_STATUS winbindd_priv_request_response(int req_type,
+NSS_STATUS winbindd_priv_request_response(struct winbindd_context *wbctx,
+					  int req_type,
 					  struct winbindd_request *request,
 					  struct winbindd_response *response);
 
@@ -51,7 +53,7 @@ static wbcErr wbcRequestResponseInt(
 	int cmd,
 	struct winbindd_request *request,
 	struct winbindd_response *response,
-	NSS_STATUS (*fn)(int req_type,
+	NSS_STATUS (*fn)(struct winbindd_context *wbctx, int req_type,
 			 struct winbindd_request *request,
 			 struct winbindd_response *response))
 {
@@ -60,7 +62,7 @@ static wbcErr wbcRequestResponseInt(
 
 	/* for some calls the request and/or response can be NULL */
 
-	nss_status = fn(cmd, request, response);
+	nss_status = fn(NULL, cmd, request, response);
 
 	switch (nss_status) {
 	case NSS_STATUS_SUCCESS:
