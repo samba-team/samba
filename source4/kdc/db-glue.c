@@ -374,6 +374,7 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 	if (allocated_keys == 0) {
 		if (kdc_db_ctx->rodc) {
 			/* We are on an RODC, but don't have keys for this account.  Signal this to the caller */
+			/* TODO:  We need to call a generalised version of auth_sam_trigger_repl_secret from here */
 			return HDB_ERR_NOT_FOUND_HERE;
 		}
 
