@@ -575,17 +575,16 @@ static void uwrap_init(void)
 	const char *env = getenv("UID_WRAPPER");
 	pthread_t tid = pthread_self();
 
-
-
+	UWRAP_LOCK(uwrap_id);
 	if (uwrap.initialised) {
 		struct uwrap_thread *id = uwrap_tls_id;
 		int rc;
 
 		if (id != NULL) {
+			UWRAP_UNLOCK(uwrap_id);
 			return;
 		}
 
-		UWRAP_LOCK(uwrap_id);
 		id = find_uwrap_id(tid);
 		if (id == NULL) {
 			rc = uwrap_new_id(tid, true);
@@ -604,8 +603,6 @@ static void uwrap_init(void)
 	}
 
 	UWRAP_LOG(UWRAP_LOG_DEBUG, "Initialize uid_wrapper");
-
-	UWRAP_LOCK(uwrap_id);
 
 	uwrap.initialised = true;
 	uwrap.enabled = false;
