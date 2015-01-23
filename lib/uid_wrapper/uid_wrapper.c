@@ -640,8 +640,8 @@ static void uwrap_init(void)
 			uwrap.ruid = uwrap.euid = uwrap.suid = 0;
 			uwrap.rgid = uwrap.egid = uwrap.sgid = 0;
 		} else {
-			uwrap.ruid = uwrap.euid = uwrap.suid = libc_geteuid();
-			uwrap.rgid = uwrap.egid = uwrap.sgid = libc_getegid();
+			uwrap.ruid = uwrap.euid = uwrap.suid = uwrap.myuid;
+			uwrap.rgid = uwrap.egid = uwrap.sgid = uwrap.mygid;
 		}
 
 		rc = uwrap_new_id(tid, true);
