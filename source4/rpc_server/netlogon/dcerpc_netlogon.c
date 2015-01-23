@@ -2917,14 +2917,33 @@ static WERROR fill_forest_trust_array(TALLOC_CTX *mem_ctx,
 /*
   netr_DsRGetForestTrustInformation
 */
+struct dcesrv_netr_DsRGetForestTrustInformation_state {
+	struct dcesrv_call_state *dce_call;
+	TALLOC_CTX *mem_ctx;
+	struct netr_DsRGetForestTrustInformation *r;
+};
+
+static void dcesrv_netr_DsRGetForestTrustInformation_done(struct tevent_req *subreq);
+
 static WERROR dcesrv_netr_DsRGetForestTrustInformation(struct dcesrv_call_state *dce_call,
 						       TALLOC_CTX *mem_ctx,
 						       struct netr_DsRGetForestTrustInformation *r)
 {
 	struct loadparm_context *lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
-	struct lsa_ForestTrustInformation *info, **info_ptr;
-	struct ldb_context *sam_ctx;
+	struct dcesrv_connection *conn = dce_call->conn;
+	struct auth_session_info *session_info = conn->auth_state.session_info;
+	enum security_user_level security_level;
+	struct lsa_ForestTrustInformation *info = NULL;
+	struct ldb_context *sam_ctx = NULL;
+	struct dcesrv_netr_DsRGetForestTrustInformation_state *state = NULL;
+	struct dcerpc_binding_handle *irpc_handle = NULL;
+	struct tevent_req *subreq = NULL;
 	WERROR werr;
+
+	security_level = security_session_user_level(session_info, NULL);
+	if (security_level < SECURITY_USER) {
+		return WERR_ACCESS_DENIED;
+	}
 
 	if (r->in.flags & 0xFFFFFFFE) {
 		return WERR_INVALID_FLAGS;
@@ -2944,32 +2963,96 @@ static WERROR dcesrv_netr_DsRGetForestTrustInformation(struct dcesrv_call_state 
 		if (r->in.trusted_domain_name == NULL) {
 			return WERR_INVALID_FLAGS;
 		}
-
-		/* TODO: establish an schannel connection with
-		 * r->in.trusted_domain_name and perform a
-		 * netr_GetForestTrustInformation call against it */
-
-		/* for now return not implementd */
-		return WERR_CALL_NOT_IMPLEMENTED;
 	}
 
-	/* TODO: check r->in.server_name is our name */
+	if (r->in.trusted_domain_name == NULL) {
+		/*
+		 * information about our own domain
+		 */
+		info = talloc_zero(mem_ctx, struct lsa_ForestTrustInformation);
+		if (info == NULL) {
+			return WERR_NOMEM;
+		}
 
-	info_ptr = talloc(mem_ctx, struct lsa_ForestTrustInformation *);
-	W_ERROR_HAVE_NO_MEMORY(info_ptr);
+		werr = fill_forest_trust_array(info, sam_ctx, lp_ctx, info);
+		if (!W_ERROR_IS_OK(werr)) {
+			return werr;
+		}
 
-	info = talloc_zero(info_ptr, struct lsa_ForestTrustInformation);
-	W_ERROR_HAVE_NO_MEMORY(info);
+		*r->out.forest_trust_info = info;
 
-	werr = fill_forest_trust_array(mem_ctx, sam_ctx, lp_ctx, info);
-	W_ERROR_NOT_OK_RETURN(werr);
+		return WERR_OK;
+	}
 
-	*info_ptr = info;
-	r->out.forest_trust_info = info_ptr;
+	/*
+	 * Forward the request to winbindd
+	 */
+
+	state = talloc_zero(mem_ctx,
+			struct dcesrv_netr_DsRGetForestTrustInformation_state);
+	if (state == NULL) {
+		return WERR_NOMEM;
+	}
+	state->dce_call = dce_call;
+	state->mem_ctx = mem_ctx;
+	state->r = r;
+
+	irpc_handle = irpc_binding_handle_by_name(state,
+						  state->dce_call->msg_ctx,
+						  "winbind_server",
+						  &ndr_table_winbind);
+	if (irpc_handle == NULL) {
+		DEBUG(0,("Failed to get binding_handle for winbind_server task\n"));
+		state->dce_call->fault_code = DCERPC_FAULT_CANT_PERFORM;
+		return WERR_SERVICE_NOT_FOUND;
+	}
+
+	/*
+	 * 60 seconds timeout should be enough
+	 */
+	dcerpc_binding_handle_set_timeout(irpc_handle, 60);
+
+	subreq = dcerpc_winbind_GetForestTrustInformation_send(state,
+						state->dce_call->event_ctx,
+						irpc_handle,
+						r->in.trusted_domain_name,
+						r->in.flags,
+						r->out.forest_trust_info);
+	if (subreq == NULL) {
+		return WERR_NOMEM;
+	}
+	state->dce_call->state_flags |= DCESRV_CALL_STATE_FLAG_ASYNC;
+	tevent_req_set_callback(subreq,
+				dcesrv_netr_DsRGetForestTrustInformation_done,
+				state);
 
 	return WERR_OK;
 }
 
+static void dcesrv_netr_DsRGetForestTrustInformation_done(struct tevent_req *subreq)
+{
+	struct dcesrv_netr_DsRGetForestTrustInformation_state *state =
+		tevent_req_callback_data(subreq,
+		struct dcesrv_netr_DsRGetForestTrustInformation_state);
+	NTSTATUS status;
+
+	status = dcerpc_winbind_GetForestTrustInformation_recv(subreq,
+							state->mem_ctx,
+							&state->r->out.result);
+	TALLOC_FREE(subreq);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
+		state->r->out.result = WERR_TIMEOUT;
+	} else if (!NT_STATUS_IS_OK(status)) {
+		state->dce_call->fault_code = DCERPC_FAULT_CANT_PERFORM;
+		DEBUG(0,(__location__ ": IRPC callback failed %s\n",
+			 nt_errstr(status)));
+	}
+
+	status = dcesrv_reply(state->dce_call);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,(__location__ ": dcesrv_reply() failed - %s\n", nt_errstr(status)));
+	}
+}
 
 /*
   netr_GetForestTrustInformation
