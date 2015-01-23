@@ -549,12 +549,19 @@ for env in ["dc", "s4member", "rodc", "promoted_dc", "plugin_s4_dc", "s3member"]
     plantestsuite("samba.blackbox.wbinfo(%s:local)" % env, "%s:local" % env, [os.path.join(samba4srcdir, "../nsswitch/tests/test_wbinfo.sh"), '$DOMAIN', '$DC_USERNAME', '$DC_PASSWORD', env])
 
 for env in ["dc", "rodc", "promoted_dc", "plugin_s4_dc", "fl2000dc", "fl2003dc", "fl2008r2dc"]:
-    plansmbtorture4testsuite('krb5.kdc', env, ['ncacn_np:$SERVER_IP', "-k", "yes", '-U$USERNAME%$PASSWORD', '--workgroup=$DOMAIN', '--realm=$REALM'],
-                             "samba4.krb5.kdc with specified account")
-    plansmbtorture4testsuite('krb5.kdc', env, ['ncacn_np:$SERVER_IP', "-k", "yes", '-Utestdenied%$PASSWORD', '--workgroup=$DOMAIN', '--realm=$REALM'],
-                             "samba4.krb5.kdc with account DENIED permission to replicate to an RODC")
     if env == "rodc":
         extra_options = ['--option=torture:expect_rodc=true']
+    else:
+        extra_options = []
+
+    plansmbtorture4testsuite('krb5.kdc', env, ['ncacn_np:$SERVER_IP', "-k", "yes", '-U$USERNAME%$PASSWORD', '--workgroup=$DOMAIN', '--realm=$REALM'] + extra_options,
+                             "samba4.krb5.kdc with specified account")
+    plansmbtorture4testsuite('krb5.kdc', env, ['ncacn_np:$SERVER_IP', "-k", "yes", '-Utestdenied%$PASSWORD', '--workgroup=$DOMAIN', '--realm=$REALM'] + extra_options,
+                             "samba4.krb5.kdc with account DENIED permission to replicate to an RODC")
+
+    # These last two tests are for users cached at the RODC
+    if env == "rodc":
+        extra_options = ['--option=torture:expect_rodc=true', '--option=torture:expect_cached_at_rodc=true']
     else:
         extra_options = []
 

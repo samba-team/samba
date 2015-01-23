@@ -122,7 +122,7 @@ static bool torture_krb5_post_recv_test(struct torture_krb5_context *test_contex
 			torture_assert(test_context->tctx,
 				       test_context->as_rep.ticket.enc_part.kvno,
 				       "Did not get a KVNO in test_context->as_rep.ticket.enc_part.kvno");
-			if (torture_setting_bool(test_context->tctx, "expect_rodc", false)) {
+			if (torture_setting_bool(test_context->tctx, "expect_cached_at_rodc", false)) {
 				torture_assert_int_not_equal(test_context->tctx,
 							     *test_context->as_rep.ticket.enc_part.kvno & 0xFFFF0000,
 							     0, "Did not get a RODC number in the KVNO");
@@ -437,8 +437,8 @@ static bool torture_krb5_as_req_win2k(struct torture_context *tctx)
 
 static bool torture_krb5_as_req_pac_request(struct torture_context *tctx)
 {
-	if (torture_setting_bool(test_context->tctx, "expect_rodc", false)) {
-		return torture_skip(tctx, "This test needs further investigation in the RODC case against a Windows DC, in particular with non-cached users");
+	if (torture_setting_bool(tctx, "expect_rodc", false)) {
+		torture_skip(tctx, "This test needs further investigation in the RODC case against a Windows DC, in particular with non-cached users");
 	}
 	return torture_krb5_as_req_creds(tctx, cmdline_credentials, TORTURE_KRB5_TEST_PAC_REQUEST);
 }

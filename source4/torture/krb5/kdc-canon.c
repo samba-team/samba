@@ -149,7 +149,7 @@ static bool torture_krb5_post_recv_test(struct torture_krb5_context *test_contex
 		torture_assert(test_context->tctx,
 			       test_context->as_rep.ticket.enc_part.kvno,
 			       "Did not get a KVNO in test_context->as_rep.ticket.enc_part.kvno");
-		if (torture_setting_bool(test_context->tctx, "expect_rodc", false)) {
+		if (torture_setting_bool(test_context->tctx, "expect_cached_at_rodc", false)) {
 			torture_assert_int_not_equal(test_context->tctx,
 						     *test_context->as_rep.ticket.enc_part.kvno & 0xFFFF0000,
 						     0, "Did not get a RODC number in the KVNO");
