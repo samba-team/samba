@@ -226,8 +226,8 @@ struct uwrap_thread {
 	gid_t egid;
 	gid_t sgid;
 
-	gid_t *groups;
 	int ngroups;
+	gid_t *groups;
 
 	struct uwrap_thread *next;
 	struct uwrap_thread *prev;
@@ -251,6 +251,9 @@ struct uwrap {
 	gid_t rgid;
 	gid_t egid;
 	gid_t sgid;
+
+	int ngroups;
+	gid_t *groups;
 
 	/* Real uid and gid of user who run uid wrapper */
 	uid_t myuid;
@@ -536,7 +539,7 @@ static int uwrap_new_id(pthread_t tid, bool do_alloc)
 			return -1;
 		}
 
-		id->groups = malloc(sizeof(gid_t) * 1);
+		id->groups = malloc(sizeof(gid_t) * uwrap.ngroups);
 		if (id->groups == NULL) {
 			UWRAP_LOG(UWRAP_LOG_ERROR, "Unable to allocate memory");
 			SAFE_FREE(id);
@@ -559,8 +562,12 @@ static int uwrap_new_id(pthread_t tid, bool do_alloc)
 	id->egid = uwrap.egid;
 	id->sgid = uwrap.sgid;
 
-	id->ngroups = 1;
-	id->groups[0] = uwrap.mygid;
+	id->ngroups = uwrap.ngroups;
+	if (uwrap.groups != NULL) {
+		memcpy(id->groups, uwrap.groups, sizeof(gid_t) * uwrap.ngroups);
+	} else {
+		id->groups = NULL;
+	}
 
 	return 0;
 }
@@ -644,9 +651,42 @@ static void uwrap_init(void)
 		if (root != NULL && root[0] == '1') {
 			uwrap.ruid = uwrap.euid = uwrap.suid = 0;
 			uwrap.rgid = uwrap.egid = uwrap.sgid = 0;
+
+			uwrap.groups = malloc(sizeof(gid_t) * 1);
+			if (uwrap.groups == NULL) {
+				UWRAP_LOG(UWRAP_LOG_ERROR,
+					  "Unable to allocate memory");
+				exit(-1);
+			}
+
+			uwrap.ngroups = 1;
+			uwrap.groups[0] = 0;
+
 		} else {
 			uwrap.ruid = uwrap.euid = uwrap.suid = uwrap.myuid;
 			uwrap.rgid = uwrap.egid = uwrap.sgid = uwrap.mygid;
+
+			uwrap.ngroups = libc_getgroups(0, NULL);
+			if (uwrap.ngroups == -1) {
+				UWRAP_LOG(UWRAP_LOG_ERROR,
+					  "Unable to call libc_getgroups in uwrap_init.");
+				exit(-1);
+			}
+			uwrap.groups = malloc(sizeof(gid_t) * uwrap.ngroups);
+			if (uwrap.groups == NULL) {
+				UWRAP_LOG(UWRAP_LOG_ERROR, "Unable to allocate memory");
+				exit(-1);
+			}
+			if (libc_getgroups(uwrap.ngroups, uwrap.groups) == -1) {
+				UWRAP_LOG(UWRAP_LOG_ERROR,
+					  "Unable to call libc_getgroups again in uwrap_init.");
+				uwrap.ngroups = 0;
+				/*
+				 * Deallocation of uwrap.groups is handled by
+				 * library destructor.
+				 */
+				exit(-1);
+			}
 		}
 
 		rc = uwrap_new_id(tid, true);
@@ -1075,9 +1115,12 @@ static int uwrap_setgroups_thread(size_t size, const gid_t *list)
 	UWRAP_LOCK(uwrap_id);
 
 	if (size == 0) {
-		free(id->groups);
-		id->groups = NULL;
+		SAFE_FREE(id->groups);
 		id->ngroups = 0;
+		if (pthread_equal(id->tid, uwrap.tid)) {
+			SAFE_FREE(uwrap.groups);
+			uwrap.ngroups = 0;
+		}
 	} else if (size > 0) {
 		gid_t *tmp;
 
@@ -1087,9 +1130,21 @@ static int uwrap_setgroups_thread(size_t size, const gid_t *list)
 			goto out;
 		}
 		id->groups = tmp;
-
 		id->ngroups = size;
 		memcpy(id->groups, list, size * sizeof(gid_t));
+
+		if (pthread_equal(id->tid, uwrap.tid)) {
+			tmp = realloc(uwrap.groups, sizeof(gid_t) * size);
+			if (tmp == NULL) {
+				/* How to return back id->groups? */
+				errno = ENOMEM;
+				goto out;
+			}
+
+			uwrap.groups = tmp;
+			uwrap.ngroups = size;
+			memcpy(uwrap.groups, list, size * sizeof(gid_t));
+		}
 	}
 
 	rc = 0;
@@ -1108,14 +1163,16 @@ static int uwrap_setgroups(size_t size, const gid_t *list)
 
 	if (size == 0) {
 		for (id = uwrap.ids; id; id = id->next) {
-			free(id->groups);
-			id->groups = NULL;
+			SAFE_FREE(id->groups);
 			id->ngroups = 0;
-		}
-	} else if (size > 0) {
-		for (id = uwrap.ids; id; id = id->next) {
-			gid_t *tmp;
 
+		}
+		SAFE_FREE(uwrap.groups);
+		uwrap.ngroups = 0;
+	} else if (size > 0) {
+		gid_t *tmp;
+
+		for (id = uwrap.ids; id; id = id->next) {
 			tmp = realloc(id->groups, sizeof(gid_t) * size);
 			if (tmp == NULL) {
 				errno = ENOMEM;
@@ -1126,6 +1183,18 @@ static int uwrap_setgroups(size_t size, const gid_t *list)
 			id->ngroups = size;
 			memcpy(id->groups, list, size * sizeof(gid_t));
 		}
+
+		tmp = realloc(uwrap.groups, sizeof(gid_t) * size);
+		if (tmp == NULL) {
+			/* How to return back id->groups? */
+			errno = ENOMEM;
+			goto out;
+		}
+
+		uwrap.groups = tmp;
+		uwrap.ngroups = size;
+		memcpy(uwrap.groups, list, size * sizeof(gid_t));
+
 	}
 
 	rc = 0;
@@ -1400,6 +1469,8 @@ void uwrap_destructor(void)
 
 		u = uwrap.ids;
 	}
+
+	SAFE_FREE(uwrap.groups);
 
 	if (uwrap.libc.handle != NULL) {
 		dlclose(uwrap.libc.handle);
