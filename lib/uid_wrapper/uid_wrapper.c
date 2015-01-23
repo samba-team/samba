@@ -1367,7 +1367,7 @@ static long int uwrap_syscall (long int sysno, va_list vp)
 		case SYS_setgid32:
 #endif
 			{
-				gid_t gid = (gid_t) va_arg(vp, int);
+				gid_t gid = (gid_t) va_arg(vp, gid_t);
 
 				rc = uwrap_setresgid_thread(gid, -1, -1);
 			}
@@ -1377,8 +1377,8 @@ static long int uwrap_syscall (long int sysno, va_list vp)
 		case SYS_setregid32:
 #endif
 			{
-				uid_t rgid = (uid_t) va_arg(vp, int);
-				uid_t egid = (uid_t) va_arg(vp, int);
+				gid_t rgid = (gid_t) va_arg(vp, gid_t);
+				gid_t egid = (gid_t) va_arg(vp, gid_t);
 
 				rc = uwrap_setresgid_thread(rgid, egid, -1);
 			}
@@ -1389,9 +1389,9 @@ static long int uwrap_syscall (long int sysno, va_list vp)
 		case SYS_setresgid32:
 #endif
 			{
-				uid_t rgid = (uid_t) va_arg(vp, int);
-				uid_t egid = (uid_t) va_arg(vp, int);
-				uid_t sgid = (uid_t) va_arg(vp, int);
+				gid_t rgid = (gid_t) va_arg(vp, gid_t);
+				gid_t egid = (gid_t) va_arg(vp, gid_t);
+				gid_t sgid = (gid_t) va_arg(vp, gid_t);
 
 				rc = uwrap_setresgid_thread(rgid, egid, sgid);
 			}
@@ -1436,7 +1436,7 @@ static long int uwrap_syscall (long int sysno, va_list vp)
 		case SYS_setuid32:
 #endif
 			{
-				uid_t uid = (uid_t) va_arg(vp, int);
+				uid_t uid = (uid_t) va_arg(vp, uid_t);
 
 				rc = uwrap_setresuid_thread(uid, -1, -1);
 			}
@@ -1446,8 +1446,8 @@ static long int uwrap_syscall (long int sysno, va_list vp)
 		case SYS_setreuid32:
 #endif
 			{
-				uid_t ruid = (uid_t) va_arg(vp, int);
-				uid_t euid = (uid_t) va_arg(vp, int);
+				uid_t ruid = (uid_t) va_arg(vp, uid_t);
+				uid_t euid = (uid_t) va_arg(vp, uid_t);
 
 				rc = uwrap_setresuid_thread(ruid, euid, -1);
 			}
@@ -1458,9 +1458,9 @@ static long int uwrap_syscall (long int sysno, va_list vp)
 		case SYS_setresuid32:
 #endif
 			{
-				uid_t ruid = (uid_t) va_arg(vp, int);
-				uid_t euid = (uid_t) va_arg(vp, int);
-				uid_t suid = (uid_t) va_arg(vp, int);
+				uid_t ruid = (uid_t) va_arg(vp, uid_t);
+				uid_t euid = (uid_t) va_arg(vp, uid_t);
+				uid_t suid = (uid_t) va_arg(vp, uid_t);
 
 				rc = uwrap_setresuid_thread(ruid, euid, suid);
 			}
