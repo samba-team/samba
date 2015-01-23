@@ -572,7 +572,7 @@ static void uwrap_thread_child(void)
 
 static void uwrap_init(void)
 {
-	const char *env = getenv("UID_WRAPPER");
+	const char *env;
 	pthread_t tid = pthread_self();
 
 	UWRAP_LOCK(uwrap_id);
@@ -607,6 +607,7 @@ static void uwrap_init(void)
 	uwrap.initialised = true;
 	uwrap.enabled = false;
 
+	env = getenv("UID_WRAPPER");
 	if (env != NULL && env[0] == '1') {
 		const char *root = getenv("UID_WRAPPER_ROOT");
 		int rc;
