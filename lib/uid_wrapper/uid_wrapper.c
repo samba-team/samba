@@ -63,6 +63,12 @@
 #define DESTRUCTOR_ATTRIBUTE
 #endif /* HAVE_DESTRUCTOR_ATTRIBUTE */
 
+#ifdef HAVE_ADDRESS_SANITIZER_ATTRIBUTE
+#define DO_NOT_SANITIZE_ADDRESS_ATTRIBUTE __attribute__((no_sanitize_address))
+#else /* DO_NOT_SANITIZE_ADDRESS_ATTRIBUTE */
+#define DO_NOT_SANITIZE_ADDRESS_ATTRIBUTE
+#endif /* DO_NOT_SANITIZE_ADDRESS_ATTRIBUTE */
+
 /* GCC have printf type attribute check. */
 #ifdef HAVE_FUNCTION_ATTRIBUTE_FORMAT
 #define PRINTF_ATTRIBUTE(a,b) __attribute__ ((__format__ (__printf__, a, b)))
@@ -472,6 +478,7 @@ static int libc_setgroups(size_t size, const gid_t *list)
 }
 
 #ifdef HAVE_SYSCALL
+DO_NOT_SANITIZE_ADDRESS_ATTRIBUTE
 static long int libc_vsyscall(long int sysno, va_list va)
 {
 	long int args[8];

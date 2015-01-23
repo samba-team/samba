@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import Options
 import os
 
 VERSION="1.0.1"
@@ -67,6 +68,25 @@ def configure(conf):
             'HAVE_DESTRUCTOR_ATTRIBUTE',
             addmain=False,
             msg='Checking for library destructor support')
+
+        if Options.options.address_sanitizer:
+            # check HAVE_ADDRESS_SANITIZER_ATTRIBUTE
+            conf.CHECK_CODE('''
+                void test_address_sanitizer_attribute(void) __attribute__((no_sanitize_address));
+
+                void test_address_sanitizer_attribute(void)
+                {
+                    return;
+                }
+
+                int main(void) {
+                    return 0;
+                }
+                ''',
+                'HAVE_ADDRESS_SANITIZER_ATTRIBUTE',
+                addmain=False,
+                cflags='-Wall -Wextra -Werror',
+                msg='Checking for address sanitizer attribute')
 
         # check HAVE_FUNCTION_ATTRIBUTE_FORMAT
         conf.CHECK_CODE('''
