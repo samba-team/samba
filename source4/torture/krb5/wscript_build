@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-if bld.CONFIG_SET('AD_DC_BUILD_IS_ENABLED'):
+if bld.CONFIG_SET('SAMBA4_USES_HEIMDAL'):
       bld.SAMBA_MODULE('TORTURE_KRB5',
                        source='kdc.c kdc-canon.c',
                        autoproto='proto.h',
