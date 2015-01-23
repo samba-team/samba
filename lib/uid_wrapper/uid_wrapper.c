@@ -177,43 +177,99 @@ static void uwrap_log(enum uwrap_dbglvl_e dbglvl, const char *format, ...)
 
 #define LIBC_NAME "libc.so"
 
-struct uwrap_libc_fns {
-	int (*_libc_setuid)(uid_t uid);
-	uid_t (*_libc_getuid)(void);
+typedef int (*__libc_setuid)(uid_t uid);
+
+typedef	uid_t (*__libc_getuid)(void);
 
 #ifdef HAVE_SETEUID
-	int (*_libc_seteuid)(uid_t euid);
+typedef int (*__libc_seteuid)(uid_t euid);
+#endif
+
+#ifdef HAVE_SETREUID
+typedef int (*__libc_setreuid)(uid_t ruid, uid_t euid);
+#endif
+
+#ifdef HAVE_SETRESUID
+typedef int (*__libc_setresuid)(uid_t ruid, uid_t euid, uid_t suid);
+#endif
+
+#ifdef HAVE_GETRESUID
+typedef int (*__libc_getresuid)(uid_t *ruid, uid_t *euid, uid_t *suid);
+#endif
+
+typedef uid_t (*__libc_geteuid)(void);
+
+typedef int (*__libc_setgid)(gid_t gid);
+
+typedef gid_t (*__libc_getgid)(void);
+
+#ifdef HAVE_SETEGID
+typedef int (*__libc_setegid)(uid_t egid);
+#endif
+
+#ifdef HAVE_SETREGID
+typedef int (*__libc_setregid)(uid_t rgid, uid_t egid);
+#endif
+
+#ifdef HAVE_SETRESGID
+typedef int (*__libc_setresgid)(uid_t rgid, uid_t egid, uid_t sgid);
+#endif
+
+#ifdef HAVE_GETRESGID
+typedef int (*__libc_getresgid)(gid_t *rgid, gid_t *egid, gid_t *sgid);
+#endif
+
+typedef gid_t (*__libc_getegid)(void);
+
+typedef int (*__libc_getgroups)(int size, gid_t list[]);
+
+typedef int (*__libc_setgroups)(size_t size, const gid_t *list);
+
+#ifdef HAVE_SYSCALL
+typedef long int (*__libc_syscall)(long int sysno, ...);
+#endif
+
+#define UWRAP_SYMBOL_ENTRY(i) \
+	union { \
+		__libc_##i f; \
+		void *obj; \
+	} _libc_##i
+
+struct uwrap_libc_symbols {
+	UWRAP_SYMBOL_ENTRY(setuid);
+	UWRAP_SYMBOL_ENTRY(getuid);
+#ifdef HAVE_SETEUID
+	UWRAP_SYMBOL_ENTRY(seteuid);
 #endif
 #ifdef HAVE_SETREUID
-	int (*_libc_setreuid)(uid_t ruid, uid_t euid);
+	UWRAP_SYMBOL_ENTRY(setreuid);
 #endif
 #ifdef HAVE_SETRESUID
-	int (*_libc_setresuid)(uid_t ruid, uid_t euid, uid_t suid);
+	UWRAP_SYMBOL_ENTRY(setresuid);
 #endif
 #ifdef HAVE_GETRESUID
-	int (*_libc_getresuid)(uid_t *ruid, uid_t *euid, uid_t *suid);
+	UWRAP_SYMBOL_ENTRY(getresuid);
 #endif
-	uid_t (*_libc_geteuid)(void);
-
-	int (*_libc_setgid)(gid_t gid);
-	gid_t (*_libc_getgid)(void);
+	UWRAP_SYMBOL_ENTRY(geteuid);
+	UWRAP_SYMBOL_ENTRY(setgid);
+	UWRAP_SYMBOL_ENTRY(getgid);
 #ifdef HAVE_SETEGID
-	int (*_libc_setegid)(uid_t egid);
+	UWRAP_SYMBOL_ENTRY(setegid);
 #endif
 #ifdef HAVE_SETREGID
-	int (*_libc_setregid)(uid_t rgid, uid_t egid);
+	UWRAP_SYMBOL_ENTRY(setregid);
 #endif
 #ifdef HAVE_SETRESGID
-	int (*_libc_setresgid)(uid_t rgid, uid_t egid, uid_t sgid);
+	UWRAP_SYMBOL_ENTRY(setresgid);
 #endif
 #ifdef HAVE_GETRESGID
-	int (*_libc_getresgid)(gid_t *rgid, gid_t *egid, gid_t *sgid);
+	UWRAP_SYMBOL_ENTRY(getresgid);
 #endif
-	gid_t (*_libc_getegid)(void);
-	int (*_libc_getgroups)(int size, gid_t list[]);
-	int (*_libc_setgroups)(size_t size, const gid_t *list);
+	UWRAP_SYMBOL_ENTRY(getegid);
+	UWRAP_SYMBOL_ENTRY(getgroups);
+	UWRAP_SYMBOL_ENTRY(setgroups);
 #ifdef HAVE_SYSCALL
-	long int (*_libc_syscall)(long int sysno, ...);
+	UWRAP_SYMBOL_ENTRY(syscall);
 #endif
 };
 
@@ -244,7 +300,7 @@ struct uwrap {
 
 	struct {
 		void *handle;
-		struct uwrap_libc_fns fns;
+		struct uwrap_libc_symbols symbols;
 	} libc;
 
 	bool initialised;
@@ -276,7 +332,7 @@ static UWRAP_THREAD struct uwrap_thread *uwrap_tls_id;
 /* The mutex or accessing the id */
 static pthread_mutex_t uwrap_id_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-/* The mutex for accessing the global libc.fns */
+/* The mutex for accessing the global libc.symbols */
 static pthread_mutex_t libc_symbol_binding_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /*********************************************************
@@ -344,7 +400,7 @@ static void *uwrap_load_lib_handle(enum uwrap_lib lib)
 	return handle;
 }
 
-static void *_uwrap_load_lib_function(enum uwrap_lib lib, const char *fn_name)
+static void *_uwrap_bind_symbol(enum uwrap_lib lib, const char *fn_name)
 {
 	void *handle;
 	void *func;
@@ -362,11 +418,11 @@ static void *_uwrap_load_lib_function(enum uwrap_lib lib, const char *fn_name)
 	return func;
 }
 
-#define uwrap_load_lib_function(lib, fn_name) \
+#define uwrap_bind_symbol(lib, sym_name) \
 	UWRAP_LOCK(libc_symbol_binding); \
-	if (uwrap.libc.fns._libc_##fn_name == NULL) { \
-		*(void **) (&uwrap.libc.fns._libc_##fn_name) = \
-			_uwrap_load_lib_function(lib, #fn_name); \
+	if (uwrap.libc.symbols._libc_##sym_name.obj == NULL) { \
+		uwrap.libc.symbols._libc_##sym_name.obj = \
+			_uwrap_bind_symbol(lib, #sym_name); \
 	} \
 	UWRAP_UNLOCK(libc_symbol_binding)
 
@@ -380,130 +436,130 @@ static void *_uwrap_load_lib_function(enum uwrap_lib lib, const char *fn_name)
  */
 static int libc_setuid(uid_t uid)
 {
-	uwrap_load_lib_function(UWRAP_LIBC, setuid);
+	uwrap_bind_symbol(UWRAP_LIBC, setuid);
 
-	return uwrap.libc.fns._libc_setuid(uid);
+	return uwrap.libc.symbols._libc_setuid.f(uid);
 }
 
 static uid_t libc_getuid(void)
 {
-	uwrap_load_lib_function(UWRAP_LIBC, getuid);
+	uwrap_bind_symbol(UWRAP_LIBC, getuid);
 
-	return uwrap.libc.fns._libc_getuid();
+	return uwrap.libc.symbols._libc_getuid.f();
 }
 
 #ifdef HAVE_SETEUID
 static int libc_seteuid(uid_t euid)
 {
-	uwrap_load_lib_function(UWRAP_LIBC, seteuid);
+	uwrap_bind_symbol(UWRAP_LIBC, seteuid);
 
-	return uwrap.libc.fns._libc_seteuid(euid);
+	return uwrap.libc.symbols._libc_seteuid.f(euid);
 }
 #endif
 
 #ifdef HAVE_SETREUID
 static int libc_setreuid(uid_t ruid, uid_t euid)
 {
-	uwrap_load_lib_function(UWRAP_LIBC, setreuid);
+	uwrap_bind_symbol(UWRAP_LIBC, setreuid);
 
-	return uwrap.libc.fns._libc_setreuid(ruid, euid);
+	return uwrap.libc.symbols._libc_setreuid.f(ruid, euid);
 }
 #endif
 
 #ifdef HAVE_SETRESUID
 static int libc_setresuid(uid_t ruid, uid_t euid, uid_t suid)
 {
-	uwrap_load_lib_function(UWRAP_LIBC, setresuid);
+	uwrap_bind_symbol(UWRAP_LIBC, setresuid);
 
-	return uwrap.libc.fns._libc_setresuid(ruid, euid, suid);
+	return uwrap.libc.symbols._libc_setresuid.f(ruid, euid, suid);
 }
 #endif
 
 #ifdef HAVE_GETRESUID
 static int libc_getresuid(uid_t *ruid, uid_t *euid, uid_t *suid)
 {
-	uwrap_load_lib_function(UWRAP_LIBC, getresuid);
+	uwrap_bind_symbol(UWRAP_LIBC, getresuid);
 
-	return uwrap.libc.fns._libc_getresuid(ruid, euid, suid);
+	return uwrap.libc.symbols._libc_getresuid.f(ruid, euid, suid);
 }
 #endif
 
 static uid_t libc_geteuid(void)
 {
-	uwrap_load_lib_function(UWRAP_LIBC, geteuid);
+	uwrap_bind_symbol(UWRAP_LIBC, geteuid);
 
-	return uwrap.libc.fns._libc_geteuid();
+	return uwrap.libc.symbols._libc_geteuid.f();
 }
 
 static int libc_setgid(gid_t gid)
 {
-	uwrap_load_lib_function(UWRAP_LIBC, setgid);
+	uwrap_bind_symbol(UWRAP_LIBC, setgid);
 
-	return uwrap.libc.fns._libc_setgid(gid);
+	return uwrap.libc.symbols._libc_setgid.f(gid);
 }
 
 static gid_t libc_getgid(void)
 {
-	uwrap_load_lib_function(UWRAP_LIBC, getgid);
+	uwrap_bind_symbol(UWRAP_LIBC, getgid);
 
-	return uwrap.libc.fns._libc_getgid();
+	return uwrap.libc.symbols._libc_getgid.f();
 }
 
 #ifdef HAVE_SETEGID
 static int libc_setegid(gid_t egid)
 {
-	uwrap_load_lib_function(UWRAP_LIBC, setegid);
+	uwrap_bind_symbol(UWRAP_LIBC, setegid);
 
-	return uwrap.libc.fns._libc_setegid(egid);
+	return uwrap.libc.symbols._libc_setegid.f(egid);
 }
 #endif
 
 #ifdef HAVE_SETREGID
 static int libc_setregid(gid_t rgid, gid_t egid)
 {
-	uwrap_load_lib_function(UWRAP_LIBC, setregid);
+	uwrap_bind_symbol(UWRAP_LIBC, setregid);
 
-	return uwrap.libc.fns._libc_setregid(rgid, egid);
+	return uwrap.libc.symbols._libc_setregid.f(rgid, egid);
 }
 #endif
 
 #ifdef HAVE_SETRESGID
 static int libc_setresgid(gid_t rgid, gid_t egid, gid_t sgid)
 {
-	uwrap_load_lib_function(UWRAP_LIBC, setresgid);
+	uwrap_bind_symbol(UWRAP_LIBC, setresgid);
 
-	return uwrap.libc.fns._libc_setresgid(rgid, egid, sgid);
+	return uwrap.libc.symbols._libc_setresgid.f(rgid, egid, sgid);
 }
 #endif
 
 #ifdef HAVE_GETRESGID
 static int libc_getresgid(gid_t *rgid, gid_t *egid, gid_t *sgid)
 {
-	uwrap_load_lib_function(UWRAP_LIBC, setresgid);
+	uwrap_bind_symbol(UWRAP_LIBC, setresgid);
 
-	return uwrap.libc.fns._libc_getresgid(rgid, egid, sgid);
+	return uwrap.libc.symbols._libc_getresgid.f(rgid, egid, sgid);
 }
 #endif
 
 static gid_t libc_getegid(void)
 {
-	uwrap_load_lib_function(UWRAP_LIBC, getegid);
+	uwrap_bind_symbol(UWRAP_LIBC, getegid);
 
-	return uwrap.libc.fns._libc_getegid();
+	return uwrap.libc.symbols._libc_getegid.f();
 }
 
 static int libc_getgroups(int size, gid_t list[])
 {
-	uwrap_load_lib_function(UWRAP_LIBC, getgroups);
+	uwrap_bind_symbol(UWRAP_LIBC, getgroups);
 
-	return uwrap.libc.fns._libc_getgroups(size, list);
+	return uwrap.libc.symbols._libc_getgroups.f(size, list);
 }
 
 static int libc_setgroups(size_t size, const gid_t *list)
 {
-	uwrap_load_lib_function(UWRAP_LIBC, setgroups);
+	uwrap_bind_symbol(UWRAP_LIBC, setgroups);
 
-	return uwrap.libc.fns._libc_setgroups(size, list);
+	return uwrap.libc.symbols._libc_setgroups.f(size, list);
 }
 
 #ifdef HAVE_SYSCALL
@@ -514,13 +570,13 @@ static long int libc_vsyscall(long int sysno, va_list va)
 	long int rc;
 	int i;
 
-	uwrap_load_lib_function(UWRAP_LIBC, syscall);
+	uwrap_bind_symbol(UWRAP_LIBC, syscall);
 
 	for (i = 0; i < 8; i++) {
 		args[i] = va_arg(va, long int);
 	}
 
-	rc = uwrap.libc.fns._libc_syscall(sysno,
+	rc = uwrap.libc.symbols._libc_syscall.f(sysno,
 					  args[0],
 					  args[1],
 					  args[2],
@@ -633,6 +689,7 @@ static void uwrap_init(void)
 	pthread_t tid = pthread_self();
 
 	UWRAP_LOCK(uwrap_id);
+
 	if (uwrap.initialised) {
 		struct uwrap_thread *id = uwrap_tls_id;
 		int rc;
