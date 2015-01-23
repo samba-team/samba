@@ -1470,12 +1470,211 @@ WERROR _winbind_LogonControl(struct pipes_struct *p,
 WERROR _winbind_GetForestTrustInformation(struct pipes_struct *p,
 			     struct winbind_GetForestTrustInformation *r)
 {
+	TALLOC_CTX *frame = talloc_stackframe();
+	NTSTATUS status, result;
 	struct winbindd_domain *domain;
+	struct rpc_pipe_client *netlogon_pipe;
+	struct dcerpc_binding_handle *b;
+	bool retry = false;
+	struct lsa_String trusted_domain_name = {};
+	struct lsa_StringLarge trusted_domain_name_l = {};
+	union lsa_TrustedDomainInfo *tdi = NULL;
+	const struct lsa_TrustDomainInfoInfoEx *tdo = NULL;
+	struct lsa_ForestTrustInformation _old_fti = {};
+	struct lsa_ForestTrustInformation *old_fti = NULL;
+	struct lsa_ForestTrustInformation *new_fti = NULL;
+	struct lsa_ForestTrustInformation *merged_fti = NULL;
+	struct lsa_ForestTrustCollisionInfo *collision_info = NULL;
+	bool update_fti = false;
+	struct rpc_pipe_client *local_lsa_pipe;
+	struct policy_handle local_lsa_policy;
+	struct dcerpc_binding_handle *local_lsa = NULL;
 
 	domain = wb_child_domain();
 	if (domain == NULL) {
+		TALLOC_FREE(frame);
 		return WERR_NO_SUCH_DOMAIN;
 	}
 
-	return WERR_NOT_SUPPORTED;
+	/*
+	 * checking for domain->internal and domain->primary
+	 * makes sure we only do some work when running as DC.
+	 */
+
+	if (domain->internal) {
+		TALLOC_FREE(frame);
+		return WERR_NO_SUCH_DOMAIN;
+	}
+
+	if (domain->primary) {
+		TALLOC_FREE(frame);
+		return WERR_NO_SUCH_DOMAIN;
+	}
+
+	trusted_domain_name.string = domain->name;
+	trusted_domain_name_l.string = domain->name;
+
+	status = open_internal_lsa_conn(frame, &local_lsa_pipe,
+					&local_lsa_policy);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("%s:%s: open_internal_lsa_conn() failed - %s\n",
+			 __location__, __func__, nt_errstr(status)));
+		TALLOC_FREE(frame);
+		return WERR_INTERNAL_ERROR;
+	}
+	local_lsa = local_lsa_pipe->binding_handle;
+
+	status = dcerpc_lsa_QueryTrustedDomainInfoByName(local_lsa, frame,
+						&local_lsa_policy,
+						&trusted_domain_name,
+						LSA_TRUSTED_DOMAIN_INFO_INFO_EX,
+						&tdi, &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("%s:%s: local_lsa.QueryTrustedDomainInfoByName(%s) failed - %s\n",
+			 __location__, __func__, domain->name, nt_errstr(status)));
+		TALLOC_FREE(frame);
+		return WERR_INTERNAL_ERROR;
+	}
+	if (NT_STATUS_EQUAL(result, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+		DEBUG(1,("%s:%s: domain[%s] not found via LSA, might be removed already.\n",
+			 __location__, __func__, domain->name));
+		TALLOC_FREE(frame);
+		return WERR_NO_SUCH_DOMAIN;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(0,("%s:%s: local_lsa.QueryTrustedDomainInfoByName(%s) returned %s\n",
+			 __location__, __func__, domain->name, nt_errstr(result)));
+		TALLOC_FREE(frame);
+		return WERR_INTERNAL_ERROR;
+	}
+	if (tdi == NULL) {
+		DEBUG(0,("%s:%s: local_lsa.QueryTrustedDomainInfoByName() "
+			 "returned no trusted domain information\n",
+			 __location__, __func__));
+		TALLOC_FREE(frame);
+		return WERR_INTERNAL_ERROR;
+	}
+
+	tdo = &tdi->info_ex;
+
+	if (!(tdo->trust_attributes & LSA_TRUST_ATTRIBUTE_FOREST_TRANSITIVE)) {
+		DEBUG(2,("%s: tdo[%s/%s] is no forest trust attributes[0x%08X]\n",
+			 __func__, tdo->netbios_name.string,
+			 tdo->domain_name.string,
+			 (unsigned)tdo->trust_attributes));
+		TALLOC_FREE(frame);
+		return WERR_NO_SUCH_DOMAIN;
+	}
+
+	if (r->in.flags & ~DS_GFTI_UPDATE_TDO) {
+		TALLOC_FREE(frame);
+		return WERR_INVALID_FLAGS;
+	}
+
+reconnect:
+	status = cm_connect_netlogon(domain, &netlogon_pipe);
+	reset_cm_connection_on_error(domain, status);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND)) {
+		status = NT_STATUS_NO_LOGON_SERVERS;
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(3, ("could not open handle to NETLOGON pipe: %s\n",
+			  nt_errstr(status)));
+		TALLOC_FREE(frame);
+		return ntstatus_to_werror(status);
+	}
+	b = netlogon_pipe->binding_handle;
+
+	status = netlogon_creds_cli_GetForestTrustInformation(domain->conn.netlogon_creds,
+							      b, p->mem_ctx,
+							      &new_fti);
+	if (!NT_STATUS_IS_OK(status)) {
+		if (!retry && dcerpc_binding_handle_is_connected(b)) {
+			invalidate_cm_connection(domain);
+			retry = true;
+			goto reconnect;
+		}
+		DEBUG(2, ("netlogon_creds_cli_GetForestTrustInformation(%s) failed: %s\n",
+			  domain->name, nt_errstr(status)));
+		TALLOC_FREE(frame);
+		return ntstatus_to_werror(status);
+	}
+
+	*r->out.forest_trust_info = new_fti;
+
+	if (r->in.flags & DS_GFTI_UPDATE_TDO) {
+		update_fti = true;
+	}
+
+	status = dcerpc_lsa_lsaRQueryForestTrustInformation(local_lsa, frame,
+						&local_lsa_policy,
+						&trusted_domain_name,
+						LSA_FOREST_TRUST_DOMAIN_INFO,
+						&old_fti, &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("%s:%s: local_lsa.lsaRQueryForestTrustInformation(%s) failed %s\n",
+			 __location__, __func__, domain->name, nt_errstr(status)));
+		TALLOC_FREE(frame);
+		return WERR_INTERNAL_ERROR;
+	}
+	if (NT_STATUS_EQUAL(result, NT_STATUS_NOT_FOUND)) {
+		DEBUG(2,("%s: no forest trust information available for domain[%s] yet.\n",
+			  __func__, domain->name));
+		update_fti = true;
+		old_fti = &_old_fti;
+		result = NT_STATUS_OK;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(0,("%s:%s: local_lsa.lsaRQueryForestTrustInformation(%s) returned %s\n",
+			 __location__, __func__, domain->name, nt_errstr(result)));
+		TALLOC_FREE(frame);
+		return WERR_INTERNAL_ERROR;
+	}
+
+	if (old_fti == NULL) {
+		DEBUG(0,("%s:%s: local_lsa.lsaRQueryForestTrustInformation() "
+			 "returned success without returning forest trust information\n",
+			 __location__, __func__));
+		TALLOC_FREE(frame);
+		return WERR_INTERNAL_ERROR;
+	}
+
+	if (!update_fti) {
+		goto done;
+	}
+
+	status = dsdb_trust_merge_forest_info(frame, tdo, old_fti, new_fti,
+					      &merged_fti);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("%s:%s: dsdb_trust_merge_forest_info(%s) failed %s\n",
+			 __location__, __func__, domain->name, nt_errstr(status)));
+		TALLOC_FREE(frame);
+		return ntstatus_to_werror(status);
+	}
+
+	status = dcerpc_lsa_lsaRSetForestTrustInformation(local_lsa, frame,
+						&local_lsa_policy,
+						&trusted_domain_name_l,
+						LSA_FOREST_TRUST_DOMAIN_INFO,
+						merged_fti,
+						0, /* check_only=0 => store it! */
+						&collision_info,
+						&result);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("%s:%s: local_lsa.lsaRSetForestTrustInformation(%s) failed %s\n",
+			 __location__, __func__, domain->name, nt_errstr(status)));
+		TALLOC_FREE(frame);
+		return WERR_INTERNAL_ERROR;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(0,("%s:%s: local_lsa.lsaRSetForestTrustInformation(%s) returned %s\n",
+			 __location__, __func__, domain->name, nt_errstr(result)));
+		TALLOC_FREE(frame);
+		return ntstatus_to_werror(result);
+	}
+
+done:
+	DEBUG(5, ("_winbind_GetForestTrustInformation succeeded\n"));
+	TALLOC_FREE(frame);
+	return WERR_OK;
 }
