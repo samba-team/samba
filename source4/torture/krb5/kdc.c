@@ -437,6 +437,9 @@ static bool torture_krb5_as_req_win2k(struct torture_context *tctx)
 
 static bool torture_krb5_as_req_pac_request(struct torture_context *tctx)
 {
+	if (torture_setting_bool(test_context->tctx, "expect_rodc", false)) {
+		return torture_skip(tctx, "This test needs further investigation in the RODC case against a Windows DC, in particular with non-cached users");
+	}
 	return torture_krb5_as_req_creds(tctx, cmdline_credentials, TORTURE_KRB5_TEST_PAC_REQUEST);
 }
 
