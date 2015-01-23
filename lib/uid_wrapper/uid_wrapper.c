@@ -236,8 +236,17 @@ struct uwrap {
 	bool initialised;
 	bool enabled;
 
+	uid_t ruid;
+	uid_t euid;
+	uid_t suid;
+
+	gid_t rgid;
+	gid_t egid;
+	gid_t sgid;
+
+	/* Real uid and gid of user who run uid wrapper */
 	uid_t myuid;
-	uid_t mygid;
+	gid_t mygid;
 
 	struct uwrap_thread *ids;
 };
@@ -533,8 +542,13 @@ static int uwrap_new_id(pthread_t tid, bool do_alloc)
 	id->tid = tid;
 	id->dead = false;
 
-	id->ruid = id->euid = id->suid = uwrap.myuid;
-	id->rgid = id->egid = id->sgid = uwrap.mygid;
+	id->ruid = uwrap.ruid;
+	id->euid = uwrap.euid;
+	id->suid = uwrap.suid;
+
+	id->rgid = uwrap.rgid;
+	id->egid = uwrap.egid;
+	id->sgid = uwrap.sgid;
 
 	id->ngroups = 1;
 	id->groups[0] = uwrap.mygid;
@@ -612,13 +626,15 @@ static void uwrap_init(void)
 		const char *root = getenv("UID_WRAPPER_ROOT");
 		int rc;
 
+		uwrap.myuid = libc_geteuid();
+		uwrap.mygid = libc_getegid();
 		/* put us in one group */
 		if (root != NULL && root[0] == '1') {
-			uwrap.myuid = 0;
-			uwrap.mygid = 0;
+			uwrap.ruid = uwrap.euid = uwrap.suid = 0;
+			uwrap.rgid = uwrap.egid = uwrap.sgid = 0;
 		} else {
-			uwrap.myuid = libc_geteuid();
-			uwrap.mygid = libc_getegid();
+			uwrap.ruid = uwrap.euid = uwrap.suid = libc_geteuid();
+			uwrap.rgid = uwrap.egid = uwrap.sgid = libc_getegid();
 		}
 
 		rc = uwrap_new_id(tid, true);
@@ -704,6 +720,20 @@ static int uwrap_setresuid(uid_t ruid, uid_t euid, uid_t suid)
 			id->suid = suid;
 		}
 	}
+
+	/* Reflect changes in thread to main process. */
+	if (ruid != (uid_t)-1) {
+		uwrap.ruid = ruid;
+	}
+
+	if (euid != (uid_t)-1) {
+		uwrap.euid = euid;
+	}
+
+	if (suid != (uid_t)-1) {
+		uwrap.suid = suid;
+	}
+
 	UWRAP_UNLOCK(uwrap_id);
 
 	return 0;
@@ -876,6 +906,19 @@ static int uwrap_setresgid(gid_t rgid, gid_t egid, gid_t sgid)
 		if (sgid != (gid_t)-1) {
 			id->sgid = sgid;
 		}
+	}
+
+	/* Reflect changes in thread to main process. */
+	if (rgid != (gid_t)-1) {
+		uwrap.rgid = rgid;
+	}
+
+	if (egid != (gid_t)-1) {
+		uwrap.egid = egid;
+	}
+
+	if (sgid != (gid_t)-1) {
+		uwrap.sgid = sgid;
 	}
 	UWRAP_UNLOCK(uwrap_id);
 
