@@ -32,6 +32,7 @@
 #include "dsdb/common/util.h"
 #include "libcli/security/session.h"
 #include "libcli/lsarpc/util_lsarpc.h"
+#include "lib/messaging/irpc.h"
 
 /*
   this type allows us to distinguish handle types
@@ -966,6 +967,9 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomain_base(struct dcesrv_call_state *dc
 	int ret;
 	NTSTATUS nt_status;
 	struct ldb_context *sam_ldb;
+	struct server_id *server_ids = NULL;
+	uint32_t num_server_ids = 0;
+	NTSTATUS status;
 
 	DCESRV_PULL_HANDLE(policy_handle, r->in.policy_handle, LSA_HANDLE_POLICY);
 	ZERO_STRUCTP(r->out.trustdom_handle);
@@ -1183,6 +1187,26 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomain_base(struct dcesrv_call_state *dc
 	if (ret != LDB_SUCCESS) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
+
+	/*
+	 * Notify winbindd that we have a new trust
+	 */
+	status = irpc_servers_byname(dce_call->msg_ctx,
+				     mem_ctx,
+				     "winbind_server",
+				     &num_server_ids, &server_ids);
+	if (NT_STATUS_IS_OK(status) && num_server_ids >= 1) {
+		enum ndr_err_code ndr_err;
+		DATA_BLOB b = {};
+
+		ndr_err = ndr_push_struct_blob(&b, mem_ctx, r->in.info,
+			(ndr_push_flags_fn_t)ndr_push_lsa_TrustDomainInfoInfoEx);
+		if (NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			imessaging_send(dce_call->msg_ctx, server_ids[0],
+				MSG_WINBIND_NEW_TRUSTED_DOMAIN, &b);
+		}
+	}
+	TALLOC_FREE(server_ids);
 
 	handle = dcesrv_handle_new(dce_call->context, LSA_HANDLE_TRUSTED_DOMAIN);
 	if (!handle) {
