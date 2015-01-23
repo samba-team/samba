@@ -1,3 +1,11 @@
+23 Jan 2015
+
+=== WARNING ===
+
+This PAM module is deprecated and will be removed from the Samba source code
+with the release of Samba 4.3. If you are still using this module please
+migrate to pam_winbind or another suiteable solution.
+
 25 Mar 2001
 
 pam_smbpass is a PAM module which can be used on conforming systems to
