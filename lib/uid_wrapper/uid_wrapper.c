@@ -234,6 +234,8 @@ struct uwrap_thread {
 };
 
 struct uwrap {
+	pthread_t tid;
+
 	struct {
 		void *handle;
 		struct uwrap_libc_fns fns;
@@ -587,6 +589,9 @@ static void uwrap_thread_child(void)
 {
 	uwrap.enabled = true;
 
+	/* We need to update to the new tid if we fork */
+	uwrap.tid = pthread_self();
+
 	UWRAP_UNLOCK(libc_symbol_binding);
 	UWRAP_UNLOCK(uwrap_id);
 }
@@ -649,6 +654,7 @@ static void uwrap_init(void)
 			exit(-1);
 		}
 
+		uwrap.tid = tid;
 		uwrap.enabled = true;
 
 		UWRAP_LOG(UWRAP_LOG_DEBUG,
@@ -695,6 +701,22 @@ static int uwrap_setresuid_thread(uid_t ruid, uid_t euid, uid_t suid)
 	if (suid != (uid_t)-1) {
 		id->suid = suid;
 	}
+
+	/* Check If syscall is called from main thread. */
+	if (pthread_equal(id->tid, uwrap.tid)) {
+		if (ruid != (uid_t)-1) {
+		    uwrap.ruid = ruid;
+		}
+
+		if (euid != (uid_t)-1) {
+		    uwrap.euid = euid;
+		}
+
+		if (suid != (uid_t)-1) {
+		    uwrap.suid = suid;
+		}
+	}
+
 	UWRAP_UNLOCK(uwrap_id);
 
 	return 0;
@@ -881,6 +903,20 @@ static int uwrap_setresgid_thread(gid_t rgid, gid_t egid, gid_t sgid)
 
 	if (sgid != (gid_t)-1) {
 		id->sgid = sgid;
+	}
+
+	if (pthread_equal(id->tid, uwrap.tid)) {
+		if (rgid != (gid_t)-1) {
+			uwrap.rgid = rgid;
+		}
+
+		if (egid != (gid_t)-1) {
+			uwrap.egid = egid;
+		}
+
+		if (sgid != (gid_t)-1) {
+			uwrap.sgid = sgid;
+		}
 	}
 	UWRAP_UNLOCK(uwrap_id);
 
