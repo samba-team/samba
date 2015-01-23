@@ -36,18 +36,24 @@
 #define TEST_UPPER_USERNAME   0x0000008
 #define TEST_NETBIOS_REALM    0x0000010
 #define TEST_WIN2K            0x0000020
-#define TEST_ALL              0x000003F
+#define TEST_UPN              0x0000040
+#define TEST_ALL              0x000007F
 
 struct test_data {
 	struct smb_krb5_context *smb_krb5_context;
 	const char *realm;
 	const char *real_realm;
+	const char *real_domain;
 	const char *username;
+	const char *real_username;
 	bool canonicalize;
 	bool enterprise;
 	bool upper_realm;
 	bool upper_username;
+	bool netbios_realm;
 	bool win2k;
+	bool upn;
+	bool other_upn_suffix;
 };	
 	
 struct torture_krb5_context {
@@ -127,8 +133,13 @@ static bool torture_krb5_post_recv_test(struct torture_krb5_context *test_contex
 					 "decode_AS_REP failed");
 		torture_assert_int_equal(test_context->tctx, used, recv_buf->length, "length mismatch");
 		torture_assert_int_equal(test_context->tctx, error.pvno, 5, "Got wrong error.pvno");
-		torture_assert_int_equal(test_context->tctx, error.error_code, KRB5KDC_ERR_PREAUTH_REQUIRED - KRB5KDC_ERR_NONE,
-					 "Got wrong error.error_code");
+		if (test_context->test_data->netbios_realm && test_context->test_data->upn) {
+			torture_assert_int_equal(test_context->tctx, error.error_code, KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN - KRB5KDC_ERR_NONE,
+						 "Got wrong error.error_code");
+		} else {
+			torture_assert_int_equal(test_context->tctx, error.error_code, KRB5KDC_ERR_PREAUTH_REQUIRED - KRB5KDC_ERR_NONE,
+						 "Got wrong error.error_code");
+		}
 		free_KRB_ERROR(&error);
 	} else if ((decode_KRB_ERROR(recv_buf->data, recv_buf->length, &error, &used) == 0)
 		   && (test_context->packet_count == 1)) {
@@ -273,6 +284,57 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 	bool ok;
 	krb5_creds my_creds;
 	
+	const char *upn = torture_setting_string(tctx, "krb5-upn", "");
+
+	/* 
+	 * If we have not passed a UPN on the command line,
+	 * then skip the UPN tests.
+	 */
+	if (test_data->upn && upn[0] == '\0') {
+		torture_skip(tctx, "This test needs a UPN specified as --option=torture:krb5-upn=user@example.com to run");
+	}
+
+	if (test_data->netbios_realm) {
+		test_data->realm = test_data->real_domain;
+	} else {
+		test_data->realm = test_data->real_realm;
+	}
+
+	if (test_data->upn) {
+		char *p;
+		test_data->username = talloc_strdup(test_data, upn);
+		p = strchr(test_data->username, '@');
+		if (p) {
+			*p = '\0';
+			p++;
+		}
+		/* 
+		 * Test the UPN behaviour carefully.  We can
+		 * test in two different modes, depending on
+		 * what UPN has been set up for us.
+		 *
+		 * If the UPN is in our realm, then we do all the tests with this name also.  
+		 *
+		 * If the UPN is not in our realm, then we
+		 * expect the tests that replace the realm to
+		 * fail (as it won't match)
+		 */
+		if (strcasecmp(p, test_data->real_realm) != 0) {
+			test_data->other_upn_suffix = true;
+		} else {
+			test_data->other_upn_suffix = false;
+		}
+
+		/* 
+		 * This lets us test the combination of the UPN prefix
+		 * with a valid domain, without adding even more
+		 * combinations 
+		 */
+		if (test_data->netbios_realm == false) {
+			test_data->realm = p;
+		}
+	}
+
 	ok = torture_krb5_init_context_canon(tctx, test_data, &smb_krb5_context);
 	torture_assert(tctx, ok, "torture_krb5_init_context failed");
 	
@@ -303,7 +365,7 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 	 * fixed UPPER case realm, but the as-sent username
 	 */
 	if (test_data->canonicalize) {
-		expected_principal_string = talloc_asprintf(test_data, "%s@%s", test_data->username, upper_real_realm);
+		expected_principal_string = talloc_asprintf(test_data, "%s@%s", test_data->real_username, upper_real_realm);
 	} else if (test_data->enterprise) {
 		expected_principal_string = principal_string;
 	} else {
@@ -313,6 +375,9 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 	if (test_data->enterprise) {
 		principal_flags = KRB5_PRINCIPAL_PARSE_ENTERPRISE;
 	} else {
+		if (test_data->upn && test_data->other_upn_suffix) {
+			torture_skip(tctx, "UPN test for UPN with other UPN suffix only runs with enterprise principals");
+		}
 		principal_flags = 0;
 	}
 
@@ -355,12 +420,18 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 					     NULL, krb_options);
 	krb5_get_init_creds_opt_free(smb_krb5_context->krb5_context, krb_options);
 	
-	assertion_message = talloc_asprintf(tctx,
-					    "krb5_get_init_creds_password for %s failed: %s",
-					    principal_string,
-					    smb_get_krb5_error_message(smb_krb5_context->krb5_context, k5ret, tctx));
-	torture_assert_int_equal(tctx, k5ret, 0, assertion_message);
-
+	if (test_data->netbios_realm && test_data->upn) {
+		torture_assert_int_equal(tctx, k5ret, KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN, "Got wrong error_code from krb5_get_init_creds_password");
+		/* We can't proceed with more checks */
+		return true;
+	} else {
+		assertion_message = talloc_asprintf(tctx,
+						    "krb5_get_init_creds_password for %s failed: %s",
+						    principal_string,
+						    smb_get_krb5_error_message(smb_krb5_context->krb5_context, k5ret, tctx));
+		torture_assert_int_equal(tctx, k5ret, 0, assertion_message);
+	}
+	
 	/*
 	 * Assert that the reply was with the correct type of
 	 * principal, depending on the flags we set
@@ -440,27 +511,28 @@ struct torture_suite *torture_krb5_canon(TALLOC_CTX *mem_ctx)
 	suite->description = talloc_strdup(suite, "Kerberos Canonicalisation tests");
 
 	for (i = 0; i < TEST_ALL; i++) {
-		char *name = talloc_asprintf(suite, "%s.%s.%s.%s.%s.%s",
+		char *name = talloc_asprintf(suite, "%s.%s.%s.%s.%s.%s.%s",
 					     (i & TEST_CANONICALIZE) ? "canon" : "no-canon",
 					     (i & TEST_ENTERPRISE) ? "enterprise" : "no-enterprise",
 					     (i & TEST_UPPER_REALM) ? "uc-realm" : "lc-realm",
 					     (i & TEST_UPPER_USERNAME) ? "uc-user" : "lc-user",
 					     (i & TEST_NETBIOS_REALM) ? "netbios-realm" : "krb5-realm",
-					     (i & TEST_WIN2K) ? "win2k" : "no-win2k");
+					     (i & TEST_WIN2K) ? "win2k" : "no-win2k",
+					     (i & TEST_UPN) ? "upn" : "no-upn");
 
-		struct test_data *test_data = talloc(suite, struct test_data);
-		if (i & TEST_NETBIOS_REALM) {
-			test_data->realm = cli_credentials_get_domain(cmdline_credentials);
-		} else {
-			test_data->realm = cli_credentials_get_realm(cmdline_credentials);
-		}
+		struct test_data *test_data = talloc_zero(suite, struct test_data);
+
 		test_data->real_realm = cli_credentials_get_realm(cmdline_credentials);
+		test_data->real_domain = cli_credentials_get_domain(cmdline_credentials);
 		test_data->username = cli_credentials_get_username(cmdline_credentials);
+		test_data->real_username = cli_credentials_get_username(cmdline_credentials);
 		test_data->canonicalize = (i & TEST_CANONICALIZE) != 0;
 		test_data->enterprise = (i & TEST_ENTERPRISE) != 0;
 		test_data->upper_realm = (i & TEST_UPPER_REALM) != 0;
 		test_data->upper_username = (i & TEST_UPPER_USERNAME) != 0;
+		test_data->netbios_realm = (i & TEST_NETBIOS_REALM) != 0;
 		test_data->win2k = (i & TEST_WIN2K) != 0;
+		test_data->upn = (i & TEST_UPN) != 0;
 		torture_suite_add_simple_tcase_const(suite, name, torture_krb5_as_req_canon,
 						     test_data);
 						     
