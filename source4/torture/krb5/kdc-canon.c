@@ -35,7 +35,8 @@
 #define TEST_UPPER_REALM      0x0000004
 #define TEST_UPPER_USERNAME   0x0000008
 #define TEST_NETBIOS_REALM    0x0000010
-#define TEST_ALL              0x000001F
+#define TEST_WIN2K            0x0000020
+#define TEST_ALL              0x000003F
 
 struct test_data {
 	struct smb_krb5_context *smb_krb5_context;
@@ -46,6 +47,7 @@ struct test_data {
 	bool enterprise;
 	bool upper_realm;
 	bool upper_username;
+	bool win2k;
 };	
 	
 struct torture_krb5_context {
@@ -344,6 +346,10 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 				 krb5_get_init_creds_opt_set_canonicalize(smb_krb5_context->krb5_context, krb_options, test_data->canonicalize),
 				 0, "krb5_get_init_creds_opt_set_canonicalize failed");
 
+	torture_assert_int_equal(tctx,
+				 krb5_get_init_creds_opt_set_win2k(smb_krb5_context->krb5_context, krb_options, test_data->win2k),
+				 0, "krb5_get_init_creds_opt_set_win2k failed");
+
 	k5ret = krb5_get_init_creds_password(smb_krb5_context->krb5_context, &my_creds, principal,
 					     password, NULL, NULL, 0,
 					     NULL, krb_options);
@@ -410,12 +416,13 @@ struct torture_suite *torture_krb5_canon(TALLOC_CTX *mem_ctx)
 	suite->description = talloc_strdup(suite, "Kerberos Canonicalisation tests");
 
 	for (i = 0; i < TEST_ALL; i++) {
-		char *name = talloc_asprintf(suite, "%s.%s.%s.%s.%s",
+		char *name = talloc_asprintf(suite, "%s.%s.%s.%s.%s.%s",
 					     (i & TEST_CANONICALIZE) ? "canon" : "no-canon",
 					     (i & TEST_ENTERPRISE) ? "enterprise" : "no-enterprise",
 					     (i & TEST_UPPER_REALM) ? "uc-realm" : "lc-realm",
 					     (i & TEST_UPPER_USERNAME) ? "uc-user" : "lc-user",
-					     (i & TEST_NETBIOS_REALM) ? "netbios-realm" : "krb5-realm");
+					     (i & TEST_NETBIOS_REALM) ? "netbios-realm" : "krb5-realm",
+					     (i & TEST_WIN2K) ? "win2k" : "no-win2k");
 
 		struct test_data *test_data = talloc(suite, struct test_data);
 		if (i & TEST_NETBIOS_REALM) {
@@ -429,6 +436,7 @@ struct torture_suite *torture_krb5_canon(TALLOC_CTX *mem_ctx)
 		test_data->enterprise = (i & TEST_ENTERPRISE) != 0;
 		test_data->upper_realm = (i & TEST_UPPER_REALM) != 0;
 		test_data->upper_username = (i & TEST_UPPER_USERNAME) != 0;
+		test_data->win2k = (i & TEST_WIN2K) != 0;
 		torture_suite_add_simple_tcase_const(suite, name, torture_krb5_as_req_canon,
 						     test_data);
 						     

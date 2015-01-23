@@ -33,7 +33,6 @@
 
 enum torture_krb5_test {
 	TORTURE_KRB5_TEST_PLAIN,
-	TORTURE_KRB5_TEST_WIN2K,
 	TORTURE_KRB5_TEST_PAC_REQUEST,
 	TORTURE_KRB5_TEST_BREAK_PW,
 	TORTURE_KRB5_TEST_CLOCK_SKEW,
@@ -62,7 +61,6 @@ static bool torture_krb5_pre_send_test(struct torture_krb5_context *test_context
 	switch (test_context->test)
 	{
 	case TORTURE_KRB5_TEST_PLAIN:
-	case TORTURE_KRB5_TEST_WIN2K:
 	case TORTURE_KRB5_TEST_PAC_REQUEST:
 	case TORTURE_KRB5_TEST_BREAK_PW:
 	case TORTURE_KRB5_TEST_CLOCK_SKEW:
@@ -91,7 +89,6 @@ static bool torture_krb5_post_recv_test(struct torture_krb5_context *test_contex
 	switch (test_context->test)
 	{
 	case TORTURE_KRB5_TEST_PLAIN:
-	case TORTURE_KRB5_TEST_WIN2K:
 		if (test_context->packet_count == 0) {
 			torture_assert_int_equal(test_context->tctx,
 						 decode_KRB_ERROR(recv_buf->data, recv_buf->length, &error, &used), 0,
@@ -345,16 +342,6 @@ static bool torture_krb5_as_req_creds(struct torture_context *tctx,
 	case TORTURE_KRB5_TEST_PLAIN:
 		break;
 
-	case TORTURE_KRB5_TEST_WIN2K:
-		torture_assert_int_equal(tctx,
-					 krb5_get_init_creds_opt_alloc(smb_krb5_context->krb5_context, &krb_options),
-					 0, "krb5_get_init_creds_opt_alloc failed");
-		
-		torture_assert_int_equal(tctx,
-					 krb5_get_init_creds_opt_set_win2k(smb_krb5_context->krb5_context, krb_options, true),
-					 0, "krb5_get_init_creds_opt_set_win2k failed");
-		break;
-		
 	case TORTURE_KRB5_TEST_PAC_REQUEST:
 		torture_assert_int_equal(tctx,
 					 krb5_get_init_creds_opt_alloc(smb_krb5_context->krb5_context, &krb_options),
@@ -385,7 +372,6 @@ static bool torture_krb5_as_req_creds(struct torture_context *tctx,
 	switch (test)
 	{
 	case TORTURE_KRB5_TEST_PLAIN:
-	case TORTURE_KRB5_TEST_WIN2K:
 	case TORTURE_KRB5_TEST_PAC_REQUEST:
 		torture_assert_int_equal(tctx, k5ret, 0, "krb5_get_init_creds_password failed");
 		break;
@@ -430,11 +416,6 @@ static bool torture_krb5_as_req_cmdline(struct torture_context *tctx)
 	return torture_krb5_as_req_creds(tctx, cmdline_credentials, TORTURE_KRB5_TEST_PLAIN);
 }
 
-static bool torture_krb5_as_req_win2k(struct torture_context *tctx)
-{
-	return torture_krb5_as_req_creds(tctx, cmdline_credentials, TORTURE_KRB5_TEST_WIN2K);
-}
-
 static bool torture_krb5_as_req_pac_request(struct torture_context *tctx)
 {
 	if (torture_setting_bool(tctx, "expect_rodc", false)) {
@@ -462,9 +443,6 @@ NTSTATUS torture_krb5_init(void)
 
 	torture_suite_add_simple_test(kdc_suite, "as-req-cmdline", 
 				      torture_krb5_as_req_cmdline);
-
-	torture_suite_add_simple_test(kdc_suite, "as-req-win2k", 
-				      torture_krb5_as_req_win2k);
 
 	torture_suite_add_simple_test(kdc_suite, "as-req-pac-request", 
 				      torture_krb5_as_req_pac_request);
