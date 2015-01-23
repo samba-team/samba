@@ -29,7 +29,7 @@
 
 #define DO_STRUCT_REQ_REP_EXT(op,req,rep,expected,strict,warnaction,cmt) do { \
 	NSS_STATUS __got, __expected = (expected); \
-	__got = winbindd_request_response(op, req, rep); \
+	__got = winbindd_request_response(NULL, op, req, rep); \
 	if (__got != __expected) { \
 		const char *__cmt = (cmt); \
 		if (strict) { \
