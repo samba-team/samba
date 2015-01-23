@@ -639,7 +639,37 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 	 */
 
 	entry_ex->entry.principal = malloc(sizeof(*(entry_ex->entry.principal)));
-	if (ent_type == SAMBA_KDC_ENT_TYPE_ANY && principal == NULL) {
+	if (ent_type == SAMBA_KDC_ENT_TYPE_KRBTGT) {
+		ret = krb5_copy_principal(context, principal, &entry_ex->entry.principal);
+		if (ret) {
+			return ret;
+		}
+
+		/*
+		 * Windows seems to canonicalize the principal
+		 * in a TGS REP even if the client did not specify
+		 * the canonicalize flag.
+		 */
+		if (flags & (HDB_F_CANON|HDB_F_FOR_TGS_REQ)) {
+			/* When requested to do so, ensure that the
+			 * both realm values in the principal are set
+			 * to the upper case, canonical realm */
+			free(entry_ex->entry.principal->name.name_string.val[1]);
+			entry_ex->entry.principal->name.name_string.val[1] = strdup(lpcfg_realm(lp_ctx));
+			if (!entry_ex->entry.principal->name.name_string.val[1]) {
+				ret = ENOMEM;
+				krb5_set_error_message(context, ret, "samba_kdc_fetch: strdup() failed!");
+				return ret;
+			}
+		}
+		/* 
+		 * this has to be with malloc(), and appears to be
+		 * required regardless of the canonicalize flag from
+		 * the client 
+		 */
+		krb5_principal_set_realm(context, entry_ex->entry.principal, lpcfg_realm(lp_ctx));
+
+	} else if (ent_type == SAMBA_KDC_ENT_TYPE_ANY && principal == NULL) {
 		krb5_make_principal(context, &entry_ex->entry.principal, lpcfg_realm(lp_ctx), samAccountName, NULL);
 	} else if (flags & HDB_F_CANON) {
 		krb5_make_principal(context, &entry_ex->entry.principal, lpcfg_realm(lp_ctx), samAccountName, NULL);
@@ -1366,30 +1396,6 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 					       "samba_kdc_fetch: could not find KRBTGT number %u in DB!",
 					       (unsigned)(krbtgt_number));
 			return HDB_ERR_NOENTRY;
-		}
-
-		/*
-		 * Windows seems to canonicalize the principal
-		 * in a TGS REP even if the client did not specify
-		 * the canonicalize flag.
-		 */
-		if (flags & (HDB_F_CANON|HDB_F_FOR_TGS_REQ)) {
-			ret = krb5_copy_principal(context, principal, &alloc_principal);
-			if (ret) {
-				return ret;
-			}
-
-			/* When requested to do so, ensure that the
-			 * both realm values in the principal are set
-			 * to the upper case, canonical realm */
-			free(alloc_principal->name.name_string.val[1]);
-			alloc_principal->name.name_string.val[1] = strdup(lpcfg_realm(lp_ctx));
-			if (!alloc_principal->name.name_string.val[1]) {
-				ret = ENOMEM;
-				krb5_set_error_message(context, ret, "samba_kdc_fetch: strdup() failed!");
-				return ret;
-			}
-			principal = alloc_principal;
 		}
 
 		ret = samba_kdc_message2entry(context, kdc_db_ctx, mem_ctx,
