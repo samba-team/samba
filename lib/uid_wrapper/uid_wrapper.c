@@ -656,6 +656,7 @@ static void uwrap_pthread_exit(void *retval)
 	if (id == NULL) {
 		UWRAP_UNLOCK(uwrap_id);
 		libpthread_pthread_exit(retval);
+		return;
 	}
 
 	UWRAP_DLIST_REMOVE(uwrap.ids, id);
