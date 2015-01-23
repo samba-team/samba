@@ -48,6 +48,14 @@ struct torture_krb5_context {
 	AS_REP as_rep;
 };
 
+/*
+ * Confirm that the outgoing packet meets certain expectations.  This
+ * should be extended to further assert the correct and expected
+ * behaviour of the krb5 libs, so we know what we are sending to the
+ * server.
+ *
+ */
+
 static bool torture_krb5_pre_send_test(struct torture_krb5_context *test_context, const krb5_data *send_buf)
 {
 	size_t used;
@@ -67,6 +75,14 @@ static bool torture_krb5_pre_send_test(struct torture_krb5_context *test_context
 	}
 	return true;
 }
+
+/*
+ * Confirm that the incoming packet from the KDC meets certain
+ * expectations.  This uses a switch and the packet count to work out
+ * what test we are in, and where in the test we are, so we can assert
+ * on the expected reply packets from the KDC.
+ *
+ */
 
 static bool torture_krb5_post_recv_test(struct torture_krb5_context *test_context, const krb5_data *recv_buf)
 {
@@ -120,6 +136,10 @@ static bool torture_krb5_post_recv_test(struct torture_krb5_context *test_contex
 		torture_assert(test_context->tctx, test_context->packet_count < 3, "too many packets");
 		free_AS_REQ(&test_context->as_req);
 		break;
+
+		/* 
+		 * Confirm correct error codes when we ask for the PAC.  This behaviour is rather odd...
+		 */
 	case TORTURE_KRB5_TEST_PAC_REQUEST:
 		if (test_context->packet_count == 0) {
 			torture_assert_int_equal(test_context->tctx,
@@ -157,6 +177,10 @@ static bool torture_krb5_post_recv_test(struct torture_krb5_context *test_contex
 		torture_assert(test_context->tctx, test_context->packet_count < 3, "too many packets");
 		free_AS_REQ(&test_context->as_req);
 		break;
+
+		/* 
+		 * Confirm correct error codes when we deliberatly send the wrong password
+		 */
 	case TORTURE_KRB5_TEST_BREAK_PW:
 		if (test_context->packet_count == 0) {
 			torture_assert_int_equal(test_context->tctx,
@@ -180,6 +204,10 @@ static bool torture_krb5_post_recv_test(struct torture_krb5_context *test_contex
 		torture_assert(test_context->tctx, test_context->packet_count < 2, "too many packets");
 		free_AS_REQ(&test_context->as_req);
 		break;
+
+		/* 
+		 * Confirm correct error codes when we deliberatly skew the client clock
+		 */
 	case TORTURE_KRB5_TEST_CLOCK_SKEW:
 		if (test_context->packet_count == 0) {
 			torture_assert_int_equal(test_context->tctx,
@@ -207,6 +235,21 @@ static bool torture_krb5_post_recv_test(struct torture_krb5_context *test_contex
 	return true;
 }
 
+
+/* 
+ * This function is set in torture_krb5_init_context as krb5
+ * send_and_recv function.  This allows us to override what server the
+ * test is aimed at, and to inspect the packets just before they are
+ * sent to the network, and before they are processed on the recv
+ * side.
+ *
+ * The torture_krb5_pre_send_test() and torture_krb5_post_recv_test()
+ * functions are implement the actual tests.
+ *
+ * When this asserts, the caller will get a spurious 'cannot contact
+ * any KDC' message.
+ *
+ */
 static krb5_error_code smb_krb5_send_and_recv_func_override(krb5_context context,
 						    void *data, /* struct torture_krb5_context */
 						    krb5_krbhst_info *hi,

@@ -57,6 +57,20 @@ struct torture_krb5_context {
 	AS_REP as_rep;
 };
 
+
+/*
+ * Confirm that the outgoing packet meets certain expectations.  This
+ * should be extended to further assert the correct and expected
+ * behaviour of the krb5 libs, so we know what we are sending to the
+ * server.
+ *
+ * Additionally, this CHANGES the request to remove the canonicalize
+ * flag automatically added by the krb5 libs when an enterprise
+ * principal is used, so we can test what the server does in this
+ * combination.
+ *
+ */
+
 static bool torture_krb5_pre_send_test(struct torture_krb5_context *test_context, const krb5_data *send_buf, krb5_data *modified_send_buf)
 {
 	krb5_error_code k5ret;
@@ -92,6 +106,14 @@ static bool torture_krb5_pre_send_test(struct torture_krb5_context *test_context
 	torture_assert_int_equal(test_context->tctx, used, send_buf->length, "re-encode length mismatch");
 	return true;
 }
+
+/*
+ * Confirm that the incoming packet from the KDC meets certain
+ * expectations.  This uses a packet count to work out what test we
+ * are in, and where in the test we are, so we can assert on the
+ * expected reply packets from the KDC.
+ *
+ */
 
 static bool torture_krb5_post_recv_test(struct torture_krb5_context *test_context, const krb5_data *recv_buf)
 {
@@ -143,6 +165,20 @@ static bool torture_krb5_post_recv_test(struct torture_krb5_context *test_contex
 	return true;
 }
 
+/* 
+ * This function is set in torture_krb5_init_context_canon as krb5
+ * send_and_recv function.  This allows us to override what server the
+ * test is aimed at, and to inspect the packets just before they are
+ * sent to the network, and before they are processed on the recv
+ * side.
+ *
+ * The torture_krb5_pre_send_test() and torture_krb5_post_recv_test()
+ * functions are implement the actual tests.
+ *
+ * When this asserts, the caller will get a spurious 'cannot contact
+ * any KDC' message.
+ *
+ */
 static krb5_error_code smb_krb5_send_and_recv_func_canon_override(krb5_context context,
 								   void *data, /* struct torture_krb5_context */
 								   krb5_krbhst_info *hi,
