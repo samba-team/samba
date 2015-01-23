@@ -107,6 +107,8 @@ def configure(conf):
 			'int syscall(int number, ...)',
 			define='HAVE_SYSCALL_INT', headers='unistd.h sys/syscall.h')
 
+        conf.CHECK_FUNCS('getresuid getresgid')
+
         # Create full path to uid_wrapper
         srcdir = os.path.realpath(conf.srcdir)
         libuid_wrapper_so_path = srcdir + '/bin/default/lib/uid_wrapper/libuid-wrapper.so'

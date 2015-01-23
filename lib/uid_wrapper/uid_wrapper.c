@@ -190,6 +190,9 @@ struct uwrap_libc_fns {
 #ifdef HAVE_SETRESUID
 	int (*_libc_setresuid)(uid_t ruid, uid_t euid, uid_t suid);
 #endif
+#ifdef HAVE_GETRESUID
+	int (*_libc_getresuid)(uid_t *ruid, uid_t *euid, uid_t *suid);
+#endif
 	uid_t (*_libc_geteuid)(void);
 
 	int (*_libc_setgid)(gid_t gid);
@@ -202,6 +205,9 @@ struct uwrap_libc_fns {
 #endif
 #ifdef HAVE_SETRESGID
 	int (*_libc_setresgid)(uid_t rgid, uid_t egid, uid_t sgid);
+#endif
+#ifdef HAVE_GETRESGID
+	int (*_libc_getresgid)(gid_t *rgid, gid_t *egid, gid_t *sgid);
 #endif
 	gid_t (*_libc_getegid)(void);
 	int (*_libc_getgroups)(int size, gid_t list[]);
@@ -413,6 +419,15 @@ static int libc_setresuid(uid_t ruid, uid_t euid, uid_t suid)
 }
 #endif
 
+#ifdef HAVE_GETRESUID
+static int libc_getresuid(uid_t *ruid, uid_t *euid, uid_t *suid)
+{
+	uwrap_load_lib_function(UWRAP_LIBC, getresuid);
+
+	return uwrap.libc.fns._libc_getresuid(ruid, euid, suid);
+}
+#endif
+
 static uid_t libc_geteuid(void)
 {
 	uwrap_load_lib_function(UWRAP_LIBC, geteuid);
@@ -458,6 +473,15 @@ static int libc_setresgid(gid_t rgid, gid_t egid, gid_t sgid)
 	uwrap_load_lib_function(UWRAP_LIBC, setresgid);
 
 	return uwrap.libc.fns._libc_setresgid(rgid, egid, sgid);
+}
+#endif
+
+#ifdef HAVE_GETRESGID
+static int libc_getresgid(gid_t *rgid, gid_t *egid, gid_t *sgid)
+{
+	uwrap_load_lib_function(UWRAP_LIBC, setresgid);
+
+	return uwrap.libc.fns._libc_getresgid(rgid, egid, sgid);
 }
 #endif
 
@@ -720,6 +744,23 @@ bool uid_wrapper_enabled(void)
 	return enabled;
 }
 
+#ifdef HAVE_GETRESUID
+static int uwrap_getresuid(uid_t *ruid, uid_t *euid, uid_t *suid)
+{
+	struct uwrap_thread *id = uwrap_tls_id;
+
+	UWRAP_LOCK(uwrap_id);
+
+	*ruid = id->ruid;
+	*euid = id->euid;
+	*suid = id->suid;
+
+	UWRAP_UNLOCK(uwrap_id);
+
+	return 0;
+}
+#endif
+
 static int uwrap_setresuid_thread(uid_t ruid, uid_t euid, uid_t suid)
 {
 	struct uwrap_thread *id = uwrap_tls_id;
@@ -761,6 +802,23 @@ static int uwrap_setresuid_thread(uid_t ruid, uid_t euid, uid_t suid)
 
 	return 0;
 }
+
+#ifdef HAVE_GETRESGID
+static int uwrap_getresgid(gid_t *rgid, gid_t *egid, gid_t *sgid)
+{
+	struct uwrap_thread *id = uwrap_tls_id;
+
+	UWRAP_LOCK(uwrap_id);
+
+	*rgid = id->rgid;
+	*egid = id->egid;
+	*sgid = id->sgid;
+
+	UWRAP_UNLOCK(uwrap_id);
+
+	return 0;
+}
+#endif
 
 static int uwrap_setresuid(uid_t ruid, uid_t euid, uid_t suid)
 {
@@ -864,6 +922,18 @@ int setresuid(uid_t ruid, uid_t euid, uid_t suid)
 
 	uwrap_init();
 	return uwrap_setresuid(ruid, euid, suid);
+}
+#endif
+
+#ifdef HAVE_GETRESUID
+int getresuid(uid_t *ruid, uid_t *euid, uid_t *suid)
+{
+	if (!uid_wrapper_enabled()) {
+		return libc_getresuid(ruid, euid, suid);
+	}
+
+	uwrap_init();
+	return uwrap_getresuid(ruid, euid, suid);
 }
 #endif
 
@@ -1054,6 +1124,18 @@ int setresgid(gid_t rgid, gid_t egid, gid_t sgid)
 
 	uwrap_init();
 	return uwrap_setresgid(rgid, egid, sgid);
+}
+#endif
+
+#ifdef HAVE_GETRESGID
+int getresgid(gid_t *rgid, gid_t *egid, gid_t *sgid)
+{
+	if (!uid_wrapper_enabled()) {
+		return libc_getresgid(rgid, egid, sgid);
+	}
+
+	uwrap_init();
+	return uwrap_getresgid(rgid, egid, sgid);
 }
 #endif
 
@@ -1315,6 +1397,20 @@ static long int uwrap_syscall (long int sysno, va_list vp)
 			}
 			break;
 #endif /* SYS_setresgid */
+#ifdef SYS_getresgid
+		case SYS_getresgid:
+#ifdef HAVE_LINUX_32BIT_SYSCALLS
+		case SYS_getresgid32:
+#endif
+			{
+				gid_t *rgid = (gid_t *) va_arg(vp, gid_t *);
+				gid_t *egid = (gid_t *) va_arg(vp, gid_t *);
+				gid_t *sgid = (gid_t *) va_arg(vp, gid_t *);
+
+				rc = uwrap_getresgid(rgid, egid, sgid);
+			}
+			break;
+#endif /* SYS_getresgid */
 
 		/* uid */
 		case SYS_getuid:
@@ -1370,7 +1466,20 @@ static long int uwrap_syscall (long int sysno, va_list vp)
 			}
 			break;
 #endif /* SYS_setresuid */
+#ifdef SYS_getresuid
+		case SYS_getresuid:
+#ifdef HAVE_LINUX_32BIT_SYSCALLS
+		case SYS_getresuid32:
+#endif
+			{
+				uid_t *ruid = (uid_t *) va_arg(vp, uid_t *);
+				uid_t *euid = (uid_t *) va_arg(vp, uid_t *);
+				uid_t *suid = (uid_t *) va_arg(vp, uid_t *);
 
+				rc = uwrap_getresuid(ruid, euid, suid);
+			}
+			break;
+#endif /* SYS_getresuid */
 		/* groups */
 		case SYS_setgroups:
 #ifdef HAVE_LINUX_32BIT_SYSCALLS
