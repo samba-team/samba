@@ -391,15 +391,39 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 						    my_creds.client, expected_principal),
 		       assertion_message);
 	
+
 	torture_assert_int_equal(tctx,
 				 krb5_principal_get_type(smb_krb5_context->krb5_context,
 							 my_creds.server), KRB5_NT_SRV_INST,
-				 "smb_krb5_init_context gave incorrect client->name.name_type");
+				 "smb_krb5_init_context gave incorrect server->name.name_type");
+	
+	torture_assert_int_equal(tctx,
+				 krb5_principal_get_num_comp(smb_krb5_context->krb5_context,
+							     my_creds.server), 2,
+				 "smb_krb5_init_context gave incorrect number of components in my_creds.server->name");
 
 	torture_assert_str_equal(tctx, krb5_principal_get_comp_string(smb_krb5_context->krb5_context,
 								      my_creds.server, 0),
 				 "krbtgt",
 				 "smb_krb5_init_context gave incorrect my_creds.server->name.name_string[0]");
+
+	if (test_data->canonicalize || test_data->enterprise) {
+		torture_assert_str_equal(tctx, krb5_principal_get_comp_string(smb_krb5_context->krb5_context,
+									      my_creds.server, 1),
+					 test_data->real_realm,
+					 
+					 "smb_krb5_init_context gave incorrect my_creds.server->name.name_string[1]");
+	} else {
+		torture_assert_str_equal(tctx, krb5_principal_get_comp_string(smb_krb5_context->krb5_context,
+									      my_creds.server, 1),
+					 realm,
+					 
+					 "smb_krb5_init_context gave incorrect my_creds.server->name.name_string[1]");
+	}
+	torture_assert_str_equal(tctx, krb5_principal_get_realm(smb_krb5_context->krb5_context,
+								my_creds.server),
+				 test_data->real_realm,
+				 "smb_krb5_init_context gave incorrect my_creds.server->realm");
 
 	krb5_free_principal(smb_krb5_context->krb5_context, principal);
 	

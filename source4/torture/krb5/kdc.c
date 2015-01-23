@@ -386,25 +386,6 @@ static bool torture_krb5_as_req_creds(struct torture_context *tctx,
 
 	}
 
-	torture_assert_int_equal(tctx,
-				 krb5_principal_get_type(smb_krb5_context->krb5_context,
-							 my_creds.client), KRB5_NT_PRINCIPAL,
-				 "smb_krb5_init_context gave incorrect client->name.name_type");
-
-	torture_assert(tctx, krb5_principal_compare(smb_krb5_context->krb5_context,
-						    principal, my_creds.client),
-		       "krb5_get_init_creds_password returned a different principal");
-	
-	torture_assert_int_equal(tctx,
-				 krb5_principal_get_type(smb_krb5_context->krb5_context,
-							 my_creds.server), KRB5_NT_SRV_INST,
-				 "smb_krb5_init_context gave incorrect client->name.name_type");
-
-	torture_assert_str_equal(tctx, krb5_principal_get_comp_string(smb_krb5_context->krb5_context,
-								      my_creds.server, 0),
-				 "krbtgt",
-				 "smb_krb5_init_context gave incorrect my_creds.server->name.name_string[0]");
-
 	k5ret = krb5_free_cred_contents(smb_krb5_context->krb5_context, &my_creds);
 	torture_assert_int_equal(tctx, k5ret, 0, "krb5_free_creds failed");
 
