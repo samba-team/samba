@@ -821,12 +821,34 @@ sub provision_raw_step2($$$)
 		return undef;
 	}
 
+	my $ldbmodify = Samba::bindir_path($self, "ldbmodify");
+	my $base_dn = "DC=".join(",DC=", split(/\./, $ctx->{realm}));
+	my $user_dn = "cn=testallowed,cn=users,$base_dn";
+	open(LDIF, "|$ldbmodify -H $ctx->{privatedir}/sam.ldb");
+	print LDIF "dn: $user_dn
+changetype: modify
+replace: userPrincipalName
+userPrincipalName: testallowed_upn\@$ctx->{realm}
+-	    
+";
+	close(LDIF);
+
 	$samba_tool_cmd = Samba::bindir_path($self, "samba-tool") 
 	    . " user add --configfile=$ctx->{smb_conf} testdenied $ctx->{password}";
 	unless (system($samba_tool_cmd) == 0) {
 		warn("Unable to add testdenied user: \n$samba_tool_cmd\n");
 		return undef;
 	}
+
+	my $user_dn = "cn=testdenied,cn=users,$base_dn";
+	open(LDIF, "|$ldbmodify -H $ctx->{privatedir}/sam.ldb");
+	print LDIF "dn: $user_dn
+changetype: modify
+replace: userPrincipalName
+userPrincipalName: testdenied_upn\@$ctx->{realm}.upn
+-	    
+";
+	close(LDIF);
 
 	$samba_tool_cmd = Samba::bindir_path($self, "samba-tool") 
 	    . " group addmembers --configfile=$ctx->{smb_conf} 'Allowed RODC Password Replication Group' testallowed";
