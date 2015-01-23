@@ -1466,3 +1466,16 @@ WERROR _winbind_LogonControl(struct pipes_struct *p,
 		  __func__, r->in.function_code));
 	return WERR_NOT_SUPPORTED;
 }
+
+WERROR _winbind_GetForestTrustInformation(struct pipes_struct *p,
+			     struct winbind_GetForestTrustInformation *r)
+{
+	struct winbindd_domain *domain;
+
+	domain = wb_child_domain();
+	if (domain == NULL) {
+		return WERR_NO_SUCH_DOMAIN;
+	}
+
+	return WERR_NOT_SUPPORTED;
+}

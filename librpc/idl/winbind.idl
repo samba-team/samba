@@ -205,4 +205,13 @@ interface winbind
 		[in,ref][switch_is(function_code)] netr_CONTROL_DATA_INFORMATION  *data,
 		[out,ref][switch_is(level)] netr_CONTROL_QUERY_INFORMATION *query
 		);
+
+	/*
+	 * do a netr_GetForestTrustInformation() against the right DC
+	 */
+	WERROR winbind_GetForestTrustInformation(
+		[in,unique] [string,charset(UTF16)] uint16 *trusted_domain_name,
+		[in] uint32 flags,
+		[out,ref] lsa_ForestTrustInformation **forest_trust_info
+		);
 }
