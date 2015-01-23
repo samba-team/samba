@@ -311,8 +311,7 @@ struct uwrap_libpthread_symbols {
  * We keep the virtualised euid/egid/groups information here
  */
 struct uwrap_thread {
-	pthread_t tid;
-	bool dead;
+	bool enabled;
 
 	uid_t ruid;
 	uid_t euid;
@@ -330,8 +329,6 @@ struct uwrap_thread {
 };
 
 struct uwrap {
-	pthread_t tid;
-
 	struct {
 		void *handle;
 		struct uwrap_libc_symbols symbols;
@@ -343,18 +340,6 @@ struct uwrap {
 	} libpthread;
 
 	bool initialised;
-	bool enabled;
-
-	uid_t ruid;
-	uid_t euid;
-	uid_t suid;
-
-	gid_t rgid;
-	gid_t egid;
-	gid_t sgid;
-
-	int ngroups;
-	gid_t *groups;
 
 	/* Real uid and gid of user who run uid wrapper */
 	uid_t myuid;
@@ -663,6 +648,23 @@ static void libpthread_pthread_exit(void *retval)
 
 static void uwrap_pthread_exit(void *retval)
 {
+	struct uwrap_thread *id = uwrap_tls_id;
+
+	UWRAP_LOG(UWRAP_LOG_DEBUG, "Cleanup thread");
+
+	UWRAP_LOCK(uwrap_id);
+	if (id == NULL) {
+		UWRAP_UNLOCK(uwrap_id);
+		libpthread_pthread_exit(retval);
+	}
+
+	UWRAP_DLIST_REMOVE(uwrap.ids, id);
+	SAFE_FREE(id->groups);
+	SAFE_FREE(id);
+	uwrap_tls_id = NULL;
+
+	UWRAP_UNLOCK(uwrap_id);
+
 	libpthread_pthread_exit(retval);
 }
 
@@ -690,12 +692,97 @@ static int libpthread_pthread_create(pthread_t *thread,
 								     arg);
 }
 
+struct uwrap_pthread_create_args {
+	struct uwrap_thread *id;
+	void *(*start_routine) (void *);
+	void *arg;
+};
+
+static void *uwrap_pthread_create_start(void *_a)
+{
+	struct uwrap_pthread_create_args *a =
+		(struct uwrap_pthread_create_args *)_a;
+	void *(*start_routine) (void *) = a->start_routine;
+	void *arg = a->arg;
+	struct uwrap_thread *id = a->id;
+
+	SAFE_FREE(a);
+
+	uwrap_tls_id = id;
+
+	return start_routine(arg);
+}
+
 static int uwrap_pthread_create(pthread_t *thread,
 				 const pthread_attr_t *attr,
 				 void *(*start_routine) (void *),
 				 void *arg)
 {
-	return libpthread_pthread_create(thread, attr, start_routine, arg);
+	struct uwrap_pthread_create_args *args;
+	struct uwrap_thread *src_id = uwrap_tls_id;
+	int ret;
+
+	args = malloc(sizeof(struct uwrap_pthread_create_args));
+	if (args == NULL) {
+		UWRAP_LOG(UWRAP_LOG_ERROR,
+			  "uwrap_pthread_create: Unable to allocate memory");
+		errno = ENOMEM;
+		return -1;
+	}
+	args->start_routine = start_routine;
+	args->arg = arg;
+
+	args->id = calloc(1, sizeof(struct uwrap_thread));
+	if (args->id == NULL) {
+		SAFE_FREE(args);
+		UWRAP_LOG(UWRAP_LOG_ERROR,
+			  "uwrap_pthread_create: Unable to allocate memory");
+		errno = ENOMEM;
+		return -1;
+	}
+
+	UWRAP_LOCK(uwrap_id);
+
+	args->id->groups = malloc(sizeof(gid_t) * src_id->ngroups);
+	if (args->id->groups == NULL) {
+		UWRAP_UNLOCK(uwrap_id);
+		SAFE_FREE(args->id);
+		SAFE_FREE(args);
+		UWRAP_LOG(UWRAP_LOG_ERROR,
+			  "uwrap_pthread_create: Unable to allocate memory again");
+		errno = ENOMEM;
+		return -1;
+	}
+
+	args->id->ruid = src_id->ruid;
+	args->id->euid = src_id->euid;
+	args->id->suid = src_id->suid;
+
+	args->id->rgid = src_id->rgid;
+	args->id->egid = src_id->egid;
+	args->id->sgid = src_id->sgid;
+
+	args->id->enabled = src_id->enabled;
+
+	args->id->ngroups = src_id->ngroups;
+	if (src_id->groups != NULL) {
+		memcpy(args->id->groups, src_id->groups,
+		       sizeof(gid_t) * src_id->ngroups);
+	} else {
+		SAFE_FREE(args->id->groups);
+	}
+
+	UWRAP_DLIST_ADD(uwrap.ids, args->id);
+	UWRAP_UNLOCK(uwrap_id);
+
+	ret = libpthread_pthread_create(thread, attr,
+					uwrap_pthread_create_start,
+					args);
+	if (ret != 0) {
+		return ret;
+	}
+
+	return ret;
 }
 
 int pthread_create(pthread_t *thread,
@@ -720,173 +807,139 @@ int pthread_create(pthread_t *thread,
  * UWRAP ID HANDLING
  *********************************************************/
 
-static struct uwrap_thread *find_uwrap_id(pthread_t tid)
-{
-	struct uwrap_thread *id;
-
-	for (id = uwrap.ids; id; id = id->next) {
-		if (pthread_equal(id->tid, tid)) {
-			return id;
-		}
-	}
-
-	return NULL;
-}
-
-static int uwrap_new_id(pthread_t tid, bool do_alloc)
+static void uwrap_thread_prepare(void)
 {
 	struct uwrap_thread *id = uwrap_tls_id;
 
-	if (do_alloc) {
-		id = malloc(sizeof(struct uwrap_thread));
-		if (id == NULL) {
-			UWRAP_LOG(UWRAP_LOG_ERROR, "Unable to allocate memory");
-			errno = ENOMEM;
-			return -1;
-		}
-
-		id->groups = malloc(sizeof(gid_t) * uwrap.ngroups);
-		if (id->groups == NULL) {
-			UWRAP_LOG(UWRAP_LOG_ERROR, "Unable to allocate memory");
-			SAFE_FREE(id);
-			errno = ENOMEM;
-			return -1;
-		}
-
-		UWRAP_DLIST_ADD(uwrap.ids, id);
-		uwrap_tls_id = id;
-	}
-
-	id->tid = tid;
-	id->dead = false;
-
-	id->ruid = uwrap.ruid;
-	id->euid = uwrap.euid;
-	id->suid = uwrap.suid;
-
-	id->rgid = uwrap.rgid;
-	id->egid = uwrap.egid;
-	id->sgid = uwrap.sgid;
-
-	id->ngroups = uwrap.ngroups;
-	if (uwrap.groups != NULL) {
-		memcpy(id->groups, uwrap.groups, sizeof(gid_t) * uwrap.ngroups);
-	} else {
-		id->groups = NULL;
-	}
-
-	return 0;
-}
-
-static void uwrap_thread_prepare(void)
-{
 	UWRAP_LOCK_ALL;
 
 	/*
 	 * What happens if another atfork prepare functions calls a uwrap
 	 * function? So disable it in case another atfork prepare function
-	 * calls a (s)uid function.
+	 * calls a (s)uid function. We disable uid_wrapper only for thread
+	 * (process) which called fork.
 	 */
-	uwrap.enabled = false;
+	id->enabled = false;
 }
 
 static void uwrap_thread_parent(void)
 {
-	uwrap.enabled = true;
+	struct uwrap_thread *id = uwrap_tls_id;
+	id->enabled = true;
 
 	UWRAP_UNLOCK_ALL;
 }
 
 static void uwrap_thread_child(void)
 {
-	uwrap.enabled = true;
+	struct uwrap_thread *id = uwrap_tls_id;
+	struct uwrap_thread *u = uwrap.ids;
 
-	/* We need to update to the new tid if we fork */
-	uwrap.tid = pthread_self();
+	/*
+	 * "Garbage collector" - Inspired by DESTRUCTOR.
+	 * All threads (except one which called fork()) are dead now.. Dave
+	 * That's what posix said...
+	 */
+	while (u != NULL) {
+		if (u == id) {
+			/* Skip this item. */
+			u = uwrap.ids->next;
+			continue;
+		}
 
-	UWRAP_UNLOCK(libc_symbol_binding);
-	UWRAP_UNLOCK(uwrap_id);
+		UWRAP_DLIST_REMOVE(uwrap.ids, u);
+
+		SAFE_FREE(u->groups);
+		SAFE_FREE(u);
+
+		u = uwrap.ids;
+	}
+
+	id->enabled = true;
+
+	UWRAP_UNLOCK_ALL;
 }
 
 static void uwrap_init(void)
 {
 	const char *env;
-	pthread_t tid = pthread_self();
 
 	UWRAP_LOCK(uwrap_id);
 
 	if (uwrap.initialised) {
 		struct uwrap_thread *id = uwrap_tls_id;
-		int rc;
 
-		if (id != NULL) {
+		if (uwrap.ids == NULL) {
 			UWRAP_UNLOCK(uwrap_id);
 			return;
 		}
 
-		id = find_uwrap_id(tid);
 		if (id == NULL) {
-			rc = uwrap_new_id(tid, true);
-			if (rc < 0) {
-				exit(-1);
-			}
-		} else {
-			/* We reuse an old thread id */
-			uwrap_tls_id = id;
-
-			uwrap_new_id(tid, false);
+			UWRAP_LOG(UWRAP_LOG_ERROR,
+				  "Invalid id for thread");
+			exit(-1);
 		}
-		UWRAP_UNLOCK(uwrap_id);
 
+		UWRAP_UNLOCK(uwrap_id);
 		return;
 	}
 
 	UWRAP_LOG(UWRAP_LOG_DEBUG, "Initialize uid_wrapper");
 
 	uwrap.initialised = true;
-	uwrap.enabled = false;
 
 	env = getenv("UID_WRAPPER");
 	if (env != NULL && env[0] == '1') {
 		const char *root = getenv("UID_WRAPPER_ROOT");
-		int rc;
+		struct uwrap_thread *id;
+
+		id = calloc(1, sizeof(struct uwrap_thread));
+		if (id == NULL) {
+			UWRAP_LOG(UWRAP_LOG_ERROR,
+				  "Unable to allocate memory for main id");
+			exit(-1);
+		}
+
+		UWRAP_DLIST_ADD(uwrap.ids, id);
+		uwrap_tls_id = id;
 
 		uwrap.myuid = libc_geteuid();
 		uwrap.mygid = libc_getegid();
+
 		/* put us in one group */
 		if (root != NULL && root[0] == '1') {
-			uwrap.ruid = uwrap.euid = uwrap.suid = 0;
-			uwrap.rgid = uwrap.egid = uwrap.sgid = 0;
+			id->ruid = id->euid = id->suid = 0;
+			id->rgid = id->egid = id->sgid = 0;
 
-			uwrap.groups = malloc(sizeof(gid_t) * 1);
-			if (uwrap.groups == NULL) {
+			id->groups = malloc(sizeof(gid_t) * 1);
+			if (id->groups == NULL) {
 				UWRAP_LOG(UWRAP_LOG_ERROR,
 					  "Unable to allocate memory");
 				exit(-1);
 			}
 
-			uwrap.ngroups = 1;
-			uwrap.groups[0] = 0;
+			id->ngroups = 1;
+			id->groups[0] = 0;
 
 		} else {
-			uwrap.ruid = uwrap.euid = uwrap.suid = uwrap.myuid;
-			uwrap.rgid = uwrap.egid = uwrap.sgid = uwrap.mygid;
+			id->ruid = id->euid = id->suid = uwrap.myuid;
+			id->rgid = id->egid = id->sgid = uwrap.mygid;
 
-			uwrap.ngroups = libc_getgroups(0, NULL);
-			if (uwrap.ngroups == -1) {
+			id->ngroups = libc_getgroups(0, NULL);
+			if (id->ngroups == -1) {
 				UWRAP_LOG(UWRAP_LOG_ERROR,
 					  "Unable to call libc_getgroups in uwrap_init.");
 				exit(-1);
 			}
-			uwrap.groups = malloc(sizeof(gid_t) * uwrap.ngroups);
-			if (uwrap.groups == NULL) {
+			id->groups = malloc(sizeof(gid_t) * id->ngroups);
+			if (id->groups == NULL) {
 				UWRAP_LOG(UWRAP_LOG_ERROR, "Unable to allocate memory");
 				exit(-1);
 			}
-			if (libc_getgroups(uwrap.ngroups, uwrap.groups) == -1) {
+			if (libc_getgroups(id->ngroups, id->groups) == -1) {
 				UWRAP_LOG(UWRAP_LOG_ERROR,
 					  "Unable to call libc_getgroups again in uwrap_init.");
-				uwrap.ngroups = 0;
+				id->groups = 0;
 				/*
 				 * Deallocation of uwrap.groups is handled by
 				 * library destructor.
@@ -895,13 +948,7 @@ static void uwrap_init(void)
 			}
 		}
 
-		rc = uwrap_new_id(tid, true);
-		if (rc < 0) {
-			exit(-1);
-		}
-
-		uwrap.tid = tid;
-		uwrap.enabled = true;
+		id->enabled = true;
 
 		UWRAP_LOG(UWRAP_LOG_DEBUG,
 			  "Enabled uid_wrapper as %s",
@@ -915,14 +962,17 @@ static void uwrap_init(void)
 
 bool uid_wrapper_enabled(void)
 {
-	bool enabled = false;
-	#ifdef HAVE_GCC_ATOMIC_BUILTINS
-		__atomic_load(&uwrap.enabled, &enabled, __ATOMIC_RELAXED);
-	#else
-		UWRAP_LOCK(uwrap_id);
-		enabled = uwrap.enabled;
-		UWRAP_UNLOCK(uwrap_id);
-	#endif
+	struct uwrap_thread *id = uwrap_tls_id;
+	bool enabled;
+
+	if (id == NULL) {
+		return false;
+	}
+
+	UWRAP_LOCK(uwrap_id);
+	enabled = id->enabled;
+	UWRAP_UNLOCK(uwrap_id);
+
 	return enabled;
 }
 
@@ -965,21 +1015,6 @@ static int uwrap_setresuid_thread(uid_t ruid, uid_t euid, uid_t suid)
 		id->suid = suid;
 	}
 
-	/* Check If syscall is called from main thread. */
-	if (pthread_equal(id->tid, uwrap.tid)) {
-		if (ruid != (uid_t)-1) {
-		    uwrap.ruid = ruid;
-		}
-
-		if (euid != (uid_t)-1) {
-		    uwrap.euid = euid;
-		}
-
-		if (suid != (uid_t)-1) {
-		    uwrap.suid = suid;
-		}
-	}
-
 	UWRAP_UNLOCK(uwrap_id);
 
 	return 0;
@@ -1013,10 +1048,6 @@ static int uwrap_setresuid(uid_t ruid, uid_t euid, uid_t suid)
 
 	UWRAP_LOCK(uwrap_id);
 	for (id = uwrap.ids; id; id = id->next) {
-		if (id->dead) {
-			continue;
-		}
-
 		if (ruid != (uid_t)-1) {
 			id->ruid = ruid;
 		}
@@ -1028,19 +1059,6 @@ static int uwrap_setresuid(uid_t ruid, uid_t euid, uid_t suid)
 		if (suid != (uid_t)-1) {
 			id->suid = suid;
 		}
-	}
-
-	/* Reflect changes in thread to main process. */
-	if (ruid != (uid_t)-1) {
-		uwrap.ruid = ruid;
-	}
-
-	if (euid != (uid_t)-1) {
-		uwrap.euid = euid;
-	}
-
-	if (suid != (uid_t)-1) {
-		uwrap.suid = suid;
 	}
 
 	UWRAP_UNLOCK(uwrap_id);
@@ -1197,19 +1215,6 @@ static int uwrap_setresgid_thread(gid_t rgid, gid_t egid, gid_t sgid)
 		id->sgid = sgid;
 	}
 
-	if (pthread_equal(id->tid, uwrap.tid)) {
-		if (rgid != (gid_t)-1) {
-			uwrap.rgid = rgid;
-		}
-
-		if (egid != (gid_t)-1) {
-			uwrap.egid = egid;
-		}
-
-		if (sgid != (gid_t)-1) {
-			uwrap.sgid = sgid;
-		}
-	}
 	UWRAP_UNLOCK(uwrap_id);
 
 	return 0;
@@ -1226,10 +1231,6 @@ static int uwrap_setresgid(gid_t rgid, gid_t egid, gid_t sgid)
 
 	UWRAP_LOCK(uwrap_id);
 	for (id = uwrap.ids; id; id = id->next) {
-		if (id->dead) {
-			continue;
-		}
-
 		if (rgid != (gid_t)-1) {
 			id->rgid = rgid;
 		}
@@ -1241,19 +1242,6 @@ static int uwrap_setresgid(gid_t rgid, gid_t egid, gid_t sgid)
 		if (sgid != (gid_t)-1) {
 			id->sgid = sgid;
 		}
-	}
-
-	/* Reflect changes in thread to main process. */
-	if (rgid != (gid_t)-1) {
-		uwrap.rgid = rgid;
-	}
-
-	if (egid != (gid_t)-1) {
-		uwrap.egid = egid;
-	}
-
-	if (sgid != (gid_t)-1) {
-		uwrap.sgid = sgid;
 	}
 	UWRAP_UNLOCK(uwrap_id);
 
@@ -1381,10 +1369,6 @@ static int uwrap_setgroups_thread(size_t size, const gid_t *list)
 	if (size == 0) {
 		SAFE_FREE(id->groups);
 		id->ngroups = 0;
-		if (pthread_equal(id->tid, uwrap.tid)) {
-			SAFE_FREE(uwrap.groups);
-			uwrap.ngroups = 0;
-		}
 	} else if (size > 0) {
 		gid_t *tmp;
 
@@ -1396,19 +1380,6 @@ static int uwrap_setgroups_thread(size_t size, const gid_t *list)
 		id->groups = tmp;
 		id->ngroups = size;
 		memcpy(id->groups, list, size * sizeof(gid_t));
-
-		if (pthread_equal(id->tid, uwrap.tid)) {
-			tmp = realloc(uwrap.groups, sizeof(gid_t) * size);
-			if (tmp == NULL) {
-				/* How to return back id->groups? */
-				errno = ENOMEM;
-				goto out;
-			}
-
-			uwrap.groups = tmp;
-			uwrap.ngroups = size;
-			memcpy(uwrap.groups, list, size * sizeof(gid_t));
-		}
 	}
 
 	rc = 0;
@@ -1431,8 +1402,6 @@ static int uwrap_setgroups(size_t size, const gid_t *list)
 			id->ngroups = 0;
 
 		}
-		SAFE_FREE(uwrap.groups);
-		uwrap.ngroups = 0;
 	} else if (size > 0) {
 		gid_t *tmp;
 
@@ -1447,18 +1416,6 @@ static int uwrap_setgroups(size_t size, const gid_t *list)
 			id->ngroups = size;
 			memcpy(id->groups, list, size * sizeof(gid_t));
 		}
-
-		tmp = realloc(uwrap.groups, sizeof(gid_t) * size);
-		if (tmp == NULL) {
-			/* How to return back id->groups? */
-			errno = ENOMEM;
-			goto out;
-		}
-
-		uwrap.groups = tmp;
-		uwrap.ngroups = size;
-		memcpy(uwrap.groups, list, size * sizeof(gid_t));
-
 	}
 
 	rc = 0;
@@ -1760,7 +1717,6 @@ void uwrap_destructor(void)
 		u = uwrap.ids;
 	}
 
-	SAFE_FREE(uwrap.groups);
 
 	if (uwrap.libc.handle != NULL) {
 		dlclose(uwrap.libc.handle);
