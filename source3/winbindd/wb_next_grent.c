@@ -26,7 +26,6 @@ struct wb_next_grent_state {
 	struct tevent_context *ev;
 	int max_nesting;
 	struct getgrent_state *gstate;
-	struct wbint_Principals next_groups;
 	struct winbindd_gr *gr;
 	struct talloc_dict *members;
 };
@@ -48,10 +47,8 @@ static void wb_next_grent_send_do(struct tevent_req *req,
 			return;
 		}
 
-		subreq = dcerpc_wbint_QueryGroupList_send(
-			state, state->ev,
-			dom_child_handle(state->gstate->domain),
-			&state->next_groups);
+		subreq = wb_query_group_list_send(state, state->ev,
+						  state->gstate->domain);
 		if (tevent_req_nomem(subreq, req)) {
 			return;
 		}
@@ -101,29 +98,20 @@ static void wb_next_grent_fetch_done(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct wb_next_grent_state *state = tevent_req_data(
 		req, struct wb_next_grent_state);
-	NTSTATUS status, result;
+	NTSTATUS status;
 
-	status = dcerpc_wbint_QueryGroupList_recv(subreq, state, &result);
+	status = wb_query_group_list_recv(subreq, state->gstate,
+					  &state->gstate->num_groups,
+					  &state->gstate->groups);
 	TALLOC_FREE(subreq);
-	if (tevent_req_nterror(req, status)) {
+	if (!NT_STATUS_IS_OK(status)) {
 		/* Ignore errors here, just log it */
-		DEBUG(10, ("QueryGroupList for domain %s returned %s\n",
-			   state->gstate->domain->name,
-			   nt_errstr(status)));
-		return;
-	}
-	if (!NT_STATUS_IS_OK(result)) {
-		/* Ignore errors here, just log it */
-		DEBUG(10, ("QueryGroupList for domain %s returned %s/%s\n",
-			   state->gstate->domain->name,
-			   nt_errstr(status), nt_errstr(result)));
-		tevent_req_nterror(req, result);
+		DEBUG(10, ("query_group_list for domain %s returned %s\n",
+			   state->gstate->domain->name, nt_errstr(status)));
+		tevent_req_nterror(req, status);
 		return;
 	}
 
-	state->gstate->num_groups = state->next_groups.num_principals;
-	state->gstate->groups = talloc_move(
-		state->gstate, &state->next_groups.principals);
 	state->gstate->next_group = 0;
 
 	wb_next_grent_send_do(req, state);
