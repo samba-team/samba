@@ -9,6 +9,19 @@ def configure(conf):
         conf.DEFINE('USING_SYSTEM_UID_WRAPPER', 1)
         libuid_wrapper_so_path = 'libuid_wrapper.so'
     else:
+        # check HAVE_GCC_ATOMIC_BUILTINS
+        conf.CHECK_CODE('''
+            #include <stdbool.h>
+            int main(void) {
+                bool x;
+                bool *p_x = &x;
+                __atomic_load(p_x, &x, __ATOMIC_RELAXED);
+                return 0;
+            ''',
+            'HAVE_GCC_ATOMIC_BUILTINS',
+            addmain=False,
+            msg='Checking for atomic builtins')
+
         # check HAVE_GCC_THREAD_LOCAL_STORAGE
         conf.CHECK_CODE('''
             __thread int tls;

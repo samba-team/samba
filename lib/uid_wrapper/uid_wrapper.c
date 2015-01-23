@@ -639,10 +639,15 @@ static void uwrap_init(void)
 
 bool uid_wrapper_enabled(void)
 {
-	uwrap_init();
-
-	return uwrap.enabled ? true : false;
-	UWRAP_UNLOCK(uwrap_id);
+	bool enabled = false;
+	#ifdef HAVE_GCC_ATOMIC_BUILTINS
+		__atomic_load(&uwrap.enabled, &enabled, __ATOMIC_RELAXED);
+	#else
+		UWRAP_LOCK(uwrap_id);
+		enabled = uwrap.enabled;
+		UWRAP_UNLOCK(uwrap_id);
+	#endif
+	return enabled;
 }
 
 static int uwrap_setresuid_thread(uid_t ruid, uid_t euid, uid_t suid)
@@ -712,6 +717,7 @@ int setuid(uid_t uid)
 		return libc_setuid(uid);
 	}
 
+	uwrap_init();
 	return uwrap_setresuid(uid, -1, -1);
 }
 
@@ -727,6 +733,7 @@ int seteuid(uid_t euid)
 		return libc_seteuid(euid);
 	}
 
+	uwrap_init();
 	return uwrap_setresuid(-1, euid, -1);
 }
 #endif
@@ -743,6 +750,7 @@ int setreuid(uid_t ruid, uid_t euid)
 		return libc_setreuid(ruid, euid);
 	}
 
+	uwrap_init();
 	return uwrap_setresuid(ruid, euid, -1);
 }
 #endif
@@ -754,6 +762,7 @@ int setresuid(uid_t ruid, uid_t euid, uid_t suid)
 		return libc_setresuid(ruid, euid, suid);
 	}
 
+	uwrap_init();
 	return uwrap_setresuid(ruid, euid, suid);
 }
 #endif
@@ -779,6 +788,7 @@ uid_t getuid(void)
 		return libc_getuid();
 	}
 
+	uwrap_init();
 	return uwrap_getuid();
 }
 
@@ -809,6 +819,7 @@ uid_t geteuid(void)
 		return libc_geteuid();
 	}
 
+	uwrap_init();
 	return uwrap_geteuid();
 }
 
@@ -879,6 +890,7 @@ int setgid(gid_t gid)
 		return libc_setgid(gid);
 	}
 
+	uwrap_init();
 	return uwrap_setresgid(gid, -1, -1);
 }
 
@@ -889,6 +901,7 @@ int setegid(gid_t egid)
 		return libc_setegid(egid);
 	}
 
+	uwrap_init();
 	return uwrap_setresgid(-1, egid, -1);
 }
 #endif
@@ -900,6 +913,7 @@ int setregid(gid_t rgid, gid_t egid)
 		return libc_setregid(rgid, egid);
 	}
 
+	uwrap_init();
 	return uwrap_setresgid(rgid, egid, -1);
 }
 #endif
@@ -911,6 +925,7 @@ int setresgid(gid_t rgid, gid_t egid, gid_t sgid)
 		return libc_setresgid(rgid, egid, sgid);
 	}
 
+	uwrap_init();
 	return uwrap_setresgid(rgid, egid, sgid);
 }
 #endif
@@ -936,6 +951,7 @@ gid_t getgid(void)
 		return libc_getgid();
 	}
 
+	uwrap_init();
 	return uwrap_getgid();
 }
 
@@ -960,6 +976,7 @@ uid_t getegid(void)
 		return libc_getegid();
 	}
 
+	uwrap_init();
 	return uwrap_getegid();
 }
 
@@ -1041,6 +1058,7 @@ int setgroups(size_t size, const gid_t *list)
 		return libc_setgroups(size, list);
 	}
 
+	uwrap_init();
 	return uwrap_setgroups(size, list);
 }
 
@@ -1076,6 +1094,7 @@ int getgroups(int size, gid_t *list)
 		return libc_getgroups(size, list);
 	}
 
+	uwrap_init();
 	return uwrap_getgroups(size, list);
 }
 
@@ -1242,6 +1261,7 @@ long int syscall (long int sysno, ...)
 		return rc;
 	}
 
+	uwrap_init();
 	rc = uwrap_syscall(sysno, va);
 	va_end(va);
 
@@ -1263,6 +1283,11 @@ void uwrap_constructor(void)
 	pthread_atfork(&uwrap_thread_prepare,
 		       &uwrap_thread_parent,
 		       &uwrap_thread_child);
+
+	/* Here is safe place to call uwrap_init() and initialize data
+	 * for main process.
+	 */
+	uwrap_init();
 }
 
 /****************************
