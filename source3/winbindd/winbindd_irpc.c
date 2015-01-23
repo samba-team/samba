@@ -213,6 +213,46 @@ static NTSTATUS wb_irpc_LogonControl(struct irpc_message *msg,
 					domain, 45 /* timeout */);
 }
 
+static NTSTATUS wb_irpc_GetForestTrustInformation(struct irpc_message *msg,
+				     struct winbind_GetForestTrustInformation *req)
+{
+	struct winbindd_domain *domain = NULL;
+
+	if (req->in.trusted_domain_name == NULL) {
+		req->out.result = WERR_NO_SUCH_DOMAIN;
+		return NT_STATUS_OK;
+	}
+
+	domain = find_domain_from_name_noinit(req->in.trusted_domain_name);
+	if (domain == NULL) {
+		req->out.result = WERR_NO_SUCH_DOMAIN;
+		return NT_STATUS_OK;
+	}
+
+	/*
+	 * checking for domain->internal and domain->primary
+	 * makes sure we only do some work when running as DC.
+	 */
+
+	if (domain->internal) {
+		req->out.result = WERR_NO_SUCH_DOMAIN;
+		return NT_STATUS_OK;
+	}
+
+	if (domain->primary) {
+		req->out.result = WERR_NO_SUCH_DOMAIN;
+		return NT_STATUS_OK;
+	}
+
+	DEBUG(5, ("wb_irpc_GetForestTrustInformation called\n"));
+
+	return wb_irpc_forward_rpc_call(msg, msg,
+					winbind_event_context(),
+					req, NDR_WINBIND_GETFORESTTRUSTINFORMATION,
+					"winbind_GetForestTrustInformation",
+					domain, 45 /* timeout */);
+}
+
 NTSTATUS wb_irpc_register(void)
 {
 	NTSTATUS status;
@@ -230,6 +270,12 @@ NTSTATUS wb_irpc_register(void)
 	status = IRPC_REGISTER(winbind_imessaging_context(), winbind,
 			       WINBIND_LOGONCONTROL,
 			       wb_irpc_LogonControl, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	status = IRPC_REGISTER(winbind_imessaging_context(), winbind,
+			       WINBIND_GETFORESTTRUSTINFORMATION,
+			       wb_irpc_GetForestTrustInformation, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
