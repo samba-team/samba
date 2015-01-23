@@ -51,6 +51,12 @@
 	pthread_mutex_unlock(&( m ## _mutex)); \
 } while(0)
 
+#ifdef HAVE_CONSTRUCTOR_ATTRIBUTE
+#define CONSTRUCTOR_ATTRIBUTE __attribute__ ((constructor))
+#else
+#define CONSTRUCTOR_ATTRIBUTE
+#endif /* HAVE_CONSTRUCTOR_ATTRIBUTE */
+
 #ifdef HAVE_DESTRUCTOR_ATTRIBUTE
 #define DESTRUCTOR_ATTRIBUTE __attribute__ ((destructor))
 #else
@@ -249,6 +255,7 @@ static pthread_mutex_t uwrap_id_mutex = PTHREAD_MUTEX_INITIALIZER;
  *********************************************************/
 
 bool uid_wrapper_enabled(void);
+void uwrap_constructor(void) CONSTRUCTOR_ATTRIBUTE;
 void uwrap_destructor(void) DESTRUCTOR_ATTRIBUTE;
 
 /*********************************************************
@@ -590,15 +597,6 @@ static void uwrap_init(void)
 	}
 
 	UWRAP_LOG(UWRAP_LOG_DEBUG, "Initialize uid_wrapper");
-
-	/*
-	 * If we hold a lock and the application forks, then the child
-	 * is not able to unlock the mutex and we are in a deadlock.
-	 * This should prevent such deadlocks.
-	 */
-	pthread_atfork(&uwrap_thread_prepare,
-		       &uwrap_thread_parent,
-		       &uwrap_thread_child);
 
 	UWRAP_LOCK(uwrap_id);
 
@@ -1247,6 +1245,21 @@ long int syscall (long int sysno, ...)
 }
 #endif /* HAVE_SYSCALL */
 #endif /* HAVE_SYS_SYSCALL_H || HAVE_SYSCALL_H */
+
+/****************************
+ * CONSTRUCTOR
+ ***************************/
+void uwrap_constructor(void)
+{
+	/*
+	* If we hold a lock and the application forks, then the child
+	* is not able to unlock the mutex and we are in a deadlock.
+	* This should prevent such deadlocks.
+	*/
+	pthread_atfork(&uwrap_thread_prepare,
+		       &uwrap_thread_parent,
+		       &uwrap_thread_child);
+}
 
 /****************************
  * DESTRUCTOR

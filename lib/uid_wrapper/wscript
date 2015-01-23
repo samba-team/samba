@@ -21,6 +21,23 @@ def configure(conf):
             addmain=False,
             msg='Checking for thread local storage')
 
+        # check HAVE_CONSTRUCTOR_ATTRIBUTE
+        conf.CHECK_CODE('''
+            void test_constructor_attribute(void) __attribute__ ((constructor));
+
+            void test_constructor_attribute(void)
+            {
+                return;
+            }
+
+            int main(void) {
+                return 0;
+            }
+            ''',
+            'HAVE_CONSTRUCTOR_ATTRIBUTE',
+            addmain=False,
+            msg='Checking for library constructor support')
+
         # check HAVE_DESTRUCTOR_ATTRIBUTE
         conf.CHECK_CODE('''
             void test_destructor_attribute(void) __attribute__ ((destructor));
