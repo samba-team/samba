@@ -250,6 +250,9 @@ static UWRAP_THREAD struct uwrap_thread *uwrap_tls_id;
 /* The mutex or accessing the id */
 static pthread_mutex_t uwrap_id_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+/* The mutex for accessing the global libc.fns */
+static pthread_mutex_t libc_symbol_binding_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 /*********************************************************
  * UWRAP PROTOTYPES
  *********************************************************/
@@ -334,10 +337,12 @@ static void *_uwrap_load_lib_function(enum uwrap_lib lib, const char *fn_name)
 }
 
 #define uwrap_load_lib_function(lib, fn_name) \
+	UWRAP_LOCK(libc_symbol_binding); \
 	if (uwrap.libc.fns._libc_##fn_name == NULL) { \
 		*(void **) (&uwrap.libc.fns._libc_##fn_name) = \
 			_uwrap_load_lib_function(lib, #fn_name); \
-	}
+	} \
+	UWRAP_UNLOCK(libc_symbol_binding)
 
 /*
  * IMPORTANT
@@ -540,7 +545,7 @@ static int uwrap_new_id(pthread_t tid, bool do_alloc)
 static void uwrap_thread_prepare(void)
 {
 	UWRAP_LOCK(uwrap_id);
-
+	UWRAP_LOCK(libc_symbol_binding);
 	/*
 	 * What happens if another atfork prepare functions calls a uwrap
 	 * function? So disable it in case another atfork prepare function
@@ -553,6 +558,7 @@ static void uwrap_thread_parent(void)
 {
 	uwrap.enabled = true;
 
+	UWRAP_UNLOCK(libc_symbol_binding);
 	UWRAP_UNLOCK(uwrap_id);
 }
 
@@ -560,6 +566,7 @@ static void uwrap_thread_child(void)
 {
 	uwrap.enabled = true;
 
+	UWRAP_UNLOCK(libc_symbol_binding);
 	UWRAP_UNLOCK(uwrap_id);
 }
 
@@ -1274,6 +1281,8 @@ void uwrap_destructor(void)
 	struct uwrap_thread *u = uwrap.ids;
 
 	UWRAP_LOCK(uwrap_id);
+	UWRAP_LOCK(libc_symbol_binding);
+
 	while (u != NULL) {
 		UWRAP_DLIST_REMOVE(uwrap.ids, u);
 
@@ -1282,9 +1291,11 @@ void uwrap_destructor(void)
 
 		u = uwrap.ids;
 	}
-	UWRAP_UNLOCK(uwrap_id);
 
 	if (uwrap.libc.handle != NULL) {
 		dlclose(uwrap.libc.handle);
 	}
+
+	UWRAP_UNLOCK(libc_symbol_binding);
+	UWRAP_UNLOCK(uwrap_id);
 }
