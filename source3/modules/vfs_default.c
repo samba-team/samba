@@ -223,8 +223,7 @@ static NTSTATUS vfswrap_get_dfs_referrals(struct vfs_handle_struct *handle,
 		pathnamep[consumedcnt] = '\0';
 
 		if (DEBUGLVL(3)) {
-			dbgtext("setup_dfs_referral: Path %s to "
-				"alternate path(s):",
+			dbgtext("Path %s to alternate path(s):",
 				pathnamep);
 			for (i=0; i < junction->referral_count; i++) {
 				dbgtext(" %s",
@@ -330,8 +329,7 @@ static NTSTATUS vfswrap_get_dfs_referrals(struct vfs_handle_struct *handle,
 		}
 		break;
 	default:
-		DEBUG(0,("setup_dfs_referral: Invalid dfs referral "
-			"version: %d\n",
+		DEBUG(0,("Invalid dfs referral version: %d\n",
 			max_referral_level));
 		return NT_STATUS_INVALID_LEVEL;
 	}
