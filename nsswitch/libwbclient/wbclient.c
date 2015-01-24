@@ -56,6 +56,7 @@ void winbindd_ctx_free(struct winbindd_context *ctx);
 */
 
 static wbcErr wbcRequestResponseInt(
+	struct winbindd_context *wbctx,
 	int cmd,
 	struct winbindd_request *request,
 	struct winbindd_response *response,
@@ -68,7 +69,7 @@ static wbcErr wbcRequestResponseInt(
 
 	/* for some calls the request and/or response can be NULL */
 
-	nss_status = fn(NULL, cmd, request, response);
+	nss_status = fn(wbctx, cmd, request, response);
 
 	switch (nss_status) {
 	case NSS_STATUS_SUCCESS:
@@ -91,25 +92,38 @@ static wbcErr wbcRequestResponseInt(
 /**
  * @brief Wrapper around Winbind's send/receive API call
  *
+ * @param ctx       Context
  * @param cmd       Winbind command operation to perform
  * @param request   Send structure
  * @param response  Receive structure
  *
  * @return #wbcErr
  */
-wbcErr wbcRequestResponse(int cmd,
+wbcErr wbcRequestResponse(struct wbcContext *ctx, int cmd,
 			  struct winbindd_request *request,
 			  struct winbindd_response *response)
 {
-	return wbcRequestResponseInt(cmd, request, response,
+	struct winbindd_context *wbctx = NULL;
+
+	if (ctx) {
+		wbctx = ctx->winbindd_ctx;
+	}
+
+	return wbcRequestResponseInt(wbctx, cmd, request, response,
 				     winbindd_request_response);
 }
 
-wbcErr wbcRequestResponsePriv(int cmd,
+wbcErr wbcRequestResponsePriv(struct wbcContext *ctx, int cmd,
 			      struct winbindd_request *request,
 			      struct winbindd_response *response)
 {
-	return wbcRequestResponseInt(cmd, request, response,
+	struct winbindd_context *wbctx = NULL;
+
+	if (ctx) {
+		wbctx = ctx->winbindd_ctx;
+	}
+
+	return wbcRequestResponseInt(wbctx, cmd, request, response,
 				     winbindd_priv_request_response);
 }
 

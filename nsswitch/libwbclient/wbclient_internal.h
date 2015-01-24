@@ -28,11 +28,11 @@ struct wbcContext {
 
 /* Private functions */
 
-wbcErr wbcRequestResponse(int cmd,
+wbcErr wbcRequestResponse(struct wbcContext *ctx, int cmd,
 			  struct winbindd_request *request,
 			  struct winbindd_response *response);
 
-wbcErr wbcRequestResponsePriv(int cmd,
+wbcErr wbcRequestResponsePriv(struct wbcContext *ctx, int cmd,
 			      struct winbindd_request *request,
 			      struct winbindd_response *response);
 
