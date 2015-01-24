@@ -734,7 +734,7 @@ import "misc.idl", "security.idl";
 		dom_sid2      *sid;
 	} lsa_TrustDomainInfoBasic;
 
-	typedef struct {
+	typedef [public] struct {
 		lsa_StringLarge     domain_name;
 		lsa_StringLarge     netbios_name;
 		dom_sid2           *sid;
