@@ -46,18 +46,19 @@ struct testA {
 
 
 static void foo_done(struct tevent_req *req) {
-// a->x contains 9
-struct foo_state *a = tevent_req_data(req, struct foo_state);
+    // a->x contains 10 since it came from foo_send
+    struct foo_state *a = tevent_req_data(req, struct foo_state);
 
-// b->y contains 10
-struct testA *b = tevent_req_callback_data(req, struct testA);
+    // b->y contains 9 since it came from run
+    struct testA *b = tevent_req_callback_data(req, struct testA);
 
-// c->y contains 10
-struct testA *c = (struct testA *)tevent_req_callback_data_void(req);
+    // c->y contains 9 since it came from run we just used a different way
+    // of getting it.
+    struct testA *c = (struct testA *)tevent_req_callback_data_void(req);
 
-printf("a->x: %d\n", a->x);
-printf("b->y: %d\n", b->y);
-printf("c->y: %d\n", c->y);
+    printf("a->x: %d\n", a->x);
+    printf("b->y: %d\n", b->y);
+    printf("c->y: %d\n", c->y);
 }
 
 
@@ -77,6 +78,9 @@ static void run(struct tevent_context *ev, struct tevent_timer *te,
                 struct timeval current_time, void *private_data) {
     struct tevent_req *req;
     struct testA *tmp = talloc(ev, struct testA);
+
+    // Note that we did not use the private data passed in
+
     tmp->y = 9;
     req = foo_send(ev, ev);
 
@@ -101,7 +105,7 @@ int main (int argc, char **argv) {
         return EXIT_FAILURE;
 
     data = talloc(mem_ctx, struct testA);
-    data->y = 10;
+    data->y = 11;
 
     time_event = tevent_add_timer(event_ctx,
                                   mem_ctx,
@@ -125,9 +129,9 @@ int main (int argc, char **argv) {
 Output of this example is:
 
 @code
-a->x: 9
-b->y: 10
-c->y: 10
+a->x: 10
+b->y: 9
+c->y: 9
 @endcode
 
 */
