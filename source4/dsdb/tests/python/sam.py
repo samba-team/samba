@@ -2863,6 +2863,66 @@ class SamTests(samba.tests.TestCase):
             self.ldb.rename(pr_object[0] + "2," + pr_object[1] + self.base_dn,
                             pr_object[0] + "," + pr_object[1] + self.base_dn)
 
+    def test_new_user_default_attributes(self):
+        """Test default attributes for new user objects"""
+        print "Test default attributes for new User objects\n"
+
+        user_name = "ldaptestuser"
+        user_dn = "CN=%s,CN=Users,%s" % (user_name, self.base_dn)
+        ldb.add({
+            "dn": user_dn,
+            "objectclass": "user",
+            "sAMAccountName": user_name})
+
+        res = ldb.search(user_dn, scope=SCOPE_BASE)
+        self.assertTrue(len(res) == 1)
+        user_obj = res[0]
+
+        expected_attrs = {"primaryGroupID": MessageElement(["513"]),
+                          "logonCount": MessageElement(["0"]),
+                          "cn": MessageElement([user_name]),
+                          "countryCode": MessageElement(["0"]),
+                          "objectClass": MessageElement(["top","person","organizationalPerson","user"]),
+                          "instanceType": MessageElement(["4"]),
+                          "distinguishedName": MessageElement([user_dn]),
+                          "sAMAccountType": MessageElement(["805306368"]),
+                          "objectSid": "**SKIP**",
+                          "whenCreated": "**SKIP**",
+                          "uSNCreated": "**SKIP**",
+                          "badPasswordTime": MessageElement(["0"]),
+                          "dn": Dn(ldb, user_dn),
+                          "pwdLastSet": MessageElement(["0"]),
+                          "sAMAccountName": MessageElement([user_name]),
+                          "objectCategory": MessageElement(["CN=Person,%s" % ldb.get_schema_basedn().get_linearized()]),
+                          "objectGUID": "**SKIP**",
+                          "whenChanged": "**SKIP**",
+                          "badPwdCount": MessageElement(["0"]),
+                          "accountExpires": MessageElement(["9223372036854775807"]),
+                          "name": MessageElement([user_name]),
+                          "codePage": MessageElement(["0"]),
+                          "userAccountControl": MessageElement(["546"]),
+                          "lastLogon": MessageElement(["0"]),
+                          "uSNChanged": "**SKIP**",
+                          "lastLogoff": MessageElement(["0"])}
+        # assert we have expected attribute names
+        actual_names = set(user_obj.keys())
+        # Samba does not use 'dSCorePropagationData', so skip it
+        actual_names -= set(['dSCorePropagationData'])
+        self.assertEqual(set(expected_attrs.keys()), actual_names, "Actual object does not has expected attributes")
+        # check attribute values
+        for name in expected_attrs.keys():
+            actual_val = user_obj.get(name)
+            self.assertFalse(actual_val is None, "No value for attribute '%s'" % name)
+            expected_val = expected_attrs[name]
+            if expected_val == "**SKIP**":
+                # "**ANY**" values means "any"
+                continue
+            self.assertEqual(expected_val, actual_val,
+                             "Unexpected value for '%s'" % name)
+        # clean up
+        delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+
+
 if not "://" in host:
     if os.path.isfile(host):
         host = "tdb://%s" % host
