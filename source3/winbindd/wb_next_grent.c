@@ -108,8 +108,7 @@ static void wb_next_grent_fetch_done(struct tevent_req *subreq)
 		/* Ignore errors here, just log it */
 		DEBUG(10, ("query_group_list for domain %s returned %s\n",
 			   state->gstate->domain->name, nt_errstr(status)));
-		tevent_req_nterror(req, status);
-		return;
+		state->gstate->num_groups = 0;
 	}
 
 	state->gstate->next_group = 0;
