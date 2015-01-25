@@ -103,14 +103,14 @@ static void wb_next_grent_fetch_done(struct tevent_req *subreq)
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		/* Ignore errors here, just log it */
-		DEBUG(10, ("query_user_list for domain %s returned %s\n",
+		DEBUG(10, ("QueryGroupList for domain %s returned %s\n",
 			   state->gstate->domain->name,
 			   nt_errstr(status)));
 		return;
 	}
 	if (!NT_STATUS_IS_OK(result)) {
 		/* Ignore errors here, just log it */
-		DEBUG(10, ("query_user_list for domain %s returned %s/%s\n",
+		DEBUG(10, ("QueryGroupList for domain %s returned %s/%s\n",
 			   state->gstate->domain->name,
 			   nt_errstr(status), nt_errstr(result)));
 		tevent_req_nterror(req, result);
