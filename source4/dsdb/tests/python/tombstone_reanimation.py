@@ -83,7 +83,7 @@ class RestoredObjectAttributesBaseTestCase(samba.tests.TestCase):
         return self.search_dn(msg['dn'])
 
     def assertAttributesEqual(self, obj_orig, attrs_orig, obj_restored, attrs_rest):
-        self.assertSetEqual(attrs_orig, attrs_rest)
+        self.assertEqual(attrs_orig, attrs_rest, "Actual object does not has expected attributes")
         # remove volatile attributes, they can't be equal
         attrs_orig -= set(["uSNChanged", "dSCorePropagationData", "whenChanged"])
         for attr in attrs_orig:
@@ -98,7 +98,7 @@ class RestoredObjectAttributesBaseTestCase(samba.tests.TestCase):
             orig_ldif = self.samdb.write_ldif(m, 0)
             # convert restored attr value to ldif
             rest_val = obj_restored.get(attr)
-            self.assertIsNotNone(rest_val)
+            self.assertFalse(rest_val is None)
             m = Message()
             if not isinstance(rest_val, MessageElement):
                 rest_val = MessageElement(str(rest_val), 0, attr)
@@ -106,6 +106,25 @@ class RestoredObjectAttributesBaseTestCase(samba.tests.TestCase):
             rest_ldif = self.samdb.write_ldif(m, 0)
             # compare generated ldif's
             self.assertEqual(orig_ldif.lower(), rest_ldif.lower())
+
+    def assertAttributesExists(self, attr_expected, obj_msg):
+        """Check object contains at least expected attrbigutes
+        :param attr_expected: dict of expected attributes with values. ** is any value
+        :param obj_msg: Ldb.Message for the object under test
+        """
+        actual_names = set(obj_msg.keys())
+        # Samba does not use 'dSCorePropagationData', so skip it
+        actual_names -= set(['dSCorePropagationData'])
+        self.assertEqual(set(attr_expected.keys()), actual_names, "Actual object does not has expected attributes")
+        for name in attr_expected.keys():
+            expected_val = attr_expected[name]
+            actual_val = obj_msg.get(name)
+            self.assertFalse(actual_val is None, "No value for attribute '%s'" % name)
+            if expected_val == "**":
+                # "**" values means "any"
+                continue
+            self.assertEqual(expected_val.lower(), str(actual_val).lower(),
+                             "Unexpected value for '%s'" % name)
 
     @staticmethod
     def restore_deleted_object(samdb, del_dn, new_dn, new_attrs=None):
@@ -287,6 +306,38 @@ class BaseRestoreObjectTestCase(RestoredObjectAttributesBaseTestCase):
 class RestoreUserObjectTestCase(RestoredObjectAttributesBaseTestCase):
     """Test cases for delete/reanimate user objects"""
 
+    def _expected_user_attributes(self, username, user_dn, category):
+        return {'dn': user_dn,
+                'objectClass': '**',
+                'cn': username,
+                'distinguishedName': user_dn,
+                'instanceType': '4',
+                'whenCreated': '**',
+                'whenChanged': '**',
+                'uSNCreated': '**',
+                'uSNChanged': '**',
+                'name': username,
+                'objectGUID': '**',
+                'userAccountControl': '546',
+                'badPwdCount': '0',
+                'badPasswordTime': '0',
+                'codePage': '0',
+                'countryCode': '0',
+                'lastLogon': '0',
+                'lastLogoff': '0',
+                'pwdLastSet': '0',
+                'primaryGroupID': '513',
+                'operatorCount': '0',
+                'objectSid': '**',
+                'adminCount': '0',
+                'accountExpires': '9223372036854775807',
+                'logonCount': '0',
+                'sAMAccountName': username,
+                'sAMAccountType': '805306368',
+                'lastKnownParent': 'CN=Users,%s' % self.base_dn,
+                'objectCategory': 'CN=%s,%s' % (category, self.schema_dn)
+                }
+
     def test_restore_user(self):
         print "Test restored user attributes"
         username = "restore_user"
@@ -308,7 +359,8 @@ class RestoreUserObjectTestCase(RestoredObjectAttributesBaseTestCase):
         # windows restore more attributes that originally we have
         orig_attrs.update(['adminCount', 'operatorCount', 'lastKnownParent'])
         rest_attrs = set(obj_restore.keys())
-        self.assertSetEqual(orig_attrs, rest_attrs)
+        self.assertEqual(orig_attrs, rest_attrs, "Actual object does not has expected attributes")
+        self.assertAttributesExists(self._expected_user_attributes(username, usr_dn, "Person"), obj_restore)
 
 
 class RestoreGroupObjectTestCase(RestoredObjectAttributesBaseTestCase):
@@ -347,6 +399,27 @@ class RestoreGroupObjectTestCase(RestoredObjectAttributesBaseTestCase):
         self.samdb.add(ldif)
         return self.search_dn(group_dn)
 
+    def _expected_group_attributes(self, groupname, group_dn, category):
+        return {'dn': group_dn,
+                'groupType': '-2147483646',
+                'distinguishedName': group_dn,
+                'sAMAccountName': groupname,
+                'name': groupname,
+                'objectCategory': 'CN=%s,%s' % (category, self.schema_dn),
+                'objectClass': '**',
+                'objectGUID': '**',
+                'lastKnownParent': 'CN=Users,%s' % self.base_dn,
+                'whenChanged': '**',
+                'sAMAccountType': '268435456',
+                'objectSid': '**',
+                'whenCreated': '**',
+                'uSNCreated': '**',
+                'operatorCount': '0',
+                'uSNChanged': '**',
+                'instanceType': '4',
+                'adminCount': '0',
+                'cn': groupname }
+
     def test_plain_group(self):
         print "Test restored Group attributes"
         # create test group
@@ -364,6 +437,7 @@ class RestoreGroupObjectTestCase(RestoredObjectAttributesBaseTestCase):
         attr_orig.update(['adminCount', 'operatorCount', 'lastKnownParent'])
         attr_rest = set(obj_restore.keys())
         self.assertAttributesEqual(obj, attr_orig, obj_restore, attr_rest)
+        self.assertAttributesExists(self._expected_group_attributes("r_group", str(obj.dn), "Group"), obj_restore)
 
     def test_group_with_members(self):
         print "Test restored Group with members attributes"
@@ -386,10 +460,30 @@ class RestoreGroupObjectTestCase(RestoredObjectAttributesBaseTestCase):
         attr_orig.remove("member")
         attr_rest = set(obj_restore.keys())
         self.assertAttributesEqual(obj, attr_orig, obj_restore, attr_rest)
+        self.assertAttributesExists(self._expected_group_attributes("r_group", str(obj.dn), "Group"), obj_restore)
 
 
 class RestoreContainerObjectTestCase(RestoredObjectAttributesBaseTestCase):
     """Test different scenarios for delete/reanimate OU/container objects"""
+
+    def _expected_container_attributes(self, rdn, name, dn, category):
+        if rdn == 'ou':
+            lastKnownParent = '%s' % self.base_dn
+        else:
+            lastKnownParent = 'CN=Users,%s' % self.base_dn
+        return {'dn': dn,
+                'distinguishedName': dn,
+                'name': name,
+                'objectCategory': 'CN=%s,%s' % (category, self.schema_dn),
+                'objectClass': '**',
+                'objectGUID': '**',
+                'lastKnownParent': lastKnownParent,
+                'whenChanged': '**',
+                'whenCreated': '**',
+                'uSNCreated': '**',
+                'uSNChanged': '**',
+                'instanceType': '4',
+                rdn: name }
 
     def _create_test_ou(self, rdn, name=None, description=None):
         ou_dn = "OU=%s,%s" % (rdn, self.base_dn)
@@ -418,8 +512,10 @@ class RestoreContainerObjectTestCase(RestoredObjectAttributesBaseTestCase):
         # windows restore more attributes that originally we have
         attr_orig.update(["lastKnownParent"])
         # and does not restore following attributes
-        attr_orig -= {"description"}
+        attr_orig -= set(["description"])
         self.assertAttributesEqual(obj, attr_orig, obj_restore, attr_rest)
+        expected_attrs = self._expected_container_attributes("ou", "r_ou", str(obj.dn), "Organizational-Unit")
+        self.assertAttributesExists(expected_attrs, obj_restore)
 
     def test_container(self):
         print "Test Container reanimation"
@@ -441,8 +537,11 @@ class RestoreContainerObjectTestCase(RestoredObjectAttributesBaseTestCase):
         # windows restore more attributes that originally we have
         attr_orig.update(["lastKnownParent"])
         # and does not restore following attributes
-        attr_orig -= {"showInAdvancedViewOnly"}
+        attr_orig -= set(["showInAdvancedViewOnly"])
         self.assertAttributesEqual(obj, attr_orig, obj_restore, attr_rest)
+        expected_attrs = self._expected_container_attributes("cn", "r_container",
+                                                             str(obj.dn), "container")
+        self.assertAttributesExists(expected_attrs, obj_restore)
 
 
 if __name__ == '__main__':
