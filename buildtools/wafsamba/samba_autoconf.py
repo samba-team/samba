@@ -703,6 +703,11 @@ int main(void) {
     if Options.options.pedantic:
         conf.ADD_CFLAGS('-W', testflags=True)
 
+    if Options.options.address_sanitizer:
+        conf.ADD_CFLAGS('-fno-omit-frame-pointer -O1 -fsanitize=address', testflags=True)
+        conf.ADD_LDFLAGS('-fsanitize=address', testflags=True)
+        conf.env['ADDRESS_SANITIZER'] = True
+
 
     # Let people pass an additional ADDITIONAL_{CFLAGS,LDFLAGS}
     # environment variables which are only used the for final build.
