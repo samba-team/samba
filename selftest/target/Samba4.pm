@@ -182,7 +182,7 @@ sub wait_for_start($$)
 	system("$nmblookup $testenv_vars->{CONFIGURATION} -U $testenv_vars->{SERVER_IP} $testenv_vars->{NETBIOSNAME}");
 
 	# Ensure we have the first RID Set before we start tests.  This makes the tests more reliable.
-	if ($testenv_vars->{SERVER_ROLE} eq "domain controller" and not ($testenv_vars->{NETBIOS_NAME} eq "rodc")) {
+	if ($testenv_vars->{SERVER_ROLE} eq "domain controller" and not ($testenv_vars->{NETBIOSNAME} eq "RODC")) {
 	    # Add hosts file for name lookups
 	    $ENV{NSS_WRAPPER_HOSTS} = $testenv_vars->{NSS_WRAPPER_HOSTS};
 		if (defined($testenv_vars->{RESOLV_WRAPPER_CONF})) {
