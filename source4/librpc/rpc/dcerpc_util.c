@@ -630,6 +630,22 @@ struct composite_context *dcerpc_pipe_auth_send(struct dcerpc_pipe *p,
 		conn->flags |= DCERPC_DEBUG_PRINT_BOTH;
 	}
 
+	if (conn->transport.transport == NCALRPC) {
+		const char *v = dcerpc_binding_get_string_option(binding,
+							"auth_type");
+
+		if (v != NULL && strcmp(v, "ncalrpc_as_system") == 0) {
+			auth_req = dcerpc_bind_auth_send(c, s->pipe, s->table,
+						 s->credentials,
+						 lpcfg_gensec_settings(c, s->lp_ctx),
+						 DCERPC_AUTH_TYPE_NCALRPC_AS_SYSTEM,
+						 DCERPC_AUTH_LEVEL_CONNECT,
+						 s->table->authservices->names[0]);
+			composite_continue(c, auth_req, continue_auth, c);
+			return c;
+		}
+	}
+
 	if (cli_credentials_is_anonymous(s->credentials)) {
 		auth_none_req = dcerpc_bind_auth_none_send(c, s->pipe, s->table);
 		composite_continue(c, auth_none_req, continue_auth_none, c);
