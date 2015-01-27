@@ -560,7 +560,7 @@ static PyObject *py_net_finddc(py_net_Object *self, PyObject *args, PyObject *kw
 	PyObject *ret;
 	const char * const kwnames[] = { "flags", "domain", "address", NULL };
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "I|ss",
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "I|zz",
 					 discard_const_p(char *, kwnames),
 					 &server_type, &domain, &address)) {
 		return NULL;
