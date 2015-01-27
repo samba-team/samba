@@ -57,6 +57,14 @@ class TestCase(unittest.TestCase):
         def skipTest(self, reason):
             raise SkipTest(reason)
 
+    if not getattr(unittest.TestCase, "assertIs", None):
+        def assertIs(self, a, b):
+            self.assertTrue(a is b)
+
+    if not getattr(unittest.TestCase, "assertIsNot", None):
+        def assertIsNot(self, a, b):
+            self.assertTrue(a is not b)
+
 
 class LdbTestCase(unittest.TestCase):
     """Trivial test case for running tests against a LDB."""
