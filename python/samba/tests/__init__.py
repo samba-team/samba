@@ -53,6 +53,7 @@ class TestCase(unittest.TestCase):
     def get_credentials(self):
         return cmdline_credentials
 
+    # These functions didn't exist before Python2.7:
     if not getattr(unittest.TestCase, "skipTest", None):
         def skipTest(self, reason):
             raise SkipTest(reason)
@@ -64,6 +65,16 @@ class TestCase(unittest.TestCase):
     if not getattr(unittest.TestCase, "assertIsNot", None):
         def assertIsNot(self, a, b):
             self.assertTrue(a is not b)
+
+    if not getattr(unittest.TestCase, "addCleanup", None):
+        def addCleanup(self, fn, *args, **kwargs):
+            self._cleanups = getattr(self, "_cleanups", []) + [
+                (fn, args, kwargs)]
+
+        def tearDown(self):
+            super(TestCase, self).tearDown()
+            for (fn, args, kwargs) in reversed(getattr(self, "_cleanups", [])):
+                fn(*args, **kwargs)
 
 
 class LdbTestCase(unittest.TestCase):
