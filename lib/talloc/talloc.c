@@ -1064,7 +1064,7 @@ static inline int _talloc_free_internal(void *ptr, const char *location)
 	return 0;
 }
 
-static size_t _talloc_total_limit_size(const void *ptr,
+static inline size_t _talloc_total_limit_size(const void *ptr,
 					struct talloc_memlimit *old_limit,
 					struct talloc_memlimit *new_limit);
 
