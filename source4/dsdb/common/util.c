@@ -4854,35 +4854,56 @@ NTSTATUS dsdb_update_bad_pwd_count(TALLOC_CTX *mem_ctx,
  */
 int dsdb_user_obj_set_defaults(struct ldb_context *ldb, struct ldb_message *usr_obj)
 {
-	int ret;
+	int i, ret;
+	const struct attribute_values {
+		const char *name;
+		const char *value;
+	} map[] = {
+		{
+			.name = "accountExpires",
+			.value = "9223372036854775807"
+		},
+		{
+			.name = "badPasswordTime",
+			.value = "0"
+		},
+		{
+			.name = "badPwdCount",
+			.value = "0"
+		},
+		{
+			.name = "codePage",
+			.value = "0"
+		},
+		{
+			.name = "countryCode",
+			.value = "0"
+		},
+		{
+			.name = "lastLogoff",
+			.value = "0"
+		},
+		{
+			.name = "lastLogon",
+			.value = "0"
+		},
+		{
+			.name = "logonCount",
+			.value = "0"
+		},
+		{
+			.name = "pwdLastSet",
+			.value = "0"
+		}
+	};
 
-	ret = samdb_find_or_add_attribute(ldb, usr_obj,
-		"accountExpires", "9223372036854775807");
-	if (ret != LDB_SUCCESS) return ret;
-	ret = samdb_find_or_add_attribute(ldb, usr_obj,
-		"badPasswordTime", "0");
-	if (ret != LDB_SUCCESS) return ret;
-	ret = samdb_find_or_add_attribute(ldb, usr_obj,
-		"badPwdCount", "0");
-	if (ret != LDB_SUCCESS) return ret;
-	ret = samdb_find_or_add_attribute(ldb, usr_obj,
-		"codePage", "0");
-	if (ret != LDB_SUCCESS) return ret;
-	ret = samdb_find_or_add_attribute(ldb, usr_obj,
-		"countryCode", "0");
-	if (ret != LDB_SUCCESS) return ret;
-	ret = samdb_find_or_add_attribute(ldb, usr_obj,
-		"lastLogoff", "0");
-	if (ret != LDB_SUCCESS) return ret;
-	ret = samdb_find_or_add_attribute(ldb, usr_obj,
-		"lastLogon", "0");
-	if (ret != LDB_SUCCESS) return ret;
-	ret = samdb_find_or_add_attribute(ldb, usr_obj,
-		"logonCount", "0");
-	if (ret != LDB_SUCCESS) return ret;
-	ret = samdb_find_or_add_attribute(ldb, usr_obj,
-		"pwdLastSet", "0");
-	if (ret != LDB_SUCCESS) return ret;
+	for (i = 0; i < ARRAY_SIZE(map); i++) {
+		ret = samdb_find_or_add_attribute(ldb, usr_obj,
+						  map[i].name, map[i].value);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
 
 	return LDB_SUCCESS;
 }
