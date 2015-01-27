@@ -536,11 +536,13 @@ static void set_recmode_handler(struct event_context *ev, struct fd_event *fde,
 	*/
 	ret = sys_read(state->fd[0], &c, 1);
 	if (ret != 1 || c != 0) {
+		const char *msg = \
+			"Took recovery lock from daemon - probably a cluster filesystem lock coherence problem";
 		ctdb_request_control_reply(
 			state->ctdb, state->c, NULL, -1,
-			"Took recovery lock from daemon during recovery - probably a cluster filesystem lock coherence problem");
+			msg);
 		talloc_free(state);
-		return;
+		ctdb_die(state->ctdb, msg);
 	}
 
 	state->ctdb->recovery_mode = state->recmode;
