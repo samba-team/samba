@@ -25,6 +25,7 @@ from samba.subunit import (
     PROGRESS_PUSH,
     PROGRESS_POP,
     )
+from samba.tests import TestCase
 import tempfile
 
 from selftest.run import (
@@ -36,7 +37,6 @@ from selftest.run import (
     run_testsuite_command,
     )
 
-from unittest import TestCase
 
 
 class ExpandEnvironmentStringsTests(TestCase):
