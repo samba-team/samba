@@ -1070,6 +1070,10 @@ static NTSTATUS netr_creds_server_step_check(struct pipes_struct *p,
 	NTSTATUS status;
 	bool schannel_global_required = (lp_server_schannel() == true) ? true:false;
 
+	if (creds_out != NULL) {
+		*creds_out = NULL;
+	}
+
 	if (schannel_global_required) {
 		status = schannel_check_required(&p->auth,
 						 computer_name,
@@ -1205,7 +1209,7 @@ NTSTATUS _netr_ServerPasswordSet(struct pipes_struct *p,
 {
 	NTSTATUS status = NT_STATUS_OK;
 	int i;
-	struct netlogon_creds_CredentialState *creds;
+	struct netlogon_creds_CredentialState *creds = NULL;
 
 	DEBUG(5,("_netr_ServerPasswordSet: %d\n", __LINE__));
 
