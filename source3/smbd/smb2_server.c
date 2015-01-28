@@ -803,6 +803,7 @@ static void smb2_set_operation_credit(struct smbXsrv_connection *xconn,
 
 	cmd = SVAL(inhdr, SMB2_HDR_OPCODE);
 	credits_requested = SVAL(inhdr, SMB2_HDR_CREDIT);
+	credits_requested = MAX(credits_requested, 1);
 	out_flags = IVAL(outhdr, SMB2_HDR_FLAGS);
 	out_status = NT_STATUS(IVAL(outhdr, SMB2_HDR_STATUS));
 
@@ -821,7 +822,7 @@ static void smb2_set_operation_credit(struct smbXsrv_connection *xconn,
 		 * credits on the final response.
 		 */
 		credits_granted = 0;
-	} else if (credits_requested > 0) {
+	} else {
 		uint16_t additional_max = 0;
 		uint16_t additional_credits = credits_requested - 1;
 
@@ -850,11 +851,6 @@ static void smb2_set_operation_credit(struct smbXsrv_connection *xconn,
 		additional_credits = MIN(additional_credits, additional_max);
 
 		credits_granted = credit_charge + additional_credits;
-	} else if (xconn->smb2.credits.granted == 0) {
-		/*
-		 * Make sure the client has always at least one credit
-		 */
-		credits_granted = 1;
 	}
 
 	/*
