@@ -125,6 +125,15 @@ static void assert_single_node_only(void)
 	}
 }
 
+static void assert_current_node_only(struct ctdb_context *ctdb)
+{
+	if (options.pnn != ctdb_get_pnn(ctdb)) {
+		DEBUG(DEBUG_ERR,
+		      ("This control can only be applied to the current node\n"));
+		exit(1);
+	}
+}
+
 /* Pretty print the flags to a static buffer in human-readable format.
  * This never returns NULL!
  */
@@ -6144,12 +6153,9 @@ static int control_listnodes(struct ctdb_context *ctdb, int argc, const char **a
 static int control_reload_nodes_file(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	int i, ret;
-	int mypnn;
 	struct ctdb_node_map *nodemap=NULL;
 
-	assert_single_node_only();
-
-	mypnn = ctdb_get_pnn(ctdb);
+	assert_current_node_only(ctdb);
 
 	ret = ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE, ctdb, &nodemap);
 	if (ret != 0) {
@@ -6159,7 +6165,7 @@ static int control_reload_nodes_file(struct ctdb_context *ctdb, int argc, const 
 
 	/* reload the nodes file on all remote nodes */
 	for (i=0;i<nodemap->num;i++) {
-		if (nodemap->nodes[i].pnn == mypnn) {
+		if (nodemap->nodes[i].pnn == options.pnn) {
 			continue;
 		}
 		DEBUG(DEBUG_NOTICE, ("Reloading nodes file on node %u\n", nodemap->nodes[i].pnn));
@@ -6170,11 +6176,11 @@ static int control_reload_nodes_file(struct ctdb_context *ctdb, int argc, const 
 		}
 	}
 
-	/* reload the nodes file on the local node */
-	DEBUG(DEBUG_NOTICE, ("Reloading nodes file on node %u\n", mypnn));
-	ret = ctdb_ctrl_reload_nodes_file(ctdb, TIMELIMIT(), mypnn);
+	/* reload the nodes file on the specified node */
+	DEBUG(DEBUG_NOTICE, ("Reloading nodes file on node %u\n", options.pnn));
+	ret = ctdb_ctrl_reload_nodes_file(ctdb, TIMELIMIT(), options.pnn);
 	if (ret != 0) {
-		DEBUG(DEBUG_ERR, ("ERROR: Failed to reload nodes file on node %u. You MUST fix that node manually!\n", mypnn));
+		DEBUG(DEBUG_ERR, ("ERROR: Failed to reload nodes file on node %u. You MUST fix that node manually!\n", options.pnn));
 	}
 
 	/* initiate a recovery */
