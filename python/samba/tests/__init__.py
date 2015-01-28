@@ -66,6 +66,10 @@ class TestCase(unittest.TestCase):
         def assertIsNot(self, a, b):
             self.assertTrue(a is not b)
 
+    if not getattr(unittest.TestCase, "assertIsInstance", None):
+        def assertIsInstance(self, a, b):
+            self.assertTrue(isinstance(a, b))
+
     if not getattr(unittest.TestCase, "addCleanup", None):
         def addCleanup(self, fn, *args, **kwargs):
             self._cleanups = getattr(self, "_cleanups", []) + [
