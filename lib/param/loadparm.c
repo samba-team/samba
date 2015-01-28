@@ -1567,19 +1567,15 @@ bool set_variable(TALLOC_CTX *mem_ctx, struct loadparm_service *service, int par
 	if (parm_table[parmnum].special) {
 		ok = parm_table[parmnum].special(lp_ctx, service, pszParmValue,
 						  (char **)parm_ptr);
-		if (!ok) {
-			return false;
-		}
-		goto mark_non_default;
+	} else {
+		ok = set_variable_helper(mem_ctx, parmnum, parm_ptr,
+					 pszParmName, pszParmValue);
 	}
-
-	ok = set_variable_helper(mem_ctx, parmnum, parm_ptr, pszParmName, pszParmValue);
 
 	if (!ok) {
 		return false;
 	}
 
-mark_non_default:
 	if (on_globals && (lp_ctx->flags[parmnum] & FLAG_DEFAULT)) {
 		lp_ctx->flags[parmnum] &= ~FLAG_DEFAULT;
 		/* we have to also unset FLAG_DEFAULT on aliases */
