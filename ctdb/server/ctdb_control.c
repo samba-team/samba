@@ -531,7 +531,8 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		 * master updates all nodes on each recovery - we
 		 * don't need the extra memory allocation or log
 		 * message each time. */
-		if (strcmp(discard_const(indata.dptr),
+		if (ctdb->recovery_lock_file != NULL &&
+		    strcmp(discard_const(indata.dptr),
 			   ctdb->recovery_lock_file) == 0) {
 			return 0;
 		}
