@@ -4291,6 +4291,7 @@ static NTSTATUS dcesrv_lsa_lsaRQueryForestTrustInformation(struct dcesrv_call_st
 	return NT_STATUS_OK;
 }
 
+#if 0
 #define DNS_CMP_MATCH 0
 #define DNS_CMP_FIRST_IS_CHILD 1
 #define DNS_CMP_SECOND_IS_CHILD 2
@@ -4659,6 +4660,7 @@ static NTSTATUS add_collision(struct lsa_ForestTrustCollisionInfo *c_info,
 
 	return NT_STATUS_OK;
 }
+#endif
 
 /*
   lsa_lsaRSetForestTrustInformation
@@ -4669,22 +4671,32 @@ static NTSTATUS dcesrv_lsa_lsaRSetForestTrustInformation(struct dcesrv_call_stat
 {
 	struct dcesrv_handle *h;
 	struct lsa_policy_state *p_state;
-	const char *trust_attrs[] = { "trustPartner", "trustAttributes",
-				      "msDS-TrustForestTrustInfo", NULL };
-	struct ldb_message **dom_res = NULL;
-	struct ldb_dn *tdo_dn;
-	struct ldb_message *msg;
-	int num_res, i;
-	const char *td_name;
-	uint32_t trust_attributes;
-	struct lsa_ForestTrustCollisionInfo *c_info;
-	struct ForestTrustInfo *nfti;
-	struct ForestTrustInfo *fti;
-	DATA_BLOB ft_blob;
+	const char * const trust_attrs[] = {
+		"securityIdentifier",
+		"flatName",
+		"trustPartner",
+		"trustAttributes",
+		"trustDirection",
+		"trustType",
+		"msDS-TrustForestTrustInfo",
+		NULL
+	};
+	struct ldb_message *trust_tdo_msg = NULL;
+	struct lsa_TrustDomainInfoInfoEx *trust_tdo = NULL;
+	struct lsa_ForestTrustInformation *step1_lfti = NULL;
+	struct lsa_ForestTrustInformation *step2_lfti = NULL;
+	struct ForestTrustInfo *trust_fti = NULL;
+	struct ldb_result *trusts_res = NULL;
+	unsigned int i;
+	struct lsa_TrustDomainInfoInfoEx *xref_tdo = NULL;
+	struct lsa_ForestTrustInformation *xref_lfti = NULL;
+	struct lsa_ForestTrustCollisionInfo *c_info = NULL;
+	DATA_BLOB ft_blob = {};
+	struct ldb_message *msg = NULL;
+	NTSTATUS status;
 	enum ndr_err_code ndr_err;
-	NTSTATUS nt_status;
-	bool am_rodc;
 	int ret;
+	bool in_transaction = false;
 
 	DCESRV_PULL_HANDLE(h, r->in.handle, LSA_HANDLE_POLICY);
 
@@ -4694,165 +4706,244 @@ static NTSTATUS dcesrv_lsa_lsaRSetForestTrustInformation(struct dcesrv_call_stat
 		return NT_STATUS_INVALID_DOMAIN_STATE;
 	}
 
-	/* abort if we are not a PDC */
+	if (r->in.check_only == 0) {
+		ret = ldb_transaction_start(p_state->sam_ldb);
+		if (ret != LDB_SUCCESS) {
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+		in_transaction = true;
+	}
+
+	/*
+	 * abort if we are not a PDC
+	 *
+	 * In future we should use a function like IsEffectiveRoleOwner()
+	 */
 	if (!samdb_is_pdc(p_state->sam_ldb)) {
-		return NT_STATUS_INVALID_DOMAIN_ROLE;
+		status = NT_STATUS_INVALID_DOMAIN_ROLE;
+		goto done;
 	}
 
-	ret = samdb_rodc(p_state->sam_ldb, &am_rodc);
-	if (ret == LDB_SUCCESS && am_rodc) {
-		return NT_STATUS_NO_SUCH_DOMAIN;
+	if (r->in.trusted_domain_name->string == NULL) {
+		status = NT_STATUS_NO_SUCH_DOMAIN;
+		goto done;
 	}
 
-	/* check caller has TRUSTED_SET_AUTH */
-
-	/* fetch all trusted domain objects */
-	num_res = gendb_search(p_state->sam_ldb, mem_ctx,
-			       p_state->system_dn,
-			       &dom_res, trust_attrs,
-			       "(objectclass=trustedDomain)");
-	if (num_res == 0) {
-		return NT_STATUS_NO_SUCH_DOMAIN;
+	status = dsdb_trust_search_tdo(p_state->sam_ldb,
+				       r->in.trusted_domain_name->string,
+				       r->in.trusted_domain_name->string,
+				       trust_attrs, mem_ctx, &trust_tdo_msg);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+		status = NT_STATUS_NO_SUCH_DOMAIN;
+		goto done;
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
 	}
 
-	for (i = 0; i < num_res; i++) {
-		td_name = ldb_msg_find_attr_as_string(dom_res[i],
-						      "trustPartner", NULL);
-		if (!td_name) {
-			return NT_STATUS_INVALID_DOMAIN_STATE;
-		}
-		if (strcasecmp_m(td_name,
-				 r->in.trusted_domain_name->string) == 0) {
-			break;
-		}
-	}
-	if (i >= num_res) {
-		return NT_STATUS_NO_SUCH_DOMAIN;
+	status = dsdb_trust_parse_tdo_info(mem_ctx, trust_tdo_msg, &trust_tdo);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
 	}
 
-	tdo_dn = dom_res[i]->dn;
-
-	trust_attributes = ldb_msg_find_attr_as_uint(dom_res[i],
-						     "trustAttributes", 0);
-	if (!(trust_attributes & LSA_TRUST_ATTRIBUTE_FOREST_TRANSITIVE)) {
-		return NT_STATUS_INVALID_PARAMETER;
+	if (!(trust_tdo->trust_attributes & LSA_TRUST_ATTRIBUTE_FOREST_TRANSITIVE)) {
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto done;
 	}
 
 	if (r->in.highest_record_type >= LSA_FOREST_TRUST_RECORD_TYPE_LAST) {
-		return NT_STATUS_INVALID_PARAMETER;
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto done;
 	}
 
-	nfti = talloc(mem_ctx, struct ForestTrustInfo);
-	if (!nfti) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	nt_status = make_ft_info(nfti, r->in.forest_trust_info, nfti);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		return nt_status;
+	/*
+	 * verify and normalize the given forest trust info.
+	 *
+	 * Step1: doesn't reorder yet, so step1_lfti might contain
+	 * NULL entries. This means dsdb_trust_verify_forest_info()
+	 * can generate collision entries with the callers index.
+	 */
+	status = dsdb_trust_normalize_forest_info_step1(mem_ctx,
+							r->in.forest_trust_info,
+							&step1_lfti);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
 	}
 
 	c_info = talloc_zero(r->out.collision_info,
 			     struct lsa_ForestTrustCollisionInfo);
-	if (!c_info) {
-		return NT_STATUS_NO_MEMORY;
+	if (c_info == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
 	}
 
-        /* first check own info, then other domains */
-	fti = talloc(mem_ctx, struct ForestTrustInfo);
-	if (!fti) {
-		return NT_STATUS_NO_MEMORY;
+	/*
+	 * First check our own forest, then other domains/forests
+	 */
+
+	status = dsdb_trust_xref_tdo_info(mem_ctx, p_state->sam_ldb,
+					  &xref_tdo);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+	status = dsdb_trust_xref_forest_info(mem_ctx, p_state->sam_ldb,
+					     &xref_lfti);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
 	}
 
-        nt_status = own_ft_info(p_state, fti);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		return nt_status;
+	/*
+	 * The documentation proposed to generate
+	 * LSA_FOREST_TRUST_COLLISION_XREF collisions.
+	 * But Windows always uses LSA_FOREST_TRUST_COLLISION_TDO.
+	 */
+	status = dsdb_trust_verify_forest_info(xref_tdo, xref_lfti,
+					       LSA_FOREST_TRUST_COLLISION_TDO,
+					       c_info, step1_lfti);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
 	}
 
-	nt_status = check_ft_info(c_info, p_state->domain_dns,
-                                  fti, nfti, c_info);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		return nt_status;
+	/* fetch all other trusted domain objects */
+	status = dsdb_trust_search_tdos(p_state->sam_ldb,
+					trust_tdo->domain_name.string,
+					trust_attrs,
+					mem_ctx, &trusts_res);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
 	}
 
-	for (i = 0; i < num_res; i++) {
-		fti = talloc(mem_ctx, struct ForestTrustInfo);
-		if (!fti) {
-			return NT_STATUS_NO_MEMORY;
+	/*
+	 * now check against the other domains.
+	 * and generate LSA_FOREST_TRUST_COLLISION_TDO collisions.
+	 */
+	for (i = 0; i < trusts_res->count; i++) {
+		struct lsa_TrustDomainInfoInfoEx *tdo = NULL;
+		struct ForestTrustInfo *fti = NULL;
+		struct lsa_ForestTrustInformation *lfti = NULL;
+
+		status = dsdb_trust_parse_tdo_info(mem_ctx,
+						   trusts_res->msgs[i],
+						   &tdo);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto done;
 		}
 
-		nt_status = get_ft_info(mem_ctx, dom_res[i], fti);
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			if (NT_STATUS_EQUAL(nt_status,
-			    NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
-				continue;
-			}
-			return nt_status;
+		status = dsdb_trust_parse_forest_info(tdo,
+						      trusts_res->msgs[i],
+						      &fti);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+			continue;
+		}
+		if (!NT_STATUS_IS_OK(status)) {
+			goto done;
 		}
 
-		td_name = ldb_msg_find_attr_as_string(dom_res[i],
-						      "trustPartner", NULL);
-		if (!td_name) {
-			return NT_STATUS_INVALID_DOMAIN_STATE;
+		status = dsdb_trust_forest_info_to_lsa(tdo, fti, &lfti);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto done;
 		}
 
-		nt_status = check_ft_info(c_info, td_name, fti, nfti, c_info);
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			return nt_status;
+		status = dsdb_trust_verify_forest_info(tdo, lfti,
+						LSA_FOREST_TRUST_COLLISION_TDO,
+						c_info, step1_lfti);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto done;
 		}
-	}
 
-	if (c_info->count != 0) {
-		*r->out.collision_info = c_info;
+		TALLOC_FREE(tdo);
 	}
 
 	if (r->in.check_only != 0) {
-		return NT_STATUS_OK;
+		status = NT_STATUS_OK;
+		goto done;
 	}
 
-	/* not just a check, write info back */
+	/*
+	 * not just a check, write info back
+	 */
 
-	ndr_err = ndr_push_struct_blob(&ft_blob, mem_ctx, nfti,
+	/*
+	 * normalize the given forest trust info.
+	 *
+	 * Step2: adds TOP_LEVEL_NAME[_EX] in reverse order,
+	 * followed by DOMAIN_INFO in reverse order. It also removes
+	 * possible NULL entries from Step1.
+	 */
+	status = dsdb_trust_normalize_forest_info_step2(mem_ctx, step1_lfti,
+							&step2_lfti);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+	status = dsdb_trust_forest_info_from_lsa(mem_ctx, step2_lfti,
+						 &trust_fti);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+	ndr_err = ndr_push_struct_blob(&ft_blob, mem_ctx, trust_fti,
 				       (ndr_push_flags_fn_t)ndr_push_ForestTrustInfo);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		return NT_STATUS_INVALID_PARAMETER;
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto done;
 	}
 
 	msg = ldb_msg_new(mem_ctx);
 	if (msg == NULL) {
-		return NT_STATUS_NO_MEMORY;
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
 	}
 
-	msg->dn = ldb_dn_copy(mem_ctx, tdo_dn);
+	msg->dn = ldb_dn_copy(mem_ctx, trust_tdo_msg->dn);
 	if (!msg->dn) {
-		return NT_STATUS_NO_MEMORY;
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
 	}
 
 	ret = ldb_msg_add_empty(msg, "msDS-TrustForestTrustInfo",
 				LDB_FLAG_MOD_REPLACE, NULL);
 	if (ret != LDB_SUCCESS) {
-		return NT_STATUS_NO_MEMORY;
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
 	}
 	ret = ldb_msg_add_value(msg, "msDS-TrustForestTrustInfo",
 				&ft_blob, NULL);
 	if (ret != LDB_SUCCESS) {
-		return NT_STATUS_NO_MEMORY;
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
 	}
 
 	ret = ldb_modify(p_state->sam_ldb, msg);
 	if (ret != LDB_SUCCESS) {
+		status = dsdb_ldb_err_to_ntstatus(ret);
+
 		DEBUG(0, ("Failed to store Forest Trust Info: %s\n",
 			  ldb_errstring(p_state->sam_ldb)));
 
-		switch (ret) {
-		case LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS:
-			return NT_STATUS_ACCESS_DENIED;
-		default:
-			return NT_STATUS_INTERNAL_DB_CORRUPTION;
-		}
+		goto done;
 	}
 
-	return NT_STATUS_OK;
+	/* ok, all fine, commit transaction and return */
+	in_transaction = false;
+	ret = ldb_transaction_commit(p_state->sam_ldb);
+	if (ret != LDB_SUCCESS) {
+		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+		goto done;
+	}
+
+	status = NT_STATUS_OK;
+
+done:
+	if (NT_STATUS_IS_OK(status) && c_info->count != 0) {
+		*r->out.collision_info = c_info;
+	}
+
+	if (in_transaction) {
+		ldb_transaction_cancel(p_state->sam_ldb);
+	}
+
+	return status;
 }
 
 /*
