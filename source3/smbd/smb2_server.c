@@ -822,6 +822,8 @@ static void smb2_set_operation_credit(struct smbXsrv_connection *xconn,
 		 */
 		credits_granted = 0;
 	} else {
+		uint16_t additional_possible =
+			xconn->smb2.credits.max - credit_charge;
 		uint16_t additional_max = 0;
 		uint16_t additional_credits = credits_requested - 1;
 
@@ -847,6 +849,7 @@ static void smb2_set_operation_credit(struct smbXsrv_connection *xconn,
 			break;
 		}
 
+		additional_max = MIN(additional_max, additional_possible);
 		additional_credits = MIN(additional_credits, additional_max);
 
 		credits_granted = credit_charge + additional_credits;
