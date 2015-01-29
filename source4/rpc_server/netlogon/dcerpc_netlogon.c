@@ -2852,68 +2852,6 @@ static NTSTATUS dcesrv_netr_ServerTrustPasswordsGet(struct dcesrv_call_state *dc
 	return status;
 }
 
-
-static WERROR fill_forest_trust_array(TALLOC_CTX *mem_ctx,
-				      struct ldb_context *sam_ctx,
-				      struct loadparm_context *lp_ctx,
-				      struct lsa_ForestTrustInformation *info)
-{
-	struct lsa_ForestTrustDomainInfo *domain_info;
-	struct lsa_ForestTrustRecord *e;
-	struct ldb_message **dom_res;
-	const char * const dom_attrs[] = { "objectSid", NULL };
-	int ret;
-
-	/* we need to provide 2 entries:
-	 * 1. the Root Forest name
-	 * 2. the Domain Information
-	 */
-
-	info->count = 2;
-	info->entries = talloc_array(info, struct lsa_ForestTrustRecord *, 2);
-	W_ERROR_HAVE_NO_MEMORY(info->entries);
-
-	/* Forest root info */
-	e = talloc(info, struct lsa_ForestTrustRecord);
-	W_ERROR_HAVE_NO_MEMORY(e);
-
-	e->flags = 0;
-	e->type = LSA_FOREST_TRUST_TOP_LEVEL_NAME;
-	e->time = 0; /* so far always 0 in trces. */
-	e->forest_trust_data.top_level_name.string = samdb_forest_name(sam_ctx,
-								       mem_ctx);
-	W_ERROR_HAVE_NO_MEMORY(e->forest_trust_data.top_level_name.string);
-
-	info->entries[0] = e;
-
-	/* Domain info */
-	e = talloc(info, struct lsa_ForestTrustRecord);
-	W_ERROR_HAVE_NO_MEMORY(e);
-
-	/* get our own domain info */
-	ret = gendb_search_dn(sam_ctx, mem_ctx, NULL, &dom_res, dom_attrs);
-	if (ret != 1) {
-		return WERR_GENERAL_FAILURE;
-	}
-
-	/* TODO: check if disabled and set flags accordingly */
-	e->flags = 0;
-	e->type = LSA_FOREST_TRUST_DOMAIN_INFO;
-	e->time = 0; /* so far always 0 in traces. */
-
-	domain_info = &e->forest_trust_data.domain_info;
-	domain_info->domain_sid = samdb_result_dom_sid(info, dom_res[0],
-						       "objectSid");
-	domain_info->dns_domain_name.string = lpcfg_dnsdomain(lp_ctx);
-	domain_info->netbios_domain_name.string = lpcfg_workgroup(lp_ctx);
-
-	info->entries[1] = e;
-
-	talloc_free(dom_res);
-
-	return WERR_OK;
-}
-
 /*
   netr_DsRGetForestTrustInformation
 */
@@ -2933,12 +2871,10 @@ static WERROR dcesrv_netr_DsRGetForestTrustInformation(struct dcesrv_call_state 
 	struct dcesrv_connection *conn = dce_call->conn;
 	struct auth_session_info *session_info = conn->auth_state.session_info;
 	enum security_user_level security_level;
-	struct lsa_ForestTrustInformation *info = NULL;
 	struct ldb_context *sam_ctx = NULL;
 	struct dcesrv_netr_DsRGetForestTrustInformation_state *state = NULL;
 	struct dcerpc_binding_handle *irpc_handle = NULL;
 	struct tevent_req *subreq = NULL;
-	WERROR werr;
 
 	security_level = security_session_user_level(session_info, NULL);
 	if (security_level < SECURITY_USER) {
@@ -2966,20 +2902,16 @@ static WERROR dcesrv_netr_DsRGetForestTrustInformation(struct dcesrv_call_state 
 	}
 
 	if (r->in.trusted_domain_name == NULL) {
+		NTSTATUS status;
+
 		/*
 		 * information about our own domain
 		 */
-		info = talloc_zero(mem_ctx, struct lsa_ForestTrustInformation);
-		if (info == NULL) {
-			return WERR_NOMEM;
+		status = dsdb_trust_xref_forest_info(mem_ctx, sam_ctx,
+						r->out.forest_trust_info);
+		if (!NT_STATUS_IS_OK(status)) {
+			return ntstatus_to_werror(status);
 		}
-
-		werr = fill_forest_trust_array(info, sam_ctx, lp_ctx, info);
-		if (!W_ERROR_IS_OK(werr)) {
-			return werr;
-		}
-
-		*r->out.forest_trust_info = info;
 
 		return WERR_OK;
 	}
@@ -3063,10 +2995,8 @@ static NTSTATUS dcesrv_netr_GetForestTrustInformation(struct dcesrv_call_state *
 {
 	struct loadparm_context *lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
 	struct netlogon_creds_CredentialState *creds;
-	struct lsa_ForestTrustInformation *info, **info_ptr;
 	struct ldb_context *sam_ctx;
 	NTSTATUS status;
-	WERROR werr;
 
 	status = dcesrv_netr_creds_server_step_check(dce_call,
 						     mem_ctx,
@@ -3091,22 +3021,11 @@ static NTSTATUS dcesrv_netr_GetForestTrustInformation(struct dcesrv_call_state *
 
 	/* TODO: check r->in.server_name is our name */
 
-	info_ptr = talloc(mem_ctx, struct lsa_ForestTrustInformation *);
-	if (!info_ptr) {
-		return NT_STATUS_NO_MEMORY;
+	status = dsdb_trust_xref_forest_info(mem_ctx, sam_ctx,
+					     r->out.forest_trust_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
-	info = talloc_zero(info_ptr, struct lsa_ForestTrustInformation);
-	if (!info) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	werr = fill_forest_trust_array(mem_ctx, sam_ctx, lp_ctx, info);
-	if (!W_ERROR_IS_OK(werr)) {
-		return werror_to_ntstatus(werr);
-	}
-
-	*info_ptr = info;
-	r->out.forest_trust_info = info_ptr;
 
 	return NT_STATUS_OK;
 }
