@@ -40,6 +40,7 @@
 #define TEST_ALL              0x000007F
 
 struct test_data {
+	const char *test_name;
 	struct smb_krb5_context *smb_krb5_context;
 	const char *realm;
 	const char *real_realm;
@@ -55,14 +56,25 @@ struct test_data {
 	bool upn;
 	bool other_upn_suffix;
 };	
-	
+
+enum test_stage {
+	TEST_AS_REQ = 0,
+	TEST_SELF_TRUST_TGS_REQ,
+	TEST_TGS_REQ,
+	TEST_TGS_REQ_KRBTGT,
+	TEST_DONE
+};
+
 struct torture_krb5_context {
 	struct torture_context *tctx;
 	struct addrinfo *server;
 	struct test_data *test_data;
 	int packet_count;
+	enum test_stage test_stage;
 	AS_REQ as_req;
 	AS_REP as_rep;
+	TGS_REQ tgs_req;
+	TGS_REP tgs_rep;
 };
 
 
@@ -79,14 +91,9 @@ struct torture_krb5_context {
  *
  */
 
-static bool torture_krb5_pre_send_test(struct torture_krb5_context *test_context, const krb5_data *send_buf, krb5_data *modified_send_buf)
+static bool torture_krb5_pre_send_as_req_test(struct torture_krb5_context *test_context, const krb5_data *send_buf, size_t used, krb5_data *modified_send_buf)
 {
 	krb5_error_code k5ret;
-	size_t used;
-	torture_assert_int_equal(test_context->tctx,
-				 decode_AS_REQ(send_buf->data, send_buf->length, &test_context->as_req, &used), 0,
-				 "decode_AS_REQ failed");
-
 	torture_assert_int_equal(test_context->tctx, used, send_buf->length, "length mismatch");
 	torture_assert_int_equal(test_context->tctx, test_context->as_req.pvno, 5, "Got wrong as_req->pvno");
 	if (test_context->test_data->canonicalize || test_context->test_data->enterprise) {
@@ -115,6 +122,87 @@ static bool torture_krb5_pre_send_test(struct torture_krb5_context *test_context
 	return true;
 }
 
+static bool torture_krb5_pre_send_self_trust_tgs_req_test(struct torture_krb5_context *test_context, const krb5_data *send_buf, size_t used, krb5_data *modified_send_buf)
+{
+	torture_assert_int_equal(test_context->tctx, used, send_buf->length, "length mismatch");
+	torture_assert_int_equal(test_context->tctx, test_context->tgs_req.pvno, 5, "Got wrong as_req->pvno");
+	torture_assert_int_equal(test_context->tctx, test_context->as_req.req_body.kdc_options.canonicalize, false, "krb5 libs unexpectedly set canonicalize!");
+
+
+	torture_assert_str_equal(test_context->tctx,
+				 test_context->tgs_req.req_body.realm,
+				 test_context->test_data->real_realm,
+				 "Mismatch in realm between request and expected request");
+
+	torture_assert_int_equal(test_context->tctx,
+				 test_context->tgs_req.req_body.sname->name_type, KRB5_NT_PRINCIPAL,
+				 "Mismatch in name type between request and expected request, expected  KRB5_NT_PRINCIPAL");
+	torture_assert_int_equal(test_context->tctx,
+				 test_context->tgs_req.req_body.sname->name_string.len, 2,
+				 "Mismatch in name between request and expected request, expected krbtgt/realm");
+	torture_assert_str_equal(test_context->tctx,
+				 test_context->tgs_req.req_body.sname->name_string.val[0], "krbtgt",
+				 "Mismatch in name between request and expected request, expected krbtgt");
+	torture_assert_str_equal(test_context->tctx,
+				 test_context->tgs_req.req_body.sname->name_string.val[1], test_context->test_data->realm,
+				 "Mismatch in realm part of cross-realm request principal between request and expected request");
+
+	*modified_send_buf = *send_buf;
+
+	return true;
+}
+
+static bool torture_krb5_pre_send_tgs_req_test(struct torture_krb5_context *test_context, const krb5_data *send_buf, size_t used, krb5_data *modified_send_buf)
+{
+	torture_assert_int_equal(test_context->tctx, used, send_buf->length, "length mismatch");
+	torture_assert_int_equal(test_context->tctx, test_context->tgs_req.pvno, 5, "Got wrong as_req->pvno");
+	torture_assert_int_equal(test_context->tctx, test_context->as_req.req_body.kdc_options.canonicalize, false, "krb5 libs unexpectedly set canonicalize!");
+
+	if (test_context->test_data->enterprise) {
+		torture_assert_int_equal(test_context->tctx,
+					 test_context->tgs_req.req_body.sname->name_type, KRB5_NT_ENTERPRISE_PRINCIPAL,
+				 "Mismatch in name type between request and expected request, expected  KRB5_NT_ENTERPRISE_PRINCIPAL");
+		torture_assert_str_equal(test_context->tctx,
+					 test_context->tgs_req.req_body.realm, test_context->test_data->real_realm,
+				 "Mismatch in realm between request and expected request");
+
+	} else {
+		torture_assert_int_equal(test_context->tctx,
+					 test_context->tgs_req.req_body.sname->name_type, KRB5_NT_PRINCIPAL,
+					 "Mismatch in name type between request and expected request, expected  KRB5_NT_PRINCIPAL");
+		torture_assert_str_equal(test_context->tctx,
+					 test_context->tgs_req.req_body.realm, test_context->test_data->realm,
+				 "Mismatch in realm between request and expected request");
+
+	}
+	*modified_send_buf = *send_buf;
+
+	return true;
+}
+
+static bool torture_krb5_pre_send_tgs_req_krbtgt_test(struct torture_krb5_context *test_context, const krb5_data *send_buf, size_t used, krb5_data *modified_send_buf)
+{
+	torture_assert_int_equal(test_context->tctx, used, send_buf->length, "length mismatch");
+	torture_assert_int_equal(test_context->tctx, test_context->tgs_req.pvno, 5, "Got wrong as_req->pvno");
+	torture_assert_int_equal(test_context->tctx, test_context->as_req.req_body.kdc_options.canonicalize, false, "krb5 libs unexpectedly set canonicalize!");
+
+	if (test_context->test_data->canonicalize) {
+		torture_assert_str_equal(test_context->tctx,
+					 test_context->tgs_req.req_body.realm,
+					 test_context->test_data->real_realm,
+					 "Mismatch in realm between request and expected request");
+	} else {
+		torture_assert_str_equal(test_context->tctx,
+					 test_context->tgs_req.req_body.realm,
+					 test_context->test_data->realm,
+					 "Mismatch in realm between request and expected request");
+	}
+
+	*modified_send_buf = *send_buf;
+
+	return true;
+}
+
 /*
  * Confirm that the incoming packet from the KDC meets certain
  * expectations.  This uses a packet count to work out what test we
@@ -123,7 +211,7 @@ static bool torture_krb5_pre_send_test(struct torture_krb5_context *test_context
  *
  */
 
-static bool torture_krb5_post_recv_test(struct torture_krb5_context *test_context, const krb5_data *recv_buf)
+static bool torture_krb5_post_recv_as_req_test(struct torture_krb5_context *test_context, const krb5_data *recv_buf)
 {
 	KRB_ERROR error;
 	size_t used;
@@ -178,6 +266,88 @@ static bool torture_krb5_post_recv_test(struct torture_krb5_context *test_contex
 	return true;
 }
 
+static bool torture_krb5_post_recv_self_trust_tgs_req_test(struct torture_krb5_context *test_context, const krb5_data *recv_buf)
+{
+	size_t used;
+	torture_assert_int_equal(test_context->tctx,
+				 decode_TGS_REP(recv_buf->data, recv_buf->length, &test_context->tgs_rep, &used), 0,
+				 "decode_TGS_REP failed");
+	torture_assert_int_equal(test_context->tctx, used, recv_buf->length, "length mismatch");
+	torture_assert_int_equal(test_context->tctx,
+				 test_context->tgs_rep.pvno, 5,
+				 "Got wrong as_rep->pvno");
+	torture_assert_int_equal(test_context->tctx,
+				 test_context->tgs_rep.ticket.tkt_vno, 5,
+				 "Got wrong as_rep->ticket.tkt_vno");
+	torture_assert(test_context->tctx,
+		       test_context->tgs_rep.ticket.enc_part.kvno,
+		       "Did not get a KVNO in test_context->as_rep.ticket.enc_part.kvno");
+	torture_assert_str_equal(test_context->tctx,
+				 test_context->tgs_req.req_body.realm,
+				 test_context->tgs_rep.ticket.realm, "Mismatch in realm between request and ticket response");
+	torture_assert_int_equal(test_context->tctx,
+				 test_context->tgs_req.req_body.sname->name_type,
+				 test_context->tgs_rep.ticket.sname.name_type, "Mismatch in name_type between request and ticket response");
+	torture_assert_int_equal(test_context->tctx,
+				 test_context->tgs_req.req_body.sname->name_type,
+				 test_context->tgs_rep.ticket.sname.name_type, "Mismatch in name_type between request and ticket response");
+	if (torture_setting_bool(test_context->tctx, "expect_cached_at_rodc", false)) {
+		torture_assert_int_not_equal(test_context->tctx,
+					     *test_context->tgs_rep.ticket.enc_part.kvno & 0xFFFF0000,
+					     0, "Did not get a RODC number in the KVNO");
+	} else {
+		torture_assert_int_equal(test_context->tctx,
+					 *test_context->tgs_rep.ticket.enc_part.kvno & 0xFFFF0000,
+					 0, "Unexpecedly got a RODC number in the KVNO");
+	}
+	free_TGS_REP(&test_context->tgs_rep);
+	torture_assert(test_context->tctx, test_context->packet_count == 0, "too many packets");
+	test_context->packet_count = 0;
+	test_context->test_stage = TEST_TGS_REQ;
+	free_TGS_REQ(&test_context->tgs_req);
+	return true;
+}
+
+static bool torture_krb5_post_recv_tgs_req_test(struct torture_krb5_context *test_context, const krb5_data *recv_buf)
+{
+	KRB_ERROR error;
+	size_t used;
+	if (decode_KRB_ERROR(recv_buf->data, recv_buf->length, &error, &used) == 0) {
+		torture_assert_int_equal(test_context->tctx, used, recv_buf->length, "length mismatch");
+		torture_assert_int_equal(test_context->tctx, error.pvno, 5, "Got wrong error.pvno");
+		torture_assert_int_equal(test_context->tctx, error.error_code, KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN - KRB5KDC_ERR_NONE,
+					 "Got wrong error.error_code");
+	} else {
+		torture_assert_int_equal(test_context->tctx,
+					 decode_TGS_REP(recv_buf->data, recv_buf->length, &test_context->tgs_rep, &used), 0,
+					 "decode_TGS_REP failed");
+		torture_assert_int_equal(test_context->tctx, used, recv_buf->length, "length mismatch");
+		torture_assert_int_equal(test_context->tctx,
+					 test_context->tgs_rep.pvno, 5,
+					 "Got wrong as_rep->pvno");
+		torture_assert_int_equal(test_context->tctx,
+					 test_context->tgs_rep.ticket.tkt_vno, 5,
+					 "Got wrong as_rep->ticket.tkt_vno");
+		torture_assert(test_context->tctx,
+			       test_context->tgs_rep.ticket.enc_part.kvno,
+			       "Did not get a KVNO in test_context->as_rep.ticket.enc_part.kvno");
+		torture_assert_str_equal(test_context->tctx,
+					 test_context->tgs_rep.ticket.realm,
+					 test_context->test_data->real_realm,
+					 "Mismatch in realm between ticket response and expected upper case REALM");
+		torture_assert_int_equal(test_context->tctx,
+					 test_context->tgs_req.req_body.sname->name_type,
+					 test_context->tgs_rep.ticket.sname.name_type, "Mismatch in name_type between request and ticket response");
+		torture_assert_int_equal(test_context->tctx,
+					 *test_context->tgs_rep.ticket.enc_part.kvno & 0xFFFF0000,
+					 0, "Unexpecedly got a RODC number in the KVNO, should just be principal KVNO");
+		free_TGS_REP(&test_context->tgs_rep);
+	}
+	torture_assert(test_context->tctx, test_context->packet_count < 2, "too many packets");
+	free_TGS_REQ(&test_context->tgs_req);
+	return true;
+}
+
 /* 
  * This function is set in torture_krb5_init_context_canon as krb5
  * send_and_recv function.  This allows us to override what server the
@@ -200,17 +370,50 @@ static krb5_error_code smb_krb5_send_and_recv_func_canon_override(krb5_context c
 								   krb5_data *recv_buf)
 {
 	krb5_error_code k5ret;
-	bool ok;
+	bool ok = false;
 	krb5_data modified_send_buf;
+	size_t used;
 	
 	struct torture_krb5_context *test_context
 		= talloc_get_type_abort(data, struct torture_krb5_context);
 
-	ok = torture_krb5_pre_send_test(test_context, send_buf, &modified_send_buf);
+	if (test_context->test_stage == TEST_DONE) {
+		torture_warning(test_context->tctx, "Unexpected outgoing packet from krb5 libs");
+		return EINVAL;
+	}
+	k5ret = decode_AS_REQ(send_buf->data, send_buf->length, &test_context->as_req, &used);
+
+	if (k5ret == 0) {
+		test_context->test_stage = TEST_AS_REQ;
+		ok = torture_krb5_pre_send_as_req_test(test_context, send_buf, used, &modified_send_buf);
+	} else {
+		k5ret = decode_TGS_REQ(send_buf->data, send_buf->length, &test_context->tgs_req, &used);
+		if (k5ret == 0) {
+			if (test_context->test_stage == TEST_AS_REQ) {
+				test_context->packet_count = 0;
+				if (test_context->test_data->canonicalize == false
+				    || test_context->test_data->enterprise
+				    || (test_context->test_data->upper_realm && test_context->test_data->netbios_realm == false)) {
+					test_context->test_stage = TEST_TGS_REQ;
+				} else {
+					test_context->test_stage = TEST_SELF_TRUST_TGS_REQ;
+				}
+			}
+			if (test_context->test_stage == TEST_SELF_TRUST_TGS_REQ) {
+				ok = torture_krb5_pre_send_self_trust_tgs_req_test(test_context, send_buf,  used, &modified_send_buf);
+			} else if (test_context->test_stage == TEST_TGS_REQ) {
+				ok = torture_krb5_pre_send_tgs_req_test(test_context, send_buf,  used, &modified_send_buf);
+			} else if (test_context->test_stage == TEST_TGS_REQ_KRBTGT) {
+				ok = torture_krb5_pre_send_tgs_req_krbtgt_test(test_context, send_buf,  used, &modified_send_buf);
+			}
+		} else {
+			torture_warning(test_context->tctx, "Failed to parse outgoing packet from krb5 libs");
+		}
+	}
 	if (ok == false) {
 		return EINVAL;
 	}
-	
+
 	k5ret = smb_krb5_send_and_recv_func_forced(context, test_context->server,
 						   hi, timeout, &modified_send_buf, 
 						   recv_buf);
@@ -218,7 +421,15 @@ static krb5_error_code smb_krb5_send_and_recv_func_canon_override(krb5_context c
 		return k5ret;
 	}
 
-	ok = torture_krb5_post_recv_test(test_context, recv_buf);
+	if (test_context->test_stage == TEST_AS_REQ) {
+		ok = torture_krb5_post_recv_as_req_test(test_context, recv_buf);
+	} else if (test_context->test_stage == TEST_SELF_TRUST_TGS_REQ) {
+		ok = torture_krb5_post_recv_self_trust_tgs_req_test(test_context, recv_buf);
+	} else if (test_context->test_stage == TEST_TGS_REQ) {
+		ok = torture_krb5_post_recv_tgs_req_test(test_context, recv_buf);
+	} else if (test_context->test_stage == TEST_TGS_REQ_KRBTGT) {
+		ok = torture_krb5_post_recv_self_trust_tgs_req_test(test_context, recv_buf);
+	}
 	if (ok == false) {
 		return EINVAL;
 	}
@@ -272,8 +483,6 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 	krb5_error_code k5ret;
 	krb5_get_init_creds_opt *krb_options = NULL;
 	struct test_data *test_data = talloc_get_type_abort(tcase_data, struct test_data);
-	char *realm;
-	char *upper_real_realm;
 	char *username;
 	krb5_principal principal;
 	krb5_principal expected_principal;
@@ -287,6 +496,10 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 	struct smb_krb5_context *smb_krb5_context;
 	bool ok;
 	krb5_creds my_creds;
+	krb5_ccache ccache;
+	krb5_auth_context auth_context;
+	char *cc_name;
+	krb5_data in_data, enc_ticket;
 	
 	const char *upn = torture_setting_string(tctx, "krb5-upn", "");
 
@@ -343,9 +556,9 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 	torture_assert(tctx, ok, "torture_krb5_init_context failed");
 	
 	if (test_data->upper_realm) {
-		realm = strupper_talloc(test_data, test_data->realm);
+		test_data->realm = strupper_talloc(test_data, test_data->realm);
 	} else {
-		realm = strlower_talloc(test_data, test_data->realm);
+		test_data->realm = strlower_talloc(test_data, test_data->realm);
 	}
 	if (test_data->upper_username) {
 		username = strupper_talloc(test_data, test_data->username);
@@ -353,10 +566,8 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 		username = talloc_strdup(test_data, test_data->username);
 	}
 
-	principal_string = talloc_asprintf(test_data, "%s@%s", username, realm);
+	principal_string = talloc_asprintf(test_data, "%s@%s", username, test_data->realm);
 	
-	upper_real_realm = strupper_talloc(test_data, test_data->real_realm);
-
 	/* 
 	 * If we are set to canonicalize, we get back the fixed UPPER
 	 * case realm, and the real username (ie matching LDAP
@@ -369,11 +580,11 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 	 * fixed UPPER case realm, but the as-sent username
 	 */
 	if (test_data->canonicalize) {
-		expected_principal_string = talloc_asprintf(test_data, "%s@%s", test_data->real_username, upper_real_realm);
+		expected_principal_string = talloc_asprintf(test_data, "%s@%s", test_data->real_username, test_data->real_realm);
 	} else if (test_data->enterprise) {
 		expected_principal_string = principal_string;
 	} else {
-		expected_principal_string = talloc_asprintf(test_data, "%s@%s", username, upper_real_realm);
+		expected_principal_string = talloc_asprintf(test_data, "%s@%s", username, test_data->real_realm);
 	}
 	
 	if (test_data->enterprise) {
@@ -491,7 +702,7 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 	} else {
 		torture_assert_str_equal(tctx, krb5_principal_get_comp_string(smb_krb5_context->krb5_context,
 									      my_creds.server, 1),
-					 realm,
+					 test_data->realm,
 					 
 					 "smb_krb5_init_context gave incorrect my_creds.server->name.name_string[1]");
 	}
@@ -500,10 +711,67 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 				 test_data->real_realm,
 				 "smb_krb5_init_context gave incorrect my_creds.server->realm");
 
+	/* Store the result of the 'kinit' above into a memory ccache */
+	cc_name = talloc_asprintf(tctx, "MEMORY:%s", test_data->test_name);
+	torture_assert_int_equal(tctx, krb5_cc_resolve(smb_krb5_context->krb5_context, cc_name,
+						       &ccache),
+				 0, "krb5_cc_resolve failed");
+
+	torture_assert_int_equal(tctx, krb5_cc_initialize(smb_krb5_context->krb5_context,
+							  ccache, my_creds.client),
+				 0, "krb5_cc_initialize failed");
+
+	torture_assert_int_equal(tctx, krb5_cc_store_cred(smb_krb5_context->krb5_context,
+							  ccache, &my_creds),
+				 0, "krb5_cc_store_cred failed");
+
+	/* Prepare a TGS-REQ */
+	torture_assert_int_equal(tctx, krb5_auth_con_init(smb_krb5_context->krb5_context, &auth_context),
+				 0, "krb5_auth_con_init failed");
+
+	/* Confirm we can not ask for our own name as a server */
+	in_data.length = 0;
+	k5ret = krb5_mk_req_exact(smb_krb5_context->krb5_context,
+				  &auth_context,
+				  0,
+				  principal,
+				  &in_data, ccache,
+				  &enc_ticket);
+
+	assertion_message = talloc_asprintf(tctx,
+					    "krb5_mk_req_exact for %s failed: %s",
+					    principal_string,
+					    smb_get_krb5_error_message(smb_krb5_context->krb5_context, k5ret, tctx));
+	if (torture_setting_bool(tctx, "expect_machine_account", false)) {
+		torture_assert_int_equal(tctx, k5ret, 0, assertion_message);
+	} else {
+		torture_assert_int_equal(tctx, k5ret, KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN, assertion_message);
+	}
+
+	/*
+	 * Ask for a ticket to the KDC krbtgt account itself.  The
+	 * value in my_creds.server varies (in the non-canonicalize
+	 * case) per the AS-REQ tests above, so we cover the same
+	 * variations
+	 */
+	in_data.length = 0;
+	k5ret = krb5_mk_req_exact(smb_krb5_context->krb5_context,
+				  &auth_context,
+				  0,
+				  my_creds.server,
+				  &in_data, ccache,
+				  &enc_ticket);
+
+	assertion_message = talloc_asprintf(tctx,
+					    "krb5_mk_req_exact for %s failed: %s",
+					    principal_string,
+					    smb_get_krb5_error_message(smb_krb5_context->krb5_context, k5ret, tctx));
+	torture_assert_int_equal(tctx, k5ret, 0, assertion_message);
+
 	krb5_free_principal(smb_krb5_context->krb5_context, principal);
 	
-	k5ret = krb5_free_cred_contents(smb_krb5_context->krb5_context, &my_creds);
-	torture_assert_int_equal(tctx, k5ret, 0, "krb5_free_creds failed");
+	torture_assert_int_equal(tctx, krb5_free_cred_contents(smb_krb5_context->krb5_context, &my_creds),
+				 0, "krb5_free_cred_contents failed");
 
 	return true;
 }
@@ -526,7 +794,8 @@ struct torture_suite *torture_krb5_canon(TALLOC_CTX *mem_ctx)
 
 		struct test_data *test_data = talloc_zero(suite, struct test_data);
 
-		test_data->real_realm = cli_credentials_get_realm(cmdline_credentials);
+		test_data->test_name = name;
+		test_data->real_realm = strupper_talloc(test_data, cli_credentials_get_realm(cmdline_credentials));
 		test_data->real_domain = cli_credentials_get_domain(cmdline_credentials);
 		test_data->username = cli_credentials_get_username(cmdline_credentials);
 		test_data->real_username = cli_credentials_get_username(cmdline_credentials);
