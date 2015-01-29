@@ -797,6 +797,8 @@ static void smb2_set_operation_credit(struct smbd_server_connection *sconn,
 		 */
 		credits_granted = 0;
 	} else {
+		uint16_t additional_possible =
+			sconn->smb2.max_credits - credit_charge;
 		uint16_t additional_max = 0;
 		uint16_t additional_credits = credits_requested - 1;
 
@@ -822,6 +824,7 @@ static void smb2_set_operation_credit(struct smbd_server_connection *sconn,
 			break;
 		}
 
+		additional_max = MIN(additional_max, additional_possible);
 		additional_credits = MIN(additional_credits, additional_max);
 
 		credits_granted = credit_charge + additional_credits;
