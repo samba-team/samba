@@ -236,12 +236,15 @@ NTSTATUS rpccli_setup_netlogon_creds_with_creds(struct cli_state *cli,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	previous_nt_hash = cli_credentials_get_old_nt_hash(creds, talloc_tos());
+
 	status = rpccli_setup_netlogon_creds(cli, transport,
 					     netlogon_creds,
 					     force_reauth,
 					     *current_nt_hash,
 					     previous_nt_hash);
 	TALLOC_FREE(current_nt_hash);
+	TALLOC_FREE(previous_nt_hash);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
