@@ -81,7 +81,7 @@ class TestCase(unittest.TestCase):
                 fn(*args, **kwargs)
 
 
-class LdbTestCase(unittest.TestCase):
+class LdbTestCase(TestCase):
     """Trivial test case for running tests against a LDB."""
 
     def setUp(self):
