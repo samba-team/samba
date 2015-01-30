@@ -60,12 +60,15 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 	const struct samr_Password *previous_nt_hash = NULL;
 	enum netr_SchannelType sec_channel_type = SEC_CHAN_NULL;
 	time_t pass_last_set_time;
+	uint32_t old_version = 0;
 	struct pdb_trusted_domain *td = NULL;
 	struct timeval g_timeout = { 0, };
 	int timeout = 0;
 	struct timeval tv = { 0, };
 	size_t new_len = DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH;
 	char *new_trust_passwd = NULL;
+	uint32_t new_version = 0;
+	uint32_t *new_trust_version = NULL;
 	NTSTATUS status;
 	bool ok;
 
@@ -118,8 +121,11 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 		return NT_STATUS_TRUSTED_RELATIONSHIP_FAILURE;
 	}
 
+	old_version = cli_credentials_get_kvno(creds);
 	pass_last_set_time = cli_credentials_get_password_last_changed_time(creds);
 	sec_channel_type = cli_credentials_get_secure_channel_type(creds);
+
+	new_version = old_version + 1;
 
 	switch (sec_channel_type) {
 	case SEC_CHAN_WKSTA:
@@ -144,6 +150,8 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 			TALLOC_FREE(frame);
 			return status;
 		}
+
+		new_trust_version = &new_version;
 		break;
 	default:
 		TALLOC_FREE(frame);
@@ -245,7 +253,8 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 		 current_timestring(talloc_tos(), false), __func__, domain));
 
 	status = netlogon_creds_cli_ServerPasswordSet(context, b,
-						      new_trust_passwd, NULL);
+						      new_trust_passwd,
+						      new_trust_version);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("%s : %s(%s) remote password change set failed - %s\n",
 			 current_timestring(talloc_tos(), false), __func__,
