@@ -2566,6 +2566,8 @@ NTSTATUS internal_resolve_name(const char *name,
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	int i;
 	TALLOC_CTX *frame = NULL;
+	bool do_nbt_lookup = true;
+	size_t nbt_len;
 
 	*return_iplist = NULL;
 	*return_count = 0;
@@ -2626,6 +2628,15 @@ NTSTATUS internal_resolve_name(const char *name,
 	}
 
 	/* iterate through the name resolution backends */
+	nbt_len = strlen(name);
+	if (nbt_len > MAX_NETBIOSNAME_LEN - 1) {
+		do_nbt_lookup = false;
+	} else {
+		const char *p = strchr(name, '.');
+		if (p != NULL) {
+			do_nbt_lookup = false;
+		}
+	}
 
 	frame = talloc_stackframe();
 	for (i=0; resolve_order[i]; i++) {
@@ -2656,13 +2667,13 @@ NTSTATUS internal_resolve_name(const char *name,
 			if (NT_STATUS_IS_OK(status)) {
 				goto done;
 			}
-		} else if(strequal( tok, "lmhosts")) {
+		} else if (do_nbt_lookup && strequal(tok, "lmhosts")) {
 			status = resolve_lmhosts(name, name_type,
 						 return_iplist, return_count);
 			if (NT_STATUS_IS_OK(status)) {
 				goto done;
 			}
-		} else if(strequal( tok, "wins")) {
+		} else if (do_nbt_lookup && strequal(tok, "wins")) {
 			/* don't resolve 1D via WINS */
 			struct sockaddr_storage *ss_list;
 			if (name_type != 0x1D) {
@@ -2679,7 +2690,7 @@ NTSTATUS internal_resolve_name(const char *name,
 					goto done;
 				}
 			}
-		} else if(strequal( tok, "bcast")) {
+		} else if (do_nbt_lookup && strequal(tok, "bcast")) {
 			struct sockaddr_storage *ss_list;
 			status = name_resolve_bcast(
 				name, name_type, talloc_tos(),
