@@ -1346,7 +1346,7 @@ import "misc.idl", "security.idl";
 		[in,ref]  lsa_StringLarge *trusted_domain_name,
 		[in]      lsa_ForestTrustRecordType highest_record_type,
 		[in,ref]  lsa_ForestTrustInformation *forest_trust_info,
-		[in]      uint8 check_only,
+		[in]      boolean8 check_only,
 		[out,ref] lsa_ForestTrustCollisionInfo **collision_info
 		);
 
