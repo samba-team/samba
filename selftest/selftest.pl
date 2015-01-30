@@ -400,13 +400,13 @@ if ($opt_socket_wrapper) {
 	$socket_wrapper_dir = SocketWrapper::setup_dir("$prefix_abs/w", $opt_socket_wrapper_pcap);
 	print "SOCKET_WRAPPER_DIR=$socket_wrapper_dir\n";
 } elsif (not $opt_list) {
-	 unless ($< == 0) { 
+	 unless ($< == 0) {
 		 warn("not using socket wrapper, but also not running as root. Will not be able to listen on proper ports");
 	 }
 }
 
 if ($opt_use_dns_faking) {
-	print "DNS: Faking namerserver\n";
+	print "DNS: Faking nameserver\n";
 	$ENV{SAMBA_DNS_FAKING} = 1;
 }
 
