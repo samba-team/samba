@@ -2077,7 +2077,7 @@ static bool test_QueryForestTrustInformation(struct dcerpc_binding_handle *b,
 
 	r.in.handle = handle;
 	r.in.trusted_domain_name = &string;
-	r.in.unknown = 0;
+	r.in.highest_record_type = LSA_FOREST_TRUST_TOP_LEVEL_NAME;
 	r.out.forest_trust_info = &info_ptr;
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_lsa_lsaRQueryForestTrustInformation_r(b, tctx, &r),

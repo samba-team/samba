@@ -1273,7 +1273,7 @@ import "misc.idl", "security.idl";
 		[default] lsa_ForestTrustBinaryData data;
 	} lsa_ForestTrustData;
 
-	typedef [v1_enum] enum {
+	typedef enum {
 		LSA_FOREST_TRUST_TOP_LEVEL_NAME = 0,
 		LSA_FOREST_TRUST_TOP_LEVEL_NAME_EX = 1,
 		LSA_FOREST_TRUST_DOMAIN_INFO = 2,
@@ -1295,7 +1295,7 @@ import "misc.idl", "security.idl";
 	NTSTATUS lsa_lsaRQueryForestTrustInformation(
 		[in] policy_handle *handle,
 		[in,ref] lsa_String *trusted_domain_name,
-		[in] uint16 unknown, /* level ? */
+		[in] lsa_ForestTrustRecordType highest_record_type,
 		[out,ref] lsa_ForestTrustInformation **forest_trust_info
 		);
 
@@ -1344,7 +1344,7 @@ import "misc.idl", "security.idl";
 	[public] NTSTATUS lsa_lsaRSetForestTrustInformation(
 		[in]      policy_handle *handle,
 		[in,ref]  lsa_StringLarge *trusted_domain_name,
-		[in]      uint16 highest_record_type,
+		[in]      lsa_ForestTrustRecordType highest_record_type,
 		[in,ref]  lsa_ForestTrustInformation *forest_trust_info,
 		[in]      uint8 check_only,
 		[out,ref] lsa_ForestTrustCollisionInfo **collision_info
