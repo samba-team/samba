@@ -268,6 +268,53 @@ _PUBLIC_ bool cli_credentials_set_utf16_password(struct cli_credentials *cred,
 	return false;
 }
 
+/*
+ * Set a old utf16 password on the credentials context.
+ *
+ * This is required because the nt_hash is calculated over the raw utf16 blob,
+ * which might not be completely valid utf16, which means the conversion
+ * from CH_UTF16MUNGED to CH_UTF8 might loose information.
+ */
+_PUBLIC_ bool cli_credentials_set_old_utf16_password(struct cli_credentials *cred,
+						     const DATA_BLOB *password_utf16)
+{
+	struct samr_Password *nt_hash = NULL;
+	char *password_talloc = NULL;
+	size_t password_len = 0;
+	bool ok;
+
+	if (password_utf16 == NULL) {
+		return cli_credentials_set_old_password(cred, NULL, CRED_SPECIFIED);
+	}
+
+	nt_hash = talloc(cred, struct samr_Password);
+	if (nt_hash == NULL) {
+		return false;
+	}
+
+	ok = convert_string_talloc(cred,
+				   CH_UTF16MUNGED, CH_UTF8,
+				   password_utf16->data,
+				   password_utf16->length,
+				   (void *)&password_talloc,
+				   &password_len);
+	if (!ok) {
+		TALLOC_FREE(nt_hash);
+		return false;
+	}
+
+	ok = cli_credentials_set_old_password(cred, password_talloc, CRED_SPECIFIED);
+	TALLOC_FREE(password_talloc);
+	if (!ok) {
+		TALLOC_FREE(nt_hash);
+		return false;
+	}
+
+	mdfour(nt_hash->hash, password_utf16->data, password_utf16->length);
+	cred->old_nt_hash = nt_hash;
+	return true;
+}
+
 _PUBLIC_ bool cli_credentials_set_nt_hash(struct cli_credentials *cred,
 				 const struct samr_Password *nt_hash, 
 				 enum credentials_obtained obtained)

@@ -196,6 +196,8 @@ void cli_credentials_set_kvno(struct cli_credentials *cred,
 bool cli_credentials_set_utf16_password(struct cli_credentials *cred,
 					const DATA_BLOB *password_utf16,
 					enum credentials_obtained obtained);
+bool cli_credentials_set_old_utf16_password(struct cli_credentials *cred,
+					    const DATA_BLOB *password_utf16);
 bool cli_credentials_set_nt_hash(struct cli_credentials *cred,
 				 const struct samr_Password *nt_hash, 
 				 enum credentials_obtained obtained);
