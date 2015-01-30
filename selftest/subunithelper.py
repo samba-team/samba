@@ -120,7 +120,7 @@ def parse_results(msg_ops, statistics, fh):
                     msg_ops.addError(subunit.RemotedTestCase(testname), subunit.RemoteError(u"Test was never started"))
                 else:
                     statistics['TESTS_UNEXPECTED_OK']+=1
-                    msg_ops.addUnexpectedSuccess(test, remote_error)
+                    msg_ops.addUnexpectedSuccess(test)
                     exitcode = 1
             elif result in ("failure", "fail"):
                 try:
@@ -312,11 +312,11 @@ class FilterOps(unittest.TestResult):
         self._ops.addExpectedFailure(test, err)
         self.output = None
 
-    def addUnexpectedSuccess(self, test, err=None):
+    def addUnexpectedSuccess(self, test):
         test = self._add_prefix(test)
         self.uxsuccess_added+=1
         self.total_uxsuccess+=1
-        self._ops.addUnexpectedSuccess(test, err)
+        self._ops.addUnexpectedSuccess(test)
         if self.output:
             self._ops.output_msg(self.output)
         self.output = None
