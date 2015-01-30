@@ -11,12 +11,10 @@ setup_nodes <<EOF
 EOF
 
 ok <<EOF
-Reloading nodes file on node 1
-ctdb_ctrl_reload_nodes_file: node 1
-Reloading nodes file on node 2
-ctdb_ctrl_reload_nodes_file: node 2
-Reloading nodes file on node 0
-ctdb_ctrl_reload_nodes_file: node 0
+Node 0 is unchanged
+Node 1 is unchanged
+Node 2 is unchanged
+No change in nodes file, skipping unnecessary reload
 EOF
 
 simple_test <<EOF

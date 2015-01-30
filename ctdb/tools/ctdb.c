@@ -6259,6 +6259,85 @@ static bool check_all_node_files_are_identical(struct ctdb_context *ctdb,
 	return ret;
 }
 
+/*
+  reload the nodes file on the local node
+ */
+static bool sanity_check_nodes_file_changes(TALLOC_CTX *mem_ctx,
+					    struct ctdb_node_map *nodemap,
+					    struct ctdb_node_map *file_nodemap)
+{
+	int i;
+	bool should_abort = false;
+	bool have_changes = false;
+
+	for (i=0; i<nodemap->num; i++) {
+		if (i >= file_nodemap->num) {
+			DEBUG(DEBUG_ERR,
+			      ("ERROR: Node %u (%s) missing from nodes file\n",
+			       nodemap->nodes[i].pnn,
+			       ctdb_addr_to_str(&nodemap->nodes[i].addr)));
+			should_abort = true;
+			continue;
+		}
+		if ((nodemap->nodes[i].flags & NODE_FLAGS_DELETED) ==
+		    (file_nodemap->nodes[i].flags & NODE_FLAGS_DELETED)) {
+			if (!ctdb_same_ip(&nodemap->nodes[i].addr,
+					  &file_nodemap->nodes[i].addr)) {
+				DEBUG(DEBUG_ERR,
+				      ("ERROR: Node %u has changed IP address (was %s, now %s)\n",
+				       nodemap->nodes[i].pnn,
+				       /* ctdb_addr_to_str() returns a static */
+				       talloc_strdup(mem_ctx,
+						     ctdb_addr_to_str(&nodemap->nodes[i].addr)),
+				       ctdb_addr_to_str(&file_nodemap->nodes[i].addr)));
+				should_abort = true;
+			} else {
+				DEBUG(DEBUG_INFO,
+				      ("Node %u is unchanged\n",
+				       nodemap->nodes[i].pnn));
+				if (nodemap->nodes[i].flags & NODE_FLAGS_DISCONNECTED) {
+					DEBUG(DEBUG_WARNING,
+					      ("WARNING: Node %u is disconnected. You MUST fix this node manually!\n",
+					       nodemap->nodes[i].pnn));
+				}
+			}
+			continue;
+		}
+		if (file_nodemap->nodes[i].flags & NODE_FLAGS_DELETED) {
+			DEBUG(DEBUG_NOTICE,
+			      ("Node %u is DELETED\n",
+			       nodemap->nodes[i].pnn));
+			have_changes = true;
+			if (!(nodemap->nodes[i].flags & NODE_FLAGS_DISCONNECTED)) {
+				DEBUG(DEBUG_ERR,
+				      ("ERROR: Node %u is still connected\n",
+				       nodemap->nodes[i].pnn));
+				should_abort = true;
+			}
+		} else if (nodemap->nodes[i].flags & NODE_FLAGS_DELETED) {
+			DEBUG(DEBUG_NOTICE,
+			      ("Node %u is UNDELETED\n", nodemap->nodes[i].pnn));
+			have_changes = true;
+		}
+	}
+
+	if (should_abort) {
+		DEBUG(DEBUG_ERR,
+		      ("ERROR: Nodes will not be reloaded due to previous error\n"));
+		talloc_free(mem_ctx);
+		exit(1);
+	}
+
+	/* Leftover nodes in file are NEW */
+	for (; i < file_nodemap->num; i++) {
+		DEBUG(DEBUG_NOTICE, ("Node %u is NEW\n",
+				     file_nodemap->nodes[i].pnn));
+		have_changes = true;
+	}
+
+	return have_changes;
+}
+
 static int control_reload_nodes_file(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	int i, ret;
@@ -6267,6 +6346,10 @@ static int control_reload_nodes_file(struct ctdb_context *ctdb, int argc, const 
 	struct ctdb_node_map *file_nodemap;
 
 	assert_current_node_only(ctdb);
+
+	/* Load both the current nodemap and the contents of the local
+	 * nodes file.  Compare and sanity check them before doing
+	 * anything. */
 
 	ret = ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE, ctdb, &nodemap);
 	if (ret != 0) {
@@ -6286,6 +6369,12 @@ static int control_reload_nodes_file(struct ctdb_context *ctdb, int argc, const 
 		return -1;
 	}
 
+	if (!sanity_check_nodes_file_changes(tmp_ctx, nodemap, file_nodemap)) {
+		DEBUG(DEBUG_NOTICE,
+		      ("No change in nodes file, skipping unnecessary reload\n"));
+		talloc_free(tmp_ctx);
+		return 0;
+	}
 
 	/* Now make the changes */
 
@@ -6293,6 +6382,9 @@ static int control_reload_nodes_file(struct ctdb_context *ctdb, int argc, const 
 	for (i=0;i<nodemap->num;i++) {
 		if (nodemap->nodes[i].pnn == options.pnn) {
 			continue;
+		}
+		if (nodemap->nodes[i].flags & NODE_FLAGS_DISCONNECTED) {
+                        continue;
 		}
 		DEBUG(DEBUG_NOTICE, ("Reloading nodes file on node %u\n", nodemap->nodes[i].pnn));
 		ret = ctdb_ctrl_reload_nodes_file(ctdb, TIMELIMIT(),
@@ -6311,6 +6403,8 @@ static int control_reload_nodes_file(struct ctdb_context *ctdb, int argc, const 
 
 	/* initiate a recovery */
 	control_recover(ctdb, argc, argv);
+
+	talloc_free(tmp_ctx);
 
 	return 0;
 }
