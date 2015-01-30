@@ -87,6 +87,14 @@ interface copychunk
 		uint32 flags;
 		hyper length_written;
 	} fsctl_offload_write_output;
+
+	typedef [public] struct {
+		/* The FileHandle field is the volatile part of the fileid */
+		hyper fid_volatile;
+		hyper source_off;
+		hyper target_off;
+		hyper byte_count;
+	} fsctl_dup_extents_to_file;
 }
 
 interface compression
