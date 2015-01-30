@@ -66,7 +66,9 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 	int timeout = 0;
 	struct timeval tv = { 0, };
 	size_t new_len = DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH;
+	uint8_t new_password_buffer[256 * 2] = { 0, };
 	char *new_trust_passwd = NULL;
+	size_t len = 0;
 	uint32_t new_version = 0;
 	uint32_t *new_trust_version = NULL;
 	NTSTATUS status;
@@ -179,10 +181,19 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 		return NT_STATUS_OK;
 	}
 
-	/* Create a random machine account password */
-	new_trust_passwd = generate_random_password(frame, new_len, new_len);
-	if (new_trust_passwd == NULL) {
-		DEBUG(0, ("generate_random_password failed\n"));
+	/*
+	 * Create a random machine account password
+	 * We create a random buffer and convert that to utf8.
+	 * This is similar to what windows is doing.
+	 */
+	generate_secret_buffer(new_password_buffer, new_len * 2);
+	ok = convert_string_talloc(frame,
+				   CH_UTF16MUNGED, CH_UTF8,
+				   new_password_buffer, new_len * 2,
+				   (void *)&new_trust_passwd, &len);
+	ZERO_STRUCT(new_password_buffer);
+	if (!ok) {
+		DEBUG(0, ("convert_string_talloc failed\n"));
 		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
