@@ -75,10 +75,11 @@ class TestCase(unittest.TestCase):
             self._cleanups = getattr(self, "_cleanups", []) + [
                 (fn, args, kwargs)]
 
-        def tearDown(self):
-            super(TestCase, self).tearDown()
+        def run(self, result=None):
+            ret = super(TestCase, self).run(result=result)
             for (fn, args, kwargs) in reversed(getattr(self, "_cleanups", [])):
                 fn(*args, **kwargs)
+            return ret
 
 
 class LdbTestCase(TestCase):
