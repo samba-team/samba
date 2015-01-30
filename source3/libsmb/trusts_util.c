@@ -55,19 +55,19 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct trust_pw_change_state *state;
-	struct samr_Password current_nt_hash;
+	struct cli_credentials *creds = NULL;
+	const struct samr_Password *current_nt_hash = NULL;
 	const struct samr_Password *previous_nt_hash = NULL;
 	enum netr_SchannelType sec_channel_type = SEC_CHAN_NULL;
-	const char *account_name;
-	char *new_trust_passwd;
-	char *pwd;
-	struct dom_sid sid;
 	time_t pass_last_set_time;
+	struct pdb_trusted_domain *td = NULL;
 	struct timeval g_timeout = { 0, };
 	int timeout = 0;
 	struct timeval tv = { 0, };
 	size_t new_len = DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH;
+	char *new_trust_passwd = NULL;
 	NTSTATUS status;
+	bool ok;
 
 	state = talloc_zero(frame, struct trust_pw_change_state);
 	if (state == NULL) {
@@ -102,25 +102,28 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 
 	talloc_set_destructor(state, trust_pw_change_state_destructor);
 
-	if (!get_trust_pw_hash(domain, current_nt_hash.hash,
-			       &account_name,
-			       &sec_channel_type)) {
-		DEBUG(0, ("could not fetch domain secrets for domain %s!\n", domain));
+	status = pdb_get_trust_credentials(domain, NULL, frame, &creds);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("could not fetch domain creds for domain %s - %s!\n",
+			  domain, nt_errstr(status)));
 		TALLOC_FREE(frame);
 		return NT_STATUS_TRUSTED_RELATIONSHIP_FAILURE;
 	}
 
+	current_nt_hash = cli_credentials_get_nt_hash(creds, frame);
+	if (current_nt_hash == NULL) {
+		DEBUG(0, ("cli_credentials_get_nt_hash failed for domain %s!\n",
+			  domain));
+		TALLOC_FREE(frame);
+		return NT_STATUS_TRUSTED_RELATIONSHIP_FAILURE;
+	}
+
+	pass_last_set_time = cli_credentials_get_password_last_changed_time(creds);
+	sec_channel_type = cli_credentials_get_secure_channel_type(creds);
+
 	switch (sec_channel_type) {
 	case SEC_CHAN_WKSTA:
 	case SEC_CHAN_BDC:
-		pwd = secrets_fetch_machine_password(domain,
-						     &pass_last_set_time,
-						     NULL);
-		if (pwd == NULL) {
-			TALLOC_FREE(frame);
-			return NT_STATUS_TRUSTED_RELATIONSHIP_FAILURE;
-		}
-		free(pwd);
 		break;
 	case SEC_CHAN_DNS_DOMAIN:
 		/*
@@ -134,9 +137,12 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 
 		/* fall through */
 	case SEC_CHAN_DOMAIN:
-		if (!pdb_get_trusteddom_pw(domain, &pwd, &sid, &pass_last_set_time)) {
+		status = pdb_get_trusted_domain(frame, domain, &td);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("pdb_get_trusted_domain() failed for domain %s - %s!\n",
+				  domain, nt_errstr(status)));
 			TALLOC_FREE(frame);
-			return NT_STATUS_TRUSTED_RELATIONSHIP_FAILURE;
+			return status;
 		}
 		break;
 	default:
@@ -187,9 +193,11 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 	 * local secrets before doing the change.
 	 */
 	status = netlogon_creds_cli_auth(context, b,
-					 current_nt_hash,
+					 *current_nt_hash,
 					 previous_nt_hash);
 	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("netlogon_creds_cli_auth for domain %s - %s!\n",
+			  domain, nt_errstr(status)));
 		TALLOC_FREE(frame);
 		return status;
 	}
@@ -203,7 +211,10 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 
 	case SEC_CHAN_WKSTA:
 	case SEC_CHAN_BDC:
-		if (!secrets_store_machine_password(new_trust_passwd, domain, sec_channel_type)) {
+		ok = secrets_store_machine_password(new_trust_passwd, domain, sec_channel_type);
+		if (!ok) {
+			DEBUG(0, ("secrets_store_machine_password failed for domain %s!\n",
+				  domain));
 			TALLOC_FREE(frame);
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
@@ -215,7 +226,11 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 		 * we need to get the sid first for the
 		 * pdb_set_trusteddom_pw call
 		 */
-		if (!pdb_set_trusteddom_pw(domain, new_trust_passwd, &sid)) {
+		ok = pdb_set_trusteddom_pw(domain, new_trust_passwd,
+					   &td->security_identifier);
+		if (!ok) {
+			DEBUG(0, ("pdb_set_trusteddom_pw() failed for domain %s!\n",
+				  domain));
 			TALLOC_FREE(frame);
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
