@@ -38,6 +38,7 @@
 #include "lib/tsocket/tsocket.h"
 #include "librpc/gen_ndr/ndr_netlogon.h"
 #include "librpc/gen_ndr/ndr_lsa.h"
+#include "librpc/gen_ndr/ndr_samr.h"
 #include "librpc/gen_ndr/ndr_irpc.h"
 #include "lib/socket/netif.h"
 
@@ -577,11 +578,11 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet2(struct dcesrv_call_state *dce_cal
 	const char * const attrs[] = { "dBCSPwd", "unicodePwd", NULL };
 	struct ldb_message **res;
 	struct samr_Password *oldLmHash, *oldNtHash;
+	struct NL_PASSWORD_VERSION version = {};
 	const uint32_t *new_version = NULL;
 	NTSTATUS nt_status;
 	DATA_BLOB new_password;
 	int ret;
-
 	struct samr_CryptPassword password_buf;
 
 	nt_status = dcesrv_netr_creds_server_step_check(dce_call,
@@ -603,6 +604,29 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet2(struct dcesrv_call_state *dce_cal
 		netlogon_creds_aes_decrypt(creds, password_buf.data, 516);
 	} else {
 		netlogon_creds_arcfour_crypt(creds, password_buf.data, 516);
+	}
+
+	switch (creds->secure_channel_type) {
+	case SEC_CHAN_DOMAIN:
+	case SEC_CHAN_DNS_DOMAIN: {
+		uint32_t len = IVAL(password_buf.data, 512);
+		if (len <= 500) {
+			uint32_t ofs = 500 - len;
+			uint8_t *p;
+
+			p = password_buf.data + ofs;
+
+			version.ReservedField = IVAL(p, 0);
+			version.PasswordVersionNumber = IVAL(p, 4);
+			version.PasswordVersionPresent = IVAL(p, 8);
+
+			if (version.PasswordVersionPresent == NETLOGON_PASSWORD_VERSION_NUMBER_PRESENT) {
+				new_version = &version.PasswordVersionNumber;
+			}
+		}}
+		break;
+	default:
+		break;
 	}
 
 	if (!extract_pw_from_buffer(mem_ctx, password_buf.data, &new_password)) {
