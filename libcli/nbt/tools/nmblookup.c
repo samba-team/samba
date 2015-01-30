@@ -32,6 +32,10 @@
 #include "../libcli/nbt/libnbt.h"
 #include "param/param.h"
 
+#include <string.h>
+
+#define MAX_NETBIOSNAME_LEN 16
+
 /* command line options */
 static struct {
 	const char *broadcast_address;
@@ -190,6 +194,7 @@ static bool process_one(struct loadparm_context *lp_ctx, struct tevent_context *
 	struct socket_address *all_zero_addr;
 	struct nbt_name_socket *nbtsock;
 	NTSTATUS status = NT_STATUS_OK;
+	size_t nbt_len;
 	bool ret = true;
 
 	if (!options.case_sensitive) {
@@ -210,6 +215,14 @@ static bool process_one(struct loadparm_context *lp_ctx, struct tevent_context *
 		node_type = (enum nbt_name_type)strtol(p+1, NULL, 16);
 	} else {
 		node_name = talloc_strdup(tmp_ctx, name);
+	}
+
+	nbt_len = strlen(node_name);
+	if (nbt_len > MAX_NETBIOSNAME_LEN - 1) {
+		printf("The specified netbios name [%s] is too long.\n",
+		       node_name);
+		talloc_free(tmp_ctx);
+		return false;
 	}
 
 	nbtsock = nbt_name_socket_init(tmp_ctx, ev);
