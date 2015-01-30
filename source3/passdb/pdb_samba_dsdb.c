@@ -2286,9 +2286,11 @@ static NTSTATUS pdb_samba_dsdb_get_trusteddom_creds(struct pdb_methods *m,
 	int trust_type;
 	int i;
 	DATA_BLOB password_utf16 = {};
-	DATA_BLOB password_nt = {};
+	struct samr_Password *password_nt = NULL;
+	uint32_t password_version = 0;
+	DATA_BLOB old_password_utf16 = {};
+	struct samr_Password *old_password_nt = NULL;
 	struct trustAuthInOutBlob password_blob;
-	struct AuthenticationInformationArray *auth_array = NULL;
 	enum ndr_err_code ndr_err;
 	NTSTATUS status;
 	time_t last_set_time = 0;
@@ -2361,27 +2363,65 @@ static NTSTATUS pdb_samba_dsdb_get_trusteddom_creds(struct pdb_methods *m,
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
 
-	auth_array = &password_blob.current;
+	for (i=0; i < password_blob.current.count; i++) {
+		struct AuthenticationInformation *a =
+			&password_blob.current.array[i];
 
-	for (i=0; i < auth_array->count; i++) {
-		if (auth_array->array[i].AuthType == TRUST_AUTH_TYPE_CLEAR) {
-			last_set_time = nt_time_to_unix(auth_array->array[i].LastUpdateTime);
-
-			password_utf16 = data_blob_const(auth_array->array[i].AuthInfo.clear.password,
-							 auth_array->array[i].AuthInfo.clear.size);
-			password_nt = data_blob_null;
+		switch (a->AuthType) {
+		case TRUST_AUTH_TYPE_NONE:
 			break;
-		}
 
-		if (auth_array->array[i].AuthType == TRUST_AUTH_TYPE_NT4OWF) {
-			last_set_time = nt_time_to_unix(auth_array->array[i].LastUpdateTime);
+		case TRUST_AUTH_TYPE_VERSION:
+			password_version = a->AuthInfo.version.version;
+			break;
 
-			password_nt = data_blob_const(auth_array->array[i].AuthInfo.clear.password,
-						      auth_array->array[i].AuthInfo.clear.size);
+		case TRUST_AUTH_TYPE_CLEAR:
+			last_set_time = nt_time_to_unix(a->LastUpdateTime);
+
+			password_utf16 = data_blob_const(a->AuthInfo.clear.password,
+							 a->AuthInfo.clear.size);
+			password_nt = NULL;
+			break;
+
+		case TRUST_AUTH_TYPE_NT4OWF:
+			if (password_utf16.length != 0) {
+				break;
+			}
+
+			last_set_time = nt_time_to_unix(a->LastUpdateTime);
+
+			password_nt = &a->AuthInfo.nt4owf.password;
+			break;
 		}
 	}
 
-	if (password_utf16.length == 0 && password_nt.length == 0) {
+	for (i=0; i < password_blob.previous.count; i++) {
+		struct AuthenticationInformation *a = &password_blob.previous.array[i];
+
+		switch (a->AuthType) {
+		case TRUST_AUTH_TYPE_NONE:
+			break;
+
+		case TRUST_AUTH_TYPE_VERSION:
+			break;
+
+		case TRUST_AUTH_TYPE_CLEAR:
+			old_password_utf16 = data_blob_const(a->AuthInfo.clear.password,
+							 a->AuthInfo.clear.size);
+			old_password_nt = NULL;
+			break;
+
+		case TRUST_AUTH_TYPE_NT4OWF:
+			if (old_password_utf16.length != 0) {
+				break;
+			}
+
+			old_password_nt = &a->AuthInfo.nt4owf.password;
+			break;
+		}
+	}
+
+	if (password_utf16.length == 0 && password_nt == NULL) {
 		DEBUG(0, ("Trusted domain %s does not have a "
 			  "clear-text nor nt password stored\n",
 			  domain));
@@ -2454,14 +2494,26 @@ static NTSTATUS pdb_samba_dsdb_get_trusteddom_creds(struct pdb_methods *m,
 		}
 	}
 
-	if (password_nt.length == 16) {
-		struct samr_Password nt_hash;
+	if (old_password_nt != NULL) {
+		ok = cli_credentials_set_old_nt_hash(creds, old_password_nt);
+		if (!ok) {
+			TALLOC_FREE(tmp_ctx);
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
 
-		memcpy(nt_hash.hash, password_nt.data, 16);
+	if (old_password_utf16.length > 0) {
+		ok = cli_credentials_set_old_utf16_password(creds,
+							    &old_password_utf16);
+		if (!ok) {
+			TALLOC_FREE(tmp_ctx);
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
 
-		ok = cli_credentials_set_nt_hash(creds, &nt_hash,
+	if (password_nt != NULL) {
+		ok = cli_credentials_set_nt_hash(creds, password_nt,
 						 CRED_SPECIFIED);
-		ZERO_STRUCT(nt_hash);
 		if (!ok) {
 			TALLOC_FREE(tmp_ctx);
 			return NT_STATUS_NO_MEMORY;
@@ -2479,6 +2531,7 @@ static NTSTATUS pdb_samba_dsdb_get_trusteddom_creds(struct pdb_methods *m,
 	}
 
 	cli_credentials_set_password_last_changed_time(creds, last_set_time);
+	cli_credentials_set_kvno(creds, password_version);
 
 	if (password_utf16.length > 0 && dns_domain != NULL) {
 		/*
