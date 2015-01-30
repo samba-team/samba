@@ -66,6 +66,7 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 	struct timeval g_timeout = { 0, };
 	int timeout = 0;
 	struct timeval tv = { 0, };
+	size_t new_len = DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH;
 	NTSTATUS status;
 
 	state = talloc_zero(frame, struct trust_pw_change_state);
@@ -121,6 +122,17 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 		}
 		free(pwd);
 		break;
+	case SEC_CHAN_DNS_DOMAIN:
+		/*
+		 * new_len * 2 = 498 bytes is the largest possible length
+		 * NL_PASSWORD_VERSION consumes the rest of the possible 512 bytes
+		 * and a confounder with at least 2 bytes is required.
+		 *
+		 * Windows uses new_len = 120 => 240 bytes.
+		 */
+		new_len = 120;
+
+		/* fall through */
 	case SEC_CHAN_DOMAIN:
 		if (!pdb_get_trusteddom_pw(domain, &pwd, &sid, &pass_last_set_time)) {
 			TALLOC_FREE(frame);
@@ -154,9 +166,7 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 	}
 
 	/* Create a random machine account password */
-	new_trust_passwd = generate_random_password(frame,
-				DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH,
-				DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH);
+	new_trust_passwd = generate_random_password(frame, new_len, new_len);
 	if (new_trust_passwd == NULL) {
 		DEBUG(0, ("generate_random_password failed\n"));
 		TALLOC_FREE(frame);
@@ -199,6 +209,7 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 		}
 		break;
 
+	case SEC_CHAN_DNS_DOMAIN:
 	case SEC_CHAN_DOMAIN:
 		/*
 		 * we need to get the sid first for the
