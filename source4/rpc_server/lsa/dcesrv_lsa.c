@@ -830,6 +830,51 @@ static NTSTATUS get_trustauth_inout_blob(struct dcesrv_call_state *dce_call,
 {
 	enum ndr_err_code ndr_err;
 
+	if (iopw->current.count != iopw->count) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (iopw->previous.count > iopw->current.count) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (iopw->previous.count == 0) {
+		/*
+		 * If the previous credentials are not present
+		 * we need to make a copy.
+		 */
+		iopw->previous = iopw->current;
+	}
+
+	if (iopw->previous.count < iopw->current.count) {
+		struct AuthenticationInformationArray *c = &iopw->current;
+		struct AuthenticationInformationArray *p = &iopw->previous;
+
+		/*
+		 * The previous array needs to have the same size
+		 * as the current one.
+		 *
+		 * We may have to fill with TRUST_AUTH_TYPE_NONE
+		 * elements.
+		 */
+		p->array = talloc_realloc(mem_ctx, p->array,
+				   struct AuthenticationInformation,
+				   c->count);
+		if (p->array == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		while (p->count < c->count) {
+			struct AuthenticationInformation *a =
+				&p->array[p->count++];
+
+			*a = (struct AuthenticationInformation) {
+				.LastUpdateTime = p->array[0].LastUpdateTime,
+				.AuthType = TRUST_AUTH_TYPE_NONE,
+			};
+		}
+	}
+
 	ndr_err = ndr_push_struct_blob(trustauth_blob, mem_ctx,
 				       iopw,
 				       (ndr_push_flags_fn_t)ndr_push_trustAuthInOutBlob);
