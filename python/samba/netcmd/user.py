@@ -71,6 +71,13 @@ samba-tool user create User4 passw4rd --rfc2307-from-nss --gecos 'some text'
 
 Example4 shows how to create a new user with Unix UID, GID and login-shell set from the local NSS and GECOS set to 'some text'.
 
+Example5:
+samba-tool user add User5 passw5rd --nis-domain=samdom --unix-home=/home/User5 \
+           --uid-number=10005 --login-shell=/bin/false --gid-number=10000
+
+Example5 shows how to create an RFC2307/NIS domain enabled user account. If
+--nis-domain is set, then the other four parameters are mandatory.
+
 """
     synopsis = "%prog <username> [<password>] [options]"
 
@@ -107,6 +114,9 @@ Example4 shows how to create a new user with Unix UID, GID and login-shell set f
         Option("--rfc2307-from-nss",
                 help="Copy Unix user attributes from NSS (will be overridden by explicit UID/GID/GECOS/shell)",
                 action="store_true"),
+        Option("--nis-domain", help="User's Unix/RFC2307 NIS domain", type=str),
+        Option("--unix-home", help="User's Unix/RFC2307 home directory",
+                type=str),
         Option("--uid", help="User's Unix/RFC2307 username", type=str),
         Option("--uid-number", help="User's Unix/RFC2307 numeric UID", type=int),
         Option("--gid-number", help="User's Unix/RFC2307 primary GID number", type=int),
@@ -130,7 +140,8 @@ Example4 shows how to create a new user with Unix UID, GID and login-shell set f
             job_title=None, department=None, company=None, description=None,
             mail_address=None, internet_address=None, telephone_number=None,
             physical_delivery_office=None, rfc2307_from_nss=False,
-            uid=None, uid_number=None, gid_number=None, gecos=None, login_shell=None):
+            nis_domain=None, unix_home=None, uid=None, uid_number=None,
+            gid_number=None, gecos=None, login_shell=None):
 
         if random_password:
             password = generate_random_password(128, 255)
@@ -164,6 +175,14 @@ Example4 shows how to create a new user with Unix UID, GID and login-shell set f
             if not lp.get("idmap_ldb:use rfc2307"):
                 self.outf.write("You are setting a Unix/RFC2307 UID or GID. You may want to set 'idmap_ldb:use rfc2307 = Yes' to use those attributes for XID/SID-mapping.\n")
 
+        if nis_domain is not None:
+            if None in (uid_number, login_shell, unix_home, gid_number):
+                raise CommandError('Missing parameters. To enable NIS features, '
+                                   'the following options have to be given: '
+                                   '--nis-domain=, --uidNumber=, --login-shell='
+                                   ', --unix-home=, --gid-number= Operation '
+                                   'cancelled.')
+
         try:
             samdb = SamDB(url=H, session_info=system_session(),
                           credentials=creds, lp=lp)
@@ -173,7 +192,9 @@ Example4 shows how to create a new user with Unix UID, GID and login-shell set f
                           jobtitle=job_title, department=department, company=company, description=description,
                           mailaddress=mail_address, internetaddress=internet_address,
                           telephonenumber=telephone_number, physicaldeliveryoffice=physical_delivery_office,
-                          uid=uid, uidnumber=uid_number, gidnumber=gid_number, gecos=gecos, loginshell=login_shell)
+                          nisdomain=nis_domain, unixhome=unix_home, uid=uid,
+                          uidnumber=uid_number, gidnumber=gid_number,
+                          gecos=gecos, loginshell=login_shell)
         except Exception, e:
             raise CommandError("Failed to add user '%s': " % username, e)
 

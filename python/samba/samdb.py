@@ -302,7 +302,7 @@ member: %s
             description=None, mailaddress=None, internetaddress=None,
             telephonenumber=None, physicaldeliveryoffice=None, sd=None,
             setpassword=True, uidnumber=None, gidnumber=None, gecos=None,
-            loginshell=None, uid=None):
+            loginshell=None, uid=None, nisdomain=None, unixhome=None):
         """Adds a new user with additional parameters
 
         :param username: Name of the new user
@@ -333,6 +333,8 @@ member: %s
         :param gecos: RFC2307 Unix GECOS field of the new user
         :param loginshell: RFC2307 Unix login shell of the new user
         :param uid: RFC2307 Unix username of the new user
+        :param nisdomain: RFC2307 Unix NIS domain of the new user
+        :param unixhome: RFC2307 Unix home directory of the new user
         """
 
         displayname = ""
@@ -413,7 +415,8 @@ member: %s
             ldbmessage["nTSecurityDescriptor"] = ndr_pack(sd)
 
         ldbmessage2 = None
-        if any(map(lambda b: b is not None, (uid, uidnumber, gidnumber, gecos, loginshell))):
+        if any(map(lambda b: b is not None, (uid, uidnumber, gidnumber, gecos,
+                loginshell, nisdomain, unixhome))):
             ldbmessage2 = ldb.Message()
             ldbmessage2.dn = ldb.Dn(self, user_dn)
             ldbmessage2["objectClass"] = ldb.MessageElement('posixAccount', ldb.FLAG_MOD_ADD, 'objectClass')
@@ -427,6 +430,17 @@ member: %s
                 ldbmessage2["gecos"] = ldb.MessageElement(str(gecos), ldb.FLAG_MOD_REPLACE, 'gecos')
             if loginshell is not None:
                 ldbmessage2["loginShell"] = ldb.MessageElement(str(loginshell), ldb.FLAG_MOD_REPLACE, 'loginShell')
+            if unixhome is not None:
+                ldbmessage2["unixHomeDirectory"] = ldb.MessageElement(
+                    str(unixhome), ldb.FLAG_MOD_REPLACE, 'unixHomeDirectory')
+            if nisdomain is not None:
+                ldbmessage2["msSFU30NisDomain"] = ldb.MessageElement(
+                    str(nisdomain), ldb.FLAG_MOD_REPLACE, 'msSFU30NisDomain')
+                ldbmessage2["msSFU30Name"] = ldb.MessageElement(
+                    str(username), ldb.FLAG_MOD_REPLACE, 'msSFU30Name')
+                ldbmessage2["unixUserPassword"] = ldb.MessageElement(
+                    'ABCD!efgh12345$67890', ldb.FLAG_MOD_REPLACE,
+                    'unixUserPassword')
 
         self.transaction_start()
         try:
