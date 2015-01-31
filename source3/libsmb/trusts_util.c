@@ -163,6 +163,19 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	/*
+	 * We could use cli_credentials_get_old_nt_hash(creds, frame) to
+	 * set previous_nt_hash.
+	 *
+	 * But we want to check if the dc has our current password and only do
+	 * a change if that's the case. So we keep previous_nt_hash = NULL.
+	 *
+	 * TODO:
+	 * If the previous password is the only password in common with the dc,
+	 * we better skip the password change, or use something like
+	 * ServerTrustPasswordsGet() or netr_ServerGetTrustInfo() to fix our
+	 * local secrets before doing the change.
+	 */
 	status = netlogon_creds_cli_auth(context, b,
 					 current_nt_hash,
 					 previous_nt_hash);
@@ -170,16 +183,6 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 		TALLOC_FREE(frame);
 		return status;
 	}
-
-	status = netlogon_creds_cli_ServerPasswordSet(context, b,
-						      new_trust_passwd, NULL);
-	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(frame);
-		return status;
-	}
-
-	DEBUG(3,("%s : trust_pw_change_and_store_it: Changed password.\n",
-		 current_timestring(talloc_tos(), False)));
 
 	/*
 	 * Return the result of trying to write the new password
@@ -211,6 +214,22 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 		smb_panic("Unsupported secure channel type");
 		break;
 	}
+
+	DEBUG(1,("%s : %s(%s): Changed password locally\n",
+		 current_timestring(talloc_tos(), false), __func__, domain));
+
+	status = netlogon_creds_cli_ServerPasswordSet(context, b,
+						      new_trust_passwd, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("%s : %s(%s) remote password change set failed - %s\n",
+			 current_timestring(talloc_tos(), false), __func__,
+			 domain, nt_errstr(status)));
+		TALLOC_FREE(frame);
+		return status;
+	}
+
+	DEBUG(1,("%s : %s(%s): Changed password remotely.\n",
+		 current_timestring(talloc_tos(), false), __func__, domain));
 
 	TALLOC_FREE(frame);
 	return NT_STATUS_OK;
