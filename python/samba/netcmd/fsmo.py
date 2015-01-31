@@ -50,7 +50,6 @@ def transfer_role(outf, role, samdb):
         m["becomeDomainMaster"]= ldb.MessageElement(
             "1", ldb.FLAG_MOD_REPLACE,
             "becomeDomainMaster")
-        samdb.modify(m)
     elif role == "infrastructure":
         m["becomeInfrastructureMaster"]= ldb.MessageElement(
             "1", ldb.FLAG_MOD_REPLACE,
