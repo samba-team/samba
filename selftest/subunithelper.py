@@ -348,7 +348,7 @@ class FilterOps(unittest.TestResult):
         if xfail_reason is not None:
             self.uxsuccess_added += 1
             self.total_uxsuccess += 1
-            self._ops.addUnexpectedSuccess(test, subunit.RemoteError(xfail_reason))
+            self._ops.addUnexpectedSuccess(test)
             if self.output:
                 self._ops.output_msg(self.output)
             if self.fail_immediately:
