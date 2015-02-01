@@ -1264,7 +1264,7 @@ static krb5_error_code samba_kdc_lookup_client(krb5_context context,
 	NTSTATUS nt_status;
 	char *principal_string;
 
-	if (principal->name.name_type == KRB5_NT_ENTERPRISE_PRINCIPAL) {
+	if (krb5_principal_get_type(context, principal) == KRB5_NT_ENTERPRISE_PRINCIPAL) {
 		principal_string = smb_krb5_principal_get_comp_string(mem_ctx, context,
 								      principal, 0);
 		if (principal_string == NULL) {
