@@ -34,6 +34,109 @@
 #include "../lib/util/dlinklist.h"
 #include "../lib/crypto/crypto.h"
 
+NTSTATUS dsdb_trust_forest_info_from_lsa(TALLOC_CTX *mem_ctx,
+				const struct lsa_ForestTrustInformation *lfti,
+				struct ForestTrustInfo **_fti)
+{
+	struct ForestTrustInfo *fti;
+	uint32_t i;
+
+	*_fti = NULL;
+
+	fti = talloc_zero(mem_ctx, struct ForestTrustInfo);
+	if (fti == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	fti->version = 1;
+	fti->count = lfti->count;
+	fti->records = talloc_zero_array(mem_ctx,
+					 struct ForestTrustInfoRecordArmor,
+					 fti->count);
+	if (fti->records == NULL) {
+		TALLOC_FREE(fti);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	for (i = 0; i < fti->count; i++) {
+		const struct lsa_ForestTrustRecord *lftr = lfti->entries[i];
+		struct ForestTrustInfoRecord *ftr = &fti->records[i].record;
+		struct ForestTrustString *str = NULL;
+		const struct lsa_StringLarge *lstr = NULL;
+		const struct lsa_ForestTrustDomainInfo *linfo = NULL;
+		struct ForestTrustDataDomainInfo *info = NULL;
+
+		if (lftr == NULL) {
+			TALLOC_FREE(fti);
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		ftr->flags = lftr->flags;
+		ftr->timestamp = lftr->time;
+		ftr->type = lftr->type;
+
+		switch (lftr->type) {
+		case LSA_FOREST_TRUST_TOP_LEVEL_NAME:
+			lstr = &lftr->forest_trust_data.top_level_name;
+			str = &ftr->data.name;
+
+			str->string = talloc_strdup(mem_ctx, lstr->string);
+			if (str->string == NULL) {
+				TALLOC_FREE(fti);
+				return NT_STATUS_NO_MEMORY;
+			}
+
+			break;
+
+		case LSA_FOREST_TRUST_TOP_LEVEL_NAME_EX:
+			lstr = &lftr->forest_trust_data.top_level_name_ex;
+			str = &ftr->data.name;
+
+			str->string = talloc_strdup(mem_ctx, lstr->string);
+			if (str->string == NULL) {
+				TALLOC_FREE(fti);
+				return NT_STATUS_NO_MEMORY;
+			}
+
+			break;
+
+		case LSA_FOREST_TRUST_DOMAIN_INFO:
+			linfo = &lftr->forest_trust_data.domain_info;
+			info = &ftr->data.info;
+
+			if (linfo->domain_sid == NULL) {
+				TALLOC_FREE(fti);
+				return NT_STATUS_INVALID_PARAMETER;
+			}
+			info->sid = *linfo->domain_sid;
+
+			lstr = &linfo->dns_domain_name;
+			str = &info->dns_name;
+			str->string = talloc_strdup(mem_ctx, lstr->string);
+			if (str->string == NULL) {
+				TALLOC_FREE(fti);
+				return NT_STATUS_NO_MEMORY;
+			}
+
+			lstr = &linfo->netbios_domain_name;
+			str = &info->netbios_name;
+			str->string = talloc_strdup(mem_ctx, lstr->string);
+			if (str->string == NULL) {
+				TALLOC_FREE(fti);
+				return NT_STATUS_NO_MEMORY;
+			}
+
+			break;
+
+		default:
+			return NT_STATUS_NOT_SUPPORTED;
+		}
+	}
+
+	*_fti = fti;
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS dsdb_trust_forest_record_to_lsa(TALLOC_CTX *mem_ctx,
 					 const struct ForestTrustInfoRecord *ftr,
 					 struct lsa_ForestTrustRecord **_lftr)
