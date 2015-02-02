@@ -1121,6 +1121,159 @@ NTSTATUS dsdb_trust_parse_forest_info(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+NTSTATUS dsdb_trust_search_tdo(struct ldb_context *sam_ctx,
+			       const char *netbios, const char *dns,
+			       const char * const *attrs,
+			       TALLOC_CTX *mem_ctx,
+			       struct ldb_message **msg)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	int ret;
+	struct ldb_dn *system_dn = NULL;
+	char *netbios_encoded = NULL;
+	char *dns_encoded = NULL;
+	char *filter = NULL;
+
+	*msg = NULL;
+
+	if (netbios == NULL && dns == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_INVALID_PARAMETER_MIX;
+	}
+
+	system_dn = ldb_dn_copy(frame, ldb_get_default_basedn(sam_ctx));
+	if (system_dn == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (!ldb_dn_add_child_fmt(system_dn, "CN=System")) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (netbios != NULL) {
+		netbios_encoded = ldb_binary_encode_string(frame, netbios);
+		if (netbios_encoded == NULL) {
+			TALLOC_FREE(frame);
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
+	if (dns != NULL) {
+		dns_encoded = ldb_binary_encode_string(frame, dns);
+		if (dns_encoded == NULL) {
+			TALLOC_FREE(frame);
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
+	if (netbios != NULL && dns != NULL) {
+		filter = talloc_asprintf(frame,
+				"(&(objectClass=trustedDomain)"
+				  "(|(trustPartner=%s)(flatName=%s))"
+				")",
+				dns_encoded, netbios_encoded);
+		if (filter == NULL) {
+			TALLOC_FREE(frame);
+			return NT_STATUS_NO_MEMORY;
+		}
+	} else if (netbios != NULL) {
+		filter = talloc_asprintf(frame,
+				"(&(objectClass=trustedDomain)(flatName=%s))",
+				netbios_encoded);
+		if (filter == NULL) {
+			TALLOC_FREE(frame);
+			return NT_STATUS_NO_MEMORY;
+		}
+	} else if (dns != NULL) {
+		filter = talloc_asprintf(frame,
+				"(&(objectClass=trustedDomain)(trustPartner=%s))",
+				dns_encoded);
+		if (filter == NULL) {
+			TALLOC_FREE(frame);
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
+	ret = dsdb_search_one(sam_ctx, mem_ctx, msg,
+			      system_dn,
+			      LDB_SCOPE_ONELEVEL, attrs,
+			      DSDB_SEARCH_NO_GLOBAL_CATALOG,
+			      "%s", filter);
+	if (ret != LDB_SUCCESS) {
+		NTSTATUS status = dsdb_ldb_err_to_ntstatus(ret);
+		DEBUG(3, ("Failed to search for %s: %s - %s\n",
+			  filter, nt_errstr(status), ldb_errstring(sam_ctx)));
+		TALLOC_FREE(frame);
+		return status;
+	}
+
+	TALLOC_FREE(frame);
+	return NT_STATUS_OK;
+}
+
+NTSTATUS dsdb_trust_search_tdo_by_type(struct ldb_context *sam_ctx,
+				       enum netr_SchannelType type,
+				       const char *name,
+				       const char * const *attrs,
+				       TALLOC_CTX *mem_ctx,
+				       struct ldb_message **msg)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	NTSTATUS status;
+	size_t len;
+	char trailer = '$';
+	bool require_trailer = true;
+	char *encoded_name = NULL;
+	const char *netbios = NULL;
+	const char *dns = NULL;
+
+	if (type != SEC_CHAN_DOMAIN && type != SEC_CHAN_DNS_DOMAIN) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (type == SEC_CHAN_DNS_DOMAIN) {
+		trailer = '.';
+		require_trailer = false;
+	}
+
+	encoded_name = ldb_binary_encode_string(frame, name);
+	if (encoded_name == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	len = strlen(encoded_name);
+	if (len < 2) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
+	if (require_trailer && encoded_name[len - 1] != trailer) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+	encoded_name[len - 1] = '\0';
+
+	if (type == SEC_CHAN_DNS_DOMAIN) {
+		dns = encoded_name;
+	} else {
+		netbios = encoded_name;
+	}
+
+	status = dsdb_trust_search_tdo(sam_ctx, netbios, dns,
+				       attrs, mem_ctx, msg);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
+		return status;
+	}
+
+	TALLOC_FREE(frame);
+	return NT_STATUS_OK;
+}
+
 NTSTATUS dsdb_trust_search_tdos(struct ldb_context *sam_ctx,
 				const char *exclude,
 				const char * const *attrs,
