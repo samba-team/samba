@@ -1274,6 +1274,122 @@ NTSTATUS dsdb_trust_search_tdo_by_type(struct ldb_context *sam_ctx,
 	return NT_STATUS_OK;
 }
 
+NTSTATUS dsdb_trust_get_incoming_passwords(struct ldb_message *msg,
+					   TALLOC_CTX *mem_ctx,
+					   struct samr_Password **_current,
+					   struct samr_Password **_previous)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct samr_Password __current = {};
+	struct samr_Password __previous = {};
+	struct samr_Password *current = NULL;
+	struct samr_Password *previous = NULL;
+	const struct ldb_val *blob = NULL;
+	enum ndr_err_code ndr_err;
+	struct trustAuthInOutBlob incoming = {};
+	uint32_t i;
+
+	if (_current != NULL) {
+		*_current = NULL;
+	}
+	if (_previous != NULL) {
+		*_previous = NULL;
+	}
+
+	blob = ldb_msg_find_ldb_val(msg, "trustAuthIncoming");
+	if (blob == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_ACCOUNT_DISABLED;
+	}
+
+	/* ldb_val is equivalent to DATA_BLOB */
+	ndr_err = ndr_pull_struct_blob_all(blob, frame, &incoming,
+				(ndr_pull_flags_fn_t)ndr_pull_trustAuthInOutBlob);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	for (i = 0; i < incoming.current.count; i++) {
+		struct AuthenticationInformation *a =
+			&incoming.current.array[i];
+
+		if (current != NULL) {
+			break;
+		}
+
+		switch (a->AuthType) {
+		case TRUST_AUTH_TYPE_NONE:
+		case TRUST_AUTH_TYPE_VERSION:
+			break;
+		case TRUST_AUTH_TYPE_NT4OWF:
+			current = &a->AuthInfo.nt4owf.password;
+			break;
+		case TRUST_AUTH_TYPE_CLEAR:
+			mdfour(__current.hash,
+			       a->AuthInfo.clear.password,
+			       a->AuthInfo.clear.size);
+			current = &__current;
+			break;
+		}
+	}
+
+	if (current == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	for (i = 0; i < incoming.previous.count; i++) {
+		struct AuthenticationInformation *a =
+			&incoming.previous.array[i];
+
+		if (previous != NULL) {
+			break;
+		}
+
+		switch (a->AuthType) {
+		case TRUST_AUTH_TYPE_NONE:
+		case TRUST_AUTH_TYPE_VERSION:
+			break;
+		case TRUST_AUTH_TYPE_NT4OWF:
+			previous = &a->AuthInfo.nt4owf.password;
+			break;
+		case TRUST_AUTH_TYPE_CLEAR:
+			mdfour(__previous.hash,
+			       a->AuthInfo.clear.password,
+			       a->AuthInfo.clear.size);
+			previous = &__previous;
+			break;
+		}
+	}
+
+	if (previous == NULL) {
+		previous = current;
+	}
+
+	if (_current != NULL) {
+		*_current = talloc(mem_ctx, struct samr_Password);
+		if (*_current == NULL) {
+			TALLOC_FREE(frame);
+			return NT_STATUS_NO_MEMORY;
+		}
+		**_current = *current;
+	}
+	if (_previous != NULL) {
+		*_previous = talloc(mem_ctx, struct samr_Password);
+		if (*_previous == NULL) {
+			TALLOC_FREE(*_current);
+			TALLOC_FREE(frame);
+			return NT_STATUS_NO_MEMORY;
+		}
+		**_previous = *previous;
+	}
+	ZERO_STRUCTP(current);
+	ZERO_STRUCTP(previous);
+	TALLOC_FREE(frame);
+	return NT_STATUS_OK;
+}
+
 NTSTATUS dsdb_trust_search_tdos(struct ldb_context *sam_ctx,
 				const char *exclude,
 				const char * const *attrs,
