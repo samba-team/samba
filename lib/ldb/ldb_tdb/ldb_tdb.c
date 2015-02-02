@@ -526,8 +526,7 @@ static int find_element(const struct ldb_message *msg, const char *name)
 
   returns 0 on success, -1 on failure (and sets errno)
 */
-static int ltdb_msg_add_element(struct ldb_context *ldb,
-				struct ldb_message *msg,
+static int ltdb_msg_add_element(struct ldb_message *msg,
 				struct ldb_message_element *el)
 {
 	struct ldb_message_element *e2;
@@ -772,7 +771,7 @@ int ltdb_modify_internal(struct ldb_module *module,
 			/* Checks if element already exists */
 			idx = find_element(msg2, el->name);
 			if (idx == -1) {
-				if (ltdb_msg_add_element(ldb, msg2, el) != 0) {
+				if (ltdb_msg_add_element(msg2, el) != 0) {
 					ret = LDB_ERR_OTHER;
 					goto done;
 				}
@@ -908,7 +907,7 @@ int ltdb_modify_internal(struct ldb_module *module,
 			}
 
 			/* Recreate it with the new values */
-			if (ltdb_msg_add_element(ldb, msg2, el) != 0) {
+			if (ltdb_msg_add_element(msg2, el) != 0) {
 				ret = LDB_ERR_OTHER;
 				goto done;
 			}
