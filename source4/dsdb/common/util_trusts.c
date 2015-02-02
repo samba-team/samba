@@ -833,6 +833,26 @@ static bool dsdb_trust_find_tln_ex_match(const struct lsa_ForestTrustInformation
 	return false;
 }
 
+NTSTATUS dsdb_trust_xref_tdo_info(TALLOC_CTX *mem_ctx,
+				  struct ldb_context *sam_ctx,
+				  struct lsa_TrustDomainInfoInfoEx **_tdo)
+{
+	/*
+	 * The extra filter makes sure we only find the forest root domain
+	 */
+	const char *extra_filter = "(!(|(rootTrust=*)(trustParent=*)))";
+	struct ldb_dn *domain_dn = NULL;
+
+	domain_dn = ldb_get_default_basedn(sam_ctx);
+	if (domain_dn == NULL) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	return dsdb_trust_crossref_tdo_info(mem_ctx, sam_ctx,
+					    domain_dn, extra_filter,
+					    _tdo, NULL, NULL);
+}
+
 static int dsdb_trust_xref_sort_msgs(struct ldb_message **_m1,
 				     struct ldb_message **_m2)
 {
