@@ -11,6 +11,12 @@ import "misc.idl", "lsa.idl", "samr.idl", "security.idl";
 cpp_quote("#define netr_DeltaEnum8Bit netr_DeltaEnum")
 cpp_quote("#define netr_SamDatabaseID8Bit netr_SamDatabaseID")
 
+cpp_quote("#define ENC_CRC32 KERB_ENCTYPE_DES_CBC_CRC")
+cpp_quote("#define ENC_RSA_MD5 KERB_ENCTYPE_DES_CBC_MD5")
+cpp_quote("#define ENC_RC4_HMAC_MD5 KERB_ENCTYPE_RC4_HMAC_MD5")
+cpp_quote("#define ENC_HMAC_SHA1_96_AES128 KERB_ENCTYPE_AES128_CTS_HMAC_SHA1_96")
+cpp_quote("#define ENC_HMAC_SHA1_96_AES256 KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96")
+
 [
   uuid("12345678-1234-abcd-ef00-01234567cffb"),
   version(1.0),
@@ -1336,7 +1342,7 @@ interface netlogon
 		lsa_String dummy_string3;
 		lsa_String dummy_string4;
 		netr_WorkstationFlags workstation_flags;
-		netr_SupportedEncTypes supported_enc_types;
+		kerb_EncTypes supported_enc_types;
 		uint32 dummy_long3;
 		uint32 dummy_long4;
 	} netr_WorkstationInformation;
@@ -1381,14 +1387,6 @@ interface netlogon
 		uint32 dummy_long4;
 	} netr_OneDomainInfo;
 
-	typedef [public,bitmap32bit] bitmap {
-		ENC_CRC32 = 0x00000001,
-		ENC_RSA_MD5 = 0x00000002,
-		ENC_RC4_HMAC_MD5 = 0x00000004,
-		ENC_HMAC_SHA1_96_AES128  = 0x00000008,
-		ENC_HMAC_SHA1_96_AES256  = 0x00000010
-	} netr_SupportedEncTypes;
-
 	typedef struct {
 		netr_OneDomainInfo primary_domain;
 		uint32 trusted_domain_count;
@@ -1399,7 +1397,7 @@ interface netlogon
 		lsa_StringLarge dummy_string3;
 		lsa_StringLarge dummy_string4;
 		netr_WorkstationFlags workstation_flags;
-		netr_SupportedEncTypes supported_enc_types;
+		kerb_EncTypes supported_enc_types;
 		uint32 dummy_long3;
 		uint32 dummy_long4;
 	} netr_DomainInformation;
