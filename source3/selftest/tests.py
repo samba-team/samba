@@ -280,7 +280,7 @@ rpc = ["rpc.authcontext", "rpc.samba3.bind", "rpc.samba3.srvsvc", "rpc.samba3.sh
        "rpc.netlogon.admin",
        "rpc.schannel", "rpc.schannel2", "rpc.bench-schannel1", "rpc.schannel_anon_setpw", "rpc.join", "rpc.bind"]
 
-local = ["local.ndr"]
+local = ["local.nss", "local.ndr"]
 
 idmap = [ "idmap.rfc2307" ]
 
@@ -376,6 +376,9 @@ for t in tests:
         plansmbtorture4testsuite(t, "s3dc", '//$SERVER_IP/tmp -U$%', description="anonymous password set")
         plansmbtorture4testsuite(t, "s3dc_schannel", '//$SERVER_IP/tmp -U$%', description="anonymous password set (schannel enforced server-side)")
         plansmbtorture4testsuite(t, "plugin_s4_dc", '//$SERVER/tmp -U$%', description="anonymous password set")
+    elif t == "local.nss":
+        for env in ["s3dc:local", "s3member:local", "member:local", "plugin_s4_dc:local", "dc:local"]:
+            plansmbtorture4testsuite(t, env, '//$SERVER/tmp -U$USERNAME%$PASSWORD')
     else:
         plansmbtorture4testsuite(t, "s3dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD')
         plansmbtorture4testsuite(t, "plugin_s4_dc", '//$SERVER/tmp -U$USERNAME%$PASSWORD')

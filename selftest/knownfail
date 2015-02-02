@@ -273,6 +273,20 @@
 ^samba.wbinfo_simple.\(s4member:local\).--user-groups
 ^samba.nss.test using winbind\(s4member:local\)
 #
+# These fail since dc assigns the local user's uid to SAMBADOMAIN/Administrator
+# hence we have a duplicate UID in nsswitch.
+#
+^samba3.local.nss.reentrant enumeration crosschecks\(dc:local\)
+^samba3.local.nss.reentrant enumeration\(dc:local\)
+^samba3.local.nss.enumeration\(dc:local\)
+#
+# These fail only if we run the unix.whoami test before them
+# in the member and s3member environments. ==> Strange!!!
+#
+^samba3.local.nss.reentrant enumeration crosschecks\(s3member:local\)
+^samba3.local.nss.reentrant enumeration\(s3member:local\)
+^samba3.local.nss.enumeration\(s3member:local\)
+#
 # These just happen to fail for some reason (probably because they run against the s4 winbind)
 #
 ^samba4.winbind.struct.getdcname\(s3member:local\)
