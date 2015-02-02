@@ -829,6 +829,8 @@ sub provision_raw_step2($$$)
 changetype: modify
 replace: userPrincipalName
 userPrincipalName: testallowed_upn\@$ctx->{realm}
+replace: servicePrincipalName
+servicePrincipalName: host/testallowed
 -	    
 ";
 	close(LDIF);
