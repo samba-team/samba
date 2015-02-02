@@ -184,7 +184,9 @@ def get_target_name(self):
 			# the import lib file name stays unversionned.
 			name = name + '-' + nums[0]
 		elif self.env.DEST_OS == 'openbsd':
-			pattern = '%s.%s.%s' % (pattern, nums[0], nums[1])
+                        pattern = '%s.%s' % (pattern, nums[0])
+                        if len(nums) >= 2:
+                                pattern += '.%s' % nums[1]
 
 	return os.path.join(dir, pattern % name)
 
