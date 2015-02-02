@@ -367,6 +367,17 @@ static bool torture_krb5_post_recv_tgs_req_canon_test(struct torture_krb5_contex
 					 test_context->tgs_req.req_body.sname->name_type,
 					 "Mismatch in name_type between request and ticket response");
 		torture_assert_int_equal(test_context->tctx,
+					 test_context->tgs_rep.ticket.sname.name_string.len,
+					 test_context->tgs_req.req_body.sname->name_string.len,
+					 "Mismatch in name_string.len between request and ticket response");
+		torture_assert(test_context->tctx,
+			       test_context->tgs_rep.ticket.sname.name_string.len >= 1,
+			       "name_string.len should be >=1 in ticket response");
+		torture_assert_str_equal(test_context->tctx,
+					 test_context->tgs_rep.ticket.sname.name_string.val[0],
+					 test_context->tgs_req.req_body.sname->name_string.val[0],
+					 "Mismatch in name between request and expected request");
+		torture_assert_int_equal(test_context->tctx,
 					 *test_context->tgs_rep.ticket.enc_part.kvno & 0xFFFF0000,
 					 0, "Unexpecedly got a RODC number in the KVNO, should just be principal KVNO");
 		free_TGS_REP(&test_context->tgs_rep);
