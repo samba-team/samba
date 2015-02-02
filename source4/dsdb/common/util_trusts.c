@@ -1996,6 +1996,424 @@ NTSTATUS dsdb_trust_verify_forest_info(const struct lsa_TrustDomainInfoInfoEx *r
 	return NT_STATUS_OK;
 }
 
+NTSTATUS dsdb_trust_merge_forest_info(TALLOC_CTX *mem_ctx,
+				const struct lsa_TrustDomainInfoInfoEx *tdo,
+				const struct lsa_ForestTrustInformation *ofti,
+				const struct lsa_ForestTrustInformation *nfti,
+				struct lsa_ForestTrustInformation **_mfti)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct lsa_ForestTrustInformation *mfti = NULL;
+	uint32_t ni;
+	uint32_t oi;
+	NTSTATUS status;
+	int cmp;
+
+	*_mfti = NULL;
+	mfti = talloc_zero(mem_ctx, struct lsa_ForestTrustInformation);
+	if (mfti == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
+	talloc_steal(frame, mfti);
+
+	/*
+	 * First we add all top unique level names.
+	 *
+	 * The one matching the tdo dns name, will be
+	 * added without further checking. All others
+	 * may keep the flags and time values.
+	 */
+	for (ni = 0; ni < nfti->count; ni++) {
+		const struct lsa_ForestTrustRecord *nftr = nfti->entries[ni];
+		struct lsa_ForestTrustRecord tftr = {};
+		const char *ndns = NULL;
+		bool ignore_new = false;
+		bool found_old = false;
+		uint32_t mi;
+
+		if (nftr == NULL) {
+			TALLOC_FREE(frame);
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		if (nftr->type != LSA_FOREST_TRUST_TOP_LEVEL_NAME) {
+			continue;
+		}
+
+		ndns = nftr->forest_trust_data.top_level_name.string;
+		if (ndns == NULL) {
+			TALLOC_FREE(frame);
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		cmp = dns_cmp(tdo->domain_name.string, ndns);
+		if (cmp == DNS_CMP_MATCH) {
+			status = dsdb_trust_forest_info_add_record(mfti, nftr);
+			if (!NT_STATUS_IS_OK(status)) {
+				TALLOC_FREE(frame);
+				return status;
+			}
+		}
+
+		for (mi = 0; mi < mfti->count; mi++) {
+			const struct lsa_ForestTrustRecord *mftr =
+				mfti->entries[mi];
+			const char *mdns = NULL;
+
+			/*
+			 * we just added this above, so we're sure to have a
+			 * valid LSA_FOREST_TRUST_TOP_LEVEL_NAME record
+			 */
+			mdns = mftr->forest_trust_data.top_level_name.string;
+
+			cmp = dns_cmp(mdns, ndns);
+			switch (cmp) {
+			case DNS_CMP_MATCH:
+			case DNS_CMP_SECOND_IS_CHILD:
+				ignore_new = true;
+				break;
+			}
+
+			if (ignore_new) {
+				break;
+			}
+		}
+
+		if (ignore_new) {
+			continue;
+		}
+
+		/*
+		 * make a temporary copy where we can change time and flags
+		 */
+		tftr = *nftr;
+
+		for (oi = 0; oi < ofti->count; oi++) {
+			const struct lsa_ForestTrustRecord *oftr =
+				ofti->entries[oi];
+			const char *odns = NULL;
+
+			if (oftr == NULL) {
+				/*
+				 * broken record => ignore...
+				 */
+				continue;
+			}
+
+			if (oftr->type != LSA_FOREST_TRUST_TOP_LEVEL_NAME) {
+				continue;
+			}
+
+			odns = oftr->forest_trust_data.top_level_name.string;
+			if (odns == NULL) {
+				/*
+				 * broken record => ignore...
+				 */
+				continue;
+			}
+
+			cmp = dns_cmp(odns, ndns);
+			if (cmp != DNS_CMP_MATCH) {
+				continue;
+			}
+
+			found_old = true;
+			tftr.flags = oftr->flags;
+			tftr.time = oftr->time;
+		}
+
+		if (!found_old) {
+			tftr.flags = LSA_TLN_DISABLED_NEW;
+			tftr.time = 0;
+		}
+
+		status = dsdb_trust_forest_info_add_record(mfti, &tftr);
+		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(frame);
+			return status;
+		}
+	}
+
+	/*
+	 * Now we add all unique (based on their SID) domains
+	 * and may keep the flags and time values.
+	 */
+	for (ni = 0; ni < nfti->count; ni++) {
+		const struct lsa_ForestTrustRecord *nftr = nfti->entries[ni];
+		struct lsa_ForestTrustRecord tftr = {};
+		const struct lsa_ForestTrustDomainInfo *nd = NULL;
+		const char *ndns = NULL;
+		const char *nnbt = NULL;
+		bool ignore_new = false;
+		bool found_old = false;
+		uint32_t mi;
+
+		if (nftr == NULL) {
+			TALLOC_FREE(frame);
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		if (nftr->type != LSA_FOREST_TRUST_DOMAIN_INFO) {
+			continue;
+		}
+
+		nd = &nftr->forest_trust_data.domain_info;
+		if (nd->domain_sid == NULL) {
+			TALLOC_FREE(frame);
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		ndns = nd->dns_domain_name.string;
+		if (ndns == NULL) {
+			TALLOC_FREE(frame);
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		nnbt = nd->netbios_domain_name.string;
+		if (nnbt == NULL) {
+			TALLOC_FREE(frame);
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		for (mi = 0; mi < mfti->count; mi++) {
+			const struct lsa_ForestTrustRecord *mftr =
+				mfti->entries[mi];
+			const struct lsa_ForestTrustDomainInfo *md = NULL;
+
+			if (mftr->type != LSA_FOREST_TRUST_DOMAIN_INFO) {
+				continue;
+			}
+
+			/*
+			 * we just added this above, so we're sure to have a
+			 * valid LSA_FOREST_TRUST_DOMAIN_INFO record
+			 */
+			md = &mftr->forest_trust_data.domain_info;
+
+			cmp = dom_sid_compare(nd->domain_sid, md->domain_sid);
+			if (cmp == 0) {
+				ignore_new = true;
+				break;
+			}
+		}
+
+		if (ignore_new) {
+			continue;
+		}
+
+		/*
+		 * make a temporary copy where we can change time and flags
+		 */
+		tftr = *nftr;
+
+		for (oi = 0; oi < ofti->count; oi++) {
+			const struct lsa_ForestTrustRecord *oftr =
+				ofti->entries[oi];
+			const struct lsa_ForestTrustDomainInfo *od = NULL;
+			const char *onbt = NULL;
+
+			if (oftr == NULL) {
+				/*
+				 * broken record => ignore...
+				 */
+				continue;
+			}
+
+			if (oftr->type != LSA_FOREST_TRUST_DOMAIN_INFO) {
+				continue;
+			}
+
+			od = &oftr->forest_trust_data.domain_info;
+			onbt = od->netbios_domain_name.string;
+			if (onbt == NULL) {
+				/*
+				 * broken record => ignore...
+				 */
+				continue;
+			}
+
+			cmp = strcasecmp(onbt, nnbt);
+			if (cmp != 0) {
+				continue;
+			}
+
+			found_old = true;
+			tftr.flags = oftr->flags;
+			tftr.time = oftr->time;
+		}
+
+		if (!found_old) {
+			tftr.flags = 0;
+			tftr.time = 0;
+		}
+
+		status = dsdb_trust_forest_info_add_record(mfti, &tftr);
+		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(frame);
+			return status;
+		}
+	}
+
+	/*
+	 * We keep old domain records disabled by the admin
+	 * if not already in the list.
+	 */
+	for (oi = 0; oi < ofti->count; oi++) {
+		const struct lsa_ForestTrustRecord *oftr =
+			ofti->entries[oi];
+		const struct lsa_ForestTrustDomainInfo *od = NULL;
+		const char *odns = NULL;
+		const char *onbt = NULL;
+		bool ignore_old = true;
+		uint32_t mi;
+
+		if (oftr == NULL) {
+			/*
+			 * broken record => ignore...
+			 */
+			continue;
+		}
+
+		if (oftr->type != LSA_FOREST_TRUST_DOMAIN_INFO) {
+			continue;
+		}
+
+		od = &oftr->forest_trust_data.domain_info;
+		odns = od->dns_domain_name.string;
+		if (odns == NULL) {
+			/*
+			 * broken record => ignore...
+			 */
+			continue;
+		}
+		onbt = od->netbios_domain_name.string;
+		if (onbt == NULL) {
+			/*
+			 * broken record => ignore...
+			 */
+			continue;
+		}
+		if (od->domain_sid == NULL) {
+			/*
+			 * broken record => ignore...
+			 */
+			continue;
+		}
+
+		if (oftr->flags & LSA_NB_DISABLED_ADMIN) {
+			ignore_old = false;
+		} else if (oftr->flags & LSA_SID_DISABLED_ADMIN) {
+			ignore_old = false;
+		}
+
+		for (mi = 0; mi < mfti->count; mi++) {
+			const struct lsa_ForestTrustRecord *mftr =
+				mfti->entries[mi];
+			const struct lsa_ForestTrustDomainInfo *md = NULL;
+
+			if (mftr->type != LSA_FOREST_TRUST_DOMAIN_INFO) {
+				continue;
+			}
+
+			/*
+			 * we just added this above, so we're sure to have a
+			 * valid LSA_FOREST_TRUST_DOMAIN_INFO record
+			 */
+			md = &mftr->forest_trust_data.domain_info;
+
+			cmp = dom_sid_compare(od->domain_sid, md->domain_sid);
+			if (cmp == 0) {
+				ignore_old = true;
+				break;
+			}
+		}
+
+		if (ignore_old) {
+			continue;
+		}
+
+		status = dsdb_trust_forest_info_add_record(mfti, oftr);
+		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(frame);
+			return status;
+		}
+	}
+
+	/*
+	 * Finally we readd top level exclusions,
+	 * if they still match a top level name.
+	 */
+	for (oi = 0; oi < ofti->count; oi++) {
+		const struct lsa_ForestTrustRecord *oftr =
+			ofti->entries[oi];
+		const char *odns = NULL;
+		bool ignore_old = false;
+		uint32_t mi;
+
+		if (oftr == NULL) {
+			/*
+			 * broken record => ignore...
+			 */
+			continue;
+		}
+
+		if (oftr->type != LSA_FOREST_TRUST_TOP_LEVEL_NAME_EX) {
+			continue;
+		}
+
+		odns = oftr->forest_trust_data.top_level_name_ex.string;
+		if (odns == NULL) {
+			/*
+			 * broken record => ignore...
+			 */
+			continue;
+		}
+
+		for (mi = 0; mi < mfti->count; mi++) {
+			const struct lsa_ForestTrustRecord *mftr =
+				mfti->entries[mi];
+			const char *mdns = NULL;
+
+			if (mftr->type != LSA_FOREST_TRUST_TOP_LEVEL_NAME) {
+				continue;
+			}
+
+			/*
+			 * we just added this above, so we're sure to have a
+			 * valid LSA_FOREST_TRUST_TOP_LEVEL_NAME.
+			 */
+			mdns = mftr->forest_trust_data.top_level_name.string;
+
+			cmp = dns_cmp(mdns, odns);
+			switch (cmp) {
+			case DNS_CMP_MATCH:
+			case DNS_CMP_SECOND_IS_CHILD:
+				break;
+			default:
+				ignore_old = true;
+				break;
+			}
+
+			if (ignore_old) {
+				break;
+			}
+		}
+
+		if (ignore_old) {
+			continue;
+		}
+
+		status = dsdb_trust_forest_info_add_record(mfti, oftr);
+		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(frame);
+			return status;
+		}
+	}
+
+	*_mfti = talloc_move(mem_ctx, &mfti);
+	TALLOC_FREE(frame);
+	return NT_STATUS_OK;
+}
+
 NTSTATUS dsdb_trust_search_tdo(struct ldb_context *sam_ctx,
 			       const char *netbios, const char *dns,
 			       const char * const *attrs,
