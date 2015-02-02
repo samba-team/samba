@@ -29,6 +29,8 @@ struct dsdb_extended_replicated_objects;
 struct loadparm_context;
 struct tevent_context;
 
+struct dsdb_trust_routing_table;
+
 #include "librpc/gen_ndr/security.h"
 #include <ldb.h>
 #include "lib/ldb-samba/ldif_handlers.h"

@@ -13,7 +13,7 @@ bld.SAMBA_LIBRARY('samdb',
 	)
 
 bld.SAMBA_LIBRARY('samdb-common',
-	source='common/util.c common/util_groups.c common/util_samr.c common/dsdb_dn.c common/dsdb_access.c',
+	source='common/util.c common/util_trusts.c common/util_groups.c common/util_samr.c common/dsdb_dn.c common/dsdb_access.c',
 	autoproto='common/proto.h',
 	private_library=True,
 	deps='ldb NDR_DRSBLOBS util_ldb LIBCLI_AUTH samba-hostconfig samba_socket cli-ldap-common flag_mapping'
