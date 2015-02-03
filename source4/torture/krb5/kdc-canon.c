@@ -647,6 +647,15 @@ static bool torture_krb5_post_recv_self_trust_tgs_req_test(struct torture_krb5_c
 				 test_context->tgs_req.req_body.sname->name_type,
 				 "Mismatch in name_type between request and ticket response");
 
+	torture_assert_int_equal(test_context->tctx,
+				 test_context->tgs_rep.ticket.sname.name_string.len, 2,
+				 "Mismatch in name between request and expected request, expected krbtgt/realm");
+	torture_assert_str_equal(test_context->tctx,
+				 test_context->tgs_rep.ticket.sname.name_string.val[0], "krbtgt",
+				 "Mismatch in name between request and expected request, expected krbtgt");
+	torture_assert_str_equal(test_context->tctx,
+				 test_context->tgs_rep.ticket.sname.name_string.val[1], test_context->test_data->realm,
+				 "Mismatch in realm part of cross-realm request principal between response and expected request");
 	/*
 	 * We can confirm that the correct proxy behaviour is
 	 * in use on the KDC by checking the KVNO of the
