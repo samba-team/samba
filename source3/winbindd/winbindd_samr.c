@@ -80,9 +80,9 @@ NTSTATUS open_internal_samr_conn(TALLOC_CTX *mem_ctx,
 	return result;
 }
 
-static NTSTATUS open_internal_lsa_conn(TALLOC_CTX *mem_ctx,
-				       struct rpc_pipe_client **lsa_pipe,
-				       struct policy_handle *lsa_hnd)
+NTSTATUS open_internal_lsa_conn(TALLOC_CTX *mem_ctx,
+				struct rpc_pipe_client **lsa_pipe,
+				struct policy_handle *lsa_hnd)
 {
 	NTSTATUS status;
 

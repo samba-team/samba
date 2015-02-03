@@ -911,6 +911,9 @@ NTSTATUS open_internal_samr_conn(TALLOC_CTX *mem_ctx,
 				 struct winbindd_domain *domain,
 				 struct rpc_pipe_client **samr_pipe,
 				 struct policy_handle *samr_domain_hnd);
+NTSTATUS open_internal_lsa_conn(TALLOC_CTX *mem_ctx,
+				struct rpc_pipe_client **lsa_pipe,
+				struct policy_handle *lsa_hnd);
 
 /* The following definitions come from winbindd/winbindd_ads.c  */
 ADS_STATUS ads_idmap_cached_connection(ADS_STRUCT **adsp, const char *dom_name);
