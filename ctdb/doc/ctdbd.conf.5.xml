@@ -373,6 +373,12 @@
 	    should be change to a useful value.  Corresponds to
 	    <option>--reclock</option>.
 	  </para>
+	  <para>
+	    For information about the recovery lock please see the
+	    <citetitle>RECOVERY LOCK</citetitle> section in
+	    <citerefentry><refentrytitle>ctdb</refentrytitle>
+	    <manvolnum>7</manvolnum></citerefentry>.
+	  </para>
 	</listitem>
       </varlistentry>
 

@@ -362,18 +362,18 @@
       </varlistentry>
 
       <varlistentry>
-	<term>--reclock=<parameter>FILENAME</parameter></term>
+	<term>--reclock=<parameter>FILE</parameter></term>
 	<listitem>
 	  <para>
-	    FILENAME is the name of the recovery lock file stored in
-	    <emphasis>shared storage</emphasis> that ctdbd uses to
-	    prevent split brains from occuring.
+	    FILE is the name of the recovery lock file, stored in
+	    <emphasis>shared storage</emphasis>, that CTDB uses to
+	    prevent split brains.
 	  </para>
 	  <para>
-	    It is possible to run CTDB without a recovery lock file, but
-	    then there will be no protection against split brain if the
-	    cluster/network becomes partitioned. Using CTDB without a
-	    reclock file is strongly discouraged.
+	    For information about the recovery lock please see the
+	    <citetitle>RECOVERY LOCK</citetitle> section in
+	    <citerefentry><refentrytitle>ctdb</refentrytitle>
+	    <manvolnum>7</manvolnum></citerefentry>.
 	  </para>
 	</listitem>
       </varlistentry>
