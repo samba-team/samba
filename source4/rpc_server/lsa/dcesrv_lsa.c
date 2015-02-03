@@ -4214,7 +4214,81 @@ static NTSTATUS dcesrv_lsa_LSARUNREGISTERAUDITEVENT(struct dcesrv_call_state *dc
 static NTSTATUS dcesrv_lsa_lsaRQueryForestTrustInformation(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct lsa_lsaRQueryForestTrustInformation *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct dcesrv_handle *h = NULL;
+	struct lsa_policy_state *p_state = NULL;
+	int forest_level = DS_DOMAIN_FUNCTION_2000;
+	const char * const trust_attrs[] = {
+		"securityIdentifier",
+		"flatName",
+		"trustPartner",
+		"trustAttributes",
+		"trustDirection",
+		"trustType",
+		"msDS-TrustForestTrustInfo",
+		NULL
+	};
+	struct ldb_message *trust_tdo_msg = NULL;
+	struct lsa_TrustDomainInfoInfoEx *trust_tdo = NULL;
+	struct ForestTrustInfo *trust_fti = NULL;
+	struct lsa_ForestTrustInformation *trust_lfti = NULL;
+	NTSTATUS status;
+
+	DCESRV_PULL_HANDLE(h, r->in.handle, LSA_HANDLE_POLICY);
+
+	p_state = h->data;
+
+	if (strcmp(p_state->domain_dns, p_state->forest_dns)) {
+		return NT_STATUS_INVALID_DOMAIN_STATE;
+	}
+
+	forest_level = dsdb_forest_functional_level(p_state->sam_ldb);
+	if (forest_level < DS_DOMAIN_FUNCTION_2003) {
+		return NT_STATUS_INVALID_DOMAIN_STATE;
+	}
+
+	if (r->in.trusted_domain_name->string == NULL) {
+		return NT_STATUS_NO_SUCH_DOMAIN;
+	}
+
+	status = dsdb_trust_search_tdo(p_state->sam_ldb,
+				       r->in.trusted_domain_name->string,
+				       r->in.trusted_domain_name->string,
+				       trust_attrs, mem_ctx, &trust_tdo_msg);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+		return NT_STATUS_NO_SUCH_DOMAIN;
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = dsdb_trust_parse_tdo_info(mem_ctx, trust_tdo_msg, &trust_tdo);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (!(trust_tdo->trust_attributes & LSA_TRUST_ATTRIBUTE_FOREST_TRANSITIVE)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (r->in.highest_record_type >= LSA_FOREST_TRUST_RECORD_TYPE_LAST) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	status = dsdb_trust_parse_forest_info(mem_ctx,
+					      trust_tdo_msg,
+					      &trust_fti);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = dsdb_trust_forest_info_to_lsa(mem_ctx, trust_fti,
+					       &trust_lfti);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	*r->out.forest_trust_info = trust_lfti;
+	return NT_STATUS_OK;
 }
 
 #define DNS_CMP_MATCH 0
