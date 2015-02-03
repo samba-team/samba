@@ -714,13 +714,14 @@ pdbtest4:x:65530:65533:pdbtest gecos:$ctx->{prefix_abs}:/bin/false
         my $uid_rfc2307test = 65533;
 
 	open(GRP, ">$ctx->{nsswrap_group}");
-	print GRP "
-root:x:0:
-wheel:x:10:
+	if ($ctx->{unix_gid} != 0) {
+		print GRP "root:x:0:\n";
+	}
+	print GRP "$ctx->{unix_name}:x:$ctx->{unix_gid}:\n";
+	print GRP "wheel:x:10:
 users:x:100:
 nobody:x:65533:
 nogroup:x:65534:nobody
-$ctx->{unix_name}:x:$ctx->{unix_gid}:
 ";
 	close(GRP);
         my $gid_rfc2307test = 65532;
