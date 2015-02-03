@@ -351,7 +351,7 @@ bool account_policy_get(enum pdb_policy_type type, uint32_t *value)
 
 	status = dbwrap_fetch_uint32_bystring(db, name, &regval);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("account_policy_get: tdb_fetch_uint32 failed for type %d (%s), returning 0\n", type, name));
+		DEBUG(2, ("account_policy_get: tdb_fetch_uint32 failed for type %d (%s), returning 0\n", type, name));
 		return False;
 	}
 
