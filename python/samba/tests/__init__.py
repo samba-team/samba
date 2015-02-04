@@ -25,6 +25,7 @@ from samba import param
 from samba.samdb import SamDB
 from samba import credentials
 import subprocess
+import sys
 import tempfile
 import unittest
 
@@ -54,32 +55,79 @@ class TestCase(unittest.TestCase):
         return cmdline_credentials
 
     # These functions didn't exist before Python2.7:
-    if not getattr(unittest.TestCase, "skipTest", None):
+    if sys.version_info < (2, 7):
+        import warnings
+
         def skipTest(self, reason):
             raise SkipTest(reason)
 
-    if not getattr(unittest.TestCase, "assertIs", None):
         def assertIs(self, a, b):
             self.assertTrue(a is b)
 
-    if not getattr(unittest.TestCase, "assertIsNot", None):
         def assertIsNot(self, a, b):
             self.assertTrue(a is not b)
 
-    if not getattr(unittest.TestCase, "assertIsInstance", None):
         def assertIsInstance(self, a, b):
             self.assertTrue(isinstance(a, b))
 
-    if not getattr(unittest.TestCase, "addCleanup", None):
         def addCleanup(self, fn, *args, **kwargs):
             self._cleanups = getattr(self, "_cleanups", []) + [
                 (fn, args, kwargs)]
 
+        def _addSkip(self, result, reason):
+            addSkip = getattr(result, 'addSkip', None)
+            if addSkip is not None:
+                addSkip(self, reason)
+            else:
+                warnings.warn("TestResult has no addSkip method, skips not reported",
+                              RuntimeWarning, 2)
+                result.addSuccess(self)
+
         def run(self, result=None):
-            ret = super(TestCase, self).run(result=result)
-            for (fn, args, kwargs) in reversed(getattr(self, "_cleanups", [])):
-                fn(*args, **kwargs)
-            return ret
+            if result is None: result = self.defaultTestResult()
+            result.startTest(self)
+            testMethod = getattr(self, self._testMethodName)
+            try:
+                try:
+                    self.setUp()
+                except SkipTest, e:
+                    self._addSkip(result, str(e))
+                    return
+                except KeyboardInterrupt:
+                    raise
+                except:
+                    result.addError(self, self._exc_info())
+                    return
+
+                ok = False
+                try:
+                    testMethod()
+                    ok = True
+                except SkipTest, e:
+                    self._addSkip(result, str(e))
+                    return
+                except self.failureException:
+                    result.addFailure(self, self._exc_info())
+                except KeyboardInterrupt:
+                    raise
+                except:
+                    result.addError(self, self._exc_info())
+
+                try:
+                    self.tearDown()
+                except SkipTest, e:
+                    self._addSkip(result, str(e))
+                except KeyboardInterrupt:
+                    raise
+                except:
+                    result.addError(self, self._exc_info())
+                    ok = False
+
+                for (fn, args, kwargs) in reversed(getattr(self, "_cleanups", [])):
+                    fn(*args, **kwargs)
+                if ok: result.addSuccess(self)
+            finally:
+                result.stopTest(self)
 
 
 class LdbTestCase(TestCase):
