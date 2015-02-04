@@ -1224,7 +1224,7 @@ static WERROR bkrp_do_retrieve_client_wrap_key(struct dcesrv_call_state *dce_cal
 			 */
 			return WERR_FILE_NOT_FOUND;
 		}
-				
+
 		cert_secret_name = talloc_asprintf(mem_ctx,
 							"BCKUPKEY_%s",
 							guid_string);
@@ -1256,6 +1256,18 @@ static WERROR bkrp_do_retrieve_client_wrap_key(struct dcesrv_call_state *dce_cal
 		return WERR_FILE_NOT_FOUND;
 	}
 
+	return WERR_NOT_SUPPORTED;
+}
+
+static WERROR bkrp_do_uncrypt_server_wrap_key(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		struct bkrp_BackupKey *r ,struct ldb_context *ldb_ctx)
+{
+	return WERR_NOT_SUPPORTED;
+}
+
+static WERROR bkrp_do_retrieve_server_wrap_key(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		struct bkrp_BackupKey *r ,struct ldb_context *ldb_ctx)
+{
 	return WERR_NOT_SUPPORTED;
 }
 
@@ -1312,13 +1324,13 @@ static WERROR dcesrv_bkrp_BackupKey(struct dcesrv_call_state *dce_call,
 		if (strncasecmp(GUID_string(mem_ctx, r->in.guidActionAgent),
 			BACKUPKEY_RESTORE_GUID_WIN2K, strlen(BACKUPKEY_RESTORE_GUID_WIN2K)) == 0) {
 			DEBUG(debuglevel, ("Client %s requested to decrypt a server side wrapped secret, not implemented yet\n", addr));
-			return WERR_NOT_SUPPORTED; /* is this appropriate? */
+			error = bkrp_do_uncrypt_server_wrap_key(dce_call, mem_ctx, r, ldb_ctx);
 		}
 
 		if (strncasecmp(GUID_string(mem_ctx, r->in.guidActionAgent),
 			BACKUPKEY_BACKUP_GUID, strlen(BACKUPKEY_BACKUP_GUID)) == 0) {
 			DEBUG(debuglevel, ("Client %s requested a server wrapped secret, not implemented yet\n", addr));
-			return WERR_NOT_SUPPORTED; /* is this appropriate? */
+			error = bkrp_do_retrieve_server_wrap_key(dce_call, mem_ctx, r, ldb_ctx);
 		}
 	}
 	/*else: I am a RODC so I don't handle backup key protocol */
