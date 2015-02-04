@@ -59,6 +59,8 @@ int main_foobar(int argc, const char **argv);
 	ctdb_client_check_message_handlers_stub(ctdb, ids, argc, result)
 #define ctdb_ctrl_getcapabilities(ctdb, timeout, destnode, capabilities) \
 	ctdb_ctrl_getcapabilities_stub(ctdb, timeout, destnode, capabilities)
+#define ctdb_ctrl_reload_nodes_file(ctdb, timeout, destnode) \
+	ctdb_ctrl_reload_nodes_file_stub(ctdb, timeout, destnode)
 #define ctdb_sys_have_ip(addr) \
 	ctdb_sys_have_ip_stub(addr)
 
@@ -90,6 +92,7 @@ struct tevent_context *tevent_context_init(TALLOC_CTX *mem_ctx);
 #undef ctdb_client_send_message
 #undef ctdb_client_check_message_handlers
 #undef ctdb_ctrl_getcapabilities
+#undef ctdb_ctrl_reload_nodes_file
 #undef ctdb_sys_have_ip
 int ctdb_ctrl_getnodemap(struct ctdb_context *ctdb,
 		    struct timeval timeout, uint32_t destnode,
@@ -129,6 +132,8 @@ int ctdb_client_check_message_handlers(struct ctdb_context *ctdb,
 int ctdb_ctrl_getcapabilities(struct ctdb_context *ctdb,
 			      struct timeval timeout, uint32_t destnode,
 			      uint32_t *capabilities);
+int ctdb_ctrl_reload_nodes_file(struct ctdb_context *ctdb,
+				struct timeval timeout, uint32_t destnode);
 bool ctdb_sys_have_ip(ctdb_sock_addr *addr);
 
 #undef TIMELIMIT

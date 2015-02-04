@@ -736,6 +736,13 @@ int ctdb_ctrl_getcapabilities_stub(struct ctdb_context *ctdb,
 	return 0;
 }
 
+int ctdb_ctrl_reload_nodes_file_stub(struct ctdb_context *ctdb,
+				     struct timeval timeout, uint32_t destnode)
+{
+	DEBUG(DEBUG_NOTICE, ("ctdb_ctrl_reload_nodes_file: node %u\n", destnode));
+	return 0;
+}
+
 /* This is to support testing ctdb xpnn */
 
 bool ctdb_sys_have_ip_stub(ctdb_sock_addr *addr)
