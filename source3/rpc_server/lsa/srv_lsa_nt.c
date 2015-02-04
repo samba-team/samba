@@ -4318,7 +4318,7 @@ static NTSTATUS add_collision(struct lsa_ForestTrustCollisionInfo *c_info,
 
 	es[i]->index = idx;
 	es[i]->type = collision_type;
-	es[i]->flags.flags = conflict_type;
+	es[i]->flags = conflict_type;
 	es[i]->name.string = talloc_strdup(es[i], tdo_name);
 	if (!es[i]->name.string) {
 		return NT_STATUS_NO_MEMORY;
