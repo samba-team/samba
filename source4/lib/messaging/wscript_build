@@ -3,7 +3,7 @@
 
 bld.SAMBA_LIBRARY('MESSAGING',
 	source='messaging.c',
-	public_deps='samba-util tdb-wrap NDR_IRPC UNIX_PRIVS util_tdb cluster ndr samba_socket dcerpc',
+	public_deps='samba-util NDR_IRPC UNIX_PRIVS cluster ndr samba_socket dcerpc server_id_db',
 	private_library=True
 	)
 
