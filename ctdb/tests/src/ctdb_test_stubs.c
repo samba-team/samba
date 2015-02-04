@@ -355,6 +355,13 @@ static bool current_node_is_connected (struct ctdb_context *ctdb)
 struct ctdb_context *ctdb_cmdline_client_stub(struct tevent_context *ev,
 					      struct timeval req_timeout)
 {
+	const char *t = getenv("CTDB_DEBUGLEVEL");
+	if (t != NULL) {
+		DEBUGLEVEL= atoi(t);
+	} else {
+		DEBUGLEVEL = 0;
+	}
+
 	return ctdb_global;
 }
 
