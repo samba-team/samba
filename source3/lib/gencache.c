@@ -681,7 +681,7 @@ bool gencache_stabilize(void)
 	}
 
 	res = tdb_traverse(cache_notrans->tdb, wipe_fn, NULL);
-	if (res != 0) {
+	if (res < 0) {
 		DEBUG(10, ("tdb_traverse with wipe_fn on gencache_notrans.tdb "
 			  "failed: %s\n",
 			   tdb_errorstr_compat(cache_notrans->tdb)));
