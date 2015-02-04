@@ -6419,9 +6419,6 @@ static int control_reload_nodes_file(struct ctdb_context *ctdb, int argc, const 
 	srvid_broadcast(ctdb, CTDB_SRVID_DISABLE_RECOVERIES, &timeout,
 			"Enable recoveries", true);
 
-	/* initiate a recovery */
-	control_recover(ctdb, argc, argv);
-
 	talloc_free(tmp_ctx);
 
 	return 0;
