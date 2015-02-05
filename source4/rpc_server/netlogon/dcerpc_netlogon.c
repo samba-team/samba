@@ -112,15 +112,14 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 	struct netlogon_server_pipe_state challenge;
 	struct netlogon_creds_CredentialState *creds;
 	struct ldb_context *sam_ctx;
-	struct samr_Password *mach_pwd;
+	struct samr_Password *curNtHash = NULL;
+	struct samr_Password *prevNtHash = NULL;
 	uint32_t user_account_control;
 	int num_records;
 	struct ldb_message **msgs;
 	NTSTATUS nt_status;
 	const char *attrs[] = {"unicodePwd", "userAccountControl",
 			       "objectSid", NULL};
-
-	const char *trust_dom_attrs[] = {"flatname", NULL};
 	const char *account_name;
 	uint32_t server_flags = 0;
 	uint32_t negotiate_flags = 0;
@@ -256,48 +255,83 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
 
-	if (r->in.secure_channel_type == SEC_CHAN_DNS_DOMAIN) {
-		char *encoded_account = ldb_binary_encode_string(mem_ctx, r->in.account_name);
-		const char *flatname;
-		if (!encoded_account) {
+	if (r->in.secure_channel_type == SEC_CHAN_DOMAIN ||
+	    r->in.secure_channel_type == SEC_CHAN_DNS_DOMAIN)
+	{
+		struct ldb_message *tdo_msg = NULL;
+		const char * const tdo_attrs[] = {
+			"trustAuthIncoming",
+			"trustAttributes",
+			"flatName",
+			NULL
+		};
+		char *encoded_name = NULL;
+		size_t len;
+		const char *flatname = NULL;
+		char trailer = '$';
+		bool require_trailer = true;
+		const char *netbios = NULL;
+		const char *dns = NULL;
+
+		if (r->in.secure_channel_type == SEC_CHAN_DNS_DOMAIN) {
+			trailer = '.';
+			require_trailer = false;
+		}
+
+		encoded_name = ldb_binary_encode_string(mem_ctx,
+							r->in.account_name);
+		if (encoded_name == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		/* Kill the trailing dot */
-		if (encoded_account[strlen(encoded_account)-1] == '.') {
-			encoded_account[strlen(encoded_account)-1] = '\0';
-		}
-
-		/* pull the user attributes */
-		num_records = gendb_search(sam_ctx, mem_ctx, NULL, &msgs,
-					   trust_dom_attrs,
-					   "(&(trustPartner=%s)(objectclass=trustedDomain))",
-					   encoded_account);
-
-		if (num_records == 0) {
-			DEBUG(3,("Couldn't find trust [%s] in samdb.\n",
-				 encoded_account));
+		len = strlen(encoded_name);
+		if (len < 2) {
 			return NT_STATUS_NO_TRUST_SAM_ACCOUNT;
 		}
 
-		if (num_records > 1) {
-			DEBUG(0,("Found %d records matching user [%s]\n", num_records, r->in.account_name));
-			return NT_STATUS_INTERNAL_DB_CORRUPTION;
-		}
-
-		flatname = ldb_msg_find_attr_as_string(msgs[0], "flatname", NULL);
-		if (!flatname) {
-			/* No flatname for this trust - we can't proceed */
-			DEBUG(3,("Couldn't find flatname for trust [%s] in samdb.\n",
-				 encoded_account));
+		if (require_trailer && encoded_name[len - 1] != trailer) {
 			return NT_STATUS_NO_TRUST_SAM_ACCOUNT;
 		}
+		encoded_name[len - 1] = '\0';
+
+		if (r->in.secure_channel_type == SEC_CHAN_DNS_DOMAIN) {
+			dns = encoded_name;
+		} else {
+			netbios = encoded_name;
+		}
+
+		nt_status = dsdb_trust_search_tdo(sam_ctx,
+						  netbios, dns,
+						  tdo_attrs, mem_ctx, &tdo_msg);
+		if (NT_STATUS_EQUAL(nt_status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+			DEBUG(2, ("Client asked for a trusted domain secure channel, "
+				  "but there's no tdo for [%s] => [%s] \n",
+				  r->in.account_name, encoded_name));
+			return NT_STATUS_NO_TRUST_SAM_ACCOUNT;
+		}
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			return nt_status;
+		}
+
+		nt_status = dsdb_trust_get_incoming_passwords(tdo_msg, mem_ctx,
+							      &curNtHash,
+							      &prevNtHash);
+		if (NT_STATUS_EQUAL(nt_status, NT_STATUS_ACCOUNT_DISABLED)) {
+			return NT_STATUS_NO_TRUST_SAM_ACCOUNT;
+		}
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			return nt_status;
+		}
+
+		flatname = ldb_msg_find_attr_as_string(tdo_msg, "flatName", NULL);
+		if (flatname == NULL) {
+			return NT_STATUS_NO_TRUST_SAM_ACCOUNT;
+		}
+
 		account_name = talloc_asprintf(mem_ctx, "%s$", flatname);
-
-		if (!account_name) {
+		if (account_name == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
-
 	} else {
 		account_name = r->in.account_name;
 	}
@@ -352,8 +386,16 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	mach_pwd = samdb_result_hash(mem_ctx, msgs[0], "unicodePwd");
-	if (mach_pwd == NULL) {
+	if (!(user_account_control & UF_INTERDOMAIN_TRUST_ACCOUNT)) {
+		nt_status = samdb_result_passwords_no_lockout(mem_ctx,
+					dce_call->conn->dce_ctx->lp_ctx,
+					msgs[0], NULL, &curNtHash);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			return NT_STATUS_ACCESS_DENIED;
+		}
+	}
+
+	if (curNtHash == NULL) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -371,11 +413,29 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 					   r->in.secure_channel_type,
 					   &challenge.client_challenge,
 					   &challenge.server_challenge,
-					   mach_pwd,
+					   curNtHash,
 					   r->in.credentials,
 					   r->out.return_credentials,
 					   negotiate_flags);
-	if (!creds) {
+	if (creds == NULL && prevNtHash != NULL) {
+		/*
+		 * We fallback to the previous password for domain trusts.
+		 *
+		 * Note that lpcfg_old_password_allowed_period() doesn't
+		 * apply here.
+		 */
+		creds = netlogon_creds_server_init(mem_ctx,
+						   r->in.account_name,
+						   r->in.computer_name,
+						   r->in.secure_channel_type,
+						   &challenge.client_challenge,
+						   &challenge.server_challenge,
+						   prevNtHash,
+						   r->in.credentials,
+						   r->out.return_credentials,
+						   negotiate_flags);
+	}
+	if (creds == NULL) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
