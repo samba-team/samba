@@ -2155,6 +2155,7 @@ static bool pdb_samba_dsdb_get_trusteddom_pw(struct pdb_methods *m,
 	enum ndr_err_code ndr_err;
 	NTSTATUS status;
 	const char *netbios_domain = NULL;
+	const struct dom_sid *domain_sid = NULL;
 
 	status = sam_get_results_trust(state->ldb, tmp_ctx, domain,
 				       NULL, attrs, &msg);
@@ -2172,6 +2173,14 @@ static bool pdb_samba_dsdb_get_trusteddom_pw(struct pdb_methods *m,
 	netbios_domain = ldb_msg_find_attr_as_string(msg, "flatName", NULL);
 	if (netbios_domain == NULL) {
 		DEBUG(2, ("Trusted domain %s has to flatName defined.\n",
+			  domain));
+		TALLOC_FREE(tmp_ctx);
+		return false;
+	}
+
+	domain_sid = samdb_result_dom_sid(tmp_ctx, msg, "securityIdentifier");
+	if (domain_sid == NULL) {
+		DEBUG(2, ("Trusted domain %s has no securityIdentifier defined.\n",
 			  domain));
 		TALLOC_FREE(tmp_ctx);
 		return false;
@@ -2254,6 +2263,10 @@ static bool pdb_samba_dsdb_get_trusteddom_pw(struct pdb_methods *m,
 	*pwd = SMB_STRNDUP(password_talloc, password_len);
 	if (pass_last_set_time) {
 		*pass_last_set_time = nt_time_to_unix(auth_array->array[i].LastUpdateTime);
+	}
+
+	if (sid != NULL) {
+		sid_copy(sid, domain_sid);
 	}
 
 	TALLOC_FREE(tmp_ctx);
