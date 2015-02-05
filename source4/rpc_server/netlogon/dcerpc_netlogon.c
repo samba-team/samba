@@ -557,6 +557,7 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet(struct dcesrv_call_state *dce_call
 	/* Using the sid for the account as the key, set the password */
 	nt_status = samdb_set_password_sid(sam_ctx, mem_ctx,
 					   creds->sid,
+					   NULL, /* Don't have version */
 					   NULL, /* Don't have plaintext */
 					   NULL, r->in.new_password,
 					   NULL, oldNtHash, /* Password change */
@@ -576,6 +577,7 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet2(struct dcesrv_call_state *dce_cal
 	const char * const attrs[] = { "dBCSPwd", "unicodePwd", NULL };
 	struct ldb_message **res;
 	struct samr_Password *oldLmHash, *oldNtHash;
+	const uint32_t *new_version = NULL;
 	NTSTATUS nt_status;
 	DATA_BLOB new_password;
 	int ret;
@@ -627,6 +629,7 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet2(struct dcesrv_call_state *dce_cal
 	/* Using the sid for the account as the key, set the password */
 	nt_status = samdb_set_password_sid(sam_ctx, mem_ctx,
 					   creds->sid,
+					   new_version,
 					   &new_password, /* we have plaintext */
 					   NULL, NULL,
 					   oldLmHash, oldNtHash, /* Password change */

@@ -213,7 +213,7 @@ static bool kpasswdd_change_password(struct kdc_server *kdc,
 	/* Performs the password change */
 	status = samdb_set_password_sid(samdb, mem_ctx,
 					&session_info->security_token->sids[PRIMARY_USER_SID_INDEX],
-					password, NULL, NULL,
+					NULL, password, NULL, NULL,
 					oldLmHash, oldNtHash, /* this is a user password change */
 					&reject_reason,
 					&dominfo);

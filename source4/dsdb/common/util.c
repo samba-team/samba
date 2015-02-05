@@ -2283,6 +2283,7 @@ NTSTATUS samdb_set_password(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
  */
 NTSTATUS samdb_set_password_sid(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 				const struct dom_sid *user_sid,
+				const uint32_t *new_version, /* optional for trusts */
 				const DATA_BLOB *new_password,
 				const struct samr_Password *lmNewHash,
 				const struct samr_Password *ntNewHash,
