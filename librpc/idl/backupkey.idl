@@ -99,19 +99,19 @@ interface backupkey
 	} bkrp_access_check_v3;
 
 	[public] typedef struct {
-		[subcontext(0),subcontext_size(32),flag(NDR_REMAINING)] DATA_BLOB r3;
-		[subcontext(0),subcontext_size(20),flag(NDR_REMAINING)] DATA_BLOB mac;
+		uint8 r3[32];
+		uint8 mac[20];
 		dom_sid sid;
-		[subcontext(0),flag(NDR_REMAINING)] DATA_BLOB secret;
+		[subcontext(0),flag(NDR_REMAINING)] DATA_BLOB secret_data;
 	} bkrp_rc4encryptedpayload;
 
 	[public] typedef struct {
 		[value(0x00000001)] uint32 magic;
 		uint32 payload_length;
-		uint32 cyphertext_length;
-		[subcontext(0),subcontext_size(16),flag(NDR_REMAINING)] DATA_BLOB guid_of_wrapping_key;
-		[subcontext(0),subcontext_size(68),flag(NDR_REMAINING)] DATA_BLOB r2;
-		[subcontext(0),flag(NDR_REMAINING)] DATA_BLOB rc4encryptedpayload;
+		uint32 ciphertext_length;
+		GUID guid;
+		uint8 r2[68];
+		uint8 rc4encryptedpayload[ciphertext_length];
 	} bkrp_server_side_wrapped;
 
 	[public] typedef struct {
