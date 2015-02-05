@@ -53,6 +53,7 @@ manpages='''
          manpages/vfs_cacheprime.8
          manpages/vfs_cap.8
          manpages/vfs_catia.8
+         manpages/vfs_ceph.8
          manpages/vfs_commit.8
          manpages/vfs_crossrename.8
          manpages/vfs_default_quota.8
