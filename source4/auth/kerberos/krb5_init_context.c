@@ -228,8 +228,8 @@ static krb5_error_code smb_krb5_send_and_recv_func_int(krb5_context context,
 
 	DATA_BLOB send_blob;
 
-	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
-	if (!tmp_ctx) {
+	TALLOC_CTX *frame = talloc_stackframe();
+	if (frame == NULL) {
 		return ENOMEM;
 	}
 
@@ -237,9 +237,9 @@ static krb5_error_code smb_krb5_send_and_recv_func_int(krb5_context context,
 
 	for (a = ai; a; a = a->ai_next) {
 		struct socket_address *remote_addr;
-		smb_krb5 = talloc(tmp_ctx, struct smb_krb5_socket);
+		smb_krb5 = talloc(frame, struct smb_krb5_socket);
 		if (!smb_krb5) {
-			talloc_free(tmp_ctx);
+			TALLOC_FREE(frame);
 			return ENOMEM;
 		}
 		smb_krb5->hi = hi;
@@ -254,7 +254,7 @@ static krb5_error_code smb_krb5_send_and_recv_func_int(krb5_context context,
 			break;
 #endif
 		default:
-			talloc_free(tmp_ctx);
+			TALLOC_FREE(frame);
 			return EINVAL;
 		}
 
@@ -267,7 +267,7 @@ static krb5_error_code smb_krb5_send_and_recv_func_int(krb5_context context,
 			status = socket_create(name, SOCKET_TYPE_STREAM, &smb_krb5->sock, 0);
 			break;
 		case KRB5_KRBHST_HTTP:
-			talloc_free(tmp_ctx);
+			TALLOC_FREE(frame);
 			return EINVAL;
 		}
 		if (!NT_STATUS_IS_OK(status)) {
@@ -335,12 +335,12 @@ static krb5_error_code smb_krb5_send_and_recv_func_int(krb5_context context,
 			packet_send(smb_krb5->packet, smb_krb5->request);
 			break;
 		case KRB5_KRBHST_HTTP:
-			talloc_free(tmp_ctx);
+			TALLOC_FREE(frame);
 			return EINVAL;
 		}
 		while ((NT_STATUS_IS_OK(smb_krb5->status)) && !smb_krb5->reply.length) {
 			if (tevent_loop_once(ev) != 0) {
-				talloc_free(tmp_ctx);
+				TALLOC_FREE(frame);
 				return EINVAL;
 			}
 
@@ -355,7 +355,7 @@ static krb5_error_code smb_krb5_send_and_recv_func_int(krb5_context context,
 								func,
 								data);
 				if (ret != 0) {
-					talloc_free(tmp_ctx);
+					TALLOC_FREE(frame);
 					return ret;
 				}
 			}
@@ -381,14 +381,14 @@ static krb5_error_code smb_krb5_send_and_recv_func_int(krb5_context context,
 
 		ret = krb5_data_copy(recv_buf, smb_krb5->reply.data, smb_krb5->reply.length);
 		if (ret) {
-			talloc_free(tmp_ctx);
+			TALLOC_FREE(frame);
 			return ret;
 		}
 		talloc_free(smb_krb5);
 
 		break;
 	}
-	talloc_free(tmp_ctx);
+	TALLOC_FREE(frame);
 	if (a) {
 		return 0;
 	}
@@ -406,16 +406,16 @@ krb5_error_code smb_krb5_send_and_recv_func(krb5_context context,
 	struct addrinfo *ai;
 
 	struct tevent_context *ev;
-	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
-	if (!tmp_ctx) {
+	TALLOC_CTX *frame = talloc_stackframe();
+	if (frame == NULL) {
 		return ENOMEM;
 	}
 
-	if (!data) {
+	if (data == NULL) {
 		/* If no event context was available, then create one for this loop */
-		ev = samba_tevent_context_init(tmp_ctx);
-		if (!ev) {
-			talloc_free(tmp_ctx);
+		ev = samba_tevent_context_init(frame);
+		if (ev == NULL) {
+			TALLOC_FREE(frame);
 			return ENOMEM;
 		}
 	} else {
@@ -424,10 +424,13 @@ krb5_error_code smb_krb5_send_and_recv_func(krb5_context context,
 
 	ret = krb5_krbhst_get_addrinfo(context, hi, &ai);
 	if (ret) {
-		talloc_free(tmp_ctx);
+		TALLOC_FREE(frame);
 		return ret;
 	}
-	return smb_krb5_send_and_recv_func_int(context, ev, hi, ai, smb_krb5_send_and_recv_func, data, timeout, send_buf, recv_buf);
+
+	ret = smb_krb5_send_and_recv_func_int(context, ev, hi, ai, smb_krb5_send_and_recv_func, data, timeout, send_buf, recv_buf);
+	TALLOC_FREE(frame);
+	return ret;
 }
 
 krb5_error_code smb_krb5_send_and_recv_func_forced(krb5_context context,
@@ -437,24 +440,27 @@ krb5_error_code smb_krb5_send_and_recv_func_forced(krb5_context context,
 						   const krb5_data *send_buf,
 						   krb5_data *recv_buf)
 {
+	krb5_error_code k5ret;
 	struct addrinfo *ai = data;
 
 	struct tevent_context *ev;
-	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
-	if (!tmp_ctx) {
+	TALLOC_CTX *frame = talloc_stackframe();
+	if (frame == NULL) {
 		return ENOMEM;
 	}
 
-	/* If no event context was available, then create one for this loop */
-	ev = samba_tevent_context_init(tmp_ctx);
-	if (!ev) {
-		talloc_free(tmp_ctx);
+	/* no event context is passed in, create one for this loop */
+	ev = samba_tevent_context_init(frame);
+	if (ev == NULL) {
+		TALLOC_FREE(frame);
 		return ENOMEM;
 	}
 
 	/* No need to pass in send_and_recv functions, we won't nest on this private event loop */
-	return smb_krb5_send_and_recv_func_int(context, ev, hi, ai, NULL, NULL,
-					       timeout, send_buf, recv_buf);
+	k5ret = smb_krb5_send_and_recv_func_int(context, ev, hi, ai, NULL, NULL,
+						timeout, send_buf, recv_buf);
+	TALLOC_FREE(frame);
+	return k5ret;
 }
 #endif
 
