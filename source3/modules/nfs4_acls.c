@@ -359,7 +359,7 @@ static bool smbacl4_nfs42win(TALLOC_CTX *mem_ctx,
 	struct security_ace *nt_ace_list = NULL;
 	int good_aces = 0;
 
-	DEBUG(10, ("smbacl_nfs42win entered\n"));
+	DEBUG(10, ("%s entered\n", __func__));
 
 	aclint = get_validated_aclint(theacl);
 	/* We do not check for theacl being NULL here
