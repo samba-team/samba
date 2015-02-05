@@ -2292,48 +2292,57 @@ NTSTATUS samdb_set_password_sid(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 				enum samPwdChangeReason *reject_reason,
 				struct samr_DomInfo1 **_dominfo) 
 {
+	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS nt_status;
-	struct ldb_dn *user_dn;
+	const char * const user_attrs[] = {
+		NULL
+	};
+	struct ldb_message *user_msg = NULL;
 	int ret;
 
 	ret = ldb_transaction_start(ldb);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(1, ("Failed to start transaction: %s\n", ldb_errstring(ldb)));
+		TALLOC_FREE(frame);
 		return NT_STATUS_TRANSACTION_ABORTED;
 	}
 
-	user_dn = samdb_search_dn(ldb, mem_ctx, NULL,
-				  "(&(objectSid=%s)(objectClass=user))", 
-				  ldap_encode_ndr_dom_sid(mem_ctx, user_sid));
-	if (!user_dn) {
+	ret = dsdb_search_one(ldb, frame, &user_msg, ldb_get_default_basedn(ldb),
+			      LDB_SCOPE_SUBTREE, user_attrs, 0,
+			      "(&(objectSid=%s)(objectClass=user))",
+			      ldap_encode_ndr_dom_sid(frame, user_sid));
+	if (ret != LDB_SUCCESS) {
 		ldb_transaction_cancel(ldb);
-		DEBUG(3, ("samdb_set_password_sid: SID %s not found in samdb, returning NO_SUCH_USER\n",
-			  dom_sid_string(mem_ctx, user_sid)));
+		DEBUG(3, ("samdb_set_password_sid: SID[%s] not found in samdb %s - %s, "
+			  "returning NO_SUCH_USER\n",
+			  dom_sid_string(frame, user_sid),
+			  ldb_strerror(ret), ldb_errstring(ldb)));
+		TALLOC_FREE(frame);
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
 	nt_status = samdb_set_password(ldb, mem_ctx,
-				       user_dn, NULL,
+				       user_msg->dn, NULL,
 				       new_password,
 				       lmNewHash, ntNewHash,
 				       lmOldHash, ntOldHash,
 				       reject_reason, _dominfo);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		ldb_transaction_cancel(ldb);
-		talloc_free(user_dn);
+		TALLOC_FREE(frame);
 		return nt_status;
 	}
 
 	ret = ldb_transaction_commit(ldb);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0,("Failed to commit transaction to change password on %s: %s\n",
-			 ldb_dn_get_linearized(user_dn),
+			 ldb_dn_get_linearized(user_msg->dn),
 			 ldb_errstring(ldb)));
-		talloc_free(user_dn);
+		TALLOC_FREE(frame);
 		return NT_STATUS_TRANSACTION_ABORTED;
 	}
 
-	talloc_free(user_dn);
+	TALLOC_FREE(frame);
 	return NT_STATUS_OK;
 }
 
