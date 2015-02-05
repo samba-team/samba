@@ -64,14 +64,17 @@ class TestCase(unittest.TestCase):
         def assertIn(self, member, container, msg=None):
             self.assertTrue(member in container, msg)
 
-        def assertIs(self, a, b):
-            self.assertTrue(a is b)
+        def assertIs(self, a, b, msg=None):
+            self.assertTrue(a is b, msg)
 
-        def assertIsNot(self, a, b):
-            self.assertTrue(a is not b)
+        def assertIsNot(self, a, b, msg=None):
+            self.assertTrue(a is not b, msg)
 
-        def assertIsInstance(self, a, b):
-            self.assertTrue(isinstance(a, b))
+        def assertIsNotNone(self, a, msg=None):
+            self.assertTrue(a is not None)
+
+        def assertIsInstance(self, a, b, msg=None):
+            self.assertTrue(isinstance(a, b), msg)
 
         def assertIsNone(self, a, msg=None):
             self.assertTrue(a is None, msg)
