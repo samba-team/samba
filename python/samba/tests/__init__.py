@@ -61,6 +61,9 @@ class TestCase(unittest.TestCase):
         def skipTest(self, reason):
             raise SkipTest(reason)
 
+        def assertIn(self, member, container, msg=None):
+            self.assertTrue(member in container, msg)
+
         def assertIs(self, a, b):
             self.assertTrue(a is b)
 
