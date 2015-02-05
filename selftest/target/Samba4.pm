@@ -703,7 +703,7 @@ sub provision_raw_step1($$)
 	if ($ctx->{unix_uid} != 0) {
 		print PWD "root:x:0:0:root gecos:$ctx->{prefix_abs}:/bin/false\n";
 	}
-	print PWD "$ctx->{unix_name}:x:$ctx->{unix_uid}:100:$ctx->{unix_name} gecos:$ctx->{prefix_abs}:/bin/false\n";
+	print PWD "$ctx->{unix_name}:x:$ctx->{unix_uid}:65531:$ctx->{unix_name} gecos:$ctx->{prefix_abs}:/bin/false\n";
 	print PWD "nobody:x:65534:65533:nobody gecos:$ctx->{prefix_abs}:/bin/false
 pdbtest:x:65533:65533:pdbtest gecos:$ctx->{prefix_abs}:/bin/false
 pdbtest2:x:65532:65533:pdbtest gecos:$ctx->{prefix_abs}:/bin/false
@@ -719,7 +719,7 @@ pdbtest4:x:65530:65533:pdbtest gecos:$ctx->{prefix_abs}:/bin/false
 	}
 	print GRP "$ctx->{unix_name}:x:$ctx->{unix_gid}:\n";
 	print GRP "wheel:x:10:
-users:x:100:
+users:x:65531:
 nobody:x:65533:
 nogroup:x:65534:nobody
 ";
