@@ -239,6 +239,7 @@ struct ctdb_recoverd {
 	struct vacuum_info *vacuum_info;
 	struct srvid_requests *reallocate_requests;
 	struct ctdb_op_state *takeover_run;
+	struct ctdb_op_state *recovery;
 	struct ctdb_control_get_ifaces *ifaces;
 	uint32_t *force_rebalance_nodes;
 };
@@ -1887,6 +1888,10 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	/* if recovery fails, force it again */
 	rec->need_recovery = true;
 
+	if (!ctdb_op_begin(rec->recovery)) {
+		return -1;
+	}
+
 	if (rec->election_timeout) {
 		/* an election is in progress */
 		DEBUG(DEBUG_ERR, ("do_recovery called while election in progress - try again later\n"));
@@ -2175,6 +2180,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	DEBUG(DEBUG_NOTICE, (__location__ " Recovery complete\n"));
 
 	rec->need_recovery = false;
+	ctdb_op_end(rec->recovery);
 
 	/* we managed to complete a full recovery, make sure to forgive
 	   any past sins by the nodes that could now participate in the
@@ -2196,18 +2202,17 @@ static int do_recovery(struct ctdb_recoverd *rec,
 		ban_state->count = 0;
 	}
 
-
-	/* We just finished a recovery successfully. 
-	   We now wait for rerecovery_timeout before we allow 
+	/* We just finished a recovery successfully.
+	   We now wait for rerecovery_timeout before we allow
 	   another recovery to take place.
 	*/
 	DEBUG(DEBUG_NOTICE, ("Just finished a recovery. New recoveries will now be supressed for the rerecovery timeout (%d seconds)\n", ctdb->tunable.rerecovery_timeout));
-	ctdb_wait_timeout(ctdb, ctdb->tunable.rerecovery_timeout);
-	DEBUG(DEBUG_NOTICE, ("The rerecovery timeout has elapsed. We now allow recoveries to trigger again.\n"));
-
+	ctdb_op_disable(rec->recovery, ctdb->ev,
+			ctdb->tunable.rerecovery_timeout);
 	return 0;
 
 fail:
+	ctdb_op_end(rec->recovery);
 	return -1;
 }
 
@@ -3991,6 +3996,9 @@ static void monitor_cluster(struct ctdb_context *ctdb)
 
 	rec->takeover_run = ctdb_op_init(rec, "takeover runs");
 	CTDB_NO_MEMORY_FATAL(ctdb, rec->takeover_run);
+
+	rec->recovery = ctdb_op_init(rec, "recoveries");
+	CTDB_NO_MEMORY_FATAL(ctdb, rec->recovery);
 
 	rec->priority_time = timeval_current();
 
