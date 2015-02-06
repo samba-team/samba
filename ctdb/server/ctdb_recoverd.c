@@ -2560,12 +2560,10 @@ static void recd_update_ip_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	update_ip_assignment_tree(rec->ctdb, ip);
 }
 
-static void disable_takeover_runs_handler(struct ctdb_context *ctdb,
-					  uint64_t srvid, TDB_DATA data,
-					  void *private_data)
+static void srvid_disable_and_reply(struct ctdb_context *ctdb,
+				    TDB_DATA data,
+				    struct ctdb_op_state *op_state)
 {
-	struct ctdb_recoverd *rec = talloc_get_type(private_data,
-						    struct ctdb_recoverd);
 	struct srvid_request_data *r;
 	uint32_t timeout;
 	TDB_DATA result;
@@ -2586,7 +2584,7 @@ static void disable_takeover_runs_handler(struct ctdb_context *ctdb,
 	r = (struct srvid_request_data *)data.dptr;
 	timeout = r->data;
 
-	ret = ctdb_op_disable(rec->takeover_run, ctdb->ev, timeout);
+	ret = ctdb_op_disable(op_state, ctdb->ev, timeout);
 	if (ret != 0) {
 		goto done;
 	}
@@ -2597,6 +2595,16 @@ done:
 	result.dsize = sizeof(int32_t);
 	result.dptr  = (uint8_t *)&ret;
 	srvid_request_reply(ctdb, (struct srvid_request *)r, result);
+}
+
+static void disable_takeover_runs_handler(struct ctdb_context *ctdb,
+					  uint64_t srvid, TDB_DATA data,
+					  void *private_data)
+{
+	struct ctdb_recoverd *rec = talloc_get_type(private_data,
+						    struct ctdb_recoverd);
+
+	srvid_disable_and_reply(ctdb, data, rec->takeover_run);
 }
 
 /* Backward compatibility for this SRVID - call
