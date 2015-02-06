@@ -2607,16 +2607,13 @@ static void disable_takeover_runs_handler(struct ctdb_context *ctdb,
 	srvid_disable_and_reply(ctdb, data, rec->takeover_run);
 }
 
-/* Backward compatibility for this SRVID - call
- * disable_takeover_runs_handler() instead
- */
+/* Backward compatibility for this SRVID */
 static void disable_ip_check_handler(struct ctdb_context *ctdb, uint64_t srvid,
 				     TDB_DATA data, void *private_data)
 {
 	struct ctdb_recoverd *rec = talloc_get_type(private_data,
 						    struct ctdb_recoverd);
-	TDB_DATA data2;
-	struct srvid_request_data *req;
+	uint32_t timeout;
 
 	if (data.dsize != sizeof(uint32_t)) {
 		DEBUG(DEBUG_ERR,(__location__ " Wrong size for data :%lu "
@@ -2629,19 +2626,9 @@ static void disable_ip_check_handler(struct ctdb_context *ctdb, uint64_t srvid,
 		return;
 	}
 
-	req = talloc(ctdb, struct srvid_request_data);
-	CTDB_NO_MEMORY_VOID(ctdb, req);
+	timeout = *((uint32_t *)data.dptr);
 
-	req->srvid = 0; /* No reply */
-	req->pnn = -1;
-	req->data = *((uint32_t *)data.dptr); /* Timeout */
-
-	data2.dsize = sizeof(*req);
-	data2.dptr = (uint8_t *)req;
-
-	disable_takeover_runs_handler(rec->ctdb,
-				      CTDB_SRVID_DISABLE_TAKEOVER_RUNS,
-				      data2, rec);
+	ctdb_op_disable(rec->takeover_run, ctdb->ev, timeout);
 }
 
 /*
