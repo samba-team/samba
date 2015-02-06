@@ -714,6 +714,7 @@ int ctdb_client_send_message_stub(struct ctdb_context *ctdb,
 		ctdb_fake_handler_pnn_reply(ctdb, ctdb->recovery_master);
 		break;
 
+	case CTDB_SRVID_DISABLE_RECOVERIES:
 	case CTDB_SRVID_DISABLE_TAKEOVER_RUNS:
 		/* Assume srvid_broadcast() is in use and reply on
 		 * behalf of relevant nodes */

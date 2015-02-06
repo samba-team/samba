@@ -2631,6 +2631,16 @@ static void disable_ip_check_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	ctdb_op_disable(rec->takeover_run, ctdb->ev, timeout);
 }
 
+static void disable_recoveries_handler(struct ctdb_context *ctdb,
+				       uint64_t srvid, TDB_DATA data,
+				       void *private_data)
+{
+	struct ctdb_recoverd *rec = talloc_get_type(private_data,
+						    struct ctdb_recoverd);
+
+	srvid_disable_and_reply(ctdb, data, rec->recovery);
+}
+
 /*
   handler for ip reallocate, just add it to the list of requests and 
   handle this later in the monitor_cluster loop so we do not recurse
@@ -4032,6 +4042,11 @@ static void monitor_cluster(struct ctdb_context *ctdb)
 	ctdb_client_set_message_handler(ctdb,
 					CTDB_SRVID_DISABLE_TAKEOVER_RUNS,
 					disable_takeover_runs_handler, rec);
+
+	/* Register a message port for disabling recoveries */
+	ctdb_client_set_message_handler(ctdb,
+					CTDB_SRVID_DISABLE_RECOVERIES,
+					disable_recoveries_handler, rec);
 
 	/* register a message port for detaching database */
 	ctdb_client_set_message_handler(ctdb,

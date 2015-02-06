@@ -156,6 +156,9 @@ struct ctdb_call_info {
 /* A message handler ID to stop takeover runs from occurring */
 #define CTDB_SRVID_DISABLE_TAKEOVER_RUNS 0xFB03000000000000LL
 
+/* A message handler ID to stop recoveries from occurring */
+#define CTDB_SRVID_DISABLE_RECOVERIES 0xFB04000000000000LL
+
 /* A message id to ask the recovery daemon to temporarily disable the
    public ip checks
 */
