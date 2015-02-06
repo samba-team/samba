@@ -1890,13 +1890,13 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	if (rec->election_timeout) {
 		/* an election is in progress */
 		DEBUG(DEBUG_ERR, ("do_recovery called while election in progress - try again later\n"));
-		return -1;
+		goto fail;
 	}
 
 	ban_misbehaving_nodes(rec, &self_ban);
 	if (self_ban) {
 		DEBUG(DEBUG_NOTICE, ("This node was banned, aborting recovery\n"));
-		return -1;
+		goto fail;
 	}
 
         if (ctdb->recovery_lock_file != NULL) {
@@ -1914,14 +1914,14 @@ static int do_recovery(struct ctdb_recoverd *rec,
 					 */
 					DEBUG(DEBUG_ERR, ("Unable to get recovery lock"
 							  " - retrying recovery\n"));
-					return -1;
+					goto fail;
 				}
 
 				DEBUG(DEBUG_ERR,("Unable to get recovery lock - aborting recovery "
 						 "and ban ourself for %u seconds\n",
 						 ctdb->tunable.recovery_ban_period));
 				ctdb_ban_node(rec, pnn, ctdb->tunable.recovery_ban_period);
-				return -1;
+				goto fail;
 			}
 			ctdb_ctrl_report_recd_lock_latency(ctdb,
 							   CONTROL_TIMEOUT(),
@@ -1937,7 +1937,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	ret = ctdb_ctrl_getdbmap(ctdb, CONTROL_TIMEOUT(), pnn, mem_ctx, &dbmap);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to get dbids from node :%u\n", pnn));
-		return -1;
+		goto fail;
 	}
 
 	/* we do the db creation before we set the recovery mode, so the freeze happens
@@ -1947,14 +1947,14 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	ret = create_missing_local_databases(ctdb, nodemap, pnn, &dbmap, mem_ctx);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to create missing local databases\n"));
-		return -1;
+		goto fail;
 	}
 
 	/* verify that all other nodes have all our databases */
 	ret = create_missing_remote_databases(ctdb, nodemap, pnn, dbmap, mem_ctx);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to create missing remote databases\n"));
-		return -1;
+		goto fail;
 	}
 	DEBUG(DEBUG_NOTICE, (__location__ " Recovery - created remote databases\n"));
 
@@ -1975,14 +1975,14 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	ret = set_recovery_mode(ctdb, rec, nodemap, CTDB_RECOVERY_ACTIVE);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to set recovery mode to active on cluster\n"));
-		return -1;
+		goto fail;
 	}
 
 	/* execute the "startrecovery" event script on all nodes */
 	ret = run_startrecovery_eventscript(rec, nodemap);
 	if (ret!=0) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to run the 'startrecovery' event on cluster\n"));
-		return -1;
+		goto fail;
 	}
 
 	/*
@@ -1999,7 +1999,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 				DEBUG(DEBUG_WARNING, (__location__ "Unable to update flags on inactive node %d\n", i));
 			} else {
 				DEBUG(DEBUG_ERR, (__location__ " Unable to update flags on all nodes for node %d\n", i));
-				return -1;
+				goto fail;
 			}
 		}
 	}
@@ -2023,7 +2023,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	ret = ctdb_ctrl_setvnnmap(ctdb, CONTROL_TIMEOUT(), pnn, mem_ctx, vnnmap);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to set vnnmap for node %u\n", pnn));
-		return -1;
+		goto fail;
 	}
 
 	data.dptr = (void *)&generation;
@@ -2045,7 +2045,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 					NULL) != 0) {
 			DEBUG(DEBUG_ERR,("Failed to cancel recovery transaction\n"));
 		}
-		return -1;
+		goto fail;
 	}
 
 	DEBUG(DEBUG_NOTICE,(__location__ " started transactions on all nodes\n"));
@@ -2057,7 +2057,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 				       pnn, nodemap, generation);
 		if (ret != 0) {
 			DEBUG(DEBUG_ERR, (__location__ " Failed to recover database 0x%x\n", dbmap->dbs[i].dbid));
-			return -1;
+			goto fail;
 		}
 	}
 
@@ -2070,7 +2070,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 					NULL, NULL,
 					NULL) != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to commit recovery changes. Recovery failed.\n"));
-		return -1;
+		goto fail;
 	}
 
 	DEBUG(DEBUG_NOTICE, (__location__ " Recovery - committed databases\n"));
@@ -2080,7 +2080,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	ret = update_capabilities(ctdb, nodemap);
 	if (ret!=0) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to update node capabilities.\n"));
-		return -1;
+		goto fail;
 	}
 
 	/* build a new vnn map with all the currently active and
@@ -2120,7 +2120,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	ret = update_vnnmap_on_all_nodes(ctdb, nodemap, pnn, vnnmap, mem_ctx);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to update vnnmap on all nodes\n"));
-		return -1;
+		goto fail;
 	}
 
 	DEBUG(DEBUG_NOTICE, (__location__ " Recovery - updated vnnmap\n"));
@@ -2129,7 +2129,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	ret = set_recovery_master(ctdb, nodemap, pnn);
 	if (ret!=0) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to set recovery master\n"));
-		return -1;
+		goto fail;
 	}
 
 	DEBUG(DEBUG_NOTICE, (__location__ " Recovery - updated recmaster\n"));
@@ -2138,7 +2138,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	ret = set_recovery_mode(ctdb, rec, nodemap, CTDB_RECOVERY_NORMAL);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to set recovery mode to normal on cluster\n"));
-		return -1;
+		goto fail;
 	}
 
 	DEBUG(DEBUG_NOTICE, (__location__ " Recovery - disabled recovery mode\n"));
@@ -2149,7 +2149,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 		DEBUG(DEBUG_ERR,("Failed to read public ips from remote node %d\n",
 				 culprit));
 		rec->need_takeover_run = true;
-		return -1;
+		goto fail;
 	}
 
 	do_takeover_run(rec, nodemap, false);
@@ -2158,7 +2158,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	ret = run_recovered_eventscript(rec, nodemap, "do_recovery");
 	if (ret!=0) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to run the 'recovered' event on cluster. Recovery process failed.\n"));
-		return -1;
+		goto fail;
 	}
 
 	DEBUG(DEBUG_NOTICE, (__location__ " Recovery - finished the recovered event\n"));
@@ -2169,7 +2169,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 				       CTDB_SRVID_RECONFIGURE, tdb_null);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Failed to send reconfigure message\n"));
-		return -1;
+		goto fail;
 	}
 
 	DEBUG(DEBUG_NOTICE, (__location__ " Recovery complete\n"));
@@ -2206,6 +2206,9 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	DEBUG(DEBUG_NOTICE, ("The rerecovery timeout has elapsed. We now allow recoveries to trigger again.\n"));
 
 	return 0;
+
+fail:
+	return -1;
 }
 
 
