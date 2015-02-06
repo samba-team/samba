@@ -3737,6 +3737,14 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 		process_ipreallocate_requests(ctdb, rec);
 	}
 
+	/* If recoveries are disabled then there is no use doing any
+	 * nodemap or flags checks.  Recoveries might be disabled due
+	 * to "reloadnodes", so doing these checks might cause an
+	 * unnecessary recovery.  */
+	if (ctdb_op_is_disabled(rec->recovery)) {
+		return;
+	}
+
 	/* get the nodemap for all active remote nodes
 	 */
 	remote_nodemaps = talloc_array(mem_ctx, struct ctdb_node_map *, nodemap->num);
