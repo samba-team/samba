@@ -305,6 +305,7 @@ static NTSTATUS gensec_gssapi_client_creds(struct gensec_security *gensec_securi
 		return NT_STATUS_INVALID_PARAMETER;
 	case KRB5KDC_ERR_PREAUTH_FAILED:
 	case KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN:
+	case KRB5KRB_AP_ERR_BAD_INTEGRITY:
 		DEBUG(1, ("Wrong username or password: %s\n", error_string));
 		return NT_STATUS_LOGON_FAILURE;
 	case KRB5KDC_ERR_CLIENT_REVOKED:
