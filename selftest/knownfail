@@ -271,7 +271,7 @@
 ^samba.blackbox.wbinfo\(s4member:local\).wbinfo --user-sids against s4member\(s4member:local\)
 ^samba4.winbind.struct.getpwent\(plugin_s4_dc:local\)
 ^samba.wbinfo_simple.\(s4member:local\).--user-groups
-^samba.nss.test using winbind\(s4member\)
+^samba.nss.test using winbind\(s4member:local\)
 #
 # These just happen to fail for some reason (probably because they run against the s4 winbind)
 #

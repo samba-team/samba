@@ -419,7 +419,7 @@ for env in ["s3dc", "member", "plugin_s4_dc", "dc", "s3member", "s4member"]:
 
 
 nsstest4 = binpath("nsstest")
-for env in ["plugin_s4_dc", "dc", "s4member", "s3dc", "s3member", "member"]:
+for env in ["plugin_s4_dc:local", "dc:local", "s4member:local", "s3dc:local", "s3member:local", "member:local"]:
     if os.path.exists(nsstest4):
         plantestsuite("samba.nss.test using winbind(%s)" % env, env, [os.path.join(bbdir, "nsstest.sh"), nsstest4, os.path.join(samba4bindir, "shared/libnss_wrapper_winbind.so.2")])
     else:
