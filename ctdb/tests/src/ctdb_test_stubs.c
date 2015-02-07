@@ -367,6 +367,8 @@ struct ctdb_context *ctdb_cmdline_client_stub(struct tevent_context *ev,
 		DEBUGLEVEL = 0;
 	}
 
+	ctdb_global->ev = ev;
+
 	return ctdb_global;
 }
 
@@ -374,6 +376,8 @@ struct tevent_context *tevent_context_init_stub(TALLOC_CTX *mem_ctx)
 {
 	struct ctdb_context *ctdb;
 
+	/* This needs to be initialised prior to the client setup, for
+	   the xpnn stub */
 	ctdb = talloc_zero(NULL, struct ctdb_context);
 
 	ctdb_set_socketname(ctdb, "fake");
