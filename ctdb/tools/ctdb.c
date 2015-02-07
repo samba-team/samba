@@ -2242,7 +2242,7 @@ static void srvid_broadcast_reply_handler(struct ctdb_context *ctdb,
 	d->done = true;
 	for (i = 0; i < talloc_array_length(d->nodes); i++) {
 		if (d->nodes[i] == ret) {
-			DEBUG(DEBUG_INFO,
+			DEBUG(DEBUG_DEBUG,
 			      ("%s reply received from node %u\n",
 			       d->srvid_str, ret));
 			d->nodes[i] = -1;
