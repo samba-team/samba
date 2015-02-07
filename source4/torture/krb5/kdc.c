@@ -267,7 +267,9 @@ static krb5_error_code smb_krb5_send_and_recv_func_override(krb5_context context
 	
 	k5ret = smb_krb5_send_and_recv_func_forced(context, test_context->server,
 						    hi, timeout, send_buf, recv_buf);
-
+	if (k5ret != 0) {
+		return k5ret;
+	}
 	ok = torture_krb5_post_recv_test(test_context, recv_buf);
 	if (ok == false) {
 		return EINVAL;

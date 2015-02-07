@@ -212,7 +212,11 @@ static krb5_error_code smb_krb5_send_and_recv_func_canon_override(krb5_context c
 	}
 	
 	k5ret = smb_krb5_send_and_recv_func_forced(context, test_context->server,
-						    hi, timeout, &modified_send_buf, recv_buf);
+						   hi, timeout, &modified_send_buf, 
+						   recv_buf);
+	if (k5ret != 0) {
+		return k5ret;
+	}
 
 	ok = torture_krb5_post_recv_test(test_context, recv_buf);
 	if (ok == false) {
