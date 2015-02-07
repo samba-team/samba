@@ -584,6 +584,120 @@ ctdb_ctrl_get_ifaces_stub(struct ctdb_context *ctdb,
 	return ret;
 }
 
+/* In reality handlers can be registered for many srvids.  However,
+ * the ctdb tool only registers one at a time so keep this simple. */
+static struct {
+	uint64_t srvid;
+	ctdb_msg_fn_t message_handler;
+	void *message_private;
+} ctdb_message_list_fake = {
+	.srvid = 0,
+	.message_handler = NULL,
+	.message_private = NULL,
+};
+
+int ctdb_client_set_message_handler_stub(struct ctdb_context *ctdb,
+					 uint64_t srvid,
+					 ctdb_msg_fn_t handler,
+					 void *private_data)
+{
+	ctdb_message_list_fake.srvid = srvid;
+	ctdb_message_list_fake.message_handler = handler;
+	ctdb_message_list_fake.message_private = private_data;
+
+	return 0;
+}
+
+int ctdb_client_remove_message_handler_stub(struct ctdb_context *ctdb,
+					    uint64_t srvid,
+					    void *private_data)
+{
+	ctdb_message_list_fake.srvid = 0;
+	ctdb_message_list_fake.message_handler = NULL;
+	ctdb_message_list_fake.message_private = NULL;
+
+	return 0;
+}
+
+static void ctdb_fake_handler_pnn_reply(struct ctdb_context *ctdb,
+					uint32_t pnn)
+{
+	TDB_DATA reply_data;
+
+	reply_data.dsize = sizeof(pnn);
+	reply_data.dptr = (uint8_t *)&pnn;
+	ctdb_message_list_fake.message_handler(
+		ctdb,
+		ctdb_message_list_fake.srvid,
+		reply_data,
+		ctdb_message_list_fake.message_private);
+}
+
+int ctdb_client_send_message_stub(struct ctdb_context *ctdb,
+				  uint32_t pnn,
+				  uint64_t srvid, TDB_DATA data)
+{
+	struct srvid_reply_handler_data *d;
+	int i;
+
+	if (ctdb_message_list_fake.message_handler == NULL) {
+		DEBUG(DEBUG_ERR,
+		      (__location__
+		       " no message handler registered for srvid %llu\n",
+		       (unsigned long long)srvid));
+		return -1;
+	}
+
+	switch (srvid) {
+	case CTDB_SRVID_TAKEOVER_RUN:
+		/* Fake a single reply from recovery master */
+		DEBUG(DEBUG_NOTICE,
+		      ("Fake takeover run on recovery master %u\n",
+		       ctdb->recovery_master));
+		ctdb_fake_handler_pnn_reply(ctdb, ctdb->recovery_master);
+		break;
+
+	case CTDB_SRVID_DISABLE_TAKEOVER_RUNS:
+		/* Assume srvid_broadcast() is in use and reply on
+		 * behalf of relevant nodes */
+		if (pnn != CTDB_BROADCAST_CONNECTED) {
+			DEBUG(DEBUG_ERR,
+			      (__location__
+			       " srvid %llu must use pnn CTDB_BROADCAST_CONNECTED\n",
+			       (unsigned long long)srvid));
+			return -1;
+		}
+
+		d = (struct srvid_reply_handler_data *)ctdb_message_list_fake.message_private;
+		if (d == NULL) {
+			DEBUG(DEBUG_ERR,
+			      (__location__ " No private data registered\n"));
+			return -1;
+		}
+		if (d->nodes == NULL) {
+			DEBUG(DEBUG_ERR,
+			      (__location__
+			       " No nodes to reply to in private data\n"));
+			return -1;
+		}
+
+		for (i = 0; i < talloc_array_length(d->nodes); i++) {
+			if (d->nodes[i] != -1) {
+				ctdb_fake_handler_pnn_reply(ctdb, d->nodes[i]);
+			}
+		}
+		break;
+
+	default:
+		DEBUG(DEBUG_ERR,
+		      (__location__ " srvid %llu not implemented\n",
+		       (unsigned long long)srvid));
+		return -1;
+	}
+
+	return 0;
+}
+
 int ctdb_client_check_message_handlers_stub(struct ctdb_context *ctdb,
 					    uint64_t *ids, uint32_t num,
 					    uint8_t *result)

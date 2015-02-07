@@ -49,6 +49,12 @@ int main_foobar(int argc, const char **argv);
 	ctdb_ctrl_getvnnmap_stub(ctdb, timelimit, pnn, tmp_ctx, vnnmap)
 #define ctdb_ctrl_getdebseqnum(ctdb, timelimit, pnn, db_id, seqnum) \
 	ctdb_ctrl_getvnnmap_stub(ctdb, timelimit, pnn, db_id, seqnum)
+#define ctdb_client_set_message_handler(ctdb, srvid, handler, private_data) \
+	ctdb_client_set_message_handler_stub(ctdb, srvid, handler, private_data)
+#define ctdb_client_remove_message_handler(ctdb, srvid, private_data) \
+	ctdb_client_remove_message_handler_stub(ctdb, srvid, private_data)
+#define ctdb_client_send_message(ctdb, pnn, srvid, data) \
+	ctdb_client_send_message_stub(ctdb, pnn, srvid, data)
 #define ctdb_client_check_message_handlers(ctdb, ids, argc, result) \
 	ctdb_client_check_message_handlers_stub(ctdb, ids, argc, result)
 #define ctdb_ctrl_getcapabilities(ctdb, timeout, destnode, capabilities) \
@@ -79,6 +85,9 @@ struct tevent_context *tevent_context_init(TALLOC_CTX *mem_ctx);
 #undef ctdb_ctrl_getrecmaster
 #undef ctdb_ctrl_getvnnmap
 #undef ctdb_ctrl_getdebseqnum
+#undef ctdb_client_set_message_handler
+#undef ctdb_client_remove_message_handler
+#undef ctdb_client_send_message
 #undef ctdb_client_check_message_handlers
 #undef ctdb_ctrl_getcapabilities
 #undef ctdb_sys_have_ip
@@ -104,6 +113,16 @@ int ctdb_ctrl_getvnnmap(struct ctdb_context *ctdb,
 		TALLOC_CTX *mem_ctx, struct ctdb_vnn_map **vnnmap);
 int ctdb_ctrl_getdbseqnum(struct ctdb_context *ctdb, struct timeval timeout,
 			  uint32_t destnode, uint32_t dbid, uint64_t *seqnum);
+int ctdb_client_set_message_handler(struct ctdb_context *ctdb,
+				    uint64_t srvid,
+				    ctdb_msg_fn_t handler,
+				    void *private_data);
+int ctdb_client_remove_message_handler(struct ctdb_context *ctdb,
+				       uint64_t srvid,
+				       void *private_data);
+int ctdb_client_send_message(struct ctdb_context *ctdb,
+			     uint32_t pnn,
+			     uint64_t srvid, TDB_DATA data);
 int ctdb_client_check_message_handlers(struct ctdb_context *ctdb,
 				       uint64_t *ids, uint32_t num,
 				       uint8_t *result);
