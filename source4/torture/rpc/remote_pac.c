@@ -616,6 +616,7 @@ static bool test_PACVerify_workstation_des(struct torture_context *tctx,
 
 
 /* Check various ways to get the PAC, in particular check the group membership and other details between the PAC from a normal kinit, S2U4Self and a SamLogon */
+#ifdef SAMBA4_USES_HEIMDAL
 static bool test_S2U4Self(struct torture_context *tctx,
 			  struct dcerpc_pipe *p1,
 			  struct cli_credentials *credentials,
@@ -929,6 +930,7 @@ static bool test_S2U4Self_workstation_aes(struct torture_context *tctx,
 			     TEST_MACHINE_NAME_S2U4SELF_WKSTA,
 			     NETLOGON_NEG_AUTH2_ADS_FLAGS | NETLOGON_NEG_SUPPORTS_AES);
 }
+#endif
 
 struct torture_suite *torture_rpc_remote_pac(TALLOC_CTX *mem_ctx)
 {
@@ -954,7 +956,7 @@ struct torture_suite *torture_rpc_remote_pac(TALLOC_CTX *mem_ctx)
 	tcase = torture_suite_add_machine_workstation_rpc_iface_tcase(suite, "netlogon-member-des",
 								      &ndr_table_netlogon, TEST_MACHINE_NAME_WKSTA_DES);
 	torture_rpc_tcase_add_test_join(tcase, "verify-sig", test_PACVerify_workstation_des);
-
+#ifdef SAMBA4_USES_HEIMDAL
 	tcase = torture_suite_add_machine_bdc_rpc_iface_tcase(suite, "netr-bdc-arcfour",
 							      &ndr_table_netlogon, TEST_MACHINE_NAME_S2U4SELF_BDC);
 	torture_rpc_tcase_add_test_creds(tcase, "s2u4self-arcfour", test_S2U4Self_bdc_arcfour);
@@ -970,6 +972,6 @@ struct torture_suite *torture_rpc_remote_pac(TALLOC_CTX *mem_ctx)
 	tcase = torture_suite_add_machine_workstation_rpc_iface_tcase(suite, "netr-mem-aes",
 								      &ndr_table_netlogon, TEST_MACHINE_NAME_S2U4SELF_WKSTA);
 	torture_rpc_tcase_add_test_creds(tcase, "s2u4self-aes", test_S2U4Self_workstation_aes);
-
+#endif
 	return suite;
 }
