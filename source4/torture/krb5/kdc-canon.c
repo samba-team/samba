@@ -60,16 +60,16 @@ struct test_data {
 
 enum test_stage {
 	TEST_AS_REQ = 0,
-	TEST_TGS_REQ_KRBTGT_CANON,
-	TEST_TGS_REQ_CANON,
-	TEST_SELF_TRUST_TGS_REQ,
-	TEST_TGS_REQ,
-	TEST_TGS_REQ_KRBTGT,
-	TEST_TGS_REQ_HOST,
-	TEST_TGS_REQ_HOST_SRV_INST,
-	TEST_TGS_REQ_HOST_SRV_HST,
-	TEST_AS_REQ_SELF,
-	TEST_DONE
+	TEST_TGS_REQ_KRBTGT_CANON = 1,
+	TEST_TGS_REQ_CANON = 2,
+	TEST_SELF_TRUST_TGS_REQ = 3,
+	TEST_TGS_REQ = 4,
+	TEST_TGS_REQ_KRBTGT = 5,
+	TEST_TGS_REQ_HOST = 6,
+	TEST_TGS_REQ_HOST_SRV_INST = 7,
+	TEST_TGS_REQ_HOST_SRV_HST = 8,
+	TEST_AS_REQ_SELF = 9,
+	TEST_DONE = 10
 };
 
 struct torture_krb5_context {
@@ -1224,6 +1224,18 @@ static krb5_error_code smb_krb5_send_and_recv_func_canon_override(krb5_context c
 		break;
 	}
 	if (ok == false) {
+		KRB_ERROR error;
+		size_t used;
+		torture_warning(test_context->tctx, "Packet of length %llu failed post-recv checks in test stage %d", (unsigned long long)recv_buf->length, test_context->test_stage);
+		if (decode_KRB_ERROR(recv_buf->data, recv_buf->length, &error, &used) == 0) {
+			torture_warning(test_context->tctx, 
+					"STAGE: %d Unexpectedly got a KRB-ERROR packet "
+					"with error code %d (%s)",
+					test_context->test_stage,
+					error.error_code,
+					error_message(error.error_code + KRB5KDC_ERR_NONE));
+			free_KRB_ERROR(&error);
+		}
 		return EINVAL;
 	}
 
