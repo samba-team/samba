@@ -343,7 +343,7 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx,
 	}
 
 	ctx->names_db = server_id_db_init(
-		ctx, ctx->id, lp_cache_directory(), 0,
+		ctx, ctx->id, lp_lock_directory(), 0,
 		TDB_INCOMPATIBLE_HASH|TDB_CLEAR_IF_FIRST);
 	if (ctx->names_db == NULL) {
 		DEBUG(10, ("%s: server_id_db_init failed\n", __func__));
