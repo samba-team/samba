@@ -2735,12 +2735,12 @@ int ctdb_ctrl_set_tunable(struct ctdb_context *ctdb,
 	ret = ctdb_control(ctdb, destnode, 0, CTDB_CONTROL_SET_TUNABLE, 0, data, NULL,
 			   NULL, &res, &timeout, NULL);
 	talloc_free(data.dptr);
-	if (ret != 0 || res != 0) {
+	if ((ret != 0) || (res == -1)) {
 		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for set_tunable failed\n"));
 		return -1;
 	}
 
-	return 0;
+	return res;
 }
 
 /*

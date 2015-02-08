@@ -175,6 +175,7 @@ int32_t ctdb_control_set_tunable(struct ctdb_context *ctdb, TDB_DATA indata)
 		DEBUG(DEBUG_WARNING,
 		      ("Setting obsolete tunable \"%s\"\n",
 		       tunable_map[i].name));
+		return 1;
 	}
 
 	return 0;
