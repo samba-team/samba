@@ -238,8 +238,7 @@ struct ctdb_recoverd {
 	struct timed_event *election_timeout;
 	struct vacuum_info *vacuum_info;
 	struct srvid_requests *reallocate_requests;
-	bool takeover_run_in_progress;
-	TALLOC_CTX *takeover_runs_disable_ctx;
+	struct ctdb_op_state *takeover_run;
 	struct ctdb_control_get_ifaces *ifaces;
 	uint32_t *force_rebalance_nodes;
 };
@@ -1663,7 +1662,7 @@ static int ctdb_reload_remote_public_ips(struct ctdb_context *ctdb,
 		}
 
 		if (ctdb->do_checkpublicip &&
-		    rec->takeover_runs_disable_ctx == NULL &&
+		    !ctdb_op_is_disabled(rec->takeover_run) &&
 		    verify_remote_ip_allocation(ctdb,
 						 node->known_public_ips,
 						 node->pnn)) {
@@ -1788,19 +1787,14 @@ static bool do_takeover_run(struct ctdb_recoverd *rec,
 
 	DEBUG(DEBUG_NOTICE, ("Takeover run starting\n"));
 
-	if (rec->takeover_run_in_progress) {
+	if (ctdb_op_is_in_progress(rec->takeover_run)) {
 		DEBUG(DEBUG_ERR, (__location__
 				  " takeover run already in progress \n"));
 		ok = false;
 		goto done;
 	}
 
-	rec->takeover_run_in_progress = true;
-
-	/* If takeover runs are in disabled then fail... */
-	if (rec->takeover_runs_disable_ctx != NULL) {
-		DEBUG(DEBUG_ERR,
-		      ("Takeover runs are disabled so refusing to run one\n"));
+	if (!ctdb_op_begin(rec->takeover_run)) {
 		ok = false;
 		goto done;
 	}
@@ -1864,7 +1858,7 @@ static bool do_takeover_run(struct ctdb_recoverd *rec,
 done:
 	rec->need_takeover_run = !ok;
 	talloc_free(nodes);
-	rec->takeover_run_in_progress = false;
+	ctdb_op_end(rec->takeover_run);
 
 	DEBUG(DEBUG_NOTICE, ("Takeover run %s\n", ok ? "completed successfully" : "unsuccessful"));
 	return ok;
@@ -2558,22 +2552,6 @@ static void recd_update_ip_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	update_ip_assignment_tree(rec->ctdb, ip);
 }
 
-
-static void clear_takeover_runs_disable(struct ctdb_recoverd *rec)
-{
-	TALLOC_FREE(rec->takeover_runs_disable_ctx);
-}
-
-static void reenable_takeover_runs(struct event_context *ev,
-				   struct timed_event *te,
-				   struct timeval yt, void *p)
-{
-	struct ctdb_recoverd *rec = talloc_get_type(p, struct ctdb_recoverd);
-
-	DEBUG(DEBUG_NOTICE,("Reenabling takeover runs after timeout\n"));
-	clear_takeover_runs_disable(rec);
-}
-
 static void disable_takeover_runs_handler(struct ctdb_context *ctdb,
 					  uint64_t srvid, TDB_DATA data,
 					  void *private_data)
@@ -2600,40 +2578,10 @@ static void disable_takeover_runs_handler(struct ctdb_context *ctdb,
 	r = (struct srvid_request_data *)data.dptr;
 	timeout = r->data;
 
-	if (timeout == 0) {
-		DEBUG(DEBUG_NOTICE,("Reenabling takeover runs\n"));
-		clear_takeover_runs_disable(rec);
-		ret = ctdb_get_pnn(ctdb);
+	ret = ctdb_op_disable(rec->takeover_run, ctdb->ev, timeout);
+	if (ret != 0) {
 		goto done;
 	}
-
-	if (rec->takeover_run_in_progress) {
-		DEBUG(DEBUG_ERR,
-		      ("Unable to disable takeover runs - in progress\n"));
-		ret = -EAGAIN;
-		goto done;
-	}
-
-	DEBUG(DEBUG_NOTICE,("Disabling takeover runs for %u seconds\n", timeout));
-
-	/* Clear any old timers */
-	clear_takeover_runs_disable(rec);
-
-	/* When this is non-NULL it indicates that takeover runs are
-	 * disabled.  This context also holds the timeout timer.
-	 */
-	rec->takeover_runs_disable_ctx = talloc_new(rec);
-	if (rec->takeover_runs_disable_ctx == NULL) {
-		DEBUG(DEBUG_ERR,(__location__ " Unable to allocate memory\n"));
-		ret = -ENOMEM;
-		goto done;
-	}
-
-	/* Arrange for the timeout to occur */
-	event_add_timed(ctdb->ev, rec->takeover_runs_disable_ctx,
-			timeval_current_ofs(timeout, 0),
-			reenable_takeover_runs,
-			rec);
 
 	/* Returning our PNN tells the caller that we succeeded */
 	ret = ctdb_get_pnn(ctdb);
@@ -3689,7 +3637,7 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 	 * have addresses we shouldnt have.
 	 */ 
 	if (ctdb->tunable.disable_ip_failover == 0 &&
-	    rec->takeover_runs_disable_ctx == NULL) {
+	    !ctdb_op_is_disabled(rec->takeover_run)) {
 		if (verify_local_ip_allocation(ctdb, rec, pnn, nodemap) != 0) {
 			DEBUG(DEBUG_ERR, (__location__ " Public IPs were inconsistent.\n"));
 		}
@@ -3771,7 +3719,7 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 
 
 	/* if there are takeovers requested, perform it and notify the waiters */
-	if (rec->takeover_runs_disable_ctx == NULL &&
+	if (!ctdb_op_is_disabled(rec->takeover_run) &&
 	    rec->reallocate_requests) {
 		process_ipreallocate_requests(ctdb, rec);
 	}
@@ -4038,7 +3986,8 @@ static void monitor_cluster(struct ctdb_context *ctdb)
 
 	rec->ctdb = ctdb;
 
-	rec->takeover_run_in_progress = false;
+	rec->takeover_run = ctdb_op_init(rec, "takeover runs");
+	CTDB_NO_MEMORY_FATAL(ctdb, rec->takeover_run);
 
 	rec->priority_time = timeval_current();
 
