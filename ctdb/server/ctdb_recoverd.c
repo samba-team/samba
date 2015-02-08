@@ -117,6 +117,103 @@ nomem:
 	srvid_request_reply(ctdb, request, result);
 }
 
+/* An abstraction to allow an operation (takeover runs, recoveries,
+ * ...) to be disabled for a given timeout */
+struct ctdb_op_state {
+	struct tevent_timer *timer;
+	bool in_progress;
+	const char *name;
+};
+
+static struct ctdb_op_state *ctdb_op_init(TALLOC_CTX *mem_ctx, const char *name)
+{
+	struct ctdb_op_state *state = talloc_zero(mem_ctx, struct ctdb_op_state);
+
+	if (state != NULL) {
+		state->in_progress = false;
+		state->name = name;
+	}
+
+	return state;
+}
+
+static bool ctdb_op_is_disabled(struct ctdb_op_state *state)
+{
+	return state->timer != NULL;
+}
+
+static bool ctdb_op_begin(struct ctdb_op_state *state)
+{
+	if (ctdb_op_is_disabled(state)) {
+		DEBUG(DEBUG_NOTICE,
+		      ("Unable to begin - %s are disabled\n", state->name));
+		return false;
+	}
+
+	state->in_progress = true;
+	return true;
+}
+
+static bool ctdb_op_end(struct ctdb_op_state *state)
+{
+	return state->in_progress = false;
+}
+
+static bool ctdb_op_is_in_progress(struct ctdb_op_state *state)
+{
+	return state->in_progress;
+}
+
+static void ctdb_op_enable(struct ctdb_op_state *state)
+{
+	TALLOC_FREE(state->timer);
+}
+
+static void ctdb_op_timeout_handler(struct event_context *ev,
+				    struct timed_event *te,
+				    struct timeval yt, void *p)
+{
+	struct ctdb_op_state *state =
+		talloc_get_type(p, struct ctdb_op_state);
+
+	DEBUG(DEBUG_NOTICE,("Reenabling %s after timeout\n", state->name));
+	ctdb_op_enable(state);
+}
+
+static int ctdb_op_disable(struct ctdb_op_state *state,
+			   struct tevent_context *ev,
+			   uint32_t timeout)
+{
+	if (timeout == 0) {
+		DEBUG(DEBUG_NOTICE,("Reenabling %s\n", state->name));
+		ctdb_op_enable(state);
+		return 0;
+	}
+
+	if (state->in_progress) {
+		DEBUG(DEBUG_ERR,
+		      ("Unable to disable %s - in progress\n", state->name));
+		return -EAGAIN;
+	}
+
+	DEBUG(DEBUG_NOTICE,("Disabling %s for %u seconds\n",
+			    state->name, timeout));
+
+	/* Clear any old timers */
+	talloc_free(state->timer);
+
+	/* Arrange for the timeout to occur */
+	state->timer = tevent_add_timer(ev, state,
+					timeval_current_ofs(timeout, 0),
+					ctdb_op_timeout_handler, state);
+	if (state->timer == NULL) {
+		DEBUG(DEBUG_ERR,(__location__ " Unable to setup timer\n"));
+		return -ENOMEM;
+	}
+
+	return 0;
+}
+
 struct ctdb_banning_state {
 	uint32_t count;
 	struct timeval last_reported_time;
