@@ -12,6 +12,7 @@ CTDB_SET_EventScriptUnhealthyOnTimeout=0
 EOF
 
 required_result 0 <<EOF
+Setting obsolete tunable variable 'EventScriptUnhealthyOnTimeout'
 Set EventScriptUnhealthyOnTimeout to 0
 Set MonitorInterval to 5
 EOF

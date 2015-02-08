@@ -4839,6 +4839,11 @@ static int control_setvar(struct ctdb_context *ctdb, int argc, const char **argv
 		DEBUG(DEBUG_ERR, ("Unable to set tunable variable '%s'\n", name));
 		return -1;
 	}
+	if (ret == 1) {
+		DEBUG(DEBUG_WARNING,
+		      ("Setting obsolete tunable variable '%s'\n",
+		       name));
+	}
 	return 0;
 }
 

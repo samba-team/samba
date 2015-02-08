@@ -317,6 +317,7 @@ ctdb_setvar ()
 
     for _i in $FAKE_CTDB_TUNABLES_OBSOLETE ; do
 	if [ "$_var" = "$_i" ] ; then
+	    echo "Setting obsolete tunable variable '${_var}'"
 	    return 0
 	fi
     done
