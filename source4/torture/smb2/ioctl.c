@@ -3556,6 +3556,106 @@ static bool test_ioctl_sparse_hole_dealloc(struct torture_context *torture,
 	return true;
 }
 
+/* check whether a file with compression and sparse attrs can be deallocated */
+static bool test_ioctl_sparse_compressed(struct torture_context *torture,
+					 struct smb2_tree *tree)
+{
+	struct smb2_handle fh;
+	NTSTATUS status;
+	TALLOC_CTX *tmp_ctx = talloc_new(tree);
+	bool ok;
+	uint64_t file_size = 1024 * 1024;
+	struct file_alloced_range_buf *far_rsp = NULL;
+	uint64_t far_count = 0;
+
+	ok = test_setup_create_fill(torture, tree, tmp_ctx,
+				    FNAME, &fh, 0, SEC_RIGHTS_FILE_ALL,
+				    FILE_ATTRIBUTE_NORMAL);
+	torture_assert(torture, ok, "setup file 1");
+
+	/* check for FS sparse file and compression support */
+	status = test_ioctl_sparse_fs_supported(torture, tree, tmp_ctx, &fh,
+						&ok);
+	torture_assert_ntstatus_ok(torture, status, "SMB2_GETINFO_FS");
+	if (!ok) {
+		smb2_util_close(tree, fh);
+		torture_skip(torture, "Sparse files not supported\n");
+	}
+
+	status = test_ioctl_compress_fs_supported(torture, tree, tmp_ctx, &fh,
+						  &ok);
+	torture_assert_ntstatus_ok(torture, status, "SMB2_GETINFO_FS");
+	if (!ok) {
+		smb2_util_close(tree, fh);
+		torture_skip(torture, "FS compression not supported\n");
+	}
+
+	/* set compression and write some data */
+	status = test_ioctl_compress_set(torture, tmp_ctx, tree, fh,
+					 COMPRESSION_FORMAT_DEFAULT);
+	torture_assert_ntstatus_ok(torture, status, "FSCTL_SET_COMPRESSION");
+
+	ok = write_pattern(torture, tree, tmp_ctx, fh,
+			   0,		/* off */
+			   file_size,	/* len */
+			   0);		/* pattern offset */
+	torture_assert(torture, ok, "write pattern");
+
+	/* set sparse - now sparse and compressed */
+	status = test_ioctl_sparse_req(torture, tmp_ctx, tree, fh, true);
+	torture_assert_ntstatus_ok(torture, status, "FSCTL_SET_SPARSE");
+
+	 /* check allocated ranges, should be fully alloced */
+	status = test_ioctl_qar_req(torture, tmp_ctx, tree, fh,
+				    0,		/* off */
+				    file_size,	/* len */
+				    &far_rsp,
+				    &far_count);
+	torture_assert_ntstatus_ok(torture, status,
+				   "FSCTL_QUERY_ALLOCATED_RANGES req failed");
+	torture_assert_u64_equal(torture, far_count, 1,
+				 "unexpected response len");
+	torture_assert_u64_equal(torture, far_rsp[0].file_off, 0,
+				 "unexpected far off");
+	torture_assert_u64_equal(torture, far_rsp[0].len, file_size,
+				 "unexpected far len");
+
+	/* zero (hole-punch) all data, with sparse and compressed attrs */
+	status = test_ioctl_zdata_req(torture, tmp_ctx, tree, fh,
+				      0,		/* off */
+				      file_size);	/* beyond_final_zero */
+	torture_assert_ntstatus_ok(torture, status, "zero_data");
+
+	 /*
+	  * Windows Server 2012 still deallocates a zeroed range when a sparse
+	  * file carries the compression attribute.
+	  */
+	status = test_ioctl_qar_req(torture, tmp_ctx, tree, fh,
+				    0,		/* off */
+				    file_size,	/* len */
+				    &far_rsp,
+				    &far_count);
+	torture_assert_ntstatus_ok(torture, status,
+				   "FSCTL_QUERY_ALLOCATED_RANGES req failed");
+	if (far_count == 0) {
+		torture_comment(torture, "sparse & compressed file "
+				"deallocated after hole-punch\n");
+	} else {
+		torture_assert_u64_equal(torture, far_count, 1,
+					 "unexpected response len");
+		torture_assert_u64_equal(torture, far_rsp[0].file_off, 0,
+					 "unexpected far off");
+		torture_assert_u64_equal(torture, far_rsp[0].len, file_size,
+					 "unexpected far len");
+		torture_comment(torture, "sparse & compressed file fully "
+				"allocated after hole-punch\n");
+	}
+
+	smb2_util_close(tree, fh);
+	talloc_free(tmp_ctx);
+	return true;
+}
+
 /*
  * basic testing of SMB2 ioctls
  */
@@ -3641,6 +3741,8 @@ struct torture_suite *torture_smb2_ioctl_init(void)
 				     test_ioctl_sparse_punch);
 	torture_suite_add_1smb2_test(suite, "sparse_hole_dealloc",
 				     test_ioctl_sparse_hole_dealloc);
+	torture_suite_add_1smb2_test(suite, "sparse_compressed",
+				     test_ioctl_sparse_compressed);
 
 	suite->description = talloc_strdup(suite, "SMB2-IOCTL tests");
 
