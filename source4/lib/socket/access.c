@@ -27,7 +27,7 @@
    The code is used here with permission.
 
    The code has been considerably changed from the original. Bug reports
-   should be sent to samba@samba.org
+   should be sent to samba-technical@lists.samba.org
 */
 
 #include "includes.h"

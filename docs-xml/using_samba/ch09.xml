@@ -1925,28 +1925,12 @@ lo0: flags=49&lt;&amp;lt&gt;UP,LOOPBACK,RUNNING&lt;&amp;gt&gt;
 <indexterm id="ch09-idx-953635-0"><primary>mailing lists</primary><secondary sortas="Samba">for Samba</secondary></indexterm>The following are mailing lists for support with Samba. See the Samba homepage, <systemitem role="url">http://www.samba.org/</systemitem> for information on subscribing and unsubscribing to these mailing lists:</para>
 
 
-<variablelist>
-<varlistentry><term><email>samba-binaries@samba.org</email></term>
-<listitem><para>This mailing list has information on precompiled binaries for the Samba platform.</para></listitem>
-</varlistentry>
-
-
-<varlistentry><term><email>samba-bugs@samba.org</email></term>
-<listitem><para>This mailing list is the place to report suspected bugs in Samba.</para></listitem>
-</varlistentry>
-
-
-<varlistentry><term><email>samba-ntdom@samba.org</email></term>
-<listitem><para>This mailing list has information on support for domains (particularly Windows NT) with the Samba product.</para></listitem>
-</varlistentry>
-
-
-<varlistentry><term><email>samba-technical@samba.org</email></term>
+<varlistentry><term><email>samba-technical@lists.samba.org</email></term>
 <listitem><para>This mailing list maintains debate about where the future of Samba is headed.</para></listitem>
 </varlistentry>
 
 
-<varlistentry><term><email>samba@samba.org</email></term>
+<varlistentry><term><email>samba@lists.samba.org</email></term>
 <listitem><para>This is the primary Samba mailing list that contains general questions and HOW-TO information on Samba.</para></listitem>
 </varlistentry>
 </variablelist>

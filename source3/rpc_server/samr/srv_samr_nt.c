@@ -6304,7 +6304,7 @@ NTSTATUS _samr_RemoveMemberFromForeignDomain(struct pipes_struct *p,
 			 "global_sam_sid() = %s\n",
 			 sid_string_dbg(&dinfo->sid),
 			 sid_string_dbg(get_global_sam_sid())));
-		DEBUGADD(1,("please report to samba-technical@samba.org!\n"));
+		DEBUGADD(1,("please report to samba-technical@lists.samba.org!\n"));
 		return NT_STATUS_OK;
 	}
 

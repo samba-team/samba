@@ -76,7 +76,7 @@ support.
 	Information regarding subscription to the Samba mailing list can be found on the Samba <ulink
 	url="https://lists.samba.org/mailman/">web</ulink> site. The public mailing list that can be used to obtain
 	free, user contributed, support is called the <literal>samba</literal> list. The email address for this list
-	is at <literal>mail:samba@samba.org</literal>.  Information regarding the Samba IRC channels may be found on
+	is at <literal>mail:samba@lists.samba.org</literal>.  Information regarding the Samba IRC channels may be found on
 	the Samba <ulink url="http://www.samba.org/samba.irc.html">IRC</ulink> web page.
 	</para>
 

@@ -41,8 +41,8 @@
     &quot;Unknown socket option&quot; when you supply an option. This means you 
     either incorrectly  typed it or you need to add an include file 
     to includes.h for your OS.  If the latter is the case please 
-    send the patch to <ulink url="mailto:samba-technical@samba.org">
-    samba-technical@samba.org</ulink>.</para>
+    send the patch to <ulink url="mailto:samba-technical@lists.samba.org">
+    samba-technical@lists.samba.org</ulink>.</para>
 
     <para>Any of the supported socket options may be combined 
     in any way you like, as long as your OS allows it.</para>

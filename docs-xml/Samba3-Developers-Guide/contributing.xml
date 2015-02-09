@@ -90,7 +90,7 @@
 		<listitem>
 		<para>Send feature patches along with a description of what the 
 		patch is supposed to do to the 
-		<ulink url="mailto:samba-technical@samba.org">Samba-technical mailinglist</ulink> and possibly to a samba team member who is (one of the) 'owners'
+		<ulink url="mailto:samba-technical@lists.samba.org">Samba-technical mailinglist</ulink> and possibly to a samba team member who is (one of the) 'owners'
 		of the code you made modifications to. We are all busy people 
 		so everybody tends to 'let one of the others handle it'. If nobody 
 		responded to your patch for a week, try to send it again until you 

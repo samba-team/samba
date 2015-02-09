@@ -657,7 +657,7 @@ static int setup_kerberos_keys(struct setup_password_fields_io *io)
 
 	/* Many, many thanks to lukeh@padl.com for this
 	 * algorithm, described in his Nov 10 2004 mail to
-	 * samba-technical@samba.org */
+	 * samba-technical@lists.samba.org */
 
 	/*
 	 * Determine a salting principal
