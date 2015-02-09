@@ -60,6 +60,7 @@ struct cli_credentials {
 
 	/* Allows authentication from a keytab or similar */
 	struct samr_Password *nt_hash;
+	struct samr_Password *old_nt_hash;
 
 	/* Allows NTLM pass-though authentication */
 	DATA_BLOB lm_response;

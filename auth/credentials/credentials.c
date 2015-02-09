@@ -70,6 +70,7 @@ _PUBLIC_ struct cli_credentials *cli_credentials_init(TALLOC_CTX *mem_ctx)
 	cred->bind_dn = NULL;
 
 	cred->nt_hash = NULL;
+	cred->old_nt_hash = NULL;
 
 	cred->lm_response.data = NULL;
 	cred->lm_response.length = 0;
@@ -481,6 +482,7 @@ _PUBLIC_ bool cli_credentials_set_old_password(struct cli_credentials *cred,
 		/* Don't print the actual password in talloc memory dumps */
 		talloc_set_name_const(cred->old_password, "password set via cli_credentials_set_old_password");
 	}
+	cred->old_nt_hash = NULL;
 	return true;
 }
 
@@ -517,6 +519,46 @@ _PUBLIC_ struct samr_Password *cli_credentials_get_nt_hash(struct cli_credential
 		}
 
 		E_md4hash(password, nt_hash->hash);
+
+		return nt_hash;
+	}
+
+	return NULL;
+}
+
+/**
+ * Obtain the old password, in the form MD4(unicode(password)) for this credentials context.
+ *
+ * Sometimes we only have this much of the password, while the rest of
+ * the time this call avoids calling E_md4hash themselves.
+ *
+ * @param cred credentials context
+ * @retval If set, the cleartext password, otherwise NULL
+ */
+_PUBLIC_ struct samr_Password *cli_credentials_get_old_nt_hash(struct cli_credentials *cred,
+							       TALLOC_CTX *mem_ctx)
+{
+	const char *old_password = NULL;
+
+	if (cred->old_nt_hash != NULL) {
+		struct samr_Password *nt_hash = talloc(mem_ctx, struct samr_Password);
+		if (!nt_hash) {
+			return NULL;
+		}
+
+		*nt_hash = *cred->old_nt_hash;
+
+		return nt_hash;
+	}
+
+	old_password = cli_credentials_get_old_password(cred);
+	if (old_password) {
+		struct samr_Password *nt_hash = talloc(mem_ctx, struct samr_Password);
+		if (!nt_hash) {
+			return NULL;
+		}
+
+		E_md4hash(old_password, nt_hash->hash);
 
 		return nt_hash;
 	}

@@ -289,6 +289,23 @@ _PUBLIC_ bool cli_credentials_set_nt_hash(struct cli_credentials *cred,
 	return false;
 }
 
+_PUBLIC_ bool cli_credentials_set_old_nt_hash(struct cli_credentials *cred,
+					      const struct samr_Password *nt_hash)
+{
+	cli_credentials_set_old_password(cred, NULL, CRED_SPECIFIED);
+	if (nt_hash) {
+		cred->old_nt_hash = talloc(cred, struct samr_Password);
+		if (cred->old_nt_hash == NULL) {
+			return false;
+		}
+		*cred->old_nt_hash = *nt_hash;
+	} else {
+		cred->old_nt_hash = NULL;
+	}
+
+	return true;
+}
+
 _PUBLIC_ bool cli_credentials_set_ntlm_response(struct cli_credentials *cred,
 						const DATA_BLOB *lm_response, 
 						const DATA_BLOB *nt_response, 
