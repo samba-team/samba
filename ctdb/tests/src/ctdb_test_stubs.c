@@ -48,7 +48,7 @@ static void ctdb_test_stubs_read_nodemap(struct ctdb_context *ctdb)
 	       (line[0] != '\n')) {
 		uint32_t pnn, flags, capabilities;
 		char *tok, *t;
-		const char *ip;
+		char *ip;
 		ctdb_sock_addr saddr;
 
 		/* Get rid of pesky newline */
@@ -83,6 +83,11 @@ static void ctdb_test_stubs_read_nodemap(struct ctdb_context *ctdb)
 			continue;
 		}
 		flags = (uint32_t)strtoul(tok, NULL, 0);
+		/* Handle deleted nodes */
+		if (flags & NODE_FLAGS_DELETED) {
+			talloc_free(ip);
+			ip = talloc_strdup(ctdb, "0.0.0.0");
+		}
 		capabilities = CTDB_CAP_RECMASTER|CTDB_CAP_LMASTER|CTDB_CAP_NATGW;
 
 		tok = strtok(NULL, " \t");
