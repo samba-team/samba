@@ -53,6 +53,7 @@ static NTSTATUS connect_to_domain_password_server(struct cli_state **cli_ret,
 						const char *dc_name,
 						const struct sockaddr_storage *dc_ss,
 						struct rpc_pipe_client **pipe_ret,
+						TALLOC_CTX *mem_ctx,
 						struct netlogon_creds_cli_context **creds_ret)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
@@ -209,7 +210,7 @@ static NTSTATUS connect_to_domain_password_server(struct cli_state **cli_ret,
 
 	*cli_ret = cli;
 	*pipe_ret = netlogon_pipe;
-	*creds_ret = netlogon_creds;
+	*creds_ret = talloc_move(mem_ctx, &netlogon_creds);
 
 	TALLOC_FREE(frame);
 	return NT_STATUS_OK;
@@ -230,6 +231,7 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 					const struct sockaddr_storage *dc_ss)
 
 {
+	TALLOC_CTX *frame = talloc_stackframe();
 	struct netr_SamInfo3 *info3 = NULL;
 	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *netlogon_pipe = NULL;
@@ -255,11 +257,13 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 							dc_name,
 							dc_ss,
 							&netlogon_pipe,
+							frame,
 							&netlogon_creds);
 	}
 
 	if ( !NT_STATUS_IS_OK(nt_status) ) {
 		DEBUG(0,("domain_client_validate: Domain password server not available.\n"));
+		TALLOC_FREE(frame);
 		if (NT_STATUS_EQUAL(nt_status, NT_STATUS_ACCESS_DENIED)) {
 			return NT_STATUS_TRUSTED_RELATIONSHIP_FAILURE;
 		}
@@ -324,6 +328,7 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 	   these pointers are no longer valid..... */
 
 	cli_shutdown(cli);
+	TALLOC_FREE(frame);
 	return nt_status;
 }
 
