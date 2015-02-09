@@ -195,7 +195,7 @@ int run_rpc_command(struct net_context *c,
 			TALLOC_FREE(c->netlogon_creds);
 			nt_status = cli_rpc_pipe_open_schannel(
 				cli, c->msg_ctx, table, NCACN_NP,
-				DCERPC_AUTH_LEVEL_PRIVACY, domain_name,
+				domain_name,
 				&pipe_hnd, c, &c->netlogon_creds);
 			if (!NT_STATUS_IS_OK(nt_status)) {
 				DEBUG(0, ("Could not initialise schannel netlogon pipe. Error was %s\n",
