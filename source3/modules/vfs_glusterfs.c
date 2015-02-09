@@ -927,9 +927,10 @@ static int vfs_gluster_ftruncate(struct vfs_handle_struct *handle,
 
 static int vfs_gluster_fallocate(struct vfs_handle_struct *handle,
 				 struct files_struct *fsp,
-				 enum vfs_fallocate_mode mode,
+				 uint32_t mode,
 				 off_t offset, off_t len)
 {
+	/* TODO: add support using glfs_fallocate() and glfs_zerofill() */
 	errno = ENOTSUP;
 	return -1;
 }

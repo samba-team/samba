@@ -1843,7 +1843,7 @@ static int vfs_gpfs_ntimes(struct vfs_handle_struct *handle,
 }
 
 static int vfs_gpfs_fallocate(struct vfs_handle_struct *handle,
-		       struct files_struct *fsp, enum vfs_fallocate_mode mode,
+		       struct files_struct *fsp, uint32_t mode,
 		       off_t offset, off_t len)
 {
 	int ret;
@@ -1859,8 +1859,9 @@ static int vfs_gpfs_fallocate(struct vfs_handle_struct *handle,
 		return -1;
 	}
 
-	if (mode == VFS_FALLOCATE_KEEP_SIZE) {
-		DEBUG(10, ("Unsupported VFS_FALLOCATE_KEEP_SIZE\n"));
+	if (mode != 0) {
+		DEBUG(10, ("unmapped fallocate flags: %lx\n",
+		      (unsigned long)mode));
 		errno = ENOTSUP;
 		return -1;
 	}

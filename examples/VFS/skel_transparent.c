@@ -490,7 +490,7 @@ static int skel_ftruncate(vfs_handle_struct *handle, files_struct *fsp,
 }
 
 static int skel_fallocate(vfs_handle_struct *handle, files_struct *fsp,
-			  enum vfs_fallocate_mode mode, off_t offset, off_t len)
+			  uint32_t mode, off_t offset, off_t len)
 {
 	return SMB_VFS_NEXT_FALLOCATE(handle, fsp, mode, offset, len);
 }

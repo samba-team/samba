@@ -3039,7 +3039,7 @@ exit:
 
 static int fruit_fallocate(struct vfs_handle_struct *handle,
 			   struct files_struct *fsp,
-			   enum vfs_fallocate_mode mode,
+			   uint32_t mode,
 			   off_t offset,
 			   off_t len)
 {

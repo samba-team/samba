@@ -573,7 +573,8 @@ int vfs_allocate_file_space(files_struct *fsp, uint64_t len)
 	if (lp_strict_allocate(SNUM(fsp->conn))) {
 		/* See if we have a syscall that will allocate beyond
 		   end-of-file without changing EOF. */
-		ret = SMB_VFS_FALLOCATE(fsp, VFS_FALLOCATE_KEEP_SIZE, 0, len);
+		ret = SMB_VFS_FALLOCATE(fsp, VFS_FALLOCATE_FL_KEEP_SIZE,
+					0, len);
 	} else {
 		ret = 0;
 	}
@@ -728,8 +729,7 @@ int vfs_fill_sparse(files_struct *fsp, off_t len)
 		 * emulation is being done by the libc (like on AIX with JFS1). In that
 		 * case we do our own emulation. fallocate implementations can
 		 * return ENOTSUP or EINVAL in cases like that. */
-		ret = SMB_VFS_FALLOCATE(fsp, VFS_FALLOCATE_EXTEND_SIZE,
-				offset, num_to_write);
+		ret = SMB_VFS_FALLOCATE(fsp, 0, offset, num_to_write);
 		if (ret == -1 && errno == ENOSPC) {
 			goto out;
 		}
@@ -2023,10 +2023,10 @@ int smb_vfs_call_ftruncate(struct vfs_handle_struct *handle,
 }
 
 int smb_vfs_call_fallocate(struct vfs_handle_struct *handle,
-				struct files_struct *fsp,
-				enum vfs_fallocate_mode mode,
-				off_t offset,
-				off_t len)
+			   struct files_struct *fsp,
+			   uint32_t mode,
+			   off_t offset,
+			   off_t len)
 {
 	VFS_FIND(fallocate);
 	return handle->fns->fallocate_fn(handle, fsp, mode, offset, len);

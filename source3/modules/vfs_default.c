@@ -1861,8 +1861,7 @@ static int strict_allocate_ftruncate(vfs_handle_struct *handle, files_struct *fs
 	   emulation is being done by the libc (like on AIX with JFS1). In that
 	   case we do our own emulation. fallocate implementations can
 	   return ENOTSUP or EINVAL in cases like that. */
-	ret = SMB_VFS_FALLOCATE(fsp, VFS_FALLOCATE_EXTEND_SIZE,
-				pst->st_ex_size, space_to_write);
+	ret = SMB_VFS_FALLOCATE(fsp, 0, pst->st_ex_size, space_to_write);
 	if (ret == -1 && errno == ENOSPC) {
 		return -1;
 	}
@@ -1962,14 +1961,14 @@ static int vfswrap_ftruncate(vfs_handle_struct *handle, files_struct *fsp, off_t
 
 static int vfswrap_fallocate(vfs_handle_struct *handle,
 			files_struct *fsp,
-			enum vfs_fallocate_mode mode,
+			uint32_t mode,
 			off_t offset,
 			off_t len)
 {
 	int result;
 
 	START_PROFILE(syscall_fallocate);
-	if (mode == VFS_FALLOCATE_EXTEND_SIZE) {
+	if (mode == 0) {
 		result = sys_posix_fallocate(fsp->fh->fd, offset, len);
 		/*
 		 * posix_fallocate returns 0 on success, errno on error
@@ -1980,11 +1979,9 @@ static int vfswrap_fallocate(vfs_handle_struct *handle,
 			errno = result;
 			result = -1;
 		}
-	} else if (mode == VFS_FALLOCATE_KEEP_SIZE) {
-		result = sys_fallocate(fsp->fh->fd, mode, offset, len);
 	} else {
-		errno = EINVAL;
-		result = -1;
+		/* sys_fallocate handles filtering of unsupported mode flags */
+		result = sys_fallocate(fsp->fh->fd, mode, offset, len);
 	}
 	END_PROFILE(syscall_fallocate);
 	return result;

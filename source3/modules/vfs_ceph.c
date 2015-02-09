@@ -796,8 +796,7 @@ static int strict_allocate_ftruncate(struct vfs_handle_struct *handle, files_str
 	   emulation is being done by the libc (like on AIX with JFS1). In that
 	   case we do our own emulation. fallocate implementations can
 	   return ENOTSUP or EINVAL in cases like that. */
-	ret = SMB_VFS_FALLOCATE(fsp, VFS_FALLOCATE_EXTEND_SIZE,
-				pst->st_ex_size, space_to_write);
+	ret = SMB_VFS_FALLOCATE(fsp, 0, pst->st_ex_size, space_to_write);
 	if (ret == -1 && errno == ENOSPC) {
 		return -1;
 	}

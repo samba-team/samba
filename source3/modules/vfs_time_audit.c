@@ -1209,7 +1209,7 @@ static int smb_time_audit_ftruncate(vfs_handle_struct *handle,
 
 static int smb_time_audit_fallocate(vfs_handle_struct *handle,
 				    files_struct *fsp,
-				    enum vfs_fallocate_mode mode,
+				    uint32_t mode,
 				    off_t offset,
 				    off_t len)
 {

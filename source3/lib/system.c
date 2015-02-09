@@ -478,18 +478,19 @@ int sys_posix_fallocate(int fd, off_t offset, off_t len)
 #include <linux/falloc.h>
 #endif
 
-int sys_fallocate(int fd, enum vfs_fallocate_mode mode, off_t offset, off_t len)
+int sys_fallocate(int fd, uint32_t mode, off_t offset, off_t len)
 {
 #if defined(HAVE_LINUX_FALLOCATE)
-	int lmode;
-	switch (mode) {
-	case VFS_FALLOCATE_EXTEND_SIZE:
-		lmode = 0;
-		break;
-	case VFS_FALLOCATE_KEEP_SIZE:
-		lmode = FALLOC_FL_KEEP_SIZE;
-		break;
-	default:
+	int lmode = 0;
+
+	if (mode & VFS_FALLOCATE_FL_KEEP_SIZE) {
+		lmode |= FALLOC_FL_KEEP_SIZE;
+		mode &= ~VFS_FALLOCATE_FL_KEEP_SIZE;
+	}
+
+	if (mode != 0) {
+		DEBUG(2, ("unmapped fallocate flags: %lx\n",
+		      (unsigned long)mode));
 		errno = EINVAL;
 		return -1;
 	}

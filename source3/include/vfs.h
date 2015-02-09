@@ -163,6 +163,7 @@
 /* Version 32 - Add in and out create context blobs to create_file */
 /* Version 32 - Remove unnecessary SMB_VFS_DISK_FREE() small_query parameter */
 /* Bump to version 33 - Samba 4.3 will ship with that. */
+/* Version 33 - change fallocate mode flags param from enum->uint32_t */
 
 #define SMB_VFS_INTERFACE_VERSION 33
 
@@ -487,9 +488,8 @@ enum vfs_translate_direction {
 	vfs_translate_to_windows
 };
 
-enum vfs_fallocate_mode {
-	VFS_FALLOCATE_EXTEND_SIZE = 0,
-	VFS_FALLOCATE_KEEP_SIZE = 1
+enum vfs_fallocate_flags {
+	VFS_FALLOCATE_FL_KEEP_SIZE		= 0x0001,
 };
 
 /*
@@ -609,7 +609,7 @@ struct vfs_fn_pointers {
 	int (*ftruncate_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, off_t offset);
 	int (*fallocate_fn)(struct vfs_handle_struct *handle,
 			    struct files_struct *fsp,
-			    enum vfs_fallocate_mode mode,
+			    uint32_t mode,
 			    off_t offset,
 			    off_t len);
 	bool (*lock_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, int op, off_t offset, off_t count, int type);
@@ -1050,10 +1050,10 @@ int smb_vfs_call_ntimes(struct vfs_handle_struct *handle,
 int smb_vfs_call_ftruncate(struct vfs_handle_struct *handle,
 			   struct files_struct *fsp, off_t offset);
 int smb_vfs_call_fallocate(struct vfs_handle_struct *handle,
-			struct files_struct *fsp,
-			enum vfs_fallocate_mode mode,
-			off_t offset,
-			off_t len);
+			   struct files_struct *fsp,
+			   uint32_t mode,
+			   off_t offset,
+			   off_t len);
 bool smb_vfs_call_lock(struct vfs_handle_struct *handle,
 		       struct files_struct *fsp, int op, off_t offset,
 		       off_t count, int type);
