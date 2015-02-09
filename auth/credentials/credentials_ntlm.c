@@ -276,6 +276,9 @@ _PUBLIC_ bool cli_credentials_set_nt_hash(struct cli_credentials *cred,
 		cli_credentials_set_password(cred, NULL, obtained);
 		if (nt_hash) {
 			cred->nt_hash = talloc(cred, struct samr_Password);
+			if (cred->nt_hash == NULL) {
+				return false;
+			}
 			*cred->nt_hash = *nt_hash;
 		} else {
 			cred->nt_hash = NULL;
