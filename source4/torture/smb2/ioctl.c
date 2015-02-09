@@ -3477,6 +3477,82 @@ static bool test_ioctl_sparse_hole_dealloc(struct torture_context *torture,
 		torture_comment(torture, "holes not merged for deallocation\n");
 	}
 
+	smb2_util_close(tree, fh);
+
+	/*
+	 * Check whether an unwritten range is allocated when a sparse file is
+	 * written to at an offset past the dealloc chunk size:
+	 *
+	 *                     /dealloc chunk size
+	 * /offset 0           |
+	 * |------------------ |-------------------|
+	 * |     unwritten     |      pattern      |
+	 */
+	ok = test_setup_create_fill(torture, tree, tmp_ctx,
+				    FNAME, &fh, 0, SEC_RIGHTS_FILE_ALL,
+				    FILE_ATTRIBUTE_NORMAL);
+	torture_assert(torture, ok, "setup file 1");
+
+	/* set sparse */
+	status = test_ioctl_sparse_req(torture, tmp_ctx, tree, fh, true);
+	torture_assert_ntstatus_ok(torture, status, "FSCTL_SET_SPARSE");
+
+	ok = write_pattern(torture, tree, tmp_ctx, fh,
+			   dealloc_chunk_len,	/* off */
+			   1024,		/* len */
+			   dealloc_chunk_len);	/* pattern offset */
+	torture_assert(torture, ok, "write pattern");
+
+	status = test_ioctl_qar_req(torture, tmp_ctx, tree, fh,
+				    0,				/* off */
+				    dealloc_chunk_len + 1024,	/* len */
+				    &far_rsp,
+				    &far_count);
+	torture_assert_ntstatus_ok(torture, status,
+			"FSCTL_QUERY_ALLOCATED_RANGES req failed");
+	torture_assert_u64_equal(torture, far_count, 1,
+				 "unexpected response len");
+	if (far_rsp[0].file_off == 0) {
+		torture_assert_u64_equal(torture, far_rsp[0].len,
+					 dealloc_chunk_len + 1024,
+					 "unexpected far len");
+		torture_comment(torture, "unwritten range fully allocated\n");
+	} else {
+		torture_assert_u64_equal(torture, far_rsp[0].file_off, dealloc_chunk_len,
+					 "unexpected deallocation");
+		torture_assert_u64_equal(torture, far_rsp[0].len, 1024,
+					 "unexpected far len");
+		torture_comment(torture, "unwritten range not allocated\n");
+	}
+
+	ok = check_zero(torture, tree, tmp_ctx, fh, 0, dealloc_chunk_len);
+	torture_assert(torture, ok, "sparse zeroed range");
+
+	ok = check_pattern(torture, tree, tmp_ctx, fh, dealloc_chunk_len,
+			   1024, dealloc_chunk_len);
+	torture_assert(torture, ok, "allocated pattern range");
+
+	/* unsparse, should now be fully allocated */
+	status = test_ioctl_sparse_req(torture, tmp_ctx, tree, fh, false);
+	torture_assert_ntstatus_ok(torture, status, "FSCTL_SET_SPARSE");
+
+	status = test_ioctl_qar_req(torture, tmp_ctx, tree, fh,
+				    0,				/* off */
+				    dealloc_chunk_len + 1024,	/* len */
+				    &far_rsp,
+				    &far_count);
+	torture_assert_ntstatus_ok(torture, status,
+			"FSCTL_QUERY_ALLOCATED_RANGES req failed");
+	torture_assert_u64_equal(torture, far_count, 1,
+				 "unexpected response len");
+	torture_assert_u64_equal(torture, far_rsp[0].file_off, 0,
+				 "unexpected deallocation");
+	torture_assert_u64_equal(torture, far_rsp[0].len,
+				 dealloc_chunk_len + 1024,
+				 "unexpected far len");
+
+	smb2_util_close(tree, fh);
+	talloc_free(tmp_ctx);
 	return true;
 }
 
