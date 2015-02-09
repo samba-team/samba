@@ -62,17 +62,8 @@ static NTSTATUS connect_to_domain_password_server(struct cli_state **cli_ret,
 	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *netlogon_pipe = NULL;
 	struct netlogon_creds_cli_context *netlogon_creds = NULL;
-	struct netlogon_creds_CredentialState *creds = NULL;
-	uint32_t netlogon_flags = 0;
-	enum netr_SchannelType sec_chan_type = 0;
-	const char *_account_name = NULL;
-	const char *account_name = NULL;
-	struct samr_Password current_nt_hash;
-	struct samr_Password *previous_nt_hash = NULL;
-	bool ok;
 
 	*cli_ret = NULL;
-
 	*pipe_ret = NULL;
 	*creds_ret = NULL;
 
@@ -115,91 +106,19 @@ static NTSTATUS connect_to_domain_password_server(struct cli_state **cli_ret,
 	 * We now have an anonymous connection to IPC$ on the domain password server.
 	 */
 
-	ok = get_trust_pw_hash(domain,
-			       current_nt_hash.hash,
-			       &_account_name,
-			       &sec_chan_type);
-	if (!ok) {
-		cli_shutdown(cli);
-		TALLOC_FREE(mutex);
-		TALLOC_FREE(frame);
-		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
-	}
-
-	account_name = talloc_asprintf(talloc_tos(), "%s$", _account_name);
-	if (account_name == NULL) {
-		cli_shutdown(cli);
-		TALLOC_FREE(mutex);
-		TALLOC_FREE(frame);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	result = rpccli_create_netlogon_creds(dc_name,
-					      domain,
-					      account_name,
-					      sec_chan_type,
-					      msg_ctx,
-					      talloc_tos(),
-					      &netlogon_creds);
-	if (!NT_STATUS_IS_OK(result)) {
-		cli_shutdown(cli);
-		TALLOC_FREE(mutex);
-		TALLOC_FREE(frame);
-		SAFE_FREE(previous_nt_hash);
-		return result;
-	}
-
-	result = rpccli_setup_netlogon_creds(cli, NCACN_NP,
-					     netlogon_creds,
-					     false, /* force_reauth */
-					     current_nt_hash,
-					     previous_nt_hash);
-	SAFE_FREE(previous_nt_hash);
-	if (!NT_STATUS_IS_OK(result)) {
-		cli_shutdown(cli);
-		TALLOC_FREE(mutex);
-		TALLOC_FREE(frame);
-		return result;
-	}
-
-	result = netlogon_creds_cli_get(netlogon_creds,
-					talloc_tos(),
-					&creds);
-	if (!NT_STATUS_IS_OK(result)) {
-		cli_shutdown(cli);
-		TALLOC_FREE(mutex);
-		TALLOC_FREE(frame);
-		return result;
-	}
-	netlogon_flags = creds->negotiate_flags;
-	TALLOC_FREE(creds);
-
-	if (netlogon_flags & NETLOGON_NEG_AUTHENTICATED_RPC) {
-		result = cli_rpc_pipe_open_schannel_with_key(
-			cli, &ndr_table_netlogon, NCACN_NP,
-			domain, netlogon_creds, &netlogon_pipe);
-	} else {
-		result = cli_rpc_pipe_open_noauth(cli,
-					&ndr_table_netlogon,
-					&netlogon_pipe);
-	}
-
+	result = cli_rpc_pipe_open_schannel(cli,
+					    msg_ctx,
+					    &ndr_table_netlogon,
+					    NCACN_NP,
+					    domain,
+					    &netlogon_pipe,
+					    frame,
+					    &netlogon_creds);
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(0,("connect_to_domain_password_server: "
 			 "unable to open the domain client session to "
-			 "machine %s. Flags[0x%08X] Error was : %s.\n",
-			 dc_name, (unsigned)netlogon_flags,
-			 nt_errstr(result)));
-		cli_shutdown(cli);
-		TALLOC_FREE(mutex);
-		TALLOC_FREE(frame);
-		return result;
-	}
-
-	if(!netlogon_pipe) {
-		DEBUG(0, ("connect_to_domain_password_server: unable to open "
-			  "the domain client session to machine %s. Error "
-			  "was : %s.\n", dc_name, nt_errstr(result)));
+			 "machine %s. Error was : %s.\n",
+			 dc_name, nt_errstr(result)));
 		cli_shutdown(cli);
 		TALLOC_FREE(mutex);
 		TALLOC_FREE(frame);
