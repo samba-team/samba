@@ -3,7 +3,7 @@
 
    test suite for SMB2 ioctl operations
 
-   Copyright (C) David Disseldorp 2011-2013
+   Copyright (C) David Disseldorp 2011-2015
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -3295,6 +3295,192 @@ static bool test_ioctl_sparse_punch(struct torture_context *torture,
 }
 
 /*
+ * Find the point at which a zeroed range in a sparse file is deallocated by the
+ * underlying filesystem. NTFS on Windows Server 2012 deallocates chunks in 64k
+ * increments. Also check whether zeroed neighbours are merged for deallocation.
+ */
+static bool test_ioctl_sparse_hole_dealloc(struct torture_context *torture,
+					   struct smb2_tree *tree)
+{
+	struct smb2_handle fh;
+	NTSTATUS status;
+	TALLOC_CTX *tmp_ctx = talloc_new(tree);
+	bool ok;
+	uint64_t file_size;
+	uint64_t hlen;
+	uint64_t dealloc_chunk_len = 0;
+	struct file_alloced_range_buf *far_rsp = NULL;
+	uint64_t far_count = 0;
+
+	ok = test_setup_create_fill(torture, tree, tmp_ctx,
+				    FNAME, &fh, 0, SEC_RIGHTS_FILE_ALL,
+				    FILE_ATTRIBUTE_NORMAL);
+	torture_assert(torture, ok, "setup file 1");
+
+	/* check for FS sparse file */
+	status = test_ioctl_sparse_fs_supported(torture, tree, tmp_ctx, &fh,
+						&ok);
+	torture_assert_ntstatus_ok(torture, status, "SMB2_GETINFO_FS");
+	if (!ok) {
+		smb2_util_close(tree, fh);
+		torture_skip(torture, "Sparse files not supported\n");
+	}
+
+	/* set sparse */
+	status = test_ioctl_sparse_req(torture, tmp_ctx, tree, fh, true);
+	torture_assert_ntstatus_ok(torture, status, "FSCTL_SET_SPARSE");
+
+	file_size = 1024 * 1024;
+
+	ok = write_pattern(torture, tree, tmp_ctx, fh,
+			   0,		/* off */
+			   file_size,	/* len */
+			   0);	/* pattern offset */
+	torture_assert(torture, ok, "write pattern");
+
+	 /* check allocated ranges, should be fully allocated */
+	status = test_ioctl_qar_req(torture, tmp_ctx, tree, fh,
+				    0,			/* off */
+				    file_size,		/* len */
+				    &far_rsp,
+				    &far_count);
+	torture_assert_ntstatus_ok(torture, status,
+			"FSCTL_QUERY_ALLOCATED_RANGES req failed");
+	torture_assert_u64_equal(torture, far_count, 1,
+				 "unexpected response len");
+	torture_assert_u64_equal(torture, far_rsp[0].file_off, 0,
+				 "unexpected far off");
+	torture_assert_u64_equal(torture, far_rsp[0].len, file_size,
+				 "unexpected far len");
+
+	/* punch holes in sizes of 1k increments */
+	for (hlen = 0; hlen <= file_size; hlen += 4096) {
+
+		/* punch a hole from zero to the current increment */
+		status = test_ioctl_zdata_req(torture, tmp_ctx, tree, fh,
+					      0,	/* off */
+					      hlen);	/* beyond_final_zero */
+		torture_assert_ntstatus_ok(torture, status, "zero_data");
+
+		/* ensure hole is zeroed, and pattern is consistent */
+		ok = check_zero(torture, tree, tmp_ctx, fh, 0, hlen);
+		torture_assert(torture, ok, "sparse zeroed range");
+
+		ok = check_pattern(torture, tree, tmp_ctx, fh, hlen,
+				   file_size - hlen, hlen);
+		torture_assert(torture, ok, "allocated pattern range");
+
+		 /* Check allocated ranges, hole might have been deallocated */
+		status = test_ioctl_qar_req(torture, tmp_ctx, tree, fh,
+					    0,		/* off */
+					    file_size,	/* len */
+					    &far_rsp,
+					    &far_count);
+		torture_assert_ntstatus_ok(torture, status,
+					   "FSCTL_QUERY_ALLOCATED_RANGES");
+		if ((hlen == file_size) && (far_count == 0)) {
+			/* hole covered entire file, deallocation occurred */
+			dealloc_chunk_len = file_size;
+			break;
+		}
+
+		torture_assert_u64_equal(torture, far_count, 1,
+					 "unexpected response len");
+		if (far_rsp[0].file_off != 0) {
+			/*
+			 * We now know the hole punch length needed to trigger a
+			 * deallocation on this FS...
+			 */
+			dealloc_chunk_len = hlen;
+			torture_comment(torture, "hole punch %lu@0 resulted in "
+					"deallocation of %lu@0\n", hlen,
+					far_rsp[0].file_off);
+			torture_assert_u64_equal(torture,
+						 file_size - far_rsp[0].len,
+						 far_rsp[0].file_off,
+						 "invalid alloced range");
+			break;
+		}
+	}
+
+	if (dealloc_chunk_len == 0) {
+		torture_comment(torture, "strange, this FS never deallocates"
+				"zeroed ranges in sparse files\n");
+		return true;	/* FS specific, not a failure */
+	}
+
+	/*
+	 * Check whether deallocation occurs when the (now known)
+	 * deallocation chunk size is punched via two ZERO_DATA requests.
+	 * I.e. Does the FS merge the two ranges and deallocate the chunk?
+	 * NTFS on Windows Server 2012 does not.
+	 */
+	ok = write_pattern(torture, tree, tmp_ctx, fh,
+			   0,		/* off */
+			   file_size,	/* len */
+			   0);	/* pattern offset */
+	torture_assert(torture, ok, "write pattern");
+
+	/* divide dealloc chunk size by two, to use as punch length */
+	hlen = dealloc_chunk_len >> 1;
+
+	/*
+	 *                     /half of dealloc chunk size           1M\
+	 *                     |                                       |
+	 * /offset 0           |                   /dealloc chunk size |
+	 * |------------------ |-------------------|-------------------|
+	 * | zeroed, 1st punch | zeroed, 2nd punch | existing pattern  |
+	 */
+	status = test_ioctl_zdata_req(torture, tmp_ctx, tree, fh,
+				      0,	/* off */
+				      hlen);	/* beyond final zero */
+	torture_assert_ntstatus_ok(torture, status, "zero_data");
+
+	status = test_ioctl_zdata_req(torture, tmp_ctx, tree, fh,
+				      hlen,	/* off */
+				      dealloc_chunk_len); /* beyond final */
+	torture_assert_ntstatus_ok(torture, status, "zero_data");
+
+	/* ensure holes are zeroed, and pattern is consistent */
+	ok = check_zero(torture, tree, tmp_ctx, fh, 0, dealloc_chunk_len);
+	torture_assert(torture, ok, "sparse zeroed range");
+
+	ok = check_pattern(torture, tree, tmp_ctx, fh, dealloc_chunk_len,
+			   file_size - dealloc_chunk_len, dealloc_chunk_len);
+	torture_assert(torture, ok, "allocated pattern range");
+
+	status = test_ioctl_qar_req(torture, tmp_ctx, tree, fh,
+				    0,			/* off */
+				    file_size,		/* len */
+				    &far_rsp,
+				    &far_count);
+	torture_assert_ntstatus_ok(torture, status,
+			"FSCTL_QUERY_ALLOCATED_RANGES req failed");
+
+	if ((far_count == 0) && (dealloc_chunk_len == file_size)) {
+		torture_comment(torture, "holes merged for deallocation of "
+				"full file\n");
+		return true;
+	}
+	torture_assert_u64_equal(torture, far_count, 1,
+				 "unexpected response len");
+	if (far_rsp[0].file_off == dealloc_chunk_len) {
+		torture_comment(torture, "holes merged for deallocation of "
+				"%lu chunk\n", dealloc_chunk_len);
+		torture_assert_u64_equal(torture,
+					 file_size - far_rsp[0].len,
+					 far_rsp[0].file_off,
+					 "invalid alloced range");
+	} else {
+		torture_assert_u64_equal(torture, far_rsp[0].file_off, 0,
+					 "unexpected deallocation");
+		torture_comment(torture, "holes not merged for deallocation\n");
+	}
+
+	return true;
+}
+
+/*
  * basic testing of SMB2 ioctls
  */
 struct torture_suite *torture_smb2_ioctl_init(void)
@@ -3377,6 +3563,8 @@ struct torture_suite *torture_smb2_ioctl_init(void)
 				     test_ioctl_sparse_qar_malformed);
 	torture_suite_add_1smb2_test(suite, "sparse_punch",
 				     test_ioctl_sparse_punch);
+	torture_suite_add_1smb2_test(suite, "sparse_hole_dealloc",
+				     test_ioctl_sparse_hole_dealloc);
 
 	suite->description = talloc_strdup(suite, "SMB2-IOCTL tests");
 
