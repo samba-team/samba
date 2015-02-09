@@ -480,7 +480,7 @@ int sys_posix_fallocate(int fd, off_t offset, off_t len)
 
 int sys_fallocate(int fd, enum vfs_fallocate_mode mode, off_t offset, off_t len)
 {
-#if defined(HAVE_LINUX_FALLOCATE64) || defined(HAVE_LINUX_FALLOCATE)
+#if defined(HAVE_LINUX_FALLOCATE)
 	int lmode;
 	switch (mode) {
 	case VFS_FALLOCATE_EXTEND_SIZE:
@@ -493,9 +493,7 @@ int sys_fallocate(int fd, enum vfs_fallocate_mode mode, off_t offset, off_t len)
 		errno = EINVAL;
 		return -1;
 	}
-#if defined(HAVE_LINUX_FALLOCATE)
 	return fallocate(fd, lmode, offset, len);
-#endif
 #else
 	/* TODO - plumb in fallocate from other filesysetms like VXFS etc. JRA. */
 	errno = ENOSYS;
