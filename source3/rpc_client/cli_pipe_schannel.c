@@ -52,6 +52,8 @@ NTSTATUS cli_rpc_pipe_open_schannel(struct cli_state *cli,
 	NTSTATUS status;
 	struct cli_credentials *cli_creds = NULL;
 	struct netlogon_creds_cli_context *netlogon_creds = NULL;
+	struct netlogon_creds_CredentialState *creds = NULL;
+	uint32_t netlogon_flags;
 
 	status = pdb_get_trust_credentials(domain, NULL,
 					   frame, &cli_creds);
@@ -79,16 +81,38 @@ NTSTATUS cli_rpc_pipe_open_schannel(struct cli_state *cli,
 		return status;
 	}
 
-	status = cli_rpc_pipe_open_schannel_with_creds(cli, table, transport,
-						       cli_creds, netlogon_creds,
-						       &result);
-	if (NT_STATUS_IS_OK(status)) {
-		*presult = result;
-		if (pcreds != NULL) {
-			*pcreds = talloc_move(mem_ctx, &netlogon_creds);
+	status = netlogon_creds_cli_get(netlogon_creds, frame, &creds);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
+		return status;
+	}
+
+	netlogon_flags = creds->negotiate_flags;
+	TALLOC_FREE(creds);
+
+	if (netlogon_flags & NETLOGON_NEG_AUTHENTICATED_RPC) {
+		status = cli_rpc_pipe_open_schannel_with_creds(cli, table,
+							       transport,
+							       cli_creds,
+							       netlogon_creds,
+							       &result);
+		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(frame);
+			return status;
+		}
+	} else {
+		status = cli_rpc_pipe_open_noauth(cli, table, &result);
+		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(frame);
+			return status;
 		}
 	}
 
+	*presult = result;
+	if (pcreds != NULL) {
+		*pcreds = talloc_move(mem_ctx, &netlogon_creds);
+	}
+
 	TALLOC_FREE(frame);
-	return status;
+	return NT_STATUS_OK;
 }
