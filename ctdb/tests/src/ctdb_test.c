@@ -41,6 +41,8 @@ int main_foobar(int argc, const char **argv);
 	ctdb_ctrl_getpnn_stub(ctdb, timelimit, pnn)
 #define ctdb_ctrl_getrecmode(ctdb, tmp_ctx, timelimit, pnn, recmode) \
 	ctdb_ctrl_getrecmode_stub(ctdb, tmp_ctx, timelimit, pnn, recmode)
+#define ctdb_ctrl_setrecmode(ctdb, timeout, destnode, recmode) \
+	ctdb_ctrl_setrecmode_stub(ctdb, timeout, destnode, recmode)
 #define ctdb_ctrl_getrecmaster(ctdb, tmp_ctx, timelimit, pnn, recmaster) \
 	ctdb_ctrl_getrecmaster_stub(ctdb, tmp_ctx, timelimit, pnn, recmaster)
 #define ctdb_ctrl_getvnnmap(ctdb, timelimit, pnn, tmp_ctx, vnnmap) \
@@ -73,6 +75,7 @@ struct tevent_context *tevent_context_init(TALLOC_CTX *mem_ctx);
 #undef ctdb_ctrl_get_ifaces 
 #undef ctdb_ctrl_getpnn
 #undef ctdb_ctrl_getrecmode
+#undef ctdb_ctrl_setrecmode
 #undef ctdb_ctrl_getrecmaster
 #undef ctdb_ctrl_getvnnmap
 #undef ctdb_ctrl_getdebseqnum
@@ -91,6 +94,8 @@ int ctdb_ctrl_getpnn(struct ctdb_context *ctdb, struct timeval timeout,
 int ctdb_ctrl_getrecmode(struct ctdb_context *ctdb,
 			 TALLOC_CTX *mem_ctx, struct timeval timeout,
 			 uint32_t destnode, uint32_t *recmode);
+int ctdb_ctrl_setrecmode(struct ctdb_context *ctdb, struct timeval timeout,
+			 uint32_t destnode, uint32_t recmode);
 int ctdb_ctrl_getrecmaster(struct ctdb_context *ctdb,
 			   TALLOC_CTX *mem_ctx, struct timeval timeout,
 			   uint32_t destnode, uint32_t *recmaster);

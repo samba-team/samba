@@ -468,6 +468,20 @@ ctdb_ctrl_getrecmode_stub(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx,
 	return 0;
 }
 
+int ctdb_ctrl_setrecmode_stub(struct ctdb_context *ctdb, struct timeval timeout,
+			      uint32_t destnode, uint32_t recmode)
+{
+	ctdb->recovery_mode = recmode;
+
+	if (ctdb->recovery_mode == CTDB_RECOVERY_ACTIVE) {
+		/* Recovery is complete! That was quick.... */
+		ctdb->recovery_mode = CTDB_RECOVERY_NORMAL;
+		ctdb->vnn_map->generation++;
+	}
+
+	return 0;
+}
+
 int
 ctdb_ctrl_getrecmaster_stub(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx,
 			    struct timeval timeout, uint32_t destnode,
