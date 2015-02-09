@@ -1015,7 +1015,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
  Ensure a path is not vetod.
 ****************************************************************************/
 
-NTSTATUS check_veto_path(connection_struct *conn, const char *name)
+static NTSTATUS check_veto_path(connection_struct *conn, const char *name)
 {
 	if (IS_VETO_PATH(conn, name))  {
 		/* Is it not dot or dot dot. */
