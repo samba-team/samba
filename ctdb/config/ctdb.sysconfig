@@ -25,8 +25,8 @@ CTDB_PUBLIC_ADDRESSES=/etc/ctdb/public_addresses
 # Default is to use the log file below instead of syslog.
 # CTDB_LOGGING=file:/var/log/log.ctdb
 
-# Default log level is ERR.  NOTICE is a little more verbose.
-CTDB_DEBUGLEVEL=NOTICE
+# Default log level is NOTICE.  Want less logging?
+# CTDB_DEBUGLEVEL=ERR
 
 # Set some CTDB tunable variables during CTDB startup?
 # CTDB_SET_TraverseTimeout=60

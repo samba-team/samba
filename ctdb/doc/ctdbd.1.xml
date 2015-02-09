@@ -52,9 +52,7 @@
 	  <para>
 	    This option sets the debug level to DEBUGLEVEL, which
 	    controls what will be written by the logging
-	    subsystem. The default is 0 which will only log important
-	    events and errors. A larger number will provide additional
-	    logging.
+	    subsystem.  The default is 2.
 	  </para>
 	  <para>
 	    See the <citetitle>DEBUG LEVELS</citetitle> section in
