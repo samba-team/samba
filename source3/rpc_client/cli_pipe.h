@@ -99,13 +99,6 @@ NTSTATUS cli_rpc_pipe_open_generic_auth(struct cli_state *cli,
 					const char *password,
 					struct rpc_pipe_client **presult);
 
-NTSTATUS cli_rpc_pipe_open_schannel_with_key(struct cli_state *cli,
-					     const struct ndr_interface_table *table,
-					     enum dcerpc_transport_t transport,
-					     const char *domain,
-					     struct netlogon_creds_cli_context *netlogon_creds,
-					     struct rpc_pipe_client **presult);
-
 NTSTATUS cli_rpc_pipe_open_schannel_with_creds(struct cli_state *cli,
 					       const struct ndr_interface_table *table,
 					       enum dcerpc_transport_t transport,
