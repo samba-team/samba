@@ -6361,6 +6361,7 @@ static int control_reload_nodes_file(struct ctdb_context *ctdb, int argc, const 
 	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
 	struct ctdb_node_map *file_nodemap;
 	uint32_t *conn;
+	uint32_t timeout;
 
 	assert_current_node_only(ctdb);
 
@@ -6400,11 +6401,23 @@ static int control_reload_nodes_file(struct ctdb_context *ctdb, int argc, const 
 				     conn[i]));
 	}
 
+	/* Another timeout could be used, such as ReRecoveryTimeout or
+	 * a new one for this purpose.  However, this is the simplest
+	 * option. */
+	timeout = options.timelimit;
+	srvid_broadcast(ctdb, CTDB_SRVID_DISABLE_RECOVERIES, &timeout,
+			"Disable recoveries", true);
+
+
 	ret = ctdb_client_async_control(ctdb, CTDB_CONTROL_RELOAD_NODES_FILE,
 					conn, 0, TIMELIMIT(),
 					true, tdb_null,
 					NULL, reload_nodes_fail_callback,
 					NULL);
+
+	timeout = 0;
+	srvid_broadcast(ctdb, CTDB_SRVID_DISABLE_RECOVERIES, &timeout,
+			"Enable recoveries", true);
 
 	/* initiate a recovery */
 	control_recover(ctdb, argc, argv);
