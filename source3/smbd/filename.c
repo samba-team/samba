@@ -1012,7 +1012,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 }
 
 /****************************************************************************
- Ensure a path is not vetod.
+ Ensure a path is not vetoed.
 ****************************************************************************/
 
 static NTSTATUS check_veto_path(connection_struct *conn, const char *name)
