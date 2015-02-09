@@ -1366,18 +1366,15 @@ NTSTATUS libnet_join_ok(struct messaging_context *msg_ctx,
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *netlogon_pipe = NULL;
+	struct cli_credentials *cli_creds = NULL;
 	struct netlogon_creds_cli_context *netlogon_creds = NULL;
 	struct netlogon_creds_CredentialState *creds = NULL;
 	uint32_t netlogon_flags = 0;
-	enum netr_SchannelType sec_chan_type = 0;
 	NTSTATUS status;
-	char *machine_password = NULL;
-	const char *machine_name = NULL;
 	const char *machine_account = NULL;
+	const char *machine_domain = NULL;
+	const char *machine_password = NULL;
 	int flags = 0;
-	struct samr_Password current_nt_hash;
-	struct samr_Password *previous_nt_hash = NULL;
-	bool ok;
 
 	if (!dc_name) {
 		TALLOC_FREE(frame);
@@ -1389,39 +1386,33 @@ NTSTATUS libnet_join_ok(struct messaging_context *msg_ctx,
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
 
-	ok = get_trust_pw_clear(netbios_domain_name,
-				&machine_password,
-				&machine_name,
-				&sec_chan_type);
-	if (!ok) {
+	status = pdb_get_trust_credentials(netbios_domain_name, NULL,
+					   frame, &cli_creds);
+	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(frame);
-		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+		return status;
 	}
 
-	machine_account = talloc_asprintf(frame, "%s$", machine_name);
-	if (machine_account == NULL) {
-		SAFE_FREE(machine_password);
-		SAFE_FREE(previous_nt_hash);
-		TALLOC_FREE(frame);
-		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
-	}
+	/* we don't want any old password */
+	cli_credentials_set_old_password(cli_creds, NULL, CRED_SPECIFIED);
 
 	if (use_kerberos) {
 		flags |= CLI_FULL_CONNECTION_USE_KERBEROS;
 	}
+
+	machine_account = cli_credentials_get_username(cli_creds);
+	machine_domain = cli_credentials_get_domain(cli_creds);
+	machine_password = cli_credentials_get_password(cli_creds);
 
 	status = cli_full_connection(&cli, NULL,
 				     dc_name,
 				     NULL, 0,
 				     "IPC$", "IPC",
 				     machine_account,
-				     netbios_domain_name,
+				     machine_domain,
 				     machine_password,
 				     flags,
 				     SMB_SIGNING_DEFAULT);
-
-	E_md4hash(machine_password, current_nt_hash.hash);
-	SAFE_FREE(machine_password);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		status = cli_full_connection(&cli, NULL,
@@ -1436,31 +1427,25 @@ NTSTATUS libnet_join_ok(struct messaging_context *msg_ctx,
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
-		SAFE_FREE(previous_nt_hash);
 		TALLOC_FREE(frame);
 		return status;
 	}
 
-	status = rpccli_create_netlogon_creds(dc_name,
-					      netbios_domain_name,
-					      machine_account,
-					      sec_chan_type,
-					      msg_ctx,
-					      frame,
-					      &netlogon_creds);
+	status = rpccli_create_netlogon_creds_with_creds(cli_creds,
+							 dc_name,
+							 msg_ctx,
+							 frame,
+							 &netlogon_creds);
 	if (!NT_STATUS_IS_OK(status)) {
-		SAFE_FREE(previous_nt_hash);
 		cli_shutdown(cli);
 		TALLOC_FREE(frame);
 		return status;
 	}
 
-	status = rpccli_setup_netlogon_creds(cli, NCACN_NP,
-					     netlogon_creds,
-					     true, /* force_reauth */
-					     current_nt_hash,
-					     previous_nt_hash);
-	SAFE_FREE(previous_nt_hash);
+	status = rpccli_setup_netlogon_creds_with_creds(cli, NCACN_NP,
+							netlogon_creds,
+							true, /* force_reauth */
+							cli_creds);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("connect_to_domain_password_server: "
 			 "unable to open the domain client session to "
@@ -1489,9 +1474,9 @@ NTSTATUS libnet_join_ok(struct messaging_context *msg_ctx,
 		return NT_STATUS_OK;
 	}
 
-	status = cli_rpc_pipe_open_schannel_with_key(
+	status = cli_rpc_pipe_open_schannel_with_creds(
 		cli, &ndr_table_netlogon, NCACN_NP,
-		netbios_domain_name,
+		cli_creds,
 		netlogon_creds, &netlogon_pipe);
 
 	TALLOC_FREE(netlogon_pipe);
