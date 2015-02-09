@@ -164,6 +164,10 @@ static bool check_pattern(struct torture_context *torture,
 	struct smb2_read r;
 	NTSTATUS status;
 
+	if (len == 0) {
+		return true;
+	}
+
 	ZERO_STRUCT(r);
 	r.in.file.handle = h;
 	r.in.length      = len;
@@ -193,6 +197,10 @@ static bool check_zero(struct torture_context *torture,
 	uint64_t i;
 	struct smb2_read r;
 	NTSTATUS status;
+
+	if (len == 0) {
+		return true;
+	}
 
 	ZERO_STRUCT(r);
 	r.in.file.handle = h;
