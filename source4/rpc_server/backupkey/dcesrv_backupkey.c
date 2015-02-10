@@ -571,7 +571,7 @@ static WERROR bkrp_client_wrap_decrypt_data(struct dcesrv_call_state *dce_call,
 	char *guid_string;
 	char *cert_secret_name;
 	DATA_BLOB lsa_secret;
-	DATA_BLOB *uncrypted;
+	DATA_BLOB *uncrypted_data;
 	NTSTATUS status;
 
 	blob.data = r->in.data_in;
@@ -698,13 +698,13 @@ static WERROR bkrp_client_wrap_decrypt_data(struct dcesrv_call_state *dce_call,
 			if (!W_ERROR_IS_OK(werr)) {
 				return werr;
 			}
-			uncrypted = talloc(mem_ctx, DATA_BLOB);
-			if (uncrypted == NULL) {
+			uncrypted_data = talloc(mem_ctx, DATA_BLOB);
+			if (uncrypted_data == NULL) {
 				return WERR_INVALID_DATA;
 			}
 
-			uncrypted->data = uncrypted_secretv2.secret;
-			uncrypted->length = uncrypted_secretv2.secret_len;
+			uncrypted_data->data = uncrypted_secretv2.secret;
+			uncrypted_data->length = uncrypted_secretv2.secret_len;
 		}
 		if (uncrypt_request.version == 3) {
 			struct bkrp_encrypted_secret_v3 uncrypted_secretv3;
@@ -743,13 +743,13 @@ static WERROR bkrp_client_wrap_decrypt_data(struct dcesrv_call_state *dce_call,
 				return werr;
 			}
 
-			uncrypted = talloc(mem_ctx, DATA_BLOB);
-			if (uncrypted == NULL) {
+			uncrypted_data = talloc(mem_ctx, DATA_BLOB);
+			if (uncrypted_data == NULL) {
 				return WERR_INVALID_DATA;
 			}
 
-			uncrypted->data = uncrypted_secretv3.secret;
-			uncrypted->length = uncrypted_secretv3.secret_len;
+			uncrypted_data->data = uncrypted_secretv3.secret;
+			uncrypted_data->length = uncrypted_secretv3.secret_len;
 		}
 
 		/*
@@ -760,7 +760,7 @@ static WERROR bkrp_client_wrap_decrypt_data(struct dcesrv_call_state *dce_call,
 		 */
 	}
 
-	if (uncrypted->data == NULL) {
+	if (uncrypted_data->data == NULL) {
 		return WERR_INVALID_DATA;
 	}
 
@@ -769,10 +769,10 @@ static WERROR bkrp_client_wrap_decrypt_data(struct dcesrv_call_state *dce_call,
 	 * parent structure is just an array of bytes it a lot of work
 	 * work just prepending 4 bytes
 	 */
-	*(r->out.data_out) = talloc_zero_array(mem_ctx, uint8_t, uncrypted->length + 4);
+	*(r->out.data_out) = talloc_zero_array(mem_ctx, uint8_t, uncrypted_data->length + 4);
 	W_ERROR_HAVE_NO_MEMORY(*(r->out.data_out));
-	memcpy(4+*(r->out.data_out), uncrypted->data, uncrypted->length);
-	*(r->out.data_out_len) = uncrypted->length + 4;
+	memcpy(4+*(r->out.data_out), uncrypted_data->data, uncrypted_data->length);
+	*(r->out.data_out_len) = uncrypted_data->length + 4;
 
 	return WERR_OK;
 }
