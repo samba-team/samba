@@ -1320,34 +1320,8 @@ static WERROR generate_bkrp_server_wrap_key(TALLOC_CTX *ctx, struct ldb_context 
 	return WERR_OK;
 }
 
-static WERROR bkrp_server_wrap_decrypt_data(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-					    struct bkrp_BackupKey *r ,struct ldb_context *ldb_ctx)
-{
-	struct bkrp_server_side_wrapped uncrypt_request;
-	DATA_BLOB blob;
-	enum ndr_err_code ndr_err;
-
-	blob.data = r->in.data_in;
-	blob.length = r->in.data_in_len;
-
-	if (r->in.data_in_len == 0 || r->in.data_in == NULL) {
-		return WERR_INVALID_PARAM;
-	}
-
-	ndr_err = ndr_pull_struct_blob(&blob, mem_ctx, &uncrypt_request,
-				       (ndr_pull_flags_fn_t)ndr_pull_bkrp_server_side_wrapped);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		return WERR_INVALID_PARAM;
-	}
-	
-	return WERR_NOT_SUPPORTED;
-}
-
 /*
- * Find the current, preferred ServerWrap Key by looking at
- * G$BCKUPKEY_P in the LSA secrets store.
- *
- * Then find the current decryption keys from the LSA secrets store as
+ * Find the specified decryption keys from the LSA secrets store as
  * G$BCKUPKEY_keyGuidString.
  */
 
@@ -1360,22 +1334,7 @@ static WERROR bkrp_do_retrieve_server_wrap_key(TALLOC_CTX *mem_ctx, struct ldb_c
 	char *secret_name;
 	char *guid_string;
 	enum ndr_err_code ndr_err;
-	
-	status = get_lsa_secret(mem_ctx, ldb_ctx, "BCKUPKEY_P", &guid_binary);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("Error while fetching secret BCKUPKEY_P to find current GUID\n"));
-		return WERR_FILE_NOT_FOUND;
-	} else if (guid_binary.length == 0) {
-		/* RODC case, we do not have secrets locally */
-		DEBUG(1, ("Unable to fetch value for secret BCKUPKEY_P, are we an undetected RODC?\n"));
-		return WERR_INTERNAL_ERROR;
-	}
 
-	status = GUID_from_ndr_blob(&guid_binary, guid);
-	if (!NT_STATUS_IS_OK(status)) {
-		return WERR_FILE_NOT_FOUND;
-	}
-	
 	guid_string = GUID_string(mem_ctx, guid);
 	if (guid_string == NULL) {
 		/* We return file not found because the client
@@ -1392,7 +1351,7 @@ static WERROR bkrp_do_retrieve_server_wrap_key(TALLOC_CTX *mem_ctx, struct ldb_c
 	status = get_lsa_secret(mem_ctx, ldb_ctx, secret_name, &lsa_secret);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("Error while fetching secret %s\n", secret_name));
-		return WERR_FILE_NOT_FOUND;
+		return WERR_INVALID_DATA;
 	} else if (guid_binary.length == 0) {
 		/* RODC case, we do not have secrets locally */
 		DEBUG(1, ("Unable to fetch value for secret %s, are we an undetected RODC?\n",
@@ -1403,12 +1362,186 @@ static WERROR bkrp_do_retrieve_server_wrap_key(TALLOC_CTX *mem_ctx, struct ldb_c
 				       (ndr_pull_flags_fn_t)ndr_pull_bkrp_dc_serverwrap_key);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		DEBUG(2, ("Unable to parse the ndr encoded server wrap key %s\n", secret_name));
-		return WERR_FILE_NOT_FOUND;
+		return WERR_INVALID_DATA;
 	}
 
 	return WERR_OK;
 }
 
+/*
+ * Find the current, preferred ServerWrap Key by looking at
+ * G$BCKUPKEY_P in the LSA secrets store.
+ *
+ * Then find the current decryption keys from the LSA secrets store as
+ * G$BCKUPKEY_keyGuidString.
+ */
+
+static WERROR bkrp_do_retrieve_default_server_wrap_key(TALLOC_CTX *mem_ctx,
+						       struct ldb_context *ldb_ctx,
+						       struct bkrp_dc_serverwrap_key *server_key,
+						       struct GUID *returned_guid)
+{
+	NTSTATUS status;
+	DATA_BLOB guid_binary;
+
+	status = get_lsa_secret(mem_ctx, ldb_ctx, "BCKUPKEY_P", &guid_binary);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("Error while fetching secret BCKUPKEY_P to find current GUID\n"));
+		return WERR_FILE_NOT_FOUND;
+	} else if (guid_binary.length == 0) {
+		/* RODC case, we do not have secrets locally */
+		DEBUG(1, ("Unable to fetch value for secret BCKUPKEY_P, are we an undetected RODC?\n"));
+		return WERR_INTERNAL_ERROR;
+	}
+
+	status = GUID_from_ndr_blob(&guid_binary, returned_guid);
+	if (!NT_STATUS_IS_OK(status)) {
+		return WERR_FILE_NOT_FOUND;
+	}
+
+	return bkrp_do_retrieve_server_wrap_key(mem_ctx, ldb_ctx,
+						server_key, returned_guid);
+}
+
+static WERROR bkrp_server_wrap_decrypt_data(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+					    struct bkrp_BackupKey *r ,struct ldb_context *ldb_ctx)
+{
+	WERROR werr;
+	struct bkrp_server_side_wrapped decrypt_request;
+	DATA_BLOB sid_blob, encrypted_blob, symkey_blob;
+	DATA_BLOB blob;
+	enum ndr_err_code ndr_err;
+	struct bkrp_dc_serverwrap_key server_key;
+	struct bkrp_rc4encryptedpayload rc4payload;
+	struct dom_sid *caller_sid;
+	uint8_t symkey[20]; /* SHA-1 hash len */
+	uint8_t mackey[20]; /* SHA-1 hash len */
+	uint8_t mac[20]; /* SHA-1 hash len */
+	unsigned int hash_len;
+	HMAC_CTX ctx;
+
+	blob.data = r->in.data_in;
+	blob.length = r->in.data_in_len;
+
+	if (r->in.data_in_len == 0 || r->in.data_in == NULL) {
+		return WERR_INVALID_PARAM;
+	}
+
+	ndr_err = ndr_pull_struct_blob(&blob, mem_ctx, &decrypt_request,
+				       (ndr_pull_flags_fn_t)ndr_pull_bkrp_server_side_wrapped);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return WERR_INVALID_PARAM;
+	}
+
+	if (decrypt_request.magic != 1) {
+		return WERR_INVALID_PARAM;
+	}
+	
+	werr = bkrp_do_retrieve_server_wrap_key(mem_ctx, ldb_ctx, &server_key,
+						&decrypt_request.guid);
+	if (!W_ERROR_IS_OK(werr)) {
+		return werr;
+	}
+
+	dump_data_pw("server_key: \n", server_key.key, sizeof(server_key.key));
+	
+	dump_data_pw("r2: \n", decrypt_request.r2, sizeof(decrypt_request.r2));
+	
+	/*
+	 * This is *not* the leading 64 bytes, as indicated in MS-BKRP 3.1.4.1.1
+	 * BACKUPKEY_BACKUP_GUID, it really is the whole key 
+	 */
+	HMAC(EVP_sha1(), server_key.key, sizeof(server_key.key),
+	     decrypt_request.r2, sizeof(decrypt_request.r2),
+	     symkey, &hash_len);
+
+	dump_data_pw("symkey: \n", symkey, hash_len);
+
+	/* rc4 decrypt sid and secret using sym key */
+	symkey_blob = data_blob_const(symkey, sizeof(symkey));
+	
+	encrypted_blob = data_blob_const(decrypt_request.rc4encryptedpayload,
+					 decrypt_request.ciphertext_length);
+	
+	arcfour_crypt_blob(encrypted_blob.data, encrypted_blob.length, &symkey_blob);
+
+	ndr_err = ndr_pull_struct_blob(&encrypted_blob, mem_ctx, &rc4payload,
+				       (ndr_pull_flags_fn_t)ndr_pull_bkrp_rc4encryptedpayload);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return WERR_INVALID_PARAM;
+	}
+
+	if (decrypt_request.payload_length != rc4payload.secret_data.length) {
+		return WERR_INVALID_PARAM;
+	}
+	
+	dump_data_pw("r3: \n", rc4payload.r3, sizeof(rc4payload.r3));
+
+	/*
+	 * This is *not* the leading 64 bytes, as indicated in MS-BKRP 3.1.4.1.1
+	 * BACKUPKEY_BACKUP_GUID, it really is the whole key 
+	 */
+	HMAC(EVP_sha1(), server_key.key, sizeof(server_key.key),
+	     rc4payload.r3, sizeof(rc4payload.r3),
+	     mackey, &hash_len);
+
+	dump_data_pw("mackey: \n", mackey, sizeof(mackey));
+
+	ndr_err = ndr_push_struct_blob(&sid_blob, mem_ctx, &rc4payload.sid,
+				       (ndr_push_flags_fn_t)ndr_push_dom_sid);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return WERR_INTERNAL_ERROR;
+	}
+
+	HMAC_CTX_init(&ctx);
+	HMAC_Init_ex(&ctx, mackey, hash_len, EVP_sha1(), NULL);
+	/* SID field */
+	HMAC_Update(&ctx, sid_blob.data, sid_blob.length);
+	/* Secret field */
+	HMAC_Update(&ctx, rc4payload.secret_data.data, rc4payload.secret_data.length);
+	HMAC_Final(&ctx, mac, &hash_len);
+	HMAC_CTX_cleanup(&ctx);
+
+	dump_data_pw("mac: \n", mac, sizeof(mac));
+	dump_data_pw("rc4payload.mac: \n", rc4payload.mac, sizeof(rc4payload.mac));
+	
+	if (memcmp(mac, rc4payload.mac, sizeof(mac)) != 0) {
+		return WERR_INVALID_ACCESS;
+	}
+
+	caller_sid = &dce_call->conn->auth_state.session_info->security_token->sids[PRIMARY_USER_SID_INDEX];
+
+	if (!dom_sid_equal(&rc4payload.sid, caller_sid)) {
+		return WERR_INVALID_ACCESS;
+	}
+
+	*(r->out.data_out) = rc4payload.secret_data.data;
+	*(r->out.data_out_len) = rc4payload.secret_data.length;
+	
+	return WERR_OK;
+}
+
+/* 
+ * For BACKUPKEY_RESTORE_GUID we need to check the first 4 bytes to
+ * determine what type of restore is wanted.
+ * 
+ * See MS-BKRP 3.1.4.1.4 BACKUPKEY_RESTORE_GUID point 1.
+ */
+
+static WERROR bkrp_generic_decrypt_data(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+					struct bkrp_BackupKey *r, struct ldb_context *ldb_ctx)
+{
+	if (r->in.data_in_len < 4 || r->in.data_in == NULL) {
+		return WERR_INVALID_PARAM;
+	}
+
+	if (IVAL(r->in.data_in, 0) == 1) {
+		return bkrp_server_wrap_decrypt_data(dce_call, mem_ctx, r, ldb_ctx);
+	}
+	
+	return bkrp_client_wrap_decrypt_data(dce_call, mem_ctx, r, ldb_ctx);
+}
+	
 /* 
  * We have some data, such as saved website or IMAP passwords that the
  * client would like to put into the profile on-disk.  This needs to
@@ -1446,9 +1579,9 @@ static WERROR bkrp_server_wrap_encrypt_data(struct dcesrv_call_state *dce_call, 
 		return WERR_INVALID_PARAM;
 	}
 
-	werr = bkrp_do_retrieve_server_wrap_key(mem_ctx,
-						ldb_ctx, &server_key,
-						&guid);
+	werr = bkrp_do_retrieve_default_server_wrap_key(mem_ctx,
+							ldb_ctx, &server_key,
+							&guid);
 	
 	if (!W_ERROR_IS_OK(werr)) {
 		if (W_ERROR_EQUAL(werr, WERR_FILE_NOT_FOUND)) {
@@ -1458,8 +1591,10 @@ static WERROR bkrp_server_wrap_encrypt_data(struct dcesrv_call_state *dce_call, 
 			if (!W_ERROR_IS_OK(werr)) {
 				return WERR_INVALID_PARAMETER;
 			}
-			werr = bkrp_do_retrieve_server_wrap_key(mem_ctx,
-								ldb_ctx, &server_key, &guid);
+			werr = bkrp_do_retrieve_default_server_wrap_key(mem_ctx,
+									ldb_ctx,
+									&server_key,
+									&guid);
 			
 			if (W_ERROR_EQUAL(werr, WERR_FILE_NOT_FOUND)) {
 				/* Ok we really don't manage to get this secret ...*/
@@ -1608,8 +1743,8 @@ static WERROR dcesrv_bkrp_BackupKey(struct dcesrv_call_state *dce_call,
 	if (!is_rodc) {
 		if(strncasecmp(GUID_string(mem_ctx, r->in.guidActionAgent),
 			BACKUPKEY_RESTORE_GUID, strlen(BACKUPKEY_RESTORE_GUID)) == 0) {
-			DEBUG(debuglevel, ("Client %s requested to decrypt a client side wrapped secret\n", addr));
-			error = bkrp_client_wrap_decrypt_data(dce_call, mem_ctx, r, ldb_ctx);
+			DEBUG(debuglevel, ("Client %s requested to decrypt a wrapped secret\n", addr));
+			error = bkrp_generic_decrypt_data(dce_call, mem_ctx, r, ldb_ctx);
 		}
 
 		if (strncasecmp(GUID_string(mem_ctx, r->in.guidActionAgent),
@@ -1620,7 +1755,7 @@ static WERROR dcesrv_bkrp_BackupKey(struct dcesrv_call_state *dce_call,
 
 		if (strncasecmp(GUID_string(mem_ctx, r->in.guidActionAgent),
 			BACKUPKEY_RESTORE_GUID_WIN2K, strlen(BACKUPKEY_RESTORE_GUID_WIN2K)) == 0) {
-			DEBUG(debuglevel, ("Client %s requested to decrypt a server side wrapped secret, not implemented yet\n", addr));
+			DEBUG(debuglevel, ("Client %s requested to decrypt a server side wrapped secret\n", addr));
 			error = bkrp_server_wrap_decrypt_data(dce_call, mem_ctx, r, ldb_ctx);
 		}
 
