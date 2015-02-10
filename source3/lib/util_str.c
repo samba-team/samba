@@ -910,7 +910,7 @@ uint64_t conv_str_size(const char * str)
 }
 
 /* Append an sprintf'ed string. Double buffer size on demand. Usable without
- * error checking in between. The indiation that something weird happened is
+ * error checking in between. The indication that something weird happened is
  * string==NULL */
 
 void sprintf_append(TALLOC_CTX *mem_ctx, char **string, ssize_t *len,
