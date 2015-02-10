@@ -1820,6 +1820,7 @@ static int do_allinfo(const char *name)
 	}
 
 	TALLOC_FREE(snapshots);
+	cli_close(cli, fnum);
 
 	return 0;
 }
