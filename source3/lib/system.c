@@ -488,6 +488,13 @@ int sys_fallocate(int fd, uint32_t mode, off_t offset, off_t len)
 		mode &= ~VFS_FALLOCATE_FL_KEEP_SIZE;
 	}
 
+#if defined(HAVE_FALLOC_FL_PUNCH_HOLE)
+	if (mode & VFS_FALLOCATE_FL_PUNCH_HOLE) {
+		lmode |= FALLOC_FL_PUNCH_HOLE;
+		mode &= ~VFS_FALLOCATE_FL_PUNCH_HOLE;
+	}
+#endif	/* HAVE_FALLOC_FL_PUNCH_HOLE */
+
 	if (mode != 0) {
 		DEBUG(2, ("unmapped fallocate flags: %lx\n",
 		      (unsigned long)mode));
@@ -495,11 +502,11 @@ int sys_fallocate(int fd, uint32_t mode, off_t offset, off_t len)
 		return -1;
 	}
 	return fallocate(fd, lmode, offset, len);
-#else
+#else	/* HAVE_LINUX_FALLOCATE */
 	/* TODO - plumb in fallocate from other filesysetms like VXFS etc. JRA. */
 	errno = ENOSYS;
 	return -1;
-#endif
+#endif	/* HAVE_LINUX_FALLOCATE */
 }
 
 #if HAVE_KERNEL_SHARE_MODES

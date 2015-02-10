@@ -490,6 +490,7 @@ enum vfs_translate_direction {
 
 enum vfs_fallocate_flags {
 	VFS_FALLOCATE_FL_KEEP_SIZE		= 0x0001,
+	VFS_FALLOCATE_FL_PUNCH_HOLE		= 0x0002,
 };
 
 /*
