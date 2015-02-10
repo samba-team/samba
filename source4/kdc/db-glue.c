@@ -1653,6 +1653,7 @@ static krb5_error_code samba_kdc_lookup_server(krb5_context context,
 		krb5_principal enterprise_prinicpal = NULL;
 
 		if (smb_krb5_principal_get_type(context, principal) == KRB5_NT_ENTERPRISE_PRINCIPAL) {
+			char *str = NULL;
 			/* Need to reparse the enterprise principal to find the real target */
 			if (krb5_princ_size(context, principal) != 1) {
 				ret = KRB5_PARSE_MALFORMED;
@@ -1661,9 +1662,13 @@ static krb5_error_code samba_kdc_lookup_server(krb5_context context,
 						       krb5_princ_size(context, principal));
 				return ret;
 			}
-			ret = krb5_parse_name(context,
-					      krb5_principal_get_comp_string(context, principal, 0),
+			str = smb_krb5_principal_get_comp_string(mem_ctx, context, principal, 0);
+			if (str == NULL) {
+				return KRB5_PARSE_MALFORMED;
+			}
+			ret = krb5_parse_name(context, str,
 					      &enterprise_prinicpal);
+			talloc_free(str);
 			if (ret) {
 				return ret;
 			}
