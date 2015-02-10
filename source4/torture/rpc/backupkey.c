@@ -579,6 +579,9 @@ static struct bkrp_BackupKey *createRestoreGUIDStruct(struct torture_context *tc
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_bkrp_BackupKey_r(b, tctx, r),
 					"Get GUID");
+	torture_assert_werr_ok(tctx, r->out.result,
+			       "Get GUID");
+
 	/*
 	 * We have to set it outside of the function createRetreiveBackupKeyGUIDStruct
 	 * the len of the blob, this is due to the fact that they don't have the
@@ -1078,6 +1081,9 @@ static bool test_RetreiveBackupKeyGUID_2048bits(struct torture_context *tctx,
 		torture_assert_ntstatus_ok(tctx,
 				dcerpc_bkrp_BackupKey_r(b, tctx, r),
 				"Get GUID");
+
+		torture_assert_werr_ok(tctx, r->out.result,
+				       "Get GUID");
 
 		out_blob.length = *r->out.data_out_len;
 
