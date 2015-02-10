@@ -380,7 +380,7 @@ static WERROR get_and_verify_access_check(TALLOC_CTX *sub_ctx,
 					  uint8_t *key_and_iv,
 					  uint8_t *access_check,
 					  uint32_t access_check_len,
-					  struct dom_sid **access_sid)
+					  struct auth_session_info *session_info)
 {
 	heim_octet_string iv;
 	heim_octet_string access_check_os;
@@ -393,10 +393,12 @@ static WERROR get_and_verify_access_check(TALLOC_CTX *sub_ctx,
 	enum ndr_err_code ndr_err;
 	hx509_context hctx;
 
+	struct dom_sid *access_sid = NULL;
+	struct dom_sid *caller_sid = NULL;
+	
 	/* This one should not be freed */
 	const AlgorithmIdentifier *alg;
 
-	*access_sid = NULL;
 	switch (version) {
 	case 2:
 		key_len = 24;
@@ -451,7 +453,9 @@ static WERROR get_and_verify_access_check(TALLOC_CTX *sub_ctx,
 
 	hx509_crypto_destroy(crypto);
 
-	if (version == 2) {
+	switch (version) {
+	case 2:
+	{
 		uint32_t hash_size = 20;
 		uint8_t hash[hash_size];
 		struct sha sctx;
@@ -483,14 +487,11 @@ static WERROR get_and_verify_access_check(TALLOC_CTX *sub_ctx,
 			DEBUG(2, ("Wrong hash value in the access check in backup key remote protocol\n"));
 			return WERR_INVALID_DATA;
 		}
-		*access_sid = dom_sid_dup(sub_ctx, &(uncrypted_accesscheckv2.sid));
-		if (*access_sid == NULL) {
-			return WERR_NOMEM;
-		}
-		return WERR_OK;
+		access_sid = &(uncrypted_accesscheckv2.sid);
+		break;
 	}
-
-	if (version == 3) {
+	case 3:
+	{
 		uint32_t hash_size = 64;
 		uint8_t hash[hash_size];
 		struct hc_sha512state sctx;
@@ -522,15 +523,20 @@ static WERROR get_and_verify_access_check(TALLOC_CTX *sub_ctx,
 			DEBUG(2, ("Wrong hash value in the access check in backup key remote protocol\n"));
 			return WERR_INVALID_DATA;
 		}
-		*access_sid = dom_sid_dup(sub_ctx, &(uncrypted_accesscheckv3.sid));
-		if (*access_sid == NULL) {
-			return WERR_NOMEM;
-		}
-		return WERR_OK;
+		access_sid = &(uncrypted_accesscheckv3.sid);
+		break;
 	}
-
-	/* Never reached normally as we filtered at the switch / case level */
-	return WERR_INVALID_DATA;
+	default:
+		/* Never reached normally as we filtered at the switch / case level */
+		return WERR_INVALID_DATA;
+	}
+	
+	caller_sid = &session_info->security_token->sids[PRIMARY_USER_SID_INDEX];
+	
+	if (!dom_sid_equal(caller_sid, access_sid)) {
+		return WERR_INVALID_ACCESS;
+	}
+	return WERR_OK;
 }
 
 static WERROR bkrp_do_uncrypt_client_wrap_key(struct dcesrv_call_state *dce_call,
@@ -599,11 +605,9 @@ static WERROR bkrp_do_uncrypt_client_wrap_key(struct dcesrv_call_state *dce_call
 		struct bkrp_exported_RSA_key_pair keypair;
 		hx509_private_key pk;
 		uint32_t i, res;
-		struct dom_sid *access_sid = NULL;
 		heim_octet_string reversed_secret;
 		heim_octet_string uncrypted_secret;
 		AlgorithmIdentifier alg;
-		struct dom_sid *caller_sid;
 		DATA_BLOB blob_us;
 		WERROR werr;
 
@@ -669,7 +673,7 @@ static WERROR bkrp_do_uncrypt_client_wrap_key(struct dcesrv_call_state *dce_call
 							   uncrypted_secretv2.payload_key,
 							   uncrypt_request.access_check,
 							   uncrypt_request.access_check_len,
-							   &access_sid);
+							   dce_call->conn->auth_state.session_info);
 			if (!W_ERROR_IS_OK(werr)) {
 				return werr;
 			}
@@ -704,7 +708,7 @@ static WERROR bkrp_do_uncrypt_client_wrap_key(struct dcesrv_call_state *dce_call
 							   uncrypted_secretv3.payload_key,
 							   uncrypt_request.access_check,
 							   uncrypt_request.access_check_len,
-							   &access_sid);
+							   dce_call->conn->auth_state.session_info);
 			if (!W_ERROR_IS_OK(werr)) {
 				return werr;
 			}
@@ -716,13 +720,6 @@ static WERROR bkrp_do_uncrypt_client_wrap_key(struct dcesrv_call_state *dce_call
 
 			uncrypted->data = uncrypted_secretv3.secret;
 			uncrypted->length = uncrypted_secretv3.secret_len;
-		}
-
-		caller_sid = &dce_call->conn->auth_state.session_info->security_token->sids[PRIMARY_USER_SID_INDEX];
-
-		if (!dom_sid_equal(caller_sid, access_sid)) {
-			talloc_free(uncrypted);
-			return WERR_INVALID_ACCESS;
 		}
 
 		/*
