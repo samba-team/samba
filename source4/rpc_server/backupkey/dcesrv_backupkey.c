@@ -54,7 +54,7 @@ static const AlgorithmIdentifier _hx509_signature_rsa_with_var_num = {
 static NTSTATUS set_lsa_secret(TALLOC_CTX *mem_ctx,
 			       struct ldb_context *ldb,
 			       const char *name,
-			       const DATA_BLOB *secret)
+			       const DATA_BLOB *lsa_secret)
 {
 	struct ldb_message *msg;
 	struct ldb_result *res;
@@ -141,8 +141,8 @@ static NTSTATUS set_lsa_secret(TALLOC_CTX *mem_ctx,
 		talloc_free(msg);
 		return NT_STATUS_NO_MEMORY;
 	}
-	val.data = secret->data;
-	val.length = secret->length;
+	val.data = lsa_secret->data;
+	val.length = lsa_secret->length;
 	ret = ldb_msg_add_value(msg, "currentValue", &val, NULL);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(msg);
@@ -176,7 +176,7 @@ static NTSTATUS set_lsa_secret(TALLOC_CTX *mem_ctx,
 static NTSTATUS get_lsa_secret(TALLOC_CTX *mem_ctx,
 			       struct ldb_context *ldb,
 			       const char *name,
-			       DATA_BLOB *secret)
+			       DATA_BLOB *lsa_secret)
 {
 	TALLOC_CTX *tmp_mem;
 	struct ldb_result *res;
@@ -190,8 +190,8 @@ static NTSTATUS get_lsa_secret(TALLOC_CTX *mem_ctx,
 	};
 	int ret;
 
-	secret->data = NULL;
-	secret->length = 0;
+	lsa_secret->data = NULL;
+	lsa_secret->length = 0;
 
 	domain_dn = ldb_get_default_basedn(ldb);
 	if (!domain_dn) {
@@ -241,8 +241,8 @@ static NTSTATUS get_lsa_secret(TALLOC_CTX *mem_ctx,
 	}
 
 	data = val->data;
-	secret->data = talloc_move(mem_ctx, &data);
-	secret->length = val->length;
+	lsa_secret->data = talloc_move(mem_ctx, &data);
+	lsa_secret->length = val->length;
 
 	talloc_free(tmp_mem);
 	return NT_STATUS_OK;
@@ -570,7 +570,7 @@ static WERROR bkrp_client_wrap_decrypt_data(struct dcesrv_call_state *dce_call,
 	enum ndr_err_code ndr_err;
 	char *guid_string;
 	char *cert_secret_name;
-	DATA_BLOB secret;
+	DATA_BLOB lsa_secret;
 	DATA_BLOB *uncrypted;
 	NTSTATUS status;
 
@@ -610,7 +610,7 @@ static WERROR bkrp_client_wrap_decrypt_data(struct dcesrv_call_state *dce_call,
 	status = get_lsa_secret(mem_ctx,
 				ldb_ctx,
 				cert_secret_name,
-				&secret);
+				&lsa_secret);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("Error while fetching secret %s\n", cert_secret_name));
 		if (NT_STATUS_EQUAL(status,NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
@@ -621,7 +621,7 @@ static WERROR bkrp_client_wrap_decrypt_data(struct dcesrv_call_state *dce_call,
 		}
 	}
 
-	if (secret.length != 0) {
+	if (lsa_secret.length != 0) {
 		hx509_context hctx;
 		struct bkrp_exported_RSA_key_pair keypair;
 		hx509_private_key pk;
@@ -632,7 +632,7 @@ static WERROR bkrp_client_wrap_decrypt_data(struct dcesrv_call_state *dce_call,
 		DATA_BLOB blob_us;
 		WERROR werr;
 
-		ndr_err = ndr_pull_struct_blob(&secret, mem_ctx, &keypair, (ndr_pull_flags_fn_t)ndr_pull_bkrp_exported_RSA_key_pair);
+		ndr_err = ndr_pull_struct_blob(&lsa_secret, mem_ctx, &keypair, (ndr_pull_flags_fn_t)ndr_pull_bkrp_exported_RSA_key_pair);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			DEBUG(2, ("Unable to parse the ndr encoded cert in key %s\n", cert_secret_name));
 			return WERR_FILE_NOT_FOUND;
@@ -1193,7 +1193,7 @@ static WERROR bkrp_retrieve_client_wrap_key(struct dcesrv_call_state *dce_call, 
 {
 	struct GUID guid;
 	char *guid_string;
-	DATA_BLOB secret;
+	DATA_BLOB lsa_secret;
 	enum ndr_err_code ndr_err;
 	NTSTATUS status;
 
@@ -1205,7 +1205,7 @@ static WERROR bkrp_retrieve_client_wrap_key(struct dcesrv_call_state *dce_call, 
 	status = get_lsa_secret(mem_ctx,
 				ldb_ctx,
 				"BCKUPKEY_PREFERRED",
-				&secret);
+				&lsa_secret);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("Error while fetching secret BCKUPKEY_PREFERRED\n"));
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
@@ -1221,7 +1221,7 @@ static WERROR bkrp_retrieve_client_wrap_key(struct dcesrv_call_state *dce_call, 
 			status = get_lsa_secret(mem_ctx,
 					ldb_ctx,
 					"BCKUPKEY_PREFERRED",
-					&secret);
+					&lsa_secret);
 
 			if (!NT_STATUS_IS_OK(status)) {
 				/* Ok we really don't manage to get this certs ...*/
@@ -1236,10 +1236,10 @@ static WERROR bkrp_retrieve_client_wrap_key(struct dcesrv_call_state *dce_call, 
 		}
 	}
 
-	if (secret.length != 0) {
+	if (lsa_secret.length != 0) {
 		char *cert_secret_name;
 
-		status = GUID_from_ndr_blob(&secret, &guid);
+		status = GUID_from_ndr_blob(&lsa_secret, &guid);
 		if (!NT_STATUS_IS_OK(status)) {
 			return WERR_FILE_NOT_FOUND;
 		}
@@ -1258,14 +1258,14 @@ static WERROR bkrp_retrieve_client_wrap_key(struct dcesrv_call_state *dce_call, 
 		status = get_lsa_secret(mem_ctx,
 					ldb_ctx,
 					cert_secret_name,
-					&secret);
+					&lsa_secret);
 		if (!NT_STATUS_IS_OK(status)) {
 			return WERR_FILE_NOT_FOUND;
 		}
 
-		if (secret.length != 0) {
+		if (lsa_secret.length != 0) {
 			struct bkrp_exported_RSA_key_pair keypair;
-			ndr_err = ndr_pull_struct_blob(&secret, mem_ctx, &keypair,
+			ndr_err = ndr_pull_struct_blob(&lsa_secret, mem_ctx, &keypair,
 					(ndr_pull_flags_fn_t)ndr_pull_bkrp_exported_RSA_key_pair);
 			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 				return WERR_FILE_NOT_FOUND;
