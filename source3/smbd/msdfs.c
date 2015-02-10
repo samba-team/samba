@@ -296,7 +296,7 @@ static NTSTATUS create_conn_struct_as_root(TALLOC_CTX *ctx,
 	set_conn_connectpath(conn, connpath);
 
 	/*
-	 * New code to check if there's a share security descripter
+	 * New code to check if there's a share security descriptor
 	 * added from NT server manager. This is done after the
 	 * smb.conf checks are done as we need a uid and token. JRA.
 	 *
