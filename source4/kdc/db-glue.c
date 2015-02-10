@@ -714,7 +714,7 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 				krb5_clear_error_message(context);
 				goto out;
 			}
-			krb5_principal_set_type(context, entry_ex->entry.principal, KRB5_NT_SRV_INST);
+			smb_krb5_principal_set_type(context, entry_ex->entry.principal, KRB5_NT_SRV_INST);
 		} else {
 			ret = krb5_copy_principal(context, principal, &entry_ex->entry.principal);
 			if (ret) {
