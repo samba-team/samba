@@ -49,17 +49,12 @@
 #define lock_type struct flock64
 #endif
 
-#ifdef HAVE_GPFS
-#include "gpfs_gpl.h"
-#endif
-
 #define MODULE "prealloc"
 static int module_debug;
 
 static int preallocate_space(int fd, off_t size)
 {
 	int err;
-#ifndef HAVE_GPFS
 	lock_type fl = {0};
 
 	if (size <= 0) {
@@ -85,10 +80,6 @@ static int preallocate_space(int fd, off_t size)
 	err = -1;
 	errno = ENOSYS;
 #endif
-#else /* GPFS uses completely different interface */
-       err = gpfs_prealloc(fd, (gpfs_off64_t)0, (gpfs_off64_t)size);
-#endif
-
 	if (err) {
 		DEBUG(module_debug,
 			("%s: preallocate failed on fd=%d size=%lld: %s\n",
