@@ -99,6 +99,13 @@ _kdc_db_fetch(krb5_context context,
 	config->db[i]->hdb_close(context, config->db[i]);
 
 	switch (ret) {
+	case HDB_ERR_WRONG_REALM:
+	    /*
+	     * the ent->entry.principal just contains hints for the client
+	     * to retry. This is important for enterprise principal routing
+	     * between trusts.
+	     */
+	    /* fall through */
 	case 0:
 	    if (db)
 		*db = config->db[i];
