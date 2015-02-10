@@ -539,10 +539,27 @@ static WERROR get_and_verify_access_check(TALLOC_CTX *sub_ctx,
 	return WERR_OK;
 }
 
-static WERROR bkrp_do_uncrypt_client_wrap_key(struct dcesrv_call_state *dce_call,
-					      TALLOC_CTX *mem_ctx,
-					      struct bkrp_BackupKey *r,
-					      struct ldb_context *ldb_ctx)
+/* 
+ * We have some data, such as saved website or IMAP passwords that the
+ * client has in profile on-disk.  This needs to be decrypted.  This
+ * version gives the server the data over the network (protected by
+ * the X.509 certificate and public key encryption, and asks that it
+ * be decrypted returned for short-term use, protected only by the
+ * negotiated transport encryption.
+ *
+ * The data is NOT stored in the LSA, but a X.509 certificate, public
+ * and private keys used to encrypt the data will be stored.  There is
+ * only one active encryption key pair and certificate per domain, it
+ * is pointed at with G$BCKUPKEY_PREFERRED in the LSA secrets store.
+ *
+ * The potentially multiple valid decrypting key pairs are in turn
+ * stored in the LSA secrets store as G$BCKUPKEY_keyGuidString.
+ *
+ */
+static WERROR bkrp_client_wrap_decrypt_data(struct dcesrv_call_state *dce_call,
+					    TALLOC_CTX *mem_ctx,
+					    struct bkrp_BackupKey *r,
+					    struct ldb_context *ldb_ctx)
 {
 	struct bkrp_client_side_wrapped uncrypt_request;
 	DATA_BLOB blob;
@@ -704,6 +721,15 @@ static WERROR bkrp_do_uncrypt_client_wrap_key(struct dcesrv_call_state *dce_call
 				return WERR_INVALID_DATA;
 			}
 
+			/* 
+			 * Confirm that the caller is permitted to
+			 * read this particular data.  Because one key
+			 * pair is used per domain, the caller could
+			 * have stolen the profile data on-disk and
+			 * would otherwise be able to read the
+			 * passwords.
+			 */
+			
 			werr = get_and_verify_access_check(mem_ctx, 3,
 							   uncrypted_secretv3.payload_key,
 							   uncrypt_request.access_check,
@@ -1158,8 +1184,8 @@ static WERROR generate_bkrp_cert(TALLOC_CTX *ctx, struct dcesrv_call_state *dce_
 	return WERR_OK;
 }
 
-static WERROR bkrp_do_retrieve_client_wrap_key(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		struct bkrp_BackupKey *r ,struct ldb_context *ldb_ctx)
+static WERROR bkrp_retrieve_client_wrap_key(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+					    struct bkrp_BackupKey *r, struct ldb_context *ldb_ctx)
 {
 	struct GUID guid;
 	char *guid_string;
@@ -1309,13 +1335,13 @@ static WERROR dcesrv_bkrp_BackupKey(struct dcesrv_call_state *dce_call,
 		if(strncasecmp(GUID_string(mem_ctx, r->in.guidActionAgent),
 			BACKUPKEY_RESTORE_GUID, strlen(BACKUPKEY_RESTORE_GUID)) == 0) {
 			DEBUG(debuglevel, ("Client %s requested to decrypt a client side wrapped secret\n", addr));
-			error = bkrp_do_uncrypt_client_wrap_key(dce_call, mem_ctx, r, ldb_ctx);
+			error = bkrp_client_wrap_decrypt_data(dce_call, mem_ctx, r, ldb_ctx);
 		}
 
 		if (strncasecmp(GUID_string(mem_ctx, r->in.guidActionAgent),
 			BACKUPKEY_RETRIEVE_BACKUP_KEY_GUID, strlen(BACKUPKEY_RETRIEVE_BACKUP_KEY_GUID)) == 0) {
 			DEBUG(debuglevel, ("Client %s requested certificate for client wrapped secret\n", addr));
-			error = bkrp_do_retrieve_client_wrap_key(dce_call, mem_ctx, r, ldb_ctx);
+			error = bkrp_retrieve_client_wrap_key(dce_call, mem_ctx, r, ldb_ctx);
 		}
 
 		if (strncasecmp(GUID_string(mem_ctx, r->in.guidActionAgent),
