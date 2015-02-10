@@ -177,14 +177,15 @@ ctdb_control_getnodemapv4(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA i
 	return 0;
 }
 
-static void
-ctdb_reload_nodes_event(struct event_context *ev, struct timed_event *te, 
-			       struct timeval t, void *private_data)
+/*
+  reload the nodes file
+*/
+int
+ctdb_control_reload_nodes_file(struct ctdb_context *ctdb, uint32_t opcode)
 {
 	int i, num_nodes;
-	struct ctdb_context *ctdb = talloc_get_type(private_data, struct ctdb_context);
 	TALLOC_CTX *tmp_ctx;
-	struct ctdb_node **nodes;	
+	struct ctdb_node **nodes;
 
 	tmp_ctx = talloc_new(ctdb);
 
@@ -225,17 +226,6 @@ ctdb_reload_nodes_event(struct event_context *ev, struct timed_event *te,
 	ctdb_daemon_send_message(ctdb, ctdb->pnn, CTDB_SRVID_RELOAD_NODES, tdb_null);
 
 	talloc_free(tmp_ctx);
-	return;
-}
-
-/*
-  reload the nodes file after a short delay (so that we can send the response
-  back first
-*/
-int 
-ctdb_control_reload_nodes_file(struct ctdb_context *ctdb, uint32_t opcode)
-{
-	event_add_timed(ctdb->ev, ctdb, timeval_current_ofs(1,0), ctdb_reload_nodes_event, ctdb);
 
 	return 0;
 }
