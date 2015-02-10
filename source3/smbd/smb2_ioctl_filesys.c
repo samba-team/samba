@@ -3,7 +3,7 @@
    Core SMB2 server
 
    Copyright (C) Stefan Metzmacher 2009
-   Copyright (C) David Disseldorp 2013
+   Copyright (C) David Disseldorp 2013-2015
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -123,6 +123,108 @@ static NTSTATUS fsctl_set_cmprn(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS fsctl_zero_data(TALLOC_CTX *mem_ctx,
+				struct tevent_context *ev,
+				struct files_struct *fsp,
+				DATA_BLOB *in_input)
+{
+	struct file_zero_data_info zdata_info;
+	enum ndr_err_code ndr_ret;
+	struct lock_struct lck;
+	int mode;
+	uint64_t len;
+	int ret;
+	NTSTATUS status;
+
+	if (fsp == NULL) {
+		return NT_STATUS_FILE_CLOSED;
+	}
+
+	/* WRITE_DATA permission is required */
+	status = check_access(fsp->conn, fsp, NULL, FILE_WRITE_DATA);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	/* allow regardless of whether FS supports sparse or not */
+
+	ndr_ret = ndr_pull_struct_blob(in_input, mem_ctx, &zdata_info,
+			(ndr_pull_flags_fn_t)ndr_pull_file_zero_data_info);
+	if (ndr_ret != NDR_ERR_SUCCESS) {
+		DEBUG(0, ("failed to unmarshall zero data request\n"));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (zdata_info.beyond_final_zero < zdata_info.file_off) {
+		DEBUG(0, ("invalid zero data params: off %lu, bfz, %lu\n",
+			  (unsigned long)zdata_info.file_off,
+			  (unsigned long)zdata_info.beyond_final_zero));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	/* convert strange "beyond final zero" param into length */
+	len = zdata_info.beyond_final_zero - zdata_info.file_off;
+
+	if (len == 0) {
+		DEBUG(2, ("zero data called with zero length range\n"));
+		return NT_STATUS_OK;
+	}
+
+	init_strict_lock_struct(fsp,
+				fsp->op->global->open_persistent_id,
+				zdata_info.file_off,
+				len,
+				WRITE_LOCK,
+				&lck);
+
+	if (!SMB_VFS_STRICT_LOCK(fsp->conn, fsp, &lck)) {
+		DEBUG(2, ("failed to lock range for zero-data\n"));
+		return NT_STATUS_FILE_LOCK_CONFLICT;
+	}
+
+	/*
+	 * MS-FSCC <58> Section 2.3.65
+	 * This FSCTL sets the range of bytes to zero (0) without extending the
+	 * file size.
+	 *
+	 * The VFS_FALLOCATE_FL_KEEP_SIZE flag is used to satisfy this
+	 * constraint.
+	 */
+
+	mode = VFS_FALLOCATE_FL_PUNCH_HOLE | VFS_FALLOCATE_FL_KEEP_SIZE;
+	ret = SMB_VFS_FALLOCATE(fsp, mode, zdata_info.file_off, len);
+	if (ret == -1)  {
+		status = map_nt_error_from_unix_common(errno);
+		DEBUG(2, ("zero-data fallocate(0x%x) failed: %s\n", mode,
+		      strerror(errno)));
+		SMB_VFS_STRICT_UNLOCK(fsp->conn, fsp, &lck);
+		return status;
+	}
+
+	if (!fsp->is_sparse && lp_strict_allocate(SNUM(fsp->conn))) {
+		/*
+		 * File marked non-sparse and "strict allocate" is enabled -
+		 * allocate the range that we just punched out.
+		 * In future FALLOC_FL_ZERO_RANGE could be used exclusively for
+		 * this, but it's currently only supported on XFS and ext4.
+		 *
+		 * The newly allocated range still won't be found by SEEK_DATA
+		 * for QAR, but stat.st_blocks will reflect it.
+		 */
+		ret = SMB_VFS_FALLOCATE(fsp, VFS_FALLOCATE_FL_KEEP_SIZE,
+					zdata_info.file_off, len);
+		if (ret == -1)  {
+			status = map_nt_error_from_unix_common(errno);
+			DEBUG(0, ("fallocate failed: %s\n", strerror(errno)));
+			SMB_VFS_STRICT_UNLOCK(fsp->conn, fsp, &lck);
+			return status;
+		}
+	}
+
+	SMB_VFS_STRICT_UNLOCK(fsp->conn, fsp, &lck);
+	return NT_STATUS_OK;
+}
+
 struct tevent_req *smb2_ioctl_filesys(uint32_t ctl_code,
 				      struct tevent_context *ev,
 				      struct tevent_req *req,
@@ -142,6 +244,14 @@ struct tevent_req *smb2_ioctl_filesys(uint32_t ctl_code,
 		break;
 	case FSCTL_SET_COMPRESSION:
 		status = fsctl_set_cmprn(state, ev, state->fsp,
+					 &state->in_input);
+		if (!tevent_req_nterror(req, status)) {
+			tevent_req_done(req);
+		}
+		return tevent_req_post(req, ev);
+		break;
+	case FSCTL_SET_ZERO_DATA:
+		status = fsctl_zero_data(state, ev, state->fsp,
 					 &state->in_input);
 		if (!tevent_req_nterror(req, status)) {
 			tevent_req_done(req);
