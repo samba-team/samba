@@ -79,7 +79,7 @@ int ctdb_set_recovery_lock_file(struct ctdb_context *ctdb, const char *file)
 /*
   add a node to the list of nodes
 */
-static int ctdb_add_node(struct ctdb_context *ctdb, char *nstr)
+static int ctdb_add_node(struct ctdb_context *ctdb, const char *nstr, uint32_t flags)
 {
 	struct ctdb_node *node, **nodep;
 
@@ -102,54 +102,13 @@ static int ctdb_add_node(struct ctdb_context *ctdb, char *nstr)
 	/* this assumes that the nodes are kept in sorted order, and no gaps */
 	node->pnn = ctdb->num_nodes;
 
-	/* nodes start out disconnected and unhealthy */
-	node->flags = (NODE_FLAGS_DISCONNECTED | NODE_FLAGS_UNHEALTHY);
+	node->flags = flags;
 
 	ctdb->num_nodes++;
 	node->dead_count = 0;
 
 	return 0;
 }
-
-/*
-  add an entry for a "deleted" node to the list of nodes.
-  a "deleted" node is a node that is commented out from the nodes file.
-  this is used to prevent that subsequent nodes in the nodes list
-  change their pnn value if a node is "delete" by commenting it out and then
-  using "ctdb reloadnodes" at runtime.
-*/
-static int ctdb_add_deleted_node(struct ctdb_context *ctdb)
-{
-	struct ctdb_node *node, **nodep;
-
-	nodep = talloc_realloc(ctdb, ctdb->nodes, struct ctdb_node *, ctdb->num_nodes+1);
-	CTDB_NO_MEMORY(ctdb, nodep);
-
-	ctdb->nodes = nodep;
-	nodep = &ctdb->nodes[ctdb->num_nodes];
-	(*nodep) = talloc_zero(ctdb->nodes, struct ctdb_node);
-	CTDB_NO_MEMORY(ctdb, *nodep);
-	node = *nodep;
-	
-	if (ctdb_parse_address(ctdb, node, "0.0.0.0", &node->address) != 0) {
-		DEBUG(DEBUG_ERR,("Failed to setup deleted node %d\n", ctdb->num_nodes));
-		return -1;
-	}
-	node->ctdb = ctdb;
-	node->name = talloc_strdup(node, "0.0.0.0:0");
-
-	/* this assumes that the nodes are kept in sorted order, and no gaps */
-	node->pnn = ctdb->num_nodes;
-
-	/* this node is permanently deleted/disconnected */
-	node->flags = NODE_FLAGS_DELETED|NODE_FLAGS_DISCONNECTED;
-
-	ctdb->num_nodes++;
-	node->dead_count = 0;
-
-	return 0;
-}
-
 
 /*
   setup the node list from a file
@@ -174,24 +133,29 @@ static int ctdb_set_nlist(struct ctdb_context *ctdb, const char *nlist)
 	}
 
 	for (i=0; i < nlines; i++) {
-		char *node;
+		const char *node;
+		uint32_t flags;
 
 		node = lines[i];
 		/* strip leading spaces */
 		while((*node == ' ') || (*node == '\t')) {
 			node++;
 		}
-		if (*node == '#') {
-			if (ctdb_add_deleted_node(ctdb) != 0) {
-				talloc_free(lines);
-				return -1;
-			}
-			continue;
-		}
 		if (strcmp(node, "") == 0) {
 			continue;
 		}
-		if (ctdb_add_node(ctdb, node) != 0) {
+		if (*node == '#') {
+			/* A "deleted" node is a node that is
+			   commented out in the nodes file.  This is
+			   used instead of removing a line, which
+			   would cause subsequent nodes to change
+			   their PNN. */
+			flags = NODE_FLAGS_DELETED|NODE_FLAGS_DISCONNECTED;
+			node = "0.0.0.0";
+		} else {
+			flags = NODE_FLAGS_DISCONNECTED|NODE_FLAGS_UNHEALTHY;
+		}
+		if (ctdb_add_node(ctdb, node, flags) != 0) {
 			talloc_free(lines);
 			return -1;
 		}
