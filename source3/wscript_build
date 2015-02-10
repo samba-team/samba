@@ -369,6 +369,7 @@ bld.SAMBA3_SUBSYSTEM('samba3core',
                         server_id_db
                         messages_util
                         messages_dgm
+                        talloc_report
                         TDB_LIB''')
 
 bld.SAMBA3_LIBRARY('smbd_shim',
