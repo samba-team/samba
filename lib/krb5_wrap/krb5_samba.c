@@ -2603,6 +2603,27 @@ int smb_krb5_principal_get_type(krb5_context context,
 }
 
 /**
+* @brief Set the type of a krb5_principal
+*
+* @param context	The krb5_context
+* @param principal	The const krb5_principal
+* @param type		The principal type
+*
+*/
+void smb_krb5_principal_set_type(krb5_context context,
+				 krb5_principal principal,
+				 int type)
+{
+#ifdef HAVE_KRB5_PRINCIPAL_SET_TYPE /* Heimdal */
+	krb5_principal_set_type(context, principal, type);
+#elif defined(krb5_princ_type) /* MIT */
+	krb5_princ_type(context, principal) = type;
+#else
+#error	UNKNOWN_PRINC_SET_TYPE_FUNCTION
+#endif
+}
+
+/**
 * @brief Generate a krb5 warning, forwarding to com_err
 *
 * @param context	The krb5_context

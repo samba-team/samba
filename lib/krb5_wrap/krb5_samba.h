@@ -263,6 +263,10 @@ krb5_error_code smb_krb5_make_pac_checksum(TALLOC_CTX *mem_ctx,
 char *smb_krb5_principal_get_realm(krb5_context context,
 				   krb5_const_principal principal);
 
+void smb_krb5_principal_set_type(krb5_context context,
+				 krb5_principal principal,
+				 int type);
+
 krb5_error_code smb_krb5_principal_set_realm(krb5_context context,
 					     krb5_principal principal,
 					     const char *realm);
