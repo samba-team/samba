@@ -213,18 +213,12 @@ static NTSTATUS get_lsa_secret(TALLOC_CTX *mem_ctx,
 			   "(&(cn=%s Secret)(objectclass=secret))",
 			   ldb_binary_encode_string(tmp_mem, name));
 
-	if (ret != LDB_SUCCESS || res->count == 0) {
+	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_mem);
-		/*
-		 * Important NOT to use NT_STATUS_OBJECT_NAME_NOT_FOUND
-		 * as this return value is used to detect the case
-		 * when we have the secret but without the currentValue
-		 * (case RODC)
-		 */
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	} else if (res->count == 0) {
 		return NT_STATUS_RESOURCE_NAME_NOT_FOUND;
-	}
-
-	if (res->count > 1) {
+	} else if (res->count > 1) {
 		DEBUG(2, ("Secret %s collision\n", name));
 		talloc_free(tmp_mem);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
@@ -236,8 +230,9 @@ static NTSTATUS get_lsa_secret(TALLOC_CTX *mem_ctx,
 		 * The secret object is here but we don't have the secret value
 		 * The most common case is a RODC
 		 */
+		*lsa_secret = data_blob_null;
 		talloc_free(tmp_mem);
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		return NT_STATUS_OK;
 	}
 
 	data = val->data;
@@ -613,15 +608,11 @@ static WERROR bkrp_client_wrap_decrypt_data(struct dcesrv_call_state *dce_call,
 				&lsa_secret);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("Error while fetching secret %s\n", cert_secret_name));
-		if (NT_STATUS_EQUAL(status,NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
-			/* we do not have the real secret attribute */
-			return WERR_INVALID_PARAMETER;
-		} else {
-			return WERR_FILE_NOT_FOUND;
-		}
-	}
-
-	if (lsa_secret.length != 0) {
+		return WERR_FILE_NOT_FOUND;
+	} else if (lsa_secret.length == 0) {
+		/* we do not have the real secret attribute, like if we are an RODC */
+		return WERR_INVALID_PARAMETER;
+	} else {
 		hx509_context hctx;
 		struct bkrp_exported_RSA_key_pair keypair;
 		hx509_private_key pk;
@@ -1206,37 +1197,34 @@ static WERROR bkrp_retrieve_client_wrap_key(struct dcesrv_call_state *dce_call, 
 				ldb_ctx,
 				"BCKUPKEY_PREFERRED",
 				&lsa_secret);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("Error while fetching secret BCKUPKEY_PREFERRED\n"));
-		if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
-			/* Ok we can be in this case if there was no certs */
-			struct loadparm_context *lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
-			char *dn = talloc_asprintf(mem_ctx, "CN=%s",
-							lpcfg_realm(lp_ctx));
-
-			WERROR werr =  generate_bkrp_cert(mem_ctx, dce_call, ldb_ctx, dn);
-			if (!W_ERROR_IS_OK(werr)) {
-				return WERR_INVALID_PARAMETER;
-			}
-			status = get_lsa_secret(mem_ctx,
+	if (NT_STATUS_EQUAL(status, NT_STATUS_RESOURCE_NAME_NOT_FOUND)) {
+		/* Ok we can be in this case if there was no certs */
+		struct loadparm_context *lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
+		char *dn = talloc_asprintf(mem_ctx, "CN=%s",
+					   lpcfg_realm(lp_ctx));
+		
+		WERROR werr =  generate_bkrp_cert(mem_ctx, dce_call, ldb_ctx, dn);
+		if (!W_ERROR_IS_OK(werr)) {
+			return WERR_INVALID_PARAMETER;
+		}
+		status = get_lsa_secret(mem_ctx,
 					ldb_ctx,
 					"BCKUPKEY_PREFERRED",
 					&lsa_secret);
-
-			if (!NT_STATUS_IS_OK(status)) {
-				/* Ok we really don't manage to get this certs ...*/
-				DEBUG(2, ("Unable to locate BCKUPKEY_PREFERRED after cert generation\n"));
-				return WERR_FILE_NOT_FOUND;
-			}
-		} else {
-			/* In theory we should NEVER reach this point as it
-			   should only appear in a rodc server */
-			/* we do not have the real secret attribute */
-			return WERR_INVALID_PARAMETER;
+		
+		if (!NT_STATUS_IS_OK(status)) {
+			/* Ok we really don't manage to get this certs ...*/
+			DEBUG(2, ("Unable to locate BCKUPKEY_PREFERRED after cert generation\n"));
+			return WERR_FILE_NOT_FOUND;
 		}
+	} else if (!NT_STATUS_IS_OK(status)) {
+		return WERR_INTERNAL_ERROR;
 	}
 
-	if (lsa_secret.length != 0) {
+	if (lsa_secret.length == 0) {
+		DEBUG(1, ("No secret in BCKUPKEY_PREFERRED, are we an undetected RODC?\n"));
+		return WERR_INTERNAL_ERROR;
+	} else {
 		char *cert_secret_name;
 
 		status = GUID_from_ndr_blob(&lsa_secret, &guid);
