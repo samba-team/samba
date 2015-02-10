@@ -1936,6 +1936,215 @@ static krb5_error_code samba_kdc_fetch_server(krb5_context context,
 	return ret;
 }
 
+static krb5_error_code samba_kdc_lookup_realm(krb5_context context,
+					      struct samba_kdc_db_context *kdc_db_ctx,
+					      TALLOC_CTX *mem_ctx,
+					      krb5_const_principal principal,
+					      unsigned flags,
+					      hdb_entry_ex *entry_ex)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	NTSTATUS status;
+	krb5_error_code ret;
+	char *_realm = NULL;
+	bool check_realm = false;
+	const char *realm = NULL;
+	struct dsdb_trust_routing_table *trt = NULL;
+	const struct lsa_TrustDomainInfoInfoEx *tdo = NULL;
+	unsigned int num_comp;
+	bool ok;
+	char *upper = NULL;
+
+	num_comp = krb5_princ_size(context, principal);
+
+	if (flags & HDB_F_GET_CLIENT) {
+		if (flags & HDB_F_FOR_AS_REQ) {
+			check_realm = true;
+		}
+	}
+	if (flags & HDB_F_GET_SERVER) {
+		if (flags & HDB_F_FOR_TGS_REQ) {
+			check_realm = true;
+		}
+	}
+
+	if (!check_realm) {
+		TALLOC_FREE(frame);
+		return 0;
+	}
+
+	_realm = smb_krb5_principal_get_realm(context, principal);
+	if (_realm == NULL) {
+		TALLOC_FREE(frame);
+		return ENOMEM;
+	}
+
+	/*
+	 * The requested realm needs to be our own
+	 */
+	ok = lpcfg_is_my_domain_or_realm(kdc_db_ctx->lp_ctx, _realm);
+	if (!ok) {
+		/*
+		 * The request is not for us...
+		 */
+		SAFE_FREE(_realm);
+		TALLOC_FREE(frame);
+		return HDB_ERR_NOENTRY;
+	}
+
+	realm = talloc_strdup(frame, _realm);
+	SAFE_FREE(_realm);
+	if (realm == NULL) {
+		TALLOC_FREE(frame);
+		return ENOMEM;
+	}
+
+	if (krb5_principal_get_type(context, principal) == KRB5_NT_ENTERPRISE_PRINCIPAL) {
+		char *principal_string = NULL;
+		krb5_principal enterprise_principal = NULL;
+		char *enterprise_realm = NULL;
+
+		if (num_comp != 1) {
+			TALLOC_FREE(frame);
+			return HDB_ERR_NOENTRY;
+		}
+
+		principal_string = smb_krb5_principal_get_comp_string(frame, context,
+								      principal, 0);
+		if (principal_string == NULL) {
+			TALLOC_FREE(frame);
+			return ENOMEM;
+		}
+
+		ret = krb5_parse_name(context, principal_string,
+				      &enterprise_principal);
+		TALLOC_FREE(principal_string);
+		if (ret) {
+			TALLOC_FREE(frame);
+			return ret;
+		}
+
+		enterprise_realm = smb_krb5_principal_get_realm(context,
+							enterprise_principal);
+		krb5_free_principal(context, enterprise_principal);
+		if (enterprise_realm != NULL) {
+			realm = talloc_strdup(frame, enterprise_realm);
+			SAFE_FREE(enterprise_realm);
+			if (realm == NULL) {
+				TALLOC_FREE(frame);
+				return ENOMEM;
+			}
+		}
+	}
+
+	if (flags & HDB_F_GET_SERVER) {
+		char *service_realm = NULL;
+
+		ret = principal_comp_strcmp(context, principal, 0, KRB5_TGS_NAME);
+		if (ret == 0) {
+			/*
+			 * we need to search krbtgt/ locally
+			 */
+			TALLOC_FREE(frame);
+			return 0;
+		}
+
+		/*
+		 * We need to check the last component against the routing table.
+		 *
+		 * Note this works only with 2 or 3 component principals, e.g:
+		 *
+		 * servicePrincipalName: ldap/W2K8R2-219.bla.base
+		 * servicePrincipalName: ldap/W2K8R2-219.bla.base/bla.base
+		 * servicePrincipalName: ldap/W2K8R2-219.bla.base/ForestDnsZones.bla.base
+		 * servicePrincipalName: ldap/W2K8R2-219.bla.base/DomainDnsZones.bla.base
+		 */
+
+		if (num_comp == 2 || num_comp == 3) {
+			service_realm = smb_krb5_principal_get_comp_string(frame,
+									   context,
+									   principal,
+									   num_comp - 1);
+		}
+
+		if (service_realm != NULL) {
+			realm = service_realm;
+		}
+	}
+
+	ok = lpcfg_is_my_domain_or_realm(kdc_db_ctx->lp_ctx, realm);
+	if (ok) {
+		/*
+		 * skip the expensive routing lookup
+		 */
+		TALLOC_FREE(frame);
+		return 0;
+	}
+
+	status = dsdb_trust_routing_table_load(kdc_db_ctx->samdb,
+					       frame, &trt);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
+		return EINVAL;
+	}
+
+	tdo = dsdb_trust_routing_by_name(trt, realm);
+	if (tdo == NULL) {
+		/*
+		 * This principal has to be local
+		 */
+		TALLOC_FREE(frame);
+		return 0;
+	}
+
+	if (tdo->trust_attributes & LSA_TRUST_ATTRIBUTE_WITHIN_FOREST) {
+		/*
+		 * TODO: handle the routing within the forest
+		 *
+		 * This should likely be handled in
+		 * samba_kdc_message2entry() in case we're
+		 * a global catalog. We'd need to check
+		 * if realm_dn is our own domain and derive
+		 * the dns domain name from realm_dn and check that
+		 * against the routing table or fallback to
+		 * the tdo we found here.
+		 *
+		 * But for now we don't support multiple domains
+		 * in our forest correctly anyway.
+		 *
+		 * Just search in our local database.
+		 */
+		TALLOC_FREE(frame);
+		return 0;
+	}
+
+	ZERO_STRUCT(entry_ex->entry);
+
+	ret = krb5_copy_principal(context, principal,
+				  &entry_ex->entry.principal);
+	if (ret) {
+		TALLOC_FREE(frame);
+		return ret;
+	}
+
+	upper = strupper_talloc(frame, tdo->domain_name.string);
+	if (upper == NULL) {
+		TALLOC_FREE(frame);
+		return ENOMEM;
+	}
+
+	ret = krb5_principal_set_realm(context,
+				       entry_ex->entry.principal,
+				       upper);
+	if (ret) {
+		TALLOC_FREE(frame);
+		return ret;
+	}
+
+	TALLOC_FREE(frame);
+	return HDB_ERR_WRONG_REALM;
+}
+
 krb5_error_code samba_kdc_fetch(krb5_context context,
 				struct samba_kdc_db_context *kdc_db_ctx,
 				krb5_const_principal principal,
@@ -1952,6 +2161,14 @@ krb5_error_code samba_kdc_fetch(krb5_context context,
 		krb5_set_error_message(context, ret, "samba_kdc_fetch: talloc_named() failed!");
 		return ret;
 	}
+
+	ret = samba_kdc_lookup_realm(context, kdc_db_ctx, mem_ctx,
+				     principal, flags, entry_ex);
+	if (ret != 0) {
+		goto done;
+	}
+
+	ret = HDB_ERR_NOENTRY;
 
 	if (flags & HDB_F_GET_CLIENT) {
 		ret = samba_kdc_fetch_client(context, kdc_db_ctx, mem_ctx, principal, flags, entry_ex);
