@@ -1609,7 +1609,6 @@ static krb5_error_code samba_kdc_lookup_server(krb5_context context,
 					      krb5_principal_get_comp_string(context, principal, 0),
 					      &enterprise_prinicpal);
 			if (ret) {
-				talloc_free(mem_ctx);
 				return ret;
 			}
 			principal = enterprise_prinicpal;
