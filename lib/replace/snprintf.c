@@ -445,6 +445,10 @@ static int dopr(char *buffer, size_t maxlen, const char *format, va_list args_in
 					ch = *format++;
 				}
 				break;
+			case 'j':
+				cnk->cflags = DP_C_LLONG;
+				ch = *format++;
+				break;
 			case 'L':
 				cnk->cflags = DP_C_LDOUBLE;
 				ch = *format++;
