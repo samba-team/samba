@@ -367,6 +367,7 @@ bld.SAMBA3_SUBSYSTEM('samba3core',
                         samba3-util
                         errors3
                         server_id_db
+                        messages_util
                         messages_dgm
                         TDB_LIB''')
 

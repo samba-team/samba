@@ -55,6 +55,7 @@
 #include "lib/iov_buf.h"
 #include "lib/util/server_id_db.h"
 #include "lib/messages_dgm_ref.h"
+#include "lib/messages_util.h"
 
 struct messaging_callback {
 	struct messaging_callback *prev, *next;
@@ -80,12 +81,6 @@ struct messaging_context {
 	struct messaging_backend *remote;
 
 	struct server_id_db *names_db;
-};
-
-struct messaging_hdr {
-	uint32_t msg_type;
-	struct server_id dst;
-	struct server_id src;
 };
 
 /****************************************************************************
@@ -215,13 +210,13 @@ static void messaging_recv_cb(const uint8_t *msg, size_t msg_len,
 {
 	struct messaging_context *msg_ctx = talloc_get_type_abort(
 		private_data, struct messaging_context);
-	const struct messaging_hdr *hdr;
+	uint8_t hdr[MESSAGE_HDR_LENGTH];
 	struct server_id_buf idbuf;
 	struct messaging_rec rec;
 	int64_t fds64[MIN(num_fds, INT8_MAX)];
 	size_t i;
 
-	if (msg_len < sizeof(*hdr)) {
+	if (msg_len < sizeof(hdr)) {
 		for (i=0; i < num_fds; i++) {
 			close(fds[i]);
 		}
@@ -246,27 +241,21 @@ static void messaging_recv_cb(const uint8_t *msg, size_t msg_len,
 		fds[i] = -1;
 	}
 
-	/*
-	 * messages_dgm guarantees alignment, so we can cast here
-	 */
-	hdr = (const struct messaging_hdr *)msg;
-
-	DEBUG(10, ("%s: Received message 0x%x len %u (num_fds:%u) from %s\n",
-		   __func__, (unsigned)hdr->msg_type,
-		   (unsigned)(msg_len - sizeof(*hdr)),
-		   (unsigned)num_fds,
-		   server_id_str_buf(hdr->src, &idbuf)));
-
 	rec = (struct messaging_rec) {
 		.msg_version = MESSAGE_VERSION,
-		.msg_type = hdr->msg_type,
-		.src = hdr->src,
-		.dest = hdr->dst,
-		.buf.data = discard_const_p(uint8, msg) + sizeof(*hdr),
-		.buf.length = msg_len - sizeof(*hdr),
+		.buf.data = discard_const_p(uint8, msg) + sizeof(hdr),
+		.buf.length = msg_len - sizeof(hdr),
 		.num_fds = num_fds,
 		.fds = fds64,
 	};
+
+	message_hdr_get(&rec.msg_type, &rec.src, &rec.dest, msg);
+
+	DEBUG(10, ("%s: Received message 0x%x len %u (num_fds:%u) from %s\n",
+		   __func__, (unsigned)rec.msg_type,
+		   (unsigned)rec.buf.length,
+		   (unsigned)num_fds,
+		   server_id_str_buf(rec.src, &idbuf)));
 
 	messaging_dispatch_rec(msg_ctx, &rec);
 }
@@ -534,7 +523,7 @@ NTSTATUS messaging_send_iov_from(struct messaging_context *msg_ctx,
 				 const int *fds, size_t num_fds)
 {
 	int ret;
-	struct messaging_hdr hdr;
+	uint8_t hdr[MESSAGE_HDR_LENGTH];
 	struct iovec iov2[iovlen+1];
 
 	if (server_id_is_disconnected(&dst)) {
@@ -560,13 +549,8 @@ NTSTATUS messaging_send_iov_from(struct messaging_context *msg_ctx,
 		return NT_STATUS_OK;
 	}
 
-	ZERO_STRUCT(hdr);
-	hdr = (struct messaging_hdr) {
-		.msg_type = msg_type,
-		.dst = dst,
-		.src = src
-	};
-	iov2[0] = (struct iovec){ .iov_base = &hdr, .iov_len = sizeof(hdr) };
+	message_hdr_put(hdr, msg_type, src, dst);
+	iov2[0] = (struct iovec){ .iov_base = hdr, .iov_len = sizeof(hdr) };
 	memcpy(&iov2[1], iov, iovlen * sizeof(*iov));
 
 	become_root();
