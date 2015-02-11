@@ -33,6 +33,7 @@
 #include "../lib/util/tevent_ntstatus.h"
 #include "lib/param/param.h"
 #include "lib/util/server_id_db.h"
+#include "lib/util/talloc_report.h"
 #include "../source3/lib/messages_dgm.h"
 #include "../source3/lib/messages_dgm_ref.h"
 #include "../source3/lib/messages_util.h"
@@ -113,6 +114,22 @@ static void ping_message(struct imessaging_context *msg, void *private_data,
 		 server_id_str_buf(src, &idbuf), (int)data->length,
 		 data->data?(const char *)data->data:""));
 	imessaging_send(msg, src, MSG_PONG, data);
+}
+
+static void pool_message(struct imessaging_context *msg, void *private_data,
+			 uint32_t msg_type, struct server_id src,
+			 DATA_BLOB *data)
+{
+	char *report;
+
+	report = talloc_report_str(msg, NULL);
+
+	if (report != NULL) {
+		DATA_BLOB blob = { .data = (uint8_t *)report,
+				   .length = talloc_get_size(report) - 1};
+		imessaging_send(msg, src, MSG_POOL_USAGE, &blob);
+	}
+	talloc_free(report);
 }
 
 /*
@@ -377,6 +394,7 @@ struct imessaging_context *imessaging_init(TALLOC_CTX *mem_ctx,
 	}
 
 	imessaging_register(msg, NULL, MSG_PING, ping_message);
+	imessaging_register(msg, NULL, MSG_REQ_POOL_USAGE, pool_message);
 	imessaging_register(msg, NULL, MSG_IRPC, irpc_handler);
 	IRPC_REGISTER(msg, irpc, IRPC_UPTIME, irpc_uptime, msg);
 

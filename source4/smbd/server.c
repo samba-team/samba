@@ -360,6 +360,8 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 
 	poptFreeContext(pc);
 
+	talloc_enable_null_tracking();
+
 	setup_logging(binary_name, opt_interactive?DEBUG_STDOUT:DEBUG_FILE);
 	setup_signals();
 
