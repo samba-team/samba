@@ -775,7 +775,7 @@ static bool test_RestoreGUID_ko(struct torture_context *tctx,
 		out_blob.length = *r->out.data_out_len;
 		ndr_err = ndr_pull_struct_blob(&out_blob, tctx, &resp, (ndr_pull_flags_fn_t)ndr_pull_bkrp_client_side_unwrapped);
 		torture_assert_int_equal(tctx, NDR_ERR_CODE_IS_SUCCESS(ndr_err), 0, "Unable to unmarshall bkrp_client_side_unwrapped");
-		torture_assert_werr_equal(tctx, r->out.result, WERR_INVALID_DATA, "Wrong error code");
+		torture_assert_werr_equal(tctx, r->out.result, WERR_INVALID_PARAM, "Wrong error code");
 	} else {
 		struct bkrp_BackupKey *r = createRetreiveBackupKeyGUIDStruct(tctx, p, 2, &out_blob);
 		torture_assert_ntstatus_equal(tctx, dcerpc_bkrp_BackupKey_r(b, tctx, r),
@@ -980,7 +980,14 @@ static bool test_RestoreGUID_badcertguid(struct torture_context *tctx,
 		out_blob.length = *r->out.data_out_len;
 		ndr_err = ndr_pull_struct_blob(&out_blob, tctx, &resp, (ndr_pull_flags_fn_t)ndr_pull_bkrp_client_side_unwrapped);
 		torture_assert_int_equal(tctx, NDR_ERR_CODE_IS_SUCCESS(ndr_err), 0, "Unable to unmarshall bkrp_client_side_unwrapped");
-		torture_assert_werr_equal(tctx, r->out.result, WERR_FILE_NOT_FOUND, "Bad error code on wrong has in access check");
+
+		/* 
+		 * Windows 2012R2 has, presumably, a programming error
+		 * returning an NTSTATUS code on this interface 
+		 */
+		if (W_ERROR_V(r->out.result) != NT_STATUS_V(NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+			torture_assert_werr_equal(tctx, r->out.result, WERR_INVALID_DATA, "Bad error code on wrong has in access check");
+		}
 	} else {
 		struct bkrp_BackupKey *r = createRetreiveBackupKeyGUIDStruct(tctx, p, 2, &out_blob);
 		torture_assert_ntstatus_equal(tctx, dcerpc_bkrp_BackupKey_r(b, tctx, r),

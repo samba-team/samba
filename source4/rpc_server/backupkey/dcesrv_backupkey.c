@@ -608,7 +608,7 @@ static WERROR bkrp_client_wrap_decrypt_data(struct dcesrv_call_state *dce_call,
 				&lsa_secret);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("Error while fetching secret %s\n", cert_secret_name));
-		return WERR_FILE_NOT_FOUND;
+		return WERR_INVALID_DATA;
 	} else if (lsa_secret.length == 0) {
 		/* we do not have the real secret attribute, like if we are an RODC */
 		return WERR_INVALID_PARAMETER;
@@ -661,7 +661,7 @@ static WERROR bkrp_client_wrap_decrypt_data(struct dcesrv_call_state *dce_call,
 		hx509_private_key_free(&pk);
 		if (res != 0) {
 			/* We are not able to decrypt the secret, looks like something is wrong */
-			return WERR_INVALID_DATA;
+			return WERR_INVALID_PARAMETER;
 		}
 		blob_us.data = uncrypted_secret.data;
 		blob_us.length = uncrypted_secret.length;
