@@ -118,7 +118,7 @@ def set_options(opt):
 		   help=("mark version with + if local git changes"),
 		   action='store_true', dest='GIT_LOCAL_CHANGES', default=False)
     gr.add_option('--address-sanitizer',
-                   help=("Enable address sanitizer compile and liker flags"),
+                   help=("Enable address sanitizer compile and linker flags"),
                    action="store_true", dest='address_sanitizer', default=False)
 
     gr.add_option('--abi-check',
