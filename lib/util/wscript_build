@@ -95,6 +95,13 @@ if not bld.env.SAMBA_UTIL_CORE_ONLY:
                       private_library=True
                       )
 
+    bld.SAMBA_LIBRARY('talloc_report',
+                      source='talloc_report.c',
+                      local_include=False,
+                      public_deps='talloc',
+                      private_library=True
+                      )
+
     if not bld.env.disable_ntdb:
         bld.SAMBA_LIBRARY('util_ntdb',
                           source='util_ntdb.c',
