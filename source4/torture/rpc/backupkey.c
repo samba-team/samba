@@ -32,6 +32,16 @@
 #include <der.h>
 #include <hcrypto/rsa.h>
 
+enum test_wrong {
+	WRONG_MAGIC,
+	WRONG_R2,
+	WRONG_PAYLOAD_LENGTH,
+	WRONG_CIPHERTEXT_LENGTH,
+	SHORT_PAYLOAD_LENGTH,
+	SHORT_CIPHERTEXT_LENGTH,
+	ZERO_PAYLOAD_LENGTH,
+	ZERO_CIPHERTEXT_LENGTH
+};
 
 /* Our very special and valued secret */
 /* No need to put const as we cast the array in uint8_t
@@ -1130,6 +1140,604 @@ static bool test_RetreiveBackupKeyGUID_2048bits(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_ServerWrap_encrypt_decrypt(struct torture_context *tctx,
+					    struct dcerpc_pipe *p)
+{
+	struct bkrp_BackupKey r;
+	struct GUID guid;
+	DATA_BLOB plaintext = data_blob_const(secret, sizeof(secret));
+	DATA_BLOB encrypted;
+	uint32_t enclen;
+	DATA_BLOB decrypted;
+	uint32_t declen;
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	enum dcerpc_AuthType auth_type;
+	enum dcerpc_AuthLevel auth_level;
+	ZERO_STRUCT(r);
+
+	dcerpc_binding_handle_auth_info(b, &auth_type, &auth_level);
+
+	/* Encrypt */
+	torture_assert_ntstatus_ok(tctx,
+				   GUID_from_string(BACKUPKEY_BACKUP_GUID, &guid),
+				   "obtain GUID");
+
+	r.in.guidActionAgent = &guid;
+	r.in.data_in = plaintext.data;
+	r.in.data_in_len = plaintext.length;
+	r.in.param = 0;
+	r.out.data_out = &encrypted.data;
+	r.out.data_out_len = &enclen;
+	if (auth_level == DCERPC_AUTH_LEVEL_PRIVACY) {
+		torture_assert_ntstatus_ok(tctx,
+					   dcerpc_bkrp_BackupKey_r(b, tctx, &r),
+					   "encrypt");
+	} else {
+		torture_assert_ntstatus_equal(tctx,
+					      dcerpc_bkrp_BackupKey_r(b, tctx, &r),
+					      NT_STATUS_ACCESS_DENIED,
+					      "encrypt");
+		return true;
+	}
+	torture_assert_werr_ok(tctx,
+			       r.out.result,
+			       "encrypt");
+	encrypted.length = *r.out.data_out_len;
+	
+	/* Decrypt */
+	torture_assert_ntstatus_ok(tctx,
+				   GUID_from_string(BACKUPKEY_RESTORE_GUID, &guid),
+				   "obtain GUID");
+
+	r.in.guidActionAgent = &guid;
+	r.in.data_in = encrypted.data;
+	r.in.data_in_len = encrypted.length;
+	r.in.param = 0;
+	r.out.data_out = &(decrypted.data);
+	r.out.data_out_len = &declen;
+	torture_assert_ntstatus_ok(tctx,
+				   dcerpc_bkrp_BackupKey_r(b, tctx, &r),
+				   "decrypt");
+	torture_assert_werr_ok(tctx,
+			       r.out.result,
+			       "decrypt");
+	decrypted.length = *r.out.data_out_len;
+
+	/* Compare */
+	torture_assert_data_blob_equal(tctx, plaintext, decrypted, "Decrypt failed");
+
+	/* Decrypt */
+	torture_assert_ntstatus_ok(tctx,
+				   GUID_from_string(BACKUPKEY_RESTORE_GUID_WIN2K, &guid),
+				   "obtain GUID");
+
+	r.in.guidActionAgent = &guid;
+	r.in.data_in = encrypted.data;
+	r.in.data_in_len = encrypted.length;
+	r.in.param = 0;
+	r.out.data_out = &(decrypted.data);
+	r.out.data_out_len = &declen;
+	torture_assert_ntstatus_ok(tctx,
+				   dcerpc_bkrp_BackupKey_r(b, tctx, &r),
+				   "decrypt");
+	torture_assert_werr_ok(tctx,
+			       r.out.result,
+			       "decrypt");
+	decrypted.length = *r.out.data_out_len;
+
+	/* Compare */
+	torture_assert_data_blob_equal(tctx, plaintext, decrypted, "Decrypt failed");
+	return true;
+}
+
+static bool test_ServerWrap_decrypt_wrong_keyGUID(struct torture_context *tctx,
+						  struct dcerpc_pipe *p)
+{
+	struct bkrp_BackupKey r;
+	struct GUID guid;
+	DATA_BLOB plaintext = data_blob_const(secret, sizeof(secret));
+	DATA_BLOB encrypted;
+	uint32_t enclen;
+	DATA_BLOB decrypted;
+	uint32_t declen;
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	enum ndr_err_code ndr_err;
+	struct bkrp_server_side_wrapped server_side_wrapped;
+	enum dcerpc_AuthType auth_type;
+	enum dcerpc_AuthLevel auth_level;
+	ZERO_STRUCT(r);
+
+	dcerpc_binding_handle_auth_info(b, &auth_type, &auth_level);
+
+	/* Encrypt */
+	torture_assert_ntstatus_ok(tctx,
+				   GUID_from_string(BACKUPKEY_BACKUP_GUID, &guid),
+				   "obtain GUID");
+
+	r.in.guidActionAgent = &guid;
+	r.in.data_in = plaintext.data;
+	r.in.data_in_len = plaintext.length;
+	r.in.param = 0;
+	r.out.data_out = &encrypted.data;
+	r.out.data_out_len = &enclen;
+	if (auth_level == DCERPC_AUTH_LEVEL_PRIVACY) {
+		torture_assert_ntstatus_ok(tctx,
+					   dcerpc_bkrp_BackupKey_r(b, tctx, &r),
+					   "encrypt");
+	} else {
+		torture_assert_ntstatus_equal(tctx,
+					      dcerpc_bkrp_BackupKey_r(b, tctx, &r),
+					      NT_STATUS_ACCESS_DENIED,
+					      "encrypt");
+		return true;
+	}
+	torture_assert_werr_ok(tctx,
+			       r.out.result,
+			       "encrypt");
+	encrypted.length = *r.out.data_out_len;
+
+	ndr_err = ndr_pull_struct_blob(&encrypted, tctx, &server_side_wrapped,
+				       (ndr_pull_flags_fn_t)ndr_pull_bkrp_server_side_wrapped);
+	torture_assert_ndr_err_equal(tctx, ndr_err, NDR_ERR_SUCCESS, "pull of server_side_wrapped");
+
+	/* Change the GUID */
+	server_side_wrapped.guid = GUID_random();
+
+	ndr_err = ndr_push_struct_blob(&encrypted, tctx, &server_side_wrapped,
+				       (ndr_push_flags_fn_t)ndr_push_bkrp_server_side_wrapped);
+	torture_assert_ndr_err_equal(tctx, ndr_err, NDR_ERR_SUCCESS, "push of server_side_wrapped");
+	
+	/* Decrypt */
+	torture_assert_ntstatus_ok(tctx,
+				   GUID_from_string(BACKUPKEY_RESTORE_GUID, &guid),
+				   "obtain GUID");
+
+	r.in.guidActionAgent = &guid;
+	r.in.data_in = encrypted.data;
+	r.in.data_in_len = encrypted.length;
+	r.in.param = 0;
+	r.out.data_out = &(decrypted.data);
+	r.out.data_out_len = &declen;
+	torture_assert_ntstatus_ok(tctx,
+				   dcerpc_bkrp_BackupKey_r(b, tctx, &r),
+				   "decrypt");
+	torture_assert_werr_equal(tctx,
+				  r.out.result,
+				  WERR_INVALID_DATA,
+				  "decrypt should fail with WERR_INVALID_DATA");
+
+	/* Decrypt */
+	torture_assert_ntstatus_ok(tctx,
+				   GUID_from_string(BACKUPKEY_RESTORE_GUID_WIN2K, &guid),
+				   "obtain GUID");
+
+	r.in.guidActionAgent = &guid;
+	r.in.data_in = encrypted.data;
+	r.in.data_in_len = encrypted.length;
+	r.in.param = 0;
+	r.out.data_out = &(decrypted.data);
+	r.out.data_out_len = &declen;
+	torture_assert_ntstatus_ok(tctx,
+				   dcerpc_bkrp_BackupKey_r(b, tctx, &r),
+				   "decrypt");
+	torture_assert_werr_equal(tctx,
+				  r.out.result,
+				  WERR_INVALID_DATA,
+				  "decrypt should fail with WERR_INVALID_DATA");
+
+	return true;
+}
+
+static bool test_ServerWrap_decrypt_empty_request(struct torture_context *tctx,
+						 struct dcerpc_pipe *p)
+{
+	struct bkrp_BackupKey r;
+	struct GUID guid;
+	DATA_BLOB decrypted;
+	uint32_t declen;
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	uint8_t short_request[4] = { 1, 0, 0, 0 };
+	enum dcerpc_AuthType auth_type;
+	enum dcerpc_AuthLevel auth_level;
+	ZERO_STRUCT(r);
+
+	dcerpc_binding_handle_auth_info(b, &auth_type, &auth_level);
+
+	/* Decrypt */
+	torture_assert_ntstatus_ok(tctx,
+				   GUID_from_string(BACKUPKEY_RESTORE_GUID, &guid),
+				   "obtain GUID");
+
+	r.in.guidActionAgent = &guid;
+	r.in.data_in = short_request;
+	r.in.data_in_len = 0;
+	r.in.param = 0;
+	r.out.data_out = &(decrypted.data);
+	r.out.data_out_len = &declen;
+	if (auth_level == DCERPC_AUTH_LEVEL_PRIVACY) {
+		torture_assert_ntstatus_ok(tctx,
+					   dcerpc_bkrp_BackupKey_r(b, tctx, &r),
+					   "encrypt");
+	} else {
+		torture_assert_ntstatus_equal(tctx,
+					      dcerpc_bkrp_BackupKey_r(b, tctx, &r),
+					      NT_STATUS_ACCESS_DENIED,
+					      "encrypt");
+		return true;
+	}
+	torture_assert_werr_equal(tctx,
+				  r.out.result,
+				  WERR_INVALID_PARAM,
+				  "decrypt should fail with WERR_INVALID_PARAM");
+
+	/* Decrypt */
+	torture_assert_ntstatus_ok(tctx,
+				   GUID_from_string(BACKUPKEY_RESTORE_GUID_WIN2K, &guid),
+				   "obtain GUID");
+
+	r.in.guidActionAgent = &guid;
+	r.in.data_in = short_request;
+	r.in.data_in_len = 0;
+	r.in.param = 0;
+	r.out.data_out = &(decrypted.data);
+	r.out.data_out_len = &declen;
+	torture_assert_ntstatus_ok(tctx,
+				   dcerpc_bkrp_BackupKey_r(b, tctx, &r),
+				   "decrypt");
+	torture_assert_werr_equal(tctx,
+				  r.out.result,
+				  WERR_INVALID_PARAM,
+				  "decrypt should fail with WERR_INVALID_PARAM");
+
+	/* Decrypt */
+	torture_assert_ntstatus_ok(tctx,
+				   GUID_from_string(BACKUPKEY_RESTORE_GUID, &guid),
+				   "obtain GUID");
+
+	r.in.guidActionAgent = &guid;
+	r.in.data_in = NULL;
+	r.in.data_in_len = 0;
+	r.in.param = 0;
+	r.out.data_out = &(decrypted.data);
+	r.out.data_out_len = &declen;
+	torture_assert_ntstatus_equal(tctx,
+				      dcerpc_bkrp_BackupKey_r(b, tctx, &r),
+				      NT_STATUS_INVALID_PARAMETER_MIX,
+				      "decrypt");
+
+	/* Decrypt */
+	torture_assert_ntstatus_ok(tctx,
+				   GUID_from_string(BACKUPKEY_RESTORE_GUID_WIN2K, &guid),
+				   "obtain GUID");
+
+	r.in.guidActionAgent = &guid;
+	r.in.data_in = NULL;
+	r.in.data_in_len = 0;
+	r.in.param = 0;
+	r.out.data_out = &(decrypted.data);
+	r.out.data_out_len = &declen;
+	torture_assert_ntstatus_equal(tctx,
+				      dcerpc_bkrp_BackupKey_r(b, tctx, &r),
+				      NT_STATUS_INVALID_PARAMETER_MIX,
+				      "decrypt");
+
+	return true;
+}
+
+
+static bool test_ServerWrap_decrypt_short_request(struct torture_context *tctx,
+						 struct dcerpc_pipe *p)
+{
+	struct bkrp_BackupKey r;
+	struct GUID guid;
+	DATA_BLOB decrypted;
+	uint32_t declen;
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	uint8_t short_request[4] = { 1, 0, 0, 0 };
+	enum dcerpc_AuthType auth_type;
+	enum dcerpc_AuthLevel auth_level;
+	ZERO_STRUCT(r);
+
+	dcerpc_binding_handle_auth_info(b, &auth_type, &auth_level);
+
+	/* Decrypt */
+	torture_assert_ntstatus_ok(tctx,
+				   GUID_from_string(BACKUPKEY_RESTORE_GUID, &guid),
+				   "obtain GUID");
+
+	r.in.guidActionAgent = &guid;
+	r.in.data_in = short_request;
+	r.in.data_in_len = 4;
+	r.in.param = 0;
+	r.out.data_out = &(decrypted.data);
+	r.out.data_out_len = &declen;
+	if (auth_level == DCERPC_AUTH_LEVEL_PRIVACY) {
+		torture_assert_ntstatus_ok(tctx,
+					   dcerpc_bkrp_BackupKey_r(b, tctx, &r),
+					   "encrypt");
+	} else {
+		torture_assert_ntstatus_equal(tctx,
+					      dcerpc_bkrp_BackupKey_r(b, tctx, &r),
+					      NT_STATUS_ACCESS_DENIED,
+					      "encrypt");
+		return true;
+	}
+	torture_assert_werr_equal(tctx,
+				  r.out.result,
+				  WERR_INVALID_PARAM,
+				  "decrypt should fail with WERR_INVALID_PARM");
+
+	/* Decrypt */
+	torture_assert_ntstatus_ok(tctx,
+				   GUID_from_string(BACKUPKEY_RESTORE_GUID_WIN2K, &guid),
+				   "obtain GUID");
+
+	r.in.guidActionAgent = &guid;
+	r.in.data_in = short_request;
+	r.in.data_in_len = 4;
+	r.in.param = 0;
+	r.out.data_out = &(decrypted.data);
+	r.out.data_out_len = &declen;
+	torture_assert_ntstatus_ok(tctx,
+				   dcerpc_bkrp_BackupKey_r(b, tctx, &r),
+				   "decrypt");
+	torture_assert_werr_equal(tctx,
+				  r.out.result,
+				  WERR_INVALID_PARAM,
+				  "decrypt should fail with WERR_INVALID_PARAM");
+
+	/* Decrypt */
+	torture_assert_ntstatus_ok(tctx,
+				   GUID_from_string(BACKUPKEY_RESTORE_GUID, &guid),
+				   "obtain GUID");
+
+	r.in.guidActionAgent = &guid;
+	r.in.data_in = short_request;
+	r.in.data_in_len = 1;
+	r.in.param = 0;
+	r.out.data_out = &(decrypted.data);
+	r.out.data_out_len = &declen;
+	torture_assert_ntstatus_ok(tctx,
+				   dcerpc_bkrp_BackupKey_r(b, tctx, &r),
+				   "decrypt");
+	torture_assert_werr_equal(tctx,
+				  r.out.result,
+				  WERR_INVALID_PARAM,
+				  "decrypt should fail with WERR_INVALID_PARAM");
+
+	/* Decrypt */
+	torture_assert_ntstatus_ok(tctx,
+				   GUID_from_string(BACKUPKEY_RESTORE_GUID_WIN2K, &guid),
+				   "obtain GUID");
+
+	r.in.guidActionAgent = &guid;
+	r.in.data_in = short_request;
+	r.in.data_in_len = 1;
+	r.in.param = 0;
+	r.out.data_out = &(decrypted.data);
+	r.out.data_out_len = &declen;
+	torture_assert_ntstatus_ok(tctx,
+				   dcerpc_bkrp_BackupKey_r(b, tctx, &r),
+				   "decrypt");
+	torture_assert_werr_equal(tctx,
+				  r.out.result,
+				  WERR_INVALID_PARAM,
+				  "decrypt should fail with WERR_INVALID_PARAM");
+
+	return true;
+}
+
+
+static bool test_ServerWrap_decrypt_wrong_stuff(struct torture_context *tctx,
+						struct dcerpc_pipe *p,
+						enum test_wrong wrong)
+{
+	struct bkrp_BackupKey r;
+	struct GUID guid;
+	DATA_BLOB plaintext = data_blob_const(secret, sizeof(secret));
+	DATA_BLOB encrypted;
+	uint32_t enclen;
+	DATA_BLOB decrypted;
+	uint32_t declen;
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	enum ndr_err_code ndr_err;
+	struct bkrp_server_side_wrapped server_side_wrapped;
+	bool repush = false;
+	enum dcerpc_AuthType auth_type;
+	enum dcerpc_AuthLevel auth_level;
+	ZERO_STRUCT(r);
+
+	dcerpc_binding_handle_auth_info(b, &auth_type, &auth_level);
+
+	/* Encrypt */
+	torture_assert_ntstatus_ok(tctx,
+				   GUID_from_string(BACKUPKEY_BACKUP_GUID, &guid),
+				   "obtain GUID");
+
+	r.in.guidActionAgent = &guid;
+	r.in.data_in = plaintext.data;
+	r.in.data_in_len = plaintext.length;
+	r.in.param = 0;
+	r.out.data_out = &encrypted.data;
+	r.out.data_out_len = &enclen;
+	if (auth_level == DCERPC_AUTH_LEVEL_PRIVACY) {
+		torture_assert_ntstatus_ok(tctx,
+					   dcerpc_bkrp_BackupKey_r(b, tctx, &r),
+					   "encrypt");
+	} else {
+		torture_assert_ntstatus_equal(tctx,
+					      dcerpc_bkrp_BackupKey_r(b, tctx, &r),
+					      NT_STATUS_ACCESS_DENIED,
+					      "encrypt");
+		return true;
+	}
+	torture_assert_werr_ok(tctx,
+			       r.out.result,
+			       "encrypt");
+	encrypted.length = *r.out.data_out_len;
+
+	ndr_err = ndr_pull_struct_blob(&encrypted, tctx, &server_side_wrapped,
+				       (ndr_pull_flags_fn_t)ndr_pull_bkrp_server_side_wrapped);
+	torture_assert_ndr_err_equal(tctx, ndr_err, NDR_ERR_SUCCESS, "pull of server_side_wrapped");
+
+	torture_assert_int_equal(tctx, server_side_wrapped.payload_length, plaintext.length,
+				 "wrong payload length");
+
+	switch (wrong) {
+	case WRONG_MAGIC:
+		/* Change the magic.  Forced by our NDR layer, so do it raw */
+		SIVAL(encrypted.data, 0, 78);  /* valid values are 1-3 */
+		break;
+	case WRONG_R2:
+		server_side_wrapped.r2[0] = 78;
+		server_side_wrapped.r2[1] = 78;
+		server_side_wrapped.r2[3] = 78;
+		repush = true;
+		break;
+	case WRONG_PAYLOAD_LENGTH:
+		server_side_wrapped.payload_length = UINT32_MAX - 8;
+		repush = true;
+		break;
+	case WRONG_CIPHERTEXT_LENGTH:
+		/* 
+		 * Change the ciphertext len.  We can't push this if
+		 * we have it wrong, so do it raw
+		 */
+		SIVAL(encrypted.data, 8, UINT32_MAX - 8);  /* valid values are 1-3 */
+		break;
+	case SHORT_PAYLOAD_LENGTH:
+		server_side_wrapped.payload_length = server_side_wrapped.payload_length - 8;
+		repush = true;
+		break;
+	case SHORT_CIPHERTEXT_LENGTH:
+		/* 
+		 * Change the ciphertext len.  We can't push this if
+		 * we have it wrong, so do it raw
+		 */
+		SIVAL(encrypted.data, 8, server_side_wrapped.ciphertext_length - 8);  /* valid values are 1-3 */
+		break;
+	case ZERO_PAYLOAD_LENGTH:
+		server_side_wrapped.payload_length = 0;
+		repush = true;
+		break;
+	case ZERO_CIPHERTEXT_LENGTH:
+		/* 
+		 * Change the ciphertext len.  We can't push this if
+		 * we have it wrong, so do it raw
+		 */
+		SIVAL(encrypted.data, 8, 0);  /* valid values are 1-3 */
+		break;
+	}
+
+	if (repush) {
+		ndr_err = ndr_push_struct_blob(&encrypted, tctx, &server_side_wrapped,
+					       (ndr_push_flags_fn_t)ndr_push_bkrp_server_side_wrapped);
+		torture_assert_ndr_err_equal(tctx, ndr_err, NDR_ERR_SUCCESS, "push of server_side_wrapped");
+	}
+	
+	/* Decrypt */
+	torture_assert_ntstatus_ok(tctx,
+				   GUID_from_string(BACKUPKEY_RESTORE_GUID, &guid),
+				   "obtain GUID");
+
+	r.in.guidActionAgent = &guid;
+	r.in.data_in = encrypted.data;
+	r.in.data_in_len = encrypted.length;
+	r.in.param = 0;
+	r.out.data_out = &(decrypted.data);
+	r.out.data_out_len = &declen;
+	torture_assert_ntstatus_ok(tctx,
+				   dcerpc_bkrp_BackupKey_r(b, tctx, &r),
+				   "decrypt");
+	if (wrong == WRONG_R2 && W_ERROR_EQUAL(r.out.result, WERR_INVALID_SID)) {
+		torture_assert_werr_equal(tctx,
+					  r.out.result,
+					  WERR_INVALID_SID,
+					  "decrypt should fail with WERR_INVALID_SID or WERR_INVALID_PARAM");
+	} else {
+		torture_assert_werr_equal(tctx,
+					  r.out.result,
+					  WERR_INVALID_PARAM,
+					  "decrypt should fail with WERR_INVALID_PARAM");
+	}
+	
+	/* Decrypt */
+	torture_assert_ntstatus_ok(tctx,
+				   GUID_from_string(BACKUPKEY_RESTORE_GUID_WIN2K, &guid),
+				   "obtain GUID");
+
+	r.in.guidActionAgent = &guid;
+	r.in.data_in = encrypted.data;
+	r.in.data_in_len = encrypted.length;
+	r.in.param = 0;
+	r.out.data_out = &(decrypted.data);
+	r.out.data_out_len = &declen;
+	torture_assert_ntstatus_ok(tctx,
+				   dcerpc_bkrp_BackupKey_r(b, tctx, &r),
+				   "decrypt");
+	if (wrong == WRONG_R2 && W_ERROR_EQUAL(r.out.result, WERR_INVALID_SID)) {
+		torture_assert_werr_equal(tctx,
+					  r.out.result,
+					  WERR_INVALID_SID,
+					  "decrypt should fail with WERR_INVALID_SID or WERR_INVALID_PARAM");
+	} else {
+		torture_assert_werr_equal(tctx,
+					  r.out.result,
+					  WERR_INVALID_PARAM,
+					  "decrypt should fail with WERR_INVALID_PARAM");
+	}
+	
+	return true;
+}
+
+static bool test_ServerWrap_decrypt_wrong_magic(struct torture_context *tctx,
+						struct dcerpc_pipe *p)
+{
+	return test_ServerWrap_decrypt_wrong_stuff(tctx, p, WRONG_MAGIC);
+}
+
+static bool test_ServerWrap_decrypt_wrong_r2(struct torture_context *tctx,
+						struct dcerpc_pipe *p)
+{
+	return test_ServerWrap_decrypt_wrong_stuff(tctx, p, WRONG_R2);
+}
+
+static bool test_ServerWrap_decrypt_wrong_payload_length(struct torture_context *tctx,
+							 struct dcerpc_pipe *p)
+{
+	return test_ServerWrap_decrypt_wrong_stuff(tctx, p, WRONG_PAYLOAD_LENGTH);
+}
+
+static bool test_ServerWrap_decrypt_short_payload_length(struct torture_context *tctx,
+							 struct dcerpc_pipe *p)
+{
+	return test_ServerWrap_decrypt_wrong_stuff(tctx, p, SHORT_PAYLOAD_LENGTH);
+}
+
+static bool test_ServerWrap_decrypt_zero_payload_length(struct torture_context *tctx,
+							 struct dcerpc_pipe *p)
+{
+	return test_ServerWrap_decrypt_wrong_stuff(tctx, p, ZERO_PAYLOAD_LENGTH);
+}
+
+static bool test_ServerWrap_decrypt_wrong_ciphertext_length(struct torture_context *tctx,
+							 struct dcerpc_pipe *p)
+{
+	return test_ServerWrap_decrypt_wrong_stuff(tctx, p, WRONG_CIPHERTEXT_LENGTH);
+}
+
+static bool test_ServerWrap_decrypt_short_ciphertext_length(struct torture_context *tctx,
+							 struct dcerpc_pipe *p)
+{
+	return test_ServerWrap_decrypt_wrong_stuff(tctx, p, SHORT_CIPHERTEXT_LENGTH);
+}
+
+static bool test_ServerWrap_decrypt_zero_ciphertext_length(struct torture_context *tctx,
+							 struct dcerpc_pipe *p)
+{
+	return test_ServerWrap_decrypt_wrong_stuff(tctx, p, ZERO_CIPHERTEXT_LENGTH);
+}
+
 struct torture_suite *torture_rpc_backupkey(TALLOC_CTX *mem_ctx)
 {
 	struct torture_rpc_tcase *tcase;
@@ -1147,7 +1755,7 @@ struct torture_suite *torture_rpc_backupkey(TALLOC_CTX *mem_ctx)
 	torture_rpc_tcase_add_test(tcase, "restore_guid version 3",
 				   test_RestoreGUID_v3);
 
-/* We double the test in order to be sure that we don't mess stuff (ie. freeing static stuff */
+/* We double the test in order to be sure that we don't mess stuff (ie. freeing static stuff) */
 
 	torture_rpc_tcase_add_test(tcase, "restore_guid_2nd",
 				   test_RestoreGUID);
@@ -1177,7 +1785,42 @@ struct torture_suite *torture_rpc_backupkey(TALLOC_CTX *mem_ctx)
 				   test_RestoreGUID_emptyrequest);
 
 	torture_rpc_tcase_add_test(tcase, "retreive_backup_key_guid_2048_bits",
-		test_RetreiveBackupKeyGUID_2048bits);
+				   test_RetreiveBackupKeyGUID_2048bits);
 
+	torture_rpc_tcase_add_test(tcase, "server_wrap_encrypt_decrypt",
+				   test_ServerWrap_encrypt_decrypt);
+
+	torture_rpc_tcase_add_test(tcase, "server_wrap_decrypt_wrong_keyGUID",
+				   test_ServerWrap_decrypt_wrong_keyGUID);
+
+	torture_rpc_tcase_add_test(tcase, "server_wrap_empty_request",
+				   test_ServerWrap_decrypt_empty_request);
+
+	torture_rpc_tcase_add_test(tcase, "server_wrap_decrypt_short_request",
+				   test_ServerWrap_decrypt_short_request);
+
+	torture_rpc_tcase_add_test(tcase, "server_wrap_decrypt_wrong_magic",
+				   test_ServerWrap_decrypt_wrong_magic);
+
+	torture_rpc_tcase_add_test(tcase, "server_wrap_decrypt_wrong_r2",
+				   test_ServerWrap_decrypt_wrong_r2);
+
+	torture_rpc_tcase_add_test(tcase, "server_wrap_decrypt_wrong_payload_length",
+				   test_ServerWrap_decrypt_wrong_payload_length);
+
+	torture_rpc_tcase_add_test(tcase, "server_wrap_decrypt_short_payload_length",
+				   test_ServerWrap_decrypt_short_payload_length);
+
+	torture_rpc_tcase_add_test(tcase, "server_wrap_decrypt_zero_payload_length",
+				   test_ServerWrap_decrypt_zero_payload_length);
+
+	torture_rpc_tcase_add_test(tcase, "server_wrap_decrypt_wrong_ciphertext_length",
+				   test_ServerWrap_decrypt_wrong_ciphertext_length);
+
+	torture_rpc_tcase_add_test(tcase, "server_wrap_decrypt_short_ciphertext_length",
+				   test_ServerWrap_decrypt_short_ciphertext_length);
+
+	torture_rpc_tcase_add_test(tcase, "server_wrap_decrypt_zero_ciphertext_length",
+				   test_ServerWrap_decrypt_zero_ciphertext_length);
 	return suite;
 }
