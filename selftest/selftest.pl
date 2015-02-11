@@ -717,6 +717,16 @@ my @exported_envvars = (
 	"DOMAIN",
 	"REALM",
 
+	# stuff related to a trusted domain
+	"TRUST_SERVER",
+	"TRUST_SERVER_IP",
+	"TRUST_SERVER_IPV6",
+	"TRUST_NETBIOSNAME",
+	"TRUST_USERNAME",
+	"TRUST_PASSWORD",
+	"TRUST_DOMAIN",
+	"TRUST_REALM",
+
 	# domain controller stuff
 	"DC_SERVER",
 	"DC_SERVER_IP",

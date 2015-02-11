@@ -470,6 +470,46 @@ EOF
 	umask $oldumask;
 }
 
+sub setup_trust($$$$$)
+{
+	my ($self, $localenv, $remoteenv, $type, $extra_args) = @_;
+
+	$localenv->{TRUST_SERVER} = $remoteenv->{SERVER};
+	$localenv->{TRUST_SERVER_IP} = $remoteenv->{SERVER_IP};
+	$localenv->{TRUST_SERVER_IPV6} = $remoteenv->{SERVER_IPV6};
+	$localenv->{TRUST_NETBIOSNAME} = $remoteenv->{NETBIOSNAME};
+	$localenv->{TRUST_USERNAME} = $remoteenv->{USERNAME};
+	$localenv->{TRUST_PASSWORD} = $remoteenv->{PASSWORD};
+	$localenv->{TRUST_DOMAIN} = $remoteenv->{DOMAIN};
+	$localenv->{TRUST_REALM} = $remoteenv->{REALM};
+
+	my $samba_tool =  Samba::bindir_path($self, "samba-tool");
+	# setup the trust
+	my $cmd_env = "";
+	$cmd_env .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$localenv->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
+	if (defined($localenv->{RESOLV_WRAPPER_CONF})) {
+		$cmd_env .= "RESOLV_WRAPPER_CONF=\"$localenv->{RESOLV_WRAPPER_CONF}\" ";
+	} else {
+		$cmd_env .= "RESOLV_WRAPPER_HOSTS=\"$localenv->{RESOLV_WRAPPER_HOSTS}\" ";
+	}
+	$cmd_env .= " KRB5_CONFIG=\"$localenv->{KRB5_CONFIG}\"";
+
+	my $cmd_config = " $localenv->{CONFIGURATION}";
+	my $cmd_creds = $cmd_config;
+	$cmd_creds .= " -U$localenv->{TRUST_DOMAIN}\\\\$localenv->{TRUST_USERNAME}\%$localenv->{TRUST_PASSWORD}";
+
+	my $create = $cmd_env;
+	$create .= " $samba_tool domain trust create --type=${type} $localenv->{TRUST_REALM}";
+	$create .= " $extra_args";
+	$create .= $cmd_creds;
+	unless (system($create) == 0) {
+		warn("Failed to create trust \n$create");
+		return undef;
+	}
+
+	return $localenv
+}
+
 sub provision_raw_prepare($$$$$$$$$$$)
 {
 	my ($self, $prefix, $server_role, $hostname,
@@ -1495,9 +1535,9 @@ sub provision_fl2000dc($$)
 	return $ret;
 }
 
-sub provision_fl2003dc($$)
+sub provision_fl2003dc($$$)
 {
-	my ($self, $prefix) = @_;
+	my ($self, $prefix, $dcvars) = @_;
 
 	print "PROVISIONING DC WITH FOREST LEVEL 2003...";
         my $extra_conf_options = "allow dns updates = nonsecure and secure";
@@ -1551,9 +1591,9 @@ sub provision_fl2003dc($$)
 	return $ret;
 }
 
-sub provision_fl2008r2dc($$)
+sub provision_fl2008r2dc($$$)
 {
-	my ($self, $prefix) = @_;
+	my ($self, $prefix, $dcvars) = @_;
 
 	print "PROVISIONING DC WITH FOREST LEVEL 2008r2...";
 	my $ret = $self->provision($prefix,
@@ -1931,9 +1971,15 @@ sub setup_env($$$)
 	} elsif ($envname eq "fl2000dc") {
 		return $self->setup_fl2000dc("$path/fl2000dc");
 	} elsif ($envname eq "fl2003dc") {
-		return $self->setup_fl2003dc("$path/fl2003dc");
+		if (not defined($self->{vars}->{ad_dc})) {
+			$self->setup_ad_dc("$path/ad_dc");
+		}
+		return $self->setup_fl2003dc("$path/fl2003dc", $self->{vars}->{ad_dc});
 	} elsif ($envname eq "fl2008r2dc") {
-		return $self->setup_fl2008r2dc("$path/fl2008r2dc");
+		if (not defined($self->{vars}->{ad_dc})) {
+			$self->setup_ad_dc("$path/ad_dc");
+		}
+		return $self->setup_fl2008r2dc("$path/fl2008r2dc", $self->{vars}->{ad_dc});
 	} elsif ($envname eq "rpc_proxy") {
 		if (not defined($self->{vars}->{ad_dc_ntvfs})) {
 			$self->setup_ad_dc_ntvfs("$path/ad_dc_ntvfs");
@@ -2065,9 +2111,9 @@ sub setup_fl2000dc($$)
 	return $env;
 }
 
-sub setup_fl2003dc($$)
+sub setup_fl2003dc($$$)
 {
-	my ($self, $path) = @_;
+	my ($self, $path, $dc_vars) = @_;
 
 	my $env = $self->provision_fl2003dc($path);
 
@@ -2076,14 +2122,16 @@ sub setup_fl2003dc($$)
 
 		$self->wait_for_start($env);
 
+		$env = $self->setup_trust($env, $dc_vars, "external", "--no-aes-keys");
+
 		$self->{vars}->{fl2003dc} = $env;
 	}
 	return $env;
 }
 
-sub setup_fl2008r2dc($$)
+sub setup_fl2008r2dc($$$)
 {
-	my ($self, $path) = @_;
+	my ($self, $path, $dc_vars) = @_;
 
 	my $env = $self->provision_fl2008r2dc($path);
 
@@ -2091,6 +2139,8 @@ sub setup_fl2008r2dc($$)
 		$self->check_or_start($env, "single");
 
 		$self->wait_for_start($env);
+
+		$env = $self->setup_trust($env, $dc_vars, "forest", "");
 
 		$self->{vars}->{fl2008r2dc} = $env;
 	}
