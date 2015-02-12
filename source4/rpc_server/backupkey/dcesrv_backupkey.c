@@ -42,9 +42,6 @@
 #include "librpc/gen_ndr/ndr_security.h"
 #include "lib/crypto/arcfour.h"
 
-#define BACKUPKEY_MIN_VERSION 2
-#define BACKUPKEY_MAX_VERSION 3
-
 static const unsigned rsa_with_var_num[] = { 1, 2, 840, 113549, 1, 1, 1 };
 /* Equivalent to asn1_oid_id_pkcs1_rsaEncryption*/
 static const AlgorithmIdentifier _hx509_signature_rsa_with_var_num = {
@@ -568,25 +565,35 @@ static WERROR bkrp_client_wrap_decrypt_data(struct dcesrv_call_state *dce_call,
 	DATA_BLOB lsa_secret;
 	DATA_BLOB *uncrypted_data;
 	NTSTATUS status;
-
+	uint32_t requested_version;
+	
 	blob.data = r->in.data_in;
 	blob.length = r->in.data_in_len;
 
-	if (r->in.data_in_len == 0 || r->in.data_in == NULL) {
+	if (r->in.data_in_len < 4 || r->in.data_in == NULL) {
 		return WERR_INVALID_PARAM;
 	}
 
+	/* 
+	 * We check for the version here, so we can actually print the
+	 * message as we are unlikely to parse it with NDR.
+	 */
+	requested_version = IVAL(r->in.data_in, 0);
+	if ((requested_version != BACKUPKEY_CLIENT_WRAP_VERSION2)
+	    && (requested_version != BACKUPKEY_CLIENT_WRAP_VERSION3)) {
+		DEBUG(1, ("Request for unknown BackupKey sub-protocol %d\n", requested_version));
+		return WERR_INVALID_PARAMETER;
+	}
+	
 	ndr_err = ndr_pull_struct_blob(&blob, mem_ctx, &uncrypt_request,
 				       (ndr_pull_flags_fn_t)ndr_pull_bkrp_client_side_wrapped);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return WERR_INVALID_PARAM;
 	}
 
-	if (uncrypt_request.version < BACKUPKEY_MIN_VERSION) {
-		return WERR_INVALID_PARAMETER;
-	}
-
-	if (uncrypt_request.version > BACKUPKEY_MAX_VERSION) {
+	if ((uncrypt_request.version != BACKUPKEY_CLIENT_WRAP_VERSION2)
+	    && (uncrypt_request.version != BACKUPKEY_CLIENT_WRAP_VERSION3)) {
+		DEBUG(1, ("Request for unknown BackupKey sub-protocol %d\n", uncrypt_request.version));
 		return WERR_INVALID_PARAMETER;
 	}
 
@@ -1433,7 +1440,7 @@ static WERROR bkrp_server_wrap_decrypt_data(struct dcesrv_call_state *dce_call, 
 		return WERR_INVALID_PARAM;
 	}
 
-	if (decrypt_request.magic != 1) {
+	if (decrypt_request.magic != BACKUPKEY_SERVER_WRAP_VERSION) {
 		return WERR_INVALID_PARAM;
 	}
 	
@@ -1535,7 +1542,7 @@ static WERROR bkrp_generic_decrypt_data(struct dcesrv_call_state *dce_call, TALL
 		return WERR_INVALID_PARAM;
 	}
 
-	if (IVAL(r->in.data_in, 0) == 1) {
+	if (IVAL(r->in.data_in, 0) == BACKUPKEY_SERVER_WRAP_VERSION) {
 		return bkrp_server_wrap_decrypt_data(dce_call, mem_ctx, r, ldb_ctx);
 	}
 	
