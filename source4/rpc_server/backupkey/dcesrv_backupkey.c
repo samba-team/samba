@@ -41,6 +41,12 @@
 #include "../libcli/security/security.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "lib/crypto/arcfour.h"
+#include <gnutls/gnutls.h>
+#include <gnutls/x509.h>
+#if HAVE_GCRYPT_H
+#include <gcrypt.h>
+#endif
+
 
 static const unsigned rsa_with_var_num[] = { 1, 2, 840, 113549, 1, 1, 1 };
 /* Equivalent to asn1_oid_id_pkcs1_rsaEncryption*/
@@ -775,62 +781,67 @@ static WERROR bkrp_client_wrap_decrypt_data(struct dcesrv_call_state *dce_call,
 	return WERR_OK;
 }
 
+/*
+ * Strictly, this function no longer uses Heimdal in order to generate an RSA
+ * key, but GnuTLS.
+ *
+ * The resulting key is then imported into Heimdal's RSA structure.
+ *
+ * We use GnuTLS because it can reliably generate 2048 bit keys every time.
+ * Windows clients strictly require 2048, no more since it won't fit and no
+ * less either. Heimdal would almost always generate a smaller key.
+ */
 static WERROR create_heimdal_rsa_key(TALLOC_CTX *ctx, hx509_context *hctx,
-				     hx509_private_key *pk, RSA **_rsa)
+				     hx509_private_key *pk, RSA **rsa)
 {
-	BIGNUM *pub_expo;
-	RSA *rsa;
 	int ret;
-	uint8_t *p0, *p;
+	uint8_t *p0 = NULL;
+	const uint8_t *p;
 	size_t len;
 	int bits = 2048;
 	int RSA_returned_bits;
+	gnutls_x509_privkey gtls_key;
+	WERROR werr;
 
-	*_rsa = NULL;
+	*rsa = NULL;
 
-	pub_expo = BN_new();
-	if(pub_expo == NULL) {
+	gnutls_global_init();
+#ifdef HAVE_GCRYPT_H
+	DEBUG(3,("Enabling QUICK mode in gcrypt\n"));
+	gcry_control(GCRYCTL_ENABLE_QUICK_RANDOM, 0);
+#endif
+	ret = gnutls_x509_privkey_init(&gtls_key);
+	if (ret != 0) {
+		gnutls_global_deinit();
 		return WERR_INTERNAL_ERROR;
 	}
 
-	/* set the public expo to 65537 like everyone */
-	BN_set_word(pub_expo, 0x10001);
-
-	rsa = RSA_new();
-	if(rsa == NULL) {
-		BN_free(pub_expo);
-		return WERR_INTERNAL_ERROR;
+	ret = gnutls_x509_privkey_generate(gtls_key, GNUTLS_PK_RSA, bits, 0);
+	if (ret != 0) {
+		werr = WERR_INTERNAL_ERROR;
+		goto done;
 	}
 
-	while (RSA_returned_bits != bits) {
-		ret = RSA_generate_key_ex(rsa, bits, pub_expo, NULL);
-		if(ret != 1) {
-			RSA_free(rsa);
-			BN_free(pub_expo);
-			return WERR_INTERNAL_ERROR;
-		}
-		RSA_returned_bits = BN_num_bits(rsa->n);
-		DEBUG(6, ("RSA_generate_key_ex returned %d Bits\n", RSA_returned_bits));
-	}
-	BN_free(pub_expo);
+	/* No need to check error code, this SHOULD fail */
+	gnutls_x509_privkey_export(gtls_key, GNUTLS_X509_FMT_DER, NULL, &len);
 
-	len = i2d_RSAPrivateKey(rsa, NULL);
 	if (len < 1) {
-		RSA_free(rsa);
-		return WERR_INTERNAL_ERROR;
+		werr = WERR_INTERNAL_ERROR;
+		goto done;
 	}
 
-	p0 = p = talloc_array(ctx, uint8_t, len);
-	if (p == NULL) {
-		RSA_free(rsa);
-		return WERR_INTERNAL_ERROR;
+	p0 = talloc_size(ctx, len);
+	if (p0 == NULL) {
+		werr = WERR_NOMEM;
+		goto done;
 	}
+	p = p0;
 
-	len = i2d_RSAPrivateKey(rsa, &p);
-	if (len < 1) {
-		RSA_free(rsa);
-		talloc_free(p0);
-		return WERR_INTERNAL_ERROR;
+	ret = gnutls_x509_privkey_export(gtls_key, GNUTLS_X509_FMT_DER, p0, &len);
+
+	if (ret != 0) {
+		werr = WERR_INTERNAL_ERROR;
+		goto done;
 	}
 
 	/*
@@ -839,15 +850,42 @@ static WERROR create_heimdal_rsa_key(TALLOC_CTX *ctx, hx509_context *hctx,
 	 */
 	ret = hx509_parse_private_key(*hctx, &_hx509_signature_rsa_with_var_num ,
 				       p0, len, HX509_KEY_FORMAT_DER, pk);
-	memset(p0, 0, len);
-	talloc_free(p0);
-	if (ret !=0) {
-		RSA_free(rsa);
-		return WERR_INTERNAL_ERROR;
+
+	if (ret != 0) {
+		werr = WERR_INTERNAL_ERROR;
+		goto done;
 	}
 
-	*_rsa = rsa;
-	return WERR_OK;
+	*rsa = d2i_RSAPrivateKey(NULL, &p, len);
+	TALLOC_FREE(p0);
+
+	if (*rsa == NULL) {
+		hx509_private_key_free(pk);
+		werr = WERR_INTERNAL_ERROR;
+		goto done;
+	}
+
+	RSA_returned_bits = BN_num_bits((*rsa)->n);
+	DEBUG(6, ("GnuTLS returned an RSA private key with %d bits\n", RSA_returned_bits));
+
+	if (RSA_returned_bits != bits) {
+		DEBUG(0, ("GnuTLS unexpectedly returned an RSA private key with %d bits, needed %d\n", RSA_returned_bits, bits));
+		hx509_private_key_free(pk);
+		werr = WERR_INTERNAL_ERROR;
+		goto done;
+	}
+
+	werr = WERR_OK;
+
+done:
+	if (p0 != NULL) {
+		memset(p0, 0, len);
+		TALLOC_FREE(p0);
+	}
+
+	gnutls_x509_privkey_deinit(gtls_key);
+	gnutls_global_deinit();
+	return werr;
 }
 
 static WERROR self_sign_cert(TALLOC_CTX *ctx, hx509_context *hctx, hx509_request *req,
