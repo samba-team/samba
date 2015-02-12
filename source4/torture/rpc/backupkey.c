@@ -23,14 +23,21 @@
 #include "librpc/gen_ndr/ndr_backupkey_c.h"
 #include "librpc/gen_ndr/ndr_backupkey.h"
 #include "librpc/gen_ndr/ndr_lsa_c.h"
+#include "librpc/gen_ndr/ndr_security.h"
 #include "torture/rpc/torture_rpc.h"
+#include "torture/ndr/ndr.h"
 #include "lib/cmdline/popt_common.h"
+#include "libcli/auth/proto.h"
+#include "lib/crypto/arcfour.h"
 #include <com_err.h>
 #include <hcrypto/sha.h>
 #include <system/network.h>
 #include <hx509.h>
 #include <der.h>
 #include <hcrypto/rsa.h>
+#include <hcrypto/hmac.h>
+#include <hcrypto/sha.h>
+#include <hcrypto/evp.h>
 
 enum test_wrong {
 	WRONG_MAGIC,
@@ -40,7 +47,10 @@ enum test_wrong {
 	SHORT_PAYLOAD_LENGTH,
 	SHORT_CIPHERTEXT_LENGTH,
 	ZERO_PAYLOAD_LENGTH,
-	ZERO_CIPHERTEXT_LENGTH
+	ZERO_CIPHERTEXT_LENGTH,
+	RIGHT_KEY,
+	WRONG_KEY,
+	WRONG_SID,
 };
 
 /* Our very special and valued secret */
@@ -50,10 +60,9 @@ enum test_wrong {
 static const char secret[] = "tata yoyo mais qu'est ce qu'il y a sous ton grand chapeau ?";
 
 /* Get the SID from a user */
-static const struct dom_sid *get_user_sid(struct torture_context *tctx,
-					struct dcerpc_pipe *p,
-					TALLOC_CTX *mem_ctx,
-					const char *user)
+static struct dom_sid *get_user_sid(struct torture_context *tctx,
+				    TALLOC_CTX *mem_ctx,
+				    const char *user)
 {
 	struct lsa_ObjectAttribute attr;
 	struct lsa_QosInfo qos;
@@ -258,7 +267,7 @@ static DATA_BLOB *create_access_check(struct torture_context *tctx,
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	DATA_BLOB *blob = talloc_zero(mem_ctx, DATA_BLOB);
 	enum ndr_err_code ndr_err;
-	const struct dom_sid *sid = get_user_sid(tctx, p, tmp_ctx, user);
+	const struct dom_sid *sid = get_user_sid(tctx, tmp_ctx, user);
 
 	if (sid == NULL) {
 		return NULL;
@@ -1527,6 +1536,239 @@ static bool test_ServerWrap_decrypt_short_request(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_ServerWrap_encrypt_decrypt_manual(struct torture_context *tctx,
+						   struct bkrp_server_side_wrapped *server_side_wrapped,
+						   enum test_wrong wrong)
+{
+        struct dcerpc_pipe *lsa_p;
+	struct dcerpc_binding_handle *lsa_b;
+	struct lsa_OpenSecret r_secret;
+	struct lsa_QuerySecret r_query_secret;
+	struct policy_handle *handle, sec_handle;
+	struct bkrp_BackupKey r;
+	struct GUID preferred_key_guid;
+	DATA_BLOB plaintext = data_blob_const(secret, sizeof(secret));
+	DATA_BLOB preferred_key, preferred_key_clear, session_key,
+		decrypt_key, decrypt_key_clear, encrypted_blob, symkey_blob,
+		sid_blob;
+	struct bkrp_dc_serverwrap_key server_key;
+	struct lsa_DATA_BUF_PTR bufp1;
+	char *key_guid_string;
+	struct bkrp_rc4encryptedpayload rc4payload;
+	struct dom_sid *caller_sid;
+	uint8_t symkey[20]; /* SHA-1 hash len */
+	uint8_t mackey[20]; /* SHA-1 hash len */
+	uint8_t mac[20]; /* SHA-1 hash len */
+	unsigned int hash_len;
+	HMAC_CTX ctx;
+	ZERO_STRUCT(r);
+	ZERO_STRUCT(r_secret);
+	ZERO_STRUCT(r_query_secret);
+
+	/* Now read BCKUPKEY_P and prove we can do a matching decrypt and encrypt */
+	
+	torture_assert_ntstatus_ok(tctx,
+				   torture_rpc_connection(tctx, &lsa_p, &ndr_table_lsarpc),
+				   "Opening LSA pipe");
+	lsa_b = lsa_p->binding_handle;
+
+	torture_assert(tctx, test_lsa_OpenPolicy2(lsa_b, tctx, &handle), "OpenPolicy failed");
+	r_secret.in.name.string = "G$BCKUPKEY_P";
+	
+	r_secret.in.handle = handle;
+	r_secret.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	r_secret.out.sec_handle = &sec_handle;
+	
+	torture_comment(tctx, "Testing OpenSecret\n");
+	
+	torture_assert_ntstatus_ok(tctx, dcerpc_lsa_OpenSecret_r(lsa_b, tctx, &r_secret),
+				   "OpenSecret failed");
+	torture_assert_ntstatus_ok(tctx, r_secret.out.result,
+				   "OpenSecret failed");
+	
+	r_query_secret.in.sec_handle = &sec_handle;
+	r_query_secret.in.new_val = &bufp1;
+	bufp1.buf = NULL;
+
+	torture_assert_ntstatus_ok(tctx, dcerpc_lsa_QuerySecret_r(lsa_b, tctx, &r_query_secret),
+		"QuerySecret failed");
+	torture_assert_ntstatus_ok(tctx, r_query_secret.out.result,
+				   "QuerySecret failed");
+	
+	
+	preferred_key.data = r_query_secret.out.new_val->buf->data;
+	preferred_key.length = r_query_secret.out.new_val->buf->size;
+	torture_assert_ntstatus_ok(tctx, dcerpc_fetch_session_key(lsa_p, &session_key),
+				   "dcerpc_fetch_session_key failed");
+	
+	torture_assert_ntstatus_ok(tctx,
+				   sess_decrypt_blob(tctx,
+						     &preferred_key, &session_key, &preferred_key_clear),
+				   "sess_decrypt_blob failed");
+	
+	torture_assert_ntstatus_ok(tctx, GUID_from_ndr_blob(&preferred_key_clear, &preferred_key_guid),
+				   "GUID parse failed");
+	
+	torture_assert_guid_equal(tctx, server_side_wrapped->guid,
+				  preferred_key_guid,
+				  "GUID didn't match value pointed at by G$BCKUPKEY_P");
+
+	/* And read BCKUPKEY_<guid> and get the actual key */
+	
+	key_guid_string = GUID_string(tctx, &server_side_wrapped->guid);
+	r_secret.in.name.string = talloc_asprintf(tctx, "G$BCKUPKEY_%s", key_guid_string);
+	
+	r_secret.in.handle = handle;
+	r_secret.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	r_secret.out.sec_handle = &sec_handle;
+	
+	torture_comment(tctx, "Testing OpenSecret\n");
+	
+	torture_assert_ntstatus_ok(tctx, dcerpc_lsa_OpenSecret_r(lsa_b, tctx, &r_secret),
+				   "OpenSecret failed");
+	torture_assert_ntstatus_ok(tctx, r_secret.out.result,
+				   "OpenSecret failed");
+	
+	r_query_secret.in.sec_handle = &sec_handle;
+	r_query_secret.in.new_val = &bufp1;
+
+	torture_assert_ntstatus_ok(tctx, dcerpc_lsa_QuerySecret_r(lsa_b, tctx, &r_query_secret),
+				   "QuerySecret failed");
+	torture_assert_ntstatus_ok(tctx, r_query_secret.out.result,
+				   "QuerySecret failed");
+	
+	
+	decrypt_key.data = r_query_secret.out.new_val->buf->data;
+	decrypt_key.length = r_query_secret.out.new_val->buf->size;
+	
+	torture_assert_ntstatus_ok(tctx,
+				   sess_decrypt_blob(tctx,
+						     &decrypt_key, &session_key, &decrypt_key_clear),
+				   "sess_decrypt_blob failed");
+	
+	torture_assert_ndr_err_equal(tctx, ndr_pull_struct_blob(&decrypt_key_clear, tctx, &server_key,
+								(ndr_pull_flags_fn_t)ndr_pull_bkrp_dc_serverwrap_key),
+				     NDR_ERR_SUCCESS, "Failed to parse server_key");
+
+	torture_assert_int_equal(tctx, server_key.magic, 1, "Failed to correctly decrypt server key");
+
+	/*
+	 * This is *not* the leading 64 bytes, as indicated in MS-BKRP 3.1.4.1.1
+	 * BACKUPKEY_BACKUP_GUID, it really is the whole key 
+	 */
+	HMAC(EVP_sha1(), server_key.key, sizeof(server_key.key),
+	     server_side_wrapped->r2, sizeof(server_side_wrapped->r2),
+	     symkey, &hash_len);
+	
+	/* rc4 decrypt sid and secret using sym key */
+	symkey_blob = data_blob_const(symkey, sizeof(symkey));
+	
+	encrypted_blob = data_blob_talloc(tctx, server_side_wrapped->rc4encryptedpayload,
+					  server_side_wrapped->ciphertext_length);
+	
+	arcfour_crypt_blob(encrypted_blob.data, encrypted_blob.length, &symkey_blob);
+
+	torture_assert_ndr_err_equal(tctx, ndr_pull_struct_blob(&encrypted_blob, tctx, &rc4payload,
+				       (ndr_pull_flags_fn_t)ndr_pull_bkrp_rc4encryptedpayload),
+				     NDR_ERR_SUCCESS, "Failed to parse rc4encryptedpayload");
+
+	torture_assert_int_equal(tctx, rc4payload.secret_data.length,
+				 server_side_wrapped->payload_length,
+				 "length of decrypted payload not the length declared in surrounding structure");
+
+	/*
+	 * This is *not* the leading 64 bytes, as indicated in MS-BKRP 3.1.4.1.1
+	 * BACKUPKEY_BACKUP_GUID, it really is the whole key 
+	 */
+	HMAC(EVP_sha1(), server_key.key, sizeof(server_key.key),
+	     rc4payload.r3, sizeof(rc4payload.r3),
+	     mackey, &hash_len);
+	
+	torture_assert_ndr_err_equal(tctx, ndr_push_struct_blob(&sid_blob, tctx, &rc4payload.sid,
+								(ndr_push_flags_fn_t)ndr_push_dom_sid),
+				     NDR_ERR_SUCCESS, "unable to push SID");
+
+	HMAC_CTX_init(&ctx);
+	HMAC_Init_ex(&ctx, mackey, hash_len, EVP_sha1(), NULL);
+	/* SID field */
+	HMAC_Update(&ctx, sid_blob.data, sid_blob.length);
+	/* Secret field */
+	HMAC_Update(&ctx, rc4payload.secret_data.data, rc4payload.secret_data.length);
+	HMAC_Final(&ctx, mac, &hash_len);
+	HMAC_CTX_cleanup(&ctx);
+
+	torture_assert_mem_equal(tctx, mac, rc4payload.mac, sizeof(mac), "mac not correct");
+	torture_assert_int_equal(tctx, rc4payload.secret_data.length,
+				 plaintext.length, "decrypted data is not correct length");
+	torture_assert_mem_equal(tctx, rc4payload.secret_data.data,
+				 plaintext.data, plaintext.length,
+				 "decrypted data is not correct");
+
+	/* Not strictly correct all the time, but good enough for this test */
+	caller_sid = get_user_sid(tctx, tctx, cli_credentials_get_username(cmdline_credentials));
+
+	torture_assert_sid_equal(tctx, &rc4payload.sid, caller_sid, "Secret saved with wrong SID");
+
+	
+	/* RE-encrypt */
+
+	if (wrong == WRONG_SID) {
+		rc4payload.sid.sub_auths[rc4payload.sid.num_auths - 1] = DOMAIN_RID_KRBTGT;
+	}
+
+	dump_data_pw("mackey: \n", mackey, sizeof(mackey));
+
+	torture_assert_ndr_err_equal(tctx,
+				     ndr_push_struct_blob(&sid_blob, tctx, &rc4payload.sid,
+							  (ndr_push_flags_fn_t)ndr_push_dom_sid),
+				     NDR_ERR_SUCCESS,
+				     "push of sid failed");
+
+	HMAC_CTX_init(&ctx);
+	HMAC_Init_ex(&ctx, mackey, 20, EVP_sha1(), NULL);
+	/* SID field */
+	HMAC_Update(&ctx, sid_blob.data, sid_blob.length);
+	/* Secret field */
+	HMAC_Update(&ctx, rc4payload.secret_data.data, rc4payload.secret_data.length);
+	HMAC_Final(&ctx, rc4payload.mac, &hash_len);
+	HMAC_CTX_cleanup(&ctx);
+
+	dump_data_pw("rc4payload.mac: \n", rc4payload.mac, sizeof(rc4payload.mac));
+	
+	torture_assert_ndr_err_equal(tctx,
+				     ndr_push_struct_blob(&encrypted_blob, tctx, &rc4payload,
+							  (ndr_push_flags_fn_t)ndr_push_bkrp_rc4encryptedpayload),
+				     NDR_ERR_SUCCESS,
+				     "push of rc4payload failed");
+
+	if (wrong == WRONG_KEY) {
+		symkey_blob.data[0] = 78;
+		symkey_blob.data[1] = 78;
+		symkey_blob.data[2] = 78;
+	}
+	
+	/* rc4 encrypt sid and secret using sym key */
+	arcfour_crypt_blob(encrypted_blob.data, encrypted_blob.length, &symkey_blob);
+
+	/* re-create server wrap structure */
+
+	torture_assert_int_equal(tctx, encrypted_blob.length,
+				 server_side_wrapped->ciphertext_length,
+				 "expected encrypted length not to change");
+	if (wrong == RIGHT_KEY) {
+		torture_assert_mem_equal(tctx, server_side_wrapped->rc4encryptedpayload,
+					 encrypted_blob.data,
+					 encrypted_blob.length,
+					 "expected encrypted data not to change");
+	}
+						 
+	server_side_wrapped->payload_length = rc4payload.secret_data.length;
+	server_side_wrapped->ciphertext_length = encrypted_blob.length;
+	server_side_wrapped->rc4encryptedpayload = encrypted_blob.data;
+
+	return true;
+}
+
 
 static bool test_ServerWrap_decrypt_wrong_stuff(struct torture_context *tctx,
 						struct dcerpc_pipe *p,
@@ -1627,6 +1869,15 @@ static bool test_ServerWrap_decrypt_wrong_stuff(struct torture_context *tctx,
 		 */
 		SIVAL(encrypted.data, 8, 0);  /* valid values are 1-3 */
 		break;
+
+	case RIGHT_KEY:
+	case WRONG_KEY:
+	case WRONG_SID:
+		torture_assert(tctx,
+			       test_ServerWrap_encrypt_decrypt_manual(tctx, &server_side_wrapped, wrong),
+			       "test_ServerWrap_encrypt_decrypt_manual failed");
+		repush = true;
+		break;
 	}
 
 	if (repush) {
@@ -1649,11 +1900,23 @@ static bool test_ServerWrap_decrypt_wrong_stuff(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx,
 				   dcerpc_bkrp_BackupKey_r(b, tctx, &r),
 				   "decrypt");
-	if (wrong == WRONG_R2 && W_ERROR_EQUAL(r.out.result, WERR_INVALID_SID)) {
+
+	if ((wrong == WRONG_R2 || wrong == WRONG_KEY)
+	    && W_ERROR_EQUAL(r.out.result, WERR_INVALID_SID)) {
 		torture_assert_werr_equal(tctx,
 					  r.out.result,
 					  WERR_INVALID_SID,
 					  "decrypt should fail with WERR_INVALID_SID or WERR_INVALID_PARAM");
+	} else if (wrong == RIGHT_KEY) {
+		torture_assert_werr_equal(tctx,
+					  r.out.result,
+					  WERR_OK,
+					  "decrypt should succeed!");
+	} else if (wrong == WRONG_SID) {
+		torture_assert_werr_equal(tctx,
+					  r.out.result,
+					  WERR_INVALID_ACCESS,
+					  "decrypt should fail with WERR_INVALID_ACCESS");
 	} else {
 		torture_assert_werr_equal(tctx,
 					  r.out.result,
@@ -1675,11 +1938,23 @@ static bool test_ServerWrap_decrypt_wrong_stuff(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx,
 				   dcerpc_bkrp_BackupKey_r(b, tctx, &r),
 				   "decrypt");
-	if (wrong == WRONG_R2 && W_ERROR_EQUAL(r.out.result, WERR_INVALID_SID)) {
+
+	if ((wrong == WRONG_R2 || wrong == WRONG_KEY)
+	    && W_ERROR_EQUAL(r.out.result, WERR_INVALID_SID)) {
 		torture_assert_werr_equal(tctx,
 					  r.out.result,
 					  WERR_INVALID_SID,
 					  "decrypt should fail with WERR_INVALID_SID or WERR_INVALID_PARAM");
+	} else if (wrong == RIGHT_KEY) {
+		torture_assert_werr_equal(tctx,
+					  r.out.result,
+					  WERR_OK,
+					  "decrypt should succeed!");
+	} else if (wrong == WRONG_SID) {
+		torture_assert_werr_equal(tctx,
+					  r.out.result,
+					  WERR_INVALID_ACCESS,
+					  "decrypt should fail with WERR_INVALID_ACCESS");
 	} else {
 		torture_assert_werr_equal(tctx,
 					  r.out.result,
@@ -1733,9 +2008,27 @@ static bool test_ServerWrap_decrypt_short_ciphertext_length(struct torture_conte
 }
 
 static bool test_ServerWrap_decrypt_zero_ciphertext_length(struct torture_context *tctx,
-							 struct dcerpc_pipe *p)
+							   struct dcerpc_pipe *p)
 {
 	return test_ServerWrap_decrypt_wrong_stuff(tctx, p, ZERO_CIPHERTEXT_LENGTH);
+}
+
+static bool test_ServerWrap_encrypt_decrypt_remote_key(struct torture_context *tctx,
+						       struct dcerpc_pipe *p)
+{
+	return test_ServerWrap_decrypt_wrong_stuff(tctx, p, RIGHT_KEY);
+}
+
+static bool test_ServerWrap_encrypt_decrypt_wrong_key(struct torture_context *tctx,
+						       struct dcerpc_pipe *p)
+{
+	return test_ServerWrap_decrypt_wrong_stuff(tctx, p, WRONG_KEY);
+}
+
+static bool test_ServerWrap_encrypt_decrypt_wrong_sid(struct torture_context *tctx,
+						      struct dcerpc_pipe *p)
+{
+	return test_ServerWrap_decrypt_wrong_stuff(tctx, p, WRONG_SID);
 }
 
 struct torture_suite *torture_rpc_backupkey(TALLOC_CTX *mem_ctx)
@@ -1822,5 +2115,15 @@ struct torture_suite *torture_rpc_backupkey(TALLOC_CTX *mem_ctx)
 
 	torture_rpc_tcase_add_test(tcase, "server_wrap_decrypt_zero_ciphertext_length",
 				   test_ServerWrap_decrypt_zero_ciphertext_length);
+
+	torture_rpc_tcase_add_test(tcase, "server_wrap_encrypt_decrypt_remote_key", 
+				   test_ServerWrap_encrypt_decrypt_remote_key);
+	
+	torture_rpc_tcase_add_test(tcase, "server_wrap_encrypt_decrypt_wrong_key",
+				   test_ServerWrap_encrypt_decrypt_wrong_key);
+
+	torture_rpc_tcase_add_test(tcase, "server_wrap_encrypt_decrypt_wrong_sid",
+				   test_ServerWrap_encrypt_decrypt_wrong_sid);
+
 	return suite;
 }
