@@ -2922,6 +2922,9 @@ static NTSTATUS test_ioctl_qar_req(struct torture_context *torture,
 			status = NT_STATUS_UNSUCCESSFUL;
 			goto err_out;
 		}
+		/* move to next buffer */
+		ioctl.smb2.out.out.data += sizeof(far_buf);
+		ioctl.smb2.out.out.length -= sizeof(far_buf);
 	}
 
 done:

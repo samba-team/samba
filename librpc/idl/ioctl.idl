@@ -164,9 +164,13 @@ interface sparse
 	 * computed by dividing the size of the returned output buffer (from
 	 * either SMB or SMB2, the lower-layer protocol that carries the FSCTL)
 	 * by the size of the FILE_ALLOCATED_RANGE_BUFFER element.
+	 *
+	 * This logic can't (currently) be represented in pidl, so just use a
+	 * blob. Perhaps in future we'll support:
+	 *	[flag(NDR_REMAINING)] file_alloced_range_buf array[];
 	 */
 	typedef [public] struct {
-		file_alloced_range_buf *array;
+		[flag(NDR_REMAINING)] DATA_BLOB far_buf_array;
 	} fsctl_query_alloced_ranges_rsp;
 
 	/* 2.3.65 FSCTL_SET_ZERO_DATA Request */
