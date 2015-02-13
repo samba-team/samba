@@ -284,23 +284,6 @@ static const char *trust_keystr(const char *domain)
 }
 
 /************************************************************************
- Lock the trust password entry.
-************************************************************************/
-
-void *secrets_get_trust_account_lock(TALLOC_CTX *mem_ctx, const char *domain)
-{
-	struct db_context *db_ctx;
-	if (!secrets_init()) {
-		return NULL;
-	}
-
-	db_ctx = secrets_db_ctx();
-
-	return dbwrap_fetch_locked(
-		db_ctx, mem_ctx, string_term_tdb_data(trust_keystr(domain)));
-}
-
-/************************************************************************
  Routine to get the default secure channel type for trust accounts
 ************************************************************************/
 

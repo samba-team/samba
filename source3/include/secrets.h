@@ -97,7 +97,6 @@ bool secrets_store_domain_sid(const char *domain, const struct dom_sid  *sid);
 bool secrets_fetch_domain_sid(const char *domain, struct dom_sid  *sid);
 bool secrets_store_domain_guid(const char *domain, struct GUID *guid);
 bool secrets_fetch_domain_guid(const char *domain, struct GUID *guid);
-void *secrets_get_trust_account_lock(TALLOC_CTX *mem_ctx, const char *domain);
 enum netr_SchannelType get_default_sec_channel(void);
 bool secrets_fetch_trust_account_password_legacy(const char *domain,
 						 uint8_t ret_pwd[16],
