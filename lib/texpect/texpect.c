@@ -52,7 +52,12 @@
 #endif /* STREAMPTY */
 
 #include <popt.h>
+
+#ifdef HAVE_ERR_H
 #include <err.h>
+#else
+#include <ccan/err/err.h>
+#endif
 
 struct command {
 	enum { CMD_EXPECT = 0, CMD_SEND, CMD_PASSWORD } type;
