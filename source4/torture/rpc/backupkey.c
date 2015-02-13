@@ -894,7 +894,6 @@ static bool test_RestoreGUID_v3(struct torture_context *tctx,
 static bool test_RestoreGUID(struct torture_context *tctx,
 			     struct dcerpc_pipe *p)
 {
-	enum ndr_err_code ndr_err;
 	struct dcerpc_binding_handle *b = p->binding_handle;
 	DATA_BLOB out_blob;
 	struct bkrp_client_side_unwrapped resp;
@@ -909,9 +908,12 @@ static bool test_RestoreGUID(struct torture_context *tctx,
 		torture_assert(tctx, r != NULL, "createRestoreGUIDStruct failed");
 		torture_assert_ntstatus_ok(tctx, dcerpc_bkrp_BackupKey_r(b, tctx, r), "Restore GUID");
 		out_blob.length = *r->out.data_out_len;
-		ndr_err = ndr_pull_struct_blob(&out_blob, tctx, &resp, (ndr_pull_flags_fn_t)ndr_pull_bkrp_client_side_unwrapped);
-		torture_assert_int_equal(tctx, NDR_ERR_CODE_IS_SUCCESS(ndr_err), 1, "Unable to unmarshall bkrp_client_side_unwrapped");
 		torture_assert_werr_equal(tctx, r->out.result, WERR_OK, "Restore GUID");
+		torture_assert_ndr_err_equal(tctx,
+					     ndr_pull_struct_blob(&out_blob, tctx, &resp,
+								(ndr_pull_flags_fn_t)ndr_pull_bkrp_client_side_unwrapped),
+					     NDR_ERR_SUCCESS,
+					     "Unable to unmarshall bkrp_client_side_unwrapped");
 		torture_assert_str_equal(tctx, (char*)resp.secret.data, secret, "Wrong secret");
 	} else {
 		struct bkrp_BackupKey *r = createRetreiveBackupKeyGUIDStruct(tctx, p, 2, &out_blob);
