@@ -25,6 +25,9 @@ def configure(conf):
 
     if 'HAVE_GNUTLS' in conf.env:
         conf.DEFINE('ENABLE_GNUTLS', 1)
+    else:
+        if 'AD_DC_BUILD_IS_ENABLED' in conf.env:
+            conf.fatal("Building the AD DC requires GnuTLS (eg libgnutls-dev, gnutls-devel) for ldaps:// support and for the BackupKey protocol")
 
     conf.CHECK_FUNCS_IN('gnutls_global_init', 'gnutls',
                         headers='gnutls/gnutls.h')
