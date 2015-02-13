@@ -690,6 +690,16 @@ get_tcp_connections_for_ip ()
 	 {print $4" "$5}'
 }
 
+##################################################################
+# use statd-callout to update NFS lock info
+##################################################################
+nfs_update_lock_info ()
+{
+    if [ -x "$CTDB_BASE/statd-callout" ] ; then
+	"$CTDB_BASE/statd-callout" update
+    fi
+}
+
 ########################################################
 # start/stop the Ganesha nfs service
 ########################################################
