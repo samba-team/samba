@@ -167,8 +167,9 @@ static uint64_t cephwrap_disk_free(struct vfs_handle_struct *handle,  const char
 		 * Provide all the correct values.
 		 */
 		*bsize = statvfs_buf.f_bsize;
-		*dfree = statvfs_buf.f_bsize * statvfs_buf.f_bavail;
-		*dsize = statvfs_buf.f_bsize * statvfs_buf.f_blocks;
+		*dfree = statvfs_buf.f_bavail;
+		*dsize = statvfs_buf.f_blocks;
+		disk_norm(small_query, bsize, dfree, dsize);
 		DEBUG(10, ("[CEPH] bsize: %llu, dfree: %llu, dsize: %llu\n",
 			llu(*bsize), llu(*dfree), llu(*dsize)));
 		return *dfree;
