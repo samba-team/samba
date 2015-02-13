@@ -82,12 +82,11 @@
 		<para>
 			Defines whether and where to store a vfs_glusterfs specific
 			logfile. Client variable substitution is supported (i.e.
-			%M, %m, %I), hence per client log file can be
-			%specified.
+			%M, %m, %I), hence per client log file can be specified.
 		</para>
 		<para>
 			Example: glusterfs:logfile =
-			%/var/log/samba/glusterfs-vol2.%M.log
+			/var/log/samba/glusterfs-vol2.%M.log
 		</para>
 		</listitem>
 		</varlistentry>
