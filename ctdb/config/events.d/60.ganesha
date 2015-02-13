@@ -221,6 +221,7 @@ case "$1" in
 	} || exit $?
 
 	update_tickles 2049
+	nfs_update_lock_info
 
 	# check that statd responds to rpc requests
 	# if statd is not running we try to restart it

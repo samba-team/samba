@@ -10,11 +10,13 @@ FAKE_DATE_OUTPUT="1234565789"
 
 ok_null
 simple_test_event "add-client" "192.168.123.45"
+simple_test_event "update"
 
 FAKE_CTDB_PNN=1
 
 ok_null
 simple_test_event "add-client" "192.168.123.46"
+simple_test_event "update"
 
 FAKE_CTDB_PNN=0
 
