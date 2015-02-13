@@ -32,28 +32,29 @@
 	<manvolnum>8</manvolnum></citerefentry> suite.</para>
 
 	<para>
-		The <command>vfs_glusterfs</command> VFS module exposes
-		GlusterFS specific features for use by Samba.
+		GlusterFS
+		(<ulink url="http://www.gluster.org/">http://www.gluster.org</ulink>)
+		is an Open Source clustered file system capable of scaling to
+		several peta-bytes.  With its FUSE based native client,
+		GlusterFS is available as a POSIX compliant file system and can
+		hence be shared by Samba without additional steps.
 	</para>
 
 	<para>
-		GlusterFS is a clustered file system, capable of scaling
-		to several peta-bytes. It aggregates various storage bricks
-		over Infiniband RDMA or TCP/IP and interconnect into one large
-		parallel network file system. Storage bricks can be made of any
-		commodity hardware, such as x86-64 server with SATA-II RAID and
-		Infiniband HBA.
-
-		GlusterFS is fully POSIX compliant file system. It supports
-		standard clients running standard applications over any standard
-		IP network and also FUSE. It works seemlessly on
-		different operating systems, currently supported on GNU/Linux
-		and Solaris.
+		The <command>vfs_glusterfs</command> VFS module provides an
+		alternative, and superior way to access a Gluster filesystem
+		from Samba for sharing. It does not require a Gluster FUSE mount
+		but directly accesses the GlusterFS daemon through its library
+		<command>libgfapi</command>, thereby omitting the expensive
+		kernel-userspace context switches and taking advantage of some
+		of the more advanced features of GlusterFS.
 	</para>
 
 	<para>
-		This module is stackable, provided glusterfs lies in the bottom
-		of the stack.
+		This module can be combined with other modules, but it
+		should be the last module in the <command>vfs objects</command>
+		list. Modules added to this list to the right of the glusterfs
+		entry may not have any effect at all.
 	</para>
 </refsect1>
 
