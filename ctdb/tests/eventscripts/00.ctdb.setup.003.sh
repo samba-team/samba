@@ -14,7 +14,8 @@ EOF
 required_result 1 <<EOF
 Set MonitorInterval to 5
 Unable to set tunable variable 'UnknownMagic'
-Failed to set CTDB tunables
+Invalid configuration: CTDB_SET_UnknownMagic=0
+Aborting setup due to invalid configuration - fix typos, remove unknown tunables
 EOF
 
 simple_test

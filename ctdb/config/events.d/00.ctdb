@@ -119,14 +119,19 @@ update_config_from_tdb() {
     fi
 }
 
-set_ctdb_variables () {
+set_ctdb_variables ()
+{
     # set any tunables from the config file
     set | sed -n '/^CTDB_SET_/s/=.*//p' |
     while read v; do
 	varname="${v#CTDB_SET_}"
 	value=$(eval echo "\$$v")
-	ctdb setvar $varname $value || return 1
-	echo "Set $varname to $value"
+	if ctdb setvar $varname $value ; then
+	    echo "Set $varname to $value"
+	else
+	    echo "Invalid configuration: CTDB_SET_${varname}=${value}"
+	    return 1
+	fi
     done
 }
 
@@ -198,7 +203,8 @@ case "$1" in
 
     setup)
 	# Set any tunables from the config file
-	set_ctdb_variables || die "Failed to set CTDB tunables"
+	set_ctdb_variables || \
+	    die "Aborting setup due to invalid configuration - fix typos, remove unknown tunables"
 	;;
 
     startup)
