@@ -250,8 +250,7 @@ NTSTATUS dcerpc_binding_handle_raw_call(struct dcerpc_binding_handle *h,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (!tevent_req_poll(subreq, ev)) {
-		status = map_nt_error_from_unix_common(errno);
+	if (!tevent_req_poll_ntstatus(subreq, ev, &status)) {
 		talloc_free(frame);
 		return status;
 	}
