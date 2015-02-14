@@ -28,7 +28,7 @@
 #include "smbprofile.h"
 #include "../lib/util/bitmap.h"
 #include "../librpc/gen_ndr/krb5pac.h"
-#include "lib/iov_buf.h"
+#include "lib/util/iov_buf.h"
 #include "auth.h"
 
 static void smbd_smb2_connection_handler(struct tevent_context *ev,

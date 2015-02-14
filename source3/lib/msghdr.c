@@ -18,7 +18,7 @@
 
 #include "replace.h"
 #include "lib/msghdr.h"
-#include "lib/iov_buf.h"
+#include "lib/util/iov_buf.h"
 #include <sys/socket.h>
 
 ssize_t msghdr_prep_fds(struct msghdr *msg, uint8_t *buf, size_t bufsize,

@@ -36,6 +36,11 @@ bld.SAMBA_LIBRARY('socket-blocking',
                   local_include=False,
                   private_library=True)
 
+bld.SAMBA_LIBRARY('iov_buf',
+                  source='iov_buf.c',
+                  local_include=False,
+                  private_library=True)
+
 bld.SAMBA_SUBSYSTEM('samba-util-core',
                     source='''xfile.c data_blob.c util_file.c time.c
                               signal.c util.c idtree.c fault.c

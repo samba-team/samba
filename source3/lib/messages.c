@@ -52,7 +52,7 @@
 #include "lib/util/tevent_unix.h"
 #include "lib/background.h"
 #include "lib/messages_dgm.h"
-#include "lib/iov_buf.h"
+#include "lib/util/iov_buf.h"
 #include "lib/util/server_id_db.h"
 #include "lib/messages_dgm_ref.h"
 #include "lib/messages_util.h"

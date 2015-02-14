@@ -252,11 +252,6 @@ bld.SAMBA3_LIBRARY('sys_rw',
                    deps='replace iov_buf',
                    private_library=True)
 
-bld.SAMBA3_LIBRARY('iov_buf',
-                   source='lib/iov_buf.c',
-                   deps='replace',
-                   private_library=True)
-
 bld.SAMBA3_SUBSYSTEM('samba3util',
                    source='''lib/system.c
                    lib/sendfile.c

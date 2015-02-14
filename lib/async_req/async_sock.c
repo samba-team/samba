@@ -27,7 +27,7 @@
 #include <talloc.h>
 #include <tevent.h>
 #include "lib/async_req/async_sock.h"
-#include "lib/iov_buf.h"
+#include "lib/util/iov_buf.h"
 
 /* Note: lib/util/ is currently GPL */
 #include "lib/util/tevent_unix.h"
