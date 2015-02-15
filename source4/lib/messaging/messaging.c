@@ -62,8 +62,6 @@ struct imessaging_context {
 	struct dispatch_fn **dispatch;
 	uint32_t num_types;
 	struct idr_context *dispatch_tree;
-	struct imessaging_rec *pending;
-	struct imessaging_rec *retry_queue;
 	struct irpc_list *irpc;
 	struct idr_context *idr;
 	struct server_id_db *names;
@@ -81,23 +79,6 @@ struct dispatch_fn {
 };
 
 /* an individual message */
-struct imessaging_rec {
-	struct imessaging_rec *next, *prev;
-	struct imessaging_context *msg;
-	const char *path;
-
-	struct imessaging_header {
-		uint32_t version;
-		uint32_t msg_type;
-		struct server_id from;
-		struct server_id to;
-		uint32_t length;
-	} *header;
-
-	DATA_BLOB packet;
-	uint32_t retries;
-};
-
 
 static void irpc_handler(struct imessaging_context *, void *,
 			 uint32_t, struct server_id, DATA_BLOB *);
