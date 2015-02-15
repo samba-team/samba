@@ -408,6 +408,11 @@ bld.SAMBA_SUBSYSTEM('NDR_FILE_ID',
     public_deps='ndr'
     )
 
+bld.SAMBA_SUBSYSTEM('NDR_MESSAGING',
+    source='gen_ndr/ndr_messaging.c',
+    public_deps='ndr NDR_SERVER_ID'
+    )
+
 bld.SAMBA_SUBSYSTEM('RPC_NDR_XATTR',
     source='gen_ndr/ndr_xattr_c.c',
     public_deps='NDR_XATTR dcerpc-binding'

@@ -10,11 +10,6 @@ bld.SAMBA3_SUBSYSTEM('NDR_LIBNET_JOIN',
 	public_deps='ndr krb5samba'
 	)
 
-bld.SAMBA3_SUBSYSTEM('NDR_MESSAGING',
-	source='gen_ndr/ndr_messaging.c',
-	public_deps='ndr NDR_SERVER_ID'
-	)
-
 bld.SAMBA3_SUBSYSTEM('NDR_OPEN_FILES',
 	source='gen_ndr/ndr_open_files.c',
 	public_deps='ndr NDR_SERVER_ID NDR_FILE_ID NDR_SECURITY NDR_SMB2_LEASE_STRUCT'
