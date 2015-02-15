@@ -816,6 +816,13 @@ static WERROR create_heimdal_rsa_key(TALLOC_CTX *ctx, hx509_context *hctx,
 		return WERR_INTERNAL_ERROR;
 	}
 
+	/* 
+	 * Unlike Heimdal's RSA_generate_key_ex(), this generates a
+	 * 2048 bit key 100% of the time.  The heimdal code had a ~1/8
+	 * chance of doing so, chewing vast quantities of computation
+	 * and entropy in the process.
+	 */
+	
 	ret = gnutls_x509_privkey_generate(gtls_key, GNUTLS_PK_RSA, bits, 0);
 	if (ret != 0) {
 		werr = WERR_INTERNAL_ERROR;
@@ -837,6 +844,19 @@ static WERROR create_heimdal_rsa_key(TALLOC_CTX *ctx, hx509_context *hctx,
 	}
 	p = p0;
 
+	/* 
+	 * Only this GnuTLS export function correctly exports the key,
+	 * we can't use gnutls_rsa_params_export_raw() because while
+	 * it appears to be fixed in more recent versions, in the
+	 * Ubuntu 14.04 version 2.12.23 (at least) it incorrectly
+	 * exports one of the key parameters (qInv).  Additionally, we
+	 * would have to work around subtle differences in big number
+	 * representations.
+	 * 
+	 * We need access to the RSA parameters directly (in the
+	 * parameter RSA **rsa) as the caller has to manually encode
+	 * them in a non-standard data structure.
+	 */
 	ret = gnutls_x509_privkey_export(gtls_key, GNUTLS_X509_FMT_DER, p0, &len);
 
 	if (ret != 0) {
