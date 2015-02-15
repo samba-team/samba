@@ -22,24 +22,9 @@
 #define _SOURCE4_LIB_MESSAGING_MESSAGES_H_
 
 #include "librpc/gen_ndr/server_id.h"
+#include "librpc/gen_ndr/messaging.h"
 
 struct imessaging_context;
-
-/* general messages */
-#define MSG_DEBUG		1
-#define MSG_PING		2
-#define MSG_PONG		3
-#define MSG_BRL_RETRY		4
-#define MSG_PVFS_RETRY_OPEN	5
-#define MSG_IRPC                6
-#define MSG_PVFS_NOTIFY		7
-#define MSG_NTVFS_OPLOCK_BREAK	8
-#define MSG_REQ_POOL_USAGE	9
-#define MSG_POOL_USAGE          10
-#define MSG_DREPL_ALLOCATE_RID	11
-
-/* temporary messaging endpoints are allocated above this line */
-#define MSG_TMP_BASE		1000
 
 /* taskid for messaging of parent process */
 #define SAMBA_PARENT_TASKID     0

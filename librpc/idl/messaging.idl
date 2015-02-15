@@ -116,10 +116,25 @@ interface messaging
 		/* smbXsrv messages */
 		MSG_SMBXSRV_SESSION_CLOSE	= 0x0600,
 
+		/* source4 and NTVFS smb server messages */
+		MSG_BRL_RETRY                   = 0x0700,
+		MSG_PVFS_RETRY_OPEN             = 0x0701,
+		MSG_IRPC                        = 0x0702,
+		MSG_NTVFS_OPLOCK_BREAK          = 0x0703,
+		MSG_DREPL_ALLOCATE_RID          = 0x0704,
+
 		/* dbwrap messages 4001-4999 (0x0FA0 - 0x1387) */
 		/* MSG_DBWRAP_TDB2_CHANGES		= 4001, */
 		/* MSG_DBWRAP_G_LOCK_RETRY		= 4002, */
-		MSG_DBWRAP_MODIFIED		= 4003
+		MSG_DBWRAP_MODIFIED		= 4003,
+
+		/*
+		 * source4 allows new messages to be registered at
+		 * runtime (currently used in python bindings and in
+		 * smbtorture). Temporary messaging endpoints are
+		 * allocated above this line
+		 */
+		MSG_TMP_BASE                    = 0xF000
 	} messaging_type;
 
 	/* messaging struct sent across the sockets and stored in the tdb */
