@@ -304,6 +304,30 @@ ctdb_natgwlist ()
 
 ######################################################################
 
+ctdb_setvar ()
+{
+    shift
+    _var="$1"
+
+    for _i in $FAKE_CTDB_TUNABLES_OK ; do
+	if [ "$_var" = "$_i" ] ; then
+	    return 0
+	fi
+    done
+
+    for _i in $FAKE_CTDB_TUNABLES_OBSOLETE ; do
+	if [ "$_var" = "$_i" ] ; then
+	    return 0
+	fi
+    done
+
+    echo "Unable to set tunable variable '${_var}'"
+    return 1
+}
+
+
+######################################################################
+
 case "$1" in
     gettickles)
 	setup_tickles
@@ -405,5 +429,6 @@ case "$1" in
     shutdown)      ctdb_shutdown "$@";;
     setnatgwstate) ctdb_setnatgwstate "$@" ;;
     natgwlist)     ctdb_natgwlist "$@" ;;
+    setvar)	   ctdb_setvar "$@" ;;
     *) not_implemented "$1" ;;
 esac
