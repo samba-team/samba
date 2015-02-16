@@ -75,6 +75,10 @@ bool iov_advance(struct iovec **iov, int *iovcnt, size_t n)
 
 	/*
 	 * Skip 0-length iovec's
+	 *
+	 * There might be empty buffers at the end of iov. Next time we do a
+	 * readv/writev based on this iov would give 0 transferred bytes, also
+	 * known as EPIPE. So we need to be careful discarding them.
 	 */
 
 	while ((cnt > 0) && (v->iov_len == 0)) {
