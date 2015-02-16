@@ -237,16 +237,22 @@ static NTSTATUS smbd_initialize_smb2(struct smbXsrv_connection *xconn)
 	buf[3] = (len)&0xFF; \
 } while (0)
 
-static void smb2_setup_nbt_length(struct iovec *vector, int count)
+static bool smb2_setup_nbt_length(struct iovec *vector, int count)
 {
-	size_t len = 0;
-	int i;
+	ssize_t len;
 
-	for (i=1; i < count; i++) {
-		len += vector[i].iov_len;
+	if (count == 0) {
+		return false;
+	}
+
+	len = iov_buflen(vector+1, count-1);
+
+	if ((len == -1) || (len > 0xFFFFFF)) {
+		return false;
 	}
 
 	_smb2_setlen(vector[0].iov_base, len);
+	return true;
 }
 
 static int smbd_smb2_request_destructor(struct smbd_smb2_request *req)
@@ -944,6 +950,7 @@ static NTSTATUS smbd_smb2_request_setup_out(struct smbd_smb2_request *req)
 	struct iovec *vector;
 	int count;
 	int idx;
+	bool ok;
 
 	count = req->in.vector_count;
 	if (count <= ARRAY_SIZE(req->out._vector)) {
@@ -1035,7 +1042,10 @@ static NTSTATUS smbd_smb2_request_setup_out(struct smbd_smb2_request *req)
 	req->out.vector_count = count;
 
 	/* setup the length of the NBT packet */
-	smb2_setup_nbt_length(req->out.vector, req->out.vector_count);
+	ok = smb2_setup_nbt_length(req->out.vector, req->out.vector_count);
+	if (!ok) {
+		return NT_STATUS_INVALID_PARAMETER_MIX;
+	}
 
 	DLIST_ADD_END(xconn->smb2.requests, req, struct smbd_smb2_request *);
 
@@ -1156,6 +1166,7 @@ static struct smbd_smb2_request *dup_smb2_req(const struct smbd_smb2_request *re
 	struct iovec *outvec = NULL;
 	int count = req->out.vector_count;
 	int i;
+	bool ok;
 
 	newreq = smbd_smb2_request_allocate(req->xconn);
 	if (!newreq) {
@@ -1195,8 +1206,12 @@ static struct smbd_smb2_request *dup_smb2_req(const struct smbd_smb2_request *re
 		return NULL;
 	}
 
-	smb2_setup_nbt_length(newreq->out.vector,
-		newreq->out.vector_count);
+	ok = smb2_setup_nbt_length(newreq->out.vector,
+				   newreq->out.vector_count);
+	if (!ok) {
+		TALLOC_FREE(newreq);
+		return NULL;
+	}
 
 	return newreq;
 }
@@ -1210,6 +1225,7 @@ static NTSTATUS smb2_send_async_interim_response(const struct smbd_smb2_request 
 	uint8_t *outhdr = NULL;
 	struct smbd_smb2_request *nreq = NULL;
 	NTSTATUS status;
+	bool ok;
 
 	/* Create a new smb2 request we'll use
 	   for the interim return. */
@@ -1222,8 +1238,11 @@ static NTSTATUS smb2_send_async_interim_response(const struct smbd_smb2_request 
 	   ones we'll be using for the async reply. */
 	nreq->out.vector_count -= SMBD_SMB2_NUM_IOV_PER_REQ;
 
-	smb2_setup_nbt_length(nreq->out.vector,
-		nreq->out.vector_count);
+	ok = smb2_setup_nbt_length(nreq->out.vector,
+				   nreq->out.vector_count);
+	if (!ok) {
+		return NT_STATUS_INVALID_PARAMETER_MIX;
+	}
 
 	/* Step back to the previous reply. */
 	nreq->current_idx -= SMBD_SMB2_NUM_IOV_PER_REQ;
@@ -1463,6 +1482,7 @@ static void smbd_smb2_request_pending_timer(struct tevent_context *ev,
 	uint64_t nonce_low = 0;
 	uint64_t async_id = 0;
 	NTSTATUS status;
+	bool ok;
 
 	TALLOC_FREE(req->async_te);
 
@@ -1564,7 +1584,13 @@ static void smbd_smb2_request_pending_timer(struct tevent_context *ev,
 	state->vector[1+SMBD_SMB2_DYN_IOV_OFS].iov_base  = dyn;
 	state->vector[1+SMBD_SMB2_DYN_IOV_OFS].iov_len   = 1;
 
-	smb2_setup_nbt_length(state->vector, 1 + SMBD_SMB2_NUM_IOV_PER_REQ);
+	ok = smb2_setup_nbt_length(state->vector,
+				   1 + SMBD_SMB2_NUM_IOV_PER_REQ);
+	if (!ok) {
+		smbd_server_connection_terminate(
+			xconn, nt_errstr(NT_STATUS_INTERNAL_ERROR));
+		return;
+	}
 
 	/* Ensure we correctly go through crediting. Grant
 	   the credits now, and zero credits on the final
@@ -2326,6 +2352,7 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 	struct iovec *outhdr = SMBD_SMB2_OUT_HDR_IOV(req);
 	struct iovec *outdyn = SMBD_SMB2_OUT_DYN_IOV(req);
 	NTSTATUS status;
+	bool ok;
 
 	req->subreq = NULL;
 	TALLOC_FREE(req->async_te);
@@ -2453,7 +2480,10 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 		req->compound_related = false;
 	}
 
-	smb2_setup_nbt_length(req->out.vector, req->out.vector_count);
+	ok = smb2_setup_nbt_length(req->out.vector, req->out.vector_count);
+	if (!ok) {
+		return NT_STATUS_INVALID_PARAMETER_MIX;
+	}
 
 	/* Set credit for these operations (zero credits if this
 	   is a final reply for an async operation). */
@@ -2736,6 +2766,7 @@ static NTSTATUS smbd_smb2_send_break(struct smbXsrv_connection *xconn,
 	uint64_t nonce_low = 0;
 	NTSTATUS status;
 	size_t statelen;
+	bool ok;
 
 	if (session != NULL) {
 		session_wire_id = session->global->session_wire_id;
@@ -2817,7 +2848,11 @@ static NTSTATUS smbd_smb2_send_break(struct smbXsrv_connection *xconn,
 	 * state->vector[1+SMBD_SMB2_DYN_IOV_OFS] is NULL by talloc_zero above
 	 */
 
-	smb2_setup_nbt_length(state->vector, 1 + SMBD_SMB2_NUM_IOV_PER_REQ);
+	ok = smb2_setup_nbt_length(state->vector,
+				   1 + SMBD_SMB2_NUM_IOV_PER_REQ);
+	if (!ok) {
+		return NT_STATUS_INVALID_PARAMETER_MIX;
+	}
 
 	if (do_encryption) {
 		DATA_BLOB encryption_key = session->global->encryption_key;
