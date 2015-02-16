@@ -1456,13 +1456,32 @@ void reply_setatr(struct smb_request *req)
 void reply_dskattr(struct smb_request *req)
 {
 	connection_struct *conn = req->conn;
+	uint64_t ret;
 	uint64_t dfree,dsize,bsize;
 	START_PROFILE(SMBdskattr);
 
-	if (get_dfree_info(conn,".",True,&bsize,&dfree,&dsize) == (uint64_t)-1) {
+	ret = get_dfree_info(conn, ".", false, &bsize, &dfree, &dsize);
+	if (ret == (uint64_t)-1) {
 		reply_nterror(req, map_nt_error_from_unix(errno));
 		END_PROFILE(SMBdskattr);
 		return;
+	}
+
+	/*
+	 * Force max to fit in 16 bit fields.
+	 */
+	while (dfree > WORDMAX || dsize > WORDMAX || bsize < 512) {
+		dfree /= 2;
+		dsize /= 2;
+		bsize *= 2;
+		if (bsize > (WORDMAX*512)) {
+			bsize = (WORDMAX*512);
+			if (dsize > WORDMAX)
+				dsize = WORDMAX;
+			if (dfree >  WORDMAX)
+				dfree = WORDMAX;
+			break;
+		}
 	}
 
 	reply_outbuf(req, 5, 0);
