@@ -507,6 +507,7 @@ NTSTATUS torture_rpc_init(void)
 	torture_suite_add_simple_test(suite, "schannel", torture_rpc_schannel);
 	torture_suite_add_simple_test(suite, "schannel2", torture_rpc_schannel2);
 	torture_suite_add_simple_test(suite, "bench-schannel1", torture_rpc_schannel_bench1);
+	torture_suite_add_simple_test(suite, "schannel_anon_setpw", torture_rpc_schannel_anon_setpw);
 	torture_suite_add_suite(suite, torture_rpc_srvsvc(suite));
 	torture_suite_add_suite(suite, torture_rpc_svcctl(suite));
 	torture_suite_add_suite(suite, torture_rpc_samr_accessmask(suite));

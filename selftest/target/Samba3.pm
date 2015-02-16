@@ -175,6 +175,8 @@ sub setup_env($$$)
 
 	if ($envname eq "s3dc") {
 		return $self->setup_s3dc("$path/s3dc");
+	} elsif ($envname eq "s3dc_schannel") {
+		return $self->setup_s3dc_schannel("$path/s3dc_schannel");
 	} elsif ($envname eq "simpleserver") {
 		return $self->setup_simpleserver("$path/simpleserver");
 	} elsif ($envname eq "maptoguest") {
@@ -235,6 +237,54 @@ sub setup_s3dc($$)
 	$vars->{DC_PASSWORD} = $vars->{PASSWORD};
 
 	$self->{vars}->{s3dc} = $vars;
+
+	return $vars;
+}
+
+sub setup_s3dc_schannel($$)
+{
+	my ($self, $path) = @_;
+
+	print "PROVISIONING S3DC WITH SERVER SCHANNEL ...";
+
+	my $pdc_options = "
+	domain master = yes
+	domain logons = yes
+	lanman auth = yes
+
+	rpc_server:epmapper = external
+	rpc_server:spoolss = external
+	rpc_server:lsarpc = external
+	rpc_server:samr = external
+	rpc_server:netlogon = external
+	rpc_server:register_embedded_np = yes
+
+	rpc_daemon:epmd = fork
+	rpc_daemon:spoolssd = fork
+	rpc_daemon:lsasd = fork
+
+	server schannel = yes
+";
+
+	my $vars = $self->provision($path,
+				    "LOCALS3DC9",
+				    "locals3dc9pass",
+				    $pdc_options);
+
+	$vars or return undef;
+
+	if (not $self->check_or_start($vars, "yes", "yes", "yes")) {
+	       return undef;
+	}
+
+	$vars->{DC_SERVER} = $vars->{SERVER};
+	$vars->{DC_SERVER_IP} = $vars->{SERVER_IP};
+	$vars->{DC_SERVER_IPV6} = $vars->{SERVER_IPV6};
+	$vars->{DC_NETBIOSNAME} = $vars->{NETBIOSNAME};
+	$vars->{DC_USERNAME} = $vars->{USERNAME};
+	$vars->{DC_PASSWORD} = $vars->{PASSWORD};
+
+	$self->{vars}->{s3dc_schannel} = $vars;
 
 	return $vars;
 }
