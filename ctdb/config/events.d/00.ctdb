@@ -121,10 +121,10 @@ update_config_from_tdb() {
 
 set_ctdb_variables () {
     # set any tunables from the config file
-    set | grep ^CTDB_SET_ | cut -d_ -f3- | 
+    set | sed -n '/^CTDB_SET_/s/=.*//p' |
     while read v; do
-	varname=`echo $v | cut -d= -f1`
-	value=`echo $v | cut -d= -f2`
+	varname="${v#CTDB_SET_}"
+	value=$(eval echo "\$$v")
 	ctdb setvar $varname $value || return 1
 	echo "Set $varname to $value"
     done
