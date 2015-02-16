@@ -26,6 +26,7 @@
 #include "system/network.h"
 #include "tsocket.h"
 #include "tsocket_internal.h"
+#include "lib/util/iov_buf.h"
 
 static int tsocket_bsd_error_from_errno(int ret,
 					int sys_errno,
@@ -1747,7 +1748,8 @@ static void tstream_bsd_readv_handler(void *private_data)
 	struct tstream_bsd *bsds = tstream_context_data(stream, struct tstream_bsd);
 	int ret;
 	int err;
-	bool retry;
+	int _count;
+	bool ok, retry;
 
 	ret = readv(bsds->fd, state->vector, state->count);
 	if (ret == 0) {
@@ -1766,31 +1768,13 @@ static void tstream_bsd_readv_handler(void *private_data)
 
 	state->ret += ret;
 
-	while (ret > 0) {
-		if (ret < state->vector[0].iov_len) {
-			uint8_t *base;
-			base = (uint8_t *)state->vector[0].iov_base;
-			base += ret;
-			state->vector[0].iov_base = (void *)base;
-			state->vector[0].iov_len -= ret;
-			break;
-		}
-		ret -= state->vector[0].iov_len;
-		state->vector += 1;
-		state->count -= 1;
-	}
+	_count = state->count; /* tstream has size_t count, readv has int */
+	ok = iov_advance(&state->vector, &_count, ret);
+	state->count = _count;
 
-	/*
-	 * there're maybe some empty vectors at the end
-	 * which we need to skip, otherwise we would get
-	 * ret == 0 from the readv() call and return EPIPE
-	 */
-	while (state->count > 0) {
-		if (state->vector[0].iov_len > 0) {
-			break;
-		}
-		state->vector += 1;
-		state->count -= 1;
+	if (!ok) {
+		tevent_req_error(req, EINVAL);
+		return;
 	}
 
 	if (state->count > 0) {
@@ -1907,7 +1891,8 @@ static void tstream_bsd_writev_handler(void *private_data)
 	struct tstream_bsd *bsds = tstream_context_data(stream, struct tstream_bsd);
 	ssize_t ret;
 	int err;
-	bool retry;
+	int _count;
+	bool ok, retry;
 
 	ret = writev(bsds->fd, state->vector, state->count);
 	if (ret == 0) {
@@ -1926,31 +1911,13 @@ static void tstream_bsd_writev_handler(void *private_data)
 
 	state->ret += ret;
 
-	while (ret > 0) {
-		if (ret < state->vector[0].iov_len) {
-			uint8_t *base;
-			base = (uint8_t *)state->vector[0].iov_base;
-			base += ret;
-			state->vector[0].iov_base = (void *)base;
-			state->vector[0].iov_len -= ret;
-			break;
-		}
-		ret -= state->vector[0].iov_len;
-		state->vector += 1;
-		state->count -= 1;
-	}
+	_count = state->count; /* tstream has size_t count, writev has int */
+	ok = iov_advance(&state->vector, &_count, ret);
+	state->count = _count;
 
-	/*
-	 * there're maybe some empty vectors at the end
-	 * which we need to skip, otherwise we would get
-	 * ret == 0 from the writev() call and return EPIPE
-	 */
-	while (state->count > 0) {
-		if (state->vector[0].iov_len > 0) {
-			break;
-		}
-		state->vector += 1;
-		state->count -= 1;
+	if (!ok) {
+		tevent_req_error(req, EINVAL);
+		return;
 	}
 
 	if (state->count > 0) {
