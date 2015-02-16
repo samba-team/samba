@@ -22,7 +22,7 @@ bld.SAMBA_SUBSYSTEM('close-low-fd',
 
 bld.SAMBA_LIBRARY('samba-debug',
                   source='debug.c',
-                  deps='replace time-basic close-low-fd talloc',
+                  deps='replace time-basic close-low-fd talloc socket-blocking',
                   local_include=False,
                   private_library=True)
 

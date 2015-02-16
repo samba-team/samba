@@ -604,6 +604,7 @@ bool reopen_logs_internal(void)
 		log_overflow = false;
 		ret = false;
 	} else {
+		smb_set_close_on_exec(new_fd);
 		old_fd = state.fd;
 		state.fd = new_fd;
 		debug_close_fd(old_fd);
@@ -737,6 +738,7 @@ void check_log_size( void )
 		 */
 		int fd = open( "/dev/console", O_WRONLY, 0);
 		if (fd != -1) {
+			smb_set_close_on_exec(fd);
 			state.fd = fd;
 			DEBUG(0,("check_log_size: open of debug file %s failed - using console.\n",
 					state.debugf ));
@@ -793,6 +795,7 @@ static int Debug1(const char *msg)
 			if(fd == -1) {
 				goto done;
 			}
+			smb_set_close_on_exec(fd);
 			state.fd = fd;
 		}
 	}
