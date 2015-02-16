@@ -4031,7 +4031,7 @@ static void call_trans2setfsinfo(connection_struct *conn,
 					return;
 				}
 
-				/* note: normaly there're 48 bytes,
+				/* note: normally there're 48 bytes,
 				 * but we didn't use the last 6 bytes for now 
 				 * --metze 
 				 */
