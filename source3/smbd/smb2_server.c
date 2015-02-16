@@ -3173,6 +3173,7 @@ static NTSTATUS smbd_smb2_flush_send_queue(struct smbXsrv_connection *xconn)
 
 	while (xconn->smb2.send_queue != NULL) {
 		struct smbd_smb2_send_queue *e = xconn->smb2.send_queue;
+		bool ok;
 
 		if (e->sendfile_header != NULL) {
 			NTSTATUS status = NT_STATUS_INTERNAL_ERROR;
@@ -3234,31 +3235,10 @@ static NTSTATUS smbd_smb2_flush_send_queue(struct smbXsrv_connection *xconn)
 		if (err != 0) {
 			return map_nt_error_from_unix_common(err);
 		}
-		while (ret > 0) {
-			if (ret < e->vector[0].iov_len) {
-				uint8_t *base;
-				base = (uint8_t *)e->vector[0].iov_base;
-				base += ret;
-				e->vector[0].iov_base = (void *)base;
-				e->vector[0].iov_len -= ret;
-				break;
-			}
-			ret -= e->vector[0].iov_len;
-			e->vector += 1;
-			e->count -= 1;
-		}
 
-		/*
-		 * there're maybe some empty vectors at the end
-		 * which we need to skip, otherwise we would get
-		 * ret == 0 from the readv() call and return EPIPE
-		 */
-		while (e->count > 0) {
-			if (e->vector[0].iov_len > 0) {
-				break;
-			}
-			e->vector += 1;
-			e->count -= 1;
+		ok = iov_advance(&e->vector, &e->count, ret);
+		if (!ok) {
+			return NT_STATUS_INTERNAL_ERROR;
 		}
 
 		if (e->count > 0) {
