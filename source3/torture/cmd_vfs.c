@@ -117,7 +117,7 @@ static NTSTATUS cmd_disk_free(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int ar
 		return NT_STATUS_OK;
 	}
 
-	diskfree = SMB_VFS_DISK_FREE(vfs->conn, argv[1], False, &bsize, &dfree, &dsize);
+	diskfree = SMB_VFS_DISK_FREE(vfs->conn, argv[1], &bsize, &dfree, &dsize);
 	printf("disk_free: %lu, bsize = %lu, dfree = %lu, dsize = %lu\n",
 			(unsigned long)diskfree,
 			(unsigned long)bsize,

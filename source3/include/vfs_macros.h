@@ -39,10 +39,10 @@
 #define SMB_VFS_NEXT_DISCONNECT(handle) \
 	smb_vfs_call_disconnect((handle)->next)
 
-#define SMB_VFS_DISK_FREE(conn, path, small_query, bsize, dfree ,dsize) \
-	smb_vfs_call_disk_free((conn)->vfs_handles, (path), (small_query), (bsize), (dfree), (dsize))
-#define SMB_VFS_NEXT_DISK_FREE(handle, path, small_query, bsize, dfree ,dsize)\
-	smb_vfs_call_disk_free((handle)->next, (path), (small_query), (bsize), (dfree), (dsize))
+#define SMB_VFS_DISK_FREE(conn, path, bsize, dfree ,dsize) \
+	smb_vfs_call_disk_free((conn)->vfs_handles, (path), (bsize), (dfree), (dsize))
+#define SMB_VFS_NEXT_DISK_FREE(handle, path, bsize, dfree ,dsize)\
+	smb_vfs_call_disk_free((handle)->next, (path), (bsize), (dfree), (dsize))
 
 #define SMB_VFS_GET_QUOTA(conn, qtype, id, qt) \
 	smb_vfs_call_get_quota((conn)->vfs_handles, (qtype), (id), (qt))

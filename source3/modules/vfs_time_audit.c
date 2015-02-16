@@ -157,8 +157,7 @@ static void smb_time_audit_disconnect(vfs_handle_struct *handle)
 }
 
 static uint64_t smb_time_audit_disk_free(vfs_handle_struct *handle,
-					 const char *path,
-					 bool small_query, uint64_t *bsize,
+					 const char *path, uint64_t *bsize,
 					 uint64_t *dfree, uint64_t *dsize)
 {
 	uint64_t result;
@@ -166,8 +165,7 @@ static uint64_t smb_time_audit_disk_free(vfs_handle_struct *handle,
 	double timediff;
 
 	clock_gettime_mono(&ts1);
-	result = SMB_VFS_NEXT_DISK_FREE(handle, path, small_query, bsize,
-					dfree, dsize);
+	result = SMB_VFS_NEXT_DISK_FREE(handle, path, bsize, dfree, dsize);
 	clock_gettime_mono(&ts2);
 	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 

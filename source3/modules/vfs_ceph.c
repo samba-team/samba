@@ -156,8 +156,9 @@ static void cephwrap_disconnect(struct vfs_handle_struct *handle)
 
 /* Disk operations */
 
-static uint64_t cephwrap_disk_free(struct vfs_handle_struct *handle,  const char *path, bool small_query, uint64_t *bsize,
-			       uint64_t *dfree, uint64_t *dsize)
+static uint64_t cephwrap_disk_free(struct vfs_handle_struct *handle,
+				   const char *path, uint64_t *bsize,
+				   uint64_t *dfree, uint64_t *dsize)
 {
 	struct statvfs statvfs_buf;
 	int ret;
@@ -169,7 +170,7 @@ static uint64_t cephwrap_disk_free(struct vfs_handle_struct *handle,  const char
 		*bsize = statvfs_buf.f_bsize;
 		*dfree = statvfs_buf.f_bavail;
 		*dsize = statvfs_buf.f_blocks;
-		disk_norm(small_query, bsize, dfree, dsize);
+		disk_norm(bsize, dfree, dsize);
 		DEBUG(10, ("[CEPH] bsize: %llu, dfree: %llu, dsize: %llu\n",
 			llu(*bsize), llu(*dfree), llu(*dsize)));
 		return *dfree;
@@ -808,8 +809,8 @@ static int strict_allocate_ftruncate(struct vfs_handle_struct *handle, files_str
 
 	/* available disk space is enough or not? */
 	space_avail = get_dfree_info(fsp->conn,
-				     fsp->fsp_name->base_name, false,
-				     &bsize,&dfree,&dsize);
+				     fsp->fsp_name->base_name,
+				     &bsize, &dfree, &dsize);
 	/* space_avail is 1k blocks */
 	if (space_avail == (uint64_t)-1 ||
 			((uint64_t)space_to_write/1024 > space_avail) ) {

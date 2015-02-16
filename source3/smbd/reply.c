@@ -1460,7 +1460,7 @@ void reply_dskattr(struct smb_request *req)
 	uint64_t dfree,dsize,bsize;
 	START_PROFILE(SMBdskattr);
 
-	ret = get_dfree_info(conn, ".", false, &bsize, &dfree, &dsize);
+	ret = get_dfree_info(conn, ".", &bsize, &dfree, &dsize);
 	if (ret == (uint64_t)-1) {
 		reply_nterror(req, map_nt_error_from_unix(errno));
 		END_PROFILE(SMBdskattr);

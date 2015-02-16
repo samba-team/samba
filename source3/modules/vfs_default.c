@@ -54,12 +54,13 @@ static void vfswrap_disconnect(vfs_handle_struct *handle)
 
 /* Disk operations */
 
-static uint64_t vfswrap_disk_free(vfs_handle_struct *handle, const char *path, bool small_query, uint64_t *bsize,
-			       uint64_t *dfree, uint64_t *dsize)
+static uint64_t vfswrap_disk_free(vfs_handle_struct *handle, const char *path,
+				  uint64_t *bsize, uint64_t *dfree,
+				  uint64_t *dsize)
 {
 	uint64_t result;
 
-	result = sys_disk_free(handle->conn, path, small_query, bsize, dfree, dsize);
+	result = sys_disk_free(handle->conn, path, bsize, dfree, dsize);
 	return result;
 }
 
@@ -1873,8 +1874,8 @@ static int strict_allocate_ftruncate(vfs_handle_struct *handle, files_struct *fs
 
 	/* available disk space is enough or not? */
 	space_avail = get_dfree_info(fsp->conn,
-				     fsp->fsp_name->base_name, false,
-				     &bsize,&dfree,&dsize);
+				     fsp->fsp_name->base_name,
+				     &bsize, &dfree, &dsize);
 	/* space_avail is 1k blocks */
 	if (space_avail == (uint64_t)-1 ||
 			((uint64_t)space_to_write/1024 > space_avail) ) {

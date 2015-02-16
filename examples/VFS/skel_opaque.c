@@ -45,7 +45,7 @@ static void skel_disconnect(vfs_handle_struct *handle)
 }
 
 static uint64_t skel_disk_free(vfs_handle_struct *handle, const char *path,
-			       bool small_query, uint64_t *bsize,
+			       uint64_t *bsize,
 			       uint64_t *dfree, uint64_t *dsize)
 {
 	*bsize = 0;

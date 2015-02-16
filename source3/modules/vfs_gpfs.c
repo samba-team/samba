@@ -2030,7 +2030,7 @@ static void vfs_gpfs_disk_free_quota(struct gpfs_quotaInfo qi, time_t cur_time,
 }
 
 static uint64_t vfs_gpfs_disk_free(vfs_handle_struct *handle, const char *path,
-				   bool small_query, uint64_t *bsize,
+				   uint64_t *bsize,
 				   uint64_t *dfree, uint64_t *dsize)
 {
 	struct security_unix_token *utok;
@@ -2042,14 +2042,14 @@ static uint64_t vfs_gpfs_disk_free(vfs_handle_struct *handle, const char *path,
 	SMB_VFS_HANDLE_GET_DATA(handle, config, struct gpfs_config_data,
 				return (uint64_t)-1);
 	if (!config->dfreequota) {
-		return SMB_VFS_NEXT_DISK_FREE(handle, path, small_query,
+		return SMB_VFS_NEXT_DISK_FREE(handle, path,
 					      bsize, dfree, dsize);
 	}
 
 	err = sys_fsusage(path, dfree, dsize);
 	if (err) {
 		DEBUG (0, ("Could not get fs usage, errno %d\n", errno));
-		return SMB_VFS_NEXT_DISK_FREE(handle, path, small_query,
+		return SMB_VFS_NEXT_DISK_FREE(handle, path,
 					      bsize, dfree, dsize);
 	}
 
@@ -2063,7 +2063,7 @@ static uint64_t vfs_gpfs_disk_free(vfs_handle_struct *handle, const char *path,
 	err = vfs_gpfs_get_quotas(path, utok->uid, utok->gid, &fset_id,
 				  &qi_user, &qi_group, &qi_fset);
 	if (err) {
-		return SMB_VFS_NEXT_DISK_FREE(handle, path, small_query,
+		return SMB_VFS_NEXT_DISK_FREE(handle, path,
 					      bsize, dfree, dsize);
 	}
 
@@ -2078,7 +2078,7 @@ static uint64_t vfs_gpfs_disk_free(vfs_handle_struct *handle, const char *path,
 		vfs_gpfs_disk_free_quota(qi_fset, cur_time, dfree, dsize);
 	}
 
-	disk_norm(small_query, bsize, dfree, dsize);
+	disk_norm(bsize, dfree, dsize);
 	return *dfree;
 }
 

@@ -592,7 +592,7 @@ int vfs_allocate_file_space(files_struct *fsp, uint64_t len)
 
 	len -= fsp->fsp_name->st.st_ex_size;
 	len /= 1024; /* Len is now number of 1k blocks needed. */
-	space_avail = get_dfree_info(conn, fsp->fsp_name->base_name, false,
+	space_avail = get_dfree_info(conn, fsp->fsp_name->base_name,
 				     &bsize, &dfree, &dsize);
 	if (space_avail == (uint64_t)-1) {
 		return -1;
@@ -1392,13 +1392,11 @@ void smb_vfs_call_disconnect(struct vfs_handle_struct *handle)
 }
 
 uint64_t smb_vfs_call_disk_free(struct vfs_handle_struct *handle,
-				const char *path, bool small_query,
-				uint64_t *bsize, uint64_t *dfree,
-				uint64_t *dsize)
+				const char *path, uint64_t *bsize,
+				uint64_t *dfree, uint64_t *dsize)
 {
 	VFS_FIND(disk_free);
-	return handle->fns->disk_free_fn(handle, path, small_query, bsize, 
-					 dfree, dsize);
+	return handle->fns->disk_free_fn(handle, path, bsize, dfree, dsize);
 }
 
 int smb_vfs_call_get_quota(struct vfs_handle_struct *handle,

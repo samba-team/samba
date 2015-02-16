@@ -168,12 +168,11 @@ bool connections_snum_used(struct smbd_server_connection *unused, int snum);
 
 /* The following definitions come from smbd/dfree.c  */
 
-void disk_norm(bool small_query, uint64_t *bsize,uint64_t *dfree,uint64_t *dsize);
-uint64_t sys_disk_free(connection_struct *conn, const char *path, bool small_query,
+void disk_norm(uint64_t *bsize,uint64_t *dfree,uint64_t *dsize);
+uint64_t sys_disk_free(connection_struct *conn, const char *path,
                               uint64_t *bsize,uint64_t *dfree,uint64_t *dsize);
 uint64_t get_dfree_info(connection_struct *conn,
 			const char *path,
-			bool small_query,
 			uint64_t *bsize,
 			uint64_t *dfree,
 			uint64_t *dsize);

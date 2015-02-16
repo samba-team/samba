@@ -160,7 +160,8 @@
 /* Version 32 - Add "lease" to CREATE_FILE operation */
 /* Version 32 - Add "lease" to struct files_struct */
 /* Version 32 - Add SMB_VFS_READDIR_ATTR() */
-/* Version 32 - Add in and our create context blobs to create_file */
+/* Version 32 - Add in and out create context blobs to create_file */
+/* Version 32 - Remove unnecessary SMB_VFS_DISK_FREE() small_query parameter */
 
 #define SMB_VFS_INTERFACE_VERSION 32
 
@@ -503,7 +504,7 @@ struct vfs_fn_pointers {
 
 	int (*connect_fn)(struct vfs_handle_struct *handle, const char *service, const char *user);
 	void (*disconnect_fn)(struct vfs_handle_struct *handle);
-	uint64_t (*disk_free_fn)(struct vfs_handle_struct *handle, const char *path, bool small_query, uint64_t *bsize,
+	uint64_t (*disk_free_fn)(struct vfs_handle_struct *handle, const char *path, uint64_t *bsize,
 			      uint64_t *dfree, uint64_t *dsize);
 	int (*get_quota_fn)(struct vfs_handle_struct *handle, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *qt);
 	int (*set_quota_fn)(struct vfs_handle_struct *handle, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *qt);
@@ -903,9 +904,8 @@ int smb_vfs_call_connect(struct vfs_handle_struct *handle,
 			 const char *service, const char *user);
 void smb_vfs_call_disconnect(struct vfs_handle_struct *handle);
 uint64_t smb_vfs_call_disk_free(struct vfs_handle_struct *handle,
-				const char *path, bool small_query,
-				uint64_t *bsize, uint64_t *dfree,
-				uint64_t *dsize);
+				const char *path, uint64_t *bsize,
+				uint64_t *dfree, uint64_t *dsize);
 int smb_vfs_call_get_quota(struct vfs_handle_struct *handle,
 			   enum SMB_QUOTA_TYPE qtype, unid_t id,
 			   SMB_DISK_QUOTA *qt);

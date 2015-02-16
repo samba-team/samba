@@ -2151,9 +2151,8 @@ static int snapper_gmt_get_real_filename(struct vfs_handle_struct *handle,
 }
 
 static uint64_t snapper_gmt_disk_free(vfs_handle_struct *handle,
-				      const char *path, bool small_query,
-				      uint64_t *bsize, uint64_t *dfree,
-				      uint64_t *dsize)
+				      const char *path, uint64_t *bsize,
+				      uint64_t *dfree, uint64_t *dsize)
 {
 	time_t timestamp;
 	char *stripped;
@@ -2166,7 +2165,7 @@ static uint64_t snapper_gmt_disk_free(vfs_handle_struct *handle,
 		return -1;
 	}
 	if (timestamp == 0) {
-		return SMB_VFS_NEXT_DISK_FREE(handle, path, small_query,
+		return SMB_VFS_NEXT_DISK_FREE(handle, path,
 					      bsize, dfree, dsize);
 	}
 
@@ -2176,8 +2175,7 @@ static uint64_t snapper_gmt_disk_free(vfs_handle_struct *handle,
 		return -1;
 	}
 
-	ret = SMB_VFS_NEXT_DISK_FREE(handle, conv, small_query, bsize, dfree,
-				     dsize);
+	ret = SMB_VFS_NEXT_DISK_FREE(handle, conv, bsize, dfree, dsize);
 
 	saved_errno = errno;
 	TALLOC_FREE(conv);
