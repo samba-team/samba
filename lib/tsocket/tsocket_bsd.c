@@ -1117,7 +1117,7 @@ static void tdgram_bsd_sendto_handler(void *private_data)
 				 sizeof(bufsize));
 		if (ret == 0) {
 			/*
-			 * We do the rety here, rather then via the
+			 * We do the retry here, rather then via the
 			 * handler, as we only want to retry once for
 			 * this condition, so if there is a mismatch
 			 * between what setsockopt() accepts and what can
