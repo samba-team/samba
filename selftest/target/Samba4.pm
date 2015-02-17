@@ -1204,9 +1204,9 @@ sub provision_rpc_proxy($$$)
 sub provision_promoted_dc($$$)
 {
 	my ($self, $prefix, $dcvars) = @_;
-	print "PROVISIONING VAMPIRE DC...";
+	print "PROVISIONING PROMOTED DC...";
 
-	# We do this so that we don't run the provision.  That's the job of 'net vampire'.
+	# We do this so that we don't run the provision.  That's the job of 'samba-tool domain dcpromo'.
 	my $ctx = $self->provision_raw_prepare($prefix, "domain controller",
 					       "promotedvdc",
 					       "SAMBADOMAIN",
