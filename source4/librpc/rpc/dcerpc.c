@@ -441,9 +441,24 @@ static void dcerpc_bh_do_ndr_print(struct dcerpc_binding_handle *h,
 	struct dcerpc_bh_state *hs = dcerpc_binding_handle_data(h,
 				     struct dcerpc_bh_state);
 	void *struct_ptr = discard_const(_struct_ptr);
+	bool print_in = false;
+	bool print_out = false;
+
+	if (hs->p->conn->flags & DCERPC_DEBUG_PRINT_IN) {
+		print_in = true;
+	}
+
+	if (hs->p->conn->flags & DCERPC_DEBUG_PRINT_OUT) {
+		print_out = true;
+	}
+
+	if (DEBUGLEVEL >= 11) {
+		print_in = true;
+		print_out = true;
+	}
 
 	if (ndr_flags & NDR_IN) {
-		if (hs->p->conn->flags & DCERPC_DEBUG_PRINT_IN) {
+		if (print_in) {
 			ndr_print_function_debug(call->ndr_print,
 						 call->name,
 						 ndr_flags,
@@ -451,7 +466,7 @@ static void dcerpc_bh_do_ndr_print(struct dcerpc_binding_handle *h,
 		}
 	}
 	if (ndr_flags & NDR_OUT) {
-		if (hs->p->conn->flags & DCERPC_DEBUG_PRINT_OUT) {
+		if (print_out) {
 			ndr_print_function_debug(call->ndr_print,
 						 call->name,
 						 ndr_flags,
