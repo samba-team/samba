@@ -1266,6 +1266,7 @@ struct tevent_req *smb1cli_req_create(TALLOC_CTX *mem_ctx,
 	uint16_t flags2 = 0;
 	uint16_t uid = 0;
 	uint16_t tid = 0;
+	ssize_t num_bytes;
 
 	if (iov_count > MAX_SMB_IOV) {
 		/*
@@ -1337,7 +1338,17 @@ struct tevent_req *smb1cli_req_create(TALLOC_CTX *mem_ctx,
 
 	state->smb1.vwv = vwv;
 
-	SSVAL(state->smb1.bytecount_buf, 0, smbXcli_iov_len(bytes_iov, iov_count));
+	num_bytes = iov_buflen(bytes_iov, iov_count);
+	if (num_bytes == -1) {
+		/*
+		 * I'd love to add a check for num_bytes<=UINT16_MAX here, but
+		 * the smbclient->samba connections can lie and transfer more.
+		 */
+		TALLOC_FREE(req);
+		return NULL;
+	}
+
+	SSVAL(state->smb1.bytecount_buf, 0, num_bytes);
 
 	state->smb1.iov[0].iov_base = (void *)state->length_hdr;
 	state->smb1.iov[0].iov_len  = sizeof(state->length_hdr);
