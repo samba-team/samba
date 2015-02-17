@@ -25,6 +25,7 @@
 #include "../lib/util/tevent_unix.h"
 #include "lib/util/util_net.h"
 #include "lib/util/dlinklist.h"
+#include "lib/util/iov_buf.h"
 #include "../libcli/smb/smb_common.h"
 #include "../libcli/smb/smb_seal.h"
 #include "../libcli/smb/smb_signing.h"
@@ -1115,12 +1116,10 @@ void smb1cli_req_set_seqnum(struct tevent_req *req, uint32_t seqnum)
 
 static size_t smbXcli_iov_len(const struct iovec *iov, int count)
 {
-	size_t result = 0;
-	int i;
-	for (i=0; i<count; i++) {
-		result += iov[i].iov_len;
-	}
-	return result;
+	ssize_t ret = iov_buflen(iov, count);
+
+	/* Ignore the overflow case for now ... */
+	return ret;
 }
 
 static uint8_t *smbXcli_iov_concat(TALLOC_CTX *mem_ctx,
