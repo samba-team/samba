@@ -1126,20 +1126,21 @@ static uint8_t *smbXcli_iov_concat(TALLOC_CTX *mem_ctx,
 				   const struct iovec *iov,
 				   int count)
 {
-	size_t len = smbXcli_iov_len(iov, count);
-	size_t copied;
+	ssize_t buflen;
 	uint8_t *buf;
-	int i;
 
-	buf = talloc_array(mem_ctx, uint8_t, len);
+	buflen = iov_buflen(iov, count);
+	if (buflen == -1) {
+		return NULL;
+	}
+
+	buf = talloc_array(mem_ctx, uint8_t, buflen);
 	if (buf == NULL) {
 		return NULL;
 	}
-	copied = 0;
-	for (i=0; i<count; i++) {
-		memcpy(buf+copied, iov[i].iov_base, iov[i].iov_len);
-		copied += iov[i].iov_len;
-	}
+
+	iov_buf(iov, count, buf, buflen);
+
 	return buf;
 }
 
