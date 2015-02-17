@@ -164,7 +164,7 @@ static int ctdb_set_nlist(struct ctdb_context *ctdb, const char *nlist)
 {
 	char **lines;
 	int nlines;
-	int i, j, num_present;
+	int i;
 
 	talloc_free(ctdb->nodes);
 	ctdb->nodes     = NULL;
@@ -179,7 +179,6 @@ static int ctdb_set_nlist(struct ctdb_context *ctdb, const char *nlist)
 		nlines--;
 	}
 
-	num_present = 0;
 	for (i=0; i < nlines; i++) {
 		char *node;
 
@@ -202,28 +201,8 @@ static int ctdb_set_nlist(struct ctdb_context *ctdb, const char *nlist)
 			talloc_free(lines);
 			return -1;
 		}
-		num_present++;
 	}
 
-	/* initialize the vnn mapping table now that we have the nodes list,
-	   skipping any deleted nodes
-	*/
-	ctdb->vnn_map = talloc(ctdb, struct ctdb_vnn_map);
-	CTDB_NO_MEMORY(ctdb, ctdb->vnn_map);
-
-	ctdb->vnn_map->generation = INVALID_GENERATION;
-	ctdb->vnn_map->size = num_present;
-	ctdb->vnn_map->map = talloc_array(ctdb->vnn_map, uint32_t, ctdb->vnn_map->size);
-	CTDB_NO_MEMORY(ctdb, ctdb->vnn_map->map);
-
-	for(i=0, j=0; i < ctdb->vnn_map->size; i++) {
-		if (ctdb->nodes[i]->flags & NODE_FLAGS_DELETED) {
-			continue;
-		}
-		ctdb->vnn_map->map[j] = i;
-		j++;
-	}
-	
 	talloc_free(lines);
 	return 0;
 }

@@ -1139,6 +1139,35 @@ static void ctdb_create_pidfile(pid_t pid)
 	}
 }
 
+static void ctdb_initialise_vnn_map(struct ctdb_context *ctdb)
+{
+	int i, j, count;
+
+	/* initialize the vnn mapping table, skipping any deleted nodes */
+	ctdb->vnn_map = talloc(ctdb, struct ctdb_vnn_map);
+	CTDB_NO_MEMORY_FATAL(ctdb, ctdb->vnn_map);
+
+	count = 0;
+	for (i = 0; i < ctdb->num_nodes; i++) {
+		if ((ctdb->nodes[i]->flags & NODE_FLAGS_DELETED) == 0) {
+			count++;
+		}
+	}
+
+	ctdb->vnn_map->generation = INVALID_GENERATION;
+	ctdb->vnn_map->size = count;
+	ctdb->vnn_map->map = talloc_array(ctdb->vnn_map, uint32_t, ctdb->vnn_map->size);
+	CTDB_NO_MEMORY_FATAL(ctdb, ctdb->vnn_map->map);
+
+	for(i=0, j=0; i < ctdb->vnn_map->size; i++) {
+		if (ctdb->nodes[i]->flags & NODE_FLAGS_DELETED) {
+			continue;
+		}
+		ctdb->vnn_map->map[j] = i;
+		j++;
+	}
+}
+
 /*
   start the protocol going as a daemon
 */
@@ -1265,6 +1294,7 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 		}
 	}
 
+	ctdb_initialise_vnn_map(ctdb);
 
 	/* attach to existing databases */
 	if (ctdb_attach_databases(ctdb) != 0) {
