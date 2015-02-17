@@ -76,57 +76,60 @@ int ctdb_set_recovery_lock_file(struct ctdb_context *ctdb, const char *file)
 	return 0;
 }
 
-/*
-  add a node to the list of nodes
-*/
-static int ctdb_add_node(struct ctdb_context *ctdb, const char *nstr, uint32_t flags)
+/* Add a node to a node map with given address and flags */
+static bool node_map_add(TALLOC_CTX *mem_ctx,
+			 const char *nstr, uint32_t flags,
+			 struct ctdb_node_map **node_map)
 {
-	struct ctdb_node *node, **nodep;
+	ctdb_sock_addr addr;
+	uint32_t num;
+	size_t s;
+	struct ctdb_node_and_flags *n;
 
-	nodep = talloc_realloc(ctdb, ctdb->nodes, struct ctdb_node *, ctdb->num_nodes+1);
-	CTDB_NO_MEMORY(ctdb, nodep);
-
-	ctdb->nodes = nodep;
-	nodep = &ctdb->nodes[ctdb->num_nodes];
-	(*nodep) = talloc_zero(ctdb->nodes, struct ctdb_node);
-	CTDB_NO_MEMORY(ctdb, *nodep);
-	node = *nodep;
-
-	if (ctdb_parse_address(node, nstr, &node->address) != 0) {
-		return -1;
+	/* Might as well do this before trying to allocate memory */
+	if (ctdb_parse_address(mem_ctx, nstr, &addr) == -1) {
+		return false;
 	}
-	node->ctdb = ctdb;
-	node->name = talloc_asprintf(node, "%s:%u",
-				     ctdb_addr_to_str(&node->address),
-				     ctdb_addr_to_port(&node->address));
-	/* this assumes that the nodes are kept in sorted order, and no gaps */
-	node->pnn = ctdb->num_nodes;
 
-	node->flags = flags;
+	num = (*node_map)->num + 1;
+	s = offsetof(struct ctdb_node_map, nodes) +
+		num * sizeof(struct ctdb_node_and_flags);
+	*node_map = talloc_realloc_size(mem_ctx, *node_map, s);
+	if (*node_map == NULL) {
+		DEBUG(DEBUG_ERR, (__location__ " Out of memory\n"));
+		return false;
+	}
 
-	ctdb->num_nodes++;
-	node->dead_count = 0;
+	n = &(*node_map)->nodes[(*node_map)->num];
+	n->addr = addr;
+	n->pnn = (*node_map)->num;
+	n->flags = flags;
 
-	return 0;
+	(*node_map)->num++;
+
+	return true;
 }
 
-/*
-  setup the node list from a file
-*/
-static int ctdb_set_nlist(struct ctdb_context *ctdb, const char *nlist)
+/* Read a nodes file into a node map */
+static struct ctdb_node_map *ctdb_read_nodes_file(TALLOC_CTX *mem_ctx,
+						  const char *nlist)
 {
 	char **lines;
 	int nlines;
 	int i;
+	struct ctdb_node_map *ret;
 
-	talloc_free(ctdb->nodes);
-	ctdb->nodes     = NULL;
-	ctdb->num_nodes = 0;
+	/* Allocate node map header */
+	ret = talloc_zero_size(mem_ctx, offsetof(struct ctdb_node_map, nodes));
+	if (ret == NULL) {
+		DEBUG(DEBUG_ERR, (__location__ " Out of memory\n"));
+		return false;
+	}
 
-	lines = file_lines_load(nlist, &nlines, 0, ctdb);
+	lines = file_lines_load(nlist, &nlines, 0, mem_ctx);
 	if (lines == NULL) {
-		ctdb_set_error(ctdb, "Failed to load nlist '%s'\n", nlist);
-		return -1;
+		DEBUG(DEBUG_ERR, ("Failed to read nodes file \"%s\"\n", nlist));
+		return false;
 	}
 	while (nlines > 0 && strcmp(lines[nlines-1], "") == 0) {
 		nlines--;
@@ -150,30 +153,88 @@ static int ctdb_set_nlist(struct ctdb_context *ctdb, const char *nlist)
 			   used instead of removing a line, which
 			   would cause subsequent nodes to change
 			   their PNN. */
-			flags = NODE_FLAGS_DELETED|NODE_FLAGS_DISCONNECTED;
+			flags = NODE_FLAGS_DELETED;
 			node = "0.0.0.0";
 		} else {
-			flags = NODE_FLAGS_DISCONNECTED|NODE_FLAGS_UNHEALTHY;
+			flags = 0;
 		}
-		if (ctdb_add_node(ctdb, node, flags) != 0) {
+		if (!node_map_add(mem_ctx, node, flags, &ret)) {
 			talloc_free(lines);
-			return -1;
+			TALLOC_FREE(ret);
+			return NULL;
 		}
 	}
 
 	talloc_free(lines);
+	return ret;
+}
+
+/* Load a nodes list file into a nodes array */
+static int convert_node_map_to_list(struct ctdb_context *ctdb,
+				    TALLOC_CTX *mem_ctx,
+				    struct ctdb_node_map *node_map,
+				    struct ctdb_node ***nodes,
+				    uint32_t *num_nodes)
+{
+	int i;
+
+	*nodes = talloc_zero_array(mem_ctx,
+					struct ctdb_node *, node_map->num);
+	CTDB_NO_MEMORY(ctdb, *nodes);
+	*num_nodes = node_map->num;
+
+	for (i = 0; i < node_map->num; i++) {
+		struct ctdb_node *node;
+
+		node = talloc_zero(*nodes, struct ctdb_node);
+		CTDB_NO_MEMORY(ctdb, node);
+		(*nodes)[i] = node;
+
+		node->address = node_map->nodes[i].addr;
+		node->name = talloc_asprintf(node, "%s:%u",
+					     ctdb_addr_to_str(&node->address),
+					     ctdb_addr_to_port(&node->address));
+
+		node->flags = node_map->nodes[i].flags;
+		if (!(node->flags & NODE_FLAGS_DELETED)) {
+			node->flags = NODE_FLAGS_UNHEALTHY;
+		}
+		node->flags |= NODE_FLAGS_DISCONNECTED;
+
+		node->pnn = i;
+		node->ctdb = ctdb;
+		node->dead_count = 0;
+	}
+
 	return 0;
 }
 
+/* Load the nodes list from a file */
 void ctdb_load_nodes_file(struct ctdb_context *ctdb)
 {
+	struct ctdb_node_map *node_map;
 	int ret;
 
-	ret = ctdb_set_nlist(ctdb, ctdb->nodes_file);
-	if (ret == -1) {
-		DEBUG(DEBUG_ALERT,("ctdb_set_nlist failed - %s\n", ctdb_errstr(ctdb)));
-		exit(1);
+	node_map = ctdb_read_nodes_file(ctdb, ctdb->nodes_file);
+	if (node_map == NULL) {
+		goto fail;
 	}
+
+	TALLOC_FREE(ctdb->nodes);
+	ret = convert_node_map_to_list(ctdb, ctdb, node_map,
+				       &ctdb->nodes, &ctdb->num_nodes);
+	if (ret == -1) {
+		goto fail;
+	}
+
+	talloc_free(node_map);
+	return;
+
+fail:
+	DEBUG(DEBUG_ERR, ("Failed to load nodes file \"%s\"\n",
+			  ctdb->nodes_file));
+	talloc_free(node_map);
+	exit(1);
 }
 
 /*
