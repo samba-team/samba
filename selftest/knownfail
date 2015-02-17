@@ -314,11 +314,3 @@
 # Differences in our KDC compared to windows
 #
 ^samba4.krb5.kdc .*.as-req-pac-request # We should reply to a request for a PAC over UDP with KRB5KRB_ERR_RESPONSE_TOO_BIG unconditionally
-#
-# Test does not work, apparently because the calling user and
-# the domain admin use the same uid. This was uncovered by
-# enabling libnss_winbindd in the nsswrapper environment.
-# TODO: fix the test.
-#
-^samba.tests.posixacl.samba.tests.posixacl.PosixAclMappingTests.test_setntacl_sysvol_check_getposixacl\(plugin_s4_dc:local\)$
-^samba.tests.posixacl.samba.tests.posixacl.PosixAclMappingTests.test_setntacl_policies_check_getposixacl\(plugin_s4_dc:local\)$
