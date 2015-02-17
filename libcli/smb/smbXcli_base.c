@@ -2367,7 +2367,7 @@ NTSTATUS smb1cli_req_chain_submit(struct tevent_req **reqs, int num_reqs)
 	struct iovec *iov = NULL;
 	struct iovec *this_iov;
 	NTSTATUS status;
-	size_t nbt_len;
+	ssize_t nbt_len;
 
 	if (num_reqs == 1) {
 		return smb1cli_req_writev_submit(reqs[0], first_state,
@@ -2489,8 +2489,8 @@ NTSTATUS smb1cli_req_chain_submit(struct tevent_req **reqs, int num_reqs)
 		chain_padding = next_padding;
 	}
 
-	nbt_len = smbXcli_iov_len(&iov[1], iovlen-1);
-	if (nbt_len > first_state->conn->smb1.max_xmit) {
+	nbt_len = iov_buflen(&iov[1], iovlen-1);
+	if ((nbt_len == -1) || (nbt_len > first_state->conn->smb1.max_xmit)) {
 		TALLOC_FREE(iov);
 		TALLOC_FREE(first_state->smb1.chained_requests);
 		return NT_STATUS_INVALID_PARAMETER_MIX;
