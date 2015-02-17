@@ -1168,6 +1168,25 @@ static void ctdb_initialise_vnn_map(struct ctdb_context *ctdb)
 	}
 }
 
+static void ctdb_set_my_pnn(struct ctdb_context *ctdb)
+{
+	int nodeid;
+
+	if (ctdb->address.address == NULL) {
+		ctdb_fatal(ctdb,
+			   "Can not determine PNN - node address is not set\n");
+	}
+
+	nodeid = ctdb_ip_to_nodeid(ctdb, ctdb->address.address);
+	if (nodeid == -1) {
+		ctdb_fatal(ctdb,
+			   "Can not determine PNN - node address not found in node list\n");
+	}
+
+	ctdb->pnn = ctdb->nodes[nodeid]->pnn;
+	DEBUG(DEBUG_NOTICE, ("PNN is %u\n", ctdb->pnn));
+}
+
 /*
   start the protocol going as a daemon
 */
@@ -1276,10 +1295,13 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 		ctdb_fatal(ctdb, "transport is unavailable. can not initialize.");
 	}
 
-	/* initialise the transport  */
+	/* Initialise the transport.  This sets the node address if it
+	 * was not set via the command-line. */
 	if (ctdb->methods->initialise(ctdb) != 0) {
 		ctdb_fatal(ctdb, "transport failed to initialise");
 	}
+
+	ctdb_set_my_pnn(ctdb);
 
 	initialise_node_flags(ctdb);
 

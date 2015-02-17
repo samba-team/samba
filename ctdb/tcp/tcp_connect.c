@@ -385,22 +385,20 @@ static int ctdb_tcp_listen_automatic(struct ctdb_context *ctdb)
 					strerror(errno), errno));
 		}
 	}
-	
+
 	if (i == ctdb->num_nodes) {
 		DEBUG(DEBUG_CRIT,("Unable to bind to any of the node addresses - giving up\n"));
 		goto failed;
 	}
 	ctdb->address.address = talloc_strdup(ctdb, ctdb->nodes[i]->address.address);
 	ctdb->address.port    = ctdb->nodes[i]->address.port;
-	ctdb->name = talloc_asprintf(ctdb, "%s:%u", 
-				     ctdb->address.address, 
+	ctdb->name = talloc_asprintf(ctdb, "%s:%u",
+				     ctdb->address.address,
 				     ctdb->address.port);
-	ctdb->pnn = ctdb->nodes[i]->pnn;
-	DEBUG(DEBUG_INFO,("ctdb chose network address %s:%u pnn %u\n", 
-		 ctdb->address.address, 
-		 ctdb->address.port, 
-		 ctdb->pnn));
-	
+	DEBUG(DEBUG_INFO,("ctdb chose network address %s:%u\n",
+		 ctdb->address.address,
+		 ctdb->address.port));
+
 	if (listen(ctcp->listen_fd, 10) == -1) {
 		goto failed;
 	}
