@@ -1455,6 +1455,7 @@ static NTSTATUS smb1cli_req_writev_submit(struct tevent_req *req,
 	NTSTATUS status;
 	uint8_t cmd;
 	uint16_t mid;
+	ssize_t nbtlen;
 
 	if (!smbXcli_conn_is_connected(state->conn)) {
 		return NT_STATUS_CONNECTION_DISCONNECTED;
@@ -1495,7 +1496,12 @@ static NTSTATUS smb1cli_req_writev_submit(struct tevent_req *req,
 	}
 	SSVAL(iov[1].iov_base, HDR_MID, mid);
 
-	_smb_setlen_nbt(iov[0].iov_base, smbXcli_iov_len(&iov[1], iov_count-1));
+	nbtlen = iov_buflen(&iov[1], iov_count-1);
+	if ((nbtlen == -1) || (nbtlen > 0x1FFFF)) {
+		return NT_STATUS_INVALID_PARAMETER_MIX;
+	}
+
+	_smb_setlen_nbt(iov[0].iov_base, nbtlen);
 
 	status = smb1cli_conn_signv(state->conn, iov, iov_count,
 				    &state->smb1.seqnum,
