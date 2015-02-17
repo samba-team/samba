@@ -377,6 +377,35 @@ class NCReplica(NamingContext):
             raise Exception("Could not set repsFrom for (%s) - (%s)" %
                             (self.nc_dnstr, estr))
 
+    def load_replUpToDateVector(self, samdb):
+        """Given an NC replica which has been discovered thru the nTDSDSA
+        database object, load the replUpToDateVector attribute for the local replica.
+        held by my dsa.  The replUpToDateVector attribute is not replicated so this
+        attribute is relative only to the local DSA that the samdb exists on
+        """
+        try:
+            res = samdb.search(base=self.nc_dnstr, scope=ldb.SCOPE_BASE,
+                               attrs=[ "replUpToDateVector" ])
+
+        except ldb.LdbError, (enum, estr):
+            raise Exception("Unable to find NC for (%s) - (%s)" %
+                            (self.nc_dnstr, estr))
+
+        msg = res[0]
+
+        # Possibly no replUpToDateVector if this is a singleton DC
+        if "replUpToDateVector" in msg:
+            value = msg["replUpToDateVector"][0]
+            replUpToDateVectorBlob = ndr_unpack(drsblobs.replUpToDateVectorBlob, value)
+            if replUpToDateVectorBlob.version != 2:
+                # Samba only generates version 2, and this runs locally
+                raise AttributeError("Unexpected replUpToDateVector version %d"
+                                     % replUpToDateVectorBlob.version)
+
+            self.rep_replUpToDateVector_cursors = replUpToDateVectorBlob.ctr.cursors
+        else:
+            self.rep_replUpToDateVector_cursors = []
+
     def dumpstr_to_be_deleted(self):
         text=""
         for repsFrom in self.rep_repsFrom:
@@ -1489,16 +1518,18 @@ class Site(object):
             if c_rep.is_config():
                 break
 
-        if c_rep is None:
+        if not c_rep.is_config():
             raise Exception("Unable to find config NC replica for (%s)" %
                             mydsa.dsa_dnstr)
 
-        # Load repsFrom if not already loaded so we can get the current
+        # Load repsFrom and replUpToDateVector if not already loaded so we can get the current
         # state of the config replica and whether we are getting updates
         # from the istg
         c_rep.load_repsFrom(samdb)
 
-        # From MS-Tech ISTG selection:
+        c_rep.load_replUpToDateVector(samdb)
+
+        # From MS-ADTS 6.2.2.3.1 ISTG selection:
         #     First, the KCC on a writable DC determines whether it acts
         #     as an ISTG for its site
         #
@@ -1540,7 +1571,7 @@ class Site(object):
         else:
             f = self.site_topo_failover * 60 * 10000000
 
-        # From MS-Tech ISTG selection:
+        # From MS-ADTS 6.2.2.3.1 ISTG selection:
         #     If o != NULL and o!interSiteTopologyGenerator is not the
         #     nTDSDSA object for the local DC and
         #     o!interSiteTopologyGenerator is an element dj of sequence D:
@@ -1551,7 +1582,7 @@ class Site(object):
             j_idx = D_sort.index(d_dsa)
 
         if d_dsa is not None and d_dsa is not mydsa:
-           # From MS-Tech ISTG selection:
+           # From MS-ADTS 6.2.2.3.1 ISTG Selection:
            #     Let c be the cursor in the replUpToDateVector variable
            #     associated with the NC replica of the config NC such
            #     that c.uuidDsa = dj!invocationId. If no such c exists
@@ -1570,16 +1601,22 @@ class Site(object):
            #
            # last_success appears to be a double word containing
            #     number of 100 nanosecond intervals since the 1600s
-           if d_dsa.dsa_ivid != c_rep.source_dsa_invocation_id:
-               i_idx = j_idx
-               t_time = 0
+           found = False
+           for cursor in c_rep.rep_replUpToDateVector_cursors:
+               if d_dsa.dsa_ivid == cursor.source_dsa_invocation_id:
+                   found = True
+                   break
 
-           elif ntnow < (c_rep.last_success - f):
+           if not found:
+                i_idx = j_idx
+                t_time = 0
+
+           elif ntnow < (cursor.last_sync_success - f):
                i_idx = 0
                t_time = 0
            else:
                i_idx = j_idx
-               t_time = c_rep.last_success
+               t_time = cursor.last_sync_success
 
         # Otherwise (Nominate local DC as ISTG):
         #     Let i be the integer such that di is the nTDSDSA
