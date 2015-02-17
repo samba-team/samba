@@ -1952,10 +1952,8 @@ class KCC(object):
 
             # Step 7
             self.update_rodc_connection()
-
-        except Exception, estr:
-            logger.error("%s" % estr)
-            return 1
+        except:
+            raise
 
         return 0
 
