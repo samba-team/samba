@@ -1288,9 +1288,13 @@ static int objectclass_do_delete(struct oc_context *ac)
 
 	/* DC's rIDSet object */
 	/* Perform this check only when it does exist - this is needed in order
-	 * to don't let existing provisions break. */
+	 * to don't let existing provisions break, and to delete . */
 	ret = samdb_rid_set_dn(ldb, ac, &dn);
-	if ((ret != LDB_SUCCESS) && (ret != LDB_ERR_NO_SUCH_OBJECT)) {
+	if ((ret != LDB_SUCCESS) && (ret != LDB_ERR_NO_SUCH_ATTRIBUTE)
+	    && (ret != LDB_ERR_NO_SUCH_OBJECT)) {
+		ldb_asprintf_errstring(ldb, "objectclass: Unable to determine if %s, is this DC's rIDSet object: %s ",
+				       ldb_dn_get_linearized(ac->req->op.del.dn),
+				       ldb_errstring(ldb));
 		return ret;
 	}
 	if (ret == LDB_SUCCESS) {
