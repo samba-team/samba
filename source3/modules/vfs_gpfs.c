@@ -27,15 +27,14 @@
 #include "include/smbprofile.h"
 #include "modules/non_posix_acls.h"
 #include "libcli/security/security.h"
-
-#undef DBGC_CLASS
-#define DBGC_CLASS DBGC_VFS
-
 #include "nfs4_acls.h"
 #include "vfs_gpfs.h"
 #include "system/filesys.h"
 #include "auth.h"
 #include "lib/util/tevent_unix.h"
+
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_VFS
 
 #ifndef GPFS_GETACL_NATIVE
 #define GPFS_GETACL_NATIVE 0x00000004
