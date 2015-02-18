@@ -27,6 +27,7 @@
 #include "torture/smb2/proto.h"
 #include "torture/util.h"
 #include "libcli/smb/smbXcli_base.h"
+#include "libcli/security/security.h"
 #include "lib/param/param.h"
 
 #define CHECK_VAL(v, correct) do { \
@@ -911,6 +912,83 @@ done:
 	talloc_free(mem_ctx);
 	return ret;
 }
+
+static bool test_lease_statopen(struct torture_context *tctx,
+				   struct smb2_tree *tree)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	struct smb2_create io;
+	struct smb2_lease ls;
+	struct smb2_handle h1, h2;
+	NTSTATUS status;
+	const char *fname = "lease_statopen.dat";
+	bool ret = true;
+	uint32_t caps;
+
+	caps = smb2cli_conn_server_capabilities(
+		tree->session->transport->conn);
+	if (!(caps & SMB2_CAP_LEASING)) {
+		torture_skip(tctx, "leases are not supported");
+	}
+
+	smb2_util_unlink(tree, fname);
+
+	/* Create file. */
+	smb2_lease_create(&io, &ls, false, fname, LEASE1,
+			  smb2_util_lease_state("RWH"));
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h1 = io.out.file.handle;
+	CHECK_CREATED(&io, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_LEASE(&io, "RWH", true, LEASE1, 0);
+	smb2_util_close(tree, h1);
+
+	/* Stat open file with RWH lease. */
+	smb2_lease_create_share(&io, &ls, false, fname, 0, LEASE1,
+			  smb2_util_lease_state("RWH"));
+	io.in.desired_access = FILE_READ_ATTRIBUTES;
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h2 = io.out.file.handle;
+	CHECK_LEASE(&io, "RWH", true, LEASE1, 0);
+
+	ZERO_STRUCT(break_info);
+
+	tree->session->transport->lease.handler	= torture_lease_handler;
+	tree->session->transport->lease.private_data = tree;
+
+	/* Ensure non-stat open doesn't break and gets same lease
+	   state as existing stat open. */
+	smb2_lease_create(&io, &ls, false, fname, LEASE1,
+			  smb2_util_lease_state(""));
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h1 = io.out.file.handle;
+	CHECK_CREATED(&io, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_LEASE(&io, "RWH", true, LEASE1, 0);
+
+	CHECK_NO_BREAK(tctx);
+	smb2_util_close(tree, h1);
+
+	/* Open with conflicting lease. stat open should break down to RH */
+	smb2_lease_create(&io, &ls, false, fname, LEASE2,
+			  smb2_util_lease_state("RWH"));
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h1 = io.out.file.handle;
+	CHECK_CREATED(&io, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_LEASE(&io, "RH", true, LEASE2, 0);
+
+	CHECK_BREAK_INFO("RWH", "RH", LEASE1);
+
+done:
+	smb2_util_close(tree, h2);
+	smb2_util_close(tree, h1);
+	smb2_util_unlink(tree, fname);
+	talloc_free(mem_ctx);
+	return ret;
+}
+
 
 static void torture_oplock_break_callback(struct smb2_request *req)
 {
@@ -3814,6 +3892,7 @@ struct torture_suite *torture_smb2_lease_init(void)
 				     test_lease_break_twice);
 	torture_suite_add_1smb2_test(suite, "nobreakself",
 				     test_lease_nobreakself);
+	torture_suite_add_1smb2_test(suite, "statopen", test_lease_statopen);
 	torture_suite_add_1smb2_test(suite, "upgrade", test_lease_upgrade);
 	torture_suite_add_1smb2_test(suite, "upgrade2", test_lease_upgrade2);
 	torture_suite_add_1smb2_test(suite, "upgrade3", test_lease_upgrade3);
