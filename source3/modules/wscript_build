@@ -279,7 +279,8 @@ bld.SAMBA3_MODULE('vfs_gpfs',
                  deps='NFS4_ACLS non_posix_acls',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_gpfs'),
-                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_gpfs'))
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_gpfs'),
+                 includes=bld.CONFIG_GET('CPPPATH_GPFS'))
 
 vfs_notify_fam_deps='samba-util '
 if bld.CONFIG_SET('SAMBA_FAM_LIBS'):
