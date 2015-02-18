@@ -2161,7 +2161,7 @@ class SiteLink(object):
 
 
 class VertexColor(object):
-    (unknown, white, black, red) = range(0, 4)
+    (red, black, white, unknown) = range(0, 4)
 
 
 class Vertex(object):
@@ -2172,6 +2172,13 @@ class Vertex(object):
         self.site = site
         self.part = part
         self.color = VertexColor.unknown
+        self.edges = []
+        self.accept_red_red = []
+        self.accept_black = []
+        self.repl_info = None
+        self.root = None
+        self.guid = None
+        self.component_id = None
 
     def color_vertex(self):
         """Color each vertex to indicate which kind of NC
@@ -2212,6 +2219,81 @@ class Vertex(object):
     def is_white(self):
         assert(self.color != VertexColor.unknown)
         return (self.color == VertexColor.white)
+
+
+class IntersiteGraph(object):
+    """Graph for representing the intersite"""
+    def __init__(self):
+        self.vertices = []
+        self.edges = []
+        self.edge_set = []
+
+
+class MultiEdgeSet(object):
+    """Defines a multi edge set"""
+    def __init__(self):
+        self.guid = 0 # objectGuid siteLinkBridge
+        self.edges = []
+
+
+class MultiEdge(object):
+    def __init__(self):
+        self.guid = 0 # objectGuid siteLink
+        self.vertices = []
+        self.con_type = None # interSiteTransport GUID
+        self.repl_info = None
+        self.directed = False
+
+class ReplInfo(object):
+    def __init__(self):
+        self.cost = 0
+        self.interval = 0
+        self.options = 0
+        self.schedule = 0
+
+class InternalEdge(object):
+    def __init__(self, v1, v2, redred, repl, eType):
+        self.v1 = v1
+        self.v2 = v2
+        self.red_red = redred
+        self.repl_info = repl
+        self.e_type = eType
+
+    def __eq__(self, other):
+        return not self < other and not other < self
+
+    def __ne__(self, other):
+        return self < other or other < self
+
+    def __gt__(self, other):
+        return other < self
+
+    def __ge__(self, other):
+        return not self < other
+
+    def __le__(self, other):
+        return not other < self
+
+    def __lt__(self, other):
+        if self.red_red != other.red_red:
+            return self.red_red
+
+        if self.repl_info.cost != other.repl_info.cost:
+            return self.repl_info.cost < other.repl_info.cost
+
+        self_time = total_schedule(self.repl_info.schedule)
+        other_time = total_schedule(other.repl_info.schedule)
+        if self_time != other_time:
+            return self_time > other_time
+
+        if self.v1.guid != other.v1.guid:
+            return self.v1.guid < other.v1.guid #TODO string?
+
+        if self.v2.guid != other.v2.guid:
+            return self.v2.guid < other.v2.guid #TODO string?
+
+        return self.con_type < other.con_type # TODO string?
+
 
 ##################################################
 # Global Functions
