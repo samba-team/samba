@@ -28,6 +28,7 @@
 #endif
 
 int gpfswrap_init(void);
+int gpfswrap_set_share(int fd, unsigned int allow, unsigned int deny);
 bool set_gpfs_sharemode(files_struct *fsp, uint32 access_mask,
 			uint32 share_access);
 int set_gpfs_lease(int fd, int leasetype);

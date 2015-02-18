@@ -76,16 +76,22 @@ int gpfswrap_init(void)
 	return 0;
 }
 
+int gpfswrap_set_share(int fd, unsigned int allow, unsigned int deny)
+{
+	if (gpfs_set_share_fn == NULL) {
+		errno = ENOSYS;
+		return -1;
+	}
+
+	return gpfs_set_share_fn(fd, allow, deny);
+}
+
 bool set_gpfs_sharemode(files_struct *fsp, uint32 access_mask,
 			uint32 share_access)
 {
 	unsigned int allow = GPFS_SHARE_NONE;
 	unsigned int deny = GPFS_DENY_NONE;
 	int result;
-
-	if (gpfs_set_share_fn == NULL) {
-		return False;
-	}
 
 	if ((fsp == NULL) || (fsp->fh == NULL) || (fsp->fh->fd < 0)) {
 		/* No real file, don't disturb */
@@ -109,11 +115,12 @@ bool set_gpfs_sharemode(files_struct *fsp, uint32 access_mask,
 	DEBUG(10, ("am=%x, allow=%d, sa=%x, deny=%d\n",
 		   access_mask, allow, share_access, deny));
 
-	result = gpfs_set_share_fn(fsp->fh->fd, allow, deny);
+	result = gpfswrap_set_share(fsp->fh->fd, allow, deny);
 	if (result != 0) {
 		if (errno == ENOSYS) {
-			DEBUG(5, ("VFS module vfs_gpfs loaded, but no gpfs "
-				  "support has been compiled into Samba. Allowing access\n"));
+			DEBUG(5, ("VFS module vfs_gpfs loaded, but gpfs "
+				  "set_share function support not available. "
+				  "Allowing access\n"));
 			return True;
 		} else {
 			DEBUG(10, ("gpfs_set_share failed: %s\n",
