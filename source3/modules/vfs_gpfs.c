@@ -38,6 +38,10 @@
 #include "auth.h"
 #include "lib/util/tevent_unix.h"
 
+#ifndef GPFS_GETACL_NATIVE
+#define GPFS_GETACL_NATIVE 0x00000004
+#endif
+
 struct gpfs_config_data {
 	bool sharemodes;
 	bool leases;
