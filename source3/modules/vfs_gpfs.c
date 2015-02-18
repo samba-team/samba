@@ -2347,7 +2347,12 @@ static struct vfs_fn_pointers vfs_gpfs_fns = {
 NTSTATUS vfs_gpfs_init(void);
 NTSTATUS vfs_gpfs_init(void)
 {
-	init_gpfs();
+	int ret;
+
+	ret = gpfswrap_init();
+	if (ret != 0) {
+		DEBUG(1, ("Could not initialize GPFS library wrapper\n"));
+	}
 
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "gpfs",
 				&vfs_gpfs_fns);

@@ -44,6 +44,38 @@ static int (*gpfs_quotactl_fn)(char *pathname, int cmd, int id, void *bufferP);
 static int (*gpfs_fcntl_fn)(gpfs_file_t fileDesc, void *fcntlArgP);
 static int (*gpfs_getfilesetid_fn)(char *pathname, char *name, int *idP);
 
+int gpfswrap_init(void)
+{
+	static void *l;
+
+	if (l != NULL) {
+		return 0;
+	}
+
+	l = dlopen("libgpfs.so", RTLD_LAZY);
+	if (l == NULL) {
+		return -1;
+	}
+
+	gpfs_set_share_fn	      = dlsym(l, "gpfs_set_share");
+	gpfs_set_lease_fn	      = dlsym(l, "gpfs_set_lease");
+	gpfs_getacl_fn		      = dlsym(l, "gpfs_getacl");
+	gpfs_putacl_fn		      = dlsym(l, "gpfs_putacl");
+	gpfs_get_realfilename_path_fn = dlsym(l, "gpfs_get_realfilename_path");
+	gpfs_set_winattrs_path_fn     = dlsym(l, "gpfs_set_winattrs_path");
+	gpfs_get_winattrs_path_fn     = dlsym(l, "gpfs_get_winattrs_path");
+	gpfs_get_winattrs_fn	      = dlsym(l, "gpfs_get_winattrs");
+	gpfs_prealloc_fn	      = dlsym(l, "gpfs_prealloc");
+	gpfs_ftruncate_fn	      = dlsym(l, "gpfs_ftruncate");
+	gpfs_lib_init_fn	      = dlsym(l, "gpfs_lib_init");
+	gpfs_set_times_path_fn	      = dlsym(l, "gpfs_set_times_path");
+	gpfs_quotactl_fn	      = dlsym(l, "gpfs_quotactl");
+	gpfs_fcntl_fn		      = dlsym(l, "gpfs_fcntl");
+	gpfs_getfilesetid_fn	      = dlsym(l, "gpfs_getfilesetid");
+
+	return 0;
+}
+
 bool set_gpfs_sharemode(files_struct *fsp, uint32 access_mask,
 			uint32 share_access)
 {
@@ -330,68 +362,4 @@ int smbd_gpfs_set_times_path(char *path, struct smb_file_time *ft)
 	}
 
 	return rc;
-}
-
-static bool init_gpfs_function_lib(void *plibhandle_pointer,
-				   const char *libname,
-				   void *pfn_pointer, const char *fn_name)
-{
-	bool did_open_here = false;
-	void **libhandle_pointer = (void **)plibhandle_pointer;
-	void **fn_pointer = (void **)pfn_pointer;
-
-	DEBUG(10, ("trying to load name %s from %s\n",
-		   fn_name, libname));
-
-	if (*libhandle_pointer == NULL) {
-		*libhandle_pointer = dlopen(libname, RTLD_LAZY);
-		did_open_here = true;
-	}
-	if (*libhandle_pointer == NULL) {
-		DEBUG(10, ("Could not open lib %s\n", libname));
-		return false;
-	}
-
-	*fn_pointer = dlsym(*libhandle_pointer, fn_name);
-	if (*fn_pointer == NULL) {
-		DEBUG(10, ("Did not find symbol %s in lib %s\n",
-			   fn_name, libname));
-		if (did_open_here) {
-			dlclose(*libhandle_pointer);
-			*libhandle_pointer = NULL;
-		}
-		return false;
-	}
-
-	return true;
-}
-
-static bool init_gpfs_function(void *fn_pointer, const char *fn_name)
-{
-	static void *libgpfs_handle = NULL;
-
-	return init_gpfs_function_lib(&libgpfs_handle, "libgpfs.so",
-				      fn_pointer, fn_name);
-}
-
-void init_gpfs(void)
-{
-	init_gpfs_function(&gpfs_set_share_fn, "gpfs_set_share");
-	init_gpfs_function(&gpfs_set_lease_fn, "gpfs_set_lease");
-	init_gpfs_function(&gpfs_getacl_fn, "gpfs_getacl");
-	init_gpfs_function(&gpfs_putacl_fn, "gpfs_putacl");
-	init_gpfs_function(&gpfs_get_realfilename_path_fn,
-			   "gpfs_get_realfilename_path");
-	init_gpfs_function(&gpfs_get_winattrs_path_fn,"gpfs_get_winattrs_path");
-        init_gpfs_function(&gpfs_set_winattrs_path_fn,"gpfs_set_winattrs_path");
-        init_gpfs_function(&gpfs_get_winattrs_fn,"gpfs_get_winattrs");
-	init_gpfs_function(&gpfs_prealloc_fn, "gpfs_prealloc");
-	init_gpfs_function(&gpfs_ftruncate_fn, "gpfs_ftruncate");
-        init_gpfs_function(&gpfs_lib_init_fn,"gpfs_lib_init");
-	init_gpfs_function(&gpfs_set_times_path_fn, "gpfs_set_times_path");
-	init_gpfs_function(&gpfs_quotactl_fn, "gpfs_quotactl");
-	init_gpfs_function(&gpfs_fcntl_fn, "gpfs_fcntl");
-	init_gpfs_function(&gpfs_getfilesetid_fn, "gpfs_getfilesetid");
-
-	return;
 }

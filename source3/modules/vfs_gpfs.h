@@ -27,6 +27,7 @@
 #define GPFS_GETACL_NATIVE 0x00000004
 #endif
 
+int gpfswrap_init(void);
 bool set_gpfs_sharemode(files_struct *fsp, uint32 access_mask,
 			uint32 share_access);
 int set_gpfs_lease(int fd, int leasetype);
@@ -44,5 +45,4 @@ int get_gpfs_quota(const char *pathname, int type, int id,
 int get_gpfs_fset_id(const char *pathname, int *fset_id);
 int smbd_gpfs_set_times_path(char *path, struct smb_file_time *ft);
 
-void init_gpfs(void);
 void smbd_gpfs_lib_init(void);
