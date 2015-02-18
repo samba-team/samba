@@ -377,7 +377,7 @@ class KCC(object):
                     cn_conn.to_be_deleted = True
 
 
-        if opts.readonly:
+        if mydsa.is_ro() or opts.readonly:
             for dnstr, connect in mydsa.connect_table.items():
                 if connect.to_be_deleted:
                     logger.info("TO BE DELETED:\n%s" % connect)
