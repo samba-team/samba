@@ -3099,7 +3099,8 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 	if (file_existed) {
 		/*
-		 * stat opens on existing files don't get oplocks or leases.
+		 * stat opens on existing files don't get oplocks.
+		 * They can get leases.
 		 *
 		 * Note that we check for stat open on the *open_access_mask*,
 		 * i.e. the access mask we actually used to do the open,
@@ -3108,12 +3109,8 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		 * FILE_OVERWRITE and FILE_OVERWRITE_IF add in O_TRUNC,
 		 * which adds FILE_WRITE_DATA to open_access_mask.
 		 */
-		if (is_stat_open(open_access_mask)) {
-			if (lease) {
-				lease->lease_state = SMB2_LEASE_NONE;
-			} else {
-				oplock_request = NO_OPLOCK;
-			}
+		if (is_stat_open(open_access_mask) && lease == NULL) {
+			oplock_request = NO_OPLOCK;
 		}
 	}
 
