@@ -17,11 +17,7 @@
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "includes.h"
-#include "system/filesys.h"
-#include "smbd/smbd.h"
-
-#include <fcntl.h>
+#include "replace.h"
 #include "vfs_gpfs.h"
 
 static int (*gpfs_set_share_fn)(int fd, unsigned int allow, unsigned int deny);
