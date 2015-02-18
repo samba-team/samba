@@ -1,7 +1,8 @@
 /*
  *  Unix SMB/CIFS implementation.
- *  Provide a connection to GPFS specific features
+ *  Wrapper for GPFS library
  *  Copyright (C) Volker Lendecke 2005
+ *  Copyright (C) Christof Schmitt 2015
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
