@@ -22,7 +22,6 @@
 #include "smbd/smbd.h"
 
 #include <fcntl.h>
-#include <gpfs_fcntl.h>
 #include "vfs_gpfs.h"
 
 static int (*gpfs_set_share_fn)(int fd, unsigned int allow, unsigned int deny);

@@ -23,6 +23,8 @@
 
 */
 
+#include <gpfs_fcntl.h>
+
 int gpfswrap_init(void);
 int gpfswrap_set_share(int fd, unsigned int allow, unsigned int deny);
 int gpfswrap_set_lease(int fd, unsigned int type);
