@@ -162,8 +162,9 @@
 /* Version 32 - Add SMB_VFS_READDIR_ATTR() */
 /* Version 32 - Add in and out create context blobs to create_file */
 /* Version 32 - Remove unnecessary SMB_VFS_DISK_FREE() small_query parameter */
+/* Bump to version 33 - Samba 4.3 will ship with that. */
 
-#define SMB_VFS_INTERFACE_VERSION 32
+#define SMB_VFS_INTERFACE_VERSION 33
 
 /*
     All intercepted VFS operations must be declared as static functions inside module source
