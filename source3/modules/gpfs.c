@@ -369,17 +369,9 @@ static bool init_gpfs_function_lib(void *plibhandle_pointer,
 static bool init_gpfs_function(void *fn_pointer, const char *fn_name)
 {
 	static void *libgpfs_handle = NULL;
-	static void *libgpfs_gpl_handle = NULL;
 
-	if (init_gpfs_function_lib(&libgpfs_handle, "libgpfs.so",
-				   fn_pointer, fn_name)) {
-		return true;
-	}
-	if (init_gpfs_function_lib(&libgpfs_gpl_handle, "libgpfs_gpl.so",
-				   fn_pointer, fn_name)) {
-		return true;
-	}
-	return false;
+	return init_gpfs_function_lib(&libgpfs_handle, "libgpfs.so",
+				      fn_pointer, fn_name);
 }
 
 void init_gpfs(void)
