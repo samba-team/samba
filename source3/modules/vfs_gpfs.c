@@ -30,7 +30,7 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS
 
-#include <gpfs_gpl.h>
+#include <gpfs_fcntl.h>
 #include "nfs4_acls.h"
 #include "vfs_gpfs.h"
 #include "system/filesys.h"

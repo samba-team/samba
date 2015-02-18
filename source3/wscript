@@ -1492,7 +1492,7 @@ main() {
             Logs.warn("pthreadpool support cannot be enabled when pthread support was not found")
             conf.undefine('WITH_PTHREADPOOL')
 
-    if conf.CHECK_HEADERS('gpfs_gpl.h'):
+    if conf.CHECK_HEADERS('gpfs_fcntl.h'):
         conf.DEFINE('HAVE_GPFS', '1')
 
     if (conf.CHECK_HEADERS('linux/ioctl.h sys/ioctl.h linux/fs.h') and
