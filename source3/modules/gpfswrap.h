@@ -21,6 +21,9 @@
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef __GPFSWRAP_H__
+#define __GPFSWRAP_H__
+
 #include <gpfs_fcntl.h>
 
 int gpfswrap_init(void);
@@ -41,3 +44,5 @@ int gpfswrap_set_times_path(char *pathname, int flags,
 int gpfswrap_quotactl(char *pathname, int cmd, int id, void *bufp);
 int gpfswrap_fcntl(int fd, void *argp);
 int gpfswrap_getfilesetid(char *pathname, char *name, int *idp);
+
+#endif
