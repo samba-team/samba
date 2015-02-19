@@ -522,6 +522,14 @@ return acl_get_perm_np(permset_d, perm);
                 'HAVE_FALLOC_FL_PUNCH_HOLE',
                 msg="Checking whether Linux 'fallocate' supports hole-punching",
                 headers='unistd.h sys/types.h fcntl.h linux/falloc.h')
+
+    conf.CHECK_CODE('''
+            int ret = lseek(0, 0, SEEK_HOLE);
+            ret = lseek(0, 0, SEEK_DATA);''',
+            'HAVE_LSEEK_HOLE_DATA',
+            msg="Checking whether lseek supports hole/data seeking",
+            headers='unistd.h sys/types.h')
+
     conf.CHECK_CODE('''
                 ssize_t err = readahead(0,0,0x80000);''',
                 'HAVE_LINUX_READAHEAD',
