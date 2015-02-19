@@ -44,20 +44,3 @@ bld.SAMBA_MODULE('process_model_standard',
                  internal_module=False
                  )
 
-bld.SAMBA_MODULE('process_model_prefork',
-                 source='process_prefork.c',
-                 subsystem='process_model',
-                 init_function='process_model_prefork_init',
-                 deps='events ldbsamba cluster samba-sockets process_model',
-                 internal_module=False
-                 )
-
-bld.SAMBA_MODULE('process_model_onefork',
-                 source='process_onefork.c',
-                 subsystem='process_model',
-                 init_function='process_model_onefork_init',
-                 deps='events ldbsamba process_model cluster samba-sockets',
-                 internal_module=False
-                 )
-
-
