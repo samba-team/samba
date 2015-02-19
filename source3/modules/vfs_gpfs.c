@@ -30,7 +30,7 @@
 #include "system/filesys.h"
 #include "auth.h"
 #include "lib/util/tevent_unix.h"
-#include "gpfswrap.h"
+#include "lib/util/gpfswrap.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS
