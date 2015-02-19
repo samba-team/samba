@@ -62,14 +62,33 @@
 	<title>CONFIGURATION</title>
 
 	<para>
-		<command>vfs_glusterfs</command> requires that the underlying share
-		path is a Gluster filesystem.
+		A basic configuration looks like this.
 	</para>
 
 	<programlisting>
 		<smbconfsection name="[share]"/>
 		<smbconfoption name="vfs objects">glusterfs</smbconfoption>
+		<smbconfoption name="path">/relative/base/path</smbconfoption>
+		<smbconfoption name="glusterfs:volume">gv0</smbconfoption>
+		<smbconfoption name="kernel share modes">no</smbconfoption>
 	</programlisting>
+
+	<para>
+		Note that since <command>vfs_glusterfs</command> does not
+		require a Gluster mount, the share <command>path</command> is
+		treated differently than for other shares: It is interpreted as
+		the base path of the share relative to the gluster volume used.
+		Because this is usually not at the same time a system path, in a
+		ctdb cluster setup where ctdb manages Samba, you need to set
+		<command>CTDB_SAMBA_SKIP_SHARE_CHECK=yes</command> in ctdb's
+		configuration file. Otherwise ctdb will not get healthy.
+	</para>
+
+	<para>
+		Note that currently kernel share modes have to be disabled
+		in a share running with the glusterfs vfs module for file
+		serving to work properly.
+	</para>
 </refsect1>
 
 <refsect1>
