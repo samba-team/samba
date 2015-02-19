@@ -3009,7 +3009,11 @@ static bool test_ioctl_sparse_qar(struct torture_context *torture,
 			   4096);	/* pattern offset */
 	torture_assert(torture, ok, "write pattern");
 
-	/* query range before write off, it should be alloced */
+	/*
+	 * Query range before write off. Whether it's allocated or not is FS
+	 * dependent. NTFS deallocates chunks in 64K increments, but others
+	 * (e.g. XFS, Btrfs, etc.) may deallocate 4K chunks.
+	 */
 	status = test_ioctl_qar_req(torture, tmp_ctx, tree, fh,
 				    0,	/* off */
 				    4096,	/* len */
@@ -3017,10 +3021,15 @@ static bool test_ioctl_sparse_qar(struct torture_context *torture,
 				    &far_count);
 	torture_assert_ntstatus_ok(torture, status,
 				   "FSCTL_QUERY_ALLOCATED_RANGES req failed");
-	torture_assert_u64_equal(torture, far_count, 1,
-				 "unexpected response len");
-	torture_assert_u64_equal(torture, far_rsp[0].file_off, 0, "far offset");
-	torture_assert_u64_equal(torture, far_rsp[0].len, 4096, "far len");
+	if (far_count == 0) {
+		torture_comment(torture, "FS deallocated 4K chunk\n");
+	} else {
+		/* expect fully allocated */
+		torture_assert_u64_equal(torture, far_count, 1,
+					 "unexpected response len");
+		torture_assert_u64_equal(torture, far_rsp[0].file_off, 0, "far offset");
+		torture_assert_u64_equal(torture, far_rsp[0].len, 4096, "far len");
+	}
 
 	/*
 	 * Query range before and past write, it should be allocated up to the
@@ -3035,8 +3044,16 @@ static bool test_ioctl_sparse_qar(struct torture_context *torture,
 				   "FSCTL_QUERY_ALLOCATED_RANGES req failed");
 	torture_assert_u64_equal(torture, far_count, 1,
 				 "unexpected response len");
-	torture_assert_u64_equal(torture, far_rsp[0].file_off, 0, "far offset");
-	torture_assert_u64_equal(torture, far_rsp[0].len, 5120, "far len");
+	/* FS dependent */
+	if (far_rsp[0].file_off == 4096) {
+		/* 4K chunk unallocated */
+		torture_assert_u64_equal(torture, far_rsp[0].file_off, 4096, "far offset");
+		torture_assert_u64_equal(torture, far_rsp[0].len, 1024, "far len");
+	} else {
+		/* expect fully allocated */
+		torture_assert_u64_equal(torture, far_rsp[0].file_off, 0, "far offset");
+		torture_assert_u64_equal(torture, far_rsp[0].len, 5120, "far len");
+	}
 
 	smb2_util_close(tree, fh);
 	talloc_free(tmp_ctx);
