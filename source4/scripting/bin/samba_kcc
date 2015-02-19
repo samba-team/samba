@@ -702,9 +702,9 @@ class KCC(object):
             if s_dnstr is not None:
                 s_dsa = self.get_dsa(s_dnstr)
 
-            # No DSA matching this source DN string?
-            if s_dsa is None:
-                return False, None
+        # No DSA matching this source DN string?
+        if s_dsa is None:
+            return False, None
 
         # To imply a repsFrom tuple is needed, each of these
         # must be True:
