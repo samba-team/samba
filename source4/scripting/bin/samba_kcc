@@ -868,6 +868,8 @@ class KCC(object):
 
                 t_repsFrom.source_dsa_obj_guid = s_dsa.dsa_guid
 
+                s_rep = s_dsa.get_current_replica(n_rep.nc_dnstr)
+
                 self.modify_repsFrom(n_rep, t_repsFrom, s_rep, s_dsa, cn_conn)
 
                 # Add to our NC repsFrom as this is newly computed
