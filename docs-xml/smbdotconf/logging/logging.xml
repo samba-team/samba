@@ -31,6 +31,7 @@
     <listitem><para><parameter moreinfo="none">file</parameter></para></listitem>
     <listitem><para><parameter moreinfo="none">systemd</parameter></para></listitem>
     <listitem><para><parameter moreinfo="none">lttng</parameter></para></listitem>
+    <listitem><para><parameter moreinfo="none">gpfs</parameter></para></listitem>
   </itemizedlist>
 
 </description>

@@ -195,6 +195,38 @@ static void debug_lttng_log(int msg_level,
 }
 #endif /* WITH_LTTNG_TRACEF */
 
+#ifdef HAVE_GPFS
+#include "gpfswrap.h"
+static void debug_gpfs_reload(bool enabled, bool previously_enabled,
+			      const char *prog_name)
+{
+	gpfswrap_init();
+
+	if (enabled && !previously_enabled) {
+		gpfswrap_init_trace();
+		return;
+	}
+
+	if (!enabled && previously_enabled) {
+		gpfswrap_fini_trace();
+		return;
+	}
+
+	if (enabled) {
+		/*
+		 * Trigger GPFS library to adjust state if necessary.
+		 */
+		gpfswrap_query_trace();
+	}
+}
+
+static void debug_gpfs_log(int msg_level,
+			   const char *msg, const char *msg_no_nl)
+{
+	gpfswrap_add_trace(msg_level, msg_no_nl);
+}
+#endif /* HAVE_GPFS */
+
 static struct debug_backend {
 	const char *name;
 	int log_level;
@@ -228,6 +260,13 @@ static struct debug_backend {
 	},
 #endif
 
+#ifdef HAVE_GPFS
+	{
+		.name = "gpfs",
+		.reload = debug_gpfs_reload,
+		.log = debug_gpfs_log,
+	},
+#endif
 };
 
 static struct debug_backend *debug_find_backend(const char *name)
