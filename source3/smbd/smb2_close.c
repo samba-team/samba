@@ -149,6 +149,48 @@ static void smbd_smb2_request_close_done(struct tevent_req *subreq)
 	}
 }
 
+static void setup_close_full_information(connection_struct *conn,
+				struct smb_filename *smb_fname,
+				bool posix_open,
+				struct timespec *out_creation_ts,
+				struct timespec *out_last_access_ts,
+				struct timespec *out_last_write_ts,
+				struct timespec *out_change_ts,
+				uint16_t *out_flags,
+				uint64_t *out_allocation_size,
+				uint64_t *out_end_of_file,
+				uint32_t *out_file_attributes)
+{
+	int ret;
+	if (posix_open) {
+		ret = SMB_VFS_LSTAT(conn, smb_fname);
+	} else {
+		ret = SMB_VFS_STAT(conn, smb_fname);
+	}
+	if (ret != 0) {
+		return;
+	}
+
+	*out_flags = SMB2_CLOSE_FLAGS_FULL_INFORMATION;
+	*out_file_attributes = dos_mode(conn, smb_fname);
+	*out_last_write_ts = smb_fname->st.st_ex_mtime;
+	*out_last_access_ts = smb_fname->st.st_ex_atime;
+	*out_creation_ts = get_create_timespec(conn, NULL, smb_fname);
+	*out_change_ts = get_change_timespec(conn, NULL, smb_fname);
+
+	if (lp_dos_filetime_resolution(SNUM(conn))) {
+		dos_filetime_timespec(out_creation_ts);
+		dos_filetime_timespec(out_last_write_ts);
+		dos_filetime_timespec(out_last_access_ts);
+		dos_filetime_timespec(out_change_ts);
+	}
+	if (!(*out_file_attributes & FILE_ATTRIBUTE_DIRECTORY)) {
+		*out_end_of_file = get_file_size_stat(&smb_fname->st);
+	}
+
+	*out_allocation_size = SMB_VFS_GET_ALLOC_SIZE(conn, NULL, &smb_fname->st);
+}
+
 static NTSTATUS smbd_smb2_close(struct smbd_smb2_request *req,
 				struct files_struct *fsp,
 				uint16_t in_flags,
