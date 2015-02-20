@@ -237,6 +237,26 @@ static NTSTATUS smbd_smb2_close(struct smbd_smb2_request *req,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	if ((in_flags & SMB2_CLOSE_FLAGS_FULL_INFORMATION) &&
+	    (fsp->initial_delete_on_close || fsp->delete_on_close)) {
+		/*
+		 * We might be deleting the file. Ensure we
+		 * return valid data from before the file got
+		 * removed.
+		 */
+		setup_close_full_information(conn,
+				smb_fname,
+				posix_open,
+				out_creation_ts,
+				out_last_access_ts,
+				out_last_write_ts,
+				out_change_ts,
+				&flags,
+				&allocation_size,
+				&file_size,
+				&dos_attrs);
+	}
+
 	status = close_file(smbreq, fsp, NORMAL_CLOSE);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(5,("smbd_smb2_close: close_file[%s]: %s\n",
