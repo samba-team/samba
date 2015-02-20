@@ -1541,6 +1541,31 @@ int ctdb_ctrl_getnodemap(struct ctdb_context *ctdb,
 }
 
 /*
+  load nodes file on a remote node and return as a node map
+ */
+int ctdb_ctrl_getnodesfile(struct ctdb_context *ctdb,
+			   struct timeval timeout, uint32_t destnode,
+			   TALLOC_CTX *mem_ctx, struct ctdb_node_map **nodemap)
+{
+	int ret;
+	TDB_DATA outdata;
+	int32_t res;
+
+	ret = ctdb_control(ctdb, destnode, 0,
+			   CTDB_CONTROL_GET_NODES_FILE, 0, tdb_null,
+			   mem_ctx, &outdata, &res, &timeout, NULL);
+	if (ret != 0 || res != 0 || outdata.dsize == 0) {
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for getnodes failed ret:%d res:%d\n", ret, res));
+		return -1;
+	}
+
+	*nodemap = (struct ctdb_node_map *)talloc_memdup(mem_ctx, outdata.dptr, outdata.dsize);
+	talloc_free(outdata.dptr);
+
+	return 0;
+}
+
+/*
   old style ipv4-only get a list of nodes (vnn and flags ) from a remote node
  */
 int ctdb_ctrl_getnodemapv4(struct ctdb_context *ctdb, 

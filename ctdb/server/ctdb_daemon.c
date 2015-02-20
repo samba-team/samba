@@ -1782,6 +1782,24 @@ int32_t ctdb_control_process_exists(struct ctdb_context *ctdb, pid_t pid)
 	return kill(pid, 0);
 }
 
+int ctdb_control_getnodesfile(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indata, TDB_DATA *outdata)
+{
+	struct ctdb_node_map *node_map = NULL;
+
+	CHECK_CONTROL_DATA_SIZE(0);
+
+	node_map = ctdb_read_nodes_file(ctdb, ctdb->nodes_file);
+	if (node_map == NULL) {
+		DEBUG(DEBUG_ERR, ("Failed to read nodes file\n"));
+		return -1;
+	}
+
+	outdata->dptr  = (unsigned char *)node_map;
+	outdata->dsize = talloc_get_size(outdata->dptr);
+
+	return 0;
+}
+
 void ctdb_shutdown_sequence(struct ctdb_context *ctdb, int exit_code)
 {
 	if (ctdb->runstate == CTDB_RUNSTATE_SHUTDOWN) {
