@@ -476,8 +476,11 @@ static void dreplsrv_op_pull_source_get_changes_trigger(struct tevent_req *req)
 			DEBUG(0,(__location__ ": Failed to construct RODC partial attribute set : %s\n", nt_errstr(status)));
 			return;
 		}
+		replica_flags &= ~DRSUAPI_DRS_WRIT_REP;
 		if (state->op->extended_op == DRSUAPI_EXOP_REPL_SECRET) {
 			replica_flags &= ~DRSUAPI_DRS_SPECIAL_SECRET_PROCESSING;
+		} else {
+			replica_flags |= DRSUAPI_DRS_SPECIAL_SECRET_PROCESSING;
 		}
 	}
 	if (state->op->extended_op != DRSUAPI_EXOP_NONE) {
