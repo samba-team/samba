@@ -118,33 +118,6 @@ ctdb_control_getdbmap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indat
 	return 0;
 }
 
-static struct ctdb_node_map *
-ctdb_node_list_to_map(struct ctdb_node **nodes, uint32_t num_nodes,
-		      TALLOC_CTX *mem_ctx)
-{
-	uint32_t i;
-	size_t size;
-	struct ctdb_node_map *node_map;
-
-	size = offsetof(struct ctdb_node_map, nodes) + num_nodes*sizeof(struct ctdb_node_and_flags);
-	node_map  = (struct ctdb_node_map *)talloc_zero_size(mem_ctx, size);
-	if (node_map == NULL) {
-		DEBUG(DEBUG_ERR, (__location__ " Failed to allocate nodemap array\n"));
-		return NULL;
-	}
-
-	node_map->num = num_nodes;
-	for (i=0; i<num_nodes; i++) {
-		node_map->nodes[i].addr  = nodes[i]->address;
-		node_map->nodes[i].pnn   = nodes[i]->pnn;
-		node_map->nodes[i].flags = nodes[i]->flags;
-	}
-
-	return node_map;
-}
-
-
-
 int
 ctdb_control_getnodemap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indata, TDB_DATA *outdata)
 {
