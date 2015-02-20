@@ -2118,7 +2118,7 @@ sub setup_vampire_dc($$$)
 			$cmd .= "RESOLV_WRAPPER_HOSTS=\"$env->{RESOLV_WRAPPER_HOSTS}\" ";
 		}
 		$cmd .= " KRB5_CONFIG=\"$env->{KRB5_CONFIG}\"";
-		$cmd .= " $samba_tool drs kcc $env->{DC_SERVER}";
+		$cmd .= " $samba_tool drs kcc -k no $env->{DC_SERVER}";
 		$cmd .= " $env->{CONFIGURATION}";
 		$cmd .= " -U$dc_vars->{DC_USERNAME}\%$dc_vars->{DC_PASSWORD}";
 		unless (system($cmd) == 0) {
@@ -2170,13 +2170,25 @@ sub setup_promoted_dc($$$)
 
 		$self->{vars}->{promoted_dc} = $env;
 
-		# force replicated DC to update repsTo/repsFrom
+		# force source and replicated DC to update repsTo/repsFrom
 		# for vampired partitions
 		my $samba_tool =  Samba::bindir_path($self, "samba-tool");
 		my $cmd = "";
 		$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$env->{SOCKET_WRAPPER_DEFAULT_IFACE}\"";
 		$cmd .= " KRB5_CONFIG=\"$env->{KRB5_CONFIG}\"";
 		$cmd .= " $samba_tool drs kcc $env->{DC_SERVER}";
+		$cmd .= " $env->{CONFIGURATION}";
+		$cmd .= " -U$dc_vars->{DC_USERNAME}\%$dc_vars->{DC_PASSWORD}";
+		unless (system($cmd) == 0) {
+			warn("Failed to exec kcc\n$cmd");
+			return undef;
+		}
+
+		my $samba_tool =  Samba::bindir_path($self, "samba-tool");
+		my $cmd = "";
+		$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$env->{SOCKET_WRAPPER_DEFAULT_IFACE}\"";
+		$cmd .= " KRB5_CONFIG=\"$env->{KRB5_CONFIG}\"";
+		$cmd .= " $samba_tool drs kcc $env->{SERVER}";
 		$cmd .= " $env->{CONFIGURATION}";
 		$cmd .= " -U$dc_vars->{DC_USERNAME}\%$dc_vars->{DC_PASSWORD}";
 		unless (system($cmd) == 0) {
@@ -2275,6 +2287,51 @@ sub setup_rodc($$$)
 	$self->check_or_start($env, "single");
 
 	$self->wait_for_start($env);
+
+	# force source and replicated DC to update repsTo/repsFrom
+	# for vampired partitions
+	my $samba_tool =  Samba::bindir_path($self, "samba-tool");
+	my $cmd = "";
+	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$env->{SOCKET_WRAPPER_DEFAULT_IFACE}\"";
+	$cmd .= " KRB5_CONFIG=\"$env->{KRB5_CONFIG}\"";
+	$cmd .= " $samba_tool drs kcc -k no $env->{DC_SERVER}";
+	$cmd .= " $env->{CONFIGURATION}";
+	$cmd .= " -U$dc_vars->{DC_USERNAME}\%$dc_vars->{DC_PASSWORD}";
+	unless (system($cmd) == 0) {
+	    warn("Failed to exec kcc\n$cmd");
+	    return undef;
+	}
+
+	my $samba_tool =  Samba::bindir_path($self, "samba-tool");
+	my $cmd = "";
+	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$env->{SOCKET_WRAPPER_DEFAULT_IFACE}\"";
+	$cmd .= " KRB5_CONFIG=\"$env->{KRB5_CONFIG}\"";
+	$cmd .= " $samba_tool drs kcc -k no $env->{SERVER}";
+	$cmd .= " $env->{CONFIGURATION}";
+	$cmd .= " -U$dc_vars->{DC_USERNAME}\%$dc_vars->{DC_PASSWORD}";
+	unless (system($cmd) == 0) {
+	    warn("Failed to exec kcc\n$cmd");
+	    return undef;
+	}
+
+	my $base_dn = "DC=".join(",DC=", split(/\./, $dc_vars->{REALM}));
+	$cmd = "SOCKET_WRAPPER_DEFAULT_IFACE=\"$env->{SOCKET_WRAPPER_DEFAULT_IFACE}\"";
+	$cmd .= " KRB5_CONFIG=\"$env->{KRB5_CONFIG}\"";
+	$cmd .= " $samba_tool drs replicate $env->{SERVER} $env->{DC_SERVER}";
+	$cmd .= " $dc_vars->{CONFIGURATION}";
+	$cmd .= " -U$dc_vars->{DC_USERNAME}\%$dc_vars->{DC_PASSWORD}";
+	# replicate Configuration NC
+	my $cmd_repl = "$cmd \"CN=Configuration,$base_dn\"";
+	unless(system($cmd_repl) == 0) {
+	    warn("Failed to replicate\n$cmd_repl");
+	    return undef;
+	}
+	# replicate Default NC
+	$cmd_repl = "$cmd \"$base_dn\"";
+	unless(system($cmd_repl) == 0) {
+	    warn("Failed to replicate\n$cmd_repl");
+	    return undef;
+	}
 
 	$self->{vars}->{rodc} = $env;
 
