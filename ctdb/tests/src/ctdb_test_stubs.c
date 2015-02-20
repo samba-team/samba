@@ -128,8 +128,7 @@ static void ctdb_test_stubs_read_nodemap(struct ctdb_context *ctdb)
 		ctdb->nodes[ctdb->num_nodes]->ctdb = ctdb;
 		ctdb->nodes[ctdb->num_nodes]->name = "fakectdb";
 		ctdb->nodes[ctdb->num_nodes]->pnn = pnn;
-		ctdb->nodes[ctdb->num_nodes]->address.address = ip;
-		ctdb->nodes[ctdb->num_nodes]->address.port = 0;
+		parse_ip(ip, NULL, 0, &ctdb->nodes[ctdb->num_nodes]->address);
 		ctdb->nodes[ctdb->num_nodes]->flags = flags;
 		ctdb->nodes[ctdb->num_nodes]->capabilities = capabilities;
 		ctdb->num_nodes++;
@@ -443,14 +442,7 @@ ctdb_control_getnodemap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA ind
 	node_map = (struct ctdb_node_map *)outdata->dptr;
 	node_map->num = num_nodes;
 	for (i=0; i<num_nodes; i++) {
-		if (parse_ip(ctdb->nodes[i]->address.address,
-			     NULL, /* TODO: pass in the correct interface here*/
-			     0,
-			     &node_map->nodes[i].addr) == 0)
-		{
-			DEBUG(DEBUG_ERR, (__location__ " Failed to parse %s into a sockaddr\n", ctdb->nodes[i]->address.address));
-		}
-
+		node_map->nodes[i].addr = ctdb->nodes[i]->address;
 		node_map->nodes[i].pnn   = ctdb->nodes[i]->pnn;
 		node_map->nodes[i].flags = ctdb->nodes[i]->flags;
 	}
@@ -794,14 +786,8 @@ bool ctdb_sys_have_ip_stub(ctdb_sock_addr *addr)
 	assert_nodes_set(ctdb);
 
 	for (i = 0; i < ctdb->num_nodes; i++) {
-		ctdb_sock_addr node_addr;
-
 		if (ctdb->pnn == ctdb->nodes[i]->pnn) {
-			if (!parse_ip(ctdb->nodes[i]->address.address, NULL, 0,
-				      &node_addr)) {
-				continue;
-			}
-			if (ctdb_same_ip(addr, &node_addr)) {
+			if (ctdb_same_ip(addr, &ctdb->nodes[i]->address)) {
 				return true;
 			}
 		}

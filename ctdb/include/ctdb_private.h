@@ -140,15 +140,6 @@ struct ctdb_registered_call {
 };
 
 /*
-  this address structure might need to be generalised later for some
-  transports
-*/
-struct ctdb_address {
-	const char *address;
-	int port;
-};
-
-/*
   check that a pnn is valid
  */
 #define ctdb_validate_pnn(ctdb, pnn) (((uint32_t)(pnn)) < (ctdb)->num_nodes)
@@ -221,7 +212,7 @@ struct ctdb_vnn {
 */
 struct ctdb_node {
 	struct ctdb_context *ctdb;
-	struct ctdb_address address;
+	ctdb_sock_addr address;
 	const char *name; /* for debug messages */
 	void *private_data; /* private to transport */
 	uint32_t pnn;
@@ -466,7 +457,7 @@ struct ctdb_context {
 	struct ctdb_freeze_handle *freeze_handles[NUM_DB_PRIORITIES+1];
 	bool freeze_transaction_started;
 	uint32_t freeze_transaction_id;
-	struct ctdb_address address;
+	ctdb_sock_addr *address;
 	const char *name;
 	const char *db_directory;
 	const char *db_directory_persistent;
@@ -725,9 +716,9 @@ void ctdb_die(struct ctdb_context *ctdb, const char *msg);
 bool ctdb_set_helper(const char *type, char *helper, size_t size,
 		     const char *envvar, const char *dir, const char *file);
 void ctdb_external_trace(void);
-bool ctdb_same_address(struct ctdb_address *a1, struct ctdb_address *a2);
+bool ctdb_same_address(ctdb_sock_addr *a1, ctdb_sock_addr *a2);
 int ctdb_parse_address(TALLOC_CTX *mem_ctx, const char *str,
-		       struct ctdb_address *address);
+		       ctdb_sock_addr *address);
 bool ctdb_same_ip(const ctdb_sock_addr *ip1, const ctdb_sock_addr *ip2);
 bool ctdb_same_sockaddr(const ctdb_sock_addr *ip1, const ctdb_sock_addr *ip2);
 uint32_t ctdb_hash(const TDB_DATA *key);

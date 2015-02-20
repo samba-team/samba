@@ -39,7 +39,7 @@ int ctdb_set_transport(struct ctdb_context *ctdb, const char *transport)
   Check whether an ip is a valid node ip
   Returns the node id for this ip address or -1
 */
-int ctdb_ip_to_nodeid(struct ctdb_context *ctdb, const char *nodeip)
+int ctdb_ip_to_nodeid(struct ctdb_context *ctdb, const ctdb_sock_addr *nodeip)
 {
 	int nodeid;
 
@@ -47,7 +47,7 @@ int ctdb_ip_to_nodeid(struct ctdb_context *ctdb, const char *nodeip)
 		if (ctdb->nodes[nodeid]->flags & NODE_FLAGS_DELETED) {
 			continue;
 		}
-		if (!strcmp(ctdb->nodes[nodeid]->address.address, nodeip)) {
+		if (ctdb_same_ip(&ctdb->nodes[nodeid]->address, nodeip)) {
 			return nodeid;
 		}
 	}
@@ -96,9 +96,9 @@ static int ctdb_add_node(struct ctdb_context *ctdb, const char *nstr, uint32_t f
 		return -1;
 	}
 	node->ctdb = ctdb;
-	node->name = talloc_asprintf(node, "%s:%u", 
-				     node->address.address, 
-				     node->address.port);
+	node->name = talloc_asprintf(node, "%s:%u",
+				     ctdb_addr_to_str(&node->address),
+				     ctdb_addr_to_port(&node->address));
 	/* this assumes that the nodes are kept in sorted order, and no gaps */
 	node->pnn = ctdb->num_nodes;
 
@@ -181,13 +181,16 @@ void ctdb_load_nodes_file(struct ctdb_context *ctdb)
 */
 int ctdb_set_address(struct ctdb_context *ctdb, const char *address)
 {
-	if (ctdb_parse_address(ctdb, address, &ctdb->address) != 0) {
+	ctdb->address = talloc(ctdb, ctdb_sock_addr);
+	CTDB_NO_MEMORY(ctdb, ctdb->address);
+
+	if (ctdb_parse_address(ctdb, address, ctdb->address) != 0) {
 		return -1;
 	}
-	
-	ctdb->name = talloc_asprintf(ctdb, "%s:%u", 
-				     ctdb->address.address, 
-				     ctdb->address.port);
+
+	ctdb->name = talloc_asprintf(ctdb, "%s:%u",
+				     ctdb_addr_to_str(ctdb->address),
+				     ctdb_addr_to_port(ctdb->address));
 	return 0;
 }
 

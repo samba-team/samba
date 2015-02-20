@@ -156,33 +156,25 @@ void ctdb_external_trace(void)
   parse a IP:port pair
 */
 int ctdb_parse_address(TALLOC_CTX *mem_ctx, const char *str,
-		       struct ctdb_address *address)
+		       ctdb_sock_addr *address)
 {
 	struct servent *se;
-	ctdb_sock_addr addr;
+	int port;
 
 	setservent(0);
 	se = getservbyname("ctdb", "tcp");
 	endservent();
 
-	/* Parse IP address and re-convert to string.  This ensure correct
-	 * string form for IPv6 addresses.
-	 */
-	if (! parse_ip(str, NULL, 0, &addr)) {
-		return -1;
-	}
-
-	address->address = talloc_strdup(mem_ctx, ctdb_addr_to_str(&addr));
-	if (address->address == NULL) {
-		DEBUG(DEBUG_ERR, (__location__ " Out of memory\n"));
-		return -1;
-	}
-
 	if (se == NULL) {
-		address->port = CTDB_PORT;
+		port = CTDB_PORT;
 	} else {
-		address->port = ntohs(se->s_port);
+		port = ntohs(se->s_port);
 	}
+
+	if (! parse_ip(str, NULL, port, address)) {
+		return -1;
+	}
+
 	return 0;
 }
 
@@ -190,9 +182,10 @@ int ctdb_parse_address(TALLOC_CTX *mem_ctx, const char *str,
 /*
   check if two addresses are the same
 */
-bool ctdb_same_address(struct ctdb_address *a1, struct ctdb_address *a2)
+bool ctdb_same_address(ctdb_sock_addr *a1, ctdb_sock_addr *a2)
 {
-	return strcmp(a1->address, a2->address) == 0 && a1->port == a2->port;
+	return ctdb_same_ip(a1, a2) &&
+		ctdb_addr_to_port(a1) == ctdb_addr_to_port(a2);
 }
 
 

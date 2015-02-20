@@ -1172,12 +1172,12 @@ static void ctdb_set_my_pnn(struct ctdb_context *ctdb)
 {
 	int nodeid;
 
-	if (ctdb->address.address == NULL) {
+	if (ctdb->address == NULL) {
 		ctdb_fatal(ctdb,
 			   "Can not determine PNN - node address is not set\n");
 	}
 
-	nodeid = ctdb_ip_to_nodeid(ctdb, ctdb->address.address);
+	nodeid = ctdb_ip_to_nodeid(ctdb, ctdb->address);
 	if (nodeid == -1) {
 		ctdb_fatal(ctdb,
 			   "Can not determine PNN - node address not found in node list\n");

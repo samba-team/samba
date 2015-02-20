@@ -81,7 +81,7 @@ const char *ctdb_get_socketname(struct ctdb_context *ctdb);
   Check that a specific ip address exists in the node list and returns
   the id for the node or -1
 */
-int ctdb_ip_to_nodeid(struct ctdb_context *ctdb, const char *nodeip);
+int ctdb_ip_to_nodeid(struct ctdb_context *ctdb, const ctdb_sock_addr *nodeip);
 
 /*
   start the ctdb protocol
