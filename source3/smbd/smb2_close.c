@@ -245,32 +245,17 @@ static NTSTATUS smbd_smb2_close(struct smbd_smb2_request *req,
 	}
 
 	if (in_flags & SMB2_CLOSE_FLAGS_FULL_INFORMATION) {
-		int ret;
-		if (posix_open) {
-			ret = SMB_VFS_LSTAT(conn, smb_fname);
-		} else {
-			ret = SMB_VFS_STAT(conn, smb_fname);
-		}
-		if (ret == 0) {
-			flags = SMB2_CLOSE_FLAGS_FULL_INFORMATION;
-			dos_attrs = dos_mode(conn, smb_fname);
-			*out_last_write_ts = smb_fname->st.st_ex_mtime;
-			*out_last_access_ts = smb_fname->st.st_ex_atime;
-			*out_creation_ts = get_create_timespec(conn, NULL, smb_fname);
-			*out_change_ts = get_change_timespec(conn, NULL, smb_fname);
-
-			if (lp_dos_filetime_resolution(SNUM(conn))) {
-				dos_filetime_timespec(out_creation_ts);
-				dos_filetime_timespec(out_last_write_ts);
-				dos_filetime_timespec(out_last_access_ts);
-				dos_filetime_timespec(out_change_ts);
-			}
-			if (!(dos_attrs & FILE_ATTRIBUTE_DIRECTORY)) {
-				file_size = get_file_size_stat(&smb_fname->st);
-			}
-
-			allocation_size = SMB_VFS_GET_ALLOC_SIZE(conn, NULL, &smb_fname->st);
-		}
+		setup_close_full_information(conn,
+				smb_fname,
+				posix_open,
+				out_creation_ts,
+				out_last_access_ts,
+				out_last_write_ts,
+				out_change_ts,
+				&flags,
+				&allocation_size,
+				&file_size,
+				&dos_attrs);
 	}
 
 	*out_flags = flags;
