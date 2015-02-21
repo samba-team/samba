@@ -421,65 +421,22 @@ struct tevent_context *tevent_context_init_stub(TALLOC_CTX *mem_ctx)
 	return tevent_context_init_byname(mem_ctx, NULL);
 }
 
-/* Copied from ctdb_recover.c */
-int
-ctdb_control_getnodemap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indata, TDB_DATA *outdata)
-{
-	uint32_t i, num_nodes;
-	struct ctdb_node_map *node_map;
-
-	CHECK_CONTROL_DATA_SIZE(0);
-
-	num_nodes = ctdb->num_nodes;
-
-	outdata->dsize = offsetof(struct ctdb_node_map, nodes) + num_nodes*sizeof(struct ctdb_node_and_flags);
-	outdata->dptr  = (unsigned char *)talloc_zero_size(outdata, outdata->dsize);
-	if (!outdata->dptr) {
-		DEBUG(DEBUG_ALERT, (__location__ " Failed to allocate nodemap array\n"));
-		exit(1);
-	}
-
-	node_map = (struct ctdb_node_map *)outdata->dptr;
-	node_map->num = num_nodes;
-	for (i=0; i<num_nodes; i++) {
-		node_map->nodes[i].addr = ctdb->nodes[i]->address;
-		node_map->nodes[i].pnn   = ctdb->nodes[i]->pnn;
-		node_map->nodes[i].flags = ctdb->nodes[i]->flags;
-	}
-
-	return 0;
-}
-
 int
 ctdb_ctrl_getnodemap_stub(struct ctdb_context *ctdb,
 			  struct timeval timeout, uint32_t destnode,
 			  TALLOC_CTX *mem_ctx,
 			  struct ctdb_node_map **nodemap)
 {
-	int ret;
-
-	TDB_DATA indata;
-	TDB_DATA *outdata;
-
 	assert_nodes_set(ctdb);
 
 	if (!current_node_is_connected(ctdb)) {
 		return -1;
 	}
 
-	indata.dsize = 0;
-	indata.dptr = NULL;
+	*nodemap = ctdb_node_list_to_map(ctdb->nodes, ctdb->num_nodes,
+					 mem_ctx);
 
-	outdata = talloc_zero(ctdb, TDB_DATA);
-
-	ret = ctdb_control_getnodemap(ctdb, CTDB_CONTROL_GET_NODEMAP,
-				      indata, outdata);
-
-	if (ret == 0) {
-		*nodemap = (struct ctdb_node_map *) outdata->dptr;
-	}
-
-	return ret;
+	return 0;
 }
 
 int
