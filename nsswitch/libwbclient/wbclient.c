@@ -4,6 +4,7 @@
    Winbind client API
 
    Copyright (C) Gerald (Jerry) Carter 2007
+   Copyright (C) Matthew Newton 2015
 
 
    This library is free software; you can redistribute it and/or
@@ -27,6 +28,8 @@
 
 /* From wb_common.c */
 
+struct winbindd_context;
+
 NSS_STATUS winbindd_request_response(struct winbindd_context *wbctx,
 				     int req_type,
 				     struct winbindd_request *request,
@@ -35,6 +38,9 @@ NSS_STATUS winbindd_priv_request_response(struct winbindd_context *wbctx,
 					  int req_type,
 					  struct winbindd_request *request,
 					  struct winbindd_response *response);
+struct winbindd_context *winbindd_ctx_create(void);
+void winbindd_ctx_free(struct winbindd_context *ctx);
+
 
 /*
  result == NSS_STATUS_UNAVAIL: winbind not around
@@ -258,4 +264,42 @@ wbcErr wbcLibraryDetails(struct wbcLibraryDetails **_details)
 
 	*_details = info;
 	return WBC_ERR_SUCCESS;
+}
+
+/* Context handling functions */
+
+static void wbcContextDestructor(void *ptr)
+{
+	struct wbcContext *ctx = (struct wbcContext *)ptr;
+
+	winbindd_ctx_free(ctx->winbindd_ctx);
+}
+
+struct wbcContext *wbcCtxCreate(void)
+{
+	struct wbcContext *ctx;
+	struct winbindd_context *wbctx;
+
+	ctx = (struct wbcContext *)wbcAllocateMemory(
+		1, sizeof(struct wbcContext), wbcContextDestructor);
+
+	if (!ctx) {
+		return NULL;
+	}
+
+	wbctx = winbindd_ctx_create();
+
+	if (!wbctx) {
+		wbcFreeMemory(ctx);
+		return NULL;
+	}
+
+	ctx->winbindd_ctx = wbctx;
+
+	return ctx;
+}
+
+void wbcCtxFree(struct wbcContext *ctx)
+{
+	wbcFreeMemory(ctx);
 }
