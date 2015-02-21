@@ -1388,6 +1388,8 @@ int ctdb_client_async_control(struct ctdb_context *ctdb,
 			        client_async_callback fail_callback,
 				void *callback_data);
 
+struct ctdb_node_map *ctdb_read_nodes_file(TALLOC_CTX *mem_ctx,
+					   const char *nlist);
 void ctdb_load_nodes_file(struct ctdb_context *ctdb);
 
 int ctdb_control_reload_nodes_file(struct ctdb_context *ctdb, uint32_t opcode);

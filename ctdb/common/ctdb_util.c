@@ -486,6 +486,98 @@ unsigned ctdb_addr_to_port(ctdb_sock_addr *addr)
 	return 0;
 }
 
+/* Add a node to a node map with given address and flags */
+static bool node_map_add(TALLOC_CTX *mem_ctx,
+			 const char *nstr, uint32_t flags,
+			 struct ctdb_node_map **node_map)
+{
+	ctdb_sock_addr addr;
+	uint32_t num;
+	size_t s;
+	struct ctdb_node_and_flags *n;
+
+	/* Might as well do this before trying to allocate memory */
+	if (ctdb_parse_address(mem_ctx, nstr, &addr) == -1) {
+		return false;
+	}
+
+	num = (*node_map)->num + 1;
+	s = offsetof(struct ctdb_node_map, nodes) +
+		num * sizeof(struct ctdb_node_and_flags);
+	*node_map = talloc_realloc_size(mem_ctx, *node_map, s);
+	if (*node_map == NULL) {
+		DEBUG(DEBUG_ERR, (__location__ " Out of memory\n"));
+		return false;
+	}
+
+	n = &(*node_map)->nodes[(*node_map)->num];
+	n->addr = addr;
+	n->pnn = (*node_map)->num;
+	n->flags = flags;
+
+	(*node_map)->num++;
+
+	return true;
+}
+
+/* Read a nodes file into a node map */
+struct ctdb_node_map *ctdb_read_nodes_file(TALLOC_CTX *mem_ctx,
+					   const char *nlist)
+{
+	char **lines;
+	int nlines;
+	int i;
+	struct ctdb_node_map *ret;
+
+	/* Allocate node map header */
+	ret = talloc_zero_size(mem_ctx, offsetof(struct ctdb_node_map, nodes));
+	if (ret == NULL) {
+		DEBUG(DEBUG_ERR, (__location__ " Out of memory\n"));
+		return false;
+	}
+
+	lines = file_lines_load(nlist, &nlines, 0, mem_ctx);
+	if (lines == NULL) {
+		DEBUG(DEBUG_ERR, ("Failed to read nodes file \"%s\"\n", nlist));
+		return false;
+	}
+	while (nlines > 0 && strcmp(lines[nlines-1], "") == 0) {
+		nlines--;
+	}
+
+	for (i=0; i < nlines; i++) {
+		const char *node;
+		uint32_t flags;
+
+		node = lines[i];
+		/* strip leading spaces */
+		while((*node == ' ') || (*node == '\t')) {
+			node++;
+		}
+		if (strcmp(node, "") == 0) {
+			continue;
+		}
+		if (*node == '#') {
+			/* A "deleted" node is a node that is
+			   commented out in the nodes file.  This is
+			   used instead of removing a line, which
+			   would cause subsequent nodes to change
+			   their PNN. */
+			flags = NODE_FLAGS_DELETED;
+			node = "0.0.0.0";
+		} else {
+			flags = 0;
+		}
+		if (!node_map_add(mem_ctx, node, flags, &ret)) {
+			talloc_free(lines);
+			TALLOC_FREE(ret);
+			return NULL;
+		}
+	}
+
+	talloc_free(lines);
+	return ret;
+}
 
 const char *ctdb_eventscript_call_names[] = {
 	"init",
