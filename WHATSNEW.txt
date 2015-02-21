@@ -1,4 +1,62 @@
                    ==============================
+                   Release Notes for Samba 4.1.17
+                          February 23, 2015
+                   ==============================
+
+
+This is a security release in order to address CVE-2015-0240 (Unexpected
+code execution in smbd).
+
+o  CVE-2015-0240:
+   All versions of Samba from 3.5.0 to 4.2.0rc4 are vulnerable to an
+   unexpected code execution vulnerability in the smbd file server
+   daemon.
+
+   A malicious client could send packets that may set up the stack in
+   such a way that the freeing of memory in a subsequent anonymous
+   netlogon packet could allow execution of arbitrary code. This code
+   would execute with root privileges.
+
+
+Changes since 4.1.16:
+---------------------
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 11077: CVE-2015-0240: talloc free on uninitialized stack pointer
+      in netlogon server could lead to security vulnerability.
+
+
+o   Andreas Schneider <asn@samba.org>
+    * BUG 11077: CVE-2015-0240: s3-netlogon: Make sure we do not deference
+      a NULL pointer.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+======================================================================
+
+                   ==============================
                    Release Notes for Samba 4.1.16
                           January 15, 2015
                    ==============================
@@ -44,10 +102,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+-----------------------------------------------------------------------
 
-======================================================================
 
                    ==============================
                    Release Notes for Samba 4.1.15
