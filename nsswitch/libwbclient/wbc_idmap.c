@@ -26,7 +26,8 @@
 #include "../winbind_client.h"
 
 /* Convert a Windows SID to a Unix uid, allocating an uid if needed */
-wbcErr wbcSidToUid(const struct wbcDomainSid *sid, uid_t *puid)
+wbcErr wbcCtxSidToUid(struct wbcContext *ctx, const struct wbcDomainSid *sid,
+		      uid_t *puid)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
@@ -46,7 +47,7 @@ wbcErr wbcSidToUid(const struct wbcDomainSid *sid, uid_t *puid)
 
 	/* Make request */
 
-	wbc_status = wbcRequestResponse(WINBINDD_SID_TO_UID,
+	wbc_status = wbcRequestResponse(ctx, WINBINDD_SID_TO_UID,
 					&request,
 					&response);
 	BAIL_ON_WBC_ERROR(wbc_status);
@@ -59,6 +60,11 @@ wbcErr wbcSidToUid(const struct wbcDomainSid *sid, uid_t *puid)
 	return wbc_status;
 }
 
+wbcErr wbcSidToUid(const struct wbcDomainSid *sid, uid_t *puid)
+{
+	return wbcCtxSidToUid(NULL, sid, puid);
+}
+
 /* Convert a Windows SID to a Unix uid if there already is a mapping */
 wbcErr wbcQuerySidToUid(const struct wbcDomainSid *sid,
 			uid_t *puid)
@@ -67,7 +73,8 @@ wbcErr wbcQuerySidToUid(const struct wbcDomainSid *sid,
 }
 
 /* Convert a Unix uid to a Windows SID, allocating a SID if needed */
-wbcErr wbcUidToSid(uid_t uid, struct wbcDomainSid *sid)
+wbcErr wbcCtxUidToSid(struct wbcContext *ctx, uid_t uid,
+		      struct wbcDomainSid *sid)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
 	struct winbindd_request request;
@@ -87,7 +94,7 @@ wbcErr wbcUidToSid(uid_t uid, struct wbcDomainSid *sid)
 
 	/* Make request */
 
-	wbc_status = wbcRequestResponse(WINBINDD_UID_TO_SID,
+	wbc_status = wbcRequestResponse(ctx, WINBINDD_UID_TO_SID,
 					&request,
 					&response);
 	BAIL_ON_WBC_ERROR(wbc_status);
@@ -97,6 +104,11 @@ wbcErr wbcUidToSid(uid_t uid, struct wbcDomainSid *sid)
 
 done:
 	return wbc_status;
+}
+
+wbcErr wbcUidToSid(uid_t uid, struct wbcDomainSid *sid)
+{
+	return wbcCtxUidToSid(NULL, uid, sid);
 }
 
 /* Convert a Unix uid to a Windows SID if there already is a mapping */
@@ -115,7 +127,8 @@ wbcErr wbcQueryUidToSid(uid_t uid,
  *
  **/
 
-wbcErr wbcSidToGid(const struct wbcDomainSid *sid, gid_t *pgid)
+wbcErr wbcCtxSidToGid(struct wbcContext *ctx, const struct wbcDomainSid *sid,
+		      gid_t *pgid)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
@@ -135,7 +148,7 @@ wbcErr wbcSidToGid(const struct wbcDomainSid *sid, gid_t *pgid)
 
 	/* Make request */
 
-	wbc_status = wbcRequestResponse(WINBINDD_SID_TO_GID,
+	wbc_status = wbcRequestResponse(ctx, WINBINDD_SID_TO_GID,
 					&request,
 					&response);
 	BAIL_ON_WBC_ERROR(wbc_status);
@@ -148,6 +161,10 @@ wbcErr wbcSidToGid(const struct wbcDomainSid *sid, gid_t *pgid)
 	return wbc_status;
 }
 
+wbcErr wbcSidToGid(const struct wbcDomainSid *sid, gid_t *pgid)
+{
+	return wbcCtxSidToGid(NULL, sid, pgid);
+}
 
 /* Convert a Windows SID to a Unix gid if there already is a mapping */
 
@@ -159,7 +176,8 @@ wbcErr wbcQuerySidToGid(const struct wbcDomainSid *sid,
 
 
 /* Convert a Unix gid to a Windows SID, allocating a SID if needed */
-wbcErr wbcGidToSid(gid_t gid, struct wbcDomainSid *sid)
+wbcErr wbcCtxGidToSid(struct wbcContext *ctx, gid_t gid,
+		      struct wbcDomainSid *sid)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
@@ -179,7 +197,7 @@ wbcErr wbcGidToSid(gid_t gid, struct wbcDomainSid *sid)
 
 	/* Make request */
 
-	wbc_status = wbcRequestResponse(WINBINDD_GID_TO_SID,
+	wbc_status = wbcRequestResponse(ctx, WINBINDD_GID_TO_SID,
 					&request,
 					&response);
 	BAIL_ON_WBC_ERROR(wbc_status);
@@ -191,6 +209,11 @@ done:
 	return wbc_status;
 }
 
+wbcErr wbcGidToSid(gid_t gid, struct wbcDomainSid *sid)
+{
+	return wbcCtxGidToSid(NULL, gid, sid);
+}
+
 /* Convert a Unix gid to a Windows SID if there already is a mapping */
 wbcErr wbcQueryGidToSid(gid_t gid,
 			struct wbcDomainSid *sid)
@@ -199,7 +222,7 @@ wbcErr wbcQueryGidToSid(gid_t gid,
 }
 
 /* Obtain a new uid from Winbind */
-wbcErr wbcAllocateUid(uid_t *puid)
+wbcErr wbcCtxAllocateUid(struct wbcContext *ctx, uid_t *puid)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
@@ -215,7 +238,7 @@ wbcErr wbcAllocateUid(uid_t *puid)
 
 	/* Make request */
 
-	wbc_status = wbcRequestResponsePriv(WINBINDD_ALLOCATE_UID,
+	wbc_status = wbcRequestResponsePriv(ctx, WINBINDD_ALLOCATE_UID,
 					    &request, &response);
 	BAIL_ON_WBC_ERROR(wbc_status);
 
@@ -228,8 +251,13 @@ wbcErr wbcAllocateUid(uid_t *puid)
 	return wbc_status;
 }
 
+wbcErr wbcAllocateUid(uid_t *puid)
+{
+	return wbcCtxAllocateUid(NULL, puid);
+}
+
 /* Obtain a new gid from Winbind */
-wbcErr wbcAllocateGid(gid_t *pgid)
+wbcErr wbcCtxAllocateGid(struct wbcContext *ctx, gid_t *pgid)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
@@ -245,7 +273,7 @@ wbcErr wbcAllocateGid(gid_t *pgid)
 
 	/* Make request */
 
-	wbc_status = wbcRequestResponsePriv(WINBINDD_ALLOCATE_GID,
+	wbc_status = wbcRequestResponsePriv(ctx, WINBINDD_ALLOCATE_GID,
 					    &request, &response);
 	BAIL_ON_WBC_ERROR(wbc_status);
 
@@ -256,6 +284,11 @@ wbcErr wbcAllocateGid(gid_t *pgid)
 
  done:
 	return wbc_status;
+}
+
+wbcErr wbcAllocateGid(gid_t *pgid)
+{
+	return wbcCtxAllocateGid(NULL, pgid);
 }
 
 /* we can't include smb.h here... */
@@ -299,8 +332,9 @@ wbcErr wbcSetGidHwm(gid_t gid_hwm)
 }
 
 /* Convert a list of SIDs */
-wbcErr wbcSidsToUnixIds(const struct wbcDomainSid *sids, uint32_t num_sids,
-			struct wbcUnixId *ids)
+wbcErr wbcCtxSidsToUnixIds(struct wbcContext *ctx,
+			   const struct wbcDomainSid *sids,
+			   uint32_t num_sids, struct wbcUnixId *ids)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
@@ -341,7 +375,7 @@ wbcErr wbcSidsToUnixIds(const struct wbcDomainSid *sids, uint32_t num_sids,
 	request.extra_data.data = sidlist;
 	request.extra_len = p - sidlist;
 
-	wbc_status = wbcRequestResponse(WINBINDD_SIDS_TO_XIDS,
+	wbc_status = wbcRequestResponse(ctx, WINBINDD_SIDS_TO_XIDS,
 					&request, &response);
 	free(sidlist);
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
@@ -392,4 +426,10 @@ wbc_err_invalid:
 done:
 	winbindd_free_response(&response);
 	return wbc_status;
+}
+
+wbcErr wbcSidsToUnixIds(const struct wbcDomainSid *sids, uint32_t num_sids,
+			struct wbcUnixId *ids)
+{
+	return wbcCtxSidsToUnixIds(NULL, sids, num_sids, ids);
 }

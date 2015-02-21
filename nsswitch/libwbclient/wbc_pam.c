@@ -28,8 +28,8 @@
 #include "../winbind_client.h"
 
 /* Authenticate a username/password pair */
-wbcErr wbcAuthenticateUser(const char *username,
-			   const char *password)
+wbcErr wbcCtxAuthenticateUser(struct wbcContext *ctx,
+			      const char *username, const char *password)
 {
 	wbcErr wbc_status = WBC_ERR_SUCCESS;
 	struct wbcAuthUserParams params;
@@ -40,11 +40,16 @@ wbcErr wbcAuthenticateUser(const char *username,
 	params.level			= WBC_AUTH_USER_LEVEL_PLAIN;
 	params.password.plaintext	= password;
 
-	wbc_status = wbcAuthenticateUserEx(&params, NULL, NULL);
+	wbc_status = wbcCtxAuthenticateUserEx(ctx, &params, NULL, NULL);
 	BAIL_ON_WBC_ERROR(wbc_status);
 
 done:
 	return wbc_status;
+}
+
+wbcErr wbcAuthenticateUser(const char *username, const char *password)
+{
+	return wbcCtxAuthenticateUser(NULL, username, password);
 }
 
 static bool sid_attr_compose(struct wbcSidWithAttr *s,
@@ -342,9 +347,10 @@ done:
 
 
 /* Authenticate with more detailed information */
-wbcErr wbcAuthenticateUserEx(const struct wbcAuthUserParams *params,
-			     struct wbcAuthUserInfo **info,
-			     struct wbcAuthErrorInfo **error)
+wbcErr wbcCtxAuthenticateUserEx(struct wbcContext *ctx,
+				const struct wbcAuthUserParams *params,
+				struct wbcAuthUserInfo **info,
+				struct wbcAuthErrorInfo **error)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
 	int cmd = 0;
@@ -388,7 +394,7 @@ wbcErr wbcAuthenticateUserEx(const struct wbcAuthUserParams *params,
 
 			ZERO_STRUCT(sep_response);
 
-			wbc_status = wbcRequestResponse(WINBINDD_INFO,
+			wbc_status = wbcRequestResponse(ctx, WINBINDD_INFO,
 							NULL, &sep_response);
 			BAIL_ON_WBC_ERROR(wbc_status);
 
@@ -518,9 +524,11 @@ wbcErr wbcAuthenticateUserEx(const struct wbcAuthUserParams *params,
 	}
 
 	if (cmd == WINBINDD_PAM_AUTH_CRAP) {
-		wbc_status = wbcRequestResponsePriv(cmd, &request, &response);
+		wbc_status = wbcRequestResponsePriv(ctx, cmd,
+						    &request, &response);
 	} else {
-		wbc_status = wbcRequestResponse(cmd, &request, &response);
+		wbc_status = wbcRequestResponse(ctx, cmd,
+						&request, &response);
 	}
 	if (response.data.auth.nt_status != 0) {
 		if (error) {
@@ -547,9 +555,16 @@ done:
 	return wbc_status;
 }
 
+wbcErr wbcAuthenticateUserEx(const struct wbcAuthUserParams *params,
+			     struct wbcAuthUserInfo **info,
+			     struct wbcAuthErrorInfo **error)
+{
+	return wbcCtxAuthenticateUserEx(NULL, params, info, error);
+}
+
 /* Trigger a verification of the trust credentials of a specific domain */
-wbcErr wbcCheckTrustCredentials(const char *domain,
-				struct wbcAuthErrorInfo **error)
+wbcErr wbcCtxCheckTrustCredentials(struct wbcContext *ctx, const char *domain,
+				   struct wbcAuthErrorInfo **error)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
@@ -565,7 +580,7 @@ wbcErr wbcCheckTrustCredentials(const char *domain,
 
 	/* Send request */
 
-	wbc_status = wbcRequestResponsePriv(WINBINDD_CHECK_MACHACC,
+	wbc_status = wbcRequestResponsePriv(ctx, WINBINDD_CHECK_MACHACC,
 					    &request, &response);
 	if (response.data.auth.nt_status != 0) {
 		if (error) {
@@ -583,9 +598,15 @@ wbcErr wbcCheckTrustCredentials(const char *domain,
 	return wbc_status;
 }
 
+wbcErr wbcCheckTrustCredentials(const char *domain,
+				struct wbcAuthErrorInfo **error)
+{
+	return wbcCtxCheckTrustCredentials(NULL, domain, error);
+}
+
 /* Trigger a change of the trust credentials for a specific domain */
-wbcErr wbcChangeTrustCredentials(const char *domain,
-				 struct wbcAuthErrorInfo **error)
+wbcErr wbcCtxChangeTrustCredentials(struct wbcContext *ctx, const char *domain,
+				    struct wbcAuthErrorInfo **error)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
@@ -601,8 +622,8 @@ wbcErr wbcChangeTrustCredentials(const char *domain,
 
 	/* Send request */
 
-	wbc_status = wbcRequestResponsePriv(WINBINDD_CHANGE_MACHACC,
-					&request, &response);
+	wbc_status = wbcRequestResponsePriv(ctx, WINBINDD_CHANGE_MACHACC,
+					    &request, &response);
 	if (response.data.auth.nt_status != 0) {
 		if (error) {
 			wbc_status = wbc_create_error_info(&response,
@@ -619,10 +640,22 @@ wbcErr wbcChangeTrustCredentials(const char *domain,
 	return wbc_status;
 }
 
+wbcErr wbcChangeTrustCredentials(const char *domain,
+				 struct wbcAuthErrorInfo **error)
+{
+	return wbcCtxChangeTrustCredentials(NULL, domain, error);
+}
+
 /*
  * Trigger a no-op NETLOGON call. Lightweight version of
  * wbcCheckTrustCredentials
  */
+wbcErr wbcCtxPingDc(struct wbcContext *ctx, const char *domain,
+		    struct wbcAuthErrorInfo **error)
+{
+	return wbcCtxPingDc2(ctx, domain, error, NULL);
+}
+
 wbcErr wbcPingDc(const char *domain, struct wbcAuthErrorInfo **error)
 {
 	return wbcPingDc2(domain, error, NULL);
@@ -632,8 +665,8 @@ wbcErr wbcPingDc(const char *domain, struct wbcAuthErrorInfo **error)
  * Trigger a no-op NETLOGON call. Lightweight version of
  * wbcCheckTrustCredentials, optionally return attempted DC
  */
-wbcErr wbcPingDc2(const char *domain, struct wbcAuthErrorInfo **error,
-		  char **dcname)
+wbcErr wbcCtxPingDc2(struct wbcContext *ctx, const char *domain,
+		     struct wbcAuthErrorInfo **error, char **dcname)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
@@ -653,7 +686,7 @@ wbcErr wbcPingDc2(const char *domain, struct wbcAuthErrorInfo **error,
 
 	/* Send request */
 
-	wbc_status = wbcRequestResponse(WINBINDD_PING_DC,
+	wbc_status = wbcRequestResponse(ctx, WINBINDD_PING_DC,
 					&request,
 					&response);
 
@@ -683,9 +716,16 @@ wbcErr wbcPingDc2(const char *domain, struct wbcAuthErrorInfo **error,
 	return wbc_status;
 }
 
+wbcErr wbcPingDc2(const char *domain, struct wbcAuthErrorInfo **error,
+		  char **dcname)
+{
+	return wbcCtxPingDc2(NULL, domain, error, dcname);
+}
+
 /* Trigger an extended logoff notification to Winbind for a specific user */
-wbcErr wbcLogoffUserEx(const struct wbcLogoffUserParams *params,
-		       struct wbcAuthErrorInfo **error)
+wbcErr wbcCtxLogoffUserEx(struct wbcContext *ctx,
+			  const struct wbcLogoffUserParams *params,
+		          struct wbcAuthErrorInfo **error)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
@@ -748,7 +788,7 @@ wbcErr wbcLogoffUserEx(const struct wbcLogoffUserParams *params,
 
 	/* Send request */
 
-	wbc_status = wbcRequestResponse(WINBINDD_PAM_LOGOFF,
+	wbc_status = wbcRequestResponse(ctx, WINBINDD_PAM_LOGOFF,
 					&request,
 					&response);
 
@@ -769,10 +809,16 @@ wbcErr wbcLogoffUserEx(const struct wbcLogoffUserParams *params,
 	return wbc_status;
 }
 
+wbcErr wbcLogoffUserEx(const struct wbcLogoffUserParams *params,
+		       struct wbcAuthErrorInfo **error)
+{
+	return wbcCtxLogoffUserEx(NULL, params, error);
+}
+
 /* Trigger a logoff notification to Winbind for a specific user */
-wbcErr wbcLogoffUser(const char *username,
-		     uid_t uid,
-		     const char *ccfilename)
+wbcErr wbcCtxLogoffUser(struct wbcContext *ctx,
+			const char *username, uid_t uid,
+			const char *ccfilename)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
@@ -799,7 +845,7 @@ wbcErr wbcLogoffUser(const char *username,
 
 	/* Send request */
 
-	wbc_status = wbcRequestResponse(WINBINDD_PAM_LOGOFF,
+	wbc_status = wbcRequestResponse(ctx, WINBINDD_PAM_LOGOFF,
 					&request,
 					&response);
 
@@ -809,11 +855,19 @@ wbcErr wbcLogoffUser(const char *username,
 	return wbc_status;
 }
 
+wbcErr wbcLogoffUser(const char *username,
+		     uid_t uid,
+		     const char *ccfilename)
+{
+	return wbcCtxLogoffUser(NULL, username, uid, ccfilename);
+}
+
 /* Change a password for a user with more detailed information upon failure */
-wbcErr wbcChangeUserPasswordEx(const struct wbcChangePasswordParams *params,
-			       struct wbcAuthErrorInfo **error,
-			       enum wbcPasswordChangeRejectReason *reject_reason,
-			       struct wbcUserPasswordPolicyInfo **policy)
+wbcErr wbcCtxChangeUserPasswordEx(struct wbcContext *ctx,
+			const struct wbcChangePasswordParams *params,
+			struct wbcAuthErrorInfo **error,
+			enum wbcPasswordChangeRejectReason *reject_reason,
+			struct wbcUserPasswordPolicyInfo **policy)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
@@ -972,7 +1026,7 @@ wbcErr wbcChangeUserPasswordEx(const struct wbcChangePasswordParams *params,
 
 	/* Send request */
 
-	wbc_status = wbcRequestResponse(cmd,
+	wbc_status = wbcRequestResponse(ctx, cmd,
 					&request,
 					&response);
 	if (WBC_ERROR_IS_OK(wbc_status)) {
@@ -1007,10 +1061,20 @@ wbcErr wbcChangeUserPasswordEx(const struct wbcChangePasswordParams *params,
 	return wbc_status;
 }
 
+wbcErr wbcChangeUserPasswordEx(const struct wbcChangePasswordParams *params,
+			      struct wbcAuthErrorInfo **error,
+			      enum wbcPasswordChangeRejectReason *reject_reason,
+			      struct wbcUserPasswordPolicyInfo **policy)
+{
+	return wbcCtxChangeUserPasswordEx(NULL, params, error,
+					  reject_reason, policy);
+}
+
 /* Change a password for a user */
-wbcErr wbcChangeUserPassword(const char *username,
-			     const char *old_password,
-			     const char *new_password)
+wbcErr wbcCtxChangeUserPassword(struct wbcContext *ctx,
+				const char *username,
+				const char *old_password,
+				const char *new_password)
 {
 	wbcErr wbc_status = WBC_ERR_SUCCESS;
 	struct wbcChangePasswordParams params;
@@ -1022,21 +1086,30 @@ wbcErr wbcChangeUserPassword(const char *username,
 	params.old_password.plaintext	= old_password;
 	params.new_password.plaintext	= new_password;
 
-	wbc_status = wbcChangeUserPasswordEx(&params,
-					     NULL,
-					     NULL,
-					     NULL);
+	wbc_status = wbcCtxChangeUserPasswordEx(ctx, &params,
+						NULL,
+						NULL,
+						NULL);
 	BAIL_ON_WBC_ERROR(wbc_status);
 
 done:
 	return wbc_status;
 }
 
+wbcErr wbcChangeUserPassword(const char *username,
+			     const char *old_password,
+			     const char *new_password)
+{
+	return wbcCtxChangeUserPassword(NULL, username,
+					old_password, new_password);
+}
+
 /* Logon a User */
-wbcErr wbcLogonUser(const struct wbcLogonUserParams *params,
-		    struct wbcLogonUserInfo **info,
-		    struct wbcAuthErrorInfo **error,
-		    struct wbcUserPasswordPolicyInfo **policy)
+wbcErr wbcCtxLogonUser(struct wbcContext *ctx,
+		       const struct wbcLogonUserParams *params,
+		       struct wbcLogonUserInfo **info,
+		       struct wbcAuthErrorInfo **error,
+		       struct wbcUserPasswordPolicyInfo **policy)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
 	struct winbindd_request request;
@@ -1138,7 +1211,7 @@ wbcErr wbcLogonUser(const struct wbcLogonUserParams *params,
 		}
 	}
 
-	wbc_status = wbcRequestResponse(WINBINDD_PAM_AUTH,
+	wbc_status = wbcRequestResponse(ctx, WINBINDD_PAM_AUTH,
 					&request,
 					&response);
 
@@ -1172,6 +1245,14 @@ done:
 	return wbc_status;
 }
 
+wbcErr wbcLogonUser(const struct wbcLogonUserParams *params,
+		    struct wbcLogonUserInfo **info,
+		    struct wbcAuthErrorInfo **error,
+		    struct wbcUserPasswordPolicyInfo **policy)
+{
+	return wbcCtxLogonUser(NULL, params, info, error, policy);
+}
+
 static void wbcCredentialCacheInfoDestructor(void *ptr)
 {
 	struct wbcCredentialCacheInfo *i =
@@ -1180,9 +1261,10 @@ static void wbcCredentialCacheInfoDestructor(void *ptr)
 }
 
 /* Authenticate a user with cached credentials */
-wbcErr wbcCredentialCache(struct wbcCredentialCacheParams *params,
-                          struct wbcCredentialCacheInfo **info,
-                          struct wbcAuthErrorInfo **error)
+wbcErr wbcCtxCredentialCache(struct wbcContext *ctx,
+			     struct wbcCredentialCacheParams *params,
+                             struct wbcCredentialCacheInfo **info,
+                             struct wbcAuthErrorInfo **error)
 {
 	wbcErr status = WBC_ERR_UNKNOWN_FAILURE;
 	struct wbcCredentialCacheInfo *result = NULL;
@@ -1227,7 +1309,8 @@ wbcErr wbcCredentialCache(struct wbcCredentialCacheParams *params,
 	}
 
 	if (params->domain_name != NULL) {
-		status = wbcRequestResponse(WINBINDD_INFO, NULL, &response);
+		status = wbcRequestResponse(ctx, WINBINDD_INFO,
+					    NULL, &response);
 		if (!WBC_ERROR_IS_OK(status)) {
 			goto fail;
 		}
@@ -1276,8 +1359,8 @@ wbcErr wbcCredentialCache(struct wbcCredentialCacheParams *params,
 		       challenge_blob->blob.length);
 	}
 
-	status = wbcRequestResponse(WINBINDD_CCACHE_NTLMAUTH, &request,
-				    &response);
+	status = wbcRequestResponse(ctx, WINBINDD_CCACHE_NTLMAUTH,
+				    &request, &response);
 	if (!WBC_ERROR_IS_OK(status)) {
 		goto fail;
 	}
@@ -1316,8 +1399,16 @@ fail:
 	return status;
 }
 
+wbcErr wbcCredentialCache(struct wbcCredentialCacheParams *params,
+                          struct wbcCredentialCacheInfo **info,
+                          struct wbcAuthErrorInfo **error)
+{
+	return wbcCtxCredentialCache(NULL, params, info, error);
+}
+
 /* Authenticate a user with cached credentials */
-wbcErr wbcCredentialSave(const char *user, const char *password)
+wbcErr wbcCtxCredentialSave(struct wbcContext *ctx,
+			    const char *user, const char *password)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
@@ -1331,5 +1422,10 @@ wbcErr wbcCredentialSave(const char *user, const char *password)
 		sizeof(request.data.ccache_save.pass)-1);
 	request.data.ccache_save.uid = getuid();
 
-	return wbcRequestResponse(WINBINDD_CCACHE_SAVE, &request, &response);
+	return wbcRequestResponse(ctx, WINBINDD_CCACHE_SAVE, &request, &response);
+}
+
+wbcErr wbcCredentialSave(const char *user, const char *password)
+{
+	return wbcCtxCredentialSave(NULL, user, password);
 }
