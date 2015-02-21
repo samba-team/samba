@@ -5,6 +5,7 @@
 
    Copyright (C) Gerald (Jerry) Carter 2007
    Copyright (C) Volker Lendecke 2009
+   Copyright (C) Matthew Newton 2015
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -93,6 +94,13 @@ struct wbcInterfaceDetails {
 	char *netbios_domain;
 	char *dns_domain;
 };
+
+/**
+ *  @brief Library context data
+ *
+ **/
+
+struct wbcContext;
 
 /*
  * Data types used by the Winbind Client API
@@ -521,6 +529,28 @@ struct wbcDomainControllerInfoEx {
  * @return void
  **/
 void wbcFreeMemory(void*);
+
+
+/**********************************************************
+ * Context Management
+ **********************************************************/
+
+/**
+ * @brief Create a new wbcContext context
+ *
+ * @return wbcContext
+ **/
+struct wbcContext *wbcCtxCreate(void);
+
+/**
+ * @brief Free a library context
+ *
+ * @param ctx           wbcContext to free
+ *
+ * @return void
+ **/
+void wbcCtxFree(struct wbcContext *ctx);
+
 
 
 /*

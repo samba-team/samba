@@ -22,6 +22,10 @@
 #ifndef _WBCLIENT_INTERNAL_H
 #define _WBCLIENT_INTERNAL_H
 
+struct wbcContext {
+	struct winbindd_context *winbindd_ctx;
+};
+
 /* Private functions */
 
 wbcErr wbcRequestResponse(int cmd,
