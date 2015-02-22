@@ -41,6 +41,15 @@ NSS_STATUS winbindd_priv_request_response(struct winbindd_context *wbctx,
 struct winbindd_context *winbindd_ctx_create(void);
 void winbindd_ctx_free(struct winbindd_context *ctx);
 
+/* Global context used for non-Ctx functions */
+
+static struct wbcContext wbcGlobalCtx = {
+	.winbindd_ctx = NULL,
+	.pw_cache_size = 0,
+	.pw_cache_idx = 0,
+	.gr_cache_size = 0,
+	.gr_cache_idx = 0
+};
 
 /*
  result == NSS_STATUS_UNAVAIL: winbind not around
@@ -316,4 +325,9 @@ struct wbcContext *wbcCtxCreate(void)
 void wbcCtxFree(struct wbcContext *ctx)
 {
 	wbcFreeMemory(ctx);
+}
+
+struct wbcContext *wbcGetGlobalCtx(void)
+{
+	return &wbcGlobalCtx;
 }
