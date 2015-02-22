@@ -726,8 +726,7 @@ bool ctdb_set_helper(const char *type, char *helper, size_t size,
 		     const char *envvar, const char *dir, const char *file);
 void ctdb_external_trace(void);
 bool ctdb_same_address(struct ctdb_address *a1, struct ctdb_address *a2);
-int ctdb_parse_address(struct ctdb_context *ctdb,
-		       TALLOC_CTX *mem_ctx, const char *str,
+int ctdb_parse_address(TALLOC_CTX *mem_ctx, const char *str,
 		       struct ctdb_address *address);
 bool ctdb_same_ip(const ctdb_sock_addr *ip1, const ctdb_sock_addr *ip2);
 bool ctdb_same_sockaddr(const ctdb_sock_addr *ip1, const ctdb_sock_addr *ip2);

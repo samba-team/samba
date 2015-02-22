@@ -92,7 +92,7 @@ static int ctdb_add_node(struct ctdb_context *ctdb, const char *nstr, uint32_t f
 	CTDB_NO_MEMORY(ctdb, *nodep);
 	node = *nodep;
 
-	if (ctdb_parse_address(ctdb, node, nstr, &node->address) != 0) {
+	if (ctdb_parse_address(node, nstr, &node->address) != 0) {
 		return -1;
 	}
 	node->ctdb = ctdb;
@@ -181,7 +181,7 @@ void ctdb_load_nodes_file(struct ctdb_context *ctdb)
 */
 int ctdb_set_address(struct ctdb_context *ctdb, const char *address)
 {
-	if (ctdb_parse_address(ctdb, ctdb, address, &ctdb->address) != 0) {
+	if (ctdb_parse_address(ctdb, address, &ctdb->address) != 0) {
 		return -1;
 	}
 	

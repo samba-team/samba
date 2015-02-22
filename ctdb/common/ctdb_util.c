@@ -155,8 +155,7 @@ void ctdb_external_trace(void)
 /*
   parse a IP:port pair
 */
-int ctdb_parse_address(struct ctdb_context *ctdb,
-		       TALLOC_CTX *mem_ctx, const char *str,
+int ctdb_parse_address(TALLOC_CTX *mem_ctx, const char *str,
 		       struct ctdb_address *address)
 {
 	struct servent *se;
@@ -174,7 +173,10 @@ int ctdb_parse_address(struct ctdb_context *ctdb,
 	}
 
 	address->address = talloc_strdup(mem_ctx, ctdb_addr_to_str(&addr));
-	CTDB_NO_MEMORY(ctdb, address->address);
+	if (address->address == NULL) {
+		DEBUG(DEBUG_ERR, (__location__ " Out of memory\n"));
+		return -1;
+	}
 
 	if (se == NULL) {
 		address->port = CTDB_PORT;
