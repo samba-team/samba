@@ -1775,7 +1775,26 @@ class KCC(object):
         # If no such cn2 can be found, cn1 is not modified.
         # If no such cn1 can be found, nothing is modified by this task.
 
-        # XXX - not implemented yet
+        if not self.my_dsa.is_ro():
+            return
+
+        cn2 = None
+        # Find cn2 - the DRS NTDSConnection
+        for con in self.my_dsa.connect_table.values():
+            if not con.is_rodc_topology():
+                cn2 = con
+                break
+
+        # Find cn1 - the FRS NTDSConnection
+        if cn2 is not None:
+            for con in self.my_dsa.connect_table.values():
+                if con.is_rodc_topology():
+                    con.from_dnstr = cn2.from_dnstr
+                    con.schedule = cn2.schedule
+                    con.to_be_modified = True
+
+            # Commit changes to the database
+            self.my_dsa.commit_connections(self.samdb, ro=opts.readonly)
 
     def intrasite_max_node_edges(self, node_count):
         """Returns the maximum number of edges directed to a node in
