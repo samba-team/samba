@@ -140,7 +140,7 @@ for env in ["member", "s3member"]:
 env = "s3member"
 t = "--krb5auth=$DOMAIN/$DC_USERNAME%$DC_PASSWORD"
 plantestsuite("samba3.wbinfo_simple.(%s:local).%s" % (env, t), "%s:local" % env, [os.path.join(srcdir(), "nsswitch/tests/test_wbinfo_simple.sh"), t])
-t = "LOCAL-WBCLIENT"
+t = "WBCLIENT-MULTI-PING"
 plantestsuite("samba3.smbtorture_s3.%s" % t, env, [os.path.join(samba3srcdir, "script/tests/test_smbtorture_s3.sh"), t, '//foo/bar', '""', '""', smbtorture3, ""])
 
 

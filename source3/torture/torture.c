@@ -8935,7 +8935,7 @@ static void wbclient_done(struct tevent_req *req)
 	d_printf("wb_trans_recv %d returned %s\n", *i, wbcErrorString(wbc_err));
 }
 
-static bool run_local_wbclient(int dummy)
+static bool run_wbclient_multi_ping(int dummy)
 {
 	struct tevent_context *ev;
 	struct wb_context **wb_ctx;
@@ -9609,7 +9609,7 @@ static struct {
 	{ "LOCAL-RBTREE", run_local_rbtree, 0},
 	{ "LOCAL-MEMCACHE", run_local_memcache, 0},
 	{ "LOCAL-STREAM-NAME", run_local_stream_name, 0},
-	{ "LOCAL-WBCLIENT", run_local_wbclient, 0},
+	{ "WBCLIENT-MULTI-PING", run_wbclient_multi_ping, 0},
 	{ "LOCAL-string_to_sid", run_local_string_to_sid, 0},
 	{ "LOCAL-sid_to_string", run_local_sid_to_string, 0},
 	{ "LOCAL-binary_to_sid", run_local_binary_to_sid, 0},
