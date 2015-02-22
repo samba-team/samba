@@ -97,7 +97,6 @@ local_tests = [
     "LOCAL-RBTREE",
     "LOCAL-MEMCACHE",
     "LOCAL-STREAM-NAME",
-    "LOCAL-WBCLIENT",
     "LOCAL-string_to_sid",
     "LOCAL-sid_to_string",
     "LOCAL-binary_to_sid",
@@ -141,6 +140,9 @@ for env in ["member", "s3member"]:
 env = "s3member"
 t = "--krb5auth=$DOMAIN/$DC_USERNAME%$DC_PASSWORD"
 plantestsuite("samba3.wbinfo_simple.(%s:local).%s" % (env, t), "%s:local" % env, [os.path.join(srcdir(), "nsswitch/tests/test_wbinfo_simple.sh"), t])
+t = "LOCAL-WBCLIENT"
+plantestsuite("samba3.smbtorture_s3.%s" % t, env, [os.path.join(samba3srcdir, "script/tests/test_smbtorture_s3.sh"), t, '//foo/bar', '""', '""', smbtorture3, ""])
+
 
 plantestsuite("samba3.ntlm_auth.krb5(ktest:local) old ccache", "ktest:local", [os.path.join(samba3srcdir, "script/tests/test_ntlm_auth_krb5.sh"), valgrindify(python), samba3srcdir, ntlm_auth3, '$PREFIX/ktest/krb5_ccache-2', '$SERVER', configuration])
 
