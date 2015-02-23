@@ -2636,7 +2636,7 @@ def create_edge(con_type, site_link, dn_to_vertex):
 
 def create_auto_edge_set(graph, transport):
     e_set = MultiEdgeSet()
-    e_set.guid = None # TODO Null guid Not associated with a SiteLinkBridge object
+    e_set.guid = misc.GUID() # NULL guid, not associated with a SiteLinkBridge object
     for site_link in graph.edges:
         if site_link.con_type == transport:
             e_set.edges.append(site_link)
