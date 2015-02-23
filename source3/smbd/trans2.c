@@ -1620,7 +1620,10 @@ static NTSTATUS smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 	uint64_t allocation_size = 0;
 	uint64_t file_index = 0;
 	size_t len = 0;
-	struct timespec mdate_ts, adate_ts, cdate_ts, create_date_ts;
+	struct timespec mdate_ts = {0};
+	struct timespec adate_ts = {0};
+	struct timespec cdate_ts = {0};
+	struct timespec create_date_ts = {0};
 	time_t mdate = (time_t)0, adate = (time_t)0, create_date = (time_t)0;
 	char *nameptr;
 	char *last_entry_ptr;
@@ -1629,11 +1632,6 @@ static NTSTATUS smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 	int pad = 0;
 	NTSTATUS status;
 	struct readdir_attr_data *readdir_attr_data = NULL;
-
-	ZERO_STRUCT(mdate_ts);
-	ZERO_STRUCT(adate_ts);
-	ZERO_STRUCT(create_date_ts);
-	ZERO_STRUCT(cdate_ts);
 
 	if (!(mode & FILE_ATTRIBUTE_DIRECTORY)) {
 		file_size = get_file_size_stat(&smb_fname->st);
