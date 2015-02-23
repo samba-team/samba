@@ -100,6 +100,12 @@ enum swrap_dbglvl_e {
 #define DESTRUCTOR_ATTRIBUTE
 #endif
 
+#ifdef HAVE_ADDRESS_SANITIZER_ATTRIBUTE
+#define DO_NOT_SANITIZE_ADDRESS_ATTRIBUTE __attribute__((no_sanitize_address))
+#else
+#define DO_NOT_SANITIZE_ADDRESS_ATTRIBUTE
+#endif
+
 #ifdef HAVE_GCC_THREAD_LOCAL_STORAGE
 # define SWRAP_THREAD __thread
 #else
@@ -598,6 +604,7 @@ static int libc_eventfd(int count, int flags)
 }
 #endif
 
+DO_NOT_SANITIZE_ADDRESS_ATTRIBUTE
 static int libc_vfcntl(int fd, int cmd, va_list ap)
 {
 	long int args[4];
@@ -649,6 +656,7 @@ static int libc_getsockopt(int sockfd,
 	return swrap.fns.libc_getsockopt(sockfd, level, optname, optval, optlen);
 }
 
+DO_NOT_SANITIZE_ADDRESS_ATTRIBUTE
 static int libc_vioctl(int d, unsigned long int request, va_list ap)
 {
 	long int args[4];
