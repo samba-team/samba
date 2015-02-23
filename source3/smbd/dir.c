@@ -522,14 +522,12 @@ NTSTATUS dptr_create(connection_struct *conn,
 		dptr_idleoldest(sconn);
 	}
 
-	dptr = talloc(NULL, struct dptr_struct);
+	dptr = talloc_zero(NULL, struct dptr_struct);
 	if(!dptr) {
 		DEBUG(0,("talloc fail in dptr_create.\n"));
 		TALLOC_FREE(dir_hnd);
 		return NT_STATUS_NO_MEMORY;
 	}
-
-	ZERO_STRUCTP(dptr);
 
 	dptr->path = talloc_strdup(dptr, path);
 	if (!dptr->path) {
