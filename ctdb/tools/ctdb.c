@@ -900,7 +900,7 @@ static struct pnn_node *read_pnn_node_file(TALLOC_CTX *mem_ctx,
 	return pnn_nodes;
 }
 
-static struct pnn_node *read_nodes_file(TALLOC_CTX *mem_ctx)
+static struct ctdb_node_map *read_nodes_file(TALLOC_CTX *mem_ctx)
 {
 	const char *nodes_list;
 
@@ -915,7 +915,7 @@ static struct pnn_node *read_nodes_file(TALLOC_CTX *mem_ctx)
 		}
 	}
 
-	return read_pnn_node_file(mem_ctx, nodes_list);
+	return ctdb_read_nodes_file(mem_ctx, nodes_list);
 }
 
 /*
@@ -926,20 +926,21 @@ static struct pnn_node *read_nodes_file(TALLOC_CTX *mem_ctx)
 static int find_node_xpnn(void)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
-	struct pnn_node *pnn_nodes;
-	struct pnn_node *pnn_node;
-	int pnn;
+	struct ctdb_node_map *node_map;
+	int i, pnn;
 
-	pnn_nodes = read_nodes_file(mem_ctx);
-	if (pnn_nodes == NULL) {
-		DEBUG(DEBUG_ERR,("Failed to read nodes file\n"));
+	node_map = read_nodes_file(mem_ctx);
+	if (node_map == NULL) {
 		talloc_free(mem_ctx);
 		return -1;
 	}
 
-	for(pnn_node=pnn_nodes;pnn_node;pnn_node=pnn_node->next) {
-		if (ctdb_sys_have_ip(&pnn_node->addr)) {
-			pnn = pnn_node->pnn;
+	for (i = 0; i < node_map->num; i++) {
+		if (node_map->nodes[i].flags & NODE_FLAGS_DELETED) {
+			continue;
+		}
+		if (ctdb_sys_have_ip(&node_map->nodes[i].addr)) {
+			pnn = node_map->nodes[i].pnn;
 			talloc_free(mem_ctx);
 			return pnn;
 		}
@@ -6160,22 +6161,26 @@ static int control_msglisten(struct ctdb_context *ctdb, int argc, const char **a
 static int control_listnodes(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
-	struct pnn_node *pnn_nodes;
-	struct pnn_node *pnn_node;
+	struct ctdb_node_map *node_map;
+	int i;
 
 	assert_single_node_only();
 
-	pnn_nodes = read_nodes_file(mem_ctx);
-	if (pnn_nodes == NULL) {
-		DEBUG(DEBUG_ERR,("Failed to read nodes file\n"));
+	node_map = read_nodes_file(mem_ctx);
+	if (node_map == NULL) {
 		talloc_free(mem_ctx);
 		return -1;
 	}
 
-	for(pnn_node=pnn_nodes;pnn_node;pnn_node=pnn_node->next) {
-		const char *addr = ctdb_addr_to_str(&pnn_node->addr);
+	for (i = 0; i < node_map->num; i++) {
+		const char *addr;
+
+		if (node_map->nodes[i].flags & NODE_FLAGS_DELETED) {
+			continue;
+		}
+		addr = ctdb_addr_to_str(&node_map->nodes[i].addr);
 		if (options.machinereadable){
-			printm(":%d:%s:\n", pnn_node->pnn, addr);
+			printm(":%d:%s:\n", node_map->nodes[i].pnn, addr);
 		} else {
 			printf("%s\n", addr);
 		}
