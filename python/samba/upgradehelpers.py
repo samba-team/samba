@@ -637,6 +637,25 @@ def update_dns_account_password(samdb, secrets_ldb, names):
 
         secrets_ldb.modify(msg)
 
+def update_krbtgt_account_password(samdb, names):
+    """Update (change) the password of the krbtgt account
+
+    :param samdb: An LDB object related to the sam.ldb file of a given provision
+    :param names: List of key provision parameters"""
+
+    expression = "samAccountName=krbtgt"
+    res = samdb.search(expression=expression, attrs=[])
+    assert(len(res) == 1)
+
+    msg = ldb.Message(res[0].dn)
+    machinepass = samba.generate_random_password(128, 255)
+    mputf16 = machinepass.encode('utf-16-le')
+    msg["clearTextPassword"] = ldb.MessageElement(mputf16,
+                                                  ldb.FLAG_MOD_REPLACE,
+                                                  "clearTextPassword")
+
+    samdb.modify(msg)
+
 def search_constructed_attrs_stored(samdb, rootdn, attrs):
     """Search a given sam DB for calculated attributes that are
     still stored in the db.
