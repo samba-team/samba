@@ -3252,7 +3252,7 @@ static bool test_ioctl_sparse_punch(struct torture_context *torture,
 	status = test_ioctl_sparse_req(torture, tmp_ctx, tree, fh, true);
 	torture_assert_ntstatus_ok(torture, status, "FSCTL_SET_SPARSE");
 
-	/* expect still fully allocated */
+	/* still fully allocated on NTFS, see note below for Samba */
 	status = test_ioctl_qar_req(torture, tmp_ctx, tree, fh,
 				    0,		/* off */
 				    4096,	/* len */
@@ -3260,12 +3260,26 @@ static bool test_ioctl_sparse_punch(struct torture_context *torture,
 				    &far_count);
 	torture_assert_ntstatus_ok(torture, status,
 				   "FSCTL_QUERY_ALLOCATED_RANGES req failed");
-	torture_assert_u64_equal(torture, far_count, 1,
-				 "unexpected response len");
-	torture_assert_u64_equal(torture, far_rsp[0].file_off, 0,
-				 "unexpected far off");
-	torture_assert_u64_equal(torture, far_rsp[0].len, 4096,
-				 "unexpected far len");
+	/*
+	 * FS specific: Samba uses PUNCH_HOLE to zero the range, and
+	 * subsequently uses fallocate() to allocate the punched range if the
+	 * file is marked non-sparse and "strict allocate" is enabled. In both
+	 * cases, the zeroed range will not be detected by SEEK_DATA, so the
+	 * range won't be present in QAR responses until the file is marked
+	 * non-sparse again.
+	 */
+	if (far_count == 0) {
+		torture_comment(torture, "non-sparse zeroed range disappeared "
+				"after marking sparse\n");
+	} else {
+		/* NTFS: range remains fully allocated */
+		torture_assert_u64_equal(torture, far_count, 1,
+					 "unexpected response len");
+		torture_assert_u64_equal(torture, far_rsp[0].file_off, 0,
+					 "unexpected far off");
+		torture_assert_u64_equal(torture, far_rsp[0].len, 4096,
+					 "unexpected far len");
+	}
 
 	/* zero (hole-punch) the data, _with_ sparse flag */
 	status = test_ioctl_zdata_req(torture, tmp_ctx, tree, fh,
