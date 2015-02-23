@@ -452,11 +452,14 @@ static void *swrap_load_lib_handle(enum swrap_lib lib)
 #ifdef HAVE_LIBSOCKET
 		handle = swrap.libsocket_handle;
 		if (handle == NULL) {
-			for (handle = NULL, i = 10; handle == NULL && i >= 0; i--) {
+			for (i = 10; i >= 0; i--) {
 				char soname[256] = {0};
 
 				snprintf(soname, sizeof(soname), "libsocket.so.%d", i);
 				handle = dlopen(soname, flags);
+				if (handle != NULL) {
+					break;
+				}
 			}
 
 			swrap.libsocket_handle = handle;
@@ -474,11 +477,14 @@ static void *swrap_load_lib_handle(enum swrap_lib lib)
 		}
 #endif
 		if (handle == NULL) {
-			for (handle = NULL, i = 10; handle == NULL && i >= 0; i--) {
+			for (i = 10; i >= 0; i--) {
 				char soname[256] = {0};
 
 				snprintf(soname, sizeof(soname), "libc.so.%d", i);
 				handle = dlopen(soname, flags);
+				if (handle != NULL) {
+					break;
+				}
 			}
 
 			swrap.libc_handle = handle;
