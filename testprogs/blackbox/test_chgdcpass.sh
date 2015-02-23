@@ -96,7 +96,8 @@ test_drs options "Test drs options with new password" || failed=`expr $failed + 
 
 testit "change dc password (2nd time)" $samba4srcdir/scripting/devel/chgtdcpass -s $PROVDIR/etc/smb.conf || failed=`expr $failed + 1`
 
-#This is important because it shows that the old ticket remains valid (as it must) for incoming connections after the DC pass
+# This is important because it shows that the old ticket is discarded if the server rejects it (as it must) after the password was changed twice in succession.
+# This also ensures we handle the case where the domain is re-provisioned etc
 test_smbclient "Test login with kerberos ccache after 2nd password change" 'ls' -k yes || failed=`expr $failed + 1`
 
 #check that drs bind works after we change the password a 2nd time
