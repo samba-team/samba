@@ -105,17 +105,17 @@ class KCC(object):
         for msg in res:
             dnstr = str(msg.dn)
 
-            # already loaded
-            if dnstr in self.transport_table.keys():
-                continue
-
             transport = Transport(dnstr)
 
             transport.load_transport(self.samdb)
 
+            # already loaded
+            if str(transport.guid) in self.transport_table.keys():
+                continue
+
             # Assign this transport to table
-            # and index by dn
-            self.transport_table[dnstr] = transport
+            # and index by guid
+            self.transport_table[str(transport.guid)] = transport
 
     def load_all_sitelinks(self):
         """Loads the inter-site siteLink objects
@@ -704,11 +704,11 @@ class KCC(object):
 
             # We have a transport type but its not an
             # object in the database
-            if cn_conn.transport_dnstr not in self.transport_table.keys():
+            if cn_conn.transport_guid not in self.transport_table.keys():
                 raise Exception("Missing inter-site transport - (%s)" %
                                 cn_conn.transport_dnstr)
 
-            x_transport = self.transport_table[cn_conn.transport_dnstr]
+            x_transport = self.transport_table[str(cn_conn.transport_guid)]
 
             if t_repsFrom.transport_guid != x_transport.guid:
                 t_repsFrom.transport_guid = x_transport.guid
@@ -1027,10 +1027,10 @@ class KCC(object):
             dn_to_vertex[site_dn].append(vertex)
 
         connected_vertices = set()
-        for transport_dn, transport in self.transport_table.items():
+        for transport_guid, transport in self.transport_table.items():
             # Currently only ever "IP"
             for site_link_dn, site_link in self.sitelink_table.items():
-                new_edge = create_edge(transport_dn, site_link, dn_to_vertex)
+                new_edge = create_edge(transport_guid, site_link, dn_to_vertex)
                 connected_vertices.update(new_edge.vertices)
                 g.edges.add(new_edge)
 
@@ -1040,11 +1040,11 @@ class KCC(object):
             # NTDSSETTINGS_OPT_W2K3_BRIDGES_REQUIRED = 0x00001000
             if ((self.my_site.site_options & 0x00000002) == 0
                 and (self.my_site.site_options & 0x00001000) == 0):
-                g.edge_set.add(create_auto_edge_set(g, transport_dn))
+                g.edge_set.add(create_auto_edge_set(g, transport_guid))
             else:
                 # TODO get all site link bridges
                 for site_link_bridge in []:
-                    g.edge_set.add(create_edge_set(g, transport_dn,
+                    g.edge_set.add(create_edge_set(g, transport_guid,
                                                    site_link_bridge))
 
         g.connected_vertices = connected_vertices
@@ -1253,7 +1253,7 @@ class KCC(object):
                 # NTDSCONN_OPT_RODC_TOPOLOGY is clear in cn!options and
                 # cn!transportType references t
                 if (cn.is_generated() and not cn.is_rodc_topology() and
-                    cn.transport_dnstr == transport.dnstr):
+                    cn.transport_guid == transport.guid):
 
                     # IF bit NTDSCONN_OPT_USER_OWNED_SCHEDULE is clear in
                     # cn!options and cn!schedule != sch
@@ -1375,7 +1375,7 @@ class KCC(object):
                 # cn!transportType references t) and
                 # NTDSCONN_OPT_RODC_TOPOLOGY is clear in cn!options
                 if ((not cn.is_generated() or
-                     cn.transport_dnstr == transport.dnstr) and
+                     cn.transport_guid == transport.guid) and
                      not cn.is_rodc_topology()):
 
                     # LET rguid be the objectGUID of the nTDSDSA object
@@ -1461,8 +1461,8 @@ class KCC(object):
                 found_failed = True
                 continue
 
-            vertex.accept_red_red.append(t_guid) # TODO should be guid
-            vertex.accept_black.append(t_guid) # TODO should be guid
+            vertex.accept_red_red.append(t_guid)
+            vertex.accept_black.append(t_guid)
 
             # Add additional transport to allow another run of Dijkstra
             vertex.accept_red_red.append("EDGE_TYPE_ALL")

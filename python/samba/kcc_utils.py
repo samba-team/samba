@@ -803,6 +803,7 @@ class DirectoryServiceAgent(object):
 
         if transport is not None:
             connect.transport_dnstr = transport.dnstr
+            connect.transport_guid = transport.guid
 
         if sched is not None:
             connect.schedule = sched
