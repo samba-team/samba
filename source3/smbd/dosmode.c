@@ -876,8 +876,13 @@ NTSTATUS file_set_sparse(connection_struct *conn,
 		return NT_STATUS_MEDIA_WRITE_PROTECTED;
 	}
 
-	if (!(fsp->access_mask & FILE_WRITE_DATA) &&
-			!(fsp->access_mask & FILE_WRITE_ATTRIBUTES)) {
+	/*
+	 * Windows Server 2008 & 2012 permit FSCTL_SET_SPARSE if any of the
+	 * following access flags are granted.
+	 */
+	if ((fsp->access_mask & (FILE_WRITE_DATA
+				| FILE_WRITE_ATTRIBUTES
+				| SEC_FILE_APPEND_DATA)) == 0) {
 		DEBUG(9,("file_set_sparse: fname[%s] set[%u] "
 			"access_mask[0x%08X] - access denied\n",
 			smb_fname_str_dbg(fsp->fsp_name),
