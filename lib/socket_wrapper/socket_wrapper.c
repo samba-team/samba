@@ -1418,6 +1418,7 @@ static void swrap_remove_stale(int fd)
 
 		if (si->fds == NULL) {
 			SWRAP_DLIST_REMOVE(sockets, si);
+			free(si);
 		}
 	}
 }
