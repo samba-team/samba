@@ -4017,6 +4017,245 @@ static bool test_ioctl_sparse_punch_invalid(struct torture_context *torture,
 	return true;
 }
 
+static bool test_ioctl_sparse_perms(struct torture_context *torture,
+				    struct smb2_tree *tree)
+{
+	struct smb2_handle fh;
+	NTSTATUS status;
+	TALLOC_CTX *tmp_ctx = talloc_new(tree);
+	bool ok;
+	bool is_sparse;
+	struct file_alloced_range_buf *far_rsp = NULL;
+	uint64_t far_count = 0;
+
+	ok = test_setup_create_fill(torture, tree, tmp_ctx,
+				    FNAME, &fh, 0, SEC_RIGHTS_FILE_ALL,
+				    FILE_ATTRIBUTE_NORMAL);
+	torture_assert(torture, ok, "setup file");
+
+	status = test_ioctl_sparse_fs_supported(torture, tree, tmp_ctx, &fh,
+						&ok);
+	torture_assert_ntstatus_ok(torture, status, "SMB2_GETINFO_FS");
+	smb2_util_close(tree, fh);
+	if (!ok) {
+		torture_skip(torture, "Sparse files not supported\n");
+	}
+
+	/* set sparse without WRITE_ATTR permission should succeed */
+	ok = test_setup_create_fill(torture, tree, tmp_ctx,
+				    FNAME, &fh, 0,
+			(SEC_RIGHTS_FILE_WRITE & ~(SEC_FILE_WRITE_ATTRIBUTE
+							| SEC_STD_WRITE_DAC
+							| SEC_FILE_WRITE_EA)),
+				    FILE_ATTRIBUTE_NORMAL);
+	torture_assert(torture, ok, "setup file");
+
+	status = test_ioctl_sparse_req(torture, tmp_ctx, tree, fh, true);
+	torture_assert_ntstatus_ok(torture, status, "FSCTL_SET_SPARSE");
+	smb2_util_close(tree, fh);
+
+	ok = test_setup_open(torture, tree, tmp_ctx,
+			     FNAME, &fh, SEC_RIGHTS_FILE_ALL,
+			     FILE_ATTRIBUTE_NORMAL);
+	torture_assert(torture, ok, "setup file");
+	status = test_sparse_get(torture, tmp_ctx, tree, fh, &is_sparse);
+	torture_assert_ntstatus_ok(torture, status, "test_sparse_get");
+	torture_assert(torture, is_sparse, "sparse after set");
+	smb2_util_close(tree, fh);
+
+	/* attempt get sparse without READ_DATA permission */
+	ok = test_setup_create_fill(torture, tree, tmp_ctx,
+				    FNAME, &fh, 0,
+			(SEC_RIGHTS_FILE_READ & ~SEC_FILE_READ_DATA),
+				    FILE_ATTRIBUTE_NORMAL);
+	torture_assert(torture, ok, "setup file");
+
+	status = test_sparse_get(torture, tmp_ctx, tree, fh, &is_sparse);
+	torture_assert_ntstatus_ok(torture, status, "test_sparse_get");
+	torture_assert(torture, !is_sparse, "sparse set");
+	smb2_util_close(tree, fh);
+
+	/* attempt to set sparse with only WRITE_ATTR permission */
+	ok = test_setup_create_fill(torture, tree, tmp_ctx,
+				    FNAME, &fh, 0,
+				    SEC_FILE_WRITE_ATTRIBUTE,
+				    FILE_ATTRIBUTE_NORMAL);
+	torture_assert(torture, ok, "setup file");
+
+	status = test_ioctl_sparse_req(torture, tmp_ctx, tree, fh, true);
+	torture_assert_ntstatus_ok(torture, status, "FSCTL_SET_SPARSE");
+	smb2_util_close(tree, fh);
+
+	/* attempt to set sparse with only WRITE_DATA permission */
+	ok = test_setup_create_fill(torture, tree, tmp_ctx,
+				    FNAME, &fh, 0,
+				    SEC_FILE_WRITE_DATA,
+				    FILE_ATTRIBUTE_NORMAL);
+	torture_assert(torture, ok, "setup file");
+
+	status = test_ioctl_sparse_req(torture, tmp_ctx, tree, fh, true);
+	torture_assert_ntstatus_ok(torture, status, "FSCTL_SET_SPARSE");
+	smb2_util_close(tree, fh);
+
+	ok = test_setup_open(torture, tree, tmp_ctx,
+			     FNAME, &fh, SEC_RIGHTS_FILE_ALL,
+			     FILE_ATTRIBUTE_NORMAL);
+	torture_assert(torture, ok, "setup file");
+	status = test_sparse_get(torture, tmp_ctx, tree, fh, &is_sparse);
+	torture_assert_ntstatus_ok(torture, status, "test_sparse_get");
+	torture_assert(torture, is_sparse, "sparse after set");
+	smb2_util_close(tree, fh);
+
+	/* attempt to set sparse with only APPEND_DATA permission */
+	ok = test_setup_create_fill(torture, tree, tmp_ctx,
+				    FNAME, &fh, 0,
+				    SEC_FILE_APPEND_DATA,
+				    FILE_ATTRIBUTE_NORMAL);
+	torture_assert(torture, ok, "setup file");
+
+	status = test_ioctl_sparse_req(torture, tmp_ctx, tree, fh, true);
+	torture_assert_ntstatus_ok(torture, status, "FSCTL_SET_SPARSE");
+	smb2_util_close(tree, fh);
+
+	ok = test_setup_open(torture, tree, tmp_ctx,
+			     FNAME, &fh, SEC_RIGHTS_FILE_ALL,
+			     FILE_ATTRIBUTE_NORMAL);
+	torture_assert(torture, ok, "setup file");
+	status = test_sparse_get(torture, tmp_ctx, tree, fh, &is_sparse);
+	torture_assert_ntstatus_ok(torture, status, "test_sparse_get");
+	torture_assert(torture, is_sparse, "sparse after set");
+	smb2_util_close(tree, fh);
+
+	/* attempt to set sparse with only WRITE_EA permission - should fail */
+	ok = test_setup_create_fill(torture, tree, tmp_ctx,
+				    FNAME, &fh, 0,
+				    SEC_FILE_WRITE_EA,
+				    FILE_ATTRIBUTE_NORMAL);
+	torture_assert(torture, ok, "setup file");
+
+	status = test_ioctl_sparse_req(torture, tmp_ctx, tree, fh, true);
+	torture_assert_ntstatus_equal(torture, status,
+				      NT_STATUS_ACCESS_DENIED,
+				      "FSCTL_SET_SPARSE permission");
+	smb2_util_close(tree, fh);
+
+	ok = test_setup_open(torture, tree, tmp_ctx,
+			     FNAME, &fh, SEC_RIGHTS_FILE_ALL,
+			     FILE_ATTRIBUTE_NORMAL);
+	torture_assert(torture, ok, "setup file");
+	status = test_sparse_get(torture, tmp_ctx, tree, fh, &is_sparse);
+	torture_assert_ntstatus_ok(torture, status, "test_sparse_get");
+	torture_assert(torture, !is_sparse, "sparse after set");
+	smb2_util_close(tree, fh);
+
+	/* attempt QAR with only READ_ATTR permission - should fail */
+	ok = test_setup_open(torture, tree, tmp_ctx,
+			     FNAME, &fh, SEC_FILE_READ_ATTRIBUTE,
+			     FILE_ATTRIBUTE_NORMAL);
+	torture_assert(torture, ok, "setup file");
+	status = test_ioctl_qar_req(torture, tmp_ctx, tree, fh,
+				    4096,		/* off */
+				    1024,		/* len */
+				    &far_rsp, &far_count);
+	torture_assert_ntstatus_equal(torture, status,
+				      NT_STATUS_ACCESS_DENIED,
+			"FSCTL_QUERY_ALLOCATED_RANGES req passed");
+	smb2_util_close(tree, fh);
+
+	/* attempt QAR with only READ_DATA permission */
+	ok = test_setup_open(torture, tree, tmp_ctx,
+			     FNAME, &fh, SEC_FILE_READ_DATA,
+			     FILE_ATTRIBUTE_NORMAL);
+	torture_assert(torture, ok, "setup file");
+	status = test_ioctl_qar_req(torture, tmp_ctx, tree, fh,
+				    0,		/* off */
+				    1024,		/* len */
+				    &far_rsp, &far_count);
+	torture_assert_ntstatus_ok(torture, status,
+			"FSCTL_QUERY_ALLOCATED_RANGES req failed");
+	torture_assert_u64_equal(torture, far_count, 0,
+				 "unexpected response len");
+	smb2_util_close(tree, fh);
+
+	/* attempt QAR with only READ_EA permission - should fail */
+	ok = test_setup_open(torture, tree, tmp_ctx,
+			     FNAME, &fh, SEC_FILE_READ_EA,
+			     FILE_ATTRIBUTE_NORMAL);
+	torture_assert(torture, ok, "setup file");
+	status = test_ioctl_qar_req(torture, tmp_ctx, tree, fh,
+				    4096,		/* off */
+				    1024,		/* len */
+				    &far_rsp, &far_count);
+	torture_assert_ntstatus_equal(torture, status,
+				      NT_STATUS_ACCESS_DENIED,
+			"FSCTL_QUERY_ALLOCATED_RANGES req passed");
+	smb2_util_close(tree, fh);
+
+	/* setup file for ZERO_DATA permissions tests */
+	ok = test_setup_create_fill(torture, tree, tmp_ctx,
+				    FNAME, &fh, 8192,
+				    SEC_RIGHTS_FILE_ALL,
+				    FILE_ATTRIBUTE_NORMAL);
+	torture_assert(torture, ok, "setup file");
+
+	status = test_ioctl_sparse_req(torture, tmp_ctx, tree, fh, true);
+	torture_assert_ntstatus_ok(torture, status, "FSCTL_SET_SPARSE");
+	smb2_util_close(tree, fh);
+
+	/* attempt ZERO_DATA with only WRITE_ATTR permission - should fail */
+	ok = test_setup_open(torture, tree, tmp_ctx,
+			     FNAME, &fh, SEC_FILE_WRITE_ATTRIBUTE,
+			     FILE_ATTRIBUTE_NORMAL);
+	torture_assert(torture, ok, "setup file");
+	status = test_ioctl_zdata_req(torture, tmp_ctx, tree, fh,
+				      0,	/* off */
+				      4096);	/* beyond_final_zero */
+	torture_assert_ntstatus_equal(torture, status,
+				      NT_STATUS_ACCESS_DENIED,
+				      "zero_data permission");
+	smb2_util_close(tree, fh);
+
+	/* attempt ZERO_DATA with only WRITE_DATA permission */
+	ok = test_setup_open(torture, tree, tmp_ctx,
+			     FNAME, &fh, SEC_FILE_WRITE_DATA,
+			     FILE_ATTRIBUTE_NORMAL);
+	torture_assert(torture, ok, "setup file");
+	status = test_ioctl_zdata_req(torture, tmp_ctx, tree, fh,
+				      0,	/* off */
+				      4096);	/* beyond_final_zero */
+	torture_assert_ntstatus_ok(torture, status, "zero_data");
+	smb2_util_close(tree, fh);
+
+	/* attempt ZERO_DATA with only APPEND_DATA permission - should fail */
+	ok = test_setup_open(torture, tree, tmp_ctx,
+			     FNAME, &fh, SEC_FILE_APPEND_DATA,
+			     FILE_ATTRIBUTE_NORMAL);
+	torture_assert(torture, ok, "setup file");
+	status = test_ioctl_zdata_req(torture, tmp_ctx, tree, fh,
+				      0,	/* off */
+				      4096);	/* beyond_final_zero */
+	torture_assert_ntstatus_equal(torture, status,
+				      NT_STATUS_ACCESS_DENIED,
+				      "zero_data permission");
+	smb2_util_close(tree, fh);
+
+	/* attempt ZERO_DATA with only WRITE_EA permission - should fail */
+	ok = test_setup_open(torture, tree, tmp_ctx,
+			     FNAME, &fh, SEC_FILE_WRITE_EA,
+			     FILE_ATTRIBUTE_NORMAL);
+	torture_assert(torture, ok, "setup file");
+	status = test_ioctl_zdata_req(torture, tmp_ctx, tree, fh,
+				      0,	/* off */
+				      4096);	/* beyond_final_zero */
+	torture_assert_ntstatus_equal(torture, status,
+				      NT_STATUS_ACCESS_DENIED,
+				      "zero_data permission");
+	smb2_util_close(tree, fh);
+
+	talloc_free(tmp_ctx);
+	return true;
+}
+
 /*
  * basic testing of SMB2 ioctls
  */
@@ -4108,6 +4347,8 @@ struct torture_suite *torture_smb2_ioctl_init(void)
 				     test_ioctl_sparse_copy_chunk);
 	torture_suite_add_1smb2_test(suite, "sparse_punch_invalid",
 				     test_ioctl_sparse_punch_invalid);
+	torture_suite_add_1smb2_test(suite, "sparse_perms",
+				     test_ioctl_sparse_perms);
 
 	suite->description = talloc_strdup(suite, "SMB2-IOCTL tests");
 
