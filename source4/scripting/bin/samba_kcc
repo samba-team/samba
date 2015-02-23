@@ -75,6 +75,8 @@ class KCC(object):
         self.kcc_failed_links = {}
         self.kcc_failed_connections = set()
 
+        self.site_dn_to_guid = {}
+
         # Used in inter-site topology computation.  A list
         # of connections (by NTDSConnection object) that are
         # to be kept when pruning un-needed NTDS Connections
@@ -84,6 +86,7 @@ class KCC(object):
         self.my_dsa = None  # My dsa object
 
         self.my_site_dnstr = None
+        self.my_site_guid = None
         self.my_site = None
 
         self.samdb = None
@@ -156,8 +159,11 @@ class KCC(object):
         site = Site(self.my_site_dnstr)
         site.load_site(self.samdb)
 
-        self.site_table[self.my_site_dnstr] = site
+        self.site_table[str(site.site_guid)] = site
+        self.my_site_guid = site.site_guid
         self.my_site = site
+
+        self.site_dn_to_guid[self.my_site_dnstr.lower()] = str(self.my_site_guid)
 
     def load_all_sites(self):
         """Discover all sites and instantiate and load each
@@ -176,14 +182,16 @@ class KCC(object):
         for msg in res:
             sitestr = str(msg.dn)
 
-            # already loaded
-            if sitestr in self.site_table.keys():
-                continue
-
             site = Site(sitestr)
             site.load_site(self.samdb)
 
-            self.site_table[sitestr] = site
+            # already loaded
+            if str(site.site_guid) in self.site_table.keys():
+                continue
+
+            self.site_table[str(site.site_guid)] = site
+
+            self.site_dn_to_guid[sitestr.lower()] = str(site.site_guid)
 
     def load_my_dsa(self):
         """Discover my nTDSDSA dn thru the rootDSE entry
@@ -1003,25 +1011,26 @@ class KCC(object):
 
         ::returns: a new graph
         """
-        dn_to_vertex = {}
+        guid_to_vertex = {}
         # Create graph
         g = IntersiteGraph()
         # Add vertices
-        for site_dn, site in self.site_table.items():
+        for site_guid, site in self.site_table.items():
             vertex = Vertex(site, part)
-            vertex.guid = site_dn
+            vertex.guid = site_guid
             g.vertices.add(vertex)
 
-            if not dn_to_vertex.get(site_dn):
-                dn_to_vertex[site_dn] = []
+            if not guid_to_vertex.get(site_guid):
+                guid_to_vertex[site_guid] = []
 
-            dn_to_vertex[site_dn].append(vertex)
+            guid_to_vertex[site_guid].append(vertex)
 
         connected_vertices = set()
         for transport_guid, transport in self.transport_table.items():
             # Currently only ever "IP"
             for site_link_dn, site_link in self.sitelink_table.items():
-                new_edge = create_edge(transport_guid, site_link, dn_to_vertex)
+                new_edge = create_edge(transport_guid, site_link, guid_to_vertex,
+                                       self.site_dn_to_guid)
                 connected_vertices.update(new_edge.vertices)
                 g.edges.add(new_edge)
 
@@ -2108,7 +2117,7 @@ class KCC(object):
         logger.debug("intrasite(): enter")
 
         # Test whether local site has topology disabled
-        mysite = self.site_table[self.my_site_dnstr]
+        mysite = self.site_table[str(self.my_site_guid)]
         if mysite.is_intrasite_topology_disabled():
             return
 
@@ -2608,13 +2617,16 @@ def write_search_result(samdb, f, res):
         lstr = samdb.write_ldif(msg, ldb.CHANGETYPE_NONE)
         f.write("%s" % lstr)
 
-def create_edge(con_type, site_link, dn_to_vertex):
+def create_edge(con_type, site_link, guid_to_vertex, site_dn_to_guid):
     e = MultiEdge()
     e.site_link = site_link
     e.vertices = []
-    for site in site_link.site_list:
-        if site in dn_to_vertex:
-            e.vertices.extend(dn_to_vertex.get(site))
+    for site_dn in site_link.site_list:
+        site_guid = site_dn_to_guid.get(site_dn.lower())
+        if site_guid is None:
+            continue
+        if site_guid in guid_to_vertex:
+            e.vertices.extend(guid_to_vertex.get(site_guid))
     e.repl_info.cost = site_link.cost
     e.repl_info.options = site_link.options
     e.repl_info.interval = site_link.interval
@@ -2678,7 +2690,6 @@ def setup_dijkstra(graph, edge_type, include_black, queue):
             vertex.root = None # NULL GUID
             vertex.demoted = True # Demoted appears not to be used
         else:
-            # TODO guid must be string?
             heapq.heappush(queue, (vertex.replInfo.cost, vertex.guid, vertex))
 
 def try_new_path(graph, queue, vfrom, edge, vto):
@@ -2787,7 +2798,7 @@ def add_int_edge(graph, internal_edges, examine, v1, v2):
 
     newIntEdge = InternalEdge(root1, root2, red_red, ri2, examine.con_type)
     # Order by vertex guid
-    if newIntEdge.v1.guid > newIntEdge.v2.guid: # TODO compare guid (str)
+    if newIntEdge.v1.guid > newIntEdge.v2.guid:
         newIntEdge.v1 = root2
         newIntEdge.v2 = root1
 

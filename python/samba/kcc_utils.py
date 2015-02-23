@@ -1425,6 +1425,7 @@ class Site(object):
     """
     def __init__(self, site_dnstr):
         self.site_dnstr = site_dnstr
+        self.site_guid = None
         self.site_options = 0
         self.site_topo_generator = None
         self.site_topo_failover = 0  # appears to be in minutes
@@ -1438,7 +1439,8 @@ class Site(object):
         ssdn = "CN=NTDS Site Settings,%s" % self.site_dnstr
         attrs = ["options",
                  "interSiteTopologyFailover",
-                 "interSiteTopologyGenerator"]
+                 "interSiteTopologyGenerator",
+                 "objectGUID"]
         try:
             res = samdb.search(base=ssdn, scope=ldb.SCOPE_BASE,
                                attrs=attrs)
@@ -1455,6 +1457,10 @@ class Site(object):
 
         if "interSiteTopologyFailover" in msg:
             self.site_topo_failover = int(msg["interSiteTopologyFailover"][0])
+
+        if "objectGUID" in msg:
+            self.site_guid = misc.GUID(samdb.schema_format_value("objectGUID",
+                                       msg["objectGUID"][0]))
 
         self.load_all_dsa(samdb)
 
