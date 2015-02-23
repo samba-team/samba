@@ -1418,6 +1418,9 @@ static void swrap_remove_stale(int fd)
 
 		if (si->fds == NULL) {
 			SWRAP_DLIST_REMOVE(sockets, si);
+			if (si->un_addr.sun_path[0] != '\0') {
+				unlink(si->un_addr.sun_path);
+			}
 			free(si);
 		}
 	}
