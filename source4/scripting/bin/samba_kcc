@@ -145,15 +145,6 @@ class KCC(object):
             # and index by dn
             self.sitelink_table[dnstr] = sitelink
 
-    def get_sitelink(self, site1_dnstr, site2_dnstr):
-        """Return the siteLink (if it exists) that connects the
-        two input site DNs
-        """
-        for sitelink in self.sitelink_table.values():
-            if sitelink.is_sitelink(site1_dnstr, site2_dnstr):
-                return sitelink
-        return None
-
     def load_my_site(self):
         """Loads the Site class for the local DSA
 
@@ -1568,9 +1559,7 @@ class KCC(object):
                lbh = self.get_bridgehead(lsite, part, transport,
                                            partial_ok, detect_failed)
 
-            # Find the siteLink object that enumerates the connection
-            # between the two sites if it is present
-            sitelink = self.get_sitelink(lsite.site_dnstr, rsite.site_dnstr)
+            sitelink = e.site_link
             if sitelink is None:
                 link_opt = 0x0
                 link_sched = None
