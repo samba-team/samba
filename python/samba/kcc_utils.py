@@ -2315,8 +2315,10 @@ class InternalEdge(object):
 
 
 ##################################################
-# Global Functions
+# Global Functions and Variables
 ##################################################
+MAX_DWORD = 2 ** 32 - 1
+
 def sort_dsa_by_guid(dsa1, dsa2):
     return cmp(dsa1.dsa_guid, dsa2.dsa_guid)
 
@@ -2358,7 +2360,7 @@ def combine_repl_info(info_a, info_b, info_c):
 
     # Truncate to MAX_DWORD
     info_c.cost = info_a.cost + info_b.cost
-    if info_c.cost > 2 ** 32 - 1:
-        info_c.cost = 2 ** 32 -1
+    if info_c.cost > MAX_DWORD:
+        info_c.cost = MAX_DWORD
 
     return True

@@ -1697,7 +1697,7 @@ class KCC(object):
             v = edge.vertices[0]
             w = edge.vertices[1]
             if v.site is vid or w.site is vid:
-                if (v.is_black() or w.is_black()) and not v.dist_to_red == 2 ** 32 - 1:
+                if (v.is_black() or w.is_black()) and not v.dist_to_red == MAX_DWORD:
                     edge.directed = True
 
                     if w.dist_to_red < v.dist_to_red:
@@ -2653,7 +2653,7 @@ def create_edge_set(graph, transport, site_link_bridge):
 def setup_vertices(graph):
     for v in graph.vertices:
         if v.is_white():
-            v.repl_info.cost = 2 ** 32 - 1
+            v.repl_info.cost = MAX_DWORD
             v.root = None
             v.component_id = None
         else:
@@ -2686,7 +2686,7 @@ def setup_dijkstra(graph, edge_type, include_black, queue):
         if ((vertex.is_black() and not include_black)
             or edge_type not in vertex.accept_black
             or edge_type not in vertex.accept_red_red):
-            vertex.repl_info.cost = 2 ** 32 - 1
+            vertex.repl_info.cost = MAX_DWORD
             vertex.root = None # NULL GUID
             vertex.demoted = True # Demoted appears not to be used
         else:
@@ -2722,7 +2722,7 @@ def check_demote_vertex(vertex, edge_type):
 
     # Accepts neither red-red nor black edges, demote
     if edge_type not in vertex.accept_black and edge_type not in vertex.accept_red_red:
-        vertex.repl_info.cost = 2 ** 32 - 1
+        vertex.repl_info.cost = MAX_DWORD
         vertex.root = None
         vertex.demoted = True # Demoted appears not to be used
 
