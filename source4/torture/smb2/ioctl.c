@@ -127,30 +127,32 @@ static bool write_pattern(struct torture_context *torture,
 	NTSTATUS status;
 	uint64_t i;
 	uint8_t *buf;
-	uint64_t buf_off = 0;
+	uint64_t io_sz = MIN(1024 * 64, len);
 
 	if (len == 0) {
 		return true;
 	}
 
-	buf = talloc_zero_size(mem_ctx, len);
+	torture_assert(torture, (len % 8) == 0, "invalid write len");
+
+	buf = talloc_zero_size(mem_ctx, io_sz);
 	torture_assert(torture, (buf != NULL), "no memory for file data buf");
 
-	for (i = 0; i <= len - 8; i += 8) {
-		SBVAL(buf, i, patt_hash(patt_off));
-		patt_off += 8;
-	}
-
 	while (len > 0) {
-		uint64_t io_sz = MIN(1024 * 1024, len);
+		for (i = 0; i <= io_sz - 8; i += 8) {
+			SBVAL(buf, i, patt_hash(patt_off));
+			patt_off += 8;
+		}
+
 		status = smb2_util_write(tree, h,
-					 buf + buf_off, off, io_sz);
+					 buf, off, io_sz);
 		torture_assert_ntstatus_ok(torture, status, "file write");
 
 		len -= io_sz;
-		buf_off += io_sz;
 		off += io_sz;
 	}
+
+	talloc_free(buf);
 
 	return true;
 }
@@ -160,33 +162,40 @@ static bool check_pattern(struct torture_context *torture,
 			  struct smb2_handle h, uint64_t off, uint64_t len,
 			  uint64_t patt_off)
 {
-	uint64_t i;
-	struct smb2_read r;
-	NTSTATUS status;
-
 	if (len == 0) {
 		return true;
 	}
 
-	ZERO_STRUCT(r);
-	r.in.file.handle = h;
-	r.in.length      = len;
-	r.in.offset      = off;
-	status = smb2_read(tree, mem_ctx, &r);
-	torture_assert_ntstatus_ok(torture, status, "read");
+	torture_assert(torture, (len % 8) == 0, "invalid read len");
 
-	torture_assert_u64_equal(torture, r.out.data.length, len,
-				 "read data len mismatch");
+	while (len > 0) {
+		uint64_t i;
+		struct smb2_read r;
+		NTSTATUS status;
+		uint64_t io_sz = MIN(1024 * 64, len);
 
-	for (i = 0; i <= len - 8; i += 8, patt_off += 8) {
-		uint64_t data = BVAL(r.out.data.data, i);
-		torture_assert_u64_equal(torture, data, patt_hash(patt_off),
-					 talloc_asprintf(torture, "read data "
-							 "pattern bad at %llu\n",
-							 (unsigned long long)i));
+		ZERO_STRUCT(r);
+		r.in.file.handle = h;
+		r.in.length      = io_sz;
+		r.in.offset      = off;
+		status = smb2_read(tree, mem_ctx, &r);
+		torture_assert_ntstatus_ok(torture, status, "read");
+
+		torture_assert_u64_equal(torture, r.out.data.length, io_sz,
+					 "read data len mismatch");
+
+		for (i = 0; i <= io_sz - 8; i += 8, patt_off += 8) {
+			uint64_t data = BVAL(r.out.data.data, i);
+			torture_assert_u64_equal(torture, data, patt_hash(patt_off),
+						 talloc_asprintf(torture, "read data "
+								 "pattern bad at %llu\n",
+								 (unsigned long long)off + i));
+		}
+		talloc_free(r.out.data.data);
+		len -= io_sz;
+		off += io_sz;
 	}
 
-	talloc_free(r.out.data.data);
 	return true;
 }
 
@@ -500,7 +509,7 @@ static bool test_ioctl_copy_chunk_tiny(struct torture_context *torture,
 
 	ok = test_setup_copy_chunk(torture, tree, tmp_ctx,
 				   2, /* chunks */
-				   &src_h, 100, /* src file */
+				   &src_h, 96, /* src file */
 				   SEC_RIGHTS_FILE_ALL,
 				   &dest_h, 0,	/* dest file */
 				   SEC_RIGHTS_FILE_ALL,
@@ -513,11 +522,11 @@ static bool test_ioctl_copy_chunk_tiny(struct torture_context *torture,
 	/* copy all src file data via two chunks, sub block size chunks */
 	cc_copy.chunks[0].source_off = 0;
 	cc_copy.chunks[0].target_off = 0;
-	cc_copy.chunks[0].length = 50;
+	cc_copy.chunks[0].length = 48;
 
-	cc_copy.chunks[1].source_off = 50;
-	cc_copy.chunks[1].target_off = 50;
-	cc_copy.chunks[1].length = 50;
+	cc_copy.chunks[1].source_off = 48;
+	cc_copy.chunks[1].target_off = 48;
+	cc_copy.chunks[1].length = 48;
 
 	ndr_ret = ndr_push_struct_blob(&ioctl.smb2.in.out, tmp_ctx,
 				       &cc_copy,
@@ -537,12 +546,12 @@ static bool test_ioctl_copy_chunk_tiny(struct torture_context *torture,
 	ok = check_copy_chunk_rsp(torture, &cc_rsp,
 				  2,	/* chunks written */
 				  0,	/* chunk bytes unsuccessfully written */
-				  100);	/* total bytes written */
+				  96);	/* total bytes written */
 	if (!ok) {
 		torture_fail(torture, "bad copy chunk response data");
 	}
 
-	ok = check_pattern(torture, tree, tmp_ctx, dest_h, 0, 100, 0);
+	ok = check_pattern(torture, tree, tmp_ctx, dest_h, 0, 96, 0);
 	if (!ok) {
 		torture_fail(torture, "inconsistent file data");
 	}
