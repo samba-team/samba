@@ -3901,6 +3901,113 @@ static bool test_ioctl_sparse_copy_chunk(struct torture_context *torture,
 	return true;
 }
 
+static bool test_ioctl_sparse_punch_invalid(struct torture_context *torture,
+					    struct smb2_tree *tree)
+{
+	struct smb2_handle fh;
+	NTSTATUS status;
+	TALLOC_CTX *tmp_ctx = talloc_new(tree);
+	bool ok;
+	bool is_sparse;
+	int i;
+
+	ok = test_setup_create_fill(torture, tree, tmp_ctx,
+				    FNAME, &fh, 4096, SEC_RIGHTS_FILE_ALL,
+				    FILE_ATTRIBUTE_NORMAL);
+	torture_assert(torture, ok, "setup file");
+
+	status = test_ioctl_sparse_fs_supported(torture, tree, tmp_ctx, &fh,
+						&ok);
+	torture_assert_ntstatus_ok(torture, status, "SMB2_GETINFO_FS");
+	if (!ok) {
+		smb2_util_close(tree, fh);
+		torture_skip(torture, "Sparse files not supported\n");
+	}
+
+	status = test_sparse_get(torture, tmp_ctx, tree, fh, &is_sparse);
+	torture_assert_ntstatus_ok(torture, status, "test_sparse_get");
+	torture_assert(torture, !is_sparse, "sparse attr before set");
+
+	/* loop twice, without and with sparse attrib */
+	for (i = 0; i <= 1;  i++) {
+		union smb_fileinfo io;
+		struct file_alloced_range_buf *far_rsp = NULL;
+		uint64_t far_count = 0;
+
+		/* get size before & after. zero data should never change it */
+		ZERO_STRUCT(io);
+		io.generic.level = RAW_FILEINFO_SMB2_ALL_INFORMATION;
+		io.generic.in.file.handle = fh;
+		status = smb2_getinfo_file(tree, tmp_ctx, &io);
+		torture_assert_ntstatus_ok(torture, status, "getinfo");
+		torture_assert_int_equal(torture, (int)io.all_info2.out.size,
+					 4096, "size after IO");
+
+		/* valid 8 byte zero data, but after EOF */
+		status = test_ioctl_zdata_req(torture, tmp_ctx, tree, fh,
+					      4096,	/* off */
+					      4104);	/* beyond_final_zero */
+		torture_assert_ntstatus_ok(torture, status, "zero_data");
+
+		/* valid 8 byte zero data, but after EOF */
+		status = test_ioctl_zdata_req(torture, tmp_ctx, tree, fh,
+					      8192,	/* off */
+					      8200);	/* beyond_final_zero */
+		torture_assert_ntstatus_ok(torture, status, "zero_data");
+
+		ZERO_STRUCT(io);
+		io.generic.level = RAW_FILEINFO_SMB2_ALL_INFORMATION;
+		io.generic.in.file.handle = fh;
+		status = smb2_getinfo_file(tree, tmp_ctx, &io);
+		torture_assert_ntstatus_ok(torture, status, "getinfo");
+		torture_assert_int_equal(torture, (int)io.all_info2.out.size,
+					 4096, "size after IO");
+
+		/* valid 0 byte zero data, without sparse flag */
+		status = test_ioctl_zdata_req(torture, tmp_ctx, tree, fh,
+					      4095,	/* off */
+					      4095);	/* beyond_final_zero */
+		torture_assert_ntstatus_ok(torture, status, "zero_data");
+
+		/* INVALID off is past beyond_final_zero */
+		status = test_ioctl_zdata_req(torture, tmp_ctx, tree, fh,
+					      4096,	/* off */
+					      4095);	/* beyond_final_zero */
+		torture_assert_ntstatus_equal(torture, status,
+					      NT_STATUS_INVALID_PARAMETER,
+					      "invalid zero_data");
+
+		/* zero length QAR - valid */
+		status = test_ioctl_qar_req(torture, tmp_ctx, tree, fh,
+					    0,			/* off */
+					    0,			/* len */
+					    &far_rsp, &far_count);
+		torture_assert_ntstatus_ok(torture, status,
+				"FSCTL_QUERY_ALLOCATED_RANGES req failed");
+		torture_assert_u64_equal(torture, far_count, 0,
+					 "unexpected response len");
+
+		/* QAR after EOF - valid */
+		status = test_ioctl_qar_req(torture, tmp_ctx, tree, fh,
+					    4096,		/* off */
+					    1024,		/* len */
+					    &far_rsp, &far_count);
+		torture_assert_ntstatus_ok(torture, status,
+				"FSCTL_QUERY_ALLOCATED_RANGES req failed");
+		torture_assert_u64_equal(torture, far_count, 0,
+					 "unexpected response len");
+
+		/* set sparse */
+		status = test_ioctl_sparse_req(torture, tmp_ctx, tree, fh,
+					       true);
+		torture_assert_ntstatus_ok(torture, status, "FSCTL_SET_SPARSE");
+	}
+
+	smb2_util_close(tree, fh);
+	talloc_free(tmp_ctx);
+	return true;
+}
+
 /*
  * basic testing of SMB2 ioctls
  */
@@ -3990,6 +4097,8 @@ struct torture_suite *torture_smb2_ioctl_init(void)
 				     test_ioctl_sparse_compressed);
 	torture_suite_add_1smb2_test(suite, "sparse_copy_chunk",
 				     test_ioctl_sparse_copy_chunk);
+	torture_suite_add_1smb2_test(suite, "sparse_punch_invalid",
+				     test_ioctl_sparse_punch_invalid);
 
 	suite->description = talloc_strdup(suite, "SMB2-IOCTL tests");
 
