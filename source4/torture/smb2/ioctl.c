@@ -3824,7 +3824,7 @@ static bool test_ioctl_sparse_copy_chunk(struct torture_context *torture,
 				      dealloc_chunk_len + 1024);
 	torture_assert_ntstatus_ok(torture, status, "zero_data");
 
-	/* zeroed range should be deallocated */
+	/* zeroed range might be deallocated */
 	status = test_ioctl_qar_req(torture, tmp_ctx, tree, dest_h,
 				    0,				/* off */
 				    dealloc_chunk_len + 1024,	/* len */
@@ -3832,8 +3832,18 @@ static bool test_ioctl_sparse_copy_chunk(struct torture_context *torture,
 				    &far_count);
 	torture_assert_ntstatus_ok(torture, status,
 			"FSCTL_QUERY_ALLOCATED_RANGES req failed");
-	torture_assert_u64_equal(torture, far_count, 0,
-				 "unexpected response len");
+	if (far_count == 0) {
+		/* FS specific (e.g. NTFS) */
+		torture_comment(torture, "FS deallocates file on full-range "
+				"punch\n");
+	} else {
+		/* FS specific (e.g. EXT4) */
+		torture_comment(torture, "FS doesn't deallocate file on "
+				"full-range punch\n");
+	}
+	ok = check_zero(torture, tree, tmp_ctx, dest_h, 0,
+			dealloc_chunk_len + 1024);
+	torture_assert(torture, ok, "punched zeroed range");
 
 	/* copy-chunk again, this time with sparse dest */
 	status = smb2_ioctl(tree, tmp_ctx, &ioctl.smb2);
@@ -3858,7 +3868,7 @@ static bool test_ioctl_sparse_copy_chunk(struct torture_context *torture,
 			   1024, dealloc_chunk_len);
 	torture_assert(torture, ok, "copychunked range");
 
-	/* copied range should be allocated in sparse dest */
+	/* copied range may be allocated in sparse dest */
 	status = test_ioctl_qar_req(torture, tmp_ctx, tree, dest_h,
 				    0,				/* off */
 				    dealloc_chunk_len + 1024,	/* len */
@@ -3868,11 +3878,22 @@ static bool test_ioctl_sparse_copy_chunk(struct torture_context *torture,
 			"FSCTL_QUERY_ALLOCATED_RANGES req failed");
 	torture_assert_u64_equal(torture, far_count, 1,
 				 "unexpected response len");
-	torture_assert_u64_equal(torture, far_rsp[0].file_off, 0,
-				 "unexpected allocation");
-	torture_assert_u64_equal(torture, far_rsp[0].len,
-				 dealloc_chunk_len + 1024,
-				 "unexpected far len");
+	/*
+	 * FS specific: sparse region may be unallocated in dest if copy-chunk
+	 *		is handled in a sparse preserving way - E.g. vfs_btrfs
+	 *		with BTRFS_IOC_CLONE_RANGE.
+	 */
+	if (far_rsp[0].file_off == dealloc_chunk_len) {
+		torture_comment(torture, "copy-chunk sparse range preserved\n");
+		torture_assert_u64_equal(torture, far_rsp[0].len, 1024,
+					 "unexpected far len");
+	} else {
+		torture_assert_u64_equal(torture, far_rsp[0].file_off, 0,
+					 "unexpected allocation");
+		torture_assert_u64_equal(torture, far_rsp[0].len,
+					 dealloc_chunk_len + 1024,
+					 "unexpected far len");
+	}
 
 	smb2_util_close(tree, src_h);
 	smb2_util_close(tree, dest_h);
