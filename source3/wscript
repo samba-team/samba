@@ -1492,12 +1492,6 @@ main() {
         conf.env['CTDB_INCLUDE'] = conf.srcdir + '/ctdb/include'
         conf.env.with_ctdb = True
 
-    conf.CHECK_CODE('__attribute__((destructor)) static void cleanup(void) { }',
-                    'HAVE_FUNCTION_ATTRIBUTE_DESTRUCTOR',
-                    addmain=False,
-                    link=False,
-                    msg='Checking whether we can compile with __attribute__((destructor))')
-
     conf.CHECK_CODE('void seekdir(DIR *d, long loc) { return; }',
                     'SEEKDIR_RETURNS_VOID',
                     headers='sys/types.h dirent.h',

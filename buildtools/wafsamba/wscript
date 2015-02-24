@@ -361,6 +361,40 @@ def configure(conf):
                         cflags=conf.env.VISIBILITY_CFLAGS,
                         define='HAVE_VISIBILITY_ATTR', addmain=False)
 
+    # check HAVE_CONSTRUCTOR_ATTRIBUTE
+    conf.CHECK_CODE('''
+            void test_constructor_attribute(void) __attribute__ ((constructor));
+
+            void test_constructor_attribute(void)
+            {
+                return;
+            }
+
+            int main(void) {
+                return 0;
+            }
+            ''',
+            'HAVE_CONSTRUCTOR_ATTRIBUTE',
+            addmain=False,
+            msg='Checking for library constructor support')
+
+        # check HAVE_DESTRUCTOR_ATTRIBUTE
+    conf.CHECK_CODE('''
+            void test_destructor_attribute(void) __attribute__ ((destructor));
+
+            void test_destructor_attribute(void)
+            {
+                return;
+            }
+
+            int main(void) {
+                return 0;
+            }
+            ''',
+            'HAVE_DESTRUCTOR_ATTRIBUTE',
+            addmain=False,
+            msg='Checking for library destructor support')
+
     if sys.platform.startswith('aix'):
         conf.DEFINE('_ALL_SOURCE', 1, add_to_cflags=True)
         # Might not be needed if ALL_SOURCE is defined
