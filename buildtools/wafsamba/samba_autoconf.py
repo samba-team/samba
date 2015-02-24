@@ -677,6 +677,8 @@ def SAMBA_CONFIG_H(conf, path=None):
                         testflags=True)
         conf.ADD_CFLAGS('-Werror=return-type -Wreturn-type',
                         testflags=True)
+        conf.ADD_CFLAGS('-Werror=uninitialized -Wuninitialized',
+                        testflags=True)
 
         conf.ADD_CFLAGS('-Wformat=2 -Wno-format-y2k', testflags=True)
         # This check is because for ldb_search(), a NULL format string
