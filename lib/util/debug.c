@@ -479,20 +479,23 @@ void setup_logging(const char *prog_name, enum debug_logtype new_logtype)
 		state.logtype = new_logtype;
 	}
 	if (prog_name) {
+		const char *p = strrchr(prog_name, '/');
+
+		if (p) {
+			prog_name = p + 1;
+		}
+
 		state.prog_name = prog_name;
 	}
 	reopen_logs_internal();
 
 	if (state.logtype == DEBUG_FILE) {
 #ifdef WITH_SYSLOG
-		const char *p = strrchr(prog_name, '/');
-		if (p)
-			prog_name = p + 1;
 #ifdef LOG_DAEMON
-		openlog( prog_name, LOG_PID, SYSLOG_FACILITY );
+		openlog(state.prog_name, LOG_PID, SYSLOG_FACILITY );
 #else
 		/* for old systems that have no facility codes. */
-		openlog( prog_name, LOG_PID );
+		openlog(state.prog_name, LOG_PID );
 #endif
 #endif
 	}
