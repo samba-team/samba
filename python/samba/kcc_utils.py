@@ -1439,11 +1439,12 @@ class Site(object):
         ssdn = "CN=NTDS Site Settings,%s" % self.site_dnstr
         attrs = ["options",
                  "interSiteTopologyFailover",
-                 "interSiteTopologyGenerator",
-                 "objectGUID"]
+                 "interSiteTopologyGenerator"]
         try:
             res = samdb.search(base=ssdn, scope=ldb.SCOPE_BASE,
                                attrs=attrs)
+            self_res = samdb.search(base=self.site_dnstr, scope=ldb.SCOPE_BASE,
+                               attrs=['objectGUID'])
         except ldb.LdbError, (enum, estr):
             raise Exception("Unable to find site settings for (%s) - (%s)" %
                             (ssdn, estr))
@@ -1458,6 +1459,7 @@ class Site(object):
         if "interSiteTopologyFailover" in msg:
             self.site_topo_failover = int(msg["interSiteTopologyFailover"][0])
 
+        msg = self_res[0]
         if "objectGUID" in msg:
             self.site_guid = misc.GUID(samdb.schema_format_value("objectGUID",
                                        msg["objectGUID"][0]))
@@ -2131,7 +2133,7 @@ class SiteLink(object):
                   "siteList" ]
         try:
             res = samdb.search(base=self.dnstr, scope=ldb.SCOPE_BASE,
-                               attrs=attrs)
+                    attrs=attrs, controls=['extended_dn:0'])
 
         except ldb.LdbError, (enum, estr):
             raise Exception("Unable to find SiteLink for (%s) - (%s)" %
@@ -2154,9 +2156,9 @@ class SiteLink(object):
         if "siteList" in msg:
             for value in msg["siteList"]:
                 dsdn = dsdb_Dn(samdb, value)
-                dnstr = str(dsdn.dn)
-                if dnstr not in self.site_list:
-                    self.site_list.append(dnstr)
+                guid = misc.GUID(dsdn.dn.get_extended_component('GUID'))
+                if guid not in self.site_list:
+                    self.site_list.append(guid)
 
     def is_sitelink(self, site1_dnstr, site2_dnstr):
         """Given a siteLink object, determine if it is a link
