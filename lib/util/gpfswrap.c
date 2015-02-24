@@ -40,6 +40,10 @@ static int (*gpfs_set_times_path_fn)(char *pathname, int flags,
 static int (*gpfs_quotactl_fn)(char *pathname, int cmd, int id, void *bufp);
 static int (*gpfs_fcntl_fn)(int fd, void *argp);
 static int (*gpfs_getfilesetid_fn)(char *pathname, char *name, int *idp);
+static int (*gpfs_init_trace_fn)(void);
+static int (*gpfs_query_trace_fn)(void);
+static void (*gpfs_add_trace_fn)(int level, const char *msg);
+static void (*gpfs_fini_trace_fn)(void);
 
 int gpfswrap_init(void)
 {
@@ -69,6 +73,10 @@ int gpfswrap_init(void)
 	gpfs_quotactl_fn	      = dlsym(l, "gpfs_quotactl");
 	gpfs_fcntl_fn		      = dlsym(l, "gpfs_fcntl");
 	gpfs_getfilesetid_fn	      = dlsym(l, "gpfs_getfilesetid");
+	gpfs_init_trace_fn	      = dlsym(l, "gpfs_init_trace");
+	gpfs_query_trace_fn	      = dlsym(l, "gpfs_query_trace");
+	gpfs_add_trace_fn	      = dlsym(l, "gpfs_add_trace");
+	gpfs_fini_trace_fn	      = dlsym(l, "gpfs_fini_trace");
 
 	return 0;
 }
@@ -223,4 +231,42 @@ int gpfswrap_getfilesetid(char *pathname, char *name, int *idp)
 	}
 
 	return gpfs_getfilesetid_fn(pathname, name, idp);
+}
+
+int gpfswrap_init_trace(void)
+{
+	if (gpfs_init_trace_fn == NULL) {
+		errno = ENOSYS;
+		return -1;
+	}
+
+	return gpfs_init_trace_fn();
+}
+
+int gpfswrap_query_trace(void)
+{
+	if (gpfs_query_trace_fn == NULL) {
+		errno = ENOSYS;
+		return -1;
+	}
+
+	return gpfs_query_trace_fn();
+}
+
+void gpfswrap_add_trace(int level, const char *msg)
+{
+	if (gpfs_add_trace_fn == NULL) {
+		return;
+	}
+
+	gpfs_add_trace_fn(level, msg);
+}
+
+void gpfswrap_fini_trace(void)
+{
+	if (gpfs_fini_trace_fn == NULL) {
+		return;
+	}
+
+	gpfs_fini_trace_fn();
 }
