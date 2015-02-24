@@ -6147,13 +6147,124 @@ static int control_listnodes(struct ctdb_context *ctdb, int argc, const char **a
 	return 0;
 }
 
-/*
-  reload the nodes file on the local node
- */
+/**********************************************************************/
+/* reload the nodes file on all nodes */
+
+static void get_nodes_files_callback(struct ctdb_context *ctdb,
+				     uint32_t node_pnn, int32_t res,
+				     TDB_DATA outdata, void *callback_data)
+{
+	struct ctdb_node_map **maps =
+		talloc_get_type(callback_data, struct ctdb_node_map *);
+
+	if (outdata.dsize < offsetof(struct ctdb_node_map, nodes) ||
+	    outdata.dptr == NULL) {
+		DEBUG(DEBUG_ERR,
+		      (__location__ " Invalid return data: %u %p\n",
+		       (unsigned)outdata.dsize, outdata.dptr));
+		return;
+	}
+
+	if (node_pnn >= talloc_array_length(maps)) {
+		DEBUG(DEBUG_ERR,
+		      (__location__ " unexpected PNN %u\n", node_pnn));
+		return;
+	}
+
+	maps[node_pnn] = talloc_memdup(maps, outdata.dptr, outdata.dsize);
+}
+
+static void get_nodes_files_fail_callback(struct ctdb_context *ctdb,
+					  uint32_t node_pnn, int32_t res,
+					  TDB_DATA outdata, void *callback_data)
+{
+	DEBUG(DEBUG_ERR,
+	      ("ERROR: Failed to get nodes file from node %u\n", node_pnn));
+}
+
+static struct ctdb_node_map **
+ctdb_get_nodes_files(struct ctdb_context *ctdb,
+		     TALLOC_CTX *mem_ctx,
+		     struct timeval timeout,
+		     struct ctdb_node_map *nodemap)
+{
+	uint32_t *nodes;
+	int ret;
+	struct ctdb_node_map **maps;
+
+	maps = talloc_zero_array(mem_ctx, struct ctdb_node_map *, nodemap->num);
+	CTDB_NO_MEMORY_NULL(ctdb, maps);
+
+	nodes = list_of_connected_nodes(ctdb, nodemap, mem_ctx, true);
+
+	ret = ctdb_client_async_control(ctdb, CTDB_CONTROL_GET_NODES_FILE,
+					nodes, 0, TIMELIMIT(),
+					true, tdb_null,
+					get_nodes_files_callback,
+					get_nodes_files_fail_callback,
+					maps);
+	if (ret != 0) {
+		talloc_free(maps);
+		return NULL;
+	}
+
+	return maps;
+}
+
+static bool node_files_are_identical(struct ctdb_node_map *nm1,
+				     struct ctdb_node_map *nm2)
+{
+	int i;
+
+	if (nm1->num != nm2->num) {
+		return false;
+	}
+	for (i = 0; i < nm1->num; i++) {
+		if (memcmp(&nm1->nodes[i], &nm2->nodes[i],
+			   sizeof(struct ctdb_node_and_flags)) != 0) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
+static bool check_all_node_files_are_identical(struct ctdb_context *ctdb,
+					       TALLOC_CTX *mem_ctx,
+					       struct timeval timeout,
+					       struct ctdb_node_map *nodemap,
+					       struct ctdb_node_map *file_nodemap)
+{
+	static struct ctdb_node_map **maps;
+	int i;
+	bool ret = true;
+
+	maps = ctdb_get_nodes_files(ctdb, mem_ctx, timeout, nodemap);
+	if (maps == NULL) {
+		return false;
+	}
+
+	for (i = 0; i < talloc_array_length(maps); i++) {
+		if (maps[i] == NULL) {
+			continue;
+		}
+		if (!node_files_are_identical(file_nodemap, maps[i])) {
+			DEBUG(DEBUG_ERR,
+			      ("ERROR: Node file on node %u differs from current node (%u)\n",
+			       i, ctdb_get_pnn(ctdb)));
+			ret = false;
+		}
+	}
+
+	return ret;
+}
+
 static int control_reload_nodes_file(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	int i, ret;
 	struct ctdb_node_map *nodemap=NULL;
+	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
+	struct ctdb_node_map *file_nodemap;
 
 	assert_current_node_only(ctdb);
 
@@ -6162,6 +6273,21 @@ static int control_reload_nodes_file(struct ctdb_context *ctdb, int argc, const 
 		DEBUG(DEBUG_ERR, ("Unable to get nodemap from local node\n"));
 		return ret;
 	}
+
+	file_nodemap = read_nodes_file(tmp_ctx);
+	if (file_nodemap == NULL) {
+		DEBUG(DEBUG_ERR,("Failed to read nodes file\n"));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	if (!check_all_node_files_are_identical(ctdb, tmp_ctx, TIMELIMIT(),
+						nodemap, file_nodemap)) {
+		return -1;
+	}
+
+
+	/* Now make the changes */
 
 	/* reload the nodes file on all remote nodes */
 	for (i=0;i<nodemap->num;i++) {
