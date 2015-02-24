@@ -320,7 +320,22 @@ void talloc_lib_init(void)
 	 */
 	p = (uint8_t *) getauxval(AT_RANDOM);
 	if (p) {
-		memcpy(&random_value, p, sizeof(random_value));
+		/*
+		 * We get 16 bytes from getauxval.  By calling rand(),
+		 * a totally insecure PRNG, but one that will
+		 * deterministically have a different value when called
+		 * twice, we ensure that if two talloc-like libraries
+		 * are somehow loaded in the same address space, that
+		 * because we choose different bytes, we will keep the
+		 * protection against collision of multiple talloc
+		 * libs.
+		 *
+		 * This protection is important because the effects of
+		 * passing a talloc pointer from one to the other may
+		 * be very hard to determine.
+		 */
+		int offset = rand() % (16 - sizeof(random_value));
+		memcpy(&random_value, p + offset, sizeof(random_value));
 	} else
 #endif
 	{
