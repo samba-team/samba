@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the fourth release candidate of Samba 4.2.  This is *not*
+This is the fifth release candidate of Samba 4.2.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -336,6 +336,82 @@ smb.conf changes
    smb2 max write                       Changed default 8388608
    smb2 max trans                       Changed default 8388608
    winbind expand groups                Changed default 0
+
+
+CHANGES SINCE 4.2.0rc4
+======================
+
+o   Michael Adam <obnox@samba.org>
+    * BUG 11032: Enable mutexes in gencache_notrans.tdb.
+    * BUG 11058: cli_connect_nb_send: Don't segfault on host == NULL.
+
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 10849: s3: lib, s3: modules: Fix compilation on Solaris.
+    * BUG 11044: Fix authentication using Kerberos (not AD).
+    * BUG 11077: CVE-2015-0240: s3: netlogon: Ensure we don't call talloc_free
+      on an uninitialized pointer.
+    * BUG 11094: s3: smbclient: Allinfo leaves the file handle open.
+    * BUG 11102: s3: smbd: leases - losen paranoia check. Stat opens can grant
+      leases.
+    * BUG 11104: s3: smbd: SMB2 close. If a file has delete on close, store the
+      return info before deleting.
+
+
+o   Ira Cooper <ira@samba.org>
+    * BUG 11069: vfs_glusterfs: Add comments to the pipe(2) code.
+
+
+o   Günther Deschner <gd@samba.org>
+    * BUG 11070: s3-vfs: Fix developer build of vfs_ceph module.
+
+
+o   David Disseldorp <ddiss@samba.org>
+    * BUG 10808: printing/cups: Pack requested-attributes with IPP_TAG_KEYWORD.
+    * BUG 11055: vfs_snapper: Correctly handles multi-byte DBus strings.
+    * BUG 11059: libsmb: Provide authinfo domain for encrypted session
+      referrals.
+
+
+o   Poornima G <pgurusid@redhat.com>
+    * BUG 11069: vfs_glusterfs: Implement AIO support.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 11032: Enable mutexes in gencache_notrans.tdb.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 9299: nsswitch: Fix soname of linux nss_*.so.2 modules.
+    * BUG 9702: s3:smb2_server: protect against integer wrap with "smb2 max
+      credits = 65535".
+    * BUG 9810: Make validate_ldb of String(Generalized-Time) accept
+      millisecond format ".000Z".
+    * BUG 10112: Use -R linker flag on Solaris, not -rpath.
+
+
+o   Marc Muehlfeld <mmuehlfeld@samba.org>
+    * BUG 10909: samba-tool: Create NIS enabled users and unixHomeDirectory
+      attribute.
+
+
+o   Garming Sam <garming@catalyst.net.nz>
+    * BUG 11022: Make Sharepoint search show user documents.
+
+
+o   Christof Schmitt <cs@samba.org>
+    * BUG 11032: Enable mutexes in gencache_notrans.tdb.
+
+
+o   Andreas Schneider <asn@samba.org>
+    * BUG 11058: utils: Fix 'net time' segfault.
+    * BUG 11066: s3-pam_smbpass: Fix memory leak in pam_sm_authenticate().
+    * BUG 11077: CVE-2015-0240: s3-netlogon: Make sure we do not deference a
+      NULL pointer.
+
+
+o   Raghavendra Talur <raghavendra.talur@gmail.com>
+    * BUG 11069: vfs/glusterfs: Change xattr key to match gluster key.
 
 
 CHANGES SINCE 4.2.0rc3
