@@ -210,7 +210,8 @@ static bool init_mappings(connection_struct *conn,
 	if (share_level->mappings) {
 		(*selected_out) = share_level;
 		return True;
-	} else if (global->mappings) {
+	}
+	if (global->mappings) {
 		share_level->mappings = global->mappings;
 		(*selected_out) = share_level;
 		return True;
