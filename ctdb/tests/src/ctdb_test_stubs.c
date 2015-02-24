@@ -856,3 +856,12 @@ ctdb_client_async_control_stub(struct ctdb_context *ctdb,
 	talloc_free(tmp_ctx);
 	return ret;
 }
+
+struct ctdb_node_capabilities *
+ctdb_get_capabilities_stub(struct ctdb_context *ctdb,
+			   TALLOC_CTX *mem_ctx,
+			   struct timeval timeout,
+			   struct ctdb_node_map *nodemap)
+{
+	return global_caps;
+}

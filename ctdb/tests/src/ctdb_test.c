@@ -67,6 +67,8 @@ int main_foobar(int argc, const char **argv);
 	ctdb_sys_have_ip_stub(addr)
 #define ctdb_client_async_control(ctdb, opcode, nodes, srvid, timeout, dont_log_errors, data, client_callback, fail_callback, callback_data) \
 	ctdb_client_async_control_stub(ctdb, opcode, nodes, srvid, timeout, dont_log_errors, data, client_callback, fail_callback, callback_data)
+#define ctdb_get_capabilities(ctdb, mem_ctx, timeout, nodemap) \
+	ctdb_get_capabilities_stub(ctdb, mem_ctx, timeout, nodemap)
 
 #include "tools/ctdb.c"
 
@@ -100,6 +102,7 @@ struct tevent_context *tevent_context_init(TALLOC_CTX *mem_ctx);
 #undef ctdb_ctrl_reload_nodes_file
 #undef ctdb_sys_have_ip
 #undef ctdb_client_async_control
+#undef ctdb_get_capabilities
 
 int ctdb_ctrl_getnodemap(struct ctdb_context *ctdb,
 		    struct timeval timeout, uint32_t destnode,
@@ -157,6 +160,11 @@ ctdb_client_async_control(struct ctdb_context *ctdb,
 			  client_async_callback client_callback,
 			  client_async_callback fail_callback,
 			  void *callback_data);
+struct ctdb_node_capabilities *
+ctdb_get_capabilities(struct ctdb_context *ctdb,
+		      TALLOC_CTX *mem_ctx,
+		      struct timeval timeout,
+		      struct ctdb_node_map *nodemap);
 
 #undef TIMELIMIT
 #include "tools/ctdb_vacuum.c"
