@@ -849,57 +849,6 @@ static int control_pnn(struct ctdb_context *ctdb, int argc, const char **argv)
 }
 
 
-struct pnn_node {
-	struct pnn_node *next, *prev;
-	ctdb_sock_addr addr;
-	int pnn;
-};
-
-static struct pnn_node *read_pnn_node_file(TALLOC_CTX *mem_ctx,
-					   const char *file)
-{
-	int nlines;
-	char **lines;
-	int i, pnn;
-	struct pnn_node *pnn_nodes = NULL;
-	struct pnn_node *pnn_node;
-
-	lines = file_lines_load(file, &nlines, 0, mem_ctx);
-	if (lines == NULL) {
-		return NULL;
-	}
-	for (i=0, pnn=0; i<nlines; i++) {
-		char *node;
-
-		node = lines[i];
-		/* strip leading spaces */
-		while((*node == ' ') || (*node == '\t')) {
-			node++;
-		}
-		if (*node == '#') {
-			pnn++;
-			continue;
-		}
-		if (strcmp(node, "") == 0) {
-			continue;
-		}
-		pnn_node = talloc(mem_ctx, struct pnn_node);
-		pnn_node->pnn = pnn++;
-
-		if (!parse_ip(node, NULL, 0, &pnn_node->addr)) {
-			DEBUG(DEBUG_ERR,
-			      ("Invalid IP address '%s' in file %s\n",
-			       node, file));
-			/* Caller will free mem_ctx */
-			return NULL;
-		}
-
-		DLIST_ADD_END(pnn_nodes, pnn_node, NULL);
-	}
-
-	return pnn_nodes;
-}
-
 static struct ctdb_node_map *read_nodes_file(TALLOC_CTX *mem_ctx)
 {
 	const char *nodes_list;
