@@ -483,6 +483,26 @@ ctdb_ctrl_getnodemap_stub(struct ctdb_context *ctdb,
 }
 
 int
+ctdb_ctrl_getnodesfile_stub(struct ctdb_context *ctdb,
+			    struct timeval timeout, uint32_t destnode,
+			    TALLOC_CTX *mem_ctx, struct ctdb_node_map **nodemap)
+{
+	char *v, *f;
+
+	/* If there's an environment variable for a node-specific file
+	 * then use it.  Otherwise use the global file. */
+	v = talloc_asprintf(mem_ctx, "CTDB_NODES_%u", destnode);
+	f = getenv(v);
+	if (f == NULL) {
+		f = getenv("CTDB_NODES");
+	}
+
+	*nodemap = ctdb_read_nodes_file(mem_ctx, f);
+
+	return *nodemap == NULL ? -1 : 0;
+}
+
+int
 ctdb_ctrl_getvnnmap_stub(struct ctdb_context *ctdb,
 			 struct timeval timeout, uint32_t destnode,
 			 TALLOC_CTX *mem_ctx, struct ctdb_vnn_map **vnnmap)
@@ -825,6 +845,16 @@ ctdb_client_async_control_stub(struct ctdb_context *ctdb,
 		case CTDB_CONTROL_RELOAD_PUBLIC_IPS:
 			DEBUG(DEBUG_NOTICE, ("Fake reload public IPs on node %u\n", pnn));
 			res = 0;
+			break;
+		case CTDB_CONTROL_GET_NODES_FILE: {
+			struct ctdb_node_map *nodemap;
+			res = ctdb_ctrl_getnodesfile_stub(ctdb, timeout, pnn,
+							  tmp_ctx, &nodemap);
+			if (res == 0) {
+				outdata.dsize = talloc_get_size(nodemap);
+				outdata.dptr = (uint8_t *) nodemap;
+			}
+		}
 			break;
 		default:
 			DEBUG(DEBUG_ERR, (__location__ " Control not implemented %u\n",

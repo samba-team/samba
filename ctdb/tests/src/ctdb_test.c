@@ -35,6 +35,8 @@ int main_foobar(int argc, const char **argv);
 	tevent_context_init_stub(x)
 #define ctdb_ctrl_getnodemap(ctdb, timelimit, pnn, tmp_ctx, nodemap) \
 	ctdb_ctrl_getnodemap_stub(ctdb, timelimit, pnn, tmp_ctx, nodemap)
+#define ctdb_ctrl_getnodesfile(ctdb, timeout, destnode, mem_ctx, nodemap) \
+	ctdb_ctrl_getnodesfile_stub(ctdb, timeout, destnode, mem_ctx, nodemap)
 #define ctdb_ctrl_get_ifaces(ctdb, timelimit, pnn, tmp_ctx, ifaces) \
 	ctdb_ctrl_get_ifaces_stub(ctdb, timelimit, pnn, tmp_ctx, ifaces)
 #define ctdb_ctrl_getpnn(ctdb, timelimit, pnn) \
@@ -82,6 +84,7 @@ struct tevent_context *tevent_context_init(TALLOC_CTX *mem_ctx);
 #include "common/cmdline.c"
 
 #undef ctdb_ctrl_getnodemap
+#undef ctdb_ctrl_getnodesfile
 #undef ctdb_ctrl_get_ifaces 
 #undef ctdb_ctrl_getpnn
 #undef ctdb_ctrl_getrecmode
@@ -101,6 +104,10 @@ struct tevent_context *tevent_context_init(TALLOC_CTX *mem_ctx);
 int ctdb_ctrl_getnodemap(struct ctdb_context *ctdb,
 		    struct timeval timeout, uint32_t destnode,
 		    TALLOC_CTX *mem_ctx, struct ctdb_node_map **nodemap);
+int ctdb_ctrl_getnodesfile(struct ctdb_context *ctdb,
+			   struct timeval timeout, uint32_t destnode,
+			   TALLOC_CTX *mem_ctx,
+			   struct ctdb_node_map **nodemap);
 int ctdb_ctrl_get_ifaces(struct ctdb_context *ctdb,
 			 struct timeval timeout, uint32_t destnode,
 			 TALLOC_CTX *mem_ctx,
