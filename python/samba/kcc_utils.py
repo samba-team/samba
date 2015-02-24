@@ -2160,14 +2160,6 @@ class SiteLink(object):
                 if guid not in self.site_list:
                     self.site_list.append(guid)
 
-    def is_sitelink(self, site1_dnstr, site2_dnstr):
-        """Given a siteLink object, determine if it is a link
-        between the two input site DNs
-        """
-        if site1_dnstr in self.site_list and site2_dnstr in self.site_list:
-            return True
-        return False
-
 class KCCFailedObject(object):
     def __init__(self, uuid, failure_count, time_first_failure, last_result, dns_name):
         self.uuid = uuid
