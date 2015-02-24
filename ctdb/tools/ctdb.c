@@ -1164,11 +1164,11 @@ static int control_nodestatus(struct ctdb_context *ctdb, int argc, const char **
 	return ret;
 }
 
-static struct pnn_node *read_natgw_nodes_file(struct ctdb_context *ctdb,
-					      TALLOC_CTX *mem_ctx)
+static struct ctdb_node_map *read_natgw_nodes_file(struct ctdb_context *ctdb,
+						   TALLOC_CTX *mem_ctx)
 {
 	const char *natgw_list;
-	struct pnn_node *natgw_nodes = NULL;
+	struct ctdb_node_map *natgw_nodes = NULL;
 
 	natgw_list = getenv("CTDB_NATGW_NODES");
 	if (natgw_list == NULL) {
@@ -1179,8 +1179,8 @@ static struct pnn_node *read_natgw_nodes_file(struct ctdb_context *ctdb,
 			exit(1);
 		}
 	}
-	/* The PNNs will be junk but they're not used */
-	natgw_nodes = read_pnn_node_file(mem_ctx, natgw_list);
+	/* The PNNs/flags will be junk but they're not used */
+	natgw_nodes = ctdb_read_nodes_file(mem_ctx, natgw_list);
 	if (natgw_nodes == NULL) {
 		DEBUG(DEBUG_ERR,
 		      ("Failed to load natgw node list '%s'\n", natgw_list));
@@ -1200,10 +1200,9 @@ static struct ctdb_node_map *talloc_nodemap(struct ctdb_node_map *nodemap)
 static struct ctdb_node_map *
 filter_nodemap_by_addrs(struct ctdb_context *ctdb,
 			struct ctdb_node_map *nodemap,
-			struct pnn_node *nodes)
+			struct ctdb_node_map *natgw_nodes)
 {
-	int i;
-	struct pnn_node *n;
+	int i, j;
 	struct ctdb_node_map *ret;
 
 	ret = talloc_nodemap(nodemap);
@@ -1212,18 +1211,18 @@ filter_nodemap_by_addrs(struct ctdb_context *ctdb,
 	ret->num = 0;
 
 	for (i = 0; i < nodemap->num; i++) {
-		for(n = nodes; n != NULL ; n = n->next) {
-			if (ctdb_same_ip(&n->addr,
+		for(j = 0; j < natgw_nodes->num ; j++) {
+			if (nodemap->nodes[j].flags & NODE_FLAGS_DELETED) {
+				continue;
+			}
+			if (ctdb_same_ip(&natgw_nodes->nodes[j].addr,
 					 &nodemap->nodes[i].addr)) {
+
+				ret->nodes[ret->num] = nodemap->nodes[i];
+				ret->num++;
 				break;
 			}
 		}
-		if (n == NULL) {
-			continue;
-		}
-
-		ret->nodes[ret->num] = nodemap->nodes[i];
-		ret->num++;
 	}
 
 	return ret;
@@ -1307,7 +1306,7 @@ static int control_natgwlist(struct ctdb_context *ctdb, int argc, const char **a
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 	int i, ret;
-	struct pnn_node *natgw_nodes = NULL;
+	struct ctdb_node_map *natgw_nodes = NULL;
 	struct ctdb_node_map *orig_nodemap=NULL;
 	struct ctdb_node_map *nodemap;
 	uint32_t mypnn, pnn;
