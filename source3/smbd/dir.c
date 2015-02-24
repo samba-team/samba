@@ -1652,13 +1652,15 @@ const char *ReadDirName(struct smb_Dir *dirp, long *poffset,
 		dirp->file_number++;
 		*ptalloced = NULL;
 		return n;
-	} else if (*poffset == END_OF_DIRECTORY_OFFSET) {
+	}
+
+	if (*poffset == END_OF_DIRECTORY_OFFSET) {
 		*poffset = dirp->offset = END_OF_DIRECTORY_OFFSET;
 		return NULL;
-	} else {
-		/* A real offset, seek to it. */
-		SeekDir(dirp, *poffset);
 	}
+
+	/* A real offset, seek to it. */
+	SeekDir(dirp, *poffset);
 
 	while ((n = vfs_readdirname(conn, dirp->dir, sbuf, &talloced))) {
 		/* Ignore . and .. - we've already returned them. */
