@@ -766,3 +766,56 @@ bool ctdb_sys_have_ip_stub(ctdb_sock_addr *addr)
 
 	return false;
 }
+
+int
+ctdb_client_async_control_stub(struct ctdb_context *ctdb,
+			       enum ctdb_controls opcode,
+			       uint32_t *nodes,
+			       uint64_t srvid,
+			       struct timeval timeout,
+			       bool dont_log_errors,
+			       TDB_DATA data,
+			       client_async_callback client_callback,
+			       client_async_callback fail_callback,
+			       void *callback_data)
+{
+	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
+	int i, ret;
+
+	ret = 0;
+	for (i = 0; i < talloc_array_length(nodes); i++) {
+		uint32_t pnn = nodes[i];
+		TDB_DATA outdata;
+		int res;
+
+		/* Not so async... but good enough for testing! */
+		switch (opcode) {
+		case CTDB_CONTROL_RELOAD_NODES_FILE:
+			res = ctdb_ctrl_reload_nodes_file_stub(ctdb, timeout, pnn);
+			break;
+		case CTDB_CONTROL_RELOAD_PUBLIC_IPS:
+			DEBUG(DEBUG_NOTICE, ("Fake reload public IPs on node %u\n", pnn));
+			res = 0;
+			break;
+		default:
+			DEBUG(DEBUG_ERR, (__location__ " Control not implemented %u\n",
+					  opcode));
+			talloc_free(tmp_ctx);
+			return -1;
+		}
+
+		if (res == 0) {
+			if (client_callback != NULL) {
+				client_callback(ctdb, pnn, res, outdata, callback_data);
+			}
+		} else {
+			if (fail_callback != NULL) {
+				fail_callback(ctdb, pnn, res, outdata, callback_data);
+				ret = -1;
+			}
+		}
+	}
+
+	talloc_free(tmp_ctx);
+	return ret;
+}
