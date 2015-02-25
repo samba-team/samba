@@ -588,9 +588,9 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 		is_computer = TRUE;
 	}
 
-	memset(entry_ex, 0, sizeof(*entry_ex));
+	ZERO_STRUCTP(entry_ex);
 
-	p = talloc(mem_ctx, struct samba_kdc_entry);
+	p = talloc_zero(mem_ctx, struct samba_kdc_entry);
 	if (!p) {
 		ret = ENOMEM;
 		goto out;
@@ -937,6 +937,7 @@ out:
 	if (ret != 0) {
 		/* This doesn't free ent itself, that is for the eventual caller to do */
 		hdb_free_entry(context, entry_ex);
+		ZERO_STRUCTP(entry_ex);
 	} else {
 		talloc_steal(kdc_db_ctx, entry_ex->ctx);
 	}
