@@ -190,6 +190,11 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 		x->global->signing_required = true;
 	}
 
+	if ((lp_smb_encrypt(-1) > SMB_SIGNING_OFF) &&
+	    (xconn->smb2.client.capabilities & SMB2_CAP_ENCRYPTION)) {
+		x->global->encryption_required = true;
+	}
+
 	if (lp_smb_encrypt(-1) == SMB_SIGNING_REQUIRED) {
 		x->global->encryption_required = true;
 	}
