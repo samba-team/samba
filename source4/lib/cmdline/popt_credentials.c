@@ -166,7 +166,7 @@ struct poptOption popt_common_credentials4[] = {
 	{ "no-pass", 'N', POPT_ARG_NONE, &dont_ask, 'N', "Don't ask for a password" },
 	{ "password", 0, POPT_ARG_STRING, NULL, OPT_PASSWORD, "Password" },
 	{ "authentication-file", 'A', POPT_ARG_STRING, NULL, 'A', "Get the credentials from a file", "FILE" },
-	{ "machine-pass", 'P', POPT_ARG_NONE, NULL, 'P', "Use stored machine account password (implies -k)" },
+	{ "machine-pass", 'P', POPT_ARG_NONE, NULL, 'P', "Use stored machine account password" },
 	{ "simple-bind-dn", 0, POPT_ARG_STRING, NULL, OPT_SIMPLE_BIND_DN, "DN to use for a simple bind" },
 	{ "kerberos", 'k', POPT_ARG_STRING, NULL, OPT_KERBEROS, "Use Kerberos, -k [yes|no]" },
 	{ "krb5-ccache", 0, POPT_ARG_STRING, NULL, OPT_KRB5_CCACHE, "Credentials cache location for Kerberos" },
