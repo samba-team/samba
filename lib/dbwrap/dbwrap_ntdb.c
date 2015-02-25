@@ -49,6 +49,7 @@ static int tdb_store_flag_to_ntdb(int tdb_flag)
 	default:
 		smb_panic("unknown tdb_flag");
 	}
+	return -1;	/* NOTREACHED */
 }
 
 static NTSTATUS db_ntdb_store(struct db_record *rec, NTDB_DATA data, int flag)
