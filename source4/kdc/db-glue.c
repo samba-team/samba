@@ -188,9 +188,12 @@ static HDBFlags uf2HDBFlags(krb5_context context, uint32_t userAccountControl, e
 
 static int samba_kdc_entry_destructor(struct samba_kdc_entry *p)
 {
-    hdb_entry_ex *entry_ex = p->entry_ex;
-    free_hdb_entry(&entry_ex->entry);
-    return 0;
+	if (p->entry_ex != NULL) {
+		hdb_entry_ex *entry_ex = p->entry_ex;
+		free_hdb_entry(&entry_ex->entry);
+	}
+
+	return 0;
 }
 
 static void samba_kdc_free_entry(krb5_context context, hdb_entry_ex *entry_ex)
