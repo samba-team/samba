@@ -126,8 +126,9 @@ class CredentialsOptions(optparse.OptionGroup):
     """Command line options for specifying credentials."""
 
     def __init__(self, parser):
-        self.no_pass = True
+        self.ask_for_password = True
         self.ipaddress = None
+        self.machine_pass = False
         optparse.OptionGroup.__init__(self, parser, "Credentials Options")
         self.add_option("--simple-bind-dn", metavar="DN", action="callback",
                         callback=self._set_simple_bind_dn, type=str,
@@ -140,8 +141,9 @@ class CredentialsOptions(optparse.OptionGroup):
         self.add_option("-W", "--workgroup", metavar="WORKGROUP",
                         action="callback", type=str,
                         help="Workgroup", callback=self._parse_workgroup)
-        self.add_option("-N", "--no-pass", action="store_true",
-                        help="Don't ask for a password")
+        self.add_option("-N", "--no-pass", action="callback",
+                        help="Don't ask for a password",
+                        callback=self._set_no_password)
         self.add_option("-k", "--kerberos", metavar="KERBEROS",
                         action="callback", type=str,
                         help="Use Kerberos", callback=self._set_kerberos)
@@ -149,17 +151,29 @@ class CredentialsOptions(optparse.OptionGroup):
                         action="callback", type=str,
                         help="IP address of server",
                         callback=self._set_ipaddress)
+        self.add_option("-P", "--machine-pass",
+                        action="callback",
+                        help="Use stored machine account password",
+                        callback=self._set_machine_pass)
         self.creds = Credentials()
 
     def _parse_username(self, option, opt_str, arg, parser):
         self.creds.parse_string(arg)
+        self.machine_pass = False
 
     def _parse_workgroup(self, option, opt_str, arg, parser):
         self.creds.set_domain(arg)
 
     def _set_password(self, option, opt_str, arg, parser):
         self.creds.set_password(arg)
-        self.no_pass = False
+        self.ask_for_password = False
+        self.machine_pass = False
+
+    def _set_no_password(self, option, opt_str, arg, parser):
+        self.ask_for_password = False
+
+    def _set_machine_pass(self, option, opt_str, arg, parser):
+        self.machine_pass = True
 
     def _set_ipaddress(self, option, opt_str, arg, parser):
         self.ipaddress = arg
@@ -177,7 +191,9 @@ class CredentialsOptions(optparse.OptionGroup):
         :return: Credentials object
         """
         self.creds.guess(lp)
-        if self.no_pass:
+        if self.machine_pass:
+            self.creds.set_machine_account(lp)
+        elif self.ask_for_password:
             self.creds.set_cmdline_callbacks()
 
         # possibly fallback to using the machine account, if we have
