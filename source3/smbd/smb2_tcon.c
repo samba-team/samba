@@ -236,6 +236,11 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 		return NT_STATUS_BAD_NETWORK_NAME;
 	}
 
+	if ((lp_smb_encrypt(snum) > SMB_SIGNING_OFF) &&
+	    (conn->smb2.client.capabilities & SMB2_CAP_ENCRYPTION)) {
+		encryption_required = true;
+	}
+
 	if (lp_smb_encrypt(snum) == SMB_SIGNING_REQUIRED) {
 		encryption_required = true;
 	}
