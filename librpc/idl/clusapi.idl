@@ -70,10 +70,18 @@ import "security.idl";
 	/*****************/
 	/* Function 0x00 */
 
+#if 0
 	HCLUSTER_RPC
 	clusapi_OpenCluster(
 		[ out ] error_status_t *Status
 	);
+#else
+	void
+	clusapi_OpenCluster(
+		[ out ] error_status_t *Status,
+		[ out ] HCLUSTER_RPC *Cluster
+	);
+#endif
 
 	/*****************/
 	/* Function 0x01 */
@@ -191,16 +199,26 @@ import "security.idl";
 	/*****************/
 	/* Function 0x08 */
 
+#if 0
 	HRES_RPC
 	clusapi_OpenResource(
 		[ in, string ] [charset(UTF16)] uint16 *lpszResourceName,
 		[ out ] error_status_t *Status,
 		[ out ] error_status_t *rpc_status
 	);
-
+#else
+	void
+	clusapi_OpenResource(
+		[ in, string ] [charset(UTF16)] uint16 *lpszResourceName,
+		[ out ] error_status_t *Status,
+		[ out ] error_status_t *rpc_status,
+		[ out ] HRES_RPC *hResource
+	);
+#endif
 	/*****************/
 	/* Function 0x09 */
 
+#if 0
 	HRES_RPC
 	clusapi_CreateResource(
 		[ in ] HGROUP_RPC hGroup,
@@ -210,7 +228,18 @@ import "security.idl";
 		[ out ] error_status_t *Status,
 		[ out ] error_status_t *rpc_status
 	);
-
+#else
+	void
+	clusapi_CreateResource(
+		[ in ] HGROUP_RPC hGroup,
+		[ in, string ] [charset(UTF16)] uint16 *lpszResourceName,
+		[ in, string ] [charset(UTF16)] uint16 *lpszResourceType,
+		[ in ] uint32 dwFlags,
+		[ out ] error_status_t *Status,
+		[ out ] error_status_t *rpc_status,
+		[ out ] HRES_RPC *hResource
+	);
+#endif
 	/*****************/
 	/* Function 0x0A */
 
@@ -392,17 +421,25 @@ import "security.idl";
 
 	/*****************/
 	/* Function 0x1C */
-
+#if 0
 	HKEY_RPC
 	clusapi_GetRootKey(
 		[ in ] uint32 samDesired,
 		[ out ] error_status_t *Status,
 		[ out ] error_status_t *rpc_status
 	);
-
+#else
+	void
+	clusapi_GetRootKey(
+		[ in ] uint32 samDesired,
+		[ out ] error_status_t *Status,
+		[ out ] error_status_t *rpc_status,
+		[ out ] HKEY_RPC *phKey
+	);
+#endif
 	/*****************/
 	/* Function 0x1D */
-
+#if 0
 	HKEY_RPC
 	clusapi_CreateKey(
 		[ in ] HKEY_RPC hKey,
@@ -414,10 +451,23 @@ import "security.idl";
 		[ out ] error_status_t *Status,
 		[ out ] error_status_t *rpc_status
 	);
-
+#else
+	void
+	clusapi_CreateKey(
+		[ in ] HKEY_RPC hKey,
+		[ in, string ] [charset(UTF16)] uint16 *lpSubKey,
+		[ in ] uint32 dwOptions,
+		[ in ] uint32 samDesired,
+		[ in, unique ] RPC_SECURITY_ATTRIBUTES *lpSecurityAttributes,
+		[ out ] uint32 *lpdwDisposition,
+		[ out ] error_status_t *Status,
+		[ out ] error_status_t *rpc_status,
+		[ out ] HKEY_RPC *phKey
+	);
+#endif
 	/*****************/
 	/* Function 0x1E */
-
+#if 0
 	HKEY_RPC
 	clusapi_OpenKey(
 		[ in ] HKEY_RPC hKey,
@@ -426,7 +476,17 @@ import "security.idl";
 		[ out ] error_status_t *Status,
 		[ out ] error_status_t *rpc_status
 	);
-
+#else
+	void
+	clusapi_OpenKey(
+		[ in ] HKEY_RPC hKey,
+		[ in, string ] [charset(UTF16)] uint16 *lpSubKey,
+		[ in ] uint32 samDesired,
+		[ out ] error_status_t *Status,
+		[ out ] error_status_t *rpc_status,
+		[ out ] HKEY_RPC *phKey
+	);
+#endif
 	/*****************/
 	/* Function 0x1F */
 
@@ -549,24 +609,40 @@ import "security.idl";
 
 	/*****************/
 	/* Function 0x29 */
-
+#if 0
 	HGROUP_RPC
 	clusapi_OpenGroup(
 		[ in, string ] [charset(UTF16)] uint16 *lpszGroupName,
 		[ out ] error_status_t *Status,
 		[ out ] error_status_t *rpc_status
 	);
-
+#else
+	void
+	clusapi_OpenGroup(
+		[ in, string ] [charset(UTF16)] uint16 *lpszGroupName,
+		[ out ] error_status_t *Status,
+		[ out ] error_status_t *rpc_status,
+		[ out ] HGROUP_RPC *hGroup
+	);
+#endif
 	/*****************/
 	/* Function 0x2A */
-
+#if 0
 	HGROUP_RPC
 	clusapi_CreateGroup(
 		[ in, string ] [charset(UTF16)] uint16 *lpszGroupName,
 		[ out ] error_status_t *Status,
 		[ out ] error_status_t *rpc_status
 	);
-
+#else
+	void
+	clusapi_CreateGroup(
+		[ in, string ] [charset(UTF16)] uint16 *lpszGroupName,
+		[ out ] error_status_t *Status,
+		[ out ] error_status_t *rpc_status,
+		[ out ] HGROUP_RPC *hGroup
+	);
+#endif
 	/*****************/
 	/* Function 0x2B */
 
@@ -687,13 +763,20 @@ import "security.idl";
 
 	/*****************/
 	/* Function 0x37 */
-
+#if 0
 	HNOTIFY_RPC
 	clusapi_CreateNotify(
 		[ out ] error_status_t *Status,
 		[ out ] error_status_t *rpc_status
 	);
-
+#else
+	void
+	clusapi_CreateNotify(
+		[ out ] error_status_t *Status,
+		[ out ] error_status_t *rpc_status,
+		[ out ] HNOTIFY_RPC *hNotify
+	);
+#endif
 	/*****************/
 	/* Function 0x38 */
 
@@ -820,14 +903,22 @@ import "security.idl";
 
 	/*****************/
 	/* Function 0x42 */
-
+#if 0
 	HNODE_RPC
 	clusapi_OpenNode(
 		[ in, string ] [charset(UTF16)] uint16 *lpszNodeName,
 		[ out ] error_status_t *Status,
 		[ out ] error_status_t *rpc_status
 	);
-
+#else
+	void
+	clusapi_OpenNode(
+		[ in, string ] [charset(UTF16)] uint16 *lpszNodeName,
+		[ out ] error_status_t *Status,
+		[ out ] error_status_t *rpc_status,
+		[ out ] HNODE_RPC *hNode
+	);
+#endif
 	/*****************/
 	/* Function 0x43 */
 
@@ -1023,14 +1114,22 @@ import "security.idl";
 
 	/*****************/
 	/* Function 0x51 */
-
+#if 0
 	HNETWORK_RPC
 	clusapi_OpenNetwork(
 		[ in, string ] [charset(UTF16)] uint16 *lpszNetworkName,
 		[ out ] error_status_t *Status,
 		[ out ] error_status_t *rpc_status
 	);
-
+#else
+	void
+	clusapi_OpenNetwork(
+		[ in, string ] [charset(UTF16)] uint16 *lpszNetworkName,
+		[ out ] error_status_t *Status,
+		[ out ] error_status_t *rpc_status,
+		[ out ] HNETWORK_RPC *hNetwork
+	);
+#endif
 	/*****************/
 	/* Function 0x52 */
 
@@ -1153,14 +1252,22 @@ import "security.idl";
 
 	/*****************/
 	/* Function 0x5C */
-
+#if 0
 	HNETINTERFACE_RPC
 	clusapi_OpenNetInterface(
 		[ in, string ] [charset(UTF16)] uint16 *lpszNetInterfaceName,
 		[ out ] error_status_t *Status,
 		[ out ] error_status_t *rpc_status
 	);
-
+#else
+	void
+	clusapi_OpenNetInterface(
+		[ in, string ] [charset(UTF16)] uint16 *lpszNetInterfaceName,
+		[ out ] error_status_t *Status,
+		[ out ] error_status_t *rpc_status,
+		[ out ] HNETINTERFACE_RPC *hNetInterface
+	);
+#endif
 	/*****************/
 	/* Function 0x5D */
 
@@ -1441,17 +1548,26 @@ import "security.idl";
 
 	/*****************/
 	/* Function 0x75 */
-
+#if 0
 	HCLUSTER_RPC
 	clusapi_OpenClusterEx(
 		[ in ] uint32 dwDesiredAccess,
 		[ out ] uint32 *lpdwGrantedAccess,
 		[ out ] error_status_t *Status
 	);
+#else
+	void
+	clusapi_OpenClusterEx(
+		[ in ] uint32 dwDesiredAccess,
+		[ out ] uint32 *lpdwGrantedAccess,
+		[ out ] error_status_t *Status,
+		[ out ] HCLUSTER_RPC *hCluster
+	);
+#endif
 
 	/*****************/
 	/* Function 0x76 */
-
+#if 0
 	HNODE_RPC
 	clusapi_OpenNodeEx(
 		[ in, string ] [charset(UTF16)] uint16 *lpszNodeName,
@@ -1460,10 +1576,20 @@ import "security.idl";
 		[ out ] error_status_t *Status,
 		[ out ] error_status_t *rpc_status
 	);
-
+#else
+	void
+	clusapi_OpenNodeEx(
+		[ in, string ] [charset(UTF16)] uint16 *lpszNodeName,
+		[ in ] uint32 dwDesiredAccess,
+		[ out ] uint32 *lpdwGrantedAccess,
+		[ out ] error_status_t *Status,
+		[ out ] error_status_t *rpc_status,
+		[ out ] HNODE_RPC *hNode
+	);
+#endif
 	/*****************/
 	/* Function 0x77 */
-
+#if 0
 	HGROUP_RPC
 	clusapi_OpenGroupEx(
 		[ in, string ] [charset(UTF16)] uint16 *lpszGroupName,
@@ -1472,10 +1598,20 @@ import "security.idl";
 		[ out ] error_status_t *Status,
 		[ out ] error_status_t *rpc_status
 	);
-
+#else
+	void
+	clusapi_OpenGroupEx(
+		[ in, string ] [charset(UTF16)] uint16 *lpszGroupName,
+		[ in ] uint32 dwDesiredAccess,
+		[ out ] uint32 *lpdwGrantedAccess,
+		[ out ] error_status_t *Status,
+		[ out ] error_status_t *rpc_status,
+		[ out ] HGROUP_RPC *hGroup
+	);
+#endif
 	/*****************/
 	/* Function 0x78 */
-
+#if 0
 	HRES_RPC
 	clusapi_OpenResourceEx(
 		[ in, string ] [charset(UTF16)] uint16 *lpszResourceName,
@@ -1484,10 +1620,20 @@ import "security.idl";
 		[ out ] error_status_t *Status,
 		[ out ] error_status_t *rpc_status
 	);
-
+#else
+	void
+	clusapi_OpenResourceEx(
+		[ in, string ] [charset(UTF16)] uint16 *lpszResourceName,
+		[ in ] uint32 dwDesiredAccess,
+		[ out ] uint32 *lpdwGrantedAccess,
+		[ out ] error_status_t *Status,
+		[ out ] error_status_t *rpc_status,
+		[ out ] HRES_RPC *hResource
+	);
+#endif
 	/*****************/
 	/* Function 0x79 */
-
+#if 0
 	HNETWORK_RPC
 	clusapi_OpenNetworkEx(
 		[ in, string ] [charset(UTF16)] uint16 *lpszNetworkName,
@@ -1496,10 +1642,20 @@ import "security.idl";
 		[ out ] error_status_t *Status,
 		[ out ] error_status_t *rpc_status
 	);
-
+#else
+	void
+	clusapi_OpenNetworkEx(
+		[ in, string ] [charset(UTF16)] uint16 *lpszNetworkName,
+		[ in ] uint32 dwDesiredAccess,
+		[ out ] uint32 *lpdwGrantedAccess,
+		[ out ] error_status_t *Status,
+		[ out ] error_status_t *rpc_status,
+		[ out ] HNETWORK_RPC *hNetwork
+	);
+#endif
 	/*****************/
 	/* Function 0x7A */
-
+#if 0
 	HNETINTERFACE_RPC
 	clusapi_OpenNetInterfaceEx(
 		[ in, string ] [charset(UTF16)] uint16 *lpszNetInterfaceName,
@@ -1508,7 +1664,17 @@ import "security.idl";
 		[ out ] error_status_t *Status,
 		[ out ] error_status_t *rpc_status
 	);
-
+#else
+	void
+	clusapi_OpenNetInterfaceEx(
+		[ in, string ] [charset(UTF16)] uint16 *lpszNetInterfaceName,
+		[ in ] uint32 dwDesiredAccess,
+		[ out ] uint32 *lpdwGrantedAccess,
+		[ out ] error_status_t *Status,
+		[ out ] error_status_t *rpc_status,
+		[ out ] HNETINTERFACE_RPC *hNetInterface
+	);
+#endif
 	/*****************/
 	/* Function 0x7B */
 
@@ -1580,7 +1746,7 @@ import "security.idl";
 
 	/*****************/
 	/* Function 0x81 */
-
+#if 0
 	HGROUP_RPC
 	clusapi_CreateGroupEx(
 		[ in, string ] [charset(UTF16)] uint16 *lpszGroupName,
@@ -1588,7 +1754,16 @@ import "security.idl";
 		[ out ] error_status_t *Status,
 		[ out ] error_status_t *rpc_status
 	);
-
+#else
+	void
+	clusapi_CreateGroupEx(
+		[ in, string ] [charset(UTF16)] uint16 *lpszGroupName,
+		[ in, unique ] CLUSTER_CREATE_GROUP_INFO_RPC *pGroupInfo,
+		[ out ] error_status_t *Status,
+		[ out ] error_status_t *rpc_status,
+		[ out ] HGROUP_RPC *hGroup
+	);
+#endif
 	/*****************/
 	/* Function 0x82 */
 
@@ -1703,12 +1878,21 @@ import "security.idl";
 	//
 	// Notify interface V2 functions
 	//
+#if 0
 	HNOTIFY_RPC
 	clusapi_CreateNotifyV2(
 		[ out ] error_status_t *rpc_error,
 		[ out ] error_status_t *rpc_status
 	);
+#else
+	void
+	clusapi_CreateNotifyV2(
+		[ out ] error_status_t *rpc_error,
+		[ out ] error_status_t *rpc_status,
+		[ out ] HNOTIFY_RPC *hNotify
+	);
 
+#endif
 	/*****************/
 	/* Function 0x8A */
 

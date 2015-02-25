@@ -325,6 +325,11 @@ bld.SAMBA_SUBSYSTEM('NDR_WITNESS',
     public_deps='ndr'
     )
 
+bld.SAMBA_SUBSYSTEM('NDR_CLUSAPI',
+    source='gen_ndr/ndr_clusapi.c',
+    public_deps='ndr'
+    )
+
 bld.SAMBA_SUBSYSTEM('NDR_DCERPC',
     source='gen_ndr/ndr_dcerpc.c ndr/ndr_dcerpc.c',
     public_deps='ndr',
@@ -653,6 +658,11 @@ bld.SAMBA_SUBSYSTEM('RPC_NDR_FSRVP',
 bld.SAMBA_SUBSYSTEM('RPC_NDR_WITNESS',
     source='gen_ndr/ndr_witness_c.c',
     public_deps='dcerpc-binding NDR_WITNESS'
+    )
+
+bld.SAMBA_SUBSYSTEM('RPC_NDR_CLUSAPI',
+    source='gen_ndr/ndr_clusapi_c.c',
+    public_deps='dcerpc-binding NDR_CLUSAPI'
     )
 
 # a grouping library for NDR subsystems that may be used by more than one target
