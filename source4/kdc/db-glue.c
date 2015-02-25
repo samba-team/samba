@@ -1388,7 +1388,6 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 	struct ldb_message *msg = NULL;
 	struct ldb_dn *realm_dn = ldb_get_default_basedn(kdc_db_ctx->samdb);
 	char *realm_from_princ, *realm_from_princ_malloc;
-	krb5_principal alloc_principal = NULL;
 
 	realm_from_princ_malloc = smb_krb5_principal_get_realm(context, principal);
 	if (realm_from_princ_malloc == NULL) {
@@ -1467,10 +1466,6 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 		ret = samba_kdc_message2entry(context, kdc_db_ctx, mem_ctx,
 					      principal, SAMBA_KDC_ENT_TYPE_KRBTGT,
 					      flags, realm_dn, msg, entry_ex);
-		if (alloc_principal) {
-			/* This is again copied in the message2entry call */
-			krb5_free_principal(context, alloc_principal);
-		}
 		if (ret != 0) {
 			krb5_warnx(context, "samba_kdc_fetch: self krbtgt message2entry failed");
 		}
