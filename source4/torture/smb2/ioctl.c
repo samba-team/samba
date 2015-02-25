@@ -4256,6 +4256,115 @@ static bool test_ioctl_sparse_perms(struct torture_context *torture,
 	return true;
 }
 
+static bool test_ioctl_sparse_lck(struct torture_context *torture,
+				  struct smb2_tree *tree)
+{
+	struct smb2_handle fh;
+	struct smb2_handle fh2;
+	NTSTATUS status;
+	uint64_t dealloc_chunk_len = 64 * 1024;	/* Windows 2012 */
+	TALLOC_CTX *tmp_ctx = talloc_new(tree);
+	bool ok;
+	bool is_sparse;
+	struct smb2_lock lck;
+	struct smb2_lock_element el[1];
+	struct file_alloced_range_buf *far_rsp = NULL;
+	uint64_t far_count = 0;
+
+	ok = test_setup_create_fill(torture, tree, tmp_ctx, FNAME, &fh,
+				    dealloc_chunk_len, SEC_RIGHTS_FILE_ALL,
+				    FILE_ATTRIBUTE_NORMAL);
+	torture_assert(torture, ok, "setup file");
+
+	status = test_ioctl_sparse_fs_supported(torture, tree, tmp_ctx, &fh,
+						&ok);
+	torture_assert_ntstatus_ok(torture, status, "SMB2_GETINFO_FS");
+	if (!ok) {
+		torture_skip(torture, "Sparse files not supported\n");
+		smb2_util_close(tree, fh);
+	}
+
+	/* open and lock via separate fh2 */
+	status = torture_smb2_testfile(tree, FNAME, &fh2);
+	torture_assert_ntstatus_ok(torture, status, "2nd src open");
+
+	lck.in.lock_count	= 0x0001;
+	lck.in.lock_sequence	= 0x00000000;
+	lck.in.file.handle	= fh2;
+	lck.in.locks		= el;
+	el[0].offset		= 0;
+	el[0].length		= dealloc_chunk_len;
+	el[0].reserved		= 0;
+	el[0].flags		= SMB2_LOCK_FLAG_EXCLUSIVE;
+
+	status = smb2_lock(tree, &lck);
+	torture_assert_ntstatus_ok(torture, status, "lock");
+
+	/* set sparse while locked */
+	status = test_ioctl_sparse_req(torture, tmp_ctx, tree, fh, true);
+	torture_assert_ntstatus_ok(torture, status, "FSCTL_SET_SPARSE");
+
+	status = test_sparse_get(torture, tmp_ctx, tree, fh, &is_sparse);
+	torture_assert_ntstatus_ok(torture, status, "test_sparse_get");
+	torture_assert(torture, is_sparse, "sparse attr after set");
+
+	/* zero data over locked range should fail */
+	status = test_ioctl_zdata_req(torture, tmp_ctx, tree, fh,
+				      0,	/* off */
+				      4096);	/* beyond_final_zero */
+	torture_assert_ntstatus_equal(torture, status,
+				      NT_STATUS_FILE_LOCK_CONFLICT,
+				      "zero_data locked");
+
+	/* QAR over locked range should pass */
+	status = test_ioctl_qar_req(torture, tmp_ctx, tree, fh,
+				    0,		/* off */
+				    4096,	/* len */
+				    &far_rsp, &far_count);
+	torture_assert_ntstatus_ok(torture, status,
+			"FSCTL_QUERY_ALLOCATED_RANGES locked");
+	torture_assert_u64_equal(torture, far_count, 1,
+				 "unexpected response len");
+	torture_assert_u64_equal(torture, far_rsp[0].file_off, 0,
+				 "unexpected allocation");
+	torture_assert_u64_equal(torture, far_rsp[0].len,
+				 4096,
+				 "unexpected far len");
+
+	/* zero data over range past EOF should pass */
+	status = test_ioctl_zdata_req(torture, tmp_ctx, tree, fh,
+				      dealloc_chunk_len,	/* off */
+				      dealloc_chunk_len + 4096);
+	torture_assert_ntstatus_ok(torture, status,
+				   "zero_data past EOF locked");
+
+	/* QAR over range past EOF should pass */
+	status = test_ioctl_qar_req(torture, tmp_ctx, tree, fh,
+				    dealloc_chunk_len,		/* off */
+				    4096,			/* len */
+				    &far_rsp, &far_count);
+	torture_assert_ntstatus_ok(torture, status,
+			"FSCTL_QUERY_ALLOCATED_RANGES past EOF locked");
+	torture_assert_u64_equal(torture, far_count, 0,
+				 "unexpected response len");
+
+	lck.in.lock_count	= 0x0001;
+	lck.in.lock_sequence	= 0x00000001;
+	lck.in.file.handle	= fh2;
+	lck.in.locks		= el;
+	el[0].offset		= 0;
+	el[0].length		= dealloc_chunk_len;
+	el[0].reserved		= 0;
+	el[0].flags		= SMB2_LOCK_FLAG_UNLOCK;
+	status = smb2_lock(tree, &lck);
+	torture_assert_ntstatus_ok(torture, status, "unlock");
+
+	smb2_util_close(tree, fh2);
+	smb2_util_close(tree, fh);
+	talloc_free(tmp_ctx);
+	return true;
+}
+
 /*
  * basic testing of SMB2 ioctls
  */
@@ -4349,6 +4458,8 @@ struct torture_suite *torture_smb2_ioctl_init(void)
 				     test_ioctl_sparse_punch_invalid);
 	torture_suite_add_1smb2_test(suite, "sparse_perms",
 				     test_ioctl_sparse_perms);
+	torture_suite_add_1smb2_test(suite, "sparse_lock",
+				     test_ioctl_sparse_lck);
 
 	suite->description = talloc_strdup(suite, "SMB2-IOCTL tests");
 
