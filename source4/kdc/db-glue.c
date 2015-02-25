@@ -545,7 +545,8 @@ out:
  */
 static krb5_error_code samba_kdc_message2entry(krb5_context context,
 					       struct samba_kdc_db_context *kdc_db_ctx,
-					       TALLOC_CTX *mem_ctx, krb5_const_principal principal,
+					       TALLOC_CTX *mem_ctx,
+					       krb5_const_principal principal,
 					       enum samba_kdc_ent_type ent_type,
 					       unsigned flags,
 					       struct ldb_dn *realm_dn,
