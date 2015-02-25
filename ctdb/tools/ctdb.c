@@ -6338,12 +6338,22 @@ static bool sanity_check_nodes_file_changes(TALLOC_CTX *mem_ctx,
 	return have_changes;
 }
 
+static void reload_nodes_fail_callback(struct ctdb_context *ctdb,
+				       uint32_t node_pnn, int32_t res,
+				       TDB_DATA outdata, void *callback_data)
+{
+	DEBUG(DEBUG_WARNING,
+	      ("WARNING: Node %u failed to reload nodes. You MUST fix this node manually!\n",
+	       node_pnn));
+}
+
 static int control_reload_nodes_file(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	int i, ret;
 	struct ctdb_node_map *nodemap=NULL;
 	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
 	struct ctdb_node_map *file_nodemap;
+	uint32_t *conn;
 
 	assert_current_node_only(ctdb);
 
@@ -6377,29 +6387,17 @@ static int control_reload_nodes_file(struct ctdb_context *ctdb, int argc, const 
 	}
 
 	/* Now make the changes */
-
-	/* reload the nodes file on all remote nodes */
-	for (i=0;i<nodemap->num;i++) {
-		if (nodemap->nodes[i].pnn == options.pnn) {
-			continue;
-		}
-		if (nodemap->nodes[i].flags & NODE_FLAGS_DISCONNECTED) {
-                        continue;
-		}
-		DEBUG(DEBUG_NOTICE, ("Reloading nodes file on node %u\n", nodemap->nodes[i].pnn));
-		ret = ctdb_ctrl_reload_nodes_file(ctdb, TIMELIMIT(),
-			nodemap->nodes[i].pnn);
-		if (ret != 0) {
-			DEBUG(DEBUG_ERR, ("ERROR: Failed to reload nodes file on node %u. You MUST fix that node manually!\n", nodemap->nodes[i].pnn));
-		}
+	conn = list_of_connected_nodes(ctdb, nodemap, tmp_ctx, true);
+	for (i = 0; i < talloc_array_length(conn); i++) {
+		DEBUG(DEBUG_NOTICE, ("Reloading nodes file on node %u\n",
+				     conn[i]));
 	}
 
-	/* reload the nodes file on the specified node */
-	DEBUG(DEBUG_NOTICE, ("Reloading nodes file on node %u\n", options.pnn));
-	ret = ctdb_ctrl_reload_nodes_file(ctdb, TIMELIMIT(), options.pnn);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, ("ERROR: Failed to reload nodes file on node %u. You MUST fix that node manually!\n", options.pnn));
-	}
+	ret = ctdb_client_async_control(ctdb, CTDB_CONTROL_RELOAD_NODES_FILE,
+					conn, 0, TIMELIMIT(),
+					true, tdb_null,
+					NULL, reload_nodes_fail_callback,
+					NULL);
 
 	/* initiate a recovery */
 	control_recover(ctdb, argc, argv);

@@ -18,10 +18,10 @@ Node 1 is unchanged
 Node 2 is DELETED
 Node 3 is NEW
 Node 4 is NEW
-Reloading nodes file on node 1
-ctdb_ctrl_reload_nodes_file: node 1
 Reloading nodes file on node 0
+Reloading nodes file on node 1
 ctdb_ctrl_reload_nodes_file: node 0
+ctdb_ctrl_reload_nodes_file: node 1
 EOF
 
 simple_test <<EOF

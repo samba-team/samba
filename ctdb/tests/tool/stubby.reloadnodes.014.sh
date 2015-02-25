@@ -15,8 +15,8 @@ Node 0 is DELETED
 Node 1 is unchanged
 Node 2 is unchanged
 Reloading nodes file on node 1
-ctdb_ctrl_reload_nodes_file: node 1
 Reloading nodes file on node 2
+ctdb_ctrl_reload_nodes_file: node 1
 ctdb_ctrl_reload_nodes_file: node 2
 EOF
 

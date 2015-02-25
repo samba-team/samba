@@ -14,10 +14,10 @@ required_result 0 <<EOF
 Node 0 is unchanged
 Node 1 is DELETED
 Node 2 is unchanged
-Reloading nodes file on node 2
-ctdb_ctrl_reload_nodes_file: node 2
 Reloading nodes file on node 0
+Reloading nodes file on node 2
 ctdb_ctrl_reload_nodes_file: node 0
+ctdb_ctrl_reload_nodes_file: node 2
 EOF
 
 simple_test <<EOF
