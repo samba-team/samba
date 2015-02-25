@@ -569,8 +569,8 @@ static struct bkrp_BackupKey *createRestoreGUIDStruct(struct torture_context *tc
 	struct bkrp_client_side_wrapped data;
 	DATA_BLOB *xs;
 	DATA_BLOB *sec;
-	DATA_BLOB *enc_sec;
-	DATA_BLOB *enc_xs;
+	DATA_BLOB *enc_sec = NULL;
+	DATA_BLOB *enc_xs = NULL;
 	DATA_BLOB *blob2;
 	DATA_BLOB enc_sec_reverted;
 	DATA_BLOB des3_key;

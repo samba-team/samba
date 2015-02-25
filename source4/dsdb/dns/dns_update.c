@@ -456,7 +456,8 @@ static NTSTATUS dnsupdate_dnsupdate_RODC(struct irpc_message *msg,
 	struct tevent_req *req;
 	int i, ret;
 	struct GUID ntds_guid;
-	const char *site, *dnsdomain, *dnsforest, *ntdsguid, *hostname;
+	const char *site, *dnsdomain, *dnsforest, *ntdsguid;
+	const char *hostname = NULL;
 	struct ldb_dn *sid_dn;
 	const char *attrs[] = { "dNSHostName", NULL };
 	struct ldb_result *res;

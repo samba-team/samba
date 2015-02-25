@@ -4211,10 +4211,10 @@ static NTSTATUS check_ft_info(TALLOC_CTX *mem_ctx,
 	struct ForestTrustInfoRecord *trec;
 	const char *dns_name;
 	const char *nb_name;
-	struct dom_sid *sid;
-	const char *tname;
+	struct dom_sid *sid = NULL;
+	const char *tname = NULL;
 	size_t dns_len;
-	size_t tlen;
+	size_t tlen = 0;
 	NTSTATUS nt_status = NT_STATUS_OK;
 	uint32_t new_fti_idx;
 	uint32_t i;
@@ -4224,7 +4224,7 @@ static NTSTATUS check_ft_info(TALLOC_CTX *mem_ctx,
 	bool sid_conflict;
 	bool nb_conflict;
 	bool exclusion;
-	bool ex_rule;
+	bool ex_rule = false;
 	int ret;
 
 	for (new_fti_idx = 0; new_fti_idx < new_fti->count; new_fti_idx++) {

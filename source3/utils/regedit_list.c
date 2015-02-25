@@ -491,7 +491,7 @@ void multilist_refresh(struct multilist *list)
 void multilist_driver(struct multilist *list, int c)
 {
 	unsigned page;
-	const void *tmp;
+	const void *tmp = NULL;
 
 	if (list->nrows == 0) {
 		return;

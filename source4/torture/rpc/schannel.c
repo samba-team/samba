@@ -59,7 +59,7 @@ bool test_netlogon_ex_ops(struct dcerpc_pipe *p, struct torture_context *tctx,
 	struct netr_UserSessionKey key;
 	struct netr_LMSessionKey LMSessKey;
 	uint32_t validation_levels[] = { 2, 3 };
-	struct netr_SamBaseInfo *base;
+	struct netr_SamBaseInfo *base = NULL;
 	const char *crypto_alg = "";
 	bool can_do_validation_6 = true;
 

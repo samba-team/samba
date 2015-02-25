@@ -557,7 +557,7 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 			
 			return NT_STATUS_MORE_PROCESSING_REQUIRED;
 		} else if (maj_stat == GSS_S_CONTEXT_EXPIRED) {
-			gss_cred_id_t creds;
+			gss_cred_id_t creds = NULL;
 			gss_name_t name;
 			gss_buffer_desc buffer;
 			OM_uint32 lifetime = 0;
@@ -584,7 +584,7 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 						    &name, &lifetime, &usage, NULL);
 
 			if (maj_stat == GSS_S_COMPLETE) {
-				const char *usage_string;
+				const char *usage_string = NULL;
 				switch (usage) {
 				case GSS_C_BOTH:
 					usage_string = "GSS_C_BOTH";

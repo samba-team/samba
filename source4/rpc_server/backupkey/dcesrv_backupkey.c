@@ -569,7 +569,7 @@ static WERROR bkrp_client_wrap_decrypt_data(struct dcesrv_call_state *dce_call,
 	char *guid_string;
 	char *cert_secret_name;
 	DATA_BLOB lsa_secret;
-	DATA_BLOB *uncrypted_data;
+	DATA_BLOB *uncrypted_data = NULL;
 	NTSTATUS status;
 	uint32_t requested_version;
 	

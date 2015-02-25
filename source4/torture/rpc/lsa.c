@@ -2804,8 +2804,8 @@ static bool test_CreateTrustedDomainEx_common(struct dcerpc_pipe *p,
 	struct lsa_CreateTrustedDomainEx r;
 	struct lsa_CreateTrustedDomainEx2 r2;
 	struct lsa_TrustDomainInfoInfoEx trustinfo;
-	struct lsa_TrustDomainInfoAuthInfoInternal *authinfo_internal;
-	struct lsa_TrustDomainInfoAuthInfo *authinfo;
+	struct lsa_TrustDomainInfoAuthInfoInternal *authinfo_internal = NULL;
+	struct lsa_TrustDomainInfoAuthInfo *authinfo = NULL;
 	struct dom_sid **domsid;
 	struct policy_handle *trustdom_handle;
 	struct lsa_QueryTrustedDomainInfo q;

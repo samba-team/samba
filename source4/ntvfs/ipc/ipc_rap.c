@@ -255,6 +255,8 @@ static NTSTATUS _rap_netshareenum(struct rap_call *call)
 {
 	struct rap_NetShareEnum r;
 	NTSTATUS result;
+	uint32_t offset_save = 0;
+	struct rap_heap_save heap_save = {0};
 
 	RAP_GOTO(rap_srv_pull_word(call, &r.in.level));
 	RAP_GOTO(rap_srv_pull_bufsize(call, &r.in.bufsize));
@@ -282,8 +284,6 @@ static NTSTATUS _rap_netshareenum(struct rap_call *call)
 	for (r.out.count = 0; r.out.count < r.out.available; r.out.count++) {
 
 		int i = r.out.count;
-		uint32_t offset_save;
-		struct rap_heap_save heap_save;
 
 		offset_save = call->ndr_push_data->offset;
 		rap_heap_save(call->heap, &heap_save);
@@ -335,6 +335,8 @@ static NTSTATUS _rap_netserverenum2(struct rap_call *call)
 {
 	struct rap_NetServerEnum2 r;
 	NTSTATUS result;
+	uint32_t offset_save = 0;
+	struct rap_heap_save heap_save = {0};
 
 	RAP_GOTO(rap_srv_pull_word(call, &r.in.level));
 	RAP_GOTO(rap_srv_pull_bufsize(call, &r.in.bufsize));
@@ -364,8 +366,6 @@ static NTSTATUS _rap_netserverenum2(struct rap_call *call)
 	for (r.out.count = 0; r.out.count < r.out.available; r.out.count++) {
 
 		int i = r.out.count;
-		uint32_t offset_save;
-		struct rap_heap_save heap_save;
 
 		offset_save = call->ndr_push_data->offset;
 		rap_heap_save(call->heap, &heap_save);

@@ -991,7 +991,7 @@ static bool torture_winbind_struct_lookup_name_sid(struct torture_context *tortu
 	struct winbindd_request req;
 	struct winbindd_response rep;
 	const char *invalid_sid = "S-0-0-7";
-	char *domain;
+	char *domain = NULL;
 	const char *invalid_user = "noone";
 	char *invalid_name;
 	bool strict = torture_setting_bool(torture, "strict mode", false);

@@ -2498,7 +2498,8 @@ static int samldb_service_principal_names_change(struct samldb_ctx *ac)
 		}
 
 		for (i = 0; i < res->msgs[0]->elements[0].num_values; i++) {
-			char *old_str, *new_str, *pos;
+			char *old_str, *new_str;
+			char *pos = NULL;
 			const char *tok;
 			struct ldb_val *vals;
 			bool found = false;

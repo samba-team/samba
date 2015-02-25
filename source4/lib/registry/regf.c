@@ -253,7 +253,7 @@ static DATA_BLOB hbin_alloc(struct regf_data *data, uint32_t size,
 	ret.data = hbin->data + rel_offset + 0x4; /* Skip past length */
 	ret.length = size - 0x4;
 	if (offset) {
-		uint32_t new_rel_offset;
+		uint32_t new_rel_offset = 0;
 		*offset = hbin->offset_from_first + rel_offset + 0x20;
 		SMB_ASSERT(hbin_by_offset(data, *offset, &new_rel_offset) == hbin);
 		SMB_ASSERT(new_rel_offset == rel_offset);
@@ -1871,7 +1871,7 @@ static WERROR regf_set_value(struct hive_key *key, const char *name,
 	struct vk_block vk;
 	uint32_t i;
 	uint32_t tmp_vk_offset, vk_offset, old_vk_offset = (uint32_t) -1;
-	DATA_BLOB values;
+	DATA_BLOB values = {0};
 
 	ZERO_STRUCT(vk);
 

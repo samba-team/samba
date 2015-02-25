@@ -247,7 +247,7 @@ static void winbind_task_init(struct task_server *task)
 	struct wbsrv_service *service;
 	struct wbsrv_listen_socket *listen_socket;
 	char *errstring;
-	struct dom_sid *primary_sid;
+	struct dom_sid *primary_sid = NULL;
 	bool ok;
 
 	task_server_set_title(task, "task[winbind]");

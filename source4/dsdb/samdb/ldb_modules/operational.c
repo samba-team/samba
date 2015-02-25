@@ -143,7 +143,7 @@ static int construct_generic_token_groups(struct ldb_module *module,
 	TALLOC_CTX *tmp_ctx = talloc_new(msg);
 	unsigned int i;
 	int ret;
-	const char *filter;
+	const char *filter = NULL;
 
 	NTSTATUS status;
 

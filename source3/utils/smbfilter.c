@@ -85,7 +85,8 @@ static void filter_request(char *buf, size_t buf_len)
 	int type = CVAL(buf,smb_com);
 	unsigned x;
 	fstring name1,name2;
-	int name_len1, name_len2;
+	int name_len1 = 0;
+	int name_len2;
 	int name_type1, name_type2;
 
 	if (msg_type) {
