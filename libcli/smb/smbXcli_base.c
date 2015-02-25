@@ -590,9 +590,8 @@ NTSTATUS smbXcli_conn_samba_suicide(struct smbXcli_conn *conn,
 	if (req == NULL) {
 		goto fail;
 	}
-	ok = tevent_req_poll(req, ev);
+	ok = tevent_req_poll_ntstatus(req, ev, &status);
 	if (!ok) {
-		status = map_nt_error_from_unix_common(errno);
 		goto fail;
 	}
 	status = smbXcli_conn_samba_suicide_recv(req);
@@ -4876,9 +4875,8 @@ NTSTATUS smbXcli_negprot(struct smbXcli_conn *conn,
 	if (req == NULL) {
 		goto fail;
 	}
-	ok = tevent_req_poll(req, ev);
+	ok = tevent_req_poll_ntstatus(req, ev, &status);
 	if (!ok) {
-		status = map_nt_error_from_unix_common(errno);
 		goto fail;
 	}
 	status = smbXcli_negprot_recv(req);
