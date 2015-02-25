@@ -263,7 +263,7 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 			xconn->smb2.credits.multicredit = true;
 
 			/*
-			 * We allow up to allmost 16MB.
+			 * We allow up to almost 16MB.
 			 *
 			 * The maximum PDU size is 0xFFFFFF (16776960)
 			 * and we need some space for the header.
