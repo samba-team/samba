@@ -646,7 +646,6 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 	 * fixed UPPER case realm, but the as-sent username
 	 */
 
-	entry_ex->entry.principal = malloc(sizeof(*(entry_ex->entry.principal)));
 	if (ent_type == SAMBA_KDC_ENT_TYPE_KRBTGT) {
 		if (flags & (HDB_F_CANON)) {
 			/*
