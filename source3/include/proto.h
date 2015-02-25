@@ -821,7 +821,6 @@ bool name_status_find(const char *q_name,
 			int type,
 			const struct sockaddr_storage *to_ss,
 			fstring name);
-int ip_service_compare(struct ip_service *ss1, struct ip_service *ss2);
 int remove_duplicate_addrs2(struct ip_service *iplist, int count );
 struct tevent_req *name_query_send(TALLOC_CTX *mem_ctx,
 				   struct tevent_context *ev,

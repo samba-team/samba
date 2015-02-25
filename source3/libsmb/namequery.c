@@ -1055,7 +1055,7 @@ static int addr_compare(const struct sockaddr_storage *ss1,
  compare 2 ldap IPs by nearness to our interfaces - used in qsort
 *******************************************************************/
 
-int ip_service_compare(struct ip_service *ss1, struct ip_service *ss2)
+static int ip_service_compare(struct ip_service *ss1, struct ip_service *ss2)
 {
 	int result;
 
