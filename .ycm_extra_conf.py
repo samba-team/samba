@@ -141,6 +141,7 @@ flags = [
 '-Ibin/default/source3/include',
 '-Ibin/default/source3/librpc/gen_ndr',
 '-Ibin/default/source3/param',
+'-Ibin/default/source4',
 '-Ibin/default/source4/auth',
 '-Ibin/default/source4/auth/gensec',
 '-Ibin/default/source4/auth/kerberos',
