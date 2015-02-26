@@ -143,8 +143,19 @@ import "security.idl";
 		[ out ] error_status_t *rpc_status
 	);
 
+	typedef [bitmap32bit] bitmap {
+		CLUSTER_ENUM_NODE			= 0x00000001,
+		CLUSTER_ENUM_RESTYPE			= 0x00000002,
+		CLUSTER_ENUM_RESOURCE			= 0x00000004,
+		CLUSTER_ENUM_GROUP			= 0x00000008,
+		CLUSTER_ENUM_NETWORK			= 0x00000010,
+		CLUSTER_ENUM_NETINTERFACE		= 0x00000020,
+		CLUSTER_ENUM_INTERNAL_NETWORK		= 0x80000000,
+		CLUSTER_ENUM_SHARED_VOLUME_RESOURCE	= 0x40000000
+	} ClusterEnumType;
+
 	typedef struct {
-		uint32 Type;
+		ClusterEnumType Type;
 		[string] [charset(UTF16)] uint16 *Name;
 	} ENUM_ENTRY;
 
@@ -191,7 +202,7 @@ import "security.idl";
 
 	error_status_t
 	clusapi_CreateEnum(
-		[ in ] uint32 dwType,
+		[ in ] ClusterEnumType dwType,
 		[ out ] ENUM_LIST **ReturnEnum,
 		[ out ] error_status_t *rpc_status
 	);
