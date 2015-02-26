@@ -4519,6 +4519,83 @@ static bool test_ioctl_sparse_qar_ob1(struct torture_context *torture,
 	return true;
 }
 
+/* test QAR with multi-range responses */
+static bool test_ioctl_sparse_qar_multi(struct torture_context *torture,
+					struct smb2_tree *tree)
+{
+	struct smb2_handle fh;
+	NTSTATUS status;
+	TALLOC_CTX *tmp_ctx = talloc_new(tree);
+	bool ok;
+	uint64_t dealloc_chunk_len = 64 * 1024;	/* Windows 2012 */
+	uint64_t this_off;
+	int i;
+	struct file_alloced_range_buf *far_rsp = NULL;
+	uint64_t far_count = 0;
+
+	ok = test_setup_create_fill(torture, tree, tmp_ctx,
+				    FNAME, &fh, dealloc_chunk_len * 2,
+				    SEC_RIGHTS_FILE_ALL,
+				    FILE_ATTRIBUTE_NORMAL);
+	torture_assert(torture, ok, "setup file");
+
+	status = test_ioctl_sparse_fs_supported(torture, tree, tmp_ctx, &fh,
+						&ok);
+	torture_assert_ntstatus_ok(torture, status, "SMB2_GETINFO_FS");
+	if (!ok) {
+		torture_skip(torture, "Sparse files not supported\n");
+		smb2_util_close(tree, fh);
+	}
+
+	status = test_ioctl_sparse_req(torture, tmp_ctx, tree, fh, true);
+	torture_assert_ntstatus_ok(torture, status, "FSCTL_SET_SPARSE");
+
+	/* each loop, write out two chunks and punch the first out */
+	for (i = 0; i < 10; i++) {
+		this_off = i * dealloc_chunk_len * 2;
+
+		ok = write_pattern(torture, tree, tmp_ctx, fh,
+				   this_off,			/* off */
+				   dealloc_chunk_len * 2,	/* len */
+				   this_off);		/* pattern offset */
+		torture_assert(torture, ok, "write pattern");
+
+		status = test_ioctl_zdata_req(torture, tmp_ctx, tree, fh,
+					      this_off,	/* off */
+					      this_off + dealloc_chunk_len);
+		torture_assert_ntstatus_ok(torture, status, "zero_data");
+	}
+
+	/* should now have one separate region for each iteration */
+	status = test_ioctl_qar_req(torture, tmp_ctx, tree, fh,
+				    0,
+				    10 * dealloc_chunk_len * 2,
+				    &far_rsp, &far_count);
+	torture_assert_ntstatus_ok(torture, status,
+			"FSCTL_QUERY_ALLOCATED_RANGES req failed");
+	if (far_count == 1) {
+		torture_comment(torture, "this FS doesn't deallocate 64K"
+				"zeroed ranges in sparse files\n");
+		return true;	/* FS specific, not a failure */
+	}
+	torture_assert_u64_equal(torture, far_count, 10,
+				 "unexpected response len");
+	for (i = 0; i < 10; i++) {
+		this_off = i * dealloc_chunk_len * 2;
+
+		torture_assert_u64_equal(torture, far_rsp[i].file_off,
+					 this_off + dealloc_chunk_len,
+					 "unexpected allocation");
+		torture_assert_u64_equal(torture, far_rsp[i].len,
+					 dealloc_chunk_len,
+					 "unexpected far len");
+	}
+
+	smb2_util_close(tree, fh);
+	talloc_free(tmp_ctx);
+	return true;
+}
+
 /*
  * basic testing of SMB2 ioctls
  */
@@ -4616,6 +4693,8 @@ struct torture_suite *torture_smb2_ioctl_init(void)
 				     test_ioctl_sparse_lck);
 	torture_suite_add_1smb2_test(suite, "sparse_qar_ob1",
 				     test_ioctl_sparse_qar_ob1);
+	torture_suite_add_1smb2_test(suite, "sparse_qar_multi",
+				     test_ioctl_sparse_qar_multi);
 
 	suite->description = talloc_strdup(suite, "SMB2-IOCTL tests");
 
