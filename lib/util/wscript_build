@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+# Please add any new SAMBA_SUBSYSTEM/SAMBA_LIBRARY to the bottom of the file
+# unless they are also required to build standalone ctdb.
+
 bld.SAMBA_SUBSYSTEM('time-basic',
                     source='time_basic.c',
                     deps='replace',
@@ -33,11 +36,6 @@ bld.SAMBA_LIBRARY('samba-debug',
 
 bld.SAMBA_LIBRARY('socket-blocking',
                   source='blocking.c',
-                  local_include=False,
-                  private_library=True)
-
-bld.SAMBA_LIBRARY('iov_buf',
-                  source='iov_buf.c',
                   local_include=False,
                   private_library=True)
 
@@ -154,5 +152,10 @@ if not bld.env.SAMBA_UTIL_CORE_ONLY:
     bld.SAMBA_LIBRARY('server_id_db',
                       source='server_id_db.c',
                       deps='talloc tdb strv util_tdb tdb-wrap samba-util',
+                      local_include=False,
+                      private_library=True)
+
+    bld.SAMBA_LIBRARY('iov_buf',
+                      source='iov_buf.c',
                       local_include=False,
                       private_library=True)
