@@ -1021,7 +1021,8 @@ bld.SAMBA3_BINARY('rpcclient/rpcclient',
                  rpcclient/cmd_eventlog.c
                  rpcclient/cmd_winreg.c
                  rpcclient/cmd_fss.c
-                 rpcclient/cmd_witness.c''',
+                 rpcclient/cmd_witness.c
+                 rpcclient/cmd_clusapi.c''',
                  deps='''
                  talloc
                  popt_samba3
@@ -1050,6 +1051,7 @@ bld.SAMBA3_BINARY('rpcclient/rpcclient',
                  INIT_SAMR
                  RPC_NDR_FSRVP
                  RPC_NDR_WITNESS
+                 RPC_NDR_CLUSAPI
                  ''')
 
 bld.SAMBA3_BINARY('client/smbclient',

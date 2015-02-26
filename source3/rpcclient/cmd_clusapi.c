@@ -1,0 +1,251 @@
+/*
+   Unix SMB/CIFS implementation.
+   RPC pipe client
+
+   Copyright (C) Günther Deschner 2015
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+#include "includes.h"
+#include "rpcclient.h"
+#include "../librpc/gen_ndr/ndr_clusapi_c.h"
+
+static WERROR cmd_clusapi_open_cluster(struct rpc_pipe_client *cli,
+				       TALLOC_CTX *mem_ctx,
+				       int argc,
+				       const char **argv)
+{
+	struct dcerpc_binding_handle *b = cli->binding_handle;
+	NTSTATUS status;
+	uint32_t error;
+	struct policy_handle Cluster;
+
+	status = dcerpc_clusapi_OpenCluster(b, mem_ctx,
+					    &error,
+					    &Cluster);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ntstatus_to_werror(status);
+	}
+
+	if (error) {
+		printf("error: %d\n", error);
+		return W_ERROR(error);
+	}
+
+	printf("successfully opened cluster\n");
+
+	status = dcerpc_clusapi_CloseCluster(b, mem_ctx,
+					     &Cluster,
+					     &error);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ntstatus_to_werror(status);
+	}
+
+	if (error) {
+		printf("error: %d\n", error);
+		return W_ERROR(error);
+	}
+
+	printf("successfully closed cluster\n");
+
+	return WERR_OK;
+}
+
+static WERROR cmd_clusapi_get_cluster_name(struct rpc_pipe_client *cli,
+					   TALLOC_CTX *mem_ctx,
+					   int argc,
+					   const char **argv)
+{
+	struct dcerpc_binding_handle *b = cli->binding_handle;
+	NTSTATUS status;
+	uint32_t error;
+	const char *ClusterName;
+	const char *NodeName;
+
+	status = dcerpc_clusapi_GetClusterName(b, mem_ctx,
+					       &ClusterName,
+					       &NodeName,
+					       &error);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ntstatus_to_werror(status);
+	}
+
+	if (error) {
+		printf("error: %d\n", error);
+		return W_ERROR(error);
+	}
+
+	printf("ClusterName: %s\n", ClusterName);
+	printf("NodeName: %s\n", NodeName);
+
+	return WERR_OK;
+}
+
+static WERROR cmd_clusapi_get_cluster_version(struct rpc_pipe_client *cli,
+					      TALLOC_CTX *mem_ctx,
+					      int argc,
+					      const char **argv)
+{
+	struct dcerpc_binding_handle *b = cli->binding_handle;
+	NTSTATUS status;
+	uint32_t error;
+	uint16_t lpwMajorVersion;
+	uint16_t lpwMinorVersion;
+	uint16_t lpwBuildNumber;
+	const char *lpszVendorId;
+	const char *lpszCSDVersion;
+
+	status = dcerpc_clusapi_GetClusterVersion(b, mem_ctx,
+						  &lpwMajorVersion,
+						  &lpwMinorVersion,
+						  &lpwBuildNumber,
+						  &lpszVendorId,
+						  &lpszCSDVersion,
+						  &error);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ntstatus_to_werror(status);
+	}
+
+	if (error) {
+		printf("error: %d\n", error);
+		return W_ERROR(error);
+	}
+
+	printf("lpwMajorVersion: %d\n", lpwMajorVersion);
+	printf("lpwMinorVersion: %d\n", lpwMinorVersion);
+	printf("lpwBuildNumber: %d\n", lpwBuildNumber);
+	printf("lpszVendorId: %s\n", lpszVendorId);
+	printf("lpszCSDVersion: %s\n", lpszCSDVersion);
+
+	return WERR_OK;
+}
+
+static WERROR cmd_clusapi_get_quorum_resource(struct rpc_pipe_client *cli,
+					      TALLOC_CTX *mem_ctx,
+					      int argc,
+					      const char **argv)
+{
+	struct dcerpc_binding_handle *b = cli->binding_handle;
+	NTSTATUS status;
+	uint32_t error;
+	const char *lpszResourceName;
+	const char *lpszDeviceName;
+	uint32_t pdwMaxQuorumLogSize;
+	uint32_t rpc_status;
+
+	status = dcerpc_clusapi_GetQuorumResource(b, mem_ctx,
+						  &lpszResourceName,
+						  &lpszDeviceName,
+						  &pdwMaxQuorumLogSize,
+						  &rpc_status,
+						  &error);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ntstatus_to_werror(status);
+	}
+
+	if (error) {
+		printf("error: %d\n", error);
+		return W_ERROR(error);
+	}
+
+	printf("lpszResourceName: %s\n", lpszResourceName);
+	printf("lpszDeviceName: %s\n", lpszDeviceName);
+	printf("pdwMaxQuorumLogSize: %d\n", pdwMaxQuorumLogSize);
+	printf("rpc_status: %d\n", rpc_status);
+
+	return WERR_OK;
+}
+
+static WERROR cmd_clusapi_create_enum(struct rpc_pipe_client *cli,
+				      TALLOC_CTX *mem_ctx,
+				      int argc,
+				      const char **argv)
+{
+	struct dcerpc_binding_handle *b = cli->binding_handle;
+	NTSTATUS status;
+	uint32_t error;
+	uint32_t dwType = 1;
+	struct ENUM_LIST *ReturnEnum;
+	uint32_t rpc_status;
+
+	if (argc >= 2) {
+		sscanf(argv[1],"%x",&dwType);
+	}
+
+	status = dcerpc_clusapi_CreateEnum(b, mem_ctx,
+					   dwType,
+					   &ReturnEnum,
+					   &rpc_status,
+					   &error);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ntstatus_to_werror(status);
+	}
+
+	if (error) {
+		printf("error: %d\n", error);
+		return W_ERROR(error);
+	}
+
+	printf("rpc_status: %d\n", rpc_status);
+
+	return WERR_OK;
+}
+
+static WERROR cmd_clusapi_open_resource(struct rpc_pipe_client *cli,
+					TALLOC_CTX *mem_ctx,
+					int argc,
+					const char **argv)
+{
+	struct dcerpc_binding_handle *b = cli->binding_handle;
+	NTSTATUS status;
+	const char *lpszResourceName = "Cluster Name";
+	uint32_t Status;
+	struct policy_handle hResource;
+	uint32_t rpc_status;
+
+	if (argc >= 2) {
+		lpszResourceName = argv[1];
+	}
+
+	status = dcerpc_clusapi_OpenResource(b, mem_ctx,
+					     lpszResourceName,
+					     &Status,
+					     &rpc_status,
+					     &hResource);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ntstatus_to_werror(status);
+	}
+
+	if (Status) {
+		printf("Status: %d\n", Status);
+		return W_ERROR(Status);
+	}
+
+	printf("rpc_status: %d\n", rpc_status);
+
+	return WERR_OK;
+}
+
+struct cmd_set clusapi_commands[] = {
+
+	{ "CLUSAPI" },
+	{ "clusapi_open_cluster", RPC_RTYPE_WERROR, NULL, cmd_clusapi_open_cluster, &ndr_table_clusapi, NULL, "bla", "" },
+	{ "clusapi_get_cluster_name", RPC_RTYPE_WERROR, NULL, cmd_clusapi_get_cluster_name, &ndr_table_clusapi, NULL, "bla", "" },
+	{ "clusapi_get_cluster_version", RPC_RTYPE_WERROR, NULL, cmd_clusapi_get_cluster_version, &ndr_table_clusapi, NULL, "bla", "" },
+	{ "clusapi_get_quorum_resource", RPC_RTYPE_WERROR, NULL, cmd_clusapi_get_quorum_resource, &ndr_table_clusapi, NULL, "bla", "" },
+	{ "clusapi_create_enum", RPC_RTYPE_WERROR, NULL, cmd_clusapi_create_enum, &ndr_table_clusapi, NULL, "bla", "" },
+	{ "clusapi_open_resource", RPC_RTYPE_WERROR, NULL, cmd_clusapi_open_resource, &ndr_table_clusapi, NULL, "bla", "" },
+	{ NULL }
+};
