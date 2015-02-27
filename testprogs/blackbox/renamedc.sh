@@ -49,6 +49,14 @@ confirmrenamedc_dNSHostName() {
     $ldbsearch -H $PREFIX/renamedc_test/private/sam.ldb -s base -b 'cn=RAYMONBAR,ou=domain controllers,dc=foo,dc=example,dc=com' dNSHostName | grep 'dNSHostName: RAYMONBAR.foo.example.com'
 }
 
+confirmrenamedc_rootdse_dnsHostName() {
+    $ldbsearch -H $PREFIX/renamedc_test/private/sam.ldb -s base -b '' dNSHostName | grep 'dnsHostName: RAYMONBAR.foo.example.com'
+}
+
+confirmrenamedc_rootdse_dsServiceName() {
+    $ldbsearch -H $PREFIX/renamedc_test/private/sam.ldb --show-binary -s base -b '' dsServiceName | grep 'dsServiceName: CN=NTDS Settings,CN=RAYMONBAR,CN=Servers,CN=Default-First-Site-Name,CN=Sites,CN=Configuration,DC=foo,DC=example,DC=com'
+}
+
 testrenamedc2() {
 	$PYTHON $SRCDIR/source4/scripting/bin/renamedc \
 		--oldname="RAYMONBAR" \
@@ -67,6 +75,8 @@ testit "confirmrenamedc" confirmrenamedc || failed=`expr $failed + 1`
 testit "confirmrenamedc_server" confirmrenamedc_server || failed=`expr $failed + 1`
 testit "confirmrenamedc_sAMAccountName" confirmrenamedc_sAMAccountName || failed=`expr $failed + 1`
 testit "confirmrenamedc_dNSHostName" confirmrenamedc_dNSHostName || failed=`expr $failed + 1`
+testit "confirmrenamedc_rootdse_dnsHostName" confirmrenamedc_rootdse_dnsHostName || failed=`expr $failed + 1`
+testit "confirmrenamedc_rootdse_dsServiceName" confirmrenamedc_rootdse_dsServiceName || failed=`expr $failed + 1`
 testit "dbcheck" dbcheck || failed=`expr $failed + 1`
 testit "renamedc2" testrenamedc2 || failed=`expr $failed + 1`
 
