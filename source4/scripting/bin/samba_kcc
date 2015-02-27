@@ -1443,7 +1443,7 @@ class KCC(object):
                 vertex.part.system_flags & 0x00000002):
                 continue
 
-            if vertex in graph.connected_vertices:
+            if vertex not in graph.connected_vertices:
                 continue
 
             partial_replica_okay = vertex.is_black()
@@ -1534,9 +1534,9 @@ class KCC(object):
                 continue
 
             if e.vertices[0].site is self.my_site:
-                rsite = e.vertices[1]
+                rsite = e.vertices[1].site
             else:
-                rsite = e.vertices[0]
+                rsite = e.vertices[0].site
 
             # We don't make connections to our own site as that
             # is intrasite topology generator's job
@@ -2680,7 +2680,7 @@ def setup_dijkstra(graph, edge_type, include_black, queue):
             vertex.root = None # NULL GUID
             vertex.demoted = True # Demoted appears not to be used
         else:
-            heapq.heappush(queue, (vertex.replInfo.cost, vertex.guid, vertex))
+            heapq.heappush(queue, (vertex.repl_info.cost, vertex.guid, vertex))
 
 def try_new_path(graph, queue, vfrom, edge, vto):
     newRI = ReplInfo()
@@ -2816,7 +2816,7 @@ def kruskal(graph, edges):
         if parent1 is not parent2:
             count_edges += 1
             add_out_edge(graph, output_edges, e)
-            parent1.component = parent2
+            parent1.component_id = parent2
             components.discard(parent1)
 
         index += 1
@@ -2824,18 +2824,18 @@ def kruskal(graph, edges):
     return output_edges, len(components)
 
 def find_component(vertex):
-    if vertex.component is vertex:
+    if vertex.component_id is vertex:
         return vertex
 
     current = vertex
-    while current.component is not current:
-        current = current.component
+    while current.component_id is not current:
+        current = current.component_id
 
     root = current
     current = vertex
-    while current.component is not root:
-        n = current.component
-        current.component = root
+    while current.component_id is not root:
+        n = current.component_id
+        current.component_id = root
         current = n
 
     return root
