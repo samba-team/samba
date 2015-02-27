@@ -474,7 +474,7 @@ class KCC(object):
         # nTDSDSA object are in different sites.
         if (cn_conn.options & dsdb.NTDSCONN_OPT_OVERRIDE_NOTIFY_DEFAULT) != 0x0:
 
-            if (cn_conn.option & dsdb.NTDSCONN_OPT_USE_NOTIFY) == 0x0:
+            if (cn_conn.options & dsdb.NTDSCONN_OPT_USE_NOTIFY) == 0x0:
 
                 if (t_repsFrom.replica_flags &
                     drsuapi.DRSUAPI_DRS_NEVER_NOTIFY) == 0x0:

@@ -902,7 +902,7 @@ class NTDSConnection(object):
                                                     msg["objectGUID"][0]))
 
         if "transportType" in msg:
-            dsdn = dsdb_Dn(samdb, msg["tranportType"][0])
+            dsdn = dsdb_Dn(samdb, msg["transportType"][0])
             self.load_connection_transport(samdb, str(dsdn.dn))
 
         if "schedule" in msg:
