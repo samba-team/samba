@@ -94,6 +94,75 @@ static bool test_CloseCluster(struct torture_context *tctx,
 	return test_CloseCluster_int(tctx, p, &Cluster);
 }
 
+static bool test_SetClusterName(struct torture_context *tctx,
+				struct dcerpc_pipe *p)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_SetClusterName r;
+	uint32_t rpc_status;
+
+	r.in.NewClusterName = "wurst";
+	r.out.rpc_status = &rpc_status;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_SetClusterName_r(b, tctx, &r),
+		"SetClusterName failed");
+	torture_assert_werr_ok(tctx,
+		W_ERROR(r.out.result),
+		"SetClusterName failed");
+
+	return true;
+}
+
+static bool test_GetClusterName(struct torture_context *tctx,
+				struct dcerpc_pipe *p)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_GetClusterName r;
+	const char *ClusterName;
+	const char *NodeName;
+
+	r.out.ClusterName = &ClusterName;
+	r.out.NodeName = &NodeName;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_GetClusterName_r(b, tctx, &r),
+		"GetClusterName failed");
+	torture_assert_werr_ok(tctx,
+		W_ERROR(r.out.result),
+		"GetClusterName failed");
+
+	return true;
+}
+
+static bool test_GetClusterVersion(struct torture_context *tctx,
+				   struct dcerpc_pipe *p)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_GetClusterVersion r;
+	uint16_t lpwMajorVersion;
+	uint16_t lpwMinorVersion;
+	uint16_t lpwBuildNumber;
+	const char *lpszVendorId;
+	const char *lpszCSDVersion;
+
+	r.out.lpwMajorVersion = &lpwMajorVersion;
+	r.out.lpwMinorVersion = &lpwMinorVersion;
+	r.out.lpwBuildNumber = &lpwBuildNumber;
+	r.out.lpszVendorId = &lpszVendorId;
+	r.out.lpszCSDVersion = &lpszCSDVersion;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_GetClusterVersion_r(b, tctx, &r),
+		"GetClusterVersion failed");
+	torture_assert_werr_equal(tctx,
+		W_ERROR(r.out.result),
+		WERR_CALL_NOT_IMPLEMENTED,
+		"GetClusterVersion failed");
+
+	return true;
+}
+
 struct torture_suite *torture_rpc_clusapi(TALLOC_CTX *mem_ctx)
 {
 	struct torture_rpc_tcase *tcase;
@@ -106,6 +175,12 @@ struct torture_suite *torture_rpc_clusapi(TALLOC_CTX *mem_ctx)
 				   test_OpenCluster);
 	torture_rpc_tcase_add_test(tcase, "CloseCluster",
 				   test_CloseCluster);
+	torture_rpc_tcase_add_test(tcase, "SetClusterName",
+				   test_SetClusterName);
+	torture_rpc_tcase_add_test(tcase, "GetClusterName",
+				   test_GetClusterName);
+	torture_rpc_tcase_add_test(tcase, "GetClusterVersion",
+				   test_GetClusterVersion);
 
 	return suite;
 }
