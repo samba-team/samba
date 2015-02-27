@@ -146,13 +146,17 @@ ctdb_ip ()
     # If nobody has done any IP-fu then generate a layout.
     [ -f "$FAKE_CTDB_IP_LAYOUT" ] || ip_reallocate
 
-    if $verbose ; then
-	echo ":Public IP:Node:ActiveInterface:AvailableInterfaces:ConfiguredInterfaces:"
-    else
-	echo ":Public IP:Node:"
-    fi
-
     _mypnn=$(ctdb_pnn | sed -e 's@PNN:@@')
+
+    if $machine_readable ; then
+	if $verbose ; then
+	    echo "|Public IP|Node|ActiveInterface|AvailableInterfaces|ConfiguredInterfaces|"
+	else
+	    echo "|Public IP|Node|"
+	fi
+    else
+	echo "Public IPs on node ${_mypnn}"
+    fi
 
     # Join public addresses file with $FAKE_CTDB_IP_LAYOUT, and
     # process output line by line...
@@ -167,9 +171,17 @@ ctdb_ip ()
 	    if [ "$_pnn" = "$_mypnn" ]; then
 		_my_iface="$_first_iface"
 	    fi
-	    echo "|${_ip}|${_pnn}|${_my_iface}|${_first_iface}|${_ifaces}|"
+	    if $machine_readable ; then
+		echo "|${_ip}|${_pnn}|${_my_iface}|${_first_iface}|${_ifaces}|"
+	    else
+		echo "${_ip} node[${_pnn}] active[${_my_iface}] available[${_first_iface}] configured[[${_ifaces}]"
+	    fi
 	else
-	    echo "|${_ip}|${_pnn}|"
+	    if $machine_readable ; then
+		echo "|${_ip}|${_pnn}|"
+	    else
+		echo "${_ip} ${_pnn}"
+	    fi
 	fi
     done
 }
@@ -445,7 +457,7 @@ case "$1" in
 	exit 0
 	;;
     scriptstatus)
-	$machine_readable || not_implemented "$1, without -Y"
+	$machine_readable || not_implemented "$1, without -X"
 	[ "$2" != "all" ] || not_implemented "scriptstatus all"
 	# For now just assume everything is good.
 	echo "|Type|Name|Code|Status|Start|End|Error Output...|"
