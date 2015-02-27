@@ -973,18 +973,31 @@ define_test ()
     # Remaining format should be NN.service.event.NNN or NN.service.NNN:
     _num="${_f##*.}"
     _f="${_f%.*}"
+
     case "$_f" in
-	*.*.*)
+	[0-9][0-9].*.*)
 	    script="${_f%.*}"
 	    event="${_f##*.}"
+	    script_dir="${CTDB_BASE}/events.d"
 	    ;;
-	*.*)
+	[0-9][0-9].*)
 	    script="$_f"
 	    unset event
+	    script_dir="${CTDB_BASE}/events.d"
+	    ;;
+	*.*)
+	    script="${_f%.*}"
+	    event="${_f##*.}"
+	    script_dir="${CTDB_BASE}"
 	    ;;
 	*)
-	    die "Internal error - unknown testcase filename format"
+	    script="${_f%.*}"
+	    unset event
+	    script_dir="${CTDB_BASE}"
     esac
+
+    [ -x "${script_dir}/${script}" ] || \
+	die "Internal error - unable to find script \"${script_dir}/${script}\""
 
     printf "%-17s %-10s %-4s - %s\n\n" "$script" "$event" "$_num" "$desc"
 }
@@ -1010,14 +1023,14 @@ simple_test ()
 
     _extra_header=$(_extra_header)
 
-    echo "Running eventscript \"$script $event${1:+ }$*\""
+    echo "Running script \"$script $event${1:+ }$*\""
     _shell=""
     if $TEST_COMMAND_TRACE ; then
 	_shell="sh -x"
     else
 	_shell="sh"
     fi
-    _out=$($_shell "${CTDB_BASE}/events.d/$script" "$event" "$@" 2>&1)
+    _out=$($_shell "${script_dir}/${script}" "$event" "$@" 2>&1)
 
     result_check "$_extra_header"
 }
@@ -1116,7 +1129,7 @@ iterate_test ()
 	else
 	    _shell="sh"
 	fi
-	_out=$($_shell "${CTDB_BASE}/events.d/$script" "$event" $args 2>&1)
+	_out=$($_shell "${script_dir}/${script}" "$event" $args 2>&1)
 	_rc=$?
 
 	_fout=$(echo "$_out" | result_filter)
