@@ -276,6 +276,33 @@ ctdb_set_output ()
     eventscripts_test_add_cleanup "rm -f $_out $_rc"
 }
 
+# For now this creates the same public addresses each time.  However,
+# it could be made more flexible.
+setup_public_addresses ()
+{
+    if [ -f "$CTDB_PUBLIC_ADDRESSES" -a \
+	    "${CTDB_PUBLIC_ADDRESSES%/*}" = "$EVENTSCRIPTS_TESTS_VAR_DIR" ] ; then
+	rm "$CTDB_PUBLIC_ADDRESSES"
+    fi
+
+    export CTDB_PUBLIC_ADDRESSES=$(mktemp \
+				       --tmpdir="$EVENTSCRIPTS_TESTS_VAR_DIR" \
+				       "public-addresses-XXXXXXXX")
+
+    echo "Setting up CTDB_PUBLIC_ADDRESSES=${CTDB_PUBLIC_ADDRESSES}"
+    cat >"$CTDB_PUBLIC_ADDRESSES" <<EOF
+10.0.0.1/24 dev123
+10.0.0.2/24 dev123
+10.0.0.3/24 dev123
+10.0.0.4/24 dev123
+10.0.0.5/24 dev123
+10.0.0.6/24 dev123
+10.0.1.1/24 dev456
+10.0.1.2/24 dev456
+10.0.1.3/24 dev456
+EOF
+}
+
 setup_ctdb ()
 {
     setup_generic
@@ -286,17 +313,7 @@ setup_ctdb ()
     export FAKE_CTDB_PNN="${2:-0}"
     echo "Setting up CTDB with PNN ${FAKE_CTDB_PNN}"
 
-    export CTDB_PUBLIC_ADDRESSES="${CTDB_BASE}/public_addresses"
-    if [ -n "$3" ] ; then
-	echo "Setting up CTDB_PUBLIC_ADDRESSES: $3"
-	CTDB_PUBLIC_ADDRESSES=$(mktemp)
-	for _i in $3 ; do
-	    _ip="${_i%@*}"
-	    _ifaces="${_i#*@}"
-	    echo "${_ip} ${_ifaces}" >>"$CTDB_PUBLIC_ADDRESSES"
-	done
-	eventscripts_test_add_cleanup "rm -f $CTDB_PUBLIC_ADDRESSES"
-    fi
+    setup_public_addresses
 
     export FAKE_CTDB_STATE="$EVENTSCRIPTS_TESTS_VAR_DIR/fake-ctdb"
 
