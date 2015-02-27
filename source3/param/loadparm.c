@@ -222,6 +222,7 @@ static struct loadparm_service sDefault =
 	.inherit_acls = false,
 	.inherit_owner = false,
 	.msdfs_root = false,
+	.msdfs_shuffle_referrals = false,
 	.use_client_driver = false,
 	.default_devmode = true,
 	.force_printername = false,

@@ -3942,6 +3942,15 @@ struct parm_struct parm_table[] = {
 		.flags		= FLAG_ADVANCED | FLAG_SHARE,
 	},
 	{
+		.label		= "msdfs shuffle referrals",
+		.type		= P_BOOL,
+		.p_class	= P_LOCAL,
+		.offset		= LOCAL_VAR(msdfs_shuffle_referrals),
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED | FLAG_SHARE,
+	},
+	{
 		.label		= "host msdfs",
 		.type		= P_BOOL,
 		.p_class	= P_GLOBAL,

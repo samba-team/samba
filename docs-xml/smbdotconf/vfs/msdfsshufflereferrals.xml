@@ -1,0 +1,16 @@
+<samba:parameter name="msdfs shuffle referrals"
+                 context="S"
+                 type="boolean"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>If set to <constant>yes</constant>, Samba will shuffle
+	Dfs referrals for a given Dfs link if multiple are available,
+	allowing for load balancing across clients. For more information
+	on setting up a Dfs tree on Samba, refer to the MSDFS chapter in
+	the Samba3-HOWTO book.</para>
+</description>
+
+<related>host msdfs</related>
+<related>msdfs root</related>
+<value type="default">no</value>
+</samba:parameter>
