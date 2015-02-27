@@ -2358,3 +2358,18 @@ def combine_repl_info(info_a, info_b, info_c):
         info_c.cost = MAX_DWORD
 
     return True
+
+def write_dot_file(basename, edge_list, label=None, destdir=None):
+    from tempfile import NamedTemporaryFile
+    if label:
+        basename += '_' + label.translate(None, ', ') #fix DN, guid labels
+    f = NamedTemporaryFile(suffix='.dot', prefix=basename + '_', delete=False, dir=destdir)
+    graphname = ''.join(x for x in basename if x.isalnum())
+    print >>f, 'graph %s {' % graphname
+    print >>f, 'label="%s",' % (label or graphname)
+    for a, b in edge_list:
+        print >>f, '"%s" -- "%s"' % (a, b)
+    print >>f, '}'
+
+
+    f.close()

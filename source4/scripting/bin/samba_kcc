@@ -36,6 +36,8 @@ sys.path.insert(0, "bin/python")
 
 import optparse
 import logging
+import itertools
+import heapq
 
 from samba import (
     getopt as options,
@@ -49,8 +51,6 @@ from samba.auth import system_session
 from samba.samdb import SamDB
 from samba.dcerpc import drsuapi
 from samba.kcc_utils import *
-
-import heapq
 
 class KCC(object):
     """The Knowledge Consistency Checker class.
@@ -1515,7 +1515,7 @@ class KCC(object):
         if my_vertex.is_white():
             return all_connected, found_failed
 
-        edge_list, component_count = self.get_spanning_tree_edges(graph)
+        edge_list, component_count = self.get_spanning_tree_edges(graph, label=part.partstr)
 
         logger.debug("%s Number of components: %d" % (part.nc_dnstr, component_count))
         if component_count > 1:
@@ -1639,7 +1639,7 @@ class KCC(object):
 
         return all_connected
 
-    def get_spanning_tree_edges(self, graph):
+    def get_spanning_tree_edges(self, graph, label=None):
         # Phase 1: Run Dijkstra's to get a list of internal edges, which are
         # just the shortest-paths connecting colored vertices
 
@@ -1655,6 +1655,12 @@ class KCC(object):
                 edgeType = e.con_type
                 for v in e.vertices:
                     v.edges.append(e)
+
+            write_dot_file('edgeset_%s' % (edgeType,),
+                           ((a.site.site_dnstr, b.site.site_dnstr)
+                            for a, b in itertools.chain(*(itertools.combinations(edge.vertices, 2)
+                                                          for edge in e_set.edges))),
+                           label=label)
 
             # Run dijkstra's algorithm with just the red vertices as seeds
             # Seed from the full replicas
@@ -1674,6 +1680,9 @@ class KCC(object):
         setup_vertices(graph)
         process_edge_set(graph, None, internal_edges)
 
+        write_dot_file('prekruskal', [(e.v1.site.site_dnstr, e.v2.site.site_dnstr)
+                                       for e in internal_edges])
+
         # Phase 2: Run Kruskal's on the internal edges
         output_edges, components = kruskal(graph, internal_edges)
 
@@ -1686,6 +1695,8 @@ class KCC(object):
                 v.dist_to_red = 0
             else:
                 v.dist_to_red = v.repl_info.cost
+
+        write_dot_file('postkruskal', ((e.v1.site.site_dnstr, e.v2.site.site_dnstr) for e in internal_edges))
 
         # count the components
         return self.copy_output_edges(graph, output_edges), components
@@ -2228,6 +2239,14 @@ class KCC(object):
 
             # Step 7
             self.update_rodc_connection()
+
+            dot_edges = []
+            for site in self.site_table.values():
+                for dsa in site.dsa_table.values():
+                    for con in dsa.connect_table.values():
+                        dot_edges.append((dsa.dsa_dnstr, con.from_dnstr))
+
+            write_dot_file('dsa_final', dot_edges)
         except:
             raise
 
