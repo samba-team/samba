@@ -9,6 +9,10 @@ EVENTSCRIPTS_PATH=""
 
 if [ -d "${TEST_SUBDIR}/stubs" ] ; then
     EVENTSCRIPTS_PATH="${TEST_SUBDIR}/stubs"
+    case "$EVENTSCRIPTS_PATH" in
+	/*) : ;;
+	*) EVENTSCRIPTS_PATH="${PWD}/${EVENTSCRIPTS_PATH}" ;;
+    esac
 fi
 
 export EVENTSCRIPTS_PATH

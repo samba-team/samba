@@ -30,6 +30,10 @@ if [ -f "${_test_dir}/run_tests.sh" ] ; then
 fi
 
 _test_bin_dir="${TEST_BIN_DIR:-${ctdb_dir}/bin}"
+case "$_test_bin_dir" in
+    /*) : ;;
+    *) _test_bin_dir="${PWD}/${_test_bin_dir}" ;;
+esac
 if [ -d "$_test_bin_dir" ] ; then
     PATH="${_test_bin_dir}:$PATH"
 fi
