@@ -1026,7 +1026,8 @@ sub provision($$$$$$$$)
 	}
 	close(MSDFS_TARGET);
 	chmod 0666, $msdfs_target;
-	symlink "msdfs:$server_ip\\ro-tmp", "$msdfs_shrdir/msdfs-src1";
+	symlink "msdfs:$server_ip\\ro-tmp,$server_ipv6\\ro-tmp",
+		"$msdfs_shrdir/msdfs-src1";
 	symlink "msdfs:$server_ipv6\\ro-tmp", "$msdfs_shrdir/deeppath/msdfs-src2";
 
 	##
@@ -1253,6 +1254,7 @@ sub provision($$$$$$$$)
 [msdfs-share]
 	path = $msdfs_shrdir
 	msdfs root = yes
+	msdfs shuffle referrals = yes
 	guest ok = yes
 [hideunread]
 	copy = tmp
