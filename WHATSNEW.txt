@@ -9,6 +9,18 @@ system at https://bugzilla.samba.org/.
 Samba 4.2 will be the next version of the Samba suite.
 
 
+Samba User Survey 2015
+======================
+
+https://www.surveygizmo.com/s3/2020369/Samba-User-Survey-2015
+
+Please take our survey. It will help us improve Samba by understanding
+your knowledge and needs. The survey runs until end of March 2015 and
+won't ask for any personal info. The full results will be shared with
+the Samba Team, and statistical summaries will be shared with the
+Samba community after the SambaXP conference (http://sambaxp.org).
+
+
 IMPORTANT NOTE ABOUT THE SUPPORT END OF SAMBA 3
 =================================================
 
