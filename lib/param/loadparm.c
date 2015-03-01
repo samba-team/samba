@@ -67,6 +67,7 @@
 #include "lib/util/bitmap.h"
 #include "libcli/smb/smb_constants.h"
 #include "tdb.h"
+#include "librpc/gen_ndr/nbt.h"
 
 #define standard_sub_basic talloc_strdup
 
@@ -2532,8 +2533,8 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lpcfg_do_global_parameter(lp_ctx, "use mmap", "True");
 
 	lpcfg_do_global_parameter(lp_ctx, "smb ports", "445 139");
-	lpcfg_do_global_parameter(lp_ctx, "nbt port", "137");
-	lpcfg_do_global_parameter(lp_ctx, "dgram port", "138");
+	lpcfg_do_global_parameter_var(lp_ctx, "nbt port", "%d", NBT_NAME_SERVICE_PORT);
+	lpcfg_do_global_parameter_var(lp_ctx, "dgram port", "%d", NBT_DGRAM_SERVICE_PORT);
 	lpcfg_do_global_parameter(lp_ctx, "cldap port", "389");
 	lpcfg_do_global_parameter(lp_ctx, "krb5 port", "88");
 	lpcfg_do_global_parameter(lp_ctx, "kpasswd port", "464");

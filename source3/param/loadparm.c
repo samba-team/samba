@@ -69,6 +69,7 @@
 #include "dbwrap/dbwrap.h"
 #include "dbwrap/dbwrap_rbt.h"
 #include "../lib/util/bitmap.h"
+#include "librpc/gen_ndr/nbt.h"
 
 #ifdef HAVE_SYS_SYSCTL_H
 #include <sys/sysctl.h>
@@ -907,9 +908,9 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 
 	Globals.cldap_port = 389;
 
-	Globals.dgram_port = 138;
+	Globals.dgram_port = NBT_DGRAM_SERVICE_PORT;
 
-	Globals.nbt_port = 137;
+	Globals.nbt_port = NBT_NAME_SERVICE_PORT;
 
 	Globals.krb5_port = 88;
 
