@@ -8,5 +8,7 @@
 		services traffic.</para>
 </description>
 
+<para>This parameter is deprecated, as it is not honoured in the
+majority of the code base.</para>
 <value type="default">137</value>
 </samba:parameter>

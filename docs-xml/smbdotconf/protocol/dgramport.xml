@@ -6,6 +6,7 @@
 <description>
 	<para>Specifies which ports the server should listen on for NetBIOS datagram traffic.</para>
 </description>
-
+<para>This parameter is deprecated, as it is not honoured in the
+majority of the code base.</para>
 <value type="default">138</value>
 </samba:parameter>

@@ -1707,7 +1707,8 @@ struct parm_struct parm_table[] = {
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(dgram_port),
 		.special	= NULL,
-		.enum_list	= NULL
+		.enum_list	= NULL,
+		.flags          = FLAG_DEPRECATED
 	},
 	{
 		.label		= "nbt port",
@@ -1715,7 +1716,8 @@ struct parm_struct parm_table[] = {
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(nbt_port),
 		.special	= NULL,
-		.enum_list	= NULL
+		.enum_list	= NULL,
+		.flags          = FLAG_DEPRECATED
 	},
 	{
 		.label		= "krb5 port",
