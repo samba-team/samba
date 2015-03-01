@@ -220,10 +220,10 @@ static int winbind_named_pipe_sock(const char *dir)
 {
 	struct sockaddr_un sunaddr;
 	struct stat st;
-	char *path = NULL;
 	int fd;
 	int wait_time;
 	int slept;
+	int ret;
 
 	/* Check permissions on unix socket directory */
 
@@ -244,25 +244,24 @@ static int winbind_named_pipe_sock(const char *dir)
 
 	/* Connect to socket */
 
-	if (asprintf(&path, "%s/%s", dir, WINBINDD_SOCKET_NAME) < 0) {
+	sunaddr = (struct sockaddr_un) { .sun_family = AF_UNIX };
+
+	ret = snprintf(sunaddr.sun_path, sizeof(sunaddr.sun_path),
+		       "%s/%s", dir, WINBINDD_SOCKET_NAME);
+	if ((ret == -1) || (ret >= sizeof(sunaddr.sun_path))) {
+		errno = ENAMETOOLONG;
 		return -1;
 	}
-
-	ZERO_STRUCT(sunaddr);
-	sunaddr.sun_family = AF_UNIX;
-	strncpy(sunaddr.sun_path, path, sizeof(sunaddr.sun_path) - 1);
 
 	/* If socket file doesn't exist, don't bother trying to connect
 	   with retry.  This is an attempt to make the system usable when
 	   the winbindd daemon is not running. */
 
-	if (lstat(path, &st) == -1) {
+	if (lstat(sunaddr.sun_path, &st) == -1) {
 		errno = ENOENT;
-		SAFE_FREE(path);
 		return -1;
 	}
 
-	SAFE_FREE(path);
 	/* Check permissions on unix socket file */
 
 	/*
@@ -290,7 +289,6 @@ static int winbind_named_pipe_sock(const char *dir)
 	for (wait_time = 0; connect(fd, (struct sockaddr *)&sunaddr, sizeof(sunaddr)) == -1;
 			wait_time += slept) {
 		struct pollfd pfd;
-		int ret;
 		int connect_errno = 0;
 		socklen_t errnosize;
 
