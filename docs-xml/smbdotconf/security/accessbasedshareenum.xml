@@ -7,7 +7,10 @@
      <para>If this parameter is <constant>yes</constant> for a
     service, then the share hosted by the service will only be visible
     to users who have read or write access to the share during share
-    enumeration (for example net view \\sambaserver).  This has
+    enumeration (for example net view \\sambaserver). The share ACLs
+    which allow or deny the access to the share can be modified using
+    for example the <command moreinfo="none">sharesec</command> command
+    or using the appropriate Windows tools. This has
     parallels to access based enumeration, the main difference being
     that only share permissions are evaluated, and security
     descriptors on files contained on the share are not used in
