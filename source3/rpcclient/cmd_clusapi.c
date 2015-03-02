@@ -29,7 +29,7 @@ static WERROR cmd_clusapi_open_cluster(struct rpc_pipe_client *cli,
 {
 	struct dcerpc_binding_handle *b = cli->binding_handle;
 	NTSTATUS status;
-	uint32_t error;
+	WERROR error;
 	struct policy_handle Cluster;
 
 	status = dcerpc_clusapi_OpenCluster(b, mem_ctx,
@@ -39,9 +39,9 @@ static WERROR cmd_clusapi_open_cluster(struct rpc_pipe_client *cli,
 		return ntstatus_to_werror(status);
 	}
 
-	if (error) {
-		printf("error: %d\n", error);
-		return W_ERROR(error);
+	if (!W_ERROR_IS_OK(error)) {
+		printf("error: %s\n", win_errstr(error));
+		return error;
 	}
 
 	printf("successfully opened cluster\n");
@@ -53,9 +53,9 @@ static WERROR cmd_clusapi_open_cluster(struct rpc_pipe_client *cli,
 		return ntstatus_to_werror(status);
 	}
 
-	if (error) {
-		printf("error: %d\n", error);
-		return W_ERROR(error);
+	if (!W_ERROR_IS_OK(error)) {
+		printf("error: %s\n", win_errstr(error));
+		return error;
 	}
 
 	printf("successfully closed cluster\n");
@@ -70,7 +70,7 @@ static WERROR cmd_clusapi_get_cluster_name(struct rpc_pipe_client *cli,
 {
 	struct dcerpc_binding_handle *b = cli->binding_handle;
 	NTSTATUS status;
-	uint32_t error;
+	WERROR error;
 	const char *ClusterName;
 	const char *NodeName;
 
@@ -82,9 +82,9 @@ static WERROR cmd_clusapi_get_cluster_name(struct rpc_pipe_client *cli,
 		return ntstatus_to_werror(status);
 	}
 
-	if (error) {
-		printf("error: %d\n", error);
-		return W_ERROR(error);
+	if (!W_ERROR_IS_OK(error)) {
+		printf("error: %s\n", win_errstr(error));
+		return error;
 	}
 
 	printf("ClusterName: %s\n", ClusterName);
@@ -100,7 +100,7 @@ static WERROR cmd_clusapi_get_cluster_version(struct rpc_pipe_client *cli,
 {
 	struct dcerpc_binding_handle *b = cli->binding_handle;
 	NTSTATUS status;
-	uint32_t error;
+	WERROR error;
 	uint16_t lpwMajorVersion;
 	uint16_t lpwMinorVersion;
 	uint16_t lpwBuildNumber;
@@ -118,9 +118,9 @@ static WERROR cmd_clusapi_get_cluster_version(struct rpc_pipe_client *cli,
 		return ntstatus_to_werror(status);
 	}
 
-	if (error) {
-		printf("error: %d\n", error);
-		return W_ERROR(error);
+	if (!W_ERROR_IS_OK(error)) {
+		printf("error: %s\n", win_errstr(error));
+		return error;
 	}
 
 	printf("lpwMajorVersion: %d\n", lpwMajorVersion);
@@ -139,11 +139,11 @@ static WERROR cmd_clusapi_get_quorum_resource(struct rpc_pipe_client *cli,
 {
 	struct dcerpc_binding_handle *b = cli->binding_handle;
 	NTSTATUS status;
-	uint32_t error;
+	WERROR error;
 	const char *lpszResourceName;
 	const char *lpszDeviceName;
 	uint32_t pdwMaxQuorumLogSize;
-	uint32_t rpc_status;
+	WERROR rpc_status;
 
 	status = dcerpc_clusapi_GetQuorumResource(b, mem_ctx,
 						  &lpszResourceName,
@@ -155,15 +155,15 @@ static WERROR cmd_clusapi_get_quorum_resource(struct rpc_pipe_client *cli,
 		return ntstatus_to_werror(status);
 	}
 
-	if (error) {
-		printf("error: %d\n", error);
-		return W_ERROR(error);
+	if (!W_ERROR_IS_OK(error)) {
+		printf("error: %s\n", win_errstr(error));
+		return error;
 	}
 
 	printf("lpszResourceName: %s\n", lpszResourceName);
 	printf("lpszDeviceName: %s\n", lpszDeviceName);
 	printf("pdwMaxQuorumLogSize: %d\n", pdwMaxQuorumLogSize);
-	printf("rpc_status: %d\n", rpc_status);
+	printf("rpc_status: %s\n", win_errstr(rpc_status));
 
 	return WERR_OK;
 }
@@ -175,10 +175,10 @@ static WERROR cmd_clusapi_create_enum(struct rpc_pipe_client *cli,
 {
 	struct dcerpc_binding_handle *b = cli->binding_handle;
 	NTSTATUS status;
-	uint32_t error;
+	WERROR error;
 	uint32_t dwType = 1;
 	struct ENUM_LIST *ReturnEnum;
-	uint32_t rpc_status;
+	WERROR rpc_status;
 
 	if (argc >= 2) {
 		sscanf(argv[1],"%x",&dwType);
@@ -193,12 +193,12 @@ static WERROR cmd_clusapi_create_enum(struct rpc_pipe_client *cli,
 		return ntstatus_to_werror(status);
 	}
 
-	if (error) {
-		printf("error: %d\n", error);
-		return W_ERROR(error);
+	if (!W_ERROR_IS_OK(error)) {
+		printf("error: %s\n", win_errstr(error));
+		return error;
 	}
 
-	printf("rpc_status: %d\n", rpc_status);
+	printf("rpc_status: %s\n", win_errstr(rpc_status));
 
 	return WERR_OK;
 }
@@ -211,9 +211,9 @@ static WERROR cmd_clusapi_open_resource(struct rpc_pipe_client *cli,
 	struct dcerpc_binding_handle *b = cli->binding_handle;
 	NTSTATUS status;
 	const char *lpszResourceName = "Cluster Name";
-	uint32_t Status;
+	WERROR Status;
 	struct policy_handle hResource;
-	uint32_t rpc_status;
+	WERROR rpc_status;
 
 	if (argc >= 2) {
 		lpszResourceName = argv[1];
@@ -228,12 +228,12 @@ static WERROR cmd_clusapi_open_resource(struct rpc_pipe_client *cli,
 		return ntstatus_to_werror(status);
 	}
 
-	if (Status) {
-		printf("Status: %d\n", Status);
-		return W_ERROR(Status);
+	if (!W_ERROR_IS_OK(Status)) {
+		printf("Status: %s\n", win_errstr(Status));
+		return Status;
 	}
 
-	printf("rpc_status: %d\n", rpc_status);
+	printf("rpc_status: %s\n", win_errstr(rpc_status));
 
 	return WERR_OK;
 }

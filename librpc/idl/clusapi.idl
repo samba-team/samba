@@ -73,12 +73,12 @@ import "security.idl";
 #if 0
 	HCLUSTER_RPC
 	clusapi_OpenCluster(
-		[ out ] error_status_t *Status
+		[ out ] WERROR *Status
 	);
 #else
 	void
 	clusapi_OpenCluster(
-		[ out ] error_status_t *Status,
+		[ out ] WERROR *Status,
 		[ out ] HCLUSTER_RPC *Cluster
 	);
 #endif
@@ -86,7 +86,7 @@ import "security.idl";
 	/*****************/
 	/* Function 0x01 */
 
-	error_status_t
+	WERROR
 	clusapi_CloseCluster(
 		[ in, out ] HCLUSTER_RPC *Cluster
 	);
@@ -94,16 +94,16 @@ import "security.idl";
 	/*****************/
 	/* Function 0x02 */
 
-	error_status_t
+	WERROR
 	clusapi_SetClusterName(
 		[ in, string ] [charset(UTF16)] uint16 *NewClusterName,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x03 */
 
-	error_status_t
+	WERROR
 	clusapi_GetClusterName(
 		[ out, string ] [charset(UTF16)] uint16 **ClusterName,
 		[ out, string ] [charset(UTF16)] uint16 **NodeName
@@ -112,7 +112,7 @@ import "security.idl";
 	/*****************/
 	/* Function 0x04 */
 
-	error_status_t
+	WERROR
 	clusapi_GetClusterVersion(
 		[ out ] uint16 *lpwMajorVersion,
 		[ out ] uint16 *lpwMinorVersion,
@@ -124,23 +124,23 @@ import "security.idl";
 	/*****************/
 	/* Function 0x05 */
 
-	error_status_t
+	WERROR
 	clusapi_GetQuorumResource(
 		[ out, string ] [charset(UTF16)] uint16 **lpszResourceName,
 		[ out, string ] [charset(UTF16)] uint16 **lpszDeviceName,
 		[ out ] uint32 *pdwMaxQuorumLogSize,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x06 */
 
-	error_status_t
+	WERROR
 	clusapi_SetQuorumResource(
 		[ in ] HRES_RPC hResource,
 		[ in, string ] [charset(UTF16)] uint16 *lpszDeviceName,
 		[ in ] uint32	 dwMaxQuorumLogSize,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	typedef [bitmap32bit] bitmap {
@@ -200,11 +200,11 @@ import "security.idl";
 	/*****************/
 	/* Function 0x07 */
 
-	error_status_t
+	WERROR
 	clusapi_CreateEnum(
 		[ in ] ClusterEnumType dwType,
 		[ out ] ENUM_LIST **ReturnEnum,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
@@ -214,15 +214,15 @@ import "security.idl";
 	HRES_RPC
 	clusapi_OpenResource(
 		[ in, string ] [charset(UTF16)] uint16 *lpszResourceName,
-		[ out ] error_status_t *Status,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *Status,
+		[ out ] WERROR *rpc_status
 	);
 #else
 	void
 	clusapi_OpenResource(
 		[ in, string ] [charset(UTF16)] uint16 *lpszResourceName,
-		[ out ] error_status_t *Status,
-		[ out ] error_status_t *rpc_status,
+		[ out ] WERROR *Status,
+		[ out ] WERROR *rpc_status,
 		[ out ] HRES_RPC *hResource
 	);
 #endif
@@ -236,8 +236,8 @@ import "security.idl";
 		[ in, string ] [charset(UTF16)] uint16 *lpszResourceName,
 		[ in, string ] [charset(UTF16)] uint16 *lpszResourceType,
 		[ in ] uint32 dwFlags,
-		[ out ] error_status_t *Status,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *Status,
+		[ out ] WERROR *rpc_status
 	);
 #else
 	void
@@ -246,24 +246,24 @@ import "security.idl";
 		[ in, string ] [charset(UTF16)] uint16 *lpszResourceName,
 		[ in, string ] [charset(UTF16)] uint16 *lpszResourceType,
 		[ in ] uint32 dwFlags,
-		[ out ] error_status_t *Status,
-		[ out ] error_status_t *rpc_status,
+		[ out ] WERROR *Status,
+		[ out ] WERROR *rpc_status,
 		[ out ] HRES_RPC *hResource
 	);
 #endif
 	/*****************/
 	/* Function 0x0A */
 
-	error_status_t
+	WERROR
 	clusapi_DeleteResource(
 		[ in ] HRES_RPC hResource,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x0B */
 
-	error_status_t
+	WERROR
 	clusapi_CloseResource(
 		[ in, out ] HRES_RPC *Resource
 	);
@@ -271,163 +271,163 @@ import "security.idl";
 	/*****************/
 	/* Function 0x0C */
 
-	error_status_t
+	WERROR
 	clusapi_GetResourceState(
 		[ in ] HRES_RPC hResource,
 		[ out ] uint32 *State,
 		[ out, string ] [charset(UTF16)] uint16 **NodeName,
 		[ out, string ] [charset(UTF16)] uint16 **GroupName,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x0D */
 
-	error_status_t
+	WERROR
 	clusapi_SetResourceName(
 		[ in ] HRES_RPC hResource,
 		[ in, string ] [charset(UTF16)] uint16 *lpszResourceName,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x0E */
 
-	error_status_t
+	WERROR
 	clusapi_GetResourceId(
 		[ in ] HRES_RPC hResource,
 		[ out, string ] [charset(UTF16)] uint16 **pGuid,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x0F */
 
-	error_status_t
+	WERROR
 	clusapi_GetResourceType(
 		[ in ] HRES_RPC hResource,
 		[ out, string ] [charset(UTF16)] uint16 **lpszResourceType,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x10 */
 
-	error_status_t
+	WERROR
 	clusapi_FailResource(
 		[ in ] HRES_RPC hResource,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x11 */
 
-	error_status_t
+	WERROR
 	clusapi_OnlineResource(
 		[ in ] HRES_RPC hResource,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x12 */
 
-	error_status_t
+	WERROR
 	clusapi_OfflineResource(
 		[ in ] HRES_RPC hResource,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x13 */
 
-	error_status_t
+	WERROR
 	clusapi_AddResourceDependency(
 		[ in ] HRES_RPC hResource,
 		[ in ] HRES_RPC hDependsOn,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x14 */
 
-	error_status_t
+	WERROR
 	clusapi_RemoveResourceDependency(
 		[ in ] HRES_RPC hResource,
 		[ in ] HRES_RPC hDependsOn,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x15 */
 
-	error_status_t
+	WERROR
 	clusapi_CanResourceBeDependent(
 		[ in ] HRES_RPC hResource,
 		[ in ] HRES_RPC hResourceDependent,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x16 */
 
-	error_status_t
+	WERROR
 	clusapi_CreateResEnum(
 		[ in ] HRES_RPC hResource,
 		[ in ] uint32 dwType,
 		[ out ] ENUM_LIST **ReturnEnum,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x17 */
 
-	error_status_t
+	WERROR
 	clusapi_AddResourceNode(
 		[ in ] HRES_RPC hResource,
 		[ in ] HNODE_RPC hNode,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x18 */
 
-	error_status_t
+	WERROR
 	clusapi_RemoveResourceNode(
 		[ in ] HRES_RPC hResource,
 		[ in ] HNODE_RPC hNode,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x19 */
 
-	error_status_t
+	WERROR
 	clusapi_ChangeResourceGroup(
 		[ in ] HRES_RPC hResource,
 		[ in ] HGROUP_RPC hGroup,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x1A */
 
-	error_status_t
+	WERROR
 	clusapi_CreateResourceType(
 		[ in, string ] [charset(UTF16)] uint16 *lpszTypeName,
 		[ in, string ] [charset(UTF16)] uint16 *lpszDisplayName,
 		[ in, string ] [charset(UTF16)] uint16 *lpszDllName,
 		[ in ] uint32 dwLooksAlive,
 		[ in ] uint32 dwIsAlive,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x1B */
 
-	error_status_t
+	WERROR
 	clusapi_DeleteResourceType(
 		[ in, string ] [charset(UTF16)] uint16 *lpszTypeName,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
@@ -436,15 +436,15 @@ import "security.idl";
 	HKEY_RPC
 	clusapi_GetRootKey(
 		[ in ] uint32 samDesired,
-		[ out ] error_status_t *Status,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *Status,
+		[ out ] WERROR *rpc_status
 	);
 #else
 	void
 	clusapi_GetRootKey(
 		[ in ] uint32 samDesired,
-		[ out ] error_status_t *Status,
-		[ out ] error_status_t *rpc_status,
+		[ out ] WERROR *Status,
+		[ out ] WERROR *rpc_status,
 		[ out ] HKEY_RPC *phKey
 	);
 #endif
@@ -459,8 +459,8 @@ import "security.idl";
 		[ in ] uint32 samDesired,
 		[ in, unique ] RPC_SECURITY_ATTRIBUTES *lpSecurityAttributes,
 		[ out ] uint32 *lpdwDisposition,
-		[ out ] error_status_t *Status,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *Status,
+		[ out ] WERROR *rpc_status
 	);
 #else
 	void
@@ -471,8 +471,8 @@ import "security.idl";
 		[ in ] uint32 samDesired,
 		[ in, unique ] RPC_SECURITY_ATTRIBUTES *lpSecurityAttributes,
 		[ out ] uint32 *lpdwDisposition,
-		[ out ] error_status_t *Status,
-		[ out ] error_status_t *rpc_status,
+		[ out ] WERROR *Status,
+		[ out ] WERROR *rpc_status,
 		[ out ] HKEY_RPC *phKey
 	);
 #endif
@@ -484,8 +484,8 @@ import "security.idl";
 		[ in ] HKEY_RPC hKey,
 		[ in, string ] [charset(UTF16)] uint16 *lpSubKey,
 		[ in ] uint32 samDesired,
-		[ out ] error_status_t *Status,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *Status,
+		[ out ] WERROR *rpc_status
 	);
 #else
 	void
@@ -493,50 +493,50 @@ import "security.idl";
 		[ in ] HKEY_RPC hKey,
 		[ in, string ] [charset(UTF16)] uint16 *lpSubKey,
 		[ in ] uint32 samDesired,
-		[ out ] error_status_t *Status,
-		[ out ] error_status_t *rpc_status,
+		[ out ] WERROR *Status,
+		[ out ] WERROR *rpc_status,
 		[ out ] HKEY_RPC *phKey
 	);
 #endif
 	/*****************/
 	/* Function 0x1F */
 
-	error_status_t
+	WERROR
 	clusapi_EnumKey(
 		[ in ] HKEY_RPC hKey,
 		[ in ] uint32 dwIndex,
 		[ out, string ] [charset(UTF16)] uint16 **KeyName,
 		[ out ] NTTIME *lpftLastWriteTime,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x20 */
 
-	error_status_t
+	WERROR
 	clusapi_SetValue(
 		[ in ] HKEY_RPC hKey,
 		[ in, string ] [charset(UTF16)] uint16 *lpValueName,
 		[ in ] uint32 dwType,
 		[ in, size_is(cbData) ] uint8 *lpData,
 		[ in ] uint32 cbData,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x21 */
 
-	error_status_t
+	WERROR
 	clusapi_DeleteValue(
 		[ in ] HKEY_RPC hKey,
 		[ in, string ] [charset(UTF16)] uint16 *lpValueName,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x22 */
 
-	error_status_t
+	WERROR
 	clusapi_QueryValue(
 		[ in ] HKEY_RPC hKey,
 		[ in, string ] [charset(UTF16)] uint16 *lpValueName,
@@ -544,23 +544,23 @@ import "security.idl";
 		[ out, size_is(cbData) ] uint8 *lpData,
 		[ in ] uint32 cbData,
 		[ out ] uint32 *lpcbRequired,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x23 */
 
-	error_status_t
+	WERROR
 	clusapi_DeleteKey(
 		[ in ] HKEY_RPC hKey,
 		[ in, string ] [charset(UTF16)] uint16 *lpSubKey,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x24 */
 
-	error_status_t
+	WERROR
 	clusapi_EnumValue(
 		[ in ] HKEY_RPC hKey,
 		[ in ] uint32 dwIndex,
@@ -569,13 +569,13 @@ import "security.idl";
 		[ out, size_is(*lpcbData) ] uint8 *lpData,
 		[ in, out ] uint32 *lpcbData,
 		[ out ] uint32 *TotalSize,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x25 */
 
-	error_status_t
+	WERROR
 	clusapi_CloseKey(
 		[ in, out ] HKEY_RPC *pKey
 	);
@@ -583,7 +583,7 @@ import "security.idl";
 	/*****************/
 	/* Function 0x26 */
 
-	error_status_t
+	WERROR
 	clusapi_QueryInfoKey(
 		[ in ] HKEY_RPC hKey,
 		[ out ] uint32 *lpcSubKeys,
@@ -593,29 +593,29 @@ import "security.idl";
 		[ out ] uint32 *lpcbMaxValueLen,
 		[ out ] uint32 *lpcbSecurityDescriptor,
 		[ out ] NTTIME *lpftLastWriteTime,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x27 */
 
-	error_status_t
+	WERROR
 	clusapi_SetKeySecurity(
 		[ in ] HKEY_RPC hKey,
 		[ in ] uint32 SecurityInformation,
 		[ in ] RPC_SECURITY_DESCRIPTOR *pRpcSecurityDescriptor,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x28 */
 
-	error_status_t
+	WERROR
 	clusapi_GetKeySecurity(
 		[ in ] HKEY_RPC hKey,
 		[ in ] uint32 SecurityInformation,
 		[ in, out ] RPC_SECURITY_DESCRIPTOR *pRpcSecurityDescriptor,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
@@ -624,15 +624,15 @@ import "security.idl";
 	HGROUP_RPC
 	clusapi_OpenGroup(
 		[ in, string ] [charset(UTF16)] uint16 *lpszGroupName,
-		[ out ] error_status_t *Status,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *Status,
+		[ out ] WERROR *rpc_status
 	);
 #else
 	void
 	clusapi_OpenGroup(
 		[ in, string ] [charset(UTF16)] uint16 *lpszGroupName,
-		[ out ] error_status_t *Status,
-		[ out ] error_status_t *rpc_status,
+		[ out ] WERROR *Status,
+		[ out ] WERROR *rpc_status,
 		[ out ] HGROUP_RPC *hGroup
 	);
 #endif
@@ -642,32 +642,32 @@ import "security.idl";
 	HGROUP_RPC
 	clusapi_CreateGroup(
 		[ in, string ] [charset(UTF16)] uint16 *lpszGroupName,
-		[ out ] error_status_t *Status,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *Status,
+		[ out ] WERROR *rpc_status
 	);
 #else
 	void
 	clusapi_CreateGroup(
 		[ in, string ] [charset(UTF16)] uint16 *lpszGroupName,
-		[ out ] error_status_t *Status,
-		[ out ] error_status_t *rpc_status,
+		[ out ] WERROR *Status,
+		[ out ] WERROR *rpc_status,
 		[ out ] HGROUP_RPC *hGroup
 	);
 #endif
 	/*****************/
 	/* Function 0x2B */
 
-	error_status_t
+	WERROR
 	clusapi_DeleteGroup(
 		[ in ] HGROUP_RPC Group,
 		[ in ] boolean8 force,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x2C */
 
-	error_status_t
+	WERROR
 	clusapi_CloseGroup(
 		[ in, out ] HGROUP_RPC *Group
 	);
@@ -675,101 +675,101 @@ import "security.idl";
 	/*****************/
 	/* Function 0x2D */
 
-	error_status_t
+	WERROR
 	clusapi_GetGroupState(
 		[ in ] HGROUP_RPC hGroup,
 		[ out ] uint32 *State,
 		[ out, string ] [charset(UTF16)] uint16 **NodeName,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x2E */
 
-	error_status_t
+	WERROR
 	clusapi_SetGroupName(
 		[ in ] HGROUP_RPC hGroup,
 		[ in, string ] [charset(UTF16)] uint16 *lpszGroupName,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x2F */
 
-	error_status_t
+	WERROR
 	clusapi_GetGroupId(
 		[ in ] HGROUP_RPC hGroup,
 		[ out, string ] [charset(UTF16)] uint16 **pGuid,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x30 */
 
-	error_status_t
+	WERROR
 	clusapi_GetNodeId(
 		[ in ] HNODE_RPC hNode,
 		[ out, string ] [charset(UTF16)] uint16 **pGuid,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x31 */
 
-	error_status_t
+	WERROR
 	clusapi_OnlineGroup(
 		[ in ] HGROUP_RPC hGroup,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x32 */
 
-	error_status_t
+	WERROR
 	clusapi_OfflineGroup(
 		[ in ] HGROUP_RPC hGroup,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x33 */
 
-	error_status_t
+	WERROR
 	clusapi_MoveGroup(
 		[ in ] HGROUP_RPC hGroup,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x34 */
 
-	error_status_t
+	WERROR
 	clusapi_MoveGroupToNode(
 		[ in ] HGROUP_RPC hGroup,
 		[ in ] HNODE_RPC hNode,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x35 */
 
-	error_status_t
+	WERROR
 	clusapi_CreateGroupResourceEnum(
 		[ in ] HGROUP_RPC hGroup,
 		[ in ] uint32 dwType,
 		[ out ] ENUM_LIST **ReturnEnum,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x36 */
 
-	error_status_t
+	WERROR
 	clusapi_SetGroupNodeList(
 		[ in ] HGROUP_RPC hGroup,
 		[ in, unique, size_is(cchListSize) ] uint16 *multiSzNodeList,
 		[ in ] uint32 cchListSize,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
@@ -777,21 +777,21 @@ import "security.idl";
 #if 0
 	HNOTIFY_RPC
 	clusapi_CreateNotify(
-		[ out ] error_status_t *Status,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *Status,
+		[ out ] WERROR *rpc_status
 	);
 #else
 	void
 	clusapi_CreateNotify(
-		[ out ] error_status_t *Status,
-		[ out ] error_status_t *rpc_status,
+		[ out ] WERROR *Status,
+		[ out ] WERROR *rpc_status,
 		[ out ] HNOTIFY_RPC *hNotify
 	);
 #endif
 	/*****************/
 	/* Function 0x38 */
 
-	error_status_t
+	WERROR
 	clusapi_CloseNotify(
 		[ in, out ] HNOTIFY_RPC *Notify
 	);
@@ -799,117 +799,117 @@ import "security.idl";
 	/*****************/
 	/* Function 0x39 */
 
-	error_status_t
+	WERROR
 	clusapi_AddNotifyCluster(
 		[ in ] HNOTIFY_RPC hNotify,
 		[ in ] HCLUSTER_RPC hCluster,
 		[ in ] uint32 dwFilter,
 		[ in ] uint32 dwNotifyKey,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x3A */
 
-	error_status_t
+	WERROR
 	clusapi_AddNotifyNode(
 		[ in ] HNOTIFY_RPC hNotify,
 		[ in ] HNODE_RPC hNode,
 		[ in ] uint32 dwFilter,
 		[ in ] uint32 dwNotifyKey,
 		[ out ] uint32 *dwStateSequence,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x3B */
 
-	error_status_t
+	WERROR
 	clusapi_AddNotifyGroup(
 		[ in ] HNOTIFY_RPC hNotify,
 		[ in ] HGROUP_RPC hGroup,
 		[ in ] uint32 dwFilter,
 		[ in ] uint32 dwNotifyKey,
 		[ out ] uint32 *dwStateSequence,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x3C */
 
-	error_status_t
+	WERROR
 	clusapi_AddNotifyResource(
 		[ in ] HNOTIFY_RPC hNotify,
 		[ in ] HRES_RPC hResource,
 		[ in ] uint32 dwFilter,
 		[ in ] uint32 dwNotifyKey,
 		[ out ] uint32 *dwStateSequence,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x3D */
 
-	error_status_t
+	WERROR
 	clusapi_AddNotifyKey(
 		[ in ] HNOTIFY_RPC hNotify,
 		[ in ] HKEY_RPC hKey,
 		[ in ] uint32 dwNotifyKey,
 		[ in ] uint32 Filter,
 		[ in ] boolean8 WatchSubTree,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x3E */
 
-	error_status_t
+	WERROR
 	clusapi_ReAddNotifyNode(
 		[ in ] HNOTIFY_RPC hNotify,
 		[ in ] HNODE_RPC hNode,
 		[ in ] uint32 dwFilter,
 		[ in ] uint32 dwNotifyKey,
 		[ in ] uint32 StateSequence,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x3F */
 
-	error_status_t
+	WERROR
 	clusapi_ReAddNotifyGroup(
 		[ in ] HNOTIFY_RPC hNotify,
 		[ in ] HGROUP_RPC hGroup,
 		[ in ] uint32 dwFilter,
 		[ in ] uint32 dwNotifyKey,
 		[ in ] uint32 StateSequence,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x40 */
 
-	error_status_t
+	WERROR
 	clusapi_ReAddNotifyResource(
 		[ in ] HNOTIFY_RPC hNotify,
 		[ in ] HRES_RPC hResource,
 		[ in ] uint32 dwFilter,
 		[ in ] uint32 dwNotifyKey,
 		[ in ] uint32 StateSequence,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x41 */
 
-	error_status_t
+	WERROR
 	clusapi_GetNotify(
 		[ in ] HNOTIFY_RPC hNotify,
 		[ out ] uint32 *dwNotifyKey,
 		[ out ] uint32 *dwFilter,
 		[ out ] uint32 *dwStateSequence,
 		[ out, string ] [charset(UTF16)] uint16 **Name,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
@@ -918,22 +918,22 @@ import "security.idl";
 	HNODE_RPC
 	clusapi_OpenNode(
 		[ in, string ] [charset(UTF16)] uint16 *lpszNodeName,
-		[ out ] error_status_t *Status,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *Status,
+		[ out ] WERROR *rpc_status
 	);
 #else
 	void
 	clusapi_OpenNode(
 		[ in, string ] [charset(UTF16)] uint16 *lpszNodeName,
-		[ out ] error_status_t *Status,
-		[ out ] error_status_t *rpc_status,
+		[ out ] WERROR *Status,
+		[ out ] WERROR *rpc_status,
 		[ out ] HNODE_RPC *hNode
 	);
 #endif
 	/*****************/
 	/* Function 0x43 */
 
-	error_status_t
+	WERROR
 	clusapi_CloseNode(
 		[ in, out ] HNODE_RPC *Node
 	);
@@ -941,44 +941,44 @@ import "security.idl";
 	/*****************/
 	/* Function 0x44 */
 
-	error_status_t
+	WERROR
 	clusapi_GetNodeState(
 		[ in ] HNODE_RPC hNode,
 		[ out ] uint32 *State,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x45 */
 
-	error_status_t
+	WERROR
 	clusapi_PauseNode(
 		[ in ] HNODE_RPC hNode,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x46 */
 
-	error_status_t
+	WERROR
 	clusapi_ResumeNode(
 		[ in ] HNODE_RPC hNode,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x47 */
 
-	error_status_t
+	WERROR
 	clusapi_EvictNode(
 		[ in ] HNODE_RPC hNode,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x48 */
 
-	error_status_t
+	WERROR
 	clusapi_NodeResourceControl(
 		[ in ] HRES_RPC hResource,
 		[ in ] HNODE_RPC hNode,
@@ -990,13 +990,13 @@ import "security.idl";
 		[ in ] uint32 nOutBufferSize,
 		[ out ] uint32 *lpBytesReturned,
 		[ out ] uint32 *lpcbRequired,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x49 */
 
-	error_status_t
+	WERROR
 	clusapi_ResourceControl(
 		[ in ] HRES_RPC hResource,
 		[ in ] uint32 dwControlCode,
@@ -1007,13 +1007,13 @@ import "security.idl";
 		[ in ] uint32 nOutBufferSize,
 		[ out ] uint32 *lpBytesReturned,
 		[ out ] uint32 *lpcbRequired,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x4A */
 
-	error_status_t
+	WERROR
 	clusapi_NodeResourceTypeControl(
 		[ in ] HCLUSTER_RPC hCluster,
 		[ in, string ] [charset(UTF16)] uint16 *lpszResourceTypeName,
@@ -1026,13 +1026,13 @@ import "security.idl";
 		[ in ] uint32 nOutBufferSize,
 		[ out ] uint32 *lpBytesReturned,
 		[ out ] uint32 *lpcbRequired,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x4B */
 
-	error_status_t
+	WERROR
 	clusapi_ResourceTypeControl(
 		[ in ] HCLUSTER_RPC hCluster,
 		[ in, string ] [charset(UTF16)] uint16 *lpszResourceTypeName,
@@ -1044,13 +1044,13 @@ import "security.idl";
 		[ in ] uint32 nOutBufferSize,
 		[ out ] uint32 *lpBytesReturned,
 		[ out ] uint32 *lpcbRequired,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x4C */
 
-	error_status_t
+	WERROR
 	clusapi_NodeGroupControl(
 		[ in ] HGROUP_RPC hGroup,
 		[ in ] HNODE_RPC hNode,
@@ -1062,13 +1062,13 @@ import "security.idl";
 		[ in ] uint32 nOutBufferSize,
 		[ out ] uint32 *lpBytesReturned,
 		[ out ] uint32 *lpcbRequired,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x4D */
 
-	error_status_t
+	WERROR
 	clusapi_GroupControl(
 		[ in ] HGROUP_RPC hGroup,
 		[ in ] uint32 dwControlCode,
@@ -1079,13 +1079,13 @@ import "security.idl";
 		[ in ] uint32 nOutBufferSize,
 		[ out ] uint32 *lpBytesReturned,
 		[ out ] uint32 *lpcbRequired,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x4E */
 
-	error_status_t
+	WERROR
 	clusapi_NodeNodeControl(
 		[ in ] HNODE_RPC hNode,
 		[ in ] HNODE_RPC hHostNode,
@@ -1097,13 +1097,13 @@ import "security.idl";
 		[ in ] uint32 nOutBufferSize,
 		[ out ] uint32 *lpBytesReturned,
 		[ out ] uint32 *lpcbRequired,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x4F */
 
-	error_status_t
+	WERROR
 	clusapi_NodeControl(
 		[ in ] HNODE_RPC hNode,
 		[ in ] uint32 dwControlCode,
@@ -1114,13 +1114,13 @@ import "security.idl";
 		[ in ] uint32 nOutBufferSize,
 		[ out ] uint32 *lpBytesReturned,
 		[ out ] uint32 *lpcbRequired,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x50 */
 
-	error_status_t
+	WERROR
 	Opnum80NotUsedOnWire(void);
 
 	/*****************/
@@ -1129,22 +1129,22 @@ import "security.idl";
 	HNETWORK_RPC
 	clusapi_OpenNetwork(
 		[ in, string ] [charset(UTF16)] uint16 *lpszNetworkName,
-		[ out ] error_status_t *Status,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *Status,
+		[ out ] WERROR *rpc_status
 	);
 #else
 	void
 	clusapi_OpenNetwork(
 		[ in, string ] [charset(UTF16)] uint16 *lpszNetworkName,
-		[ out ] error_status_t *Status,
-		[ out ] error_status_t *rpc_status,
+		[ out ] WERROR *Status,
+		[ out ] WERROR *rpc_status,
 		[ out ] HNETWORK_RPC *hNetwork
 	);
 #endif
 	/*****************/
 	/* Function 0x52 */
 
-	error_status_t
+	WERROR
 	clusapi_CloseNetwork(
 		[ in, out ] HNETWORK_RPC *Network
 	);
@@ -1152,58 +1152,58 @@ import "security.idl";
 	/*****************/
 	/* Function 0x53 */
 
-	error_status_t
+	WERROR
 	clusapi_GetNetworkState(
 		[ in ] HNETWORK_RPC hNetwork,
 		[ out ] uint32 *State,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x54 */
 
-	error_status_t
+	WERROR
 	clusapi_SetNetworkName(
 		[ in ] HNETWORK_RPC hNetwork,
 		[ in, string ] [charset(UTF16)] uint16 *lpszNetworkName,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x55 */
 
-	error_status_t
+	WERROR
 	clusapi_CreateNetworkEnum(
 		[ in ] HNETWORK_RPC hNetwork,
 		[ in ] uint32 dwType,
 		[ out ] ENUM_LIST **ReturnEnum,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x56 */
 
-	error_status_t
+	WERROR
 	clusapi_GetNetworkId(
 		[ in ] HNETWORK_RPC hNetwork,
 		[ out, string ] [charset(UTF16)] uint16 **pGuid,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x57 */
 
-	error_status_t
+	WERROR
 	clusapi_SetNetworkPriorityOrder(
 		[ in, range(0, 1000)] uint32 NetworkCount,
 		[ in, string, size_is(NetworkCount) ] [charset(UTF16)] uint16 NetworkIdList[*],
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x58 */
 
-	error_status_t
+	WERROR
 	clusapi_NodeNetworkControl(
 		[ in ] HNETWORK_RPC hNetwork,
 		[ in ] HNODE_RPC hNode,
@@ -1215,13 +1215,13 @@ import "security.idl";
 		[ in ] uint32 nOutBufferSize,
 		[ out ] uint32 *lpBytesReturned,
 		[ out ] uint32 *lpcbRequired,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x59 */
 
-	error_status_t
+	WERROR
 	clusapi_NetworkControl(
 		[ in ] HNETWORK_RPC hNetwork,
 		[ in ] uint32 dwControlCode,
@@ -1232,33 +1232,33 @@ import "security.idl";
 		[ in ] uint32 nOutBufferSize,
 		[ out ] uint32 *lpBytesReturned,
 		[ out ] uint32 *lpcbRequired,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x5A */
 
-	error_status_t
+	WERROR
 	clusapi_AddNotifyNetwork(
 		[ in ] HNOTIFY_RPC hNotify,
 		[ in ] HNETWORK_RPC hNetwork,
 		[ in ] uint32 dwFilter,
 		[ in ] uint32 dwNotifyKey,
 		[ out ] uint32 *dwStateSequence,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x5B */
 
-	error_status_t
+	WERROR
 	clusapi_ReAddNotifyNetwork(
 		[ in ] HNOTIFY_RPC hNotify,
 		[ in ] HNETWORK_RPC hNetwork,
 		[ in ] uint32 dwFilter,
 		[ in ] uint32 dwNotifyKey,
 		[ in ] uint32 StateSequence,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
@@ -1267,22 +1267,22 @@ import "security.idl";
 	HNETINTERFACE_RPC
 	clusapi_OpenNetInterface(
 		[ in, string ] [charset(UTF16)] uint16 *lpszNetInterfaceName,
-		[ out ] error_status_t *Status,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *Status,
+		[ out ] WERROR *rpc_status
 	);
 #else
 	void
 	clusapi_OpenNetInterface(
 		[ in, string ] [charset(UTF16)] uint16 *lpszNetInterfaceName,
-		[ out ] error_status_t *Status,
-		[ out ] error_status_t *rpc_status,
+		[ out ] WERROR *Status,
+		[ out ] WERROR *rpc_status,
 		[ out ] HNETINTERFACE_RPC *hNetInterface
 	);
 #endif
 	/*****************/
 	/* Function 0x5D */
 
-	error_status_t
+	WERROR
 	clusapi_CloseNetInterface(
 		[ in, out ] HNETINTERFACE_RPC *NetInterface
 	);
@@ -1290,38 +1290,38 @@ import "security.idl";
 	/*****************/
 	/* Function 0x5E */
 
-	error_status_t
+	WERROR
 	clusapi_GetNetInterfaceState(
 		[ in ] HNETINTERFACE_RPC hNetInterface,
 		[ out ] uint32 *State,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x5F */
 
-	error_status_t
+	WERROR
 	clusapi_GetNetInterface(
 		[ in, string ] [charset(UTF16)] uint16 *lpszNodeName,
 		[ in, string ] [charset(UTF16)] uint16 *lpszNetworkName,
 		[ out, string ] [charset(UTF16)] uint16 **lppszInterfaceName,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x60 */
 
-	error_status_t
+	WERROR
 	clusapi_GetNetInterfaceId(
 		[ in ] HNETINTERFACE_RPC hNetInterface,
 		[ out, string ] [charset(UTF16)] uint16 **pGuid,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x61 */
 
-	error_status_t
+	WERROR
 	clusapi_NodeNetInterfaceControl(
 		[ in ] HNETINTERFACE_RPC hNetInterface,
 		[ in ] HNODE_RPC hNode,
@@ -1333,13 +1333,13 @@ import "security.idl";
 		[ in ] uint32 nOutBufferSize,
 		[ out ] uint32 *lpBytesReturned,
 		[ out ] uint32 *lpcbRequired,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x62 */
 
-	error_status_t
+	WERROR
 	clusapi_NetInterfaceControl(
 		[ in ] HNETINTERFACE_RPC hNetInterface,
 		[ in ] uint32 dwControlCode,
@@ -1350,50 +1350,50 @@ import "security.idl";
 		[ in ] uint32 nOutBufferSize,
 		[ out ] uint32 *lpBytesReturned,
 		[ out ] uint32 *lpcbRequired,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x63 */
 
-	error_status_t
+	WERROR
 	clusapi_AddNotifyNetInterface(
 		[ in ] HNOTIFY_RPC hNotify,
 		[ in ] HNETINTERFACE_RPC hNetInterface,
 		[ in ] uint32 dwFilter,
 		[ in ] uint32 dwNotifyKey,
 		[ out ] uint32 *dwStateSequence,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x64 */
 
-	error_status_t
+	WERROR
 	clusapi_ReAddNotifyNetInterface(
 		[ in ] HNOTIFY_RPC hNotify,
 		[ in ] HNETINTERFACE_RPC hNetInterface,
 		[ in ] uint32 dwFilter,
 		[ in ] uint32 dwNotifyKey,
 		[ in ] uint32 StateSequence,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x65 */
 
-	error_status_t
+	WERROR
 	clusapi_CreateNodeEnum(
 		[ in ] HNODE_RPC hNode,
 		[ in ] uint32 dwType,
 		[ out ] ENUM_LIST **ReturnEnum,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x66 */
 
-	error_status_t
+	WERROR
 	clusapi_GetClusterVersion2(
 		[ out ] uint16 *lpwMajorVersion,
 		[ out ] uint16 *lpwMinorVersion,
@@ -1401,33 +1401,33 @@ import "security.idl";
 		[ out, string ] [charset(UTF16)] uint16 **lpszVendorId,
 		[ out, string ] [charset(UTF16)] uint16 **lpszCSDVersion,
 		[ out ] CLUSTER_OPERATIONAL_VERSION_INFO **ppClusterOpVerInfo,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x67 */
 
-	error_status_t
+	WERROR
 	clusapi_CreateResTypeEnum(
 		[ in, string ] [charset(UTF16)] uint16 *lpszTypeName,
 		[ in ] uint32 dwType,
 		[ out ] ENUM_LIST **ReturnEnum,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x68 */
 
-	error_status_t
+	WERROR
 	clusapi_BackupClusterDatabase(
 		[ in, string ] [charset(UTF16)] uint16 *lpszPathName,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x69 */
 
-	error_status_t
+	WERROR
 	clusapi_NodeClusterControl(
 		[ in ] HCLUSTER_RPC hCluster,
 		[ in ] HNODE_RPC hHostNode,
@@ -1439,13 +1439,13 @@ import "security.idl";
 		[ in ] uint32 nOutBufferSize,
 		[ out ] uint32 *lpBytesReturned,
 		[ out ] uint32 *lpcbRequired,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x6A */
 
-	error_status_t
+	WERROR
 	clusapi_ClusterControl(
 		[ in ] HCLUSTER_RPC hCluster,
 		[ in ] uint32 dwControlCode,
@@ -1456,13 +1456,13 @@ import "security.idl";
 		[ in ] uint32 nOutBufferSize,
 		[ out ] uint32 *lpBytesReturned,
 		[ out ] uint32 *lpcbRequired,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x6B */
 
-	error_status_t
+	WERROR
 	clusapi_UnblockGetNotifyCall(
 		[ in ] HNOTIFY_RPC hNotify
 	);
@@ -1470,7 +1470,7 @@ import "security.idl";
 	/*****************/
 	/* Function 0x6C */
 
-	error_status_t
+	WERROR
 	clusapi_SetServiceAccountPassword(
 		[ in, string ] [charset(UTF16)] uint16 *lpszNewPassword,
 		[ in ]  IDL_CLUSTER_SET_PASSWORD_FLAGS dwFlags,
@@ -1484,65 +1484,65 @@ import "security.idl";
 	/*****************/
 	/* Function 0x6D */
 
-	error_status_t
+	WERROR
 	clusapi_SetResourceDependencyExpression(
 		[ in ] HRES_RPC hResource,
 		[ in, string, unique ] [charset(UTF16)] uint16 *lpszDependencyExpression,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x6E */
 
-	error_status_t
+	WERROR
 	clusapi_GetResourceDependencyExpression(
 		[ in ] HRES_RPC hResource,
 		[ out, string ] [charset(UTF16)] uint16 **lpszDependencyExpression,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x6F */
 
-	error_status_t
+	WERROR
 	Opnum111NotUsedOnWire(void);
 
 	/*****************/
 	/* Function 0x70 */
 
-	error_status_t
+	WERROR
 	clusapi_GetResourceNetworkName(
 		[ in ] HRES_RPC hResource,
 		[ out, string ] [charset(UTF16)] uint16 **lpszName,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x71 */
 
-	error_status_t
+	WERROR
 	clusapi_ExecuteBatch(
 		[ in ] HKEY_RPC hKey,
 		[ in ] uint32 cbData,
 		[ in, size_is(cbData)] uint8 *lpData,
 		[ out ] int *pdwFailedCommand,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x72 */
 
-	error_status_t
+	WERROR
 	clusapi_CreateBatchPort(
 		[ in ] HKEY_RPC hKey,
 		[ out ] HBATCH_PORT_RPC *phBatchPort,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x73 */
 
-	error_status_t
+	WERROR
 	clusapi_GetBatchNotification(
 		 [ in ] HBATCH_PORT_RPC hBatchNotify,
 		 [ out ] uint32 *cbData,
@@ -1552,7 +1552,7 @@ import "security.idl";
 	/*****************/
 	/* Function 0x74 */
 
-	error_status_t
+	WERROR
 	clusapi_CloseBatchPort(
 		 [ in, out ] HBATCH_PORT_RPC *phBatchPort
 	);
@@ -1564,14 +1564,14 @@ import "security.idl";
 	clusapi_OpenClusterEx(
 		[ in ] uint32 dwDesiredAccess,
 		[ out ] uint32 *lpdwGrantedAccess,
-		[ out ] error_status_t *Status
+		[ out ] WERROR *Status
 	);
 #else
 	void
 	clusapi_OpenClusterEx(
 		[ in ] uint32 dwDesiredAccess,
 		[ out ] uint32 *lpdwGrantedAccess,
-		[ out ] error_status_t *Status,
+		[ out ] WERROR *Status,
 		[ out ] HCLUSTER_RPC *hCluster
 	);
 #endif
@@ -1584,8 +1584,8 @@ import "security.idl";
 		[ in, string ] [charset(UTF16)] uint16 *lpszNodeName,
 		[ in ] uint32 dwDesiredAccess,
 		[ out ] uint32 *lpdwGrantedAccess,
-		[ out ] error_status_t *Status,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *Status,
+		[ out ] WERROR *rpc_status
 	);
 #else
 	void
@@ -1593,8 +1593,8 @@ import "security.idl";
 		[ in, string ] [charset(UTF16)] uint16 *lpszNodeName,
 		[ in ] uint32 dwDesiredAccess,
 		[ out ] uint32 *lpdwGrantedAccess,
-		[ out ] error_status_t *Status,
-		[ out ] error_status_t *rpc_status,
+		[ out ] WERROR *Status,
+		[ out ] WERROR *rpc_status,
 		[ out ] HNODE_RPC *hNode
 	);
 #endif
@@ -1606,8 +1606,8 @@ import "security.idl";
 		[ in, string ] [charset(UTF16)] uint16 *lpszGroupName,
 		[ in ] uint32 dwDesiredAccess,
 		[ out ] uint32 *lpdwGrantedAccess,
-		[ out ] error_status_t *Status,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *Status,
+		[ out ] WERROR *rpc_status
 	);
 #else
 	void
@@ -1615,8 +1615,8 @@ import "security.idl";
 		[ in, string ] [charset(UTF16)] uint16 *lpszGroupName,
 		[ in ] uint32 dwDesiredAccess,
 		[ out ] uint32 *lpdwGrantedAccess,
-		[ out ] error_status_t *Status,
-		[ out ] error_status_t *rpc_status,
+		[ out ] WERROR *Status,
+		[ out ] WERROR *rpc_status,
 		[ out ] HGROUP_RPC *hGroup
 	);
 #endif
@@ -1628,8 +1628,8 @@ import "security.idl";
 		[ in, string ] [charset(UTF16)] uint16 *lpszResourceName,
 		[ in ] uint32 dwDesiredAccess,
 		[ out ] uint32 *lpdwGrantedAccess,
-		[ out ] error_status_t *Status,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *Status,
+		[ out ] WERROR *rpc_status
 	);
 #else
 	void
@@ -1637,8 +1637,8 @@ import "security.idl";
 		[ in, string ] [charset(UTF16)] uint16 *lpszResourceName,
 		[ in ] uint32 dwDesiredAccess,
 		[ out ] uint32 *lpdwGrantedAccess,
-		[ out ] error_status_t *Status,
-		[ out ] error_status_t *rpc_status,
+		[ out ] WERROR *Status,
+		[ out ] WERROR *rpc_status,
 		[ out ] HRES_RPC *hResource
 	);
 #endif
@@ -1650,8 +1650,8 @@ import "security.idl";
 		[ in, string ] [charset(UTF16)] uint16 *lpszNetworkName,
 		[ in ] uint32 dwDesiredAccess,
 		[ out ] uint32 *lpdwGrantedAccess,
-		[ out ] error_status_t *Status,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *Status,
+		[ out ] WERROR *rpc_status
 	);
 #else
 	void
@@ -1659,8 +1659,8 @@ import "security.idl";
 		[ in, string ] [charset(UTF16)] uint16 *lpszNetworkName,
 		[ in ] uint32 dwDesiredAccess,
 		[ out ] uint32 *lpdwGrantedAccess,
-		[ out ] error_status_t *Status,
-		[ out ] error_status_t *rpc_status,
+		[ out ] WERROR *Status,
+		[ out ] WERROR *rpc_status,
 		[ out ] HNETWORK_RPC *hNetwork
 	);
 #endif
@@ -1672,8 +1672,8 @@ import "security.idl";
 		[ in, string ] [charset(UTF16)] uint16 *lpszNetInterfaceName,
 		[ in ] uint32 dwDesiredAccess,
 		[ out ] uint32 *lpdwGrantedAccess,
-		[ out ] error_status_t *Status,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *Status,
+		[ out ] WERROR *rpc_status
 	);
 #else
 	void
@@ -1681,78 +1681,78 @@ import "security.idl";
 		[ in, string ] [charset(UTF16)] uint16 *lpszNetInterfaceName,
 		[ in ] uint32 dwDesiredAccess,
 		[ out ] uint32 *lpdwGrantedAccess,
-		[ out ] error_status_t *Status,
-		[ out ] error_status_t *rpc_status,
+		[ out ] WERROR *Status,
+		[ out ] WERROR *rpc_status,
 		[ out ] HNETINTERFACE_RPC *hNetInterface
 	);
 #endif
 	/*****************/
 	/* Function 0x7B */
 
-	error_status_t
+	WERROR
 	clusapi_ChangeCsvState(
 		[ in ] HRES_RPC hResource,
 		[ in ] uint32 dwState,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x7C */
 
-	error_status_t
+	WERROR
 	clusapi_CreateNodeEnumEx(
 		[in] HNODE_RPC hNode,
 		[in] uint32 dwType,
 		[in] uint32 dwOptions,
 		[out] ENUM_LIST **ReturnIdEnum,
 		[out] ENUM_LIST **ReturnNameEnum,
-		[out] error_status_t* rpc_status
+		[out] WERROR* rpc_status
 	);
 
 	/*****************/
 	/* Function 0x7D */
 
-	error_status_t
+	WERROR
 	clusapi_CreateEnumEx(
 		[in] HCLUSTER_RPC hCluster,
 		[in] uint32 dwType,
 		[in] uint32 dwOptions,
 		[out] ENUM_LIST **ReturnIdEnum,
 		[out] ENUM_LIST **ReturnNameEnum,
-		[out] error_status_t* rpc_status
+		[out] WERROR* rpc_status
 	);
 
 	/*****************/
 	/* Function 0x7E */
 
-	error_status_t
+	WERROR
 	clusapi_PauseNodeEx(
 		[ in ] HNODE_RPC hNode,
 		[ in ] boolean8 bDrainNode,
 		[ in ] uint32 dwPauseFlags,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x7F */
 
-	error_status_t
+	WERROR
 	clusapi_PauseNodeWithDrainTarget(
 		[ in ] HNODE_RPC hNode,
 		[ in ] uint32 dwPauseFlags,
 		[ in ] HNODE_RPC hNodeDrainTarget,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x80 */
 
-	error_status_t
+	WERROR
 	clusapi_ResumeNodeEx(
 		[ in ] HNODE_RPC hNode,
 		[ in ] uint32 dwResumeFailbackType,
 		[ in ] uint32 dwResumeFlagsReserved,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
@@ -1762,100 +1762,100 @@ import "security.idl";
 	clusapi_CreateGroupEx(
 		[ in, string ] [charset(UTF16)] uint16 *lpszGroupName,
 		[ in, unique ] CLUSTER_CREATE_GROUP_INFO_RPC *pGroupInfo,
-		[ out ] error_status_t *Status,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *Status,
+		[ out ] WERROR *rpc_status
 	);
 #else
 	void
 	clusapi_CreateGroupEx(
 		[ in, string ] [charset(UTF16)] uint16 *lpszGroupName,
 		[ in, unique ] CLUSTER_CREATE_GROUP_INFO_RPC *pGroupInfo,
-		[ out ] error_status_t *Status,
-		[ out ] error_status_t *rpc_status,
+		[ out ] WERROR *Status,
+		[ out ] WERROR *rpc_status,
 		[ out ] HGROUP_RPC *hGroup
 	);
 #endif
 	/*****************/
 	/* Function 0x82 */
 
-	error_status_t
+	WERROR
 	clusapi_OnlineGroupEx(
 		[ in ] HGROUP_RPC hGroup,
 		[ in ] uint32	  dwOnlineFlags,
 		[ in, size_is(cbInBufferSize) ] uint8* lpInBuffer,
 		[ in ] uint32	  cbInBufferSize,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x83 */
 
-	error_status_t
+	WERROR
 	clusapi_OfflineGroupEx(
 		[ in ] HGROUP_RPC hGroup,
 		[ in ] uint32	  dwOfflineFlags,
 		[ in, size_is(cbInBufferSize) ] uint8* lpInBuffer,
 		[ in ] uint32	  cbInBufferSize,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x84 */
 
-	error_status_t
+	WERROR
 	clusapi_MoveGroupEx(
 		[ in ] HGROUP_RPC hGroup,
 		[ in ] uint32		dwMoveFlags,
 		[ in, size_is(cbInBufferSize) ] uint8* lpInBuffer,
 		[ in ] uint32		cbInBufferSize,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x85 */
 
-	error_status_t
+	WERROR
 	clusapi_MoveGroupToNodeEx(
 		[ in ] HGROUP_RPC hGroup,
 		[ in ] HNODE_RPC  hNode,
 		[ in ] uint32		dwMoveFlags,
 		[ in, size_is(cbInBufferSize) ] uint8* lpInBuffer,
 		[ in ] uint32		cbInBufferSize,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x86 */
 
-	error_status_t
+	WERROR
 	clusapi_CancelClusterGroupOperation(
 		[ in ] HGROUP_RPC	hGroup,
 		[ in ] uint32		 dwCancelFlags,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x87 */
 
-	error_status_t
+	WERROR
 	clusapi_OnlineResourceEx(
 		[ in ] HRES_RPC hResource,
 		[ in ] uint32	  dwOnlineFlags,
 		[ in, size_is(cbInBufferSize) ] uint8* lpInBuffer,
 		[ in ] uint32	  cbInBufferSize,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x88 */
 
-	error_status_t
+	WERROR
 	clusapi_OfflineResourceEx(
 		[ in ] HRES_RPC hResource,
 		[ in ] uint32	  dwOfflineFlags,
 		[ in, size_is(cbInBufferSize) ] uint8* lpInBuffer,
 		[ in ] uint32	  cbInBufferSize,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 #define HGENERIC_RPC policy_handle
@@ -1892,14 +1892,14 @@ import "security.idl";
 #if 0
 	HNOTIFY_RPC
 	clusapi_CreateNotifyV2(
-		[ out ] error_status_t *rpc_error,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_error,
+		[ out ] WERROR *rpc_status
 	);
 #else
 	void
 	clusapi_CreateNotifyV2(
-		[ out ] error_status_t *rpc_error,
-		[ out ] error_status_t *rpc_status,
+		[ out ] WERROR *rpc_error,
+		[ out ] WERROR *rpc_status,
 		[ out ] HNOTIFY_RPC *hNotify
 	);
 
@@ -1907,7 +1907,7 @@ import "security.idl";
 	/*****************/
 	/* Function 0x8A */
 
-	error_status_t
+	WERROR
 	clusapi_AddNotifyV2(
 		[ in ] HNOTIFY_RPC hNotify,
 		[ in ] HGENERIC_RPC hObject,
@@ -1915,13 +1915,13 @@ import "security.idl";
 		[ in ] uint32 dwNotifyKey,
 		[ in ] uint32 dwVersion,
 		[ in ] boolean8 isTargetedAtObject,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x8B */
 
-	error_status_t
+	WERROR
 	clusapi_GetNotifyV2(
 		[ in ] HNOTIFY_RPC hNotify,
 		[ out, size_is(,*dwNumNotifications) ] NOTIFICATION_RPC **Notifications,
@@ -1931,12 +1931,12 @@ import "security.idl";
 	/*****************/
 	/* Function 0x8C */
 
-	error_status_t
+	WERROR
 	clusapi_QueryAllValues(
 		[ in ] HKEY_RPC hKey,
 		[ out ] uint32 *pcbData,
 		[ out, size_is(1, *pcbData) ] uint8 ** ppData,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	typedef struct {
@@ -1947,7 +1947,7 @@ import "security.idl";
 	/*****************/
 	/* Function 0x8D */
 
-	error_status_t
+	WERROR
 	clusapi_StmFindDisk(
 		[ in ] HCLUSTER_RPC hCluster,
 		[ in ] uint32 dwFlags,
@@ -1955,7 +1955,7 @@ import "security.idl";
 		[ in, size_is(uniqueIdSize), unique ] uint8 *pUniqueId,
 		[ in ] uint32 uniqueIdSize,
 		[ out, ref, string ] [charset(UTF16)] uint16 **ppszDeviceName,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	typedef struct{
@@ -1973,7 +1973,7 @@ import "security.idl";
 	/*****************/
 	/* Function 0x8E */
 
-	error_status_t
+	WERROR
 	clusapi_ClusterMrr(
 		[ in ] HCLUSTER_RPC hCluster,
 		[ in ] boolean8 fExcludeSelf,
@@ -1984,13 +1984,13 @@ import "security.idl";
 		[ in ] uint32 inSize,
 		[ in, unique, size_is(inSize) ] uint8 *pInData,
 		[ out, ref, size_is(1, 1) ] CLUSTER_MRR_RESPONSE **ppInfo,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x8F */
 
-	error_status_t
+	WERROR
 	clusapi_CreateGroupEnum(
 		[ in ] HCLUSTER_RPC hCluster,
 		[ in, unique, size_is(cbProperties)] uint8* pProperties,
@@ -1998,13 +1998,13 @@ import "security.idl";
 		[ in, unique, size_is(cbRoProperties)] uint8* pRoProperties,
 		[ in ] uint32 cbRoProperties,
 		[ out ] GROUP_ENUM_LIST **ppResultList,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x90 */
 
-	error_status_t
+	WERROR
 	clusapi_CreateResourceEnum(
 		[ in ] HCLUSTER_RPC hCluster,
 		[ in, unique, size_is(cbProperties)] uint8* pProperties,
@@ -2012,30 +2012,30 @@ import "security.idl";
 		[ in, unique, size_is(cbRoProperties)] uint8* pRoProperties,
 		[ in ] uint32 cbRoProperties,
 		[ out ] RESOURCE_ENUM_LIST **ppResultList,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x91 */
 
-	error_status_t
+	WERROR
 	clusapi_ExecuteReadBatch(
 		[ in ] HKEY_RPC hKey,
 		[ in ] uint32 cbInData,
 		[ in, size_is(cbInData)] uint8 *lpInData,
 		[ out ] uint32 *cbOutData,
 		[ out, size_is(,*cbOutData) ] uint8 ** lpOutData,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	/*****************/
 	/* Function 0x92 */
 
-	error_status_t
+	WERROR
 	clusapi_RestartResource(
 		[ in ] HRES_RPC hResource,
 		[ in ] uint32 dwFlags,
-		[ out ] error_status_t *rpc_status
+		[ out ] WERROR *rpc_status
 	);
 
 	typedef struct {
@@ -2047,7 +2047,7 @@ import "security.idl";
 	/*****************/
 	/* Function 0x93 */
 
-	error_status_t
+	WERROR
 	clusapi_GetNotifyAsync(
 		[ in ] HNOTIFY_RPC hNotify,
 		[ out, size_is(,*dwNumNotifications) ] NOTIFICATION_DATA_ASYNC_RPC **Notifications,

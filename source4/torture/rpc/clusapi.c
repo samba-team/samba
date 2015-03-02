@@ -29,7 +29,7 @@ static bool test_OpenCluster_int(struct torture_context *tctx,
 {
 	struct dcerpc_binding_handle *b = p->binding_handle;
 	struct clusapi_OpenCluster r;
-	uint32_t Status;
+	WERROR Status;
 
 	r.out.Status = &Status;
 	r.out.Cluster = Cluster;
@@ -38,7 +38,7 @@ static bool test_OpenCluster_int(struct torture_context *tctx,
 		dcerpc_clusapi_OpenCluster_r(b, tctx, &r),
 		"OpenCluster failed");
 	torture_assert_werr_ok(tctx,
-		W_ERROR(*r.out.Status),
+		*r.out.Status,
 		"OpenCluster failed");
 
 	return true;
@@ -58,7 +58,7 @@ static bool test_CloseCluster_int(struct torture_context *tctx,
 		dcerpc_clusapi_CloseCluster_r(b, tctx, &r),
 		"CloseCluster failed");
 	torture_assert_werr_ok(tctx,
-		W_ERROR(r.out.result),
+		r.out.result,
 		"CloseCluster failed");
 
 	torture_assert(tctx,
@@ -99,7 +99,7 @@ static bool test_SetClusterName(struct torture_context *tctx,
 {
 	struct dcerpc_binding_handle *b = p->binding_handle;
 	struct clusapi_SetClusterName r;
-	uint32_t rpc_status;
+	WERROR rpc_status;
 
 	r.in.NewClusterName = "wurst";
 	r.out.rpc_status = &rpc_status;
@@ -108,7 +108,7 @@ static bool test_SetClusterName(struct torture_context *tctx,
 		dcerpc_clusapi_SetClusterName_r(b, tctx, &r),
 		"SetClusterName failed");
 	torture_assert_werr_ok(tctx,
-		W_ERROR(r.out.result),
+		r.out.result,
 		"SetClusterName failed");
 
 	return true;
@@ -129,7 +129,7 @@ static bool test_GetClusterName(struct torture_context *tctx,
 		dcerpc_clusapi_GetClusterName_r(b, tctx, &r),
 		"GetClusterName failed");
 	torture_assert_werr_ok(tctx,
-		W_ERROR(r.out.result),
+		r.out.result,
 		"GetClusterName failed");
 
 	return true;
@@ -156,7 +156,7 @@ static bool test_GetClusterVersion(struct torture_context *tctx,
 		dcerpc_clusapi_GetClusterVersion_r(b, tctx, &r),
 		"GetClusterVersion failed");
 	torture_assert_werr_equal(tctx,
-		W_ERROR(r.out.result),
+		r.out.result,
 		WERR_CALL_NOT_IMPLEMENTED,
 		"GetClusterVersion failed");
 
@@ -170,7 +170,7 @@ static bool test_CreateEnum(struct torture_context *tctx,
 	struct clusapi_CreateEnum r;
 	uint32_t dwType = CLUSTER_ENUM_RESOURCE;
 	struct ENUM_LIST *ReturnEnum;
-	uint32_t rpc_status;
+	WERROR rpc_status;
 
 	r.in.dwType = dwType;
 	r.out.ReturnEnum = &ReturnEnum;
@@ -180,7 +180,7 @@ static bool test_CreateEnum(struct torture_context *tctx,
 		dcerpc_clusapi_CreateEnum_r(b, tctx, &r),
 		"CreateEnum failed");
 	torture_assert_werr_ok(tctx,
-		W_ERROR(r.out.result),
+		r.out.result,
 		"CreateEnum failed");
 
 	return true;
@@ -194,7 +194,7 @@ static bool test_GetQuorumResource(struct torture_context *tctx,
 	const char *lpszResourceName;
 	const char *lpszDeviceName;
 	uint32_t pdwMaxQuorumLogSize;
-	uint32_t rpc_status;
+	WERROR rpc_status;
 
 	r.out.lpszResourceName = &lpszResourceName;
 	r.out.lpszDeviceName = &lpszDeviceName;
@@ -205,7 +205,7 @@ static bool test_GetQuorumResource(struct torture_context *tctx,
 		dcerpc_clusapi_GetQuorumResource_r(b, tctx, &r),
 		"GetQuorumResource failed");
 	torture_assert_werr_ok(tctx,
-		W_ERROR(r.out.result),
+		r.out.result,
 		"GetQuorumResource failed");
 
 	return true;
@@ -218,7 +218,7 @@ static bool test_SetQuorumResource(struct torture_context *tctx,
 	struct clusapi_SetQuorumResource r;
 	const char *lpszDeviceName = "";
 	uint32_t dwMaxQuorumLogSize = 0;
-	uint32_t rpc_status;
+	WERROR rpc_status;
 	struct policy_handle hResource;
 
 	/* we need to figure out how this call works and what we provide as
@@ -238,7 +238,7 @@ static bool test_SetQuorumResource(struct torture_context *tctx,
 		dcerpc_clusapi_SetQuorumResource_r(b, tctx, &r),
 		"SetQuorumResource failed");
 	torture_assert_werr_ok(tctx,
-		W_ERROR(r.out.result),
+		r.out.result,
 		"SetQuorumResource failed");
 
 	return true;
@@ -251,8 +251,8 @@ static bool test_OpenResource_int(struct torture_context *tctx,
 	struct dcerpc_binding_handle *b = p->binding_handle;
 	struct clusapi_OpenResource r;
 	const char *lpszResourceName = "Cluster Name";
-	uint32_t Status;
-	uint32_t rpc_status;
+	WERROR Status;
+	WERROR rpc_status;
 
 	r.in.lpszResourceName = lpszResourceName;
 	r.out.rpc_status = &rpc_status;
@@ -263,7 +263,7 @@ static bool test_OpenResource_int(struct torture_context *tctx,
 		dcerpc_clusapi_OpenResource_r(b, tctx, &r),
 		"OpenResource failed");
 	torture_assert_werr_ok(tctx,
-		W_ERROR(*r.out.Status),
+		*r.out.Status,
 		"OpenResource failed");
 
 	return true;
@@ -283,7 +283,7 @@ static bool test_CloseResource_int(struct torture_context *tctx,
 		dcerpc_clusapi_CloseResource_r(b, tctx, &r),
 		"CloseResource failed");
 	torture_assert_werr_ok(tctx,
-		W_ERROR(r.out.result),
+		r.out.result,
 		"CloseResource failed");
 	torture_assert(tctx,
 		ndr_policy_handle_empty(hResource),
@@ -326,8 +326,8 @@ static bool test_CreateResource_int(struct torture_context *tctx,
 	struct clusapi_CreateResource r;
 	const char *lpszResourceName = "Cluster Name";
 	const char *lpszResourceType = "wurst";
-	uint32_t Status;
-	uint32_t rpc_status;
+	WERROR Status;
+	WERROR rpc_status;
 	struct policy_handle hGroup;
 
 	ZERO_STRUCT(hGroup); /* FIXME !!!!!! */
@@ -344,7 +344,7 @@ static bool test_CreateResource_int(struct torture_context *tctx,
 		dcerpc_clusapi_CreateResource_r(b, tctx, &r),
 		"CreateResource failed");
 	torture_assert_werr_ok(tctx,
-		W_ERROR(*r.out.Status),
+		*r.out.Status,
 		"CreateResource failed");
 
 	return true;
@@ -356,7 +356,7 @@ static bool test_DeleteResource_int(struct torture_context *tctx,
 {
 	struct dcerpc_binding_handle *b = p->binding_handle;
 	struct clusapi_DeleteResource r;
-	uint32_t rpc_status;
+	WERROR rpc_status;
 
 	r.in.hResource = *hResource;
 	r.out.rpc_status = &rpc_status;
@@ -365,7 +365,7 @@ static bool test_DeleteResource_int(struct torture_context *tctx,
 		dcerpc_clusapi_DeleteResource_r(b, tctx, &r),
 		"DeleteResource failed");
 	torture_assert_werr_ok(tctx,
-		W_ERROR(r.out.result),
+		r.out.result,
 		"DeleteResource failed");
 
 	return true;
@@ -406,7 +406,7 @@ static bool test_GetResourceState_int(struct torture_context *tctx,
 	uint32_t State;
 	const char *NodeName;
 	const char *GroupName;
-	uint32_t rpc_status;
+	WERROR rpc_status;
 
 	r.in.hResource = *hResource;
 	r.out.State = &State;
@@ -418,7 +418,7 @@ static bool test_GetResourceState_int(struct torture_context *tctx,
 		dcerpc_clusapi_GetResourceState_r(b, tctx, &r),
 		"GetResourceState failed");
 	torture_assert_werr_ok(tctx,
-		W_ERROR(r.out.result),
+		r.out.result,
 		"GetResourceState failed");
 
 	return true;
@@ -448,7 +448,7 @@ static bool test_GetResourceId_int(struct torture_context *tctx,
 	struct dcerpc_binding_handle *b = p->binding_handle;
 	struct clusapi_GetResourceId r;
 	const char *pGuid;
-	uint32_t rpc_status;
+	WERROR rpc_status;
 
 	r.in.hResource = *hResource;
 	r.out.pGuid = &pGuid;
@@ -458,7 +458,7 @@ static bool test_GetResourceId_int(struct torture_context *tctx,
 		dcerpc_clusapi_GetResourceId_r(b, tctx, &r),
 		"GetResourceId failed");
 	torture_assert_werr_ok(tctx,
-		W_ERROR(r.out.result),
+		r.out.result,
 		"GetResourceId failed");
 
 	return true;
@@ -488,7 +488,7 @@ static bool test_GetResourceType_int(struct torture_context *tctx,
 	struct dcerpc_binding_handle *b = p->binding_handle;
 	struct clusapi_GetResourceType r;
 	const char *lpszResourceType;
-	uint32_t rpc_status;
+	WERROR rpc_status;
 
 	r.in.hResource = *hResource;
 	r.out.lpszResourceType = &lpszResourceType;
@@ -498,7 +498,7 @@ static bool test_GetResourceType_int(struct torture_context *tctx,
 		dcerpc_clusapi_GetResourceType_r(b, tctx, &r),
 		"GetResourceType failed");
 	torture_assert_werr_ok(tctx,
-		W_ERROR(r.out.result),
+		r.out.result,
 		"GetResourceType failed");
 
 	return true;
@@ -527,7 +527,7 @@ static bool test_FailResource_int(struct torture_context *tctx,
 {
 	struct dcerpc_binding_handle *b = p->binding_handle;
 	struct clusapi_FailResource r;
-	uint32_t rpc_status;
+	WERROR rpc_status;
 
 	r.in.hResource = *hResource;
 	r.out.rpc_status = &rpc_status;
@@ -536,7 +536,7 @@ static bool test_FailResource_int(struct torture_context *tctx,
 		dcerpc_clusapi_FailResource_r(b, tctx, &r),
 		"FailResource failed");
 	torture_assert_werr_ok(tctx,
-		W_ERROR(r.out.result),
+		r.out.result,
 		"FailResource failed");
 
 	return true;
@@ -565,7 +565,7 @@ static bool test_OnlineResource_int(struct torture_context *tctx,
 {
 	struct dcerpc_binding_handle *b = p->binding_handle;
 	struct clusapi_OnlineResource r;
-	uint32_t rpc_status;
+	WERROR rpc_status;
 
 	r.in.hResource = *hResource;
 	r.out.rpc_status = &rpc_status;
@@ -574,7 +574,7 @@ static bool test_OnlineResource_int(struct torture_context *tctx,
 		dcerpc_clusapi_OnlineResource_r(b, tctx, &r),
 		"OnlineResource failed");
 	torture_assert_werr_ok(tctx,
-		W_ERROR(r.out.result),
+		r.out.result,
 		"OnlineResource failed");
 
 	return true;
@@ -603,7 +603,7 @@ static bool test_OfflineResource_int(struct torture_context *tctx,
 {
 	struct dcerpc_binding_handle *b = p->binding_handle;
 	struct clusapi_OfflineResource r;
-	uint32_t rpc_status;
+	WERROR rpc_status;
 
 	r.in.hResource = *hResource;
 	r.out.rpc_status = &rpc_status;
@@ -612,7 +612,7 @@ static bool test_OfflineResource_int(struct torture_context *tctx,
 		dcerpc_clusapi_OfflineResource_r(b, tctx, &r),
 		"OfflineResource failed");
 	torture_assert_werr_ok(tctx,
-		W_ERROR(r.out.result),
+		r.out.result,
 		"OfflineResource failed");
 
 	return true;
