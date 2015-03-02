@@ -2,6 +2,9 @@
 # dynamic DNS update. It is processed by the samba_dnsupdate script
 A                      ${HOSTNAME}                                           $IP
 AAAA                   ${HOSTNAME}                                           $IP
+${IF_RWDNS_DOMAIN}NS   ${DNSDOMAIN}                                          ${HOSTNAME}
+${IF_RWDNS_FOREST}NS   ${DNSFOREST}                                          ${HOSTNAME}
+${IF_RWDNS_FOREST}NS   _msdcs.${DNSFOREST}                                   ${HOSTNAME}
 
 # RW domain controller
 ${IF_RWDC}A            ${DNSDOMAIN}                                          $IP
