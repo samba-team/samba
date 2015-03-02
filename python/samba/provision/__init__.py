@@ -243,8 +243,11 @@ def find_provision_key_parameters(samdb, secretsdb, idmapdb, paths, smbconf,
 
     # dns hostname and server dn
     res4 = samdb.search(expression="(CN=%s)" % names.netbiosname,
-                            base="OU=Domain Controllers,%s" % basedn,
-                            scope=ldb.SCOPE_ONELEVEL, attrs=["dNSHostName"])
+                        base="OU=Domain Controllers,%s" % basedn,
+                        scope=ldb.SCOPE_ONELEVEL, attrs=["dNSHostName"])
+    if len(res4) == 0:
+        raise ProvisioningError("Unable to find DC called CN=%s under OU=Domain Controllers,%s" % (names.netbiosname, basedn))
+
     names.hostname = str(res4[0]["dNSHostName"]).replace("." + names.dnsdomain, "")
 
     server_res = samdb.search(expression="serverReference=%s" % res4[0].dn,
