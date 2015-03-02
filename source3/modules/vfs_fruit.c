@@ -568,7 +568,7 @@ static bool ad_pack(struct adouble *ad)
 /**
  * Unpack an AppleDouble blob into a struct adoble
  **/
-static bool ad_unpack(struct adouble *ad, const int nentries)
+static bool ad_unpack(struct adouble *ad, const int nentries, size_t filesize)
 {
 	size_t bufsize = talloc_get_size(ad->ad_data);
 	int adentries, i;
@@ -611,17 +611,74 @@ static bool ad_unpack(struct adouble *ad, const int nentries)
 			return false;
 		}
 
+		/*
+		 * All entries other than the resource fork are
+		 * expected to be read into the ad_data buffer, so
+		 * ensure the specified offset is within that bound
+		 */
 		if ((off > bufsize) && (eid != ADEID_RFORK)) {
 			DEBUG(1, ("bogus eid %d: off: %" PRIu32 ", len: %" PRIu32 "\n",
 				  eid, off, len));
 			return false;
 		}
+
+		/*
+		 * All entries besides FinderInfo and resource fork
+		 * must fit into the buffer. FinderInfo is special as
+		 * it may be larger then the default 32 bytes (if it
+		 * contains marshalled xattrs), but we will fixup that
+		 * in ad_convert(). And the resource fork is never
+		 * accessed directly by the ad_data buf (also see
+		 * comment above) anyway.
+		 */
 		if ((eid != ADEID_RFORK) &&
 		    (eid != ADEID_FINDERI) &&
 		    ((off + len) > bufsize)) {
 			DEBUG(1, ("bogus eid %d: off: %" PRIu32 ", len: %" PRIu32 "\n",
 				  eid, off, len));
 			return false;
+		}
+
+		/*
+		 * That would be obviously broken
+		 */
+		if (off > filesize) {
+			DEBUG(1, ("bogus eid %d: off: %" PRIu32 ", len: %" PRIu32 "\n",
+				  eid, off, len));
+			return false;
+		}
+
+		/*
+		 * Check for any entry that has its end beyond the
+		 * filesize.
+		 */
+		if (off + len < off) {
+			DEBUG(1, ("offset wrap in eid %d: off: %" PRIu32
+				  ", len: %" PRIu32 "\n",
+				  eid, off, len));
+			return false;
+
+		}
+		if (off + len > filesize) {
+			/*
+			 * If this is the resource fork entry, we fix
+			 * up the length, for any other entry we bail
+			 * out.
+			 */
+			if (eid != ADEID_RFORK) {
+				DEBUG(1, ("bogus eid %d: off: %" PRIu32
+					  ", len: %" PRIu32 "\n",
+					  eid, off, len));
+				return false;
+			}
+
+			/*
+			 * Fixup the resource fork entry by limiting
+			 * the size to entryoffset - filesize.
+			 */
+			len = filesize - off;
+			DEBUG(1, ("Limiting ADEID_RFORK: off: %" PRIu32
+				  ", len: %" PRIu32 "\n", off, len));
 		}
 
 		ad->ad_eid[eid].ade_off = off;
@@ -658,9 +715,11 @@ static int ad_convert(struct adouble *ad, int fd)
 		goto exit;
 	}
 
-	memmove(map + ad_getentryoff(ad, ADEID_FINDERI) + ADEDLEN_FINDERI,
-		map + ad_getentryoff(ad, ADEID_RFORK),
-		ad_getentrylen(ad, ADEID_RFORK));
+	if (ad_getentrylen(ad, ADEID_RFORK) > 0) {
+		memmove(map + ad_getentryoff(ad, ADEID_FINDERI) + ADEDLEN_FINDERI,
+			map + ad_getentryoff(ad, ADEID_RFORK),
+			ad_getentrylen(ad, ADEID_RFORK));
+	}
 
 	ad_setentrylen(ad, ADEID_FINDERI, ADEDLEN_FINDERI);
 	ad_setentryoff(ad, ADEID_RFORK,
@@ -718,7 +777,7 @@ static ssize_t ad_header_read_meta(struct adouble *ad, const char *path)
 	}
 
 	/* Now parse entries */
-	ok = ad_unpack(ad, ADEID_NUM_XATTR);
+	ok = ad_unpack(ad, ADEID_NUM_XATTR, AD_DATASZ_XATTR);
 	if (!ok) {
 		DEBUG(2, ("invalid AppleDouble metadata xattr\n"));
 		errno = EINVAL;
@@ -845,8 +904,16 @@ static ssize_t ad_header_read_rsrc(struct adouble *ad, const char *path)
 			goto exit;
 		}
 
+		/* FIXME: direct sys_fstat(), we don't have an fsp */
+		rc = sys_fstat(fd, &sbuf,
+			       lp_fake_directory_create_times(
+				       SNUM(ad->ad_handle->conn)));
+		if (rc != 0) {
+			goto exit;
+		}
+
 		/* Now parse entries */
-		ok = ad_unpack(ad, ADEID_NUM_DOT_UND);
+		ok = ad_unpack(ad, ADEID_NUM_DOT_UND, sbuf.st_ex_size);
 		if (!ok) {
 			DEBUG(1, ("invalid AppleDouble ressource %s\n", path));
 			errno = EINVAL;
