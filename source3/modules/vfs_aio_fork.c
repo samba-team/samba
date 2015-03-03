@@ -203,15 +203,13 @@ static ssize_t read_fd(int fd, void *ptr, size_t nbytes, int *recvfd)
 
 static ssize_t write_fd(int fd, void *ptr, size_t nbytes, int sendfd)
 {
-	struct msghdr msg;
+	struct msghdr msg = {0};
 	size_t bufsize = msghdr_prep_fds(NULL, NULL, 0, &sendfd, 1);
 	uint8_t buf[bufsize];
 	struct iovec iov;
 	ssize_t sent;
 
 	msghdr_prep_fds(&msg, buf, bufsize, &sendfd, 1);
-	msg.msg_name = NULL;
-	msg.msg_namelen = 0;
 
 	iov.iov_base = (void *)ptr;
 	iov.iov_len = nbytes;
