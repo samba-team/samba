@@ -121,9 +121,9 @@ static PyObject *py_ldb_control_new(PyTypeObject *type, PyObject *args, PyObject
 	TALLOC_CTX *mem_ctx;
 	struct ldb_context *ldb_ctx;
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "Os",
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O!s",
 					 discard_const_p(char *, kwnames),
-					 &py_ldb, &data))
+					 &PyLdb, &py_ldb, &data))
 		return NULL;
 
 	mem_ctx = talloc_new(NULL);
@@ -2141,9 +2141,9 @@ static PyObject *py_ldb_module_search(PyLdbModuleObject *self, PyObject *args, P
 	const char * const*attrs;
 
 	/* type "int" rather than "enum" for "scope" is intentional */
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OiOO",
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O!iOO",
 					 discard_const_p(char *, kwnames),
-					 &py_base, &scope, &py_tree, &py_attrs))
+					 &PyLdbDn, &py_base, &scope, &py_tree, &py_attrs))
 		return NULL;
 
 	mod = self->mod;
@@ -2185,7 +2185,7 @@ static PyObject *py_ldb_module_add(PyLdbModuleObject *self, PyObject *args)
 	int ret;
 	struct ldb_module *mod;
 
-	if (!PyArg_ParseTuple(args, "O", &py_message))
+	if (!PyArg_ParseTuple(args, "O!", &PyLdbMessage, &py_message))
 		return NULL;
 
 	req = talloc_zero(NULL, struct ldb_request);
@@ -2207,7 +2207,7 @@ static PyObject *py_ldb_module_modify(PyLdbModuleObject *self, PyObject *args)
 	PyObject *py_message;
 	struct ldb_module *mod;
 
-	if (!PyArg_ParseTuple(args, "O", &py_message))
+	if (!PyArg_ParseTuple(args, "O!", &PyLdbMessage, &py_message))
 		return NULL;
 
 	req = talloc_zero(NULL, struct ldb_request);
@@ -2228,7 +2228,7 @@ static PyObject *py_ldb_module_delete(PyLdbModuleObject *self, PyObject *args)
 	struct ldb_request *req;
 	PyObject *py_dn;
 
-	if (!PyArg_ParseTuple(args, "O", &py_dn))
+	if (!PyArg_ParseTuple(args, "O!", &PyLdbDn, &py_dn))
 		return NULL;
 
 	req = talloc_zero(NULL, struct ldb_request);
@@ -2248,7 +2248,7 @@ static PyObject *py_ldb_module_rename(PyLdbModuleObject *self, PyObject *args)
 	struct ldb_request *req;
 	PyObject *py_dn1, *py_dn2;
 
-	if (!PyArg_ParseTuple(args, "OO", &py_dn1, &py_dn2))
+	if (!PyArg_ParseTuple(args, "O!O!", &PyLdbDn, &py_dn1, &PyLdbDn, &py_dn2))
 		return NULL;
 
 	req = talloc_zero(NULL, struct ldb_request);
