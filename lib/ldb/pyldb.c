@@ -1109,6 +1109,10 @@ static PyObject *py_ldb_modify(PyLdbObject *self, PyObject *args, PyObject *kwar
 		parsed_controls = NULL;
 	} else {
 		const char **controls = PyList_AsStringList(mem_ctx, py_controls, "controls");
+		if (controls == NULL) {
+			talloc_free(mem_ctx);
+			return NULL;
+		}
 		parsed_controls = ldb_parse_control_strings(ldb_ctx, mem_ctx, controls);
 		talloc_free(controls);
 	}
@@ -1254,6 +1258,10 @@ static PyObject *py_ldb_add(PyLdbObject *self, PyObject *args, PyObject *kwargs)
 		parsed_controls = NULL;
 	} else {
 		const char **controls = PyList_AsStringList(mem_ctx, py_controls, "controls");
+		if (controls == NULL) {
+			talloc_free(mem_ctx);
+			return NULL;
+		}
 		parsed_controls = ldb_parse_control_strings(ldb_ctx, mem_ctx, controls);
 		talloc_free(controls);
 	}
@@ -1343,6 +1351,10 @@ static PyObject *py_ldb_delete(PyLdbObject *self, PyObject *args, PyObject *kwar
 		parsed_controls = NULL;
 	} else {
 		const char **controls = PyList_AsStringList(mem_ctx, py_controls, "controls");
+		if (controls == NULL) {
+			talloc_free(mem_ctx);
+			return NULL;
+		}
 		parsed_controls = ldb_parse_control_strings(ldb_ctx, mem_ctx, controls);
 		talloc_free(controls);
 	}
@@ -1417,6 +1429,10 @@ static PyObject *py_ldb_rename(PyLdbObject *self, PyObject *args, PyObject *kwar
 		parsed_controls = NULL;
 	} else {
 		const char **controls = PyList_AsStringList(mem_ctx, py_controls, "controls");
+		if (controls == NULL) {
+			talloc_free(mem_ctx);
+			return NULL;
+		}
 		parsed_controls = ldb_parse_control_strings(ldb_ctx, mem_ctx, controls);
 		talloc_free(controls);
 	}
@@ -1717,6 +1733,10 @@ static PyObject *py_ldb_search(PyLdbObject *self, PyObject *args, PyObject *kwar
 		parsed_controls = NULL;
 	} else {
 		const char **controls = PyList_AsStringList(mem_ctx, py_controls, "controls");
+		if (controls == NULL) {
+			talloc_free(mem_ctx);
+			return NULL;
+		}
 		parsed_controls = ldb_parse_control_strings(ldb_ctx, mem_ctx, controls);
 		talloc_free(controls);
 	}
