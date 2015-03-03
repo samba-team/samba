@@ -269,7 +269,11 @@ static PyObject *PyLdbResult_FromResult(struct ldb_result *result)
 	ret->msgs = list;
 
 	if (result->controls) {
-		controls = PyList_New(1);
+		i = 0;
+		while (result->controls[i]) {
+			i++;
+		}
+		controls = PyList_New(i);
 		if (controls == NULL) {
 			Py_DECREF(ret);
 			PyErr_NoMemory();
