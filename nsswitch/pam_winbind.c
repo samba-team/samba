@@ -2436,6 +2436,7 @@ static char* winbind_upn_to_username(struct pwb_context *ctx,
 	char *domain = NULL;
 	char *name;
 	char *p;
+	char *result;
 
 	/* This cannot work when the winbind separator = @ */
 
@@ -2467,7 +2468,9 @@ static char* winbind_upn_to_username(struct pwb_context *ctx,
 		return NULL;
 	}
 
-	return talloc_asprintf(ctx, "%s%c%s", domain, sep, name);
+	result = talloc_asprintf(ctx, "%s%c%s", domain, sep, name);
+	wbcFreeMemory(domain);
+	return result;
 }
 
 static int _pam_delete_cred(pam_handle_t *pamh, int flags,
