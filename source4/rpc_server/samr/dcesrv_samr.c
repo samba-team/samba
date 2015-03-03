@@ -1239,13 +1239,16 @@ static NTSTATUS dcesrv_samr_CreateUser(struct dcesrv_call_state *dce_call, TALLO
 
 
 	/* a simple wrapper around samr_CreateUser2 works nicely */
-	r2.in.domain_handle = r->in.domain_handle;
-	r2.in.account_name = r->in.account_name;
-	r2.in.acct_flags = ACB_NORMAL;
-	r2.in.access_mask = r->in.access_mask;
-	r2.out.user_handle = r->out.user_handle;
-	r2.out.access_granted = &access_granted;
-	r2.out.rid = r->out.rid;
+
+	r2 = (struct samr_CreateUser2) {
+		.in.domain_handle = r->in.domain_handle,
+		.in.account_name = r->in.account_name,
+		.in.acct_flags = ACB_NORMAL,
+		.in.access_mask = r->in.access_mask,
+		.out.user_handle = r->out.user_handle,
+		.out.access_granted = &access_granted,
+		.out.rid = r->out.rid
+	};
 
 	return dcesrv_samr_CreateUser2(dce_call, mem_ctx, &r2);
 }
@@ -4007,9 +4010,11 @@ static NTSTATUS dcesrv_samr_QueryUserInfo2(struct dcesrv_call_state *dce_call, T
 	struct samr_QueryUserInfo r1;
 	NTSTATUS status;
 
-	r1.in.user_handle = r->in.user_handle;
-	r1.in.level  = r->in.level;
-	r1.out.info  = r->out.info;
+	r1 = (struct samr_QueryUserInfo) {
+		.in.user_handle = r->in.user_handle,
+		.in.level  = r->in.level,
+		.out.info  = r->out.info
+	};
 
 	status = dcesrv_samr_QueryUserInfo(dce_call, mem_ctx, &r1);
 

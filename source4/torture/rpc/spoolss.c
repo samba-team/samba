@@ -4118,9 +4118,12 @@ static bool test_GetPrinterData_list(struct torture_context *tctx,
 	int i;
 
 	for (i=0; i < ARRAY_SIZE(list); i++) {
-		enum winreg_Type type, type_ex;
-		uint8_t *data, *data_ex;
-		uint32_t needed, needed_ex;
+		enum winreg_Type type = REG_NONE;
+		enum winreg_Type type_ex= REG_NONE;
+		uint8_t *data;
+		uint8_t *data_ex = NULL;
+		uint32_t needed;
+		uint32_t needed_ex = 0;
 
 		torture_assert(tctx, test_GetPrinterData(tctx, b, &ctx->server_handle, list[i], &type, &data, &needed),
 			talloc_asprintf(tctx, "GetPrinterData failed on %s\n", list[i]));
@@ -6064,9 +6067,9 @@ static bool test_GetChangeID_PrinterDataEx(struct torture_context *tctx,
 					   struct policy_handle *handle,
 					   uint32_t *change_id)
 {
-	enum winreg_Type type;
-	uint8_t *data;
-	uint32_t needed;
+	enum winreg_Type type = REG_NONE;
+	uint8_t *data = NULL;
+	uint32_t needed = 0;
 
 	torture_assert(tctx,
 		test_GetPrinterDataEx(tctx, p, handle, "PrinterDriverData", "ChangeID", &type, &data, &needed),

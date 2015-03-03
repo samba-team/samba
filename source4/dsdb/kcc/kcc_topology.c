@@ -2790,7 +2790,7 @@ static NTSTATUS kcctpl_create_connection(struct kccsrv_service *service,
 				       "transportType", "schedule", "options",
 				       "enabledConnection", NULL };
 	unsigned int i, valid_connections;
-	struct GUID_list keep_connections;
+	struct GUID_list keep_connections = {0};
 
 	tmp_ctx = talloc_new(service);
 	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
@@ -3299,7 +3299,8 @@ static NTSTATUS kcctpl_create_connections(struct kccsrv_service *service,
 		struct GUID other_site_id;
 		struct kcctpl_vertex *other_site_vertex;
 		struct ldb_result *res;
-		struct ldb_message *transport, *r_bridgehead, *l_bridgehead;
+		struct ldb_message *transport, *r_bridgehead;
+		struct ldb_message *l_bridgehead = NULL;
 		uint8_t schedule[84];
 		uint32_t first_available, j, interval;
 
@@ -3532,8 +3533,8 @@ NTSTATUS kcctpl_test(struct kccsrv_service *service)
 {
 	NTSTATUS status;
 	TALLOC_CTX *tmp_ctx = talloc_new(service);
-	struct GUID_list keep;
-	bool all_connected;
+	struct GUID_list keep = {0};
+	bool all_connected = false;
 
 	DEBUG(5, ("Testing kcctpl_create_intersite_connections\n"));
 	status = kcctpl_create_intersite_connections(service, tmp_ctx, &keep,

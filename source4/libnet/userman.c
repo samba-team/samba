@@ -756,7 +756,7 @@ static void continue_usermod_user_queried(struct tevent_req *subreq)
 	struct composite_context *c;
 	struct usermod_state *s;
 	union samr_UserInfo *i;
-	uint16_t level;
+	uint16_t level = 0;
 	
 	c = tevent_req_callback_data(subreq, struct composite_context);
 	s = talloc_get_type(c->private_data, struct usermod_state);

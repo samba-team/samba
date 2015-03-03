@@ -722,7 +722,7 @@ static void ctdbd_socket_handler(struct tevent_context *event_ctx,
 {
 	struct ctdbd_connection *conn = talloc_get_type_abort(
 		private_data, struct ctdbd_connection);
-	struct ctdb_req_header *hdr;
+	struct ctdb_req_header *hdr = NULL;
 	NTSTATUS status;
 
 	status = ctdb_read_packet(conn->fd, talloc_tos(), &hdr);
@@ -1304,7 +1304,7 @@ char *ctdbd_dbpath(struct ctdbd_connection *conn,
 {
 	NTSTATUS status;
 	TDB_DATA data;
-	int32_t cstatus;
+	int32_t cstatus = 0;
 
 	data.dptr = (uint8_t*)&db_id;
 	data.dsize = sizeof(db_id);
@@ -1557,7 +1557,7 @@ NTSTATUS ctdbd_traverse(uint32_t db_id,
 	}
 
 	while (True) {
-		struct ctdb_req_header *hdr;
+		struct ctdb_req_header *hdr = NULL;
 		struct ctdb_req_message *m;
 		struct ctdb_rec_data *d;
 

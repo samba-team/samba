@@ -896,7 +896,7 @@ static bool parse_domain_user(struct torture_context *torture,
 			      fstring user)
 {
 	char *p = strchr(domuser, winbind_separator(torture));
-	char *dom;
+	char *dom = NULL;
 
 	if (!p) {
 		/* Maybe it was a UPN? */

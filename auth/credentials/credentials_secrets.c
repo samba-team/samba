@@ -411,7 +411,7 @@ _PUBLIC_ NTSTATUS cli_credentials_set_stored_principal(struct cli_credentials *c
 {
 	NTSTATUS status;
 	char *filter;
-	char *error_string;
+	char *error_string = NULL;
 	/* Bleh, nasty recursion issues: We are setting a machine
 	 * account here, so we don't want the 'pending' flag around
 	 * any more */
@@ -424,7 +424,9 @@ _PUBLIC_ NTSTATUS cli_credentials_set_stored_principal(struct cli_credentials *c
 					     SECRETS_PRINCIPALS_DN, filter,
 					     0, NULL, &error_string);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Could not find %s principal in secrets database: %s: %s\n", serviceprincipal, nt_errstr(status), error_string));
+		DEBUG(1, ("Could not find %s principal in secrets database: %s: %s\n",
+			  serviceprincipal, nt_errstr(status),
+			  error_string ? error_string : "<no error>"));
 	}
 	return status;
 }

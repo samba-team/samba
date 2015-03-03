@@ -166,7 +166,7 @@ struct tevent_req *http_send_auth_request_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *subreq;
 	struct http_auth_state *state;
 	NTSTATUS status;
-	struct http_request *auth_request;
+	struct http_request *auth_request = NULL;
 	struct http_request *request_to_send;
 
 	req = tevent_req_create(mem_ctx, &state, struct http_auth_state);
@@ -301,7 +301,7 @@ static void http_send_auth_request_done2(struct tevent_req *subreq)
 	struct tevent_req	*req;
 	struct http_auth_state	*state;
 	struct http_request *auth_response;
-	struct http_request *auth_request;
+	struct http_request *auth_request = NULL;
 	struct http_request *request_to_send;
 
 	req = tevent_req_callback_data(subreq, struct tevent_req);

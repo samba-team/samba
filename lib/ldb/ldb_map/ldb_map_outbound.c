@@ -635,7 +635,7 @@ static int map_subtree_select_local_list(struct ldb_module *module, void *mem_ct
 	/* Generate new list of subtrees */
 	j = 0;
 	for (i = 0; i < tree->u.list.num_elements; i++) {
-		struct ldb_parse_tree *child;
+		struct ldb_parse_tree *child = NULL;
 		ret = map_subtree_select_local(module, *new, &child, tree->u.list.elements[i]);
 		if (ret) {
 			talloc_free(*new);

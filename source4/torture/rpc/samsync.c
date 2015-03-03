@@ -463,7 +463,7 @@ static bool samsync_handle_user(struct torture_context *tctx, TALLOC_CTX *mem_ct
 {
 	uint32_t rid = delta->delta_id_union.rid;
 	struct netr_DELTA_USER *user = delta->delta_union.user;
-	struct netr_SamInfo3 *info3;
+	struct netr_SamInfo3 *info3 = NULL;
 	struct samr_Password lm_hash;
 	struct samr_Password nt_hash;
 	struct samr_Password *lm_hash_p = NULL;

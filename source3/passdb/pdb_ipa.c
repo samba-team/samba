@@ -1303,7 +1303,7 @@ static NTSTATUS ipasam_create_dom_group(struct pdb_methods *pdb_methods,
 {
 	NTSTATUS status;
 	struct ldapsam_privates *ldap_state;
-	char *dn;
+	char *dn = NULL;
 	uint32_t has_objectclass = 0;
 
 	ldap_state = (struct ldapsam_privates *)(pdb_methods->private_data);

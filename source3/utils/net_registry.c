@@ -274,7 +274,7 @@ static int net_registry_createkey(struct net_context *c, int argc,
 {
 	WERROR werr;
 	enum winreg_CreateAction action;
-	char *subkeyname;
+	char *subkeyname = NULL;
 	struct registry_key *hivekey = NULL;
 	struct registry_key *subkey = NULL;
 	TALLOC_CTX *ctx = talloc_stackframe();
@@ -333,7 +333,7 @@ static int net_registry_deletekey_internal(struct net_context *c, int argc,
 					   bool recursive)
 {
 	WERROR werr;
-	char *subkeyname;
+	char *subkeyname = NULL;
 	struct registry_key *hivekey = NULL;
 	TALLOC_CTX *ctx = talloc_stackframe();
 	int ret = -1;
