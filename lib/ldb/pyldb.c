@@ -1213,7 +1213,7 @@ static struct ldb_message *PyDict_AsMessage(TALLOC_CTX *mem_ctx,
 			msg_el = PyObject_AsMessageElement(msg->elements, value,
 							   mod_flags, key_str);
 			if (msg_el == NULL) {
-				PyErr_SetString(PyExc_TypeError, "unable to import element");
+				PyErr_Format(PyExc_TypeError, "unable to import element '%s'", key_str);
 				return NULL;
 			}
 			memcpy(&msg->elements[msg_pos], msg_el, sizeof(*msg_el));
@@ -2968,7 +2968,7 @@ static int py_ldb_msg_set_dn(PyLdbMessageObject *self, PyObject *value, void *cl
 {
 	struct ldb_message *msg = pyldb_Message_AsMessage(self);
 	if (!pyldb_Dn_Check(value)) {
-		PyErr_SetNone(PyExc_TypeError);
+		PyErr_SetString(PyExc_TypeError, "expected dn");
 		return -1;
 	}
 
