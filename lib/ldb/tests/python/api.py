@@ -776,6 +776,48 @@ class LdbResultTests(TestCase):
         self.assertTrue(found)
 
 
+class BadTypeTests(TestCase):
+    def test_control(self):
+        l = ldb.Ldb()
+        self.assertRaises(TypeError, ldb.Control, '<bad type>', 'relax:1')
+        self.assertRaises(TypeError, ldb.Control, ldb, 1234)
+
+    def test_modify(self):
+        l = ldb.Ldb()
+        dn = ldb.Dn(l, 'a=b')
+        m = ldb.Message(dn)
+        self.assertRaises(TypeError, l.modify, '<bad type>')
+        self.assertRaises(TypeError, l.modify, m, '<bad type>')
+
+    def test_add(self):
+        l = ldb.Ldb()
+        dn = ldb.Dn(l, 'a=b')
+        m = ldb.Message(dn)
+        self.assertRaises(TypeError, l.add, '<bad type>')
+        self.assertRaises(TypeError, l.add, m, '<bad type>')
+
+    def test_delete(self):
+        l = ldb.Ldb()
+        dn = ldb.Dn(l, 'a=b')
+        self.assertRaises(TypeError, l.add, '<bad type>')
+        self.assertRaises(TypeError, l.add, dn, '<bad type>')
+
+    def test_rename(self):
+        l = ldb.Ldb()
+        dn = ldb.Dn(l, 'a=b')
+        self.assertRaises(TypeError, l.add, '<bad type>', dn)
+        self.assertRaises(TypeError, l.add, dn, '<bad type>')
+        self.assertRaises(TypeError, l.add, dn, dn, '<bad type>')
+
+    def test_search(self):
+        l = ldb.Ldb()
+        self.assertRaises(TypeError, l.search, base=1234)
+        self.assertRaises(TypeError, l.search, scope='<bad type>')
+        self.assertRaises(TypeError, l.search, expression=1234)
+        self.assertRaises(TypeError, l.search, attrs='<bad type>')
+        self.assertRaises(TypeError, l.search, controls='<bad type>')
+
+
 class VersionTests(TestCase):
 
     def test_version(self):
