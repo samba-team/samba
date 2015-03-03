@@ -163,6 +163,37 @@ static bool test_GetClusterVersion(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_GetClusterVersion2(struct torture_context *tctx,
+				    struct dcerpc_pipe *p)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_GetClusterVersion2 r;
+	uint16_t lpwMajorVersion;
+	uint16_t lpwMinorVersion;
+	uint16_t lpwBuildNumber;
+	const char *lpszVendorId;
+	const char *lpszCSDVersion;
+	struct CLUSTER_OPERATIONAL_VERSION_INFO *ppClusterOpVerInfo;
+	WERROR rpc_status;
+
+	r.out.lpwMajorVersion = &lpwMajorVersion;
+	r.out.lpwMinorVersion = &lpwMinorVersion;
+	r.out.lpwBuildNumber = &lpwBuildNumber;
+	r.out.lpszVendorId = &lpszVendorId;
+	r.out.lpszCSDVersion = &lpszCSDVersion;
+	r.out.ppClusterOpVerInfo = &ppClusterOpVerInfo;
+	r.out.rpc_status = &rpc_status;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_GetClusterVersion2_r(b, tctx, &r),
+		"GetClusterVersion2 failed");
+	torture_assert_werr_ok(tctx,
+		r.out.result,
+		"GetClusterVersion2 failed");
+
+	return true;
+}
+
 static bool test_CreateEnum(struct torture_context *tctx,
 			    struct dcerpc_pipe *p)
 {
@@ -683,6 +714,9 @@ struct torture_suite *torture_rpc_clusapi(TALLOC_CTX *mem_ctx)
 	test = torture_rpc_tcase_add_test(tcase, "OfflineResource",
 				   test_OfflineResource);
 	test->dangerous = true;
+
+	torture_rpc_tcase_add_test(tcase, "GetClusterVersion2",
+				   test_GetClusterVersion2);
 
 	return suite;
 }
