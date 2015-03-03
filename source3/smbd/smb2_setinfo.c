@@ -474,6 +474,7 @@ static struct tevent_req *smbd_smb2_setinfo_send(TALLOC_CTX *mem_ctx,
 			lck = get_existing_share_mode_lock(mem_ctx,
 							fsp->file_id);
 			if (lck == NULL) {
+				SAFE_FREE(data);
 				tevent_req_nterror(req,
 					NT_STATUS_UNSUCCESSFUL);
 				return tevent_req_post(req, ev);
