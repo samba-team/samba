@@ -48,7 +48,7 @@ static PyTypeObject PyLdb;
 static PyTypeObject PyLdbMessageElement;
 #define pyldb_MessageElement_Check(ob) PyObject_TypeCheck(ob, &PyLdbMessageElement)
 
-staticforward PyTypeObject PyLdbTree;
+static PyTypeObject PyLdbTree;
 static PyObject *PyLdb_FromLdbContext(struct ldb_context *ldb_ctx);
 static PyObject *PyLdbModule_FromModule(struct ldb_module *mod);
 static struct ldb_message_element *PyObject_AsMessageElement(
