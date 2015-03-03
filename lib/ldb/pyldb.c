@@ -1546,7 +1546,7 @@ static PyObject *py_ldb_write_ldif(PyLdbObject *self, PyObject *args)
 
 static PyObject *py_ldb_parse_ldif(PyLdbObject *self, PyObject *args)
 {
-	PyObject *list;
+	PyObject *list, *ret;
 	struct ldb_ldif *ldif;
 	const char *s;
 
@@ -1573,7 +1573,9 @@ static PyObject *py_ldb_parse_ldif(PyLdbObject *self, PyObject *args)
 		}
 	}
 	talloc_free(mem_ctx); /* The pyobject already has a reference to the things it needs */
-	return PyObject_GetIter(list);
+	ret = PyObject_GetIter(list);
+	Py_DECREF(list);
+	return ret;
 }
 
 static PyObject *py_ldb_msg_diff(PyLdbObject *self, PyObject *args)
@@ -2450,7 +2452,9 @@ static PyObject *py_ldb_msg_element_iter(PyLdbMessageElementObject *self)
 {
 	PyObject *el = ldb_msg_element_to_set(NULL,
 					      pyldb_MessageElement_AsMessageElement(self));
-	return PyObject_GetIter(el);
+	PyObject *ret = PyObject_GetIter(el);
+	Py_DECREF(el);
+	return ret;
 }
 
 static PyObject *PyLdbMessageElement_FromMessageElement(struct ldb_message_element *el, TALLOC_CTX *mem_ctx)
@@ -2562,14 +2566,16 @@ static PyObject *py_ldb_msg_element_repr(PyLdbMessageElementObject *self)
 	char *element_str = NULL;
 	Py_ssize_t i;
 	struct ldb_message_element *el = pyldb_MessageElement_AsMessageElement(self);
-	PyObject *ret;
+	PyObject *ret, *repr;
 
 	for (i = 0; i < el->num_values; i++) {
 		PyObject *o = py_ldb_msg_element_find(self, i);
+		repr = PyObject_Repr(o);
 		if (element_str == NULL)
-			element_str = talloc_strdup(NULL, PyObject_REPR(o));
+			element_str = talloc_strdup(NULL, PyString_AsString(repr));
 		else
-			element_str = talloc_asprintf_append(element_str, ",%s", PyObject_REPR(o));
+			element_str = talloc_asprintf_append(element_str, ",%s", PyString_AsString(repr));
+		Py_DECREF(repr);
 	}
 
 	if (element_str != NULL) {
