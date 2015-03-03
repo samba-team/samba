@@ -483,10 +483,16 @@ static int port_event_loop(struct port_event_context *port_ev, struct timeval *t
 	port_errno = errno;
 	tevent_trace_point_callback(ev, TEVENT_TRACE_AFTER_WAIT);
 
-	if (ret == -1 && port_errno == EINTR && ev->signal_events) {
-		if (tevent_common_check_signal(ev)) {
-			return 0;
+	if (ret == -1 && port_errno == EINTR) {
+		if (ev->signal_events) {
+			tevent_common_check_signal(ev);
 		}
+		/*
+		 * If no signal handlers we got an unsolicited
+		 * signal wakeup. This can happen with epoll
+		 * too. Just return and ignore.
+		 */
+		return 0;
 	}
 
 	if (ret == -1 && port_errno == ETIME && tvalp) {
