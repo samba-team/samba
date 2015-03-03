@@ -28,7 +28,7 @@ _PUBLIC_ int close_low_fd(int fd)
 
 	dev_null = open("/dev/null", O_RDWR, 0);
 
-	if ((dev_null == -1) && (errno = ENFILE)) {
+	if ((dev_null == -1) && (errno == ENFILE)) {
 		/*
 		 * Try to free up an fd
 		 */
