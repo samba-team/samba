@@ -88,7 +88,7 @@ static void py_ldb_control_dealloc(PyLdbControlObject *self)
 		talloc_free(self->mem_ctx);
 	}
 	self->data = NULL;
-	self->ob_type->tp_free(self);
+	Py_TYPE(self)->tp_free(self);
 }
 
 static PyObject *py_ldb_control_get_oid(PyLdbControlObject *self)
@@ -1993,7 +1993,7 @@ static PyObject *PyLdb_FromLdbContext(struct ldb_context *ldb_ctx)
 static void py_ldb_dealloc(PyLdbObject *self)
 {
 	talloc_free(self->mem_ctx);
-	self->ob_type->tp_free(self);
+	Py_TYPE(self)->tp_free(self);
 }
 
 static PyTypeObject PyLdb = {
@@ -2017,7 +2017,7 @@ static void py_ldb_result_dealloc(PyLdbResultObject *self)
 	Py_DECREF(self->msgs);
 	Py_DECREF(self->referals);
 	Py_DECREF(self->controls);
-	self->ob_type->tp_free(self);
+	Py_TYPE(self)->tp_free(self);
 }
 
 static PyObject *py_ldb_result_get_msgs(PyLdbResultObject *self, void *closure)
