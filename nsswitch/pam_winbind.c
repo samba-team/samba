@@ -2470,6 +2470,7 @@ static char* winbind_upn_to_username(struct pwb_context *ctx,
 
 	result = talloc_asprintf(ctx, "%s%c%s", domain, sep, name);
 	wbcFreeMemory(domain);
+	wbcFreeMemory(name);
 	return result;
 }
 
