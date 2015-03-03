@@ -457,7 +457,7 @@ static PyObject *py_ldb_dn_check_special(PyLdbDnObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "s", &name))
 		return NULL;
 
-	return ldb_dn_check_special(self->dn, name)?Py_True:Py_False;
+	return PyBool_FromLong(ldb_dn_check_special(self->dn, name));
 }
 
 static int py_ldb_dn_compare(PyLdbDnObject *dn1, PyLdbDnObject *dn2)
@@ -507,7 +507,7 @@ static PyObject *py_ldb_dn_add_child(PyLdbDnObject *self, PyObject *args)
 	if (!pyldb_Object_AsDn(NULL, py_other, dn_ldb_ctx(dn), &other))
 		return NULL;
 
-	return ldb_dn_add_child(dn, other)?Py_True:Py_False;
+	return PyBool_FromLong(ldb_dn_add_child(dn, other));
 }
 
 static PyObject *py_ldb_dn_add_base(PyLdbDnObject *self, PyObject *args)
@@ -522,7 +522,7 @@ static PyObject *py_ldb_dn_add_base(PyLdbDnObject *self, PyObject *args)
 	if (!pyldb_Object_AsDn(NULL, py_other, dn_ldb_ctx(dn), &other))
 		return NULL;
 
-	return ldb_dn_add_base(dn, other)?Py_True:Py_False;
+	return PyBool_FromLong(ldb_dn_add_base(dn, other));
 }
 
 static PyObject *py_ldb_dn_remove_base_components(PyLdbDnObject *self, PyObject *args)
@@ -534,7 +534,7 @@ static PyObject *py_ldb_dn_remove_base_components(PyLdbDnObject *self, PyObject 
 
 	dn = pyldb_Dn_AsDn((PyObject *)self);
 
-	return ldb_dn_remove_base_components(dn, i)?Py_True:Py_False;
+	return PyBool_FromLong(ldb_dn_remove_base_components(dn, i));
 }
 
 static PyObject *py_ldb_dn_is_child_of(PyLdbDnObject *self, PyObject *args)
