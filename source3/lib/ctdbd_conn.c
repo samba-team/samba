@@ -1304,6 +1304,7 @@ char *ctdbd_dbpath(struct ctdbd_connection *conn,
 {
 	NTSTATUS status;
 	TDB_DATA data;
+	TDB_DATA rdata = {0};
 	int32_t cstatus = 0;
 
 	data.dptr = (uint8_t*)&db_id;
@@ -1311,13 +1312,13 @@ char *ctdbd_dbpath(struct ctdbd_connection *conn,
 
 	status = ctdbd_control(conn, CTDB_CURRENT_NODE,
 			       CTDB_CONTROL_GETDBPATH, 0, 0, data,
-			       mem_ctx, &data, &cstatus);
+			       mem_ctx, &rdata, &cstatus);
 	if (!NT_STATUS_IS_OK(status) || cstatus != 0) {
 		DEBUG(0,(__location__ " ctdb_control for getdbpath failed\n"));
 		return NULL;
 	}
 
-	return (char *)data.dptr;
+	return (char *)rdata.dptr;
 }
 
 /*
