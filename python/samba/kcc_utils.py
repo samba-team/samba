@@ -1620,7 +1620,7 @@ class Site(object):
                 i_idx = j_idx
                 t_time = 0
 
-           elif ntnow < (cursor.last_sync_success - f):
+           elif ntnow - cursor.last_sync_success > f:
                i_idx = 0
                t_time = 0
            else:
