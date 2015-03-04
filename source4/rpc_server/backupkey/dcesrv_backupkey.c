@@ -219,9 +219,11 @@ static NTSTATUS get_lsa_secret(TALLOC_CTX *mem_ctx,
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_mem);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	} else if (res->count == 0) {
+	}
+	if (res->count == 0) {
 		return NT_STATUS_RESOURCE_NAME_NOT_FOUND;
-	} else if (res->count > 1) {
+	}
+	if (res->count > 1) {
 		DEBUG(2, ("Secret %s collision\n", name));
 		talloc_free(tmp_mem);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
