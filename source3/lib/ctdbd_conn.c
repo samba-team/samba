@@ -1222,7 +1222,7 @@ bool ctdb_serverids_exist(struct ctdbd_connection *conn,
 
 		if (hdr->operation != CTDB_REPLY_CONTROL) {
 			DEBUG(1, ("Received invalid reply %u\n",
-				  (unsigned)reply->hdr.operation));
+				  (unsigned)hdr->operation));
 			goto fail;
 		}
 		reply = (struct ctdb_reply_control *)hdr;
