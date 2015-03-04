@@ -1417,7 +1417,8 @@ static WERROR bkrp_do_retrieve_server_wrap_key(TALLOC_CTX *mem_ctx, struct ldb_c
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("Error while fetching secret %s\n", secret_name));
 		return WERR_INVALID_DATA;
-	} else if (guid_binary.length == 0) {
+	}
+	if (guid_binary.length == 0) {
 		/* RODC case, we do not have secrets locally */
 		DEBUG(1, ("Unable to fetch value for secret %s, are we an undetected RODC?\n",
 			  secret_name));
