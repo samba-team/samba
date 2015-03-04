@@ -197,7 +197,7 @@ def get_paths(param, targetdir=None, smbconf=None):
         smbconf = param.default_path()
 
     if not os.path.exists(smbconf):
-        raise ProvisioningError("Unable to find smb.conf")
+        raise ProvisioningError("Unable to find smb.conf at %s" % smbconf)
 
     lp = param.LoadParm()
     lp.load(smbconf)
