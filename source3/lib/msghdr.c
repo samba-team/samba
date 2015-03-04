@@ -70,12 +70,17 @@ ssize_t msghdr_copy(struct msghdr_buf *msg, size_t msgsize,
 		    const struct iovec *iov, int iovcnt,
 		    const int *fds, size_t num_fds)
 {
-	size_t fd_len, iov_len, needed, bufsize;
+	ssize_t fd_len;
+	size_t iov_len, needed, bufsize;
 
 	bufsize = (msgsize > offsetof(struct msghdr_buf, buf)) ?
 		msgsize - offsetof(struct msghdr_buf, buf) : 0;
 
 	fd_len = msghdr_prep_fds(&msg->msg, msg->buf, bufsize, fds, num_fds);
+
+	if (fd_len == -1) {
+		return -1;
+	}
 
 	if (bufsize >= fd_len) {
 		bufsize -= fd_len;
