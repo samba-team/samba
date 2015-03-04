@@ -173,7 +173,7 @@ static struct idmap_domain *idmap_init_domain(TALLOC_CTX *mem_ctx,
 	char *config_option = NULL;
 	const char *range;
 	unsigned low_id = 0;
-	unsigned high_id;
+	unsigned high_id = 0;
 
 	result = talloc_zero(mem_ctx, struct idmap_domain);
 	if (result == NULL) {
