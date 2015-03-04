@@ -538,6 +538,65 @@ EOF
 
 ######################################################################
 
+ctdb_catdb_format_pairs ()
+{
+    _count=0
+
+    while read _k _v ; do
+	_kn=$(echo -n "$_k" | wc -c)
+	_vn=$(echo -n "$_v" | wc -c)
+	cat <<EOF
+key(${_kn}) = "${_k}"
+dmaster: 0
+rsn: 1
+data(${_vn}) = "${_v}"
+
+EOF
+	_count=$(($_count + 1))
+    done
+
+    echo "Dumped ${_count} records"
+}
+
+check_ctdb_tdb_statd_state ()
+{
+    ctdb_get_my_public_addresses |
+    while read _x _sip _x ; do
+	for _cip ; do
+	    echo "statd-state@${_sip}@${_cip}" "$FAKE_DATE_OUTPUT"
+	done
+    done |
+    ctdb_catdb_format_pairs | {
+	ok
+	simple_test_command ctdb catdb ctdb.tdb
+    }
+}
+
+check_statd_callout_smnotify ()
+{
+    _state_even=$(( $(date '+%s') / 2 * 2))
+    _state_odd=$(($_state_even + 1))
+
+    nfs_load_config
+
+    ctdb_get_my_public_addresses |
+    while read _x _sip _x ; do
+	for _cip ; do
+	    cat <<EOF
+--client=${_cip} --ip=${_sip} --server=${_sip} --stateval=${_state_even}
+--client=${_cip} --ip=${_sip} --server=${NFS_HOSTNAME} --stateval=${_state_even}
+--client=${_cip} --ip=${_sip} --server=${_sip} --stateval=${_state_odd}
+--client=${_cip} --ip=${_sip} --server=${NFS_HOSTNAME} --stateval=${_state_odd}
+EOF
+	done
+    done | {
+	ok
+	simple_test_event "notify"
+    }
+}
+
+######################################################################
+
 setup_ctdb_natgw ()
 {
     debug "Setting up NAT gateway"
@@ -810,6 +869,19 @@ rpc_services_up ()
     done
 }
 
+
+nfs_load_config ()
+{
+    _etc="$CTDB_ETCDIR" # shortcut for readability
+    for _c in "$_etc/sysconfig/nfs" "$_etc/default/nfs" "$_etc/ctdb/sysconfig/nfs" ; do
+	if [ -r "$_c" ] ; then
+	    . "$_c"
+	    break
+	fi
+    done
+}
+
+
 # Set the required result for a particular RPC program having failed
 # for a certain number of iterations.  This is probably still a work
 # in progress.  Note that we could hook aggressively
@@ -826,13 +898,7 @@ rpc_set_service_failure_response ()
     # the flexibility to set the number of failures.
     _numfails="${2:-${iteration}}"
 
-    _etc="$CTDB_ETCDIR" # shortcut for readability
-    for _c in "$_etc/sysconfig/nfs" "$_etc/default/nfs" "$_etc/ctdb/sysconfig/nfs" ; do
-	if [ -r "$_c" ] ; then
-	    . "$_c"
-	    break
-	fi
-    done
+    nfs_load_config
 
     # A handy newline.  :-)
     _nl="
