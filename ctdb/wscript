@@ -654,7 +654,8 @@ def test(ctx):
 
 
 def autotest(ctx):
-    cmd = 'LD_PRELOAD=bin/shared/libsocket-wrapper.so tests/run_tests.sh -e -S -C'
+    ld = 'LD_PRELOAD=%s/bin/shared/libsocket-wrapper.so' % os.getcwd()
+    cmd = '%s tests/run_tests.sh -e -S -C' % ld
     ret = samba_utils.RUN_COMMAND(cmd)
     if ret != 0:
         print('autotest exited with exit status %d' % ret)
