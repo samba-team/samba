@@ -445,7 +445,7 @@ static bool test_GetResourceState_int(struct torture_context *tctx,
 {
 	struct dcerpc_binding_handle *b = p->binding_handle;
 	struct clusapi_GetResourceState r;
-	uint32_t State;
+	enum clusapi_ClusterResourceState State;
 	const char *NodeName;
 	const char *GroupName;
 	WERROR rpc_status;
