@@ -98,6 +98,7 @@
 #define SMB3_DIALECT_REVISION_300       0x0300
 #define SMB3_DIALECT_REVISION_302       0x0302
 #define SMB3_DIALECT_REVISION_310       0x0310
+#define SMB3_DIALECT_REVISION_311       0x0311
 #define SMB2_DIALECT_REVISION_2FF       0x02FF
 
 /* SMB2 negotiate security_mode */
