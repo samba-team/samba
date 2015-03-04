@@ -134,7 +134,7 @@ void map_max_allowed_access(const struct security_token *nt_token,
 	*pacc_requested &= ~MAXIMUM_ALLOWED_ACCESS;
 
 	/* At least try for generic read|execute - Everyone gets that. */
-	*pacc_requested = GENERIC_READ_ACCESS|GENERIC_EXECUTE_ACCESS;
+	*pacc_requested |= GENERIC_READ_ACCESS|GENERIC_EXECUTE_ACCESS;
 
 	/* root gets anything. */
 	if (unix_token->uid == sec_initial_uid()) {
