@@ -1435,6 +1435,16 @@ class KCC(object):
                 self.keep_connection_list.append(cn)
 
     def add_transports(self, vertex, local_vertex, graph, detect_failed):
+
+        # The docs ([MS-ADTS] 6.2.2.3.4.3) say to use local_vertex
+        # here and in the, but using vertex seems to make more
+        # sense. That is, it wants this:
+        #
+        #bh = self.get_bridgehead(vertex.site, vertex.part, transport,
+        #                         local_vertex.is_black(), detect_failed)
+        #
+        # TODO WHY?????
+
         vertex.accept_red_red = []
         vertex.accept_black = []
         found_failed = False
@@ -1451,9 +1461,6 @@ class KCC(object):
                 continue
 
             partial_replica_okay = vertex.is_black()
-
-            # TODO WHY?????
-            # bh = self.get_bridgehead(local_vertex.site, vertex.part, transport,
             bh = self.get_bridgehead(vertex.site, vertex.part, transport,
                                      partial_replica_okay, detect_failed)
             if bh is None:
