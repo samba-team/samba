@@ -951,10 +951,18 @@ import "security.idl";
 	/*****************/
 	/* Function 0x44 */
 
+	typedef [v1_enum] enum {
+		ClusterNodeUp		= 0x00000000,
+		ClusterNodeDown		= 0x00000001,
+		ClusterNodePaused	= 0x00000002,
+		ClusterNodeJoining	= 0x00000003,
+		ClusterNodeStateUnknown	= 0xFFFFFFFF
+	} clusapi_ClusterNodeState;
+
 	WERROR
 	clusapi_GetNodeState(
 		[ in ] HNODE_RPC hNode,
-		[ out ] uint32 *State,
+		[ out ] clusapi_ClusterNodeState *State,
 		[ out ] WERROR *rpc_status
 	);
 
