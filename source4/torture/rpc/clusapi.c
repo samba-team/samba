@@ -94,35 +94,15 @@ static bool test_CloseCluster(struct torture_context *tctx,
 	return test_CloseCluster_int(tctx, p, &Cluster);
 }
 
-static bool test_SetClusterName(struct torture_context *tctx,
-				struct dcerpc_pipe *p)
-{
-	struct dcerpc_binding_handle *b = p->binding_handle;
-	struct clusapi_SetClusterName r;
-	WERROR rpc_status;
-
-	r.in.NewClusterName = "wurst";
-	r.out.rpc_status = &rpc_status;
-
-	torture_assert_ntstatus_ok(tctx,
-		dcerpc_clusapi_SetClusterName_r(b, tctx, &r),
-		"SetClusterName failed");
-	torture_assert_werr_ok(tctx,
-		r.out.result,
-		"SetClusterName failed");
-
-	return true;
-}
-
-static bool test_GetClusterName(struct torture_context *tctx,
-				struct dcerpc_pipe *p)
+static bool test_GetClusterName_int(struct torture_context *tctx,
+				    struct dcerpc_pipe *p,
+				    const char **ClusterName)
 {
 	struct dcerpc_binding_handle *b = p->binding_handle;
 	struct clusapi_GetClusterName r;
-	const char *ClusterName;
 	const char *NodeName;
 
-	r.out.ClusterName = &ClusterName;
+	r.out.ClusterName = ClusterName;
 	r.out.NodeName = &NodeName;
 
 	torture_assert_ntstatus_ok(tctx,
@@ -133,6 +113,40 @@ static bool test_GetClusterName(struct torture_context *tctx,
 		"GetClusterName failed");
 
 	return true;
+}
+
+static bool test_SetClusterName(struct torture_context *tctx,
+				struct dcerpc_pipe *p)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_SetClusterName r;
+	const char *NewClusterName;
+	WERROR rpc_status;
+
+	torture_assert(tctx,
+		test_GetClusterName_int(tctx, p, &NewClusterName),
+		"failed to query old ClusterName");
+
+	r.in.NewClusterName = NewClusterName;
+	r.out.rpc_status = &rpc_status;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_SetClusterName_r(b, tctx, &r),
+		"SetClusterName failed");
+	torture_assert_werr_equal(tctx,
+		r.out.result,
+		WERR_RESOURCE_PROPERTIES_STORED,
+		"SetClusterName failed");
+
+	return true;
+}
+
+static bool test_GetClusterName(struct torture_context *tctx,
+				struct dcerpc_pipe *p)
+{
+	const char *ClusterName;
+
+	return test_GetClusterName_int(tctx, p, &ClusterName);
 }
 
 static bool test_GetClusterVersion(struct torture_context *tctx,
