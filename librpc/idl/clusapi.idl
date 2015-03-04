@@ -271,10 +271,20 @@ import "security.idl";
 	/*****************/
 	/* Function 0x0C */
 
+	typedef [v1_enum] enum {
+		ClusterResourceInitializing	= 0x00000001,
+		ClusterResourceOnline		= 0x00000002,
+		ClusterResourceOffline		= 0x00000003,
+		ClusterResourceFailed		= 0x00000004,
+		ClusterResourceOnlinePending	= 0x00000081,
+		ClusterResourceOfflinePending	= 0x00000082,
+		ClusterResourceStateUnknown	= 0xFFFFFFFF
+	} clusapi_ClusterResourceState;
+
 	WERROR
 	clusapi_GetResourceState(
 		[ in ] HRES_RPC hResource,
-		[ out ] uint32 *State,
+		[ out ] clusapi_ClusterResourceState *State,
 		[ out, string ] [charset(UTF16)] uint16 **NodeName,
 		[ out, string ] [charset(UTF16)] uint16 **GroupName,
 		[ out ] WERROR *rpc_status
