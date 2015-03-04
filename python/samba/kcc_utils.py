@@ -2366,7 +2366,7 @@ def write_dot_file(basename, edge_list, label=None, destdir=None):
     f = NamedTemporaryFile(suffix='.dot', prefix=basename + '_', delete=False, dir=destdir)
     graphname = ''.join(x for x in basename if x.isalnum())
     print >>f, 'graph %s {' % graphname
-    print >>f, 'label="%s",' % (label or graphname)
+    print >>f, 'label="%s";\nfontsize=20' % (label or graphname)
     for a, b in edge_list:
         print >>f, '"%s" -- "%s"' % (a, b)
     print >>f, '}'

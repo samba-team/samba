@@ -1688,7 +1688,7 @@ class KCC(object):
         process_edge_set(graph, None, internal_edges)
 
         write_dot_file('prekruskal', [(e.v1.site.site_dnstr, e.v2.site.site_dnstr)
-                                       for e in internal_edges])
+                                       for e in internal_edges], label=label)
 
         # Phase 2: Run Kruskal's on the internal edges
         output_edges, components = kruskal(graph, internal_edges)
@@ -1703,7 +1703,8 @@ class KCC(object):
             else:
                 v.dist_to_red = v.repl_info.cost
 
-        write_dot_file('postkruskal', ((e.v1.site.site_dnstr, e.v2.site.site_dnstr) for e in internal_edges))
+        write_dot_file('postkruskal', ((e.v1.site.site_dnstr, e.v2.site.site_dnstr) for e in internal_edges),
+                       label=label)
 
         # count the components
         return self.copy_output_edges(graph, output_edges), components
