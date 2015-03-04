@@ -936,7 +936,7 @@ err:
 static bool api_pipe_alter_context(struct pipes_struct *p,
 					struct ncacn_packet *pkt)
 {
-	struct dcerpc_auth auth_info;
+	struct dcerpc_auth auth_info = {0};
 	uint16 assoc_gid;
 	NTSTATUS status;
 	union dcerpc_payload u;
