@@ -623,7 +623,8 @@ def build(bld):
     test_eventscript_links = [
         'events.d',
         'functions',
-        'nfs-rpc-checks.d'
+        'nfs-rpc-checks.d',
+        'statd-callout'
     ]
 
     test_link_dir = os.path.join(bld.env.CTDB_TEST_DATADIR,

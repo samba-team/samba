@@ -1,0 +1,3 @@
+#!/bin/sh
+# Make statd-callout happy
+echo 0
