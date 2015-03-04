@@ -788,7 +788,7 @@ static bool test_GetNodeState_int(struct torture_context *tctx,
 {
 	struct dcerpc_binding_handle *b = p->binding_handle;
 	struct clusapi_GetNodeState r;
-	uint32_t State;
+	enum clusapi_ClusterNodeState State;
 	WERROR rpc_status;
 
 	r.in.hNode = *hNode;
