@@ -573,7 +573,7 @@ static NTSTATUS pipe_auth_verify_final(struct pipes_struct *p)
 static bool api_pipe_bind_req(struct pipes_struct *p,
 				struct ncacn_packet *pkt)
 {
-	struct dcerpc_auth auth_info;
+	struct dcerpc_auth auth_info = {0};
 	uint16 assoc_gid;
 	unsigned int auth_type = DCERPC_AUTH_TYPE_NONE;
 	NTSTATUS status;
