@@ -666,6 +666,36 @@ static bool test_OfflineResource(struct torture_context *tctx,
 	return ret;
 }
 
+static bool test_CreateResEnum(struct torture_context *tctx,
+			       struct dcerpc_pipe *p)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_CreateResEnum r;
+	struct policy_handle hResource;
+	uint32_t dwType = CLUSTER_ENUM_RESOURCE;
+	struct ENUM_LIST *ReturnEnum;
+	WERROR rpc_status;
+
+	torture_assert(tctx,
+		test_OpenResource_int(tctx, p, &hResource),
+		"OpenResource failed");
+
+	r.in.hResource = hResource;
+	r.in.dwType = dwType;
+	r.out.ReturnEnum = &ReturnEnum;
+	r.out.rpc_status = &rpc_status;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_CreateResEnum_r(b, tctx, &r),
+		"CreateResEnum failed");
+	torture_assert_werr_ok(tctx,
+		r.out.result,
+		"CreateResEnum failed");
+
+	test_CloseResource_int(tctx, p, &hResource);
+
+	return true;
+}
 
 struct torture_suite *torture_rpc_clusapi(TALLOC_CTX *mem_ctx)
 {
@@ -717,6 +747,8 @@ struct torture_suite *torture_rpc_clusapi(TALLOC_CTX *mem_ctx)
 
 	torture_rpc_tcase_add_test(tcase, "GetClusterVersion2",
 				   test_GetClusterVersion2);
+	torture_rpc_tcase_add_test(tcase, "CreateResEnum",
+				   test_CreateResEnum);
 
 	return suite;
 }
