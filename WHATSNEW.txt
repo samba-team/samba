@@ -1,10 +1,10 @@
-Release Announcements
-=====================
+                   =============================
+                   Release Notes for Samba 4.2.0
+                           March 04, 2015
+                   =============================
 
-This is the fifth release candidate of Samba 4.2.  This is *not*
-intended for production environments and is designed for testing
-purposes only.  Please report any defects via the Samba bug reporting
-system at https://bugzilla.samba.org/.
+
+This is is the first stable release of Samba 4.2.
 
 Samba 4.2 will be the next version of the Samba suite.
 
@@ -348,6 +348,54 @@ smb.conf changes
    smb2 max write                       Changed default 8388608
    smb2 max trans                       Changed default 8388608
    winbind expand groups                Changed default 0
+
+
+CHANGES SINCE 4.2.0rc5
+======================
+
+o   Michael Adam <obnox@samba.org>
+    * BUG 11117: doc:man:vfs_glusterfs: improve the configuration section.
+
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 11118: tevent: Ignore unexpected signal events in the same way the
+      epoll backend does.
+
+
+o   Andrew Bartlett <abartlet@samba.org>
+    * BUG 11100: debug: Set close-on-exec for the main log file FD.
+    * BUG 11097: Fix Win8.1 Credentials Manager issue after KB2992611 on Samba
+      domain.
+
+
+o   Ira Cooper <ira@samba.org>
+    * BUG 1115: smbd: Stop using vfs_Chdir after SMB_VFS_DISCONNECT.
+
+
+o   Günther Deschner <gd@samba.org>
+    * BUG 11088: vfs: Add a brief vfs_ceph manpage.
+
+
+o   David Disseldorp <ddiss@samba.org>
+    * BUG 11118: tevent: version 0.9.24.
+
+
+o   Amitay Isaacs <amitay@gmail.com>
+    * BUG 11124: ctdb-io: Do not use sys_write to write to client sockets.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 11119: snprintf: Try to support %j.
+
+
+o   Garming Sam <garming@catalyst.net.nz>
+    * BUG 11097: Fix Win8.1 Credentials Manager issue after KB2992611 on Samba
+      domain.
+
+
+o   Andreas Schneider <asn@samba.org>
+    * BUG 11127: doc-xml: Add 'sharesec' reference to 'access based share
+      enum'.
 
 
 CHANGES SINCE 4.2.0rc4
