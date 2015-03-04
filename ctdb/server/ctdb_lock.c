@@ -486,6 +486,8 @@ static void ctdb_lock_timeout_handler(struct tevent_context *ev,
 	struct lock_context *lock_ctx;
 	struct ctdb_context *ctdb;
 	pid_t pid;
+	double elapsed_time;
+	int new_timer;
 
 	lock_ctx = talloc_get_type_abort(private_data, struct lock_context);
 	ctdb = lock_ctx->ctdb;
@@ -495,16 +497,17 @@ static void ctdb_lock_timeout_handler(struct tevent_context *ev,
 		lock_ctx->ttimer = NULL;
 		return;
 	}
+
+	elapsed_time = timeval_elapsed(&lock_ctx->start_time);
 	if (lock_ctx->ctdb_db) {
 		DEBUG(DEBUG_WARNING,
 		      ("Unable to get %s lock on database %s for %.0lf seconds\n",
 		       (lock_ctx->type == LOCK_RECORD ? "RECORD" : "DB"),
-		       lock_ctx->ctdb_db->db_name,
-		       timeval_elapsed(&lock_ctx->start_time)));
+		       lock_ctx->ctdb_db->db_name, elapsed_time));
 	} else {
 		DEBUG(DEBUG_WARNING,
 		      ("Unable to get ALLDB locks for %.0lf seconds\n",
-		       timeval_elapsed(&lock_ctx->start_time)));
+		       elapsed_time));
 	}
 
 	/* Fire a child process to find the blocking process. */
@@ -529,11 +532,20 @@ static void ctdb_lock_timeout_handler(struct tevent_context *ev,
 		       " Unable to setup lock debugging - no memory?\n"));
 	}
 
+	/* Back-off logging if lock is not obtained for a long time */
+	if (elapsed_time < 100.0) {
+		new_timer = 10;
+	} else if (elapsed_time < 1000.0) {
+		new_timer = 100;
+	} else {
+		new_timer = 1000;
+	}
+
 	/* reset the timeout timer */
 	// talloc_free(lock_ctx->ttimer);
 	lock_ctx->ttimer = tevent_add_timer(ctdb->ev,
 					    lock_ctx,
-					    timeval_current_ofs(10, 0),
+					    timeval_current_ofs(new_timer, 0),
 					    ctdb_lock_timeout_handler,
 					    (void *)lock_ctx);
 }
