@@ -1398,7 +1398,7 @@ static WERROR bkrp_do_retrieve_server_wrap_key(TALLOC_CTX *mem_ctx, struct ldb_c
 					       struct GUID *guid)
 {
 	NTSTATUS status;
-	DATA_BLOB guid_binary, lsa_secret;
+	DATA_BLOB lsa_secret;
 	char *secret_name;
 	char *guid_string;
 	enum ndr_err_code ndr_err;
