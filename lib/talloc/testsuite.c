@@ -981,6 +981,84 @@ static bool test_free_parent_deny_child(void)
 	return true;
 }
 
+struct new_parent {
+	void *new_parent;
+	char val[20];
+};
+
+static int reparenting_destructor(struct new_parent *np)
+{
+	talloc_set_destructor(np, NULL);
+	(void)talloc_move(np->new_parent, &np);
+	return -1;
+}
+
+static bool test_free_parent_reparent_child(void)
+{
+	void *top = talloc_new(NULL);
+	char *level1;
+	char *alternate_level1;
+	char *level2;
+	struct new_parent *level3;
+
+	printf("test: free_parent_reparent_child\n# "
+		"TALLOC FREE PARENT REPARENT CHILD\n");
+
+	level1 = talloc_strdup(top, "level1");
+	alternate_level1 = talloc_strdup(top, "alternate_level1");
+	level2 = talloc_strdup(level1, "level2");
+	level3 = talloc(level2, struct new_parent);
+	level3->new_parent = alternate_level1;
+	memset(level3->val, 'x', sizeof(level3->val));
+
+	talloc_set_destructor(level3, reparenting_destructor);
+	talloc_free(level1);
+
+	CHECK_PARENT("free_parent_reparent_child",
+		level3, alternate_level1);
+
+	talloc_free(top);
+
+	printf("success: free_parent_reparent_child\n");
+	return true;
+}
+
+static bool test_free_parent_reparent_child_in_pool(void)
+{
+	void *top = talloc_new(NULL);
+	char *level1;
+	char *alternate_level1;
+	char *level2;
+	void *pool;
+	struct new_parent *level3;
+
+	printf("test: free_parent_reparent_child_in_pool\n# "
+		"TALLOC FREE PARENT REPARENT CHILD IN POOL\n");
+
+	pool = talloc_pool(top, 1024);
+	level1 = talloc_strdup(pool, "level1");
+	alternate_level1 = talloc_strdup(top, "alternate_level1");
+	level2 = talloc_strdup(level1, "level2");
+	level3 = talloc(level2, struct new_parent);
+	level3->new_parent = alternate_level1;
+	memset(level3->val, 'x', sizeof(level3->val));
+
+	talloc_set_destructor(level3, reparenting_destructor);
+	talloc_free(level1);
+	talloc_set_destructor(level3, NULL);
+
+	CHECK_PARENT("free_parent_reparent_child_in_pool",
+		level3, alternate_level1);
+
+	/* Even freeing alternate_level1 should leave pool alone. */
+	talloc_free(alternate_level1);
+	talloc_free(top);
+
+	printf("success: free_parent_reparent_child_in_pool\n");
+	return true;
+}
+
+
 static bool test_talloc_ptrtype(void)
 {
 	void *top = talloc_new(NULL);
@@ -1673,6 +1751,10 @@ bool torture_local_talloc(struct torture_context *tctx)
 	ret &= test_loop();
 	test_reset();
 	ret &= test_free_parent_deny_child(); 
+	test_reset();
+	ret &= test_free_parent_reparent_child();
+	test_reset();
+	ret &= test_free_parent_reparent_child_in_pool();
 	test_reset();
 	ret &= test_talloc_ptrtype();
 	test_reset();
