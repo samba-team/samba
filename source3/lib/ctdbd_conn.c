@@ -697,7 +697,7 @@ static NTSTATUS ctdb_handle_message(struct messaging_context *msg_ctx,
 	}
 
 	if (!ctdb_is_our_srvid(conn, msg->srvid)) {
-		DEBUG(0,("Got unexpected message with srvid=%llu\n", 
+		DEBUG(0,("Got unexpected message with srvid=%llu\n",
 			 (unsigned long long)msg->srvid));
 		return NT_STATUS_OK;
 	}
@@ -1310,7 +1310,7 @@ char *ctdbd_dbpath(struct ctdbd_connection *conn,
 	data.dsize = sizeof(db_id);
 
 	status = ctdbd_control(conn, CTDB_CURRENT_NODE,
-			       CTDB_CONTROL_GETDBPATH, 0, 0, data, 
+			       CTDB_CONTROL_GETDBPATH, 0, 0, data,
 			       mem_ctx, &data, &cstatus);
 	if (!NT_STATUS_IS_OK(status) || cstatus != 0) {
 		DEBUG(0,(__location__ " ctdb_control for getdbpath failed\n"));
@@ -1360,7 +1360,7 @@ NTSTATUS ctdbd_db_attach(struct ctdbd_connection *conn,
 	data.dsize = sizeof(*db_id);
 
 	status = ctdbd_control(conn, CTDB_CURRENT_NODE,
-			       CTDB_CONTROL_ENABLE_SEQNUM, 0, 0, data, 
+			       CTDB_CONTROL_ENABLE_SEQNUM, 0, 0, data,
 			       NULL, NULL, &cstatus);
 	if (!NT_STATUS_IS_OK(status) || cstatus != 0) {
 		DEBUG(0,(__location__ " ctdb_control for enable seqnum "
@@ -1703,7 +1703,7 @@ NTSTATUS ctdbd_register_ips(struct ctdbd_connection *conn,
 	 * can send an extra ack to trigger a reset for our client, so it
 	 * immediately reconnects
 	 */
-	return ctdbd_control(conn, CTDB_CURRENT_NODE, 
+	return ctdbd_control(conn, CTDB_CURRENT_NODE,
 			     CTDB_CONTROL_TCP_CLIENT, 0,
 			     CTDB_CTRL_FLAG_NOREPLY, data, NULL, NULL, NULL);
 }
