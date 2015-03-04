@@ -1423,13 +1423,14 @@ class Site(object):
     """An individual site object discovered thru the configuration
     naming context.  Contains all DSAs that exist within the site
     """
-    def __init__(self, site_dnstr):
+    def __init__(self, site_dnstr, unix_now):
         self.site_dnstr = site_dnstr
         self.site_guid = None
         self.site_options = 0
         self.site_topo_generator = None
         self.site_topo_failover = 0  # appears to be in minutes
         self.dsa_table = {}
+        self.unix_now = unix_now
 
     def load_site(self, samdb):
         """Loads the NTDS Site Settions options attribute for the site
@@ -1555,9 +1556,8 @@ class Site(object):
         D_sort = []
         d_dsa = None
 
-        unixnow = int(time.time())     # seconds since 1970
-        ntnow = unix2nttime(unixnow) # double word number of 100 nanosecond
-                                       # intervals since 1600s
+        ntnow = unix2nttime(self.unix_now) # double word number of 100 nanosecond
+                                           # intervals since 1600s
 
         for dsa in self.dsa_table.values():
             D_sort.append(dsa)

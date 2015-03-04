@@ -38,6 +38,7 @@ import optparse
 import logging
 import itertools
 import heapq
+import time
 
 from samba import (
     getopt as options,
@@ -154,7 +155,7 @@ class KCC(object):
         self.my_site_dnstr = "CN=%s,CN=Sites,%s" % (
                               self.samdb.server_site_name(),
                               self.samdb.get_config_basedn())
-        site = Site(self.my_site_dnstr)
+        site = Site(self.my_site_dnstr, unix_now)
         site.load_site(self.samdb)
 
         self.site_table[str(site.site_guid)] = site
@@ -178,7 +179,7 @@ class KCC(object):
         for msg in res:
             sitestr = str(msg.dn)
 
-            site = Site(sitestr)
+            site = Site(sitestr, unix_now)
             site.load_site(self.samdb)
 
             # already loaded
@@ -301,13 +302,12 @@ class KCC(object):
             if failed_link.failure_count > 0:
                 unix_first_time_failure = nttime2unix(failed_link.time_first_failure)
                 # TODO guard against future
-                current_time = int(time.time())
-                if unix_first_time_failure > current_time:
+                if unix_first_time_failure > unix_now:
                     logger.error("The last success time attribute for \
                                  repsFrom is in the future!")
 
                 # Perform calculation in seconds
-                if (current_time - unix_first_time_failure) > 60 * 60 * 2:
+                if (unix_now - unix_first_time_failure) > 60 * 60 * 2:
                     return True
 
         # TODO connections
@@ -2929,6 +2929,10 @@ parser.add_option("--tmpdb",
                   help="schemaless database file to create for ldif import",
                   type=str, metavar="<file>")
 
+parser.add_option("--now",
+                  help="assume current time is this ('YYYYmmddHHMMSS[tz]', default: system time)",
+                  type=str, metavar="<date>")
+
 logger = logging.getLogger("samba_kcc")
 logger.addHandler(logging.StreamHandler(sys.stdout))
 
@@ -2955,6 +2959,23 @@ else:
 
 if opts.dburl is None:
     opts.dburl = lp.samdb_url()
+
+if opts.now:
+    for timeformat in ("%Y%m%d%H%M%S%Z", "%Y%m%d%H%M%S"):
+        try:
+            now_tuple = time.strptime(opts.now, timeformat)
+            break
+        except ValueError:
+            pass
+    else:
+        # else happens if break doesn't --> no match
+        print >> sys.stderr, "could not parse time '%s'" % opts.now
+        sys.exit(1)
+
+    unix_now = int(time.mktime(now_tuple))
+else:
+    unix_now = int(time.time())
+
 
 # Instantiate Knowledge Consistency Checker and perform run
 kcc = KCC()
