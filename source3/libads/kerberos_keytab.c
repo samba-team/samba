@@ -508,7 +508,7 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 	krb5_context context = NULL;
 	krb5_keytab keytab = NULL;
 	krb5_kt_cursor cursor;
-	krb5_keytab_entry kt_entry;
+	krb5_keytab_entry kt_entry = {0};
 	krb5_kvno kvno;
 	size_t found = 0;
 	char *sam_account_name, *upn;
