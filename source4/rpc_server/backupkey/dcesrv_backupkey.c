@@ -221,6 +221,7 @@ static NTSTATUS get_lsa_secret(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 	if (res->count == 0) {
+		talloc_free(tmp_mem);
 		return NT_STATUS_RESOURCE_NAME_NOT_FOUND;
 	}
 	if (res->count > 1) {
