@@ -58,6 +58,7 @@ struct tevent_req *ctdb_conn_init_send(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req, *subreq;
 	struct ctdb_conn_init_state *state;
+	size_t len;
 
 	req = tevent_req_create(mem_ctx, &state, struct ctdb_conn_init_state);
 	if (req == NULL) {
@@ -66,11 +67,6 @@ struct tevent_req *ctdb_conn_init_send(TALLOC_CTX *mem_ctx,
 
 	if (!lp_clustering()) {
 		tevent_req_error(req, ENOSYS);
-		return tevent_req_post(req, ev);
-	}
-
-	if (strlen(sock) >= sizeof(state->addr.sun_path)) {
-		tevent_req_error(req, ENAMETOOLONG);
 		return tevent_req_post(req, ev);
 	}
 
@@ -93,7 +89,13 @@ struct tevent_req *ctdb_conn_init_send(TALLOC_CTX *mem_ctx,
 	talloc_set_destructor(state->conn, ctdb_conn_destructor);
 
 	state->addr.sun_family = AF_UNIX;
-	strncpy(state->addr.sun_path, sock, sizeof(state->addr.sun_path));
+
+	len = strlcpy(state->addr.sun_path, sock,
+		      sizeof(state->addr.sun_path));
+	if (len >= sizeof(state->addr.sun_path)) {
+		tevent_req_error(req, ENAMETOOLONG);
+		return tevent_req_post(req, ev);
+	}
 
 	subreq = async_connect_send(state, ev, state->conn->fd,
 				    (struct sockaddr *)&state->addr,
