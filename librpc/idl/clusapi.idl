@@ -1184,10 +1184,18 @@ import "security.idl";
 	/*****************/
 	/* Function 0x53 */
 
+	typedef [v1_enum] enum {
+		ClusterNetworkUnavailable	= 0x00000000,
+		ClusterNetworkDown		= 0x00000001,
+		ClusterNetworkPartitioned	= 0x00000002,
+		ClusterNetworkUp		= 0x00000003,
+		ClusterNetworkStateUnknown	= 0xFFFFFFFF
+	} clusapi_ClusterNetworkState;
+
 	WERROR
 	clusapi_GetNetworkState(
 		[ in ] HNETWORK_RPC hNetwork,
-		[ out ] uint32 *State,
+		[ out ] clusapi_ClusterNetworkState *State,
 		[ out ] WERROR *rpc_status
 	);
 
@@ -1322,10 +1330,18 @@ import "security.idl";
 	/*****************/
 	/* Function 0x5E */
 
+	typedef [v1_enum] enum {
+		ClusterNetInterfaceFailed	= 0x00000000,
+		ClusterNetInterfaceUnreachable	= 0x00000001,
+		ClusterNetInterfaceUnavailable	= 0x00000002,
+		ClusterNetInterfaceUp		= 0x00000003,
+		ClusterNetInterfaceStateUnknown	= 0xFFFFFFFF
+	} clusapi_ClusterNetInterfaceState;
+
 	WERROR
 	clusapi_GetNetInterfaceState(
 		[ in ] HNETINTERFACE_RPC hNetInterface,
-		[ out ] uint32 *State,
+		[ out ] clusapi_ClusterNetInterfaceState *State,
 		[ out ] WERROR *rpc_status
 	);
 
