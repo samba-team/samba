@@ -389,7 +389,7 @@ static bool test_CreateResource_int(struct torture_context *tctx,
 	r.in.hGroup = hGroup;
 	r.in.lpszResourceName = lpszResourceName;
 	r.in.lpszResourceType = lpszResourceType;
-	r.in.dwFlags = 0; /* FIXME */
+	r.in.dwFlags = CLUSTER_RESOURCE_DEFAULT_MONITOR;
 	r.out.rpc_status = &rpc_status;
 	r.out.Status = &Status;
 	r.out.hResource = hResource;

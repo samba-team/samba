@@ -229,13 +229,18 @@ import "security.idl";
 	/*****************/
 	/* Function 0x09 */
 
+	typedef [v1_enum] enum {
+		CLUSTER_RESOURCE_DEFAULT_MONITOR	= 0x00000000,
+		CLUSTER_RESOURCE_SEPARATE_MONITOR	= 0x00000001
+	} clusapi_CreateResourceFlags;
+
 #if 0
 	HRES_RPC
 	clusapi_CreateResource(
 		[ in ] HGROUP_RPC hGroup,
 		[ in, string ] [charset(UTF16)] uint16 *lpszResourceName,
 		[ in, string ] [charset(UTF16)] uint16 *lpszResourceType,
-		[ in ] uint32 dwFlags,
+		[ in ] clusapi_CreateResourceFlags dwFlags,
 		[ out ] WERROR *Status,
 		[ out ] WERROR *rpc_status
 	);
@@ -245,7 +250,7 @@ import "security.idl";
 		[ in ] HGROUP_RPC hGroup,
 		[ in, string ] [charset(UTF16)] uint16 *lpszResourceName,
 		[ in, string ] [charset(UTF16)] uint16 *lpszResourceType,
-		[ in ] uint32 dwFlags,
+		[ in ] clusapi_CreateResourceFlags dwFlags,
 		[ out ] WERROR *Status,
 		[ out ] WERROR *rpc_status,
 		[ out ] HRES_RPC *hResource
