@@ -1665,6 +1665,264 @@ static bool test_SetServiceAccountPassword(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_OpenNetwork_int(struct torture_context *tctx,
+				 struct dcerpc_pipe *p,
+				 const char *lpszNetworkName,
+				 struct policy_handle *hNetwork)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_OpenNetwork r;
+	WERROR Status;
+	WERROR rpc_status;
+
+	r.in.lpszNetworkName = lpszNetworkName;
+	r.out.rpc_status = &rpc_status;
+	r.out.Status = &Status;
+	r.out.hNetwork = hNetwork ;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_OpenNetwork_r(b, tctx, &r),
+		"OpenNetwork failed");
+	torture_assert_werr_ok(tctx,
+		*r.out.Status,
+		"OpenNetwork failed");
+
+	return true;
+}
+
+static bool test_OpenNetworkEx_int(struct torture_context *tctx,
+				   struct dcerpc_pipe *p,
+				   const char *lpszNetworkName,
+				   struct policy_handle *hNetwork)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_OpenNetworkEx r;
+	uint32_t lpdwGrantedAccess;
+	WERROR Status;
+	WERROR rpc_status;
+
+	r.in.lpszNetworkName = lpszNetworkName;
+	r.in.dwDesiredAccess = SEC_FLAG_MAXIMUM_ALLOWED;
+	r.out.lpdwGrantedAccess = &lpdwGrantedAccess;
+	r.out.rpc_status = &rpc_status;
+	r.out.Status = &Status;
+	r.out.hNetwork = hNetwork ;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_OpenNetworkEx_r(b, tctx, &r),
+		"OpenNetworkEx failed");
+	torture_assert_werr_ok(tctx,
+		*r.out.Status,
+		"OpenNetworkEx failed");
+
+	return true;
+}
+
+static bool test_CloseNetwork_int(struct torture_context *tctx,
+				  struct dcerpc_pipe *p,
+				  struct policy_handle *Network)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_CloseNetwork r;
+
+	r.in.Network = Network;
+	r.out.Network = Network;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_CloseNetwork_r(b, tctx, &r),
+		"CloseNetwork failed");
+	torture_assert_werr_ok(tctx,
+		r.out.result,
+		"CloseNetwork failed");
+	torture_assert(tctx,
+		ndr_policy_handle_empty(Network),
+		"policy_handle non empty after CloseNetwork");
+
+	return true;
+}
+
+static bool test_OpenNetwork(struct torture_context *tctx,
+			     struct dcerpc_pipe *p)
+{
+	struct policy_handle hNetwork;
+
+	if (!test_OpenNetwork_int(tctx, p, "Cluster Network 1", &hNetwork)) {
+		return false;
+	}
+
+	test_CloseNetwork_int(tctx, p, &hNetwork);
+
+	return true;
+}
+
+static bool test_OpenNetworkEx(struct torture_context *tctx,
+			       struct dcerpc_pipe *p)
+{
+	struct policy_handle hNetwork;
+
+	if (!test_OpenNetworkEx_int(tctx, p, "Cluster Network 1", &hNetwork)) {
+		return false;
+	}
+
+	test_CloseNetwork_int(tctx, p, &hNetwork);
+
+	return true;
+}
+
+static bool test_CloseNetwork(struct torture_context *tctx,
+			      struct dcerpc_pipe *p)
+{
+	struct policy_handle hNetwork;
+
+	if (!test_OpenNetwork_int(tctx, p, "Cluster Network 1", &hNetwork)) {
+		return false;
+	}
+
+	return test_CloseNetwork_int(tctx, p, &hNetwork);
+}
+
+static bool test_GetNetworkState_int(struct torture_context *tctx,
+				     struct dcerpc_pipe *p,
+				     struct policy_handle *hNetwork)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_GetNetworkState r;
+	enum clusapi_ClusterNetworkState State;
+	WERROR rpc_status;
+
+	r.in.hNetwork = *hNetwork;
+	r.out.State = &State;
+	r.out.rpc_status = &rpc_status;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_GetNetworkState_r(b, tctx, &r),
+		"GetNetworkState failed");
+	torture_assert_werr_ok(tctx,
+		r.out.result,
+		"GetNetworkState failed");
+
+	return true;
+}
+
+static bool test_GetNetworkState(struct torture_context *tctx,
+				 struct dcerpc_pipe *p)
+{
+	struct policy_handle hNetwork;
+	bool ret = true;
+
+	if (!test_OpenNetwork_int(tctx, p, "Cluster Network 1", &hNetwork)) {
+		return false;
+	}
+
+	ret = test_GetNetworkState_int(tctx, p, &hNetwork);
+
+	test_CloseNetwork_int(tctx, p, &hNetwork);
+
+	return ret;
+}
+
+static bool test_GetNetworkId_int(struct torture_context *tctx,
+				  struct dcerpc_pipe *p,
+				  struct policy_handle *hNetwork)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_GetNetworkId r;
+	const char *pGuid;
+	WERROR rpc_status;
+
+	r.in.hNetwork = *hNetwork;
+	r.out.pGuid = &pGuid;
+	r.out.rpc_status = &rpc_status;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_GetNetworkId_r(b, tctx, &r),
+		"GetNetworkId failed");
+	torture_assert_werr_ok(tctx,
+		r.out.result,
+		"GetNetworkId failed");
+
+	return true;
+}
+
+static bool test_GetNetworkId(struct torture_context *tctx,
+			      struct dcerpc_pipe *p)
+{
+	struct policy_handle hNetwork;
+	bool ret = true;
+
+	if (!test_OpenNetwork_int(tctx, p, "Cluster Network 1", &hNetwork)) {
+		return false;
+	}
+
+	ret = test_GetNetworkId_int(tctx, p, &hNetwork);
+
+	test_CloseNetwork_int(tctx, p, &hNetwork);
+
+	return ret;
+}
+
+static bool test_one_network(struct torture_context *tctx,
+			     struct dcerpc_pipe *p,
+			     const char *network_name)
+{
+	struct policy_handle hNetwork;
+
+	torture_assert(tctx,
+		test_OpenNetwork_int(tctx, p, network_name, &hNetwork),
+		"failed to open network");
+	test_CloseNetwork_int(tctx, p, &hNetwork);
+
+	torture_assert(tctx,
+		test_OpenNetworkEx_int(tctx, p, network_name, &hNetwork),
+		"failed to openex network");
+
+	torture_assert(tctx,
+		test_GetNetworkId_int(tctx, p, &hNetwork),
+		"failed to query network id");
+	torture_assert(tctx,
+		test_GetNetworkState_int(tctx, p, &hNetwork),
+		"failed to query network id");
+
+	test_CloseNetwork_int(tctx, p, &hNetwork);
+
+	return true;
+}
+
+static bool test_all_networks(struct torture_context *tctx,
+			      struct dcerpc_pipe *p)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_CreateEnum r;
+	uint32_t dwType = CLUSTER_ENUM_NETWORK;
+	struct ENUM_LIST *ReturnEnum;
+	WERROR rpc_status;
+	int i;
+
+	r.in.dwType = dwType;
+	r.out.ReturnEnum = &ReturnEnum;
+	r.out.rpc_status = &rpc_status;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_CreateEnum_r(b, tctx, &r),
+		"CreateEnum failed");
+	torture_assert_werr_ok(tctx,
+		r.out.result,
+		"CreateEnum failed");
+
+	for (i=0; i < ReturnEnum->EntryCount; i++) {
+
+		struct ENUM_ENTRY e = ReturnEnum->Entry[i];
+
+		torture_assert_int_equal(tctx, e.Type, CLUSTER_ENUM_NETWORK, "type mismatch");
+
+		torture_assert(tctx,
+			test_one_network(tctx, p, e.Name),
+			"failed to test one network");
+	}
+
+	return true;
+}
+
 struct torture_suite *torture_rpc_clusapi(TALLOC_CTX *mem_ctx)
 {
 	struct torture_rpc_tcase *tcase;
@@ -1777,6 +2035,21 @@ struct torture_suite *torture_rpc_clusapi(TALLOC_CTX *mem_ctx)
 	test->dangerous = true;
 	torture_rpc_tcase_add_test(tcase, "all_groups",
 				   test_all_groups);
+
+	tcase = torture_suite_add_rpc_iface_tcase(suite, "network",
+						  &ndr_table_clusapi);
+	torture_rpc_tcase_add_test(tcase, "OpenNetwork",
+				   test_OpenNetwork);
+	torture_rpc_tcase_add_test(tcase, "OpenNetworkEx",
+				   test_OpenNetworkEx);
+	torture_rpc_tcase_add_test(tcase, "CloseNetwork",
+				   test_CloseNetwork);
+	torture_rpc_tcase_add_test(tcase, "GetNetworkState",
+				   test_GetNetworkState);
+	torture_rpc_tcase_add_test(tcase, "GetNetworkId",
+				   test_GetNetworkId);
+	torture_rpc_tcase_add_test(tcase, "all_networks",
+				   test_all_networks);
 
 	return suite;
 }
