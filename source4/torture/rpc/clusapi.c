@@ -730,6 +730,66 @@ static bool test_OfflineResource(struct torture_context *tctx,
 	return ret;
 }
 
+static bool test_one_resource(struct torture_context *tctx,
+			      struct dcerpc_pipe *p,
+			      const char *resource_name)
+{
+	struct policy_handle hResource;
+
+	torture_assert(tctx,
+		test_OpenResource_int(tctx, p, resource_name, &hResource),
+		"failed to open resource");
+
+	torture_assert(tctx,
+		test_GetResourceType_int(tctx, p, &hResource),
+		"failed to query resource type");
+	torture_assert(tctx,
+		test_GetResourceId_int(tctx, p, &hResource),
+		"failed to query resource id");
+	torture_assert(tctx,
+		test_GetResourceState_int(tctx, p, &hResource),
+		"failed to query resource id");
+
+	test_CloseResource_int(tctx, p, &hResource);
+
+	return true;
+}
+
+static bool test_all_resources(struct torture_context *tctx,
+			       struct dcerpc_pipe *p)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_CreateEnum r;
+	uint32_t dwType = CLUSTER_ENUM_RESOURCE;
+	struct ENUM_LIST *ReturnEnum;
+	WERROR rpc_status;
+	int i;
+
+	r.in.dwType = dwType;
+	r.out.ReturnEnum = &ReturnEnum;
+	r.out.rpc_status = &rpc_status;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_CreateEnum_r(b, tctx, &r),
+		"CreateEnum failed");
+	torture_assert_werr_ok(tctx,
+		r.out.result,
+		"CreateEnum failed");
+
+	for (i=0; i < ReturnEnum->EntryCount; i++) {
+
+		struct ENUM_ENTRY e = ReturnEnum->Entry[i];
+
+		torture_assert_int_equal(tctx, e.Type, CLUSTER_ENUM_RESOURCE, "type mismatch");
+
+		torture_assert(tctx,
+			test_one_resource(tctx, p, e.Name),
+			"failed to test one resource");
+	}
+
+	return true;
+}
+
 static bool test_CreateResEnum(struct torture_context *tctx,
 			       struct dcerpc_pipe *p)
 {
@@ -1284,6 +1344,12 @@ struct torture_suite *torture_rpc_clusapi(TALLOC_CTX *mem_ctx)
 				   test_GetClusterVersion);
 	torture_rpc_tcase_add_test(tcase, "CreateEnum",
 				   test_CreateEnum);
+	torture_rpc_tcase_add_test(tcase, "GetClusterVersion2",
+				   test_GetClusterVersion2);
+	torture_rpc_tcase_add_test(tcase, "CreateResEnum",
+				   test_CreateResEnum);
+	torture_rpc_tcase_add_test(tcase, "all_resources",
+				   test_all_resources);
 
 	tcase = torture_suite_add_rpc_iface_tcase(suite, "resource",
 						  &ndr_table_clusapi);
@@ -1316,11 +1382,6 @@ struct torture_suite *torture_rpc_clusapi(TALLOC_CTX *mem_ctx)
 	test = torture_rpc_tcase_add_test(tcase, "OfflineResource",
 				   test_OfflineResource);
 	test->dangerous = true;
-
-	torture_rpc_tcase_add_test(tcase, "GetClusterVersion2",
-				   test_GetClusterVersion2);
-	torture_rpc_tcase_add_test(tcase, "CreateResEnum",
-				   test_CreateResEnum);
 
 	tcase = torture_suite_add_rpc_iface_tcase(suite, "node",
 						  &ndr_table_clusapi);
