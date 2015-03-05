@@ -138,7 +138,7 @@ static const char *smb_subop_name(int op, int subop)
 		}
 		return trans_subop_table[subop];
 	} else if (op == 0x32) {
-		if (subop > sizeof(trans2_subop_table) /
+		if (subop >= sizeof(trans2_subop_table) /
 		    sizeof(trans2_subop_table[0])) {
 			return "unknown";
 		}
