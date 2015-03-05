@@ -69,7 +69,7 @@ static void perfcount_test_add_counters(struct perfcount_test_context *ctxt)
 
 		found = false;
 
-		if (ptc->op > MAX_OP)
+		if (ptc->op >= MAX_OP)
 			continue;
 
 		for (head = g_list[ptc->op]; head != NULL; head = head->next) {
