@@ -493,6 +493,7 @@ for env in ["dc", "fl2000dc", "fl2003dc", "fl2008r2dc"]:
 
 planpythontestsuite("dc:local", "samba.tests.upgradeprovisionneeddc")
 planpythontestsuite("plugin_s4_dc:local", "samba.tests.posixacl")
+planpythontestsuite("plugin_s4_dc_no_nss:local", "samba.tests.posixacl")
 plantestsuite_loadlist("samba4.deletetest.python(dc)", "dc", [python, os.path.join(samba4srcdir, "dsdb/tests/python/deletetest.py"),
                                                      '$SERVER', '-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN', '$LOADLIST', '$LISTOPT'])
 plantestsuite("samba4.blackbox.samba3dump", "none", [os.path.join(samba4srcdir, "selftest/test_samba3dump.sh")])
