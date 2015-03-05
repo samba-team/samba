@@ -1969,11 +1969,11 @@ sub setup_env($$$)
 		return $self->setup_rodc("$path/rodc", $self->{vars}->{ad_dc_ntvfs});
 	} elsif ($envname eq "chgdcpass") {
 		return $self->setup_chgdcpass("$path/chgdcpass", $self->{vars}->{chgdcpass});
-	} elsif ($envname eq "s3member") {
+	} elsif ($envname eq "ad_member") {
 		if (not defined($self->{vars}->{ad_dc_ntvfs})) {
 			$self->setup_ad_dc_ntvfs("$path/ad_dc_ntvfs");
 		}
-		return $target3->setup_admember("$path/s3member", $self->{vars}->{ad_dc_ntvfs}, 29);
+		return $target3->setup_admember("$path/ad_member", $self->{vars}->{ad_dc_ntvfs}, 29);
 	} elsif ($envname eq "ad_dc") {
 		return $self->setup_ad_dc("$path/ad_dc");
 	} elsif ($envname eq "ad_dc_no_nss") {

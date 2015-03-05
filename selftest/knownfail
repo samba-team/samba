@@ -55,7 +55,7 @@
 ^samba3.base.delete.deltest16a
 ^samba3.base.delete.deltest17a
 ^samba3.unix.whoami anonymous connection.whoami\(ad_dc\) # We need to resolve if we should be including SID_NT_WORLD and SID_NT_NETWORK in this token
-^samba3.unix.whoami anonymous connection.whoami\(s3member\) # smbd maps anonymous logins to domain guest in the local domain, not SID_NT_ANONYMOUS
+^samba3.unix.whoami anonymous connection.whoami\(ad_member\) # smbd maps anonymous logins to domain guest in the local domain, not SID_NT_ANONYMOUS
 # these show that we still have some differences between our system
 # with our internal iconv because it passes except when we bypass our
 # internal iconv modules
@@ -250,10 +250,10 @@
 #
 # This makes less sense when not running against an AD DC
 #
-^samba.blackbox.wbinfo\(s3member:local\).wbinfo -U against s3member
-^samba.blackbox.wbinfo\(s3member:local\).wbinfo -G against s3member
-^samba.blackbox.wbinfo\(s3member:local\).wbinfo -U check for sane mapping
-^samba.blackbox.wbinfo\(s3member:local\).wbinfo -G check for sane mapping
+^samba.blackbox.wbinfo\(ad_member:local\).wbinfo -U against ad_member
+^samba.blackbox.wbinfo\(ad_member:local\).wbinfo -G against ad_member
+^samba.blackbox.wbinfo\(ad_member:local\).wbinfo -U check for sane mapping
+^samba.blackbox.wbinfo\(ad_member:local\).wbinfo -G check for sane mapping
 ^samba4.winbind.struct.show_sequence\(ad_dc_ntvfs\)
 ^samba.wbinfo_simple.\(ad_dc_ntvfs:local\).--allocate-uid
 ^samba.wbinfo_simple.\(ad_dc_ntvfs:local\).--allocate-gid
@@ -281,16 +281,16 @@
 ^samba3.local.nss.enumeration\(ad_dc_ntvfs:local\)
 #
 # These fail only if we run the unix.whoami test before them
-# in the member and s3member environments. ==> Strange!!!
+# in the member and ad_member environments. ==> Strange!!!
 #
-^samba3.local.nss.reentrant enumeration crosschecks\(s3member:local\)
-^samba3.local.nss.reentrant enumeration\(s3member:local\)
-^samba3.local.nss.enumeration\(s3member:local\)
+^samba3.local.nss.reentrant enumeration crosschecks\(ad_member:local\)
+^samba3.local.nss.reentrant enumeration\(ad_member:local\)
+^samba3.local.nss.enumeration\(ad_member:local\)
 #
 # These just happen to fail for some reason (probably because they run against the s4 winbind)
 #
-^samba4.winbind.struct.getdcname\(s3member:local\)
-^samba4.winbind.struct.lookup_name_sid\(s3member:local\)
+^samba4.winbind.struct.getdcname\(ad_member:local\)
+^samba4.winbind.struct.lookup_name_sid\(ad_member:local\)
 ^samba.wbinfo_simple.\(ad_dc_ntvfs:local\).--all-domains.wbinfo\(ad_dc_ntvfs:local\)
 ^samba.wbinfo_simple.\(ad_dc_ntvfs:local\).--trusted-domains.wbinfo\(ad_dc_ntvfs:local\)
 ^samba.wbinfo_simple.\(ad_dc_ntvfs:local\).--online-status.wbinfo\(ad_dc_ntvfs:local\)
@@ -304,10 +304,10 @@
 #
 # These do not work against winbindd in member mode for unknown reasons
 #
-^samba.blackbox.wbinfo\(s3member:local\).wbinfo -U against s3member\(s3member:local\)
-^samba.blackbox.wbinfo\(s3member:local\).wbinfo -U check for sane mapping\(s3member:local\)
-^samba.blackbox.wbinfo\(s3member:local\).wbinfo -G against s3member\(s3member:local\)
-^samba.blackbox.wbinfo\(s3member:local\).wbinfo -G check for sane mapping\(s3member:local\)
+^samba.blackbox.wbinfo\(ad_member:local\).wbinfo -U against ad_member\(ad_member:local\)
+^samba.blackbox.wbinfo\(ad_member:local\).wbinfo -U check for sane mapping\(ad_member:local\)
+^samba.blackbox.wbinfo\(ad_member:local\).wbinfo -G against ad_member\(ad_member:local\)
+^samba.blackbox.wbinfo\(ad_member:local\).wbinfo -G check for sane mapping\(ad_member:local\)
 ^samba.ntlm_auth.\(ad_dc_ntvfs:local\).ntlm_auth against winbindd with failed require-membership-of
 ^samba.ntlm_auth.\(ad_dc_ntvfs:local\).ntlm_auth with NTLMSSP gss-spnego-client and gss-spnego server against winbind with failed require-membership-of
 #
