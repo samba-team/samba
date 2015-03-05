@@ -1202,6 +1202,34 @@ static bool test_OpenGroup_int(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_OpenGroupEx_int(struct torture_context *tctx,
+				 struct dcerpc_pipe *p,
+				 const char *lpszGroupName,
+				 struct policy_handle *hGroup)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_OpenGroupEx r;
+	uint32_t lpdwGrantedAccess;
+	WERROR Status;
+	WERROR rpc_status;
+
+	r.in.lpszGroupName = lpszGroupName;
+	r.in.dwDesiredAccess = SEC_FLAG_MAXIMUM_ALLOWED;
+	r.out.lpdwGrantedAccess = &lpdwGrantedAccess;
+	r.out.rpc_status = &rpc_status;
+	r.out.Status = &Status;
+	r.out.hGroup= hGroup;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_OpenGroupEx_r(b, tctx, &r),
+		"OpenGroupEx failed");
+	torture_assert_werr_ok(tctx,
+		*r.out.Status,
+		"OpenGroupEx failed");
+
+	return true;
+}
+
 static bool test_CloseGroup_int(struct torture_context *tctx,
 				struct dcerpc_pipe *p,
 				struct policy_handle *Group)
@@ -1231,6 +1259,20 @@ static bool test_OpenGroup(struct torture_context *tctx,
 	struct policy_handle hGroup;
 
 	if (!test_OpenGroup_int(tctx, p, "Cluster Group", &hGroup)) {
+		return false;
+	}
+
+	test_CloseGroup_int(tctx, p, &hGroup);
+
+	return true;
+}
+
+static bool test_OpenGroupEx(struct torture_context *tctx,
+			     struct dcerpc_pipe *p)
+{
+	struct policy_handle hGroup;
+
+	if (!test_OpenGroupEx_int(tctx, p, "Cluster Group", &hGroup)) {
 		return false;
 	}
 
@@ -1499,6 +1541,8 @@ struct torture_suite *torture_rpc_clusapi(TALLOC_CTX *mem_ctx)
 
 	torture_rpc_tcase_add_test(tcase, "OpenGroup",
 				   test_OpenGroup);
+	torture_rpc_tcase_add_test(tcase, "OpenGroupEx",
+				   test_OpenGroupEx);
 	torture_rpc_tcase_add_test(tcase, "CloseGroup",
 				   test_CloseGroup);
 	torture_rpc_tcase_add_test(tcase, "GetGroupState",
