@@ -19,8 +19,8 @@
 
 #include "replace.h"
 #include <talloc.h>
-#include "../lib/util/samba_util.h"
 #include "../lib/util/debug.h"
+#include "../lib/util/samba_util.h"
 #include "../lib/util/dlinklist.h"
 #include "../lib/util/rbtree.h"
 #include "memcache.h"
