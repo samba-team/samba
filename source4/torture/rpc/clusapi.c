@@ -910,11 +910,11 @@ static bool test_CreateResEnum(struct torture_context *tctx,
 
 static bool test_OpenNode_int(struct torture_context *tctx,
 			      struct dcerpc_pipe *p,
+			      const char *lpszNodeName,
 			      struct policy_handle *hNode)
 {
 	struct dcerpc_binding_handle *b = p->binding_handle;
 	struct clusapi_OpenNode r;
-	const char *lpszNodeName = "NODE1";
 	WERROR Status;
 	WERROR rpc_status;
 
@@ -932,6 +932,35 @@ static bool test_OpenNode_int(struct torture_context *tctx,
 
 	return true;
 }
+
+static bool test_OpenNodeEx_int(struct torture_context *tctx,
+				struct dcerpc_pipe *p,
+				const char *lpszNodeName,
+				struct policy_handle *hNode)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_OpenNodeEx r;
+	uint32_t lpdwGrantedAccess;
+	WERROR Status;
+	WERROR rpc_status;
+
+	r.in.lpszNodeName = lpszNodeName;
+	r.in.dwDesiredAccess = SEC_FLAG_MAXIMUM_ALLOWED;
+	r.out.lpdwGrantedAccess = &lpdwGrantedAccess;
+	r.out.rpc_status = &rpc_status;
+	r.out.Status = &Status;
+	r.out.hNode= hNode;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_OpenNodeEx_r(b, tctx, &r),
+		"OpenNodeEx failed");
+	torture_assert_werr_ok(tctx,
+		*r.out.Status,
+		"OpenNodeEx failed");
+
+	return true;
+}
+
 
 static bool test_CloseNode_int(struct torture_context *tctx,
 			       struct dcerpc_pipe *p,
@@ -961,7 +990,21 @@ static bool test_OpenNode(struct torture_context *tctx,
 {
 	struct policy_handle hNode;
 
-	if (!test_OpenNode_int(tctx, p, &hNode)) {
+	if (!test_OpenNode_int(tctx, p, "NODE1", &hNode)) {
+		return false;
+	}
+
+	test_CloseNode_int(tctx, p, &hNode);
+
+	return true;
+}
+
+static bool test_OpenNodeEx(struct torture_context *tctx,
+			    struct dcerpc_pipe *p)
+{
+	struct policy_handle hNode;
+
+	if (!test_OpenNodeEx_int(tctx, p, "NODE1", &hNode)) {
 		return false;
 	}
 
@@ -975,7 +1018,7 @@ static bool test_CloseNode(struct torture_context *tctx,
 {
 	struct policy_handle hNode;
 
-	if (!test_OpenNode_int(tctx, p, &hNode)) {
+	if (!test_OpenNode_int(tctx, p, "NODE1", &hNode)) {
 		return false;
 	}
 
@@ -1011,7 +1054,7 @@ static bool test_GetNodeState(struct torture_context *tctx,
 	struct policy_handle hNode;
 	bool ret = true;
 
-	if (!test_OpenNode_int(tctx, p, &hNode)) {
+	if (!test_OpenNode_int(tctx, p, "NODE1", &hNode)) {
 		return false;
 	}
 
@@ -1051,7 +1094,7 @@ static bool test_GetNodeId(struct torture_context *tctx,
 	struct policy_handle hNode;
 	bool ret = true;
 
-	if (!test_OpenNode_int(tctx, p, &hNode)) {
+	if (!test_OpenNode_int(tctx, p, "NODE1", &hNode)) {
 		return false;
 	}
 
@@ -1089,7 +1132,7 @@ static bool test_PauseNode(struct torture_context *tctx,
 	struct policy_handle hNode;
 	bool ret = true;
 
-	if (!test_OpenNode_int(tctx, p, &hNode)) {
+	if (!test_OpenNode_int(tctx, p, "NODE1", &hNode)) {
 		return false;
 	}
 
@@ -1128,7 +1171,7 @@ static bool test_ResumeNode(struct torture_context *tctx,
 	struct policy_handle hNode;
 	bool ret = true;
 
-	if (!test_OpenNode_int(tctx, p, &hNode)) {
+	if (!test_OpenNode_int(tctx, p, "NODE1", &hNode)) {
 		return false;
 	}
 
@@ -1166,7 +1209,7 @@ static bool test_EvictNode(struct torture_context *tctx,
 	struct policy_handle hNode;
 	bool ret = true;
 
-	if (!test_OpenNode_int(tctx, p, &hNode)) {
+	if (!test_OpenNode_int(tctx, p, "NODE1", &hNode)) {
 		return false;
 	}
 
@@ -1521,6 +1564,8 @@ struct torture_suite *torture_rpc_clusapi(TALLOC_CTX *mem_ctx)
 
 	torture_rpc_tcase_add_test(tcase, "OpenNode",
 				   test_OpenNode);
+	torture_rpc_tcase_add_test(tcase, "OpenNodeEx",
+				   test_OpenNodeEx);
 	torture_rpc_tcase_add_test(tcase, "CloseNode",
 				   test_CloseNode);
 	torture_rpc_tcase_add_test(tcase, "GetNodeState",
