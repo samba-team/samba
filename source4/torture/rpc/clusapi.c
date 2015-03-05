@@ -44,6 +44,30 @@ static bool test_OpenCluster_int(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_OpenClusterEx_int(struct torture_context *tctx,
+				   struct dcerpc_pipe *p,
+				   struct policy_handle *Cluster)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_OpenClusterEx r;
+	uint32_t lpdwGrantedAccess;
+	WERROR Status;
+
+	r.in.dwDesiredAccess = SEC_FLAG_MAXIMUM_ALLOWED;
+	r.out.lpdwGrantedAccess = &lpdwGrantedAccess;
+	r.out.Status = &Status;
+	r.out.hCluster = Cluster;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_OpenClusterEx_r(b, tctx, &r),
+		"OpenClusterEx failed");
+	torture_assert_werr_ok(tctx,
+		*r.out.Status,
+		"OpenClusterEx failed");
+
+	return true;
+}
+
 static bool test_CloseCluster_int(struct torture_context *tctx,
 				  struct dcerpc_pipe *p,
 				  struct policy_handle *Cluster)
@@ -74,6 +98,20 @@ static bool test_OpenCluster(struct torture_context *tctx,
 	struct policy_handle Cluster;
 
 	if (!test_OpenCluster_int(tctx, p, &Cluster)) {
+		return false;
+	}
+
+	test_CloseCluster_int(tctx, p, &Cluster);
+
+	return true;
+}
+
+static bool test_OpenClusterEx(struct torture_context *tctx,
+			       struct dcerpc_pipe *p)
+{
+	struct policy_handle Cluster;
+
+	if (!test_OpenClusterEx_int(tctx, p, &Cluster)) {
 		return false;
 	}
 
@@ -1334,6 +1372,8 @@ struct torture_suite *torture_rpc_clusapi(TALLOC_CTX *mem_ctx)
 
 	torture_rpc_tcase_add_test(tcase, "OpenCluster",
 				   test_OpenCluster);
+	torture_rpc_tcase_add_test(tcase, "OpenClusterEx",
+				   test_OpenClusterEx);
 	torture_rpc_tcase_add_test(tcase, "CloseCluster",
 				   test_CloseCluster);
 	torture_rpc_tcase_add_test(tcase, "SetClusterName",
