@@ -407,24 +407,10 @@ class NCReplica(NamingContext):
             self.rep_replUpToDateVector_cursors = []
 
     def dumpstr_to_be_deleted(self):
-        text=""
-        for repsFrom in self.rep_repsFrom:
-            if repsFrom.to_be_deleted:
-                if text:
-                    text = text + "\n%s" % repsFrom
-                else:
-                    text = "%s" % repsFrom
-        return text
+        return '\n'.join(str(x) for x in self.rep_repsFrom if x.to_be_deleted)
 
     def dumpstr_to_be_modified(self):
-        text=""
-        for repsFrom in self.rep_repsFrom:
-            if repsFrom.is_modified():
-                if text:
-                    text = text + "\n%s" % repsFrom
-                else:
-                    text = "%s" % repsFrom
-        return text
+        return '\n'.join(str(x) for x in self.rep_repsFrom if x.is_modified())
 
     def load_fsmo_roles(self, samdb):
         """Given an NC replica which has been discovered thru the nTDSDSA
@@ -682,10 +668,9 @@ class DirectoryServiceAgent(object):
 
     def add_needed_replica(self, rep):
         """Method to add a NC replica that "should be present" to the
-        needed_rep_table if not already in the table
+        needed_rep_table.
         """
-        if not rep.nc_dnstr in self.needed_rep_table.keys():
-            self.needed_rep_table[rep.nc_dnstr] = rep
+        self.needed_rep_table[rep.nc_dnstr] = rep
 
     def load_connection_table(self, samdb):
         """Method to load the nTDSConnections listed for DSA object.
@@ -758,33 +743,15 @@ class DirectoryServiceAgent(object):
 
     def dumpstr_current_replica_table(self):
         '''Debug dump string output of current replica table'''
-        text=""
-        for k in self.current_rep_table.keys():
-            if text:
-                text = text + "\n%s" % self.current_rep_table[k]
-            else:
-                text = "%s" % self.current_rep_table[k]
-        return text
+        return '\n'.join(str(x) for x in self.current_rep_table)
 
     def dumpstr_needed_replica_table(self):
         '''Debug dump string output of needed replica table'''
-        text=""
-        for k in self.needed_rep_table.keys():
-            if text:
-                text = text + "\n%s" % self.needed_rep_table[k]
-            else:
-                text = "%s" % self.needed_rep_table[k]
-        return text
+        return '\n'.join(str(x) for x in self.needed_rep_table)
 
     def dumpstr_connect_table(self):
         '''Debug dump string output of connect table'''
-        text=""
-        for k in self.connect_table.keys():
-            if text:
-                text = text + "\n%s" % self.connect_table[k]
-            else:
-                text = "%s" % self.connect_table[k]
-        return text
+        return '\n'.join(str(x) for x in self.connect_table)
 
     def new_connection(self, options, flags, transport, from_dnstr, sched):
         """Set up a new connection for the DSA based on input
