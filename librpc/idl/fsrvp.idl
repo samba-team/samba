@@ -38,7 +38,6 @@ import "misc.idl";
 
 	const uint32 FSRVP_RPC_VERSION_1 = 0x000000001;
 	DWORD fss_GetSupportedVersion(
-		[in] uint8 magic[52],		/* wire */
 		[out] uint32 *MinVersion,
 		[out] uint32 *MaxVersion);
 
@@ -82,7 +81,6 @@ import "misc.idl";
 
 	DWORD fss_IsPathSupported(
 		[in] [string,charset(UTF16)] uint16 *ShareName,
-		[in] uint8 magic[52],				/* wire */
 		[out] boolean32 *SupportedByThisProvider,
 		[out] [string,charset(UTF16)] uint16 **OwnerMachineName);
 

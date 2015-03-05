@@ -48,14 +48,6 @@
 #define FSHARE	"fsrvp_share"
 #define FNAME	"testfss.dat"
 
-uint8_t fsrvp_magic[] = {0x8a, 0xe3, 0x13, 0x71, 0x02, 0xf4, 0x36, 0x71,
-			 0x02, 0x40, 0x28, 0x00, 0x3c, 0x65, 0xe0, 0xa8,
-			 0x44, 0x27, 0x89, 0x43, 0xa6, 0x1d, 0x73, 0x73,
-			 0xdf, 0x8b, 0x22, 0x92, 0x01, 0x00, 0x00, 0x00,
-			 0x33, 0x05, 0x71, 0x71, 0xba, 0xbe, 0x37, 0x49,
-			 0x83, 0x19, 0xb5, 0xdb, 0xef, 0x9c, 0xcc, 0x36,
-			 0x01, 0x00, 0x00, 0x00};
-
 static bool test_fsrvp_is_path_supported(struct torture_context *tctx,
 					 struct dcerpc_pipe *p)
 {
@@ -67,17 +59,6 @@ static bool test_fsrvp_is_path_supported(struct torture_context *tctx,
 	r.in.ShareName = talloc_asprintf(tctx,"\\\\%s\\%s\\",
 					 dcerpc_server_name(p),
 					 FSHARE);
-	/* win8 beta sends this */
-	memcpy(r.in.magic, fsrvp_magic, sizeof(fsrvp_magic));
-	status = dcerpc_fss_IsPathSupported_r(b, tctx, &r);
-	torture_assert_ntstatus_ok(tctx, status,
-				   "IsPathSupported failed");
-
-	ZERO_STRUCT(r);
-	r.in.ShareName = talloc_asprintf(tctx,"\\\\%s\\%s\\",
-					 dcerpc_server_name(p),
-					 FSHARE);
-	/* also works without magic */
 	status = dcerpc_fss_IsPathSupported_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status,
 				   "IsPathSupported failed");
@@ -99,17 +80,9 @@ static bool test_fsrvp_get_version(struct torture_context *tctx,
 	NTSTATUS status;
 
 	ZERO_STRUCT(r);
-	/* win8 beta sends this */
-	memcpy(r.in.magic, fsrvp_magic, sizeof(fsrvp_magic));
 	status = dcerpc_fss_GetSupportedVersion_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status,
-				   "GetSupportedVersion failed with magic");
-
-	ZERO_STRUCT(r);
-	/* also works without magic */
-	status = dcerpc_fss_GetSupportedVersion_r(b, tctx, &r);
-	torture_assert_ntstatus_ok(tctx, status,
-				   "GetSupportedVersion failed without magic");
+				   "GetSupportedVersion failed");
 
 	torture_comment(tctx, "got MinVersion %u\n", *r.out.MinVersion);
 	torture_comment(tctx, "got MaxVersion %u\n", *r.out.MaxVersion);
@@ -172,7 +145,7 @@ static bool test_fsrvp_sc_create(struct torture_context *tctx,
 	 */
 	dcerpc_binding_handle_set_timeout(b, 240);
 
-	ZERO_STRUCT(r_pathsupport_get);	/* sending with zeroed magic */
+	ZERO_STRUCT(r_pathsupport_get);
 	r_pathsupport_get.in.ShareName = share;
 	status = dcerpc_fss_IsPathSupported_r(b, tmp_ctx, &r_pathsupport_get);
 	torture_assert_ntstatus_ok(tctx, status,
@@ -182,10 +155,10 @@ static bool test_fsrvp_sc_create(struct torture_context *tctx,
 	torture_assert(tctx, r_pathsupport_get.out.SupportedByThisProvider,
 		       "path not supported");
 
-	ZERO_STRUCT(r_version_get);	/* sending with zeroed magic */
+	ZERO_STRUCT(r_version_get);
 	status = dcerpc_fss_GetSupportedVersion_r(b, tmp_ctx, &r_version_get);
 	torture_assert_ntstatus_ok(tctx, status,
-				   "GetSupportedVersion failed without magic");
+				   "GetSupportedVersion failed");
 	torture_assert_int_equal(tctx, r_version_get.out.result, 0,
 				 "failed GetSupportedVersion response");
 
@@ -434,7 +407,7 @@ static bool test_fsrvp_sc_set_abort(struct torture_context *tctx,
 	NTSTATUS status;
 	TALLOC_CTX *tmp_ctx = talloc_new(tctx);
 
-	ZERO_STRUCT(r_pathsupport_get);	/* sending with zeroed magic */
+	ZERO_STRUCT(r_pathsupport_get);
 	r_pathsupport_get.in.ShareName = share_unc;
 	status = dcerpc_fss_IsPathSupported_r(b, tmp_ctx, &r_pathsupport_get);
 	torture_assert_ntstatus_ok(tctx, status,
@@ -442,10 +415,10 @@ static bool test_fsrvp_sc_set_abort(struct torture_context *tctx,
 	torture_assert(tctx, r_pathsupport_get.out.SupportedByThisProvider,
 		       "path not supported");
 
-	ZERO_STRUCT(r_version_get);	/* sending with zeroed magic */
+	ZERO_STRUCT(r_version_get);
 	status = dcerpc_fss_GetSupportedVersion_r(b, tmp_ctx, &r_version_get);
 	torture_assert_ntstatus_ok(tctx, status,
-				   "GetSupportedVersion failed without magic");
+				   "GetSupportedVersion failed");
 
 	ZERO_STRUCT(r_context_set);
 	r_context_set.in.Context = FSRVP_CTX_BACKUP;
