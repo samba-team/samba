@@ -69,9 +69,9 @@ static void winbindd_sid_to_uid_done(struct tevent_req *subreq)
 	struct winbindd_sid_to_uid_state *state = tevent_req_data(
 		req, struct winbindd_sid_to_uid_state);
 	NTSTATUS status;
-	struct unixid xid;
+	struct unixid xids[1];
 
-	status = wb_sids2xids_recv(subreq, &xid);
+	status = wb_sids2xids_recv(subreq, xids, ARRAY_SIZE(xids));
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		return;
@@ -83,12 +83,12 @@ static void winbindd_sid_to_uid_done(struct tevent_req *subreq)
 	 * by lookupsids). Here we need to filter for the type of object
 	 * actually requested, in this case uid.
 	 */
-	if (!(xid.type == ID_TYPE_UID || xid.type == ID_TYPE_BOTH)) {
+	if (!(xids[0].type == ID_TYPE_UID || xids[0].type == ID_TYPE_BOTH)) {
 		tevent_req_nterror(req, NT_STATUS_NONE_MAPPED);
 		return;
 	}
 
-	state->uid = (uid_t)xid.id;
+	state->uid = (uid_t)xids[0].id;
 	tevent_req_done(req);
 }
 

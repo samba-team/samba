@@ -155,7 +155,7 @@ static void winbindd_getgroups_sid2gid_done(struct tevent_req *subreq)
 		xids[i].id = UINT32_MAX;
 	}
 
-	status = wb_sids2xids_recv(subreq, xids);
+	status = wb_sids2xids_recv(subreq, xids, state->num_sids);
 	TALLOC_FREE(subreq);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NONE_MAPPED) ||
 	    NT_STATUS_EQUAL(status, STATUS_SOME_UNMAPPED))

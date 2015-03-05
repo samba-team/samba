@@ -253,7 +253,7 @@ static void wb_sids2xids_done(struct tevent_req *subreq)
 }
 
 NTSTATUS wb_sids2xids_recv(struct tevent_req *req,
-			   struct unixid *xids)
+			   struct unixid xids[], uint32_t num_xids)
 {
 	struct wb_sids2xids_state *state = tevent_req_data(
 		req, struct wb_sids2xids_state);
@@ -263,6 +263,12 @@ NTSTATUS wb_sids2xids_recv(struct tevent_req *req,
 	if (tevent_req_is_nterror(req, &status)) {
 		DEBUG(5, ("wb_sids_to_xids failed: %s\n", nt_errstr(status)));
 		return status;
+	}
+
+	if (num_xids != state->num_sids) {
+		DEBUG(1, ("%s: Have %u xids, caller wants %u\n", __func__,
+			  (unsigned)state->num_sids, num_xids));
+		return NT_STATUS_INTERNAL_ERROR;
 	}
 
 	num_non_cached = 0;
