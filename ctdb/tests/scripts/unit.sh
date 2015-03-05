@@ -150,6 +150,12 @@ result_check ()
     result_footer "$_passed"
 }
 
+test_fail ()
+{
+    _passed=false
+    return 1
+}
+
 local="${TEST_SUBDIR}/scripts/local.sh"
 if [ -r "$local" ] ; then
     . "$local"

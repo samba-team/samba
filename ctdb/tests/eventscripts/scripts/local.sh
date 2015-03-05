@@ -533,7 +533,7 @@ default via $_gw dev $_dev "
 EOF
 
 	simple_test_command dump_routes
-    }
+    } || test_fail
 }
 
 ######################################################################
@@ -569,7 +569,7 @@ check_ctdb_tdb_statd_state ()
     ctdb_catdb_format_pairs | {
 	ok
 	simple_test_command ctdb catdb ctdb.tdb
-    }
+    } || test_fail
 }
 
 check_statd_callout_smnotify ()
@@ -592,7 +592,7 @@ EOF
     done | {
 	ok
 	simple_test_event "notify"
-    }
+    } || test_fail
 }
 
 ######################################################################
