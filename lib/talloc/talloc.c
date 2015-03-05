@@ -991,7 +991,13 @@ static inline int _talloc_free_internal(void *ptr, const char *location)
 		}
 		tc->destructor = (talloc_destructor_t)-1;
 		if (d(ptr) == -1) {
-			tc->destructor = d;
+			/*
+			 * Only replace the destructor pointer if
+			 * calling the destructor didn't modify it.
+			 */
+			if (tc->destructor == (talloc_destructor_t)-1) {
+				tc->destructor = d;
+			}
 			return -1;
 		}
 		tc->destructor = NULL;
