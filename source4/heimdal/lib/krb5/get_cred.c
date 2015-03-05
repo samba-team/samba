@@ -839,7 +839,6 @@ get_cred_kdc_capath_worker(krb5_context context,
 	ret = krb5_make_principal(context, &tmp_creds.server,
 				  tgt_inst, KRB5_TGS_NAME, server_realm, NULL);
 	if(ret) {
-	    krb5_free_principal(context, tmp_creds.server);
 	    krb5_free_principal(context, tmp_creds.client);
 	    return ret;
 	}
