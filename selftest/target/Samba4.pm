@@ -1978,11 +1978,11 @@ sub setup_env($$$)
 		return $self->setup_ad_dc("$path/ad_dc");
 	} elsif ($envname eq "ad_dc_no_nss") {
 		return $self->setup_ad_dc("$path/ad_dc_no_nss", "no_nss");
-	} elsif ($envname eq "s3member_rfc2307") {
+	} elsif ($envname eq "ad_member_rfc2307") {
 		if (not defined($self->{vars}->{ad_dc_ntvfs})) {
 			$self->setup_ad_dc_ntvfs("$path/ad_dc_ntvfs");
 		}
-		return $target3->setup_admember_rfc2307("$path/s3member_rfc2307",
+		return $target3->setup_admember_rfc2307("$path/ad_member_rfc2307",
 							$self->{vars}->{ad_dc_ntvfs}, 34);
 	} else {
 		return "UNKNOWN";
