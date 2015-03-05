@@ -2274,7 +2274,7 @@ sub setup_rodc($$$)
 
 sub setup_plugin_s4_dc($$)
 {
-	my ($self, $path) = @_;
+	my ($self, $path, $no_nss) = @_;
 
 	# If we didn't build with ADS, pretend this env was never available
 	if (not $self->{target3}->have_ads()) {
@@ -2284,6 +2284,11 @@ sub setup_plugin_s4_dc($$)
 	my $env = $self->provision_plugin_s4_dc($path);
 	unless ($env) {
 		return undef;
+	}
+
+	if (defined($no_nss) and $no_nss) {
+		$env->{NSS_WRAPPER_MODULE_SO_PATH} = undef;
+		$env->{NSS_WRAPPER_MODULE_FN_PREFIX} = undef;
 	}
 
 	$self->check_or_start($env, "single");
