@@ -265,7 +265,7 @@ if not opts.list:
         if opts.socket_wrapper and not has_socket_wrapper(opts.bindir):
             sys.stderr.write("You must include --enable-socket-wrapper when compiling Samba in order to execute 'make test'.  Exiting....\n")
             sys.exit(1)
-        testenv_default = "dc"
+        testenv_default = "ad_dc_ntvfs"
         from selftest.target.samba import Samba
         target = Samba(opts.bindir, binary_mapping, ldap, opts.srcdir, server_maxtime)
     elif opts.target == "samba3":

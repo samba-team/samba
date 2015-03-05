@@ -60,7 +60,7 @@ planpythontestsuite("none", "samba.tests.strings")
 planpythontestsuite("none", "samba.tests.netcmd")
 planpythontestsuite("none", "samba.tests.dcerpc.rpc_talloc")
 planpythontestsuite("none", "samba.tests.hostconfig")
-planpythontestsuite("dc:local", "samba.tests.messaging")
+planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.messaging")
 planpythontestsuite("none", "samba.tests.samba3sam")
 planpythontestsuite(
     "none", "wafsamba.tests.test_suite",

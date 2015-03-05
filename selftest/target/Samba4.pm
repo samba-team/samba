@@ -1434,11 +1434,11 @@ sub provision_subdom_dc($$$)
 	return $ret;
 }
 
-sub provision_dc($$)
+sub provision_ad_dc_ntvfs($$)
 {
 	my ($self, $prefix) = @_;
 
-	print "PROVISIONING DC...";
+	print "PROVISIONING AD DC (NTVFS)...";
         my $extra_conf_options = "netbios aliases = localDC1-a
         server services = +winbind -winbindd";
 	my $ret = $self->provision($prefix,
@@ -1929,8 +1929,8 @@ sub setup_env($$$)
 	        return $self->{vars}->{$envname};
 	}
 
-	if ($envname eq "dc") {
-		return $self->setup_dc("$path/dc");
+	if ($envname eq "ad_dc_ntvfs") {
+		return $self->setup_ad_dc_ntvfs("$path/ad_dc_ntvfs");
 	} elsif ($envname eq "fl2000dc") {
 		return $self->setup_fl2000dc("$path/fl2000dc");
 	} elsif ($envname eq "fl2003dc") {
@@ -1938,52 +1938,52 @@ sub setup_env($$$)
 	} elsif ($envname eq "fl2008r2dc") {
 		return $self->setup_fl2008r2dc("$path/fl2008r2dc");
 	} elsif ($envname eq "rpc_proxy") {
-		if (not defined($self->{vars}->{dc})) {
-			$self->setup_dc("$path/dc");
+		if (not defined($self->{vars}->{ad_dc_ntvfs})) {
+			$self->setup_ad_dc_ntvfs("$path/ad_dc_ntvfs");
 		}
-		return $self->setup_rpc_proxy("$path/rpc_proxy", $self->{vars}->{dc});
+		return $self->setup_rpc_proxy("$path/rpc_proxy", $self->{vars}->{ad_dc_ntvfs});
 	} elsif ($envname eq "vampire_dc") {
-		if (not defined($self->{vars}->{dc})) {
-			$self->setup_dc("$path/dc");
+		if (not defined($self->{vars}->{ad_dc_ntvfs})) {
+			$self->setup_ad_dc_ntvfs("$path/ad_dc_ntvfs");
 		}
-		return $self->setup_vampire_dc("$path/vampire_dc", $self->{vars}->{dc});
+		return $self->setup_vampire_dc("$path/vampire_dc", $self->{vars}->{ad_dc_ntvfs});
 	} elsif ($envname eq "promoted_dc") {
-		if (not defined($self->{vars}->{dc})) {
-			$self->setup_dc("$path/dc");
+		if (not defined($self->{vars}->{ad_dc_ntvfs})) {
+			$self->setup_ad_dc_ntvfs("$path/ad_dc_ntvfs");
 		}
-		return $self->setup_promoted_dc("$path/promoted_dc", $self->{vars}->{dc});
+		return $self->setup_promoted_dc("$path/promoted_dc", $self->{vars}->{ad_dc_ntvfs});
 	} elsif ($envname eq "subdom_dc") {
-		if (not defined($self->{vars}->{dc})) {
-			$self->setup_dc("$path/dc");
+		if (not defined($self->{vars}->{ad_dc_ntvfs})) {
+			$self->setup_ad_dc_ntvfs("$path/ad_dc_ntvfs");
 		}
-		return $self->setup_subdom_dc("$path/subdom_dc", $self->{vars}->{dc});
+		return $self->setup_subdom_dc("$path/subdom_dc", $self->{vars}->{ad_dc_ntvfs});
 	} elsif ($envname eq "s4member") {
-		if (not defined($self->{vars}->{dc})) {
-			$self->setup_dc("$path/dc");
+		if (not defined($self->{vars}->{ad_dc_ntvfs})) {
+			$self->setup_ad_dc_ntvfs("$path/ad_dc_ntvfs");
 		}
-		return $self->setup_s4member("$path/s4member", $self->{vars}->{dc});
+		return $self->setup_s4member("$path/s4member", $self->{vars}->{ad_dc_ntvfs});
 	} elsif ($envname eq "rodc") {
-		if (not defined($self->{vars}->{dc})) {
-			$self->setup_dc("$path/dc");
+		if (not defined($self->{vars}->{ad_dc_ntvfs})) {
+			$self->setup_ad_dc_ntvfs("$path/ad_dc_ntvfs");
 		}
-		return $self->setup_rodc("$path/rodc", $self->{vars}->{dc});
+		return $self->setup_rodc("$path/rodc", $self->{vars}->{ad_dc_ntvfs});
 	} elsif ($envname eq "chgdcpass") {
 		return $self->setup_chgdcpass("$path/chgdcpass", $self->{vars}->{chgdcpass});
 	} elsif ($envname eq "s3member") {
-		if (not defined($self->{vars}->{dc})) {
-			$self->setup_dc("$path/dc");
+		if (not defined($self->{vars}->{ad_dc_ntvfs})) {
+			$self->setup_ad_dc_ntvfs("$path/ad_dc_ntvfs");
 		}
-		return $target3->setup_admember("$path/s3member", $self->{vars}->{dc}, 29);
+		return $target3->setup_admember("$path/s3member", $self->{vars}->{ad_dc_ntvfs}, 29);
 	} elsif ($envname eq "ad_dc") {
 		return $self->setup_ad_dc("$path/ad_dc");
 	} elsif ($envname eq "ad_dc_no_nss") {
 		return $self->setup_ad_dc("$path/ad_dc_no_nss", "no_nss");
 	} elsif ($envname eq "s3member_rfc2307") {
-		if (not defined($self->{vars}->{dc})) {
-			$self->setup_dc("$path/dc");
+		if (not defined($self->{vars}->{ad_dc_ntvfs})) {
+			$self->setup_ad_dc_ntvfs("$path/ad_dc_ntvfs");
 		}
 		return $target3->setup_admember_rfc2307("$path/s3member_rfc2307",
-							$self->{vars}->{dc}, 34);
+							$self->{vars}->{ad_dc_ntvfs}, 34);
 	} else {
 		return "UNKNOWN";
 	}
@@ -2022,17 +2022,17 @@ sub setup_rpc_proxy($$$)
 	return $env;
 }
 
-sub setup_dc($$)
+sub setup_ad_dc_ntvfs($$)
 {
 	my ($self, $path) = @_;
 
-	my $env = $self->provision_dc($path);
+	my $env = $self->provision_ad_dc_ntvfs($path);
 	if (defined $env) {
 		$self->check_or_start($env, "standard");
 
 		$self->wait_for_start($env);
 
-		$self->{vars}->{dc} = $env;
+		$self->{vars}->{ad_dc_ntvfs} = $env;
 	}
 	return $env;
 }

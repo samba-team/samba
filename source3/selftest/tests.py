@@ -66,7 +66,7 @@ for t in tests:
         # this is a negative test to verify that the server rejects
         # access without encryption
         plantestsuite("samba3.smbtorture_s3.crypt_server(s3dc).%s" % t, "s3dc", [os.path.join(samba3srcdir, "script/tests/test_smbtorture_s3.sh"), t, '//$SERVER_IP/tmpenc', '$USERNAME', '$PASSWORD', smbtorture3, "", "-l $LOCAL_PATH"])
-    plantestsuite("samba3.smbtorture_s3.plain(dc).%s" % t, "dc", [os.path.join(samba3srcdir, "script/tests/test_smbtorture_s3.sh"), t, '//$SERVER_IP/tmp', '$USERNAME', '$PASSWORD', smbtorture3, "", "-l $LOCAL_PATH"])
+    plantestsuite("samba3.smbtorture_s3.plain(ad_dc_ntvfs).%s" % t, "ad_dc_ntvfs", [os.path.join(samba3srcdir, "script/tests/test_smbtorture_s3.sh"), t, '//$SERVER_IP/tmp', '$USERNAME', '$PASSWORD', smbtorture3, "", "-l $LOCAL_PATH"])
 
 # non-crypt only
 
@@ -83,7 +83,7 @@ posix_tests = ["POSIX", "POSIX-APPEND"]
 for t in posix_tests:
     plantestsuite("samba3.smbtorture_s3.plain(s3dc).%s" % t, "s3dc", [os.path.join(samba3srcdir, "script/tests/test_smbtorture_s3.sh"), t, '//$SERVER_IP/posix_share', '$USERNAME', '$PASSWORD', smbtorture3, "", "-l $LOCAL_PATH"])
     plantestsuite("samba3.smbtorture_s3.crypt(s3dc).%s" % t, "s3dc", [os.path.join(samba3srcdir, "script/tests/test_smbtorture_s3.sh"), t, '//$SERVER_IP/posix_share', '$USERNAME', '$PASSWORD', smbtorture3, "-e", "-l $LOCAL_PATH"])
-    plantestsuite("samba3.smbtorture_s3.plain(dc).%s" % t, "dc", [os.path.join(samba3srcdir, "script/tests/test_smbtorture_s3.sh"), t, '//$SERVER_IP/posix_share', '$USERNAME', '$PASSWORD', smbtorture3, "", "-l $LOCAL_PATH"])
+    plantestsuite("samba3.smbtorture_s3.plain(ad_dc_ntvfs).%s" % t, "ad_dc_ntvfs", [os.path.join(samba3srcdir, "script/tests/test_smbtorture_s3.sh"), t, '//$SERVER_IP/posix_share', '$USERNAME', '$PASSWORD', smbtorture3, "", "-l $LOCAL_PATH"])
 
 env = "s3dc:local"
 t = "CLEANUP3"
@@ -127,7 +127,7 @@ for options in ["--option=clientusespnego=no", " --option=clientntlmv2auth=no --
     env = "s3dc"
     plantestsuite("samba3.blackbox.smbclient_auth.plain (%s) %s" % (env, options), env, [os.path.join(samba3srcdir, "script/tests/test_smbclient_auth.sh"), '$SERVER', '$SERVER_IP', '$DC_USERNAME', '$DC_PASSWORD', smbclient3, configuration, options])
 
-for env in ["s3dc", "member", "s3member", "dc", "s4member"]:
+for env in ["s3dc", "member", "s3member", "ad_dc_ntvfs", "s4member"]:
     plantestsuite("samba3.blackbox.smbclient_machine_auth.plain (%s:local)" % env, "%s:local" % env, [os.path.join(samba3srcdir, "script/tests/test_smbclient_machine_auth.sh"), '$SERVER', smbclient3, configuration])
 
 for env in ["s3dc", "member", "s3member"]:
@@ -379,7 +379,7 @@ for t in tests:
         plansmbtorture4testsuite(t, "s3dc_schannel", '//$SERVER_IP/tmp -U$%', description="anonymous password set (schannel enforced server-side)")
         plansmbtorture4testsuite(t, "ad_dc", '//$SERVER/tmp -U$%', description="anonymous password set")
     elif t == "local.nss":
-        for env in ["s3dc:local", "s3member:local", "member:local", "ad_dc:local", "dc:local"]:
+        for env in ["s3dc:local", "s3member:local", "member:local", "ad_dc:local", "ad_dc_ntvfs:local"]:
             plansmbtorture4testsuite(t, env, '//$SERVER/tmp -U$USERNAME%$PASSWORD')
     else:
         plansmbtorture4testsuite(t, "s3dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD')

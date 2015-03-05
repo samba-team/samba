@@ -41,7 +41,7 @@ class DsdbTests(TestCase):
             session_info=self.session, credentials=self.creds,lp=self.lp)
 
     def baseprovpath(self):
-        return os.path.join(os.environ['SELFTEST_PREFIX'], "dc")
+        return os.path.join(os.environ['SELFTEST_PREFIX'], "ad_dc_ntvfs")
 
     def test_get_oid_from_attrid(self):
         oid = self.samdb.get_oid_from_attid(591614)

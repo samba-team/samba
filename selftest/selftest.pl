@@ -435,7 +435,7 @@ if (defined($ENV{SMBD_MAXTIME}) and $ENV{SMBD_MAXTIME} ne "") {
 
 unless ($opt_list) {
 	if ($opt_target eq "samba") {
-		$testenv_default = "dc";
+		$testenv_default = "ad_dc_ntvfs";
 		require target::Samba;
 		$target = new Samba($bindir, \%binary_mapping, $ldap, $srcdir, $server_maxtime);
 	} elsif ($opt_target eq "samba3") {

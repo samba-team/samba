@@ -2,9 +2,9 @@
 # outside the test environment
 
 export UID_WRAPPER=1
-export NSS_WRAPPER_PASSWD=$PWD/st/dc/passwd
-export NSS_WRAPPER_GROUP=$PWD/st/dc/group
-export CONFIGURATION="--configfile=$PWD/st/dc/etc/smb.conf"
+export NSS_WRAPPER_PASSWD=$PWD/st/ad_dc_ntvfs/passwd
+export NSS_WRAPPER_GROUP=$PWD/st/ad_dc_ntvfs/group
+export CONFIGURATION="--configfile=$PWD/st/ad_dc_ntvfs/etc/smb.conf"
 export VAMPIRE_DC_SERVER=localvampiredc
 export VAMPIRE_DC_SERVER_IP=127.0.0.22
 export VAMPIRE_DC_NETBIOSNAME=localvampiredc1
@@ -22,7 +22,7 @@ export NETBIOSNAME=localdc1
 export REALM=SAMBA.EXAMPLE.COM
 export SOCKET_WRAPPER_DEFAULT_IFACE=21
 export SERVER=localdc1
-export SELFTEST_WINBINDD_SOCKET_DIR=$PWD/st/dc/winbindd_socket
+export SELFTEST_WINBINDD_SOCKET_DIR=$PWD/st/ad_dc_ntvfs/winbindd_socket
 export SELFTEST_PREFIX=$PWD/st
 export DOMAIN=SAMBADOMAIN
 export BINDIR=./bin
@@ -32,7 +32,7 @@ export SOCKET_WRAPPER_DIR=$PWD/st/w
 export DC_USERNAME=Administrator
 export USERNAME=Administrator
 export SERVER_IP=127.0.0.21
-export KRB5_CONFIG=$PWD/st/dc/etc/krb5.conf
+export KRB5_CONFIG=$PWD/st/ad_dc_ntvfs/etc/krb5.conf
 export PREFIX_ABS=$PWD/st
 export SRCDIR_ABS=$PWD
 export PREFIX=$PWD/st
@@ -46,4 +46,4 @@ export DC_PASSWORD=locDCpass1
 export PYTHONPATH=$PWD/bin/python
 export PASSWORD=locDCpass1
 export NETBIOSALIAS=localdc
-export SMB_CONF_PATH=$PWD/st/dc/etc/smb.conf
+export SMB_CONF_PATH=$PWD/st/ad_dc_ntvfs/etc/smb.conf
