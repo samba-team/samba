@@ -1220,6 +1220,68 @@ static bool test_EvictNode(struct torture_context *tctx,
 	return ret;
 }
 
+static bool test_one_node(struct torture_context *tctx,
+			  struct dcerpc_pipe *p,
+			  const char *node_name)
+{
+	struct policy_handle hNode;
+
+	torture_assert(tctx,
+		test_OpenNode_int(tctx, p, node_name, &hNode),
+		"failed to open node");
+	test_CloseNode_int(tctx, p, &hNode);
+
+	torture_assert(tctx,
+		test_OpenNodeEx_int(tctx, p, node_name, &hNode),
+		"failed to openex node");
+
+	torture_assert(tctx,
+		test_GetNodeId_int(tctx, p, &hNode),
+		"failed to query node id");
+	torture_assert(tctx,
+		test_GetNodeState_int(tctx, p, &hNode),
+		"failed to query node id");
+
+	test_CloseNode_int(tctx, p, &hNode);
+
+	return true;
+}
+
+static bool test_all_nodes(struct torture_context *tctx,
+			   struct dcerpc_pipe *p)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_CreateEnum r;
+	uint32_t dwType = CLUSTER_ENUM_NODE;
+	struct ENUM_LIST *ReturnEnum;
+	WERROR rpc_status;
+	int i;
+
+	r.in.dwType = dwType;
+	r.out.ReturnEnum = &ReturnEnum;
+	r.out.rpc_status = &rpc_status;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_CreateEnum_r(b, tctx, &r),
+		"CreateEnum failed");
+	torture_assert_werr_ok(tctx,
+		r.out.result,
+		"CreateEnum failed");
+
+	for (i=0; i < ReturnEnum->EntryCount; i++) {
+
+		struct ENUM_ENTRY e = ReturnEnum->Entry[i];
+
+		torture_assert_int_equal(tctx, e.Type, CLUSTER_ENUM_NODE, "type mismatch");
+
+		torture_assert(tctx,
+			test_one_node(tctx, p, e.Name),
+			"failed to test one node");
+	}
+
+	return true;
+}
+
 static bool test_OpenGroup_int(struct torture_context *tctx,
 			       struct dcerpc_pipe *p,
 			       const char *lpszGroupName,
@@ -1580,6 +1642,8 @@ struct torture_suite *torture_rpc_clusapi(TALLOC_CTX *mem_ctx)
 	test = torture_rpc_tcase_add_test(tcase, "EvictNode",
 					  test_EvictNode);
 	test->dangerous = true;
+	torture_rpc_tcase_add_test(tcase, "all_nodes",
+				   test_all_nodes);
 
 	tcase = torture_suite_add_rpc_iface_tcase(suite, "group",
 						  &ndr_table_clusapi);
