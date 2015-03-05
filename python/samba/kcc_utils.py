@@ -493,10 +493,7 @@ class DirectoryServiceAgent(object):
         return text
 
     def get_current_replica(self, nc_dnstr):
-        if nc_dnstr in self.current_rep_table.keys():
-            return self.current_rep_table[nc_dnstr]
-        else:
-            return None
+        return self.current_rep_table.get(nc_dnstr)
 
     def is_istg(self):
         '''Returns True if dsa is intersite topology generator for it's site'''
