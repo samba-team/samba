@@ -1556,6 +1556,67 @@ static bool test_OfflineGroup(struct torture_context *tctx,
 	return ret;
 }
 
+static bool test_one_group(struct torture_context *tctx,
+			   struct dcerpc_pipe *p,
+			   const char *node_name)
+{
+	struct policy_handle hGroup;
+
+	torture_assert(tctx,
+		test_OpenGroup_int(tctx, p, node_name, &hGroup),
+		"failed to open group");
+	test_CloseGroup_int(tctx, p, &hGroup);
+
+	torture_assert(tctx,
+		test_OpenGroupEx_int(tctx, p, node_name, &hGroup),
+		"failed to openex group");
+
+	torture_assert(tctx,
+		test_GetGroupId_int(tctx, p, &hGroup),
+		"failed to query group id");
+	torture_assert(tctx,
+		test_GetGroupState_int(tctx, p, &hGroup),
+		"failed to query group id");
+
+	test_CloseGroup_int(tctx, p, &hGroup);
+
+	return true;
+}
+
+static bool test_all_groups(struct torture_context *tctx,
+			    struct dcerpc_pipe *p)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_CreateEnum r;
+	uint32_t dwType = CLUSTER_ENUM_GROUP;
+	struct ENUM_LIST *ReturnEnum;
+	WERROR rpc_status;
+	int i;
+
+	r.in.dwType = dwType;
+	r.out.ReturnEnum = &ReturnEnum;
+	r.out.rpc_status = &rpc_status;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_CreateEnum_r(b, tctx, &r),
+		"CreateEnum failed");
+	torture_assert_werr_ok(tctx,
+		r.out.result,
+		"CreateEnum failed");
+
+	for (i=0; i < ReturnEnum->EntryCount; i++) {
+
+		struct ENUM_ENTRY e = ReturnEnum->Entry[i];
+
+		torture_assert_int_equal(tctx, e.Type, CLUSTER_ENUM_GROUP, "type mismatch");
+
+		torture_assert(tctx,
+			test_one_group(tctx, p, e.Name),
+			"failed to test one group");
+	}
+
+	return true;
+}
 
 struct torture_suite *torture_rpc_clusapi(TALLOC_CTX *mem_ctx)
 {
@@ -1663,6 +1724,8 @@ struct torture_suite *torture_rpc_clusapi(TALLOC_CTX *mem_ctx)
 	test = torture_rpc_tcase_add_test(tcase, "OfflineGroup",
 				   test_OfflineGroup);
 	test->dangerous = true;
+	torture_rpc_tcase_add_test(tcase, "all_groups",
+				   test_all_groups);
 
 	return suite;
 }
