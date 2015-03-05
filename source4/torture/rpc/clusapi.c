@@ -1104,6 +1104,165 @@ static bool test_CloseGroup(struct torture_context *tctx,
 	return test_CloseGroup_int(tctx, p, &hGroup);
 }
 
+static bool test_GetGroupState_int(struct torture_context *tctx,
+				   struct dcerpc_pipe *p,
+				   struct policy_handle *hGroup)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_GetGroupState r;
+	enum clusapi_ClusterGroupState State;
+	const char *NodeName;
+	WERROR rpc_status;
+
+	r.in.hGroup = *hGroup;
+	r.out.State = &State;
+	r.out.NodeName = &NodeName;
+	r.out.rpc_status = &rpc_status;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_GetGroupState_r(b, tctx, &r),
+		"GetGroupState failed");
+	torture_assert_werr_ok(tctx,
+		r.out.result,
+		"GetGroupState failed");
+
+	return true;
+}
+
+static bool test_GetGroupState(struct torture_context *tctx,
+			       struct dcerpc_pipe *p)
+{
+	struct policy_handle hGroup;
+	bool ret = true;
+
+	if (!test_OpenGroup_int(tctx, p, &hGroup)) {
+		return false;
+	}
+
+	ret = test_GetGroupState_int(tctx, p, &hGroup);
+
+	test_CloseGroup_int(tctx, p, &hGroup);
+
+	return ret;
+}
+
+static bool test_GetGroupId_int(struct torture_context *tctx,
+				struct dcerpc_pipe *p,
+				struct policy_handle *hGroup)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_GetGroupId r;
+	const char *pGuid;
+	WERROR rpc_status;
+
+	r.in.hGroup = *hGroup;
+	r.out.pGuid = &pGuid;
+	r.out.rpc_status = &rpc_status;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_GetGroupId_r(b, tctx, &r),
+		"GetGroupId failed");
+	torture_assert_werr_ok(tctx,
+		r.out.result,
+		"GetGroupId failed");
+
+	return true;
+}
+
+static bool test_GetGroupId(struct torture_context *tctx,
+			    struct dcerpc_pipe *p)
+{
+	struct policy_handle hGroup;
+	bool ret = true;
+
+	if (!test_OpenGroup_int(tctx, p, &hGroup)) {
+		return false;
+	}
+
+	ret = test_GetGroupId_int(tctx, p, &hGroup);
+
+	test_CloseGroup_int(tctx, p, &hGroup);
+
+	return ret;
+}
+
+static bool test_OnlineGroup_int(struct torture_context *tctx,
+				 struct dcerpc_pipe *p,
+				 struct policy_handle *hGroup)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_OnlineGroup r;
+	WERROR rpc_status;
+
+	r.in.hGroup = *hGroup;
+	r.out.rpc_status = &rpc_status;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_OnlineGroup_r(b, tctx, &r),
+		"OnlineGroup failed");
+	torture_assert_werr_ok(tctx,
+		r.out.result,
+		"OnlineGroup failed");
+
+	return true;
+}
+
+static bool test_OnlineGroup(struct torture_context *tctx,
+			     struct dcerpc_pipe *p)
+{
+	struct policy_handle hGroup;
+	bool ret = true;
+
+	if (!test_OpenGroup_int(tctx, p, &hGroup)) {
+		return false;
+	}
+
+	ret = test_OnlineGroup_int(tctx, p, &hGroup);
+
+	test_CloseGroup_int(tctx, p, &hGroup);
+
+	return ret;
+}
+
+static bool test_OfflineGroup_int(struct torture_context *tctx,
+				  struct dcerpc_pipe *p,
+				  struct policy_handle *hGroup)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_OfflineGroup r;
+	WERROR rpc_status;
+
+	r.in.hGroup = *hGroup;
+	r.out.rpc_status = &rpc_status;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_OfflineGroup_r(b, tctx, &r),
+		"OfflineGroup failed");
+	torture_assert_werr_ok(tctx,
+		r.out.result,
+		"OfflineGroup failed");
+
+	return true;
+}
+
+static bool test_OfflineGroup(struct torture_context *tctx,
+				 struct dcerpc_pipe *p)
+{
+	struct policy_handle hGroup;
+	bool ret = true;
+
+	if (!test_OpenGroup_int(tctx, p, &hGroup)) {
+		return false;
+	}
+
+	ret = test_OfflineGroup_int(tctx, p, &hGroup);
+
+	test_CloseGroup_int(tctx, p, &hGroup);
+
+	return ret;
+}
+
+
 struct torture_suite *torture_rpc_clusapi(TALLOC_CTX *mem_ctx)
 {
 	struct torture_rpc_tcase *tcase;
@@ -1190,7 +1349,15 @@ struct torture_suite *torture_rpc_clusapi(TALLOC_CTX *mem_ctx)
 				   test_OpenGroup);
 	torture_rpc_tcase_add_test(tcase, "CloseGroup",
 				   test_CloseGroup);
-
+	torture_rpc_tcase_add_test(tcase, "GetGroupState",
+				   test_GetGroupState);
+	torture_rpc_tcase_add_test(tcase, "GetGroupId",
+				   test_GetGroupId);
+	torture_rpc_tcase_add_test(tcase, "OnlineGroup",
+				   test_OnlineGroup);
+	test = torture_rpc_tcase_add_test(tcase, "OfflineGroup",
+				   test_OfflineGroup);
+	test->dangerous = true;
 
 	return suite;
 }
