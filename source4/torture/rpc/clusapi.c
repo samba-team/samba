@@ -352,6 +352,34 @@ static bool test_OpenResource_int(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_OpenResourceEx_int(struct torture_context *tctx,
+				    struct dcerpc_pipe *p,
+				    const char *lpszResourceName,
+				    struct policy_handle *hResource)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_OpenResourceEx r;
+	uint32_t lpdwGrantedAccess;
+	WERROR Status;
+	WERROR rpc_status;
+
+	r.in.lpszResourceName = lpszResourceName;
+	r.in.dwDesiredAccess = SEC_FLAG_MAXIMUM_ALLOWED;
+	r.out.lpdwGrantedAccess = &lpdwGrantedAccess;
+	r.out.rpc_status = &rpc_status;
+	r.out.Status = &Status;
+	r.out.hResource = hResource;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_OpenResourceEx_r(b, tctx, &r),
+		"OpenResourceEx failed");
+	torture_assert_werr_ok(tctx,
+		*r.out.Status,
+		"OpenResourceEx failed");
+
+	return true;
+}
+
 static bool test_CloseResource_int(struct torture_context *tctx,
 				   struct dcerpc_pipe *p,
 				   struct policy_handle *hResource)
@@ -388,6 +416,21 @@ static bool test_OpenResource(struct torture_context *tctx,
 
 	return true;
 }
+
+static bool test_OpenResourceEx(struct torture_context *tctx,
+				struct dcerpc_pipe *p)
+{
+	struct policy_handle hResource;
+
+	if (!test_OpenResourceEx_int(tctx, p, "Cluster Name", &hResource)) {
+		return false;
+	}
+
+	test_CloseResource_int(tctx, p, &hResource);
+
+	return true;
+}
+
 
 static bool test_CloseResource(struct torture_context *tctx,
 			       struct dcerpc_pipe *p)
@@ -777,6 +820,11 @@ static bool test_one_resource(struct torture_context *tctx,
 	torture_assert(tctx,
 		test_OpenResource_int(tctx, p, resource_name, &hResource),
 		"failed to open resource");
+	test_CloseResource_int(tctx, p, &hResource);
+
+	torture_assert(tctx,
+		test_OpenResourceEx_int(tctx, p, resource_name, &hResource),
+		"failed to openex resource");
 
 	torture_assert(tctx,
 		test_GetResourceType_int(tctx, p, &hResource),
@@ -1400,6 +1448,8 @@ struct torture_suite *torture_rpc_clusapi(TALLOC_CTX *mem_ctx)
 				   test_SetQuorumResource);
 	torture_rpc_tcase_add_test(tcase, "OpenResource",
 				   test_OpenResource);
+	torture_rpc_tcase_add_test(tcase, "OpenResourceEx",
+				   test_OpenResourceEx);
 	torture_rpc_tcase_add_test(tcase, "CloseResource",
 				   test_CloseResource);
 	torture_rpc_tcase_add_test(tcase, "CreateResource",
