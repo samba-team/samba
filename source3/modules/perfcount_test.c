@@ -172,6 +172,10 @@ static void perfcount_test_dump_counters(void)
 	count_mod = lp_parm_int(0, PARM_PC_TEST_TYPE, PARM_DUMPON_COUNT,
 	    PARM_DUMPON_COUNT_DEFAULT);
 
+	if (count_mod == 0) {
+		return;
+	}
+
 	if ((count++ % count_mod) != 0)
 		return;
 
