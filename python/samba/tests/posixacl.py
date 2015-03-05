@@ -330,7 +330,7 @@ class PosixAclMappingTests(TestCaseInTempDir):
 
         s4_passdb = passdb.PDB(self.lp.get("passdb backend"))
 
-        # These assertions correct for current plugin_s4_dc selftest
+        # These assertions correct for current ad_dc selftest
         # configuration.  When other environments have a broad range of
         # groups mapped via passdb, we can relax some of these checks
         (LA_uid,LA_type) = s4_passdb.sid_to_id(LA_sid)
@@ -470,7 +470,7 @@ class PosixAclMappingTests(TestCaseInTempDir):
 
         s4_passdb = passdb.PDB(self.lp.get("passdb backend"))
 
-        # These assertions correct for current plugin_s4_dc selftest
+        # These assertions correct for current ad_dc selftest
         # configuration.  When other environments have a broad range of
         # groups mapped via passdb, we can relax some of these checks
         (LA_uid,LA_type) = s4_passdb.sid_to_id(LA_sid)
@@ -564,7 +564,7 @@ class PosixAclMappingTests(TestCaseInTempDir):
 
         s4_passdb = passdb.PDB(self.lp.get("passdb backend"))
 
-        # These assertions correct for current plugin_s4_dc selftest
+        # These assertions correct for current ad_dc selftest
         # configuration.  When other environments have a broad range of
         # groups mapped via passdb, we can relax some of these checks
         (LA_uid,LA_type) = s4_passdb.sid_to_id(LA_sid)
@@ -677,7 +677,7 @@ class PosixAclMappingTests(TestCaseInTempDir):
 
         s4_passdb = passdb.PDB(self.lp.get("passdb backend"))
 
-        # These assertions correct for current plugin_s4_dc selftest
+        # These assertions correct for current ad_dc selftest
         # configuration.  When other environments have a broad range of
         # groups mapped via passdb, we can relax some of these checks
         (LA_uid,LA_type) = s4_passdb.sid_to_id(LA_sid)

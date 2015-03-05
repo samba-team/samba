@@ -34,7 +34,7 @@
 ^samba3.smb2.rename.*.simple_nodelete
 ^samba3.smb2.rename.*.no_share_delete_no_delete_access
 ^samba3.blackbox.smbclient_machine_auth.plain \(s3dc:local\)# the S3dc does not currently set up a self-join
-^samba3.raw.samba3hide.samba3hide\((s3dc|plugin_s4_dc)\) # This test fails against an smbd environment with NT ACLs enabled
+^samba3.raw.samba3hide.samba3hide\((s3dc|ad_dc)\) # This test fails against an smbd environment with NT ACLs enabled
 ^samba3.raw.samba3closeerr.samba3closeerr\(s3dc\) # This test fails against an smbd environment with NT ACLs enabled
 ^samba3.raw.acls nfs4acl_xattr-simple.INHERITFLAGS\(s3dc\) # This (and the follow nfs4acl_xattr tests fail because our NFSv4 backend isn't a complete mapping yet.
 ^samba3.raw.acls nfs4acl_xattr-simple.sd\(s3dc\)
@@ -54,7 +54,7 @@
 ^samba3.raw.acls nfs4acl_xattr-special.inherit_creator_group\(s3dc\)
 ^samba3.base.delete.deltest16a
 ^samba3.base.delete.deltest17a
-^samba3.unix.whoami anonymous connection.whoami\(plugin_s4_dc\) # We need to resolve if we should be including SID_NT_WORLD and SID_NT_NETWORK in this token
+^samba3.unix.whoami anonymous connection.whoami\(ad_dc\) # We need to resolve if we should be including SID_NT_WORLD and SID_NT_NETWORK in this token
 ^samba3.unix.whoami anonymous connection.whoami\(s3member\) # smbd maps anonymous logins to domain guest in the local domain, not SID_NT_ANONYMOUS
 # these show that we still have some differences between our system
 # with our internal iconv because it passes except when we bypass our
@@ -218,31 +218,31 @@
 ^samba3.rpc.spoolss.printer.*.publish_toggle\(.*\)$ # needs spoolss AD member env
 ^samba3.rpc.spoolss.printserver.*.add_processor\(.*\)$
 #
-# The following tests fail against plugin_s4_dc (aka s3fs) currently.
+# The following tests fail against ad_dc (aka s3fs) currently.
 # These need to be examined and either fixed or correctly categorised.
 # but in the interests of ensuring we do not regress, we run the tests
 # and list the current failures here.
 #
-^samba3.rpc.eventlog.eventlog.GetLogIntormation\(plugin_s4_dc\)
-^samba3.rpc.eventlog.eventlog.FlushEventLog\(plugin_s4_dc\)
-^samba3.rpc.eventlog.eventlog.ReportEventLog\(plugin_s4_dc\)
-^samba3.rpc.eventlog.eventlog.ReadEventLog\(plugin_s4_dc\)
-^samba3.rpc.eventlog.eventlog.GetNumRecords\(plugin_s4_dc\)
-^samba3.rpc.eventlog.eventlog.OpenEventLog\(plugin_s4_dc\)
-^samba3.rap.basic.netsessiongetinfo\(plugin_s4_dc\)
+^samba3.rpc.eventlog.eventlog.GetLogIntormation\(ad_dc\)
+^samba3.rpc.eventlog.eventlog.FlushEventLog\(ad_dc\)
+^samba3.rpc.eventlog.eventlog.ReportEventLog\(ad_dc\)
+^samba3.rpc.eventlog.eventlog.ReadEventLog\(ad_dc\)
+^samba3.rpc.eventlog.eventlog.GetNumRecords\(ad_dc\)
+^samba3.rpc.eventlog.eventlog.OpenEventLog\(ad_dc\)
+^samba3.rap.basic.netsessiongetinfo\(ad_dc\)
 #
 # The Samba4 netlogon server does not implement these LogonControl operations
 #
-^samba3.rpc.netlogon.admin.netlogon.LogonControl2\(plugin_s4_dc\)
-^samba3.rpc.netlogon.admin.netlogon.LogonControl\(plugin_s4_dc\)
-^samba3.rpc.netlogon.admin.netlogon.LogonControl2\(plugin_s4_dc\)
-^samba3.rpc.netlogon.admin.netlogon.LogonControl\(plugin_s4_dc\)
-^samba3.rpc.netlogon.admin.netlogon.LogonControl2\(plugin_s4_dc\)
-^samba3.rpc.netlogon.admin.netlogon.LogonControl\(plugin_s4_dc\)
+^samba3.rpc.netlogon.admin.netlogon.LogonControl2\(ad_dc\)
+^samba3.rpc.netlogon.admin.netlogon.LogonControl\(ad_dc\)
+^samba3.rpc.netlogon.admin.netlogon.LogonControl2\(ad_dc\)
+^samba3.rpc.netlogon.admin.netlogon.LogonControl\(ad_dc\)
+^samba3.rpc.netlogon.admin.netlogon.LogonControl2\(ad_dc\)
+^samba3.rpc.netlogon.admin.netlogon.LogonControl\(ad_dc\)
 #
 # The Samba4 winbind does not cover the full winbind protocol, so these are expected
 #
-^samba4.winbind.struct.show_sequence\(plugin_s4_dc\)
+^samba4.winbind.struct.show_sequence\(ad_dc\)
 ^samba.blackbox.wbinfo\(dc:local\).wbinfo -N against dc
 ^samba.blackbox.wbinfo\(dc:local\).wbinfo -I against dc
 ^samba.blackbox.wbinfo\(dc:local\).wbinfo  --trusted-domains against dc
@@ -259,8 +259,8 @@
 ^samba.wbinfo_simple.\(dc:local\).--allocate-gid
 ^samba.wbinfo_simple.\(s4member:local\).--allocate-uid
 ^samba.wbinfo_simple.\(s4member:local\).--allocate-gid
-^samba.wbinfo_simple.\(plugin_s4_dc:local\).--allocate-uid
-^samba.wbinfo_simple.\(plugin_s4_dc:local\).--allocate-gid
+^samba.wbinfo_simple.\(ad_dc:local\).--allocate-uid
+^samba.wbinfo_simple.\(ad_dc:local\).--allocate-gid
 #
 # These do not work against winbindd in member mode for unknown reasons
 #
@@ -269,7 +269,7 @@
 ^samba4.winbind.struct.lookup_name_sid\(s4member:local\)
 ^samba.blackbox.wbinfo\(s4member:local\).wbinfo -r against s4member\(s4member:local\)
 ^samba.blackbox.wbinfo\(s4member:local\).wbinfo --user-sids against s4member\(s4member:local\)
-^samba4.winbind.struct.getpwent\(plugin_s4_dc:local\)
+^samba4.winbind.struct.getpwent\(ad_dc:local\)
 ^samba.wbinfo_simple.\(s4member:local\).--user-groups
 ^samba.nss.test using winbind\(s4member:local\)
 #

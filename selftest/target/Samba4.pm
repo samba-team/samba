@@ -1680,7 +1680,7 @@ sub provision_rodc($$$)
 	return $ret;
 }
 
-sub provision_plugin_s4_dc($$)
+sub provision_ad_dc($$)
 {
 	my ($self, $prefix) = @_;
 
@@ -1770,12 +1770,12 @@ sub provision_plugin_s4_dc($$)
 	copy = print1
 ";
 
-	print "PROVISIONING PLUGIN S4 DC...";
+	print "PROVISIONING AD DC...";
 	my $ret = $self->provision($prefix,
 				   "domain controller",
-				   "plugindc",
-				   "PLUGINDOMAIN",
-				   "plugindc.samba.example.com",
+				   "addc",
+				   "ADDOMAIN",
+				   "addc.samba.example.com",
 				   "2008",
 				   "locDCpass1",
 				   undef,
@@ -1974,10 +1974,10 @@ sub setup_env($$$)
 			$self->setup_dc("$path/dc");
 		}
 		return $target3->setup_admember("$path/s3member", $self->{vars}->{dc}, 29);
-	} elsif ($envname eq "plugin_s4_dc") {
-		return $self->setup_plugin_s4_dc("$path/plugin_s4_dc");
-	} elsif ($envname eq "plugin_s4_dc_no_nss") {
-		return $self->setup_plugin_s4_dc("$path/plugin_s4_dc_no_nss", "no_nss");
+	} elsif ($envname eq "ad_dc") {
+		return $self->setup_ad_dc("$path/ad_dc");
+	} elsif ($envname eq "ad_dc_no_nss") {
+		return $self->setup_ad_dc("$path/ad_dc_no_nss", "no_nss");
 	} elsif ($envname eq "s3member_rfc2307") {
 		if (not defined($self->{vars}->{dc})) {
 			$self->setup_dc("$path/dc");
@@ -2288,7 +2288,7 @@ sub setup_rodc($$$)
 	return $env;
 }
 
-sub setup_plugin_s4_dc($$)
+sub setup_ad_dc($$)
 {
 	my ($self, $path, $no_nss) = @_;
 
@@ -2297,7 +2297,7 @@ sub setup_plugin_s4_dc($$)
 	       return "UNKNOWN";
 	}
 
-	my $env = $self->provision_plugin_s4_dc($path);
+	my $env = $self->provision_ad_dc($path);
 	unless ($env) {
 		return undef;
 	}
@@ -2311,7 +2311,7 @@ sub setup_plugin_s4_dc($$)
 	
 	$self->wait_for_start($env);
 	
-	$self->{vars}->{plugin_s4_dc} = $env;
+	$self->{vars}->{ad_dc} = $env;
 	return $env;
 }
 

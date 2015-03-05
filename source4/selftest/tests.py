@@ -115,7 +115,7 @@ for bindoptions in ["seal,padcheck"] + validate_list + ["bigendian"]:
 #
 for bindoptions in ["seal,padcheck"] + validate_list + ["bigendian"]:
     for t in ncacn_np_tests:
-        env = "plugin_s4_dc"
+        env = "ad_dc"
         transport = "ncacn_np"
         plansmbtorture4testsuite(t, env, ["%s:$SERVER[%s]" % (transport, bindoptions), '-U$USERNAME%$PASSWORD', '--workgroup=$DOMAIN'], "samba4.%s with %s" % (t, bindoptions))
 
@@ -140,7 +140,7 @@ for transport in ["ncacn_np", "ncacn_ip_tcp"]:
 # Tests for the DFS referral calls implementation
 for t in smbtorture4_testsuites("dfs."):
     plansmbtorture4testsuite(t, "dc", '//$SERVER/ipc\$ -U$USERNAME%$PASSWORD')
-    plansmbtorture4testsuite(t, "plugin_s4_dc", '//$SERVER/ipc\$ -U$USERNAME%$PASSWORD')
+    plansmbtorture4testsuite(t, "ad_dc", '//$SERVER/ipc\$ -U$USERNAME%$PASSWORD')
 
 # Tests for the NET API (net.api.become.dc tested below against all the roles)
 net_tests = filter(lambda x: "net.api.become.dc" not in x, smbtorture4_testsuites("net."))
@@ -176,7 +176,7 @@ plantestsuite("samba.blackbox.pdbtest.s4winbind_wbclient(dc)", "dc:local", [os.p
 transports = ["ncacn_np", "ncacn_ip_tcp"]
 
 #Kerberos varies between functional levels, so it is important to check this on all of them
-for env in ["dc", "fl2000dc", "fl2003dc", "fl2008r2dc", "plugin_s4_dc"]:
+for env in ["dc", "fl2000dc", "fl2003dc", "fl2008r2dc", "ad_dc"]:
     transport = "ncacn_np"
     plansmbtorture4testsuite('rpc.pac', env, ["%s:$SERVER[]" % (transport, ), '-U$USERNAME%$PASSWORD', '--workgroup=$DOMAIN'], "samba4.rpc.pac on %s" % (transport,))
     plansmbtorture4testsuite('rpc.lsa.secrets', env, ["%s:$SERVER[]" % (transport, ), '-k', 'yes', '-U$USERNAME%$PASSWORD', '--workgroup=$DOMAIN', '--option=gensec:target_hostname=$NETBIOSNAME', 'rpc.lsa.secrets'], "samba4.rpc.lsa.secrets on %s with Kerberos" % (transport,))
@@ -351,8 +351,8 @@ for mech in [
     name = "smb.signing disabled on with %s" % signoptions
     plansmbtorture4testsuite('base.xcopy', "s4member", ['//$NETBIOSNAME/xcopy_share', signoptions, '-U$DC_USERNAME%$DC_PASSWORD'], "samba4.%s domain-creds" % name)
     plansmbtorture4testsuite('base.xcopy', "s3member", ['//$NETBIOSNAME/xcopy_share', signoptions, '-U$DC_USERNAME%$DC_PASSWORD'], "samba4.%s domain-creds" % name)
-    plansmbtorture4testsuite('base.xcopy', "plugin_s4_dc", ['//$NETBIOSNAME/xcopy_share', signoptions, '-U$USERNAME%$PASSWORD'], "samba4.%s" % name)
-    plansmbtorture4testsuite('base.xcopy', "plugin_s4_dc",
+    plansmbtorture4testsuite('base.xcopy', "ad_dc", ['//$NETBIOSNAME/xcopy_share', signoptions, '-U$USERNAME%$PASSWORD'], "samba4.%s" % name)
+    plansmbtorture4testsuite('base.xcopy', "ad_dc",
                             ['//$NETBIOSNAME/xcopy_share', signoptions, '-U$DC_USERNAME%$DC_PASSWORD'], "samba4.%s administrator" % name)
 
 plantestsuite("samba4.blackbox.bogusdomain", "s3member", ["testprogs/blackbox/bogus.sh", "$NETBIOSNAME", "xcopy_share", '$USERNAME', '$PASSWORD', '$DC_USERNAME', '$DC_PASSWORD', smbclient4])
@@ -372,7 +372,7 @@ wb_opts = ["--option=\"torture:strict mode=no\"", "--option=\"torture:timelimit=
 
 winbind_ad_client_tests = smbtorture4_testsuites("winbind.struct") + smbtorture4_testsuites("winbind.pac")
 winbind_wbclient_tests = smbtorture4_testsuites("winbind.wbclient")
-for env in ["plugin_s4_dc", "s4member", "s3member"]:
+for env in ["ad_dc", "s4member", "s3member"]:
     for t in winbind_ad_client_tests:
         plansmbtorture4testsuite(t, "%s:local" % env, wb_opts + ['//$SERVER/tmp', '--realm=$REALM', '--machine-pass', '--option=torture:addc=$DC_SERVER'])
 
@@ -380,7 +380,7 @@ for env in ["s3dc", "fl2003dc"]:
     for t in winbind_wbclient_tests:
         plansmbtorture4testsuite(t, "%s:local" % env, '//$SERVER/tmp -U$DC_USERNAME%$DC_PASSWORD')
 
-for env in ["s3dc", "member", "plugin_s4_dc", "dc", "s3member", "s4member"]:
+for env in ["s3dc", "member", "ad_dc", "dc", "s3member", "s4member"]:
     tests = ["--ping", "--separator",
              "--own-domain",
              "--all-domains",
@@ -419,7 +419,7 @@ for env in ["s3dc", "member", "plugin_s4_dc", "dc", "s3member", "s4member"]:
 
 
 nsstest4 = binpath("nsstest")
-for env in ["plugin_s4_dc:local", "dc:local", "s4member:local", "s3dc:local", "s3member:local", "member:local"]:
+for env in ["ad_dc:local", "dc:local", "s4member:local", "s3dc:local", "s3member:local", "member:local"]:
     if os.path.exists(nsstest4):
         plantestsuite("samba.nss.test using winbind(%s)" % env, env, [os.path.join(bbdir, "nsstest.sh"), nsstest4, os.path.join(samba4bindir, "shared/libnss_wrapper_winbind.so.2")])
     else:
@@ -451,17 +451,17 @@ planpythontestsuite("dc:local", "samba.tests.samba_tool.timecmd")
 # the only test we have of GPO get/set behaviour, and this involves
 # the file server as well as the LDAP server.
 planpythontestsuite("dc:local", "samba.tests.samba_tool.gpo")
-planpythontestsuite("plugin_s4_dc:local", "samba.tests.samba_tool.gpo")
+planpythontestsuite("ad_dc:local", "samba.tests.samba_tool.gpo")
 
 planpythontestsuite("dc:local", "samba.tests.samba_tool.processes")
 planpythontestsuite("dc:local", "samba.tests.samba_tool.user")
 planpythontestsuite("dc:local", "samba.tests.samba_tool.group")
-planpythontestsuite("plugin_s4_dc:local", "samba.tests.samba_tool.ntacl")
+planpythontestsuite("ad_dc:local", "samba.tests.samba_tool.ntacl")
 
 planpythontestsuite("dc:local", "samba.tests.dcerpc.rpcecho")
 planoldpythontestsuite("dc:local", "samba.tests.dcerpc.registry", extra_args=['-U"$USERNAME%$PASSWORD"'])
 planoldpythontestsuite("dc", "samba.tests.dcerpc.dnsserver", extra_args=['-U"$USERNAME%$PASSWORD"'])
-planoldpythontestsuite("plugin_s4_dc", "samba.tests.dcerpc.dnsserver", extra_args=['-U"$USERNAME%$PASSWORD"'])
+planoldpythontestsuite("ad_dc", "samba.tests.dcerpc.dnsserver", extra_args=['-U"$USERNAME%$PASSWORD"'])
 plantestsuite_loadlist("samba4.ldap.python(dc)", "dc", [python, os.path.join(samba4srcdir, "dsdb/tests/python/ldap.py"), '$SERVER', '-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN', '$LOADLIST', '$LISTOPT'])
 plantestsuite_loadlist("samba4.tokengroups.python(dc)", "dc:local", [python, os.path.join(samba4srcdir, "dsdb/tests/python/token_group.py"), '$SERVER', '-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN', '$LOADLIST', '$LISTOPT'])
 plantestsuite("samba4.sam.python(dc)", "dc", [python, os.path.join(samba4srcdir, "dsdb/tests/python/sam.py"), '$SERVER', '-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN'])
@@ -492,8 +492,8 @@ for env in ["dc", "fl2000dc", "fl2003dc", "fl2008r2dc"]:
                            )
 
 planpythontestsuite("dc:local", "samba.tests.upgradeprovisionneeddc")
-planpythontestsuite("plugin_s4_dc:local", "samba.tests.posixacl")
-planpythontestsuite("plugin_s4_dc_no_nss:local", "samba.tests.posixacl")
+planpythontestsuite("ad_dc:local", "samba.tests.posixacl")
+planpythontestsuite("ad_dc_no_nss:local", "samba.tests.posixacl")
 plantestsuite_loadlist("samba4.deletetest.python(dc)", "dc", [python, os.path.join(samba4srcdir, "dsdb/tests/python/deletetest.py"),
                                                      '$SERVER', '-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN', '$LOADLIST', '$LISTOPT'])
 plantestsuite("samba4.blackbox.samba3dump", "none", [os.path.join(samba4srcdir, "selftest/test_samba3dump.sh")])
@@ -550,10 +550,10 @@ for env in ['vampire_dc', 'promoted_dc']:
 
     plantestsuite("samba4.blackbox.samba_tool_demote(%s)" % env, env, [os.path.join(samba4srcdir, "utils/tests/test_demote.sh"), '$SERVER', '$SERVER_IP', '$USERNAME', '$PASSWORD', '$DOMAIN', '$DC_SERVER', '$PREFIX/%s' % env, smbclient4])
 
-for env in ["dc", "s4member", "rodc", "promoted_dc", "plugin_s4_dc", "s3member"]:
+for env in ["dc", "s4member", "rodc", "promoted_dc", "ad_dc", "s3member"]:
     plantestsuite("samba.blackbox.wbinfo(%s:local)" % env, "%s:local" % env, [os.path.join(samba4srcdir, "../nsswitch/tests/test_wbinfo.sh"), '$DOMAIN', '$DC_USERNAME', '$DC_PASSWORD', env])
 
-for env in ["dc", "rodc", "promoted_dc", "plugin_s4_dc", "fl2000dc", "fl2003dc", "fl2008r2dc"]:
+for env in ["dc", "rodc", "promoted_dc", "ad_dc", "fl2000dc", "fl2003dc", "fl2008r2dc"]:
     if env == "rodc":
         extra_options = ['--option=torture:expect_rodc=true']
     else:

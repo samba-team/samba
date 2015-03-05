@@ -177,7 +177,7 @@ sub get_interface($)
     $interfaces{"dc7"} = 27;
     $interfaces{"rodc"} = 28;
     $interfaces{"localadmember"} = 29;
-    $interfaces{"plugindc"} = 30;
+    $interfaces{"addc"} = 30;
     $interfaces{"localsubdc"} = 31;
     $interfaces{"chgdcpass"} = 32;
     $interfaces{"promotedvdc"} = 33;

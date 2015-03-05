@@ -144,7 +144,7 @@ def get_interface(netbiosname):
         "dc7": 27,
         "rodc": 28,
         "localadmember": 29,
-        "plugindc": 30,
+        "addc": 30,
         "localsubdc": 31,
         "chgdcpass": 32,
     }
