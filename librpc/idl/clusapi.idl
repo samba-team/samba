@@ -685,10 +685,19 @@ import "security.idl";
 	/*****************/
 	/* Function 0x2D */
 
+	typedef [v1_enum] enum {
+		ClusterGroupOnline		= 0x00000000,
+		ClusterGroupOffline		= 0x00000001,
+		ClusterGroupFailed		= 0x00000002,
+		ClusterGroupPartialOnline	= 0x00000003,
+		ClusterGroupPending		= 0x00000004,
+		ClusterGroupStateUnknown	= 0xFFFFFFFF
+	} clusapi_ClusterGroupState;
+
 	WERROR
 	clusapi_GetGroupState(
 		[ in ] HGROUP_RPC hGroup,
-		[ out ] uint32 *State,
+		[ out ] clusapi_ClusterGroupState *State,
 		[ out, string ] [charset(UTF16)] uint16 **NodeName,
 		[ out ] WERROR *rpc_status
 	);
