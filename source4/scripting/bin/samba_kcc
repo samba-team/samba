@@ -824,16 +824,18 @@ class KCC(object):
         """This function adjusts values of repsFrom abstract attributes of NC
         replicas on the local DC to match those implied by
         nTDSConnection objects.
+        [MS-ADTS] 6.2.2.5
         """
-        logger.debug("translate_ntdsconn(): enter")
-
         if self.my_dsa.is_translate_ntdsconn_disabled():
+            logger.debug("skipping translate_ntdsconn() because disabling flag is set")
             return
+
+        logger.debug("translate_ntdsconn(): enter")
 
         current_rep_table, needed_rep_table = self.my_dsa.get_rep_tables()
 
         # Filled in with replicas we currently have that need deleting
-        delete_rep_table = {}
+        delete_reps = set()
 
         # We're using the MS notation names here to allow
         # correlation back to the published algorithm.
@@ -850,9 +852,16 @@ class KCC(object):
         #
         # If we have the replica and its not needed
         # then we add it to the "to be deleted" list.
-        for dnstr, n_rep in current_rep_table.items():
-            if dnstr not in needed_rep_table.keys():
-                delete_rep_table[dnstr] = n_rep
+        for dnstr in current_rep_table:
+            if dnstr not in needed_rep_table:
+                delete_reps.add(dnstr)
+
+        if delete_reps:
+            DEBUG('current %d needed %d delete %d', len(current_rep_table),
+                  len(needed_rep_table), len(delete_reps))
+            DEBUG('deleting these reps: %s', delete_reps)
+            for dnstr in delete_reps:
+                del current_rep_table[dnstr]
 
         # Now perform the scan of replicas we'll need
         # and compare any current repsFrom against the
@@ -2225,7 +2234,7 @@ class KCC(object):
             self.load_all_sitelinks()
 
             # These are the published steps (in order) for the
-            # MS-TECH description of the KCC algorithm
+            # MS-TECH description of the KCC algorithm ([MS-ADTS] 6.2.2)
 
             # Step 1
             self.refresh_failed_links_connections()
@@ -2943,6 +2952,7 @@ parser.add_option("--now",
 
 logger = logging.getLogger("samba_kcc")
 logger.addHandler(logging.StreamHandler(sys.stdout))
+DEBUG = logger.debug
 
 lp = sambaopts.get_loadparm()
 creds = credopts.get_credentials(lp, fallback_machine=True)
