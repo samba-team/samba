@@ -453,6 +453,45 @@ static bool test_DeleteResource(struct torture_context *tctx,
 	return test_DeleteResource_int(tctx, p, &hResource);
 }
 
+static bool test_SetResourceName_int(struct torture_context *tctx,
+				     struct dcerpc_pipe *p,
+				     struct policy_handle *hResource)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_SetResourceName r;
+	WERROR rpc_status;
+
+	r.in.hResource = *hResource;
+	r.in.lpszResourceName = "wurst";
+	r.out.rpc_status = &rpc_status;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_SetResourceName_r(b, tctx, &r),
+		"SetResourceName failed");
+	torture_assert_werr_ok(tctx,
+		r.out.result,
+		"SetResourceName failed");
+
+	return true;
+}
+
+static bool test_SetResourceName(struct torture_context *tctx,
+				 struct dcerpc_pipe *p)
+{
+	struct policy_handle hResource;
+	bool ret = true;
+
+	if (!test_CreateResource_int(tctx, p, &hResource)) {
+		return false;
+	}
+
+	ret = test_SetResourceName_int(tctx, p, &hResource);
+
+	test_DeleteResource_int(tctx, p, &hResource);
+
+	return ret;
+}
+
 static bool test_GetResourceState_int(struct torture_context *tctx,
 				      struct dcerpc_pipe *p,
 				      struct policy_handle *hResource)
@@ -1102,6 +1141,8 @@ struct torture_suite *torture_rpc_clusapi(TALLOC_CTX *mem_ctx)
 				   test_CreateResource);
 	torture_rpc_tcase_add_test(tcase, "DeleteResource",
 				   test_DeleteResource);
+	torture_rpc_tcase_add_test(tcase, "SetResourceName",
+				   test_SetResourceName);
 	torture_rpc_tcase_add_test(tcase, "GetResourceState",
 				   test_GetResourceState);
 	torture_rpc_tcase_add_test(tcase, "GetResourceId",
