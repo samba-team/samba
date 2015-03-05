@@ -446,6 +446,7 @@ static bool test_CloseResource(struct torture_context *tctx,
 
 static bool test_OpenGroup_int(struct torture_context *tctx,
 			       struct dcerpc_pipe *p,
+			       const char *lpszGroupName,
 			       struct policy_handle *hGroup);
 static bool test_CloseGroup_int(struct torture_context *tctx,
 				struct dcerpc_pipe *p,
@@ -464,7 +465,7 @@ static bool test_CreateResource_int(struct torture_context *tctx,
 	struct policy_handle hGroup;
 
 	torture_assert(tctx,
-		test_OpenGroup_int(tctx, p, &hGroup),
+		test_OpenGroup_int(tctx, p, "Cluster Group", &hGroup),
 		"failed to open group");
 
 	r.in.hGroup = hGroup;
@@ -1178,11 +1179,11 @@ static bool test_EvictNode(struct torture_context *tctx,
 
 static bool test_OpenGroup_int(struct torture_context *tctx,
 			       struct dcerpc_pipe *p,
+			       const char *lpszGroupName,
 			       struct policy_handle *hGroup)
 {
 	struct dcerpc_binding_handle *b = p->binding_handle;
 	struct clusapi_OpenGroup r;
-	const char *lpszGroupName = "Cluster Group";
 	WERROR Status;
 	WERROR rpc_status;
 
@@ -1229,7 +1230,7 @@ static bool test_OpenGroup(struct torture_context *tctx,
 {
 	struct policy_handle hGroup;
 
-	if (!test_OpenGroup_int(tctx, p, &hGroup)) {
+	if (!test_OpenGroup_int(tctx, p, "Cluster Group", &hGroup)) {
 		return false;
 	}
 
@@ -1243,7 +1244,7 @@ static bool test_CloseGroup(struct torture_context *tctx,
 {
 	struct policy_handle hGroup;
 
-	if (!test_OpenGroup_int(tctx, p, &hGroup)) {
+	if (!test_OpenGroup_int(tctx, p, "Cluster Group", &hGroup)) {
 		return false;
 	}
 
@@ -1281,7 +1282,7 @@ static bool test_GetGroupState(struct torture_context *tctx,
 	struct policy_handle hGroup;
 	bool ret = true;
 
-	if (!test_OpenGroup_int(tctx, p, &hGroup)) {
+	if (!test_OpenGroup_int(tctx, p, "Cluster Group", &hGroup)) {
 		return false;
 	}
 
@@ -1321,7 +1322,7 @@ static bool test_GetGroupId(struct torture_context *tctx,
 	struct policy_handle hGroup;
 	bool ret = true;
 
-	if (!test_OpenGroup_int(tctx, p, &hGroup)) {
+	if (!test_OpenGroup_int(tctx, p, "Cluster Group", &hGroup)) {
 		return false;
 	}
 
@@ -1359,7 +1360,7 @@ static bool test_OnlineGroup(struct torture_context *tctx,
 	struct policy_handle hGroup;
 	bool ret = true;
 
-	if (!test_OpenGroup_int(tctx, p, &hGroup)) {
+	if (!test_OpenGroup_int(tctx, p, "Cluster Group", &hGroup)) {
 		return false;
 	}
 
@@ -1397,7 +1398,7 @@ static bool test_OfflineGroup(struct torture_context *tctx,
 	struct policy_handle hGroup;
 	bool ret = true;
 
-	if (!test_OpenGroup_int(tctx, p, &hGroup)) {
+	if (!test_OpenGroup_int(tctx, p, "Cluster Group", &hGroup)) {
 		return false;
 	}
 
