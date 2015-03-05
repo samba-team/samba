@@ -291,11 +291,11 @@ static bool test_SetQuorumResource(struct torture_context *tctx,
 
 static bool test_OpenResource_int(struct torture_context *tctx,
 				  struct dcerpc_pipe *p,
+				  const char *lpszResourceName,
 				  struct policy_handle *hResource)
 {
 	struct dcerpc_binding_handle *b = p->binding_handle;
 	struct clusapi_OpenResource r;
-	const char *lpszResourceName = "Cluster Name";
 	WERROR Status;
 	WERROR rpc_status;
 
@@ -342,7 +342,7 @@ static bool test_OpenResource(struct torture_context *tctx,
 {
 	struct policy_handle hResource;
 
-	if (!test_OpenResource_int(tctx, p, &hResource)) {
+	if (!test_OpenResource_int(tctx, p, "Cluster Name", &hResource)) {
 		return false;
 	}
 
@@ -356,7 +356,7 @@ static bool test_CloseResource(struct torture_context *tctx,
 {
 	struct policy_handle hResource;
 
-	if (!test_OpenResource_int(tctx, p, &hResource)) {
+	if (!test_OpenResource_int(tctx, p, "Cluster Name", &hResource)) {
 		return false;
 	}
 
@@ -525,7 +525,7 @@ static bool test_GetResourceState(struct torture_context *tctx,
 	struct policy_handle hResource;
 	bool ret = true;
 
-	if (!test_OpenResource_int(tctx, p, &hResource)) {
+	if (!test_OpenResource_int(tctx, p, "Cluster Name", &hResource)) {
 		return false;
 	}
 
@@ -565,7 +565,7 @@ static bool test_GetResourceId(struct torture_context *tctx,
 	struct policy_handle hResource;
 	bool ret = true;
 
-	if (!test_OpenResource_int(tctx, p, &hResource)) {
+	if (!test_OpenResource_int(tctx, p, "Cluster Name", &hResource)) {
 		return false;
 	}
 
@@ -605,7 +605,7 @@ static bool test_GetResourceType(struct torture_context *tctx,
 	struct policy_handle hResource;
 	bool ret = true;
 
-	if (!test_OpenResource_int(tctx, p, &hResource)) {
+	if (!test_OpenResource_int(tctx, p, "Cluster Name", &hResource)) {
 		return false;
 	}
 
@@ -643,7 +643,7 @@ static bool test_FailResource(struct torture_context *tctx,
 	struct policy_handle hResource;
 	bool ret = true;
 
-	if (!test_OpenResource_int(tctx, p, &hResource)) {
+	if (!test_OpenResource_int(tctx, p, "Cluster Name", &hResource)) {
 		return false;
 	}
 
@@ -681,7 +681,7 @@ static bool test_OnlineResource(struct torture_context *tctx,
 	struct policy_handle hResource;
 	bool ret = true;
 
-	if (!test_OpenResource_int(tctx, p, &hResource)) {
+	if (!test_OpenResource_int(tctx, p, "Cluster Name", &hResource)) {
 		return false;
 	}
 
@@ -719,7 +719,7 @@ static bool test_OfflineResource(struct torture_context *tctx,
 	struct policy_handle hResource;
 	bool ret = true;
 
-	if (!test_OpenResource_int(tctx, p, &hResource)) {
+	if (!test_OpenResource_int(tctx, p, "Cluster Name", &hResource)) {
 		return false;
 	}
 
@@ -741,7 +741,7 @@ static bool test_CreateResEnum(struct torture_context *tctx,
 	WERROR rpc_status;
 
 	torture_assert(tctx,
-		test_OpenResource_int(tctx, p, &hResource),
+		test_OpenResource_int(tctx, p, "Cluster Name", &hResource),
 		"OpenResource failed");
 
 	r.in.hResource = hResource;
