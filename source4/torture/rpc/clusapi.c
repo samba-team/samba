@@ -1923,6 +1923,264 @@ static bool test_all_networks(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_OpenNetInterface_int(struct torture_context *tctx,
+				      struct dcerpc_pipe *p,
+				      const char *lpszNetInterfaceName,
+				      struct policy_handle *hNetInterface)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_OpenNetInterface r;
+	WERROR Status;
+	WERROR rpc_status;
+
+	r.in.lpszNetInterfaceName = lpszNetInterfaceName;
+	r.out.rpc_status = &rpc_status;
+	r.out.Status = &Status;
+	r.out.hNetInterface = hNetInterface;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_OpenNetInterface_r(b, tctx, &r),
+		"OpenNetInterface failed");
+	torture_assert_werr_ok(tctx,
+		*r.out.Status,
+		"OpenNetInterface failed");
+
+	return true;
+}
+
+static bool test_OpenNetInterfaceEx_int(struct torture_context *tctx,
+					struct dcerpc_pipe *p,
+					const char *lpszNetInterfaceName,
+					struct policy_handle *hNetInterface)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_OpenNetInterfaceEx r;
+	uint32_t lpdwGrantedAccess;
+	WERROR Status;
+	WERROR rpc_status;
+
+	r.in.lpszNetInterfaceName = lpszNetInterfaceName;
+	r.in.dwDesiredAccess = SEC_FLAG_MAXIMUM_ALLOWED;
+	r.out.lpdwGrantedAccess = &lpdwGrantedAccess;
+	r.out.rpc_status = &rpc_status;
+	r.out.Status = &Status;
+	r.out.hNetInterface = hNetInterface;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_OpenNetInterfaceEx_r(b, tctx, &r),
+		"OpenNetInterfaceEx failed");
+	torture_assert_werr_ok(tctx,
+		*r.out.Status,
+		"OpenNetInterfaceEx failed");
+
+	return true;
+}
+
+static bool test_CloseNetInterface_int(struct torture_context *tctx,
+				       struct dcerpc_pipe *p,
+				       struct policy_handle *NetInterface)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_CloseNetInterface r;
+
+	r.in.NetInterface = NetInterface;
+	r.out.NetInterface = NetInterface;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_CloseNetInterface_r(b, tctx, &r),
+		"CloseNetInterface failed");
+	torture_assert_werr_ok(tctx,
+		r.out.result,
+		"CloseNetInterface failed");
+	torture_assert(tctx,
+		ndr_policy_handle_empty(NetInterface),
+		"policy_handle non empty after CloseNetInterface");
+
+	return true;
+}
+
+static bool test_OpenNetInterface(struct torture_context *tctx,
+				  struct dcerpc_pipe *p)
+{
+	struct policy_handle hNetInterface;
+
+	if (!test_OpenNetInterface_int(tctx, p, "node1 - Ethernet", &hNetInterface)) {
+		return false;
+	}
+
+	test_CloseNetInterface_int(tctx, p, &hNetInterface);
+
+	return true;
+}
+
+static bool test_OpenNetInterfaceEx(struct torture_context *tctx,
+				    struct dcerpc_pipe *p)
+{
+	struct policy_handle hNetInterface;
+
+	if (!test_OpenNetInterfaceEx_int(tctx, p, "node1 - Ethernet", &hNetInterface)) {
+		return false;
+	}
+
+	test_CloseNetInterface_int(tctx, p, &hNetInterface);
+
+	return true;
+}
+
+static bool test_CloseNetInterface(struct torture_context *tctx,
+				   struct dcerpc_pipe *p)
+{
+	struct policy_handle hNetInterface;
+
+	if (!test_OpenNetInterface_int(tctx, p, "node1 - Ethernet", &hNetInterface)) {
+		return false;
+	}
+
+	return test_CloseNetInterface_int(tctx, p, &hNetInterface);
+}
+
+static bool test_GetNetInterfaceState_int(struct torture_context *tctx,
+					  struct dcerpc_pipe *p,
+					  struct policy_handle *hNetInterface)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_GetNetInterfaceState r;
+	enum clusapi_ClusterNetInterfaceState State;
+	WERROR rpc_status;
+
+	r.in.hNetInterface = *hNetInterface;
+	r.out.State = &State;
+	r.out.rpc_status = &rpc_status;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_GetNetInterfaceState_r(b, tctx, &r),
+		"GetNetInterfaceState failed");
+	torture_assert_werr_ok(tctx,
+		r.out.result,
+		"GetNetInterfaceState failed");
+
+	return true;
+}
+
+static bool test_GetNetInterfaceState(struct torture_context *tctx,
+				      struct dcerpc_pipe *p)
+{
+	struct policy_handle hNetInterface;
+	bool ret = true;
+
+	if (!test_OpenNetInterface_int(tctx, p, "node1 - Ethernet", &hNetInterface)) {
+		return false;
+	}
+
+	ret = test_GetNetInterfaceState_int(tctx, p, &hNetInterface);
+
+	test_CloseNetInterface_int(tctx, p, &hNetInterface);
+
+	return ret;
+}
+
+static bool test_GetNetInterfaceId_int(struct torture_context *tctx,
+				       struct dcerpc_pipe *p,
+				       struct policy_handle *hNetInterface)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_GetNetInterfaceId r;
+	const char *pGuid;
+	WERROR rpc_status;
+
+	r.in.hNetInterface = *hNetInterface;
+	r.out.pGuid = &pGuid;
+	r.out.rpc_status = &rpc_status;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_GetNetInterfaceId_r(b, tctx, &r),
+		"GetNetInterfaceId failed");
+	torture_assert_werr_ok(tctx,
+		r.out.result,
+		"GetNetInterfaceId failed");
+
+	return true;
+}
+
+static bool test_GetNetInterfaceId(struct torture_context *tctx,
+				   struct dcerpc_pipe *p)
+{
+	struct policy_handle hNetInterface;
+	bool ret = true;
+
+	if (!test_OpenNetInterface_int(tctx, p, "node1 - Ethernet", &hNetInterface)) {
+		return false;
+	}
+
+	ret = test_GetNetInterfaceId_int(tctx, p, &hNetInterface);
+
+	test_CloseNetInterface_int(tctx, p, &hNetInterface);
+
+	return ret;
+}
+
+static bool test_one_netinterface(struct torture_context *tctx,
+				  struct dcerpc_pipe *p,
+				  const char *netinterface_name)
+{
+	struct policy_handle hNetInterface;
+
+	torture_assert(tctx,
+		test_OpenNetInterface_int(tctx, p, netinterface_name, &hNetInterface),
+		"failed to open netinterface");
+	test_CloseNetInterface_int(tctx, p, &hNetInterface);
+
+	torture_assert(tctx,
+		test_OpenNetInterfaceEx_int(tctx, p, netinterface_name, &hNetInterface),
+		"failed to openex netinterface");
+
+	torture_assert(tctx,
+		test_GetNetInterfaceId_int(tctx, p, &hNetInterface),
+		"failed to query netinterface id");
+	torture_assert(tctx,
+		test_GetNetInterfaceState_int(tctx, p, &hNetInterface),
+		"failed to query netinterface id");
+
+	test_CloseNetInterface_int(tctx, p, &hNetInterface);
+
+	return true;
+}
+
+static bool test_all_netinterfaces(struct torture_context *tctx,
+				   struct dcerpc_pipe *p)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_CreateEnum r;
+	uint32_t dwType = CLUSTER_ENUM_NETINTERFACE;
+	struct ENUM_LIST *ReturnEnum;
+	WERROR rpc_status;
+	int i;
+
+	r.in.dwType = dwType;
+	r.out.ReturnEnum = &ReturnEnum;
+	r.out.rpc_status = &rpc_status;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_CreateEnum_r(b, tctx, &r),
+		"CreateEnum failed");
+	torture_assert_werr_ok(tctx,
+		r.out.result,
+		"CreateEnum failed");
+
+	for (i=0; i < ReturnEnum->EntryCount; i++) {
+
+		struct ENUM_ENTRY e = ReturnEnum->Entry[i];
+
+		torture_assert_int_equal(tctx, e.Type, CLUSTER_ENUM_NETINTERFACE, "type mismatch");
+
+		torture_assert(tctx,
+			test_one_netinterface(tctx, p, e.Name),
+			"failed to test one netinterface");
+	}
+
+	return true;
+}
+
 struct torture_suite *torture_rpc_clusapi(TALLOC_CTX *mem_ctx)
 {
 	struct torture_rpc_tcase *tcase;
@@ -2050,6 +2308,21 @@ struct torture_suite *torture_rpc_clusapi(TALLOC_CTX *mem_ctx)
 				   test_GetNetworkId);
 	torture_rpc_tcase_add_test(tcase, "all_networks",
 				   test_all_networks);
+
+	tcase = torture_suite_add_rpc_iface_tcase(suite, "netinterface",
+						  &ndr_table_clusapi);
+	torture_rpc_tcase_add_test(tcase, "OpenNetInterface",
+				   test_OpenNetInterface);
+	torture_rpc_tcase_add_test(tcase, "OpenNetInterfaceEx",
+				   test_OpenNetInterfaceEx);
+	torture_rpc_tcase_add_test(tcase, "CloseNetInterface",
+				   test_CloseNetInterface);
+	torture_rpc_tcase_add_test(tcase, "GetNetInterfaceState",
+				   test_GetNetInterfaceState);
+	torture_rpc_tcase_add_test(tcase, "GetNetInterfaceId",
+				   test_GetNetInterfaceId);
+	torture_rpc_tcase_add_test(tcase, "all_netinterfaces",
+				   test_all_netinterfaces);
 
 	return suite;
 }
