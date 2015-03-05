@@ -1962,6 +1962,8 @@ sub setup_env($$$)
 		return $target3->setup_admember("$path/s3member", $self->{vars}->{dc}, 29);
 	} elsif ($envname eq "plugin_s4_dc") {
 		return $self->setup_plugin_s4_dc("$path/plugin_s4_dc");
+	} elsif ($envname eq "plugin_s4_dc_no_nss") {
+		return $self->setup_plugin_s4_dc("$path/plugin_s4_dc_no_nss", "no_nss");
 	} elsif ($envname eq "s3member_rfc2307") {
 		if (not defined($self->{vars}->{dc})) {
 			$self->setup_dc("$path/dc");
