@@ -25,9 +25,7 @@
 
 #include "attr.h"
 
-#ifndef DEBUG
-#include "debug.h"
-#endif /* DEBUG */
+/* Please include header file debug.h if you want to use macro SMB_ASSERT */
 
 /**
  * assert macros

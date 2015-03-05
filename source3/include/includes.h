@@ -356,6 +356,9 @@ enum timestamp_set_resolution {
 typedef char fstring[FSTRING_LEN];
 #endif
 
+/* debug.h need to be included before samba_util.h for the macro SMB_ASSERT */
+#include "../lib/util/debug.h"
+
 /* Lists, trees, caching, database... */
 #include "../lib/util/samba_util.h"
 #include "../lib/util/util_net.h"
@@ -371,7 +374,6 @@ typedef char fstring[FSTRING_LEN];
 
 #include "../lib/util/data_blob.h"
 #include "../lib/util/time.h"
-#include "../lib/util/debug.h"
 #include "../lib/util/debug_s3.h"
 
 #include "../libcli/util/ntstatus.h"
