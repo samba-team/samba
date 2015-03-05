@@ -1618,6 +1618,53 @@ static bool test_all_groups(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_BackupClusterDatabase(struct torture_context *tctx,
+				       struct dcerpc_pipe *p)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_BackupClusterDatabase r;
+	WERROR rpc_status;
+
+	r.in.lpszPathName = "c:\\cluster_backup";
+	r.out.rpc_status = &rpc_status;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_BackupClusterDatabase_r(b, tctx, &r),
+		"BackupClusterDatabase failed");
+	torture_assert_werr_equal(tctx,
+		r.out.result,
+		WERR_CALL_NOT_IMPLEMENTED,
+		"BackupClusterDatabase failed");
+
+	return true;
+}
+
+static bool test_SetServiceAccountPassword(struct torture_context *tctx,
+					   struct dcerpc_pipe *p)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_SetServiceAccountPassword r;
+	uint32_t SizeReturned;
+	uint32_t ExpectedBufferSize;
+
+	r.in.lpszNewPassword = "P@ssw0rd!";
+	r.in.dwFlags = IDL_CLUSTER_SET_PASSWORD_IGNORE_DOWN_NODES;
+	r.in.ReturnStatusBufferSize = 1024;
+	r.out.ReturnStatusBufferPtr = NULL;
+	r.out.SizeReturned = &SizeReturned;
+	r.out.ExpectedBufferSize = &ExpectedBufferSize;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_SetServiceAccountPassword_r(b, tctx, &r),
+		"SetServiceAccountPassword failed");
+	torture_assert_werr_equal(tctx,
+		r.out.result,
+		WERR_CALL_NOT_IMPLEMENTED,
+		"SetServiceAccountPassword failed");
+
+	return true;
+}
+
 struct torture_suite *torture_rpc_clusapi(TALLOC_CTX *mem_ctx)
 {
 	struct torture_rpc_tcase *tcase;
@@ -1645,6 +1692,10 @@ struct torture_suite *torture_rpc_clusapi(TALLOC_CTX *mem_ctx)
 				   test_GetClusterVersion2);
 	torture_rpc_tcase_add_test(tcase, "CreateResEnum",
 				   test_CreateResEnum);
+	torture_rpc_tcase_add_test(tcase, "BackupClusterDatabase",
+				   test_BackupClusterDatabase);
+	torture_rpc_tcase_add_test(tcase, "SetServiceAccountPassword",
+				   test_SetServiceAccountPassword);
 	torture_rpc_tcase_add_test(tcase, "all_resources",
 				   test_all_resources);
 
