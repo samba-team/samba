@@ -1530,16 +1530,10 @@ class Site(object):
         # Which is a fancy way of saying "sort all the nTDSDSA objects
         # in the site by guid in ascending order".   Place sorted list
         # in D_sort[]
-        D_sort = []
-        d_dsa = None
+        D_sort = sorted(self.dsa_table.values(), cmp=sort_dsa_by_guid)
 
         ntnow = unix2nttime(self.unix_now) # double word number of 100 nanosecond
                                            # intervals since 1600s
-
-        for dsa in self.dsa_table.values():
-            D_sort.append(dsa)
-
-        D_sort.sort(sort_dsa_by_guid)
 
         # Let f be the duration o!interSiteTopologyFailover seconds, or 2 hours
         # if o!interSiteTopologyFailover is 0 or has no value.
@@ -1558,16 +1552,15 @@ class Site(object):
         else:
             f = self.site_topo_failover * 60 * 10000000
 
+        # Let o be the site settings object for the site of the local
+        # DC, or NULL if no such o exists.
+        d_dsa = self.dsa_table.get(self.site_topo_generator)
+
         # From MS-ADTS 6.2.2.3.1 ISTG selection:
         #     If o != NULL and o!interSiteTopologyGenerator is not the
         #     nTDSDSA object for the local DC and
         #     o!interSiteTopologyGenerator is an element dj of sequence D:
         #
-        if self.site_topo_generator is not None and \
-           self.site_topo_generator in self.dsa_table.keys():
-            d_dsa = self.dsa_table[self.site_topo_generator]
-            j_idx = D_sort.index(d_dsa)
-
         if d_dsa is not None and d_dsa is not mydsa:
            # From MS-ADTS 6.2.2.3.1 ISTG Selection:
            #     Let c be the cursor in the replUpToDateVector variable
@@ -1588,6 +1581,8 @@ class Site(object):
            #
            # last_success appears to be a double word containing
            #     number of 100 nanosecond intervals since the 1600s
+           j_idx = D_sort.index(d_dsa)
+
            found = False
            for cursor in c_rep.rep_replUpToDateVector_cursors:
                if d_dsa.dsa_ivid == cursor.source_dsa_invocation_id:
