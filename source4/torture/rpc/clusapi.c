@@ -2181,6 +2181,335 @@ static bool test_all_netinterfaces(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_CloseKey_int(struct torture_context *tctx,
+			      struct dcerpc_pipe *p,
+			      struct policy_handle *pKey)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_CloseKey r;
+
+	r.in.pKey = pKey;
+	r.out.pKey = pKey;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_CloseKey_r(b, tctx, &r),
+		"CloseKey failed");
+	torture_assert_werr_ok(tctx,
+		r.out.result,
+		"CloseKey failed");
+	torture_assert(tctx,
+		ndr_policy_handle_empty(pKey),
+		"policy_handle non empty after CloseKey");
+
+	return true;
+}
+
+static bool test_GetRootKey_int(struct torture_context *tctx,
+				struct dcerpc_pipe *p,
+				struct policy_handle *phKey)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_GetRootKey r;
+	WERROR Status;
+	WERROR rpc_status;
+
+	r.in.samDesired = SEC_FLAG_MAXIMUM_ALLOWED;
+	r.out.Status = &Status;
+	r.out.rpc_status = &rpc_status;
+	r.out.phKey = phKey;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_GetRootKey_r(b, tctx, &r),
+		"GetRootKey failed");
+	torture_assert_werr_ok(tctx,
+		*r.out.Status,
+		"GetRootKey failed");
+
+	return true;
+}
+
+static bool test_EnumKey_int(struct torture_context *tctx,
+			     struct dcerpc_pipe *p,
+			     struct policy_handle *hKey)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_EnumKey r;
+	const char *KeyName;
+	NTTIME lpftLastWriteTime;
+	WERROR rpc_status;
+
+	r.in.hKey = *hKey;
+	r.in.dwIndex = 0;
+	r.out.KeyName = &KeyName;
+	r.out.lpftLastWriteTime = &lpftLastWriteTime;
+	r.out.rpc_status = &rpc_status;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_EnumKey_r(b, tctx, &r),
+		"EnumKey failed");
+	torture_assert_werr_ok(tctx,
+		r.out.result,
+		"EnumKey failed");
+
+	return true;
+}
+
+static bool test_OpenKey_int(struct torture_context *tctx,
+			     struct dcerpc_pipe *p,
+			     struct policy_handle *hKey,
+			     const char *lpSubKey,
+			     struct policy_handle *phKey)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_OpenKey r;
+	WERROR Status;
+	WERROR rpc_status;
+
+	r.in.hKey = *hKey;
+	r.in.lpSubKey = lpSubKey;
+	r.in.samDesired = SEC_FLAG_MAXIMUM_ALLOWED;
+	r.out.Status = &Status;
+	r.out.rpc_status = &rpc_status;
+	r.out.phKey = phKey;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_OpenKey_r(b, tctx, &r),
+		"OpenKey failed");
+	torture_assert_werr_ok(tctx,
+		*r.out.Status,
+		"OpenKey failed");
+
+	return true;
+}
+
+static bool test_EnumValue_int(struct torture_context *tctx,
+			       struct dcerpc_pipe *p,
+			       struct policy_handle *hKey)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_EnumValue r;
+	const char *lpValueName;
+	uint32_t lpType;
+	uint32_t TotalSize;
+	WERROR rpc_status;
+	int i = 0;
+
+	do {
+		uint32_t lpcbData = 1024;
+
+		r.in.hKey = *hKey;
+		r.in.dwIndex = i++;
+		r.in.lpcbData = &lpcbData;
+		r.out.lpValueName = &lpValueName;
+		r.out.lpType = &lpType;
+		r.out.lpData = talloc_array(tctx, uint8_t, lpcbData);
+		r.out.TotalSize = &TotalSize;
+		r.out.rpc_status = &rpc_status;
+		r.out.lpcbData = &lpcbData;
+
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_clusapi_EnumValue_r(b, tctx, &r),
+			"EnumValue failed");
+
+	} while (W_ERROR_IS_OK(r.out.result));
+
+	torture_assert_werr_equal(tctx,
+		r.out.result,
+		WERR_NO_MORE_ITEMS,
+		"EnumValue failed");
+
+	return true;
+}
+
+static bool test_QueryInfoKey_int(struct torture_context *tctx,
+				  struct dcerpc_pipe *p,
+				  struct policy_handle *hKey)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_QueryInfoKey r;
+	uint32_t lpcSubKeys;
+	uint32_t lpcbMaxSubKeyLen;
+	uint32_t lpcValues;
+	uint32_t lpcbMaxValueNameLen;
+	uint32_t lpcbMaxValueLen;
+	uint32_t lpcbSecurityDescriptor;
+	NTTIME lpftLastWriteTime;
+	WERROR rpc_status;
+
+	r.in.hKey = *hKey;
+	r.out.lpcSubKeys = &lpcSubKeys;
+	r.out.lpcbMaxSubKeyLen = &lpcbMaxSubKeyLen;
+	r.out.lpcValues = &lpcValues;
+	r.out.lpcbMaxValueNameLen = &lpcbMaxValueNameLen;
+	r.out.lpcbMaxValueLen = &lpcbMaxValueLen;
+	r.out.lpcbSecurityDescriptor = &lpcbSecurityDescriptor;
+	r.out.lpftLastWriteTime = &lpftLastWriteTime;
+	r.out.rpc_status = &rpc_status;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_QueryInfoKey_r(b, tctx, &r),
+		"QueryInfoKey failed");
+	torture_assert_werr_ok(tctx,
+		r.out.result,
+		"QueryInfoKey failed");
+
+	return true;
+}
+
+static bool test_GetKeySecurity_int(struct torture_context *tctx,
+				    struct dcerpc_pipe *p,
+				    struct policy_handle *hKey)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_GetKeySecurity r;
+	uint32_t SecurityInformation = SECINFO_DACL | SECINFO_OWNER | SECINFO_GROUP;
+	struct RPC_SECURITY_DESCRIPTOR pRpcSecurityDescriptor;
+	WERROR rpc_status;
+
+	ZERO_STRUCT(pRpcSecurityDescriptor);
+
+	r.in.hKey = *hKey;
+	r.in.SecurityInformation = SecurityInformation;
+	r.in.pRpcSecurityDescriptor = &pRpcSecurityDescriptor;
+	r.out.rpc_status = &rpc_status;
+	r.out.pRpcSecurityDescriptor = &pRpcSecurityDescriptor;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_GetKeySecurity_r(b, tctx, &r),
+		"GetKeySecurity failed");
+
+	if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
+		pRpcSecurityDescriptor.lpSecurityDescriptor = talloc_array(tctx,
+		uint8_t, pRpcSecurityDescriptor.cbInSecurityDescriptor);
+
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_clusapi_GetKeySecurity_r(b, tctx, &r),
+			"GetKeySecurity failed");
+	}
+
+	torture_assert_werr_ok(tctx,
+		r.out.result,
+		"GetKeySecurity failed");
+
+	return true;
+}
+
+static bool test_GetRootKey(struct torture_context *tctx,
+			    struct dcerpc_pipe *p)
+{
+	struct policy_handle hKey;
+
+	if (!test_GetRootKey_int(tctx, p, &hKey)) {
+		return false;
+	}
+
+	test_CloseKey_int(tctx, p, &hKey);
+
+	return true;
+}
+
+static bool test_CloseKey(struct torture_context *tctx,
+			  struct dcerpc_pipe *p)
+{
+	struct policy_handle hKey;
+
+	if (!test_GetRootKey_int(tctx, p, &hKey)) {
+		return false;
+	}
+
+	return test_CloseKey_int(tctx, p, &hKey);
+}
+
+static bool test_EnumKey(struct torture_context *tctx,
+			 struct dcerpc_pipe *p)
+{
+	struct policy_handle hKey;
+	bool ret = true;
+
+	if (!test_GetRootKey_int(tctx, p, &hKey)) {
+		return false;
+	}
+
+	ret = test_EnumKey_int(tctx, p, &hKey);
+
+	test_CloseKey_int(tctx, p, &hKey);
+
+	return ret;
+}
+
+static bool test_one_key(struct torture_context *tctx,
+			 struct dcerpc_pipe *p,
+			 struct policy_handle *hKey,
+			 const char *KeyName)
+{
+	struct policy_handle phKey;
+
+	torture_assert(tctx,
+		test_OpenKey_int(tctx, p, hKey, KeyName, &phKey),
+		"failed to open key");
+
+	torture_assert(tctx,
+		test_QueryInfoKey_int(tctx, p, &phKey),
+		"failed to enum values");
+	torture_assert(tctx,
+		test_GetKeySecurity_int(tctx, p, &phKey),
+		"failed to get key security");
+
+	torture_assert(tctx,
+		test_EnumValue_int(tctx, p, &phKey),
+		"failed to enum values");
+
+	torture_assert(tctx,
+		test_CloseKey_int(tctx, p, &phKey),
+		"failed to close key");
+
+	return true;
+}
+
+static bool test_all_keys(struct torture_context *tctx,
+			  struct dcerpc_pipe *p)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct policy_handle hKey;
+	struct clusapi_EnumKey r;
+	const char *KeyName;
+	NTTIME lpftLastWriteTime;
+	WERROR rpc_status;
+	int i = 0;
+
+	if (!test_GetRootKey_int(tctx, p, &hKey)) {
+		return false;
+	}
+
+	do {
+		r.in.hKey = hKey;
+		r.in.dwIndex = i++;
+		r.out.KeyName = &KeyName;
+		r.out.lpftLastWriteTime = &lpftLastWriteTime;
+		r.out.rpc_status = &rpc_status;
+
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_clusapi_EnumKey_r(b, tctx, &r),
+			"EnumKey failed");
+
+		if (W_ERROR_IS_OK(r.out.result)) {
+			torture_assert(tctx,
+				test_one_key(tctx, p, &hKey, KeyName),
+				"failed to test one key");
+		}
+
+	} while (W_ERROR_IS_OK(r.out.result));
+
+	torture_assert_werr_equal(tctx,
+		r.out.result,
+		WERR_NO_MORE_ITEMS,
+		"EnumKey failed");
+
+	test_CloseKey_int(tctx, p, &hKey);
+
+	return true;
+}
+
 struct torture_suite *torture_rpc_clusapi(TALLOC_CTX *mem_ctx)
 {
 	struct torture_rpc_tcase *tcase;
@@ -2323,6 +2652,17 @@ struct torture_suite *torture_rpc_clusapi(TALLOC_CTX *mem_ctx)
 				   test_GetNetInterfaceId);
 	torture_rpc_tcase_add_test(tcase, "all_netinterfaces",
 				   test_all_netinterfaces);
+
+	tcase = torture_suite_add_rpc_iface_tcase(suite, "registry",
+						  &ndr_table_clusapi);
+	torture_rpc_tcase_add_test(tcase, "GetRootKey",
+				   test_GetRootKey);
+	torture_rpc_tcase_add_test(tcase, "CloseKey",
+				   test_CloseKey);
+	torture_rpc_tcase_add_test(tcase, "EnumKey",
+				   test_EnumKey);
+	torture_rpc_tcase_add_test(tcase, "all_keys",
+				   test_all_keys);
 
 	return suite;
 }
