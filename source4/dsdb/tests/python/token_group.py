@@ -8,8 +8,8 @@ import os
 
 sys.path.insert(0, "bin/python")
 import samba
-samba.ensure_external_module("testtools", "testtools")
-samba.ensure_external_module("subunit", "subunit/python")
+
+from samba.tests.subunitrun import SubunitOptions, TestProgram
 
 import samba.getopt as options
 
@@ -22,8 +22,6 @@ from samba import gensec
 from samba.credentials import Credentials, DONT_USE_KERBEROS
 from samba.dsdb import GTYPE_SECURITY_GLOBAL_GROUP, GTYPE_SECURITY_UNIVERSAL_GROUP
 
-from subunit.run import SubunitTestRunner
-import unittest
 import samba.tests
 from samba.tests import delete_force
 
@@ -37,6 +35,8 @@ parser.add_option_group(options.VersionOptions(parser))
 # use command line creds if available
 credopts = options.CredentialsOptions(parser)
 parser.add_option_group(credopts)
+subunitopts = SubunitOptions(parser)
+parser.add_option_group(subunitopts)
 opts, args = parser.parse_args()
 
 if len(args) < 1:
@@ -117,7 +117,7 @@ class StaticTokenTest(samba.tests.TestCase):
             print("token sids don't match")
             print("difference : %s" % sidset1.difference(sidset2))
             self.fail(msg="calculated groups don't match against user DN tokenGroups")
-        
+
     def test_pac_groups(self):
         settings = {}
         settings["lp_ctx"] = lp
@@ -142,8 +142,8 @@ class StaticTokenTest(samba.tests.TestCase):
         client_finished = False
         server_finished = False
         server_to_client = ""
-        
-        """Run the actual call loop"""
+
+        # Run the actual call loop.
         while client_finished == False and server_finished == False:
             if not client_finished:
                 print "running client gensec_update"
@@ -495,10 +495,6 @@ if not "://" in url:
     else:
         url = "ldap://%s" % url
 
-runner = SubunitTestRunner()
-rc = 0
-if not runner.run(unittest.makeSuite(StaticTokenTest)).wasSuccessful():
-    rc = 1
-if not runner.run(unittest.makeSuite(DynamicTokenTest)).wasSuccessful():
-    rc = 1
-sys.exit(rc)
+samdb = SamDB(url, credentials=creds, session_info=system_session(lp), lp=lp)
+
+TestProgram(module=__name__, opts=subunitopts)
