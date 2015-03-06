@@ -661,7 +661,7 @@ class DirectoryServiceAgent(object):
                     flags = dsdn.get_binary_integer()
                     dnstr = str(dsdn.dn)
 
-                    if not dnstr in tmp_table.keys():
+                    if not dnstr in tmp_table:
                         rep = NCReplica(self.dsa_dnstr, self.dsa_guid, dnstr)
                         tmp_table[dnstr] = rep
                     else:
@@ -1467,7 +1467,7 @@ class Site(object):
             dnstr = str(msg.dn)
 
             # already loaded
-            if dnstr in self.dsa_table.keys():
+            if dnstr in self.dsa_table:
                 continue
 
             dsa = DirectoryServiceAgent(dnstr)

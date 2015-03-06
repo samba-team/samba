@@ -1850,7 +1850,7 @@ class KCC(object):
 
     def construct_intrasite_graph(self, site_local, dc_local,
                                   nc_x, gc_only, detect_stale):
-
+        # [MS-ADTS] 6.2.2.2
         # We're using the MS notation names here to allow
         # correlation back to the published algorithm.
         #
@@ -1898,18 +1898,39 @@ class KCC(object):
         # needed replica table for this DSA
         dc_local.add_needed_replica(l_of_x)
 
-        # Empty replica sequence list
+        # Replica list
+        #
+        # Let R be a sequence containing each writable replica f of x
+        # such that f "is present" on a DC s satisfying the following
+        # criteria:
+        #
+        #  * s is a writable DC other than the local DC.
+        #
+        #  * s is in the same site as the local DC.
+        #
+        #  * If x is a read-only full replica and x is a domain NC,
+        #    then the DC's functional level is at least
+        #    DS_BEHAVIOR_WIN2008.
+        #
+        #  * Bit NTDSSETTINGS_OPT_IS_TOPL_DETECT_STALE_DISABLED is set
+        #    in the options attribute of the site settings object for
+        #    the local DC's site, or no tuple z exists in the
+        #    kCCFailedLinks or kCCFailedConnections variables such
+        #    that z.UUIDDsa is the objectGUID of the nTDSDSA object
+        #    for s, z.FailureCount > 0, and the current time -
+        #    z.TimeFirstFailure > 2 hours.
+
         r_list = []
 
         # We'll loop thru all the DSAs looking for
         # writeable NC replicas that match the naming
         # context dn for (nc_x)
         #
-        for dc_s_dn, dc_s in self.my_site.dsa_table.items():
+        for dc_s in self.my_site.dsa_table.values():
 
             # If this partition (nc_x) doesn't appear as a
             # replica (f_of_x) on (dc_s) then continue
-            if not nc_x.nc_dnstr in dc_s.current_rep_table.keys():
+            if not nc_x.nc_dnstr in dc_s.current_rep_table:
                 continue
 
             # Pull out the NCReplica (f) of (x) with the dn
@@ -1935,6 +1956,7 @@ class KCC(object):
             # Certain replica graphs are produced only
             # for global catalogs, so test against
             # method input parameter
+            # XXX can't see this in the KCC docs, though it sounds convincing
             if gc_only and not dc_s.is_gc():
                 continue
 
@@ -1974,17 +1996,25 @@ class KCC(object):
         # on the local DC, append to R each partial replica (p of x)
         # such that p "is present" on a DC satisfying the same
         # criteria defined above for full replica DCs.
+        #
+        # XXX This loop and the previous one differ only in whether
+        # the replica is partial or not. here we only accept partial
+        # (because we're partial); before we onl accepted full. if
+        # order doen't matter (and it doesn't seem to as we're using
+        # hash ordering here) these loops could easily be merged. Or
+        # this could be a helper function.
+
         if partial:
 
             # Now we loop thru all the DSAs looking for
             # partial NC replicas that match the naming
             # context dn for (NC x)
-            for dc_s_dn, dc_s in self.my_site.dsa_table.items():
+            for dc_s in self.my_site.dsa_table.values():
 
                 # If this partition NC (x) doesn't appear as a
                 # replica (p) of NC (x) on the dsa DC (s) then
                 # continue
-                if not nc_x.nc_dnstr in dc_s.current_rep_table.keys():
+                if not nc_x.nc_dnstr in dc_s.current_rep_table:
                     continue
 
                 # Pull out the NCReplica with the dn that
