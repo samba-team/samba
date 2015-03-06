@@ -439,7 +439,7 @@ unless ($opt_list) {
 		require target::Samba;
 		$target = new Samba($bindir, \%binary_mapping, $ldap, $srcdir, $server_maxtime);
 	} elsif ($opt_target eq "samba3") {
-		$testenv_default = "member";
+		$testenv_default = "nt4_member";
 		require target::Samba3;
 		$target = new Samba3($bindir, \%binary_mapping, $srcdir_abs, $server_maxtime);
 	}

@@ -380,7 +380,7 @@ for env in ["nt4_dc", "fl2003dc"]:
     for t in winbind_wbclient_tests:
         plansmbtorture4testsuite(t, "%s:local" % env, '//$SERVER/tmp -U$DC_USERNAME%$DC_PASSWORD')
 
-for env in ["nt4_dc", "member", "ad_dc", "ad_dc_ntvfs", "ad_member", "s4member"]:
+for env in ["nt4_dc", "nt4_member", "ad_dc", "ad_dc_ntvfs", "ad_member", "s4member"]:
     tests = ["--ping", "--separator",
              "--own-domain",
              "--all-domains",
@@ -419,7 +419,7 @@ for env in ["nt4_dc", "member", "ad_dc", "ad_dc_ntvfs", "ad_member", "s4member"]
 
 
 nsstest4 = binpath("nsstest")
-for env in ["ad_dc:local", "ad_dc_ntvfs:local", "s4member:local", "nt4_dc:local", "ad_member:local", "member:local"]:
+for env in ["ad_dc:local", "ad_dc_ntvfs:local", "s4member:local", "nt4_dc:local", "ad_member:local", "nt4_member:local"]:
     if os.path.exists(nsstest4):
         plantestsuite("samba.nss.test using winbind(%s)" % env, env, [os.path.join(bbdir, "nsstest.sh"), nsstest4, os.path.join(samba4bindir, "shared/libnss_wrapper_winbind.so.2")])
     else:

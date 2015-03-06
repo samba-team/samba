@@ -128,7 +128,7 @@ def get_interface(netbiosname):
 
     interfaces = {
         "localnt4dc2": 2,
-        "localmember3": 3,
+        "localnt4member3": 3,
         "localshare4": 4,
         "localserver5": 5,
         "localktest6": 6,

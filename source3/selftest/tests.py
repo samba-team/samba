@@ -127,14 +127,14 @@ for options in ["--option=clientusespnego=no", " --option=clientntlmv2auth=no --
     env = "nt4_dc"
     plantestsuite("samba3.blackbox.smbclient_auth.plain (%s) %s" % (env, options), env, [os.path.join(samba3srcdir, "script/tests/test_smbclient_auth.sh"), '$SERVER', '$SERVER_IP', '$DC_USERNAME', '$DC_PASSWORD', smbclient3, configuration, options])
 
-for env in ["nt4_dc", "member", "ad_member", "ad_dc_ntvfs", "s4member"]:
+for env in ["nt4_dc", "nt4_member", "ad_member", "ad_dc_ntvfs", "s4member"]:
     plantestsuite("samba3.blackbox.smbclient_machine_auth.plain (%s:local)" % env, "%s:local" % env, [os.path.join(samba3srcdir, "script/tests/test_smbclient_machine_auth.sh"), '$SERVER', smbclient3, configuration])
 
-for env in ["nt4_dc", "member", "ad_member"]:
+for env in ["nt4_dc", "nt4_member", "ad_member"]:
     plantestsuite("samba3.blackbox.smbclient_auth.plain (%s)" % env, env, [os.path.join(samba3srcdir, "script/tests/test_smbclient_auth.sh"), '$SERVER', '$SERVER_IP', '$DC_USERNAME', '$DC_PASSWORD', smbclient3, configuration])
     plantestsuite("samba3.blackbox.smbclient_auth.plain (%s) member creds" % env, env, [os.path.join(samba3srcdir, "script/tests/test_smbclient_auth.sh"), '$SERVER', '$SERVER_IP', '$SERVER/$USERNAME', '$PASSWORD', smbclient3, configuration])
 
-for env in ["member", "ad_member"]:
+for env in ["nt4_member", "ad_member"]:
     plantestsuite("samba3.blackbox.net_cred_change.(%s:local)" % env, "%s:local" % env, [os.path.join(samba3srcdir, "script/tests/test_net_cred_change.sh"), configuration])
 
 env = "ad_member"
@@ -159,13 +159,13 @@ plantestsuite("samba3.blackbox.smbclient_auth.plain (%s) bad username" % env, en
 for env in ["nt4_dc"]:
     plantestsuite("samba3.blackbox.smbclient_s3.plain (%s)" % env, env, [os.path.join(samba3srcdir, "script/tests/test_smbclient_s3.sh"), '$SERVER', '$SERVER_IP', '$DOMAIN', '$DC_USERNAME', '$DC_PASSWORD', '$USERID', '$LOCAL_PATH', '$PREFIX', smbclient3, wbinfo, net, configuration])
 
-for env in ["member", "ad_member"]:
+for env in ["nt4_member", "ad_member"]:
     plantestsuite("samba3.blackbox.smbclient_s3.plain (%s) member creds" % env, env, [os.path.join(samba3srcdir, "script/tests/test_smbclient_s3.sh"), '$SERVER', '$SERVER_IP', '$SERVER', '$SERVER/$USERNAME', '$PASSWORD', '$USERID', '$LOCAL_PATH', '$PREFIX', smbclient3, wbinfo, net, configuration])
 
 for env in ["nt4_dc"]:
     plantestsuite("samba3.blackbox.smbclient_s3.sign (%s)" % env, env, [os.path.join(samba3srcdir, "script/tests/test_smbclient_s3.sh"), '$SERVER', '$SERVER_IP', '$DOMAIN', '$DC_USERNAME', '$DC_PASSWORD', '$USERID', '$LOCAL_PATH', '$PREFIX', smbclient3, wbinfo, net, configuration, "--signing=required"])
 
-for env in ["member", "ad_member"]:
+for env in ["nt4_member", "ad_member"]:
     plantestsuite("samba3.blackbox.smbclient_s3.sign (%s) member creds" % env, env, [os.path.join(samba3srcdir, "script/tests/test_smbclient_s3.sh"), '$SERVER', '$SERVER_IP', '$SERVER', '$SERVER/$USERNAME', '$PASSWORD', '$USERID', '$LOCAL_PATH', '$PREFIX', smbclient3, wbinfo, net, configuration, "--signing=required"])
 
 for env in ["nt4_dc"]:
@@ -307,9 +307,9 @@ for t in tests:
     elif t == "winbind.pac":
         plansmbtorture4testsuite(t, "ad_member:local", '//$SERVER/tmp --realm=$REALM --machine-pass --option=torture:addc=$DC_SERVER', description="machine account")
     elif t == "unix.whoami":
-        plansmbtorture4testsuite(t, "member:local", '//$SERVER/tmp --machine-pass', description="machine account")
+        plansmbtorture4testsuite(t, "nt4_member:local", '//$SERVER/tmp --machine-pass', description="machine account")
         plansmbtorture4testsuite(t, "ad_member:local", '//$SERVER/tmp --machine-pass --option=torture:addc=$DC_SERVER', description="machine account")
-        for env in ["nt4_dc", "member"]:
+        for env in ["nt4_dc", "nt4_member"]:
             plansmbtorture4testsuite(t, env, '//$SERVER/tmp -U$DC_USERNAME%$DC_PASSWORD')
             plansmbtorture4testsuite(t, env, '//$SERVER/tmpguest -U%', description='anonymous connection')
         for env in ["ad_dc", "ad_member"]:
@@ -379,7 +379,7 @@ for t in tests:
         plansmbtorture4testsuite(t, "nt4_dc_schannel", '//$SERVER_IP/tmp -U$%', description="anonymous password set (schannel enforced server-side)")
         plansmbtorture4testsuite(t, "ad_dc", '//$SERVER/tmp -U$%', description="anonymous password set")
     elif t == "local.nss":
-        for env in ["nt4_dc:local", "ad_member:local", "member:local", "ad_dc:local", "ad_dc_ntvfs:local"]:
+        for env in ["nt4_dc:local", "ad_member:local", "nt4_member:local", "ad_dc:local", "ad_dc_ntvfs:local"]:
             plansmbtorture4testsuite(t, env, '//$SERVER/tmp -U$USERNAME%$PASSWORD')
     else:
         plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD')

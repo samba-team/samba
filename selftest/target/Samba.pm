@@ -159,7 +159,7 @@ sub get_interface($)
 
     my %interfaces = ();
     $interfaces{"localnt4dc2"} = 3;
-    $interfaces{"localmember3"} = 4;
+    $interfaces{"localnt4member3"} = 4;
     $interfaces{"localshare4"} = 5;
 
     $interfaces{"localktest6"} = 7;

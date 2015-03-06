@@ -183,13 +183,13 @@ sub setup_env($$$)
 		return $self->setup_maptoguest("$path/maptoguest");
 	} elsif ($envname eq "ktest") {
 		return $self->setup_ktest("$path/ktest");
-	} elsif ($envname eq "member") {
+	} elsif ($envname eq "nt4_member") {
 		if (not defined($self->{vars}->{nt4_dc})) {
 			if (not defined($self->setup_nt4_dc("$path/nt4_dc"))) {
 			        return undef;
 			}
 		}
-		return $self->setup_member("$path/member", $self->{vars}->{nt4_dc});
+		return $self->setup_nt4_member("$path/nt4_member", $self->{vars}->{nt4_dc});
 	} else {
 		return "UNKNOWN";
 	}
@@ -289,7 +289,7 @@ sub setup_nt4_dc_schannel($$)
 	return $vars;
 }
 
-sub setup_member($$$)
+sub setup_nt4_member($$$)
 {
 	my ($self, $prefix, $nt4_dc_vars) = @_;
 	my $count = 0;
@@ -303,8 +303,8 @@ sub setup_member($$$)
 	dbwrap_tdb_mutexes:* = yes
 ";
 	my $ret = $self->provision($prefix,
-				   "LOCALMEMBER3",
-				   "localmember3pass",
+				   "LOCALNT4MEMBER3",
+				   "localnt4member3pass",
 				   $member_options);
 
 	$ret or return undef;
