@@ -173,8 +173,8 @@ sub setup_env($$$)
 	        return $self->{vars}->{$envname};
 	}
 
-	if ($envname eq "s3dc") {
-		return $self->setup_s3dc("$path/s3dc");
+	if ($envname eq "nt4_dc") {
+		return $self->setup_nt4_dc("$path/nt4_dc");
 	} elsif ($envname eq "s3dc_schannel") {
 		return $self->setup_s3dc_schannel("$path/s3dc_schannel");
 	} elsif ($envname eq "simpleserver") {
@@ -184,24 +184,24 @@ sub setup_env($$$)
 	} elsif ($envname eq "ktest") {
 		return $self->setup_ktest("$path/ktest");
 	} elsif ($envname eq "member") {
-		if (not defined($self->{vars}->{s3dc})) {
-			if (not defined($self->setup_s3dc("$path/s3dc"))) {
+		if (not defined($self->{vars}->{nt4_dc})) {
+			if (not defined($self->setup_nt4_dc("$path/nt4_dc"))) {
 			        return undef;
 			}
 		}
-		return $self->setup_member("$path/member", $self->{vars}->{s3dc});
+		return $self->setup_member("$path/member", $self->{vars}->{nt4_dc});
 	} else {
 		return "UNKNOWN";
 	}
 }
 
-sub setup_s3dc($$)
+sub setup_nt4_dc($$)
 {
 	my ($self, $path) = @_;
 
-	print "PROVISIONING S3DC...";
+	print "PROVISIONING NT4 DC...";
 
-	my $s3dc_options = "
+	my $nt4_dc_options = "
 	domain master = yes
 	domain logons = yes
 	lanman auth = yes
@@ -219,9 +219,9 @@ sub setup_s3dc($$)
 ";
 
 	my $vars = $self->provision($path,
-				    "LOCALS3DC2",
-				    "locals3dc2pass",
-				    $s3dc_options);
+				    "LOCALNT4DC2",
+				    "localntdc2pass",
+				    $nt4_dc_options);
 
 	$vars or return undef;
 
@@ -236,7 +236,7 @@ sub setup_s3dc($$)
 	$vars->{DC_USERNAME} = $vars->{USERNAME};
 	$vars->{DC_PASSWORD} = $vars->{PASSWORD};
 
-	$self->{vars}->{s3dc} = $vars;
+	$self->{vars}->{nt4_dc} = $vars;
 
 	return $vars;
 }
@@ -291,7 +291,7 @@ sub setup_s3dc_schannel($$)
 
 sub setup_member($$$)
 {
-	my ($self, $prefix, $s3dcvars) = @_;
+	my ($self, $prefix, $nt4_dc_vars) = @_;
 	my $count = 0;
 	my $rc;
 
@@ -327,8 +327,8 @@ sub setup_member($$$)
 	my $net = Samba::bindir_path($self, "net");
 	my $cmd = "";
 	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$ret->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
-	$cmd .= "$net join $ret->{CONFIGURATION} $s3dcvars->{DOMAIN} member";
-	$cmd .= " -U$s3dcvars->{USERNAME}\%$s3dcvars->{PASSWORD}";
+	$cmd .= "$net join $ret->{CONFIGURATION} $nt4_dc_vars->{DOMAIN} member";
+	$cmd .= " -U$nt4_dc_vars->{USERNAME}\%$nt4_dc_vars->{PASSWORD}";
 
 	if (system($cmd) != 0) {
 	    warn("Join failed\n$cmd");
@@ -339,12 +339,12 @@ sub setup_member($$$)
 	       return undef;
 	}
 
-	$ret->{DC_SERVER} = $s3dcvars->{SERVER};
-	$ret->{DC_SERVER_IP} = $s3dcvars->{SERVER_IP};
-	$ret->{DC_SERVER_IPV6} = $s3dcvars->{SERVER_IPV6};
-	$ret->{DC_NETBIOSNAME} = $s3dcvars->{NETBIOSNAME};
-	$ret->{DC_USERNAME} = $s3dcvars->{USERNAME};
-	$ret->{DC_PASSWORD} = $s3dcvars->{PASSWORD};
+	$ret->{DC_SERVER} = $nt4_dc_vars->{SERVER};
+	$ret->{DC_SERVER_IP} = $nt4_dc_vars->{SERVER_IP};
+	$ret->{DC_SERVER_IPV6} = $nt4_dc_vars->{SERVER_IPV6};
+	$ret->{DC_NETBIOSNAME} = $nt4_dc_vars->{NETBIOSNAME};
+	$ret->{DC_USERNAME} = $nt4_dc_vars->{USERNAME};
+	$ret->{DC_PASSWORD} = $nt4_dc_vars->{PASSWORD};
 
 	return $ret;
 }

@@ -158,7 +158,7 @@ sub get_interface($)
     $netbiosname = lc($netbiosname);
 
     my %interfaces = ();
-    $interfaces{"locals3dc2"} = 3;
+    $interfaces{"localnt4dc2"} = 3;
     $interfaces{"localmember3"} = 4;
     $interfaces{"localshare4"} = 5;
 

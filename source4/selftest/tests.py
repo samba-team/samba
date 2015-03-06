@@ -151,7 +151,7 @@ for t in net_tests:
 # FIXME: Integrate these into a single smbtorture test
 
 transport = "ncacn_np"
-for env in ["ad_dc_ntvfs", "s3dc"]:
+for env in ["ad_dc_ntvfs", "nt4_dc"]:
     for ntlmoptions in [
         "-k no --option=usespnego=yes",
         "-k no --option=usespnego=yes --option=ntlmssp_client:128bit=no",
@@ -287,7 +287,7 @@ for t in smbtorture4_testsuites("dlz_bind9."):
     #The dlz_bind9 tests needs to look at the DNS database
     plansmbtorture4testsuite(t, "chgdcpass:local", ["ncalrpc:$SERVER", '-U$USERNAME%$PASSWORD'])
 
-planpythontestsuite("s3dc", "samba.tests.libsmb_samba_internal");
+planpythontestsuite("nt4_dc", "samba.tests.libsmb_samba_internal");
 
 # Blackbox Tests:
 # tests that interact directly with the command-line tools rather than using
@@ -376,11 +376,11 @@ for env in ["ad_dc", "s4member", "ad_member"]:
     for t in winbind_ad_client_tests:
         plansmbtorture4testsuite(t, "%s:local" % env, wb_opts + ['//$SERVER/tmp', '--realm=$REALM', '--machine-pass', '--option=torture:addc=$DC_SERVER'])
 
-for env in ["s3dc", "fl2003dc"]:
+for env in ["nt4_dc", "fl2003dc"]:
     for t in winbind_wbclient_tests:
         plansmbtorture4testsuite(t, "%s:local" % env, '//$SERVER/tmp -U$DC_USERNAME%$DC_PASSWORD')
 
-for env in ["s3dc", "member", "ad_dc", "ad_dc_ntvfs", "ad_member", "s4member"]:
+for env in ["nt4_dc", "member", "ad_dc", "ad_dc_ntvfs", "ad_member", "s4member"]:
     tests = ["--ping", "--separator",
              "--own-domain",
              "--all-domains",
@@ -419,7 +419,7 @@ for env in ["s3dc", "member", "ad_dc", "ad_dc_ntvfs", "ad_member", "s4member"]:
 
 
 nsstest4 = binpath("nsstest")
-for env in ["ad_dc:local", "ad_dc_ntvfs:local", "s4member:local", "s3dc:local", "ad_member:local", "member:local"]:
+for env in ["ad_dc:local", "ad_dc_ntvfs:local", "s4member:local", "nt4_dc:local", "ad_member:local", "member:local"]:
     if os.path.exists(nsstest4):
         plantestsuite("samba.nss.test using winbind(%s)" % env, env, [os.path.join(bbdir, "nsstest.sh"), nsstest4, os.path.join(samba4bindir, "shared/libnss_wrapper_winbind.so.2")])
     else:
