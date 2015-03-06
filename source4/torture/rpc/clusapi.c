@@ -966,6 +966,80 @@ static bool test_EvictNode(struct torture_context *tctx,
 	return ret;
 }
 
+static bool test_OpenGroup_int(struct torture_context *tctx,
+			       struct dcerpc_pipe *p,
+			       struct policy_handle *hGroup)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_OpenGroup r;
+	const char *lpszGroupName = "Cluster Group";
+	WERROR Status;
+	WERROR rpc_status;
+
+	r.in.lpszGroupName = lpszGroupName;
+	r.out.rpc_status = &rpc_status;
+	r.out.Status = &Status;
+	r.out.hGroup= hGroup;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_OpenGroup_r(b, tctx, &r),
+		"OpenGroup failed");
+	torture_assert_werr_ok(tctx,
+		*r.out.Status,
+		"OpenGroup failed");
+
+	return true;
+}
+
+static bool test_CloseGroup_int(struct torture_context *tctx,
+				struct dcerpc_pipe *p,
+				struct policy_handle *Group)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_CloseGroup r;
+
+	r.in.Group = Group;
+	r.out.Group = Group;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_CloseGroup_r(b, tctx, &r),
+		"CloseGroup failed");
+	torture_assert_werr_ok(tctx,
+		r.out.result,
+		"CloseGroup failed");
+	torture_assert(tctx,
+		ndr_policy_handle_empty(Group),
+		"policy_handle non empty after CloseGroup");
+
+	return true;
+}
+
+static bool test_OpenGroup(struct torture_context *tctx,
+			   struct dcerpc_pipe *p)
+{
+	struct policy_handle hGroup;
+
+	if (!test_OpenGroup_int(tctx, p, &hGroup)) {
+		return false;
+	}
+
+	test_CloseGroup_int(tctx, p, &hGroup);
+
+	return true;
+}
+
+static bool test_CloseGroup(struct torture_context *tctx,
+			    struct dcerpc_pipe *p)
+{
+	struct policy_handle hGroup;
+
+	if (!test_OpenGroup_int(tctx, p, &hGroup)) {
+		return false;
+	}
+
+	return test_CloseGroup_int(tctx, p, &hGroup);
+}
+
 struct torture_suite *torture_rpc_clusapi(TALLOC_CTX *mem_ctx)
 {
 	struct torture_rpc_tcase *tcase;
@@ -1038,6 +1112,15 @@ struct torture_suite *torture_rpc_clusapi(TALLOC_CTX *mem_ctx)
 	test = torture_rpc_tcase_add_test(tcase, "EvictNode",
 					  test_EvictNode);
 	test->dangerous = true;
+
+	tcase = torture_suite_add_rpc_iface_tcase(suite, "group",
+						  &ndr_table_clusapi);
+
+	torture_rpc_tcase_add_test(tcase, "OpenGroup",
+				   test_OpenGroup);
+	torture_rpc_tcase_add_test(tcase, "CloseGroup",
+				   test_CloseGroup);
+
 
 	return suite;
 }
