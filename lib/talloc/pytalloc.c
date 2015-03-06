@@ -102,7 +102,7 @@ static int pytalloc_default_cmp(PyObject *_obj1, PyObject *_obj2)
 	pytalloc_Object *obj1 = (pytalloc_Object *)_obj1,
 					 *obj2 = (pytalloc_Object *)_obj2;
 	if (obj1->ob_type != obj2->ob_type)
-		return (obj1->ob_type - obj2->ob_type);
+		return ((char *)obj1->ob_type - (char *)obj2->ob_type);
 
 	return ((char *)pytalloc_get_ptr(obj1) - (char *)pytalloc_get_ptr(obj2));
 }
