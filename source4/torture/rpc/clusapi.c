@@ -186,10 +186,461 @@ static bool test_CreateEnum(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_GetQuorumResource(struct torture_context *tctx,
+				   struct dcerpc_pipe *p)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_GetQuorumResource r;
+	const char *lpszResourceName;
+	const char *lpszDeviceName;
+	uint32_t pdwMaxQuorumLogSize;
+	uint32_t rpc_status;
+
+	r.out.lpszResourceName = &lpszResourceName;
+	r.out.lpszDeviceName = &lpszDeviceName;
+	r.out.pdwMaxQuorumLogSize = &pdwMaxQuorumLogSize;
+	r.out.rpc_status = &rpc_status;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_GetQuorumResource_r(b, tctx, &r),
+		"GetQuorumResource failed");
+	torture_assert_werr_ok(tctx,
+		W_ERROR(r.out.result),
+		"GetQuorumResource failed");
+
+	return true;
+}
+
+static bool test_SetQuorumResource(struct torture_context *tctx,
+				   struct dcerpc_pipe *p)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_SetQuorumResource r;
+	const char *lpszDeviceName = "";
+	uint32_t dwMaxQuorumLogSize = 0;
+	uint32_t rpc_status;
+	struct policy_handle hResource;
+
+	/* we need to figure out how this call works and what we provide as
+	   devicename and resource handle - gd
+	 */
+
+	torture_skip(tctx, "skipping SetQuorumResource test");
+
+	ZERO_STRUCT(hResource);
+
+	r.in.hResource = hResource;
+	r.in.lpszDeviceName = lpszDeviceName;
+	r.in.dwMaxQuorumLogSize = dwMaxQuorumLogSize;
+	r.out.rpc_status = &rpc_status;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_SetQuorumResource_r(b, tctx, &r),
+		"SetQuorumResource failed");
+	torture_assert_werr_ok(tctx,
+		W_ERROR(r.out.result),
+		"SetQuorumResource failed");
+
+	return true;
+}
+
+static bool test_OpenResource_int(struct torture_context *tctx,
+				  struct dcerpc_pipe *p,
+				  struct policy_handle *hResource)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_OpenResource r;
+	const char *lpszResourceName = "Cluster Name";
+	uint32_t Status;
+	uint32_t rpc_status;
+
+	r.in.lpszResourceName = lpszResourceName;
+	r.out.rpc_status = &rpc_status;
+	r.out.Status = &Status;
+	r.out.hResource = hResource;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_OpenResource_r(b, tctx, &r),
+		"OpenResource failed");
+	torture_assert_werr_ok(tctx,
+		W_ERROR(*r.out.Status),
+		"OpenResource failed");
+
+	return true;
+}
+
+static bool test_CloseResource_int(struct torture_context *tctx,
+				   struct dcerpc_pipe *p,
+				   struct policy_handle *hResource)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_CloseResource r;
+
+	r.in.Resource = hResource;
+	r.out.Resource = hResource;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_CloseResource_r(b, tctx, &r),
+		"CloseResource failed");
+	torture_assert_werr_ok(tctx,
+		W_ERROR(r.out.result),
+		"CloseResource failed");
+	torture_assert(tctx,
+		ndr_policy_handle_empty(hResource),
+		"policy_handle non empty after CloseResource");
+
+	return true;
+}
+
+static bool test_OpenResource(struct torture_context *tctx,
+			      struct dcerpc_pipe *p)
+{
+	struct policy_handle hResource;
+
+	if (!test_OpenResource_int(tctx, p, &hResource)) {
+		return false;
+	}
+
+	test_CloseResource_int(tctx, p, &hResource);
+
+	return true;
+}
+
+static bool test_CloseResource(struct torture_context *tctx,
+			       struct dcerpc_pipe *p)
+{
+	struct policy_handle hResource;
+
+	if (!test_OpenResource_int(tctx, p, &hResource)) {
+		return false;
+	}
+
+	return test_CloseResource_int(tctx, p, &hResource);
+}
+
+static bool test_CreateResource_int(struct torture_context *tctx,
+				    struct dcerpc_pipe *p,
+				    struct policy_handle *hResource)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_CreateResource r;
+	const char *lpszResourceName = "Cluster Name";
+	const char *lpszResourceType = "wurst";
+	uint32_t Status;
+	uint32_t rpc_status;
+	struct policy_handle hGroup;
+
+	ZERO_STRUCT(hGroup); /* FIXME !!!!!! */
+
+	r.in.hGroup = hGroup;
+	r.in.lpszResourceName = lpszResourceName;
+	r.in.lpszResourceType = lpszResourceType;
+	r.in.dwFlags = 0; /* FIXME */
+	r.out.rpc_status = &rpc_status;
+	r.out.Status = &Status;
+	r.out.hResource = hResource;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_CreateResource_r(b, tctx, &r),
+		"CreateResource failed");
+	torture_assert_werr_ok(tctx,
+		W_ERROR(*r.out.Status),
+		"CreateResource failed");
+
+	return true;
+}
+
+static bool test_DeleteResource_int(struct torture_context *tctx,
+				    struct dcerpc_pipe *p,
+				    struct policy_handle *hResource)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_DeleteResource r;
+	uint32_t rpc_status;
+
+	r.in.hResource = *hResource;
+	r.out.rpc_status = &rpc_status;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_DeleteResource_r(b, tctx, &r),
+		"DeleteResource failed");
+	torture_assert_werr_ok(tctx,
+		W_ERROR(r.out.result),
+		"DeleteResource failed");
+
+	return true;
+}
+
+static bool test_CreateResource(struct torture_context *tctx,
+				struct dcerpc_pipe *p)
+{
+	struct policy_handle hResource;
+
+	if (!test_CreateResource_int(tctx, p, &hResource)) {
+		return false;
+	}
+
+	test_DeleteResource_int(tctx, p, &hResource);
+
+	return true;
+}
+
+static bool test_DeleteResource(struct torture_context *tctx,
+				struct dcerpc_pipe *p)
+{
+	struct policy_handle hResource;
+
+	if (!test_CreateResource_int(tctx, p, &hResource)) {
+		return false;
+	}
+
+	return test_DeleteResource_int(tctx, p, &hResource);
+}
+
+static bool test_GetResourceState_int(struct torture_context *tctx,
+				      struct dcerpc_pipe *p,
+				      struct policy_handle *hResource)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_GetResourceState r;
+	uint32_t State;
+	const char *NodeName;
+	const char *GroupName;
+	uint32_t rpc_status;
+
+	r.in.hResource = *hResource;
+	r.out.State = &State;
+	r.out.NodeName = &NodeName;
+	r.out.GroupName = &GroupName;
+	r.out.rpc_status = &rpc_status;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_GetResourceState_r(b, tctx, &r),
+		"GetResourceState failed");
+	torture_assert_werr_ok(tctx,
+		W_ERROR(r.out.result),
+		"GetResourceState failed");
+
+	return true;
+}
+
+static bool test_GetResourceState(struct torture_context *tctx,
+				  struct dcerpc_pipe *p)
+{
+	struct policy_handle hResource;
+	bool ret = true;
+
+	if (!test_OpenResource_int(tctx, p, &hResource)) {
+		return false;
+	}
+
+	ret = test_GetResourceState_int(tctx, p, &hResource);
+
+	test_CloseResource_int(tctx, p, &hResource);
+
+	return ret;
+}
+
+static bool test_GetResourceId_int(struct torture_context *tctx,
+				   struct dcerpc_pipe *p,
+				   struct policy_handle *hResource)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_GetResourceId r;
+	const char *pGuid;
+	uint32_t rpc_status;
+
+	r.in.hResource = *hResource;
+	r.out.pGuid = &pGuid;
+	r.out.rpc_status = &rpc_status;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_GetResourceId_r(b, tctx, &r),
+		"GetResourceId failed");
+	torture_assert_werr_ok(tctx,
+		W_ERROR(r.out.result),
+		"GetResourceId failed");
+
+	return true;
+}
+
+static bool test_GetResourceId(struct torture_context *tctx,
+			       struct dcerpc_pipe *p)
+{
+	struct policy_handle hResource;
+	bool ret = true;
+
+	if (!test_OpenResource_int(tctx, p, &hResource)) {
+		return false;
+	}
+
+	ret = test_GetResourceId_int(tctx, p, &hResource);
+
+	test_CloseResource_int(tctx, p, &hResource);
+
+	return ret;
+}
+
+static bool test_GetResourceType_int(struct torture_context *tctx,
+				     struct dcerpc_pipe *p,
+				     struct policy_handle *hResource)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_GetResourceType r;
+	const char *lpszResourceType;
+	uint32_t rpc_status;
+
+	r.in.hResource = *hResource;
+	r.out.lpszResourceType = &lpszResourceType;
+	r.out.rpc_status = &rpc_status;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_GetResourceType_r(b, tctx, &r),
+		"GetResourceType failed");
+	torture_assert_werr_ok(tctx,
+		W_ERROR(r.out.result),
+		"GetResourceType failed");
+
+	return true;
+}
+
+static bool test_GetResourceType(struct torture_context *tctx,
+				 struct dcerpc_pipe *p)
+{
+	struct policy_handle hResource;
+	bool ret = true;
+
+	if (!test_OpenResource_int(tctx, p, &hResource)) {
+		return false;
+	}
+
+	ret = test_GetResourceType_int(tctx, p, &hResource);
+
+	test_CloseResource_int(tctx, p, &hResource);
+
+	return ret;
+}
+
+static bool test_FailResource_int(struct torture_context *tctx,
+				  struct dcerpc_pipe *p,
+				  struct policy_handle *hResource)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_FailResource r;
+	uint32_t rpc_status;
+
+	r.in.hResource = *hResource;
+	r.out.rpc_status = &rpc_status;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_FailResource_r(b, tctx, &r),
+		"FailResource failed");
+	torture_assert_werr_ok(tctx,
+		W_ERROR(r.out.result),
+		"FailResource failed");
+
+	return true;
+}
+
+static bool test_FailResource(struct torture_context *tctx,
+			      struct dcerpc_pipe *p)
+{
+	struct policy_handle hResource;
+	bool ret = true;
+
+	if (!test_OpenResource_int(tctx, p, &hResource)) {
+		return false;
+	}
+
+	ret = test_FailResource_int(tctx, p, &hResource);
+
+	test_CloseResource_int(tctx, p, &hResource);
+
+	return ret;
+}
+
+static bool test_OnlineResource_int(struct torture_context *tctx,
+				    struct dcerpc_pipe *p,
+				    struct policy_handle *hResource)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_OnlineResource r;
+	uint32_t rpc_status;
+
+	r.in.hResource = *hResource;
+	r.out.rpc_status = &rpc_status;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_OnlineResource_r(b, tctx, &r),
+		"OnlineResource failed");
+	torture_assert_werr_ok(tctx,
+		W_ERROR(r.out.result),
+		"OnlineResource failed");
+
+	return true;
+}
+
+static bool test_OnlineResource(struct torture_context *tctx,
+				struct dcerpc_pipe *p)
+{
+	struct policy_handle hResource;
+	bool ret = true;
+
+	if (!test_OpenResource_int(tctx, p, &hResource)) {
+		return false;
+	}
+
+	ret = test_OnlineResource_int(tctx, p, &hResource);
+
+	test_CloseResource_int(tctx, p, &hResource);
+
+	return ret;
+}
+
+static bool test_OfflineResource_int(struct torture_context *tctx,
+				     struct dcerpc_pipe *p,
+				     struct policy_handle *hResource)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_OfflineResource r;
+	uint32_t rpc_status;
+
+	r.in.hResource = *hResource;
+	r.out.rpc_status = &rpc_status;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_OfflineResource_r(b, tctx, &r),
+		"OfflineResource failed");
+	torture_assert_werr_ok(tctx,
+		W_ERROR(r.out.result),
+		"OfflineResource failed");
+
+	return true;
+}
+
+static bool test_OfflineResource(struct torture_context *tctx,
+				 struct dcerpc_pipe *p)
+{
+	struct policy_handle hResource;
+	bool ret = true;
+
+	if (!test_OpenResource_int(tctx, p, &hResource)) {
+		return false;
+	}
+
+	ret = test_OfflineResource_int(tctx, p, &hResource);
+
+	test_CloseResource_int(tctx, p, &hResource);
+
+	return ret;
+}
+
+
 struct torture_suite *torture_rpc_clusapi(TALLOC_CTX *mem_ctx)
 {
 	struct torture_rpc_tcase *tcase;
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "clusapi");
+	struct torture_test *test;
 
 	tcase = torture_suite_add_rpc_iface_tcase(suite, "clusapi",
 						  &ndr_table_clusapi);
@@ -206,6 +657,32 @@ struct torture_suite *torture_rpc_clusapi(TALLOC_CTX *mem_ctx)
 				   test_GetClusterVersion);
 	torture_rpc_tcase_add_test(tcase, "CreateEnum",
 				   test_CreateEnum);
+	torture_rpc_tcase_add_test(tcase, "GetQuorumResource",
+				   test_GetQuorumResource);
+	torture_rpc_tcase_add_test(tcase, "SetQuorumResource",
+				   test_SetQuorumResource);
+	torture_rpc_tcase_add_test(tcase, "OpenResource",
+				   test_OpenResource);
+	torture_rpc_tcase_add_test(tcase, "CloseResource",
+				   test_CloseResource);
+	torture_rpc_tcase_add_test(tcase, "CreateResource",
+				   test_CreateResource);
+	torture_rpc_tcase_add_test(tcase, "DeleteResource",
+				   test_DeleteResource);
+	torture_rpc_tcase_add_test(tcase, "GetResourceState",
+				   test_GetResourceState);
+	torture_rpc_tcase_add_test(tcase, "GetResourceId",
+				   test_GetResourceId);
+	torture_rpc_tcase_add_test(tcase, "GetResourceType",
+				   test_GetResourceType);
+	test = torture_rpc_tcase_add_test(tcase, "FailResource",
+				   test_FailResource);
+	test->dangerous = true;
+	torture_rpc_tcase_add_test(tcase, "OnlineResource",
+				   test_OnlineResource);
+	test = torture_rpc_tcase_add_test(tcase, "OfflineResource",
+				   test_OfflineResource);
+	test->dangerous = true;
 
 	return suite;
 }
