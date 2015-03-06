@@ -722,6 +722,8 @@ struct ctdb_fetch_handle {
 void ctdb_set_error(struct ctdb_context *ctdb, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
 void ctdb_fatal(struct ctdb_context *ctdb, const char *msg);
 void ctdb_die(struct ctdb_context *ctdb, const char *msg);
+bool ctdb_set_helper(const char *type, char *helper, size_t size,
+		     const char *envvar, const char *dir, const char *file);
 void ctdb_external_trace(void);
 bool ctdb_same_address(struct ctdb_address *a1, struct ctdb_address *a2);
 int ctdb_parse_address(struct ctdb_context *ctdb,
