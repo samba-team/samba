@@ -163,6 +163,29 @@ static bool test_GetClusterVersion(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_CreateEnum(struct torture_context *tctx,
+			    struct dcerpc_pipe *p)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_CreateEnum r;
+	uint32_t dwType = CLUSTER_ENUM_RESOURCE;
+	struct ENUM_LIST *ReturnEnum;
+	uint32_t rpc_status;
+
+	r.in.dwType = dwType;
+	r.out.ReturnEnum = &ReturnEnum;
+	r.out.rpc_status = &rpc_status;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_CreateEnum_r(b, tctx, &r),
+		"CreateEnum failed");
+	torture_assert_werr_ok(tctx,
+		W_ERROR(r.out.result),
+		"CreateEnum failed");
+
+	return true;
+}
+
 struct torture_suite *torture_rpc_clusapi(TALLOC_CTX *mem_ctx)
 {
 	struct torture_rpc_tcase *tcase;
@@ -181,6 +204,8 @@ struct torture_suite *torture_rpc_clusapi(TALLOC_CTX *mem_ctx)
 				   test_GetClusterName);
 	torture_rpc_tcase_add_test(tcase, "GetClusterVersion",
 				   test_GetClusterVersion);
+	torture_rpc_tcase_add_test(tcase, "CreateEnum",
+				   test_CreateEnum);
 
 	return suite;
 }
