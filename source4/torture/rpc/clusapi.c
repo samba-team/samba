@@ -697,6 +697,275 @@ static bool test_CreateResEnum(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_OpenNode_int(struct torture_context *tctx,
+			      struct dcerpc_pipe *p,
+			      struct policy_handle *hNode)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_OpenNode r;
+	const char *lpszNodeName = "NODE1";
+	WERROR Status;
+	WERROR rpc_status;
+
+	r.in.lpszNodeName = lpszNodeName;
+	r.out.rpc_status = &rpc_status;
+	r.out.Status = &Status;
+	r.out.hNode= hNode;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_OpenNode_r(b, tctx, &r),
+		"OpenNode failed");
+	torture_assert_werr_ok(tctx,
+		*r.out.Status,
+		"OpenNode failed");
+
+	return true;
+}
+
+static bool test_CloseNode_int(struct torture_context *tctx,
+			       struct dcerpc_pipe *p,
+			       struct policy_handle *Node)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_CloseNode r;
+
+	r.in.Node = Node;
+	r.out.Node = Node;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_CloseNode_r(b, tctx, &r),
+		"CloseNode failed");
+	torture_assert_werr_ok(tctx,
+		r.out.result,
+		"CloseNode failed");
+	torture_assert(tctx,
+		ndr_policy_handle_empty(Node),
+		"policy_handle non empty after CloseNode");
+
+	return true;
+}
+
+static bool test_OpenNode(struct torture_context *tctx,
+			  struct dcerpc_pipe *p)
+{
+	struct policy_handle hNode;
+
+	if (!test_OpenNode_int(tctx, p, &hNode)) {
+		return false;
+	}
+
+	test_CloseNode_int(tctx, p, &hNode);
+
+	return true;
+}
+
+static bool test_CloseNode(struct torture_context *tctx,
+			   struct dcerpc_pipe *p)
+{
+	struct policy_handle hNode;
+
+	if (!test_OpenNode_int(tctx, p, &hNode)) {
+		return false;
+	}
+
+	return test_CloseNode_int(tctx, p, &hNode);
+}
+
+static bool test_GetNodeState_int(struct torture_context *tctx,
+				  struct dcerpc_pipe *p,
+				  struct policy_handle *hNode)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_GetNodeState r;
+	uint32_t State;
+	WERROR rpc_status;
+
+	r.in.hNode = *hNode;
+	r.out.State = &State;
+	r.out.rpc_status = &rpc_status;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_GetNodeState_r(b, tctx, &r),
+		"GetNodeState failed");
+	torture_assert_werr_ok(tctx,
+		r.out.result,
+		"GetNodeState failed");
+
+	return true;
+}
+
+static bool test_GetNodeState(struct torture_context *tctx,
+			      struct dcerpc_pipe *p)
+{
+	struct policy_handle hNode;
+	bool ret = true;
+
+	if (!test_OpenNode_int(tctx, p, &hNode)) {
+		return false;
+	}
+
+	ret = test_GetNodeState_int(tctx, p, &hNode);
+
+	test_CloseNode_int(tctx, p, &hNode);
+
+	return ret;
+}
+
+static bool test_GetNodeId_int(struct torture_context *tctx,
+			       struct dcerpc_pipe *p,
+			       struct policy_handle *hNode)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_GetNodeId r;
+	const char *pGuid;
+	WERROR rpc_status;
+
+	r.in.hNode = *hNode;
+	r.out.pGuid = &pGuid;
+	r.out.rpc_status = &rpc_status;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_GetNodeId_r(b, tctx, &r),
+		"GetNodeId failed");
+	torture_assert_werr_ok(tctx,
+		r.out.result,
+		"GetNodeId failed");
+
+	return true;
+}
+
+static bool test_GetNodeId(struct torture_context *tctx,
+			   struct dcerpc_pipe *p)
+{
+	struct policy_handle hNode;
+	bool ret = true;
+
+	if (!test_OpenNode_int(tctx, p, &hNode)) {
+		return false;
+	}
+
+	ret = test_GetNodeId_int(tctx, p, &hNode);
+
+	test_CloseNode_int(tctx, p, &hNode);
+
+	return ret;
+}
+
+static bool test_PauseNode_int(struct torture_context *tctx,
+			       struct dcerpc_pipe *p,
+			       struct policy_handle *hNode)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_PauseNode r;
+	WERROR rpc_status;
+
+	r.in.hNode = *hNode;
+	r.out.rpc_status = &rpc_status;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_PauseNode_r(b, tctx, &r),
+		"PauseNode failed");
+	torture_assert_werr_ok(tctx,
+		r.out.result,
+		"PauseNode failed");
+
+	return true;
+}
+
+static bool test_PauseNode(struct torture_context *tctx,
+			   struct dcerpc_pipe *p)
+{
+	struct policy_handle hNode;
+	bool ret = true;
+
+	if (!test_OpenNode_int(tctx, p, &hNode)) {
+		return false;
+	}
+
+	ret = test_PauseNode_int(tctx, p, &hNode);
+
+	test_CloseNode_int(tctx, p, &hNode);
+
+	return ret;
+}
+
+static bool test_ResumeNode_int(struct torture_context *tctx,
+				struct dcerpc_pipe *p,
+				struct policy_handle *hNode)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_ResumeNode r;
+	WERROR rpc_status;
+
+	r.in.hNode = *hNode;
+	r.out.rpc_status = &rpc_status;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_ResumeNode_r(b, tctx, &r),
+		"ResumeNode failed");
+	torture_assert_werr_equal(tctx,
+		r.out.result,
+		WERR_CLUSTER_NODE_NOT_PAUSED,
+		"ResumeNode gave unexpected result");
+
+	return true;
+}
+
+static bool test_ResumeNode(struct torture_context *tctx,
+			    struct dcerpc_pipe *p)
+{
+	struct policy_handle hNode;
+	bool ret = true;
+
+	if (!test_OpenNode_int(tctx, p, &hNode)) {
+		return false;
+	}
+
+	ret = test_ResumeNode_int(tctx, p, &hNode);
+
+	test_CloseNode_int(tctx, p, &hNode);
+
+	return ret;
+}
+
+static bool test_EvictNode_int(struct torture_context *tctx,
+			       struct dcerpc_pipe *p,
+			       struct policy_handle *hNode)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_EvictNode r;
+	WERROR rpc_status;
+
+	r.in.hNode = *hNode;
+	r.out.rpc_status = &rpc_status;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_EvictNode_r(b, tctx, &r),
+		"EvictNode failed");
+	torture_assert_werr_ok(tctx,
+		r.out.result,
+		"EvictNode failed");
+
+	return true;
+}
+
+static bool test_EvictNode(struct torture_context *tctx,
+			   struct dcerpc_pipe *p)
+{
+	struct policy_handle hNode;
+	bool ret = true;
+
+	if (!test_OpenNode_int(tctx, p, &hNode)) {
+		return false;
+	}
+
+	ret = test_EvictNode_int(tctx, p, &hNode);
+
+	test_CloseNode_int(tctx, p, &hNode);
+
+	return ret;
+}
+
 struct torture_suite *torture_rpc_clusapi(TALLOC_CTX *mem_ctx)
 {
 	struct torture_rpc_tcase *tcase;
@@ -749,6 +1018,26 @@ struct torture_suite *torture_rpc_clusapi(TALLOC_CTX *mem_ctx)
 				   test_GetClusterVersion2);
 	torture_rpc_tcase_add_test(tcase, "CreateResEnum",
 				   test_CreateResEnum);
+
+	tcase = torture_suite_add_rpc_iface_tcase(suite, "node",
+						  &ndr_table_clusapi);
+
+	torture_rpc_tcase_add_test(tcase, "OpenNode",
+				   test_OpenNode);
+	torture_rpc_tcase_add_test(tcase, "CloseNode",
+				   test_CloseNode);
+	torture_rpc_tcase_add_test(tcase, "GetNodeState",
+				   test_GetNodeState);
+	torture_rpc_tcase_add_test(tcase, "GetNodeId",
+				   test_GetNodeId);
+	test = torture_rpc_tcase_add_test(tcase, "PauseNode",
+					  test_PauseNode);
+	test->dangerous = true;
+	torture_rpc_tcase_add_test(tcase, "ResumeNode",
+				   test_ResumeNode);
+	test = torture_rpc_tcase_add_test(tcase, "EvictNode",
+					  test_EvictNode);
+	test->dangerous = true;
 
 	return suite;
 }
