@@ -14685,3 +14685,17 @@ const char *hresult_errstr_const(HRESULT err_code)
 	}
 	return result;
 };
+
+const char *hresult_errstr(HRESULT err_code)
+{
+	static char msg[20];
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(hresult_errs); i++) {
+		if (HRES_IS_EQUAL(err_code, hresult_errs[i].error_code)) {
+			return hresult_errs[i].error_str;
+		}
+	}
+	snprintf(msg, sizeof(msg), "HRES code 0x%08x", HRES_ERROR_V(err_code));
+	return msg;
+};
