@@ -482,7 +482,7 @@ static void ctdb_lock_timeout_handler(struct tevent_context *ev,
 				    struct timeval current_time,
 				    void *private_data)
 {
-	static const char * debug_locks = NULL;
+	static char debug_locks[PATH_MAX+1] = "";
 	struct lock_context *lock_ctx;
 	struct ctdb_context *ctdb;
 	pid_t pid;
@@ -510,16 +510,10 @@ static void ctdb_lock_timeout_handler(struct tevent_context *ev,
 		       elapsed_time));
 	}
 
-	/* Fire a child process to find the blocking process. */
-	if (debug_locks == NULL) {
-		debug_locks = getenv("CTDB_DEBUG_LOCKS");
-		if (debug_locks == NULL) {
-			debug_locks = talloc_asprintf(ctdb,
-						      "%s/debug_locks.sh",
-						      getenv("CTDB_BASE"));
-		}
-	}
-	if (debug_locks != NULL) {
+	if (ctdb_set_helper("lock debugging helper",
+			    debug_locks, sizeof(debug_locks),
+			    "CTDB_DEBUG_LOCKS",
+			    getenv("CTDB_BASE"), "debug_locks.sh")) {
 		pid = vfork();
 		if (pid == 0) {
 			execl(debug_locks, debug_locks, NULL);
@@ -529,7 +523,7 @@ static void ctdb_lock_timeout_handler(struct tevent_context *ev,
 	} else {
 		DEBUG(DEBUG_WARNING,
 		      (__location__
-		       " Unable to setup lock debugging - no memory?\n"));
+		       " Unable to setup lock debugging\n"));
 	}
 
 	/* Back-off logging if lock is not obtained for a long time */
@@ -754,20 +748,15 @@ static void ctdb_lock_schedule(struct ctdb_context *ctdb)
 	struct lock_context *lock_ctx;
 	int ret, argc;
 	TALLOC_CTX *tmp_ctx;
-	const char *helper = CTDB_HELPER_BINDIR "/ctdb_lock_helper";
-	static const char *prog = NULL;
+	static char prog[PATH_MAX+1] = "";
 	const char **args;
 
-	if (prog == NULL) {
-		const char *t;
-
-		t = getenv("CTDB_LOCK_HELPER");
-		if (t != NULL) {
-			prog = talloc_strdup(ctdb, t);
-		} else {
-			prog = talloc_strdup(ctdb, helper);
-		}
-		CTDB_NO_MEMORY_VOID(ctdb, prog);
+	if (!ctdb_set_helper("lock helper",
+			     prog, sizeof(prog),
+			     "CTDB_LOCK_HELPER",
+			     CTDB_HELPER_BINDIR, "ctdb_lock_helper")) {
+		ctdb_die(ctdb, __location__
+			 " Unable to set lock helper\n");
 	}
 
 	/* Find a lock context with requests */

@@ -261,7 +261,7 @@ failed:
 static void ctdb_event_script_handler(struct event_context *ev, struct fd_event *fde,
 				      uint16_t flags, void *p);
 
-static const char *helper_prog = NULL;
+static char helper_prog[PATH_MAX+1] = "";
 
 static int fork_child_for_script(struct ctdb_context *ctdb,
 				 struct ctdb_event_script_state *state)
@@ -271,15 +271,12 @@ static int fork_child_for_script(struct ctdb_context *ctdb,
 	struct ctdb_script_wire *current = get_current_script(state);
 	int argc;
 	const char **argv;
-	static const char *helper = CTDB_HELPER_BINDIR "/ctdb_event_helper";
 
-	if (helper_prog == NULL) {
-		const char *t = getenv("CTDB_EVENT_HELPER");
-		if (t != NULL) {
-			helper_prog = t;
-		} else {
-			helper_prog = helper;
-		}
+	if (!ctdb_set_helper("event helper", helper_prog, sizeof(helper_prog),
+			     "CTDB_EVENT_HELPER",
+			     CTDB_HELPER_BINDIR, "ctdb_event_helper")) {
+		ctdb_die(ctdb, __location__
+			 " Unable to set event helper\n");
 	}
 
 	current->start = timeval_current();
