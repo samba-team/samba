@@ -835,7 +835,8 @@ static ssize_t ad_header_read_rsrc(struct adouble *ad, const char *path)
 		if (rc != 0) {
 			goto exit;
 		}
-		ad_setentrylen(ad, ADEID_RFORK, sbuf.st_ex_size);
+		len = sbuf.st_ex_size;
+		ad_setentrylen(ad, ADEID_RFORK, len);
 	} else {
 		/* FIXME: direct sys_pread(), don't have an fsp */
 		len = sys_pread(fd, ad->ad_data, AD_DATASZ_DOT_UND, 0);
