@@ -164,7 +164,7 @@ sub get_interface($)
 
     $interfaces{"localktest6"} = 7;
     $interfaces{"maptoguest"} = 8;
-    $interfaces{"locals3dc9"} = 9;
+    $interfaces{"localnt4dc9"} = 9;
 
     # 11-16 used by selftest.pl for client interfaces
 

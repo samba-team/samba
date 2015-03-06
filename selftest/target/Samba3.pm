@@ -175,8 +175,8 @@ sub setup_env($$$)
 
 	if ($envname eq "nt4_dc") {
 		return $self->setup_nt4_dc("$path/nt4_dc");
-	} elsif ($envname eq "s3dc_schannel") {
-		return $self->setup_s3dc_schannel("$path/s3dc_schannel");
+	} elsif ($envname eq "nt4_dc_schannel") {
+		return $self->setup_nt4_dc_schannel("$path/nt4_dc_schannel");
 	} elsif ($envname eq "simpleserver") {
 		return $self->setup_simpleserver("$path/simpleserver");
 	} elsif ($envname eq "maptoguest") {
@@ -241,11 +241,11 @@ sub setup_nt4_dc($$)
 	return $vars;
 }
 
-sub setup_s3dc_schannel($$)
+sub setup_nt4_dc_schannel($$)
 {
 	my ($self, $path) = @_;
 
-	print "PROVISIONING S3DC WITH SERVER SCHANNEL ...";
+	print "PROVISIONING NT4 DC WITH SERVER SCHANNEL ...";
 
 	my $pdc_options = "
 	domain master = yes
@@ -267,8 +267,8 @@ sub setup_s3dc_schannel($$)
 ";
 
 	my $vars = $self->provision($path,
-				    "LOCALS3DC9",
-				    "locals3dc9pass",
+				    "LOCALNT4DC9",
+				    "localntdc9pass",
 				    $pdc_options);
 
 	$vars or return undef;
@@ -284,7 +284,7 @@ sub setup_s3dc_schannel($$)
 	$vars->{DC_USERNAME} = $vars->{USERNAME};
 	$vars->{DC_PASSWORD} = $vars->{PASSWORD};
 
-	$self->{vars}->{s3dc_schannel} = $vars;
+	$self->{vars}->{nt4_dc_schannel} = $vars;
 
 	return $vars;
 }
