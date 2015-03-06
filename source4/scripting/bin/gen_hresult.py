@@ -66,14 +66,14 @@ def parseErrorDescriptions( input_file, isWinError ):
             err = Errors[-1]
             if err.err_define == None:
                 err.err_define = "HRES_" + content[0]
-        else:
-            if len(content) > 0:
-                desc =  escapeString(line.strip())
-                if len(desc):
-                    if err.err_string == "":
-                        err.err_string = desc
-                    else:
-                        err.err_string = err.err_string + " " + desc
+	    else:
+                if len(content) > 0:
+                    desc =  escapeString(line.strip())
+                    if len(desc):
+                        if err.err_string == "":
+                            err.err_string = desc
+                        else:
+                            err.err_string = err.err_string + " " + desc
         count = count + 1
     fileContents.close()
     print "parsed %d lines generated %d error definitions"%(count,len(Errors))
