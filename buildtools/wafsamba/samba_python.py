@@ -34,6 +34,7 @@ def SAMBA_PYTHON(bld, name,
                  init_function_sentinel=None,
                  local_include=True,
                  vars=None,
+                 install=True,
                  enabled=True):
     '''build a python extension for Samba'''
 
@@ -64,6 +65,7 @@ def SAMBA_PYTHON(bld, name,
                       install_path='${PYTHONARCHDIR}',
                       allow_undefined_symbols=True,
                       allow_warnings=True,
+                      install=install,
                       enabled=enabled)
 
 Build.BuildContext.SAMBA_PYTHON = SAMBA_PYTHON
