@@ -29,6 +29,8 @@ from samba.dcerpc import (
 from samba.common import dsdb_Dn
 from samba.ndr import (ndr_unpack, ndr_pack)
 
+class KCCError(Exception):
+    pass
 
 class NCType(object):
     (unknown, schema, domain, config, application) = range(0, 5)
@@ -1487,14 +1489,7 @@ class Site(object):
             mydsa.dsa_is_istg = True
             return True
 
-        # Find configuration NC replica for my DSA
-        for c_rep in mydsa.current_rep_table.values():
-            if c_rep.is_config():
-                break
-
-        if not c_rep.is_config():
-            raise Exception("Unable to find config NC replica for (%s)" %
-                            mydsa.dsa_dnstr)
+        c_rep = get_dsa_config_rep(mydsa)
 
         # Load repsFrom and replUpToDateVector if not already loaded so we can get the current
         # state of the config replica and whether we are getting updates
@@ -2276,6 +2271,16 @@ class InternalEdge(object):
 # Global Functions and Variables
 ##################################################
 MAX_DWORD = 2 ** 32 - 1
+
+def get_dsa_config_rep(dsa):
+    # Find configuration NC replica for the DSA
+    for c_rep in dsa.current_rep_table.values():
+        if c_rep.is_config():
+            return c_rep
+
+    raise KCCError("Unable to find config NC replica for (%s)" %
+                   dsa.dsa_dnstr)
+
 
 def sort_dsa_by_guid(dsa1, dsa2):
     return cmp(dsa1.dsa_guid, dsa2.dsa_guid)
