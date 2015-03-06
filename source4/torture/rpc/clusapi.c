@@ -349,19 +349,28 @@ static bool test_CloseResource(struct torture_context *tctx,
 	return test_CloseResource_int(tctx, p, &hResource);
 }
 
+static bool test_OpenGroup_int(struct torture_context *tctx,
+			       struct dcerpc_pipe *p,
+			       struct policy_handle *hGroup);
+static bool test_CloseGroup_int(struct torture_context *tctx,
+				struct dcerpc_pipe *p,
+				struct policy_handle *Group);
+
 static bool test_CreateResource_int(struct torture_context *tctx,
 				    struct dcerpc_pipe *p,
 				    struct policy_handle *hResource)
 {
 	struct dcerpc_binding_handle *b = p->binding_handle;
 	struct clusapi_CreateResource r;
-	const char *lpszResourceName = "Cluster Name";
-	const char *lpszResourceType = "wurst";
+	const char *lpszResourceName = "wurst";
+	const char *lpszResourceType = "Generic Service";
 	WERROR Status;
 	WERROR rpc_status;
 	struct policy_handle hGroup;
 
-	ZERO_STRUCT(hGroup); /* FIXME !!!!!! */
+	torture_assert(tctx,
+		test_OpenGroup_int(tctx, p, &hGroup),
+		"failed to open group");
 
 	r.in.hGroup = hGroup;
 	r.in.lpszResourceName = lpszResourceName;
@@ -377,6 +386,8 @@ static bool test_CreateResource_int(struct torture_context *tctx,
 	torture_assert_werr_ok(tctx,
 		*r.out.Status,
 		"CreateResource failed");
+
+	test_CloseGroup_int(tctx, p, &hGroup);
 
 	return true;
 }
