@@ -1072,6 +1072,10 @@ struct torture_suite *torture_rpc_clusapi(TALLOC_CTX *mem_ctx)
 				   test_GetClusterVersion);
 	torture_rpc_tcase_add_test(tcase, "CreateEnum",
 				   test_CreateEnum);
+
+	tcase = torture_suite_add_rpc_iface_tcase(suite, "resource",
+						  &ndr_table_clusapi);
+
 	torture_rpc_tcase_add_test(tcase, "GetQuorumResource",
 				   test_GetQuorumResource);
 	torture_rpc_tcase_add_test(tcase, "SetQuorumResource",
