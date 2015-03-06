@@ -1099,7 +1099,7 @@ define_test ()
 	    script_dir="${CTDB_BASE}"
     esac
 
-    [ -x "${script_dir}/${script}" ] || \
+    [ -r "${script_dir}/${script}" ] || \
 	die "Internal error - unable to find script \"${script_dir}/${script}\""
 
     printf "%-17s %-10s %-4s - %s\n\n" "$script" "$event" "$_num" "$desc"
