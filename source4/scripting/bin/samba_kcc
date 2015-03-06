@@ -457,9 +457,9 @@ class KCC(object):
         if mydsa.is_ro() or opts.readonly:
             for dnstr, connect in mydsa.connect_table.items():
                 if connect.to_be_deleted:
-                    logger.info("TO BE DELETED:\n%s" % connect)
+                    DEBUG_GREEN("TO BE DELETED:\n%s" % connect)
                 if connect.to_be_added:
-                    logger.info("TO BE ADDED:\n%s" % connect)
+                    DEBUG_GREEN("TO BE ADDED:\n%s" % connect)
 
             # Peform deletion from our tables but perform
             # no database modification
@@ -1460,7 +1460,7 @@ class KCC(object):
         for t_guid, transport in self.transport_table.items():
             if transport.name != 'IP':
                 continue
-            logger.debug(t_guid)
+            DEBUG_RED(t_guid)
             # FLAG_CR_NTDS_DOMAIN 0x00000002
             if (vertex.is_red() and transport.name != "IP" and
                 vertex.part.system_flags & 0x00000002):
@@ -1871,7 +1871,7 @@ class KCC(object):
         # partition (NC x) then continue
         needed, ro, partial = nc_x.should_be_present(dc_local)
 
-        logger.debug("construct_intrasite_graph(): enter" +
+        DEBUG_YELLOW("construct_intrasite_graph(): enter" +
                      "\n\tgc_only=%d" % gc_only +
                      "\n\tdetect_stale=%d" % detect_stale +
                      "\n\tneeded=%s" % needed +
@@ -1880,6 +1880,8 @@ class KCC(object):
                      "\n%s" % nc_x)
 
         if not needed:
+            DEBUG_RED("%s lacks 'should be present' status, aborting construct_intersite_graph!" %
+                      nc_x.nc_dnstr)
             return
 
         # Create a NCReplica that matches what the local replica
@@ -2233,6 +2235,44 @@ class KCC(object):
             self.load_all_transports()
             self.load_all_sitelinks()
 
+            if True:
+                dot_edges = []
+                for site in self.site_table.values():
+                    for dsa in site.dsa_table.values():
+                        for con in dsa.connect_table.values():
+                            dot_edges.append((dsa.dsa_dnstr, con.from_dnstr))
+
+                write_dot_file('dsa_initial', dot_edges, directed=True)
+
+
+                dot_edges = []
+                for site in self.site_table.values():
+                    for dsa in site.dsa_table.values():
+                        c_rep = get_dsa_config_rep(dsa)
+                        c_rep.load_repsFrom(self.samdb)
+                        for x in c_rep.rep_repsFrom:
+                            #print dir(x)
+                            dot_edges.append((c_rep.rep_dsa_dnstr, x.nc_dnstr))
+
+                write_dot_file('config_repsFrom_initial', dot_edges, directed=True)
+
+                dot_edges = []
+                for site in self.site_table.values():
+                    for dsa in site.dsa_table.values():
+                        for x in dsa.current_rep_table:
+                            dot_edges.append((dsa.dsa_dnstr, x))
+
+                write_dot_file('dsa_repsFrom_initial', dot_edges, directed=True)
+
+                dot_edges = []
+                for link in self.sitelink_table.values():
+                    for a, b in itertools.combinations(link.site_list, 2):
+                        dot_edges.append((str(a), str(b)))
+
+                write_dot_file('dsa_sitelink_initial', dot_edges, directed=False)
+
+
+
             # These are the published steps (in order) for the
             # MS-TECH description of the KCC algorithm ([MS-ADTS] 6.2.2)
 
@@ -2263,7 +2303,7 @@ class KCC(object):
                     for con in dsa.connect_table.values():
                         dot_edges.append((dsa.dsa_dnstr, con.from_dnstr))
 
-            write_dot_file('dsa_final', dot_edges)
+            write_dot_file('dsa_final', dot_edges, directed=True)
         except:
             raise
 
@@ -2953,6 +2993,13 @@ parser.add_option("--now",
 logger = logging.getLogger("samba_kcc")
 logger.addHandler(logging.StreamHandler(sys.stdout))
 DEBUG = logger.debug
+
+def DEBUG_RED(*args):
+    DEBUG('%s%s%s' % (RED, args[0], C_NORMAL), *args[1:])
+def DEBUG_GREEN(*args):
+    DEBUG('%s%s%s' % (GREEN, args[0], C_NORMAL), *args[1:])
+def DEBUG_YELLOW(*args):
+    DEBUG('%s%s%s' % (YELLOW, args[0], C_NORMAL), *args[1:])
 
 lp = sambaopts.get_loadparm()
 creds = credopts.get_credentials(lp, fallback_machine=True)

@@ -29,6 +29,24 @@ from samba.dcerpc import (
 from samba.common import dsdb_Dn
 from samba.ndr import (ndr_unpack, ndr_pack)
 
+#colours for prettier logs
+C_NORMAL  = "\033[00m"
+DARK_RED  = "\033[00;31m"
+RED = "\033[01;31m"
+DARK_GREEN  = "\033[00;32m"
+GREEN  = "\033[01;32m"
+YELLOW  = "\033[01;33m"
+DARK_YELLOW  = "\033[00;33m"
+DARK_BLUE  = "\033[00;34m"
+BLUE  = "\033[01;34m"
+PURPLE  = "\033[00;35m"
+MAGENTA  = "\033[01;35m"
+DARK_CYAN  = "\033[00;36m"
+CYAN  = "\033[01;36m"
+GREY  = "\033[00;37m"
+WHITE  = "\033[01;37m"
+REV_RED = "\033[01;41m"
+
 class KCCError(Exception):
     pass
 
@@ -55,7 +73,7 @@ class NamingContext(object):
 
     def __str__(self):
         '''Debug dump string output of class'''
-        text = "%s:" % self.__class__.__name__
+        text = "%s%s%s:" % (CYAN, self.__class__.__name__, C_NORMAL)
         text = text + "\n\tnc_dnstr=%s" % self.nc_dnstr
         text = text + "\n\tnc_guid=%s"  % str(self.nc_guid)
 
@@ -2328,17 +2346,20 @@ def combine_repl_info(info_a, info_b, info_c):
 
     return True
 
-def write_dot_file(basename, edge_list, label=None, destdir=None):
+def write_dot_file(basename, edge_list, label=None, destdir=None, reformat_labels=True, directed=False):
     from tempfile import NamedTemporaryFile
     if label:
         basename += '_' + label.translate(None, ', ') #fix DN, guid labels
     f = NamedTemporaryFile(suffix='.dot', prefix=basename + '_', delete=False, dir=destdir)
     graphname = ''.join(x for x in basename if x.isalnum())
-    print >>f, 'graph %s {' % graphname
-    print >>f, 'label="%s";\nfontsize=20' % (label or graphname)
+    print >>f, '%s %s {' % ('digraph' if directed else 'graph', graphname)
+    print >>f, 'label="%s";\nfontsize=20;' % (label or graphname)
     for a, b in edge_list:
-        print >>f, '"%s" -- "%s"' % (a, b)
+        if reformat_labels:
+            a = a.replace(',', '\\n')
+            b = b.replace(',', '\\n')
+        line = '->' if directed else '--'
+        print >>f, '"%s" %s "%s";' % (a, line, b)
     print >>f, '}'
-
 
     f.close()
