@@ -148,14 +148,17 @@ def generateSourceFile(out_file):
     out_file.write("static const struct {\n")
     out_file.write("	HRESULT error_code;\n")
     out_file.write("	const char *error_str;\n")
+    out_file.write("	const char *error_message;\n")
     out_file.write("} hresult_errs[] = {\n")
 
     for err in Errors:
         out_file.write("	{\n")
         if err.isWinError:
             out_file.write("		HRESULT_FROM_WIN32(%s),\n"%err.err_define)
+            out_file.write("		\"HRESULT_FROM_WIN32(%s)\",\n"%err.err_define)
         else:
             out_file.write("		%s,\n"%err.err_define)
+            out_file.write("		\"%s\",\n"%err.err_define)
         out_file.write("		\"%s\"\n"%err.err_string)
         out_file.write("	},\n")
     out_file.write("};\n")
@@ -166,7 +169,7 @@ def generateSourceFile(out_file):
     out_file.write("	int i;\n")
     out_file.write("	for (i = 0; i < ARRAY_SIZE(hresult_errs); ++i) {\n")
     out_file.write("		if (HRES_IS_EQUAL(err_code, hresult_errs[i].error_code)) {\n")
-    out_file.write("			result = hresult_errs[i].error_str;\n")
+    out_file.write("			result = hresult_errs[i].error_message;\n")
     out_file.write("			break;\n")
     out_file.write("		}\n")
     out_file.write("	}\n")
