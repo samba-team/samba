@@ -650,7 +650,8 @@ static WERROR ldb_del_value(TALLOC_CTX *mem_ctx, struct hive_key *key,
 		if (ret != LDB_SUCCESS) {
 			return WERR_FOOBAR;
 		}
-		ldb_msg_add_empty(msg, "type", LDB_FLAG_MOD_DELETE, NULL);
+		ret = ldb_msg_add_empty(msg, "type", LDB_FLAG_MOD_DELETE,
+					NULL);
 		if (ret != LDB_SUCCESS) {
 			return WERR_FOOBAR;
 		}
