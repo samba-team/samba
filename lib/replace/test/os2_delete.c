@@ -70,7 +70,8 @@ static int os2_delete(DIR *d)
 	     de && i < READDIR_SIZE; 
 	     de=readdir(d), i++) {
 		offsets[i] = telldir(d);
-		strcpy(names[i], de->d_name);
+		/* strlcpy not available here */
+		snprintf(names[i], sizeof(names[i]), "%s", de->d_name);
 	}
 
 	if (i == 0) {
