@@ -100,7 +100,7 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 		}
 
 		DEBUG(DEBUG_DEBUG, (__location__ " Created SOCKET FD:%d for sending arp\n", s));
-		strncpy(ifr.ifr_name, iface, sizeof(ifr.ifr_name)-1);
+		strlcpy(ifr.ifr_name, iface, sizeof(ifr.ifr_name));
 		if (ioctl(s, SIOCGIFINDEX, &ifr) < 0) {
 			DEBUG(DEBUG_CRIT,(__location__ " interface '%s' not found\n", iface));
 			close(s);
