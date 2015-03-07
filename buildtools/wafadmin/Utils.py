@@ -416,15 +416,15 @@ def pprint(col, str, label='', sep='\n'):
 	"print messages in color"
 	sys.stderr.write("%s%s%s %s%s" % (Logs.colors(col), str, Logs.colors.NORMAL, label, sep))
 
-def check_dir(dir):
+def check_dir(path):
 	"""If a folder doesn't exists, create it."""
-	try:
-		os.lstat(dir)
-	except OSError:
+	if not os.path.isdir(path):
 		try:
-			os.makedirs(dir)
+			os.makedirs(path)
 		except OSError, e:
-			raise WafError("Cannot create folder '%s' (original error: %s)" % (dir, e))
+			if not os.path.isdir(path):
+				raise Errors.WafError('Cannot create the folder %r' % path, ex=e)
+
 
 def cmd_output(cmd, **kw):
 

@@ -154,7 +154,7 @@ def tex_build(task, command='LATEX'):
 		task.env.SRCFILE = srcfile
 		ret = fun(task)
 		if ret:
-			error('error when calling %s %s' % (command, latex_compile_cmd))
+			error('error when calling %s %s' % (command, latex_fun))
 			return ret
 
 	return None # ok

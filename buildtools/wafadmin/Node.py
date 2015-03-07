@@ -663,7 +663,7 @@ class Node(object):
 	def update_build_dir(self, env=None):
 
 		if not env:
-			for env in bld.all_envs:
+			for env in self.bld.all_envs:
 				self.update_build_dir(env)
 			return
 

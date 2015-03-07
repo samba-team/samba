@@ -567,7 +567,7 @@ def exec_rule(self):
 	if getattr(self, 'cwd', None):
 		tsk.cwd = self.cwd
 
-	if getattr(self, 'on_results', None):
+	if getattr(self, 'on_results', None) or getattr(self, 'update_outputs', None):
 		Task.update_outputs(cls)
 
 	if getattr(self, 'always', None):
