@@ -134,14 +134,16 @@ bool ctdb_set_helper(const char *type, char *helper, size_t size,
 void ctdb_external_trace(void)
 {
 	int ret;
-	const char * t = getenv("CTDB_EXTERNAL_TRACE");
+	static char external_trace[PATH_MAX+1] = "";
 	char * cmd;
 
-	if (t == NULL) {
+	if (!ctdb_set_helper("external trace handler",
+			     external_trace, sizeof(external_trace),
+			     "CTDB_EXTERNAL_TRACE", NULL, NULL)) {
 		return;
 	}
 
-	cmd = talloc_asprintf(NULL, "%s %lu", t, (unsigned long) getpid());
+	cmd = talloc_asprintf(NULL, "%s %lu", external_trace, (unsigned long) getpid());
 	DEBUG(DEBUG_WARNING,("begin external trace: %s\n", cmd));
 	ret = system(cmd);
 	if (ret == -1) {
