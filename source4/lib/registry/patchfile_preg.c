@@ -187,7 +187,7 @@ _PUBLIC_ WERROR reg_preg_diff_save(TALLOC_CTX *ctx, const char *filename,
 		data->fd = STDOUT_FILENO;
 	}
 
-	strncpy(preg_header.hdr, "PReg", 4);
+	memcpy(preg_header.hdr, "PReg", sizeof(preg_header.hdr));
 	SIVAL(&preg_header.version, 0, 1);
 	write(data->fd, (uint8_t *)&preg_header, sizeof(preg_header));
 
