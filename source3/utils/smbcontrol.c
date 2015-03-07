@@ -1093,14 +1093,10 @@ static bool do_winbind_offline(struct tevent_context *ev_ctx,
 	   5 times. */
 
 	for (retry = 0; retry < 5; retry++) {
-		TDB_DATA d;
 		uint8 buf[4];
-
-		ZERO_STRUCT(d);
+		TDB_DATA d = { .dptr = buf, .dsize = sizeof(buf) };
 
 		SIVAL(buf, 0, time(NULL));
-		d.dptr = buf;
-		d.dsize = 4;
 
 		tdb_store_bystring(tdb, "WINBINDD_OFFLINE", d, TDB_INSERT);
 
