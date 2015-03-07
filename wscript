@@ -216,7 +216,7 @@ def configure(conf):
             conf.env['ENABLE_RELRO'] = True
 
     if Options.options.enable_systemd != False:
-        conf.check_cfg(package='libsystemd-daemon', args='--cflags --libs',
+        conf.CHECK_CFG(package='libsystemd-daemon', args='--cflags --libs',
                        msg='Checking for libsystemd-daemon', uselib_store="SYSTEMD-DAEMON")
         conf.CHECK_HEADERS('systemd/sd-daemon.h', lib='systemd-daemon')
         conf.CHECK_LIB('systemd-daemon', shlib=True)

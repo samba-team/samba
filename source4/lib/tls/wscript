@@ -21,12 +21,12 @@ def configure(conf):
             conf.fatal("--disable-gnutls given: Building the AD DC requires GnuTLS (eg libgnutls-dev, gnutls-devel) for ldaps:// support and for the BackupKey protocol")
         return
 
-    if conf.check_cfg(package='gnutls',
+    if conf.CHECK_CFG(package='gnutls',
                       args='"gnutls >= 3.0.0" --cflags --libs',
                       msg='Checking for gnutls >= 3.0.0s', mandatory=False):
         conf.DEFINE('HAVE_GNUTLS3', 1)
     else:
-        conf.check_cfg(package='gnutls',
+        conf.CHECK_CFG(package='gnutls',
                        args='"gnutls >= 1.4.0 gnutls != 2.2.4 gnutls != 2.8.0 gnutls != 2.8.1" --cflags --libs',
                        msg='Checking for gnutls >= 1.4.0 and broken versions', mandatory=False)
 

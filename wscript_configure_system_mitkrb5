@@ -21,11 +21,11 @@ else:
 
 conf.find_program('krb5-config', path_list=path_krb5_config, var='KRB5_CONFIG')
 if conf.env.KRB5_CONFIG:
-    conf.check_cfg(path=conf.env.KRB5_CONFIG, args="--cflags --libs",
+    conf.CHECK_CFG(path=conf.env.KRB5_CONFIG, args="--cflags --libs",
                package="", uselib_store="KRB5")
     krb5_define_syslib(conf, "krb5", conf.env['LIB_KRB5'])
 
-    conf.check_cfg(path=conf.env.KRB5_CONFIG, args="--cflags --libs",
+    conf.CHECK_CFG(path=conf.env.KRB5_CONFIG, args="--cflags --libs",
                package="gssapi", uselib_store="GSSAPI")
     krb5_define_syslib(conf, "gssapi", conf.env['LIB_GSSAPI'])
     if 'k5crypto' in conf.env['LIB_GSSAPI']:
@@ -54,7 +54,7 @@ if conf.env.KRB5_CONFIG:
         else:
             Logs.info('%s is detected, MIT krb5 build can proceed' % (kversion))
 
-conf.check_cfg(args="--cflags --libs", package="com_err", uselib_store="com_err")
+conf.CHECK_CFG(args="--cflags --libs", package="com_err", uselib_store="com_err")
 conf.CHECK_FUNCS_IN('_et_list', 'com_err')
 conf.CHECK_HEADERS('com_err.h', lib='com_err')
 

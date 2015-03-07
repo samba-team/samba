@@ -654,7 +654,7 @@ msg.msg_accrightslen = sizeof(fd);
             # we would normally use --libs here, but cups-config incorrectly adds
             # gssapi_krb5 and other libraries to its --libs output. That breaks the use
             # of an in-tree heimdal kerberos
-            conf.check_cfg(path=conf.env.CUPS_CONFIG, args="--cflags --ldflags",
+            conf.CHECK_CFG(path=conf.env.CUPS_CONFIG, args="--cflags --ldflags",
                            package="", uselib_store="CUPS")
         conf.CHECK_HEADERS('cups/cups.h cups/language.h', lib='cups')
         conf.CHECK_FUNCS_IN('httpConnect httpConnectEncrypt', 'cups')
@@ -1523,7 +1523,7 @@ main() {
         conf.DEFINE('HAVE_CEPH', '1')
 
     if Options.options.with_glusterfs:
-        conf.check_cfg(package='glusterfs-api', args='"glusterfs-api >= 4" --cflags --libs',
+        conf.CHECK_CFG(package='glusterfs-api', args='"glusterfs-api >= 4" --cflags --libs',
                        msg='Checking for glusterfs-api >= 4', uselib_store="GFAPI")
         conf.CHECK_HEADERS('api/glfs.h', lib='gfapi')
         conf.CHECK_LIB('gfapi', shlib=True)
@@ -1540,7 +1540,7 @@ main() {
     if Options.options.enable_vxfs:
 	conf.DEFINE('HAVE_VXFS', '1')
 
-    if conf.check_cfg(package='dbus-1', args='--cflags --libs',
+    if conf.CHECK_CFG(package='dbus-1', args='--cflags --libs',
                       msg='Checking for dbus', uselib_store="DBUS-1"):
         if (conf.CHECK_HEADERS('dbus/dbus.h', lib='dbus-1')
                                       and conf.CHECK_LIB('dbus-1', shlib=True)):
