@@ -977,6 +977,7 @@ static int test_utimes(void)
 		printf("failure: utimes [\n"
 		       "fstat (1) failed - %s\n]\n",
 		       strerror(errno));
+		close(fd);
 		return false;
 	}
 
@@ -987,6 +988,7 @@ static int test_utimes(void)
 		printf("failure: utimes [\n"
 		       "utimes(tv) failed - %s\n]\n",
 		       strerror(errno));
+		close(fd);
 		return false;
 	}
 
@@ -994,6 +996,7 @@ static int test_utimes(void)
 		printf("failure: utimes [\n"
 		       "fstat (2) failed - %s\n]\n",
 		       strerror(errno));
+		close(fd);
 		return false;
 	}
 
@@ -1003,6 +1006,7 @@ static int test_utimes(void)
 		       "%s: %s(%d) != %s(%d)\n]\n", \
 		       __location__, \
 		       #a, (int)a, #b, (int)b); \
+		close(fd); \
 		return false; \
 	} \
 } while(0)
@@ -1014,6 +1018,7 @@ static int test_utimes(void)
 
 	unlink(TESTFILE);
 	printf("success: utimes\n");
+	close(fd);
 	return true;
 }
 
