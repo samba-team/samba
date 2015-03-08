@@ -138,14 +138,18 @@ bld.SAMBA3_SUBSYSTEM('RPC_WKSSVC',
                     ../../librpc/gen_ndr/srv_wkssvc.c''',
                     deps='LIBNET')
 
+bld.SAMBA3_SUBSYSTEM('mdssvc',
+                    source='''
+                    mdssvc/dalloc.c
+                    mdssvc/marshalling.c
+                    ''')
+
 rpc_mdssvc_sources = '''
                      mdssvc/mdssvc.c
-                     mdssvc/dalloc.c
-                     mdssvc/marshalling.c
                      mdssvc/srv_mdssvc_nt.c
                      ../../librpc/gen_ndr/srv_mdssvc.c
                      '''
-rpc_mdssvc_deps = 'samba-util '
+rpc_mdssvc_deps = 'mdssvc samba-util '
 
 if bld.env.spotlight_backend_tracker:
     rpc_mdssvc_sources += '''
