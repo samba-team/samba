@@ -74,6 +74,7 @@ static void check_file_intact(int fd)
 	if (pread(fd, contents, st.st_size, 0) != st.st_size) {
 		diag("Read fail");
 		errors++;
+		free(contents);
 		return;
 	}
 
