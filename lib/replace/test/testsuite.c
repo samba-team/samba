@@ -888,6 +888,7 @@ static int test_utime(void)
 		printf("failure: utime [\n"
 		       "fstat (1) failed - %s\n]\n",
 		       strerror(errno));
+		close(fd);
 		return false;
 	}
 
@@ -897,6 +898,7 @@ static int test_utime(void)
 		printf("failure: utime [\n"
 		       "utime(&u) failed - %s\n]\n",
 		       strerror(errno));
+		close(fd);
 		return false;
 	}
 
@@ -904,6 +906,7 @@ static int test_utime(void)
 		printf("failure: utime [\n"
 		       "fstat (2) failed - %s\n]\n",
 		       strerror(errno));
+		close(fd);
 		return false;
 	}
 
@@ -911,6 +914,7 @@ static int test_utime(void)
 		printf("failure: utime [\n"
 		       "utime(NULL) failed - %s\n]\n",
 		       strerror(errno));
+		close(fd);
 		return false;
 	}
 
@@ -918,6 +922,7 @@ static int test_utime(void)
 		printf("failure: utime [\n"
 		       "fstat (3) failed - %s\n]\n",
 		       strerror(errno));
+		close(fd);
 		return false;
 	}
 
@@ -927,6 +932,7 @@ static int test_utime(void)
 		       "%s: %s(%d) %s %s(%d)\n]\n", \
 		       __location__, \
 		       #a, (int)a, #c, #b, (int)b); \
+		close(fd); \
 		return false; \
 	} \
 } while(0)
@@ -946,6 +952,7 @@ static int test_utime(void)
 
 	unlink(TESTFILE);
 	printf("success: utime\n");
+	close(fd);
 	return true;
 }
 
