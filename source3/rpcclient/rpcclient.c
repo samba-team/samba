@@ -798,6 +798,7 @@ extern struct cmd_set winreg_commands[];
 extern struct cmd_set fss_commands[];
 extern struct cmd_set witness_commands[];
 extern struct cmd_set clusapi_commands[];
+extern struct cmd_set spotlight_commands[];
 
 static struct cmd_set *rpcclient_command_list[] = {
 	rpcclient_commands,
@@ -821,6 +822,7 @@ static struct cmd_set *rpcclient_command_list[] = {
 	fss_commands,
 	witness_commands,
 	clusapi_commands,
+	spotlight_commands,
 	NULL
 };
 
