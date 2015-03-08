@@ -272,6 +272,7 @@ static int test_strndup(void)
 	x = strndup("bla", 10);
 	if (strcmp(x, "bla") != 0) {
 		printf("failure: strndup [\ninvalid\n]\n");
+		free(x);
 		return false;
 	}
 	free(x);
