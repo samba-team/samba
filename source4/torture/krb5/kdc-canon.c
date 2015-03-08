@@ -37,7 +37,8 @@
 #define TEST_NETBIOS_REALM    0x0000010
 #define TEST_WIN2K            0x0000020
 #define TEST_UPN              0x0000040
-#define TEST_ALL              0x000007F
+#define TEST_S4U2SELF         0x0000080
+#define TEST_ALL              0x00000FF
 
 struct test_data {
 	const char *test_name;
@@ -54,6 +55,7 @@ struct test_data {
 	bool win2k;
 	bool upn;
 	bool other_upn_suffix;
+	bool s4u2self;
 	const char *krb5_service;
 	const char *krb5_hostname;
 };	
@@ -1665,6 +1667,14 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 				       opt,
 				       KRB5_GC_NO_STORE);
 
+	if (test_data->s4u2self) {
+		torture_assert_int_equal(tctx,
+					 krb5_get_creds_opt_set_impersonate(k5_context,
+									    opt,
+									    principal),
+					 0, "krb5_get_creds_opt_set_impersonate failed");
+	}
+
 	/* Confirm if we can get a ticket to our own name */
 	k5ret = krb5_get_creds(k5_context, opt, ccache, principal, &server_creds);
 
@@ -2051,14 +2061,15 @@ struct torture_suite *torture_krb5_canon(TALLOC_CTX *mem_ctx)
 	suite->description = talloc_strdup(suite, "Kerberos Canonicalisation tests");
 
 	for (i = 0; i < TEST_ALL; i++) {
-		char *name = talloc_asprintf(suite, "%s.%s.%s.%s.%s.%s.%s",
+		char *name = talloc_asprintf(suite, "%s.%s.%s.%s.%s.%s.%s.%s",
 					     (i & TEST_CANONICALIZE) ? "canon" : "no-canon",
 					     (i & TEST_ENTERPRISE) ? "enterprise" : "no-enterprise",
 					     (i & TEST_UPPER_REALM) ? "uc-realm" : "lc-realm",
 					     (i & TEST_UPPER_USERNAME) ? "uc-user" : "lc-user",
 					     (i & TEST_NETBIOS_REALM) ? "netbios-realm" : "krb5-realm",
 					     (i & TEST_WIN2K) ? "win2k" : "no-win2k",
-					     (i & TEST_UPN) ? "upn" : "no-upn");
+					     (i & TEST_UPN) ? "upn" : "no-upn",
+					     (i & TEST_S4U2SELF) ? "s4u2self" : "normal");
 
 		struct test_data *test_data = talloc_zero(suite, struct test_data);
 
@@ -2075,6 +2086,7 @@ struct torture_suite *torture_krb5_canon(TALLOC_CTX *mem_ctx)
 		test_data->netbios_realm = (i & TEST_NETBIOS_REALM) != 0;
 		test_data->win2k = (i & TEST_WIN2K) != 0;
 		test_data->upn = (i & TEST_UPN) != 0;
+		test_data->s4u2self = (i & TEST_S4U2SELF) != 0;
 		torture_suite_add_simple_tcase_const(suite, name, torture_krb5_as_req_canon,
 						     test_data);
 						     
