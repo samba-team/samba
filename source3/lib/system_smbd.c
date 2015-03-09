@@ -222,7 +222,7 @@ bool getgroups_unix_user(TALLOC_CTX *mem_ctx, const char *user,
 		if (!temp_groups) {
 			return False;
 		}
-		
+
 		if (sys_getgrouplist(user, primary_gid,
 				     temp_groups, &max_grp) == -1) {
 			DEBUG(0, ("get_user_groups: failed to get the unix "
@@ -231,7 +231,7 @@ bool getgroups_unix_user(TALLOC_CTX *mem_ctx, const char *user,
 			return False;
 		}
 	}
-	
+
 	ngrp = 0;
 	groups = NULL;
 
