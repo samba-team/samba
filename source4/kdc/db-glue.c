@@ -1839,7 +1839,6 @@ samba_kdc_check_s4u2self(krb5_context context,
 			 krb5_const_principal target_principal)
 {
 	krb5_error_code ret;
-	krb5_principal enterprise_prinicpal = NULL;
 	struct ldb_dn *realm_dn;
 	struct ldb_message *msg;
 	struct dom_sid *orig_sid;
@@ -1857,29 +1856,9 @@ samba_kdc_check_s4u2self(krb5_context context,
 		return ret;
 	}
 
-	if (target_principal->name.name_type == KRB5_NT_ENTERPRISE_PRINCIPAL) {
-		/* Need to reparse the enterprise principal to find the real target */
-		if (target_principal->name.name_string.len != 1) {
-			ret = KRB5_PARSE_MALFORMED;
-			krb5_set_error_message(context, ret, "samba_kdc_check_s4u2self: request for delegation to enterprise principal with wrong (%d) number of components",
-					       target_principal->name.name_string.len);
-			talloc_free(mem_ctx);
-			return ret;
-		}
-		ret = krb5_parse_name(context, target_principal->name.name_string.val[0],
-				      &enterprise_prinicpal);
-		if (ret) {
-			talloc_free(mem_ctx);
-			return ret;
-		}
-		target_principal = enterprise_prinicpal;
-	}
-
 	ret = samba_kdc_lookup_server(context, kdc_db_ctx, mem_ctx, target_principal,
 				      HDB_F_GET_CLIENT|HDB_F_GET_SERVER,
 				      delegation_check_attrs, &realm_dn, &msg);
-
-	krb5_free_principal(context, enterprise_prinicpal);
 
 	if (ret != 0) {
 		talloc_free(mem_ctx);
