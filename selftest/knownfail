@@ -94,7 +94,6 @@
 ^samba4.rpc.netlogon.*.NetrEnumerateTrustedDomains
 ^samba4.rpc.netlogon.*.NetrEnumerateTrustedDomainsEx
 ^samba4.rpc.netlogon.*.GetPassword
-^samba4.rpc.netlogon.*.GetTrustPasswords
 ^samba4.rpc.netlogon.*.DatabaseRedo
 ^samba4.base.charset.*.Testing partial surrogate
 ^samba4.*.base.maximum_allowed		# broken until we implement NTCREATEX_OPTIONS_BACKUP_INTENT

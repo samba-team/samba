@@ -2520,13 +2520,37 @@ static WERROR dcesrv_netr_DsrDeregisterDNSHostRecords(struct dcesrv_call_state *
 }
 
 
+static NTSTATUS dcesrv_netr_ServerGetTrustInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct netr_ServerGetTrustInfo *r);
+
 /*
   netr_ServerTrustPasswordsGet
 */
 static NTSTATUS dcesrv_netr_ServerTrustPasswordsGet(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_ServerTrustPasswordsGet *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct netr_ServerGetTrustInfo r2 = {};
+	struct netr_TrustInfo *_ti = NULL;
+	NTSTATUS status;
+
+	r2.in.server_name = r->in.server_name;
+	r2.in.account_name = r->in.account_name;
+	r2.in.secure_channel_type = r->in.secure_channel_type;
+	r2.in.computer_name = r->in.computer_name;
+	r2.in.credential = r->in.credential;
+
+	r2.out.return_authenticator = r->out.return_authenticator;
+	r2.out.new_owf_password = r->out.new_owf_password;
+	r2.out.old_owf_password = r->out.old_owf_password;
+	r2.out.trust_info = &_ti;
+
+	status = dcesrv_netr_ServerGetTrustInfo(dce_call, mem_ctx, &r2);
+
+	r->out.return_authenticator = r2.out.return_authenticator;
+	r->out.new_owf_password = r2.out.new_owf_password;
+	r->out.old_owf_password = r2.out.old_owf_password;
+
+	return status;
 }
 
 
