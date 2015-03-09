@@ -132,12 +132,13 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 		talloc_get_type_abort(gensec_security->private_data,
 				      struct gensec_ntlmssp_context);
 	struct ntlmssp_state *ntlmssp_state = gensec_ntlmssp->ntlmssp_state;
-	uint32_t chal_flags, ntlmssp_command, unkn1, unkn2;
+	uint32_t chal_flags, ntlmssp_command, unkn1 = 0, unkn2 = 0;
 	DATA_BLOB server_domain_blob;
 	DATA_BLOB challenge_blob;
 	DATA_BLOB target_info = data_blob(NULL, 0);
 	char *server_domain;
 	const char *chal_parse_string;
+	const char *chal_parse_string_short = NULL;
 	const char *auth_gen_string;
 	DATA_BLOB lm_response = data_blob(NULL, 0);
 	DATA_BLOB nt_response = data_blob(NULL, 0);
@@ -178,6 +179,7 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 			chal_parse_string = "CdUdbddB";
 		} else {
 			chal_parse_string = "CdUdbdd";
+			chal_parse_string_short = "CdUdb";
 		}
 		auth_gen_string = "CdBBUUUBd";
 	} else {
@@ -185,6 +187,7 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 			chal_parse_string = "CdAdbddB";
 		} else {
 			chal_parse_string = "CdAdbdd";
+			chal_parse_string_short = "CdAdb";
 		}
 
 		auth_gen_string = "CdBBAAABd";
@@ -199,10 +202,39 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 			 &challenge_blob, 8,
 			 &unkn1, &unkn2,
 			 &target_info)) {
+
+		bool ok = false;
+
 		DEBUG(1, ("Failed to parse the NTLMSSP Challenge: (#2)\n"));
-		dump_data(2, in.data, in.length);
-		talloc_free(mem_ctx);
-		return NT_STATUS_INVALID_PARAMETER;
+
+		if (chal_parse_string_short != NULL) {
+			/*
+			 * In the case where NTLMSSP_NEGOTIATE_TARGET_INFO
+			 * is not used, some NTLMSSP servers don't return
+			 * the unused unkn1 and unkn2 fields.
+			 * See bug:
+			 * https://bugzilla.samba.org/show_bug.cgi?id=10016
+			 * for packet traces.
+			 * Try and parse again without them.
+			 */
+			ok = msrpc_parse(mem_ctx,
+				&in, chal_parse_string_short,
+				"NTLMSSP",
+				&ntlmssp_command,
+				&server_domain,
+				&chal_flags,
+				&challenge_blob, 8);
+			if (!ok) {
+				DEBUG(1, ("Failed to short parse "
+					"the NTLMSSP Challenge: (#2)\n"));
+			}
+		}
+
+		if (!ok) {
+			dump_data(2, in.data, in.length);
+			talloc_free(mem_ctx);
+			return NT_STATUS_INVALID_PARAMETER;
+		}
 	}
 
 	if (chal_flags & NTLMSSP_TARGET_TYPE_SERVER) {
