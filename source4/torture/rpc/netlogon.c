@@ -781,8 +781,8 @@ static bool test_GetTrustPasswords(struct torture_context *tctx,
 	r.in.computer_name = TEST_MACHINE_NAME;
 	r.in.credential = &credential;
 	r.out.return_authenticator = &return_authenticator;
-	r.out.password = &password;
-	r.out.password2 = &password2;
+	r.out.new_owf_password = &password;
+	r.out.old_owf_password = &password2;
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_netr_ServerTrustPasswordsGet_r(b, tctx, &r),
 		"ServerTrustPasswordsGet failed");

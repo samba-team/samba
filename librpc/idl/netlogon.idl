@@ -1594,8 +1594,8 @@ interface netlogon
 		[in]  [string,charset(UTF16)] uint16 *computer_name,
 		[in,ref] netr_Authenticator *credential,
 		[out,ref] netr_Authenticator *return_authenticator,
-		[out,ref] samr_Password *password,
-		[out,ref] samr_Password *password2
+		[out,ref] samr_Password *new_owf_password,
+		[out,ref] samr_Password *old_owf_password
 	);
 
 	/****************/
