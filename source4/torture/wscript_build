@@ -32,12 +32,11 @@ bld.RECURSE('winbind')
 bld.RECURSE('libnetapi')
 bld.RECURSE('libsmbclient')
 
-heimdal_specific = dict()
-heimdal_specific['ndr'] = ('','')
-heimdal_specific['rpc'] = ('','')
+heimdal_specific = dict(source='', deps='')
+
 if bld.CONFIG_SET('AD_DC_BUILD_IS_ENABLED'):
-	heimdal_specific['rpc'] = (' rpc/backupkey.c rpc/spoolss_notify.c',
-				    ' RPC_NDR_BACKUPKEY SMB_SERVER dcerpc_server ntvfs')
+	heimdal_specific['source'] += ' rpc/spoolss_notify.c'
+	heimdal_specific['deps'] += ' SMB_SERVER dcerpc_server ntvfs'
 
 bld.SAMBA_SUBSYSTEM('TORTURE_NDR',
 	source='ndr/ndr.c ndr/winreg.c ndr/atsvc.c ndr/lsa.c ndr/epmap.c ndr/dfs.c ndr/netlogon.c ndr/drsuapi.c ndr/spoolss.c ndr/ntprinting.c ndr/samr.c ndr/dfsblob.c ndr/drsblobs.c ndr/nbt.c ndr/ntlmssp.c ndr/string.c ndr/backupkey.c ndr/witness.c',
@@ -61,7 +60,6 @@ bld.SAMBA_MODULE('torture_rpc',
                         rpc/spoolss.c
                         rpc/spoolss_win.c
                         rpc/spoolss_access.c
-                        rpc/spoolss_notify.c
                         rpc/unixinfo.c
                         rpc/samr.c
                         rpc/samr_accessmask.c
@@ -100,7 +98,9 @@ bld.SAMBA_MODULE('torture_rpc',
                         rpc/bind.c
                         rpc/fsrvp.c
                         rpc/clusapi.c
-                        rpc/witness.c''' + heimdal_specific['rpc'][0],
+                        rpc/witness.c
+                        rpc/backupkey.c
+                        ''' + heimdal_specific['source'],
                  autoproto='rpc/proto.h',
                  subsystem='smbtorture',
                  init_function='torture_rpc_init',
@@ -145,7 +145,8 @@ bld.SAMBA_MODULE('torture_rpc',
                       RPC_NDR_FSRVP
                       RPC_NDR_CLUSAPI
                       RPC_NDR_WITNESS
-                      ''' + heimdal_specific['rpc'][1],
+                      RPC_NDR_BACKUPKEY
+                      ''' + heimdal_specific['deps'],
                  internal_module=True)
 
 bld.RECURSE('drs')

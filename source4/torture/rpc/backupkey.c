@@ -20,12 +20,15 @@
 
 #include "includes.h"
 #include "../libcli/security/security.h"
+
+#include "torture/rpc/torture_rpc.h"
+#include "torture/ndr/ndr.h"
+
+#ifdef SAMBA4_USES_HEIMDAL
 #include "librpc/gen_ndr/ndr_backupkey_c.h"
 #include "librpc/gen_ndr/ndr_backupkey.h"
 #include "librpc/gen_ndr/ndr_lsa_c.h"
 #include "librpc/gen_ndr/ndr_security.h"
-#include "torture/rpc/torture_rpc.h"
-#include "torture/ndr/ndr.h"
 #include "lib/cmdline/popt_common.h"
 #include "libcli/auth/proto.h"
 #include "lib/crypto/arcfour.h"
@@ -2032,11 +2035,22 @@ static bool test_ServerWrap_encrypt_decrypt_wrong_sid(struct torture_context *tc
 {
 	return test_ServerWrap_decrypt_wrong_stuff(tctx, p, WRONG_SID);
 }
+#else
+static bool test_skip(struct torture_context *tctx,
+		      void *data)
+{
+	torture_skip(tctx, "Skip backupkey test with MIT Kerberos");
+
+	return true;
+}
+#endif
 
 struct torture_suite *torture_rpc_backupkey(TALLOC_CTX *mem_ctx)
 {
-	struct torture_rpc_tcase *tcase;
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "backupkey");
+
+#ifdef SAMBA4_USES_HEIMDAL
+	struct torture_rpc_tcase *tcase;
 
 	tcase = torture_suite_add_rpc_iface_tcase(suite, "backupkey",
 						  &ndr_table_backupkey);
@@ -2126,6 +2140,14 @@ struct torture_suite *torture_rpc_backupkey(TALLOC_CTX *mem_ctx)
 
 	torture_rpc_tcase_add_test(tcase, "server_wrap_encrypt_decrypt_wrong_sid",
 				   test_ServerWrap_encrypt_decrypt_wrong_sid);
+#else
+	struct torture_tcase *tcase;
+
+	tcase = torture_suite_add_tcase(suite, "backupkey");
+
+	torture_tcase_add_simple_test(tcase, "skip",
+				      test_skip);
+#endif
 
 	return suite;
 }
