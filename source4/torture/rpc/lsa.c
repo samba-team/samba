@@ -2783,6 +2783,8 @@ static bool check_dom_trust_pw(struct dcerpc_pipe *p,
 {
 	struct cli_credentials *credentials;
 	char *dummy;
+	const char *binding = torture_setting_string(tctx, "binding", NULL);
+	struct dcerpc_binding *b2;
 	struct netlogon_creds_CredentialState *creds;
 	struct dcerpc_pipe *p2;
 	NTSTATUS status;
@@ -2804,7 +2806,10 @@ static bool check_dom_trust_pw(struct dcerpc_pipe *p,
 					trusted_dom_name, CRED_SPECIFIED);
 	cli_credentials_set_secure_channel_type(credentials, SEC_CHAN_DOMAIN);
 
-	status = dcerpc_pipe_connect_b(tctx, &p2, p->binding,
+	status = dcerpc_parse_binding(tctx, binding, &b2);
+	torture_assert_ntstatus_ok(tctx, status, "Bad binding string");
+
+	status = dcerpc_pipe_connect_b(tctx, &p2, b2,
 				       &ndr_table_netlogon,
 				       cli_credentials_init_anon(tctx),
 				       tctx->ev, tctx->lp_ctx);
