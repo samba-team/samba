@@ -23,6 +23,12 @@
 #include "torture/rpc/torture_rpc.h"
 #include "param/param.h"
 
+struct torture_clusapi_context {
+	struct dcerpc_pipe *p;
+	const char *NodeName;
+	const char *ClusterName;
+};
+
 static bool test_OpenCluster_int(struct torture_context *tctx,
 				 struct dcerpc_pipe *p,
 				 struct policy_handle *Cluster)
@@ -93,43 +99,49 @@ static bool test_CloseCluster_int(struct torture_context *tctx,
 }
 
 static bool test_OpenCluster(struct torture_context *tctx,
-			     struct dcerpc_pipe *p)
+			     void *data)
 {
+	struct torture_clusapi_context *t =
+		talloc_get_type_abort(data, struct torture_clusapi_context);
 	struct policy_handle Cluster;
 
-	if (!test_OpenCluster_int(tctx, p, &Cluster)) {
+	if (!test_OpenCluster_int(tctx, t->p, &Cluster)) {
 		return false;
 	}
 
-	test_CloseCluster_int(tctx, p, &Cluster);
+	test_CloseCluster_int(tctx, t->p, &Cluster);
 
 	return true;
 }
 
 static bool test_OpenClusterEx(struct torture_context *tctx,
-			       struct dcerpc_pipe *p)
+			       void *data)
 {
+	struct torture_clusapi_context *t =
+		talloc_get_type_abort(data, struct torture_clusapi_context);
 	struct policy_handle Cluster;
 
-	if (!test_OpenClusterEx_int(tctx, p, &Cluster)) {
+	if (!test_OpenClusterEx_int(tctx, t->p, &Cluster)) {
 		return false;
 	}
 
-	test_CloseCluster_int(tctx, p, &Cluster);
+	test_CloseCluster_int(tctx, t->p, &Cluster);
 
 	return true;
 }
 
 static bool test_CloseCluster(struct torture_context *tctx,
-			      struct dcerpc_pipe *p)
+			      void *data)
 {
+	struct torture_clusapi_context *t =
+		talloc_get_type_abort(data, struct torture_clusapi_context);
 	struct policy_handle Cluster;
 
-	if (!test_OpenCluster_int(tctx, p, &Cluster)) {
+	if (!test_OpenCluster_int(tctx, t->p, &Cluster)) {
 		return false;
 	}
 
-	return test_CloseCluster_int(tctx, p, &Cluster);
+	return test_CloseCluster_int(tctx, t->p, &Cluster);
 }
 
 static bool test_GetClusterName_int(struct torture_context *tctx,
@@ -154,15 +166,17 @@ static bool test_GetClusterName_int(struct torture_context *tctx,
 }
 
 static bool test_SetClusterName(struct torture_context *tctx,
-				struct dcerpc_pipe *p)
+				void *data)
 {
-	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct torture_clusapi_context *t =
+		talloc_get_type_abort(data, struct torture_clusapi_context);
+	struct dcerpc_binding_handle *b = t->p->binding_handle;
 	struct clusapi_SetClusterName r;
 	const char *NewClusterName;
 	WERROR rpc_status;
 
 	torture_assert(tctx,
-		test_GetClusterName_int(tctx, p, &NewClusterName),
+		test_GetClusterName_int(tctx, t->p, &NewClusterName),
 		"failed to query old ClusterName");
 
 	r.in.NewClusterName = NewClusterName;
@@ -180,17 +194,21 @@ static bool test_SetClusterName(struct torture_context *tctx,
 }
 
 static bool test_GetClusterName(struct torture_context *tctx,
-				struct dcerpc_pipe *p)
+				void *data)
 {
+	struct torture_clusapi_context *t =
+		talloc_get_type_abort(data, struct torture_clusapi_context);
 	const char *ClusterName;
 
-	return test_GetClusterName_int(tctx, p, &ClusterName);
+	return test_GetClusterName_int(tctx, t->p, &ClusterName);
 }
 
 static bool test_GetClusterVersion(struct torture_context *tctx,
-				   struct dcerpc_pipe *p)
+				   void *data)
 {
-	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct torture_clusapi_context *t =
+		talloc_get_type_abort(data, struct torture_clusapi_context);
+	struct dcerpc_binding_handle *b = t->p->binding_handle;
 	struct clusapi_GetClusterVersion r;
 	uint16_t lpwMajorVersion;
 	uint16_t lpwMinorVersion;
@@ -216,9 +234,11 @@ static bool test_GetClusterVersion(struct torture_context *tctx,
 }
 
 static bool test_GetClusterVersion2(struct torture_context *tctx,
-				    struct dcerpc_pipe *p)
+				    void *data)
 {
-	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct torture_clusapi_context *t =
+		talloc_get_type_abort(data, struct torture_clusapi_context);
+	struct dcerpc_binding_handle *b = t->p->binding_handle;
 	struct clusapi_GetClusterVersion2 r;
 	uint16_t lpwMajorVersion;
 	uint16_t lpwMinorVersion;
@@ -247,9 +267,11 @@ static bool test_GetClusterVersion2(struct torture_context *tctx,
 }
 
 static bool test_CreateEnum(struct torture_context *tctx,
-			    struct dcerpc_pipe *p)
+			    void *data)
 {
-	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct torture_clusapi_context *t =
+		talloc_get_type_abort(data, struct torture_clusapi_context);
+	struct dcerpc_binding_handle *b = t->p->binding_handle;
 	struct clusapi_CreateEnum r;
 	uint32_t dwType = CLUSTER_ENUM_RESOURCE;
 	struct ENUM_LIST *ReturnEnum;
@@ -270,9 +292,11 @@ static bool test_CreateEnum(struct torture_context *tctx,
 }
 
 static bool test_GetQuorumResource(struct torture_context *tctx,
-				   struct dcerpc_pipe *p)
+				   void *data)
 {
-	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct torture_clusapi_context *t =
+		talloc_get_type_abort(data, struct torture_clusapi_context);
+	struct dcerpc_binding_handle *b = t->p->binding_handle;
 	struct clusapi_GetQuorumResource r;
 	const char *lpszResourceName;
 	const char *lpszDeviceName;
@@ -295,9 +319,11 @@ static bool test_GetQuorumResource(struct torture_context *tctx,
 }
 
 static bool test_SetQuorumResource(struct torture_context *tctx,
-				   struct dcerpc_pipe *p)
+				   void *data)
 {
-	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct torture_clusapi_context *t =
+		talloc_get_type_abort(data, struct torture_clusapi_context);
+	struct dcerpc_binding_handle *b = t->p->binding_handle;
 	struct clusapi_SetQuorumResource r;
 	const char *lpszDeviceName = "";
 	uint32_t dwMaxQuorumLogSize = 0;
@@ -404,44 +430,50 @@ static bool test_CloseResource_int(struct torture_context *tctx,
 }
 
 static bool test_OpenResource(struct torture_context *tctx,
-			      struct dcerpc_pipe *p)
+			      void *data)
 {
+	struct torture_clusapi_context *t =
+		talloc_get_type_abort(data, struct torture_clusapi_context);
 	struct policy_handle hResource;
 
-	if (!test_OpenResource_int(tctx, p, "Cluster Name", &hResource)) {
+	if (!test_OpenResource_int(tctx, t->p, "Cluster Name", &hResource)) {
 		return false;
 	}
 
-	test_CloseResource_int(tctx, p, &hResource);
+	test_CloseResource_int(tctx, t->p, &hResource);
 
 	return true;
 }
 
 static bool test_OpenResourceEx(struct torture_context *tctx,
-				struct dcerpc_pipe *p)
+				void *data)
 {
+	struct torture_clusapi_context *t =
+		talloc_get_type_abort(data, struct torture_clusapi_context);
 	struct policy_handle hResource;
 
-	if (!test_OpenResourceEx_int(tctx, p, "Cluster Name", &hResource)) {
+	if (!test_OpenResourceEx_int(tctx, t->p, "Cluster Name", &hResource)) {
 		return false;
 	}
 
-	test_CloseResource_int(tctx, p, &hResource);
+	test_CloseResource_int(tctx, t->p, &hResource);
 
 	return true;
 }
 
 
 static bool test_CloseResource(struct torture_context *tctx,
-			       struct dcerpc_pipe *p)
+			       void *data)
 {
+	struct torture_clusapi_context *t =
+		talloc_get_type_abort(data, struct torture_clusapi_context);
 	struct policy_handle hResource;
 
-	if (!test_OpenResource_int(tctx, p, "Cluster Name", &hResource)) {
+	if (!test_OpenResource_int(tctx, t->p, "Cluster Name", &hResource)) {
 		return false;
 	}
 
-	return test_CloseResource_int(tctx, p, &hResource);
+	return test_CloseResource_int(tctx, t->p, &hResource);
 }
 
 static bool test_OpenGroup_int(struct torture_context *tctx,
@@ -510,29 +542,33 @@ static bool test_DeleteResource_int(struct torture_context *tctx,
 }
 
 static bool test_CreateResource(struct torture_context *tctx,
-				struct dcerpc_pipe *p)
+				void *data)
 {
+	struct torture_clusapi_context *t =
+		talloc_get_type_abort(data, struct torture_clusapi_context);
 	struct policy_handle hResource;
 
-	if (!test_CreateResource_int(tctx, p, &hResource)) {
+	if (!test_CreateResource_int(tctx, t->p, &hResource)) {
 		return false;
 	}
 
-	test_DeleteResource_int(tctx, p, &hResource);
+	test_DeleteResource_int(tctx, t->p, &hResource);
 
 	return true;
 }
 
 static bool test_DeleteResource(struct torture_context *tctx,
-				struct dcerpc_pipe *p)
+				void *data)
 {
+	struct torture_clusapi_context *t =
+		talloc_get_type_abort(data, struct torture_clusapi_context);
 	struct policy_handle hResource;
 
-	if (!test_CreateResource_int(tctx, p, &hResource)) {
+	if (!test_CreateResource_int(tctx, t->p, &hResource)) {
 		return false;
 	}
 
-	return test_DeleteResource_int(tctx, p, &hResource);
+	return test_DeleteResource_int(tctx, t->p, &hResource);
 }
 
 static bool test_SetResourceName_int(struct torture_context *tctx,
@@ -558,18 +594,20 @@ static bool test_SetResourceName_int(struct torture_context *tctx,
 }
 
 static bool test_SetResourceName(struct torture_context *tctx,
-				 struct dcerpc_pipe *p)
+				 void *data)
 {
+	struct torture_clusapi_context *t =
+		talloc_get_type_abort(data, struct torture_clusapi_context);
 	struct policy_handle hResource;
 	bool ret = true;
 
-	if (!test_CreateResource_int(tctx, p, &hResource)) {
+	if (!test_CreateResource_int(tctx, t->p, &hResource)) {
 		return false;
 	}
 
-	ret = test_SetResourceName_int(tctx, p, &hResource);
+	ret = test_SetResourceName_int(tctx, t->p, &hResource);
 
-	test_DeleteResource_int(tctx, p, &hResource);
+	test_DeleteResource_int(tctx, t->p, &hResource);
 
 	return ret;
 }
@@ -602,18 +640,20 @@ static bool test_GetResourceState_int(struct torture_context *tctx,
 }
 
 static bool test_GetResourceState(struct torture_context *tctx,
-				  struct dcerpc_pipe *p)
+				  void *data)
 {
+	struct torture_clusapi_context *t =
+		talloc_get_type_abort(data, struct torture_clusapi_context);
 	struct policy_handle hResource;
 	bool ret = true;
 
-	if (!test_OpenResource_int(tctx, p, "Cluster Name", &hResource)) {
+	if (!test_OpenResource_int(tctx, t->p, "Cluster Name", &hResource)) {
 		return false;
 	}
 
-	ret = test_GetResourceState_int(tctx, p, &hResource);
+	ret = test_GetResourceState_int(tctx, t->p, &hResource);
 
-	test_CloseResource_int(tctx, p, &hResource);
+	test_CloseResource_int(tctx, t->p, &hResource);
 
 	return ret;
 }
@@ -642,18 +682,20 @@ static bool test_GetResourceId_int(struct torture_context *tctx,
 }
 
 static bool test_GetResourceId(struct torture_context *tctx,
-			       struct dcerpc_pipe *p)
+			       void *data)
 {
+	struct torture_clusapi_context *t =
+		talloc_get_type_abort(data, struct torture_clusapi_context);
 	struct policy_handle hResource;
 	bool ret = true;
 
-	if (!test_OpenResource_int(tctx, p, "Cluster Name", &hResource)) {
+	if (!test_OpenResource_int(tctx, t->p, "Cluster Name", &hResource)) {
 		return false;
 	}
 
-	ret = test_GetResourceId_int(tctx, p, &hResource);
+	ret = test_GetResourceId_int(tctx, t->p, &hResource);
 
-	test_CloseResource_int(tctx, p, &hResource);
+	test_CloseResource_int(tctx, t->p, &hResource);
 
 	return ret;
 }
@@ -682,18 +724,20 @@ static bool test_GetResourceType_int(struct torture_context *tctx,
 }
 
 static bool test_GetResourceType(struct torture_context *tctx,
-				 struct dcerpc_pipe *p)
+				 void *data)
 {
+	struct torture_clusapi_context *t =
+		talloc_get_type_abort(data, struct torture_clusapi_context);
 	struct policy_handle hResource;
 	bool ret = true;
 
-	if (!test_OpenResource_int(tctx, p, "Cluster Name", &hResource)) {
+	if (!test_OpenResource_int(tctx, t->p, "Cluster Name", &hResource)) {
 		return false;
 	}
 
-	ret = test_GetResourceType_int(tctx, p, &hResource);
+	ret = test_GetResourceType_int(tctx, t->p, &hResource);
 
-	test_CloseResource_int(tctx, p, &hResource);
+	test_CloseResource_int(tctx, t->p, &hResource);
 
 	return ret;
 }
@@ -720,18 +764,20 @@ static bool test_FailResource_int(struct torture_context *tctx,
 }
 
 static bool test_FailResource(struct torture_context *tctx,
-			      struct dcerpc_pipe *p)
+			      void *data)
 {
+	struct torture_clusapi_context *t =
+		talloc_get_type_abort(data, struct torture_clusapi_context);
 	struct policy_handle hResource;
 	bool ret = true;
 
-	if (!test_OpenResource_int(tctx, p, "Cluster Name", &hResource)) {
+	if (!test_OpenResource_int(tctx, t->p, "Cluster Name", &hResource)) {
 		return false;
 	}
 
-	ret = test_FailResource_int(tctx, p, &hResource);
+	ret = test_FailResource_int(tctx, t->p, &hResource);
 
-	test_CloseResource_int(tctx, p, &hResource);
+	test_CloseResource_int(tctx, t->p, &hResource);
 
 	return ret;
 }
@@ -758,18 +804,20 @@ static bool test_OnlineResource_int(struct torture_context *tctx,
 }
 
 static bool test_OnlineResource(struct torture_context *tctx,
-				struct dcerpc_pipe *p)
+				void *data)
 {
+	struct torture_clusapi_context *t =
+		talloc_get_type_abort(data, struct torture_clusapi_context);
 	struct policy_handle hResource;
 	bool ret = true;
 
-	if (!test_OpenResource_int(tctx, p, "Cluster Name", &hResource)) {
+	if (!test_OpenResource_int(tctx, t->p, "Cluster Name", &hResource)) {
 		return false;
 	}
 
-	ret = test_OnlineResource_int(tctx, p, &hResource);
+	ret = test_OnlineResource_int(tctx, t->p, &hResource);
 
-	test_CloseResource_int(tctx, p, &hResource);
+	test_CloseResource_int(tctx, t->p, &hResource);
 
 	return ret;
 }
@@ -796,18 +844,20 @@ static bool test_OfflineResource_int(struct torture_context *tctx,
 }
 
 static bool test_OfflineResource(struct torture_context *tctx,
-				 struct dcerpc_pipe *p)
+				 void *data)
 {
+	struct torture_clusapi_context *t =
+		talloc_get_type_abort(data, struct torture_clusapi_context);
 	struct policy_handle hResource;
 	bool ret = true;
 
-	if (!test_OpenResource_int(tctx, p, "Cluster Name", &hResource)) {
+	if (!test_OpenResource_int(tctx, t->p, "Cluster Name", &hResource)) {
 		return false;
 	}
 
-	ret = test_OfflineResource_int(tctx, p, &hResource);
+	ret = test_OfflineResource_int(tctx, t->p, &hResource);
 
-	test_CloseResource_int(tctx, p, &hResource);
+	test_CloseResource_int(tctx, t->p, &hResource);
 
 	return ret;
 }
@@ -843,9 +893,11 @@ static bool test_one_resource(struct torture_context *tctx,
 }
 
 static bool test_all_resources(struct torture_context *tctx,
-			       struct dcerpc_pipe *p)
+			       void *data)
 {
-	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct torture_clusapi_context *t =
+		talloc_get_type_abort(data, struct torture_clusapi_context);
+	struct dcerpc_binding_handle *b = t->p->binding_handle;
 	struct clusapi_CreateEnum r;
 	uint32_t dwType = CLUSTER_ENUM_RESOURCE;
 	struct ENUM_LIST *ReturnEnum;
@@ -870,7 +922,7 @@ static bool test_all_resources(struct torture_context *tctx,
 		torture_assert_int_equal(tctx, e.Type, CLUSTER_ENUM_RESOURCE, "type mismatch");
 
 		torture_assert(tctx,
-			test_one_resource(tctx, p, e.Name),
+			test_one_resource(tctx, t->p, e.Name),
 			"failed to test one resource");
 	}
 
@@ -878,9 +930,11 @@ static bool test_all_resources(struct torture_context *tctx,
 }
 
 static bool test_CreateResEnum(struct torture_context *tctx,
-			       struct dcerpc_pipe *p)
+			       void *data)
 {
-	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct torture_clusapi_context *t =
+		talloc_get_type_abort(data, struct torture_clusapi_context);
+	struct dcerpc_binding_handle *b = t->p->binding_handle;
 	struct clusapi_CreateResEnum r;
 	struct policy_handle hResource;
 	uint32_t dwType = CLUSTER_ENUM_RESOURCE;
@@ -888,7 +942,7 @@ static bool test_CreateResEnum(struct torture_context *tctx,
 	WERROR rpc_status;
 
 	torture_assert(tctx,
-		test_OpenResource_int(tctx, p, "Cluster Name", &hResource),
+		test_OpenResource_int(tctx, t->p, "Cluster Name", &hResource),
 		"OpenResource failed");
 
 	r.in.hResource = hResource;
@@ -903,7 +957,7 @@ static bool test_CreateResEnum(struct torture_context *tctx,
 		r.out.result,
 		"CreateResEnum failed");
 
-	test_CloseResource_int(tctx, p, &hResource);
+	test_CloseResource_int(tctx, t->p, &hResource);
 
 	return true;
 }
@@ -986,43 +1040,49 @@ static bool test_CloseNode_int(struct torture_context *tctx,
 }
 
 static bool test_OpenNode(struct torture_context *tctx,
-			  struct dcerpc_pipe *p)
+			  void *data)
 {
+	struct torture_clusapi_context *t =
+		talloc_get_type_abort(data, struct torture_clusapi_context);
 	struct policy_handle hNode;
 
-	if (!test_OpenNode_int(tctx, p, "NODE1", &hNode)) {
+	if (!test_OpenNode_int(tctx, t->p, t->NodeName, &hNode)) {
 		return false;
 	}
 
-	test_CloseNode_int(tctx, p, &hNode);
+	test_CloseNode_int(tctx, t->p, &hNode);
 
 	return true;
 }
 
 static bool test_OpenNodeEx(struct torture_context *tctx,
-			    struct dcerpc_pipe *p)
+			    void *data)
 {
+	struct torture_clusapi_context *t =
+		talloc_get_type_abort(data, struct torture_clusapi_context);
 	struct policy_handle hNode;
 
-	if (!test_OpenNodeEx_int(tctx, p, "NODE1", &hNode)) {
+	if (!test_OpenNodeEx_int(tctx, t->p, t->NodeName, &hNode)) {
 		return false;
 	}
 
-	test_CloseNode_int(tctx, p, &hNode);
+	test_CloseNode_int(tctx, t->p, &hNode);
 
 	return true;
 }
 
 static bool test_CloseNode(struct torture_context *tctx,
-			   struct dcerpc_pipe *p)
+			   void *data)
 {
+	struct torture_clusapi_context *t =
+		talloc_get_type_abort(data, struct torture_clusapi_context);
 	struct policy_handle hNode;
 
-	if (!test_OpenNode_int(tctx, p, "NODE1", &hNode)) {
+	if (!test_OpenNode_int(tctx, t->p, t->NodeName, &hNode)) {
 		return false;
 	}
 
-	return test_CloseNode_int(tctx, p, &hNode);
+	return test_CloseNode_int(tctx, t->p, &hNode);
 }
 
 static bool test_GetNodeState_int(struct torture_context *tctx,
@@ -1049,18 +1109,20 @@ static bool test_GetNodeState_int(struct torture_context *tctx,
 }
 
 static bool test_GetNodeState(struct torture_context *tctx,
-			      struct dcerpc_pipe *p)
+			      void *data)
 {
+	struct torture_clusapi_context *t =
+		talloc_get_type_abort(data, struct torture_clusapi_context);
 	struct policy_handle hNode;
 	bool ret = true;
 
-	if (!test_OpenNode_int(tctx, p, "NODE1", &hNode)) {
+	if (!test_OpenNode_int(tctx, t->p, t->NodeName, &hNode)) {
 		return false;
 	}
 
-	ret = test_GetNodeState_int(tctx, p, &hNode);
+	ret = test_GetNodeState_int(tctx, t->p, &hNode);
 
-	test_CloseNode_int(tctx, p, &hNode);
+	test_CloseNode_int(tctx, t->p, &hNode);
 
 	return ret;
 }
@@ -1089,18 +1151,20 @@ static bool test_GetNodeId_int(struct torture_context *tctx,
 }
 
 static bool test_GetNodeId(struct torture_context *tctx,
-			   struct dcerpc_pipe *p)
+			   void *data)
 {
+	struct torture_clusapi_context *t =
+		talloc_get_type_abort(data, struct torture_clusapi_context);
 	struct policy_handle hNode;
 	bool ret = true;
 
-	if (!test_OpenNode_int(tctx, p, "NODE1", &hNode)) {
+	if (!test_OpenNode_int(tctx, t->p, t->NodeName, &hNode)) {
 		return false;
 	}
 
-	ret = test_GetNodeId_int(tctx, p, &hNode);
+	ret = test_GetNodeId_int(tctx, t->p, &hNode);
 
-	test_CloseNode_int(tctx, p, &hNode);
+	test_CloseNode_int(tctx, t->p, &hNode);
 
 	return ret;
 }
@@ -1127,18 +1191,20 @@ static bool test_PauseNode_int(struct torture_context *tctx,
 }
 
 static bool test_PauseNode(struct torture_context *tctx,
-			   struct dcerpc_pipe *p)
+			   void *data)
 {
+	struct torture_clusapi_context *t =
+		talloc_get_type_abort(data, struct torture_clusapi_context);
 	struct policy_handle hNode;
 	bool ret = true;
 
-	if (!test_OpenNode_int(tctx, p, "NODE1", &hNode)) {
+	if (!test_OpenNode_int(tctx, t->p, t->NodeName, &hNode)) {
 		return false;
 	}
 
-	ret = test_PauseNode_int(tctx, p, &hNode);
+	ret = test_PauseNode_int(tctx, t->p, &hNode);
 
-	test_CloseNode_int(tctx, p, &hNode);
+	test_CloseNode_int(tctx, t->p, &hNode);
 
 	return ret;
 }
@@ -1166,18 +1232,20 @@ static bool test_ResumeNode_int(struct torture_context *tctx,
 }
 
 static bool test_ResumeNode(struct torture_context *tctx,
-			    struct dcerpc_pipe *p)
+			    void *data)
 {
+	struct torture_clusapi_context *t =
+		talloc_get_type_abort(data, struct torture_clusapi_context);
 	struct policy_handle hNode;
 	bool ret = true;
 
-	if (!test_OpenNode_int(tctx, p, "NODE1", &hNode)) {
+	if (!test_OpenNode_int(tctx, t->p, t->NodeName, &hNode)) {
 		return false;
 	}
 
-	ret = test_ResumeNode_int(tctx, p, &hNode);
+	ret = test_ResumeNode_int(tctx, t->p, &hNode);
 
-	test_CloseNode_int(tctx, p, &hNode);
+	test_CloseNode_int(tctx, t->p, &hNode);
 
 	return ret;
 }
@@ -1204,18 +1272,20 @@ static bool test_EvictNode_int(struct torture_context *tctx,
 }
 
 static bool test_EvictNode(struct torture_context *tctx,
-			   struct dcerpc_pipe *p)
+			   void *data)
 {
+	struct torture_clusapi_context *t =
+		talloc_get_type_abort(data, struct torture_clusapi_context);
 	struct policy_handle hNode;
 	bool ret = true;
 
-	if (!test_OpenNode_int(tctx, p, "NODE1", &hNode)) {
+	if (!test_OpenNode_int(tctx, t->p, t->NodeName, &hNode)) {
 		return false;
 	}
 
-	ret = test_EvictNode_int(tctx, p, &hNode);
+	ret = test_EvictNode_int(tctx, t->p, &hNode);
 
-	test_CloseNode_int(tctx, p, &hNode);
+	test_CloseNode_int(tctx, t->p, &hNode);
 
 	return ret;
 }
@@ -1248,9 +1318,11 @@ static bool test_one_node(struct torture_context *tctx,
 }
 
 static bool test_all_nodes(struct torture_context *tctx,
-			   struct dcerpc_pipe *p)
+			   void *data)
 {
-	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct torture_clusapi_context *t =
+		talloc_get_type_abort(data, struct torture_clusapi_context);
+	struct dcerpc_binding_handle *b = t->p->binding_handle;
 	struct clusapi_CreateEnum r;
 	uint32_t dwType = CLUSTER_ENUM_NODE;
 	struct ENUM_LIST *ReturnEnum;
@@ -1275,7 +1347,7 @@ static bool test_all_nodes(struct torture_context *tctx,
 		torture_assert_int_equal(tctx, e.Type, CLUSTER_ENUM_NODE, "type mismatch");
 
 		torture_assert(tctx,
-			test_one_node(tctx, p, e.Name),
+			test_one_node(tctx, t->p, e.Name),
 			"failed to test one node");
 	}
 
@@ -1359,43 +1431,49 @@ static bool test_CloseGroup_int(struct torture_context *tctx,
 }
 
 static bool test_OpenGroup(struct torture_context *tctx,
-			   struct dcerpc_pipe *p)
+			   void *data)
 {
+	struct torture_clusapi_context *t =
+		talloc_get_type_abort(data, struct torture_clusapi_context);
 	struct policy_handle hGroup;
 
-	if (!test_OpenGroup_int(tctx, p, "Cluster Group", &hGroup)) {
+	if (!test_OpenGroup_int(tctx, t->p, "Cluster Group", &hGroup)) {
 		return false;
 	}
 
-	test_CloseGroup_int(tctx, p, &hGroup);
+	test_CloseGroup_int(tctx, t->p, &hGroup);
 
 	return true;
 }
 
 static bool test_OpenGroupEx(struct torture_context *tctx,
-			     struct dcerpc_pipe *p)
+			     void *data)
 {
+	struct torture_clusapi_context *t =
+		talloc_get_type_abort(data, struct torture_clusapi_context);
 	struct policy_handle hGroup;
 
-	if (!test_OpenGroupEx_int(tctx, p, "Cluster Group", &hGroup)) {
+	if (!test_OpenGroupEx_int(tctx, t->p, "Cluster Group", &hGroup)) {
 		return false;
 	}
 
-	test_CloseGroup_int(tctx, p, &hGroup);
+	test_CloseGroup_int(tctx, t->p, &hGroup);
 
 	return true;
 }
 
 static bool test_CloseGroup(struct torture_context *tctx,
-			    struct dcerpc_pipe *p)
+			    void *data)
 {
+	struct torture_clusapi_context *t =
+		talloc_get_type_abort(data, struct torture_clusapi_context);
 	struct policy_handle hGroup;
 
-	if (!test_OpenGroup_int(tctx, p, "Cluster Group", &hGroup)) {
+	if (!test_OpenGroup_int(tctx, t->p, "Cluster Group", &hGroup)) {
 		return false;
 	}
 
-	return test_CloseGroup_int(tctx, p, &hGroup);
+	return test_CloseGroup_int(tctx, t->p, &hGroup);
 }
 
 static bool test_GetGroupState_int(struct torture_context *tctx,
@@ -1424,18 +1502,20 @@ static bool test_GetGroupState_int(struct torture_context *tctx,
 }
 
 static bool test_GetGroupState(struct torture_context *tctx,
-			       struct dcerpc_pipe *p)
+			       void *data)
 {
+	struct torture_clusapi_context *t =
+		talloc_get_type_abort(data, struct torture_clusapi_context);
 	struct policy_handle hGroup;
 	bool ret = true;
 
-	if (!test_OpenGroup_int(tctx, p, "Cluster Group", &hGroup)) {
+	if (!test_OpenGroup_int(tctx, t->p, "Cluster Group", &hGroup)) {
 		return false;
 	}
 
-	ret = test_GetGroupState_int(tctx, p, &hGroup);
+	ret = test_GetGroupState_int(tctx, t->p, &hGroup);
 
-	test_CloseGroup_int(tctx, p, &hGroup);
+	test_CloseGroup_int(tctx, t->p, &hGroup);
 
 	return ret;
 }
@@ -1464,18 +1544,20 @@ static bool test_GetGroupId_int(struct torture_context *tctx,
 }
 
 static bool test_GetGroupId(struct torture_context *tctx,
-			    struct dcerpc_pipe *p)
+			    void *data)
 {
+	struct torture_clusapi_context *t =
+		talloc_get_type_abort(data, struct torture_clusapi_context);
 	struct policy_handle hGroup;
 	bool ret = true;
 
-	if (!test_OpenGroup_int(tctx, p, "Cluster Group", &hGroup)) {
+	if (!test_OpenGroup_int(tctx, t->p, "Cluster Group", &hGroup)) {
 		return false;
 	}
 
-	ret = test_GetGroupId_int(tctx, p, &hGroup);
+	ret = test_GetGroupId_int(tctx, t->p, &hGroup);
 
-	test_CloseGroup_int(tctx, p, &hGroup);
+	test_CloseGroup_int(tctx, t->p, &hGroup);
 
 	return ret;
 }
@@ -1502,18 +1584,20 @@ static bool test_OnlineGroup_int(struct torture_context *tctx,
 }
 
 static bool test_OnlineGroup(struct torture_context *tctx,
-			     struct dcerpc_pipe *p)
+			     void *data)
 {
+	struct torture_clusapi_context *t =
+		talloc_get_type_abort(data, struct torture_clusapi_context);
 	struct policy_handle hGroup;
 	bool ret = true;
 
-	if (!test_OpenGroup_int(tctx, p, "Cluster Group", &hGroup)) {
+	if (!test_OpenGroup_int(tctx, t->p, "Cluster Group", &hGroup)) {
 		return false;
 	}
 
-	ret = test_OnlineGroup_int(tctx, p, &hGroup);
+	ret = test_OnlineGroup_int(tctx, t->p, &hGroup);
 
-	test_CloseGroup_int(tctx, p, &hGroup);
+	test_CloseGroup_int(tctx, t->p, &hGroup);
 
 	return ret;
 }
@@ -1540,18 +1624,20 @@ static bool test_OfflineGroup_int(struct torture_context *tctx,
 }
 
 static bool test_OfflineGroup(struct torture_context *tctx,
-				 struct dcerpc_pipe *p)
+			      void *data)
 {
+	struct torture_clusapi_context *t =
+		talloc_get_type_abort(data, struct torture_clusapi_context);
 	struct policy_handle hGroup;
 	bool ret = true;
 
-	if (!test_OpenGroup_int(tctx, p, "Cluster Group", &hGroup)) {
+	if (!test_OpenGroup_int(tctx, t->p, "Cluster Group", &hGroup)) {
 		return false;
 	}
 
-	ret = test_OfflineGroup_int(tctx, p, &hGroup);
+	ret = test_OfflineGroup_int(tctx, t->p, &hGroup);
 
-	test_CloseGroup_int(tctx, p, &hGroup);
+	test_CloseGroup_int(tctx, t->p, &hGroup);
 
 	return ret;
 }
@@ -1584,9 +1670,11 @@ static bool test_one_group(struct torture_context *tctx,
 }
 
 static bool test_all_groups(struct torture_context *tctx,
-			    struct dcerpc_pipe *p)
+			    void *data)
 {
-	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct torture_clusapi_context *t =
+		talloc_get_type_abort(data, struct torture_clusapi_context);
+	struct dcerpc_binding_handle *b = t->p->binding_handle;
 	struct clusapi_CreateEnum r;
 	uint32_t dwType = CLUSTER_ENUM_GROUP;
 	struct ENUM_LIST *ReturnEnum;
@@ -1611,7 +1699,7 @@ static bool test_all_groups(struct torture_context *tctx,
 		torture_assert_int_equal(tctx, e.Type, CLUSTER_ENUM_GROUP, "type mismatch");
 
 		torture_assert(tctx,
-			test_one_group(tctx, p, e.Name),
+			test_one_group(tctx, t->p, e.Name),
 			"failed to test one group");
 	}
 
@@ -1619,9 +1707,11 @@ static bool test_all_groups(struct torture_context *tctx,
 }
 
 static bool test_BackupClusterDatabase(struct torture_context *tctx,
-				       struct dcerpc_pipe *p)
+				       void *data)
 {
-	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct torture_clusapi_context *t =
+		talloc_get_type_abort(data, struct torture_clusapi_context);
+	struct dcerpc_binding_handle *b = t->p->binding_handle;
 	struct clusapi_BackupClusterDatabase r;
 	WERROR rpc_status;
 
@@ -1640,9 +1730,11 @@ static bool test_BackupClusterDatabase(struct torture_context *tctx,
 }
 
 static bool test_SetServiceAccountPassword(struct torture_context *tctx,
-					   struct dcerpc_pipe *p)
+					   void *data)
 {
-	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct torture_clusapi_context *t =
+		talloc_get_type_abort(data, struct torture_clusapi_context);
+	struct dcerpc_binding_handle *b = t->p->binding_handle;
 	struct clusapi_SetServiceAccountPassword r;
 	uint32_t SizeReturned;
 	uint32_t ExpectedBufferSize;
@@ -1742,43 +1834,49 @@ static bool test_CloseNetwork_int(struct torture_context *tctx,
 }
 
 static bool test_OpenNetwork(struct torture_context *tctx,
-			     struct dcerpc_pipe *p)
+			     void *data)
 {
+	struct torture_clusapi_context *t =
+		talloc_get_type_abort(data, struct torture_clusapi_context);
 	struct policy_handle hNetwork;
 
-	if (!test_OpenNetwork_int(tctx, p, "Cluster Network 1", &hNetwork)) {
+	if (!test_OpenNetwork_int(tctx, t->p, "Cluster Network 1", &hNetwork)) {
 		return false;
 	}
 
-	test_CloseNetwork_int(tctx, p, &hNetwork);
+	test_CloseNetwork_int(tctx, t->p, &hNetwork);
 
 	return true;
 }
 
 static bool test_OpenNetworkEx(struct torture_context *tctx,
-			       struct dcerpc_pipe *p)
+			       void *data)
 {
+	struct torture_clusapi_context *t =
+		talloc_get_type_abort(data, struct torture_clusapi_context);
 	struct policy_handle hNetwork;
 
-	if (!test_OpenNetworkEx_int(tctx, p, "Cluster Network 1", &hNetwork)) {
+	if (!test_OpenNetworkEx_int(tctx, t->p, "Cluster Network 1", &hNetwork)) {
 		return false;
 	}
 
-	test_CloseNetwork_int(tctx, p, &hNetwork);
+	test_CloseNetwork_int(tctx, t->p, &hNetwork);
 
 	return true;
 }
 
 static bool test_CloseNetwork(struct torture_context *tctx,
-			      struct dcerpc_pipe *p)
+			      void *data)
 {
+	struct torture_clusapi_context *t =
+		talloc_get_type_abort(data, struct torture_clusapi_context);
 	struct policy_handle hNetwork;
 
-	if (!test_OpenNetwork_int(tctx, p, "Cluster Network 1", &hNetwork)) {
+	if (!test_OpenNetwork_int(tctx, t->p, "Cluster Network 1", &hNetwork)) {
 		return false;
 	}
 
-	return test_CloseNetwork_int(tctx, p, &hNetwork);
+	return test_CloseNetwork_int(tctx, t->p, &hNetwork);
 }
 
 static bool test_GetNetworkState_int(struct torture_context *tctx,
@@ -1805,18 +1903,20 @@ static bool test_GetNetworkState_int(struct torture_context *tctx,
 }
 
 static bool test_GetNetworkState(struct torture_context *tctx,
-				 struct dcerpc_pipe *p)
+				 void *data)
 {
+	struct torture_clusapi_context *t =
+		talloc_get_type_abort(data, struct torture_clusapi_context);
 	struct policy_handle hNetwork;
 	bool ret = true;
 
-	if (!test_OpenNetwork_int(tctx, p, "Cluster Network 1", &hNetwork)) {
+	if (!test_OpenNetwork_int(tctx, t->p, "Cluster Network 1", &hNetwork)) {
 		return false;
 	}
 
-	ret = test_GetNetworkState_int(tctx, p, &hNetwork);
+	ret = test_GetNetworkState_int(tctx, t->p, &hNetwork);
 
-	test_CloseNetwork_int(tctx, p, &hNetwork);
+	test_CloseNetwork_int(tctx, t->p, &hNetwork);
 
 	return ret;
 }
@@ -1845,18 +1945,20 @@ static bool test_GetNetworkId_int(struct torture_context *tctx,
 }
 
 static bool test_GetNetworkId(struct torture_context *tctx,
-			      struct dcerpc_pipe *p)
+			      void *data)
 {
+	struct torture_clusapi_context *t =
+		talloc_get_type_abort(data, struct torture_clusapi_context);
 	struct policy_handle hNetwork;
 	bool ret = true;
 
-	if (!test_OpenNetwork_int(tctx, p, "Cluster Network 1", &hNetwork)) {
+	if (!test_OpenNetwork_int(tctx, t->p, "Cluster Network 1", &hNetwork)) {
 		return false;
 	}
 
-	ret = test_GetNetworkId_int(tctx, p, &hNetwork);
+	ret = test_GetNetworkId_int(tctx, t->p, &hNetwork);
 
-	test_CloseNetwork_int(tctx, p, &hNetwork);
+	test_CloseNetwork_int(tctx, t->p, &hNetwork);
 
 	return ret;
 }
@@ -1889,9 +1991,11 @@ static bool test_one_network(struct torture_context *tctx,
 }
 
 static bool test_all_networks(struct torture_context *tctx,
-			      struct dcerpc_pipe *p)
+			      void *data)
 {
-	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct torture_clusapi_context *t =
+		talloc_get_type_abort(data, struct torture_clusapi_context);
+	struct dcerpc_binding_handle *b = t->p->binding_handle;
 	struct clusapi_CreateEnum r;
 	uint32_t dwType = CLUSTER_ENUM_NETWORK;
 	struct ENUM_LIST *ReturnEnum;
@@ -1916,7 +2020,7 @@ static bool test_all_networks(struct torture_context *tctx,
 		torture_assert_int_equal(tctx, e.Type, CLUSTER_ENUM_NETWORK, "type mismatch");
 
 		torture_assert(tctx,
-			test_one_network(tctx, p, e.Name),
+			test_one_network(tctx, t->p, e.Name),
 			"failed to test one network");
 	}
 
@@ -2000,43 +2104,49 @@ static bool test_CloseNetInterface_int(struct torture_context *tctx,
 }
 
 static bool test_OpenNetInterface(struct torture_context *tctx,
-				  struct dcerpc_pipe *p)
+				  void *data)
 {
+	struct torture_clusapi_context *t =
+		talloc_get_type_abort(data, struct torture_clusapi_context);
 	struct policy_handle hNetInterface;
 
-	if (!test_OpenNetInterface_int(tctx, p, "node1 - Ethernet", &hNetInterface)) {
+	if (!test_OpenNetInterface_int(tctx, t->p, "node1 - Ethernet", &hNetInterface)) {
 		return false;
 	}
 
-	test_CloseNetInterface_int(tctx, p, &hNetInterface);
+	test_CloseNetInterface_int(tctx, t->p, &hNetInterface);
 
 	return true;
 }
 
 static bool test_OpenNetInterfaceEx(struct torture_context *tctx,
-				    struct dcerpc_pipe *p)
+				    void *data)
 {
+	struct torture_clusapi_context *t =
+		talloc_get_type_abort(data, struct torture_clusapi_context);
 	struct policy_handle hNetInterface;
 
-	if (!test_OpenNetInterfaceEx_int(tctx, p, "node1 - Ethernet", &hNetInterface)) {
+	if (!test_OpenNetInterfaceEx_int(tctx, t->p, "node1 - Ethernet", &hNetInterface)) {
 		return false;
 	}
 
-	test_CloseNetInterface_int(tctx, p, &hNetInterface);
+	test_CloseNetInterface_int(tctx, t->p, &hNetInterface);
 
 	return true;
 }
 
 static bool test_CloseNetInterface(struct torture_context *tctx,
-				   struct dcerpc_pipe *p)
+				   void *data)
 {
+	struct torture_clusapi_context *t =
+		talloc_get_type_abort(data, struct torture_clusapi_context);
 	struct policy_handle hNetInterface;
 
-	if (!test_OpenNetInterface_int(tctx, p, "node1 - Ethernet", &hNetInterface)) {
+	if (!test_OpenNetInterface_int(tctx, t->p, "node1 - Ethernet", &hNetInterface)) {
 		return false;
 	}
 
-	return test_CloseNetInterface_int(tctx, p, &hNetInterface);
+	return test_CloseNetInterface_int(tctx, t->p, &hNetInterface);
 }
 
 static bool test_GetNetInterfaceState_int(struct torture_context *tctx,
@@ -2063,18 +2173,20 @@ static bool test_GetNetInterfaceState_int(struct torture_context *tctx,
 }
 
 static bool test_GetNetInterfaceState(struct torture_context *tctx,
-				      struct dcerpc_pipe *p)
+				      void *data)
 {
+	struct torture_clusapi_context *t =
+		talloc_get_type_abort(data, struct torture_clusapi_context);
 	struct policy_handle hNetInterface;
 	bool ret = true;
 
-	if (!test_OpenNetInterface_int(tctx, p, "node1 - Ethernet", &hNetInterface)) {
+	if (!test_OpenNetInterface_int(tctx, t->p, "node1 - Ethernet", &hNetInterface)) {
 		return false;
 	}
 
-	ret = test_GetNetInterfaceState_int(tctx, p, &hNetInterface);
+	ret = test_GetNetInterfaceState_int(tctx, t->p, &hNetInterface);
 
-	test_CloseNetInterface_int(tctx, p, &hNetInterface);
+	test_CloseNetInterface_int(tctx, t->p, &hNetInterface);
 
 	return ret;
 }
@@ -2103,18 +2215,20 @@ static bool test_GetNetInterfaceId_int(struct torture_context *tctx,
 }
 
 static bool test_GetNetInterfaceId(struct torture_context *tctx,
-				   struct dcerpc_pipe *p)
+				   void *data)
 {
+	struct torture_clusapi_context *t =
+		talloc_get_type_abort(data, struct torture_clusapi_context);
 	struct policy_handle hNetInterface;
 	bool ret = true;
 
-	if (!test_OpenNetInterface_int(tctx, p, "node1 - Ethernet", &hNetInterface)) {
+	if (!test_OpenNetInterface_int(tctx, t->p, "node1 - Ethernet", &hNetInterface)) {
 		return false;
 	}
 
-	ret = test_GetNetInterfaceId_int(tctx, p, &hNetInterface);
+	ret = test_GetNetInterfaceId_int(tctx, t->p, &hNetInterface);
 
-	test_CloseNetInterface_int(tctx, p, &hNetInterface);
+	test_CloseNetInterface_int(tctx, t->p, &hNetInterface);
 
 	return ret;
 }
@@ -2147,9 +2261,11 @@ static bool test_one_netinterface(struct torture_context *tctx,
 }
 
 static bool test_all_netinterfaces(struct torture_context *tctx,
-				   struct dcerpc_pipe *p)
+				   void *data)
 {
-	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct torture_clusapi_context *t =
+		talloc_get_type_abort(data, struct torture_clusapi_context);
+	struct dcerpc_binding_handle *b = t->p->binding_handle;
 	struct clusapi_CreateEnum r;
 	uint32_t dwType = CLUSTER_ENUM_NETINTERFACE;
 	struct ENUM_LIST *ReturnEnum;
@@ -2174,7 +2290,7 @@ static bool test_all_netinterfaces(struct torture_context *tctx,
 		torture_assert_int_equal(tctx, e.Type, CLUSTER_ENUM_NETINTERFACE, "type mismatch");
 
 		torture_assert(tctx,
-			test_one_netinterface(tctx, p, e.Name),
+			test_one_netinterface(tctx, t->p, e.Name),
 			"failed to test one netinterface");
 	}
 
@@ -2395,44 +2511,50 @@ static bool test_GetKeySecurity_int(struct torture_context *tctx,
 }
 
 static bool test_GetRootKey(struct torture_context *tctx,
-			    struct dcerpc_pipe *p)
+			    void *data)
 {
+	struct torture_clusapi_context *t =
+		talloc_get_type_abort(data, struct torture_clusapi_context);
 	struct policy_handle hKey;
 
-	if (!test_GetRootKey_int(tctx, p, &hKey)) {
+	if (!test_GetRootKey_int(tctx, t->p, &hKey)) {
 		return false;
 	}
 
-	test_CloseKey_int(tctx, p, &hKey);
+	test_CloseKey_int(tctx, t->p, &hKey);
 
 	return true;
 }
 
 static bool test_CloseKey(struct torture_context *tctx,
-			  struct dcerpc_pipe *p)
+			  void *data)
 {
+	struct torture_clusapi_context *t =
+		talloc_get_type_abort(data, struct torture_clusapi_context);
 	struct policy_handle hKey;
 
-	if (!test_GetRootKey_int(tctx, p, &hKey)) {
+	if (!test_GetRootKey_int(tctx, t->p, &hKey)) {
 		return false;
 	}
 
-	return test_CloseKey_int(tctx, p, &hKey);
+	return test_CloseKey_int(tctx, t->p, &hKey);
 }
 
 static bool test_EnumKey(struct torture_context *tctx,
-			 struct dcerpc_pipe *p)
+			 void *data)
 {
+	struct torture_clusapi_context *t =
+		talloc_get_type_abort(data, struct torture_clusapi_context);
 	struct policy_handle hKey;
 	bool ret = true;
 
-	if (!test_GetRootKey_int(tctx, p, &hKey)) {
+	if (!test_GetRootKey_int(tctx, t->p, &hKey)) {
 		return false;
 	}
 
-	ret = test_EnumKey_int(tctx, p, &hKey);
+	ret = test_EnumKey_int(tctx, t->p, &hKey);
 
-	test_CloseKey_int(tctx, p, &hKey);
+	test_CloseKey_int(tctx, t->p, &hKey);
 
 	return ret;
 }
@@ -2467,9 +2589,11 @@ static bool test_one_key(struct torture_context *tctx,
 }
 
 static bool test_all_keys(struct torture_context *tctx,
-			  struct dcerpc_pipe *p)
+			  void *data)
 {
-	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct torture_clusapi_context *t =
+		talloc_get_type_abort(data, struct torture_clusapi_context);
+	struct dcerpc_binding_handle *b = t->p->binding_handle;
 	struct policy_handle hKey;
 	struct clusapi_EnumKey r;
 	const char *KeyName;
@@ -2477,7 +2601,7 @@ static bool test_all_keys(struct torture_context *tctx,
 	WERROR rpc_status;
 	int i = 0;
 
-	if (!test_GetRootKey_int(tctx, p, &hKey)) {
+	if (!test_GetRootKey_int(tctx, t->p, &hKey)) {
 		return false;
 	}
 
@@ -2494,7 +2618,7 @@ static bool test_all_keys(struct torture_context *tctx,
 
 		if (W_ERROR_IS_OK(r.out.result)) {
 			torture_assert(tctx,
-				test_one_key(tctx, p, &hKey, KeyName),
+				test_one_key(tctx, t->p, &hKey, KeyName),
 				"failed to test one key");
 		}
 
@@ -2505,164 +2629,274 @@ static bool test_all_keys(struct torture_context *tctx,
 		WERR_NO_MORE_ITEMS,
 		"EnumKey failed");
 
-	test_CloseKey_int(tctx, p, &hKey);
+	test_CloseKey_int(tctx, t->p, &hKey);
 
 	return true;
 }
 
-struct torture_suite *torture_rpc_clusapi(TALLOC_CTX *mem_ctx)
+static bool torture_rpc_clusapi_setup_common(struct torture_context *tctx,
+					     struct torture_clusapi_context *t)
 {
-	struct torture_rpc_tcase *tcase;
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "clusapi");
+	struct dcerpc_binding_handle *b;
+
+	torture_assert_ntstatus_ok(tctx,
+		torture_rpc_connection(tctx, &t->p, &ndr_table_clusapi),
+		"Error connecting to server");
+
+	{
+		struct clusapi_GetClusterName r;
+
+		b = t->p->binding_handle;
+
+		r.out.ClusterName = &t->ClusterName;
+		r.out.NodeName = &t->NodeName;
+
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_clusapi_GetClusterName_r(b, tctx, &r),
+			"GetClusterName failed");
+		torture_assert_werr_ok(tctx,
+			r.out.result,
+			"GetClusterName failed");
+	}
+
+	return true;
+}
+
+static bool torture_rpc_clusapi_setup(struct torture_context *tctx,
+				      void **data)
+{
+	struct torture_clusapi_context *t;
+
+	*data = t = talloc_zero(tctx, struct torture_clusapi_context);
+
+	return torture_rpc_clusapi_setup_common(tctx, t);
+}
+
+static bool torture_rpc_clusapi_teardown(struct torture_context *tctx,
+					 void *data)
+{
+	talloc_free(data);
+
+	return true;
+}
+
+void torture_tcase_cluster(struct torture_tcase *tcase)
+{
+	torture_tcase_add_simple_test(tcase, "OpenCluster",
+				      test_OpenCluster);
+	torture_tcase_add_simple_test(tcase, "OpenClusterEx",
+				      test_OpenClusterEx);
+	torture_tcase_add_simple_test(tcase, "CloseCluster",
+				      test_CloseCluster);
+	torture_tcase_add_simple_test(tcase, "SetClusterName",
+				      test_SetClusterName);
+	torture_tcase_add_simple_test(tcase, "GetClusterName",
+				      test_GetClusterName);
+	torture_tcase_add_simple_test(tcase, "GetClusterVersion",
+				      test_GetClusterVersion);
+	torture_tcase_add_simple_test(tcase, "CreateEnum",
+				      test_CreateEnum);
+	torture_tcase_add_simple_test(tcase, "GetClusterVersion2",
+				      test_GetClusterVersion2);
+	torture_tcase_add_simple_test(tcase, "BackupClusterDatabase",
+				      test_BackupClusterDatabase);
+	torture_tcase_add_simple_test(tcase, "SetServiceAccountPassword",
+				      test_SetServiceAccountPassword);
+}
+
+void torture_tcase_resource(struct torture_tcase *tcase)
+{
 	struct torture_test *test;
 
-	tcase = torture_suite_add_rpc_iface_tcase(suite, "cluster",
-						  &ndr_table_clusapi);
-
-	torture_rpc_tcase_add_test(tcase, "OpenCluster",
-				   test_OpenCluster);
-	torture_rpc_tcase_add_test(tcase, "OpenClusterEx",
-				   test_OpenClusterEx);
-	torture_rpc_tcase_add_test(tcase, "CloseCluster",
-				   test_CloseCluster);
-	torture_rpc_tcase_add_test(tcase, "SetClusterName",
-				   test_SetClusterName);
-	torture_rpc_tcase_add_test(tcase, "GetClusterName",
-				   test_GetClusterName);
-	torture_rpc_tcase_add_test(tcase, "GetClusterVersion",
-				   test_GetClusterVersion);
-	torture_rpc_tcase_add_test(tcase, "CreateEnum",
-				   test_CreateEnum);
-	torture_rpc_tcase_add_test(tcase, "GetClusterVersion2",
-				   test_GetClusterVersion2);
-	torture_rpc_tcase_add_test(tcase, "CreateResEnum",
-				   test_CreateResEnum);
-	torture_rpc_tcase_add_test(tcase, "BackupClusterDatabase",
-				   test_BackupClusterDatabase);
-	torture_rpc_tcase_add_test(tcase, "SetServiceAccountPassword",
-				   test_SetServiceAccountPassword);
-	torture_rpc_tcase_add_test(tcase, "all_resources",
-				   test_all_resources);
-
-	tcase = torture_suite_add_rpc_iface_tcase(suite, "resource",
-						  &ndr_table_clusapi);
-
-	torture_rpc_tcase_add_test(tcase, "GetQuorumResource",
-				   test_GetQuorumResource);
-	torture_rpc_tcase_add_test(tcase, "SetQuorumResource",
-				   test_SetQuorumResource);
-	torture_rpc_tcase_add_test(tcase, "OpenResource",
-				   test_OpenResource);
-	torture_rpc_tcase_add_test(tcase, "OpenResourceEx",
-				   test_OpenResourceEx);
-	torture_rpc_tcase_add_test(tcase, "CloseResource",
-				   test_CloseResource);
-	torture_rpc_tcase_add_test(tcase, "CreateResource",
-				   test_CreateResource);
-	torture_rpc_tcase_add_test(tcase, "DeleteResource",
-				   test_DeleteResource);
-	torture_rpc_tcase_add_test(tcase, "SetResourceName",
-				   test_SetResourceName);
-	torture_rpc_tcase_add_test(tcase, "GetResourceState",
-				   test_GetResourceState);
-	torture_rpc_tcase_add_test(tcase, "GetResourceId",
-				   test_GetResourceId);
-	torture_rpc_tcase_add_test(tcase, "GetResourceType",
-				   test_GetResourceType);
-	test = torture_rpc_tcase_add_test(tcase, "FailResource",
-				   test_FailResource);
+	torture_tcase_add_simple_test(tcase, "GetQuorumResource",
+				      test_GetQuorumResource);
+	torture_tcase_add_simple_test(tcase, "SetQuorumResource",
+				      test_SetQuorumResource);
+	torture_tcase_add_simple_test(tcase, "OpenResource",
+				      test_OpenResource);
+	torture_tcase_add_simple_test(tcase, "OpenResourceEx",
+				      test_OpenResourceEx);
+	torture_tcase_add_simple_test(tcase, "CloseResource",
+				      test_CloseResource);
+	torture_tcase_add_simple_test(tcase, "CreateResource",
+				      test_CreateResource);
+	torture_tcase_add_simple_test(tcase, "DeleteResource",
+				      test_DeleteResource);
+	torture_tcase_add_simple_test(tcase, "SetResourceName",
+				      test_SetResourceName);
+	torture_tcase_add_simple_test(tcase, "GetResourceState",
+				      test_GetResourceState);
+	torture_tcase_add_simple_test(tcase, "GetResourceId",
+				      test_GetResourceId);
+	torture_tcase_add_simple_test(tcase, "GetResourceType",
+				      test_GetResourceType);
+	torture_tcase_add_simple_test(tcase, "CreateResEnum",
+				      test_CreateResEnum);
+	test = torture_tcase_add_simple_test(tcase, "FailResource",
+				      test_FailResource);
 	test->dangerous = true;
-	torture_rpc_tcase_add_test(tcase, "OnlineResource",
-				   test_OnlineResource);
-	test = torture_rpc_tcase_add_test(tcase, "OfflineResource",
-				   test_OfflineResource);
+	torture_tcase_add_simple_test(tcase, "OnlineResource",
+				      test_OnlineResource);
+	test = torture_tcase_add_simple_test(tcase, "OfflineResource",
+				      test_OfflineResource);
 	test->dangerous = true;
+	torture_tcase_add_simple_test(tcase, "all_resources",
+				      test_all_resources);
+}
 
-	tcase = torture_suite_add_rpc_iface_tcase(suite, "node",
-						  &ndr_table_clusapi);
+void torture_tcase_node(struct torture_tcase *tcase)
+{
+	struct torture_test *test;
 
-	torture_rpc_tcase_add_test(tcase, "OpenNode",
-				   test_OpenNode);
-	torture_rpc_tcase_add_test(tcase, "OpenNodeEx",
-				   test_OpenNodeEx);
-	torture_rpc_tcase_add_test(tcase, "CloseNode",
-				   test_CloseNode);
-	torture_rpc_tcase_add_test(tcase, "GetNodeState",
-				   test_GetNodeState);
-	torture_rpc_tcase_add_test(tcase, "GetNodeId",
-				   test_GetNodeId);
-	test = torture_rpc_tcase_add_test(tcase, "PauseNode",
-					  test_PauseNode);
+	torture_tcase_add_simple_test(tcase, "OpenNode",
+				      test_OpenNode);
+	torture_tcase_add_simple_test(tcase, "OpenNodeEx",
+				      test_OpenNodeEx);
+	torture_tcase_add_simple_test(tcase, "CloseNode",
+				      test_CloseNode);
+	torture_tcase_add_simple_test(tcase, "GetNodeState",
+				      test_GetNodeState);
+	torture_tcase_add_simple_test(tcase, "GetNodeId",
+				      test_GetNodeId);
+	test = torture_tcase_add_simple_test(tcase, "PauseNode",
+					     test_PauseNode);
 	test->dangerous = true;
-	torture_rpc_tcase_add_test(tcase, "ResumeNode",
-				   test_ResumeNode);
-	test = torture_rpc_tcase_add_test(tcase, "EvictNode",
-					  test_EvictNode);
+	torture_tcase_add_simple_test(tcase, "ResumeNode",
+				      test_ResumeNode);
+	test = torture_tcase_add_simple_test(tcase, "EvictNode",
+					     test_EvictNode);
 	test->dangerous = true;
-	torture_rpc_tcase_add_test(tcase, "all_nodes",
-				   test_all_nodes);
+	torture_tcase_add_simple_test(tcase, "all_nodes",
+				      test_all_nodes);
+}
 
-	tcase = torture_suite_add_rpc_iface_tcase(suite, "group",
-						  &ndr_table_clusapi);
+void torture_tcase_group(struct torture_tcase *tcase)
+{
+	struct torture_test *test;
 
-	torture_rpc_tcase_add_test(tcase, "OpenGroup",
-				   test_OpenGroup);
-	torture_rpc_tcase_add_test(tcase, "OpenGroupEx",
-				   test_OpenGroupEx);
-	torture_rpc_tcase_add_test(tcase, "CloseGroup",
-				   test_CloseGroup);
-	torture_rpc_tcase_add_test(tcase, "GetGroupState",
-				   test_GetGroupState);
-	torture_rpc_tcase_add_test(tcase, "GetGroupId",
-				   test_GetGroupId);
-	torture_rpc_tcase_add_test(tcase, "OnlineGroup",
-				   test_OnlineGroup);
-	test = torture_rpc_tcase_add_test(tcase, "OfflineGroup",
-				   test_OfflineGroup);
+	torture_tcase_add_simple_test(tcase, "OpenGroup",
+				      test_OpenGroup);
+	torture_tcase_add_simple_test(tcase, "OpenGroupEx",
+				      test_OpenGroupEx);
+	torture_tcase_add_simple_test(tcase, "CloseGroup",
+				      test_CloseGroup);
+	torture_tcase_add_simple_test(tcase, "GetGroupState",
+				      test_GetGroupState);
+	torture_tcase_add_simple_test(tcase, "GetGroupId",
+				      test_GetGroupId);
+	torture_tcase_add_simple_test(tcase, "OnlineGroup",
+				      test_OnlineGroup);
+	test = torture_tcase_add_simple_test(tcase, "OfflineGroup",
+				      test_OfflineGroup);
 	test->dangerous = true;
-	torture_rpc_tcase_add_test(tcase, "all_groups",
-				   test_all_groups);
+	torture_tcase_add_simple_test(tcase, "all_groups",
+				      test_all_groups);
+}
 
-	tcase = torture_suite_add_rpc_iface_tcase(suite, "network",
-						  &ndr_table_clusapi);
-	torture_rpc_tcase_add_test(tcase, "OpenNetwork",
-				   test_OpenNetwork);
-	torture_rpc_tcase_add_test(tcase, "OpenNetworkEx",
-				   test_OpenNetworkEx);
-	torture_rpc_tcase_add_test(tcase, "CloseNetwork",
-				   test_CloseNetwork);
-	torture_rpc_tcase_add_test(tcase, "GetNetworkState",
-				   test_GetNetworkState);
-	torture_rpc_tcase_add_test(tcase, "GetNetworkId",
-				   test_GetNetworkId);
-	torture_rpc_tcase_add_test(tcase, "all_networks",
-				   test_all_networks);
+void torture_tcase_network(struct torture_tcase *tcase)
+{
+	torture_tcase_add_simple_test(tcase, "OpenNetwork",
+				      test_OpenNetwork);
+	torture_tcase_add_simple_test(tcase, "OpenNetworkEx",
+				      test_OpenNetworkEx);
+	torture_tcase_add_simple_test(tcase, "CloseNetwork",
+				      test_CloseNetwork);
+	torture_tcase_add_simple_test(tcase, "GetNetworkState",
+				      test_GetNetworkState);
+	torture_tcase_add_simple_test(tcase, "GetNetworkId",
+				      test_GetNetworkId);
+	torture_tcase_add_simple_test(tcase, "all_networks",
+				      test_all_networks);
+}
 
-	tcase = torture_suite_add_rpc_iface_tcase(suite, "netinterface",
-						  &ndr_table_clusapi);
-	torture_rpc_tcase_add_test(tcase, "OpenNetInterface",
-				   test_OpenNetInterface);
-	torture_rpc_tcase_add_test(tcase, "OpenNetInterfaceEx",
-				   test_OpenNetInterfaceEx);
-	torture_rpc_tcase_add_test(tcase, "CloseNetInterface",
-				   test_CloseNetInterface);
-	torture_rpc_tcase_add_test(tcase, "GetNetInterfaceState",
-				   test_GetNetInterfaceState);
-	torture_rpc_tcase_add_test(tcase, "GetNetInterfaceId",
-				   test_GetNetInterfaceId);
-	torture_rpc_tcase_add_test(tcase, "all_netinterfaces",
-				   test_all_netinterfaces);
+void torture_tcase_netinterface(struct torture_tcase *tcase)
+{
+	torture_tcase_add_simple_test(tcase, "OpenNetInterface",
+				      test_OpenNetInterface);
+	torture_tcase_add_simple_test(tcase, "OpenNetInterfaceEx",
+				      test_OpenNetInterfaceEx);
+	torture_tcase_add_simple_test(tcase, "CloseNetInterface",
+				      test_CloseNetInterface);
+	torture_tcase_add_simple_test(tcase, "GetNetInterfaceState",
+				      test_GetNetInterfaceState);
+	torture_tcase_add_simple_test(tcase, "GetNetInterfaceId",
+				      test_GetNetInterfaceId);
+	torture_tcase_add_simple_test(tcase, "all_netinterfaces",
+				      test_all_netinterfaces);
+}
 
-	tcase = torture_suite_add_rpc_iface_tcase(suite, "registry",
-						  &ndr_table_clusapi);
-	torture_rpc_tcase_add_test(tcase, "GetRootKey",
-				   test_GetRootKey);
-	torture_rpc_tcase_add_test(tcase, "CloseKey",
-				   test_CloseKey);
-	torture_rpc_tcase_add_test(tcase, "EnumKey",
-				   test_EnumKey);
-	torture_rpc_tcase_add_test(tcase, "all_keys",
-				   test_all_keys);
+void torture_tcase_registry(struct torture_tcase *tcase)
+{
+	torture_tcase_add_simple_test(tcase, "GetRootKey",
+				      test_GetRootKey);
+	torture_tcase_add_simple_test(tcase, "CloseKey",
+				      test_CloseKey);
+	torture_tcase_add_simple_test(tcase, "EnumKey",
+				      test_EnumKey);
+	torture_tcase_add_simple_test(tcase, "all_keys",
+				      test_all_keys);
+}
+
+struct torture_suite *torture_rpc_clusapi(TALLOC_CTX *mem_ctx)
+{
+	struct torture_tcase *tcase;
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "clusapi");
+
+	tcase = torture_suite_add_tcase(suite, "cluster");
+
+	torture_tcase_set_fixture(tcase,
+				  torture_rpc_clusapi_setup,
+				  torture_rpc_clusapi_teardown);
+
+	torture_tcase_cluster(tcase);
+
+	tcase = torture_suite_add_tcase(suite, "resource");
+
+	torture_tcase_set_fixture(tcase,
+				  torture_rpc_clusapi_setup,
+				  torture_rpc_clusapi_teardown);
+
+	torture_tcase_resource(tcase);
+
+	tcase = torture_suite_add_tcase(suite, "node");
+
+	torture_tcase_set_fixture(tcase,
+				  torture_rpc_clusapi_setup,
+				  torture_rpc_clusapi_teardown);
+
+	torture_tcase_node(tcase);
+
+	tcase = torture_suite_add_tcase(suite, "group");
+
+	torture_tcase_set_fixture(tcase,
+				  torture_rpc_clusapi_setup,
+				  torture_rpc_clusapi_teardown);
+
+	torture_tcase_group(tcase);
+
+	tcase = torture_suite_add_tcase(suite, "network");
+
+	torture_tcase_set_fixture(tcase,
+				  torture_rpc_clusapi_setup,
+				  torture_rpc_clusapi_teardown);
+
+	torture_tcase_network(tcase);
+
+	tcase = torture_suite_add_tcase(suite, "netinterface");
+
+	torture_tcase_set_fixture(tcase,
+				  torture_rpc_clusapi_setup,
+				  torture_rpc_clusapi_teardown);
+
+	torture_tcase_netinterface(tcase);
+
+	tcase = torture_suite_add_tcase(suite, "registry");
+
+	torture_tcase_set_fixture(tcase,
+				  torture_rpc_clusapi_setup,
+				  torture_rpc_clusapi_teardown);
+
+	torture_tcase_registry(tcase);
 
 	return suite;
 }
