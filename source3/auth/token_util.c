@@ -793,15 +793,11 @@ static NTSTATUS create_token_from_sid(TALLOC_CTX *mem_ctx,
 		}
 		num_group_sids = getgroups_num_group_sids;
 
-		if (num_group_sids) {
-			group_sids = talloc_array(tmp_ctx, struct dom_sid, num_group_sids);
-			if (group_sids == NULL) {
-				DEBUG(1, ("talloc_array failed\n"));
-				result = NT_STATUS_NO_MEMORY;
-				goto done;
-			}
-		} else {
-			group_sids = NULL;
+		group_sids = talloc_array(tmp_ctx, struct dom_sid, num_group_sids);
+		if (group_sids == NULL) {
+			DEBUG(1, ("talloc_array failed\n"));
+			result = NT_STATUS_NO_MEMORY;
+			goto done;
 		}
 
 		for (i=0; i<num_group_sids; i++) {
