@@ -677,7 +677,9 @@ verify_logonname(krb5_context context,
 	    return ret;
 	}
     }
-    ret = krb5_parse_name_flags(context, s, KRB5_PRINCIPAL_PARSE_NO_REALM, &p2);
+    ret = krb5_parse_name_flags(context, s,
+				KRB5_PRINCIPAL_PARSE_NO_REALM |
+				KRB5_PRINCIPAL_PARSE_ENTERPRISE, &p2);
     free(s);
     if (ret)
 	return ret;
