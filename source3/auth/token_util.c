@@ -846,17 +846,23 @@ static NTSTATUS create_token_from_sid(TALLOC_CTX *mem_ctx,
 			goto done;
 		}
 
+		gids = talloc_array(tmp_ctx, gid_t, num_group_sids);
+		if (gids == NULL) {
+			result = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
+
 		sid_copy(&group_sids[0], user_sid);
 		sid_split_rid(&group_sids[0], NULL);
 		sid_append_rid(&group_sids[0], DOMAIN_RID_USERS);
 
-		if (!sid_to_gid(&group_sids[0], gid)) {
+		if (!sid_to_gid(&group_sids[0], &gids[0])) {
 			DEBUG(1, ("sid_to_gid(%s) failed\n",
 				  sid_string_dbg(&group_sids[0])));
 			goto done;
 		}
 
-		gids = gid;
+		*gid = gids[0];
 
 		*found_username = NULL;
 	}
