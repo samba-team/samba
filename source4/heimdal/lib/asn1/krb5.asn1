@@ -157,7 +157,6 @@ PADATA-TYPE ::= INTEGER {
 						-- tell KDC that is supports
 						-- the asCheckSum in the
 						--  PK-AS-REP
-	KRB5-PADATA-CLIENT-CANONICALIZED(133),	-- referals
 	KRB5-PADATA-FX-COOKIE(133),		-- krb-wg-preauth-framework
 	KRB5-PADATA-AUTHENTICATION-SET(134),	-- krb-wg-preauth-framework
 	KRB5-PADATA-AUTH-SET-SELECTED(135),	-- krb-wg-preauth-framework
@@ -730,16 +729,6 @@ KRB5SignedPath ::= SEQUENCE {
 	-- srvs delegated though
 	delegated[2]	Principals OPTIONAL,
 	method_data[3]  METHOD-DATA OPTIONAL
-}
-
-PA-ClientCanonicalizedNames ::= SEQUENCE{
-	requested-name	[0] PrincipalName,
-	mapped-name	[1] PrincipalName
-}
-
-PA-ClientCanonicalized ::= SEQUENCE {
-	names		[0] PA-ClientCanonicalizedNames,
-	canon-checksum	[1] Checksum
 }
 
 AD-LoginAlias ::= SEQUENCE { -- ad-type number TBD --
