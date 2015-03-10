@@ -672,7 +672,6 @@ static NTSTATUS create_token_from_sid(TALLOC_CTX *mem_ctx,
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 	gid_t *gids;
 	struct dom_sid *group_sids;
-	struct dom_sid unix_group_sid;
 	uint32_t num_group_sids;
 	uint32_t num_gids;
 	uint32_t i;
@@ -872,6 +871,7 @@ static NTSTATUS create_token_from_sid(TALLOC_CTX *mem_ctx,
 	num_gids = num_group_sids;
 	range_ok = lp_idmap_default_range(&low, &high);
 	for ( i=0; i<num_gids; i++ ) {
+		struct dom_sid unix_group_sid;
 
 		/* don't pickup anything managed by Winbind */
 		if (range_ok && (gids[i] >= low) && (gids[i] <= high)) {
