@@ -107,13 +107,16 @@ static bool test_create_trust_and_set_info(struct dcerpc_pipe *p,
 
 	trustinfo.trust_type = LSA_TRUST_TYPE_UPLEVEL;
 
-	/* MS-LSAD: Section 3.1.4.7.10 makes it clear that Win2k3
+	/*
+	 * MS-LSAD: Section 3.1.4.7.10 makes it clear that Win2k3
 	 * functional level and above return
 	 * NT_STATUS_INVALID_DOMAIN_STATE if
 	 * TRUST_ATTRIBUTE_FOREST_TRANSITIVE or
 	 * TRUST_ATTRIBUTE_CROSS_ORGANIZATION is set here.
-	*/
-	trustinfo.trust_attributes = 0;
+	 *
+	 * But we really want to test forest trusts here.
+	 */
+	trustinfo.trust_attributes = LSA_TRUST_ATTRIBUTE_FOREST_TRANSITIVE;
 
 	r.in.policy_handle = handle;
 	r.in.info = &trustinfo;
@@ -522,7 +525,7 @@ static bool test_validate_trust(struct torture_context *tctx,
 	int i;
 	struct samr_Password nt_hash;
 	char *dummy;
-	uint32_t trust_attributes = 0;
+	uint32_t trust_attributes = LSA_TRUST_ATTRIBUTE_FOREST_TRANSITIVE;
 
 	status = dcerpc_parse_binding(tctx, binding, &b);
 	torture_assert_ntstatus_ok(tctx, status, "Bad binding string");
