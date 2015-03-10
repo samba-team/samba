@@ -3435,9 +3435,10 @@ static bool test_ioctl_sparse_hole_dealloc(struct torture_context *torture,
 			 * deallocation on this FS...
 			 */
 			dealloc_chunk_len = hlen;
-			torture_comment(torture, "hole punch %lu@0 resulted in "
-					"deallocation of %lu@0\n", hlen,
-					far_rsp[0].file_off);
+			torture_comment(torture, "hole punch %ju@0 resulted in "
+					"deallocation of %ju@0\n",
+					(uintmax_t)hlen,
+					(uintmax_t)far_rsp[0].file_off);
 			torture_assert_u64_equal(torture,
 						 file_size - far_rsp[0].len,
 						 far_rsp[0].file_off,
@@ -3509,7 +3510,7 @@ static bool test_ioctl_sparse_hole_dealloc(struct torture_context *torture,
 				 "unexpected response len");
 	if (far_rsp[0].file_off == dealloc_chunk_len) {
 		torture_comment(torture, "holes merged for deallocation of "
-				"%lu chunk\n", dealloc_chunk_len);
+				"%ju chunk\n", (uintmax_t)dealloc_chunk_len);
 		torture_assert_u64_equal(torture,
 					 file_size - far_rsp[0].len,
 					 far_rsp[0].file_off,
@@ -4630,7 +4631,7 @@ static bool test_ioctl_sparse_qar_overflow(struct torture_context *torture,
 
 	/* off + length wraps around to 511 */
 	far_buf.file_off = 512;
-	far_buf.len = (uint64_t)0xffffffffffffffff;
+	far_buf.len = 0xffffffffffffffffLL;
 	ndr_ret = ndr_push_struct_blob(&ioctl.smb2.in.out, tmp_ctx,
 				       &far_buf,
 			(ndr_push_flags_fn_t)ndr_push_file_alloced_range_buf);
