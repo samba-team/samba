@@ -523,7 +523,8 @@ static bool test_validate_trust(struct torture_context *tctx,
 	struct lsa_ForestTrustRecord *tln = NULL;
 	struct lsa_ForestTrustRecord *di = NULL;
 	int i;
-	struct samr_Password nt_hash;
+	struct samr_Password *new_nt_hash;
+	struct samr_Password *old_nt_hash;
 	char *dummy;
 	uint32_t trust_attributes = LSA_TRUST_ATTRIBUTE_FOREST_TRANSITIVE;
 
@@ -541,6 +542,7 @@ static bool test_validate_trust(struct torture_context *tctx,
 	cli_credentials_set_realm(credentials, trusting_dom_dns_name,
 				  CRED_SPECIFIED);
 	cli_credentials_set_password(credentials, trust_password, CRED_SPECIFIED);
+	cli_credentials_set_old_password(credentials, trust_password, CRED_SPECIFIED);
 	cli_credentials_set_workstation(credentials,
 					trusted_dom_name, CRED_SPECIFIED);
 	cli_credentials_set_secure_channel_type(credentials, SEC_CHAN_DOMAIN);
@@ -589,16 +591,25 @@ static bool test_validate_trust(struct torture_context *tctx,
 	torture_assert_int_equal(tctx, trust_info->data[0], trust_attributes,
 				 "Unexpected trust_attributes");
 
+	new_nt_hash = cli_credentials_get_nt_hash(credentials, tctx);
+	torture_assert(tctx, new_nt_hash != NULL, "cli_credentials_get_nt_hash()");
 
-	E_md4hash(cli_credentials_get_password(credentials), nt_hash.hash);
+	old_nt_hash = cli_credentials_get_old_nt_hash(credentials, tctx);
+	torture_assert(tctx, old_nt_hash != NULL, "cli_credentials_get_old_nt_hash()");
 
 	netlogon_creds_des_decrypt(creds, &new_owf_password);
+	netlogon_creds_des_decrypt(creds, &old_owf_password);
 
 	dump_data(1, new_owf_password.hash, 16);
-	dump_data(1, nt_hash.hash, 16);
+	dump_data(1, new_nt_hash->hash, 16);
+	dump_data(1, old_owf_password.hash, 16);
+	dump_data(1, old_nt_hash->hash, 16);
 
-	torture_assert_mem_equal(tctx, new_owf_password.hash, nt_hash.hash, 16,
-		"received unexpected owf password\n");
+	torture_assert_mem_equal(tctx, new_owf_password.hash, new_nt_hash->hash, 16,
+		"received unexpected new owf password\n");
+
+	torture_assert_mem_equal(tctx, old_owf_password.hash, old_nt_hash->hash, 16,
+		"received unexpected old owf password\n");
 
 	netlogon_creds_client_authenticator(creds, &a);
 
