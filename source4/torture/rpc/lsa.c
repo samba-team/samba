@@ -2950,9 +2950,12 @@ static bool test_CreateTrustedDomainEx_common(struct dcerpc_pipe *p,
 			if (trustinfo.trust_direction != 2 &&
 			    trustinfo.trust_type != 3) {
 
-				if (torture_setting_bool(tctx, "samba3", false) ||
-				    torture_setting_bool(tctx, "samba4", false)) {
-					torture_comment(tctx, "skipping trusted domain auth tests against samba");
+				if (torture_setting_bool(tctx, "samba3", false)) {
+					torture_comment(tctx, "skipping trusted domain auth tests against samba3");
+				} else if (ex2_call == false &&
+					   torture_setting_bool(tctx, "samba4", false)) {
+					torture_comment(tctx, "skipping CreateTrustedDomainEx trusted domain auth tests against samba4");
+
 				} else {
 					if (check_dom_trust_pw(p, tctx, trust_name,
 								"x" TRUSTPW "x")) {
