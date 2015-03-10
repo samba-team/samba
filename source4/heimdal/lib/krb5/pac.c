@@ -724,7 +724,9 @@ build_logon_name(krb5_context context,
     CHECK(ret, krb5_store_uint32(sp, t >> 32), out);
 
     ret = krb5_unparse_name_flags(context, principal,
-				  KRB5_PRINCIPAL_UNPARSE_NO_REALM, &s);
+				  KRB5_PRINCIPAL_UNPARSE_NO_REALM |
+				  KRB5_PRINCIPAL_UNPARSE_DISPLAY,
+				  &s);
     if (ret)
 	goto out;
 
