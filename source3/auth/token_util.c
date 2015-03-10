@@ -716,8 +716,6 @@ static NTSTATUS create_token_from_sid(TALLOC_CTX *mem_ctx,
 		/* see the smb_panic() in pdb_default_enum_group_memberships */
 		SMB_ASSERT(num_group_sids > 0);
 
-		*gid = gids[0];
-
 		/* Ensure we're returning the found_username on the right context. */
 		*found_username = talloc_strdup(mem_ctx,
 						pdb_get_username(sam_acct));
@@ -813,8 +811,6 @@ static NTSTATUS create_token_from_sid(TALLOC_CTX *mem_ctx,
 		/* In getgroups_unix_user we always set the primary gid */
 		SMB_ASSERT(num_group_sids > 0);
 
-		*gid = gids[0];
-
 		/* Ensure we're returning the found_username on the right context. */
 		*found_username = talloc_strdup(mem_ctx, pass->pw_name);
 		if (*found_username == NULL) {
@@ -862,10 +858,10 @@ static NTSTATUS create_token_from_sid(TALLOC_CTX *mem_ctx,
 			goto done;
 		}
 
-		*gid = gids[0];
-
 		*found_username = NULL;
 	}
+
+	*gid = gids[0];
 
 	/* Add the "Unix Group" SID for each gid to catch mapped groups
 	   and their Unix equivalent.  This is to solve the backwards
