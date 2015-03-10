@@ -782,7 +782,7 @@ static bool testcase_ForestTrusts(struct torture_context *tctx,
 						     "Forest_Trust_Dom2_Binding",
 						     NULL);
 	if (dom2_binding_string == NULL) {
-		return true;
+		torture_skip(tctx, "torture:Forest_Trust_Dom2_Binding not specified\n");
 	}
 
 	status = dcerpc_parse_binding(tctx, dom2_binding_string, &dom2_binding);
