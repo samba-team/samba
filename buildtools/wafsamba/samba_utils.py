@@ -386,6 +386,22 @@ def RUN_COMMAND(cmd,
     return -1
 
 
+def RUN_PYTHON_TESTS(testfiles, pythonpath=None):
+    env = LOAD_ENVIRONMENT()
+    if pythonpath is None:
+        pythonpath = os.path.join(Utils.g_module.blddir, 'python')
+    result = 0
+    for interp in env.python_interpreters:
+        for testfile in testfiles:
+            cmd = "PYTHONPATH=%s %s %s" % (pythonpath, interp, testfile)
+            print('Running Python test with %s: %s' % (interp, testfile))
+            ret = RUN_COMMAND(cmd)
+            if ret:
+                print('Python test failed: %s' % cmd)
+                result = ret
+    return result
+
+
 # make sure we have md5. some systems don't have it
 try:
     from hashlib import md5

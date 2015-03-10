@@ -9,6 +9,8 @@ from Configure import conf
 @conf
 def SAMBA_CHECK_PYTHON(conf, mandatory=True, version=(2,4,2)):
     # enable tool to build python extensions
+    interpreters = []
+
     if conf.env['EXTRA_PYTHON']:
         conf.all_envs['extrapython'] = conf.env.copy()
         conf.setenv('extrapython')
@@ -21,6 +23,7 @@ def SAMBA_CHECK_PYTHON(conf, mandatory=True, version=(2,4,2)):
         except Exception:
             warn('extra-python needs to be Python 3.3 or later')
             raise
+        interpreters.append(conf.env['PYTHON'])
         conf.setenv('default')
 
     conf.find_program('python', var='PYTHON', mandatory=mandatory)
@@ -28,6 +31,9 @@ def SAMBA_CHECK_PYTHON(conf, mandatory=True, version=(2,4,2)):
     path_python = conf.find_program('python')
     conf.env.PYTHON_SPECIFIED = (conf.env.PYTHON != path_python)
     conf.check_python_version(version)
+
+    interpreters.append(conf.env['PYTHON'])
+    conf.env.python_interpreters = interpreters
 
 
 @conf
