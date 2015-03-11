@@ -4522,7 +4522,9 @@ NTSTATUS _lsa_lsaRSetForestTrustInformation(struct pipes_struct *p,
 		}
 	}
 
-	*r->out.collision_info = c_info;
+	if (c_info->count != 0) {
+		*r->out.collision_info = c_info;
+	}
 
 	if (r->in.check_only != 0) {
 		return NT_STATUS_OK;
