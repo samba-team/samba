@@ -3069,7 +3069,7 @@ parser.add_option_group(sambaopts)
 parser.add_option_group(credopts)
 parser.add_option_group(options.VersionOptions(parser))
 
-parser.add_option("--readonly",
+parser.add_option("--readonly", default=False,
                   help="compute topology but do not update database",
                   action="store_true")
 
