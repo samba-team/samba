@@ -1305,7 +1305,7 @@ import "misc.idl", "security.idl";
 		[size_is(count)] lsa_ForestTrustRecord **entries;
 	} lsa_ForestTrustInformation;
 
-	NTSTATUS lsa_lsaRQueryForestTrustInformation(
+	[public] NTSTATUS lsa_lsaRQueryForestTrustInformation(
 		[in] policy_handle *handle,
 		[in,ref] lsa_String *trusted_domain_name,
 		[in] lsa_ForestTrustRecordType highest_record_type,
