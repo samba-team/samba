@@ -2377,7 +2377,7 @@ def write_dot_file(basename, edge_list, vertices=None, label=None, destdir=None,
 class KCCGraphError(Exception):
     pass
 
-def verify_graph_fully_connected(edges, vertices, edge_vertices):
+def verify_graph_complete(edges, vertices, edge_vertices):
     """The graph is complete, which is to say there is an edge between
     every pair of nodes."""
     for v in vertices:
@@ -2598,7 +2598,7 @@ def verify_and_dot(basename, edges, vertices=None, label=None, destdir=None,
                      debug=debug)
     if dot_files:
         write_dot_file(basename, edges, vertices=vertices, label=label, destdir=destdir,
-                       reformat_labels=reformat_labels, directed=directed)
+                       reformat_labels=reformat_labels, directed=directed, debug=debug)
 
 def list_verify_tests():
     for k, v in sorted(globals().items()):

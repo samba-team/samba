@@ -1677,7 +1677,7 @@ class KCC(object):
                                for a, b in itertools.chain(*(itertools.combinations(edge.vertices, 2)
                                                              for edge in e_set.edges))]
                 graph_nodes = [v.site.site_dnstr for v in graph.vertices]
-                verify_properties = ('fully_connected', 'connected', 'multi_edge_forest', 'forest',
+                verify_properties = ('complete', 'connected', 'multi_edge_forest', 'forest',
                                      'directed_double_ring')
 
                 if opts.dot_files:
@@ -1709,7 +1709,8 @@ class KCC(object):
         if opts.verify or opts.dot_files:
             graph_edges = [(e.v1.site.site_dnstr, e.v2.site.site_dnstr) for e in internal_edges]
             graph_nodes = [v.site.site_dnstr for v in graph.vertices]
-            verify_properties = ('fully_connected', 'connected', 'multi_edge_forest', 'forest')
+            verify_properties = ('complete', 'connected', 'multi_edge_forest', 'forest',
+                                 'directed_double_ring')
             verify_and_dot('prekruskal', graph_edges, graph_nodes, label=label,
                            properties=verify_properties, debug=DEBUG, verify=opts.verify,
                            dot_files=opts.dot_files)
@@ -1731,7 +1732,7 @@ class KCC(object):
         if opts.verify or opts.dot_files:
             graph_edges = [(e.v1.site.site_dnstr, e.v2.site.site_dnstr) for e in internal_edges]
             graph_nodes = [v.site.site_dnstr for v in graph.vertices]
-            verify_properties = ('fully_connected', 'connected', 'multi_edge_forest', 'forest')
+            verify_properties = ('complete', 'connected', 'multi_edge_forest', 'forest', 'directed_double_ring')
             verify_and_dot('postkruskal', graph_edges, graph_nodes, label=label,
                            properties=verify_properties, debug=DEBUG, verify=opts.verify,
                            dot_files=opts.dot_files)
@@ -2153,10 +2154,10 @@ class KCC(object):
                     dot_edges.append((v2, v1.dsa_dnstr))
                     dot_vertices.add(v2)
 
-            verify_properties = ('fully_connected', 'connected', 'multi_edge_forest', 'forest')
+            verify_properties = ('connected', 'directed_double_ring')
             verify_and_dot('intrasite_pre_ntdscon', dot_edges, dot_vertices, label=site_local.site_dnstr,
                            properties=verify_properties, debug=DEBUG, verify=opts.verify,
-                           dot_files=opts.dot_files)
+                           dot_files=opts.dot_files, directed=True)
 
 
 
@@ -2228,7 +2229,7 @@ class KCC(object):
                     dot_edges.append((v2, v1.dsa_dnstr))
                     dot_vertices.add(v2)
 
-            verify_properties = ('fully_connected', 'connected', 'multi_edge_forest', 'forest')
+            verify_properties = ('complete', 'connected', 'multi_edge_forest', 'forest', 'directed_double_ring')
             verify_and_dot('intrasite_post_ntdscon', dot_edges, dot_vertices, label=site_local.site_dnstr,
                            properties=verify_properties, debug=DEBUG, verify=opts.verify,
                            dot_files=opts.dot_files)
@@ -2340,9 +2341,8 @@ class KCC(object):
                     for dsa in site.dsa_table.values():
                         for con in dsa.connect_table.values():
                             dot_edges.append((dsa.dsa_dnstr, con.from_dnstr))
-                verify_properties = ('fully_connected', 'connected', 'multi_edge_forest', 'forest')
                 verify_and_dot('dsa_initial', dot_edges, label=self.my_dsa_dnstr,
-                               properties=verify_properties, debug=DEBUG, verify=opts.verify,
+                               properties=(), debug=DEBUG, verify=opts.verify,
                                dot_files=opts.dot_files)
 
                 dot_edges = []
@@ -2355,7 +2355,7 @@ class KCC(object):
                             dot_edges.append((c_rep.rep_dsa_dnstr, x.nc_dnstr))
 
                 verify_and_dot('config_repsFrom_initial', dot_edges, directed=True, label=self.my_dsa_dnstr,
-                               properties=verify_properties, debug=DEBUG, verify=opts.verify,
+                               properties=(), debug=DEBUG, verify=opts.verify,
                                dot_files=opts.dot_files)
 
                 dot_edges = []
@@ -2365,14 +2365,14 @@ class KCC(object):
                             dot_edges.append((dsa.dsa_dnstr, x))
 
                 verify_and_dot('dsa_repsFrom_initial', dot_edges, directed=True, label=self.my_dsa_dnstr,
-                               properties=verify_properties, debug=DEBUG, verify=opts.verify,
+                               properties=(), debug=DEBUG, verify=opts.verify,
                                dot_files=opts.dot_files)
 
                 dot_edges = []
                 for link in self.sitelink_table.values():
                     for a, b in itertools.combinations(link.site_list, 2):
                         dot_edges.append((str(a), str(b)))
-
+                verify_properties = ('connected',)
                 verify_and_dot('dsa_sitelink_initial', dot_edges, directed=False, label=self.my_dsa_dnstr,
                                properties=verify_properties, debug=DEBUG, verify=opts.verify,
                                dot_files=opts.dot_files)
@@ -2410,7 +2410,7 @@ class KCC(object):
                     for dsa in site.dsa_table.values():
                         for con in dsa.connect_table.values():
                             dot_edges.append((dsa.dsa_dnstr, con.from_dnstr))
-                verify_properties = ('fully_connected', 'connected', 'multi_edge_forest', 'forest')
+                verify_properties = ('complete', 'connected', 'multi_edge_forest', 'forest', 'directed_double_ring')
                 verify_and_dot('dsa_final', dot_edges, label=self.my_dsa_dnstr,
                                properties=verify_properties, debug=DEBUG, verify=opts.verify,
                                dot_files=opts.dot_files)
