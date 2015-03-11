@@ -900,7 +900,7 @@ class KCC(object):
                 # is a child of the local DC's nTDSDSA object and
                 # (cn!fromServer = s) and (cn!options) does not contain
                 # NTDSCONN_OPT_RODC_TOPOLOGY or NULL if no such (cn) exists.
-                if cn_conn and cn_conn.is_rodc_topology():
+                if cn_conn and not cn_conn.is_rodc_topology():
                     cn_conn = None
 
                 # KCC removes this repsFrom tuple if any of the following
