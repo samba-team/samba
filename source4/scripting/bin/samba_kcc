@@ -1672,11 +1672,23 @@ class KCC(object):
                 for v in e.vertices:
                     v.edges.append(e)
 
-            write_dot_file('edgeset_%s' % (edgeType,),
-                           ((a.site.site_dnstr, b.site.site_dnstr)
-                            for a, b in itertools.chain(*(itertools.combinations(edge.vertices, 2)
-                                                          for edge in e_set.edges))),
-                           label=label)
+            if opts.verify or opts.dot_files:
+                graph_edges = [(a.site.site_dnstr, b.site.site_dnstr)
+                               for a, b in itertools.chain(*(itertools.combinations(edge.vertices, 2)
+                                                             for edge in e_set.edges))]
+                graph_nodes = [v.site.site_dnstr for v in graph.vertices]
+                verify_properties = ('fully connected', 'connected', 'forest')
+
+                if opts.dot_files:
+                    write_dot_file('edgeset_%s' % (edgeType,), graph_edges, vertices=graph_nodes,
+                                   label=label, verify=verify_properties, dot_graph=opts.dot_files)
+
+                if opts.verify:
+                    verify_graph('spanning tree edge set %s' % edgeType, graph_edges,
+                                 properties=verify_properties)
+
+
+
 
             # Run dijkstra's algorithm with just the red vertices as seeds
             # Seed from the full replicas
@@ -3016,9 +3028,17 @@ parser.add_option("--debug",
                   help="debug output",
                   action="store_true")
 
+parser.add_option("--verify",
+                  help="verify that assorted invariants are kept",
+                  action="store_true")
+
+parser.add_option("--no-dot-files", dest='dot_files',
+                  help="Don't write dot graph files in /tmp",
+                  action="store_false")
+
 parser.add_option("--seed",
                   help="random number seed",
-                  type=str, metavar="<number>")
+                  type=int)
 
 parser.add_option("--importldif",
                   help="import topology ldif file",
@@ -3074,7 +3094,7 @@ else:
 
 # initialize seed from optional input parameter
 if opts.seed:
-    random.seed(int(opts.seed))
+    random.seed(opts.seed)
 else:
     random.seed(0xACE5CA11)
 

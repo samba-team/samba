@@ -19,6 +19,8 @@
 import ldb
 import uuid
 import time
+import sys
+import itertools
 
 from samba import dsdb, unix2nttime
 from samba.dcerpc import (
@@ -2345,7 +2347,8 @@ def combine_repl_info(info_a, info_b, info_c):
 
     return True
 
-def write_dot_file(basename, edge_list, label=None, destdir=None, reformat_labels=True, directed=False):
+def write_dot_file(basename, edge_list, vertices=(), label=None, destdir=None,
+                   reformat_labels=True, directed=False):
     from tempfile import NamedTemporaryFile
     if label:
         basename += '_' + label.translate(None, ', ') #fix DN, guid labels
@@ -2353,6 +2356,8 @@ def write_dot_file(basename, edge_list, label=None, destdir=None, reformat_label
     graphname = ''.join(x for x in basename if x.isalnum())
     print >>f, '%s %s {' % ('digraph' if directed else 'graph', graphname)
     print >>f, 'label="%s";\nfontsize=20;' % (label or graphname)
+    for v in vertices:
+        print >>f, '"%s";' % (v,)
     for a, b in edge_list:
         if reformat_labels:
             a = a.replace(',', '\\n')
@@ -2360,5 +2365,157 @@ def write_dot_file(basename, edge_list, label=None, destdir=None, reformat_label
         line = '->' if directed else '--'
         print >>f, '"%s" %s "%s";' % (a, line, b)
     print >>f, '}'
-
     f.close()
+
+
+
+class KCCGraphError(Exception):
+    pass
+
+def verify_graph_fully_connected(edges, vertices, edge_vertices):
+    for v in vertices:
+        remotes = set()
+        for a, b in edges:
+            if a == v:
+                remotes.add(b)
+            elif b == v:
+                remotes.add(a)
+        if len(remotes) + 1 != len(vertices):
+            raise KCCGraphError("graph is not fully connected")
+
+
+def verify_graph_connected(edges, vertices, edge_vertices):
+    if not edges:
+        if len(vertices) <= 1:
+            return
+        raise KCCGraphError("disconnected vertices were found:\nvertices: %s\n edges: %s" %
+                            (sorted(vertices), sorted(edges)))
+
+    remaining_edges = list(edges)
+    reached = set(remaining_edges.pop())
+    while True:
+        doomed = []
+        for i, e in enumerate(remaining_edges):
+            a, b = e
+            if a in reached:
+                reached.add(b)
+                doomed.append(i)
+            elif b in reached:
+                reached.add(a)
+                doomed.append(i)
+        if not doomed:
+            break
+        for i in reversed(doomed):
+            del remaining_edges[i]
+
+    if remaining_edges or reached != vertices:
+        raise KCCGraphError("graph is not connected:\nvertices: %s\n edges: %s" %
+                            (sorted(vertices), sorted(edges)))
+
+
+
+def verify_graph_forest(edges, vertices, edge_vertices):
+    trees = [set(e) for e in edges]
+    while True:
+        for a, b in itertools.combinations(trees, 2):
+            intersection = a & b
+            if intersection:
+                if len(intersection) == 1:
+                    a |= b
+                    trees.remove(b)
+                    break
+                else:
+                    raise KCCGraphError("there is a loop in the graph")
+        else:
+            # no break in itertools.combinations loop means no
+            # further mergers, so we're done.
+            #
+            # XXX here we also know whether it is a tree or a
+            # forest by len(trees) but the connected test already
+            # tells us that.
+            return
+
+def verify_graph_multi_edge_forest(edges, vertices, edge_vertices):
+    """This allows a forest with duplicate edges. That is if multiple
+    edges go between the same two vertices, they are treated as a
+    single edge by this test.
+
+    e.g.:
+                        o
+    pass: o-o=o  o=o   (|)             fail:  o-o
+            `o          o                     `o'
+    """
+    unique_edges = set(edges)
+    trees = [set(e) for e in unique_edges]
+    while True:
+        for a, b in itertools.combinations(trees, 2):
+            intersection = a & b
+            if intersection:
+                if len(intersection) == 1:
+                    a |= b
+                    trees.remove(b)
+                    break
+                else:
+                    raise KCCGraphError("there is a loop in the graph")
+        else:
+            return
+
+
+
+
+def verify_graph_no_lonely_vertices(edges, vertices, edge_vertices):
+    lonely = vertices - edge_vertices
+    if lonely:
+        raise KCCGraphError("some vertices are not connected:\n%s" % '\n'.join(sorted(lonely)))
+
+
+def verify_graph_no_unknown_vertices(edges, vertices, edge_vertices):
+    unknown = edge_vertices - vertices
+    if unknown:
+        raise KCCGraphError("some edge vertices are seemingly unknown:\n%s" % '\n'.join(sorted(unknown)))
+
+
+def verify_graph(title, edges, vertices=None, directed=False, properties=(), fatal=False,
+                 debug=None):
+    errors = []
+    if debug is None:
+        def debug(*args): pass
+
+    debug("%sStarting verify_graph for %s%s%s" % (PURPLE, MAGENTA, title, C_NORMAL))
+
+    properties = [x.replace(' ', '_') for x in properties]
+
+    edge_vertices = set()
+    for a, b in edges:
+        edge_vertices.add(a)
+        edge_vertices.add(b)
+
+    if vertices is None:
+        vertices = edge_vertices
+    else:
+        vertices = set(vertices)
+        if vertices != edge_vertices:
+            debug("vertices in edges don't match given vertices:\n %s != %s" %
+                  (sorted(edge_vertices), sorted(vertices)))
+
+    for p in properties:
+        fn = 'verify_graph_%s' % p
+        try:
+            f = globals()[fn]
+        except KeyError:
+            errors.append((p, "There is no verification check for '%s'" % p))
+        try:
+            f(edges, vertices, edge_vertices)
+            debug(" %s%18s:%s verified!" % (DARK_GREEN, p, C_NORMAL))
+        except KCCGraphError, e:
+            errors.append((p, e))
+
+    if errors:
+        if fatal:
+            raise KCCGraphError("The graph lacks the following properties:\n" + '\n'.join(errors))
+        debug(("%s%s%s FAILED:" % (MAGENTA, title, RED)))
+        for p, e in errors:
+            debug(" %18s: %s%s%s" %(p, DARK_YELLOW, e, RED))
+        debug(C_NORMAL)
+
+
