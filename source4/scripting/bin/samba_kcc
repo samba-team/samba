@@ -1460,7 +1460,7 @@ class KCC(object):
         for t_guid, transport in self.transport_table.items():
             if transport.name != 'IP':
                 continue
-            DEBUG_RED(t_guid)
+            DEBUG_BLUE(t_guid)
             # FLAG_CR_NTDS_DOMAIN 0x00000002
             if (vertex.is_red() and transport.name != "IP" and
                 vertex.part.system_flags & 0x00000002):
@@ -2158,7 +2158,7 @@ class KCC(object):
         i = 0
         while i < r_len:
             dsa = self.my_site.dsa_table[graph_list[i].dsa_dnstr]
-            DEBUG_RED(dsa.dsa_dnstr)
+            DEBUG_REV_RED(dsa.dsa_dnstr)
             graph_list[i].add_edges_from_connections(dsa)
             i = i + 1
         DEBUG([x.rep_dsa_dnstr for x in r_list])
@@ -3105,17 +3105,20 @@ parser.add_option("--forced-local-dsa",
                   type=str, metavar="<DSA>")
 
 
-
 logger = logging.getLogger("samba_kcc")
 logger.addHandler(logging.StreamHandler(sys.stdout))
 DEBUG = logger.debug
 
-def DEBUG_RED(*args):
-    DEBUG('%s%s%s' % (RED, args[0], C_NORMAL), *args[1:])
-def DEBUG_GREEN(*args):
-    DEBUG('%s%s%s' % (GREEN, args[0], C_NORMAL), *args[1:])
-def DEBUG_YELLOW(*args):
-    DEBUG('%s%s%s' % (YELLOW, args[0], C_NORMAL), *args[1:])
+from functools import partial
+def _colour_debug(*args, **kwargs):
+    DEBUG('%s%s%s' % (kwargs['colour'], args[0], C_NORMAL), *args[1:])
+
+_globals = globals()
+for _colour in ('DARK_RED', 'RED', 'DARK_GREEN', 'GREEN', 'YELLOW',
+                'DARK_YELLOW', 'DARK_BLUE', 'BLUE', 'PURPLE', 'MAGENTA',
+                'DARK_CYAN', 'CYAN', 'GREY', 'WHITE', 'REV_RED'):
+    _globals['DEBUG_' + _colour] = partial(_colour_debug, colour=_globals[_colour])
+
 
 lp = sambaopts.get_loadparm()
 creds = credopts.get_credentials(lp, fallback_machine=True)
