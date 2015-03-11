@@ -3080,6 +3080,10 @@ parser.add_option("--verify",
                   help="verify that assorted invariants are kept",
                   action="store_true")
 
+parser.add_option("--list-verify-tests",
+                  help="list what verification actions are available and do nothing else",
+                  action="store_true")
+
 parser.add_option("--no-dot-files", dest='dot_files',
                   help="Don't write dot graph files in /tmp",
                   default=True, action="store_false")
@@ -3133,8 +3137,9 @@ creds = credopts.get_credentials(lp, fallback_machine=True)
 
 opts, args = parser.parse_args()
 
-if opts.readonly is None:
-    opts.readonly = False
+if opts.list_verify_tests:
+    list_verify_tests()
+    sys.exit(0)
 
 if opts.debug:
     logger.setLevel(logging.DEBUG)

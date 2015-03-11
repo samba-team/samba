@@ -2376,6 +2376,8 @@ class KCCGraphError(Exception):
     pass
 
 def verify_graph_fully_connected(edges, vertices, edge_vertices):
+    """The graph is complete, which is to say there is an edge between
+    every pair of nodes."""
     for v in vertices:
         remotes = set()
         for a, b in edges:
@@ -2388,6 +2390,7 @@ def verify_graph_fully_connected(edges, vertices, edge_vertices):
 
 
 def verify_graph_connected(edges, vertices, edge_vertices):
+    """There is a path between any two nodes."""
     if not edges:
         if len(vertices) <= 1:
             return
@@ -2418,6 +2421,8 @@ def verify_graph_connected(edges, vertices, edge_vertices):
 
 
 def verify_graph_forest(edges, vertices, edge_vertices):
+    """The graph contains no loops. A forest that is also connected is a
+    tree."""
     trees = [set(e) for e in edges]
     while True:
         for a, b in itertools.combinations(trees, 2):
@@ -2467,12 +2472,14 @@ def verify_graph_multi_edge_forest(edges, vertices, edge_vertices):
 
 
 def verify_graph_no_lonely_vertices(edges, vertices, edge_vertices):
+    """There are no vertices without edges."""
     lonely = vertices - edge_vertices
     if lonely:
         raise KCCGraphError("some vertices are not connected:\n%s" % '\n'.join(sorted(lonely)))
 
 
 def verify_graph_no_unknown_vertices(edges, vertices, edge_vertices):
+    """The edge endpoints contain no vertices that are otherwise unknown."""
     unknown = edge_vertices - vertices
     if unknown:
         raise KCCGraphError("some edge vertices are seemingly unknown:\n%s" % '\n'.join(sorted(unknown)))
@@ -2534,3 +2541,12 @@ def verify_and_dot(basename, edges, vertices=None, label=None, destdir=None,
     if dot_files:
         write_dot_file(basename, edges, vertices=vertices, label=label, destdir=destdir,
                        reformat_labels=reformat_labels, directed=directed)
+
+def list_verify_tests():
+    for k, v in sorted(globals().items()):
+        if k.startswith('verify_graph_'):
+            print k.replace('verify_graph_', '')
+            if v.__doc__:
+                print '    %s%s%s' %(GREY, v.__doc__, C_NORMAL)
+            else:
+                print
