@@ -2348,11 +2348,13 @@ def combine_repl_info(info_a, info_b, info_c):
     return True
 
 def write_dot_file(basename, edge_list, vertices=None, label=None, destdir=None,
-                   reformat_labels=True, directed=False):
+                   reformat_labels=True, directed=False, debug=None):
     from tempfile import NamedTemporaryFile
     if label:
         basename += '_' + label.translate(None, ', ') #fix DN, guid labels
     f = NamedTemporaryFile(suffix='.dot', prefix=basename + '_', delete=False, dir=destdir)
+    if debug is not None:
+        debug(f.name)
     graphname = ''.join(x for x in basename if x.isalnum())
     print >>f, '%s %s {' % ('digraph' if directed else 'graph', graphname)
     print >>f, 'label="%s";\nfontsize=20;' % (label or graphname)
