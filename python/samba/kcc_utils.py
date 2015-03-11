@@ -2485,6 +2485,62 @@ def verify_graph_no_unknown_vertices(edges, vertices, edge_vertices):
         raise KCCGraphError("some edge vertices are seemingly unknown:\n%s" % '\n'.join(sorted(unknown)))
 
 
+def verify_graph_directed_double_ring(edges, vertices, edge_vertices):
+    """Each node has two directed edges leaving it, and two arriving. The
+    edges work in pairs that have the same end points but point in
+    opposite directions. The pairs form a path that touches every
+    vertex and form a loop.
+    """
+    #XXX possibly the 1 and 2 vertex cases are special cases.
+    if not edges:
+        return
+    if len(edges) != 2* len(vertices):
+        raise KCCGraphError("directed double ring requires edges == 2 * vertices")
+
+    exits = {}
+
+    for start, end in edges:
+        s = exits.setdefault(start, [])
+        s.append(end)
+
+    try:
+        #follow both paths at once -- they should be the same length
+        #XXX there is probably a simpler way.
+        forwards, backwards = exits[start]
+        fprev, bprev = (start, start)
+        f_path = [start]
+        b_path = [start]
+        for i in range(len(vertices)):
+            a, b = exits[forwards]
+            if a == fprev:
+                fnext = b
+            else:
+                fnext = a
+            f_path.append(forwards)
+            fprev = forwards
+            forwards = fnext
+
+            a, b = exits[backwards]
+            if a == bprev:
+                bnext = b
+            else:
+                bnext = a
+            b_path.append(backwards)
+            bprev = backwards
+            backwards = bnext
+
+    except ValueError, e:
+        raise KCCGraphError("wrong number of exits '%s'" % e)
+
+    f_set = set(f_path)
+    b_set = set(b_path)
+
+    if (f_path != list(reversed(b_path)) or
+        len(f_path) != len(f_set) + 1 or
+        len(f_set) != len(vertices)):
+        raise KCCGraphError("doesn't seem like a double ring to me!")
+
+
 def verify_graph(title, edges, vertices=None, directed=False, properties=(), fatal=False,
                  debug=None):
     errors = []

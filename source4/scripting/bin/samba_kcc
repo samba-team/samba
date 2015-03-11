@@ -1677,7 +1677,8 @@ class KCC(object):
                                for a, b in itertools.chain(*(itertools.combinations(edge.vertices, 2)
                                                              for edge in e_set.edges))]
                 graph_nodes = [v.site.site_dnstr for v in graph.vertices]
-                verify_properties = ('fully_connected', 'connected', 'multi_edge_forest', 'forest')
+                verify_properties = ('fully_connected', 'connected', 'multi_edge_forest', 'forest',
+                                     'directed_double_ring')
 
                 if opts.dot_files:
                     write_dot_file('edgeset_%s' % (edgeType,), graph_edges, vertices=graph_nodes,
