@@ -200,3 +200,24 @@ interface resiliency
 		uint32 reserved;
 	} network_resiliency_request;
 }
+
+interface trim
+{
+	/* MS-FSCC 2.3.73.1 FILE_LEVEL_TRIM_RANGE */
+	typedef [public] struct {
+		hyper off;
+		hyper len;
+	} file_level_trim_range;
+
+	/* MS-FSCC 2.3.73 FSCTL_FILE_LEVEL_TRIM Request */
+	typedef [public] struct {
+		uint32 key;
+		uint32 num_ranges;
+		file_level_trim_range ranges[num_ranges];
+	} fsctl_file_level_trim_req;
+
+	/* MS-FSCC 2.3.74 FSCTL_FILE_LEVEL_TRIM Reply */
+	typedef [public] struct {
+		uint32 num_ranges_processed;
+	} fsctl_file_level_trim_rsp;
+}
