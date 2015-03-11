@@ -575,7 +575,7 @@ for env in ["dc", "rodc", "promoted_dc", "plugin_s4_dc", "fl2000dc", "fl2003dc",
     plansmbtorture4testsuite('krb5.kdc', env, ['ncacn_np:$SERVER_IP', "-k", "yes", '-Utestallowed%$PASSWORD',
                                                '--workgroup=$DOMAIN', '--realm=$REALM',
                                                '--option=torture:expect_machine_account=true',
-                                               '--option=torture:krb5-upn=testallowed_upn@$REALM',
+                                               '--option=torture:krb5-upn=testallowed\ upn@$REALM',
                                                '--option=torture:krb5-hostname=testallowed'] + extra_options,
                              "samba4.krb5.kdc with account ALLOWED permission to replicate to an RODC")
 

@@ -835,7 +835,7 @@ sub provision_raw_step2($$$)
 	print LDIF "dn: $user_dn
 changetype: modify
 replace: userPrincipalName
-userPrincipalName: testallowed_upn\@$ctx->{realm}
+userPrincipalName: testallowed upn\@$ctx->{realm}
 replace: servicePrincipalName
 servicePrincipalName: host/testallowed
 -	    
