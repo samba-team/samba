@@ -447,10 +447,6 @@ static void ctdb_run_debug_hung_script(struct ctdb_context *ctdb, struct debug_h
 	const char **argv;
 	int i;
 
-	if (helper_prog == NULL) {
-		return;
-	}
-
 	if (pipe(fd) < 0) {
 		DEBUG(DEBUG_ERR,("Failed to create pipe fd for debug hung script\n"));
 		return;
