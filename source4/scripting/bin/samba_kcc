@@ -1677,18 +1677,15 @@ class KCC(object):
                                for a, b in itertools.chain(*(itertools.combinations(edge.vertices, 2)
                                                              for edge in e_set.edges))]
                 graph_nodes = [v.site.site_dnstr for v in graph.vertices]
-                verify_properties = ('fully connected', 'connected', 'forest')
+                verify_properties = ('fully_connected', 'connected', 'multi_edge_forest', 'forest')
 
                 if opts.dot_files:
                     write_dot_file('edgeset_%s' % (edgeType,), graph_edges, vertices=graph_nodes,
-                                   label=label, verify=verify_properties, dot_graph=opts.dot_files)
+                                   label=label)
 
                 if opts.verify:
-                    verify_graph('spanning tree edge set %s' % edgeType, graph_edges,
-                                 properties=verify_properties)
-
-
-
+                    verify_graph('spanning tree edge set %s' % edgeType, graph_edges, vertices=graph_nodes,
+                                 properties=verify_properties, debug=DEBUG)
 
             # Run dijkstra's algorithm with just the red vertices as seeds
             # Seed from the full replicas
@@ -1708,8 +1705,14 @@ class KCC(object):
         setup_vertices(graph)
         process_edge_set(graph, None, internal_edges)
 
-        write_dot_file('prekruskal', [(e.v1.site.site_dnstr, e.v2.site.site_dnstr)
-                                       for e in internal_edges], label=label)
+        if opts.verify or opts.dot_files:
+            graph_edges = [(e.v1.site.site_dnstr, e.v2.site.site_dnstr) for e in internal_edges]
+            graph_nodes = [v.site.site_dnstr for v in graph.vertices]
+            verify_properties = ('fully_connected', 'connected', 'multi_edge_forest', 'forest')
+            verify_and_dot('prekruskal', graph_edges, graph_nodes, label=label,
+                           properties=verify_properties, debug=DEBUG, verify=opts.verify,
+                           dot_files=opts.dot_files)
+
 
         # Phase 2: Run Kruskal's on the internal edges
         output_edges, components = kruskal(graph, internal_edges)
@@ -1724,8 +1727,13 @@ class KCC(object):
             else:
                 v.dist_to_red = v.repl_info.cost
 
-        write_dot_file('postkruskal', ((e.v1.site.site_dnstr, e.v2.site.site_dnstr) for e in internal_edges),
-                       label=label)
+        if opts.verify or opts.dot_files:
+            graph_edges = [(e.v1.site.site_dnstr, e.v2.site.site_dnstr) for e in internal_edges]
+            graph_nodes = [v.site.site_dnstr for v in graph.vertices]
+            verify_properties = ('fully_connected', 'connected', 'multi_edge_forest', 'forest')
+            verify_and_dot('postkruskal', graph_edges, graph_nodes, label=label,
+                           properties=verify_properties, debug=DEBUG, verify=opts.verify,
+                           dot_files=opts.dot_files)
 
         # count the components
         return self.copy_output_edges(graph, output_edges), components
@@ -2126,11 +2134,22 @@ class KCC(object):
         if not r_list[0].is_partial() or r_list[r_len-1].is_partial():
             graph_list[r_len-1].add_edge_from(r_list[0].rep_dsa_dnstr)
 
-        dot_edges = []
-        for v1 in graph_list:
-            for v2 in v1.edge_from:
-                dot_edges.append((v2, v1.dsa_dnstr))
-        write_dot_file('intrasite_pre_ntdscon', dot_edges, directed=True, label=nc_x.nc_dnstr)
+
+        if opts.verify or opts.dot_files:
+            dot_edges = []
+            dot_vertices = set()
+            for v1 in graph_list:
+                dot_vertices.add(v1.dsa_dnstr)
+                for v2 in v1.edge_from:
+                    dot_edges.append((v2, v1.dsa_dnstr))
+                    dot_vertices.add(v2)
+
+            verify_properties = ('fully_connected', 'connected', 'multi_edge_forest', 'forest')
+            verify_and_dot('intrasite_pre_ntdscon', dot_edges, dot_vertices, label=site_local.site_dnstr,
+                           properties=verify_properties, debug=DEBUG, verify=opts.verify,
+                           dot_files=opts.dot_files)
+
+
 
         # For each existing nTDSConnection object implying an edge
         # from rj of R to ri such that j != i, an edge from rj to ri
@@ -2191,11 +2210,19 @@ class KCC(object):
 
             i = i + 1
 
-        dot_edges = []
-        for v1 in graph_list:
-            for v2 in v1.edge_from:
-                dot_edges.append((v2, v1.dsa_dnstr))
-        write_dot_file('intrasite_post_ntdscon', dot_edges, directed=True, label=nc_x.nc_dnstr)
+        if opts.verify or opts.dot_files:
+            dot_edges = []
+            dot_vertices = set()
+            for v1 in graph_list:
+                dot_vertices.add(v1.dsa_dnstr)
+                for v2 in v1.edge_from:
+                    dot_edges.append((v2, v1.dsa_dnstr))
+                    dot_vertices.add(v2)
+
+            verify_properties = ('fully_connected', 'connected', 'multi_edge_forest', 'forest')
+            verify_and_dot('intrasite_post_ntdscon', dot_edges, dot_vertices, label=site_local.site_dnstr,
+                           properties=verify_properties, debug=DEBUG, verify=opts.verify,
+                           dot_files=opts.dot_files)
 
 
     def intrasite(self):
@@ -2297,15 +2324,17 @@ class KCC(object):
             self.load_all_transports()
             self.load_all_sitelinks()
 
-            if True:
+            if opts.verify or opts.dot_files:
+
                 dot_edges = []
                 for site in self.site_table.values():
                     for dsa in site.dsa_table.values():
                         for con in dsa.connect_table.values():
                             dot_edges.append((dsa.dsa_dnstr, con.from_dnstr))
-
-                write_dot_file('dsa_initial', dot_edges, directed=True)
-
+                verify_properties = ('fully_connected', 'connected', 'multi_edge_forest', 'forest')
+                verify_and_dot('dsa_initial', dot_edges, label=self.my_dsa_dnstr,
+                               properties=verify_properties, debug=DEBUG, verify=opts.verify,
+                               dot_files=opts.dot_files)
 
                 dot_edges = []
                 for site in self.site_table.values():
@@ -2316,7 +2345,9 @@ class KCC(object):
                             #print dir(x)
                             dot_edges.append((c_rep.rep_dsa_dnstr, x.nc_dnstr))
 
-                write_dot_file('config_repsFrom_initial', dot_edges, directed=True)
+                verify_and_dot('config_repsFrom_initial', dot_edges, directed=True, label=self.my_dsa_dnstr,
+                               properties=verify_properties, debug=DEBUG, verify=opts.verify,
+                               dot_files=opts.dot_files)
 
                 dot_edges = []
                 for site in self.site_table.values():
@@ -2324,14 +2355,18 @@ class KCC(object):
                         for x in dsa.current_rep_table:
                             dot_edges.append((dsa.dsa_dnstr, x))
 
-                write_dot_file('dsa_repsFrom_initial', dot_edges, directed=True)
+                verify_and_dot('dsa_repsFrom_initial', dot_edges, directed=True, label=self.my_dsa_dnstr,
+                               properties=verify_properties, debug=DEBUG, verify=opts.verify,
+                               dot_files=opts.dot_files)
 
                 dot_edges = []
                 for link in self.sitelink_table.values():
                     for a, b in itertools.combinations(link.site_list, 2):
                         dot_edges.append((str(a), str(b)))
 
-                write_dot_file('dsa_sitelink_initial', dot_edges, directed=False)
+                verify_and_dot('dsa_sitelink_initial', dot_edges, directed=False, label=self.my_dsa_dnstr,
+                               properties=verify_properties, debug=DEBUG, verify=opts.verify,
+                               dot_files=opts.dot_files)
 
 
 
@@ -2359,13 +2394,18 @@ class KCC(object):
             # Step 7
             self.update_rodc_connection()
 
-            dot_edges = []
-            for site in self.site_table.values():
-                for dsa in site.dsa_table.values():
-                    for con in dsa.connect_table.values():
-                        dot_edges.append((dsa.dsa_dnstr, con.from_dnstr))
 
-            write_dot_file('dsa_final', dot_edges, directed=True)
+            if opts.verify or opts.dot_files:
+                dot_edges = []
+                for site in self.site_table.values():
+                    for dsa in site.dsa_table.values():
+                        for con in dsa.connect_table.values():
+                            dot_edges.append((dsa.dsa_dnstr, con.from_dnstr))
+                verify_properties = ('fully_connected', 'connected', 'multi_edge_forest', 'forest')
+                verify_and_dot('dsa_final', dot_edges, label=self.my_dsa_dnstr,
+                               properties=verify_properties, debug=DEBUG, verify=opts.verify,
+                               dot_files=opts.dot_files)
+
         except:
             raise
 
@@ -3034,7 +3074,7 @@ parser.add_option("--verify",
 
 parser.add_option("--no-dot-files", dest='dot_files',
                   help="Don't write dot graph files in /tmp",
-                  action="store_false")
+                  default=True, action="store_false")
 
 parser.add_option("--seed",
                   help="random number seed",

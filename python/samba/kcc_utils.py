@@ -2347,7 +2347,7 @@ def combine_repl_info(info_a, info_b, info_c):
 
     return True
 
-def write_dot_file(basename, edge_list, vertices=(), label=None, destdir=None,
+def write_dot_file(basename, edge_list, vertices=None, label=None, destdir=None,
                    reformat_labels=True, directed=False):
     from tempfile import NamedTemporaryFile
     if label:
@@ -2356,8 +2356,11 @@ def write_dot_file(basename, edge_list, vertices=(), label=None, destdir=None,
     graphname = ''.join(x for x in basename if x.isalnum())
     print >>f, '%s %s {' % ('digraph' if directed else 'graph', graphname)
     print >>f, 'label="%s";\nfontsize=20;' % (label or graphname)
-    for v in vertices:
-        print >>f, '"%s";' % (v,)
+    if vertices:
+        for v in vertices:
+            if reformat_labels:
+                v = v.replace(',', '\\n')
+            print >>f, '"%s";' % (v,)
     for a, b in edge_list:
         if reformat_labels:
             a = a.replace(',', '\\n')
@@ -2519,3 +2522,15 @@ def verify_graph(title, edges, vertices=None, directed=False, properties=(), fat
         debug(C_NORMAL)
 
 
+
+def verify_and_dot(basename, edges, vertices=None, label=None, destdir=None,
+                   reformat_labels=True, directed=False, properties=(), fatal=False,
+                   debug=None, verify=True, dot_files=False):
+
+    title = '%s %s' % (basename, label or '')
+    if verify:
+        verify_graph(title, edges, vertices, properties=properties, fatal=fatal,
+                     debug=debug)
+    if dot_files:
+        write_dot_file(basename, edges, vertices=vertices, label=label, destdir=destdir,
+                       reformat_labels=reformat_labels, directed=directed)
