@@ -29,6 +29,10 @@
 #include "source4/auth/kerberos/kerberos.h"
 #include "source4/auth/kerberos/kerberos_util.h"
 #include "lib/util/util_net.h"
+#include "auth/auth.h"
+#include "auth/auth_sam_reply.h"
+#include "auth/gensec/gensec.h"
+#include "param/param.h"
 
 #define TEST_CANONICALIZE     0x0000001
 #define TEST_ENTERPRISE       0x0000002
@@ -87,6 +91,121 @@ struct torture_krb5_context {
 	TGS_REP tgs_rep;
 };
 
+struct pac_data {
+	const char *principal_name;
+};
+
+/*
+ * A helper function which avoids touching the local databases to
+ * generate the session info, as we just want to verify the principal
+ * name that we found in the ticket not the full local token
+ */
+static NTSTATUS test_generate_session_info_pac(struct auth4_context *auth_ctx,
+					       TALLOC_CTX *mem_ctx,
+					       struct smb_krb5_context *smb_krb5_context,
+					       DATA_BLOB *pac_blob,
+					       const char *principal_name,
+					       const struct tsocket_address *remote_address,
+					       uint32_t session_info_flags,
+					       struct auth_session_info **session_info)
+{
+	NTSTATUS nt_status;
+	struct auth_user_info_dc *user_info_dc;
+	TALLOC_CTX *tmp_ctx;
+	struct pac_data *pac_data;
+
+	tmp_ctx = talloc_named(mem_ctx, 0, "gensec_gssapi_session_info context");
+	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
+
+	auth_ctx->private_data = pac_data = talloc_zero(auth_ctx, struct pac_data);
+
+	pac_data->principal_name = talloc_strdup(pac_data, principal_name);
+	if (!pac_data->principal_name) {
+		talloc_free(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	nt_status = kerberos_pac_blob_to_user_info_dc(tmp_ctx,
+						      *pac_blob,
+						      smb_krb5_context->krb5_context,
+						      &user_info_dc, NULL, NULL);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		talloc_free(tmp_ctx);
+		return nt_status;
+	}
+
+	if (user_info_dc->info->authenticated) {
+		session_info_flags |= AUTH_SESSION_INFO_AUTHENTICATED;
+	}
+
+	session_info_flags |= AUTH_SESSION_INFO_SIMPLE_PRIVILEGES;
+	nt_status = auth_generate_session_info(mem_ctx,
+					       NULL,
+					       NULL,
+					       user_info_dc, session_info_flags,
+					       session_info);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		talloc_free(tmp_ctx);
+		return nt_status;
+	}
+
+	talloc_free(tmp_ctx);
+	return NT_STATUS_OK;
+}
+
+/* Check to see if we can pass the PAC across to the NETLOGON server for validation */
+
+/* Also happens to be a really good one-step verfication of our Kerberos stack */
+
+static bool test_accept_ticket(struct torture_context *tctx,
+			       struct cli_credentials *credentials,
+			       const char *principal,
+			       DATA_BLOB client_to_server)
+{
+	NTSTATUS status;
+	struct gensec_security *gensec_server_context;
+	DATA_BLOB server_to_client;
+	struct auth4_context *auth_context;
+	struct auth_session_info *session_info;
+	struct pac_data *pac_data;
+	TALLOC_CTX *tmp_ctx = talloc_new(tctx);
+
+	torture_assert(tctx, tmp_ctx != NULL, "talloc_new() failed");
+
+	auth_context = talloc_zero(tmp_ctx, struct auth4_context);
+	torture_assert(tctx, auth_context != NULL, "talloc_new() failed");
+
+	auth_context->generate_session_info_pac = test_generate_session_info_pac;
+
+	status = gensec_server_start(tctx,
+				     lpcfg_gensec_settings(tctx, tctx->lp_ctx),
+				     auth_context, &gensec_server_context);
+	torture_assert_ntstatus_ok(tctx, status, "gensec_server_start (server) failed");
+
+	status = gensec_set_credentials(gensec_server_context, credentials);
+	torture_assert_ntstatus_ok(tctx, status, "gensec_set_credentials (server) failed");
+
+	status = gensec_start_mech_by_name(gensec_server_context, "krb5");
+	torture_assert_ntstatus_ok(tctx, status, "gensec_start_mech_by_name (server) failed");
+
+	server_to_client = data_blob(NULL, 0);
+
+	/* Do a client-server update dance */
+	status = gensec_update(gensec_server_context, tmp_ctx, client_to_server, &server_to_client);
+	torture_assert_ntstatus_ok(tctx, status, "gensec_update (server) failed");
+
+	/* Extract the PAC using Samba's code */
+
+	status = gensec_session_info(gensec_server_context, gensec_server_context, &session_info);
+	torture_assert_ntstatus_ok(tctx, status, "gensec_session_info failed");
+
+	pac_data = talloc_get_type(auth_context->private_data, struct pac_data);
+
+	torture_assert(tctx, pac_data != NULL, "gensec_update failed to fill in pac_data in auth_context");
+	torture_assert(tctx, pac_data->principal_name != NULL, "principal_name not present");
+	torture_assert_str_equal(tctx, pac_data->principal_name, principal, "wrong principal name");
+	return true;
+}
 
 /*
  * TEST_AS_REQ and TEST_AS_REQ_SELF - SEND
@@ -1298,6 +1417,7 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 	char *krbtgt_other_string;
 	int principal_flags;
 	char *expected_principal_string;
+	char *expected_unparse_principal_string;
 	int expected_principal_flags;
 	char *got_principal_string;
 	char *assertion_message;
@@ -1436,6 +1556,11 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 						       &expected_principal),
 				 0, "krb5_parse_name_flags failed");
 
+	torture_assert_int_equal(tctx,
+				 krb5_unparse_name(k5_context,
+						   expected_principal,
+						   &expected_unparse_principal_string),
+				 0, "krb5_unparse_name failed");
 	/*
 	 * Prepare a AS-REQ and run the TEST_AS_REQ tests
 	 *
@@ -1752,7 +1877,7 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 	in_data.length = 0;
 	k5ret = krb5_mk_req_exact(k5_context,
 				  &auth_context,
-				  0,
+				  AP_OPTS_USE_SUBKEY,
 				  principal,
 				  &in_data, ccache,
 				  &enc_ticket);
@@ -1766,7 +1891,15 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 	 * servicePrincipalName) can expect this test to succeed
 	 */
 	if (torture_setting_bool(tctx, "expect_machine_account", false) && (test_data->enterprise || test_data->upn == false)) {
+		DATA_BLOB client_to_server;
 		torture_assert_int_equal(tctx, k5ret, 0, assertion_message);
+		client_to_server = data_blob_const(enc_ticket.data, enc_ticket.length);
+		torture_assert(tctx,
+			       test_accept_ticket(tctx, cmdline_credentials,
+						  expected_unparse_principal_string,
+						  client_to_server),
+			       "test_accept_ticket failed - failed to accept the ticket we just created");
+		krb5_data_free(&enc_ticket);
 	} else {
 		torture_assert_int_equal(tctx, k5ret, KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN,
 					 assertion_message);
