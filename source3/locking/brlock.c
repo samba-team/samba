@@ -2005,7 +2005,7 @@ static void brl_get_locks_readonly_parser(TDB_DATA key, TDB_DATA data,
 		*state->br_lock = NULL;
 		return;
 	}
-	*br_lck = (struct byte_range_lock) {};
+	*br_lck = (struct byte_range_lock) { 0 };
 	if (!brl_parse_data(br_lck, data)) {
 		*state->br_lock = NULL;
 		return;
