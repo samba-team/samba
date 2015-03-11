@@ -1856,6 +1856,14 @@ class KCC(object):
         to it such that (n) is the smallest non-negative integer
         satisfying (node_count <= 2*(n*n) + 6*n + 7)
 
+        edges  n   nodecount
+          2    0    7
+          3    1   15
+          4    2   27
+          5    3   43
+                  ...
+         50   48 4903
+
         :param node_count: total number of nodes in the replica graph
         """
         n = 0
