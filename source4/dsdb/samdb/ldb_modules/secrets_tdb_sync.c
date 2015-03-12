@@ -503,7 +503,7 @@ static int secrets_tdb_sync_init(struct ldb_module *module)
 		private_dir = talloc_strdup(data, ".");
 	}
 
-	secrets_init_path(private_dir, false);
+	secrets_init_path(private_dir);
 
 	TALLOC_FREE(private_dir);
 

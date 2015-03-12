@@ -55,7 +55,7 @@ static void get_rand_seed(void *userdata, int *new_seed)
 }
 
 /* open up the secrets database with specified private_dir path */
-bool secrets_init_path(const char *private_dir, bool use_ntdb)
+bool secrets_init_path(const char *private_dir)
 {
 	char *fname = NULL;
 	unsigned char dummy;
@@ -70,8 +70,7 @@ bool secrets_init_path(const char *private_dir, bool use_ntdb)
 	}
 
 	frame = talloc_stackframe();
-	fname = talloc_asprintf(frame, "%s/secrets.%s",
-				private_dir, use_ntdb ? "ntdb" : "tdb");
+	fname = talloc_asprintf(frame, "%s/secrets.tdb", private_dir);
 	if (fname == NULL) {
 		TALLOC_FREE(frame);
 		return False;
@@ -105,7 +104,7 @@ bool secrets_init_path(const char *private_dir, bool use_ntdb)
 /* open up the secrets database */
 bool secrets_init(void)
 {
-	return secrets_init_path(lp_private_dir(), false);
+	return secrets_init_path(lp_private_dir());
 }
 
 struct db_context *secrets_db_ctx(void)
