@@ -193,9 +193,7 @@ char *lpcfg_private_path(TALLOC_CTX* mem_ctx,
  * @brief Returns an absolute path to a NTDB or TDB file in the Samba
  * private directory.
  *
- * @param name File to find, relative to PRIVATEDIR, without .(n)tdb extension.
- * Only provide fixed-string names which are supposed to change with "use ntdb"
- * option.
+ * @param name File to find, relative to PRIVATEDIR, without .tdb extension.
  *
  * @retval Pointer to a talloc'ed string containing the full path, for
  * use with dbwrap_local_open().
