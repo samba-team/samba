@@ -29,23 +29,6 @@
 #include <ccan/typesafe_cb/typesafe_cb.h>
 #include <tdb.h>
 
-/* FIXME: Inlining this is a bit lazy, but eases S3 build. */
-static inline struct tdb_context *
-tdb_open_compat(const char *name, int hash_size,
-		int tdb_flags, int open_flags, mode_t mode,
-		tdb_log_func log_fn, void *log_private)
-{
-	struct tdb_logging_context lctx;
-	lctx.log_fn = log_fn;
-	lctx.log_private = log_private;
-
-	if (log_fn)
-		return tdb_open_ex(name, hash_size, tdb_flags, open_flags,
-				   mode, &lctx, NULL);
-	else
-		return tdb_open(name, hash_size, tdb_flags, open_flags, mode);
-}
-
 #define tdb_firstkey_compat tdb_firstkey
 /* Note: this frees the old key.dptr. */
 static inline TDB_DATA tdb_nextkey_compat(struct tdb_context *tdb, TDB_DATA k)

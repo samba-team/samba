@@ -323,6 +323,7 @@ TDB_CONTEXT *tdb_open_log(const char *name, int hash_size, int tdb_flags,
 			  int open_flags, mode_t mode)
 {
 	TDB_CONTEXT *tdb;
+	struct tdb_logging_context log_ctx = { .log_fn = tdb_log };
 
 	if (!lp_use_mmap())
 		tdb_flags |= TDB_NOMMAP;
@@ -338,8 +339,8 @@ TDB_CONTEXT *tdb_open_log(const char *name, int hash_size, int tdb_flags,
 		hash_size = lp_parm_int(-1, "tdb_hashsize", base, 0);
 	}
 
-	tdb = tdb_open_compat(name, hash_size, tdb_flags,
-			      open_flags, mode, tdb_log, NULL);
+	tdb = tdb_open_ex(name, hash_size, tdb_flags,
+			  open_flags, mode, &log_ctx, NULL);
 	if (!tdb)
 		return NULL;
 
