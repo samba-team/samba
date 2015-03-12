@@ -825,6 +825,11 @@ sub provision_raw_step2($$$)
 
 	my $ldbmodify = Samba::bindir_path($self, "ldbmodify");
 	my $base_dn = "DC=".join(",DC=", split(/\./, $ctx->{realm}));
+
+	if ($ctx->{server_role} ne "domain controller") {
+		$base_dn = "DC=$ctx->{netbiosname}";
+	}
+
 	my $user_dn = "cn=testallowed,cn=users,$base_dn";
 	open(LDIF, "|$ldbmodify -H $ctx->{privatedir}/sam.ldb");
 	print LDIF "dn: $user_dn
