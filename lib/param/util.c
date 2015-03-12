@@ -204,14 +204,8 @@ char *lpcfg_private_db_path(TALLOC_CTX *mem_ctx,
 			    struct loadparm_context *lp_ctx,
 			    const char *name)
 {
-	const char *extension = ".tdb";
-
-	if (lpcfg_use_ntdb(lp_ctx)) {
-		extension = ".ntdb";
-	}
-
-	return talloc_asprintf(mem_ctx, "%s/%s%s",
-			       lpcfg_private_dir(lp_ctx), name, extension);
+	return talloc_asprintf(mem_ctx, "%s/%s.tdb",
+			       lpcfg_private_dir(lp_ctx), name);
 }
 
 /**

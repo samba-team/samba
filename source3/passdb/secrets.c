@@ -105,7 +105,7 @@ bool secrets_init_path(const char *private_dir, bool use_ntdb)
 /* open up the secrets database */
 bool secrets_init(void)
 {
-	return secrets_init_path(lp_private_dir(), lp_use_ntdb());
+	return secrets_init_path(lp_private_dir(), false);
 }
 
 struct db_context *secrets_db_ctx(void)

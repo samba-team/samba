@@ -56,10 +56,7 @@ static struct db_context *local_db_tmp_open(struct cluster_ops *ops,
 	char *path, *dbname;
 	struct db_context *db;
 
-	if (lpcfg_use_ntdb(lp_ctx))
-		dbname = talloc_asprintf(mem_ctx, "%s.ntdb", dbbase);
-	else
-		dbname = talloc_asprintf(mem_ctx, "%s.tdb", dbbase);
+	dbname = talloc_asprintf(mem_ctx, "%s.tdb", dbbase);
 
 	path = smbd_tmp_path(tmp_ctx, lp_ctx, dbname);
 	db = dbwrap_local_open(mem_ctx, lp_ctx, path, 0, flags, O_RDWR|O_CREAT,
