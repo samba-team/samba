@@ -42,11 +42,13 @@ my $rebind_url;
 
 
 my $tdbdump	= "/usr/bin/tdbdump";
+my $ntdbdump	= "/usr/bin/ntdbdump";
 my $testparm	= "/usr/bin/testparm";
 my $net		= "/usr/bin/net";
 my $dig		= "/usr/bin/dig";
 my $nmblookup	= "/usr/bin/nmblookup";
 my $secrets_tdb = "/etc/samba/secrets.tdb";
+my $secrets_ntdb = "/etc/samba/secrets.ntdb";
 my $klist	= "/usr/bin/klist";
 my $kinit	= "/usr/bin/kinit";
 my $workgroup	= "";
@@ -723,13 +725,21 @@ sub get_machine_password {
 	my $workgroup = shift || "";
 	$workgroup = uc($workgroup);
 
-	my ($found, $tmp);
-	-x $tdbdump || die "tdbdump is not installed. cannot proceed autodetection\n";
-	-r $secrets_tdb || die "cannot read $secrets_tdb. cannot proceed autodetection\n";
+	my ($found, $tmp, $dbdump, $db);
+	if (-r $secrets_ntdb) {
+	    -x $ntdbdump || die "ntdbdump is not installed. cannot proceed autodetection\n";
+	    $dbdump = $ntdbdump;
+	    $db = $secrets_ntdb;
+	} else {
+	    -x $tdbdump || die "tdbdump is not installed. cannot proceed autodetection\n";
+	    -r $secrets_tdb || die "cannot read $secrets_tdb. cannot proceed autodetection\n";
+	    $dbdump = $tdbdump;
+	    $db = $secrets_tdb;
+	}
 
 	# get machine-password
 	my $key = sprintf("SECRETS/MACHINE_PASSWORD/%s", $workgroup);
-	open(SECRETS,"$tdbdump $secrets_tdb |");
+	open(SECRETS,"$dbdump $db |");
 	while(my $line = <SECRETS>) {
 		chomp($line);
 		if ($found) {

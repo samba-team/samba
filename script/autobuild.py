@@ -22,7 +22,6 @@ builddirs = {
     "samba-libs"  : ".",
     "ldb"     : "lib/ldb",
     "tdb"     : "lib/tdb",
-    "ntdb"    : "lib/ntdb",
     "talloc"  : "lib/talloc",
     "replace" : "lib/replace",
     "tevent"  : "lib/tevent",
@@ -32,7 +31,7 @@ builddirs = {
     "retry"   : "."
     }
 
-defaulttasks = [ "ctdb", "samba", "samba-ctdb", "samba-libs", "ldb", "tdb", "ntdb", "talloc", "replace", "tevent", "pidl" ]
+defaulttasks = [ "ctdb", "samba", "samba-ctdb", "samba-libs", "ldb", "tdb", "talloc", "replace", "tevent", "pidl" ]
 
 tasks = {
     "ctdb" : [ ("random-sleep", "../script/random-sleep.sh 60 600", "text/plain"),
@@ -81,10 +80,6 @@ tasks = {
                       ("tdb-make", "cd lib/tdb && make", "text/plain"),
                       ("tdb-install", "cd lib/tdb && make install", "text/plain"),
 
-                      ("ntdb-configure", "cd lib/ntdb && PYTHONPATH=${PYTHON_PREFIX}/site-packages:$PYTHONPATH PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX_DIR}/lib/pkgconfig ./configure --bundled-libraries=NONE --abi-check --enable-debug -C ${PREFIX}", "text/plain"),
-                      ("ntdb-make", "cd lib/ntdb && make", "text/plain"),
-                      ("ntdb-install", "cd lib/ntdb && make install", "text/plain"),
-
                       ("tevent-configure", "cd lib/tevent && PYTHONPATH=${PYTHON_PREFIX}/site-packages:$PYTHONPATH PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX_DIR}/lib/pkgconfig ./configure --bundled-libraries=NONE --abi-check --enable-debug -C ${PREFIX}", "text/plain"),
                       ("tevent-make", "cd lib/tevent && make", "text/plain"),
                       ("tevent-install", "cd lib/tevent && make install", "text/plain"),
@@ -93,7 +88,7 @@ tasks = {
                       ("ldb-make", "cd lib/ldb && make", "text/plain"),
                       ("ldb-install", "cd lib/ldb && make install", "text/plain"),
 
-                      ("configure", "PYTHONPATH=${PYTHON_PREFIX}/site-packages:$PYTHONPATH PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX_DIR}/lib/pkgconfig ./configure --bundled-libraries=!talloc,!tdb,!pytdb,!ntdb,!pyntdb,!ldb,!pyldb,!tevent,!pytevent --abi-check --enable-debug -C ${PREFIX}", "text/plain"),
+                      ("configure", "PYTHONPATH=${PYTHON_PREFIX}/site-packages:$PYTHONPATH PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX_DIR}/lib/pkgconfig ./configure --bundled-libraries=!talloc,!tdb,!pytdb,!ldb,!pyldb,!tevent,!pytevent --abi-check --enable-debug -C ${PREFIX}", "text/plain"),
                       ("make", "make", "text/plain"),
                       ("install", "make install", "text/plain"),
                       ("dist", "make dist", "text/plain")],
@@ -117,16 +112,6 @@ tasks = {
               ("check-clean-tree", "../../script/clean-source-tree.sh", "text/plain"),
               ("distcheck", "make distcheck", "text/plain"),
               ("clean", "make clean", "text/plain") ],
-
-    "ntdb" : [
-               ("random-sleep", "../../script/random-sleep.sh 60 600", "text/plain"),
-               ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
-               ("make", "make", "text/plain"),
-               ("install", "make install", "text/plain"),
-               ("test", "make test", "text/plain"),
-               ("check-clean-tree", "../../script/clean-source-tree.sh", "text/plain"),
-               ("distcheck", "make distcheck", "text/plain"),
-               ("clean", "make clean", "text/plain") ],
 
     "talloc" : [
                  ("random-sleep", "../../script/random-sleep.sh 60 600", "text/plain"),
