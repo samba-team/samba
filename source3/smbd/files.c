@@ -22,7 +22,6 @@
 #include "smbd/globals.h"
 #include "libcli/security/security.h"
 #include "util_tdb.h"
-#include <ccan/hash/hash.h>
 #include "lib/util/bitmap.h"
 
 #define FILE_HANDLE_OFFSET 0x1000
@@ -729,6 +728,7 @@ NTSTATUS file_name_hash(connection_struct *conn,
 	char tmpbuf[PATH_MAX];
 	char *fullpath, *to_free;
 	ssize_t len;
+	TDB_DATA key;
 
 	/* Set the hash of the full pathname. */
 
@@ -737,7 +737,8 @@ NTSTATUS file_name_hash(connection_struct *conn,
 	if (len == -1) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	*p_name_hash = hash(fullpath, len+1, 0);
+	key = (TDB_DATA) { .dptr = (uint8_t *)fullpath, .dsize = len+1 };
+	*p_name_hash = tdb_jenkins_hash(&key);
 
 	DEBUG(10,("file_name_hash: %s hash 0x%x\n",
 		  fullpath,

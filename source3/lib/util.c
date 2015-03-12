@@ -28,7 +28,6 @@
 #include "ctdbd_conn.h"
 #include "../lib/util/util_pw.h"
 #include "messages.h"
-#include <ccan/hash/hash.h>
 #include "libcli/security/security.h"
 #include "serverid.h"
 #include "lib/sys_rw.h"
@@ -1321,9 +1320,14 @@ const char *tab_depth(int level, int depth)
 
 int str_checksum(const char *s)
 {
+	TDB_DATA key;
 	if (s == NULL)
 		return 0;
-	return hash(s, strlen(s), 0);
+
+	key = (TDB_DATA) { .dptr = discard_const_p(uint8_t, s),
+			   .dsize = strlen(s) };
+
+	return tdb_jenkins_hash(&key);
 }
 
 /*****************************************************************

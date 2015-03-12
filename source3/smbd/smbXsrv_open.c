@@ -29,7 +29,6 @@
 #include "messages.h"
 #include "lib/util/util_tdb.h"
 #include "librpc/gen_ndr/ndr_smbXsrv.h"
-#include <ccan/hash/hash.h>
 #include "serverid.h"
 
 struct smbXsrv_open_table {
@@ -889,12 +888,14 @@ uint32_t smbXsrv_open_hash(struct smbXsrv_open *_open)
 {
 	uint8_t buf[8+8+8];
 	uint32_t ret;
+	TDB_DATA key;
 
 	SBVAL(buf,  0, _open->global->open_persistent_id);
 	SBVAL(buf,  8, _open->global->open_volatile_id);
 	SBVAL(buf, 16, _open->global->open_time);
 
-	ret = hash(buf, sizeof(buf), 0);
+	key = (TDB_DATA) { .dptr = buf, .dsize = sizeof(buf) };
+	ret = tdb_jenkins_hash(&key);
 
 	if (ret == 0) {
 		ret = 1;

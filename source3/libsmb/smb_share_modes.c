@@ -37,7 +37,6 @@
 #include "smb_share_modes.h"
 #include <tdb.h>
 #include "librpc/gen_ndr/open_files.h"
-#include <ccan/hash/hash.h>
 
 /* Database context handle. */
 struct smbdb_ctx {
@@ -307,6 +306,7 @@ static uint32_t smb_name_hash(const char *sharepath, const char *filename, int *
 	size_t sharepath_size = strlen(sharepath);
 	size_t filename_size = strlen(filename);
 	uint32_t name_hash;
+	TDB_DATA key;
 
 	*err = 0;
 	fullpath = (char *)malloc(sharepath_size + filename_size + 2);
@@ -318,7 +318,9 @@ static uint32_t smb_name_hash(const char *sharepath, const char *filename, int *
 	fullpath[sharepath_size] = '/';
 	memcpy(&fullpath[sharepath_size + 1], filename, filename_size + 1);
 
-	name_hash = hash(fullpath, strlen(fullpath) + 1, 0);
+	key = (TDB_DATA) { .dptr = (uint8_t *)fullpath,
+			   .dsize = strlen(fullpath) + 1 };
+	name_hash = tdb_jenkins_hash(&key);
 	free(fullpath);
 	return name_hash;
 }

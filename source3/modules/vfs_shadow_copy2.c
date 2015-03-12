@@ -32,7 +32,6 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "include/ntioctl.h"
-#include <ccan/hash/hash.h>
 #include "util_tdb.h"
 
 struct shadow_copy2_config {
@@ -647,9 +646,11 @@ static void convert_sbuf(vfs_handle_struct *handle, const char *fname,
 		   number collision, but I can't see a better approach
 		   without significant VFS changes
 		*/
+		TDB_DATA key = { .dptr = discard_const_p(uint8_t, fname),
+				 .dsize = strlen(fname) };
 		uint32_t shash;
 
-		shash = hash(fname, strlen(fname), 0) & 0xFF000000;
+		shash = tdb_jenkins_hash(&key) & 0xFF000000;
 		if (shash == 0) {
 			shash = 1;
 		}
