@@ -116,7 +116,7 @@ bld.SAMBA_MODULE('dcerpc_backupkey',
 	autoproto='backupkey/proto.h',
 	subsystem='dcerpc_server',
 	init_function='dcerpc_server_backupkey_init',
-	deps='samdb DCERPC_COMMON NDR_BACKUPKEY RPC_NDR_BACKUPKEY krb5 hx509 hcrypto'
+	deps='samdb DCERPC_COMMON NDR_BACKUPKEY RPC_NDR_BACKUPKEY krb5 hx509 hcrypto gnutls gcrypt'
 	)
 
 
