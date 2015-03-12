@@ -281,6 +281,7 @@ class NCReplica(NamingContext):
 
         # Not RODC
         elif attr == "msDS-hasMasterNCs":
+            self.rep_present_criteria_one = True
             self.rep_ro = False
 
         # Now use this DSA attribute to identify the naming
