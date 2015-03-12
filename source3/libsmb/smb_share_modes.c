@@ -35,7 +35,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "smb_share_modes.h"
-#include "tdb_compat.h"
+#include <tdb.h>
 #include "librpc/gen_ndr/open_files.h"
 #include <ccan/hash/hash.h>
 

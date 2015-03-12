@@ -29,8 +29,8 @@
 #include "librpc/gen_ndr/ndr_drsuapi.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "param/param.h"
+#include <tdb.h>
 #include "lib/tdb_wrap/tdb_wrap.h"
-#include "lib/tdb_compat/tdb_compat.h"
 #include "dsdb/samdb/ldb_modules/util.h"
 
 #include "system/filesys.h"

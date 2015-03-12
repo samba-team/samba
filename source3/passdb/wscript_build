@@ -3,7 +3,7 @@
 bld.SAMBA3_MODULE('pdb_tdbsam',
                  subsystem='pdb',
                  source='pdb_tdb.c',
-                 deps='samba-util tdb_compat dbwrap tdb-wrap3',
+                 deps='samba-util dbwrap tdb-wrap3',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('pdb_tdbsam'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('pdb_tdbsam'))
@@ -43,6 +43,6 @@ bld.SAMBA3_MODULE('pdb_samba_dsdb',
 bld.SAMBA3_PYTHON('pypassdb',
                   source='py_passdb.c',
                   deps='pdb',
-                  public_deps='samba-util tdb_compat talloc pyrpc_util',
+                  public_deps='samba-util tdb talloc pyrpc_util',
                   realname='samba/samba3/passdb.so'
                   )

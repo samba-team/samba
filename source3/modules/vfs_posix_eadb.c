@@ -26,7 +26,7 @@
 #include "librpc/gen_ndr/xattr.h"
 #include "librpc/gen_ndr/ndr_xattr.h"
 #include "../librpc/gen_ndr/ndr_netlogon.h"
-#include "tdb_compat.h"
+#include <tdb.h>
 #include "lib/tdb_wrap/tdb_wrap.h"
 #include "ntvfs/posix/posix_eadb.h"
 #include "param/param.h"

@@ -74,7 +74,6 @@ flags = [
 '-Ilib/talloc',
 '-Ilib/tdb',
 '-Ilib/tdb/include',
-'-Ilib/tdb_compat',
 '-Ilib/tevent',
 '-Ilib/tsocket',
 '-Ilib/util/charset',
