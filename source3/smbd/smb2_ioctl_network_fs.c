@@ -25,7 +25,6 @@
 #include "../libcli/smb/smb_common.h"
 #include "../libcli/security/security.h"
 #include "../lib/util/tevent_ntstatus.h"
-#include "../lib/ccan/build_assert/build_assert.h"
 #include "include/ntioctl.h"
 #include "../librpc/ndr/libndr.h"
 #include "librpc/gen_ndr/ndr_ioctl.h"
