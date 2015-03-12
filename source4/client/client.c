@@ -1620,6 +1620,7 @@ fsinfo_level_t fsinfo_levels[] = {
 	{"quota-information", RAW_QFS_QUOTA_INFORMATION},
 	{"fullsize-information", RAW_QFS_FULL_SIZE_INFORMATION},
 	{"objectid", RAW_QFS_OBJECTID_INFORMATION},
+	{"sector-size-info", RAW_QFS_SECTOR_SIZE_INFORMATION},
 	{NULL, RAW_QFS_GENERIC}
 };
 
@@ -1762,6 +1763,22 @@ static int cmd_fsinfo(struct smbclient_context *ctx, const char **args)
 			 (unsigned long long) fsinfo.objectid_information.out.unknown[3],
 			 (unsigned long long) fsinfo.objectid_information.out.unknown[4],
 			 (unsigned long long) fsinfo.objectid_information.out.unknown[5] );
+		break;
+	case RAW_QFS_SECTOR_SIZE_INFORMATION:
+		d_printf("\tlogical_bytes_per_sector:			%u\n",
+			 (unsigned)fsinfo.sector_size_info.out.logical_bytes_per_sector);
+		d_printf("\tphys_bytes_per_sector_atomic:		%u\n",
+			 (unsigned)fsinfo.sector_size_info.out.phys_bytes_per_sector_atomic);
+		d_printf("\tphys_bytes_per_sector_perf:			%u\n",
+			 (unsigned)fsinfo.sector_size_info.out.phys_bytes_per_sector_perf);
+		d_printf("\tfs_effective_phys_bytes_per_sector_atomic:	%u\n",
+			 (unsigned)fsinfo.sector_size_info.out.fs_effective_phys_bytes_per_sector_atomic);
+		d_printf("\tflags:					0x%x\n",
+			 (unsigned)fsinfo.sector_size_info.out.flags);
+		d_printf("\tbyte_off_sector_align:			%u\n",
+			 (unsigned)fsinfo.sector_size_info.out.byte_off_sector_align);
+		d_printf("\tbyte_off_partition_align:			%u\n",
+			 (unsigned)fsinfo.sector_size_info.out.byte_off_partition_align);
 		break;
 	case RAW_QFS_GENERIC:
 		d_printf("\twrong level returned\n");
