@@ -80,7 +80,7 @@ release_lib() {
 
 for lib in $*; do
     case $lib in
-	talloc | tdb | ntdb | tevent | ldb)
+	talloc | tdb | tevent | ldb)
 	    [ -z "$GPG_USER" ] && {
 	        GPG_USER='Samba Library Distribution Key <samba-bugs@samba.org>'
 	    }
