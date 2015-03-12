@@ -37,7 +37,6 @@ def set_options(opt):
     opt.RECURSE('lib/replace')
     opt.RECURSE('dynconfig')
     opt.RECURSE('lib/ldb')
-    opt.RECURSE('lib/ntdb')
     opt.RECURSE('selftest')
     opt.RECURSE('source4/lib/tls')
     opt.RECURSE('pidl')
@@ -153,7 +152,6 @@ def configure(conf):
     conf.RECURSE('source4/ntvfs/sysdep')
     conf.RECURSE('lib/util')
     conf.RECURSE('lib/ccan')
-    conf.RECURSE('lib/ntdb')
     conf.RECURSE('lib/util/charset')
     conf.RECURSE('source4/auth')
     conf.RECURSE('nsswitch')
@@ -262,7 +260,7 @@ def pydoctor(ctx):
     '''build python apidocs'''
     bp = os.path.abspath('bin/python')
     mpaths = {}
-    modules = ['talloc', 'tdb', 'ldb', 'ntdb']
+    modules = ['talloc', 'tdb', 'ldb']
     for m in modules:
         f = os.popen("PYTHONPATH=%s python -c 'import %s; print %s.__file__'" % (bp, m, m), 'r')
         try:
