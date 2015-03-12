@@ -139,7 +139,7 @@ static int schema_metadata_get_uint64(struct ldb_module *module,
 		} else {
 			talloc_free(tmp_ctx);
 			return ldb_module_error(module, LDB_ERR_OPERATIONS_ERROR,
-						tdb_errorstr_compat(tdb));
+						tdb_errorstr(tdb));
 		}
 	}
 
