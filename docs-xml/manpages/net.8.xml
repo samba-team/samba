@@ -1258,7 +1258,7 @@ against an NT4 Domain Controller.
 <refsect2>
 <title>RPC GETSID</title>
 
-<para>Fetch domain SID and store it in the local <filename>secrets.tdb</filename> (or <filename>secrets.ntdb</filename>). </para>
+<para>Fetch domain SID and store it in the local <filename>secrets.tdb</filename>. </para>
 
 </refsect2>
 
