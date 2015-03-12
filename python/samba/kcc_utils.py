@@ -2544,6 +2544,13 @@ def verify_graph_directed_double_ring(edges, vertices, edge_vertices):
         raise KCCGraphError("doesn't seem like a double ring to me!")
 
 
+def verify_graph_directed_double_ring_or_small(edges, vertices, edge_vertices):
+    if len(vertices) < 3:
+        return
+    return verify_graph_directed_double_ring(edges, vertices, edge_vertices)
+
+
+
 def verify_graph(title, edges, vertices=None, directed=False, properties=(), fatal=False,
                  debug=None):
     errors = []
