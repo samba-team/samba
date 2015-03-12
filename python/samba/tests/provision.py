@@ -57,7 +57,6 @@ class ProvisionTestCase(samba.tests.TestCaseInTempDir):
         path = os.path.join(self.tempdir, "secrets.ldb")
         paths = ProvisionPaths()
         secrets_tdb_path = os.path.join(self.tempdir, "secrets.tdb")
-        secrets_ntdb_path = os.path.join(self.tempdir, "secrets.ntdb")
         paths.secrets = path
         paths.private_dir = os.path.dirname(path)
         paths.keytab = "no.keytab"
@@ -71,8 +70,6 @@ class ProvisionTestCase(samba.tests.TestCaseInTempDir):
             os.unlink(path)
             if os.path.exists(secrets_tdb_path):
                 os.unlink(secrets_tdb_path)
-            if os.path.exists(secrets_ntdb_path):
-                os.unlink(secrets_ntdb_path)
 
 class FindNssTests(TestCase):
     """Test findnss() function."""
