@@ -151,7 +151,6 @@ def configure(conf):
     conf.RECURSE('source4/lib/tls')
     conf.RECURSE('source4/ntvfs/sysdep')
     conf.RECURSE('lib/util')
-    conf.RECURSE('lib/ccan')
     conf.RECURSE('lib/util/charset')
     conf.RECURSE('source4/auth')
     conf.RECURSE('nsswitch')
