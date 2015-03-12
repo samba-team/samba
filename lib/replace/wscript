@@ -53,7 +53,7 @@ def configure(conf):
     conf.CHECK_HEADERS('sys/uio.h ifaddrs.h direct.h dirent.h')
     conf.CHECK_HEADERS('windows.h winsock2.h ws2tcpip.h')
     conf.CHECK_HEADERS('errno.h')
-    conf.CHECK_HEADERS('gcrypt.h getopt.h iconv.h')
+    conf.CHECK_HEADERS('getopt.h iconv.h')
     conf.CHECK_HEADERS('memory.h nss.h sasl/sasl.h')
 
     conf.CHECK_FUNCS_IN('inotify_init', 'inotify', checklibc=True,
