@@ -1601,7 +1601,10 @@ static krb5_error_code samba_kdc_lookup_server(krb5_context context,
 
 		/* TODO: Check if it is our realm, otherwise give referral */
 
-		ret = krb5_unparse_name_flags(context, principal,  KRB5_PRINCIPAL_UNPARSE_NO_REALM, &short_princ);
+		ret = krb5_unparse_name_flags(context, principal,
+					      KRB5_PRINCIPAL_UNPARSE_NO_REALM |
+					      KRB5_PRINCIPAL_UNPARSE_DISPLAY,
+					      &short_princ);
 
 		if (ret != 0) {
 			krb5_set_error_message(context, ret, "samba_kdc_lookup_principal: could not parse principal");
