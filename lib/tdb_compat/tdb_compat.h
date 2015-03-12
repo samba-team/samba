@@ -29,14 +29,6 @@
 #include <ccan/typesafe_cb/typesafe_cb.h>
 #include <tdb.h>
 
-#define tdb_firstkey_compat tdb_firstkey
-/* Note: this frees the old key.dptr. */
-static inline TDB_DATA tdb_nextkey_compat(struct tdb_context *tdb, TDB_DATA k)
-{
-	TDB_DATA next = tdb_nextkey(tdb, k);
-	free(k.dptr);
-	return next;
-}
 #define tdb_errorstr_compat(tdb) tdb_errorstr(tdb)
 #define tdb_fetch_compat tdb_fetch
 
