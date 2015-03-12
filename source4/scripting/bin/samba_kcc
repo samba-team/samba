@@ -2155,7 +2155,8 @@ class KCC(object):
                     dot_vertices.add(v2)
 
             verify_properties = ('connected', 'directed_double_ring')
-            verify_and_dot('intrasite_pre_ntdscon', dot_edges, dot_vertices, label=site_local.site_dnstr,
+            verify_and_dot('intrasite_pre_ntdscon', dot_edges, dot_vertices,
+                           label='%s__%s__%s' % (site_local.site_dnstr, nc_x.nc_type, nc_x.nc_dnstr),
                            properties=verify_properties, debug=DEBUG, verify=opts.verify,
                            dot_files=opts.dot_files, directed=True)
 
@@ -2230,7 +2231,8 @@ class KCC(object):
                     dot_vertices.add(v2)
 
             verify_properties = ('complete', 'connected', 'multi_edge_forest', 'forest', 'directed_double_ring')
-            verify_and_dot('intrasite_post_ntdscon', dot_edges, dot_vertices, label=site_local.site_dnstr,
+            verify_and_dot('intrasite_post_ntdscon', dot_edges, dot_vertices,
+                           label='%s__%s__%s' % (site_local.site_dnstr, nc_x.nc_type, nc_x.nc_dnstr),
                            properties=verify_properties, debug=DEBUG, verify=opts.verify,
                            dot_files=opts.dot_files)
 
