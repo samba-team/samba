@@ -3583,6 +3583,34 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			break;
 		}
 
+		case SMB_FS_SECTOR_SIZE_INFORMATION:
+		{
+			data_len = 28;
+			/*
+			 * These values match a physical Windows Server 2012
+			 * share backed by NTFS atop spinning rust.
+			 */
+			DEBUG(5, ("SMB_FS_SECTOR_SIZE_INFORMATION:"));
+			/* logical_bytes_per_sector */
+			SIVAL(pdata, 0, bytes_per_sector);
+			/* phys_bytes_per_sector_atomic */
+			SIVAL(pdata, 4, bytes_per_sector);
+			/* phys_bytes_per_sector_perf */
+			SIVAL(pdata, 8, bytes_per_sector);
+			/* fs_effective_phys_bytes_per_sector_atomic */
+			SIVAL(pdata, 12, bytes_per_sector);
+			/* flags */
+			SIVAL(pdata, 16, SSINFO_FLAGS_ALIGNED_DEVICE
+				| SSINFO_FLAGS_PARTITION_ALIGNED_ON_DEVICE);
+			/* byte_off_sector_align */
+			SIVAL(pdata, 20, 0);
+			/* byte_off_partition_align */
+			SIVAL(pdata, 24, 0);
+			*fixed_portion = 28;
+			break;
+		}
+
+
 		/*
 		 * Query the version and capabilities of the CIFS UNIX extensions
 		 * in use.
