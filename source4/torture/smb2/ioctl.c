@@ -4645,6 +4645,144 @@ static bool test_ioctl_sparse_qar_overflow(struct torture_context *torture,
 	return true;
 }
 
+static NTSTATUS test_ioctl_trim_supported(struct torture_context *torture,
+					  struct smb2_tree *tree,
+					  TALLOC_CTX *mem_ctx,
+					  struct smb2_handle *fh,
+					  bool *trim_support)
+{
+	NTSTATUS status;
+	union smb_fsinfo info;
+
+	ZERO_STRUCT(info);
+	info.generic.level = RAW_QFS_SECTOR_SIZE_INFORMATION;
+	info.generic.handle = *fh;
+	status = smb2_getinfo_fs(tree, tree, &info);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_INFO_CLASS)) {
+		/*
+		 * Windows < Server 2012, 8 etc. don't support this info level
+		 * or the trim ioctl. Ignore the error and let the caller skip.
+		 */
+		*trim_support = false;
+		return NT_STATUS_OK;
+	} else if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	torture_comment(torture, "sector size info: lb/s=%u, pb/sA=%u, "
+			"pb/sP=%u, fse/sA=%u, flags=0x%x, bosa=%u, bopa=%u\n",
+	    (unsigned)info.sector_size_info.out.logical_bytes_per_sector,
+	    (unsigned)info.sector_size_info.out.phys_bytes_per_sector_atomic,
+	    (unsigned)info.sector_size_info.out.phys_bytes_per_sector_perf,
+  (unsigned)info.sector_size_info.out.fs_effective_phys_bytes_per_sector_atomic,
+	    (unsigned)info.sector_size_info.out.flags,
+	    (unsigned)info.sector_size_info.out.byte_off_sector_align,
+	    (unsigned)info.sector_size_info.out.byte_off_partition_align);
+
+	if (info.sector_size_info.out.flags & QFS_SSINFO_FLAGS_TRIM_ENABLED) {
+		*trim_support = true;
+	} else {
+		*trim_support = false;
+	}
+	return NT_STATUS_OK;
+}
+
+static bool test_setup_trim(struct torture_context *torture,
+			    struct smb2_tree *tree,
+			    TALLOC_CTX *mem_ctx,
+			    uint32_t num_ranges,
+			    struct smb2_handle *fh,
+			    uint64_t file_size,
+			    uint32_t desired_access,
+			    struct fsctl_file_level_trim_req *trim_req,
+			    union smb_ioctl *ioctl)
+{
+	bool ok;
+
+	ok = test_setup_create_fill(torture, tree, mem_ctx, FNAME,
+				    fh, file_size, desired_access,
+				    FILE_ATTRIBUTE_NORMAL);
+	torture_assert(torture, ok, "src file create fill");
+
+	ZERO_STRUCTPN(ioctl);
+	ioctl->smb2.level = RAW_IOCTL_SMB2;
+	ioctl->smb2.in.file.handle = *fh;
+	ioctl->smb2.in.function = FSCTL_FILE_LEVEL_TRIM;
+	ioctl->smb2.in.max_response_size
+				= sizeof(struct fsctl_file_level_trim_rsp);
+	ioctl->smb2.in.flags = SMB2_IOCTL_FLAG_IS_FSCTL;
+
+	ZERO_STRUCTPN(trim_req);
+	/* leave key as zero for now. TODO test locking with differing keys */
+	trim_req->num_ranges = num_ranges;
+	trim_req->ranges = talloc_zero_array(mem_ctx,
+					     struct file_level_trim_range,
+					     num_ranges);
+	torture_assert(torture, (trim_req->ranges != NULL), "no memory for ranges");
+
+	return true;
+}
+
+static bool test_ioctl_trim_simple(struct torture_context *torture,
+				   struct smb2_tree *tree)
+{
+	struct smb2_handle fh;
+	NTSTATUS status;
+	union smb_ioctl ioctl;
+	bool trim_supported;
+	TALLOC_CTX *tmp_ctx = talloc_new(tree);
+	struct fsctl_file_level_trim_req trim_req;
+	struct fsctl_file_level_trim_rsp trim_rsp;
+	uint64_t trim_chunk_len = 64 * 1024;	/* trim 64K chunks */
+	enum ndr_err_code ndr_ret;
+	bool ok;
+
+	ok = test_setup_trim(torture, tree, tmp_ctx,
+			     1, /* 1 range */
+			     &fh, 2 * trim_chunk_len, /* fill 128K file */
+			     SEC_RIGHTS_FILE_ALL,
+			     &trim_req,
+			     &ioctl);
+	if (!ok) {
+		torture_fail(torture, "setup trim error");
+	}
+
+	status = test_ioctl_trim_supported(torture, tree, tmp_ctx, &fh,
+					   &trim_supported);
+	torture_assert_ntstatus_ok(torture, status, "fsinfo");
+	if (!trim_supported) {
+		smb2_util_close(tree, fh);
+		talloc_free(tmp_ctx);
+		torture_skip(torture, "trim not supported\n");
+	}
+
+	/* trim first chunk, leave second */
+	trim_req.ranges[0].off = 0;
+	trim_req.ranges[0].len = trim_chunk_len;
+
+	ndr_ret = ndr_push_struct_blob(&ioctl.smb2.in.out, tmp_ctx, &trim_req,
+		       (ndr_push_flags_fn_t)ndr_push_fsctl_file_level_trim_req);
+	torture_assert_ndr_success(torture, ndr_ret,
+				   "ndr_push_fsctl_file_level_trim_req");
+
+	status = smb2_ioctl(tree, tmp_ctx, &ioctl.smb2);
+	torture_assert_ntstatus_ok(torture, status, "FILE_LEVEL_TRIM_RANGE");
+
+	ndr_ret = ndr_pull_struct_blob(&ioctl.smb2.out.out, tmp_ctx,
+				       &trim_rsp,
+		       (ndr_pull_flags_fn_t)ndr_pull_fsctl_file_level_trim_rsp);
+	torture_assert_ndr_success(torture, ndr_ret,
+				   "ndr_pull_fsctl_file_level_trim_rsp");
+
+	torture_assert_int_equal(torture, trim_rsp.num_ranges_processed, 1, "");
+
+	/* second half of the file should remain consitent */
+	ok = check_pattern(torture, tree, tmp_ctx, fh, trim_chunk_len,
+			   trim_chunk_len, trim_chunk_len);
+	torture_assert(torture, ok, "non-trimmed range inconsistent");
+
+	return true;
+}
 
 /*
  * basic testing of SMB2 ioctls
@@ -4747,6 +4885,8 @@ struct torture_suite *torture_smb2_ioctl_init(void)
 				     test_ioctl_sparse_qar_multi);
 	torture_suite_add_1smb2_test(suite, "sparse_qar_overflow",
 				     test_ioctl_sparse_qar_overflow);
+	torture_suite_add_1smb2_test(suite, "trim_simple",
+				     test_ioctl_trim_simple);
 
 	suite->description = talloc_strdup(suite, "SMB2-IOCTL tests");
 
