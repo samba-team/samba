@@ -258,7 +258,7 @@ static int net_printing_dump(struct net_context *c, int argc,
 	     kbuf.dptr;
 	     newkey = tdb_nextkey(tdb, kbuf), free(kbuf.dptr), kbuf=newkey)
 	{
-		dbuf = tdb_fetch_compat(tdb, kbuf);
+		dbuf = tdb_fetch(tdb, kbuf);
 		if (!dbuf.dptr) {
 			continue;
 		}
@@ -351,7 +351,7 @@ static NTSTATUS printing_migrate_internal(struct net_context *c,
 	     kbuf.dptr;
 	     newkey = tdb_nextkey(tdb, kbuf), free(kbuf.dptr), kbuf = newkey)
 	{
-		dbuf = tdb_fetch_compat(tdb, kbuf);
+		dbuf = tdb_fetch(tdb, kbuf);
 		if (!dbuf.dptr) {
 			continue;
 		}
@@ -394,7 +394,7 @@ static NTSTATUS printing_migrate_internal(struct net_context *c,
 	     kbuf.dptr;
 	     newkey = tdb_nextkey(tdb, kbuf), free(kbuf.dptr), kbuf = newkey)
 	{
-		dbuf = tdb_fetch_compat(tdb, kbuf);
+		dbuf = tdb_fetch(tdb, kbuf);
 		if (!dbuf.dptr) {
 			continue;
 		}

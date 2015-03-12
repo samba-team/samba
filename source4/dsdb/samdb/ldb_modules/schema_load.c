@@ -130,7 +130,7 @@ static int schema_metadata_get_uint64(struct ldb_module *module,
 	tdb_key.dptr = (uint8_t *)discard_const_p(char, key);
 	tdb_key.dsize = strlen(key);
 
-	tdb_data = tdb_fetch_compat(tdb, tdb_key);
+	tdb_data = tdb_fetch(tdb, tdb_key);
 	if (!tdb_data.dptr) {
 		if (tdb_error(tdb) == TDB_ERR_NOEXIST) {
 			*value = default_value;

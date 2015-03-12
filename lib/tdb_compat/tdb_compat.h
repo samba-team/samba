@@ -29,6 +29,4 @@
 #include <ccan/typesafe_cb/typesafe_cb.h>
 #include <tdb.h>
 
-#define tdb_fetch_compat tdb_fetch
-
 #endif /* TDB_COMPAT_H */
