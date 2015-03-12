@@ -3208,6 +3208,7 @@ NTSTATUS smbd_do_qfsinfo(struct smbXsrv_connection *xconn,
 	int snum = SNUM(conn);
 	const char *fstype = lp_fstype(SNUM(conn));
 	const char *filename = NULL;
+	const uint64_t bytes_per_sector = 512;
 	uint32 additional_flags = 0;
 	struct smb_filename smb_fname;
 	SMB_STRUCT_STAT st;
@@ -3260,7 +3261,7 @@ NTSTATUS smbd_do_qfsinfo(struct smbXsrv_connection *xconn,
 	switch (info_level) {
 		case SMB_INFO_ALLOCATION:
 		{
-			uint64_t dfree,dsize,bsize,block_size,sectors_per_unit,bytes_per_sector;
+			uint64_t dfree,dsize,bsize,block_size,sectors_per_unit;
 			data_len = 18;
 			df_ret = get_dfree_info(conn, filename, &bsize, &dfree,
 						&dsize);
@@ -3281,7 +3282,6 @@ NTSTATUS smbd_do_qfsinfo(struct smbXsrv_connection *xconn,
 				dsize *= factor;
 				dfree *= factor;
 			}
-			bytes_per_sector = 512;
 			sectors_per_unit = bsize/bytes_per_sector;
 
 			DEBUG(5,("smbd_do_qfsinfo : SMB_INFO_ALLOCATION id=%x, bsize=%u, cSectorUnit=%u, \
@@ -3412,7 +3412,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)st.st_ex_dev, (u
 		case SMB_QUERY_FS_SIZE_INFO:
 		case SMB_FS_SIZE_INFORMATION:
 		{
-			uint64_t dfree,dsize,bsize,block_size,sectors_per_unit,bytes_per_sector;
+			uint64_t dfree,dsize,bsize,block_size,sectors_per_unit;
 			data_len = 24;
 			df_ret = get_dfree_info(conn, filename, &bsize, &dfree,
 						&dsize);
@@ -3432,7 +3432,6 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)st.st_ex_dev, (u
 				dsize *= factor;
 				dfree *= factor;
 			}
-			bytes_per_sector = 512;
 			sectors_per_unit = bsize/bytes_per_sector;
 			DEBUG(5,("smbd_do_qfsinfo : SMB_QUERY_FS_SIZE_INFO bsize=%u, cSectorUnit=%u, \
 cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned int)sectors_per_unit,
@@ -3447,7 +3446,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 
 		case SMB_FS_FULL_SIZE_INFORMATION:
 		{
-			uint64_t dfree,dsize,bsize,block_size,sectors_per_unit,bytes_per_sector;
+			uint64_t dfree,dsize,bsize,block_size,sectors_per_unit;
 			data_len = 32;
 			df_ret = get_dfree_info(conn, filename, &bsize, &dfree,
 						&dsize);
@@ -3467,7 +3466,6 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 				dsize *= factor;
 				dfree *= factor;
 			}
-			bytes_per_sector = 512;
 			sectors_per_unit = bsize/bytes_per_sector;
 			DEBUG(5,("smbd_do_qfsinfo : SMB_QUERY_FS_FULL_SIZE_INFO bsize=%u, cSectorUnit=%u, \
 cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned int)sectors_per_unit,
