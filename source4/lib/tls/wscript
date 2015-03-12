@@ -17,11 +17,18 @@ def configure(conf):
         conf.SET_TARGET_TYPE('gnutls', 'DISABLED')
         conf.SET_TARGET_TYPE('gcrypt', 'DISABLED')
         conf.SET_TARGET_TYPE('gpg-error', 'DISABLED')
+        if 'AD_DC_BUILD_IS_ENABLED' in conf.env:
+            conf.fatal("--disable-gnutls given: Building the AD DC requires GnuTLS (eg libgnutls-dev, gnutls-devel) for ldaps:// support and for the BackupKey protocol")
         return
 
-    conf.check_cfg(package='gnutls',
-                   args='"gnutls >= 1.4.0 gnutls != 2.2.4 gnutls != 2.8.0 gnutls != 2.8.1" --cflags --libs',
-                   msg='Checking for gnutls >= 1.4.0 and broken versions', mandatory=False)
+    if conf.check_cfg(package='gnutls',
+                      args='"gnutls >= 3.0.0" --cflags --libs',
+                      msg='Checking for gnutls >= 3.0.0s', mandatory=False):
+        conf.DEFINE('HAVE_GNUTLS3', 1)
+    else:
+        conf.check_cfg(package='gnutls',
+                       args='"gnutls >= 1.4.0 gnutls != 2.2.4 gnutls != 2.8.0 gnutls != 2.8.1" --cflags --libs',
+                       msg='Checking for gnutls >= 1.4.0 and broken versions', mandatory=False)
 
     if 'HAVE_GNUTLS' in conf.env:
         conf.DEFINE('ENABLE_GNUTLS', 1)
@@ -45,8 +52,13 @@ def configure(conf):
     conf.CHECK_TYPES('gnutls_datum gnutls_datum_t',
                      headers='gnutls/gnutls.h', lib='gnutls')
 
-    conf.CHECK_FUNCS_IN('gcry_control', 'gcrypt', headers='gcrypt.h')
-    conf.CHECK_FUNCS_IN('gpg_err_code_from_errno', 'gpg-error')
+    # GnuTLS3 moved to libnettle, so only do this in the < 3.0 case
+    if not 'HAVE_GNUTLS3' in conf.env:
+        conf.CHECK_FUNCS_IN('gcry_control', 'gcrypt', headers='gcrypt.h')
+        conf.CHECK_FUNCS_IN('gpg_err_code_from_errno', 'gpg-error')
+    else:
+        conf.SET_TARGET_TYPE('gcrypt', 'DISABLED')
+        conf.SET_TARGET_TYPE('gpg-error', 'DISABLED')
 
 
 def build(bld):
