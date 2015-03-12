@@ -43,7 +43,7 @@
 #include "lib/crypto/arcfour.h"
 #include <gnutls/gnutls.h>
 #include <gnutls/x509.h>
-#if HAVE_GCRYPT_H
+#if defined(HAVE_GCRYPT_H) && !defined(HAVE_GNUTLS3)
 #include <gcrypt.h>
 #endif
 
@@ -806,7 +806,7 @@ static WERROR create_heimdal_rsa_key(TALLOC_CTX *ctx, hx509_context *hctx,
 	*rsa = NULL;
 
 	gnutls_global_init();
-#ifdef HAVE_GCRYPT_H
+#if defined(HAVE_GCRYPT_H) && !defined(HAVE_GNUTLS3)
 	DEBUG(3,("Enabling QUICK mode in gcrypt\n"));
 	gcry_control(GCRYCTL_ENABLE_QUICK_RANDOM, 0);
 #endif
