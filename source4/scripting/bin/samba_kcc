@@ -1064,11 +1064,11 @@ class KCC(object):
         bhs = self.get_all_bridgeheads(site, part, transport,
                                        partial_ok, detect_failed)
         if len(bhs) == 0:
-            logger.debug("get_bridgehead: exit\n\tsitedn=%s\n\tbhdn=None" %
+            logger.debug("get_bridgehead:\n\tsitedn=%s\n\tbhdn=None" %
                          site.site_dnstr)
             return None
         else:
-            logger.debug("get_bridgehead: exit\n\tsitedn=%s\n\tbhdn=%s" %
+            logger.debug("get_bridgehead:\n\tsitedn=%s\n\tbhdn=%s" %
                          (site.site_dnstr, bhs[0].dsa_dnstr))
             return bhs[0]
 
