@@ -2778,7 +2778,7 @@ class KCC(object):
 # Global Functions
 ##################################################
 def sort_replica_by_dsa_guid(rep1, rep2):
-    return cmp(rep1.rep_dsa_guid, rep2.rep_dsa_guid)
+    return cmp(ndr_pack(rep1.rep_dsa_guid), ndr_pack(rep2.rep_dsa_guid))
 
 def sort_dsa_by_gc_and_guid(dsa1, dsa2):
     if dsa1.is_gc() and not dsa2.is_gc():
