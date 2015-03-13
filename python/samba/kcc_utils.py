@@ -1799,14 +1799,9 @@ class GraphNode(object):
             #
             #    c.options does not contain NTDSCONN_OPT_RODC_TOPOLOGY
             if connect and not connect.is_rodc_topology():
-                exists = True
-            else:
-                exists = False
-
+                continue
             # if no such object exists then the KCC adds an object
             # c with the following attributes
-            if exists:
-                return
 
             # Generate a new dnstr for this nTDSConnection
             opt = dsdb.NTDSCONN_OPT_IS_GENERATED
