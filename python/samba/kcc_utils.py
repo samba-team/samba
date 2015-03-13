@@ -2159,6 +2159,13 @@ class SiteLink(object):
             return True
         return False
 
+class KCCFailedObject(object):
+    def __init__(self, uuid, failure_count, time_first_failure, last_result, dns_name):
+        self.uuid = uuid
+        self.failure_count = failure_count
+        self.time_first_failure = time_first_failure
+        self.last_result = last_result
+        self.dns_name = dns_name
 
 class VertexColor(object):
     (red, black, white, unknown) = range(0, 4)
@@ -2175,10 +2182,13 @@ class Vertex(object):
         self.edges = []
         self.accept_red_red = []
         self.accept_black = []
-        self.repl_info = None
-        self.root = None
+        self.repl_info = ReplInfo()
+        self.root = self
         self.guid = None
-        self.component_id = None
+        self.component_id = self
+        self.demoted = False
+        self.options = 0
+        self.interval = 0
 
     def color_vertex(self):
         """Color each vertex to indicate which kind of NC
@@ -2208,6 +2218,7 @@ class Vertex(object):
             else:
                 self.color = VertexColor.black
 
+
     def is_red(self):
         assert(self.color != VertexColor.unknown)
         return (self.color == VertexColor.red)
@@ -2224,10 +2235,11 @@ class Vertex(object):
 class IntersiteGraph(object):
     """Graph for representing the intersite"""
     def __init__(self):
-        self.vertices = []
-        self.edges = []
-        self.edge_set = []
-
+        self.vertices = set()
+        self.edges = set()
+        self.edge_set = set()
+        # All vertices that are endpoints of edges
+        self.connected_vertices = None
 
 class MultiEdgeSet(object):
     """Defines a multi edge set"""
@@ -2235,21 +2247,20 @@ class MultiEdgeSet(object):
         self.guid = 0 # objectGuid siteLinkBridge
         self.edges = []
 
-
 class MultiEdge(object):
     def __init__(self):
-        self.guid = 0 # objectGuid siteLink
+        self.site_link = None # object siteLink
         self.vertices = []
         self.con_type = None # interSiteTransport GUID
-        self.repl_info = None
-        self.directed = False
+        self.repl_info = ReplInfo()
+        self.directed = True
 
 class ReplInfo(object):
     def __init__(self):
         self.cost = 0
         self.interval = 0
         self.options = 0
-        self.schedule = 0
+        self.schedule = None
 
 class InternalEdge(object):
     def __init__(self, v1, v2, redred, repl, eType):
@@ -2274,6 +2285,7 @@ class InternalEdge(object):
     def __le__(self, other):
         return not other < self
 
+    # TODO compare options and interval
     def __lt__(self, other):
         if self.red_red != other.red_red:
             return self.red_red
@@ -2287,12 +2299,12 @@ class InternalEdge(object):
             return self_time > other_time
 
         if self.v1.guid != other.v1.guid:
-            return self.v1.guid < other.v1.guid #TODO string?
+            return self.v1.guid < other.v1.guid
 
         if self.v2.guid != other.v2.guid:
-            return self.v2.guid < other.v2.guid #TODO string?
+            return self.v2.guid < other.v2.guid
 
-        return self.con_type < other.con_type # TODO string?
+        return self.e_type < other.e_type
 
 
 ##################################################
@@ -2300,3 +2312,46 @@ class InternalEdge(object):
 ##################################################
 def sort_dsa_by_guid(dsa1, dsa2):
     return cmp(dsa1.dsa_guid, dsa2.dsa_guid)
+
+def total_schedule(schedule):
+    if schedule is None:
+        return 84 * 8 # 84 bytes = 84 * 8 bits
+
+    total = 0
+    for byte in schedule:
+        while byte != 0:
+            total += byte & 1
+            byte >>= 1
+    return total
+
+# Returns true if schedule intersect
+def combine_repl_info(info_a, info_b, info_c):
+    info_c.interval = max(info_a.interval, info_b.interval)
+    info_c.options = info_a.options & info_b.options
+
+    if info_a.schedule is None:
+        info_a.schedule = [0xFF] * 84
+    if info_b.schedule is None:
+        info_b.schedule = [0xFF] * 84
+
+    new_info = [0] * 84
+    i = 0
+    count = 0
+    while i < 84:
+        # Note that this operation is actually bitwise
+        new_info = info_a.schedule[i] & info_b.schedule[i]
+        if new_info != 0:
+            count += 1
+        i += 1
+
+    if count == 0:
+        return False
+
+        info_c.schedule = new_info
+
+    # Truncate to MAX_DWORD
+    info_c.cost = info_a.cost + info_b.cost
+    if info_c.cost > 2 ** 32 - 1:
+        info_c.cost = 2 ** 32 -1
+
+    return True

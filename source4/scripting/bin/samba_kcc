@@ -42,11 +42,15 @@ from samba import (
     Ldb,
     ldb,
     dsdb,
-    read_and_sub_file)
+    read_and_sub_file,
+    drs_utils,
+    nttime2unix)
 from samba.auth import system_session
 from samba.samdb import SamDB
 from samba.dcerpc import drsuapi
 from samba.kcc_utils import *
+
+import heapq
 
 class KCC(object):
     """The Knowledge Consistency Checker class.
@@ -64,6 +68,12 @@ class KCC(object):
         self.site_table = {}
         self.transport_table = {}
         self.sitelink_table = {}
+
+        # TODO: These should be backed by a 'permanent' store so that when
+        # calling DRSGetReplInfo with DS_REPL_INFO_KCC_DSA_CONNECT_FAILURES,
+        # the failure information can be returned
+        self.kcc_failed_links = {}
+        self.kcc_failed_connections = set()
 
         # Used in inter-site topology computation.  A list
         # of connections (by NTDSConnection object) that are
@@ -239,8 +249,51 @@ class KCC(object):
                            (dsadn, part.nc_dnstr, needed, ro, partial))
 
     def refresh_failed_links_connections(self):
-        # XXX - not implemented yet
-        pass
+        """Instead of NULL link with failure_count = 0, the tuple is simply removed"""
+
+        # LINKS: Refresh failed links
+        self.kcc_failed_links = {}
+        current, needed = self.my_dsa.get_rep_tables()
+        for replica in current.values():
+            # For every possible connection to replicate
+            for reps_from in replica.rep_repsFrom:
+                failure_count = reps_from.consecutive_sync_failures
+                if failure_count <= 0:
+                    continue
+
+                dsa_guid = str(reps_from.source_dsa_obj_guid)
+                time_first_failure = reps_from.last_success
+                last_result = reps_from.last_attempt
+                dns_name = reps_from.dns_name1
+
+                f = self.kcc_failed_links.get(dsa_guid)
+                if not f:
+                    f = KCCFailedObject(dsa_guid, failure_count,
+                                        time_first_failure, last_result,
+                                        dns_name)
+                    self.kcc_failed_links[dsa_guid] = f
+                #elif f.failure_count == 0:
+                #    f.failure_count = failure_count
+                #    f.time_first_failure = time_first_failure
+                #    f.last_result = last_result
+                else:
+                    f.failure_count = max(f.failure_count, failure_count)
+                    f.time_first_failure = min(f.time_first_failure, time_first_failure)
+                    f.last_result = last_result
+
+        # CONNECTIONS: Refresh failed connections
+        restore_connections = set()
+        for connection in self.kcc_failed_connections:
+            try:
+                drs_utils.drsuapi_connect(connection.dns_name, lp, creds)
+                # Failed connection is no longer failing
+                restore_connections.add(connection)
+            except drs_utils.drsException:
+                # Failed connection still failing
+                connection.failure_count += 1
+
+        # Remove the restored connections from the failed connections
+        self.kcc_failed_connections.difference_update(restore_connections)
 
     def is_stale_link_connection(self, target_dsa):
         """Returns False if no tuple z exists in the kCCFailedLinks or
@@ -248,11 +301,33 @@ class KCC(object):
         objectGUID of the target dsa, z.FailureCount > 0, and
         the current time - z.TimeFirstFailure > 2 hours.
         """
-        # XXX - not implemented yet
+        # Returns True if tuple z exists...
+        failed_link = self.kcc_failed_links.get(str(target_dsa.dsa_guid))
+        if failed_link:
+            # failure_count should be > 0, but check anyways
+            if failed_link.failure_count > 0:
+                unix_first_time_failure = nttime2unix(failed_link.time_first_failure)
+                # TODO guard against future
+                current_time = int(time.time())
+                if unix_first_time_failure > current_time:
+                    logger.error("The last success time attribute for \
+                                 repsFrom is in the future!")
+
+                # Perform calculation in seconds
+                if (current_time - unix_first_time_failure) > 60 * 60 * 2:
+                    return True
+
+        # TODO connections
+
         return False
 
+    # TODO: This should be backed by some form of local database
     def remove_unneeded_failed_links_connections(self):
-        # XXX - not implemented yet
+        # Remove all tuples in kcc_failed_links where failure count = 0
+        # In this implementation, this should never happen.
+
+        # Remove all connections which were not used this run or connections
+        # that became active during this run.
         pass
 
     def remove_unneeded_ntdsconn(self, all_connected):
@@ -365,11 +440,20 @@ class KCC(object):
                 if not cn_conn.is_generated():
                     continue
 
-                if self.keep_connection(cn_conn):
+                # TODO
+                # We are directly using this connection in intersite or
+                # we are using a connection which can supersede this one.
+                #
+                # MS-ADTS 6.2.2.4 - Removing Unnecessary Connections does not
+                # appear to be correct.
+                #
+                # 1. cn!fromServer and cn!parent appear inconsistent with no cn2
+                # 2. The repsFrom do not imply each other
+                #
+                if self.keep_connection(cn_conn): # and not_superceded:
                     continue
 
-                # XXX - To be implemented
-
+                # This is the result of create_intersite_connections
                 if not all_connected:
                     continue
 
@@ -914,9 +998,13 @@ class KCC(object):
         # MS-TECH Ref 6.2.2.3.2 Merge of kCCFailedLinks and kCCFailedLinks
         #     from Bridgeheads
 
+        # 1. Queries every bridgehead server in your site (other than yourself)
+        # 2. For every ntDSConnection that references a server in a different
+        #    site merge all the failure info
+        #
         # XXX - not implemented yet
 
-    def setup_graph(self):
+    def setup_graph(self, part):
         """Set up a GRAPH, populated with a VERTEX for each site
         object, a MULTIEDGE for each siteLink object, and a
         MUTLIEDGESET for each siteLinkBridge object (or implied
@@ -924,8 +1012,44 @@ class KCC(object):
 
         ::returns: a new graph
         """
-        # XXX - not implemented yet
-        return None
+        dn_to_vertex = {}
+        # Create graph
+        g = IntersiteGraph()
+        # Add vertices
+        for site_dn, site in self.site_table.items():
+            vertex = Vertex(site, part)
+            vertex.guid = site_dn
+            g.vertices.add(vertex)
+
+            if not dn_to_vertex.get(site_dn):
+                dn_to_vertex[site_dn] = []
+
+            dn_to_vertex[site_dn].append(vertex)
+
+        connected_vertices = set()
+        for transport_dn, transport in self.transport_table.items():
+            # Currently only ever "IP"
+            for site_link_dn, site_link in self.sitelink_table.items():
+                new_edge = create_edge(transport_dn, site_link, dn_to_vertex)
+                connected_vertices.update(new_edge.vertices)
+                g.edges.add(new_edge)
+
+            # If 'Bridge all site links' is enabled and Win2k3 bridges required is not set
+            # NTDSTRANSPORT_OPT_BRIDGES_REQUIRED 0x00000002
+            # No documentation for this however, ntdsapi.h appears to have listed:
+            # NTDSSETTINGS_OPT_W2K3_BRIDGES_REQUIRED = 0x00001000
+            if ((self.my_site.site_options & 0x00000002) == 0
+                and (self.my_site.site_options & 0x00001000) == 0):
+                g.edge_set.add(create_auto_edge_set(g, transport_dn))
+            else:
+                # TODO get all site link bridges
+                for site_link_bridge in []:
+                    g.edge_set.add(create_edge_set(g, transport_dn,
+                                                   site_link_bridge))
+
+        g.connected_vertices = connected_vertices
+
+        return g
 
     def get_bridgehead(self, site, part, transport, partial_ok, detect_failed):
         """Get a bridghead DC.
@@ -1033,6 +1157,9 @@ class KCC(object):
                     continue
 
                 msg = res[0]
+                if transport.address_attr not in msg:
+                    continue
+
                 nastr = str(msg[transport.address_attr][0])
 
             # IF BridgeheadDCFailed(dc!objectGUID, detectFailedDCs) = TRUE
@@ -1061,8 +1188,14 @@ class KCC(object):
         """Determine whether a given DC is known to be in a failed state
         ::returns: True if and only if the DC should be considered failed
         """
-        # XXX - not implemented yet
-        return False
+        # NTDSSETTINGS_OPT_IS_TOPL_DETECT_STALE_DISABLED = 0x00000008
+        # When DETECT_STALE_DISABLED, we can never know of if it's in a failed state
+        if self.my_site.site_options & 0x00000008:
+            return False
+        elif self.is_stale_link_connection(dsa):
+            return True
+
+        return detect_failed
 
     def create_connection(self, part, rbh, rsite, transport,
                           lbh, lsite, link_opt, link_sched,
@@ -1307,6 +1440,36 @@ class KCC(object):
             if not self.keep_connection(cn):
                 self.keep_connection_list.append(cn)
 
+    def add_transports(self, vertex, local_vertex, graph, detect_failed):
+        vertex.accept_red_red = []
+        vertex.accept_black = []
+        found_failed = False
+        for t_guid, transport in self.transport_table.items():
+            # FLAG_CR_NTDS_DOMAIN 0x00000002
+            if (local_vertex.is_red() and transport != "IP" and
+                vertex.part.system_flags & 0x00000002):
+                continue
+
+            if vertex in graph.connected_vertices:
+                continue
+
+            partial_replica_okay = vertex.is_black()
+
+            bh = self.get_bridgehead(local_vertex.site, vertex.part, transport,
+                                     partial_replica_okay, detect_failed)
+            if bh is None:
+                found_failed = True
+                continue
+
+            vertex.accept_red_red.append(t_guid) # TODO should be guid
+            vertex.accept_black.append(t_guid) # TODO should be guid
+
+            # Add additional transport to allow another run of Dijkstra
+            vertex.accept_red_red.append("EDGE_TYPE_ALL")
+            vertex.accept_black.append("EDGE_TYPE_ALL")
+
+        return found_failed
+
     def create_connections(self, graph, part, detect_failed):
         """Construct an NC replica graph for the NC identified by
         the given crossRef, then create any additional nTDSConnection
@@ -1339,13 +1502,23 @@ class KCC(object):
         #       creating a minimum cost spanning tree but instead
         #       producing a fully connected tree.  This should produce
         #       a full (albeit not optimal cost) replication topology.
+
         my_vertex = Vertex(self.my_site, part)
         my_vertex.color_vertex()
+
+        for v in graph.vertices:
+            v.color_vertex()
+            self.add_transports(v, my_vertex, graph, detect_failed)
 
         # No NC replicas for this NC in the site of the local DC,
         # so no nTDSConnection objects need be created
         if my_vertex.is_white():
             return all_connected, found_failed
+
+        edge_list, component_count = self.get_spanning_tree_edges(graph)
+
+        if component_count > 1:
+            all_connected = False
 
         # LET partialReplicaOkay be TRUE if and only if
         # localSiteVertex.Color = COLOR.BLACK
@@ -1363,7 +1536,14 @@ class KCC(object):
         if transport is None:
             raise Exception("Unable to find inter-site transport for IP")
 
-        for rsite in self.site_table.values():
+        for e in edge_list:
+            if e.directed and e.vertices[0].site is self.my_site: # more accurate comparison?
+                continue
+
+            if e.vertices[0].site is self.my_site:
+                rsite = e.vertices[1]
+            else:
+                rsite = e.vertices[0]
 
             # We don't make connections to our own site as that
             # is intrasite topology generator's job
@@ -1439,7 +1619,7 @@ class KCC(object):
             if part.is_foreign():
                 continue
 
-            graph = self.setup_graph()
+            graph = self.setup_graph(part)
 
             # Create nTDSConnection objects, routing replication traffic
             # around "failed" DCs.
@@ -1456,6 +1636,79 @@ class KCC(object):
                     self.create_connections(graph, part, False)
 
         return all_connected
+
+    def get_spanning_tree_edges(self, graph):
+        # Phase 1: Run Dijkstra's to get a list of internal edges, which are
+        # just the shortest-paths connecting colored vertices
+
+        internal_edges = set()
+
+        for e_set in graph.edge_set:
+            edgeType = None
+            for v in graph.vertices:
+                v.edges = []
+
+            # All con_type in an edge set is the same
+            for e in e_set.edges:
+                edgeType = e.con_type
+                for v in e.vertices:
+                    v.edges.append(e)
+
+            # Run dijkstra's algorithm with just the red vertices as seeds
+            # Seed from the full replicas
+            dijkstra(graph, edgeType, False)
+
+            # Process edge set
+            process_edge_set(graph, e_set, internal_edges)
+
+            # Run dijkstra's algorithm with red and black vertices as the seeds
+            # Seed from both full and partial replicas
+            dijkstra(graph, edgeType, True)
+
+            # Process edge set
+            process_edge_set(graph, e_set, internal_edges)
+
+        # All vertices have root/component as itself
+        setup_vertices(graph)
+        process_edge_set(graph, None, internal_edges)
+
+        # Phase 2: Run Kruskal's on the internal edges
+        output_edges, components = kruskal(graph, internal_edges)
+
+        # This recalculates the cost for the path connecting the closest red vertex
+        # Ignoring types is fine because NO suboptimal edge should exist in the graph
+        dijkstra(graph, "EDGE_TYPE_ALL", False) # TODO rename
+        # Phase 3: Process the output
+        for v in graph.vertices:
+            if v.is_red():
+                v.dist_to_red = 0
+            else:
+                v.dist_to_red = v.repl_info.cost
+
+        # count the components
+        return self.copy_output_edges(graph, output_edges), components
+
+    # This ensures only one-way connections for partial-replicas
+    def copy_output_edges(self, graph, output_edges):
+        edge_list = []
+        vid = self.my_site # object guid for the local dc's site
+
+        for edge in output_edges:
+            # Three-way edges are no problem here since these were created by
+            # add_out_edge which only has two endpoints
+            v = edge.vertices[0]
+            w = edge.vertices[1]
+            if v.site is vid or w.site is vid:
+                if (v.is_black() or w.is_black()) and not v.dist_to_red == 2 ** 32 - 1:
+                    edge.directed = True
+
+                    if w.dist_to_red < v.dist_to_red:
+                        edge.vertices[0] = w
+                        edge.vertices[1] = v
+
+                edge_list.append(edge)
+
+        return edge_list
 
     def intersite(self):
         """The head method for generating the inter-site KCC replica
@@ -2346,6 +2599,255 @@ def write_search_result(samdb, f, res):
     for msg in res:
         lstr = samdb.write_ldif(msg, ldb.CHANGETYPE_NONE)
         f.write("%s" % lstr)
+
+def create_edge(con_type, site_link, dn_to_vertex):
+    e = MultiEdge()
+    e.site_link = site_link
+    e.vertices = []
+    for site in site_link.site_list:
+        if site in dn_to_vertex:
+            e.vertices.extend(dn_to_vertex.get(site))
+    e.repl_info.cost = site_link.cost
+    e.repl_info.options = site_link.options
+    e.repl_info.interval = site_link.interval
+    e.repl_info.schedule = site_link.schedule
+    e.con_type = con_type
+    e.directed = False
+    return e
+
+def create_auto_edge_set(graph, transport):
+    e_set = MultiEdgeSet()
+    e_set.guid = None # TODO Null guid Not associated with a SiteLinkBridge object
+    for site_link in graph.edges:
+        if site_link.con_type == transport:
+            e_set.edges.append(site_link)
+
+    return e_set
+
+def create_edge_set(graph, transport, site_link_bridge):
+    # TODO not implemented - need to store all site link bridges
+    e_set = MultiEdgeSet()
+    # e_set.guid = site_link_bridge
+    return e_set
+
+def setup_vertices(graph):
+    for v in graph.vertices:
+        if v.is_white():
+            v.repl_info.cost = 2 ** 32 - 1
+            v.root = None
+            v.component_id = None
+        else:
+            v.repl_info.cost = 0
+            v.root = v
+            v.component_id = v
+
+        v.repl_info.interval = 0
+        v.repl_info.options = 0xFFFFFFFF
+        v.repl_info.schedule = None # TODO highly suspicious
+        v.demoted = False
+
+def dijkstra(graph, edge_type, include_black):
+    queue = []
+    setup_dijkstra(graph, edge_type, include_black, queue)
+    while len(queue) > 0:
+        cost, guid, vertex = heapq.heappop(queue)
+        for edge in vertex.edges:
+            for v in edge.vertices:
+                if v is not vertex:
+                    # add new path from vertex to v
+                    try_new_path(graph, queue, vertex, edge, v)
+
+def setup_dijkstra(graph, edge_type, include_black, queue):
+    setup_vertices(graph)
+    for vertex in graph.vertices:
+        if vertex.is_white():
+            continue
+
+        if ((vertex.is_black() and not include_black)
+            or edge_type not in vertex.accept_black
+            or edge_type not in vertex.accept_red_red):
+            vertex.repl_info.cost = 2 ** 32 - 1
+            vertex.root = None # NULL GUID
+            vertex.demoted = True # Demoted appears not to be used
+        else:
+            # TODO guid must be string?
+            heapq.heappush(queue, (vertex.replInfo.cost, vertex.guid, vertex))
+
+def try_new_path(graph, queue, vfrom, edge, vto):
+    newRI = ReplInfo()
+    # What this function checks is that there is a valid time frame for
+    # which replication can actually occur, despite being adequately
+    # connected
+    intersect = combine_repl_info(vfrom.repl_info, edge.repl_info, newRI)
+
+    # If the new path costs more than the current, then ignore the edge
+    if newRI.cost > vto.repl_info.cost:
+        return
+
+    if newRI.cost < vto.repl_info.cost and not intersect:
+        return
+
+    new_duration = total_schedule(newRI.schedule)
+    old_duration = total_schedule(vto.repl_info.schedule)
+
+    # Cheaper or longer schedule
+    if newRI.cost < vto.repl_info.cost or new_duration > old_duration:
+        vto.root = vfrom.root
+        vto.component_id = vfrom.component_id
+        vto.repl_info = newRI
+        heapq.heappush(queue, (vto.repl_info.cost, vto.guid, vto))
+
+def check_demote_vertex(vertex, edge_type):
+    if vertex.is_white():
+        return
+
+    # Accepts neither red-red nor black edges, demote
+    if edge_type not in vertex.accept_black and edge_type not in vertex.accept_red_red:
+        vertex.repl_info.cost = 2 ** 32 - 1
+        vertex.root = None
+        vertex.demoted = True # Demoted appears not to be used
+
+def undemote_vertex(vertex):
+    if vertex.is_white():
+        return
+
+    vertex.repl_info.cost = 0
+    vertex.root = vertex
+    vertex.demoted = False
+
+def process_edge_set(graph, e_set, internal_edges):
+    if e_set is None:
+        for edge in graph.edges:
+            for vertex in edge.vertices:
+                check_demote_vertex(vertex, edge.con_type)
+            process_edge(graph, edge, internal_edges)
+            for vertex in edge.vertices:
+                undemote_vertex(vertex)
+    else:
+        for edge in e_set.edges:
+            process_edge(graph, edge, internal_edges)
+
+def process_edge(graph, examine, internal_edges):
+    # Find the set of all vertices touches the edge to examine
+    vertices = []
+    for v in examine.vertices:
+        # Append a 4-tuple of color, repl cost, guid and vertex
+        vertices.append((v.color, v.repl_info.cost, v.guid, v))
+    # Sort by color, lower
+    vertices.sort()
+
+    color, cost, guid, bestv = vertices[0]
+    # Add to internal edges an edge from every colored vertex to bestV
+    for v in examine.vertices:
+        if v.component_id is None or v.root is None:
+            continue
+
+        # Only add edge if valid inter-tree edge - needs a root and
+        # different components
+        if (bestv.component_id is not None and bestv.root is not None
+            and v.component_id is not None and v.root is not None and
+            bestv.component_id != v.component_id):
+            add_int_edge(graph, internal_edges, examine, bestv, v)
+
+# Add internal edge, endpoints are roots of the vertices to pass in and are always colored
+def add_int_edge(graph, internal_edges, examine, v1, v2):
+    root1 = v1.root
+    root2 = v2.root
+
+    red_red = False
+    if root1.is_red() and root2.is_red():
+        red_red = True
+
+    if red_red:
+        if (examine.con_type not in root1.accept_red_red
+            or examine.con_type not in root2.accept_red_red):
+            return
+    else:
+        if (examine.con_type not in root1.accept_black
+            or examine.con_type not in root2.accept_black):
+            return
+
+    ri = ReplInfo()
+    ri2 = ReplInfo()
+
+    # Create the transitive replInfo for the two trees and this edge
+    if not combine_repl_info(v1.repl_info, v2.repl_info, ri):
+        return
+    # ri is now initialized
+    if not combine_repl_info(ri, examine.repl_info, ri2):
+        return
+
+    newIntEdge = InternalEdge(root1, root2, red_red, ri2, examine.con_type)
+    # Order by vertex guid
+    if newIntEdge.v1.guid > newIntEdge.v2.guid: # TODO compare guid (str)
+        newIntEdge.v1 = root2
+        newIntEdge.v2 = root1
+
+    internal_edges.add(newIntEdge)
+
+def kruskal(graph, edges):
+    for v in graph.vertices:
+        v.edges = []
+
+    components = set(graph.vertices)
+    edges = list(edges)
+
+    # Sorted based on internal comparison function of internal edge
+    edges.sort()
+
+    expected_num_tree_edges = 0 # TODO this value makes little sense
+
+    count_edges = 0
+    output_edges = []
+    index = 0
+    while index < len(edges): # TODO and num_components > 1
+        e = edges[index]
+        parent1 = find_component(e.v1)
+        parent2 = find_component(e.v2)
+        if parent1 is not parent2:
+            count_edges += 1
+            add_out_edge(graph, output_edges, e)
+            parent1.component = parent2
+            components.discard(parent1)
+
+        index += 1
+
+    return output_edges, len(components)
+
+def find_component(vertex):
+    if vertex.component is vertex:
+        return vertex
+
+    current = vertex
+    while current.component is not current:
+        current = current.component
+
+    root = current
+    current = vertex
+    while current.component is not root:
+        n = current.component
+        current.component = root
+        current = n
+
+    return root
+
+def add_out_edge(graph, output_edges, e):
+    v1 = e.v1
+    v2 = e.v2
+
+    # This multi-edge is a 'real' edge with no GUID
+    ee = MultiEdge()
+    ee.directed = False
+    ee.vertices.append(v1)
+    ee.vertices.append(v2)
+    ee.con_type = e.e_type
+    ee.repl_info = e.repl_info
+    output_edges.append(ee)
+
+    v1.edges.append(ee)
+    v2.edges.append(ee)
+
+
 
 ##################################################
 # samba_kcc entry point
