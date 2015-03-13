@@ -648,14 +648,14 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 					  gensec_security->gensec_role == GENSEC_CLIENT ? "client" : "server",
 					  gensec_gssapi_state->gss_exchange_count,
 					  gssapi_error_string(out_mem_ctx, maj_stat, min_stat, gensec_gssapi_state->gss_oid)));
-				return nt_status;
+				return NT_STATUS_LOGON_FAILURE;
 			}
 		} else {
 			DEBUG(1, ("GSS %s Update(%d) failed: %s\n",
 				  gensec_security->gensec_role == GENSEC_CLIENT ? "client" : "server",
 				  gensec_gssapi_state->gss_exchange_count,
 				  gssapi_error_string(out_mem_ctx, maj_stat, min_stat, gensec_gssapi_state->gss_oid)));
-			return nt_status;
+			return NT_STATUS_LOGON_FAILURE;
 		}
 		break;
 	}
