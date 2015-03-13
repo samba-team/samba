@@ -183,11 +183,13 @@ static struct ctdb_scripts_wire *ctdb_get_script_list(struct ctdb_context *ctdb,
 	scripts->num_scripts = count;
 
 	for (i = 0; i < count; i++) {
-		strcpy(scripts->scripts[i].name, namelist[i]->d_name);
-		scripts->scripts[i].status = 0;
+		struct ctdb_script_wire *s = &scripts->scripts[i];
+
+		strcpy(s->name, namelist[i]->d_name);
+		s->status = 0;
 		if (!check_executable(ctdb->event_script_dir,
 				      namelist[i]->d_name)) {
-			scripts->scripts[i].status = -errno;
+			s->status = -errno;
 		}
 	}
 
