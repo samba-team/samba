@@ -1438,8 +1438,11 @@ class KCC(object):
         vertex.accept_black = []
         found_failed = False
         for t_guid, transport in self.transport_table.items():
+            if transport.name != 'IP':
+                continue
+            logger.debug(t_guid)
             # FLAG_CR_NTDS_DOMAIN 0x00000002
-            if (local_vertex.is_red() and transport != "IP" and
+            if (vertex.is_red() and transport.name != "IP" and
                 vertex.part.system_flags & 0x00000002):
                 continue
 
@@ -1448,7 +1451,9 @@ class KCC(object):
 
             partial_replica_okay = vertex.is_black()
 
-            bh = self.get_bridgehead(local_vertex.site, vertex.part, transport,
+            # TODO WHY?????
+            # bh = self.get_bridgehead(local_vertex.site, vertex.part, transport,
+            bh = self.get_bridgehead(vertex.site, vertex.part, transport,
                                      partial_replica_okay, detect_failed)
             if bh is None:
                 found_failed = True
@@ -1501,7 +1506,8 @@ class KCC(object):
 
         for v in graph.vertices:
             v.color_vertex()
-            self.add_transports(v, my_vertex, graph, detect_failed)
+            if self.add_transports(v, my_vertex, graph, False):
+                found_failed = True
 
         # No NC replicas for this NC in the site of the local DC,
         # so no nTDSConnection objects need be created
@@ -1560,6 +1566,9 @@ class KCC(object):
                lsite = self.my_site
                lbh = self.get_bridgehead(lsite, part, transport,
                                            partial_ok, detect_failed)
+            # TODO
+            if lbh is None:
+                return False, True
 
             sitelink = e.site_link
             if sitelink is None:
