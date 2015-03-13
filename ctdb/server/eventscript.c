@@ -160,7 +160,7 @@ static struct ctdb_scripts_wire *ctdb_get_script_list(struct ctdb_context *ctdb,
 {
 	struct dirent **namelist;
 	struct ctdb_scripts_wire *scripts;
-	int count;
+	int i, count;
 
 	/* scan all directory entries and insert all valid scripts into the 
 	   tree
@@ -183,11 +183,12 @@ static struct ctdb_scripts_wire *ctdb_get_script_list(struct ctdb_context *ctdb,
 	}
 	scripts->num_scripts = count;
 
-	for (count = 0; count < scripts->num_scripts; count++) {
-		strcpy(scripts->scripts[count].name, namelist[count]->d_name);
-		scripts->scripts[count].status = 0;
-		if (!check_executable(ctdb->event_script_dir, namelist[count]->d_name)) {
-			scripts->scripts[count].status = -errno;
+	for (i = 0; i < count; i++) {
+		strcpy(scripts->scripts[i].name, namelist[i]->d_name);
+		scripts->scripts[i].status = 0;
+		if (!check_executable(ctdb->event_script_dir,
+				      namelist[i]->d_name)) {
+			scripts->scripts[i].status = -errno;
 		}
 	}
 
