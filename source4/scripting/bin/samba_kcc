@@ -2489,7 +2489,8 @@ class KCC(object):
                    self.samdb.get_config_basedn()
             res = self.samdb.search(sstr, scope=ldb.SCOPE_SUBTREE,
                                      attrs=attrs,
-                                     expression="(objectClass=siteLink)")
+                                     expression="(objectClass=siteLink)",
+                                     controls=['extended_dn:0'])
 
             # Write siteLink output
             write_search_result(self.samdb, f, res)
