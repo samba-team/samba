@@ -1,4 +1,4 @@
-/* 
+/*
    event script handling
 
    Copyright (C) Andrew Tridgell  2007
@@ -7,12 +7,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program; if not, see <http://www.gnu.org/licenses/>.
 */
@@ -38,7 +38,6 @@ struct event_script_callback {
 	void (*fn)(struct ctdb_context *, int, void *);
 	void *private_data;
 };
-	
 
 struct ctdb_event_script_state {
 	struct ctdb_context *ctdb;
@@ -48,7 +47,7 @@ struct ctdb_event_script_state {
 	enum ctdb_eventscript_call call;
 	const char *options;
 	struct timeval timeout;
-	
+
 	unsigned int current;
 	struct ctdb_scripts_wire *scripts;
 };
@@ -162,7 +161,7 @@ static struct ctdb_scripts_wire *ctdb_get_script_list(struct ctdb_context *ctdb,
 	struct ctdb_scripts_wire *scripts;
 	int count;
 
-	/* scan all directory entries and insert all valid scripts into the 
+	/* scan all directory entries and insert all valid scripts into the
 	   tree
 	*/
 	count = scandir(ctdb->event_script_dir, &namelist, script_filter, alphasort);
@@ -347,10 +346,10 @@ static int script_status(struct ctdb_scripts_wire *scripts)
 }
 
 /* called when child is finished */
-static void ctdb_event_script_handler(struct event_context *ev, struct fd_event *fde, 
+static void ctdb_event_script_handler(struct event_context *ev, struct fd_event *fde,
 				      uint16_t flags, void *p)
 {
-	struct ctdb_event_script_state *state = 
+	struct ctdb_event_script_state *state =
 		talloc_get_type(p, struct ctdb_event_script_state);
 	struct ctdb_script_wire *current = get_current_script(state);
 	struct ctdb_context *ctdb = state->ctdb;
@@ -508,7 +507,7 @@ static void ctdb_run_debug_hung_script(struct ctdb_context *ctdb, struct debug_h
 }
 
 /* called when child times out */
-static void ctdb_event_script_timeout(struct event_context *ev, struct timed_event *te, 
+static void ctdb_event_script_timeout(struct event_context *ev, struct timed_event *te,
 				      struct timeval t, void *p)
 {
 	struct ctdb_event_script_state *state = talloc_get_type(p, struct ctdb_event_script_state);
@@ -610,7 +609,7 @@ static int event_script_destructor(struct ctdb_event_script_state *state)
 			break;
 		}
 	}
-	
+
 	state->callback = NULL;
 
 	if (callback) {
@@ -670,7 +669,7 @@ static int remove_callback(struct event_script_callback *callback)
 }
 
 /*
-  run the event script in the background, calling the callback when 
+  run the event script in the background, calling the callback when
   finished
  */
 static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
@@ -807,10 +806,10 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 
 
 /*
-  run the event script in the background, calling the callback when 
+  run the event script in the background, calling the callback when
   finished.  If mem_ctx is freed, callback will never be called.
  */
-int ctdb_event_script_callback(struct ctdb_context *ctdb, 
+int ctdb_event_script_callback(struct ctdb_context *ctdb,
 			       TALLOC_CTX *mem_ctx,
 			       void (*callback)(struct ctdb_context *, int, void *),
 			       void *private_data,
@@ -895,10 +894,10 @@ struct eventscript_callback_state {
 /*
   called when a forced eventscript run has finished
  */
-static void run_eventscripts_callback(struct ctdb_context *ctdb, int status, 
+static void run_eventscripts_callback(struct ctdb_context *ctdb, int status,
 				 void *private_data)
 {
-	struct eventscript_callback_state *state = 
+	struct eventscript_callback_state *state =
 		talloc_get_type(private_data, struct eventscript_callback_state);
 
 	if (status != 0) {
@@ -964,7 +963,7 @@ int32_t ctdb_run_eventscripts(struct ctdb_context *ctdb,
 
 	DEBUG(DEBUG_NOTICE,("Running eventscripts with arguments %s\n", indata.dptr));
 
-	ret = ctdb_event_script_callback(ctdb, 
+	ret = ctdb_event_script_callback(ctdb,
 			 state, run_eventscripts_callback, state,
 			 call, "%s", options);
 
@@ -1007,7 +1006,7 @@ int32_t ctdb_control_enable_script(struct ctdb_context *ctdb, TDB_DATA indata)
 	}
 
 
-	if (stat(ctdb->event_script_dir, &st) != 0 && 
+	if (stat(ctdb->event_script_dir, &st) != 0 &&
 	    errno == ENOENT) {
 		DEBUG(DEBUG_CRIT,("No event script directory found at '%s'\n", ctdb->event_script_dir));
 		talloc_free(tmp_ctx);
@@ -1063,7 +1062,7 @@ int32_t ctdb_control_disable_script(struct ctdb_context *ctdb, TDB_DATA indata)
 	}
 
 
-	if (stat(ctdb->event_script_dir, &st) != 0 && 
+	if (stat(ctdb->event_script_dir, &st) != 0 &&
 	    errno == ENOENT) {
 		DEBUG(DEBUG_CRIT,("No event script directory found at '%s'\n", ctdb->event_script_dir));
 		talloc_free(tmp_ctx);
