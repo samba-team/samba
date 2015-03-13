@@ -1189,7 +1189,7 @@ class KCC(object):
         elif self.is_stale_link_connection(dsa):
             return True
 
-        return detect_failed
+        return detect_failed # TODO WHY?
 
     def create_connection(self, part, rbh, rsite, transport,
                           lbh, lsite, link_opt, link_sched,
