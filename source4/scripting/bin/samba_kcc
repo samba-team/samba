@@ -2190,7 +2190,7 @@ class KCC(object):
             # n+2 edges directed at a node we have to have at least three replicas
             # in |R| (i.e. if n is zero then at least replicas from two other graph
             # nodes may direct edges to us).
-            if r_len >= 3:
+            if r_len >= 3 and not tnode.has_sufficient_edges():
                 candidates = [x for x in graph_list if (x is not tnode and
                                                         x.dsa_dnstr not in tnode.edge_from)]
 
