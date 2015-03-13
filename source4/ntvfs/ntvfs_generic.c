@@ -664,6 +664,22 @@ static NTSTATUS ntvfs_map_fsinfo_finish(struct ntvfs_module_context *ntvfs,
 		ZERO_STRUCT(fs->objectid_information.out.unknown);
 		return NT_STATUS_OK;
 
+	case RAW_QFS_SECTOR_SIZE_INFORMATION:
+		fs->sector_size_info.out.logical_bytes_per_sector
+						= fs2->generic.out.block_size;
+		fs->sector_size_info.out.phys_bytes_per_sector_atomic
+						= fs2->generic.out.block_size;
+		fs->sector_size_info.out.phys_bytes_per_sector_perf
+						= fs2->generic.out.block_size;
+		fs->sector_size_info.out.fs_effective_phys_bytes_per_sector_atomic
+						= fs2->generic.out.block_size;
+		fs->sector_size_info.out.flags
+					= QFS_SSINFO_FLAGS_ALIGNED_DEVICE
+				| QFS_SSINFO_FLAGS_PARTITION_ALIGNED_ON_DEVICE;
+		fs->sector_size_info.out.byte_off_sector_align = 0;
+		fs->sector_size_info.out.byte_off_partition_align = 0;
+		return NT_STATUS_OK;
+
 	case RAW_QFS_GENERIC:
 	case RAW_QFS_UNIX_INFO:
 		return NT_STATUS_INVALID_LEVEL;

@@ -292,6 +292,26 @@ NTSTATUS smbsrv_push_passthru_fsinfo(TALLOC_CTX *mem_ctx,
 
 		return NT_STATUS_OK;
 	}
+
+	case RAW_QFS_SECTOR_SIZE_INFORMATION:
+		BLOB_CHECK(smbsrv_blob_grow_data(mem_ctx, blob, 28));
+		SIVAL(blob->data,  0,
+		      fsinfo->sector_size_info.out.logical_bytes_per_sector);
+		SIVAL(blob->data,  4,
+		     fsinfo->sector_size_info.out.phys_bytes_per_sector_atomic);
+		SIVAL(blob->data,  8,
+		      fsinfo->sector_size_info.out.phys_bytes_per_sector_perf);
+		SIVAL(blob->data, 12,
+		      fsinfo->sector_size_info.out.fs_effective_phys_bytes_per_sector_atomic);
+		SIVAL(blob->data, 16,
+		      fsinfo->sector_size_info.out.flags);
+		SIVAL(blob->data, 20,
+		      fsinfo->sector_size_info.out.byte_off_sector_align);
+		SIVAL(blob->data, 24,
+		      fsinfo->sector_size_info.out.byte_off_partition_align);
+
+		return NT_STATUS_OK;
+
 	default:
 		return NT_STATUS_INVALID_LEVEL;
 	}
