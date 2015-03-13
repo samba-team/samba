@@ -184,7 +184,12 @@ static struct ctdb_scripts_wire *ctdb_get_script_list(struct ctdb_context *ctdb,
 	for (i = 0; i < count; i++) {
 		struct ctdb_script_wire *s = &scripts->scripts[i];
 
-		strcpy(s->name, namelist[i]->d_name);
+		if (strlcpy(s->name, namelist[i]->d_name, sizeof(s->name)) >=
+		    sizeof(s->name)) {
+			s->status = -ENAMETOOLONG;
+			continue;
+		}
+
 		s->status = 0;
 		if (!check_executable(ctdb->event_script_dir,
 				      namelist[i]->d_name)) {
@@ -335,6 +340,7 @@ static int script_status(struct ctdb_scripts_wire *scripts)
 
 	for (i = 0; i < scripts->num_scripts; i++) {
 		switch (scripts->scripts[i].status) {
+		case -ENAMETOOLONG:
 		case -ENOENT:
 		case -ENOEXEC:
 			/* Disabled or missing; that's OK. */
