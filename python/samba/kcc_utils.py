@@ -2,6 +2,10 @@
 #
 # Copyright (C) Dave Craft 2011
 # Copyright (C) Jelmer Vernooij 2011
+# Copyright (C) Andrew Bartlett 2015
+#
+# Andrew Bartlett's alleged work performed by his underlings Douglas
+# Bagnall and Garming Sam.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -1773,6 +1777,7 @@ class GraphNode(object):
         """
         for dnstr, connect in dsa.connect_table.items():
             self.add_edge_from(connect.from_dnstr)
+
 
     def add_connections_from_edges(self, dsa):
         """For each edge directed to this graph node, ensure there
