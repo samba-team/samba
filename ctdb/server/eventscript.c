@@ -178,8 +178,7 @@ static struct ctdb_scripts_wire *ctdb_get_script_list(struct ctdb_context *ctdb,
 				   + sizeof(scripts->scripts[0]) * count);
 	if (scripts == NULL) {
 		DEBUG(DEBUG_ERR, (__location__ " Failed to allocate scripts\n"));
-		free(namelist);
-		return NULL;
+		goto done;
 	}
 	scripts->num_scripts = count;
 
@@ -192,6 +191,10 @@ static struct ctdb_scripts_wire *ctdb_get_script_list(struct ctdb_context *ctdb,
 		}
 	}
 
+done:
+	for (i=0; i<count; i++) {
+		free(namelist[i]);
+	}
 	free(namelist);
 	return scripts;
 }
