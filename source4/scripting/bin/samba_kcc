@@ -2808,7 +2808,7 @@ def kruskal(graph, edges):
     for v in graph.vertices:
         v.edges = []
 
-    components = set(graph.vertices)
+    components = set([x for x in graph.vertices if not x.is_white()])
     edges = list(edges)
 
     # Sorted based on internal comparison function of internal edge
