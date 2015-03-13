@@ -1095,6 +1095,7 @@ class KCC(object):
 
         logger.debug("get_all_bridgeheads: %s" % transport)
 
+        logger.debug(site.dsa_table)
         for key, dsa in site.dsa_table.items():
 
             pdnstr = dsa.get_parent_dnstr()
@@ -1516,6 +1517,7 @@ class KCC(object):
 
         edge_list, component_count = self.get_spanning_tree_edges(graph)
 
+        logger.debug("%s Number of components: %d" % (part.nc_dnstr, component_count))
         if component_count > 1:
             all_connected = False
 
