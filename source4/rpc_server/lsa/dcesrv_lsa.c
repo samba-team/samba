@@ -2148,7 +2148,7 @@ static NTSTATUS dcesrv_lsa_DeleteTrustedDomain(struct dcesrv_call_state *dce_cal
 				      struct lsa_DeleteTrustedDomain *r)
 {
 	NTSTATUS status;
-	struct lsa_OpenTrustedDomain opn;
+	struct lsa_OpenTrustedDomain opn = {{0},{0}};
 	struct lsa_DeleteObject del;
 	struct dcesrv_handle *h;
 
@@ -2294,7 +2294,7 @@ static NTSTATUS dcesrv_lsa_QueryTrustedDomainInfoBySid(struct dcesrv_call_state 
 						struct lsa_QueryTrustedDomainInfoBySid *r)
 {
 	NTSTATUS status;
-	struct lsa_OpenTrustedDomain opn;
+	struct lsa_OpenTrustedDomain opn = {{0},{0}};
 	struct lsa_QueryTrustedDomainInfo query;
 	struct dcesrv_handle *h;
 
@@ -2366,7 +2366,7 @@ static NTSTATUS dcesrv_lsa_QueryTrustedDomainInfoByName(struct dcesrv_call_state
 						 struct lsa_QueryTrustedDomainInfoByName *r)
 {
 	NTSTATUS status;
-	struct lsa_OpenTrustedDomainByName opn;
+	struct lsa_OpenTrustedDomainByName opn = {{0},{0}};
 	struct lsa_QueryTrustedDomainInfo query;
 	struct dcesrv_handle *h;
 
