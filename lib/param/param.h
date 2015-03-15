@@ -37,6 +37,8 @@ struct param_section {
 struct param_context;
 struct smbsrv_connection;
 
+typedef bool (*lpcfg_defaults_hook) (struct loadparm_context *);
+
 #define Auto (2)
 
 #include "libds/common/roles.h"
@@ -212,6 +214,19 @@ const char *lpcfg_socket_options(struct loadparm_context *);
 struct dcerpc_server_info *lpcfg_dcerpc_server_info(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx);
 struct gensec_settings *lpcfg_gensec_settings(TALLOC_CTX *, struct loadparm_context *);
 
+/* Hooks to override defaults.
+ *
+ * Every time a loadparm context is initialized, the hooks are
+ * called on it, once Samba itself has set defaults.
+ *
+ * This allows modules to tweak defaults (before any smb.conf file or registry
+ * is loaded). Usually they would do this by calling lpcfg_do_global_parameter
+ * or lpcfg_do_service_parameter.
+ *
+ * A good use case for this is OpenChange, which by default enables its
+ * DCE/RPC services when it is installed.
+ * */
+bool lpcfg_register_defaults_hook(const char *name, lpcfg_defaults_hook hook);
 
 /* The following definitions come from param/util.c  */
 
