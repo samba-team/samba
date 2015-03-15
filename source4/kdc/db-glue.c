@@ -965,6 +965,32 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 					supported_enctypes);
 	}
 
+	trust_direction_flags = ldb_msg_find_attr_as_int(msg, "trustDirection", 0);
+
+	if (direction == INBOUND) {
+		password_val = ldb_msg_find_ldb_val(msg, "trustAuthIncoming");
+
+	} else { /* OUTBOUND */
+		dnsdomain = ldb_msg_find_attr_as_string(msg, "trustPartner", NULL);
+		/* replace realm */
+		realm = strupper_talloc(mem_ctx, dnsdomain);
+		password_val = ldb_msg_find_ldb_val(msg, "trustAuthOutgoing");
+	}
+
+	if (!password_val || !(trust_direction_flags & direction)) {
+		krb5_clear_error_message(context);
+		ret = HDB_ERR_NOENTRY;
+		goto out;
+	}
+
+	ndr_err = ndr_pull_struct_blob(password_val, mem_ctx, &password_blob,
+				       (ndr_pull_flags_fn_t)ndr_pull_trustAuthInOutBlob);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		krb5_clear_error_message(context);
+		ret = EINVAL;
+		goto out;
+	}
+
 	p = talloc(mem_ctx, struct samba_kdc_entry);
 	if (!p) {
 		ret = ENOMEM;
@@ -1022,33 +1048,6 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 	}
 
 	entry_ex->entry.valid_start = NULL;
-
-	trust_direction_flags = ldb_msg_find_attr_as_int(msg, "trustDirection", 0);
-
-	if (direction == INBOUND) {
-		password_val = ldb_msg_find_ldb_val(msg, "trustAuthIncoming");
-
-	} else { /* OUTBOUND */
-		dnsdomain = ldb_msg_find_attr_as_string(msg, "trustPartner", NULL);
-		/* replace realm */
-		realm = strupper_talloc(mem_ctx, dnsdomain);
-		password_val = ldb_msg_find_ldb_val(msg, "trustAuthOutgoing");
-	}
-
-	if (!password_val || !(trust_direction_flags & direction)) {
-		krb5_clear_error_message(context);
-		ret = HDB_ERR_NOENTRY;
-		goto out;
-	}
-
-	ndr_err = ndr_pull_struct_blob(password_val, mem_ctx, &password_blob,
-					   (ndr_pull_flags_fn_t)ndr_pull_trustAuthInOutBlob);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		krb5_clear_error_message(context);
-		ret = EINVAL;
-		goto out;
-	}
-
 
 	/* we need to work out if we are going to use the current or
 	 * the previous password hash.
