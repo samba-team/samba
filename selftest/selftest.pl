@@ -428,7 +428,7 @@ $ENV{BINARY_MAPPING} = $opt_binary_mapping;
 # must terminate in this time, and testenv will only stay alive this
 # long
 
-my $server_maxtime = 7500;
+my $server_maxtime = 9000;
 if (defined($ENV{SMBD_MAXTIME}) and $ENV{SMBD_MAXTIME} ne "") {
     $server_maxtime = $ENV{SMBD_MAXTIME};
 }
