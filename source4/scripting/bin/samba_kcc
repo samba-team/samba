@@ -420,9 +420,10 @@ class KCC(object):
                     if s2_dnstr != s_dnstr:
                         continue
 
+                    #XXX GUID comparison
                     lesser = (cn_conn.whenCreated < cn2_conn.whenCreated or
                               (cn_conn.whenCreated == cn2_conn.whenCreated and
-                               cmp(cn_conn.guid, cn2_conn.guid) < 0))
+                               ndr_pack(cn_conn.guid) < ndr_pack(cn2_conn.guid)))
 
                     if lesser:
                         break
