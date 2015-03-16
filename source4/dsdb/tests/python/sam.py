@@ -2906,7 +2906,7 @@ class SamTests(samba.tests.TestCase):
         actual_names = set(user_obj.keys())
         # Samba does not use 'dSCorePropagationData', so skip it
         actual_names -= set(['dSCorePropagationData'])
-        self.assertEqual(set(expected_attrs.keys()), actual_names, "Actual object does not has expected attributes")
+        self.assertEqual(set(expected_attrs.keys()), actual_names, "Actual object does not have expected attributes")
         # check attribute values
         for name in expected_attrs.keys():
             actual_val = user_obj.get(name)
