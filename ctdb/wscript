@@ -333,7 +333,7 @@ def build(bld):
 
     bld.SAMBA_SUBSYSTEM('ctdb-util',
                         source=bld.SUBDIR('common',
-                                          '''db_hash.c'''),
+                                          '''db_hash.c srvid.c'''),
                         deps='replace talloc tevent tdb')
 
     bld.SAMBA_SUBSYSTEM('ctdb-client',
@@ -573,6 +573,7 @@ def build(bld):
     # Unit tests
     ctdb_unit_tests = [
         'db_hash_test',
+        'srvid_test',
     ]
 
     for target in ctdb_unit_tests:
