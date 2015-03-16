@@ -1049,6 +1049,7 @@ class KCC(object):
         for site_guid, site in self.site_table.items():
             vertex = Vertex(site, part)
             vertex.guid = site_guid
+            vertex.ndrpacked_guid = ndr_pack(site.site_guid)
             g.vertices.add(vertex)
 
             if not guid_to_vertex.get(site_guid):
@@ -3041,7 +3042,8 @@ def add_int_edge(graph, internal_edges, examine, v1, v2):
 
     newIntEdge = InternalEdge(root1, root2, red_red, ri2, examine.con_type)
     # Order by vertex guid
-    if newIntEdge.v1.guid > newIntEdge.v2.guid:
+    #XXX guid comparison using ndr_pack
+    if newIntEdge.v1.ndrpacked_guid > newIntEdge.v2.ndrpacked_guid:
         newIntEdge.v1 = root2
         newIntEdge.v2 = root1
 

@@ -2278,11 +2278,12 @@ class InternalEdge(object):
         if self_time != other_time:
             return self_time > other_time
 
+        #XXX guid comparison using ndr_pack
         if self.v1.guid != other.v1.guid:
-            return self.v1.guid < other.v1.guid
+            return self.v1.ndrpacked_guid < other.v1.ndrpacked_guid
 
         if self.v2.guid != other.v2.guid:
-            return self.v2.guid < other.v2.guid
+            return self.v2.ndrpacked_guid < other.v2.ndrpacked_guid
 
         return self.e_type < other.e_type
 
