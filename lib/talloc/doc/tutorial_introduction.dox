@@ -40,4 +40,6 @@ recursively frees all of its descendants as well.
 
 @subpage libtalloc_bestpractices
 
+@subpage libtalloc_threads
+
 */
