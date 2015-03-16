@@ -798,6 +798,7 @@ my @exported_envvars = (
 
 	# resolv_wrapper
 	"RESOLV_WRAPPER_CONF",
+	"RESOLV_WRAPPER_HOSTS",
 );
 
 sub sighandler($)
