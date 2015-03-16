@@ -20,7 +20,7 @@ import base64
 sys.path.insert(0, "bin/python")
 from samba.tests.subunitrun import TestProgram, SubunitOptions
 
-from subunit.run import SubunitTestRunner
+from samba.subunit.run import SubunitTestRunner
 from samba.auth import system_session
 from samba.samdb import SamDB
 from samba.dcerpc import samr, security, lsa
