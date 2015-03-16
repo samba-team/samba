@@ -1505,8 +1505,8 @@ static bool pdb_default_sid_to_id(struct pdb_methods *methods,
 	if (sid_peek_check_rid(get_global_sam_sid(), sid, &rid)) {
 		const char *name;
 		enum lsa_SidType type;
-		uid_t uid;
-		gid_t gid;
+		uid_t uid = (uid_t)-1;
+		gid_t gid = (gid_t)-1;
 		/* Here we might have users as well as groups and aliases */
 		ret = lookup_global_sam_rid(mem_ctx, rid, &name, &type, &uid, &gid);
 		if (ret) {
