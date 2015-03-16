@@ -83,7 +83,7 @@ class RestoredObjectAttributesBaseTestCase(samba.tests.TestCase):
         return self.search_dn(msg['dn'])
 
     def assertAttributesEqual(self, obj_orig, attrs_orig, obj_restored, attrs_rest):
-        self.assertEqual(attrs_orig, attrs_rest, "Actual object does not has expected attributes")
+        self.assertEqual(attrs_orig, attrs_rest, "Actual object does not have expected attributes")
         # remove volatile attributes, they can't be equal
         attrs_orig -= set(["uSNChanged", "dSCorePropagationData", "whenChanged"])
         for attr in attrs_orig:
@@ -115,7 +115,7 @@ class RestoredObjectAttributesBaseTestCase(samba.tests.TestCase):
         actual_names = set(obj_msg.keys())
         # Samba does not use 'dSCorePropagationData', so skip it
         actual_names -= set(['dSCorePropagationData'])
-        self.assertEqual(set(attr_expected.keys()), actual_names, "Actual object does not has expected attributes")
+        self.assertEqual(set(attr_expected.keys()), actual_names, "Actual object does not have expected attributes")
         for name in attr_expected.keys():
             expected_val = attr_expected[name]
             actual_val = obj_msg.get(name)
@@ -359,7 +359,7 @@ class RestoreUserObjectTestCase(RestoredObjectAttributesBaseTestCase):
         # windows restore more attributes that originally we have
         orig_attrs.update(['adminCount', 'operatorCount', 'lastKnownParent'])
         rest_attrs = set(obj_restore.keys())
-        self.assertEqual(orig_attrs, rest_attrs, "Actual object does not has expected attributes")
+        self.assertEqual(orig_attrs, rest_attrs, "Actual object does not have expected attributes")
         self.assertAttributesExists(self._expected_user_attributes(username, usr_dn, "Person"), obj_restore)
 
 
