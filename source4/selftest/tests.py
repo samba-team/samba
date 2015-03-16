@@ -298,7 +298,7 @@ for env in ["s3member", "s4member", "dc", "chgdcpass"]:
     plantestsuite("samba4.blackbox.smbclient(%s:local)" % env, "%s:local" % env, [os.path.join(samba4srcdir, "utils/tests/test_smbclient.sh"), '$SERVER', '$SERVER_IP', '$USERNAME', '$PASSWORD', '$DOMAIN', smbclient4])
 
 plantestsuite("samba4.blackbox.samba_tool(dc:local)", "dc:local", [os.path.join(samba4srcdir, "utils/tests/test_samba_tool.sh"), '$SERVER', '$SERVER_IP', '$USERNAME', '$PASSWORD', '$DOMAIN', smbclient4])
-plantestsuite("samba4.blackbox.pkinit(dc:local)", "dc:local", [os.path.join(bbdir, "test_pkinit.sh"), '$SERVER', '$USERNAME', '$PASSWORD', '$REALM', '$DOMAIN', '$PREFIX', "aes256-cts-hmac-sha1-96", smbclient4, configuration])
+plantestsuite("samba4.blackbox.pkinit(dc:local)", "dc:local", [os.path.join(bbdir, "test_pkinit.sh"), '$SERVER', '$USERNAME', '$PASSWORD', '$REALM', '$DOMAIN', '$PREFIX/dc', "aes256-cts-hmac-sha1-96", smbclient4, configuration])
 plantestsuite("samba4.blackbox.kinit(dc:local)", "dc:local", [os.path.join(bbdir, "test_kinit.sh"), '$SERVER', '$USERNAME', '$PASSWORD', '$REALM', '$DOMAIN', '$PREFIX', "aes256-cts-hmac-sha1-96", smbclient4, configuration])
 plantestsuite("samba4.blackbox.kinit(fl2000dc:local)", "fl2000dc:local", [os.path.join(bbdir, "test_kinit.sh"), '$SERVER', '$USERNAME', '$PASSWORD', '$REALM', '$DOMAIN', '$PREFIX', "arcfour-hmac-md5", smbclient4, configuration])
 plantestsuite("samba4.blackbox.kinit(fl2008r2dc:local)", "fl2008r2dc:local", [os.path.join(bbdir, "test_kinit.sh"), '$SERVER', '$USERNAME', '$PASSWORD', '$REALM', '$DOMAIN', '$PREFIX', "aes256-cts-hmac-sha1-96", smbclient4, configuration])
