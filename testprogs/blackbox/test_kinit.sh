@@ -80,7 +80,6 @@ rm -rf $KRB5CCNAME_PATH
 testit "reset password policies beside of minimum password age of 0 days" $VALGRIND $samba_tool domain passwordsettings $ADMIN_LDBMODIFY_CONFIG set --complexity=default --history-length=default --min-pwd-length=default --min-pwd-age=0 --max-pwd-age=default || failed=`expr $failed + 1`
 
 echo $PASSWORD > $PREFIX/tmppassfile
-#testit "kinit with keytab" $samba4kinit $enctype --keytab=$PREFIX/dc/private/secrets.keytab $SERVER\$@$REALM   || failed=`expr $failed + 1`
 testit "kinit with password" $samba4kinit $enctype --password-file=$PREFIX/tmppassfile --request-pac $USERNAME@$REALM   || failed=`expr $failed + 1`
 test_smbclient "Test login with user kerberos ccache" 'ls' -k yes || failed=`expr $failed + 1`
 
