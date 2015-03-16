@@ -21,7 +21,7 @@ if test -x $BINDIR/samba4kinit; then
 	samba4kinit=$BINDIR/samba4kinit
 fi
 
-CONFIG="--configfile=$PREFIX/dc/etc/smb.conf"
+CONFIG="--configfile=$PREFIX/etc/smb.conf"
 
 TESTUSER="ktpassUser"
 
