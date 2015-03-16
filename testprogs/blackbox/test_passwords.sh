@@ -70,7 +70,7 @@ do_kinit() {
 UID_WRAPPER_ROOT=1
 export UID_WRAPPER_ROOT
 
-CONFIG="--configfile=$PREFIX/dc/etc/smb.conf"
+CONFIG="--configfile=$PREFIX/etc/smb.conf"
 export CONFIG
 
 testit "reset password policies beside of minimum password age of 0 days" $VALGRIND $samba_tool domain passwordsettings $CONFIG set --complexity=default --history-length=default --min-pwd-length=default --min-pwd-age=0 --max-pwd-age=default || failed=`expr $failed + 1`
@@ -176,7 +176,7 @@ expect Retype new SMB password:
 send ${NEWUSERPASS}\n
 EOF
 
-testit "set user password with smbpasswd" $texpect ./tmpsmbpasswdscript $smbpasswd -L -c $PREFIX/dc/etc/smb.conf nettestuser || failed=`expr $failed + 1`
+testit "set user password with smbpasswd" $texpect ./tmpsmbpasswdscript $smbpasswd -L -c $PREFIX/etc/smb.conf nettestuser || failed=`expr $failed + 1`
 USERPASS=$NEWUSERPASS
 
 test_smbclient "Test login with user (ntlm)" 'ls' -k no -Unettestuser@$REALM%$NEWUSERPASS || failed=`expr $failed + 1`
@@ -226,7 +226,7 @@ expect Retype new SMB password:
 send ${NEWUSERPASS}\n
 EOF
 
-testit "change user password with smbpasswd (after must change flag set)" $texpect ./tmpsmbpasswdscript $smbpasswd -r $SERVER  -c $PREFIX/dc/etc/smb.conf -U nettestuser || failed=`expr $failed + 1`
+testit "change user password with smbpasswd (after must change flag set)" $texpect ./tmpsmbpasswdscript $smbpasswd -r $SERVER  -c $PREFIX/etc/smb.conf -U nettestuser || failed=`expr $failed + 1`
 
 USERPASS=$NEWUSERPASS
 
