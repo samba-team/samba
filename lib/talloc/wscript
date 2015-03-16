@@ -89,9 +89,13 @@ def build(bld):
                           public_headers=[],
                           enabled=bld.env.TALLOC_COMPAT1)
 
+        testsuite_deps = 'talloc'
+        if bld.CONFIG_SET('HAVE_PTHREAD'):
+            testsuite_deps += ' pthread'
+
         bld.SAMBA_BINARY('talloc_testsuite',
                          'testsuite_main.c testsuite.c',
-                         deps='talloc',
+                         testsuite_deps,
                          install=False)
 
     else:
