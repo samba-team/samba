@@ -2840,8 +2840,6 @@ dsServiceName: CN=NTDS Settings,%s
 # Global Functions
 ##################################################
 def sort_replica_by_dsa_guid(rep1, rep2):
-    DEBUG_GREEN((ndr_pack(rep1.rep_dsa_guid), ndr_pack(rep2.rep_dsa_guid),
-                 cmp(rep1.rep_dsa_guid, rep2.rep_dsa_guid), cmp(ndr_pack(rep1.rep_dsa_guid), ndr_pack(rep2.rep_dsa_guid))))
     return cmp(ndr_pack(rep1.rep_dsa_guid), ndr_pack(rep2.rep_dsa_guid))
 
 def sort_dsa_by_gc_and_guid(dsa1, dsa2):
@@ -2849,8 +2847,7 @@ def sort_dsa_by_gc_and_guid(dsa1, dsa2):
         return -1
     if not dsa1.is_gc() and dsa2.is_gc():
         return +1
-    DEBUG_CYAN((dsa1.dsa_guid, dsa2.dsa_guid, cmp(dsa1.dsa_guid, dsa2.dsa_guid)))
-    return cmp(dsa1.dsa_guid, dsa2.dsa_guid)
+    return cmp(ndr_pack(dsa1.dsa_guid), ndr_pack(dsa2.dsa_guid))
 
 def is_smtp_replication_available():
     """Currently always returns false because Samba

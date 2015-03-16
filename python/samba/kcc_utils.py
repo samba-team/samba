@@ -2304,7 +2304,8 @@ def get_dsa_config_rep(dsa):
 
 
 def sort_dsa_by_guid(dsa1, dsa2):
-    return cmp(dsa1.dsa_guid, dsa2.dsa_guid)
+    "use ndr_pack for GUID comparison, as appears correct in some places"""
+    return cmp(ndr_pack(dsa1.dsa_guid), ndr_pack(dsa2.dsa_guid))
 
 def total_schedule(schedule):
     if schedule is None:
