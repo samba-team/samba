@@ -2476,6 +2476,10 @@ def verify_graph_multi_edge_forest(edges, vertices, edge_vertices):
             return
 
 
+def verify_graph_forest_of_rings(edges, vertices, edge_vertices):
+    """The graph should consist of clusters of node connected in rings,
+    with the connections between the cdlusters forming a forest."""
+    pass
 
 
 def verify_graph_no_lonely_vertices(edges, vertices, edge_vertices):

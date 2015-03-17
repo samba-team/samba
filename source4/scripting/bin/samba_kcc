@@ -1707,8 +1707,6 @@ class KCC(object):
                                for a, b in itertools.chain(*(itertools.combinations(edge.vertices, 2)
                                                              for edge in e_set.edges))]
                 graph_nodes = [v.site.site_dnstr for v in graph.vertices]
-                verify_properties = ('complete', 'connected', 'multi_edge_forest', 'forest',
-                                     'directed_double_ring')
 
                 if opts.dot_files:
                     write_dot_file('edgeset_%s' % (edgeType,), graph_edges, vertices=graph_nodes,
@@ -1716,7 +1714,7 @@ class KCC(object):
 
                 if opts.verify:
                     verify_graph('spanning tree edge set %s' % edgeType, graph_edges, vertices=graph_nodes,
-                                 properties=verify_properties, debug=DEBUG)
+                                 properties=('complete', 'connected'), debug=DEBUG)
 
             # Run dijkstra's algorithm with just the red vertices as seeds
             # Seed from the full replicas
@@ -1739,8 +1737,7 @@ class KCC(object):
         if opts.verify or opts.dot_files:
             graph_edges = [(e.v1.site.site_dnstr, e.v2.site.site_dnstr) for e in internal_edges]
             graph_nodes = [v.site.site_dnstr for v in graph.vertices]
-            verify_properties = ('complete', 'connected', 'multi_edge_forest', 'forest',
-                                 'directed_double_ring')
+            verify_properties = ('multi_edge_forest',)
             verify_and_dot('prekruskal', graph_edges, graph_nodes, label=label,
                            properties=verify_properties, debug=DEBUG, verify=opts.verify,
                            dot_files=opts.dot_files)
@@ -2255,7 +2252,7 @@ class KCC(object):
                     dot_edges.append((v2, v1.dsa_dnstr))
                     dot_vertices.add(v2)
 
-            verify_properties = ('complete', 'connected', 'multi_edge_forest', 'forest', 'directed_double_ring')
+            verify_properties = ('connected', 'directed_double_ring')
             verify_and_dot('intrasite_post_ntdscon', dot_edges, dot_vertices,
                            label='%s__%s__%s' % (site_local.site_dnstr, nctype_lut[nc_x.nc_type], nc_x.nc_dnstr),
                            properties=verify_properties, debug=DEBUG, verify=opts.verify,
@@ -2456,7 +2453,7 @@ class KCC(object):
                     for dsa in site.dsa_table.values():
                         for con in dsa.connect_table.values():
                             dot_edges.append((dsa.dsa_dnstr, con.from_dnstr))
-                verify_properties = ('complete', 'connected', 'multi_edge_forest', 'forest', 'directed_double_ring')
+                verify_properties = ('connected', 'forest_of_rings')
                 verify_and_dot('dsa_final', dot_edges, label=self.my_dsa_dnstr,
                                properties=verify_properties, debug=DEBUG, verify=opts.verify,
                                dot_files=opts.dot_files, directed=True)
