@@ -2119,7 +2119,7 @@ static int check_password_restrictions(struct setup_password_fields_io *io)
 
 		/* checks the LM hash password history */
 		for (i = 0; i < io->o.lm_history_len; i++) {
-			ret = memcmp(io->n.nt_hash, io->o.lm_history[i].hash, 16);
+			ret = memcmp(io->n.lm_hash, io->o.lm_history[i].hash, 16);
 			if (ret == 0) {
 				ret = LDB_ERR_CONSTRAINT_VIOLATION;
 				ldb_asprintf_errstring(ldb,
