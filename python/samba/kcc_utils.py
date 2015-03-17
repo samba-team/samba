@@ -59,6 +59,8 @@ class KCCError(Exception):
 class NCType(object):
     (unknown, schema, domain, config, application) = range(0, 5)
 
+# map the NCType enum to strings for debugging
+nctype_lut = {v:k for k, v in NCType.__dict__.items() if k[:2] != '__'}
 
 class NamingContext(object):
     """Base class for a naming context.
@@ -88,7 +90,7 @@ class NamingContext(object):
         else:
             text = text + "\n\tnc_sid=<present>"
 
-        text = text + "\n\tnc_type=%s"  % self.nc_type
+        text = text + "\n\tnc_type=%s (%s)"  % (nctype_lut[self.nc_type], self.nc_type)
         return text
 
     def load_nc(self, samdb):
