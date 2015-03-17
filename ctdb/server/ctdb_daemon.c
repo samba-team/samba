@@ -1311,9 +1311,6 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 			DEBUG(DEBUG_ALERT,("Unable to setup public address list\n"));
 			exit(1);
 		}
-		if (ctdb->do_checkpublicip) {
-			ctdb_start_monitoring_interfaces(ctdb);
-		}
 	}
 
 	ctdb_initialise_vnn_map(ctdb);
