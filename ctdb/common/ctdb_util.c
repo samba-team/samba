@@ -23,6 +23,7 @@
 #include "system/filesys.h"
 #include "system/wait.h"
 #include "../include/ctdb_private.h"
+#include "common/reqid.h"
 
 /*
   return error string for last error
@@ -197,54 +198,6 @@ bool ctdb_same_address(ctdb_sock_addr *a1, ctdb_sock_addr *a2)
 uint32_t ctdb_hash(const TDB_DATA *key)
 {
 	return tdb_jenkins_hash(discard_const(key));
-}
-
-/*
-  a type checking varient of idr_find
- */
-static void *_idr_find_type(struct idr_context *idp, int id, const char *type, const char *location)
-{
-	void *p = idr_find(idp, id);
-	if (p && talloc_check_name(p, type) == NULL) {
-		DEBUG(DEBUG_ERR,("%s idr_find_type expected type %s  but got %s\n",
-			 location, type, talloc_get_name(p)));
-		return NULL;
-	}
-	return p;
-}
-
-uint32_t ctdb_reqid_new(struct ctdb_context *ctdb, void *state)
-{
-	int id = idr_get_new_above(ctdb->idr, state, ctdb->lastid+1, INT_MAX);
-	if (id < 0) {
-		DEBUG(DEBUG_DEBUG, ("Reqid wrap!\n"));
-		id = idr_get_new(ctdb->idr, state, INT_MAX);
-	}
-	ctdb->lastid = id;
-	return id;
-}
-
-void *_ctdb_reqid_find(struct ctdb_context *ctdb, uint32_t reqid, const char *type, const char *location)
-{
-	void *p;
-
-	p = _idr_find_type(ctdb->idr, reqid, type, location);
-	if (p == NULL) {
-		DEBUG(DEBUG_WARNING, ("Could not find idr:%u\n",reqid));
-	}
-
-	return p;
-}
-
-
-void ctdb_reqid_remove(struct ctdb_context *ctdb, uint32_t reqid)
-{
-	int ret;
-
-	ret = idr_remove(ctdb->idr, reqid);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, ("Removing idr that does not exist\n"));
-	}
 }
 
 

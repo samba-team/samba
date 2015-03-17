@@ -24,6 +24,7 @@
 #include "lib/tdb_wrap/tdb_wrap.h"
 #include "tdb.h"
 #include "../include/ctdb_private.h"
+#include "common/reqid.h"
 
 struct ctdb_persistent_state {
 	struct ctdb_context *ctdb;
@@ -174,7 +175,7 @@ int32_t ctdb_control_trans3_commit(struct ctdb_context *ctdb,
 		return -1;
 	}
 
-	client = ctdb_reqid_find(ctdb, c->client_id, struct ctdb_client);
+	client = reqid_find(ctdb->idr, c->client_id, struct ctdb_client);
 	if (client == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " can not match persistent_store "
 				 "to a client. Returning error\n"));
@@ -277,7 +278,7 @@ int32_t ctdb_control_start_persistent_update(struct ctdb_context *ctdb,
 				      struct ctdb_req_control *c,
 				      TDB_DATA recdata)
 {
-	struct ctdb_client *client = ctdb_reqid_find(ctdb, c->client_id, struct ctdb_client);
+	struct ctdb_client *client = reqid_find(ctdb->idr, c->client_id, struct ctdb_client);
 
 	if (client == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " can not match start_persistent_update to a client. Returning error\n"));
@@ -298,7 +299,7 @@ int32_t ctdb_control_cancel_persistent_update(struct ctdb_context *ctdb,
 					      struct ctdb_req_control *c,
 					      TDB_DATA recdata)
 {
-	struct ctdb_client *client = ctdb_reqid_find(ctdb, c->client_id, struct ctdb_client);
+	struct ctdb_client *client = reqid_find(ctdb->idr, c->client_id, struct ctdb_client);
 
 	if (client == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " can not match cancel_persistent_update to a client. Returning error\n"));

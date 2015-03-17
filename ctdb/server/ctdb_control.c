@@ -25,6 +25,7 @@
 #include "lib/util/dlinklist.h"
 #include "lib/tdb_wrap/tdb_wrap.h"
 #include "lib/util/talloc_report.h"
+#include "common/reqid.h"
 
 
 struct ctdb_control_state {
@@ -785,7 +786,7 @@ void ctdb_reply_control(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	struct ctdb_control_state *state;
 	const char *errormsg = NULL;
 
-	state = ctdb_reqid_find(ctdb, hdr->reqid, struct ctdb_control_state);
+	state = reqid_find(ctdb->idr, hdr->reqid, struct ctdb_control_state);
 	if (state == NULL) {
 		DEBUG(DEBUG_ERR,("pnn %u Invalid reqid %u in ctdb_reply_control\n",
 			 ctdb->pnn, hdr->reqid));
@@ -814,7 +815,7 @@ void ctdb_reply_control(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 
 static int ctdb_control_destructor(struct ctdb_control_state *state)
 {
-	ctdb_reqid_remove(state->ctdb, state->reqid);
+	reqid_remove(state->ctdb->idr, state->reqid);
 	return 0;
 }
 
@@ -881,7 +882,7 @@ int ctdb_daemon_send_control(struct ctdb_context *ctdb, uint32_t destnode,
 	state = talloc(private_data?private_data:ctdb, struct ctdb_control_state);
 	CTDB_NO_MEMORY(ctdb, state);
 
-	state->reqid = ctdb_reqid_new(ctdb, state);
+	state->reqid = reqid_new(ctdb->idr, state);
 	state->callback = callback;
 	state->private_data = private_data;
 	state->ctdb = ctdb;

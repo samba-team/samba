@@ -19,6 +19,7 @@
 #include "includes.h"
 #include "../include/ctdb_private.h"
 #include "../common/rb_tree.h"
+#include "common/reqid.h"
 
 
 #define SERVER_ID_KEY_SIZE 3
@@ -58,7 +59,7 @@ int32_t ctdb_control_register_server_id(struct ctdb_context *ctdb,
 				 TDB_DATA indata)
 {
 	struct ctdb_server_id *server_id;
-	struct ctdb_client *client = ctdb_reqid_find(ctdb, client_id, struct ctdb_client);
+	struct ctdb_client *client = reqid_find(ctdb->idr, client_id, struct ctdb_client);
 
 
 	if (client == NULL) {

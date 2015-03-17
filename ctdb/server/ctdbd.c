@@ -25,6 +25,7 @@
 #include "system/network.h"
 #include "cmdline.h"
 #include "../include/ctdb_private.h"
+#include "common/reqid.h"
 
 static struct {
 	const char *nlist;
@@ -185,8 +186,13 @@ int main(int argc, const char *argv[])
 	ctdb->recovery_mode    = CTDB_RECOVERY_NORMAL;
 	ctdb->recovery_master  = (uint32_t)-1;
 	ctdb->upcalls          = &ctdb_upcalls;
-	ctdb->idr              = idr_init(ctdb);
 	ctdb->recovery_lock_fd = -1;
+
+	ret = reqid_init(ctdb, 0, &ctdb->idr);;
+	if (ret != 0) {
+		DEBUG(DEBUG_ALERT, ("reqid_init failed (%s)\n", strerror(ret)));
+		exit(1);
+	}
 
 	ctdb_tunables_set_defaults(ctdb);
 

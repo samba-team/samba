@@ -27,6 +27,7 @@
 #include "system/filesys.h"
 #include "../include/ctdb_private.h"
 #include "../common/rb_tree.h"
+#include "common/reqid.h"
 
 struct ctdb_sticky_record {
 	struct ctdb_context *ctdb;
@@ -334,7 +335,7 @@ static void ctdb_become_dmaster(struct ctdb_db_context *ctdb_db,
 	header.dmaster = ctdb->pnn;
 	header.flags = record_flags;
 
-	state = ctdb_reqid_find(ctdb, hdr->reqid, struct ctdb_call_state);
+	state = reqid_find(ctdb->idr, hdr->reqid, struct ctdb_call_state);
 
 	if (state) {
 		if (state->call->flags & CTDB_CALL_FLAG_VACUUM_MIGRATION) {
@@ -1159,7 +1160,7 @@ void ctdb_reply_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	struct ctdb_reply_call *c = (struct ctdb_reply_call *)hdr;
 	struct ctdb_call_state *state;
 
-	state = ctdb_reqid_find(ctdb, hdr->reqid, struct ctdb_call_state);
+	state = reqid_find(ctdb->idr, hdr->reqid, struct ctdb_call_state);
 	if (state == NULL) {
 		DEBUG(DEBUG_ERR, (__location__ " reqid %u not found\n", hdr->reqid));
 		return;
@@ -1319,7 +1320,7 @@ void ctdb_reply_error(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	struct ctdb_reply_error *c = (struct ctdb_reply_error *)hdr;
 	struct ctdb_call_state *state;
 
-	state = ctdb_reqid_find(ctdb, hdr->reqid, struct ctdb_call_state);
+	state = reqid_find(ctdb->idr, hdr->reqid, struct ctdb_call_state);
 	if (state == NULL) {
 		DEBUG(DEBUG_ERR,("pnn %u Invalid reqid %u in ctdb_reply_error\n",
 			 ctdb->pnn, hdr->reqid));
@@ -1348,7 +1349,7 @@ void ctdb_reply_error(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 static int ctdb_call_destructor(struct ctdb_call_state *state)
 {
 	DLIST_REMOVE(state->ctdb_db->pending_calls, state);
-	ctdb_reqid_remove(state->ctdb_db->ctdb, state->reqid);
+	reqid_remove(state->ctdb_db->ctdb->idr, state->reqid);
 	return 0;
 }
 
@@ -1363,8 +1364,8 @@ static void ctdb_call_resend(struct ctdb_call_state *state)
 	state->generation = state->ctdb_db->generation;
 
 	/* use a new reqid, in case the old reply does eventually come in */
-	ctdb_reqid_remove(ctdb, state->reqid);
-	state->reqid = ctdb_reqid_new(ctdb, state);
+	reqid_remove(ctdb->idr, state->reqid);
+	state->reqid = reqid_new(ctdb->idr, state);
 	state->c->hdr.reqid = state->reqid;
 
 	/* update the generation count for this request, so its valid with the new vnn_map */
@@ -1473,7 +1474,7 @@ struct ctdb_call_state *ctdb_daemon_call_send_remote(struct ctdb_db_context *ctd
 	state->call = talloc(state, struct ctdb_call);
 	CTDB_NO_MEMORY_NULL(ctdb, state->call);
 
-	state->reqid = ctdb_reqid_new(ctdb, state);
+	state->reqid = reqid_new(ctdb->idr, state);
 	state->ctdb_db = ctdb_db;
 	talloc_set_destructor(state, ctdb_call_destructor);
 

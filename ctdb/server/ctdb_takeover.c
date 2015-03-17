@@ -26,6 +26,7 @@
 #include "system/wait.h"
 #include "../include/ctdb_private.h"
 #include "../common/rb_tree.h"
+#include "common/reqid.h"
 
 
 #define TAKEOVER_TIMEOUT() timeval_current_ofs(ctdb->tunable.takeover_timeout,0)
@@ -820,9 +821,9 @@ static void release_kill_clients(struct ctdb_context *ctdb, ctdb_sock_addr *addr
 			ctdb_addr_to_str(&ip->addr)));
 
 		if (ctdb_same_ip(&tmp_addr, addr)) {
-			struct ctdb_client *client = ctdb_reqid_find(ctdb, 
-								     ip->client_id, 
-								     struct ctdb_client);
+			struct ctdb_client *client = reqid_find(ctdb->idr,
+								ip->client_id,
+								struct ctdb_client);
 			DEBUG(DEBUG_INFO,("matched client %u with IP %s and pid %u\n", 
 				ip->client_id,
 				ctdb_addr_to_str(&ip->addr),
@@ -2799,7 +2800,7 @@ static int ctdb_client_ip_destructor(struct ctdb_client_ip *ip)
 int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id,
 				TDB_DATA indata)
 {
-	struct ctdb_client *client = ctdb_reqid_find(ctdb, client_id, struct ctdb_client);
+	struct ctdb_client *client = reqid_find(ctdb->idr, client_id, struct ctdb_client);
 	struct ctdb_control_tcp_addr *tcp_sock = NULL;
 	struct ctdb_tcp_list *tcp;
 	struct ctdb_tcp_connection t;

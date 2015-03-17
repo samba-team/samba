@@ -28,6 +28,7 @@
 #include "lib/tdb_wrap/tdb_wrap.h"
 #include "lib/util/dlinklist.h"
 #include <ctype.h>
+#include "common/reqid.h"
 
 #define PERSISTENT_HEALTH_TDB "persistent_health.tdb"
 
@@ -1096,7 +1097,7 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 	 * recovery daemons.
 	 */
 	if (client_id != 0) {
-		client = ctdb_reqid_find(ctdb, client_id, struct ctdb_client);
+		client = reqid_find(ctdb->idr, client_id, struct ctdb_client);
 	}
 	if (client != NULL) {
 		/* If the node is inactive it is not part of the cluster
@@ -1236,7 +1237,7 @@ int32_t ctdb_control_db_detach(struct ctdb_context *ctdb, TDB_DATA indata,
 	 * Do the actual detach only if the control comes from other daemons.
 	 */
 	if (client_id != 0) {
-		client = ctdb_reqid_find(ctdb, client_id, struct ctdb_client);
+		client = reqid_find(ctdb->idr, client_id, struct ctdb_client);
 		if (client != NULL) {
 			/* forward the control to all the nodes */
 			ctdb_daemon_send_control(ctdb, CTDB_BROADCAST_ALL, 0,

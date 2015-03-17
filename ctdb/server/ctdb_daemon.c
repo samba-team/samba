@@ -29,6 +29,7 @@
 #include "../include/ctdb_private.h"
 #include "../common/rb_tree.h"
 #include <sys/socket.h>
+#include "common/reqid.h"
 
 struct ctdb_client_pid_list {
 	struct ctdb_client_pid_list *next, *prev;
@@ -157,7 +158,7 @@ static void daemon_message_handler(uint64_t srvid, TDB_DATA data,
  */
 int daemon_register_message_handler(struct ctdb_context *ctdb, uint32_t client_id, uint64_t srvid)
 {
-	struct ctdb_client *client = ctdb_reqid_find(ctdb, client_id, struct ctdb_client);
+	struct ctdb_client *client = reqid_find(ctdb->idr, client_id, struct ctdb_client);
 	int res;
 	if (client == NULL) {
 		DEBUG(DEBUG_ERR,("Bad client_id in daemon_request_register_message_handler\n"));
@@ -182,7 +183,7 @@ int daemon_register_message_handler(struct ctdb_context *ctdb, uint32_t client_i
  */
 int daemon_deregister_message_handler(struct ctdb_context *ctdb, uint32_t client_id, uint64_t srvid)
 {
-	struct ctdb_client *client = ctdb_reqid_find(ctdb, client_id, struct ctdb_client);
+	struct ctdb_client *client = reqid_find(ctdb->idr, client_id, struct ctdb_client);
 	if (client == NULL) {
 		DEBUG(DEBUG_ERR,("Bad client_id in daemon_request_deregister_message_handler\n"));
 		return -1;
@@ -229,7 +230,7 @@ static int ctdb_client_destructor(struct ctdb_client *client)
 	struct ctdb_db_context *ctdb_db;
 
 	ctdb_takeover_client_destructor_hook(client);
-	ctdb_reqid_remove(client->ctdb, client->client_id);
+	reqid_remove(client->ctdb->idr, client->client_id);
 	client->ctdb->num_clients--;
 
 	if (client->num_persistent_updates != 0) {
@@ -387,7 +388,7 @@ static void daemon_incoming_packet_wrap(void *p, struct ctdb_req_header *hdr)
 		return;
 	}
 
-	client = ctdb_reqid_find(w->ctdb, w->client_id, struct ctdb_client);
+	client = reqid_find(w->ctdb->idr, w->client_id, struct ctdb_client);
 	if (client == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " Packet for disconnected client %u\n",
 			 w->client_id));
@@ -448,7 +449,7 @@ static int deferred_fetch_queue_destructor(struct ctdb_deferred_fetch_queue *dfq
 
 		DLIST_REMOVE(dfq->deferred_calls, dfc);
 
-		client = ctdb_reqid_find(dfc->w->ctdb, dfc->w->client_id, struct ctdb_client);
+		client = reqid_find(dfc->w->ctdb->idr, dfc->w->client_id, struct ctdb_client);
 		if (client == NULL) {
 			DEBUG(DEBUG_ERR,(__location__ " Packet for disconnected client %u\n",
 				 dfc->w->client_id));
@@ -931,7 +932,7 @@ static void ctdb_accept_client(struct event_context *ev, struct fd_event *fde,
 
 	client->ctdb = ctdb;
 	client->fd = fd;
-	client->client_id = ctdb_reqid_new(ctdb, client);
+	client->client_id = reqid_new(ctdb->idr, client);
 	client->pid = peer_pid;
 
 	client_pid = talloc(client, struct ctdb_client_pid_list);
@@ -1654,7 +1655,7 @@ static int ctdb_client_notify_destructor(struct ctdb_client_notify_list *nl)
 int32_t ctdb_control_register_notify(struct ctdb_context *ctdb, uint32_t client_id, TDB_DATA indata)
 {
 	struct ctdb_client_notify_register *notify = (struct ctdb_client_notify_register *)indata.dptr;
-        struct ctdb_client *client = ctdb_reqid_find(ctdb, client_id, struct ctdb_client); 
+        struct ctdb_client *client = reqid_find(ctdb->idr, client_id, struct ctdb_client);
 	struct ctdb_client_notify_list *nl;
 
 	DEBUG(DEBUG_INFO,("Register srvid %llu for client %d\n", (unsigned long long)notify->srvid, client_id));
@@ -1703,7 +1704,7 @@ int32_t ctdb_control_register_notify(struct ctdb_context *ctdb, uint32_t client_
 int32_t ctdb_control_deregister_notify(struct ctdb_context *ctdb, uint32_t client_id, TDB_DATA indata)
 {
 	struct ctdb_client_notify_deregister *notify = (struct ctdb_client_notify_deregister *)indata.dptr;
-        struct ctdb_client *client = ctdb_reqid_find(ctdb, client_id, struct ctdb_client); 
+        struct ctdb_client *client = reqid_find(ctdb->idr, client_id, struct ctdb_client);
 	struct ctdb_client_notify_list *nl;
 
 	DEBUG(DEBUG_INFO,("Deregister srvid %llu for client %d\n", (unsigned long long)notify->srvid, client_id));

@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include "../include/ctdb_private.h"
 #include "lib/util/dlinklist.h"
+#include "common/reqid.h"
 
 /*
   allocate a packet for use in client<->daemon communication
@@ -153,7 +154,7 @@ static void ctdb_client_reply_call(struct ctdb_context *ctdb, struct ctdb_req_he
 	struct ctdb_reply_call *c = (struct ctdb_reply_call *)hdr;
 	struct ctdb_client_call_state *state;
 
-	state = ctdb_reqid_find(ctdb, hdr->reqid, struct ctdb_client_call_state);
+	state = reqid_find(ctdb->idr, hdr->reqid, struct ctdb_client_call_state);
 	if (state == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " reqid %u not found\n", hdr->reqid));
 		return;
@@ -344,7 +345,7 @@ int ctdb_call_recv(struct ctdb_client_call_state *state, struct ctdb_call *call)
 */
 static int ctdb_client_call_destructor(struct ctdb_client_call_state *state)	
 {
-	ctdb_reqid_remove(state->ctdb_db->ctdb, state->reqid);
+	reqid_remove(state->ctdb_db->ctdb->idr, state->reqid);
 	return 0;
 }
 
@@ -444,7 +445,7 @@ struct ctdb_client_call_state *ctdb_call_send(struct ctdb_db_context *ctdb_db,
 		return NULL;
 	}
 
-	state->reqid     = ctdb_reqid_new(ctdb, state);
+	state->reqid     = reqid_new(ctdb->idr, state);
 	state->ctdb_db = ctdb_db;
 	talloc_set_destructor(state, ctdb_client_call_destructor);
 
@@ -978,7 +979,7 @@ static void ctdb_client_reply_control(struct ctdb_context *ctdb,
 	struct ctdb_reply_control *c = (struct ctdb_reply_control *)hdr;
 	struct ctdb_client_control_state *state;
 
-	state = ctdb_reqid_find(ctdb, hdr->reqid, struct ctdb_client_control_state);
+	state = reqid_find(ctdb->idr, hdr->reqid, struct ctdb_client_control_state);
 	if (state == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " reqid %u not found\n", hdr->reqid));
 		return;
@@ -1020,7 +1021,7 @@ static void ctdb_client_reply_control(struct ctdb_context *ctdb,
 */
 static int ctdb_client_control_destructor(struct ctdb_client_control_state *state)
 {
-	ctdb_reqid_remove(state->ctdb, state->reqid);
+	reqid_remove(state->ctdb->idr, state->reqid);
 	return 0;
 }
 
@@ -1071,7 +1072,7 @@ struct ctdb_client_control_state *ctdb_control_send(struct ctdb_context *ctdb,
 	CTDB_NO_MEMORY_NULL(ctdb, state);
 
 	state->ctdb       = ctdb;
-	state->reqid      = ctdb_reqid_new(ctdb, state);
+	state->reqid      = reqid_new(ctdb->idr, state);
 	state->state      = CTDB_CONTROL_WAIT;
 	state->errormsg   = NULL;
 
@@ -3313,10 +3314,13 @@ struct ctdb_context *ctdb_init(struct event_context *ev)
 		return NULL;
 	}
 	ctdb->ev  = ev;
-	ctdb->idr = idr_init(ctdb);
 	/* Wrap early to exercise code. */
-	ctdb->lastid = INT_MAX-200;
-	CTDB_NO_MEMORY_NULL(ctdb, ctdb->idr);
+	ret = reqid_init(ctdb, INT_MAX-200, &ctdb->idr);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("reqid_init failed (%s)\n", strerror(ret)));
+		talloc_free(ctdb);
+		return NULL;
+	}
 
 	ret = srvid_init(ctdb, &ctdb->srv);
 	if (ret != 0) {
@@ -4101,7 +4105,7 @@ struct ctdb_transaction_handle {
 static int ctdb_transaction_destructor(struct ctdb_transaction_handle *h)
 {
 	g_lock_unlock(h, h->g_lock_db, h->lock_name, h->reqid);
-	ctdb_reqid_remove(h->ctdb_db->ctdb, h->reqid);
+	reqid_remove(h->ctdb_db->ctdb->idr, h->reqid);
 	return 0;
 }
 
@@ -4149,7 +4153,7 @@ struct ctdb_transaction_handle *ctdb_transaction_start(struct ctdb_db_context *c
 		return NULL;
 	}
 
-	h->reqid = ctdb_reqid_new(h->ctdb_db->ctdb, h);
+	h->reqid = reqid_new(h->ctdb_db->ctdb->idr, h);
 
 	if (!g_lock_lock(h, h->g_lock_db, h->lock_name, h->reqid)) {
 		DEBUG(DEBUG_ERR, (__location__ " Error locking g_lock.tdb\n"));

@@ -453,8 +453,7 @@ struct ctdb_context {
 	uint32_t num_connected;
 	unsigned flags;
 	uint32_t capabilities;
-	struct idr_context *idr;
-	int lastid;
+	struct reqid_context *idr;
 	struct ctdb_node **nodes; /* array of nodes in the cluster - indexed by vnn */
 	struct ctdb_vnn *vnn; /* list of public ip addresses and interfaces */
 	struct ctdb_vnn *single_ip_vnn; /* a structure for the single ip */
@@ -812,10 +811,6 @@ int ctdb_call_local(struct ctdb_db_context *ctdb_db, struct ctdb_call *call,
 
 int ctdb_socket_connect(struct ctdb_context *ctdb);
 void ctdb_client_read_cb(uint8_t *data, size_t cnt, void *args);
-
-uint32_t ctdb_reqid_new(struct ctdb_context *ctdb, void *state);
-void *_ctdb_reqid_find(struct ctdb_context *ctdb, uint32_t reqid, const char *type, const char *location);
-void ctdb_reqid_remove(struct ctdb_context *ctdb, uint32_t reqid);
 
 void ctdb_request_control(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
 void ctdb_reply_control(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
