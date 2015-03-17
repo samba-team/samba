@@ -852,9 +852,9 @@ ctdb_client_async_control_stub(struct ctdb_context *ctdb,
 				client_callback(ctdb, pnn, res, outdata, callback_data);
 			}
 		} else {
+			ret = -1;
 			if (fail_callback != NULL) {
 				fail_callback(ctdb, pnn, res, outdata, callback_data);
-				ret = -1;
 			}
 		}
 	}
