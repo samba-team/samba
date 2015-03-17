@@ -35,7 +35,8 @@ from samba.dcerpc import dnsp, misc, security
 from samba.dsdb import (
     DS_DOMAIN_FUNCTION_2000,
     DS_DOMAIN_FUNCTION_2003,
-    DS_DOMAIN_FUNCTION_2008_R2
+    DS_DOMAIN_FUNCTION_2008_R2,
+    DS_DOMAIN_FUNCTION_2012_R2
     )
 from samba.descriptor import (
     get_domain_descriptor,
@@ -967,7 +968,7 @@ def is_valid_dns_backend(dns_backend):
 
 
 def is_valid_os_level(os_level):
-    return DS_DOMAIN_FUNCTION_2000 <= os_level <= DS_DOMAIN_FUNCTION_2008_R2
+    return DS_DOMAIN_FUNCTION_2000 <= os_level <= DS_DOMAIN_FUNCTION_2012_R2
 
 
 def create_dns_legacy(samdb, domainsid, forestdn, dnsadmins_sid):
