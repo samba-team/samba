@@ -331,6 +331,11 @@ def build(bld):
                         includes='include include/internal',
                         deps='replace tevent tdb')
 
+    bld.SAMBA_SUBSYSTEM('ctdb-util',
+                        source=bld.SUBDIR('common',
+                                          '''db_hash.c'''),
+                        deps='replace talloc tevent tdb')
+
     bld.SAMBA_SUBSYSTEM('ctdb-client',
                         source=bld.SUBDIR('client', 'ctdb_client.c'),
                         includes='include include/internal',
@@ -565,6 +570,19 @@ def build(bld):
     t.env.VERSION = VERSION
     bld.INSTALL_FILES('${LIBDIR}/pkgconfig', 'ctdb.pc')
 
+    # Unit tests
+    ctdb_unit_tests = [
+        'db_hash_test',
+    ]
+
+    for target in ctdb_unit_tests:
+        src = 'tests/src/' + target + '.c'
+
+        bld.SAMBA_BINARY(target,
+                         source=src,
+                         deps='talloc tevent tdb',
+                         install_path='${CTDB_TEST_LIBDIR}')
+
     # Test binaries
     ctdb_tests = [
         'rb_test',
@@ -626,6 +644,7 @@ def build(bld):
 
     test_subdirs = [
         'complex',
+        'cunit',
         'events.d',
         'eventscripts',
         'onnode',
