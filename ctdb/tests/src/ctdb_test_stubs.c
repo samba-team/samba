@@ -136,10 +136,20 @@ static void ctdb_test_stubs_read_nodemap(struct ctdb_context *ctdb)
 	}
 }
 
+static void assert_nodes_set(struct ctdb_context *ctdb)
+{
+	if (ctdb->nodes == NULL) {
+		printf("ctdb->nodes not initialised - missing a NODEMAP section?");
+		exit(1);
+	}
+}
+
 #ifdef CTDB_TEST_OVERRIDE_MAIN
 static void ctdb_test_stubs_print_nodemap(struct ctdb_context *ctdb)
 {
 	int i;
+
+	assert_nodes_set(ctdb);
 
 	for (i = 0; i < ctdb->num_nodes; i++) {
 		printf("%ld\t0x%lx%s%s\n",
@@ -225,10 +235,20 @@ static void ctdb_test_stubs_read_ifaces(struct ctdb_context *ctdb)
 	}
 }
 
+static void assert_ifaces_set(struct ctdb_context *ctdb)
+{
+	if (ctdb->ifaces == NULL) {
+		printf("ctdb->ifaces not initialised - missing an IFACES section?");
+		exit(1);
+	}
+}
+
 #ifdef CTDB_TEST_OVERRIDE_MAIN
 static void ctdb_test_stubs_print_ifaces(struct ctdb_context *ctdb)
 {
 	struct ctdb_iface *iface;
+
+	assert_ifaces_set(ctdb);
 
 	printf(":Name:LinkStatus:References:\n");
 	for (iface = ctdb->ifaces; iface != NULL; iface = iface->next) {
@@ -299,10 +319,20 @@ static void ctdb_test_stubs_read_vnnmap(struct ctdb_context *ctdb)
 	}
 }
 
+static void assert_vnn_map_set(struct ctdb_context *ctdb)
+{
+	if (ctdb->vnn_map == NULL) {
+		printf("ctdb->vnn_map not initialised - missing a VNNMAP section?");
+		exit(1);
+	}
+}
+
 #ifdef CTDB_TEST_OVERRIDE_MAIN
 static void ctdb_test_stubs_print_vnnmap(struct ctdb_context *ctdb)
 {
 	int i;
+
+	assert_vnn_map_set(ctdb);
 
 	printf("%d\n", ctdb->vnn_map->generation);
 	for (i = 0; i < ctdb->vnn_map->size; i++) {
@@ -340,6 +370,9 @@ static void ctdb_test_stubs_fake_setup(struct ctdb_context *ctdb)
 static bool current_node_is_connected (struct ctdb_context *ctdb)
 {
 	int i;
+
+	assert_nodes_set(ctdb);
+
 	for (i = 0; i < ctdb->num_nodes; i++) {
 		if (ctdb->nodes[i]->pnn == ctdb->pnn) {
 			if (ctdb->nodes[i]->flags &
@@ -436,6 +469,8 @@ ctdb_ctrl_getnodemap_stub(struct ctdb_context *ctdb,
 	TDB_DATA indata;
 	TDB_DATA *outdata;
 
+	assert_nodes_set(ctdb);
+
 	if (!current_node_is_connected(ctdb)) {
 		return -1;
 	}
@@ -460,6 +495,8 @@ ctdb_ctrl_getvnnmap_stub(struct ctdb_context *ctdb,
 			 struct timeval timeout, uint32_t destnode,
 			 TALLOC_CTX *mem_ctx, struct ctdb_vnn_map **vnnmap)
 {
+	assert_vnn_map_set(ctdb);
+
 	*vnnmap = talloc(ctdb, struct ctdb_vnn_map);
 	if (*vnnmap == NULL) {
 		DEBUG(DEBUG_ERR, (__location__ "OOM\n"));
@@ -492,6 +529,7 @@ int ctdb_ctrl_setrecmode_stub(struct ctdb_context *ctdb, struct timeval timeout,
 	if (ctdb->recovery_mode == CTDB_RECOVERY_ACTIVE) {
 		/* Recovery is complete! That was quick.... */
 		ctdb->recovery_mode = CTDB_RECOVERY_NORMAL;
+		assert_vnn_map_set(ctdb);
 		ctdb->vnn_map->generation++;
 	}
 
@@ -531,6 +569,8 @@ int32_t ctdb_control_get_ifaces(struct ctdb_context *ctdb,
 	int i, num, len;
 	struct ctdb_control_get_ifaces *ifaces;
 	struct ctdb_iface *cur;
+
+	assert_ifaces_set(ctdb);
 
 	/* count how many public ip structures we have */
 	num = 0;
@@ -710,6 +750,7 @@ int ctdb_ctrl_getcapabilities_stub(struct ctdb_context *ctdb,
 				   struct timeval timeout, uint32_t destnode,
 				   uint32_t *capabilities)
 {
+	assert_nodes_set(ctdb);
 
 	if (ctdb->nodes[destnode]->flags & NODE_FLAGS_FAKE_TIMEOUT) {
 		/* Placeholder for line#, instead of __location__ */
@@ -749,6 +790,8 @@ bool ctdb_sys_have_ip_stub(ctdb_sock_addr *addr)
 {
 	int i;
 	struct ctdb_context *ctdb = ctdb_global;
+
+	assert_nodes_set(ctdb);
 
 	for (i = 0; i < ctdb->num_nodes; i++) {
 		ctdb_sock_addr node_addr;
