@@ -746,7 +746,7 @@ NSS_STATUS winbindd_priv_request_response(struct winbindd_context *ctx,
 {
 	NSS_STATUS status = NSS_STATUS_UNAVAIL;
 	int count = 0;
-	struct winbindd_context *wb_ctx;
+	struct winbindd_context *wb_ctx = ctx;
 
 	if (ctx == NULL) {
 		wb_ctx = &wb_global_ctx;
