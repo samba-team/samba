@@ -2360,6 +2360,25 @@ class KCC(object):
             mydsa.commit_connections(self.samdb)
 
 
+    def list_dsas(self):
+        self.load_my_site()
+        self.load_my_dsa()
+
+        self.load_all_sites()
+        self.load_all_partitions()
+        self.load_all_transports()
+        self.load_all_sitelinks()
+
+        for site in self.site_table.values():
+            for dsa in site.dsa_table.values():
+                print dsa.dsa_dnstr
+
+    def load_samdb(self, dburl, lp, creds):
+        self.samdb = SamDB(url=dburl,
+                           session_info=system_session(),
+                           credentials=creds, lp=lp)
+
+
     def run(self, dburl, lp, creds, forced_local_dsa=None):
         """Method to perform a complete run of the KCC and
         produce an updated topology for subsequent NC replica
@@ -2369,14 +2388,12 @@ class KCC(object):
         # currently importing an ldif for a test run
         if self.samdb is None:
             try:
-                self.samdb = SamDB(url=dburl,
-                                   session_info=system_session(),
-                                   credentials=creds, lp=lp)
-
+                self.load_samdb(dburl, lp, creds)
             except ldb.LdbError, (num, msg):
                 logger.error("Unable to open sam database %s : %s" %
                              (dburl, msg))
                 return 1
+
 
         if forced_local_dsa:
             self.samdb.set_ntds_settings_dn("CN=NTDS Settings,%s" % forced_local_dsa)
@@ -3241,6 +3258,10 @@ parser.add_option("--attempt-live-connections", default=False,
                   help="Attempt to connect to other DSAs to test links",
                   action="store_true")
 
+parser.add_option("--list-valid-dsas", default=False,
+                  help="Print a list of DSA dnstrs that could be used in--forced-local-dsa",
+                  action="store_true")
+
 
 logger = logging.getLogger("samba_kcc")
 logger.addHandler(logging.StreamHandler(sys.stdout))
@@ -3314,6 +3335,11 @@ if opts.importldif:
     rc = kcc.import_ldif(opts.tmpdb, lp, creds, opts.importldif)
     if rc != 0:
         sys.exit(rc)
+
+if opts.list_valid_dsas:
+    kcc.load_samdb(opts.dburl, lp, creds)
+    kcc.list_dsas()
+    sys.exit()
 
 try:
     rc = kcc.run(opts.dburl, lp, creds, opts.forced_local_dsa)
