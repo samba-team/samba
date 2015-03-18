@@ -305,14 +305,19 @@ class KCC(object):
 
         # CONNECTIONS: Refresh failed connections
         restore_connections = set()
-        for connection in self.kcc_failed_connections:
-            try:
-                drs_utils.drsuapi_connect(connection.dns_name, lp, creds)
-                # Failed connection is no longer failing
-                restore_connections.add(connection)
-            except drs_utils.drsException:
-                # Failed connection still failing
-                connection.failure_count += 1
+        if opts.attempt_live_connections:
+            DEBUG("refresh_failed_links: checking if links are still down")
+            for connection in self.kcc_failed_connections:
+                try:
+                    drs_utils.drsuapi_connect(connection.dns_name, lp, creds)
+                    # Failed connection is no longer failing
+                    restore_connections.add(connection)
+                except drs_utils.drsException:
+                    # Failed connection still failing
+                    connection.failure_count += 1
+        else:
+            DEBUG("refresh_failed_links: not checking live links because we weren't\n"
+                  "asked to --attempt-live-connections")
 
         # Remove the restored connections from the failed connections
         self.kcc_failed_connections.difference_update(restore_connections)
@@ -1034,6 +1039,12 @@ class KCC(object):
         #    site merge all the failure info
         #
         # XXX - not implemented yet
+        if opts.attempt_live_connections:
+            DEBUG_RED("merge_failed_links() is NOT IMPLEMENTED")
+        else:
+            DEBUG("skipping merge_failed_links() because it requires real network connections\n"
+                  "and we weren't asked to --attempt-live-connctions")
+
 
     def setup_graph(self, part):
         """Set up a GRAPH, populated with a VERTEX for each site
@@ -3167,6 +3178,10 @@ parser.add_option("--now",
 parser.add_option("--forced-local-dsa",
                   help="run calculations assuming the DSA is this DN",
                   type=str, metavar="<DSA>")
+
+parser.add_option("--attempt-live-connections", default=False,
+                  help="Attempt to connect to other DSAs to test links",
+                  action="store_true")
 
 
 logger = logging.getLogger("samba_kcc")
