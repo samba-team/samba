@@ -520,26 +520,6 @@ static int cephwrap_fsync(struct vfs_handle_struct *handle, files_struct *fsp)
 	WRAP_RETURN(result);
 }
 
-static void cephwrap_init_stat_ex_from_stat(struct stat_ex *dst, const struct stat *src)
-{
-	ZERO_STRUCT(*dst);
-
-	dst->st_ex_dev = src->st_dev;
-	dst->st_ex_ino = src->st_ino;
-	dst->st_ex_mode = src->st_mode;
-	dst->st_ex_nlink = src->st_nlink;
-	dst->st_ex_uid = src->st_uid;
-	dst->st_ex_gid = src->st_gid;
-	dst->st_ex_rdev = src->st_rdev;
-	dst->st_ex_size = src->st_size;
-	dst->st_ex_atime.tv_sec = src->st_atime;
-	dst->st_ex_mtime.tv_sec = src->st_mtime;
-	dst->st_ex_ctime.tv_sec = src->st_ctime;
-	dst->st_ex_btime.tv_sec = src->st_mtime;
-	dst->st_ex_blksize = src->st_blksize;
-	dst->st_ex_blocks = src->st_blocks;
-}
-
 static int cephwrap_stat(struct vfs_handle_struct *handle,
 			struct smb_filename *smb_fname)
 {
@@ -565,7 +545,9 @@ static int cephwrap_stat(struct vfs_handle_struct *handle,
 			   stbuf.st_uid, stbuf.st_gid, llu(stbuf.st_rdev), llu(stbuf.st_size), llu(stbuf.st_blksize),
 			   llu(stbuf.st_blocks), llu(stbuf.st_atime), llu(stbuf.st_mtime), llu(stbuf.st_ctime)));
 	}
-	cephwrap_init_stat_ex_from_stat(&(smb_fname->st), &stbuf);
+	init_stat_ex_from_stat(
+			&smb_fname->st, &stbuf,
+			lp_fake_directory_create_times(SNUM(handle->conn)));
 	DEBUG(10, ("[CEPH] mode = 0x%x\n", smb_fname->st.st_ex_mode));
 	return result;
 }
@@ -589,7 +571,9 @@ static int cephwrap_fstat(struct vfs_handle_struct *handle, files_struct *fsp, S
 			   llu(stbuf.st_blocks), llu(stbuf.st_atime), llu(stbuf.st_mtime), llu(stbuf.st_ctime)));
 	}
 
-	cephwrap_init_stat_ex_from_stat(sbuf, &stbuf);
+	init_stat_ex_from_stat(
+			sbuf, &stbuf,
+			lp_fake_directory_create_times(SNUM(handle->conn)));
 	DEBUG(10, ("[CEPH] mode = 0x%x\n", sbuf->st_ex_mode));
 	return result;
 }
@@ -612,7 +596,9 @@ static int cephwrap_lstat(struct vfs_handle_struct *handle,
 	if (result < 0) {
 		WRAP_RETURN(result);
 	}
-	cephwrap_init_stat_ex_from_stat(&(smb_fname->st), &stbuf);
+	init_stat_ex_from_stat(
+			&smb_fname->st, &stbuf,
+			lp_fake_directory_create_times(SNUM(handle->conn)));
 	return result;
 }
 
