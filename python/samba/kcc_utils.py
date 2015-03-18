@@ -35,24 +35,6 @@ from samba.dcerpc import (
 from samba.common import dsdb_Dn
 from samba.ndr import (ndr_unpack, ndr_pack)
 
-#colours for prettier logs
-C_NORMAL  = "\033[00m"
-DARK_RED  = "\033[00;31m"
-RED = "\033[01;31m"
-DARK_GREEN  = "\033[00;32m"
-GREEN  = "\033[01;32m"
-YELLOW  = "\033[01;33m"
-DARK_YELLOW  = "\033[00;33m"
-DARK_BLUE  = "\033[00;34m"
-BLUE  = "\033[01;34m"
-PURPLE  = "\033[00;35m"
-MAGENTA  = "\033[01;35m"
-DARK_CYAN  = "\033[00;36m"
-CYAN  = "\033[01;36m"
-GREY  = "\033[00;37m"
-WHITE  = "\033[01;37m"
-REV_RED = "\033[01;41m"
-
 class KCCError(Exception):
     pass
 
@@ -81,7 +63,7 @@ class NamingContext(object):
 
     def __str__(self):
         '''Debug dump string output of class'''
-        text = "%s%s%s:" % (CYAN, self.__class__.__name__, C_NORMAL)
+        text = "%s:" % (self.__class__.__name__,)
         text = text + "\n\tnc_dnstr=%s" % self.nc_dnstr
         text = text + "\n\tnc_guid=%s"  % str(self.nc_guid)
 
