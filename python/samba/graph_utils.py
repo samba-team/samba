@@ -54,7 +54,7 @@ def write_dot_file(basename, edge_list, vertices=None, label=None, destdir=None,
 
 
 
-class KCCGraphError(Exception):
+class GraphError(Exception):
     pass
 
 def verify_graph_complete(edges, vertices, edge_vertices):
@@ -68,7 +68,7 @@ def verify_graph_complete(edges, vertices, edge_vertices):
             elif b == v:
                 remotes.add(a)
         if len(remotes) + 1 != len(vertices):
-            raise KCCGraphError("graph is not fully connected")
+            raise GraphError("graph is not fully connected")
 
 
 def verify_graph_connected(edges, vertices, edge_vertices):
@@ -76,7 +76,7 @@ def verify_graph_connected(edges, vertices, edge_vertices):
     if not edges:
         if len(vertices) <= 1:
             return
-        raise KCCGraphError("disconnected vertices were found:\nvertices: %s\n edges: %s" %
+        raise GraphError("disconnected vertices were found:\nvertices: %s\n edges: %s" %
                             (sorted(vertices), sorted(edges)))
 
     remaining_edges = list(edges)
@@ -97,7 +97,7 @@ def verify_graph_connected(edges, vertices, edge_vertices):
             del remaining_edges[i]
 
     if remaining_edges or reached != vertices:
-        raise KCCGraphError("graph is not connected:\nvertices: %s\n edges: %s" %
+        raise GraphError("graph is not connected:\nvertices: %s\n edges: %s" %
                             (sorted(vertices), sorted(edges)))
 
 
@@ -115,7 +115,7 @@ def verify_graph_forest(edges, vertices, edge_vertices):
                     trees.remove(b)
                     break
                 else:
-                    raise KCCGraphError("there is a loop in the graph")
+                    raise GraphError("there is a loop in the graph")
         else:
             # no break in itertools.combinations loop means no
             # further mergers, so we're done.
@@ -146,7 +146,7 @@ def verify_graph_multi_edge_forest(edges, vertices, edge_vertices):
                     trees.remove(b)
                     break
                 else:
-                    raise KCCGraphError("there is a loop in the graph")
+                    raise GraphError("there is a loop in the graph")
         else:
             return
 
@@ -161,14 +161,14 @@ def verify_graph_no_lonely_vertices(edges, vertices, edge_vertices):
     """There are no vertices without edges."""
     lonely = vertices - edge_vertices
     if lonely:
-        raise KCCGraphError("some vertices are not connected:\n%s" % '\n'.join(sorted(lonely)))
+        raise GraphError("some vertices are not connected:\n%s" % '\n'.join(sorted(lonely)))
 
 
 def verify_graph_no_unknown_vertices(edges, vertices, edge_vertices):
     """The edge endpoints contain no vertices that are otherwise unknown."""
     unknown = edge_vertices - vertices
     if unknown:
-        raise KCCGraphError("some edge vertices are seemingly unknown:\n%s" % '\n'.join(sorted(unknown)))
+        raise GraphError("some edge vertices are seemingly unknown:\n%s" % '\n'.join(sorted(unknown)))
 
 
 def verify_graph_directed_double_ring(edges, vertices, edge_vertices):
@@ -183,7 +183,7 @@ def verify_graph_directed_double_ring(edges, vertices, edge_vertices):
     if not edges:
         return
     if len(edges) < 2* len(vertices):
-        raise KCCGraphError("directed double ring requires at least twice as many edges as vertices")
+        raise GraphError("directed double ring requires at least twice as many edges as vertices")
 
     exits = {}
     for start, end in edges:
@@ -217,7 +217,7 @@ def verify_graph_directed_double_ring(edges, vertices, edge_vertices):
             backwards = bnext
 
     except ValueError, e:
-        raise KCCGraphError("wrong number of exits '%s'" % e)
+        raise GraphError("wrong number of exits '%s'" % e)
 
     f_set = set(f_path)
     b_set = set(b_path)
@@ -225,7 +225,7 @@ def verify_graph_directed_double_ring(edges, vertices, edge_vertices):
     if (f_path != list(reversed(b_path)) or
         len(f_path) != len(f_set) + 1 or
         len(f_set) != len(vertices)):
-        raise KCCGraphError("doesn't seem like a double ring to me!")
+        raise GraphError("doesn't seem like a double ring to me!")
 
 
 def verify_graph_directed_double_ring_or_small(edges, vertices, edge_vertices):
@@ -267,12 +267,12 @@ def verify_graph(title, edges, vertices=None, directed=False, properties=(), fat
         try:
             f(edges, vertices, edge_vertices)
             debug(" %s%18s:%s verified!" % (DARK_GREEN, p, C_NORMAL))
-        except KCCGraphError, e:
+        except GraphError, e:
             errors.append((p, e))
 
     if errors:
         if fatal:
-            raise KCCGraphError("The '%s' graph lacks the following properties:\n%s" %
+            raise GraphError("The '%s' graph lacks the following properties:\n%s" %
                                 (title, '\n'.join('%s: %s' % x for x in errors)))
         debug(("%s%s%s FAILED:" % (MAGENTA, title, RED)))
         for p, e in errors:

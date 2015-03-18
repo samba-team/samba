@@ -3319,6 +3319,6 @@ try:
     rc = kcc.run(opts.dburl, lp, creds, opts.forced_local_dsa)
     sys.exit(rc)
 
-except KCCGraphError, e:
+except GraphError, e:
     print e
     sys.exit(1)
