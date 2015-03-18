@@ -773,6 +773,8 @@ static WERROR dcesrv_drsuapi_DsGetDomainControllerInfo_1(struct drsuapi_bind_sta
 
 		}
 		break;
+	default:
+		return WERR_UNKNOWN_LEVEL;
 	}
 	return WERR_OK;
 }
