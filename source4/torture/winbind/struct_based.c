@@ -974,7 +974,7 @@ static bool lookup_name_sid_list(struct torture_context *torture, char **list)
 	return true;
 }
 
-static bool name_is_in_list(const char *name, const char **list)
+static bool name_is_in_list(const char *name, char **list)
 {
 	uint32_t count;
 
@@ -1038,8 +1038,8 @@ static bool torture_winbind_struct_lookup_name_sid(struct torture_context *tortu
 		invalid_name = talloc_asprintf(torture, "%s/%s%u",
 					       domain,
 					       invalid_user, count);
-	} while(name_is_in_list(invalid_name, (const char **)users) ||
-		name_is_in_list(invalid_name, (const char **)groups));
+	} while(name_is_in_list(invalid_name, users) ||
+		name_is_in_list(invalid_name, groups));
 
 	fstrcpy(req.data.name.dom_name, domain);
 	fstrcpy(req.data.name.name,
