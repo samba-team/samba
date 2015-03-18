@@ -1067,6 +1067,7 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 	} spoolss_JobInfoContainer;
 
 	typedef [v1_enum] enum {
+		SPOOLSS_JOB_CONTROL_NOOP		= 0,
 		SPOOLSS_JOB_CONTROL_PAUSE		= 1,
 		SPOOLSS_JOB_CONTROL_RESUME		= 2,
 		SPOOLSS_JOB_CONTROL_CANCEL		= 3,
