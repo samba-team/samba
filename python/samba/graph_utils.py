@@ -171,7 +171,7 @@ def verify_graph_multi_edge_forest(edges, vertices, edge_vertices):
 
 def verify_graph_forest_of_rings(edges, vertices, edge_vertices):
     """The graph should consist of clusters of node connected in rings,
-    with the connections between the cdlusters forming a forest."""
+    with the connections between the clusters forming a forest."""
     pass
 
 
@@ -197,10 +197,10 @@ def verify_graph_directed_double_ring(edges, vertices, edge_vertices):
 
     There might be other connections that *aren't* part of the ring.
     """
-    #XXX possibly the 1 and 2 vertex cases are special cases.
+    #XXX 1 and 2 vertex cases are special cases.
     if not edges:
         return
-    if len(edges) < 2* len(vertices):
+    if len(edges) < 2 * len(vertices):
         raise GraphError("directed double ring requires at least twice as many edges as vertices")
 
     exits = {}
