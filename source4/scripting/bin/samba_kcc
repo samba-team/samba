@@ -3242,5 +3242,10 @@ if opts.importldif:
     if rc != 0:
         sys.exit(rc)
 
-rc = kcc.run(opts.dburl, lp, creds, opts.forced_local_dsa)
-sys.exit(rc)
+try:
+    rc = kcc.run(opts.dburl, lp, creds, opts.forced_local_dsa)
+    sys.exit(rc)
+
+except KCCGraphError, e:
+    print e
+    sys.exit(1)

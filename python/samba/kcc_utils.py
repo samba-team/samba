@@ -2559,7 +2559,7 @@ def verify_graph_directed_double_ring_or_small(edges, vertices, edge_vertices):
 
 
 
-def verify_graph(title, edges, vertices=None, directed=False, properties=(), fatal=False,
+def verify_graph(title, edges, vertices=None, directed=False, properties=(), fatal=True,
                  debug=None):
     errors = []
     if debug is None:
@@ -2596,7 +2596,8 @@ def verify_graph(title, edges, vertices=None, directed=False, properties=(), fat
 
     if errors:
         if fatal:
-            raise KCCGraphError("The graph lacks the following properties:\n" + '\n'.join(errors))
+            raise KCCGraphError("The '%s' graph lacks the following properties:\n%s" %
+                                (title, '\n'.join('%s: %s' % x for x in errors)))
         debug(("%s%s%s FAILED:" % (MAGENTA, title, RED)))
         for p, e in errors:
             debug(" %18s: %s%s%s" %(p, DARK_YELLOW, e, RED))
@@ -2605,7 +2606,7 @@ def verify_graph(title, edges, vertices=None, directed=False, properties=(), fat
 
 
 def verify_and_dot(basename, edges, vertices=None, label=None, destdir=None,
-                   reformat_labels=True, directed=False, properties=(), fatal=False,
+                   reformat_labels=True, directed=False, properties=(), fatal=True,
                    debug=None, verify=True, dot_files=False):
 
     title = '%s %s' % (basename, label or '')
