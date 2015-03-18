@@ -57,7 +57,7 @@ static bool writespn_check_spn(struct drsuapi_bind_state *b_state,
 	krb5_context krb_ctx;
 	krb5_error_code kerr;
 	krb5_principal principal;
-	krb5_data *component;
+	const krb5_data *component;
 	const char *dns_name, *dnsHostName;
 
 	/* The service principal name shouldn't be NULL */
