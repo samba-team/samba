@@ -7548,7 +7548,7 @@ WERROR _spoolss_SetJob(struct pipes_struct *p,
 		errcode = print_job_resume(session_info, p->msg_ctx,
 					   snum, r->in.job_id);
 		break;
-	case 0:
+	case SPOOLSS_JOB_CONTROL_NOOP:
 		errcode = WERR_OK;
 		break;
 	default:
