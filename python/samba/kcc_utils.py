@@ -1895,7 +1895,13 @@ class RepsFromTo(object):
         self.__dict__['to_be_deleted'] = False
         self.__dict__['nc_dnstr'] = nc_dnstr
         self.__dict__['update_flags'] = 0x0
-
+        # XXX the following sounds dubious and/or better solved
+        # elsewhere, but lets leave it for now. In particular, there
+        # seems to be no reason for all the non-ndr generated
+        # attributes to be handled in the round about way (e.g.
+        # self.__dict__['to_be_deleted'] = False above). On the other
+        # hand, it all seems to work. Hooray! Hands off!.
+        #
         # WARNING:
         #
         # There is a very subtle bug here with python
