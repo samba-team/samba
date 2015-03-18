@@ -864,7 +864,10 @@ int ctdb_event_script_args(struct ctdb_context *ctdb, enum ctdb_eventscript_call
 {
 	va_list ap;
 	int ret;
-	struct callback_status status;
+	struct callback_status status = {
+		.status = -1,
+		.done = false,
+	};
 
 	va_start(ap, fmt);
 	ret = ctdb_event_script_callback_v(ctdb, ctdb,
@@ -873,9 +876,6 @@ int ctdb_event_script_args(struct ctdb_context *ctdb, enum ctdb_eventscript_call
 	if (ret != 0) {
 		return ret;
 	}
-
-	status.status = -1;
-	status.done = false;
 
 	while (status.done == false && event_loop_once(ctdb->ev) == 0) /* noop */;
 
