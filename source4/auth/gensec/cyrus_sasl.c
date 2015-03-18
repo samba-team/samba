@@ -117,6 +117,8 @@ static int gensec_sasl_dispose(struct gensec_sasl_state *gensec_sasl_state)
 	return SASL_OK;
 }
 
+typedef int (*__gensec_sasl_callback_t)(void);
+
 static NTSTATUS gensec_sasl_client_start(struct gensec_security *gensec_security)
 {
 	struct gensec_sasl_state *gensec_sasl_state;
@@ -137,19 +139,19 @@ static NTSTATUS gensec_sasl_client_start(struct gensec_security *gensec_security
 
 	callbacks = talloc_array(gensec_sasl_state, sasl_callback_t, 5);
 	callbacks[0].id = SASL_CB_USER;
-	callbacks[0].proc = gensec_sasl_get_user;
+	callbacks[0].proc = (__gensec_sasl_callback_t)gensec_sasl_get_user;
 	callbacks[0].context = gensec_security;
 
-	callbacks[1].id =  SASL_CB_AUTHNAME;
-	callbacks[1].proc = gensec_sasl_get_user;
+	callbacks[1].id = SASL_CB_AUTHNAME;
+	callbacks[1].proc = (__gensec_sasl_callback_t)gensec_sasl_get_user;
 	callbacks[1].context = gensec_security;
 
 	callbacks[2].id = SASL_CB_GETREALM;
-	callbacks[2].proc = gensec_sasl_get_realm;
+	callbacks[2].proc = (__gensec_sasl_callback_t)gensec_sasl_get_realm;
 	callbacks[2].context = gensec_security;
 
 	callbacks[3].id = SASL_CB_PASS;
-	callbacks[3].proc = gensec_sasl_get_password;
+	callbacks[3].proc = (__gensec_sasl_callback_t)gensec_sasl_get_password;
 	callbacks[3].context = gensec_security;
 
 	callbacks[4].id = SASL_CB_LIST_END;
@@ -392,12 +394,12 @@ NTSTATUS gensec_sasl_init(void)
 	static const sasl_callback_t callbacks[] = {
 		{ 
 			.id = SASL_CB_LOG,
-			.proc = gensec_sasl_log,
+			.proc = (__gensec_sasl_callback_t)gensec_sasl_log,
 			.context = NULL,
 		},
 		{
 			.id = SASL_CB_LIST_END,
-			.proc = gensec_sasl_log,
+			.proc = NULL,
 			.context = NULL,
 		}
 	};
