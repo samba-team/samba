@@ -554,7 +554,6 @@ static bool test_schannel_anonymous_setPassword(struct torture_context *tctx,
 						uint32_t dcerpc_flags,
 						bool use2)
 {
-	struct test_join *join_ctx;
 	NTSTATUS status, result;
 	const char *binding = torture_setting_string(tctx, "binding", NULL);
 	struct dcerpc_binding *b;
@@ -790,6 +789,7 @@ struct torture_schannel_bench {
 	bool stopped;
 };
 
+#if 0
 static void torture_schannel_bench_connected(struct composite_context *c)
 {
 	struct torture_schannel_bench_conn *conn =
@@ -803,6 +803,7 @@ static void torture_schannel_bench_connected(struct composite_context *c)
 		s->nconns++;
 	}
 }
+#endif
 
 static void torture_schannel_bench_recv(struct tevent_req *subreq);
 

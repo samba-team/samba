@@ -2756,7 +2756,7 @@ static bool check_dom_trust_pw(struct dcerpc_pipe *p,
 	struct cli_credentials *credentials;
 	char *dummy;
 	struct netlogon_creds_CredentialState *creds;
-	struct dcerpc_pipe *pipe;
+	struct dcerpc_pipe *p2;
 	NTSTATUS status;
 	bool ok;
 
@@ -2776,7 +2776,7 @@ static bool check_dom_trust_pw(struct dcerpc_pipe *p,
 					trusted_dom_name, CRED_SPECIFIED);
 	cli_credentials_set_secure_channel_type(credentials, SEC_CHAN_DOMAIN);
 
-	status = dcerpc_pipe_connect_b(tctx, &pipe, p->binding,
+	status = dcerpc_pipe_connect_b(tctx, &p2, p->binding,
 				       &ndr_table_netlogon,
 				       cli_credentials_init_anon(tctx),
 				       tctx->ev, tctx->lp_ctx);
@@ -2785,10 +2785,10 @@ static bool check_dom_trust_pw(struct dcerpc_pipe *p,
 		return false;
 	}
 
-	ok = check_pw_with_ServerAuthenticate3(pipe, tctx,
+	ok = check_pw_with_ServerAuthenticate3(p2, tctx,
 					       NETLOGON_NEG_AUTH2_ADS_FLAGS,
 					       credentials, &creds);
-	talloc_free(pipe);
+	talloc_free(p2);
 
 	return ok;
 }
