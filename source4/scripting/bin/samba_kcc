@@ -43,6 +43,7 @@ import logging
 import itertools
 import heapq
 import time
+from functools import partial
 
 from samba import (
     getopt as options,
@@ -3267,7 +3268,6 @@ logger = logging.getLogger("samba_kcc")
 logger.addHandler(logging.StreamHandler(sys.stdout))
 DEBUG = logger.debug
 
-from functools import partial
 def _colour_debug(*args, **kwargs):
     DEBUG('%s%s%s' % (kwargs['colour'], args[0], C_NORMAL), *args[1:])
 
