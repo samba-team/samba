@@ -794,6 +794,7 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 
 	/* Nothing to do? */
 	if (state->scripts->num_scripts == 0) {
+		callback(ctdb, 0, private_data);
 		talloc_free(state);
 		return 0;
 	}
