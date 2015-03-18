@@ -19,7 +19,6 @@ bld.SAMBA_MODULE('gensec_gssapi',
 	source='gensec_gssapi.c',
 	subsystem='gensec',
 	init_function='gensec_gssapi_init',
-	allow_warnings=True,
 	deps='gssapi samba-credentials authkrb5 com_err gensec_util'
 	)
 
