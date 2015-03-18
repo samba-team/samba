@@ -56,24 +56,26 @@ static size_t gensec_gssapi_max_wrapped_size(struct gensec_security *gensec_secu
 
 static int gensec_gssapi_destructor(struct gensec_gssapi_state *gensec_gssapi_state)
 {
-	OM_uint32 maj_stat, min_stat;
-	
+	OM_uint32 min_stat;
+
 	if (gensec_gssapi_state->delegated_cred_handle != GSS_C_NO_CREDENTIAL) {
-		maj_stat = gss_release_cred(&min_stat, 
-					    &gensec_gssapi_state->delegated_cred_handle);
+		gss_release_cred(&min_stat,
+				 &gensec_gssapi_state->delegated_cred_handle);
 	}
 
 	if (gensec_gssapi_state->gssapi_context != GSS_C_NO_CONTEXT) {
-		maj_stat = gss_delete_sec_context (&min_stat,
-						   &gensec_gssapi_state->gssapi_context,
-						   GSS_C_NO_BUFFER);
+		gss_delete_sec_context(&min_stat,
+				       &gensec_gssapi_state->gssapi_context,
+				       GSS_C_NO_BUFFER);
 	}
 
 	if (gensec_gssapi_state->server_name != GSS_C_NO_NAME) {
-		maj_stat = gss_release_name(&min_stat, &gensec_gssapi_state->server_name);
+		gss_release_name(&min_stat,
+				 &gensec_gssapi_state->server_name);
 	}
 	if (gensec_gssapi_state->client_name != GSS_C_NO_NAME) {
-		maj_stat = gss_release_name(&min_stat, &gensec_gssapi_state->client_name);
+		gss_release_name(&min_stat,
+				 &gensec_gssapi_state->client_name);
 	}
 
 	if (gensec_gssapi_state->lucid) {
