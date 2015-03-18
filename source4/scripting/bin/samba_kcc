@@ -2391,6 +2391,11 @@ class KCC(object):
             self.load_all_sitelinks()
 
             if opts.verify or opts.dot_files:
+                guid_to_dnstr = {}
+                for site in self.site_table.values():
+                    guid_to_dnstr.update((str(dsa.dsa_guid), dnstr)
+                                         for dnstr, dsa in site.dsa_table.items())
+
 
                 dot_edges = []
                 for site in self.site_table.values():
@@ -2415,14 +2420,30 @@ class KCC(object):
                                dot_files=opts.dot_files)
 
                 dot_edges = []
-                for site in self.site_table.values():
-                    for dsa in site.dsa_table.values():
-                        for x in dsa.current_rep_table:
-                            dot_edges.append((dsa.dsa_dnstr, x))
+                current_rep_table, needed_rep_table = self.my_dsa.get_rep_tables()
+                for dnstr, c_rep in current_rep_table.items():
+                    DEBUG("c_rep %s" % c_rep)
+                    dot_edges.append((dsa.dsa_dnstr, dnstr))
 
                 verify_and_dot('dsa_repsFrom_initial', dot_edges, directed=True, label=self.my_dsa_dnstr,
                                properties=(), debug=DEBUG, verify=opts.verify,
                                dot_files=opts.dot_files)
+
+
+                dot_edges = []
+                for site in self.site_table.values():
+                    for dsa in site.dsa_table.values():
+                        current_rep_table, needed_rep_table = dsa.get_rep_tables()
+                        for dn_str, rep in current_rep_table.items():
+                            for reps_from in rep.rep_repsFrom:
+                                DEBUG("rep %s" % rep)
+                                dsa_dn = guid_to_dnstr[str(reps_from.source_dsa_obj_guid)]
+                                dot_edges.append((dsa.dsa_dnstr, dsa_dn))
+
+                verify_and_dot('dsa_repsFrom_initial_all', dot_edges, directed=True, label=self.my_dsa_dnstr,
+                               properties=(), debug=DEBUG, verify=opts.verify,
+                               dot_files=opts.dot_files)
+
 
                 dot_edges = []
                 for link in self.sitelink_table.values():
@@ -2470,6 +2491,37 @@ class KCC(object):
                 verify_and_dot('dsa_final', dot_edges, label=self.my_dsa_dnstr,
                                properties=verify_properties, debug=DEBUG, verify=opts.verify,
                                dot_files=opts.dot_files, directed=True)
+
+
+
+                DEBUG_MAGENTA("there are %d dsa guids" % len(guid_to_dnstr))
+
+                dot_edges = []
+                my_dnstr = self.my_dsa.dsa_dnstr
+                current_rep_table, needed_rep_table = self.my_dsa.get_rep_tables()
+                for dnstr, n_rep in needed_rep_table.items():
+                    for reps_from in n_rep.rep_repsFrom:
+                        dot_edges.append((my_dnstr, guid_to_dnstr[str(reps_from.source_dsa_obj_guid)]))
+
+                verify_and_dot('dsa_repsFrom_final', dot_edges, directed=True, label=self.my_dsa_dnstr,
+                               properties=(), debug=DEBUG, verify=opts.verify,
+                               dot_files=opts.dot_files)
+
+
+                dot_edges = []
+
+                for site in self.site_table.values():
+                    for dsa in site.dsa_table.values():
+                        current_rep_table, needed_rep_table = dsa.get_rep_tables()
+                        for n_rep in needed_rep_table.values():
+                            for reps_from in n_rep.rep_repsFrom:
+                                dsa_dn = guid_to_dnstr[str(reps_from.source_dsa_obj_guid)]
+                                dot_edges.append((dsa.dsa_dnstr, dsa_dn))
+
+                verify_and_dot('dsa_repsFrom_final_all', dot_edges, directed=True, label=self.my_dsa_dnstr,
+                               properties=(), debug=DEBUG, verify=opts.verify,
+                               dot_files=opts.dot_files)
+
 
         except:
             raise
