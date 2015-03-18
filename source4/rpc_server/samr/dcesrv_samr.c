@@ -313,7 +313,6 @@ static NTSTATUS dcesrv_samr_LookupDomain(struct dcesrv_call_state *dce_call, TAL
 static NTSTATUS dcesrv_samr_EnumDomains(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				 struct samr_EnumDomains *r)
 {
-	struct samr_connect_state *c_state;
 	struct dcesrv_handle *h;
 	struct samr_SamArray *array;
 	uint32_t i, start_i;
@@ -323,8 +322,6 @@ static NTSTATUS dcesrv_samr_EnumDomains(struct dcesrv_call_state *dce_call, TALL
 	*r->out.num_entries = 0;
 
 	DCESRV_PULL_HANDLE(h, r->in.connect_handle, SAMR_HANDLE_CONNECT);
-
-	c_state = h->data;
 
 	*r->out.resume_handle = 2;
 
@@ -1886,13 +1883,11 @@ static NTSTATUS dcesrv_samr_SetGroupInfo(struct dcesrv_call_state *dce_call, TAL
 	struct dcesrv_handle *h;
 	struct samr_account_state *g_state;
 	struct ldb_message *msg;
-	struct ldb_context *sam_ctx;
 	int ret;
 
 	DCESRV_PULL_HANDLE(h, r->in.group_handle, SAMR_HANDLE_GROUP);
 
 	g_state = h->data;
-	sam_ctx = g_state->sam_ctx;
 
 	msg = ldb_msg_new(mem_ctx);
 	if (msg == NULL) {
@@ -2338,13 +2333,11 @@ static NTSTATUS dcesrv_samr_SetAliasInfo(struct dcesrv_call_state *dce_call, TAL
 	struct dcesrv_handle *h;
 	struct samr_account_state *a_state;
 	struct ldb_message *msg;
-	struct ldb_context *sam_ctx;
 	int ret;
 
 	DCESRV_PULL_HANDLE(h, r->in.alias_handle, SAMR_HANDLE_ALIAS);
 
 	a_state = h->data;
-	sam_ctx = a_state->sam_ctx;
 
 	msg = ldb_msg_new(mem_ctx);
 	if (msg == NULL) {
