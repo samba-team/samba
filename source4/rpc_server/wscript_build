@@ -130,7 +130,6 @@ bld.SAMBA_MODULE('dcerpc_spoolss',
 
 bld.SAMBA_MODULE('dcerpc_drsuapi',
 	source='drsuapi/dcesrv_drsuapi.c drsuapi/updaterefs.c drsuapi/getncchanges.c drsuapi/addentry.c drsuapi/writespn.c drsuapi/drsutil.c',
-	allow_warnings=True,
 	subsystem='dcerpc_server',
 	init_function='dcerpc_server_drsuapi_init',
 	deps='samdb DCERPC_COMMON NDR_DRSUAPI samba-security'
