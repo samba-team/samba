@@ -6,21 +6,20 @@
 THIRD_PARTY_DIR="`dirname $0`/../third_party"
 # Library directory where projects live that haven't been migrated to
 # $THIRD_PARTY_DIR yet.
-LIBDIR="`dirname $0`"
 WORKDIR="`mktemp -d`"
 
 echo "Updating dnspython..."
-git clone git://www.dnspython.org/dnspython.git "$WORKDIR/dnspython"
+git clone git://git.samba.org/third_party/dnspython "$WORKDIR/dnspython"
 rm -rf "$WORKDIR/dnspython/.git"
-rsync -avz --delete "$WORKDIR/dnspython/" "$LIBDIR/dnspython/"
+rsync -avz --delete "$WORKDIR/dnspython/" "$THIRD_PARTY_DIR/dnspython/"
 
 echo "Updating pep8..."
-git clone git://github.com/jcrocholl/pep8 "$WORKDIR/pep8"
+git clone git://git.samba.org/third_party/pep8 "$WORKDIR/pep8"
 rm -rf "$WORKDIR/pep8/.git"
-rsync -avz --delete "$WORKDIR/pep8/" "$LIBDIR/pep8/"
+rsync -avz --delete "$WORKDIR/pep8/" "$THIRD_PARTY_DIR/pep8/"
 
 echo "Updating zlib..."
-git clone git://github.com/madler/zlib "$WORKDIR/zlib"
+git clone git://git.samba.org/third_party/zlib "$WORKDIR/zlib"
 rm -rf "$WORKDIR/zlib/.git"
 rsync --exclude=wscript -avz --delete "$WORKDIR/zlib/" "$THIRD_PARTY_DIR/zlib/"
 
