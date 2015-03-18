@@ -45,6 +45,11 @@ struct socket_context *tls_init_server(struct tls_params *parms,
 				    struct tevent_fd *fde,
 				    const char *plain_chars);
 
+void tls_cert_generate(TALLOC_CTX *mem_ctx,
+		       const char *hostname,
+		       const char *keyfile, const char *certfile,
+		       const char *cafile);
+
 /*
   call tls_init_client() on each new client connection
 */

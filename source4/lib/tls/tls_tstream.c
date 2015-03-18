@@ -1061,8 +1061,6 @@ int tstream_tls_connect_recv(struct tevent_req *req,
 	return 0;
 }
 
-extern void tls_cert_generate(TALLOC_CTX *, const char *, const char *, const char *, const char *);
-
 /*
   initialise global tls state
 */
