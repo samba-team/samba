@@ -54,7 +54,7 @@ const gss_OID_desc * const gss_mech_krb5_wrong        = krb5_gss_oid_array+2;
 
 gss_OID_desc gse_sesskey_inq_oid = {
 	GSS_KRB5_INQ_SSPI_SESSION_KEY_OID_LENGTH,
-	(void *)GSS_KRB5_INQ_SSPI_SESSION_KEY_OID
+	discard_const(GSS_KRB5_INQ_SSPI_SESSION_KEY_OID)
 };
 
 #ifndef GSS_KRB5_SESSION_KEY_ENCTYPE_OID
@@ -64,7 +64,7 @@ gss_OID_desc gse_sesskey_inq_oid = {
 
 gss_OID_desc gse_sesskeytype_oid = {
 	GSS_KRB5_SESSION_KEY_ENCTYPE_OID_LENGTH,
-	(void *)GSS_KRB5_SESSION_KEY_ENCTYPE_OID
+	discard_const(GSS_KRB5_SESSION_KEY_ENCTYPE_OID)
 };
 
 /* The Heimdal OID for getting the PAC */
@@ -236,7 +236,7 @@ NTSTATUS gssapi_get_session_key(TALLOC_CTX *mem_ctx,
 
 	if (keytype) {
 		int diflen, i;
-		const char *p;
+		const uint8_t *p;
 
 		if (set->count < 2) {
 
@@ -266,7 +266,7 @@ NTSTATUS gssapi_get_session_key(TALLOC_CTX *mem_ctx,
 			gss_maj = gss_release_buffer_set(&gss_min, &set);
 			return NT_STATUS_OK;
 		}
-		p = (uint8_t *)set->elements[1].value + gse_sesskeytype_oid.length;
+		p = (const uint8_t *)set->elements[1].value + gse_sesskeytype_oid.length;
 		diflen = set->elements[1].length - gse_sesskeytype_oid.length;
 		if (diflen <= 0) {
 			gss_maj = gss_release_buffer_set(&gss_min, &set);
@@ -307,9 +307,17 @@ char *gssapi_error_string(TALLOC_CTX *mem_ctx,
 	disp_maj_stat = gss_display_status(&disp_min_stat, maj_stat,
 					   GSS_C_GSS_CODE, mech,
 					   &msg_ctx, &maj_error_message);
+	if (disp_maj_stat != 0) {
+		maj_error_message.value = NULL;
+		maj_error_message.length = 0;
+	}
 	disp_maj_stat = gss_display_status(&disp_min_stat, min_stat,
 					   GSS_C_MECH_CODE, mech,
 					   &msg_ctx, &min_error_message);
+	if (disp_maj_stat != 0) {
+		min_error_message.value = NULL;
+		min_error_message.length = 0;
+	}
 
 	maj_error_string = talloc_strndup(mem_ctx,
 					  (char *)maj_error_message.value,
