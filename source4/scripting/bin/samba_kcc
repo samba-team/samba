@@ -56,6 +56,7 @@ from samba.auth import system_session
 from samba.samdb import SamDB
 from samba.dcerpc import drsuapi
 from samba.kcc_utils import *
+from samba.graph_utils import *
 
 class KCC(object):
     """The Knowledge Consistency Checker class.
