@@ -81,6 +81,7 @@ struct _SMBCSRV {
 	bool no_pathinfo3;
         bool no_nt_session;
         struct policy_handle pol;
+	time_t last_echo_time;
 
 	SMBCSRV *next, *prev;
 };
