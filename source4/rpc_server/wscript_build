@@ -76,7 +76,6 @@ bld.SAMBA_MODULE('dcerpc_unixinfo',
 
 bld.SAMBA_MODULE('dcesrv_samr',
 	source='samr/dcesrv_samr.c samr/samr_password.c',
-	allow_warnings=True,
 	autoproto='samr/proto.h',
 	subsystem='dcerpc_server',
 	init_function='dcerpc_server_samr_init',
