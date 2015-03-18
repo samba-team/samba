@@ -216,7 +216,6 @@ def build(bld):
                          'tests/sample_module.c',
                          init_function='ldb_sample_init',
                          internal_module=False,
-                         allow_warnings=True,
                          module_init_name='ldb_init_module',
                          deps='ldb',
                          subsystem='ldb')
