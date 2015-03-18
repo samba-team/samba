@@ -39,7 +39,7 @@ def write_dot_file(basename, edge_list, vertices=None, label=None, destdir=None,
             if reformat_labels:
                 v = v.replace(',', '\\n')
             print >>f, '"%s";' % (v,)
-    print edge_colors, edge_labels
+
     for i, edge in enumerate(edge_list):
         a, b = edge
         if reformat_labels:

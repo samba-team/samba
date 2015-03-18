@@ -3195,6 +3195,20 @@ def add_out_edge(graph, output_edges, e):
 
 
 
+logger = logging.getLogger("samba_kcc")
+logger.addHandler(logging.StreamHandler(sys.stdout))
+DEBUG = logger.debug
+
+def _colour_debug(*args, **kwargs):
+    DEBUG('%s%s%s' % (kwargs['colour'], args[0], C_NORMAL), *args[1:])
+
+_globals = globals()
+for _colour in ('DARK_RED', 'RED', 'DARK_GREEN', 'GREEN', 'YELLOW',
+                'DARK_YELLOW', 'DARK_BLUE', 'BLUE', 'PURPLE', 'MAGENTA',
+                'DARK_CYAN', 'CYAN', 'GREY', 'WHITE', 'REV_RED'):
+    _globals['DEBUG_' + _colour] = partial(_colour_debug, colour=_globals[_colour])
+
+
 ##################################################
 # samba_kcc entry point
 ##################################################
@@ -3260,28 +3274,12 @@ parser.add_option("--attempt-live-connections", default=False,
                   action="store_true")
 
 parser.add_option("--list-valid-dsas", default=False,
-                  help="Print a list of DSA dnstrs that could be used in--forced-local-dsa",
+                  help="Print a list of DSA dnstrs that could be used in --forced-local-dsa",
                   action="store_true")
 
 
-logger = logging.getLogger("samba_kcc")
-logger.addHandler(logging.StreamHandler(sys.stdout))
-DEBUG = logger.debug
-
-def _colour_debug(*args, **kwargs):
-    DEBUG('%s%s%s' % (kwargs['colour'], args[0], C_NORMAL), *args[1:])
-
-_globals = globals()
-for _colour in ('DARK_RED', 'RED', 'DARK_GREEN', 'GREEN', 'YELLOW',
-                'DARK_YELLOW', 'DARK_BLUE', 'BLUE', 'PURPLE', 'MAGENTA',
-                'DARK_CYAN', 'CYAN', 'GREY', 'WHITE', 'REV_RED'):
-    _globals['DEBUG_' + _colour] = partial(_colour_debug, colour=_globals[_colour])
-
-
-lp = sambaopts.get_loadparm()
-creds = credopts.get_credentials(lp, fallback_machine=True)
-
 opts, args = parser.parse_args()
+
 
 if opts.list_verify_tests:
     list_verify_tests()
@@ -3299,9 +3297,6 @@ if opts.seed:
     random.seed(opts.seed)
 else:
     random.seed(0xACE5CA11)
-
-if opts.dburl is None:
-    opts.dburl = lp.samdb_url()
 
 if opts.now:
     for timeformat in ("%Y%m%d%H%M%S%Z", "%Y%m%d%H%M%S"):
@@ -3322,6 +3317,12 @@ else:
 
 # Instantiate Knowledge Consistency Checker and perform run
 kcc = KCC()
+
+lp = sambaopts.get_loadparm()
+creds = credopts.get_credentials(lp, fallback_machine=True)
+
+if opts.dburl is None:
+    opts.dburl = lp.samdb_url()
 
 if opts.exportldif:
     rc = kcc.export_ldif(opts.dburl, lp, creds, opts.exportldif)
