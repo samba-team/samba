@@ -655,7 +655,7 @@ static bool test_stream_names(struct torture_context *tctx,
 	const char *fname = BASEDIR "\\stream_names.txt";
 	const char *sname1, *sname1b, *sname1c, *sname1d;
 	const char *sname2, *snamew, *snamew2;
-	const char *snamer1, *snamer2;
+	const char *snamer1;
 	bool ret = true;
 	int fnum1 = -1;
 	int fnum2 = -1;
@@ -692,7 +692,6 @@ static bool test_stream_names(struct torture_context *tctx,
 	snamew = talloc_asprintf(tctx, "%s:%s:$DATA", fname, "?Stream*");
 	snamew2 = talloc_asprintf(tctx, "%s\\stream*:%s:$DATA", BASEDIR, "?Stream*");
 	snamer1 = talloc_asprintf(tctx, "%s:%s:$DATA", fname, "BeforeRename");
-	snamer2 = talloc_asprintf(tctx, "%s:%s:$DATA", fname, "AfterRename");
 
 	printf("(%s) testing stream names\n", __location__);
 	io.generic.level = RAW_OPEN_NTCREATEX;
@@ -1090,8 +1089,6 @@ done:
 }
 
 #define CHECK_CALL_FNUM(call, rightstatus) do { \
-        check_fnum = true; \
-        call_name = #call; \
         sfinfo.generic.level = RAW_SFILEINFO_ ## call; \
         sfinfo.generic.in.file.fnum = fnum; \
         status = smb_raw_setfileinfo(cli->tree, &sfinfo); \
@@ -1122,8 +1119,6 @@ static bool test_stream_rename(struct torture_context *tctx,
 	union smb_setfileinfo sfinfo;
 	bool ret = true;
 	int fnum = -1;
-	bool check_fnum;
-	const char *call_name;
 
 	torture_assert(tctx, torture_setup_dir(cli, BASEDIR), "Failed to setup up test directory: " BASEDIR);
 
@@ -1398,8 +1393,6 @@ static bool test_stream_rename3(struct torture_context *tctx,
 	bool ret = true;
 	int fnum = -1;
 	int fnum2 = -1;
-	bool check_fnum;
-	const char *call_name;
 
 	torture_assert(tctx, torture_setup_dir(cli, BASEDIR), "Failed to setup up test directory: " BASEDIR);
 

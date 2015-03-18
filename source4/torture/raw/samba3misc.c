@@ -981,7 +981,6 @@ bool torture_samba3_rootdirfid(struct torture_context *tctx, struct smbcli_state
 
 bool torture_samba3_oplock_logoff(struct torture_context *tctx, struct smbcli_state *cli)
 {
-	uint16_t fnum1;
 	union smb_open io;
 	const char *fname = "testfile";
 	bool ret = false;
@@ -1007,7 +1006,6 @@ bool torture_samba3_oplock_logoff(struct torture_context *tctx, struct smbcli_st
 	torture_assert_ntstatus_equal_goto(tctx, smb_raw_open(cli->tree, tctx, &io),
 					   NT_STATUS_OK,
 					   ret, done, "first smb_open on the file failed");
-	fnum1 = io.ntcreatex.out.file.fnum;
 
 	/*
 	 * Create a conflicting open, causing the one-second delay
