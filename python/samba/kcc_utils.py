@@ -2503,19 +2503,20 @@ def verify_graph_no_unknown_vertices(edges, vertices, edge_vertices):
 
 
 def verify_graph_directed_double_ring(edges, vertices, edge_vertices):
-    """Each node has two directed edges leaving it, and two arriving. The
-    edges work in pairs that have the same end points but point in
-    opposite directions. The pairs form a path that touches every
-    vertex and form a loop.
+    """Each node has at least two directed edges leaving it, and two
+    arriving. The edges work in pairs that have the same end points
+    but point in opposite directions. The pairs form a path that
+    touches every vertex and form a loop.
+
+    There might be other connections that *aren't* part of the ring.
     """
     #XXX possibly the 1 and 2 vertex cases are special cases.
     if not edges:
         return
-    if len(edges) != 2* len(vertices):
-        raise KCCGraphError("directed double ring requires edges == 2 * vertices")
+    if len(edges) < 2* len(vertices):
+        raise KCCGraphError("directed double ring requires at least twice as many edges as vertices")
 
     exits = {}
-
     for start, end in edges:
         s = exits.setdefault(start, [])
         s.append(end)
