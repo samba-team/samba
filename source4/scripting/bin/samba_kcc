@@ -2209,11 +2209,13 @@ class KCC(object):
         # from rj of R to ri such that j != i, an edge from rj to ri
         # is not already in the graph, and the total edges directed
         # to ri is less than n+2, the KCC adds that edge to the graph.
-        i = 0
-        while i < r_len:
-            dsa = self.my_site.dsa_table[graph_list[i].dsa_dnstr]
-            graph_list[i].add_edges_from_connections(dsa)
-            i = i + 1
+        for vertex in graph_list:
+            dsa = self.my_site.dsa_table[vertex.dsa_dnstr]
+            for dnstr, connect in dsa.connect_table.items():
+                remote = connect.from_dnstr
+                if remote in self.my_site.dsa_table:
+                    vertex.add_edge_from(remote)
+
         DEBUG('reps are:  %s' % '   '.join(x.rep_dsa_dnstr for x in r_list))
         DEBUG('dsas are:  %s' % '   '.join(x.dsa_dnstr for x in graph_list))
 
