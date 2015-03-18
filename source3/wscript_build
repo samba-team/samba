@@ -713,7 +713,6 @@ bld.SAMBA3_SUBSYSTEM('LIBNET_DSSYNC',
                     source='''libnet/libnet_dssync.c
                     libnet/libnet_dssync_passdb.c
                     libnet/libnet_dssync_keytab.c''',
-                    allow_warnings=True,
                     deps='LIBNET RPC_NDR_DRSUAPI')
 
 bld.SAMBA3_SUBSYSTEM('LIBNET_SAMSYNC',
