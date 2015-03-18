@@ -940,7 +940,9 @@ bool asn1_read_enumerated(struct asn1_data *data, int *v)
 	if (!asn1_start_tag(data, ASN1_ENUMERATED)) return false;
 	while (!data->has_error && asn1_tag_remaining(data)>0) {
 		uint8_t b;
-		asn1_read_uint8(data, &b);
+		if (!asn1_read_uint8(data, &b)) {
+			return false;
+		}
 		*v = (*v << 8) + b;
 	}
 	return asn1_end_tag(data);	
