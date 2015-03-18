@@ -1775,7 +1775,7 @@ class KCC(object):
         if opts.verify or opts.dot_files:
             graph_edges = [(e.v1.site.site_dnstr, e.v2.site.site_dnstr) for e in internal_edges]
             graph_nodes = [v.site.site_dnstr for v in graph.vertices]
-            verify_properties = ('complete', 'connected', 'multi_edge_forest', 'forest', 'directed_double_ring')
+            verify_properties = ('multi_edge_forest',)
             verify_and_dot('postkruskal', graph_edges, graph_nodes, label=label,
                            properties=verify_properties, debug=DEBUG, verify=opts.verify,
                            dot_files=opts.dot_files)
