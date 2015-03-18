@@ -2498,15 +2498,18 @@ class KCC(object):
                 DEBUG_MAGENTA("there are %d dsa guids" % len(guid_to_dnstr))
 
                 dot_edges = []
+                edge_colors = []
                 my_dnstr = self.my_dsa.dsa_dnstr
                 current_rep_table, needed_rep_table = self.my_dsa.get_rep_tables()
                 for dnstr, n_rep in needed_rep_table.items():
                     for reps_from in n_rep.rep_repsFrom:
-                        dot_edges.append((my_dnstr, guid_to_dnstr[str(reps_from.source_dsa_obj_guid)]))
+                        guid_str = str(reps_from.source_dsa_obj_guid)
+                        dot_edges.append((my_dnstr, guid_to_dnstr[guid_str]))
+                        edge_colors.append('#' + str(n_rep.nc_guid)[:6])
 
                 verify_and_dot('dsa_repsFrom_final', dot_edges, directed=True, label=self.my_dsa_dnstr,
                                properties=(), debug=DEBUG, verify=opts.verify,
-                               dot_files=opts.dot_files)
+                               dot_files=opts.dot_files, edge_colors=edge_colors)
 
 
                 dot_edges = []
