@@ -627,7 +627,7 @@ static int unix_dgram_send(struct unix_dgram_ctx *ctx,
 
 	{
 		uint8_t buf[fdlen];
-		msghdr_prep_fds(&msg, buf, 0, fds, num_fds);
+		msghdr_prep_fds(&msg, buf, fdlen, fds, num_fds);
 
 		ret = sendmsg(ctx->sock, &msg, 0);
 	}
