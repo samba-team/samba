@@ -483,6 +483,11 @@ static struct smb2_handle custom_smb2_create(struct smb2_tree *tree,
 	CHECK_STATUS(status, NT_STATUS_OK);
 	h1 = smb2->out.file.handle;
 done:
+	if (!ret) {
+		h1 = (struct smb2_handle) {
+			.data = { 0 , 0},
+		};
+	}
 	return h1;
 }
 
