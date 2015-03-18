@@ -36,6 +36,7 @@ static bool ntlmssp_NEGOTIATE_MESSAGE_check(struct torture_context *tctx,
 	return true;
 }
 
+#if 0
 static const uint8_t ntlmssp_CHALLENGE_MESSAGE_data[] = {
 	0x4e, 0x54, 0x4c, 0x4d, 0x53, 0x53, 0x50, 0x00, 0x02, 0x00, 0x00, 0x00,
 	0x0a, 0x00, 0x0a, 0x00, 0x38, 0x00, 0x00, 0x00, 0x95, 0x82, 0x89, 0xe2,
@@ -107,6 +108,7 @@ static bool ntlmssp_AUTHENTICATE_MESSAGE_check(struct torture_context *tctx,
 {
 	return true;
 }
+#endif
 
 struct torture_suite *ndr_ntlmssp_suite(TALLOC_CTX *ctx)
 {
