@@ -83,7 +83,9 @@ class RestoredObjectAttributesBaseTestCase(samba.tests.TestCase):
         return self.search_dn(msg['dn'])
 
     def assertAttributesEqual(self, obj_orig, attrs_orig, obj_restored, attrs_rest):
-        self.assertEqual(attrs_orig, attrs_rest, "Actual object does not have expected attributes")
+        self.assertEqual(attrs_orig, attrs_rest,
+                         "Actual object does not have expected attributes, missing from expected (%s), extra (%s)"
+                         % (str(attrs_orig.difference(attrs_rest)), str(attrs_rest.difference(attrs_orig))))
         # remove volatile attributes, they can't be equal
         attrs_orig -= set(["uSNChanged", "dSCorePropagationData", "whenChanged"])
         for attr in attrs_orig:
