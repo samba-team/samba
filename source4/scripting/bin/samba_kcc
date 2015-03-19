@@ -24,6 +24,7 @@
 import os
 import sys
 import random
+import uuid
 
 # ensure we get messages out immediately, so they get in the samba logs,
 # and don't get swallowed by a timeout
@@ -368,6 +369,14 @@ class KCC(object):
         mydsa = self.my_dsa
 
         # Loop thru connections
+        for cn_conn in mydsa.connect_table.values():
+            if cn_conn.guid is None:
+                if opts.readonly:
+                    cn_conn.guid = misc.GUID(str(uuid.uuid4()))
+                    cn_conn.whenCreated = nt_now
+                else:
+                    cn_conn.load_connection(self.samdb)
+
         for cn_dnstr, cn_conn in mydsa.connect_table.items():
 
             s_dnstr = cn_conn.get_from_dnstr()
@@ -422,8 +431,6 @@ class KCC(object):
                         continue
 
                     s2_dnstr = cn2_conn.get_from_dnstr()
-                    if s2_dnstr is None:
-                        continue
 
                     # If the NTDS Connections has a different
                     # fromServer field then no match
@@ -3006,6 +3013,7 @@ if opts.now:
 else:
     unix_now = int(time.time())
 
+nt_now = unix2nttime(unix_now)
 
 lp = sambaopts.get_loadparm()
 creds = credopts.get_credentials(lp, fallback_machine=True)
