@@ -52,11 +52,11 @@ struct netlogon_creds_CredentialState *netlogon_creds_server_init(TALLOC_CTX *me
 								  const struct netr_Credential *client_challenge,
 								  const struct netr_Credential *server_challenge,
 								  const struct samr_Password *machine_password,
-								  struct netr_Credential *credentials_in,
+								  const struct netr_Credential *credentials_in,
 								  struct netr_Credential *credentials_out,
 								  uint32_t negotiate_flags);
 NTSTATUS netlogon_creds_server_step_check(struct netlogon_creds_CredentialState *creds,
-				 struct netr_Authenticator *received_authenticator,
+				 const struct netr_Authenticator *received_authenticator,
 				 struct netr_Authenticator *return_authenticator) ;
 void netlogon_creds_decrypt_samlogon_validation(struct netlogon_creds_CredentialState *creds,
 						uint16_t validation_level,
