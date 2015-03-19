@@ -2010,7 +2010,6 @@ class KCC(object):
         # context dn for (nc_x)
         #
         for dc_s in self.my_site.dsa_table.values():
-
             # If this partition (nc_x) doesn't appear as a
             # replica (f_of_x) on (dc_s) then continue
             if not nc_x.nc_dnstr in dc_s.current_rep_table:
@@ -2087,7 +2086,6 @@ class KCC(object):
         # function.
 
         if partial:
-
             # Now we loop thru all the DSAs looking for
             # partial NC replicas that match the naming
             # context dn for (NC x)
@@ -2160,7 +2158,6 @@ class KCC(object):
         r_list.append(l_of_x)
 
         r_list.sort(sort_replica_by_dsa_guid)
-        DEBUG('\n'.join(str((x.rep_dsa_guid, x.rep_dsa_dnstr)) for x in r_list))
         r_len = len(r_list)
 
         max_node_edges = self.intrasite_max_node_edges(r_len)
@@ -2194,6 +2191,9 @@ class KCC(object):
         # r|R|-1 is a partial replica.
         if not r_list[0].is_partial() or r_list[r_len-1].is_partial():
             graph_list[r_len-1].add_edge_from(r_list[0].rep_dsa_dnstr)
+
+        DEBUG("r_list is length %s" % len(r_list))
+        DEBUG('\n'.join(str((x.rep_dsa_guid, x.rep_dsa_dnstr)) for x in r_list))
 
         if opts.verify or opts.dot_files:
             dot_edges = []
