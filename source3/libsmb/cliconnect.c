@@ -1664,7 +1664,7 @@ static char *cli_session_setup_get_principal(
 	char *principal = NULL;
 
 	if (!lp_client_use_spnego_principal() ||
-	    strequal(principal, ADS_IGNORE_PRINCIPAL)) {
+	    strequal(spnego_principal, ADS_IGNORE_PRINCIPAL)) {
 		spnego_principal = NULL;
 	}
 	if (spnego_principal != NULL) {
