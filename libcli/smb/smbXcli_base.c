@@ -1592,6 +1592,7 @@ static void smb1cli_req_writev_done(struct tevent_req *subreq)
 	if (nwritten == -1) {
 		NTSTATUS status = map_nt_error_from_unix_common(err);
 		smbXcli_conn_disconnect(state->conn, status);
+		tevent_req_nterror(req, status);
 		return;
 	}
 
