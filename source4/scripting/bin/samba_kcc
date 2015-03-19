@@ -2867,6 +2867,20 @@ def add_out_edge(graph, output_edges, e):
     v2.edges.append(ee)
 
 
+def test_all_reps_from(lp, creds):
+    kcc = KCC()
+    kcc.load_samdb(opts.dburl, lp, creds)
+    dsas = kcc.list_dsas()
+    needed_reps = []
+    current_reps = []
+    for dsa in dsas:
+        kcc = KCC()
+        kcc.run(opts.dburl, lp, creds, forced_local_dsa=dsa)
+        current, needed = kcc.my_dsa.get_rep_tables()
+        print "current", current
+        print "needed", needed
+
+
 
 logger = logging.getLogger("samba_kcc")
 logger.addHandler(logging.StreamHandler(sys.stdout))
@@ -2950,6 +2964,11 @@ parser.add_option("--list-valid-dsas", default=False,
                   help="Print a list of DSA dnstrs that could be used in --forced-local-dsa",
                   action="store_true")
 
+parser.add_option("--test-all-reps-from", default=False,
+                  help="Create and verify a graph of reps-from for every DSA",
+                  action="store_true")
+
+
 
 opts, args = parser.parse_args()
 
@@ -2993,6 +3012,11 @@ creds = credopts.get_credentials(lp, fallback_machine=True)
 
 if opts.dburl is None:
     opts.dburl = lp.samdb_url()
+
+if opts.test_all_reps_from:
+    opts.readonly = True
+    test_all_reps_from(lp, creds)
+    sys.exit()
 
 # Instantiate Knowledge Consistency Checker and perform run
 kcc = KCC()
