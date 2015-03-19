@@ -760,7 +760,7 @@ struct parm_struct parm_table[] = {
 		.offset		= GLOBAL_VAR(client_use_spnego_principal),
 		.special	= NULL,
 		.enum_list	= NULL,
-		.flags		= FLAG_ADVANCED,
+		.flags		= FLAG_ADVANCED | FLAG_DEPRECATED,
 	},
 	{
 		.label		= "username",
