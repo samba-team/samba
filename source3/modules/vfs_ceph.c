@@ -753,8 +753,26 @@ static int cephwrap_ntimes(struct vfs_handle_struct *handle,
 {
 	struct utimbuf buf;
 	int result;
-	buf.actime = ft->atime.tv_sec;
-	buf.modtime = ft->mtime.tv_sec;
+
+	if (null_timespec(ft->atime)) {
+		buf.actime = smb_fname->st.st_ex_atime.tv_sec;
+	} else {
+		buf.actime = ft->atime.tv_sec;
+	}
+	if (null_timespec(ft->mtime)) {
+		buf.modtime = smb_fname->st.st_ex_mtime.tv_sec;
+	} else {
+		buf.modtime = ft->mtime.tv_sec;
+	}
+	if (!null_timespec(ft->create_time)) {
+		set_create_timespec_ea(handle->conn, smb_fname,
+				       ft->create_time);
+	}
+	if (buf.actime == smb_fname->st.st_ex_atime.tv_sec &&
+	    buf.modtime == smb_fname->st.st_ex_mtime.tv_sec) {
+		return 0;
+	}
+
 	result = ceph_utime(handle->data, smb_fname->base_name, &buf);
 	DEBUG(10, ("[CEPH] ntimes(%p, %s, {%ld, %ld, %ld, %ld}) = %d\n", handle, smb_fname_str_dbg(smb_fname),
 				ft->mtime.tv_sec, ft->atime.tv_sec, ft->ctime.tv_sec,
