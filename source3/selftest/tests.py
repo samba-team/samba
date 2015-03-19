@@ -112,6 +112,7 @@ local_tests = [
     "LOCAL-MESSAGING-FDPASS1",
     "LOCAL-MESSAGING-FDPASS2",
     "LOCAL-MESSAGING-FDPASS2a",
+    "LOCAL-MESSAGING-FDPASS2b",
     "LOCAL-hex_encode_buf",
     "LOCAL-sprintf_append",
     "LOCAL-remove_duplicate_addrs2"]

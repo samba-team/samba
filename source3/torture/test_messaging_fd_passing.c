@@ -386,3 +386,12 @@ bool run_messaging_fdpass2a(int dummy)
 {
 	return run_messaging_fdpass2_int(dummy, 1);
 }
+
+/**
+ * Variant of the FDPASS2 test that tests the non-queuing fast path
+ * without a payload.
+ */
+bool run_messaging_fdpass2b(int dummy)
+{
+	return run_messaging_fdpass2_int(dummy, 0);
+}
