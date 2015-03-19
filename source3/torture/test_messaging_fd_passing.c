@@ -214,7 +214,7 @@ static void child_done_cb(struct tevent_context *ev,
 	state->done = true;
 }
 
-static bool fdpass2_parent(pid_t child_pid, int ready_fd)
+static bool fdpass2_parent(pid_t child_pid, int ready_fd, size_t payload_size)
 {
 	struct tevent_context *ev = NULL;
 	struct messaging_context *msg_ctx = NULL;
@@ -285,8 +285,11 @@ static bool fdpass2_parent(pid_t child_pid, int ready_fd)
 	 * Send a certain payload with the fds, to test to test
 	 * that fd-passing works when we have fragmentation and
 	 * re-assembly of the datagrams.
+	 *
+	 * Fragmentation/queuing is triggered by a certain payload
+	 * size. Payloads below that size use the fast path.
 	 */
-	blob = data_blob_talloc_zero(frame, 1000*1000);
+	blob = data_blob_talloc_zero(frame, payload_size);
 	iov.iov_base = blob.data;
 	iov.iov_len  = blob.length;
 
@@ -343,7 +346,7 @@ done:
 	return retval;
 }
 
-bool run_messaging_fdpass2(int dummy)
+static bool run_messaging_fdpass2_int(int dummy, size_t payload_size)
 {
 	bool retval = false;
 	pid_t child_pid;
@@ -364,8 +367,13 @@ bool run_messaging_fdpass2(int dummy)
 		retval = fdpass2_child(ready_pipe[1]);
 	} else {
 		close(ready_pipe[1]);
-		retval = fdpass2_parent(child_pid, ready_pipe[0]);
+		retval = fdpass2_parent(child_pid, ready_pipe[0], payload_size);
 	}
 
 	return retval;
+}
+
+bool run_messaging_fdpass2(int dummy)
+{
+	return run_messaging_fdpass2_int(dummy, 1000*1000);
 }
