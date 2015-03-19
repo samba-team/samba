@@ -16,6 +16,11 @@ UPGRADING
 NEW FEATURES
 ============
 
+The logging code now supports logging to multiple backends.  In
+addition to the previously available syslog and file backends, the
+backends for logging to the systemd-journal, lttng and gpfs have been
+added. Please consult the section for the 'logging' parameter in the
+smb.conf manpage for details.
 
 
 ######################################################################
@@ -27,6 +32,7 @@ smb.conf changes
 
    Parameter Name			Description	Default
    --------------			-----------	-------
+   logging				New		(empty)
 
 
 KNOWN ISSUES
