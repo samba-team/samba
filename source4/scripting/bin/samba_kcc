@@ -1178,6 +1178,7 @@ class KCC(object):
                 needed, ro, partial = part.should_be_present(dsa)
                 if not needed or (partial and not partial_ok):
                     continue
+                rep = dsa.get_current_replica(part.nc_dnstr)
 
             # ELSE
             #     IF an NC replica of cr!nCName is not in the set of NC
@@ -1193,7 +1194,7 @@ class KCC(object):
             #     Let dsaobj be the nTDSDSA object of the dc
             #     IF  dsaobj.msDS-Behavior-Version < DS_DOMAIN_FUNCTION_2008
             #         Skip dc
-            if self.my_dsa.is_ro() and part.is_default():
+            if self.my_dsa.is_ro() and rep is not None and rep.is_default():
                 if not dsa.is_minimum_behavior(dsdb.DS_DOMAIN_FUNCTION_2008):
                     continue
 
