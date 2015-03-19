@@ -2426,15 +2426,19 @@ class KCC(object):
                     guid_to_dnstr.update((str(dsa.dsa_guid), dnstr)
                                          for dnstr, dsa in site.dsa_table.items())
 
-
                 dot_edges = []
+                colours = []
                 for site in self.site_table.values():
                     for dsa in site.dsa_table.values():
                         for con in dsa.connect_table.values():
+                            if con.is_rodc_topology():
+                                colours.append('red')
+                            else:
+                                colours.append('blue')
                             dot_edges.append((dsa.dsa_dnstr, con.from_dnstr))
                 verify_and_dot('dsa_initial', dot_edges, label=self.my_dsa_dnstr,
-                               properties=(), debug=DEBUG, verify=opts.verify,
-                               dot_files=opts.dot_files, directed=True)
+                               properties=(), debug=DEBUG, verify=False,
+                               dot_files=opts.dot_files, directed=True, edge_colors=colours)
 
                 dot_edges = []
                 for site in self.site_table.values():
@@ -2513,14 +2517,19 @@ class KCC(object):
 
             if opts.verify or opts.dot_files:
                 dot_edges = []
+                colours = []
                 for site in self.site_table.values():
                     for dsa in site.dsa_table.values():
                         for con in dsa.connect_table.values():
+                            if con.is_rodc_topology():
+                                colours.append('red')
+                            else:
+                                colours.append('blue')
                             dot_edges.append((dsa.dsa_dnstr, con.from_dnstr))
                 verify_properties = ('connected', 'forest_of_rings')
                 verify_and_dot('dsa_final', dot_edges, label=self.my_dsa_dnstr,
                                properties=verify_properties, debug=DEBUG, verify=opts.verify,
-                               dot_files=opts.dot_files, directed=True)
+                               dot_files=opts.dot_files, directed=True, edge_colors=colours)
 
 
 
