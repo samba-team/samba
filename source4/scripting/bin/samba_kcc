@@ -2372,10 +2372,11 @@ class KCC(object):
         self.load_all_partitions()
         self.load_all_transports()
         self.load_all_sitelinks()
-
+        dsas = []
         for site in self.site_table.values():
-            for dsa in site.dsa_table.values():
-                print dsa.dsa_dnstr
+            dsas.extend([dsa.dsa_dnstr.replace('CN=NTDS Settings,', '', 1)
+                         for dsa in site.dsa_table.values()])
+        return dsas
 
     def load_samdb(self, dburl, lp, creds):
         self.samdb = SamDB(url=dburl,
@@ -2987,14 +2988,14 @@ else:
     unix_now = int(time.time())
 
 
-# Instantiate Knowledge Consistency Checker and perform run
-kcc = KCC()
-
 lp = sambaopts.get_loadparm()
 creds = credopts.get_credentials(lp, fallback_machine=True)
 
 if opts.dburl is None:
     opts.dburl = lp.samdb_url()
+
+# Instantiate Knowledge Consistency Checker and perform run
+kcc = KCC()
 
 if opts.exportldif:
     rc = kcc.export_ldif(opts.dburl, lp, creds, opts.exportldif)
@@ -3011,7 +3012,7 @@ if opts.importldif:
 
 if opts.list_valid_dsas:
     kcc.load_samdb(opts.dburl, lp, creds)
-    kcc.list_dsas()
+    print '\n'.join(kcc.list_dsas())
     sys.exit()
 
 try:
