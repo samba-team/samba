@@ -1,3 +1,11 @@
 def set_options(opt):
     ''' This is a bit strange, but disable is the flag, not enable. '''
     opt.add_option('--disable-fault-handling', action='store_true', dest='disable_fault_handling', help=('disable the fault handlers'), default=False)
+
+    opt.add_option('--with-systemd',
+                   help=("Enable systemd integration"),
+                   action='store_true', dest='enable_systemd')
+
+    opt.add_option('--without-systemd',
+                   help=("Disable systemd integration"),
+                   action='store_false', dest='enable_systemd')

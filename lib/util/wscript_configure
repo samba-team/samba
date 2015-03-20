@@ -99,3 +99,17 @@ conf.CHECK_CODE('struct statvfs buf; buf.f_flags = 0',
                 headers='sys/statvfs.h',
                 local_include=False,
                 execute=False)
+
+if Options.options.enable_systemd != False:
+    conf.CHECK_CFG(package='libsystemd-daemon', args='--cflags --libs',
+                   msg='Checking for libsystemd-daemon', uselib_store="SYSTEMD-DAEMON")
+    conf.CHECK_HEADERS('systemd/sd-daemon.h', lib='systemd-daemon')
+    conf.CHECK_LIB('systemd-daemon', shlib=True)
+
+if (conf.CONFIG_SET('HAVE_SYSTEMD_SD_DAEMON_H') and
+    conf.CONFIG_SET('HAVE_LIBSYSTEMD_DAEMON')):
+    conf.DEFINE('HAVE_SYSTEMD', '1')
+    conf.env['ENABLE_SYSTEMD'] = True
+else:
+    conf.SET_TARGET_TYPE('systemd-daemon', 'EMPTY')
+    conf.undefine('HAVE_SYSTEMD')

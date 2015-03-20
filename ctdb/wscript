@@ -212,8 +212,6 @@ def configure(conf):
             conf.ADD_EXTRA_INCLUDES('#ctdb')
         conf.ADD_EXTRA_INCLUDES('#lib #lib/replace')
 
-        conf.SET_TARGET_TYPE('systemd-daemon', 'EMPTY')
-
         del(conf.env.defines['PYTHONDIR'])
         del(conf.env.defines['PYTHONARCHDIR'])
 
