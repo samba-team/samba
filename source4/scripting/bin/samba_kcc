@@ -1104,6 +1104,17 @@ class KCC(object):
 
         g.connected_vertices = connected_vertices
 
+
+        dot_edges = []
+        for edge in g.edges:
+            for a, b in itertools.combinations(edge.vertices, 2):
+                dot_edges.append((a.site.site_dnstr, b.site.site_dnstr))
+        verify_properties = ()
+        verify_and_dot('site_edges', dot_edges, directed=False, label=self.my_dsa_dnstr,
+                       properties=verify_properties, debug=DEBUG, verify=opts.verify,
+                       dot_files=opts.dot_files)
+
+
         return g
 
     def get_bridgehead(self, site, part, transport, partial_ok, detect_failed):
@@ -2520,19 +2531,23 @@ class KCC(object):
 
             if opts.verify or opts.dot_files:
                 dot_edges = []
-                colours = []
+                dot_vertices = []
+                edge_colours = []
+
                 for site in self.site_table.values():
                     for dsa in site.dsa_table.values():
+                        dot_vertices.append(dsa.dsa_dnstr)
                         for con in dsa.connect_table.values():
                             if con.is_rodc_topology():
-                                colours.append('red')
+                                edge_colours.append('red')
                             else:
-                                colours.append('blue')
+                                edge_colours.append('blue')
                             dot_edges.append((dsa.dsa_dnstr, con.from_dnstr))
                 verify_properties = ('connected', 'forest_of_rings')
                 verify_and_dot('dsa_final', dot_edges, label=self.my_dsa_dnstr,
                                properties=verify_properties, debug=DEBUG, verify=opts.verify,
-                               dot_files=opts.dot_files, directed=True, edge_colors=colours)
+                               dot_files=opts.dot_files, directed=True, edge_colors=edge_colours,
+                )
 
 
 
