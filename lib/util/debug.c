@@ -102,7 +102,7 @@ static struct {
 	.fd = 2 /* stderr by default */
 };
 
-#ifdef WITH_SYSLOG
+#if defined(WITH_SYSLOG) || defined(HAVE_SYSTEMD_JOURNAL)
 static int debug_level_to_priority(int level)
 {
 	/*
@@ -174,6 +174,18 @@ static void debug_syslog_log(int msg_level,
 }
 #endif /* WITH_SYSLOG */
 
+#ifdef HAVE_SYSTEMD_JOURNAL
+#include <systemd/sd-journal.h>
+static void debug_systemd_log(int msg_level,
+			      const char *msg, const char *msg_no_nl)
+{
+	sd_journal_send("MESSAGE=%s", msg_no_nl,
+			"PRIORITY=%d", debug_level_to_priority(msg_level),
+			"LEVEL=%d", msg_level,
+			NULL);
+}
+#endif
+
 static struct debug_backend {
 	const char *name;
 	int log_level;
@@ -190,6 +202,13 @@ static struct debug_backend {
 		.name = "syslog",
 		.reload = debug_syslog_reload,
 		.log = debug_syslog_log,
+	},
+#endif
+
+#ifdef HAVE_SYSTEMD_JOURNAL
+	{
+		.name = "systemd",
+		.log = debug_systemd_log,
 	},
 #endif
 };

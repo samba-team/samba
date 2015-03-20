@@ -113,3 +113,17 @@ if (conf.CONFIG_SET('HAVE_SYSTEMD_SD_DAEMON_H') and
 else:
     conf.SET_TARGET_TYPE('systemd-daemon', 'EMPTY')
     conf.undefine('HAVE_SYSTEMD')
+
+if Options.options.enable_systemd != False:
+    conf.check_cfg(package='libsystemd-journal', args='--cflags --libs',
+                   msg='Checking for libsystemd-journal',
+                   uselib_store="SYSTEMD-JOURNAL")
+    conf.CHECK_HEADERS('systemd/sd-journal.h', lib='systemd-journal')
+    conf.CHECK_LIB('systemd-journal', shlib=True)
+
+if (conf.CONFIG_SET('HAVE_SYSTEMD_SD_JOURNAL_H') and
+    conf.CONFIG_SET('HAVE_LIBSYSTEMD_JOURNAL')):
+    conf.DEFINE('HAVE_SYSTEMD_JOURNAL', '1')
+else:
+    conf.SET_TARGET_TYPE('systemd-journal', 'EMPTY')
+    conf.undefine('HAVE_SYSTEMD_JOURNAL')

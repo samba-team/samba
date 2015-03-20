@@ -29,6 +29,7 @@
   <itemizedlist>
     <listitem><para><parameter moreinfo="none">syslog</parameter></para></listitem>
     <listitem><para><parameter moreinfo="none">file</parameter></para></listitem>
+    <listitem><para><parameter moreinfo="none">systemd</parameter></para></listitem>
   </itemizedlist>
 
 </description>
