@@ -713,6 +713,27 @@ cleanup_ma:
 static void (*tdb_robust_mutext_old_handler)(int) = SIG_ERR;
 static pid_t tdb_robust_mutex_pid = -1;
 
+static void (*tdb_robust_mutex_setup_sigchild(void (*handler)(int)))(int)
+{
+#ifdef HAVE_SIGACTION
+	struct sigaction act;
+	struct sigaction oldact;
+
+	memset(&act, '\0', sizeof(act));
+
+	act.sa_handler = handler;
+#ifdef SA_RESTART
+	act.sa_flags = SA_RESTART;
+#endif
+	sigemptyset(&act.sa_mask);
+	sigaddset(&act.sa_mask, SIGCHLD);
+	sigaction(SIGCHLD, &act, &oldact);
+	return oldact.sa_handler;
+#else /* !HAVE_SIGACTION */
+	return NULL;
+#endif
+}
+
 static void tdb_robust_mutex_handler(int sig)
 {
 	if (tdb_robust_mutex_pid != -1) {
@@ -803,8 +824,11 @@ _PUBLIC_ bool tdb_runtime_check_for_robust_mutexes(void)
 		goto cleanup_ma;
 	}
 
-	tdb_robust_mutext_old_handler = signal(SIGCHLD,
-					       tdb_robust_mutex_handler);
+	tdb_robust_mutext_old_handler = tdb_robust_mutex_setup_sigchild(
+						tdb_robust_mutex_handler);
+	if (tdb_robust_mutext_old_handler == NULL) {
+		goto cleanup_ma;
+	}
 
 	tdb_robust_mutex_pid = fork();
 	if (tdb_robust_mutex_pid == 0) {
@@ -869,7 +893,7 @@ _PUBLIC_ bool tdb_runtime_check_for_robust_mutexes(void)
 			goto cleanup_child;
 		}
 	}
-	signal(SIGCHLD, tdb_robust_mutext_old_handler);
+	tdb_robust_mutex_setup_sigchild(tdb_robust_mutext_old_handler);
 
 	ret = pthread_mutex_trylock(m);
 	if (ret != EOWNERDEAD) {
@@ -915,7 +939,7 @@ cleanup_child:
 		}
 	}
 cleanup_sig_child:
-	signal(SIGCHLD, tdb_robust_mutext_old_handler);
+	tdb_robust_mutex_setup_sigchild(tdb_robust_mutext_old_handler);
 cleanup_m:
 	pthread_mutex_destroy(m);
 cleanup_ma:
