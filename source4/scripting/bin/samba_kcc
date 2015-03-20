@@ -1624,6 +1624,8 @@ class KCC(object):
             # Determine bridgehead server in remote site
             rbh = self.get_bridgehead(rsite, part, transport,
                                       partial_ok, detect_failed)
+            if rbh is None:
+                continue
 
             # RODC acts as an BH for itself
             # IF AmIRODC() then
