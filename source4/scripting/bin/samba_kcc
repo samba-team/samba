@@ -1482,7 +1482,7 @@ class KCC(object):
             # object cn that is a child of lbh, cn!enabledConnection = TRUE,
             # cn!options = opt, cn!transportType is a reference to t,
             # cn!fromServer is a reference to rbh, and cn!schedule = sch
-            cn = lbh.new_connection(opt, 0, transport, lbh.dsa_dnstr, link_sched)
+            cn = lbh.new_connection(opt, 0, transport, rbh.dsa_dnstr, link_sched)
 
             # Display any added connection
             if opts.readonly:
