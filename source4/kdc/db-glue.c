@@ -1707,6 +1707,10 @@ static krb5_error_code samba_kdc_seq(krb5_context context,
 {
 	krb5_error_code ret;
 	struct samba_kdc_seq *priv = kdc_db_ctx->seq_ctx;
+	const char *realm = lpcfg_realm(kdc_db_ctx->lp_ctx);
+	struct ldb_message *msg = NULL;
+	const char *sAMAccountName = NULL;
+	krb5_principal principal = NULL;
 	TALLOC_CTX *mem_ctx;
 
 	if (!priv) {
@@ -1721,13 +1725,34 @@ static krb5_error_code samba_kdc_seq(krb5_context context,
 		return ret;
 	}
 
-	if (priv->index < priv->count) {
-		ret = samba_kdc_message2entry(context, kdc_db_ctx, mem_ctx,
-					      NULL, SAMBA_KDC_ENT_TYPE_ANY,
-					      HDB_F_ADMIN_DATA|HDB_F_GET_ANY,
-					      priv->realm_dn, priv->msgs[priv->index++], entry);
-	} else {
+	while (priv->index < priv->count) {
+		msg = priv->msgs[priv->index++];
+
+		sAMAccountName = ldb_msg_find_attr_as_string(msg, "sAMAccountName", NULL);
+		if (sAMAccountName != NULL) {
+			break;
+		}
+	}
+
+	if (sAMAccountName == NULL) {
 		ret = HDB_ERR_NOENTRY;
+		goto out;
+	}
+
+	ret = smb_krb5_make_principal(context, &principal,
+				      realm, sAMAccountName, NULL);
+	if (ret != 0) {
+		goto out;
+	}
+
+	ret = samba_kdc_message2entry(context, kdc_db_ctx, mem_ctx,
+				      principal, SAMBA_KDC_ENT_TYPE_ANY,
+				      HDB_F_ADMIN_DATA|HDB_F_GET_ANY,
+				      priv->realm_dn, msg, entry);
+
+out:
+	if (principal != NULL) {
+		krb5_free_principal(context, principal);
 	}
 
 	if (ret != 0) {
