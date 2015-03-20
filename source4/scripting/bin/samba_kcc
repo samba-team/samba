@@ -1255,15 +1255,50 @@ class KCC(object):
     def is_bridgehead_failed(self, dsa, detect_failed):
         """Determine whether a given DC is known to be in a failed state
         ::returns: True if and only if the DC should be considered failed
+
+        Here we DEPART from the pseudo code spec which appears to be
+        wrong. It says, in full:
+
+    /***** BridgeheadDCFailed *****/
+    /* Determine whether a given DC is known to be in a failed state.
+     * IN: objectGUID - objectGUID of the DC's nTDSDSA object.
+     * IN: detectFailedDCs - TRUE if and only failed DC detection is
+     *     enabled.
+     * RETURNS: TRUE if and only if the DC should be considered to be in a
+     *          failed state.
+     */
+    BridgeheadDCFailed(IN GUID objectGUID, IN bool detectFailedDCs) : bool
+    {
+        IF bit NTDSSETTINGS_OPT_IS_TOPL_DETECT_STALE_DISABLED is set in
+        the options attribute of the site settings object for the local
+        DC's site
+            RETURN FALSE
+        ELSEIF a tuple z exists in the kCCFailedLinks or
+        kCCFailedConnections variables such that z.UUIDDsa =
+        objectGUID, z.FailureCount > 1, and the current time -
+        z.TimeFirstFailure > 2 hours
+            RETURN TRUE
+        ELSE
+            RETURN detectFailedDCs
+        ENDIF
+    }
+
+        where you will see detectFailedDCs is not behaving as
+        advertised -- it is acting as a default return code in the
+        event that a failure is not detected, not a switch turning
+        detection on or off. Elsewhere the documentation seems to
+        concur with the comment rather than the code.
         """
+        if not detect_failed:
+            return False
+
         # NTDSSETTINGS_OPT_IS_TOPL_DETECT_STALE_DISABLED = 0x00000008
         # When DETECT_STALE_DISABLED, we can never know of if it's in a failed state
         if self.my_site.site_options & 0x00000008:
             return False
-        elif self.is_stale_link_connection(dsa):
-            return True
 
-        return detect_failed # TODO WHY?
+        return self.is_stale_link_connection(dsa)
+
 
     def create_connection(self, part, rbh, rsite, transport,
                           lbh, lsite, link_opt, link_sched,
