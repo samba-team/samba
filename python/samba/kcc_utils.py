@@ -1472,6 +1472,7 @@ class Site(object):
         # The KCC on an RODC always acts as an ISTG for itself
         if mydsa.dsa_is_ro:
             mydsa.dsa_is_istg = True
+            self.site_topo_generator = mydsa.dsa_dnstr
             return True
 
         c_rep = get_dsa_config_rep(mydsa)
