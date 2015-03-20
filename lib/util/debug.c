@@ -37,14 +37,13 @@
 
 /* -------------------------------------------------------------------------- **
  * Defines...
- *
- *  FORMAT_BUFR_MAX - Index of the last byte of the format buffer;
- *                    format_bufr[FORMAT_BUFR_MAX] should always be reserved
- *                    for a terminating null byte.
  */
 
+/*
+ * format_bufr[FORMAT_BUFR_SIZE - 1] should always be reserved
+ * for a terminating null byte.
+ */
 #define FORMAT_BUFR_SIZE 1024
-#define FORMAT_BUFR_MAX (FORMAT_BUFR_SIZE - 1)
 
 /* -------------------------------------------------------------------------- **
  * This module implements Samba's debugging utility.
@@ -889,7 +888,7 @@ static void format_debug_text( const char *msg )
 		}
 
 		/* If there's room, copy the character to the format buffer. */
-		if( format_pos < FORMAT_BUFR_MAX )
+		if (format_pos < FORMAT_BUFR_SIZE - 1)
 			format_bufr[format_pos++] = msg[i];
 
 		/* If a newline is encountered, print & restart. */
@@ -899,7 +898,7 @@ static void format_debug_text( const char *msg )
 		/* If the buffer is full dump it out, reset it, and put out a line
 		 * continuation indicator.
 		 */
-		if( format_pos >= FORMAT_BUFR_MAX ) {
+		if (format_pos >= FORMAT_BUFR_SIZE - 1) {
 			bufr_print();
 			(void)Debug1( " +>\n" );
 		}
