@@ -65,8 +65,12 @@ debug ()
 	# here document.
 	if [ -n "$1" ] ; then
 	    echo "DEBUG: $*"
-	elif ! tty -s ; then
+	else
 	    sed -e 's@^@DEBUG: @'
+	fi
+    else
+	if [ -z "$1" ] ; then
+	    cat >/dev/null
 	fi
     fi
 }
