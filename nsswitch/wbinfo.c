@@ -752,8 +752,8 @@ static bool wbinfo_check_secret(const char *domain)
 		WBC_ERROR_IS_OK(wbc_status) ? "succeeded" : "failed");
 
 	if (wbc_status == WBC_ERR_AUTH_ERROR) {
-		d_fprintf(stderr, "error code was %s (0x%x)\n",
-			  error->nt_string, error->nt_status);
+		d_fprintf(stderr, "wbcCheckTrustCredentials(%s): error code was %s (0x%x)\n",
+			  domain_name, error->nt_string, error->nt_status);
 		wbcFreeMemory(error);
 	}
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
@@ -811,8 +811,8 @@ static bool wbinfo_change_secret(const char *domain)
 		WBC_ERROR_IS_OK(wbc_status) ? "succeeded" : "failed");
 
 	if (wbc_status == WBC_ERR_AUTH_ERROR) {
-		d_fprintf(stderr, "error code was %s (0x%x)\n",
-			  error->nt_string, error->nt_status);
+		d_fprintf(stderr, "wbcChangeTrustCredentials(%s): error code was %s (0x%x)\n",
+			  domain_name, error->nt_string, error->nt_status);
 		wbcFreeMemory(error);
 	}
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
@@ -849,8 +849,8 @@ static bool wbinfo_ping_dc(const char *domain)
 
 	wbcFreeMemory(dcname);
 	if (wbc_status == WBC_ERR_AUTH_ERROR) {
-		d_fprintf(stderr, "error code was %s (0x%x)\n",
-			  error->nt_string, error->nt_status);
+		d_fprintf(stderr, "wbcPingDc2(%s): error code was %s (0x%x)\n",
+			  domain_name, error->nt_string, error->nt_status);
 		wbcFreeMemory(error);
 		return false;
 	}
@@ -1584,8 +1584,9 @@ static bool wbinfo_auth_krb5(char *username, const char *cctype, uint32_t flags)
 
 	if (error) {
 		d_fprintf(stderr,
-			 "error code was %s (0x%x)\nerror message was: %s\n",
-			 error->nt_string,
+			 "wbcLogonUser(%s): error code was %s (0x%x)\n"
+			 "error message was: %s\n",
+			 params.username, error->nt_string,
 			 error->nt_status,
 			 error->display_string);
 	}
@@ -1756,7 +1757,11 @@ static bool wbinfo_auth_crap(char *username, bool use_ntlmv2, bool use_lanman)
 
 	if (wbc_status == WBC_ERR_AUTH_ERROR) {
 		d_fprintf(stderr,
-			 "error code was %s (0x%x)\nerror message was: %s\n",
+			 "wbcAuthenticateUserEx(%s%c%s): error code was %s (0x%x)\n"
+			 "error message was: %s\n",
+			 name_domain,
+			 winbind_separator(),
+			 name_user,
 			 err->nt_string,
 			 err->nt_status,
 			 err->display_string);
@@ -1830,7 +1835,9 @@ static bool wbinfo_pam_logon(char *username)
 
 	if (!WBC_ERROR_IS_OK(wbc_status) && (error != NULL)) {
 		d_fprintf(stderr,
-			  "error code was %s (0x%x)\nerror message was: %s\n",
+			  "wbcLogonUser(%s): error code was %s (0x%x)\n"
+			  "error message was: %s\n",
+			  params.username,
 			  error->nt_string,
 			  (int)error->nt_status,
 			  error->display_string);
