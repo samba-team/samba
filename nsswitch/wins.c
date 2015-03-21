@@ -48,7 +48,6 @@ NSS_STATUS _nss_wins_gethostbyname2_r(const char *name, int af, struct hostent *
 static void nss_wins_init(void)
 {
 	initialised = 1;
-	load_case_tables_library();
 	lp_set_cmdline("log level", "0");
 
 	TimeInit();

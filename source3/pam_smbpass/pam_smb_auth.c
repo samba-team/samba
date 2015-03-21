@@ -89,7 +89,6 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 	char *p = NULL;
 
 	/* Samba initialization. */
-	load_case_tables_library();
 
 	ctrl = set_ctrl(pamh, flags, argc, argv);
 

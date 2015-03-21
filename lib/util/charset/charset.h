@@ -223,7 +223,6 @@ smb_iconv_t smb_iconv_open_ex(TALLOC_CTX *mem_ctx, const char *tocode,
 			      const char *fromcode, bool use_builtin_handlers);
 
 void load_case_tables(void);
-void load_case_tables_library(void);
 
 /* The following definitions come from util_unistr_w.c  */
 

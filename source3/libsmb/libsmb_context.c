@@ -46,8 +46,6 @@ SMBC_module_init(void * punused)
     char *home = NULL;
     TALLOC_CTX *frame = talloc_stackframe();
 
-    load_case_tables_library();
-
     setup_logging("libsmbclient", DEBUG_STDOUT);
 
     /* Here we would open the smb.conf file if needed ... */
