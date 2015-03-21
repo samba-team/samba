@@ -38,7 +38,7 @@ int main(int argc, const char **argv)
 
 	TALLOC_CTX *frame = talloc_stackframe();
 
-	load_case_tables();
+	smb_init_locale();
 	lp_set_cmdline("log level", "0");
 
 	pc = poptGetContext(NULL, argc, argv, long_options,

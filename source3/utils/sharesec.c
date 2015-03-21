@@ -537,7 +537,7 @@ int main(int argc, const char *argv[])
 	/* set default debug level to 1 regardless of what smb.conf sets */
 	setup_logging( "sharesec", DEBUG_STDERR);
 
-	load_case_tables();
+	smb_init_locale();
 
 	lp_set_cmdline("log level", "1");
 

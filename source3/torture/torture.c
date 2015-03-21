@@ -9749,7 +9749,7 @@ static void usage(void)
 
 	setup_logging("smbtorture", DEBUG_STDOUT);
 
-	load_case_tables();
+	smb_init_locale();
 	fault_setup();
 
 	if (is_default_dyn_CONFIGFILE()) {

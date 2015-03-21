@@ -1436,7 +1436,7 @@ int main(int argc, const char **argv)
 	fault_setup();
 	dump_core_setup("winbindd", lp_logfile(talloc_tos()));
 
-	load_case_tables();
+	smb_init_locale();
 
 	/* Initialise for running in non-root mode */
 

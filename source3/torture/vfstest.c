@@ -487,7 +487,7 @@ int main(int argc, const char *argv[])
 		.exit_server_cleanly = vfstest_exit_server_cleanly,
 	};
 
-	load_case_tables();
+	smb_init_locale();
 
 	setlinebuf(stdout);
 

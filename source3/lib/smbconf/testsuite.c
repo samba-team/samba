@@ -296,7 +296,7 @@ int main(int argc, const char **argv)
 		{0, 0, 0, 0}
 	};
 
-	load_case_tables();
+	smb_init_locale();
 	setup_logging(argv[0], DEBUG_STDERR);
 
 	/* parse options */

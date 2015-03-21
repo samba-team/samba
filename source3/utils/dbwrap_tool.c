@@ -435,7 +435,7 @@ int main(int argc, const char **argv)
 	int extra_argc = 0;
 	poptContext pc;
 
-	load_case_tables();
+	smb_init_locale();
 	lp_set_cmdline("log level", "0");
 	setup_logging(argv[0], DEBUG_STDERR);
 

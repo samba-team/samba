@@ -2224,7 +2224,7 @@ int main(int argc, const char **argv, char **envp)
 	};
 
 	/* Samba client initialisation */
-	load_case_tables();
+	smb_init_locale();
 
 
 	/* Parse options */

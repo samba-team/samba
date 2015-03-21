@@ -40,7 +40,7 @@ int main(int argc, const char *argv[])
 		POPT_TABLEEND
 	};
 
-	load_case_tables();
+	smb_init_locale();
 
 	pc = poptGetContext(NULL, argc, argv, long_options,
 			    POPT_CONTEXT_KEEP_FIRST);

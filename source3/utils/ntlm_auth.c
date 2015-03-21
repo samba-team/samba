@@ -2770,7 +2770,7 @@ enum {
 	};
 
 	/* Samba client initialisation */
-	load_case_tables();
+	smb_init_locale();
 
 	setup_logging("ntlm_auth", DEBUG_STDERR);
 

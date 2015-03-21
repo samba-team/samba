@@ -193,7 +193,7 @@ static void process_arguments(int argc, char **argv)
 int main(int argc, char **argv)
 {
 	sec_init();
-	load_case_tables();
+	smb_init_locale();
 
 	if (!lp_load_initial_only(get_dyn_CONFIGFILE())) {
 		fprintf(stderr, "Can't load %s - run testparm to debug it\n",

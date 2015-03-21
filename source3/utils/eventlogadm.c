@@ -427,7 +427,7 @@ int main( int argc, char *argv[] )
 
 	fstring opname;
 
-	load_case_tables();
+	smb_init_locale();
 
 	opt_debug = 0;		/* todo set this from getopts */
 

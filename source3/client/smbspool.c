@@ -252,7 +252,7 @@ main(int argc,			/* I - Number of command-line arguments */
 
 	setup_logging("smbspool", DEBUG_STDOUT);
 
-	load_case_tables();
+	smb_init_locale();
 
 	if (!lp_load_client(get_dyn_CONFIGFILE())) {
 		fprintf(stderr, "ERROR: Can't load %s - run testparm to debug it\n", get_dyn_CONFIGFILE());

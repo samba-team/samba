@@ -48,7 +48,7 @@ static void pong_message(struct messaging_context *msg_ctx,
 	int ret;
 	TALLOC_CTX *frame = talloc_stackframe();
 
-	load_case_tables();
+	smb_init_locale();
 
 	setup_logging(argv[0], DEBUG_STDOUT);
 

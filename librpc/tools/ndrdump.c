@@ -227,7 +227,7 @@ static NTSTATUS ndrdump_pull_and_print_pipes(const char *function,
 	ndr_table_init();
 
 	/* Initialise samba stuff */
-	load_case_tables();
+	smb_init_locale();
 
 	setlinebuf(stdout);
 

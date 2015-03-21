@@ -1124,7 +1124,7 @@ extern void build_options(bool screen);
 
 	setup_logging(argv[0], DEBUG_DEFAULT_STDOUT);
 
-	load_case_tables();
+	smb_init_locale();
 
 	set_smbd_shim(&smbd_shim_fns);
 

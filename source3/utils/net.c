@@ -839,7 +839,7 @@ static struct functable net_func[] = {
 
 	setup_logging(argv[0], DEBUG_STDERR);
 
-	load_case_tables();
+	smb_init_locale();
 
 	setlocale(LC_ALL, "");
 #if defined(HAVE_BINDTEXTDOMAIN)

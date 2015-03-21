@@ -323,7 +323,7 @@ int main(int argc, char *argv[])
 	const char *configfile;
 	TALLOC_CTX *frame = talloc_stackframe();
 
-	load_case_tables();
+	smb_init_locale();
 
 	setup_logging(argv[0], DEBUG_STDOUT);
 

@@ -454,7 +454,7 @@ static void do_per_share_checks(int s)
 
 	TALLOC_CTX *frame = talloc_stackframe();
 
-	load_case_tables();
+	smb_init_locale();
 	/*
 	 * Set the default debug level to 2.
 	 * Allow it to be overridden by the command line,

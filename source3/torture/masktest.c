@@ -482,7 +482,7 @@ static void usage(void)
 	argc -= 1;
 	argv += 1;
 
-	load_case_tables();
+	smb_init_locale();
 	lp_load_global(get_dyn_CONFIGFILE());
 	load_interfaces();
 

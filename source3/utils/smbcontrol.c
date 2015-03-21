@@ -1550,7 +1550,7 @@ int main(int argc, const char **argv)
 	TALLOC_CTX *frame = talloc_stackframe();
 	int ret = 0;
 
-	load_case_tables();
+	smb_init_locale();
 
 	setup_logging(argv[0], DEBUG_STDOUT);
 

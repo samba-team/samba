@@ -1064,7 +1064,7 @@ int main(int argc, const char **argv)
 
 	bin = bout = NULL;
 
-	load_case_tables();
+	smb_init_locale();
 
 	setup_logging("pdbedit", DEBUG_STDOUT);
 

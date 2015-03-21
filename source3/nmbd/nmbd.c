@@ -819,7 +819,7 @@ static bool open_sockets(bool isdaemon, int port)
 
 	setup_logging(argv[0], DEBUG_DEFAULT_STDOUT);
 
-	load_case_tables();
+	smb_init_locale();
 
 	global_nmb_port = NMB_PORT;
 

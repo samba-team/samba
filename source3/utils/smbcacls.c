@@ -1400,7 +1400,7 @@ int main(int argc, char *argv[])
 	char *server;
 	struct user_auth_info *auth_info;
 
-	load_case_tables();
+	smb_init_locale();
 
 	/* set default debug level to 1 regardless of what smb.conf sets */
 	setup_logging( "smbcacls", DEBUG_STDERR);

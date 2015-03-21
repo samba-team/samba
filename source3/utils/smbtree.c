@@ -302,7 +302,7 @@ int main(int argc, char *argv[])
 	poptContext pc;
 
 	/* Initialise samba stuff */
-	load_case_tables();
+	smb_init_locale();
 
 	setlinebuf(stdout);
 

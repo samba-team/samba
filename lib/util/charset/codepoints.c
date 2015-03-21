@@ -16424,7 +16424,7 @@ static const uint16_t upcase_table[] = {
 	0xfff8,0xfff9,0xfffa,0xfffb,0xfffc,0xfffd,0xfffe,0xffff
 };
 
-void load_case_tables(void)
+void smb_init_locale(void)
 {
 	/* This is a useful global hook where we can ensure that the
 	 * locale is set from the environment.  This is needed so that

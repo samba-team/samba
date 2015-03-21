@@ -459,7 +459,7 @@ int main(int argc, const char **argv)
 
 	ctx = talloc_stackframe();
 
-	load_case_tables();
+	smb_init_locale();
 
 	pc = poptGetContext("pdbtest", argc, argv, long_options, 0);
 

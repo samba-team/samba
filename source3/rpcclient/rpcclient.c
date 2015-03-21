@@ -932,7 +932,7 @@ out_free:
 		POPT_TABLEEND
 	};
 
-	load_case_tables();
+	smb_init_locale();
 
 	zero_sockaddr(&server_ss);
 

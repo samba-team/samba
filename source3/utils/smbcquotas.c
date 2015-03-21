@@ -589,7 +589,7 @@ FSQFLAGS:QUOTA_ENABLED/DENY_DISK/LOG_SOFTLIMIT/LOG_HARD_LIMIT", "SETSTRING" },
 		{ NULL }
 	};
 
-	load_case_tables();
+	smb_init_locale();
 
 	ZERO_STRUCT(qt);
 
