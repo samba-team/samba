@@ -12,7 +12,7 @@ SBINPROGS="smbd nmbd winbindd swat"
 BINPROGS="findsmb nmblookup eventlogadm pdbedit rpcclient smbclient smbcquotas smbspool smbtar tdbbackup testparm wbinfo net ntlm_auth profiles smbcacls smbcontrol smbpasswd smbstatus smbtree tdbdump"
 MSGFILES="de.msg en.msg fi.msg fr.msg it.msg ja.msg nl.msg pl.msg tr.msg"
 VFSLIBS="audit.so default_quota.so extd_audit.so full_audit.so readonly.so shadow_copy.so cap.so expand_msdfs.so fake_perms.so netatalk.so recycle.so"
-DATFILES="lowcase.dat upcase.dat valid.dat"
+DATFILES="valid.dat"
 CHARSETLIBS="CP437.so CP850.so"
 AUTHLIBS="script.so"
 
