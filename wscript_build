@@ -136,7 +136,6 @@ else:
     bld.PROCESS_SEPARATE_RULE('system_mitkrb5')
 
 bld.RECURSE('libcli/smbreadline')
-bld.RECURSE('codepages')
 if bld.AD_DC_BUILD_IS_ENABLED():
     bld.RECURSE('source4/setup')
 if bld.env.with_ctdb:
