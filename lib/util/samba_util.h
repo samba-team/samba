@@ -509,11 +509,6 @@ load a file into memory
 _PUBLIC_ char *file_load(const char *fname, size_t *size, size_t maxsize, TALLOC_CTX *mem_ctx);
 
 /**
-mmap (if possible) or read a file
-**/
-_PUBLIC_ void *map_file(const char *fname, size_t size);
-
-/**
 load a file into memory and return an array of pointers to lines in the file
 must be freed with talloc_free(). 
 **/
@@ -800,8 +795,6 @@ bool pm_process( const char *fileName,
                  bool (*sfunc)(const char *, void *),
                  bool (*pfunc)(const char *, const char *, void *),
 				 void *userdata);
-
-bool unmap_file(void *start, size_t size);
 
 void print_asc(int level, const uint8_t *buf,int len);
 void print_asc_cb(const uint8_t *buf, int len,
