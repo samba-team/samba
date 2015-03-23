@@ -161,7 +161,7 @@ static NTSTATUS check_parent_exists(TALLOC_CTX *ctx,
 	}
 
 	/* Parent exists - set "start" to be the
-	 * last compnent to shorten the tree walk. */
+	 * last component to shorten the tree walk. */
 
 	/*
 	 * Safe to use discard_const_p
