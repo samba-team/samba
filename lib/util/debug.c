@@ -138,6 +138,42 @@ static void debug_file_log(int msg_level,
 	write(state.fd, msg, strlen(msg));
 }
 
+#ifdef WITH_SYSLOG
+static void debug_syslog_reload(bool enabled, bool previously_enabled,
+				const char *prog_name)
+{
+	if (enabled && !previously_enabled) {
+#ifdef LOG_DAEMON
+		openlog(prog_name, LOG_PID, SYSLOG_FACILITY);
+#else
+		/* for old systems that have no facility codes. */
+		openlog(prog_name, LOG_PID );
+#endif
+		return;
+	}
+
+	if (!enabled && previously_enabled) {
+		closelog();
+	}
+}
+
+static void debug_syslog_log(int msg_level,
+			     const char *msg, const char *msg_no_nl)
+{
+	int priority;
+
+	priority = debug_level_to_priority(msg_level);
+
+	/*
+	 * Specify the facility to interoperate with other syslog
+	 * callers (vfs_full_audit for example).
+	 */
+	priority |= SYSLOG_FACILITY;
+
+	syslog(priority, "%s", msg);
+}
+#endif /* WITH_SYSLOG */
+
 static struct debug_backend {
 	const char *name;
 	int log_level;
@@ -149,6 +185,13 @@ static struct debug_backend {
 		.name = "file",
 		.log = debug_file_log,
 	},
+#ifdef WITH_SYSLOG
+	{
+		.name = "syslog",
+		.reload = debug_syslog_reload,
+		.log = debug_syslog_log,
+	},
+#endif
 };
 
 static struct debug_backend *debug_find_backend(const char *name)
@@ -676,16 +719,11 @@ void setup_logging(const char *prog_name, enum debug_logtype new_logtype)
 	}
 	reopen_logs_internal();
 
-	if (state.logtype == DEBUG_FILE) {
 #ifdef WITH_SYSLOG
-#ifdef LOG_DAEMON
-		openlog(state.prog_name, LOG_PID, SYSLOG_FACILITY );
-#else
-		/* for old systems that have no facility codes. */
-		openlog(state.prog_name, LOG_PID );
-#endif
-#endif
+	if (state.logtype == DEBUG_FILE) {
+		debug_syslog_reload(true, false, state.prog_name);
 	}
+#endif
 }
 
 /***************************************************************************
