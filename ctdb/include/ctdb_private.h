@@ -974,17 +974,6 @@ struct ctdb_control_list_tunable {
 };
 
 
-struct ctdb_node_and_flagsv4 {
-	uint32_t pnn;
-	uint32_t flags;
-	struct sockaddr_in sin;
-};
-
-struct ctdb_node_mapv4 {
-	uint32_t num;
-	struct ctdb_node_and_flagsv4 nodes[1];
-};
-
 struct ctdb_control_wipe_database {
 	uint32_t db_id;
 	uint32_t transaction_id;
@@ -1111,24 +1100,15 @@ int32_t ctdb_control_end_recovery(struct ctdb_context *ctdb,
 				 struct ctdb_req_control *c,
 				 bool *async_reply);
 
-struct ctdb_public_ipv4 {
-	uint32_t pnn;
-	struct sockaddr_in sin;
-};
-
 int ctdb_ctrl_takeover_ip(struct ctdb_context *ctdb, struct timeval timeout, 
 			  uint32_t destnode, struct ctdb_public_ip *ip);
 int ctdb_ctrl_release_ip(struct ctdb_context *ctdb, struct timeval timeout, 
 			 uint32_t destnode, struct ctdb_public_ip *ip);
 
-struct ctdb_all_public_ipsv4 {
-	uint32_t num;
-	struct ctdb_public_ipv4 ips[1];
-};
-
-int32_t ctdb_control_get_public_ipsv4(struct ctdb_context *ctdb, struct ctdb_req_control *c, TDB_DATA *outdata);
-int32_t ctdb_control_get_public_ips(struct ctdb_context *ctdb, struct ctdb_req_control *c, TDB_DATA *outdata);
-int ctdb_ctrl_get_public_ips(struct ctdb_context *ctdb, 
+int32_t ctdb_control_get_public_ips(struct ctdb_context *ctdb,
+				    struct ctdb_req_control *c,
+				    TDB_DATA *outdata);
+int ctdb_ctrl_get_public_ips(struct ctdb_context *ctdb,
 			     struct timeval timeout,
 			     uint32_t destnode,
 			     TALLOC_CTX *mem_ctx,
@@ -1139,9 +1119,6 @@ int ctdb_ctrl_get_public_ips_flags(struct ctdb_context *ctdb,
 				   TALLOC_CTX *mem_ctx,
 				   uint32_t flags,
 				   struct ctdb_all_public_ips **ips);
-int ctdb_ctrl_get_public_ipsv4(struct ctdb_context *ctdb, 
-			struct timeval timeout, uint32_t destnode, 
-			TALLOC_CTX *mem_ctx, struct ctdb_all_public_ips **ips);
 
 struct ctdb_control_iface_info {
 	char name[CTDB_IFACE_SIZE+2];

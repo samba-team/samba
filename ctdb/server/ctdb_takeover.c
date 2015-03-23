@@ -814,24 +814,6 @@ int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb,
 }
 
 /*
-  takeover an ip address old v4 style
- */
-int32_t ctdb_control_takeover_ipv4(struct ctdb_context *ctdb, 
-				struct ctdb_req_control *c,
-				TDB_DATA indata, 
-				bool *async_reply)
-{
-	TDB_DATA data;
-	
-	data.dsize = sizeof(struct ctdb_public_ip);
-	data.dptr  = (uint8_t *)talloc_zero(c, struct ctdb_public_ip);
-	CTDB_NO_MEMORY(ctdb, data.dptr);
-	
-	memcpy(data.dptr, indata.dptr, indata.dsize);
-	return ctdb_control_takeover_ip(ctdb, c, data, async_reply);
-}
-
-/*
   kill any clients that are registered with a IP that is being released
  */
 static void release_kill_clients(struct ctdb_context *ctdb, ctdb_sock_addr *addr)
@@ -1048,25 +1030,6 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb,
 	*async_reply = true;
 	return 0;
 }
-
-/*
-  release an ip address old v4 style
- */
-int32_t ctdb_control_release_ipv4(struct ctdb_context *ctdb, 
-				struct ctdb_req_control *c,
-				TDB_DATA indata, 
-				bool *async_reply)
-{
-	TDB_DATA data;
-	
-	data.dsize = sizeof(struct ctdb_public_ip);
-	data.dptr  = (uint8_t *)talloc_zero(c, struct ctdb_public_ip);
-	CTDB_NO_MEMORY(ctdb, data.dptr);
-	
-	memcpy(data.dptr, indata.dptr, indata.dsize);
-	return ctdb_control_release_ip(ctdb, c, data, async_reply);
-}
-
 
 static int ctdb_add_public_address(struct ctdb_context *ctdb,
 				   ctdb_sock_addr *addr,
@@ -2609,7 +2572,6 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap,
 {
 	int i, j, ret;
 	struct ctdb_public_ip ip;
-	struct ctdb_public_ipv4 ipv4;
 	uint32_t *nodes;
 	struct ctdb_public_ip_list *all_ips, *tmp_ip;
 	TDB_DATA data;
@@ -2695,36 +2657,22 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap,
 				*/
 				continue;
 			}
-			if (tmp_ip->addr.sa.sa_family == AF_INET) {
-				ipv4.pnn = tmp_ip->pnn;
-				ipv4.sin = tmp_ip->addr.ip;
+			ip.pnn  = tmp_ip->pnn;
+			ip.addr = tmp_ip->addr;
 
-				timeout = TAKEOVER_TIMEOUT();
-				data.dsize = sizeof(ipv4);
-				data.dptr  = (uint8_t *)&ipv4;
-				state = ctdb_control_send(ctdb, nodemap->nodes[i].pnn,
-						0, CTDB_CONTROL_RELEASE_IPv4, 0,
-						data, async_data,
-						&timeout, NULL);
-			} else {
-				ip.pnn  = tmp_ip->pnn;
-				ip.addr = tmp_ip->addr;
-
-				timeout = TAKEOVER_TIMEOUT();
-				data.dsize = sizeof(ip);
-				data.dptr  = (uint8_t *)&ip;
-				state = ctdb_control_send(ctdb, nodemap->nodes[i].pnn,
-						0, CTDB_CONTROL_RELEASE_IP, 0,
-						data, async_data,
-						&timeout, NULL);
-			}
-
+			timeout = TAKEOVER_TIMEOUT();
+			data.dsize = sizeof(ip);
+			data.dptr  = (uint8_t *)&ip;
+			state = ctdb_control_send(ctdb, nodemap->nodes[i].pnn,
+						  0, CTDB_CONTROL_RELEASE_IP, 0,
+						  data, async_data,
+						  &timeout, NULL);
 			if (state == NULL) {
 				DEBUG(DEBUG_ERR,(__location__ " Failed to call async control CTDB_CONTROL_RELEASE_IP to node %u\n", nodemap->nodes[i].pnn));
 				talloc_free(tmp_ctx);
 				return -1;
 			}
-		
+
 			ctdb_client_async_add(async_data, state);
 		}
 	}
@@ -2752,35 +2700,21 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap,
 			continue;
 		}
 
-		if (tmp_ip->addr.sa.sa_family == AF_INET) {
-			ipv4.pnn = tmp_ip->pnn;
-			ipv4.sin = tmp_ip->addr.ip;
+		ip.pnn  = tmp_ip->pnn;
+		ip.addr = tmp_ip->addr;
 
-			timeout = TAKEOVER_TIMEOUT();
-			data.dsize = sizeof(ipv4);
-			data.dptr  = (uint8_t *)&ipv4;
-			state = ctdb_control_send(ctdb, tmp_ip->pnn,
-					0, CTDB_CONTROL_TAKEOVER_IPv4, 0,
-					data, async_data,
-					&timeout, NULL);
-		} else {
-			ip.pnn  = tmp_ip->pnn;
-			ip.addr = tmp_ip->addr;
-
-			timeout = TAKEOVER_TIMEOUT();
-			data.dsize = sizeof(ip);
-			data.dptr  = (uint8_t *)&ip;
-			state = ctdb_control_send(ctdb, tmp_ip->pnn,
-					0, CTDB_CONTROL_TAKEOVER_IP, 0,
-					data, async_data,
-					&timeout, NULL);
-		}
+		timeout = TAKEOVER_TIMEOUT();
+		data.dsize = sizeof(ip);
+		data.dptr  = (uint8_t *)&ip;
+		state = ctdb_control_send(ctdb, tmp_ip->pnn,
+					  0, CTDB_CONTROL_TAKEOVER_IP, 0,
+					  data, async_data, &timeout, NULL);
 		if (state == NULL) {
 			DEBUG(DEBUG_ERR,(__location__ " Failed to call async control CTDB_CONTROL_TAKEOVER_IP to node %u\n", tmp_ip->pnn));
 			talloc_free(tmp_ctx);
 			return -1;
 		}
-		
+
 		ctdb_client_async_add(async_data, state);
 	}
 	if (ctdb_client_async_wait(ctdb, async_data) != 0) {
@@ -3282,47 +3216,6 @@ int32_t ctdb_control_get_public_ips(struct ctdb_context *ctdb,
 	return 0;
 }
 
-
-/*
-  get list of public IPs, old ipv4 style.  only returns ipv4 addresses
- */
-int32_t ctdb_control_get_public_ipsv4(struct ctdb_context *ctdb, 
-				    struct ctdb_req_control *c, TDB_DATA *outdata)
-{
-	int i, num, len;
-	struct ctdb_all_public_ipsv4 *ips;
-	struct ctdb_vnn *vnn;
-
-	/* count how many public ip structures we have */
-	num = 0;
-	for (vnn=ctdb->vnn;vnn;vnn=vnn->next) {
-		if (vnn->public_address.sa.sa_family != AF_INET) {
-			continue;
-		}
-		num++;
-	}
-
-	len = offsetof(struct ctdb_all_public_ipsv4, ips) + 
-		num*sizeof(struct ctdb_public_ipv4);
-	ips = talloc_zero_size(outdata, len);
-	CTDB_NO_MEMORY(ctdb, ips);
-
-	outdata->dsize = len;
-	outdata->dptr  = (uint8_t *)ips;
-
-	ips->num = num;
-	i = 0;
-	for (vnn=ctdb->vnn;vnn;vnn=vnn->next) {
-		if (vnn->public_address.sa.sa_family != AF_INET) {
-			continue;
-		}
-		ips->ips[i].pnn = vnn->pnn;
-		ips->ips[i].sin = vnn->public_address.ip;
-		i++;
-	}
-
-	return 0;
-}
 
 int32_t ctdb_control_get_public_ip_info(struct ctdb_context *ctdb,
 					struct ctdb_req_control *c,

@@ -164,7 +164,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return ctdb_control_getdbmap(ctdb, opcode, indata, outdata);
 
 	case CTDB_CONTROL_GET_NODEMAPv4:
-		return ctdb_control_getnodemapv4(ctdb, opcode, indata, outdata);
+		return control_not_implemented("GET_NODEMAPv4", "GET_NODEMAP");
 
 	case CTDB_CONTROL_GET_NODEMAP:
 		return ctdb_control_getnodemap(ctdb, opcode, indata, outdata);
@@ -351,16 +351,14 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return 0;
 
 	case CTDB_CONTROL_TAKEOVER_IPv4:
-		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_public_ipv4));
-		return ctdb_control_takeover_ipv4(ctdb, c, indata, async_reply);
+		return control_not_implemented("TAKEOVER_IPv4", "TAKEOVER_IP");
 
 	case CTDB_CONTROL_TAKEOVER_IP:
 		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_public_ip));
 		return ctdb_control_takeover_ip(ctdb, c, indata, async_reply);
 
 	case CTDB_CONTROL_RELEASE_IPv4:
-		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_public_ipv4));
-		return ctdb_control_release_ipv4(ctdb, c, indata, async_reply);
+		return control_not_implemented("RELEASE_IPv4", "RELEASE_IP");
 
 	case CTDB_CONTROL_RELEASE_IP:
 		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_public_ip));
@@ -371,8 +369,8 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return ctdb_control_ipreallocated(ctdb, c, async_reply);
 
 	case CTDB_CONTROL_GET_PUBLIC_IPSv4:
-		CHECK_CONTROL_DATA_SIZE(0);
-		return ctdb_control_get_public_ipsv4(ctdb, c, outdata);
+		return control_not_implemented("GET_PUBLIC_IPSv4",
+					       "GET_PUBLIC_IPS");
 
 	case CTDB_CONTROL_GET_PUBLIC_IPS:
 		CHECK_CONTROL_DATA_SIZE(0);
