@@ -1276,16 +1276,12 @@ update_tickles ()
 	sort >"$_my_tickles"
 
 	# Add tickles for connections that we haven't already got tickles for
-	comm -23 "$_my_connections" "$_my_tickles" |
-	while read _src _dst ; do
-		$CTDB addtickle "$_src" "$_dst"
-	done
+	comm -23 "$_my_connections" "$_my_tickles" | \
+		$CTDB addtickle
 
 	# Remove tickles for connections that are no longer there
-	comm -13 "$_my_connections" "$_my_tickles" |
-	while read _src _dst ; do
-		$CTDB deltickle "$_src" "$_dst"
-	done
+	comm -13 "$_my_connections" "$_my_tickles" | \
+		$CTDB deltickle
 
 	rm -f "$_my_connections" "$_my_tickles"
 
