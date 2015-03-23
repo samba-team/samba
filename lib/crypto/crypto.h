@@ -17,7 +17,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef _SAMBA_CRYPTO_H
+#ifndef _SAMBA_CRYPTO_H_
 #define _SAMBA_CRYPTO_H_
 
 #include "../lib/crypto/crc32.h"
