@@ -2115,7 +2115,7 @@ static bool test_LogonControl(struct torture_context *tctx,
 				    (secure_channel_type == SEC_CHAN_WKSTA)) {
 					torture_assert_werr_equal(tctx, r.out.result, WERR_ACCESS_DENIED,
 						"LogonControl returned unexpected error code");
-				} else {
+				} else if (!W_ERROR_EQUAL(r.out.result, WERR_NOT_SUPPORTED)) {
 					torture_assert_werr_ok(tctx, r.out.result,
 						"LogonControl returned unexpected result");
 				}
