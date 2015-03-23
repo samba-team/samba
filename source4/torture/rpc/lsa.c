@@ -2401,36 +2401,64 @@ static bool test_EnumTrustDomEx(struct dcerpc_binding_handle *b,
 				struct policy_handle *handle)
 {
 	struct lsa_EnumTrustedDomainsEx r_ex;
-	uint32_t resume_handle = 0;
+	uint32_t in_resume_handle = 0;
+	uint32_t out_resume_handle;
 	struct lsa_DomainListEx domains_ex;
 	bool ret = true;
 
 	torture_comment(tctx, "\nTesting EnumTrustedDomainsEx\n");
 
 	r_ex.in.handle = handle;
-	r_ex.in.resume_handle = &resume_handle;
-	r_ex.in.max_size = LSA_ENUM_TRUST_DOMAIN_EX_MULTIPLIER * 3;
+	r_ex.in.resume_handle = &in_resume_handle;
+	r_ex.in.max_size = 0;
 	r_ex.out.domains = &domains_ex;
-	r_ex.out.resume_handle = &resume_handle;
+	r_ex.out.resume_handle = &out_resume_handle;
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_lsa_EnumTrustedDomainsEx_r(b, tctx, &r_ex),
 		"EnumTrustedDomainsEx failed");
 
-	if (!(NT_STATUS_EQUAL(r_ex.out.result, STATUS_MORE_ENTRIES) || NT_STATUS_EQUAL(r_ex.out.result, NT_STATUS_NO_MORE_ENTRIES))) {
-		torture_comment(tctx, "EnumTrustedDomainEx of zero size failed - %s\n", nt_errstr(r_ex.out.result));
+	/* according to MS-LSAD 3.1.4.7.8 output resume handle MUST
+	 * always be larger than the previous input resume handle, in
+	 * particular when hitting the last query it is vital to set the
+	 * resume handle correctly to avoid infinite client loops, as
+	 * seen e.g.  with Windows XP SP3 when resume handle is 0 and
+	 * status is NT_STATUS_OK - gd */
+
+	if (NT_STATUS_IS_OK(r_ex.out.result) ||
+	    NT_STATUS_EQUAL(r_ex.out.result, NT_STATUS_NO_MORE_ENTRIES) ||
+	    NT_STATUS_EQUAL(r_ex.out.result, STATUS_MORE_ENTRIES))
+	{
+		if (out_resume_handle <= in_resume_handle) {
+			torture_comment(tctx, "EnumTrustDomEx failed - should have returned output resume_handle (0x%08x) larger than input resume handle (0x%08x)\n",
+				out_resume_handle, in_resume_handle);
+			return false;
+		}
+	}
+
+	if (NT_STATUS_IS_OK(r_ex.out.result)) {
+		if (domains_ex.count == 0) {
+			torture_comment(tctx, "EnumTrustDom failed - should have returned 'NT_STATUS_NO_MORE_ENTRIES' for 0 trusted domains\n");
+			return false;
+		}
+	} else if (!(NT_STATUS_EQUAL(r_ex.out.result, STATUS_MORE_ENTRIES) ||
+		    NT_STATUS_EQUAL(r_ex.out.result, NT_STATUS_NO_MORE_ENTRIES))) {
+		torture_comment(tctx, "EnumTrustDom of zero size failed - %s\n",
+				nt_errstr(r_ex.out.result));
 		return false;
 	}
 
-	resume_handle = 0;
+	in_resume_handle = 0;
 	do {
 		r_ex.in.handle = handle;
-		r_ex.in.resume_handle = &resume_handle;
+		r_ex.in.resume_handle = &in_resume_handle;
 		r_ex.in.max_size = LSA_ENUM_TRUST_DOMAIN_EX_MULTIPLIER * 3;
 		r_ex.out.domains = &domains_ex;
-		r_ex.out.resume_handle = &resume_handle;
+		r_ex.out.resume_handle = &out_resume_handle;
 
 		torture_assert_ntstatus_ok(tctx, dcerpc_lsa_EnumTrustedDomainsEx_r(b, tctx, &r_ex),
 			"EnumTrustedDomainsEx failed");
+
+		in_resume_handle = out_resume_handle;
 
 		/* NO_MORE_ENTRIES is allowed */
 		if (NT_STATUS_EQUAL(r_ex.out.result, NT_STATUS_NO_MORE_ENTRIES)) {
