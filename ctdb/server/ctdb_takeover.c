@@ -2869,15 +2869,11 @@ static int ctdb_client_ip_destructor(struct ctdb_client_ip *ip)
 /*
   called by a client to inform us of a TCP connection that it is managing
   that should tickled with an ACK when IP takeover is done
-  we handle both the old ipv4 style of packets as well as the new ipv4/6
-  pdus.
  */
 int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id,
 				TDB_DATA indata)
 {
 	struct ctdb_client *client = ctdb_reqid_find(ctdb, client_id, struct ctdb_client);
-	struct ctdb_control_tcp *old_addr = NULL;
-	struct ctdb_control_tcp_addr new_addr;
 	struct ctdb_control_tcp_addr *tcp_sock = NULL;
 	struct ctdb_tcp_list *tcp;
 	struct ctdb_tcp_connection t;
@@ -2892,26 +2888,7 @@ int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id,
 		return 0;
 	}
 
-	switch (indata.dsize) {
-	case sizeof(struct ctdb_control_tcp):
-		old_addr = (struct ctdb_control_tcp *)indata.dptr;
-		ZERO_STRUCT(new_addr);
-		tcp_sock = &new_addr;
-		tcp_sock->src.ip  = old_addr->src;
-		tcp_sock->dest.ip = old_addr->dest;
-		break;
-	case sizeof(struct ctdb_control_tcp_addr):
-		tcp_sock = (struct ctdb_control_tcp_addr *)indata.dptr;
-		break;
-	default:
-		DEBUG(DEBUG_ERR,(__location__ " Invalid data structure passed "
-				 "to ctdb_control_tcp_client. size was %d but "
-				 "only allowed sizes are %lu and %lu\n",
-				 (int)indata.dsize,
-				 (long unsigned)sizeof(struct ctdb_control_tcp),
-				 (long unsigned)sizeof(struct ctdb_control_tcp_addr)));
-		return -1;
-	}
+	tcp_sock = (struct ctdb_control_tcp_addr *)indata.dptr;
 
 	addr = tcp_sock->src;
 	ctdb_canonicalize_ip(&addr,  &tcp_sock->src);

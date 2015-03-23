@@ -470,17 +470,6 @@ struct ctdb_uptime {
 	struct timeval last_recovery_finished;
 };
 
-/*
-  struct for tcp_client control
-  this is an ipv4 only version of this structure used by samba
-  samba will later be migrated over to use the
-  ctdb_control_tcp_addr structure instead
- */
-struct ctdb_control_tcp {
-	struct sockaddr_in src;  /* samba uses this */
-	struct sockaddr_in dest; /* samba uses this */
-};
-/* new style structure */
 struct ctdb_control_tcp_addr {
 	ctdb_sock_addr src;
 	ctdb_sock_addr dest;

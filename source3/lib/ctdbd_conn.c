@@ -1632,12 +1632,6 @@ NTSTATUS ctdbd_register_ips(struct ctdbd_connection *conn,
 						       void *private_data),
 			    void *private_data)
 {
-	/*
-	 * we still use ctdb_control_tcp for ipv4
-	 * because we want to work against older ctdb
-	 * versions at runtime
-	 */
-	struct ctdb_control_tcp p4;
 	struct ctdb_control_tcp_addr p;
 	TDB_DATA data;
 	NTSTATUS status;
@@ -1654,10 +1648,10 @@ NTSTATUS ctdbd_register_ips(struct ctdbd_connection *conn,
 
 	switch (client.ss_family) {
 	case AF_INET:
-		memcpy(&p4.dest, &server, sizeof(p4.dest));
-		memcpy(&p4.src, &client, sizeof(p4.src));
-		data.dptr = (uint8_t *)&p4;
-		data.dsize = sizeof(p4);
+		memcpy(&p.dest.ip, &server, sizeof(p.dest.ip));
+		memcpy(&p.src.ip, &client, sizeof(p.src.ip));
+		data.dptr = (uint8_t *)&p;
+		data.dsize = sizeof(p);
 		break;
 	case AF_INET6:
 		memcpy(&p.dest.ip6, &server, sizeof(p.dest.ip6));
