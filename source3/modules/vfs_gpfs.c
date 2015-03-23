@@ -56,19 +56,16 @@ struct gpfs_config_data {
 
 static inline unsigned int gpfs_acl_flags(gpfs_acl_t *gacl)
 {
-	if (gacl->acl_level == 1) { /* GPFS_ACL_LEVEL_V4FLAGS */
-		/* gacl->v4Level1.acl_flags requires gpfs 3.5 */
-		return *(unsigned int *)&gacl->ace_v4;
+	if (gacl->acl_level == GPFS_ACL_LEVEL_V4FLAGS) {
+		return gacl->v4Level1.acl_flags;
 	}
 	return 0;
 }
 
 static inline gpfs_ace_v4_t *gpfs_ace_ptr(gpfs_acl_t *gacl, unsigned int i)
 {
-	if (gacl->acl_level == 1) { /* GPFS_ACL_LEVEL_V4FLAGS */
-		/* &gacl->v4Level1.ace_v4[i] requires gpfs 3.5 */
-		char *ptr = (char *)&gacl->ace_v4[i] + sizeof(unsigned int);
-		return (gpfs_ace_v4_t *)ptr;
+	if (gacl->acl_level == GPFS_ACL_LEVEL_V4FLAGS) {
+		return &gacl->v4Level1.ace_v4[i];
 	}
 	return &gacl->ace_v4[i];
 }
@@ -315,12 +312,11 @@ static void sd2gpfs_control(uint16_t control, struct gpfs_acl *gacl)
 		SEC_DESC_DACL_PRESENT | SEC_DESC_SACL_PRESENT;
 	gpfs_aclflags = control << 8;
 	if (!(control & SEC_DESC_DACL_PRESENT))
-		gpfs_aclflags |= 0x00800000; /* ACL4_FLAG_NULL_DACL; */
+		gpfs_aclflags |= ACL4_FLAG_NULL_DACL;
 	if (!(control & SEC_DESC_SACL_PRESENT))
-		gpfs_aclflags |= 0x01000000; /* ACL4_FLAG_NULL_SACL; */
-	gacl->acl_level = 1; /* GPFS_ACL_LEVEL_V4FLAGS*/
-	/* gacl->v4Level1.acl_flags requires gpfs 3.5 */
-	*(unsigned int *)&gacl->ace_v4 = gpfs_aclflags;
+		gpfs_aclflags |= ACL4_FLAG_NULL_SACL;
+	gacl->acl_level = GPFS_ACL_LEVEL_V4FLAGS;
+	gacl->v4Level1.acl_flags = gpfs_aclflags;
 }
 
 static uint16_t gpfs2sd_control(unsigned int gpfs_aclflags)
@@ -396,7 +392,7 @@ again:
 	} else {
 		struct gpfs_acl *buf = (struct gpfs_acl *) aclbuf;
 		buf->acl_type = type;
-		buf->acl_level = 1; /* GPFS_ACL_LEVEL_V4FLAGS */
+		buf->acl_level = GPFS_ACL_LEVEL_V4FLAGS;
 		flags = GPFS_GETACL_STRUCT;
 		len = &(buf->acl_len);
 		/* reserve space for control flags in gpfs 3.5 and beyond */
@@ -471,7 +467,7 @@ static int gpfs_get_nfs4_acl(TALLOC_CTX *mem_ctx, const char *fname, SMB4ACL_T *
 
 	*ppacl = smb_create_smb4acl(mem_ctx);
 
-	if (gacl->acl_level == 1) { /* GPFS_ACL_LEVEL_V4FLAGS */
+	if (gacl->acl_level == GPFS_ACL_LEVEL_V4FLAGS) {
 		uint16_t control = gpfs2sd_control(gpfs_acl_flags(gacl));
 		smbacl4_set_controlflags(*ppacl, control);
 	}
@@ -648,13 +644,13 @@ static struct gpfs_acl *vfs_gpfs_smbacl2gpfsacl(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	gacl->acl_level = 0; /* GPFS_ACL_LEVEL_BASE */
+	gacl->acl_level = GPFS_ACL_LEVEL_BASE;
 	gacl->acl_version = GPFS_ACL_VERSION_NFS4;
 	gacl->acl_type = GPFS_ACL_TYPE_NFS4;
 	gacl->acl_nace = 0; /* change later... */
 
 	if (controlflags) {
-		gacl->acl_level = 1; /* GPFS_ACL_LEVEL_V4FLAGS */
+		gacl->acl_level = GPFS_ACL_LEVEL_V4FLAGS;
 		sd2gpfs_control(smbacl4_get_controlflags(smbacl), gacl);
 	}
 
