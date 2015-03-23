@@ -2209,10 +2209,18 @@ static bool test_LogonControl2(struct torture_context *tctx,
 	struct netr_LogonControl2 r;
 	union netr_CONTROL_DATA_INFORMATION data;
 	union netr_CONTROL_QUERY_INFORMATION query;
+	enum netr_SchannelType secure_channel_type = SEC_CHAN_NULL;
 	int i;
 	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	data.domain = lpcfg_workgroup(tctx->lp_ctx);
+
+	if (machine_credentials) {
+		secure_channel_type = cli_credentials_get_secure_channel_type(machine_credentials);
+	}
+
+	torture_comment(tctx, "Testing LogonControl2 with secure channel type: %d\n",
+		secure_channel_type);
 
 	r.in.logon_server = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 
@@ -2284,8 +2292,14 @@ static bool test_LogonControl2(struct torture_context *tctx,
 
 	status = dcerpc_netr_LogonControl2_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "LogonControl2");
-	torture_assert_werr_equal(tctx, r.out.result, WERR_UNKNOWN_LEVEL, "LogonControl2");
-
+	switch (secure_channel_type) {
+	case SEC_CHAN_NULL:
+		torture_assert_werr_equal(tctx, r.out.result, WERR_NOT_SUPPORTED, "LogonControl2");
+		break;
+	default:
+		torture_assert_werr_equal(tctx, r.out.result, WERR_ACCESS_DENIED, "LogonControl2");
+		break;
+	}
 	data.debug_level = ~0;
 
 	r.in.function_code = NETLOGON_CONTROL_SET_DBFLAG;
