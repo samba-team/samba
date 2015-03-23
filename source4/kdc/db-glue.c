@@ -1370,9 +1370,10 @@ static krb5_error_code samba_kdc_lookup_client(krb5_context context,
 						krb5_const_principal principal,
 						const char **attrs,
 						struct ldb_dn **realm_dn,
-						struct ldb_message **msg) {
+						struct ldb_message **msg)
+{
 	NTSTATUS nt_status;
-	char *principal_string;
+	char *principal_string = NULL;
 
 	if (smb_krb5_principal_get_type(context, principal) == KRB5_NT_ENTERPRISE_PRINCIPAL) {
 		principal_string = smb_krb5_principal_get_comp_string(mem_ctx, context,
@@ -1380,21 +1381,111 @@ static krb5_error_code samba_kdc_lookup_client(krb5_context context,
 		if (principal_string == NULL) {
 			return ENOMEM;
 		}
-		nt_status = sam_get_results_principal(kdc_db_ctx->samdb,
-						      mem_ctx, principal_string, attrs,
-						      realm_dn, msg);
-		TALLOC_FREE(principal_string);
 	} else {
+		char *principal_string_m = NULL;
 		krb5_error_code ret;
-		ret = krb5_unparse_name(context, principal, &principal_string);
+
+		ret = krb5_unparse_name(context, principal, &principal_string_m);
 		if (ret != 0) {
 			return ret;
 		}
-		nt_status = sam_get_results_principal(kdc_db_ctx->samdb,
-						      mem_ctx, principal_string, attrs,
-						      realm_dn, msg);
-		free(principal_string);
+
+		principal_string = talloc_strdup(mem_ctx, principal_string_m);
+		SAFE_FREE(principal_string_m);
+		if (principal_string == NULL) {
+			return ENOMEM;
+		}
 	}
+
+	nt_status = sam_get_results_principal(kdc_db_ctx->samdb,
+					      mem_ctx, principal_string, attrs,
+					      realm_dn, msg);
+	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_SUCH_USER)) {
+		krb5_principal fallback_principal = NULL;
+		unsigned int num_comp;
+		char *fallback_realm = NULL;
+		char *fallback_account = NULL;
+		krb5_error_code ret;
+
+		ret = krb5_parse_name(context, principal_string,
+				      &fallback_principal);
+		TALLOC_FREE(principal_string);
+		if (ret != 0) {
+			return ret;
+		}
+
+		num_comp = krb5_princ_size(context, fallback_principal);
+		fallback_realm = smb_krb5_principal_get_realm(context,
+							      fallback_principal);
+		if (fallback_realm == NULL) {
+			krb5_free_principal(context, fallback_principal);
+			return ENOMEM;
+		}
+
+		if (num_comp == 1) {
+			size_t len;
+
+			fallback_account = smb_krb5_principal_get_comp_string(mem_ctx,
+						context, fallback_principal, 0);
+			if (fallback_account == NULL) {
+				krb5_free_principal(context, fallback_principal);
+				SAFE_FREE(fallback_realm);
+				return ENOMEM;
+			}
+
+			len = strlen(fallback_account);
+			if (len >= 2 && fallback_account[len - 1] == '$') {
+				TALLOC_FREE(fallback_account);
+			}
+		}
+		krb5_free_principal(context, fallback_principal);
+		fallback_principal = NULL;
+
+		if (fallback_account != NULL) {
+			char *with_dollar;
+
+			with_dollar = talloc_asprintf(mem_ctx, "%s$",
+						     fallback_account);
+			if (with_dollar == NULL) {
+				SAFE_FREE(fallback_realm);
+				return ENOMEM;
+			}
+			TALLOC_FREE(fallback_account);
+
+			ret = smb_krb5_make_principal(context,
+						      &fallback_principal,
+						      fallback_realm,
+						      with_dollar, NULL);
+			TALLOC_FREE(with_dollar);
+			if (ret != 0) {
+				SAFE_FREE(fallback_realm);
+				return ret;
+			}
+		}
+		SAFE_FREE(fallback_realm);
+
+		if (fallback_principal != NULL) {
+			char *fallback_string = NULL;
+
+			ret = krb5_unparse_name(context,
+						fallback_principal,
+						&fallback_string);
+			if (ret != 0) {
+				krb5_free_principal(context, fallback_principal);
+				return ret;
+			}
+
+			nt_status = sam_get_results_principal(kdc_db_ctx->samdb,
+							      mem_ctx,
+							      fallback_string,
+							      attrs,
+							      realm_dn, msg);
+			SAFE_FREE(fallback_string);
+		}
+		krb5_free_principal(context, fallback_principal);
+		fallback_principal = NULL;
+	}
+	TALLOC_FREE(principal_string);
 
 	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_SUCH_USER)) {
 		return HDB_ERR_NOENTRY;
@@ -1652,6 +1743,9 @@ static krb5_error_code samba_kdc_lookup_server(krb5_context context,
 		char *short_princ;
 		krb5_principal enterprise_principal = NULL;
 		krb5_const_principal used_principal = NULL;
+		char *name1 = NULL;
+		size_t len1 = 0;
+		char *filter = NULL;
 
 		if (smb_krb5_principal_get_type(context, principal) == KRB5_NT_ENTERPRISE_PRINCIPAL) {
 			char *str = NULL;
@@ -1697,24 +1791,48 @@ static krb5_error_code samba_kdc_lookup_server(krb5_context context,
 			return ret;
 		}
 
+		name1 = ldb_binary_encode_string(mem_ctx, short_princ);
+		SAFE_FREE(short_princ);
+		if (name1 == NULL) {
+			return ENOMEM;
+		}
+		len1 = strlen(name1);
+		if (len1 >= 1 && name1[len1 - 1] != '$') {
+			filter = talloc_asprintf(mem_ctx,
+					"(&(objectClass=user)(|(samAccountName=%s)(samAccountName=%s$)))",
+					name1, name1);
+			if (filter == NULL) {
+				return ENOMEM;
+			}
+		} else {
+			filter = talloc_asprintf(mem_ctx,
+					"(&(objectClass=user)(samAccountName=%s))",
+					name1);
+			if (filter == NULL) {
+				return ENOMEM;
+			}
+		}
+
 		lret = dsdb_search_one(kdc_db_ctx->samdb, mem_ctx, msg,
 				       *realm_dn, LDB_SCOPE_SUBTREE,
 				       attrs,
 				       DSDB_SEARCH_SHOW_EXTENDED_DN | DSDB_SEARCH_NO_GLOBAL_CATALOG,
-				       "(&(objectClass=user)(samAccountName=%s))",
-				       ldb_binary_encode_string(mem_ctx, short_princ));
+				       "%s", filter);
 		if (lret == LDB_ERR_NO_SUCH_OBJECT) {
-			DEBUG(3, ("Failed to find an entry for %s\n", short_princ));
-			free(short_princ);
+			DEBUG(10, ("Failed to find an entry for %s filter:%s\n",
+				  name1, filter));
+			return HDB_ERR_NOENTRY;
+		}
+		if (lret == LDB_ERR_CONSTRAINT_VIOLATION) {
+			DEBUG(10, ("Failed to find unique entry for %s filter:%s\n",
+				  name1, filter));
 			return HDB_ERR_NOENTRY;
 		}
 		if (lret != LDB_SUCCESS) {
-			DEBUG(3, ("Failed single search for %s - %s\n",
-				  short_princ, ldb_errstring(kdc_db_ctx->samdb)));
-			free(short_princ);
+			DEBUG(0, ("Failed single search for %s - %s\n",
+				  name1, ldb_errstring(kdc_db_ctx->samdb)));
 			return HDB_ERR_NOENTRY;
 		}
-		free(short_princ);
 		return 0;
 	}
 	return HDB_ERR_NOENTRY;
