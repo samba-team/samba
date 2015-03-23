@@ -4074,19 +4074,19 @@ struct torture_suite *torture_rpc_netlogon_admin(TALLOC_CTX *mem_ctx)
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "netlogon.admin");
 	struct torture_rpc_tcase *tcase;
 
-	tcase = torture_suite_add_machine_bdc_rpc_iface_tcase(suite, "netlogon",
+	tcase = torture_suite_add_machine_bdc_rpc_iface_tcase(suite, "bdc",
 						  &ndr_table_netlogon, TEST_MACHINE_NAME);
 	torture_rpc_tcase_add_test_creds(tcase, "LogonControl", test_LogonControl);
 	torture_rpc_tcase_add_test_creds(tcase, "LogonControl2", test_LogonControl2);
 	torture_rpc_tcase_add_test_creds(tcase, "LogonControl2Ex", test_LogonControl2Ex);
 
-	tcase = torture_suite_add_machine_workstation_rpc_iface_tcase(suite, "netlogon",
+	tcase = torture_suite_add_machine_workstation_rpc_iface_tcase(suite, "wkst",
 						  &ndr_table_netlogon, TEST_MACHINE_NAME);
 	torture_rpc_tcase_add_test_creds(tcase, "LogonControl", test_LogonControl);
 	torture_rpc_tcase_add_test_creds(tcase, "LogonControl2", test_LogonControl2);
 	torture_rpc_tcase_add_test_creds(tcase, "LogonControl2Ex", test_LogonControl2Ex);
 
-	tcase = torture_suite_add_rpc_iface_tcase(suite, "netlogon",
+	tcase = torture_suite_add_rpc_iface_tcase(suite, "admin",
 						  &ndr_table_netlogon);
 	torture_rpc_tcase_add_test_creds(tcase, "LogonControl", test_LogonControl);
 	torture_rpc_tcase_add_test_creds(tcase, "LogonControl2", test_LogonControl2);

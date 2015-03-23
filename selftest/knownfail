@@ -233,12 +233,8 @@
 #
 # The Samba4 netlogon server does not implement these LogonControl operations
 #
-^samba3.rpc.netlogon.admin.netlogon.LogonControl2\(ad_dc\)
-^samba3.rpc.netlogon.admin.netlogon.LogonControl\(ad_dc\)
-^samba3.rpc.netlogon.admin.netlogon.LogonControl2\(ad_dc\)
-^samba3.rpc.netlogon.admin.netlogon.LogonControl\(ad_dc\)
-^samba3.rpc.netlogon.admin.netlogon.LogonControl2\(ad_dc\)
-^samba3.rpc.netlogon.admin.netlogon.LogonControl\(ad_dc\)
+^samba3.rpc.netlogon.admin.*.LogonControl2\(ad_dc\)
+^samba3.rpc.netlogon.admin.*.LogonControl\(ad_dc\)
 #
 # The Samba4 winbind does not cover the full winbind protocol, so these are expected
 #
