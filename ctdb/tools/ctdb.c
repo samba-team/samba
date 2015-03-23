@@ -2606,7 +2606,7 @@ static int control_delip(struct ctdb_context *ctdb, int argc, const char **argv)
 static int kill_tcp_from_file(struct ctdb_context *ctdb,
 			      int argc, const char **argv)
 {
-	struct ctdb_control_killtcp *killtcp;
+	struct ctdb_tcp_connection *killtcp;
 	int max_entries, current, i;
 	struct timeval timeout;
 	char line[128], src[128], dst[128];
@@ -2643,7 +2643,7 @@ static int kill_tcp_from_file(struct ctdb_context *ctdb,
 		if (current >= max_entries) {
 			max_entries += 1024;
 			killtcp = talloc_realloc(ctdb, killtcp,
-						 struct ctdb_control_killtcp,
+						 struct ctdb_tcp_connection,
 						 max_entries);
 			CTDB_NO_MEMORY(ctdb, killtcp);
 		}
@@ -2673,7 +2673,7 @@ static int kill_tcp_from_file(struct ctdb_context *ctdb,
 
 	for (i = 0; i < current; i++) {
 
-		data.dsize = sizeof(struct ctdb_control_killtcp);
+		data.dsize = sizeof(struct ctdb_tcp_connection);
 		data.dptr  = (unsigned char *)&killtcp[i];
 
 		timeout = TIMELIMIT();
@@ -2709,7 +2709,7 @@ static int kill_tcp_from_file(struct ctdb_context *ctdb,
 static int kill_tcp(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	int ret;
-	struct ctdb_control_killtcp killtcp;
+	struct ctdb_tcp_connection killtcp;
 
 	assert_single_node_only();
 

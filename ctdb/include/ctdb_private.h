@@ -608,14 +608,6 @@ struct ctdb_db_context {
 	  }} while (0)
 
 /*
-  struct for kill_tcp control
- */
-struct ctdb_control_killtcp {
-	ctdb_sock_addr src_addr;
-	ctdb_sock_addr dst_addr;
-};
-
-/*
   struct holding a ctdb_sock_addr and an interface name,
   used to add/remove public addresses
  */
@@ -1215,7 +1207,7 @@ int ctdb_sys_read_tcp_packet(int s, void *private_data, ctdb_sock_addr *src, ctd
 int ctdb_ctrl_killtcp(struct ctdb_context *ctdb, 
 		      struct timeval timeout, 
 		      uint32_t destnode,
-		      struct ctdb_control_killtcp *killtcp);
+		      struct ctdb_tcp_connection *killtcp);
 
 int ctdb_ctrl_add_public_ip(struct ctdb_context *ctdb, 
 		      struct timeval timeout, 

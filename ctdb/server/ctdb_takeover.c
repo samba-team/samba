@@ -3714,7 +3714,7 @@ failed:
  */
 int32_t ctdb_control_kill_tcp(struct ctdb_context *ctdb, TDB_DATA indata)
 {
-	struct ctdb_control_killtcp *killtcp = (struct ctdb_control_killtcp *)indata.dptr;
+	struct ctdb_tcp_connection *killtcp = (struct ctdb_tcp_connection *)indata.dptr;
 
 	return ctdb_killtcp_add_connection(ctdb, &killtcp->src_addr, &killtcp->dst_addr);
 }
