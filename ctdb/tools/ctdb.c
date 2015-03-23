@@ -1479,7 +1479,7 @@ static int control_get_tickles(struct ctdb_context *ctdb, int argc, const char *
 		port = atoi(argv[1]);
 	}
 
-	if (parse_ip(argv[0], NULL, 0, &addr) == 0) {
+	if (parse_ip(argv[0], NULL, port, &addr) == 0) {
 		DEBUG(DEBUG_ERR,("Wrongly formed ip address '%s'\n", argv[0]));
 		return -1;
 	}
@@ -1493,9 +1493,6 @@ static int control_get_tickles(struct ctdb_context *ctdb, int argc, const char *
 	if (options.machinereadable){
 		printm(":source ip:port:destination ip:port:\n");
 		for (i=0;i<list->num;i++) {
-			if (port && port != ntohs(list->connections[i].dst.ip.sin_port)) {
-				continue;
-			}
 			printm(":%s:%u", ctdb_addr_to_str(&list->connections[i].src), ntohs(list->connections[i].src.ip.sin_port));
 			printm(":%s:%u:\n", ctdb_addr_to_str(&list->connections[i].dst), ntohs(list->connections[i].dst.ip.sin_port));
 		}
@@ -1503,16 +1500,13 @@ static int control_get_tickles(struct ctdb_context *ctdb, int argc, const char *
 		printf("Tickles for ip:%s\n", ctdb_addr_to_str(&list->addr));
 		printf("Num tickles:%u\n", list->num);
 		for (i=0;i<list->num;i++) {
-			if (port && port != ntohs(list->connections[i].dst.ip.sin_port)) {
-				continue;
-			}
 			printf("SRC: %s:%u   ", ctdb_addr_to_str(&list->connections[i].src), ntohs(list->connections[i].src.ip.sin_port));
 			printf("DST: %s:%u\n", ctdb_addr_to_str(&list->connections[i].dst), ntohs(list->connections[i].dst.ip.sin_port));
 		}
 	}
 
 	talloc_free(list);
-	
+
 	return 0;
 }
 

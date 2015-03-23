@@ -2633,22 +2633,34 @@ int32_t ctdb_control_get_tcp_tickle_list(struct ctdb_context *ctdb, TDB_DATA ind
 	ctdb_sock_addr *addr = (ctdb_sock_addr *)indata.dptr;
 	struct ctdb_tickle_list_old *list;
 	struct ctdb_tcp_array *tcparray;
-	int num;
+	int num, i;
 	struct ctdb_vnn *vnn;
+	unsigned port;
 
 	vnn = find_public_ip_vnn(ctdb, addr);
 	if (vnn == NULL) {
-		DEBUG(DEBUG_ERR,(__location__ " Could not get tcp tickle list, '%s' is not a public address\n", 
+		DEBUG(DEBUG_ERR,(__location__ " Could not get tcp tickle list, '%s' is not a public address\n",
 			ctdb_addr_to_str(addr)));
 
 		return 1;
 	}
 
+	port = ctdb_addr_to_port(addr);
+
 	tcparray = vnn->tcp_array;
-	if (tcparray) {
-		num = tcparray->num;
-	} else {
-		num = 0;
+	num = 0;
+	if (tcparray != NULL) {
+		if (port == 0) {
+			/* All connections */
+			num = tcparray->num;
+		} else {
+			/* Count connections for port */
+			for (i = 0; i < tcparray->num; i++) {
+				if (port == ctdb_addr_to_port(&tcparray->connections[i].dst)) {
+					num++;
+				}
+			}
+		}
 	}
 
 	outdata->dsize = offsetof(struct ctdb_tickle_list_old, connections)
@@ -2660,9 +2672,18 @@ int32_t ctdb_control_get_tcp_tickle_list(struct ctdb_context *ctdb, TDB_DATA ind
 
 	list->addr = *addr;
 	list->num = num;
-	if (num) {
-		memcpy(&list->connections[0], tcparray->connections,
-			sizeof(struct ctdb_connection) * num);
+
+	if (num == 0) {
+		return 0;
+	}
+
+	num = 0;
+	for (i = 0; i < tcparray->num; i++) {
+		if (port == 0 || \
+		    port == ctdb_addr_to_port(&tcparray->connections[i].dst)) {
+			list->connections[num] = tcparray->connections[i];
+			num++;
+		}
 	}
 
 	return 0;
