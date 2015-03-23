@@ -2495,8 +2495,8 @@ static bool test_CreateTrustedDomain(struct dcerpc_binding_handle *b,
 	trustdom_handle = talloc_array(tctx, struct policy_handle, num_trusts);
 
 	for (i=0; i< num_trusts; i++) {
-		char *trust_name = talloc_asprintf(tctx, "torturedom%02d", i);
-		char *trust_sid = talloc_asprintf(tctx, "S-1-5-21-97398-379795-100%02d", i);
+		char *trust_name = talloc_asprintf(tctx, "torturedom1%02d", i);
+		char *trust_sid = talloc_asprintf(tctx, "S-1-5-21-97398-379795-1%02d", i);
 
 		domsid[i] = dom_sid_parse_talloc(tctx, trust_sid);
 
@@ -2813,11 +2813,14 @@ static bool test_CreateTrustedDomainEx_common(struct dcerpc_pipe *p,
 	DATA_BLOB session_key;
 	int i;
 	struct dcerpc_binding_handle *b = p->binding_handle;
+	const char *id;
 
 	if (ex2_call) {
 		torture_comment(tctx, "\nTesting CreateTrustedDomainEx2 for %d domains\n", num_trusts);
+		id = "3";
 	} else {
 		torture_comment(tctx, "\nTesting CreateTrustedDomainEx for %d domains\n", num_trusts);
+		id = "2";
 	}
 
 	domsid = talloc_array(tctx, struct dom_sid *, num_trusts);
@@ -2830,9 +2833,9 @@ static bool test_CreateTrustedDomainEx_common(struct dcerpc_pipe *p,
 	}
 
 	for (i=0; i< num_trusts; i++) {
-		char *trust_name = talloc_asprintf(tctx, "torturedom%02d", i);
-		char *trust_name_dns = talloc_asprintf(tctx, "torturedom%02d.samba.example.com", i);
-		char *trust_sid = talloc_asprintf(tctx, "S-1-5-21-97398-379795-100%02d", i);
+		char *trust_name = talloc_asprintf(tctx, "torturedom%s%02d", id, i);
+		char *trust_name_dns = talloc_asprintf(tctx, "torturedom%s%02d.samba.example.com", id, i);
+		char *trust_sid = talloc_asprintf(tctx, "S-1-5-21-97398-379795-%s%02d", id, i);
 
 		domsid[i] = dom_sid_parse_talloc(tctx, trust_sid);
 
