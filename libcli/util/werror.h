@@ -104,7 +104,6 @@ typedef uint32_t WERROR;
 #define WERR_SEM_TIMEOUT W_ERROR(0x00000079)
 #define WERR_INSUFFICIENT_BUFFER W_ERROR(0x0000007A)
 #define WERR_INVALID_NAME W_ERROR(0x0000007B)
-#define WERR_UNKNOWN_LEVEL W_ERROR(0x0000007C)
 #define WERR_OBJECT_PATH_INVALID W_ERROR(0x000000A1)
 #define WERR_ALREADY_EXISTS W_ERROR(0x000000B7)
 #define WERR_MORE_DATA W_ERROR(0x000000EA)
@@ -260,6 +259,9 @@ typedef uint32_t WERROR;
 
 /* Generic error code aliases */
 #define WERR_FOOBAR WERR_GENERAL_FAILURE
+
+/* TODO: remove WERR_UNKNOWN_LEVEL in all callers */
+#define WERR_UNKNOWN_LEVEL WERR_INVALID_LEVEL
 
 /*****************************************************************************
  Auto-generated Win32 error from:
