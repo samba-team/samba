@@ -346,7 +346,7 @@ bool torture_unix_whoami(struct torture_context *torture)
 {
 	struct smbcli_state *cli;
 	struct smb_whoami whoami;
-	bool ret;
+	bool ret = false;
 	struct ldb_context *ldb;
 	const char *addc, *host;
 
