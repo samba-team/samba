@@ -50,6 +50,8 @@
 #include <unistd.h>
 #include <ctype.h>
 
+#include <assert.h>
+
 /*
  * Defining _POSIX_PTHREAD_SEMANTICS before including pwd.h and grp.h  gives us
  * the posix getpwnam_r(), getpwuid_r(), getgrnam_r and getgrgid_r calls on
@@ -476,6 +478,141 @@ struct nwrap_main {
 
 struct nwrap_main *nwrap_main_global;
 struct nwrap_main __nwrap_main_global;
+
+/*
+ * VECTORS
+ */
+
+#define DEFAULT_VECTOR_CAPACITY 16
+
+struct nwrap_vector {
+	void **items;
+	size_t count;
+	size_t capacity;
+};
+
+/* Macro returns pointer to first element of vector->items array.
+ *
+ * nwrap_vector is used as a memory backend which take care of
+ * memory allocations and other stuff like memory growing.
+ * nwrap_vectors should not be considered as some abstract structures.
+ * On this level, vectors are more handy than direct realloc/malloc
+ * calls.
+ *
+ * nwrap_vector->items is array inside nwrap_vector which can be
+ * directly pointed by libc structure assembled by cwrap itself.
+ *
+ * EXAMPLE:
+ *
+ * 1) struct hostent contains char **h_addr_list element.
+ * 2) nwrap_vector holds array of pointers to addresses.
+ *    It's easier to use vector to store results of
+ *    file parsing etc.
+ *
+ * Now, pretend that cwrap assembled struct hostent and
+ * we need to set h_addr_list to point to nwrap_vector.
+ * Idea behind is to shield users from internal nwrap_vector
+ * implementation.
+ * (Yes, not fully - array terminated by NULL is needed because
+ * it's result expected by libc function caller.)
+ *
+ *
+ * CODE EXAMPLE:
+ *
+ * struct hostent he;
+ * struct nwrap_vector *vector = malloc(sizeof(struct nwrap_vector));
+ * ... don't care about failed allocation now ...
+ *
+ * ... fill nwrap vector ...
+ *
+ * struct hostent he;
+ * he.h_addr_list = nwrap_vector_head(vector);
+ *
+ */
+#define nwrap_vector_head(vect) ((void *)((vect)->items))
+
+#define nwrap_vector_foreach(item, vect, iter) \
+	for (iter = 0, (item) = (vect).items == NULL ? NULL : (vect).items[0]; \
+	     item != NULL; \
+	     (item) = (vect).items[++iter])
+
+static inline bool nwrap_vector_init(struct nwrap_vector *const vector)
+{
+	if (vector == NULL) {
+		return false;
+	}
+
+	/* count is initialized by ZERO_STRUCTP */
+	ZERO_STRUCTP(vector);
+	vector->items = malloc(sizeof(void *) * (DEFAULT_VECTOR_CAPACITY + 1));
+	if (vector->items == NULL) {
+		return false;
+	}
+	vector->capacity = DEFAULT_VECTOR_CAPACITY;
+	memset(vector->items, '\0', sizeof(void *) * (DEFAULT_VECTOR_CAPACITY + 1));
+
+	return true;
+}
+
+static bool nwrap_vector_add_item(struct nwrap_vector *cont, void *const item)
+{
+	assert (cont != NULL);
+
+	if (cont->items == NULL) {
+		nwrap_vector_init(cont);
+	}
+
+	if (cont->count == cont->capacity) {
+		/* Items array _MUST_ be NULL terminated because it's passed
+		 * as result to caller which expect NULL terminated array from libc.
+		 */
+		void **items = realloc(cont->items, sizeof(void *) * ((cont->capacity * 2) + 1));
+		if (items == NULL) {
+			return false;
+		}
+		cont->items = items;
+
+		/* Don't count ending NULL to capacity */
+		cont->capacity *= 2;
+	}
+
+	cont->items[cont->count] = item;
+
+	cont->count += 1;
+	cont->items[cont->count] = NULL;
+
+	return true;
+}
+
+static bool nwrap_vector_merge(struct nwrap_vector *dst,
+			       struct nwrap_vector *src)
+{
+	void **dst_items = NULL;
+	size_t count;
+
+	if (src->count == 0) {
+		return true;
+	}
+
+	count = dst->count + src->count;
+
+	/* We don't need reallocation if we have enough capacity. */
+	if (src->count > (dst->capacity - dst->count)) {
+		dst_items = (void **)realloc(dst->items, (count + 1) * sizeof(void *));
+		if (dst_items == NULL) {
+			return false;
+		}
+		dst->items = dst_items;
+		dst->capacity = count;
+	}
+
+	memcpy((void *)(((long *)dst->items) + dst->count),
+	       src->items,
+	       src->count * sizeof(void *));
+	dst->count = count;
+
+	return true;
+}
 
 struct nwrap_cache {
 	const char *path;
