@@ -617,9 +617,12 @@ static bool nwrap_vector_merge(struct nwrap_vector *dst,
 struct nwrap_cache {
 	const char *path;
 	int fd;
+	FILE *fp;
 	struct stat st;
-	uint8_t *buf;
 	void *private_data;
+
+	struct nwrap_vector lines;
+
 	bool (*parse_line)(struct nwrap_cache *, char *line);
 	void (*unload)(struct nwrap_cache *);
 };
@@ -842,6 +845,18 @@ static void *_nwrap_load_lib_function(enum nwrap_lib lib, const char *fn_name)
 		*(void **) (&nwrap_main_global->libc->fns->_libc_##fn_name) = \
 			_nwrap_load_lib_function(lib, #fn_name); \
 	}
+
+/* INTERNAL HELPER FUNCTIONS */
+static void nwrap_lines_unload(struct nwrap_cache *const nwrap)
+{
+	size_t p;
+	for (p = 0; p < nwrap->lines.count; p++) {
+		/* Maybe some vectors were merged ... */
+		SAFE_FREE(nwrap->lines.items[p]);
+	}
+	SAFE_FREE(nwrap->lines.items);
+	nwrap->lines.count = 0;
+}
 
 /*
  * IMPORTANT
@@ -1414,6 +1429,7 @@ static void nwrap_init(void)
 	nwrap_pw_global.cache = &__nwrap_cache_pw;
 
 	nwrap_pw_global.cache->path = getenv("NSS_WRAPPER_PASSWD");
+	nwrap_pw_global.cache->fp = NULL;
 	nwrap_pw_global.cache->fd = -1;
 	nwrap_pw_global.cache->private_data = &nwrap_pw_global;
 	nwrap_pw_global.cache->parse_line = nwrap_pw_parse_line;
@@ -1424,6 +1440,7 @@ static void nwrap_init(void)
 	nwrap_sp_global.cache = &__nwrap_cache_sp;
 
 	nwrap_sp_global.cache->path = getenv("NSS_WRAPPER_SHADOW");
+	nwrap_sp_global.cache->fp = NULL;
 	nwrap_sp_global.cache->fd = -1;
 	nwrap_sp_global.cache->private_data = &nwrap_sp_global;
 	nwrap_sp_global.cache->parse_line = nwrap_sp_parse_line;
@@ -1434,6 +1451,7 @@ static void nwrap_init(void)
 	nwrap_gr_global.cache = &__nwrap_cache_gr;
 
 	nwrap_gr_global.cache->path = getenv("NSS_WRAPPER_GROUP");
+	nwrap_gr_global.cache->fp = NULL;
 	nwrap_gr_global.cache->fd = -1;
 	nwrap_gr_global.cache->private_data = &nwrap_gr_global;
 	nwrap_gr_global.cache->parse_line = nwrap_gr_parse_line;
@@ -1443,6 +1461,7 @@ static void nwrap_init(void)
 	nwrap_he_global.cache = &__nwrap_cache_he;
 
 	nwrap_he_global.cache->path = getenv("NSS_WRAPPER_HOSTS");
+	nwrap_he_global.cache->fp = NULL;
 	nwrap_he_global.cache->fd = -1;
 	nwrap_he_global.cache->private_data = &nwrap_he_global;
 	nwrap_he_global.cache->parse_line = nwrap_he_parse_line;
@@ -1504,88 +1523,78 @@ static bool nwrap_hostname_enabled(void)
 
 static bool nwrap_parse_file(struct nwrap_cache *nwrap)
 {
-	int ret;
-	uint8_t *buf = NULL;
-	char *nline;
+	char *line = NULL;
+	ssize_t n;
+	/* Unused but getline needs it */
+	size_t len;
+	bool ok;
 
 	if (nwrap->st.st_size == 0) {
 		NWRAP_LOG(NWRAP_LOG_DEBUG, "size == 0");
-		goto done;
+		return true;
 	}
 
+	/* Support for 32-bit system I guess */
 	if (nwrap->st.st_size > INT32_MAX) {
 		NWRAP_LOG(NWRAP_LOG_ERROR,
 			  "Size[%u] larger than INT32_MAX",
 			  (unsigned)nwrap->st.st_size);
-		goto failed;
+		return false;
 	}
 
-	ret = lseek(nwrap->fd, 0, SEEK_SET);
-	if (ret != 0) {
-		NWRAP_LOG(NWRAP_LOG_ERROR, "lseek - rc=%d\n", ret);
-		goto failed;
-	}
+	rewind(nwrap->fp);
 
-	buf = (uint8_t *)malloc(nwrap->st.st_size + 1);
-	if (!buf) {
-		NWRAP_LOG(NWRAP_LOG_ERROR, "Out of memory");
-		goto failed;
-	}
-
-	ret = read(nwrap->fd, buf, nwrap->st.st_size);
-	if (ret != nwrap->st.st_size) {
-		NWRAP_LOG(NWRAP_LOG_ERROR,
-			  "read(%u) rc=%d\n",
-			  (unsigned)nwrap->st.st_size, ret);
-		goto failed;
-	}
-
-	buf[nwrap->st.st_size] = '\0';
-
-	nline = (char *)buf;
-	while (nline != NULL && nline[0] != '\0') {
-		char *line;
-		char *e;
-		bool ok;
-
-		line = nline;
-		nline = NULL;
-
-		e = strchr(line, '\n');
-		if (e) {
-			e[0] = '\0';
-			e++;
-			if (e[0] == '\r') {
-				e[0] = '\0';
-				e++;
+	do {
+		n = getline(&line, &len, nwrap->fp);
+		if (n < 0) {
+			if (feof(nwrap->fp)) {
+				break;
 			}
-			nline = e;
+
+			NWRAP_LOG(NWRAP_LOG_ERROR,
+				  "Unable to read line from file: %s",
+				  nwrap->path);
+			return false;
 		}
 
-		if (strlen(line) == 0) {
+		if (line[n - 1] == '\n') {
+			line[n - 1] = '\0';
+		}
+
+		if (line[0] == '\0') {
+			SAFE_FREE(line);
 			continue;
 		}
 
 		ok = nwrap->parse_line(nwrap, line);
 		if (!ok) {
-			goto failed;
+			NWRAP_LOG(NWRAP_LOG_ERROR,
+				  "Unable to parse line file: %s",
+				  line);
+			SAFE_FREE(line);
+			return false;
 		}
-	}
 
-done:
-	nwrap->buf = buf;
+		/* Line is parsed without issues so add it to list */
+		ok = nwrap_vector_add_item(&(nwrap->lines), (void *const) line);
+		if (!ok) {
+			NWRAP_LOG(NWRAP_LOG_ERROR,
+				  "Unable to add line to vector");
+			return false;
+		}
+
+		/* This forces getline to allocate new memory for line. */
+		line = NULL;
+	} while (!feof(nwrap->fp));
+
 	return true;
-
-failed:
-	SAFE_FREE(buf);
-	return false;
 }
 
 static void nwrap_files_cache_unload(struct nwrap_cache *nwrap)
 {
 	nwrap->unload(nwrap);
 
-	SAFE_FREE(nwrap->buf);
+	nwrap_lines_unload(nwrap);
 }
 
 static void nwrap_files_cache_reload(struct nwrap_cache *nwrap)
@@ -1595,16 +1604,21 @@ static void nwrap_files_cache_reload(struct nwrap_cache *nwrap)
 	bool ok;
 	bool retried = false;
 
+	assert(nwrap != NULL);
+
 reopen:
 	if (nwrap->fd < 0) {
-		nwrap->fd = open(nwrap->path, O_RDONLY);
-		if (nwrap->fd < 0) {
+		nwrap->fp = fopen(nwrap->path, "re");
+		if (nwrap->fp == NULL) {
+			nwrap->fd = -1;
 			NWRAP_LOG(NWRAP_LOG_ERROR,
 				  "Unable to open '%s' readonly %d:%s",
 				  nwrap->path, nwrap->fd,
 				  strerror(errno));
 			return;
+
 		}
+		nwrap->fd = fileno(nwrap->fp);
 		NWRAP_LOG(NWRAP_LOG_DEBUG, "Open '%s'", nwrap->path);
 	}
 
@@ -1615,6 +1629,9 @@ reopen:
 			  nwrap->path,
 			  ret,
 			  strerror(errno));
+		fclose(nwrap->fp);
+		nwrap->fp = NULL;
+		nwrap->fd = -1;
 		return;
 	}
 
@@ -1625,7 +1642,8 @@ reopen:
 			  nwrap->path);
 		retried = true;
 		memset(&nwrap->st, 0, sizeof(nwrap->st));
-		close(nwrap->fd);
+		fclose(nwrap->fp);
+		nwrap->fp = NULL;
 		nwrap->fd = -1;
 		goto reopen;
 	}
@@ -4864,7 +4882,8 @@ void nwrap_destructor(void)
 
 		nwrap_files_cache_unload(c);
 		if (c->fd >= 0) {
-			close(c->fd);
+			fclose(c->fp);
+			c->fd = -1;
 		}
 
 		SAFE_FREE(nwrap_pw_global.list);
@@ -4876,7 +4895,8 @@ void nwrap_destructor(void)
 
 		nwrap_files_cache_unload(c);
 		if (c->fd >= 0) {
-			close(c->fd);
+			fclose(c->fp);
+			c->fd = -1;
 		}
 
 		SAFE_FREE(nwrap_gr_global.list);
@@ -4888,7 +4908,8 @@ void nwrap_destructor(void)
 
 		nwrap_files_cache_unload(c);
 		if (c->fd >= 0) {
-			close(c->fd);
+			fclose(c->fp);
+			c->fd = -1;
 		}
 
 		SAFE_FREE(nwrap_he_global.list);
