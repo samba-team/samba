@@ -90,6 +90,7 @@
 ^samba4.rpc.netlogon.*.DatabaseSync2
 ^samba4.rpc.netlogon.*.LogonControl\(.*\)$
 ^samba4.rpc.netlogon.*.LogonControl2\(.*\)$
+^samba4.rpc.netlogon.*.LogonControl2Ex\(.*\)$
 ^samba4.rpc.netlogon.*.NetrEnumerateTrustedDomains
 ^samba4.rpc.netlogon.*.NetrEnumerateTrustedDomainsEx
 ^samba4.rpc.netlogon.*.GetPassword
@@ -233,6 +234,7 @@
 #
 # The Samba4 netlogon server does not implement these LogonControl operations
 #
+^samba3.rpc.netlogon.admin.*.LogonControl2Ex\(ad_dc\)
 ^samba3.rpc.netlogon.admin.*.LogonControl2\(ad_dc\)
 ^samba3.rpc.netlogon.admin.*.LogonControl\(ad_dc\)
 #
