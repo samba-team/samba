@@ -154,7 +154,7 @@ bool test_session_reconnect2(struct torture_context *tctx, struct smb2_tree *tre
 	struct smb2_create io1;
 	uint64_t previous_session_id;
 	bool ret = true;
-	struct smb2_session *session2;
+	struct smb2_session *session2 = NULL;
 	union smb_fileinfo qfinfo;
 
 	/* Add some random component to the file name. */
