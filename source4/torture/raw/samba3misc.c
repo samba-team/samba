@@ -428,8 +428,8 @@ static NTSTATUS raw_smbcli_ntcreate(struct smbcli_tree *tree, const char *fname,
 
 bool torture_samba3_badpath(struct torture_context *torture)
 {
-	struct smbcli_state *cli_nt;
-	struct smbcli_state *cli_dos;
+	struct smbcli_state *cli_nt = NULL;
+	struct smbcli_state *cli_dos = NULL;
 	const char *fname = "test.txt";
 	const char *fname1 = "test1.txt";
 	const char *dirname = "testdir";
