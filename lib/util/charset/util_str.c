@@ -369,7 +369,7 @@ _PUBLIC_ char *strchr_m(const char *src, char c)
  */
 _PUBLIC_ char *strrchr_m(const char *s, char c)
 {
-	struct smb_iconv_handle *ic = get_iconv_handle();
+	struct smb_iconv_handle *ic;
 	char *ret = NULL;
 
 	if (s == NULL) {
@@ -415,6 +415,8 @@ _PUBLIC_ char *strrchr_m(const char *s, char c)
 		if (!got_mb)
 			return NULL;
 	}
+
+	ic = get_iconv_handle();
 
 	while (*s) {
 		size_t size;
