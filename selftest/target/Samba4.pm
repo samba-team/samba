@@ -1689,7 +1689,7 @@ sub provision_ad_dc($$)
 	kernel oplocks = no
 	kernel change notify = no
 
-	syslog = no
+	logging = file
 	printing = bsd
 	printcap name = /dev/null
 

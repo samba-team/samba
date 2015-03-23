@@ -1154,7 +1154,7 @@ sub provision($$$$$$$$)
 	kernel change notify = no
 	smb2 leases = yes
 
-	syslog = no
+	logging = file
 	printing = bsd
 	printcap name = /dev/null
 
