@@ -478,12 +478,11 @@ static int gpfs_get_nfs4_acl(TALLOC_CTX *mem_ctx, const char *fname, SMB4ACL_T *
 
 	for (i=0; i<gacl->acl_nace; i++) {
 		struct gpfs_ace_v4 *gace = gpfs_ace_ptr(gacl, i);
-		SMB_ACE4PROP_T smbace;
+		SMB_ACE4PROP_T smbace = { 0 };
 		DEBUG(10, ("type: %d, iflags: %x, flags: %x, mask: %x, "
 			   "who: %d\n", gace->aceType, gace->aceIFlags,
 			   gace->aceFlags, gace->aceMask, gace->aceWho));
 
-		ZERO_STRUCT(smbace);
 		if (gace->aceIFlags & ACE4_IFLAG_SPECIAL_ID) {
 			smbace.flags |= SMB_ACE4_ID_SPECIAL;
 			switch (gace->aceWho) {
@@ -1299,7 +1298,7 @@ static int gpfsacl_emu_chmod(vfs_handle_struct *handle,
 	int     result;
 	bool    haveAllowEntry[SMB_ACE4_WHO_EVERYONE + 1] = {False, False, False, False};
 	int     i;
-	files_struct    fake_fsp; /* TODO: rationalize parametrization */
+	files_struct fake_fsp = { 0 }; /* TODO: rationalize parametrization */
 	SMB4ACE_T       *smbace;
 	TALLOC_CTX *frame = talloc_stackframe();
 
@@ -1345,12 +1344,11 @@ static int gpfsacl_emu_chmod(vfs_handle_struct *handle,
 	 * - if necessary
 	 */
 	for(i = SMB_ACE4_WHO_OWNER; i<=SMB_ACE4_WHO_EVERYONE; i++) {
-		SMB_ACE4PROP_T  ace;
+		SMB_ACE4PROP_T ace = { 0 };
 
 		if (haveAllowEntry[i]==True)
 			continue;
 
-		ZERO_STRUCT(ace);
 		ace.aceType = SMB_ACE4_ACCESS_ALLOWED_ACE_TYPE;
 		ace.flags |= SMB_ACE4_ID_SPECIAL;
 		ace.who.special_id = i;
@@ -1372,7 +1370,6 @@ static int gpfsacl_emu_chmod(vfs_handle_struct *handle,
 	}
 
 	/* don't add complementary DENY ACEs here */
-	ZERO_STRUCT(fake_fsp);
 	fake_fsp.fsp_name = synthetic_smb_fname(
 		frame, path, NULL, NULL);
 	if (fake_fsp.fsp_name == NULL) {
@@ -2067,7 +2064,6 @@ static int get_gpfs_quota(const char *pathname, int type, int id,
 {
 	int ret;
 
-	ZERO_STRUCTP(qi);
 	ret = gpfswrap_quotactl(discard_const_p(char, pathname),
 				GPFS_QCMD(Q_GETQUOTA, type), id, qi);
 
@@ -2133,7 +2129,7 @@ static uint64_t vfs_gpfs_disk_free(vfs_handle_struct *handle, const char *path,
 				   uint64_t *dfree, uint64_t *dsize)
 {
 	struct security_unix_token *utok;
-	struct gpfs_quotaInfo qi_user, qi_group;
+	struct gpfs_quotaInfo qi_user = { 0 }, qi_group = { 0 };
 	struct gpfs_config_data *config;
 	int err;
 	time_t cur_time;
