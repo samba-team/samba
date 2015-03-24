@@ -35,6 +35,8 @@
 
 #include "config.h"
 
+#include <pthread.h>
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/socket.h>
@@ -155,6 +157,62 @@ typedef nss_status_t NSS_STATUS;
 #else
 #define NWRAP_INET_ADDRSTRLEN INET_ADDRSTRLEN
 #endif
+
+#define NWRAP_LOCK(m) do { \
+	pthread_mutex_lock(&( m ## _mutex)); \
+} while(0)
+
+#define NWRAP_UNLOCK(m) do { \
+	pthread_mutex_unlock(&( m ## _mutex)); \
+} while(0)
+
+
+static bool nwrap_initialized = false;
+static pthread_mutex_t nwrap_initialized_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+/* The mutex or accessing the id */
+static pthread_mutex_t nwrap_global_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t nwrap_gr_global_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t nwrap_he_global_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t nwrap_pw_global_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t nwrap_sp_global_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+/* Add new global locks here please */
+/* Also don't forget to add locks to
+ * nwrap_init() function.
+ */
+# define NWRAP_LOCK_ALL do { \
+	NWRAP_LOCK(nwrap_initialized); \
+	NWRAP_LOCK(nwrap_global); \
+	NWRAP_LOCK(nwrap_gr_global); \
+	NWRAP_LOCK(nwrap_he_global); \
+	NWRAP_LOCK(nwrap_pw_global); \
+	NWRAP_LOCK(nwrap_sp_global); \
+} while (0);
+
+# define NWRAP_UNLOCK_ALL do {\
+	NWRAP_UNLOCK(nwrap_sp_global); \
+	NWRAP_UNLOCK(nwrap_pw_global); \
+	NWRAP_UNLOCK(nwrap_he_global); \
+	NWRAP_UNLOCK(nwrap_gr_global); \
+	NWRAP_UNLOCK(nwrap_global); \
+	NWRAP_UNLOCK(nwrap_initialized); \
+} while (0);
+
+static void nwrap_thread_prepare(void)
+{
+	NWRAP_LOCK_ALL;
+}
+
+static void nwrap_thread_parent(void)
+{
+	NWRAP_UNLOCK_ALL;
+}
+
+static void nwrap_thread_child(void)
+{
+	NWRAP_UNLOCK_ALL;
+}
 
 enum nwrap_dbglvl_e {
 	NWRAP_LOG_ERROR = 0,
@@ -1465,13 +1523,32 @@ static void nwrap_backend_init(struct nwrap_main *r)
 
 static void nwrap_init(void)
 {
-	static bool initialized;
 	const char *env;
 	char *endptr;
 	size_t max_hostents_tmp;
 
-	if (initialized) return;
-	initialized = true;
+	NWRAP_LOCK(nwrap_initialized);
+	if (nwrap_initialized) {
+		NWRAP_UNLOCK(nwrap_initialized);
+		return;
+	}
+
+	/*
+	 * Still holding nwrap_initialized lock here.
+	 * We don't use NWRAP_(UN)LOCK_ALL macros here because we
+	 * want to avoid overhead when other threads do their job.
+	 */
+	NWRAP_LOCK(nwrap_global);
+	NWRAP_LOCK(nwrap_gr_global);
+	NWRAP_LOCK(nwrap_he_global);
+	NWRAP_LOCK(nwrap_pw_global);
+	NWRAP_LOCK(nwrap_sp_global);
+
+	nwrap_initialized = true;
+
+	/* Initialize pthread_atfork handlers */
+	pthread_atfork(&nwrap_thread_prepare, &nwrap_thread_parent,
+		       &nwrap_thread_child);
 
 	env = getenv("NSS_WRAPPER_MAX_HOSTENTS");
 	if (env != NULL) {
@@ -1493,7 +1570,7 @@ static void nwrap_init(void)
 	if (hcreate(max_hostents) == 0) {
 		NWRAP_LOG(NWRAP_LOG_ERROR,
 			  "Failed to initialize hash table");
-		return;
+		goto done;
 	}
 
 	nwrap_main_global = &__nwrap_main_global;
@@ -1543,6 +1620,10 @@ static void nwrap_init(void)
 	nwrap_he_global.cache->private_data = &nwrap_he_global;
 	nwrap_he_global.cache->parse_line = nwrap_he_parse_line;
 	nwrap_he_global.cache->unload = nwrap_he_unload;
+
+done:
+	/* We hold all locks here so we can use NWRAP_UNLOCK_ALL. */
+	NWRAP_UNLOCK_ALL;
 }
 
 bool nss_wrapper_enabled(void)
@@ -5256,6 +5337,7 @@ void nwrap_destructor(void)
 {
 	int i;
 
+	NWRAP_LOCK_ALL;
 	if (nwrap_main_global != NULL) {
 		struct nwrap_main *m = nwrap_main_global;
 
@@ -5323,4 +5405,5 @@ void nwrap_destructor(void)
 	}
 
 	hdestroy();
+	NWRAP_UNLOCK_ALL;
 }
