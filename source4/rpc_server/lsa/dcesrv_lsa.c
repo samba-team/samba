@@ -2468,6 +2468,8 @@ static NTSTATUS dcesrv_lsa_EnumTrustedDomainsEx(struct dcesrv_call_state *dce_ca
 		return STATUS_MORE_ENTRIES;
 	}
 
+	*r->out.resume_handle = *r->in.resume_handle + r->out.domains->count;
+
 	return NT_STATUS_OK;
 }
 
