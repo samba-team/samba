@@ -939,6 +939,37 @@ static int libc_getpwuid_r(uid_t uid,
 }
 #endif
 
+static inline void str_tolower(char *dst, char *src)
+{
+	register char *src_tmp = src;
+	register char *dst_tmp = dst;
+
+	while (*src_tmp != '\0') {
+		*dst_tmp = tolower(*src_tmp);
+		++src_tmp;
+		++dst_tmp;
+	}
+}
+
+static bool str_tolower_copy(char **dst_name, const char *const src_name)
+{
+	char *h_name_lower;
+
+	if ((dst_name == NULL) || (src_name == NULL)) {
+		return false;
+	}
+
+	h_name_lower = strdup(src_name);
+	if (h_name_lower == NULL) {
+		NWRAP_LOG(NWRAP_LOG_DEBUG, "Out of memory while strdup");
+		return false;
+	}
+
+	str_tolower(h_name_lower, h_name_lower);
+	*dst_name = h_name_lower;
+	return true;
+}
+
 static void libc_setpwent(void)
 {
 	nwrap_load_lib_function(NWRAP_LIBC, setpwent);
