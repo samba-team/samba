@@ -115,7 +115,7 @@ static const struct smbd_smb2_dispatch_table {
 		_OP(SMB2_OP_KEEPALIVE),
 		.as_root = true,
 	},{
-		_OP(SMB2_OP_FIND),
+		_OP(SMB2_OP_QUERY_DIRECTORY),
 		.need_session = true,
 		.need_tcon = true,
 		.fileid_ofs = 0x08,
@@ -2307,10 +2307,10 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		return_value = smbd_smb2_request_process_keepalive(req);
 		break;
 
-	case SMB2_OP_FIND:
+	case SMB2_OP_QUERY_DIRECTORY:
 		SMBPROFILE_IOBYTES_ASYNC_START(smb2_find, profile_p,
 					       req->profile, _INBYTES(req));
-		return_value = smbd_smb2_request_process_find(req);
+		return_value = smbd_smb2_request_process_query_directory(req);
 		break;
 
 	case SMB2_OP_NOTIFY:

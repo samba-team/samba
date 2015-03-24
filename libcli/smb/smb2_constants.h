@@ -67,25 +67,25 @@
 #define SMB2_HDR_FLAG_REPLAY_OPERATION 0x20000000
 
 /* SMB2 opcodes */
-#define SMB2_OP_NEGPROT   0x00
-#define SMB2_OP_SESSSETUP 0x01
-#define SMB2_OP_LOGOFF    0x02
-#define SMB2_OP_TCON      0x03
-#define SMB2_OP_TDIS      0x04
-#define SMB2_OP_CREATE    0x05
-#define SMB2_OP_CLOSE     0x06
-#define SMB2_OP_FLUSH     0x07
-#define SMB2_OP_READ      0x08
-#define SMB2_OP_WRITE     0x09
-#define SMB2_OP_LOCK      0x0a
-#define SMB2_OP_IOCTL     0x0b
-#define SMB2_OP_CANCEL    0x0c
-#define SMB2_OP_KEEPALIVE 0x0d
-#define SMB2_OP_FIND      0x0e
-#define SMB2_OP_NOTIFY    0x0f
-#define SMB2_OP_GETINFO   0x10
-#define SMB2_OP_SETINFO   0x11
-#define SMB2_OP_BREAK     0x12
+#define SMB2_OP_NEGPROT		0x00
+#define SMB2_OP_SESSSETUP	0x01
+#define SMB2_OP_LOGOFF		0x02
+#define SMB2_OP_TCON		0x03
+#define SMB2_OP_TDIS		0x04
+#define SMB2_OP_CREATE		0x05
+#define SMB2_OP_CLOSE		0x06
+#define SMB2_OP_FLUSH		0x07
+#define SMB2_OP_READ		0x08
+#define SMB2_OP_WRITE		0x09
+#define SMB2_OP_LOCK		0x0a
+#define SMB2_OP_IOCTL		0x0b
+#define SMB2_OP_CANCEL		0x0c
+#define SMB2_OP_KEEPALIVE	0x0d
+#define SMB2_OP_QUERY_DIRECTORY	0x0e
+#define SMB2_OP_NOTIFY		0x0f
+#define SMB2_OP_GETINFO		0x10
+#define SMB2_OP_SETINFO		0x11
+#define SMB2_OP_BREAK		0x12
 
 #define SMB2_MAGIC 0x424D53FE /* 0xFE 'S' 'M' 'B' */
 
