@@ -535,7 +535,9 @@ class KCC(object):
         return None
 
     def modify_repsFrom(self, n_rep, t_repsFrom, s_rep, s_dsa, cn_conn):
-        """Update t_repsFrom if necessary to satisfy requirements. Such
+        """Part of MS-ADTS 6.2.2.5.
+
+        Update t_repsFrom if necessary to satisfy requirements. Such
         updates are typically required when the IDL_DRSGetNCChanges
         server has moved from one site to another--for example, to
         enable compression when the server is moved from the
@@ -563,11 +565,11 @@ class KCC(object):
         else:
             same_site = False
 
-        times = convert_schedule_to_repltimes(cn_conn.schedule)
-
         # if schedule doesn't match then update and modify
+        times = convert_schedule_to_repltimes(cn_conn.schedule)
         if times != t_repsFrom.schedule:
             t_repsFrom.schedule = times
+            update |= drsuapi.DRSUAPI_DRS_UPDATE_SCHEDULE
 
         # Bit DRS_PER_SYNC is set in replicaFlags if and only
         # if nTDSConnection schedule has a value v that specifies
