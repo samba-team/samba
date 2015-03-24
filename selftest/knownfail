@@ -235,6 +235,8 @@
 #
 ^samba3.rpc.netlogon.admin.*.LogonControl2\(ad_dc\)
 ^samba3.rpc.netlogon.admin.*.LogonControl\(ad_dc\)
+# tmp...
+^samba3.rpc.netlogon.admin.*.LogonControl2\(nt4_dc\)
 #
 # The Samba4 winbind does not cover the full winbind protocol, so these are expected
 #
