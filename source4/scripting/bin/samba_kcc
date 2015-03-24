@@ -1139,12 +1139,12 @@ class KCC(object):
         bhs = self.get_all_bridgeheads(site, part, transport,
                                        partial_ok, detect_failed)
         if len(bhs) == 0:
-            logger.debug("get_bridgehead:\n\tsitedn=%s\n\tbhdn=None" %
-                         site.site_dnstr)
+            DEBUG_MAGENTA("get_bridgehead:\n\tsitedn=%s\n\tbhdn=None" %
+                          site.site_dnstr)
             return None
         else:
-            logger.debug("get_bridgehead:\n\tsitedn=%s\n\tbhdn=%s" %
-                         (site.site_dnstr, bhs[0].dsa_dnstr))
+            DEBUG_GREEN("get_bridgehead:\n\tsitedn=%s\n\tbhdn=%s" %
+                        (site.site_dnstr, bhs[0].dsa_dnstr))
             return bhs[0]
 
     def get_all_bridgeheads(self, site, part, transport,
@@ -1169,7 +1169,10 @@ class KCC(object):
         bhs = []
 
         logger.debug("get_all_bridgeheads: %s" % transport)
-
+        if 'Site-5' in site.site_dnstr:
+            DEBUG_RED("get_all_bridgeheads with %s, part%s, partial_ok %s"
+                      " detect_failed %s" % (site.site_dnstr, part.partstr,
+                                             partial_ok, detect_failed))
         logger.debug(site.dsa_table)
         for key, dsa in site.dsa_table.items():
 
@@ -1235,6 +1238,7 @@ class KCC(object):
             # IF BridgeheadDCFailed(dc!objectGUID, detectFailedDCs) = TRUE
             #     Skip dc
             if self.is_bridgehead_failed(dsa, detect_failed):
+                DEBUG("bridgehead is failed")
                 continue
 
             logger.debug("get_all_bridgeheads: dsadn=%s" % dsa.dsa_dnstr)
@@ -1250,7 +1254,7 @@ class KCC(object):
             bhs.sort(sort_dsa_by_gc_and_guid)
         else:
             random.shuffle(bhs)
-
+        DEBUG_YELLOW(bhs)
         return bhs
 
 
@@ -1330,12 +1334,16 @@ class KCC(object):
         rbhs_all = self.get_all_bridgeheads(rsite, part, transport,
                                             partial_ok, False)
 
+        DEBUG_GREY("rbhs_all: %s %s" % (len(rbhs_all), [x.dsa_dnstr for x in rbhs_all]))
+
         # MS-TECH says to compute rbhs_avail but then doesn't use it
         # rbhs_avail = self.get_all_bridgeheads(rsite, part, transport,
         #                                        partial_ok, detect_failed)
 
         lbhs_all = self.get_all_bridgeheads(lsite, part, transport,
                                             partial_ok, False)
+
+        DEBUG_GREY("lbhs_all: %s %s" % (len(lbhs_all), [x.dsa_dnstr for x in lbhs_all]))
 
         # MS-TECH says to compute lbhs_avail but then doesn't use it
         # lbhs_avail = self.get_all_bridgeheads(lsite, part, transport,
@@ -1354,6 +1362,7 @@ class KCC(object):
                 if rdsa is None:
                     continue
 
+                DEBUG_DARK_YELLOW("rdsa is %s" % rdsa.dsa_dnstr)
                 # IF bit NTDSCONN_OPT_IS_GENERATED is set in cn!options and
                 # NTDSCONN_OPT_RODC_TOPOLOGY is clear in cn!options and
                 # cn!transportType references t
@@ -1475,6 +1484,7 @@ class KCC(object):
 
                 if rdsa is None:
                     continue
+                DEBUG_DARK_YELLOW("round 2: rdsa is %s" % rdsa.dsa_dnstr)
 
                 # IF (bit NTDSCONN_OPT_IS_GENERATED is clear in cn!options or
                 # cn!transportType references t) and
@@ -1687,10 +1697,22 @@ class KCC(object):
             else:
                lsite = self.my_site
                lbh = self.get_bridgehead(lsite, part, transport,
-                                           partial_ok, detect_failed)
+                                         partial_ok, detect_failed)
             # TODO
             if lbh is None:
+                DEBUG_RED("DISASTER! lbh is None")
                 return False, True
+
+            if rbh is None:
+                DEBUG_RED("DISASTER! rbh is None")
+
+            DEBUG_CYAN("SITES")
+            print lsite, rsite
+            DEBUG_BLUE("vertices")
+            print e.vertices
+            DEBUG_BLUE("bridgeheads")
+            print lbh, rbh
+            DEBUG_BLUE("-" * 70)
 
             sitelink = e.site_link
             if sitelink is None:

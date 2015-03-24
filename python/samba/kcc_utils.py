@@ -733,6 +733,9 @@ class DirectoryServiceAgent(object):
         for dnstr in delconn:
             del self.connect_table[dnstr]
 
+
+
+
     def add_connection(self, dnstr, connect):
         assert dnstr not in self.connect_table.keys()
         self.connect_table[dnstr] = connect
@@ -767,6 +770,10 @@ class DirectoryServiceAgent(object):
         connect_table and will be marked as "to be added" pending
         a call to commit_connections()
         """
+        print("new_connection: between %s and %s" %
+              (self.dsa_dnstr, from_dnstr))
+
+
         dnstr = "CN=%s," % str(uuid.uuid4()) + self.dsa_dnstr
 
         connect = NTDSConnection(dnstr)
