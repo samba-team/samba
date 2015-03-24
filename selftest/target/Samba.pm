@@ -77,7 +77,7 @@ sub nss_wrapper_winbind_so_path($) {
 
 sub mk_krb5_conf($$)
 {
-	my ($ctx, $other_realms_stanza) = @_;
+	my ($ctx) = @_;
 
 	unless (open(KRB5CONF, ">$ctx->{krb5_conf}")) {
 	        warn("can't open $ctx->{krb5_conf}$?");
@@ -93,15 +93,14 @@ sub mk_krb5_conf($$)
 
 [libdefaults]
  default_realm = $ctx->{realm}
- dns_lookup_realm = false
- dns_lookup_kdc = false
+ dns_lookup_realm = true
+ dns_lookup_kdc = true
  ticket_lifetime = 24h
  forwardable = yes
  allow_weak_crypto = yes
 
 [realms]
  $our_realms_stanza
- $other_realms_stanza
 ";
 
 

@@ -697,7 +697,7 @@ sub provision_raw_step1($$)
 		$ctx->{kdc_ipv6} = $ctx->{ipv6};
 	}
 
-	Samba::mk_krb5_conf($ctx, "");
+	Samba::mk_krb5_conf($ctx);
 
 	open(PWD, ">$ctx->{nsswrap_passwd}");
 	if ($ctx->{unix_uid} != 0) {
@@ -1388,17 +1388,7 @@ sub provision_subdom_dc($$$)
 		return undef;
 	}
 
-        # This ensures we share the krb5.conf with the main DC, so
-        # they can find each other.  Sadly only works between 'dc' and
-        # 'subdom_dc', the other DCs won't see it
-
-        my $dc_realms = Samba::mk_realms_stanza($dcvars->{REALM}, lc($dcvars->{REALM}),
-                                                $dcvars->{DOMAIN}, $dcvars->{SERVER_IP});
-
-        $ret->{KRB5_CONFIG} = $dcvars->{KRB5_CONFIG};
-        $ctx->{krb5_conf} = $dcvars->{KRB5_CONFIG};
-
-	Samba::mk_krb5_conf($ctx, $dc_realms);
+	Samba::mk_krb5_conf($ctx);
 
 	my $samba_tool =  Samba::bindir_path($self, "samba-tool");
 	my $cmd = "";
