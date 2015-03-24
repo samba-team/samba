@@ -1159,7 +1159,7 @@ class KCC(object):
         :param partial_ok: True if a DC containing a partial
             replica or a full replica will suffice, False if
             only a full replica will suffice.
-        :param detect_ok: True to detect failed DCs and route
+        :param detect_failed: True to detect failed DCs and route
             replication traffic around them, FALSE to assume
             no DC has failed.
         ::returns: list of dsa object for available bridgehead
