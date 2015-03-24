@@ -1440,13 +1440,24 @@ RUNNING
     </refsect2>
 
     <refsect2>
-      <title>tickle <parameter>SRC-IPADDR</parameter>:<parameter>SRC-PORT</parameter> <parameter>DST-IPADDR</parameter>:<parameter>DST-PORT</parameter></title>
+      <title>tickle</title>
       <para>
-	Send a TCP tickle to the source host for the specified TCP
-	connection.  A TCP tickle is a TCP ACK packet with an invalid
-	sequence and acknowledge number and will when received by the
-	source host result in it sending an immediate correct ACK back
-	to the other end.
+	Read a list of TCP connections, one per line, from standard
+	input and send a TCP tickle to the source host for each
+	connection.  A connection is specified as:
+      </para>
+      <synopsis>
+	<parameter>SRC-IPADDR</parameter>:<parameter>SRC-PORT</parameter> <parameter>DST-IPADDR</parameter>:<parameter>DST-PORT</parameter>
+      </synopsis>
+      <para>
+	A single connection can be specified on the command-line
+	rather than on standard input.
+      </para>
+      <para>
+	A TCP tickle is a TCP ACK packet with an invalid sequence and
+	acknowledge number and will when received by the source host
+	result in it sending an immediate correct ACK back to the
+	other end.
       </para>
       <para>
 	TCP tickles are useful to "tickle" clients after a IP failover has
