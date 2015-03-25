@@ -2462,7 +2462,34 @@ class KCC(object):
                            credentials=creds, lp=lp)
 
 
-    def run(self, dburl, lp, creds, forced_local_dsa=None):
+
+    def plot_all_connections(self, basename, verify_properties=()):
+        verify = verify_properties and opts.verify
+        plot = opts.dot_files
+        if not (verify or plot):
+            return
+
+        dot_edges = []
+        dot_vertices = []
+        colours = []
+        for site in self.site_table.values():
+            for dsa in site.dsa_table.values():
+                dot_vertices.append(dsa.dsa_dnstr)
+                for con in dsa.connect_table.values():
+                    if con.is_rodc_topology():
+                        colours.append('red')
+                    else:
+                        colours.append('blue')
+                    dot_edges.append((dsa.dsa_dnstr, con.from_dnstr))
+
+        verify_and_dot(basename, dot_edges, vertices=dot_vertices,
+                       label=self.my_dsa_dnstr, properties=verify_properties,
+                       debug=DEBUG, verify=verify, dot_files=plot,
+                       directed=True, edge_colors=colours)
+
+
+    def run(self, dburl, lp, creds, forced_local_dsa=None,
+            forget_local_links=False, forget_intersite_links=False):
         """Method to perform a complete run of the KCC and
         produce an updated topology for subsequent NC replica
         syncronization between domain controllers
@@ -2491,44 +2518,20 @@ class KCC(object):
             self.load_all_transports()
             self.load_all_sitelinks()
 
+
             if opts.verify or opts.dot_files:
                 guid_to_dnstr = {}
                 for site in self.site_table.values():
                     guid_to_dnstr.update((str(dsa.dsa_guid), dnstr)
                                          for dnstr, dsa in site.dsa_table.items())
 
-                dot_edges = []
-                colours = []
-                for site in self.site_table.values():
-                    for dsa in site.dsa_table.values():
-                        for con in dsa.connect_table.values():
-                            if con.is_rodc_topology():
-                                colours.append('red')
-                            else:
-                                colours.append('blue')
-                            dot_edges.append((dsa.dsa_dnstr, con.from_dnstr))
-                verify_and_dot('dsa_initial', dot_edges, label=self.my_dsa_dnstr,
-                               properties=(), debug=DEBUG, verify=False,
-                               dot_files=opts.dot_files, directed=True, edge_colors=colours)
-
-                dot_edges = []
-                for site in self.site_table.values():
-                    for dsa in site.dsa_table.values():
-                        c_rep = get_dsa_config_rep(dsa)
-                        c_rep.load_repsFrom(self.samdb)
-                        for x in c_rep.rep_repsFrom:
-                            #print dir(x)
-                            dot_edges.append((c_rep.rep_dsa_dnstr, x.nc_dnstr))
-
-                verify_and_dot('config_repsFrom_initial', dot_edges, directed=True, label=self.my_dsa_dnstr,
-                               properties=(), debug=DEBUG, verify=opts.verify,
-                               dot_files=opts.dot_files)
+                self.plot_all_connections('dsa_initial')
 
                 dot_edges = []
                 current_rep_table, needed_rep_table = self.my_dsa.get_rep_tables()
                 for dnstr, c_rep in current_rep_table.items():
                     DEBUG("c_rep %s" % c_rep)
-                    dot_edges.append((dsa.dsa_dnstr, dnstr))
+                    dot_edges.append((self.my_dsa.dsa_dnstr, dnstr))
 
                 verify_and_dot('dsa_repsFrom_initial', dot_edges, directed=True, label=self.my_dsa_dnstr,
                                properties=(), debug=DEBUG, verify=opts.verify,
@@ -2560,7 +2563,20 @@ class KCC(object):
                                dot_files=opts.dot_files)
 
 
+            if forget_local_links:
+                for dsa in self.my_site.dsa_table.values():
+                    dsa.connect_table = {k:v for k, v in dsa.connect_table.items()
+                                         if v.is_rodc_topology()}
+                self.plot_all_connections('dsa_forgotten_local')
 
+
+            if forget_intersite_links:
+                for site in self.site_table.values():
+                    for dsa in site.dsa_table.values():
+                        dsa.connect_table = {k:v for k, v in dsa.connect_table.items()
+                                             if site is self.my_site and v.is_rodc_topology()}
+
+                self.plot_all_connections('dsa_forgotten_all')
             # These are the published steps (in order) for the
             # MS-TECH description of the KCC algorithm ([MS-ADTS] 6.2.2)
 
@@ -2587,26 +2603,7 @@ class KCC(object):
 
 
             if opts.verify or opts.dot_files:
-                dot_edges = []
-                dot_vertices = []
-                edge_colours = []
-
-                for site in self.site_table.values():
-                    for dsa in site.dsa_table.values():
-                        dot_vertices.append(dsa.dsa_dnstr)
-                        for con in dsa.connect_table.values():
-                            if con.is_rodc_topology():
-                                edge_colours.append('red')
-                            else:
-                                edge_colours.append('blue')
-                            dot_edges.append((dsa.dsa_dnstr, con.from_dnstr))
-                verify_properties = ('connected', 'forest_of_rings')
-                verify_and_dot('dsa_final', dot_edges, label=self.my_dsa_dnstr,
-                               properties=verify_properties, debug=DEBUG, verify=opts.verify,
-                               dot_files=opts.dot_files, directed=True, edge_colors=edge_colours,
-                )
-
-
+                self.plot_all_connections('dsa_final', ('connected', 'forest_of_rings'))
 
                 DEBUG_MAGENTA("there are %d dsa guids" % len(guid_to_dnstr))
 
@@ -2967,7 +2964,9 @@ def test_all_reps_from(lp, creds):
     current_reps = []
     for dsa in dsas:
         kcc = KCC()
-        kcc.run(opts.dburl, lp, creds, forced_local_dsa=dsa)
+        kcc.run(opts.dburl, lp, creds, forced_local_dsa=dsa,
+                forget_local_links=opts.forget_local_links,
+                forget_intersite_links=opts.forget_intersite_links)
         current, needed = kcc.my_dsa.get_rep_tables()
         print "current", current
         print "needed", needed
@@ -3060,6 +3059,13 @@ parser.add_option("--test-all-reps-from", default=False,
                   help="Create and verify a graph of reps-from for every DSA",
                   action="store_true")
 
+parser.add_option("--forget-local-links", default=False,
+                  help="pretend not to know the existing local topology",
+                  action="store_true")
+
+parser.add_option("--forget-intersite-links", default=False,
+                  help="pretend not to know the existing intersite topology",
+                  action="store_true")
 
 
 opts, args = parser.parse_args()
@@ -3133,7 +3139,8 @@ if opts.list_valid_dsas:
     sys.exit()
 
 try:
-    rc = kcc.run(opts.dburl, lp, creds, opts.forced_local_dsa)
+    rc = kcc.run(opts.dburl, lp, creds, opts.forced_local_dsa,
+                 opts.forget_local_links, opts.forget_intersite_links)
     sys.exit(rc)
 
 except GraphError, e:
