@@ -349,7 +349,9 @@ static NTSTATUS dcesrv_lsa_QuerySecurity(struct dcesrv_call_state *dce_call, TAL
 					 struct lsa_QuerySecurity *r)
 {
 	struct dcesrv_handle *h;
-	struct security_descriptor *sd;
+	const struct security_descriptor *sd = NULL;
+	uint32_t access_granted = 0;
+	struct sec_desc_buf *sdbuf = NULL;
 	NTSTATUS status;
 	struct dom_sid *sid;
 
@@ -358,19 +360,38 @@ static NTSTATUS dcesrv_lsa_QuerySecurity(struct dcesrv_call_state *dce_call, TAL
 	sid = &dce_call->conn->auth_state.session_info->security_token->sids[PRIMARY_USER_SID_INDEX];
 
 	if (h->wire_handle.handle_type == LSA_HANDLE_POLICY) {
-		status = dcesrv_build_lsa_sd(mem_ctx, &sd, sid, 0);
-	} else 	if (h->wire_handle.handle_type == LSA_HANDLE_ACCOUNT) {
-		status = dcesrv_build_lsa_sd(mem_ctx, &sd, sid,
+		struct lsa_policy_state *pstate = h->data;
+
+		sd = pstate->sd;
+		access_granted = pstate->access_mask;
+
+	} else if (h->wire_handle.handle_type == LSA_HANDLE_ACCOUNT) {
+		struct lsa_account_state *astate = h->data;
+		struct security_descriptor *_sd = NULL;
+
+		status = dcesrv_build_lsa_sd(mem_ctx, &_sd, sid,
 					     LSA_ACCOUNT_ALL_ACCESS);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+		sd = _sd;
+		access_granted = astate->access_mask;
 	} else {
 		return NT_STATUS_INVALID_HANDLE;
 	}
-	NT_STATUS_NOT_OK_RETURN(status);
 
-	(*r->out.sdbuf) = talloc(mem_ctx, struct sec_desc_buf);
-	NT_STATUS_HAVE_NO_MEMORY(*r->out.sdbuf);
+	sdbuf = talloc_zero(mem_ctx, struct sec_desc_buf);
+	if (sdbuf == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
-	(*r->out.sdbuf)->sd = sd;
+	status = security_descriptor_for_client(sdbuf, sd, r->in.sec_info,
+						access_granted, &sdbuf->sd);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	*r->out.sdbuf = sdbuf;
 
 	return NT_STATUS_OK;
 }
@@ -421,7 +442,9 @@ static WERROR dcesrv_dssetup_DsRoleGetPrimaryDomainInformation(struct dcesrv_cal
 		struct GUID domain_guid;
 		struct lsa_policy_state *state;
 
-		NTSTATUS status = dcesrv_lsa_get_policy_state(dce_call, mem_ctx, &state);
+		NTSTATUS status = dcesrv_lsa_get_policy_state(dce_call, mem_ctx,
+							      0, /* we skip access checks */
+							      &state);
 		if (!NT_STATUS_IS_OK(status)) {
 			return ntstatus_to_werror(status);
 		}
