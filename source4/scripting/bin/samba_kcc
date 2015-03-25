@@ -1493,7 +1493,8 @@ class KCC(object):
                     self.kept_connections.add(cn)
 
         # ENDFOR
-
+        DEBUG_RED("valid connections %d" % valid_connections)
+        DEBUG("kept_connections:\n%s" % (self.kept_connections,))
         # IF cValidConnections = 0
         if valid_connections == 0:
 
@@ -1556,7 +1557,7 @@ class KCC(object):
                 #XXX well this is cheating a bit
                 logging.warning("WARNING: we are ignoring a transport named %r" % transport.name)
                 continue
-            DEBUG_BLUE(t_guid)
+
             # FLAG_CR_NTDS_DOMAIN 0x00000002
             if (vertex.is_red() and transport.name != "IP" and
                 vertex.part.system_flags & 0x00000002):
@@ -1649,6 +1650,7 @@ class KCC(object):
         if transport is None:
             raise Exception("Unable to find inter-site transport for IP")
 
+        DEBUG("edge_list %s" % edge_list)
         for e in edge_list:
             if e.directed and e.vertices[0].site is self.my_site: # more accurate comparison?
                 continue
@@ -1661,6 +1663,7 @@ class KCC(object):
             # We don't make connections to our own site as that
             # is intrasite topology generator's job
             if rsite is self.my_site:
+                DEBUG("rsite is my_site")
                 continue
 
             # Determine bridgehead server in remote site
@@ -1686,9 +1689,6 @@ class KCC(object):
             if lbh is None:
                 DEBUG_RED("DISASTER! lbh is None")
                 return False, True
-
-            if rbh is None:
-                DEBUG_RED("DISASTER! rbh is None")
 
             DEBUG_CYAN("SITES")
             print lsite, rsite
@@ -1755,6 +1755,7 @@ class KCC(object):
 
             connected, found_failed = self.create_connections(graph, part, True)
 
+            DEBUG("with detect_failed: connected %s Found failed %s" % (connected, found_failed))
             if not connected:
                 all_connected = False
 
@@ -2826,6 +2827,7 @@ def process_edge(graph, examine, internal_edges):
         # Append a 4-tuple of color, repl cost, guid and vertex
         vertices.append((v.color, v.repl_info.cost, v.guid, v))
     # Sort by color, lower
+    DEBUG("vertices is %s" % vertices)
     vertices.sort()
 
     color, cost, guid, bestv = vertices[0]
