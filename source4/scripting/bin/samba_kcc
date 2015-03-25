@@ -1553,6 +1553,8 @@ class KCC(object):
         found_failed = False
         for t_guid, transport in self.transport_table.items():
             if transport.name != 'IP':
+                #XXX well this is cheating a bit
+                logging.warning("WARNING: we are ignoring a transport named %r" % transport.name)
                 continue
             DEBUG_BLUE(t_guid)
             # FLAG_CR_NTDS_DOMAIN 0x00000002
