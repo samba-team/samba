@@ -144,6 +144,12 @@ typedef nss_status_t NSS_STATUS;
 #define SAFE_FREE(x) do { if ((x) != NULL) {free(x); (x)=NULL;} } while(0)
 #endif
 
+#ifdef HAVE_IPV6
+#define NWRAP_INET_ADDRSTRLEN INET6_ADDRSTRLEN
+#else
+#define NWRAP_INET_ADDRSTRLEN INET_ADDRSTRLEN
+#endif
+
 enum nwrap_dbglvl_e {
 	NWRAP_LOG_ERROR = 0,
 	NWRAP_LOG_WARN,
@@ -2439,7 +2445,7 @@ static struct hostent *nwrap_files_gethostbyaddr(const void *addr,
 						 socklen_t len, int type)
 {
 	struct hostent *he;
-	char ip[INET6_ADDRSTRLEN] = {0};
+	char ip[NWRAP_INET_ADDRSTRLEN] = {0};
 	const char *a;
 	int i;
 
