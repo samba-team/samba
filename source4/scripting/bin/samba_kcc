@@ -87,7 +87,7 @@ class KCC(object):
         # Used in inter-site topology computation.  A list
         # of connections (by NTDSConnection object) that are
         # to be kept when pruning un-needed NTDS Connections
-        self.keep_connection_list = []
+        self.kept_connections = set()
 
         self.my_dsa_dnstr = None  # My dsa DN
         self.my_dsa = None  # My dsa object
@@ -487,7 +487,7 @@ class KCC(object):
                 # 1. cn!fromServer and cn!parent appear inconsistent with no cn2
                 # 2. The repsFrom do not imply each other
                 #
-                if self.keep_connection(cn_conn): # and not_superceded:
+                if cn_conn in self.kept_connections: # and not_superceded:
                     continue
 
                 # This is the result of create_intersite_connections
@@ -1024,18 +1024,7 @@ class KCC(object):
                 # Commit any modified repsFrom to the NC replica
                 n_rep.commit_repsFrom(self.samdb)
 
-    def keep_connection(self, cn_conn):
-        """Determines if the connection is meant to be kept during the
-        pruning of unneeded connections operation.
 
-        Consults the keep_connection_list[] which was built during
-        intersite NC replica graph computation.
-
-        ::returns (True or False): if (True) connection should not be pruned
-        """
-        if cn_conn in self.keep_connection_list:
-            return True
-        return False
 
     def merge_failed_links(self):
         """Merge of kCCFailedLinks and kCCFailedLinks from bridgeheads.
@@ -1504,8 +1493,7 @@ class KCC(object):
 
                     # IF keepConnections does not contain cn!objectGUID
                     #     APPEND cn!objectGUID to keepConnections
-                    if not self.keep_connection(cn):
-                        self.keep_connection_list.append(cn)
+                    self.kept_connections.add(cn)
 
         # ENDFOR
 
@@ -1550,8 +1538,7 @@ class KCC(object):
                 lbh.commit_connections(self.samdb)
 
             # APPEND cn!objectGUID to keepConnections
-            if not self.keep_connection(cn):
-                self.keep_connection_list.append(cn)
+            self.kept_connections.add(cn)
 
     def add_transports(self, vertex, local_vertex, graph, detect_failed):
 
@@ -1606,7 +1593,7 @@ class KCC(object):
             replication traffic around them, False to assume no DC
             has failed.
 
-        Modifies self.keep_connection_list by adding any connections
+        Modifies self.kept_connections by adding any connections
         deemed to be "in use".
 
         ::returns: (all_connected, found_failed_dc)
@@ -1734,7 +1721,7 @@ class KCC(object):
         nTDSConnection object to imply that edge if one does not already
         exist.
 
-        Modifies self.keep_connection_list - A list of nTDSConnection
+        Modifies self.kept_connections - A set of nTDSConnection
         objects for edges that are directed
         to the local DC's site in one or more NC replica graphs.
 
@@ -1742,7 +1729,7 @@ class KCC(object):
             graphs, otherwise False.
         """
         all_connected = True
-        self.keep_connection_list = []
+        self.kept_connections = set()
 
         # LET crossRefList be the set containing each object o of class
         # crossRef such that o is a child of the CN=Partitions child of the
@@ -1888,7 +1875,7 @@ class KCC(object):
         connection graph and attendant nTDSConnection objects
         in the samdb.
 
-        Produces self.keep_connection_list[] of NTDS Connections
+        Produces self.kept_connections set of NTDS Connections
         that should be kept during subsequent pruning process.
 
         ::return (True or False):  (True) if the produced NC replica
