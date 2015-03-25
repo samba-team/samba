@@ -1336,6 +1336,10 @@ static int init_fruit_config(vfs_handle_struct *handle)
 		config->use_aapl = true;
 	}
 
+	if (lp_parm_bool(-1, FRUIT_PARAM_TYPE_NAME, "nfs_aces", true)) {
+		config->unix_info_enabled = true;
+	}
+
 	if (lp_parm_bool(SNUM(handle->conn),
 			 "readdir_attr", "aapl_rsize", true)) {
 		config->readdir_attr_rsize = true;
@@ -1829,8 +1833,9 @@ static NTSTATUS check_aapl(vfs_handle_struct *handle,
 		 * The client doesn't set the flag, so we can't check
 		 * for it and just set it unconditionally
 		 */
-		server_caps |= SMB2_CRTCTX_AAPL_SUPPORTS_NFS_ACE;
-		config->unix_info_enabled = true;
+		if (config->unix_info_enabled) {
+			server_caps |= SMB2_CRTCTX_AAPL_SUPPORTS_NFS_ACE;
+		}
 
 		SBVAL(p, 0, server_caps);
 		ok = data_blob_append(req, &blob, p, 8);
