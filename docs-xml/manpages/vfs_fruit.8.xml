@@ -188,6 +188,15 @@
 	    </listitem>
 	  </varlistentry>
 
+	  <varlistentry>
+	    <term>fruit:nfs_aces = yes | no</term>
+	    <listitem>
+	      <para>Whether support for querying and modifying the
+	      UNIX mode of directory entries via NFS ACEs is enabled,
+	      default <emphasis>yes</emphasis>.</para>
+	    </listitem>
+	  </varlistentry>
+
 	</variablelist>
 </refsect1>
 
