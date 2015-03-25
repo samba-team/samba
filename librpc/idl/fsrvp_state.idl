@@ -1,0 +1,36 @@
+#include "idl_types.h"
+[
+	pointer_default(unique)
+]
+interface fsrvp_state
+{
+	/* database format version, NOT the FSRVP protocol version */
+	const uint32 FSRVP_STATE_DB_VERSION = 1;
+
+	/*
+	 * These data structures describe the FSRVP server on-disk format. Any
+	 * changes should result in a new DB version number, and corresponding
+	 * upgrade function.
+	 */
+	typedef [public] struct {
+		[flag(STR_UTF8|STR_NULLTERM)] string share_name;
+		[flag(STR_UTF8|STR_NULLTERM)] string sc_share_name;
+		[flag(STR_UTF8|STR_NULLTERM)] string sc_share_comment;
+		boolean32 is_exposed;
+	} fsrvp_state_smap;
+
+	typedef [public] struct {
+		[flag(STR_UTF8|STR_NULLTERM)] string id_str;
+		[flag(STR_UTF8|STR_NULLTERM)] string volume_name;
+		[flag(STR_UTF8|STR_NULLTERM)] string sc_path;
+		time_t create_ts;
+		int smaps_count;
+	} fsrvp_state_sc;
+
+	typedef [public] struct {
+		[flag(STR_UTF8|STR_NULLTERM)] string id_str;
+		int state;
+		int context;
+		int scs_count;
+	} fsrvp_state_sc_set;
+}

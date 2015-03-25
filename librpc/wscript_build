@@ -719,3 +719,8 @@ bld.SAMBA3_SUBSYSTEM('SRV_NDR_WINBIND',
 	source='gen_ndr/srv_winbind.c',
 	public_deps='NDR_WINBIND'
 	)
+
+bld.SAMBA_SUBSYSTEM('NDR_FSRVP_STATE',
+    source='gen_ndr/ndr_fsrvp_state.c',
+    public_deps='ndr'
+    )
