@@ -763,7 +763,8 @@ void debug_set_settings(struct debug_settings *settings,
 			const char *logging_param,
 			int syslog_level, bool syslog_only)
 {
-	char fake_param[20];
+	char fake_param[256];
+	size_t len = 0;
 
 	/*
 	 * This forces in some smb.conf derived values into the debug
@@ -776,7 +777,10 @@ void debug_set_settings(struct debug_settings *settings,
 	 * If 'logging' is not set, create backend settings from
 	 * deprecated 'syslog' and 'syslog only' paramters
 	 */
-	if (!logging_param) {
+	if (logging_param != NULL) {
+		len = strlen(logging_param);
+	}
+	if (len == 0) {
 		if (syslog_only) {
 			snprintf(fake_param, sizeof(fake_param),
 				 "syslog:%d", syslog_level - 1);
