@@ -2825,7 +2825,7 @@ def process_edge(graph, examine, internal_edges):
     vertices = []
     for v in examine.vertices:
         # Append a 4-tuple of color, repl cost, guid and vertex
-        vertices.append((v.color, v.repl_info.cost, v.guid, v))
+        vertices.append((v.color, v.repl_info.cost, v.ndrpacked_guid, v))
     # Sort by color, lower
     DEBUG("vertices is %s" % vertices)
     vertices.sort()
