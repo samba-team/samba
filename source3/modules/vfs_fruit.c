@@ -127,7 +127,7 @@ struct fruit_config_data {
 	bool unix_info_enabled;
 
 	/*
-	 * Additional undocumented options, all enabled by default,
+	 * Additional options, all enabled by default,
 	 * possibly useful for analyzing performance. The associated
 	 * operations with each of them may be expensive, so having
 	 * the chance to disable them individually gives a chance
