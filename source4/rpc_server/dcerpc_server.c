@@ -614,6 +614,12 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 		call->conn->cli_max_recv_frag = MIN(0x2000, call->pkt.u.bind.max_recv_frag);
 	}
 
+	if ((call->pkt.pfc_flags & DCERPC_PFC_FLAG_CONC_MPX) &&
+	    (call->state_flags & DCESRV_CALL_STATE_FLAG_MULTIPLEXED)) {
+		call->context->conn->state_flags |= DCESRV_CALL_STATE_FLAG_MULTIPLEXED;
+		extra_flags |= DCERPC_PFC_FLAG_CONC_MPX;
+	}
+
 	/* handle any authentication that is being requested */
 	if (!dcesrv_auth_bind(call)) {
 		talloc_free(call->context);
@@ -793,6 +799,7 @@ static NTSTATUS dcesrv_alter(struct dcesrv_call_state *call)
 	NTSTATUS status;
 	uint32_t result=0, reason=0;
 	uint32_t context_id;
+	uint32_t extra_flags = 0;
 
 	/* handle any authentication that is being requested */
 	if (!dcesrv_auth_alter(call)) {
@@ -826,12 +833,18 @@ static NTSTATUS dcesrv_alter(struct dcesrv_call_state *call)
 		reason = DCERPC_BIND_REASON_ASYNTAX;
 	}
 
+	if ((call->pkt.pfc_flags & DCERPC_PFC_FLAG_CONC_MPX)) {
+		if (call->context->conn->state_flags & DCESRV_CALL_STATE_FLAG_MULTIPLEXED) {
+			extra_flags |= DCERPC_PFC_FLAG_CONC_MPX;
+		}
+	}
+
 	/* setup a alter_resp */
 	dcesrv_init_hdr(&pkt, lpcfg_rpc_big_endian(call->conn->dce_ctx->lp_ctx));
 	pkt.auth_length = 0;
 	pkt.call_id = call->pkt.call_id;
 	pkt.ptype = DCERPC_PKT_ALTER_RESP;
-	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
+	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST | extra_flags;
 	pkt.u.alter_resp.max_xmit_frag = 0x2000;
 	pkt.u.alter_resp.max_recv_frag = 0x2000;
 	if (result == 0) {
