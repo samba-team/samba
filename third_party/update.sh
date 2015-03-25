@@ -1,9 +1,9 @@
 #!/bin/sh
-# Pull in a new snapshot of external projects that are included in 
+# Pull in a new snapshot of external projects that are included in
 # our source tree for users that don't have them installed on their system
 
 # Third party directory
-THIRD_PARTY_DIR="`dirname $0`/../third_party"
+THIRD_PARTY_DIR="`dirname $0`"
 # Library directory where projects live that haven't been migrated to
 # $THIRD_PARTY_DIR yet.
 WORKDIR="`mktemp -d`"
