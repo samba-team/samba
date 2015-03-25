@@ -15,7 +15,7 @@ sys.path.insert(0, srcdir + '/buildtools/wafsamba')
 
 import wafsamba, samba_dist, Options, Logs
 
-samba_dist.DIST_DIRS('lib/tevent:. lib/replace:lib/replace lib/talloc:lib/talloc buildtools:buildtools')
+samba_dist.DIST_DIRS('lib/tevent:. lib/replace:lib/replace lib/talloc:lib/talloc buildtools:buildtools third_party/waf:third_party/waf')
 
 def set_options(opt):
     opt.BUILTIN_DEFAULT('replace')

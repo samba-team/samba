@@ -18,7 +18,7 @@ import wafsamba, samba_dist, Options, Utils
 samba_dist.DIST_DIRS('''lib/ldb:. lib/replace:lib/replace lib/talloc:lib/talloc
                         lib/tdb:lib/tdb lib/tdb:lib/tdb lib/tevent:lib/tevent
                         third_party/popt:third_party/popt
-                        buildtools:buildtools''')
+                        buildtools:buildtools third_party/waf:third_party/waf''')
 
 
 def set_options(opt):
