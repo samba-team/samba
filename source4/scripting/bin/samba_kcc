@@ -93,7 +93,6 @@ class KCC(object):
         self.my_dsa = None  # My dsa object
 
         self.my_site_dnstr = None
-        self.my_site_guid = None
         self.my_site = None
 
         self.samdb = None
@@ -167,7 +166,6 @@ class KCC(object):
         site.load_site(self.samdb)
 
         self.site_table[str(site.site_guid)] = site
-        self.my_site_guid = site.site_guid
         self.my_site = site
 
     def load_all_sites(self):
@@ -2368,7 +2366,7 @@ class KCC(object):
         logger.debug("intrasite(): enter")
 
         # Test whether local site has topology disabled
-        mysite = self.site_table[str(self.my_site_guid)]
+        mysite = self.my_site
         if mysite.is_intrasite_topology_disabled():
             return
 
