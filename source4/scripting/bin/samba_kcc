@@ -718,10 +718,7 @@ class KCC(object):
                 drsuapi.DRSUAPI_DRS_MAIL_REP) != 0x0:
                 t_repsFrom.replica_flags &= ~drsuapi.DRSUAPI_DRS_MAIL_REP
 
-            null_guid = misc.GUID()
-            if (t_repsFrom.transport_guid is None or
-                t_repsFrom.transport_guid != null_guid):
-                t_repsFrom.transport_guid = null_guid
+            t_repsFrom.transport_guid = misc.GUID()
 
             # See (NOTE MS-TECH INCORRECT) above
             if t_repsFrom.version == 0x1:
