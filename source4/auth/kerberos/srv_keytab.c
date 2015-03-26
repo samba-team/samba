@@ -211,7 +211,7 @@ static krb5_error_code keytab_add_keys(TALLOC_CTX *parent_ctx,
 		ZERO_STRUCT(entry);
 
 		ret = smb_krb5_create_key_from_string(context,
-						      &salt_princ,
+						      salt_princ,
 						      NULL,
 						      &password,
 						      enctypes[i],

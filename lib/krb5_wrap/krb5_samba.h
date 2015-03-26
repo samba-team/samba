@@ -313,7 +313,7 @@ int smb_krb5_get_pw_salt(krb5_context context,
 			 krb5_data *psalt);
 
 int smb_krb5_create_key_from_string(krb5_context context,
-				    krb5_principal *host_princ,
+				    krb5_const_principal host_princ,
 				    krb5_data *salt,
 				    krb5_data *password,
 				    krb5_enctype enctype,

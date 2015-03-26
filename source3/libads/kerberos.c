@@ -491,7 +491,7 @@ int create_kerberos_key_from_string(krb5_context context,
 	}
 	salt_princ = kerberos_fetch_salt_princ_for_host_princ(context, host_princ, enctype);
 	ret = smb_krb5_create_key_from_string(context,
-					      salt_princ ? &salt_princ : &host_princ,
+					      salt_princ ? salt_princ : host_princ,
 					      NULL,
 					      password,
 					      enctype,
