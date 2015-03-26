@@ -1339,11 +1339,13 @@ class KCC(object):
             for cn in ldsa.connect_table.values():
 
                 rdsa = None
+                found = False
                 for rdsa in rbhs_all:
                     if cn.from_dnstr == rdsa.dsa_dnstr:
+                        found = True
                         break
 
-                if rdsa is None:
+                if rdsa is None or not found:
                     continue
 
                 DEBUG_DARK_YELLOW("rdsa is %s" % rdsa.dsa_dnstr)
@@ -1462,12 +1464,15 @@ class KCC(object):
             for cn in ldsa.connect_table.values():
 
                 rdsa = None
+                found = False
                 for rdsa in rbhs_all:
                     if cn.from_dnstr == rdsa.dsa_dnstr:
+                        found = True
                         break
 
-                if rdsa is None:
+                if rdsa is None or not found:
                     continue
+
                 DEBUG_DARK_YELLOW("round 2: rdsa is %s" % rdsa.dsa_dnstr)
 
                 # IF (bit NTDSCONN_OPT_IS_GENERATED is clear in cn!options or
