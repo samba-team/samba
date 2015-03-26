@@ -5,7 +5,7 @@
 		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 
-  <para>This parameter configures logging backends backends. Multiple
+  <para>This parameter configures logging backends. Multiple
     backends can be specified at the same time, with different log
     levels for each backend. The parameter is a list of backends,
     where each backend is specified as backend[:option][@loglevel].</para>
