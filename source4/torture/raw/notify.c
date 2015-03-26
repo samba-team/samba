@@ -731,7 +731,7 @@ static bool test_notify_mask(struct torture_context *tctx,
 #define NOTIFY_MASK_TEST(test_name, setup, op, cleanup, Action, expected, nchanges) \
 	do { \
 	smbcli_getatr(cli->tree, test_name, NULL, NULL, NULL); \
-	do { for (mask=i=0;i<32;i++) { \
+	for (mask=i=0;i<32;i++) { \
 		struct smbcli_request *req; \
 		status = smb_raw_open(cli->tree, tctx, &io); \
 		torture_assert_ntstatus_ok_goto(tctx, status, ret, done, \
@@ -790,7 +790,6 @@ static bool test_notify_mask(struct torture_context *tctx,
 			       mask, expected); \
 		} \
 	} \
-	} while (0); \
 	} while (0);
 
 	printf("Testing mkdir\n");
