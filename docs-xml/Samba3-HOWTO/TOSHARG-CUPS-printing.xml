@@ -4847,7 +4847,7 @@ cupsomatic</link> show how CUPS handles print jobs.
 
 	<para>
 	If <command>cupsaddsmb</command>, or <command>rpcclient addriver</command> emit the error message
-	WERR_BAD_PASSWORD, refer to <link linkend="root-ask-loop">the previous common error</link>.
+	WERR_BAD_PASSWORD/WERR_INVALID_PASSWORD, refer to <link linkend="root-ask-loop">the previous common error</link>.
 	</para>
 	
 	</sect2>
