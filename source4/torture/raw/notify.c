@@ -333,7 +333,8 @@ done:
  * pair in any of the three following notify_changes.
  */
 
-static bool check_rename_reply(struct smbcli_state *cli,
+static bool check_rename_reply(struct torture_context *tctx,
+			       struct smbcli_state *cli,
 			       int line,
 			       struct notify_changes *actions,
 			       uint32_t action, const char *name)
@@ -342,19 +343,14 @@ static bool check_rename_reply(struct smbcli_state *cli,
 
 	for (i=0; i<3; i++) {
 		if (actions[i].action == action) {
-			if ((actions[i].name.s == NULL)
-			    || (strcmp(actions[i].name.s, name) != 0)
-			    || (wire_bad_flags(&actions[i].name, STR_UNICODE,
-					       cli->transport))) {
-				printf("(%d) name [%s] != %s\n", line,
-				       actions[i].name.s, name);
-				return false;
-			}
+			CHECK_WSTR(tctx, actions[i].name, name, STR_UNICODE);
 			return true;
 		}
 	}
 
-	printf("(%d) expected action %d, not found\n", line, action);
+	torture_result(tctx, TORTURE_FAIL,
+		       __location__": (%d) expected action %d, not found\n",
+		       line, action);
 	return false;
 }
 
@@ -490,23 +486,23 @@ static bool test_notify_recursive(struct torture_context *mem_ctx,
 	CHECK_WSTR(mem_ctx, notify.nttrans.out.changes[4].name,
 		   "subdir-name\\subname1-r", STR_UNICODE);
 
-	ret &= check_rename_reply(
+	ret &= check_rename_reply(mem_ctx,
 		cli, __LINE__, &notify.nttrans.out.changes[5],
 		NOTIFY_ACTION_ADDED, "subname2-r");
-	ret &= check_rename_reply(
+	ret &= check_rename_reply(mem_ctx,
 		cli, __LINE__, &notify.nttrans.out.changes[5],
 		NOTIFY_ACTION_REMOVED, "subdir-name\\subname2");
-	ret &= check_rename_reply(
+	ret &= check_rename_reply(mem_ctx,
 		cli, __LINE__, &notify.nttrans.out.changes[5],
 		NOTIFY_ACTION_MODIFIED, "subname2-r");
 		
-	ret &= check_rename_reply(
+	ret &= check_rename_reply(mem_ctx,
 		cli, __LINE__, &notify.nttrans.out.changes[8],
 		NOTIFY_ACTION_OLD_NAME, "subname2-r");
-	ret &= check_rename_reply(
+	ret &= check_rename_reply(mem_ctx,
 		cli, __LINE__, &notify.nttrans.out.changes[8],
 		NOTIFY_ACTION_NEW_NAME, "subname3-r");
-	ret &= check_rename_reply(
+	ret &= check_rename_reply(mem_ctx,
 		cli, __LINE__, &notify.nttrans.out.changes[8],
 		NOTIFY_ACTION_MODIFIED, "subname3-r");
 
