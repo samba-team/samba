@@ -64,14 +64,22 @@ int rep_ftruncate(int f, off_t l)
 
 
 #ifndef HAVE_STRLCPY
-/* like strncpy but does not 0 fill the buffer and always null 
-   terminates. bufsize is the size of the destination buffer */
+/*
+ * Like strncpy but does not 0 fill the buffer and always null
+ * terminates. bufsize is the size of the destination buffer.
+ * Returns the length of s.
+ */
 size_t rep_strlcpy(char *d, const char *s, size_t bufsize)
 {
 	size_t len = strlen(s);
 	size_t ret = len;
-	if (bufsize <= 0) return 0;
-	if (len >= bufsize) len = bufsize-1;
+
+	if (bufsize <= 0) {
+		return 0;
+	}
+	if (len >= bufsize) {
+		len = bufsize - 1;
+	}
 	memcpy(d, s, len);
 	d[len] = 0;
 	return ret;
