@@ -27,15 +27,6 @@
 
 #define BASEDIR "\\test_notify"
 
-#define CHECK_STATUS(status, correct) do { \
-	if (!NT_STATUS_EQUAL(status, correct)) { \
-		printf("(%d) Incorrect status %s - should be %s\n", \
-		       __LINE__, nt_errstr(status), nt_errstr(correct)); \
-		ret = false; \
-		goto done; \
-	}} while (0)
-
-
 #define CHECK_VAL(v, correct) do { \
 	if ((v) != (correct)) { \
 		printf("(%d) wrong value for %s  0x%x should be 0x%x\n", \
@@ -99,11 +90,13 @@ static bool test_notify_dir(struct torture_context *mem_ctx,
 	io.ntcreatex.in.fname = BASEDIR;
 
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok_goto(mem_ctx, status, ret, done,
+					"smb_raw_open");
 	fnum = io.ntcreatex.out.file.fnum;
 
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok_goto(mem_ctx, status, ret, done,
+					"smb_raw_open");
 	fnum2 = io.ntcreatex.out.file.fnum;
 
 	/* ask for a change notify,
@@ -119,7 +112,9 @@ static bool test_notify_dir(struct torture_context *mem_ctx,
 	req = smb_raw_changenotify_send(cli->tree, &notify);
 	smb_raw_ntcancel(req);
 	status = smb_raw_changenotify_recv(req, mem_ctx, &notify);
-	CHECK_STATUS(status, NT_STATUS_CANCELLED);
+	torture_assert_ntstatus_equal_goto(mem_ctx, status, NT_STATUS_CANCELLED,
+					   ret, done,
+					   "smb_raw_changenotify_recv");
 
 	printf("Testing notify mkdir\n");
 
@@ -127,7 +122,8 @@ static bool test_notify_dir(struct torture_context *mem_ctx,
 	smbcli_mkdir(cli2->tree, BASEDIR "\\subdir-name");
 
 	status = smb_raw_changenotify_recv(req, mem_ctx, &notify);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok_goto(mem_ctx, status, ret, done,
+					"smb_raw_changenotify_recv");
 
 	CHECK_VAL(notify.nttrans.out.num_changes, 1);
 	CHECK_VAL(notify.nttrans.out.changes[0].action, NOTIFY_ACTION_ADDED);
@@ -139,7 +135,8 @@ static bool test_notify_dir(struct torture_context *mem_ctx,
 	smbcli_rmdir(cli2->tree, BASEDIR "\\subdir-name");
 
 	status = smb_raw_changenotify_recv(req, mem_ctx, &notify);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok_goto(mem_ctx, status, ret, done,
+					"smb_raw_changenotify_recv");
 	CHECK_VAL(notify.nttrans.out.num_changes, 1);
 	CHECK_VAL(notify.nttrans.out.changes[0].action, NOTIFY_ACTION_REMOVED);
 	CHECK_WSTR(notify.nttrans.out.changes[0].name, "subdir-name", STR_UNICODE);
@@ -153,7 +150,8 @@ static bool test_notify_dir(struct torture_context *mem_ctx,
 	smb_msleep(200);
 	req = smb_raw_changenotify_send(cli->tree, &notify);
 	status = smb_raw_changenotify_recv(req, mem_ctx, &notify);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok_goto(mem_ctx, status, ret, done,
+					"smb_raw_changenotify_recv");
 	CHECK_VAL(notify.nttrans.out.num_changes, 4);
 	CHECK_VAL(notify.nttrans.out.changes[0].action, NOTIFY_ACTION_ADDED);
 	CHECK_WSTR(notify.nttrans.out.changes[0].name, "subdir-name", STR_UNICODE);
@@ -190,18 +188,23 @@ static bool test_notify_dir(struct torture_context *mem_ctx,
 	req = smb_raw_changenotify_send(cli->tree, &notify);
 
 	status = smbcli_unlink(cli->tree, BASEDIR "\\nonexistent.txt");
-	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+	torture_assert_ntstatus_equal_goto(mem_ctx, status,
+					   NT_STATUS_OBJECT_NAME_NOT_FOUND,
+					   ret, done,
+					   "smbcli_unlink");
 
 	/* (1st unlink) as the 2nd notify directly returns,
 	   this unlink is only seen by the 1st notify and 
 	   the 3rd notify (later) */
 	printf("Testing notify on unlink for the first file\n");
 	status = smbcli_unlink(cli2->tree, BASEDIR "\\test0.txt");
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok_goto(mem_ctx, status, ret, done,
+					"smbcli_unlink");
 
 	/* receive the reply from the 2nd notify */
 	status = smb_raw_changenotify_recv(req, mem_ctx, &notify);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok_goto(mem_ctx, status, ret, done,
+					"smb_raw_changenotify_recv");
 
 	CHECK_VAL(notify.nttrans.out.num_changes, count);
 	for (i=1;i<count;i++) {
@@ -211,7 +214,8 @@ static bool test_notify_dir(struct torture_context *mem_ctx,
 
 	printf("and now from the 1st notify\n");
 	status = smb_raw_changenotify_recv(req2, mem_ctx, &notify);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok_goto(mem_ctx, status, ret, done,
+					"smb_raw_changenotify_recv");
 	CHECK_VAL(notify.nttrans.out.num_changes, 1);
 	CHECK_VAL(notify.nttrans.out.changes[0].action, NOTIFY_ACTION_REMOVED);
 	CHECK_WSTR(notify.nttrans.out.changes[0].name, "test0.txt", STR_UNICODE);
@@ -220,16 +224,21 @@ static bool test_notify_dir(struct torture_context *mem_ctx,
 	req = smb_raw_changenotify_send(cli->tree, &notify);
 
 	status = smbcli_unlink(cli->tree, BASEDIR "\\nonexistent.txt");
-	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+	torture_assert_ntstatus_equal_goto(mem_ctx, status,
+					   NT_STATUS_OBJECT_NAME_NOT_FOUND,
+					   ret, done,
+					   "smbcli_unlink");
 
 	printf("Testing notify on wildcard unlink for %d files\n", count-1);
 	/* (2nd unlink) do a wildcard unlink */
 	status = smbcli_unlink(cli2->tree, BASEDIR "\\test*.txt");
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok_goto(mem_ctx, status, ret, done,
+					"smb_raw_changenotify_recv");
 
 	/* receive the 3rd notify */
 	status = smb_raw_changenotify_recv(req, mem_ctx, &notify);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok_goto(mem_ctx, status, ret, done,
+					"smb_raw_changenotify_recv");
 	CHECK_VAL(notify.nttrans.out.num_changes, 1);
 	CHECK_VAL(notify.nttrans.out.changes[0].action, NOTIFY_ACTION_REMOVED);
 	CHECK_WSTR(notify.nttrans.out.changes[0].name, "test0.txt", STR_UNICODE);
@@ -239,7 +248,8 @@ static bool test_notify_dir(struct torture_context *mem_ctx,
 	sleep(3);
 	req = smb_raw_changenotify_send(cli->tree, &notify);
 	status = smb_raw_changenotify_recv(req, mem_ctx, &notify);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok_goto(mem_ctx, status, ret, done,
+					"smb_raw_changenotify_recv");
 	CHECK_VAL(notify.nttrans.out.num_changes, count-1);
 	for (i=0;i<notify.nttrans.out.num_changes;i++) {
 		CHECK_VAL(notify.nttrans.out.changes[i].action, NOTIFY_ACTION_REMOVED);
@@ -247,7 +257,8 @@ static bool test_notify_dir(struct torture_context *mem_ctx,
 	notify.nttrans.in.file.fnum = fnum2;
 	req = smb_raw_changenotify_send(cli->tree, &notify);
 	status = smb_raw_changenotify_recv(req, mem_ctx, &notify);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok_goto(mem_ctx, status, ret, done,
+					"smb_raw_changenotify_recv");
 	CHECK_VAL(notify.nttrans.out.num_changes, count-1);
 	for (i=0;i<notify.nttrans.out.num_changes;i++) {
 		CHECK_VAL(notify.nttrans.out.changes[i].action, NOTIFY_ACTION_REMOVED);
@@ -262,10 +273,12 @@ static bool test_notify_dir(struct torture_context *mem_ctx,
 	cl.close.in.file.fnum = fnum;
 	cl.close.in.write_time = 0;
 	status = smb_raw_close(cli->tree, &cl);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok_goto(mem_ctx, status, ret, done,
+					"smb_raw_close");
 
 	status = smb_raw_changenotify_recv(req, mem_ctx, &notify);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok_goto(mem_ctx, status, ret, done,
+					"smb_raw_changenotify_recv");
 	CHECK_VAL(notify.nttrans.out.num_changes, 0);
 
 done:
@@ -343,7 +356,8 @@ static bool test_notify_recursive(struct torture_context *mem_ctx,
 	io.ntcreatex.in.fname = BASEDIR;
 
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok_goto(mem_ctx, status, ret, done,
+					"smb_raw_open");
 	fnum = io.ntcreatex.out.file.fnum;
 
 	/* ask for a change notify, on file or directory name
@@ -362,11 +376,17 @@ static bool test_notify_recursive(struct torture_context *mem_ctx,
 	/* cancel initial requests so the buffer is setup */
 	smb_raw_ntcancel(req1);
 	status = smb_raw_changenotify_recv(req1, mem_ctx, &notify);
-	CHECK_STATUS(status, NT_STATUS_CANCELLED);
+	torture_assert_ntstatus_equal_goto(mem_ctx, status,
+					   NT_STATUS_CANCELLED,
+					   ret, done,
+					   "smb_raw_changenotify_recv");
 
 	smb_raw_ntcancel(req2);
 	status = smb_raw_changenotify_recv(req2, mem_ctx, &notify);
-	CHECK_STATUS(status, NT_STATUS_CANCELLED);
+	torture_assert_ntstatus_equal_goto(mem_ctx, status,
+					   NT_STATUS_CANCELLED,
+					   ret, done,
+					   "smb_raw_changenotify_recv");
 
 	/*
 	 * Make notifies a bit more interesting in a cluster by doing
@@ -395,7 +415,8 @@ static bool test_notify_recursive(struct torture_context *mem_ctx,
 	req2 = smb_raw_changenotify_send(cli->tree, &notify);
 
 	status = smb_raw_changenotify_recv(req1, mem_ctx, &notify);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok_goto(mem_ctx, status, ret, done,
+					"smb_raw_changenotify_recv");
 
 	CHECK_VAL(notify.nttrans.out.num_changes, 11);
 	CHECK_VAL(notify.nttrans.out.changes[0].action, NOTIFY_ACTION_ADDED);
@@ -434,7 +455,8 @@ static bool test_notify_recursive(struct torture_context *mem_ctx,
 	}
 
 	status = smb_raw_changenotify_recv(req2, mem_ctx, &notify);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok_goto(mem_ctx, status, ret, done,
+					"smb_raw_changenotify_recv");
 
 	CHECK_VAL(notify.nttrans.out.num_changes, 3);
 	CHECK_VAL(notify.nttrans.out.changes[0].action, NOTIFY_ACTION_REMOVED);
@@ -486,7 +508,8 @@ static bool test_notify_mask_change(struct torture_context *mem_ctx,
 	io.ntcreatex.in.fname = BASEDIR;
 
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok_goto(mem_ctx, status, ret, done,
+					"smb_raw_open");
 	fnum = io.ntcreatex.out.file.fnum;
 
 	/* ask for a change notify, on file or directory name
@@ -505,11 +528,17 @@ static bool test_notify_mask_change(struct torture_context *mem_ctx,
 	/* cancel initial requests so the buffer is setup */
 	smb_raw_ntcancel(req1);
 	status = smb_raw_changenotify_recv(req1, mem_ctx, &notify);
-	CHECK_STATUS(status, NT_STATUS_CANCELLED);
+	torture_assert_ntstatus_equal_goto(mem_ctx, status,
+					   NT_STATUS_CANCELLED,
+					   ret, done,
+					   "smb_raw_changenotify_recv");
 
 	smb_raw_ntcancel(req2);
 	status = smb_raw_changenotify_recv(req2, mem_ctx, &notify);
-	CHECK_STATUS(status, NT_STATUS_CANCELLED);
+	torture_assert_ntstatus_equal_goto(mem_ctx, status,
+					   NT_STATUS_CANCELLED,
+					   ret, done,
+					   "smb_raw_changenotify_recv");
 
 	notify.nttrans.in.recursive = true;
 	req1 = smb_raw_changenotify_send(cli->tree, &notify);
@@ -520,7 +549,8 @@ static bool test_notify_mask_change(struct torture_context *mem_ctx,
 	smbcli_unlink(cli->tree, BASEDIR "\\tname1");
 
 	status = smb_raw_changenotify_recv(req1, mem_ctx, &notify);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok_goto(mem_ctx, status, ret, done,
+					"smb_raw_changenotify_recv");
 
 	CHECK_VAL(notify.nttrans.out.num_changes, 1);
 	CHECK_VAL(notify.nttrans.out.changes[0].action, NOTIFY_ACTION_MODIFIED);
@@ -550,14 +580,16 @@ static bool test_notify_mask_change(struct torture_context *mem_ctx,
 	smbcli_unlink(cli->tree, BASEDIR "\\subname3-r");
 
 	status = smb_raw_changenotify_recv(req1, mem_ctx, &notify);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok_goto(mem_ctx, status, ret, done,
+					"smb_raw_changenotify_recv");
 
 	CHECK_VAL(notify.nttrans.out.num_changes, 1);
 	CHECK_VAL(notify.nttrans.out.changes[0].action, NOTIFY_ACTION_MODIFIED);
 	CHECK_WSTR(notify.nttrans.out.changes[0].name, "subname2-r", STR_UNICODE);
 
 	status = smb_raw_changenotify_recv(req2, mem_ctx, &notify);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok_goto(mem_ctx, status, ret, done,
+					"smb_raw_changenotify_recv");
 
 	CHECK_VAL(notify.nttrans.out.num_changes, 1);
 	CHECK_VAL(notify.nttrans.out.changes[0].action, NOTIFY_ACTION_MODIFIED);
@@ -630,7 +662,8 @@ static bool test_notify_mask(struct torture_context *tctx,
 	do { for (mask=i=0;i<32;i++) { \
 		struct smbcli_request *req; \
 		status = smb_raw_open(cli->tree, tctx, &io); \
-		CHECK_STATUS(status, NT_STATUS_OK); \
+		torture_assert_ntstatus_ok_goto(tctx, status, ret, done, \
+						"smb_raw_open"); \
 		fnum = io.ntcreatex.out.file.fnum; \
 		setup \
 		notify.nttrans.in.file.fnum = fnum;	\
@@ -643,7 +676,8 @@ static bool test_notify_mask(struct torture_context *tctx,
 		cleanup \
 		smbcli_close(cli->tree, fnum); \
 		if (NT_STATUS_EQUAL(status, NT_STATUS_CANCELLED)) continue; \
-		CHECK_STATUS(status, NT_STATUS_OK); \
+		torture_assert_ntstatus_ok_goto(tctx, status, ret, done, \
+						"smbcli_close"); \
 		/* special case to cope with file rename behaviour */ \
 		if (nchanges == 2 && notify.nttrans.out.num_changes == 1 && \
 		    notify.nttrans.out.changes[0].action == NOTIFY_ACTION_MODIFIED && \
@@ -854,7 +888,8 @@ static bool test_notify_file(struct torture_context *mem_ctx,
 	io.ntcreatex.in.security_flags = 0;
 	io.ntcreatex.in.fname = fname;
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok_goto(mem_ctx, status, ret, done,
+					"smb_raw_open");
 	fnum = io.ntcreatex.out.file.fnum;
 
 	/* ask for a change notify,
@@ -869,16 +904,21 @@ static bool test_notify_file(struct torture_context *mem_ctx,
 
 	req = smb_raw_changenotify_send(cli->tree, &notify);
 	status = smb_raw_changenotify_recv(req, mem_ctx, &notify);
-	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
+	torture_assert_ntstatus_equal_goto(mem_ctx, status,
+					   NT_STATUS_INVALID_PARAMETER,
+					   ret, done,
+					   "smb_raw_changenotify_recv");
 
 	cl.close.level = RAW_CLOSE_CLOSE;
 	cl.close.in.file.fnum = fnum;
 	cl.close.in.write_time = 0;
 	status = smb_raw_close(cli->tree, &cl);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok_goto(mem_ctx, status, ret, done,
+					"smb_raw_close");
 
 	status = smbcli_unlink(cli->tree, fname);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok_goto(mem_ctx, status, ret, done,
+					"smbcli_unlink");
 
 done:
 	smb_raw_exit(cli->session);
@@ -927,7 +967,8 @@ static bool test_notify_tdis(struct torture_context *tctx,
 	io.ntcreatex.in.fname = BASEDIR;
 
 	status = smb_raw_open(cli->tree, tctx, &io);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb_raw_open");
 	fnum = io.ntcreatex.out.file.fnum;
 
 	/* ask for a change notify,
@@ -941,11 +982,13 @@ static bool test_notify_tdis(struct torture_context *tctx,
 	req = smb_raw_changenotify_send(cli->tree, &notify);
 
 	status = smbcli_tdis(cli);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smbcli_tdis");
 	cli->tree = NULL;
 
 	status = smb_raw_changenotify_recv(req, tctx, &notify);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb_raw_changenotify_recv");
 	CHECK_VAL(notify.nttrans.out.num_changes, 0);
 
 done:
@@ -995,7 +1038,8 @@ static bool test_notify_exit(struct torture_context *tctx,
 	io.ntcreatex.in.fname = BASEDIR;
 
 	status = smb_raw_open(cli->tree, tctx, &io);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb_raw_open");
 	fnum = io.ntcreatex.out.file.fnum;
 
 	/* ask for a change notify,
@@ -1009,10 +1053,12 @@ static bool test_notify_exit(struct torture_context *tctx,
 	req = smb_raw_changenotify_send(cli->tree, &notify);
 
 	status = smb_raw_exit(cli->session);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb_raw_exit");
 
 	status = smb_raw_changenotify_recv(req, tctx, &notify);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb_raw_changenotify_recv");
 	CHECK_VAL(notify.nttrans.out.num_changes, 0);
 
 done:
@@ -1062,7 +1108,8 @@ static bool test_notify_ulogoff(struct torture_context *tctx,
 	io.ntcreatex.in.fname = BASEDIR;
 
 	status = smb_raw_open(cli->tree, tctx, &io);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb_raw_open");
 	fnum = io.ntcreatex.out.file.fnum;
 
 	/* ask for a change notify,
@@ -1076,10 +1123,12 @@ static bool test_notify_ulogoff(struct torture_context *tctx,
 	req = smb_raw_changenotify_send(cli->tree, &notify);
 
 	status = smb_raw_ulogoff(cli->session);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb_raw_ulogoff");
 
 	status = smb_raw_changenotify_recv(req, tctx, &notify);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb_raw_changenotify_recv");
 	CHECK_VAL(notify.nttrans.out.num_changes, 0);
 
 done:
@@ -1136,7 +1185,8 @@ static bool test_notify_tcp_dis(struct torture_context *tctx,
 	io.ntcreatex.in.fname = BASEDIR;
 
 	status = smb_raw_open(cli->tree, tctx, &io);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb_raw_open");
 	fnum = io.ntcreatex.out.file.fnum;
 
 	/* ask for a change notify,
@@ -1152,7 +1202,10 @@ static bool test_notify_tcp_dis(struct torture_context *tctx,
 	smbcli_transport_idle_handler(cli->transport, tcp_dis_handler, 250, cli);
 
 	status = smb_raw_changenotify_recv(req, tctx, &notify);
-	CHECK_STATUS(status, NT_STATUS_LOCAL_DISCONNECT);
+	torture_assert_ntstatus_equal_goto(tctx, status,
+					   NT_STATUS_LOCAL_DISCONNECT,
+					   ret, done,
+					   "smb_raw_changenotify_recv");
 
 done:
 	torture_close_connection(cli);
@@ -1195,7 +1248,8 @@ static bool test_notify_double(struct torture_context *mem_ctx,
 	io.ntcreatex.in.fname = BASEDIR;
 
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok_goto(mem_ctx, status, ret, done,
+					"smb_raw_open");
 	fnum = io.ntcreatex.out.file.fnum;
 
 	/* ask for a change notify,
@@ -1212,14 +1266,16 @@ static bool test_notify_double(struct torture_context *mem_ctx,
 	smbcli_mkdir(cli->tree, BASEDIR "\\subdir-name");
 
 	status = smb_raw_changenotify_recv(req1, mem_ctx, &notify);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok_goto(mem_ctx, status, ret, done,
+					"smb_raw_changenotify_recv");
 	CHECK_VAL(notify.nttrans.out.num_changes, 1);
 	CHECK_WSTR(notify.nttrans.out.changes[0].name, "subdir-name", STR_UNICODE);
 
 	smbcli_mkdir(cli->tree, BASEDIR "\\subdir-name2");
 
 	status = smb_raw_changenotify_recv(req2, mem_ctx, &notify);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok_goto(mem_ctx, status, ret, done,
+					"smb_raw_changenotify_recv");
 	CHECK_VAL(notify.nttrans.out.num_changes, 1);
 	CHECK_WSTR(notify.nttrans.out.changes[0].name, "subdir-name2", STR_UNICODE);
 
@@ -1302,7 +1358,8 @@ static bool test_notify_tree(struct torture_context *mem_ctx,
 	for (i=0;i<ARRAY_SIZE(dirs);i++) {
 		io.ntcreatex.in.fname = dirs[i].path;
 		status = smb_raw_open(cli->tree, mem_ctx, &io);
-		CHECK_STATUS(status, NT_STATUS_OK);
+		torture_assert_ntstatus_ok_goto(mem_ctx, status, ret, done,
+						"smb_raw_open");
 		dirs[i].fnum = io.ntcreatex.out.file.fnum;
 
 		notify.nttrans.in.completion_filter = dirs[i].filter;
@@ -1311,7 +1368,10 @@ static bool test_notify_tree(struct torture_context *mem_ctx,
 		req = smb_raw_changenotify_send(cli->tree, &notify);
 		smb_raw_ntcancel(req);
 		status = smb_raw_changenotify_recv(req, mem_ctx, &notify);
-		CHECK_STATUS(status, NT_STATUS_CANCELLED);
+		torture_assert_ntstatus_equal_goto(mem_ctx, status,
+						   NT_STATUS_CANCELLED,
+						   ret, done,
+						   "smb_raw_changenotify_recv");
 	}
 
 	/* trigger 2 events in each dir */
@@ -1412,7 +1472,8 @@ static bool test_notify_overflow(struct torture_context *mem_ctx,
 	io.ntcreatex.in.fname = BASEDIR;
 
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok_goto(mem_ctx, status, ret, done,
+					"smb_raw_open");
 	fnum = io.ntcreatex.out.file.fnum;
 
 	/* ask for a change notify, on name changes. */
@@ -1427,7 +1488,10 @@ static bool test_notify_overflow(struct torture_context *mem_ctx,
 	/* cancel initial requests so the buffer is setup */
 	smb_raw_ntcancel(req1);
 	status = smb_raw_changenotify_recv(req1, mem_ctx, &notify);
-	CHECK_STATUS(status, NT_STATUS_CANCELLED);
+	torture_assert_ntstatus_equal_goto(mem_ctx, status,
+					   NT_STATUS_CANCELLED,
+					   ret, done,
+					   "smb_raw_changenotify_recv");
 
 	/* open a lot of files, filling up the server side notify buffer */
 	printf("Testing overflowed buffer notify on create of %d files\n",
@@ -1449,7 +1513,8 @@ static bool test_notify_overflow(struct torture_context *mem_ctx,
 	/* expect that 0 events will be returned with NT_STATUS_OK */
 	req1 = smb_raw_changenotify_send(cli->tree, &notify);
 	status = smb_raw_changenotify_recv(req1, mem_ctx, &notify);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok_goto(mem_ctx, status, ret, done,
+					"smb_raw_changenotify_recv");
 	CHECK_VAL(notify.nttrans.out.num_changes, 0);
 
 done:
@@ -1494,7 +1559,8 @@ static bool test_notify_basedir(struct torture_context *mem_ctx,
 	io.ntcreatex.in.fname = BASEDIR;
 
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok_goto(mem_ctx, status, ret, done,
+					"smb_raw_open");
 	fnum = io.ntcreatex.out.file.fnum;
 
 	/* create a test file that will also be modified */
@@ -1519,7 +1585,8 @@ static bool test_notify_basedir(struct torture_context *mem_ctx,
 
 	/* check how many responses were given, expect only 1 for the file */
 	status = smb_raw_changenotify_recv(req1, mem_ctx, &notify);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok_goto(mem_ctx, status, ret, done,
+					"smb_raw_changenotify_recv");
 	CHECK_VAL(notify.nttrans.out.num_changes, 1);
 	CHECK_VAL(notify.nttrans.out.changes[0].action, NOTIFY_ACTION_MODIFIED);
 	CHECK_WSTR(notify.nttrans.out.changes[0].name, "tname1", STR_UNICODE);
@@ -1606,11 +1673,13 @@ static bool test_notify_tcon(struct torture_context *torture,
 	io.ntcreatex.in.fname = BASEDIR;
 
 	status = smb_raw_open(cli->tree, torture, &io);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok_goto(torture, status, ret, done,
+					"smb_raw_open");
 	fnum = io.ntcreatex.out.file.fnum;
 
 	status = smb_raw_open(cli->tree, torture, &io);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok_goto(torture, status, ret, done,
+					"smb_raw_open");
 
 	/* ask for a change notify,
 	   on file or directory name changes */
@@ -1625,7 +1694,8 @@ static bool test_notify_tcon(struct torture_context *torture,
 	smbcli_mkdir(cli->tree, BASEDIR "\\subdir-name");
 
 	status = smb_raw_changenotify_recv(req, torture, &notify);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok_goto(torture, status, ret, done,
+					"smb_raw_changenotify_recv");
 
 	CHECK_VAL(notify.nttrans.out.num_changes, 1);
 	CHECK_VAL(notify.nttrans.out.changes[0].action, NOTIFY_ACTION_ADDED);
@@ -1636,7 +1706,8 @@ static bool test_notify_tcon(struct torture_context *torture,
 	smbcli_rmdir(cli->tree, BASEDIR "\\subdir-name");
 
 	status = smb_raw_changenotify_recv(req, torture, &notify);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok_goto(torture, status, ret, done,
+					"smb_raw_changenotify_recv");
 	CHECK_VAL(notify.nttrans.out.num_changes, 1);
 	CHECK_VAL(notify.nttrans.out.changes[0].action, NOTIFY_ACTION_REMOVED);
 	CHECK_WSTR(notify.nttrans.out.changes[0].name, "subdir-name", STR_UNICODE);
@@ -1651,7 +1722,8 @@ static bool test_notify_tcon(struct torture_context *torture,
 	smbcli_mkdir(cli->tree, BASEDIR "\\subdir-name");
 
 	status = smb_raw_changenotify_recv(req, torture, &notify);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok_goto(torture, status, ret, done,
+					"smb_raw_changenotify_recv");
 
 	CHECK_VAL(notify.nttrans.out.num_changes, 1);
 	CHECK_VAL(notify.nttrans.out.changes[0].action, NOTIFY_ACTION_ADDED);
@@ -1662,7 +1734,8 @@ static bool test_notify_tcon(struct torture_context *torture,
 	smbcli_rmdir(cli->tree, BASEDIR "\\subdir-name");
 
 	status = smb_raw_changenotify_recv(req, torture, &notify);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok_goto(torture, status, ret, done,
+					"smb_raw_changenotify_recv");
 	CHECK_VAL(notify.nttrans.out.num_changes, 1);
 	CHECK_VAL(notify.nttrans.out.changes[0].action, NOTIFY_ACTION_REMOVED);
 	CHECK_WSTR(notify.nttrans.out.changes[0].name, "subdir-name", STR_UNICODE);
@@ -1671,7 +1744,8 @@ static bool test_notify_tcon(struct torture_context *torture,
 
 	printf("Disconnecting secondary tree\n");
 	status = smb_tree_disconnect(tree);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok_goto(torture, status, ret, done,
+					"smb_tree_disconnect");
 	talloc_free(tree);
 
 	printf("Testing notify mkdir\n");
@@ -1679,7 +1753,8 @@ static bool test_notify_tcon(struct torture_context *torture,
 	smbcli_mkdir(cli->tree, BASEDIR "\\subdir-name");
 
 	status = smb_raw_changenotify_recv(req, torture, &notify);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok_goto(torture, status, ret, done,
+					"smb_raw_changenotify_recv");
 
 	CHECK_VAL(notify.nttrans.out.num_changes, 1);
 	CHECK_VAL(notify.nttrans.out.changes[0].action, NOTIFY_ACTION_ADDED);
@@ -1690,7 +1765,8 @@ static bool test_notify_tcon(struct torture_context *torture,
 	smbcli_rmdir(cli->tree, BASEDIR "\\subdir-name");
 
 	status = smb_raw_changenotify_recv(req, torture, &notify);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert_ntstatus_ok_goto(torture, status, ret, done,
+					"smb_raw_changenotify_recv");
 	CHECK_VAL(notify.nttrans.out.num_changes, 1);
 	CHECK_VAL(notify.nttrans.out.changes[0].action, NOTIFY_ACTION_REMOVED);
 	CHECK_WSTR(notify.nttrans.out.changes[0].name, "subdir-name", STR_UNICODE);
