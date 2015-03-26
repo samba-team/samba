@@ -1145,16 +1145,8 @@ static uint32 reg_perfcount_get_perf_data_block(uint32 base_index,
 
 	reg_perfcount_get_last_counter(base_index);
 
-	if(object_ids == NULL)
-	{
-		/* we're getting a request for "Global" here */
-		retval = _reg_perfcount_assemble_global(block, mem_ctx, base_index, names);
-	}
-	else
-	{
-		/* we're getting a request for a specific set of PERF_OBJECT_TYPES */
-		retval = _reg_perfcount_assemble_global(block, mem_ctx, base_index, names);
-	}
+	retval = _reg_perfcount_assemble_global(block, mem_ctx, base_index, names);
+
 	buffer_size = _reg_perfcount_perf_data_block_fixup(block, mem_ctx);
 
 	tdb_close(names);
