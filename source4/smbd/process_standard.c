@@ -42,7 +42,7 @@ NTSTATUS process_model_standard_init(void);
 /* we hold a pipe open in the parent, and the any child
    processes wait for EOF on that pipe. This ensures that
    children die when the parent dies */
-static int child_pipe[2];
+static int child_pipe[2] = { -1, -1 };
 
 /*
   called when the process model is selected
@@ -266,7 +266,10 @@ static void standard_accept_connection(struct tevent_context *ev,
 
 	tevent_add_fd(ev, ev, child_pipe[0], TEVENT_FD_READ,
 		      standard_pipe_handler, NULL);
-	close(child_pipe[1]);
+	if (child_pipe[1] != -1) {
+		close(child_pipe[1]);
+		child_pipe[1] = -1;
+	}
 
 	/* Ensure that the forked children do not expose identical random streams */
 	set_need_random_reseed();
@@ -342,7 +345,10 @@ static void standard_new_task(struct tevent_context *ev,
 
 	tevent_add_fd(ev, ev, child_pipe[0], TEVENT_FD_READ,
 		      standard_pipe_handler, NULL);
-	close(child_pipe[1]);
+	if (child_pipe[1] != -1) {
+		close(child_pipe[1]);
+		child_pipe[1] = -1;
+	}
 
 	/* Ensure that the forked children do not expose identical random streams */
 	set_need_random_reseed();
