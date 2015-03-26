@@ -177,12 +177,9 @@ static bool test_notify_dir(struct torture_context *mem_ctx,
 	for (i=0;i<count;i++) {
 		char *fname = talloc_asprintf(cli, BASEDIR "\\test%d.txt", i);
 		int fnum3 = smbcli_open(cli->tree, fname, O_CREAT|O_RDWR, DENY_NONE);
-		if (fnum3 == -1) {
-			printf("Failed to create %s - %s\n", 
-			       fname, smbcli_errstr(cli->tree));
-			ret = false;
-			goto done;
-		}
+		torture_assert_int_not_equal_goto(mem_ctx, fnum3, -1, ret, done,
+			talloc_asprintf(mem_ctx, "Failed to create %s - %s",
+					fname, smbcli_errstr(cli->tree)));
 		talloc_free(fname);
 		smbcli_close(cli->tree, fnum3);
 	}
@@ -1571,12 +1568,9 @@ static bool test_notify_overflow(struct torture_context *mem_ctx,
 		char *fname = talloc_asprintf(cli, BASEDIR "\\test%d.txt", i);
 		int fnum2 = smbcli_open(cli->tree, fname, O_CREAT|O_RDWR,
 					DENY_NONE);
-		if (fnum2 == -1) {
-			printf("Failed to create %s - %s\n",
-			       fname, smbcli_errstr(cli->tree));
-			ret = false;
-			goto done;
-		}
+		torture_assert_int_not_equal_goto(mem_ctx, fnum2, -1, ret, done,
+			talloc_asprintf(mem_ctx, "Failed to create %s - %s",
+					fname, smbcli_errstr(cli->tree)));
 		talloc_free(fname);
 		smbcli_close(cli->tree, fnum2);
 	}
