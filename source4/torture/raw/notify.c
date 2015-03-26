@@ -1023,9 +1023,8 @@ static bool test_notify_tdis(struct torture_context *tctx,
 	torture_assert(tctx, torture_setup_dir(cli1, BASEDIR),
 		       "Failed to setup up test directory: " BASEDIR);
 
-	if (!torture_open_connection(&cli, tctx, 0)) {
-		return false;
-	}
+	torture_assert(tctx, torture_open_connection(&cli, tctx, 0),
+		       "Failed to open connection.");
 
 	/*
 	  get a handle on the directory
@@ -1094,9 +1093,8 @@ static bool test_notify_exit(struct torture_context *tctx,
 	torture_assert(tctx, torture_setup_dir(cli1, BASEDIR),
 		       "Failed to setup up test directory: " BASEDIR);
 
-	if (!torture_open_connection(&cli, tctx, 0)) {
-		return false;
-	}
+	torture_assert(tctx, torture_open_connection(&cli, tctx, 0),
+		       "Failed to open connection.");
 
 	/*
 	  get a handle on the directory
@@ -1164,9 +1162,8 @@ static bool test_notify_ulogoff(struct torture_context *tctx,
 	torture_assert(tctx, torture_setup_dir(cli1, BASEDIR),
 		       "Failed to setup up test directory: " BASEDIR);
 
-	if (!torture_open_connection(&cli, tctx, 0)) {
-		return false;
-	}
+	torture_assert(tctx, torture_open_connection(&cli, tctx, 0),
+		       "Failed to open connection.");
 
 	/*
 	  get a handle on the directory
@@ -1241,9 +1238,8 @@ static bool test_notify_tcp_dis(struct torture_context *tctx,
 	torture_assert(tctx, torture_setup_dir(cli1, BASEDIR),
 		       "Failed to setup up test directory: " BASEDIR);
 
-	if (!torture_open_connection(&cli, tctx, 0)) {
-		return false;
-	}
+	torture_assert(tctx, torture_open_connection(&cli, tctx, 0),
+		       "Failed to open connection.");
 
 	/*
 	  get a handle on the directory
