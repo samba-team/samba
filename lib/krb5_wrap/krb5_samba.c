@@ -223,7 +223,7 @@ int smb_krb5_create_key_from_string(krb5_context context,
 */
 
 int smb_krb5_get_pw_salt(krb5_context context,
-			 krb5_principal host_princ,
+			 krb5_const_principal host_princ,
 			 krb5_data *psalt)
 #if defined(HAVE_KRB5_GET_PW_SALT)
 /* Heimdal */

@@ -309,7 +309,7 @@ krb5_error_code ms_suptypes_to_ietf_enctypes(TALLOC_CTX *mem_ctx,
 					     uint32_t enctype_bitmap,
 					     krb5_enctype **enctypes);
 int smb_krb5_get_pw_salt(krb5_context context,
-			 krb5_principal host_princ,
+			 krb5_const_principal host_princ,
 			 krb5_data *psalt);
 
 int smb_krb5_create_key_from_string(krb5_context context,
