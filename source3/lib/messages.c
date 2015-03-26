@@ -1066,6 +1066,7 @@ static void mess_parent_dgm_cleanup_done(struct tevent_req *req)
 		mess_parent_dgm_cleanup, msg);
 	if (req == NULL) {
 		DEBUG(1, ("background_job_send failed\n"));
+		return;
 	}
 	tevent_req_set_callback(req, mess_parent_dgm_cleanup_done, msg);
 }
