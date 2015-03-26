@@ -182,6 +182,76 @@ struct security_descriptor *security_descriptor_copy(TALLOC_CTX *mem_ctx,
 	return NULL;
 }
 
+NTSTATUS security_descriptor_for_client(TALLOC_CTX *mem_ctx,
+					const struct security_descriptor *ssd,
+					uint32_t sec_info,
+					uint32_t access_granted,
+					struct security_descriptor **_csd)
+{
+	struct security_descriptor *csd = NULL;
+	uint32_t access_required = 0;
+
+	*_csd = NULL;
+
+	if (sec_info & (SECINFO_OWNER|SECINFO_GROUP)) {
+		access_required |= SEC_STD_READ_CONTROL;
+	}
+	if (sec_info & SECINFO_DACL) {
+		access_required |= SEC_STD_READ_CONTROL;
+	}
+	if (sec_info & SECINFO_SACL) {
+		access_required |= SEC_FLAG_SYSTEM_SECURITY;
+	}
+
+	if (access_required & (~access_granted)) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	/*
+	 * make a copy...
+	 */
+	csd = security_descriptor_copy(mem_ctx, ssd);
+	if (csd == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/*
+	 * ... and remove everthing not wanted
+	 */
+
+	if (!(sec_info & SECINFO_OWNER)) {
+		TALLOC_FREE(csd->owner_sid);
+		csd->type &= ~SEC_DESC_OWNER_DEFAULTED;
+	}
+	if (!(sec_info & SECINFO_GROUP)) {
+		TALLOC_FREE(csd->group_sid);
+		csd->type &= ~SEC_DESC_GROUP_DEFAULTED;
+	}
+	if (!(sec_info & SECINFO_DACL)) {
+		TALLOC_FREE(csd->dacl);
+		csd->type &= ~(
+			SEC_DESC_DACL_PRESENT |
+			SEC_DESC_DACL_DEFAULTED|
+			SEC_DESC_DACL_AUTO_INHERIT_REQ |
+			SEC_DESC_DACL_AUTO_INHERITED |
+			SEC_DESC_DACL_PROTECTED |
+			SEC_DESC_DACL_TRUSTED);
+	}
+	if (!(sec_info & SECINFO_SACL)) {
+		TALLOC_FREE(csd->sacl);
+		csd->type &= ~(
+			SEC_DESC_SACL_PRESENT |
+			SEC_DESC_SACL_DEFAULTED |
+			SEC_DESC_SACL_AUTO_INHERIT_REQ |
+			SEC_DESC_SACL_AUTO_INHERITED |
+			SEC_DESC_SACL_PROTECTED |
+			SEC_DESC_SERVER_SECURITY);
+	}
+
+	*_csd = csd;
+	return NT_STATUS_OK;
+}
+
 /*
   add an ACE to an ACL of a security_descriptor
 */

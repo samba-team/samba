@@ -26,6 +26,11 @@
 struct security_descriptor *security_descriptor_initialise(TALLOC_CTX *mem_ctx);
 struct security_descriptor *security_descriptor_copy(TALLOC_CTX *mem_ctx, 
 						     const struct security_descriptor *osd);
+NTSTATUS security_descriptor_for_client(TALLOC_CTX *mem_ctx,
+					const struct security_descriptor *ssd,
+					uint32_t sec_info,
+					uint32_t access_granted,
+					struct security_descriptor **_csd);
 NTSTATUS security_descriptor_sacl_add(struct security_descriptor *sd,
 				      const struct security_ace *ace);
 NTSTATUS security_descriptor_dacl_add(struct security_descriptor *sd,
