@@ -312,9 +312,11 @@ SMBC_statvfs_ctx(SMBCCTX *context,
         bool            bIsDir;
         struct stat     statbuf;
         SMBCFILE *      pFile;
+	TALLOC_CTX *frame = talloc_stackframe();
 
         /* Determine if the provided path is a file or a folder */
         if (SMBC_stat_ctx(context, path, &statbuf) < 0) {
+		TALLOC_FREE(frame);
                 return -1;
         }
 
@@ -322,6 +324,7 @@ SMBC_statvfs_ctx(SMBCCTX *context,
         if (S_ISDIR(statbuf.st_mode)) {
                 /* It's a directory. */
                 if ((pFile = SMBC_opendir_ctx(context, path)) == NULL) {
+			TALLOC_FREE(frame);
                         return -1;
                 }
                 bIsDir = true;
@@ -329,11 +332,13 @@ SMBC_statvfs_ctx(SMBCCTX *context,
                 /* It's a file. */
                 if ((pFile = SMBC_open_ctx(context, path,
                                            O_RDONLY, 0)) == NULL) {
+			TALLOC_FREE(frame);
                         return -1;
                 }
                 bIsDir = false;
         } else {
                 /* It's neither a file nor a directory. Not supported. */
+		TALLOC_FREE(frame);
                 errno = ENOSYS;
                 return -1;
         }
@@ -348,6 +353,7 @@ SMBC_statvfs_ctx(SMBCCTX *context,
                 SMBC_close_ctx(context, pFile);
         }
 
+	TALLOC_FREE(frame);
         return ret;
 }
 
@@ -365,6 +371,7 @@ SMBC_fstatvfs_ctx(SMBCCTX *context,
 	uint32 fs_attrs = 0;
 	struct cli_state *cli = file->srv->cli;
 	struct smbXcli_tcon *tcon;
+	TALLOC_CTX *frame = talloc_stackframe();
 
 	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
 		tcon = cli->smb2.tcon;
@@ -488,5 +495,6 @@ SMBC_fstatvfs_ctx(SMBCCTX *context,
         st->f_flags = flags;
 #endif
 
+	TALLOC_FREE(frame);
         return 0;
 }
