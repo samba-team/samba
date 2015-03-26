@@ -1228,7 +1228,7 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 
 	if (password_utf8.length != 0) {
 		Key key = {};
-		krb5_const_principal salt_principal = principal;
+		krb5_const_principal salt_principal = entry_ex->entry.principal;
 		krb5_data salt;
 		krb5_data cleartext_data;
 
