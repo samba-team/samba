@@ -1338,6 +1338,9 @@ bool handle_smb_ports(struct loadparm_context *lp_ctx, struct loadparm_service *
 
 	if (parm_num == -1) {
 		parm_num = lpcfg_map_parameter("smb ports");
+		if (parm_num == -1) {
+			return false;
+		}
 	}
 
 	if(!set_variable_helper(lp_ctx->globals->ctx, parm_num, ptr, "smb ports",
