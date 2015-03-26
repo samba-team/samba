@@ -2467,7 +2467,7 @@ class KCC(object):
                         colours.append('red')
                     else:
                         colours.append('blue')
-                    dot_edges.append((dsa.dsa_dnstr, con.from_dnstr))
+                    dot_edges.append((con.from_dnstr, dsa.dsa_dnstr))
 
         verify_and_dot(basename, dot_edges, vertices=dot_vertices,
                        label=self.my_dsa_dnstr, properties=verify_properties,
@@ -2948,17 +2948,55 @@ def test_all_reps_from(lp, creds):
     kcc = KCC()
     kcc.load_samdb(opts.dburl, lp, creds)
     dsas = kcc.list_dsas()
-    needed_reps = []
-    current_reps = []
+    needed_parts = {}
+    current_parts = {}
+
+    guid_to_dnstr = {}
+    for site in kcc.site_table.values():
+        guid_to_dnstr.update((str(dsa.dsa_guid), dnstr)
+                             for dnstr, dsa in site.dsa_table.items())
+
+    dot_edges = []
+    dot_vertices = []
+    colours = []
+
     for dsa in dsas:
         kcc = KCC()
         kcc.run(opts.dburl, lp, creds, forced_local_dsa=dsa,
                 forget_local_links=opts.forget_local_links,
                 forget_intersite_links=opts.forget_intersite_links)
         current, needed = kcc.my_dsa.get_rep_tables()
-        print "current", current
-        print "needed", needed
 
+
+        for name, rep_table, rep_parts in (('needed', needed, needed_parts),
+                                           ('current', current, current_parts)):
+            for part, nc_rep in rep_table.items():
+                edges = rep_parts.setdefault(part, [])
+                for reps_from in nc_rep.rep_repsFrom:
+                    source = guid_to_dnstr[str(reps_from.source_dsa_obj_guid)]
+                    dest = guid_to_dnstr[str(nc_rep.rep_dsa_guid)]
+                    edges.append((source, dest))
+
+        for site in kcc.site_table.values():
+            for dsa in site.dsa_table.values():
+                dot_vertices.append(dsa.dsa_dnstr)
+                for con in dsa.connect_table.values():
+                    if con.is_rodc_topology():
+                        colours.append('red')
+                    else:
+                        colours.append('blue')
+                    dot_edges.append((con.from_dnstr, dsa.dsa_dnstr))
+
+    for name, rep_parts in (('needed', needed_parts), ('current', current_parts)):
+        for part, edges in rep_parts.items():
+            verify_and_dot('repsFrom_%s_all_%s' % (name, part), edges, directed=True, label=part,
+                           properties=(), debug=DEBUG, verify=opts.verify,
+                           dot_files=opts.dot_files)
+
+    verify_and_dot('all-dsa-connections', dot_edges, vertices=dot_vertices,
+                   label="all dsa NTDSConnections", properties=(),
+                   debug=DEBUG, verify=opts.verify, dot_files=opts.dot_files,
+                   directed=True, edge_colors=colours)
 
 
 logger = logging.getLogger("samba_kcc")
