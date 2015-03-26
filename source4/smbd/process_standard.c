@@ -49,7 +49,12 @@ static int child_pipe[2] = { -1, -1 };
 */
 static void standard_model_init(void)
 {
-	pipe(child_pipe);
+	int rc;
+
+	rc = pipe(child_pipe);
+	if (rc < 0) {
+		smb_panic("Failed to initialze pipe!");
+	}
 }
 
 /*
