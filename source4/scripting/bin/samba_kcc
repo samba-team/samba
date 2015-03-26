@@ -973,8 +973,7 @@ class KCC(object):
                 # if we already have a tuple for this connection then
                 # no need to proceed to add.  It will have been changed
                 # to have the correct attributes above
-                for i, t_repsFrom in enumerate(n_rep.rep_repsFrom):
-
+                for t_repsFrom in n_rep.rep_repsFrom:
                      guidstr = str(t_repsFrom.source_dsa_obj_guid)
                      if s_dsa is self.get_dsa_by_guidstr(guidstr):
                          s_dsa = None
