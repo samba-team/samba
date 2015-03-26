@@ -919,8 +919,8 @@ class KCC(object):
                 # Source dsa is gone from config (strange)
                 # so cleanup stale repsFrom for unlisted DSA
                 if s_dsa is None:
-                    logger.debug("repsFrom source DSA guid (%s) not found" %
-                                 guidstr)
+                    logger.warning("repsFrom source DSA guid (%s) not found" %
+                                   guidstr)
                     t_repsFrom.to_be_deleted = True
                     continue
 
