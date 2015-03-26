@@ -77,6 +77,11 @@ class KCC(object):
         self.site_table = {}
         self.transport_table = {}
         self.sitelink_table = {}
+        self.dsa_by_dnstr = {}
+        self.dsa_by_guid = {}
+
+        self.get_dsa_by_guidstr = self.dsa_by_guid.get
+        self.get_dsa = self.dsa_by_dnstr.get
 
         # TODO: These should be backed by a 'permanent' store so that when
         # calling DRSGetReplInfo with DS_REPL_INFO_KCC_DSA_CONNECT_FAILURES,
@@ -154,6 +159,24 @@ class KCC(object):
             # and index by dn
             self.sitelink_table[dnstr] = sitelink
 
+    def load_site(self, dn_str):
+        """Helper for load_my_site and load_all_sites. It puts all the site's
+        DSAs into the KCC indices.
+        """
+        site = Site(dn_str, unix_now)
+        site.load_site(self.samdb)
+
+        # I am not sure why, but we avoid replacing the site with an
+        # identical copy.
+        guid = str(site.site_guid)
+        if guid not in self.site_table:
+            self.site_table[guid] = site
+
+        self.dsa_by_dnstr.update(site.dsa_table)
+        self.dsa_by_guid.update((str(x.dsa_guid), x) for x in site.dsa_table.values())
+
+        return site
+
     def load_my_site(self):
         """Loads the Site class for the local DSA
 
@@ -162,11 +185,8 @@ class KCC(object):
         self.my_site_dnstr = "CN=%s,CN=Sites,%s" % (
                               self.samdb.server_site_name(),
                               self.samdb.get_config_basedn())
-        site = Site(self.my_site_dnstr, unix_now)
-        site.load_site(self.samdb)
 
-        self.site_table[str(site.site_guid)] = site
-        self.my_site = site
+        self.my_site = self.load_site(self.my_site_dnstr)
 
     def load_all_sites(self):
         """Discover all sites and instantiate and load each
@@ -184,15 +204,7 @@ class KCC(object):
 
         for msg in res:
             sitestr = str(msg.dn)
-
-            site = Site(sitestr, unix_now)
-            site.load_site(self.samdb)
-
-            # already loaded
-            if str(site.site_guid) in self.site_table:
-                continue
-
-            self.site_table[str(site.site_guid)] = site
+            self.load_site(sitestr)
 
     def load_my_dsa(self):
         """Discover my nTDSDSA dn thru the rootDSE entry
@@ -511,26 +523,6 @@ class KCC(object):
         else:
             # Commit any modified connections
             mydsa.commit_connections(self.samdb)
-
-    def get_dsa_by_guidstr(self, guidstr):
-        """Given a DSA guid string, consule all sites looking
-        for the corresponding DSA and return it.
-        """
-        for site in self.site_table.values():
-            dsa = site.get_dsa_by_guidstr(guidstr)
-            if dsa is not None:
-                return dsa
-        return None
-
-    def get_dsa(self, dnstr):
-        """Given a DSA dn string, consule all sites looking
-        for the corresponding DSA and return it.
-        """
-        for site in self.site_table.values():
-            dsa = site.get_dsa(dnstr)
-            if dsa is not None:
-                return dsa
-        return None
 
     def modify_repsFrom(self, n_rep, t_repsFrom, s_rep, s_dsa, cn_conn):
         """Part of MS-ADTS 6.2.2.5.
