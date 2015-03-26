@@ -500,6 +500,27 @@ void torture_result(struct torture_context *test,
 	}\
 	} while(0)
 
+#define torture_assert_not_null(torture_ctx,got,cmt)\
+	do { void *__got = (got); \
+	if (__got == NULL) { \
+		torture_result(torture_ctx, TORTURE_FAIL, \
+			__location__": "#got" was NULL, expected != NULL: %s", \
+			cmt); \
+		return false; \
+	} \
+	} while(0)
+
+#define torture_assert_not_null_goto(torture_ctx,got,ret,label,cmt)\
+	do { void *__got = (got); \
+	if (__got == NULL) { \
+		torture_result(torture_ctx, TORTURE_FAIL, \
+			__location__": "#got" was NULL, expected != NULL: %s", \
+			cmt); \
+		ret = false; \
+		goto label; \
+	} \
+	} while(0)
+
 #define torture_skip(torture_ctx,cmt) do {\
 		torture_result(torture_ctx, TORTURE_SKIP, __location__": %s", cmt);\
 		return true; \
