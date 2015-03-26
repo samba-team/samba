@@ -1946,7 +1946,7 @@ static bool test_notify_alignment(struct torture_context *tctx,
 	io.ntcreatex.in.fname = BASEDIR;
 
 	status = smb_raw_open(cli->tree, tctx, &io);
-	torture_assert_ntstatus_ok(tctx, status, "");
+	torture_assert_ntstatus_ok(tctx, status, "smb_raw_open");
 	fnum = io.ntcreatex.out.file.fnum;
 
 	/* ask for a change notify, on file creation */
@@ -1964,7 +1964,7 @@ static bool test_notify_alignment(struct torture_context *tctx,
 	smbcli_close(cli->tree, fnum2);
 
 	status = smb_raw_changenotify_recv(req, tctx, &notify);
-	torture_assert_ntstatus_ok(tctx, status, "");
+	torture_assert_ntstatus_ok(tctx, status, "smb_raw_changenotify_recv");
 
 	/* create 4 files that will cause CHANGE_NOTIFY_INFO structures
 	 * to be returned in the same packet with all possible 4-byte padding
@@ -1984,7 +1984,7 @@ static bool test_notify_alignment(struct torture_context *tctx,
 	 * the alignment checking for us. */
 	req = smb_raw_changenotify_send(cli->tree, &notify);
 	status = smb_raw_changenotify_recv(req, tctx, &notify);
-	torture_assert_ntstatus_ok(tctx, status, "");
+	torture_assert_ntstatus_ok(tctx, status, "smb_raw_changenotify_recv");
 
 	/* Do basic checking for correctness. */
 	torture_assert(tctx, notify.nttrans.out.num_changes == num_names, "");
