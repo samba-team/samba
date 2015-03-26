@@ -29,11 +29,10 @@
 
 #define CHECK_WSTR(tctx, field, value, flags) \
 do { \
-	if (!field.s || strcmp(field.s, value) || \
-	    wire_bad_flags(&field, flags, cli->transport)) { \
-		torture_result(tctx, TORTURE_FAIL, \
-		    "(%d) %s [%s] != %s\n",  __LINE__, #field, field.s, value); \
-	} \
+	torture_assert_str_equal(tctx, field.s, value, "values don't match"); \
+	torture_assert(tctx, \
+		       !wire_bad_flags(&field, STR_UNICODE, cli->transport), \
+		       "wire_bad_flags"); \
 } while (0)
 
 /* 
