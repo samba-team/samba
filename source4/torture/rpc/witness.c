@@ -25,6 +25,7 @@
 #include "librpc/gen_ndr/ndr_srvsvc_c.h"
 #include "librpc/gen_ndr/ndr_clusapi_c.h"
 #include "param/param.h"
+#include <tevent.h>
 
 struct torture_test_clusapi_state {
 	struct dcerpc_pipe *p;
@@ -623,10 +624,6 @@ static bool toggle_cluster_resource_state(struct torture_context *tctx,
 	return true;
 }
 
-/* for this test to run, we need to have some basic clusapi client support
- * first, so that we can programmatically change something in the cluster and
- * then receive async notifications - Guenther */
-
 static bool test_witness_AsyncNotify(struct torture_context *tctx,
 				     struct dcerpc_pipe *p,
 				     void *data)
@@ -638,8 +635,6 @@ static bool test_witness_AsyncNotify(struct torture_context *tctx,
 		(struct torture_test_witness_state *)data;
 	int i;
 
-	torture_skip(tctx, "skipping witness_AsyncNotify test");
-
 	init_witness_test_state(tctx, p, state);
 
 	setup_clusapi_connection(tctx, state);
@@ -649,6 +644,7 @@ static bool test_witness_AsyncNotify(struct torture_context *tctx,
 		const char *ip_address;
 		struct witness_interfaceInfo interface = state->list->interfaces[i];
 		struct witness_Register reg;
+		struct tevent_req *req;
 
 		if (!check_valid_interface(tctx, &interface)) {
 			continue;
@@ -675,9 +671,20 @@ static bool test_witness_AsyncNotify(struct torture_context *tctx,
 		r.in.context_handle = state->context_handle;
 		r.out.response = &response;
 
+		req = dcerpc_witness_AsyncNotify_r_send(tctx, tctx->ev, b, &r);
+		torture_assert(tctx, req, "failed to create request");
+
+		torture_assert(tctx,
+			toggle_cluster_resource_state(tctx, state->clusapi.p, state->net_name),
+			"failed to toggle cluster resource state");
+
+		torture_assert(tctx,
+			tevent_req_poll(req, tctx->ev),
+			"failed to call event loop");
+
 		torture_assert_ntstatus_ok(tctx,
-			dcerpc_witness_AsyncNotify_r(b, tctx, &r),
-			"AsyncNotify failed");
+			dcerpc_witness_AsyncNotify_r_recv(req, tctx),
+			"failed to receive reply");
 
 		torture_assert(tctx,
 			test_witness_UnRegister_with_handle(tctx, p, &state->context_handle),
