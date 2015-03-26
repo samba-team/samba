@@ -45,6 +45,7 @@
 #include "rpc_server/svcctl/srv_svcctl_reg.h"
 #include "rpc_server/spoolss/srv_spoolss_nt.h"
 #include "rpc_server/svcctl/srv_svcctl_nt.h"
+#include "rpc_server/mdssvc/srv_mdssvc_nt.h"
 
 #include "librpc/rpc/dcerpc_ep.h"
 #include "rpc_server/rpc_sock_helper.h"
@@ -445,18 +446,44 @@ static bool rpc_setup_initshutdown(struct tevent_context *ev_ctx,
 }
 
 #ifdef WITH_SPOTLIGHT
+static bool mdssvc_init_cb(void *ptr)
+{
+	struct messaging_context *msg_ctx =
+		talloc_get_type_abort(ptr, struct messaging_context);
+	bool ok;
+
+	ok = init_service_mdssvc(msg_ctx);
+	if (!ok) {
+		return false;
+	}
+
+	return true;
+}
+
+static bool mdssvc_shutdown_cb(void *ptr)
+{
+	shutdown_service_mdssvc();
+
+	return true;
+}
+
 static bool rpc_setup_mdssvc(struct tevent_context *ev_ctx,
 			     struct messaging_context *msg_ctx)
 {
 	const struct ndr_interface_table *t = &ndr_table_mdssvc;
 	const char *pipe_name = "mdssvc";
+	struct rpc_srv_callbacks mdssvc_cb;
 	NTSTATUS status;
 	enum rpc_service_mode_e service_mode = rpc_service_mode(t->name);
 	if (service_mode != RPC_SERVICE_MODE_EMBEDDED) {
 		return true;
 	}
 
-	status = rpc_mdssvc_init(NULL);
+	mdssvc_cb.init         = mdssvc_init_cb;
+	mdssvc_cb.shutdown     = mdssvc_shutdown_cb;
+	mdssvc_cb.private_data = msg_ctx;
+
+	status = rpc_mdssvc_init(&mdssvc_cb);
 	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}
