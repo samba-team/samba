@@ -515,7 +515,12 @@ int32_t ctdb_control_get_ifaces(struct ctdb_context *ctdb,
 
 	i = 0;
 	for (cur=ctdb->ifaces;cur;cur=cur->next) {
-		strcpy(ifaces->ifaces[i].name, cur->name);
+		size_t nlen = strlcpy(ifaces->ifaces[i].name, cur->name,
+				      sizeof(ifaces->ifaces[i].name));
+		if (nlen >= sizeof(ifaces->ifaces[i].name)) {
+			/* Ignore invalid name */
+			continue;
+		}
 		ifaces->ifaces[i].link_state = cur->link_up;
 		ifaces->ifaces[i].references = cur->references;
 		i++;
