@@ -431,7 +431,7 @@ static void ctdb_test_init(const char nodestates[],
 	while (tok != NULL) {
 		nodeflags[numnodes] = (uint32_t) strtol(tok, NULL, 0);
 		numnodes++;
-		if (numnodes > CTDB_TEST_MAX_NODES) {
+		if (numnodes >= CTDB_TEST_MAX_NODES) {
 			DEBUG(DEBUG_ERR, ("ERROR: Exceeding CTDB_TEST_MAX_NODES: %d\n", CTDB_TEST_MAX_NODES));
 			exit(1);
 		}
