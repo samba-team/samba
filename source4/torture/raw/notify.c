@@ -52,10 +52,9 @@ static bool test_notify_dir(struct torture_context *mem_ctx,
 	extern int torture_numops;
 
 	printf("TESTING CHANGE NOTIFY ON DIRECTORIES\n");
-		
-	if (!torture_setup_dir(cli, BASEDIR)) {
-		return false;
-	}
+
+	torture_assert(mem_ctx, torture_setup_dir(cli, BASEDIR),
+		       "Failed to setup up test directory: " BASEDIR);
 
 	/*
 	  get a handle on the directory
@@ -368,10 +367,9 @@ static bool test_notify_recursive(struct torture_context *mem_ctx,
 	struct smbcli_request *req1, *req2;
 
 	printf("TESTING CHANGE NOTIFY WITH RECURSION\n");
-		
-	if (!torture_setup_dir(cli, BASEDIR)) {
-		return false;
-	}
+
+	torture_assert(mem_ctx, torture_setup_dir(cli, BASEDIR),
+		       "Failed to setup up test directory: " BASEDIR);
 
 	/*
 	  get a handle on the directory
@@ -555,9 +553,8 @@ static bool test_notify_mask_change(struct torture_context *mem_ctx,
 
 	printf("TESTING CHANGE NOTIFY WITH MASK CHANGE\n");
 
-	if (!torture_setup_dir(cli, BASEDIR)) {
-		return false;
-	}
+	torture_assert(mem_ctx, torture_setup_dir(cli, BASEDIR),
+		       "Failed to setup up test directory: " BASEDIR);
 
 	/*
 	  get a handle on the directory
@@ -710,9 +707,8 @@ static bool test_notify_mask(struct torture_context *tctx,
 
 	printf("TESTING CHANGE NOTIFY COMPLETION FILTERS\n");
 
-	if (!torture_setup_dir(cli, BASEDIR)) {
-		return false;
-	}
+	torture_assert(tctx, torture_setup_dir(cli, BASEDIR),
+		       "Failed to setup up test directory: " BASEDIR);
 
 	tv = timeval_current_ofs(1000, 0);
 	t = timeval_to_nttime(&tv);
@@ -954,9 +950,8 @@ static bool test_notify_file(struct torture_context *mem_ctx,
 
 	printf("TESTING CHANGE NOTIFY ON FILES\n");
 
-	if (!torture_setup_dir(cli, BASEDIR)) {
-		return false;
-	}
+	torture_assert(mem_ctx, torture_setup_dir(cli, BASEDIR),
+		       "Failed to setup up test directory: " BASEDIR);
 
 	io.generic.level = RAW_OPEN_NTCREATEX;
 	io.ntcreatex.in.root_fid.fnum = 0;
@@ -1025,9 +1020,8 @@ static bool test_notify_tdis(struct torture_context *tctx,
 
 	printf("TESTING CHANGE NOTIFY FOLLOWED BY TDIS\n");
 
-	if (!torture_setup_dir(cli1, BASEDIR)) {
-		return false;
-	}
+	torture_assert(tctx, torture_setup_dir(cli1, BASEDIR),
+		       "Failed to setup up test directory: " BASEDIR);
 
 	if (!torture_open_connection(&cli, tctx, 0)) {
 		return false;
@@ -1097,9 +1091,8 @@ static bool test_notify_exit(struct torture_context *tctx,
 
 	printf("TESTING CHANGE NOTIFY FOLLOWED BY EXIT\n");
 
-	if (!torture_setup_dir(cli1, BASEDIR)) {
-		return false;
-	}
+	torture_assert(tctx, torture_setup_dir(cli1, BASEDIR),
+		       "Failed to setup up test directory: " BASEDIR);
 
 	if (!torture_open_connection(&cli, tctx, 0)) {
 		return false;
@@ -1168,9 +1161,8 @@ static bool test_notify_ulogoff(struct torture_context *tctx,
 
 	printf("TESTING CHANGE NOTIFY FOLLOWED BY ULOGOFF\n");
 
-	if (!torture_setup_dir(cli1, BASEDIR)) {
-		return false;
-	}
+	torture_assert(tctx, torture_setup_dir(cli1, BASEDIR),
+		       "Failed to setup up test directory: " BASEDIR);
 
 	if (!torture_open_connection(&cli, tctx, 0)) {
 		return false;
@@ -1246,9 +1238,8 @@ static bool test_notify_tcp_dis(struct torture_context *tctx,
 
 	printf("TESTING CHANGE NOTIFY FOLLOWED BY TCP DISCONNECT\n");
 
-	if (!torture_setup_dir(cli1, BASEDIR)) {
-		return false;
-	}
+	torture_assert(tctx, torture_setup_dir(cli1, BASEDIR),
+		       "Failed to setup up test directory: " BASEDIR);
 
 	if (!torture_open_connection(&cli, tctx, 0)) {
 		return false;
@@ -1313,10 +1304,10 @@ static bool test_notify_double(struct torture_context *mem_ctx,
 	struct smbcli_request *req1, *req2;
 
 	printf("TESTING CHANGE NOTIFY TWICE ON ONE DIRECTORY\n");
-		
-	if (!torture_setup_dir(cli, BASEDIR)) {
-		return false;
-	}
+
+	torture_assert(mem_ctx, torture_setup_dir(cli, BASEDIR),
+		       "Failed to setup up test directory: " BASEDIR);
+
 	/*
 	  get a handle on the directory
 	*/
@@ -1423,9 +1414,8 @@ static bool test_notify_tree(struct torture_context *mem_ctx,
 
 	printf("TESTING CHANGE NOTIFY FOR DIFFERENT DEPTHS\n");
 
-	if (!torture_setup_dir(cli, BASEDIR)) {
-		return false;
-	}
+	torture_assert(mem_ctx, torture_setup_dir(cli, BASEDIR),
+		       "Failed to setup up test directory: " BASEDIR);
 
 	io.generic.level = RAW_OPEN_NTCREATEX;
 	io.ntcreatex.in.root_fid.fnum = 0;
@@ -1542,9 +1532,8 @@ static bool test_notify_overflow(struct torture_context *mem_ctx,
 
 	printf("TESTING CHANGE NOTIFY EVENT OVERFLOW\n");
 
-	if (!torture_setup_dir(cli, BASEDIR)) {
-		return false;
-	}
+	torture_assert(mem_ctx, torture_setup_dir(cli, BASEDIR),
+		       "Failed to setup up test directory: " BASEDIR);
 
 	/* get a handle on the directory */
 	io.generic.level = RAW_OPEN_NTCREATEX;
@@ -1630,9 +1619,8 @@ static bool test_notify_basedir(struct torture_context *mem_ctx,
 
 	printf("TESTING CHANGE NOTIFY BASEDIR EVENTS\n");
 
-	if (!torture_setup_dir(cli, BASEDIR)) {
-		return false;
-	}
+	torture_assert(mem_ctx, torture_setup_dir(cli, BASEDIR),
+		       "Failed to setup up test directory: " BASEDIR);
 
 	/* get a handle on the directory */
 	io.generic.level = RAW_OPEN_NTCREATEX;
@@ -1747,10 +1735,9 @@ static bool test_notify_tcon(struct torture_context *torture,
 	struct smbcli_tree *tree = NULL;
 		
 	printf("TESTING SIMPLE CHANGE NOTIFY\n");
-		
-	if (!torture_setup_dir(cli, BASEDIR)) {
-		return false;
-	}
+
+	torture_assert(torture, torture_setup_dir(cli, BASEDIR),
+		       "Failed to setup up test directory: " BASEDIR);
 
 	/*
 	  get a handle on the directory
@@ -1926,9 +1913,8 @@ static bool test_notify_alignment(struct torture_context *tctx,
 
 	torture_comment(tctx, "TESTING CHANGE NOTIFY REPLY ALIGNMENT\n");
 
-	if (!torture_setup_dir(cli, BASEDIR)) {
-		return false;
-	}
+	torture_assert(tctx, torture_setup_dir(cli, BASEDIR),
+		       "Failed to setup up test directory: " BASEDIR);
 
 	/* get a handle on the directory */
 	io.generic.level = RAW_OPEN_NTCREATEX;
