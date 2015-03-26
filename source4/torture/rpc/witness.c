@@ -23,13 +23,19 @@
 #include "torture/rpc/torture_rpc.h"
 #include "librpc/gen_ndr/ndr_witness_c.h"
 #include "librpc/gen_ndr/ndr_srvsvc_c.h"
+#include "librpc/gen_ndr/ndr_clusapi_c.h"
 #include "param/param.h"
+
+struct torture_test_clusapi_state {
+	struct dcerpc_pipe *p;
+};
 
 struct torture_test_witness_state {
 	const char *net_name;
 	const char *share_name;
 	struct witness_interfaceList *list;
 	struct policy_handle context_handle;
+	struct torture_test_clusapi_state clusapi;
 };
 
 static bool test_witness_GetInterfaceList(struct torture_context *tctx,
@@ -506,6 +512,47 @@ static bool test_witness_RegisterEx(struct torture_context *tctx,
 	return true;
 }
 
+static bool setup_clusapi_connection(struct torture_context *tctx,
+				     struct torture_test_witness_state *s)
+{
+	if (s->clusapi.p) {
+		return true;
+	}
+
+	torture_assert_ntstatus_ok(tctx,
+		torture_rpc_connection_transport(tctx, &s->clusapi.p, &ndr_table_clusapi, NCACN_IP_TCP, 0),
+		"failed to connect to clusapi");
+
+	return true;
+}
+
+#if 0
+static bool cluster_get_nodes(struct torture_context *tctx,
+			      struct torture_test_witness_state *s)
+{
+	struct clusapi_CreateEnum r;
+	struct ENUM_LIST *ReturnEnum;
+	WERROR rpc_status;
+	struct dcerpc_binding_handle *b;
+
+	torture_assert(tctx,
+		setup_clusapi_connection(tctx, s),
+		"failed to setup clusapi connection");
+
+	b = s->clusapi.p->binding_handle;
+
+	r.in.dwType = CLUSTER_ENUM_NODE;
+	r.out.ReturnEnum = &ReturnEnum;
+	r.out.rpc_status = &rpc_status;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_CreateEnum_r(b, tctx, &r),
+		"failed to enumerate nodes");
+
+	return true;
+}
+#endif
+
 /* for this test to run, we need to have some basic clusapi client support
  * first, so that we can programmatically change something in the cluster and
  * then receive async notifications - Guenther */
@@ -524,6 +571,8 @@ static bool test_witness_AsyncNotify(struct torture_context *tctx,
 	torture_skip(tctx, "skipping witness_AsyncNotify test");
 
 	init_witness_test_state(tctx, p, state);
+
+	setup_clusapi_connection(tctx, state);
 
 	for (i=0; state->list && i < state->list->num_interfaces; i++) {
 
