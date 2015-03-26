@@ -1308,6 +1308,7 @@ class KCC(object):
         """
         rbhs_all = self.get_all_bridgeheads(rsite, part, transport,
                                             partial_ok, False)
+        rbh_table = {x.dsa_dnstr:x for x in rbhs_all}
 
         DEBUG_GREY("rbhs_all: %s %s" % (len(rbhs_all), [x.dsa_dnstr for x in rbhs_all]))
 
@@ -1329,14 +1330,8 @@ class KCC(object):
         for ldsa in lbhs_all:
             for cn in ldsa.connect_table.values():
 
-                rdsa = None
-                found = False
-                for rdsa in rbhs_all:
-                    if cn.from_dnstr == rdsa.dsa_dnstr:
-                        found = True
-                        break
-
-                if rdsa is None or not found:
+                rdsa = rbh_table.get(cn.from_dnstr)
+                if rdsa is None:
                     continue
 
                 DEBUG_DARK_YELLOW("rdsa is %s" % rdsa.dsa_dnstr)
@@ -1454,14 +1449,8 @@ class KCC(object):
         for ldsa in lbhs_all:
             for cn in ldsa.connect_table.values():
 
-                rdsa = None
-                found = False
-                for rdsa in rbhs_all:
-                    if cn.from_dnstr == rdsa.dsa_dnstr:
-                        found = True
-                        break
-
-                if rdsa is None or not found:
+                rdsa = rbh_table.get(cn.from_dnstr)
+                if rdsa is None:
                     continue
 
                 DEBUG_DARK_YELLOW("round 2: rdsa is %s" % rdsa.dsa_dnstr)
