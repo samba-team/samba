@@ -27,14 +27,7 @@
 
 #define BASEDIR "\\test_notify"
 
-#define CHECK_WSTR(field, value, flags) do { \
-	if (!field.s || strcmp(field.s, value) || wire_bad_flags(&field, flags, cli->transport)) { \
-		printf("(%d) %s [%s] != %s\n",  __LINE__, #field, field.s, value); \
-			ret = false; \
-		goto done; \
-	}} while (0)
-
-#define CHECK_WSTR2(tctx, field, value, flags) \
+#define CHECK_WSTR(tctx, field, value, flags) \
 do { \
 	if (!field.s || strcmp(field.s, value) || \
 	    wire_bad_flags(&field, flags, cli->transport)) { \
@@ -123,7 +116,8 @@ static bool test_notify_dir(struct torture_context *mem_ctx,
 				      notify.nttrans.out.changes[0].action,
 				      NOTIFY_ACTION_ADDED, ret, done,
 				      "wrong action (exp: ADDED)");
-	CHECK_WSTR(notify.nttrans.out.changes[0].name, "subdir-name", STR_UNICODE);
+	CHECK_WSTR(mem_ctx, notify.nttrans.out.changes[0].name, "subdir-name",
+		   STR_UNICODE);
 
 	printf("Testing notify rmdir\n");
 
@@ -139,7 +133,8 @@ static bool test_notify_dir(struct torture_context *mem_ctx,
 				      notify.nttrans.out.changes[0].action,
 				      NOTIFY_ACTION_REMOVED, ret, done,
 				      "wrong action (exp: REMOVED)");
-	CHECK_WSTR(notify.nttrans.out.changes[0].name, "subdir-name", STR_UNICODE);
+	CHECK_WSTR(mem_ctx, notify.nttrans.out.changes[0].name, "subdir-name",
+		   STR_UNICODE);
 
 	printf("Testing notify mkdir - rmdir - mkdir - rmdir\n");
 
@@ -158,22 +153,26 @@ static bool test_notify_dir(struct torture_context *mem_ctx,
 				      notify.nttrans.out.changes[0].action,
 				      NOTIFY_ACTION_ADDED, ret, done,
 				      "wrong action (exp: ADDED)");
-	CHECK_WSTR(notify.nttrans.out.changes[0].name, "subdir-name", STR_UNICODE);
+	CHECK_WSTR(mem_ctx, notify.nttrans.out.changes[0].name, "subdir-name",
+		   STR_UNICODE);
 	torture_assert_int_equal_goto(mem_ctx,
 				      notify.nttrans.out.changes[1].action,
 				      NOTIFY_ACTION_REMOVED, ret, done,
 				      "wrong action (exp: REMOVED)");
-	CHECK_WSTR(notify.nttrans.out.changes[1].name, "subdir-name", STR_UNICODE);
+	CHECK_WSTR(mem_ctx, notify.nttrans.out.changes[1].name, "subdir-name",
+		   STR_UNICODE);
 	torture_assert_int_equal_goto(mem_ctx,
 				      notify.nttrans.out.changes[2].action,
 				      NOTIFY_ACTION_ADDED, ret, done,
 				      "wrong action (exp: ADDED)");
-	CHECK_WSTR(notify.nttrans.out.changes[2].name, "subdir-name", STR_UNICODE);
+	CHECK_WSTR(mem_ctx, notify.nttrans.out.changes[2].name, "subdir-name",
+		   STR_UNICODE);
 	torture_assert_int_equal_goto(mem_ctx,
 				      notify.nttrans.out.changes[3].action,
 				      NOTIFY_ACTION_REMOVED, ret, done,
 				      "wrong action (exp: REMOVED)");
-	CHECK_WSTR(notify.nttrans.out.changes[3].name, "subdir-name", STR_UNICODE);
+	CHECK_WSTR(mem_ctx, notify.nttrans.out.changes[3].name, "subdir-name",
+		   STR_UNICODE);
 
 	count = torture_numops;
 	printf("Testing buffered notify on create of %d files\n", count);
@@ -228,7 +227,8 @@ static bool test_notify_dir(struct torture_context *mem_ctx,
 					NOTIFY_ACTION_ADDED, ret, done,
 					"wrong action (exp: ADDED)");
 	}
-	CHECK_WSTR(notify.nttrans.out.changes[0].name, "test0.txt", STR_UNICODE);
+	CHECK_WSTR(mem_ctx, notify.nttrans.out.changes[0].name, "test0.txt",
+		   STR_UNICODE);
 
 	printf("and now from the 1st notify\n");
 	status = smb_raw_changenotify_recv(req2, mem_ctx, &notify);
@@ -240,7 +240,8 @@ static bool test_notify_dir(struct torture_context *mem_ctx,
 				      notify.nttrans.out.changes[0].action,
 				      NOTIFY_ACTION_REMOVED, ret, done,
 				      "wrong action (exp: REMOVED)");
-	CHECK_WSTR(notify.nttrans.out.changes[0].name, "test0.txt", STR_UNICODE);
+	CHECK_WSTR(mem_ctx, notify.nttrans.out.changes[0].name, "test0.txt",
+		   STR_UNICODE);
 
 	printf("(3rd notify) this notify will only see the 1st unlink\n");
 	req = smb_raw_changenotify_send(cli->tree, &notify);
@@ -267,7 +268,8 @@ static bool test_notify_dir(struct torture_context *mem_ctx,
 				      notify.nttrans.out.changes[0].action,
 				      NOTIFY_ACTION_REMOVED, ret, done,
 				      "wrong action (exp: REMOVED)");
-	CHECK_WSTR(notify.nttrans.out.changes[0].name, "test0.txt", STR_UNICODE);
+	CHECK_WSTR(mem_ctx, notify.nttrans.out.changes[0].name, "test0.txt",
+		   STR_UNICODE);
 
 	/* and we now see the rest of the unlink calls on both directory handles */
 	notify.nttrans.in.file.fnum = fnum;
@@ -461,27 +463,32 @@ static bool test_notify_recursive(struct torture_context *mem_ctx,
 				      notify.nttrans.out.changes[0].action,
 				      NOTIFY_ACTION_ADDED, ret, done,
 				      "wrong action (exp: ADDED)");
-	CHECK_WSTR(notify.nttrans.out.changes[0].name, "subdir-name", STR_UNICODE);
+	CHECK_WSTR(mem_ctx, notify.nttrans.out.changes[0].name, "subdir-name",
+		   STR_UNICODE);
 	torture_assert_int_equal_goto(mem_ctx,
 				      notify.nttrans.out.changes[1].action,
 				      NOTIFY_ACTION_ADDED, ret, done,
 				      "wrong action (exp: ADDED)");
-	CHECK_WSTR(notify.nttrans.out.changes[1].name, "subdir-name\\subname1", STR_UNICODE);
+	CHECK_WSTR(mem_ctx, notify.nttrans.out.changes[1].name,
+		   "subdir-name\\subname1", STR_UNICODE);
 	torture_assert_int_equal_goto(mem_ctx,
 				      notify.nttrans.out.changes[2].action,
 				      NOTIFY_ACTION_ADDED, ret, done,
 				      "wrong action (exp: ADDED)");
-	CHECK_WSTR(notify.nttrans.out.changes[2].name, "subdir-name\\subname2", STR_UNICODE);
+	CHECK_WSTR(mem_ctx, notify.nttrans.out.changes[2].name,
+		   "subdir-name\\subname2", STR_UNICODE);
 	torture_assert_int_equal_goto(mem_ctx,
 				      notify.nttrans.out.changes[3].action,
 				      NOTIFY_ACTION_OLD_NAME, ret, done,
 				      "wrong action (exp: OLD_NAME)");
-	CHECK_WSTR(notify.nttrans.out.changes[3].name, "subdir-name\\subname1", STR_UNICODE);
+	CHECK_WSTR(mem_ctx, notify.nttrans.out.changes[3].name,
+		   "subdir-name\\subname1", STR_UNICODE);
 	torture_assert_int_equal_goto(mem_ctx,
 				      notify.nttrans.out.changes[4].action,
 				      NOTIFY_ACTION_NEW_NAME, ret, done,
 				      "wrong action (exp: NEW_NAME)");
-	CHECK_WSTR(notify.nttrans.out.changes[4].name, "subdir-name\\subname1-r", STR_UNICODE);
+	CHECK_WSTR(mem_ctx, notify.nttrans.out.changes[4].name,
+		   "subdir-name\\subname1-r", STR_UNICODE);
 
 	ret &= check_rename_reply(
 		cli, __LINE__, &notify.nttrans.out.changes[5],
@@ -517,17 +524,20 @@ static bool test_notify_recursive(struct torture_context *mem_ctx,
 				      notify.nttrans.out.changes[0].action,
 				      NOTIFY_ACTION_REMOVED, ret, done,
 				      "wrong action (exp: REMOVED)");
-	CHECK_WSTR(notify.nttrans.out.changes[0].name, "subdir-name\\subname1-r", STR_UNICODE);
+	CHECK_WSTR(mem_ctx, notify.nttrans.out.changes[0].name,
+		   "subdir-name\\subname1-r", STR_UNICODE);
 	torture_assert_int_equal_goto(mem_ctx,
 				      notify.nttrans.out.changes[1].action,
 				      NOTIFY_ACTION_REMOVED, ret, done,
 				      "wrong action (exp: REMOVED)");
-	CHECK_WSTR(notify.nttrans.out.changes[1].name, "subdir-name", STR_UNICODE);
+	CHECK_WSTR(mem_ctx, notify.nttrans.out.changes[1].name, "subdir-name",
+		   STR_UNICODE);
 	torture_assert_int_equal_goto(mem_ctx,
 				      notify.nttrans.out.changes[2].action,
 				      NOTIFY_ACTION_REMOVED, ret, done,
 				      "wrong action (exp: REMOVED)");
-	CHECK_WSTR(notify.nttrans.out.changes[2].name, "subname3-r", STR_UNICODE);
+	CHECK_WSTR(mem_ctx, notify.nttrans.out.changes[2].name, "subname3-r",
+		   STR_UNICODE);
 
 done:
 	smb_raw_exit(cli->session);
@@ -621,7 +631,8 @@ static bool test_notify_mask_change(struct torture_context *mem_ctx,
 				      notify.nttrans.out.changes[0].action,
 				      NOTIFY_ACTION_MODIFIED, ret, done,
 				      "wrong action (exp: MODIFIED)");
-	CHECK_WSTR(notify.nttrans.out.changes[0].name, "tname1", STR_UNICODE);
+	CHECK_WSTR(mem_ctx, notify.nttrans.out.changes[0].name, "tname1",
+		   STR_UNICODE);
 
 	/* Now try and change the mask to include other events.
 	 * This should not work - once the mask is set on a directory
@@ -656,7 +667,8 @@ static bool test_notify_mask_change(struct torture_context *mem_ctx,
 				      notify.nttrans.out.changes[0].action,
 				      NOTIFY_ACTION_MODIFIED, ret, done,
 				      "wrong action (exp: MODIFIED)");
-	CHECK_WSTR(notify.nttrans.out.changes[0].name, "subname2-r", STR_UNICODE);
+	CHECK_WSTR(mem_ctx, notify.nttrans.out.changes[0].name, "subname2-r",
+		   STR_UNICODE);
 
 	status = smb_raw_changenotify_recv(req2, mem_ctx, &notify);
 	torture_assert_ntstatus_ok_goto(mem_ctx, status, ret, done,
@@ -668,7 +680,8 @@ static bool test_notify_mask_change(struct torture_context *mem_ctx,
 				      notify.nttrans.out.changes[0].action,
 				      NOTIFY_ACTION_MODIFIED, ret, done,
 				      "wrong action (exp: MODIFIED)");
-	CHECK_WSTR(notify.nttrans.out.changes[0].name, "subname3-r", STR_UNICODE);
+	CHECK_WSTR(mem_ctx, notify.nttrans.out.changes[0].name, "subname3-r",
+		   STR_UNICODE);
 
 	if (!ret) {
 		goto done;
@@ -1348,7 +1361,8 @@ static bool test_notify_double(struct torture_context *mem_ctx,
 					"smb_raw_changenotify_recv");
 	torture_assert_int_equal_goto(mem_ctx, notify.nttrans.out.num_changes,
 				      1, ret, done, "wrong number of changes");
-	CHECK_WSTR(notify.nttrans.out.changes[0].name, "subdir-name", STR_UNICODE);
+	CHECK_WSTR(mem_ctx, notify.nttrans.out.changes[0].name, "subdir-name",
+		   STR_UNICODE);
 
 	smbcli_mkdir(cli->tree, BASEDIR "\\subdir-name2");
 
@@ -1357,7 +1371,8 @@ static bool test_notify_double(struct torture_context *mem_ctx,
 					"smb_raw_changenotify_recv");
 	torture_assert_int_equal_goto(mem_ctx, notify.nttrans.out.num_changes,
 				      1, ret, done, "wrong number of changes");
-	CHECK_WSTR(notify.nttrans.out.changes[0].name, "subdir-name2", STR_UNICODE);
+	CHECK_WSTR(mem_ctx, notify.nttrans.out.changes[0].name, "subdir-name2",
+		   STR_UNICODE);
 
 done:
 	smb_raw_exit(cli->session);
@@ -1674,7 +1689,8 @@ static bool test_notify_basedir(struct torture_context *mem_ctx,
 				      notify.nttrans.out.changes[0].action,
 				      NOTIFY_ACTION_MODIFIED, ret, done,
 				      "wrong action (exp: MODIFIED)");
-	CHECK_WSTR(notify.nttrans.out.changes[0].name, "tname1", STR_UNICODE);
+	CHECK_WSTR(mem_ctx, notify.nttrans.out.changes[0].name, "tname1",
+		   STR_UNICODE);
 
 done:
 	smb_raw_exit(cli->session);
@@ -1788,7 +1804,8 @@ static bool test_notify_tcon(struct torture_context *torture,
 				      notify.nttrans.out.changes[0].action,
 				      NOTIFY_ACTION_ADDED, ret, done,
 				      "wrong action (exp: ADDED)");
-	CHECK_WSTR(notify.nttrans.out.changes[0].name, "subdir-name", STR_UNICODE);
+	CHECK_WSTR(torture, notify.nttrans.out.changes[0].name, "subdir-name",
+		   STR_UNICODE);
 
 	printf("Testing notify rmdir\n");
 	req = smb_raw_changenotify_send(cli->tree, &notify);
@@ -1803,7 +1820,8 @@ static bool test_notify_tcon(struct torture_context *torture,
 				      notify.nttrans.out.changes[0].action,
 				      NOTIFY_ACTION_REMOVED, ret, done,
 				      "wrong action (exp: REMOVED)");
-	CHECK_WSTR(notify.nttrans.out.changes[0].name, "subdir-name", STR_UNICODE);
+	CHECK_WSTR(torture, notify.nttrans.out.changes[0].name, "subdir-name",
+		   STR_UNICODE);
 
 	printf("SIMPLE CHANGE NOTIFY OK\n");
 
@@ -1824,7 +1842,8 @@ static bool test_notify_tcon(struct torture_context *torture,
 				      notify.nttrans.out.changes[0].action,
 				      NOTIFY_ACTION_ADDED, ret, done,
 				      "wrong action (exp: ADDED)");
-	CHECK_WSTR(notify.nttrans.out.changes[0].name, "subdir-name", STR_UNICODE);
+	CHECK_WSTR(torture, notify.nttrans.out.changes[0].name, "subdir-name",
+		   STR_UNICODE);
 
 	printf("Testing notify rmdir\n");
 	req = smb_raw_changenotify_send(cli->tree, &notify);
@@ -1839,7 +1858,8 @@ static bool test_notify_tcon(struct torture_context *torture,
 				      notify.nttrans.out.changes[0].action,
 				      NOTIFY_ACTION_REMOVED, ret, done,
 				      "wrong action (exp: REMOVED)");
-	CHECK_WSTR(notify.nttrans.out.changes[0].name, "subdir-name", STR_UNICODE);
+	CHECK_WSTR(torture, notify.nttrans.out.changes[0].name, "subdir-name",
+		   STR_UNICODE);
 
 	printf("CHANGE NOTIFY WITH TCON OK\n");
 
@@ -1863,7 +1883,8 @@ static bool test_notify_tcon(struct torture_context *torture,
 				      notify.nttrans.out.changes[0].action,
 				      NOTIFY_ACTION_ADDED, ret, done,
 				      "wrong action (exp: ADDED)");
-	CHECK_WSTR(notify.nttrans.out.changes[0].name, "subdir-name", STR_UNICODE);
+	CHECK_WSTR(torture, notify.nttrans.out.changes[0].name, "subdir-name",
+		   STR_UNICODE);
 
 	printf("Testing notify rmdir\n");
 	req = smb_raw_changenotify_send(cli->tree, &notify);
@@ -1878,7 +1899,8 @@ static bool test_notify_tcon(struct torture_context *torture,
 				      notify.nttrans.out.changes[0].action,
 				      NOTIFY_ACTION_REMOVED, ret, done,
 				      "wrong action (exp: REMOVED)");
-	CHECK_WSTR(notify.nttrans.out.changes[0].name, "subdir-name", STR_UNICODE);
+	CHECK_WSTR(torture, notify.nttrans.out.changes[0].name, "subdir-name",
+		   STR_UNICODE);
 
 	printf("CHANGE NOTIFY WITH TDIS OK\n");
 done:
@@ -1974,7 +1996,7 @@ static bool test_notify_alignment(struct torture_context *tctx,
 	for (i = 0; i < num_names; i++) {
 		torture_assert(tctx, notify.nttrans.out.changes[i].action ==
 		    NOTIFY_ACTION_ADDED, "");
-		CHECK_WSTR2(tctx, notify.nttrans.out.changes[i].name, fnames[i],
+		CHECK_WSTR(tctx, notify.nttrans.out.changes[i].name, fnames[i],
 		    STR_UNICODE);
 	}
 
