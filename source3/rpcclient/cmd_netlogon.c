@@ -1289,10 +1289,10 @@ struct cmd_set netlogon_commands[] = {
 	{ "dsr_getsitename", RPC_RTYPE_WERROR, NULL, cmd_netlogon_dsr_getsitename, &ndr_table_netlogon, NULL, "Get sitename",     "" },
 	{ "dsr_getforesttrustinfo", RPC_RTYPE_WERROR, NULL, cmd_netlogon_dsr_getforesttrustinfo, &ndr_table_netlogon, NULL, "Get Forest Trust Info",     "" },
 	{ "logonctrl",  RPC_RTYPE_WERROR, NULL, cmd_netlogon_logon_ctrl, &ndr_table_netlogon, NULL, "Logon Control",       "" },
-	{ "samsync",    RPC_RTYPE_NTSTATUS, cmd_netlogon_sam_sync,    NULL, &ndr_table_netlogon, NULL, "Sam Synchronisation", "" },
-	{ "samdeltas",  RPC_RTYPE_NTSTATUS, cmd_netlogon_sam_deltas,  NULL, &ndr_table_netlogon, NULL, "Query Sam Deltas",    "" },
-	{ "samlogon",   RPC_RTYPE_NTSTATUS, cmd_netlogon_sam_logon,   NULL, &ndr_table_netlogon, NULL, "Sam Logon",           "" },
-	{ "change_trust_pw",   RPC_RTYPE_NTSTATUS, cmd_netlogon_change_trust_pw,   NULL, &ndr_table_netlogon, NULL, "Change Trust Account Password",           "" },
+	{ "samsync",    RPC_RTYPE_NTSTATUS, cmd_netlogon_sam_sync,    NULL, &ndr_table_netlogon, NULL, "Sam Synchronisation", "", .use_netlogon_creds = true, },
+	{ "samdeltas",  RPC_RTYPE_NTSTATUS, cmd_netlogon_sam_deltas,  NULL, &ndr_table_netlogon, NULL, "Query Sam Deltas",    "", .use_netlogon_creds = true, },
+	{ "samlogon",   RPC_RTYPE_NTSTATUS, cmd_netlogon_sam_logon,   NULL, &ndr_table_netlogon, NULL, "Sam Logon",           "", .use_netlogon_creds = true, },
+	{ "change_trust_pw",   RPC_RTYPE_NTSTATUS, cmd_netlogon_change_trust_pw,   NULL, &ndr_table_netlogon, NULL, "Change Trust Account Password",           "", .use_netlogon_creds = true, },
 	{ "gettrustrid", RPC_RTYPE_WERROR, NULL, cmd_netlogon_gettrustrid, &ndr_table_netlogon, NULL, "Get trust rid",     "" },
 	{ "dsr_enumtrustdom", RPC_RTYPE_WERROR, NULL, cmd_netlogon_dsr_enumtrustdom, &ndr_table_netlogon, NULL, "Enumerate trusted domains",     "" },
 	{ "dsenumdomtrusts",  RPC_RTYPE_WERROR, NULL, cmd_netlogon_dsr_enumtrustdom, &ndr_table_netlogon, NULL, "Enumerate all trusted domains in an AD forest",     "" },
@@ -1300,8 +1300,8 @@ struct cmd_set netlogon_commands[] = {
 	{ "netrenumtrusteddomains", RPC_RTYPE_NTSTATUS, cmd_netlogon_enumtrusteddomains, NULL, &ndr_table_netlogon, NULL, "Enumerate trusted domains",     "" },
 	{ "netrenumtrusteddomainsex", RPC_RTYPE_WERROR, NULL, cmd_netlogon_enumtrusteddomainsex, &ndr_table_netlogon, NULL, "Enumerate trusted domains",     "" },
 	{ "getdcsitecoverage", RPC_RTYPE_WERROR, NULL, cmd_netlogon_getdcsitecoverage, &ndr_table_netlogon, NULL, "Get the Site-Coverage from a DC",     "" },
-	{ "database_redo", RPC_RTYPE_NTSTATUS, cmd_netlogon_database_redo, NULL, &ndr_table_netlogon, NULL, "Replicate single object from a DC",     "" },
-	{ "capabilities", RPC_RTYPE_NTSTATUS, cmd_netlogon_capabilities, NULL, &ndr_table_netlogon, NULL, "Return Capabilities",     "" },
+	{ "database_redo", RPC_RTYPE_NTSTATUS, cmd_netlogon_database_redo, NULL, &ndr_table_netlogon, NULL, "Replicate single object from a DC",     "", .use_netlogon_creds = true, },
+	{ "capabilities", RPC_RTYPE_NTSTATUS, cmd_netlogon_capabilities, NULL, &ndr_table_netlogon, NULL, "Return Capabilities",     "", .use_netlogon_creds = true, },
 
 	{ NULL }
 };

@@ -39,6 +39,7 @@ struct cmd_set {
 	struct rpc_pipe_client *rpc_pipe;
 	const char *description;
 	const char *usage;
+	bool use_netlogon_creds;
 };
 
 extern struct messaging_context *rpcclient_msg_ctx;

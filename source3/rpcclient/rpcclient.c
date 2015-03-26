@@ -681,7 +681,6 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 {
 	NTSTATUS ntresult;
 	WERROR wresult;
-	bool ok;
 
 	TALLOC_CTX *mem_ctx;
 
@@ -757,9 +756,7 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 			return ntresult;
 		}
 
-		ok = ndr_syntax_id_equal(&cmd_entry->table->syntax_id,
-					 &ndr_table_netlogon.syntax_id);
-		if (rpcclient_netlogon_creds == NULL && ok) {
+		if (rpcclient_netlogon_creds == NULL && cmd_entry->use_netlogon_creds) {
 			const char *dc_name = cmd_entry->rpc_pipe->desthost;
 			const char *domain = get_cmdline_auth_info_domain(auth_info);
 			struct cli_credentials *creds = NULL;
