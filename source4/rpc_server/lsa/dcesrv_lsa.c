@@ -639,6 +639,13 @@ static NTSTATUS dcesrv_lsa_ClearAuditLog(struct dcesrv_call_state *dce_call, TAL
 }
 
 
+static const struct generic_mapping dcesrv_lsa_account_mapping = {
+	LSA_ACCOUNT_READ,
+	LSA_ACCOUNT_WRITE,
+	LSA_ACCOUNT_EXECUTE,
+	LSA_ACCOUNT_ALL_ACCESS
+};
+
 /*
   lsa_CreateAccount
 
@@ -678,6 +685,22 @@ static NTSTATUS dcesrv_lsa_CreateAccount(struct dcesrv_call_state *dce_call, TAL
 
 	astate->policy = talloc_reference(astate, state);
 	astate->access_mask = r->in.access_mask;
+
+	/*
+	 * For now we grant all requested access.
+	 *
+	 * We will fail at the ldb layer later.
+	 */
+	if (astate->access_mask & SEC_FLAG_MAXIMUM_ALLOWED) {
+		astate->access_mask &= ~SEC_FLAG_MAXIMUM_ALLOWED;
+		astate->access_mask |= LSA_ACCOUNT_ALL_ACCESS;
+	}
+	se_map_generic(&astate->access_mask, &dcesrv_lsa_account_mapping);
+
+	DEBUG(10,("%s: %s access desired[0x%08X] granted[0x%08X].\n",
+		  __func__, dom_sid_string(mem_ctx, astate->account_sid),
+		 (unsigned)r->in.access_mask,
+		 (unsigned)astate->access_mask));
 
 	ah = dcesrv_handle_new(dce_call->context, LSA_HANDLE_ACCOUNT);
 	if (!ah) {
@@ -2503,6 +2526,22 @@ static NTSTATUS dcesrv_lsa_OpenAccount(struct dcesrv_call_state *dce_call, TALLO
 
 	astate->policy = talloc_reference(astate, state);
 	astate->access_mask = r->in.access_mask;
+
+	/*
+	 * For now we grant all requested access.
+	 *
+	 * We will fail at the ldb layer later.
+	 */
+	if (astate->access_mask & SEC_FLAG_MAXIMUM_ALLOWED) {
+		astate->access_mask &= ~SEC_FLAG_MAXIMUM_ALLOWED;
+		astate->access_mask |= LSA_ACCOUNT_ALL_ACCESS;
+	}
+	se_map_generic(&astate->access_mask, &dcesrv_lsa_account_mapping);
+
+	DEBUG(10,("%s: %s access desired[0x%08X] granted[0x%08X] - success.\n",
+		  __func__, dom_sid_string(mem_ctx, astate->account_sid),
+		 (unsigned)r->in.access_mask,
+		 (unsigned)astate->access_mask));
 
 	ah = dcesrv_handle_new(dce_call->context, LSA_HANDLE_ACCOUNT);
 	if (!ah) {
