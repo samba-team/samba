@@ -675,10 +675,6 @@ static bool test_notify_mask_change(struct torture_context *mem_ctx,
 	CHECK_WSTR(mem_ctx, notify.nttrans.out.changes[0].name, "subname3-r",
 		   STR_UNICODE);
 
-	if (!ret) {
-		goto done;
-	}
-
 done:
 	smb_raw_exit(cli->session);
 	smbcli_deltree(cli->tree, BASEDIR);
