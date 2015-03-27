@@ -1800,6 +1800,8 @@ static bool test_notify_tcon(struct torture_context *torture,
 
 	printf("TESTING WITH SECONDARY TCON\n");
 	tree = secondary_tcon(cli, torture);
+	torture_assert_not_null_goto(torture, tree, ret, done,
+				     "failed to create secondary tcon");
 
 	printf("Testing notify mkdir\n");
 	req = smb_raw_changenotify_send(cli->tree, &notify);
