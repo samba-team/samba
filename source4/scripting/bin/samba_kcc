@@ -2341,7 +2341,7 @@ class KCC(object):
             return
 
         detect_stale = (not mysite.is_detect_stale_disabled())
-        for dnstr, connect in mydsa.connect_table.items():
+        for connect in mydsa.connect_table.values():
             if connect.to_be_added:
                 DEBUG_CYAN("TO BE ADDED:\n%s" % connect)
 
@@ -2349,7 +2349,7 @@ class KCC(object):
         for partdn, part in self.part_table.items():
             self.construct_intrasite_graph(mysite, mydsa, part, False,
                                            detect_stale)
-            for dnstr, connect in mydsa.connect_table.items():
+            for connect in mydsa.connect_table.values():
                 if connect.to_be_added:
                     DEBUG_BLUE("TO BE ADDED:\n%s" % connect)
 
@@ -2358,7 +2358,7 @@ class KCC(object):
         # replica graph (and creates nTDSConnection objects) for the
         # config NC as above, except that only NC replicas that "are present"
         # on GC servers are added to R.
-        for dnstr, connect in mydsa.connect_table.items():
+        for connect in mydsa.connect_table.values():
             if connect.to_be_added:
                 DEBUG_YELLOW("TO BE ADDED:\n%s" % connect)
 
@@ -2374,7 +2374,7 @@ class KCC(object):
         # if the bit NTDSSETTINGS_OPT_IS_TOPL_DETECT_STALE_DISABLED were
         # set in the options attribute of the site settings object for
         # the local DC's site.  (ie. we set "detec_stale" flag to False)
-        for dnstr, connect in mydsa.connect_table.items():
+        for connect in mydsa.connect_table.values():
             if connect.to_be_added:
                 DEBUG_BLUE("TO BE ADDED:\n%s" % connect)
 
@@ -2387,7 +2387,7 @@ class KCC(object):
         # replica graph (and creates nTDSConnection objects) for the
         # config NC as above, except that only NC replicas that "are present"
         # on GC servers are added to R.
-        for dnstr, connect in mydsa.connect_table.items():
+        for connect in mydsa.connect_table.values():
             if connect.to_be_added:
                 DEBUG_RED("TO BE ADDED:\n%s" % connect)
 
@@ -2398,7 +2398,7 @@ class KCC(object):
 
         if opts.readonly:
             # Display any to be added or modified repsFrom
-            for dnstr, connect in mydsa.connect_table.items():
+            for connect in mydsa.connect_table.values():
                 if connect.to_be_deleted:
                     logger.info("TO BE DELETED:\n%s" % connect)
                 if connect.to_be_modified:
