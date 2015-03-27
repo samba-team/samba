@@ -161,6 +161,56 @@ static bool nbt_netlogon_packet_logon_primary_query_check(struct torture_context
 	return true;
 }
 
+static const uint8_t netlogon_samlogon_response_data2[] = {
+/*	0x04, 0x77, 0x17, 0x00, 0x00, 0x00, 0xfd, 0x33, 0x00, 0x00, 0x55, 0xaf,*/
+	            0x17, 0x00, 0x00, 0x00, 0xfd, 0x33, 0x00, 0x00, 0x55, 0xaf,
+	0x8d, 0x13, 0x8c, 0x91, 0x70, 0x41, 0x9d, 0x46, 0xd4, 0xd5, 0x04, 0x90,
+	0xaa, 0x13, 0x03, 0x62, 0x6c, 0x61, 0x04, 0x62, 0x61, 0x73, 0x65, 0x00,
+	0xc0, 0x18, 0x0a, 0x57, 0x32, 0x4b, 0x38, 0x52, 0x32, 0x2d, 0x32, 0x31,
+	0x39, 0xc0, 0x18, 0x03, 0x42, 0x4c, 0x41, 0x00, 0x0a, 0x57, 0x32, 0x4b,
+	0x38, 0x52, 0x32, 0x2d, 0x32, 0x31, 0x39, 0x00, 0x0a, 0x77, 0x32, 0x30,
+	0x31, 0x32, 0x72, 0x32, 0x2d, 0x6c, 0x36, 0x05, 0x62, 0x61, 0x73, 0x65,
+	0x2e, 0x00, 0x17, 0x44, 0x65, 0x66, 0x61, 0x75, 0x6c, 0x74, 0x2d, 0x46,
+	0x69, 0x72, 0x73, 0x74, 0x2d, 0x53, 0x69, 0x74, 0x65, 0x2d, 0x4e, 0x61,
+	0x6d, 0x65, 0x00, 0xc0, 0x54, 0x05, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff,
+	0xff
+};
+
+static bool netlogon_samlogon_response_check2(struct torture_context *tctx,
+					      struct netlogon_samlogon_response *r)
+{
+	struct GUID guid;
+	torture_assert_ntstatus_ok(tctx, GUID_from_string("138daf55-918c-4170-9d46-d4d50490aa13", &guid), "");
+
+	torture_assert_int_equal(tctx, r->ntver, 5, "ntver");
+	torture_assert_int_equal(tctx, r->data.nt5_ex.command, LOGON_SAM_LOGON_RESPONSE_EX, "command");
+	torture_assert_int_equal(tctx, r->data.nt5_ex.sbz, 0, "sbz");
+	torture_assert_int_equal(tctx, r->data.nt5_ex.server_type, 0x000033fd, "server_type");
+	torture_assert_guid_equal(tctx, r->data.nt5_ex.domain_uuid, guid, "domain_uuid");
+	torture_assert_str_equal(tctx, r->data.nt5_ex.forest, "bla.base", "forest");
+	torture_assert_str_equal(tctx, r->data.nt5_ex.dns_domain, "bla.base", "dns_domain");
+	torture_assert_str_equal(tctx, r->data.nt5_ex.pdc_dns_name, "W2K8R2-219.bla.base", "pdc_dns_name");
+	torture_assert_str_equal(tctx, r->data.nt5_ex.domain_name, "BLA", "domain_name");
+	torture_assert_str_equal(tctx, r->data.nt5_ex.pdc_name, "W2K8R2-219", "pdc_name");
+	torture_assert_str_equal(tctx, r->data.nt5_ex.user_name, "w2012r2-l6.base.", "user_name");
+	torture_assert_str_equal(tctx, r->data.nt5_ex.server_site, "Default-First-Site-Name", "server_site");
+	torture_assert_str_equal(tctx, r->data.nt5_ex.client_site, "Default-First-Site-Name", "client_site");
+	torture_assert_int_equal(tctx, r->data.nt5_ex.sockaddr_size, 0, "sockaddr_size");
+	/*
+	 * sockaddr: struct nbt_sockaddr
+	 *             sockaddr_family          : 0x00000000 (0)
+	 *             pdc_ip                   : (null)
+	 *             remaining                : DATA_BLOB length=0
+	 */
+	torture_assert_int_equal(tctx, r->data.nt5_ex.nt_version, 5, "nt_version");
+	/* next_closest_site NULL */
+	torture_assert_int_equal(tctx, r->data.nt5_ex.lmnt_token, 0xffff, "lmnt_token");
+	torture_assert_int_equal(tctx, r->data.nt5_ex.lm20_token, 0xffff, "lm20_token");
+
+	return true;
+}
+
+
 struct torture_suite *ndr_nbt_suite(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = torture_suite_create(ctx, "nbt");
@@ -193,6 +243,11 @@ struct torture_suite *ndr_nbt_suite(TALLOC_CTX *ctx)
 					    nbt_netlogon_packet,
 					    data_blob_const(nbt_netlogon_packet_logon_primary_query_data, sizeof(nbt_netlogon_packet_logon_primary_query_data)),
 					    nbt_netlogon_packet_logon_primary_query_check);
+
+	torture_suite_add_ndr_pullpush_test(suite,
+					    netlogon_samlogon_response,
+					    data_blob_const(netlogon_samlogon_response_data2, sizeof(netlogon_samlogon_response_data2)),
+					    netlogon_samlogon_response_check2);
 
 	return suite;
 }
