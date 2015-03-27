@@ -3812,6 +3812,13 @@ int32_t ctdb_control_set_tcp_tickle_list(struct ctdb_context *ctdb, TDB_DATA ind
 		return 1;
 	}
 
+	if (vnn->pnn == ctdb->pnn) {
+		DEBUG(DEBUG_INFO,
+		      ("Ignoring redundant set tcp tickle list, this node hosts '%s'\n",
+		       ctdb_addr_to_str(&list->addr)));
+		return 0;
+	}
+
 	/* remove any old ticklelist we might have */
 	talloc_free(vnn->tcp_array);
 	vnn->tcp_array = NULL;
