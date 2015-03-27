@@ -2145,8 +2145,6 @@ static int vfs_gpfs_get_quotas(const char *path, uid_t uid, gid_t gid,
 
 	err = get_gpfs_fset_id(dir_path, fset_id);
 	if (err) {
-		DEBUG(0, ("Get fset id failed path %s, dir %s, errno %d.\n",
-			  path, dir_path, errno));
 		return err;
 	}
 
