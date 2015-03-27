@@ -756,39 +756,45 @@ static bool test_notify_mask(struct torture_context *tctx,
 		    ((expected) & FILE_NOTIFY_CHANGE_ATTRIBUTES) && \
 		    Action == NOTIFY_ACTION_OLD_NAME) { \
 			printf("(rename file special handling OK)\n"); \
-		} else if (nchanges != notify.nttrans.out.num_changes) { \
-			printf("ERROR: nchanges=%d expected=%d action=%d filter=0x%08x\n", \
-			       notify.nttrans.out.num_changes, \
-			       nchanges, \
-			       notify.nttrans.out.changes[0].action, \
-			       notify.nttrans.in.completion_filter); \
-			ret = false; \
-		} else if (notify.nttrans.out.changes[0].action != Action) { \
-			printf("ERROR: nchanges=%d action=%d expectedAction=%d filter=0x%08x\n", \
-			       notify.nttrans.out.num_changes, \
-			       notify.nttrans.out.changes[0].action, \
-			       Action, \
-			       notify.nttrans.in.completion_filter); \
-			ret = false; \
-		} else if (strcmp(notify.nttrans.out.changes[0].name.s, "tname1") != 0) { \
-			printf("ERROR: nchanges=%d action=%d filter=0x%08x name=%s\n", \
-			       notify.nttrans.out.num_changes, \
-			       notify.nttrans.out.changes[0].action, \
-			       notify.nttrans.in.completion_filter, \
-			       notify.nttrans.out.changes[0].name.s);	\
-			ret = false; \
+		} else { \
+			torture_assert_int_equal_goto(tctx, \
+				notify.nttrans.out.num_changes,\
+				nchanges, ret, done, \
+				talloc_asprintf(tctx, \
+					"nchanges=%d expected=%d action=%d " \
+					"filter=0x%08x\n", \
+					notify.nttrans.out.num_changes, \
+					nchanges, \
+					notify.nttrans.out.changes[0].action, \
+					notify.nttrans.in.completion_filter)); \
+			torture_assert_int_equal_goto(tctx, \
+				notify.nttrans.out.changes[0].action, \
+				Action, ret, done, \
+				talloc_asprintf(tctx, \
+					"nchanges=%d action=%d " \
+					"expectedAction=%d filter=0x%08x\n", \
+					notify.nttrans.out.num_changes, \
+					notify.nttrans.out.changes[0].action, \
+					Action, \
+					notify.nttrans.in.completion_filter)); \
+			torture_assert_str_equal_goto(tctx, \
+				notify.nttrans.out.changes[0].name.s, \
+				"tname1", ret, done, \
+				talloc_asprintf(tctx, \
+					"nchanges=%d action=%d filter=0x%08x " \
+					"name=%s expected_name=tname1\n", \
+					notify.nttrans.out.num_changes, \
+					notify.nttrans.out.changes[0].action, \
+					notify.nttrans.in.completion_filter, \
+					notify.nttrans.out.changes[0].name.s));\
 		} \
 		mask |= (1<<i); \
 	} \
 	if ((expected) != mask) { \
-		if (((expected) & ~mask) != 0) { \
-			printf("ERROR: trigger on too few bits. mask=0x%08x expected=0x%08x\n", \
-			       mask, expected); \
-			ret = false; \
-		} else { \
-			printf("WARNING: trigger on too many bits. mask=0x%08x expected=0x%08x\n", \
-			       mask, expected); \
-		} \
+		torture_assert_int_not_equal_goto(tctx, ((expected) & ~mask), \
+				0, ret, done, "Too few bits"); \
+		printf("WARNING: trigger on too many bits. mask=0x%08x expected=0x%08x\n", \
+		       mask, expected); \
 	} \
 	} while (0);
 
