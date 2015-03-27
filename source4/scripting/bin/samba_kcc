@@ -397,11 +397,8 @@ class KCC(object):
             # Get the source DSA no matter what site
             s_dsa = self.get_dsa(s_dnstr)
 
-            # Check if the DSA is in our site
-            if self.my_site.same_site(s_dsa):
-                same_site = True
-            else:
-                same_site = False
+            #XXX should an RODC be regarded as same site
+            same_site = s_dnstr in self.my_site.dsa_table
 
             # Given an nTDSConnection object cn, if the DC with the
             # nTDSDSA object dc that is the parent object of cn and
@@ -550,10 +547,7 @@ class KCC(object):
         s_dnstr = s_dsa.dsa_dnstr
         update = 0x0
 
-        if self.my_site.same_site(s_dsa):
-            same_site = True
-        else:
-            same_site = False
+        same_site = s_dnstr in self.my_site.dsa_table
 
         # if schedule doesn't match then update and modify
         times = convert_schedule_to_repltimes(cn_conn.schedule)

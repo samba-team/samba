@@ -1467,9 +1467,7 @@ class Site(object):
 
         :return: None if DSA doesn't exist
         """
-        if dnstr in self.dsa_table:
-            return self.dsa_table[dnstr]
-        return None
+        return self.dsa_table.get(dnstr)
 
     def select_istg(self, samdb, mydsa, ro):
         """Determine if my DC should be an intersite topology
