@@ -913,7 +913,8 @@ class KCC(object):
             n_rep.load_fsmo_roles(self.samdb)
 
             # Loop thru the existing repsFrom tupples (if any)
-            for i, t_repsFrom in enumerate(n_rep.rep_repsFrom):
+            # XXX This is a list and could contain duplicates (multiple load_repsFrom calls)
+            for t_repsFrom in n_rep.rep_repsFrom:
 
                 # for each tuple t in n!repsFrom, let s be the nTDSDSA
                 # object such that s!objectGUID = t.uuidDsa
