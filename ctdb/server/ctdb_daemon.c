@@ -1103,6 +1103,16 @@ static void ctdb_setup_event_callback(struct ctdb_context *ctdb, int status,
 static struct timeval tevent_before_wait_ts;
 static struct timeval tevent_after_wait_ts;
 
+static void ctdb_tevent_trace_init(void)
+{
+	struct timeval now;
+
+	now = timeval_current();
+
+	tevent_before_wait_ts = now;
+	tevent_after_wait_ts = now;
+}
+
 static void ctdb_tevent_trace(enum tevent_trace_point tp,
 			      void *private_data)
 {
@@ -1119,25 +1129,21 @@ static void ctdb_tevent_trace(enum tevent_trace_point tp,
 
 	switch (tp) {
 	case TEVENT_TRACE_BEFORE_WAIT:
-		if (!timeval_is_zero(&tevent_after_wait_ts)) {
-			diff = timeval_until(&tevent_after_wait_ts, &now);
-			if (diff.tv_sec > 3) {
-				DEBUG(DEBUG_ERR,
-				      ("Handling event took %ld seconds!\n",
-				       (long)diff.tv_sec));
-			}
+		diff = timeval_until(&tevent_after_wait_ts, &now);
+		if (diff.tv_sec > 3) {
+			DEBUG(DEBUG_ERR,
+			      ("Handling event took %ld seconds!\n",
+			       diff.tv_sec));
 		}
 		tevent_before_wait_ts = now;
 		break;
 
 	case TEVENT_TRACE_AFTER_WAIT:
-		if (!timeval_is_zero(&tevent_before_wait_ts)) {
-			diff = timeval_until(&tevent_before_wait_ts, &now);
-			if (diff.tv_sec > 3) {
-				DEBUG(DEBUG_CRIT,
-				      ("No event for %ld seconds!\n",
-				       (long)diff.tv_sec));
-			}
+		diff = timeval_until(&tevent_before_wait_ts, &now);
+		if (diff.tv_sec > 3) {
+			DEBUG(DEBUG_ERR,
+			      ("No event for %ld seconds!\n",
+			       diff.tv_sec));
 		}
 		tevent_after_wait_ts = now;
 		break;
@@ -1287,6 +1293,7 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 		exit(1);
 	}
 	tevent_loop_allow_nesting(ctdb->ev);
+	ctdb_tevent_trace_init();
 	tevent_set_trace_callback(ctdb->ev, ctdb_tevent_trace, ctdb);
 	ret = ctdb_init_tevent_logging(ctdb);
 	if (ret != 0) {
