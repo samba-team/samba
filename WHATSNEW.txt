@@ -22,6 +22,14 @@ backends for logging to the systemd-journal, lttng and gpfs have been
 added. Please consult the section for the 'logging' parameter in the
 smb.conf manpage for details.
 
+Spotlight
+=========
+
+Support for Apple's Spotlight has been added by integrating with Gnome
+Tracker.
+
+For detailed instructions how to build and setup Samba for Spotlight,
+please see the Samba wiki: <https://wiki.samba.org/index.php/Spotlight>
 
 ######################################################################
 Changes
