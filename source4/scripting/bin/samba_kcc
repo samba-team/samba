@@ -245,6 +245,16 @@ class KCC(object):
 
         self.my_dsa = self.my_site.get_dsa(self.my_dsa_dnstr)
 
+        if self.my_dsa_dnstr not in self.dsa_by_dnstr:
+            DEBUG_DARK_YELLOW("my_dsa %s isn't in self.dsas_by_dnstr: it must be RODC."
+                              "Let's add it, because my_dsa is a special case!\n"
+                              "(likewise for self.dsa_by_guid of course)" %
+                              self.my_dsas_dnstr)
+
+            self.dsa_by_dnstr[self.my_dsa_dnstr] = self.my_dsa
+            self.dsa_by_guid[str(self.my_dsa.dsa_guid)] = self.my_dsa
+
+
     def load_all_partitions(self):
         """Discover all NCs thru the Partitions dn and
         instantiate and load the NCs.
@@ -1142,8 +1152,8 @@ class KCC(object):
             DEBUG_RED("get_all_bridgeheads with %s, part%s, partial_ok %s"
                       " detect_failed %s" % (site.site_dnstr, part.partstr,
                                              partial_ok, detect_failed))
-        logger.debug(site.dsa_table)
-        for key, dsa in site.dsa_table.items():
+        logger.debug(site.rw_dsa_table)
+        for dsa in site.rw_dsa_table.values():
 
             pdnstr = dsa.get_parent_dnstr()
 

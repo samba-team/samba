@@ -1391,6 +1391,7 @@ class Site(object):
         self.site_topo_generator = None
         self.site_topo_failover = 0  # appears to be in minutes
         self.dsa_table = {}
+        self.rw_dsa_table = {}
         self.unix_now = unix_now
 
     def load_site(self, samdb):
@@ -1454,8 +1455,11 @@ class Site(object):
             # Assign this dsa to my dsa table
             # and index by dsa dn
             self.dsa_table[dnstr] = dsa
+            if not dsa.is_ro():
+                self.rw_dsa_table[dnstr] = dsa
 
-    def get_dsa_by_guidstr(self, guidstr):
+
+    def get_dsa_by_guidstr(self, guidstr): #XXX unused
         for dsa in self.dsa_table.values():
             if str(dsa.dsa_guid) == guidstr:
                 return dsa
@@ -1506,7 +1510,7 @@ class Site(object):
         # Which is a fancy way of saying "sort all the nTDSDSA objects
         # in the site by guid in ascending order".   Place sorted list
         # in D_sort[]
-        D_sort = sorted(self.dsa_table.values(), cmp=sort_dsa_by_guid)
+        D_sort = sorted(self.rw_dsa_table.values(), cmp=sort_dsa_by_guid)
 
         ntnow = unix2nttime(self.unix_now) # double word number of 100 nanosecond
                                            # intervals since 1600s
