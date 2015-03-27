@@ -42,7 +42,7 @@ REV_RED = "\033[01;41m"
 
 def write_dot_file(basename, edge_list, vertices=None, label=None, destdir=None,
                    reformat_labels=True, directed=False, debug=None, edge_colors=None,
-                   edge_labels=None):
+                   edge_labels=None, vertex_colors=None):
     from tempfile import NamedTemporaryFile
     if label:
         basename += '_' + label.translate(None, ', ') #fix DN, guid labels
@@ -53,10 +53,11 @@ def write_dot_file(basename, edge_list, vertices=None, label=None, destdir=None,
     print >>f, '%s %s {' % ('digraph' if directed else 'graph', graphname)
     print >>f, 'label="%s";\nfontsize=20;' % (label or graphname)
     if vertices:
-        for v in vertices:
+        for i, v in enumerate(vertices):
             if reformat_labels:
                 v = v.replace(',', '\\n')
-            print >>f, '"%s";' % (v,)
+            vc = ('color="%s"' % vertex_colors[i]) if vertex_colors else ''
+            print >>f, '"%s" [%s];' % (v, vc)
 
     for i, edge in enumerate(edge_list):
         a, b = edge
@@ -302,7 +303,7 @@ def verify_graph(title, edges, vertices=None, directed=False, properties=(), fat
 def verify_and_dot(basename, edges, vertices=None, label=None, destdir=None,
                    reformat_labels=True, directed=False, properties=(), fatal=True,
                    debug=None, verify=True, dot_files=False, edge_colors=None,
-                   edge_labels=None):
+                   edge_labels=None, vertex_colors=None):
 
     title = '%s %s' % (basename, label or '')
     if verify:
@@ -311,7 +312,8 @@ def verify_and_dot(basename, edges, vertices=None, label=None, destdir=None,
     if dot_files:
         write_dot_file(basename, edges, vertices=vertices, label=label, destdir=destdir,
                        reformat_labels=reformat_labels, directed=directed, debug=debug,
-                       edge_colors=edge_colors, edge_labels=edge_labels)
+                       edge_colors=edge_colors, edge_labels=edge_labels,
+                       vertex_colors=vertex_colors)
 
 def list_verify_tests():
     for k, v in sorted(globals().items()):

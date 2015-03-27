@@ -2441,21 +2441,27 @@ class KCC(object):
 
         dot_edges = []
         dot_vertices = []
-        colours = []
-        for site in self.site_table.values():
-            for dsa in site.dsa_table.values():
-                dot_vertices.append(dsa.dsa_dnstr)
-                for con in dsa.connect_table.values():
-                    if con.is_rodc_topology():
-                        colours.append('red')
-                    else:
-                        colours.append('blue')
-                    dot_edges.append((con.from_dnstr, dsa.dsa_dnstr))
+        edge_colours = []
+        vertex_colours = []
+
+        for dsa in self.dsa_by_dnstr.values():
+            dot_vertices.append(dsa.dsa_dnstr)
+            if dsa.is_ro():
+                vertex_colours.append('#cc0000')
+            else:
+                vertex_colours.append('#0000cc')
+            for con in dsa.connect_table.values():
+                if con.is_rodc_topology():
+                    edge_colours.append('red')
+                else:
+                    edge_colours.append('blue')
+                dot_edges.append((con.from_dnstr, dsa.dsa_dnstr))
 
         verify_and_dot(basename, dot_edges, vertices=dot_vertices,
                        label=self.my_dsa_dnstr, properties=verify_properties,
                        debug=DEBUG, verify=verify, dot_files=plot,
-                       directed=True, edge_colors=colours)
+                       directed=True, edge_colors=edge_colours,
+                       vertex_colors=vertex_colours)
 
 
     def run(self, dburl, lp, creds, forced_local_dsa=None,
@@ -2942,6 +2948,7 @@ def test_all_reps_from(lp, creds):
     dot_edges = []
     dot_vertices = []
     colours = []
+    vertex_colours = []
 
     for dsa in dsas:
         kcc = KCC()
@@ -2962,6 +2969,10 @@ def test_all_reps_from(lp, creds):
 
         for site in kcc.site_table.values():
             for dsa in site.dsa_table.values():
+                if dsa.is_ro():
+                    vertex_colours.append('#cc0000')
+                else:
+                    vertex_colours.append('#0000cc')
                 dot_vertices.append(dsa.dsa_dnstr)
                 for con in dsa.connect_table.values():
                     if con.is_rodc_topology():
@@ -2970,16 +2981,17 @@ def test_all_reps_from(lp, creds):
                         colours.append('blue')
                     dot_edges.append((con.from_dnstr, dsa.dsa_dnstr))
 
+    verify_and_dot('all-dsa-connections', dot_edges, vertices=dot_vertices,
+                   label="all dsa NTDSConnections", properties=(),
+                   debug=DEBUG, verify=opts.verify, dot_files=opts.dot_files,
+                   directed=True, edge_colors=colours, vertex_colors=vertex_colours)
+
     for name, rep_parts in (('needed', needed_parts), ('current', current_parts)):
         for part, edges in rep_parts.items():
             verify_and_dot('repsFrom_%s_all_%s' % (name, part), edges, directed=True, label=part,
                            properties=(), debug=DEBUG, verify=opts.verify,
                            dot_files=opts.dot_files)
 
-    verify_and_dot('all-dsa-connections', dot_edges, vertices=dot_vertices,
-                   label="all dsa NTDSConnections", properties=(),
-                   debug=DEBUG, verify=opts.verify, dot_files=opts.dot_files,
-                   directed=True, edge_colors=colours)
 
 
 logger = logging.getLogger("samba_kcc")
