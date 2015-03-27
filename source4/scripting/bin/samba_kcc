@@ -804,6 +804,8 @@ class KCC(object):
         :param conn: NTDS Connection
         ::returns (True || False), source DSA:
         """
+        #XXX different conditions for "implies" than MS-ADTS 6.2.2
+
         # NTDS Connection must satisfy all the following criteria
         # to imply a repsFrom tuple is needed:
         #
@@ -940,12 +942,18 @@ class KCC(object):
                 # is a child of the local DC's nTDSDSA object and
                 # (cn!fromServer = s) and (cn!options) does not contain
                 # NTDSCONN_OPT_RODC_TOPOLOGY or NULL if no such (cn) exists.
-                if cn_conn and not cn_conn.is_rodc_topology():
-                    cn_conn = None
 
                 # KCC removes this repsFrom tuple if any of the following
                 # is true:
                 #     cn = NULL.
+                #     [...]
+
+                #XXX varying possible interpretations of rodc_topology
+                if cn_conn is None or cn_conn.is_rodc_topology():
+                    t_repsFrom.to_be_deleted = True
+                    continue
+
+                #     [...] KCC removes this repsFrom tuple if:
                 #
                 #     No NC replica of the NC "is present" on DSA that
                 #     would be source of replica
@@ -955,8 +963,7 @@ class KCC(object):
                 #     the source DSA
                 s_rep = s_dsa.get_current_replica(n_rep.nc_dnstr)
 
-                if cn_conn is None or \
-                   s_rep is None or not s_rep.is_present() or \
+                if s_rep is None or not s_rep.is_present() or \
                    (not n_rep.is_ro() and s_rep.is_partial()):
 
                     t_repsFrom.to_be_deleted = True
