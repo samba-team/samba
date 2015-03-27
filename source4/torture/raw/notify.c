@@ -51,7 +51,7 @@ static bool test_notify_dir(struct torture_context *tctx,
 	struct smbcli_request *req, *req2;
 	extern int torture_numops;
 
-	printf("TESTING CHANGE NOTIFY ON DIRECTORIES\n");
+	torture_comment(tctx, "TESTING CHANGE NOTIFY ON DIRECTORIES\n");
 
 	torture_assert(tctx, torture_setup_dir(cli, BASEDIR),
 		       "Failed to setup up test directory: " BASEDIR);
@@ -90,7 +90,7 @@ static bool test_notify_dir(struct torture_context *tctx,
 	notify.nttrans.in.file.fnum = fnum;
 	notify.nttrans.in.recursive = true;
 
-	printf("Testing notify cancel\n");
+	torture_comment(tctx, "Testing notify cancel\n");
 
 	req = smb_raw_changenotify_send(cli->tree, &notify);
 	smb_raw_ntcancel(req);
@@ -99,7 +99,7 @@ static bool test_notify_dir(struct torture_context *tctx,
 					   ret, done,
 					   "smb_raw_changenotify_recv");
 
-	printf("Testing notify mkdir\n");
+	torture_comment(tctx, "Testing notify mkdir\n");
 
 	req = smb_raw_changenotify_send(cli->tree, &notify);
 	smbcli_mkdir(cli2->tree, BASEDIR "\\subdir-name");
@@ -117,7 +117,7 @@ static bool test_notify_dir(struct torture_context *tctx,
 	CHECK_WSTR(tctx, notify.nttrans.out.changes[0].name, "subdir-name",
 		   STR_UNICODE);
 
-	printf("Testing notify rmdir\n");
+	torture_comment(tctx, "Testing notify rmdir\n");
 
 	req = smb_raw_changenotify_send(cli->tree, &notify);
 	smbcli_rmdir(cli2->tree, BASEDIR "\\subdir-name");
@@ -134,7 +134,7 @@ static bool test_notify_dir(struct torture_context *tctx,
 	CHECK_WSTR(tctx, notify.nttrans.out.changes[0].name, "subdir-name",
 		   STR_UNICODE);
 
-	printf("Testing notify mkdir - rmdir - mkdir - rmdir\n");
+	torture_comment(tctx, "Testing notify mkdir - rmdir - mkdir - rmdir\n");
 
 	smbcli_mkdir(cli2->tree, BASEDIR "\\subdir-name");
 	smbcli_rmdir(cli2->tree, BASEDIR "\\subdir-name");
@@ -173,7 +173,7 @@ static bool test_notify_dir(struct torture_context *tctx,
 		   STR_UNICODE);
 
 	count = torture_numops;
-	printf("Testing buffered notify on create of %d files\n", count);
+	torture_comment(tctx, "Testing buffered notify on create of %d files\n", count);
 	for (i=0;i<count;i++) {
 		char *fname = talloc_asprintf(cli, BASEDIR "\\test%d.txt", i);
 		int fnum3 = smbcli_open(cli->tree, fname, O_CREAT|O_RDWR, DENY_NONE);
@@ -203,7 +203,7 @@ static bool test_notify_dir(struct torture_context *tctx,
 	/* (1st unlink) as the 2nd notify directly returns,
 	   this unlink is only seen by the 1st notify and 
 	   the 3rd notify (later) */
-	printf("Testing notify on unlink for the first file\n");
+	torture_comment(tctx, "Testing notify on unlink for the first file\n");
 	status = smbcli_unlink(cli2->tree, BASEDIR "\\test0.txt");
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
 					"smbcli_unlink");
@@ -225,7 +225,7 @@ static bool test_notify_dir(struct torture_context *tctx,
 	CHECK_WSTR(tctx, notify.nttrans.out.changes[0].name, "test0.txt",
 		   STR_UNICODE);
 
-	printf("and now from the 1st notify\n");
+	torture_comment(tctx, "and now from the 1st notify\n");
 	status = smb_raw_changenotify_recv(req2, tctx, &notify);
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
 					"smb_raw_changenotify_recv");
@@ -238,7 +238,7 @@ static bool test_notify_dir(struct torture_context *tctx,
 	CHECK_WSTR(tctx, notify.nttrans.out.changes[0].name, "test0.txt",
 		   STR_UNICODE);
 
-	printf("(3rd notify) this notify will only see the 1st unlink\n");
+	torture_comment(tctx, "(3rd notify) this notify will only see the 1st unlink\n");
 	req = smb_raw_changenotify_send(cli->tree, &notify);
 
 	status = smbcli_unlink(cli->tree, BASEDIR "\\nonexistent.txt");
@@ -247,7 +247,7 @@ static bool test_notify_dir(struct torture_context *tctx,
 					   ret, done,
 					   "smbcli_unlink");
 
-	printf("Testing notify on wildcard unlink for %d files\n", count-1);
+	torture_comment(tctx, "Testing notify on wildcard unlink for %d files\n", count-1);
 	/* (2nd unlink) do a wildcard unlink */
 	status = smbcli_unlink(cli2->tree, BASEDIR "\\test*.txt");
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
@@ -297,7 +297,7 @@ static bool test_notify_dir(struct torture_context *tctx,
 					"wrong action (exp: REMOVED)");
 	}
 
-	printf("Testing if a close() on the dir handle triggers the notify reply\n");
+	torture_comment(tctx, "Testing if a close() on the dir handle triggers the notify reply\n");
 
 	notify.nttrans.in.file.fnum = fnum;
 	req = smb_raw_changenotify_send(cli->tree, &notify);
@@ -363,7 +363,7 @@ static bool test_notify_recursive(struct torture_context *tctx,
 	int fnum;
 	struct smbcli_request *req1, *req2;
 
-	printf("TESTING CHANGE NOTIFY WITH RECURSION\n");
+	torture_comment(tctx, "TESTING CHANGE NOTIFY WITH RECURSION\n");
 
 	torture_assert(tctx, torture_setup_dir(cli, BASEDIR),
 		       "Failed to setup up test directory: " BASEDIR);
@@ -548,7 +548,7 @@ static bool test_notify_mask_change(struct torture_context *tctx,
 	int fnum;
 	struct smbcli_request *req1, *req2;
 
-	printf("TESTING CHANGE NOTIFY WITH MASK CHANGE\n");
+	torture_comment(tctx, "TESTING CHANGE NOTIFY WITH MASK CHANGE\n");
 
 	torture_assert(tctx, torture_setup_dir(cli, BASEDIR),
 		       "Failed to setup up test directory: " BASEDIR);
@@ -698,7 +698,7 @@ static bool test_notify_mask(struct torture_context *tctx,
 	struct timeval tv;
 	NTTIME t;
 
-	printf("TESTING CHANGE NOTIFY COMPLETION FILTERS\n");
+	torture_comment(tctx, "TESTING CHANGE NOTIFY COMPLETION FILTERS\n");
 
 	torture_assert(tctx, torture_setup_dir(cli, BASEDIR),
 		       "Failed to setup up test directory: " BASEDIR);
@@ -755,7 +755,7 @@ static bool test_notify_mask(struct torture_context *tctx,
 		    notify.nttrans.out.changes[0].action == NOTIFY_ACTION_MODIFIED && \
 		    ((expected) & FILE_NOTIFY_CHANGE_ATTRIBUTES) && \
 		    Action == NOTIFY_ACTION_OLD_NAME) { \
-			printf("(rename file special handling OK)\n"); \
+			torture_comment(tctx, "(rename file special handling OK)\n"); \
 		} else { \
 			torture_assert_int_equal_goto(tctx, \
 				notify.nttrans.out.num_changes,\
@@ -793,26 +793,26 @@ static bool test_notify_mask(struct torture_context *tctx,
 	if ((expected) != mask) { \
 		torture_assert_int_not_equal_goto(tctx, ((expected) & ~mask), \
 				0, ret, done, "Too few bits"); \
-		printf("WARNING: trigger on too many bits. mask=0x%08x expected=0x%08x\n", \
+		torture_comment(tctx, "WARNING: trigger on too many bits. mask=0x%08x expected=0x%08x\n", \
 		       mask, expected); \
 	} \
 	} while (0);
 
-	printf("Testing mkdir\n");
+	torture_comment(tctx, "Testing mkdir\n");
 	NOTIFY_MASK_TEST("Testing mkdir",;,
 			 smbcli_mkdir(cli->tree, BASEDIR "\\tname1");,
 			 smbcli_rmdir(cli2->tree, BASEDIR "\\tname1");,
 			 NOTIFY_ACTION_ADDED,
 			 FILE_NOTIFY_CHANGE_DIR_NAME, 1);
 
-	printf("Testing create file\n");
+	torture_comment(tctx, "Testing create file\n");
 	NOTIFY_MASK_TEST("Testing create file",;,
 			 smbcli_close(cli->tree, smbcli_open(cli->tree, BASEDIR "\\tname1", O_CREAT, 0));,
 			 smbcli_unlink(cli2->tree, BASEDIR "\\tname1");,
 			 NOTIFY_ACTION_ADDED,
 			 FILE_NOTIFY_CHANGE_FILE_NAME, 1);
 
-	printf("Testing unlink\n");
+	torture_comment(tctx, "Testing unlink\n");
 	NOTIFY_MASK_TEST("Testing unlink",
 			 smbcli_close(cli->tree, smbcli_open(cli->tree, BASEDIR "\\tname1", O_CREAT, 0));,
 			 smbcli_unlink(cli2->tree, BASEDIR "\\tname1");,
@@ -820,7 +820,7 @@ static bool test_notify_mask(struct torture_context *tctx,
 			 NOTIFY_ACTION_REMOVED,
 			 FILE_NOTIFY_CHANGE_FILE_NAME, 1);
 
-	printf("Testing rmdir\n");
+	torture_comment(tctx, "Testing rmdir\n");
 	NOTIFY_MASK_TEST("Testing rmdir",
 			 smbcli_mkdir(cli->tree, BASEDIR "\\tname1");,
 			 smbcli_rmdir(cli2->tree, BASEDIR "\\tname1");,
@@ -828,7 +828,7 @@ static bool test_notify_mask(struct torture_context *tctx,
 			 NOTIFY_ACTION_REMOVED,
 			 FILE_NOTIFY_CHANGE_DIR_NAME, 1);
 
-	printf("Testing rename file\n");
+	torture_comment(tctx, "Testing rename file\n");
 	NOTIFY_MASK_TEST("Testing rename file",
 			 smbcli_close(cli->tree, smbcli_open(cli->tree, BASEDIR "\\tname1", O_CREAT, 0));,
 			 smbcli_rename(cli2->tree, BASEDIR "\\tname1", BASEDIR "\\tname2");,
@@ -836,7 +836,7 @@ static bool test_notify_mask(struct torture_context *tctx,
 			 NOTIFY_ACTION_OLD_NAME,
 			 FILE_NOTIFY_CHANGE_FILE_NAME|FILE_NOTIFY_CHANGE_ATTRIBUTES|FILE_NOTIFY_CHANGE_CREATION, 2);
 
-	printf("Testing rename dir\n");
+	torture_comment(tctx, "Testing rename dir\n");
 	NOTIFY_MASK_TEST("Testing rename dir",
 		smbcli_mkdir(cli->tree, BASEDIR "\\tname1");,
 		smbcli_rename(cli2->tree, BASEDIR "\\tname1", BASEDIR "\\tname2");,
@@ -844,7 +844,7 @@ static bool test_notify_mask(struct torture_context *tctx,
 		NOTIFY_ACTION_OLD_NAME,
 		FILE_NOTIFY_CHANGE_DIR_NAME, 2);
 
-	printf("Testing set path attribute\n");
+	torture_comment(tctx, "Testing set path attribute\n");
 	NOTIFY_MASK_TEST("Testing set path attribute",
 		smbcli_close(cli->tree, smbcli_open(cli->tree, BASEDIR "\\tname1", O_CREAT, 0));,
 		smbcli_setatr(cli2->tree, BASEDIR "\\tname1", FILE_ATTRIBUTE_HIDDEN, 0);,
@@ -852,7 +852,7 @@ static bool test_notify_mask(struct torture_context *tctx,
 		NOTIFY_ACTION_MODIFIED,
 		FILE_NOTIFY_CHANGE_ATTRIBUTES, 1);
 
-	printf("Testing set path write time\n");
+	torture_comment(tctx, "Testing set path write time\n");
 	NOTIFY_MASK_TEST("Testing set path write time",
 		smbcli_close(cli->tree, smbcli_open(cli->tree, BASEDIR "\\tname1", O_CREAT, 0));,
 		smbcli_setatr(cli2->tree, BASEDIR "\\tname1", FILE_ATTRIBUTE_NORMAL, 1000);,
@@ -860,7 +860,7 @@ static bool test_notify_mask(struct torture_context *tctx,
 		NOTIFY_ACTION_MODIFIED,
 		FILE_NOTIFY_CHANGE_LAST_WRITE, 1);
 
-	printf("Testing set file attribute\n");
+	torture_comment(tctx, "Testing set file attribute\n");
 	NOTIFY_MASK_TEST("Testing set file attribute",
 		fnum2 = create_complex_file(cli2, tctx, BASEDIR "\\tname1");,
 		smbcli_fsetatr(cli2->tree, fnum2, FILE_ATTRIBUTE_HIDDEN, 0, 0, 0, 0);,
@@ -869,11 +869,11 @@ static bool test_notify_mask(struct torture_context *tctx,
 		FILE_NOTIFY_CHANGE_ATTRIBUTES, 1);
 
 	if (torture_setting_bool(tctx, "samba3", false)) {
-		printf("Samba3 does not yet support create times "
+		torture_comment(tctx, "Samba3 does not yet support create times "
 		       "everywhere\n");
 	}
 	else {
-		printf("Testing set file create time\n");
+		torture_comment(tctx, "Testing set file create time\n");
 		NOTIFY_MASK_TEST("Testing set file create time",
 			fnum2 = create_complex_file(cli, tctx,
 						    BASEDIR "\\tname1");,
@@ -884,7 +884,7 @@ static bool test_notify_mask(struct torture_context *tctx,
 			FILE_NOTIFY_CHANGE_CREATION, 1);
 	}
 
-	printf("Testing set file access time\n");
+	torture_comment(tctx, "Testing set file access time\n");
 	NOTIFY_MASK_TEST("Testing set file access time",
 		fnum2 = create_complex_file(cli, tctx, BASEDIR "\\tname1");,
 		smbcli_fsetatr(cli->tree, fnum2, 0, 0, t, 0, 0);,
@@ -892,7 +892,7 @@ static bool test_notify_mask(struct torture_context *tctx,
 		NOTIFY_ACTION_MODIFIED,
 		FILE_NOTIFY_CHANGE_LAST_ACCESS, 1);
 
-	printf("Testing set file write time\n");
+	torture_comment(tctx, "Testing set file write time\n");
 	NOTIFY_MASK_TEST("Testing set file write time",
 		fnum2 = create_complex_file(cli, tctx, BASEDIR "\\tname1");,
 		smbcli_fsetatr(cli->tree, fnum2, 0, 0, 0, t, 0);,
@@ -900,7 +900,7 @@ static bool test_notify_mask(struct torture_context *tctx,
 		NOTIFY_ACTION_MODIFIED,
 		FILE_NOTIFY_CHANGE_LAST_WRITE, 1);
 
-	printf("Testing set file change time\n");
+	torture_comment(tctx, "Testing set file change time\n");
 	NOTIFY_MASK_TEST("Testing set file change time",
 		fnum2 = create_complex_file(cli, tctx, BASEDIR "\\tname1");,
 		smbcli_fsetatr(cli->tree, fnum2, 0, 0, 0, 0, t);,
@@ -909,7 +909,7 @@ static bool test_notify_mask(struct torture_context *tctx,
 		0, 1);
 
 
-	printf("Testing write\n");
+	torture_comment(tctx, "Testing write\n");
 	NOTIFY_MASK_TEST("Testing write",
 		fnum2 = create_complex_file(cli2, tctx, BASEDIR "\\tname1");,
 		smbcli_write(cli2->tree, fnum2, 1, &c, 10000, 1);,
@@ -917,7 +917,7 @@ static bool test_notify_mask(struct torture_context *tctx,
 		NOTIFY_ACTION_MODIFIED,
 		0, 1);
 
-	printf("Testing truncate\n");
+	torture_comment(tctx, "Testing truncate\n");
 	NOTIFY_MASK_TEST("Testing truncate",
 		fnum2 = create_complex_file(cli2, tctx, BASEDIR "\\tname1");,
 		smbcli_ftruncate(cli2->tree, fnum2, 10000);,
@@ -946,7 +946,7 @@ static bool test_notify_file(struct torture_context *tctx,
 	int fnum;
 	const char *fname = BASEDIR "\\file.txt";
 
-	printf("TESTING CHANGE NOTIFY ON FILES\n");
+	torture_comment(tctx, "TESTING CHANGE NOTIFY ON FILES\n");
 
 	torture_assert(tctx, torture_setup_dir(cli, BASEDIR),
 		       "Failed to setup up test directory: " BASEDIR);
@@ -976,7 +976,7 @@ static bool test_notify_file(struct torture_context *tctx,
 	notify.nttrans.in.completion_filter = FILE_NOTIFY_CHANGE_STREAM_NAME;
 	notify.nttrans.in.recursive = false;
 
-	printf("Testing if notifies on file handles are invalid (should be)\n");
+	torture_comment(tctx, "Testing if notifies on file handles are invalid (should be)\n");
 
 	req = smb_raw_changenotify_send(cli->tree, &notify);
 	status = smb_raw_changenotify_recv(req, tctx, &notify);
@@ -1016,7 +1016,7 @@ static bool test_notify_tdis(struct torture_context *tctx,
 	struct smbcli_request *req;
 	struct smbcli_state *cli = NULL;
 
-	printf("TESTING CHANGE NOTIFY FOLLOWED BY TDIS\n");
+	torture_comment(tctx, "TESTING CHANGE NOTIFY FOLLOWED BY TDIS\n");
 
 	torture_assert(tctx, torture_setup_dir(cli1, BASEDIR),
 		       "Failed to setup up test directory: " BASEDIR);
@@ -1086,7 +1086,7 @@ static bool test_notify_exit(struct torture_context *tctx,
 	struct smbcli_request *req;
 	struct smbcli_state *cli = NULL;
 
-	printf("TESTING CHANGE NOTIFY FOLLOWED BY EXIT\n");
+	torture_comment(tctx, "TESTING CHANGE NOTIFY FOLLOWED BY EXIT\n");
 
 	torture_assert(tctx, torture_setup_dir(cli1, BASEDIR),
 		       "Failed to setup up test directory: " BASEDIR);
@@ -1155,7 +1155,7 @@ static bool test_notify_ulogoff(struct torture_context *tctx,
 	struct smbcli_request *req;
 	struct smbcli_state *cli = NULL;
 
-	printf("TESTING CHANGE NOTIFY FOLLOWED BY ULOGOFF\n");
+	torture_comment(tctx, "TESTING CHANGE NOTIFY FOLLOWED BY ULOGOFF\n");
 
 	torture_assert(tctx, torture_setup_dir(cli1, BASEDIR),
 		       "Failed to setup up test directory: " BASEDIR);
@@ -1231,7 +1231,7 @@ static bool test_notify_tcp_dis(struct torture_context *tctx,
 	struct smbcli_request *req;
 	struct smbcli_state *cli = NULL;
 
-	printf("TESTING CHANGE NOTIFY FOLLOWED BY TCP DISCONNECT\n");
+	torture_comment(tctx, "TESTING CHANGE NOTIFY FOLLOWED BY TCP DISCONNECT\n");
 
 	torture_assert(tctx, torture_setup_dir(cli1, BASEDIR),
 		       "Failed to setup up test directory: " BASEDIR);
@@ -1297,7 +1297,7 @@ static bool test_notify_double(struct torture_context *tctx,
 	int fnum;
 	struct smbcli_request *req1, *req2;
 
-	printf("TESTING CHANGE NOTIFY TWICE ON ONE DIRECTORY\n");
+	torture_comment(tctx, "TESTING CHANGE NOTIFY TWICE ON ONE DIRECTORY\n");
 
 	torture_assert(tctx, torture_setup_dir(cli, BASEDIR),
 		       "Failed to setup up test directory: " BASEDIR);
@@ -1406,7 +1406,7 @@ static bool test_notify_tree(struct torture_context *tctx,
 	NTSTATUS status;
 	bool all_done = false;
 
-	printf("TESTING CHANGE NOTIFY FOR DIFFERENT DEPTHS\n");
+	torture_comment(tctx, "TESTING CHANGE NOTIFY FOR DIFFERENT DEPTHS\n");
 
 	torture_assert(tctx, torture_setup_dir(cli, BASEDIR),
 		       "Failed to setup up test directory: " BASEDIR);
@@ -1484,7 +1484,7 @@ static bool test_notify_tree(struct torture_context *tctx,
 		}
 	} while (!all_done && timeval_elapsed(&tv) < 20);
 
-	printf("took %.4f seconds to propogate all events\n", timeval_elapsed(&tv));
+	torture_comment(tctx, "took %.4f seconds to propogate all events\n", timeval_elapsed(&tv));
 
 	for (i=0;i<ARRAY_SIZE(dirs);i++) {
 		torture_assert_int_equal_goto(tctx,
@@ -1524,7 +1524,7 @@ static bool test_notify_overflow(struct torture_context *tctx,
 	struct smbcli_request *req1;
 	int i;
 
-	printf("TESTING CHANGE NOTIFY EVENT OVERFLOW\n");
+	torture_comment(tctx, "TESTING CHANGE NOTIFY EVENT OVERFLOW\n");
 
 	torture_assert(tctx, torture_setup_dir(cli, BASEDIR),
 		       "Failed to setup up test directory: " BASEDIR);
@@ -1567,7 +1567,7 @@ static bool test_notify_overflow(struct torture_context *tctx,
 					   "smb_raw_changenotify_recv");
 
 	/* open a lot of files, filling up the server side notify buffer */
-	printf("Testing overflowed buffer notify on create of %d files\n",
+	torture_comment(tctx, "Testing overflowed buffer notify on create of %d files\n",
 	       count);
 	for (i=0;i<count;i++) {
 		char *fname = talloc_asprintf(cli, BASEDIR "\\test%d.txt", i);
@@ -1608,7 +1608,7 @@ static bool test_notify_basedir(struct torture_context *tctx,
 	int fnum;
 	struct smbcli_request *req1;
 
-	printf("TESTING CHANGE NOTIFY BASEDIR EVENTS\n");
+	torture_comment(tctx, "TESTING CHANGE NOTIFY BASEDIR EVENTS\n");
 
 	torture_assert(tctx, torture_setup_dir(cli, BASEDIR),
 		       "Failed to setup up test directory: " BASEDIR);
@@ -1688,7 +1688,7 @@ static struct smbcli_tree *secondary_tcon(struct smbcli_state *cli,
 	share = torture_setting_string(tctx, "share", NULL);
 	host  = torture_setting_string(tctx, "host", NULL);
 	
-	printf("create a second tree context on the same session\n");
+	torture_comment(tctx, "create a second tree context on the same session\n");
 	tree = smbcli_tree_init(cli->session, tctx, false);
 
 	tcon.generic.level = RAW_TCON_TCONX;
@@ -1699,12 +1699,12 @@ static struct smbcli_tree *secondary_tcon(struct smbcli_state *cli,
 	status = smb_raw_tcon(tree, tctx, &tcon);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(tree);
-		printf("Failed to create secondary tree\n");
+		torture_comment(tctx, "Failed to create secondary tree\n");
 		return NULL;
 	}
 
 	tree->tid = tcon.tconx.out.tid;
-	printf("tid1=%d tid2=%d\n", cli->tree->tid, tree->tid);
+	torture_comment(tctx, "tid1=%d tid2=%d\n", cli->tree->tid, tree->tid);
 
 	return tree;
 }
@@ -1725,7 +1725,7 @@ static bool test_notify_tcon(struct torture_context *tctx,
 	extern int torture_numops;
 	struct smbcli_tree *tree = NULL;
 		
-	printf("TESTING SIMPLE CHANGE NOTIFY\n");
+	torture_comment(tctx, "TESTING SIMPLE CHANGE NOTIFY\n");
 
 	torture_assert(tctx, torture_setup_dir(cli, BASEDIR),
 		       "Failed to setup up test directory: " BASEDIR);
@@ -1763,7 +1763,7 @@ static bool test_notify_tcon(struct torture_context *tctx,
 	notify.nttrans.in.file.fnum = fnum;
 	notify.nttrans.in.recursive = true;
 
-	printf("Testing notify mkdir\n");
+	torture_comment(tctx, "Testing notify mkdir\n");
 	req = smb_raw_changenotify_send(cli->tree, &notify);
 	smbcli_mkdir(cli->tree, BASEDIR "\\subdir-name");
 
@@ -1780,7 +1780,7 @@ static bool test_notify_tcon(struct torture_context *tctx,
 	CHECK_WSTR(tctx, notify.nttrans.out.changes[0].name, "subdir-name",
 		   STR_UNICODE);
 
-	printf("Testing notify rmdir\n");
+	torture_comment(tctx, "Testing notify rmdir\n");
 	req = smb_raw_changenotify_send(cli->tree, &notify);
 	smbcli_rmdir(cli->tree, BASEDIR "\\subdir-name");
 
@@ -1796,14 +1796,14 @@ static bool test_notify_tcon(struct torture_context *tctx,
 	CHECK_WSTR(tctx, notify.nttrans.out.changes[0].name, "subdir-name",
 		   STR_UNICODE);
 
-	printf("SIMPLE CHANGE NOTIFY OK\n");
+	torture_comment(tctx, "SIMPLE CHANGE NOTIFY OK\n");
 
-	printf("TESTING WITH SECONDARY TCON\n");
+	torture_comment(tctx, "TESTING WITH SECONDARY TCON\n");
 	tree = secondary_tcon(cli, tctx);
 	torture_assert_not_null_goto(tctx, tree, ret, done,
 				     "failed to create secondary tcon");
 
-	printf("Testing notify mkdir\n");
+	torture_comment(tctx, "Testing notify mkdir\n");
 	req = smb_raw_changenotify_send(cli->tree, &notify);
 	smbcli_mkdir(cli->tree, BASEDIR "\\subdir-name");
 
@@ -1820,7 +1820,7 @@ static bool test_notify_tcon(struct torture_context *tctx,
 	CHECK_WSTR(tctx, notify.nttrans.out.changes[0].name, "subdir-name",
 		   STR_UNICODE);
 
-	printf("Testing notify rmdir\n");
+	torture_comment(tctx, "Testing notify rmdir\n");
 	req = smb_raw_changenotify_send(cli->tree, &notify);
 	smbcli_rmdir(cli->tree, BASEDIR "\\subdir-name");
 
@@ -1836,15 +1836,15 @@ static bool test_notify_tcon(struct torture_context *tctx,
 	CHECK_WSTR(tctx, notify.nttrans.out.changes[0].name, "subdir-name",
 		   STR_UNICODE);
 
-	printf("CHANGE NOTIFY WITH TCON OK\n");
+	torture_comment(tctx, "CHANGE NOTIFY WITH TCON OK\n");
 
-	printf("Disconnecting secondary tree\n");
+	torture_comment(tctx, "Disconnecting secondary tree\n");
 	status = smb_tree_disconnect(tree);
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
 					"smb_tree_disconnect");
 	talloc_free(tree);
 
-	printf("Testing notify mkdir\n");
+	torture_comment(tctx, "Testing notify mkdir\n");
 	req = smb_raw_changenotify_send(cli->tree, &notify);
 	smbcli_mkdir(cli->tree, BASEDIR "\\subdir-name");
 
@@ -1861,7 +1861,7 @@ static bool test_notify_tcon(struct torture_context *tctx,
 	CHECK_WSTR(tctx, notify.nttrans.out.changes[0].name, "subdir-name",
 		   STR_UNICODE);
 
-	printf("Testing notify rmdir\n");
+	torture_comment(tctx, "Testing notify rmdir\n");
 	req = smb_raw_changenotify_send(cli->tree, &notify);
 	smbcli_rmdir(cli->tree, BASEDIR "\\subdir-name");
 
@@ -1877,7 +1877,7 @@ static bool test_notify_tcon(struct torture_context *tctx,
 	CHECK_WSTR(tctx, notify.nttrans.out.changes[0].name, "subdir-name",
 		   STR_UNICODE);
 
-	printf("CHANGE NOTIFY WITH TDIS OK\n");
+	torture_comment(tctx, "CHANGE NOTIFY WITH TDIS OK\n");
 done:
 	smb_raw_exit(cli->session);
 	smbcli_deltree(cli->tree, BASEDIR);
