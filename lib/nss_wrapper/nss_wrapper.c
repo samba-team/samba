@@ -4746,8 +4746,14 @@ void endhostent(void)
 }
 #endif /* HAVE_SOLARIS_ENDHOSTENT */
 
+#ifdef BSD
+/* BSD implementation stores data in thread local storage but GLIBC does not */
+static __thread struct hostent user_he;
+static __thread struct nwrap_vector user_addrlist;
+#else
 static struct hostent user_he;
 static struct nwrap_vector user_addrlist;
+#endif /* BSD */
 static struct hostent *nwrap_gethostbyname(const char *name)
 {
 	if (nwrap_files_gethostbyname(name, AF_UNSPEC, &user_he, &user_addrlist) == -1) {
@@ -4765,9 +4771,16 @@ struct hostent *gethostbyname(const char *name)
 	return nwrap_gethostbyname(name);
 }
 
+/* This is a GNU extension - Also can be found on BSD systems */
 #ifdef HAVE_GETHOSTBYNAME2
+#ifdef BSD
+/* BSD implementation stores data in  thread local storage but GLIBC not */
+static __thread struct hostent user_he2;
+static __thread struct nwrap_vector user_addrlist2;
+#else
 static struct hostent user_he2;
 static struct nwrap_vector user_addrlist2;
+#endif /* BSD */
 static struct hostent *nwrap_gethostbyname2(const char *name, int af)
 {
 	if (nwrap_files_gethostbyname(name, af, &user_he2, &user_addrlist2) == -1) {
