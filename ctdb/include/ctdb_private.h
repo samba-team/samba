@@ -134,10 +134,10 @@ struct ctdb_daemon_data {
 #define CTDB_UPDATE_STAT(ctdb, counter, value) \
 	{										\
 		if (value > ctdb->statistics.counter) {					\
-			ctdb->statistics.counter = c->hopcount;				\
+			ctdb->statistics.counter = value;				\
 		}									\
 		if (value > ctdb->statistics_current.counter) {				\
-			ctdb->statistics_current.counter = c->hopcount;			\
+			ctdb->statistics_current.counter = value;			\
 		}									\
 	}
 
