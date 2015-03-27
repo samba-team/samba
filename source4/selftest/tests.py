@@ -582,5 +582,5 @@ for env in ["ad_dc_ntvfs", "rodc", "promoted_dc", "ad_dc", "fl2000dc", "fl2003dc
 # TODO: Verifying the databases really should be a part of the
 # environment teardown.
 # check the databases are all OK. PLEASE LEAVE THIS AS THE LAST TEST
-for env in ["ad_dc_ntvfs", "fl2000dc", "fl2003dc", "fl2008r2dc", 'vampire_dc', 'promoted_dc']:
+for env in ["ad_dc_ntvfs", "ad_dc", "fl2000dc", "fl2003dc", "fl2008r2dc", 'vampire_dc', 'promoted_dc']:
     plantestsuite("samba4.blackbox.dbcheck(%s)" % env, env + ":local" , ["PYTHON=%s" % python, os.path.join(bbdir, "dbcheck.sh"), '$PREFIX/provision', configuration])
