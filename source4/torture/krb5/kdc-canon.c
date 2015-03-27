@@ -42,7 +42,8 @@
 #define TEST_WIN2K            0x0000020
 #define TEST_UPN              0x0000040
 #define TEST_S4U2SELF         0x0000080
-#define TEST_ALL              0x00000FF
+#define TEST_REMOVEDOLLAR     0x0000100
+#define TEST_ALL              0x00001FF
 
 struct test_data {
 	const char *test_name;
@@ -60,6 +61,7 @@ struct test_data {
 	bool upn;
 	bool other_upn_suffix;
 	bool s4u2self;
+	bool removedollar;
 	const char *krb5_service;
 	const char *krb5_hostname;
 };	
@@ -1445,6 +1447,12 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 		torture_skip(tctx, "This test needs a UPN specified as --option=torture:krb5-upn=user@example.com to run");
 	}
 
+	if (test_data->removedollar &&
+	    !torture_setting_bool(tctx, "run_removedollar_test", false))
+	{
+		torture_skip(tctx, "--option=torture:run_removedollar_test=true not specified");
+	}
+
 	if (test_data->netbios_realm) {
 		test_data->realm = test_data->real_domain;
 	} else {
@@ -1499,6 +1507,16 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 		test_data->username = strupper_talloc(test_data, test_data->username);
 	} else {
 		test_data->username = talloc_strdup(test_data, test_data->username);
+	}
+
+	if (test_data->removedollar) {
+		char *p;
+
+		p = strchr_m(test_data->username, '$');
+		torture_assert(tctx, p != NULL, talloc_asprintf(tctx,
+			       "username[%s] contains no '$'\n",
+			       test_data->username));
+		*p = '\0';
 	}
 
 	principal_string = talloc_asprintf(test_data, "%s@%s", test_data->username, test_data->realm);
@@ -2194,7 +2212,7 @@ struct torture_suite *torture_krb5_canon(TALLOC_CTX *mem_ctx)
 	suite->description = talloc_strdup(suite, "Kerberos Canonicalisation tests");
 
 	for (i = 0; i < TEST_ALL; i++) {
-		char *name = talloc_asprintf(suite, "%s.%s.%s.%s.%s.%s.%s.%s",
+		char *name = talloc_asprintf(suite, "%s.%s.%s.%s.%s.%s.%s.%s.%s",
 					     (i & TEST_CANONICALIZE) ? "canon" : "no-canon",
 					     (i & TEST_ENTERPRISE) ? "enterprise" : "no-enterprise",
 					     (i & TEST_UPPER_REALM) ? "uc-realm" : "lc-realm",
@@ -2202,7 +2220,8 @@ struct torture_suite *torture_krb5_canon(TALLOC_CTX *mem_ctx)
 					     (i & TEST_NETBIOS_REALM) ? "netbios-realm" : "krb5-realm",
 					     (i & TEST_WIN2K) ? "win2k" : "no-win2k",
 					     (i & TEST_UPN) ? "upn" : "no-upn",
-					     (i & TEST_S4U2SELF) ? "s4u2self" : "normal");
+					     (i & TEST_S4U2SELF) ? "s4u2self" : "normal",
+					     (i & TEST_REMOVEDOLLAR) ? "removedollar" : "keepdollar");
 
 		struct test_data *test_data = talloc_zero(suite, struct test_data);
 
@@ -2220,6 +2239,7 @@ struct torture_suite *torture_krb5_canon(TALLOC_CTX *mem_ctx)
 		test_data->win2k = (i & TEST_WIN2K) != 0;
 		test_data->upn = (i & TEST_UPN) != 0;
 		test_data->s4u2self = (i & TEST_S4U2SELF) != 0;
+		test_data->removedollar = (i & TEST_REMOVEDOLLAR) != 0;
 		torture_suite_add_simple_tcase_const(suite, name, torture_krb5_as_req_canon,
 						     test_data);
 						     
