@@ -2950,9 +2950,9 @@ def test_all_reps_from(lp, creds):
     colours = []
     vertex_colours = []
 
-    for dsa in dsas:
+    for dsa_dn in dsas:
         kcc = KCC()
-        kcc.run(opts.dburl, lp, creds, forced_local_dsa=dsa,
+        kcc.run(opts.dburl, lp, creds, forced_local_dsa=dsa_dn,
                 forget_local_links=opts.forget_local_links,
                 forget_intersite_links=opts.forget_intersite_links)
         current, needed = kcc.my_dsa.get_rep_tables()
