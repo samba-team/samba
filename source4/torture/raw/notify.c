@@ -1487,11 +1487,11 @@ static bool test_notify_tree(struct torture_context *mem_ctx,
 	printf("took %.4f seconds to propogate all events\n", timeval_elapsed(&tv));
 
 	for (i=0;i<ARRAY_SIZE(dirs);i++) {
-		if (dirs[i].counted != dirs[i].expected) {
-			printf("ERROR: i=%d expected %d got %d for '%s'\n",
-			       i, dirs[i].expected, dirs[i].counted, dirs[i].path);
-			ret = false;
-		}
+		torture_assert_int_equal_goto(mem_ctx,
+			dirs[i].counted, dirs[i].expected, ret, done,
+			talloc_asprintf(mem_ctx,
+					"unexpected number of events for '%s'",
+					dirs[i].path));
 	}
 
 	/*
