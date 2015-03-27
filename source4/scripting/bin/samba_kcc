@@ -1923,22 +1923,20 @@ class KCC(object):
         if not self.my_dsa.is_ro():
             return
 
-        cn2 = None
-        # Find cn2 - the DRS NTDSConnection
-        for con in self.my_dsa.connect_table.values():
-            if not con.is_rodc_topology():
-                cn2 = con
-                break
+        all_connections = self.my_dsa.connect_table.values()
+        ro_connections = [x for x in all_connections if x.is_rodc_topology()]
+        rw_connections = [x for x in all_connections if x not in ro_connections]
 
-        # Find cn1 - the FRS NTDSConnection
-        if cn2 is not None:
-            for con in self.my_dsa.connect_table.values():
-                if con.is_rodc_topology():
-                    con.from_dnstr = cn2.from_dnstr
-                    con.schedule = cn2.schedule
-                    con.to_be_modified = True
+        # XXX here we are dealing with multiple RODC_TOPO connections,
+        # if they exist. It is not clear whether the spec means that
+        # or if it ever arises.
+        if rw_connections and ro_connections:
+            for con in ro_connections:
+                cn2 = rw_connections[0]
+                con.from_dnstr = cn2.from_dnstr
+                con.schedule = cn2.schedule
+                con.to_be_modified = True
 
-            # Commit changes to the database
             self.my_dsa.commit_connections(self.samdb, ro=opts.readonly)
 
     def intrasite_max_node_edges(self, node_count):
