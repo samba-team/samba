@@ -1081,7 +1081,8 @@ class KCC(object):
 
         g.connected_vertices = connected_vertices
 
-
+        #be less verbose in dot file output unless --debug
+        do_dot_files = opts.dot_files and opts.debug
         dot_edges = []
         for edge in g.edges:
             for a, b in itertools.combinations(edge.vertices, 2):
@@ -1089,8 +1090,7 @@ class KCC(object):
         verify_properties = ()
         verify_and_dot('site_edges', dot_edges, directed=False, label=self.my_dsa_dnstr,
                        properties=verify_properties, debug=DEBUG, verify=opts.verify,
-                       dot_files=opts.dot_files)
-
+                       dot_files=do_dot_files)
 
         return g
 
@@ -1774,7 +1774,7 @@ class KCC(object):
                                                              for edge in e_set.edges))]
                 graph_nodes = [v.site.site_dnstr for v in graph.vertices]
 
-                if opts.dot_files:
+                if opts.dot_files and opts.debug:
                     write_dot_file('edgeset_%s' % (edgeType,), graph_edges, vertices=graph_nodes,
                                    label=label)
 
@@ -2236,7 +2236,8 @@ class KCC(object):
         DEBUG("r_list is length %s" % len(r_list))
         DEBUG('\n'.join(str((x.rep_dsa_guid, x.rep_dsa_dnstr)) for x in r_list))
 
-        if opts.verify or opts.dot_files:
+        do_dot_files = opts.dot_files and opts.debug
+        if opts.verify or do_dot_files:
             dot_edges = []
             dot_vertices = set()
             for v1 in graph_list:
@@ -2249,7 +2250,7 @@ class KCC(object):
             verify_and_dot('intrasite_pre_ntdscon', dot_edges, dot_vertices,
                            label='%s__%s__%s' % (site_local.site_dnstr, nctype_lut[nc_x.nc_type], nc_x.nc_dnstr),
                            properties=verify_properties, debug=DEBUG, verify=opts.verify,
-                           dot_files=opts.dot_files, directed=True)
+                           dot_files=do_dot_files, directed=True)
 
 
 
@@ -2309,7 +2310,7 @@ class KCC(object):
                 tnode.add_connections_from_edges(dc_local)
 
 
-        if opts.verify or opts.dot_files:
+        if opts.verify or do_dot_files:
             dot_edges = []
             dot_vertices = set()
             for v1 in graph_list:
@@ -2322,7 +2323,7 @@ class KCC(object):
             verify_and_dot('intrasite_post_ntdscon', dot_edges, dot_vertices,
                            label='%s__%s__%s' % (site_local.site_dnstr, nctype_lut[nc_x.nc_type], nc_x.nc_dnstr),
                            properties=verify_properties, debug=DEBUG, verify=opts.verify,
-                           dot_files=opts.dot_files, directed=True)
+                           dot_files=do_dot_files, directed=True)
 
 
     def intrasite(self):
