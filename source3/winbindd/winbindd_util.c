@@ -87,10 +87,13 @@ struct winbindd_domain *wb_next_domain(struct winbindd_domain *domain)
 		domain = domain->next;
 	}
 
-	if ((domain != NULL)
-	    && sid_check_is_our_sam(&domain->sid)) {
+	if ((domain != NULL) &&
+	    (lp_server_role() != ROLE_ACTIVE_DIRECTORY_DC) &&
+	    sid_check_is_our_sam(&domain->sid))
+	{
 		domain = domain->next;
 	}
+
 	return domain;
 }
 

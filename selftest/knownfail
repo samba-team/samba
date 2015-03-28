@@ -267,7 +267,6 @@
 ^samba4.winbind.struct.getdcname\(s4member:local\)
 ^samba.blackbox.wbinfo\(s4member:local\).wbinfo -r against s4member\(s4member:local\)
 ^samba.blackbox.wbinfo\(s4member:local\).wbinfo --user-sids against s4member\(s4member:local\)
-^samba4.winbind.struct.getpwent\(ad_dc:local\)
 ^samba.wbinfo_simple.\(s4member:local\).--user-groups
 ^samba.nss.test using winbind\(s4member:local\)
 #
@@ -277,6 +276,9 @@
 ^samba3.local.nss.reentrant enumeration crosschecks\(ad_dc_ntvfs:local\)
 ^samba3.local.nss.reentrant enumeration\(ad_dc_ntvfs:local\)
 ^samba3.local.nss.enumeration\(ad_dc_ntvfs:local\)
+^samba3.local.nss.reentrant enumeration crosschecks\(ad_dc:local\)
+^samba3.local.nss.reentrant enumeration\(ad_dc:local\)
+^samba3.local.nss.enumeration\(ad_dc:local\)
 #
 # These fail only if we run the unix.whoami test before them
 # in the member and ad_member environments. ==> Strange!!!
