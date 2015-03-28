@@ -380,43 +380,106 @@ NTSTATUS _wbint_QueryGroupList(struct pipes_struct *p,
 			       struct wbint_QueryGroupList *r)
 {
 	struct winbindd_domain *domain = wb_child_domain();
-	uint32_t i, num_groups;
-	struct wb_acct_info *groups;
+	uint32_t i;
+	uint32_t num_local_groups = 0;
+	struct wb_acct_info *local_groups = NULL;
+	uint32_t num_dom_groups = 0;
+	struct wb_acct_info *dom_groups = NULL;
+	uint32_t ti = 0;
+	uint64_t num_total = 0;
 	struct wbint_Principal *result;
 	NTSTATUS status;
+	bool include_local_groups = false;
 
 	if (domain == NULL) {
 		return NT_STATUS_REQUEST_NOT_ACCEPTED;
 	}
 
+	switch (lp_server_role()) {
+	case ROLE_ACTIVE_DIRECTORY_DC:
+		if (domain->internal) {
+			/*
+			 * we want to include local groups
+			 * for BUILTIN and WORKGROUP
+			 */
+			include_local_groups = true;
+		}
+		break;
+	default:
+		/*
+		 * We might include local groups in more
+		 * setups later, but that requires more work
+		 * elsewhere.
+		 */
+		break;
+	}
+
+	if (include_local_groups) {
+		status = domain->methods->enum_local_groups(domain, talloc_tos(),
+							    &num_local_groups,
+							    &local_groups);
+		reset_cm_connection_on_error(domain, status);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+	}
+
 	status = domain->methods->enum_dom_groups(domain, talloc_tos(),
-						  &num_groups, &groups);
+						  &num_dom_groups,
+						  &dom_groups);
 	reset_cm_connection_on_error(domain, status);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
+	num_total = num_local_groups + num_dom_groups;
+	if (num_total > UINT32_MAX) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
 	result = talloc_array(r->out.groups, struct wbint_Principal,
-			      num_groups);
+			      num_total);
 	if (result == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	for (i=0; i<num_groups; i++) {
-		sid_compose(&result[i].sid, &domain->sid, groups[i].rid);
-		result[i].type = SID_NAME_DOM_GRP;
-		result[i].name = talloc_strdup(result, groups[i].acct_name);
-		if (result[i].name == NULL) {
+	for (i = 0; i < num_local_groups; i++) {
+		struct wb_acct_info *lg = &local_groups[i];
+		struct wbint_Principal *rg = &result[ti++];
+
+		sid_compose(&rg->sid, &domain->sid, lg->rid);
+		rg->type = SID_NAME_ALIAS;
+		rg->name = talloc_strdup(result, lg->acct_name);
+		if (rg->name == NULL) {
 			TALLOC_FREE(result);
-			TALLOC_FREE(groups);
+			TALLOC_FREE(dom_groups);
+			TALLOC_FREE(local_groups);
 			return NT_STATUS_NO_MEMORY;
 		}
 	}
+	num_local_groups = 0;
+	TALLOC_FREE(local_groups);
 
-	r->out.groups->num_principals = num_groups;
+	for (i = 0; i < num_dom_groups; i++) {
+		struct wb_acct_info *dg = &dom_groups[i];
+		struct wbint_Principal *rg = &result[ti++];
+
+		sid_compose(&rg->sid, &domain->sid, dg->rid);
+		rg->type = SID_NAME_DOM_GRP;
+		rg->name = talloc_strdup(result, dg->acct_name);
+		if (rg->name == NULL) {
+			TALLOC_FREE(result);
+			TALLOC_FREE(dom_groups);
+			TALLOC_FREE(local_groups);
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+	num_dom_groups = 0;
+	TALLOC_FREE(dom_groups);
+
+	r->out.groups->num_principals = ti;
 	r->out.groups->principals = result;
 
-	TALLOC_FREE(groups);
 	return NT_STATUS_OK;
 }
 
