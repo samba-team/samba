@@ -929,8 +929,8 @@ static bool lookup_name_sid_list(struct torture_context *torture, char **list)
 		char *sid;
 		char *name;
 		const char *domain_name = torture_setting_string(torture,
-						"winbindd_netbios_domain",
-						lpcfg_workgroup(torture->lp_ctx));
+						"winbindd_domain_without_prefix",
+						NULL);
 
 		ZERO_STRUCT(req);
 		ZERO_STRUCT(rep);
@@ -949,7 +949,9 @@ static bool lookup_name_sid_list(struct torture_context *torture, char **list)
 
 		DO_STRUCT_REQ_REP(WINBINDD_LOOKUPSID, &req, &rep);
 
-		if (strequal(rep.data.name.dom_name, domain_name)) {
+		if (domain_name != NULL &&
+		    strequal(rep.data.name.dom_name, domain_name))
+		{
 			name = talloc_asprintf(torture, "%s",
 					       rep.data.name.name);
 		} else {

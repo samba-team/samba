@@ -368,11 +368,13 @@ plansmbtorture4testsuite('base.xcopy', "ad_dc_ntvfs", ['//$NETBIOSNAME/xcopy_sha
 plansmbtorture4testsuite('base.xcopy', "s4member", ['//$NETBIOSNAME/xcopy_share', '-k', 'no', '--signing=no', '-U%'], modname="samba4.smb.signing --signing=no anon")
 
 
-wb_opts = ["--option=\"torture:strict mode=no\"", "--option=\"torture:timelimit=1\"", "--option=\"torture:winbindd_separator=/\"", "--option=\"torture:winbindd_netbios_name=$SERVER\"", "--option=\"torture:winbindd_netbios_domain=$DOMAIN\""]
+wb_opts_default = ["--option=\"torture:strict mode=no\"", "--option=\"torture:timelimit=1\"", "--option=\"torture:winbindd_separator=/\"", "--option=\"torture:winbindd_netbios_name=$SERVER\"", "--option=\"torture:winbindd_netbios_domain=$DOMAIN\""]
 
 winbind_ad_client_tests = smbtorture4_testsuites("winbind.struct") + smbtorture4_testsuites("winbind.pac")
 winbind_wbclient_tests = smbtorture4_testsuites("winbind.wbclient")
 for env in ["ad_dc", "s4member", "ad_member"]:
+    wb_opts = wb_opts_default
+    wb_opts += ["--option=\"torture:winbindd_domain_without_prefix=$DOMAIN\""]
     for t in winbind_ad_client_tests:
         plansmbtorture4testsuite(t, "%s:local" % env, wb_opts + ['//$SERVER/tmp', '--realm=$REALM', '--machine-pass', '--option=torture:addc=$DC_SERVER'])
 
