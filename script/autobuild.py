@@ -197,7 +197,7 @@ class builder(object):
         cleanup_list.append(self.prefix)
         os.makedirs(self.sdir)
         run_cmd("rm -rf %s" % self.sdir)
-        run_cmd("git clone --shared %s %s" % (test_master, self.sdir), dir=test_master, show=True)
+        run_cmd("git clone --recursive --shared %s %s" % (test_master, self.sdir), dir=test_master, show=True)
         self.start_next()
 
     def start_next(self):
@@ -575,7 +575,7 @@ while True:
     try:
         run_cmd("rm -rf %s" % test_master)
         cleanup_list.append(test_master)
-        run_cmd("git clone --shared %s %s" % (gitroot, test_master), show=True, dir=gitroot)
+        run_cmd("git clone --recursive --shared %s %s" % (gitroot, test_master), show=True, dir=gitroot)
     except Exception:
         cleanup()
         raise
