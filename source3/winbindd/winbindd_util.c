@@ -1052,11 +1052,17 @@ bool canonicalize_username(fstring username_inout, fstring domain, fstring user)
     Also, if omit DOMAIN if 'winbind trusted domains only = true', as the
     username is then unqualified in unix
 
+    On an AD DC we always fill DOMAIN\\USERNAME.
+
     We always canonicalize as UPPERCASE DOMAIN, lowercase username.
 */
 void fill_domain_username(fstring name, const char *domain, const char *user, bool can_assume)
 {
 	fstring tmp_user;
+
+	if (lp_server_role() == ROLE_ACTIVE_DIRECTORY_DC) {
+		can_assume = false;
+	}
 
 	fstrcpy(tmp_user, user);
 	(void)strlower_m(tmp_user);
@@ -1080,6 +1086,10 @@ char *fill_domain_username_talloc(TALLOC_CTX *mem_ctx,
 				  bool can_assume)
 {
 	char *tmp_user, *name;
+
+	if (lp_server_role() == ROLE_ACTIVE_DIRECTORY_DC) {
+		can_assume = false;
+	}
 
 	tmp_user = talloc_strdup(mem_ctx, user);
 	if (!strlower_m(tmp_user)) {

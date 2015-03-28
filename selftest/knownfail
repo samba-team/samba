@@ -265,7 +265,6 @@
 #
 ^samba4.winbind.struct.domain_info\(s4member:local\)
 ^samba4.winbind.struct.getdcname\(s4member:local\)
-^samba4.winbind.struct.lookup_name_sid\(s4member:local\)
 ^samba.blackbox.wbinfo\(s4member:local\).wbinfo -r against s4member\(s4member:local\)
 ^samba.blackbox.wbinfo\(s4member:local\).wbinfo --user-sids against s4member\(s4member:local\)
 ^samba4.winbind.struct.getpwent\(ad_dc:local\)
