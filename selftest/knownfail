@@ -241,7 +241,6 @@
 #
 # The Samba4 winbind does not cover the full winbind protocol, so these are expected
 #
-^samba4.winbind.struct.show_sequence\(ad_dc\)
 ^samba.blackbox.wbinfo\(ad_dc_ntvfs:local\).wbinfo -N against ad_dc_ntvfs
 ^samba.blackbox.wbinfo\(ad_dc_ntvfs:local\).wbinfo -I against ad_dc_ntvfs
 ^samba.blackbox.wbinfo\(ad_dc_ntvfs:local\).wbinfo  --trusted-domains against ad_dc_ntvfs
