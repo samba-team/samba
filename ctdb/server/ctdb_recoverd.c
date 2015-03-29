@@ -225,7 +225,6 @@ struct ctdb_banning_state {
 struct ctdb_recoverd {
 	struct ctdb_context *ctdb;
 	uint32_t recmaster;
-	uint32_t num_lmasters;
 	uint32_t last_culprit_node;
 	struct ctdb_node_map *nodemap;
 	struct timeval priority_time;
@@ -3407,6 +3406,7 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 	struct ctdb_node_map **remote_nodemaps=NULL;
 	struct ctdb_vnn_map *vnnmap=NULL;
 	struct ctdb_vnn_map *remote_vnnmap=NULL;
+	uint32_t num_lmasters;
 	int32_t debug_level;
 	int i, j, ret;
 	bool self_ban;
@@ -3589,13 +3589,13 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 	}
 
 	/* count how many active nodes there are */
-	rec->num_lmasters  = 0;
+	num_lmasters  = 0;
 	for (i=0; i<nodemap->num; i++) {
 		if (!(nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE)) {
 			if (ctdb_node_has_capabilities(rec->caps,
 						       ctdb->nodes[i]->pnn,
 						       CTDB_CAP_LMASTER)) {
-				rec->num_lmasters++;
+				num_lmasters++;
 			}
 		}
 	}
@@ -3852,9 +3852,9 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 	 * there are active nodes with the lmaster capability...  or
 	 * do a recovery.
 	 */
-	if (vnnmap->size != rec->num_lmasters) {
+	if (vnnmap->size != num_lmasters) {
 		DEBUG(DEBUG_ERR, (__location__ " The vnnmap count is different from the number of active lmaster nodes: %u vs %u\n",
-			  vnnmap->size, rec->num_lmasters));
+			  vnnmap->size, num_lmasters));
 		ctdb_set_culprit(rec, ctdb->pnn);
 		do_recovery(rec, mem_ctx, pnn, nodemap, vnnmap);
 		return;
