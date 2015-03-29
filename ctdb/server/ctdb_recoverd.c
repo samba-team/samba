@@ -719,7 +719,7 @@ static int pull_one_remote_database(struct ctdb_context *ctdb, uint32_t srcnode,
 	int ret;
 	TDB_DATA outdata;
 	struct ctdb_marshall_buffer *reply;
-	struct ctdb_rec_data *rec;
+	struct ctdb_rec_data *recdata;
 	int i;
 	TALLOC_CTX *tmp_ctx = talloc_new(recdb);
 
@@ -738,21 +738,21 @@ static int pull_one_remote_database(struct ctdb_context *ctdb, uint32_t srcnode,
 		talloc_free(tmp_ctx);
 		return -1;
 	}
-	
-	rec = (struct ctdb_rec_data *)&reply->data[0];
-	
+
+	recdata = (struct ctdb_rec_data *)&reply->data[0];
+
 	for (i=0;
 	     i<reply->count;
-	     rec = (struct ctdb_rec_data *)(rec->length + (uint8_t *)rec), i++) {
+	     recdata = (struct ctdb_rec_data *)(recdata->length + (uint8_t *)recdata), i++) {
 		TDB_DATA key, data;
 		struct ctdb_ltdb_header *hdr;
 		TDB_DATA existing;
-		
-		key.dptr = &rec->data[0];
-		key.dsize = rec->keylen;
-		data.dptr = &rec->data[key.dsize];
-		data.dsize = rec->datalen;
-		
+
+		key.dptr = &recdata->data[0];
+		key.dsize = recdata->keylen;
+		data.dptr = &recdata->data[key.dsize];
+		data.dsize = recdata->datalen;
+
 		hdr = (struct ctdb_ltdb_header *)data.dptr;
 
 		if (data.dsize < sizeof(struct ctdb_ltdb_header)) {
@@ -1406,7 +1406,7 @@ struct recdb_data {
 static int traverse_recdb(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *p)
 {
 	struct recdb_data *params = (struct recdb_data *)p;
-	struct ctdb_rec_data *rec;
+	struct ctdb_rec_data *recdata;
 	struct ctdb_ltdb_header *hdr;
 
 	/*
@@ -1451,25 +1451,25 @@ static int traverse_recdb(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, 
 	}
 
 	/* add the record to the blob ready to send to the nodes */
-	rec = ctdb_marshall_record(params->recdata, 0, key, NULL, data);
-	if (rec == NULL) {
+	recdata = ctdb_marshall_record(params->recdata, 0, key, NULL, data);
+	if (recdata == NULL) {
 		params->failed = true;
 		return -1;
 	}
-	if (params->len + rec->length >= params->allocated_len) {
-		params->allocated_len = rec->length + params->len + params->ctdb->tunable.pulldb_preallocation_size;
+	if (params->len + recdata->length >= params->allocated_len) {
+		params->allocated_len = recdata->length + params->len + params->ctdb->tunable.pulldb_preallocation_size;
 		params->recdata = talloc_realloc_size(NULL, params->recdata, params->allocated_len);
 	}
 	if (params->recdata == NULL) {
 		DEBUG(DEBUG_CRIT,(__location__ " Failed to expand recdata to %u\n",
-			 rec->length + params->len));
+			 recdata->length + params->len));
 		params->failed = true;
 		return -1;
 	}
 	params->recdata->count++;
-	memcpy(params->len+(uint8_t *)params->recdata, rec, rec->length);
-	params->len += rec->length;
-	talloc_free(rec);
+	memcpy(params->len+(uint8_t *)params->recdata, recdata, recdata->length);
+	params->len += recdata->length;
+	talloc_free(recdata);
 
 	return 0;
 }
