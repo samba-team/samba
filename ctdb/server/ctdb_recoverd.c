@@ -225,9 +225,7 @@ struct ctdb_banning_state {
 struct ctdb_recoverd {
 	struct ctdb_context *ctdb;
 	uint32_t recmaster;
-	uint32_t num_active;
 	uint32_t num_lmasters;
-	uint32_t num_connected;
 	uint32_t last_culprit_node;
 	struct ctdb_node_map *nodemap;
 	struct timeval priority_time;
@@ -3591,20 +3589,14 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 	}
 
 	/* count how many active nodes there are */
-	rec->num_active    = 0;
 	rec->num_lmasters  = 0;
-	rec->num_connected = 0;
 	for (i=0; i<nodemap->num; i++) {
 		if (!(nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE)) {
-			rec->num_active++;
 			if (ctdb_node_has_capabilities(rec->caps,
 						       ctdb->nodes[i]->pnn,
 						       CTDB_CAP_LMASTER)) {
 				rec->num_lmasters++;
 			}
-		}
-		if (!(nodemap->nodes[i].flags & NODE_FLAGS_DISCONNECTED)) {
-			rec->num_connected++;
 		}
 	}
 
