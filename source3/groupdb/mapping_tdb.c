@@ -101,7 +101,7 @@ static bool init_group_mapping(void)
 			vers_id = DATABASE_VERSION_V2;
 		}
 
-		/* if its an unknown version we remove everthing in the db */
+		/* if its an unknown version we remove everything in the db */
 
 		if (vers_id != DATABASE_VERSION_V2) {
 			tdb_wipe_all(tdb);
