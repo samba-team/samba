@@ -3588,19 +3588,6 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 		return;
 	}
 
-	/* count how many active nodes there are */
-	num_lmasters  = 0;
-	for (i=0; i<nodemap->num; i++) {
-		if (!(nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE)) {
-			if (ctdb_node_has_capabilities(rec->caps,
-						       ctdb->nodes[i]->pnn,
-						       CTDB_CAP_LMASTER)) {
-				num_lmasters++;
-			}
-		}
-	}
-
-
 	/* verify that the recmaster node is still active */
 	for (j=0; j<nodemap->num; j++) {
 		if (nodemap->nodes[j].pnn==rec->recmaster) {
@@ -3843,6 +3830,19 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 						    vnnmap);
 					return;
 				}
+			}
+		}
+	}
+
+
+	/* count how many active nodes there are */
+	num_lmasters  = 0;
+	for (i=0; i<nodemap->num; i++) {
+		if (!(nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE)) {
+			if (ctdb_node_has_capabilities(rec->caps,
+						       ctdb->nodes[i]->pnn,
+						       CTDB_CAP_LMASTER)) {
+				num_lmasters++;
 			}
 		}
 	}
