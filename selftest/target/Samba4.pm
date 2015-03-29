@@ -816,8 +816,9 @@ sub provision_raw_step2($$$)
 		return undef;
 	}
 
+	my $testallowed_account = "testallowed";
 	my $samba_tool_cmd = Samba::bindir_path($self, "samba-tool") 
-	    . " user add --configfile=$ctx->{smb_conf} testallowed $ctx->{password}";
+	    . " user add --configfile=$ctx->{smb_conf} $testallowed_account $ctx->{password}";
 	unless (system($samba_tool_cmd) == 0) {
 		warn("Unable to add testallowed user: \n$samba_tool_cmd\n");
 		return undef;
@@ -830,12 +831,13 @@ sub provision_raw_step2($$$)
 		$base_dn = "DC=$ctx->{netbiosname}";
 	}
 
-	my $user_dn = "cn=testallowed,cn=users,$base_dn";
+	my $user_dn = "cn=$testallowed_account,cn=users,$base_dn";
+	$testallowed_account = "testallowed account";
 	open(LDIF, "|$ldbmodify -H $ctx->{privatedir}/sam.ldb");
 	print LDIF "dn: $user_dn
 changetype: modify
 replace: samAccountName
-samAccountName: test allowed
+samAccountName: $testallowed_account
 -
 ";
 	close(LDIF);
@@ -869,9 +871,9 @@ userPrincipalName: testdenied_upn\@$ctx->{realm}.upn
 	close(LDIF);
 
 	$samba_tool_cmd = Samba::bindir_path($self, "samba-tool") 
-	    . " group addmembers --configfile=$ctx->{smb_conf} 'Allowed RODC Password Replication Group' 'test allowed'";
+	    . " group addmembers --configfile=$ctx->{smb_conf} 'Allowed RODC Password Replication Group' '$testallowed_account'";
 	unless (system($samba_tool_cmd) == 0) {
-		warn("Unable to add 'test allowed' user to 'Allowed RODC Password Replication Group': \n$samba_tool_cmd\n");
+		warn("Unable to add '$testallowed_account' user to 'Allowed RODC Password Replication Group': \n$samba_tool_cmd\n");
 		return undef;
 	}
 
@@ -1637,10 +1639,11 @@ sub provision_rodc($$$)
 		return undef;
 	}
 
-        # This ensures deterministic behaviour for tests that want to have the 'test allowed'
+        # This ensures deterministic behaviour for tests that want to have the 'testallowed account'
         # user password verified on the RODC
+	my $testallowed_account = "testallowed account";
 	$cmd = "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
-	$cmd .= "$samba_tool rodc preload 'test allowed' $ret->{CONFIGURATION}";
+	$cmd .= "$samba_tool rodc preload '$testallowed_account' $ret->{CONFIGURATION}";
 	$cmd .= " --server=$dcvars->{DC_SERVER}";
 
 	unless (system($cmd) == 0) {
