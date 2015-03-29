@@ -30,12 +30,17 @@ static bool copy_passwd(struct torture_context *tctx,
 			struct passwd *p)
 {
 	p->pw_name	= talloc_strdup(tctx, pwd->pw_name);
+	torture_assert(tctx, (p->pw_name != NULL || pwd->pw_name == NULL), __location__);
 	p->pw_passwd	= talloc_strdup(tctx, pwd->pw_passwd);
+	torture_assert(tctx, (p->pw_passwd != NULL || pwd->pw_passwd == NULL), __location__);
 	p->pw_uid	= pwd->pw_uid;
 	p->pw_gid	= pwd->pw_gid;
 	p->pw_gecos	= talloc_strdup(tctx, pwd->pw_gecos);
+	torture_assert(tctx, (p->pw_gecos != NULL || pwd->pw_gecos == NULL), __location__);
 	p->pw_dir	= talloc_strdup(tctx, pwd->pw_dir);
+	torture_assert(tctx, (p->pw_dir != NULL || pwd->pw_dir == NULL), __location__);
 	p->pw_shell	= talloc_strdup(tctx, pwd->pw_shell);
+	torture_assert(tctx, (p->pw_shell != NULL || pwd->pw_shell == NULL), __location__);
 
 	return true;
 }
@@ -58,19 +63,22 @@ static bool test_getpwnam(struct torture_context *tctx,
 			  struct passwd *pwd_p)
 {
 	struct passwd *pwd;
+	int ret;
 
 	torture_comment(tctx, "Testing getpwnam: %s\n", name);
 
+	errno = 0;
 	pwd = getpwnam(name);
-	if (pwd) {
-		print_passwd(pwd);
+	ret = errno;
+	torture_assert(tctx, (pwd != NULL), talloc_asprintf(tctx,
+		       "getpwnam(%s) failed - %d - %s",
+		       name, ret, strerror(ret)));
+
+	if (pwd_p != NULL) {
+		torture_assert(tctx, copy_passwd(tctx, pwd, pwd_p), __location__);
 	}
 
-	if (pwd_p) {
-		copy_passwd(tctx, pwd, pwd_p);
-	}
-
-	return pwd ? true : false;
+	return true;
 }
 
 static bool test_getpwnam_r(struct torture_context *tctx,
@@ -84,17 +92,14 @@ static bool test_getpwnam_r(struct torture_context *tctx,
 	torture_comment(tctx, "Testing getpwnam_r: %s\n", name);
 
 	ret = getpwnam_r(name, &pwd, buffer, sizeof(buffer), &pwdp);
-	if (ret != 0) {
-		if (ret != ENOENT) {
-			torture_comment(tctx, "got %d return code\n", ret);
-		}
-		return false;
-	}
+	torture_assert(tctx, ret == 0, talloc_asprintf(tctx,
+		       "getpwnam_r(%s) failed - %d - %s",
+		       name, ret, strerror(ret)));
 
 	print_passwd(&pwd);
 
-	if (pwd_p) {
-		copy_passwd(tctx, &pwd, pwd_p);
+	if (pwd_p != NULL) {
+		torture_assert(tctx, copy_passwd(tctx, &pwd, pwd_p), __location__);
 	}
 
 	return true;
@@ -105,19 +110,24 @@ static bool test_getpwuid(struct torture_context *tctx,
 			  struct passwd *pwd_p)
 {
 	struct passwd *pwd;
+	int ret;
 
 	torture_comment(tctx, "Testing getpwuid: %lu\n", (unsigned long)uid);
 
+	errno = 0;
 	pwd = getpwuid(uid);
-	if (pwd) {
-		print_passwd(pwd);
+	ret = errno;
+	torture_assert(tctx, (pwd != NULL), talloc_asprintf(tctx,
+		       "getpwuid(%lu) failed - %d - %s",
+		       (unsigned long)uid, ret, strerror(ret)));
+
+	print_passwd(pwd);
+
+	if (pwd_p != NULL) {
+		torture_assert(tctx, copy_passwd(tctx, pwd, pwd_p), __location__);
 	}
 
-	if (pwd_p) {
-		copy_passwd(tctx, pwd, pwd_p);
-	}
-
-	return pwd ? true : false;
+	return true;
 }
 
 static bool test_getpwuid_r(struct torture_context *tctx,
@@ -131,17 +141,14 @@ static bool test_getpwuid_r(struct torture_context *tctx,
 	torture_comment(tctx, "Testing getpwuid_r: %lu\n", (unsigned long)uid);
 
 	ret = getpwuid_r(uid, &pwd, buffer, sizeof(buffer), &pwdp);
-	if (ret != 0) {
-		if (ret != ENOENT) {
-			torture_comment(tctx, "got %d return code\n", ret);
-		}
-		return false;
-	}
+	torture_assert(tctx, ret == 0, talloc_asprintf(tctx,
+		       "getpwuid_r(%lu) failed - %d - %s",
+		       (unsigned long)uid, ret, strerror(ret)));
 
 	print_passwd(&pwd);
 
-	if (pwd_p) {
-		copy_passwd(tctx, &pwd, pwd_p);
+	if (pwd_p != NULL) {
+		torture_assert(tctx, copy_passwd(tctx, &pwd, pwd_p), __location__);
 	}
 
 	return true;
@@ -155,13 +162,17 @@ static bool copy_group(struct torture_context *tctx,
 	int i;
 
 	g->gr_name	= talloc_strdup(tctx, grp->gr_name);
+	torture_assert(tctx, (g->gr_name != NULL || grp->gr_name == NULL), __location__);
 	g->gr_passwd	= talloc_strdup(tctx, grp->gr_passwd);
+	torture_assert(tctx, (g->gr_passwd != NULL || grp->gr_passwd == NULL), __location__);
 	g->gr_gid	= grp->gr_gid;
 	g->gr_mem	= NULL;
 
 	for (i=0; grp->gr_mem && grp->gr_mem[i]; i++) {
 		g->gr_mem = talloc_realloc(tctx, g->gr_mem, char *, i + 2);
+		torture_assert(tctx, (g->gr_mem != NULL), __location__);
 		g->gr_mem[i] = talloc_strdup(g->gr_mem, grp->gr_mem[i]);
+		torture_assert(tctx, (g->gr_mem[i] != NULL), __location__);
 		g->gr_mem[i+1] = NULL;
 	}
 
@@ -192,19 +203,24 @@ static bool test_getgrnam(struct torture_context *tctx,
 			  struct group *grp_p)
 {
 	struct group *grp;
+	int ret;
 
 	torture_comment(tctx, "Testing getgrnam: %s\n", name);
 
+	errno = 0;
 	grp = getgrnam(name);
-	if (grp) {
-		print_group(grp);
+	ret = errno;
+	torture_assert(tctx, (grp != NULL), talloc_asprintf(tctx,
+		       "getgrnam(%s) failed - %d - %s",
+		       name, ret, strerror(ret)));
+
+	print_group(grp);
+
+	if (grp_p != NULL) {
+		torture_assert(tctx, copy_group(tctx, grp, grp_p), __location__);
 	}
 
-	if (grp_p) {
-		copy_group(tctx, grp, grp_p);
-	}
-
-	return grp ? true : false;
+	return true;
 }
 
 static bool test_getgrnam_r(struct torture_context *tctx,
@@ -218,17 +234,14 @@ static bool test_getgrnam_r(struct torture_context *tctx,
 	torture_comment(tctx, "Testing getgrnam_r: %s\n", name);
 
 	ret = getgrnam_r(name, &grp, buffer, sizeof(buffer), &grpp);
-	if (ret != 0) {
-		if (ret != ENOENT) {
-			torture_comment(tctx, "got %d return code\n", ret);
-		}
-		return false;
-	}
+	torture_assert(tctx, ret == 0, talloc_asprintf(tctx,
+		       "getgrnam_r(%s) failed - %d - %s",
+		       name, ret, strerror(ret)));
 
 	print_group(&grp);
 
-	if (grp_p) {
-		copy_group(tctx, &grp, grp_p);
+	if (grp_p != NULL) {
+		torture_assert(tctx, copy_group(tctx, &grp, grp_p), __location__);
 	}
 
 	return true;
@@ -240,19 +253,24 @@ static bool test_getgrgid(struct torture_context *tctx,
 			  struct group *grp_p)
 {
 	struct group *grp;
+	int ret;
 
 	torture_comment(tctx, "Testing getgrgid: %lu\n", (unsigned long)gid);
 
+	errno = 0;
 	grp = getgrgid(gid);
-	if (grp) {
-		print_group(grp);
+	ret = errno;
+	torture_assert(tctx, (grp != NULL), talloc_asprintf(tctx,
+		       "getgrgid(%lu) failed - %d - %s",
+		       (unsigned long)gid, ret, strerror(ret)));
+
+	print_group(grp);
+
+	if (grp_p != NULL) {
+		torture_assert(tctx, copy_group(tctx, grp, grp_p), __location__);
 	}
 
-	if (grp_p) {
-		copy_group(tctx, grp, grp_p);
-	}
-
-	return grp ? true : false;
+	return true;
 }
 
 static bool test_getgrgid_r(struct torture_context *tctx,
@@ -266,17 +284,14 @@ static bool test_getgrgid_r(struct torture_context *tctx,
 	torture_comment(tctx, "Testing getgrgid_r: %lu\n", (unsigned long)gid);
 
 	ret = getgrgid_r(gid, &grp, buffer, sizeof(buffer), &grpp);
-	if (ret != 0) {
-		if (ret != ENOENT) {
-			torture_comment(tctx, "got %d return code\n", ret);
-		}
-		return false;
-	}
+	torture_assert(tctx, ret == 0, talloc_asprintf(tctx,
+		       "getgrgid_r(%lu) failed - %d - %s",
+		       (unsigned long)gid, ret, strerror(ret)));
 
 	print_group(&grp);
 
-	if (grp_p) {
-		copy_group(tctx, &grp, grp_p);
+	if (grp_p != NULL) {
+		torture_assert(tctx, copy_group(tctx, &grp, grp_p), __location__);
 	}
 
 	return true;
@@ -391,14 +406,17 @@ static bool test_passwd(struct torture_context *tctx)
 	for (i=0; i < num_pwd; i++) {
 		torture_assert(tctx, test_getpwnam(tctx, pwd[i].pw_name, &pwd1),
 			"failed to call getpwnam for enumerated user");
-		torture_assert_passwd_equal(tctx, &pwd[i], &pwd1,
-			"getpwent and getpwnam gave different results");
+		torture_assert(tctx, torture_assert_passwd_equal(tctx, &pwd[i], &pwd1,
+			"getpwent and getpwnam gave different results"),
+			__location__);
 		torture_assert(tctx, test_getpwuid(tctx, pwd[i].pw_uid, &pwd2),
 			"failed to call getpwuid for enumerated user");
-		torture_assert_passwd_equal(tctx, &pwd[i], &pwd2,
-			"getpwent and getpwuid gave different results");
-		torture_assert_passwd_equal(tctx, &pwd1, &pwd2,
-			"getpwnam and getpwuid gave different results");
+		torture_assert(tctx, torture_assert_passwd_equal(tctx, &pwd[i], &pwd2,
+			"getpwent and getpwuid gave different results"),
+			__location__);
+		torture_assert(tctx, torture_assert_passwd_equal(tctx, &pwd1, &pwd2,
+			"getpwnam and getpwuid gave different results"),
+			__location__);
 	}
 
 	return true;
@@ -416,14 +434,17 @@ static bool test_passwd_r(struct torture_context *tctx)
 	for (i=0; i < num_pwd; i++) {
 		torture_assert(tctx, test_getpwnam_r(tctx, pwd[i].pw_name, &pwd1),
 			"failed to call getpwnam_r for enumerated user");
-		torture_assert_passwd_equal(tctx, &pwd[i], &pwd1,
-			"getpwent_r and getpwnam_r gave different results");
+		torture_assert(tctx, torture_assert_passwd_equal(tctx, &pwd[i], &pwd1,
+			"getpwent_r and getpwnam_r gave different results"),
+			__location__);
 		torture_assert(tctx, test_getpwuid_r(tctx, pwd[i].pw_uid, &pwd2),
 			"failed to call getpwuid_r for enumerated user");
-		torture_assert_passwd_equal(tctx, &pwd[i], &pwd2,
-			"getpwent_r and getpwuid_r gave different results");
-		torture_assert_passwd_equal(tctx, &pwd1, &pwd2,
-			"getpwnam_r and getpwuid_r gave different results");
+		torture_assert(tctx, torture_assert_passwd_equal(tctx, &pwd[i], &pwd2,
+			"getpwent_r and getpwuid_r gave different results"),
+			__location__);
+		torture_assert(tctx, torture_assert_passwd_equal(tctx, &pwd1, &pwd2,
+			"getpwnam_r and getpwuid_r gave different results"),
+			__location__);
 	}
 
 	return true;
@@ -441,24 +462,30 @@ static bool test_passwd_r_cross(struct torture_context *tctx)
 	for (i=0; i < num_pwd; i++) {
 		torture_assert(tctx, test_getpwnam_r(tctx, pwd[i].pw_name, &pwd1),
 			"failed to call getpwnam_r for enumerated user");
-		torture_assert_passwd_equal(tctx, &pwd[i], &pwd1,
-			"getpwent_r and getpwnam_r gave different results");
+		torture_assert(tctx, torture_assert_passwd_equal(tctx, &pwd[i], &pwd1,
+			"getpwent_r and getpwnam_r gave different results"),
+			__location__);
 		torture_assert(tctx, test_getpwuid_r(tctx, pwd[i].pw_uid, &pwd2),
 			"failed to call getpwuid_r for enumerated user");
-		torture_assert_passwd_equal(tctx, &pwd[i], &pwd2,
-			"getpwent_r and getpwuid_r gave different results");
-		torture_assert_passwd_equal(tctx, &pwd1, &pwd2,
-			"getpwnam_r and getpwuid_r gave different results");
+		torture_assert(tctx, torture_assert_passwd_equal(tctx, &pwd[i], &pwd2,
+			"getpwent_r and getpwuid_r gave different results"),
+			__location__);
+		torture_assert(tctx, torture_assert_passwd_equal(tctx, &pwd1, &pwd2,
+			"getpwnam_r and getpwuid_r gave different results"),
+			__location__);
 		torture_assert(tctx, test_getpwnam(tctx, pwd[i].pw_name, &pwd3),
 			"failed to call getpwnam for enumerated user");
-		torture_assert_passwd_equal(tctx, &pwd[i], &pwd3,
-			"getpwent_r and getpwnam gave different results");
+		torture_assert(tctx, torture_assert_passwd_equal(tctx, &pwd[i], &pwd3,
+			"getpwent_r and getpwnam gave different results"),
+			__location__);
 		torture_assert(tctx, test_getpwuid(tctx, pwd[i].pw_uid, &pwd4),
 			"failed to call getpwuid for enumerated user");
-		torture_assert_passwd_equal(tctx, &pwd[i], &pwd4,
-			"getpwent_r and getpwuid gave different results");
-		torture_assert_passwd_equal(tctx, &pwd3, &pwd4,
-			"getpwnam and getpwuid gave different results");
+		torture_assert(tctx, torture_assert_passwd_equal(tctx, &pwd[i], &pwd4,
+			"getpwent_r and getpwuid gave different results"),
+			__location__);
+		torture_assert(tctx, torture_assert_passwd_equal(tctx, &pwd3, &pwd4,
+			"getpwnam and getpwuid gave different results"),
+			__location__);
 	}
 
 	return true;
@@ -554,12 +581,8 @@ static bool torture_assert_group_equal(struct torture_context *tctx,
 	torture_assert_str_equal(tctx, g1->gr_name, g2->gr_name, comment);
 	torture_assert_str_equal(tctx, g1->gr_passwd, g2->gr_passwd, comment);
 	torture_assert_int_equal(tctx, g1->gr_gid, g2->gr_gid, comment);
-	if (g1->gr_mem && !g2->gr_mem) {
-		return false;
-	}
-	if (!g1->gr_mem && g2->gr_mem) {
-		return false;
-	}
+	torture_assert(tctx, !(g1->gr_mem && !g2->gr_mem), __location__);
+	torture_assert(tctx, !(!g1->gr_mem && g2->gr_mem), __location__);
 	if (!g1->gr_mem && !g2->gr_mem) {
 		return true;
 	}
@@ -582,14 +605,17 @@ static bool test_group(struct torture_context *tctx)
 	for (i=0; i < num_grp; i++) {
 		torture_assert(tctx, test_getgrnam(tctx, grp[i].gr_name, &grp1),
 			"failed to call getgrnam for enumerated user");
-		torture_assert_group_equal(tctx, &grp[i], &grp1,
-			"getgrent and getgrnam gave different results");
+		torture_assert(tctx, torture_assert_group_equal(tctx, &grp[i], &grp1,
+			"getgrent and getgrnam gave different results"),
+			__location__);
 		torture_assert(tctx, test_getgrgid(tctx, grp[i].gr_gid, &grp2),
 			"failed to call getgrgid for enumerated user");
-		torture_assert_group_equal(tctx, &grp[i], &grp2,
-			"getgrent and getgrgid gave different results");
-		torture_assert_group_equal(tctx, &grp1, &grp2,
-			"getgrnam and getgrgid gave different results");
+		torture_assert(tctx, torture_assert_group_equal(tctx, &grp[i], &grp2,
+			"getgrent and getgrgid gave different results"),
+			__location__);
+		torture_assert(tctx, torture_assert_group_equal(tctx, &grp1, &grp2,
+			"getgrnam and getgrgid gave different results"),
+			__location__);
 	}
 
 	return true;
@@ -607,14 +633,17 @@ static bool test_group_r(struct torture_context *tctx)
 	for (i=0; i < num_grp; i++) {
 		torture_assert(tctx, test_getgrnam_r(tctx, grp[i].gr_name, &grp1),
 			"failed to call getgrnam_r for enumerated user");
-		torture_assert_group_equal(tctx, &grp[i], &grp1,
-			"getgrent_r and getgrnam_r gave different results");
+		torture_assert(tctx, torture_assert_group_equal(tctx, &grp[i], &grp1,
+			"getgrent_r and getgrnam_r gave different results"),
+			__location__);
 		torture_assert(tctx, test_getgrgid_r(tctx, grp[i].gr_gid, &grp2),
 			"failed to call getgrgid_r for enumerated user");
-		torture_assert_group_equal(tctx, &grp[i], &grp2,
-			"getgrent_r and getgrgid_r gave different results");
-		torture_assert_group_equal(tctx, &grp1, &grp2,
-			"getgrnam_r and getgrgid_r gave different results");
+		torture_assert(tctx, torture_assert_group_equal(tctx, &grp[i], &grp2,
+			"getgrent_r and getgrgid_r gave different results"),
+			__location__);
+		torture_assert(tctx, torture_assert_group_equal(tctx, &grp1, &grp2,
+			"getgrnam_r and getgrgid_r gave different results"),
+			__location__);
 	}
 
 	return true;
@@ -632,24 +661,30 @@ static bool test_group_r_cross(struct torture_context *tctx)
 	for (i=0; i < num_grp; i++) {
 		torture_assert(tctx, test_getgrnam_r(tctx, grp[i].gr_name, &grp1),
 			"failed to call getgrnam_r for enumerated user");
-		torture_assert_group_equal(tctx, &grp[i], &grp1,
-			"getgrent_r and getgrnam_r gave different results");
+		torture_assert(tctx, torture_assert_group_equal(tctx, &grp[i], &grp1,
+			"getgrent_r and getgrnam_r gave different results"),
+			__location__);
 		torture_assert(tctx, test_getgrgid_r(tctx, grp[i].gr_gid, &grp2),
 			"failed to call getgrgid_r for enumerated user");
-		torture_assert_group_equal(tctx, &grp[i], &grp2,
-			"getgrent_r and getgrgid_r gave different results");
-		torture_assert_group_equal(tctx, &grp1, &grp2,
-			"getgrnam_r and getgrgid_r gave different results");
+		torture_assert(tctx, torture_assert_group_equal(tctx, &grp[i], &grp2,
+			"getgrent_r and getgrgid_r gave different results"),
+			__location__);
+		torture_assert(tctx, torture_assert_group_equal(tctx, &grp1, &grp2,
+			"getgrnam_r and getgrgid_r gave different results"),
+			__location__);
 		torture_assert(tctx, test_getgrnam(tctx, grp[i].gr_name, &grp3),
 			"failed to call getgrnam for enumerated user");
-		torture_assert_group_equal(tctx, &grp[i], &grp3,
-			"getgrent_r and getgrnam gave different results");
+		torture_assert(tctx, torture_assert_group_equal(tctx, &grp[i], &grp3,
+			"getgrent_r and getgrnam gave different results"),
+			__location__);
 		torture_assert(tctx, test_getgrgid(tctx, grp[i].gr_gid, &grp4),
 			"failed to call getgrgid for enumerated user");
-		torture_assert_group_equal(tctx, &grp[i], &grp4,
-			"getgrent_r and getgrgid gave different results");
-		torture_assert_group_equal(tctx, &grp3, &grp4,
-			"getgrnam and getgrgid gave different results");
+		torture_assert(tctx, torture_assert_group_equal(tctx, &grp[i], &grp4,
+			"getgrent_r and getgrgid gave different results"),
+			__location__);
+		torture_assert(tctx, torture_assert_group_equal(tctx, &grp3, &grp4,
+			"getgrnam and getgrgid gave different results"),
+			__location__);
 	}
 
 	return true;
