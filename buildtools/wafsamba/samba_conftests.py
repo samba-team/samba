@@ -565,7 +565,6 @@ def samba_config_c_parse_flags(line1, uselib, env):
         # bugs in the real parse_flags() function.
         #
         if x == '-Wl,-rpath' or x == '-Wl,-R':
-            linkflags.remove(x)
             x = lst1.pop(0)
             if x.startswith('-Wl,'):
                 rpath = x[4:]
