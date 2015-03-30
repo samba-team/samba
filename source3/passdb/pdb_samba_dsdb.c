@@ -2157,15 +2157,16 @@ static bool pdb_samba_dsdb_get_trusteddom_pw(struct pdb_methods *m,
 	const char *netbios_domain = NULL;
 	const struct dom_sid *domain_sid = NULL;
 
-	status = sam_get_results_trust(state->ldb, tmp_ctx, domain,
-				       NULL, attrs, &msg);
+	status = dsdb_trust_search_tdo(state->ldb, domain, NULL,
+				       attrs, tmp_ctx, &msg);
 	if (!NT_STATUS_IS_OK(status)) {
 		/*
 		 * This can be called to work out of a domain is
 		 * trusted, rather than just to get the password
 		 */
-		DEBUG(2, ("Failed to get trusted domain password for %s.  "
-			  "It may not be a trusted domain.\n", domain));
+		DEBUG(2, ("Failed to get trusted domain password for %s - %s.  "
+			  "It may not be a trusted domain.\n", domain,
+			  nt_errstr(status)));
 		TALLOC_FREE(tmp_ctx);
 		return false;
 	}
@@ -2317,17 +2318,18 @@ static NTSTATUS pdb_samba_dsdb_get_trusteddom_creds(struct pdb_methods *m,
 	char *principal_name = NULL;
 	const char *dns_domain = NULL;
 
-	status = sam_get_results_trust(state->ldb, tmp_ctx, domain,
-				       NULL, attrs, &msg);
+	status = dsdb_trust_search_tdo(state->ldb, domain, NULL,
+				       attrs, tmp_ctx, &msg);
 	if (!NT_STATUS_IS_OK(status)) {
 		/*
 		 * This can be called to work out of a domain is
 		 * trusted, rather than just to get the password
 		 */
-		DEBUG(2, ("Failed to get trusted domain password for %s.  "
-			  "It may not be a trusted domain.\n", domain));
+		DEBUG(2, ("Failed to get trusted domain password for %s - %s "
+			  "It may not be a trusted domain.\n", domain,
+			  nt_errstr(status)));
 		TALLOC_FREE(tmp_ctx);
-		return status;
+		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
 
 	netbios_domain = ldb_msg_find_attr_as_string(msg, "flatName", NULL);
@@ -2612,15 +2614,16 @@ static bool pdb_samba_dsdb_set_trusteddom_pw(struct pdb_methods *m,
 		return false;
 	}
 
-	status = sam_get_results_trust(state->ldb, tmp_ctx, domain,
-				       NULL, attrs, &msg);
+	status = dsdb_trust_search_tdo(state->ldb, domain, NULL,
+				       attrs, tmp_ctx, &msg);
 	if (!NT_STATUS_IS_OK(status)) {
 		/*
 		 * This can be called to work out of a domain is
 		 * trusted, rather than just to get the password
 		 */
-		DEBUG(2, ("Failed to get trusted domain password for %s.  "
-			  "It may not be a trusted domain.\n", domain));
+		DEBUG(2, ("Failed to get trusted domain password for %s - %s.  "
+			  "It may not be a trusted domain.\n", domain,
+			  nt_errstr(status)));
 		TALLOC_FREE(tmp_ctx);
 		ldb_transaction_cancel(state->ldb);
 		return false;
