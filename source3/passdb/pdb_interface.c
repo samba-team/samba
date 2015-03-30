@@ -2298,9 +2298,17 @@ static NTSTATUS pdb_default_get_trusted_domain(struct pdb_methods *methods,
 	taiob.current.count = 1;
 	taiob.current.array = &aia;
 	unix_to_nt_time(&aia.LastUpdateTime, last_set_time);
+
 	aia.AuthType = TRUST_AUTH_TYPE_CLEAR;
-	aia.AuthInfo.clear.password = (uint8_t *) pwd;
 	aia.AuthInfo.clear.size = strlen(pwd);
+	aia.AuthInfo.clear.password = (uint8_t *)talloc_memdup(tdom, pwd,
+							       aia.AuthInfo.clear.size);
+	SAFE_FREE(pwd);
+	if (aia.AuthInfo.clear.password == NULL) {
+		talloc_free(tdom);
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	taiob.previous.count = 0;
 	taiob.previous.array = NULL;
 
