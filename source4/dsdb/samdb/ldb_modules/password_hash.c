@@ -2260,6 +2260,22 @@ static int setup_io(struct ph_context *ac,
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 
+	if (io->u.userAccountControl & UF_INTERDOMAIN_TRUST_ACCOUNT) {
+		struct ldb_control *permit_trust = ldb_request_get_control(ac->req,
+				DSDB_CONTROL_PERMIT_INTERDOMAIN_TRUST_UAC_OID);
+
+		if (permit_trust == NULL) {
+			ret = LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS;
+			ldb_asprintf_errstring(ldb,
+				"%08X: %s - setup_io: changing the interdomain trust password "
+				"on %s not allowed via LDAP. Use LSA or NETLOGON",
+				W_ERROR_V(WERR_ACCESS_DENIED),
+				ldb_strerror(ret),
+				ldb_dn_get_linearized(searched_msg->dn));
+			return ret;
+		}
+	}
+
 	/* Only non-trust accounts have restrictions (possibly this test is the
 	 * wrong way around, but we like to be restrictive if possible */
 	io->u.restrictions = !(io->u.userAccountControl
