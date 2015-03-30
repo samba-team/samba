@@ -2714,7 +2714,6 @@ static void election_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	struct ctdb_recoverd *rec = talloc_get_type(private_data, struct ctdb_recoverd);
 	int ret;
 	struct election_message *em = (struct election_message *)data.dptr;
-	TALLOC_CTX *mem_ctx;
 
 	/* Ignore election packets from ourself */
 	if (ctdb->pnn == em->pnn) {
@@ -2729,8 +2728,6 @@ static void election_handler(struct ctdb_context *ctdb, uint64_t srvid,
 						timeval_current_ofs(ctdb->tunable.election_timeout, 0), 
 						ctdb_election_timeout, rec);
 
-	mem_ctx = talloc_new(ctdb);
-
 	/* someone called an election. check their election data
 	   and if we disagree and we would rather be the elected node, 
 	   send a new election message to all other nodes
@@ -2741,7 +2738,6 @@ static void election_handler(struct ctdb_context *ctdb, uint64_t srvid,
 								timeval_current_ofs(0, 500000),
 								election_send_request, rec);
 		}
-		talloc_free(mem_ctx);
 		/*unban_all_nodes(ctdb);*/
 		return;
 	}
@@ -2763,11 +2759,9 @@ static void election_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	ret = ctdb_ctrl_setrecmaster(ctdb, CONTROL_TIMEOUT(), ctdb_get_pnn(ctdb), em->pnn);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " failed to send recmaster election request"));
-		talloc_free(mem_ctx);
 		return;
 	}
 
-	talloc_free(mem_ctx);
 	return;
 }
 
