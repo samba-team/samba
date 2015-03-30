@@ -2748,8 +2748,7 @@ static void election_handler(struct ctdb_context *ctdb, uint64_t srvid,
 
         if (ctdb->recovery_lock_file != NULL) {
 		/* Release the recovery lock file */
-		if (em->pnn != ctdb->pnn &&
-		    ctdb_recovery_have_lock(ctdb)) {
+		if (ctdb_recovery_have_lock(ctdb)) {
 			ctdb_recovery_unlock(ctdb);
 			unban_all_nodes(ctdb);
 		}
