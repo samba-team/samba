@@ -1414,12 +1414,11 @@ static krb5_error_code samba_kdc_lookup_trust(krb5_context context, struct ldb_c
 	NTSTATUS status;
 	const char * const *attrs = trust_attrs;
 
-	status = sam_get_results_trust(ldb_ctx,
-				       mem_ctx, realm, realm, attrs,
-				       pmsg);
+	status = dsdb_trust_search_tdo(ldb_ctx, realm, realm,
+				       attrs, mem_ctx, pmsg);
 	if (NT_STATUS_IS_OK(status)) {
 		return 0;
-	} else if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+	} else if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
 		return HDB_ERR_NOENTRY;
 	} else if (NT_STATUS_EQUAL(status, NT_STATUS_NO_MEMORY)) {
 		int ret = ENOMEM;
