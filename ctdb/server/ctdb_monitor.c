@@ -187,11 +187,14 @@ after_change_status:
 	}
 
 	/* ask the recmaster to reallocate all addresses */
-	DEBUG(DEBUG_ERR,("Node became %s. Ask recovery master %u to perform ip reallocation\n",
-			 state_str, ctdb->recovery_master));
-	ret = ctdb_daemon_send_message(ctdb, ctdb->recovery_master, CTDB_SRVID_TAKEOVER_RUN, rddata);
+	DEBUG(DEBUG_ERR,
+	      ("Node became %s. Ask recovery master to reallocate IPs\n",
+	       state_str));
+	ret = ctdb_daemon_send_message(ctdb, CTDB_BROADCAST_CONNECTED, CTDB_SRVID_TAKEOVER_RUN, rddata);
 	if (ret != 0) {
-		DEBUG(DEBUG_ERR,(__location__ " Failed to send ip takeover run request message to %u\n", ctdb->recovery_master));
+		DEBUG(DEBUG_ERR,
+		      (__location__
+		       " Failed to send IP takeover run request\n"));
 	}
 }
 
