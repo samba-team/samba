@@ -341,9 +341,10 @@ static NTSTATUS fsctl_validate_neg_info(TALLOC_CTX *mem_ctx,
 	struct GUID in_guid;
 	uint16_t in_security_mode;
 	uint16_t in_num_dialects;
-	uint16_t i;
+	uint16_t dialect;
 	DATA_BLOB out_guid_blob;
 	NTSTATUS status;
+	enum protocol_types protocol = PROTOCOL_NONE;
 
 	if (in_input->length < 0x18) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -367,18 +368,23 @@ static NTSTATUS fsctl_validate_neg_info(TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
-	if (in_num_dialects != conn->smb2.client.num_dialects) {
+	/*
+	 * From: [MS-SMB2]
+	 * 3.3.5.15.12 Handling a Validate Negotiate Info Request
+	 *
+	 * The server MUST determine the greatest common dialect
+	 * between the dialects it implements and the Dialects array
+	 * of the VALIDATE_NEGOTIATE_INFO request. If no dialect is
+	 * matched, or if the value is not equal to Connection.Dialect,
+	 * the server MUST terminate the transport connection
+	 * and free the Connection object.
+	 */
+	protocol = smbd_smb2_protocol_dialect_match(in_input->data + 0x18,
+						in_num_dialects,
+						&dialect);
+	if (conn->protocol != protocol) {
 		*disconnect = true;
 		return NT_STATUS_ACCESS_DENIED;
-	}
-
-	for (i=0; i < in_num_dialects; i++) {
-		uint16_t v = SVAL(in_input->data, 0x18 + i*2);
-
-		if (conn->smb2.client.dialects[i] != v) {
-			*disconnect = true;
-			return NT_STATUS_ACCESS_DENIED;
-		}
 	}
 
 	if (GUID_compare(&in_guid, &conn->smb2.client.guid) != 0) {
