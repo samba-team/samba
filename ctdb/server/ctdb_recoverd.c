@@ -2745,12 +2745,10 @@ static void election_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	/* we didn't win */
 	TALLOC_FREE(rec->send_election_te);
 
-        if (ctdb->recovery_lock_file != NULL) {
-		/* Release the recovery lock file */
-		if (ctdb_recovery_have_lock(ctdb)) {
-			ctdb_recovery_unlock(ctdb);
-			unban_all_nodes(ctdb);
-		}
+	/* Release the recovery lock file */
+	if (ctdb_recovery_have_lock(ctdb)) {
+		ctdb_recovery_unlock(ctdb);
+		unban_all_nodes(ctdb);
 	}
 
 	/* ok, let that guy become recmaster then */
