@@ -306,6 +306,7 @@ static NTSTATUS get_pk_from_raw_keypair_params(TALLOC_CTX *ctx,
 	hx509_context hctx;
 	RSA *rsa;
 	struct hx509_private_key_ops *ops;
+	hx509_private_key privkey = NULL;
 
 	hx509_context_init(&hctx);
 	ops = hx509_find_private_alg(&_hx509_signature_rsa_with_var_num.algorithm);
@@ -314,13 +315,14 @@ static NTSTATUS get_pk_from_raw_keypair_params(TALLOC_CTX *ctx,
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	if (hx509_private_key_init(pk, ops, NULL) != 0) {
+	if (hx509_private_key_init(&privkey, ops, NULL) != 0) {
 		hx509_context_free(&hctx);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	rsa = RSA_new();
 	if (rsa ==NULL) {
+		hx509_private_key_free(&privkey);
 		hx509_context_free(&hctx);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -328,51 +330,61 @@ static NTSTATUS get_pk_from_raw_keypair_params(TALLOC_CTX *ctx,
 	rsa->n = reverse_and_get_bignum(ctx, &(keypair->modulus));
 	if (rsa->n == NULL) {
 		RSA_free(rsa);
+		hx509_private_key_free(&privkey);
 		hx509_context_free(&hctx);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	rsa->d = reverse_and_get_bignum(ctx, &(keypair->private_exponent));
 	if (rsa->d == NULL) {
 		RSA_free(rsa);
+		hx509_private_key_free(&privkey);
 		hx509_context_free(&hctx);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	rsa->p = reverse_and_get_bignum(ctx, &(keypair->prime1));
 	if (rsa->p == NULL) {
 		RSA_free(rsa);
+		hx509_private_key_free(&privkey);
 		hx509_context_free(&hctx);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	rsa->q = reverse_and_get_bignum(ctx, &(keypair->prime2));
 	if (rsa->q == NULL) {
 		RSA_free(rsa);
+		hx509_private_key_free(&privkey);
 		hx509_context_free(&hctx);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	rsa->dmp1 = reverse_and_get_bignum(ctx, &(keypair->exponent1));
 	if (rsa->dmp1 == NULL) {
 		RSA_free(rsa);
+		hx509_private_key_free(&privkey);
 		hx509_context_free(&hctx);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	rsa->dmq1 = reverse_and_get_bignum(ctx, &(keypair->exponent2));
 	if (rsa->dmq1 == NULL) {
 		RSA_free(rsa);
+		hx509_private_key_free(&privkey);
 		hx509_context_free(&hctx);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	rsa->iqmp = reverse_and_get_bignum(ctx, &(keypair->coefficient));
 	if (rsa->iqmp == NULL) {
 		RSA_free(rsa);
+		hx509_private_key_free(&privkey);
 		hx509_context_free(&hctx);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	rsa->e = reverse_and_get_bignum(ctx, &(keypair->public_exponent));
 	if (rsa->e == NULL) {
 		RSA_free(rsa);
+		hx509_private_key_free(&privkey);
 		hx509_context_free(&hctx);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
+
+	*pk = privkey;
 
 	hx509_private_key_assign_rsa(*pk, rsa);
 
