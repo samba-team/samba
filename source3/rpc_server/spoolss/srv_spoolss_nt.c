@@ -6479,6 +6479,9 @@ static WERROR update_dsspooler(TALLOC_CTX *mem_ctx,
 						 snum, printer->sharename ?
 						 printer->sharename : "");
 		}
+
+		/* name change, purge any cache entries for the old */
+		prune_printername_cache();
 	}
 
 	if (printer->printername != NULL &&
@@ -6515,6 +6518,9 @@ static WERROR update_dsspooler(TALLOC_CTX *mem_ctx,
 			notify_printer_printername(server_event_context(),
 						   msg_ctx, snum, p ? p : "");
 		}
+
+		/* name change, purge any cache entries for the old */
+		prune_printername_cache();
 	}
 
 	if (printer->portname != NULL &&
