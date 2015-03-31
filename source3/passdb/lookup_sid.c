@@ -395,6 +395,30 @@ bool lookup_name_smbconf(TALLOC_CTX *mem_ctx,
 				ret_sid, ret_type);
 	}
 
+	/* Try with winbind default domain name. */
+	if (lp_winbind_use_default_domain()) {
+		bool ok;
+
+		qualified_name = talloc_asprintf(mem_ctx,
+						 "%s\\%s",
+						 lp_workgroup(),
+						 full_name);
+		if (qualified_name == NULL) {
+			return false;
+		}
+
+		ok = lookup_name(mem_ctx,
+				 qualified_name,
+				 flags,
+				 ret_domain,
+				 ret_name,
+				 ret_sid,
+				 ret_type);
+		if (ok) {
+			return true;
+		}
+	}
+
 	/* Try with our own SAM name. */
 	qualified_name = talloc_asprintf(mem_ctx, "%s\\%s",
 				get_global_sam_name(),
