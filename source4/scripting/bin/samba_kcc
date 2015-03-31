@@ -105,7 +105,7 @@ class KCC(object):
     def load_all_transports(self):
         """Loads the inter-site transport objects for Sites
 
-        ::returns: Raises an Exception on error
+        ::returns: Raises KCCError on error
         """
         try:
             res = self.samdb.search("CN=Inter-Site Transports,CN=Sites,%s" %
@@ -113,8 +113,8 @@ class KCC(object):
                                     scope=ldb.SCOPE_SUBTREE,
                                     expression="(objectClass=interSiteTransport)")
         except ldb.LdbError, (enum, estr):
-            raise Exception("Unable to find inter-site transports - (%s)" %
-                    estr)
+            raise KCCError("Unable to find inter-site transports - (%s)" %
+                           estr)
 
         for msg in res:
             dnstr = str(msg.dn)
@@ -134,7 +134,7 @@ class KCC(object):
     def load_all_sitelinks(self):
         """Loads the inter-site siteLink objects
 
-        ::returns: Raises an Exception on error
+        ::returns: Raises KCCError on error
         """
         try:
             res = self.samdb.search("CN=Inter-Site Transports,CN=Sites,%s" %
@@ -142,7 +142,7 @@ class KCC(object):
                                     scope=ldb.SCOPE_SUBTREE,
                                     expression="(objectClass=siteLink)")
         except ldb.LdbError, (enum, estr):
-            raise Exception("Unable to find inter-site siteLinks - (%s)" % estr)
+            raise KCCError("Unable to find inter-site siteLinks - (%s)" % estr)
 
         for msg in res:
             dnstr = str(msg.dn)
@@ -192,7 +192,7 @@ class KCC(object):
         """Discover all sites and instantiate and load each
         NTDS Site settings.
 
-        ::returns: Raises an Exception on error
+        ::returns: Raises KCCError on error
         """
         try:
             res = self.samdb.search("CN=Sites,%s" %
@@ -200,7 +200,7 @@ class KCC(object):
                                     scope=ldb.SCOPE_SUBTREE,
                                     expression="(objectClass=site)")
         except ldb.LdbError, (enum, estr):
-            raise Exception("Unable to find sites - (%s)" % estr)
+            raise KCCError("Unable to find sites - (%s)" % estr)
 
         for msg in res:
             sitestr = str(msg.dn)
@@ -209,7 +209,7 @@ class KCC(object):
     def load_my_dsa(self):
         """Discover my nTDSDSA dn thru the rootDSE entry
 
-        ::returns: Raises an Exception on error.
+        ::returns: Raises KCCError on error.
         """
         dn = ldb.Dn(self.samdb, "<GUID=%s>" % self.samdb.get_ntds_GUID())
         try:
@@ -233,13 +233,13 @@ class KCC(object):
                 res = self.samdb.search(base=dn, scope=ldb.SCOPE_BASE,
                                         attrs=["objectGUID"])
             except ldb.LdbError, (enum, estr):
-                raise Exception("Unable to find my nTDSDSA - (%s)" % estr)
+                raise KCCError("Unable to find my nTDSDSA - (%s)" % estr)
 
         if len(res) != 1:
-            raise Exception("Unable to find my nTDSDSA at %s" % dn.extended_str())
+            raise KCCError("Unable to find my nTDSDSA at %s" % dn.extended_str())
 
         if misc.GUID(res[0]["objectGUID"][0]) != misc.GUID(self.samdb.get_ntds_GUID()):
-            raise Exception("Did not find the GUID we expected, perhaps due to --importldif")
+            raise KCCError("Did not find the GUID we expected, perhaps due to --importldif")
 
         self.my_dsa_dnstr = str(res[0].dn)
 
@@ -262,7 +262,7 @@ class KCC(object):
         Each NC is inserted into the part_table by partition
         dn string (not the nCName dn string)
 
-        ::returns: Raises an Exception on error
+        ::returns: Raises KCCError on error
         """
         try:
             res = self.samdb.search("CN=Partitions,%s" %
@@ -270,7 +270,7 @@ class KCC(object):
                                     scope=ldb.SCOPE_SUBTREE,
                                     expression="(objectClass=crossRef)")
         except ldb.LdbError, (enum, estr):
-            raise Exception("Unable to find partitions - (%s)" % estr)
+            raise KCCError("Unable to find partitions - (%s)" % estr)
 
         for msg in res:
             partstr = str(msg.dn)
@@ -737,7 +737,7 @@ class KCC(object):
             # We have a transport type but its not an
             # object in the database
             if cn_conn.transport_guid not in self.transport_table:
-                raise Exception("Missing inter-site transport - (%s)" %
+                raise KCCError("Missing inter-site transport - (%s)" %
                                 cn_conn.transport_dnstr)
 
             x_transport = self.transport_table[str(cn_conn.transport_guid)]
@@ -771,7 +771,7 @@ class KCC(object):
                     res = self.samdb.search(base=pdnstr, scope=ldb.SCOPE_BASE,
                                             attrs=attrs)
                 except ldb.LdbError, (enum, estr):
-                    raise Exception(
+                    raise KCCError(
                         "Unable to find attr (%s) for (%s) - (%s)" %
                          (x_transport.address_attr, pdnstr, estr))
 
@@ -1645,7 +1645,7 @@ class KCC(object):
                break
 
         if transport is None:
-            raise Exception("Unable to find inter-site transport for IP")
+            raise KCCError("Unable to find inter-site transport for IP")
 
         DEBUG("edge_list %s" % edge_list)
         for e in edge_list:
