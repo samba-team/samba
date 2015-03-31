@@ -713,7 +713,7 @@ static int create_missing_local_databases(struct ctdb_context *ctdb, struct ctdb
 /*
   pull the remote database contents from one node into the recdb
  */
-static int pull_one_remote_database(struct ctdb_context *ctdb, uint32_t srcnode, 
+static int pull_one_remote_database(struct ctdb_context *ctdb, uint32_t srcnode,
 				    struct tdb_wrap *recdb, uint32_t dbid)
 {
 	int ret;
@@ -763,11 +763,11 @@ static int pull_one_remote_database(struct ctdb_context *ctdb, uint32_t srcnode,
 
 		/* fetch the existing record, if any */
 		existing = tdb_fetch(recdb->tdb, key);
-		
+
 		if (existing.dptr != NULL) {
 			struct ctdb_ltdb_header header;
 			if (existing.dsize < sizeof(struct ctdb_ltdb_header)) {
-				DEBUG(DEBUG_CRIT,(__location__ " Bad record size %u from node %u\n", 
+				DEBUG(DEBUG_CRIT,(__location__ " Bad record size %u from node %u\n",
 					 (unsigned)existing.dsize, srcnode));
 				free(existing.dptr);
 				talloc_free(tmp_ctx);
@@ -776,15 +776,16 @@ static int pull_one_remote_database(struct ctdb_context *ctdb, uint32_t srcnode,
 			header = *(struct ctdb_ltdb_header *)existing.dptr;
 			free(existing.dptr);
 			if (!(header.rsn < hdr->rsn ||
-			      (header.dmaster != ctdb->recovery_master && header.rsn == hdr->rsn))) {
+			      (header.dmaster != ctdb_get_pnn(ctdb) &&
+			       header.rsn == hdr->rsn))) {
 				continue;
 			}
 		}
-		
+
 		if (tdb_store(recdb->tdb, key, data, TDB_REPLACE) != 0) {
 			DEBUG(DEBUG_CRIT,(__location__ " Failed to store record\n"));
 			talloc_free(tmp_ctx);
-			return -1;				
+			return -1;
 		}
 	}
 
