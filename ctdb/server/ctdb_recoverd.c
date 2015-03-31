@@ -2743,8 +2743,7 @@ static void election_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	}
 
 	/* we didn't win */
-	talloc_free(rec->send_election_te);
-	rec->send_election_te = NULL;
+	TALLOC_FREE(rec->send_election_te);
 
         if (ctdb->recovery_lock_file != NULL) {
 		/* Release the recovery lock file */
