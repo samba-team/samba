@@ -368,11 +368,8 @@ static void popt_common_credentials_callback(poptContext con,
 		}
 
 		if (getenv("USER")) {
-			char *puser = SMB_STRDUP(getenv("USER"));
-			if (!puser) {
-				exit(ENOMEM);
-			}
-			set_cmdline_auth_info_username(auth_info, puser);
+			set_cmdline_auth_info_username(auth_info,
+						       getenv("USER"));
 		}
 
 		if (getenv("PASSWD")) {
