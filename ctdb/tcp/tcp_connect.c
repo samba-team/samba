@@ -397,13 +397,18 @@ static int ctdb_tcp_listen_automatic(struct ctdb_context *ctdb)
 		goto failed;
 	}
 	ctdb->address.port    = ctdb->nodes[i]->address.port;
-	ctdb->name = talloc_asprintf(ctdb, "%s:%u", 
-				     ctdb->address.address, 
+	ctdb->name = talloc_asprintf(ctdb, "%s:%u",
+				     ctdb->address.address,
 				     ctdb->address.port);
+	if (ctdb->name == NULL) {
+		ctdb_set_error(ctdb, "Out of memory at %s:%d",
+			       __FILE__, __LINE__);
+		goto failed;
+	}
 	ctdb->pnn = ctdb->nodes[i]->pnn;
-	DEBUG(DEBUG_INFO,("ctdb chose network address %s:%u pnn %u\n", 
-		 ctdb->address.address, 
-		 ctdb->address.port, 
+	DEBUG(DEBUG_INFO,("ctdb chose network address %s:%u pnn %u\n",
+		 ctdb->address.address,
+		 ctdb->address.port,
 		 ctdb->pnn));
 
 	if (listen(ctcp->listen_fd, 10) == -1) {
