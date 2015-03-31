@@ -82,6 +82,43 @@ void reply_smb20ff(struct smb_request *req, uint16_t choice)
 	reply_smb20xx(req, SMB2_DIALECT_REVISION_2FF);
 }
 
+enum protocol_types smbd_smb2_protocol_dialect_match(const uint8_t *indyn,
+				const int dialect_count,
+				uint16_t *dialect)
+{
+	struct {
+		enum protocol_types proto;
+		uint16_t dialect;
+	} pd[] = {
+		{ PROTOCOL_SMB3_00, SMB3_DIALECT_REVISION_300 },
+		{ PROTOCOL_SMB2_24, SMB2_DIALECT_REVISION_224 },
+		{ PROTOCOL_SMB2_22, SMB2_DIALECT_REVISION_222 },
+		{ PROTOCOL_SMB2_10, SMB2_DIALECT_REVISION_210 },
+		{ PROTOCOL_SMB2_02, SMB2_DIALECT_REVISION_202 },
+	};
+	size_t i;
+
+	for (i = 0; i < ARRAY_SIZE(pd); i ++) {
+		size_t c = 0;
+
+		if (lp_srv_maxprotocol() < pd[i].proto) {
+			continue;
+		}
+		if (lp_srv_minprotocol() > pd[i].proto) {
+			continue;
+		}
+
+		for (c = 0; c < dialect_count; c++) {
+			*dialect = SVAL(indyn, c*2);
+			if (*dialect == pd[i].dialect) {
+				return pd[i].proto;
+			}
+		}
+	}
+
+	return PROTOCOL_NONE;
+}
+
 NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 {
 	NTSTATUS status;
@@ -138,80 +175,9 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 	}
 	indyn = SMBD_SMB2_IN_DYN_PTR(req);
 
-	for (c=0; protocol == PROTOCOL_NONE && c < dialect_count; c++) {
-		if (lp_srv_maxprotocol() < PROTOCOL_SMB3_00) {
-			break;
-		}
-		if (lp_srv_minprotocol() > PROTOCOL_SMB3_00) {
-			break;
-		}
-
-		dialect = SVAL(indyn, c*2);
-		if (dialect == SMB3_DIALECT_REVISION_300) {
-			protocol = PROTOCOL_SMB3_00;
-			break;
-		}
-	}
-
-	for (c=0; protocol == PROTOCOL_NONE && c < dialect_count; c++) {
-		if (lp_srv_maxprotocol() < PROTOCOL_SMB2_24) {
-			break;
-		}
-		if (lp_srv_minprotocol() > PROTOCOL_SMB2_24) {
-			break;
-		}
-
-		dialect = SVAL(indyn, c*2);
-		if (dialect == SMB2_DIALECT_REVISION_224) {
-			protocol = PROTOCOL_SMB2_24;
-			break;
-		}
-	}
-
-	for (c=0; protocol == PROTOCOL_NONE && c < dialect_count; c++) {
-		if (lp_srv_maxprotocol() < PROTOCOL_SMB2_22) {
-			break;
-		}
-		if (lp_srv_minprotocol() > PROTOCOL_SMB2_22) {
-			break;
-		}
-
-		dialect = SVAL(indyn, c*2);
-		if (dialect == SMB2_DIALECT_REVISION_222) {
-			protocol = PROTOCOL_SMB2_22;
-			break;
-		}
-	}
-
-	for (c=0; protocol == PROTOCOL_NONE && c < dialect_count; c++) {
-		if (lp_srv_maxprotocol() < PROTOCOL_SMB2_10) {
-			break;
-		}
-		if (lp_srv_minprotocol() > PROTOCOL_SMB2_10) {
-			break;
-		}
-
-		dialect = SVAL(indyn, c*2);
-		if (dialect == SMB2_DIALECT_REVISION_210) {
-			protocol = PROTOCOL_SMB2_10;
-			break;
-		}
-	}
-
-	for (c=0; protocol == PROTOCOL_NONE && c < dialect_count; c++) {
-		if (lp_srv_maxprotocol() < PROTOCOL_SMB2_02) {
-			break;
-		}
-		if (lp_srv_minprotocol() > PROTOCOL_SMB2_02) {
-			break;
-		}
-
-		dialect = SVAL(indyn, c*2);
-		if (dialect == SMB2_DIALECT_REVISION_202) {
-			protocol = PROTOCOL_SMB2_02;
-			break;
-		}
-	}
+	protocol = smbd_smb2_protocol_dialect_match(indyn,
+					dialect_count,
+					&dialect);
 
 	for (c=0; protocol == PROTOCOL_NONE && c < dialect_count; c++) {
 		if (lp_srv_maxprotocol() < PROTOCOL_SMB2_10) {
