@@ -2073,6 +2073,25 @@ SMBC_getxattr_ctx(SMBCCTX *context,
         if (! srv->no_nt_session) {
                 ipc_srv = SMBC_attr_server(frame, context, server, port, share,
                                            &workgroup, &user, &password);
+		/*
+		 * SMBC_attr_server() can cause the original
+		 * server to be removed from the cache.
+		 * If so we must error out here as the srv
+		 * pointer has been freed.
+		 */
+		if (smbc_getFunctionGetCachedServer(context)(context,
+				server,
+				share,
+				workgroup,
+				user) != srv) {
+#if defined(ECONNRESET)
+			errno = ECONNRESET;
+#else
+			errno = ETIMEDOUT;
+#endif
+			TALLOC_FREE(frame);
+			return -1;
+		}
                 if (! ipc_srv) {
                         srv->no_nt_session = True;
                 }
@@ -2208,9 +2227,31 @@ SMBC_removexattr_ctx(SMBCCTX *context,
         }
 
         if (! srv->no_nt_session) {
+		int saved_errno;
                 ipc_srv = SMBC_attr_server(frame, context, server, port, share,
                                            &workgroup, &user, &password);
+		saved_errno = errno;
+		/*
+		 * SMBC_attr_server() can cause the original
+		 * server to be removed from the cache.
+		 * If so we must error out here as the srv
+		 * pointer has been freed.
+		 */
+		if (smbc_getFunctionGetCachedServer(context)(context,
+				server,
+				share,
+				workgroup,
+				user) != srv) {
+#if defined(ECONNRESET)
+			errno = ECONNRESET;
+#else
+			errno = ETIMEDOUT;
+#endif
+			TALLOC_FREE(frame);
+			return -1;
+		}
                 if (! ipc_srv) {
+			errno = saved_errno;
                         srv->no_nt_session = True;
                 }
         } else {
