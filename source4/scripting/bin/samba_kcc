@@ -1569,8 +1569,8 @@ class KCC(object):
     def add_transports(self, vertex, local_vertex, graph, detect_failed):
 
         # The docs ([MS-ADTS] 6.2.2.3.4.3) say to use local_vertex
-        # here and in the, but using vertex seems to make more
-        # sense. That is, it wants this:
+        # here, but using vertex seems to make more sense. That is,
+        # the docs want this:
         #
         #bh = self.get_bridgehead(vertex.site, vertex.part, transport,
         #                         local_vertex.is_black(), detect_failed)
@@ -3049,6 +3049,10 @@ def test_all_reps_from(lp, creds):
                 else:
                     vertex_colours.append('#0000cc')
                 dot_vertices.append(dsa.dsa_dnstr)
+                if dsa.connect_table:
+                    DEBUG_FN("DSA %s %s connections:\n%s" %
+                             (dsa.dsa_dnstr, len(dsa.connect_table),
+                              [x.from_dnstr for x in dsa.connect_table.values()]))
                 for con in dsa.connect_table.values():
                     if con.is_rodc_topology():
                         colours.append('red')
