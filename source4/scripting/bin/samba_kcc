@@ -750,6 +750,8 @@ class KCC(object):
                     t_repsFrom.dns_name2 = nastr
 
         else:
+            # XXX This entire branch is NEVER used! Because we don't do SMTP!
+            # (see the if condition above). Just close your eyes here.
             if ((t_repsFrom.replica_flags &
                  drsuapi.DRSUAPI_DRS_MAIL_REP) == 0x0):
                 t_repsFrom.replica_flags |= drsuapi.DRSUAPI_DRS_MAIL_REP
