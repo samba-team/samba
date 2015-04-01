@@ -80,8 +80,8 @@ class NamingContext(object):
         return text
 
     def load_nc(self, samdb):
-        attrs = [ "objectGUID",
-                  "objectSid" ]
+        attrs = ["objectGUID",
+                 "objectSid"]
         try:
             res = samdb.search(base=self.nc_dnstr,
                                scope=ldb.SCOPE_BASE, attrs=attrs)
@@ -314,7 +314,7 @@ class NCReplica(NamingContext):
         """
         try:
             res = samdb.search(base=self.nc_dnstr, scope=ldb.SCOPE_BASE,
-                               attrs=[ "repsFrom" ])
+                               attrs=["repsFrom"])
 
         except ldb.LdbError, (enum, estr):
             raise Exception("Unable to find NC for (%s) - (%s)" %
@@ -402,7 +402,7 @@ class NCReplica(NamingContext):
         """
         try:
             res = samdb.search(base=self.nc_dnstr, scope=ldb.SCOPE_BASE,
-                               attrs=[ "replUpToDateVector" ])
+                               attrs=["replUpToDateVector"])
 
         except ldb.LdbError, (enum, estr):
             raise Exception("Unable to find NC for (%s) - (%s)" %
@@ -436,7 +436,7 @@ class NCReplica(NamingContext):
         """
         try:
             res = samdb.search(base=self.nc_dnstr, scope=ldb.SCOPE_BASE,
-                               attrs=[ "fSMORoleOwner" ])
+                               attrs=["fSMORoleOwner"])
 
         except ldb.LdbError, (enum, estr):
             raise Exception("Unable to find NC for (%s) - (%s)" %
@@ -624,7 +624,8 @@ class DirectoryServiceAgent(object):
                     # RODC only - default, config, schema, app NCs
                     "msDS-hasFullReplicaNCs",
                     # Identifies if replica is coming, going, or stable
-                    "msDS-HasInstantiatedNCs" ]
+                    "msDS-HasInstantiatedNCs"
+                    ]
         try:
             res = samdb.search(base=self.dsa_dnstr, scope=ldb.SCOPE_BASE,
                                attrs=ncattrs)
@@ -864,14 +865,14 @@ class NTDSConnection(object):
         for the object's DN, search for the DN and load attributes
         from the samdb.
         """
-        attrs = [ "options",
-                  "enabledConnection",
-                  "schedule",
-                  "whenCreated",
-                  "objectGUID",
-                  "transportType",
-                  "fromServer",
-                  "systemFlags" ]
+        attrs = ["options",
+                 "enabledConnection",
+                 "schedule",
+                 "whenCreated",
+                 "objectGUID",
+                 "transportType",
+                 "fromServer",
+                 "systemFlags"]
         try:
             res = samdb.search(base=self.dnstr, scope=ldb.SCOPE_BASE,
                                attrs=attrs)
@@ -918,7 +919,7 @@ class NTDSConnection(object):
 
         :param tdnstr: transport DN to load
         """
-        attrs = [ "objectGUID" ]
+        attrs = ["objectGUID"]
         try:
             res = samdb.search(base=tdnstr,
                                scope=ldb.SCOPE_BASE, attrs=attrs)
@@ -1239,11 +1240,11 @@ class Partition(NamingContext):
 
         :param samdb: sam database to load partition from
         """
-        attrs = [ "nCName",
-                  "Enabled",
-                  "systemFlags",
-                  "msDS-NC-Replica-Locations",
-                  "msDS-NC-RO-Replica-Locations" ]
+        attrs = ["nCName",
+                 "Enabled",
+                 "systemFlags",
+                 "msDS-NC-Replica-Locations",
+                 "msDS-NC-RO-Replica-Locations"]
         try:
             res = samdb.search(base=self.partstr, scope=ldb.SCOPE_BASE,
                                attrs=attrs)
@@ -1792,11 +1793,11 @@ class Transport(object):
         for the object's DN, search for the DN and load attributes
         from the samdb.
         """
-        attrs = [ "objectGUID",
-                  "options",
-                  "name",
-                  "bridgeheadServerListBL",
-                  "transportAddressAttribute" ]
+        attrs = ["objectGUID",
+                 "options",
+                 "name",
+                 "bridgeheadServerListBL",
+                 "transportAddressAttribute"]
         try:
             res = samdb.search(base=self.dnstr, scope=ldb.SCOPE_BASE,
                                attrs=attrs)
@@ -1912,10 +1913,10 @@ class RepsFromTo(object):
 
     def __setattr__(self, item, value):
 
-        if item in [ 'schedule', 'replica_flags', 'transport_guid',
-                     'source_dsa_obj_guid', 'source_dsa_invocation_id',
-                     'consecutive_sync_failures', 'last_success',
-                     'last_attempt' ]:
+        if item in ['schedule', 'replica_flags', 'transport_guid',
+                    'source_dsa_obj_guid', 'source_dsa_invocation_id',
+                    'consecutive_sync_failures', 'last_success',
+                    'last_attempt']:
 
             if item in ['replica_flags']:
                 self.__dict__['update_flags'] |= drsuapi.DRSUAPI_DRS_UPDATE_FLAGS
@@ -1961,10 +1962,10 @@ class RepsFromTo(object):
 
         Allows external code to ignore substructures within the blob
         """
-        if item in [ 'schedule', 'replica_flags', 'transport_guid',
-                     'source_dsa_obj_guid', 'source_dsa_invocation_id',
-                     'consecutive_sync_failures', 'last_success',
-                     'last_attempt' ]:
+        if item in ['schedule', 'replica_flags', 'transport_guid',
+                    'source_dsa_obj_guid', 'source_dsa_invocation_id',
+                    'consecutive_sync_failures', 'last_success',
+                    'last_attempt']:
             return getattr(self.__dict__['ndr_blob'].ctr, item)
 
         elif item in ['version']:
@@ -2047,12 +2048,12 @@ class SiteLink(object):
         for the object's DN, search for the DN and load attributes
         from the samdb.
         """
-        attrs = [ "options",
-                  "systemFlags",
-                  "cost",
-                  "schedule",
-                  "replInterval",
-                  "siteList" ]
+        attrs = ["options",
+                 "systemFlags",
+                 "cost",
+                 "schedule",
+                 "replInterval",
+                 "siteList"]
         try:
             res = samdb.search(base=self.dnstr, scope=ldb.SCOPE_BASE,
                                attrs=attrs, controls=['extended_dn:0'])
