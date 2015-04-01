@@ -1656,7 +1656,7 @@ class KCC(object):
             return all_connected, found_failed
 
         edge_list, n_components = \
-            self.get_spanning_tree_edges(graph, label=part.partstr)
+            get_spanning_tree_edges(graph, self.my_site, label=part.partstr)
 
         logger.debug("%s Number of components: %d" %
                      (part.nc_dnstr, n_components))
@@ -1798,118 +1798,6 @@ class KCC(object):
 
         return all_connected
 
-    def get_spanning_tree_edges(self, graph, label=None):
-        # Phase 1: Run Dijkstra's to get a list of internal edges, which are
-        # just the shortest-paths connecting colored vertices
-
-        internal_edges = set()
-
-        for e_set in graph.edge_set:
-            edgeType = None
-            for v in graph.vertices:
-                v.edges = []
-
-            # All con_type in an edge set is the same
-            for e in e_set.edges:
-                edgeType = e.con_type
-                for v in e.vertices:
-                    v.edges.append(e)
-
-            if opts.verify or opts.dot_files:
-                graph_edges = [(a.site.site_dnstr, b.site.site_dnstr)
-                               for a, b in
-                               itertools.chain(
-                                   *(itertools.combinations(edge.vertices, 2)
-                                     for edge in e_set.edges))]
-                graph_nodes = [v.site.site_dnstr for v in graph.vertices]
-
-                if opts.dot_files and opts.debug:
-                    write_dot_file('edgeset_%s' % (edgeType,), graph_edges,
-                                   vertices=graph_nodes, label=label)
-
-                if opts.verify:
-                    verify_graph('spanning tree edge set %s' % edgeType,
-                                 graph_edges, vertices=graph_nodes,
-                                 properties=('complete', 'connected'),
-                                 debug=DEBUG)
-
-            # Run dijkstra's algorithm with just the red vertices as seeds
-            # Seed from the full replicas
-            dijkstra(graph, edgeType, False)
-
-            # Process edge set
-            process_edge_set(graph, e_set, internal_edges)
-
-            # Run dijkstra's algorithm with red and black vertices as the seeds
-            # Seed from both full and partial replicas
-            dijkstra(graph, edgeType, True)
-
-            # Process edge set
-            process_edge_set(graph, e_set, internal_edges)
-
-        # All vertices have root/component as itself
-        setup_vertices(graph)
-        process_edge_set(graph, None, internal_edges)
-
-        if opts.verify or opts.dot_files:
-            graph_edges = [(e.v1.site.site_dnstr, e.v2.site.site_dnstr)
-                           for e in internal_edges]
-            graph_nodes = [v.site.site_dnstr for v in graph.vertices]
-            verify_properties = ('multi_edge_forest',)
-            verify_and_dot('prekruskal', graph_edges, graph_nodes, label=label,
-                           properties=verify_properties, debug=DEBUG,
-                           verify=opts.verify,
-                           dot_files=opts.dot_files)
-
-        # Phase 2: Run Kruskal's on the internal edges
-        output_edges, components = kruskal(graph, internal_edges)
-
-        # This recalculates the cost for the path connecting the
-        # closest red vertex. Ignoring types is fine because NO
-        # suboptimal edge should exist in the graph
-        dijkstra(graph, "EDGE_TYPE_ALL", False)  # TODO rename
-        # Phase 3: Process the output
-        for v in graph.vertices:
-            if v.is_red():
-                v.dist_to_red = 0
-            else:
-                v.dist_to_red = v.repl_info.cost
-
-        if opts.verify or opts.dot_files:
-            graph_edges = [(e.v1.site.site_dnstr, e.v2.site.site_dnstr)
-                           for e in internal_edges]
-            graph_nodes = [v.site.site_dnstr for v in graph.vertices]
-            verify_properties = ('multi_edge_forest',)
-            verify_and_dot('postkruskal', graph_edges, graph_nodes,
-                           label=label, properties=verify_properties,
-                           debug=DEBUG, verify=opts.verify,
-                           dot_files=opts.dot_files)
-
-        # count the components
-        return self.copy_output_edges(graph, output_edges), components
-
-    # This ensures only one-way connections for partial-replicas
-    def copy_output_edges(self, graph, output_edges):
-        edge_list = []
-        vid = self.my_site  # object guid for the local dc's site
-
-        for edge in output_edges:
-            # Three-way edges are no problem here since these were created by
-            # add_out_edge which only has two endpoints
-            v = edge.vertices[0]
-            w = edge.vertices[1]
-            if v.site is vid or w.site is vid:
-                if (((v.is_black() or w.is_black()) and
-                     v.dist_to_red != MAX_DWORD)):
-                    edge.directed = True
-
-                    if w.dist_to_red < v.dist_to_red:
-                        edge.vertices[0] = w
-                        edge.vertices[1] = v
-
-                edge_list.append(edge)
-
-        return edge_list
 
     def intersite(self):
         """The head method for generating the inter-site KCC replica
@@ -2712,6 +2600,119 @@ class KCC(object):
 ##################################################
 # Global Functions
 ##################################################
+
+def get_spanning_tree_edges(graph, site_id, label=None):
+    # Phase 1: Run Dijkstra's to get a list of internal edges, which are
+    # just the shortest-paths connecting colored vertices
+
+    internal_edges = set()
+
+    for e_set in graph.edge_set:
+        edgeType = None
+        for v in graph.vertices:
+            v.edges = []
+
+        # All con_type in an edge set is the same
+        for e in e_set.edges:
+            edgeType = e.con_type
+            for v in e.vertices:
+                v.edges.append(e)
+
+        if opts.verify or opts.dot_files:
+            graph_edges = [(a.site.site_dnstr, b.site.site_dnstr)
+                           for a, b in
+                           itertools.chain(
+                               *(itertools.combinations(edge.vertices, 2)
+                                 for edge in e_set.edges))]
+            graph_nodes = [v.site.site_dnstr for v in graph.vertices]
+
+            if opts.dot_files and opts.debug:
+                write_dot_file('edgeset_%s' % (edgeType,), graph_edges,
+                               vertices=graph_nodes, label=label)
+
+            if opts.verify:
+                verify_graph('spanning tree edge set %s' % edgeType,
+                             graph_edges, vertices=graph_nodes,
+                             properties=('complete', 'connected'),
+                             debug=DEBUG)
+
+        # Run dijkstra's algorithm with just the red vertices as seeds
+        # Seed from the full replicas
+        dijkstra(graph, edgeType, False)
+
+        # Process edge set
+        process_edge_set(graph, e_set, internal_edges)
+
+        # Run dijkstra's algorithm with red and black vertices as the seeds
+        # Seed from both full and partial replicas
+        dijkstra(graph, edgeType, True)
+
+        # Process edge set
+        process_edge_set(graph, e_set, internal_edges)
+
+    # All vertices have root/component as itself
+    setup_vertices(graph)
+    process_edge_set(graph, None, internal_edges)
+
+    if opts.verify or opts.dot_files:
+        graph_edges = [(e.v1.site.site_dnstr, e.v2.site.site_dnstr)
+                       for e in internal_edges]
+        graph_nodes = [v.site.site_dnstr for v in graph.vertices]
+        verify_properties = ('multi_edge_forest',)
+        verify_and_dot('prekruskal', graph_edges, graph_nodes, label=label,
+                       properties=verify_properties, debug=DEBUG,
+                       verify=opts.verify,
+                       dot_files=opts.dot_files)
+
+    # Phase 2: Run Kruskal's on the internal edges
+    output_edges, components = kruskal(graph, internal_edges)
+
+    # This recalculates the cost for the path connecting the
+    # closest red vertex. Ignoring types is fine because NO
+    # suboptimal edge should exist in the graph
+    dijkstra(graph, "EDGE_TYPE_ALL", False)  # TODO rename
+    # Phase 3: Process the output
+    for v in graph.vertices:
+        if v.is_red():
+            v.dist_to_red = 0
+        else:
+            v.dist_to_red = v.repl_info.cost
+
+    if opts.verify or opts.dot_files:
+        graph_edges = [(e.v1.site.site_dnstr, e.v2.site.site_dnstr)
+                       for e in internal_edges]
+        graph_nodes = [v.site.site_dnstr for v in graph.vertices]
+        verify_properties = ('multi_edge_forest',)
+        verify_and_dot('postkruskal', graph_edges, graph_nodes,
+                       label=label, properties=verify_properties,
+                       debug=DEBUG, verify=opts.verify,
+                       dot_files=opts.dot_files)
+
+    # count the components
+    return copy_output_edges(graph, output_edges, site_id), components
+
+# This ensures only one-way connections for partial-replicas
+def copy_output_edges(graph, output_edges, vid):
+    edge_list = []
+
+    for edge in output_edges:
+        # Three-way edges are no problem here since these were created by
+        # add_out_edge which only has two endpoints
+        v = edge.vertices[0]
+        w = edge.vertices[1]
+        if v.site is vid or w.site is vid:
+            if (((v.is_black() or w.is_black()) and
+                 v.dist_to_red != MAX_DWORD)):
+                edge.directed = True
+
+                if w.dist_to_red < v.dist_to_red:
+                    edge.vertices[0] = w
+                    edge.vertices[1] = v
+
+            edge_list.append(edge)
+
+    return edge_list
+
 
 
 def sort_replica_by_dsa_guid(rep1, rep2):
