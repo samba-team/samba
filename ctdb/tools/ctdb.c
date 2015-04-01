@@ -6279,8 +6279,15 @@ static bool sanity_check_nodes_file_changes(TALLOC_CTX *mem_ctx,
 			should_abort = true;
 			continue;
 		}
-		if ((nodemap->nodes[i].flags & NODE_FLAGS_DELETED) ==
-		    (file_nodemap->nodes[i].flags & NODE_FLAGS_DELETED)) {
+		if (nodemap->nodes[i].flags & NODE_FLAGS_DELETED &&
+		    file_nodemap->nodes[i].flags & NODE_FLAGS_DELETED) {
+			/* Node remains deleted */
+			DEBUG(DEBUG_INFO,
+			      ("Node %u is unchanged (DELETED)\n",
+			       nodemap->nodes[i].pnn));
+		} else if (!(nodemap->nodes[i].flags & NODE_FLAGS_DELETED) &&
+			   !(file_nodemap->nodes[i].flags & NODE_FLAGS_DELETED)) {
+			/* Node not newly nor previously deleted */
 			if (!ctdb_same_ip(&nodemap->nodes[i].addr,
 					  &file_nodemap->nodes[i].addr)) {
 				DEBUG(DEBUG_ERR,
@@ -6301,9 +6308,8 @@ static bool sanity_check_nodes_file_changes(TALLOC_CTX *mem_ctx,
 					       nodemap->nodes[i].pnn));
 				}
 			}
-			continue;
-		}
-		if (file_nodemap->nodes[i].flags & NODE_FLAGS_DELETED) {
+		} else if (file_nodemap->nodes[i].flags & NODE_FLAGS_DELETED) {
+			/* Node is being deleted */
 			DEBUG(DEBUG_NOTICE,
 			      ("Node %u is DELETED\n",
 			       nodemap->nodes[i].pnn));
@@ -6315,6 +6321,7 @@ static bool sanity_check_nodes_file_changes(TALLOC_CTX *mem_ctx,
 				should_abort = true;
 			}
 		} else if (nodemap->nodes[i].flags & NODE_FLAGS_DELETED) {
+			/* Node was previously deleted */
 			DEBUG(DEBUG_NOTICE,
 			      ("Node %u is UNDELETED\n", nodemap->nodes[i].pnn));
 			have_changes = true;
