@@ -218,9 +218,9 @@ class KCC(object):
             res = self.samdb.search(base=dn, scope=ldb.SCOPE_BASE,
                                     attrs=["objectGUID"])
         except ldb.LdbError, (enum, estr):
-            DEBUG("Search for %s failed: %s.  This typically happens in"
-                  " --importldif mode due to lack of module support",
-                  dn, estr)
+            logger.warning("Search for %s failed: %s.  This typically happens"
+                           " in --importldif mode due to lack of module"
+                           " support.", dn, estr)
             try:
                 # We work around the failure above by looking at the
                 # dsServiceName that was put in the fake rootdse by
@@ -530,9 +530,9 @@ class KCC(object):
         if mydsa.is_ro() or opts.readonly:
             for connect in mydsa.connect_table.values():
                 if connect.to_be_deleted:
-                    DEBUG_GREEN("TO BE DELETED:\n%s" % connect)
+                    DEBUG_FN("TO BE DELETED:\n%s" % connect)
                 if connect.to_be_added:
-                    DEBUG_GREEN("TO BE ADDED:\n%s" % connect)
+                    DEBUG_FN("TO BE ADDED:\n%s" % connect)
 
             # Peform deletion from our tables but perform
             # no database modification
@@ -919,10 +919,11 @@ class KCC(object):
             if dnstr not in needed_rep_table:
                 delete_reps.add(dnstr)
 
+        DEBUG_FN('current %d needed %d delete %d' % (len(current_rep_table),
+                 len(needed_rep_table), len(delete_reps)))
+
         if delete_reps:
-            DEBUG('current %d needed %d delete %d', len(current_rep_table),
-                  len(needed_rep_table), len(delete_reps))
-            DEBUG('deleting these reps: %s', delete_reps)
+            DEBUG('deleting these reps: %s' % delete_reps)
             for dnstr in delete_reps:
                 del current_rep_table[dnstr]
 
@@ -1065,9 +1066,9 @@ class KCC(object):
         if opts.attempt_live_connections:
             DEBUG_RED("merge_failed_links() is NOT IMPLEMENTED")
         else:
-            DEBUG("skipping merge_failed_links() because it requires "
-                  "real network connections\n"
-                  "and we weren't asked to --attempt-live-connections")
+            DEBUG_FN("skipping merge_failed_links() because it requires "
+                     "real network connections\n"
+                     "and we weren't asked to --attempt-live-connections")
 
     def setup_graph(self, part):
         """Set up a GRAPH, populated with a VERTEX for each site
@@ -1181,7 +1182,7 @@ class KCC(object):
 
         bhs = []
 
-        logger.debug("get_all_bridgeheads: %s" % transport)
+        logger.debug("get_all_bridgeheads: %s" % transport.name)
         if 'Site-5' in site.site_dnstr:
             DEBUG_RED("get_all_bridgeheads with %s, part%s, partial_ok %s"
                       " detect_failed %s" % (site.site_dnstr, part.partstr,
@@ -3084,6 +3085,13 @@ for _color in ('DARK_RED', 'RED', 'DARK_GREEN', 'GREEN', 'YELLOW',
                'DARK_YELLOW', 'DARK_BLUE', 'BLUE', 'PURPLE', 'MAGENTA',
                'DARK_CYAN', 'CYAN', 'GREY', 'WHITE', 'REV_RED'):
     _globals['DEBUG_' + _color] = partial(_color_debug, color=_globals[_color])
+
+
+def DEBUG_FN(msg=''):
+    import traceback
+    filename, lineno, function, text = traceback.extract_stack(None, 2)[0]
+    DEBUG("%s%s:%s%s %s%s()%s '%s'" % (CYAN, filename, BLUE, lineno,
+                                       CYAN, function, C_NORMAL, msg))
 
 
 ##################################################
