@@ -796,27 +796,7 @@ class DirectoryServiceAgent(object):
         else:
             # Create schedule.  Attribute valuse set according to MS-TECH
             # intrasite connection creation document
-            connect.schedule = drsblobs.schedule()
-
-            connect.schedule.size = 188
-            connect.schedule.bandwidth = 0
-            connect.schedule.numberOfSchedules = 1
-
-            header = drsblobs.scheduleHeader()
-            header.type = 0
-            header.offset = 20
-
-            connect.schedule.headerArray = [ header ]
-
-            # 168 byte instances of the 0x01 value.  The low order 4 bits
-            # of the byte equate to 15 minute intervals within a single hour.
-            # There are 168 bytes because there are 168 hours in a full week
-            # Effectively we are saying to perform replication at the end of
-            # each hour of the week
-            data = drsblobs.scheduleSlots()
-            data.slots = [ 0x01 ] * 168
-
-            connect.schedule.dataArray = [ data ]
+            connect.schedule = new_connection_schedule()
 
         self.add_connection(dnstr, connect)
         return connect
@@ -2105,27 +2085,7 @@ class SiteLink(object):
         if "schedule" in msg:
             self.schedule = ndr_unpack(drsblobs.schedule, value)
         else:
-            self.schedule = drsblobs.schedule()
-
-            self.schedule.size = 188
-            self.schedule.bandwidth = 0
-            self.schedule.numberOfSchedules = 1
-
-            header = drsblobs.scheduleHeader()
-            header.type = 0
-            header.offset = 20
-
-            self.schedule.headerArray = [ header ]
-
-            # 168 byte instances of the 0x01 value.  The low order 4 bits
-            # of the byte equate to 15 minute intervals within a single hour.
-            # There are 168 bytes because there are 168 hours in a full week
-            # Effectively we are saying to perform replication at the end of
-            # each hour of the week
-            data = drsblobs.scheduleSlots()
-            data.slots = [ 0x01 ] * 168
-
-            self.schedule.dataArray = [ data ]
+            self.schedule = new_connection_schedule()
 
 
 class KCCFailedObject(object):
@@ -2384,3 +2344,31 @@ def convert_schedule_to_repltimes(schedule):
         times.append((data[i * 2] & 0xF) << 4 | (data[i * 2 + 1] & 0xF))
 
     return times
+
+def new_connection_schedule():
+    """Create a default schedule for an NTDSConnection or Sitelink. This
+    is packed differently from the repltimes schedule used elsewhere
+    in KCC (where the 168 nibbles are packed into 84 bytes).
+    """
+    # 168 byte instances of the 0x01 value.  The low order 4 bits
+    # of the byte equate to 15 minute intervals within a single hour.
+    # There are 168 bytes because there are 168 hours in a full week
+    # Effectively we are saying to perform replication at the end of
+    # each hour of the week
+    schedule = drsblobs.schedule()
+
+    schedule.size = 188
+    schedule.bandwidth = 0
+    schedule.numberOfSchedules = 1
+
+    header = drsblobs.scheduleHeader()
+    header.type = 0
+    header.offset = 20
+
+    schedule.headerArray = [header]
+
+    data = drsblobs.scheduleSlots()
+    data.slots = [0x01] * 168
+
+    schedule.dataArray = [data]
+    return schedule
