@@ -1669,10 +1669,7 @@ class KCC(object):
 
         # LET partialReplicaOkay be TRUE if and only if
         # localSiteVertex.Color = COLOR.BLACK
-        if my_vertex.is_black():
-            partial_ok = True
-        else:
-            partial_ok = False
+        partial_ok = my_vertex.is_black()
 
         # Utilize the IP transport only for now
         transport = self.ip_transport
