@@ -1311,18 +1311,16 @@ class Partition(NamingContext):
 
         :param target_dsa: should NC be present on target dsa
         """
-        needed = False
         ro = False
         partial = False
 
         # If this is the config, schema, or default
         # domain NC for the target dsa then it should
         # be present
-        if self.nc_type == NCType.config or \
-           self.nc_type == NCType.schema or \
-           (self.nc_type == NCType.domain and
-            self.nc_dnstr == target_dsa.default_dnstr):
-            needed = True
+        needed = (self.nc_type == NCType.config or
+                  self.nc_type == NCType.schema or
+                  (self.nc_type == NCType.domain and
+                   self.nc_dnstr == target_dsa.default_dnstr))
 
         # A writable replica of an application NC should be present
         # if there a cross reference to the target DSA exists.  Depending
