@@ -35,14 +35,17 @@ from samba.dcerpc import (
 from samba.common import dsdb_Dn
 from samba.ndr import (ndr_unpack, ndr_pack)
 
+
 class KCCError(Exception):
     pass
+
 
 class NCType(object):
     (unknown, schema, domain, config, application) = range(0, 5)
 
 # map the NCType enum to strings for debugging
-nctype_lut = {v:k for k, v in NCType.__dict__.items() if k[:2] != '__'}
+nctype_lut = {v: k for k, v in NCType.__dict__.items() if k[:2] != '__'}
+
 
 class NamingContext(object):
     """Base class for a naming context.
@@ -72,7 +75,8 @@ class NamingContext(object):
         else:
             text = text + "\n\tnc_sid=<present>"
 
-        text = text + "\n\tnc_type=%s (%s)"  % (nctype_lut[self.nc_type], self.nc_type)
+        text = text + "\n\tnc_type=%s (%s)"  % (nctype_lut[self.nc_type],
+                                                self.nc_type)
         return text
 
     def load_nc(self, samdb):
@@ -185,7 +189,7 @@ class NCReplica(NamingContext):
         """
         self.rep_dsa_dnstr = dsa_dnstr
         self.rep_dsa_guid = dsa_guid
-        self.rep_default = False # replica for DSA's default domain
+        self.rep_default = False  # replica for DSA's default domain
         self.rep_partial = False
         self.rep_ro = False
         self.rep_instantiated_flags = 0
@@ -390,9 +394,11 @@ class NCReplica(NamingContext):
 
     def load_replUpToDateVector(self, samdb):
         """Given an NC replica which has been discovered thru the nTDSDSA
-        database object, load the replUpToDateVector attribute for the local replica.
-        held by my dsa.  The replUpToDateVector attribute is not replicated so this
-        attribute is relative only to the local DSA that the samdb exists on
+        database object, load the replUpToDateVector attribute for the
+        local replica. held by my dsa. The replUpToDateVector
+        attribute is not replicated so this attribute is relative only
+        to the local DSA that the samdb exists on
+
         """
         try:
             res = samdb.search(base=self.nc_dnstr, scope=ldb.SCOPE_BASE,
@@ -407,7 +413,8 @@ class NCReplica(NamingContext):
         # Possibly no replUpToDateVector if this is a singleton DC
         if "replUpToDateVector" in msg:
             value = msg["replUpToDateVector"][0]
-            replUpToDateVectorBlob = ndr_unpack(drsblobs.replUpToDateVectorBlob, value)
+            replUpToDateVectorBlob = ndr_unpack(drsblobs.replUpToDateVectorBlob,
+                                                value)
             if replUpToDateVectorBlob.version != 2:
                 # Samba only generates version 2, and this runs locally
                 raise AttributeError("Unexpected replUpToDateVector version %d"
@@ -606,7 +613,7 @@ class DirectoryServiceAgent(object):
 
         :param samdb: database to query for DSA replica list
         """
-        ncattrs = [ # not RODC - default, config, schema (old style)
+        ncattrs = [  # not RODC - default, config, schema (old style)
                     "hasMasterNCs",
                     # not RODC - default, config, schema, app NCs
                     "msDS-hasMasterNCs",
@@ -733,9 +740,6 @@ class DirectoryServiceAgent(object):
         for dnstr in delconn:
             del self.connect_table[dnstr]
 
-
-
-
     def add_connection(self, dnstr, connect):
         assert dnstr not in self.connect_table
         self.connect_table[dnstr] = connect
@@ -773,7 +777,6 @@ class DirectoryServiceAgent(object):
         """
         print("new_connection: between %s and %s" %
               (self.dsa_dnstr, from_dnstr))
-
 
         dnstr = "CN=%s," % str(uuid.uuid4()) + self.dsa_dnstr
 
@@ -815,7 +818,7 @@ class DirectoryServiceAgent(object):
 
             connect.schedule.dataArray = [ data ]
 
-        self.add_connection(dnstr, connect);
+        self.add_connection(dnstr, connect)
         return connect
 
 
@@ -1015,7 +1018,8 @@ class NTDSConnection(object):
             ldb.MessageElement("TRUE", ldb.FLAG_MOD_ADD,
                                "showInAdvancedViewOnly")
         m["enabledConnection"] = \
-            ldb.MessageElement(enablestr, ldb.FLAG_MOD_ADD, "enabledConnection")
+            ldb.MessageElement(enablestr, ldb.FLAG_MOD_ADD,
+                               "enabledConnection")
         m["fromServer"] = \
             ldb.MessageElement(self.from_dnstr, ldb.FLAG_MOD_ADD, "fromServer")
         m["options"] = \
@@ -1145,9 +1149,9 @@ class NTDSConnection(object):
         elif sched is None:
             return True
 
-        if (self.schedule.size != sched.size or
+        if ((self.schedule.size != sched.size or
             self.schedule.bandwidth != sched.bandwidth or
-            self.schedule.numberOfSchedules != sched.numberOfSchedules):
+            self.schedule.numberOfSchedules != sched.numberOfSchedules)):
             return False
 
         for i, header in enumerate(self.schedule.headerArray):
@@ -1245,7 +1249,6 @@ class Partition(NamingContext):
         # fill in the naming context yet.  We'll get that
         # fully set up with load_partition().
         NamingContext.__init__(self, None)
-
 
     def load_partition(self, samdb):
         """Given a Partition class object that has been initialized with its
@@ -1346,20 +1349,20 @@ class Partition(NamingContext):
         # msDS-NC-RO-Replica-Locations
         if self.nc_type == NCType.application:
             if target_dsa.is_ro():
-               if target_dsa.dsa_dnstr in self.ro_location_list:
-                   needed = True
+                if target_dsa.dsa_dnstr in self.ro_location_list:
+                    needed = True
             else:
-               if target_dsa.dsa_dnstr in self.rw_location_list:
-                   needed = True
+                if target_dsa.dsa_dnstr in self.rw_location_list:
+                    needed = True
 
         # If the target dsa is a gc then a partial replica of a
         # domain NC (other than the DSAs default domain) should exist
         # if there is also a cross reference for the DSA
-        if target_dsa.is_gc() and \
-           self.nc_type == NCType.domain and \
-           self.nc_dnstr != target_dsa.default_dnstr and \
-           (target_dsa.dsa_dnstr in self.ro_location_list or
-            target_dsa.dsa_dnstr in self.rw_location_list):
+        if (target_dsa.is_gc() and
+            self.nc_type == NCType.domain and
+            self.nc_dnstr != target_dsa.default_dnstr and
+            (target_dsa.dsa_dnstr in self.ro_location_list or
+             target_dsa.dsa_dnstr in self.rw_location_list)):
             needed = True
             partial = True
 
@@ -1407,7 +1410,7 @@ class Site(object):
             res = samdb.search(base=ssdn, scope=ldb.SCOPE_BASE,
                                attrs=attrs)
             self_res = samdb.search(base=self.site_dnstr, scope=ldb.SCOPE_BASE,
-                               attrs=['objectGUID'])
+                                    attrs=['objectGUID'])
         except ldb.LdbError, (enum, estr):
             raise Exception("Unable to find site settings for (%s) - (%s)" %
                             (ssdn, estr))
@@ -1458,8 +1461,7 @@ class Site(object):
             if not dsa.is_ro():
                 self.rw_dsa_table[dnstr] = dsa
 
-
-    def get_dsa_by_guidstr(self, guidstr): #XXX unused
+    def get_dsa_by_guidstr(self, guidstr):  # XXX unused
         for dsa in self.dsa_table.values():
             if str(dsa.dsa_guid) == guidstr:
                 return dsa
@@ -1489,9 +1491,9 @@ class Site(object):
 
         c_rep = get_dsa_config_rep(mydsa)
 
-        # Load repsFrom and replUpToDateVector if not already loaded so we can get the current
-        # state of the config replica and whether we are getting updates
-        # from the istg
+        # Load repsFrom and replUpToDateVector if not already loaded
+        # so we can get the current state of the config replica and
+        # whether we are getting updates from the istg
         c_rep.load_repsFrom(samdb)
 
         c_rep.load_replUpToDateVector(samdb)
@@ -1512,8 +1514,8 @@ class Site(object):
         # in D_sort[]
         D_sort = sorted(self.rw_dsa_table.values(), cmp=sort_dsa_by_guid)
 
-        ntnow = unix2nttime(self.unix_now) # double word number of 100 nanosecond
-                                           # intervals since 1600s
+        # double word number of 100 nanosecond intervals since 1600s
+        ntnow = unix2nttime(self.unix_now)
 
         # Let f be the duration o!interSiteTopologyFailover seconds, or 2 hours
         # if o!interSiteTopologyFailover is 0 or has no value.
@@ -1542,46 +1544,46 @@ class Site(object):
         #     o!interSiteTopologyGenerator is an element dj of sequence D:
         #
         if d_dsa is not None and d_dsa is not mydsa:
-           # From MS-ADTS 6.2.2.3.1 ISTG Selection:
-           #     Let c be the cursor in the replUpToDateVector variable
-           #     associated with the NC replica of the config NC such
-           #     that c.uuidDsa = dj!invocationId. If no such c exists
-           #     (No evidence of replication from current ITSG):
-           #         Let i = j.
-           #         Let t = 0.
-           #
-           #     Else if the current time < c.timeLastSyncSuccess - f
-           #     (Evidence of time sync problem on current ISTG):
-           #         Let i = 0.
-           #         Let t = 0.
-           #
-           #     Else (Evidence of replication from current ITSG):
-           #         Let i = j.
-           #         Let t = c.timeLastSyncSuccess.
-           #
-           # last_success appears to be a double word containing
-           #     number of 100 nanosecond intervals since the 1600s
-           j_idx = D_sort.index(d_dsa)
+            # From MS-ADTS 6.2.2.3.1 ISTG Selection:
+            #     Let c be the cursor in the replUpToDateVector variable
+            #     associated with the NC replica of the config NC such
+            #     that c.uuidDsa = dj!invocationId. If no such c exists
+            #     (No evidence of replication from current ITSG):
+            #         Let i = j.
+            #         Let t = 0.
+            #
+            #     Else if the current time < c.timeLastSyncSuccess - f
+            #     (Evidence of time sync problem on current ISTG):
+            #         Let i = 0.
+            #         Let t = 0.
+            #
+            #     Else (Evidence of replication from current ITSG):
+            #         Let i = j.
+            #         Let t = c.timeLastSyncSuccess.
+            #
+            # last_success appears to be a double word containing
+            #     number of 100 nanosecond intervals since the 1600s
+            j_idx = D_sort.index(d_dsa)
 
-           found = False
-           for cursor in c_rep.rep_replUpToDateVector_cursors:
-               if d_dsa.dsa_ivid == cursor.source_dsa_invocation_id:
-                   found = True
-                   break
+            found = False
+            for cursor in c_rep.rep_replUpToDateVector_cursors:
+                if d_dsa.dsa_ivid == cursor.source_dsa_invocation_id:
+                    found = True
+                    break
 
-           if not found:
+            if not found:
                 i_idx = j_idx
                 t_time = 0
 
-           #XXX doc says current time < c.timeLastSyncSuccess - f
-           # which is true only if f is negative or clocks are wrong.
-           # f is not negative in the default case (2 hours).
-           elif ntnow - cursor.last_sync_success > f:
-               i_idx = 0
-               t_time = 0
-           else:
-               i_idx = j_idx
-               t_time = cursor.last_sync_success
+            #XXX doc says current time < c.timeLastSyncSuccess - f
+            # which is true only if f is negative or clocks are wrong.
+            # f is not negative in the default case (2 hours).
+            elif ntnow - cursor.last_sync_success > f:
+                i_idx = 0
+                t_time = 0
+            else:
+                i_idx = j_idx
+                t_time = cursor.last_sync_success
 
         # Otherwise (Nominate local DC as ISTG):
         #     Let i be the integer such that di is the nTDSDSA
@@ -1643,44 +1645,35 @@ class Site(object):
 
     def is_intrasite_topology_disabled(self):
         '''Returns True if intra-site topology is disabled for site'''
-        if (self.site_options &
-            dsdb.DS_NTDSSETTINGS_OPT_IS_AUTO_TOPOLOGY_DISABLED) != 0:
-            return True
-        return False
+        return (self.site_options &
+                dsdb.DS_NTDSSETTINGS_OPT_IS_AUTO_TOPOLOGY_DISABLED) != 0
 
     def is_intersite_topology_disabled(self):
         '''Returns True if inter-site topology is disabled for site'''
-        if (self.site_options &
-            dsdb.DS_NTDSSETTINGS_OPT_IS_INTER_SITE_AUTO_TOPOLOGY_DISABLED) != 0:
-            return True
-        return False
+        return ((self.site_options &
+                 dsdb.DS_NTDSSETTINGS_OPT_IS_INTER_SITE_AUTO_TOPOLOGY_DISABLED)
+                != 0)
 
     def is_random_bridgehead_disabled(self):
         '''Returns True if selection of random bridgehead is disabled'''
-        if (self.site_options &
-            dsdb.DS_NTDSSETTINGS_OPT_IS_RAND_BH_SELECTION_DISABLED) != 0:
-            return True
-        return False
+        return (self.site_options &
+                dsdb.DS_NTDSSETTINGS_OPT_IS_RAND_BH_SELECTION_DISABLED) != 0
 
     def is_detect_stale_disabled(self):
         '''Returns True if detect stale is disabled for site'''
-        if (self.site_options &
-            dsdb.DS_NTDSSETTINGS_OPT_IS_TOPL_DETECT_STALE_DISABLED) != 0:
-            return True
-        return False
+        return (self.site_options &
+                dsdb.DS_NTDSSETTINGS_OPT_IS_TOPL_DETECT_STALE_DISABLED) != 0
 
     def is_cleanup_ntdsconn_disabled(self):
         '''Returns True if NTDS Connection cleanup is disabled for site'''
-        if (self.site_options &
-            dsdb.DS_NTDSSETTINGS_OPT_IS_TOPL_CLEANUP_DISABLED) != 0:
-            return True
-        return False
+        return (self.site_options &
+                dsdb.DS_NTDSSETTINGS_OPT_IS_TOPL_CLEANUP_DISABLED) != 0
 
     def same_site(self, dsa):
-       '''Return True if dsa is in this site'''
-       if self.get_dsa(dsa.dsa_dnstr):
-           return True
-       return False
+        '''Return True if dsa is in this site'''
+        if self.get_dsa(dsa.dsa_dnstr):
+            return True
+        return False
 
     def __str__(self):
         '''Debug dump string output of class'''
@@ -1778,8 +1771,8 @@ class GraphNode(object):
 
             # Generate a new dnstr for this nTDSConnection
             opt = dsdb.NTDSCONN_OPT_IS_GENERATED
-            flags = dsdb.SYSTEM_FLAG_CONFIG_ALLOW_RENAME + \
-                     dsdb.SYSTEM_FLAG_CONFIG_ALLOW_MOVE
+            flags = (dsdb.SYSTEM_FLAG_CONFIG_ALLOW_RENAME |
+                     dsdb.SYSTEM_FLAG_CONFIG_ALLOW_MOVE)
 
             dsa.new_connection(opt, flags, None, edge_dnstr, None)
 
@@ -2091,7 +2084,7 @@ class SiteLink(object):
                   "siteList" ]
         try:
             res = samdb.search(base=self.dnstr, scope=ldb.SCOPE_BASE,
-                    attrs=attrs, controls=['extended_dn:0'])
+                               attrs=attrs, controls=['extended_dn:0'])
 
         except ldb.LdbError, (enum, estr):
             raise Exception("Unable to find SiteLink for (%s) - (%s)" %
@@ -2143,13 +2136,16 @@ class SiteLink(object):
 
             self.schedule.dataArray = [ data ]
 
+
 class KCCFailedObject(object):
-    def __init__(self, uuid, failure_count, time_first_failure, last_result, dns_name):
+    def __init__(self, uuid, failure_count, time_first_failure,
+                 last_result, dns_name):
         self.uuid = uuid
         self.failure_count = failure_count
         self.time_first_failure = time_first_failure
         self.last_result = last_result
         self.dns_name = dns_name
+
 
 class VertexColor(object):
     (red, black, white, unknown) = range(0, 4)
@@ -2202,7 +2198,6 @@ class Vertex(object):
             else:
                 self.color = VertexColor.black
 
-
     def is_red(self):
         assert(self.color != VertexColor.unknown)
         return (self.color == VertexColor.red)
@@ -2225,19 +2220,22 @@ class IntersiteGraph(object):
         # All vertices that are endpoints of edges
         self.connected_vertices = None
 
+
 class MultiEdgeSet(object):
     """Defines a multi edge set"""
     def __init__(self):
-        self.guid = 0 # objectGuid siteLinkBridge
+        self.guid = 0  # objectGuid siteLinkBridge
         self.edges = []
+
 
 class MultiEdge(object):
     def __init__(self):
-        self.site_link = None # object siteLink
+        self.site_link = None  # object siteLink
         self.vertices = []
-        self.con_type = None # interSiteTransport GUID
+        self.con_type = None  # interSiteTransport GUID
         self.repl_info = ReplInfo()
         self.directed = True
+
 
 class ReplInfo(object):
     def __init__(self):
@@ -2245,6 +2243,7 @@ class ReplInfo(object):
         self.interval = 0
         self.options = 0
         self.schedule = None
+
 
 class InternalEdge(object):
     def __init__(self, v1, v2, redred, repl, eType, site_link):
@@ -2298,6 +2297,7 @@ class InternalEdge(object):
 ##################################################
 MAX_DWORD = 2 ** 32 - 1
 
+
 def get_dsa_config_rep(dsa):
     # Find configuration NC replica for the DSA
     for c_rep in dsa.current_rep_table.values():
@@ -2312,9 +2312,10 @@ def sort_dsa_by_guid(dsa1, dsa2):
     "use ndr_pack for GUID comparison, as appears correct in some places"""
     return cmp(ndr_pack(dsa1.dsa_guid), ndr_pack(dsa2.dsa_guid))
 
+
 def total_schedule(schedule):
     if schedule is None:
-        return 84 * 8 # 84 bytes = 84 * 8 bits
+        return 84 * 8  # 84 bytes = 84 * 8 bits
 
     total = 0
     for byte in schedule:
@@ -2322,6 +2323,7 @@ def total_schedule(schedule):
             total += byte & 1
             byte >>= 1
     return total
+
 
 # Returns true if schedule intersect
 def combine_repl_info(info_a, info_b, info_c):
@@ -2354,6 +2356,7 @@ def combine_repl_info(info_a, info_b, info_c):
         info_c.cost = MAX_DWORD
 
     return True
+
 
 def convert_schedule_to_repltimes(schedule):
     """Convert NTDS Connection schedule to replTime schedule.

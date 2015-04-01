@@ -61,6 +61,7 @@ from samba.kcc_utils import *
 from samba.graph_utils import *
 from samba import ldif_utils
 
+
 class KCC(object):
     """The Knowledge Consistency Checker class.
 
@@ -173,7 +174,8 @@ class KCC(object):
             self.site_table[guid] = site
 
         self.dsa_by_dnstr.update(site.dsa_table)
-        self.dsa_by_guid.update((str(x.dsa_guid), x) for x in site.dsa_table.values())
+        self.dsa_by_guid.update((str(x.dsa_guid), x)
+                                for x in site.dsa_table.values())
 
         return site
 
@@ -182,9 +184,9 @@ class KCC(object):
 
         ::returns: Raises an Exception on error
         """
-        self.my_site_dnstr = "CN=%s,CN=Sites,%s" % (
-                              self.samdb.server_site_name(),
-                              self.samdb.get_config_basedn())
+        self.my_site_dnstr = ("CN=%s,CN=Sites,%s" % (
+            self.samdb.server_site_name(),
+            self.samdb.get_config_basedn()))
 
         self.my_site = self.load_site(self.my_site_dnstr)
 
@@ -226,9 +228,11 @@ class KCC(object):
                 # samdb.get_ntds_GUID(). The disadvantage is that this
                 # mode requires we modify the @ROOTDSE dnq to support
                 # --forced-local-dsa
-                service_name_res = self.samdb.search(base="", scope=ldb.SCOPE_BASE,
+                service_name_res = self.samdb.search(base="",
+                                                     scope=ldb.SCOPE_BASE,
                                                      attrs=["dsServiceName"])
-                dn = ldb.Dn(self.samdb, service_name_res[0]["dsServiceName"][0])
+                dn = ldb.Dn(self.samdb,
+                            service_name_res[0]["dsServiceName"][0])
 
                 res = self.samdb.search(base=dn, scope=ldb.SCOPE_BASE,
                                         attrs=["objectGUID"])
@@ -236,24 +240,27 @@ class KCC(object):
                 raise KCCError("Unable to find my nTDSDSA - (%s)" % estr)
 
         if len(res) != 1:
-            raise KCCError("Unable to find my nTDSDSA at %s" % dn.extended_str())
+            raise KCCError("Unable to find my nTDSDSA at %s" %
+                           dn.extended_str())
 
-        if misc.GUID(res[0]["objectGUID"][0]) != misc.GUID(self.samdb.get_ntds_GUID()):
-            raise KCCError("Did not find the GUID we expected, perhaps due to --importldif")
+        ntds_guid = misc.GUID(self.samdb.get_ntds_GUID())
+        if misc.GUID(res[0]["objectGUID"][0]) != ntds_guid:
+            raise KCCError("Did not find the GUID we expected,"
+                           " perhaps due to --importldif")
 
         self.my_dsa_dnstr = str(res[0].dn)
 
         self.my_dsa = self.my_site.get_dsa(self.my_dsa_dnstr)
 
         if self.my_dsa_dnstr not in self.dsa_by_dnstr:
-            DEBUG_DARK_YELLOW("my_dsa %s isn't in self.dsas_by_dnstr: it must be RODC."
+            DEBUG_DARK_YELLOW("my_dsa %s isn't in self.dsas_by_dnstr:"
+                              " it must be RODC.\n"
                               "Let's add it, because my_dsa is a special case!\n"
                               "(likewise for self.dsa_by_guid of course)" %
                               self.my_dsas_dnstr)
 
             self.dsa_by_dnstr[self.my_dsa_dnstr] = self.my_dsa
             self.dsa_by_guid[str(self.my_dsa.dsa_guid)] = self.my_dsa
-
 
     def load_all_partitions(self):
         """Discover all NCs thru the Partitions dn and
@@ -290,14 +297,15 @@ class KCC(object):
         """
         for partdn, part in self.part_table.items():
             for dsadn, dsa in self.my_site.dsa_table.items():
-               needed, ro, partial = part.should_be_present(dsa)
-               logger.info("dsadn:%s\nncdn:%s\nneeded=%s:ro=%s:partial=%s\n" %
-                           (dsadn, part.nc_dnstr, needed, ro, partial))
+                needed, ro, partial = part.should_be_present(dsa)
+                logger.info("dsadn:%s\nncdn:%s\nneeded=%s:ro=%s:partial=%s\n" %
+                            (dsadn, part.nc_dnstr, needed, ro, partial))
 
     def refresh_failed_links_connections(self):
         """Based on MS-ADTS 6.2.2.1"""
 
-        # Instead of NULL link with failure_count = 0, the tuple is simply removed
+        # Instead of NULL link with failure_count = 0, the tuple is
+        # simply removed
 
         # LINKS: Refresh failed links
         self.kcc_failed_links = {}
@@ -326,7 +334,8 @@ class KCC(object):
                 #    f.last_result = last_result
                 else:
                     f.failure_count = max(f.failure_count, failure_count)
-                    f.time_first_failure = min(f.time_first_failure, time_first_failure)
+                    f.time_first_failure = min(f.time_first_failure,
+                                               time_first_failure)
                     f.last_result = last_result
 
         # CONNECTIONS: Refresh failed connections
@@ -342,8 +351,8 @@ class KCC(object):
                     # Failed connection still failing
                     connection.failure_count += 1
         else:
-            DEBUG("refresh_failed_links: not checking live links because we weren't\n"
-                  "asked to --attempt-live-connections")
+            DEBUG("refresh_failed_links: not checking live links because we\n"
+                  "weren't asked to --attempt-live-connections")
 
         # Remove the restored connections from the failed connections
         self.kcc_failed_connections.difference_update(restore_connections)
@@ -359,14 +368,14 @@ class KCC(object):
         if failed_link:
             # failure_count should be > 0, but check anyways
             if failed_link.failure_count > 0:
-                unix_first_time_failure = nttime2unix(failed_link.time_first_failure)
+                unix_first_failure = nttime2unix(failed_link.time_first_failure)
                 # TODO guard against future
-                if unix_first_time_failure > unix_now:
+                if unix_first_failure > unix_now:
                     logger.error("The last success time attribute for \
                                  repsFrom is in the future!")
 
                 # Perform calculation in seconds
-                if (unix_now - unix_first_time_failure) > 60 * 60 * 2:
+                if (unix_now - unix_first_failure) > 60 * 60 * 2:
                     return True
 
         # TODO connections
@@ -488,7 +497,7 @@ class KCC(object):
             #     Bit NTDSCONN_OPT_RODC_TOPOLOGY is clear in
             #     cn!options
             #
-            else: # different site
+            else:  # different site
 
                 if not mydsa.is_istg():
                     continue
@@ -506,7 +515,7 @@ class KCC(object):
                 # 1. cn!fromServer and cn!parent appear inconsistent with no cn2
                 # 2. The repsFrom do not imply each other
                 #
-                if cn_conn in self.kept_connections: # and not_superceded:
+                if cn_conn in self.kept_connections:  # and not_superceded:
                     continue
 
                 # This is the result of create_intersite_connections
@@ -515,7 +524,6 @@ class KCC(object):
 
                 if not cn_conn.is_rodc_topology():
                     cn_conn.to_be_deleted = True
-
 
         if mydsa.is_ro() or opts.readonly:
             for connect in mydsa.connect_table.values():
@@ -571,8 +579,8 @@ class KCC(object):
         # per week.
         if cn_conn.is_schedule_minimum_once_per_week():
 
-            if (t_repsFrom.replica_flags &
-                drsuapi.DRSUAPI_DRS_PER_SYNC) == 0x0:
+            if ((t_repsFrom.replica_flags &
+                 drsuapi.DRSUAPI_DRS_PER_SYNC) == 0x0):
                 t_repsFrom.replica_flags |= drsuapi.DRSUAPI_DRS_PER_SYNC
 
         # Bit DRS_INIT_SYNC is set in t.replicaFlags if and only
@@ -581,8 +589,8 @@ class KCC(object):
         # of one or more FSMO roles in the NC replica.
         if same_site or n_rep.is_fsmo_role_owner(s_dnstr):
 
-            if (t_repsFrom.replica_flags &
-                drsuapi.DRSUAPI_DRS_INIT_SYNC) == 0x0:
+            if ((t_repsFrom.replica_flags &
+                 drsuapi.DRSUAPI_DRS_INIT_SYNC) == 0x0):
                 t_repsFrom.replica_flags |= drsuapi.DRSUAPI_DRS_INIT_SYNC
 
         # If bit NTDSCONN_OPT_OVERRIDE_NOTIFY_DEFAULT is set in
@@ -591,18 +599,19 @@ class KCC(object):
         # cn!options. Otherwise, bit DRS_NEVER_NOTIFY is set in
         # t.replicaFlags if and only if s and the local DC's
         # nTDSDSA object are in different sites.
-        if (cn_conn.options & dsdb.NTDSCONN_OPT_OVERRIDE_NOTIFY_DEFAULT) != 0x0:
+        if ((cn_conn.options &
+             dsdb.NTDSCONN_OPT_OVERRIDE_NOTIFY_DEFAULT) != 0x0):
 
             if (cn_conn.options & dsdb.NTDSCONN_OPT_USE_NOTIFY) == 0x0:
 
-                if (t_repsFrom.replica_flags &
-                    drsuapi.DRSUAPI_DRS_NEVER_NOTIFY) == 0x0:
+                if ((t_repsFrom.replica_flags &
+                     drsuapi.DRSUAPI_DRS_NEVER_NOTIFY) == 0x0):
                     t_repsFrom.replica_flags |= drsuapi.DRSUAPI_DRS_NEVER_NOTIFY
 
         elif not same_site:
 
-            if (t_repsFrom.replica_flags &
-                drsuapi.DRSUAPI_DRS_NEVER_NOTIFY) == 0x0:
+            if ((t_repsFrom.replica_flags &
+                 drsuapi.DRSUAPI_DRS_NEVER_NOTIFY) == 0x0):
                 t_repsFrom.replica_flags |= drsuapi.DRSUAPI_DRS_NEVER_NOTIFY
 
         # Bit DRS_USE_COMPRESSION is set in t.replicaFlags if
@@ -611,32 +620,32 @@ class KCC(object):
         # NTDSCONN_OPT_DISABLE_INTERSITE_COMPRESSION bit is
         # clear in cn!options
         if (not same_site and
-           (cn_conn.options &
-            dsdb.NTDSCONN_OPT_DISABLE_INTERSITE_COMPRESSION) == 0x0):
+            (cn_conn.options &
+             dsdb.NTDSCONN_OPT_DISABLE_INTERSITE_COMPRESSION) == 0x0):
 
-            if (t_repsFrom.replica_flags &
-                drsuapi.DRSUAPI_DRS_USE_COMPRESSION) == 0x0:
+            if ((t_repsFrom.replica_flags &
+                 drsuapi.DRSUAPI_DRS_USE_COMPRESSION) == 0x0):
                 t_repsFrom.replica_flags |= drsuapi.DRSUAPI_DRS_USE_COMPRESSION
 
         # Bit DRS_TWOWAY_SYNC is set in t.replicaFlags if and only
         # if bit NTDSCONN_OPT_TWOWAY_SYNC is set in cn!options.
         if (cn_conn.options & dsdb.NTDSCONN_OPT_TWOWAY_SYNC) != 0x0:
 
-            if (t_repsFrom.replica_flags &
-                drsuapi.DRSUAPI_DRS_TWOWAY_SYNC) == 0x0:
+            if ((t_repsFrom.replica_flags &
+                 drsuapi.DRSUAPI_DRS_TWOWAY_SYNC) == 0x0):
                 t_repsFrom.replica_flags |= drsuapi.DRSUAPI_DRS_TWOWAY_SYNC
 
         # Bits DRS_DISABLE_AUTO_SYNC and DRS_DISABLE_PERIODIC_SYNC are
         # set in t.replicaFlags if and only if cn!enabledConnection = false.
         if not cn_conn.is_enabled():
 
-            if (t_repsFrom.replica_flags &
-                drsuapi.DRSUAPI_DRS_DISABLE_AUTO_SYNC) == 0x0:
+            if ((t_repsFrom.replica_flags &
+                 drsuapi.DRSUAPI_DRS_DISABLE_AUTO_SYNC) == 0x0):
                 t_repsFrom.replica_flags |= \
                     drsuapi.DRSUAPI_DRS_DISABLE_AUTO_SYNC
 
-            if (t_repsFrom.replica_flags &
-                drsuapi.DRSUAPI_DRS_DISABLE_PERIODIC_SYNC) == 0x0:
+            if ((t_repsFrom.replica_flags &
+                 drsuapi.DRSUAPI_DRS_DISABLE_PERIODIC_SYNC) == 0x0):
                 t_repsFrom.replica_flags |= \
                     drsuapi.DRSUAPI_DRS_DISABLE_PERIODIC_SYNC
 
@@ -705,13 +714,13 @@ class KCC(object):
         # We're not currently supporting SMTP replication
         # so is_smtp_replication_available() is currently
         # always returning False
-        if (same_site or
-            cn_conn.transport_dnstr is None or
-            cn_conn.transport_dnstr.find("CN=IP") == 0 or
-            not is_smtp_replication_available()):
+        if ((same_site or
+             cn_conn.transport_dnstr is None or
+             cn_conn.transport_dnstr.find("CN=IP") == 0 or
+             not is_smtp_replication_available())):
 
-            if (t_repsFrom.replica_flags &
-                drsuapi.DRSUAPI_DRS_MAIL_REP) != 0x0:
+            if ((t_repsFrom.replica_flags &
+                 drsuapi.DRSUAPI_DRS_MAIL_REP) != 0x0):
                 t_repsFrom.replica_flags &= ~drsuapi.DRSUAPI_DRS_MAIL_REP
 
             t_repsFrom.transport_guid = misc.GUID()
@@ -730,15 +739,15 @@ class KCC(object):
                     t_repsFrom.dns_name2 = nastr
 
         else:
-            if (t_repsFrom.replica_flags &
-                drsuapi.DRSUAPI_DRS_MAIL_REP) == 0x0:
+            if ((t_repsFrom.replica_flags &
+                 drsuapi.DRSUAPI_DRS_MAIL_REP) == 0x0):
                 t_repsFrom.replica_flags |= drsuapi.DRSUAPI_DRS_MAIL_REP
 
             # We have a transport type but its not an
             # object in the database
             if cn_conn.transport_guid not in self.transport_table:
                 raise KCCError("Missing inter-site transport - (%s)" %
-                                cn_conn.transport_dnstr)
+                               cn_conn.transport_dnstr)
 
             x_transport = self.transport_table[str(cn_conn.transport_guid)]
 
@@ -766,14 +775,14 @@ class KCC(object):
                 # the DSA object
                 try:
                     pdnstr = s_dsa.get_parent_dnstr()
-                    attrs = [ x_transport.address_attr ]
+                    attrs = [x_transport.address_attr]
 
                     res = self.samdb.search(base=pdnstr, scope=ldb.SCOPE_BASE,
                                             attrs=attrs)
                 except ldb.LdbError, (enum, estr):
                     raise KCCError(
                         "Unable to find attr (%s) for (%s) - (%s)" %
-                         (x_transport.address_attr, pdnstr, estr))
+                        (x_transport.address_attr, pdnstr, estr))
 
                 msg = res[0]
                 nastr = str(msg[x_transport.address_attr][0])
@@ -812,6 +821,7 @@ class KCC(object):
         #    cn!enabledConnection = true.
         #    cn!options does not contain NTDSCONN_OPT_RODC_TOPOLOGY.
         #    cn!fromServer references an nTDSDSA object.
+
         s_dsa = None
 
         if cn_conn.is_enabled() and not cn_conn.is_rodc_topology():
@@ -868,7 +878,8 @@ class KCC(object):
         [MS-ADTS] 6.2.2.5
         """
         if self.my_dsa.is_translate_ntdsconn_disabled():
-            logger.debug("skipping translate_ntdsconn() because disabling flag is set")
+            logger.debug("skipping translate_ntdsconn() "
+                         "because disabling flag is set")
             return
 
         logger.debug("translate_ntdsconn(): enter")
@@ -887,8 +898,8 @@ class KCC(object):
         #              object (s) such that (s!objectGUID = t.uuidDsa)
         #              In our IDL representation of repsFrom the (uuidDsa)
         #              attribute is called (source_dsa_obj_guid)
-        # cn_conn    - (cn) is nTDSConnection object and child of the local DC's
-        #              nTDSDSA object and (cn!fromServer = s)
+        # cn_conn    - (cn) is nTDSConnection object and child of the local
+        #               DC's nTDSDSA object and (cn!fromServer = s)
         # s_rep      - source DSA replica of n
         #
         # If we have the replica and its not needed
@@ -915,7 +926,8 @@ class KCC(object):
             n_rep.load_fsmo_roles(self.samdb)
 
             # Loop thru the existing repsFrom tupples (if any)
-            # XXX This is a list and could contain duplicates (multiple load_repsFrom calls)
+            # XXX This is a list and could contain duplicates
+            #     (multiple load_repsFrom calls)
             for t_repsFrom in n_rep.rep_repsFrom:
 
                 # for each tuple t in n!repsFrom, let s be the nTDSDSA
@@ -986,10 +998,11 @@ class KCC(object):
                 # no need to proceed to add.  It will have been changed
                 # to have the correct attributes above
                 for t_repsFrom in n_rep.rep_repsFrom:
-                     guidstr = str(t_repsFrom.source_dsa_obj_guid)
-                     if s_dsa is self.get_dsa_by_guidstr(guidstr):
-                         s_dsa = None
-                         break
+                    guidstr = str(t_repsFrom.source_dsa_obj_guid)
+                    #XXXX what?
+                    if s_dsa is self.get_dsa_by_guidstr(guidstr):
+                        s_dsa = None
+                        break
 
                 if s_dsa is None:
                     continue
@@ -1024,8 +1037,6 @@ class KCC(object):
                 # Commit any modified repsFrom to the NC replica
                 n_rep.commit_repsFrom(self.samdb)
 
-
-
     def merge_failed_links(self):
         """Merge of kCCFailedLinks and kCCFailedLinks from bridgeheads.
         The KCC on a writable DC attempts to merge the link and connection
@@ -1043,9 +1054,9 @@ class KCC(object):
         if opts.attempt_live_connections:
             DEBUG_RED("merge_failed_links() is NOT IMPLEMENTED")
         else:
-            DEBUG("skipping merge_failed_links() because it requires real network connections\n"
-                  "and we weren't asked to --attempt-live-connctions")
-
+            DEBUG("skipping merge_failed_links() because it requires "
+                  "real network connections\n"
+                  "and we weren't asked to --attempt-live-connections")
 
     def setup_graph(self, part):
         """Set up a GRAPH, populated with a VERTEX for each site
@@ -1078,12 +1089,13 @@ class KCC(object):
                 connected_vertices.update(new_edge.vertices)
                 g.edges.add(new_edge)
 
-            # If 'Bridge all site links' is enabled and Win2k3 bridges required is not set
+            # If 'Bridge all site links' is enabled and Win2k3 bridges required
+            # is not set
             # NTDSTRANSPORT_OPT_BRIDGES_REQUIRED 0x00000002
             # No documentation for this however, ntdsapi.h appears to have listed:
             # NTDSSETTINGS_OPT_W2K3_BRIDGES_REQUIRED = 0x00001000
-            if ((self.my_site.site_options & 0x00000002) == 0
-                and (self.my_site.site_options & 0x00001000) == 0):
+            if (((self.my_site.site_options & 0x00000002) == 0
+                 and (self.my_site.site_options & 0x00001000) == 0)):
                 g.edge_set.add(create_auto_edge_set(g, transport_guid))
             else:
                 # TODO get all site link bridges
@@ -1100,8 +1112,10 @@ class KCC(object):
             for a, b in itertools.combinations(edge.vertices, 2):
                 dot_edges.append((a.site.site_dnstr, b.site.site_dnstr))
         verify_properties = ()
-        verify_and_dot('site_edges', dot_edges, directed=False, label=self.my_dsa_dnstr,
-                       properties=verify_properties, debug=DEBUG, verify=opts.verify,
+        verify_and_dot('site_edges', dot_edges, directed=False,
+                       label=self.my_dsa_dnstr,
+                       properties=verify_properties, debug=DEBUG,
+                       verify=opts.verify,
                        dot_files=do_dot_files)
 
         return g
@@ -1168,8 +1182,8 @@ class KCC(object):
             # IF t!bridgeheadServerListBL has one or more values and
             # t!bridgeheadServerListBL does not contain a reference
             # to the parent object of dc then skip dc
-            if (len(transport.bridgehead_list) != 0 and
-                pdnstr not in transport.bridgehead_list):
+            if ((len(transport.bridgehead_list) != 0 and
+                 pdnstr not in transport.bridgehead_list)):
                 continue
 
             # IF dc is in the same site as the local DC
@@ -1209,7 +1223,7 @@ class KCC(object):
                 # attribute in "transportAddressAttribute" from the parent
                 # of the DSA object
                 try:
-                    attrs = [ transport.address_attr ]
+                    attrs = [transport.address_attr]
 
                     res = self.samdb.search(base=pdnstr, scope=ldb.SCOPE_BASE,
                                             attrs=attrs)
@@ -1243,7 +1257,6 @@ class KCC(object):
             random.shuffle(bhs)
         DEBUG_YELLOW(bhs)
         return bhs
-
 
     def is_bridgehead_failed(self, dsa, detect_failed):
         """Determine whether a given DC is known to be in a failed state
@@ -1286,12 +1299,12 @@ class KCC(object):
             return False
 
         # NTDSSETTINGS_OPT_IS_TOPL_DETECT_STALE_DISABLED = 0x00000008
-        # When DETECT_STALE_DISABLED, we can never know of if it's in a failed state
+        # When DETECT_STALE_DISABLED, we can never know of if
+        # it's in a failed state
         if self.my_site.site_options & 0x00000008:
             return False
 
         return self.is_stale_link_connection(dsa)
-
 
     def create_connection(self, part, rbh, rsite, transport,
                           lbh, lsite, link_opt, link_sched,
@@ -1309,7 +1322,8 @@ class KCC(object):
         :param lbh: nTDSDSA object for DC to act as the
             IDL_DRSGetNCChanges client (which is in the local DC's site).
         :param lsite: site of the lbh
-        :param link_opt: Replication parameters (aggregated siteLink options, etc.)
+        :param link_opt: Replication parameters (aggregated siteLink options,
+                                                 etc.)
         :param link_sched: Schedule specifying the times at which
             to begin replicating.
         :partial_ok: True if bridgehead DCs containing partial
@@ -1320,9 +1334,10 @@ class KCC(object):
         """
         rbhs_all = self.get_all_bridgeheads(rsite, part, transport,
                                             partial_ok, False)
-        rbh_table = {x.dsa_dnstr:x for x in rbhs_all}
+        rbh_table = {x.dsa_dnstr: x for x in rbhs_all}
 
-        DEBUG_GREY("rbhs_all: %s %s" % (len(rbhs_all), [x.dsa_dnstr for x in rbhs_all]))
+        DEBUG_GREY("rbhs_all: %s %s" % (len(rbhs_all),
+                                        [x.dsa_dnstr for x in rbhs_all]))
 
         # MS-TECH says to compute rbhs_avail but then doesn't use it
         # rbhs_avail = self.get_all_bridgeheads(rsite, part, transport,
@@ -1331,7 +1346,8 @@ class KCC(object):
         lbhs_all = self.get_all_bridgeheads(lsite, part, transport,
                                             partial_ok, False)
 
-        DEBUG_GREY("lbhs_all: %s %s" % (len(lbhs_all), [x.dsa_dnstr for x in lbhs_all]))
+        DEBUG_GREY("lbhs_all: %s %s" % (len(lbhs_all),
+                                        [x.dsa_dnstr for x in lbhs_all]))
 
         # MS-TECH says to compute lbhs_avail but then doesn't use it
         # lbhs_avail = self.get_all_bridgeheads(lsite, part, transport,
@@ -1350,15 +1366,16 @@ class KCC(object):
                 # IF bit NTDSCONN_OPT_IS_GENERATED is set in cn!options and
                 # NTDSCONN_OPT_RODC_TOPOLOGY is clear in cn!options and
                 # cn!transportType references t
-                if (cn.is_generated() and not cn.is_rodc_topology() and
-                    cn.transport_guid == transport.guid):
+                if ((cn.is_generated() and
+                     not cn.is_rodc_topology() and
+                     cn.transport_guid == transport.guid)):
 
                     # IF bit NTDSCONN_OPT_USER_OWNED_SCHEDULE is clear in
                     # cn!options and cn!schedule != sch
                     #     Perform an originating update to set cn!schedule to
                     #     sched
-                    if (not cn.is_user_owned_schedule() and
-                        not cn.is_equivalent_schedule(link_sched)):
+                    if ((not cn.is_user_owned_schedule() and
+                         not cn.is_equivalent_schedule(link_sched))):
                         cn.schedule = link_sched
                         cn.set_modified(True)
 
@@ -1392,7 +1409,6 @@ class KCC(object):
                                  dsdb.NTDSCONN_OPT_USE_NOTIFY)
                             cn.set_modified(True)
 
-
                     # IF bit NTDSCONN_OPT_TWOWAY_SYNC is set in cn!options
                     if cn.is_twoway_sync():
 
@@ -1415,7 +1431,6 @@ class KCC(object):
                             cn.options |= dsdb.NTDSCONN_OPT_TWOWAY_SYNC
                             cn.set_modified(True)
 
-
                     # IF bit NTDSCONN_OPT_DISABLE_INTERSITE_COMPRESSION is set
                     # in cn!options
                     if cn.is_intersite_compression_disabled():
@@ -1425,8 +1440,8 @@ class KCC(object):
                         #     Perform an originating update to clear bit
                         #     NTDSCONN_OPT_DISABLE_INTERSITE_COMPRESSION in
                         #     cn!options
-                        if (link_opt &
-                            dsdb.NTDSSITELINK_OPT_DISABLE_COMPRESSION) == 0:
+                        if ((link_opt &
+                             dsdb.NTDSSITELINK_OPT_DISABLE_COMPRESSION) == 0):
                             cn.options &= \
                                 ~dsdb.NTDSCONN_OPT_DISABLE_INTERSITE_COMPRESSION
                             cn.set_modified(True)
@@ -1438,8 +1453,8 @@ class KCC(object):
                         #     Perform an originating update to set bit
                         #     NTDSCONN_OPT_DISABLE_INTERSITE_COMPRESSION in
                         #     cn!options
-                        if (link_opt &
-                            dsdb.NTDSSITELINK_OPT_DISABLE_COMPRESSION) != 0:
+                        if ((link_opt &
+                             dsdb.NTDSSITELINK_OPT_DISABLE_COMPRESSION) != 0):
                             cn.options |= \
                                 dsdb.NTDSCONN_OPT_DISABLE_INTERSITE_COMPRESSION
                             cn.set_modified(True)
@@ -1470,9 +1485,9 @@ class KCC(object):
                 # IF (bit NTDSCONN_OPT_IS_GENERATED is clear in cn!options or
                 # cn!transportType references t) and
                 # NTDSCONN_OPT_RODC_TOPOLOGY is clear in cn!options
-                if ((not cn.is_generated() or
-                     cn.transport_guid == transport.guid) and
-                     not cn.is_rodc_topology()):
+                if (((not cn.is_generated() or
+                      cn.transport_guid == transport.guid) and
+                     not cn.is_rodc_topology())):
 
                     # LET rguid be the objectGUID of the nTDSDSA object
                     # referenced by cn!fromServer
@@ -1481,8 +1496,8 @@ class KCC(object):
                     # IF BridgeheadDCFailed(rguid, detectFailedDCs) = FALSE and
                     # BridgeheadDCFailed(lguid, detectFailedDCs) = FALSE
                     #     Increment cValidConnections by 1
-                    if (not self.is_bridgehead_failed(rdsa, detect_failed) and
-                        not self.is_bridgehead_failed(ldsa, detect_failed)):
+                    if ((not self.is_bridgehead_failed(rdsa, detect_failed) and
+                         not self.is_bridgehead_failed(ldsa, detect_failed))):
                         valid_connections += 1
 
                     # IF keepConnections does not contain cn!objectGUID
@@ -1513,8 +1528,8 @@ class KCC(object):
             # IF bit NTDSSITELINK_OPT_DISABLE_COMPRESSION is set in
             # ri.Options
             #     SET bit NTDSCONN_OPT_DISABLE_INTERSITE_COMPRESSION in opt
-            if (link_opt &
-                dsdb.NTDSSITELINK_OPT_DISABLE_COMPRESSION) != 0:
+            if ((link_opt &
+                 dsdb.NTDSSITELINK_OPT_DISABLE_COMPRESSION) != 0):
                 opt |= dsdb.NTDSCONN_OPT_DISABLE_INTERSITE_COMPRESSION
 
             # Perform an originating update to create a new nTDSConnection
@@ -1552,12 +1567,13 @@ class KCC(object):
         for t_guid, transport in self.transport_table.items():
             if transport.name != 'IP':
                 #XXX well this is cheating a bit
-                logging.warning("WARNING: we are ignoring a transport named %r" % transport.name)
+                logging.warning("WARNING: we are ignoring a transport named %r"
+                                % transport.name)
                 continue
 
             # FLAG_CR_NTDS_DOMAIN 0x00000002
-            if (vertex.is_red() and transport.name != "IP" and
-                vertex.part.system_flags & 0x00000002):
+            if ((vertex.is_red() and transport.name != "IP" and
+                 vertex.part.system_flags & 0x00000002)):
                 continue
 
             if vertex not in graph.connected_vertices:
@@ -1602,7 +1618,8 @@ class KCC(object):
         all_connected = True
         found_failed = False
 
-        logger.debug("create_connections(): enter\n\tpartdn=%s\n\tdetect_failed=%s" %
+        logger.debug("create_connections(): enter\n"
+                     "\tpartdn=%s\n\tdetect_failed=%s" %
                      (part.nc_dnstr, detect_failed))
 
         # XXX - This is a highly abbreviated function from the MS-TECH
@@ -1625,7 +1642,8 @@ class KCC(object):
         if my_vertex.is_white():
             return all_connected, found_failed
 
-        edge_list, component_count = self.get_spanning_tree_edges(graph, label=part.partstr)
+        edge_list, component_count = self.get_spanning_tree_edges(graph,
+                                                                  label=part.partstr)
 
         logger.debug("%s Number of components: %d" % (part.nc_dnstr, component_count))
         if component_count > 1:
@@ -1642,14 +1660,15 @@ class KCC(object):
         transport = None
         for transport in self.transport_table.values():
             if transport.name == "IP":
-               break
+                break
 
         if transport is None:
             raise KCCError("Unable to find inter-site transport for IP")
 
         DEBUG("edge_list %s" % edge_list)
         for e in edge_list:
-            if e.directed and e.vertices[0].site is self.my_site: # more accurate comparison?
+            # XXX more accurate comparison?
+            if e.directed and e.vertices[0].site is self.my_site:
                 continue
 
             if e.vertices[0].site is self.my_site:
@@ -1676,12 +1695,12 @@ class KCC(object):
             #     LET lbh be the result of GetBridgeheadDC(localSiteVertex.ID,
             #     cr, t, partialReplicaOkay, detectFailedDCs)
             if self.my_dsa.is_ro():
-               lsite = self.my_site
-               lbh = self.my_dsa
+                lsite = self.my_site
+                lbh = self.my_dsa
             else:
-               lsite = self.my_site
-               lbh = self.get_bridgehead(lsite, part, transport,
-                                         partial_ok, detect_failed)
+                lsite = self.my_site
+                lbh = self.get_bridgehead(lsite, part, transport,
+                                          partial_ok, detect_failed)
             # TODO
             if lbh is None:
                 DEBUG_RED("DISASTER! lbh is None")
@@ -1752,7 +1771,8 @@ class KCC(object):
 
             connected, found_failed = self.create_connections(graph, part, True)
 
-            DEBUG("with detect_failed: connected %s Found failed %s" % (connected, found_failed))
+            DEBUG("with detect_failed: connected %s Found failed %s" %
+                  (connected, found_failed))
             if not connected:
                 all_connected = False
 
@@ -1782,16 +1802,18 @@ class KCC(object):
 
             if opts.verify or opts.dot_files:
                 graph_edges = [(a.site.site_dnstr, b.site.site_dnstr)
-                               for a, b in itertools.chain(*(itertools.combinations(edge.vertices, 2)
-                                                             for edge in e_set.edges))]
+                               for a, b in
+                               itertools.chain(*(itertools.combinations(edge.vertices, 2)
+                                                 for edge in e_set.edges))]
                 graph_nodes = [v.site.site_dnstr for v in graph.vertices]
 
                 if opts.dot_files and opts.debug:
-                    write_dot_file('edgeset_%s' % (edgeType,), graph_edges, vertices=graph_nodes,
-                                   label=label)
+                    write_dot_file('edgeset_%s' % (edgeType,), graph_edges,
+                                   vertices=graph_nodes, label=label)
 
                 if opts.verify:
-                    verify_graph('spanning tree edge set %s' % edgeType, graph_edges, vertices=graph_nodes,
+                    verify_graph('spanning tree edge set %s' % edgeType,
+                                 graph_edges, vertices=graph_nodes,
                                  properties=('complete', 'connected'), debug=DEBUG)
 
             # Run dijkstra's algorithm with just the red vertices as seeds
@@ -1813,20 +1835,21 @@ class KCC(object):
         process_edge_set(graph, None, internal_edges)
 
         if opts.verify or opts.dot_files:
-            graph_edges = [(e.v1.site.site_dnstr, e.v2.site.site_dnstr) for e in internal_edges]
+            graph_edges = [(e.v1.site.site_dnstr, e.v2.site.site_dnstr)
+                           for e in internal_edges]
             graph_nodes = [v.site.site_dnstr for v in graph.vertices]
             verify_properties = ('multi_edge_forest',)
             verify_and_dot('prekruskal', graph_edges, graph_nodes, label=label,
-                           properties=verify_properties, debug=DEBUG, verify=opts.verify,
+                           properties=verify_properties, debug=DEBUG,
+                           verify=opts.verify,
                            dot_files=opts.dot_files)
-
 
         # Phase 2: Run Kruskal's on the internal edges
         output_edges, components = kruskal(graph, internal_edges)
 
         # This recalculates the cost for the path connecting the closest red vertex
         # Ignoring types is fine because NO suboptimal edge should exist in the graph
-        dijkstra(graph, "EDGE_TYPE_ALL", False) # TODO rename
+        dijkstra(graph, "EDGE_TYPE_ALL", False)  # TODO rename
         # Phase 3: Process the output
         for v in graph.vertices:
             if v.is_red():
@@ -1835,11 +1858,13 @@ class KCC(object):
                 v.dist_to_red = v.repl_info.cost
 
         if opts.verify or opts.dot_files:
-            graph_edges = [(e.v1.site.site_dnstr, e.v2.site.site_dnstr) for e in internal_edges]
+            graph_edges = [(e.v1.site.site_dnstr, e.v2.site.site_dnstr)
+                           for e in internal_edges]
             graph_nodes = [v.site.site_dnstr for v in graph.vertices]
             verify_properties = ('multi_edge_forest',)
             verify_and_dot('postkruskal', graph_edges, graph_nodes, label=label,
-                           properties=verify_properties, debug=DEBUG, verify=opts.verify,
+                           properties=verify_properties, debug=DEBUG,
+                           verify=opts.verify,
                            dot_files=opts.dot_files)
 
         # count the components
@@ -1848,7 +1873,7 @@ class KCC(object):
     # This ensures only one-way connections for partial-replicas
     def copy_output_edges(self, graph, output_edges):
         edge_list = []
-        vid = self.my_site # object guid for the local dc's site
+        vid = self.my_site  # object guid for the local dc's site
 
         for edge in output_edges:
             # Three-way edges are no problem here since these were created by
@@ -2016,7 +2041,8 @@ class KCC(object):
                      "\n%s" % nc_x)
 
         if not needed:
-            DEBUG_RED("%s lacks 'should be present' status, aborting construct_intersite_graph!" %
+            DEBUG_RED("%s lacks 'should be present' status, "
+                      "aborting construct_intersite_graph!" %
                       nc_x.nc_dnstr)
             return
 
@@ -2120,7 +2146,7 @@ class KCC(object):
             # detection and this dsa has a stale connection then
             # continue
             if detect_stale and self.is_stale_link_connection(dc_s):
-               continue
+                continue
 
             # Replica meets criteria.  Add it to table indexed
             # by the GUID of the DC that it appears on
@@ -2260,11 +2286,12 @@ class KCC(object):
 
             verify_properties = ('connected', 'directed_double_ring')
             verify_and_dot('intrasite_pre_ntdscon', dot_edges, dot_vertices,
-                           label='%s__%s__%s' % (site_local.site_dnstr, nctype_lut[nc_x.nc_type], nc_x.nc_dnstr),
-                           properties=verify_properties, debug=DEBUG, verify=opts.verify,
+                           label='%s__%s__%s' % (site_local.site_dnstr,
+                                                 nctype_lut[nc_x.nc_type],
+                                                 nc_x.nc_dnstr),
+                           properties=verify_properties, debug=DEBUG,
+                           verify=opts.verify,
                            dot_files=do_dot_files, directed=True)
-
-
 
         # For each existing nTDSConnection object implying an edge
         # from rj of R to ri such that j != i, an edge from rj to ri
@@ -2281,23 +2308,28 @@ class KCC(object):
         DEBUG('dsas are:  %s' % '   '.join(x.dsa_dnstr for x in graph_list))
 
         for tnode in graph_list:
-            # To optimize replication latency in sites with many NC replicas, the
-            # KCC adds new edges directed to ri to bring the total edges to n+2,
-            # where the NC replica rk of R from which the edge is directed
-            # is chosen at random such that k != i and an edge from rk to ri
-            # is not already in the graph.
+            # To optimize replication latency in sites with many NC
+            # replicas, the KCC adds new edges directed to ri to bring
+            # the total edges to n+2, where the NC replica rk of R
+            # from which the edge is directed is chosen at random such
+            # that k != i and an edge from rk to ri is not already in
+            # the graph.
             #
-            # Note that the KCC tech ref does not give a number for the definition
-            # of "sites with many NC replicas".   At a bare minimum to satisfy
-            # n+2 edges directed at a node we have to have at least three replicas
-            # in |R| (i.e. if n is zero then at least replicas from two other graph
+            # Note that the KCC tech ref does not give a number for
+            # the definition of "sites with many NC replicas". At a
+            # bare minimum to satisfy n+2 edges directed at a node we
+            # have to have at least three replicas in |R| (i.e. if n
+            # is zero then at least replicas from two other graph
             # nodes may direct edges to us).
             if r_len >= 3 and not tnode.has_sufficient_edges():
-                candidates = [x for x in graph_list if (x is not tnode and
-                                                        x.dsa_dnstr not in tnode.edge_from)]
+                candidates = [x for x in graph_list if
+                              (x is not tnode and
+                               x.dsa_dnstr not in tnode.edge_from)]
 
-                DEBUG_BLUE("looking for random link for %s. r_len %d, graph len %d candidates %d"
-                           % (tnode.dsa_dnstr, r_len, len(graph_list), len(candidates)))
+                DEBUG_BLUE("looking for random link for %s. r_len %d, "
+                           "graph len %d candidates %d"
+                           % (tnode.dsa_dnstr, r_len, len(graph_list),
+                              len(candidates)))
 
                 DEBUG("candidates %s" % [x.dsa_dnstr for x in candidates])
 
@@ -2309,8 +2341,8 @@ class KCC(object):
                     candidates.remove(other)
             else:
                 DEBUG_CYAN("not adding links to %s: nodes %s, links is %s/%s" %
-                           (tnode.dsa_dnstr, r_len, len(tnode.edge_from), tnode.max_edges))
-
+                           (tnode.dsa_dnstr, r_len, len(tnode.edge_from),
+                            tnode.max_edges))
 
             # Print the graph node in debug mode
             logger.debug("%s" % tnode)
@@ -2320,7 +2352,6 @@ class KCC(object):
 
             if tnode.dsa_dnstr == dc_local.dsa_dnstr:
                 tnode.add_connections_from_edges(dc_local)
-
 
         if opts.verify or do_dot_files:
             dot_edges = []
@@ -2333,10 +2364,12 @@ class KCC(object):
 
             verify_properties = ('connected', 'directed_double_ring_or_small')
             verify_and_dot('intrasite_post_ntdscon', dot_edges, dot_vertices,
-                           label='%s__%s__%s' % (site_local.site_dnstr, nctype_lut[nc_x.nc_type], nc_x.nc_dnstr),
-                           properties=verify_properties, debug=DEBUG, verify=opts.verify,
+                           label='%s__%s__%s' % (site_local.site_dnstr,
+                                                 nctype_lut[nc_x.nc_type],
+                                                 nc_x.nc_dnstr),
+                           properties=verify_properties, debug=DEBUG,
+                           verify=opts.verify,
                            dot_files=do_dot_files, directed=True)
-
 
     def intrasite(self):
         """The head method for generating the intra-site KCC replica
@@ -2366,7 +2399,6 @@ class KCC(object):
                 if connect.to_be_added:
                     DEBUG_BLUE("TO BE ADDED:\n%s" % connect)
 
-
         # If the DC is a GC server, the KCC constructs an additional NC
         # replica graph (and creates nTDSConnection objects) for the
         # config NC as above, except that only NC replicas that "are present"
@@ -2394,7 +2426,7 @@ class KCC(object):
         # Loop thru all the partitions.
         for partdn, part in self.part_table.items():
             self.construct_intrasite_graph(mysite, mydsa, part, False,
-                                           False) # don't detect stale
+                                           False)  # don't detect stale
 
         # If the DC is a GC server, the KCC constructs an additional NC
         # replica graph (and creates nTDSConnection objects) for the
@@ -2424,7 +2456,6 @@ class KCC(object):
             # Commit any newly created connections to the samdb
             mydsa.commit_connections(self.samdb)
 
-
     def list_dsas(self):
         self.load_my_site()
         self.load_my_dsa()
@@ -2443,8 +2474,6 @@ class KCC(object):
         self.samdb = SamDB(url=dburl,
                            session_info=system_session(),
                            credentials=creds, lp=lp)
-
-
 
     def plot_all_connections(self, basename, verify_properties=()):
         verify = verify_properties and opts.verify
@@ -2476,7 +2505,6 @@ class KCC(object):
                        directed=True, edge_colors=edge_colours,
                        vertex_colors=vertex_colours)
 
-
     def run(self, dburl, lp, creds, forced_local_dsa=None,
             forget_local_links=False, forget_intersite_links=False):
         """Method to perform a complete run of the KCC and
@@ -2493,9 +2521,9 @@ class KCC(object):
                              (dburl, msg))
                 return 1
 
-
         if forced_local_dsa:
-            self.samdb.set_ntds_settings_dn("CN=NTDS Settings,%s" % forced_local_dsa)
+            self.samdb.set_ntds_settings_dn("CN=NTDS Settings,%s" %
+                                            forced_local_dsa)
 
         try:
             # Setup
@@ -2506,7 +2534,6 @@ class KCC(object):
             self.load_all_partitions()
             self.load_all_transports()
             self.load_all_sitelinks()
-
 
             if opts.verify or opts.dot_files:
                 guid_to_dnstr = {}
@@ -2522,10 +2549,10 @@ class KCC(object):
                     DEBUG("c_rep %s" % c_rep)
                     dot_edges.append((self.my_dsa.dsa_dnstr, dnstr))
 
-                verify_and_dot('dsa_repsFrom_initial', dot_edges, directed=True, label=self.my_dsa_dnstr,
+                verify_and_dot('dsa_repsFrom_initial', dot_edges, directed=True,
+                               label=self.my_dsa_dnstr,
                                properties=(), debug=DEBUG, verify=opts.verify,
                                dot_files=opts.dot_files)
-
 
                 dot_edges = []
                 for site in self.site_table.values():
@@ -2537,27 +2564,26 @@ class KCC(object):
                                 dsa_dn = guid_to_dnstr[str(reps_from.source_dsa_obj_guid)]
                                 dot_edges.append((dsa.dsa_dnstr, dsa_dn))
 
-                verify_and_dot('dsa_repsFrom_initial_all', dot_edges, directed=True, label=self.my_dsa_dnstr,
+                verify_and_dot('dsa_repsFrom_initial_all', dot_edges, directed=True,
+                               label=self.my_dsa_dnstr,
                                properties=(), debug=DEBUG, verify=opts.verify,
                                dot_files=opts.dot_files)
-
 
                 dot_edges = []
                 for link in self.sitelink_table.values():
                     for a, b in itertools.combinations(link.site_list, 2):
                         dot_edges.append((str(a), str(b)))
                 verify_properties = ('connected',)
-                verify_and_dot('dsa_sitelink_initial', dot_edges, directed=False, label=self.my_dsa_dnstr,
-                               properties=verify_properties, debug=DEBUG, verify=opts.verify,
+                verify_and_dot('dsa_sitelink_initial', dot_edges, directed=False,
+                               label=self.my_dsa_dnstr, properties=verify_properties,
+                               debug=DEBUG, verify=opts.verify,
                                dot_files=opts.dot_files)
-
 
             if forget_local_links:
                 for dsa in self.my_site.dsa_table.values():
                     dsa.connect_table = {k:v for k, v in dsa.connect_table.items()
                                          if v.is_rodc_topology()}
                 self.plot_all_connections('dsa_forgotten_local')
-
 
             if forget_intersite_links:
                 for site in self.site_table.values():
@@ -2590,7 +2616,6 @@ class KCC(object):
             # Step 7
             self.update_rodc_connection()
 
-
             if opts.verify or opts.dot_files:
                 self.plot_all_connections('dsa_final', ('connected', 'forest_of_rings'))
 
@@ -2606,10 +2631,10 @@ class KCC(object):
                         dot_edges.append((my_dnstr, guid_to_dnstr[guid_str]))
                         edge_colors.append('#' + str(n_rep.nc_guid)[:6])
 
-                verify_and_dot('dsa_repsFrom_final', dot_edges, directed=True, label=self.my_dsa_dnstr,
+                verify_and_dot('dsa_repsFrom_final', dot_edges, directed=True,
+                               label=self.my_dsa_dnstr,
                                properties=(), debug=DEBUG, verify=opts.verify,
                                dot_files=opts.dot_files, edge_colors=edge_colors)
-
 
                 dot_edges = []
 
@@ -2621,10 +2646,10 @@ class KCC(object):
                                 dsa_dn = guid_to_dnstr[str(reps_from.source_dsa_obj_guid)]
                                 dot_edges.append((dsa.dsa_dnstr, dsa_dn))
 
-                verify_and_dot('dsa_repsFrom_final_all', dot_edges, directed=True, label=self.my_dsa_dnstr,
+                verify_and_dot('dsa_repsFrom_final_all', dot_edges, directed=True,
+                               label=self.my_dsa_dnstr,
                                properties=(), debug=DEBUG, verify=opts.verify,
                                dot_files=opts.dot_files)
-
 
         except:
             raise
@@ -2670,7 +2695,8 @@ class KCC(object):
         :param ldif_file: output LDIF file name to create
         """
         try:
-            ldif_utils.samdb_to_ldif_file(self.samdb, dburl, lp, creds, ldif_file)
+            ldif_utils.samdb_to_ldif_file(self.samdb, dburl, lp, creds,
+                                          ldif_file)
         except ldif_utils.LdifError, e:
             print e
             return 1
@@ -2679,8 +2705,11 @@ class KCC(object):
 ##################################################
 # Global Functions
 ##################################################
+
+
 def sort_replica_by_dsa_guid(rep1, rep2):
     return cmp(ndr_pack(rep1.rep_dsa_guid), ndr_pack(rep2.rep_dsa_guid))
+
 
 def sort_dsa_by_gc_and_guid(dsa1, dsa2):
     if dsa1.is_gc() and not dsa2.is_gc():
@@ -2689,12 +2718,14 @@ def sort_dsa_by_gc_and_guid(dsa1, dsa2):
         return +1
     return cmp(ndr_pack(dsa1.dsa_guid), ndr_pack(dsa2.dsa_guid))
 
+
 def is_smtp_replication_available():
     """Currently always returns false because Samba
     doesn't implement SMTP transfer for NC changes
     between DCs
     """
     return False
+
 
 def create_edge(con_type, site_link, guid_to_vertex):
     e = MultiEdge()
@@ -2711,20 +2742,24 @@ def create_edge(con_type, site_link, guid_to_vertex):
     e.directed = False
     return e
 
+
 def create_auto_edge_set(graph, transport):
     e_set = MultiEdgeSet()
-    e_set.guid = misc.GUID() # NULL guid, not associated with a SiteLinkBridge object
+    # use a NULL guid, not associated with a SiteLinkBridge object
+    e_set.guid = misc.GUID()
     for site_link in graph.edges:
         if site_link.con_type == transport:
             e_set.edges.append(site_link)
 
     return e_set
 
+
 def create_edge_set(graph, transport, site_link_bridge):
     # TODO not implemented - need to store all site link bridges
     e_set = MultiEdgeSet()
     # e_set.guid = site_link_bridge
     return e_set
+
 
 def setup_vertices(graph):
     for v in graph.vertices:
@@ -2739,8 +2774,9 @@ def setup_vertices(graph):
 
         v.repl_info.interval = 0
         v.repl_info.options = 0xFFFFFFFF
-        v.repl_info.schedule = None # TODO highly suspicious
+        v.repl_info.schedule = None  # TODO highly suspicious
         v.demoted = False
+
 
 def dijkstra(graph, edge_type, include_black):
     queue = []
@@ -2753,20 +2789,22 @@ def dijkstra(graph, edge_type, include_black):
                     # add new path from vertex to v
                     try_new_path(graph, queue, vertex, edge, v)
 
+
 def setup_dijkstra(graph, edge_type, include_black, queue):
     setup_vertices(graph)
     for vertex in graph.vertices:
         if vertex.is_white():
             continue
 
-        if ((vertex.is_black() and not include_black)
-            or edge_type not in vertex.accept_black
-            or edge_type not in vertex.accept_red_red):
+        if (((vertex.is_black() and not include_black)
+             or edge_type not in vertex.accept_black
+             or edge_type not in vertex.accept_red_red)):
             vertex.repl_info.cost = MAX_DWORD
-            vertex.root = None # NULL GUID
-            vertex.demoted = True # Demoted appears not to be used
+            vertex.root = None  # NULL GUID
+            vertex.demoted = True  # Demoted appears not to be used
         else:
             heapq.heappush(queue, (vertex.repl_info.cost, vertex.guid, vertex))
+
 
 def try_new_path(graph, queue, vfrom, edge, vto):
     newRI = ReplInfo()
@@ -2792,15 +2830,18 @@ def try_new_path(graph, queue, vfrom, edge, vto):
         vto.repl_info = newRI
         heapq.heappush(queue, (vto.repl_info.cost, vto.guid, vto))
 
+
 def check_demote_vertex(vertex, edge_type):
     if vertex.is_white():
         return
 
     # Accepts neither red-red nor black edges, demote
-    if edge_type not in vertex.accept_black and edge_type not in vertex.accept_red_red:
+    if ((edge_type not in vertex.accept_black and
+         edge_type not in vertex.accept_red_red)):
         vertex.repl_info.cost = MAX_DWORD
         vertex.root = None
-        vertex.demoted = True # Demoted appears not to be used
+        vertex.demoted = True  # Demoted appears not to be used
+
 
 def undemote_vertex(vertex):
     if vertex.is_white():
@@ -2809,6 +2850,7 @@ def undemote_vertex(vertex):
     vertex.repl_info.cost = 0
     vertex.root = vertex
     vertex.demoted = False
+
 
 def process_edge_set(graph, e_set, internal_edges):
     if e_set is None:
@@ -2821,6 +2863,7 @@ def process_edge_set(graph, e_set, internal_edges):
     else:
         for edge in e_set.edges:
             process_edge(graph, edge, internal_edges)
+
 
 def process_edge(graph, examine, internal_edges):
     # Find the set of all vertices touches the edge to examine
@@ -2840,12 +2883,16 @@ def process_edge(graph, examine, internal_edges):
 
         # Only add edge if valid inter-tree edge - needs a root and
         # different components
-        if (bestv.component_id is not None and bestv.root is not None
-            and v.component_id is not None and v.root is not None and
-            bestv.component_id != v.component_id):
+        if ((bestv.component_id is not None and
+             bestv.root is not None and
+             v.component_id is not None and
+             v.root is not None and
+             bestv.component_id != v.component_id)):
             add_int_edge(graph, internal_edges, examine, bestv, v)
 
-# Add internal edge, endpoints are roots of the vertices to pass in and are always colored
+
+# Add internal edge, endpoints are roots of the vertices to pass in
+# and are always colored
 def add_int_edge(graph, internal_edges, examine, v1, v2):
     root1 = v1.root
     root2 = v2.root
@@ -2855,13 +2902,12 @@ def add_int_edge(graph, internal_edges, examine, v1, v2):
         red_red = True
 
     if red_red:
-        if (examine.con_type not in root1.accept_red_red
-            or examine.con_type not in root2.accept_red_red):
+        if ((examine.con_type not in root1.accept_red_red
+             or examine.con_type not in root2.accept_red_red)):
             return
-    else:
-        if (examine.con_type not in root1.accept_black
-            or examine.con_type not in root2.accept_black):
-            return
+    elif (examine.con_type not in root1.accept_black
+          or examine.con_type not in root2.accept_black):
+        return
 
     ri = ReplInfo()
     ri2 = ReplInfo()
@@ -2873,7 +2919,8 @@ def add_int_edge(graph, internal_edges, examine, v1, v2):
     if not combine_repl_info(ri, examine.repl_info, ri2):
         return
 
-    newIntEdge = InternalEdge(root1, root2, red_red, ri2, examine.con_type, examine.site_link)
+    newIntEdge = InternalEdge(root1, root2, red_red, ri2, examine.con_type,
+                              examine.site_link)
     # Order by vertex guid
     #XXX guid comparison using ndr_pack
     if newIntEdge.v1.ndrpacked_guid > newIntEdge.v2.ndrpacked_guid:
@@ -2881,6 +2928,7 @@ def add_int_edge(graph, internal_edges, examine, v1, v2):
         newIntEdge.v2 = root1
 
     internal_edges.add(newIntEdge)
+
 
 def kruskal(graph, edges):
     for v in graph.vertices:
@@ -2892,12 +2940,12 @@ def kruskal(graph, edges):
     # Sorted based on internal comparison function of internal edge
     edges.sort()
 
-    expected_num_tree_edges = 0 # TODO this value makes little sense
+    expected_num_tree_edges = 0  # TODO this value makes little sense
 
     count_edges = 0
     output_edges = []
     index = 0
-    while index < len(edges): # TODO and num_components > 1
+    while index < len(edges):  # TODO and num_components > 1
         e = edges[index]
         parent1 = find_component(e.v1)
         parent2 = find_component(e.v2)
@@ -2910,6 +2958,7 @@ def kruskal(graph, edges):
         index += 1
 
     return output_edges, len(components)
+
 
 def find_component(vertex):
     if vertex.component_id is vertex:
@@ -2927,6 +2976,7 @@ def find_component(vertex):
         current = n
 
     return root
+
 
 def add_out_edge(graph, output_edges, e):
     v1 = e.v1
@@ -2970,7 +3020,6 @@ def test_all_reps_from(lp, creds):
                 forget_intersite_links=opts.forget_intersite_links)
         current, needed = kcc.my_dsa.get_rep_tables()
 
-
         for name, rep_table, rep_parts in (('needed', needed, needed_parts),
                                            ('current', current, current_parts)):
             for part, nc_rep in rep_table.items():
@@ -2997,28 +3046,31 @@ def test_all_reps_from(lp, creds):
     verify_and_dot('all-dsa-connections', dot_edges, vertices=dot_vertices,
                    label="all dsa NTDSConnections", properties=(),
                    debug=DEBUG, verify=opts.verify, dot_files=opts.dot_files,
-                   directed=True, edge_colors=colours, vertex_colors=vertex_colours)
+                   directed=True, edge_colors=colours,
+                   vertex_colors=vertex_colours)
 
-    for name, rep_parts in (('needed', needed_parts), ('current', current_parts)):
+    for name, rep_parts in (('needed', needed_parts),
+                            ('current', current_parts)):
         for part, edges in rep_parts.items():
-            verify_and_dot('repsFrom_%s_all_%s' % (name, part), edges, directed=True, label=part,
+            verify_and_dot('repsFrom_%s_all_%s' % (name, part), edges,
+                           directed=True, label=part,
                            properties=(), debug=DEBUG, verify=opts.verify,
                            dot_files=opts.dot_files)
-
 
 
 logger = logging.getLogger("samba_kcc")
 logger.addHandler(logging.StreamHandler(sys.stdout))
 DEBUG = logger.debug
 
-def _colour_debug(*args, **kwargs):
-    DEBUG('%s%s%s' % (kwargs['colour'], args[0], C_NORMAL), *args[1:])
+
+def _color_debug(*args, **kwargs):
+    DEBUG('%s%s%s' % (kwargs['color'], args[0], C_NORMAL), *args[1:])
 
 _globals = globals()
-for _colour in ('DARK_RED', 'RED', 'DARK_GREEN', 'GREEN', 'YELLOW',
-                'DARK_YELLOW', 'DARK_BLUE', 'BLUE', 'PURPLE', 'MAGENTA',
-                'DARK_CYAN', 'CYAN', 'GREY', 'WHITE', 'REV_RED'):
-    _globals['DEBUG_' + _colour] = partial(_colour_debug, colour=_globals[_colour])
+for _color in ('DARK_RED', 'RED', 'DARK_GREEN', 'GREEN', 'YELLOW',
+               'DARK_YELLOW', 'DARK_BLUE', 'BLUE', 'PURPLE', 'MAGENTA',
+               'DARK_CYAN', 'CYAN', 'GREY', 'WHITE', 'REV_RED'):
+    _globals['DEBUG_' + _color] = partial(_color_debug, color=_globals[_color])
 
 
 ##################################################
@@ -3046,7 +3098,8 @@ parser.add_option("--verify",
                   action="store_true")
 
 parser.add_option("--list-verify-tests",
-                  help="list what verification actions are available and do nothing else",
+                  help=("list what verification actions are available "
+                        "and do nothing else"),
                   action="store_true")
 
 parser.add_option("--no-dot-files", dest='dot_files',
@@ -3065,7 +3118,7 @@ parser.add_option("--exportldif",
                   help="export topology ldif file",
                   type=str, metavar="<file>")
 
-parser.add_option("-H", "--URL" ,
+parser.add_option("-H", "--URL",
                   help="LDB URL for database or target server",
                   type=str, metavar="<URL>", dest="dburl")
 
@@ -3074,7 +3127,8 @@ parser.add_option("--tmpdb",
                   type=str, metavar="<file>")
 
 parser.add_option("--now",
-                  help="assume current time is this ('YYYYmmddHHMMSS[tz]', default: system time)",
+                  help=("assume current time is this ('YYYYmmddHHMMSS[tz]',"
+                        " default: system time)"),
                   type=str, metavar="<date>")
 
 parser.add_option("--forced-local-dsa",
@@ -3086,7 +3140,8 @@ parser.add_option("--attempt-live-connections", default=False,
                   action="store_true")
 
 parser.add_option("--list-valid-dsas", default=False,
-                  help="Print a list of DSA dnstrs that could be used in --forced-local-dsa",
+                  help=("Print a list of DSA dnstrs that could be"
+                        " used in --forced-local-dsa"),
                   action="store_true")
 
 parser.add_option("--test-all-reps-from", default=False,
@@ -3160,7 +3215,7 @@ if opts.exportldif:
 
 if opts.importldif:
     if opts.tmpdb is None or opts.tmpdb.startswith('ldap'):
-        logger.error("Specify a target temp database file with --tmpdb option.")
+        logger.error("Specify a target temp database file with --tmpdb option")
         sys.exit(1)
 
     rc = kcc.import_ldif(opts.tmpdb, lp, creds, opts.importldif)
