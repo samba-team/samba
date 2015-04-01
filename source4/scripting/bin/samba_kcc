@@ -2222,26 +2222,6 @@ class KCC(object):
                 if gc_only and not dc_s.is_gc():
                     continue
 
-                # DC (s) must be in the same site as the local DC
-                # as this is the intra-site algorithm. This is
-                # handled by virtue of placing DSAs in per
-                # site objects (see enclosing for() loop)
-
-                # This criteria is moot (a no-op) for this case
-                # because we are scanning for (partial = True).  The
-                # MS algorithm statement says partial replica scans
-                # should adhere to the "same" criteria as full replica
-                # scans so the criteria doesn't change here...its just
-                # rendered pointless.
-                #
-                # The case that is occurring would be a partial domain
-                # replica is needed on a local DC global catalog.  There
-                # is no minimum windows behavior for those since GCs
-                # have always been present.
-                if ro and not partial and nc_x.nc_type == NCType.domain:
-                    if not dc_s.is_minimum_behavior(dsdb.DS_DOMAIN_FUNCTION_2008):
-                        continue
-
                 # If we haven't been told to turn off stale connection
                 # detection and this dsa has a stale connection then
                 # continue
