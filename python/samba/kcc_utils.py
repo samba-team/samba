@@ -862,17 +862,17 @@ class NTDSConnection(object):
         text = text + "\n\tfrom_dn=%s" % self.from_dnstr
 
         if self.schedule is not None:
-            text = text + "\n\tschedule.size=%s" % self.schedule.size
-            text = text + "\n\tschedule.bandwidth=%s" % self.schedule.bandwidth
-            text = text + "\n\tschedule.numberOfSchedules=%s" % \
-                   self.schedule.numberOfSchedules
+            text += "\n\tschedule.size=%s" % self.schedule.size
+            text += "\n\tschedule.bandwidth=%s" % self.schedule.bandwidth
+            text += ("\n\tschedule.numberOfSchedules=%s" %
+                     self.schedule.numberOfSchedules)
 
             for i, header in enumerate(self.schedule.headerArray):
-                text = text + "\n\tschedule.headerArray[%d].type=%d" % \
-                       (i, header.type)
-                text = text + "\n\tschedule.headerArray[%d].offset=%d" % \
-                       (i, header.offset)
-                text = text + "\n\tschedule.dataArray[%d].slots[ " % i
+                text += ("\n\tschedule.headerArray[%d].type=%d" %
+                         (i, header.type))
+                text += ("\n\tschedule.headerArray[%d].offset=%d" %
+                         (i, header.offset))
+                text += "\n\tschedule.dataArray[%d].slots[ " % i
                 for slot in self.schedule.dataArray[i].slots:
                     text = text + "0x%X " % slot
                 text = text + "]"
@@ -1744,7 +1744,6 @@ class GraphNode(object):
         for connect in dsa.connect_table.values():
             self.add_edge_from(connect.from_dnstr)
 
-
     def add_connections_from_edges(self, dsa):
         """For each edge directed to this graph node, ensure there
            is a corresponding nTDSConnection object in the dsa.
@@ -1910,32 +1909,24 @@ class RepsFromTo(object):
         '''Debug dump string output of class'''
 
         text = "%s:" % self.__class__.__name__
-        text = text + "\n\tdnstr=%s" % self.nc_dnstr
-        text = text + "\n\tupdate_flags=0x%X" % self.update_flags
-
-        text = text + "\n\tversion=%d" % self.version
-        text = text + "\n\tsource_dsa_obj_guid=%s" % \
-               str(self.source_dsa_obj_guid)
-        text = text + "\n\tsource_dsa_invocation_id=%s" % \
-               str(self.source_dsa_invocation_id)
-        text = text + "\n\ttransport_guid=%s" % \
-               str(self.transport_guid)
-        text = text + "\n\treplica_flags=0x%X" % \
-               self.replica_flags
-        text = text + "\n\tconsecutive_sync_failures=%d" % \
-               self.consecutive_sync_failures
-        text = text + "\n\tlast_success=%s" % \
-               self.last_success
-        text = text + "\n\tlast_attempt=%s" % \
-               self.last_attempt
-        text = text + "\n\tdns_name1=%s" % \
-               str(self.dns_name1)
-        text = text + "\n\tdns_name2=%s" % \
-               str(self.dns_name2)
-        text = text + "\n\tschedule[ "
+        text += "\n\tdnstr=%s" % self.nc_dnstr
+        text += "\n\tupdate_flags=0x%X" % self.update_flags
+        text += "\n\tversion=%d" % self.version
+        text += "\n\tsource_dsa_obj_guid=%s" % self.source_dsa_obj_guid
+        text += ("\n\tsource_dsa_invocation_id=%s" %
+                 self.source_dsa_invocation_id)
+        text += "\n\ttransport_guid=%s" % self.transport_guid
+        text += "\n\treplica_flags=0x%X" % self.replica_flags
+        text += ("\n\tconsecutive_sync_failures=%d" %
+                 self.consecutive_sync_failures)
+        text += "\n\tlast_success=%s" % self.last_success
+        text += "\n\tlast_attempt=%s" % self.last_attempt
+        text += "\n\tdns_name1=%s" % self.dns_name1
+        text += "\n\tdns_name2=%s" % self.dns_name2
+        text += "\n\tschedule[ "
         for slot in self.schedule:
-            text = text + "0x%X " % slot
-        text = text + "]"
+            text += "0x%X " % slot
+        text += "]"
 
         return text
 
@@ -2058,10 +2049,10 @@ class SiteLink(object):
                    self.schedule.numberOfSchedules
 
             for i, header in enumerate(self.schedule.headerArray):
-                text = text + "\n\tschedule.headerArray[%d].type=%d" % \
-                       (i, header.type)
-                text = text + "\n\tschedule.headerArray[%d].offset=%d" % \
-                       (i, header.offset)
+                text += ("\n\tschedule.headerArray[%d].type=%d" %
+                         (i, header.type))
+                text += ("\n\tschedule.headerArray[%d].offset=%d" %
+                         (i, header.offset))
                 text = text + "\n\tschedule.dataArray[%d].slots[ " % i
                 for slot in self.schedule.dataArray[i].slots:
                     text = text + "0x%X " % slot
