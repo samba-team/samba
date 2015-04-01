@@ -77,6 +77,7 @@ class KCC(object):
         self.part_table = {}    # partition objects
         self.site_table = {}
         self.transport_table = {}
+        self.ip_transport = None
         self.sitelink_table = {}
         self.dsa_by_dnstr = {}
         self.dsa_by_guid = {}
@@ -123,14 +124,13 @@ class KCC(object):
             transport = Transport(dnstr)
 
             transport.load_transport(self.samdb)
+            self.transport_table.setdefault(str(transport.guid),
+                                            transport)
+            if transport.name == 'IP':
+                self.ip_transport = transport
 
-            # already loaded
-            if str(transport.guid) in self.transport_table:
-                continue
-
-            # Assign this transport to table
-            # and index by guid
-            self.transport_table[str(transport.guid)] = transport
+        if self.ip_transport is None:
+            raise KCCError("there doesn't seem to be an IP transport")
 
     def load_all_sitelinks(self):
         """Loads the inter-site siteLink objects
@@ -1672,13 +1672,7 @@ class KCC(object):
             partial_ok = False
 
         # Utilize the IP transport only for now
-        transport = None
-        for transport in self.transport_table.values():
-            if transport.name == "IP":
-                break
-
-        if transport is None:
-            raise KCCError("Unable to find inter-site transport for IP")
+        transport = self.ip_transport
 
         DEBUG("edge_list %s" % edge_list)
         for e in edge_list:
