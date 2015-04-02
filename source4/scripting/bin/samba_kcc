@@ -1363,6 +1363,8 @@ class KCC(object):
 
         lbhs_all = self.get_all_bridgeheads(lsite, part, transport,
                                             partial_ok, False)
+        if lbh.is_ro():
+            lbhs_all.append(lbh)
 
         DEBUG_GREY("lbhs_all: %s %s" % (len(lbhs_all),
                                         [x.dsa_dnstr for x in lbhs_all]))
