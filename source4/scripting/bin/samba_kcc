@@ -1097,6 +1097,10 @@ class KCC(object):
         connected_vertices = set()
         for transport_guid, transport in self.transport_table.items():
             # Currently only ever "IP"
+            if transport.name != 'IP':
+                DEBUG_FN("setup_graph is ignoring transport %s" %
+                         transport.name)
+                continue
             for site_link_dn, site_link in self.sitelink_table.items():
                 new_edge = create_edge(transport_guid, site_link,
                                        guid_to_vertex)
