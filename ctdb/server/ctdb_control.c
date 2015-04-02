@@ -151,8 +151,15 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 	}
 
 	case CTDB_CONTROL_STATISTICS_RESET: {
+		struct ctdb_db_context *ctdb_db;
+
 		CHECK_CONTROL_DATA_SIZE(0);
 		ZERO_STRUCT(ctdb->statistics);
+		for (ctdb_db = ctdb->db_list;
+		     ctdb_db != NULL;
+		     ctdb_db = ctdb_db->next) {
+			ctdb_db_statistics_reset(ctdb_db);
+		}
 		ctdb->statistics.statistics_start_time = timeval_current();
 		return 0;
 	}

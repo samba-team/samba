@@ -1600,6 +1600,20 @@ int ctdb_set_db_sticky(struct ctdb_context *ctdb, struct ctdb_db_context *ctdb_d
 	return 0;
 }
 
+void ctdb_db_statistics_reset(struct ctdb_db_context *ctdb_db)
+{
+	struct ctdb_db_statistics *s = &ctdb_db->statistics;
+	int i;
+
+	for (i=0; i<MAX_HOT_KEYS; i++) {
+		if (s->hot_keys[i].key.dsize > 0) {
+			talloc_free(s->hot_keys[i].key.dptr);
+		}
+	}
+
+	ZERO_STRUCT(ctdb_db->statistics);
+}
+
 int32_t ctdb_control_get_db_statistics(struct ctdb_context *ctdb,
 				uint32_t db_id,
 				TDB_DATA *outdata)
