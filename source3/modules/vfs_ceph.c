@@ -1205,6 +1205,47 @@ static int cephwrap_set_offline(struct vfs_handle_struct *handle,
 	return -1;
 }
 
+static SMB_ACL_T cephwrap_sys_acl_get_file(struct vfs_handle_struct *handle,
+					   const char *path_p,
+					   SMB_ACL_TYPE_T type,
+					   TALLOC_CTX *mem_ctx)
+{
+	errno = ENOTSUP;
+	return NULL;
+}
+
+static SMB_ACL_T cephwrap_sys_acl_get_fd(struct vfs_handle_struct *handle,
+					 struct files_struct *fsp,
+					 TALLOC_CTX *mem_ctx)
+{
+	errno = ENOTSUP;
+	return NULL;
+}
+
+static int cephwrap_sys_acl_set_file(struct vfs_handle_struct *handle,
+				     const char *name,
+				     SMB_ACL_TYPE_T acltype,
+				     SMB_ACL_T theacl)
+{
+	errno = ENOTSUP;
+	return -1;
+}
+
+static int cephwrap_sys_acl_set_fd(struct vfs_handle_struct *handle,
+				   struct files_struct *fsp,
+				   SMB_ACL_T theacl)
+{
+	errno = ENOTSUP;
+	return -1;
+}
+
+static int cephwrap_sys_acl_delete_def_file(struct vfs_handle_struct *handle,
+					    const char *path)
+{
+	errno = ENOTSUP;
+	return -1;
+}
+
 static struct vfs_fn_pointers ceph_fns = {
 	/* Disk operations */
 
@@ -1276,6 +1317,13 @@ static struct vfs_fn_pointers ceph_fns = {
 	.fremovexattr_fn = cephwrap_fremovexattr,
 	.setxattr_fn = cephwrap_setxattr,
 	.fsetxattr_fn = cephwrap_fsetxattr,
+
+	/* Posix ACL Operations */
+	.sys_acl_get_file_fn = cephwrap_sys_acl_get_file,
+	.sys_acl_get_fd_fn = cephwrap_sys_acl_get_fd,
+	.sys_acl_set_file_fn = cephwrap_sys_acl_set_file,
+	.sys_acl_set_fd_fn = cephwrap_sys_acl_set_fd,
+	.sys_acl_delete_def_file_fn = cephwrap_sys_acl_delete_def_file,
 
 	/* aio operations */
 	.aio_force_fn = cephwrap_aio_force,
