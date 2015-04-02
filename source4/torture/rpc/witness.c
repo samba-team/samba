@@ -504,6 +504,8 @@ static bool test_witness_AsyncNotify(struct torture_context *tctx,
 		(struct torture_test_witness_state *)data;
 	int i;
 
+	torture_skip(tctx, "skipping witness_AsyncNotify test");
+
 	init_witness_test_state(tctx, p, state);
 
 	for (i=0; state->list && i < state->list->num_interfaces; i++) {
