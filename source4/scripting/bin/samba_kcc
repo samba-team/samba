@@ -172,12 +172,11 @@ class KCC(object):
         guid = str(site.site_guid)
         if guid not in self.site_table:
             self.site_table[guid] = site
+            self.dsa_by_dnstr.update(site.dsa_table)
+            self.dsa_by_guid.update((str(x.dsa_guid), x)
+                                    for x in site.dsa_table.values())
 
-        self.dsa_by_dnstr.update(site.dsa_table)
-        self.dsa_by_guid.update((str(x.dsa_guid), x)
-                                for x in site.dsa_table.values())
-
-        return site
+        return self.site_table[guid]
 
     def load_my_site(self):
         """Loads the Site class for the local DSA
