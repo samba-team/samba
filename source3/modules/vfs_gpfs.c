@@ -2045,50 +2045,6 @@ static int vfs_gpfs_connect(struct vfs_handle_struct *handle,
 	return 0;
 }
 
-static int get_gpfs_fset_id(const char *pathname, int *fset_id)
-{
-	int err, fd, errno_fcntl;
-
-	struct {
-		gpfsFcntlHeader_t hdr;
-		gpfsGetFilesetName_t fsn;
-	} arg;
-
-	arg.hdr.totalLength = sizeof(arg);
-	arg.hdr.fcntlVersion = GPFS_FCNTL_CURRENT_VERSION;
-	arg.hdr.fcntlReserved = 0;
-	arg.fsn.structLen = sizeof(arg.fsn);
-	arg.fsn.structType = GPFS_FCNTL_GET_FILESETNAME;
-
-	fd = open(pathname, O_RDONLY);
-	if (fd == -1) {
-		DEBUG(1, ("Could not open %s: %s\n",
-			  pathname, strerror(errno)));
-		return fd;
-	}
-
-	err = gpfswrap_fcntl(fd, &arg);
-	errno_fcntl = errno;
-	close(fd);
-
-	if (err) {
-		errno = errno_fcntl;
-		if (errno != ENOSYS) {
-			DEBUG(1, ("GPFS_FCNTL_GET_FILESETNAME for %s failed: "
-				  "%s\n", pathname, strerror(errno)));
-		}
-		return err;
-	}
-
-	err = gpfswrap_getfilesetid(discard_const_p(char, pathname),
-				    arg.fsn.buffer, fset_id);
-	if (err && errno != ENOSYS) {
-		DEBUG(1, ("gpfs_getfilesetid for %s failed: %s\n",
-			  pathname, strerror(errno)));
-	}
-	return err;
-}
-
 static int get_gpfs_quota(const char *pathname, int type, int id,
 			  struct gpfs_quotaInfo *qi)
 {
@@ -2117,36 +2073,11 @@ static int get_gpfs_quota(const char *pathname, int type, int id,
 }
 
 static int vfs_gpfs_get_quotas(const char *path, uid_t uid, gid_t gid,
-			       int *fset_id,
 			       struct gpfs_quotaInfo *qi_user,
-			       struct gpfs_quotaInfo *qi_group,
-			       struct gpfs_quotaInfo *qi_fset)
+			       struct gpfs_quotaInfo *qi_group)
 {
 	int err;
-	char *dir_path;
 	bool b;
-
-	/*
-	 * We want to always use the directory to get the fileset id,
-	 * because files might have a share mode. We also do not want
-	 * to get the parent directory when there is already a
-	 * directory to avoid stepping in a different fileset.  The
-	 * path passed here is currently either "." or a filename, so
-	 * this is ok. The proper solution would be having a way to
-	 * query the fileset id without opening the file.
-	 */
-	b = parent_dirname(talloc_tos(), path, &dir_path, NULL);
-	if (!b) {
-		errno = ENOMEM;
-		return -1;
-	}
-
-	DEBUG(10, ("path %s, directory %s\n", path, dir_path));
-
-	err = get_gpfs_fset_id(dir_path, fset_id);
-	if (err) {
-		return err;
-	}
 
 	err = get_gpfs_quota(path, GPFS_USRQUOTA, uid, qi_user);
 	if (err) {
@@ -2154,11 +2085,6 @@ static int vfs_gpfs_get_quotas(const char *path, uid_t uid, gid_t gid,
 	}
 
 	err = get_gpfs_quota(path, GPFS_GRPQUOTA, gid, qi_group);
-	if (err) {
-		return err;
-	}
-
-	err = get_gpfs_quota(path, GPFS_FILESETQUOTA, *fset_id, qi_fset);
 	if (err) {
 		return err;
 	}
@@ -2210,9 +2136,9 @@ static uint64_t vfs_gpfs_disk_free(vfs_handle_struct *handle, const char *path,
 				   uint64_t *dfree, uint64_t *dsize)
 {
 	struct security_unix_token *utok;
-	struct gpfs_quotaInfo qi_user, qi_group, qi_fset;
+	struct gpfs_quotaInfo qi_user, qi_group;
 	struct gpfs_config_data *config;
-	int err, fset_id;
+	int err;
 	time_t cur_time;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, config, struct gpfs_config_data,
@@ -2236,8 +2162,8 @@ static uint64_t vfs_gpfs_disk_free(vfs_handle_struct *handle, const char *path,
 		   (unsigned long long)*dfree, (unsigned long long)*dsize));
 
 	utok = handle->conn->session_info->unix_token;
-	err = vfs_gpfs_get_quotas(path, utok->uid, utok->gid, &fset_id,
-				  &qi_user, &qi_group, &qi_fset);
+	err = vfs_gpfs_get_quotas(path, utok->uid, utok->gid,
+				  &qi_user, &qi_group);
 	if (err) {
 		return SMB_VFS_NEXT_DISK_FREE(handle, path,
 					      bsize, dfree, dsize);
@@ -2248,11 +2174,6 @@ static uint64_t vfs_gpfs_disk_free(vfs_handle_struct *handle, const char *path,
 	/* Adjust free space and size according to quota limits. */
 	vfs_gpfs_disk_free_quota(qi_user, cur_time, dfree, dsize);
 	vfs_gpfs_disk_free_quota(qi_group, cur_time, dfree, dsize);
-
-	/* Id 0 indicates the default quota, not an actual quota */
-	if (fset_id != 0) {
-		vfs_gpfs_disk_free_quota(qi_fset, cur_time, dfree, dsize);
-	}
 
 	disk_norm(bsize, dfree, dsize);
 	return *dfree;
