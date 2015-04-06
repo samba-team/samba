@@ -504,6 +504,7 @@ static int dcesrv_connection_context_destructor(struct dcesrv_connection_context
 
 	if (c->iface && c->iface->unbind) {
 		c->iface->unbind(c, c->iface);
+		c->iface = NULL;
 	}
 
 	return 0;
@@ -618,6 +619,10 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	    (call->state_flags & DCESRV_CALL_STATE_FLAG_MULTIPLEXED)) {
 		call->context->conn->state_flags |= DCESRV_CALL_STATE_FLAG_MULTIPLEXED;
 		extra_flags |= DCERPC_PFC_FLAG_CONC_MPX;
+	}
+
+	if (call->state_flags & DCESRV_CALL_STATE_FLAG_PROCESS_PENDING_CALL) {
+		call->context->conn->state_flags |= DCESRV_CALL_STATE_FLAG_PROCESS_PENDING_CALL;
 	}
 
 	/* handle any authentication that is being requested */
@@ -837,6 +842,10 @@ static NTSTATUS dcesrv_alter(struct dcesrv_call_state *call)
 		if (call->context->conn->state_flags & DCESRV_CALL_STATE_FLAG_MULTIPLEXED) {
 			extra_flags |= DCERPC_PFC_FLAG_CONC_MPX;
 		}
+	}
+
+	if (call->state_flags & DCESRV_CALL_STATE_FLAG_PROCESS_PENDING_CALL) {
+		call->context->conn->state_flags |= DCESRV_CALL_STATE_FLAG_PROCESS_PENDING_CALL;
 	}
 
 	/* setup a alter_resp */
@@ -1377,6 +1386,18 @@ static void dcesrv_cleanup_broken_connections(struct dcesrv_context *dce_ctx)
 	while (next != NULL) {
 		cur = next;
 		next = cur->next;
+
+		if (cur->state_flags & DCESRV_CALL_STATE_FLAG_PROCESS_PENDING_CALL) {
+			struct dcesrv_connection_context *context_cur, *context_next;
+
+			context_next = cur->contexts;
+			while (context_next != NULL) {
+				context_cur = context_next;
+				context_next = context_cur->next;
+
+				dcesrv_connection_context_destructor(context_cur);
+			}
+		}
 
 		dcesrv_terminate_connection(cur, cur->terminate);
 	}
