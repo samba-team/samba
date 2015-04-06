@@ -2072,26 +2072,6 @@ static int get_gpfs_quota(const char *pathname, int type, int id,
 	return ret;
 }
 
-static int vfs_gpfs_get_quotas(const char *path, uid_t uid, gid_t gid,
-			       struct gpfs_quotaInfo *qi_user,
-			       struct gpfs_quotaInfo *qi_group)
-{
-	int err;
-	bool b;
-
-	err = get_gpfs_quota(path, GPFS_USRQUOTA, uid, qi_user);
-	if (err) {
-		return err;
-	}
-
-	err = get_gpfs_quota(path, GPFS_GRPQUOTA, gid, qi_group);
-	if (err) {
-		return err;
-	}
-
-	return 0;
-}
-
 static void vfs_gpfs_disk_free_quota(struct gpfs_quotaInfo qi, time_t cur_time,
 				     uint64_t *dfree, uint64_t *dsize)
 {
@@ -2162,8 +2142,14 @@ static uint64_t vfs_gpfs_disk_free(vfs_handle_struct *handle, const char *path,
 		   (unsigned long long)*dfree, (unsigned long long)*dsize));
 
 	utok = handle->conn->session_info->unix_token;
-	err = vfs_gpfs_get_quotas(path, utok->uid, utok->gid,
-				  &qi_user, &qi_group);
+
+	err = get_gpfs_quota(path, GPFS_USRQUOTA, utok->uid, &qi_user);
+	if (err) {
+		return SMB_VFS_NEXT_DISK_FREE(handle, path,
+					      bsize, dfree, dsize);
+	}
+
+	err = get_gpfs_quota(path, GPFS_GRPQUOTA, utok->gid, &qi_group);
 	if (err) {
 		return SMB_VFS_NEXT_DISK_FREE(handle, path,
 					      bsize, dfree, dsize);
