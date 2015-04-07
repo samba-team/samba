@@ -487,8 +487,6 @@ static NTSTATUS cmd_seal(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 static NTSTATUS cmd_timeout(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			    int argc, const char **argv)
 {
-	struct cmd_list *tmp;
-
 	if (argc > 2) {
 		printf("Usage: %s timeout\n", argv[0]);
 		return NT_STATUS_OK;
@@ -496,19 +494,6 @@ static NTSTATUS cmd_timeout(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 
 	if (argc == 2) {
 		timeout = atoi(argv[1]);
-
-		for (tmp = cmd_list; tmp; tmp = tmp->next) {
-
-			struct cmd_set *tmp_set;
-
-			for (tmp_set = tmp->cmd_set; tmp_set->name; tmp_set++) {
-				if (tmp_set->rpc_pipe == NULL) {
-					continue;
-				}
-
-				rpccli_set_timeout(tmp_set->rpc_pipe, timeout);
-			}
-		}
 	}
 
 	printf("timeout is %d\n", timeout);
@@ -801,6 +786,11 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 				return ntresult;
 			}
 		}
+	}
+
+	/* Set timeout for new connections */
+	if (cmd_entry->rpc_pipe) {
+		rpccli_set_timeout(cmd_entry->rpc_pipe, timeout);
 	}
 
 	/* Run command */
@@ -1140,7 +1130,9 @@ out_free:
 
 	/* Load command lists */
 	rpcclient_cli_state = cli;
-	timeout = cli_set_timeout(cli, 10000);
+
+	timeout = 10000;
+	cli_set_timeout(cli, timeout);
 
 	cmd_set = rpcclient_command_list;
 
