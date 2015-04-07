@@ -54,7 +54,7 @@ if not bld.env.SAMBA_UTIL_CORE_ONLY:
                     tevent_debug.c util_process.c memcache.c''',
                   deps='samba-util-core DYNCONFIG close-low-fd tini tiniparser',
 
-                  public_deps='talloc tevent execinfo pthread LIBCRYPTO charset util_setid systemd-daemon',
+                  public_deps='talloc tevent execinfo pthread LIBCRYPTO charset util_setid systemd systemd-daemon',
                   public_headers='debug.h attr.h byteorder.h data_blob.h memory.h safe_string.h time.h talloc_stack.h xfile.h dlinklist.h samba_util.h string_wrappers.h idtree.h idtree_random.h blocking.h signal.h substitute.h fault.h',
                   header_path= [ ('dlinklist.h samba_util.h', '.'), ('*', 'util') ],
                   local_include=False,
