@@ -100,33 +100,28 @@ conf.CHECK_CODE('struct statvfs buf; buf.f_flags = 0',
                 local_include=False,
                 execute=False)
 
-if Options.options.enable_systemd != False:
-    conf.CHECK_CFG(package='libsystemd-daemon', args='--cflags --libs',
-                   msg='Checking for libsystemd-daemon', uselib_store="SYSTEMD-DAEMON")
-    conf.CHECK_HEADERS('systemd/sd-daemon.h', lib='systemd-daemon')
-    conf.CHECK_LIB('systemd-daemon', shlib=True)
+#
+# systemd removed the libsystemd-daemon and libsystemd-journal libraries. In newer
+# versions it is only libsystemd. As waf pkg-config handling does not provide
+# targets which could be used as a dependency based on the package name we need
+# to look for them on our own. This enabled one of the library targets based on
+# which version we detect.
+#
+conf.SET_TARGET_TYPE('systemd-daemon', 'EMPTY')
+conf.SET_TARGET_TYPE('systemd-journal', 'EMPTY')
+conf.SET_TARGET_TYPE('systemd', 'EMPTY')
 
-if (conf.CONFIG_SET('HAVE_SYSTEMD_SD_DAEMON_H') and
-    conf.CONFIG_SET('HAVE_LIBSYSTEMD_DAEMON')):
-    conf.DEFINE('HAVE_SYSTEMD', '1')
-    conf.env['ENABLE_SYSTEMD'] = True
-else:
-    conf.SET_TARGET_TYPE('systemd-daemon', 'EMPTY')
-    conf.undefine('HAVE_SYSTEMD')
+if Options.options.enable_systemd != False:
+    conf.check_cfg(package='libsystemd-daemon', args='--cflags --libs',
+                   msg='Checking for libsystemd-daemon')
+    if not conf.CHECK_LIB('systemd-daemon', shlib=True):
+        conf.CHECK_LIB('systemd', shlib=True)
 
 if Options.options.enable_systemd != False:
     conf.check_cfg(package='libsystemd-journal', args='--cflags --libs',
-                   msg='Checking for libsystemd-journal',
-                   uselib_store="SYSTEMD-JOURNAL")
-    conf.CHECK_HEADERS('systemd/sd-journal.h', lib='systemd-journal')
-    conf.CHECK_LIB('systemd-journal', shlib=True)
-
-if (conf.CONFIG_SET('HAVE_SYSTEMD_SD_JOURNAL_H') and
-    conf.CONFIG_SET('HAVE_LIBSYSTEMD_JOURNAL')):
-    conf.DEFINE('HAVE_SYSTEMD_JOURNAL', '1')
-else:
-    conf.SET_TARGET_TYPE('systemd-journal', 'EMPTY')
-    conf.undefine('HAVE_SYSTEMD_JOURNAL')
+                   msg='Checking for libsystemd-journal')
+    if not conf.CHECK_LIB('systemd-journal', shlib=True):
+        conf.CHECK_LIB('systemd', shlib=True)
 
 if Options.options.enable_lttng != False:
     conf.check_cfg(package='lttng-ust', args='--cflags --libs',
