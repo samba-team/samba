@@ -1287,7 +1287,7 @@ uint32_t _fss_RecoveryCompleteShadowCopySet(struct pipes_struct *p,
 	/* stop msg sequence timer */
 	TALLOC_FREE(fss_global.seq_tmr);
 
-	if (sc_set->context | ATTR_NO_AUTO_RECOVERY) {
+	if (sc_set->context & ATTR_NO_AUTO_RECOVERY) {
 		/* TODO set read-only */
 	}
 
