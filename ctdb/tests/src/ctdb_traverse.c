@@ -31,7 +31,7 @@ static const char *dbname = "test.tdb";
 static int traverse_callback(TDB_DATA key, TDB_DATA data, void *private_data)
 {
 	uint32_t *count = private_data;
-	
+
 	(*count)++;
 	return 0;
 }
