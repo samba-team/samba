@@ -3013,7 +3013,7 @@ def add_out_edge(graph, output_edges, e):
     v2.edges.append(ee)
 
 
-def test_all_reps_from(lp, creds):
+def test_all_reps_from(lp, creds, rng_seed=None):
     kcc = KCC()
     kcc.load_samdb(opts.dburl, lp, creds)
     dsas = kcc.list_dsas()
@@ -3031,6 +3031,8 @@ def test_all_reps_from(lp, creds):
     vertex_colours = []
 
     for dsa_dn in dsas:
+        if rng_seed:
+            random.seed(rng_seed)
         kcc = KCC()
         kcc.run(opts.dburl, lp, creds, forced_local_dsa=dsa_dn,
                 forget_local_links=opts.forget_local_links,
@@ -3232,7 +3234,8 @@ if opts.dburl is None:
 
 if opts.test_all_reps_from:
     opts.readonly = True
-    test_all_reps_from(lp, creds)
+    rng_seed = opts.seed or 0xACE5CA11
+    test_all_reps_from(lp, creds, rng_seed=rng_seed)
     sys.exit()
 
 # Instantiate Knowledge Consistency Checker and perform run
