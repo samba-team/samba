@@ -2188,9 +2188,9 @@ static void traverse_handler(struct ctdb_context *ctdb, uint64_t srvid, TDB_DATA
 	struct ctdb_rec_data *d = (struct ctdb_rec_data *)data.dptr;
 	TDB_DATA key;
 
-	if (data.dsize < sizeof(uint32_t) ||
-	    d->length != data.dsize) {
-		DEBUG(DEBUG_ERR,("Bad data size %u in traverse_handler\n", (unsigned)data.dsize));
+	if (data.dsize < sizeof(uint32_t) || d->length != data.dsize) {
+		DEBUG(DEBUG_ERR, ("Bad data size %u in traverse_handler\n",
+				  (unsigned)data.dsize));
 		state->done = true;
 		return;
 	}
