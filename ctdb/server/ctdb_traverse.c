@@ -674,7 +674,7 @@ static void traverse_start_callback(void *p, TDB_DATA key, TDB_DATA data)
 	cdata.dptr = (uint8_t *)d;
 	cdata.dsize = d->length;
 
-	ctdb_dispatch_message(state->ctdb, state->srvid, cdata);
+	srvid_dispatch(state->ctdb->srv, state->srvid, 0, cdata);
 	if (key.dsize == 0 && data.dsize == 0) {
 		DEBUG(DEBUG_NOTICE, ("Ending traverse on DB %s (id %d), records %d\n",
 				     state->h->ctdb_db->db_name, state->h->reqid,

@@ -2189,9 +2189,7 @@ struct srvid_reply_handler_data {
 	const char *srvid_str;
 };
 
-static void srvid_broadcast_reply_handler(struct ctdb_context *ctdb,
-					 uint64_t srvid,
-					 TDB_DATA data,
+static void srvid_broadcast_reply_handler(uint64_t srvid, TDB_DATA data,
 					 void *private_data)
 {
 	struct srvid_reply_handler_data *d =
@@ -6036,8 +6034,7 @@ static int control_dumpmemory(struct ctdb_context *ctdb, int argc, const char **
 /*
   handler for memory dumps
 */
-static void mem_dump_handler(struct ctdb_context *ctdb, uint64_t srvid, 
-			     TDB_DATA data, void *private_data)
+static void mem_dump_handler(uint64_t srvid, TDB_DATA data, void *private_data)
 {
 	sys_write(1, data.dptr, data.dsize);
 	exit(0);
@@ -6108,8 +6105,8 @@ static int control_msgsend(struct ctdb_context *ctdb, int argc, const char **arg
 /*
   handler for msglisten
 */
-static void msglisten_handler(struct ctdb_context *ctdb, uint64_t srvid, 
-			     TDB_DATA data, void *private_data)
+static void msglisten_handler(uint64_t srvid, TDB_DATA data,
+			      void *private_data)
 {
 	int i;
 

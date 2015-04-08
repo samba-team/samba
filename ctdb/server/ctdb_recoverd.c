@@ -1063,10 +1063,12 @@ static bool vacuum_fetch_process_one(struct ctdb_db_context *ctdb_db,
 /*
   handler for vacuum fetch
 */
-static void vacuum_fetch_handler(struct ctdb_context *ctdb, uint64_t srvid, 
-				 TDB_DATA data, void *private_data)
+static void vacuum_fetch_handler(uint64_t srvid, TDB_DATA data,
+				 void *private_data)
 {
-	struct ctdb_recoverd *rec = talloc_get_type(private_data, struct ctdb_recoverd);
+	struct ctdb_recoverd *rec = talloc_get_type(
+		private_data, struct ctdb_recoverd);
+	struct ctdb_context *ctdb = rec->ctdb;
 	struct ctdb_marshall_buffer *recs;
 	int ret, i;
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
@@ -1134,9 +1136,12 @@ done:
 /*
  * handler for database detach
  */
-static void detach_database_handler(struct ctdb_context *ctdb, uint64_t srvid,
-				    TDB_DATA data, void *private_data)
+static void detach_database_handler(uint64_t srvid, TDB_DATA data,
+				    void *private_data)
 {
+	struct ctdb_recoverd *rec = talloc_get_type(
+		private_data, struct ctdb_recoverd);
+	struct ctdb_context *ctdb = rec->ctdb;
 	uint32_t db_id;
 	struct ctdb_db_context *ctdb_db;
 
@@ -2339,9 +2344,11 @@ static void election_send_request(struct event_context *ev, struct timed_event *
 /*
   handler for memory dumps
 */
-static void mem_dump_handler(struct ctdb_context *ctdb, uint64_t srvid, 
-			     TDB_DATA data, void *private_data)
+static void mem_dump_handler(uint64_t srvid, TDB_DATA data, void *private_data)
 {
+	struct ctdb_recoverd *rec = talloc_get_type(
+		private_data, struct ctdb_recoverd);
+	struct ctdb_context *ctdb = rec->ctdb;
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 	TDB_DATA *dump;
 	int ret;
@@ -2382,10 +2389,11 @@ DEBUG(DEBUG_ERR, ("recovery master memory dump\n"));
 /*
   handler for reload_nodes
 */
-static void reload_nodes_handler(struct ctdb_context *ctdb, uint64_t srvid, 
-			     TDB_DATA data, void *private_data)
+static void reload_nodes_handler(uint64_t srvid, TDB_DATA data,
+				 void *private_data)
 {
-	struct ctdb_recoverd *rec = talloc_get_type(private_data, struct ctdb_recoverd);
+	struct ctdb_recoverd *rec = talloc_get_type(
+		private_data, struct ctdb_recoverd);
 
 	DEBUG(DEBUG_ERR, (__location__ " Reload nodes file from recovery daemon\n"));
 
@@ -2410,16 +2418,17 @@ static void ctdb_rebalance_timeout(struct event_context *ev,
 	do_takeover_run(rec, rec->nodemap, false);
 }
 
-	
-static void recd_node_rebalance_handler(struct ctdb_context *ctdb,
-					uint64_t srvid,
-					TDB_DATA data, void *private_data)
+
+static void recd_node_rebalance_handler(uint64_t srvid, TDB_DATA data,
+					void *private_data)
 {
+	struct ctdb_recoverd *rec = talloc_get_type(
+		private_data, struct ctdb_recoverd);
+	struct ctdb_context *ctdb = rec->ctdb;
 	uint32_t pnn;
 	uint32_t *t;
 	int len;
 	uint32_t deferred_rebalance;
-	struct ctdb_recoverd *rec = talloc_get_type(private_data, struct ctdb_recoverd);
 
 	if (rec->recmaster != ctdb_get_pnn(ctdb)) {
 		return;
@@ -2475,10 +2484,11 @@ static void recd_node_rebalance_handler(struct ctdb_context *ctdb,
 
 
 
-static void recd_update_ip_handler(struct ctdb_context *ctdb, uint64_t srvid, 
-			     TDB_DATA data, void *private_data)
+static void recd_update_ip_handler(uint64_t srvid, TDB_DATA data,
+				   void *private_data)
 {
-	struct ctdb_recoverd *rec = talloc_get_type(private_data, struct ctdb_recoverd);
+	struct ctdb_recoverd *rec = talloc_get_type(
+		private_data, struct ctdb_recoverd);
 	struct ctdb_public_ip *ip;
 
 	if (rec->recmaster != rec->ctdb->pnn) {
@@ -2533,22 +2543,21 @@ done:
 	srvid_request_reply(ctdb, (struct srvid_request *)r, result);
 }
 
-static void disable_takeover_runs_handler(struct ctdb_context *ctdb,
-					  uint64_t srvid, TDB_DATA data,
+static void disable_takeover_runs_handler(uint64_t srvid, TDB_DATA data,
 					  void *private_data)
 {
-	struct ctdb_recoverd *rec = talloc_get_type(private_data,
-						    struct ctdb_recoverd);
+	struct ctdb_recoverd *rec = talloc_get_type(
+		private_data, struct ctdb_recoverd);
 
-	srvid_disable_and_reply(ctdb, data, rec->takeover_run);
+	srvid_disable_and_reply(rec->ctdb, data, rec->takeover_run);
 }
 
 /* Backward compatibility for this SRVID */
-static void disable_ip_check_handler(struct ctdb_context *ctdb, uint64_t srvid,
-				     TDB_DATA data, void *private_data)
+static void disable_ip_check_handler(uint64_t srvid, TDB_DATA data,
+				     void *private_data)
 {
-	struct ctdb_recoverd *rec = talloc_get_type(private_data,
-						    struct ctdb_recoverd);
+	struct ctdb_recoverd *rec = talloc_get_type(
+		private_data, struct ctdb_recoverd);
 	uint32_t timeout;
 
 	if (data.dsize != sizeof(uint32_t)) {
@@ -2564,17 +2573,16 @@ static void disable_ip_check_handler(struct ctdb_context *ctdb, uint64_t srvid,
 
 	timeout = *((uint32_t *)data.dptr);
 
-	ctdb_op_disable(rec->takeover_run, ctdb->ev, timeout);
+	ctdb_op_disable(rec->takeover_run, rec->ctdb->ev, timeout);
 }
 
-static void disable_recoveries_handler(struct ctdb_context *ctdb,
-				       uint64_t srvid, TDB_DATA data,
+static void disable_recoveries_handler(uint64_t srvid, TDB_DATA data,
 				       void *private_data)
 {
-	struct ctdb_recoverd *rec = talloc_get_type(private_data,
-						    struct ctdb_recoverd);
+	struct ctdb_recoverd *rec = talloc_get_type(
+		private_data, struct ctdb_recoverd);
 
-	srvid_disable_and_reply(ctdb, data, rec->recovery);
+	srvid_disable_and_reply(rec->ctdb, data, rec->recovery);
 }
 
 /*
@@ -2582,12 +2590,12 @@ static void disable_recoveries_handler(struct ctdb_context *ctdb,
   handle this later in the monitor_cluster loop so we do not recurse
   with other requests to takeover_run()
 */
-static void ip_reallocate_handler(struct ctdb_context *ctdb, uint64_t srvid,
-				  TDB_DATA data, void *private_data)
+static void ip_reallocate_handler(uint64_t srvid, TDB_DATA data,
+				  void *private_data)
 {
 	struct srvid_request *request;
-	struct ctdb_recoverd *rec = talloc_get_type(private_data,
-						    struct ctdb_recoverd);
+	struct ctdb_recoverd *rec = talloc_get_type(
+		private_data, struct ctdb_recoverd);
 
 	if (data.dsize != sizeof(struct srvid_request)) {
 		DEBUG(DEBUG_ERR, (__location__ " Wrong size of return address.\n"));
@@ -2596,7 +2604,7 @@ static void ip_reallocate_handler(struct ctdb_context *ctdb, uint64_t srvid,
 
 	request = (struct srvid_request *)data.dptr;
 
-	srvid_request_add(ctdb, &rec->reallocate_requests, request);
+	srvid_request_add(rec->ctdb, &rec->reallocate_requests, request);
 }
 
 static void process_ipreallocate_requests(struct ctdb_context *ctdb,
@@ -2644,10 +2652,11 @@ static void process_ipreallocate_requests(struct ctdb_context *ctdb,
 /*
   handler for recovery master elections
 */
-static void election_handler(struct ctdb_context *ctdb, uint64_t srvid, 
-			     TDB_DATA data, void *private_data)
+static void election_handler(uint64_t srvid, TDB_DATA data, void *private_data)
 {
-	struct ctdb_recoverd *rec = talloc_get_type(private_data, struct ctdb_recoverd);
+	struct ctdb_recoverd *rec = talloc_get_type(
+		private_data, struct ctdb_recoverd);
+	struct ctdb_context *ctdb = rec->ctdb;
 	int ret;
 	struct election_message *em = (struct election_message *)data.dptr;
 
@@ -2740,15 +2749,16 @@ static void force_election(struct ctdb_recoverd *rec, uint32_t pnn,
 /*
   handler for when a node changes its flags
 */
-static void monitor_handler(struct ctdb_context *ctdb, uint64_t srvid, 
-			    TDB_DATA data, void *private_data)
+static void monitor_handler(uint64_t srvid, TDB_DATA data, void *private_data)
 {
+	struct ctdb_recoverd *rec = talloc_get_type(
+		private_data, struct ctdb_recoverd);
+	struct ctdb_context *ctdb = rec->ctdb;
 	int ret;
 	struct ctdb_node_flag_change *c = (struct ctdb_node_flag_change *)data.dptr;
 	struct ctdb_node_map *nodemap=NULL;
 	TALLOC_CTX *tmp_ctx;
 	int i;
-	struct ctdb_recoverd *rec = talloc_get_type(private_data, struct ctdb_recoverd);
 	int disabled_flag_changed;
 
 	if (data.dsize != sizeof(*c)) {
@@ -2814,9 +2824,12 @@ static void monitor_handler(struct ctdb_context *ctdb, uint64_t srvid,
 /*
   handler for when we need to push out flag changes ot all other nodes
 */
-static void push_flags_handler(struct ctdb_context *ctdb, uint64_t srvid, 
-			    TDB_DATA data, void *private_data)
+static void push_flags_handler(uint64_t srvid, TDB_DATA data,
+			       void *private_data)
 {
+	struct ctdb_recoverd *rec = talloc_get_type(
+		private_data, struct ctdb_recoverd);
+	struct ctdb_context *ctdb = rec->ctdb;
 	int ret;
 	struct ctdb_node_flag_change *c = (struct ctdb_node_flag_change *)data.dptr;
 	struct ctdb_node_map *nodemap=NULL;

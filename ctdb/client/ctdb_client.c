@@ -178,6 +178,22 @@ static void ctdb_client_reply_call(struct ctdb_context *ctdb, struct ctdb_req_he
 	}
 }
 
+void ctdb_request_message(struct ctdb_context *ctdb,
+			  struct ctdb_req_header *hdr)
+{
+	struct ctdb_req_message *c = (struct ctdb_req_message *)hdr;
+	TDB_DATA data;
+
+	data.dsize = c->datalen;
+	data.dptr = talloc_memdup(c, &c->data[0], c->datalen);
+	if (data.dptr == NULL) {
+		DEBUG(DEBUG_ERR, (__location__ " Memory allocation failure\n"));
+		return;
+	}
+
+	srvid_dispatch(ctdb->srv, c->srvid, CTDB_SRVID_ALL, data);
+}
+
 static void ctdb_client_reply_control(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
 
 /*
@@ -472,7 +488,7 @@ int ctdb_call(struct ctdb_db_context *ctdb_db, struct ctdb_call *call)
   handler function in the client
 */
 int ctdb_client_set_message_handler(struct ctdb_context *ctdb, uint64_t srvid, 
-			     ctdb_msg_fn_t handler,
+			     srvid_handler_fn handler,
 			     void *private_data)
 {
 	int res;
@@ -486,7 +502,7 @@ int ctdb_client_set_message_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	}
 
 	/* also need to register the handler with our own ctdb structure */
-	return ctdb_register_message_handler(ctdb, ctdb, srvid, handler, private_data);
+	return srvid_register(ctdb->srv, ctdb, srvid, handler, private_data);
 }
 
 /*
@@ -505,7 +521,7 @@ int ctdb_client_remove_message_handler(struct ctdb_context *ctdb, uint64_t srvid
 	}
 
 	/* also need to register the handler with our own ctdb structure */
-	ctdb_deregister_message_handler(ctdb, srvid, private_data);
+	srvid_deregister(ctdb->srv, srvid, private_data);
 	return 0;
 }
 
@@ -2182,7 +2198,7 @@ struct traverse_state {
 /*
   called on each key during a ctdb_traverse
  */
-static void traverse_handler(struct ctdb_context *ctdb, uint64_t srvid, TDB_DATA data, void *p)
+static void traverse_handler(uint64_t srvid, TDB_DATA data, void *p)
 {
 	struct traverse_state *state = (struct traverse_state *)p;
 	struct ctdb_rec_data *d = (struct ctdb_rec_data *)data.dptr;
@@ -3294,6 +3310,13 @@ struct ctdb_context *ctdb_init(struct event_context *ev)
 	/* Wrap early to exercise code. */
 	ctdb->lastid = INT_MAX-200;
 	CTDB_NO_MEMORY_NULL(ctdb, ctdb->idr);
+
+	ret = srvid_init(ctdb, &ctdb->srv);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("srvid_init failed (%s)\n", strerror(ret)));
+		talloc_free(ctdb);
+		return NULL;
+	}
 
 	ret = ctdb_set_socketname(ctdb, CTDB_SOCKET);
 	if (ret != 0) {

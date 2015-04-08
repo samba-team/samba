@@ -127,8 +127,8 @@ static int daemon_queue_send(struct ctdb_client *client, struct ctdb_req_header 
   message handler for when we are in daemon mode. This redirects the message
   to the right client
  */
-static void daemon_message_handler(struct ctdb_context *ctdb, uint64_t srvid, 
-				    TDB_DATA data, void *private_data)
+static void daemon_message_handler(uint64_t srvid, TDB_DATA data,
+				   void *private_data)
 {
 	struct ctdb_client *client = talloc_get_type(private_data, struct ctdb_client);
 	struct ctdb_req_message *r;
@@ -136,9 +136,9 @@ static void daemon_message_handler(struct ctdb_context *ctdb, uint64_t srvid,
 
 	/* construct a message to send to the client containing the data */
 	len = offsetof(struct ctdb_req_message, data) + data.dsize;
-	r = ctdbd_allocate_pkt(ctdb, ctdb, CTDB_REQ_MESSAGE, 
+	r = ctdbd_allocate_pkt(client->ctdb, client->ctdb, CTDB_REQ_MESSAGE,
 			       len, struct ctdb_req_message);
-	CTDB_NO_MEMORY_VOID(ctdb, r);
+	CTDB_NO_MEMORY_VOID(client->ctdb, r);
 
 	talloc_set_name_const(r, "req_message packet");
 
@@ -163,7 +163,8 @@ int daemon_register_message_handler(struct ctdb_context *ctdb, uint32_t client_i
 		DEBUG(DEBUG_ERR,("Bad client_id in daemon_request_register_message_handler\n"));
 		return -1;
 	}
-	res = ctdb_register_message_handler(ctdb, client, srvid, daemon_message_handler, client);
+	res = srvid_register(ctdb->srv, client, srvid, daemon_message_handler,
+			     client);
 	if (res != 0) {
 		DEBUG(DEBUG_ERR,(__location__ " Failed to register handler %llu in daemon\n", 
 			 (unsigned long long)srvid));
@@ -186,7 +187,7 @@ int daemon_deregister_message_handler(struct ctdb_context *ctdb, uint32_t client
 		DEBUG(DEBUG_ERR,("Bad client_id in daemon_request_deregister_message_handler\n"));
 		return -1;
 	}
-	return ctdb_deregister_message_handler(ctdb, srvid, client);
+	return srvid_deregister(ctdb->srv, srvid, client);
 }
 
 int daemon_check_srvids(struct ctdb_context *ctdb, TDB_DATA indata,
@@ -211,7 +212,7 @@ int daemon_check_srvids(struct ctdb_context *ctdb, TDB_DATA indata,
 		return -1;
 	}
 	for (i=0; i<num_ids; i++) {
-		if (ctdb_check_message_handler(ctdb, ids[i])) {
+		if (srvid_exists(ctdb->srv, ids[i]) == 0) {
 			results[i/8] |= (1 << (i%8));
 		}
 	}
@@ -1257,6 +1258,11 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 
 	ctdb_set_child_logging(ctdb);
 
+	if (srvid_init(ctdb, &ctdb->srv) != 0) {
+		DEBUG(DEBUG_CRIT,("Failed to setup message srvid context\n"));
+		exit(1);
+	}
+
 	/* initialize statistics collection */
 	ctdb_statistics_init(ctdb);
 
@@ -1558,15 +1564,10 @@ struct ctdb_local_message {
 static void ctdb_local_message_trigger(struct event_context *ev, struct timed_event *te, 
 				       struct timeval t, void *private_data)
 {
-	struct ctdb_local_message *m = talloc_get_type(private_data, 
-						       struct ctdb_local_message);
-	int res;
+	struct ctdb_local_message *m = talloc_get_type(
+		private_data, struct ctdb_local_message);
 
-	res = ctdb_dispatch_message(m->ctdb, m->srvid, m->data);
-	if (res != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " Failed to dispatch message for srvid=%llu\n", 
-			  (unsigned long long)m->srvid));
-	}
+	srvid_dispatch(m->ctdb->srv, m->srvid, CTDB_SRVID_ALL, m->data);
 	talloc_free(m);
 }
 

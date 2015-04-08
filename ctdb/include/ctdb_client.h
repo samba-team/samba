@@ -19,6 +19,8 @@
 
 #ifndef _CTDB_CLIENT_H
 #define _CTDB_CLIENT_H
+
+#include "common/srvid.h"
 #include "ctdb_protocol.h"
 
 enum control_state {CTDB_CONTROL_WAIT, CTDB_CONTROL_DONE, CTDB_CONTROL_ERROR, CTDB_CONTROL_TIMEOUT};
@@ -127,8 +129,8 @@ uint32_t ctdb_get_pnn(struct ctdb_context *ctdb);
 typedef void (*ctdb_msg_fn_t)(struct ctdb_context *, uint64_t srvid,
 				  TDB_DATA data, void *);
 int ctdb_client_set_message_handler(struct ctdb_context *ctdb, uint64_t srvid,
-			     ctdb_msg_fn_t handler,
-			     void *private_data);
+				    srvid_handler_fn handler,
+				    void *private_data);
 int ctdb_client_remove_message_handler(struct ctdb_context *ctdb,
 				       uint64_t srvid, void *private_data);
 int ctdb_client_check_message_handlers(struct ctdb_context *ctdb,
@@ -158,12 +160,6 @@ int ctdb_record_store(struct ctdb_record_handle *h, TDB_DATA data);
 
 int ctdb_fetch(struct ctdb_db_context *ctdb_db, TALLOC_CTX *mem_ctx,
 	       TDB_DATA key, TDB_DATA *data);
-
-int ctdb_register_message_handler(struct ctdb_context *ctdb,
-				  TALLOC_CTX *mem_ctx,
-				  uint64_t srvid,
-				  ctdb_msg_fn_t handler,
-				  void *private_data);
 
 struct ctdb_db_context *find_ctdb_db(struct ctdb_context *ctdb, uint32_t id);
 

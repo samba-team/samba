@@ -132,7 +132,7 @@ int ctdb_ctrl_getdbseqnum(struct ctdb_context *ctdb, struct timeval timeout,
 			  uint32_t destnode, uint32_t dbid, uint64_t *seqnum);
 int ctdb_client_set_message_handler(struct ctdb_context *ctdb,
 				    uint64_t srvid,
-				    ctdb_msg_fn_t handler,
+				    srvid_handler_fn handler,
 				    void *private_data);
 int ctdb_client_remove_message_handler(struct ctdb_context *ctdb,
 				       uint64_t srvid,
@@ -173,7 +173,8 @@ ctdb_get_capabilities(struct ctdb_context *ctdb,
 #include "common/ctdb_io.c"
 #include "common/ctdb_util.c"
 #include "common/ctdb_ltdb.c"
-#include "common/ctdb_message.c"
+#include "common/db_hash.c"
+#include "common/srvid.c"
 #include "common/rb_tree.c"
 #include "common/ctdb_logging.c"
 #include "common/ctdb_fork.c"
