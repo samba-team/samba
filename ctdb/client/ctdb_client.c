@@ -2213,7 +2213,7 @@ static void traverse_handler(struct ctdb_context *ctdb, uint64_t srvid, TDB_DATA
 		return;
 	}
 
-	if (state->fn(ctdb, key, data, state->private_data) != 0) {
+	if (state->fn(key, data, state->private_data) != 0) {
 		state->done = true;
 	}
 
@@ -2296,7 +2296,7 @@ int ctdb_traverse(struct ctdb_db_context *ctdb_db, ctdb_traverse_func fn, void *
 /*
   called on each key during a catdb
  */
-int ctdb_dumpdb_record(struct ctdb_context *ctdb, TDB_DATA key, TDB_DATA data, void *p)
+int ctdb_dumpdb_record(TDB_DATA key, TDB_DATA data, void *p)
 {
 	int i;
 	struct ctdb_dump_db_context *c = (struct ctdb_dump_db_context *)p;
@@ -2316,8 +2316,8 @@ int ctdb_dumpdb_record(struct ctdb_context *ctdb, TDB_DATA key, TDB_DATA data, v
 	fprintf(f, "dmaster: %u\n", h->dmaster);
 	fprintf(f, "rsn: %llu\n", (unsigned long long)h->rsn);
 
-	if (c->printlmaster && ctdb->vnn_map != NULL) {
-		fprintf(f, "lmaster: %u\n", ctdb_lmaster(ctdb, &key));
+	if (c->printlmaster && c->ctdb->vnn_map != NULL) {
+		fprintf(f, "lmaster: %u\n", ctdb_lmaster(c->ctdb, &key));
 	}
 
 	if (c->printhash) {

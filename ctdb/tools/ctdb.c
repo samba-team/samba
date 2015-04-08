@@ -3772,6 +3772,7 @@ static int control_catdb(struct ctdb_context *ctdb, int argc, const char **argv)
 	}
 
 	ZERO_STRUCT(c);
+	c.ctdb = ctdb;
 	c.f = stdout;
 	c.printemptyrecords = (bool)options.printemptyrecords;
 	c.printdatasize = (bool)options.printdatasize;
@@ -3807,6 +3808,7 @@ static int cattdb_traverse(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data,
 	d->count++;
 
 	ZERO_STRUCT(c);
+	c.ctdb = d->ctdb;
 	c.f = stdout;
 	c.printemptyrecords = (bool)options.printemptyrecords;
 	c.printdatasize = (bool)options.printdatasize;
@@ -3814,7 +3816,7 @@ static int cattdb_traverse(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data,
 	c.printhash = (bool)options.printhash;
 	c.printrecordflags = true;
 
-	return ctdb_dumpdb_record(d->ctdb, key, data, &c);
+	return ctdb_dumpdb_record(key, data, &c);
 }
 
 /*
@@ -5824,6 +5826,7 @@ static int control_dumpdbbackup(struct ctdb_context *ctdb, int argc, const char 
 		dbhdr.name, m->db_id, tbuf);
 
 	ZERO_STRUCT(c);
+	c.ctdb = ctdb;
 	c.f = stdout;
 	c.printemptyrecords = (bool)options.printemptyrecords;
 	c.printdatasize = (bool)options.printdatasize;
@@ -5839,7 +5842,7 @@ static int control_dumpdbbackup(struct ctdb_context *ctdb, int argc, const char 
 		rec = ctdb_marshall_loop_next(m, rec, &reqid,
 					      NULL, &key, &data);
 
-		ctdb_dumpdb_record(ctdb, key, data, &c);
+		ctdb_dumpdb_record(key, data, &c);
 	}
 
 	printf("Dumped %d records\n", i);

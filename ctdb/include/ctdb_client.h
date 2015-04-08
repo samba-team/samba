@@ -324,10 +324,11 @@ uint32_t *ctdb_get_connected_nodes(struct ctdb_context *ctdb,
 
 int ctdb_statistics_reset(struct ctdb_context *ctdb, uint32_t destnode);
 
-typedef int (*ctdb_traverse_func)(struct ctdb_context *, TDB_DATA, TDB_DATA, void *);
+typedef int (*ctdb_traverse_func)(TDB_DATA, TDB_DATA, void *);
 int ctdb_traverse(struct ctdb_db_context *ctdb_db, ctdb_traverse_func fn, void *private_data);
 
 struct ctdb_dump_db_context {
+	struct ctdb_context *ctdb;
 	FILE *f;
 	bool printemptyrecords;
 	bool printdatasize;
@@ -336,7 +337,7 @@ struct ctdb_dump_db_context {
 	bool printrecordflags;
 };
 
-int ctdb_dumpdb_record(struct ctdb_context *ctdb, TDB_DATA key, TDB_DATA data, void *p);
+int ctdb_dumpdb_record(TDB_DATA key, TDB_DATA data, void *p);
 int ctdb_dump_db(struct ctdb_db_context *ctdb_db,
 		 struct ctdb_dump_db_context *ctx);
 
