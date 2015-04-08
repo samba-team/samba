@@ -145,7 +145,7 @@ static void each_second(struct event_context *ev, struct timed_event *te,
 			each_second, bdata);
 }
 
-static void dummy_event(struct event_context *ev, struct timed_event *te, 
+static void dummy_event(struct event_context *ev, struct timed_event *te,
 					 struct timeval t, void *private_data)
 {
 	struct bench_data *bdata = talloc_get_type_abort(

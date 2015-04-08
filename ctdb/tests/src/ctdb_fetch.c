@@ -86,7 +86,7 @@ static void bench_fetch_1node(struct bench_data *bdata)
 	if (data.dsize == 0) {
 		data.dptr = (uint8_t *)talloc_asprintf(tmp_ctx, "Test data\n");
 	}
-	data.dptr = (uint8_t *)talloc_asprintf_append((char *)data.dptr, 
+	data.dptr = (uint8_t *)talloc_asprintf_append((char *)data.dptr,
 						      "msg_count=%d on node %d\n",
 						      bdata->msg_count,
 						      ctdb_get_pnn(ctdb));
