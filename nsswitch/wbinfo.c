@@ -1778,10 +1778,11 @@ static bool wbinfo_auth_crap(char *username, bool use_ntlmv2, bool use_lanman)
 
 /* Authenticate a user with a plaintext password */
 
-static bool wbinfo_pam_logon(char *username)
+static bool wbinfo_pam_logon(char *username, bool verbose)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
 	struct wbcLogonUserParams params;
+	struct wbcLogonUserInfo *info = NULL;
 	struct wbcAuthErrorInfo *error = NULL;
 	char *s = NULL;
 	char *p = NULL;
@@ -1826,7 +1827,45 @@ static bool wbinfo_pam_logon(char *username)
 		return false;
 	}
 
-	wbc_status = wbcLogonUser(&params, NULL, &error, NULL);
+	wbc_status = wbcLogonUser(&params, &info, &error, NULL);
+
+	if (verbose && (info != NULL)) {
+		struct wbcAuthUserInfo *i = info->info;
+
+		if (i->account_name != NULL) {
+			d_printf("account_name: %s\n", i->account_name);
+		}
+		if (i->user_principal != NULL) {
+			d_printf("user_principal: %s\n", i->user_principal);
+		}
+		if (i->full_name != NULL) {
+			d_printf("full_name: %s\n", i->full_name);
+		}
+		if (i->domain_name != NULL) {
+			d_printf("domain_name: %s\n", i->domain_name);
+		}
+		if (i->dns_domain_name != NULL) {
+			d_printf("dns_domain_name: %s\n", i->dns_domain_name);
+		}
+		if (i->logon_server != NULL) {
+			d_printf("logon_server: %s\n", i->logon_server);
+		}
+		if (i->logon_script != NULL) {
+			d_printf("logon_script: %s\n", i->logon_script);
+		}
+		if (i->profile_path != NULL) {
+			d_printf("profile_path: %s\n", i->profile_path);
+		}
+		if (i->home_directory != NULL) {
+			d_printf("home_directory: %s\n", i->home_directory);
+		}
+		if (i->home_drive != NULL) {
+			d_printf("home_drive: %s\n", i->home_drive);
+		}
+
+		wbcFreeMemory(info);
+		info = NULL;
+	}
 
 	wbcFreeMemory(params.blobs);
 
@@ -2566,7 +2605,7 @@ int main(int argc, const char **argv, char **envp)
 				break;
 			}
 		case OPT_PAM_LOGON:
-			if (!wbinfo_pam_logon(string_arg)) {
+			if (!wbinfo_pam_logon(string_arg, verbose)) {
 				d_fprintf(stderr, "pam_logon failed for %s\n",
 					  string_arg);
 				goto done;
