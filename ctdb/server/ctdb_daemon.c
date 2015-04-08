@@ -1561,7 +1561,8 @@ struct ctdb_local_message {
 	TDB_DATA data;
 };
 
-static void ctdb_local_message_trigger(struct event_context *ev, struct timed_event *te, 
+static void ctdb_local_message_trigger(struct event_context *ev,
+				       struct timed_event *te,
 				       struct timeval t, void *private_data)
 {
 	struct ctdb_local_message *m = talloc_get_type(

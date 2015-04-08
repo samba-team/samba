@@ -241,8 +241,8 @@ int main(int argc, const char *argv[])
 		exit(1);
 	}
 
-	ctdb_client_set_message_handler(ctdb, CTDB_SRVID_RECONFIGURE, reconfigure_handler, 
-				 &cluster_ready);
+	ctdb_client_set_message_handler(ctdb, CTDB_SRVID_RECONFIGURE,
+					reconfigure_handler, &cluster_ready);
 
 	/* attach to a specific database */
 	ctdb_db = ctdb_attach(ctdb, timeval_current_ofs(2, 0), "test.tdb",

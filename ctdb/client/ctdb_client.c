@@ -487,17 +487,20 @@ int ctdb_call(struct ctdb_db_context *ctdb_db, struct ctdb_call *call)
   tell the daemon what messaging srvid we will use, and register the message
   handler function in the client
 */
-int ctdb_client_set_message_handler(struct ctdb_context *ctdb, uint64_t srvid, 
-			     srvid_handler_fn handler,
-			     void *private_data)
+int ctdb_client_set_message_handler(struct ctdb_context *ctdb, uint64_t srvid,
+				    srvid_handler_fn handler,
+				    void *private_data)
 {
 	int res;
 	int32_t status;
 
-	res = ctdb_control(ctdb, CTDB_CURRENT_NODE, srvid, CTDB_CONTROL_REGISTER_SRVID, 0, 
+	res = ctdb_control(ctdb, CTDB_CURRENT_NODE, srvid,
+			   CTDB_CONTROL_REGISTER_SRVID, 0,
 			   tdb_null, NULL, NULL, &status, NULL, NULL);
 	if (res != 0 || status != 0) {
-		DEBUG(DEBUG_ERR,("Failed to register srvid %llu\n", (unsigned long long)srvid));
+		DEBUG(DEBUG_ERR,
+		      ("Failed to register srvid %llu\n",
+		       (unsigned long long)srvid));
 		return -1;
 	}
 
@@ -508,15 +511,19 @@ int ctdb_client_set_message_handler(struct ctdb_context *ctdb, uint64_t srvid,
 /*
   tell the daemon we no longer want a srvid
 */
-int ctdb_client_remove_message_handler(struct ctdb_context *ctdb, uint64_t srvid, void *private_data)
+int ctdb_client_remove_message_handler(struct ctdb_context *ctdb,
+				       uint64_t srvid, void *private_data)
 {
 	int res;
 	int32_t status;
 
-	res = ctdb_control(ctdb, CTDB_CURRENT_NODE, srvid, CTDB_CONTROL_DEREGISTER_SRVID, 0, 
+	res = ctdb_control(ctdb, CTDB_CURRENT_NODE, srvid,
+			   CTDB_CONTROL_DEREGISTER_SRVID, 0,
 			   tdb_null, NULL, NULL, &status, NULL, NULL);
 	if (res != 0 || status != 0) {
-		DEBUG(DEBUG_ERR,("Failed to deregister srvid %llu\n", (unsigned long long)srvid));
+		DEBUG(DEBUG_ERR,
+		      ("Failed to deregister srvid %llu\n",
+		       (unsigned long long)srvid));
 		return -1;
 	}
 
