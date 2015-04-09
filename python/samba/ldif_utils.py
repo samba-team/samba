@@ -20,27 +20,23 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import os, sys
+import os
 
-from samba import (
-    Ldb,
-    ldb,
-    dsdb,
-    read_and_sub_file,
-#    drs_utils,
-#    nttime2unix
-)
+from samba import Ldb, ldb, read_and_sub_file
 from samba.auth import system_session
 from samba.samdb import SamDB
 from samba.common import dsdb_Dn
 
+
 class LdifError(Exception):
     pass
+
 
 def write_search_result(samdb, f, res):
     for msg in res:
         lstr = samdb.write_ldif(msg, ldb.CHANGETYPE_NONE)
         f.write("%s" % lstr)
+
 
 def ldif_to_samdb(dburl, lp, creds, ldif_file, forced_local_dsa=None):
     """Routine to import all objects and attributes that are relevent
@@ -89,7 +85,8 @@ dsServiceName: CN=NTDS Settings,%s
     # modules only during this re-open
     samdb = SamDB(url=dburl, session_info=system_session(),
                   credentials=creds, lp=lp,
-                  options=["modules:rootdse,extended_dn_in,extended_dn_out_ldb"])
+                  options=["modules:rootdse,extended_dn_in,"
+                           "extended_dn_out_ldb"])
     return samdb
 
 
@@ -114,7 +111,7 @@ def samdb_to_ldif_file(samdb, dburl, lp, creds, ldif_file):
                       credentials=creds, lp=lp)
     except ldb.LdbError, (enum, estr):
         raise LdifError("Unable to open sam database (%s) : %s" %
-                         (dburl, estr))
+                        (dburl, estr))
 
     if os.path.exists(ldif_file):
         raise LdifError("Specify a file (%s) that doesn't already exist." %
@@ -127,17 +124,17 @@ def samdb_to_ldif_file(samdb, dburl, lp, creds, ldif_file):
 
     try:
         # Query Partitions
-        attrs = [ "objectClass",
-                  "objectGUID",
-                  "cn",
-                  "whenChanged",
-                  "objectSid",
-                  "Enabled",
-                  "systemFlags",
-                  "dnsRoot",
-                  "nCName",
-                  "msDS-NC-Replica-Locations",
-                  "msDS-NC-RO-Replica-Locations" ]
+        attrs = ["objectClass",
+                 "objectGUID",
+                 "cn",
+                 "whenChanged",
+                 "objectSid",
+                 "Enabled",
+                 "systemFlags",
+                 "dnsRoot",
+                 "nCName",
+                 "msDS-NC-Replica-Locations",
+                 "msDS-NC-RO-Replica-Locations"]
 
         sstr = "CN=Partitions,%s" % samdb.get_config_basedn()
         res = samdb.search(base=sstr, scope=ldb.SCOPE_SUBTREE,
@@ -148,14 +145,14 @@ def samdb_to_ldif_file(samdb, dburl, lp, creds, ldif_file):
         write_search_result(samdb, f, res)
 
         # Query cross reference container
-        attrs = [ "objectClass",
-                  "objectGUID",
-                  "cn",
-                  "whenChanged",
-                  "fSMORoleOwner",
-                  "systemFlags",
-                  "msDS-Behavior-Version",
-                  "msDS-EnabledFeature" ]
+        attrs = ["objectClass",
+                 "objectGUID",
+                 "cn",
+                 "whenChanged",
+                 "fSMORoleOwner",
+                 "systemFlags",
+                 "msDS-Behavior-Version",
+                 "msDS-EnabledFeature"]
 
         sstr = "CN=Partitions,%s" % samdb.get_config_basedn()
         res = samdb.search(base=sstr, scope=ldb.SCOPE_SUBTREE,
@@ -166,11 +163,11 @@ def samdb_to_ldif_file(samdb, dburl, lp, creds, ldif_file):
         write_search_result(samdb, f, res)
 
         # Query Sites
-        attrs = [ "objectClass",
-                  "objectGUID",
-                  "cn",
-                  "whenChanged",
-                  "systemFlags" ]
+        attrs = ["objectClass",
+                 "objectGUID",
+                 "cn",
+                 "whenChanged",
+                 "systemFlags"]
 
         sstr = "CN=Sites,%s" % samdb.get_config_basedn()
         sites = samdb.search(base=sstr, scope=ldb.SCOPE_SUBTREE,
@@ -184,14 +181,14 @@ def samdb_to_ldif_file(samdb, dburl, lp, creds, ldif_file):
         for msg in sites:
             sitestr = str(msg.dn)
 
-            attrs = [ "objectClass",
-                      "objectGUID",
-                      "cn",
-                      "whenChanged",
-                      "interSiteTopologyGenerator",
-                      "interSiteTopologyFailover",
-                      "schedule",
-                      "options" ]
+            attrs = ["objectClass",
+                     "objectGUID",
+                     "cn",
+                     "whenChanged",
+                     "interSiteTopologyGenerator",
+                     "interSiteTopologyFailover",
+                     "schedule",
+                     "options"]
 
             sstr = "CN=NTDS Site Settings,%s" % sitestr
             res = samdb.search(base=sstr, scope=ldb.SCOPE_BASE,
@@ -207,20 +204,20 @@ def samdb_to_ldif_file(samdb, dburl, lp, creds, ldif_file):
         for msg in sites:
             sstr = str(msg.dn)
 
-            ncattrs = [ "hasMasterNCs",
-                        "msDS-hasMasterNCs",
-                        "hasPartialReplicaNCs",
-                        "msDS-HasDomainNCs",
-                        "msDS-hasFullReplicaNCs",
-                        "msDS-HasInstantiatedNCs" ]
-            attrs = [ "objectClass",
-                        "objectGUID",
-                        "cn",
-                        "whenChanged",
-                        "invocationID",
-                        "options",
-                        "msDS-isRODC",
-                        "msDS-Behavior-Version" ]
+            ncattrs = ["hasMasterNCs",
+                       "msDS-hasMasterNCs",
+                       "hasPartialReplicaNCs",
+                       "msDS-HasDomainNCs",
+                       "msDS-hasFullReplicaNCs",
+                       "msDS-HasInstantiatedNCs"]
+            attrs = ["objectClass",
+                     "objectGUID",
+                     "cn",
+                     "whenChanged",
+                     "invocationID",
+                     "options",
+                     "msDS-isRODC",
+                     "msDS-Behavior-Version"]
 
             res = samdb.search(base=sstr, scope=ldb.SCOPE_SUBTREE,
                                attrs=attrs + ncattrs,
@@ -247,17 +244,17 @@ def samdb_to_ldif_file(samdb, dburl, lp, creds, ldif_file):
         for msg in sites:
             sstr = str(msg.dn)
 
-            attrs = [ "objectClass",
-                      "objectGUID",
-                      "cn",
-                      "whenChanged",
-                      "options",
-                      "whenCreated",
-                      "enabledConnection",
-                      "schedule",
-                      "transportType",
-                      "fromServer",
-                      "systemFlags" ]
+            attrs = ["objectClass",
+                     "objectGUID",
+                     "cn",
+                     "whenChanged",
+                     "options",
+                     "whenCreated",
+                     "enabledConnection",
+                     "schedule",
+                     "transportType",
+                     "fromServer",
+                     "systemFlags"]
 
             res = samdb.search(base=sstr, scope=ldb.SCOPE_SUBTREE,
                                attrs=attrs,
@@ -265,16 +262,15 @@ def samdb_to_ldif_file(samdb, dburl, lp, creds, ldif_file):
             # Write NTDS Connection output
             write_search_result(samdb, f, res)
 
-
         # Query Intersite transports
-        attrs = [ "objectClass",
-                  "objectGUID",
-                  "cn",
-                  "whenChanged",
-                  "options",
-                  "name",
-                  "bridgeheadServerListBL",
-                  "transportAddressAttribute" ]
+        attrs = ["objectClass",
+                 "objectGUID",
+                 "cn",
+                 "whenChanged",
+                 "options",
+                 "name",
+                 "bridgeheadServerListBL",
+                 "transportAddressAttribute"]
 
         sstr = "CN=Inter-Site Transports,CN=Sites,%s" % \
                samdb.get_config_basedn()
@@ -286,16 +282,16 @@ def samdb_to_ldif_file(samdb, dburl, lp, creds, ldif_file):
         write_search_result(samdb, f, res)
 
         # Query siteLink
-        attrs = [ "objectClass",
-                  "objectGUID",
-                  "cn",
-                  "whenChanged",
-                  "systemFlags",
-                  "options",
-                  "schedule",
-                  "replInterval",
-                  "siteList",
-                  "cost" ]
+        attrs = ["objectClass",
+                 "objectGUID",
+                 "cn",
+                 "whenChanged",
+                 "systemFlags",
+                 "options",
+                 "schedule",
+                 "replInterval",
+                 "siteList",
+                 "cost"]
 
         sstr = "CN=Sites,%s" % \
                samdb.get_config_basedn()
@@ -308,27 +304,27 @@ def samdb_to_ldif_file(samdb, dburl, lp, creds, ldif_file):
         write_search_result(samdb, f, res)
 
         # Query siteLinkBridge
-        attrs = [ "objectClass",
-                  "objectGUID",
-                  "cn",
-                  "whenChanged",
-                  "siteLinkList" ]
+        attrs = ["objectClass",
+                 "objectGUID",
+                 "cn",
+                 "whenChanged",
+                 "siteLinkList"]
 
         sstr = "CN=Sites,%s" % samdb.get_config_basedn()
         res = samdb.search(sstr, scope=ldb.SCOPE_SUBTREE,
-                                 attrs=attrs,
-                                 expression="(objectClass=siteLinkBridge)")
+                           attrs=attrs,
+                           expression="(objectClass=siteLinkBridge)")
 
         # Write siteLinkBridge output
         write_search_result(samdb, f, res)
 
         # Query servers containers
         # Needed for samdb.server_site_name()
-        attrs = [ "objectClass",
-                  "objectGUID",
-                  "cn",
-                  "whenChanged",
-                  "systemFlags" ]
+        attrs = ["objectClass",
+                 "objectGUID",
+                 "cn",
+                 "whenChanged",
+                 "systemFlags"]
 
         sstr = "CN=Sites,%s" % samdb.get_config_basedn()
         res = samdb.search(sstr, scope=ldb.SCOPE_SUBTREE,
@@ -342,13 +338,13 @@ def samdb_to_ldif_file(samdb, dburl, lp, creds, ldif_file):
         # Needed because some transport interfaces refer back to
         # attributes found in the server object.   Also needed
         # so extended-dn will be happy with dsServiceName in rootDSE
-        attrs = [ "objectClass",
-                  "objectGUID",
-                  "cn",
-                  "whenChanged",
-                  "systemFlags",
-                  "dNSHostName",
-                  "mailAddress" ]
+        attrs = ["objectClass",
+                 "objectGUID",
+                 "cn",
+                 "whenChanged",
+                 "systemFlags",
+                 "dNSHostName",
+                 "mailAddress"]
 
         sstr = "CN=Sites,%s" % samdb.get_config_basedn()
         res = samdb.search(sstr, scope=ldb.SCOPE_SUBTREE,
@@ -359,15 +355,15 @@ def samdb_to_ldif_file(samdb, dburl, lp, creds, ldif_file):
         write_search_result(samdb, f, res)
 
         # Query Naming Context replicas
-        attrs = [ "objectClass",
-                  "objectGUID",
-                  "cn",
-                  "whenChanged",
-                  "objectSid",
-                  "fSMORoleOwner",
-                  "msDS-Behavior-Version",
-                  "repsFrom",
-                  "repsTo" ]
+        attrs = ["objectClass",
+                 "objectGUID",
+                 "cn",
+                 "whenChanged",
+                 "objectSid",
+                 "fSMORoleOwner",
+                 "msDS-Behavior-Version",
+                 "repsFrom",
+                 "repsTo"]
 
         for sstr in nclist:
             res = samdb.search(sstr, scope=ldb.SCOPE_BASE,
@@ -377,15 +373,15 @@ def samdb_to_ldif_file(samdb, dburl, lp, creds, ldif_file):
             write_search_result(samdb, f, res)
 
         # Query rootDSE replicas
-        attrs=[ "objectClass",
-                "objectGUID",
-                "cn",
-                "whenChanged",
-                "rootDomainNamingContext",
-                "configurationNamingContext",
-                "schemaNamingContext",
-                "defaultNamingContext",
-                "dsServiceName" ]
+        attrs = ["objectClass",
+                 "objectGUID",
+                 "cn",
+                 "whenChanged",
+                 "rootDomainNamingContext",
+                 "configurationNamingContext",
+                 "schemaNamingContext",
+                 "defaultNamingContext",
+                 "dsServiceName"]
 
         sstr = ""
         res = samdb.search(sstr, scope=ldb.SCOPE_BASE,
