@@ -120,6 +120,18 @@ def verify_graph_connected(edges, vertices, edge_vertices):
                             (sorted(vertices), sorted(edges)))
 
 
+def verify_graph_connected_under_edge_failures(edges, vertices, edge_vertices):
+    """The graph stays connected when any single edge is removed."""
+    for subset in itertools.combinations(edges, len(edges) - 1):
+        verify_graph_connected(edges, vertices, edge_vertices)
+
+
+def verify_graph_connected_under_vertex_failures(edges, vertices, edge_vertices):
+    """The graph stays connected when any single vertex is removed."""
+    for v in vertices:
+        sub_vertices = [x for x in vertices if x is not v]
+        sub_edges = [x for x in edges if v not in x]
+        verify_graph_connected(sub_edges, sub_vertices, sub_vertices)
 
 def verify_graph_forest(edges, vertices, edge_vertices):
     """The graph contains no loops. A forest that is also connected is a
@@ -203,8 +215,7 @@ def verify_graph_directed_double_ring(edges, vertices, edge_vertices):
     So far we check for:
       - leaf nodes
       - disjoint subgraphs
-
-    But, for example, a figure-8 topology will not be found.
+      - robustness against edge and vertex failure
     """
     # a zero or one node graph is OK with no edges.
     # The two vertex case is special. Use
@@ -265,8 +276,17 @@ def verify_graph_directed_double_ring(edges, vertices, edge_vertices):
                          "(%s can't reach each other)" %
                          ', '.join(edge_map.keys()))
 
+    verify_graph_connected_under_edge_failures(duplex_links, vertices,
+                                               edge_vertices)
+    verify_graph_connected_under_vertex_failures(duplex_links, vertices,
+                                                 edge_vertices)
+
+
 
 def verify_graph_directed_double_ring_or_small(edges, vertices, edge_vertices):
+    """This performs the directed_double_ring test but makes special
+    concessions for small rings where the strict rules don't really
+    apply."""
     if len(vertices) < 2:
         return
     if len(vertices) == 2:
@@ -342,11 +362,12 @@ def verify_and_dot(basename, edges, vertices=None, label=None, destdir=None,
                        edge_colors=edge_colors, edge_labels=edge_labels,
                        vertex_colors=vertex_colors)
 
+
 def list_verify_tests():
     for k, v in sorted(globals().items()):
         if k.startswith('verify_graph_'):
             print k.replace('verify_graph_', '')
             if v.__doc__:
-                print '    %s%s%s' %(GREY, v.__doc__, C_NORMAL)
+                print '    %s%s%s' %(GREY, v.__doc__.rstrip(), C_NORMAL)
             else:
                 print
