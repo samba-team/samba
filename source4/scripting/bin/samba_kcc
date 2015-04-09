@@ -2173,7 +2173,7 @@ class KCC(object):
                     dot_edges.append((v2, v1.dsa_dnstr))
                     dot_vertices.add(v2)
 
-            verify_properties = ('connected', 'directed_double_ring')
+            verify_properties = ('connected', 'directed_double_ring_or_small')
             verify_and_dot('intrasite_pre_ntdscon', dot_edges, dot_vertices,
                            label='%s__%s__%s' % (site_local.site_dnstr,
                                                  nctype_lut[nc_x.nc_type],

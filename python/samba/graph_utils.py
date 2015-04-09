@@ -197,59 +197,86 @@ def verify_graph_directed_double_ring(edges, vertices, edge_vertices):
     touches every vertex and form a loop.
 
     There might be other connections that *aren't* part of the ring.
+
+    Deciding this for sure is NP-complete (the Hamiltonian path
+    problem), but there are some easy failures that can be detected.
+    So far we check for:
+      - leaf nodes
+      - disjoint subgraphs
+
+    But, for example, a figure-8 topology will not be found.
     """
-    #XXX 1 and 2 vertex cases are special cases.
-    if not edges:
+    # a zero or one node graph is OK with no edges.
+    # The two vertex case is special. Use
+    # verify_graph_directed_double_ring_or_small() to allow that.
+    if not edges and len(vertices) <= 1:
         return
     if len(edges) < 2 * len(vertices):
-        raise GraphError("directed double ring requires at least twice as many edges as vertices")
+        raise GraphError("directed double ring requires at least twice "
+                         "as many edges as vertices")
 
-    exits = {}
-    for start, end in edges:
-        s = exits.setdefault(start, [])
-        s.append(end)
+    # Reduce the problem space by looking only at bi-directional links.
+    half_duplex = set(edges)
+    duplex_links = set()
+    for edge in edges:
+        rev_edge = (edge[1], edge[0])
+        if edge in half_duplex and rev_edge in half_duplex:
+            duplex_links.add(edge)
+            half_duplex.remove(edge)
+            half_duplex.remove(rev_edge)
 
-    try:
-        #follow both paths at once -- they should be the same length
-        #XXX there is probably a simpler way.
-        forwards, backwards = exits[start]
-        fprev, bprev = (start, start)
-        f_path = [start]
-        b_path = [start]
-        for i in range(len(vertices)):
-            a, b = exits[forwards]
-            if a == fprev:
-                fnext = b
-            else:
-                fnext = a
-            f_path.append(forwards)
-            fprev = forwards
-            forwards = fnext
+    # the Hamiltonian cycle problem is NP-complete in general, but we
+    # can cheat a bit and prove a less strong result.
+    #
+    # We declutter the graph by replacing nodes with edges connecting
+    # their neighbours.
+    #
+    #       A-B-C --> A-C
+    #
+    #    -A-B-C-   -->  -A--C-
+    #       `D_           `D'_
+    #
+    # In the end there should be a single 2 vertex graph.
 
-            a, b = exits[backwards]
-            if a == bprev:
-                bnext = b
-            else:
-                bnext = a
-            b_path.append(backwards)
-            bprev = backwards
-            backwards = bnext
+    edge_map = {}
+    for a, b in duplex_links:
+        edge_map.setdefault(a, set()).add(b)
+        edge_map.setdefault(b, set()).add(a)
 
-    except ValueError, e:
-        raise GraphError("wrong number of exits '%s'" % e)
+    # an easy to detect failure is a lonely leaf node
+    for vertex, neighbours in edge_map.items():
+        if len(neighbours) == 1:
+            raise GraphError("wanted double directed ring, found a leaf node"
+                             "(%s)" % vertex)
 
-    f_set = set(f_path)
-    b_set = set(b_path)
+    for vertex in edge_map.keys():
+        nset = edge_map[vertex]
+        if not nset:
+            continue
+        for n in nset:
+            n_neighbours = edge_map[n]
+            n_neighbours.remove(vertex)
+            n_neighbours.update(x for x in nset if x != n)
+        del edge_map[vertex]
 
-    if (f_path != list(reversed(b_path)) or
-        len(f_path) != len(f_set) + 1 or
-        len(f_set) != len(vertices)):
-        raise GraphError("doesn't seem like a double ring to me!")
+    if len(edge_map) > 1:
+        raise GraphError("wanted double directed ring, but "
+                         "this looks like a split graph\n"
+                         "(%s can't reach each other)" %
+                         ', '.join(edge_map.keys()))
 
 
 def verify_graph_directed_double_ring_or_small(edges, vertices, edge_vertices):
-    if len(vertices) < 3:
+    if len(vertices) < 2:
         return
+    if len(vertices) == 2:
+        """With 2 nodes there should be a single link in each directions."""
+        if (len(edges) == 2 and
+            edges[0][0] == edges[1][1] and
+            edges[0][1] == edges[1][0]):
+            return
+        raise GraphError("A two vertex graph should have an edge each way.")
+
     return verify_graph_directed_double_ring(edges, vertices, edge_vertices)
 
 
