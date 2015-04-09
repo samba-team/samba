@@ -48,10 +48,8 @@ from functools import partial
 
 from samba import (
     getopt as options,
-    Ldb,
     ldb,
     dsdb,
-    read_and_sub_file,
     drs_utils,
     nttime2unix)
 from samba.auth import system_session
@@ -414,6 +412,7 @@ class KCC(object):
                 continue
 
             # Get the source DSA no matter what site
+            # XXX s_dsa is NEVER USED. It will be removed.
             s_dsa = self.get_dsa(s_dnstr)
 
             #XXX should an RODC be regarded as same site
@@ -837,7 +836,6 @@ class KCC(object):
         s_dsa = None
 
         if cn_conn.is_enabled() and not cn_conn.is_rodc_topology():
-
             s_dnstr = cn_conn.get_from_dnstr()
             if s_dnstr is not None:
                 s_dsa = self.get_dsa(s_dnstr)
@@ -1251,7 +1249,7 @@ class KCC(object):
                 msg = res[0]
                 if transport.address_attr not in msg:
                     continue
-
+                #XXX nastr is NEVER USED. It will be removed.
                 nastr = str(msg[transport.address_attr][0])
 
             # IF BridgeheadDCFailed(dc!objectGUID, detectFailedDCs) = TRUE
@@ -1797,7 +1795,6 @@ class KCC(object):
                     self.create_connections(graph, part, False)
 
         return all_connected
-
 
     def intersite(self):
         """The head method for generating the inter-site KCC replica
@@ -2473,15 +2470,18 @@ class KCC(object):
 
             if forget_local_links:
                 for dsa in self.my_site.dsa_table.values():
-                    dsa.connect_table = {k:v for k, v in dsa.connect_table.items()
+                    dsa.connect_table = {k: v for k, v in
+                                         dsa.connect_table.items()
                                          if v.is_rodc_topology()}
                 self.plot_all_connections('dsa_forgotten_local')
 
             if forget_intersite_links:
                 for site in self.site_table.values():
                     for dsa in site.dsa_table.values():
-                        dsa.connect_table = {k:v for k, v in dsa.connect_table.items()
-                                             if site is self.my_site and v.is_rodc_topology()}
+                        dsa.connect_table = {k: v for k, v in
+                                             dsa.connect_table.items()
+                                             if site is self.my_site and
+                                             v.is_rodc_topology()}
 
                 self.plot_all_connections('dsa_forgotten_all')
             # These are the published steps (in order) for the
@@ -2712,7 +2712,7 @@ def get_spanning_tree_edges(graph, my_site, label=None):
         graph_edges.extend([x.site.site_dnstr
                             for x in reversed(e.vertices)]
                            for e in edge_list if not e.directed)
-        graph_nodes = [v.site.site_dnstr for v in graph.vertices]
+        graph_nodes = [x.site.site_dnstr for x in graph.vertices]
         verify_properties = ()
         verify_and_dot('post-one-way-partial', graph_edges, graph_nodes,
                        label=label, properties=verify_properties,
@@ -2957,6 +2957,7 @@ def kruskal(graph, edges):
     # Sorted based on internal comparison function of internal edge
     edges.sort()
 
+    #XXX expected_num_tree_edges is never used
     expected_num_tree_edges = 0  # TODO this value makes little sense
 
     count_edges = 0
@@ -3059,7 +3060,8 @@ def test_all_reps_from(lp, creds, rng_seed=None):
                 if dsa.connect_table:
                     DEBUG_FN("DSA %s %s connections:\n%s" %
                              (dsa.dsa_dnstr, len(dsa.connect_table),
-                              [x.from_dnstr for x in dsa.connect_table.values()]))
+                              [x.from_dnstr for x in
+                               dsa.connect_table.values()]))
                 for con in dsa.connect_table.values():
                     if con.is_rodc_topology():
                         colours.append('red')
