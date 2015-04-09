@@ -18,35 +18,36 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import sys
 import itertools
 
 #colours for prettier logs
-C_NORMAL  = "\033[00m"
-DARK_RED  = "\033[00;31m"
+C_NORMAL = "\033[00m"
+DARK_RED = "\033[00;31m"
 RED = "\033[01;31m"
-DARK_GREEN  = "\033[00;32m"
-GREEN  = "\033[01;32m"
-YELLOW  = "\033[01;33m"
-DARK_YELLOW  = "\033[00;33m"
-DARK_BLUE  = "\033[00;34m"
-BLUE  = "\033[01;34m"
-PURPLE  = "\033[00;35m"
-MAGENTA  = "\033[01;35m"
-DARK_CYAN  = "\033[00;36m"
-CYAN  = "\033[01;36m"
-GREY  = "\033[00;37m"
-WHITE  = "\033[01;37m"
+DARK_GREEN = "\033[00;32m"
+GREEN = "\033[01;32m"
+YELLOW = "\033[01;33m"
+DARK_YELLOW = "\033[00;33m"
+DARK_BLUE = "\033[00;34m"
+BLUE = "\033[01;34m"
+PURPLE = "\033[00;35m"
+MAGENTA = "\033[01;35m"
+DARK_CYAN = "\033[00;36m"
+CYAN = "\033[01;36m"
+GREY = "\033[00;37m"
+WHITE = "\033[01;37m"
 REV_RED = "\033[01;41m"
 
 
-def write_dot_file(basename, edge_list, vertices=None, label=None, destdir=None,
-                   reformat_labels=True, directed=False, debug=None, edge_colors=None,
-                   edge_labels=None, vertex_colors=None):
+def write_dot_file(basename, edge_list, vertices=None, label=None,
+                   destdir=None, reformat_labels=True, directed=False,
+                   debug=None, edge_colors=None, edge_labels=None,
+                   vertex_colors=None):
     from tempfile import NamedTemporaryFile
     if label:
-        basename += '_' + label.translate(None, ', ') #fix DN, guid labels
-    f = NamedTemporaryFile(suffix='.dot', prefix=basename + '_', delete=False, dir=destdir)
+        basename += '_' + label.translate(None, ', ')  # fix DN, guid labels
+    f = NamedTemporaryFile(suffix='.dot', prefix=basename + '_', delete=False,
+                           dir=destdir)
     if debug is not None:
         debug(f.name)
     graphname = ''.join(x for x in basename if x.isalnum())
@@ -72,9 +73,9 @@ def write_dot_file(basename, edge_list, vertices=None, label=None, destdir=None,
     f.close()
 
 
-
 class GraphError(Exception):
     pass
+
 
 def verify_graph_complete(edges, vertices, edge_vertices):
     """The graph is complete, which is to say there is an edge between
@@ -95,8 +96,9 @@ def verify_graph_connected(edges, vertices, edge_vertices):
     if not edges:
         if len(vertices) <= 1:
             return
-        raise GraphError("disconnected vertices were found:\nvertices: %s\n edges: %s" %
-                            (sorted(vertices), sorted(edges)))
+        raise GraphError("disconnected vertices were found:\n"
+                         "vertices: %s\n edges: %s" %
+                         (sorted(vertices), sorted(edges)))
 
     remaining_edges = list(edges)
     reached = set(remaining_edges.pop())
@@ -117,7 +119,7 @@ def verify_graph_connected(edges, vertices, edge_vertices):
 
     if remaining_edges or reached != vertices:
         raise GraphError("graph is not connected:\nvertices: %s\n edges: %s" %
-                            (sorted(vertices), sorted(edges)))
+                         (sorted(vertices), sorted(edges)))
 
 
 def verify_graph_connected_under_edge_failures(edges, vertices, edge_vertices):
@@ -126,12 +128,14 @@ def verify_graph_connected_under_edge_failures(edges, vertices, edge_vertices):
         verify_graph_connected(edges, vertices, edge_vertices)
 
 
-def verify_graph_connected_under_vertex_failures(edges, vertices, edge_vertices):
+def verify_graph_connected_under_vertex_failures(edges, vertices,
+                                                 edge_vertices):
     """The graph stays connected when any single vertex is removed."""
     for v in vertices:
         sub_vertices = [x for x in vertices if x is not v]
         sub_edges = [x for x in edges if v not in x]
         verify_graph_connected(sub_edges, sub_vertices, sub_vertices)
+
 
 def verify_graph_forest(edges, vertices, edge_vertices):
     """The graph contains no loops. A forest that is also connected is a
@@ -155,6 +159,7 @@ def verify_graph_forest(edges, vertices, edge_vertices):
             # forest by len(trees) but the connected test already
             # tells us that.
             return
+
 
 def verify_graph_multi_edge_forest(edges, vertices, edge_vertices):
     """This allows a forest with duplicate edges. That is if multiple
@@ -192,14 +197,16 @@ def verify_graph_no_lonely_vertices(edges, vertices, edge_vertices):
     """There are no vertices without edges."""
     lonely = vertices - edge_vertices
     if lonely:
-        raise GraphError("some vertices are not connected:\n%s" % '\n'.join(sorted(lonely)))
+        raise GraphError("some vertices are not connected:\n%s" %
+                         '\n'.join(sorted(lonely)))
 
 
 def verify_graph_no_unknown_vertices(edges, vertices, edge_vertices):
     """The edge endpoints contain no vertices that are otherwise unknown."""
     unknown = edge_vertices - vertices
     if unknown:
-        raise GraphError("some edge vertices are seemingly unknown:\n%s" % '\n'.join(sorted(unknown)))
+        raise GraphError("some edge vertices are seemingly unknown:\n%s" %
+                         '\n'.join(sorted(unknown)))
 
 
 def verify_graph_directed_double_ring(edges, vertices, edge_vertices):
@@ -282,7 +289,6 @@ def verify_graph_directed_double_ring(edges, vertices, edge_vertices):
                                                  edge_vertices)
 
 
-
 def verify_graph_directed_double_ring_or_small(edges, vertices, edge_vertices):
     """This performs the directed_double_ring test but makes special
     concessions for small rings where the strict rules don't really
@@ -300,14 +306,15 @@ def verify_graph_directed_double_ring_or_small(edges, vertices, edge_vertices):
     return verify_graph_directed_double_ring(edges, vertices, edge_vertices)
 
 
-
-def verify_graph(title, edges, vertices=None, directed=False, properties=(), fatal=True,
-                 debug=None):
+def verify_graph(title, edges, vertices=None, directed=False, properties=(),
+                 fatal=True, debug=None):
     errors = []
     if debug is None:
-        def debug(*args): pass
+        def debug(*args):
+            pass
 
-    debug("%sStarting verify_graph for %s%s%s" % (PURPLE, MAGENTA, title, C_NORMAL))
+    debug("%sStarting verify_graph for %s%s%s" % (PURPLE, MAGENTA, title,
+                                                  C_NORMAL))
 
     properties = [x.replace(' ', '_') for x in properties]
 
@@ -338,29 +345,29 @@ def verify_graph(title, edges, vertices=None, directed=False, properties=(), fat
 
     if errors:
         if fatal:
-            raise GraphError("The '%s' graph lacks the following properties:\n%s" %
-                                (title, '\n'.join('%s: %s' % x for x in errors)))
+            raise GraphError("The '%s' graph lacks the following properties:"
+                             "\n%s" %
+                             (title, '\n'.join('%s: %s' % x for x in errors)))
         debug(("%s%s%s FAILED:" % (MAGENTA, title, RED)))
         for p, e in errors:
-            debug(" %18s: %s%s%s" %(p, DARK_YELLOW, e, RED))
+            debug(" %18s: %s%s%s" % (p, DARK_YELLOW, e, RED))
         debug(C_NORMAL)
 
 
-
 def verify_and_dot(basename, edges, vertices=None, label=None, destdir=None,
-                   reformat_labels=True, directed=False, properties=(), fatal=True,
-                   debug=None, verify=True, dot_files=False, edge_colors=None,
-                   edge_labels=None, vertex_colors=None):
+                   reformat_labels=True, directed=False, properties=(),
+                   fatal=True, debug=None, verify=True, dot_files=False,
+                   edge_colors=None, edge_labels=None, vertex_colors=None):
 
     title = '%s %s' % (basename, label or '')
     if verify:
-        verify_graph(title, edges, vertices, properties=properties, fatal=fatal,
-                     debug=debug)
+        verify_graph(title, edges, vertices, properties=properties,
+                     fatal=fatal, debug=debug)
     if dot_files:
-        write_dot_file(basename, edges, vertices=vertices, label=label, destdir=destdir,
-                       reformat_labels=reformat_labels, directed=directed, debug=debug,
-                       edge_colors=edge_colors, edge_labels=edge_labels,
-                       vertex_colors=vertex_colors)
+        write_dot_file(basename, edges, vertices=vertices, label=label,
+                       destdir=destdir, reformat_labels=reformat_labels,
+                       directed=directed, debug=debug, edge_colors=edge_colors,
+                       edge_labels=edge_labels, vertex_colors=vertex_colors)
 
 
 def list_verify_tests():
@@ -368,6 +375,6 @@ def list_verify_tests():
         if k.startswith('verify_graph_'):
             print k.replace('verify_graph_', '')
             if v.__doc__:
-                print '    %s%s%s' %(GREY, v.__doc__.rstrip(), C_NORMAL)
+                print '    %s%s%s' % (GREY, v.__doc__.rstrip(), C_NORMAL)
             else:
                 print
