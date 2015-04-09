@@ -22,9 +22,6 @@
 
 import ldb
 import uuid
-import time
-import sys
-import itertools
 
 from samba import dsdb, unix2nttime
 from samba.dcerpc import (
@@ -68,15 +65,15 @@ class NamingContext(object):
         '''Debug dump string output of class'''
         text = "%s:" % (self.__class__.__name__,)
         text = text + "\n\tnc_dnstr=%s" % self.nc_dnstr
-        text = text + "\n\tnc_guid=%s"  % str(self.nc_guid)
+        text = text + "\n\tnc_guid=%s" % str(self.nc_guid)
 
         if self.nc_sid is None:
             text = text + "\n\tnc_sid=<absent>"
         else:
             text = text + "\n\tnc_sid=<present>"
 
-        text = text + "\n\tnc_type=%s (%s)"  % (nctype_lut[self.nc_type],
-                                                self.nc_type)
+        text = text + "\n\tnc_type=%s (%s)" % (nctype_lut[self.nc_type],
+                                               self.nc_type)
         return text
 
     def load_nc(self, samdb):
@@ -212,12 +209,12 @@ class NCReplica(NamingContext):
     def __str__(self):
         '''Debug dump string output of class'''
         text = "%s:" % self.__class__.__name__
-        text = text + "\n\tdsa_dnstr=%s"       % self.rep_dsa_dnstr
-        text = text + "\n\tdsa_guid=%s"        % str(self.rep_dsa_guid)
-        text = text + "\n\tdefault=%s"         % self.rep_default
-        text = text + "\n\tro=%s"              % self.rep_ro
-        text = text + "\n\tpartial=%s"         % self.rep_partial
-        text = text + "\n\tpresent=%s"         % self.is_present()
+        text = text + "\n\tdsa_dnstr=%s" % self.rep_dsa_dnstr
+        text = text + "\n\tdsa_guid=%s" % self.rep_dsa_guid
+        text = text + "\n\tdefault=%s" % self.rep_default
+        text = text + "\n\tro=%s" % self.rep_ro
+        text = text + "\n\tpartial=%s" % self.rep_partial
+        text = text + "\n\tpresent=%s" % self.is_present()
         text = text + "\n\tfsmo_role_owner=%s" % self.rep_fsmo_role_owner
 
         for rep in self.rep_repsFrom:
@@ -493,9 +490,9 @@ class DirectoryServiceAgent(object):
         if self.dsa_dnstr is not None:
             text = text + "\n\tdsa_dnstr=%s" % self.dsa_dnstr
         if self.dsa_guid is not None:
-            text = text + "\n\tdsa_guid=%s"  % str(self.dsa_guid)
+            text = text + "\n\tdsa_guid=%s" % str(self.dsa_guid)
         if self.dsa_ivid is not None:
-            text = text + "\n\tdsa_ivid=%s"  % str(self.dsa_ivid)
+            text = text + "\n\tdsa_ivid=%s" % str(self.dsa_ivid)
 
         text = text + "\n\tro=%s" % self.is_ro()
         text = text + "\n\tgc=%s" % self.is_gc()
@@ -1040,6 +1037,7 @@ class NTDSConnection(object):
         # First verify we have this entry to ensure nothing
         # is programatically amiss
         try:
+            #XXX msg is never used
             msg = samdb.search(base=self.dnstr, scope=ldb.SCOPE_BASE)
             found = True
 
@@ -1659,10 +1657,10 @@ class Site(object):
     def __str__(self):
         '''Debug dump string output of class'''
         text = "%s:" % self.__class__.__name__
-        text = text + "\n\tdn=%s"             % self.site_dnstr
-        text = text + "\n\toptions=0x%X"      % self.site_options
+        text = text + "\n\tdn=%s" % self.site_dnstr
+        text = text + "\n\toptions=0x%X" % self.site_options
         text = text + "\n\ttopo_generator=%s" % self.site_topo_generator
-        text = text + "\n\ttopo_failover=%d"  % self.site_topo_failover
+        text = text + "\n\ttopo_failover=%d" % self.site_topo_failover
         for key, dsa in self.dsa_table.items():
             text = text + "\n%s" % dsa
         return text
