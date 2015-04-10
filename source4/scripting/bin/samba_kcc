@@ -881,20 +881,25 @@ class KCC(object):
         else:
             return False, None
 
-    def translate_ntdsconn(self):
+    def translate_ntdsconn(self, current_dsa=None):
         """This function adjusts values of repsFrom abstract attributes of NC
         replicas on the local DC to match those implied by
         nTDSConnection objects.
         [MS-ADTS] 6.2.2.5
         """
-        if self.my_dsa.is_translate_ntdsconn_disabled():
+        count = 0
+
+        if current_dsa is None:
+            current_dsa = self.my_dsa
+
+        if current_dsa.is_translate_ntdsconn_disabled():
             logger.debug("skipping translate_ntdsconn() "
                          "because disabling flag is set")
             return
 
         logger.debug("translate_ntdsconn(): enter")
 
-        current_rep_table, needed_rep_table = self.my_dsa.get_rep_tables()
+        current_rep_table, needed_rep_table = current_dsa.get_rep_tables()
 
         # Filled in with replicas we currently have that need deleting
         delete_reps = set()
@@ -959,7 +964,15 @@ class KCC(object):
                 # Retrieve my DSAs connection object (if it exists)
                 # that specifies the fromServer equivalent to
                 # the DSA that is specified in the repsFrom source
-                cn_conn = self.my_dsa.get_connection_by_from_dnstr(s_dnstr)
+                connections = current_dsa.get_connection_by_from_dnstr(s_dnstr)
+
+                count = 0
+                cn_conn = None
+
+                for con in connections:
+                    if con.is_rodc_topology():
+                        continue
+                    cn_conn = con
 
                 # Let (cn) be the nTDSConnection object such that (cn)
                 # is a child of the local DC's nTDSDSA object and
@@ -972,7 +985,7 @@ class KCC(object):
                 #     [...]
 
                 #XXX varying possible interpretations of rodc_topology
-                if cn_conn is None or cn_conn.is_rodc_topology():
+                if cn_conn is None:
                     t_repsFrom.to_be_deleted = True
                     continue
 
@@ -998,7 +1011,7 @@ class KCC(object):
             # Loop thru connections and add implied repsFrom tuples
             # for each NTDSConnection under our local DSA if the
             # repsFrom is not already present
-            for cn_conn in self.my_dsa.connect_table.values():
+            for cn_conn in current_dsa.connect_table.values():
 
                 implied, s_dsa = self.is_repsFrom_implied(n_rep, cn_conn)
                 if not implied:
@@ -1010,7 +1023,7 @@ class KCC(object):
                 # to have the correct attributes above
                 for t_repsFrom in n_rep.rep_repsFrom:
                     guidstr = str(t_repsFrom.source_dsa_obj_guid)
-                    #XXXX what?
+                    #XXX what?
                     if s_dsa is self.get_dsa_by_guidstr(guidstr):
                         s_dsa = None
                         break

@@ -750,11 +750,12 @@ class DirectoryServiceAgent(object):
 
         :param from_dnstr: search for this from server entry
         """
-        #XXX is this connection always unique?
+        answer = []
         for connect in self.connect_table.values():
             if connect.get_from_dnstr() == from_dnstr:
-                return connect
-        return None
+                answer.append(connect)
+
+        return answer
 
     def dumpstr_current_replica_table(self):
         '''Debug dump string output of current replica table'''
@@ -1725,7 +1726,7 @@ class GraphNode(object):
            is a corresponding nTDSConnection object in the dsa.
         """
         for edge_dnstr in self.edge_from:
-            connect = dsa.get_connection_by_from_dnstr(edge_dnstr)
+            connections = dsa.get_connection_by_from_dnstr(edge_dnstr)
 
             # For each edge directed to the NC replica that
             # "should be present" on the local DC, the KCC determines
@@ -1739,8 +1740,16 @@ class GraphNode(object):
             #    the DC on which ri "is present".
             #
             #    c.options does not contain NTDSCONN_OPT_RODC_TOPOLOGY
-            if connect and not connect.is_rodc_topology():
+
+            found_valid = False
+            for connect in connections:
+                if connect.is_rodc_topology():
+                    continue
+                found_valid = True
+
+            if found_valid:
                 continue
+
             # if no such object exists then the KCC adds an object
             # c with the following attributes
 
