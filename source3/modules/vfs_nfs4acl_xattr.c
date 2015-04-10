@@ -344,11 +344,15 @@ static SMB4ACL_T *nfs4acls_defaultacl(TALLOC_CTX *mem_ctx)
 {
 	SMB4ACL_T *pacl = NULL;
 	SMB4ACE_T *pace;
-	SMB_ACE4PROP_T ace = { SMB_ACE4_ID_SPECIAL,
-		SMB_ACE4_WHO_EVERYONE,
-		SMB_ACE4_ACCESS_ALLOWED_ACE_TYPE,
-		0,
-		SMB_ACE4_ALL_MASKS };
+	SMB_ACE4PROP_T ace = {
+		.flags = SMB_ACE4_ID_SPECIAL,
+		.who = {
+			.id = SMB_ACE4_WHO_EVERYONE,
+		},
+		.aceType = SMB_ACE4_ACCESS_ALLOWED_ACE_TYPE,
+		.aceFlags = 0,
+		.aceMask = SMB_ACE4_ALL_MASKS,
+	};
 
 	DEBUG(10, ("Building default full access acl\n"));
 
@@ -467,8 +471,8 @@ static SMB4ACL_T *nfs4acls_inheritacl(vfs_handle_struct *handle,
 	     pace = smb_next_ace4(pace)) {
 		SMB4ACE_T *pchildace;
 		ace = *smb_get_ace4(pace);
-		if (isdir && !(ace.aceFlags & SMB_ACE4_DIRECTORY_INHERIT_ACE)
-		    || !isdir && !(ace.aceFlags & SMB_ACE4_FILE_INHERIT_ACE)) {
+		if ((isdir && !(ace.aceFlags & SMB_ACE4_DIRECTORY_INHERIT_ACE)) ||
+		    (!isdir && !(ace.aceFlags & SMB_ACE4_FILE_INHERIT_ACE))) {
 			DEBUG(10, ("non inheriting ace type: %d, iflags: %x, "
 				   "flags: %x, mask: %x, who: %d\n",
 				   ace.aceType, ace.flags, ace.aceFlags,
@@ -480,9 +484,7 @@ static SMB4ACL_T *nfs4acls_inheritacl(vfs_handle_struct *handle,
 			   ace.aceType, ace.flags, ace.aceFlags,
 			   ace.aceMask, ace.who.id));
 		ace.aceFlags |= SMB_ACE4_INHERITED_ACE;
-		if ((isdir && (ace.aceFlags & SMB_ACE4_DIRECTORY_INHERIT_ACE)
-		     || !isdir && (ace.aceFlags & SMB_ACE4_FILE_INHERIT_ACE))
-		    && ace.aceFlags & SMB_ACE4_INHERIT_ONLY_ACE) {
+		if (ace.aceFlags & SMB_ACE4_INHERIT_ONLY_ACE) {
 			ace.aceFlags &= ~SMB_ACE4_INHERIT_ONLY_ACE;
 		}
 		if (ace.aceFlags & SMB_ACE4_NO_PROPAGATE_INHERIT_ACE) {
