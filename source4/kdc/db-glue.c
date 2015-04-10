@@ -1022,13 +1022,15 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 	const struct ldb_val *password_val;
 	struct trustAuthInOutBlob password_blob;
 	struct samba_kdc_entry *p;
-	bool use_previous;
+	bool use_previous = false;
 	uint32_t current_kvno;
+	uint32_t previous_kvno;
 	uint32_t num_keys = 0;
 	enum ndr_err_code ndr_err;
 	int ret, trust_direction_flags;
 	unsigned int i;
 	struct AuthenticationInformationArray *auth_array;
+	uint32_t *auth_kvno;
 	uint32_t supported_enctypes = ENC_RC4_HMAC_MD5;
 
 	if (dsdb_functional_level(kdc_db_ctx->samdb) >= DS_DOMAIN_FUNCTION_2008) {
@@ -1125,8 +1127,24 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 	/* first work out the current kvno */
 	current_kvno = 0;
 	for (i=0; i < password_blob.count; i++) {
-		if (password_blob.current.array[i].AuthType == TRUST_AUTH_TYPE_VERSION) {
-			current_kvno = password_blob.current.array[i].AuthInfo.version.version;
+		struct AuthenticationInformation *a =
+			&password_blob.current.array[i];
+
+		if (a->AuthType == TRUST_AUTH_TYPE_VERSION) {
+			current_kvno = a->AuthInfo.version.version;
+		}
+	}
+	if (current_kvno == 0) {
+		previous_kvno = 255;
+	} else {
+		previous_kvno = current_kvno - 1;
+	}
+	for (i=0; i < password_blob.count; i++) {
+		struct AuthenticationInformation *a =
+			&password_blob.previous.array[i];
+
+		if (a->AuthType == TRUST_AUTH_TYPE_VERSION) {
+			previous_kvno = a->AuthInfo.version.version;
 		}
 	}
 
@@ -1135,31 +1153,41 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 	if (password_blob.previous.count == 0) {
 		/* there is no previous password */
 		use_previous = false;
-	} else if (!(flags & HDB_F_KVNO_SPECIFIED) ||
-	    kvno == current_kvno) {
+	} else if (!(flags & HDB_F_KVNO_SPECIFIED)) {
+		/*
+		 * If not specified we use the current one.
+		 */
 		use_previous = false;
-	} else if ((kvno+1 == current_kvno) ||
-		   (kvno == 255 && current_kvno == 0)) {
+	} else if (kvno == current_kvno) {
+		/*
+		 * Exact match ...
+		 */
+		use_previous = false;
+	} else if (kvno == previous_kvno) {
+		/*
+		 * Exact match ...
+		 */
 		use_previous = true;
 	} else {
-		DEBUG(1,(__location__ ": Request for unknown kvno %u - current kvno is %u\n",
-			 kvno, current_kvno));
-		krb5_clear_error_message(context);
-		ret = HDB_ERR_NOENTRY;
-		goto out;
+		/*
+		 * Fallback to the current one for anything else
+		 */
+		use_previous = false;
 	}
 
 	if (use_previous) {
 		auth_array = &password_blob.previous;
+		auth_kvno = &previous_kvno;
 	} else {
 		auth_array = &password_blob.current;
+		auth_kvno = &current_kvno;
 	}
 
 	/* use the kvno the client specified, if available */
 	if (flags & HDB_F_KVNO_SPECIFIED) {
 		entry_ex->entry.kvno = kvno;
 	} else {
-		entry_ex->entry.kvno = current_kvno;
+		entry_ex->entry.kvno = *auth_kvno;
 	}
 
 	for (i=0; i < auth_array->count; i++) {
