@@ -3060,7 +3060,16 @@ def test_all_reps_from(lp, creds, rng_seed=None):
         kcc.run(opts.dburl, lp, creds, forced_local_dsa=dsa_dn,
                 forget_local_links=opts.forget_local_links,
                 forget_intersite_links=opts.forget_intersite_links)
+
         current, needed = kcc.my_dsa.get_rep_tables()
+
+        for dsa in kcc.my_site.dsa_table.values():
+            if dsa is kcc.my_dsa:
+                continue
+            kcc.translate_ntdsconn(dsa)
+            c, n = dsa.get_rep_tables()
+            current.update(c)
+            needed.update(n)
 
         for name, rep_table, rep_parts in (
                 ('needed', needed, needed_parts),
