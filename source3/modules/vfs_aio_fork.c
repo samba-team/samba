@@ -51,7 +51,7 @@ struct mmap_area {
 
 static int mmap_area_destructor(struct mmap_area *area)
 {
-	munmap((void *)area->ptr, area->size);
+	munmap(discard_const(area->ptr), area->size);
 	return 0;
 }
 
@@ -344,7 +344,7 @@ static void aio_child_loop(int sockfd, struct mmap_area *map)
 		switch (cmd_struct.cmd) {
 		case READ_CMD:
 			ret_struct.size = sys_pread(
-				fd, (void *)map->ptr, cmd_struct.n,
+				fd, discard_const(map->ptr), cmd_struct.n,
 				cmd_struct.offset);
 #if 0
 /* This breaks "make test" when run with aio_fork module. */
@@ -355,7 +355,7 @@ static void aio_child_loop(int sockfd, struct mmap_area *map)
 			break;
 		case WRITE_CMD:
 			ret_struct.size = sys_pwrite(
-				fd, (void *)map->ptr, cmd_struct.n,
+				fd, discard_const(map->ptr), cmd_struct.n,
 				cmd_struct.offset);
 			break;
 		case FSYNC_CMD:
