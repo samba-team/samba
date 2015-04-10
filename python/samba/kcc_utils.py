@@ -2023,7 +2023,7 @@ class RepsFromTo(object):
         elif item in ['update_flags']:
             return self.__dict__['update_flags']
 
-        raise AttributeError("Unknwown attribute %s" % item)
+        raise AttributeError("Unknown attribute %s" % item)
 
     def is_modified(self):
         return (self.update_flags != 0x0)
