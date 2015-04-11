@@ -2875,6 +2875,10 @@ static WERROR dcesrv_netr_DsRGetForestTrustInformation(struct dcesrv_call_state 
 	struct dcesrv_netr_DsRGetForestTrustInformation_state *state = NULL;
 	struct dcerpc_binding_handle *irpc_handle = NULL;
 	struct tevent_req *subreq = NULL;
+	struct ldb_dn *domain_dn = NULL;
+	struct ldb_dn *forest_dn = NULL;
+	int cmp;
+	int forest_level;
 
 	security_level = security_session_user_level(session_info, NULL);
 	if (security_level < SECURITY_USER) {
@@ -2889,6 +2893,26 @@ static WERROR dcesrv_netr_DsRGetForestTrustInformation(struct dcesrv_call_state 
 				dce_call->conn->auth_state.session_info, 0);
 	if (sam_ctx == NULL) {
 		return WERR_GENERAL_FAILURE;
+	}
+
+	domain_dn = ldb_get_default_basedn(sam_ctx);
+	if (domain_dn == NULL) {
+		return WERR_GENERAL_FAILURE;
+	}
+
+	forest_dn = ldb_get_root_basedn(sam_ctx);
+	if (forest_dn == NULL) {
+		return WERR_GENERAL_FAILURE;
+	}
+
+	cmp = ldb_dn_compare(domain_dn, forest_dn);
+	if (cmp != 0) {
+		return WERR_NERR_ACFNOTLOADED;
+	}
+
+	forest_level = dsdb_forest_functional_level(sam_ctx);
+	if (forest_level < DS_DOMAIN_FUNCTION_2003) {
+		return WERR_INVALID_FUNCTION;
 	}
 
 	if (r->in.flags & DS_GFTI_UPDATE_TDO) {
@@ -2994,8 +3018,12 @@ static NTSTATUS dcesrv_netr_GetForestTrustInformation(struct dcesrv_call_state *
 						      struct netr_GetForestTrustInformation *r)
 {
 	struct loadparm_context *lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
-	struct netlogon_creds_CredentialState *creds;
-	struct ldb_context *sam_ctx;
+	struct netlogon_creds_CredentialState *creds = NULL;
+	struct ldb_context *sam_ctx = NULL;
+	struct ldb_dn *domain_dn = NULL;
+	struct ldb_dn *forest_dn = NULL;
+	int cmp;
+	int forest_level;
 	NTSTATUS status;
 
 	status = dcesrv_netr_creds_server_step_check(dce_call,
@@ -3020,6 +3048,26 @@ static NTSTATUS dcesrv_netr_GetForestTrustInformation(struct dcesrv_call_state *
 	}
 
 	/* TODO: check r->in.server_name is our name */
+
+	domain_dn = ldb_get_default_basedn(sam_ctx);
+	if (domain_dn == NULL) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	forest_dn = ldb_get_root_basedn(sam_ctx);
+	if (forest_dn == NULL) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	cmp = ldb_dn_compare(domain_dn, forest_dn);
+	if (cmp != 0) {
+		return NT_STATUS_INVALID_DOMAIN_STATE;
+	}
+
+	forest_level = dsdb_forest_functional_level(sam_ctx);
+	if (forest_level < DS_DOMAIN_FUNCTION_2003) {
+		return NT_STATUS_INVALID_DOMAIN_STATE;
+	}
 
 	status = dsdb_trust_xref_forest_info(mem_ctx, sam_ctx,
 					     r->out.forest_trust_info);
