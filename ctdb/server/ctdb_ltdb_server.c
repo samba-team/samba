@@ -622,7 +622,7 @@ int ctdb_recheck_persistent_health(struct ctdb_context *ctdb)
 				   ctdb_db->unhealthy_reason));
 	}
 	DEBUG((fail!=0)?DEBUG_ALERT:DEBUG_NOTICE,
-	      ("ctdb_recheck_presistent_health: OK[%d] FAIL[%d]\n",
+	      ("ctdb_recheck_persistent_health: OK[%d] FAIL[%d]\n",
 	       ok, fail));
 
 	if (fail != 0) {
