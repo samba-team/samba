@@ -1903,6 +1903,14 @@ class KCC(object):
          50   48 4903
 
         :param node_count: total number of nodes in the replica graph
+
+        The intention is that there should be no more than 3 hops
+        between any two DSAs at a site. With up to 7 nodes the 2 edges
+        of the ring are enough; any configuration of extra edges with
+        8 nodes will be enough. It is less clear that the 3 hop
+        guarantee holds at e.g. 15 nodes in degenerate cases, but
+        those are quite unlikely given the extra edges are randomly
+        arranged.
         """
         n = 0
         while True:
