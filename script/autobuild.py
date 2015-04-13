@@ -230,6 +230,11 @@ class buildlist(object):
         self.retry = None
         if tasknames == []:
             tasknames = defaulttasks
+        else:
+            # If we are only running one test,
+            # do not sleep randomly to wait for it to start
+            os.environ['AUTOBUILD_RANDOM_SLEEP_OVERRIDE'] = '1'
+
         for n in tasknames:
             b = builder(n, tasks[n])
             self.tlist.append(b)
