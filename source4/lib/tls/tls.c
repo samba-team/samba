@@ -572,7 +572,6 @@ struct socket_context *tls_init_client(struct socket_context *socket_ctx,
 {
 	struct tls_context *tls;
 	int ret = 0;
-	const int cert_type_priority[] = { GNUTLS_CRT_X509, GNUTLS_CRT_OPENPGP, 0 };
 	struct socket_context *new_sock;
 	NTSTATUS nt_status;
 
@@ -598,7 +597,7 @@ struct socket_context *tls_init_client(struct socket_context *socket_ctx,
 	gnutls_certificate_set_x509_trust_file(tls->xcred, ca_path, GNUTLS_X509_FMT_PEM);
 	TLSCHECK(gnutls_init(&tls->session, GNUTLS_CLIENT));
 	TLSCHECK(gnutls_set_default_priority(tls->session));
-	gnutls_certificate_type_set_priority(tls->session, cert_type_priority);
+	gnutls_priority_set_direct(tls->session, "NORMAL:+CTYPE-OPENPGP", NULL);
 	TLSCHECK(gnutls_credentials_set(tls->session, GNUTLS_CRD_CERTIFICATE, tls->xcred));
 
 	talloc_set_destructor(tls, tls_destructor);
