@@ -967,11 +967,6 @@ struct tevent_req *_tstream_tls_connect_send(TALLOC_CTX *mem_ctx,
 #if ENABLE_GNUTLS
 	struct tstream_tls *tlss;
 	int ret;
-	static const int cert_type_priority[] = {
-		GNUTLS_CRT_X509,
-		GNUTLS_CRT_OPENPGP,
-		0
-	};
 #endif /* ENABLE_GNUTLS */
 
 	req = tevent_req_create(mem_ctx, &state,
@@ -1014,7 +1009,7 @@ struct tevent_req *_tstream_tls_connect_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	gnutls_certificate_type_set_priority(tlss->tls_session, cert_type_priority);
+	gnutls_priority_set_direct(tlss->tls_session, "NORMAL:+CTYPE-OPENPGP", NULL);
 
 	ret = gnutls_credentials_set(tlss->tls_session,
 				     GNUTLS_CRD_CERTIFICATE,
