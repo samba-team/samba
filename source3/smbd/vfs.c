@@ -222,7 +222,7 @@ bool vfs_init_custom(connection_struct *conn, const char *vfs_object)
  be refactored if it becomes more widely used.
 ******************************************************************/
 
-#define EXT_DATA_AREA(e) ((uint8 *)(e) + sizeof(struct vfs_fsp_data))
+#define EXT_DATA_AREA(e) ((uint8_t *)(e) + sizeof(struct vfs_fsp_data))
 
 void *vfs_add_fsp_extension_notype(vfs_handle_struct *handle,
 				   files_struct *fsp, size_t ext_size,
@@ -1419,7 +1419,7 @@ NTSTATUS smb_vfs_call_get_dfs_referrals(struct vfs_handle_struct *handle,
 
 DIR *smb_vfs_call_opendir(struct vfs_handle_struct *handle,
 				     const char *fname, const char *mask,
-				     uint32 attributes)
+				     uint32_t attributes)
 {
 	VFS_FIND(opendir);
 	return handle->fns->opendir_fn(handle, fname, mask, attributes);
@@ -1428,7 +1428,7 @@ DIR *smb_vfs_call_opendir(struct vfs_handle_struct *handle,
 DIR *smb_vfs_call_fdopendir(struct vfs_handle_struct *handle,
 					struct files_struct *fsp,
 					const char *mask,
-					uint32 attributes)
+					uint32_t attributes)
 {
 	VFS_FIND(fdopendir);
 	return handle->fns->fdopendir_fn(handle, fsp, mask, attributes);
@@ -2004,7 +2004,7 @@ int smb_vfs_call_fallocate(struct vfs_handle_struct *handle,
 }
 
 int smb_vfs_call_kernel_flock(struct vfs_handle_struct *handle,
-			      struct files_struct *fsp, uint32 share_mode,
+			      struct files_struct *fsp, uint32_t share_mode,
 			      uint32_t access_mask)
 {
 	VFS_FIND(kernel_flock);
@@ -2233,7 +2233,7 @@ NTSTATUS smb_vfs_call_snap_delete(struct vfs_handle_struct *handle,
 
 NTSTATUS smb_vfs_call_fget_nt_acl(struct vfs_handle_struct *handle,
 				  struct files_struct *fsp,
-				  uint32 security_info,
+				  uint32_t security_info,
 				  TALLOC_CTX *mem_ctx,
 				  struct security_descriptor **ppdesc)
 {
@@ -2244,7 +2244,7 @@ NTSTATUS smb_vfs_call_fget_nt_acl(struct vfs_handle_struct *handle,
 
 NTSTATUS smb_vfs_call_get_nt_acl(struct vfs_handle_struct *handle,
 				 const char *name,
-				 uint32 security_info,
+				 uint32_t security_info,
 				 TALLOC_CTX *mem_ctx,
 				 struct security_descriptor **ppdesc)
 {
@@ -2254,7 +2254,7 @@ NTSTATUS smb_vfs_call_get_nt_acl(struct vfs_handle_struct *handle,
 
 NTSTATUS smb_vfs_call_fset_nt_acl(struct vfs_handle_struct *handle,
 				  struct files_struct *fsp,
-				  uint32 security_info_sent,
+				  uint32_t security_info_sent,
 				  const struct security_descriptor *psd)
 {
 	VFS_FIND(fset_nt_acl);

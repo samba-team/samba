@@ -198,7 +198,7 @@ struct fd_handle {
 	int fd;
 	uint64_t position_information;
 	off_t pos;
-	uint32 private_options;	/* NT Create options, but we only look at
+	uint32_t private_options;	/* NT Create options, but we only look at
 				 * NTCREATEX_OPTIONS_PRIVATE_DENY_DOS and
 				 * NTCREATEX_OPTIONS_PRIVATE_DENY_FCB and
 				 * NTCREATEX_OPTIONS_PRIVATE_DELETE_ON_CLOSE
@@ -225,12 +225,12 @@ typedef struct files_struct {
 	unsigned int num_smb_operations;
 	struct file_id file_id;
 	uint64_t initial_allocation_size; /* Faked up initial allocation on disk. */
-	uint16 file_pid;
+	uint16_t file_pid;
 	uint64_t vuid; /* SMB2 compat */
 	struct write_cache *wcp;
 	struct timeval open_time;
-	uint32 access_mask;		/* NTCreateX access bits (FILE_READ_DATA etc.) */
-	uint32 share_access;		/* NTCreateX share constants (FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE). */
+	uint32_t access_mask;		/* NTCreateX access bits (FILE_READ_DATA etc.) */
+	uint32_t share_access;		/* NTCreateX share constants (FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE). */
 
 	bool update_write_time_triggered;
 	struct tevent_timer *update_write_time_event;
@@ -393,17 +393,17 @@ struct privilege_paths;
 
 struct smb_request {
 	uint8_t cmd;
-	uint16 flags2;
-	uint16 smbpid;
+	uint16_t flags2;
+	uint16_t smbpid;
 	uint64_t mid; /* For compatibility with SMB2. */
 	uint32_t seqnum;
 	uint64_t vuid; /* For compatibility with SMB2. */
 	uint32_t tid;
-	uint8  wct;
+	uint8_t  wct;
 	const uint16_t *vwv;
 	uint16_t buflen;
 	const uint8_t *buf;
-	const uint8 *inbuf;
+	const uint8_t *inbuf;
 
 	/*
 	 * Async handling in the main smb processing loop is directed by
@@ -414,7 +414,7 @@ struct smb_request {
 	 * If async handling is wanted, the reply_xxx routine must make sure
 	 * that it talloc_move()s the smb_req somewhere else.
 	 */
-	uint8 *outbuf;
+	uint8_t *outbuf;
 
 	size_t unread_bytes;
 	bool encrypted;
@@ -524,8 +524,8 @@ struct vfs_fn_pointers {
 
 	/* Directory operations */
 
-	DIR *(*opendir_fn)(struct vfs_handle_struct *handle, const char *fname, const char *mask, uint32 attributes);
-	DIR *(*fdopendir_fn)(struct vfs_handle_struct *handle, files_struct *fsp, const char *mask, uint32 attributes);
+	DIR *(*opendir_fn)(struct vfs_handle_struct *handle, const char *fname, const char *mask, uint32_t attributes);
+	DIR *(*fdopendir_fn)(struct vfs_handle_struct *handle, files_struct *fsp, const char *mask, uint32_t attributes);
 	struct dirent *(*readdir_fn)(struct vfs_handle_struct *handle,
 					 DIR *dirp,
 					 SMB_STRUCT_STAT *sbuf);
@@ -616,7 +616,7 @@ struct vfs_fn_pointers {
 			    off_t len);
 	bool (*lock_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, int op, off_t offset, off_t count, int type);
 	int (*kernel_flock_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp,
-			       uint32 share_mode, uint32_t access_mask);
+			       uint32_t share_mode, uint32_t access_mask);
 	int (*linux_setlease_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, int leasetype);
 	bool (*getlock_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, off_t *poffset, off_t *pcount, int *ptype, pid_t *ppid);
 	int (*symlink_fn)(struct vfs_handle_struct *handle, const char *oldpath, const char *newpath);
@@ -732,17 +732,17 @@ struct vfs_fn_pointers {
 
 	NTSTATUS (*fget_nt_acl_fn)(struct vfs_handle_struct *handle,
 				   struct files_struct *fsp,
-				   uint32 security_info,
+				   uint32_t security_info,
 				   TALLOC_CTX *mem_ctx,
 				   struct security_descriptor **ppdesc);
 	NTSTATUS (*get_nt_acl_fn)(struct vfs_handle_struct *handle,
 				  const char *name,
-				  uint32 security_info,
+				  uint32_t security_info,
 				   TALLOC_CTX *mem_ctx,
 				  struct security_descriptor **ppdesc);
 	NTSTATUS (*fset_nt_acl_fn)(struct vfs_handle_struct *handle,
 				   struct files_struct *fsp,
-				   uint32 security_info_sent,
+				   uint32_t security_info_sent,
 				   const struct security_descriptor *psd);
 
 	NTSTATUS (*audit_file_fn)(struct vfs_handle_struct *handle,
@@ -838,8 +838,8 @@ typedef struct vfs_handle_struct {
 
 typedef struct vfs_statvfs_struct {
 	/* For undefined recommended transfer size return -1 in that field */
-	uint32 OptimalTransferSize;  /* bsize on some os, iosize on other os */
-	uint32 BlockSize;
+	uint32_t OptimalTransferSize;  /* bsize on some os, iosize on other os */
+	uint32_t BlockSize;
 
 	/*
 	 The next three fields are in terms of the block size.
@@ -945,11 +945,11 @@ NTSTATUS smb_vfs_call_get_dfs_referrals(struct vfs_handle_struct *handle,
 					struct dfs_GetDFSReferral *r);
 DIR *smb_vfs_call_opendir(struct vfs_handle_struct *handle,
 				     const char *fname, const char *mask,
-				     uint32 attributes);
+				     uint32_t attributes);
 DIR *smb_vfs_call_fdopendir(struct vfs_handle_struct *handle,
 					struct files_struct *fsp,
 					const char *mask,
-					uint32 attributes);
+					uint32_t attributes);
 struct dirent *smb_vfs_call_readdir(struct vfs_handle_struct *handle,
 					DIR *dirp,
 					SMB_STRUCT_STAT *sbuf);
@@ -1075,7 +1075,7 @@ bool smb_vfs_call_lock(struct vfs_handle_struct *handle,
 		       struct files_struct *fsp, int op, off_t offset,
 		       off_t count, int type);
 int smb_vfs_call_kernel_flock(struct vfs_handle_struct *handle,
-			      struct files_struct *fsp, uint32 share_mode,
+			      struct files_struct *fsp, uint32_t share_mode,
 			      uint32_t access_mask);
 int smb_vfs_call_linux_setlease(struct vfs_handle_struct *handle,
 				struct files_struct *fsp, int leasetype);
@@ -1184,17 +1184,17 @@ NTSTATUS smb_vfs_call_snap_delete(struct vfs_handle_struct *handle,
 				  char *snap_path);
 NTSTATUS smb_vfs_call_fget_nt_acl(struct vfs_handle_struct *handle,
 				  struct files_struct *fsp,
-				  uint32 security_info,
+				  uint32_t security_info,
 				  TALLOC_CTX *mem_ctx,
 				  struct security_descriptor **ppdesc);
 NTSTATUS smb_vfs_call_get_nt_acl(struct vfs_handle_struct *handle,
 				 const char *name,
-				 uint32 security_info,
+				 uint32_t security_info,
 				 TALLOC_CTX *mem_ctx,
 				 struct security_descriptor **ppdesc);
 NTSTATUS smb_vfs_call_fset_nt_acl(struct vfs_handle_struct *handle,
 				  struct files_struct *fsp,
-				  uint32 security_info_sent,
+				  uint32_t security_info_sent,
 				  const struct security_descriptor *psd);
 NTSTATUS smb_vfs_call_audit_file(struct vfs_handle_struct *handle,
 				 struct smb_filename *file,
