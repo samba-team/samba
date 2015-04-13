@@ -168,6 +168,8 @@ static bool test_PACVerify(struct torture_context *tctx,
 	client_creds = cli_credentials_shallow_copy(tmp_ctx,
 						    cmdline_credentials);
 	torture_assert(tctx, client_creds, "Failed to copy of credentials");
+	/* Invalidate the gss creds container to allocate a new MEMORY ccache */
+	cli_credentials_invalidate_ccache(client_creds, CRED_SPECIFIED);
 
 	server_creds = cli_credentials_shallow_copy(tmp_ctx,
 						    credentials);
