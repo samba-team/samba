@@ -3087,7 +3087,7 @@ def test_all_reps_from(lp, creds, rng_seed=None):
     for name, rep_parts in (('needed', needed_parts),
                             ('current', current_parts)):
         for part, edges in rep_parts.items():
-            verify_and_dot('repsFrom_%s_all_%s' % (name, part), edges,
+            verify_and_dot('all-repsFrom_%s__%s' % (name, part), edges,
                            directed=True, label=part,
                            properties=(), debug=DEBUG, verify=opts.verify,
                            dot_files=opts.dot_files)
