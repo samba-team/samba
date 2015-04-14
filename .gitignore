@@ -21,6 +21,7 @@ pidl/cover_db
 pidl/Makefile
 pidl/pm_to_blib
 pidl/MYMETA.yml
+pidl/MYMETA.json
 packaging/RHEL-CTDB/samba.spec
 packaging/RHEL/samba.spec
 packaging/RHEL/makerpms.sh
