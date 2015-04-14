@@ -7,8 +7,13 @@ from subprocess import call, check_call,Popen, PIPE
 import os, tarfile, sys, time
 from optparse import OptionParser
 import smtplib
+import email
 from email.mime.text import MIMEText
+from email.mime.base import MIMEBase
+from email.mime.application import MIMEApplication
+from email.mime.multipart import MIMEMultipart
 from distutils.sysconfig import get_python_lib
+import platform
 
 # This speeds up testing remarkably.
 os.environ['TDB_NO_FSYNC'] = '1'
@@ -461,6 +466,10 @@ parser.add_option("", "--retry", help="automatically retry if master changes",
                   default=False, action="store_true")
 parser.add_option("", "--email", help="send email to the given address on failure",
                   type='str', default=None)
+parser.add_option("", "--email-from", help="send email from the given address",
+                  type='str', default="autobuild@samba.org")
+parser.add_option("", "--email-server", help="send email via the given server",
+                  type='str', default='localhost')
 parser.add_option("", "--always-email", help="always send email, even on success",
                   action="store_true")
 parser.add_option("", "--daemon", help="daemonize after initial setup",
@@ -469,6 +478,29 @@ parser.add_option("", "--branch", help="the branch to work on (default=master)",
                   default="master", type='str')
 parser.add_option("", "--log-base", help="location where the logs can be found (default=cwd)",
                   default=gitroot, type='str')
+parser.add_option("", "--attach-logs", help="Attach logs to mails sent on success/failure?",
+                  default=False, action="store_true")
+
+def send_email(subject, text, log_tar):
+    outer = MIMEMultipart()
+    outer['Subject'] = subject
+    outer['To'] = options.email
+    outer['From'] = options.email_from
+    outer['Date'] = email.utils.formatdate(localtime = True)
+    outer.preamble = 'Autobuild mails are now in MIME because we optionally attach the logs.\n'
+    outer.attach(MIMEText(text, 'plain'))
+    if options.attach_logs:
+        fp = open(log_tar, 'rb')
+        msg = MIMEApplication(fp.read(), 'gzip', email.encoders.encode_base64)
+        fp.close()
+        # Set the filename parameter
+        msg.add_header('Content-Disposition', 'attachment', filename=os.path.basename(log_tar))
+        outer.attach(msg)
+    content = outer.as_string()
+    s = smtplib.SMTP(options.email_server)
+    s.sendmail(options.email_from, [options.email], content)
+    s.set_debuglevel(1)
+    s.quit()
 
 def email_failure(status, failed_task, failed_stage, failed_tag, errstr, log_base=None):
     '''send an email to options.email about the failure'''
@@ -478,7 +510,7 @@ def email_failure(status, failed_task, failed_stage, failed_tag, errstr, log_bas
     text = '''
 Dear Developer,
 
-Your autobuild failed when trying to test %s with the following error:
+Your autobuild on %s failed when trying to test %s with the following error:
    %s
 
 the autobuild has been abandoned. Please fix the error and resubmit.
@@ -486,7 +518,7 @@ the autobuild has been abandoned. Please fix the error and resubmit.
 A summary of the autobuild process is here:
 
   %s/autobuild.log
-''' % (failed_task, errstr, log_base)
+''' % (platform.node(), failed_task, errstr, log_base)
     
     if failed_task != 'rebase':
         text += '''
@@ -504,15 +536,11 @@ The top commit for the tree that was built was:
 %s
 
 ''' % (log_base, failed_tag, log_base, failed_tag, log_base, top_commit_msg)
-    msg = MIMEText(text)
-    msg['Subject'] = 'autobuild failure for task %s during %s' % (failed_task, failed_stage)
-    msg['From'] = 'autobuild@samba.org'
-    msg['To'] = options.email
 
-    s = smtplib.SMTP()
-    s.connect()
-    s.sendmail(msg['From'], [msg['To']], msg.as_string())
-    s.quit()
+    logs = os.path.join(gitroot, 'logs.tar.gz')
+    send_email('autobuild failure on %s for task %s during %s'
+               % (platform.node(), failed_task, failed_stage),
+               text, logs)
 
 def email_success(log_base=None):
     '''send an email to options.email about a successful build'''
@@ -522,9 +550,9 @@ def email_success(log_base=None):
     text = '''
 Dear Developer,
 
-Your autobuild has succeeded.
+Your autobuild on %s has succeeded.
 
-'''
+''' % platform.node()
 
     if options.keeplogs:
         text += '''
@@ -541,15 +569,9 @@ The top commit for the tree that was built was:
 %s
 ''' % top_commit_msg
 
-    msg = MIMEText(text)
-    msg['Subject'] = 'autobuild success'
-    msg['From'] = 'autobuild@samba.org'
-    msg['To'] = options.email
-
-    s = smtplib.SMTP()
-    s.connect()
-    s.sendmail(msg['From'], [msg['To']], msg.as_string())
-    s.quit()
+    logs = os.path.join(gitroot, 'logs.tar.gz')
+    send_email('autobuild sucess on %s ' % platform.node(),
+               text, logs)
 
 
 (options, args) = parser.parse_args()
@@ -622,7 +644,7 @@ if status == 0:
         run_cmd(options.passcmd, dir=test_master)
     if options.pushto is not None:
         push_to(options.pushto, push_branch=options.branch)
-    if options.keeplogs:
+    if options.keeplogs or options.attach_logs:
         blist.tarlogs("logs.tar.gz")
         print("Logs in logs.tar.gz")
     if options.always_email:
