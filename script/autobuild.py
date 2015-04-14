@@ -150,6 +150,7 @@ tasks = {
                ("make", "make", "text/plain"),
                ("test", "make test", "text/plain"),
                ("install", "make install", "text/plain"),
+               ("checkout-yapp-generated", "git checkout lib/Parse/Pidl/IDL.pm lib/Parse/Pidl/Expr.pm", "text/plain"),
                ("check-clean-tree", "../script/clean-source-tree.sh", "text/plain"),
                ("clean", "make clean", "text/plain") ],
 
