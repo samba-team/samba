@@ -117,15 +117,17 @@ def verify_graph_connected(edges, vertices, edge_vertices):
         for i in reversed(doomed):
             del remaining_edges[i]
 
-    if remaining_edges or reached != vertices:
-        raise GraphError("graph is not connected:\nvertices: %s\n edges: %s" %
-                         (sorted(vertices), sorted(edges)))
+    if remaining_edges or reached != set(vertices):
+        raise GraphError("graph is not connected:\n vertices: %s\n edges: %s\n"
+                         " reached: %s\n remaining edges: %s" %
+                         (sorted(vertices), sorted(edges),
+                          sorted(reached), sorted(remaining_edges)))
 
 
 def verify_graph_connected_under_edge_failures(edges, vertices, edge_vertices):
     """The graph stays connected when any single edge is removed."""
     for subset in itertools.combinations(edges, len(edges) - 1):
-        verify_graph_connected(edges, vertices, edge_vertices)
+        verify_graph_connected(subset, vertices, edge_vertices)
 
 
 def verify_graph_connected_under_vertex_failures(edges, vertices,
@@ -150,7 +152,10 @@ def verify_graph_forest(edges, vertices, edge_vertices):
                     trees.remove(b)
                     break
                 else:
-                    raise GraphError("there is a loop in the graph")
+                    raise GraphError("there is a loop in the graph\n"
+                                     " vertices %s\n edges %s\n"
+                                     " intersection %s" %
+                                     (vertices, edges, intersection))
         else:
             # no break in itertools.combinations loop means no
             # further mergers, so we're done.
@@ -195,7 +200,7 @@ def verify_graph_forest_of_rings(edges, vertices, edge_vertices):
 
 def verify_graph_no_lonely_vertices(edges, vertices, edge_vertices):
     """There are no vertices without edges."""
-    lonely = vertices - edge_vertices
+    lonely = set(vertices) - set(edge_vertices)
     if lonely:
         raise GraphError("some vertices are not connected:\n%s" %
                          '\n'.join(sorted(lonely)))
@@ -203,7 +208,7 @@ def verify_graph_no_lonely_vertices(edges, vertices, edge_vertices):
 
 def verify_graph_no_unknown_vertices(edges, vertices, edge_vertices):
     """The edge endpoints contain no vertices that are otherwise unknown."""
-    unknown = edge_vertices - vertices
+    unknown = set(edge_vertices) - set(vertices)
     if unknown:
         raise GraphError("some edge vertices are seemingly unknown:\n%s" %
                          '\n'.join(sorted(unknown)))
