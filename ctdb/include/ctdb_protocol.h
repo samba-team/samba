@@ -487,17 +487,6 @@ struct ctdb_req_message {
 	uint8_t data[1];
 };
 
-struct ctdb_req_getdbpath {
-	struct ctdb_req_header hdr;
-	uint32_t db_id;
-};
-
-struct ctdb_reply_getdbpath {
-	struct ctdb_req_header hdr;
-	uint32_t datalen;
-	uint8_t data[1];
-};
-
 struct ctdb_req_control {
 	struct ctdb_req_header hdr;
 	uint32_t opcode;
