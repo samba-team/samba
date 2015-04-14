@@ -449,6 +449,8 @@ static bool test_PACVerify(struct torture_context *tctx,
 	torture_assert(tctx, netlogon_creds_client_check(creds, &r.out.return_authenticator->cred),
 		       "Credential chaining failed");
 
+	talloc_free(tmp_ctx);
+
 	return true;
 }
 
