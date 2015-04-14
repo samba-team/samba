@@ -398,43 +398,54 @@ static bool wcache_server_down(struct winbindd_domain *domain)
 	return ret;
 }
 
+struct wcache_seqnum_state {
+	uint32_t *seqnum;
+	uint32_t *last_seq_check;
+};
+
+static int wcache_seqnum_parser(TDB_DATA key, TDB_DATA data,
+				void *private_data)
+{
+	struct wcache_seqnum_state *state = private_data;
+
+	if (data.dsize != 8) {
+		DEBUG(10, ("wcache_fetch_seqnum: invalid data size %d\n",
+			   (int)data.dsize));
+		return -1;
+	}
+
+	*state->seqnum = IVAL(data.dptr, 0);
+	*state->last_seq_check = IVAL(data.dptr, 4);
+	return 0;
+}
+
 static bool wcache_fetch_seqnum(const char *domain_name, uint32_t *seqnum,
 				uint32_t *last_seq_check)
 {
-	char *key;
-	TDB_DATA data;
+	struct wcache_seqnum_state state = {
+		.seqnum = seqnum, .last_seq_check = last_seq_check
+	};
+	char *keystr;
+	TDB_DATA key;
+	int ret;
 
 	if (wcache->tdb == NULL) {
 		DEBUG(10,("wcache_fetch_seqnum: tdb == NULL\n"));
 		return false;
 	}
 
-	key = talloc_asprintf(talloc_tos(), "SEQNUM/%s", domain_name);
-	if (key == NULL) {
+	keystr = talloc_asprintf(talloc_tos(), "SEQNUM/%s", domain_name);
+	if (keystr == NULL) {
 		DEBUG(10, ("talloc failed\n"));
 		return false;
 	}
+	key = string_term_tdb_data(keystr);
 
-	data = tdb_fetch_bystring(wcache->tdb, key);
-	TALLOC_FREE(key);
+	ret = tdb_parse_record(wcache->tdb, key, wcache_seqnum_parser,
+			       &state);
+	TALLOC_FREE(keystr);
 
-	if (data.dptr == NULL) {
-		DEBUG(10, ("wcache_fetch_seqnum: %s not found\n",
-			   domain_name));
-		return false;
-	}
-	if (data.dsize != 8) {
-		DEBUG(10, ("wcache_fetch_seqnum: invalid data size %d\n",
-			   (int)data.dsize));
-		SAFE_FREE(data.dptr);
-		return false;
-	}
-
-	*seqnum = IVAL(data.dptr, 0);
-	*last_seq_check = IVAL(data.dptr, 4);
-	SAFE_FREE(data.dptr);
-
-	return true;
+	return (ret == 0);
 }
 
 static NTSTATUS fetch_cache_seqnum( struct winbindd_domain *domain, time_t now )
