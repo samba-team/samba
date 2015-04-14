@@ -5,8 +5,8 @@ N=`git clean -n | wc -l`
 C=`git diff --stat HEAD | wc -l`
 
 test x"$N" != x"0" && {
-	echo "The tree has uncommitted changes!!! see stderr"
-	echo "The tree has uncommitted changes!!!" >&2
+	echo "The tree has $N new uncommitted files!!! see stderr"
+	echo "The tree has $N new uncommitted files!!!" >&2
 
 	echo "git clean -n" >&2
 	git clean -n >&2
