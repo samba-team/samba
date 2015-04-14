@@ -32,7 +32,7 @@
  * Utility function to open a complete registry path including the hive prefix.
  */
 WERROR reg_open_path(TALLOC_CTX *mem_ctx, const char *orig_path,
-		     uint32 desired_access, const struct security_token *token,
+		     uint32_t desired_access, const struct security_token *token,
 		     struct registry_key **pkey)
 {
 	struct registry_key *hive, *key;
@@ -89,7 +89,7 @@ WERROR reg_open_path(TALLOC_CTX *mem_ctx, const char *orig_path,
  */
 
 WERROR reg_create_path(TALLOC_CTX *mem_ctx, const char *orig_path,
-		       uint32 desired_access,
+		       uint32_t desired_access,
 		       const struct security_token *token,
 		       enum winreg_CreateAction *paction,
 		       struct registry_key **pkey)

@@ -72,13 +72,13 @@ static char *counters_directory(const char *dbname)
 /*********************************************************************
 *********************************************************************/
 
-uint32 reg_perfcount_get_base_index(void)
+uint32_t reg_perfcount_get_base_index(void)
 {
 	char *fname;
 	TDB_CONTEXT *names;
 	TDB_DATA kbuf, dbuf;
 	char key[] = "1";
-	uint32 retval = 0;
+	uint32_t retval = 0;
 	char buf[PERFCOUNT_MAX_LEN];
 
 	fname = counters_directory(NAMES_DB);
@@ -121,7 +121,7 @@ uint32 reg_perfcount_get_base_index(void)
 	TALLOC_FREE(fname);
 	memset(buf, 0, PERFCOUNT_MAX_LEN);
 	memcpy(buf, dbuf.dptr, dbuf.dsize);
-	retval = (uint32)atoi(buf);
+	retval = (uint32_t)atoi(buf);
 	SAFE_FREE(dbuf.dptr);
 	return retval;
 }
@@ -129,9 +129,9 @@ uint32 reg_perfcount_get_base_index(void)
 /*********************************************************************
 *********************************************************************/
 
-uint32 reg_perfcount_get_last_counter(uint32 base_index)
+uint32_t reg_perfcount_get_last_counter(uint32_t base_index)
 {
-	uint32 retval;
+	uint32_t retval;
 
 	if(base_index == 0)
 		retval = 0;
@@ -144,9 +144,9 @@ uint32 reg_perfcount_get_last_counter(uint32 base_index)
 /*********************************************************************
 *********************************************************************/
 
-uint32 reg_perfcount_get_last_help(uint32 last_counter)
+uint32_t reg_perfcount_get_last_help(uint32_t last_counter)
 {
-	uint32 retval;
+	uint32_t retval;
 
 	if(last_counter == 0)
 		retval = 0;
@@ -160,15 +160,15 @@ uint32 reg_perfcount_get_last_help(uint32 last_counter)
 /*********************************************************************
 *********************************************************************/
 
-static uint32 _reg_perfcount_multi_sz_from_tdb(TDB_CONTEXT *tdb, 
+static uint32_t _reg_perfcount_multi_sz_from_tdb(TDB_CONTEXT *tdb,
 					       int keyval,
 					       char **retbuf,
-					       uint32 buffer_size)
+					       uint32_t buffer_size)
 {
 	TDB_DATA kbuf, dbuf;
 	char temp[256];
 	char *buf1 = *retbuf;
-	uint32 working_size = 0;
+	uint32_t working_size = 0;
 	DATA_BLOB name_index, name;
 	bool ok;
 
@@ -224,10 +224,10 @@ static uint32 _reg_perfcount_multi_sz_from_tdb(TDB_CONTEXT *tdb,
 /*********************************************************************
 *********************************************************************/
 
-uint32 reg_perfcount_get_counter_help(uint32 base_index, char **retbuf)
+uint32_t reg_perfcount_get_counter_help(uint32_t base_index, char **retbuf)
 {
 	char *buf1 = NULL;
-	uint32 buffer_size = 0;
+	uint32_t buffer_size = 0;
 	TDB_CONTEXT *names;
 	char *fname;
 	int i;
@@ -274,10 +274,10 @@ uint32 reg_perfcount_get_counter_help(uint32 base_index, char **retbuf)
 /*********************************************************************
 *********************************************************************/
 
-uint32 reg_perfcount_get_counter_names(uint32 base_index, char **retbuf)
+uint32_t reg_perfcount_get_counter_names(uint32_t base_index, char **retbuf)
 {
 	char *buf1 = NULL;
-	uint32 buffer_size = 0;
+	uint32_t buffer_size = 0;
 	TDB_CONTEXT *names;
 	char *fname;
 	int i;
@@ -376,7 +376,7 @@ static bool _reg_perfcount_ischild(TDB_DATA data)
 /*********************************************************************
 *********************************************************************/
 
-static uint32 _reg_perfcount_get_numinst(int objInd, TDB_CONTEXT *names)
+static uint32_t _reg_perfcount_get_numinst(int objInd, TDB_CONTEXT *names)
 {
 	TDB_DATA key, data;
 	char buf[PERFCOUNT_MAX_LEN];
@@ -385,12 +385,12 @@ static uint32 _reg_perfcount_get_numinst(int objInd, TDB_CONTEXT *names)
 	data = tdb_fetch(names, key);
 
 	if(data.dptr == NULL)
-		return (uint32)PERF_NO_INSTANCES;
+		return (uint32_t)PERF_NO_INSTANCES;
 
 	memset(buf, 0, PERFCOUNT_MAX_LEN);
 	memcpy(buf, data.dptr, data.dsize);
 	SAFE_FREE(data.dptr);
-	return (uint32)atoi(buf);
+	return (uint32_t)atoi(buf);
 }
 
 /*********************************************************************
@@ -428,7 +428,7 @@ static bool _reg_perfcount_add_object(struct PERF_DATA_BLOCK *block,
 	block->objects[block->NumObjectTypes].NumInstances = _reg_perfcount_get_numinst(num, names);
 	block->objects[block->NumObjectTypes].counters = NULL;
 	block->objects[block->NumObjectTypes].instances = NULL;
-	block->objects[block->NumObjectTypes].counter_data.ByteLength = sizeof(uint32);
+	block->objects[block->NumObjectTypes].counter_data.ByteLength = sizeof(uint32_t);
 	block->objects[block->NumObjectTypes].counter_data.data = NULL;
 	block->objects[block->NumObjectTypes].DetailLevel = PERF_DETAIL_NOVICE;
 	block->NumObjectTypes+=1;
@@ -472,9 +472,9 @@ static bool _reg_perfcount_get_counter_data(TDB_DATA key, TDB_DATA *data)
 /*********************************************************************
 *********************************************************************/
 
-static uint32 _reg_perfcount_get_size_field(uint32 CounterType)
+static uint32_t _reg_perfcount_get_size_field(uint32_t CounterType)
 {
-	uint32 retval;
+	uint32_t retval;
 
 	retval = CounterType;
 
@@ -489,7 +489,7 @@ static uint32 _reg_perfcount_get_size_field(uint32 CounterType)
 /*********************************************************************
 *********************************************************************/
 
-static uint32 _reg_perfcount_compute_scale(int64_t data)
+static uint32_t _reg_perfcount_compute_scale(int64_t data)
 {
 	int scale = 0;
 	if(data == 0)
@@ -505,7 +505,7 @@ static uint32 _reg_perfcount_compute_scale(int64_t data)
 		scale++;
 	}
 
-	return (uint32)scale;
+	return (uint32_t)scale;
 }
 
 /*********************************************************************
@@ -522,7 +522,7 @@ static bool _reg_perfcount_get_counter_info(struct PERF_DATA_BLOCK *block,
 	size_t dsize, padding;
 	long int data32, dbuf[2];
 	int64_t data64;
-	uint32 counter_size;
+	uint32_t counter_size;
 
 	obj->counters[obj->NumCounters].DefaultScale = 0;
 	dbuf[0] = dbuf[1] = 0;
@@ -591,20 +591,20 @@ static bool _reg_perfcount_get_counter_info(struct PERF_DATA_BLOCK *block,
 	obj->counter_data.data = talloc_realloc(mem_ctx,
 						      obj->counter_data.data,
 						      uint8,
-						      obj->counter_data.ByteLength - sizeof(uint32));
+						      obj->counter_data.ByteLength - sizeof(uint32_t));
 	if(obj->counter_data.data == NULL)
 		return False;
 	if(dbuf[0] != 0 || dbuf[1] != 0)
 	{
 		memcpy((void *)(obj->counter_data.data + 
-				(obj->counter_data.ByteLength - (sizeof(uint32) + dsize))), 
+				(obj->counter_data.ByteLength - (sizeof(uint32_t) + dsize))),
 		       (const void *)dbuf, dsize);
 	}
 	else
 	{
 		/* Handling PERF_SIZE_VARIABLE_LEN */
 		memcpy((void *)(obj->counter_data.data +
-				(obj->counter_data.ByteLength - (sizeof(uint32) + dsize))),
+				(obj->counter_data.ByteLength - (sizeof(uint32_t) + dsize))),
 		       (const void *)buf, dsize);
 	}
 	obj->counters[obj->NumCounters].CounterOffset = obj->counter_data.ByteLength - dsize;
@@ -775,7 +775,7 @@ static bool _reg_perfcount_get_instance_info(struct PERF_INSTANCE_DEFINITION *in
 	inst->ParentObjectTitleIndex = 0;
 	inst->ParentObjectTitlePointer = 0;
 	inst->UniqueID = PERF_NO_UNIQUE_ID;
-	inst->NameOffset = 6 * sizeof(uint32);
+	inst->NameOffset = 6 * sizeof(uint32_t);
 
 	inst->ByteLength = inst->NameOffset + inst->NameLength;
 	/* Need to be aligned on a 64-bit boundary here for counter_data */
@@ -1017,7 +1017,7 @@ err_out:
 /*********************************************************************
 *********************************************************************/
 
-static uint32 _reg_perfcount_perf_data_block_fixup(struct PERF_DATA_BLOCK *block, TALLOC_CTX *mem_ctx)
+static uint32_t _reg_perfcount_perf_data_block_fixup(struct PERF_DATA_BLOCK *block, TALLOC_CTX *mem_ctx)
 {
 	int obj, cnt, inst, pad, i;
 	struct PERF_OBJECT_TYPE *object;
@@ -1111,13 +1111,13 @@ static uint32 _reg_perfcount_perf_data_block_fixup(struct PERF_DATA_BLOCK *block
 /*********************************************************************
 *********************************************************************/
 
-static uint32 reg_perfcount_get_perf_data_block(uint32 base_index,
+static uint32_t reg_perfcount_get_perf_data_block(uint32_t base_index,
 						TALLOC_CTX *mem_ctx,
 						struct PERF_DATA_BLOCK *block,
 						const char *object_ids,
 						bool bigendian_data)
 {
-	uint32 buffer_size = 0;
+	uint32_t buffer_size = 0;
 	char *fname;
 	TDB_CONTEXT *names;
 	int retval = 0;
@@ -1296,7 +1296,7 @@ static bool _reg_perfcount_marshall_perf_counter_data(prs_struct *ps,
 
 	if(!prs_uint32("ByteLength", ps, depth, &counter_data.ByteLength))
 		return False;
-	if(!prs_uint8s(False, "CounterData", ps, depth, counter_data.data, counter_data.ByteLength - sizeof(uint32)))
+	if(!prs_uint8s(False, "CounterData", ps, depth, counter_data.data, counter_data.ByteLength - sizeof(uint32_t)))
 		return False;
 	if(!prs_align_uint64(ps))
 		return False;
@@ -1418,7 +1418,7 @@ static bool _reg_perfcount_marshall_perf_objects(prs_struct *ps, struct PERF_DAT
 /*********************************************************************
 *********************************************************************/
 
-WERROR reg_perfcount_get_hkpd(prs_struct *ps, uint32 max_buf_size, uint32 *outbuf_len, const char *object_ids)
+WERROR reg_perfcount_get_hkpd(prs_struct *ps, uint32_t max_buf_size, uint32_t *outbuf_len, const char *object_ids)
 {
 	/*
 	 * For a detailed description of the layout of this structure,
@@ -1429,7 +1429,7 @@ WERROR reg_perfcount_get_hkpd(prs_struct *ps, uint32 max_buf_size, uint32 *outbu
 	 * http://msdn2.microsoft.com/en-us/library/aa373105.aspx -- vl
 	 */
 	struct PERF_DATA_BLOCK block;
-	uint32 buffer_size, base_index; 
+	uint32_t buffer_size, base_index;
 
 	buffer_size = 0;
 	base_index = reg_perfcount_get_base_index();

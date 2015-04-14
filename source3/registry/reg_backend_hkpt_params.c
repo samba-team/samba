@@ -36,8 +36,8 @@ extern struct registry_ops regdb_ops;
 
 static int hkpt_params_fetch_values(const char *key, struct regval_ctr *regvals)
 {
-	uint32 base_index;
-	uint32 buffer_size;
+	uint32_t base_index;
+	uint32_t buffer_size;
 	char *buffer = NULL;
 
 	/* This is ALMOST the same as perflib_009_params, but HKPT has

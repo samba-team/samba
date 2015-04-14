@@ -153,10 +153,10 @@ static const char *builtin_registry_paths[] = {
 struct builtin_regkey_value {
 	const char *path;
 	const char *valuename;
-	uint32 type;
+	uint32_t type;
 	union {
 		const char *string;
-		uint32 dw_value;
+		uint32_t dw_value;
 	} data;
 };
 
@@ -286,7 +286,7 @@ static void regdb_ctr_add_value(struct regval_ctr *ctr,
 	case REG_DWORD:
 		regval_ctr_addvalue(ctr, value->valuename, REG_DWORD,
 				    (uint8_t *)&value->data.dw_value,
-				    sizeof(uint32));
+				    sizeof(uint32_t));
 		break;
 
 	case REG_SZ:
@@ -1037,8 +1037,8 @@ static WERROR regdb_store_keys_internal2(struct db_context *db,
 	TDB_DATA dbuf;
 	uint8 *buffer = NULL;
 	int i = 0;
-	uint32 len, buflen;
-	uint32 num_subkeys = regsubkey_ctr_numkeys(ctr);
+	uint32_t len, buflen;
+	uint32_t num_subkeys = regsubkey_ctr_numkeys(ctr);
 	char *keyname = NULL;
 	TALLOC_CTX *ctx = talloc_stackframe();
 	WERROR werr;
@@ -1731,7 +1731,7 @@ static WERROR regdb_fetch_keys_internal(struct db_context *db, const char *key,
 	WERROR werr;
 	uint32_t num_items;
 	uint8 *buf;
-	uint32 buflen, len;
+	uint32_t buflen, len;
 	int i;
 	fstring subkeyname;
 	TALLOC_CTX *frame = talloc_stackframe();
@@ -1823,11 +1823,11 @@ static int regdb_fetch_keys(const char *key, struct regsubkey_ctr *ctr)
 static int regdb_unpack_values(struct regval_ctr *values, uint8 *buf, int buflen)
 {
 	int 		len = 0;
-	uint32		type;
+	uint32_t	type;
 	fstring valuename;
-	uint32		size;
+	uint32_t	size;
 	uint8		*data_p;
-	uint32 		num_values = 0;
+	uint32_t 	num_values = 0;
 	int 		i;
 
 	/* loop and unpack the rest of the registry values */

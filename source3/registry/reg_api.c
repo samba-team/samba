@@ -133,7 +133,7 @@ static WERROR regkey_open_onelevel(TALLOC_CTX *mem_ctx,
 				   struct registry_key *parent,
 				   const char *name,
 				   const struct security_token *token,
-				   uint32 access_desired,
+				   uint32_t access_desired,
 				   struct registry_key **pregkey)
 {
 	WERROR     	result = WERR_OK;
@@ -229,7 +229,7 @@ done:
 }
 
 WERROR reg_openhive(TALLOC_CTX *mem_ctx, const char *hive,
-		    uint32 desired_access,
+		    uint32_t desired_access,
 		    const struct security_token *token,
 		    struct registry_key **pkey)
 {
@@ -252,7 +252,7 @@ WERROR reg_openhive(TALLOC_CTX *mem_ctx, const char *hive,
  **********************************************************************/
 
 WERROR reg_openkey(TALLOC_CTX *mem_ctx, struct registry_key *parent,
-		   const char *name, uint32 desired_access,
+		   const char *name, uint32_t desired_access,
 		   struct registry_key **pkey)
 {
 	struct registry_key *direct_parent = parent;
@@ -304,7 +304,7 @@ error:
 }
 
 WERROR reg_enumkey(TALLOC_CTX *mem_ctx, struct registry_key *key,
-		   uint32 idx, char **name, NTTIME *last_write_time)
+		   uint32_t idx, char **name, NTTIME *last_write_time)
 {
 	WERROR err;
 
@@ -335,7 +335,7 @@ WERROR reg_enumkey(TALLOC_CTX *mem_ctx, struct registry_key *key,
 }
 
 WERROR reg_enumvalue(TALLOC_CTX *mem_ctx, struct registry_key *key,
-		     uint32 idx, char **pname, struct registry_value **pval)
+		     uint32_t idx, char **pname, struct registry_value **pval)
 {
 	struct registry_value *val;
 	struct regval_blob *blob;
@@ -377,7 +377,7 @@ WERROR reg_enumvalue(TALLOC_CTX *mem_ctx, struct registry_key *key,
 
 static WERROR reg_enumvalue_nocachefill(TALLOC_CTX *mem_ctx,
 					struct registry_key *key,
-					uint32 idx, char **pname,
+					uint32_t idx, char **pname,
 					struct registry_value **pval)
 {
 	struct registry_value *val;
@@ -416,7 +416,7 @@ WERROR reg_queryvalue(TALLOC_CTX *mem_ctx, struct registry_key *key,
 		      const char *name, struct registry_value **pval)
 {
 	WERROR err;
-	uint32 i;
+	uint32_t i;
 
 	if (!(key->key->access_granted & KEY_QUERY_VALUE)) {
 		return WERR_ACCESS_DENIED;
@@ -500,7 +500,7 @@ WERROR reg_queryinfokey(struct registry_key *key, uint32_t *num_subkeys,
 			uint32_t *max_valbufsize, uint32_t *secdescsize,
 			NTTIME *last_changed_time)
 {
-	uint32 i, max_size;
+	uint32_t i, max_size;
 	size_t max_len;
 	TALLOC_CTX *mem_ctx;
 	WERROR err;
@@ -557,7 +557,7 @@ WERROR reg_queryinfokey(struct registry_key *key, uint32_t *num_subkeys,
 }
 
 WERROR reg_createkey(TALLOC_CTX *ctx, struct registry_key *parent,
-		     const char *subkeypath, uint32 desired_access,
+		     const char *subkeypath, uint32_t desired_access,
 		     struct registry_key **pkey,
 		     enum winreg_CreateAction *paction)
 {
@@ -958,7 +958,7 @@ static WERROR reg_deletekey_recursive_internal(struct registry_key *parent,
 	WERROR werr = WERR_OK;
 	struct registry_key *key;
 	char *subkey_name = NULL;
-	uint32 i;
+	uint32_t i;
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
 
 	DEBUG(5, ("reg_deletekey_recursive_internal: deleting '%s' from '%s'\n",
