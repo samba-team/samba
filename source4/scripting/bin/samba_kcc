@@ -1554,6 +1554,7 @@ class KCC(object):
             # object cn that is a child of lbh, cn!enabledConnection = TRUE,
             # cn!options = opt, cn!transportType is a reference to t,
             # cn!fromServer is a reference to rbh, and cn!schedule = sch
+            DEBUG_FN("new connection, KCC dsa: %s" % self.my_dsa.dsa_dnstr)
             cn = lbh.new_connection(opt, 0, transport,
                                     rbh.dsa_dnstr, link_sched)
 
@@ -2234,9 +2235,9 @@ class KCC(object):
                         DEBUG_RED("could not add %s" % other.dsa_dstr)
                     candidates.remove(other)
             else:
-                DEBUG_CYAN("not adding links to %s: nodes %s, links is %s/%s" %
-                           (tnode.dsa_dnstr, r_len, len(tnode.edge_from),
-                            tnode.max_edges))
+                DEBUG_FN("not adding links to %s: nodes %s, links is %s/%s" %
+                         (tnode.dsa_dnstr, r_len, len(tnode.edge_from),
+                          tnode.max_edges))
 
             # Print the graph node in debug mode
             logger.debug("%s" % tnode)
