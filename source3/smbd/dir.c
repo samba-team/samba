@@ -1068,6 +1068,7 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 	connection_struct *conn = dirptr->conn;
 	size_t slashlen;
 	size_t pathlen;
+	bool dirptr_path_is_dot = ISDOT(dirptr->path);
 
 	*_smb_fname = NULL;
 	*_mode = 0;
@@ -1132,10 +1133,18 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 			return false;
 		}
 
-		memcpy(pathreal, dirptr->path, pathlen);
-		pathreal[pathlen] = '/';
-		memcpy(pathreal + slashlen + pathlen, dname,
-		       talloc_get_size(dname));
+		/*
+		 * We don't want to pass ./xxx to modules below us so don't
+		 * add the path if it is just . by itself.
+		 */
+		if (dirptr_path_is_dot) {
+			memcpy(pathreal, dname, talloc_get_size(dname));
+		} else {
+			memcpy(pathreal, dirptr->path, pathlen);
+			pathreal[pathlen] = '/';
+			memcpy(pathreal + slashlen + pathlen, dname,
+			       talloc_get_size(dname));
+		}
 
 		/* Create smb_fname with NULL stream_name. */
 		smb_fname = (struct smb_filename) {
