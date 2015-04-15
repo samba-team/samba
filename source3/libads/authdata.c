@@ -239,7 +239,7 @@ NTSTATUS kerberos_return_pac(TALLOC_CTX *mem_ctx,
 	}
 
 	gensec_settings = lpcfg_gensec_settings(tmp_ctx, lp_ctx);
-	if (lp_ctx == NULL) {
+	if (gensec_settings == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		DEBUG(10, ("lpcfg_gensec_settings failed\n"));
 		goto out;
