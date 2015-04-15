@@ -622,18 +622,18 @@ static WERROR set_printer_hnd_name(TALLOC_CTX *mem_ctx,
 		found = true;
 	}
 
+	cache_key = talloc_asprintf(talloc_tos(), "PRINTERNAME/%s", aprinter);
+	if (cache_key == NULL) {
+		return WERR_NOMEM;
+	}
+
 	/*
 	 * With hundreds of printers, the "for" loop iterating all
 	 * shares can be quite expensive, as it is done on every
 	 * OpenPrinter. The loop maps "aprinter" to "sname", the
 	 * result of which we cache in gencache.
 	 */
-
-	cache_key = talloc_asprintf(talloc_tos(), "PRINTERNAME/%s",
-				    aprinter);
-	if ((cache_key != NULL) &&
-	    gencache_get(cache_key, talloc_tos(), &tmp, NULL)) {
-
+	if (gencache_get(cache_key, talloc_tos(), &tmp, NULL)) {
 		found = (strcmp(tmp, printer_not_found) != 0);
 		if (!found) {
 			DEBUG(4, ("Printer %s not found\n", aprinter));
@@ -702,20 +702,16 @@ static WERROR set_printer_hnd_name(TALLOC_CTX *mem_ctx,
 		TALLOC_FREE(info2);
 	}
 
-	if ( !found ) {
-		if (cache_key != NULL) {
-			gencache_set(cache_key, printer_not_found,
-				     time(NULL)+300);
-			TALLOC_FREE(cache_key);
-		}
+	if (!found) {
+		gencache_set(cache_key, printer_not_found,
+			     time_mono(NULL) + 300);
+		TALLOC_FREE(cache_key);
 		DEBUGADD(4,("Printer not found\n"));
 		return WERR_INVALID_PRINTER_NAME;
 	}
 
-	if (cache_key != NULL) {
-		gencache_set(cache_key, sname, time(NULL)+300);
-		TALLOC_FREE(cache_key);
-	}
+	gencache_set(cache_key, sname, time_mono(NULL) + 300);
+	TALLOC_FREE(cache_key);
 
 	DEBUGADD(4,("set_printer_hnd_name: Printer found: %s -> %s\n", aprinter, sname));
 
