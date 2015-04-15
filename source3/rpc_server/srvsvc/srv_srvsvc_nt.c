@@ -1874,7 +1874,7 @@ WERROR _srvsvc_NetShareSetInfo(struct pipes_struct *p,
 				get_dyn_CONFIGFILE(),
 				share_name,
 				path,
-				comment ? comment : "",
+				comment,
 				max_connections,
 				csc_policy);
 		if (!command) {
