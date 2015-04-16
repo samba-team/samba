@@ -1299,7 +1299,7 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 		krb5_data salt;
 		krb5_data cleartext_data;
 
-		cleartext_data.data = password_utf8.data;
+		cleartext_data.data = discard_const_p(char, password_utf8.data);
 		cleartext_data.length = password_utf8.length;
 
 		ret = smb_krb5_get_pw_salt(context,
