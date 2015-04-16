@@ -652,7 +652,7 @@ static int setup_kerberos_keys(struct setup_password_fields_io *io)
 	krb5_data cleartext_data;
 
 	ldb = ldb_module_get_ctx(io->ac->module);
-	cleartext_data.data = io->n.cleartext_utf8->data;
+	cleartext_data.data = (char *)io->n.cleartext_utf8->data;
 	cleartext_data.length = io->n.cleartext_utf8->length;
 
 	/* Many, many thanks to lukeh@padl.com for this
