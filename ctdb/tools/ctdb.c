@@ -2418,6 +2418,7 @@ static int control_addip(struct ctdb_context *ctdb, int argc, const char **argv)
 static int control_ipiface(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	ctdb_sock_addr addr;
+	char *iface = NULL;
 
 	if (argc != 1) {
 		usage();
@@ -2428,7 +2429,15 @@ static int control_ipiface(struct ctdb_context *ctdb, int argc, const char **arg
 		return -1;
 	}
 
-	printf("IP on interface %s\n", ctdb_sys_find_ifname(&addr));
+	iface = ctdb_sys_find_ifname(&addr);
+	if (iface == NULL) {
+		printf("Failed to get interface name for ip: %s", argv[0]);
+		return -1;
+	}
+
+	printf("IP on interface %s\n", iface);
+
+	free(iface);
 
 	return 0;
 }
