@@ -962,7 +962,7 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 					   rid, is_rodc, userAccountControl,
 					   ent_type, entry_ex);
 	if (ret) {
-		/* Could be bougus data in the entry, or out of memory */
+		/* Could be bogus data in the entry, or out of memory */
 		goto out;
 	}
 
