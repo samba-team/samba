@@ -1005,11 +1005,22 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb,
 		pip->pnn));
 
 	state = talloc(ctdb, struct takeover_callback_state);
-	CTDB_NO_MEMORY(ctdb, state);
+	if (state == NULL) {
+		ctdb_set_error(ctdb, "Out of memory at %s:%d",
+			       __FILE__, __LINE__);
+		free(iface);
+		return -1;
+	}
 
 	state->c = talloc_steal(state, c);
 	state->addr = talloc(state, ctdb_sock_addr);       
-	CTDB_NO_MEMORY(ctdb, state->addr);
+	if (state->addr == NULL) {
+		ctdb_set_error(ctdb, "Out of memory at %s:%d",
+			       __FILE__, __LINE__);
+		free(iface);
+		talloc_free(state);
+		return -1;
+	}
 	*state->addr = pip->addr;
 	state->vnn   = vnn;
 
