@@ -21,18 +21,17 @@
 
 import samba
 import os
-import sys
 from tempfile import mkdtemp
-import shutil
 
 import samba.tests
 from samba import ldif_utils
 from samba import ldb
+from samba.dcerpc import misc
+
 
 from samba.param import LoadParm
 from samba.credentials import Credentials
 from samba.samdb import SamDB
-import itertools
 
 MULTISITE_LDIF = os.path.join(os.environ['SRCDIR_ABS'],
                               "testdata/ldif-utils-test-multisite.ldif")
@@ -60,6 +59,7 @@ MULTISITE_LDIF_DSAS = (
      "Default-First-Site-Name"),
 )
 
+
 class LdifUtilTests(samba.tests.TestCase):
     def setUp(self):
         super(LdifUtilTests, self).setUp()
@@ -82,6 +82,21 @@ class LdifUtilTests(samba.tests.TestCase):
         samdb = ldif_utils.ldif_to_samdb(dburl, self.lp, MULTISITE_LDIF)
         self.assertIsInstance(samdb, SamDB)
 
+        dsa = ("CN=WIN01,CN=Servers,CN=Default-First-Site-Name,CN=Sites,"
+               "CN=Configuration,DC=ad,DC=samba,DC=example,DC=com")
+        res = samdb.search(ldb.Dn(samdb, "CN=NTDS Settings," + dsa),
+                           scope=ldb.SCOPE_BASE, attrs=["objectGUID"])
+
+        ntds_guid = misc.GUID(samdb.get_ntds_GUID())
+        self.assertEqual(misc.GUID(res[0]["objectGUID"][0]), ntds_guid)
+
+        service_name_res = samdb.search(base="",
+                                        scope=ldb.SCOPE_BASE,
+                                        attrs=["dsServiceName"])
+        dn = ldb.Dn(samdb,
+                    service_name_res[0]["dsServiceName"][0])
+        self.assertEqual(dn, ldb.Dn(samdb, "CN=NTDS Settings," + dsa))
+
     def test_ldif_to_samdb_forced_local_dsa(self):
         for dsa, site in MULTISITE_LDIF_DSAS:
             dburl = os.path.join(self.tmpdir, "ldif-to-samba-forced-local-dsa"
@@ -90,9 +105,19 @@ class LdifUtilTests(samba.tests.TestCase):
                                              forced_local_dsa=dsa)
             self.assertIsInstance(samdb, SamDB)
             self.assertEqual(samdb.server_site_name(), site)
-            dn = ldb.Dn(samdb, "<GUID=%s>" % samdb.get_ntds_GUID())
-            print dn
 
+            res = samdb.search(ldb.Dn(samdb, "CN=NTDS Settings," + dsa),
+                               scope=ldb.SCOPE_BASE, attrs=["objectGUID"])
+
+            ntds_guid = misc.GUID(samdb.get_ntds_GUID())
+            self.assertEqual(misc.GUID(res[0]["objectGUID"][0]), ntds_guid)
+
+            service_name_res = samdb.search(base="",
+                                            scope=ldb.SCOPE_BASE,
+                                            attrs=["dsServiceName"])
+            dn = ldb.Dn(samdb,
+                        service_name_res[0]["dsServiceName"][0])
+            self.assertEqual(dn, ldb.Dn(samdb, "CN=NTDS Settings," + dsa))
 
     def samdb_to_ldif_file(self):
         #samdb_to_ldif_file(samdb, dburl, lp, creds, ldif_file):
