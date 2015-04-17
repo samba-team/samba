@@ -23,81 +23,20 @@
 
 #include "includes.h"
 #include "system/kerberos.h"
+#include "auth/credentials/credentials.h"
 #include "auth/kerberos/kerberos.h"
+#include "auth/kerberos/kerberos_util.h"
 #include "auth/kerberos/kerberos_srv_keytab.h"
 
-static void keytab_principals_free(krb5_context context, krb5_principal *set)
+static void keytab_principals_free(krb5_context context,
+				   uint32_t num_principals,
+				   krb5_principal *set)
 {
-	int i;
-	for (i = 0; set[i] != NULL; i++) {
+	uint32_t i;
+
+	for (i = 0; i < num_principals; i++) {
 		krb5_free_principal(context, set[i]);
 	}
-}
-
-static krb5_error_code principals_from_list(TALLOC_CTX *parent_ctx,
-					const char *samAccountName,
-					const char *realm,
-					const char **SPNs, int num_SPNs,
-					krb5_context context,
-					krb5_principal **principals_out,
-					const char **error_string)
-{
-	unsigned int i;
-	krb5_error_code ret;
-	char *upper_realm;
-	TALLOC_CTX *tmp_ctx;
-	krb5_principal *principals = NULL;
-	tmp_ctx = talloc_new(parent_ctx);
-	if (!tmp_ctx) {
-		*error_string = "Cannot allocate tmp_ctx";
-		return ENOMEM;
-	}
-
-	if (!realm) {
-		*error_string = "Cannot make principal without a realm";
-		ret = EINVAL;
-		goto done;
-	}
-
-	upper_realm = strupper_talloc(tmp_ctx, realm);
-	if (!upper_realm) {
-		*error_string = "Cannot allocate full upper case realm";
-		ret = ENOMEM;
-		goto done;
-	}
-
-	principals = talloc_zero_array(tmp_ctx, krb5_principal,
-					num_SPNs ? (num_SPNs + 2) : 2);
-
-	for (i = 0; num_SPNs && i < num_SPNs; i++) {
-		ret = krb5_parse_name(context, SPNs[i], &principals[i]);
-
-		if (ret) {
-			*error_string = smb_get_krb5_error_message(context, ret,
-								   parent_ctx);
-			goto done;
-		}
-	}
-
-	if (samAccountName) {
-		ret = smb_krb5_make_principal(context, &principals[i],
-					  upper_realm, samAccountName,
-					  NULL);
-		if (ret) {
-			*error_string = smb_get_krb5_error_message(context, ret,
-								   parent_ctx);
-			goto done;
-		}
-	}
-
-done:
-	if (ret) {
-		keytab_principals_free(context, principals);
-	} else {
-		*principals_out = talloc_steal(parent_ctx, principals);
-	}
-	talloc_free(tmp_ctx);
-	return ret;
 }
 
 static krb5_error_code salt_principal(TALLOC_CTX *parent_ctx,
@@ -188,6 +127,7 @@ static krb5_error_code salt_principal(TALLOC_CTX *parent_ctx,
 }
 
 static krb5_error_code keytab_add_keys(TALLOC_CTX *parent_ctx,
+				       uint32_t num_principals,
 				       krb5_principal *principals,
 				       krb5_principal salt_princ,
 				       int kvno,
@@ -222,7 +162,7 @@ static krb5_error_code keytab_add_keys(TALLOC_CTX *parent_ctx,
 
                 entry.vno = kvno;
 
-		for (p = 0; principals[p]; p++) {
+		for (p = 0; p < num_principals; p++) {
 			unparsed = NULL;
 			entry.principal = principals[p];
 			ret = krb5_kt_add_entry(context, keytab, &entry);
@@ -261,6 +201,7 @@ static krb5_error_code create_keytab(TALLOC_CTX *parent_ctx,
 				     const char *new_secret,
 				     const char *old_secret,
 				     uint32_t supp_enctypes,
+				     uint32_t num_principals,
 				     krb5_principal *principals,
 				     krb5_context context,
 				     krb5_keytab keytab,
@@ -303,7 +244,9 @@ static krb5_error_code create_keytab(TALLOC_CTX *parent_ctx,
 		goto done;
 	}
 
-	ret = keytab_add_keys(mem_ctx, principals,
+	ret = keytab_add_keys(mem_ctx,
+			      num_principals,
+			      principals,
 			      salt_princ, kvno, new_secret,
 			      context, enctypes, keytab, error_string);
 	if (ret) {
@@ -312,7 +255,9 @@ static krb5_error_code create_keytab(TALLOC_CTX *parent_ctx,
 	}
 
 	if (old_secret && add_old && kvno != 0) {
-		ret = keytab_add_keys(mem_ctx, principals,
+		ret = keytab_add_keys(mem_ctx,
+				      num_principals,
+				      principals,
 				      salt_princ, kvno - 1, old_secret,
 				      context, enctypes, keytab, error_string);
 		if (ret) {
@@ -322,145 +267,6 @@ static krb5_error_code create_keytab(TALLOC_CTX *parent_ctx,
 
 done:
 	krb5_free_principal(context, salt_princ);
-	talloc_free(mem_ctx);
-	return ret;
-}
-
-/*
- * Walk the keytab, looking for entries of this principal name,
- * with KVNO other than current kvno -1.
- *
- * These entries are now stale,
- * we only keep the current and previous entries around.
- *
- * Inspired by the code in Samba3 for 'use kerberos keytab'.
- */
-
-static krb5_error_code remove_old_entries(TALLOC_CTX *parent_ctx,
-					  int kvno,
-					  krb5_principal *principals,
-					  bool delete_all_kvno,
-					  krb5_context context,
-					  krb5_keytab keytab,
-					  bool *found_previous,
-					  const char **error_string)
-{
-	krb5_error_code ret, ret2;
-	krb5_kt_cursor cursor;
-	TALLOC_CTX *mem_ctx = talloc_new(parent_ctx);
-
-	if (!mem_ctx) {
-		return ENOMEM;
-	}
-
-	*found_previous = false;
-
-	/* for each entry in the keytab */
-	ret = krb5_kt_start_seq_get(context, keytab, &cursor);
-	switch (ret) {
-	case 0:
-		break;
-#ifdef HEIM_ERR_OPNOTSUPP
-	case HEIM_ERR_OPNOTSUPP:
-#endif
-	case ENOENT:
-	case KRB5_KT_END:
-		/* no point enumerating if there isn't anything here */
-		talloc_free(mem_ctx);
-		return 0;
-	default:
-		*error_string = talloc_asprintf(parent_ctx,
-			"failed to open keytab for read of old entries: %s\n",
-			smb_get_krb5_error_message(context, ret, mem_ctx));
-		talloc_free(mem_ctx);
-		return ret;
-	}
-
-	while (!ret) {
-		unsigned int i;
-		bool matched = false;
-		krb5_keytab_entry entry;
-
-		ret = krb5_kt_next_entry(context, keytab, &entry, &cursor);
-		if (ret) {
-			break;
-		}
-		for (i = 0; principals[i]; i++) {
-			/* if it matches our principal */
-			if (smb_krb5_kt_compare(context, &entry,
-						principals[i], 0, 0)) {
-				matched = true;
-				break;
-			}
-		}
-
-		if (!matched) {
-			/* Free the entry,
-			 * it wasn't the one we were looking for anyway */
-			krb5_kt_free_entry(context, &entry);
-			/* Make sure we do not double free */
-			ZERO_STRUCT(entry);
-			continue;
-		}
-
-		/* delete it, if it is not kvno -1 */
-		if (entry.vno != (kvno - 1 )) {
-			/* Release the enumeration.  We are going to
-			 * have to start this from the top again,
-			 * because deletes during enumeration may not
-			 * always be consistent.
-			 *
-			 * Also, the enumeration locks a FILE: keytab
-			 */
-
-			krb5_kt_end_seq_get(context, keytab, &cursor);
-
-			ret = krb5_kt_remove_entry(context, keytab, &entry);
-			krb5_kt_free_entry(context, &entry);
-			/* Make sure we do not double free */
-			ZERO_STRUCT(entry);
-
-			/* Deleted: Restart from the top */
-			ret2 = krb5_kt_start_seq_get(context, keytab, &cursor);
-			if (ret2) {
-				krb5_kt_free_entry(context, &entry);
-				/* Make sure we do not double free */
-				ZERO_STRUCT(entry);
-				DEBUG(1, ("failed to restart enumeration of keytab: %s\n",
-					  smb_get_krb5_error_message(context,
-								ret, mem_ctx)));
-
-				talloc_free(mem_ctx);
-				return ret2;
-			}
-
-			if (ret) {
-				break;
-			}
-
-		} else {
-			*found_previous = true;
-		}
-
-		/* Free the entry, we don't need it any more */
-		krb5_kt_free_entry(context, &entry);
-		/* Make sure we do not double free */
-		ZERO_STRUCT(entry);
-	}
-	krb5_kt_end_seq_get(context, keytab, &cursor);
-
-	switch (ret) {
-	case 0:
-		break;
-	case ENOENT:
-	case KRB5_KT_END:
-		ret = 0;
-		break;
-	default:
-		*error_string = talloc_asprintf(parent_ctx,
-			"failed in deleting old entries for principal: %s\n",
-			smb_get_krb5_error_message(context, ret, mem_ctx));
-	}
 	talloc_free(mem_ctx);
 	return ret;
 }
@@ -483,9 +289,11 @@ krb5_error_code smb_krb5_update_keytab(TALLOC_CTX *parent_ctx,
 {
 	krb5_keytab keytab;
 	krb5_error_code ret;
-	bool found_previous;
+	bool found_previous = false;
 	TALLOC_CTX *tmp_ctx;
 	krb5_principal *principals = NULL;
+	uint32_t num_principals = 0;
+	char *upper_realm;
 
 	if (keytab_name == NULL) {
 		return ENOENT;
@@ -505,11 +313,22 @@ krb5_error_code smb_krb5_update_keytab(TALLOC_CTX *parent_ctx,
 		return ENOMEM;
 	}
 
-	/* Get the principal we will store the new keytab entries under */
-	ret = principals_from_list(tmp_ctx,
-				  samAccountName, realm, SPNs, num_SPNs,
-				  context, &principals, error_string);
+	upper_realm = strupper_talloc(tmp_ctx, realm);
+	if (upper_realm == NULL) {
+		*error_string = "Cannot allocate memory to upper case realm";
+		talloc_free(tmp_ctx);
+		return ENOMEM;
+	}
 
+	ret = smb_krb5_create_principals_array(tmp_ctx,
+					       context,
+					       samAccountName,
+					       upper_realm,
+					       num_SPNs,
+					       SPNs,
+					       &num_principals,
+					       &principals,
+					       error_string);
 	if (ret != 0) {
 		*error_string = talloc_asprintf(parent_ctx,
 			"Failed to load principals from ldb message: %s\n",
@@ -517,8 +336,14 @@ krb5_error_code smb_krb5_update_keytab(TALLOC_CTX *parent_ctx,
 		goto done;
 	}
 
-	ret = remove_old_entries(tmp_ctx, kvno, principals, delete_all_kvno,
-				 context, keytab, &found_previous, error_string);
+	ret = smb_krb5_remove_obsolete_keytab_entries(tmp_ctx,
+						      context,
+						      keytab,
+						      num_principals,
+						      principals,
+						      kvno,
+						      &found_previous,
+						      error_string);
 	if (ret != 0) {
 		*error_string = talloc_asprintf(parent_ctx,
 			"Failed to remove old principals from keytab: %s\n",
@@ -532,9 +357,11 @@ krb5_error_code smb_krb5_update_keytab(TALLOC_CTX *parent_ctx,
 		 * Otherwise, add kvno, and kvno -1 */
 
 		ret = create_keytab(tmp_ctx,
-				    samAccountName, realm, saltPrincipal,
+				    samAccountName, upper_realm, saltPrincipal,
 				    kvno, new_secret, old_secret,
-				    supp_enctypes, principals,
+				    supp_enctypes,
+				    num_principals,
+				    principals,
 				    context, keytab,
 				    found_previous ? false : true,
 				    error_string);
@@ -549,7 +376,7 @@ krb5_error_code smb_krb5_update_keytab(TALLOC_CTX *parent_ctx,
 	}
 
 done:
-	keytab_principals_free(context, principals);
+	keytab_principals_free(context, num_principals, principals);
 	if (ret != 0 || _keytab == NULL) {
 		krb5_kt_close(context, keytab);
 	}
@@ -585,7 +412,6 @@ krb5_error_code smb_krb5_create_memory_keytab(TALLOC_CTX *parent_ctx,
 		talloc_free(mem_ctx);
 		return ENOMEM;
 	}
-
 
 	ret = smb_krb5_update_keytab(mem_ctx, context,
 				     *keytab_name, samAccountName, realm,
