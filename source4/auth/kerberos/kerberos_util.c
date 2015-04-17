@@ -471,3 +471,160 @@ krb5_error_code smb_krb5_get_keytab_container(TALLOC_CTX *mem_ctx,
 
 	return 0;
 }
+
+/*
+ * Walk the keytab, looking for entries of this principal name,
+ * with KVNO other than current kvno -1.
+ *
+ * These entries are now stale,
+ * we only keep the current and previous entries around.
+ *
+ * Inspired by the code in Samba3 for 'use kerberos keytab'.
+ */
+krb5_error_code smb_krb5_remove_obsolete_keytab_entries(TALLOC_CTX *mem_ctx,
+							krb5_context context,
+							krb5_keytab keytab,
+							uint32_t num_principals,
+							krb5_principal *principals,
+							krb5_kvno kvno,
+							bool *found_previous,
+							const char **error_string)
+{
+	TALLOC_CTX *tmp_ctx;
+	krb5_error_code code;
+	krb5_kt_cursor cursor;
+
+	tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		*error_string = "Cannot allocate tmp_ctx";
+		return ENOMEM;
+	}
+
+	*found_previous = true;
+
+	code = krb5_kt_start_seq_get(context, keytab, &cursor);
+	switch (code) {
+	case 0:
+		break;
+#ifdef HEIM_ERR_OPNOTSUPP
+	case HEIM_ERR_OPNOTSUPP:
+#endif
+	case ENOENT:
+	case KRB5_KT_END:
+		/* no point enumerating if there isn't anything here */
+		code = 0;
+		goto done;
+	default:
+		*error_string = talloc_asprintf(mem_ctx,
+						"failed to open keytab for read of old entries: %s\n",
+						smb_get_krb5_error_message(context, code, mem_ctx));
+		goto done;
+	}
+
+	do {
+		krb5_keytab_entry entry;
+		bool matched = false;
+		uint32_t i;
+
+		code = krb5_kt_next_entry(context, keytab, &entry, &cursor);
+		if (code) {
+			break;
+		}
+
+		for (i = 0; i < num_principals; i++) {
+			krb5_boolean ok;
+
+			ok = smb_krb5_kt_compare(context,
+						&entry,
+						principals[i],
+						0,
+						0);
+			if (ok) {
+				matched = true;
+				break;
+			}
+		}
+
+		if (!matched) {
+			/*
+			 * Free the entry, it wasn't the one we were looking
+			 * for anyway
+			 */
+			krb5_kt_free_entry(context, &entry);
+			/* Make sure we do not double free */
+			ZERO_STRUCT(entry);
+			continue;
+		}
+
+		/* Delete it, if it is not kvno - 1 */
+		if (entry.vno != (kvno - 1)) {
+			krb5_error_code rc;
+
+			/* Release the enumeration.  We are going to
+			 * have to start this from the top again,
+			 * because deletes during enumeration may not
+			 * always be consistent.
+			 *
+			 * Also, the enumeration locks a FILE: keytab
+			 */
+			krb5_kt_end_seq_get(context, keytab, &cursor);
+
+			code = krb5_kt_remove_entry(context, keytab, &entry);
+			krb5_kt_free_entry(context, &entry);
+
+			/* Make sure we do not double free */
+			ZERO_STRUCT(entry);
+
+			/* Deleted: Restart from the top */
+			rc = krb5_kt_start_seq_get(context, keytab, &cursor);
+			if (rc != 0) {
+				krb5_kt_free_entry(context, &entry);
+
+				/* Make sure we do not double free */
+				ZERO_STRUCT(entry);
+
+				DEBUG(1, ("failed to restart enumeration of keytab: %s\n",
+					  smb_get_krb5_error_message(context,
+								     code,
+								     tmp_ctx)));
+
+				talloc_free(tmp_ctx);
+				return rc;
+			}
+
+			if (code != 0) {
+				break;
+			}
+
+		} else {
+			*found_previous = true;
+		}
+
+		/* Free the entry, we don't need it any more */
+		krb5_kt_free_entry(context, &entry);
+		/* Make sure we do not double free */
+		ZERO_STRUCT(entry);
+	} while (code != 0);
+
+	krb5_kt_end_seq_get(context, keytab, &cursor);
+
+	switch (code) {
+	case 0:
+		break;
+	case ENOENT:
+	case KRB5_KT_END:
+		code = 0;
+		break;
+	default:
+		*error_string = talloc_asprintf(mem_ctx,
+						"failed in deleting old entries for principal: %s\n",
+						smb_get_krb5_error_message(context,
+									   code,
+									   mem_ctx));
+	}
+
+	code = 0;
+done:
+	talloc_free(tmp_ctx);
+	return code;
+}
