@@ -134,6 +134,92 @@ static krb5_error_code impersonate_principal_from_credentials(
 			smb_krb5_context, princ, error_string);
 }
 
+krb5_error_code smb_krb5_create_principals_array(TALLOC_CTX *mem_ctx,
+						 krb5_context context,
+						 const char *account_name,
+						 const char *realm,
+						 uint32_t num_spns,
+						 const char *spns[],
+						 uint32_t *pnum_principals,
+						 krb5_principal **pprincipals,
+						 const char **error_string)
+{
+	krb5_error_code code;
+	TALLOC_CTX *tmp_ctx;
+	uint32_t num_principals = 0;
+	krb5_principal *principals;
+	uint32_t i;
+
+	tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		*error_string = "Cannot allocate tmp_ctx";
+		return ENOMEM;
+	}
+
+	if (realm == NULL) {
+		*error_string = "Cannot create principal without a realm";
+		code = EINVAL;
+		goto done;
+	}
+
+	if (account_name == NULL && (num_spns == 0 || spns == NULL)) {
+		*error_string = "Cannot create principal without an account or SPN";
+		code = EINVAL;
+		goto done;
+	}
+
+	if (account_name != NULL && account_name[0] != '\0') {
+		num_principals++;
+	}
+	num_principals += num_spns;
+
+	principals = talloc_zero_array(tmp_ctx,
+				       krb5_principal,
+				       num_principals);
+	if (principals == NULL) {
+		*error_string = "Cannot allocate principals";
+		code = ENOMEM;
+		goto done;
+	}
+
+	for (i = 0; i < num_spns; i++) {
+		code = krb5_parse_name(context, spns[i], &(principals[i]));
+		if (code != 0) {
+			*error_string = smb_get_krb5_error_message(context,
+								   code,
+								   mem_ctx);
+			goto done;
+		}
+	}
+
+	if (account_name != NULL && account_name[0] != '\0') {
+		code = smb_krb5_make_principal(context,
+					       &(principals[i]),
+					       realm,
+					       account_name,
+					       NULL);
+		if (code != 0) {
+			*error_string = smb_get_krb5_error_message(context,
+								   code,
+								   mem_ctx);
+			goto done;
+		}
+	}
+
+	if (pnum_principals != NULL) {
+		*pnum_principals = num_principals;
+
+		if (pprincipals != NULL) {
+			*pprincipals = talloc_steal(mem_ctx, principals);
+		}
+	}
+
+	code = 0;
+done:
+	talloc_free(tmp_ctx);
+	return code;
+}
+
 /**
  * Return a freshly allocated ccache (destroyed by destructor on child
  * of parent_ctx), for a given set of client credentials 
