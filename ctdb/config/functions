@@ -199,6 +199,20 @@ nice_service()
 }
 
 ######################################################
+# Cached retrieval of PNN from local node.  This never changes so why
+# open a client connection to the server each time this is needed?
+# This sets $pnn - this avoid an unnecessary subprocess.
+ctdb_get_pnn ()
+{
+    _pnn_file="$CTDB_VARDIR/state/my-pnn"
+    if [ ! -f "$_pnn_file" ] ; then
+	ctdb pnn | sed -e 's@.*:@@' >"$_pnn_file"
+    fi
+
+    read pnn <"$_pnn_file"
+}
+
+######################################################
 # wrapper around /proc/ settings to allow them to be hooked
 # for testing
 # 1st arg is relative path under /proc/, 2nd arg is value to set
