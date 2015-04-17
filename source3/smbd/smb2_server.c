@@ -1327,12 +1327,11 @@ NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,
 
 	if (req->in.vector_count > req->current_idx + SMBD_SMB2_NUM_IOV_PER_REQ) {
 		/*
-		 * We're trying to go async in a compound
-		 * request chain.
-		 * This is only allowed for opens that
-		 * cause an oplock break, otherwise it
-		 * is not allowed. See [MS-SMB2].pdf
-		 * note <194> on Section 3.3.5.2.7.
+		 * We're trying to go async in a compound request
+		 * chain. This is only allowed for opens that cause an
+		 * oplock break or for the last operation in the
+		 * chain, otherwise it is not allowed. See
+		 * [MS-SMB2].pdf note <206> on Section 3.3.5.2.7.
 		 */
 		const uint8_t *inhdr = SMBD_SMB2_IN_HDR_PTR(req);
 
