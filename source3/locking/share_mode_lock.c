@@ -188,10 +188,7 @@ static void share_mode_memcache_store(struct share_mode_data *d)
 static enum ndr_err_code get_blob_sequence_number(DATA_BLOB *blob,
 						uint64_t *pseq)
 {
-	struct ndr_pull ndr;
-	memset(&ndr, '\0', sizeof(struct ndr_pull));
-	ndr.data = blob->data;
-	ndr.data_size = blob->length;
+	struct ndr_pull ndr = {.data = blob->data, .data_size = blob->length};
 	NDR_CHECK(ndr_pull_hyper(&ndr, NDR_SCALARS, pseq));
 	return NDR_ERR_SUCCESS;
 }
