@@ -303,6 +303,18 @@ setup_public_addresses ()
 EOF
 }
 
+# Need to cope with ctdb_get_pnn().  If a test changes PNN then it
+# needs to be using a different state directory, otherwise the wrong
+# PNN can already be cached in the state directory.
+ctdb_set_pnn ()
+{
+    export FAKE_CTDB_PNN="$1"
+    echo "Setting up PNN ${FAKE_CTDB_PNN}"
+
+    export CTDB_VARDIR="$EVENTSCRIPTS_TESTS_VAR_DIR/ctdb/${FAKE_CTDB_PNN}"
+    mkdir -p "$CTDB_VARDIR"
+}
+
 setup_ctdb ()
 {
     setup_generic
@@ -310,8 +322,7 @@ setup_ctdb ()
     export FAKE_CTDB_NUMNODES="${1:-3}"
     echo "Setting up CTDB with ${FAKE_CTDB_NUMNODES} fake nodes"
 
-    export FAKE_CTDB_PNN="${2:-0}"
-    echo "Setting up CTDB with PNN ${FAKE_CTDB_PNN}"
+    ctdb_set_pnn "${2:-0}"
 
     setup_public_addresses
 
@@ -747,10 +758,6 @@ setup_samba ()
 	export FAKE_TCP_LISTEN=""
 	export FAKE_WBINFO_FAIL="yes"
     fi
-
-    # This is ugly but if this file isn't removed before each test
-    # then configuration changes between tests don't stick.
-    rm -f "$CTDB_VARDIR/state/samba/smb.conf.cache"
 }
 
 setup_winbind ()

@@ -12,17 +12,17 @@ ok_null
 simple_test_event "add-client" "192.168.123.45"
 simple_test_event "update"
 
-FAKE_CTDB_PNN=1
+ctdb_set_pnn 1
 
 ok_null
 simple_test_event "add-client" "192.168.123.46"
 simple_test_event "update"
 
-FAKE_CTDB_PNN=0
+ctdb_set_pnn 0
 
 check_statd_callout_smnotify "192.168.123.45"
 
-FAKE_CTDB_PNN=1
+ctdb_set_pnn 1
 
 check_statd_callout_smnotify "192.168.123.46"
 
