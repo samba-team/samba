@@ -119,8 +119,8 @@ const char *ads_errstr(ADS_STATUS status)
 	case ENUM_ADS_ERROR_GSS:
 	{
 		char *ret;
-		uint32 msg_ctx;
-		uint32 minor;
+		uint32_t msg_ctx;
+		uint32_t minor;
 		gss_buffer_desc msg1, msg2;
 
 		msg_ctx = 0;
@@ -147,7 +147,7 @@ const char *ads_errstr(ADS_STATUS status)
 }
 
 #ifdef HAVE_KRB5
-NTSTATUS gss_err_to_ntstatus(uint32 maj, uint32 min)
+NTSTATUS gss_err_to_ntstatus(uint32_t maj, uint32_t min)
 {
         ADS_STATUS adss = ADS_ERROR_GSS(maj, min);
         DEBUG(10,("gss_err_to_ntstatus: Error %s\n",

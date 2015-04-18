@@ -85,7 +85,7 @@ char *ads_ou_string(ADS_STRUCT *ads, const char *org_unit);
 char *ads_default_ou_string(ADS_STRUCT *ads, const char *wknguid);
 ADS_STATUS ads_add_strlist(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 				const char *name, const char **vals);
-uint32 ads_get_kvno(ADS_STRUCT *ads, const char *account_name);
+uint32_t ads_get_kvno(ADS_STRUCT *ads, const char *account_name);
 uint32_t ads_get_machine_kvno(ADS_STRUCT *ads, const char *machine_name);
 
 bool ads_element_in_array(const char **el_array, size_t num_el, const char *el);
@@ -103,9 +103,9 @@ ADS_STATUS ads_create_machine_acct(ADS_STRUCT *ads, const char *machine_name,
 ADS_STATUS ads_move_machine_acct(ADS_STRUCT *ads, const char *machine_name,
                                  const char *org_unit, bool *moved);
 int ads_count_replies(ADS_STRUCT *ads, void *res);
-ADS_STATUS ads_USN(ADS_STRUCT *ads, uint32 *usn);
+ADS_STATUS ads_USN(ADS_STRUCT *ads, uint32_t *usn);
 ADS_STATUS ads_current_time(ADS_STRUCT *ads);
-ADS_STATUS ads_domain_func_level(ADS_STRUCT *ads, uint32 *val);
+ADS_STATUS ads_domain_func_level(ADS_STRUCT *ads, uint32_t *val);
 ADS_STATUS ads_domain_sid(ADS_STRUCT *ads, struct dom_sid *sid);
 ADS_STATUS ads_site_dn(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, const char **site_name);
 ADS_STATUS ads_site_dn_for_machine(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, const char *computer_name, const char **site_dn);
@@ -122,12 +122,12 @@ char* ads_get_dnshostname( ADS_STRUCT *ads, TALLOC_CTX *ctx, const char *machine
 char* ads_get_upn( ADS_STRUCT *ads, TALLOC_CTX *ctx, const char *machine_name );
 char* ads_get_samaccountname( ADS_STRUCT *ads, TALLOC_CTX *ctx, const char *machine_name );
 ADS_STATUS ads_join_realm(ADS_STRUCT *ads, const char *machine_name,
-			uint32 account_type, const char *org_unit);
+			uint32_t account_type, const char *org_unit);
 ADS_STATUS ads_leave_realm(ADS_STRUCT *ads, const char *hostname);
 ADS_STATUS ads_find_samaccount(ADS_STRUCT *ads,
 			       TALLOC_CTX *mem_ctx,
 			       const char *samaccountname,
-			       uint32 *uac_ret,
+			       uint32_t *uac_ret,
 			       const char **dn_ret);
 ADS_STATUS ads_config_path(ADS_STRUCT *ads,
 			   TALLOC_CTX *mem_ctx,

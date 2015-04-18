@@ -171,7 +171,7 @@ eagain:
 	return -1;
 }
 
-static ber_slen_t ads_saslwrap_prepare_outbuf(ADS_STRUCT *ads, uint32 len)
+static ber_slen_t ads_saslwrap_prepare_outbuf(ADS_STRUCT *ads, uint32_t len)
 {
 	ads->ldap.out.ofs	= 0;
 	ads->ldap.out.left	= 0;

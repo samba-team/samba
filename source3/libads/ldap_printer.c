@@ -146,7 +146,7 @@ static bool map_dword(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 	if (value->type != REG_DWORD) {
 		return false;
 	}
-	if (value->data.length != sizeof(uint32)) {
+	if (value->data.length != sizeof(uint32_t)) {
 		return false;
 	}
 	str_value = talloc_asprintf(ctx, "%d", IVAL(value->data.data, 0));
@@ -292,7 +292,7 @@ WERROR get_remote_printer_publishing_data(struct rpc_pipe_client *cli,
 	char *printername;
 	struct spoolss_PrinterEnumValues *info;
 	uint32_t count;
-	uint32 i;
+	uint32_t i;
 	struct policy_handle pol;
 	WERROR werr;
 
