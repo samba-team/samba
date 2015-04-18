@@ -103,7 +103,8 @@ EOF
 update_config_from_tdb() {
 
     # Pull optional ctdb configuration data out of config.tdb
-    _key="public_addresses:node#$(ctdb -t 1 xpnn|sed -e 's/.*://')"
+    ctdb_get_pnn
+    _key="public_addresses:node#${pnn}"
     _t="$service_state_dir/public_addresses"
     rm -f "$_t"
 
