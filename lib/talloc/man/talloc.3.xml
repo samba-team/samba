@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
 <!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN" "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd">
 <refentry>
+  <refentryinfo><date>2015-04-10</date></refentryinfo>
   <refmeta>
     <refentrytitle>talloc</refentrytitle>
     <manvolnum>3</manvolnum>
