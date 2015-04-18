@@ -1174,7 +1174,7 @@ static ADS_STATUS ads_do_paged_search(ADS_STRUCT *ads, const char *bind_path,
 
  ADS_STATUS ads_do_search_all_sd_flags(ADS_STRUCT *ads, const char *bind_path,
 				       int scope, const char *expr,
-				       const char **attrs, uint32 sd_flags, 
+				       const char **attrs, uint32_t sd_flags, 
 				       LDAPMessage **res)
 {
 	ads_control args;
@@ -1783,10 +1783,10 @@ ADS_STATUS ads_add_strlist(TALLOC_CTX *ctx, ADS_MODLIST *mods,
  * @return the kvno for the account, or -1 in case of a failure.
  **/
 
-uint32 ads_get_kvno(ADS_STRUCT *ads, const char *account_name)
+uint32_t ads_get_kvno(ADS_STRUCT *ads, const char *account_name)
 {
 	LDAPMessage *res = NULL;
-	uint32 kvno = (uint32)-1;      /* -1 indicates a failure */
+	uint32_t kvno = (uint32)-1;      /* -1 indicates a failure */
 	char *filter;
 	const char *attrs[] = {"msDS-KeyVersionNumber", NULL};
 	char *dn_string = NULL;
@@ -2136,7 +2136,7 @@ ADS_STATUS ads_create_machine_acct(ADS_STRUCT *ads, const char *machine_name,
 	const char *objectClass[] = {"top", "person", "organizationalPerson",
 				     "user", "computer", NULL};
 	LDAPMessage *res = NULL;
-	uint32 acct_control = ( UF_WORKSTATION_TRUST_ACCOUNT |\
+	uint32_t acct_control = ( UF_WORKSTATION_TRUST_ACCOUNT |\
 	                        UF_DONT_EXPIRE_PASSWD |\
 			        UF_ACCOUNTDISABLE );
 
@@ -2312,7 +2312,7 @@ static void dump_sd(ADS_STRUCT *ads, const char *filed, struct berval **values)
 	struct security_descriptor *psd;
 	NTSTATUS status;
 
-	status = unmarshall_sec_desc(talloc_tos(), (uint8 *)values[0]->bv_val,
+	status = unmarshall_sec_desc(talloc_tos(), (uint8_t *)values[0]->bv_val,
 				     values[0]->bv_len, &psd);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("unmarshall_sec_desc failed: %s\n",
@@ -2725,7 +2725,7 @@ int ads_count_replies(ADS_STRUCT *ads, void *res)
 }
 
 /**
- * pull a single uint32 from a ADS result
+ * pull a single uint32_t from a ADS result
  * @param ads connection to ads server
  * @param msg Results of search
  * @param field Attribute to retrieve
@@ -2733,7 +2733,7 @@ int ads_count_replies(ADS_STRUCT *ads, void *res)
  * @return boolean inidicating success
 */
  bool ads_pull_uint32(ADS_STRUCT *ads, LDAPMessage *msg, const char *field,
-		      uint32 *v)
+		      uint32_t *v)
 {
 	char **values;
 
@@ -2858,7 +2858,7 @@ int ads_count_replies(ADS_STRUCT *ads, void *res)
 	if (values[0]) {
 		NTSTATUS status;
 		status = unmarshall_sec_desc(mem_ctx,
-					     (uint8 *)values[0]->bv_val,
+					     (uint8_t *)values[0]->bv_val,
 					     values[0]->bv_len, sd);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("unmarshall_sec_desc failed: %s\n",
@@ -2908,7 +2908,7 @@ int ads_count_replies(ADS_STRUCT *ads, void *res)
  * @param usn Pointer to retrieved update serial number
  * @return status of search
  **/
-ADS_STATUS ads_USN(ADS_STRUCT *ads, uint32 *usn)
+ADS_STATUS ads_USN(ADS_STRUCT *ads, uint32_t *usn)
 {
 	const char *attrs[] = {"highestCommittedUSN", NULL};
 	ADS_STATUS status;
@@ -3020,7 +3020,7 @@ done:
 /********************************************************************
 ********************************************************************/
 
-ADS_STATUS ads_domain_func_level(ADS_STRUCT *ads, uint32 *val)
+ADS_STATUS ads_domain_func_level(ADS_STRUCT *ads, uint32_t *val)
 {
 	const char *attrs[] = {"domainFunctionality", NULL};
 	ADS_STATUS status;
@@ -3512,7 +3512,7 @@ out:
  * @return status of join
  **/
 ADS_STATUS ads_join_realm(ADS_STRUCT *ads, const char *machine_name,
-			uint32 account_type, const char *org_unit)
+			uint32_t account_type, const char *org_unit)
 {
 	ADS_STATUS status;
 	LDAPMessage *res = NULL;
@@ -3708,7 +3708,7 @@ ADS_STATUS ads_leave_realm(ADS_STRUCT *ads, const char *hostname)
 	struct dom_sid *tmp_sids;
 	struct dom_sid tmp_user_sid;
 	struct dom_sid tmp_primary_group_sid;
-	uint32 pgid;
+	uint32_t pgid;
 	const char *attrs[] = {
 		"objectSid",
 		"tokenGroups",
@@ -3790,14 +3790,14 @@ ADS_STATUS ads_leave_realm(ADS_STRUCT *ads, const char *hostname)
  * @param ads connection to ads server
  * @param mem_ctx TALLOC_CTX for allocating sid array
  * @param samaccountname to search
- * @param uac_ret uint32 pointer userAccountControl attribute value
+ * @param uac_ret uint32_t pointer userAccountControl attribute value
  * @param dn_ret pointer to dn
  * @return status of token query
  **/
 ADS_STATUS ads_find_samaccount(ADS_STRUCT *ads,
 			       TALLOC_CTX *mem_ctx,
 			       const char *samaccountname,
-			       uint32 *uac_ret,
+			       uint32_t *uac_ret,
 			       const char **dn_ret)
 {
 	ADS_STATUS status;
@@ -3805,7 +3805,7 @@ ADS_STATUS ads_find_samaccount(ADS_STRUCT *ads,
 	const char *filter;
 	LDAPMessage *res = NULL;
 	char *dn = NULL;
-	uint32 uac = 0;
+	uint32_t uac = 0;
 
 	filter = talloc_asprintf(mem_ctx, "(&(objectclass=user)(sAMAccountName=%s))",
 		samaccountname);

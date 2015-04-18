@@ -51,7 +51,7 @@ char **ads_pull_strings_range(ADS_STRUCT *ads,
 			      size_t *num_strings,
 			      bool *more_strings);
 bool ads_pull_uint32(ADS_STRUCT *ads, LDAPMessage *msg, const char *field,
-		     uint32 *v);
+		     uint32_t *v);
 bool ads_pull_guid(ADS_STRUCT *ads, LDAPMessage *msg, struct GUID *guid);
 bool ads_pull_sid(ADS_STRUCT *ads, LDAPMessage *msg, const char *field,
 		  struct dom_sid *sid);
@@ -120,12 +120,12 @@ ADS_STATUS ads_parse_gpo(ADS_STRUCT *ads,
 			 const char *gpo_dn,
 			 struct GROUP_POLICY_OBJECT *gpo);
 ADS_STATUS ads_search_retry_dn_sd_flags(ADS_STRUCT *ads, LDAPMessage **res,
-					 uint32 sd_flags,
+					 uint32_t sd_flags,
 					 const char *dn,
 					 const char **attrs);
 ADS_STATUS ads_do_search_all_sd_flags(ADS_STRUCT *ads, const char *bind_path,
 				       int scope, const char *expr,
-				       const char **attrs, uint32 sd_flags,
+				       const char **attrs, uint32_t sd_flags,
 				       LDAPMessage **res);
 ADS_STATUS ads_get_tokensids(ADS_STRUCT *ads,
 			      TALLOC_CTX *mem_ctx,

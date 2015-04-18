@@ -63,6 +63,6 @@ ADS_STATUS ads_build_nt_error(enum ads_error_type etype,
 			   NTSTATUS nt_status);
 NTSTATUS ads_ntstatus(ADS_STATUS status);
 const char *ads_errstr(ADS_STATUS status);
-NTSTATUS gss_err_to_ntstatus(uint32 maj, uint32 min);
+NTSTATUS gss_err_to_ntstatus(uint32_t maj, uint32_t min);
 
 #endif /* _LIBADS_ADS_STATUS_H_ */
