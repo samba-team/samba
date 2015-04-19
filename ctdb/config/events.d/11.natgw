@@ -208,7 +208,7 @@ case "$1" in
     updatenatgw|ipreallocated)
 	natgw_check_config
 
-	mypnn=$(ctdb pnn | cut -d: -f2)
+	ctdb_get_pnn
 
 	natgw_set_capability
 	natgw_ensure_master
@@ -217,7 +217,7 @@ case "$1" in
 
 	natgw_clear
 
-	if [ "$mypnn" = "$natgwmaster" ]; then
+	if [ "$pnn" = "$natgwmaster" ]; then
 	    natgw_set_master
 	else
 	    natgw_set_slave "$natgwip"

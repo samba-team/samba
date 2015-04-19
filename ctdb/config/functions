@@ -1455,11 +1455,10 @@ update_tickles ()
 	tickledir="$CTDB_VARDIR/state/tickles"
 	mkdir -p "$tickledir"
 
-	# Who am I?
-	_pnn=$(ctdb pnn) ; _pnn=${_pnn#PNN:}
+	ctdb_get_pnn
 
 	# What public IPs do I hold?
-	_ips=$(ctdb -X ip | awk -F'|' -v pnn=$_pnn '$3 == pnn {print $2}')
+	_ips=$(ctdb -X ip | awk -F'|' -v pnn=$pnn '$3 == pnn {print $2}')
 
 	# IPs as a regexp choice
 	_ipschoice="($(echo $_ips | sed -e 's/ /|/g' -e 's/\./\\\\./g'))"

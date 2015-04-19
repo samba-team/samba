@@ -46,10 +46,10 @@ case "$1" in
 	ipvsadm -D -u $CTDB_LVS_PUBLIC_IP:0
 	kill_tcp_connections_local_only $CTDB_LVS_PUBLIC_IP
 
-	PNN=`ctdb pnn | sed -e "s/.*PNN://"`
+	ctdb_get_pnn
 	LVSMASTER=`ctdb lvsmaster | sed -e "s/.*Node //" -e "s/ .*//"`
 
-	[ "$PNN" != "$LVSMASTER" ] && {
+	[ "$pnn" != "$LVSMASTER" ] && {
 	    # we are not the lvs master so we have to
 	    # change the ip address to have scope host so we wont respond
 	    # to arps
@@ -66,7 +66,7 @@ case "$1" in
 	ipvsadm -A -u $CTDB_LVS_PUBLIC_IP:0 -p 1999999 -s lc
 
 	# add all nodes (except ourselves) to the lvs config
-	ctdb lvs | egrep -v "^$PNN:" | sed -e "s/.*://" | while read IP; do
+	ctdb lvs | egrep -v "^${pnn}:" | sed -e "s/.*://" | while read IP; do
 		ipvsadm -a -t $CTDB_LVS_PUBLIC_IP:0 -r $IP -g
 		ipvsadm -a -u $CTDB_LVS_PUBLIC_IP:0 -r $IP -g
 	done
