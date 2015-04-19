@@ -126,6 +126,28 @@
       </varlistentry>
 
       <varlistentry>
+	<term>--listen=<parameter>IPADDR</parameter></term>
+	<listitem>
+	  <para>
+	    IPADDR is the private IP address that ctdbd will bind to.
+	  </para>
+	  <para>
+	    By default ctdbd will select the first address from the
+	    nodes list that in can bind to.  See also
+	    <citetitle>--nlist</citetitle>.
+	  </para>
+	  <para>
+	    This option is only required when automatic address
+	    detection can not be used.  This can be the case when
+	    running multiple ctdbd daemons/nodes on the same physical
+	    host (usually for testing), using InfiniBand for the
+	    private network or on Linux when sysctl
+	    net.ipv4.ip_nonlocal_bind=1.
+	  </para>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
 	<term>--logging=<parameter>STRING</parameter></term>
 	<listitem>
 	  <para>
@@ -481,27 +503,6 @@
 	    foreground and not detach from the terminal.  By default
 	    ctdbd will detach itself and run in the background as a
 	    daemon.
-	  </para>
-	</listitem>
-      </varlistentry>
-
-      <varlistentry>
-	<term>--listen=<parameter>IPADDR</parameter></term>
-	<listitem>
-	  <para>
-	    This specifies which IP address that ctdbd will bind to.
-	  </para>
-	  <para>
-	    By default ctdbd will bind to the first address it finds in
-	    the <filename>/etc/ctdb/nodes</filename> file that is also
-	    present on the local system.
-	  </para>
-	  <para>
-	    This option is only required when you want to run multiple
-	    ctdbd daemons/nodes on the same physical host in which case
-	    there would be multiple entries in
-	    <filename>/etc/ctdb/nodes</filename> that would match a
-	    local interface.
 	  </para>
 	</listitem>
       </varlistentry>
