@@ -344,6 +344,29 @@
       </varlistentry>
 
       <varlistentry>
+	<term>CTDB_NODE_ADDRESS=<parameter>FILENAME</parameter></term>
+	<listitem>
+	  <para>
+	    IPADDR is the private IP address that ctdbd will bind to.
+	    Corresponds to <option>--listen</option>.
+	  </para>
+	  <para>
+	    By default ctdbd will select the first address from the
+	    nodes list that in can bind to.  See also
+	    <citetitle>CTDB_NODES</citetitle>.
+	  </para>
+	  <para>
+	    This option is only required when automatic address
+	    detection can not be used.  This can be the case when
+	    running multiple ctdbd daemons/nodes on the same physical
+	    host (usually for testing), using InfiniBand for the
+	    private network or on Linux when sysctl
+	    net.ipv4.ip_nonlocal_bind=1.
+	  </para>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
 	<term>CTDB_PUBLIC_ADDRESSES=<parameter>FILENAME</parameter></term>
 	<listitem>
 	  <para>
