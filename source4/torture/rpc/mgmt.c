@@ -48,17 +48,17 @@ bool test_inq_if_ids(struct torture_context *tctx,
 
 	status = dcerpc_mgmt_inq_if_ids_r(b, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("inq_if_ids failed - %s\n", nt_errstr(status));
+		torture_comment(tctx, "inq_if_ids failed - %s\n", nt_errstr(status));
 		return false;
 	}
 
 	if (!W_ERROR_IS_OK(r.out.result)) {
-		printf("inq_if_ids gave error code %s\n", win_errstr(r.out.result));
+		torture_comment(tctx, "inq_if_ids gave error code %s\n", win_errstr(r.out.result));
 		return false;
 	}
 
 	if (!vector) {
-		printf("inq_if_ids gave NULL if_id_vector\n");
+		torture_comment(tctx, "inq_if_ids gave NULL if_id_vector\n");
 		return false;
 	}
 
@@ -66,7 +66,7 @@ bool test_inq_if_ids(struct torture_context *tctx,
 		struct ndr_syntax_id *id = vector->if_id[i].id;
 		if (!id) continue;
 
-		printf("\tuuid %s  version 0x%08x  '%s'\n",
+		torture_comment(tctx, "\tuuid %s  version 0x%08x  '%s'\n",
 		       GUID_string(mem_ctx, &id->uuid),
 		       id->if_version,
 		       ndr_interface_name(&id->uuid, id->if_version));
@@ -98,11 +98,11 @@ static bool test_inq_stats(struct torture_context *tctx,
 	}
 
 	if (statistics.count != MGMT_STATS_ARRAY_MAX_SIZE) {
-		printf("Unexpected array size %d\n", statistics.count);
+		torture_comment(tctx, "Unexpected array size %d\n", statistics.count);
 		return false;
 	}
 
-	printf("\tcalls_in %6d  calls_out %6d\n\tpkts_in  %6d  pkts_out  %6d\n",
+	torture_comment(tctx, "\tcalls_in %6d  calls_out %6d\n\tpkts_in  %6d  pkts_out  %6d\n",
 	       statistics.statistics[MGMT_STATS_CALLS_IN],
 	       statistics.statistics[MGMT_STATS_CALLS_OUT],
 	       statistics.statistics[MGMT_STATS_PKTS_IN],
@@ -132,17 +132,17 @@ static bool test_inq_princ_name(struct torture_context *tctx,
 			const char *name = gensec_get_name_by_authtype(NULL, i);
 			ret = true;
 			if (name) {
-				printf("\tprinciple name for proto %u (%s) is '%s'\n",
+				torture_comment(tctx, "\tprinciple name for proto %u (%s) is '%s'\n",
 				       i, name, r.out.princ_name);
 			} else {
-				printf("\tprinciple name for proto %u is '%s'\n",
+				torture_comment(tctx, "\tprinciple name for proto %u is '%s'\n",
 				       i, r.out.princ_name);
 			}
 		}
 	}
 
 	if (!ret) {
-		printf("\tno principle names?\n");
+		torture_comment(tctx, "\tno principle names?\n");
 	}
 
 	return true;
@@ -163,9 +163,9 @@ static bool test_is_server_listening(struct torture_context *tctx,
 	}
 
 	if (*r.out.status != 0 || r.out.result == 0) {
-		printf("\tserver is NOT listening\n");
+		torture_comment(tctx, "\tserver is NOT listening\n");
 	} else {
-		printf("\tserver is listening\n");
+		torture_comment(tctx, "\tserver is listening\n");
 	}
 
 	return true;
@@ -185,9 +185,9 @@ static bool test_stop_server_listening(struct torture_context *tctx,
 	}
 
 	if (!W_ERROR_IS_OK(r.out.result)) {
-		printf("\tserver refused to stop listening - %s\n", win_errstr(r.out.result));
+		torture_comment(tctx, "\tserver refused to stop listening - %s\n", win_errstr(r.out.result));
 	} else {
-		printf("\tserver allowed a stop_server_listening request\n");
+		torture_comment(tctx, "\tserver allowed a stop_server_listening request\n");
 		return false;
 	}
 
@@ -224,12 +224,12 @@ bool torture_rpc_mgmt(struct torture_context *tctx)
 			continue;
 		}
 
-		printf("\nTesting pipe '%s'\n", l->table->name);
+		torture_comment(tctx, "\nTesting pipe '%s'\n", l->table->name);
 
 		status = dcerpc_epm_map_binding(loop_ctx, b, l->table,
 						tctx->ev, tctx->lp_ctx);
 		if (!NT_STATUS_IS_OK(status)) {
-			printf("Failed to map port for uuid %s\n",
+			torture_comment(tctx, "Failed to map port for uuid %s\n",
 				   GUID_string(loop_ctx, &l->table->syntax_id.uuid));
 			talloc_free(loop_ctx);
 			continue;
@@ -239,7 +239,7 @@ bool torture_rpc_mgmt(struct torture_context *tctx)
 
 		status = torture_rpc_connection(tctx, &p, &ndr_table_mgmt);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
-			printf("Interface not available - skipping\n");
+			torture_comment(tctx, "Interface not available - skipping\n");
 			talloc_free(loop_ctx);
 			continue;
 		}
