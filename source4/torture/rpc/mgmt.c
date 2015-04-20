@@ -38,7 +38,6 @@ bool test_inq_if_ids(struct torture_context *tctx,
 					 struct ndr_syntax_id *id),
 		     const void *priv)
 {
-	NTSTATUS status;
 	struct mgmt_inq_if_ids r;
 	struct rpc_if_id_vector_t *vector;
 	int i;
@@ -46,16 +45,13 @@ bool test_inq_if_ids(struct torture_context *tctx,
 	vector = talloc(mem_ctx, struct rpc_if_id_vector_t);
 	r.out.if_id_vector = &vector;
 
-	status = dcerpc_mgmt_inq_if_ids_r(b, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		torture_comment(tctx, "inq_if_ids failed - %s\n", nt_errstr(status));
-		return false;
-	}
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_mgmt_inq_if_ids_r(b, mem_ctx, &r),
+		"inq_if_ids failed");
 
-	if (!W_ERROR_IS_OK(r.out.result)) {
-		torture_comment(tctx, "inq_if_ids gave error code %s\n", win_errstr(r.out.result));
-		return false;
-	}
+	torture_assert_werr_ok(tctx,
+		r.out.result,
+		"inq_if_ids gave unexpected error code");
 
 	if (!vector) {
 		torture_comment(tctx, "inq_if_ids gave NULL if_id_vector\n");
@@ -83,7 +79,6 @@ static bool test_inq_stats(struct torture_context *tctx,
 			   struct dcerpc_binding_handle *b,
 			   TALLOC_CTX *mem_ctx)
 {
-	NTSTATUS status;
 	struct mgmt_inq_stats r;
 	struct mgmt_statistics statistics;
 
@@ -91,11 +86,9 @@ static bool test_inq_stats(struct torture_context *tctx,
 	r.in.unknown = 0;
 	r.out.statistics = &statistics;
 
-	status = dcerpc_mgmt_inq_stats_r(b, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("inq_stats failed - %s\n", nt_errstr(status));
-		return false;
-	}
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_mgmt_inq_stats_r(b, mem_ctx, &r),
+		"inq_stats failed");
 
 	if (statistics.count != MGMT_STATS_ARRAY_MAX_SIZE) {
 		torture_comment(tctx, "Unexpected array size %d\n", statistics.count);
@@ -152,15 +145,12 @@ static bool test_is_server_listening(struct torture_context *tctx,
 				     struct dcerpc_binding_handle *b,
 				     TALLOC_CTX *mem_ctx)
 {
-	NTSTATUS status;
 	struct mgmt_is_server_listening r;
 	r.out.status = talloc(mem_ctx, uint32_t);
 
-	status = dcerpc_mgmt_is_server_listening_r(b, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("is_server_listening failed - %s\n", nt_errstr(status));
-		return false;
-	}
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_mgmt_is_server_listening_r(b, mem_ctx, &r),
+		"is_server_listening failed");
 
 	if (*r.out.status != 0 || r.out.result == 0) {
 		torture_comment(tctx, "\tserver is NOT listening\n");
@@ -175,14 +165,11 @@ static bool test_stop_server_listening(struct torture_context *tctx,
 				       struct dcerpc_binding_handle *b,
 				       TALLOC_CTX *mem_ctx)
 {
-	NTSTATUS status;
 	struct mgmt_stop_server_listening r;
 
-	status = dcerpc_mgmt_stop_server_listening_r(b, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("stop_server_listening failed - %s\n", nt_errstr(status));
-		return false;
-	}
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_mgmt_stop_server_listening_r(b, mem_ctx, &r),
+		"stop_server_listening failed");
 
 	if (!W_ERROR_IS_OK(r.out.result)) {
 		torture_comment(tctx, "\tserver refused to stop listening - %s\n", win_errstr(r.out.result));
