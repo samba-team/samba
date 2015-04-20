@@ -1,19 +1,19 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    test suite for mgmt rpc operations
 
    Copyright (C) Andrew Tridgell 2003
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -29,7 +29,7 @@
 /*
   ask the server what interface IDs are available on this endpoint
 */
-bool test_inq_if_ids(struct torture_context *tctx, 
+bool test_inq_if_ids(struct torture_context *tctx,
 		     struct dcerpc_binding_handle *b,
 		     TALLOC_CTX *mem_ctx,
 		     bool (*per_id_test)(struct torture_context *,
@@ -45,7 +45,7 @@ bool test_inq_if_ids(struct torture_context *tctx,
 
 	vector = talloc(mem_ctx, struct rpc_if_id_vector_t);
 	r.out.if_id_vector = &vector;
-	
+
 	status = dcerpc_mgmt_inq_if_ids_r(b, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("inq_if_ids failed - %s\n", nt_errstr(status));
@@ -130,10 +130,10 @@ static bool test_inq_princ_name(struct dcerpc_binding_handle *b,
 			const char *name = gensec_get_name_by_authtype(NULL, i);
 			ret = true;
 			if (name) {
-				printf("\tprinciple name for proto %u (%s) is '%s'\n", 
+				printf("\tprinciple name for proto %u (%s) is '%s'\n",
 				       i, name, r.out.princ_name);
 			} else {
-				printf("\tprinciple name for proto %u is '%s'\n", 
+				printf("\tprinciple name for proto %u is '%s'\n",
 				       i, r.out.princ_name);
 			}
 		}
@@ -208,11 +208,11 @@ bool torture_rpc_mgmt(struct torture_context *torture)
 		return false;
 	}
 
-	for (l=ndr_table_list();l;l=l->next) {		
+	for (l=ndr_table_list();l;l=l->next) {
 		struct dcerpc_binding_handle *bh;
 
 		loop_ctx = talloc_named(mem_ctx, 0, "torture_rpc_mgmt loop context");
-		
+
 		/* some interfaces are not mappable */
 		if (l->table->num_calls == 0 ||
 		    strcmp(l->table->name, "mgmt") == 0) {
@@ -225,7 +225,7 @@ bool torture_rpc_mgmt(struct torture_context *torture)
 		status = dcerpc_epm_map_binding(loop_ctx, b, l->table,
 						torture->ev, torture->lp_ctx);
 		if (!NT_STATUS_IS_OK(status)) {
-			printf("Failed to map port for uuid %s\n", 
+			printf("Failed to map port for uuid %s\n",
 				   GUID_string(loop_ctx, &l->table->syntax_id.uuid));
 			talloc_free(loop_ctx);
 			continue;
