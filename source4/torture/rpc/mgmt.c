@@ -191,7 +191,7 @@ static bool test_stop_server_listening(struct dcerpc_binding_handle *b,
 }
 
 
-bool torture_rpc_mgmt(struct torture_context *torture)
+bool torture_rpc_mgmt(struct torture_context *tctx)
 {
         NTSTATUS status;
         struct dcerpc_pipe *p;
@@ -202,7 +202,7 @@ bool torture_rpc_mgmt(struct torture_context *torture)
 
 	mem_ctx = talloc_init("torture_rpc_mgmt");
 
-	status = torture_rpc_binding(torture, &b);
+	status = torture_rpc_binding(tctx, &b);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);
 		return false;
@@ -223,7 +223,7 @@ bool torture_rpc_mgmt(struct torture_context *torture)
 		printf("\nTesting pipe '%s'\n", l->table->name);
 
 		status = dcerpc_epm_map_binding(loop_ctx, b, l->table,
-						torture->ev, torture->lp_ctx);
+						tctx->ev, tctx->lp_ctx);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("Failed to map port for uuid %s\n",
 				   GUID_string(loop_ctx, &l->table->syntax_id.uuid));
@@ -231,9 +231,9 @@ bool torture_rpc_mgmt(struct torture_context *torture)
 			continue;
 		}
 
-		lpcfg_set_cmdline(torture->lp_ctx, "torture:binding", dcerpc_binding_string(loop_ctx, b));
+		lpcfg_set_cmdline(tctx->lp_ctx, "torture:binding", dcerpc_binding_string(loop_ctx, b));
 
-		status = torture_rpc_connection(torture, &p, &ndr_table_mgmt);
+		status = torture_rpc_connection(tctx, &p, &ndr_table_mgmt);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
 			printf("Interface not available - skipping\n");
 			talloc_free(loop_ctx);
@@ -263,7 +263,7 @@ bool torture_rpc_mgmt(struct torture_context *torture)
 			ret = false;
 		}
 
-		if (!test_inq_if_ids(torture, bh, loop_ctx, NULL, NULL)) {
+		if (!test_inq_if_ids(tctx, bh, loop_ctx, NULL, NULL)) {
 			ret = false;
 		}
 
