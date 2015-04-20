@@ -784,13 +784,13 @@ static int unix_dgram_free(struct unix_dgram_ctx *ctx)
 
 	ctx->ev_funcs->watch_free(ctx->sock_read_watch);
 
+	close(ctx->sock);
 	if (getpid() == ctx->created_pid) {
 		/* If we created it, unlink. Otherwise someone else might
 		 * still have it open */
 		unlink(ctx->path);
 	}
 
-	close(ctx->sock);
 	free(ctx->recv_buf);
 	free(ctx);
 	return 0;
