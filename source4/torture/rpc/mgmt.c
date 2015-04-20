@@ -79,7 +79,8 @@ bool test_inq_if_ids(struct torture_context *tctx,
 	return true;
 }
 
-static bool test_inq_stats(struct dcerpc_binding_handle *b,
+static bool test_inq_stats(struct torture_context *tctx,
+			   struct dcerpc_binding_handle *b,
 			   TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
@@ -110,7 +111,8 @@ static bool test_inq_stats(struct dcerpc_binding_handle *b,
 	return true;
 }
 
-static bool test_inq_princ_name(struct dcerpc_binding_handle *b,
+static bool test_inq_princ_name(struct torture_context *tctx,
+				struct dcerpc_binding_handle *b,
 				TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
@@ -146,7 +148,8 @@ static bool test_inq_princ_name(struct dcerpc_binding_handle *b,
 	return true;
 }
 
-static bool test_is_server_listening(struct dcerpc_binding_handle *b,
+static bool test_is_server_listening(struct torture_context *tctx,
+				     struct dcerpc_binding_handle *b,
 				     TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
@@ -168,7 +171,8 @@ static bool test_is_server_listening(struct dcerpc_binding_handle *b,
 	return true;
 }
 
-static bool test_stop_server_listening(struct dcerpc_binding_handle *b,
+static bool test_stop_server_listening(struct torture_context *tctx,
+				       struct dcerpc_binding_handle *b,
 				       TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
@@ -247,19 +251,19 @@ bool torture_rpc_mgmt(struct torture_context *tctx)
 			continue;
 		}
 
-		if (!test_is_server_listening(bh, loop_ctx)) {
+		if (!test_is_server_listening(tctx, bh, loop_ctx)) {
 			ret = false;
 		}
 
-		if (!test_stop_server_listening(bh, loop_ctx)) {
+		if (!test_stop_server_listening(tctx, bh, loop_ctx)) {
 			ret = false;
 		}
 
-		if (!test_inq_stats(bh, loop_ctx)) {
+		if (!test_inq_stats(tctx, bh, loop_ctx)) {
 			ret = false;
 		}
 
-		if (!test_inq_princ_name(bh, loop_ctx)) {
+		if (!test_inq_princ_name(tctx, bh, loop_ctx)) {
 			ret = false;
 		}
 
