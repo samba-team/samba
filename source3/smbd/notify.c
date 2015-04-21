@@ -23,6 +23,7 @@
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
 #include "../librpc/gen_ndr/ndr_notify.h"
+#include "librpc/gen_ndr/ndr_file_id.h"
 
 struct notify_change_event {
 	struct timespec when;
@@ -416,6 +417,48 @@ void smbd_notify_cancel_by_smbreq(const struct smb_request *smbreq)
 	change_notify_reply(map->req->req,
 			    NT_STATUS_CANCELLED, 0, NULL, map->req->reply_fn);
 	change_notify_remove_request(sconn, map->req);
+}
+
+static struct files_struct *smbd_notify_cancel_deleted_fn(
+	struct files_struct *fsp, void *private_data)
+{
+	struct file_id *fid = talloc_get_type_abort(
+		private_data, struct file_id);
+
+	if (file_id_equal(&fsp->file_id, fid)) {
+		remove_pending_change_notify_requests_by_fid(
+			fsp, NT_STATUS_DELETE_PENDING);
+	}
+	return NULL;
+}
+
+void smbd_notify_cancel_deleted(struct messaging_context *msg,
+				void *private_data, uint32_t msg_type,
+				struct server_id server_id, DATA_BLOB *data)
+{
+	struct smbd_server_connection *sconn = talloc_get_type_abort(
+		private_data, struct smbd_server_connection);
+	struct file_id *fid;
+	enum ndr_err_code ndr_err;
+
+	fid = talloc(talloc_tos(), struct file_id);
+	if (fid == NULL) {
+		DEBUG(1, ("talloc failed\n"));
+		return;
+	}
+
+	ndr_err = ndr_pull_struct_blob_all(
+		data, fid, fid, (ndr_pull_flags_fn_t)ndr_pull_file_id);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DEBUG(10, ("%s: ndr_pull_file_id failed: %s\n", __func__,
+			   ndr_errstr(ndr_err)));
+		goto done;
+	}
+
+	files_forall(sconn, smbd_notify_cancel_deleted_fn, fid);
+
+done:
+	TALLOC_FREE(fid);
 }
 
 /****************************************************************************

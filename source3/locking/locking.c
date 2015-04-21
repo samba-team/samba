@@ -46,6 +46,7 @@
 #include "messages.h"
 #include "util_tdb.h"
 #include "../librpc/gen_ndr/ndr_open_files.h"
+#include "librpc/gen_ndr/ndr_file_id.h"
 #include "locking/leases_db.h"
 
 #undef DBGC_CLASS
@@ -1118,9 +1119,12 @@ void set_delete_on_close_lck(files_struct *fsp,
 			const struct security_token *nt_tok,
 			const struct security_unix_token *tok)
 {
+	struct messaging_context *msg_ctx = fsp->conn->sconn->msg_ctx;
 	struct share_mode_data *d = lck->data;
-	int i;
+	uint32_t i;
 	bool ret;
+	DATA_BLOB fid_blob = {};
+	enum ndr_err_code ndr_err;
 
 	SMB_ASSERT(nt_tok != NULL);
 	SMB_ASSERT(tok != NULL);
@@ -1144,6 +1148,31 @@ void set_delete_on_close_lck(files_struct *fsp,
 
 	ret = add_delete_on_close_token(lck->data, fsp->name_hash, nt_tok, tok);
 	SMB_ASSERT(ret);
+
+	ndr_err = ndr_push_struct_blob(&fid_blob, talloc_tos(), &fsp->file_id,
+				       (ndr_push_flags_fn_t)ndr_push_file_id);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DEBUG(10, ("ndr_push_file_id failed: %s\n",
+			   ndr_errstr(ndr_err)));
+	}
+
+	for (i=0; i<d->num_share_modes; i++) {
+		struct share_mode_entry *e = &d->share_modes[i];
+		NTSTATUS status;
+
+		status = messaging_send(
+			msg_ctx, e->pid, MSG_SMB_NOTIFY_CANCEL_DELETED,
+			&fid_blob);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			struct server_id_buf tmp;
+			DEBUG(10, ("%s: messaging_send to %s returned %s\n",
+				   __func__, server_id_str_buf(e->pid, &tmp),
+				   nt_errstr(status)));
+		}
+	}
+
+	TALLOC_FREE(fid_blob.data);
 }
 
 bool set_delete_on_close(files_struct *fsp, bool delete_on_close,
