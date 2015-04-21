@@ -461,7 +461,7 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
  	 */
 
 	fsp->delete_on_close = false;
-	set_delete_on_close_lck(fsp, lck, false, NULL, NULL);
+	reset_delete_on_close_lck(fsp, lck);
 
  done:
 
