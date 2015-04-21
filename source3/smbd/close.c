@@ -303,7 +303,7 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 			became_user = True;
 		}
 		fsp->delete_on_close = true;
-		set_delete_on_close_lck(fsp, lck, True,
+		set_delete_on_close_lck(fsp, lck,
 				get_current_nttok(conn),
 				get_current_utok(conn));
 		if (became_user) {
@@ -1083,7 +1083,7 @@ static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
 		}
 		send_stat_cache_delete_message(fsp->conn->sconn->msg_ctx,
 					       fsp->fsp_name->base_name);
-		set_delete_on_close_lck(fsp, lck, true,
+		set_delete_on_close_lck(fsp, lck,
 				get_current_nttok(fsp->conn),
 				get_current_utok(fsp->conn));
 		fsp->delete_on_close = true;
