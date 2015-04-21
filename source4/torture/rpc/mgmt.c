@@ -287,13 +287,14 @@ bool torture_rpc_mgmt(struct torture_context *tctx)
 			talloc_free(loop_ctx);
 			continue;
 		}
-		bh = p->binding_handle;
 
 		if (!NT_STATUS_IS_OK(status)) {
 			talloc_free(loop_ctx);
+			torture_comment(tctx, "Interface not available (%s) - skipping\n", nt_errstr(status));
 			ret = false;
 			continue;
 		}
+		bh = p->binding_handle;
 
 		if (!test_is_server_listening(tctx, bh, loop_ctx)) {
 			ret = false;
