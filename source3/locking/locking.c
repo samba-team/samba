@@ -1081,6 +1081,27 @@ static bool add_delete_on_close_token(struct share_mode_data *d,
 	return true;
 }
 
+void reset_delete_on_close_lck(files_struct *fsp,
+			       struct share_mode_lock *lck)
+{
+	struct share_mode_data *d = lck->data;
+	uint32_t i;
+
+	for (i=0; i<d->num_delete_tokens; i++) {
+		struct delete_token *dt = &d->delete_tokens[i];
+
+		if (dt->name_hash == fsp->name_hash) {
+			d->modified = true;
+
+			/* Delete this entry. */
+			TALLOC_FREE(dt->delete_nt_token);
+			TALLOC_FREE(dt->delete_token);
+			*dt = d->delete_tokens[d->num_delete_tokens-1];
+			d->num_delete_tokens -= 1;
+		}
+	}
+}
+
 /****************************************************************************
  Sets the delete on close flag over all share modes on this file.
  Modify the share mode entry for all files open
@@ -1102,42 +1123,30 @@ void set_delete_on_close_lck(files_struct *fsp,
 	int i;
 	bool ret;
 
-	if (delete_on_close) {
-		SMB_ASSERT(nt_tok != NULL);
-		SMB_ASSERT(tok != NULL);
-	} else {
+	if (!delete_on_close) {
 		SMB_ASSERT(nt_tok == NULL);
 		SMB_ASSERT(tok == NULL);
+		return reset_delete_on_close_lck(fsp, lck);
 	}
+
+	SMB_ASSERT(nt_tok != NULL);
+	SMB_ASSERT(tok != NULL);
 
 	for (i=0; i<d->num_delete_tokens; i++) {
 		struct delete_token *dt = &d->delete_tokens[i];
 		if (dt->name_hash == fsp->name_hash) {
 			d->modified = true;
-			if (delete_on_close == false) {
-				/* Delete this entry. */
-				TALLOC_FREE(dt->delete_nt_token);
-				TALLOC_FREE(dt->delete_token);
-				*dt = d->delete_tokens[
-					d->num_delete_tokens-1];
-				d->num_delete_tokens -= 1;
-			} else {
-				/* Replace this token with the
-				   given tok. */
-				TALLOC_FREE(dt->delete_nt_token);
-				dt->delete_nt_token = dup_nt_token(dt, nt_tok);
-				SMB_ASSERT(dt->delete_nt_token != NULL);
-				TALLOC_FREE(dt->delete_token);
-				dt->delete_token = copy_unix_token(dt, tok);
-				SMB_ASSERT(dt->delete_token != NULL);
-			}
+
+			/* Replace this token with the given tok. */
+			TALLOC_FREE(dt->delete_nt_token);
+			dt->delete_nt_token = dup_nt_token(dt, nt_tok);
+			SMB_ASSERT(dt->delete_nt_token != NULL);
+			TALLOC_FREE(dt->delete_token);
+			dt->delete_token = copy_unix_token(dt, tok);
+			SMB_ASSERT(dt->delete_token != NULL);
+
 			return;
 		}
-	}
-
-	if (!delete_on_close) {
-		/* Nothing to delete - not found. */
-		return;
 	}
 
 	ret = add_delete_on_close_token(lck->data, fsp->name_hash, nt_tok, tok);
