@@ -3904,12 +3904,11 @@ bool lp_load_client_no_reinit(const char *file_name)
 	return lp_load_global_no_reinit(file_name);
 }
 
-bool lp_load_with_registry_shares(const char *pszFname,
-				  bool save_defaults)
+bool lp_load_with_registry_shares(const char *pszFname)
 {
 	return lp_load_ex(pszFname,
 			  false, /* global_only */
-			  save_defaults,
+			  true,  /* save_defaults */
 			  false, /* add_ipc */
 			  false, /* reinit_globals */
 			  true,  /* allow_include_registry */

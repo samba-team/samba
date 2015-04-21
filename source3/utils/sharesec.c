@@ -599,7 +599,7 @@ int main(int argc, const char *argv[])
 
 	setlinebuf(stdout);
 
-	lp_load_with_registry_shares(get_dyn_CONFIGFILE(), False);
+	lp_load_with_registry_shares(get_dyn_CONFIGFILE());
 
 	/* check for initializing secrets.tdb first */
 
