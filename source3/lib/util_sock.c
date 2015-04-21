@@ -1363,7 +1363,7 @@ struct tevent_req *getaddrinfo_send(TALLOC_CTX *mem_ctx,
 static void getaddrinfo_do(void *private_data)
 {
 	struct getaddrinfo_state *state =
-		(struct getaddrinfo_state *)private_data;
+		talloc_get_type_abort(private_data, struct getaddrinfo_state);
 
 	state->ret = getaddrinfo(state->node, state->service, state->hints,
 				 &state->res);
