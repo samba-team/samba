@@ -682,6 +682,10 @@ static NTSTATUS make_connection_snum(struct smbXsrv_connection *xconn,
 		if (sconn->notify_ctx == NULL) {
 			sconn->notify_ctx = notify_init(
 				sconn, sconn->msg_ctx, sconn->ev_ctx);
+			status = messaging_register(
+				sconn->msg_ctx, sconn,
+				MSG_SMB_NOTIFY_CANCEL_DELETED,
+				smbd_notify_cancel_deleted);
 		}
 		if (sconn->sys_notify_ctx == NULL) {
 			sconn->sys_notify_ctx = sys_notify_context_create(

@@ -96,6 +96,9 @@ interface messaging
 		MSG_SMB_TELL_NUM_CHILDREN       = 0x0317,
 		MSG_SMB_NUM_CHILDREN            = 0x0318,
 
+		/* Cancel a notify, directory got deleted */
+		MSG_SMB_NOTIFY_CANCEL_DELETED   = 0x0319,
+
 		/* winbind messages */
 		MSG_WINBIND_FINISHED		= 0x0401,
 		MSG_WINBIND_FORGET_STATE	= 0x0402,
