@@ -104,6 +104,46 @@ static bool test_inq_stats(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_inq_princ_name_size(struct torture_context *tctx,
+				     struct dcerpc_binding_handle *b,
+				     uint32_t authn_proto,
+				     const char *expected_princ_name)
+{
+	struct mgmt_inq_princ_name r;
+	uint32_t len, i;
+
+	len = strlen(expected_princ_name);
+
+	r.in.authn_proto = authn_proto;
+
+	/*
+	 * 0 gives NT_STATUS_RPC_BAD_STUB_DATA
+	 */
+
+	for (i=1; i <= len; i++) {
+		r.in.princ_name_size = i;
+
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_mgmt_inq_princ_name_r(b, tctx, &r),
+			"mgmt_inq_princ_name failed");
+		torture_assert_werr_equal(tctx,
+			r.out.result,
+			WERR_INSUFFICIENT_BUFFER,
+			"mgmt_inq_princ_name failed");
+	}
+
+	r.in.princ_name_size = len + 1;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_mgmt_inq_princ_name_r(b, tctx, &r),
+		"mgmt_inq_princ_name failed");
+	torture_assert_werr_ok(tctx,
+		r.out.result,
+		"mgmt_inq_princ_name failed");
+
+	return true;
+}
+
 static bool test_inq_princ_name(struct torture_context *tctx,
 				struct dcerpc_binding_handle *b,
 				TALLOC_CTX *mem_ctx)
@@ -130,6 +170,23 @@ static bool test_inq_princ_name(struct torture_context *tctx,
 			} else {
 				torture_comment(tctx, "\tprinciple name for proto %u is '%s'\n",
 				       i, r.out.princ_name);
+			}
+
+			switch (i) {
+			case DCERPC_AUTH_TYPE_KRB5:
+			case DCERPC_AUTH_TYPE_NTLMSSP:
+			case DCERPC_AUTH_TYPE_SPNEGO:
+				torture_assert(tctx,
+					test_inq_princ_name_size(tctx, b, i, r.out.princ_name),
+					"failed");
+				break;
+			case DCERPC_AUTH_TYPE_SCHANNEL:
+				/*
+				 * for some reason schannel behaves differently
+				 *
+				 */
+			default:
+				break;
 			}
 		}
 	}
