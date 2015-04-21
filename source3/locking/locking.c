@@ -1115,19 +1115,12 @@ void reset_delete_on_close_lck(files_struct *fsp,
 
 void set_delete_on_close_lck(files_struct *fsp,
 			struct share_mode_lock *lck,
-			bool delete_on_close,
 			const struct security_token *nt_tok,
 			const struct security_unix_token *tok)
 {
 	struct share_mode_data *d = lck->data;
 	int i;
 	bool ret;
-
-	if (!delete_on_close) {
-		SMB_ASSERT(nt_tok == NULL);
-		SMB_ASSERT(tok == NULL);
-		return reset_delete_on_close_lck(fsp, lck);
-	}
 
 	SMB_ASSERT(nt_tok != NULL);
 	SMB_ASSERT(tok != NULL);
@@ -1170,9 +1163,7 @@ bool set_delete_on_close(files_struct *fsp, bool delete_on_close,
 	}
 
 	if (delete_on_close) {
-		set_delete_on_close_lck(fsp, lck, true,
-			nt_tok,
-			tok);
+		set_delete_on_close_lck(fsp, lck, nt_tok, tok);
 	} else {
 		reset_delete_on_close_lck(fsp, lck);
 	}

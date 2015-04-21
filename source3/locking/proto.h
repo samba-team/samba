@@ -189,7 +189,6 @@ void reset_delete_on_close_lck(files_struct *fsp,
 			       struct share_mode_lock *lck);
 void set_delete_on_close_lck(files_struct *fsp,
 			struct share_mode_lock *lck,
-			bool delete_on_close,
 			const struct security_token *nt_tok,
 			const struct security_unix_token *tok);
 bool set_delete_on_close(files_struct *fsp, bool delete_on_close,
