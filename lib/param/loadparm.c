@@ -1549,8 +1549,6 @@ static bool set_variable_helper(TALLOC_CTX *mem_ctx, int parmnum, void *parm_ptr
 			}
 			break;
 
-		case P_SEP:
-			break;
 	}
 
 	return true;
@@ -1876,8 +1874,6 @@ void lpcfg_print_parameter(struct parm_struct *p, void *ptr, FILE * f)
 				fprintf(f, "%s", *(char **)ptr);
 			}
 			break;
-		case P_SEP:
-			break;
 	}
 }
 
@@ -1915,8 +1911,6 @@ static bool lpcfg_equal_parameter(parm_type type, void *ptr1, void *ptr2)
 				p2 = NULL;
 			return (p1 == p2 || strequal(p1, p2));
 		}
-		case P_SEP:
-			break;
 	}
 	return false;
 }
@@ -2004,8 +1998,6 @@ static bool is_default(void *base_structure, int i)
 		case P_ENUM:
 			return parm_table[i].def.ivalue ==
 				*(int *)def_ptr;
-		case P_SEP:
-			break;
 	}
 	return false;
 }

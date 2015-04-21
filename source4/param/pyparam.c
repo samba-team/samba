@@ -143,8 +143,6 @@ static PyObject *py_lp_ctx_get_helper(struct loadparm_context *lp_ctx, const cha
 			       PyString_FromString(strlist[j]));
 	    return pylist;
 	}
-    case P_SEP:
-	return NULL; /* this stands for a separator, can be ignored */
     }
     return NULL;
 

@@ -293,8 +293,6 @@ static const struct enum_list enum_case[] = {
 
 
 struct parm_struct parm_table[] = {
-	{N_("Base Options"), P_SEP, P_SEPARATOR},
-
 	{
 		.label		= "dos charset",
 		.type		= P_STRING,
@@ -430,9 +428,6 @@ struct parm_struct parm_table[] = {
 		.enum_list	= enum_server_role,
 		.flags		= FLAG_BASIC | FLAG_ADVANCED,
 	},
-
-	{N_("Security Options"), P_SEP, P_SEPARATOR},
-
 	{
 		.label		= "security",
 		.type		= P_ENUM,
@@ -1156,10 +1151,6 @@ struct parm_struct parm_table[] = {
 		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED | FLAG_GLOBAL,
 	},
-
-
-	{N_("Logging Options"), P_SEP, P_SEPARATOR},
-
 	{
 		.label		= "log level",
 		.type		= P_STRING,
@@ -1295,9 +1286,6 @@ struct parm_struct parm_table[] = {
 		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED,
 	},
-
-	{N_("Protocol Options"), P_SEP, P_SEPARATOR},
-
 	{
 		.label		= "allocation roundup size",
 		.type		= P_BYTES,
@@ -1769,9 +1757,6 @@ struct parm_struct parm_table[] = {
 		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED,
 	},
-
-	{N_("Tuning Options"), P_SEP, P_SEPARATOR},
-
 	{
 		.label		= "block size",
 		.type		= P_BYTES,
@@ -2060,9 +2045,6 @@ struct parm_struct parm_table[] = {
 		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED,
 	},
-
-	{N_("Printing Options"), P_SEP, P_SEPARATOR},
-
 	{
 		.label		= "max reported print jobs",
 		.type		= P_INTEGER,
@@ -2389,9 +2371,6 @@ struct parm_struct parm_table[] = {
 		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED | FLAG_PRINT,
 	},
-
-	{N_("Filename Handling"), P_SEP, P_SEPARATOR},
-
 	{
 		.label		= "mangling method",
 		.type		= P_STRING,
@@ -2618,10 +2597,6 @@ struct parm_struct parm_table[] = {
 		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL,
 	},
-
-
-	{N_("Domain Options"), P_SEP, P_SEPARATOR},
-
 	{
 		.label		= "machine password timeout",
 		.type		= P_INTEGER,
@@ -2631,9 +2606,6 @@ struct parm_struct parm_table[] = {
 		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED | FLAG_WIZARD,
 	},
-
-	{N_("Logon Options"), P_SEP, P_SEPARATOR},
-
 	{
 		.label		= "add user script",
 		.type		= P_STRING,
@@ -2817,9 +2789,6 @@ struct parm_struct parm_table[] = {
 		.flags		= FLAG_ADVANCED,
 
 	},
-
-	{N_("Browse Options"), P_SEP, P_SEPARATOR},
-
 	{
 		.label		= "os level",
 		.type		= P_INTEGER,
@@ -2928,9 +2897,6 @@ struct parm_struct parm_table[] = {
 		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED,
 	},
-
-	{N_("WINS Options"), P_SEP, P_SEPARATOR},
-
 	{
 		.label		= "dns proxy",
 		.type		= P_BOOL,
@@ -2976,9 +2942,6 @@ struct parm_struct parm_table[] = {
 		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED,
 	},
-
-	{N_("Locking Options"), P_SEP, P_SEPARATOR},
-
 	{
 		.label		= "blocking locks",
 		.type		= P_BOOL,
@@ -3105,9 +3068,6 @@ struct parm_struct parm_table[] = {
 		.enum_list	= enum_bool_auto,
 		.flags		= FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL,
 	},
-
-	{N_("Ldap Options"), P_SEP, P_SEPARATOR},
-
 	{
 		.label		= "ldap admin dn",
 		.type		= P_STRING,
@@ -3279,9 +3239,6 @@ struct parm_struct parm_table[] = {
 		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED,
 	},
-
-	{N_("EventLog Options"), P_SEP, P_SEPARATOR},
-
 	{
 		.label		= "eventlog list",
 		.type		= P_CMDLIST,
@@ -3291,9 +3248,6 @@ struct parm_struct parm_table[] = {
 		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED | FLAG_GLOBAL | FLAG_SHARE,
 	},
-
-	{N_("Miscellaneous Options"), P_SEP, P_SEPARATOR},
-
 	{
 		.label		= "add share command",
 		.type		= P_STRING,
@@ -3900,9 +3854,6 @@ struct parm_struct parm_table[] = {
 		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED,
 	},
-
-	{N_("VFS module options"), P_SEP, P_SEPARATOR},
-
 	{
 		.label		= "vfs objects",
 		.type		= P_CMDLIST,
@@ -3921,10 +3872,6 @@ struct parm_struct parm_table[] = {
 		.enum_list	= NULL,
 		.flags		= FLAG_HIDE,
 	},
-
-
-	{N_("MSDFS options"), P_SEP, P_SEPARATOR},
-
 	{
 		.label		= "msdfs root",
 		.type		= P_BOOL,
@@ -3961,9 +3908,6 @@ struct parm_struct parm_table[] = {
 		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED,
 	},
-
-	{N_("Winbind options"), P_SEP, P_SEPARATOR},
-
 	{
 		.label		= "passdb expand explicit",
 		.type		= P_BOOL,
@@ -4279,8 +4223,6 @@ struct parm_struct parm_table[] = {
 		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED,
 	},
-
-	{N_("DNS options"), P_SEP, P_SEPARATOR},
 	{
 		.label		= "allow dns updates",
 		.type		= P_ENUM,
@@ -4335,9 +4277,6 @@ struct parm_struct parm_table[] = {
 		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED | FLAG_GLOBAL,
 	},
-
-	{N_("AD DC options"), P_SEP, P_SEPARATOR},
-
 	{
 		.label		= "samba kcc command",
 		.type		= P_CMDLIST,
@@ -4406,9 +4345,6 @@ struct parm_struct parm_table[] = {
 		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED,
 	},
-
-	{N_("TLS options"), P_SEP, P_SEPARATOR},
-
 	{
 		.label		= "tls enabled",
 		.type		= P_BOOL,

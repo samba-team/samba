@@ -72,8 +72,6 @@ def get_implementation_parameters(sourcedir):
             if re.match("^\s*\}\;\s*$", l):
                 break
             # pull in the param names only
-            if re.match(".*P_SEPARATOR.*", l):
-                continue
             m = re.match("\s*\.label\s*=\s*\"(.*)\".*", l)
             if not m:
                 continue

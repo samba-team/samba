@@ -36,11 +36,11 @@
 /* the following are used by loadparm for option lists */
 typedef enum {
 	P_BOOL,P_BOOLREV,P_CHAR,P_INTEGER,P_OCTAL,P_LIST,
-	P_STRING,P_USTRING,P_ENUM,P_BYTES,P_CMDLIST,P_SEP
+	P_STRING,P_USTRING,P_ENUM,P_BYTES,P_CMDLIST
 } parm_type;
 
 typedef enum {
-	P_LOCAL,P_GLOBAL,P_SEPARATOR,P_NONE
+	P_LOCAL,P_GLOBAL,P_NONE
 } parm_class;
 
 struct enum_list {
