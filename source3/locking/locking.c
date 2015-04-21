@@ -1174,9 +1174,7 @@ bool set_delete_on_close(files_struct *fsp, bool delete_on_close,
 			nt_tok,
 			tok);
 	} else {
-		set_delete_on_close_lck(fsp, lck, false,
-			NULL,
-			NULL);
+		reset_delete_on_close_lck(fsp, lck);
 	}
 
 	if (fsp->is_directory) {
