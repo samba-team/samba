@@ -3873,7 +3873,7 @@ static bool server_id_exists(struct ctdb_context *ctdb, struct server_id *id)
 {
 	struct ctdb_server_id sid;
 	int ret;
-	uint32_t result;
+	uint32_t result = 0;
 
 	sid.type = SERVER_TYPE_SAMBA;
 	sid.pnn = id->vnn;

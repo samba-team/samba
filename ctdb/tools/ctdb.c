@@ -340,7 +340,7 @@ static bool db_exists(struct ctdb_context *ctdb, const char *dbarg,
 	bool dbid_given = false, found = false;
 	uint32_t id;
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
-	const char *name;
+	const char *name = NULL;
 
 	ret = ctdb_ctrl_getdbmap(ctdb, TIMELIMIT(), options.pnn, tmp_ctx, &dbmap);
 	if (ret != 0) {
@@ -2803,7 +2803,7 @@ static int unregsrvid(struct ctdb_context *ctdb, int argc, const char **argv)
  */
 static int chksrvid(struct ctdb_context *ctdb, int argc, const char **argv)
 {
-	uint32_t status;
+	uint32_t status = 0;
 	int ret;
 	struct ctdb_server_id server_id;
 
@@ -4589,9 +4589,9 @@ static int control_getdbmap(struct ctdb_context *ctdb, int argc, const char **ar
 	if(options.machinereadable){
 		printm(":ID:Name:Path:Persistent:Sticky:Unhealthy:ReadOnly:\n");
 		for(i=0;i<dbmap->num;i++){
-			const char *path;
-			const char *name;
-			const char *health;
+			const char *path = NULL;
+			const char *name = NULL;
+			const char *health = NULL;
 			bool persistent;
 			bool readonly;
 			bool sticky;
@@ -4615,9 +4615,9 @@ static int control_getdbmap(struct ctdb_context *ctdb, int argc, const char **ar
 
 	printf("Number of databases:%d\n", dbmap->num);
 	for(i=0;i<dbmap->num;i++){
-		const char *path;
-		const char *name;
-		const char *health;
+		const char *path = NULL;
+		const char *name = NULL;
+		const char *health = NULL;
 		bool persistent;
 		bool readonly;
 		bool sticky;
@@ -4647,8 +4647,8 @@ static int control_getdbstatus(struct ctdb_context *ctdb, int argc, const char *
 	const char *db_name;
 	uint32_t db_id;
 	uint8_t flags;
-	const char *path;
-	const char *health;
+	const char *path = NULL;
+	const char *health = NULL;
 
 	if (argc < 1) {
 		usage();
