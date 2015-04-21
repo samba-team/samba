@@ -62,8 +62,7 @@ int main(int argc, const char **argv)
 	for (i=0; i < count; i++) {
 		printf("call lp_load() #%d: ", i+1);
 		if (!lp_load_with_registry_shares(config_file,
-						  True,  /* save defaults */
-						  True)) /*init globals */
+						  True)) /* save defaults */
 		{
 			printf("ERROR.\n");
 			ret = 1;
