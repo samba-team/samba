@@ -29,6 +29,7 @@
 #include "messages.h"
 #include "libcli/security/security.h"
 #include "../libcli/smb/smb2_create_ctx.h"
+#include "lib/util/tevent_ntstatus.h"
 
 /*
  * Enhanced OS X and Netatalk compatibility
@@ -123,8 +124,10 @@ struct fruit_config_data {
 	enum fruit_locking locking;
 	enum fruit_encoding encoding;
 	bool use_aapl;
+	bool use_copyfile;
 	bool readdir_attr_enabled;
 	bool unix_info_enabled;
+	bool copyfile_enabled;
 	bool veto_appledouble;
 
 	/*
@@ -1351,6 +1354,9 @@ static int init_fruit_config(vfs_handle_struct *handle)
 		config->readdir_attr_rsize = true;
 	}
 
+	config->use_copyfile = lp_parm_bool(-1, FRUIT_PARAM_TYPE_NAME,
+					   "copyfile", false);
+
 	if (lp_parm_bool(SNUM(handle->conn),
 			 "readdir_attr", "aapl_finder_info", true)) {
 		config->readdir_attr_finder_info = true;
@@ -1833,6 +1839,11 @@ static NTSTATUS check_aapl(vfs_handle_struct *handle,
 		    (handle->conn->tcon->compat->fs_capabilities & FILE_NAMED_STREAMS)) {
 			server_caps |= SMB2_CRTCTX_AAPL_SUPPORTS_READ_DIR_ATTR;
 			config->readdir_attr_enabled = true;
+		}
+
+		if (config->use_copyfile) {
+			server_caps |= SMB2_CRTCTX_AAPL_SUPPORTS_OSX_COPYFILE;
+			config->copyfile_enabled = true;
 		}
 
 		/*
@@ -3264,6 +3275,15 @@ static NTSTATUS fruit_create_file(vfs_handle_struct *handle,
 		return status;
 	}
 
+	if (config->copyfile_enabled) {
+		/*
+		 * Set a flag in the fsp. Gets used in copychunk to
+		 * check whether the special Apple copyfile semantics
+		 * for copychunk should be allowed in a copychunk
+		 * request with a count of 0.
+		 */
+		(*result)->aapl_copyfile_supported = true;
+	}
 	if (is_ntfs_stream_smb_fname(smb_fname)
 	    || (*result == NULL)
 	    || ((*result)->is_directory)) {
@@ -3473,6 +3493,202 @@ static NTSTATUS fruit_fset_nt_acl(vfs_handle_struct *handle,
 	return NT_STATUS_OK;
 }
 
+struct fruit_copy_chunk_state {
+	struct vfs_handle_struct *handle;
+	off_t copied;
+	struct files_struct *src_fsp;
+	struct files_struct *dst_fsp;
+	bool is_copyfile;
+};
+
+static void fruit_copy_chunk_done(struct tevent_req *subreq);
+static struct tevent_req *fruit_copy_chunk_send(struct vfs_handle_struct *handle,
+						TALLOC_CTX *mem_ctx,
+						struct tevent_context *ev,
+						struct files_struct *src_fsp,
+						off_t src_off,
+						struct files_struct *dest_fsp,
+						off_t dest_off,
+						off_t num)
+{
+	struct tevent_req *req, *subreq;
+	struct fruit_copy_chunk_state *fruit_copy_chunk_state;
+	NTSTATUS status;
+	struct fruit_config_data *config;
+	off_t to_copy = num;
+
+	DEBUG(10,("soff: %zd, doff: %zd, len: %zd\n",
+		  src_off, dest_off, num));
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct fruit_config_data,
+				return NULL);
+
+	req = tevent_req_create(mem_ctx, &fruit_copy_chunk_state,
+				struct fruit_copy_chunk_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	fruit_copy_chunk_state->handle = handle;
+	fruit_copy_chunk_state->src_fsp = src_fsp;
+	fruit_copy_chunk_state->dst_fsp = dest_fsp;
+
+	/*
+	 * Check if this a OS X copyfile style copychunk request with
+	 * a requested chunk count of 0 that was translated to a
+	 * copy_chunk_send VFS call overloading the parameters src_off
+	 * = dest_off = num = 0.
+	 */
+	if ((src_off == 0) && (dest_off == 0) && (num == 0) &&
+	    src_fsp->aapl_copyfile_supported &&
+	    dest_fsp->aapl_copyfile_supported)
+	{
+		status = vfs_stat_fsp(src_fsp);
+		if (tevent_req_nterror(req, status)) {
+			return tevent_req_post(req, ev);
+		}
+
+		to_copy = src_fsp->fsp_name->st.st_ex_size;
+		fruit_copy_chunk_state->is_copyfile = true;
+	}
+
+	subreq = SMB_VFS_NEXT_COPY_CHUNK_SEND(handle,
+					      mem_ctx,
+					      ev,
+					      src_fsp,
+					      src_off,
+					      dest_fsp,
+					      dest_off,
+					      to_copy);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	tevent_req_set_callback(subreq, fruit_copy_chunk_done, req);
+	return req;
+}
+
+static void fruit_copy_chunk_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct fruit_copy_chunk_state *state = tevent_req_data(
+		req, struct fruit_copy_chunk_state);
+	NTSTATUS status;
+	unsigned int num_streams = 0;
+	struct stream_struct *streams = NULL;
+	int i;
+	struct smb_filename *src_fname_tmp = NULL;
+	struct smb_filename *dst_fname_tmp = NULL;
+
+	status = SMB_VFS_NEXT_COPY_CHUNK_RECV(state->handle,
+					      subreq,
+					      &state->copied);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	if (!state->is_copyfile) {
+		tevent_req_done(req);
+		return;
+	}
+
+	/*
+	 * Now copy all reamining streams. We know the share supports
+	 * streams, because we're in vfs_fruit. We don't do this async
+	 * because streams are few and small.
+	 */
+	status = vfs_streaminfo(state->handle->conn, NULL,
+				state->src_fsp->fsp_name->base_name,
+				req, &num_streams, &streams);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	if (num_streams == 1) {
+		/* There is always one stream, ::$DATA. */
+		tevent_req_done(req);
+		return;
+	}
+
+	for (i = 0; i < num_streams; i++) {
+		DEBUG(10, ("%s: stream: '%s'/%zd\n",
+			  __func__, streams[i].name, streams[i].size));
+
+		src_fname_tmp = synthetic_smb_fname(
+			req,
+			state->src_fsp->fsp_name->base_name,
+			streams[i].name,
+			NULL);
+		if (tevent_req_nomem(src_fname_tmp, req)) {
+			return;
+		}
+
+		if (is_ntfs_default_stream_smb_fname(src_fname_tmp)) {
+			TALLOC_FREE(src_fname_tmp);
+			continue;
+		}
+
+		dst_fname_tmp = synthetic_smb_fname(
+			req,
+			state->dst_fsp->fsp_name->base_name,
+			streams[i].name,
+			NULL);
+		if (tevent_req_nomem(dst_fname_tmp, req)) {
+			TALLOC_FREE(src_fname_tmp);
+			return;
+		}
+
+		status = copy_file(req,
+				   state->handle->conn,
+				   src_fname_tmp,
+				   dst_fname_tmp,
+				   OPENX_FILE_CREATE_IF_NOT_EXIST,
+				   0, false);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(1, ("%s: copy %s to %s failed: %s\n", __func__,
+				  smb_fname_str_dbg(src_fname_tmp),
+				  smb_fname_str_dbg(dst_fname_tmp),
+				  nt_errstr(status)));
+			TALLOC_FREE(src_fname_tmp);
+			TALLOC_FREE(dst_fname_tmp);
+			tevent_req_nterror(req, status);
+			return;
+		}
+
+		TALLOC_FREE(src_fname_tmp);
+		TALLOC_FREE(dst_fname_tmp);
+	}
+
+	TALLOC_FREE(streams);
+	TALLOC_FREE(src_fname_tmp);
+	TALLOC_FREE(dst_fname_tmp);
+	tevent_req_done(req);
+}
+
+static NTSTATUS fruit_copy_chunk_recv(struct vfs_handle_struct *handle,
+				      struct tevent_req *req,
+				      off_t *copied)
+{
+	struct fruit_copy_chunk_state *fruit_copy_chunk_state = tevent_req_data(
+		req, struct fruit_copy_chunk_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		DEBUG(1, ("server side copy chunk failed: %s\n",
+			  nt_errstr(status)));
+		*copied = 0;
+		tevent_req_received(req);
+		return status;
+	}
+
+	*copied = fruit_copy_chunk_state->copied;
+	tevent_req_received(req);
+
+	return NT_STATUS_OK;
+}
+
 static struct vfs_fn_pointers vfs_fruit_fns = {
 	.connect_fn = fruit_connect,
 
@@ -3495,6 +3711,8 @@ static struct vfs_fn_pointers vfs_fruit_fns = {
 	.fallocate_fn = fruit_fallocate,
 	.create_file_fn = fruit_create_file,
 	.readdir_attr_fn = fruit_readdir_attr,
+	.copy_chunk_send_fn = fruit_copy_chunk_send,
+	.copy_chunk_recv_fn = fruit_copy_chunk_recv,
 
 	/* NT ACL operations */
 	.fget_nt_acl_fn = fruit_fget_nt_acl,
