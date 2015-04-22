@@ -473,6 +473,23 @@ static bool test_witness_RegisterEx(struct torture_context *tctx,
 		r.in.net_name = state->net_name;
 		r.in.ip_address = ip_address;
 
+		/*
+		 * a valid request with an invalid sharename fails with
+		 * WERR_INVALID_STATE
+		 */
+		r.in.share_name = "any_invalid_share_name";
+
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_witness_RegisterEx_r(b, tctx, &r),
+			"RegisterEx failed");
+
+		torture_assert_werr_equal(tctx,
+			r.out.result,
+			WERR_INVALID_STATE,
+			"RegisterEx failed");
+
+		r.in.share_name = NULL;
+
 		torture_assert_ntstatus_ok(tctx,
 			dcerpc_witness_RegisterEx_r(b, tctx, &r),
 			"RegisterEx failed");
