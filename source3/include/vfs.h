@@ -165,6 +165,7 @@
 /* Bump to version 33 - Samba 4.3 will ship with that. */
 /* Version 33 - change fallocate mode flags param from enum->uint32_t */
 /* Version 33 - Add snapshot create/delete calls */
+/* Version 33 - Add OS X SMB2 AAPL copyfile extension flag to fsp */
 
 #define SMB_VFS_INTERFACE_VERSION 33
 
@@ -257,6 +258,7 @@ typedef struct files_struct {
 	bool is_sparse;
 	bool backup_intent; /* Handle was successfully opened with backup intent
 				and opener has privilege to do so. */
+	bool aapl_copyfile_supported;
 	struct smb_filename *fsp_name;
 	uint32_t name_hash;		/* Jenkins hash of full pathname. */
 	uint64_t mid;			/* Mid of the operation that created us. */
