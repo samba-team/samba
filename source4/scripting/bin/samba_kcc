@@ -2078,6 +2078,7 @@ class KCC(object):
         r_list.append(l_of_x)
 
         r_list.sort(sort_replica_by_dsa_guid)
+        DEBUG_GREEN([x.rep_dsa_dnstr for x in r_list])
 
         r_len = len(r_list)
 
@@ -2113,6 +2114,12 @@ class KCC(object):
         if not r_list[0].is_partial() or r_list[r_len-1].is_partial():
             graph_list[r_len-1].add_edge_from(r_list[0].rep_dsa_dnstr)
 
+        dot_edges = []
+        for v1 in graph_list:
+            for v2 in v1.edge_from:
+                dot_edges.append((v2, v1.dsa_dnstr))
+        write_dot_file('intrasite_pre_ntdscon', dot_edges, directed=True, label=nc_x.nc_dnstr)
+
         # For each existing nTDSConnection object implying an edge
         # from rj of R to ri such that j != i, an edge from rj to ri
         # is not already in the graph, and the total edges directed
@@ -2120,9 +2127,11 @@ class KCC(object):
         i = 0
         while i < r_len:
             dsa = self.my_site.dsa_table[graph_list[i].dsa_dnstr]
+            DEBUG_RED(dsa.dsa_dnstr)
             graph_list[i].add_edges_from_connections(dsa)
             i = i + 1
-
+        DEBUG([x.rep_dsa_dnstr for x in r_list])
+        DEBUG_YELLOW([x.dsa_dnstr for x in graph_list])
         i = 0
         while i < r_len:
             tnode = graph_list[i]
@@ -2169,6 +2178,13 @@ class KCC(object):
                 graph_list[i].add_connections_from_edges(dc_local)
 
             i = i + 1
+
+        dot_edges = []
+        for v1 in graph_list:
+            for v2 in v1.edge_from:
+                dot_edges.append((v2, v1.dsa_dnstr))
+        write_dot_file('intrasite_post_ntdscon', dot_edges, directed=True, label=nc_x.nc_dnstr)
+
 
     def intrasite(self):
         """The head method for generating the intra-site KCC replica
