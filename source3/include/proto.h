@@ -374,6 +374,9 @@ NTSTATUS init_before_fork(void);
 NTSTATUS reinit_after_fork(struct messaging_context *msg_ctx,
 			   struct tevent_context *ev_ctx,
 			   bool parent_longlived);
+NTSTATUS smbd_reinit_after_fork(struct messaging_context *msg_ctx,
+				struct tevent_context *ev_ctx,
+				bool parent_longlived);
 void *malloc_(size_t size);
 void *Realloc(void *p, size_t size, bool free_old_on_error);
 void add_to_large_array(TALLOC_CTX *mem_ctx, size_t element_size,
