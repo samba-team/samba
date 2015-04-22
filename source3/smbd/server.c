@@ -590,9 +590,6 @@ static void smbd_accept_connection(struct tevent_context *ev,
 	if (pid == 0) {
 		NTSTATUS status = NT_STATUS_OK;
 
-		/* Child code ... */
-		am_parent = NULL;
-
 		/*
 		 * Can't use TALLOC_FREE here. Nulling out the argument to it
 		 * would overwrite memory we've just freed.
@@ -606,9 +603,7 @@ static void smbd_accept_connection(struct tevent_context *ev,
 		 * them, counting worker smbds. */
 		CatchChild();
 
-		status = reinit_after_fork(msg_ctx,
-					   ev,
-					   true);
+		status = smbd_reinit_after_fork(msg_ctx, ev, true);
 		if (!NT_STATUS_IS_OK(status)) {
 			if (NT_STATUS_EQUAL(status,
 					    NT_STATUS_TOO_MANY_OPENED_FILES)) {

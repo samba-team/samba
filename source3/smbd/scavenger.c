@@ -244,11 +244,9 @@ static bool smbd_scavenger_start(struct smbd_scavenger_state *state)
 
 		close(fds[0]);
 
-		am_parent = NULL;
-
 		set_my_unique_id(unique_id);
 
-		status = reinit_after_fork(state->msg, state->ev, true);
+		status = smbd_reinit_after_fork(state->msg, state->ev, true);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(2, ("reinit_after_fork failed: %s\n",
 				  nt_errstr(status)));

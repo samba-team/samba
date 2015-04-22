@@ -373,7 +373,7 @@ pid_t start_background_queue(struct tevent_context *ev,
 		close(pause_pipe[0]);
 		pause_pipe[0] = -1;
 
-		status = reinit_after_fork(msg_ctx, ev, true);
+		status = smbd_reinit_after_fork(msg_ctx, ev, true);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,("reinit_after_fork() failed\n"));
