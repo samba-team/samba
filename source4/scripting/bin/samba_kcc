@@ -1999,10 +1999,10 @@ class KCC(object):
         #
         # XXX This loop and the previous one differ only in whether
         # the replica is partial or not. here we only accept partial
-        # (because we're partial); before we onl accepted full. if
-        # order doen't matter (and it doesn't seem to as we're using
-        # hash ordering here) these loops could easily be merged. Or
-        # this could be a helper function.
+        # (because we're partial); before we only accepted full. Order
+        # doen't matter (the list is sorted a few lines down) so these
+        # loops could easily be merged. Or this could be a helper
+        # function.
 
         if partial:
 
