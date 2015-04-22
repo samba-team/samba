@@ -193,14 +193,14 @@ class KCC(object):
 
         ::returns: Raises an Exception on error.
         """
-        dn = ldb.Dn(self.samdb, "")
+        dn = ldb.Dn(self.samdb, "<GUID=%s>" % self.samdb.get_ntds_GUID())
         try:
             res = self.samdb.search(base=dn, scope=ldb.SCOPE_BASE,
-                                    attrs=["dsServiceName"])
+                                    attrs=[])
         except ldb.LdbError, (enum, estr):
             raise Exception("Unable to find my nTDSDSA - (%s)" % estr)
 
-        self.my_dsa_dnstr = res[0]["dsServiceName"][0]
+        self.my_dsa_dnstr = str(res[0].dn)
         self.my_dsa = self.my_site.get_dsa(self.my_dsa_dnstr)
 
     def load_all_partitions(self):
@@ -2237,7 +2237,8 @@ class KCC(object):
             # Commit any newly created connections to the samdb
             mydsa.commit_connections(self.samdb)
 
-    def run(self, dburl, lp, creds):
+
+    def run(self, dburl, lp, creds, forced_local_dsa=None):
         """Method to perform a complete run of the KCC and
         produce an updated topology for subsequent NC replica
         syncronization between domain controllers
@@ -2254,6 +2255,9 @@ class KCC(object):
                 logger.error("Unable to open sam database %s : %s" %
                              (dburl, msg))
                 return 1
+
+        if forced_local_dsa:
+            self.samdb.set_ntds_settings_dn("CN=NTDS Settings,%s" % forced_local_dsa)
 
         try:
             # Setup
@@ -3020,6 +3024,12 @@ parser.add_option("--now",
                   help="assume current time is this ('YYYYmmddHHMMSS[tz]', default: system time)",
                   type=str, metavar="<date>")
 
+parser.add_option("--forced-local-dsa",
+                  help="run calculations assuming the DSA is this DN",
+                  type=str, metavar="<DSA>")
+
+
+
 logger = logging.getLogger("samba_kcc")
 logger.addHandler(logging.StreamHandler(sys.stdout))
 DEBUG = logger.debug
@@ -3088,5 +3098,5 @@ if opts.importldif:
     if rc != 0:
         sys.exit(rc)
 
-rc = kcc.run(opts.dburl, lp, creds)
+rc = kcc.run(opts.dburl, lp, creds, opts.forced_local_dsa)
 sys.exit(rc)
