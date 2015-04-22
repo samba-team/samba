@@ -2,7 +2,7 @@
 
 if [ $# -lt 1 ]; then
 cat <<EOF
-Usage: blackbox_newuser.sh PREFIX
+Usage: bogus.sh SERVER SHARE USER PASSWORD DC_USER DC_PASSWORD SMBCLIENT
 EOF
 exit 1;
 fi
