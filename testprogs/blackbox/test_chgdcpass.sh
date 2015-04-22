@@ -25,7 +25,9 @@ samba4bindir="$BINDIR"
 samba4srcdir="$SRCDIR/source4"
 
 samba4kinit=kinit
+heimdal=0
 if test -x $BINDIR/samba4kinit; then
+	heimdal=1
 	samba4kinit=bin/samba4kinit
 fi
 
@@ -59,7 +61,12 @@ enctype="-e $ENCTYPE"
 KRB5CCNAME="$PREFIX/tmpccache"
 export KRB5CCNAME
 rm -f $KRB5CCNAME
-testit "kinit with keytab" $samba4kinit $enctype -t $PROVDIR/private/secrets.keytab --use-keytab $USERNAME   || failed=`expr $failed + 1`
+
+if [ $heimdal -eq 1 ]; then
+	testit "kinit with keytab" $samba4kinit $enctype -t $PROVDIR/private/secrets.keytab --use-keytab $USERNAME   || failed=`expr $failed + 1`
+else
+	testit "kinit with keytab" $samba4kinit -k -t $PROVDIR/private/secrets.keytab $USERNAME || failed=`expr $failed + 1`
+fi
 
 #This is important because it puts the ticket for the old KVNO and password into a local ccache
 test_smbclient "Test login with kerberos ccache before password change" 'ls' "$unc" -k yes || failed=`expr $failed + 1`
@@ -94,8 +101,13 @@ test_drs bind "Test drs bind after 2nd password change" || failed=`expr $failed 
 test_drs options "Test drs options after 2nd password change" || failed=`expr $failed + 1`
 
 #This confirms that the DC password is valid for a kinit too
-testit "kinit with keytab" $samba4kinit $enctype -t $PROVDIR/private/secrets.keytab --use-keytab $USERNAME   || failed=`expr $failed + 1`
+if [ $heimdal -eq 1 ]; then
+	testit "kinit with keytab" $samba4kinit $enctype -t $PROVDIR/private/secrets.keytab --use-keytab $USERNAME   || failed=`expr $failed + 1`
+else
+	testit "kinit with keytab" $samba4kinit -k -t $PROVDIR/private/secrets.keytab $USERNAME || failed=`expr $failed + 1`
+fi
 test_smbclient "Test login with kerberos ccache with fresh kinit" 'ls' "$unc" -k yes || failed=`expr $failed + 1`
+
 rm -f $KRB5CCNAME
 
 rm -f $PREFIX/tmpccache tmpccfile tmppassfile tmpuserpassfile tmpuserccache tmpkpasswdscript
