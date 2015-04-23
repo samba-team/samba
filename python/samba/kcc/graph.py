@@ -29,8 +29,69 @@ from samba.dcerpc import misc
 from samba.kcc.debug import DEBUG, DEBUG_FN
 
 from samba.kcc.kcc_utils import MAX_DWORD
-from samba.kcc.kcc_utils import ReplInfo, combine_repl_info, total_schedule
-from samba.kcc.kcc_utils import convert_schedule_to_repltimes
+from samba.kcc.kcc_utils import ReplInfo, total_schedule
+
+
+def convert_schedule_to_repltimes(schedule):
+    """Convert NTDS Connection schedule to replTime schedule.
+
+    Schedule defined in  MS-ADTS 6.1.4.5.2
+    ReplTimes defined in MS-DRSR 5.164.
+
+    "Schedule" has 168 bytes but only the lower nibble of each is
+    significant. There is one byte per hour. Bit 3 (0x08) represents
+    the first 15 minutes of the hour and bit 0 (0x01) represents the
+    last 15 minutes. The first byte presumably covers 12am - 1am
+    Sunday, though the spec doesn't define the start of a week.
+
+    "ReplTimes" has 84 bytes which are the 168 lower nibbles of
+    "Schedule" packed together. Thus each byte covers 2 hours. Bits 7
+    (i.e. 0x80) is the first 15 minutes and bit 0 is the last. The
+    first byte covers Sunday 12am - 2am (per spec).
+
+    Here we pack two elements of the NTDS Connection schedule slots
+    into one element of the replTimes list.
+
+    If no schedule appears in NTDS Connection then a default of 0x11
+    is set in each replTimes slot as per behaviour noted in a Windows
+    DC. That default would cause replication within the last 15
+    minutes of each hour.
+    """
+    if schedule is None or schedule.dataArray[0] is None:
+        return [0x11] * 84
+
+    times = []
+    data = schedule.dataArray[0].slots
+
+    for i in range(84):
+        times.append((data[i * 2] & 0xF) << 4 | (data[i * 2 + 1] & 0xF))
+
+    return times
+
+
+# Returns true if schedule intersect
+def combine_repl_info(info_a, info_b, info_c):
+    info_c.interval = max(info_a.interval, info_b.interval)
+    info_c.options = info_a.options & info_b.options
+
+    if info_a.schedule is None:
+        info_a.schedule = [0xFF] * 84
+    if info_b.schedule is None:
+        info_b.schedule = [0xFF] * 84
+
+    new_info = [a & b for a, b in zip(info_a.schedule, info_b.schedule)]
+
+    if not any(new_info):
+        return False
+
+    info_c.schedule = new_info
+
+    # Truncate to MAX_DWORD
+    info_c.cost = info_a.cost + info_b.cost
+    if info_c.cost > MAX_DWORD:
+        info_c.cost = MAX_DWORD
+
+    return True
 
 
 def get_spanning_tree_edges(graph, my_site, label=None, verify=False,

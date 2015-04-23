@@ -32,7 +32,7 @@ from samba.dcerpc import drsuapi, misc
 from samba.kcc.kcc_utils import Site, Partition, Transport, SiteLink
 from samba.kcc.kcc_utils import NCReplica, NCType, nctype_lut, GraphNode
 from samba.kcc.kcc_utils import RepsFromTo, KCCError, KCCFailedObject
-from samba.kcc.kcc_utils import convert_schedule_to_repltimes
+from samba.kcc.graph import convert_schedule_to_repltimes
 
 from samba.ndr import ndr_pack
 
