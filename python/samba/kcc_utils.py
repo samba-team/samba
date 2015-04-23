@@ -1123,6 +1123,8 @@ class NTDSConnection(object):
         """Returns True if our schedule includes at least one
         replication interval within the week.  False otherwise
         """
+        # replinfo schedule is None means "always", while
+        # NTDSConnection schedule is None means "never".
         if self.schedule is None or self.schedule.dataArray[0] is None:
             return False
 
