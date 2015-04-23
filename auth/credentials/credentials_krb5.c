@@ -731,6 +731,83 @@ _PUBLIC_ int cli_credentials_get_client_gss_creds(struct cli_credentials *cred,
 	return ret;
 }
 
+static int smb_krb5_create_salt_principal(TALLOC_CTX *mem_ctx,
+					  const char *samAccountName,
+					  const char *realm,
+					  const char **salt_principal,
+					  const char **error_string)
+{
+	char *machine_username;
+	bool is_machine_account = false;
+	char *upper_realm;
+	TALLOC_CTX *tmp_ctx;
+	int rc = -1;
+
+	if (samAccountName == NULL) {
+		*error_string = "Cannot determine salt principal, no "
+				"saltPrincipal or samAccountName specified";
+		return rc;
+	}
+
+	if (realm == NULL) {
+		*error_string = "Cannot make principal without a realm";
+		return rc;
+	}
+
+	tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		*error_string = "Cannot allocate talloc context";
+		return rc;
+	}
+
+	upper_realm = strupper_talloc(tmp_ctx, realm);
+	if (upper_realm == NULL) {
+		*error_string = "Cannot allocate to upper case realm";
+		goto out;
+	}
+
+	machine_username = strlower_talloc(tmp_ctx, samAccountName);
+	if (!machine_username) {
+		*error_string = "Cannot duplicate samAccountName";
+		goto out;
+	}
+
+	if (machine_username[strlen(machine_username) - 1] == '$') {
+		machine_username[strlen(machine_username) - 1] = '\0';
+		is_machine_account = true;
+	}
+
+	if (is_machine_account) {
+		char *lower_realm;
+
+		lower_realm = strlower_talloc(tmp_ctx, realm);
+		if (lower_realm == NULL) {
+			*error_string = "Cannot allocate to lower case realm";
+			goto out;
+		}
+
+		*salt_principal = talloc_asprintf(mem_ctx,
+						  "host/%s.%s@%s",
+						  machine_username,
+						  lower_realm,
+						  upper_realm);
+	} else {
+		*salt_principal = talloc_asprintf(mem_ctx,
+						  "%s@%s",
+						  machine_username,
+						  upper_realm);
+	}
+	if (*salt_principal == NULL) {
+		*error_string = "Cannot create salt principal";
+		goto out;
+	}
+
+	rc = 0;
+out:
+	talloc_free(tmp_ctx);
+	return rc;
+}
+
 /* Get the keytab (actually, a container containing the krb5_keytab)
  * attached to this context.  If this hasn't been done or set before,
  * it will be generated from the password.
@@ -745,6 +822,10 @@ _PUBLIC_ int cli_credentials_get_keytab(struct cli_credentials *cred,
 	const char *keytab_name;
 	krb5_keytab keytab;
 	TALLOC_CTX *mem_ctx;
+	const char *username = cli_credentials_get_username(cred);
+	const char *realm = cli_credentials_get_realm(cred);
+	const char *error_string;
+	const char *salt_principal;
 
 	if (cred->keytab_obtained >= (MAX(cred->principal_obtained, 
 					  cred->username_obtained))) {
@@ -767,13 +848,30 @@ _PUBLIC_ int cli_credentials_get_keytab(struct cli_credentials *cred,
 		return ENOMEM;
 	}
 
+	/*
+	 * FIXME: Currently there is no better way than to create the correct
+	 * salt principal by checking if the username ends with a '$'. It would
+	 * be better if it is part of the credentials.
+	 */
+	ret = smb_krb5_create_salt_principal(mem_ctx,
+					     username,
+					     realm,
+					     &salt_principal,
+					     &error_string);
+	if (ret) {
+		talloc_free(mem_ctx);
+		return ret;
+	}
+
 	ret = smb_krb5_create_memory_keytab(mem_ctx,
-					smb_krb5_context->krb5_context,
-					cli_credentials_get_password(cred),
-					cli_credentials_get_username(cred),
-					cli_credentials_get_realm(cred),
-					cli_credentials_get_kvno(cred),
-					&keytab, &keytab_name);
+					    smb_krb5_context->krb5_context,
+					    cli_credentials_get_password(cred),
+					    username,
+					    realm,
+					    salt_principal,
+					    cli_credentials_get_kvno(cred),
+					    &keytab,
+					    &keytab_name);
 	if (ret) {
 		talloc_free(mem_ctx);
 		return ret;

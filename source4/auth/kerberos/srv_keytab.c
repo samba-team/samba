@@ -39,93 +39,6 @@ static void keytab_principals_free(krb5_context context,
 	}
 }
 
-static krb5_error_code salt_principal(TALLOC_CTX *parent_ctx,
-				const char *samAccountName,
-				const char *realm,
-				const char *saltPrincipal,
-				krb5_context context,
-				krb5_principal *salt_princ,
-				const char **error_string)
-{
-
-	krb5_error_code ret;
-	char *machine_username;
-	char *salt_body;
-	char *lower_realm;
-	char *upper_realm;
-
-	TALLOC_CTX *tmp_ctx;
-
-	if (saltPrincipal) {
-		ret = krb5_parse_name(context, saltPrincipal, salt_princ);
-		if (ret) {
-			*error_string = smb_get_krb5_error_message(
-						context, ret, parent_ctx);
-		}
-		return ret;
-	}
-
-	if (!samAccountName) {
-		(*error_string) = "Cannot determine salt principal, no "
-				"saltPrincipal or samAccountName specified";
-		return EINVAL;
-	}
-
-	if (!realm) {
-		*error_string = "Cannot make principal without a realm";
-		return EINVAL;
-	}
-
-	tmp_ctx = talloc_new(parent_ctx);
-	if (!tmp_ctx) {
-		*error_string = "Cannot allocate tmp_ctx";
-		return ENOMEM;
-	}
-
-	machine_username = strlower_talloc(tmp_ctx, samAccountName);
-	if (!machine_username) {
-		*error_string = "Cannot duplicate samAccountName";
-		talloc_free(tmp_ctx);
-		return ENOMEM;
-	}
-
-	if (machine_username[strlen(machine_username)-1] == '$') {
-		machine_username[strlen(machine_username)-1] = '\0';
-	}
-
-	lower_realm = strlower_talloc(tmp_ctx, realm);
-	if (!lower_realm) {
-		*error_string = "Cannot allocate to lower case realm";
-		talloc_free(tmp_ctx);
-		return ENOMEM;
-	}
-
-	upper_realm = strupper_talloc(tmp_ctx, realm);
-	if (!upper_realm) {
-		*error_string = "Cannot allocate to upper case realm";
-		talloc_free(tmp_ctx);
-		return ENOMEM;
-	}
-
-	salt_body = talloc_asprintf(tmp_ctx, "%s.%s",
-				    machine_username, lower_realm);
-	if (!salt_body) {
-		*error_string = "Cannot form salt principal body";
-		talloc_free(tmp_ctx);
-		return ENOMEM;
-	}
-
-	ret = smb_krb5_make_principal(context, salt_princ, upper_realm,
-						"host", salt_body, NULL);
-	if (ret) {
-		*error_string = smb_get_krb5_error_message(context,
-							   ret, parent_ctx);
-	}
-
-	talloc_free(tmp_ctx);
-	return ret;
-}
-
 static krb5_error_code keytab_add_keys(TALLOC_CTX *parent_ctx,
 				       uint32_t num_principals,
 				       krb5_principal *principals,
@@ -227,9 +140,11 @@ static krb5_error_code create_keytab(TALLOC_CTX *parent_ctx,
 
 	/* The salt used to generate these entries may be different however,
 	 * fetch that */
-	ret = salt_principal(mem_ctx, samAccountName, realm, saltPrincipal,
-			     context, &salt_princ, error_string);
+	ret = krb5_parse_name(context, saltPrincipal, &salt_princ);
 	if (ret) {
+		*error_string = smb_get_krb5_error_message(context,
+							   ret,
+							   parent_ctx);
 		talloc_free(mem_ctx);
 		return ret;
 	}
@@ -297,6 +212,11 @@ krb5_error_code smb_krb5_update_keytab(TALLOC_CTX *parent_ctx,
 
 	if (keytab_name == NULL) {
 		return ENOENT;
+	}
+
+	if (saltPrincipal == NULL) {
+		*error_string = "No saltPrincipal provided";
+		return EINVAL;
 	}
 
 	ret = krb5_kt_resolve(context, keytab_name, &keytab);
@@ -389,6 +309,7 @@ krb5_error_code smb_krb5_create_memory_keytab(TALLOC_CTX *parent_ctx,
 				const char *new_secret,
 				const char *samAccountName,
 				const char *realm,
+				const char *salt_principal,
 				int kvno,
 				krb5_keytab *keytab,
 				const char **keytab_name)
@@ -415,7 +336,7 @@ krb5_error_code smb_krb5_create_memory_keytab(TALLOC_CTX *parent_ctx,
 
 	ret = smb_krb5_update_keytab(mem_ctx, context,
 				     *keytab_name, samAccountName, realm,
-				     NULL, 0, NULL, new_secret, NULL,
+				     NULL, 0, salt_principal, new_secret, NULL,
 				     kvno, ENC_ALL_TYPES,
 				     false, keytab, &error_string);
 	if (ret == 0) {
