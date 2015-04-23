@@ -1295,7 +1295,7 @@ NTSTATUS ctdbd_parse(struct ctdbd_connection *conn, uint32_t db_id,
 		goto fail;
 	}
 
-	if (hdr->operation != CTDB_REPLY_CALL) {
+	if ((hdr == NULL) || (hdr->operation != CTDB_REPLY_CALL)) {
 		DEBUG(0, ("received invalid reply\n"));
 		status = NT_STATUS_INTERNAL_ERROR;
 		goto fail;
