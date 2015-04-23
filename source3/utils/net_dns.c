@@ -210,7 +210,7 @@ int get_my_ip_address( struct sockaddr_storage **pp_ss )
 
 DNS_ERROR do_gethostbyname(const char *server, const char *host)
 {
-	struct dns_connection *conn;
+	struct dns_connection *conn = NULL;
 	struct dns_request *req, *resp;
 	DNS_ERROR err;
 
