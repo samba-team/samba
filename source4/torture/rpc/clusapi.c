@@ -862,6 +862,50 @@ static bool test_OfflineResource(struct torture_context *tctx,
 	return ret;
 }
 
+static bool test_CreateResEnum_int(struct torture_context *tctx,
+				   struct dcerpc_pipe *p,
+				   struct policy_handle *hResource)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_CreateResEnum r;
+	uint32_t dwType = CLUSTER_ENUM_RESOURCE;
+	struct ENUM_LIST *ReturnEnum;
+	WERROR rpc_status;
+
+	r.in.hResource = *hResource;
+	r.in.dwType = dwType;
+	r.out.ReturnEnum = &ReturnEnum;
+	r.out.rpc_status = &rpc_status;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_CreateResEnum_r(b, tctx, &r),
+		"CreateResEnum failed");
+	torture_assert_werr_ok(tctx,
+		r.out.result,
+		"CreateResEnum failed");
+
+	return true;
+}
+
+static bool test_CreateResEnum(struct torture_context *tctx,
+			       void *data)
+{
+	struct torture_clusapi_context *t =
+		talloc_get_type_abort(data, struct torture_clusapi_context);
+	struct policy_handle hResource;
+	bool ret = true;
+
+	if (!test_OpenResource_int(tctx, t->p, "Cluster Name", &hResource)) {
+		return false;
+	}
+
+	ret = test_CreateResEnum_int(tctx, t->p, &hResource);
+
+	test_CloseResource_int(tctx, t->p, &hResource);
+
+	return ret;
+}
+
 static bool test_one_resource(struct torture_context *tctx,
 			      struct dcerpc_pipe *p,
 			      const char *resource_name)
@@ -885,7 +929,10 @@ static bool test_one_resource(struct torture_context *tctx,
 		"failed to query resource id");
 	torture_assert(tctx,
 		test_GetResourceState_int(tctx, p, &hResource),
-		"failed to query resource id");
+		"failed to query resource state");
+	torture_assert(tctx,
+		test_CreateResEnum_int(tctx, p, &hResource),
+		"failed to query resource enum");
 
 	test_CloseResource_int(tctx, p, &hResource);
 
@@ -925,39 +972,6 @@ static bool test_all_resources(struct torture_context *tctx,
 			test_one_resource(tctx, t->p, e.Name),
 			"failed to test one resource");
 	}
-
-	return true;
-}
-
-static bool test_CreateResEnum(struct torture_context *tctx,
-			       void *data)
-{
-	struct torture_clusapi_context *t =
-		talloc_get_type_abort(data, struct torture_clusapi_context);
-	struct dcerpc_binding_handle *b = t->p->binding_handle;
-	struct clusapi_CreateResEnum r;
-	struct policy_handle hResource;
-	uint32_t dwType = CLUSTER_ENUM_RESOURCE;
-	struct ENUM_LIST *ReturnEnum;
-	WERROR rpc_status;
-
-	torture_assert(tctx,
-		test_OpenResource_int(tctx, t->p, "Cluster Name", &hResource),
-		"OpenResource failed");
-
-	r.in.hResource = hResource;
-	r.in.dwType = dwType;
-	r.out.ReturnEnum = &ReturnEnum;
-	r.out.rpc_status = &rpc_status;
-
-	torture_assert_ntstatus_ok(tctx,
-		dcerpc_clusapi_CreateResEnum_r(b, tctx, &r),
-		"CreateResEnum failed");
-	torture_assert_werr_ok(tctx,
-		r.out.result,
-		"CreateResEnum failed");
-
-	test_CloseResource_int(tctx, t->p, &hResource);
 
 	return true;
 }
