@@ -1915,7 +1915,11 @@ class RepsFromTo(object):
         return text
 
     def __setattr__(self, item, value):
+        """Set an attribute and chyange update flag.
 
+        Be aware that setting any RepsFromTo attribute will set the
+        drsuapi.DRSUAPI_DRS_UPDATE_ADDRESS update flag.
+        """
         if item in ['schedule', 'replica_flags', 'transport_guid',
                     'source_dsa_obj_guid', 'source_dsa_invocation_id',
                     'consecutive_sync_failures', 'last_success',
