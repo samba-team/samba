@@ -437,7 +437,6 @@ struct server_id procid_self(void);
 #define serverid_equal(p1, p2) server_id_equal(p1,p2)
 bool procid_is_me(const struct server_id *pid);
 struct server_id interpret_pid(const char *pid_string);
-char *procid_str_static(const struct server_id *pid);
 bool procid_valid(const struct server_id *pid);
 bool procid_is_local(const struct server_id *pid);
 bool is_offset_safe(const char *buf_base, size_t buf_len, char *ptr, size_t off);

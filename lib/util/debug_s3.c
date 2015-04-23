@@ -84,14 +84,15 @@ static void debuglevel_message(struct messaging_context *msg_ctx,
 			       DATA_BLOB *data)
 {
 	char *message = debug_list_class_names_and_levels();
+	struct server_id_buf tmp;
 
 	if (!message) {
 		DEBUG(0,("debuglevel_message - debug_list_class_names_and_levels returned NULL\n"));
 		return;
 	}
 
-	DEBUG(1,("INFO: Received REQ_DEBUGLEVEL message from PID %s\n",
-		 procid_str_static(&src)));
+	DEBUG(1, ("INFO: Received REQ_DEBUGLEVEL message from PID %s\n",
+		  server_id_str_buf(src, &tmp)));
 	messaging_send_buf(msg_ctx, src, MSG_DEBUGLEVEL,
 			   (uint8 *)message, strlen(message) + 1);
 

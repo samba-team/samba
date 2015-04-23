@@ -356,10 +356,10 @@ static void dbwrap_watch_record_stored(struct db_context *db,
 		status = messaging_send_buf(msg, ids[i], MSG_DBWRAP_MODIFIED,
 					    w_key.dptr, w_key.dsize);
 		if (!NT_STATUS_IS_OK(status)) {
-			char *str = procid_str_static(&ids[i]);
+			struct server_id_buf tmp;
 			DEBUG(1, ("messaging_send to %s failed: %s\n",
-				  str, nt_errstr(status)));
-			TALLOC_FREE(str);
+				  server_id_str_buf(ids[i], &tmp),
+				  nt_errstr(status)));
 		}
 	}
 done:

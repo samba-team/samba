@@ -1251,9 +1251,10 @@ NTSTATUS send_break_message(struct messaging_context *msg_ctx,
 {
 	NTSTATUS status;
 	char msg[MSG_SMB_SHARE_MODE_ENTRY_SIZE];
+	struct server_id_buf tmp;
 
 	DEBUG(10, ("Sending break request to PID %s\n",
-		   procid_str_static(&exclusive->pid)));
+		   server_id_str_buf(exclusive->pid, &tmp)));
 
 	/* Create the message. */
 	share_mode_entry_to_message(msg, exclusive);

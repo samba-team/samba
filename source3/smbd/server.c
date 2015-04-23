@@ -155,10 +155,11 @@ static void msg_inject_fault(struct messaging_context *msg,
 			     DATA_BLOB *data)
 {
 	int sig;
+	struct server_id_buf tmp;
 
 	if (data->length != sizeof(sig)) {
 		DEBUG(0, ("Process %s sent bogus signal injection request\n",
-			  procid_str_static(&src)));
+			  server_id_str_buf(src, &tmp)));
 		return;
 	}
 
@@ -170,10 +171,10 @@ static void msg_inject_fault(struct messaging_context *msg,
 
 #if HAVE_STRSIGNAL
 	DEBUG(0, ("Process %s requested injection of signal %d (%s)\n",
-		  procid_str_static(&src), sig, strsignal(sig)));
+		  server_id_str_buf(src, &tmp), sig, strsignal(sig)));
 #else
 	DEBUG(0, ("Process %s requested injection of signal %d\n",
-		  procid_str_static(&src), sig));
+		  server_id_str_buf(src, &tmp), sig));
 #endif
 
 	kill(getpid(), sig);

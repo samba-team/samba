@@ -969,8 +969,12 @@ static NTSTATUS brl_lock_posix(struct messaging_context *msg_ctx,
 
 			if (pend_lock->lock_type == PENDING_READ_LOCK &&
 					brl_pending_overlap(plock, pend_lock)) {
-				DEBUG(10,("brl_lock_posix: sending unlock message to pid %s\n",
-					procid_str_static(&pend_lock->context.pid )));
+				struct server_id_buf tmp;
+
+				DEBUG(10, ("brl_lock_posix: sending unlock "
+					   "message to pid %s\n",
+					   server_id_str_buf(pend_lock->context.pid,
+							     &tmp)));
 
 				messaging_send(msg_ctx, pend_lock->context.pid,
 					       MSG_SMB_UNLOCK, &data_blob_null);
@@ -1155,8 +1159,12 @@ bool brl_unlock_windows_default(struct messaging_context *msg_ctx,
 
 		/* We could send specific lock info here... */
 		if (brl_pending_overlap(plock, pend_lock)) {
-			DEBUG(10,("brl_unlock: sending unlock message to pid %s\n",
-				procid_str_static(&pend_lock->context.pid )));
+			struct server_id_buf tmp;
+
+			DEBUG(10, ("brl_unlock: sending unlock message to "
+				   "pid %s\n",
+				   server_id_str_buf(pend_lock->context.pid,
+						     &tmp)));
 
 			messaging_send(msg_ctx, pend_lock->context.pid,
 				       MSG_SMB_UNLOCK, &data_blob_null);
@@ -1312,8 +1320,12 @@ static bool brl_unlock_posix(struct messaging_context *msg_ctx,
 
 		/* We could send specific lock info here... */
 		if (brl_pending_overlap(plock, pend_lock)) {
-			DEBUG(10,("brl_unlock: sending unlock message to pid %s\n",
-				procid_str_static(&pend_lock->context.pid )));
+			struct server_id_buf tmp;
+
+			DEBUG(10, ("brl_unlock: sending unlock message to "
+				   "pid %s\n",
+				   server_id_str_buf(pend_lock->context.pid,
+						     &tmp)));
 
 			messaging_send(msg_ctx, pend_lock->context.pid,
 				       MSG_SMB_UNLOCK, &data_blob_null);

@@ -137,7 +137,8 @@ static int print_share_mode(const struct share_mode_entry *e,
 	}
 
 	if (Ucrit_checkPid(e->pid)) {
-		d_printf("%-11s  ",procid_str_static(&e->pid));
+		struct server_id_buf tmp;
+		d_printf("%-11s  ", server_id_str_buf(e->pid, &tmp));
 		d_printf("%-9u  ", (unsigned int)e->uid);
 		switch (map_share_mode_to_deny_mode(e->share_access,
 						    e->private_options)) {
@@ -218,6 +219,7 @@ static void print_brl(struct file_id id,
 	const char *sharepath = "";
 	char *fname = NULL;
 	struct share_mode_lock *share_mode;
+	struct server_id_buf tmp;
 
 	if (count==0) {
 		d_printf("Byte range locks:\n");
@@ -250,7 +252,7 @@ static void print_brl(struct file_id id,
 	}
 
 	d_printf("%-10s %-15s %-4s %-9jd %-9jd %-24s %-24s\n",
-		 procid_str_static(&pid), file_id_string_tos(&id),
+		 server_id_str_buf(pid, &tmp), file_id_string_tos(&id),
 		 desc,
 		 (intmax_t)start, (intmax_t)size,
 		 sharepath, fname);
@@ -263,6 +265,8 @@ static int traverse_connections(const struct connections_key *key,
 				const struct connections_data *crec,
 				void *state)
 {
+	struct server_id_buf tmp;
+
 	if (crec->cnum == TID_FIELD_INVALID)
 		return 0;
 
@@ -272,7 +276,7 @@ static int traverse_connections(const struct connections_key *key,
 	}
 
 	d_printf("%-10s   %s   %-12s  %s",
-		 crec->servicename,procid_str_static(&crec->pid),
+		 crec->servicename, server_id_str_buf(crec->pid, &tmp),
 		 crec->machine,
 		 time_to_asc(crec->start));
 
@@ -283,6 +287,7 @@ static int traverse_sessionid(const char *key, struct sessionid *session,
 			      void *private_data)
 {
 	fstring uid_str, gid_str;
+	struct server_id_buf tmp;
 
 	if (do_checks &&
 	    (!process_exists(session->pid) ||
@@ -313,7 +318,7 @@ static int traverse_sessionid(const char *key, struct sessionid *session,
 	}
 
 	d_printf("%-7s   %-12s  %-12s  %-12s (%s) %-12s\n",
-		 procid_str_static(&session->pid),
+		 server_id_str_buf(session->pid, &tmp),
 		 uid_str, gid_str,
 		 session->remote_machine, session->hostname, session->protocol_ver);
 

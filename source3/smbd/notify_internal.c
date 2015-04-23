@@ -444,12 +444,13 @@ static NTSTATUS notify_del_entry(struct db_record *rec,
 				 void *private_data)
 {
 	TDB_DATA value = dbwrap_record_get_value(rec);
+	struct server_id_buf tmp;
 	struct notify_db_entry *entries;
 	size_t i, num_entries;
 	time_t now;
 
-	DEBUG(10, ("del_entry called for %s %p\n", procid_str_static(pid),
-		   private_data));
+	DEBUG(10, ("del_entry called for %s %p\n",
+		   server_id_str_buf(*pid, &tmp), private_data));
 
 	if ((value.dsize % sizeof(struct notify_db_entry)) != 0) {
 		DEBUG(1, ("Invalid value.dsize = %u\n",
@@ -777,9 +778,10 @@ static void notify_trigger_local(struct notify_context *notify,
 		}
 
 		if (!procid_is_local(&e->server)) {
+			struct server_id_buf tmp;
 			DEBUG(1, ("internal error: Non-local pid %s in "
 				  "notify.tdb\n",
-				  procid_str_static(&e->server)));
+				  server_id_str_buf(e->server, &tmp)));
 			continue;
 		}
 

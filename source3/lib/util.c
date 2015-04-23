@@ -1984,11 +1984,6 @@ struct server_id interpret_pid(const char *pid_string)
 	return server_id_from_string(get_my_vnn(), pid_string);
 }
 
-char *procid_str_static(const struct server_id *pid)
-{
-	return server_id_str(talloc_tos(), pid);
-}
-
 bool procid_valid(const struct server_id *pid)
 {
 	return (pid->pid != (uint64_t)-1);
