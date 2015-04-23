@@ -1550,6 +1550,7 @@ class Site(object):
         #       interSiteTopologyFailover (if set) appears to be in minutes
         #       so we'll need to convert to senconds and then 100 nanosecond
         #       intervals
+        #       XXX [MS-ADTS] 6.2.2.3.1 says it is seconds, not minutes.
         #
         #       10,000,000 is number of 100 nanosecond intervals in a second
         if self.site_topo_failover == 0:
@@ -1597,6 +1598,9 @@ class Site(object):
                 i_idx = j_idx
                 t_time = 0
 
+           #XXX doc says current time < c.timeLastSyncSuccess - f
+           # which is true only if f is negative or clocks are wrong.
+           # f is not negative in the default case (2 hours).
            elif ntnow - cursor.last_sync_success > f:
                i_idx = 0
                t_time = 0
