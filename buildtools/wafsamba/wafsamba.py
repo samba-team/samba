@@ -886,7 +886,8 @@ def SAMBAMANPAGES(bld, manpages, extra_source=None):
     '''build and install manual pages'''
     bld.env.SAMBA_EXPAND_XSL = bld.srcnode.abspath() + '/docs-xml/xslt/expand-sambadoc.xsl'
     bld.env.SAMBA_MAN_XSL = bld.srcnode.abspath() + '/docs-xml/xslt/man.xsl'
-    bld.env.SAMBA_CATALOGS = 'file:///etc/xml/catalog file:///usr/local/share/xml/catalog file://' + bld.srcnode.abspath() + '/bin/default/docs-xml/build/catalog.xml'
+    bld.env.SAMBA_CATALOG = bld.srcnode.abspath() + '/bin/default/docs-xml/build/catalog.xml'
+    bld.env.SAMBA_CATALOGS = 'file:///etc/xml/catalog file:///usr/local/share/xml/catalog file://' + bld.env.SAMBA_CATALOG
 
     for m in manpages.split():
         source = m + '.xml'
@@ -896,6 +897,7 @@ def SAMBAMANPAGES(bld, manpages, extra_source=None):
                             source=source,
                             target=m,
                             group='final',
+                            dep_vars=['SAMBA_MAN_XSL', 'SAMBA_EXPAND_XSL', 'SAMBA_CATALOG'],
                             rule='''XML_CATALOG_FILES="${SAMBA_CATALOGS}"
                                     export XML_CATALOG_FILES
                                     ${XSLTPROC} --xinclude --stringparam noreference 0 -o ${TGT}.xml --nonet ${SAMBA_EXPAND_XSL} ${SRC[0].abspath(env)}
