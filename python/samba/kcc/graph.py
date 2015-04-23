@@ -237,9 +237,9 @@ def setup_dijkstra(graph, edge_type, include_black, queue):
 
 def try_new_path(graph, queue, vfrom, edge, vto):
     newRI = ReplInfo()
-    # What this function checks is that there is a valid time frame for
-    # which replication can actually occur, despite being adequately
-    # connected
+    #This function combines the repl_info and checks is that there is
+    # a valid time frame for which replication can actually occur,
+    # despite being adequately connected
     intersect = combine_repl_info(vfrom.repl_info, edge.repl_info, newRI)
 
     # If the new path costs more than the current, then ignore the edge
@@ -321,7 +321,7 @@ def process_edge(graph, examine, internal_edges):
 
 
 # Add internal edge, endpoints are roots of the vertices to pass in
-# and are always colored
+# and are always red or black
 def add_int_edge(graph, internal_edges, examine, v1, v2):
     root1 = v1.root
     root2 = v2.root
