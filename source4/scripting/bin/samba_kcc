@@ -167,14 +167,19 @@ class KCC(object):
             self.sitelink_table[dnstr] = sitelink
 
     def load_site(self, dn_str):
-        """Helper for load_my_site and load_all_sites. It puts all the site's
-        DSAs into the KCC indices.
+        """Helper for load_my_site and load_all_sites.
+
+        Put all the site's DSAs into the KCC indices.
+
+        :param dn_str: a site dn_str
+        :return: the Site object pertaining to the dn_str
         """
         site = Site(dn_str, unix_now)
         site.load_site(self.samdb)
 
-        # I am not sure why, but we avoid replacing the site with an
-        # identical copy.
+        # We avoid replacing the site with an identical copy in case
+        # somewhere else has a reference to the old one, which would
+        # lead to all manner of confusion and chaos.
         guid = str(site.site_guid)
         if guid not in self.site_table:
             self.site_table[guid] = site
