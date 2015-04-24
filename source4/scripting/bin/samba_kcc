@@ -221,7 +221,8 @@ class KCC(object):
     def load_my_dsa(self):
         """Discover my nTDSDSA dn thru the rootDSE entry
 
-        ::returns: Raises KCCError on error.
+        :return: None
+        :raise: KCCError if DSA can't be found
         """
         dn = ldb.Dn(self.samdb, "<GUID=%s>" % self.samdb.get_ntds_GUID())
         try:
