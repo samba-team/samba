@@ -2747,6 +2747,14 @@ def get_spanning_tree_edges(graph, my_site, label=None):
 
 
 def sort_replica_by_dsa_guid(rep1, rep2):
+    """Helper to sort NCReplicas by their DSA guids
+
+    The guids need to be sorted in their NDR form.
+
+    :param rep1: An NC replica
+    :param rep2: Another replica
+    :return: -1, 0, or 1, indicating sort order.
+    """
     return cmp(ndr_pack(rep1.rep_dsa_guid), ndr_pack(rep2.rep_dsa_guid))
 
 
