@@ -1005,7 +1005,6 @@ int lp_add_service(const char *pszService, int iDefaultService);
 bool lp_add_printer(const char *pszPrintername, int iDefaultService);
 bool lp_parameter_is_valid(const char *pszParmName);
 bool lp_parameter_is_global(const char *pszParmName);
-bool lp_parameter_is_canonical(const char *parm_name);
 bool lp_canonicalize_parameter(const char *parm_name, const char **canon_parm,
 			       bool *inverse);
 bool lp_canonicalize_parameter_with_value(const char *parm_name,

@@ -1568,22 +1568,6 @@ bool lp_parameter_is_global(const char *pszParmName)
 }
 
 /**************************************************************************
- Check whether the given name is the canonical name of a parameter.
- Returns false if it is not a valid parameter Name.
- For parametric options, true is returned.
-**************************************************************************/
-
-bool lp_parameter_is_canonical(const char *parm_name)
-{
-	if (!lp_parameter_is_valid(parm_name)) {
-		return false;
-	}
-
-	return (lpcfg_map_parameter(parm_name) ==
-		map_parameter_canonical(parm_name, NULL));
-}
-
-/**************************************************************************
  Determine the canonical name for a parameter.
  Indicate when it is an inverse (boolean) synonym instead of a
  "usual" synonym.
