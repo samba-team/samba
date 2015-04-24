@@ -2776,9 +2776,12 @@ def sort_dsa_by_gc_and_guid(dsa1, dsa2):
 
 
 def is_smtp_replication_available():
-    """Currently always returns false because Samba
-    doesn't implement SMTP transfer for NC changes
-    between DCs
+    """Can the KCC use SMTP replication?
+
+    Currently always returns false because Samba doesn't implement
+    SMTP transfer for NC changes between DCs.
+
+    :return: Boolean (always False)
     """
     return False
 
