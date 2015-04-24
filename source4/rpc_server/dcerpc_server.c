@@ -793,66 +793,31 @@ static NTSTATUS dcesrv_alter_new_context(struct dcesrv_call_state *call, uint32_
 	return NT_STATUS_OK;
 }
 
-
-/*
-  handle a alter context request
-*/
-static NTSTATUS dcesrv_alter(struct dcesrv_call_state *call)
+/* setup and send an alter_resp */
+static NTSTATUS dcesrv_alter_resp(struct dcesrv_call_state *call,
+				uint32_t result,
+				uint32_t reason)
 {
 	struct ncacn_packet pkt;
-	struct data_blob_list_item *rep;
-	NTSTATUS status;
-	uint32_t result=0, reason=0;
-	uint32_t context_id;
 	uint32_t extra_flags = 0;
+	struct data_blob_list_item *rep = NULL;
+	NTSTATUS status;
 
-	/* handle any authentication that is being requested */
-	if (!dcesrv_auth_alter(call)) {
-		/* TODO: work out the right reject code */
-		result = DCERPC_BIND_PROVIDER_REJECT;
-		reason = DCERPC_BIND_REASON_ASYNTAX;		
-	}
-
-	context_id = call->pkt.u.alter.ctx_list[0].context_id;
-
-	/* see if they are asking for a new interface */
-	if (result == 0) {
-		call->context = dcesrv_find_context(call->conn, context_id);
-		if (!call->context) {
-			status = dcesrv_alter_new_context(call, context_id);
-			if (!NT_STATUS_IS_OK(status)) {
-				result = DCERPC_BIND_PROVIDER_REJECT;
-				reason = DCERPC_BIND_REASON_ASYNTAX;
-			}
-		}
-	}
-
-	if (result == 0 &&
-	    call->pkt.u.alter.assoc_group_id != 0 &&
-	    lpcfg_parm_bool(call->conn->dce_ctx->lp_ctx, NULL, "dcesrv","assoc group checking", true) &&
-	    call->pkt.u.alter.assoc_group_id != call->context->assoc_group->id) {
-		DEBUG(0,(__location__ ": Failed attempt to use new assoc_group in alter context (0x%08x 0x%08x)\n",
-			 call->context->assoc_group->id, call->pkt.u.alter.assoc_group_id));
-		/* TODO: can they ask for a new association group? */
-		result = DCERPC_BIND_PROVIDER_REJECT;
-		reason = DCERPC_BIND_REASON_ASYNTAX;
-	}
-
-	if ((call->pkt.pfc_flags & DCERPC_PFC_FLAG_CONC_MPX)) {
-		if (call->context->conn->state_flags & DCESRV_CALL_STATE_FLAG_MULTIPLEXED) {
-			extra_flags |= DCERPC_PFC_FLAG_CONC_MPX;
-		}
-	}
-
-	if (call->state_flags & DCESRV_CALL_STATE_FLAG_PROCESS_PENDING_CALL) {
-		call->context->conn->state_flags |= DCESRV_CALL_STATE_FLAG_PROCESS_PENDING_CALL;
-	}
-
-	/* setup a alter_resp */
 	dcesrv_init_hdr(&pkt, lpcfg_rpc_big_endian(call->conn->dce_ctx->lp_ctx));
 	pkt.auth_length = 0;
 	pkt.call_id = call->pkt.call_id;
 	pkt.ptype = DCERPC_PKT_ALTER_RESP;
+	if (result == 0) {
+		if ((call->pkt.pfc_flags & DCERPC_PFC_FLAG_CONC_MPX) &&
+				call->context->conn->state_flags &
+					DCESRV_CALL_STATE_FLAG_MULTIPLEXED) {
+			extra_flags |= DCERPC_PFC_FLAG_CONC_MPX;
+		}
+		if (call->state_flags & DCESRV_CALL_STATE_FLAG_PROCESS_PENDING_CALL) {
+			call->context->conn->state_flags |=
+				DCESRV_CALL_STATE_FLAG_PROCESS_PENDING_CALL;
+		}
+	}
 	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST | extra_flags;
 	pkt.u.alter_resp.max_xmit_frag = 0x2000;
 	pkt.u.alter_resp.max_recv_frag = 0x2000;
@@ -905,6 +870,51 @@ static NTSTATUS dcesrv_alter(struct dcesrv_call_state *call)
 	}
 
 	return NT_STATUS_OK;
+}
+
+/*
+  handle a alter context request
+*/
+static NTSTATUS dcesrv_alter(struct dcesrv_call_state *call)
+{
+	NTSTATUS status;
+	uint32_t context_id;
+
+	/* handle any authentication that is being requested */
+	if (!dcesrv_auth_alter(call)) {
+		/* TODO: work out the right reject code */
+		return dcesrv_alter_resp(call,
+				DCERPC_BIND_PROVIDER_REJECT,
+				DCERPC_BIND_REASON_ASYNTAX);
+	}
+
+	context_id = call->pkt.u.alter.ctx_list[0].context_id;
+
+	/* see if they are asking for a new interface */
+	call->context = dcesrv_find_context(call->conn, context_id);
+	if (!call->context) {
+		status = dcesrv_alter_new_context(call, context_id);
+		if (!NT_STATUS_IS_OK(status)) {
+			return dcesrv_alter_resp(call,
+				DCERPC_BIND_PROVIDER_REJECT,
+				DCERPC_BIND_REASON_ASYNTAX);
+		}
+	}
+
+	if (call->pkt.u.alter.assoc_group_id != 0 &&
+	    lpcfg_parm_bool(call->conn->dce_ctx->lp_ctx, NULL, "dcesrv","assoc group checking", true) &&
+	    call->pkt.u.alter.assoc_group_id != call->context->assoc_group->id) {
+		DEBUG(0,(__location__ ": Failed attempt to use new assoc_group in alter context (0x%08x 0x%08x)\n",
+			 call->context->assoc_group->id, call->pkt.u.alter.assoc_group_id));
+		/* TODO: can they ask for a new association group? */
+		return dcesrv_alter_resp(call,
+				DCERPC_BIND_PROVIDER_REJECT,
+				DCERPC_BIND_REASON_ASYNTAX);
+	}
+
+	return dcesrv_alter_resp(call,
+				DCERPC_BIND_ACK_RESULT_ACCEPTANCE,
+				DCERPC_BIND_ACK_REASON_NOT_SPECIFIED);
 }
 
 /*
