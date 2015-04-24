@@ -31,5 +31,7 @@ void print_ace(struct cli_state *cli, FILE *f, struct security_ace *ace,
 	       bool numeric);
 bool parse_ace(struct cli_state *cli, struct security_ace *ace,
 	       const char *orig_str);
+void sec_desc_print(struct cli_state *cli, FILE *f,
+		    struct security_descriptor *sd, bool numeric);
 
 #endif
