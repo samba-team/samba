@@ -72,56 +72,6 @@ static const struct perm_value standard_values[] = {
 	{ NULL, 0 },
 };
 
-static NTSTATUS cli_lsa_lookup_name(struct cli_state *cli,
-				    const char *name,
-				    enum lsa_SidType *type,
-				    struct dom_sid *sid)
-{
-	uint16 orig_cnum = cli_state_get_tid(cli);
-	struct rpc_pipe_client *p;
-	struct policy_handle handle;
-	NTSTATUS status;
-	TALLOC_CTX *frame = talloc_stackframe();
-	struct dom_sid *sids;
-	enum lsa_SidType *types;
-
-	status = cli_tree_connect(cli, "IPC$", "?????", "", 0);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto tcon_fail;
-	}
-
-	status = cli_rpc_pipe_open_noauth(cli, &ndr_table_lsarpc,
-					  &p);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto fail;
-	}
-
-	status = rpccli_lsa_open_policy(p, talloc_tos(), True,
-					GENERIC_EXECUTE_ACCESS, &handle);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto fail;
-	}
-
-	status = rpccli_lsa_lookup_names(p, talloc_tos(), &handle, 1, &name,
-					 NULL, 1, &sids, &types);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto fail;
-	}
-
-	*type = types[0];
-	*sid = sids[0];
-
-	status = NT_STATUS_OK;
- fail:
-	TALLOC_FREE(p);
-	cli_tdis(cli);
- tcon_fail:
-	cli_state_set_tid(cli, orig_cnum);
-	TALLOC_FREE(frame);
-	return status;
-}
-
-
 static NTSTATUS cli_lsa_lookup_domain_sid(struct cli_state *cli,
 					  struct dom_sid *sid)
 {
@@ -195,18 +145,6 @@ static struct dom_sid *get_domain_sid(struct cli_state *cli)
 
 	DEBUG(2,("Domain SID: %s\n", sid_string_dbg(sid)));
 	return sid;
-}
-
-/* convert a string to a SID, either numeric or username/group */
-static bool StringToSid(struct cli_state *cli, struct dom_sid *sid, const char *str)
-{
-	enum lsa_SidType type;
-
-	if (string_to_sid(sid, str)) {
-		return true;
-	}
-
-	return NT_STATUS_IS_OK(cli_lsa_lookup_name(cli, str, &type, sid));
 }
 
 static void print_ace_flags(FILE *f, uint8_t flags)

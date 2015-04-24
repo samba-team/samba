@@ -26,5 +26,6 @@
 
 void SidToString(struct cli_state *cli, fstring str, const struct dom_sid *sid,
 		 bool numeric);
+bool StringToSid(struct cli_state *cli, struct dom_sid *sid, const char *str);
 
 #endif
