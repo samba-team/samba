@@ -140,7 +140,8 @@ class KCC(object):
     def load_all_sitelinks(self):
         """Loads the inter-site siteLink objects
 
-        ::returns: Raises KCCError on error
+        :return: None
+        :raise KCCError: if site-links aren't found
         """
         try:
             res = self.samdb.search("CN=Inter-Site Transports,CN=Sites,%s" %
