@@ -2759,6 +2759,15 @@ def sort_replica_by_dsa_guid(rep1, rep2):
 
 
 def sort_dsa_by_gc_and_guid(dsa1, dsa2):
+    """Helper to sort DSAs by guid global catalog status
+
+    GC DSAs come before non-GC DSAs, other than that, the guids are
+    sorted in NDR form.
+
+    :param dsa1: A DSA object
+    :param dsa2: Another DSA
+    :return: -1, 0, or 1, indicating sort order.
+    """
     if dsa1.is_gc() and not dsa2.is_gc():
         return -1
     if not dsa1.is_gc() and dsa2.is_gc():
