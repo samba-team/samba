@@ -1340,7 +1340,7 @@ bld.SAMBA3_BINARY('msg_source',
                  install=False)
 
 bld.SAMBA3_BINARY('smbcacls',
-                 source='utils/smbcacls.c',
+                 source='utils/smbcacls.c lib/util_sd.c',
                  deps='''
                  talloc
                  popt_samba3
