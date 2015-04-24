@@ -141,7 +141,7 @@ void SidToString(struct cli_state *cli, fstring str, const struct dom_sid *sid,
 
 	sid_to_fstring(str, sid);
 
-	if (numeric) {
+	if (numeric || cli == NULL) {
 		return;
 	}
 
@@ -216,6 +216,10 @@ bool StringToSid(struct cli_state *cli, struct dom_sid *sid, const char *str)
 
 	if (string_to_sid(sid, str)) {
 		return true;
+	}
+
+	if (cli == NULL) {
+		return false;
 	}
 
 	return NT_STATUS_IS_OK(cli_lsa_lookup_name(cli, str, &type, sid));
