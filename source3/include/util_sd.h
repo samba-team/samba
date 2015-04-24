@@ -27,5 +27,9 @@
 void SidToString(struct cli_state *cli, fstring str, const struct dom_sid *sid,
 		 bool numeric);
 bool StringToSid(struct cli_state *cli, struct dom_sid *sid, const char *str);
+void print_ace(struct cli_state *cli, FILE *f, struct security_ace *ace,
+	       bool numeric);
+bool parse_ace(struct cli_state *cli, struct security_ace *ace,
+	       const char *orig_str);
 
 #endif
