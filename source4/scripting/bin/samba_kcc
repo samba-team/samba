@@ -201,10 +201,10 @@ class KCC(object):
         self.my_site = self.load_site(self.my_site_dnstr)
 
     def load_all_sites(self):
-        """Discover all sites and instantiate and load each
-        NTDS Site settings.
+        """Discover all sites and create Site objects.
 
-        ::returns: Raises KCCError on error
+        :return: None
+        :raise: KCCError if sites can't be found
         """
         try:
             res = self.samdb.search("CN=Sites,%s" %
