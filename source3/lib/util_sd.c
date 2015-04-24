@@ -54,6 +54,29 @@ static const struct perm_value standard_values[] = {
 	{ NULL, 0 },
 };
 
+static const struct {
+	uint16_t mask;
+	const char *str;
+	const char *desc;
+} sec_desc_ctrl_bits[] = {
+	{SEC_DESC_OWNER_DEFAULTED,       "OD", "Owner Defaulted"},
+	{SEC_DESC_GROUP_DEFAULTED,       "GD", "Group Defaulted"},
+	{SEC_DESC_DACL_PRESENT,          "DP", "DACL Present"},
+	{SEC_DESC_DACL_DEFAULTED,        "DD", "DACL Defaulted"},
+	{SEC_DESC_SACL_PRESENT,          "SP", "SACL Present"},
+	{SEC_DESC_SACL_DEFAULTED,        "SD", "SACL Defaulted"},
+	{SEC_DESC_DACL_TRUSTED,          "DT", "DACL Trusted"},
+	{SEC_DESC_SERVER_SECURITY,       "SS", "Server Security"},
+	{SEC_DESC_DACL_AUTO_INHERIT_REQ, "DR", "DACL Inheritance Required"},
+	{SEC_DESC_SACL_AUTO_INHERIT_REQ, "SR", "SACL Inheritance Required"},
+	{SEC_DESC_DACL_AUTO_INHERITED,   "DI", "DACL Auto Inherited"},
+	{SEC_DESC_SACL_AUTO_INHERITED,   "SI", "SACL Auto Inherited"},
+	{SEC_DESC_DACL_PROTECTED,        "PD", "DACL Protected"},
+	{SEC_DESC_SACL_PROTECTED,        "PS", "SACL Protected"},
+	{SEC_DESC_RM_CONTROL_VALID,      "RM", "RM Control Valid"},
+	{SEC_DESC_SELF_RELATIVE ,        "SR", "Self Relative"},
+};
+
 /* Open cli connection and policy handle */
 static NTSTATUS cli_lsa_lookup_sid(struct cli_state *cli,
 				   const struct dom_sid *sid,
@@ -525,4 +548,63 @@ bool parse_ace(struct cli_state *cli, struct security_ace *ace,
 	TALLOC_FREE(frame);
 	SAFE_FREE(str);
 	return True;
+}
+
+static void print_acl_ctrl(FILE *file, uint16_t ctrl, bool numeric)
+{
+	int i;
+	const char* separator = "";
+
+	fprintf(file, "CONTROL:");
+	if (numeric) {
+		fprintf(file, "0x%x\n", ctrl);
+		return;
+	}
+
+	for (i = ARRAY_SIZE(sec_desc_ctrl_bits) - 1; i >= 0; i--) {
+		if (ctrl & sec_desc_ctrl_bits[i].mask) {
+			fprintf(file, "%s%s",
+				separator, sec_desc_ctrl_bits[i].str);
+			separator = "|";
+		}
+	}
+	fputc('\n', file);
+}
+
+/* print a ascii version of a security descriptor on a FILE handle */
+void sec_desc_print(struct cli_state *cli, FILE *f,
+		    struct security_descriptor *sd, bool numeric)
+{
+	fstring sidstr;
+	uint32 i;
+
+	fprintf(f, "REVISION:%d\n", sd->revision);
+	print_acl_ctrl(f, sd->type, numeric);
+
+	/* Print owner and group sid */
+
+	if (sd->owner_sid) {
+		SidToString(cli, sidstr, sd->owner_sid, numeric);
+	} else {
+		fstrcpy(sidstr, "");
+	}
+
+	fprintf(f, "OWNER:%s\n", sidstr);
+
+	if (sd->group_sid) {
+		SidToString(cli, sidstr, sd->group_sid, numeric);
+	} else {
+		fstrcpy(sidstr, "");
+	}
+
+	fprintf(f, "GROUP:%s\n", sidstr);
+
+	/* Print aces */
+	for (i = 0; sd->dacl && i < sd->dacl->num_aces; i++) {
+		struct security_ace *ace = &sd->dacl->aces[i];
+		fprintf(f, "ACL:");
+		print_ace(cli, f, ace, numeric);
+		fprintf(f, "\n");
+	}
+
 }
