@@ -54,19 +54,20 @@ struct perm_value {
 /* These values discovered by inspection */
 
 static const struct perm_value special_values[] = {
-	{ "R", 0x00120089 },
-	{ "W", 0x00120116 },
-	{ "X", 0x001200a0 },
-	{ "D", 0x00010000 },
-	{ "P", 0x00040000 },
-	{ "O", 0x00080000 },
+	{ "R", SEC_RIGHTS_FILE_READ },
+	{ "W", SEC_RIGHTS_FILE_WRITE },
+	{ "X", SEC_RIGHTS_FILE_EXECUTE },
+	{ "D", SEC_STD_DELETE },
+	{ "P", SEC_STD_WRITE_DAC },
+	{ "O", SEC_STD_WRITE_OWNER },
 	{ NULL, 0 },
 };
 
 static const struct perm_value standard_values[] = {
-	{ "READ",   0x001200a9 },
-	{ "CHANGE", 0x001301bf },
-	{ "FULL",   0x001f01ff },
+	{ "READ",   SEC_RIGHTS_DIR_READ|SEC_DIR_TRAVERSE },
+	{ "CHANGE", SEC_RIGHTS_DIR_READ|SEC_STD_DELETE|\
+	  SEC_RIGHTS_DIR_WRITE|SEC_DIR_TRAVERSE },
+	{ "FULL",   SEC_RIGHTS_DIR_ALL },
 	{ NULL, 0 },
 };
 
