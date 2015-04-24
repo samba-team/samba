@@ -36,10 +36,6 @@ static int test_args;
 
 #define CREATE_ACCESS_READ READ_CONTROL_ACCESS
 
-/* numeric is set when the user wants numeric SIDs and ACEs rather
-   than going via LSA calls to resolve them */
-static int numeric;
-
 static int sddl;
 static int query_sec_info = -1;
 static int set_sec_info = -1;
@@ -255,7 +251,8 @@ static struct dom_sid *get_domain_sid(struct cli_state *cli)
 
 
 /* convert a SID to a string, either numeric or username/group */
-static void SidToString(struct cli_state *cli, fstring str, const struct dom_sid *sid)
+static void SidToString(struct cli_state *cli, fstring str,
+			const struct dom_sid *sid, bool numeric)
 {
 	char *domain = NULL;
 	char *name = NULL;
@@ -356,14 +353,15 @@ static void print_ace_flags(FILE *f, uint8_t flags)
 }
 
 /* print an ACE on a FILE, using either numeric or ascii representation */
-static void print_ace(struct cli_state *cli, FILE *f, struct security_ace *ace)
+static void print_ace(struct cli_state *cli, FILE *f, struct security_ace *ace,
+		      bool numeric)
 {
 	const struct perm_value *v;
 	fstring sidstr;
 	int do_print = 0;
 	uint32 got_mask;
 
-	SidToString(cli, sidstr, &ace->trustee);
+	SidToString(cli, sidstr, &ace->trustee, numeric);
 
 	fprintf(f, "%s:", sidstr);
 
@@ -739,7 +737,7 @@ static const struct {
 	{SEC_DESC_SELF_RELATIVE ,        "SR", "Self Relative"},
 };
 
-static void print_acl_ctrl(FILE *file, uint16_t ctrl)
+static void print_acl_ctrl(FILE *file, uint16_t ctrl, bool numeric)
 {
 	int i;
 	const char* separator = "";
@@ -760,18 +758,19 @@ static void print_acl_ctrl(FILE *file, uint16_t ctrl)
 }
 
 /* print a ascii version of a security descriptor on a FILE handle */
-static void sec_desc_print(struct cli_state *cli, FILE *f, struct security_descriptor *sd)
+static void sec_desc_print(struct cli_state *cli, FILE *f,
+			   struct security_descriptor *sd, bool numeric)
 {
 	fstring sidstr;
 	uint32 i;
 
 	fprintf(f, "REVISION:%d\n", sd->revision);
-	print_acl_ctrl(f, sd->type);
+	print_acl_ctrl(f, sd->type, numeric);
 
 	/* Print owner and group sid */
 
 	if (sd->owner_sid) {
-		SidToString(cli, sidstr, sd->owner_sid);
+		SidToString(cli, sidstr, sd->owner_sid, numeric);
 	} else {
 		fstrcpy(sidstr, "");
 	}
@@ -779,7 +778,7 @@ static void sec_desc_print(struct cli_state *cli, FILE *f, struct security_descr
 	fprintf(f, "OWNER:%s\n", sidstr);
 
 	if (sd->group_sid) {
-		SidToString(cli, sidstr, sd->group_sid);
+		SidToString(cli, sidstr, sd->group_sid, numeric);
 	} else {
 		fstrcpy(sidstr, "");
 	}
@@ -790,7 +789,7 @@ static void sec_desc_print(struct cli_state *cli, FILE *f, struct security_descr
 	for (i = 0; sd->dacl && i < sd->dacl->num_aces; i++) {
 		struct security_ace *ace = &sd->dacl->aces[i];
 		fprintf(f, "ACL:");
-		print_ace(cli, f, ace);
+		print_ace(cli, f, ace, numeric);
 		fprintf(f, "\n");
 	}
 
@@ -942,7 +941,7 @@ static bool set_secdesc(struct cli_state *cli, const char *filename,
 /*****************************************************
 dump the acls for a file
 *******************************************************/
-static int cacl_dump(struct cli_state *cli, const char *filename)
+static int cacl_dump(struct cli_state *cli, const char *filename, bool numeric)
 {
 	struct security_descriptor *sd;
 
@@ -963,7 +962,7 @@ static int cacl_dump(struct cli_state *cli, const char *filename)
 		printf("%s\n", str);
 		TALLOC_FREE(str);
 	} else {
-		sec_desc_print(cli, stdout, sd);
+		sec_desc_print(cli, stdout, sd, numeric);
 	}
 
 	return EXIT_OK;
@@ -1070,7 +1069,7 @@ set the ACLs on a file given an ascii description
 *******************************************************/
 
 static int cacl_set(struct cli_state *cli, const char *filename,
-		    char *the_acl, enum acl_mode mode)
+		    char *the_acl, enum acl_mode mode, bool numeric)
 {
 	struct security_descriptor *sd, *old;
 	uint32 i, j;
@@ -1113,7 +1112,8 @@ static int cacl_set(struct cli_state *cli, const char *filename,
 
 			if (!found) {
 				printf("ACL for ACE:");
-				print_ace(cli, stdout, &sd->dacl->aces[i]);
+				print_ace(cli, stdout, &sd->dacl->aces[i],
+					  numeric);
 				printf(" not found\n");
 			}
 		}
@@ -1135,7 +1135,8 @@ static int cacl_set(struct cli_state *cli, const char *filename,
 				fstring str;
 
 				SidToString(cli, str,
-					    &sd->dacl->aces[i].trustee);
+					    &sd->dacl->aces[i].trustee,
+					    numeric);
 				printf("ACL for SID %s not found\n", str);
 			}
 		}
@@ -1368,6 +1369,10 @@ int main(int argc, char *argv[])
 	char *path;
 	char *filename = NULL;
 	poptContext pc;
+	/* numeric is set when the user wants numeric SIDs and ACEs rather
+	   than going via LSA calls to resolve them */
+	int numeric;
+
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
 		{ "delete", 'D', POPT_ARG_STRING, NULL, 'D', "Delete an acl", "ACL" },
@@ -1530,9 +1535,9 @@ int main(int argc, char *argv[])
 	} else if (change_mode != REQUEST_NONE) {
 		result = owner_set(cli, change_mode, filename, owner_username);
 	} else if (the_acl) {
-		result = cacl_set(cli, filename, the_acl, mode);
+		result = cacl_set(cli, filename, the_acl, mode, numeric);
 	} else {
-		result = cacl_dump(cli, filename);
+		result = cacl_dump(cli, filename, numeric);
 	}
 
 	TALLOC_FREE(frame);
