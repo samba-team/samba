@@ -111,7 +111,8 @@ class KCC(object):
     def load_all_transports(self):
         """Loads the inter-site transport objects for Sites
 
-        ::returns: Raises KCCError on error
+        :return: None
+        :raise KCCError: if no IP transport is found
         """
         try:
             res = self.samdb.search("CN=Inter-Site Transports,CN=Sites,%s" %
