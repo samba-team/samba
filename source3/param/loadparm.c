@@ -1652,7 +1652,7 @@ static int map_parameter_canonical(const char *pszParmName, bool *inverse)
 	bool loc_inverse = false;
 
 	parm_num = lpcfg_map_parameter(pszParmName);
-	if ((parm_num < 0) || !(parm_table[parm_num].flags & FLAG_HIDE)) {
+	if ((parm_num < 0) || !(parm_table[parm_num].flags & FLAG_SYNONYM)) {
 		/* invalid, parametric or no canidate for synonyms ... */
 		goto done;
 	}
@@ -1682,8 +1682,8 @@ static bool is_synonym_of(int parm1, int parm2, bool *inverse)
 {
 	if ((parm_table[parm1].offset == parm_table[parm2].offset) &&
 	    (parm_table[parm1].p_class == parm_table[parm2].p_class) &&
-	    (parm_table[parm1].flags & FLAG_HIDE) &&
-	    !(parm_table[parm2].flags & FLAG_HIDE))
+	    (parm_table[parm1].flags & FLAG_SYNONYM) &&
+	    !(parm_table[parm2].flags & FLAG_SYNONYM))
 	{
 		if (inverse != NULL) {
 			if ((parm_table[parm1].type == P_BOOLREV) &&
@@ -1714,8 +1714,8 @@ static void show_parameter(int parmIndex)
 	const char *type[] = { "P_BOOL", "P_BOOLREV", "P_CHAR", "P_INTEGER",
 		"P_OCTAL", "P_LIST", "P_STRING", "P_USTRING",
 		"P_ENUM" };
-	unsigned flags[] = { FLAG_DEPRECATED, FLAG_HIDE };
-	const char *flag_names[] = { "FLAG_DEPRECATED", "FLAG_HIDE", NULL};
+	unsigned flags[] = { FLAG_DEPRECATED, FLAG_SYNONYM };
+	const char *flag_names[] = { "FLAG_DEPRECATED", "FLAG_SYNONYM", NULL};
 
 	printf("%s=%s", parm_table[parmIndex].label,
 	       type[parm_table[parmIndex].type]);

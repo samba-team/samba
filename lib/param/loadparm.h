@@ -95,7 +95,7 @@ struct file_lists {
 };
 
 #define FLAG_DEPRECATED 0x1000 /* options that should no longer be used */
-#define FLAG_HIDE  	0x2000 /* options that should be hidden in SWAT */
+#define FLAG_SYNONYM	0x2000 /* options that is a synonym of another option */
 #define FLAG_CMDLINE	0x10000 /* option has been overridden */
 #define FLAG_DEFAULT    0x20000 /* this option was a default */
 

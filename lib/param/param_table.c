@@ -274,7 +274,7 @@ static const struct enum_list enum_case[] = {
  *
  * NOTE: Handling of duplicated (synonym) parameters:
  *   Parameters that are synonymous are stored in the same variable.
- *   All but the default spelling carry the flag FLAG_HIDE.
+ *   All but the default spelling carry the flag FLAG_SYNONYM.
  */
 
 #define GLOBAL_VAR(name) offsetof(struct loadparm_global, name)
@@ -321,7 +321,7 @@ struct parm_struct parm_table[] = {
 		.offset		= LOCAL_VAR(path),
 		.special	= NULL,
 		.enum_list	= NULL,
-		.flags		= FLAG_HIDE,
+		.flags		= FLAG_SYNONYM,
 	},
 	{
 		.label		= "workgroup",
@@ -515,7 +515,7 @@ struct parm_struct parm_table[] = {
 		.offset		= GLOBAL_VAR(private_dir),
 		.special	= NULL,
 		.enum_list	= NULL,
-		.flags		= FLAG_HIDE,
+		.flags		= FLAG_SYNONYM,
 	},
 	{
 		.label		= "passdb backend",
@@ -548,7 +548,7 @@ struct parm_struct parm_table[] = {
 		.offset		= GLOBAL_VAR(root_directory),
 		.special	= NULL,
 		.enum_list	= NULL,
-		.flags		= FLAG_HIDE,
+		.flags		= FLAG_SYNONYM,
 	},
 	{
 		.label		= "root",
@@ -557,7 +557,7 @@ struct parm_struct parm_table[] = {
 		.offset		= GLOBAL_VAR(root_directory),
 		.special	= NULL,
 		.enum_list	= NULL,
-		.flags		= FLAG_HIDE,
+		.flags		= FLAG_SYNONYM,
 	},
 	{
 		.label		= "guest account",
@@ -722,7 +722,7 @@ struct parm_struct parm_table[] = {
 		.offset		= LOCAL_VAR(username),
 		.special	= NULL,
 		.enum_list	= NULL,
-		.flags		= FLAG_HIDE,
+		.flags		= FLAG_SYNONYM,
 	},
 	{
 		.label		= "users",
@@ -731,7 +731,7 @@ struct parm_struct parm_table[] = {
 		.offset		= LOCAL_VAR(username),
 		.special	= NULL,
 		.enum_list	= NULL,
-		.flags		= FLAG_HIDE,
+		.flags		= FLAG_SYNONYM,
 	},
 	{
 		.label		= "invalid users",
@@ -812,7 +812,7 @@ struct parm_struct parm_table[] = {
 		.offset		= LOCAL_VAR(read_only),
 		.special	= NULL,
 		.enum_list	= NULL,
-		.flags		= FLAG_HIDE,
+		.flags		= FLAG_SYNONYM,
 	},
 	{
 		.label		= "writeable",
@@ -821,7 +821,7 @@ struct parm_struct parm_table[] = {
 		.offset		= LOCAL_VAR(read_only),
 		.special	= NULL,
 		.enum_list	= NULL,
-		.flags		= FLAG_HIDE,
+		.flags		= FLAG_SYNONYM,
 	},
 	{
 		.label		= "writable",
@@ -830,7 +830,7 @@ struct parm_struct parm_table[] = {
 		.offset		= LOCAL_VAR(read_only),
 		.special	= NULL,
 		.enum_list	= NULL,
-		.flags		= FLAG_HIDE,
+		.flags		= FLAG_SYNONYM,
 	},
 	{
 		.label		= "acl check permissions",
@@ -881,7 +881,7 @@ struct parm_struct parm_table[] = {
 		.offset		= LOCAL_VAR(create_mask),
 		.special	= NULL,
 		.enum_list	= NULL,
-		.flags		= FLAG_HIDE,
+		.flags		= FLAG_SYNONYM,
 	},
 	{
 		.label		= "force create mode",
@@ -962,7 +962,7 @@ struct parm_struct parm_table[] = {
 		.offset		= LOCAL_VAR(guest_only),
 		.special	= NULL,
 		.enum_list	= NULL,
-		.flags		= FLAG_HIDE,
+		.flags		= FLAG_SYNONYM,
 	},
 	{
 		.label		= "administrative share",
@@ -988,7 +988,7 @@ struct parm_struct parm_table[] = {
 		.offset		= LOCAL_VAR(guest_ok),
 		.special	= NULL,
 		.enum_list	= NULL,
-		.flags		= FLAG_HIDE,
+		.flags		= FLAG_SYNONYM,
 	},
 	{
 		.label		= "only user",
@@ -1014,7 +1014,7 @@ struct parm_struct parm_table[] = {
 		.offset		= LOCAL_VAR(hosts_allow),
 		.special	= NULL,
 		.enum_list	= NULL,
-		.flags		= FLAG_HIDE,
+		.flags		= FLAG_SYNONYM,
 	},
 	{
 		.label		= "hosts deny",
@@ -1031,7 +1031,7 @@ struct parm_struct parm_table[] = {
 		.offset		= LOCAL_VAR(hosts_deny),
 		.special	= NULL,
 		.enum_list	= NULL,
-		.flags		= FLAG_HIDE,
+		.flags		= FLAG_SYNONYM,
 	},
 	{
 		.label		= "preload modules",
@@ -1080,7 +1080,7 @@ struct parm_struct parm_table[] = {
 		.offset		= GLOBAL_VAR(log_level),
 		.special	= handle_debug_list,
 		.enum_list	= NULL,
-		.flags		= FLAG_HIDE,
+		.flags		= FLAG_SYNONYM,
 	},
 	{
 		.label		= "syslog",
@@ -1918,7 +1918,7 @@ struct parm_struct parm_table[] = {
 		.offset		= GLOBAL_VAR(szPrintcapname),
 		.special	= NULL,
 		.enum_list	= NULL,
-		.flags		= FLAG_HIDE,
+		.flags		= FLAG_SYNONYM,
 	},
 	{
 		.label		= "printable",
@@ -1943,7 +1943,7 @@ struct parm_struct parm_table[] = {
 		.offset		= LOCAL_VAR(printable),
 		.special	= NULL,
 		.enum_list	= NULL,
-		.flags		= FLAG_HIDE,
+		.flags		= FLAG_SYNONYM,
 	},
 	{
 		.label		= "printing",
@@ -2017,7 +2017,7 @@ struct parm_struct parm_table[] = {
 		.offset		= GLOBAL_VAR(_disable_spoolss),
 		.special	= NULL,
 		.enum_list	= NULL,
-		.flags		= FLAG_HIDE,
+		.flags		= FLAG_SYNONYM,
 	},
 	{
 		.label		= "lpq command",
@@ -2131,7 +2131,7 @@ struct parm_struct parm_table[] = {
 		.offset		= LOCAL_VAR(_printername),
 		.special	= NULL,
 		.enum_list	= NULL,
-		.flags		= FLAG_HIDE,
+		.flags		= FLAG_SYNONYM,
 	},
 	{
 		.label		= "use client driver",
@@ -2205,7 +2205,7 @@ struct parm_struct parm_table[] = {
 		.offset		= LOCAL_VAR(case_sensitive),
 		.special	= NULL,
 		.enum_list	= enum_bool_auto,
-		.flags		= FLAG_HIDE,
+		.flags		= FLAG_SYNONYM,
 	},
 	{
 		.label		= "preserve case",
@@ -2577,7 +2577,7 @@ struct parm_struct parm_table[] = {
 		.offset		= GLOBAL_VAR(iPreferredMaster),
 		.special	= NULL,
 		.enum_list	= enum_bool_auto,
-		.flags		= FLAG_HIDE,
+		.flags		= FLAG_SYNONYM,
 	},
 	{
 		.label		= "local master",
@@ -2618,7 +2618,7 @@ struct parm_struct parm_table[] = {
 		.offset		= LOCAL_VAR(browseable),
 		.special	= NULL,
 		.enum_list	= NULL,
-		.flags		= FLAG_HIDE,
+		.flags		= FLAG_SYNONYM,
 	},
 	{
 		.label		= "access based share enum",
@@ -2843,7 +2843,7 @@ struct parm_struct parm_table[] = {
 		.offset		= GLOBAL_VAR(ldap_passwd_sync),
 		.special	= NULL,
 		.enum_list	= enum_ldap_passwd_sync,
-		.flags		= FLAG_HIDE,
+		.flags		= FLAG_SYNONYM,
 	},
 	{
 		.label		= "ldap replication sleep",
@@ -3012,7 +3012,7 @@ struct parm_struct parm_table[] = {
 		.offset		= GLOBAL_VAR(lock_directory),
 		.special	= NULL,
 		.enum_list	= NULL,
-		.flags		= FLAG_HIDE,
+		.flags		= FLAG_SYNONYM,
 	},
 	{
 		.label		= "state directory",
@@ -3218,7 +3218,7 @@ struct parm_struct parm_table[] = {
 		.offset		= LOCAL_VAR(valid),
 		.special	= NULL,
 		.enum_list	= NULL,
-		.flags		= FLAG_HIDE,
+		.flags		= FLAG_SYNONYM,
 	},
 	{
 		.label		= "copy",
@@ -3227,7 +3227,7 @@ struct parm_struct parm_table[] = {
 		.offset		= LOCAL_VAR(szCopy),
 		.special	= handle_copy,
 		.enum_list	= NULL,
-		.flags		= FLAG_HIDE,
+		.flags		= FLAG_SYNONYM,
 	},
 	{
 		.label		= "include",
@@ -3508,7 +3508,7 @@ struct parm_struct parm_table[] = {
 		.offset		= LOCAL_VAR(vfs_objects),
 		.special	= NULL,
 		.enum_list	= NULL,
-		.flags		= FLAG_HIDE,
+		.flags		= FLAG_SYNONYM,
 	},
 	{
 		.label		= "msdfs root",
@@ -3591,7 +3591,7 @@ struct parm_struct parm_table[] = {
 		.offset		= GLOBAL_VAR(szIdmapUID),
 		.special	= handle_idmap_uid,
 		.enum_list	= NULL,
-		.flags		= FLAG_HIDE,
+		.flags		= FLAG_SYNONYM,
 	},
 	{
 		.label		= "idmap gid",
@@ -3609,7 +3609,7 @@ struct parm_struct parm_table[] = {
 		.offset		= GLOBAL_VAR(szIdmapGID),
 		.special	= handle_idmap_gid,
 		.enum_list	= NULL,
-		.flags		= FLAG_HIDE,
+		.flags		= FLAG_SYNONYM,
 	},
 	{
 		.label		= "template homedir",
