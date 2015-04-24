@@ -124,7 +124,7 @@ NTSTATUS winbindd_getgrgid_recv(struct tevent_req *req,
 		return status;
 	}
 
-	response->data.gr.num_gr_mem = (uint32)num_members;
+	response->data.gr.num_gr_mem = (uint32_t)num_members;
 
 	/* Group membership lives at start of extra data */
 

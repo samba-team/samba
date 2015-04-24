@@ -152,9 +152,9 @@ struct winbindd_domain {
 	char *alt_name;                        /* alt Domain name, if any (FQDN for ADS) */
 	char *forest_name;                     /* Name of the AD forest we're in */
 	struct dom_sid sid;                           /* SID for this domain */
-	uint32 domain_flags;                   /* Domain flags from netlogon.h */
-	uint32 domain_type;                    /* Domain type from netlogon.h */
-	uint32 domain_trust_attribs;           /* Trust attribs from netlogon.h */
+	uint32_t domain_flags;                   /* Domain flags from netlogon.h */
+	uint32_t domain_type;                    /* Domain type from netlogon.h */
+	uint32_t domain_trust_attribs;           /* Trust attribs from netlogon.h */
 	bool initialized;		       /* Did we already ask for the domain mode? */
 	bool native_mode;                      /* is this a win2k domain in native mode ? */
 	bool active_directory;                 /* is this a win2k active directory ? */
@@ -193,7 +193,7 @@ struct winbindd_domain {
 	/* Sequence number stuff */
 
 	time_t last_seq_check;
-	uint32 sequence_number;
+	uint32_t sequence_number;
 	NTSTATUS last_status;
 
 	/* The smb connection */
@@ -206,7 +206,7 @@ struct winbindd_domain {
 
 	/* Callback we use to try put us back online. */
 
-	uint32 check_online_timeout;
+	uint32_t check_online_timeout;
 	struct tevent_timer *check_online_event;
 
 	/* Linked list info */
@@ -230,19 +230,19 @@ struct winbindd_methods {
 	/* get a list of users, returning a wbint_userinfo for each one */
 	NTSTATUS (*query_user_list)(struct winbindd_domain *domain,
 				   TALLOC_CTX *mem_ctx,
-				   uint32 *num_entries, 
+				   uint32_t *num_entries,
 				   struct wbint_userinfo **info);
 
 	/* get a list of domain groups */
 	NTSTATUS (*enum_dom_groups)(struct winbindd_domain *domain,
 				    TALLOC_CTX *mem_ctx,
-				    uint32 *num_entries, 
+				    uint32_t *num_entries,
 				    struct wb_acct_info **info);
 
 	/* get a list of domain local groups */
 	NTSTATUS (*enum_local_groups)(struct winbindd_domain *domain,
 				    TALLOC_CTX *mem_ctx,
-				    uint32 *num_entries, 
+				    uint32_t *num_entries,
 				    struct wb_acct_info **info);
 
 	/* convert one user or group name to a sid */
@@ -265,7 +265,7 @@ struct winbindd_methods {
 	NTSTATUS (*rids_to_names)(struct winbindd_domain *domain,
 				  TALLOC_CTX *mem_ctx,
 				  const struct dom_sid *domain_sid,
-				  uint32 *rids,
+				  uint32_t *rids,
 				  size_t num_rids,
 				  char **domain_name,
 				  char ***names,
@@ -283,28 +283,28 @@ struct winbindd_methods {
 	NTSTATUS (*lookup_usergroups)(struct winbindd_domain *domain,
 				      TALLOC_CTX *mem_ctx,
 				      const struct dom_sid *user_sid,
-				      uint32 *num_groups, struct dom_sid **user_gids);
+				      uint32_t *num_groups, struct dom_sid **user_gids);
 
 	/* Lookup all aliases that the sids delivered are member of. This is
 	 * to implement 'domain local groups' correctly */
 	NTSTATUS (*lookup_useraliases)(struct winbindd_domain *domain,
 				       TALLOC_CTX *mem_ctx,
-				       uint32 num_sids,
+				       uint32_t num_sids,
 				       const struct dom_sid *sids,
-				       uint32 *num_aliases,
-				       uint32 **alias_rids);
+				       uint32_t *num_aliases,
+				       uint32_t **alias_rids);
 
 	/* find all members of the group with the specified group_rid */
 	NTSTATUS (*lookup_groupmem)(struct winbindd_domain *domain,
 				    TALLOC_CTX *mem_ctx,
 				    const struct dom_sid *group_sid,
 				    enum lsa_SidType type,
-				    uint32 *num_names, 
+				    uint32_t *num_names,
 				    struct dom_sid **sid_mem, char ***names,
-				    uint32 **name_types);
+				    uint32_t **name_types);
 
 	/* return the current global sequence number */
-	NTSTATUS (*sequence_number)(struct winbindd_domain *domain, uint32 *seq);
+	NTSTATUS (*sequence_number)(struct winbindd_domain *domain, uint32_t *seq);
 
 	/* return the lockout policy */
 	NTSTATUS (*lockout_policy)(struct winbindd_domain *domain,
@@ -345,9 +345,9 @@ struct winbindd_tdc_domain {
 	const char *domain_name;
 	const char *dns_name;
         struct dom_sid sid;
-	uint32 trust_flags;
-	uint32 trust_attribs;
-	uint32 trust_type;
+	uint32_t trust_flags;
+	uint32_t trust_attribs;
+	uint32_t trust_type;
 };
 
 /* Switch for listing users or groups */

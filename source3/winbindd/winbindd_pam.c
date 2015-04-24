@@ -429,7 +429,7 @@ done:
 
 static NTSTATUS get_max_bad_attempts_from_lockout_policy(struct winbindd_domain *domain,
 							 TALLOC_CTX *mem_ctx,
-							 uint16 *lockout_threshold)
+							 uint16_t *lockout_threshold)
 {
 	struct winbindd_methods *methods;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
@@ -451,7 +451,7 @@ static NTSTATUS get_max_bad_attempts_from_lockout_policy(struct winbindd_domain 
 
 static NTSTATUS get_pwd_properties(struct winbindd_domain *domain,
 				   TALLOC_CTX *mem_ctx,
-				   uint32 *password_properties)
+				   uint32_t *password_properties)
 {
 	struct winbindd_methods *methods;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
@@ -886,13 +886,13 @@ static NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 					      struct netr_SamInfo3 **info3)
 {
 	NTSTATUS result = NT_STATUS_LOGON_FAILURE;
-	uint16 max_allowed_bad_attempts;
+	uint16_t max_allowed_bad_attempts;
 	fstring name_domain, name_user;
 	struct dom_sid sid;
 	enum lsa_SidType type;
 	uchar new_nt_pass[NT_HASH_LEN];
-	const uint8 *cached_nt_pass;
-	const uint8 *cached_salt;
+	const uint8_t *cached_nt_pass;
+	const uint8_t *cached_salt;
 	struct netr_SamInfo3 *my_info3;
 	time_t kickoff_time, must_change_time;
 	bool password_good = false;
@@ -1124,7 +1124,7 @@ static NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 	/* lockout user */
 	if (my_info3->base.bad_password_count >= max_allowed_bad_attempts) {
 
-		uint32 password_properties;
+		uint32_t password_properties;
 
 		result = get_pwd_properties(domain, state->mem_ctx, &password_properties);
 		if (!NT_STATUS_IS_OK(result)) {
@@ -1568,7 +1568,7 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(TALLOC_CTX *mem_ctx,
 		struct policy_handle samr_domain_handle, user_pol;
 		union samr_UserInfo *info = NULL;
 		NTSTATUS status_tmp, result_tmp;
-		uint32 acct_flags;
+		uint32_t acct_flags;
 		struct dcerpc_binding_handle *b;
 
 		status_tmp = cm_connect_sam(domain, mem_ctx, false,

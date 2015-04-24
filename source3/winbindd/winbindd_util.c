@@ -517,9 +517,9 @@ static void rescan_forest_trusts( void )
 		return;
 
 	for ( i=0; i<num_trusts; i++ ) {
-		uint32 flags   = dom_list[i].trust_flags;
-		uint32 type    = dom_list[i].trust_type;
-		uint32 attribs = dom_list[i].trust_attribs;
+		uint32_t flags   = dom_list[i].trust_flags;
+		uint32_t type    = dom_list[i].trust_type;
+		uint32_t attribs = dom_list[i].trust_attribs;
 
 		d = find_domain_from_name_noinit( dom_list[i].domain_name );
 

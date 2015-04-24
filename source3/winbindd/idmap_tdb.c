@@ -62,7 +62,7 @@ static int convert_fn(struct db_record *rec, void *private_data)
 	char *p;
 	NTSTATUS status;
 	struct dom_sid sid;
-	uint32 rid;
+	uint32_t rid;
 	fstring keystr;
 	fstring dom_name;
 	TDB_DATA key;

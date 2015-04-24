@@ -425,7 +425,7 @@ done:
 /* List all domain groups */
 static NTSTATUS builtin_enum_dom_groups(struct winbindd_domain *domain,
 				TALLOC_CTX *mem_ctx,
-				uint32 *num_entries,
+				uint32_t *num_entries,
 				struct wb_acct_info **info)
 {
 	/* BUILTIN doesn't have domain groups */
@@ -437,7 +437,7 @@ static NTSTATUS builtin_enum_dom_groups(struct winbindd_domain *domain,
 /* Query display info for a domain */
 static NTSTATUS builtin_query_user_list(struct winbindd_domain *domain,
 				TALLOC_CTX *mem_ctx,
-				uint32 *num_entries,
+				uint32_t *num_entries,
 				struct wbint_userinfo **info)
 {
 	/* We don't have users */
@@ -670,7 +670,7 @@ done:
 static NTSTATUS sam_rids_to_names(struct winbindd_domain *domain,
 				  TALLOC_CTX *mem_ctx,
 				  const struct dom_sid *domain_sid,
-				  uint32 *rids,
+				  uint32_t *rids,
 				  size_t num_rids,
 				  char **pdomain_name,
 				  char ***pnames,

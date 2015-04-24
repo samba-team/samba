@@ -185,7 +185,7 @@ void winbindd_ccache_ntlm_auth(struct winbindd_cli_state *state)
 	NTSTATUS result = NT_STATUS_NOT_SUPPORTED;
 	struct WINBINDD_MEMORY_CREDS *entry;
 	DATA_BLOB initial, challenge, auth;
-	uint32 initial_blob_len, challenge_blob_len, extra_len;
+	uint32_t initial_blob_len, challenge_blob_len, extra_len;
 
 	/* Ensure null termination */
 	state->request->data.ccache_ntlm_auth.user[

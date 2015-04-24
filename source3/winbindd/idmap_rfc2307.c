@@ -151,7 +151,7 @@ static NTSTATUS idmap_rfc2307_ldap_search(struct idmap_rfc2307_context *ctx,
 }
 
 static bool idmap_rfc2307_get_uint32(LDAP *ldap, LDAPMessage *entry,
-				     const char *field, uint32 *value)
+				     const char *field, uint32_t *value)
 {
 	bool b;
 	char str[20];

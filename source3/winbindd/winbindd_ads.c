@@ -57,8 +57,8 @@ static void ads_cached_connection_reuse(ADS_STRUCT **adsp)
 		expire = MIN(ads->auth.tgt_expire, ads->auth.tgs_expire);
 
 		DEBUG(7, ("Current tickets expire in %d seconds (at %d, time "
-			  "is now %d)\n", (uint32)expire - (uint32)now,
-			  (uint32) expire, (uint32) now));
+			  "is now %d)\n", (uint32_t)expire - (uint32_t)now,
+			  (uint32_t) expire, (uint32_t) now));
 
 		if ( ads->config.realm && (expire > now)) {
 			return;
@@ -286,7 +286,7 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 /* Query display info for a realm. This is the basic user list fn */
 static NTSTATUS query_user_list(struct winbindd_domain *domain,
 			       TALLOC_CTX *mem_ctx,
-			       uint32 *num_entries, 
+			       uint32_t *num_entries,
 			       struct wbint_userinfo **pinfo)
 {
 	ADS_STRUCT *ads = NULL;
@@ -340,8 +340,8 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 
 	for (msg = ads_first_entry(ads, res); msg; msg = ads_next_entry(ads, msg)) {
 		struct wbint_userinfo *info = &((*pinfo)[count]);
-		uint32 group;
-		uint32 atype;
+		uint32_t group;
+		uint32_t atype;
 
 		if (!ads_pull_uint32(ads, msg, "sAMAccountType", &atype) ||
 		    ds_atype_map(atype) != SID_NAME_USER) {
@@ -410,7 +410,7 @@ done:
 /* list all domain groups */
 static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 				TALLOC_CTX *mem_ctx,
-				uint32 *num_entries, 
+				uint32_t *num_entries,
 				struct wb_acct_info **info)
 {
 	ADS_STRUCT *ads = NULL;
@@ -500,7 +500,7 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 	for (msg = ads_first_entry(ads, res); msg; msg = ads_next_entry(ads, msg)) {
 		char *name, *gecos;
 		struct dom_sid sid;
-		uint32 rid;
+		uint32_t rid;
 
 		name = ads_pull_username(ads, mem_ctx, msg);
 		gecos = ads_pull_string(ads, mem_ctx, msg, "name");
@@ -536,7 +536,7 @@ done:
 /* list all domain local groups */
 static NTSTATUS enum_local_groups(struct winbindd_domain *domain,
 				TALLOC_CTX *mem_ctx,
-				uint32 *num_entries, 
+				uint32_t *num_entries,
 				struct wb_acct_info **info)
 {
 	/*
@@ -584,7 +584,7 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 static NTSTATUS rids_to_names(struct winbindd_domain *domain,
 			      TALLOC_CTX *mem_ctx,
 			      const struct dom_sid *sid,
-			      uint32 *rids,
+			      uint32_t *rids,
 			      size_t num_rids,
 			      char **domain_name,
 			      char ***names,
@@ -613,7 +613,7 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	LDAPMessage *msg = NULL;
 	char *ldap_exp;
 	char *sidstr;
-	uint32 group_rid;
+	uint32_t group_rid;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	struct netr_SamInfo3 *user = NULL;
 	gid_t gid = -1;
@@ -989,7 +989,7 @@ done:
 static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 				  TALLOC_CTX *mem_ctx,
 				  const struct dom_sid *sid,
-				  uint32 *p_num_groups, struct dom_sid **user_sids)
+				  uint32_t *p_num_groups, struct dom_sid **user_sids)
 {
 	ADS_STRUCT *ads = NULL;
 	const char *attrs[] = {"tokenGroups", "primaryGroupID", NULL};
@@ -1000,7 +1000,7 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	struct dom_sid *sids;
 	int i;
 	struct dom_sid primary_group;
-	uint32 primary_group_rid;
+	uint32_t primary_group_rid;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	uint32_t num_groups = 0;
 
@@ -1125,7 +1125,7 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 		}
 	}
 
-	*p_num_groups = (uint32)num_groups;
+	*p_num_groups = (uint32_t)num_groups;
 	status = (*user_sids != NULL) ? NT_STATUS_OK : NT_STATUS_NO_MEMORY;
 
 	DEBUG(3,("ads lookup_usergroups (tokenGroups) succeeded for sid=%s\n",
@@ -1139,8 +1139,8 @@ done:
 /* Lookup aliases a user is member of - use rpc methods */
 static NTSTATUS lookup_useraliases(struct winbindd_domain *domain,
 				   TALLOC_CTX *mem_ctx,
-				   uint32 num_sids, const struct dom_sid *sids,
-				   uint32 *num_aliases, uint32 **alias_rids)
+				   uint32_t num_sids, const struct dom_sid *sids,
+				   uint32_t *num_aliases, uint32_t **alias_rids)
 {
 	return reconnect_methods.lookup_useraliases(domain, mem_ctx,
 						    num_sids, sids,
@@ -1155,9 +1155,9 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 				TALLOC_CTX *mem_ctx,
 				const struct dom_sid *group_sid,
 				enum lsa_SidType type,
-				uint32 *num_names,
+				uint32_t *num_names,
 				struct dom_sid **sid_mem, char ***names,
-				uint32 **name_types)
+				uint32_t **name_types)
 {
 	ADS_STATUS rc;
 	ADS_STRUCT *ads = NULL;
@@ -1172,7 +1172,7 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	char **names_nocache = NULL;
 	enum lsa_SidType *name_types_nocache = NULL;
 	char **domains_nocache = NULL;     /* only needed for rpccli_lsa_lookup_sids */
-	uint32 num_nocache = 0;
+	uint32_t num_nocache = 0;
 	TALLOC_CTX *tmp_ctx = NULL;
 
 	DEBUG(10,("ads: lookup_groupmem %s sid=%s\n", domain->name,
@@ -1384,7 +1384,7 @@ done:
 }
 
 /* find the sequence number for a domain */
-static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
+static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32_t *seq)
 {
 	ADS_STRUCT *ads = NULL;
 	ADS_STATUS rc;
