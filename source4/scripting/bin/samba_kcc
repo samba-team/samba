@@ -190,9 +190,9 @@ class KCC(object):
         return self.site_table[guid]
 
     def load_my_site(self):
-        """Loads the Site class for the local DSA
+        """Load the Site object for the local DSA.
 
-        ::returns: Raises an Exception on error
+        :return: None
         """
         self.my_site_dnstr = ("CN=%s,CN=Sites,%s" % (
             self.samdb.server_site_name(),
