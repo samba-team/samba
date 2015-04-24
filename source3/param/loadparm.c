@@ -1714,12 +1714,8 @@ static void show_parameter(int parmIndex)
 	const char *type[] = { "P_BOOL", "P_BOOLREV", "P_CHAR", "P_INTEGER",
 		"P_OCTAL", "P_LIST", "P_STRING", "P_USTRING",
 		"P_ENUM" };
-	unsigned flags[] = { FLAG_BASIC, FLAG_SHARE, FLAG_PRINT, FLAG_GLOBAL,
-		FLAG_WIZARD, FLAG_ADVANCED, FLAG_DEVELOPER, FLAG_DEPRECATED,
-		FLAG_HIDE};
-	const char *flag_names[] = { "FLAG_BASIC", "FLAG_SHARE", "FLAG_PRINT",
-		"FLAG_GLOBAL", "FLAG_WIZARD", "FLAG_ADVANCED", "FLAG_DEVELOPER",
-		"FLAG_DEPRECATED", "FLAG_HIDE", NULL};
+	unsigned flags[] = { FLAG_DEPRECATED, FLAG_HIDE };
+	const char *flag_names[] = { "FLAG_DEPRECATED", "FLAG_HIDE", NULL};
 
 	printf("%s=%s", parm_table[parmIndex].label,
 	       type[parm_table[parmIndex].type]);

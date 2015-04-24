@@ -94,17 +94,8 @@ struct file_lists {
 	time_t modtime;
 };
 
-/* The following flags are used in SWAT */
-#define FLAG_BASIC 	0x0001 /* Display only in BASIC view */
-#define FLAG_SHARE 	0x0002 /* file sharing options */
-#define FLAG_PRINT 	0x0004 /* printing options */
-#define FLAG_GLOBAL 	0x0008 /* local options that should be globally settable in SWAT */
-#define FLAG_WIZARD 	0x0010 /* Parameters that the wizard will operate on */
-#define FLAG_ADVANCED 	0x0020 /* Parameters that will be visible in advanced view */
-#define FLAG_DEVELOPER 	0x0040 /* No longer used */
 #define FLAG_DEPRECATED 0x1000 /* options that should no longer be used */
 #define FLAG_HIDE  	0x2000 /* options that should be hidden in SWAT */
-#define FLAG_META	0x8000 /* A meta directive - not a real parameter */
 #define FLAG_CMDLINE	0x10000 /* option has been overridden */
 #define FLAG_DEFAULT    0x20000 /* this option was a default */
 
