@@ -1395,7 +1395,7 @@ static bool hash_a_service(const char *name, int idx)
 	canon_name = canonicalize_servicename(talloc_tos(), name );
 
 	dbwrap_store_bystring(ServiceHash, canon_name,
-			      make_tdb_data((uint8 *)&idx, sizeof(idx)),
+			      make_tdb_data((uint8_t *)&idx, sizeof(idx)),
 			      TDB_REPLACE);
 
 	TALLOC_FREE(canon_name);
@@ -4185,7 +4185,7 @@ const char *lp_printcapname(void)
 	return PRINTCAP_NAME;
 }
 
-static uint32 spoolss_state;
+static uint32_t spoolss_state;
 
 bool lp_disable_spoolss( void )
 {
@@ -4195,14 +4195,14 @@ bool lp_disable_spoolss( void )
 	return spoolss_state == SVCCTL_STOPPED ? true : false;
 }
 
-void lp_set_spoolss_state( uint32 state )
+void lp_set_spoolss_state( uint32_t state )
 {
 	SMB_ASSERT( (state == SVCCTL_STOPPED) || (state == SVCCTL_RUNNING) );
 
 	spoolss_state = state;
 }
 
-uint32 lp_get_spoolss_state( void )
+uint32_t lp_get_spoolss_state( void )
 {
 	return lp_disable_spoolss() ? SVCCTL_STOPPED : SVCCTL_RUNNING;
 }

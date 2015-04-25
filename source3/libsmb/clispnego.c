@@ -159,7 +159,7 @@ bool spnego_parse_negTokenInit(TALLOC_CTX *ctx,
 	*/
 
 	if (asn1_peek_tag(data, ASN1_CONTEXT(1))) {
-		uint8 flags;
+		uint8_t flags;
 
 		/* reqFlags [1] ContextFlags  OPTIONAL */
 		if (!asn1_start_tag(data, ASN1_CONTEXT(1))) goto err;
@@ -233,7 +233,7 @@ bool spnego_parse_negTokenInit(TALLOC_CTX *ctx,
 /*
   generate a krb5 GSS-API wrapper packet given a ticket
 */
-DATA_BLOB spnego_gen_krb5_wrap(TALLOC_CTX *ctx, const DATA_BLOB ticket, const uint8 tok_id[2])
+DATA_BLOB spnego_gen_krb5_wrap(TALLOC_CTX *ctx, const DATA_BLOB ticket, const uint8_t tok_id[2])
 {
 	ASN1_DATA *data;
 	DATA_BLOB ret = data_blob_null;
@@ -270,7 +270,7 @@ DATA_BLOB spnego_gen_krb5_wrap(TALLOC_CTX *ctx, const DATA_BLOB ticket, const ui
 int spnego_gen_krb5_negTokenInit(TALLOC_CTX *ctx,
 			    const char *principal, int time_offset,
 			    DATA_BLOB *targ,
-			    DATA_BLOB *session_key_krb5, uint32 extra_ap_opts,
+			    DATA_BLOB *session_key_krb5, uint32_t extra_ap_opts,
 			    const char *ccname, time_t *expire_time)
 {
 	int retval;
@@ -395,7 +395,7 @@ bool spnego_parse_auth_response(TALLOC_CTX *ctx,
 				DATA_BLOB *auth)
 {
 	ASN1_DATA *data;
-	uint8 negResult;
+	uint8_t negResult;
 	bool ret = false;
 
 	if (NT_STATUS_IS_OK(nt_status)) {

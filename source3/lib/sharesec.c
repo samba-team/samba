@@ -260,13 +260,13 @@ bool share_info_db_init(void)
  def_access is a GENERIC_XXX access mode.
  ********************************************************************/
 
-struct security_descriptor *get_share_security_default( TALLOC_CTX *ctx, size_t *psize, uint32 def_access)
+struct security_descriptor *get_share_security_default( TALLOC_CTX *ctx, size_t *psize, uint32_t def_access)
 {
 	uint32_t sa;
 	struct security_ace ace;
 	struct security_acl *psa = NULL;
 	struct security_descriptor *psd = NULL;
-	uint32 spec_access = def_access;
+	uint32_t spec_access = def_access;
 
 	se_map_generic(&spec_access, &file_generic_mapping);
 
@@ -442,10 +442,10 @@ bool delete_share_security(const char *servicename)
 
 bool share_access_check(const struct security_token *token,
 			const char *sharename,
-			uint32 desired_access,
+			uint32_t desired_access,
 			uint32_t *pgranted)
 {
-	uint32 granted;
+	uint32_t granted;
 	NTSTATUS status;
 	struct security_descriptor *psd = NULL;
 	size_t sd_size;
@@ -509,8 +509,8 @@ bool parse_usershare_acl(TALLOC_CTX *ctx, const char *acl_str, struct security_d
 
 	for (i = 0; i < num_aces; i++) {
 		uint32_t sa;
-		uint32 g_access;
-		uint32 s_access;
+		uint32_t g_access;
+		uint32_t s_access;
 		struct dom_sid sid;
 		char *sidstr;
 		enum security_ace_type type = SEC_ACE_TYPE_ACCESS_ALLOWED;

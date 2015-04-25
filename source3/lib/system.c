@@ -522,7 +522,7 @@ int sys_fallocate(int fd, uint32_t mode, off_t offset, off_t len)
  A flock() wrapper that will perform the kernel flock.
 ********************************************************************/
 
-void kernel_flock(int fd, uint32 share_mode, uint32 access_mask)
+void kernel_flock(int fd, uint32_t share_mode, uint32_t access_mask)
 {
 #if HAVE_KERNEL_SHARE_MODES
 	int kernel_mode = 0;
@@ -1214,7 +1214,7 @@ int sys_pclose(int fd)
  Return the major devicenumber for UNIX extensions.
 ****************************************************************************/
 
-uint32 unix_dev_major(SMB_DEV_T dev)
+uint32_t unix_dev_major(SMB_DEV_T dev)
 {
 #if defined(HAVE_DEVICE_MAJOR_FN)
         return (uint32)major(dev);
@@ -1227,7 +1227,7 @@ uint32 unix_dev_major(SMB_DEV_T dev)
  Return the minor devicenumber for UNIX extensions.
 ****************************************************************************/
 
-uint32 unix_dev_minor(SMB_DEV_T dev)
+uint32_t unix_dev_minor(SMB_DEV_T dev)
 {
 #if defined(HAVE_DEVICE_MINOR_FN)
         return (uint32)minor(dev);

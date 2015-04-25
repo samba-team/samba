@@ -198,7 +198,7 @@ void show_msg(const char *buf)
 	if (DEBUGLEVEL < 50)
 		bcc = MIN(bcc, 512);
 
-	dump_data(10, (const uint8 *)smb_buf_const(buf), bcc);
+	dump_data(10, (const uint8_t *)smb_buf_const(buf), bcc);
 }
 
 /*******************************************************************
@@ -218,10 +218,10 @@ int set_message_bcc(char *buf,int num_bytes)
  Return the bytes added
 ********************************************************************/
 
-ssize_t message_push_blob(uint8 **outbuf, DATA_BLOB blob)
+ssize_t message_push_blob(uint8_t **outbuf, DATA_BLOB blob)
 {
 	size_t newlen = smb_len(*outbuf) + 4 + blob.length;
-	uint8 *tmp;
+	uint8_t *tmp;
 
 	if (!(tmp = talloc_realloc(NULL, *outbuf, uint8, newlen))) {
 		DEBUG(0, ("talloc failed\n"));
@@ -490,7 +490,7 @@ NTSTATUS reinit_after_fork(struct messaging_context *msg_ctx,
 ****************************************************************************/
 
 void add_to_large_array(TALLOC_CTX *mem_ctx, size_t element_size,
-			void *element, void *_array, uint32 *num_elements,
+			void *element, void *_array, uint32_t *num_elements,
 			ssize_t *array_size)
 {
 	void **array = (void **)_array;
@@ -1907,7 +1907,7 @@ void *talloc_append_blob(TALLOC_CTX *mem_ctx, void *buf, DATA_BLOB blob)
 	return result;
 }
 
-uint32 map_share_mode_to_deny_mode(uint32 share_access, uint32 private_options)
+uint32_t map_share_mode_to_deny_mode(uint32_t share_access, uint32_t private_options)
 {
 	switch (share_access & ~FILE_SHARE_DELETE) {
 		case FILE_SHARE_NONE:
@@ -1933,15 +1933,15 @@ pid_t procid_to_pid(const struct server_id *proc)
 	return proc->pid;
 }
 
-static uint32 my_vnn = NONCLUSTER_VNN;
+static uint32_t my_vnn = NONCLUSTER_VNN;
 
-void set_my_vnn(uint32 vnn)
+void set_my_vnn(uint32_t vnn)
 {
 	DEBUG(10, ("vnn pid %d = %u\n", (int)getpid(), (unsigned int)vnn));
 	my_vnn = vnn;
 }
 
-uint32 get_my_vnn(void)
+uint32_t get_my_vnn(void)
 {
 	return my_vnn;
 }
@@ -2196,16 +2196,16 @@ bool is_executable(const char *fname)
 
 bool map_open_params_to_ntcreate(const char *smb_base_fname,
 				 int deny_mode, int open_func,
-				 uint32 *paccess_mask,
-				 uint32 *pshare_mode,
-				 uint32 *pcreate_disposition,
-				 uint32 *pcreate_options,
+				 uint32_t *paccess_mask,
+				 uint32_t *pshare_mode,
+				 uint32_t *pcreate_disposition,
+				 uint32_t *pcreate_options,
 				 uint32_t *pprivate_flags)
 {
-	uint32 access_mask;
-	uint32 share_mode;
-	uint32 create_disposition;
-	uint32 create_options = FILE_NON_DIRECTORY_FILE;
+	uint32_t access_mask;
+	uint32_t share_mode;
+	uint32_t create_disposition;
+	uint32_t create_options = FILE_NON_DIRECTORY_FILE;
 	uint32_t private_flags = 0;
 
 	DEBUG(10,("map_open_params_to_ntcreate: fname = %s, deny_mode = 0x%x, "

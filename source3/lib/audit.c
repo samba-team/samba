@@ -21,7 +21,7 @@
 #include "../librpc/gen_ndr/lsa.h"
 
 static const struct audit_category_tab {
-	uint32 category;
+	uint32_t category;
 	const char *category_str;
 	const char *param_str;
 	const char *description;
@@ -56,7 +56,7 @@ static const struct audit_category_tab {
 	{ 0, NULL, NULL }
 };
 
-const char *audit_category_str(uint32 category)
+const char *audit_category_str(uint32_t category)
 {
 	int i;
 	for (i=0; audit_category_tab[i].category_str; i++) {
@@ -67,7 +67,7 @@ const char *audit_category_str(uint32 category)
 	return NULL;
 }
 
-const char *audit_param_str(uint32 category)
+const char *audit_param_str(uint32_t category)
 {
 	int i;
 	for (i=0; audit_category_tab[i].param_str; i++) {
@@ -78,7 +78,7 @@ const char *audit_param_str(uint32 category)
 	return NULL;
 }
 
-const char *audit_description_str(uint32 category)
+const char *audit_description_str(uint32_t category)
 {
 	int i;
 	for (i=0; audit_category_tab[i].description; i++) {
@@ -89,7 +89,7 @@ const char *audit_description_str(uint32 category)
 	return NULL;
 }
 
-bool get_audit_category_from_param(const char *param, uint32 *audit_category)
+bool get_audit_category_from_param(const char *param, uint32_t *audit_category)
 {
 	*audit_category = Undefined;
 
@@ -119,7 +119,7 @@ bool get_audit_category_from_param(const char *param, uint32 *audit_category)
 	return True;
 }
 
-const char *audit_policy_str(TALLOC_CTX *mem_ctx, uint32 policy)
+const char *audit_policy_str(TALLOC_CTX *mem_ctx, uint32_t policy)
 {
 	const char *ret = NULL;
 
