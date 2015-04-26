@@ -1206,7 +1206,7 @@ static bool check_session_info(int uLevel, char* id)
 
 struct srv_info_struct {
 	fstring name;
-	uint32 type;
+	uint32_t type;
 	fstring comment;
 	fstring domain;
 	bool server_added;
@@ -1217,7 +1217,7 @@ struct srv_info_struct {
  number of entries.
 ******************************************************************/
 
-static int get_session_info(uint32 servertype,
+static int get_session_info(uint32_t servertype,
 			   struct srv_info_struct **servers,
 			   const char *domain)
 {
@@ -1454,7 +1454,7 @@ static bool api_RNetServerEnum2(struct smbd_server_connection *sconn,
 	char *p = skip_string(param,tpscnt,str2);
 	int uLevel = get_safe_SVAL(param, tpscnt, p, 0, -1);
 	int buf_len = get_safe_SVAL(param,tpscnt, p, 2, 0);
-	uint32 servertype = get_safe_IVAL(param,tpscnt,p,4, 0);
+	uint32_t servertype = get_safe_IVAL(param,tpscnt,p,4, 0);
 	char *p2;
 	int data_len, fixed_len, string_len;
 	int f_len = 0, s_len = 0;
@@ -1624,7 +1624,7 @@ static bool api_RNetServerEnum3(struct smbd_server_connection *sconn,
 	char *p = skip_string(param,tpscnt,str2);
 	int uLevel = get_safe_SVAL(param, tpscnt, p, 0, -1);
 	int buf_len = get_safe_SVAL(param,tpscnt, p, 2, 0);
-	uint32 servertype = get_safe_IVAL(param,tpscnt,p,4, 0);
+	uint32_t servertype = get_safe_IVAL(param,tpscnt,p,4, 0);
 	char *p2;
 	int data_len, fixed_len, string_len;
 	int f_len = 0, s_len = 0;
@@ -3101,7 +3101,7 @@ static bool api_RDosPrintJobDel(struct smbd_server_connection *sconn,
 	char *str1 = get_safe_str_ptr(param,tpscnt,param,2);
 	char *str2 = skip_string(param,tpscnt,str1);
 	char *p = skip_string(param,tpscnt,str2);
-	uint32 jobid;
+	uint32_t jobid;
 	fstring sharename;
 	int errcode;
 	WERROR werr = WERR_OK;
@@ -3396,7 +3396,7 @@ static bool api_PrintJobInfo(struct smbd_server_connection *sconn,
 	char *str1 = get_safe_str_ptr(param,tpscnt,param,2);
 	char *str2 = skip_string(param,tpscnt,str1);
 	char *p = skip_string(param,tpscnt,str2);
-	uint32 jobid;
+	uint32_t jobid;
 	fstring sharename;
 	int uLevel = get_safe_SVAL(param,tpscnt,p,2,-1);
 	int function = get_safe_SVAL(param,tpscnt,p,4,-1);
@@ -4554,7 +4554,7 @@ static bool api_WPrintJobGetInfo(struct smbd_server_connection *sconn,
 	char *p = skip_string(param,tpscnt,str2);
 	int uLevel;
 	fstring sharename;
-	uint32 jobid;
+	uint32_t jobid;
 	struct pack_desc desc;
 	char *tmpdata=NULL;
 

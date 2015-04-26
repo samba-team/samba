@@ -719,8 +719,8 @@ static NTSTATUS open_file(files_struct *fsp,
 			  const char *parent_dir,
 			  int flags,
 			  mode_t unx_mode,
-			  uint32 access_mask, /* client requested access mask. */
-			  uint32 open_access_mask, /* what we're actually using in the open. */
+			  uint32_t access_mask, /* client requested access mask. */
+			  uint32_t open_access_mask, /* what we're actually using in the open. */
 			  bool *p_file_created)
 {
 	struct smb_filename *smb_fname = fsp->fsp_name;
@@ -1014,8 +1014,8 @@ static NTSTATUS open_file(files_struct *fsp,
 ****************************************************************************/
 
 static bool share_conflict(struct share_mode_entry *entry,
-			   uint32 access_mask,
-			   uint32 share_access)
+			   uint32_t access_mask,
+			   uint32_t share_access)
 {
 	DEBUG(10,("share_conflict: entry->access_mask = 0x%x, "
 		  "entry->share_access = 0x%x, "
@@ -1152,7 +1152,7 @@ static void validate_my_share_entries(struct smbd_server_connection *sconn,
 }
 #endif
 
-bool is_stat_open(uint32 access_mask)
+bool is_stat_open(uint32_t access_mask)
 {
 	const uint32_t stat_open_bits =
 		(SYNCHRONIZE_ACCESS|
@@ -1191,8 +1191,8 @@ static bool has_delete_on_close(struct share_mode_lock *lck,
 
 static NTSTATUS open_mode_check(connection_struct *conn,
 				struct share_mode_lock *lck,
-				uint32 access_mask,
-				uint32 share_access)
+				uint32_t access_mask,
+				uint32_t share_access)
 {
 	int i;
 
@@ -1261,14 +1261,14 @@ NTSTATUS send_break_message(struct messaging_context *msg_ctx,
 
 	/* Overload entry->op_type */
 	/*
-	 * This is a cut from uint32 to uint16, but so far only the lower 3
+	 * This is a cut from uint32_t to uint16, but so far only the lower 3
 	 * bits (LEASE_WRITE/HANDLE/READ are used anyway.
 	 */
 	SSVAL(msg,OP_BREAK_MSG_OP_TYPE_OFFSET, break_to);
 
 	status = messaging_send_buf(msg_ctx, exclusive->pid,
 				    MSG_SMB_BREAK_REQUEST,
-				    (uint8 *)msg, sizeof(msg));
+				    (uint8_t *)msg, sizeof(msg));
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("Could not send oplock break message: %s\n",
 			  nt_errstr(status)));
@@ -1986,13 +1986,13 @@ static void defer_open_done(struct tevent_req *req)
 ****************************************************************************/
 
 static bool open_match_attributes(connection_struct *conn,
-				  uint32 old_dos_attr,
-				  uint32 new_dos_attr,
+				  uint32_t old_dos_attr,
+				  uint32_t new_dos_attr,
 				  mode_t existing_unx_mode,
 				  mode_t new_unx_mode,
 				  mode_t *returned_unx_mode)
 {
-	uint32 noarch_old_dos_attr, noarch_new_dos_attr;
+	uint32_t noarch_old_dos_attr, noarch_new_dos_attr;
 
 	noarch_old_dos_attr = (old_dos_attr & ~FILE_ATTRIBUTE_ARCHIVE);
 	noarch_new_dos_attr = (new_dos_attr & ~FILE_ATTRIBUTE_ARCHIVE);
@@ -2038,11 +2038,11 @@ static NTSTATUS fcb_or_dos_open(struct smb_request *req,
 				files_struct *fsp_to_dup_into,
 				const struct smb_filename *smb_fname,
 				struct file_id id,
-				uint16 file_pid,
+				uint16_t file_pid,
 				uint64_t vuid,
-				uint32 access_mask,
-				uint32 share_access,
-				uint32 create_options)
+				uint32_t access_mask,
+				uint32_t share_access,
+				uint32_t create_options)
 {
 	files_struct *fsp;
 
@@ -2390,11 +2390,11 @@ static int calculate_open_access_flags(uint32_t access_mask,
 
 static NTSTATUS open_file_ntcreate(connection_struct *conn,
 			    struct smb_request *req,
-			    uint32 access_mask,		/* access bits (FILE_READ_DATA etc.) */
-			    uint32 share_access,	/* share constants (FILE_SHARE_READ etc) */
-			    uint32 create_disposition,	/* FILE_OPEN_IF etc. */
-			    uint32 create_options,	/* options such as delete on close. */
-			    uint32 new_dos_attributes,	/* attributes used for new file. */
+			    uint32_t access_mask,		/* access bits (FILE_READ_DATA etc.) */
+			    uint32_t share_access,	/* share constants (FILE_SHARE_READ etc) */
+			    uint32_t create_disposition,	/* FILE_OPEN_IF etc. */
+			    uint32_t create_options,	/* options such as delete on close. */
+			    uint32_t new_dos_attributes,	/* attributes used for new file. */
 			    int oplock_request, 	/* internal Samba oplock codes. */
 			    struct smb2_lease *lease,
 				 			/* Information (FILE_EXISTS etc.) */
@@ -2414,10 +2414,10 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	mode_t new_unx_mode = (mode_t)0;
 	mode_t unx_mode = (mode_t)0;
 	int info;
-	uint32 existing_dos_attributes = 0;
+	uint32_t existing_dos_attributes = 0;
 	struct timeval request_time = timeval_zero();
 	struct share_mode_lock *lck = NULL;
-	uint32 open_access_mask = access_mask;
+	uint32_t open_access_mask = access_mask;
 	NTSTATUS status;
 	char *parent_dir;
 	SMB_STRUCT_STAT saved_stat = smb_fname->st;
@@ -2899,7 +2899,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
-		uint32 can_access_mask;
+		uint32_t can_access_mask;
 		bool can_access = True;
 
 		SMB_ASSERT(NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION));
@@ -3252,7 +3252,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 static NTSTATUS mkdir_internal(connection_struct *conn,
 			       struct smb_filename *smb_dname,
-			       uint32 file_attributes)
+			       uint32_t file_attributes)
 {
 	mode_t mode;
 	char *parent_dir = NULL;
@@ -3369,11 +3369,11 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 static NTSTATUS open_directory(connection_struct *conn,
 			       struct smb_request *req,
 			       struct smb_filename *smb_dname,
-			       uint32 access_mask,
-			       uint32 share_access,
-			       uint32 create_disposition,
-			       uint32 create_options,
-			       uint32 file_attributes,
+			       uint32_t access_mask,
+			       uint32_t share_access,
+			       uint32_t create_disposition,
+			       uint32_t create_options,
+			       uint32_t file_attributes,
 			       int *pinfo,
 			       files_struct **result)
 {
@@ -4489,7 +4489,7 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 	if ((conn->fs_capabilities & FILE_NAMED_STREAMS)
 	    && is_ntfs_stream_smb_fname(smb_fname)
 	    && (!(private_flags & NTCREATEX_OPTIONS_PRIVATE_STREAM_DELETE))) {
-		uint32 base_create_disposition;
+		uint32_t base_create_disposition;
 		struct smb_filename *smb_fname_base = NULL;
 
 		if (create_options & FILE_DIRECTORY_FILE) {

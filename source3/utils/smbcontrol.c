@@ -66,7 +66,7 @@ static bool send_message(struct messaging_context *msg_ctx,
 	if (procid_to_pid(&pid) != 0)
 		return NT_STATUS_IS_OK(
 			messaging_send_buf(msg_ctx, pid, msg_type,
-					   (const uint8 *)buf, len));
+					   (const uint8_t *)buf, len));
 
 	ret = message_send_all(msg_ctx, msg_type, buf, len, &n_sent);
 	DEBUG(10,("smbcontrol/send_message: broadcast message to "
@@ -735,7 +735,7 @@ static bool do_printnotify(struct tevent_context *ev_ctx,
 		goto send;
 
 	} else if (strcmp(cmd, "printer") == 0) {
-		uint32 attribute;
+		uint32_t attribute;
 
 		if (argc != 5) {
 			fprintf(stderr, "Usage: smbcontrol <dest> printnotify "
@@ -1093,7 +1093,7 @@ static bool do_winbind_offline(struct tevent_context *ev_ctx,
 	   5 times. */
 
 	for (retry = 0; retry < 5; retry++) {
-		uint8 buf[4];
+		uint8_t buf[4];
 		TDB_DATA d = { .dptr = buf, .dsize = sizeof(buf) };
 
 		SIVAL(buf, 0, time(NULL));

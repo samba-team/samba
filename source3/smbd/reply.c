@@ -257,7 +257,7 @@ NTSTATUS check_path_syntax_posix(char *path)
 
 size_t srvstr_get_path_wcard(TALLOC_CTX *ctx,
 			const char *base_ptr,
-			uint16 smb_flags2,
+			uint16_t smb_flags2,
 			char **pp_dest,
 			const char *src,
 			size_t src_len,
@@ -303,7 +303,7 @@ size_t srvstr_get_path_wcard(TALLOC_CTX *ctx,
 
 size_t srvstr_get_path(TALLOC_CTX *ctx,
 			const char *base_ptr,
-			uint16 smb_flags2,
+			uint16_t smb_flags2,
 			char **pp_dest,
 			const char *src,
 			size_t src_len,
@@ -979,8 +979,8 @@ void reply_tcon_and_X(struct smb_request *req)
 
 		if (tcon_flags & TCONX_FLAG_EXTENDED_RESPONSE) {
 			/* Return permissions. */
-			uint32 perm1 = 0;
-			uint32 perm2 = 0;
+			uint32_t perm1 = 0;
+			uint32_t perm2 = 0;
 
 			reply_outbuf(req, 7, 0);
 
@@ -1040,7 +1040,7 @@ void reply_tcon_and_X(struct smb_request *req)
  Reply to an unknown type.
 ****************************************************************************/
 
-void reply_unknown_new(struct smb_request *req, uint8 type)
+void reply_unknown_new(struct smb_request *req, uint8_t type)
 {
 	DEBUG(0, ("unknown command type (%s): type=%d (0x%X)\n",
 		  smb_fn_name(type), type, type));
@@ -1056,9 +1056,9 @@ void reply_unknown_new(struct smb_request *req, uint8 type)
 void reply_ioctl(struct smb_request *req)
 {
 	connection_struct *conn = req->conn;
-	uint16 device;
-	uint16 function;
-	uint32 ioctl_code;
+	uint16_t device;
+	uint16_t function;
+	uint32_t ioctl_code;
 	int replysize;
 	char *p;
 
@@ -1561,7 +1561,7 @@ static bool make_dir_struct(TALLOC_CTX *ctx,
 			    const char *mask,
 			    const char *fname,
 			    off_t size,
-			    uint32 mode,
+			    uint32_t mode,
 			    time_t date,
 			    bool uc)
 {
@@ -1612,9 +1612,9 @@ void reply_search(struct smb_request *req)
 	struct smb_filename *smb_fname = NULL;
 	char *fname = NULL;
 	off_t size;
-	uint32 mode;
+	uint32_t mode;
 	struct timespec date;
-	uint32 dirtype;
+	uint32_t dirtype;
 	unsigned int numentries = 0;
 	unsigned int maxentries = 0;
 	bool finished = False;
@@ -1952,18 +1952,18 @@ void reply_open(struct smb_request *req)
 	connection_struct *conn = req->conn;
 	struct smb_filename *smb_fname = NULL;
 	char *fname = NULL;
-	uint32 fattr=0;
+	uint32_t fattr=0;
 	off_t size = 0;
 	time_t mtime=0;
 	int info;
 	files_struct *fsp;
 	int oplock_request;
 	int deny_mode;
-	uint32 dos_attr;
-	uint32 access_mask;
-	uint32 share_mode;
-	uint32 create_disposition;
-	uint32 create_options = 0;
+	uint32_t dos_attr;
+	uint32_t access_mask;
+	uint32_t share_mode;
+	uint32_t create_disposition;
+	uint32_t create_options = 0;
 	uint32_t private_flags = 0;
 	NTSTATUS status;
 	TALLOC_CTX *ctx = talloc_tos();
@@ -2093,9 +2093,9 @@ void reply_open_and_X(struct smb_request *req)
 	connection_struct *conn = req->conn;
 	struct smb_filename *smb_fname = NULL;
 	char *fname = NULL;
-	uint16 open_flags;
+	uint16_t open_flags;
 	int deny_mode;
-	uint32 smb_attr;
+	uint32_t smb_attr;
 	/* Breakout the oplock request bits so we can set the
 		reply bits separately. */
 	int ex_oplock_request;
@@ -2103,20 +2103,20 @@ void reply_open_and_X(struct smb_request *req)
 	int oplock_request;
 #if 0
 	int smb_sattr = SVAL(req->vwv+4, 0);
-	uint32 smb_time = make_unix_date3(req->vwv+6);
+	uint32_t smb_time = make_unix_date3(req->vwv+6);
 #endif
 	int smb_ofun;
-	uint32 fattr=0;
+	uint32_t fattr=0;
 	int mtime=0;
 	int smb_action = 0;
 	files_struct *fsp;
 	NTSTATUS status;
 	uint64_t allocation_size;
 	ssize_t retval = -1;
-	uint32 access_mask;
-	uint32 share_mode;
-	uint32 create_disposition;
-	uint32 create_options = 0;
+	uint32_t access_mask;
+	uint32_t share_mode;
+	uint32_t create_disposition;
+	uint32_t create_options = 0;
 	uint32_t private_flags = 0;
 	TALLOC_CTX *ctx = talloc_tos();
 
@@ -2367,15 +2367,15 @@ void reply_mknew(struct smb_request *req)
 	connection_struct *conn = req->conn;
 	struct smb_filename *smb_fname = NULL;
 	char *fname = NULL;
-	uint32 fattr = 0;
+	uint32_t fattr = 0;
 	struct smb_file_time ft;
 	files_struct *fsp;
 	int oplock_request = 0;
 	NTSTATUS status;
-	uint32 access_mask = FILE_GENERIC_READ | FILE_GENERIC_WRITE;
-	uint32 share_mode = FILE_SHARE_READ|FILE_SHARE_WRITE;
-	uint32 create_disposition;
-	uint32 create_options = 0;
+	uint32_t access_mask = FILE_GENERIC_READ | FILE_GENERIC_WRITE;
+	uint32_t share_mode = FILE_SHARE_READ|FILE_SHARE_WRITE;
+	uint32_t create_disposition;
+	uint32_t create_options = 0;
 	TALLOC_CTX *ctx = talloc_tos();
 
 	START_PROFILE(SMBcreate);
@@ -2501,7 +2501,7 @@ void reply_ctemp(struct smb_request *req)
 	struct smb_filename *smb_fname = NULL;
 	char *wire_name = NULL;
 	char *fname = NULL;
-	uint32 fattr;
+	uint32_t fattr;
 	files_struct *fsp;
 	int oplock_request;
 	char *s;
@@ -2651,7 +2651,7 @@ void reply_ctemp(struct smb_request *req)
 ********************************************************************/
 
 static NTSTATUS can_rename(connection_struct *conn, files_struct *fsp,
-			uint16 dirtype)
+			uint16_t dirtype)
 {
 	if (!CAN_WRITE(conn)) {
 		return NT_STATUS_MEDIA_WRITE_PROTECTED;
@@ -2695,11 +2695,11 @@ static NTSTATUS can_rename(connection_struct *conn, files_struct *fsp,
 static NTSTATUS do_unlink(connection_struct *conn,
 			struct smb_request *req,
 			struct smb_filename *smb_fname,
-			uint32 dirtype)
+			uint32_t dirtype)
 {
-	uint32 fattr;
+	uint32_t fattr;
 	files_struct *fsp;
-	uint32 dirtype_orig = dirtype;
+	uint32_t dirtype_orig = dirtype;
 	NTSTATUS status;
 	int ret;
 	bool posix_paths = lp_posix_pathnames();
@@ -2832,7 +2832,7 @@ static NTSTATUS do_unlink(connection_struct *conn,
 ****************************************************************************/
 
 NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
-			  uint32 dirtype, struct smb_filename *smb_fname,
+			  uint32_t dirtype, struct smb_filename *smb_fname,
 			  bool has_wild)
 {
 	char *fname_dir = NULL;
@@ -3034,7 +3034,7 @@ void reply_unlink(struct smb_request *req)
 	connection_struct *conn = req->conn;
 	char *name = NULL;
 	struct smb_filename *smb_fname = NULL;
-	uint32 dirtype;
+	uint32_t dirtype;
 	NTSTATUS status;
 	bool path_contains_wcard = False;
 	TALLOC_CTX *ctx = talloc_tos();
@@ -3814,7 +3814,7 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 	    (fsp->base_fsp == NULL) &&
 	    (fsp->wcp == NULL) &&
 	    lp_use_sendfile(SNUM(conn), xconn->smb1.signing_state) ) {
-		uint8 headerbuf[smb_size + 12 * 2 + 1 /* padding byte */];
+		uint8_t headerbuf[smb_size + 12 * 2 + 1 /* padding byte */];
 		DATA_BLOB header;
 
 		if(fsp_stat(fsp) == -1) {
@@ -3928,7 +3928,7 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 normal_read:
 
 	if ((smb_maxcnt & 0xFF0000) > 0x10000) {
-		uint8 headerbuf[smb_size + 2*12 + 1 /* padding byte */];
+		uint8_t headerbuf[smb_size + 2*12 + 1 /* padding byte */];
 		ssize_t ret;
 
 		construct_reply_common_req(req, (char *)headerbuf);
@@ -4173,7 +4173,7 @@ void reply_read_and_X(struct smb_request *req)
 
 void error_to_writebrawerr(struct smb_request *req)
 {
-	uint8 *old_outbuf = req->outbuf;
+	uint8_t *old_outbuf = req->outbuf;
 
 	reply_outbuf(req, 1, 0);
 
@@ -5080,7 +5080,7 @@ void reply_lseek(struct smb_request *req)
 void reply_flush(struct smb_request *req)
 {
 	connection_struct *conn = req->conn;
-	uint16 fnum;
+	uint16_t fnum;
 	files_struct *fsp;
 
 	START_PROFILE(SMBflush);
@@ -6328,7 +6328,7 @@ static void notify_rename(connection_struct *conn, bool is_dir,
 {
 	char *parent_dir_src = NULL;
 	char *parent_dir_dst = NULL;
-	uint32 mask;
+	uint32_t mask;
 
 	mask = is_dir ? FILE_NOTIFY_CHANGE_DIR_NAME
 		: FILE_NOTIFY_CHANGE_FILE_NAME;
@@ -6415,7 +6415,7 @@ static NTSTATUS parent_dirname_compatible_open(connection_struct *conn,
 NTSTATUS rename_internals_fsp(connection_struct *conn,
 			files_struct *fsp,
 			const struct smb_filename *smb_fname_dst_in,
-			uint32 attrs,
+			uint32_t attrs,
 			bool replace_if_exists)
 {
 	TALLOC_CTX *ctx = talloc_tos();
@@ -6614,7 +6614,7 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 	SMB_ASSERT(lck != NULL);
 
 	if(SMB_VFS_RENAME(conn, fsp->fsp_name, smb_fname_dst) == 0) {
-		uint32 create_options = fsp->fh->private_options;
+		uint32_t create_options = fsp->fh->private_options;
 
 		DEBUG(3, ("rename_internals_fsp: succeeded doing rename on "
 			  "%s -> %s\n", smb_fname_str_dbg(fsp->fsp_name),
@@ -6694,7 +6694,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 			struct smb_request *req,
 			struct smb_filename *smb_fname_src,
 			struct smb_filename *smb_fname_dst,
-			uint32 attrs,
+			uint32_t attrs,
 			bool replace_if_exists,
 			bool src_has_wild,
 			bool dest_has_wild,
@@ -7044,7 +7044,7 @@ void reply_mv(struct smb_request *req)
 	char *name = NULL;
 	char *newname = NULL;
 	const char *p;
-	uint32 attrs;
+	uint32_t attrs;
 	NTSTATUS status;
 	bool src_has_wcard = False;
 	bool dest_has_wcard = False;
@@ -7181,8 +7181,8 @@ NTSTATUS copy_file(TALLOC_CTX *ctx,
 	struct smb_filename *smb_fname_dst_tmp = NULL;
 	off_t ret=-1;
 	files_struct *fsp1,*fsp2;
- 	uint32 dosattrs;
-	uint32 new_create_disposition;
+	uint32_t dosattrs;
+	uint32_t new_create_disposition;
 	NTSTATUS status;
 
 
@@ -7997,8 +7997,8 @@ void reply_lockingX(struct smb_request *req)
 	files_struct *fsp;
 	unsigned char locktype;
 	unsigned char oplocklevel;
-	uint16 num_ulocks;
-	uint16 num_locks;
+	uint16_t num_ulocks;
+	uint16_t num_locks;
 	int32 lock_timeout;
 	int i;
 	const uint8_t *data;
@@ -8391,7 +8391,7 @@ void reply_getattrE(struct smb_request *req)
 		SIVAL(req->outbuf, smb_vwv6, 0);
 		SIVAL(req->outbuf, smb_vwv8, 0);
 	} else {
-		uint32 allocation_size = SMB_VFS_GET_ALLOC_SIZE(conn,fsp, &fsp->fsp_name->st);
+		uint32_t allocation_size = SMB_VFS_GET_ALLOC_SIZE(conn,fsp, &fsp->fsp_name->st);
 		SIVAL(req->outbuf, smb_vwv6, (uint32)fsp->fsp_name->st.st_ex_size);
 		SIVAL(req->outbuf, smb_vwv8, allocation_size);
 	}
