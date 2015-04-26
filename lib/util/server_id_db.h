@@ -32,6 +32,8 @@ struct server_id_db *server_id_db_init(TALLOC_CTX *mem_ctx,
 void server_id_db_reinit(struct server_id_db *db, struct server_id pid);
 int server_id_db_add(struct server_id_db *db, const char *name);
 int server_id_db_remove(struct server_id_db *db, const char *name);
+int server_id_db_prune_name(struct server_id_db *db, const char *name,
+			    struct server_id server);
 int server_id_db_lookup(struct server_id_db *db, const char *name,
 			TALLOC_CTX *mem_ctx, unsigned *num_servers,
 			struct server_id **servers);
