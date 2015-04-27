@@ -1117,12 +1117,18 @@ class KCC(object):
                      "and we weren't asked to --attempt-live-connections")
 
     def setup_graph(self, part):
-        """Set up a GRAPH, populated with a VERTEX for each site
-        object, a MULTIEDGE for each siteLink object, and a
-        MUTLIEDGESET for each siteLinkBridge object (or implied
-        siteLinkBridge).
+        """Set up an intersite graph
 
-        ::returns: a new graph
+        An intersite graph has a Vertex for each site object, a
+        MultiEdge for each SiteLink object, and a MutliEdgeSet for
+        each siteLinkBridge object (or implied siteLinkBridge). It
+        reflects the intersite topology in a slightly more abstract
+        graph form.
+
+        Roughly corresponds to MS-ADTS 6.2.2.3.4.3
+
+        :param part: a Partition object
+        :returns: an InterSiteGraph object
         """
         guid_to_vertex = {}
         # Create graph
