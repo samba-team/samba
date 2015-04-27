@@ -906,10 +906,16 @@ class KCC(object):
             return False, None
 
     def translate_ntdsconn(self, current_dsa=None):
-        """This function adjusts values of repsFrom abstract attributes of NC
+        """Adjust repsFrom to match NTDSConnections
+
+        This function adjusts values of repsFrom abstract attributes of NC
         replicas on the local DC to match those implied by
         nTDSConnection objects.
-        [MS-ADTS] 6.2.2.5
+
+        Based on [MS-ADTS] 6.2.2.5
+
+        :param current_dsa: optional DSA on whose behalf we are acting.
+        :return: None
         """
         count = 0
 
