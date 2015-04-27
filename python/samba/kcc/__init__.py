@@ -414,7 +414,9 @@ class KCC(object):
                 if (self.unix_now - unix_first_failure) > 60 * 60 * 2:
                     return True
 
-        # TODO connections
+        # TODO connections.
+        # We have checked failed *links*, but we also need to check
+        # *connections*
 
         return False
 
