@@ -360,7 +360,7 @@ class KCC(object):
                 dns_name = reps_from.dns_name1
 
                 f = self.kcc_failed_links.get(dsa_guid)
-                if not f:
+                if f is None:
                     f = KCCFailedObject(dsa_guid, failure_count,
                                         time_first_failure, last_result,
                                         dns_name)
