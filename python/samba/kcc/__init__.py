@@ -336,16 +336,6 @@ class KCC(object):
             part.load_partition(self.samdb)
             self.part_table[partstr] = part
 
-    def should_be_present_test(self):
-        """Enumerate all loaded partitions and DSAs in local
-        site and test if NC should be present as replica
-        """
-        for partdn, part in self.part_table.items():
-            for dsadn, dsa in self.my_site.dsa_table.items():
-                needed, ro, partial = part.should_be_present(dsa)
-                logger.info("dsadn:%s\nncdn:%s\nneeded=%s:ro=%s:partial=%s\n" %
-                            (dsadn, part.nc_dnstr, needed, ro, partial))
-
     def refresh_failed_links_connections(self, ping=None):
         """Ensure the failed links list is up to date
 
