@@ -1332,7 +1332,10 @@ class KCC(object):
 
     def is_bridgehead_failed(self, dsa, detect_failed):
         """Determine whether a given DC is known to be in a failed state
-        ::returns: True if and only if the DC should be considered failed
+
+        :param dsa: the bridgehead to test
+        :param detect_failed: True to really check, False to assume no failure
+        :return: True if and only if the DC should be considered failed
 
         Here we DEPART from the pseudo code spec which appears to be
         wrong. It says, in full:
