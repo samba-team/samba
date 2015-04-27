@@ -88,6 +88,11 @@ static int do_global_checks(void)
 				"must differ.\n\n");
 	}
 
+	if (strlen(lp_netbios_name()) > 15) {
+		fprintf(stderr, "WARNING: The 'netbios name' is too long "
+				"(max. 15 chars).\n\n");
+	}
+
 	if (!directory_exist_stat(lp_lock_directory(), &st)) {
 		fprintf(stderr, "ERROR: lock directory %s does not exist\n\n",
 		       lp_lock_directory());
