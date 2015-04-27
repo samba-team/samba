@@ -27,6 +27,12 @@ ssize_t transfer_file_internal(void *in_file,
 			       ssize_t (*read_fn)(void *, void *, size_t),
 			       ssize_t (*write_fn)(void *, const void *, size_t));
 
+ssize_t transfer_file_internal_offset(void *in_file,
+				      void *out_file,
+				      size_t n,
+				      ssize_t (*pread_fn)(void *, void *, size_t, off_t),
+				      ssize_t (*pwrite_fn)(void *, const void *, size_t, off_t));
+
 off_t transfer_file(int infd, int outfd, off_t n);
 
 #endif /* __TRANSFER_FILE_H__ */
