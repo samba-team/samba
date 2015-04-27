@@ -1221,7 +1221,9 @@ class KCC(object):
 
     def get_all_bridgeheads(self, site, part, transport,
                             partial_ok, detect_failed):
-        """Get all bridghead DCs satisfying the given criteria
+        """Get all bridghead DCs on a site satisfying the given criteria
+
+        Part of MS-ADTS 6.2.2.3.4.4
 
         :param site: site object representing the site for which
             bridgehead DCs are desired.
@@ -1234,8 +1236,7 @@ class KCC(object):
         :param detect_failed: True to detect failed DCs and route
             replication traffic around them, FALSE to assume
             no DC has failed.
-        ::returns: list of dsa object for available bridgehead
-            DCs or None
+        :return: list of dsa object for available bridgehead DCs
         """
 
         bhs = []
