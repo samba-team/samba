@@ -870,14 +870,19 @@ class KCC(object):
         if t_repsFrom.is_modified():
             DEBUG_FN("modify_repsFrom(): %s" % t_repsFrom)
 
-    def is_repsFrom_implied(self, n_rep, cn_conn):
-        """Given a NC replica and NTDS Connection, determine if the connection
-        implies a repsFrom tuple should be present from the source DSA listed
-        in the connection to the naming context
+    def get_dsa_for_implied_replica(self, n_rep, cn_conn):
+        """If a connection imply a replica, find the relevant DSA
+
+        Given a NC replica and NTDS Connection, determine if the
+        connection implies a repsFrom tuple should be present from the
+        source DSA listed in the connection to the naming context. If
+        it should be, return the DSA; otherwise return None.
+
+        Based on part of MS-ADTS 6.2.2.5
 
         :param n_rep: NC replica
-        :param conn: NTDS Connection
-        ::returns (True || False), source DSA:
+        :param cn_conn: NTDS Connection
+        :return: source DSA or None
         """
         #XXX different conditions for "implies" than MS-ADTS 6.2.2
 
@@ -888,16 +893,15 @@ class KCC(object):
         #    cn!options does not contain NTDSCONN_OPT_RODC_TOPOLOGY.
         #    cn!fromServer references an nTDSDSA object.
 
-        s_dsa = None
+        if not cn_conn.is_enabled() or cn_conn.is_rodc_topology():
+            return None
 
-        if cn_conn.is_enabled() and not cn_conn.is_rodc_topology():
-            s_dnstr = cn_conn.get_from_dnstr()
-            if s_dnstr is not None:
-                s_dsa = self.get_dsa(s_dnstr)
+        s_dnstr = cn_conn.get_from_dnstr()
+        s_dsa = self.get_dsa(s_dnstr)
 
         # No DSA matching this source DN string?
         if s_dsa is None:
-            return False, None
+            return None
 
         # To imply a repsFrom tuple is needed, each of these
         # must be True:
@@ -911,7 +915,7 @@ class KCC(object):
         s_rep = s_dsa.get_current_replica(n_rep.nc_dnstr)
 
         if s_rep is None or not s_rep.is_present():
-            return False, None
+            return None
 
         # To imply a repsFrom tuple is needed, each of these
         # must be True:
@@ -932,9 +936,8 @@ class KCC(object):
                    cn_conn.transport_dnstr.find("CN=IP") == 0)
 
         if implied:
-            return True, s_dsa
-        else:
-            return False, None
+            return s_dsa
+        return None
 
     def translate_ntdsconn(self, current_dsa=None):
         """Adjust repsFrom to match NTDSConnections
@@ -1074,8 +1077,8 @@ class KCC(object):
             # repsFrom is not already present
             for cn_conn in current_dsa.connect_table.values():
 
-                implied, s_dsa = self.is_repsFrom_implied(n_rep, cn_conn)
-                if not implied:
+                s_dsa = self.get_dsa_for_implied_replica(n_rep, cn_conn)
+                if s_dsa is None:
                     continue
 
                 # Loop thru the existing repsFrom tupples (if any) and
