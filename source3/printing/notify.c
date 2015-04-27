@@ -357,11 +357,9 @@ static void send_notify_field_values(struct tevent_context *ev,
 	if (!create_send_ctx())
 		return;
 
-	msg = talloc(send_ctx, struct spoolss_notify_msg);
+	msg = talloc_zero(send_ctx, struct spoolss_notify_msg);
 	if (!msg)
 		return;
-
-	ZERO_STRUCTP(msg);
 
 	fstrcpy(msg->printer, sharename);
 	msg->type = type;
@@ -388,11 +386,9 @@ static void send_notify_field_buffer(struct tevent_context *ev,
 	if (!create_send_ctx())
 		return;
 
-	msg = talloc(send_ctx, struct spoolss_notify_msg);
+	msg = talloc_zero(send_ctx, struct spoolss_notify_msg);
 	if (!msg)
 		return;
-
-	ZERO_STRUCTP(msg);
 
 	fstrcpy(msg->printer, sharename);
 	msg->type = type;
