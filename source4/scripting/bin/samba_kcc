@@ -563,7 +563,9 @@ class KCC(object):
             mydsa.commit_connections(self.samdb)
 
     def modify_repsFrom(self, n_rep, t_repsFrom, s_rep, s_dsa, cn_conn):
-        """Part of MS-ADTS 6.2.2.5.
+        """Update an repsFrom object if required.
+
+        Part of MS-ADTS 6.2.2.5.
 
         Update t_repsFrom if necessary to satisfy requirements. Such
         updates are typically required when the IDL_DRSGetNCChanges
@@ -571,19 +573,18 @@ class KCC(object):
         enable compression when the server is moved from the
         client's site to another site.
 
+        The repsFrom.update_flags bit field may be modified
+        auto-magically if any changes are made here. See
+        kcc_utils.RepsFromTo for gory details.
+
+
         :param n_rep: NC replica we need
         :param t_repsFrom: repsFrom tuple to modify
         :param s_rep: NC replica at source DSA
         :param s_dsa: source DSA
         :param cn_conn: Local DSA NTDSConnection child
 
-        ::returns: (update) bit field containing which portion of the
-           repsFrom was modified.  This bit field is suitable as input
-           to IDL_DRSReplicaModify ulModifyFields element, as it consists
-           of these bits:
-               drsuapi.DRSUAPI_DRS_UPDATE_SCHEDULE
-               drsuapi.DRSUAPI_DRS_UPDATE_FLAGS
-               drsuapi.DRSUAPI_DRS_UPDATE_ADDRESS
+        :return: None
         """
         s_dnstr = s_dsa.dsa_dnstr
         update = 0x0
