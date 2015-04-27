@@ -1384,8 +1384,9 @@ class KCC(object):
     def create_connection(self, part, rbh, rsite, transport,
                           lbh, lsite, link_opt, link_sched,
                           partial_ok, detect_failed):
-        """Create an nTDSConnection object with the given parameters
-        if one does not already exist.
+        """Create an nTDSConnection object as specified if it doesn't exist.
+
+        Part of MS-ADTS 6.2.2.3.4.5
 
         :param part: crossRef object for the NC to replicate.
         :param rbh: nTDSDSA object for DC to act as the
