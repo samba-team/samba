@@ -369,12 +369,16 @@ class KCC(object):
         self.kcc_failed_connections.difference_update(restore_connections)
 
     def is_stale_link_connection(self, target_dsa):
-        """Returns False if no tuple z exists in the kCCFailedLinks or
-        kCCFailedConnections variables such that z.UUIDDsa is the
-        objectGUID of the target dsa, z.FailureCount > 0, and
-        the current time - z.TimeFirstFailure > 2 hours.
+        """Check whether a link to a remote DSA is stale
+
+        Used in MS-ADTS 6.2.2.2 Intrasite Connection Creation
+
+        Returns True if the remote seems to have been down for at
+        least two hours, otherwise False.
+
+        :param target_dsa: the remote DSA object
+        :return: True if link is stale, otherwise False
         """
-        # Returns True if tuple z exists...
         failed_link = self.kcc_failed_links.get(str(target_dsa.dsa_guid))
         if failed_link:
             # failure_count should be > 0, but check anyways
