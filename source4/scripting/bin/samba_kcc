@@ -1624,7 +1624,21 @@ class KCC(object):
             self.kept_connections.add(cn)
 
     def add_transports(self, vertex, local_vertex, graph, detect_failed):
+        """Build a Vertex's transport lists
 
+        Each vertex has accept_red_red and accept_black lists that
+        list what transports they accept under various conditions. The
+        only transport that is ever accepted is IP, and a dummy extra
+        transport called "EDGE_TYPE_ALL".
+
+        Part of MS-ADTS 6.2.2.3.4.3 -- ColorVertices
+
+        :param vertex: the remote vertex we are thinking about
+        :param local_vertex: the vertex relating to the local site.
+        :param graph: the intersite graph
+        :param detect_failed: whether to detect failed links
+        :return: True if some bridgeheads were not found
+        """
         # The docs ([MS-ADTS] 6.2.2.3.4.3) say to use local_vertex
         # here, but using vertex seems to make more sense. That is,
         # the docs want this:
