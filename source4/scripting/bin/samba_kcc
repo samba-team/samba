@@ -274,13 +274,13 @@ class KCC(object):
             self.dsa_by_guid[str(self.my_dsa.dsa_guid)] = self.my_dsa
 
     def load_all_partitions(self):
-        """Discover all NCs thru the Partitions dn and
-        instantiate and load the NCs.
+        """Discover and load all partitions.
 
         Each NC is inserted into the part_table by partition
         dn string (not the nCName dn string)
 
-        ::returns: Raises KCCError on error
+        :return: None
+        :raise: KCCError if partitions can't be found
         """
         try:
             res = self.samdb.search("CN=Partitions,%s" %
