@@ -621,15 +621,12 @@ class KCC(object):
         :return: None
         """
         s_dnstr = s_dsa.dsa_dnstr
-        update = 0x0
-
         same_site = s_dnstr in self.my_site.dsa_table
 
         # if schedule doesn't match then update and modify
         times = convert_schedule_to_repltimes(cn_conn.schedule)
         if times != t_repsFrom.schedule:
             t_repsFrom.schedule = times
-            update |= drsuapi.DRSUAPI_DRS_UPDATE_SCHEDULE
 
         # Bit DRS_PER_SYNC is set in replicaFlags if and only
         # if nTDSConnection schedule has a value v that specifies
