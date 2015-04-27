@@ -365,10 +365,6 @@ class KCC(object):
                                         time_first_failure, last_result,
                                         dns_name)
                     self.kcc_failed_links[dsa_guid] = f
-                #elif f.failure_count == 0:
-                #    f.failure_count = failure_count
-                #    f.time_first_failure = time_first_failure
-                #    f.last_result = last_result
                 else:
                     f.failure_count = max(f.failure_count, failure_count)
                     f.time_first_failure = min(f.time_first_failure,
