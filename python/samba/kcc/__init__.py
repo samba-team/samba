@@ -1158,16 +1158,17 @@ class KCC(object):
         g = setup_graph(part, self.site_table, self.transport_table,
                         self.sitelink_table, bridges_required)
 
-        dot_edges = []
-        for edge in g.edges:
-            for a, b in itertools.combinations(edge.vertices, 2):
-                dot_edges.append((a.site.site_dnstr, b.site.site_dnstr))
-        verify_properties = ()
-        verify_and_dot('site_edges', dot_edges, directed=False,
-                       label=self.my_dsa_dnstr,
-                       properties=verify_properties, debug=DEBUG,
-                       verify=self.verify,
-                       dot_files=self.dot_files)
+        if self.verify or self.dot_files:
+            dot_edges = []
+            for edge in g.edges:
+                for a, b in itertools.combinations(edge.vertices, 2):
+                    dot_edges.append((a.site.site_dnstr, b.site.site_dnstr))
+            verify_properties = ()
+            verify_and_dot('site_edges', dot_edges, directed=False,
+                           label=self.my_dsa_dnstr,
+                           properties=verify_properties, debug=DEBUG,
+                           verify=self.verify,
+                           dot_files=self.dot_files)
 
         return g
 
