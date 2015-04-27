@@ -404,12 +404,17 @@ class KCC(object):
         pass
 
     def remove_unneeded_ntdsconn(self, all_connected):
-        """Removes unneeded NTDS Connections after computation
-        of KCC intra and inter-site topology has finished.
+        """Remove unneeded NTDS Connections once topology is calculated
+
+        Based on MS-ADTS 6.2.2.4 Removing Unnecessary Connections
+
+        :param all_connected: indicates whether all sites are connected
+        :return: None
         """
         mydsa = self.my_dsa
 
-        # Loop thru connections
+        # New connections won't have GUIDs which are needed for
+        # sorting. Add them.
         for cn_conn in mydsa.connect_table.values():
             if cn_conn.guid is None:
                 if opts.readonly:
