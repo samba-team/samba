@@ -2589,7 +2589,7 @@ class KCC(object):
         :param ldif_file: path to the ldif file to import
         """
         try:
-            self.samdb = ldif_utils.ldif_to_samdb(dburl, lp, creds, ldif_file,
+            self.samdb = ldif_utils.ldif_to_samdb(dburl, lp, ldif_file,
                                                   opts.forced_local_dsa)
         except ldif_utils.LdifError, e:
             print e
