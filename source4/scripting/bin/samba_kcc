@@ -1082,13 +1082,17 @@ class KCC(object):
 
     def merge_failed_links(self):
         """Merge of kCCFailedLinks and kCCFailedLinks from bridgeheads.
+
         The KCC on a writable DC attempts to merge the link and connection
         failure information from bridgehead DCs in its own site to help it
         identify failed bridgehead DCs.
-        """
-        # MS-TECH Ref 6.2.2.3.2 Merge of kCCFailedLinks and kCCFailedLinks
-        #     from Bridgeheads
 
+        Based on MS-ADTS 6.2.2.3.2 "Merge of kCCFailedLinks and kCCFailedLinks
+        from Bridgeheads"
+
+        :param ping: An oracle of current bridgehead availability
+        :return: None
+        """
         # 1. Queries every bridgehead server in your site (other than yourself)
         # 2. For every ntDSConnection that references a server in a different
         #    site merge all the failure info
