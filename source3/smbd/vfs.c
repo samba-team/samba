@@ -756,24 +756,24 @@ int vfs_fill_sparse(files_struct *fsp, off_t len)
  Transfer some data (n bytes) between two file_struct's.
 ****************************************************************************/
 
-static ssize_t vfs_read_fn(void *file, void *buf, size_t len)
+static ssize_t vfs_pread_fn(void *file, void *buf, size_t len, off_t offset)
 {
 	struct files_struct *fsp = (struct files_struct *)file;
 
-	return SMB_VFS_READ(fsp, buf, len);
+	return SMB_VFS_PREAD(fsp, buf, len, offset);
 }
 
-static ssize_t vfs_write_fn(void *file, const void *buf, size_t len)
+static ssize_t vfs_pwrite_fn(void *file, const void *buf, size_t len, off_t offset)
 {
 	struct files_struct *fsp = (struct files_struct *)file;
 
-	return SMB_VFS_WRITE(fsp, buf, len);
+	return SMB_VFS_PWRITE(fsp, buf, len, offset);
 }
 
 off_t vfs_transfer_file(files_struct *in, files_struct *out, off_t n)
 {
 	return transfer_file_internal((void *)in, (void *)out, n,
-				      vfs_read_fn, vfs_write_fn);
+				      vfs_pread_fn, vfs_pwrite_fn);
 }
 
 /*******************************************************************
