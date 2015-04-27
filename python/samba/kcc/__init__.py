@@ -391,7 +391,7 @@ class KCC(object):
             DEBUG("refresh_failed_links: checking if links are still down")
             for connection in self.kcc_failed_connections:
                 if ping(connection.dns_name):
-                    # Failed connection is no longer failing\
+                    # Failed connection is no longer failing
                     restore_connections.add(connection)
                 else:
                     connection.failure_count += 1
