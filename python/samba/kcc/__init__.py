@@ -1221,15 +1221,9 @@ class KCC(object):
             no DC has failed.
         :return: list of dsa object for available bridgehead DCs
         """
-
         bhs = []
 
         DEBUG_FN("get_all_bridgeheads: %s" % transport.name)
-        if 'Site-5' in site.site_dnstr:
-            debug.DEBUG_RED("get_all_bridgeheads with %s, part%s, "
-                            "partial_ok %s detect_failed %s" %
-                            (site.site_dnstr, part.partstr, partial_ok,
-                             detect_failed))
         DEBUG_FN(site.rw_dsa_table)
         for dsa in site.rw_dsa_table.values():
 
