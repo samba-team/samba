@@ -176,6 +176,10 @@ start()
 	ulimit -c unlimited
     fi
 
+    if [ -n "$CTDB_MAX_OPEN_FILES" ]; then
+	ulimit -n $CTDB_MAX_OPEN_FILES
+    fi
+
     mkdir -p $(dirname "$pidfile")
 
     if [ -n "$CTDB_VALGRIND" -a "$CTDB_VALGRIND" != "no" ] ; then

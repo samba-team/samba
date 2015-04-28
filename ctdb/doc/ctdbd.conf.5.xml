@@ -1631,6 +1631,18 @@ CTDB_SET_MonitorInterval=20
       </varlistentry>
 
       <varlistentry>
+	<term>CTDB_MAX_OPEN_FILES=<parameter>NUM</parameter></term>
+	<listitem>
+	  <para>
+	    NUM is the maximum number of open files.
+	  </para>
+	  <para>
+	    There is no default.
+	  </para>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
 	<term>CTDB_RC_LOCAL=<parameter>FILENAME</parameter></term>
 	<listitem>
 	  <para>
