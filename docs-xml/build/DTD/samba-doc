@@ -42,11 +42,6 @@
 	name CDATA #REQUIRED
 	type CDATA #REQUIRED
 	context CDATA #REQUIRED
-	advanced CDATA #IMPLIED
-	developer CDATA #IMPLIED
-	wizard CDATA #IMPLIED
-	basic CDATA #IMPLIED
-	print CDATA #IMPLIED
 >
 <!ELEMENT description ANY>
 <!ELEMENT synonym (#PCDATA)>
