@@ -1,6 +1,7 @@
 <samba:parameter name="server signing"
                  context="G"
                  type="enum"
+                 enumlist="enum_smb_signing_vals"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 

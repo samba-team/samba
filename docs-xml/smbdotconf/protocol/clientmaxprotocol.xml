@@ -2,6 +2,7 @@
                  context="G"
                  type="enum"
                  function="_client_max_protocol"
+                 enumlist="enum_protocol"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>The value of the parameter (a string) is the highest 

@@ -1,6 +1,7 @@
 <samba:parameter name="server min protocol"
                  context="G"
                  type="enum"
+                 enumlist="enum_protocol"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <synonym>min protocol</synonym>
 <description>

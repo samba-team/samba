@@ -2,6 +2,7 @@
                  context="G"
                  type="enum"
                  function="_security"
+                 enumlist="enum_security"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <when_value value="security">
     <requires option="encrypted passwords">/(yes|true)/</requires>

@@ -1,6 +1,7 @@
 <samba:parameter name="allow dns updates"
                  context="G"
                  type="enum"
+                 enumlist="enum_dns_update_settings"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This option determines what kind of updates to the DNS are allowed.

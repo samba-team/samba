@@ -1,6 +1,7 @@
 <samba:parameter name="printing"
                  context="S"
                  type="enum"
+                 enumlist="enum_printing"
                  handler="handle_printing"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
