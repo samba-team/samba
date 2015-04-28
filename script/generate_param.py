@@ -69,8 +69,9 @@ def iterate_all(path):
         synonym = parameter.attrib.get("synonym")
         removed = parameter.attrib.get("removed")
         generated = parameter.attrib.get("generated_function")
-        if synonym == "1" or removed == "1" or generated == "0":
+        if removed == "1":
             continue
+
         constant = parameter.attrib.get("constant")
         parm = parameter.attrib.get("parm")
         if name is None or param_type is None or context is None:
@@ -82,7 +83,9 @@ def iterate_all(path):
                'context': context,
                'function': func,
                'constant': (constant == '1'),
-               'parm': (parm == '1')}
+               'parm': (parm == '1'),
+               'synonym' : synonym,
+               'generated' : generated }
 
 # map doc attributes to a section of the generated function
 context_dict = {"G": "_GLOBAL", "S": "_LOCAL"}
@@ -98,6 +101,11 @@ def generate_functions(path_in, path_out):
             # filter out parameteric options
             if ':' in parameter['name']:
                 continue
+            if parameter['synonym'] == "1":
+                continue
+            if parameter['generated'] == "0":
+                continue
+
             output_string = "FN"
             temp = context_dict.get(parameter['context'])
             if temp is None: 
@@ -128,6 +136,10 @@ def make_s3_param_proto(path_in, path_out):
         for parameter in iterate_all(path_in):
             # filter out parameteric options
             if ':' in parameter['name']:
+                continue
+            if parameter['synonym'] == "1":
+                continue
+            if parameter['generated'] == "0":
                 continue
 
             output_string = ""
@@ -174,6 +186,10 @@ def make_lib_proto(path_in, path_out):
         for parameter in iterate_all(path_in):
             # filter out parameteric options
             if ':' in parameter['name']:
+                continue
+            if parameter['synonym'] == "1":
+                continue
+            if parameter['generated'] == "0":
                 continue
 
             output_string = ""
@@ -237,6 +253,10 @@ def make_param_defs(path_in, path_out, scope):
         for parameter in iterate_all(path_in):
             # filter out parameteric options
             if ':' in parameter['name']:
+                continue
+            if parameter['synonym'] == "1":
+                continue
+            if parameter['generated'] == "0":
                 continue
 
             if (scope == "GLOBAL" and parameter['context'] != "G" or
