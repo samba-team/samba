@@ -858,6 +858,13 @@ _PUBLIC_ int tdb_chainunlock_read(struct tdb_context *tdb, TDB_DATA key)
 	return tdb_unlock(tdb, BUCKET(tdb->hash_fn(&key)), F_RDLCK);
 }
 
+_PUBLIC_ int tdb_chainlock_read_nonblock(struct tdb_context *tdb, TDB_DATA key)
+{
+	int ret = tdb_lock_nonblock(tdb, BUCKET(tdb->hash_fn(&key)), F_RDLCK);
+	tdb_trace_1rec_ret(tdb, "tdb_chainlock_read_nonblock", key, ret);
+	return ret;
+}
+
 /* record lock stops delete underneath */
 int tdb_lock_record(struct tdb_context *tdb, tdb_off_t off)
 {
