@@ -42,6 +42,7 @@
 	name CDATA #REQUIRED
 	type CDATA #REQUIRED
 	context CDATA #REQUIRED
+	synonym CDATA #IMPLIED
 >
 <!ELEMENT description ANY>
 <!ELEMENT synonym (#PCDATA)>
