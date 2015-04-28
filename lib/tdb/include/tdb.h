@@ -884,6 +884,7 @@ int tdb_chainlock(struct tdb_context *tdb, TDB_DATA key);
 int tdb_chainlock_nonblock(struct tdb_context *tdb, TDB_DATA key);
 int tdb_chainunlock(struct tdb_context *tdb, TDB_DATA key);
 int tdb_chainlock_read(struct tdb_context *tdb, TDB_DATA key);
+int tdb_chainlock_read_nonblock(struct tdb_context *tdb, TDB_DATA key);
 int tdb_chainunlock_read(struct tdb_context *tdb, TDB_DATA key);
 int tdb_chainlock_mark(struct tdb_context *tdb, TDB_DATA key);
 int tdb_chainlock_unmark(struct tdb_context *tdb, TDB_DATA key);
