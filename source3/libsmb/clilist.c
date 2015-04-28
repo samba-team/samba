@@ -505,8 +505,7 @@ NTSTATUS cli_list_old(struct cli_state *cli, const char *mask,
 	if (req == NULL) {
 		goto fail;
 	}
-	if (!tevent_req_poll(req, ev)) {
-		status = map_nt_error_from_unix(errno);
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
 		goto fail;
 	}
 	status = cli_list_old_recv(req, frame, &finfo);
@@ -966,8 +965,7 @@ NTSTATUS cli_list(struct cli_state *cli, const char *mask, uint16_t attribute,
 	if (req == NULL) {
 		goto fail;
 	}
-	if (!tevent_req_poll(req, ev)) {
-		status = map_nt_error_from_unix(errno);
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
 		goto fail;
 	}
 

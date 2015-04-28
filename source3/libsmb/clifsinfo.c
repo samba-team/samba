@@ -149,8 +149,7 @@ NTSTATUS cli_unix_extensions_version(struct cli_state *cli, uint16_t *pmajor,
 		goto fail;
 	}
 
-	if (!tevent_req_poll(req, ev)) {
-		status = map_nt_error_from_unix(errno);
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
 		goto fail;
 	}
 
