@@ -65,23 +65,6 @@ char *server_id_str_buf(struct server_id id, struct server_id_buf *dst)
 	return dst->buf;
 }
 
-char *server_id_str(TALLOC_CTX *mem_ctx, const struct server_id *id)
-{
-	struct server_id_buf tmp;
-	char *result;
-
-	result = talloc_strdup(mem_ctx, server_id_str_buf(*id, &tmp));
-	if (result == NULL) {
-		return NULL;
-	}
-
-	/*
-	 * beautify the talloc_report output
-	 */
-	talloc_set_name_const(result, result);
-	return result;
-}
-
 struct server_id server_id_from_string(uint32_t local_vnn,
 				       const char *pid_string)
 {
@@ -93,7 +76,7 @@ struct server_id server_id_from_string(uint32_t local_vnn,
 
 	/*
 	 * We accept various forms with 1, 2 or 3 component forms
-	 * because the server_id_str() can print different forms, and
+	 * because the server_id_str_buf() can print different forms, and
 	 * we want backwards compatibility for scripts that may call
 	 * smbclient.
 	 */

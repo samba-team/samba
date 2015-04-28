@@ -630,10 +630,11 @@ static void smbXsrv_open_global_verify_record(struct db_record *db_rec,
 		exists = serverid_exists(&global->server_id);
 	}
 	if (!exists) {
+		struct server_id_buf idbuf;
 		DEBUG(2,("smbXsrv_open_global_verify_record: "
 			 "key '%s' server_id %s does not exist.\n",
 			 hex_encode_talloc(frame, key.dptr, key.dsize),
-			 server_id_str(frame, &global->server_id)));
+			 server_id_str_buf(global->server_id, &idbuf)));
 		if (CHECK_DEBUGLVL(2)) {
 			NDR_PRINT_DEBUG(smbXsrv_open_globalB, &global_blob);
 		}
@@ -1453,9 +1454,11 @@ NTSTATUS smbXsrv_open_cleanup(uint64_t persistent_id)
 			   op->durable_timeout_msec / 1000,
 			   delete_open ? "" : " not"));
 	} else if (!serverid_exists(&op->server_id)) {
+		struct server_id_buf idbuf;
 		DEBUG(10, ("smbXsrv_open_cleanup[global: 0x%08x] "
 			   "server[%s] does not exist\n",
-			   global_id, server_id_str(frame, &op->server_id)));
+			   global_id,
+			   server_id_str_buf(op->server_id, &idbuf)));
 		delete_open = true;
 	}
 

@@ -30,10 +30,10 @@
 static int net_serverid_list_fn(const struct server_id *id,
 				uint32_t msg_flags, void *priv)
 {
-	char *str = server_id_str(talloc_tos(), id);
-	d_printf("%s %llu 0x%x\n", str, (unsigned long long)id->unique_id,
+	struct server_id_buf idbuf;
+	d_printf("%s %llu 0x%x\n", server_id_str_buf(*id, &idbuf),
+		 (unsigned long long)id->unique_id,
 		 (unsigned int)msg_flags);
-	TALLOC_FREE(str);
 	return 0;
 }
 
@@ -55,10 +55,9 @@ static int net_serverid_wipe_fn(struct db_record *rec,
 	}
 	status = dbwrap_record_delete(rec);
 	if (!NT_STATUS_IS_OK(status)) {
-		char *str = server_id_str(talloc_tos(), id);
+		struct server_id_buf idbuf;
 		DEBUG(1, ("Could not delete serverid.tdb record %s: %s\n",
-			  str, nt_errstr(status)));
-		TALLOC_FREE(str);
+			  server_id_str_buf(*id, &idbuf), nt_errstr(status)));
 	}
 	return 0;
 }
@@ -125,34 +124,39 @@ static struct wipedbs_server_data *get_server_data(struct wipedbs_state *state,
 		ret = *(struct wipedbs_server_data**) val.dptr;
 		TALLOC_FREE(val.dptr);
 	} else if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+		struct server_id_buf idbuf;
+
+		server_id_str_buf(*id, &idbuf);
+
 		ret = talloc_zero(state->id2server_data,
 				  struct wipedbs_server_data);
 		if (ret == NULL) {
 			DEBUG(0, ("Failed to allocate server entry for %s\n",
-				  server_id_str(talloc_tos(), id)));
+				  idbuf.buf));
 			goto done;
 		}
 		ret->server_id = *id;
-		ret->server_id_str = server_id_str(ret, id);
+		ret->server_id_str = talloc_strdup(ret, idbuf.buf);
 		ret->exists = true;
 		val = make_tdb_data((const void*)&ret, sizeof(ret));
 		status = dbwrap_store(state->id2server_data,
 				      key, val, TDB_INSERT);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("Failed to store server entry for %s: %s\n",
-				  server_id_str(talloc_tos(), id),
-				  nt_errstr(status)));
+				  idbuf.buf, nt_errstr(status)));
 		}
 		goto done;
 	} else {
+		struct server_id_buf idbuf;
 		DEBUG(0, ("Failed to fetch server entry for %s: %s\n",
-			  server_id_str(talloc_tos(), id), nt_errstr(status)));
+			  server_id_str_buf(*id, &idbuf), nt_errstr(status)));
 		goto done;
 	}
 	if (!server_id_equal(id, &ret->server_id)) {
+		struct server_id_buf idbuf1, idbuf2;
 		DEBUG(0, ("uniq id collision for %s and %s\n",
-			  server_id_str(talloc_tos(), id),
-			  server_id_str(talloc_tos(), &ret->server_id)));
+			  server_id_str_buf(*id, &idbuf1),
+			  server_id_str_buf(ret->server_id, &idbuf2)));
 		smb_panic("server_id->unique_id not unique!");
 	}
 done:

@@ -340,12 +340,11 @@ static void print_notify_recs(const char *path,
 
 	for (i=0; i<num_entries; i++) {
 		struct notify_db_entry *e = &entries[i];
-		char *str;
+		struct server_id_buf idbuf;
 
-		str = server_id_str(talloc_tos(), &e->server);
-		printf("%s %x %x\n", str, (unsigned)e->filter,
+		printf("%s %x %x\n", server_id_str_buf(e->server, &idbuf),
+		       (unsigned)e->filter,
 		       (unsigned)e->subdir_filter);
-		TALLOC_FREE(str);
 	}
 	printf("\n");
 }

@@ -511,9 +511,10 @@ static int shutdown_other_smbds(struct smbXsrv_session_global0 *session,
 	struct server_id self_pid = messaging_server_id(state->msg_ctx);
 	struct server_id pid = session->channels[0].server_id;
 	const char *addr = session->channels[0].remote_address;
+	struct server_id_buf tmp;
 
 	DEBUG(10, ("shutdown_other_smbds: %s, %s\n",
-		   server_id_str(talloc_tos(), &pid), addr));
+		   server_id_str_buf(pid, &tmp), addr));
 
 	if (!process_exists(pid)) {
 		DEBUG(10, ("process does not exist\n"));

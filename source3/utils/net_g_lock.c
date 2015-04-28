@@ -111,12 +111,9 @@ done:
 static int net_g_lock_dump_fn(struct server_id pid, enum g_lock_type lock_type,
 			      void *private_data)
 {
-	char *pidstr;
-
-	pidstr = server_id_str(talloc_tos(), &pid);
-	d_printf("%s: %s\n", pidstr,
+	struct server_id_buf idbuf;
+	d_printf("%s: %s\n", server_id_str_buf(pid, &idbuf),
 		 (lock_type & 1) ? "WRITE" : "READ");
-	TALLOC_FREE(pidstr);
 	return 0;
 }
 

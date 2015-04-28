@@ -792,6 +792,7 @@ bool share_mode_cleanup_disconnected(struct file_id fid,
 		struct share_mode_entry *entry = &data->share_modes[n];
 
 		if (!server_id_is_disconnected(&entry->pid)) {
+			struct server_id_buf tmp;
 			DEBUG(5, ("share_mode_cleanup_disconnected: "
 				  "file (file-id='%s', servicepath='%s', "
 				  "base_name='%s%s%s') "
@@ -803,7 +804,7 @@ bool share_mode_cleanup_disconnected(struct file_id fid,
 				  ? "" : "', stream_name='",
 				  (data->stream_name == NULL)
 				  ? "" : data->stream_name,
-				  server_id_str(frame, &entry->pid)));
+				  server_id_str_buf(entry->pid, &tmp)));
 			goto done;
 		}
 		if (open_persistent_id != entry->share_file_id) {

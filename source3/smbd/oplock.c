@@ -776,6 +776,7 @@ static void process_oplock_break_message(struct messaging_context *msg_ctx,
 	uint16_t break_from;
 	uint16_t break_to;
 	bool break_needed = true;
+	struct server_id_buf tmp;
 
 	if (data->data == NULL) {
 		DEBUG(0, ("Got NULL buffer\n"));
@@ -792,7 +793,7 @@ static void process_oplock_break_message(struct messaging_context *msg_ctx,
 	break_to = msg.op_type;
 
 	DEBUG(10, ("Got oplock break to %u message from pid %s: %s/%llu\n",
-		   (unsigned)break_to, server_id_str(talloc_tos(), &src),
+		   (unsigned)break_to, server_id_str_buf(src, &tmp),
 		   file_id_string_tos(&msg.id),
 		   (unsigned long long)msg.share_file_id));
 
@@ -970,6 +971,7 @@ static void process_kernel_oplock_break(struct messaging_context *msg_ctx,
 	struct smbd_server_connection *sconn =
 		talloc_get_type_abort(private_data,
 		struct smbd_server_connection);
+	struct server_id_buf tmp;
 
 	if (data->data == NULL) {
 		DEBUG(0, ("Got NULL buffer\n"));
@@ -986,7 +988,7 @@ static void process_kernel_oplock_break(struct messaging_context *msg_ctx,
 	file_id = (unsigned long)IVAL(data->data, 24);
 
 	DEBUG(10, ("Got kernel oplock break message from pid %s: %s/%u\n",
-		   server_id_str(talloc_tos(), &src), file_id_string_tos(&id),
+		   server_id_str_buf(src, &tmp), file_id_string_tos(&id),
 		   (unsigned int)file_id));
 
 	fsp = initial_break_processing(sconn, id, file_id);

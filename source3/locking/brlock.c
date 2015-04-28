@@ -58,11 +58,13 @@ struct byte_range_lock {
 
 static void print_lock_struct(unsigned int i, const struct lock_struct *pls)
 {
+	struct server_id_buf tmp;
+
 	DEBUG(10,("[%u]: smblctx = %llu, tid = %u, pid = %s, ",
 			i,
 			(unsigned long long)pls->context.smblctx,
 			(unsigned int)pls->context.tid,
-			server_id_str(talloc_tos(), &pls->context.pid) ));
+			server_id_str_buf(pls->context.pid, &tmp) ));
 
 	DEBUG(10, ("start = %ju, size = %ju, fnum = %ju, %s %s\n",
 		   (uintmax_t)pls->start,
@@ -2243,10 +2245,11 @@ bool brl_cleanup_disconnected(struct file_id fid, uint64_t open_persistent_id)
 		struct lock_context *ctx = &lock[n].context;
 
 		if (!server_id_is_disconnected(&ctx->pid)) {
+			struct server_id_buf tmp;
 			DEBUG(5, ("brl_cleanup_disconnected: byte range lock "
 				  "%s used by server %s, do not cleanup\n",
 				  file_id_string(frame, &fid),
-				  server_id_str(frame, &ctx->pid)));
+				  server_id_str_buf(ctx->pid, &tmp)));
 			goto done;
 		}
 
