@@ -273,7 +273,7 @@ static int last_stabilize_parser(TDB_DATA key, TDB_DATA data,
  * @param blob DATA_BLOB value being cached
  * @param timeout time when the value is expired
  *
- * @retval true when entry is successfuly stored
+ * @retval true when entry is successfully stored
  * @retval false on failure
  **/
 
