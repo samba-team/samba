@@ -50,14 +50,14 @@ check_tdb ()
 
     if $use_tdb_tool_check ; then
 	# tdbtool always exits with 0  :-(
-	if tdbtool "$_db" check 2>/dev/null |
+	if timeout 10 tdbtool "$_db" check 2>/dev/null |
 	    grep -q "Database integrity is OK" ; then
 	    return 0
 	else
 	    return 1
 	fi
     else
-	tdbdump "$_db" >/dev/null 2>/dev/null
+	timeout 10 tdbdump "$_db" >/dev/null 2>/dev/null
 	return $?
     fi
 }
