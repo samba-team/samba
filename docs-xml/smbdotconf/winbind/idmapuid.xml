@@ -1,7 +1,6 @@
 <samba:parameter name="idmap uid"
 			 type="string"
                  context="G"
-                 advanced="1" developer="1" hide="1"
                  generated_function="0"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <synonym>winbind uid</synonym>

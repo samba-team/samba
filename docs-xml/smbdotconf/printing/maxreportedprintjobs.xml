@@ -1,7 +1,6 @@
 <samba:parameter name="max reported print jobs"
                  context="S"
 				 type="integer"
-		 print="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>

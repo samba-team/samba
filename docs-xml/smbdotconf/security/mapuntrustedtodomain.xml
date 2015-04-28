@@ -1,8 +1,6 @@
 <samba:parameter name="map untrusted to domain"
                  context="G"
 		 type="boolean"
-		 advanced="1"
-		 developer="1"
 		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>

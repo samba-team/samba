@@ -1,7 +1,6 @@
 <samba:parameter name="comment"
                  context="S"
 				 type="string"
-                 basic="1" advanced="1" share="1" print="1" developer="1" 
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>This is a text field that is seen next to a share 

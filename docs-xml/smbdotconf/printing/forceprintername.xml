@@ -1,7 +1,6 @@
 <samba:parameter name="force printername"
                  context="S"
 		 type="boolean"
-		 print="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>When printing from Windows NT (or later), 

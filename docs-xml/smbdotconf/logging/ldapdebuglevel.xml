@@ -1,7 +1,6 @@
 <samba:parameter name="ldap debug level"
 		 type="integer"
 		context="G"
-		developer="1" advanced="1"
 		xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>

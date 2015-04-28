@@ -1,7 +1,6 @@
 <samba:parameter name="name resolve order"
                  context="G"
 				 type="list"
-                 advanced="1" wizard="1" developer="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc"> 
 <description>
     <para>This option is used by the programs in the Samba 

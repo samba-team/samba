@@ -1,6 +1,5 @@
 <samba:parameter name="available"
 	         context="S"
-		 basic="1" advanced="1" print="1"
 		 type="boolean"
                  generated_function="0"
 		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">

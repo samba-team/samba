@@ -1,7 +1,6 @@
 <samba:parameter name="map to guest"
 				 type="enum"
                  context="G"
-                 advanced="1" developer="1"
 		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>This parameter can take four different values, which tell

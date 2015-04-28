@@ -1,7 +1,6 @@
 <samba:parameter name="default devmode"
                  context="S"
 				 type="boolean"
-		 print="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>This parameter is only applicable to <smbconfoption name="printable"/> services.

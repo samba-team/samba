@@ -1,7 +1,6 @@
 <samba:parameter name="get quota command"
                  context="G"
 				 type="string"
-                 advanced="1" developer="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>The <command>get quota command</command> should only be used 

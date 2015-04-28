@@ -1,7 +1,6 @@
 <samba:parameter name="debug timestamp"
                  context="G"
 				 type="boolean"
-                 developer="1"
                  function="timestamp_logs"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <synonym>timestamp logs</synonym>

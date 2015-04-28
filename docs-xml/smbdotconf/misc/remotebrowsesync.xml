@@ -1,6 +1,5 @@
 <samba:parameter name="remote browse sync"
 	         context="G"
-		 advanced="1" developer="1"
 		 type="string"
 		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>

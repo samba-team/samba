@@ -1,7 +1,6 @@
 <samba:parameter name="client max protocol"
 		 context="G"
 		 type="enum"
-		 developer="1"
 		 function="_client_max_protocol"
 		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>

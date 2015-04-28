@@ -1,7 +1,6 @@
 <samba:parameter name="printjob username"
                  context="S"
 				 type="string"
-		 print="1"
                  constant="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>

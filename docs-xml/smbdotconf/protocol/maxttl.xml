@@ -1,7 +1,6 @@
 <samba:parameter name="max ttl"
                  context="G"
 				 type="integer"
-                 advanced="1" developer="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>This option tells <citerefentry><refentrytitle>nmbd</refentrytitle>

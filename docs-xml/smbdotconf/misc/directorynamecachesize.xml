@@ -1,7 +1,6 @@
 <samba:parameter name="directory name cache size"
 		 context="S"
 		 type="integer"
-		 advanced="1"
 		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>

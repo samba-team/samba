@@ -1,7 +1,6 @@
 <samba:parameter name="ctdb locktime warn threshold"
                  context="G"
 		 type="integer"
-                 advanced="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 

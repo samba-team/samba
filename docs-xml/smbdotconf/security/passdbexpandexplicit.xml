@@ -1,6 +1,5 @@
 <samba:parameter name="passdb expand explicit"
                  context="G"
-                 advanced="1" developer="0"
 				 type="boolean"
 		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>

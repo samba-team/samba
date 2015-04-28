@@ -1,7 +1,6 @@
 <samba:parameter name="use client driver"
                  context="S"
 				 type="boolean"
-		 print="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>This parameter applies only to Windows NT/2000

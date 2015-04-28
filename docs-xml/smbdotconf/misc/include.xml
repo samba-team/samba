@@ -1,7 +1,6 @@
 <samba:parameter name="include"
 	         context="G"
 		 type="string"
-		 hide="1"
                  generated_function="0"
 		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>

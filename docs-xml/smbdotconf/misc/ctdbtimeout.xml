@@ -1,7 +1,6 @@
 <samba:parameter name="ctdb timeout"
                  context="G"
 				 type="integer"
-                 advanced="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This parameter specifies a timeout in seconds for the

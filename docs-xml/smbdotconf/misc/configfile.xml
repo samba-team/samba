@@ -1,7 +1,6 @@
 <samba:parameter name="config file"
                  context="G"
 				 type="string"
-		 hide="1"
                  function="next_configfile"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>

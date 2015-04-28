@@ -1,5 +1,4 @@
 <samba:parameter name="dedicated keytab file" context="G" type="string"
-		 advanced="1" developer="1"
                  constant="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>

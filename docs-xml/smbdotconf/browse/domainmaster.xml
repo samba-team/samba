@@ -1,7 +1,6 @@
 <samba:parameter name="domain master"
 				 type="enum"
                  context="G"
-                 basic="1" advanced="1" developer="1"
                  function="_domain_master"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>

@@ -1,7 +1,5 @@
 <samba:parameter name="ldap passwd sync"
 			context="G"
-			advanced="1"
-			developer="1"
 			type="enum"
 			xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 

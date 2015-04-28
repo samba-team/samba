@@ -1,7 +1,6 @@
 <samba:parameter name="iprint server"
                  context="G"
 		 type="string"
-		 print="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>

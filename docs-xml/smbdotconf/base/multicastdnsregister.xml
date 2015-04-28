@@ -1,7 +1,6 @@
 <samba:parameter name="multicast dns register"
 				type="boolean"
                  context="G"
-                 advanced="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
         <para>If compiled with proper support for it, Samba will

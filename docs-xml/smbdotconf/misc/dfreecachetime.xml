@@ -1,7 +1,6 @@
 <samba:parameter name="dfree cache time"
 	         context="S"
 			 type="integer"
-		 advanced="1" developer="1"
 		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 

@@ -1,7 +1,6 @@
 <samba:parameter name="client signing"
                  context="G"
 				 type="enum"
-                 basic="1"
 		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>This controls whether the client is allowed or required to use SMB signing. Possible values 

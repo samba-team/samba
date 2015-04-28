@@ -1,6 +1,5 @@
 <samba:parameter name="nt acl support"
                  context="S"
-                 advanced="1" wizard="1"
 				 type="boolean"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>

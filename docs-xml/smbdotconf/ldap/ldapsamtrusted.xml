@@ -1,7 +1,6 @@
 <samba:parameter name="ldapsam:trusted"
 	context="G"
 	type="string"
-		 advanced="1" developer="0"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 

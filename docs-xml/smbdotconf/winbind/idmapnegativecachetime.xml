@@ -1,7 +1,6 @@
 <samba:parameter name="idmap negative cache time"
                  context="G"
 		 type="integer"
-                 advanced="1" developer="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This parameter specifies the number of seconds that Winbind's

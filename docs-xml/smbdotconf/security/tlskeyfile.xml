@@ -1,7 +1,6 @@
 <samba:parameter name="tls keyfile"
                  type="string"
                  context="G"
-                 basic="1" advanced="1" developer="1"
                  function="_tls_keyfile"
                  constant="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">

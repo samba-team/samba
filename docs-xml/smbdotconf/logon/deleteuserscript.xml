@@ -1,7 +1,6 @@
 <samba:parameter name="delete user script"
 			     type="string"
                  context="G"
-                 advanced="1" developer="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This is the full pathname to a script that will 

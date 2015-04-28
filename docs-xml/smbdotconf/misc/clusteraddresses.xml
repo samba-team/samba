@@ -1,7 +1,6 @@
 <samba:parameter name="cluster addresses"
 	         context="G"
 			 type="list"
-		 developer="1"
 		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>With this parameter you can add additional addresses

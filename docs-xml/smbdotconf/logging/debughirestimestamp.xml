@@ -1,6 +1,5 @@
 <samba:parameter name="debug hires timestamp"
                  context="G"
-                 developer="1"
 				 type="boolean"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>

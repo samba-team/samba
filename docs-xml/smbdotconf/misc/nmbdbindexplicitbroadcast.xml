@@ -1,6 +1,5 @@
 <samba:parameter name="nmbd bind explicit broadcast"
 	         context="G"
-		 advanced="1" developer="1"
 		 type="boolean"
 		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>

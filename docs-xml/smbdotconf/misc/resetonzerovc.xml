@@ -1,7 +1,6 @@
 <samba:parameter name="reset on zero vc"
 		 context="G"
 		 type="boolean"
-		 advanced="1" developer="0"
 		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>

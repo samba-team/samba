@@ -1,5 +1,4 @@
 <samba:parameter name="browseable" context="S" type="boolean"
-                 basic="1" advanced="1" print="1" developer="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <synonym>browsable</synonym>
 <description>

@@ -1,6 +1,5 @@
 <samba:parameter name="max mux"
                  context="G"
-                 advanced="1" developer="1"
 				 type="integer"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>

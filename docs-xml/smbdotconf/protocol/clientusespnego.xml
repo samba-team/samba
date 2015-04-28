@@ -1,7 +1,6 @@
 <samba:parameter name="client use spnego"
                  context="G"
 				 type="boolean"
-                 developer="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para> This variable controls whether Samba clients will try 

@@ -1,7 +1,6 @@
 <samba:parameter name="debug class"
                  context="G"
 		 type="boolean"
-                 developer="1" advanced="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>

@@ -1,7 +1,6 @@
 <samba:parameter name="printing"
                  context="S"
 				 type="enum"
-		 print="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>This parameters controls how printer status  information is

@@ -1,7 +1,6 @@
 <samba:parameter name="hosts allow"
                  context="S"
 				 type="list"
-                 basic="1" advanced="1" print="1" developer="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <synonym>allow hosts</synonym>
 <description>

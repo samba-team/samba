@@ -1,7 +1,6 @@
 <samba:parameter name="auth methods"
                  context="G"
 				 type="list"
-                 basic="1" advanced="1" wizard="1" developer="1"
 		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 

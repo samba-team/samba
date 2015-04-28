@@ -1,7 +1,6 @@
 <samba:parameter name="dcerpc endpoint servers"
                  context="G"
 				 type="list"
-                 advanced="1" developer="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>Specifies which DCE/RPC endpoint servers should be run.</para>

@@ -1,6 +1,5 @@
 <samba:parameter name="stat cache"
                  context="G"
-                 developer="1"
 				 type="boolean"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>

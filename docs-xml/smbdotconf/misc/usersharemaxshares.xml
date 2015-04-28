@@ -1,6 +1,5 @@
 <samba:parameter name="usershare max shares"
 	         context="G"
-		 basic="1" advanced="1"
 		 type="integer"
 		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>

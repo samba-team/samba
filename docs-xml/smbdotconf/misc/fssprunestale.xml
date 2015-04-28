@@ -1,7 +1,6 @@
 <samba:parameter name="fss: prune stale"
                  context="G"
 		 type="boolean"
-		 advanced="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>
