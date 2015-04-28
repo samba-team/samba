@@ -285,11 +285,10 @@ static bool get_trusted_domains(struct torture_context *torture,
 	DO_STRUCT_REQ_REP(WINBINDD_LIST_TRUSTDOM, &req, &rep);
 
 	extra_data = (char *)rep.extra_data.data;
-	if (!extra_data) {
-		return true;
-	}
-
-	torture_assert(torture, extra_data, "NULL trust list");
+	torture_assert(torture, extra_data != NULL,
+		       "Trust list was NULL: the list of trusted domain "
+		       "should be returned, with at least 2 entries "
+		       "(BUILTIN, and the local domain)");
 
 	while (next_token(&extra_data, line, "\n", sizeof(line))) {
 		char *p, *lp;
@@ -324,7 +323,8 @@ static bool get_trusted_domains(struct torture_context *torture,
 	SAFE_FREE(rep.extra_data.data);
 
 	torture_assert(torture, dcount >= 2,
-		       "The list of trusted domain should contain 2 entries");
+		       "The list of trusted domain should contain 2 entries "
+		       "(BUILTIN, and the local domain)");
 
 	*_d = d;
 	return true;
