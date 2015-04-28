@@ -299,7 +299,16 @@ nfs_check_rpc_services ()
 	_t="${_f%.check}"
 	_prog_name="${_t##*/[0-9][0-9].}"
 
-	if _nfs_check_rpc_common "$_prog_name" ; then
+	# If $_prog_name contains '@' then the bit after it is the
+	# address family.
+	_family="${_prog_name#*@}"
+	if [ "$_family" = "$_prog_name" ] ; then
+	    _family=""
+	else
+	    _prog_name="${_prog_name%@*}"
+	fi
+
+	if _nfs_check_rpc_common "$_prog_name" "$_family" ; then
 	    # This RPC service is up, check next service...
 	    continue
 	fi
@@ -323,6 +332,7 @@ nfs_check_rpc_services ()
 _nfs_check_rpc_common ()
 {
     _prog_name="$1"
+    _family="$2"
 
     # Some platforms don't have separate programs for all services.
     case "$_prog_name" in
@@ -356,9 +366,9 @@ _nfs_check_rpc_common ()
 	    exit 1
     esac
 
-    _service_name="nfs_${_prog_name}"
+    _service_name="nfs_${_prog_name}${_family:+_}${_family}"
 
-    if ctdb_check_rpc "$_rpc_prog" $_version >/dev/null ; then
+    if ctdb_check_rpc "$_rpc_prog" "$_version" "$_family" >/dev/null ; then
 	ctdb_counter_init "$_service_name"
 	return 0
     fi
@@ -460,10 +470,11 @@ ctdb_check_rpc ()
 {
     progname="$1"
     version="$2"
+    _family="${3:-tcp}"
 
     _localhost="${CTDB_RPCINFO_LOCALHOST:-127.0.0.1}"
 
-    if ! ctdb_check_rpc_out=$(rpcinfo -T tcp $_localhost $progname $version 2>&1) ; then
+    if ! ctdb_check_rpc_out=$(rpcinfo -T $_family $_localhost $progname $version 2>&1) ; then
 	ctdb_check_rpc_out="ERROR: $progname failed RPC check:
 $ctdb_check_rpc_out"
 	echo "$ctdb_check_rpc_out"
