@@ -1904,8 +1904,6 @@ static int vfswrap_ftruncate(vfs_handle_struct *handle, files_struct *fsp, off_t
 	   ftruncate extend but ext2 can. */
 
 	result = ftruncate(fsp->fh->fd, len);
-	if (result == 0)
-		goto done;
 
 	/* According to W. R. Stevens advanced UNIX prog. Pure 4.3 BSD cannot
 	   extend a file with ftruncate. Provide alternate implementation
@@ -1919,6 +1917,12 @@ static int vfswrap_ftruncate(vfs_handle_struct *handle, files_struct *fsp, off_t
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
+
+	/* We need to update the files_struct after successful ftruncate */
+	if (result == 0) {
+		goto done;
+	}
+
 	pst = &fsp->fsp_name->st;
 
 #ifdef S_ISFIFO
