@@ -115,8 +115,12 @@ static int vfs_gpfs_setlease(vfs_handle_struct *handle, files_struct *fsp,
 				struct gpfs_config_data,
 				return -1);
 
-	if (linux_set_lease_sighandler(fsp->fh->fd) == -1)
-		return -1;
+	START_PROFILE(syscall_linux_setlease);
+
+	if (linux_set_lease_sighandler(fsp->fh->fd) == -1) {
+		ret = -1;
+		goto failure;
+	}
 
 	START_PROFILE(syscall_linux_setlease);
 
@@ -132,6 +136,7 @@ static int vfs_gpfs_setlease(vfs_handle_struct *handle, files_struct *fsp,
 
 	END_PROFILE(syscall_linux_setlease);
 
+failure:
 	return ret;
 }
 
