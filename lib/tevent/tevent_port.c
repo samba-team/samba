@@ -174,10 +174,11 @@ static int associate_all_events(struct port_event_context *port_ev)
 	struct port_associate_vals *val;
 
 	for (val = port_ev->po_vals; val; val = val->next) {
+		int ret;
 		if (val->associated_event) {
 			continue;
 		}
-		int ret = port_associate(port_ev->port_fd,
+		ret = port_associate(port_ev->port_fd,
 					PORT_SOURCE_FD,
 					(uintptr_t)val->fde->fd,
 					val->events,
