@@ -18,6 +18,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import os
 import itertools
 
 from samba.kcc.debug import null_debug, PURPLE, MAGENTA, DARK_YELLOW, RED
@@ -26,14 +27,15 @@ from samba.kcc.debug import DARK_GREEN, C_NORMAL, GREY
 
 
 def write_dot_file(basename, edge_list, vertices=None, label=None,
-                   destdir=None, reformat_labels=True, directed=False,
+                   dot_file_dir=None, reformat_labels=True, directed=False,
                    debug=None, edge_colors=None, edge_labels=None,
                    vertex_colors=None):
-    from tempfile import NamedTemporaryFile
     if label:
-        basename += '_' + label.translate(None, ', ')  # fix DN, guid labels
-    f = NamedTemporaryFile(suffix='.dot', prefix=basename + '_', delete=False,
-                           dir=destdir)
+        # sanitise DN and guid labels
+        basename += '_' + label.translate(None, ', ')
+
+    f = open(os.path.join(dot_file_dir, "%s.dot" % basename), 'w')
+
     if debug is not None:
         debug(f.name)
     graphname = ''.join(x for x in basename if x.isalnum())
@@ -341,19 +343,22 @@ def verify_graph(title, edges, vertices=None, directed=False, properties=(),
         debug(C_NORMAL)
 
 
-def verify_and_dot(basename, edges, vertices=None, label=None, destdir=None,
-                   reformat_labels=True, directed=False, properties=(),
-                   fatal=True, debug=None, verify=True, dot_files=False,
-                   edge_colors=None, edge_labels=None, vertex_colors=None):
+def verify_and_dot(basename, edges, vertices=None, label=None,
+                   reformat_labels=True, directed=False,
+                   properties=(), fatal=True, debug=None,
+                   verify=True, dot_file_dir=None,
+                   edge_colors=None, edge_labels=None,
+                   vertex_colors=None):
 
     title = '%s %s' % (basename, label or '')
     if verify:
         verify_graph(title, edges, vertices, properties=properties,
                      fatal=fatal, debug=debug)
-    if dot_files:
+    if dot_file_dir is not None:
         write_dot_file(basename, edges, vertices=vertices, label=label,
-                       destdir=destdir, reformat_labels=reformat_labels,
-                       directed=directed, debug=debug, edge_colors=edge_colors,
+                       dot_file_dir=dot_file_dir,
+                       reformat_labels=reformat_labels, directed=directed,
+                       debug=debug, edge_colors=edge_colors,
                        edge_labels=edge_labels, vertex_colors=vertex_colors)
 
 

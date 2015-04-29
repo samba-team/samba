@@ -55,7 +55,8 @@ from samba.kcc import KCC
 def test_all_reps_from(lp, creds, unix_now, rng_seed=None):
     # This implies readonly and attempt_live_connections
     kcc = KCC(unix_now, readonly=True,
-              verify=opts.verify, debug=opts.debug, dot_files=opts.dot_files)
+              verify=opts.verify, debug=opts.debug,
+              dot_file_dir=opts.dot_file_dir)
     kcc.load_samdb(opts.dburl, lp, creds)
     dsas = kcc.list_dsas()
     needed_parts = {}
@@ -76,7 +77,7 @@ def test_all_reps_from(lp, creds, unix_now, rng_seed=None):
             random.seed(rng_seed)
         kcc = KCC(unix_now, readonly=True,
                   verify=opts.verify, debug=opts.debug,
-                  dot_files=opts.dot_files)
+                  dot_file_dir=opts.dot_file_dir)
         kcc.run(opts.dburl, lp, creds, forced_local_dsa=dsa_dn,
                 forget_local_links=opts.forget_local_links,
                 forget_intersite_links=opts.forget_intersite_links,
@@ -123,7 +124,8 @@ def test_all_reps_from(lp, creds, unix_now, rng_seed=None):
 
     verify_and_dot('all-dsa-connections', dot_edges, vertices=dot_vertices,
                    label="all dsa NTDSConnections", properties=(),
-                   debug=DEBUG, verify=opts.verify, dot_files=opts.dot_files,
+                   debug=DEBUG, verify=opts.verify,
+                   dot_file_dir=opts.dot_file_dir,
                    directed=True, edge_colors=colours,
                    vertex_colors=vertex_colours)
 
@@ -133,7 +135,7 @@ def test_all_reps_from(lp, creds, unix_now, rng_seed=None):
             verify_and_dot('all-repsFrom_%s__%s' % (name, part), edges,
                            directed=True, label=part,
                            properties=(), debug=DEBUG, verify=opts.verify,
-                           dot_files=opts.dot_files)
+                           dot_file_dir=opts.dot_file_dir)
 
 ##################################################
 # samba_kcc entry point
@@ -165,9 +167,8 @@ parser.add_option("--list-verify-tests",
                         "and do nothing else"),
                   action="store_true")
 
-parser.add_option("--no-dot-files", dest='dot_files',
-                  help="Don't write dot graph files in /tmp",
-                  default=True, action="store_false")
+parser.add_option("--dot-file-dir", default=None,
+                  help="Write Graphviz .dot files to this directory")
 
 parser.add_option("--seed",
                   help="random number seed",
@@ -269,7 +270,7 @@ if opts.test_all_reps_from:
 
 # Instantiate Knowledge Consistency Checker and perform run
 kcc = KCC(unix_now, readonly=opts.readonly, verify=opts.verify,
-          debug=opts.debug, dot_files=opts.dot_files)
+          debug=opts.debug, dot_file_dir=opts.dot_file_dir)
 
 
 if opts.exportldif:

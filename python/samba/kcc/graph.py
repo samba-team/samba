@@ -95,7 +95,7 @@ def combine_repl_info(info_a, info_b, info_c):
 
 
 def get_spanning_tree_edges(graph, my_site, label=None, verify=False,
-                            dot_files=False):
+                            dot_file_dir=None):
     # Phase 1: Run Dijkstra's to get a list of internal edges, which are
     # just the shortest-paths connecting colored vertices
 
@@ -112,7 +112,7 @@ def get_spanning_tree_edges(graph, my_site, label=None, verify=False,
             for v in e.vertices:
                 v.edges.append(e)
 
-        if verify or dot_files:
+        if verify or dot_file_dir is not None:
             graph_edges = [(a.site.site_dnstr, b.site.site_dnstr)
                            for a, b in
                            itertools.chain(
@@ -120,7 +120,7 @@ def get_spanning_tree_edges(graph, my_site, label=None, verify=False,
                                  for edge in e_set.edges))]
             graph_nodes = [v.site.site_dnstr for v in graph.vertices]
 
-            if dot_files:
+            if dot_file_dir is not None:
                 write_dot_file('edgeset_%s' % (edgeType,), graph_edges,
                                vertices=graph_nodes, label=label)
 
@@ -148,15 +148,14 @@ def get_spanning_tree_edges(graph, my_site, label=None, verify=False,
     setup_vertices(graph)
     process_edge_set(graph, None, internal_edges)
 
-    if verify or dot_files:
+    if verify or dot_file_dir is not None:
         graph_edges = [(e.v1.site.site_dnstr, e.v2.site.site_dnstr)
                        for e in internal_edges]
         graph_nodes = [v.site.site_dnstr for v in graph.vertices]
         verify_properties = ('multi_edge_forest',)
         verify_and_dot('prekruskal', graph_edges, graph_nodes, label=label,
                        properties=verify_properties, debug=DEBUG,
-                       verify=verify,
-                       dot_files=dot_files)
+                       verify=verify, dot_file_dir=dot_file_dir)
 
     # Phase 2: Run Kruskal's on the internal edges
     output_edges, components = kruskal(graph, internal_edges)
@@ -172,7 +171,7 @@ def get_spanning_tree_edges(graph, my_site, label=None, verify=False,
         else:
             v.dist_to_red = v.repl_info.cost
 
-    if verify or dot_files:
+    if verify or dot_file_dir is not None:
         graph_edges = [(e.v1.site.site_dnstr, e.v2.site.site_dnstr)
                        for e in internal_edges]
         graph_nodes = [v.site.site_dnstr for v in graph.vertices]
@@ -180,7 +179,7 @@ def get_spanning_tree_edges(graph, my_site, label=None, verify=False,
         verify_and_dot('postkruskal', graph_edges, graph_nodes,
                        label=label, properties=verify_properties,
                        debug=DEBUG, verify=verify,
-                       dot_files=dot_files)
+                       dot_file_dir=dot_file_dir)
 
     # Ensure only one-way connections for partial-replicas,
     # and make sure they point the right way.
@@ -198,7 +197,7 @@ def get_spanning_tree_edges(graph, my_site, label=None, verify=False,
                     edge.vertices[:] = w, v
             edge_list.append(edge)
 
-    if verify or dot_files:
+    if verify or dot_file_dir is not None:
         graph_edges = [[x.site.site_dnstr for x in e.vertices]
                        for e in edge_list]
         #add the reverse edge if not directed.
@@ -211,7 +210,7 @@ def get_spanning_tree_edges(graph, my_site, label=None, verify=False,
                        label=label, properties=verify_properties,
                        debug=DEBUG, verify=verify,
                        directed=True,
-                       dot_files=dot_files)
+                       dot_file_dir=dot_file_dir)
 
     # count the components
     return edge_list, components

@@ -97,10 +97,10 @@ class KCC(object):
     :param read_only: Don't write to the database.
     :param verify: Check topological invariants for the generated graphs
     :param debug: Write verbosely to stderr.
-    "param dot_files: write Graphviz files in /tmp showing topology
+    "param dot_file_dir: write diagnostic Graphviz files in this directory
     """
-    def __init__(self, unix_now, readonly=False,verify=False, debug=False,
-                 dot_files=False):
+    def __init__(self, unix_now, readonly=False, verify=False, debug=False,
+                 dot_file_dir=None):
         """Initializes the partitions class which can hold
         our local DCs partitions or all the partitions in
         the forest
@@ -140,7 +140,7 @@ class KCC(object):
         self.readonly = readonly
         self.verify = verify
         self.debug = debug
-        self.dot_files = dot_files
+        self.dot_file_dir = dot_file_dir
 
     def load_all_transports(self):
         """Loads the inter-site transport objects for Sites
@@ -1158,7 +1158,7 @@ class KCC(object):
         g = setup_graph(part, self.site_table, self.transport_table,
                         self.sitelink_table, bridges_required)
 
-        if self.verify or self.dot_files:
+        if self.verify or self.dot_file_dir is not None:
             dot_edges = []
             for edge in g.edges:
                 for a, b in itertools.combinations(edge.vertices, 2):
@@ -1168,7 +1168,7 @@ class KCC(object):
                            label=self.my_dsa_dnstr,
                            properties=verify_properties, debug=DEBUG,
                            verify=self.verify,
-                           dot_files=self.dot_files)
+                           dot_file_dir=self.dot_file_dir)
 
         return g
 
@@ -2238,7 +2238,7 @@ class KCC(object):
         DEBUG('\n'.join(str((x.rep_dsa_guid, x.rep_dsa_dnstr))
                         for x in r_list))
 
-        do_dot_files = self.dot_files and self.debug
+        do_dot_files = self.dot_file_dir is not None and self.debug
         if self.verify or do_dot_files:
             dot_edges = []
             dot_vertices = set()
@@ -2255,7 +2255,8 @@ class KCC(object):
                                                  nc_x.nc_dnstr),
                            properties=verify_properties, debug=DEBUG,
                            verify=self.verify,
-                           dot_files=do_dot_files, directed=True)
+                           dot_file_dir=self.dot_file_dir,
+                           directed=True)
 
         # For each existing nTDSConnection object implying an edge
         # from rj of R to ri such that j != i, an edge from rj to ri
@@ -2333,7 +2334,8 @@ class KCC(object):
                                                  nc_x.nc_dnstr),
                            properties=verify_properties, debug=DEBUG,
                            verify=self.verify,
-                           dot_files=do_dot_files, directed=True)
+                           dot_file_dir=self.dot_file_dir,
+                           directed=True)
 
     def intrasite(self):
         """The head method for generating the intra-site KCC replica
@@ -2457,8 +2459,7 @@ class KCC(object):
 
     def plot_all_connections(self, basename, verify_properties=()):
         verify = verify_properties and self.verify
-        plot = self.dot_files
-        if not (verify or plot):
+        if not verify and self.dot_file_dir is None:
             return
 
         dot_edges = []
@@ -2481,7 +2482,7 @@ class KCC(object):
 
         verify_and_dot(basename, dot_edges, vertices=dot_vertices,
                        label=self.my_dsa_dnstr, properties=verify_properties,
-                       debug=DEBUG, verify=verify, dot_files=plot,
+                       debug=DEBUG, verify=verify, dot_file_dir=self.dot_file_dir,
                        directed=True, edge_colors=edge_colours,
                        vertex_colors=vertex_colours)
 
@@ -2516,7 +2517,7 @@ class KCC(object):
             self.load_all_transports()
             self.load_all_sitelinks()
 
-            if self.verify or self.dot_files:
+            if self.verify or self.dot_file_dir is not None:
                 guid_to_dnstr = {}
                 for site in self.site_table.values():
                     guid_to_dnstr.update((str(dsa.dsa_guid), dnstr)
@@ -2534,7 +2535,7 @@ class KCC(object):
                 verify_and_dot('dsa_repsFrom_initial', dot_edges,
                                directed=True, label=self.my_dsa_dnstr,
                                properties=(), debug=DEBUG, verify=self.verify,
-                               dot_files=self.dot_files)
+                               dot_file_dir=self.dot_file_dir)
 
                 dot_edges = []
                 for site in self.site_table.values():
@@ -2550,7 +2551,7 @@ class KCC(object):
                 verify_and_dot('dsa_repsFrom_initial_all', dot_edges,
                                directed=True, label=self.my_dsa_dnstr,
                                properties=(), debug=DEBUG, verify=self.verify,
-                               dot_files=self.dot_files)
+                               dot_file_dir=self.dot_file_dir)
 
                 dot_edges = []
                 for link in self.sitelink_table.values():
@@ -2561,7 +2562,7 @@ class KCC(object):
                                directed=False,
                                label=self.my_dsa_dnstr, properties=properties,
                                debug=DEBUG, verify=self.verify,
-                               dot_files=self.dot_files)
+                               dot_file_dir=self.dot_file_dir)
 
             if forget_local_links:
                 for dsa in self.my_site.dsa_table.values():
@@ -2615,7 +2616,7 @@ class KCC(object):
             # Step 7
             self.update_rodc_connection()
 
-            if self.verify or self.dot_files:
+            if self.verify or self.dot_file_dir is not None:
                 self.plot_all_connections('dsa_final',
                                           ('connected', 'forest_of_rings'))
 
@@ -2635,7 +2636,7 @@ class KCC(object):
                 verify_and_dot('dsa_repsFrom_final', dot_edges, directed=True,
                                label=self.my_dsa_dnstr,
                                properties=(), debug=DEBUG, verify=self.verify,
-                               dot_files=self.dot_files,
+                               dot_file_dir=self.dot_file_dir,
                                edge_colors=edge_colors)
 
                 dot_edges = []
@@ -2652,7 +2653,7 @@ class KCC(object):
                 verify_and_dot('dsa_repsFrom_final_all', dot_edges,
                                directed=True, label=self.my_dsa_dnstr,
                                properties=(), debug=DEBUG, verify=self.verify,
-                               dot_files=self.dot_files)
+                               dot_file_dir=self.dot_file_dir)
 
         except:
             raise
