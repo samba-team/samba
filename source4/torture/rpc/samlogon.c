@@ -1519,8 +1519,9 @@ bool test_InteractiveLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	torture_comment(tctx, "Testing netr_LogonSamLogonWithFlags '%s' (Interactive Logon)\n", comment);
 
+	status = dcerpc_netr_LogonSamLogonWithFlags_r(b, fn_ctx, &r);
 	torture_assert_ntstatus_ok_goto(tctx,
-		dcerpc_netr_LogonSamLogonWithFlags_r(b, fn_ctx, &r),
+		status,
 		ret, failed,
 		talloc_asprintf(tctx, "%s: netr_LogonSamLogonWithFlags - %s\n",
 			 __location__, nt_errstr(status)));
