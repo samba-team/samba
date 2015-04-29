@@ -2489,9 +2489,19 @@ class KCC(object):
     def run(self, dburl, lp, creds, forced_local_dsa=None,
             forget_local_links=False, forget_intersite_links=False,
             attempt_live_connections=False):
-        """Method to perform a complete run of the KCC and
-        produce an updated topology for subsequent NC replica
-        syncronization between domain controllers
+        """Perform a KCC run, possibly updating repsFrom topology
+
+        :param dburl: url of the database to work with.
+        :param lp: a loadparm object.
+        :param creds: a Credentials object.
+        :param forced_local_dsa: pretend to be on the DSA with this dn_str
+        :param forget_local_links: calculate as if no connections existed
+               (boolean, default False)
+        :param forget_intersite_links: calculate with only intrasite connection
+               (boolean, default False)
+        :param attempt_live_connections: attempt to connect to remote DSAs to
+               determine link availability (boolean, default False)
+        :return: 1 on error, 0 otherwise
         """
         # We may already have a samdb setup if we are
         # currently importing an ldif for a test run
