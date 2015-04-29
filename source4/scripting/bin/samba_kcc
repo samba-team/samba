@@ -2450,6 +2450,12 @@ class KCC(object):
         return dsas
 
     def load_samdb(self, dburl, lp, creds):
+        """Load the database using an url, loadparm, and credentials
+
+        :param dburl: a database url.
+        :param lp: a loadparm object.
+        :param cred: a Credentials object.
+        """
         self.samdb = SamDB(url=dburl,
                            session_info=system_session(),
                            credentials=creds, lp=lp)
