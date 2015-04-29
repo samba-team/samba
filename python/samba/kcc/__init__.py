@@ -2458,6 +2458,11 @@ class KCC(object):
                            credentials=creds, lp=lp)
 
     def plot_all_connections(self, basename, verify_properties=()):
+        """Helper function to plot and verify NTDSConnections
+
+        :param basename: an identifying string to use in filenames and logs.
+        :param verify_properties: properties to verify (default empty)
+        """
         verify = verify_properties and self.verify
         if not verify and self.dot_file_dir is None:
             return
