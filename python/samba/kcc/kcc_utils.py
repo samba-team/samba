@@ -1651,6 +1651,11 @@ class Site(object):
             return True
         return False
 
+    def is_rodc_site(self):
+        if len(self.dsa_table) > 0 and len(self.rw_dsa_table) == 0:
+            return True
+        return False
+
     def __str__(self):
         '''Debug dump string output of class'''
         text = "%s:" % self.__class__.__name__

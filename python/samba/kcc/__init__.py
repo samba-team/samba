@@ -1633,7 +1633,10 @@ class KCC(object):
             bh = self.get_bridgehead(vertex.site, vertex.part, transport,
                                      partial_replica_okay, detect_failed)
             if bh is None:
-                found_failed = True
+                if vertex.site.is_rodc_site():
+                    vertex.accept_red_red.append(t_guid)
+                else:
+                    found_failed = True
                 continue
 
             vertex.accept_red_red.append(t_guid)
