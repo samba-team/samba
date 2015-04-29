@@ -3064,6 +3064,15 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 	if (fsp->fh->fd != -1 && lp_kernel_share_modes(SNUM(conn))) {
 		int ret_flock;
+		/*
+		 * Beware: streams implementing VFS modules may
+		 * implement streams in a way that fsp will have the
+		 * basefile open in the fsp fd, so lacking a distinct
+		 * fd for the stream kernel_flock will apply on the
+		 * basefile which is wrong. The actual check is
+		 * deffered to the VFS module implementing the
+		 * kernel_flock call.
+		 */
 		ret_flock = SMB_VFS_KERNEL_FLOCK(fsp, share_access, access_mask);
 		if(ret_flock == -1 ){
 
