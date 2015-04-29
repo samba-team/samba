@@ -2426,6 +2426,16 @@ class KCC(object):
             mydsa.commit_connections(self.samdb)
 
     def list_dsas(self):
+        """Compile a comprehensive list of DSA DNs
+
+        These are all the DSAs on all the sites that KCC would be
+        dealing with.
+
+        This method is not idempotent and may not work correctly in
+        sequence with KCC.run().
+
+        :return: a list of DSA DN strings.
+        """
         self.load_my_site()
         self.load_my_dsa()
 
