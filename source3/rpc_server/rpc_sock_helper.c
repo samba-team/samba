@@ -138,7 +138,7 @@ NTSTATUS rpc_create_tcpip_sockets(const struct ndr_interface_table *iface,
 			if (bvec != NULL) {
 				status = dcerpc_binding_vector_add_port(iface,
 									bvec,
-									sock_ptr,
+									sock_tok,
 									p);
 				if (!NT_STATUS_IS_OK(status)) {
 					close(fd);
