@@ -134,9 +134,9 @@ static int vfs_gpfs_setlease(vfs_handle_struct *handle, files_struct *fsp,
 		unbecome_root();
 	}
 
+failure:
 	END_PROFILE(syscall_linux_setlease);
 
-failure:
 	return ret;
 }
 
