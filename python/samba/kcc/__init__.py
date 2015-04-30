@@ -1626,11 +1626,6 @@ class KCC(object):
                                % transport.name)
                 continue
 
-            # FLAG_CR_NTDS_DOMAIN 0x00000002
-            if ((vertex.is_red() and transport.name != "IP" and
-                 vertex.part.system_flags & 0x00000002)):
-                continue
-
             if vertex not in graph.connected_vertices:
                 continue
 
