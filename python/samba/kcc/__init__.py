@@ -1644,9 +1644,9 @@ class KCC(object):
             vertex.accept_red_red.append(t_guid)
             vertex.accept_black.append(t_guid)
 
-            # Add additional transport to allow another run of Dijkstra
-            vertex.accept_red_red.append("EDGE_TYPE_ALL")
-            vertex.accept_black.append("EDGE_TYPE_ALL")
+        # Add additional transport to allow another run of Dijkstra
+        vertex.accept_red_red.append("EDGE_TYPE_ALL")
+        vertex.accept_black.append("EDGE_TYPE_ALL")
 
         return found_failed
 
