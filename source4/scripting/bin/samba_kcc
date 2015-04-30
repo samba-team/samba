@@ -282,7 +282,8 @@ if opts.importldif:
         logger.error("Specify a target temp database file with --tmpdb option")
         sys.exit(1)
 
-    rc = kcc.import_ldif(opts.tmpdb, lp, creds, opts.importldif)
+    rc = kcc.import_ldif(opts.tmpdb, lp, creds, opts.importldif,
+                         forced_local_dsa=opts.forced_local_dsa)
     if rc != 0:
         sys.exit(rc)
 
