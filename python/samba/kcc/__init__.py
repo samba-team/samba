@@ -1007,38 +1007,21 @@ class KCC(object):
                     t_repsFrom.to_be_deleted = True
                     continue
 
+                # Find the connection that this repsFrom would use. If
+                # there isn't a good one (i.e. non-RODC_TOPOLOGY,
+                # meaning non-FRS), we delete the repsFrom.
                 s_dnstr = s_dsa.dsa_dnstr
-
-                # Retrieve my DSAs connection object (if it exists)
-                # that specifies the fromServer equivalent to
-                # the DSA that is specified in the repsFrom source
                 connections = current_dsa.get_connection_by_from_dnstr(s_dnstr)
-
-                count = 0
-                cn_conn = None
-
-                for con in connections:
-                    if con.is_rodc_topology():
-                        continue
-                    cn_conn = con
-
-                # Let (cn) be the nTDSConnection object such that (cn)
-                # is a child of the local DC's nTDSDSA object and
-                # (cn!fromServer = s) and (cn!options) does not contain
-                # NTDSCONN_OPT_RODC_TOPOLOGY or NULL if no such (cn) exists.
-
-                # KCC removes this repsFrom tuple if any of the following
-                # is true:
-                #     cn = NULL.
-                #     [...]
-
-                #XXX varying possible interpretations of rodc_topology
-                if cn_conn is None:
+                for cn_conn in connections:
+                    if not cn_conn.is_rodc_topology():
+                        break
+                else:
+                    # no break means no non-rodc_topology connection exists
                     t_repsFrom.to_be_deleted = True
                     continue
 
-                #     [...] KCC removes this repsFrom tuple if:
-                #
+                # KCC removes this repsFrom tuple if any of the following
+                # is true:
                 #     No NC replica of the NC "is present" on DSA that
                 #     would be source of replica
                 #
