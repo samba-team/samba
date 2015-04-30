@@ -336,12 +336,25 @@ a local master browser for workgroup %s and we think we are master. Forcing elec
 				ttl, comment);
 		} else {
 			/* Update the record. */
-			servrec->serv.type = servertype|SV_TYPE_LOCAL_LIST_ONLY;
+			if (servrec->serv.type !=
+					(servertype|SV_TYPE_LOCAL_LIST_ONLY)) {
+				servrec->serv.type =
+					servertype|SV_TYPE_LOCAL_LIST_ONLY;
+				subrec->work_changed = true;
+			}
+			if (!strequal(servrec->serv.comment,comment)) {
+				strlcpy(servrec->serv.comment,
+					comment,
+					sizeof(servrec->serv.comment));
+				subrec->work_changed = true;
+			}
 			update_server_ttl(servrec, ttl);
-			strlcpy(servrec->serv.comment,comment,sizeof(servrec->serv.comment));
 		}
-	
-		set_workgroup_local_master_browser_name( work, server_name );
+
+		if (!strequal(work->local_master_browser_name, server_name)) {
+			set_workgroup_local_master_browser_name( work, server_name );
+			subrec->work_changed = true;
+		}
 	} else {
 		/*
 		 * This server is announcing it is going down. Remove it from the
@@ -353,7 +366,6 @@ a local master browser for workgroup %s and we think we are master. Forcing elec
 		}
 	}
 
-	subrec->work_changed = True;
 done:
 
 	END_PROFILE(local_master_announce);
