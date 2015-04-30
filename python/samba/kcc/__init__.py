@@ -1577,7 +1577,9 @@ class KCC(object):
         return found_failed
 
     def create_connections(self, graph, part, detect_failed):
-        """Construct an NC replica graph for the NC identified by
+        """Create intersite NTDSConnections as needed by a partition
+
+        Construct an NC replica graph for the NC identified by
         the given crossRef, then create any additional nTDSConnection
         objects required.
 
@@ -1590,7 +1592,7 @@ class KCC(object):
         Modifies self.kept_connections by adding any connections
         deemed to be "in use".
 
-        ::returns: (all_connected, found_failed_dc)
+        :return: (all_connected, found_failed_dc)
         (all_connected) True if the resulting NC replica graph
             connects all sites that need to be connected.
         (found_failed_dc) True if one or more failed DCs were
