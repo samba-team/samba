@@ -1,7 +1,7 @@
 <samba:parameter name="cluster addresses"
-	         context="G"
-			 type="list"
-		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+                 context="G"
+                 type="list"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>With this parameter you can add additional addresses
 	nmbd will register with a WINS server. These addresses are not

@@ -1,6 +1,6 @@
 <samba:parameter name="kernel oplocks"
-				 type="boolean"
-		 context="S"
+                 type="boolean"
+                 context="S"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>For UNIXes that support kernel based <smbconfoption name="oplocks"/>

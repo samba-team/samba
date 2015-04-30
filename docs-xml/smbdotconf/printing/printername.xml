@@ -1,6 +1,6 @@
 <samba:parameter name="printer name"
                  context="S"
-		 type="string"
+                 type="string"
                  function="_printername"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
  <synonym>printer</synonym>

@@ -1,6 +1,6 @@
 <samba:parameter name="hide dot files"
                  context="S"
-				 type="boolean"
+                 type="boolean"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This is a boolean parameter that controls whether 

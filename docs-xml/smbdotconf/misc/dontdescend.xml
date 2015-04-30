@@ -1,7 +1,7 @@
 <samba:parameter name="dont descend"
-	         context="S"
-		 type="string"
-		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+                 context="S"
+                 type="string"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>There are certain directories on some systems 
 	(e.g., the <filename moreinfo="none">/proc</filename> tree under Linux) that are either not 

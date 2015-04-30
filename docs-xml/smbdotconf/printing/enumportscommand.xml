@@ -1,6 +1,6 @@
 <samba:parameter name="enumports command"
                  context="G"
-				 type="string"
+                 type="string"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>The concept of a &quot;port&quot; is fairly foreign

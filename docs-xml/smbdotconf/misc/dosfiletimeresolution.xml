@@ -1,7 +1,7 @@
 <samba:parameter name="dos filetime resolution"
-		 context="S"
-		 type="boolean"
-		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+                 context="S"
+                 type="boolean"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>Under the DOS and Windows FAT filesystem, the finest 
 	granularity on time resolution is two seconds. Setting this parameter 

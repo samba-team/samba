@@ -1,7 +1,7 @@
 <samba:parameter name="map archive"
                  context="S"
-				 type="boolean"
-				 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+                 type="boolean"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>
 	This controls whether the DOS archive attribute 

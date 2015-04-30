@@ -1,8 +1,8 @@
 <samba:parameter name="ldap admin dn"
                  context="G"
-				 type="string"
+                 type="string"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
-				 <description>
+<description>
 
 	 <para>
 	The <smbconfoption name="ldap admin dn"/> defines the Distinguished  Name (DN) name used by Samba to contact

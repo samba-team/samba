@@ -1,7 +1,7 @@
 <samba:parameter name="root preexec close"
-		 context="S"
-		 type="boolean"
-		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+                 context="S"
+                 type="boolean"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This is the same as the <parameter moreinfo="none">preexec close
 	</parameter> parameter except that the command is run as root.</para>

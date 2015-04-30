@@ -1,5 +1,5 @@
 <samba:parameter name="locking"
-				 type="boolean"
+                 type="boolean"
                  context="S"
                  parm="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">

@@ -1,7 +1,7 @@
 <samba:parameter name="message command"
-	         context="G"
-			 type="string"
-		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+                 context="G"
+                 type="string"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This specifies what command to run when the 
 	server receives a WinPopup style message.</para>

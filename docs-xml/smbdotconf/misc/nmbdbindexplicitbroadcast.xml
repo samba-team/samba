@@ -1,7 +1,7 @@
 <samba:parameter name="nmbd bind explicit broadcast"
-	         context="G"
-		 type="boolean"
-		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+                 context="G"
+                 type="boolean"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>
 	This option causes <citerefentry><refentrytitle>nmbd</refentrytitle>

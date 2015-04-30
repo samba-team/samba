@@ -1,6 +1,6 @@
 <samba:parameter name="dmapi support"
                  context="S"
-				 type="boolean"
+                 type="boolean"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This parameter specifies whether Samba should use DMAPI to

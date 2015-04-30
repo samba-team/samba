@@ -1,6 +1,6 @@
 <samba:parameter name="show add printer wizard"
                  context="G"
-				 type="boolean"
+                 type="boolean"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>With the introduction of MS-RPC based printing support

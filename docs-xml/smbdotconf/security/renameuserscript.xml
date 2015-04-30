@@ -1,7 +1,7 @@
 <samba:parameter name="rename user script"
                  context="G"
-				 type="string"
-				 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+                 type="string"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>
 	This is the full pathname to a script that will be run as root by <citerefentry><refentrytitle>smbd</refentrytitle>

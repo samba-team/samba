@@ -1,7 +1,7 @@
 <samba:parameter name="NIS homedir"
-	         context="G"
-			 type="boolean"
-		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+                 context="G"
+                 type="boolean"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>Get the home share server from a NIS map. For 
 	UNIX systems that use an automounter, the user's home directory 

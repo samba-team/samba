@@ -1,6 +1,6 @@
 <samba:parameter name="acl check permissions"
                  context="S"
-		 type="boolean"
+                 type="boolean"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>Please note this parameter is now deprecated in Samba 3.6.2 and will be removed

@@ -1,6 +1,6 @@
 <samba:parameter name="kpasswd port"
                  context="G"
-				 type="integer"
+                 type="integer"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>Specifies which ports the Kerberos server should listen on for

@@ -1,7 +1,7 @@
 <samba:parameter name="ldap ssl ads"
-		 context="G"
-		 type="boolean"
-		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+                 context="G"
+                 type="boolean"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This option is used to define whether or not Samba should
 	use SSL when connecting to the ldap server using

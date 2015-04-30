@@ -1,7 +1,7 @@
 <samba:parameter name="reset on zero vc"
-		 context="G"
-		 type="boolean"
-		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+                 context="G"
+                 type="boolean"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>
 	This boolean option controls whether an incoming session setup

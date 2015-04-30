@@ -1,7 +1,7 @@
 <samba:parameter name="enable asu support"
-		 context="G"
-		 type="boolean"
-		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+                 context="G"
+                 type="boolean"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>Hosts running the "Advanced Server for Unix (ASU)" product
     require some special accomodations such as creating a builtin [ADMIN$]

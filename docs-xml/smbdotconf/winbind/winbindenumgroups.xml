@@ -1,6 +1,6 @@
 <samba:parameter name="winbind enum groups"
                  context="G"
-				 type="boolean"
+                 type="boolean"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>On large installations using <citerefentry><refentrytitle>winbindd</refentrytitle>

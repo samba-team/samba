@@ -1,8 +1,8 @@
 <samba:parameter name="fstype"
-	         context="S"
-			 type="string"
+                 context="S"
+                 type="string"
                  constant="1"
-		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>
 	This parameter allows the administrator to configure the string that specifies the type of filesystem a share 

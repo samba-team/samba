@@ -1,6 +1,6 @@
 <samba:parameter name="read only"
                  context="S"
-				 type="boolean"
+                 type="boolean"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <synonym>write ok</synonym>
 <description>

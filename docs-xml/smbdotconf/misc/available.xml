@@ -1,8 +1,8 @@
 <samba:parameter name="available"
-	         context="S"
-		 type="boolean"
+                 context="S"
+                 type="boolean"
                  generated_function="0"
-		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This parameter lets you &quot;turn off&quot; a service. If 
 	<parameter moreinfo="none">available = no</parameter>, then <emphasis>ALL</emphasis> 

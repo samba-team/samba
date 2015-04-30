@@ -1,7 +1,7 @@
 <samba:parameter name="smb encrypt"
                  context="S"
-				 type="enum"
-		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+                 type="enum"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>
 	This parameter controls whether a remote client is allowed or required

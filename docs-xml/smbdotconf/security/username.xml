@@ -1,6 +1,6 @@
 <samba:parameter name="username"
-	context="S"
-	type="string"
+                 context="S"
+                 type="string"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <synonym>user</synonym>
 <synonym>users</synonym>

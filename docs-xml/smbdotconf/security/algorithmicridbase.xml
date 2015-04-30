@@ -1,7 +1,7 @@
 <samba:parameter name="algorithmic rid base"
                  context="G"
-				 type="integer"
-		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+                 type="integer"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>This determines how Samba will use its
     algorithmic mapping from uids/gid to the RIDs needed to construct

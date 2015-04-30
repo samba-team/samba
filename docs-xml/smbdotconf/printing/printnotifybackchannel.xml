@@ -1,7 +1,7 @@
 <samba:parameter name="print notify backchannel"
-		 context="S"
-		 type="boolean"
-		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+                 context="S"
+                 type="boolean"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 <para>Windows print clients can update print queue status by expecting
 	the server to open a backchannel SMB connection to them. Due to

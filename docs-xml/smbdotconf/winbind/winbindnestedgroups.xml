@@ -1,6 +1,6 @@
 <samba:parameter name="winbind nested groups"
                  context="G"
-				 type="boolean"
+                 type="boolean"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>If set to yes, this parameter activates the support for nested

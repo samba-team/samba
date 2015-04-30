@@ -1,7 +1,7 @@
 <samba:parameter name="ldap connection timeout"
-		 context="G"
-			type="integer"
-		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+                 context="G"
+                 type="integer"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>
 	This parameter tells the LDAP library calls which timeout in seconds

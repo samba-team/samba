@@ -1,5 +1,5 @@
 <samba:parameter name="log level"
-				 type="string"
+                 type="string"
                  context="G"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <synonym>debuglevel</synonym>

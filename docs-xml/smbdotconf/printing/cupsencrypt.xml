@@ -1,8 +1,8 @@
 <samba:parameter name="cups encrypt"
-	context="G"
-	type="enum"
+                 context="G"
+                 type="enum"
                  generated_function="0"
-	xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>
 	This parameter is only applicable if <smbconfoption name="printing"/>

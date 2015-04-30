@@ -1,6 +1,6 @@
 <samba:parameter name="time server"
                  context="G"
-				 type="boolean"
+                 type="boolean"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>This parameter determines if <citerefentry><refentrytitle>nmbd</refentrytitle>

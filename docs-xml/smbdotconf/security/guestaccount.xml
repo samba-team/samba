@@ -1,8 +1,8 @@
 <samba:parameter name="guest account"
                  context="G"
-				 type="string"
+                 type="string"
                  constant="1"
-		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>This is a username which will be used for access 
     to services which are specified as <smbconfoption name="guest ok"/> (see below). Whatever privileges this 

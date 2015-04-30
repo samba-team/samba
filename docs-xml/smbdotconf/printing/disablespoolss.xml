@@ -1,6 +1,6 @@
 <samba:parameter name="disable spoolss"
                  context="G"
-				 type="boolean"
+                 type="boolean"
                  function="_disable_spoolss"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>

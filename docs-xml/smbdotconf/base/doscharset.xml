@@ -1,8 +1,8 @@
 <samba:parameter name="dos charset"
-				 type="string"
+                 type="string"
                  context="G"
                  constant="1"
-				 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
         <para>DOS SMB clients assume the server has 
 	the same charset as they do. This option specifies which 

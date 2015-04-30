@@ -1,6 +1,6 @@
 <samba:parameter name="kernel change notify"
                  context="G"
-				 type="boolean"
+                 type="boolean"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This parameter specifies whether Samba should ask the 

@@ -1,8 +1,8 @@
 <samba:parameter name="winbind max domain connections"
-		 context="G"
-		 type="integer"
+                 context="G"
+                 type="integer"
                  generated_function="0"
-		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This parameter specifies the maximum number of simultaneous
 	connections that the <citerefentry><refentrytitle>winbindd</refentrytitle>

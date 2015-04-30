@@ -1,6 +1,6 @@
 <samba:parameter name="max stat cache size"
                  context="G"
-		 type="integer"
+                 type="integer"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This parameter limits the size in memory of any 

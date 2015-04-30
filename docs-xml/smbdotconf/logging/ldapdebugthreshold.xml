@@ -1,7 +1,7 @@
 <samba:parameter name="ldap debug threshold"
-		type="integer"
-		context="G"
-		xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+                 type="integer"
+                 context="G"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>
 		This parameter controls the Samba debug level at which

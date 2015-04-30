@@ -1,6 +1,6 @@
 <samba:parameter name="winbind trusted domains only"
                  context="G"
-		 type="boolean"
+                 type="boolean"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>

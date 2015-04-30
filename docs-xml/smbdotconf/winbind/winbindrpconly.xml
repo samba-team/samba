@@ -1,6 +1,6 @@
 <samba:parameter name="winbind rpc only"
-	context="G"
-	type="boolean"
+                 context="G"
+                 type="boolean"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 

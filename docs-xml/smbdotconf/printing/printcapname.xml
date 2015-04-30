@@ -1,6 +1,6 @@
 <samba:parameter name="printcap name"
-	context="G"
-	type="string"
+                 context="G"
+                 type="string"
                  generated_function="0"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <synonym>printcap</synonym>

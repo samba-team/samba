@@ -1,6 +1,6 @@
 <samba:parameter name="winbind max clients"
                  context="G"
-				 type="integer"
+                 type="integer"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This parameter specifies the maximum number of clients

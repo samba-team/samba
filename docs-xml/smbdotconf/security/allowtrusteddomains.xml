@@ -1,7 +1,7 @@
 <samba:parameter name="allow trusted domains"
                  context="G"
-				 type="boolean"
-		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+                 type="boolean"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>
     This option only takes effect when the <smbconfoption name="security"/> option is set to 

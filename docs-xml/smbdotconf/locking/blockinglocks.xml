@@ -1,6 +1,6 @@
 <samba:parameter name="blocking locks"
                  context="S"
-				 type="boolean"
+                 type="boolean"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This parameter controls the behavior 

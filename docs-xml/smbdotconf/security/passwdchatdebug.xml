@@ -1,6 +1,6 @@
 <samba:parameter name="passwd chat debug"
                  context="G"
-				 type="boolean"
+                 type="boolean"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>This boolean specifies if the passwd chat script 

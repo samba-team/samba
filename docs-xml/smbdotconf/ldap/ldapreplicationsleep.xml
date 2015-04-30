@@ -1,6 +1,6 @@
 <samba:parameter name="ldap replication sleep"
                  context="G"
-				 type="integer"
+                 type="integer"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>

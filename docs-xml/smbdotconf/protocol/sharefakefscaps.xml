@@ -1,6 +1,6 @@
 <samba:parameter name="share:fake_fscaps"
-	context="G"
-	type="string"
+                 context="G"
+                 type="string"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 

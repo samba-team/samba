@@ -1,6 +1,6 @@
 <samba:parameter name="use spnego"
                  context="G"
-				 type="boolean"
+                 type="boolean"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>This deprecated variable controls whether samba will try 

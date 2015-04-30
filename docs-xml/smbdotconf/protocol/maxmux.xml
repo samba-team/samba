@@ -1,6 +1,6 @@
 <samba:parameter name="max mux"
                  context="G"
-				 type="integer"
+                 type="integer"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>This option controls the maximum number of 

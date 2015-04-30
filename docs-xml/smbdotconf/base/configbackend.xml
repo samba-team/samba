@@ -1,6 +1,6 @@
 <samba:parameter name="config backend"
                  context="G"
-				 type="enum"
+                 type="enum"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>

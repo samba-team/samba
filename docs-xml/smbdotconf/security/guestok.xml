@@ -1,7 +1,7 @@
 <samba:parameter name="guest ok"
-				 type="boolean"
+                 type="boolean"
                  context="S"
-				 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <synonym>public</synonym>
 <description>
     <para>If this parameter is <constant>yes</constant> for 

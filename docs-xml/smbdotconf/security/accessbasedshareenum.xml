@@ -1,7 +1,7 @@
 <samba:parameter name="access based share enum"
-		 type="boolean"
+                 type="boolean"
                  context="S"
-		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
  <description>
      <para>If this parameter is <constant>yes</constant> for a
     service, then the share hosted by the service will only be visible

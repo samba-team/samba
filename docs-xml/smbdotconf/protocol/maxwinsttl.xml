@@ -1,5 +1,5 @@
 <samba:parameter name="max wins ttl"
-				 type="integer"
+                 type="integer"
                  context="G"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>

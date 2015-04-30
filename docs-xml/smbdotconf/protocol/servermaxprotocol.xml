@@ -1,7 +1,7 @@
 <samba:parameter name="server max protocol"
-		 context="G"
-		 type="enum"
-		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+                 context="G"
+                 type="enum"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>The value of the parameter (a string) is the highest 
     protocol level that will be supported by the server.</para>

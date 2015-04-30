@@ -1,6 +1,6 @@
 <samba:parameter name="browse list"
                  context="G"
-				 type="boolean"
+                 type="boolean"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This controls whether <citerefentry><refentrytitle>smbd</refentrytitle>

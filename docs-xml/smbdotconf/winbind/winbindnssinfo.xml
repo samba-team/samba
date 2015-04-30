@@ -1,6 +1,6 @@
 <samba:parameter name="winbind nss info"
                  context="G"
-				 type="list"
+                 type="list"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 

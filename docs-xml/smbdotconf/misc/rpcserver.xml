@@ -1,6 +1,6 @@
 <samba:parameter name="rpc_server:SERVER"
                  context="G"
-		 type="string"
+                 type="string"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>

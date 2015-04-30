@@ -1,6 +1,6 @@
 <samba:parameter name="lm interval"
                  context="G"
-				 type="integer"
+                 type="integer"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>If Samba is set to produce Lanman announce 

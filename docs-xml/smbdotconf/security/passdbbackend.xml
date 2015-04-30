@@ -1,8 +1,8 @@
 <samba:parameter name="passdb backend"
                  context="G"
-		 type="string"
+                 type="string"
                  constant="1"
-		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 
     <para>This option allows the administrator to chose which backend

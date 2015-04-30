@@ -1,6 +1,6 @@
 <samba:parameter name="dns proxy"
                  context="G"
-				 type="boolean"
+                 type="boolean"
                  function="wins_dns_proxy"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>

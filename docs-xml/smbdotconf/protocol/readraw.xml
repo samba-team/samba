@@ -1,6 +1,6 @@
 <samba:parameter name="read raw"
                  context="G"
-				 type="boolean"
+                 type="boolean"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>This is ignored if <smbconfoption name="async echo handler"/> is set,

@@ -1,9 +1,9 @@
 <samba:parameter name="idmap gid"
                  context="G"
-		 type="string"
+                 type="string"
                  generated_function="0"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
-		<synonym>winbind gid</synonym>
+<synonym>winbind gid</synonym>
 <description>
 	<para>
 	The idmap gid parameter specifies the range of group ids

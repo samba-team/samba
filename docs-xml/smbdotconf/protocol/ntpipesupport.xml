@@ -1,6 +1,6 @@
 <samba:parameter name="nt pipe support"
                  context="G"
-				 type="boolean"
+                 type="boolean"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>This boolean parameter controls whether 

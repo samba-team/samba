@@ -1,6 +1,6 @@
 <samba:parameter name="ldap delete dn"
                  context="G"
-				 type="boolean"
+                 type="boolean"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para> This parameter specifies whether a delete

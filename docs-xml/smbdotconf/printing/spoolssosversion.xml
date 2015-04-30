@@ -1,7 +1,7 @@
 <samba:parameter name="spoolss: os_major"
-		 context="G"
-		 type="integer"
-		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+                 context="G"
+                 type="integer"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>Windows might require a new os version number. This option allows
 		to modify the build number. The complete default version number is:

@@ -1,7 +1,7 @@
 <samba:parameter name="client plaintext auth"
                  context="G"
-				 type="boolean"
-		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+                 type="boolean"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>Specifies whether a client should send a plaintext 
 		password if the server does not support encrypted passwords.</para>

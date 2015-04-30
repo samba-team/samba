@@ -1,7 +1,7 @@
 <samba:parameter name="log writeable files on exit"
-		 context="G"
-		 type="boolean"
-		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+                 context="G"
+                 type="boolean"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>
 	When the network connection between a CIFS client and Samba

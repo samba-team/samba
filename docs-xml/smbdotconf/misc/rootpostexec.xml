@@ -1,7 +1,7 @@
 <samba:parameter name="root postexec"
-		 context="S"
-		 type="string"
-		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+                 context="S"
+                 type="string"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>
 	This is the same as the <parameter moreinfo="none">postexec</parameter>

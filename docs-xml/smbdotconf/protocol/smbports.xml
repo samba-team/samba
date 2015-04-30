@@ -1,6 +1,7 @@
 <samba:parameter name="smb ports"
                  context="G"
-				 type="list"
+                 type="list"
+                 handler="handle_smb_ports"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>Specifies which ports the server should listen on for SMB traffic.</para>

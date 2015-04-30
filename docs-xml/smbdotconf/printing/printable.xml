@@ -1,6 +1,6 @@
 <samba:parameter name="printable"
                  context="S"
-				 type="boolean"
+                 type="boolean"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <synonym>print ok</synonym>
 <description>

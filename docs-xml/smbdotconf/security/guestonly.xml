@@ -1,6 +1,6 @@
 <samba:parameter name="guest only"
                  context="S"
-				 type="boolean"
+                 type="boolean"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <synonym>only guest</synonym>
 <description>

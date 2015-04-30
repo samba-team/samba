@@ -1,7 +1,7 @@
 <samba:parameter name="logging"
-		 type="string"
-		 context="G"
-		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+                 type="string"
+                 context="G"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 
   <para>This parameter configures logging backends. Multiple

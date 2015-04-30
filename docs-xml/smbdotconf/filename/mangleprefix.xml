@@ -1,6 +1,6 @@
 <samba:parameter name="mangle prefix"
                  context="G"
-				 type="integer"
+                 type="integer"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para> controls the number of prefix

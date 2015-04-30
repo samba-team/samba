@@ -1,8 +1,8 @@
 <samba:parameter name="preexec"
-		 context="S"
-		 type="string"
-		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
- <synonym>exec</synonym>
+                 context="S"
+                 type="string"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<synonym>exec</synonym>
 <description>
 	<para>This option specifies a command to be run whenever 
 	the service is connected to. It takes the usual substitutions.</para>

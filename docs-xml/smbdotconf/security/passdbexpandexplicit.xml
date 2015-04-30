@@ -1,7 +1,7 @@
 <samba:parameter name="passdb expand explicit"
                  context="G"
-				 type="boolean"
-		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+                 type="boolean"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>
 	This parameter controls whether Samba substitutes %-macros in the passdb fields if they are explicitly set. We

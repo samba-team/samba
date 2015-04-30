@@ -1,5 +1,5 @@
 <samba:parameter name="bind interfaces only"
-				type="boolean"
+                 type="boolean"
                  context="G"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>

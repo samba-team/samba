@@ -1,6 +1,6 @@
 <samba:parameter name="client lanman auth"
                  context="G"
-				 type="boolean"
+                 type="boolean"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>This parameter determines whether or not <citerefentry><refentrytitle>smbclient</refentrytitle>

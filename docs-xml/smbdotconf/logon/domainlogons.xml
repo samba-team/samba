@@ -1,6 +1,6 @@
 <samba:parameter name="domain logons"
                  context="G"
-				 type="boolean"
+                 type="boolean"
                  function="_domain_logons"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>

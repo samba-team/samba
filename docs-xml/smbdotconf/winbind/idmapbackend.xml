@@ -1,6 +1,6 @@
 <samba:parameter name="idmap backend"
                  context="G"
-		 type="string"
+                 type="string"
                  generated_function="0"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>

@@ -1,7 +1,7 @@
 <samba:parameter name="lpq cache time"
-		 context="G"
-		 type="integer"
-		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+                 context="G"
+                 type="integer"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This controls how long lpq info will be cached 
 	for to prevent the <command moreinfo="none">lpq</command> command being called too 

@@ -1,7 +1,7 @@
 <samba:parameter name="acl map full control"
-		context="S"
-		type="boolean"
-		xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+                 context="S"
+                 type="boolean"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>
 	This boolean parameter controls whether <citerefentry><refentrytitle>smbd</refentrytitle>

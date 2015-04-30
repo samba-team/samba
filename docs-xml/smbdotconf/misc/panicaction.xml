@@ -1,7 +1,7 @@
 <samba:parameter name="panic action"
-		 context="G"
-		 type="string"
-		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+                 context="G"
+                 type="string"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This is a Samba developer option that allows a 
 	system command to be called when either <citerefentry><refentrytitle>smbd</refentrytitle>

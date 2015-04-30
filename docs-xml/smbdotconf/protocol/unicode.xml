@@ -1,6 +1,6 @@
 <samba:parameter name="unicode"
                  context="G"
-				 type="boolean"
+                 type="boolean"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>Specifies whether the server and client should support unicode.</para>

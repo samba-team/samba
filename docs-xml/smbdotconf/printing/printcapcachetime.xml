@@ -1,6 +1,6 @@
 <samba:parameter name="printcap cache time"
-	context="G"
-	type="integer"
+                 context="G"
+                 type="integer"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>This option specifies the number of seconds before the printing
