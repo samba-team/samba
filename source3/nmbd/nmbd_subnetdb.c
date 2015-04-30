@@ -37,7 +37,7 @@ struct subnet_record *unicast_subnet = NULL;
 struct subnet_record *remote_broadcast_subnet = NULL;
 struct subnet_record *wins_server_subnet = NULL;
 
-extern uint16 samba_nb_type; /* Samba's NetBIOS name type. */
+extern uint16_t samba_nb_type; /* Samba's NetBIOS name type. */
 
 /****************************************************************************
   Add a subnet into the list.

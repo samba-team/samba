@@ -24,7 +24,7 @@
 #include "../librpc/gen_ndr/svcctl.h"
 #include "nmbd/nmbd.h"
 
-extern uint16 samba_nb_type;
+extern uint16_t samba_nb_type;
 
 int workgroup_count = 0; /* unique index key: one for each workgroup */
 

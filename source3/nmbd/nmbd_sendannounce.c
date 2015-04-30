@@ -164,7 +164,7 @@ static void send_local_master_announcement(struct subnet_record *subrec, struct 
                                            struct server_record *servrec)
 {
 	/* Ensure we don't have the prohibited bit set. */
-	uint32 type = servrec->serv.type & ~SV_TYPE_LOCAL_LIST_ONLY;
+	uint32_t type = servrec->serv.type & ~SV_TYPE_LOCAL_LIST_ONLY;
 
 	DEBUG(3,("send_local_master_announcement: type %x for name %s on subnet %s for workgroup %s\n",
 		type, lp_netbios_name(), subrec->subnet_name, work->work_group));
@@ -206,7 +206,7 @@ static void send_host_announcement(struct subnet_record *subrec, struct work_rec
                                    struct server_record *servrec)
 {
 	/* Ensure we don't have the prohibited bits set. */
-	uint32 type = servrec->serv.type & ~SV_TYPE_LOCAL_LIST_ONLY;
+	uint32_t type = servrec->serv.type & ~SV_TYPE_LOCAL_LIST_ONLY;
 
 	DEBUG(3,("send_host_announcement: type %x for host %s on subnet %s for workgroup %s\n",
 		type, servrec->serv.name, subrec->subnet_name, work->work_group));
@@ -229,7 +229,7 @@ static void send_lm_host_announcement(struct subnet_record *subrec, struct work_
                                    struct server_record *servrec, int lm_interval)
 {
 	/* Ensure we don't have the prohibited bits set. */
-	uint32 type = servrec->serv.type & ~SV_TYPE_LOCAL_LIST_ONLY;
+	uint32_t type = servrec->serv.type & ~SV_TYPE_LOCAL_LIST_ONLY;
 
 	DEBUG(3,("send_lm_host_announcement: type %x for host %s on subnet %s for workgroup %s, ttl: %d\n",
 		type, servrec->serv.name, subrec->subnet_name, work->work_group, lm_interval));

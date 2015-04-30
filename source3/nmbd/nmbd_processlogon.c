@@ -32,9 +32,9 @@
 #include "nmbd/nmbd.h"
 
 struct sam_database_info {
-        uint32 index;
-        uint32 serial_lo, serial_hi;
-        uint32 date_lo, date_hi;
+        uint32_t index;
+        uint32_t serial_lo, serial_hi;
+        uint32_t date_lo, date_hi;
 };
 
 /**

@@ -47,7 +47,7 @@ static void register_name_response(struct subnet_record *subrec,
 	struct nmb_name *answer_name = &nmb->answers->rr_name;
 	struct nmb_packet *sent_nmb = &rrec->packet->packet.nmb;
 	int ttl = 0;
-	uint16 nb_flags = 0;
+	uint16_t nb_flags = 0;
 	struct in_addr register_ip;
 	fstring reg_name;
 	
@@ -210,7 +210,7 @@ static void wins_registration_timeout(struct subnet_record *subrec,
 	   failure, and go into our standard name refresh mode. This
 	   copes with all the wins servers being down */
 	if (wins_srv_is_dead(rrec->packet->ip, register_ip)) {
-		uint16 nb_flags = get_nb_flags(sent_nmb->additional->rdata);
+		uint16_t nb_flags = get_nb_flags(sent_nmb->additional->rdata);
 		int ttl = sent_nmb->additional->ttl;
 
 		standard_success_register(subrec, userdata, nmbname, nb_flags, ttl, register_ip);
@@ -261,7 +261,7 @@ static void register_name_timeout_response(struct subnet_record *subrec,
 	bool bcast = sent_nmb->header.nm_flags.bcast;
 	bool success = False;
 	struct nmb_name *question_name = &sent_nmb->question.question_name;
-	uint16 nb_flags = 0;
+	uint16_t nb_flags = 0;
 	int ttl = 0;
 	struct in_addr registered_ip;
 	
@@ -306,7 +306,7 @@ static void register_name_timeout_response(struct subnet_record *subrec,
 ****************************************************************************/
 
 static void multihomed_register_one(struct nmb_name *nmbname,
-				    uint16 nb_flags,
+				    uint16_t nb_flags,
 				    register_name_success_function success_fn,
 				    register_name_fail_function fail_fn,
 				    struct in_addr ip,
@@ -356,7 +356,7 @@ static void wins_next_registration(struct response_record *rrec)
 {
 	struct nmb_packet *sent_nmb = &rrec->packet->packet.nmb;
 	struct nmb_name *nmbname = &sent_nmb->question.question_name;
-	uint16 nb_flags = get_nb_flags(sent_nmb->additional->rdata);
+	uint16_t nb_flags = get_nb_flags(sent_nmb->additional->rdata);
 	struct userdata_struct *userdata = rrec->userdata;
 	const char *tag;
 	struct in_addr last_ip;
@@ -400,7 +400,7 @@ static void wins_next_registration(struct response_record *rrec)
  Try and register one of our names on the unicast subnet - multihomed.
 ****************************************************************************/
 
-static void multihomed_register_name(struct nmb_name *nmbname, uint16 nb_flags,
+static void multihomed_register_name(struct nmb_name *nmbname, uint16_t nb_flags,
 				     register_name_success_function success_fn,
 				     register_name_fail_function fail_fn)
 {
@@ -475,7 +475,7 @@ static void multihomed_register_name(struct nmb_name *nmbname, uint16 nb_flags,
 ****************************************************************************/
 
 void register_name(struct subnet_record *subrec,
-                   const char *name, int type, uint16 nb_flags,
+                   const char *name, int type, uint16_t nb_flags,
                    register_name_success_function success_fn,
                    register_name_fail_function fail_fn,
                    struct userdata_struct *userdata)

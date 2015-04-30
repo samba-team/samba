@@ -52,7 +52,7 @@ static XFILE *fp;
   Note sname and comment are in UNIX codepage format.
   ******************************************************************/
 
-static void callback(const char *sname, uint32 stype, 
+static void callback(const char *sname, uint32_t stype,
                      const char *comment, void *state)
 {
 	x_fprintf(fp,"\"%s\" %08X \"%s\"\n", sname, stype, comment);
@@ -71,7 +71,7 @@ static void sync_child(char *name, int nm_type,
 {
 	fstring unix_workgroup;
 	struct cli_state *cli;
-	uint32 local_type = local ? SV_TYPE_LOCAL_LIST_ONLY : 0;
+	uint32_t local_type = local ? SV_TYPE_LOCAL_LIST_ONLY : 0;
 	struct sockaddr_storage ss;
 	NTSTATUS status;
 
@@ -190,7 +190,7 @@ done:
  **********************************************************************/
 
 static void complete_one(struct sync_record *s,
-			 char *sname, uint32 stype, char *comment)
+			 char *sname, uint32_t stype, char *comment)
 {
 	struct work_record *work;
 	struct server_record *servrec;

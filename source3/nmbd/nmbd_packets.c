@@ -94,12 +94,12 @@ static int find_subnet_mailslot_fd_for_address( struct in_addr local_ip )
 Get/Set problematic nb_flags as network byte order 16 bit int.
 **************************************************************************/
 
-uint16 get_nb_flags(char *buf)
+uint16_t get_nb_flags(char *buf)
 {
-	return ((((uint16)*buf)&0xFFFF) & NB_FLGMSK);
+	return ((((uint16_t)*buf)&0xFFFF) & NB_FLGMSK);
 }
 
-void set_nb_flags(char *buf, uint16 nb_flags)
+void set_nb_flags(char *buf, uint16_t nb_flags)
 {
 	*buf++ = ((nb_flags & NB_FLGMSK) & 0xFF);
 	*buf = '\0';
@@ -145,9 +145,9 @@ static void debug_browse_data(const char *outbuf, int len)
   Generates the unique transaction identifier
 **************************************************************************/
 
-static uint16 name_trn_id=0;
+static uint16_t name_trn_id=0;
 
-static uint16 generate_name_trn_id(void)
+static uint16_t generate_name_trn_id(void)
 {
 	if (!name_trn_id) {
 		name_trn_id = ((unsigned)time(NULL)%(unsigned)0x7FFF) + ((unsigned)getpid()%(unsigned)100);
@@ -242,7 +242,7 @@ static struct packet_struct *create_and_init_netbios_packet(struct nmb_name *nmb
 **************************************************************************/
 
 static bool create_and_init_additional_record(struct packet_struct *packet,
-                                                     uint16 nb_flags,
+                                                     uint16_t nb_flags,
                                                      const struct in_addr *register_ip)
 {
 	struct nmb_packet *nmb = &packet->packet.nmb;
@@ -335,7 +335,7 @@ static bool initiate_name_query_packet_from_wins_server( struct packet_struct *p
 **************************************************************************/
 
 static bool initiate_name_register_packet( struct packet_struct *packet,
-                                    uint16 nb_flags, const struct in_addr *register_ip)
+                                    uint16_t nb_flags, const struct in_addr *register_ip)
 {
 	struct nmb_packet *nmb = &packet->packet.nmb;
 
@@ -359,7 +359,7 @@ static bool initiate_name_register_packet( struct packet_struct *packet,
 **************************************************************************/
 
 static bool initiate_multihomed_name_register_packet(struct packet_struct *packet,
-						     uint16 nb_flags, struct in_addr *register_ip)
+						     uint16_t nb_flags, struct in_addr *register_ip)
 {
 	struct nmb_packet *nmb = &packet->packet.nmb;
 	fstring second_ip_buf;
@@ -387,7 +387,7 @@ for name %s IP %s (bcast=%s) to IP %s\n",
 **************************************************************************/
 
 static bool initiate_name_refresh_packet( struct packet_struct *packet,
-                                   uint16 nb_flags, struct in_addr *refresh_ip)
+                                   uint16_t nb_flags, struct in_addr *refresh_ip)
 {
 	struct nmb_packet *nmb = &packet->packet.nmb;
 
@@ -411,7 +411,7 @@ static bool initiate_name_refresh_packet( struct packet_struct *packet,
 **************************************************************************/
 
 static bool initiate_name_release_packet( struct packet_struct *packet,
-                                   uint16 nb_flags, struct in_addr *release_ip)
+                                   uint16_t nb_flags, struct in_addr *release_ip)
 {
 	struct nmb_packet *nmb = &packet->packet.nmb;
 
@@ -484,7 +484,7 @@ struct response_record *queue_register_name( struct subnet_record *subrec,
                           register_name_fail_function fail_fn,
                           struct userdata_struct *userdata,
                           struct nmb_name *nmbname,
-                          uint16 nb_flags)
+                          uint16_t nb_flags)
 {
 	struct packet_struct *p;
 	struct response_record *rrec;
@@ -535,7 +535,7 @@ struct response_record *queue_register_name( struct subnet_record *subrec,
 void queue_wins_refresh(struct nmb_name *nmbname,
 			response_function resp_fn,
 			timeout_response_function timeout_fn,
-			uint16 nb_flags,
+			uint16_t nb_flags,
 			struct in_addr refresh_ip,
 			const char *tag)
 {
@@ -602,7 +602,7 @@ struct response_record *queue_register_multihomed_name( struct subnet_record *su
 							register_name_fail_function fail_fn,
 							struct userdata_struct *userdata,
 							struct nmb_name *nmbname,
-							uint16 nb_flags,
+							uint16_t nb_flags,
 							struct in_addr register_ip,
 							struct in_addr wins_ip)
 {
@@ -660,7 +660,7 @@ struct response_record *queue_release_name( struct subnet_record *subrec,
 					    release_name_fail_function fail_fn,
 					    struct userdata_struct *userdata,
 					    struct nmb_name *nmbname,
-					    uint16 nb_flags,
+					    uint16_t nb_flags,
 					    struct in_addr release_ip,
 					    struct in_addr dest_ip)
 {

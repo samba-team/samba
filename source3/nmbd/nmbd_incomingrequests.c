@@ -60,7 +60,7 @@ void process_name_release_request(struct subnet_record *subrec,
 	struct nmb_name *question = &nmb->question.question_name;
 	unstring qname;
 	bool bcast = nmb->header.nm_flags.bcast;
-	uint16 nb_flags = get_nb_flags(nmb->additional->rdata);
+	uint16_t nb_flags = get_nb_flags(nmb->additional->rdata);
 	bool group = (nb_flags & NB_GROUP) ? True : False;
 	struct name_record *namerec;
 	int rcode = 0;
@@ -192,7 +192,7 @@ void process_name_registration_request(struct subnet_record *subrec,
 	struct nmb_packet *nmb = &p->packet.nmb;
 	struct nmb_name *question = &nmb->question.question_name;
 	bool bcast = nmb->header.nm_flags.bcast;
-	uint16 nb_flags = get_nb_flags(nmb->additional->rdata);
+	uint16_t nb_flags = get_nb_flags(nmb->additional->rdata);
 	bool group = (nb_flags & NB_GROUP) ? True : False;
 	struct name_record *namerec = NULL;
 	int ttl = nmb->additional->ttl;

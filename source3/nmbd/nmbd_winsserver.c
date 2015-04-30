@@ -81,13 +81,13 @@ static void wins_delete_all_1b_in_memory_records(void)
 static struct name_record *wins_record_to_name_record(TDB_DATA key, TDB_DATA data)
 {
 	struct name_record *namerec = NULL;
-	uint16 nb_flags;
+	uint16_t nb_flags;
 	unsigned char nr_src;
-	uint32 death_time, refresh_time;
-	uint32 id_low, id_high;
-	uint32 saddr;
-	uint32 wins_flags;
-	uint32 num_ips;
+	uint32_t death_time, refresh_time;
+	uint32_t id_low, id_high;
+	uint32_t saddr;
+	uint32_t wins_flags;
+	uint32_t num_ips;
 	size_t len;
 	int i;
 
@@ -167,15 +167,15 @@ static TDB_DATA name_record_to_wins_record(const struct name_record *namerec)
 	TDB_DATA data;
 	size_t len = 0;
 	int i;
-	uint32 id_low = (namerec->data.id & 0xFFFFFFFF);
-	uint32 id_high = (namerec->data.id >> 32) & 0xFFFFFFFF;
+	uint32_t id_low = (namerec->data.id & 0xFFFFFFFF);
+	uint32_t id_high = (namerec->data.id >> 32) & 0xFFFFFFFF;
 
 	ZERO_STRUCT(data);
 
 	len = (2 + 1 + (7*4)); /* "wbddddddd" */
 	len += (namerec->data.num_ips * 4);
 
-	data.dptr = (uint8 *)SMB_MALLOC(len);
+	data.dptr = (uint8_t *)SMB_MALLOC(len);
 	if (!data.dptr) {
 		return data;
 	}
@@ -184,13 +184,13 @@ static TDB_DATA name_record_to_wins_record(const struct name_record *namerec)
 	len = tdb_pack(data.dptr, data.dsize, "wbddddddd",
                         namerec->data.nb_flags,
                         (unsigned char)namerec->data.source,
-                        (uint32)namerec->data.death_time,
-                        (uint32)namerec->data.refresh_time,
+                        (uint32_t)namerec->data.death_time,
+                        (uint32_t)namerec->data.refresh_time,
                         id_low,
                         id_high,
-                        (uint32)namerec->data.wins_ip.s_addr,
-                        (uint32)namerec->data.wins_flags,
-                        (uint32)namerec->data.num_ips );
+                        (uint32_t)namerec->data.wins_ip.s_addr,
+                        (uint32_t)namerec->data.wins_flags,
+                        (uint32_t)namerec->data.num_ips );
 
 	for (i = 0; i < namerec->data.num_ips; i++) {
 		SIVAL(data.dptr, len + (i*4), namerec->data.ip[i].s_addr);
@@ -213,7 +213,7 @@ static TDB_DATA name_to_key(const struct nmb_name *nmbname)
 	pull_ascii_nstring(keydata, sizeof(unstring), nmbname->name);
 	(void)strupper_m(keydata);
 	keydata[sizeof(unstring)] = nmbname->name_type;
-	key.dptr = (uint8 *)keydata;
+	key.dptr = (uint8_t *)keydata;
 	key.dsize = sizeof(keydata);
 
 	return key;
@@ -862,7 +862,7 @@ void wins_process_name_refresh_request( struct subnet_record *subrec,
 	struct nmb_packet *nmb = &p->packet.nmb;
 	struct nmb_name *question = &nmb->question.question_name;
 	bool bcast = nmb->header.nm_flags.bcast;
-	uint16 nb_flags = get_nb_flags(nmb->additional->rdata);
+	uint16_t nb_flags = get_nb_flags(nmb->additional->rdata);
 	bool group = (nb_flags & NB_GROUP) ? True : False;
 	struct name_record *namerec = NULL;
 	int ttl = get_ttl_from_packet(nmb);
@@ -1169,7 +1169,7 @@ void wins_process_name_registration_request(struct subnet_record *subrec,
 	struct nmb_packet *nmb = &p->packet.nmb;
 	struct nmb_name *question = &nmb->question.question_name;
 	bool bcast = nmb->header.nm_flags.bcast;
-	uint16 nb_flags = get_nb_flags(nmb->additional->rdata);
+	uint16_t nb_flags = get_nb_flags(nmb->additional->rdata);
 	int ttl = get_ttl_from_packet(nmb);
 	struct name_record *namerec = NULL;
 	struct in_addr from_ip;
@@ -1619,7 +1619,7 @@ void wins_process_multihomed_name_registration_request( struct subnet_record *su
 	struct nmb_packet *nmb = &p->packet.nmb;
 	struct nmb_name *question = &nmb->question.question_name;
 	bool bcast = nmb->header.nm_flags.bcast;
-	uint16 nb_flags = get_nb_flags(nmb->additional->rdata);
+	uint16_t nb_flags = get_nb_flags(nmb->additional->rdata);
 	int ttl = get_ttl_from_packet(nmb);
 	struct name_record *namerec = NULL;
 	struct in_addr from_ip;
@@ -2147,7 +2147,7 @@ void wins_process_name_release_request(struct subnet_record *subrec,
 	struct nmb_packet *nmb = &p->packet.nmb;
 	struct nmb_name *question = &nmb->question.question_name;
 	bool bcast = nmb->header.nm_flags.bcast;
-	uint16 nb_flags = get_nb_flags(nmb->additional->rdata);
+	uint16_t nb_flags = get_nb_flags(nmb->additional->rdata);
 	struct name_record *namerec = NULL;
 	struct in_addr from_ip;
 	bool releasing_group_name = (nb_flags & NB_GROUP) ? True : False;

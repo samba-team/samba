@@ -169,7 +169,7 @@ struct response_record *make_response_record( struct subnet_record *subrec,
   **************************************************************************/
 
 static struct response_record *find_response_record_on_subnet(
-                                struct subnet_record *subrec, uint16 id)
+                                struct subnet_record *subrec, uint16_t id)
 {  
 	struct response_record *rrec = NULL;
 
@@ -188,7 +188,7 @@ static struct response_record *find_response_record_on_subnet(
   **************************************************************************/
 
 struct response_record *find_response_record(struct subnet_record **ppsubrec,
-				uint16 id)
+				uint16_t id)
 {  
 	struct response_record *rrec = NULL;
 

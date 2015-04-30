@@ -24,7 +24,7 @@
 #include "nmbd/nmbd.h"
 #include "../librpc/gen_ndr/svcctl.h"
 
-extern uint16 samba_nb_type; /* Samba's NetBIOS name type. */
+extern uint16_t samba_nb_type; /* Samba's NetBIOS name type. */
 
 /*******************************************************************
  Utility function to add a name to the unicast subnet, or add in
@@ -32,7 +32,7 @@ extern uint16 samba_nb_type; /* Samba's NetBIOS name type. */
 ******************************************************************/
 
 void insert_permanent_name_into_unicast( struct subnet_record *subrec, 
-                                                struct nmb_name *nmbname, uint16 nb_type )
+                                                struct nmb_name *nmbname, uint16_t nb_type )
 {
 	unstring name;
 	struct name_record *namerec;
@@ -324,7 +324,7 @@ in workgroup %s on subnet %s\n",
 static void become_local_master_stage2(struct subnet_record *subrec,
                                         struct userdata_struct *userdata,
                                         struct nmb_name *registered_name,
-                                        uint16 nb_flags,
+                                        uint16_t nb_flags,
                                         int ttl, struct in_addr registered_ip)
 {
 	int i = 0;
@@ -437,7 +437,7 @@ workgroup %s on subnet %s\n", failname, subrec->subnet_name));
 static void become_local_master_stage1(struct subnet_record *subrec,
                                         struct userdata_struct *userdata,
                                         struct nmb_name *registered_name,
-                                        uint16 nb_flags,
+                                        uint16_t nb_flags,
                                         int ttl, struct in_addr registered_ip)
 {
 	char *work_name = userdata->data;

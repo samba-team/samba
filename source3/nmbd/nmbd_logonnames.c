@@ -24,7 +24,7 @@
 #include "../librpc/gen_ndr/svcctl.h"
 #include "nmbd/nmbd.h"
 
-extern uint16 samba_nb_type; /* Samba's NetBIOS type. */
+extern uint16_t samba_nb_type; /* Samba's NetBIOS type. */
 
 /****************************************************************************
   Fail to become a Logon server on a subnet.
@@ -72,7 +72,7 @@ workgroup %s on subnet %s. Couldn't register name %s.\n",
 static void become_logon_server_success(struct subnet_record *subrec,
                                         struct userdata_struct *userdata,
                                         struct nmb_name *registered_name,
-                                        uint16 nb_flags,
+                                        uint16_t nb_flags,
                                         int ttl, struct in_addr registered_ip)
 {
 	unstring reg_name;

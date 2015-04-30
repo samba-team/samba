@@ -202,7 +202,7 @@ static void domain_master_node_status_success(struct subnet_record *subrec,
 
 		while (numnames--) {
 			unstring qname;
-			uint16 nb_flags;
+			uint16_t nb_flags;
 			int name_type;
 
 			pull_ascii_nstring(qname, sizeof(qname), p);
@@ -424,7 +424,7 @@ static void get_domain_master_name_node_status_success(struct subnet_record *sub
 
 		while (numnames--) {
 			unstring qname;
-			uint16 nb_flags;
+			uint16_t nb_flags;
 			int name_type;
 
 			pull_ascii_nstring(qname, sizeof(qname), p);

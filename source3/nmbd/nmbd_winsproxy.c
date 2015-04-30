@@ -34,7 +34,7 @@ static void wins_proxy_name_query_request_success( struct subnet_record *subrec,
 	struct packet_struct *original_packet;
 	struct subnet_record *orig_broadcast_subnet;
 	struct name_record *namerec = NULL;
-	uint16 nb_flags;
+	uint16_t nb_flags;
 	int num_ips;
 	int i;
 	int ttl = 3600; /* By default one hour in the cache. */

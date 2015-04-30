@@ -99,7 +99,7 @@ void process_host_announce(struct subnet_record *subrec, struct packet_struct *p
 	struct dgram_packet *dgram = &p->packet.dgram;
 	int ttl = IVAL(buf,1)/1000;
 	unstring announce_name;
-	uint32 servertype = IVAL(buf,23);
+	uint32_t servertype = IVAL(buf,23);
 	fstring comment;
 	struct work_record *work;
 	struct server_record *servrec;
@@ -197,7 +197,7 @@ void process_workgroup_announce(struct subnet_record *subrec, struct packet_stru
 	int ttl = IVAL(buf,1)/1000;
 	unstring workgroup_announce_name;
 	unstring master_name;
-	uint32 servertype = IVAL(buf,23);
+	uint32_t servertype = IVAL(buf,23);
 	struct work_record *work;
 	unstring source_name;
 	unstring dest_name;
@@ -250,7 +250,7 @@ void process_local_master_announce(struct subnet_record *subrec, struct packet_s
 	struct dgram_packet *dgram = &p->packet.dgram;
 	int ttl = IVAL(buf,1)/1000;
 	unstring server_name;
-	uint32 servertype = IVAL(buf,23);
+	uint32_t servertype = IVAL(buf,23);
 	fstring comment;
 	unstring work_name;
 	struct work_record *work = NULL;
@@ -408,7 +408,7 @@ done:
 void process_lm_host_announce(struct subnet_record *subrec, struct packet_struct *p, const char *buf, int len)
 {
 	struct dgram_packet *dgram = &p->packet.dgram;
-	uint32 servertype = IVAL(buf,1);
+	uint32_t servertype = IVAL(buf,1);
 	int osmajor=CVAL(buf,5);           /* major version of node software */
 	int osminor=CVAL(buf,6);           /* minor version of node software */
 	int ttl = SVAL(buf,7);
@@ -526,7 +526,7 @@ static void send_backup_list_response(struct subnet_record *subrec,
 				      struct work_record *work,
 				      struct nmb_name *send_to_name,
 				      unsigned char max_number_requested,
-				      uint32 token, struct in_addr sendto_ip,
+				      uint32_t token, struct in_addr sendto_ip,
 				      int port)
 {
 	char outbuf[1024];
@@ -634,7 +634,7 @@ void process_get_backup_list_request(struct subnet_record *subrec,
 	struct dgram_packet *dgram = &p->packet.dgram;
 	struct work_record *work;
 	unsigned char max_number_requested = CVAL(buf,0);
-	uint32 token = IVAL(buf,1); /* Sender's key index for the workgroup. */
+	uint32_t token = IVAL(buf,1); /* Sender's key index for the workgroup. */
 	int name_type = dgram->dest_name.name_type;
 	unstring workgroup_name;
 	struct subnet_record *search_subrec = subrec;
