@@ -1,4 +1,4 @@
-# Unix SMB/CIFS implementation. Tests for graph_utils.py routines
+# Unix SMB/CIFS implementation. Tests for kcc.graph_utils routines
 # Copyright (C) Andrew Bartlett 2015
 #
 # Written by Douglas Bagnall <douglas.bagnall@catalyst.net.nz>
@@ -17,11 +17,11 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-"""Tests for samba.graph_utils"""
+"""Tests for samba.kcc.graph_utils"""
 
 import samba
 import samba.tests
-from samba.graph_utils import *
+from samba.kcc.graph_utils import *
 
 import itertools
 

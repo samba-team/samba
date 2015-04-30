@@ -23,9 +23,10 @@ import samba
 import os
 from tempfile import mkdtemp
 import time
+import shutil
 
 import samba.tests
-from samba.kcc import ldif_import_export
+from samba.kcc import ldif_import_export, KCC
 from samba import ldb
 from samba.dcerpc import misc
 
@@ -82,7 +83,8 @@ class LdifUtilTests(samba.tests.TestCase):
 
     def test_ldif_to_samdb(self):
         dburl = os.path.join(self.tmpdir, "ldap")
-        samdb = ldif_utils.ldif_to_samdb(dburl, self.lp, MULTISITE_LDIF)
+        samdb = ldif_import_export.ldif_to_samdb(dburl, self.lp,
+                                                 MULTISITE_LDIF)
         self.assertIsInstance(samdb, SamDB)
 
         dsa = ("CN=WIN01,CN=Servers,CN=Default-First-Site-Name,CN=Sites,"
@@ -104,8 +106,9 @@ class LdifUtilTests(samba.tests.TestCase):
         for dsa, site in MULTISITE_LDIF_DSAS:
             dburl = os.path.join(self.tmpdir, "ldif-to-samba-forced-local-dsa"
                                  "-%s" % dsa)
-            samdb = ldif_utils.ldif_to_samdb(dburl, self.lp, MULTISITE_LDIF,
-                                             forced_local_dsa=dsa)
+            samdb = ldif_import_export.ldif_to_samdb(dburl, self.lp,
+                                                     MULTISITE_LDIF,
+                                                     forced_local_dsa=dsa)
             self.assertIsInstance(samdb, SamDB)
             self.assertEqual(samdb.server_site_name(), site)
 
@@ -142,39 +145,26 @@ class KCCMultisiteLdifTests(samba.tests.TestCase):
     def _get_kcc(self, name, readonly=False, verify=False, dot_file_dir=None):
         # Note that setting read-only to False won't affect the ldif,
         # only the temporary database that is created from it.
-        my_kcc = kcc.KCC(unix_now, readonly=readonly, verify=verify,
-                         dot_file_dir=dot_file_dir)
+        my_kcc = KCC(unix_now, readonly=readonly, verify=verify,
+                     dot_file_dir=dot_file_dir)
         tmpdb = os.path.join(self.tmpdir, 'tmpdb')
         my_kcc.import_ldif(tmpdb, self.lp, self.creds, MULTISITE_LDIF)
         return my_kcc
 
     def test_list_dsas(self):
-        my_kcc = _get_kcc('test-list')
+        my_kcc = self._get_kcc('test-list')
         dsas = set(my_kcc.list_dsas())
         expected_dsas = set(x[0] for x in MULTISITE_LDIF_DSAS)
         self.assertEqual(dsas, expected_dsas)
-
-        env = os.environ['TEST_ENV']
-        for expected_dsa in ENV_DSAS[env]:
-            self.assertIn(expected_dsa, dsas)
 
     def test_verify(self):
         """Check that the KCC generates graphs that pass its own verify
         option.
         """
-        my_kcc = _get_kcc('test-list')
+        my_kcc = self._get_kcc('test-list', verify=True)
+        tmpdb = os.path.join(self.tmpdir, 'verify-tmpdb')
+        my_kcc.import_ldif(tmpdb, self.lp, self.creds, MULTISITE_LDIF)
 
-        self.kcc = kcc.KCC(unix_now, readonly=False, ver)
-        self.kcc.import_ldif(self.tmpdb, self.lp, self.creds, MULTISITE_LDIF)
-
-
-        if opts.tmpdb is None or opts.tmpdb.startswith('ldap'):
-
-        if opts.tmpdb is None or opts.tmpdb.startswith('ldap'):
-
-        my_kcc = kcc.KCC(unix_now, readonly=True, verify=True,
-                         debug=False, dot_file_dir=None)
-
-        my_kcc.run("ldap://%s" % os.environ["SERVER"],
+        my_kcc.run("ldap://%s" % tmpdb,
                    self.lp, self.creds,
                    attempt_live_connections=False)
