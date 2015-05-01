@@ -2633,8 +2633,7 @@ class KCC(object):
         return 0
 
     def export_ldif(self, dburl, lp, creds, ldif_file):
-        """Routine to extract all objects and attributes that are relevent
-        to the KCC algorithms from a DC database.
+        """Save KCC relevant details to an ldif file
 
         The point of this function is to allow a programmer/debugger to
         extract an LDIF file with non-security relevent information from
@@ -2645,7 +2644,10 @@ class KCC(object):
         is computationally the same between different OSes and algorithms.
 
         :param dburl: LDAP database URL to extract info from
+        :param lp: a loadparm object.
+        :param cred: a Credentials object.
         :param ldif_file: output LDIF file name to create
+        :return: zero on success, 1 on error
         """
         try:
             ldif_import_export.samdb_to_ldif_file(self.samdb, dburl, lp, creds,
