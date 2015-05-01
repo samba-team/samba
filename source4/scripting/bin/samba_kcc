@@ -120,7 +120,7 @@ class KCC(object):
             transport.load_transport(self.samdb)
 
             # already loaded
-            if str(transport.guid) in self.transport_table.keys():
+            if str(transport.guid) in self.transport_table:
                 continue
 
             # Assign this transport to table
@@ -144,7 +144,7 @@ class KCC(object):
             dnstr = str(msg.dn)
 
             # already loaded
-            if dnstr in self.sitelink_table.keys():
+            if dnstr in self.sitelink_table:
                 continue
 
             sitelink = SiteLink(dnstr)
@@ -191,7 +191,7 @@ class KCC(object):
             site.load_site(self.samdb)
 
             # already loaded
-            if str(site.site_guid) in self.site_table.keys():
+            if str(site.site_guid) in self.site_table:
                 continue
 
             self.site_table[str(site.site_guid)] = site
@@ -256,7 +256,7 @@ class KCC(object):
             partstr = str(msg.dn)
 
             # already loaded
-            if partstr in self.part_table.keys():
+            if partstr in self.part_table:
                 continue
 
             part = Partition(partstr)
@@ -377,7 +377,7 @@ class KCC(object):
                 else:
                     cn_conn.load_connection(self.samdb)
 
-        for cn_dnstr, cn_conn in mydsa.connect_table.items():
+        for cn_conn in mydsa.connect_table.values():
 
             s_dnstr = cn_conn.get_from_dnstr()
             if s_dnstr is None:
@@ -426,7 +426,7 @@ class KCC(object):
                 # fulfills the previous criteria
                 lesser = False
 
-                for cn2_dnstr, cn2_conn in mydsa.connect_table.items():
+                for cn2_conn in mydsa.connect_table.values():
                     if cn2_conn is cn_conn:
                         continue
 
@@ -501,7 +501,7 @@ class KCC(object):
 
 
         if mydsa.is_ro() or opts.readonly:
-            for dnstr, connect in mydsa.connect_table.items():
+            for connect in mydsa.connect_table.values():
                 if connect.to_be_deleted:
                     DEBUG_GREEN("TO BE DELETED:\n%s" % connect)
                 if connect.to_be_added:
@@ -745,7 +745,7 @@ class KCC(object):
 
             # We have a transport type but its not an
             # object in the database
-            if cn_conn.transport_guid not in self.transport_table.keys():
+            if cn_conn.transport_guid not in self.transport_table:
                 raise Exception("Missing inter-site transport - (%s)" %
                                 cn_conn.transport_dnstr)
 
@@ -914,7 +914,7 @@ class KCC(object):
         # Now perform the scan of replicas we'll need
         # and compare any current repsFrom against the
         # connections
-        for dnstr, n_rep in needed_rep_table.items():
+        for n_rep in needed_rep_table.values():
 
             # load any repsFrom and fsmo roles as we'll
             # need them during connection translation
@@ -976,7 +976,7 @@ class KCC(object):
             # Loop thru connections and add implied repsFrom tuples
             # for each NTDSConnection under our local DSA if the
             # repsFrom is not already present
-            for cn_dnstr, cn_conn in self.my_dsa.connect_table.items():
+            for cn_conn in self.my_dsa.connect_table.values():
 
                 implied, s_dsa = self.is_repsFrom_implied(n_rep, cn_conn)
                 if not implied:
@@ -2291,7 +2291,7 @@ class KCC(object):
         # to ri is less than n+2, the KCC adds that edge to the graph.
         for vertex in graph_list:
             dsa = self.my_site.dsa_table[vertex.dsa_dnstr]
-            for dnstr, connect in dsa.connect_table.items():
+            for connect in dsa.connect_table.values():
                 remote = connect.from_dnstr
                 if remote in self.my_site.dsa_table:
                     vertex.add_edge_from(remote)

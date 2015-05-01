@@ -698,7 +698,7 @@ class DirectoryServiceAgent(object):
             dnstr = str(msg.dn)
 
             # already loaded
-            if dnstr in self.connect_table.keys():
+            if dnstr in self.connect_table:
                 continue
 
             connect = NTDSConnection(dnstr)
@@ -737,7 +737,7 @@ class DirectoryServiceAgent(object):
 
 
     def add_connection(self, dnstr, connect):
-        assert dnstr not in self.connect_table.keys()
+        assert dnstr not in self.connect_table
         self.connect_table[dnstr] = connect
 
     def get_connection_by_from_dnstr(self, from_dnstr):
@@ -747,7 +747,8 @@ class DirectoryServiceAgent(object):
 
         :param from_dnstr: search for this from server entry
         """
-        for dnstr, connect in self.connect_table.items():
+        #XXX is this connection always unique?
+        for connect in self.connect_table.values():
             if connect.get_from_dnstr() == from_dnstr:
                 return connect
         return None
@@ -1464,7 +1465,7 @@ class Site(object):
 
         :return: None if DSA doesn't exist
         """
-        if dnstr in self.dsa_table.keys():
+        if dnstr in self.dsa_table:
             return self.dsa_table[dnstr]
         return None
 
@@ -1743,7 +1744,7 @@ class GraphNode(object):
 
         :param dsa: dsa with a dnstr equivalent to his graph node
         """
-        for dnstr, connect in dsa.connect_table.items():
+        for connect in dsa.connect_table.values():
             self.add_edge_from(connect.from_dnstr)
 
 
