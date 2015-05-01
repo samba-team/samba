@@ -759,97 +759,25 @@ class KCC(object):
         #
         nastr = "%s._msdcs.%s" % (s_dsa.dsa_guid, self.samdb.forest_dns_name())
 
-        # We're not currently supporting SMTP replication
-        # so is_smtp_replication_available() is currently
-        # always returning False
-        if ((same_site or
-             cn_conn.transport_dnstr is None or
-             cn_conn.transport_dnstr.find("CN=IP") == 0 or
-             not is_smtp_replication_available())):
+        if ((t_repsFrom.replica_flags &
+             drsuapi.DRSUAPI_DRS_MAIL_REP) != 0x0):
+            t_repsFrom.replica_flags &= ~drsuapi.DRSUAPI_DRS_MAIL_REP
 
-            if ((t_repsFrom.replica_flags &
-                 drsuapi.DRSUAPI_DRS_MAIL_REP) != 0x0):
-                t_repsFrom.replica_flags &= ~drsuapi.DRSUAPI_DRS_MAIL_REP
+        t_repsFrom.transport_guid = misc.GUID()
 
-            t_repsFrom.transport_guid = misc.GUID()
+        # See (NOTE MS-TECH INCORRECT) above
 
-            # See (NOTE MS-TECH INCORRECT) above
-            if t_repsFrom.version == 0x1:
-                if t_repsFrom.dns_name1 is None or \
-                   t_repsFrom.dns_name1 != nastr:
-                    t_repsFrom.dns_name1 = nastr
-            else:
-                if t_repsFrom.dns_name1 is None or \
-                   t_repsFrom.dns_name2 is None or \
-                   t_repsFrom.dns_name1 != nastr or \
-                   t_repsFrom.dns_name2 != nastr:
-                    t_repsFrom.dns_name1 = nastr
-                    t_repsFrom.dns_name2 = nastr
+        # XXX it looks like these conditionals are pointless, because
+        # the state will end up as `t_repsFrom.dns_name1 == nastr` in
+        # either case, BUT the repsFrom thing is magic and assigning
+        # to it alters some flags. So we try not to update it unless
+        # necessary.
+        if t_repsFrom.dns_name1 != nastr:
+            t_repsFrom.dns_name1 = nastr
 
-        else:
-            # XXX This entire branch is NEVER used! Because we don't do SMTP!
-            # (see the if condition above). Just close your eyes here.
-            if ((t_repsFrom.replica_flags &
-                 drsuapi.DRSUAPI_DRS_MAIL_REP) == 0x0):
-                t_repsFrom.replica_flags |= drsuapi.DRSUAPI_DRS_MAIL_REP
+        if t_repsFrom.version > 0x1 and t_repsFrom.dns_name2 != nastr:
+            t_repsFrom.dns_name2 = nastr
 
-            # We have a transport type but its not an
-            # object in the database
-            if cn_conn.transport_guid not in self.transport_table:
-                raise KCCError("Missing inter-site transport - (%s)" %
-                               cn_conn.transport_dnstr)
-
-            x_transport = self.transport_table[str(cn_conn.transport_guid)]
-
-            if t_repsFrom.transport_guid != x_transport.guid:
-                t_repsFrom.transport_guid = x_transport.guid
-
-            # See (NOTE MS-TECH INCORRECT) above
-            if x_transport.address_attr == "dNSHostName":
-
-                if t_repsFrom.version == 0x1:
-                    if t_repsFrom.dns_name1 is None or \
-                       t_repsFrom.dns_name1 != nastr:
-                        t_repsFrom.dns_name1 = nastr
-                else:
-                    if t_repsFrom.dns_name1 is None or \
-                       t_repsFrom.dns_name2 is None or \
-                       t_repsFrom.dns_name1 != nastr or \
-                       t_repsFrom.dns_name2 != nastr:
-                        t_repsFrom.dns_name1 = nastr
-                        t_repsFrom.dns_name2 = nastr
-
-            else:
-                # MS tech specification says we retrieve the named
-                # attribute in "transportAddressAttribute" from the parent of
-                # the DSA object
-                try:
-                    pdnstr = s_dsa.get_parent_dnstr()
-                    attrs = [x_transport.address_attr]
-
-                    res = self.samdb.search(base=pdnstr, scope=ldb.SCOPE_BASE,
-                                            attrs=attrs)
-                except ldb.LdbError, (enum, estr):
-                    raise KCCError(
-                        "Unable to find attr (%s) for (%s) - (%s)" %
-                        (x_transport.address_attr, pdnstr, estr))
-
-                msg = res[0]
-                nastr = str(msg[x_transport.address_attr][0])
-
-                # See (NOTE MS-TECH INCORRECT) above
-                if t_repsFrom.version == 0x1:
-                    if t_repsFrom.dns_name1 is None or \
-                       t_repsFrom.dns_name1 != nastr:
-                        t_repsFrom.dns_name1 = nastr
-                else:
-                    if t_repsFrom.dns_name1 is None or \
-                       t_repsFrom.dns_name2 is None or \
-                       t_repsFrom.dns_name1 != nastr or \
-                       t_repsFrom.dns_name2 != nastr:
-
-                        t_repsFrom.dns_name1 = nastr
-                        t_repsFrom.dns_name2 = nastr
 
         if t_repsFrom.is_modified():
             DEBUG_FN("modify_repsFrom(): %s" % t_repsFrom)
