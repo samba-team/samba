@@ -379,7 +379,21 @@ static void smbd_notify_cancel_by_map(struct notify_mid_map *map)
 {
 	struct smb_request *smbreq = map->req->req;
 	struct smbd_server_connection *sconn = smbreq->sconn;
+	struct smbd_smb2_request *smb2req = smbreq->smb2req;
 	NTSTATUS notify_status = NT_STATUS_CANCELLED;
+
+	if (smb2req != NULL) {
+		if (smb2req->session == NULL) {
+			notify_status = STATUS_NOTIFY_CLEANUP;
+		} else if (!NT_STATUS_IS_OK(smb2req->session->status)) {
+			notify_status = STATUS_NOTIFY_CLEANUP;
+		}
+		if (smb2req->tcon == NULL) {
+			notify_status = STATUS_NOTIFY_CLEANUP;
+		} else if (!NT_STATUS_IS_OK(smb2req->tcon->status)) {
+			notify_status = STATUS_NOTIFY_CLEANUP;
+		}
+	}
 
 	change_notify_reply(smbreq, notify_status,
 			    0, NULL, map->req->reply_fn);
