@@ -2656,7 +2656,7 @@ class KCC(object):
 
         return 0
 
-    def import_ldif(self, dburl, lp, creds, ldif_file):
+    def import_ldif(self, dburl, lp, creds, ldif_file, forced_local_dsa=None):
         """Import all objects and attributes that are relevent
         to the KCC algorithms from a previously exported LDIF file.
 
@@ -2673,7 +2673,7 @@ class KCC(object):
         """
         try:
             self.samdb = ldif_import_export.ldif_to_samdb(dburl, lp, ldif_file,
-                                                          self.forced_local_dsa)
+                                                          forced_local_dsa)
         except ldif_import_export.LdifError, e:
             print e
             return 1
