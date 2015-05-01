@@ -2607,8 +2607,7 @@ class KCC(object):
         return 0
 
     def import_ldif(self, dburl, lp, creds, ldif_file, forced_local_dsa=None):
-        """Import all objects and attributes that are relevent
-        to the KCC algorithms from a previously exported LDIF file.
+        """Import relevant objects and attributes from an LDIF file.
 
         The point of this function is to allow a programmer/debugger to
         import an LDIF file with non-security relevent information that
@@ -2619,7 +2618,11 @@ class KCC(object):
         same between different OSes and algorithms.
 
         :param dburl: path to the temporary abbreviated db to create
+        :param lp: a loadparm object.
+        :param cred: a Credentials object.
         :param ldif_file: path to the ldif file to import
+        :param forced_local_dsa: perform KCC from this DSA's point of view
+        :return: zero on success, 1 on error
         """
         try:
             self.samdb = ldif_import_export.ldif_to_samdb(dburl, lp, ldif_file,
