@@ -187,7 +187,6 @@
 ^samba3.smb2.create.open
 ^samba3.smb2.create.leading-slash
 ^samba3.smb2.notify.valid-req
-^samba3.smb2.notify.dir
 ^samba3.smb2.notify.rec
 ^samba3.smb2.durable-open.lock-lease
 ^samba3.smb2.durable-open.reopen4
