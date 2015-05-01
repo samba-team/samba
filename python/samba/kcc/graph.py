@@ -109,6 +109,14 @@ def combine_repl_info(info_a, info_b, info_c):
 
 def get_spanning_tree_edges(graph, my_site, label=None, verify=False,
                             dot_file_dir=None):
+    """Find edges for the intersite graph
+
+    :param graph: a kcc.kcc_utils.Graph object
+    :param my_site: the topology generator's site
+    :param label: a label for use in dot files and verification
+    :param verify: if True, try to verify that graph properties are correct
+    :param dot_file_dir: if not None, write Graphviz dot files here
+    """
     # Phase 1: Run Dijkstra's to get a list of internal edges, which are
     # just the shortest-paths connecting colored vertices
 
