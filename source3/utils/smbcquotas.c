@@ -332,11 +332,11 @@ static void dump_ntquota_list(SMB_NTQUOTA_LIST **qtl, bool _verbose,
 
 static int do_quota(struct cli_state *cli,
 		enum SMB_QUOTA_TYPE qtype,
-		uint16 cmd,
+		uint16_t cmd,
 		const char *username_str,
 		SMB_NTQUOTA_STRUCT *pqt)
 {
-	uint32 fs_attrs = 0;
+	uint32_t fs_attrs = 0;
 	uint16_t quota_fnum = 0;
 	SMB_NTQUOTA_LIST *qtl = NULL;
 	SMB_NTQUOTA_STRUCT qt;

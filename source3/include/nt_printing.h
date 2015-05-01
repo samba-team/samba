@@ -67,33 +67,33 @@
 #define VS_NE_BUF_SIZE                  4096  /* Must be > 2*VS_VERSION_INFO_SIZE */
 
 /* Notify spoolss clients that something has changed.  The
-   notification data is either stored in two uint32 values or a
+   notification data is either stored in two uint32_t values or a
    variable length array. */
 
 #define SPOOLSS_NOTIFY_MSG_UNIX_JOBID 0x0001    /* Job id is unix  */
 
 typedef struct spoolss_notify_msg {
 	fstring printer;	/* Name of printer notified */
-	uint32 type;		/* Printer or job notify */
-	uint32 field;		/* Notify field changed */
-	uint32 id;		/* Job id */
-	uint32 len;		/* Length of data, 0 for two uint32 value */
-	uint32 flags;
+	uint32_t type;		/* Printer or job notify */
+	uint32_t field;		/* Notify field changed */
+	uint32_t id;		/* Job id */
+	uint32_t len;		/* Length of data, 0 for two uint32_t value */
+	uint32_t flags;
 	union {
-		uint32 value[2];
+		uint32_t value[2];
 		char *data;
 	} notify;
 } SPOOLSS_NOTIFY_MSG;
 
 typedef struct {
 	fstring 		printername;
-	uint32			num_msgs;
+	uint32_t		num_msgs;
 	SPOOLSS_NOTIFY_MSG	*msgs;
 } SPOOLSS_NOTIFY_MSG_GROUP;
 
 typedef struct {
 	TALLOC_CTX 			*ctx;
-	uint32				num_groups;
+	uint32_t			num_groups;
 	SPOOLSS_NOTIFY_MSG_GROUP	*msg_groups;
 } SPOOLSS_NOTIFY_MSG_CTR;
 

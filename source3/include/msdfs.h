@@ -38,15 +38,15 @@
 #define MAX_MSDFS_JUNCTIONS 256
 
 struct client_dfs_referral {
-	uint32 proximity;
-	uint32 ttl;
+	uint32_t proximity;
+	uint32_t ttl;
 	char *dfspath;
 };
 
 struct referral {
 	char *alternate_path; /* contains the path referred */
-	uint32 proximity;
-	uint32 ttl; /* how long should client cache referral */
+	uint32_t proximity;
+	uint32_t ttl; /* how long should client cache referral */
 };
 
 struct junction_map {

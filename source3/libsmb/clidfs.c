@@ -328,8 +328,8 @@ static NTSTATUS cli_cm_connect(TALLOC_CTX *ctx,
 	}
 
 	if (referring_cli && referring_cli->requested_posix_capabilities) {
-		uint16 major, minor;
-		uint32 caplow, caphigh;
+		uint16_t major, minor;
+		uint32_t caplow, caphigh;
 		status = cli_unix_extensions_version(cli, &major, &minor,
 						     &caplow, &caphigh);
 		if (NT_STATUS_IS_OK(status)) {
@@ -658,7 +658,7 @@ NTSTATUS cli_dfs_get_referral(TALLOC_CTX *ctx,
 	smb_ucs2_t *path_ucs;
 	char *consumed_path = NULL;
 	uint16_t consumed_ucs;
-	uint16 num_referrals;
+	uint16_t num_referrals;
 	struct client_dfs_referral *referrals = NULL;
 	NTSTATUS status;
 	TALLOC_CTX *frame = talloc_stackframe();
@@ -773,10 +773,10 @@ NTSTATUS cli_dfs_get_referral(TALLOC_CTX *ctx,
 	*consumed = strlen(consumed_path);
 
 	if (num_referrals != 0) {
-		uint16 ref_version;
-		uint16 ref_size;
+		uint16_t ref_version;
+		uint16_t ref_size;
 		int i;
-		uint16 node_offset;
+		uint16_t node_offset;
 
 		referrals = talloc_array(ctx, struct client_dfs_referral,
 					 num_referrals);
@@ -868,7 +868,7 @@ NTSTATUS cli_resolve_path(TALLOC_CTX *ctx,
 	char *newmount = NULL;
 	char *ppath = NULL;
 	SMB_STRUCT_STAT sbuf;
-	uint32 attributes;
+	uint32_t attributes;
 	NTSTATUS status;
 	struct smbXcli_tcon *root_tcon = NULL;
 	struct smbXcli_tcon *target_tcon = NULL;
@@ -1174,7 +1174,7 @@ bool cli_check_msdfs_proxy(TALLOC_CTX *ctx,
 	size_t consumed = 0;
 	char *fullpath = NULL;
 	bool res;
-	uint16 cnum;
+	uint16_t cnum;
 	char *newextrapath = NULL;
 	NTSTATUS status;
 	const char *remote_name;
