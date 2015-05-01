@@ -414,7 +414,7 @@ static int xattr_tdb_rmdir(vfs_handle_struct *handle, const char *path)
 					TALLOC_FREE(frame); return -1;
 				});
 
-	if (vfs_stat_smb_fname(handle->conn, path, &sbuf) == -1) {
+	if (vfs_stat_smb_basename(handle->conn, path, &sbuf) == -1) {
 		TALLOC_FREE(frame);
 		return -1;
 	}

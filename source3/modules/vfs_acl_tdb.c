@@ -159,7 +159,7 @@ static NTSTATUS get_acl_blob(TALLOC_CTX *ctx,
 		status = vfs_stat_fsp(fsp);
 		sbuf = fsp->fsp_name->st;
 	} else {
-		int ret = vfs_stat_smb_fname(handle->conn, name, &sbuf);
+		int ret = vfs_stat_smb_basename(handle->conn, name, &sbuf);
 		if (ret == -1) {
 			status = map_nt_error_from_unix(errno);
 		}
@@ -282,12 +282,7 @@ static int rmdir_acl_tdb(vfs_handle_struct *handle, const char *path)
 	struct db_context *db = acl_db;
 	int ret = -1;
 
-	if (lp_posix_pathnames()) {
-		ret = vfs_lstat_smb_fname(handle->conn, path, &sbuf);
-	} else {
-		ret = vfs_stat_smb_fname(handle->conn, path, &sbuf);
-	}
-
+	ret = vfs_stat_smb_basename(handle->conn, path, &sbuf);
 	if (ret == -1) {
 		return -1;
 	}
@@ -347,12 +342,7 @@ static int sys_acl_set_file_tdb(vfs_handle_struct *handle,
 	struct db_context *db = acl_db;
 	int ret = -1;
 
-	if (lp_posix_pathnames()) {
-		ret = vfs_lstat_smb_fname(handle->conn, path, &sbuf);
-	} else {
-		ret = vfs_stat_smb_fname(handle->conn, path, &sbuf);
-	}
-
+	ret = vfs_stat_smb_basename(handle->conn, path, &sbuf);
 	if (ret == -1) {
 		return -1;
 	}

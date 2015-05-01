@@ -167,7 +167,7 @@ int solarisacl_sys_acl_set_file(vfs_handle_struct *handle,
 	 * that has not been specified in "type" from the file first 
 	 * and concatenate it with the acl provided.
 	 */
-	if (vfs_stat_smb_fname(handle->conn, name, &s) != 0) {
+	if (vfs_stat_smb_basename(handle->conn, name, &s) != 0) {
 		DEBUG(10, ("Error in stat call: %s\n", strerror(errno)));
 		goto done;
 	}
