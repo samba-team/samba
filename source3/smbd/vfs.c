@@ -1278,61 +1278,6 @@ NTSTATUS check_reduced_name(connection_struct *conn, const char *fname)
 /**
  * XXX: This is temporary and there should be no callers of this once
  * smb_filename is plumbed through all path based operations.
- */
-int vfs_stat_smb_fname(struct connection_struct *conn, const char *fname,
-		       SMB_STRUCT_STAT *psbuf)
-{
-	struct smb_filename *smb_fname;
-	int ret;
-
-	smb_fname = synthetic_smb_fname_split(talloc_tos(), fname, NULL);
-	if (smb_fname == NULL) {
-		errno = ENOMEM;
-		return -1;
-	}
-
-	if (lp_posix_pathnames()) {
-		ret = SMB_VFS_LSTAT(conn, smb_fname);
-	} else {
-		ret = SMB_VFS_STAT(conn, smb_fname);
-	}
-
-	if (ret != -1) {
-		*psbuf = smb_fname->st;
-	}
-
-	TALLOC_FREE(smb_fname);
-	return ret;
-}
-
-/**
- * XXX: This is temporary and there should be no callers of this once
- * smb_filename is plumbed through all path based operations.
- */
-int vfs_lstat_smb_fname(struct connection_struct *conn, const char *fname,
-			SMB_STRUCT_STAT *psbuf)
-{
-	struct smb_filename *smb_fname;
-	int ret;
-
-	smb_fname = synthetic_smb_fname_split(talloc_tos(), fname, NULL);
-	if (smb_fname == NULL) {
-		errno = ENOMEM;
-		return -1;
-	}
-
-	ret = SMB_VFS_LSTAT(conn, smb_fname);
-	if (ret != -1) {
-		*psbuf = smb_fname->st;
-	}
-
-	TALLOC_FREE(smb_fname);
-	return ret;
-}
-
-/**
- * XXX: This is temporary and there should be no callers of this once
- * smb_filename is plumbed through all path based operations.
  *
  * Called when we know stream name parsing has already been done.
  */
