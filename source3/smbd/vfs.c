@@ -1331,6 +1331,32 @@ int vfs_lstat_smb_fname(struct connection_struct *conn, const char *fname,
 }
 
 /**
+ * XXX: This is temporary and there should be no callers of this once
+ * smb_filename is plumbed through all path based operations.
+ *
+ * Called when we know stream name parsing has already been done.
+ */
+int vfs_stat_smb_basename(struct connection_struct *conn, const char *fname,
+		       SMB_STRUCT_STAT *psbuf)
+{
+	struct smb_filename smb_fname = {
+			.base_name = discard_const_p(char, fname)
+	};
+	int ret;
+
+	if (lp_posix_pathnames()) {
+		ret = SMB_VFS_LSTAT(conn, &smb_fname);
+	} else {
+		ret = SMB_VFS_STAT(conn, &smb_fname);
+	}
+
+	if (ret != -1) {
+		*psbuf = smb_fname.st;
+	}
+	return ret;
+}
+
+/**
  * Ensure LSTAT is called for POSIX paths.
  */
 
