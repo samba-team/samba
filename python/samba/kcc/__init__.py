@@ -1763,14 +1763,21 @@ class KCC(object):
         return all_connected
 
     def intersite(self, ping):
-        """The head method for generating the inter-site KCC replica
-        connection graph and attendant nTDSConnection objects
-        in the samdb.
+        """Generate the inter-site KCC replica graph and nTDSConnections
 
-        Produces self.kept_connections set of NTDS Connections
-        that should be kept during subsequent pruning process.
+        As per MS-ADTS 6.2.2.3.
 
-        ::return (True or False):  (True) if the produced NC replica
+        If self.readonly is False, the connections are added to self.samdb.
+
+        Produces self.kept_connections which is a set of NTDS
+        Connections that should be kept during subsequent pruning
+        process.
+
+        After this has run, all sites should be connected in a minimum
+        spanning tree.
+
+        :param ping: An oracle function of remote site availability
+        :return (True or False):  (True) if the produced NC replica
             graph connects all sites that need to be connected
         """
 
@@ -2249,11 +2256,19 @@ class KCC(object):
                            directed=True)
 
     def intrasite(self):
-        """The head method for generating the intra-site KCC replica
-        connection graph and attendant nTDSConnection objects
-        in the samdb
+        """Generate the intrasite KCC connections
+
+        As per MS-ADTS 6.2.2.2.
+
+        If self.readonly is False, the connections are added to self.samdb.
+
+        After this call, all DCs in each site with more than 3 DCs
+        should be connected in a bidirectional ring. If a site has 2
+        DCs, they will bidirectionally connected. Sites with many DCs
+        may have arbitrary extra connections.
+
+        :return: None
         """
-        # Retrieve my DSA
         mydsa = self.my_dsa
 
         DEBUG_FN("intrasite(): enter")
