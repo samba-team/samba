@@ -497,8 +497,7 @@ static struct tevent_req *smbd_smb2_tdis_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req;
 	struct smbd_smb2_tdis_state *state;
 	struct tevent_req *subreq;
-	struct smbd_smb2_request *preq;
-	struct smbXsrv_connection *xconn = smb2req->xconn;
+	struct smbXsrv_connection *xconn = NULL;
 
 	req = tevent_req_create(mem_ctx, &state,
 			struct smbd_smb2_tdis_state);
@@ -517,35 +516,40 @@ static struct tevent_req *smbd_smb2_tdis_send(TALLOC_CTX *mem_ctx,
 	 */
 	smb2req->tcon->status = NT_STATUS_NETWORK_NAME_DELETED;
 
-	for (preq = xconn->smb2.requests; preq != NULL; preq = preq->next) {
-		if (preq == smb2req) {
-			/* Can't cancel current request. */
-			continue;
-		}
-		if (preq->tcon != smb2req->tcon) {
-			/* Request on different tcon. */
-			continue;
-		}
+	xconn = smb2req->xconn->client->connections;
+	for (; xconn != NULL; xconn = xconn->next) {
+		struct smbd_smb2_request *preq;
 
-		/*
-		 * Never cancel anything in a compound
-		 * request. Way too hard to deal with
-		 * the result.
-		 */
-		if (!preq->compound_related && preq->subreq != NULL) {
-			tevent_req_cancel(preq->subreq);
-		}
+		for (preq = xconn->smb2.requests; preq != NULL; preq = preq->next) {
+			if (preq == smb2req) {
+				/* Can't cancel current request. */
+				continue;
+			}
+			if (preq->tcon != smb2req->tcon) {
+				/* Request on different tcon. */
+				continue;
+			}
 
-		/*
-		 * Now wait until the request is finished.
-		 *
-		 * We don't set a callback, as we just want to block the
-		 * wait queue and the talloc_free() of the request will
-		 * remove the item from the wait queue.
-		 */
-		subreq = tevent_queue_wait_send(preq, ev, state->wait_queue);
-		if (tevent_req_nomem(subreq, req)) {
-			return tevent_req_post(req, ev);
+			/*
+			 * Never cancel anything in a compound
+			 * request. Way too hard to deal with
+			 * the result.
+			 */
+			if (!preq->compound_related && preq->subreq != NULL) {
+				tevent_req_cancel(preq->subreq);
+			}
+
+			/*
+			 * Now wait until the request is finished.
+			 *
+			 * We don't set a callback, as we just want to block the
+			 * wait queue and the talloc_free() of the request will
+			 * remove the item from the wait queue.
+			 */
+			subreq = tevent_queue_wait_send(preq, ev, state->wait_queue);
+			if (tevent_req_nomem(subreq, req)) {
+				return tevent_req_post(req, ev);
+			}
 		}
 	}
 
