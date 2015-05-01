@@ -1856,17 +1856,18 @@ class KCC(object):
             self.my_dsa.commit_connections(self.samdb, ro=self.readonly)
 
     def intrasite_max_node_edges(self, node_count):
-        """Returns the maximum number of edges directed to a node in
-        the intrasite replica graph.
+        """Find the maximum number of edges directed to an intrasite node
 
-        The KCC does not create more
-        than 50 edges directed to a single DC. To optimize replication,
-        we compute that each node should have n+2 total edges directed
-        to it such that (n) is the smallest non-negative integer
-        satisfying (node_count <= 2*(n*n) + 6*n + 7)
+        The KCC does not create more than 50 edges directed to a
+        single DC. To optimize replication, we compute that each node
+        should have n+2 total edges directed to it such that (n) is
+        the smallest non-negative integer satisfying
+        (node_count <= 2*(n*n) + 6*n + 7)
 
         (If the number of edges is m (i.e. n + 2), that is the same as
-        2 * m*m - 2 * m + 3).
+        2 * m*m - 2 * m + 3). We think in terms of n because that is
+        the number of extra connections over the double directed ring
+        that exists by default.
 
         edges  n   nodecount
           2    0    7
@@ -1885,6 +1886,9 @@ class KCC(object):
         guarantee holds at e.g. 15 nodes in degenerate cases, but
         those are quite unlikely given the extra edges are randomly
         arranged.
+
+        :param node_count: the number of nodes in the site
+        "return: The desired maximum number of connections
         """
         n = 0
         while True:
