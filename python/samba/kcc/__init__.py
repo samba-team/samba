@@ -2564,7 +2564,7 @@ class KCC(object):
 
             if self.verify or self.dot_file_dir is not None:
                 self.plot_all_connections('dsa_final',
-                                          ('connected', 'forest_of_rings'))
+                                          ('connected',))
 
                 debug.DEBUG_MAGENTA("there are %d dsa guids" %
                                     len(guid_to_dnstr))

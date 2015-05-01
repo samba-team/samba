@@ -144,9 +144,6 @@ class UndirectedGraphTests(samba.tests.TestCase):
     def test_graph_multi_edge_forest(self):
         pass
 
-    def test_graph_forest_of_rings(self):
-        pass
-
     def test_graph_no_lonely_vertices(self):
         fn = verify_graph_no_lonely_vertices
         self.assertGraphError(fn, *self.unconnected_graph)
