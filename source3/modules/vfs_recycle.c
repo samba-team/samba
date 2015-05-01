@@ -188,7 +188,7 @@ static bool recycle_directory_exist(vfs_handle_struct *handle, const char *dname
 {
 	SMB_STRUCT_STAT st;
 
-	if (vfs_stat_smb_fname(handle->conn, dname, &st) == 0) {
+	if (vfs_stat_smb_basename(handle->conn, dname, &st) == 0) {
 		if (S_ISDIR(st.st_ex_mode)) {
 			return True;
 		}
