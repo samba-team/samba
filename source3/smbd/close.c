@@ -1050,6 +1050,13 @@ static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
 	NTSTATUS status1 = NT_STATUS_OK;
 	const struct security_token *del_nt_token = NULL;
 	const struct security_unix_token *del_token = NULL;
+	NTSTATUS notify_status;
+
+	if (fsp->conn->sconn->using_smb2) {
+		notify_status = STATUS_NOTIFY_CLEANUP;
+	} else {
+		notify_status = NT_STATUS_OK;
+	}
 
 	/*
 	 * NT can set delete_on_close of the last open
@@ -1159,8 +1166,8 @@ static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
 		 * now fail as the directory has been deleted.
 		 */
 
-		if(NT_STATUS_IS_OK(status)) {
-			remove_pending_change_notify_requests_by_fid(fsp, NT_STATUS_DELETE_PENDING);
+		if (NT_STATUS_IS_OK(status)) {
+			notify_status = NT_STATUS_DELETE_PENDING;
 		}
 	} else {
 		if (!del_share_mode(lck, fsp)) {
@@ -1169,9 +1176,9 @@ static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
 		}
 
 		TALLOC_FREE(lck);
-		remove_pending_change_notify_requests_by_fid(
-			fsp, NT_STATUS_OK);
 	}
+
+	remove_pending_change_notify_requests_by_fid(fsp, notify_status);
 
 	status1 = fd_close(fsp);
 
