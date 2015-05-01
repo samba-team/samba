@@ -21,6 +21,7 @@
 
 import random
 import uuid
+import sys
 
 import itertools
 from samba import unix2nttime, nttime2unix
@@ -1683,11 +1684,11 @@ class KCC(object):
                 return False, True
 
             debug.DEBUG_CYAN("SITES")
-            print lsite, rsite
+            print >> sys.stderr, lsite, rsite
             debug.DEBUG_BLUE("vertices")
-            print e.vertices
+            print >> sys.stderr, e.vertices
             debug.DEBUG_BLUE("bridgeheads")
-            print lbh, rbh
+            print >> sys.stderr, lbh, rbh
             debug.DEBUG_BLUE("-" * 70)
 
             sitelink = e.site_link
@@ -2624,7 +2625,7 @@ class KCC(object):
             self.samdb = ldif_import_export.ldif_to_samdb(dburl, lp, ldif_file,
                                                           forced_local_dsa)
         except ldif_import_export.LdifError, e:
-            print e
+            print >> sys.stderr, e
             return 1
         return 0
 
@@ -2647,6 +2648,6 @@ class KCC(object):
             ldif_import_export.samdb_to_ldif_file(self.samdb, dburl, lp, creds,
                                                   ldif_file)
         except ldif_import_export.LdifError, e:
-            print e
+            print >> sys.stderr, e
             return 1
         return 0
