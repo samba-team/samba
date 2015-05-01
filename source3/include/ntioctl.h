@@ -34,7 +34,7 @@ typedef char SHADOW_COPY_LABEL[25];
 
 struct shadow_copy_data {
 	/* Total number of shadow volumes currently mounted */
-	uint32 num_volumes;
+	uint32_t num_volumes;
 	/* Concatenated list of labels */
 	SHADOW_COPY_LABEL *labels;
 };

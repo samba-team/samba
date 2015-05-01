@@ -371,7 +371,7 @@ static NTSTATUS vfswrap_snap_delete(struct vfs_handle_struct *handle,
 
 /* Directory operations */
 
-static DIR *vfswrap_opendir(vfs_handle_struct *handle, const char *fname, const char *mask, uint32 attr)
+static DIR *vfswrap_opendir(vfs_handle_struct *handle, const char *fname, const char *mask, uint32_t attr)
 {
 	DIR *result;
 
@@ -384,7 +384,7 @@ static DIR *vfswrap_opendir(vfs_handle_struct *handle, const char *fname, const 
 static DIR *vfswrap_fdopendir(vfs_handle_struct *handle,
 			files_struct *fsp,
 			const char *mask,
-			uint32 attr)
+			uint32_t attr)
 {
 	DIR *result;
 
@@ -1141,8 +1141,8 @@ static NTSTATUS vfswrap_fsctl(struct vfs_handle_struct *handle,
 		 */
 		struct shadow_copy_data *shadow_data = NULL;
 		bool labels = False;
-		uint32 labels_data_count = 0;
-		uint32 i;
+		uint32_t labels_data_count = 0;
+		uint32_t i;
 		char *cur_pdata = NULL;
 
 		if (max_out_len < 16) {
@@ -2029,7 +2029,7 @@ static bool vfswrap_lock(vfs_handle_struct *handle, files_struct *fsp, int op, o
 }
 
 static int vfswrap_kernel_flock(vfs_handle_struct *handle, files_struct *fsp,
-				uint32 share_mode, uint32 access_mask)
+				uint32_t share_mode, uint32_t access_mask)
 {
 	START_PROFILE(syscall_kernel_flock);
 	kernel_flock(fsp->fh->fd, share_mode, access_mask);
@@ -2334,7 +2334,7 @@ static void vfswrap_strict_unlock(struct vfs_handle_struct *handle,
 
 static NTSTATUS vfswrap_fget_nt_acl(vfs_handle_struct *handle,
 				    files_struct *fsp,
-				    uint32 security_info,
+				    uint32_t security_info,
 				    TALLOC_CTX *mem_ctx,
 				    struct security_descriptor **ppdesc)
 {
@@ -2349,7 +2349,7 @@ static NTSTATUS vfswrap_fget_nt_acl(vfs_handle_struct *handle,
 
 static NTSTATUS vfswrap_get_nt_acl(vfs_handle_struct *handle,
 				   const char *name,
-				   uint32 security_info,
+				   uint32_t security_info,
 				   TALLOC_CTX *mem_ctx,
 				   struct security_descriptor **ppdesc)
 {
@@ -2362,7 +2362,7 @@ static NTSTATUS vfswrap_get_nt_acl(vfs_handle_struct *handle,
 	return result;
 }
 
-static NTSTATUS vfswrap_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp, uint32 security_info_sent, const struct security_descriptor *psd)
+static NTSTATUS vfswrap_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp, uint32_t security_info_sent, const struct security_descriptor *psd)
 {
 	NTSTATUS result;
 

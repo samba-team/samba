@@ -348,7 +348,7 @@ static NTSTATUS smb_time_audit_snap_delete(struct vfs_handle_struct *handle,
 
 static DIR *smb_time_audit_opendir(vfs_handle_struct *handle,
 				   const char *fname,
-				   const char *mask, uint32 attr)
+				   const char *mask, uint32_t attr)
 {
 	DIR *result;
 	struct timespec ts1,ts2;
@@ -368,7 +368,7 @@ static DIR *smb_time_audit_opendir(vfs_handle_struct *handle,
 
 static DIR *smb_time_audit_fdopendir(vfs_handle_struct *handle,
 					      files_struct *fsp,
-					      const char *mask, uint32 attr)
+					      const char *mask, uint32_t attr)
 {
 	DIR *result;
 	struct timespec ts1,ts2;
@@ -1326,7 +1326,7 @@ static bool smb_time_audit_lock(vfs_handle_struct *handle, files_struct *fsp,
 
 static int smb_time_audit_kernel_flock(struct vfs_handle_struct *handle,
 				       struct files_struct *fsp,
-				       uint32 share_mode, uint32 access_mask)
+				       uint32_t share_mode, uint32_t access_mask)
 {
 	int result;
 	struct timespec ts1,ts2;
@@ -1901,7 +1901,7 @@ static NTSTATUS smb_time_audit_readdir_attr(struct vfs_handle_struct *handle,
 
 static NTSTATUS smb_time_audit_fget_nt_acl(vfs_handle_struct *handle,
 					   files_struct *fsp,
-					   uint32 security_info,
+					   uint32_t security_info,
 					   TALLOC_CTX *mem_ctx,
 					   struct security_descriptor **ppdesc)
 {
@@ -1924,7 +1924,7 @@ static NTSTATUS smb_time_audit_fget_nt_acl(vfs_handle_struct *handle,
 
 static NTSTATUS smb_time_audit_get_nt_acl(vfs_handle_struct *handle,
 					  const char *name,
-					  uint32 security_info,
+					  uint32_t security_info,
 					  TALLOC_CTX *mem_ctx,
 					  struct security_descriptor **ppdesc)
 {
@@ -1947,7 +1947,7 @@ static NTSTATUS smb_time_audit_get_nt_acl(vfs_handle_struct *handle,
 
 static NTSTATUS smb_time_audit_fset_nt_acl(vfs_handle_struct *handle,
 					   files_struct *fsp,
-					   uint32 security_info_sent,
+					   uint32_t security_info_sent,
 					   const struct security_descriptor *psd)
 {
 	NTSTATUS result;
