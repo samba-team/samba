@@ -133,8 +133,6 @@ workgroup %s. This is a bug.\n", name, work->work_group));
 	DEBUG(3,("create_server_on_workgroup: Created server entry %s of type %x (%s) on \
 workgroup %s.\n", name,servertype,comment, work->work_group));
  
-	work->subnet->work_changed = True;
- 
 	return(servrec);
 }
 
@@ -151,8 +149,6 @@ void update_server_ttl(struct server_record *servrec, int ttl)
 		servrec->death_time = PERMANENT_TTL;
 	else
 		servrec->death_time = (ttl != PERMANENT_TTL) ? time(NULL)+(ttl*3) : PERMANENT_TTL;
-
-	servrec->subnet->work_changed = True;
 }
 
 /*******************************************************************
@@ -172,7 +168,6 @@ void expire_servers(struct work_record *work, time_t t)
 		if ((servrec->death_time != PERMANENT_TTL) && ((t == -1) || (servrec->death_time < t))) {
 			DEBUG(3,("expire_old_servers: Removing timed out server %s\n",servrec->serv.name));
 			remove_server_from_workgroup(work, servrec);
-			work->subnet->work_changed = True;
 		}
 	}
 }
