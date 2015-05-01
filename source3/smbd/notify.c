@@ -375,6 +375,17 @@ static void change_notify_remove_request(struct smbd_server_connection *sconn,
 	TALLOC_FREE(req);
 }
 
+static void smbd_notify_cancel_by_map(struct notify_mid_map *map)
+{
+	struct smb_request *smbreq = map->req->req;
+	struct smbd_server_connection *sconn = smbreq->sconn;
+	NTSTATUS notify_status = NT_STATUS_CANCELLED;
+
+	change_notify_reply(smbreq, notify_status,
+			    0, NULL, map->req->reply_fn);
+	change_notify_remove_request(sconn, map->req);
+}
+
 /****************************************************************************
  Delete entries by mid from the change notify pending queue. Always send reply.
 *****************************************************************************/
@@ -394,9 +405,7 @@ void remove_pending_change_notify_requests_by_mid(
 		return;
 	}
 
-	change_notify_reply(map->req->req,
-			    NT_STATUS_CANCELLED, 0, NULL, map->req->reply_fn);
-	change_notify_remove_request(sconn, map->req);
+	smbd_notify_cancel_by_map(map);
 }
 
 void smbd_notify_cancel_by_smbreq(const struct smb_request *smbreq)
@@ -414,9 +423,7 @@ void smbd_notify_cancel_by_smbreq(const struct smb_request *smbreq)
 		return;
 	}
 
-	change_notify_reply(map->req->req,
-			    NT_STATUS_CANCELLED, 0, NULL, map->req->reply_fn);
-	change_notify_remove_request(sconn, map->req);
+	smbd_notify_cancel_by_map(map);
 }
 
 static struct files_struct *smbd_notify_cancel_deleted_fn(
