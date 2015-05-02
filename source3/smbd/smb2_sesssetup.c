@@ -363,7 +363,6 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 	 * we attach the session to the request
 	 * so that the response can be signed
 	 */
-	smb2req->session = session;
 	if (!guest) {
 		smb2req->do_signing = true;
 	}
@@ -582,6 +581,7 @@ static struct tevent_req *smbd_smb2_session_setup_send(TALLOC_CTX *mem_ctx,
 		if (tevent_req_nterror(req, status)) {
 			return tevent_req_post(req, ev);
 		}
+		smb2req->session = state->session;
 	} else {
 		if (smb2req->session == NULL) {
 			tevent_req_nterror(req, NT_STATUS_USER_SESSION_DELETED);
