@@ -980,6 +980,9 @@ sub provision($$$$$$$$)
 	my $lease2_shrdir="$shrdir/SMB3_00";
 	push(@dirs,$lease2_shrdir);
 
+	my $manglenames_shrdir="$shrdir/manglenames";
+	push(@dirs,$manglenames_shrdir);
+
 	# this gets autocreated by winbindd
 	my $wbsockdir="$prefix_abs/winbindd";
 	my $wbsockprivdir="$lockdir/winbindd_privileged";
@@ -1062,6 +1065,12 @@ sub provision($$$$$$$$)
         }
         close(BADNAME_TARGET);
         chmod 0666, $badname_target;
+
+	##
+	## create mangleable directory names in $manglenames_shrdir
+	##
+        my $manglename_target = "$manglenames_shrdir/foo:bar";
+	mkdir($manglename_target, 0777);
 
 	my $conffile="$libdir/server.conf";
 
@@ -1336,6 +1345,10 @@ sub provision($$$$$$$$)
 
 [badname-tmp]
 	path = $badnames_shrdir
+	guest ok = yes
+
+[manglenames_share]
+	path = $manglenames_shrdir
 	guest ok = yes
 
 [dynamic_share]
