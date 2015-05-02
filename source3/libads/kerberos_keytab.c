@@ -731,13 +731,14 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 		smb_krb5_kt_free_entry(context, &kt_entry);
 		ZERO_STRUCT(kt_entry);
 	}
+	krb5_kt_end_seq_get(context, keytab, &cursor);
+	ZERO_STRUCT(cursor);
+
 	ret = 0;
 	for (i = 0; oldEntries[i]; i++) {
 		ret |= ads_keytab_add_entry(ads, oldEntries[i]);
 		TALLOC_FREE(oldEntries[i]);
 	}
-	krb5_kt_end_seq_get(context, keytab, &cursor);
-	ZERO_STRUCT(cursor);
 
 done:
 	TALLOC_FREE(oldEntries);
