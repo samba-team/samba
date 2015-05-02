@@ -348,7 +348,7 @@ static int fake_acls_sys_acl_delete_def_file(vfs_handle_struct *handle, const ch
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct smb_filename *smb_fname;
 
-	smb_fname = synthetic_smb_fname_split(frame, path, NULL);
+	smb_fname = synthetic_smb_fname(frame, path, NULL, NULL);
 	if (smb_fname == NULL) {
 		TALLOC_FREE(frame);
 		errno = ENOMEM;
