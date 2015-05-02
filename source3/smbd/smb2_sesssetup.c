@@ -448,93 +448,11 @@ struct smbd_smb2_session_setup_state {
 	uint16_t out_session_flags;
 	DATA_BLOB out_security_buffer;
 	uint64_t out_session_id;
-	/* The following pointer is owned by state->session. */
-	struct smbd_smb2_session_setup_state **pp_self_ref;
 };
-
-static int pp_self_ref_destructor(struct smbd_smb2_session_setup_state **pp_state)
-{
-	(*pp_state)->session = NULL;
-	/*
-	 * To make things clearer, ensure the pp_self_ref
-	 * pointer is nulled out. We're never going to
-	 * access this again.
-	 */
-	(*pp_state)->pp_self_ref = NULL;
-	return 0;
-}
-
-static int smbd_smb2_session_setup_state_destructor(struct smbd_smb2_session_setup_state *state)
-{
-	struct smbXsrv_connection *xconn;
-	struct smbd_smb2_request *preq;
-
-	/*
-	 * If state->session is not NULL,
-	 * we move the session from the session table to the request on failure
-	 * so that the error response can be correctly signed, but the session
-	 * is then really deleted when the request is done.
-	 */
-
-	if (state->session == NULL) {
-		return 0;
-	}
-
-	state->session->status = NT_STATUS_USER_SESSION_DELETED;
-	state->smb2req->session = talloc_move(state->smb2req, &state->session);
-
-	/*
-	 * We own the session now - we don't need the
-	 * tag talloced on session that keeps track of session independently.
-	 */
-	TALLOC_FREE(state->pp_self_ref);
-
-	/*
-	 * We've made this session owned by the current request.
-	 * Ensure that any outstanding requests don't also refer
-	 * to it.
-	 */
-	xconn = state->smb2req->xconn;
-
-	for (preq = xconn->smb2.requests; preq != NULL; preq = preq->next) {
-		if (preq == state->smb2req) {
-			continue;
-		}
-		if (preq->session == state->smb2req->session) {
-			preq->session = NULL;
-			/*
-			 * If we no longer have a session we can't
-			 * sign or encrypt replies.
-			 */
-			preq->do_signing = false;
-			preq->do_encryption = false;
-		}
-	}
-
-	return 0;
-}
 
 static void smbd_smb2_session_setup_gensec_done(struct tevent_req *subreq);
 static void smbd_smb2_session_setup_previous_done(struct tevent_req *subreq);
 static void smbd_smb2_session_setup_auth_return(struct tevent_req *req);
-
-/************************************************************************
- We have to tag the state->session pointer with memory talloc'ed
- on it to ensure it gets NULL'ed out if the underlying struct smbXsrv_session
- is deleted by shutdown whilst this request is in flight.
-************************************************************************/
-
-static NTSTATUS tag_state_session_ptr(struct smbd_smb2_session_setup_state *state)
-{
-	state->pp_self_ref = talloc_zero(state->session,
-			struct smbd_smb2_session_setup_state *);
-	if (state->pp_self_ref == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	*state->pp_self_ref = state;
-	talloc_set_destructor(state->pp_self_ref, pp_self_ref_destructor);
-	return NT_STATUS_OK;
-}
 
 static struct tevent_req *smbd_smb2_session_setup_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
@@ -577,8 +495,6 @@ static struct tevent_req *smbd_smb2_session_setup_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	talloc_set_destructor(state, smbd_smb2_session_setup_state_destructor);
-
 	if (state->in_session_id == 0) {
 		/* create a new session */
 		status = smbXsrv_session_create(state->smb2req->xconn,
@@ -607,11 +523,6 @@ static struct tevent_req *smbd_smb2_session_setup_send(TALLOC_CTX *mem_ctx,
 			tevent_req_nterror(req, status);
 			return tevent_req_post(req, ev);
 		}
-	}
-
-	status = tag_state_session_ptr(state);
-	if (tevent_req_nterror(req, status)) {
-		return tevent_req_post(req, ev);
 	}
 
 	if (state->session->gensec == NULL) {
@@ -668,9 +579,6 @@ static void smbd_smb2_session_setup_gensec_done(struct tevent_req *subreq)
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		state->out_session_id = state->session->global->session_wire_id;
-		/* we want to keep the session */
-		state->session = NULL;
-		TALLOC_FREE(state->pp_self_ref);
 		tevent_req_nterror(req, status);
 		return;
 	}
@@ -735,9 +643,6 @@ static void smbd_smb2_session_setup_auth_return(struct tevent_req *req)
 		if (tevent_req_nterror(req, status)) {
 			return;
 		}
-		/* we want to keep the session */
-		state->session = NULL;
-		TALLOC_FREE(state->pp_self_ref);
 		tevent_req_done(req);
 		return;
 	}
@@ -752,9 +657,6 @@ static void smbd_smb2_session_setup_auth_return(struct tevent_req *req)
 		return;
 	}
 
-	/* we want to keep the session */
-	state->session = NULL;
-	TALLOC_FREE(state->pp_self_ref);
 	tevent_req_done(req);
 	return;
 }
