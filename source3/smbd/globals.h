@@ -394,6 +394,11 @@ NTSTATUS smbXsrv_session_create(struct smbXsrv_connection *conn,
 				NTTIME now,
 				struct smbXsrv_session **_session);
 NTSTATUS smbXsrv_session_update(struct smbXsrv_session *session);
+struct tevent_req *smb2srv_session_shutdown_send(TALLOC_CTX *mem_ctx,
+					struct tevent_context *ev,
+					struct smbXsrv_session *session,
+					struct smbd_smb2_request *current_req);
+NTSTATUS smb2srv_session_shutdown_recv(struct tevent_req *req);
 NTSTATUS smbXsrv_session_logoff(struct smbXsrv_session *session);
 NTSTATUS smbXsrv_session_logoff_all(struct smbXsrv_connection *conn);
 NTSTATUS smb1srv_session_table_init(struct smbXsrv_connection *conn);
