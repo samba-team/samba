@@ -520,6 +520,9 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 	size_t i;
 	ADS_STATUS status;
 
+	ZERO_STRUCT(kt_entry);
+	ZERO_STRUCT(cursor);
+
 	frame = talloc_stackframe();
 	if (frame == NULL) {
 		ret = -1;
@@ -575,8 +578,6 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 #endif
 
 	memset(princ_s, '\0', sizeof(princ_s));
-	ZERO_STRUCT(kt_entry);
-	ZERO_STRUCT(cursor);
 
 	initialize_krb5_error_table();
 	ret = krb5_init_context(&context);
