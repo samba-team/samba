@@ -1321,6 +1321,127 @@ NTSTATUS smbXsrv_session_find_channel(const struct smbXsrv_session *session,
 	return NT_STATUS_USER_SESSION_DELETED;
 }
 
+struct smb2srv_session_shutdown_state {
+	struct tevent_queue *wait_queue;
+};
+
+static void smb2srv_session_shutdown_wait_done(struct tevent_req *subreq);
+
+struct tevent_req *smb2srv_session_shutdown_send(TALLOC_CTX *mem_ctx,
+					struct tevent_context *ev,
+					struct smbXsrv_session *session,
+					struct smbd_smb2_request *current_req)
+{
+	struct tevent_req *req;
+	struct smb2srv_session_shutdown_state *state;
+	struct tevent_req *subreq;
+	struct smbXsrv_connection *xconn = NULL;
+	size_t len = 0;
+
+	/*
+	 * Make sure that no new request will be able to use this session.
+	 */
+	session->status = NT_STATUS_USER_SESSION_DELETED;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct smb2srv_session_shutdown_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	state->wait_queue = tevent_queue_create(state, "smb2srv_session_shutdown_queue");
+	if (tevent_req_nomem(state->wait_queue, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	for (xconn = session->client->connections; xconn != NULL; xconn = xconn->next) {
+		struct smbd_smb2_request *preq;
+
+		for (preq = xconn->smb2.requests; preq != NULL; preq = preq->next) {
+			if (preq == current_req) {
+				/* Can't cancel current request. */
+				continue;
+			}
+			if (preq->session != session) {
+				/* Request on different session. */
+				continue;
+			}
+
+			if (!NT_STATUS_IS_OK(xconn->transport.status)) {
+				preq->session = NULL;
+				/*
+				 * If we no longer have a session we can't
+				 * sign or encrypt replies.
+				 */
+				preq->do_signing = false;
+				preq->do_encryption = false;
+
+				if (preq->subreq != NULL) {
+					tevent_req_cancel(preq->subreq);
+				}
+				continue;
+			}
+
+			/*
+			 * Never cancel anything in a compound
+			 * request. Way too hard to deal with
+			 * the result.
+			 */
+			if (!preq->compound_related && preq->subreq != NULL) {
+				tevent_req_cancel(preq->subreq);
+			}
+
+			/*
+			 * Now wait until the request is finished.
+			 *
+			 * We don't set a callback, as we just want to block the
+			 * wait queue and the talloc_free() of the request will
+			 * remove the item from the wait queue.
+			 */
+			subreq = tevent_queue_wait_send(preq, ev, state->wait_queue);
+			if (tevent_req_nomem(subreq, req)) {
+				return tevent_req_post(req, ev);
+			}
+		}
+	}
+
+	len = tevent_queue_length(state->wait_queue);
+	if (len == 0) {
+		tevent_req_done(req);
+		return tevent_req_post(req, ev);
+	}
+
+	/*
+	 * Now we add our own waiter to the end of the queue,
+	 * this way we get notified when all pending requests are finished
+	 * and send to the socket.
+	 */
+	subreq = tevent_queue_wait_send(state, ev, state->wait_queue);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, smb2srv_session_shutdown_wait_done, req);
+
+	return req;
+}
+
+static void smb2srv_session_shutdown_wait_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq,
+		struct tevent_req);
+
+	tevent_queue_wait_recv(subreq);
+	TALLOC_FREE(subreq);
+
+	tevent_req_done(req);
+}
+
+NTSTATUS smb2srv_session_shutdown_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
+}
+
 NTSTATUS smbXsrv_session_logoff(struct smbXsrv_session *session)
 {
 	struct smbXsrv_session_table *table;

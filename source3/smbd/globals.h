@@ -535,6 +535,11 @@ struct smbXsrv_channel_global0;
 NTSTATUS smbXsrv_session_find_channel(const struct smbXsrv_session *session,
 				      const struct smbXsrv_connection *conn,
 				      struct smbXsrv_channel_global0 **_c);
+struct tevent_req *smb2srv_session_shutdown_send(TALLOC_CTX *mem_ctx,
+					struct tevent_context *ev,
+					struct smbXsrv_session *session,
+					struct smbd_smb2_request *current_req);
+NTSTATUS smb2srv_session_shutdown_recv(struct tevent_req *req);
 NTSTATUS smbXsrv_session_logoff(struct smbXsrv_session *session);
 NTSTATUS smbXsrv_session_logoff_all(struct smbXsrv_connection *conn);
 NTSTATUS smb1srv_session_table_init(struct smbXsrv_connection *conn);
