@@ -1062,6 +1062,25 @@ NTSTATUS smb2srv_session_close_previous_recv(struct tevent_req *req)
 static int smbXsrv_session_destructor(struct smbXsrv_session *session)
 {
 	NTSTATUS status;
+	struct smbd_smb2_request *preq = NULL;
+
+	if (session->connection != NULL) {
+		preq = session->connection->sconn->smb2.requests;
+	}
+
+	for (; preq != NULL; preq = preq->next) {
+		if (preq->session != session) {
+			continue;
+		}
+
+		preq->session = NULL;
+		/*
+		 * If we no longer have a session we can't
+		 * sign or encrypt replies.
+		 */
+		preq->do_signing = false;
+		preq->do_encryption = false;
+	}
 
 	status = smbXsrv_session_logoff(session);
 	if (!NT_STATUS_IS_OK(status)) {
