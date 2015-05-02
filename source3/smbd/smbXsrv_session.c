@@ -1473,6 +1473,7 @@ static int smbXsrv_session_logoff_all_callback(struct db_record *local_rec,
 	TDB_DATA val;
 	void *ptr = NULL;
 	struct smbXsrv_session *session = NULL;
+	struct smbd_smb2_request *preq = NULL;
 	NTSTATUS status;
 
 	val = dbwrap_record_get_value(local_rec);
@@ -1489,6 +1490,25 @@ static int smbXsrv_session_logoff_all_callback(struct db_record *local_rec,
 	session = talloc_get_type_abort(ptr, struct smbXsrv_session);
 
 	session->db_rec = local_rec;
+
+	if (session->connection != NULL) {
+		preq = session->connection->sconn->smb2.requests;
+	}
+
+	for (; preq != NULL; preq = preq->next) {
+		if (preq->session != session) {
+			continue;
+		}
+
+		preq->session = NULL;
+		/*
+		 * If we no longer have a session we can't
+		 * sign or encrypt replies.
+		 */
+		preq->do_signing = false;
+		preq->do_encryption = false;
+	}
+
 	status = smbXsrv_session_logoff(session);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_IS_OK(state->first_status)) {
