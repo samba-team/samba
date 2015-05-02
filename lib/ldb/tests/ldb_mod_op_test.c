@@ -143,6 +143,75 @@ static void test_ldb_add(void **state)
 	talloc_free(tmp_ctx);
 }
 
+static void test_ldb_search(void **state)
+{
+	int ret;
+	struct ldb_message *msg;
+	struct ldbtest_ctx *test_ctx = talloc_get_type_abort(*state,
+							struct ldbtest_ctx);
+	TALLOC_CTX *tmp_ctx;
+	struct ldb_dn *basedn;
+	struct ldb_dn *basedn2;
+	struct ldb_result *result = NULL;
+
+	tmp_ctx = talloc_new(test_ctx);
+	assert_non_null(tmp_ctx);
+
+	basedn = ldb_dn_new_fmt(tmp_ctx, test_ctx->ldb, "dc=test");
+	assert_non_null(basedn);
+
+	ret = ldb_search(test_ctx->ldb, tmp_ctx, &result, basedn,
+			 LDB_SCOPE_BASE, NULL, NULL);
+	assert_int_equal(ret, 0);
+	assert_non_null(result);
+	assert_int_equal(result->count, 0);
+
+	msg = ldb_msg_new(tmp_ctx);
+	assert_non_null(msg);
+
+	msg->dn = basedn;
+	assert_non_null(msg->dn);
+
+	ret = ldb_msg_add_string(msg, "cn", "test_cn_val1");
+	assert_int_equal(ret, 0);
+
+	ret = ldb_add(test_ctx->ldb, msg);
+	assert_int_equal(ret, 0);
+
+	basedn2 = ldb_dn_new_fmt(tmp_ctx, test_ctx->ldb, "dc=test2");
+	assert_non_null(basedn2);
+
+	msg = ldb_msg_new(tmp_ctx);
+	assert_non_null(msg);
+
+	msg->dn = basedn2;
+	assert_non_null(msg->dn);
+
+	ret = ldb_msg_add_string(msg, "cn", "test_cn_val2");
+	assert_int_equal(ret, 0);
+
+	ret = ldb_add(test_ctx->ldb, msg);
+	assert_int_equal(ret, 0);
+
+	ret = ldb_search(test_ctx->ldb, tmp_ctx, &result, basedn,
+			 LDB_SCOPE_BASE, NULL, NULL);
+	assert_int_equal(ret, 0);
+	assert_non_null(result);
+	assert_int_equal(result->count, 1);
+	assert_string_equal(ldb_dn_get_linearized(result->msgs[0]->dn),
+			    ldb_dn_get_linearized(basedn));
+
+	ret = ldb_search(test_ctx->ldb, tmp_ctx, &result, basedn2,
+			 LDB_SCOPE_BASE, NULL, NULL);
+	assert_int_equal(ret, 0);
+	assert_non_null(result);
+	assert_int_equal(result->count, 1);
+	assert_string_equal(ldb_dn_get_linearized(result->msgs[0]->dn),
+			    ldb_dn_get_linearized(basedn2));
+
+	talloc_free(tmp_ctx);
+}
+
 int main(int argc, const char **argv)
 {
 	const struct CMUnitTest tests[] = {
@@ -150,6 +219,9 @@ int main(int argc, const char **argv)
 						ldbtest_noconn_setup,
 						ldbtest_noconn_teardown),
 		cmocka_unit_test_setup_teardown(test_ldb_add,
+						ldbtest_setup,
+						ldbtest_teardown),
+		cmocka_unit_test_setup_teardown(test_ldb_search,
 						ldbtest_setup,
 						ldbtest_teardown),
 	};
