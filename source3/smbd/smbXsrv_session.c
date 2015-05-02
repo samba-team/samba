@@ -222,6 +222,8 @@ static NTSTATUS smbXsrv_session_table_init(struct smbXsrv_connection *conn,
 	return NT_STATUS_OK;
 }
 
+static void smbXsrv_session_close_shutdown_done(struct tevent_req *subreq);
+
 static void smbXsrv_session_close_loop(struct tevent_req *subreq)
 {
 	struct smbXsrv_client *client =
@@ -326,20 +328,22 @@ static void smbXsrv_session_close_loop(struct tevent_req *subreq)
 		goto next;
 	}
 
-	/*
-	 * TODO: cancel all outstanding requests on the session
-	 */
-	status = smbXsrv_session_logoff(session);
-	if (!NT_STATUS_IS_OK(status)) {
+	subreq = smb2srv_session_shutdown_send(session, client->ev_ctx,
+					       session, NULL);
+	if (subreq == NULL) {
+		status = NT_STATUS_NO_MEMORY;
 		DEBUG(0, ("smbXsrv_session_close_loop: "
-			  "smbXsrv_session_logoff(%llu) failed: %s\n",
+			  "smb2srv_session_shutdown_send(%llu) failed: %s\n",
 			  (unsigned long long)session->global->session_wire_id,
 			  nt_errstr(status)));
 		if (DEBUGLVL(1)) {
 			NDR_PRINT_DEBUG(smbXsrv_session_closeB, &close_blob);
 		}
+		goto next;
 	}
-	TALLOC_FREE(session);
+	tevent_req_set_callback(subreq,
+				smbXsrv_session_close_shutdown_done,
+				session);
 
 next:
 	TALLOC_FREE(rec);
@@ -353,6 +357,33 @@ next:
 		return;
 	}
 	tevent_req_set_callback(subreq, smbXsrv_session_close_loop, client);
+}
+
+static void smbXsrv_session_close_shutdown_done(struct tevent_req *subreq)
+{
+	struct smbXsrv_session *session =
+		tevent_req_callback_data(subreq,
+		struct smbXsrv_session);
+	NTSTATUS status;
+
+	status = smb2srv_session_shutdown_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("smbXsrv_session_close_loop: "
+			  "smb2srv_session_shutdown_recv(%llu) failed: %s\n",
+			  (unsigned long long)session->global->session_wire_id,
+			  nt_errstr(status)));
+	}
+
+	status = smbXsrv_session_logoff(session);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("smbXsrv_session_close_loop: "
+			  "smbXsrv_session_logoff(%llu) failed: %s\n",
+			  (unsigned long long)session->global->session_wire_id,
+			  nt_errstr(status)));
+	}
+
+	TALLOC_FREE(session);
 }
 
 struct smb1srv_session_local_allocate_state {
