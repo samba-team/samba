@@ -863,6 +863,40 @@ test_bad_names()
     fi
 }
 
+# Test accessing an share with a name that must be mangled - with acl_xattrs.
+# We know foo:bar gets mangled to FF4GBY~Q with the default name-mangling algorithm (hash2).
+test_mangled_names()
+{
+    tmpfile=$PREFIX/smbclient_interactive_prompt_commands
+    cat > $tmpfile <<EOF
+ls
+cd FF4GBY~Q
+ls
+quit
+EOF
+    cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT "$@" -U$USERNAME%$PASSWORD //$SERVER/manglenames_share -I $SERVER_IP $ADDARGS < $tmpfile 2>&1'
+    eval echo "$cmd"
+    out=`eval $cmd`
+    ret=$?
+    rm -f $tmpfile
+
+    if [ $ret != 0 ] ; then
+	echo "$out"
+	echo "failed accessing manglenames_share with error $ret"
+	false
+	return
+    fi
+
+    echo "$out" | grep 'NT_STATUS'
+    ret=$?
+    if [ $ret == 0 ] ; then
+	echo "$out"
+	echo "failed - NT_STATUS_XXXX listing \\manglenames_share\\FF4GBY~Q"
+	false
+    fi
+}
+
+
 LOGDIR_PREFIX=test_smbclient_s3
 
 # possibly remove old logdirs:
@@ -940,6 +974,10 @@ testit "list with backup privilege" \
 
 testit "list a share with bad names (won't convert)" \
     test_bad_names || \
+    failed=`expr $failed + 1`
+
+testit "list a share with a mangled name + acl_xattr object" \
+    test_mangled_names || \
     failed=`expr $failed + 1`
 
 testit "rm -rf $LOGDIR" \
