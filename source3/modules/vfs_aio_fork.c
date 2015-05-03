@@ -154,21 +154,16 @@ static void free_aio_children(void **p)
 
 static ssize_t read_fd(int fd, void *ptr, size_t nbytes, int *recvfd)
 {
-	struct msghdr msg;
 	struct iovec iov[1];
+	struct msghdr msg = { .msg_iov = iov, .msg_iovlen = 1 };
 	ssize_t n;
 	size_t bufsize = msghdr_prep_recv_fds(NULL, NULL, 0, 1);
 	uint8_t buf[bufsize];
 
 	msghdr_prep_recv_fds(&msg, buf, bufsize, 1);
 
-	msg.msg_name = NULL;
-	msg.msg_namelen = 0;
-
 	iov[0].iov_base = (void *)ptr;
 	iov[0].iov_len = nbytes;
-	msg.msg_iov = iov;
-	msg.msg_iovlen = 1;
 
 	do {
 		n = recvmsg(fd, &msg, 0);
