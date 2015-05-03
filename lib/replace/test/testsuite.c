@@ -69,19 +69,23 @@ static int test_ftruncate(void)
 	}
 	if (ftruncate(fd, size) != 0) {
 		printf("failure: ftruncate [\n%s\n]\n", strerror(errno));
+		close(fd);
 		return false;
 	}
 	if (fstat(fd, &st) != 0) {
 		printf("failure: ftruncate [\nfstat failed - %s\n]\n", strerror(errno));
+		close(fd);
 		return false;
 	}
 	if (st.st_size != size) {
 		printf("failure: ftruncate [\ngave wrong size %d - expected %d\n]\n",
 		       (int)st.st_size, size);
+		close(fd);
 		return false;
 	}
 	unlink(TESTFILE);
 	printf("success: ftruncate\n");
+	close(fd);
 	return true;
 }
 
