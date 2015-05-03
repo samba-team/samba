@@ -983,7 +983,7 @@ static NTSTATUS sam_sequence_number(struct winbindd_domain *domain,
 {
 	struct rpc_pipe_client *samr_pipe;
 	struct policy_handle dom_pol;
-	uint32_t seq;
+	uint32_t seq = DOM_SEQUENCE_NONE;
 	TALLOC_CTX *tmp_ctx;
 	NTSTATUS status, result;
 	struct dcerpc_binding_handle *b = NULL;
