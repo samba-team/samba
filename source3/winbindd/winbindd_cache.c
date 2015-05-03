@@ -901,7 +901,7 @@ static struct cache_entry *centry_start(struct winbindd_domain *domain,
 	centry = SMB_XMALLOC_P(struct cache_entry);
 
 	centry->len = 8192; /* reasonable default */
-	centry->data = SMB_XMALLOC_ARRAY(uint8, centry->len);
+	centry->data = SMB_XMALLOC_ARRAY(uint8_t, centry->len);
 	centry->ofs = 0;
 	centry->sequence_number = domain->sequence_number;
 	centry->timeout = lp_winbind_cache_time() + time(NULL);
@@ -2718,7 +2718,7 @@ NTSTATUS wcache_lookup_groupmem(struct winbindd_domain *domain,
 
 	*sid_mem = talloc_array(mem_ctx, struct dom_sid, *num_names);
 	*names = talloc_array(mem_ctx, char *, *num_names);
-	*name_types = talloc_array(mem_ctx, uint32, *num_names);
+	*name_types = talloc_array(mem_ctx, uint32_t, *num_names);
 
 	if ((*sid_mem == NULL) || (*names == NULL) || (*name_types == NULL)) {
 		TALLOC_FREE(*sid_mem);

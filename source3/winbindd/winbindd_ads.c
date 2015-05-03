@@ -1244,7 +1244,7 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	if (num_members) {
 		(*sid_mem) = talloc_zero_array(mem_ctx, struct dom_sid, num_members);
 		(*names) = talloc_zero_array(mem_ctx, char *, num_members);
-		(*name_types) = talloc_zero_array(mem_ctx, uint32, num_members);
+		(*name_types) = talloc_zero_array(mem_ctx, uint32_t, num_members);
 		(sid_mem_nocache) = talloc_zero_array(tmp_ctx, struct dom_sid, num_members);
 
 		if ((members == NULL) || (*sid_mem == NULL) ||
@@ -1448,7 +1448,7 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 	NTSTATUS 		result = NT_STATUS_UNSUCCESSFUL;
 	WERROR werr;
 	int			i;
-	uint32			flags;	
+	uint32_t		flags;
 	struct rpc_pipe_client *cli;
 	int ret_count;
 	struct dcerpc_binding_handle *b;

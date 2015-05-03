@@ -496,7 +496,7 @@ static void winbind_msg_validate_cache(struct messaging_context *msg_ctx,
 				       struct server_id server_id,
 				       DATA_BLOB *data)
 {
-	uint8 ret;
+	uint8_t ret;
 	pid_t child_pid;
 	NTSTATUS status;
 
@@ -535,7 +535,7 @@ static void winbind_msg_validate_cache(struct messaging_context *msg_ctx,
 	/* install default SIGCHLD handler: validation code uses fork/waitpid */
 	CatchSignal(SIGCHLD, SIG_DFL);
 
-	ret = (uint8)winbindd_validate_cache_nobackup();
+	ret = (uint8_t)winbindd_validate_cache_nobackup();
 	DEBUG(10, ("winbindd_msg_validata_cache: got return value %d\n", ret));
 	messaging_send_buf(msg_ctx, server_id, MSG_WINBIND_VALIDATE_CACHE, &ret,
 			   (size_t)1);

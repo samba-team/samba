@@ -786,7 +786,7 @@ void winbind_msg_onlinestatus(struct messaging_context *msg_ctx,
 	}
 
 	messaging_send_buf(msg_ctx, *sender, MSG_WINBIND_ONLINESTATUS, 
-			   (const uint8 *)message, strlen(message) + 1);
+			   (const uint8_t *)message, strlen(message) + 1);
 
 	talloc_destroy(mem_ctx);
 }

@@ -388,6 +388,6 @@ struct WINBINDD_CCACHE_ENTRY {
 #define WINBINDD_ESTABLISH_LOOP 30
 #define WINBINDD_RESCAN_FREQ lp_winbind_cache_time()
 #define WINBINDD_PAM_AUTH_KRB5_RENEW_TIME 2592000 /* one month */
-#define DOM_SEQUENCE_NONE ((uint32)-1)
+#define DOM_SEQUENCE_NONE ((uint32_t)-1)
 
 #endif /* _WINBINDD_H */

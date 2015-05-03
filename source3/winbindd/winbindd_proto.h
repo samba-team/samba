@@ -61,11 +61,11 @@ NTSTATUS wcache_cached_creds_exist(struct winbindd_domain *domain, const struct 
 NTSTATUS wcache_get_creds(struct winbindd_domain *domain, 
 			  TALLOC_CTX *mem_ctx, 
 			  const struct dom_sid *sid,
-			  const uint8 **cached_nt_pass,
-			  const uint8 **cached_salt);
+			  const uint8_t **cached_nt_pass,
+			  const uint8_t **cached_salt);
 NTSTATUS wcache_save_creds(struct winbindd_domain *domain, 
 			   const struct dom_sid *sid,
-			   const uint8 nt_pass[NT_HASH_LEN]);
+			   const uint8_t nt_pass[NT_HASH_LEN]);
 void wcache_invalidate_samlogon(struct winbindd_domain *domain, 
 				const struct dom_sid *user_sid);
 bool wcache_invalidate_cache(void);
@@ -104,8 +104,8 @@ NTSTATUS wcache_query_user_fullname(struct winbindd_domain *domain,
 				    const char **full_name);
 NTSTATUS wcache_lookup_useraliases(struct winbindd_domain *domain,
 				   TALLOC_CTX *mem_ctx,
-				   uint32 num_sids, const struct dom_sid *sids,
-				   uint32 *pnum_aliases, uint32 **paliases);
+				   uint32_t num_sids, const struct dom_sid *sids,
+				   uint32_t *pnum_aliases, uint32 **paliases);
 NTSTATUS wcache_lookup_usergroups(struct winbindd_domain *domain,
 				  TALLOC_CTX *mem_ctx,
 				  const struct dom_sid *user_sid,
@@ -219,8 +219,8 @@ NTSTATUS winbindd_get_creds(struct winbindd_domain *domain,
 			    TALLOC_CTX *mem_ctx,
 			    const struct dom_sid *sid,
 			    struct netr_SamInfo3 **info3,
-			    const uint8 *cached_nt_pass[NT_HASH_LEN],
-			    const uint8 *cred_salt[NT_HASH_LEN]);
+			    const uint8_t *cached_nt_pass[NT_HASH_LEN],
+			    const uint8_t *cred_salt[NT_HASH_LEN]);
 NTSTATUS winbindd_store_creds(struct winbindd_domain *domain,
 			      const char *user, 
 			      const char *pass, 
@@ -436,7 +436,7 @@ int winbindd_num_clients(void);
 NTSTATUS lookup_usergroups_cached(struct winbindd_domain *domain,
 				  TALLOC_CTX *mem_ctx,
 				  const struct dom_sid *user_sid,
-				  uint32 *p_num_groups, struct dom_sid **user_sids);
+				  uint32_t *p_num_groups, struct dom_sid **user_sids);
 
 NTSTATUS normalize_name_map(TALLOC_CTX *mem_ctx,
 			     struct winbindd_domain *domain,
