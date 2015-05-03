@@ -944,9 +944,9 @@ static ssize_t streams_xattr_pwrite(vfs_handle_struct *handle,
 	}
 
         if ((offset + n) > ea.value.length-1) {
-		uint8 *tmp;
+		uint8_t *tmp;
 
-		tmp = talloc_realloc(talloc_tos(), ea.value.data, uint8,
+		tmp = talloc_realloc(talloc_tos(), ea.value.data, uint8_t,
 					   offset + n + 1);
 
 		if (tmp == NULL) {
@@ -1029,7 +1029,7 @@ static int streams_xattr_ftruncate(struct vfs_handle_struct *handle,
 					off_t offset)
 {
 	int ret;
-	uint8 *tmp;
+	uint8_t *tmp;
 	struct ea_struct ea;
 	NTSTATUS status;
         struct stream_io *sio =
@@ -1052,7 +1052,7 @@ static int streams_xattr_ftruncate(struct vfs_handle_struct *handle,
 		return -1;
 	}
 
-	tmp = talloc_realloc(talloc_tos(), ea.value.data, uint8,
+	tmp = talloc_realloc(talloc_tos(), ea.value.data, uint8_t,
 				   offset + 1);
 
 	if (tmp == NULL) {

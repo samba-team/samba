@@ -355,7 +355,7 @@ static uint32_t vfs_gluster_fs_capabilities(struct vfs_handle_struct *handle,
 
 static DIR *vfs_gluster_opendir(struct vfs_handle_struct *handle,
 				const char *path, const char *mask,
-				uint32 attributes)
+				uint32_t attributes)
 {
 	glfs_fd_t *fd;
 
@@ -370,7 +370,7 @@ static DIR *vfs_gluster_opendir(struct vfs_handle_struct *handle,
 
 static DIR *vfs_gluster_fdopendir(struct vfs_handle_struct *handle,
 				  files_struct *fsp, const char *mask,
-				  uint32 attributes)
+				  uint32_t attributes)
 {
 	return (DIR *) *(glfs_fd_t **)VFS_FETCH_FSP_EXTENSION(handle, fsp);
 }
@@ -542,7 +542,7 @@ static void aio_glusterfs_done(glfs_fd_t *fd, ssize_t ret, void *data)
  */
 static void aio_tevent_fd_done(struct tevent_context *event_ctx,
 				struct tevent_fd *fde,
-				uint16 flags, void *data)
+				uint16_t flags, void *data)
 {
 	struct tevent_req *req = NULL;
 	int sts = 0;
@@ -974,7 +974,7 @@ static bool vfs_gluster_lock(struct vfs_handle_struct *handle,
 }
 
 static int vfs_gluster_kernel_flock(struct vfs_handle_struct *handle,
-				    files_struct *fsp, uint32 share_mode,
+				    files_struct *fsp, uint32_t share_mode,
 				    uint32_t access_mask)
 {
 	errno = ENOSYS;

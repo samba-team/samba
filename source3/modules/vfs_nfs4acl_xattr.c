@@ -88,10 +88,10 @@ static NTSTATUS nfs4_get_nfs4_acl_common(TALLOC_CTX *mem_ctx,
 	for(i=0; i<nfs4acl->a_count; i++) {
 		SMB_ACE4PROP_T aceprop;
 
-		aceprop.aceType  = (uint32) nfs4acl->ace[i].e_type;
-		aceprop.aceFlags = (uint32) nfs4acl->ace[i].e_flags;
-		aceprop.aceMask  = (uint32) nfs4acl->ace[i].e_mask;
-		aceprop.who.id   = (uint32) nfs4acl->ace[i].e_id;
+		aceprop.aceType  = (uint32_t) nfs4acl->ace[i].e_type;
+		aceprop.aceFlags = (uint32_t) nfs4acl->ace[i].e_flags;
+		aceprop.aceMask  = (uint32_t) nfs4acl->ace[i].e_mask;
+		aceprop.who.id   = (uint32_t) nfs4acl->ace[i].e_id;
 		if (!strcmp(nfs4acl->ace[i].e_who,
 			    NFS4ACL_XATTR_OWNER_WHO)) {
 			aceprop.flags = SMB_ACE4_ID_SPECIAL;
@@ -333,7 +333,7 @@ static bool nfs4acl_xattr_fset_smb4acl(vfs_handle_struct *handle,
  * using the NFSv4 format conversion
  */
 static NTSTATUS nfs4_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
-			   uint32 security_info_sent,
+			   uint32_t security_info_sent,
 			   const struct security_descriptor *psd)
 {
 	return smb_set_nt_acl_nfs4(handle, fsp, security_info_sent, psd,
@@ -515,7 +515,7 @@ static SMB4ACL_T *nfs4acls_inheritacl(vfs_handle_struct *handle,
 
 static NTSTATUS nfs4acl_xattr_fget_nt_acl(struct vfs_handle_struct *handle,
 				   struct files_struct *fsp,
-				   uint32 security_info,
+				   uint32_t security_info,
 				   TALLOC_CTX *mem_ctx,
 				   struct security_descriptor **ppdesc)
 {
@@ -539,7 +539,7 @@ static NTSTATUS nfs4acl_xattr_fget_nt_acl(struct vfs_handle_struct *handle,
 }
 
 static NTSTATUS nfs4acl_xattr_get_nt_acl(struct vfs_handle_struct *handle,
-				  const char *name, uint32 security_info,
+				  const char *name, uint32_t security_info,
 				  TALLOC_CTX *mem_ctx,
 				  struct security_descriptor **ppdesc)
 {
@@ -565,7 +565,7 @@ static NTSTATUS nfs4acl_xattr_get_nt_acl(struct vfs_handle_struct *handle,
 
 static NTSTATUS nfs4acl_xattr_fset_nt_acl(vfs_handle_struct *handle,
 			 files_struct *fsp,
-			 uint32 security_info_sent,
+			 uint32_t security_info_sent,
 			 const struct security_descriptor *psd)
 {
 	return nfs4_set_nt_acl(handle, fsp, security_info_sent, psd);

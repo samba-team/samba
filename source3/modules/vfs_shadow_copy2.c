@@ -661,7 +661,7 @@ static void convert_sbuf(vfs_handle_struct *handle, const char *fname,
 static DIR *shadow_copy2_opendir(vfs_handle_struct *handle,
 					    const char *fname,
 					    const char *mask,
-					    uint32 attr)
+					    uint32_t attr)
 {
 	time_t timestamp;
 	char *stripped;
@@ -1405,7 +1405,7 @@ static int shadow_copy2_get_shadow_copy_data(
 
 static NTSTATUS shadow_copy2_fget_nt_acl(vfs_handle_struct *handle,
 					struct files_struct *fsp,
-					uint32 security_info,
+					uint32_t security_info,
 					 TALLOC_CTX *mem_ctx,
 					struct security_descriptor **ppdesc)
 {
@@ -1437,7 +1437,7 @@ static NTSTATUS shadow_copy2_fget_nt_acl(vfs_handle_struct *handle,
 
 static NTSTATUS shadow_copy2_get_nt_acl(vfs_handle_struct *handle,
 					const char *fname,
-					uint32 security_info,
+					uint32_t security_info,
 					TALLOC_CTX *mem_ctx,
 					struct security_descriptor **ppdesc)
 {

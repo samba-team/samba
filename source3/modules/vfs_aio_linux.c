@@ -36,7 +36,7 @@ static unsigned num_busy;
 
 static void aio_linux_done(struct tevent_context *event_ctx,
 			   struct tevent_fd *event,
-			   uint16 flags, void *private_data);
+			   uint16_t flags, void *private_data);
 
 /************************************************************************
  Housekeeping. Cleanup if no activity for 30 seconds.
@@ -249,7 +249,7 @@ static struct tevent_req *aio_linux_fsync_send(
 
 static void aio_linux_done(struct tevent_context *event_ctx,
 			   struct tevent_fd *event,
-			   uint16 flags, void *private_data)
+			   uint16_t flags, void *private_data)
 {
 	uint64_t num_events = 0;
 

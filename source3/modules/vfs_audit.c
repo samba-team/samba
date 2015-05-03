@@ -106,7 +106,7 @@ static void audit_disconnect(vfs_handle_struct *handle)
 	return;
 }
 
-static DIR *audit_opendir(vfs_handle_struct *handle, const char *fname, const char *mask, uint32 attr)
+static DIR *audit_opendir(vfs_handle_struct *handle, const char *fname, const char *mask, uint32_t attr)
 {
 	DIR *result;
 	

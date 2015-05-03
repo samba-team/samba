@@ -154,7 +154,7 @@ static bool aixjfs2_get_nfs4_acl(TALLOC_CTX *mem_ctx, const char *name,
 }
 
 static NTSTATUS aixjfs2_fget_nt_acl(vfs_handle_struct *handle,
-	files_struct *fsp, uint32 security_info,
+	files_struct *fsp, uint32_t security_info,
 	TALLOC_CTX *mem_ctx,
 	struct security_descriptor **ppdesc)
 {
@@ -187,7 +187,7 @@ static NTSTATUS aixjfs2_fget_nt_acl(vfs_handle_struct *handle,
 
 static NTSTATUS aixjfs2_get_nt_acl(vfs_handle_struct *handle,
 	const char *name,
-	uint32 security_info,
+	uint32_t security_info,
 	TALLOC_CTX *mem_ctx,
 	struct security_descriptor **ppdesc)
 {
@@ -321,9 +321,9 @@ static int aixjfs2_query_acl_support(
 	acl_type_t *pacl_type_info
 )
 {
-	acl_types_list_t	acl_type_list;
-	size_t  acl_type_list_len = sizeof(acl_types_list_t);
-	uint32_t	i;
+	acl_types_list_t acl_type_list;
+	size_t acl_type_list_len = sizeof(acl_types_list_t);
+	uint32_t i;
 
 	memset(&acl_type_list, 0, sizeof(acl_type_list));
 
@@ -350,9 +350,9 @@ static bool aixjfs2_process_smbacl(vfs_handle_struct *handle, files_struct *fsp,
 	SMB4ACE_T	*smbace;
 	TALLOC_CTX	*mem_ctx;
 	nfs4_acl_int_t	*jfs2acl;
-	int32_t	entryLen;
-	uint32	aclLen, naces;
-	int	rc;
+	int32_t		entryLen;
+	uint32_t	aclLen, naces;
+	int		rc;
 	acl_type_t	acltype;
 
 	DEBUG(10, ("jfs2_process_smbacl invoked on %s\n", fsp_str_dbg(fsp)));
@@ -420,7 +420,7 @@ static bool aixjfs2_process_smbacl(vfs_handle_struct *handle, files_struct *fsp,
 	return True;
 }
 
-static NTSTATUS aixjfs2_set_nt_acl_common(vfs_handle_struct *handle, files_struct *fsp, uint32 security_info_sent, const struct security_descriptor *psd)
+static NTSTATUS aixjfs2_set_nt_acl_common(vfs_handle_struct *handle, files_struct *fsp, uint32_t security_info_sent, const struct security_descriptor *psd)
 {
 	acl_type_t	acl_type_info;
 	NTSTATUS	result = NT_STATUS_ACCESS_DENIED;
@@ -444,7 +444,7 @@ static NTSTATUS aixjfs2_set_nt_acl_common(vfs_handle_struct *handle, files_struc
 	return result;
 }
 
-NTSTATUS aixjfs2_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp, uint32 security_info_sent, const struct security_descriptor *psd)
+NTSTATUS aixjfs2_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp, uint32_t security_info_sent, const struct security_descriptor *psd)
 {
 	return aixjfs2_set_nt_acl_common(handle, fsp, security_info_sent, psd);
 }

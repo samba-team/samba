@@ -553,7 +553,7 @@ err:
 static DIR *um_opendir(vfs_handle_struct *handle,
 		       const char *fname,
 		       const char *mask,
-		       uint32 attr)
+		       uint32_t attr)
 {
 	struct um_dirinfo_struct *dirInfo;
 
@@ -590,7 +590,7 @@ err:
 static DIR *um_fdopendir(vfs_handle_struct *handle,
 			 files_struct *fsp,
 			 const char *mask,
-			 uint32 attr)
+			 uint32_t attr)
 {
 	struct um_dirinfo_struct *dirInfo = NULL;
 	DIR *dirstream;
@@ -1519,7 +1519,7 @@ err:
 
 static NTSTATUS um_get_nt_acl(vfs_handle_struct *handle,
 			      const char *name,
-			      uint32 security_info,
+			      uint32_t security_info,
 			      TALLOC_CTX *mem_ctx,
 			      struct security_descriptor **ppdesc)
 {

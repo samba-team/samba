@@ -69,7 +69,7 @@ static bool fam_connection_initialized = False;
 static struct fam_watch_context *fam_notify_list;
 static void fam_handler(struct tevent_context *event_ctx,
 			struct tevent_fd *fd_event,
-			uint16 flags,
+			uint16_t flags,
 			void *private_data);
 
 static NTSTATUS fam_open_connection(FAMConnection *fam_conn,
@@ -148,7 +148,7 @@ static void fam_reopen(FAMConnection *fam_conn,
 
 static void fam_handler(struct tevent_context *event_ctx,
 			struct tevent_fd *fd_event,
-			uint16 flags,
+			uint16_t flags,
 			void *private_data)
 {
 	FAMConnection *fam_conn = (FAMConnection *)private_data;
@@ -230,7 +230,7 @@ static NTSTATUS fam_watch(vfs_handle_struct *vfs_handle,
 			  void *private_data, 
 			  void *handle_p)
 {
-	const uint32 fam_mask = (FILE_NOTIFY_CHANGE_FILE_NAME|
+	const uint32_t fam_mask = (FILE_NOTIFY_CHANGE_FILE_NAME|
 				 FILE_NOTIFY_CHANGE_DIR_NAME);
 	struct fam_watch_context *watch;
 	void **handle = (void **)handle_p;

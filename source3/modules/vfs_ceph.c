@@ -251,7 +251,7 @@ static int cephwrap_statvfs(struct vfs_handle_struct *handle,  const char *path,
 
 /* Directory operations */
 
-static DIR *cephwrap_opendir(struct vfs_handle_struct *handle,  const char *fname, const char *mask, uint32 attr)
+static DIR *cephwrap_opendir(struct vfs_handle_struct *handle,  const char *fname, const char *mask, uint32_t attr)
 {
 	int ret = 0;
 	struct ceph_dir_result *result;
@@ -271,7 +271,7 @@ static DIR *cephwrap_opendir(struct vfs_handle_struct *handle,  const char *fnam
 static DIR *cephwrap_fdopendir(struct vfs_handle_struct *handle,
 			       struct files_struct *fsp,
 			       const char *mask,
-			       uint32 attributes)
+			       uint32_t attributes)
 {
 	int ret = 0;
 	struct ceph_dir_result *result;
@@ -910,7 +910,7 @@ static bool cephwrap_lock(struct vfs_handle_struct *handle, files_struct *fsp, i
 }
 
 static int cephwrap_kernel_flock(struct vfs_handle_struct *handle, files_struct *fsp,
-				uint32 share_mode, uint32 access_mask)
+				uint32_t share_mode, uint32_t access_mask)
 {
 	DEBUG(10, ("[CEPH] kernel_flock\n"));
 	/*

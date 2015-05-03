@@ -3346,7 +3346,7 @@ fail:
 
 static NTSTATUS fruit_fget_nt_acl(vfs_handle_struct *handle,
 				  files_struct *fsp,
-				  uint32 security_info,
+				  uint32_t security_info,
 				  TALLOC_CTX *mem_ctx,
 				  struct security_descriptor **ppdesc)
 {
@@ -3404,7 +3404,7 @@ static NTSTATUS fruit_fget_nt_acl(vfs_handle_struct *handle,
 
 static NTSTATUS fruit_fset_nt_acl(vfs_handle_struct *handle,
 				  files_struct *fsp,
-				  uint32 security_info_sent,
+				  uint32_t security_info_sent,
 				  const struct security_descriptor *psd)
 {
 	NTSTATUS status;

@@ -510,7 +510,7 @@ static bool scannedonly_allow_access(vfs_handle_struct * handle,
 
 static DIR *scannedonly_opendir(vfs_handle_struct * handle,
 					   const char *fname,
-					   const char *mask, uint32 attr)
+					   const char *mask, uint32_t attr)
 {
 	DIR *DIRp;
 	struct scannedonly_DIR *sDIR;
@@ -535,7 +535,7 @@ static DIR *scannedonly_opendir(vfs_handle_struct * handle,
 
 static DIR *scannedonly_fdopendir(vfs_handle_struct * handle,
 					   files_struct *fsp,
-					   const char *mask, uint32 attr)
+					   const char *mask, uint32_t attr)
 {
 	DIR *DIRp;
 	struct scannedonly_DIR *sDIR;

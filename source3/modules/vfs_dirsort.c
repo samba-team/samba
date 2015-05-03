@@ -114,7 +114,7 @@ static bool open_and_sort_dir(vfs_handle_struct *handle,
 
 static DIR *dirsort_opendir(vfs_handle_struct *handle,
 				       const char *fname, const char *mask,
-				       uint32 attr)
+				       uint32_t attr)
 {
 	struct dirsort_privates *list_head = NULL;
 	struct dirsort_privates *data = NULL;
@@ -163,7 +163,7 @@ static DIR *dirsort_opendir(vfs_handle_struct *handle,
 static DIR *dirsort_fdopendir(vfs_handle_struct *handle,
 					files_struct *fsp,
 					const char *mask,
-					uint32 attr)
+					uint32_t attr)
 {
 	struct dirsort_privates *list_head = NULL;
 	struct dirsort_privates *data = NULL;

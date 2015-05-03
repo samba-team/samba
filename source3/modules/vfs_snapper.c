@@ -2407,7 +2407,7 @@ done:
 
 static NTSTATUS snapper_gmt_fget_nt_acl(vfs_handle_struct *handle,
 					struct files_struct *fsp,
-					uint32 security_info,
+					uint32_t security_info,
 					TALLOC_CTX *mem_ctx,
 					struct security_descriptor **ppdesc)
 {
@@ -2439,7 +2439,7 @@ static NTSTATUS snapper_gmt_fget_nt_acl(vfs_handle_struct *handle,
 
 static NTSTATUS snapper_gmt_get_nt_acl(vfs_handle_struct *handle,
 				       const char *fname,
-				       uint32 security_info,
+				       uint32_t security_info,
 				       TALLOC_CTX *mem_ctx,
 				       struct security_descriptor **ppdesc)
 {

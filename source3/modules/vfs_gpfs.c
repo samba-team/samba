@@ -73,8 +73,8 @@ static inline gpfs_ace_v4_t *gpfs_ace_ptr(gpfs_acl_t *gacl, unsigned int i)
 	return &gacl->ace_v4[i];
 }
 
-static bool set_gpfs_sharemode(files_struct *fsp, uint32 access_mask,
-			       uint32 share_access)
+static bool set_gpfs_sharemode(files_struct *fsp, uint32_t access_mask,
+			       uint32_t share_access)
 {
 	unsigned int allow = GPFS_SHARE_NONE;
 	unsigned int deny = GPFS_DENY_NONE;
@@ -119,7 +119,7 @@ static bool set_gpfs_sharemode(files_struct *fsp, uint32 access_mask,
 }
 
 static int vfs_gpfs_kernel_flock(vfs_handle_struct *handle, files_struct *fsp,
-				 uint32 share_mode, uint32 access_mask)
+				 uint32_t share_mode, uint32_t access_mask)
 {
 
 	struct gpfs_config_data *config;
@@ -537,7 +537,7 @@ static int gpfs_get_nfs4_acl(TALLOC_CTX *mem_ctx, const char *fname, SMB4ACL_T *
 }
 
 static NTSTATUS gpfsacl_fget_nt_acl(vfs_handle_struct *handle,
-	files_struct *fsp, uint32 security_info,
+	files_struct *fsp, uint32_t security_info,
 	TALLOC_CTX *mem_ctx,
 	struct security_descriptor **ppdesc)
 {
@@ -585,7 +585,7 @@ static NTSTATUS gpfsacl_fget_nt_acl(vfs_handle_struct *handle,
 
 static NTSTATUS gpfsacl_get_nt_acl(vfs_handle_struct *handle,
 	const char *name,
-	uint32 security_info,
+	uint32_t security_info,
 	TALLOC_CTX *mem_ctx, struct security_descriptor **ppdesc)
 {
 	SMB4ACL_T *pacl = NULL;
@@ -759,7 +759,7 @@ static bool gpfsacl_process_smbacl(vfs_handle_struct *handle,
 	return True;
 }
 
-static NTSTATUS gpfsacl_set_nt_acl_internal(vfs_handle_struct *handle, files_struct *fsp, uint32 security_info_sent, const struct security_descriptor *psd)
+static NTSTATUS gpfsacl_set_nt_acl_internal(vfs_handle_struct *handle, files_struct *fsp, uint32_t security_info_sent, const struct security_descriptor *psd)
 {
 	struct gpfs_acl *acl;
 	NTSTATUS result = NT_STATUS_ACCESS_DENIED;
@@ -791,7 +791,7 @@ static NTSTATUS gpfsacl_set_nt_acl_internal(vfs_handle_struct *handle, files_str
 	return result;
 }
 
-static NTSTATUS gpfsacl_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp, uint32 security_info_sent, const struct security_descriptor *psd)
+static NTSTATUS gpfsacl_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp, uint32_t security_info_sent, const struct security_descriptor *psd)
 {
 	struct gpfs_config_data *config;
 
@@ -1261,9 +1261,9 @@ static int gpfsacl_sys_acl_delete_def_file(vfs_handle_struct *handle,
  * Assumed: mode bits are shiftable and standard
  * Output: the new aceMask field for an smb nfs4 ace
  */
-static uint32 gpfsacl_mask_filter(uint32 aceType, uint32 aceMask, uint32 rwx)
+static uint32_t gpfsacl_mask_filter(uint32_t aceType, uint32_t aceMask, uint32_t rwx)
 {
-	const uint32 posix_nfs4map[3] = {
+	const uint32_t posix_nfs4map[3] = {
                 SMB_ACE4_EXECUTE, /* execute */
 		SMB_ACE4_WRITE_DATA | SMB_ACE4_APPEND_DATA, /* write; GPFS specific */
                 SMB_ACE4_READ_DATA /* read */

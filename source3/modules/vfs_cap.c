@@ -41,7 +41,7 @@ static uint64_t cap_disk_free(vfs_handle_struct *handle, const char *path,
 	return SMB_VFS_NEXT_DISK_FREE(handle, cappath, bsize, dfree, dsize);
 }
 
-static DIR *cap_opendir(vfs_handle_struct *handle, const char *fname, const char *mask, uint32 attr)
+static DIR *cap_opendir(vfs_handle_struct *handle, const char *fname, const char *mask, uint32_t attr)
 {
 	char *capname = capencode(talloc_tos(), fname);
 

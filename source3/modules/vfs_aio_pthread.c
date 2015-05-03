@@ -41,7 +41,7 @@ static bool init_aio_threadpool(struct tevent_context *ev_ctx,
 				struct pthreadpool **pp_pool,
 				void (*completion_fn)(struct tevent_context *,
 						struct tevent_fd *,
-						uint16,
+						uint16_t,
 						void *))
 {
 	struct tevent_fd *sock_event = NULL;
@@ -152,7 +152,7 @@ static struct aio_open_private_data *find_open_private_data_by_mid(uint64_t mid)
 
 static void aio_open_handle_completion(struct tevent_context *event_ctx,
 				struct tevent_fd *event,
-				uint16 flags,
+				uint16_t flags,
 				void *p)
 {
 	struct aio_open_private_data *opd = NULL;

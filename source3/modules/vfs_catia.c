@@ -271,7 +271,7 @@ static NTSTATUS catia_string_replace_allocate(connection_struct *conn,
 static DIR *catia_opendir(vfs_handle_struct *handle,
 				     const char *fname,
 				     const char *mask,
-				     uint32 attr)
+				     uint32_t attr)
 {
 	char *name_mapped = NULL;
 	NTSTATUS status;
@@ -729,7 +729,7 @@ catia_streaminfo(struct vfs_handle_struct *handle,
 static NTSTATUS
 catia_get_nt_acl(struct vfs_handle_struct *handle,
 		 const char *path,
-		 uint32 security_info,
+		 uint32_t security_info,
 		 TALLOC_CTX *mem_ctx,
 		 struct security_descriptor **ppdesc)
 {

@@ -79,10 +79,10 @@ static NTSTATUS zfs_get_nt_acl_common(TALLOC_CTX *mem_ctx,
 	for(i=0; i<naces; i++) {
 		SMB_ACE4PROP_T aceprop;
 
-		aceprop.aceType  = (uint32) acebuf[i].a_type;
-		aceprop.aceFlags = (uint32) acebuf[i].a_flags;
-		aceprop.aceMask  = (uint32) acebuf[i].a_access_mask;
-		aceprop.who.id   = (uint32) acebuf[i].a_who;
+		aceprop.aceType  = (uint32_t) acebuf[i].a_type;
+		aceprop.aceFlags = (uint32_t) acebuf[i].a_flags;
+		aceprop.aceMask  = (uint32_t) acebuf[i].a_access_mask;
+		aceprop.who.id   = (uint32_t) acebuf[i].a_who;
 
 		if(aceprop.aceFlags & ACE_OWNER) {
 			aceprop.flags = SMB_ACE4_ID_SPECIAL;
@@ -183,7 +183,7 @@ static bool zfs_process_smbacl(vfs_handle_struct *handle, files_struct *fsp, SMB
  * using the NFSv4 format conversion
  */
 static NTSTATUS zfs_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
-			   uint32 security_info_sent,
+			   uint32_t security_info_sent,
 			   const struct security_descriptor *psd)
 {
         return smb_set_nt_acl_nfs4(handle, fsp, security_info_sent, psd,
@@ -192,7 +192,7 @@ static NTSTATUS zfs_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 
 static NTSTATUS zfsacl_fget_nt_acl(struct vfs_handle_struct *handle,
 				   struct files_struct *fsp,
-				   uint32 security_info,
+				   uint32_t security_info,
 				   TALLOC_CTX *mem_ctx,
 				   struct security_descriptor **ppdesc)
 {
@@ -214,7 +214,7 @@ static NTSTATUS zfsacl_fget_nt_acl(struct vfs_handle_struct *handle,
 }
 
 static NTSTATUS zfsacl_get_nt_acl(struct vfs_handle_struct *handle,
-				  const char *name, uint32 security_info,
+				  const char *name, uint32_t security_info,
 				  TALLOC_CTX *mem_ctx,
 				  struct security_descriptor **ppdesc)
 {
@@ -237,7 +237,7 @@ static NTSTATUS zfsacl_get_nt_acl(struct vfs_handle_struct *handle,
 
 static NTSTATUS zfsacl_fset_nt_acl(vfs_handle_struct *handle,
 			 files_struct *fsp,
-			 uint32 security_info_sent,
+			 uint32_t security_info_sent,
 			 const struct security_descriptor *psd)
 {
 	return zfs_set_nt_acl(handle, fsp, security_info_sent, psd);
