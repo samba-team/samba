@@ -6,7 +6,7 @@ from Configure import conf
 real_Popen = None
 
 ANSWER_UNKNOWN = (254, "")
-ANSWER_FAIL    = (255, "")
+ANSWER_NO      = (1, "")
 ANSWER_OK      = (0, "")
 
 cross_answers_incomplete = False
@@ -33,10 +33,13 @@ def add_answer(ca_file, msg, answer):
         f.write('%s: OK\n' % msg)
     elif answer == ANSWER_UNKNOWN:
         f.write('%s: UNKNOWN\n' % msg)
-    elif answer == ANSWER_FAIL:
-        f.write('%s: FAIL\n' % msg)
+    elif answer == ANSWER_NO:
+        f.write('%s: NO\n' % msg)
     else:
-        f.write('%s: (%d, "%s")\n' % (msg, retcode, retstring))
+        if retcode == 0:
+            f.write('%s: "%s"\n' % (msg, retstring))
+        else:
+            f.write('%s: (%d, "%s")\n' % (msg, retcode, retstring))
     f.close()
 
 
@@ -64,7 +67,7 @@ def cross_answer(ca_file, msg):
                 return ANSWER_UNKNOWN
             elif ans == "FAIL" or ans == "NO":
                 f.close()
-                return ANSWER_FAIL
+                return ANSWER_NO
             elif ans[0] == '"':
                 f.close()
                 return (0, ans.strip('"'))
