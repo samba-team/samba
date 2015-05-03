@@ -566,7 +566,7 @@ bool strupper_m(char *s)
 	if (!*s)
 		return true;
 
-	/* I assume that lowercased string takes the same number of bytes
+	/* I assume that uppercased string takes the same number of bytes
 	 * as source string even in multibyte encoding. (VIV) */
 	len = strlen(s) + 1;
 	ret = unix_strupper(s,len,s,len);
