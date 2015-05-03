@@ -9597,7 +9597,6 @@ static struct {
 	{ "LOCAL-SUBSTITUTE", run_local_substitute, 0},
 	{ "LOCAL-GENCACHE", run_local_gencache, 0},
 	{ "LOCAL-TALLOC-DICT", run_local_talloc_dict, 0},
-	{ "LOCAL-CTDB-CONN", run_ctdb_conn, 0},
 	{ "LOCAL-DBWRAP-WATCH1", run_dbwrap_watch1, 0 },
 	{ "LOCAL-MESSAGING-READ1", run_messaging_read1, 0 },
 	{ "LOCAL-MESSAGING-READ2", run_messaging_read2, 0 },

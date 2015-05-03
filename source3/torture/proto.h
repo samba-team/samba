@@ -105,7 +105,6 @@ bool run_cleanup1(int dummy);
 bool run_cleanup2(int dummy);
 bool run_cleanup3(int dummy);
 bool run_cleanup4(int dummy);
-bool run_ctdb_conn(int dummy);
 bool run_notify_bench2(int dummy);
 bool run_notify_bench3(int dummy);
 bool run_dbwrap_watch1(int dummy);
