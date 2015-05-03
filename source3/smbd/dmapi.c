@@ -27,7 +27,7 @@
 
 #ifndef USE_DMAPI
 
-uint32 dmapi_file_flags(const char * const path) { return 0; }
+uint32_t dmapi_file_flags(const char * const path) { return 0; }
 bool dmapi_have_session(void) { return False; }
 const void * dmapi_get_current_session(void) { return NULL; }
 
@@ -259,7 +259,7 @@ bool dmapi_destroy_session(void)
    is used in vfs_tsmsm.c will work with other DMAPI-based HSM 
    implementations as well.
 */
-uint32 dmapi_file_flags(const char * const path)
+uint32_t dmapi_file_flags(const char * const path)
 {
 	int		err;
 	dm_eventset_t   events = {0};
@@ -271,7 +271,7 @@ uint32 dmapi_file_flags(const char * const path)
 	void	        *dm_handle = NULL;
 	size_t	        dm_handle_len = 0;
 
-	uint32	        flags = 0;
+	uint32_t        flags = 0;
 
 	_dmapi_session_ptr = dmapi_get_current_session();
 	if (_dmapi_session_ptr == NULL) {

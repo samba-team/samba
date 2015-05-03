@@ -178,7 +178,7 @@ bool set_conn_connectpath(connection_struct *conn, const char *connectpath)
  Load parameters specific to a connection/service.
 ****************************************************************************/
 
-bool set_current_service(connection_struct *conn, uint16 flags, bool do_chdir)
+bool set_current_service(connection_struct *conn, uint16_t flags, bool do_chdir)
 {
 	int snum;
 

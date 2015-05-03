@@ -64,12 +64,12 @@ struct smb_Dir {
 struct dptr_struct {
 	struct dptr_struct *next, *prev;
 	int dnum;
-	uint16 spid;
+	uint16_t spid;
 	struct connection_struct *conn;
 	struct smb_Dir *dir_hnd;
 	bool expect_close;
 	char *wcard;
-	uint32 attr;
+	uint32_t attr;
 	char *path;
 	bool has_wild; /* Set to true if the wcard entry has MS wildcard characters in it. */
 	bool did_stat; /* Optimisation for non-wcard searches. */
@@ -81,7 +81,7 @@ struct dptr_struct {
 static struct smb_Dir *OpenDir_fsp(TALLOC_CTX *mem_ctx, connection_struct *conn,
 			files_struct *fsp,
 			const char *mask,
-			uint32 attr);
+			uint32_t attr);
 
 static void DirCacheAdd(struct smb_Dir *dirp, const char *name, long offset);
 
@@ -209,7 +209,7 @@ const char *dptr_wcard(struct smbd_server_connection *sconn, int key)
  Get the dir attrib for a dir index.
 ****************************************************************************/
 
-uint16 dptr_attr(struct smbd_server_connection *sconn, int key)
+uint16_t dptr_attr(struct smbd_server_connection *sconn, int key)
 {
 	struct dptr_struct *dptr = dptr_get(sconn, key, false);
 	if (dptr)
@@ -334,7 +334,7 @@ void dptr_idlecnum(connection_struct *conn)
 ****************************************************************************/
 
 void dptr_closepath(struct smbd_server_connection *sconn,
-		    char *path,uint16 spid)
+		    char *path,uint16_t spid)
 {
 	struct dptr_struct *dptr, *next;
 	for(dptr = sconn->searches.dirptrs; dptr; dptr = next) {
@@ -444,8 +444,8 @@ static struct smb_Dir *open_dir_with_privilege(connection_struct *conn,
 NTSTATUS dptr_create(connection_struct *conn,
 		struct smb_request *req,
 		files_struct *fsp,
-		const char *path, bool old_handle, bool expect_close,uint16 spid,
-		const char *wcard, bool wcard_has_wild, uint32 attr, struct dptr_struct **dptr_ret)
+		const char *path, bool old_handle, bool expect_close,uint16_t spid,
+		const char *wcard, bool wcard_has_wild, uint32_t attr, struct dptr_struct **dptr_ret)
 {
 	struct smbd_server_connection *sconn = conn->sconn;
 	struct dptr_struct *dptr = NULL;
@@ -1230,7 +1230,7 @@ static bool smbd_dirptr_8_3_match_fn(TALLOC_CTX *ctx,
 		size_t ret_len = 0;
 		size_t len = (strlen(dname) + 2) * 4; /* Allow enough space. */
 		uint8_t *tmp = talloc_array(talloc_tos(),
-					uint8,
+					uint8_t,
 					len);
 
 		status = srvstr_push(NULL,
@@ -1533,7 +1533,7 @@ static int smb_Dir_destructor(struct smb_Dir *dirp)
 struct smb_Dir *OpenDir(TALLOC_CTX *mem_ctx, connection_struct *conn,
 			const char *name,
 			const char *mask,
-			uint32 attr)
+			uint32_t attr)
 {
 	struct smb_Dir *dirp = talloc_zero(mem_ctx, struct smb_Dir);
 	struct smbd_server_connection *sconn = conn->sconn;
@@ -1577,7 +1577,7 @@ struct smb_Dir *OpenDir(TALLOC_CTX *mem_ctx, connection_struct *conn,
 static struct smb_Dir *OpenDir_fsp(TALLOC_CTX *mem_ctx, connection_struct *conn,
 			files_struct *fsp,
 			const char *mask,
-			uint32 attr)
+			uint32_t attr)
 {
 	struct smb_Dir *dirp = talloc_zero(mem_ctx, struct smb_Dir);
 	struct smbd_server_connection *sconn = conn->sconn;

@@ -1111,7 +1111,7 @@ static void send_break_to_none(struct messaging_context *msg_ctx,
 	SSVAL(msg, OP_BREAK_MSG_OP_TYPE_OFFSET, NO_OPLOCK);
 
 	messaging_send_buf(msg_ctx, e->pid, MSG_SMB_BREAK_REQUEST,
-			   (uint8 *)msg, sizeof(msg));
+			   (uint8_t *)msg, sizeof(msg));
 }
 
 static void do_break_to_none(struct tevent_context *ctx,
@@ -1261,7 +1261,7 @@ void smbd_contend_level2_oplocks_end(files_struct *fsp,
 
 void share_mode_entry_to_message(char *msg, const struct share_mode_entry *e)
 {
-	SIVAL(msg,OP_BREAK_MSG_PID_OFFSET,(uint32)e->pid.pid);
+	SIVAL(msg,OP_BREAK_MSG_PID_OFFSET,(uint32_t)e->pid.pid);
 	SBVAL(msg,OP_BREAK_MSG_MID_OFFSET,e->op_mid);
 	SSVAL(msg,OP_BREAK_MSG_OP_TYPE_OFFSET,e->op_type);
 	SIVAL(msg,OP_BREAK_MSG_ACCESS_MASK_OFFSET,e->access_mask);
@@ -1293,8 +1293,8 @@ void message_to_share_mode_entry(struct share_mode_entry *e, const char *msg)
 	e->time.tv_usec = (int)IVAL(msg,OP_BREAK_MSG_TIME_USEC_OFFSET);
 	pull_file_id_24(msg+OP_BREAK_MSG_DEV_OFFSET, &e->id);
 	e->share_file_id = (unsigned long)IVAL(msg,OP_BREAK_MSG_FILE_ID_OFFSET);
-	e->uid = (uint32)IVAL(msg,OP_BREAK_MSG_UID_OFFSET);
-	e->flags = (uint16)SVAL(msg,OP_BREAK_MSG_FLAGS_OFFSET);
+	e->uid = (uint32_t)IVAL(msg,OP_BREAK_MSG_UID_OFFSET);
+	e->flags = (uint16_t)SVAL(msg,OP_BREAK_MSG_FLAGS_OFFSET);
 	e->name_hash = IVAL(msg,OP_BREAK_MSG_NAME_HASH_OFFSET);
 	e->pid.vnn = IVAL(msg,OP_BREAK_MSG_VNN_OFFSET);
 }

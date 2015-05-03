@@ -170,7 +170,7 @@ void file_close_conn(connection_struct *conn)
  Close all open files for a pid and a vuid.
 ****************************************************************************/
 
-void file_close_pid(struct smbd_server_connection *sconn, uint16 smbpid,
+void file_close_pid(struct smbd_server_connection *sconn, uint16_t smbpid,
 		    uint64_t vuid)
 {
 	files_struct *fsp, *next;
@@ -558,7 +558,7 @@ void file_free(struct smb_request *req, files_struct *fsp)
  Get an fsp from a packet given a 16 bit fnum.
 ****************************************************************************/
 
-files_struct *file_fsp(struct smb_request *req, uint16 fid)
+files_struct *file_fsp(struct smb_request *req, uint16_t fid)
 {
 	struct smbXsrv_open *op;
 	NTSTATUS status;
@@ -687,8 +687,8 @@ struct files_struct *file_fsp_smb2(struct smbd_smb2_request *smb2req,
 ****************************************************************************/
 
 NTSTATUS dup_file_fsp(struct smb_request *req, files_struct *from,
-		      uint32 access_mask, uint32 share_access,
-		      uint32 create_options, files_struct *to)
+		      uint32_t access_mask, uint32_t share_access,
+		      uint32_t create_options, files_struct *to)
 {
 	/* this can never happen for print files */
 	SMB_ASSERT(from->print_file == NULL);

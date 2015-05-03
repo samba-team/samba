@@ -1333,7 +1333,7 @@ void reply_getatr(struct smb_request *req)
 	} else {
 		srv_put_dos_date3((char *)req->outbuf,smb_vwv1,mtime);
 	}
-	SIVAL(req->outbuf,smb_vwv3,(uint32)size);
+	SIVAL(req->outbuf,smb_vwv3,(uint32_t)size);
 
 	if (get_Protocol() >= PROTOCOL_NT1) {
 		SSVAL(req->outbuf, smb_flg2,
@@ -2067,7 +2067,7 @@ void reply_open(struct smb_request *req)
 	} else {
 		srv_put_dos_date3((char *)req->outbuf,smb_vwv2,mtime);
 	}
-	SIVAL(req->outbuf,smb_vwv4,(uint32)size);
+	SIVAL(req->outbuf,smb_vwv4,(uint32_t)size);
 	SSVAL(req->outbuf,smb_vwv6,deny_mode);
 
 	if (oplock_request && lp_fake_oplocks(SNUM(conn))) {
@@ -2286,7 +2286,7 @@ void reply_open_and_X(struct smb_request *req)
 	} else {
 		srv_put_dos_date3((char *)req->outbuf,smb_vwv4,mtime);
 	}
-	SIVAL(req->outbuf,smb_vwv6,(uint32)fsp->fsp_name->st.st_ex_size);
+	SIVAL(req->outbuf,smb_vwv6,(uint32_t)fsp->fsp_name->st.st_ex_size);
 	SSVAL(req->outbuf,smb_vwv8,GET_OPENX_MODE(deny_mode));
 	SSVAL(req->outbuf,smb_vwv11,smb_action);
 
@@ -8392,7 +8392,7 @@ void reply_getattrE(struct smb_request *req)
 		SIVAL(req->outbuf, smb_vwv8, 0);
 	} else {
 		uint32_t allocation_size = SMB_VFS_GET_ALLOC_SIZE(conn,fsp, &fsp->fsp_name->st);
-		SIVAL(req->outbuf, smb_vwv6, (uint32)fsp->fsp_name->st.st_ex_size);
+		SIVAL(req->outbuf, smb_vwv6, (uint32_t)fsp->fsp_name->st.st_ex_size);
 		SIVAL(req->outbuf, smb_vwv8, allocation_size);
 	}
 	SSVAL(req->outbuf,smb_vwv10, mode);

@@ -584,7 +584,7 @@ static NTSTATUS receive_smb_talloc(TALLOC_CTX *mem_ctx,
 static bool init_smb_request(struct smb_request *req,
 			     struct smbd_server_connection *sconn,
 			     struct smbXsrv_connection *xconn,
-			     const uint8 *inbuf,
+			     const uint8_t *inbuf,
 			     size_t unread_bytes, bool encrypted,
 			     uint32_t seqnum)
 {
@@ -1382,7 +1382,7 @@ static bool create_outbuf(TALLOC_CTX *mem_ctx, struct smb_request *req,
 	return true;
 }
 
-void reply_outbuf(struct smb_request *req, uint8 num_words, uint32 num_bytes)
+void reply_outbuf(struct smb_request *req, uint8_t num_words, uint32_t num_bytes)
 {
 	char *outbuf;
 	if (!create_outbuf(req, req, req->inbuf, &outbuf, num_words,
@@ -1443,7 +1443,7 @@ static void smb_dump(const char *name, int type, const char *data)
  find.
 ****************************************************************************/
 
-static connection_struct *switch_message(uint8 type, struct smb_request *req)
+static connection_struct *switch_message(uint8_t type, struct smb_request *req)
 {
 	int flags;
 	uint64_t session_tag;
@@ -1666,7 +1666,7 @@ static void construct_reply(struct smbXsrv_connection *xconn,
 		smb_panic("could not allocate smb_request");
 	}
 
-	if (!init_smb_request(req, sconn, xconn, (uint8 *)inbuf, unread_bytes,
+	if (!init_smb_request(req, sconn, xconn, (uint8_t *)inbuf, unread_bytes,
 			      encrypted, seqnum)) {
 		exit_server_cleanly("Invalid SMB request");
 	}
@@ -1969,12 +1969,12 @@ const char *smb_fn_name(int type)
  Helper functions for contruct_reply.
 ****************************************************************************/
 
-void add_to_common_flags2(uint32 v)
+void add_to_common_flags2(uint32_t v)
 {
 	common_flags2 |= v;
 }
 
-void remove_from_common_flags2(uint32 v)
+void remove_from_common_flags2(uint32_t v)
 {
 	common_flags2 &= ~v;
 }

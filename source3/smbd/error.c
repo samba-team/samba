@@ -53,12 +53,12 @@ bool use_nt_status(void)
  server.
 ****************************************************************************/
 
-void error_packet_set(char *outbuf, uint8 eclass, uint32 ecode, NTSTATUS ntstatus, int line, const char *file)
+void error_packet_set(char *outbuf, uint8_t eclass, uint32_t ecode, NTSTATUS ntstatus, int line, const char *file)
 {
 	bool force_nt_status = False;
 	bool force_dos_status = False;
 
-	if (eclass == (uint8)-1) {
+	if (eclass == (uint8_t)-1) {
 		force_nt_status = True;
 	} else if (NT_STATUS_IS_DOS(ntstatus)) {
 		force_dos_status = True;
@@ -105,7 +105,7 @@ void error_packet_set(char *outbuf, uint8 eclass, uint32 ecode, NTSTATUS ntstatu
 	}
 }
 
-int error_packet(char *outbuf, uint8 eclass, uint32 ecode, NTSTATUS ntstatus, int line, const char *file)
+int error_packet(char *outbuf, uint8_t eclass, uint32_t ecode, NTSTATUS ntstatus, int line, const char *file)
 {
 	int outsize = srv_set_message(outbuf,0,0,True);
 	error_packet_set(outbuf, eclass, ecode, ntstatus, line, file);
@@ -124,7 +124,7 @@ void reply_nt_error(struct smb_request *req, NTSTATUS ntstatus,
  Forces a DOS error on the wire.
 ****************************************************************************/
 
-void reply_force_dos_error(struct smb_request *req, uint8 eclass, uint32 ecode,
+void reply_force_dos_error(struct smb_request *req, uint8_t eclass, uint32_t ecode,
 		    int line, const char *file)
 {
 	TALLOC_FREE(req->outbuf);
@@ -136,7 +136,7 @@ void reply_force_dos_error(struct smb_request *req, uint8 eclass, uint32 ecode,
 			file);
 }
 
-void reply_both_error(struct smb_request *req, uint8 eclass, uint32 ecode,
+void reply_both_error(struct smb_request *req, uint8_t eclass, uint32_t ecode,
 		      NTSTATUS status, int line, const char *file)
 {
 	TALLOC_FREE(req->outbuf);

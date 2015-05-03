@@ -1261,7 +1261,7 @@ static void call_trans2open(connection_struct *conn,
 	SSVAL(params,0,fsp->fnum);
 	SSVAL(params,2,fattr);
 	srv_put_dos_date2(params,4, mtime);
-	SIVAL(params,8, (uint32)size);
+	SIVAL(params,8, (uint32_t)size);
 	SSVAL(params,12,deny_mode);
 	SSVAL(params,14,0); /* open_type - file or directory. */
 	SSVAL(params,16,0); /* open_state - only valid for IPC device. */
@@ -1478,7 +1478,7 @@ static bool smbd_dirptr_lanman2_match_fn(TALLOC_CTX *ctx,
 		size_t ret_len = 0;
 		size_t len = (strlen(dname) + 2) * 4; /* Allow enough space. */
 		uint8_t *tmp = talloc_array(talloc_tos(),
-					uint8,
+					uint8_t,
 					len);
 
 		status = srvstr_push(NULL,
@@ -1705,8 +1705,8 @@ static NTSTATUS smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 		srv_put_dos_date2(p,0,create_date);
 		srv_put_dos_date2(p,4,adate);
 		srv_put_dos_date2(p,8,mdate);
-		SIVAL(p,12,(uint32)file_size);
-		SIVAL(p,16,(uint32)allocation_size);
+		SIVAL(p,12,(uint32_t)file_size);
+		SIVAL(p,16,(uint32_t)allocation_size);
 		SSVAL(p,20,mode);
 		p += 23;
 		nameptr = p;
@@ -1744,8 +1744,8 @@ static NTSTATUS smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 		srv_put_dos_date2(p,0,create_date);
 		srv_put_dos_date2(p,4,adate);
 		srv_put_dos_date2(p,8,mdate);
-		SIVAL(p,12,(uint32)file_size);
-		SIVAL(p,16,(uint32)allocation_size);
+		SIVAL(p,12,(uint32_t)file_size);
+		SIVAL(p,16,(uint32_t)allocation_size);
 		SSVAL(p,20,mode);
 		{
 			unsigned int ea_size = estimate_ea_size(conn, NULL,
@@ -1794,8 +1794,8 @@ static NTSTATUS smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 		srv_put_dos_date2(p,0,create_date);
 		srv_put_dos_date2(p,4,adate);
 		srv_put_dos_date2(p,8,mdate);
-		SIVAL(p,12,(uint32)file_size);
-		SIVAL(p,16,(uint32)allocation_size);
+		SIVAL(p,12,(uint32_t)file_size);
+		SIVAL(p,16,(uint32_t)allocation_size);
 		SSVAL(p,20,mode);
 		p += 22; /* p now points to the EA area. */
 
@@ -4727,8 +4727,8 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			srv_put_dos_date2(pdata,l1_fdateCreation,create_time);
 			srv_put_dos_date2(pdata,l1_fdateLastAccess,atime);
 			srv_put_dos_date2(pdata,l1_fdateLastWrite,mtime); /* write time */
-			SIVAL(pdata,l1_cbFile,(uint32)file_size);
-			SIVAL(pdata,l1_cbFileAlloc,(uint32)allocation_size);
+			SIVAL(pdata,l1_cbFile,(uint32_t)file_size);
+			SIVAL(pdata,l1_cbFileAlloc,(uint32_t)allocation_size);
 			SSVAL(pdata,l1_attrFile,mode);
 			break;
 
@@ -4742,8 +4742,8 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			srv_put_dos_date2(pdata,0,create_time);
 			srv_put_dos_date2(pdata,4,atime);
 			srv_put_dos_date2(pdata,8,mtime); /* write time */
-			SIVAL(pdata,12,(uint32)file_size);
-			SIVAL(pdata,16,(uint32)allocation_size);
+			SIVAL(pdata,12,(uint32_t)file_size);
+			SIVAL(pdata,16,(uint32_t)allocation_size);
 			SSVAL(pdata,20,mode);
 			SIVAL(pdata,22,ea_size);
 			break;
@@ -7561,7 +7561,7 @@ static NTSTATUS smb_posix_mkdir(connection_struct *conn,
 		return status;
 	}
 
-	mod_unixmode = (uint32)unixmode | FILE_FLAG_POSIX_SEMANTICS;
+	mod_unixmode = (uint32_t)unixmode | FILE_FLAG_POSIX_SEMANTICS;
 
 	DEBUG(10,("smb_posix_mkdir: file %s, mode 0%o\n",
 		  smb_fname_str_dbg(smb_fname), (unsigned int)unixmode));
@@ -7773,7 +7773,7 @@ static NTSTATUS smb_posix_open(connection_struct *conn,
 		return status;
 	}
 
-	mod_unixmode = (uint32)unixmode | FILE_FLAG_POSIX_SEMANTICS;
+	mod_unixmode = (uint32_t)unixmode | FILE_FLAG_POSIX_SEMANTICS;
 
 	if (wire_open_mode & SMB_O_SYNC) {
 		create_options |= FILE_WRITE_THROUGH;

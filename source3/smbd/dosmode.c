@@ -201,7 +201,7 @@ mode_t unix_mode(connection_struct *conn, int dosmode,
  Change a unix mode to a dos mode.
 ****************************************************************************/
 
-static uint32 dos_mode_from_sbuf(connection_struct *conn,
+static uint32_t dos_mode_from_sbuf(connection_struct *conn,
 				 const struct smb_filename *smb_fname)
 {
 	int result = 0;
@@ -258,7 +258,7 @@ static uint32 dos_mode_from_sbuf(connection_struct *conn,
 
 static bool get_ea_dos_attribute(connection_struct *conn,
 				 struct smb_filename *smb_fname,
-				 uint32 *pattr)
+				 uint32_t *pattr)
 {
 	struct xattr_DOSATTRIB dosattrib;
 	enum ndr_err_code ndr_err;
@@ -364,7 +364,7 @@ static bool get_ea_dos_attribute(connection_struct *conn,
 		dosattr |= FILE_ATTRIBUTE_DIRECTORY;
 	}
 	/* FILE_ATTRIBUTE_SPARSE is valid on get but not on set. */
-	*pattr = (uint32)(dosattr & (SAMBA_ATTRIBUTES_MASK|FILE_ATTRIBUTE_SPARSE));
+	*pattr = (uint32_t)(dosattr & (SAMBA_ATTRIBUTES_MASK|FILE_ATTRIBUTE_SPARSE));
 
 	DEBUG(8,("get_ea_dos_attribute returning (0x%x)", dosattr));
 
@@ -386,7 +386,7 @@ static bool get_ea_dos_attribute(connection_struct *conn,
 
 static bool set_ea_dos_attribute(connection_struct *conn,
 				 struct smb_filename *smb_fname,
-				 uint32 dosmode)
+				 uint32_t dosmode)
 {
 	struct xattr_DOSATTRIB dosattrib;
 	enum ndr_err_code ndr_err;
@@ -490,10 +490,10 @@ static bool set_ea_dos_attribute(connection_struct *conn,
  Change a unix mode to a dos mode for an ms dfs link.
 ****************************************************************************/
 
-uint32 dos_mode_msdfs(connection_struct *conn,
+uint32_t dos_mode_msdfs(connection_struct *conn,
 		      const struct smb_filename *smb_fname)
 {
-	uint32 result = 0;
+	uint32_t result = 0;
 
 	DEBUG(8,("dos_mode_msdfs: %s\n", smb_fname_str_dbg(smb_fname)));
 
@@ -592,9 +592,9 @@ err_out:
  if "store dos attributes" is true.
 ****************************************************************************/
 
-uint32 dos_mode(connection_struct *conn, struct smb_filename *smb_fname)
+uint32_t dos_mode(connection_struct *conn, struct smb_filename *smb_fname)
 {
-	uint32 result = 0;
+	uint32_t result = 0;
 	bool offline;
 
 	DEBUG(8,("dos_mode: %s\n", smb_fname_str_dbg(smb_fname)));
@@ -665,7 +665,7 @@ uint32 dos_mode(connection_struct *conn, struct smb_filename *smb_fname)
 ********************************************************************/
 
 int file_set_dosmode(connection_struct *conn, struct smb_filename *smb_fname,
-		     uint32 dosmode, const char *parent_dir, bool newfile)
+		     uint32_t dosmode, const char *parent_dir, bool newfile)
 {
 	int mask=0;
 	mode_t tmp;

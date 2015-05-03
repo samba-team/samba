@@ -31,7 +31,7 @@
 
 extern fstring remote_proto;
 
-static void get_challenge(struct smbXsrv_connection *xconn, uint8 buff[8])
+static void get_challenge(struct smbXsrv_connection *xconn, uint8_t buff[8])
 {
 	NTSTATUS nt_status;
 
@@ -60,7 +60,7 @@ static void get_challenge(struct smbXsrv_connection *xconn, uint8 buff[8])
  Reply for the lanman 1.0 protocol.
 ****************************************************************************/
 
-static void reply_lanman1(struct smb_request *req, uint16 choice)
+static void reply_lanman1(struct smb_request *req, uint16_t choice)
 {
 	int secword=0;
 	time_t t = time(NULL);
@@ -85,7 +85,7 @@ static void reply_lanman1(struct smb_request *req, uint16 choice)
 	SSVAL(req->outbuf,smb_vwv1,secword);
 	/* Create a token value and add it to the outgoing packet. */
 	if (xconn->smb1.negprot.encrypted_passwords) {
-		get_challenge(xconn, (uint8 *)smb_buf(req->outbuf));
+		get_challenge(xconn, (uint8_t *)smb_buf(req->outbuf));
 		SSVAL(req->outbuf,smb_vwv11, 8);
 	}
 
@@ -110,7 +110,7 @@ static void reply_lanman1(struct smb_request *req, uint16 choice)
  Reply for the lanman 2.0 protocol.
 ****************************************************************************/
 
-static void reply_lanman2(struct smb_request *req, uint16 choice)
+static void reply_lanman2(struct smb_request *req, uint16_t choice)
 {
 	int secword=0;
 	time_t t = time(NULL);
@@ -137,7 +137,7 @@ static void reply_lanman2(struct smb_request *req, uint16 choice)
 
 	/* Create a token value and add it to the outgoing packet. */
 	if (xconn->smb1.negprot.encrypted_passwords) {
-		get_challenge(xconn, (uint8 *)smb_buf(req->outbuf));
+		get_challenge(xconn, (uint8_t *)smb_buf(req->outbuf));
 		SSVAL(req->outbuf,smb_vwv11, 8);
 	}
 
@@ -239,7 +239,7 @@ DATA_BLOB negprot_spnego(TALLOC_CTX *ctx, struct smbXsrv_connection *xconn)
  Reply for the nt protocol.
 ****************************************************************************/
 
-static void reply_nt1(struct smb_request *req, uint16 choice)
+static void reply_nt1(struct smb_request *req, uint16_t choice)
 {
 	/* dual names + lock_and_read + nt SMBs + remote API calls */
 	int capabilities = CAP_NT_FIND|CAP_LOCK_AND_READ|
@@ -345,7 +345,7 @@ static void reply_nt1(struct smb_request *req, uint16 choice)
 	if (!negotiate_spnego) {
 		/* Create a token value and add it to the outgoing packet. */
 		if (xconn->smb1.negprot.encrypted_passwords) {
-			uint8 chal[8];
+			uint8_t chal[8];
 			/* note that we do not send a challenge at all if
 			   we are using plaintext */
 			get_challenge(xconn, chal);
@@ -483,7 +483,7 @@ protocol [LANMAN2.1]
 static const struct {
 	const char *proto_name;
 	const char *short_name;
-	void (*proto_reply_fn)(struct smb_request *req, uint16 choice);
+	void (*proto_reply_fn)(struct smb_request *req, uint16_t choice);
 	int protocol_level;
 } supported_protocols[] = {
 	{"SMB 2.???",               "SMB2_FF",  reply_smb20ff,  PROTOCOL_SMB2_10},
