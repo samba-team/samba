@@ -862,7 +862,7 @@ static NTSTATUS msrpc_sequence_number(struct winbindd_domain *domain,
 {
 	struct rpc_pipe_client *samr_pipe;
 	struct policy_handle dom_pol;
-	uint32_t seq;
+	uint32_t seq = DOM_SEQUENCE_NONE;
 	TALLOC_CTX *tmp_ctx;
 	NTSTATUS status;
 
