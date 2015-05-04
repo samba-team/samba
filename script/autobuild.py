@@ -23,6 +23,7 @@ cleanup_list = []
 builddirs = {
     "ctdb"    : "ctdb",
     "samba"  : ".",
+    "samba-xc" : ".",
     "samba-ctdb" : ".",
     "samba-libs"  : ".",
     "ldb"     : "lib/ldb",
@@ -36,7 +37,9 @@ builddirs = {
     "retry"   : "."
     }
 
-defaulttasks = [ "ctdb", "samba", "samba-ctdb", "samba-libs", "ldb", "tdb", "talloc", "replace", "tevent", "pidl" ]
+defaulttasks = [ "ctdb", "samba", "samba-xc", "samba-ctdb", "samba-libs", "ldb", "tdb", "talloc", "replace", "tevent", "pidl" ]
+
+samba_configure_params = " --picky-developer ${PREFIX} --with-profiling-data"
 
 tasks = {
     "ctdb" : [ ("random-sleep", "../script/random-sleep.sh 60 600", "text/plain"),
@@ -48,12 +51,21 @@ tasks = {
                ("clean", "make clean", "text/plain") ],
 
     # We have 'test' before 'install' because, 'test' should work without 'install'
-    "samba" : [ ("configure", "./configure.developer --picky-developer ${PREFIX} --with-selftest-prefix=./bin/ab  --with-profiling-data", "text/plain"),
+    "samba" : [ ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
                 ("make", "make -j", "text/plain"),
                 ("test", "make test FAIL_IMMEDIATELY=1", "text/plain"),
                 ("install", "make install", "text/plain"),
                 ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
                 ("clean", "make clean", "text/plain") ],
+
+    # Test cross-compile infrastructure
+    "samba-xc" : [ ("configure-native", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
+                   ("configure-cross-execute", "./configure.developer -b ./bin-xe --cross-compile --cross-execute=script/identity_cc.sh" \
+                    " --cross-answers=./bin-xe/cross-answers.txt --with-selftest-prefix=./bin-xe/ab" + samba_configure_params, "text/plain"),
+                   ("configure-cross-answers", "./configure.developer -b ./bin-xa --cross-compile" \
+                    " --cross-answers=./bin-xe/cross-answers.txt --with-selftest-prefix=./bin-xa/ab" + samba_configure_params, "text/plain"),
+                   ("compare-results", "script/compare_cc_results.py ./bin/c4che/default.cache.py ./bin-xe/c4che/default.cache.py ./bin-xa/c4che/default.cache.py", "text/plain")],
+
 
     "samba-ctdb" : [ ("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
 
@@ -519,7 +531,7 @@ A summary of the autobuild process is here:
 
   %s/autobuild.log
 ''' % (platform.node(), failed_task, errstr, log_base)
-    
+
     if failed_task != 'rebase':
         text += '''
 You can see logs of the failed task here:
