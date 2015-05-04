@@ -28,8 +28,35 @@ from samba.dcerpc import misc
 
 from samba.kcc.debug import DEBUG, DEBUG_FN
 
-from samba.kcc.kcc_utils import MAX_DWORD
-from samba.kcc.kcc_utils import ReplInfo, total_schedule
+MAX_DWORD = 2 ** 32 - 1
+
+
+class ReplInfo(object):
+    def __init__(self):
+        self.cost = 0
+        self.interval = 0
+        self.options = 0
+        self.schedule = None
+
+
+def total_schedule(schedule):
+    """Return the total number of 15 minute windows in which the schedule
+    is set to replicate in a week. If the schedule is None it is
+    assumed that the replication will happen in every 15 minute
+    window.
+
+    This is essentially a bit population count.
+    """
+
+    if schedule is None:
+        return 84 * 8  # 84 bytes = 84 * 8 bits
+
+    total = 0
+    for byte in schedule:
+        while byte != 0:
+            total += byte & 1
+            byte >>= 1
+    return total
 
 
 def convert_schedule_to_repltimes(schedule):

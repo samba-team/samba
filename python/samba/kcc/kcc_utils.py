@@ -2111,19 +2111,9 @@ class KCCFailedObject(object):
         self.dns_name = dns_name
 
 
-class ReplInfo(object):
-    def __init__(self):
-        self.cost = 0
-        self.interval = 0
-        self.options = 0
-        self.schedule = None
-
-
 ##################################################
 # Global Functions and Variables
 ##################################################
-MAX_DWORD = 2 ** 32 - 1
-
 
 def get_dsa_config_rep(dsa):
     # Find configuration NC replica for the DSA
@@ -2138,18 +2128,6 @@ def get_dsa_config_rep(dsa):
 def sort_dsa_by_guid(dsa1, dsa2):
     "use ndr_pack for GUID comparison, as appears correct in some places"""
     return cmp(ndr_pack(dsa1.dsa_guid), ndr_pack(dsa2.dsa_guid))
-
-
-def total_schedule(schedule):
-    if schedule is None:
-        return 84 * 8  # 84 bytes = 84 * 8 bits
-
-    total = 0
-    for byte in schedule:
-        while byte != 0:
-            total += byte & 1
-            byte >>= 1
-    return total
 
 
 def new_connection_schedule():
