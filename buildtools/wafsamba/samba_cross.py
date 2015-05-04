@@ -55,7 +55,7 @@ def cross_answer(ca_file, msg):
         if line == '' or line[0] == '#':
             continue
         if line.find(':') != -1:
-            a = line.split(':')
+            a = line.split(':', 1)
             thismsg = a[0].strip()
             if thismsg != msg:
                 continue
