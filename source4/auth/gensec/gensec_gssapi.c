@@ -276,6 +276,7 @@ static NTSTATUS gensec_gssapi_client_creds(struct gensec_security *gensec_securi
 	case KRB5KDC_ERR_CLIENT_REVOKED:
 		DEBUG(1, ("Account locked out: %s\n", error_string));
 		return NT_STATUS_ACCOUNT_LOCKED_OUT;
+	case KRB5_REALM_UNKNOWN:
 	case KRB5_KDC_UNREACH:
 		DEBUG(3, ("Cannot reach a KDC we require to contact %s : %s\n", gensec_gssapi_state->target_principal, error_string));
 		return NT_STATUS_NO_LOGON_SERVERS;
