@@ -104,14 +104,14 @@ void *sys_acl_get_qualifier(SMB_ACL_ENTRY_T entry_d)
 {
 	if (entry_d->a_type == SMB_ACL_USER) {
 		return &entry_d->info.user.uid;
-		}
+	}
 
 	if (entry_d->a_type == SMB_ACL_GROUP) {
 		return &entry_d->info.group.gid;
 	}
 
 	errno = EINVAL;
-		return NULL;
+	return NULL;
 }
 
 int sys_acl_clear_perms(SMB_ACL_PERMSET_T permset_d)
@@ -127,7 +127,7 @@ int sys_acl_add_perm(SMB_ACL_PERMSET_T permset_d, SMB_ACL_PERM_T perm)
 	    && perm != SMB_ACL_EXECUTE) {
 		errno = EINVAL;
 		return -1;
-		}
+	}
 
 	if (permset_d == NULL) {
 		errno = EINVAL;
@@ -319,7 +319,7 @@ int sys_acl_set_qualifier(SMB_ACL_ENTRY_T entry_d, void *qual_p)
 	if (entry_d->a_type == SMB_ACL_USER) {
 		entry_d->info.user.uid = *((uid_t *)qual_p);
 		return 0;
-		}
+	}
 	if (entry_d->a_type == SMB_ACL_GROUP) {
 		entry_d->info.group.gid = *((gid_t *)qual_p);
 		return 0;
