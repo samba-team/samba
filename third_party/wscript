@@ -31,7 +31,7 @@ def find_third_party_module(conf, module, package):
                 os.path.isfile(os.path.join(conf.srcdir, ".gitmodule"))):
                 raise Utils.WafError("""\
 Unable to find Python module '%s'. Please install the system package or check \
-out the relevant submodule by running 'git submodule init; git submodule update'.
+out the relevant submodule by running 'git submodule update --init'.
 """ % module)
             else:
                 raise Utils.WafError("""\
