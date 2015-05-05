@@ -1,4 +1,135 @@
                    ==============================
+                   Release Notes for Samba 4.1.18
+                            May 12, 2015
+                   ==============================
+
+
+This is the latest stable release of Samba 4.1.
+
+
+Changes since 4.1.17:
+---------------------
+
+o   Michael Adam <obnox@samba.org>
+    * BUG 8905: s3:winbind:grent: Don't stop group enumeration when a group has
+      no gid.
+    * BUG 11058: cli_connect_nb_send: don't segfault on host == NULL.
+    * BUG 11117: vfs_glusterfs manpage corrections.
+    * BUG 11143: s3-winbind: Fix chached user group lookup of trusted domains.
+
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 10016: Fix NTLM authentication.
+    * BUG 10888: s3: client - "client use spnego principal = yes" code checks
+      wrong name.
+    * BUG 11079: s3: lib: libsmbclient: If reusing a server struct, check every
+      cli->timout miliseconds if it's still valid before use.
+    * BUG 11094: s3: smbclient: Allinfo leaves the file handle open.
+    * BUG 11144: Fix memory leak in SMB2 notify handling.
+    * BUG 11173: s3: libcli: smb1: Ensure we correctly finish a tevent req if
+      the writev fails in the SMB1 case.
+    * BUG 11177: s3: libsmbclient: Add missing talloc stackframe.
+    * BUG 11186: s3: libsmbclient: After getting attribute server, ensure main
+      srv pointer is still valid.
+    * BUG 11187: s3: Mac OS X 10.10.x fails validate negotiate request to 4.1.x.
+    * BUG 11236: s4: rpc: Refactor dcesrv_alter() function into setup and send
+      steps.
+    * BUG 11240: s3: smbd: Incorrect file size returned in the response of
+      "FILE_SUPERSEDE Create".
+    * BUG 11254: s3: nmbd: Don't set work_changed = True inside
+      update_server_ttl().
+
+
+o   Andrew Bartlett <abartlet@samba.org>
+    * BUG 11100: debug: Set close-on-exec for the main log file FD.
+
+
+o   Ralph Boehme <slow@samba.org>
+    * BUG 11224: s3:smbd: Missing tevent_req_nterror.
+    * BUG 11243: vfs: kernel_flock and named streams.
+
+
+o   Ira Cooper <ira@samba.org>
+    * BUG 11069: vfs_glusterfs: Add comments to the pipe(2) code.
+    * BUG 11115: smbd: Stop using vfs_Chdir after SMB_VFS_DISCONNECT.
+
+
+o   Günther Deschner <gd@samba.org>
+    * BUG 10240: vfs: Add glusterfs manpage.
+
+
+o   David Disseldorp <ddiss@samba.org>
+    * BUG 10808: printing/cups: Pack requested-attributes with IPP_TAG_KEYWORD.
+    * BUG 11018: smbd can't find the GUID for a printer in the registry and
+      fails to publish printers.
+    * BUG 11059: libsmb: Provide authinfo domain for encrypted session
+      referrals.
+    * BUG 11169: docs/idmap_rid: Remove deprecated base_rid from example.
+    * BUG 11210: spoolss: Purge the printer name cache on name change.
+
+
+o   Julien Kerihuel <j.kerihuel@openchange.org>
+    * BUG 11225: s4:rpc_server: Add multiplex state to dcerpc flags and control
+      over multiplex PFC flag in bind_ack and and dcesrv_alter replies.
+    * BUG 11226: Fix terminate connection behavior for asynchronous endpoint
+      with PUSH notification flavors.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 11041: smbd: Fix CID 1063259 Uninitialized scalar variable.
+    * BUG 11051: net: Fix 'net sam addgroupmem'.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 9702: s3:smb2_server: protect against integer wrap with "smb2 max
+      credits = 65535".
+    * BUG 11144: Fix memory leak in SMB2 notify handling.
+    * BUG 11164: s4:auth/gensec_gssapi: let gensec_gssapi_update() return
+      NT_STATUS_LOGON_FAILURE for unknown errors.
+
+
+o   Andreas Schneider <asn@samba.org>
+    * BUG 10984: spoolss: Clear PrinterInfo on GetPrinter error.
+    * BUG 11008: s3-util: Fix authentication with long hostnames.
+    * BUG 11037: s3-libads: Fix a possible segfault in kerberos_fetch_pac().
+    * BUG 11058: utils: Fix 'net time' segfault.
+    * BUG 11066: s3-pam_smbpass: Fix memory leak in pam_sm_authenticate().
+    * BUG 11127: doc-xml: Add 'sharesec' reference to 'access based share enum'.
+    * BUG 11180: s4-process_model: Do not close random fds while forking.
+    * BUG 11185: s3-passdb: Fix 'force user' with winbind default domain.
+
+
+o   Richard Sharpe <rsharpe@nutanix.com>
+    * BUG 11234: Fix crash in 'net ads dns gethostbyname' with an error in TALLOC_FREE
+      if you enter invalid values.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+======================================================================
+
+                   ==============================
                    Release Notes for Samba 4.1.17
                           February 23, 2015
                    ==============================
@@ -51,10 +182,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
 
-======================================================================
 
                    ==============================
                    Release Notes for Samba 4.1.16
