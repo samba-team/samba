@@ -25,8 +25,26 @@ from samba.kcc.graph import *
 
 import itertools
 
-class GraphFunctionTests(samba.tests.TestCase):
 
+def ntdsconn_schedule(times):
+    if times is None:
+        return None
+    from samba.dcerpc import drsblobs
+    schedule = drsblobs.schedule()
+    schedule.size = 188
+    schedule.bandwidth = 0
+    schedule.numberOfSchedules = 1
+    header = drsblobs.scheduleHeader()
+    header.type = 0
+    header.offset = 20
+    schedule.headerArray = [header]
+    data = drsblobs.scheduleSlots()
+    data.slots = times
+    schedule.dataArray = [data]
+    return schedule
+
+
+class GraphFunctionTests(samba.tests.TestCase):
 
     def test_total_schedule(self):
         schedule = [0x81] * 84
@@ -35,5 +53,18 @@ class GraphFunctionTests(samba.tests.TestCase):
                 ([0xff] * 84, 84 * 8),
                 ([0xaa] * 84, 84 * 4),
                 ([0x03, 0x33] * 42, 42 * 6),
-                (range(4) * 21, 21 * 5)):
-            self.assetEquals(total_schedule(schedule), total)
+                (range(7) * 12, 12 * 9),
+                (range(4) * 21, 21 * 4)):
+            self.assertEquals(total_schedule(schedule), total)
+
+    def test_convert_schedule_to_repltimes(self):
+        for ntdsconn_times, repltimes in (
+                ([0x01] * 168, [0x11] * 84),
+                (None, [0x11] * 84),
+                ([0x06] * 168, [0x66] * 84),
+                ([0x03, 0xa] * 84, [0x3a] * 84),
+                (range(7) * 24,
+                 [0x01, 0x23, 0x45, 0x60, 0x12, 0x34, 0x56] * 12)):
+            schedule = ntdsconn_schedule(ntdsconn_times)
+            self.assertEquals(convert_schedule_to_repltimes(schedule),
+                              repltimes)
