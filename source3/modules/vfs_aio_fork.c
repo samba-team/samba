@@ -398,7 +398,7 @@ static int aio_child_destructor(struct aio_child *child)
 	SMB_ASSERT(!child->busy);
 
 	DEBUG(10, ("aio_child_destructor: removing child %d on fd %d\n",
-			child->pid, child->sockfd));
+		   (int)child->pid, child->sockfd));
 
 	/*
 	 * closing the sockfd makes the child not return from recvmsg() on RHEL
@@ -471,7 +471,7 @@ static int create_aio_child(struct smbd_server_connection *sconn,
 	}
 
 	DEBUG(10, ("Child %d created with sockfd %d\n",
-			result->pid, fdpair[0]));
+		   (int)result->pid, fdpair[0]));
 
 	result->sockfd = fdpair[0];
 	close(fdpair[1]);

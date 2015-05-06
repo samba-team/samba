@@ -291,7 +291,7 @@ static void samba_runcmd_io_handler(struct tevent_context *ev,
 					DEBUG(0, ("Error in waitpid() unexpectedly got ECHILD "
 						  "for %s child %d - %s, "
 						  "someone has set SIGCHLD to SIG_IGN!\n",
-					  state->arg0, state->pid, strerror(errno)));
+					state->arg0, (int)state->pid, strerror(errno)));
 					tevent_req_error(req, errno);
 					return;
 				}

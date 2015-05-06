@@ -209,7 +209,8 @@ void start_fssd(struct tevent_context *ev_ctx,
 		exit(1);
 	}
 
-	DEBUG(1, ("File Server Shadow-copy Daemon Started (%d)\n", getpid()));
+	DEBUG(1, ("File Server Shadow-copy Daemon Started (%d)\n",
+		  (int)getpid()));
 
 	/* loop forever */
 	rc = tevent_loop_wait(ev_ctx);

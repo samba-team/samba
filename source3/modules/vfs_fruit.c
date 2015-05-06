@@ -1982,7 +1982,7 @@ static NTSTATUS check_ms_nfs(vfs_handle_struct *handle,
 			*pdo_chmod = true;
 
 			DEBUG(10, ("MS NFS chmod request %s, %04o\n",
-				   fsp_str_dbg(fsp), *pmode));
+				   fsp_str_dbg(fsp), (unsigned)(*pmode)));
 			break;
 		}
 	}
@@ -3439,7 +3439,8 @@ static NTSTATUS fruit_fset_nt_acl(vfs_handle_struct *handle,
 
 		if (result != 0) {
 			DEBUG(1, ("chmod: %s, result: %d, %04o error %s\n", fsp_str_dbg(fsp),
-				  result, ms_nfs_mode, strerror(errno)));
+				  result, (unsigned)ms_nfs_mode,
+				  strerror(errno)));
 			status = map_nt_error_from_unix(errno);
 			return status;
 		}

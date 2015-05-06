@@ -104,12 +104,13 @@ static void standard_child_pipe_handler(struct tevent_context *ev,
 			DEBUG(0, ("Error in waitpid() unexpectedly got ECHILD "
 				  "for child %d (%s) - %s, someone has set SIGCHLD "
 				  "to SIG_IGN!\n",
-				  state->pid, state->name, strerror(errno)));
+				  (int)state->pid, state->name,
+				  strerror(errno)));
 			TALLOC_FREE(state);
 			return;
 		}
 		DEBUG(0, ("Error in waitpid() for child %d (%s) - %s \n",
-			  state->pid, state->name, strerror(errno)));
+			  (int)state->pid, state->name, strerror(errno)));
 		if (errno == 0) {
 			errno = ECHILD;
 		}
@@ -119,11 +120,11 @@ static void standard_child_pipe_handler(struct tevent_context *ev,
 	if (WIFEXITED(status)) {
 		status = WEXITSTATUS(status);
 		DEBUG(2, ("Child %d (%s) exited with status %d\n",
-			  state->pid, state->name, status));
+			  (int)state->pid, state->name, status));
 	} else if (WIFSIGNALED(status)) {
 		status = WTERMSIG(status);
 		DEBUG(0, ("Child %d (%s) terminated with signal %d\n",
-			  state->pid, state->name, status));
+			  (int)state->pid, state->name, status));
 	}
 	TALLOC_FREE(state);
 	return;
