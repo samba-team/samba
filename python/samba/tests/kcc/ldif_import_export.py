@@ -184,12 +184,17 @@ class KCCMultisiteLdifTests(samba.tests.TestCaseInTempDir):
                    self.lp, self.creds,
                    attempt_live_connections=False)
 
-        if subprocess.call(['/usr/bin/dot', '-?']) == 0:
-            for fn in os.listdir(self.tempdir):
-                if fn.endswith('.dot'):
-                    ffn = os.path.join(self.tempdir, fn)
-                    r = subprocess.call(['/usr/bin/dot', '-Tcanon', ffn])
+        dot = '/usr/bin/dot'
+        for fn in os.listdir(self.tempdir):
+            if fn.endswith('.dot'):
+                ffn = os.path.join(self.tempdir, fn)
+                if os.path.exists(dot) and subprocess.call([dot, '-?']) == 0:
+                    r = subprocess.call([dot, '-Tcanon', ffn])
                     self.assertEqual(r, 0)
-                    files.append(ffn)
+
+                #even if dot is not there, at least check the file is non-empty
+                size = os.stat(ffn).st_size
+                self.assertNotEqual(size, 0)
+                files.append(ffn)
 
         self.remove_files(*files)
