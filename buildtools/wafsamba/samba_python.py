@@ -23,6 +23,12 @@ def SAMBA_CHECK_PYTHON_HEADERS(conf, mandatory=True):
     else:
         conf.msg("python headers", "using cache")
 
+    if conf.env['PYTHON_VERSION'] > '3':
+        abi_pattern = os.path.splitext(conf.env['pyext_PATTERN'])[0]
+        conf.env['PYTHON_SO_ABI_FLAG'] = abi_pattern % ''
+    else:
+        conf.env['PYTHON_SO_ABI_FLAG'] = ''
+
 
 def SAMBA_PYTHON(bld, name,
                  source='',
@@ -69,3 +75,9 @@ def SAMBA_PYTHON(bld, name,
                       enabled=enabled)
 
 Build.BuildContext.SAMBA_PYTHON = SAMBA_PYTHON
+
+
+def pyembed_libname(bld, name, extrapython=False):
+    return name + bld.env['PYTHON_SO_ABI_FLAG']
+
+Build.BuildContext.pyembed_libname = pyembed_libname
