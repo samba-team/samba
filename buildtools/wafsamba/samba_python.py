@@ -74,6 +74,9 @@ def SAMBA_PYTHON(bld, name,
                  enabled=True):
     '''build a python extension for Samba'''
 
+    if bld.env['IS_EXTRA_PYTHON']:
+        name = 'extra-' + name
+
     # when we support static python modules we'll need to gather
     # the list from all the SAMBA_PYTHON() targets
     if init_function_sentinel is not None:
@@ -111,3 +114,25 @@ def pyembed_libname(bld, name, extrapython=False):
     return name + bld.env['PYTHON_SO_ABI_FLAG']
 
 Build.BuildContext.pyembed_libname = pyembed_libname
+
+
+def gen_python_environments(bld, extra_env_vars=()):
+    """Generate all Python environments
+
+    To be used in a for loop. Normally, the loop body will be executed once.
+
+    When --extra-python is used, the body will additionaly be executed
+    with the extra-python environment active.
+    """
+    yield
+
+    if bld.env['EXTRA_PYTHON']:
+        copied = ('GLOBAL_DEPENDENCIES', 'TARGET_TYPE') + tuple(extra_env_vars)
+        for name in copied:
+            bld.all_envs['extrapython'][name] = bld.all_envs['default'][name]
+        default_env = bld.all_envs['default']
+        bld.all_envs['default'] = bld.all_envs['extrapython']
+        yield
+        bld.all_envs['default'] = default_env
+
+Build.BuildContext.gen_python_environments = gen_python_environments

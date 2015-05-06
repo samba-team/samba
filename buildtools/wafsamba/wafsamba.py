@@ -143,6 +143,9 @@ def SAMBA_LIBRARY(bld, libname, source,
                   enabled=True):
     '''define a Samba library'''
 
+    if pyembed and bld.env['IS_EXTRA_PYTHON']:
+        public_headers = pc_files = None
+
     if LIB_MUST_BE_PRIVATE(bld, libname):
         private_library=True
 

@@ -116,68 +116,33 @@ def build(bld):
                           manpages='man/talloc.3')
 
     if not bld.CONFIG_SET('USING_SYSTEM_PYTALLOC_UTIL') and not bld.env.disable_python:
-        name = bld.pyembed_libname('pytalloc-util')
+        for env in bld.gen_python_environments(['PKGCONFIGDIR']):
+            name = bld.pyembed_libname('pytalloc-util')
 
-        bld.SAMBA_LIBRARY(name,
-            source='pytalloc_util.c',
-            public_deps='talloc',
-            pyembed=True,
-            vnum=VERSION,
-            hide_symbols=True,
-            abi_directory='ABI',
-            abi_match='pytalloc_*',
-            private_library=private_library,
-            public_headers='pytalloc.h',
-            pc_files='pytalloc-util.pc'
-            )
-        bld.SAMBA_PYTHON('pytalloc',
-                         'pytalloc.c',
-                         deps='talloc ' + name,
-                         enabled=True,
-                         realname='talloc.so')
+            bld.SAMBA_LIBRARY(name,
+                source='pytalloc_util.c',
+                public_deps='talloc',
+                pyembed=True,
+                vnum=VERSION,
+                hide_symbols=True,
+                abi_directory='ABI',
+                abi_match='pytalloc_*',
+                private_library=private_library,
+                public_headers='pytalloc.h',
+                pc_files='pytalloc-util.pc'
+                )
+            bld.SAMBA_PYTHON('pytalloc',
+                            'pytalloc.c',
+                            deps='talloc ' + name,
+                            enabled=True,
+                            realname='talloc.so')
 
-        bld.SAMBA_PYTHON('test_pytalloc',
-                         'test_pytalloc.c',
-                         deps='pytalloc',
-                         enabled=True,
-                         realname='_test_pytalloc.so',
-                         install=False)
-
-    if bld.env['EXTRA_PYTHON']:
-        for var_name in ('GLOBAL_DEPENDENCIES', 'TARGET_TYPE', 'PKGCONFIGDIR'):
-            bld.all_envs['extrapython'][var_name] = bld.all_envs['default'][var_name]
-        bak = bld.all_envs['default']
-        bld.all_envs['default'] = bld.all_envs['extrapython']
-
-        name = bld.pyembed_libname('pytalloc-util')
-
-        bld.SAMBA_LIBRARY(name,
-            source='pytalloc_util.c',
-            public_deps='talloc',
-            pyembed=True,
-            vnum=VERSION,
-            hide_symbols=True,
-            abi_directory='ABI',
-            abi_match='pytalloc_*',
-            private_library=private_library,
-            #public_headers='pytalloc.h',
-            #pc_files='pytalloc-util.pc'
-            )
-
-        bld.SAMBA_PYTHON('extra-pytalloc',
-                         'pytalloc.c',
-                         deps='talloc ' + name,
-                         enabled=True,
-                         realname='talloc.so')
-
-        bld.SAMBA_PYTHON('extra-test_pytalloc',
-                         'test_pytalloc.c',
-                         deps='pytalloc',
-                         enabled=True,
-                         realname='_test_pytalloc.so',
-                         install=False)
-
-        bld.all_envs['default'] = bak
+            bld.SAMBA_PYTHON('test_pytalloc',
+                            'test_pytalloc.c',
+                            deps='pytalloc',
+                            enabled=True,
+                            realname='_test_pytalloc.so',
+                            install=False)
 
 
 def test(ctx):
