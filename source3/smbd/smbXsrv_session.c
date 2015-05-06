@@ -1088,7 +1088,7 @@ NTSTATUS smb2srv_session_close_previous_recv(struct tevent_req *req)
 	return NT_STATUS_OK;
 }
 
-static int smbXsrv_session_destructor(struct smbXsrv_session *session)
+static NTSTATUS smbXsrv_session_clear_and_logoff(struct smbXsrv_session *session)
 {
 	NTSTATUS status;
 	struct smbXsrv_connection *xconn = NULL;
@@ -1116,6 +1116,14 @@ static int smbXsrv_session_destructor(struct smbXsrv_session *session)
 	}
 
 	status = smbXsrv_session_logoff(session);
+	return status;
+}
+
+static int smbXsrv_session_destructor(struct smbXsrv_session *session)
+{
+	NTSTATUS status;
+
+	status = smbXsrv_session_clear_and_logoff(session);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("smbXsrv_session_destructor: "
 			  "smbXsrv_session_logoff() failed: %s\n",
@@ -1649,7 +1657,6 @@ static int smbXsrv_session_logoff_all_callback(struct db_record *local_rec,
 	TDB_DATA val;
 	void *ptr = NULL;
 	struct smbXsrv_session *session = NULL;
-	struct smbXsrv_connection *xconn = NULL;
 	NTSTATUS status;
 
 	val = dbwrap_record_get_value(local_rec);
@@ -1667,28 +1674,7 @@ static int smbXsrv_session_logoff_all_callback(struct db_record *local_rec,
 
 	session->db_rec = local_rec;
 
-	if (session->client != NULL) {
-		xconn = session->client->connections;
-	}
-	for (; xconn != NULL; xconn = xconn->next) {
-		struct smbd_smb2_request *preq;
-
-		for (preq = xconn->smb2.requests; preq != NULL; preq = preq->next) {
-			if (preq->session != session) {
-				continue;
-			}
-
-			preq->session = NULL;
-			/*
-			 * If we no longer have a session we can't
-			 * sign or encrypt replies.
-			 */
-			preq->do_signing = false;
-			preq->do_encryption = false;
-		}
-	}
-
-	status = smbXsrv_session_logoff(session);
+	status = smbXsrv_session_clear_and_logoff(session);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_IS_OK(state->first_status)) {
 			state->first_status = status;
