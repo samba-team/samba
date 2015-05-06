@@ -200,11 +200,35 @@ class KCC(object):
         dn = ldb.Dn(self.samdb, "<GUID=%s>" % self.samdb.get_ntds_GUID())
         try:
             res = self.samdb.search(base=dn, scope=ldb.SCOPE_BASE,
-                                    attrs=[])
+                                    attrs=["objectGUID"])
         except ldb.LdbError, (enum, estr):
-            raise Exception("Unable to find my nTDSDSA - (%s)" % estr)
+            DEBUG("Search for %s failed: %s.  This typically happens in"
+                  " --importldif mode due to lack of module support",
+                  dn, estr)
+            try:
+                # We work around the failure above by looking at the
+                # dsServiceName that was put in the fake rootdse by
+                # the --exportldif, rather than the
+                # samdb.get_ntds_GUID(). The disadvantage is that this
+                # mode requires we modify the @ROOTDSE dnq to support
+                # --forced-local-dsa
+                service_name_res = self.samdb.search(base="", scope=ldb.SCOPE_BASE,
+                                                     attrs=["dsServiceName"])
+                dn = ldb.Dn(self.samdb, service_name_res[0]["dsServiceName"][0])
+
+                res = self.samdb.search(base=dn, scope=ldb.SCOPE_BASE,
+                                        attrs=["objectGUID"])
+            except ldb.LdbError, (enum, estr):
+                raise Exception("Unable to find my nTDSDSA - (%s)" % estr)
+
+        if len(res) != 1:
+            raise Exception("Unable to find my nTDSDSA at %s" % dn.extended_str())
+
+        if misc.GUID(res[0]["objectGUID"][0]) != misc.GUID(self.samdb.get_ntds_GUID()):
+            raise Exception("Did not find the GUID we expected, perhaps due to --importldif")
 
         self.my_dsa_dnstr = str(res[0].dn)
+
         self.my_dsa = self.my_site.get_dsa(self.my_dsa_dnstr)
 
     def load_all_partitions(self):
@@ -2469,9 +2493,16 @@ class KCC(object):
         try:
             data = read_and_sub_file(ldif_file, None)
             self.samdb.add_ldif(data, None)
+            if opts.forced_local_dsa:
+                self.samdb.modify_ldif("""dn: @ROOTDSE
+changetype: modify
+replace: dsServiceName
+dsServiceName: CN=NTDS Settings,%s
+-
+                """ % opts.forced_local_dsa)
 
         except Exception, estr:
-            logger.error("%s" % estr)
+            logger.error("Failed to import %s: %s" % (ldif_file, estr))
             self.samdb.transaction_cancel()
             return 1
         else:
@@ -2484,7 +2515,7 @@ class KCC(object):
         # modules only during this re-open
         self.samdb = SamDB(url=dburl, session_info=system_session(),
                            credentials=creds, lp=lp,
-                           options=["modules:rootdse,extended_dn_out_ldb"])
+                           options=["modules:rootdse,extended_dn_in,extended_dn_out_ldb"])
         return 0
 
     def export_ldif(self, dburl, lp, creds, ldif_file):
