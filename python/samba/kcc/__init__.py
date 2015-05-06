@@ -1815,7 +1815,9 @@ class KCC(object):
         return all_connected, found_failed
 
     def create_intersite_connections(self):
-        """Computes an NC replica graph for each NC replica that "should be
+        """Create NTDSConnections as necessary for all partitions.
+
+        Computes an NC replica graph for each NC replica that "should be
         present" on the local DC or "is present" on any DC in the same site
         as the local DC. For each edge directed to an NC replica on such a
         DC from an NC replica on a DC in another site, the KCC creates an
@@ -1826,8 +1828,8 @@ class KCC(object):
         objects for edges that are directed
         to the local DC's site in one or more NC replica graphs.
 
-        returns: True if spanning trees were created for all NC replica
-            graphs, otherwise False.
+        :return: True if spanning trees were created for all NC replica
+                 graphs, otherwise False.
         """
         all_connected = True
         self.kept_connections = set()
