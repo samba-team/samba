@@ -1923,9 +1923,13 @@ class KCC(object):
         return all_connected
 
     def update_rodc_connection(self):
-        """Runs when the local DC is an RODC and updates the RODC NTFRS
-        connection object.
+        """Updates the RODC NTFRS connection object.
+
+        If the local DSA is not an RODC, this does nothing.
         """
+        if not self.my_dsa.is_ro():
+            return
+
         # Given an nTDSConnection object cn1, such that cn1.options contains
         # NTDSCONN_OPT_RODC_TOPOLOGY, and another nTDSConnection object cn2,
         # does not contain NTDSCONN_OPT_RODC_TOPOLOGY, modify cn1 to ensure
@@ -1936,9 +1940,6 @@ class KCC(object):
         #
         # If no such cn2 can be found, cn1 is not modified.
         # If no such cn1 can be found, nothing is modified by this task.
-
-        if not self.my_dsa.is_ro():
-            return
 
         all_connections = self.my_dsa.connect_table.values()
         ro_connections = [x for x in all_connections if x.is_rodc_topology()]
