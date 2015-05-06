@@ -2470,7 +2470,7 @@ class KCC(object):
 
         :param dburl: a database url.
         :param lp: a loadparm object.
-        :param cred: a Credentials object.
+        :param creds: a Credentials object.
         """
         self.samdb = SamDB(url=dburl,
                            session_info=system_session(),
