@@ -2001,7 +2001,21 @@ class KCC(object):
 
     def construct_intrasite_graph(self, site_local, dc_local,
                                   nc_x, gc_only, detect_stale):
-        # [MS-ADTS] 6.2.2.2
+        """Create an intrasite graph using given parameters
+
+        This might be called a number of times per site with different
+        parameters.
+
+        Based on [MS-ADTS] 6.2.2.2
+
+        :param site_local: site for which we are working
+        :param dc_local: local DC that potentially needs a replica
+        :param nc_x:  naming context (x) that we are testing if it
+                    "should be present" on the local DC
+        :param gc_only: Boolean - only consider global catalog servers
+        :param detect_stale: Boolean - check whether links seems down
+        :return: None
+        """
         # We're using the MS notation names here to allow
         # correlation back to the published algorithm.
         #
