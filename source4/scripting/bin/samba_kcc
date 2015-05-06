@@ -2812,7 +2812,7 @@ def add_int_edge(graph, internal_edges, examine, v1, v2):
     if not combine_repl_info(ri, examine.repl_info, ri2):
         return
 
-    newIntEdge = InternalEdge(root1, root2, red_red, ri2, examine.con_type)
+    newIntEdge = InternalEdge(root1, root2, red_red, ri2, examine.con_type, examine.site_link)
     # Order by vertex guid
     #XXX guid comparison using ndr_pack
     if newIntEdge.v1.ndrpacked_guid > newIntEdge.v2.ndrpacked_guid:
@@ -2874,6 +2874,7 @@ def add_out_edge(graph, output_edges, e):
     # This multi-edge is a 'real' edge with no GUID
     ee = MultiEdge()
     ee.directed = False
+    ee.site_link = e.site_link
     ee.vertices.append(v1)
     ee.vertices.append(v2)
     ee.con_type = e.e_type

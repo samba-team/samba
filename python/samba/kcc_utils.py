@@ -2233,12 +2233,13 @@ class ReplInfo(object):
         self.schedule = None
 
 class InternalEdge(object):
-    def __init__(self, v1, v2, redred, repl, eType):
+    def __init__(self, v1, v2, redred, repl, eType, site_link):
         self.v1 = v1
         self.v2 = v2
         self.red_red = redred
         self.repl_info = repl
         self.e_type = eType
+        self.site_link = site_link
 
     def __eq__(self, other):
         return not self < other and not other < self
