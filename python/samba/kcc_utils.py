@@ -1158,25 +1158,37 @@ class NTDSConnection(object):
     def convert_schedule_to_repltimes(self):
         """Convert NTDS Connection schedule to replTime schedule.
 
-        NTDS Connection schedule slots are double the size of
-        the replTime slots but the top portion of the NTDS
-        Connection schedule slot (4 most significant bits in
-        uchar) are unused.  The 4 least significant bits have
-        the same (15 minute interval) bit positions as replTimes.
-        We thus pack two elements of the NTDS Connection schedule
-        slots into one element of the replTimes slot
-        If no schedule appears in NTDS Connection then a default
-        of 0x11 is set in each replTimes slot as per behaviour
-        noted in a Windows DC.  That default would cause replication
-        within the last 15 minutes of each hour.
-        """
-        times = [0x11] * 84
+        Schedule defined in  MS-ADTS 6.1.4.5.2
+        ReplTimes defined in MS-DRSR 5.164.
 
-        for i, slot in enumerate(times):
-            if self.schedule is not None and \
-               self.schedule.dataArray[0] is not None:
-                slot = (self.schedule.dataArray[0].slots[i*2] & 0xF) << 4 | \
-                       (self.schedule.dataArray[0].slots[i*2] & 0xF)
+        "Schedule" has 168 bytes but only the lower nibble of each is
+        significant. There is one byte per hour. Bit 3 (0x08) represents
+        the first 15 minutes of the hour and bit 0 (0x01) represents the
+        last 15 minutes. The first byte presumably covers 12am - 1am
+        Sunday, though the spec doesn't define the start of a week.
+
+        "ReplTimes" has 84 bytes which are the 168 lower nibbles of
+        "Schedule" packed together. Thus each byte covers 2 hours. Bits 7
+        (i.e. 0x80) is the first 15 minutes and bit 0 is the last. The
+        first byte covers Sunday 12am - 2am (per spec).
+
+        Here we pack two elements of the NTDS Connection schedule slots
+        into one element of the replTimes list.
+
+        If no schedule appears in NTDS Connection then a default of 0x11
+        is set in each replTimes slot as per behaviour noted in a Windows
+        DC. That default would cause replication within the last 15
+        minutes of each hour.
+        """
+        if self.schedule is None or self.schedule.dataArray[0] is None:
+            return [0x11] * 84
+
+        times = []
+        data = self.schedule.dataArray[0].slots
+
+        for i in range(84):
+            times.append((data[i * 2] & 0xF) << 4 | (data[i * 2 + 1] & 0xF))
+
         return times
 
     def is_rodc_topology(self):
