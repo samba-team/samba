@@ -1,4 +1,82 @@
                    ==============================
+                   Release Notes for Samba 4.0.26
+                            May 6, 2015
+                   ==============================
+
+
+This is the last bug-fix release of the Samba 4.1 release series.
+There will be security releases only starting from now.
+
+
+Changes since 4.0.25:
+---------------------
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 10982: s3: smbd: Fix *allocate* calls to follow POSIX error return
+      convention.
+    * BUG 11094: s3: smbclient: Allinfo leaves the file handle open.
+
+
+o   Christian Ambach <ambi@samba.org>
+    * BUG 9629: Fix 'profiles' tool.
+
+
+o   Ira Cooper <ira@samba.org>
+    * BUG 11115: smbd: Stop using vfs_Chdir after SMB_VFS_DISCONNECT.
+
+
+o   David Disseldorp <ddiss@samba.org>
+    * BUG 10808: printing/cups: Pack requested-attributes with IPP_TAG_KEYWORD.
+    * BUG 11059: libsmb: Provide authinfo domain for encrypted session
+      referrals.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 11041: smbd: Fix CID 1063259 Uninitialized scalar variable.
+    * BUG 11051: net: Fix 'net sam addgroupmem'.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 9299: nsswitch: Fix soname of linux nss_*.so.2 modules.
+    * BUG 9702: s3:smb2_server: Protect against integer wrap with "smb2 max
+      credits = 65535".
+    * BUG 10949: s4:dsdb/rootdse: Expand extended dn values with the AS_SYSTEM
+      control.
+    * BUG 10958: libcli/smb: Nnly force signing of smb2 session setups when
+      binding a new session.
+    * BUG 11144: Fix memory leak in SMB2 notify handling.
+    * BUG 11164: s4:auth/gensec_gssapi: Let gensec_gssapi_update() return
+      NT_STATUS_LOGON_FAILURE for unknown errors.
+
+
+o   Christof Schmitt <cs@samba.org>
+    * BUG 11034: winbind: Retry after SESSION_EXPIRED error in ping-dc.
+
+
+######################################################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.0 product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   ==============================
                    Release Notes for Samba 4.0.25
                           February 23, 2015
                    ==============================
@@ -51,8 +129,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    ==============================
                    Release Notes for Samba 4.0.24
