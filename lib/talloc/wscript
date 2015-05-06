@@ -148,18 +148,10 @@ def build(bld):
 def test(ctx):
     '''run talloc testsuite'''
     import Utils, samba_utils
-    env = samba_utils.LOAD_ENVIRONMENT()
     cmd = os.path.join(Utils.g_module.blddir, 'talloc_testsuite')
     ret = samba_utils.RUN_COMMAND(cmd)
     print("testsuite returned %d" % ret)
-    if 'USING_SYSTEM_PYTALLOC_UTIL' not in env.defines and not env.disable_python:
-        cmd = "PYTHONPATH=%s %s test_pytalloc.py" % (
-            os.path.join(Utils.g_module.blddir, 'python'),
-            env['PYTHON'],
-        )
-        pyret = samba_utils.RUN_COMMAND(cmd)
-    else:
-        pyret = 0
+    pyret = samba_utils.RUN_PYTHON_TESTS(['test_pytalloc.py'])
     print("python testsuite returned %d" % pyret)
     sys.exit(ret or pyret)
 
