@@ -348,11 +348,10 @@ class KCC(object):
                             (dsadn, part.nc_dnstr, needed, ro, partial))
 
     def refresh_failed_links_connections(self):
-        """Based on MS-ADTS 6.2.2.1"""
+        """Ensure the failed links list is up to date
 
-        # Instead of NULL link with failure_count = 0, the tuple is
-        # simply removed
-
+        Based on MS-ADTS 6.2.2.1
+        """
         # LINKS: Refresh failed links
         self.kcc_failed_links = {}
         current, needed = self.my_dsa.get_rep_tables()
