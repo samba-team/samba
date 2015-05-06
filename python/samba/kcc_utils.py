@@ -1155,42 +1155,6 @@ class NTDSConnection(object):
                     return False
         return True
 
-    def convert_schedule_to_repltimes(self):
-        """Convert NTDS Connection schedule to replTime schedule.
-
-        Schedule defined in  MS-ADTS 6.1.4.5.2
-        ReplTimes defined in MS-DRSR 5.164.
-
-        "Schedule" has 168 bytes but only the lower nibble of each is
-        significant. There is one byte per hour. Bit 3 (0x08) represents
-        the first 15 minutes of the hour and bit 0 (0x01) represents the
-        last 15 minutes. The first byte presumably covers 12am - 1am
-        Sunday, though the spec doesn't define the start of a week.
-
-        "ReplTimes" has 84 bytes which are the 168 lower nibbles of
-        "Schedule" packed together. Thus each byte covers 2 hours. Bits 7
-        (i.e. 0x80) is the first 15 minutes and bit 0 is the last. The
-        first byte covers Sunday 12am - 2am (per spec).
-
-        Here we pack two elements of the NTDS Connection schedule slots
-        into one element of the replTimes list.
-
-        If no schedule appears in NTDS Connection then a default of 0x11
-        is set in each replTimes slot as per behaviour noted in a Windows
-        DC. That default would cause replication within the last 15
-        minutes of each hour.
-        """
-        if self.schedule is None or self.schedule.dataArray[0] is None:
-            return [0x11] * 84
-
-        times = []
-        data = self.schedule.dataArray[0].slots
-
-        for i in range(84):
-            times.append((data[i * 2] & 0xF) << 4 | (data[i * 2 + 1] & 0xF))
-
-        return times
-
     def is_rodc_topology(self):
         """Returns True if NTDS Connection specifies RODC
         topology only
@@ -2141,6 +2105,31 @@ class SiteLink(object):
                 if guid not in self.site_list:
                     self.site_list.append(guid)
 
+        if "schedule" in msg:
+            self.schedule = ndr_unpack(drsblobs.schedule, value)
+        else:
+            self.schedule = drsblobs.schedule()
+
+            self.schedule.size = 188
+            self.schedule.bandwidth = 0
+            self.schedule.numberOfSchedules = 1
+
+            header = drsblobs.scheduleHeader()
+            header.type = 0
+            header.offset = 20
+
+            self.schedule.headerArray = [ header ]
+
+            # 168 byte instances of the 0x01 value.  The low order 4 bits
+            # of the byte equate to 15 minute intervals within a single hour.
+            # There are 168 bytes because there are 168 hours in a full week
+            # Effectively we are saying to perform replication at the end of
+            # each hour of the week
+            data = drsblobs.scheduleSlots()
+            data.slots = [ 0x01 ] * 168
+
+            self.schedule.dataArray = [ data ]
+
 class KCCFailedObject(object):
     def __init__(self, uuid, failure_count, time_first_failure, last_result, dns_name):
         self.uuid = uuid
@@ -2353,3 +2342,38 @@ def combine_repl_info(info_a, info_b, info_c):
 
     return True
 
+def convert_schedule_to_repltimes(schedule):
+    """Convert NTDS Connection schedule to replTime schedule.
+
+    Schedule defined in  MS-ADTS 6.1.4.5.2
+    ReplTimes defined in MS-DRSR 5.164.
+
+    "Schedule" has 168 bytes but only the lower nibble of each is
+    significant. There is one byte per hour. Bit 3 (0x08) represents
+    the first 15 minutes of the hour and bit 0 (0x01) represents the
+    last 15 minutes. The first byte presumably covers 12am - 1am
+    Sunday, though the spec doesn't define the start of a week.
+
+    "ReplTimes" has 84 bytes which are the 168 lower nibbles of
+    "Schedule" packed together. Thus each byte covers 2 hours. Bits 7
+    (i.e. 0x80) is the first 15 minutes and bit 0 is the last. The
+    first byte covers Sunday 12am - 2am (per spec).
+
+    Here we pack two elements of the NTDS Connection schedule slots
+    into one element of the replTimes list.
+
+    If no schedule appears in NTDS Connection then a default of 0x11
+    is set in each replTimes slot as per behaviour noted in a Windows
+    DC. That default would cause replication within the last 15
+    minutes of each hour.
+    """
+    if schedule is None or schedule.dataArray[0] is None:
+        return [0x11] * 84
+
+    times = []
+    data = schedule.dataArray[0].slots
+
+    for i in range(84):
+        times.append((data[i * 2] & 0xF) << 4 | (data[i * 2 + 1] & 0xF))
+
+    return times

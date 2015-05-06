@@ -563,7 +563,7 @@ class KCC(object):
         else:
             same_site = False
 
-        times = cn_conn.convert_schedule_to_repltimes()
+        times = convert_schedule_to_repltimes(cn_conn.schedule)
 
         # if schedule doesn't match then update and modify
         if times != t_repsFrom.schedule:
@@ -2646,7 +2646,7 @@ def create_edge(con_type, site_link, guid_to_vertex):
     e.repl_info.cost = site_link.cost
     e.repl_info.options = site_link.options
     e.repl_info.interval = site_link.interval
-    e.repl_info.schedule = site_link.schedule
+    e.repl_info.schedule = convert_schedule_to_repltimes(site_link.schedule)
     e.con_type = con_type
     e.directed = False
     return e
