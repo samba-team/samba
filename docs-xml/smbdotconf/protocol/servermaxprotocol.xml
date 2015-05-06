@@ -53,7 +53,7 @@
 		    <para><constant>SMB3_02</constant>: Windows 8.1 SMB3 version.</para>
 		</listitem>
 	    </itemizedlist>
-	    <para>By default SMB3 selects the SMB3_00 variant.</para>
+	    <para>By default SMB3 selects the SMB3_02 variant.</para>
 	</listitem>
     </itemizedlist>
 

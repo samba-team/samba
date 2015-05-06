@@ -643,7 +643,7 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 	Globals.large_readwrite = true;
 	Globals.max_log_size = 5000;
 	Globals.max_open_files = max_open_files();
-	Globals.server_max_protocol = PROTOCOL_SMB3_00;
+	Globals.server_max_protocol = PROTOCOL_SMB3_02;
 	Globals.server_min_protocol = PROTOCOL_LANMAN1;
 	Globals._client_max_protocol = PROTOCOL_DEFAULT;
 	Globals.client_min_protocol = PROTOCOL_CORE;
