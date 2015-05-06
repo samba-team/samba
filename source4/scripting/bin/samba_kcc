@@ -53,6 +53,19 @@ from samba.kcc import KCC
 
 
 def test_all_reps_from(lp, creds, unix_now, rng_seed=None):
+    """Run the KCC from all DSAs in read-only mode
+
+    The behaviour depends on the global opts variable which contains
+    command line variables. Usually you will want to run it with
+    opt.dot_file_dir set (via --dot-file-dir) to see the graphs that
+    would be created from each DC.
+
+    :param lp: a loadparm object.
+    :param creds: a Credentials object.
+    :param unix_now: the unix epoch time as an integer
+    :param rng_seed: a seed for the random number generator
+    :return None:
+    """
     # This implies readonly and attempt_live_connections
     kcc = KCC(unix_now, readonly=True,
               verify=opts.verify, debug=opts.debug,
