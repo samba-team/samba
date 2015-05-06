@@ -23,6 +23,8 @@ import samba
 import os
 import time
 import shutil
+import sys
+import subprocess
 
 import samba.tests
 from samba.kcc import ldif_import_export, KCC
@@ -170,3 +172,24 @@ class KCCMultisiteLdifTests(samba.tests.TestCaseInTempDir):
                    self.lp, self.creds,
                    attempt_live_connections=False)
         self.remove_files(tmpdb)
+
+    def test_dotfiles(self):
+        """Check that KCC writes dot_files when asked.
+        """
+        my_kcc = self._get_kcc('test-dotfiles', dot_file_dir=self.tempdir)
+        tmpdb = os.path.join(self.tempdir, 'dotfile-tmpdb')
+        files = [tmpdb]
+        my_kcc.import_ldif(tmpdb, self.lp, self.creds, MULTISITE_LDIF)
+        my_kcc.run("ldap://%s" % tmpdb,
+                   self.lp, self.creds,
+                   attempt_live_connections=False)
+
+        if subprocess.call(['/usr/bin/dot', '-?']) == 0:
+            for fn in os.listdir(self.tempdir):
+                if fn.endswith('.dot'):
+                    ffn = os.path.join(self.tempdir, fn)
+                    r = subprocess.call(['/usr/bin/dot', '-Tcanon', ffn])
+                    self.assertEqual(r, 0)
+                    files.append(ffn)
+
+        self.remove_files(*files)
