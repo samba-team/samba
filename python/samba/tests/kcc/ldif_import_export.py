@@ -21,7 +21,6 @@
 
 import samba
 import os
-from tempfile import mkdtemp
 import time
 import shutil
 
@@ -64,25 +63,23 @@ MULTISITE_LDIF_DSAS = (
 )
 
 
-class LdifUtilTests(samba.tests.TestCase):
+class LdifImportExportTests(samba.tests.TestCaseInTempDir):
     def setUp(self):
-        super(LdifUtilTests, self).setUp()
+        super(LdifImportExportTests, self).setUp()
         self.lp = LoadParm()
         self.creds = Credentials()
         self.creds.guess(self.lp)
-        #self.creds.set_machine_account(self.lp)
-        self.tmpdir = mkdtemp()
 
-    def tearDown(self):
-        #shutil.rmtree(self.tmpdir)
-        pass
+    def remove_files(self, *files):
+        for f in files:
+            assert(f.startswith(self.tempdir))
+            os.unlink(f)
 
     def test_write_search_url(self):
         pass
-        #write_search_result(samdb, f, res)
 
     def test_ldif_to_samdb(self):
-        dburl = os.path.join(self.tmpdir, "ldap")
+        dburl = os.path.join(self.tempdir, "ldap")
         samdb = ldif_import_export.ldif_to_samdb(dburl, self.lp,
                                                  MULTISITE_LDIF)
         self.assertIsInstance(samdb, SamDB)
@@ -101,10 +98,11 @@ class LdifUtilTests(samba.tests.TestCase):
         dn = ldb.Dn(samdb,
                     service_name_res[0]["dsServiceName"][0])
         self.assertEqual(dn, ldb.Dn(samdb, "CN=NTDS Settings," + dsa))
+        self.remove_files(dburl)
 
     def test_ldif_to_samdb_forced_local_dsa(self):
         for dsa, site in MULTISITE_LDIF_DSAS:
-            dburl = os.path.join(self.tmpdir, "ldif-to-samba-forced-local-dsa"
+            dburl = os.path.join(self.tempdir, "ldif-to-samba-forced-local-dsa"
                                  "-%s" % dsa)
             samdb = ldif_import_export.ldif_to_samdb(dburl, self.lp,
                                                      MULTISITE_LDIF,
@@ -124,31 +122,34 @@ class LdifUtilTests(samba.tests.TestCase):
             dn = ldb.Dn(samdb,
                         service_name_res[0]["dsServiceName"][0])
             self.assertEqual(dn, ldb.Dn(samdb, "CN=NTDS Settings," + dsa))
+            self.remove_files(dburl)
+
 
     def samdb_to_ldif_file(self):
         #samdb_to_ldif_file(samdb, dburl, lp, creds, ldif_file):
         pass
 
 
-class KCCMultisiteLdifTests(samba.tests.TestCase):
+class KCCMultisiteLdifTests(samba.tests.TestCaseInTempDir):
     def setUp(self):
         super(KCCMultisiteLdifTests, self).setUp()
         self.lp = LoadParm()
         self.creds = Credentials()
         self.creds.guess(self.lp)
-        self.tmpdir = mkdtemp()
-        self.tmpdb = os.path.join(self.tmpdir, 'tmpdb')
 
-    def tearDown(self):
-        shutil.rmtree(self.tmpdir)
+    def remove_files(self, *files):
+        for f in files:
+            assert(f.startswith(self.tempdir))
+            os.unlink(f)
 
     def _get_kcc(self, name, readonly=False, verify=False, dot_file_dir=None):
         # Note that setting read-only to False won't affect the ldif,
         # only the temporary database that is created from it.
         my_kcc = KCC(unix_now, readonly=readonly, verify=verify,
                      dot_file_dir=dot_file_dir)
-        tmpdb = os.path.join(self.tmpdir, 'tmpdb')
+        tmpdb = os.path.join(self.tempdir, 'tmpdb')
         my_kcc.import_ldif(tmpdb, self.lp, self.creds, MULTISITE_LDIF)
+        self.remove_files(tmpdb)
         return my_kcc
 
     def test_list_dsas(self):
@@ -161,10 +162,11 @@ class KCCMultisiteLdifTests(samba.tests.TestCase):
         """Check that the KCC generates graphs that pass its own verify
         option.
         """
-        my_kcc = self._get_kcc('test-list', verify=True)
-        tmpdb = os.path.join(self.tmpdir, 'verify-tmpdb')
+        my_kcc = self._get_kcc('test-verify', verify=True)
+        tmpdb = os.path.join(self.tempdir, 'verify-tmpdb')
         my_kcc.import_ldif(tmpdb, self.lp, self.creds, MULTISITE_LDIF)
 
         my_kcc.run("ldap://%s" % tmpdb,
                    self.lp, self.creds,
                    attempt_live_connections=False)
+        self.remove_files(tmpdb)
