@@ -48,7 +48,7 @@
  * split given path into hive and remaining path and open the hive key
  */
 static WERROR open_hive(TALLOC_CTX *ctx, const char *path,
-			uint32 desired_access,
+			uint32_t desired_access,
 			struct registry_key **hive,
 			char **subkeyname)
 {
@@ -91,7 +91,7 @@ done:
 }
 
 static WERROR open_key(TALLOC_CTX *ctx, const char *path,
-		       uint32 desired_access,
+		       uint32_t desired_access,
 		       struct registry_key **key)
 {
 	WERROR werr;

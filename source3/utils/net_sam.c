@@ -142,7 +142,7 @@ static int net_sam_set_workstations(struct net_context *c, int argc,
 
 static int net_sam_set_userflag(struct net_context *c, int argc,
 				const char **argv, const char *field,
-				uint16 flag)
+				uint16_t flag)
 {
 	struct samu *sam_acct = NULL;
 	struct dom_sid sid;
@@ -480,8 +480,8 @@ static int net_sam_set(struct net_context *c, int argc, const char **argv)
 static int net_sam_policy_set(struct net_context *c, int argc, const char **argv)
 {
 	const char *account_policy = NULL;
-	uint32 value = 0;
-	uint32 old_value = 0;
+	uint32_t value = 0;
+	uint32_t old_value = 0;
 	enum pdb_policy_type field;
 	char *endptr;
 
@@ -550,7 +550,7 @@ static int net_sam_policy_set(struct net_context *c, int argc, const char **argv
 static int net_sam_policy_show(struct net_context *c, int argc, const char **argv)
 {
 	const char *account_policy = NULL;
-        uint32 old_value;
+        uint32_t old_value;
         enum pdb_policy_type field;
 
         if (argc != 1 || c->display_usage) {
@@ -825,7 +825,7 @@ static int net_sam_rights(struct net_context *c, int argc, const char **argv)
 static NTSTATUS map_unix_group(const struct group *grp, GROUP_MAP *map)
 {
 	const char *dom, *name;
-	uint32 rid;
+	uint32_t rid;
 
 	if (pdb_getgrgid(map, grp->gr_gid)) {
 		return NT_STATUS_GROUP_EXISTS;
@@ -970,7 +970,7 @@ static int net_sam_createdomaingroup(struct net_context *c, int argc,
 				     const char **argv)
 {
 	NTSTATUS status;
-	uint32 rid;
+	uint32_t rid;
 
 	if (argc != 1 || c->display_usage) {
 		d_fprintf(stderr, "%s\n%s",
@@ -1046,7 +1046,7 @@ static int net_sam_deletedomaingroup(struct net_context *c, int argc,
 static int net_sam_createlocalgroup(struct net_context *c, int argc, const char **argv)
 {
 	NTSTATUS status;
-	uint32 rid;
+	uint32_t rid;
 
 	if (argc != 1 || c->display_usage) {
 		d_fprintf(stderr, "%s\n%s",
@@ -1124,7 +1124,7 @@ static int net_sam_deletelocalgroup(struct net_context *c, int argc, const char 
 static int net_sam_createbuiltingroup(struct net_context *c, int argc, const char **argv)
 {
 	NTSTATUS status;
-	uint32 rid;
+	uint32_t rid;
 	enum lsa_SidType type;
 	fstring groupname;
 	struct dom_sid sid;

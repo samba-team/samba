@@ -100,12 +100,12 @@ static NTSTATUS enum_privileges(struct rpc_pipe_client *pipe_hnd,
 				struct policy_handle *pol )
 {
 	NTSTATUS status, result;
-	uint32 enum_context = 0;
-	uint32 pref_max_length=0x1000;
+	uint32_t enum_context = 0;
+	uint32_t pref_max_length=0x1000;
 	int i;
-	uint16 lang_id=0;
-	uint16 lang_id_sys=0;
-	uint16 lang_id_desc;
+	uint16_t lang_id=0;
+	uint16_t lang_id_sys=0;
+	uint16_t lang_id_desc;
 	struct lsa_StringLarge *description = NULL;
 	struct lsa_PrivArray priv_array;
 	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
@@ -241,8 +241,8 @@ static NTSTATUS enum_accounts_for_privilege(struct rpc_pipe_client *pipe_hnd,
 						const char *privilege)
 {
 	NTSTATUS status, result;
-	uint32 enum_context=0;
-	uint32 pref_max_length=0x1000;
+	uint32_t enum_context=0;
+	uint32_t pref_max_length=0x1000;
 	struct lsa_SidArray sid_array;
 	int i;
 	fstring name;
@@ -294,8 +294,8 @@ static NTSTATUS enum_privileges_for_accounts(struct rpc_pipe_client *pipe_hnd,
 						struct policy_handle *pol)
 {
 	NTSTATUS status, result;
-	uint32 enum_context=0;
-	uint32 pref_max_length=0x1000;
+	uint32_t enum_context=0;
+	uint32_t pref_max_length=0x1000;
 	struct lsa_SidArray sid_array;
 	int i;
 	fstring name;
@@ -352,9 +352,9 @@ static NTSTATUS rpc_rights_list_internal(struct net_context *c,
 	fstring privname;
 	struct lsa_String lsa_name;
 	struct lsa_StringLarge *description = NULL;
-	uint16 lang_id = 0;
-	uint16 lang_id_sys = 0;
-	uint16 lang_id_desc;
+	uint16_t lang_id = 0;
+	uint16_t lang_id_sys = 0;
+	uint16_t lang_id_desc;
 	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 
 	status = rpccli_lsa_open_policy(pipe_hnd, mem_ctx, true,

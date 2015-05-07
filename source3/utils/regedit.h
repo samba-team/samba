@@ -33,12 +33,12 @@ WERROR reg_openhive_wrap(TALLOC_CTX *ctx, const char *hive,
 WERROR reg_openkey_wrap(TALLOC_CTX *ctx, struct samba3_registry_key *parent,
 		        const char *name, struct samba3_registry_key *key);
 WERROR reg_enumvalue_wrap(TALLOC_CTX *ctx, struct samba3_registry_key *key,
-			  uint32 idx, char **name, uint32_t *type,
+			  uint32_t idx, char **name, uint32_t *type,
 			  DATA_BLOB *data);
 WERROR reg_queryvalue_wrap(TALLOC_CTX *ctx, struct samba3_registry_key *key,
 			   const char *name, uint32_t *type, DATA_BLOB *data);
 WERROR reg_enumkey_wrap(TALLOC_CTX *ctx, struct samba3_registry_key *key,
-			uint32 idx, char **name, NTTIME *last_write_time);
+			uint32_t idx, char **name, NTTIME *last_write_time);
 WERROR reg_createkey_wrap(TALLOC_CTX *ctx, struct samba3_registry_key *parent,
 			  const char *subkeypath,
 			  struct samba3_registry_key *pkey);

@@ -136,7 +136,7 @@ static int ace_compare(struct security_ace *ace1, struct security_ace *ace2)
 
 static void sort_acl(struct security_acl *the_acl)
 {
-	uint32 i;
+	uint32_t i;
 	if (!the_acl) return;
 
 	TYPESAFE_QSORT(the_acl->aces, the_acl->num_aces, ace_compare);
@@ -161,7 +161,7 @@ static int change_share_sec(TALLOC_CTX *mem_ctx, const char *sharename, char *th
 	struct security_descriptor *sd = NULL;
 	struct security_descriptor *old = NULL;
 	size_t sd_size = 0;
-	uint32 i, j;
+	uint32_t i, j;
 
 	if (mode != SMB_ACL_SET && mode != SMB_SD_DELETE) {
 	    if (!(old = get_share_security( mem_ctx, sharename, &sd_size )) ) {
@@ -191,7 +191,7 @@ static int change_share_sec(TALLOC_CTX *mem_ctx, const char *sharename, char *th
 		for (j=0;old->dacl && j<old->dacl->num_aces;j++) {
 		    if (security_ace_equal(&sd->dacl->aces[i],
 					   &old->dacl->aces[j])) {
-			uint32 k;
+			uint32_t k;
 			for (k=j; k<old->dacl->num_aces-1;k++) {
 			    old->dacl->aces[k] = old->dacl->aces[k+1];
 			}

@@ -79,7 +79,7 @@ void print_registry_value(const struct registry_value *valvalue, bool raw)
 		break;
 	}
 	case REG_MULTI_SZ: {
-		uint32 j;
+		uint32_t j;
 		const char **a;
 
 		if (!pull_reg_multi_sz(talloc_tos(), &valvalue->data, &a)) {

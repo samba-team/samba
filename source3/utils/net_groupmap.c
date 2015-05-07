@@ -195,7 +195,7 @@ static int net_groupmap_add(struct net_context *c, int argc, const char **argv)
 	fstring type = "";
 	fstring ntcomment = "";
 	enum lsa_SidType sid_type = SID_NAME_DOM_GRP;
-	uint32 rid = 0;
+	uint32_t rid = 0;
 	gid_t gid;
 	int i;
 	GROUP_MAP *map;
@@ -860,7 +860,7 @@ static bool print_alias_memberships(TALLOC_CTX *mem_ctx,
 				    const struct dom_sid *domain_sid,
 				    const struct dom_sid *member)
 {
-	uint32 *alias_rids;
+	uint32_t *alias_rids;
 	size_t i, num_alias_rids;
 
 	alias_rids = NULL;

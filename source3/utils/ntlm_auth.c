@@ -498,10 +498,10 @@ NTSTATUS contact_winbind_auth_crap(const char *username,
 				   const DATA_BLOB *challenge,
 				   const DATA_BLOB *lm_response,
 				   const DATA_BLOB *nt_response,
-				   uint32 flags,
-				   uint32 extra_logon_parameters,
-				   uint8 lm_key[8],
-				   uint8 user_session_key[16],
+				   uint32_t flags,
+				   uint32_t extra_logon_parameters,
+				   uint8_t lm_key[8],
+				   uint8_t user_session_key[16],
 				   char **error_string,
 				   char **unix_name)
 {
@@ -879,8 +879,8 @@ static NTSTATUS winbind_pw_check(struct auth4_context *auth4_context,
 	static const char zeros[16] = { 0, };
 	NTSTATUS nt_status;
 	char *error_string = NULL;
-	uint8 lm_key[8]; 
-	uint8 user_sess_key[16]; 
+	uint8_t lm_key[8]; 
+	uint8_t user_sess_key[16]; 
 	char *unix_name = NULL;
 
 	nt_status = contact_winbind_auth_crap(user_info->client.account_name, user_info->client.domain_name, 
@@ -2175,7 +2175,7 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 			char *error_string = NULL;
 			uchar lm_key[8];
 			uchar user_session_key[16];
-			uint32 flags = 0;
+			uint32_t flags = 0;
 
 			if (full_username && !username) {
 				fstring fstr_user;
@@ -2645,13 +2645,13 @@ static void squid_stream(enum stdio_helper_mode stdio_mode,
 static bool check_auth_crap(void)
 {
 	NTSTATUS nt_status;
-	uint32 flags = 0;
+	uint32_t flags = 0;
 	char lm_key[8];
 	char user_session_key[16];
 	char *hex_lm_key;
 	char *hex_user_session_key;
 	char *error_string;
-	static uint8 zeros[16];
+	static uint8_t zeros[16];
 
 	x_setbuf(x_stdout, NULL);
 

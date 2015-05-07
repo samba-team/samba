@@ -50,7 +50,7 @@ static bool test_lm_ntlm_broken(enum ntlm_break break_which)
 {
 	bool pass = True;
 	NTSTATUS nt_status;
-	uint32 flags = 0;
+	uint32_t flags = 0;
 	DATA_BLOB lm_response = data_blob(NULL, 24);
 	DATA_BLOB nt_response = data_blob(NULL, 24);
 	DATA_BLOB session_key = data_blob(NULL, 16);
@@ -174,7 +174,7 @@ static bool test_ntlm_in_lm(void)
 {
 	bool pass = True;
 	NTSTATUS nt_status;
-	uint32 flags = 0;
+	uint32_t flags = 0;
 	DATA_BLOB nt_response = data_blob(NULL, 24);
 
 	uchar lm_key[8];
@@ -240,14 +240,14 @@ static bool test_ntlm_in_both(void)
 {
 	bool pass = True;
 	NTSTATUS nt_status;
-	uint32 flags = 0;
+	uint32_t flags = 0;
 	DATA_BLOB nt_response = data_blob(NULL, 24);
 	DATA_BLOB session_key = data_blob(NULL, 16);
 
-	uint8 lm_key[8];
-	uint8 lm_hash[16];
-	uint8 user_session_key[16];
-	uint8 nt_hash[16];
+	uint8_t lm_key[8];
+	uint8_t lm_hash[16];
+	uint8_t user_session_key[16];
+	uint8_t nt_hash[16];
 	DATA_BLOB chall = get_challenge();
 	char *error_string;
 	
@@ -314,7 +314,7 @@ static bool test_lmv2_ntlmv2_broken(enum ntlm_break break_which)
 {
 	bool pass = True;
 	NTSTATUS nt_status;
-	uint32 flags = 0;
+	uint32_t flags = 0;
 	DATA_BLOB ntlmv2_response = data_blob_null;
 	DATA_BLOB lmv2_response = data_blob_null;
 	DATA_BLOB ntlmv2_session_key = data_blob_null;
@@ -442,7 +442,7 @@ static bool test_ntlmv2_ntlmv2_broken(void)
 static bool test_plaintext(enum ntlm_break break_which)
 {
 	NTSTATUS nt_status;
-	uint32 flags = 0;
+	uint32_t flags = 0;
 	DATA_BLOB nt_response = data_blob_null;
 	DATA_BLOB lm_response = data_blob_null;
 	char *password;

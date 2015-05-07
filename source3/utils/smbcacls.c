@@ -51,7 +51,7 @@ static NTSTATUS cli_lsa_lookup_domain_sid(struct cli_state *cli,
 					  struct dom_sid *sid)
 {
 	union lsa_PolicyInformation *info = NULL;
-	uint16 orig_cnum = cli_state_get_tid(cli);
+	uint16_t orig_cnum = cli_state_get_tid(cli);
 	struct rpc_pipe_client *rpc_pipe = NULL;
 	struct policy_handle handle;
 	NTSTATUS status, result;
@@ -218,10 +218,10 @@ static struct security_descriptor *sec_desc_parse(TALLOC_CTX *ctx, struct cli_st
 /*****************************************************
 get fileinfo for filename
 *******************************************************/
-static uint16 get_fileinfo(struct cli_state *cli, const char *filename)
+static uint16_t get_fileinfo(struct cli_state *cli, const char *filename)
 {
 	uint16_t fnum = (uint16_t)-1;
-	uint16 mode = 0;
+	uint16_t mode = 0;
 	NTSTATUS status;
 
 	/* The desired access below is the only one I could find that works
@@ -465,7 +465,7 @@ static int ace_compare(struct security_ace *ace1, struct security_ace *ace2)
 
 static void sort_acl(struct security_acl *the_acl)
 {
-	uint32 i;
+	uint32_t i;
 	if (!the_acl) return;
 
 	TYPESAFE_QSORT(the_acl->aces, the_acl->num_aces, ace_compare);
@@ -492,7 +492,7 @@ static int cacl_set(struct cli_state *cli, const char *filename,
 		    char *the_acl, enum acl_mode mode, bool numeric)
 {
 	struct security_descriptor *sd, *old;
-	uint32 i, j;
+	uint32_t i, j;
 	size_t sd_size;
 	int result = EXIT_OK;
 
@@ -520,7 +520,7 @@ static int cacl_set(struct cli_state *cli, const char *filename,
 			for (j=0;old->dacl && j<old->dacl->num_aces;j++) {
 				if (security_ace_equal(&sd->dacl->aces[i],
 						       &old->dacl->aces[j])) {
-					uint32 k;
+					uint32_t k;
 					for (k=j; k<old->dacl->num_aces-1;k++) {
 						old->dacl->aces[k] = old->dacl->aces[k+1];
 					}
@@ -612,7 +612,7 @@ static int inherit(struct cli_state *cli, const char *filename,
                    const char *type)
 {
 	struct security_descriptor *old,*sd;
-	uint32 oldattr;
+	uint32_t oldattr;
 	size_t sd_size;
 	int result = EXIT_OK;
 

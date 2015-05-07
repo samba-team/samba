@@ -91,7 +91,7 @@ static bool eventlog_add_source( const char *eventlog, const char *sourcename,
 	const char *hive_name, *relpath;
 	enum winreg_CreateAction action;
 	struct registry_value *value;
-	static const uint32 ACCESS = REG_KEY_READ | REG_KEY_WRITE;
+	static const uint32_t ACCESS = REG_KEY_READ | REG_KEY_WRITE;
 	bool ret = false;
 
 	if (!elogs) {

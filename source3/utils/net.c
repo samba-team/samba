@@ -370,10 +370,10 @@ static int net_getdomainsid(struct net_context *c, int argc, const char **argv)
 }
 
 static bool search_maxrid(struct pdb_search *search, const char *type,
-			  uint32 *max_rid)
+			  uint32_t *max_rid)
 {
 	struct samr_displayentry *entries;
-	uint32 i, num_entries;
+	uint32_t i, num_entries;
 
 	if (search == NULL) {
 		d_fprintf(stderr, _("get_maxrid: Could not search %s\n"), type);
@@ -387,9 +387,9 @@ static bool search_maxrid(struct pdb_search *search, const char *type,
 	return true;
 }
 
-static uint32 get_maxrid(void)
+static uint32_t get_maxrid(void)
 {
-	uint32 max_rid = 0;
+	uint32_t max_rid = 0;
 
 	if (!search_maxrid(pdb_search_users(talloc_tos(), 0), "users", &max_rid))
 		return 0;
@@ -407,7 +407,7 @@ static uint32 get_maxrid(void)
 
 static int net_maxrid(struct net_context *c, int argc, const char **argv)
 {
-	uint32 rid;
+	uint32_t rid;
 
 	if (argc != 0) {
 	        d_fprintf(stderr, "%s net maxrid\n", _("Usage:"));
