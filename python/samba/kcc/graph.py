@@ -751,6 +751,18 @@ class InternalEdge(object):
 
     # TODO compare options and interval
     def __lt__(self, other):
+        """Here "less than" means "better".
+
+        From within MS-ADTS 6.2.2.3.4.4:
+
+        SORT internalEdges by (descending RedRed,
+                               ascending ReplInfo.Cost,
+                               descending available time in ReplInfo.Schedule,
+                               ascending V1ID,
+                               ascending V2ID,
+                               ascending Type)
+
+        """
         if self.red_red != other.red_red:
             return self.red_red
 
