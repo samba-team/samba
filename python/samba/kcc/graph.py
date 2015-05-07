@@ -460,6 +460,13 @@ def undemote_vertex(vertex):
 
 
 def process_edge_set(graph, e_set, internal_edges):
+    """Find internal edges to pass to Kruskal's algorithm
+
+    :param graph: an IntersiteGraph object
+    :param e_set: an edge set
+    :param internal_edges: a set that internal edges get added to
+    :return: None
+    """
     if e_set is None:
         for edge in graph.edges:
             for vertex in edge.vertices:
