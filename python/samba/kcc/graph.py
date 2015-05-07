@@ -480,7 +480,13 @@ def process_edge_set(graph, e_set, internal_edges):
 
 
 def process_edge(graph, examine, internal_edges):
-    # Find the set of all vertices touches the edge to examine
+    """Find the set of all vertices touching an edge to examine
+
+    :param graph: an IntersiteGraph object
+    :param examine: an edge
+    :param internal_edges: a set that internal edges get added to
+    :return: None
+    """
     vertices = []
     for v in examine.vertices:
         # Append a 4-tuple of color, repl cost, guid and vertex
