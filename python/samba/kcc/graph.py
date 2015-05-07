@@ -389,6 +389,15 @@ def setup_dijkstra(graph, edge_type, include_black, queue):
 
 
 def try_new_path(graph, queue, vfrom, edge, vto):
+    """Helper function for Dijksta's algorithm.
+
+    :param graph: an IntersiteGraph object
+    :param queue: the empty queue to initialise.
+    :param vfrom: Vertex we are coming from
+    :param edge: an edge to try
+    :param vto: the other Vertex
+    :return: None
+    """
     newRI = ReplInfo()
     #This function combines the repl_info and checks is that there is
     # a valid time frame for which replication can actually occur,
