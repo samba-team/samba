@@ -299,12 +299,20 @@ def create_edge(con_type, site_link, guid_to_vertex):
     return e
 
 
-def create_auto_edge_set(graph, transport):
+def create_auto_edge_set(graph, transport_guid):
+    """Set up an automatic MultiEdgeSet for the intersite graph
+
+    From within MS-ADTS 6.2.2.3.4.4
+
+    :param graph: the intersite graph object
+    :param transport_guid: a transport type GUID
+    :return: a MultiEdgeSet
+    """
     e_set = MultiEdgeSet()
     # use a NULL guid, not associated with a SiteLinkBridge object
     e_set.guid = misc.GUID()
     for site_link in graph.edges:
-        if site_link.con_type == transport:
+        if site_link.con_type == transport_guid:
             e_set.edges.append(site_link)
 
     return e_set
