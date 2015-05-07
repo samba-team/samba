@@ -444,6 +444,13 @@ def check_demote_vertex(vertex, edge_type):
 
 
 def undemote_vertex(vertex):
+    """Un-demote non-white vertices
+
+    Set a vertex's to an undemoted state.
+
+    :param vertex: a Vertex()
+    :return: None
+    """
     if vertex.is_white():
         return
 
