@@ -346,6 +346,13 @@ def setup_vertices(graph):
 
 
 def dijkstra(graph, edge_type, include_black):
+    """Perform Dijkstra's algorithm on an intersite graph.
+
+    :param graph: an IntersiteGraph object
+    :param edge_type: a transport type GUID
+    :param include_black: boolean, whether to include black vertices
+    :return: None
+    """
     queue = []
     setup_dijkstra(graph, edge_type, include_black, queue)
     while len(queue) > 0:
@@ -358,6 +365,14 @@ def dijkstra(graph, edge_type, include_black):
 
 
 def setup_dijkstra(graph, edge_type, include_black, queue):
+    """Initialise a queue for Dijksta's algorithm.
+
+    :param graph: an IntersiteGraph object
+    :param edge_type: a transport type GUID
+    :param include_black: boolean, whether to include black vertices
+    :param queue: the empty queue to initialise.
+    :return: None
+    """
     setup_vertices(graph)
     for vertex in graph.vertices:
         if vertex.is_white():
