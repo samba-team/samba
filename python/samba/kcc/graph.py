@@ -424,6 +424,14 @@ def try_new_path(graph, queue, vfrom, edge, vto):
 
 
 def check_demote_vertex(vertex, edge_type):
+    """Demote non-white vertices that accept only white edges
+
+    This makes them seem temporarily like white vertices.
+
+    :param vertex: a Vertex()
+    :param edge_type: a transport type GUID
+    :return: None
+    """
     if vertex.is_white():
         return
 
