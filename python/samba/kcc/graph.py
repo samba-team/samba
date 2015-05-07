@@ -514,7 +514,6 @@ def add_int_edge(graph, internal_edges, examine, v1, v2):
     newIntEdge = InternalEdge(root1, root2, red_red, ri2, examine.con_type,
                               examine.site_link)
     # Order by vertex guid
-    #XXX guid comparison using ndr_pack
     if newIntEdge.v1.ndrpacked_guid > newIntEdge.v2.ndrpacked_guid:
         newIntEdge.v1 = root2
         newIntEdge.v2 = root1
@@ -775,7 +774,6 @@ class InternalEdge(object):
         if self_time != other_time:
             return self_time > other_time
 
-        #XXX guid comparison using ndr_pack
         if self.v1.guid != other.v1.guid:
             return self.v1.ndrpacked_guid < other.v1.ndrpacked_guid
 

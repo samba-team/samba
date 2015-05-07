@@ -507,7 +507,6 @@ class KCC(object):
                     if s2_dnstr != s_dnstr:
                         continue
 
-                    #XXX GUID comparison
                     lesser = (cn_conn.whenCreated < cn2_conn.whenCreated or
                               (cn_conn.whenCreated == cn2_conn.whenCreated and
                                packed_guid < ndr_pack(cn2_conn.guid)))
