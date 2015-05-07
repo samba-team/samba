@@ -967,6 +967,11 @@ _PUBLIC_ bool cli_credentials_is_anonymous(struct cli_credentials *cred)
 						    cred->machine_account_pending_lp_ctx);
 	}
 
+	/* if principal is set, it's not anonymous */
+	if ((cred->principal != NULL) && cred->principal_obtained >= cred->username_obtained) {
+		return false;
+	}
+
 	username = cli_credentials_get_username(cred);
 	
 	/* Yes, it is deliberate that we die if we have a NULL pointer
