@@ -1663,8 +1663,8 @@ class KCC(object):
                 debug.DEBUG_RED("DISASTER! lbh is None")
                 return False, True
 
-            DEBUG_FN("lsite: %s\nrsite: %s" %(lsite, rsite))
-            DEBUG_FN("vertices %s" %(e.vertices,))
+            DEBUG_FN("lsite: %s\nrsite: %s" % (lsite, rsite))
+            DEBUG_FN("vertices %s" % (e.vertices,))
             debug.DEBUG_BLUE("bridgeheads\n%s\n%s\n%s" % (lbh, rbh, "-" * 70))
 
             sitelink = e.site_link
