@@ -32,6 +32,12 @@ MAX_DWORD = 2 ** 32 - 1
 
 
 class ReplInfo(object):
+    """Represents information about replication
+
+    NTDSConnections use one representation a replication schedule, and
+    graph vertices use another. This is the Vertex one.
+
+    """
     def __init__(self):
         self.cost = 0
         self.interval = 0
