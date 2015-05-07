@@ -353,8 +353,7 @@ def dijkstra(graph, edge_type, include_black):
     :param include_black: boolean, whether to include black vertices
     :return: None
     """
-    queue = []
-    setup_dijkstra(graph, edge_type, include_black, queue)
+    queue = setup_dijkstra(graph, edge_type, include_black)
     while len(queue) > 0:
         cost, guid, vertex = heapq.heappop(queue)
         for edge in vertex.edges:
@@ -364,15 +363,15 @@ def dijkstra(graph, edge_type, include_black):
                     try_new_path(graph, queue, vertex, edge, v)
 
 
-def setup_dijkstra(graph, edge_type, include_black, queue):
-    """Initialise a queue for Dijksta's algorithm.
+def setup_dijkstra(graph, edge_type, include_black):
+    """Create a vertex queue for Dijksta's algorithm.
 
     :param graph: an IntersiteGraph object
     :param edge_type: a transport type GUID
     :param include_black: boolean, whether to include black vertices
-    :param queue: the empty queue to initialise.
-    :return: None
+    :return: A heap queue of vertices
     """
+    queue = []
     setup_vertices(graph)
     for vertex in graph.vertices:
         if vertex.is_white():
@@ -386,6 +385,8 @@ def setup_dijkstra(graph, edge_type, include_black, queue):
             vertex.demoted = True  # Demoted appears not to be used
         else:
             heapq.heappush(queue, (vertex.repl_info.cost, vertex.guid, vertex))
+
+    return queue
 
 
 def try_new_path(graph, queue, vfrom, edge, vto):
