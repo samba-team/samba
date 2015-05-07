@@ -144,6 +144,8 @@ def get_spanning_tree_edges(graph, my_site, label=None, verify=False,
                             dot_file_dir=None):
     """Find edges for the intersite graph
 
+    From MS-ADTS 6.2.2.3.4.4
+
     :param graph: a kcc.kcc_utils.Graph object
     :param my_site: the topology generator's site
     :param label: a label for use in dot files and verification
