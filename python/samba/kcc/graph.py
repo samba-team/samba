@@ -324,6 +324,11 @@ def create_edge_set(graph, transport, site_link_bridge):
 
 
 def setup_vertices(graph):
+    """Initialise vertices in the graph for the Dijkstra's run.
+
+    :param graph: an IntersiteGraph object
+    :return: None
+    """
     for v in graph.vertices:
         if v.is_white():
             v.repl_info.cost = MAX_DWORD
