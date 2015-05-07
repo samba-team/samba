@@ -273,6 +273,17 @@ def get_spanning_tree_edges(graph, my_site, label=None, verify=False,
 
 
 def create_edge(con_type, site_link, guid_to_vertex):
+    """Set up a MultiEdge for the intersite graph
+
+    A MultiEdge can have multiple vertices.
+
+    From MS-ADTS 6.2.2.3.4.4
+
+    :param con_type: a transport type GUID
+    :param  site_link: a kcc.kcc_utils.SiteLink object
+    :param guid_to_vertex: a mapping between GUIDs and vertices
+    :return: a MultiEdge
+    """
     e = MultiEdge()
     e.site_link = site_link
     e.vertices = []
