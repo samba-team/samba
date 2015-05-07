@@ -320,9 +320,7 @@ def create_auto_edge_set(graph, transport_guid):
 
 def create_edge_set(graph, transport, site_link_bridge):
     # TODO not implemented - need to store all site link bridges
-    e_set = MultiEdgeSet()
-    # e_set.guid = site_link_bridge
-    return e_set
+    raise NotImplementedError("We don't create fancy edge sets")
 
 
 def setup_vertices(graph):
