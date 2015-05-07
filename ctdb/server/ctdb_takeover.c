@@ -720,7 +720,7 @@ int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb,
 		return 0;
 	}
 
-	if (ctdb->do_checkpublicip) {
+	if (ctdb->tunable.disable_ip_failover == 0 && ctdb->do_checkpublicip) {
 		have_ip = ctdb_sys_have_ip(&pip->addr);
 	}
 	best_iface = ctdb_vnn_best_iface(ctdb, vnn);
@@ -873,7 +873,7 @@ static void release_ip_callback(struct ctdb_context *ctdb, int status,
 		ctdb_ban_self(ctdb);
 	}
 
-	if (ctdb->do_checkpublicip) {
+	if (ctdb->tunable.disable_ip_failover == 0 && ctdb->do_checkpublicip) {
 		if  (ctdb_sys_have_ip(state->addr)) {
 			DEBUG(DEBUG_ERR,
 			      ("IP %s still hosted during release IP callback, failing\n",
@@ -952,7 +952,7 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb,
 	 * intended new node.  The following causes makes ctdbd ignore
 	 * a release for any address it doesn't host.
 	 */
-	if (ctdb->do_checkpublicip) {
+	if (ctdb->tunable.disable_ip_failover == 0 && ctdb->do_checkpublicip) {
 		if (!ctdb_sys_have_ip(&pip->addr)) {
 			DEBUG(DEBUG_DEBUG,("Redundant release of IP %s/%u on interface %s (ip not held)\n",
 				ctdb_addr_to_str(&pip->addr),
