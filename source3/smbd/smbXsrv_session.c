@@ -52,6 +52,8 @@ struct smbXsrv_session_table {
 };
 
 static NTSTATUS smb2srv_session_lookup_raw(struct smbXsrv_session_table *table,
+					   /* conn: optional */
+					   struct smbXsrv_connection *conn,
 					   uint64_t session_id, NTTIME now,
 					   struct smbXsrv_session **session);
 
@@ -281,6 +283,7 @@ static void smbXsrv_session_close_loop(struct tevent_req *subreq)
 	}
 
 	status = smb2srv_session_lookup_raw(client->session_table,
+					    NULL, /* smbXsrv_connection */
 					    close_info0->old_session_wire_id,
 					    now, &session);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_USER_SESSION_DELETED)) {
@@ -1748,6 +1751,8 @@ NTSTATUS smb2srv_session_table_init(struct smbXsrv_connection *conn)
 }
 
 static NTSTATUS smb2srv_session_lookup_raw(struct smbXsrv_session_table *table,
+					   /* conn: optional */
+					   struct smbXsrv_connection *conn,
 					   uint64_t session_id, NTTIME now,
 					   struct smbXsrv_session **session)
 {
@@ -1758,7 +1763,7 @@ static NTSTATUS smb2srv_session_lookup_raw(struct smbXsrv_session_table *table,
 		return NT_STATUS_USER_SESSION_DELETED;
 	}
 
-	return smbXsrv_session_local_lookup(table, NULL, local_id, now,
+	return smbXsrv_session_local_lookup(table, conn, local_id, now,
 					    session);
 }
 
@@ -1767,7 +1772,8 @@ NTSTATUS smb2srv_session_lookup(struct smbXsrv_connection *conn,
 				struct smbXsrv_session **session)
 {
 	struct smbXsrv_session_table *table = conn->client->session_table;
-	return smb2srv_session_lookup_raw(table, session_id, now, session);
+	return smb2srv_session_lookup_raw(table, conn, session_id, now,
+					  session);
 }
 
 struct smbXsrv_session_global_traverse_state {
