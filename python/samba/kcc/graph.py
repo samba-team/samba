@@ -99,6 +99,8 @@ def convert_schedule_to_repltimes(schedule):
     DC. That default would cause replication within the last 15
     minutes of each hour.
     """
+    # note, NTDSConnection schedule == None means "once an hour"
+    # repl_info == None means "always"
     if schedule is None or schedule.dataArray[0] is None:
         return [0x11] * 84
 
