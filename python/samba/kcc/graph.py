@@ -708,6 +708,7 @@ def setup_graph(part, site_table, transport_guid, sitelink_table,
 
 
 class VertexColor(object):
+    """Enumeration of vertex colours"""
     (red, black, white, unknown) = range(0, 4)
 
 
