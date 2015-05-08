@@ -3136,6 +3136,10 @@ void ctdb_release_all_ips(struct ctdb_context *ctdb)
 	struct ctdb_vnn *vnn;
 	int count = 0;
 
+	if (ctdb->tunable.disable_ip_failover == 1) {
+		return;
+	}
+
 	for (vnn=ctdb->vnn;vnn;vnn=vnn->next) {
 		if (!ctdb_sys_have_ip(&vnn->public_address)) {
 			ctdb_vnn_unassign_iface(ctdb, vnn);
