@@ -247,6 +247,9 @@ static void ctdb_run_startup(struct event_context *ev, struct timed_event *te,
 		return;
 	}
 
+	/* release any IPs we hold from previous runs of the daemon */
+	ctdb_release_all_ips(ctdb);
+
 	DEBUG(DEBUG_NOTICE,("Running the \"startup\" event.\n"));
 	ret = ctdb_event_script_callback(ctdb,
 					 ctdb->monitor->monitor_context,

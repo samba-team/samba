@@ -1334,9 +1334,6 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 	}
 	tevent_fd_set_auto_close(fde);
 
-	/* release any IPs we hold from previous runs of the daemon */
-	ctdb_release_all_ips(ctdb);
-
 	/* Start the transport */
 	if (ctdb->methods->start(ctdb) != 0) {
 		DEBUG(DEBUG_ALERT,("transport failed to start!\n"));
