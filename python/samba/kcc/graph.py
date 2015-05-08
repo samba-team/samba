@@ -655,12 +655,19 @@ def add_out_edge(graph, output_edges, e):
 
 def setup_graph(part, site_table, transport_guid, sitelink_table,
                 bridges_required):
-    """Set up a GRAPH, populated with a VERTEX for each site
-    object, a MULTIEDGE for each siteLink object, and a
-    MUTLIEDGESET for each siteLinkBridge object (or implied
-    siteLinkBridge).
+    """Set up an IntersiteGraph based on intersite topology
 
-    ::returns: a new graph
+    The graph will have a Vertex for each site, a MultiEdge for each
+    siteLink object, and a MultiEdgeSet for each siteLinkBridge object
+    (or implied siteLinkBridge).
+
+    :param part: the partition we are dealing with
+    :param site_table: a mapping of guids to sites (KCC.site_table)
+    :param transport_guid: the GUID of the IP transport
+    :param sitelink_table: a mapping of dnstrs to sitelinks
+    :param bridges_required: boolean
+
+    :return: a new IntersiteGraph
     """
     guid_to_vertex = {}
     # Create graph
