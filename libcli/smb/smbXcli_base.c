@@ -130,6 +130,8 @@ struct smbXcli_conn {
 		uint16_t cur_credits;
 		uint16_t max_credits;
 
+		uint8_t io_priority;
+
 		uint8_t preauth_sha512[64];
 	} smb2;
 
@@ -405,6 +407,7 @@ struct smbXcli_conn *smbXcli_conn_create(TALLOC_CTX *mem_ctx,
 
 	conn->smb2.cur_credits = 1;
 	conn->smb2.max_credits = 0;
+	conn->smb2.io_priority = 1;
 
 	talloc_set_destructor(conn, smbXcli_conn_destructor);
 	return conn;
@@ -2577,6 +2580,21 @@ void smb2cli_conn_set_max_credits(struct smbXcli_conn *conn,
 	conn->smb2.max_credits = max_credits;
 }
 
+uint8_t smb2cli_conn_get_io_priority(struct smbXcli_conn *conn)
+{
+	if (conn->protocol < PROTOCOL_SMB3_11) {
+		return 0;
+	}
+
+	return conn->smb2.io_priority;
+}
+
+void smb2cli_conn_set_io_priority(struct smbXcli_conn *conn,
+				  uint8_t io_priority)
+{
+	conn->smb2.io_priority = io_priority;
+}
+
 static void smb2cli_req_cancel_done(struct tevent_req *subreq);
 
 static bool smb2cli_req_cancel(struct tevent_req *req)
@@ -2672,6 +2690,10 @@ struct tevent_req *smb2cli_req_create(TALLOC_CTX *mem_ctx,
 
 	if (smbXcli_conn_protocol(conn) >= PROTOCOL_SMB3_00) {
 		use_replay_flag = true;
+	}
+
+	if (smbXcli_conn_protocol(conn) >= PROTOCOL_SMB3_11) {
+		flags |= SMB2_PRIORITY_VALUE_TO_MASK(conn->smb2.io_priority);
 	}
 
 	if (session) {
