@@ -793,6 +793,7 @@ class MultiEdgeSet(object):
 
 
 class MultiEdge(object):
+    """An "edge" between multiple vertices"""
     def __init__(self):
         self.site_link = None  # object siteLink
         self.vertices = []
