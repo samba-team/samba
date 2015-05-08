@@ -625,10 +625,21 @@ def find_component(vertex):
 
 
 def add_out_edge(graph, output_edges, e):
+    """Kruskal helper to add output edges
+
+    :param graph: the InterSiteGraph
+    :param output_edges: the list of spanning tree edges
+    :param e: the edge to be added
+    :return: None
+    """
     v1 = e.v1
     v2 = e.v2
 
-    # This multi-edge is a 'real' edge with no GUID
+    # This multi-edge is a 'real' undirected 2-vertex edge with no
+    # GUID. XXX It is not really the same thing at all as the
+    # multi-vertex edges relating to site-links. We shouldn't really
+    # be using the same class or storing them in the same list as the
+    # other ones. But we do. Historical reasons.
     ee = MultiEdge()
     ee.directed = False
     ee.site_link = e.site_link
