@@ -602,6 +602,11 @@ def kruskal(graph, edges):
 
 
 def find_component(vertex):
+    """Kruskal helper to find the component a vertex belongs to.
+
+    :param vertex: a Vertex
+    :return: the Vertex object representing the component
+    """
     if vertex.component_id is vertex:
         return vertex
 
