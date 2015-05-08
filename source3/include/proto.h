@@ -524,7 +524,7 @@ char *sid_string_dbg(const struct dom_sid *sid);
 char *sid_string_tos(const struct dom_sid *sid);
 bool sid_linearize(char *outbuf, size_t len, const struct dom_sid *sid);
 bool non_mappable_sid(struct dom_sid *sid);
-char *sid_binstring_hex(const struct dom_sid *sid);
+char *sid_binstring_hex_talloc(TALLOC_CTX *mem_ctx, const struct dom_sid *sid);
 struct netr_SamInfo3;
 NTSTATUS sid_array_from_info3(TALLOC_CTX *mem_ctx,
 			      const struct netr_SamInfo3 *info3,

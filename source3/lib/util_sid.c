@@ -113,14 +113,12 @@ bool non_mappable_sid(struct dom_sid *sid)
  Caller must free.
 *****************************************************************/
 
-char *sid_binstring_hex(const struct dom_sid *sid)
+char *sid_binstring_hex_talloc(TALLOC_CTX *mem_ctx, const struct dom_sid *sid)
 {
-	char *s;
 	int len = ndr_size_dom_sid(sid, 0);
 	char buf[len];
 	sid_linearize(buf, len, sid);
-	hex_encode((const unsigned char *)buf, len, &s);
-	return s;
+	return hex_encode_talloc(mem_ctx, (const unsigned char *)buf, len);
 }
 
 NTSTATUS sid_array_from_info3(TALLOC_CTX *mem_ctx,
