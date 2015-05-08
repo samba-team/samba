@@ -584,6 +584,8 @@ static void smbXsrv_session_local_fetch_parser(TDB_DATA key, TDB_DATA data,
 }
 
 static NTSTATUS smbXsrv_session_local_lookup(struct smbXsrv_session_table *table,
+					     /* conn: optional */
+					     struct smbXsrv_connection *conn,
 					     uint32_t session_local_id,
 					     NTTIME now,
 					     struct smbXsrv_session **_session)
@@ -627,6 +629,19 @@ static NTSTATUS smbXsrv_session_local_lookup(struct smbXsrv_session_table *table
 
 	if (NT_STATUS_EQUAL(state.session->status, NT_STATUS_USER_SESSION_DELETED)) {
 		return NT_STATUS_USER_SESSION_DELETED;
+	}
+
+	/*
+	 * If a connection is specified check if the session is
+	 * valid on the channel.
+	 */
+	if (conn != NULL) {
+		struct smbXsrv_channel_global0 *c = NULL;
+
+		status = smbXsrv_session_find_channel(state.session, conn, &c);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 	}
 
 	state.session->idle_time = now;
@@ -1719,7 +1734,8 @@ NTSTATUS smb1srv_session_lookup(struct smbXsrv_connection *conn,
 	struct smbXsrv_session_table *table = conn->client->session_table;
 	uint32_t local_id = vuid;
 
-	return smbXsrv_session_local_lookup(table, local_id, now, session);
+	return smbXsrv_session_local_lookup(table, conn, local_id, now,
+					    session);
 }
 
 NTSTATUS smb2srv_session_table_init(struct smbXsrv_connection *conn)
@@ -1742,7 +1758,8 @@ static NTSTATUS smb2srv_session_lookup_raw(struct smbXsrv_session_table *table,
 		return NT_STATUS_USER_SESSION_DELETED;
 	}
 
-	return smbXsrv_session_local_lookup(table, local_id, now, session);
+	return smbXsrv_session_local_lookup(table, NULL, local_id, now,
+					    session);
 }
 
 NTSTATUS smb2srv_session_lookup(struct smbXsrv_connection *conn,
