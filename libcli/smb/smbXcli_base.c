@@ -274,6 +274,9 @@ struct smbXcli_req_state {
 		bool signing_skipped;
 		bool notify_async;
 		bool got_async;
+		uint16_t cancel_flags;
+		uint64_t cancel_mid;
+		uint64_t cancel_aid;
 	} smb2;
 };
 
@@ -2581,9 +2584,6 @@ static bool smb2cli_req_cancel(struct tevent_req *req)
 	struct smbXcli_req_state *state =
 		tevent_req_data(req,
 		struct smbXcli_req_state);
-	uint32_t flags = IVAL(state->smb2.hdr, SMB2_HDR_FLAGS);
-	uint64_t mid = BVAL(state->smb2.hdr, SMB2_HDR_MESSAGE_ID);
-	uint64_t aid = BVAL(state->smb2.hdr, SMB2_HDR_ASYNC_ID);
 	struct smbXcli_tcon *tcon = state->tcon;
 	struct smbXcli_session *session = state->session;
 	uint8_t *fixed = state->smb2.pad;
@@ -2598,7 +2598,7 @@ static bool smb2cli_req_cancel(struct tevent_req *req)
 	subreq = smb2cli_req_create(state, state->ev,
 				    state->conn,
 				    SMB2_OP_CANCEL,
-				    flags, 0,
+				    0, 0, /* flags */
 				    0, /* timeout */
 				    tcon, session,
 				    fixed, fixed_len,
@@ -2608,19 +2608,9 @@ static bool smb2cli_req_cancel(struct tevent_req *req)
 	}
 	substate = tevent_req_data(subreq, struct smbXcli_req_state);
 
-	/*
-	 * clear everything but the SMB2_HDR_FLAG_ASYNC flag
-	 * e.g. if SMB2_HDR_FLAG_CHAINED is set we get INVALID_PARAMETER back
-	 */
-	flags &= SMB2_HDR_FLAG_ASYNC;
-
-	if (flags & SMB2_HDR_FLAG_ASYNC) {
-		mid = 0;
-	}
-
-	SIVAL(substate->smb2.hdr, SMB2_HDR_FLAGS, flags);
-	SBVAL(substate->smb2.hdr, SMB2_HDR_MESSAGE_ID, mid);
-	SBVAL(substate->smb2.hdr, SMB2_HDR_ASYNC_ID, aid);
+	SIVAL(substate->smb2.hdr, SMB2_HDR_FLAGS, state->smb2.cancel_flags);
+	SBVAL(substate->smb2.hdr, SMB2_HDR_MESSAGE_ID, state->smb2.cancel_mid);
+	SBVAL(substate->smb2.hdr, SMB2_HDR_ASYNC_ID, state->smb2.cancel_aid);
 
 	status = smb2cli_req_compound_submit(&subreq, 1);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2964,6 +2954,10 @@ NTSTATUS smb2cli_req_compound_submit(struct tevent_req **reqs,
 		}
 		SSVAL(state->smb2.hdr, SMB2_HDR_CREDIT, credits);
 		SBVAL(state->smb2.hdr, SMB2_HDR_MESSAGE_ID, mid);
+
+		state->smb2.cancel_flags = 0;
+		state->smb2.cancel_mid = mid;
+		state->smb2.cancel_aid = 0;
 
 skip_credits:
 		if (state->session && encryption_key == NULL) {
@@ -3431,9 +3425,9 @@ static NTSTATUS smb2cli_conn_dispatch_incoming(struct smbXcli_conn *conn,
 			 * even if the SMB2_HDR_FLAG_SIGNED flag
 			 * is set.
 			 */
-			req_flags |= SMB2_HDR_FLAG_ASYNC;
-			SBVAL(state->smb2.hdr, SMB2_HDR_FLAGS, req_flags);
-			SBVAL(state->smb2.hdr, SMB2_HDR_ASYNC_ID, async_id);
+			state->smb2.cancel_flags = SMB2_HDR_FLAG_ASYNC;
+			state->smb2.cancel_mid = 0;
+			state->smb2.cancel_aid = async_id;
 
 			if (state->smb2.notify_async) {
 				tevent_req_defer_callback(req, state->ev);
