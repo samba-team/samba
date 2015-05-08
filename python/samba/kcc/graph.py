@@ -511,9 +511,23 @@ def process_edge(graph, examine, internal_edges):
             add_int_edge(graph, internal_edges, examine, bestv, v)
 
 
-# Add internal edge, endpoints are roots of the vertices to pass in
-# and are always red or black
 def add_int_edge(graph, internal_edges, examine, v1, v2):
+    """Add edges between compatible red and black vertices
+
+    Internal edges form the core of the tree -- white and RODC
+    vertices attach to it as leaf nodes. An edge needs to have black
+    or red endpoints with compatible replication schedules to be
+    accepted as an internal edge.
+
+    Here we examine an edge and add it to the set of internal edges if
+    it looks good.
+
+    :param graph: the graph object.
+    :param internal_edges: a set of internal edges
+    :param examine: an edge to examine for suitability.
+    :param v1: a Vertex
+    :param v2: the other Vertex
+    """
     root1 = v1.root
     root2 = v2.root
 
