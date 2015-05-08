@@ -180,6 +180,10 @@ case "$1" in
 	_promote="sys/net/ipv4/conf/all/promote_secondaries"
 	get_proc "$_promote" >/dev/null 2>&1 || \
 	    die "Public IPs only supported if promote_secondaries is available"
+
+	# make sure we drop any ips that might still be held if
+	# previous instance of ctdb got killed with -9 or similar
+	drop_all_public_ips
 	;;
 
      #############################
