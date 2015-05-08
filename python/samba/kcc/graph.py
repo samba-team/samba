@@ -564,6 +564,15 @@ def add_int_edge(graph, internal_edges, examine, v1, v2):
 
 
 def kruskal(graph, edges):
+    """Perform Kruskal's algorithm using the given set of edges
+
+    The input edges are "internal edges" -- between red and black
+    nodes. The output edges are a minimal spanning tree.
+
+    :param graph: the graph object.
+    :param edges: a set of edges
+    :return: a tuple of a list of edges, and the number of components
+    """
     for v in graph.vertices:
         v.edges = []
 
