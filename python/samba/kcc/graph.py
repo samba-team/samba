@@ -713,8 +713,12 @@ class VertexColor(object):
 
 
 class Vertex(object):
-    """Class encapsulation of a Site Vertex in the
-    intersite topology replication algorithm
+    """intersite graph representation of a Site.
+
+    There is a separate vertex for each partition.
+
+    :param site: the site to make a vertex of.
+    :param part: the partition.
     """
     def __init__(self, site, part):
         self.site = site
@@ -732,8 +736,7 @@ class Vertex(object):
         self.interval = 0
 
     def color_vertex(self):
-        """Color each vertex to indicate which kind of NC
-        replica it contains
+        """Color to indicate which kind of NC replica the vertex contains
         """
         # IF s contains one or more DCs with full replicas of the
         # NC cr!nCName
