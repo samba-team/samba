@@ -4234,7 +4234,12 @@ int verify_remote_ip_allocation(struct ctdb_context *ctdb,
 
 int update_ip_assignment_tree(struct ctdb_context *ctdb, struct ctdb_public_ip *ip)
 {
-	struct ctdb_public_ip_list *tmp_ip; 
+	struct ctdb_public_ip_list *tmp_ip;
+
+	/* IP tree is never built if DisableIPFailover is set */
+	if (ctdb->tunable.disable_ip_failover != 0) {
+		return 0;
+	}
 
 	if (ctdb->ip_tree == NULL) {
 		DEBUG(DEBUG_ERR,("No ctdb->ip_tree yet. Failed to update ip assignment\n"));
