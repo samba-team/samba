@@ -32,13 +32,11 @@ struct db_context *dbwrap_local_open(TALLOC_CTX *mem_ctx,
 				     enum dbwrap_lock_order lock_order,
 				     uint64_t dbwrap_flags)
 {
-	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	struct db_context *db = NULL;
 
 	db = db_open_tdb(mem_ctx, lp_ctx, name, hash_size,
 			 tdb_flags, open_flags, mode,
 			 lock_order, dbwrap_flags);
 
-	talloc_free(tmp_ctx);
 	return db;
 }
