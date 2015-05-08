@@ -803,6 +803,12 @@ class MultiEdge(object):
 
 
 class InternalEdge(object):
+    """An edge that forms part of the minimal spanning tree
+
+    These are used in the Kruskal's algorithm. Their interesting
+    feature isa that they are sortable, with the good edges sorting
+    before the bad ones -- lower is better.
+    """
     def __init__(self, v1, v2, redred, repl, eType, site_link):
         self.v1 = v1
         self.v2 = v2
