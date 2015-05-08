@@ -932,19 +932,7 @@ _PUBLIC_ void hex_encode_buf(char *dst, const uint8_t *src, size_t srclen)
 }
 
 /**
- * Routine to print a buffer as HEX digits, into an allocated string.
- */
-_PUBLIC_ void hex_encode(const unsigned char *buff_in, size_t len, char **out_hex_buffer)
-{
-	char *hex_buffer;
-
-	*out_hex_buffer = malloc_array_p(char, (len*2)+1);
-	hex_buffer = *out_hex_buffer;
-	hex_encode_buf(hex_buffer, buff_in, len);
-}
-
-/**
- * talloc version of hex_encode()
+ * talloc version of hex_encode_buf()
  */
 _PUBLIC_ char *hex_encode_talloc(TALLOC_CTX *mem_ctx, const unsigned char *buff_in, size_t len)
 {

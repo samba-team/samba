@@ -205,12 +205,7 @@ _PUBLIC_ _PURE_ DATA_BLOB strhex_to_data_blob(TALLOC_CTX *mem_ctx, const char *s
 _PUBLIC_ void hex_encode_buf(char *dst, const uint8_t *src, size_t srclen);
 
 /**
- * Routine to print a buffer as HEX digits, into an allocated string.
- */
-_PUBLIC_ void hex_encode(const unsigned char *buff_in, size_t len, char **out_hex_buffer);
-
-/**
- * talloc version of hex_encode()
+ * talloc version of hex_encode_buf()
  */
 _PUBLIC_ char *hex_encode_talloc(TALLOC_CTX *mem_ctx, const unsigned char *buff_in, size_t len);
 
