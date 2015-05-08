@@ -531,13 +531,11 @@ def add_int_edge(graph, internal_edges, examine, v1, v2):
     root1 = v1.root
     root2 = v2.root
 
-    red_red = False
-    if root1.is_red() and root2.is_red():
-        red_red = True
+    red_red = root1.is_red() and root2.is_red()
 
     if red_red:
-        if ((examine.con_type not in root1.accept_red_red
-             or examine.con_type not in root2.accept_red_red)):
+        if (examine.con_type not in root1.accept_red_red
+            or examine.con_type not in root2.accept_red_red):
             return
     elif (examine.con_type not in root1.accept_black
           or examine.con_type not in root2.accept_black):
@@ -553,12 +551,12 @@ def add_int_edge(graph, internal_edges, examine, v1, v2):
     if not combine_repl_info(ri, examine.repl_info, ri2):
         return
 
+    # Order by vertex guid
+    if root1.ndrpacked_guid > root2.ndrpacked_guid:
+        root1, root2 = root2, root1
+
     newIntEdge = InternalEdge(root1, root2, red_red, ri2, examine.con_type,
                               examine.site_link)
-    # Order by vertex guid
-    if newIntEdge.v1.ndrpacked_guid > newIntEdge.v2.ndrpacked_guid:
-        newIntEdge.v1 = root2
-        newIntEdge.v2 = root1
 
     internal_edges.add(newIntEdge)
 
