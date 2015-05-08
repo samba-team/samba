@@ -2055,6 +2055,14 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 	allowed_flags = SMB2_HDR_FLAG_CHAINED |
 			SMB2_HDR_FLAG_SIGNED |
 			SMB2_HDR_FLAG_DFS;
+	if (xconn->protocol >= PROTOCOL_SMB3_11) {
+		allowed_flags |= SMB2_HDR_FLAG_PRIORITY_MASK;
+	}
+	if (opcode == SMB2_OP_NEGPROT) {
+		if (lp_server_max_protocol() >= PROTOCOL_SMB3_11) {
+			allowed_flags |= SMB2_HDR_FLAG_PRIORITY_MASK;
+		}
+	}
 	if (opcode == SMB2_OP_CANCEL) {
 		allowed_flags |= SMB2_HDR_FLAG_ASYNC;
 	}
