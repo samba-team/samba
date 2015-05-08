@@ -115,14 +115,11 @@ bool non_mappable_sid(struct dom_sid *sid)
 
 char *sid_binstring_hex(const struct dom_sid *sid)
 {
-	char *buf, *s;
+	char *s;
 	int len = ndr_size_dom_sid(sid, 0);
-	buf = (char *)SMB_MALLOC(len);
-	if (!buf)
-		return NULL;
+	char buf[len];
 	sid_linearize(buf, len, sid);
 	hex_encode((const unsigned char *)buf, len, &s);
-	free(buf);
 	return s;
 }
 
