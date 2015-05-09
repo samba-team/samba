@@ -705,11 +705,17 @@ catia_streaminfo(struct vfs_handle_struct *handle,
 		 struct files_struct *fsp,
 		 const char *path,
 		 TALLOC_CTX *mem_ctx,
-		 unsigned int *num_streams,
-		 struct stream_struct **streams)
+		 unsigned int *_num_streams,
+		 struct stream_struct **_streams)
 {
 	char *mapped_name = NULL;
 	NTSTATUS status;
+	int i;
+	unsigned int num_streams = 0;
+	struct stream_struct *streams = NULL;
+
+	*_num_streams = 0;
+	*_streams = NULL;
 
 	status = catia_string_replace_allocate(handle->conn, path,
 				        &mapped_name, vfs_translate_to_unix);
@@ -719,10 +725,54 @@ catia_streaminfo(struct vfs_handle_struct *handle,
 	}
 
 	status = SMB_VFS_NEXT_STREAMINFO(handle, fsp, mapped_name,
-					 mem_ctx, num_streams,streams);
+					 mem_ctx, &num_streams, &streams);
 	TALLOC_FREE(mapped_name);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
-	return status;
+	/*
+	 * Translate stream names just like the base names
+	 */
+	for (i = 0; i < num_streams; i++) {
+		/*
+		 * Strip ":" prefix and ":$DATA" suffix to get a
+		 * "pure" stream name and only translate that.
+		 */
+		void *old_ptr = streams[i].name;
+		char *stream_name = streams[i].name + 1;
+		char *stream_type = strrchr_m(stream_name, ':');
+
+		if (stream_type != NULL) {
+			*stream_type = '\0';
+			stream_type += 1;
+		}
+
+		status = catia_string_replace_allocate(handle->conn, stream_name,
+						       &mapped_name, vfs_translate_to_windows);
+		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(streams);
+			return status;
+		}
+
+		if (stream_type != NULL) {
+			streams[i].name = talloc_asprintf(streams, ":%s:%s",
+							  mapped_name, stream_type);
+		} else {
+			streams[i].name = talloc_asprintf(streams, ":%s",
+							  mapped_name);
+		}
+		TALLOC_FREE(mapped_name);
+		TALLOC_FREE(old_ptr);
+		if (streams[i].name == NULL) {
+			TALLOC_FREE(streams);
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
+	*_num_streams = num_streams;
+	*_streams = streams;
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS
