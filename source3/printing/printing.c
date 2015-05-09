@@ -93,7 +93,7 @@ uint16_t pjobid_to_rap(const char* sharename, uint32_t jobid)
 	key.dsize = sizeof(jinfo);
 
 	data = tdb_fetch(rap_tdb, key);
-	if (data.dptr && data.dsize == sizeof(uint16)) {
+	if (data.dptr && data.dsize == sizeof(uint16_t)) {
 		rap_jobid = SVAL(data.dptr, 0);
 		SAFE_FREE(data.dptr);
 		DEBUG(10,("pjobid_to_rap: jobid %u maps to RAP jobid %u\n",
@@ -168,7 +168,7 @@ void rap_jobid_delete(const char* sharename, uint32_t jobid)
 	key.dsize = sizeof(jinfo);
 
 	data = tdb_fetch(rap_tdb, key);
-	if (!data.dptr || (data.dsize != sizeof(uint16))) {
+	if (!data.dptr || (data.dsize != sizeof(uint16_t))) {
 		DEBUG(10,("rap_jobid_delete: cannot find jobid %u\n",
 			(unsigned int)jobid ));
 		SAFE_FREE(data.dptr);
@@ -519,7 +519,7 @@ static int sysjob_to_jobid_traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA key,
 		return 0;
 
 	pjob = (struct printjob *)data.dptr;
-	if (key.dsize != sizeof(uint32))
+	if (key.dsize != sizeof(uint32_t))
 		return 0;
 
 	if (state->sysjob == pjob->sysjob) {
@@ -569,7 +569,7 @@ uint32_t sysjob_to_jobid(int unix_jobid)
 		if (state.jobid != (uint32_t)-1)
 			return state.jobid;
 	}
-	return (uint32)-1;
+	return (uint32_t)-1;
 }
 
 /* find sysjob based on spoolss jobid */
@@ -798,7 +798,7 @@ static bool pjob_store(struct tevent_context *ev,
 	TDB_DATA 		old_data, new_data;
 	bool 			ret = False;
 	struct tdb_print_db 	*pdb = get_print_db_byname(sharename);
-	uint8			*buf = NULL;
+	uint8_t			*buf = NULL;
 	int			len, newlen, buflen;
 
 
@@ -817,16 +817,16 @@ static bool pjob_store(struct tevent_context *ev,
 		len = 0;
 		buflen = newlen;
 		len += tdb_pack(buf+len, buflen-len, "ddddddddddfffff",
-				(uint32)pjob->pid,
-				(uint32)pjob->jobid,
-				(uint32)pjob->sysjob,
-				(uint32)pjob->fd,
-				(uint32)pjob->starttime,
-				(uint32)pjob->status,
-				(uint32)pjob->size,
-				(uint32)pjob->page_count,
-				(uint32)pjob->spooled,
-				(uint32)pjob->smbjob,
+				(uint32_t)pjob->pid,
+				(uint32_t)pjob->jobid,
+				(uint32_t)pjob->sysjob,
+				(uint32_t)pjob->fd,
+				(uint32_t)pjob->starttime,
+				(uint32_t)pjob->status,
+				(uint32_t)pjob->size,
+				(uint32_t)pjob->page_count,
+				(uint32_t)pjob->spooled,
+				(uint32_t)pjob->smbjob,
 				pjob->filename,
 				pjob->jobname,
 				pjob->user,
@@ -956,7 +956,7 @@ static void print_unix_job(struct tevent_context *ev,
 		return;
 	}
 
-	if (jobid == (uint32)-1) {
+	if (jobid == (uint32_t)-1) {
 		jobid = q->sysjob + UNIX_JOB_START;
 	}
 
@@ -1269,12 +1269,12 @@ static void store_queue_struct(struct tdb_print_db *pdb, struct traverse_struct 
 
 		qcount++;
 		data.dsize += tdb_pack(NULL, 0, "ddddddff",
-				(uint32)queue[i].sysjob,
-				(uint32)queue[i].size,
-				(uint32)queue[i].page_count,
-				(uint32)queue[i].status,
-				(uint32)queue[i].priority,
-				(uint32)queue[i].time,
+				(uint32_t)queue[i].sysjob,
+				(uint32_t)queue[i].size,
+				(uint32_t)queue[i].page_count,
+				(uint32_t)queue[i].status,
+				(uint32_t)queue[i].priority,
+				(uint32_t)queue[i].time,
 				queue[i].fs_user,
 				queue[i].fs_file);
 	}
@@ -1289,12 +1289,12 @@ static void store_queue_struct(struct tdb_print_db *pdb, struct traverse_struct 
 			continue;
 
 		len += tdb_pack(data.dptr + len, data.dsize - len, "ddddddff",
-				(uint32)queue[i].sysjob,
-				(uint32)queue[i].size,
-				(uint32)queue[i].page_count,
-				(uint32)queue[i].status,
-				(uint32)queue[i].priority,
-				(uint32)queue[i].time,
+				(uint32_t)queue[i].sysjob,
+				(uint32_t)queue[i].size,
+				(uint32_t)queue[i].page_count,
+				(uint32_t)queue[i].status,
+				(uint32_t)queue[i].priority,
+				(uint32_t)queue[i].time,
 				queue[i].fs_user,
 				queue[i].fs_file);
 	}
@@ -1466,7 +1466,7 @@ static void print_queue_update_internal(struct tevent_context *ev,
 
 	for (i=0; i<qcount; i++) {
 		uint32_t jobid = sysjob_to_jobid_pdb(pdb, queue[i].sysjob);
-		if (jobid == (uint32)-1) {
+		if (jobid == (uint32_t)-1) {
 			/* assume its a unix print job */
 			print_unix_job(ev, msg_ctx,
 				       sharename, &queue[i], jobid);
@@ -1775,7 +1775,7 @@ static void print_queue_update(struct messaging_context *msg_ctx,
 		lpqcommand,
 		lprmcommand );
 
-	buffer = SMB_XMALLOC_ARRAY( uint8, len );
+	buffer = SMB_XMALLOC_ARRAY( uint8_t, len );
 
 	/* now pack the buffer */
 	newlen = tdb_pack( buffer, len, "fdPP",
@@ -2573,7 +2573,7 @@ static WERROR allocate_print_jobid(struct tdb_print_db *pdb, int snum,
 	enum TDB_ERROR terr;
 	int ret;
 
-	*pjobid = (uint32)-1;
+	*pjobid = (uint32_t)-1;
 
 	for (i = 0; i < 3; i++) {
 		/* Lock the database - only wait 20 seconds. */

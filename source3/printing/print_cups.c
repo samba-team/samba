@@ -498,7 +498,7 @@ struct cups_async_cb_args {
 
 static void cups_async_callback(struct tevent_context *event_ctx,
 				struct tevent_fd *event,
-				uint16 flags,
+				uint16_t flags,
 				void *p)
 {
 	TALLOC_CTX *frame = talloc_stackframe();

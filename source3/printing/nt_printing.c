@@ -1900,7 +1900,7 @@ bool print_time_access_check(const struct auth_session_info *session_info,
 	}
 
 	t = gmtime(&now);
-	mins = (uint32)t->tm_hour*60 + (uint32)t->tm_min;
+	mins = (uint32_t)t->tm_hour*60 + (uint32)t->tm_min;
 
 	if (mins >= pinfo2->starttime && mins <= pinfo2->untiltime) {
 		ok = True;

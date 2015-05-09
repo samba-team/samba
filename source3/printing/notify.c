@@ -94,7 +94,7 @@ again:
 	len += tdb_pack(buf + len, buflen - len, "f", msg->printer);
 
 	len += tdb_pack(buf + len, buflen - len, "ddddddd",
-			(uint32)q->tv.tv_sec, (uint32)q->tv.tv_usec,
+			(uint32_t)q->tv.tv_sec, (uint32_t)q->tv.tv_usec,
 			msg->type, msg->field, msg->id, msg->len, msg->flags);
 
 	/* Pack data */

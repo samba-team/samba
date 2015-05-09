@@ -32,7 +32,7 @@ struct print_file_data {
 	char *filename;
 	struct policy_handle handle;
 	uint32_t jobid;
-	uint16 rap_jobid;
+	uint16_t rap_jobid;
 };
 
 uint16_t print_spool_rap_jobid(struct print_file_data *print_file)
