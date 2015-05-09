@@ -37,7 +37,7 @@ static NTSTATUS add_new_domain_account_policies(struct smbldap_state *ldap_state
 {
 	NTSTATUS ntstatus = NT_STATUS_UNSUCCESSFUL;
 	int i, rc;
-	uint32 policy_default;
+	uint32_t policy_default;
 	const char *policy_attr = NULL;
 	char *dn = NULL;
 	LDAPMod **mods = NULL;
@@ -213,7 +213,7 @@ static NTSTATUS add_new_domain_info(struct smbldap_state *ldap_state,
 	/* add the sambaNextUserRid attributes. */
 
 	{
-		uint32 rid = BASE_RID;
+		uint32_t rid = BASE_RID;
 		fstring rid_str;
 
 		fstr_sprintf( rid_str, "%i", rid );

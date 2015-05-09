@@ -28,9 +28,9 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_PASSDB
 
-uint32 pdb_get_user_rid (const struct samu *sampass)
+uint32_t pdb_get_user_rid (const struct samu *sampass)
 {
-	uint32 u_rid;
+	uint32_t u_rid;
 
 	if (sampass)
 		if (sid_peek_check_rid(get_global_sam_sid(), pdb_get_user_sid(sampass),&u_rid))
@@ -39,9 +39,9 @@ uint32 pdb_get_user_rid (const struct samu *sampass)
 	return (0);
 }
 
-uint32 pdb_get_group_rid (struct samu *sampass)
+uint32_t pdb_get_group_rid (struct samu *sampass)
 {
-	uint32 g_rid;
+	uint32_t g_rid;
 
 	if (sampass)
 		if (sid_peek_check_rid(get_global_sam_sid(), pdb_get_group_sid(sampass),&g_rid))
@@ -49,7 +49,7 @@ uint32 pdb_get_group_rid (struct samu *sampass)
 	return (0);
 }
 
-bool pdb_set_user_sid_from_rid (struct samu *sampass, uint32 rid, enum pdb_value_state flag)
+bool pdb_set_user_sid_from_rid (struct samu *sampass, uint32_t rid, enum pdb_value_state flag)
 {
 	struct dom_sid u_sid;
 	const struct dom_sid *global_sam_sid;
@@ -75,7 +75,7 @@ bool pdb_set_user_sid_from_rid (struct samu *sampass, uint32 rid, enum pdb_value
 	return True;
 }
 
-bool pdb_set_group_sid_from_rid (struct samu *sampass, uint32 grid, enum pdb_value_state flag)
+bool pdb_set_group_sid_from_rid (struct samu *sampass, uint32_t grid, enum pdb_value_state flag)
 {
 	struct dom_sid g_sid;
 	const struct dom_sid *global_sam_sid;

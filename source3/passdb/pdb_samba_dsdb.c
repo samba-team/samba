@@ -730,8 +730,8 @@ static NTSTATUS pdb_samba_dsdb_getsampwsid(struct pdb_methods *m,
 
 static NTSTATUS pdb_samba_dsdb_create_user(struct pdb_methods *m,
 				    TALLOC_CTX *mem_ctx,
-				    const char *name, uint32 acct_flags,
-				    uint32 *rid)
+				    const char *name, uint32_t acct_flags,
+				    uint32_t *rid)
 {
 	struct pdb_samba_dsdb_state *state = talloc_get_type_abort(
 		m->private_data, struct pdb_samba_dsdb_state);
@@ -1064,7 +1064,7 @@ static NTSTATUS pdb_samba_dsdb_getgrnam(struct pdb_methods *m, GROUP_MAP *map,
 
 static NTSTATUS pdb_samba_dsdb_create_dom_group(struct pdb_methods *m,
 					 TALLOC_CTX *mem_ctx, const char *name,
-					 uint32 *rid)
+					 uint32_t *rid)
 {
 	struct pdb_samba_dsdb_state *state = talloc_get_type_abort(
 		m->private_data, struct pdb_samba_dsdb_state);
@@ -1086,7 +1086,7 @@ static NTSTATUS pdb_samba_dsdb_create_dom_group(struct pdb_methods *m,
 }
 
 static NTSTATUS pdb_samba_dsdb_delete_dom_group(struct pdb_methods *m,
-					 TALLOC_CTX *mem_ctx, uint32 rid)
+					 TALLOC_CTX *mem_ctx, uint32_t rid)
 {
 	const char *attrs[] = { NULL };
 	struct pdb_samba_dsdb_state *state = talloc_get_type_abort(
@@ -1461,7 +1461,7 @@ static NTSTATUS pdb_samba_dsdb_mod_groupmem_by_sid(struct pdb_methods *m,
 
 static NTSTATUS pdb_samba_dsdb_mod_groupmem(struct pdb_methods *m,
 				     TALLOC_CTX *mem_ctx,
-				     uint32 grouprid, uint32 memberrid,
+				     uint32_t grouprid, uint32_t memberrid,
 				     int mod_op)
 {
 	struct pdb_samba_dsdb_state *state = talloc_get_type_abort(
@@ -1490,7 +1490,7 @@ static NTSTATUS pdb_samba_dsdb_mod_groupmem(struct pdb_methods *m,
 
 static NTSTATUS pdb_samba_dsdb_add_groupmem(struct pdb_methods *m,
 				     TALLOC_CTX *mem_ctx,
-				     uint32 group_rid, uint32 member_rid)
+				     uint32_t group_rid, uint32_t member_rid)
 {
 	return pdb_samba_dsdb_mod_groupmem(m, mem_ctx, group_rid, member_rid,
 				    LDB_FLAG_MOD_ADD);
@@ -1498,14 +1498,14 @@ static NTSTATUS pdb_samba_dsdb_add_groupmem(struct pdb_methods *m,
 
 static NTSTATUS pdb_samba_dsdb_del_groupmem(struct pdb_methods *m,
 				     TALLOC_CTX *mem_ctx,
-				     uint32 group_rid, uint32 member_rid)
+				     uint32_t group_rid, uint32_t member_rid)
 {
 	return pdb_samba_dsdb_mod_groupmem(m, mem_ctx, group_rid, member_rid,
 				       LDB_FLAG_MOD_DELETE);
 }
 
 static NTSTATUS pdb_samba_dsdb_create_alias(struct pdb_methods *m,
-				     const char *name, uint32 *rid)
+				     const char *name, uint32_t *rid)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct pdb_samba_dsdb_state *state = talloc_get_type_abort(
@@ -1793,7 +1793,7 @@ static NTSTATUS pdb_samba_dsdb_enum_alias_memberships(struct pdb_methods *m,
 static NTSTATUS pdb_samba_dsdb_lookup_rids(struct pdb_methods *m,
 				    const struct dom_sid *domain_sid,
 				    int num_rids,
-				    uint32 *rids,
+				    uint32_t *rids,
 				    const char **names,
 				    enum lsa_SidType *lsa_attrs)
 {
@@ -1819,7 +1819,7 @@ static NTSTATUS pdb_samba_dsdb_lookup_names(struct pdb_methods *m,
 				     const struct dom_sid *domain_sid,
 				     int num_names,
 				     const char **pp_names,
-				     uint32 *rids,
+				     uint32_t *rids,
 				     enum lsa_SidType *attrs)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
@@ -1995,7 +1995,7 @@ static bool pdb_samba_dsdb_search_filter(struct pdb_methods *m,
 
 static bool pdb_samba_dsdb_search_users(struct pdb_methods *m,
 				 struct pdb_search *search,
-				 uint32 acct_flags)
+				 uint32_t acct_flags)
 {
 	struct pdb_samba_dsdb_search_state *sstate;
 	bool ret;
@@ -2117,7 +2117,7 @@ static uint32_t pdb_samba_dsdb_capabilities(struct pdb_methods *m)
 	return PDB_CAP_STORE_RIDS | PDB_CAP_ADS;
 }
 
-static bool pdb_samba_dsdb_new_rid(struct pdb_methods *m, uint32 *rid)
+static bool pdb_samba_dsdb_new_rid(struct pdb_methods *m, uint32_t *rid)
 {
 	return false;
 }
@@ -2857,7 +2857,7 @@ static bool pdb_samba_dsdb_del_trusteddom_pw(struct pdb_methods *m,
 
 static NTSTATUS pdb_samba_dsdb_enum_trusteddoms(struct pdb_methods *m,
 					 TALLOC_CTX *mem_ctx,
-					 uint32 *num_domains,
+					 uint32_t *num_domains,
 					 struct trustdom_info ***domains)
 {
 	*num_domains = 0;

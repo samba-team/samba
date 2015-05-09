@@ -46,7 +46,7 @@ bool lookup_name(TALLOC_CTX *mem_ctx,
 	const char *tmp;
 	const char *domain = NULL;
 	const char *name = NULL;
-	uint32 rid;
+	uint32_t rid;
 	struct dom_sid sid;
 	enum lsa_SidType type;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
@@ -450,7 +450,7 @@ bool lookup_name_smbconf(TALLOC_CTX *mem_ctx,
 
 static bool wb_lookup_rids(TALLOC_CTX *mem_ctx,
 			   const struct dom_sid *domain_sid,
-			   int num_rids, uint32 *rids,
+			   int num_rids, uint32_t *rids,
 			   const char **domain_name,
 			   const char **names, enum lsa_SidType *types)
 {
@@ -671,7 +671,7 @@ static bool lookup_as_domain(const struct dom_sid *sid, TALLOC_CTX *mem_ctx,
 	}
 
 	if (IS_DC) {
-		uint32 i, num_domains;
+		uint32_t i, num_domains;
 		struct trustdom_info **domains;
 
 		/* This is relatively expensive, but it happens only on DCs
@@ -932,7 +932,7 @@ NTSTATUS lookup_sids(TALLOC_CTX *mem_ctx, int num_sids,
 			continue;
 		}
 
-		if (!(rids = talloc_array(tmp_ctx, uint32, dom->num_idxs))) {
+		if (!(rids = talloc_array(tmp_ctx, uint32_t, dom->num_idxs))) {
 			result = NT_STATUS_NO_MEMORY;
 			goto fail;
 		}
@@ -1397,7 +1397,7 @@ bool sid_to_uid(const struct dom_sid *psid, uid_t *puid)
 {
 	bool expired = true;
 	bool ret;
-	uint32 rid;
+	uint32_t rid;
 
 	/* Optimize for the Unix Users Domain
 	 * as the conversion is straightforward */
@@ -1450,7 +1450,7 @@ bool sid_to_gid(const struct dom_sid *psid, gid_t *pgid)
 {
 	bool expired = true;
 	bool ret;
-	uint32 rid;
+	uint32_t rid;
 
 	/* Optimize for the Unix Groups Domain
 	 * as the conversion is straightforward */

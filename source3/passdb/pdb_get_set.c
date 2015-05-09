@@ -169,31 +169,31 @@ uint32_t pdb_get_hours_len(const struct samu *sampass)
 	return sampass->hours_len;
 }
 
-const uint8 *pdb_get_hours(const struct samu *sampass)
+const uint8_t *pdb_get_hours(const struct samu *sampass)
 {
 	return (sampass->hours);
 }
 
-const uint8 *pdb_get_nt_passwd(const struct samu *sampass)
+const uint8_t *pdb_get_nt_passwd(const struct samu *sampass)
 {
 	SMB_ASSERT((!sampass->nt_pw.data) 
 		   || sampass->nt_pw.length == NT_HASH_LEN);
-	return (uint8 *)sampass->nt_pw.data;
+	return (uint8_t *)sampass->nt_pw.data;
 }
 
-const uint8 *pdb_get_lanman_passwd(const struct samu *sampass)
+const uint8_t *pdb_get_lanman_passwd(const struct samu *sampass)
 {
 	SMB_ASSERT((!sampass->lm_pw.data) 
 		   || sampass->lm_pw.length == LM_HASH_LEN);
-	return (uint8 *)sampass->lm_pw.data;
+	return (uint8_t *)sampass->lm_pw.data;
 }
 
-const uint8 *pdb_get_pw_history(const struct samu *sampass, uint32_t *current_hist_len)
+const uint8_t *pdb_get_pw_history(const struct samu *sampass, uint32_t *current_hist_len)
 {
 	SMB_ASSERT((!sampass->nt_pw_his.data) 
 	   || ((sampass->nt_pw_his.length % PW_HISTORY_ENTRY_LEN) == 0));
 	*current_hist_len = sampass->nt_pw_his.length / PW_HISTORY_ENTRY_LEN;
-	return (uint8 *)sampass->nt_pw_his.data;
+	return (uint8_t *)sampass->nt_pw_his.data;
 }
 
 /* Return the plaintext password if known.  Most of the time
@@ -830,7 +830,7 @@ bool pdb_set_munged_dial(struct samu *sampass, const char *munged_dial, enum pdb
  Set the user's NT hash.
  ********************************************************************/
 
-bool pdb_set_nt_passwd(struct samu *sampass, const uint8 pwd[NT_HASH_LEN], enum pdb_value_state flag)
+bool pdb_set_nt_passwd(struct samu *sampass, const uint8_t pwd[NT_HASH_LEN], enum pdb_value_state flag)
 {
 	data_blob_clear_free(&sampass->nt_pw);
 
@@ -848,7 +848,7 @@ bool pdb_set_nt_passwd(struct samu *sampass, const uint8 pwd[NT_HASH_LEN], enum 
  Set the user's LM hash.
  ********************************************************************/
 
-bool pdb_set_lanman_passwd(struct samu *sampass, const uint8 pwd[LM_HASH_LEN], enum pdb_value_state flag)
+bool pdb_set_lanman_passwd(struct samu *sampass, const uint8_t pwd[LM_HASH_LEN], enum pdb_value_state flag)
 {
 	data_blob_clear_free(&sampass->lm_pw);
 
@@ -866,11 +866,11 @@ bool pdb_set_lanman_passwd(struct samu *sampass, const uint8 pwd[LM_HASH_LEN], e
 /*********************************************************************
  Set the user's password history hash. historyLen is the number of 
  PW_HISTORY_SALT_LEN+SALTED_MD5_HASH_LEN length
- entries to store in the history - this must match the size of the uint8 array
+ entries to store in the history - this must match the size of the uint8_t array
  in pwd.
 ********************************************************************/
 
-bool pdb_set_pw_history(struct samu *sampass, const uint8 *pwd, uint32_t historyLen, enum pdb_value_state flag)
+bool pdb_set_pw_history(struct samu *sampass, const uint8_t *pwd, uint32_t historyLen, enum pdb_value_state flag)
 {
 	DATA_BLOB new_nt_pw_his = {};
 
@@ -945,7 +945,7 @@ bool pdb_set_unknown_6(struct samu *sampass, uint32_t unkn, enum pdb_value_state
 	return pdb_set_init_flags(sampass, PDB_UNKNOWN6, flag);
 }
 
-bool pdb_set_hours(struct samu *sampass, const uint8 *hours, int hours_len,
+bool pdb_set_hours(struct samu *sampass, const uint8_t *hours, int hours_len,
 		   enum pdb_value_state flag)
 {
 	if (hours_len > sizeof(sampass->hours)) {

@@ -39,7 +39,7 @@
 
 struct smb_passwd
 {
-        uint32 smb_userid;        /* this is actually the unix uid_t */
+        uint32_t smb_userid;      /* this is actually the unix uid_t */
         const char *smb_name;     /* username string */
 
         const unsigned char *smb_passwd;    /* Null if no password */
@@ -1019,7 +1019,7 @@ This is no longer supported.!\n", pwd->smb_name));
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("mod_smbfilepwd_entry: "));
-	dump_data(100, (uint8 *)ascii_p16, wr_len);
+	dump_data(100, (uint8_t *)ascii_p16, wr_len);
 #endif
 
 	if(wr_len > LINEBUF_SIZE) {

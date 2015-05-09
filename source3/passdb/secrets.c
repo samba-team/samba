@@ -167,7 +167,7 @@ bool secrets_store(const char *key, const void *data, size_t size)
 	}
 
 	status = dbwrap_trans_store(db_ctx, string_tdb_data(key),
-				    make_tdb_data((const uint8 *)data, size),
+				    make_tdb_data((const uint8_t *)data, size),
 				    TDB_REPLACE);
 	return NT_STATUS_IS_OK(status);
 }
@@ -419,7 +419,7 @@ bool secrets_fetch_afs_key(const char *cell, struct afs_key *result)
 	fstring key;
 	struct afs_keyfile *keyfile;
 	size_t size = 0;
-	uint32 i;
+	uint32_t i;
 
 	slprintf(key, sizeof(key)-1, "%s/%s", SECRETS_AFS_KEYFILE, cell);
 
