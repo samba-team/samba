@@ -314,7 +314,7 @@ struct server_record *create_server_on_workgroup(struct work_record *work,
                                                  int ttl, const char *comment);
 void update_server_ttl(struct server_record *servrec, int ttl);
 void expire_servers(struct work_record *work, time_t t);
-void write_browse_list_entry(XFILE *fp, const char *name, uint32 rec_type,
+void write_browse_list_entry(XFILE *fp, const char *name, uint32_t rec_type,
 		const char *local_master_browser_name, const char *description);
 void write_browse_list(time_t t, bool force_write);
 
