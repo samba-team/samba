@@ -361,7 +361,7 @@ static TDB_DATA locking_ref_count_key_fsp(files_struct *fsp,
 
 static TDB_DATA fd_array_key_fsp(files_struct *fsp)
 {
-	return make_tdb_data((uint8 *)&fsp->file_id, sizeof(fsp->file_id));
+	return make_tdb_data((uint8_t *)&fsp->file_id, sizeof(fsp->file_id));
 }
 
 /*******************************************************************

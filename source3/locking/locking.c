@@ -567,7 +567,7 @@ bool rename_share_filename(struct messaging_context *msg_ctx,
 			has_stream ? d->stream_name : ""));
 
 		messaging_send_buf(msg_ctx, se->pid, MSG_SMB_FILE_RENAME,
-				   (uint8 *)frm, msg_len);
+				   (uint8_t *)frm, msg_len);
 	}
 
 	for (i=0; i<d->num_leases; i++) {
@@ -846,7 +846,7 @@ bool set_share_mode(struct share_mode_lock *lck, struct files_struct *fsp,
 	e->time.tv_usec = fsp->open_time.tv_usec;
 	e->id = fsp->file_id;
 	e->share_file_id = fsp->fh->gen_id;
-	e->uid = (uint32)uid;
+	e->uid = (uint32_t)uid;
 	e->flags = fsp->posix_open ? SHARE_MODE_FLAG_POSIX_OPEN : 0;
 	e->name_hash = fsp->name_hash;
 

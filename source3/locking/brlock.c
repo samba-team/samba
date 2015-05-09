@@ -1976,7 +1976,7 @@ struct byte_range_lock *brl_get_locks(TALLOC_CTX *mem_ctx, files_struct *fsp)
 
 	br_lck->fsp = fsp;
 
-	key.dptr = (uint8 *)&fsp->file_id;
+	key.dptr = (uint8_t *)&fsp->file_id;
 	key.dsize = sizeof(struct file_id);
 
 	br_lck->record = dbwrap_fetch_locked(brlock_db, br_lck, key);
@@ -2115,7 +2115,7 @@ struct byte_range_lock *brl_get_locks_readonly(files_struct *fsp)
 
 struct brl_revalidate_state {
 	ssize_t array_size;
-	uint32 num_pids;
+	uint32_t num_pids;
 	struct server_id *pids;
 };
 
@@ -2171,7 +2171,7 @@ void brl_revalidate(struct messaging_context *msg_ctx,
 		    DATA_BLOB *data)
 {
 	struct brl_revalidate_state *state;
-	uint32 i;
+	uint32_t i;
 	struct server_id last_pid;
 
 	if (!(state = talloc_zero(NULL, struct brl_revalidate_state))) {
