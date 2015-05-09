@@ -574,7 +574,7 @@ static bool api_pipe_bind_req(struct pipes_struct *p,
 				struct ncacn_packet *pkt)
 {
 	struct dcerpc_auth auth_info = {0};
-	uint16 assoc_gid;
+	uint16_t assoc_gid;
 	unsigned int auth_type = DCERPC_AUTH_TYPE_NONE;
 	NTSTATUS status;
 	struct ndr_syntax_id id;
@@ -937,7 +937,7 @@ static bool api_pipe_alter_context(struct pipes_struct *p,
 					struct ncacn_packet *pkt)
 {
 	struct dcerpc_auth auth_info = {0};
-	uint16 assoc_gid;
+	uint16_t assoc_gid;
 	NTSTATUS status;
 	union dcerpc_payload u;
 	struct dcerpc_ack_ctx bind_ack_ctx;
