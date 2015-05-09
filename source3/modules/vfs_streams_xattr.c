@@ -112,7 +112,21 @@ static NTSTATUS streams_xattr_get_name(vfs_handle_struct *handle,
 	SMB_VFS_HANDLE_GET_DATA(handle, config, struct streams_xattr_config,
 				return NT_STATUS_UNSUCCESSFUL);
 
-	stype = strchr_m(stream_name + 1, ':');
+	/*
+	 * With vfs_fruit option "fruit:encoding = native" we're
+	 * already converting stream names that contain illegal NTFS
+	 * characters from their on-the-wire Unicode Private Range
+	 * encoding to their native ASCII representation.
+	 *
+	 * As as result the name of xattrs storing the streams (via
+	 * vfs_streams_xattr) may contain a colon, so we have to use
+	 * strrchr_m() instead of strchr_m() for matching the stream
+	 * type suffix.
+	 *
+	 * In check_path_syntax() we've already ensured the streamname
+	 * we got from the client is valid.
+	 */
+	stype = strrchr_m(stream_name + 1, ':');
 
 	if (stype) {
 		if (strcasecmp_m(stype, ":$DATA") != 0) {
