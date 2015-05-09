@@ -99,7 +99,7 @@ NTSTATUS cli_full_connection(struct cli_state **output_cli,
 			     int signing_state);
 NTSTATUS cli_raw_tcon(struct cli_state *cli,
 		      const char *service, const char *pass, const char *dev,
-		      uint16 *max_xmit, uint16 *tid);
+		      uint16_t *max_xmit, uint16_t *tid);
 struct cli_state *get_ipc_connect(char *server,
 				struct sockaddr_storage *server_ss,
 				const struct user_auth_info *user_info);
@@ -176,7 +176,7 @@ void cli_nt_pipes_close(struct cli_state *cli);
 void cli_shutdown(struct cli_state *cli);
 const char *cli_state_remote_realm(struct cli_state *cli);
 uint16_t cli_state_get_vc_num(struct cli_state *cli);
-uint16 cli_setpid(struct cli_state *cli, uint16 pid);
+uint16_t cli_setpid(struct cli_state *cli, uint16_t pid);
 uint16_t cli_getpid(struct cli_state *cli);
 bool cli_state_has_tcon(struct cli_state *cli);
 uint16_t cli_state_get_tid(struct cli_state *cli);
@@ -204,7 +204,7 @@ NTSTATUS cli_smb(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 
 const char *cli_errstr(struct cli_state *cli);
 NTSTATUS cli_nt_error(struct cli_state *cli);
-void cli_dos_error(struct cli_state *cli, uint8 *eclass, uint32 *ecode);
+void cli_dos_error(struct cli_state *cli, uint8_t *eclass, uint32_t *ecode);
 int cli_errno(struct cli_state *cli);
 bool cli_is_error(struct cli_state *cli);
 bool cli_is_nt_error(struct cli_state *cli);
@@ -643,16 +643,16 @@ NTSTATUS cli_unix_extensions_version_recv(struct tevent_req *req,
 					  uint16_t *pmajor, uint16_t *pminor,
 					  uint32_t *pcaplow,
 					  uint32_t *pcaphigh);
-NTSTATUS cli_unix_extensions_version(struct cli_state *cli, uint16 *pmajor,
-				     uint16 *pminor, uint32 *pcaplow,
-				     uint32 *pcaphigh);
+NTSTATUS cli_unix_extensions_version(struct cli_state *cli, uint16_t *pmajor,
+				     uint16_t *pminor, uint32_t *pcaplow,
+				     uint32_t *pcaphigh);
 struct tevent_req *cli_set_unix_extensions_capabilities_send(
 	TALLOC_CTX *mem_ctx, struct tevent_context *ev, struct cli_state *cli,
 	uint16_t major, uint16_t minor, uint32_t caplow, uint32_t caphigh);
 NTSTATUS cli_set_unix_extensions_capabilities_recv(struct tevent_req *req);
 NTSTATUS cli_set_unix_extensions_capabilities(struct cli_state *cli,
-					      uint16 major, uint16 minor,
-					      uint32 caplow, uint32 caphigh);
+					      uint16_t major, uint16_t minor,
+					      uint32_t caplow, uint32 caphigh);
 struct tevent_req *cli_get_fs_attr_info_send(TALLOC_CTX *mem_ctx,
 					     struct tevent_context *ev,
 					     struct cli_state *cli);
@@ -660,7 +660,7 @@ NTSTATUS cli_get_fs_attr_info_recv(struct tevent_req *req, uint32_t *fs_attr);
 NTSTATUS cli_get_fs_attr_info(struct cli_state *cli, uint32_t *fs_attr);
 NTSTATUS cli_get_fs_volume_info(struct cli_state *cli,
 				TALLOC_CTX *mem_ctx, char **volume_name,
-				uint32 *pserial_number, time_t *pdate);
+				uint32_t *pserial_number, time_t *pdate);
 NTSTATUS cli_get_fs_full_size_info(struct cli_state *cli,
 				   uint64_t *total_allocation_units,
 				   uint64_t *caller_allocation_units,
@@ -668,8 +668,8 @@ NTSTATUS cli_get_fs_full_size_info(struct cli_state *cli,
 				   uint64_t *sectors_per_allocation_unit,
 				   uint64_t *bytes_per_sector);
 NTSTATUS cli_get_posix_fs_info(struct cli_state *cli,
-			       uint32 *optimal_transfer_size,
-			       uint32 *block_size,
+			       uint32_t *optimal_transfer_size,
+			       uint32_t *block_size,
 			       uint64_t *total_blocks,
 			       uint64_t *blocks_available,
 			       uint64_t *user_blocks_available,
@@ -688,7 +688,7 @@ NTSTATUS cli_force_encryption(struct cli_state *c,
 
 /* The following definitions come from libsmb/clilist.c  */
 
-NTSTATUS cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute,
+NTSTATUS cli_list_old(struct cli_state *cli,const char *Mask,uint16_t attribute,
 		      NTSTATUS (*fn)(const char *, struct file_info *,
 				 const char *, void *), void *state);
 NTSTATUS cli_list_trans(struct cli_state *cli, const char *mask,
@@ -704,7 +704,7 @@ struct tevent_req *cli_list_send(TALLOC_CTX *mem_ctx,
 				 uint16_t info_level);
 NTSTATUS cli_list_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 		       struct file_info **finfo, size_t *num_finfo);
-NTSTATUS cli_list(struct cli_state *cli,const char *Mask,uint16 attribute,
+NTSTATUS cli_list(struct cli_state *cli,const char *Mask,uint16_t attribute,
 		  NTSTATUS (*fn)(const char *, struct file_info *, const char *,
 			     void *), void *state);
 

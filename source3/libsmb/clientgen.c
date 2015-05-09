@@ -379,7 +379,7 @@ uint16_t cli_state_get_vc_num(struct cli_state *cli)
  Set the PID to use for smb messages. Return the old pid.
 ****************************************************************************/
 
-uint16 cli_setpid(struct cli_state *cli, uint16 pid)
+uint16_t cli_setpid(struct cli_state *cli, uint16 pid)
 {
 	uint16_t ret = cli->smb1.pid;
 	cli->smb1.pid = pid;

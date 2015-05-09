@@ -241,9 +241,9 @@ static struct in_addr my_socket_addr_v4(void)
 
 static int generate_trn_id(void)
 {
-	uint16 id;
+	uint16_t id;
 
-	generate_random_buffer((uint8 *)&id, sizeof(id));
+	generate_random_buffer((uint8_t *)&id, sizeof(id));
 
 	return id % (unsigned)0x7FFF;
 }

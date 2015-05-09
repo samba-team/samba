@@ -401,7 +401,7 @@ bool
 SMBC_getatr(SMBCCTX * context,
             SMBCSRV *srv,
             const char *path,
-            uint16 *mode,
+            uint16_t *mode,
             off_t *size,
             struct timespec *create_time_ts,
             struct timespec *access_time_ts,
@@ -531,7 +531,7 @@ SMBC_setatr(SMBCCTX * context, SMBCSRV *srv, char *path,
             time_t access_time,
             time_t write_time,
             time_t change_time,
-            uint16 mode)
+            uint16_t mode)
 {
         uint16_t fd;
         int ret;
@@ -586,7 +586,7 @@ SMBC_setatr(SMBCCTX * context, SMBCSRV *srv, char *path,
                  * cli_setatr() for that, and with only this parameter, it
                  * seems to work on win98.
                  */
-                if (ret && mode != (uint16) -1) {
+                if (ret && mode != (uint16_t) -1) {
                         ret = NT_STATUS_IS_OK(cli_setatr(srv->cli, path, mode, 0));
                 }
 

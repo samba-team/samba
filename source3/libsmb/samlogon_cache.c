@@ -261,7 +261,7 @@ struct netr_SamInfo3 *netsamlogon_cache_get(TALLOC_CTX *mem_ctx, const struct do
 	   --jerry */
 	{
 		time_t		now = time(NULL);
-		uint32		time_diff;
+		uint32_t	time_diff;
 
 		/* is the entry expired? */
 		time_diff = now - t;

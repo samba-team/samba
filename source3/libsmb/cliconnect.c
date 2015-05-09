@@ -2410,7 +2410,7 @@ struct tevent_req *cli_tcon_andx_create(TALLOC_CTX *mem_ctx,
 			 * Non-encrypted passwords - convert to DOS codepage
 			 * before using.
 			 */
-			tmp_pass = talloc_array(talloc_tos(), uint8, 0);
+			tmp_pass = talloc_array(talloc_tos(), uint8_t, 0);
 			if (tevent_req_nomem(tmp_pass, req)) {
 				return tevent_req_post(req, ev);
 			}
@@ -2637,7 +2637,7 @@ static struct tevent_req *cli_raw_tcon_send(
 	TALLOC_CTX *mem_ctx, struct tevent_context *ev, struct cli_state *cli,
 	const char *service, const char *pass, const char *dev);
 static NTSTATUS cli_raw_tcon_recv(struct tevent_req *req,
-				  uint16 *max_xmit, uint16 *tid);
+				  uint16_t *max_xmit, uint16_t *tid);
 
 static void cli_tree_connect_smb2_done(struct tevent_req *subreq);
 static void cli_tree_connect_andx_done(struct tevent_req *subreq);
@@ -3543,7 +3543,7 @@ static void cli_raw_tcon_done(struct tevent_req *subreq)
 }
 
 static NTSTATUS cli_raw_tcon_recv(struct tevent_req *req,
-				  uint16 *max_xmit, uint16 *tid)
+				  uint16_t *max_xmit, uint16_t *tid)
 {
 	struct cli_raw_tcon_state *state = tevent_req_data(
 		req, struct cli_raw_tcon_state);
@@ -3559,7 +3559,7 @@ static NTSTATUS cli_raw_tcon_recv(struct tevent_req *req,
 
 NTSTATUS cli_raw_tcon(struct cli_state *cli,
 		      const char *service, const char *pass, const char *dev,
-		      uint16 *max_xmit, uint16 *tid)
+		      uint16_t *max_xmit, uint16_t *tid)
 {
 	struct tevent_context *ev;
 	struct tevent_req *req;

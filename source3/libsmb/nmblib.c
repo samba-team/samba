@@ -1334,7 +1334,7 @@ static unsigned char *name_ptr(unsigned char *buf, size_t buf_len, unsigned int 
 
 	c = *(unsigned char *)(buf+ofs);
 	if ((c & 0xC0) == 0xC0) {
-		uint16 l = 0;
+		uint16_t l = 0;
 
 		if (ofs > buf_len - 1) {
 			return NULL;

@@ -165,7 +165,7 @@ bool cli_NetWkstaUserLogon(struct cli_state *cli,char *user, char *workstation)
  Call a NetShareEnum - try and browse available connections on a host.
 ****************************************************************************/
 
-int cli_RNetShareEnum(struct cli_state *cli, void (*fn)(const char *, uint32, const char *, void *), void *state)
+int cli_RNetShareEnum(struct cli_state *cli, void (*fn)(const char *, uint32_t, const char *, void *), void *state)
 {
 	char *rparam = NULL;
 	char *rdata = NULL;
@@ -272,8 +272,8 @@ int cli_RNetShareEnum(struct cli_state *cli, void (*fn)(const char *, uint32, co
  the comment and a state pointer.
 ****************************************************************************/
 
-bool cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
-		       void (*fn)(const char *, uint32, const char *, void *),
+bool cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32_t stype,
+		       void (*fn)(const char *, uint32_t, const char *, void *),
 		       void *state)
 {
 	char *rparam = NULL;
@@ -284,7 +284,7 @@ bool cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 	char param[1024];
 	int uLevel = 1;
 	size_t len;
-	uint32 func = RAP_NetServerEnum2;
+	uint32_t func = RAP_NetServerEnum2;
 	char *last_entry = NULL;
 	int total_cnt = 0;
 	int return_cnt = 0;
@@ -626,7 +626,7 @@ NTSTATUS cli_qpathinfo1_recv(struct tevent_req *req,
 			     time_t *access_time,
 			     time_t *write_time,
 			     off_t *size,
-			     uint16 *mode)
+			     uint16_t *mode)
 {
 	struct cli_qpathinfo1_state *state = tevent_req_data(
 		req, struct cli_qpathinfo1_state);
@@ -668,7 +668,7 @@ NTSTATUS cli_qpathinfo1(struct cli_state *cli,
 			time_t *access_time,
 			time_t *write_time,
 			off_t *size,
-			uint16 *mode)
+			uint16_t *mode)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct tevent_context *ev;
@@ -709,7 +709,7 @@ NTSTATUS cli_setpathinfo_basic(struct cli_state *cli, const char *fname,
 			       time_t access_time,
 			       time_t write_time,
 			       time_t change_time,
-			       uint16 mode)
+			       uint16_t mode)
 {
 	unsigned int data_len = 0;
 	char data[40];
@@ -802,7 +802,7 @@ NTSTATUS cli_qpathinfo2_recv(struct tevent_req *req,
 			     struct timespec *access_time,
 			     struct timespec *write_time,
 			     struct timespec *change_time,
-			     off_t *size, uint16 *mode,
+			     off_t *size, uint16_t *mode,
 			     SMB_INO_T *ino)
 {
 	struct cli_qpathinfo2_state *state = tevent_req_data(
@@ -842,7 +842,7 @@ NTSTATUS cli_qpathinfo2(struct cli_state *cli, const char *fname,
 			struct timespec *access_time,
 			struct timespec *write_time,
 			struct timespec *change_time,
-			off_t *size, uint16 *mode,
+			off_t *size, uint16_t *mode,
 			SMB_INO_T *ino)
 {
 	TALLOC_CTX *frame = NULL;
@@ -1138,7 +1138,7 @@ NTSTATUS cli_qfilename(struct cli_state *cli, uint16_t fnum,
 ****************************************************************************/
 
 NTSTATUS cli_qfileinfo_basic(struct cli_state *cli, uint16_t fnum,
-			     uint16 *mode, off_t *size,
+			     uint16_t *mode, off_t *size,
 			     struct timespec *create_time,
 			     struct timespec *access_time,
 			     struct timespec *write_time,
@@ -1255,7 +1255,7 @@ static void cli_qpathinfo_basic_done(struct tevent_req *subreq)
 }
 
 NTSTATUS cli_qpathinfo_basic_recv(struct tevent_req *req,
-				  SMB_STRUCT_STAT *sbuf, uint32 *attributes)
+				  SMB_STRUCT_STAT *sbuf, uint32_t *attributes)
 {
 	struct cli_qpathinfo_basic_state *state = tevent_req_data(
 		req, struct cli_qpathinfo_basic_state);
@@ -1274,7 +1274,7 @@ NTSTATUS cli_qpathinfo_basic_recv(struct tevent_req *req,
 }
 
 NTSTATUS cli_qpathinfo_basic(struct cli_state *cli, const char *name,
-			     SMB_STRUCT_STAT *sbuf, uint32 *attributes)
+			     SMB_STRUCT_STAT *sbuf, uint32_t *attributes)
 {
 	TALLOC_CTX *frame = NULL;
 	struct tevent_context *ev;
@@ -1420,7 +1420,7 @@ NTSTATUS cli_qpathinfo3(struct cli_state *cli, const char *fname,
 			struct timespec *access_time,
 			struct timespec *write_time,
 			struct timespec *change_time,
-			off_t *size, uint16 *mode,
+			off_t *size, uint16_t *mode,
 			SMB_INO_T *ino)
 {
 	NTSTATUS status = NT_STATUS_OK;

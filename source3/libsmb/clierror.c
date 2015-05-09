@@ -84,7 +84,7 @@ NTSTATUS cli_nt_error(struct cli_state *cli)
  code.
 ****************************************************************************/
 
-void cli_dos_error(struct cli_state *cli, uint8 *eclass, uint32 *ecode)
+void cli_dos_error(struct cli_state *cli, uint8_t *eclass, uint32_t *ecode)
 {
 	if (!cli_state_is_connected(cli)) {
 		*eclass = ERRDOS;
@@ -115,8 +115,8 @@ int cli_errno(struct cli_state *cli)
 	}
 
         if (cli_is_dos_error(cli)) {
-                uint8 eclass;
-                uint32 ecode;
+                uint8_t eclass;
+                uint32_t ecode;
 
                 cli_dos_error(cli, &eclass, &ecode);
 		status = dos_to_ntstatus(eclass, ecode);
