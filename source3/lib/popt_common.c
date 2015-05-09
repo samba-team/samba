@@ -286,7 +286,7 @@ static void get_credentials_file(struct user_auth_info *auth_info,
 {
 	XFILE *auth;
 	fstring buf;
-	uint16 len = 0;
+	uint16_t len = 0;
 	char *ptr, *val, *param;
 
 	if ((auth=x_fopen(file, O_RDONLY, 0)) == NULL)

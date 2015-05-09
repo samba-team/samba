@@ -223,7 +223,7 @@ ssize_t message_push_blob(uint8_t **outbuf, DATA_BLOB blob)
 	size_t newlen = smb_len(*outbuf) + 4 + blob.length;
 	uint8_t *tmp;
 
-	if (!(tmp = talloc_realloc(NULL, *outbuf, uint8, newlen))) {
+	if (!(tmp = talloc_realloc(NULL, *outbuf, uint8_t, newlen))) {
 		DEBUG(0, ("talloc failed\n"));
 		return -1;
 	}
@@ -1937,7 +1937,7 @@ uint32_t map_share_mode_to_deny_mode(uint32_t share_access, uint32_t private_opt
 		return DENY_FCB;
 	}
 
-	return (uint32)-1;
+	return (uint32_t)-1;
 }
 
 pid_t procid_to_pid(const struct server_id *proc)

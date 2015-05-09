@@ -33,7 +33,7 @@
 
 struct perm_value {
 	const char *perm;
-	uint32 mask;
+	uint32_t mask;
 };
 
 static const struct perm_value special_values[] = {
@@ -84,7 +84,7 @@ static NTSTATUS cli_lsa_lookup_sid(struct cli_state *cli,
 				   enum lsa_SidType *type,
 				   char **domain, char **name)
 {
-	uint16 orig_cnum = cli_state_get_tid(cli);
+	uint16_t orig_cnum = cli_state_get_tid(cli);
 	struct rpc_pipe_client *p = NULL;
 	struct policy_handle handle;
 	NTSTATUS status;
@@ -165,7 +165,7 @@ static NTSTATUS cli_lsa_lookup_name(struct cli_state *cli,
 				    enum lsa_SidType *type,
 				    struct dom_sid *sid)
 {
-	uint16 orig_cnum = cli_state_get_tid(cli);
+	uint16_t orig_cnum = cli_state_get_tid(cli);
 	struct rpc_pipe_client *p;
 	struct policy_handle handle;
 	NTSTATUS status;
@@ -292,7 +292,7 @@ void print_ace(struct cli_state *cli, FILE *f, struct security_ace *ace,
 	const struct perm_value *v;
 	fstring sidstr;
 	int do_print = 0;
-	uint32 got_mask;
+	uint32_t got_mask;
 
 	SidToString(cli, sidstr, &ace->trustee, numeric);
 
@@ -580,7 +580,7 @@ void sec_desc_print(struct cli_state *cli, FILE *f,
 		    struct security_descriptor *sd, bool numeric)
 {
 	fstring sidstr;
-	uint32 i;
+	uint32_t i;
 
 	fprintf(f, "REVISION:%d\n", sd->revision);
 	print_acl_ctrl(f, sd->type, numeric);

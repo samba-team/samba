@@ -59,7 +59,7 @@
 
 struct messaging_callback {
 	struct messaging_callback *prev, *next;
-	uint32 msg_type;
+	uint32_t msg_type;
 	void (*fn)(struct messaging_context *msg, void *private_data, 
 		   uint32_t msg_type, 
 		   struct server_id server_id, DATA_BLOB *data);
@@ -112,7 +112,7 @@ static void ping_message(struct messaging_context *msg_ctx,
 struct msg_all {
 	struct messaging_context *msg_ctx;
 	int msg_type;
-	uint32 msg_flag;
+	uint32_t msg_flag;
 	const void *buf;
 	size_t len;
 	int n_sent;
@@ -243,7 +243,7 @@ static void messaging_recv_cb(const uint8_t *msg, size_t msg_len,
 
 	rec = (struct messaging_rec) {
 		.msg_version = MESSAGE_VERSION,
-		.buf.data = discard_const_p(uint8, msg) + sizeof(hdr),
+		.buf.data = discard_const_p(uint8_t, msg) + sizeof(hdr),
 		.buf.length = msg_len - sizeof(hdr),
 		.num_fds = num_fds,
 		.fds = fds64,

@@ -113,7 +113,7 @@ int sys_get_nfs_quota(const char *path, const char *bdev,
 	enum clnt_stat clnt_stat;
 
 	int ret = -1;
-	uint32 qflags = 0;
+	uint32_t qflags = 0;
 
 	if (!path || !bdev || !dp) {
 		smb_panic("sys_get_nfs_quota: called with NULL pointer");

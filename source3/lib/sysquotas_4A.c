@@ -87,7 +87,7 @@
 int sys_get_vfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *dp)
 {
 	int ret = -1;
-	uint32 qflags = 0;
+	uint32_t qflags = 0;
 	struct dqblk D;
 	uint64_t bsize = (uint64_t)QUOTABLOCK_SIZE;
 
@@ -181,8 +181,8 @@ int sys_get_vfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qt
 int sys_set_vfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *dp)
 {
 	int ret = -1;
-	uint32 qflags = 0;
-	uint32 oldqflags = 0;
+	uint32_t qflags = 0;
+	uint32_t oldqflags = 0;
 	struct dqblk D;
 	uint64_t bsize = (uint64_t)QUOTABLOCK_SIZE;
 

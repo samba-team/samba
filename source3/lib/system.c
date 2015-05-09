@@ -1217,9 +1217,9 @@ int sys_pclose(int fd)
 uint32_t unix_dev_major(SMB_DEV_T dev)
 {
 #if defined(HAVE_DEVICE_MAJOR_FN)
-        return (uint32)major(dev);
+        return (uint32_t)major(dev);
 #else
-        return (uint32)(dev >> 8);
+        return (uint32_t)(dev >> 8);
 #endif
 }
 
@@ -1230,9 +1230,9 @@ uint32_t unix_dev_major(SMB_DEV_T dev)
 uint32_t unix_dev_minor(SMB_DEV_T dev)
 {
 #if defined(HAVE_DEVICE_MINOR_FN)
-        return (uint32)minor(dev);
+        return (uint32_t)minor(dev);
 #else
-        return (uint32)(dev & 0xff);
+        return (uint32_t)(dev & 0xff);
 #endif
 }
 

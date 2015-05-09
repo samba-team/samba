@@ -699,7 +699,7 @@ static NTSTATUS ctdb_handle_message(struct messaging_context *msg_ctx,
 
 static void ctdbd_socket_handler(struct tevent_context *event_ctx,
 				 struct tevent_fd *event,
-				 uint16 flags,
+				 uint16_t flags,
 				 void *private_data)
 {
 	struct ctdbd_connection *conn = talloc_get_type_abort(
@@ -887,7 +887,7 @@ static NTSTATUS ctdbd_control(struct ctdbd_connection *conn,
 	reply = (struct ctdb_reply_control *)hdr;
 
 	if (outdata) {
-		if (!(outdata->dptr = (uint8 *)talloc_memdup(
+		if (!(outdata->dptr = (uint8_t *)talloc_memdup(
 			      mem_ctx, reply->data, reply->datalen))) {
 			TALLOC_FREE(reply);
 			return NT_STATUS_NO_MEMORY;
