@@ -39,10 +39,11 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/mman.h>
+#include <stdbool.h>
 
 static struct timeval tp1,tp2;
 
-static int do_reads, do_writes, use_mmap, do_check;
+static int do_reads, do_writes, use_mmap, do_check, do_brl_test;
 
 static void start_timer(void)
 {
@@ -57,7 +58,7 @@ static double end_timer(void)
 }
 
 /* lock a byte range in a open file */
-static int lock_range(int fd, int offset, int len)
+static int lock_range(int fd, int offset, int len, bool wait)
 {
 	struct flock lock;
 
@@ -67,7 +68,7 @@ static int lock_range(int fd, int offset, int len)
 	lock.l_len = len;
 	lock.l_pid = 0;
 	
-	return fcntl(fd,F_SETLKW,&lock);
+	return fcntl(fd, wait ? F_SETLKW : F_SETLK, &lock);
 }
 
 /* check whether we could place a lock */
@@ -147,11 +148,11 @@ static void ping_pong(int fd, int num_locks)
 
 	start_timer();
 
-	lock_range(fd, 0, 1);
+	lock_range(fd, 0, 1, true);
 	i = 0;
 
 	while (1) {
-		if (lock_range(fd, (i+1) % num_locks, 1) != 0) {
+		if (lock_range(fd, (i+1) % num_locks, 1, true) != 0) {
 			printf("lock at %d failed! - %s\n",
 			       (i+1) % num_locks, strerror(errno));
 		}
@@ -198,13 +199,25 @@ static void ping_pong(int fd, int num_locks)
 	}
 }
 
+static void usage(void)
+{
+	printf("ping_pong -rwmc <file> <num_locks>\n");
+	printf("ping_pong -l <file>\n\n");
+	printf("Options\n");
+	printf(" -r    do reads\n");
+	printf(" -w    do writes\n");
+	printf(" -m    use mmap\n");
+	printf(" -c    check locks\n");
+	printf(" -l    test for working byte range locks\n");
+}
+
 int main(int argc, char *argv[])
 {
 	char *fname;
 	int fd, num_locks;
 	int c;
 
-	while ((c = getopt(argc, argv, "rwmc")) != -1) {
+	while ((c = getopt(argc, argv, "rwmcl")) != -1) {
 		switch (c){
 		case 'w':
 			do_writes = 1;
@@ -218,6 +231,9 @@ int main(int argc, char *argv[])
 		case 'c':
 			do_check = 1;
 			break;
+		case 'l':
+			do_brl_test = 1;
+			break;
 		default:
 			fprintf(stderr, "Unknown option '%c'\n", c);
 			exit(1);
@@ -227,24 +243,43 @@ int main(int argc, char *argv[])
 	argv += optind;
 	argc -= optind;
 
-	if (argc < 2) {
-		printf("ping_pong [options] <file> <num_locks>\n");
-		printf("           -r    do reads\n");
-		printf("           -w    do writes\n");
-		printf("           -m    use mmap\n");
-		printf("           -c    check locks\n");
+	if (argc < 1) {
+		usage();
 		exit(1);
 	}
 
 	fname = argv[0];
+
+	fd = open(fname, O_CREAT|O_RDWR, 0600);
+	if (fd == -1) {
+		exit(1);
+	}
+
+	if (do_brl_test) {
+		if (lock_range(fd, 0, 0, false) != 0) {
+			printf("file already locked, calling check_lock to tell us who has it locked:\n");
+			(void)check_lock(fd, 0, 0);
+			printf("Working POSIX byte range locks\n");
+			exit(0);
+		}
+
+		printf("Holding lock, press any key to continue...\n");
+		printf("You should run the same command on another node now.\n");
+		getchar();
+		printf("Good bye.\n");
+		exit(0);
+	}
+
+	if (argc < 2) {
+		usage();
+		exit(1);
+	}
+
 	num_locks = atoi(argv[1]);
 	if (num_locks <= 0) {
 		printf("num_locks should be > 0\n");
 		exit(1);
 	}
-
-	fd = open(fname, O_CREAT|O_RDWR, 0600);
-	if (fd == -1) exit(1);
 
 	ping_pong(fd, num_locks);
 
