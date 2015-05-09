@@ -218,7 +218,7 @@ static size_t rap_getstringp(TALLOC_CTX *ctx, char *p, char **dest, char *r, uin
 	return 4;
 }
 
-static char *make_header(char *param, uint16 apinum, const char *reqfmt, const char *datafmt)
+static char *make_header(char *param, uint16_t apinum, const char *reqfmt, const char *datafmt)
 {
 	PUTWORD(param,apinum);
 	if (reqfmt)
@@ -1097,7 +1097,7 @@ int cli_RNetUserEnum0(struct cli_state *cli,
  Call a NetFileClose2 - close open file on another session to server.
 ****************************************************************************/
 
-int cli_NetFileClose(struct cli_state *cli, uint32 file_id )
+int cli_NetFileClose(struct cli_state *cli, uint32_t file_id )
 {
 	char *rparam = NULL;
 	char *rdata = NULL;
@@ -1145,7 +1145,7 @@ int cli_NetFileClose(struct cli_state *cli, uint32 file_id )
  workstation.
 ****************************************************************************/
 
-int cli_NetFileGetInfo(struct cli_state *cli, uint32 file_id, void (*fn)(const char *, const char *, uint16, uint16, uint32))
+int cli_NetFileGetInfo(struct cli_state *cli, uint32_t file_id, void (*fn)(const char *, const char *, uint16_t, uint16_t, uint32_t))
 {
 	char *rparam = NULL;
 	char *rdata = NULL;
@@ -1245,8 +1245,8 @@ int cli_NetFileGetInfo(struct cli_state *cli, uint32 file_id, void (*fn)(const c
 
 int cli_NetFileEnum(struct cli_state *cli, const char * user,
 		    const char * base_path,
-		    void (*fn)(const char *, const char *, uint16, uint16,
-			       uint32))
+		    void (*fn)(const char *, const char *, uint16_t, uint16_t,
+			       uint32_t))
 {
 	char *rparam = NULL;
 	char *rdata = NULL;
@@ -1636,7 +1636,7 @@ bool cli_get_server_domain(struct cli_state *cli)
 *
 * Parameters:
 *             cli       - pointer to cli_state structure
-*             pstype    - pointer to uint32 to contain returned server type
+*             pstype    - pointer to uint32_t to contain returned server type
 *
 * Returns:
 *             True      - success
@@ -1646,7 +1646,7 @@ bool cli_get_server_domain(struct cli_state *cli)
 *
 ************************************************************************/
 
-bool cli_get_server_type(struct cli_state *cli, uint32 *pstype)
+bool cli_get_server_type(struct cli_state *cli, uint32_t *pstype)
 {
 	char *rparam = NULL;
 	char *rdata = NULL;
@@ -1775,7 +1775,7 @@ bool cli_get_server_name(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 *
 ************************************************************************/
 
-bool cli_ns_check_server_type(struct cli_state *cli, char *workgroup, uint32 stype)
+bool cli_ns_check_server_type(struct cli_state *cli, char *workgroup, uint32_t stype)
 {
 	char *rparam = NULL;
 	char *rdata = NULL;
@@ -1910,8 +1910,8 @@ bool cli_NetWkstaUserLogoff(struct cli_state *cli, const char *user, const char 
 }
 
 int cli_NetPrintQEnum(struct cli_state *cli,
-		void (*qfn)(const char*,uint16,uint16,uint16,const char*,const char*,const char*,const char*,const char*,uint16,uint16),
-		void (*jfn)(uint16,const char*,const char*,const char*,const char*,uint16,uint16,const char*,unsigned int,unsigned int,const char*))
+		void (*qfn)(const char*,uint16_t,uint16_t,uint16_t,const char*,const char*,const char*,const char*,const char*,uint16_t,uint16_t),
+		void (*jfn)(uint16_t,const char*,const char*,const char*,const char*,uint16_t,uint16_t,const char*,unsigned int,unsigned int,const char*))
 {
 	char param[WORDSIZE                         /* api number    */
 		+sizeof(RAP_NetPrintQEnum_REQ)    /* req string    */
@@ -2018,7 +2018,7 @@ int cli_NetPrintQEnum(struct cli_state *cli,
 			if (jobcount) {
 				int j;
 				for (j=0;j<jobcount;j++) {
-					uint16 jid = 0, pos = 0, fsstatus = 0;
+					uint16_t jid = 0, pos = 0, fsstatus = 0;
 					char ownername[RAP_USERNAME_LEN];
 					char notifyname[RAP_MACHNAME_LEN];
 					char datatype[RAP_DATATYPE_LEN];
@@ -2086,8 +2086,8 @@ int cli_NetPrintQEnum(struct cli_state *cli,
 }
 
 int cli_NetPrintQGetInfo(struct cli_state *cli, const char *printer,
-	void (*qfn)(const char*,uint16,uint16,uint16,const char*,const char*,const char*,const char*,const char*,uint16,uint16),
-	void (*jfn)(uint16,const char*,const char*,const char*,const char*,uint16,uint16,const char*,unsigned int,unsigned int,const char*))
+	void (*qfn)(const char*,uint16_t,uint16_t,uint16_t,const char*,const char*,const char*,const char*,const char*,uint16_t,uint16_t),
+	void (*jfn)(uint16_t,const char*,const char*,const char*,const char*,uint16_t,uint16_t,const char*,unsigned int,unsigned int,const char*))
 {
 	char param[WORDSIZE                         /* api number    */
 		+sizeof(RAP_NetPrintQGetInfo_REQ) /* req string    */
@@ -2347,7 +2347,7 @@ int cli_RNetServiceEnum(struct cli_state *cli, void (*fn)(const char *, const ch
  Call a NetSessionEnum - list workstations with sessions to an SMB server.
 ****************************************************************************/
 
-int cli_NetSessionEnum(struct cli_state *cli, void (*fn)(char *, char *, uint16, uint16, uint16, unsigned int, unsigned int, unsigned int, char *))
+int cli_NetSessionEnum(struct cli_state *cli, void (*fn)(char *, char *, uint16_t, uint16_t, uint16_t, unsigned int, unsigned int, unsigned int, char *))
 {
 	char param[WORDSIZE                       /* api number    */
 		+sizeof(RAP_NetSessionEnum_REQ) /* parm string   */
@@ -2447,7 +2447,7 @@ int cli_NetSessionEnum(struct cli_state *cli, void (*fn)(char *, char *, uint16,
 ****************************************************************************/
 
 int cli_NetSessionGetInfo(struct cli_state *cli, const char *workstation,
-		void (*fn)(const char *, const char *, uint16, uint16, uint16, unsigned int, unsigned int, unsigned int, const char *))
+		void (*fn)(const char *, const char *, uint16_t, uint16_t, uint16_t, unsigned int, unsigned int, unsigned int, const char *))
 {
 	char param[WORDSIZE                          /* api number    */
 		+sizeof(RAP_NetSessionGetInfo_REQ) /* req string    */

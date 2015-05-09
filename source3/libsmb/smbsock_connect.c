@@ -29,7 +29,7 @@
 struct cli_session_request_state {
 	struct tevent_context *ev;
 	int sock;
-	uint32 len_hdr;
+	uint32_t len_hdr;
 	struct iovec iov[3];
 	uint8_t nb_session_response;
 };

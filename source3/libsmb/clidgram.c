@@ -33,7 +33,7 @@
  */
 
 static bool cli_prep_mailslot(bool unique, const char *mailslot,
-		       uint16 priority,
+		       uint16_t priority,
 		       char *buf, int len,
 		       const char *srcname, int src_type,
 		       const char *dstname, int dest_type,

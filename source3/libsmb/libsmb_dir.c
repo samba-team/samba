@@ -60,7 +60,7 @@ static int
 add_dirent(SMBCFILE *dir,
            const char *name,
            const char *comment,
-           uint32 type)
+           uint32_t type)
 {
 	struct smbc_dirent *dirent;
 	int size;
@@ -138,7 +138,7 @@ add_dirent(SMBCFILE *dir,
 
 static void
 list_unique_wg_fn(const char *name,
-                  uint32 type,
+                  uint32_t type,
                   const char *comment,
                   void *state)
 {
@@ -183,7 +183,7 @@ list_unique_wg_fn(const char *name,
 
 static void
 list_fn(const char *name,
-        uint32 type,
+        uint32_t type,
         const char *comment,
         void *state)
 {
@@ -257,15 +257,15 @@ dir_list_fn(const char *mnt,
 static int
 net_share_enum_rpc(struct cli_state *cli,
                    void (*fn)(const char *name,
-                              uint32 type,
+                              uint32_t type,
                               const char *comment,
                               void *state),
                    void *state)
 {
         int i;
 	WERROR result;
-	uint32 preferred_len = 0xffffffff;
-        uint32 type;
+	uint32_t preferred_len = 0xffffffff;
+        uint32_t type;
 	struct srvsvc_NetShareInfoCtr info_ctr;
 	struct srvsvc_NetShareCtr1 ctr1;
 	fstring name = "";
@@ -377,7 +377,7 @@ SMBC_opendir_ctx(SMBCCTX *context,
         char *options = NULL;
 	char *workgroup = NULL;
 	char *path = NULL;
-        uint16 mode;
+        uint16_t mode;
 	uint16_t port = 0;
         char *p = NULL;
 	SMBCSRV *srv  = NULL;
@@ -1562,7 +1562,7 @@ SMBC_chmod_ctx(SMBCCTX *context,
 	char *targetpath = NULL;
 	struct cli_state *targetcli = NULL;
 	char *path = NULL;
-	uint16 mode;
+	uint16_t mode;
 	uint16_t port = 0;
 	TALLOC_CTX *frame = talloc_stackframe();
         NTSTATUS status;
@@ -1832,7 +1832,7 @@ SMBC_unlink_ctx(SMBCCTX *context,
 
 			int saverr = errno;
 			off_t size = 0;
-			uint16 mode = 0;
+			uint16_t mode = 0;
 			struct timespec write_time_ts;
                         struct timespec access_time_ts;
                         struct timespec change_time_ts;
