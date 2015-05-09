@@ -185,7 +185,7 @@ static uint32_t _reg_perfcount_multi_sz_from_tdb(TDB_CONTEXT *tdb,
 		return buffer_size;
 	}
 	/* First encode the name_index */
-	working_size = (kbuf.dsize + 1)*sizeof(uint16);
+	working_size = (kbuf.dsize + 1)*sizeof(uint16_t);
 	buf1 = (char *)SMB_REALLOC(buf1, buffer_size + working_size);
 	if(!buf1) {
 		buffer_size = 0;
@@ -199,7 +199,7 @@ static uint32_t _reg_perfcount_multi_sz_from_tdb(TDB_CONTEXT *tdb,
 	memcpy(buf1+buffer_size, (char *)name_index.data, working_size);
 	buffer_size += working_size;
 	/* Now encode the actual name */
-	working_size = (dbuf.dsize + 1)*sizeof(uint16);
+	working_size = (dbuf.dsize + 1)*sizeof(uint16_t);
 	buf1 = (char *)SMB_REALLOC(buf1, buffer_size + working_size);
 	if(!buf1) {
 		buffer_size = 0;
@@ -590,7 +590,7 @@ static bool _reg_perfcount_get_counter_info(struct PERF_DATA_BLOCK *block,
 	obj->counter_data.ByteLength += dsize + padding;
 	obj->counter_data.data = talloc_realloc(mem_ctx,
 						      obj->counter_data.data,
-						      uint8,
+						      uint8_t,
 						      obj->counter_data.ByteLength - sizeof(uint32_t));
 	if(obj->counter_data.data == NULL)
 		return False;
@@ -730,7 +730,7 @@ static bool _reg_perfcount_get_instance_info(struct PERF_INSTANCE_DEFINITION *in
 	inst->counter_data.ByteLength = data.dsize + sizeof(inst->counter_data.ByteLength);
 	inst->counter_data.data = talloc_realloc(mem_ctx,
 						       inst->counter_data.data,
-						       uint8,
+						       uint8_t,
 						       data.dsize);
 	if(inst->counter_data.data == NULL)
 		return False;
@@ -762,7 +762,7 @@ static bool _reg_perfcount_get_instance_info(struct PERF_INSTANCE_DEFINITION *in
 		}
 		inst->data = talloc_realloc(mem_ctx,
 						  inst->data,
-						  uint8,
+						  uint8_t,
 						  inst->NameLength);
 		if (inst->data == NULL) {
 			SAFE_FREE(data.dptr);
@@ -784,7 +784,7 @@ static bool _reg_perfcount_get_instance_info(struct PERF_INSTANCE_DEFINITION *in
 		pad = 8 - pad;
 		inst->data = talloc_realloc(mem_ctx,
 						  inst->data,
-						  uint8,
+						  uint8_t,
 						  inst->NameLength + pad);
 		memset(inst->data + inst->NameLength, 0, pad);
 		inst->ByteLength += pad;
@@ -995,7 +995,7 @@ static bool _reg_perfcount_init_data_block(struct PERF_DATA_BLOCK *block,
 		goto err_out;
 	}
 	block->SystemNameLength = (strlen_w(temp) * 2) + 2;
-	block->data = talloc_zero_array(mem_ctx, uint8, block->SystemNameLength + (8 - (block->SystemNameLength % 8)));
+	block->data = talloc_zero_array(mem_ctx, uint8_t, block->SystemNameLength + (8 - (block->SystemNameLength % 8)));
 	if (block->data == NULL) {
 		goto err_out;
 	}
@@ -1071,7 +1071,7 @@ static uint32_t _reg_perfcount_perf_data_block_fixup(struct PERF_DATA_BLOCK *blo
 				}
 				counter_data->data = talloc_realloc(mem_ctx,
 									 counter_data->data,
-									 uint8,
+									 uint8_t,
 									 counter_data->ByteLength - sizeof(counter_data->ByteLength) + pad);
 				if (counter_data->data == NULL) {
 					return 0;
@@ -1091,7 +1091,7 @@ static uint32_t _reg_perfcount_perf_data_block_fixup(struct PERF_DATA_BLOCK *blo
 				pad = 8 - pad;
 				object[obj].counter_data.data = talloc_realloc(mem_ctx,
 										     object[obj].counter_data.data,
-										     uint8, 
+										     uint8_t,
 										     object[obj].counter_data.ByteLength + pad);
 				memset((void *)(object[obj].counter_data.data + object[obj].counter_data.ByteLength), 0, pad);
 				object[obj].counter_data.ByteLength += pad;

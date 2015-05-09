@@ -33,7 +33,7 @@ typedef struct _prs_struct {
 	 * always little-endian.
 	 */
 	bool bigendian_data;
-	uint8 align; /* data alignment */
+	uint8_t align; /* data alignment */
 	bool is_dynamic; /* Do we own this memory or not ? */
 	uint32_t data_offset; /* Current working offset into data. */
 	uint32_t buffer_size; /* Current allocated size of the buffer. */
@@ -75,6 +75,6 @@ void prs_switch_type(prs_struct *ps, bool io);
 bool prs_uint16(const char *name, prs_struct *ps, int depth, uint16 *data16);
 bool prs_uint32(const char *name, prs_struct *ps, int depth, uint32_t *data32);
 bool prs_uint64(const char *name, prs_struct *ps, int depth, uint64 *data64);
-bool prs_uint8s(bool charmode, const char *name, prs_struct *ps, int depth, uint8 *data8s, int len);
+bool prs_uint8s(bool charmode, const char *name, prs_struct *ps, int depth, uint8_t *data8s, int len);
 
 #endif

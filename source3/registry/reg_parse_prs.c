@@ -283,7 +283,7 @@ bool prs_align(prs_struct *ps)
 bool prs_align_uint64(prs_struct *ps)
 {
 	bool ret;
-	uint8 old_align = ps->align;
+	uint8_t old_align = ps->align;
 
 	ps->align = 8;
 	ret = prs_align(ps);
@@ -335,7 +335,7 @@ void prs_switch_type(prs_struct *ps, bool io)
 
 bool prs_uint16(const char *name, prs_struct *ps, int depth, uint16 *data16)
 {
-	char *q = prs_mem_get(ps, sizeof(uint16));
+	char *q = prs_mem_get(ps, sizeof(uint16_t));
 	if (q == NULL)
 		return False;
 
@@ -353,7 +353,7 @@ bool prs_uint16(const char *name, prs_struct *ps, int depth, uint16 *data16)
 
 	DEBUGADD(5,("%s%04x %s: %04x\n", tab_depth(5,depth), ps->data_offset, name, *data16));
 
-	ps->data_offset += sizeof(uint16);
+	ps->data_offset += sizeof(uint16_t);
 
 	return True;
 }
@@ -415,7 +415,7 @@ bool prs_uint64(const char *name, prs_struct *ps, int depth, uint64 *data64)
  Stream an array of uint8s. Length is number of uint8s.
  ********************************************************************/
 
-bool prs_uint8s(bool charmode, const char *name, prs_struct *ps, int depth, uint8 *data8s, int len)
+bool prs_uint8s(bool charmode, const char *name, prs_struct *ps, int depth, uint8_t *data8s, int len)
 {
 	int i;
 	char *q = prs_mem_get(ps, len);

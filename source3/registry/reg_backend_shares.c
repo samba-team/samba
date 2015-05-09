@@ -38,7 +38,7 @@
 static char* trim_reg_path( const char *path )
 {
 	const char *p;
-	uint16 key_len = strlen(KEY_SHARES);
+	uint16_t key_len = strlen(KEY_SHARES);
 
 	/* 
 	 * sanity check...this really should never be True.

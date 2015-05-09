@@ -1035,7 +1035,7 @@ static WERROR regdb_store_keys_internal2(struct db_context *db,
 					 struct regsubkey_ctr *ctr)
 {
 	TDB_DATA dbuf;
-	uint8 *buffer = NULL;
+	uint8_t *buffer = NULL;
 	int i = 0;
 	uint32_t len, buflen;
 	uint32_t num_subkeys = regsubkey_ctr_numkeys(ctr);
@@ -1062,7 +1062,7 @@ static WERROR regdb_store_keys_internal2(struct db_context *db,
 
 	/* allocate some initial memory */
 
-	buffer = (uint8 *)SMB_MALLOC(1024);
+	buffer = (uint8_t *)SMB_MALLOC(1024);
 	if (buffer == NULL) {
 		werr = WERR_NOMEM;
 		goto done;
@@ -1730,7 +1730,7 @@ static WERROR regdb_fetch_keys_internal(struct db_context *db, const char *key,
 {
 	WERROR werr;
 	uint32_t num_items;
-	uint8 *buf;
+	uint8_t *buf;
 	uint32_t buflen, len;
 	int i;
 	fstring subkeyname;
@@ -1820,13 +1820,13 @@ static int regdb_fetch_keys(const char *key, struct regsubkey_ctr *ctr)
  Unpack a list of registry values frem the TDB
  ***************************************************************************/
 
-static int regdb_unpack_values(struct regval_ctr *values, uint8 *buf, int buflen)
+static int regdb_unpack_values(struct regval_ctr *values, uint8_t *buf, int buflen)
 {
 	int 		len = 0;
 	uint32_t	type;
 	fstring valuename;
 	uint32_t	size;
-	uint8		*data_p;
+	uint8_t		*data_p;
 	uint32_t 	num_values = 0;
 	int 		i;
 
@@ -1862,7 +1862,7 @@ static int regdb_unpack_values(struct regval_ctr *values, uint8 *buf, int buflen
  Pack all values in all printer keys
  ***************************************************************************/
 
-static int regdb_pack_values(struct regval_ctr *values, uint8 *buf, int buflen)
+static int regdb_pack_values(struct regval_ctr *values, uint8_t *buf, int buflen)
 {
 	int 		len = 0;
 	int 		i;
@@ -2004,7 +2004,7 @@ static NTSTATUS regdb_store_values_internal(struct db_context *db,
 		goto done;
 	}
 
-	data.dptr = talloc_array(ctx, uint8, len);
+	data.dptr = talloc_array(ctx, uint8_t, len);
 	data.dsize = len;
 
 	len = regdb_pack_values(values, data.dptr, data.dsize);
@@ -2115,7 +2115,7 @@ static WERROR regdb_get_secdesc(TALLOC_CTX *mem_ctx, const char *key,
 		goto done;
 	}
 
-	status = unmarshall_sec_desc(mem_ctx, (uint8 *)data.dptr, data.dsize,
+	status = unmarshall_sec_desc(mem_ctx, (uint8_t *)data.dptr, data.dsize,
 				     psecdesc);
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NO_MEMORY)) {

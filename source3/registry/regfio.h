@@ -82,7 +82,7 @@ typedef struct regf_hbin {
 
 typedef struct {
 	uint32_t nk_off;
-	uint8 keycheck[sizeof(uint32_t)];
+	uint8_t keycheck[sizeof(uint32_t)];
 	char *fullname;
 } REGF_HASH_REC;
 
@@ -92,7 +92,7 @@ typedef struct {
 	uint32_t rec_size;	/* ((start_offset - end_offset) & 0xfffffff8) */
 
 	char header[REC_HDR_SIZE];
-	uint16 num_keys;
+	uint16_t num_keys;
 	REGF_HASH_REC *hashes;
 } REGF_LF_REC;
 
@@ -108,9 +108,9 @@ typedef struct {
 	char *valuename;
 	uint32_t data_size;
 	uint32_t data_off;
-	uint8  *data;
+	uint8_t  *data;
 	uint32_t type;
-	uint16 flag;
+	uint16_t flag;
 } REGF_VK_REC;
 
 
@@ -145,7 +145,7 @@ typedef struct {
 	/* header information */
 	
 	char header[REC_HDR_SIZE];
-	uint16 key_type;
+	uint16_t key_type;
 	NTTIME mtime;
 	uint32_t parent_off;	/* back pointer in registry hive */
 	uint32_t classname_off;
