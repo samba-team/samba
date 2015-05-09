@@ -93,7 +93,7 @@ static NTSTATUS cmd_show_data(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int ar
 		printf("show_data: error=-1 (not enough data in buffer)\n");
 		return NT_STATUS_UNSUCCESSFUL;
 	}
-	dump_data(0, (uint8 *)(vfs->data) + offset, len);
+	dump_data(0, (uint8_t *)(vfs->data) + offset, len);
 	return NT_STATUS_OK;
 }
 
