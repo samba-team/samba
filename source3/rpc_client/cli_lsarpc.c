@@ -81,7 +81,7 @@ NTSTATUS dcerpc_lsa_open_policy(struct dcerpc_binding_handle *h,
 
 NTSTATUS rpccli_lsa_open_policy(struct rpc_pipe_client *cli,
 				TALLOC_CTX *mem_ctx,
-				bool sec_qos, uint32 des_access,
+				bool sec_qos, uint32_t des_access,
 				struct policy_handle *pol)
 {
 	NTSTATUS status;
@@ -140,7 +140,7 @@ NTSTATUS dcerpc_lsa_open_policy2(struct dcerpc_binding_handle *h,
 
 NTSTATUS rpccli_lsa_open_policy2(struct rpc_pipe_client *cli,
 				 TALLOC_CTX *mem_ctx, bool sec_qos,
-				 uint32 des_access, struct policy_handle *pol)
+				 uint32_t des_access, struct policy_handle *pol)
 {
 	NTSTATUS status;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;

@@ -56,9 +56,9 @@ static const char *rpccli_pipe_txt(TALLOC_CTX *mem_ctx,
  Rpc pipe call id.
  ********************************************************************/
 
-static uint32 get_rpc_call_id(void)
+static uint32_t get_rpc_call_id(void)
 {
-	static uint32 call_id = 0;
+	static uint32_t call_id = 0;
 	return ++call_id;
 }
 
@@ -1039,14 +1039,14 @@ static NTSTATUS create_generic_auth_rpc_bind_req(struct rpc_pipe_client *cli,
 
 static NTSTATUS create_bind_or_alt_ctx_internal(TALLOC_CTX *mem_ctx,
 						enum dcerpc_pkt_type ptype,
-						uint32 rpc_call_id,
+						uint32_t rpc_call_id,
 						const struct ndr_syntax_id *abstract,
 						const struct ndr_syntax_id *transfer,
 						const DATA_BLOB *auth_info,
 						bool client_hdr_signing,
 						DATA_BLOB *blob)
 {
-	uint16 auth_len = auth_info->length;
+	uint16_t auth_len = auth_info->length;
 	NTSTATUS status;
 	union dcerpc_payload u;
 	struct dcerpc_ctx_list ctx_list;
@@ -1093,7 +1093,7 @@ static NTSTATUS create_bind_or_alt_ctx_internal(TALLOC_CTX *mem_ctx,
 static NTSTATUS create_rpc_bind_req(TALLOC_CTX *mem_ctx,
 				    struct rpc_pipe_client *cli,
 				    struct pipe_auth_data *auth,
-				    uint32 rpc_call_id,
+				    uint32_t rpc_call_id,
 				    const struct ndr_syntax_id *abstract,
 				    const struct ndr_syntax_id *transfer,
 				    DATA_BLOB *rpc_out)
@@ -1628,7 +1628,7 @@ static bool check_bind_response(const struct dcerpc_bind_ack *r,
 
 static NTSTATUS create_rpc_bind_auth3(TALLOC_CTX *mem_ctx,
 				struct rpc_pipe_client *cli,
-				uint32 rpc_call_id,
+				uint32_t rpc_call_id,
 				enum dcerpc_AuthType auth_type,
 				enum dcerpc_AuthLevel auth_level,
 				DATA_BLOB *pauth_blob,
@@ -1675,7 +1675,7 @@ static NTSTATUS create_rpc_bind_auth3(TALLOC_CTX *mem_ctx,
 static NTSTATUS create_rpc_alter_context(TALLOC_CTX *mem_ctx,
 					enum dcerpc_AuthType auth_type,
 					enum dcerpc_AuthLevel auth_level,
-					uint32 rpc_call_id,
+					uint32_t rpc_call_id,
 					const struct ndr_syntax_id *abstract,
 					const struct ndr_syntax_id *transfer,
 					const DATA_BLOB *pauth_blob, /* spnego auth blob already created. */
