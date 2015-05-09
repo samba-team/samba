@@ -28,7 +28,7 @@
 
 /* Display server query info */
 
-static char *get_server_type_str(uint32 type)
+static char *get_server_type_str(uint32_t type)
 {
 	static fstring typestr;
 	int i;
@@ -133,7 +133,7 @@ static char *get_server_type_str(uint32 type)
 	return typestr;
 }
 
-static void display_server(const char *sname, uint32 type, const char *comment)
+static void display_server(const char *sname, uint32_t type, const char *comment)
 {
 	printf("\t%-15.15s%-20s %s\n", sname, get_server_type_str(type), 
 	       comment);
@@ -171,7 +171,7 @@ static WERROR cmd_srvsvc_srv_query_info(struct rpc_pipe_client *cli,
                                           TALLOC_CTX *mem_ctx,
                                           int argc, const char **argv)
 {
-	uint32 info_level = 101;
+	uint32_t info_level = 101;
 	union srvsvc_NetSrvInfo info;
 	WERROR result;
 	NTSTATUS status;
@@ -258,7 +258,7 @@ static WERROR cmd_srvsvc_net_share_enum_int(struct rpc_pipe_client *cli,
 					    int argc, const char **argv,
 					    uint32_t opcode)
 {
-	uint32 info_level = 2;
+	uint32_t info_level = 2;
 	struct srvsvc_NetShareInfoCtr info_ctr;
 	struct srvsvc_NetShareCtr0 ctr0;
 	struct srvsvc_NetShareCtr1 ctr1;
@@ -276,7 +276,7 @@ static WERROR cmd_srvsvc_net_share_enum_int(struct rpc_pipe_client *cli,
 	uint32_t count = 0;
 	uint32_t resume_handle = 0;
 	uint32_t *resume_handle_p = NULL;
-	uint32 preferred_len = 0xffffffff, i;
+	uint32_t preferred_len = 0xffffffff, i;
 	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	if (argc > 3) {
@@ -420,7 +420,7 @@ static WERROR cmd_srvsvc_net_share_get_info(struct rpc_pipe_client *cli,
 					    TALLOC_CTX *mem_ctx,
 					    int argc, const char **argv)
 {
-	uint32 info_level = 502;
+	uint32_t info_level = 502;
 	union srvsvc_NetShareInfo info;
 	WERROR result;
 	NTSTATUS status;
@@ -474,7 +474,7 @@ static WERROR cmd_srvsvc_net_share_set_info(struct rpc_pipe_client *cli,
 					    TALLOC_CTX *mem_ctx,
 					    int argc, const char **argv)
 {
-	uint32 info_level = 502;
+	uint32_t info_level = 502;
 	union srvsvc_NetShareInfo info_get;
 	WERROR result;
 	NTSTATUS status;
@@ -576,12 +576,12 @@ static WERROR cmd_srvsvc_net_file_enum(struct rpc_pipe_client *cli,
 					 TALLOC_CTX *mem_ctx,
 					 int argc, const char **argv)
 {
-	uint32 info_level = 3;
+	uint32_t info_level = 3;
 	struct srvsvc_NetFileInfoCtr info_ctr;
 	struct srvsvc_NetFileCtr3 ctr3;
 	WERROR result;
 	NTSTATUS status;
-	uint32 preferred_len = 0xffff;
+	uint32_t preferred_len = 0xffff;
 	uint32_t total_entries = 0;
 	uint32_t resume_handle = 0;
 	struct dcerpc_binding_handle *b = cli->binding_handle;

@@ -213,7 +213,7 @@ static WERROR cmd_netlogon_dsr_getdcname(struct rpc_pipe_client *cli,
 {
 	NTSTATUS result;
 	WERROR werr = WERR_OK;
-	uint32 flags = DS_RETURN_DNS_NAME;
+	uint32_t flags = DS_RETURN_DNS_NAME;
 	const char *server_name = cli->desthost;
 	const char *domain_name;
 	struct GUID domain_guid = GUID_zero();
@@ -776,7 +776,7 @@ static NTSTATUS cmd_netlogon_sam_logon(struct rpc_pipe_client *cli,
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	int logon_type = NetlogonNetworkInformation;
 	const char *username, *password;
-	uint32 logon_param = 0;
+	uint32_t logon_param = 0;
 	const char *workstation = NULL;
 	struct netr_SamInfo3 *info3 = NULL;
 

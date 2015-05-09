@@ -26,7 +26,7 @@ static NTSTATUS cmd_echo_add_one(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ct
 				 int argc, const char **argv)
 {
 	struct dcerpc_binding_handle *b = cli->binding_handle;
-	uint32 request = 1, response;
+	uint32_t request = 1, response;
 	NTSTATUS status;
 
 	if (argc > 2) {
@@ -53,7 +53,7 @@ static NTSTATUS cmd_echo_data(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			      int argc, const char **argv)
 {
 	struct dcerpc_binding_handle *b = cli->binding_handle;
-	uint32 size, i;
+	uint32_t size, i;
 	NTSTATUS status;
 	uint8_t *in_data = NULL, *out_data = NULL;
 
@@ -105,7 +105,7 @@ static NTSTATUS cmd_echo_source_data(struct rpc_pipe_client *cli,
 				     const char **argv)
 {
 	struct dcerpc_binding_handle *b = cli->binding_handle;
-	uint32 size, i;
+	uint32_t size, i;
 	NTSTATUS status;
 	uint8_t *out_data = NULL;
 
@@ -146,7 +146,7 @@ static NTSTATUS cmd_echo_sink_data(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 				   int argc, const char **argv)
 {
 	struct dcerpc_binding_handle *b = cli->binding_handle;
-	uint32 size, i;
+	uint32_t size, i;
 	NTSTATUS status;
 	uint8_t *in_data = NULL;
 

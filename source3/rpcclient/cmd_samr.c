@@ -316,10 +316,10 @@ static NTSTATUS cmd_samr_query_user(struct rpc_pipe_client *cli,
 {
 	struct policy_handle connect_pol, domain_pol, user_pol;
 	NTSTATUS status, result;
-	uint32 info_level = 21;
-	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
+	uint32_t info_level = 21;
+	uint32_t access_mask = MAXIMUM_ALLOWED_ACCESS;
 	union samr_UserInfo *info = NULL;
-	uint32 user_rid = 0;
+	uint32_t user_rid = 0;
 	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	if ((argc < 2) || (argc > 4)) {
@@ -539,9 +539,9 @@ static NTSTATUS cmd_samr_query_group(struct rpc_pipe_client *cli,
 	struct policy_handle connect_pol, domain_pol, group_pol;
 	NTSTATUS status, result;
 	enum samr_GroupInfoEnum info_level = GROUPINFOALL;
-	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
+	uint32_t access_mask = MAXIMUM_ALLOWED_ACCESS;
 	union samr_GroupInfo *group_info = NULL;
-	uint32 group_rid;
+	uint32_t group_rid;
 	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	if ((argc < 2) || (argc > 4)) {
@@ -624,8 +624,8 @@ static NTSTATUS cmd_samr_query_usergroups(struct rpc_pipe_client *cli,
 				domain_pol,
 				user_pol;
 	NTSTATUS status, result;
-	uint32 			user_rid;
-	uint32			access_mask = MAXIMUM_ALLOWED_ACCESS;
+	uint32_t 		user_rid;
+	uint32_t		access_mask = MAXIMUM_ALLOWED_ACCESS;
 	int 			i;
 	struct samr_RidWithAttributeArray *rid_array = NULL;
 	struct dcerpc_binding_handle *b = cli->binding_handle;
@@ -710,8 +710,8 @@ static NTSTATUS cmd_samr_query_useraliases(struct rpc_pipe_client *cli,
 	struct policy_handle 		connect_pol, domain_pol;
 	NTSTATUS status, result;
 	struct dom_sid                *sids;
-	uint32_t                     num_sids;
-	uint32			access_mask = MAXIMUM_ALLOWED_ACCESS;
+	uint32_t                num_sids;
+	uint32_t		access_mask = MAXIMUM_ALLOWED_ACCESS;
 	int 			i;
 	struct lsa_SidArray sid_array;
 	struct samr_Ids alias_rids;
@@ -801,8 +801,8 @@ static NTSTATUS cmd_samr_query_groupmem(struct rpc_pipe_client *cli,
 {
 	struct policy_handle connect_pol, domain_pol, group_pol;
 	NTSTATUS status, result;
-	uint32 group_rid;
-	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
+	uint32_t group_rid;
+	uint32_t access_mask = MAXIMUM_ALLOWED_ACCESS;
 	int i;
 	unsigned int old_timeout;
 	struct samr_RidAttrArray *rids = NULL;
@@ -893,10 +893,10 @@ static NTSTATUS cmd_samr_enum_dom_users(struct rpc_pipe_client *cli,
 	struct policy_handle connect_pol;
 	struct policy_handle domain_pol = { 0, };
 	NTSTATUS status, result;
-	uint32 start_idx, num_dom_users, i;
+	uint32_t start_idx, num_dom_users, i;
 	struct samr_SamArray *dom_users = NULL;
-	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
-	uint32 acb_mask = ACB_NORMAL;
+	uint32_t access_mask = MAXIMUM_ALLOWED_ACCESS;
+	uint32_t acb_mask = ACB_NORMAL;
 	uint32_t size = 0xffff;
 	struct dcerpc_binding_handle *b = cli->binding_handle;
 
@@ -983,8 +983,8 @@ static NTSTATUS cmd_samr_enum_dom_groups(struct rpc_pipe_client *cli,
 	struct policy_handle connect_pol;
 	struct policy_handle domain_pol = { 0, };
 	NTSTATUS status, result;
-	uint32 start_idx, num_dom_groups, i;
-	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
+	uint32_t start_idx, num_dom_groups, i;
+	uint32_t access_mask = MAXIMUM_ALLOWED_ACCESS;
 	struct samr_SamArray *dom_groups = NULL;
 	uint32_t size = 0xffff;
 	struct dcerpc_binding_handle *b = cli->binding_handle;
@@ -1067,8 +1067,8 @@ static NTSTATUS cmd_samr_enum_als_groups(struct rpc_pipe_client *cli,
 	struct policy_handle connect_pol;
 	struct policy_handle domain_pol = { 0, };
 	NTSTATUS status, result;
-	uint32 start_idx, num_als_groups, i;
-	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
+	uint32_t start_idx, num_als_groups, i;
+	uint32_t access_mask = MAXIMUM_ALLOWED_ACCESS;
 	struct samr_SamArray *als_groups = NULL;
 	uint32_t size = 0xffff;
 	struct dcerpc_binding_handle *b = cli->binding_handle;
@@ -1149,8 +1149,8 @@ static NTSTATUS cmd_samr_enum_domains(struct rpc_pipe_client *cli,
 {
 	struct policy_handle connect_pol;
 	NTSTATUS status, result;
-	uint32 start_idx, size, num_entries, i;
-	uint32 access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	uint32_t start_idx, size, num_entries, i;
+	uint32_t access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	struct samr_SamArray *sam = NULL;
 	struct dcerpc_binding_handle *b = cli->binding_handle;
 
@@ -1215,8 +1215,8 @@ static NTSTATUS cmd_samr_query_aliasmem(struct rpc_pipe_client *cli,
 {
 	struct policy_handle connect_pol, domain_pol, alias_pol;
 	NTSTATUS status, result;
-	uint32 alias_rid, i;
-	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
+	uint32_t alias_rid, i;
+	uint32_t access_mask = MAXIMUM_ALLOWED_ACCESS;
 	struct lsa_SidArray sid_array;
 	struct dcerpc_binding_handle *b = cli->binding_handle;
 
@@ -1403,8 +1403,8 @@ static NTSTATUS cmd_samr_delete_alias(struct rpc_pipe_client *cli,
 {
 	struct policy_handle connect_pol, domain_pol, alias_pol;
 	NTSTATUS status, result;
-	uint32 alias_rid;
-	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
+	uint32_t alias_rid;
+	uint32_t access_mask = MAXIMUM_ALLOWED_ACCESS;
 	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	if (argc != 3) {
@@ -1510,9 +1510,9 @@ static NTSTATUS cmd_samr_query_dispinfo_internal(struct rpc_pipe_client *cli,
 {
 	struct policy_handle connect_pol, domain_pol;
 	NTSTATUS status, result;
-	uint32 start_idx=0, max_entries=250, max_size = 0xffff, num_entries = 0, i;
-	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
-	uint32 info_level = 1;
+	uint32_t start_idx=0, max_entries=250, max_size = 0xffff, num_entries = 0, i;
+	uint32_t access_mask = MAXIMUM_ALLOWED_ACCESS;
+	uint32_t info_level = 1;
 	union samr_DispInfo info;
 	int loop_count = 0;
 	bool got_params = False; /* Use get_query_dispinfo_params() or not? */
@@ -1715,8 +1715,8 @@ static NTSTATUS cmd_samr_query_dominfo(struct rpc_pipe_client *cli,
 {
 	struct policy_handle connect_pol, domain_pol;
 	NTSTATUS status, result;
-	uint32 switch_level = 2;
-	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
+	uint32_t switch_level = 2;
+	uint32_t access_mask = MAXIMUM_ALLOWED_ACCESS;
 	union samr_DomainInfo *info = NULL;
 	struct dcerpc_binding_handle *b = cli->binding_handle;
 
@@ -1830,9 +1830,9 @@ static NTSTATUS cmd_samr_create_dom_user(struct rpc_pipe_client *cli,
 	struct policy_handle connect_pol, domain_pol, user_pol;
 	NTSTATUS status, result;
 	struct lsa_String acct_name;
-	uint32 acb_info;
-	uint32 acct_flags, user_rid;
-	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
+	uint32_t acb_info;
+	uint32_t acct_flags, user_rid;
+	uint32_t access_mask = MAXIMUM_ALLOWED_ACCESS;
 	uint32_t access_granted = 0;
 	struct dcerpc_binding_handle *b = cli->binding_handle;
 
@@ -1919,7 +1919,7 @@ static NTSTATUS cmd_samr_create_dom_group(struct rpc_pipe_client *cli,
 	struct policy_handle connect_pol, domain_pol, group_pol;
 	NTSTATUS status, result;
 	struct lsa_String grp_name;
-	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
+	uint32_t access_mask = MAXIMUM_ALLOWED_ACCESS;
 	uint32_t rid = 0;
 	struct dcerpc_binding_handle *b = cli->binding_handle;
 
@@ -1996,7 +1996,7 @@ static NTSTATUS cmd_samr_create_dom_alias(struct rpc_pipe_client *cli,
 	struct policy_handle connect_pol, domain_pol, alias_pol;
 	NTSTATUS status, result;
 	struct lsa_String alias_name;
-	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
+	uint32_t access_mask = MAXIMUM_ALLOWED_ACCESS;
 	uint32_t rid = 0;
 	struct dcerpc_binding_handle *b = cli->binding_handle;
 
@@ -2074,7 +2074,7 @@ static NTSTATUS cmd_samr_lookup_names(struct rpc_pipe_client *cli,
 {
 	NTSTATUS status, result;
 	struct policy_handle connect_pol, domain_pol;
-	uint32 num_names;
+	uint32_t num_names;
 	struct samr_Ids rids, name_types;
 	int i;
 	struct lsa_String *names = NULL;
@@ -2197,7 +2197,7 @@ static NTSTATUS cmd_samr_lookup_rids(struct rpc_pipe_client *cli,
 
 	num_rids = argc - 2;
 
-	if ((rids = talloc_array(mem_ctx, uint32, num_rids)) == NULL) {
+	if ((rids = talloc_array(mem_ctx, uint32_t, num_rids)) == NULL) {
 		dcerpc_samr_Close(b, mem_ctx, &domain_pol, &result);
 		dcerpc_samr_Close(b, mem_ctx, &connect_pol, &result);
 		status = NT_STATUS_NO_MEMORY;
@@ -2251,7 +2251,7 @@ static NTSTATUS cmd_samr_delete_dom_group(struct rpc_pipe_client *cli,
 {
 	NTSTATUS status, result;
 	struct policy_handle connect_pol, domain_pol, group_pol;
-	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
+	uint32_t access_mask = MAXIMUM_ALLOWED_ACCESS;
 	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	if ((argc < 2) || (argc > 3)) {
@@ -2362,7 +2362,7 @@ static NTSTATUS cmd_samr_delete_dom_user(struct rpc_pipe_client *cli,
 {
 	NTSTATUS status, result;
 	struct policy_handle connect_pol, domain_pol, user_pol;
-	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
+	uint32_t access_mask = MAXIMUM_ALLOWED_ACCESS;
 	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	if ((argc < 2) || (argc > 3)) {
@@ -2474,8 +2474,8 @@ static NTSTATUS cmd_samr_query_sec_obj(struct rpc_pipe_client *cli,
 {
 	struct policy_handle connect_pol, domain_pol, user_pol, *pol;
 	NTSTATUS status, result;
-	uint32 sec_info = SECINFO_DACL;
-	uint32 user_rid = 0;
+	uint32_t sec_info = SECINFO_DACL;
+	uint32_t user_rid = 0;
 	TALLOC_CTX *ctx = NULL;
 	struct sec_desc_buf *sec_desc_buf=NULL;
 	bool domain = False;
@@ -2689,7 +2689,7 @@ static NTSTATUS cmd_samr_lookup_domain(struct rpc_pipe_client *cli,
 {
 	struct policy_handle connect_pol, domain_pol;
 	NTSTATUS status, result;
-	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
+	uint32_t access_mask = MAXIMUM_ALLOWED_ACCESS;
 	fstring sid_string;
 	struct lsa_String domain_name;
 	struct dom_sid *sid = NULL;
@@ -2759,7 +2759,7 @@ static NTSTATUS cmd_samr_chgpasswd(struct rpc_pipe_client *cli,
 	struct policy_handle user_pol = { 0, };
 	NTSTATUS status, result;
 	const char *user, *oldpass, *newpass;
-	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
+	uint32_t access_mask = MAXIMUM_ALLOWED_ACCESS;
 	struct samr_Ids rids, types;
 	struct lsa_String lsa_acct_name;
 	struct dcerpc_binding_handle *b = cli->binding_handle;
@@ -2870,7 +2870,7 @@ static NTSTATUS cmd_samr_chgpasswd2(struct rpc_pipe_client *cli,
 	struct policy_handle connect_pol, domain_pol;
 	NTSTATUS status, result;
 	const char *user, *oldpass, *newpass;
-	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
+	uint32_t access_mask = MAXIMUM_ALLOWED_ACCESS;
 	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	if (argc < 3) {
@@ -2934,7 +2934,7 @@ static NTSTATUS cmd_samr_chgpasswd3(struct rpc_pipe_client *cli,
 	struct policy_handle connect_pol, domain_pol;
 	NTSTATUS status, result;
 	const char *user, *oldpass, *newpass;
-	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
+	uint32_t access_mask = MAXIMUM_ALLOWED_ACCESS;
 	struct samr_DomInfo1 *info = NULL;
 	struct userPwdChangeFailureInformation *reject = NULL;
 	struct dcerpc_binding_handle *b = cli->binding_handle;

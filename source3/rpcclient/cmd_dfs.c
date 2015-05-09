@@ -58,7 +58,7 @@ static WERROR cmd_dfs_add(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	NTSTATUS result;
 	WERROR werr;
 	const char *path, *servername, *sharename, *comment;
-	uint32 flags = 0;
+	uint32_t flags = 0;
 	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	if (argc != 5) {
@@ -149,7 +149,7 @@ static void display_dfs_info_3(struct dfs_Info3 *info3)
 
 
 /* Display a DFS_INFO_CTR structure */
-static void display_dfs_info(uint32 level, union dfs_Info *ctr)
+static void display_dfs_info(uint32_t level, union dfs_Info *ctr)
 {
 	switch (level) {
 		case 0x01:
@@ -202,7 +202,7 @@ static WERROR cmd_dfs_enum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 
 	NTSTATUS result;
 	WERROR werr;
-	uint32 total = 0;
+	uint32_t total = 0;
 
 	if (argc > 2) {
 		printf("Usage: %s [info_level]\n", argv[0]);
@@ -253,7 +253,7 @@ static WERROR cmd_dfs_enumex(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 
 	NTSTATUS result;
 	WERROR werr;
-	uint32 total = 0;
+	uint32_t total = 0;
 
 	if (argc < 2 || argc > 3) {
 		printf("Usage: %s dfs_name [info_level]\n", argv[0]);
@@ -296,7 +296,7 @@ static WERROR cmd_dfs_getinfo(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	NTSTATUS result;
 	WERROR werr;
 	const char *path, *servername, *sharename;
-	uint32 info_level = 1;
+	uint32_t info_level = 1;
 	union dfs_Info ctr;
 	struct dcerpc_binding_handle *b = cli->binding_handle;
 
