@@ -458,6 +458,8 @@ static ADS_STATUS ads_sasl_spnego_gsskrb5_bind(ADS_STRUCT *ads, const gss_name_t
 	DATA_BLOB unwrapped;
 	DATA_BLOB wrapped;
 	struct berval cred, *scred = NULL;
+	uint32_t context_validity = 0;
+	time_t context_endtime = 0;
 
 	status = ads_init_gssapi_cred(ads, &gss_cred);
 	if (!ADS_ERR_OK(status)) {
@@ -652,6 +654,26 @@ static ADS_STATUS ads_sasl_spnego_gsskrb5_bind(ADS_STRUCT *ads, const gss_name_t
 		goto failed;
 	}
 
+	gss_rc =
+	    gss_context_time(&minor_status, context_handle, &context_validity);
+	if (gss_rc == GSS_S_COMPLETE) {
+		if (context_validity != 0) {
+			context_endtime = time(NULL) + context_validity;
+			DEBUG(10, ("context (service ticket) valid for "
+				"%u seconds\n",
+				context_validity));
+		} else {
+			DEBUG(10, ("context (service ticket) expired\n"));
+		}
+	} else {
+		DEBUG(1, ("gss_context_time failed (%d,%u) -"
+			" this will be a one-time context\n",
+			gss_rc, minor_status));
+		if (gss_rc == GSS_S_CONTEXT_EXPIRED) {
+			DEBUG(10, ("context (service ticket) expired\n"));
+		}
+	}
+
 	if (ads->ldap.wrap_type > ADS_SASLWRAP_TYPE_PLAIN) {
 		uint32 max_msg_size = ADS_SASL_WRAPPING_OUT_MAX_WRAPPED;
 
@@ -677,6 +699,7 @@ static ADS_STATUS ads_sasl_spnego_gsskrb5_bind(ADS_STRUCT *ads, const gss_name_t
 		context_handle = GSS_C_NO_CONTEXT;
 	}
 
+	ads->auth.tgs_expire = context_endtime;
 	status = ADS_SUCCESS;
 
 failed:
