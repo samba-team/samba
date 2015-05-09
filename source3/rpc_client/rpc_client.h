@@ -44,8 +44,8 @@ struct rpc_pipe_client {
 	char *desthost;
 	char *srv_name_slash;
 
-	uint16 max_xmit_frag;
-	uint16 max_recv_frag;
+	uint16_t max_xmit_frag;
+	uint16_t max_recv_frag;
 
 	struct pipe_auth_data *auth;
 };
