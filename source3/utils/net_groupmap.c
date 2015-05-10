@@ -222,7 +222,7 @@ static int net_groupmap_add(struct net_context *c, int argc, const char **argv)
 			if ( rid < DOMAIN_RID_ADMINS ) {
 				d_fprintf(stderr,
 					  _("RID must be greater than %d\n"),
-					  (uint32)DOMAIN_RID_ADMINS-1);
+					  (uint32_t)DOMAIN_RID_ADMINS-1);
 				return -1;
 			}
 		}
