@@ -29,6 +29,7 @@
 #include "param/param.h"
 #include "libcli/resolve/resolve.h"
 #include "MacExtensions.h"
+#include "lib/util/tsort.h"
 
 #include "torture/torture.h"
 #include "torture/util.h"
@@ -57,6 +58,16 @@
 		ret = false; \
 		goto done; \
 	}} while (0)
+
+static int qsort_string(char * const *s1, char * const *s2)
+{
+	return strcmp(*s1, *s2);
+}
+
+static int qsort_stream(const struct stream_struct * s1, const struct stream_struct *s2)
+{
+	return strcmp(s1->stream_name.s, s2->stream_name.s);
+}
 
 /*
  * REVIEW:
@@ -2165,6 +2176,133 @@ done:
 	return true;
 }
 
+static bool check_stream_list(struct smb2_tree *tree,
+			      struct torture_context *tctx,
+			      const char *fname,
+			      int num_exp,
+			      const char **exp,
+			      struct smb2_handle h)
+{
+	union smb_fileinfo finfo;
+	NTSTATUS status;
+	int i;
+	TALLOC_CTX *tmp_ctx = talloc_new(tctx);
+	char **exp_sort;
+	struct stream_struct *stream_sort;
+
+	finfo.generic.level = RAW_FILEINFO_STREAM_INFORMATION;
+	finfo.generic.in.file.handle = h;
+
+	status = smb2_getinfo_file(tree, tctx, &finfo);
+	torture_assert_ntstatus_ok(tctx, status, "get stream info");
+
+	torture_assert_int_equal(tctx, finfo.stream_info.out.num_streams, num_exp,
+				 "stream count");
+
+	if (num_exp == 0) {
+		TALLOC_FREE(tmp_ctx);
+		return true;
+	}
+
+	exp_sort = talloc_memdup(tmp_ctx, exp, num_exp * sizeof(*exp));
+	torture_assert(tctx, exp_sort != NULL, __location__);
+
+	TYPESAFE_QSORT(exp_sort, num_exp, qsort_string);
+
+	stream_sort = talloc_memdup(tmp_ctx, finfo.stream_info.out.streams,
+				    finfo.stream_info.out.num_streams *
+				    sizeof(*stream_sort));
+	torture_assert(tctx, stream_sort != NULL, __location__);
+
+	TYPESAFE_QSORT(stream_sort, finfo.stream_info.out.num_streams, qsort_stream);
+
+	for (i=0; i<num_exp; i++) {
+		torture_comment(tctx, "i[%d] exp[%s] got[%s]\n",
+				i, exp_sort[i], stream_sort[i].stream_name.s);
+		torture_assert_str_equal(tctx, stream_sort[i].stream_name.s, exp_sort[i],
+					 "stream name");
+	}
+
+	TALLOC_FREE(tmp_ctx);
+	return true;
+}
+
+/*
+  test stream names
+*/
+static bool test_stream_names(struct torture_context *tctx,
+			      struct smb2_tree *tree,
+			      struct smb2_tree *tree2)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	NTSTATUS status;
+	struct smb2_create create;
+	struct smb2_handle h;
+	const char *fname = BASEDIR "\\stream_names.txt";
+	const char *sname1;
+	bool ret;
+	/* UTF8 private use are starts at 0xef 0x80 0x80 (0xf000) */
+	const char *streams[] = {
+		":foo" "\xef\x80\xa2" "bar:$DATA", /* "foo:bar:$DATA" */
+		":bar" "\xef\x80\xa2" "baz:$DATA", /* "bar:baz:$DATA" */
+		"::$DATA"
+	};
+
+	sname1 = talloc_asprintf(mem_ctx, "%s%s", fname, streams[0]);
+
+	/* clean slate ...*/
+	smb2_util_unlink(tree, fname);
+	smb2_deltree(tree, fname);
+	smb2_deltree(tree, BASEDIR);
+
+	status = torture_smb2_testdir(tree, BASEDIR, &h);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	smb2_util_close(tree, h);
+
+	torture_comment(tctx, "(%s) testing stream names\n", __location__);
+	ZERO_STRUCT(create);
+	create.in.desired_access = SEC_FILE_WRITE_DATA;
+	create.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	create.in.share_access =
+		NTCREATEX_SHARE_ACCESS_DELETE|
+		NTCREATEX_SHARE_ACCESS_READ|
+		NTCREATEX_SHARE_ACCESS_WRITE;
+	create.in.create_disposition = NTCREATEX_DISP_CREATE;
+	create.in.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS;
+	create.in.fname = sname1;
+
+	status = smb2_create(tree, mem_ctx, &create);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	smb2_util_close(tree, create.out.file.handle);
+
+	ret = torture_setup_local_xattr(tctx, "localdir", BASEDIR "/stream_names.txt",
+					"user.DosStream.bar:baz:$DATA",
+					"data", strlen("data"));
+	CHECK_VALUE(ret, true);
+
+	ZERO_STRUCT(create);
+	create.in.fname = fname;
+	create.in.create_disposition = NTCREATEX_DISP_OPEN;
+	create.in.desired_access = SEC_RIGHTS_FILE_ALL;
+	create.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	create.in.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS;
+	status = smb2_create(tree, mem_ctx, &create);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	ret = check_stream_list(tree, tctx, fname, 3, streams,
+				create.out.file.handle);
+	CHECK_VALUE(ret, true);
+
+	smb2_util_close(tree, create.out.file.handle);
+
+done:
+	status = smb2_util_unlink(tree, fname);
+	smb2_deltree(tree, BASEDIR);
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+
 /*
  * Note: This test depends on "vfs objects = catia fruit
  * streams_xattr".  Note: To run this test, use
@@ -2185,6 +2323,7 @@ struct torture_suite *torture_vfs_fruit(void)
 	torture_suite_add_2ns_smb2_test(suite, "resource fork IO", test_write_atalk_rfork_io);
 	torture_suite_add_2ns_smb2_test(suite, "OS X AppleDouble file conversion", test_adouble_conversion);
 	torture_suite_add_2ns_smb2_test(suite, "SMB2/CREATE context AAPL", test_aapl);
+	torture_suite_add_2ns_smb2_test(suite, "stream names", test_stream_names);
 
 	return suite;
 }
