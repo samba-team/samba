@@ -32,8 +32,8 @@
  */
 
 struct print_job_info {
-	uint16 id;
-	uint16 priority;
+	uint16_t id;
+	uint16_t priority;
 	size_t size;
 	fstring user;
 	fstring name;
@@ -106,7 +106,7 @@ struct cli_state {
 
 struct file_info {
 	uint64_t size;
-	uint16 mode;
+	uint16_t mode;
 	uid_t uid;
 	gid_t gid;
 	/* these times are normally kept in GMT */

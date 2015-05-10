@@ -360,7 +360,7 @@ static int do_cd(const char *new_dir)
 	char *targetpath = NULL;
 	struct cli_state *targetcli = NULL;
 	SMB_STRUCT_STAT sbuf;
-	uint32 attributes;
+	uint32_t attributes;
 	int ret = 1;
 	TALLOC_CTX *ctx = talloc_stackframe();
 	NTSTATUS status;
@@ -813,7 +813,7 @@ static NTSTATUS do_list_helper(const char *mntpoint, struct file_info *f,
 ****************************************************************************/
 
 NTSTATUS do_list(const char *mask,
-			uint16 attribute,
+			uint16_t attribute,
 			NTSTATUS (*fn)(struct cli_state *cli_state, struct file_info *,
 				   const char *dir),
 			bool rec,
@@ -929,7 +929,7 @@ NTSTATUS do_list(const char *mask,
 static int cmd_dir(void)
 {
 	TALLOC_CTX *ctx = talloc_tos();
-	uint16 attribute = FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN;
+	uint16_t attribute = FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN;
 	char *mask = NULL;
 	char *buf = NULL;
 	int rc = 1;
@@ -979,7 +979,7 @@ static int cmd_dir(void)
 static int cmd_du(void)
 {
 	TALLOC_CTX *ctx = talloc_tos();
-	uint16 attribute = FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN;
+	uint16_t attribute = FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN;
 	char *mask = NULL;
 	char *buf = NULL;
 	NTSTATUS status;
@@ -1063,7 +1063,7 @@ static int do_get(const char *rname, const char *lname_in, bool reget)
 	uint16_t fnum;
 	bool newhandle = false;
 	struct timespec tp_start;
-	uint16 attr;
+	uint16_t attr;
 	off_t size;
 	off_t start = 0;
 	off_t nread = 0;
@@ -1158,7 +1158,7 @@ static int do_get(const char *rname, const char *lname_in, bool reget)
 	}
 
 	if (archive_level >= 2 && (attr & FILE_ATTRIBUTE_ARCHIVE)) {
-		cli_setatr(cli, rname, attr & ~(uint16)FILE_ATTRIBUTE_ARCHIVE, 0);
+		cli_setatr(cli, rname, attr & ~(uint16_t)FILE_ATTRIBUTE_ARCHIVE, 0);
 	}
 
 	{
@@ -1419,7 +1419,7 @@ static int cmd_more(void)
 static int cmd_mget(void)
 {
 	TALLOC_CTX *ctx = talloc_tos();
-	uint16 attribute = FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN;
+	uint16_t attribute = FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN;
 	char *mget_mask = NULL;
 	char *buf = NULL;
 	NTSTATUS status = NT_STATUS_OK;
@@ -2390,7 +2390,7 @@ static int cmd_del(void)
 	char *mask = NULL;
 	char *buf = NULL;
 	NTSTATUS status = NT_STATUS_OK;
-	uint16 attribute = FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN;
+	uint16_t attribute = FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN;
 
 	if (recurse) {
 		attribute |= FILE_ATTRIBUTE_DIRECTORY;
@@ -2425,7 +2425,7 @@ static int cmd_wdel(void)
 	TALLOC_CTX *ctx = talloc_tos();
 	char *mask = NULL;
 	char *buf = NULL;
-	uint16 attribute;
+	uint16_t attribute;
 	struct cli_state *targetcli;
 	char *targetname = NULL;
 	NTSTATUS status;
@@ -2435,7 +2435,7 @@ static int cmd_wdel(void)
 		return 1;
 	}
 
-	attribute = (uint16)strtol(buf, (char **)NULL, 16);
+	attribute = (uint16_t)strtol(buf, (char **)NULL, 16);
 
 	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		d_printf("wdel 0x<attrib> <wcard>\n");
@@ -2767,8 +2767,8 @@ static int cmd_close(void)
 static int cmd_posix(void)
 {
 	TALLOC_CTX *ctx = talloc_tos();
-	uint16 major, minor;
-	uint32 caplow, caphigh;
+	uint16_t major, minor;
+	uint32_t caplow, caphigh;
 	char *caps;
 	NTSTATUS status;
 
@@ -3321,14 +3321,14 @@ static int cmd_getfacl(void)
 	char *name = NULL;
 	char *targetname = NULL;
 	struct cli_state *targetcli;
-	uint16 major, minor;
-	uint32 caplow, caphigh;
+	uint16_t major, minor;
+	uint32_t caplow, caphigh;
 	char *retbuf = NULL;
 	size_t rb_size = 0;
 	SMB_STRUCT_STAT sbuf;
-	uint16 num_file_acls = 0;
-	uint16 num_dir_acls = 0;
-	uint16 i;
+	uint16_t num_file_acls = 0;
+	uint16_t num_dir_acls = 0;
+	uint16_t i;
 	NTSTATUS status;
 
 	if (!next_token_talloc(ctx, &cmd_ptr,&name,NULL)) {
@@ -3408,7 +3408,7 @@ static int cmd_getfacl(void)
 	}
 
 	for (i = 0; i < num_file_acls; i++) {
-		uint32 uorg;
+		uint32_t uorg;
 		fstring permstring;
 		unsigned char tagtype = CVAL(retbuf, SMB_POSIX_ACL_HEADER_SIZE+(i*SMB_POSIX_ACL_ENTRY_SIZE));
 		unsigned char perms = CVAL(retbuf, SMB_POSIX_ACL_HEADER_SIZE+(i*SMB_POSIX_ACL_ENTRY_SIZE)+1);
@@ -3445,7 +3445,7 @@ static int cmd_getfacl(void)
 	}
 
 	for (i = 0; i < num_dir_acls; i++) {
-		uint32 uorg;
+		uint32_t uorg;
 		fstring permstring;
 		unsigned char tagtype = CVAL(retbuf, SMB_POSIX_ACL_HEADER_SIZE+((i+num_file_acls)*SMB_POSIX_ACL_ENTRY_SIZE));
 		unsigned char perms = CVAL(retbuf, SMB_POSIX_ACL_HEADER_SIZE+((i+num_file_acls)*SMB_POSIX_ACL_ENTRY_SIZE)+1);
@@ -4181,7 +4181,7 @@ static int cmd_reput(void)
  List a share name.
  ****************************************************************************/
 
-static void browse_fn(const char *name, uint32 m,
+static void browse_fn(const char *name, uint32_t m,
                       const char *comment, void *state)
 {
 	const char *typestr = "";
@@ -4295,7 +4295,7 @@ static bool browse_host(bool sort)
  List a server name.
 ****************************************************************************/
 
-static void server_fn(const char *name, uint32 m,
+static void server_fn(const char *name, uint32_t m,
                       const char *comment, void *state)
 {
 
