@@ -714,15 +714,15 @@ static NTSTATUS fetch_domain_info(TALLOC_CTX *mem_ctx,
 		return nt_status;
 
 	if (!pdb_set_account_policy(PDB_POLICY_MAX_PASSWORD_AGE,
-				    (uint32)u_max_age))
+				    (uint32_t)u_max_age))
 		return nt_status;
 
 	if (!pdb_set_account_policy(PDB_POLICY_MIN_PASSWORD_AGE,
-				    (uint32)u_min_age))
+				    (uint32_t)u_min_age))
 		return nt_status;
 
 	if (!pdb_set_account_policy(PDB_POLICY_TIME_TO_LOGOUT,
-				    (uint32)u_logout))
+				    (uint32_t)u_logout))
 		return nt_status;
 
 	if (lockstr) {

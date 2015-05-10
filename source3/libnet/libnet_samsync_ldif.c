@@ -33,8 +33,8 @@
 #ifdef HAVE_LDAP
 
 /* uid's and gid's for writing deltas to ldif */
-static uint32 ldif_gid = 999;
-static uint32 ldif_uid = 999;
+static uint32_t ldif_gid = 999;
+static uint32_t ldif_uid = 999;
 
 /* global counters */
 static uint32_t g_index = 0;
@@ -576,7 +576,7 @@ static NTSTATUS fetch_group_info_to_ldif(TALLOC_CTX *mem_ctx,
 					 const char *suffix)
 {
 	const char *groupname = r->group_name.string;
-	uint32 grouptype = 0, g_rid = 0;
+	uint32_t grouptype = 0, g_rid = 0;
 	char *group_attr = sstring_sub(lp_ldap_group_suffix(talloc_tos()), '=', ',');
 
 	/* Set up the group type (always 2 for group info) */
@@ -649,7 +649,7 @@ static NTSTATUS fetch_account_info_to_ldif(TALLOC_CTX *mem_ctx,
 	const char *ou;
 	const char* nopasswd = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
 	uchar zero_buf[16];
-	uint32 rid = 0, group_rid = 0, gidNumber = 0;
+	uint32_t rid = 0, group_rid = 0, gidNumber = 0;
 	time_t unix_time;
 	int i, ret;
 
@@ -795,7 +795,7 @@ static NTSTATUS fetch_alias_info_to_ldif(TALLOC_CTX *mem_ctx,
 					 enum netr_SamDatabaseID database_id)
 {
 	fstring aliasname, description;
-	uint32 grouptype = 0, g_rid = 0;
+	uint32_t grouptype = 0, g_rid = 0;
 	char *group_attr = sstring_sub(lp_ldap_group_suffix(talloc_tos()), '=', ',');
 
 	/* Get the alias name */
@@ -878,7 +878,7 @@ static NTSTATUS fetch_groupmem_info_to_ldif(struct netr_DELTA_GROUP_MEMBER *r,
 					    FILE *mod_fd, int alloced)
 {
 	fstring group_dn;
-	uint32 group_rid = 0, rid = 0;
+	uint32_t group_rid = 0, rid = 0;
 	int i, j, k;
 
 	/* Get the dn for the group */
