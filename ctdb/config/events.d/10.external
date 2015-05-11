@@ -1,0 +1,49 @@
+#!/bin/sh
+
+# Eventscript for CTDB to cope with externally managed public IP addresses
+
+# If DisableIPFailover is set:
+#
+# * 10.interface must be disabled.
+# * For connection tracking/killing to work this script must be enabled.
+
+[ -n "$CTDB_BASE" ] || \
+    export CTDB_BASE=$(cd -P $(dirname "$0") ; dirname "$PWD")
+
+. $CTDB_BASE/functions
+loadconfig
+
+if [ -z "$CTDB_PUBLIC_ADDRESSES" ] ; then
+    exit 0
+fi
+
+if [ ! -f "$CTDB_PUBLIC_ADDRESSES" ] ; then
+    if [ "$1" = "init" ]; then
+	echo "No public addresses file found. Nothing to do for 10.interfaces.external"
+    fi
+    exit 0
+fi
+
+takeover_assigned_ips ()
+{
+    ctdb_get_pnn
+
+    ctdb -X ip |
+    awk -F'|' '{print $2}' |
+    while read ip ; do
+	if [ -n "$(ip_maskbits_iface $ip)" ] ; then
+	    echo "Assigning $ip to this node ($pnn)"
+	    ctdb moveip "$ip" "$pnn"
+	fi
+    done
+}
+
+ctdb_check_args "$@"
+
+case "$1" in
+    startup)
+	takeover_assigned_ips
+	;;
+esac
+
+exit 0
