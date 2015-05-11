@@ -165,7 +165,7 @@ bool make_user_info_netlogon_network(TALLOC_CTX *mem_ctx,
 				     const char *client_domain,
 				     const char *workstation_name,
 				     const struct tsocket_address *remote_address,
-				     uint32 logon_parameters,
+				     uint32_t logon_parameters,
 				     const uchar *lm_network_pwd,
 				     int lm_pwd_len,
 				     const uchar *nt_network_pwd,
@@ -176,7 +176,7 @@ bool make_user_info_netlogon_interactive(TALLOC_CTX *mem_ctx,
 					 const char *client_domain,
 					 const char *workstation_name,
 					 const struct tsocket_address *remote_address,
-					 uint32 logon_parameters,
+					 uint32_t logon_parameters,
 					 const uchar chal[8],
 					 const uchar lm_interactive_pwd[16],
 					 const uchar nt_interactive_pwd[16]);
@@ -185,7 +185,7 @@ bool make_user_info_for_reply(TALLOC_CTX *mem_ctx,
 			      const char *smb_name,
 			      const char *client_domain,
 			      const struct tsocket_address *remote_address,
-			      const uint8 chal[8],
+			      const uint8_t chal[8],
 			      DATA_BLOB plaintext_password);
 NTSTATUS make_user_info_for_reply_enc(TALLOC_CTX *mem_ctx,
 				      struct auth_usersupplied_info **user_info,
@@ -336,7 +336,7 @@ NTSTATUS pass_check(const struct passwd *pass,
 /* The following definitions come from auth/token_util.c  */
 
 bool nt_token_check_sid ( const struct dom_sid *sid, const struct security_token *token );
-bool nt_token_check_domain_rid( struct security_token *token, uint32 rid );
+bool nt_token_check_domain_rid( struct security_token *token, uint32_t rid );
 struct security_token *get_root_nt_token( void );
 NTSTATUS add_aliases(const struct dom_sid *domain_sid,
 		     struct security_token *token);
