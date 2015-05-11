@@ -102,12 +102,6 @@ int ltdb_has_wildcard(struct ldb_module *module, const char *attr_name,
 void ltdb_search_dn1_free(struct ldb_module *module, struct ldb_message *msg);
 int ltdb_search_dn1(struct ldb_module *module, struct ldb_dn *dn, struct ldb_message *msg,
 		    unsigned int unpack_flags);
-int ltdb_add_attr_results(struct ldb_module *module,
- 			  TALLOC_CTX *mem_ctx, 
-			  struct ldb_message *msg,
-			  const char * const attrs[], 
-			  unsigned int *count, 
-			  struct ldb_message ***res);
 int ltdb_filter_attrs(TALLOC_CTX *mem_ctx,
 		      const struct ldb_message *msg, const char * const *attrs,
 		      struct ldb_message **filtered_msg);
