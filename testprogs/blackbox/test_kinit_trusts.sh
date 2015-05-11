@@ -71,6 +71,11 @@ test_smbclient "Test login with user kerberos ccache" 'ls' -k yes || failed=`exp
 testit "kinit with password (enterprise style)" $samba4kinit $enctype --enterprise --password-file=$PREFIX/tmppassfile --request-pac $TRUST_USERNAME@$TRUST_REALM   || failed=`expr $failed + 1`
 test_smbclient "Test login with user kerberos ccache" 'ls' -k yes || failed=`expr $failed + 1`
 
+if test x"${TYPE}" = x"forest" ;then
+	testit "kinit with password (upn enterprise style)" $samba4kinit $enctype --enterprise --password-file=$PREFIX/tmppassfile --request-pac testdenied_upn@${TRUST_REALM}.upn   || failed=`expr $failed + 1`
+	test_smbclient "Test login with user kerberos ccache" 'ls' -k yes || failed=`expr $failed + 1`
+fi
+
 testit "kinit with password (windows style)" $samba4kinit $enctype  --renewable --windows --password-file=$PREFIX/tmppassfile --request-pac $TRUST_USERNAME@$TRUST_REALM   || failed=`expr $failed + 1`
 test_smbclient "Test login with user kerberos ccache" 'ls' -k yes || failed=`expr $failed + 1`
 
