@@ -470,6 +470,46 @@ EOF
 	umask $oldumask;
 }
 
+sub setup_namespaces($$:$$)
+{
+	my ($self, $localenv, $upn_array, $spn_array) = @_;
+
+	@{$upn_array} = [] unless defined($upn_array);
+	my $upn_args = "";
+	foreach my $upn (@{$upn_array}) {
+		$upn_args .= " --add-upn-suffix=$upn";
+	}
+
+	@{$spn_array} = [] unless defined($spn_array);
+	my $spn_args = "";
+	foreach my $spn (@{$spn_array}) {
+		$spn_args .= " --add-spn-suffix=$spn";
+	}
+
+	my $samba_tool =  Samba::bindir_path($self, "samba-tool");
+
+	my $cmd_env = "";
+	$cmd_env .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$localenv->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
+	if (defined($localenv->{RESOLV_WRAPPER_CONF})) {
+		$cmd_env .= "RESOLV_WRAPPER_CONF=\"$localenv->{RESOLV_WRAPPER_CONF}\" ";
+	} else {
+		$cmd_env .= "RESOLV_WRAPPER_HOSTS=\"$localenv->{RESOLV_WRAPPER_HOSTS}\" ";
+	}
+	$cmd_env .= " KRB5_CONFIG=\"$localenv->{KRB5_CONFIG}\"";
+
+	my $cmd_config = " $localenv->{CONFIGURATION}";
+
+	my $namespaces = $cmd_env;
+	$namespaces .= " $samba_tool domain trust namespaces $upn_args $spn_args";
+	$namespaces .= $cmd_config;
+	unless (system($namespaces) == 0) {
+		warn("Failed to add namespaces \n$namespaces");
+		return;
+	}
+
+	return;
+}
+
 sub setup_trust($$$$$)
 {
 	my ($self, $localenv, $remoteenv, $type, $extra_args) = @_;
@@ -2140,6 +2180,11 @@ sub setup_fl2008r2dc($$$)
 
 		$self->wait_for_start($env);
 
+		my $upn_array = ["$env->{REALM}.upn"];
+		my $spn_array = ["$env->{REALM}.spn"];
+
+		$self->setup_namespaces($env, $upn_array, $spn_array);
+
 		$env = $self->setup_trust($env, $dc_vars, "forest", "");
 
 		$self->{vars}->{fl2008r2dc} = $env;
@@ -2414,7 +2459,12 @@ sub setup_ad_dc($$)
 	$self->check_or_start($env, "single");
 	
 	$self->wait_for_start($env);
-	
+
+	my $upn_array = ["$env->{REALM}.upn"];
+	my $spn_array = ["$env->{REALM}.spn"];
+
+	$self->setup_namespaces($env, $upn_array, $spn_array);
+
 	$self->{vars}->{ad_dc} = $env;
 	return $env;
 }
