@@ -2,6 +2,7 @@
                  type="string"
                  context="G"
                  constant="1"
+                 handler="handle_dos_charset"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
         <para>DOS SMB clients assume the server has 

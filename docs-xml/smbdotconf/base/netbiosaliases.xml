@@ -1,6 +1,7 @@
 <samba:parameter name="netbios aliases"
                  context="G"
                  type="list"
+                 handler="handle_netbios_aliases"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
  <description>
         <para>This is a list of NetBIOS names that nmbd will 
