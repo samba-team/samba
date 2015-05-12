@@ -43,6 +43,8 @@
 	type CDATA #REQUIRED
 	context CDATA #REQUIRED
 	synonym CDATA #IMPLIED
+	handler CDATA #IMPLIED
+	deprecated CDATA #IMPLIED
 >
 <!ELEMENT description ANY>
 <!ELEMENT synonym (#PCDATA)>
