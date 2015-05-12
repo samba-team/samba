@@ -337,7 +337,7 @@ struct parm_struct parm_table[] = {
 		.label		= "realm",
 		.type		= P_STRING,
 		.p_class	= P_GLOBAL,
-		.offset		= GLOBAL_VAR(realm_original),
+		.offset		= GLOBAL_VAR(realm),
 		.special	= handle_realm,
 		.enum_list	= NULL,
 	},
