@@ -79,7 +79,13 @@ static void gotalarm_sig(int signum)
 		/* End setup timeout. */
 	}
 
-	uri = talloc_asprintf(talloc_tos(), "ldap://%s:%u", server, port);
+	if ( strchr_m(server, ':') ) {
+		/* IPv6 URI */
+		uri = talloc_asprintf(talloc_tos(), "ldap://[%s]:%u", server, port);
+	} else {
+		/* IPv4 URI */
+		uri = talloc_asprintf(talloc_tos(), "ldap://%s:%u", server, port);
+	}
 	if (uri == NULL) {
 		return NULL;
 	}
