@@ -623,6 +623,143 @@ static bool test_witness_AsyncNotify(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_do_witness_RegisterEx(struct torture_context *tctx,
+				       struct dcerpc_binding_handle *b,
+				       uint32_t version,
+				       const char *net_name,
+				       const char *share_name,
+				       const char *ip_address,
+				       const char *client_computer_name,
+				       uint32_t flags,
+				       uint32_t timeout,
+				       struct policy_handle *context_handle)
+{
+	struct witness_RegisterEx r;
+
+	r.in.version = version;
+	r.in.net_name = net_name;
+	r.in.share_name = NULL;
+	r.in.ip_address = ip_address;
+	r.in.client_computer_name = client_computer_name;
+	r.in.flags = flags;
+	r.in.timeout = timeout;
+	r.out.context_handle = context_handle;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_witness_RegisterEx_r(b, tctx, &r),
+		"RegisterEx failed");
+
+	torture_assert_werr_ok(tctx,
+		r.out.result,
+		"RegisterEx failed");
+
+	return true;
+}
+
+static void torture_subunit_report_time(struct torture_context *tctx)
+{
+	struct timespec tp;
+	struct tm *tmp;
+	char timestr[200];
+
+	if (clock_gettime(CLOCK_REALTIME, &tp) != 0) {
+		torture_comment(tctx, "failed to call clock_gettime");
+		return;
+	}
+
+	tmp = localtime(&tp.tv_sec);
+	if (!tmp) {
+		torture_comment(tctx, "failed to call localtime");
+		return;
+	}
+
+	if (strftime(timestr, sizeof(timestr), "%Y-%m-%d %H:%M:%S", tmp) <= 0) {
+		torture_comment(tctx, "failed to call strftime");
+		return;
+	}
+
+	torture_comment(tctx, "time: %s.%06ld\n", timestr, tp.tv_nsec / 1000);
+}
+
+static bool test_witness_AsyncNotify_timeouts(struct torture_context *tctx,
+					      struct dcerpc_pipe *p,
+					      void *data)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct witness_AsyncNotify r;
+	struct witness_notifyResponse *response;
+	struct torture_test_witness_state *state =
+		(struct torture_test_witness_state *)data;
+	int i;
+
+	init_witness_test_state(tctx, p, state);
+
+	setup_clusapi_connection(tctx, state);
+
+	for (i=0; state->list && i < state->list->num_interfaces; i++) {
+
+		const char *ip_address;
+		struct witness_interfaceInfo interface = state->list->interfaces[i];
+		uint32_t timeouts[] = {
+			0, 1, 10, 100, 120
+		};
+		int t;
+		uint32_t old_timeout;
+
+		if (!check_valid_interface(tctx, &interface)) {
+			continue;
+		}
+
+		torture_assert(tctx,
+			get_ip_address_from_interface(tctx, &interface, &ip_address),
+			"failed to get ip_address from interface");
+
+		for (t=0; t < ARRAY_SIZE(timeouts); t++) {
+
+			torture_comment(tctx, "Testing Async Notify with timeout of %d milliseconds", timeouts[t]);
+
+			torture_assert(tctx,
+				test_do_witness_RegisterEx(tctx, b,
+							   WITNESS_V2,
+							   state->net_name,
+							   NULL,
+							   ip_address,
+							   lpcfg_netbios_name(tctx->lp_ctx),
+							   0,
+							   timeouts[t],
+							   &state->context_handle),
+				"failed to RegisterEx");
+
+			r.in.context_handle = state->context_handle;
+			r.out.response = &response;
+
+			old_timeout = dcerpc_binding_handle_set_timeout(b, UINT_MAX);
+
+			torture_subunit_report_time(tctx);
+
+			torture_assert_ntstatus_ok(tctx,
+				dcerpc_witness_AsyncNotify_r(b, tctx, &r),
+				"AsyncNotify failed");
+			torture_assert_werr_equal(tctx,
+				r.out.result,
+				WERR_TIMEOUT,
+				"AsyncNotify failed");
+
+			torture_subunit_report_time(tctx);
+
+			dcerpc_binding_handle_set_timeout(b, old_timeout);
+
+			torture_assert(tctx,
+				test_witness_UnRegister_with_handle(tctx, p, &state->context_handle),
+				"Failed to unregister");
+
+			ZERO_STRUCT(state->context_handle);
+		}
+	}
+
+	return true;
+}
+
 struct torture_suite *torture_rpc_witness(TALLOC_CTX *mem_ctx)
 {
 	struct torture_rpc_tcase *tcase;
@@ -644,6 +781,8 @@ struct torture_suite *torture_rpc_witness(TALLOC_CTX *mem_ctx)
 				      test_witness_RegisterEx, state);
 	torture_rpc_tcase_add_test_ex(tcase, "AsyncNotify",
 				      test_witness_AsyncNotify, state);
+	torture_rpc_tcase_add_test_ex(tcase, "AsyncNotify_timeouts",
+				      test_witness_AsyncNotify_timeouts, state);
 
 	return suite;
 }
