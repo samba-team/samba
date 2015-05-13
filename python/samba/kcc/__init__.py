@@ -770,11 +770,11 @@ class KCC(object):
 
         # See (NOTE MS-TECH INCORRECT) above
 
-        # XXX it looks like these conditionals are pointless, because
-        # the state will end up as `t_repsFrom.dns_name1 == nastr` in
-        # either case, BUT the repsFrom thing is magic and assigning
-        # to it alters some flags. So we try not to update it unless
-        # necessary.
+        # NOTE: it looks like these conditionals are pointless,
+        # because the state will end up as `t_repsFrom.dns_name1 ==
+        # nastr` in either case, BUT the repsFrom thing is magic and
+        # assigning to it alters some flags. So we try not to update
+        # it unless necessary.
         if t_repsFrom.dns_name1 != nastr:
             t_repsFrom.dns_name1 = nastr
 
