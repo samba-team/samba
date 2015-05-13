@@ -984,7 +984,6 @@ class KCC(object):
                 # to have the correct attributes above
                 for t_repsFrom in n_rep.rep_repsFrom:
                     guidstr = str(t_repsFrom.source_dsa_obj_guid)
-                    #XXX what?
                     if s_dsa is self.get_dsa_by_guidstr(guidstr):
                         s_dsa = None
                         break
