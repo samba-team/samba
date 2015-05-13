@@ -286,7 +286,7 @@ static bool test_witness_Register(struct torture_context *tctx,
 		},{
 			.version		= WITNESS_V1,
 			.net_name		= dcerpc_server_name(p),
-			.ip_address		= NULL, /* "99192.168.44.45" */
+			.ip_address		= NULL,
 			.client_computer_name	= lpcfg_netbios_name(tctx->lp_ctx),
 			.expected_status	= NT_STATUS_OK,
 			.expected_result	= WERR_INVALID_PARAM
@@ -422,7 +422,7 @@ static bool test_witness_RegisterEx(struct torture_context *tctx,
 		},{
 			.version		= WITNESS_V2,
 			.net_name		= dcerpc_server_name(p),
-			.ip_address		= NULL, /* "99192.168.44.45" */
+			.ip_address		= NULL,
 			.client_computer_name	= lpcfg_netbios_name(tctx->lp_ctx),
 			.expected_status	= NT_STATUS_OK,
 			.expected_result	= WERR_INVALID_PARAM
