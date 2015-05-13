@@ -832,7 +832,6 @@ class InternalEdge(object):
     def __le__(self, other):
         return not other < self
 
-    # TODO compare options and interval
     def __lt__(self, other):
         """Here "less than" means "better".
 
@@ -844,7 +843,6 @@ class InternalEdge(object):
                                ascending V1ID,
                                ascending V2ID,
                                ascending Type)
-
         """
         if self.red_red != other.red_red:
             return self.red_red
