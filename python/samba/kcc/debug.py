@@ -26,6 +26,7 @@ import traceback
 logger = logging.getLogger("samba_kcc")
 logger.addHandler(logging.StreamHandler(sys.stdout))
 DEBUG = logger.debug
+WARN = logger.warning
 
 
 #colours for prettier logs

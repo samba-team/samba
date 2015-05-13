@@ -26,7 +26,7 @@ from samba.kcc.graph_utils import write_dot_file, verify_and_dot, verify_graph
 from samba.ndr import ndr_pack
 from samba.dcerpc import misc
 
-from samba.kcc.debug import DEBUG, DEBUG_FN
+from samba.kcc.debug import DEBUG, DEBUG_FN, WARN
 
 MAX_DWORD = 2 ** 32 - 1
 
@@ -665,8 +665,8 @@ def setup_graph(part, site_table, transport_guid, sitelink_table,
     :param site_table: a mapping of guids to sites (KCC.site_table)
     :param transport_guid: the GUID of the IP transport
     :param sitelink_table: a mapping of dnstrs to sitelinks
-    :param bridges_required: boolean
-
+    :param bridges_required: boolean, asking in vain for something to do
+         with site link bridges
     :return: a new IntersiteGraph
     """
     guid_to_vertex = {}
@@ -689,19 +689,12 @@ def setup_graph(part, site_table, transport_guid, sitelink_table,
         connected_vertices.update(new_edge.vertices)
         g.edges.add(new_edge)
 
-    # If 'Bridge all site links' is enabled and Win2k3 bridges required
-    # is not set
-    # NTDSTRANSPORT_OPT_BRIDGES_REQUIRED 0x00000002
-    # No documentation for this however, ntdsapi.h appears to have:
-    # NTDSSETTINGS_OPT_W2K3_BRIDGES_REQUIRED = 0x00001000
+    # XXX we are ignoring the bridges_required option and indeed the
+    # whole concept of SiteLinkBridge objects.
     if bridges_required:
-        g.edge_set.add(create_auto_edge_set(g, transport_guid))
-    else:
-        # TODO get all site link bridges
-        for site_link_bridge in []:
-            g.edge_set.add(create_edge_set(g, transport_guid,
-                                           site_link_bridge))
+        WARN("Samba KCC ignores the bridges required option")
 
+    g.edge_set.add(create_auto_edge_set(g, transport_guid))
     g.connected_vertices = connected_vertices
 
     return g
