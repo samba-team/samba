@@ -1065,7 +1065,7 @@ class KCC(object):
         # NTDSTRANSPORT_OPT_BRIDGES_REQUIRED 0x00000002
         # No documentation for this however, ntdsapi.h appears to have:
         # NTDSSETTINGS_OPT_W2K3_BRIDGES_REQUIRED = 0x00001000
-        bridges_required = self.my_site.site_options & 0x00001002 == 0
+        bridges_required = self.my_site.site_options & 0x00001002 != 0
         transport_guid = str(self.ip_transport.guid)
 
         g = setup_graph(part, self.site_table, transport_guid,
