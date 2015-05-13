@@ -515,13 +515,17 @@ static bool test_witness_RegisterEx(struct torture_context *tctx,
 static bool setup_clusapi_connection(struct torture_context *tctx,
 				     struct torture_test_witness_state *s)
 {
+	NTSTATUS status;
+
 	if (s->clusapi.p) {
 		return true;
 	}
 
-	torture_assert_ntstatus_ok(tctx,
-		torture_rpc_connection_transport(tctx, &s->clusapi.p, &ndr_table_clusapi, NCACN_IP_TCP, 0),
-		"failed to connect to clusapi");
+	status = torture_rpc_connection_transport(tctx, &s->clusapi.p, &ndr_table_clusapi, NCACN_IP_TCP, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		torture_comment(tctx, "clusapi interface not available\n");
+		return true;
+	}
 
 	return true;
 }
