@@ -321,11 +321,6 @@ def create_auto_edge_set(graph, transport_guid):
     return e_set
 
 
-def create_edge_set(graph, transport, site_link_bridge):
-    # TODO not implemented - need to store all site link bridges
-    raise NotImplementedError("We don't create fancy edge sets")
-
-
 def setup_vertices(graph):
     """Initialise vertices in the graph for the Dijkstra's run.
 
