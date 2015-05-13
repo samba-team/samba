@@ -2392,8 +2392,9 @@ class KCC(object):
                 dot_edges.append((con.from_dnstr, dsa.dsa_dnstr))
 
         verify_and_dot(basename, dot_edges, vertices=dot_vertices,
-                       label=self.my_dsa_dnstr, properties=verify_properties,
-                       debug=DEBUG, verify=verify, dot_file_dir=self.dot_file_dir,
+                       label=self.my_dsa_dnstr,
+                       properties=verify_properties, debug=DEBUG,
+                       verify=verify, dot_file_dir=self.dot_file_dir,
                        directed=True, edge_colors=edge_colours,
                        vertex_colors=vertex_colours)
 
