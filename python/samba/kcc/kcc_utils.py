@@ -1035,19 +1035,16 @@ class NTDSConnection(object):
         # First verify we have this entry to ensure nothing
         # is programatically amiss
         try:
-            #XXX msg is never used
-            msg = samdb.search(base=self.dnstr, scope=ldb.SCOPE_BASE)
-            found = True
+            # we don't use the search result, but it tests the status
+            # of self.dnstr in the database.
+            samdb.search(base=self.dnstr, scope=ldb.SCOPE_BASE)
 
         except ldb.LdbError, (enum, estr):
             if enum == ldb.ERR_NO_SUCH_OBJECT:
-                found = False
-            else:
-                raise Exception("Unable to search for (%s) - (%s)" %
-                                (self.dnstr, estr))
-        if not found:
-            raise Exception("nTDSConnection for (%s) doesn't exist!" %
-                            self.dnstr)
+                raise KCCError("nTDSConnection for (%s) doesn't exist!" %
+                               self.dnstr)
+            raise KccError("Unable to search for (%s) - (%s)" %
+                           (self.dnstr, estr))
 
         if self.enabled:
             enablestr = "TRUE"
