@@ -2544,6 +2544,38 @@ static NTSTATUS resolve_ads(const char *name,
 	return NT_STATUS_OK;
 }
 
+static const char **filter_out_nbt_lookup(TALLOC_CTX *mem_ctx,
+					  const char **resolve_order)
+{
+	size_t i, len, result_idx;
+	const char **result;
+
+	len = 0;
+	while (resolve_order[len] != NULL) {
+		len += 1;
+	}
+
+	result = talloc_array(mem_ctx, const char *, len+1);
+	if (result == NULL) {
+		return NULL;
+	}
+
+	result_idx = 0;
+
+	for (i=0; i<len; i++) {
+		const char *tok = resolve_order[i];
+
+		if (strequal(tok, "lmhosts") || strequal(tok, "wins") ||
+		    strequal(tok, "bcast")) {
+			continue;
+		}
+		result[result_idx++] = tok;
+	}
+	result[result_idx] = NULL;
+
+	return result;
+}
+
 /*******************************************************************
  Internal interface to resolve a name into an IP address.
  Use this function if the string is either an IP address, DNS
@@ -2566,8 +2598,6 @@ NTSTATUS internal_resolve_name(const char *name,
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	int i;
 	TALLOC_CTX *frame = NULL;
-	bool do_nbt_lookup = true;
-	size_t nbt_len;
 
 	*return_iplist = NULL;
 	*return_count = 0;
@@ -2627,18 +2657,21 @@ NTSTATUS internal_resolve_name(const char *name,
 		resolve_order = host_order;
 	}
 
-	/* iterate through the name resolution backends */
-	nbt_len = strlen(name);
-	if (nbt_len > MAX_NETBIOSNAME_LEN - 1) {
-		do_nbt_lookup = false;
-	} else {
-		const char *p = strchr(name, '.');
-		if (p != NULL) {
-			do_nbt_lookup = false;
+	frame = talloc_stackframe();
+
+	if ((strlen(name) > MAX_NETBIOSNAME_LEN - 1) ||
+	    (strchr(name, '.') != NULL)) {
+		/*
+		 * Don't do NBT lookup, the name would not fit anyway
+		 */
+		resolve_order = filter_out_nbt_lookup(frame, resolve_order);
+		if (resolve_order == NULL) {
+			return NT_STATUS_NO_MEMORY;
 		}
 	}
 
-	frame = talloc_stackframe();
+	/* iterate through the name resolution backends */
+
 	for (i=0; resolve_order[i]; i++) {
 		tok = resolve_order[i];
 
@@ -2667,13 +2700,13 @@ NTSTATUS internal_resolve_name(const char *name,
 			if (NT_STATUS_IS_OK(status)) {
 				goto done;
 			}
-		} else if (do_nbt_lookup && strequal(tok, "lmhosts")) {
+		} else if (strequal(tok, "lmhosts")) {
 			status = resolve_lmhosts(name, name_type,
 						 return_iplist, return_count);
 			if (NT_STATUS_IS_OK(status)) {
 				goto done;
 			}
-		} else if (do_nbt_lookup && strequal(tok, "wins")) {
+		} else if (strequal(tok, "wins")) {
 			/* don't resolve 1D via WINS */
 			struct sockaddr_storage *ss_list;
 			if (name_type != 0x1D) {
@@ -2690,7 +2723,7 @@ NTSTATUS internal_resolve_name(const char *name,
 					goto done;
 				}
 			}
-		} else if (do_nbt_lookup && strequal(tok, "bcast")) {
+		} else if (strequal(tok, "bcast")) {
 			struct sockaddr_storage *ss_list;
 			status = name_resolve_bcast(
 				name, name_type, talloc_tos(),
