@@ -89,9 +89,6 @@ bool dbghdr( int level, const char *location, const char *func);
 #define DBGC_DNS		21
 #define DBGC_LDB		22
 
-/* Always ensure this is updated when new fixed classes area added, to ensure the array in debug.c is the right size */
-#define DBGC_MAX_FIXED		22
-
 /* So you can define DBGC_CLASS before including debug.h */
 #ifndef DBGC_CLASS
 #define DBGC_CLASS            0     /* override as shown above */

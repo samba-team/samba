@@ -416,11 +416,37 @@ static void debug_backends_log(const char *msg, int msg_level)
 */
 bool    override_logfile;
 
+static const char *default_classname_table[] = {
+	[DBGC_ALL] =		"all",
+	[DBGC_TDB] =		"tdb",
+	[DBGC_PRINTDRIVERS] =	"printdrivers",
+	[DBGC_LANMAN] =		"lanman",
+	[DBGC_SMB] =		"smb",
+	[DBGC_RPC_PARSE] =	"rpc_parse",
+	[DBGC_RPC_SRV] =	"rpc_srv",
+	[DBGC_RPC_CLI] =	"rpc_cli",
+	[DBGC_PASSDB] =		"passdb",
+	[DBGC_SAM] =		"sam",
+	[DBGC_AUTH] =		"auth",
+	[DBGC_WINBIND] =	"winbind",
+	[DBGC_VFS] =		"vfs",
+	[DBGC_IDMAP] =		"idmap",
+	[DBGC_QUOTA] =		"quota",
+	[DBGC_ACLS] =		"acls",
+	[DBGC_LOCKING] =	"locking",
+	[DBGC_MSDFS] =		"msdfs",
+	[DBGC_DMAPI] =		"dmapi",
+	[DBGC_REGISTRY] =	"registry",
+	[DBGC_SCAVENGER] =	"scavenger",
+	[DBGC_DNS] =		"dns",
+	[DBGC_LDB] =		"ldb",
+};
+
 /*
  * This is to allow reading of DEBUGLEVEL_CLASS before the debug
  * system has been initialized.
  */
-static const int debug_class_list_initial[DBGC_MAX_FIXED + 1];
+static const int debug_class_list_initial[ARRAY_SIZE(default_classname_table)];
 
 static int debug_num_classes = 0;
 int     *DEBUGLEVEL_CLASS = discard_const_p(int, debug_class_list_initial);
@@ -460,32 +486,6 @@ static bool    log_overflow   = false;
  * white space. There must be one name for each DBGC_<class name>, and they
  * must be in the table in the order of DBGC_<class name>..
  */
-static const char *default_classname_table[] = {
-	"all",               /* DBGC_ALL; index refs traditional DEBUGLEVEL */
-	"tdb",               /* DBGC_TDB	  */
-	"printdrivers",      /* DBGC_PRINTDRIVERS */
-	"lanman",            /* DBGC_LANMAN       */
-	"smb",               /* DBGC_SMB          */
-	"rpc_parse",         /* DBGC_RPC_PARSE    */
-	"rpc_srv",           /* DBGC_RPC_SRV      */
-	"rpc_cli",           /* DBGC_RPC_CLI      */
-	"passdb",            /* DBGC_PASSDB       */
-	"sam",               /* DBGC_SAM          */
-	"auth",              /* DBGC_AUTH         */
-	"winbind",           /* DBGC_WINBIND      */
-	"vfs",		     /* DBGC_VFS	  */
-	"idmap",	     /* DBGC_IDMAP	  */
-	"quota",	     /* DBGC_QUOTA	  */
-	"acls",		     /* DBGC_ACLS	  */
-	"locking",	     /* DBGC_LOCKING	  */
-	"msdfs",	     /* DBGC_MSDFS	  */
-	"dmapi",	     /* DBGC_DMAPI	  */
-	"registry",          /* DBGC_REGISTRY     */
-	"scavenger",         /* DBGC_SCAVENGER    */
-	"dns",               /* DBGC_DNS          */
-	"ldb",               /* DBGC_LDB          */
-	NULL
-};
 
 static char **classname_table = NULL;
 
@@ -744,8 +744,7 @@ Init debugging (one time stuff)
 
 static void debug_init(void)
 {
-	int i;
-	const char **p;
+	size_t i;
 
 	if (state.initialized)
 		return;
@@ -754,8 +753,8 @@ static void debug_init(void)
 
 	debug_setup_talloc_log();
 
-	for(p = default_classname_table; *p; p++) {
-		debug_add_class(*p);
+	for (i = 0; i < ARRAY_SIZE(default_classname_table); i++) {
+		debug_add_class(default_classname_table[i]);
 	}
 
 	for (i = 0; i < ARRAY_SIZE(debug_backends); i++) {
