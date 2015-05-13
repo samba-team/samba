@@ -645,7 +645,7 @@ class KCC(object):
              dsdb.NTDSCONN_OPT_OVERRIDE_NOTIFY_DEFAULT) != 0x0):
 
             if (cn_conn.options & dsdb.NTDSCONN_OPT_USE_NOTIFY) == 0x0:
-                # XXX WARNING
+                # WARNING
                 #
                 # it LOOKS as if this next test is a bit silly: it
                 # checks the flag then sets it if it not set; the same
