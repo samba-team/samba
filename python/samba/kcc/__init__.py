@@ -781,7 +781,6 @@ class KCC(object):
         if t_repsFrom.version > 0x1 and t_repsFrom.dns_name2 != nastr:
             t_repsFrom.dns_name2 = nastr
 
-
         if t_repsFrom.is_modified():
             DEBUG_FN("modify_repsFrom(): %s" % t_repsFrom)
 
