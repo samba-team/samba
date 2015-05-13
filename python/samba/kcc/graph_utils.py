@@ -25,7 +25,6 @@ from samba.kcc.debug import null_debug, PURPLE, MAGENTA, DARK_YELLOW, RED
 from samba.kcc.debug import DARK_GREEN, C_NORMAL, GREY
 
 
-
 def write_dot_file(basename, edge_list, vertices=None, label=None,
                    dot_file_dir=None, reformat_labels=True, directed=False,
                    debug=None, edge_colors=None, edge_labels=None,
