@@ -2666,6 +2666,7 @@ NTSTATUS internal_resolve_name(const char *name,
 		 */
 		resolve_order = filter_out_nbt_lookup(frame, resolve_order);
 		if (resolve_order == NULL) {
+			TALLOC_FREE(frame);
 			return NT_STATUS_NO_MEMORY;
 		}
 	}
