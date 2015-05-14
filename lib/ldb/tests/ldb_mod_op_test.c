@@ -22,6 +22,7 @@
 #include <unistd.h>
 #include <talloc.h>
 #include <ldb.h>
+#include <string.h>
 
 #define DEFAULT_BE  "tdb"
 
@@ -432,22 +433,21 @@ static struct ldb_message *build_mod_msg(TALLOC_CTX *mem_ctx,
 	return msg;
 }
 
-static void mod_test_add_data(struct ldb_mod_test_ctx *mod_test_ctx,
+static void ldb_test_add_data(TALLOC_CTX *mem_ctx,
+			      struct ldbtest_ctx *ldb_test_ctx,
+			      const char *basedn,
 			      struct keyval *kvs)
 {
 	TALLOC_CTX *tmp_ctx;
 	struct ldb_message *msg;
 	struct ldb_result *result = NULL;
-	struct ldbtest_ctx *ldb_test_ctx;
 	int ret;
 
-	ldb_test_ctx = mod_test_ctx->ldb_test_ctx;
-
-	tmp_ctx = talloc_new(mod_test_ctx);
+	tmp_ctx = talloc_new(mem_ctx);
 	assert_non_null(tmp_ctx);
 
 	msg = build_mod_msg(tmp_ctx, ldb_test_ctx,
-			    mod_test_ctx->entry_dn, 0, kvs);
+			    basedn, 0, kvs);
 	assert_non_null(msg);
 
 	ret = ldb_add(ldb_test_ctx->ldb, msg);
@@ -464,21 +464,20 @@ static void mod_test_add_data(struct ldb_mod_test_ctx *mod_test_ctx,
 	talloc_free(tmp_ctx);
 }
 
-static void mod_test_remove_data(struct ldb_mod_test_ctx *mod_test_ctx)
+static void ldb_test_remove_data(TALLOC_CTX *mem_ctx,
+				 struct ldbtest_ctx *ldb_test_ctx,
+				 const char *strdn)
 {
 	TALLOC_CTX *tmp_ctx;
-	struct ldb_dn *basedn;
 	struct ldb_result *result = NULL;
+	struct ldb_dn *basedn;
 	int ret;
-	struct ldbtest_ctx *ldb_test_ctx;
 
-	ldb_test_ctx = mod_test_ctx->ldb_test_ctx;
-
-	tmp_ctx = talloc_new(mod_test_ctx);
+	tmp_ctx = talloc_new(mem_ctx);
 	assert_non_null(tmp_ctx);
 
 	basedn = ldb_dn_new_fmt(tmp_ctx, ldb_test_ctx->ldb,
-				"%s", mod_test_ctx->entry_dn);
+				"%s", strdn);
 	assert_non_null(basedn);
 
 	ret = ldb_delete(ldb_test_ctx->ldb, basedn);
@@ -491,6 +490,22 @@ static void mod_test_remove_data(struct ldb_mod_test_ctx *mod_test_ctx)
 	assert_int_equal(result->count, 0);
 
 	talloc_free(tmp_ctx);
+}
+
+static void mod_test_add_data(struct ldb_mod_test_ctx *mod_test_ctx,
+			      struct keyval *kvs)
+{
+	ldb_test_add_data(mod_test_ctx,
+			  mod_test_ctx->ldb_test_ctx,
+			  mod_test_ctx->entry_dn,
+			  kvs);
+}
+
+static void mod_test_remove_data(struct ldb_mod_test_ctx *mod_test_ctx)
+{
+	ldb_test_remove_data(mod_test_ctx,
+			     mod_test_ctx->ldb_test_ctx,
+			     mod_test_ctx->entry_dn);
 }
 
 static struct ldb_result *run_mod_test(struct ldb_mod_test_ctx *mod_test_ctx,
@@ -787,6 +802,343 @@ static void test_ldb_modify_del_keyval(void **state)
 	assert_null(el);
 }
 
+struct search_test_ctx {
+	struct ldbtest_ctx *ldb_test_ctx;
+	const char *base_dn;
+};
+
+static char *get_full_dn(TALLOC_CTX *mem_ctx,
+			 struct search_test_ctx *search_test_ctx,
+			 const char *rdn)
+{
+	char *full_dn;
+
+	full_dn = talloc_asprintf(mem_ctx,
+				  "%s,%s", rdn, search_test_ctx->base_dn);
+	assert_non_null(full_dn);
+
+	return full_dn;
+}
+
+static void search_test_add_data(struct search_test_ctx *search_test_ctx,
+				 const char *rdn,
+				 struct keyval *kvs)
+{
+	char *full_dn;
+
+	full_dn = get_full_dn(search_test_ctx, search_test_ctx, rdn);
+
+	ldb_test_add_data(search_test_ctx,
+			  search_test_ctx->ldb_test_ctx,
+			  full_dn,
+			  kvs);
+}
+
+static void search_test_remove_data(struct search_test_ctx *search_test_ctx,
+				    const char *rdn)
+{
+	char *full_dn;
+
+	full_dn = talloc_asprintf(search_test_ctx,
+				  "%s,%s", rdn, search_test_ctx->base_dn);
+	assert_non_null(full_dn);
+
+	ldb_test_remove_data(search_test_ctx,
+			     search_test_ctx->ldb_test_ctx,
+			     full_dn);
+}
+
+static int ldb_search_test_setup(void **state)
+{
+	struct ldbtest_ctx *ldb_test_ctx;
+	struct search_test_ctx *search_test_ctx;
+	struct keyval kvs[] = {
+		{ "cn", "test_search_cn" },
+		{ "cn", "test_search_cn2" },
+		{ "uid", "test_search_uid" },
+		{ "uid", "test_search_uid2" },
+		{ NULL, NULL },
+	};
+	struct keyval kvs2[] = {
+		{ "cn", "test_search_2_cn" },
+		{ "cn", "test_search_2_cn2" },
+		{ "uid", "test_search_2_uid" },
+		{ "uid", "test_search_2_uid2" },
+		{ NULL, NULL },
+	};
+
+	ldbtest_setup((void **) &ldb_test_ctx);
+
+	search_test_ctx = talloc(ldb_test_ctx, struct search_test_ctx);
+	assert_non_null(search_test_ctx);
+
+	search_test_ctx->base_dn = "dc=search_test_entry";
+	search_test_ctx->ldb_test_ctx = ldb_test_ctx;
+
+	search_test_remove_data(search_test_ctx, "cn=test_search_cn");
+	search_test_add_data(search_test_ctx, "cn=test_search_cn", kvs);
+
+	search_test_remove_data(search_test_ctx, "cn=test_search_2_cn");
+	search_test_add_data(search_test_ctx, "cn=test_search_2_cn", kvs2);
+
+	*state = search_test_ctx;
+	return 0;
+}
+
+static int ldb_search_test_teardown(void **state)
+{
+	struct search_test_ctx *search_test_ctx = talloc_get_type_abort(*state,
+			struct search_test_ctx);
+	struct ldbtest_ctx *ldb_test_ctx;
+
+	ldb_test_ctx = search_test_ctx->ldb_test_ctx;
+
+	search_test_remove_data(search_test_ctx, "cn=test_search_cn");
+	search_test_remove_data(search_test_ctx, "cn=test_search_2_cn");
+	ldbtest_teardown((void **) &ldb_test_ctx);
+	return 0;
+}
+
+static void assert_attr_has_vals(struct ldb_message *msg,
+				 const char *attr,
+				 const char *vals[],
+				 const size_t nvals)
+{
+	struct ldb_message_element *el;
+	size_t i;
+
+	el = ldb_msg_find_element(msg, attr);
+	assert_non_null(el);
+
+	assert_int_equal(el->num_values, nvals);
+	for (i = 0; i < nvals; i++) {
+		assert_string_equal(el->values[i].data,
+				    vals[i]);
+	}
+}
+
+static void assert_has_no_attr(struct ldb_message *msg,
+			       const char *attr)
+{
+	struct ldb_message_element *el;
+
+	el = ldb_msg_find_element(msg, attr);
+	assert_null(el);
+}
+
+static bool has_dn(struct ldb_message *msg, const char *dn)
+{
+	const char *msgdn;
+
+	msgdn = ldb_dn_get_linearized(msg->dn);
+	if (strcmp(dn, msgdn) == 0) {
+		return true;
+	}
+
+	return false;
+}
+
+static void test_search_match_none(void **state)
+{
+	struct search_test_ctx *search_test_ctx = talloc_get_type_abort(*state,
+			struct search_test_ctx);
+	int ret;
+	struct ldb_dn *basedn;
+	struct ldb_result *result = NULL;
+
+	basedn = ldb_dn_new_fmt(search_test_ctx,
+			        search_test_ctx->ldb_test_ctx->ldb,
+				"%s",
+				search_test_ctx->base_dn);
+	assert_non_null(basedn);
+
+	ret = ldb_search(search_test_ctx->ldb_test_ctx->ldb,
+			 search_test_ctx,
+			 &result,
+			 basedn,
+			 LDB_SCOPE_SUBTREE, NULL,
+			 "dc=no_such_entry");
+	assert_int_equal(ret, 0);
+	assert_non_null(result);
+	assert_int_equal(result->count, 0);
+}
+
+static void test_search_match_one(void **state)
+{
+	struct search_test_ctx *search_test_ctx = talloc_get_type_abort(*state,
+			struct search_test_ctx);
+	int ret;
+	struct ldb_dn *basedn;
+	struct ldb_result *result = NULL;
+	const char *cn_vals[] = { "test_search_cn",
+				  "test_search_cn2" };
+	const char *uid_vals[] = { "test_search_uid",
+				   "test_search_uid2" };
+
+	basedn = ldb_dn_new_fmt(search_test_ctx,
+				search_test_ctx->ldb_test_ctx->ldb,
+				"%s",
+				search_test_ctx->base_dn);
+	assert_non_null(basedn);
+
+	ret = ldb_search(search_test_ctx->ldb_test_ctx->ldb,
+			 search_test_ctx,
+			 &result,
+			 basedn,
+			 LDB_SCOPE_SUBTREE, NULL,
+			 "cn=test_search_cn");
+	assert_int_equal(ret, 0);
+	assert_non_null(result);
+	assert_int_equal(result->count, 1);
+
+	assert_attr_has_vals(result->msgs[0], "cn", cn_vals, 2);
+	assert_attr_has_vals(result->msgs[0], "uid", uid_vals, 2);
+}
+
+static void test_search_match_filter(void **state)
+{
+	struct search_test_ctx *search_test_ctx = talloc_get_type_abort(*state,
+			struct search_test_ctx);
+	int ret;
+	struct ldb_dn *basedn;
+	struct ldb_result *result = NULL;
+	const char *cn_vals[] = { "test_search_cn",
+				  "test_search_cn2" };
+	const char *attrs[] = { "cn", NULL };
+
+	basedn = ldb_dn_new_fmt(search_test_ctx,
+			        search_test_ctx->ldb_test_ctx->ldb,
+				"%s",
+				search_test_ctx->base_dn);
+	assert_non_null(basedn);
+
+	ret = ldb_search(search_test_ctx->ldb_test_ctx->ldb,
+			 search_test_ctx,
+			 &result,
+			 basedn,
+			 LDB_SCOPE_SUBTREE,
+			 attrs,
+			 "cn=test_search_cn");
+	assert_int_equal(ret, 0);
+	assert_non_null(result);
+	assert_int_equal(result->count, 1);
+
+	assert_attr_has_vals(result->msgs[0], "cn", cn_vals, 2);
+	assert_has_no_attr(result->msgs[0], "uid");
+}
+
+static void assert_expected(struct search_test_ctx *search_test_ctx,
+			    struct ldb_message *msg)
+{
+	char *full_dn1;
+	char *full_dn2;
+	const char *cn_vals[] = { "test_search_cn",
+				  "test_search_cn2" };
+	const char *uid_vals[] = { "test_search_uid",
+				   "test_search_uid2" };
+	const char *cn2_vals[] = { "test_search_2_cn",
+				   "test_search_2_cn2" };
+	const char *uid2_vals[] = { "test_search_2_uid",
+				    "test_search_2_uid2" };
+
+	full_dn1 = get_full_dn(search_test_ctx,
+			       search_test_ctx,
+			       "cn=test_search_cn");
+
+	full_dn2 = get_full_dn(search_test_ctx,
+			       search_test_ctx,
+			       "cn=test_search_2_cn");
+
+	if (has_dn(msg, full_dn1) == true) {
+		assert_attr_has_vals(msg, "cn", cn_vals, 2);
+		assert_attr_has_vals(msg, "uid", uid_vals, 2);
+	} else if (has_dn(msg, full_dn2) == true) {
+		assert_attr_has_vals(msg, "cn", cn2_vals, 2);
+		assert_attr_has_vals(msg, "uid", uid2_vals, 2);
+	} else {
+		fail();
+	}
+}
+
+static void test_search_match_both(void **state)
+{
+	struct search_test_ctx *search_test_ctx = talloc_get_type_abort(*state,
+			struct search_test_ctx);
+	int ret;
+	struct ldb_dn *basedn;
+	struct ldb_result *result = NULL;
+
+	basedn = ldb_dn_new_fmt(search_test_ctx,
+			        search_test_ctx->ldb_test_ctx->ldb,
+				"%s",
+				search_test_ctx->base_dn);
+	assert_non_null(basedn);
+
+	ret = ldb_search(search_test_ctx->ldb_test_ctx->ldb,
+			 search_test_ctx,
+			 &result,
+			 basedn,
+			 LDB_SCOPE_SUBTREE, NULL,
+			 "cn=test_search_*");
+	assert_int_equal(ret, 0);
+	assert_non_null(result);
+	assert_int_equal(result->count, 2);
+
+	assert_expected(search_test_ctx, result->msgs[0]);
+	assert_expected(search_test_ctx, result->msgs[1]);
+}
+
+static void test_search_match_basedn(void **state)
+{
+	struct search_test_ctx *search_test_ctx = talloc_get_type_abort(*state,
+			struct search_test_ctx);
+	int ret;
+	struct ldb_dn *basedn;
+	struct ldb_result *result = NULL;
+	struct ldb_message *msg;
+
+	basedn = ldb_dn_new_fmt(search_test_ctx,
+			        search_test_ctx->ldb_test_ctx->ldb,
+				"dc=nosuchdn");
+	assert_non_null(basedn);
+
+	ret = ldb_search(search_test_ctx->ldb_test_ctx->ldb,
+			 search_test_ctx,
+			 &result,
+			 basedn,
+			 LDB_SCOPE_SUBTREE, NULL,
+			 "cn=*");
+	assert_int_equal(ret, 0);
+
+	/* Add 'checkBaseOnSearch' to @OPTIONS */
+	msg = ldb_msg_new(search_test_ctx);
+	assert_non_null(msg);
+
+	msg->dn = ldb_dn_new_fmt(msg,
+				 search_test_ctx->ldb_test_ctx->ldb,
+				 "@OPTIONS");
+	assert_non_null(msg->dn);
+
+	ret = ldb_msg_add_string(msg, "checkBaseOnSearch", "TRUE");
+	assert_int_equal(ret, 0);
+
+	ret = ldb_add(search_test_ctx->ldb_test_ctx->ldb, msg);
+	assert_int_equal(ret, 0);
+
+	/* Search again */
+	/* The search should return LDB_ERR_NO_SUCH_OBJECT */
+	ret = ldb_search(search_test_ctx->ldb_test_ctx->ldb,
+			 search_test_ctx,
+			 &result,
+			 basedn,
+			 LDB_SCOPE_SUBTREE, NULL,
+			 "cn=*");
+	assert_int_equal(ret, LDB_ERR_NO_SUCH_OBJECT);
+
+	ret = ldb_delete(search_test_ctx->ldb_test_ctx->ldb, msg->dn);
+	assert_int_equal(ret, 0);
+}
+
 int main(int argc, const char **argv)
 {
 	const struct CMUnitTest tests[] = {
@@ -835,6 +1187,21 @@ int main(int argc, const char **argv)
 		cmocka_unit_test_setup_teardown(test_ldb_modify_del_keyval,
 						ldb_modify_test_setup,
 						ldb_modify_test_teardown),
+		cmocka_unit_test_setup_teardown(test_search_match_none,
+						ldb_search_test_setup,
+						ldb_search_test_teardown),
+		cmocka_unit_test_setup_teardown(test_search_match_one,
+						ldb_search_test_setup,
+						ldb_search_test_teardown),
+		cmocka_unit_test_setup_teardown(test_search_match_filter,
+						ldb_search_test_setup,
+						ldb_search_test_teardown),
+		cmocka_unit_test_setup_teardown(test_search_match_both,
+						ldb_search_test_setup,
+						ldb_search_test_teardown),
+		cmocka_unit_test_setup_teardown(test_search_match_basedn,
+						ldb_search_test_setup,
+						ldb_search_test_teardown),
 	};
 
 	return cmocka_run_group_tests(tests, NULL, NULL);
