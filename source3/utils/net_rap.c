@@ -350,7 +350,7 @@ int net_rap_session_usage(struct net_context *c, int argc, const char **argv)
 
 static void list_sessions_func(char *wsname, char *username, uint16_t conns,
 			uint16_t opens, uint16_t users, uint32_t sess_time,
-			uint32_t idle_time, uint32 user_flags, char *clitype)
+			uint32_t idle_time, uint32_t user_flags, char *clitype)
 {
 	int hrs = idle_time / 3600;
 	int min = (idle_time / 60) % 60;
@@ -361,8 +361,8 @@ static void list_sessions_func(char *wsname, char *username, uint16_t conns,
 }
 
 static void display_session_func(const char *wsname, const char *username,
-				 uint16_t conns, uint16_t opens, uint16 users,
-				 uint32_t sess_time, uint32 idle_time,
+				 uint16_t conns, uint16_t opens, uint16_t users,
+				 uint32_t sess_time, uint32_t idle_time,
 				 uint32_t user_flags, const char *clitype)
 {
 	int ihrs = idle_time / 3600;
@@ -382,7 +382,7 @@ static void display_session_func(const char *wsname, const char *username,
 		 shrs, smin, ssec, ihrs, imin, isec);
 }
 
-static void display_conns_func(uint16_t conn_id, uint16_t conn_type, uint16 opens,
+static void display_conns_func(uint16_t conn_id, uint16_t conn_type, uint16_t opens,
 			       uint16_t users, uint32_t conn_time,
 			       const char *username, const char *netname)
 {

@@ -47,7 +47,7 @@ bool nt_token_check_sid ( const struct dom_sid *sid, const struct security_token
 	return security_token_has_sid(token, sid);
 }
 
-bool nt_token_check_domain_rid( struct security_token *token, uint32 rid )
+bool nt_token_check_domain_rid( struct security_token *token, uint32_t rid )
 {
 	struct dom_sid domain_sid;
 
@@ -129,7 +129,7 @@ struct security_token *get_root_nt_token( void )
 NTSTATUS add_aliases(const struct dom_sid *domain_sid,
 		     struct security_token *token)
 {
-	uint32 *aliases;
+	uint32_t *aliases;
 	size_t i, num_aliases;
 	NTSTATUS status;
 	TALLOC_CTX *tmp_ctx;

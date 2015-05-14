@@ -757,7 +757,7 @@ struct ip_service {
 };
 
 struct ea_struct {
-	uint8 flags;
+	uint8_t flags;
 	char *name;
 	DATA_BLOB value;
 };

@@ -365,7 +365,7 @@ bool check_same_stat(const SMB_STRUCT_STAT *sbuf1,
 			const SMB_STRUCT_STAT *sbuf2);
 void show_msg(const char *buf);
 int set_message_bcc(char *buf,int num_bytes);
-ssize_t message_push_blob(uint8 **outbuf, DATA_BLOB blob);
+ssize_t message_push_blob(uint8_t **outbuf, DATA_BLOB blob);
 char *unix_clean_name(TALLOC_CTX *ctx, const char *s);
 char *clean_name(TALLOC_CTX *ctx, const char *s);
 ssize_t write_data_at_offset(int fd, const char *buffer, size_t N, off_t pos);
@@ -741,7 +741,7 @@ bool spnego_parse_negTokenInit(TALLOC_CTX *ctx,
 			       char *OIDs[ASN1_MAX_OIDS],
 			       char **principal,
 			       DATA_BLOB *secblob);
-DATA_BLOB spnego_gen_krb5_wrap(TALLOC_CTX *ctx, const DATA_BLOB ticket, const uint8 tok_id[2]);
+DATA_BLOB spnego_gen_krb5_wrap(TALLOC_CTX *ctx, const DATA_BLOB ticket, const uint8_t tok_id[2]);
 int spnego_gen_krb5_negTokenInit(TALLOC_CTX *ctx,
 			    const char *principal, int time_offset,
 			    DATA_BLOB *targ,
@@ -776,7 +776,7 @@ NTSTATUS dsgetdcname(TALLOC_CTX *mem_ctx,
 
 /* The following definitions come from libsmb/errormap.c  */
 
-NTSTATUS dos_to_ntstatus(uint8 eclass, uint32_t ecode);
+NTSTATUS dos_to_ntstatus(uint8_t eclass, uint32_t ecode);
 
 /* The following definitions come from libsmb/namecache.c  */
 
@@ -938,9 +938,9 @@ bool netsamlogon_cache_have(const struct dom_sid *user_sid);
 
 /* The following definitions come from libsmb/smberr.c  */
 
-const char *smb_dos_err_name(uint8 e_class, uint16 num);
+const char *smb_dos_err_name(uint8_t e_class, uint16_t num);
 const char *get_dos_error_msg(WERROR result);
-const char *smb_dos_err_class(uint8 e_class);
+const char *smb_dos_err_class(uint8_t e_class);
 WERROR map_werror_from_unix(int error);
 
 /* The following definitions come from libsmb/trustdom_cache.c  */

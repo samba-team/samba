@@ -235,8 +235,8 @@ NTSTATUS cli_set_unix_extensions_capabilities_recv(struct tevent_req *req)
 }
 
 NTSTATUS cli_set_unix_extensions_capabilities(struct cli_state *cli,
-					      uint16_t major, uint16 minor,
-					      uint32_t caplow, uint32 caphigh)
+					      uint16_t major, uint16_t minor,
+					      uint32_t caplow, uint32_t caphigh)
 {
 	struct tevent_context *ev;
 	struct tevent_req *req;

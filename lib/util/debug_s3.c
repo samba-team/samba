@@ -94,7 +94,7 @@ static void debuglevel_message(struct messaging_context *msg_ctx,
 	DEBUG(1, ("INFO: Received REQ_DEBUGLEVEL message from PID %s\n",
 		  server_id_str_buf(src, &tmp)));
 	messaging_send_buf(msg_ctx, src, MSG_DEBUGLEVEL,
-			   (uint8 *)message, strlen(message) + 1);
+			   (uint8_t *)message, strlen(message) + 1);
 
 	TALLOC_FREE(message);
 }

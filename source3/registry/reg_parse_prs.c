@@ -333,7 +333,7 @@ void prs_switch_type(prs_struct *ps, bool io)
  Stream a uint16.
  ********************************************************************/
 
-bool prs_uint16(const char *name, prs_struct *ps, int depth, uint16 *data16)
+bool prs_uint16(const char *name, prs_struct *ps, int depth, uint16_t *data16)
 {
 	char *q = prs_mem_get(ps, sizeof(uint16_t));
 	if (q == NULL)

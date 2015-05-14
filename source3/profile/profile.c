@@ -113,7 +113,7 @@ static void reqprofile_message(struct messaging_context *msg_ctx,
 	DEBUG(1,("INFO: Received REQ_PROFILELEVEL message from PID %u\n",
 		 (unsigned int)procid_to_pid(&src)));
 	messaging_send_buf(msg_ctx, src, MSG_PROFILELEVEL,
-			   (uint8 *)&level, sizeof(level));
+			   (uint8_t *)&level, sizeof(level));
 }
 
 /*******************************************************************

@@ -246,7 +246,7 @@ static bool prs_regf_block( const char *desc, prs_struct *ps, int depth, REGF_FI
 	prs_debug(ps, depth, desc, "prs_regf_block");
 	depth++;
 	
-	if ( !prs_uint8s( True, "header", ps, depth, (uint8*)file->header, sizeof( file->header )) )
+	if ( !prs_uint8s( True, "header", ps, depth, (uint8_t *)file->header, sizeof( file->header )) )
 		return False;
 	
 	/* yes, these values are always identical so store them only once */
@@ -308,7 +308,7 @@ static bool prs_hbin_block( const char *desc, prs_struct *ps, int depth, REGF_HB
 	prs_debug(ps, depth, desc, "prs_regf_block");
 	depth++;
 	
-	if ( !prs_uint8s( True, "header", ps, depth, (uint8*)hbin->header, sizeof( hbin->header )) )
+	if ( !prs_uint8s( True, "header", ps, depth, (uint8_t*)hbin->header, sizeof( hbin->header )) )
 		return False;
 
 	if ( !prs_uint32( "first_hbin_off", ps, depth, &hbin->first_hbin_off ))
@@ -357,7 +357,7 @@ static bool prs_nk_rec( const char *desc, prs_struct *ps, int depth, REGF_NK_REC
 	if ( !prs_uint32( "rec_size", ps, depth, &nk->rec_size ))
 		return False;
 	
-	if ( !prs_uint8s( True, "header", ps, depth, (uint8*)nk->header, sizeof( nk->header )) )
+	if ( !prs_uint8s( True, "header", ps, depth, (uint8_t *)nk->header, sizeof( nk->header )) )
 		return False;
 		
 	if ( !prs_uint16( "key_type", ps, depth, &nk->key_type ))
@@ -418,7 +418,7 @@ static bool prs_nk_rec( const char *desc, prs_struct *ps, int depth, REGF_NK_REC
 				return False;
 		}
 
-		if ( !prs_uint8s( True, "name", ps, depth, (uint8*)nk->keyname, name_length) )
+		if ( !prs_uint8s( True, "name", ps, depth, (uint8_t *)nk->keyname, name_length) )
 			return False;
 
 		if ( UNMARSHALLING(ps) ) 
@@ -682,7 +682,7 @@ static bool hbin_prs_lf_records( const char *desc, REGF_HBIN *hbin, int depth, R
 	if ( !prs_uint32( "rec_size", &hbin->ps, depth, &lf->rec_size ))
 		return False;
 
-	if ( !prs_uint8s( True, "header", &hbin->ps, depth, (uint8*)lf->header, sizeof( lf->header )) )
+	if ( !prs_uint8s( True, "header", &hbin->ps, depth, (uint8_t *)lf->header, sizeof( lf->header )) )
 		return False;
 		
 	if ( !prs_uint16( "num_keys", &hbin->ps, depth, &lf->num_keys))
@@ -740,7 +740,7 @@ static bool hbin_prs_sk_rec( const char *desc, REGF_HBIN *hbin, int depth, REGF_
 	if ( !prs_uint32( "rec_size", &hbin->ps, depth, &sk->rec_size ))
 		return False;
 
-	if ( !prs_uint8s( True, "header", ps, depth, (uint8*)sk->header, sizeof( sk->header )) )
+	if ( !prs_uint8s( True, "header", ps, depth, (uint8_t *)sk->header, sizeof( sk->header )) )
 		return False;
 	if ( !prs_uint16( "tag", ps, depth, &tag))
 		return False;
@@ -816,7 +816,7 @@ static bool hbin_prs_vk_rec( const char *desc, REGF_HBIN *hbin, int depth, REGF_
 	if ( !prs_uint32( "rec_size", &hbin->ps, depth, &vk->rec_size ))
 		return False;
 
-	if ( !prs_uint8s( True, "header", ps, depth, (uint8*)vk->header, sizeof( vk->header )) )
+	if ( !prs_uint8s( True, "header", ps, depth, (uint8_t *)vk->header, sizeof( vk->header )) )
 		return False;
 
 	if ( MARSHALLING(&hbin->ps) )
@@ -845,7 +845,7 @@ static bool hbin_prs_vk_rec( const char *desc, REGF_HBIN *hbin, int depth, REGF_
 			if ( !(vk->valuename = PRS_ALLOC_MEM( ps, char, name_length+1 )))
 				return False;
 		}
-		if ( !prs_uint8s( True, "name", ps, depth, (uint8*)vk->valuename, name_length ) )
+		if ( !prs_uint8s( True, "name", ps, depth, (uint8_t *)vk->valuename, name_length ) )
 			return False;
 	}
 

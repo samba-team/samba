@@ -97,7 +97,7 @@ static NTSTATUS skel_get_dfs_referrals(struct vfs_handle_struct *handle,
 }
 
 static DIR *skel_opendir(vfs_handle_struct *handle, const char *fname,
-			 const char *mask, uint32 attr)
+			 const char *mask, uint32_t attr)
 {
 	return NULL;
 }
@@ -130,7 +130,7 @@ static NTSTATUS skel_snap_delete(struct vfs_handle_struct *handle,
 }
 
 static DIR *skel_fdopendir(vfs_handle_struct *handle, files_struct *fsp,
-			   const char *mask, uint32 attr)
+			   const char *mask, uint32_t attr)
 {
 	return NULL;
 }
@@ -435,7 +435,7 @@ static bool skel_lock(vfs_handle_struct *handle, files_struct *fsp, int op,
 
 static int skel_kernel_flock(struct vfs_handle_struct *handle,
 			     struct files_struct *fsp,
-			     uint32 share_mode, uint32 access_mask)
+			     uint32_t share_mode, uint32_t access_mask)
 {
 	errno = ENOSYS;
 	return -1;
@@ -671,7 +671,7 @@ static NTSTATUS skel_readdir_attr(struct vfs_handle_struct *handle,
 }
 
 static NTSTATUS skel_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
-				 uint32 security_info,
+				 uint32_t security_info,
 				 TALLOC_CTX *mem_ctx,
 				 struct security_descriptor **ppdesc)
 {
@@ -679,7 +679,7 @@ static NTSTATUS skel_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 }
 
 static NTSTATUS skel_get_nt_acl(vfs_handle_struct *handle,
-				const char *name, uint32 security_info,
+				const char *name, uint32_t security_info,
 				TALLOC_CTX *mem_ctx,
 				struct security_descriptor **ppdesc)
 {
@@ -687,7 +687,7 @@ static NTSTATUS skel_get_nt_acl(vfs_handle_struct *handle,
 }
 
 static NTSTATUS skel_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
-				 uint32 security_info_sent,
+				 uint32_t security_info_sent,
 				 const struct security_descriptor *psd)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;

@@ -40,7 +40,7 @@ void notify_job_status_byname(struct tevent_context *ev,
 			      uint32_t flags);
 void notify_job_status(struct tevent_context *ev,
 		       struct messaging_context *msg_ctx,
-		       const char *sharename, uint32_t jobid, uint32 status);
+		       const char *sharename, uint32_t jobid, uint32_t status);
 void notify_job_total_bytes(struct tevent_context *ev,
 			    struct messaging_context *msg_ctx,
 			    const char *sharename, uint32_t jobid,

@@ -93,7 +93,7 @@ bool smbconf_reg_parameter_is_valid(const char *param_name)
 static sbcErr smbconf_reg_open_service_key(TALLOC_CTX *mem_ctx,
 					   struct smbconf_ctx *ctx,
 					   const char *servicename,
-					   uint32 desired_access,
+					   uint32_t desired_access,
 					   struct registry_key **key)
 {
 	WERROR werr;
@@ -338,7 +338,7 @@ static char *smbconf_format_registry_value(TALLOC_CTX *mem_ctx,
 		break;
 	}
 	case REG_MULTI_SZ: {
-		uint32 j;
+		uint32_t j;
 		const char **a = NULL;
 		if (!pull_reg_multi_sz(mem_ctx, &value->data, &a)) {
 			break;

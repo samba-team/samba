@@ -373,7 +373,7 @@ bool
 SMBC_getatr(SMBCCTX * context,
             SMBCSRV *srv,
             const char *path,
-            uint16 *mode,
+            uint16_t *mode,
             off_t *size,
             struct timespec *create_time_ts,
             struct timespec *access_time_ts,
@@ -387,7 +387,7 @@ SMBC_setatr(SMBCCTX * context, SMBCSRV *srv, char *path,
             time_t access_time,
             time_t write_time,
             time_t change_time,
-            uint16 mode);
+            uint16_t mode);
 
 off_t
 SMBC_lseek_ctx(SMBCCTX *context,

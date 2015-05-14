@@ -1788,7 +1788,7 @@ ADS_STATUS ads_add_strlist(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 uint32_t ads_get_kvno(ADS_STRUCT *ads, const char *account_name)
 {
 	LDAPMessage *res = NULL;
-	uint32_t kvno = (uint32)-1;      /* -1 indicates a failure */
+	uint32_t kvno = (uint32_t)-1;      /* -1 indicates a failure */
 	char *filter;
 	const char *attrs[] = {"msDS-KeyVersionNumber", NULL};
 	char *dn_string = NULL;

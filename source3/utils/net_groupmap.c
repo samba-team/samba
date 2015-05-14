@@ -654,7 +654,7 @@ static int net_groupmap_set(struct net_context *c, int argc, const char **argv)
 
 		if (c->opt_rid == 0) {
 			if ( pdb_capabilities() & PDB_CAP_STORE_RIDS ) {
-				if ( !pdb_new_rid((uint32*)&c->opt_rid) ) {
+				if ( !pdb_new_rid((uint32_t *)&c->opt_rid) ) {
 					d_fprintf( stderr,
 					    _("Could not allocate new RID\n"));
 					TALLOC_FREE(map);
