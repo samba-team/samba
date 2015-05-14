@@ -1,5 +1,5 @@
 <samba:parameter name="include"
-                 context="G"
+                 context="S"
                  type="string"
                  generated_function="0"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
