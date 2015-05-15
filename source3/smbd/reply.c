@@ -7999,7 +7999,7 @@ void reply_lockingX(struct smb_request *req)
 	unsigned char oplocklevel;
 	uint16_t num_ulocks;
 	uint16_t num_locks;
-	int32 lock_timeout;
+	int32_t lock_timeout;
 	int i;
 	const uint8_t *data;
 	bool large_file_format;

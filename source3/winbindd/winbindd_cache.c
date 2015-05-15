@@ -3808,13 +3808,13 @@ static int validate_ul(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf,
 		       struct tdb_validation_status *state)
 {
 	struct cache_entry *centry = create_centry_validate(keystr, dbuf, state);
-	int32 num_entries, i;
+	int32_t num_entries, i;
 
 	if (!centry) {
 		return 1;
 	}
 
-	num_entries = (int32)centry_uint32(centry);
+	num_entries = (int32_t)centry_uint32(centry);
 
 	for (i=0; i< num_entries; i++) {
 		struct dom_sid sid;
@@ -3839,7 +3839,7 @@ static int validate_gl(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf,
 		       struct tdb_validation_status *state)
 {
 	struct cache_entry *centry = create_centry_validate(keystr, dbuf, state);
-	int32 num_entries, i;
+	int32_t num_entries, i;
 
 	if (!centry) {
 		return 1;
@@ -3866,7 +3866,7 @@ static int validate_ug(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf,
 		       struct tdb_validation_status *state)
 {
 	struct cache_entry *centry = create_centry_validate(keystr, dbuf, state);
-	int32 num_groups, i;
+	int32_t num_groups, i;
 
 	if (!centry) {
 		return 1;
@@ -3892,7 +3892,7 @@ static int validate_ua(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf,
 		       struct tdb_validation_status *state)
 {
 	struct cache_entry *centry = create_centry_validate(keystr, dbuf, state);
-	int32 num_aliases, i;
+	int32_t num_aliases, i;
 
 	if (!centry) {
 		return 1;
@@ -3917,7 +3917,7 @@ static int validate_gm(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf,
 		       struct tdb_validation_status *state)
 {
 	struct cache_entry *centry = create_centry_validate(keystr, dbuf, state);
-	int32 num_names, i;
+	int32_t num_names, i;
 
 	if (!centry) {
 		return 1;

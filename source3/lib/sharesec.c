@@ -139,7 +139,7 @@ static int upgrade_v2_to_v3(struct db_record *rec, void *priv)
 bool share_info_db_init(void)
 {
 	const char *vstring = "INFO/version";
-	int32 vers_id = 0;
+	int32_t vers_id = 0;
 	bool upgrade_ok = true;
 	NTSTATUS status;
 	char *db_path;

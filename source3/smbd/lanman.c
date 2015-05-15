@@ -307,7 +307,7 @@ static int package(struct pack_desc *p, ...)
 	int needed=0, stringneeded;
 	const char *str=NULL;
 	int is_string=0, stringused;
-	int32 temp;
+	int32_t temp;
 
 	va_start(args,p);
 

@@ -362,7 +362,7 @@ static bool tdbsam_upgrade_next_rid(struct db_context *db)
 	return true;
 }
 
-static bool tdbsam_convert(struct db_context **pp_db, const char *name, int32 from)
+static bool tdbsam_convert(struct db_context **pp_db, const char *name, int32_t from)
 {
 	struct tdbsam_convert_state state;
 	struct db_context *db = NULL;
@@ -437,8 +437,8 @@ static bool tdbsam_convert(struct db_context **pp_db, const char *name, int32 fr
 
 static bool tdbsam_open( const char *name )
 {
-	int32	version;
-	int32	minor_version;
+	int32_t version;
+	int32_t minor_version;
 	NTSTATUS status;
 
 	/* check if we are already open */

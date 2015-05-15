@@ -77,7 +77,7 @@ struct tcpdump_file_header {
 	uint32_t magic;
 	uint16_t major;
 	uint16_t minor;
-	int32 zone;
+	int32_t zone;
 	uint32_t sigfigs;
 	uint32_t snaplen;
 	uint32_t linktype;

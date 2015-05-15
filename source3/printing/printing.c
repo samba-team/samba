@@ -1545,7 +1545,7 @@ static void print_queue_update_internal(struct tevent_context *ev,
 	 */
 
 	slprintf(keystr, sizeof(keystr)-1, "CACHE/%s", sharename);
-	tdb_store_int32(pdb->tdb, keystr, (int32)time(NULL));
+	tdb_store_int32(pdb->tdb, keystr, (int32_t)time(NULL));
 
 	/* clear the msg pending record for this queue */
 

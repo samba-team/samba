@@ -1068,7 +1068,7 @@ static void call_trans2open(connection_struct *conn,
 	char *params = *pparams;
 	char *pdata = *ppdata;
 	int deny_mode;
-	int32 open_attr;
+	int32_t open_attr;
 	bool oplock_request;
 #if 0
 	bool return_additional_info;
