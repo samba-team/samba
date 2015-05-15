@@ -178,6 +178,8 @@ sub setup_env($$$)
 		return $self->setup_nt4_dc_schannel("$path/nt4_dc_schannel");
 	} elsif ($envname eq "simpleserver") {
 		return $self->setup_simpleserver("$path/simpleserver");
+	} elsif ($envname eq "fileserver") {
+		return $self->setup_fileserver("$path/fileserver");
 	} elsif ($envname eq "maptoguest") {
 		return $self->setup_maptoguest("$path/maptoguest");
 	} elsif ($envname eq "ktest") {
@@ -526,7 +528,7 @@ sub setup_simpleserver($$)
 {
 	my ($self, $path) = @_;
 
-	print "PROVISIONING server with security=share...";
+	print "PROVISIONING simple server...";
 
 	my $prefix_abs = abs_path($path);
 
@@ -553,6 +555,98 @@ sub setup_simpleserver($$)
 	}
 
 	$self->{vars}->{simpleserver} = $vars;
+
+	return $vars;
+}
+
+sub setup_fileserver($$)
+{
+	my ($self, $path) = @_;
+	my $prefix_abs = abs_path($path);
+
+	print "PROVISIONING file server ...\n";
+
+	my @dirs = ();
+
+	mkdir($prefix_abs, 0777);
+
+	my $share_dir="$prefix_abs/share";
+
+	# Create share directory structure
+	my $lower_case_share_dir="$share_dir/lower-case";
+	push(@dirs, $lower_case_share_dir);
+
+	my $lower_case_share_dir_30000="$share_dir/lower-case-30000";
+	push(@dirs, $lower_case_share_dir_30000);
+
+	my $fileserver_options = "
+[lowercase]
+	path = $lower_case_share_dir
+	comment = smb username is [%U]
+	case sensitive = True
+	default case = lower
+	preserve case = no
+	short preserve case = no
+[lowercase-30000]
+	path = $lower_case_share_dir_30000
+	comment = smb username is [%U]
+	case sensitive = True
+	default case = lower
+	preserve case = no
+	short preserve case = no
+	";
+
+	my $vars = $self->provision($path,
+				    "FILESERVER",
+				    "fileserver_secret",
+				    $fileserver_options,
+				    undef,
+				    undef,
+				    1);
+
+	$vars or return undef;
+
+	if (not $self->check_or_start($vars, "yes", "no", "yes")) {
+	       return undef;
+	}
+
+	$self->{vars}->{fileserver} = $vars;
+
+	mkdir($_, 0777) foreach(@dirs);
+
+	## Create case sensitive lower case share dir
+	foreach my $file ('a'..'z') {
+		my $full_path = $lower_case_share_dir . '/' . $file;
+		open my $fh, '>', $full_path;
+		# Add some content to file
+		print $fh $full_path;
+		close $fh;
+	}
+
+	for (my $file = 1; $file < 51; ++$file) {
+		my $full_path = $lower_case_share_dir . '/' . $file;
+		open my $fh, '>', $full_path;
+		# Add some content to file
+		print $fh $full_path;
+		close $fh;
+	}
+
+	# Create content for 30000 share
+	foreach my $file ('a'..'z') {
+		my $full_path = $lower_case_share_dir_30000 . '/' . $file;
+		open my $fh, '>', $full_path;
+		# Add some content to file
+		print $fh $full_path;
+		close $fh;
+	}
+
+	for (my $file = 1; $file < 30001; ++$file) {
+		my $full_path = $lower_case_share_dir_30000 . '/' . $file;
+		open my $fh, '>', $full_path;
+		# Add some content to file
+		print $fh $full_path;
+		close $fh;
+	}
 
 	return $vars;
 }

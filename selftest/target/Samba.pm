@@ -177,6 +177,7 @@ sub get_interface($)
     $interfaces{"chgdcpass"} = 32;
     $interfaces{"promotedvdc"} = 33;
     $interfaces{"rfc2307member"} = 34;
+    $interfaces{"fileserver"} = 35;
 
     # update lib/socket_wrapper/socket_wrapper.c
     #  #define MAX_WRAPPED_INTERFACES 32
