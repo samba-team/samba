@@ -281,7 +281,7 @@ static NTTIME centry_nttime(struct cache_entry *centry)
 	}
 	ret = IVAL(centry->data, centry->ofs);
 	centry->ofs += 4;
-	ret += (uint64)IVAL(centry->data, centry->ofs) << 32;
+	ret += (uint64_t)IVAL(centry->data, centry->ofs) << 32;
 	centry->ofs += 4;
 	return ret;
 }

@@ -689,9 +689,9 @@ static NTSTATUS fetch_domain_info(TALLOC_CTX *mem_ctx,
 			nt_errstr(status));
 	}
 
-	u_max_age = uint64s_nt_time_to_unix_abs((uint64 *)&r->max_password_age);
-	u_min_age = uint64s_nt_time_to_unix_abs((uint64 *)&r->min_password_age);
-	u_logout = uint64s_nt_time_to_unix_abs((uint64 *)&r->force_logoff_time);
+	u_max_age = uint64s_nt_time_to_unix_abs((uint64_t *)&r->max_password_age);
+	u_min_age = uint64s_nt_time_to_unix_abs((uint64_t *)&r->min_password_age);
+	u_logout = uint64s_nt_time_to_unix_abs((uint64_t *)&r->force_logoff_time);
 
 	domname = r->domain_name.string;
 	if (!domname) {

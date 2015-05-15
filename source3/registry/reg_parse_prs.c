@@ -390,7 +390,7 @@ bool prs_uint32(const char *name, prs_struct *ps, int depth, uint32_t *data32)
 /*******************************************************************
  Stream a uint64_struct
  ********************************************************************/
-bool prs_uint64(const char *name, prs_struct *ps, int depth, uint64 *data64)
+bool prs_uint64(const char *name, prs_struct *ps, int depth, uint64_t *data64)
 {
 	if (UNMARSHALLING(ps)) {
 		uint32_t high, low;

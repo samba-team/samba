@@ -132,7 +132,7 @@ NTSTATUS do_unlock(struct messaging_context *msg_ctx,
 			uint64_t offset,
 			enum brl_flavour lock_flav);
 NTSTATUS do_lock_cancel(files_struct *fsp,
-			uint64 smblctx,
+			uint64_t smblctx,
 			uint64_t count,
 			uint64_t offset,
 			enum brl_flavour lock_flav);
