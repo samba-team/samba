@@ -1077,7 +1077,8 @@ class KCC(object):
                 for a, b in itertools.combinations(edge.vertices, 2):
                     dot_edges.append((a.site.site_dnstr, b.site.site_dnstr))
             verify_properties = ()
-            verify_and_dot('site_edges', dot_edges, directed=False,
+            name = 'site_edges_%s' % part.partstr
+            verify_and_dot(name, dot_edges, directed=False,
                            label=self.my_dsa_dnstr,
                            properties=verify_properties, debug=DEBUG,
                            verify=self.verify,
