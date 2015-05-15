@@ -124,7 +124,7 @@ sub CallWithStruct($$$$)
 
 	if ($fn->{RETURN_TYPE}) {
 		$ret = "r->out.result = $ret";
-		$proto = "$fn->{RETURN_TYPE} $proto";
+		$proto = mapTypeName($fn->{RETURN_TYPE})." $proto";
 	} else {
 		$proto = "void $proto";
 	}
