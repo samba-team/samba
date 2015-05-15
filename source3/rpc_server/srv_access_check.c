@@ -48,7 +48,7 @@
 NTSTATUS access_check_object( struct security_descriptor *psd, struct security_token *token,
 			      enum sec_privilege needed_priv_1, enum sec_privilege needed_priv_2,
 			      uint32_t rights_mask,
-			      uint32_t des_access, uint32 *acc_granted,
+			      uint32_t des_access, uint32_t *acc_granted,
 			      const char *debug )
 {
 	NTSTATUS status = NT_STATUS_ACCESS_DENIED;

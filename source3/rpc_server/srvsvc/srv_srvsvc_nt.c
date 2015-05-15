@@ -92,7 +92,7 @@ static int enum_file_fn(const struct share_mode_entry *e,
 	struct byte_range_lock *brl;
 	int num_locks = 0;
 	char *fullpath = NULL;
-	uint32 permissions;
+	uint32_t permissions;
 	const char *username;
 
 	/* If the pid was not found delete the entry from connections.tdb */
@@ -291,7 +291,7 @@ static void map_generic_share_sd_bits(struct security_descriptor *psd)
 
 	for (i = 0; i < ps_dacl->num_aces; i++) {
 		struct security_ace *psa = &ps_dacl->aces[i];
-		uint32 orig_mask = psa->access_mask;
+		uint32_t orig_mask = psa->access_mask;
 
 		se_map_generic(&psa->access_mask, &file_generic_mapping);
 		psa->access_mask |= orig_mask;
@@ -917,7 +917,7 @@ static WERROR init_srv_sess_info_1(struct pipes_struct *p,
 	W_ERROR_HAVE_NO_MEMORY(ctr1->array);
 
 	for (num_entries = 0; resume_handle < *total_entries; num_entries++, resume_handle++) {
-		uint32 connect_time;
+		uint32_t connect_time;
 		bool guest;
 
 		connect_time = (uint32_t)(now - session_list[resume_handle].connect_start);
@@ -2253,7 +2253,7 @@ WERROR _srvsvc_NetRemoteTOD(struct pipes_struct *p,
 	/* We do this call first as if we do it *after* the gmtime call
 	   it overwrites the pointed-to values. JRA */
 
-	uint32 zone = get_time_zone(unixdate)/60;
+	uint32_t zone = get_time_zone(unixdate)/60;
 
 	DEBUG(5,("_srvsvc_NetRemoteTOD: %d\n", __LINE__));
 
@@ -2573,14 +2573,14 @@ error_exit:
 
 static const char *server_disks[] = {"C:"};
 
-static uint32 get_server_disk_count(void)
+static uint32_t get_server_disk_count(void)
 {
 	return sizeof(server_disks)/sizeof(server_disks[0]);
 }
 
-static uint32 init_server_disk_enum(uint32 *resume)
+static uint32_t init_server_disk_enum(uint32_t *resume)
 {
-	uint32 server_disk_count = get_server_disk_count();
+	uint32_t server_disk_count = get_server_disk_count();
 
 	/*resume can be an offset into the list for now*/
 
@@ -2593,7 +2593,7 @@ static uint32 init_server_disk_enum(uint32 *resume)
 	return server_disk_count - *resume;
 }
 
-static const char *next_server_disk_enum(uint32 *resume)
+static const char *next_server_disk_enum(uint32_t *resume)
 {
 	const char *disk;
 
@@ -2616,7 +2616,7 @@ static const char *next_server_disk_enum(uint32 *resume)
 WERROR _srvsvc_NetDiskEnum(struct pipes_struct *p,
 			   struct srvsvc_NetDiskEnum *r)
 {
-	uint32 i;
+	uint32_t i;
 	const char *disk_name;
 	TALLOC_CTX *ctx = p->mem_ctx;
 	WERROR werr;
@@ -2718,7 +2718,7 @@ static int enum_file_close_fn(const struct share_mode_entry *e,
 	state->r->out.result = ntstatus_to_werror(
 		messaging_send_buf(state->msg_ctx,
 				e->pid, MSG_SMB_CLOSE_FILE,
-				(uint8 *)msg, sizeof(msg)));
+				(uint8_t *)msg, sizeof(msg)));
 
 	return 0;
 }

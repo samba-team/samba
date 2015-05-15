@@ -86,21 +86,21 @@ struct printer_handle {
 	struct printer_handle *prev, *next;
 	bool document_started;
 	bool page_started;
-	uint32 jobid; /* jobid in printing backend */
+	uint32_t jobid; /* jobid in printing backend */
 	int printer_type;
 	const char *servername;
 	fstring sharename;
-	uint32 type;
-	uint32 access_granted;
+	uint32_t type;
+	uint32_t access_granted;
 	struct {
-		uint32 flags;
-		uint32 options;
+		uint32_t flags;
+		uint32_t options;
 		fstring localmachine;
-		uint32 printerlocal;
+		uint32_t printerlocal;
 		struct spoolss_NotifyOption *option;
 		struct policy_handle cli_hnd;
 		struct notify_back_channel *cli_chan;
-		uint32 change;
+		uint32_t change;
 		/* are we in a FindNextPrinterChangeNotify() call? */
 		bool fnpcn;
 		struct messaging_context *msg_ctx;

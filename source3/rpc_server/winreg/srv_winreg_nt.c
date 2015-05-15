@@ -866,7 +866,7 @@ WERROR _winreg_GetKeySecurity(struct pipes_struct *p,
 	struct registry_key *key = find_regkey_by_hnd(p, r->in.handle);
 	WERROR err = WERR_OK;
 	struct security_descriptor *secdesc = NULL;
-	uint8 *data = NULL;
+	uint8_t *data = NULL;
 	size_t len = 0;
 
 	if ( !key )
