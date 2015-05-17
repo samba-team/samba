@@ -343,7 +343,7 @@ static NTSTATUS ctdb_read_packet(int fd, TALLOC_CTX *mem_ctx,
 	struct ctdb_req_header *req;
 	int ret, revents;
 	uint32_t msglen;
-	NTSTATUS status;
+	ssize_t nread;
 
 	if (timeout == 0) {
 		timeout = -1;
@@ -362,9 +362,12 @@ static NTSTATUS ctdb_read_packet(int fd, TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	status = read_data_ntstatus(fd, (char *)&msglen, sizeof(msglen));
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	nread = read_data(fd, &msglen, sizeof(msglen));
+	if (nread == -1) {
+		return map_nt_error_from_unix(errno);
+	}
+	if (nread == 0) {
+		return NT_STATUS_UNEXPECTED_IO_ERROR;
 	}
 
 	if (msglen < sizeof(struct ctdb_req_header)) {
@@ -379,10 +382,13 @@ static NTSTATUS ctdb_read_packet(int fd, TALLOC_CTX *mem_ctx,
 
 	req->length = msglen;
 
-	status = read_data_ntstatus(fd, ((char *)req) + sizeof(msglen),
-				    msglen - sizeof(msglen));
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	nread = read_data(fd, ((char *)req) + sizeof(msglen),
+			  msglen - sizeof(msglen));
+	if (nread == -1) {
+		return map_nt_error_from_unix(errno);
+	}
+	if (nread == 0) {
+		return NT_STATUS_UNEXPECTED_IO_ERROR;
 	}
 
 	*result = req;
