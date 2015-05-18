@@ -320,22 +320,6 @@ int main(int argc, char **argv)
                         headers='sys/capability.h',
                         msg="Checking whether POSIX capabilities are available")
 
-    # Check for int16, uint16, int32 and uint32 in rpc/types.h included from
-    # rpc/rpc.h. This is *really* broken but some systems (DEC OSF1) do this.
-    # -- JRA.
-    if conf.CONFIG_SET("HAVE_RPC_RPC_H"):
-        conf.CHECK_TYPE('int16', headers='rpc/rpc.h',
-                        define='HAVE_INT16_FROM_RPC_RPC_H',
-                        msg="Checking for int16 typedef included by rpc/rpc.h")
-        conf.CHECK_CODE('uint16 testvar;', 'HAVE_INT16_FROM_RPC_RPC_H',
-                        headers='sys/types.h rpc/rpc.h',
-                        msg="Checking for uint16 typedef included by rpc/rpc.h")
-        conf.CHECK_CODE('int32 testvar;', 'HAVE_INT16_FROM_RPC_RPC_H',
-                        headers='sys/types.h rpc/rpc.h',
-                        msg="Checking for int32 typedef included by rpc/rpc.h")
-        conf.CHECK_CODE('uint32 testvar;', 'HAVE_INT16_FROM_RPC_RPC_H',
-                        headers='sys/types.h rpc/rpc.h',
-                        msg="Checking for uint32 typedef included by rpc/rpc.h")
     conf.CHECK_CODE('int i;', 'BROKEN_NISPLUS_INCLUDE_FILES',
                     headers='sys/types.h sys/acl.h rpcsvc/nis.h',
                     msg="Checking for broken nisplus include files")
