@@ -176,6 +176,11 @@ void tevent_set_default_backend(const char *backend);
  *
  * @note To cancel the monitoring of a file descriptor, call talloc_free()
  * on the object returned by this function.
+ *
+ * @note The caller should avoid closing the file descriptor before
+ * calling talloc_free()! Otherwise the behaviour is undefined which
+ * might result in crashes. See https://bugzilla.samba.org/show_bug.cgi?id=11141
+ * for an example.
  */
 struct tevent_fd *tevent_add_fd(struct tevent_context *ev,
 				TALLOC_CTX *mem_ctx,
