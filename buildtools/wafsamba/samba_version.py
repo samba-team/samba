@@ -3,57 +3,6 @@ import Utils
 import samba_utils
 import sys
 
-def bzr_version_summary(path):
-    try:
-        import bzrlib
-    except ImportError:
-        return ("BZR-UNKNOWN", {})
-
-    import bzrlib.ui
-    bzrlib.ui.ui_factory = bzrlib.ui.make_ui_for_terminal(
-        sys.stdin, sys.stdout, sys.stderr)
-    from bzrlib import branch, osutils, workingtree
-    from bzrlib.plugin import load_plugins
-    load_plugins()
-
-    b = branch.Branch.open(path)
-    (revno, revid) = b.last_revision_info()
-    rev = b.repository.get_revision(revid)
-
-    fields = {
-        "BZR_REVISION_ID": revid,
-        "BZR_REVNO": revno,
-        "COMMIT_DATE": osutils.format_date_with_offset_in_original_timezone(rev.timestamp,
-            rev.timezone or 0),
-        "COMMIT_TIME": int(rev.timestamp),
-        "BZR_BRANCH": rev.properties.get("branch-nick", ""),
-        }
-
-    # If possible, retrieve the git sha
-    try:
-        from bzrlib.plugins.git.object_store import get_object_store
-    except ImportError:
-        # No git plugin
-        ret = "BZR-%d" % revno
-    else:
-        store = get_object_store(b.repository)
-        store.lock_read()
-        try:
-            full_rev = store._lookup_revision_sha1(revid)
-        finally:
-            store.unlock()
-        fields["GIT_COMMIT_ABBREV"] = full_rev[:7]
-        fields["GIT_COMMIT_FULLREV"] = full_rev
-        ret = "GIT-" + fields["GIT_COMMIT_ABBREV"]
-
-    if workingtree.WorkingTree.open(path).has_changes():
-        fields["COMMIT_IS_CLEAN"] = 0
-        ret += "+"
-    else:
-        fields["COMMIT_IS_CLEAN"] = 1
-    return (ret, fields)
-
-
 def git_version_summary(path, env=None):
     # Get version from GIT
     if not 'GIT' in env and os.path.exists("/usr/bin/git"):
@@ -200,8 +149,6 @@ also accepted as dictionary entries here
                 self.vcs_fields = {}
             elif os.path.exists(os.path.join(path, ".git")):
                 suffix, self.vcs_fields = git_version_summary(path, env=env)
-            elif os.path.exists(os.path.join(path, ".bzr")):
-                suffix, self.vcs_fields = bzr_version_summary(path)
             elif os.path.exists(os.path.join(path, ".distversion")):
                 suffix, self.vcs_fields = distversion_version_summary(path)
             else:

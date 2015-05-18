@@ -86,12 +86,6 @@ def vcs_dir_contents(path):
             env = dict(os.environ)
             env["GIT_DIR"] = os.path.join(repo, ".git")
             break
-        elif os.path.isdir(os.path.join(repo, ".bzr")):
-            ls_files_cmd = [ 'bzr', 'ls', '--recursive', '--versioned',
-                             os_path_relpath(path, repo)]
-            cwd = repo
-            env = None
-            break
         repo = os.path.dirname(repo)
     if repo == "/":
         raise Exception("unsupported or no vcs for %s" % path)
