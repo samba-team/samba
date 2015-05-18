@@ -14,6 +14,15 @@ def find_git(env=None):
     return None
 
 
+def has_submodules(path):
+    """Check whether a source directory is git-versioned and has submodules.
+
+    :param path: Path to Samba source directory
+    """
+    return (os.path.isdir(os.path.join(path, ".git")) and
+            os.path.isfile(os.path.join(path, ".gitmodules")))
+
+
 def read_submodule_status(path, env=None):
     """Check status of submodules.
 
@@ -24,7 +33,7 @@ def read_submodule_status(path, env=None):
     :raise RuntimeError: raised when parsing of 'git submodule status' output
         fails.
     """
-    if not os.path.isfile(os.path.join(path, ".gitmodules")):
+    if not has_submodules(path):
         # No point in running git.
         return
     git = find_git(env)
