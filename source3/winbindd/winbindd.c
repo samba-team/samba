@@ -792,6 +792,7 @@ static void request_finished(struct winbindd_cli_state *state)
 		return;
 	}
 	tevent_req_set_callback(req, winbind_client_response_written, state);
+	state->io_req = req;
 }
 
 static void winbind_client_response_written(struct tevent_req *req)
@@ -800,6 +801,8 @@ static void winbind_client_response_written(struct tevent_req *req)
 		req, struct winbindd_cli_state);
 	ssize_t ret;
 	int err;
+
+	state->io_req = NULL;
 
 	ret = wb_resp_write_recv(req, &err);
 	TALLOC_FREE(req);
@@ -827,6 +830,7 @@ static void winbind_client_response_written(struct tevent_req *req)
 		return;
 	}
 	tevent_req_set_callback(req, winbind_client_request_read, state);
+	state->io_req = req;
 }
 
 void request_error(struct winbindd_cli_state *state)
@@ -897,6 +901,7 @@ static void new_connection(int listen_sock, bool privileged)
 		return;
 	}
 	tevent_req_set_callback(req, winbind_client_request_read, state);
+	state->io_req = req;
 
 	/* Add to connection list */
 
@@ -909,6 +914,8 @@ static void winbind_client_request_read(struct tevent_req *req)
 		req, struct winbindd_cli_state);
 	ssize_t ret;
 	int err;
+
+	state->io_req = NULL;
 
 	ret = wb_req_read_recv(req, state, &state->request, &err);
 	TALLOC_FREE(req);
@@ -940,6 +947,25 @@ static void remove_client(struct winbindd_cli_state *state)
 	if (state == NULL) {
 		return;
 	}
+
+	/*
+	 * We need to remove a pending wb_req_read_*
+	 * or wb_resp_write_* request before closing the
+	 * socket.
+	 *
+	 * This is important as they might have used tevent_add_fd() and we
+	 * use the epoll * backend on linux. So we must remove the tevent_fd
+	 * before closing the fd.
+	 *
+	 * Otherwise we might hit a race with close_conns_after_fork() (via
+	 * winbindd_reinit_after_fork()) where a file description
+	 * is still open in a child, which means it's still active in
+	 * the parents epoll queue, but the related tevent_fd is already
+	 * already gone in the parent.
+	 *
+	 * See bug #11141.
+	 */
+	TALLOC_FREE(state->io_req);
 
 	if (state->sock != -1) {
 		/* tell client, we are closing ... */

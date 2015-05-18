@@ -66,6 +66,8 @@ struct winbindd_cli_state {
 	struct winbindd_request *request;         /* Request from client */
 	struct tevent_queue *out_queue;
 	struct winbindd_response *response;        /* Respose to client */
+	struct tevent_req *io_req; /* wb_req_read_* or wb_resp_write_* */
+
 	bool getpwent_initialized;                /* Has getpwent_state been
 						   * initialized? */
 	bool getgrent_initialized;                /* Has getgrent_state been
