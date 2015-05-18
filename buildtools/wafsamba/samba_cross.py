@@ -19,6 +19,16 @@ def add_answer(ca_file, msg, answer):
     except:
         Logs.error("Unable to open cross-answers file %s" % ca_file)
         sys.exit(1)
+    (retcode, retstring) = answer
+    # if retstring is more than one line then we probably
+    # don't care about its actual content (the tests should
+    # yield one-line output in order to comply with the cross-answer
+    # format)
+    retstring = retstring.strip()
+    if len(retstring.split('\n')) > 1:
+        retstring = ''
+    answer = (retcode, retstring)
+
     if answer == ANSWER_OK:
         f.write('%s: OK\n' % msg)
     elif answer == ANSWER_UNKNOWN:
@@ -26,8 +36,7 @@ def add_answer(ca_file, msg, answer):
     elif answer == ANSWER_FAIL:
         f.write('%s: FAIL\n' % msg)
     else:
-        (retcode, retstring) = answer
-        f.write('%s: (%d, "%s")' % (msg, retcode, retstring))
+        f.write('%s: (%d, "%s")\n' % (msg, retcode, retstring))
     f.close()
 
 
