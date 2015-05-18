@@ -8,7 +8,7 @@ VERSION=None
 
 import sys, os, tempfile
 sys.path.insert(0, srcdir+"/buildtools/wafsamba")
-import wafsamba, Options, samba_dist, Scripting, Utils, samba_version
+import wafsamba, Options, samba_dist, samba_git, Scripting, Utils, samba_version
 
 
 samba_dist.DIST_DIRS('.')
@@ -225,6 +225,7 @@ def ctags(ctx):
     if os.WEXITSTATUS(status):
         raise Utils.WafError('ctags failed')
 
+
 # putting this here enabled build in the list
 # of commands in --help
 def build(bld):
@@ -320,6 +321,7 @@ def wildcard_cmd(cmd):
 
 def main():
     from samba_wildcard import wildcard_main
+
     wildcard_main(wildcard_cmd)
 Scripting.main = main
 
@@ -327,3 +329,10 @@ def reconfigure(ctx):
     '''reconfigure if config scripts have changed'''
     import samba_utils
     samba_utils.reconfigure(ctx)
+
+
+if os.path.isdir(os.path.join(srcdir, ".git")):
+    # Check if there are submodules that are checked out but out of date.
+    for submodule, status in samba_git.read_submodule_status(srcdir):
+        if status == "out-of-date":
+            raise Utils.WafError("some submodules are out of date. Please run 'git submodule update'")

@@ -1,4 +1,5 @@
 import os
+import subprocess
 
 def find_git(env=None):
     """Find the git binary."""
@@ -12,3 +13,36 @@ def find_git(env=None):
 
     return None
 
+
+def read_submodule_status(path, env=None):
+    """Check status of submodules.
+
+    :param path: Path to git directory
+    :param env: Optional waf environment
+    :return: Yields tuples with submodule relpath and status
+        (one of: 'out-of-date', 'not-checked-out', 'up-to-date')
+    :raise RuntimeError: raised when parsing of 'git submodule status' output
+        fails.
+    """
+    if not os.path.isfile(os.path.join(path, ".gitmodules")):
+        # No point in running git.
+        return
+    git = find_git(env)
+    if git is None:
+        return
+    p = subprocess.Popen([git, "submodule", "status"], stdout=subprocess.PIPE,
+        cwd=path)
+    (stdout, stderr) = p.communicate(None)
+    for l in stdout.splitlines():
+        l = l.rstrip()
+        status = l[0]
+        l = l[1:]
+        parts = l.split(" ")
+        if len(parts) > 2 and status in ("-", "+"):
+            yield (parts[1], "out-of-date")
+        elif len(parts) == 2 and status == "-":
+            yield (parts[1], "not-checked-out")
+        elif len(parts) > 2 and status == " ":
+            yield (parts[1], "up-to-date")
+        else:
+            raise RuntimeError("Unable to parse submodule status: %r, %r" % (status, parts))
