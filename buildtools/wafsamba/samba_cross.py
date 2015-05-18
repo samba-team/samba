@@ -58,8 +58,10 @@ def cross_answer(ca_file, msg):
                 f.close()
                 return ANSWER_FAIL
             elif ans[0] == '"':
+                f.close()
                 return (0, ans.strip('"'))
             elif ans[0] == "'":
+                f.close()
                 return (0, ans.strip("'"))
             else:
                 m = re.match('\(\s*(-?\d+)\s*,\s*\"(.*)\"\s*\)', ans)
