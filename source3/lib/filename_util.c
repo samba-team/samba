@@ -192,7 +192,7 @@ struct smb_filename *cp_smb_filename(TALLOC_CTX *mem_ctx,
 	ZERO_STRUCTP(out);
 
 	/*
-	 * The following allocations cannot fails as we
+	 * The following allocations cannot fail as we
 	 * pre-allocated space for them in the out pooled
 	 * object.
 	 */
