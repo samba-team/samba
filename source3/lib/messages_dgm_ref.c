@@ -26,6 +26,7 @@
 
 struct msg_dgm_ref {
 	struct msg_dgm_ref *prev, *next;
+	void *tevent_handle;
 	void (*recv_cb)(const uint8_t *msg, size_t msg_len,
 			int *fds, size_t num_fds, void *private_data);
 	void *recv_cb_private_data;
@@ -55,6 +56,7 @@ void *messaging_dgm_ref(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 		*err = ENOMEM;
 		return NULL;
 	}
+	result->tevent_handle = NULL;
 
 	tmp_refs = refs;
 
@@ -79,6 +81,14 @@ void *messaging_dgm_ref(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 			return NULL;
 		}
 		dgm_pid = getpid();
+	} else {
+		result->tevent_handle = messaging_dgm_register_tevent_context(
+			result, ev);
+		if (result->tevent_handle == NULL) {
+			TALLOC_FREE(result);
+			*err = ENOMEM;
+			return NULL;
+		}
 	}
 
 	refs = tmp_refs;
@@ -113,6 +123,8 @@ static int msg_dgm_ref_destructor(struct msg_dgm_ref *r)
 		abort();
 	}
 	DLIST_REMOVE(refs, r);
+
+	TALLOC_FREE(r->tevent_handle);
 
 	if (refs == NULL) {
 		messaging_dgm_destroy();
