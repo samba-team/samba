@@ -1,16 +1,15 @@
 import os
 import Utils
 import samba_utils
-import sys
+from samba_git import find_git
 
 def git_version_summary(path, env=None):
-    # Get version from GIT
-    if not 'GIT' in env and os.path.exists("/usr/bin/git"):
-        # this is useful when doing make dist without configuring
-        env.GIT = "/usr/bin/git"
+    git = find_git(env)
 
-    if not 'GIT' in env:
+    if git is None:
         return ("GIT-UNKNOWN", {})
+
+    env.GIT = git
 
     environ = dict(os.environ)
     environ["GIT_DIR"] = '%s/.git' % path
