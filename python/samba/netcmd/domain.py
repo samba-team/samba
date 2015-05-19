@@ -205,7 +205,7 @@ class cmd_domain_provision(Command):
                 default="domain controller"),
          Option("--function-level", type="choice", metavar="FOR-FUN-LEVEL",
                 choices=["2000", "2003", "2008", "2008_R2"],
-                help="The domain and forest function level (2000 | 2003 | 2008 | 2008_R2 - always native). Default is (Windows) 2008R2 Native.",
+                help="The domain and forest function level (2000 | 2003 | 2008 | 2008_R2 - always native). Default is (Windows) 2008_R2 Native.",
                 default="2008_R2"),
          Option("--next-rid", type="int", metavar="NEXTRID", default=1000,
                 help="The initial nextRid value (only needed for upgrades).  Default is 1000."),
