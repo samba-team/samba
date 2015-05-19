@@ -90,7 +90,13 @@ NTSTATUS ctdbd_control_local(struct ctdbd_connection *conn, uint32_t opcode,
 			     int *cstatus);
 NTSTATUS ctdb_watch_us(struct ctdbd_connection *conn);
 NTSTATUS ctdb_unwatch(struct ctdbd_connection *conn);
-NTSTATUS register_with_ctdbd(struct ctdbd_connection *conn, uint64_t srvid);
+
+struct ctdb_req_message;
+
+NTSTATUS register_with_ctdbd(struct ctdbd_connection *conn, uint64_t srvid,
+			     void (*cb)(struct ctdb_req_message *msg,
+					void *private_data),
+			     void *private_data);
 NTSTATUS ctdbd_probe(void);
 
 #endif /* _CTDBD_CONN_H */

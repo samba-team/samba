@@ -44,7 +44,10 @@ NTSTATUS ctdbd_messaging_send_blob(struct ctdbd_connection *conn,
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-NTSTATUS register_with_ctdbd(struct ctdbd_connection *conn, uint64_t srvid)
+NTSTATUS register_with_ctdbd(struct ctdbd_connection *conn, uint64_t srvid,
+			     void (*cb)(struct ctdb_req_message *msg,
+					void *private_data),
+			     void *private_data)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }

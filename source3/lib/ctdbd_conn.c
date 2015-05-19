@@ -96,7 +96,10 @@ static void ctdb_packet_dump(struct ctdb_req_header *hdr)
 /*
  * Register a srvid with ctdbd
  */
-NTSTATUS register_with_ctdbd(struct ctdbd_connection *conn, uint64_t srvid)
+NTSTATUS register_with_ctdbd(struct ctdbd_connection *conn, uint64_t srvid,
+			     void (*cb)(struct ctdb_req_message *msg,
+					void *private_data),
+			     void *private_data)
 {
 
 	NTSTATUS status;
@@ -121,7 +124,7 @@ NTSTATUS register_with_ctdbd(struct ctdbd_connection *conn, uint64_t srvid)
 	conn->callbacks = tmp;
 
 	conn->callbacks[num_callbacks] = (struct ctdbd_srvid_cb) {
-		.srvid = srvid
+		.srvid = srvid, .cb = cb, .private_data = private_data
 	};
 
 	return NT_STATUS_OK;
@@ -573,7 +576,7 @@ static NTSTATUS ctdbd_init_connection(TALLOC_CTX *mem_ctx,
 	generate_random_buffer((unsigned char *)&conn->rand_srvid,
 			       sizeof(conn->rand_srvid));
 
-	status = register_with_ctdbd(conn, conn->rand_srvid);
+	status = register_with_ctdbd(conn, conn->rand_srvid, NULL, NULL);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(5, ("Could not register random srvid: %s\n",
@@ -605,17 +608,18 @@ NTSTATUS ctdbd_messaging_connection(TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
-	status = register_with_ctdbd(conn, (uint64_t)getpid());
+	status = register_with_ctdbd(conn, (uint64_t)getpid(), NULL, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
 	}
 
-	status = register_with_ctdbd(conn, MSG_SRVID_SAMBA);
+	status = register_with_ctdbd(conn, MSG_SRVID_SAMBA, NULL, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
 	}
 
-	status = register_with_ctdbd(conn, CTDB_SRVID_SAMBA_NOTIFY);
+	status = register_with_ctdbd(conn, CTDB_SRVID_SAMBA_NOTIFY,
+				     NULL, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
 	}
@@ -1685,7 +1689,7 @@ NTSTATUS ctdbd_register_ips(struct ctdbd_connection *conn,
 	 * We want to be told about IP releases
 	 */
 
-	status = register_with_ctdbd(conn, CTDB_SRVID_RELEASE_IP);
+	status = register_with_ctdbd(conn, CTDB_SRVID_RELEASE_IP, NULL, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -1705,7 +1709,7 @@ NTSTATUS ctdbd_register_ips(struct ctdbd_connection *conn,
  */
 NTSTATUS ctdbd_register_reconfigure(struct ctdbd_connection *conn)
 {
-	return register_with_ctdbd(conn, CTDB_SRVID_RECONFIGURE);
+	return register_with_ctdbd(conn, CTDB_SRVID_RECONFIGURE, NULL, NULL);
 }
 
 /*
