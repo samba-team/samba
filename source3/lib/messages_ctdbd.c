@@ -128,6 +128,88 @@ static int messaging_ctdbd_destructor(struct messaging_ctdbd_context *ctx)
 	return 0;
 }
 
+static struct messaging_rec *ctdb_pull_messaging_rec(
+	TALLOC_CTX *mem_ctx, const struct ctdb_req_message *msg)
+{
+	struct messaging_rec *result;
+	DATA_BLOB blob;
+	enum ndr_err_code ndr_err;
+	size_t len = msg->hdr.length;
+
+	if (len < offsetof(struct ctdb_req_message, data)) {
+		return NULL;
+	}
+	len -= offsetof(struct ctdb_req_message, data);
+
+	if (len < msg->datalen) {
+		return NULL;
+	}
+
+	result = talloc(mem_ctx, struct messaging_rec);
+	if (result == NULL) {
+		return NULL;
+	}
+
+	blob = data_blob_const(msg->data, msg->datalen);
+
+	ndr_err = ndr_pull_struct_blob_all(
+		&blob, result, result,
+		(ndr_pull_flags_fn_t)ndr_pull_messaging_rec);
+
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DEBUG(0, ("ndr_pull_struct_blob failed: %s\n",
+			  ndr_errstr(ndr_err)));
+		TALLOC_FREE(result);
+		return NULL;
+	}
+
+	if (DEBUGLEVEL >= 11) {
+		DEBUG(11, ("ctdb_pull_messaging_rec:\n"));
+		NDR_PRINT_DEBUG(messaging_rec, result);
+	}
+
+	return result;
+}
+
+static void messaging_ctdb_recv(struct ctdb_req_message *msg,
+				void *private_data)
+{
+	struct messaging_context *msg_ctx = talloc_get_type_abort(
+		private_data, struct messaging_context);
+	struct server_id me = messaging_server_id(msg_ctx);
+	struct messaging_rec *rec;
+	NTSTATUS status;
+	struct iovec iov;
+
+	rec = ctdb_pull_messaging_rec(msg_ctx, msg);
+	if (rec == NULL) {
+		DEBUG(10, ("%s: ctdb_pull_messaging_rec failed\n", __func__));
+		return;
+	}
+
+	if (!server_id_same_process(&me, &rec->dest)) {
+		struct server_id_buf id1, id2;
+
+		DEBUG(10, ("%s: I'm %s, ignoring msg to %s\n", __func__,
+			   server_id_str_buf(me, &id1),
+			   server_id_str_buf(rec->dest, &id2)));
+		TALLOC_FREE(rec);
+		return;
+	}
+
+	iov = (struct iovec) { .iov_base = rec->buf.data,
+			       .iov_len = rec->buf.length };
+
+	status = messaging_send_iov_from(msg_ctx, rec->src, rec->dest,
+					 rec->msg_type, &iov, 1, NULL, 0);
+	TALLOC_FREE(rec);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("%s: messaging_send_iov_from failed: %s\n",
+			   __func__, nt_errstr(status)));
+	}
+}
+
 NTSTATUS messaging_ctdbd_init(struct messaging_context *msg_ctx,
 			      TALLOC_CTX *mem_ctx,
 			      struct messaging_backend **presult)
@@ -164,6 +246,9 @@ NTSTATUS messaging_ctdbd_init(struct messaging_context *msg_ctx,
 		TALLOC_FREE(result);
 		return status;
 	}
+
+	status = register_with_ctdbd(ctx->conn, getpid(),
+				     messaging_ctdb_recv, msg_ctx);
 
 	global_ctdb_connection_pid = getpid();
 	global_ctdbd_connection = ctx->conn;
