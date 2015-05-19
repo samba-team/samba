@@ -144,6 +144,22 @@ static bool ctdb_is_our_srvid(struct ctdbd_connection *conn, uint64_t srvid)
 	return false;
 }
 
+static void ctdbd_msg_call_back(struct ctdbd_connection *conn,
+				struct ctdb_req_message *msg)
+{
+	size_t i, num_callbacks;
+
+	num_callbacks = talloc_array_length(conn->callbacks);
+
+	for (i=0; i<num_callbacks; i++) {
+		struct ctdbd_srvid_cb *cb = &conn->callbacks[i];
+
+		if ((cb->srvid == msg->srvid) && (cb->cb != NULL)) {
+			cb->cb(msg, cb->private_data);
+		}
+	}
+}
+
 /*
  * get our vnn from the cluster
  */
@@ -480,6 +496,8 @@ static NTSTATUS ctdb_read_req(struct ctdbd_connection *conn, uint32_t reqid,
 			goto next_pkt;
 		}
 
+		ctdbd_msg_call_back(conn, msg);
+
 		msg_state = talloc(NULL, struct deferred_msg_state);
 		if (msg_state == NULL) {
 			DEBUG(0, ("talloc failed\n"));
@@ -696,6 +714,8 @@ static NTSTATUS ctdb_handle_message(struct messaging_context *msg_ctx,
 
 		return NT_STATUS_OK;
 	}
+
+	ctdbd_msg_call_back(conn, msg);
 
 	if (!ctdb_is_our_srvid(conn, msg->srvid)) {
 		DEBUG(0,("Got unexpected message with srvid=%llu\n",
