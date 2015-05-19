@@ -1,4 +1,4 @@
-Copyright (C) 1997-2014 Samba-Team
+Copyright (C) 1997-2015 Samba-Team
 
 The Samba-Team are committed to an aggressive program to deliver quality
 controlled software to a well defined roadmap.
@@ -9,14 +9,14 @@ information.
 The following development objectives for future releases
 are in progress:
 ----------------------------------------------------------------------------
-Samba-3.6.x		This release turned into security maintenance mode since we
-			released 4.1.
+Samba-4.0.x		This release turned into security maintenance mode
+			since we released 4.2.
 
-Samba-4.0.x		Our previous release including the AD domain controller
-                        feature, the file server and other functionality
-                        from Samba 3.6 as well as the new SMB3 protocol.
+Samba-4.1.x		Our previous release including the AD domain
+			controller feature, the file server and other
+			functionality from Samba 4.0.
 
-Samba-4.1.x		Our current release.
+Samba-4.2.x		Our current release.
 
 
 Note that it is a given that the Samba-Team will continue to track
