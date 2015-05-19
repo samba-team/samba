@@ -32,12 +32,18 @@
 #include "ctdb.h"
 #include "ctdb_private.h"
 
+struct ctdbd_srvid_cb {
+	uint64_t srvid;
+	void (*cb)(struct ctdb_req_message *msg, void *private_data);
+	void *private_data;
+};
+
 struct ctdbd_connection {
 	struct messaging_context *msg_ctx;
 	uint32_t reqid;
 	uint32_t our_vnn;
 	uint64_t rand_srvid;
-	uint64_t *srvids;
+	struct ctdbd_srvid_cb *callbacks;
 	int fd;
 	struct tevent_fd *fde;
 
@@ -95,8 +101,8 @@ NTSTATUS register_with_ctdbd(struct ctdbd_connection *conn, uint64_t srvid)
 
 	NTSTATUS status;
 	int cstatus;
-	size_t num_srvids;
-	uint64_t *tmp;
+	size_t num_callbacks;
+	struct ctdbd_srvid_cb *tmp;
 
 	status = ctdbd_control(conn, CTDB_CURRENT_NODE,
 			       CTDB_CONTROL_REGISTER_SRVID, srvid, 0,
@@ -105,27 +111,30 @@ NTSTATUS register_with_ctdbd(struct ctdbd_connection *conn, uint64_t srvid)
 		return status;
 	}
 
-	num_srvids = talloc_array_length(conn->srvids);
+	num_callbacks = talloc_array_length(conn->callbacks);
 
-	tmp = talloc_realloc(conn, conn->srvids, uint64_t,
-			     num_srvids + 1);
+	tmp = talloc_realloc(conn, conn->callbacks, struct ctdbd_srvid_cb,
+			     num_callbacks + 1);
 	if (tmp == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	conn->srvids = tmp;
+	conn->callbacks = tmp;
 
-	conn->srvids[num_srvids] = srvid;
+	conn->callbacks[num_callbacks] = (struct ctdbd_srvid_cb) {
+		.srvid = srvid
+	};
+
 	return NT_STATUS_OK;
 }
 
 static bool ctdb_is_our_srvid(struct ctdbd_connection *conn, uint64_t srvid)
 {
-	size_t i, num_srvids;
+	size_t i, num_callbacks;
 
-	num_srvids = talloc_array_length(conn->srvids);
+	num_callbacks = talloc_array_length(conn->callbacks);
 
-	for (i=0; i<num_srvids; i++) {
-		if (srvid == conn->srvids[i]) {
+	for (i=0; i<num_callbacks; i++) {
+		if (srvid == conn->callbacks[i].srvid) {
 			return true;
 		}
 	}
