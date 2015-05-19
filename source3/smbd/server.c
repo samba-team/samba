@@ -48,6 +48,7 @@
 #include "lib/smbd_shim.h"
 #include "scavenger.h"
 #include "locking/leases_db.h"
+#include "../../ctdb/include/ctdb_protocol.h"
 
 struct smbd_open_socket;
 struct smbd_child_pid;
@@ -258,6 +259,23 @@ static void smbd_parent_id_cache_delete(struct messaging_context *ctx,
 	id_cache_delete_message(ctx, data, msg_type, srv_id, msg_data);
 
 	messaging_send_to_children(ctx, msg_type, msg_data);
+}
+
+static void smbd_parent_ctdb_reconfigured(struct ctdb_req_message *msg,
+					  void *private_data)
+{
+	struct messaging_context *msg_ctx = talloc_get_type_abort(
+		private_data, struct messaging_context);
+
+	DEBUG(10, ("Got %s message\n", (msg->srvid == CTDB_SRVID_RECONFIGURE)
+		   ? "cluster reconfigure" : "SAMBA_NOTIFY"));
+
+	/*
+	 * Someone from the family died, validate our locks
+	 */
+
+	messaging_send_buf(msg_ctx, messaging_server_id(msg_ctx),
+			   MSG_SMB_BRL_VALIDATE, NULL, 0);
 }
 
 struct smbd_parent_notify_state {
@@ -898,7 +916,12 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 			   ID_CACHE_KILL, smbd_parent_id_cache_kill);
 
 	if (lp_clustering()) {
-		ctdbd_register_reconfigure(messaging_ctdbd_connection());
+		struct ctdbd_connection *conn = messaging_ctdbd_connection();
+
+		register_with_ctdbd(conn, CTDB_SRVID_RECONFIGURE,
+				    smbd_parent_ctdb_reconfigured, msg_ctx);
+		register_with_ctdbd(conn, CTDB_SRVID_SAMBA_NOTIFY,
+				    smbd_parent_ctdb_reconfigured, msg_ctx);
 	}
 
 #ifdef DEVELOPER

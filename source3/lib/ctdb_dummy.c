@@ -52,11 +52,6 @@ NTSTATUS register_with_ctdbd(struct ctdbd_connection *conn, uint64_t srvid,
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-NTSTATUS ctdbd_register_reconfigure(struct ctdbd_connection *conn)
-{
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
 NTSTATUS ctdbd_register_ips(struct ctdbd_connection *conn,
 			    const struct sockaddr_storage *_server,
 			    const struct sockaddr_storage *_client,

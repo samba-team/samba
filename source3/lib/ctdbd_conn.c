@@ -394,20 +394,6 @@ static NTSTATUS ctdb_read_req(struct ctdbd_connection *conn, uint32_t reqid,
 			goto next_pkt;
 		}
 
-		if ((msg->srvid == CTDB_SRVID_RECONFIGURE)
-		    || (msg->srvid == CTDB_SRVID_SAMBA_NOTIFY)) {
-
-			DEBUG(1, ("ctdb_read_req: Got %s message\n",
-				  (msg->srvid == CTDB_SRVID_RECONFIGURE)
-				  ? "cluster reconfigure" : "SAMBA_NOTIFY"));
-
-			messaging_send(conn->msg_ctx,
-				       messaging_server_id(conn->msg_ctx),
-				       MSG_SMB_BRL_VALIDATE, &data_blob_null);
-			TALLOC_FREE(hdr);
-			goto next_pkt;
-		}
-
 		ctdbd_msg_call_back(conn, msg);
 		TALLOC_FREE(hdr);
 		goto next_pkt;
@@ -508,12 +494,6 @@ NTSTATUS ctdbd_messaging_connection(TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 
-	status = register_with_ctdbd(conn, CTDB_SRVID_SAMBA_NOTIFY,
-				     NULL, NULL);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto fail;
-	}
-
 	*pconn = conn;
 	return NT_STATUS_OK;
 
@@ -570,21 +550,6 @@ static NTSTATUS ctdb_handle_message(struct messaging_context *msg_ctx,
 	}
 
 	SMB_ASSERT(conn->msg_ctx != NULL);
-
-	if ((msg->srvid == CTDB_SRVID_RECONFIGURE)
-	    || (msg->srvid == CTDB_SRVID_SAMBA_NOTIFY)){
-		DEBUG(0,("Got cluster reconfigure message\n"));
-		/*
-		 * when the cluster is reconfigured or someone of the
-		 * family has passed away (SAMBA_NOTIFY), we need to
-		 * clean the brl database
-		 */
-		messaging_send(conn->msg_ctx,
-			       messaging_server_id(conn->msg_ctx),
-			       MSG_SMB_BRL_VALIDATE, &data_blob_null);
-
-		return NT_STATUS_OK;
-	}
 
 	ctdbd_msg_call_back(conn, msg);
 
@@ -1581,14 +1546,6 @@ NTSTATUS ctdbd_register_ips(struct ctdbd_connection *conn,
 	return ctdbd_control(conn, CTDB_CURRENT_NODE,
 			     CTDB_CONTROL_TCP_CLIENT, 0,
 			     CTDB_CTRL_FLAG_NOREPLY, data, NULL, NULL, NULL);
-}
-
-/*
- * We want to handle reconfigure events
- */
-NTSTATUS ctdbd_register_reconfigure(struct ctdbd_connection *conn)
-{
-	return register_with_ctdbd(conn, CTDB_SRVID_RECONFIGURE, NULL, NULL);
 }
 
 /*
