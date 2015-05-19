@@ -2,6 +2,7 @@
 
 import Utils, Logs, sys, os, Options, re
 from Configure import conf
+import shlex
 
 real_Popen = None
 
@@ -113,7 +114,7 @@ class cross_Popen(Utils.pproc.Popen):
             # when --cross-execute is set, then change the arguments
             # to use the cross emulator
             i = args.index('--cross-execute')
-            newargs = args[i+1].split()
+            newargs = shlex.split(args[i+1])
             newargs.extend(args[0:i])
             if use_answers:
                 p = real_Popen(newargs,
