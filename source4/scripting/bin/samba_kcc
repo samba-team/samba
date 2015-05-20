@@ -255,7 +255,7 @@ class KCC(object):
         if self.my_dsa_dnstr not in self.dsa_by_dnstr:
             DEBUG_DARK_YELLOW("my_dsa %s isn't in self.dsas_by_dnstr:"
                               " it must be RODC.\n"
-                              "Let's add it, because my_dsa is a special case!\n"
+                              "Let's add it, because my_dsa is special!\n"
                               "(likewise for self.dsa_by_guid of course)" %
                               self.my_dsas_dnstr)
 
@@ -368,7 +368,8 @@ class KCC(object):
         if failed_link:
             # failure_count should be > 0, but check anyways
             if failed_link.failure_count > 0:
-                unix_first_failure = nttime2unix(failed_link.time_first_failure)
+                unix_first_failure = \
+                    nttime2unix(failed_link.time_first_failure)
                 # TODO guard against future
                 if unix_first_failure > unix_now:
                     logger.error("The last success time attribute for \
@@ -451,7 +452,7 @@ class KCC(object):
                 # Loop thru connections looking for a duplicate that
                 # fulfills the previous criteria
                 lesser = False
-
+                packed_guid = ndr_pack(cn_conn.guid)
                 for cn2_conn in mydsa.connect_table.values():
                     if cn2_conn is cn_conn:
                         continue
@@ -466,7 +467,7 @@ class KCC(object):
                     #XXX GUID comparison
                     lesser = (cn_conn.whenCreated < cn2_conn.whenCreated or
                               (cn_conn.whenCreated == cn2_conn.whenCreated and
-                               ndr_pack(cn_conn.guid) < ndr_pack(cn2_conn.guid)))
+                               packed_guid < ndr_pack(cn2_conn.guid)))
 
                     if lesser:
                         break
@@ -512,7 +513,8 @@ class KCC(object):
                 # MS-ADTS 6.2.2.4 - Removing Unnecessary Connections does not
                 # appear to be correct.
                 #
-                # 1. cn!fromServer and cn!parent appear inconsistent with no cn2
+                # 1. cn!fromServer and cn!parent appear inconsistent with
+                #    no cn2
                 # 2. The repsFrom do not imply each other
                 #
                 if cn_conn in self.kept_connections:  # and not_superceded:
@@ -606,7 +608,8 @@ class KCC(object):
 
                 if ((t_repsFrom.replica_flags &
                      drsuapi.DRSUAPI_DRS_NEVER_NOTIFY) == 0x0):
-                    t_repsFrom.replica_flags |= drsuapi.DRSUAPI_DRS_NEVER_NOTIFY
+                    t_repsFrom.replica_flags |= \
+                        drsuapi.DRSUAPI_DRS_NEVER_NOTIFY
 
         elif not same_site:
 
@@ -1085,14 +1088,15 @@ class KCC(object):
         for transport_guid, transport in self.transport_table.items():
             # Currently only ever "IP"
             for site_link_dn, site_link in self.sitelink_table.items():
-                new_edge = create_edge(transport_guid, site_link, guid_to_vertex)
+                new_edge = create_edge(transport_guid, site_link,
+                                       guid_to_vertex)
                 connected_vertices.update(new_edge.vertices)
                 g.edges.add(new_edge)
 
             # If 'Bridge all site links' is enabled and Win2k3 bridges required
             # is not set
             # NTDSTRANSPORT_OPT_BRIDGES_REQUIRED 0x00000002
-            # No documentation for this however, ntdsapi.h appears to have listed:
+            # No documentation for this however, ntdsapi.h appears to have:
             # NTDSSETTINGS_OPT_W2K3_BRIDGES_REQUIRED = 0x00001000
             if (((self.my_site.site_options & 0x00000002) == 0
                  and (self.my_site.site_options & 0x00001000) == 0)):
@@ -1536,7 +1540,8 @@ class KCC(object):
             # object cn that is a child of lbh, cn!enabledConnection = TRUE,
             # cn!options = opt, cn!transportType is a reference to t,
             # cn!fromServer is a reference to rbh, and cn!schedule = sch
-            cn = lbh.new_connection(opt, 0, transport, rbh.dsa_dnstr, link_sched)
+            cn = lbh.new_connection(opt, 0, transport,
+                                    rbh.dsa_dnstr, link_sched)
 
             # Display any added connection
             if opts.readonly:
@@ -1642,11 +1647,12 @@ class KCC(object):
         if my_vertex.is_white():
             return all_connected, found_failed
 
-        edge_list, component_count = self.get_spanning_tree_edges(graph,
-                                                                  label=part.partstr)
+        edge_list, n_components = \
+            self.get_spanning_tree_edges(graph, label=part.partstr)
 
-        logger.debug("%s Number of components: %d" % (part.nc_dnstr, component_count))
-        if component_count > 1:
+        logger.debug("%s Number of components: %d" %
+                     (part.nc_dnstr, n_components))
+        if n_components > 1:
             all_connected = False
 
         # LET partialReplicaOkay be TRUE if and only if
@@ -1769,7 +1775,8 @@ class KCC(object):
             # around "failed" DCs.
             found_failed = False
 
-            connected, found_failed = self.create_connections(graph, part, True)
+            connected, found_failed = self.create_connections(graph,
+                                                              part, True)
 
             DEBUG("with detect_failed: connected %s Found failed %s" %
                   (connected, found_failed))
@@ -1803,8 +1810,9 @@ class KCC(object):
             if opts.verify or opts.dot_files:
                 graph_edges = [(a.site.site_dnstr, b.site.site_dnstr)
                                for a, b in
-                               itertools.chain(*(itertools.combinations(edge.vertices, 2)
-                                                 for edge in e_set.edges))]
+                               itertools.chain(
+                                   *(itertools.combinations(edge.vertices, 2)
+                                     for edge in e_set.edges))]
                 graph_nodes = [v.site.site_dnstr for v in graph.vertices]
 
                 if opts.dot_files and opts.debug:
@@ -1814,7 +1822,8 @@ class KCC(object):
                 if opts.verify:
                     verify_graph('spanning tree edge set %s' % edgeType,
                                  graph_edges, vertices=graph_nodes,
-                                 properties=('complete', 'connected'), debug=DEBUG)
+                                 properties=('complete', 'connected'),
+                                 debug=DEBUG)
 
             # Run dijkstra's algorithm with just the red vertices as seeds
             # Seed from the full replicas
@@ -1847,8 +1856,9 @@ class KCC(object):
         # Phase 2: Run Kruskal's on the internal edges
         output_edges, components = kruskal(graph, internal_edges)
 
-        # This recalculates the cost for the path connecting the closest red vertex
-        # Ignoring types is fine because NO suboptimal edge should exist in the graph
+        # This recalculates the cost for the path connecting the
+        # closest red vertex. Ignoring types is fine because NO
+        # suboptimal edge should exist in the graph
         dijkstra(graph, "EDGE_TYPE_ALL", False)  # TODO rename
         # Phase 3: Process the output
         for v in graph.vertices:
@@ -1862,9 +1872,9 @@ class KCC(object):
                            for e in internal_edges]
             graph_nodes = [v.site.site_dnstr for v in graph.vertices]
             verify_properties = ('multi_edge_forest',)
-            verify_and_dot('postkruskal', graph_edges, graph_nodes, label=label,
-                           properties=verify_properties, debug=DEBUG,
-                           verify=opts.verify,
+            verify_and_dot('postkruskal', graph_edges, graph_nodes,
+                           label=label, properties=verify_properties,
+                           debug=DEBUG, verify=opts.verify,
                            dot_files=opts.dot_files)
 
         # count the components
@@ -1881,7 +1891,8 @@ class KCC(object):
             v = edge.vertices[0]
             w = edge.vertices[1]
             if v.site is vid or w.site is vid:
-                if (v.is_black() or w.is_black()) and not v.dist_to_red == MAX_DWORD:
+                if (((v.is_black() or w.is_black()) and
+                     v.dist_to_red != MAX_DWORD)):
                     edge.directed = True
 
                     if w.dist_to_red < v.dist_to_red:
@@ -1962,7 +1973,8 @@ class KCC(object):
 
         all_connections = self.my_dsa.connect_table.values()
         ro_connections = [x for x in all_connections if x.is_rodc_topology()]
-        rw_connections = [x for x in all_connections if x not in ro_connections]
+        rw_connections = [x for x in all_connections
+                          if x not in ro_connections]
 
         # XXX here we are dealing with multiple RODC_TOPO connections,
         # if they exist. It is not clear whether the spec means that
@@ -2272,7 +2284,8 @@ class KCC(object):
             graph_list[r_len-1].add_edge_from(r_list[0].rep_dsa_dnstr)
 
         DEBUG("r_list is length %s" % len(r_list))
-        DEBUG('\n'.join(str((x.rep_dsa_guid, x.rep_dsa_dnstr)) for x in r_list))
+        DEBUG('\n'.join(str((x.rep_dsa_guid, x.rep_dsa_dnstr))
+                        for x in r_list))
 
         do_dot_files = opts.dot_files and opts.debug
         if opts.verify or do_dot_files:
@@ -2539,33 +2552,35 @@ class KCC(object):
                 guid_to_dnstr = {}
                 for site in self.site_table.values():
                     guid_to_dnstr.update((str(dsa.dsa_guid), dnstr)
-                                         for dnstr, dsa in site.dsa_table.items())
+                                         for dnstr, dsa
+                                         in site.dsa_table.items())
 
                 self.plot_all_connections('dsa_initial')
 
                 dot_edges = []
-                current_rep_table, needed_rep_table = self.my_dsa.get_rep_tables()
-                for dnstr, c_rep in current_rep_table.items():
+                current_reps, needed_reps = self.my_dsa.get_rep_tables()
+                for dnstr, c_rep in current_reps.items():
                     DEBUG("c_rep %s" % c_rep)
                     dot_edges.append((self.my_dsa.dsa_dnstr, dnstr))
 
-                verify_and_dot('dsa_repsFrom_initial', dot_edges, directed=True,
-                               label=self.my_dsa_dnstr,
+                verify_and_dot('dsa_repsFrom_initial', dot_edges,
+                               directed=True, label=self.my_dsa_dnstr,
                                properties=(), debug=DEBUG, verify=opts.verify,
                                dot_files=opts.dot_files)
 
                 dot_edges = []
                 for site in self.site_table.values():
                     for dsa in site.dsa_table.values():
-                        current_rep_table, needed_rep_table = dsa.get_rep_tables()
-                        for dn_str, rep in current_rep_table.items():
+                        current_reps, needed_reps = dsa.get_rep_tables()
+                        for dn_str, rep in current_reps.items():
                             for reps_from in rep.rep_repsFrom:
                                 DEBUG("rep %s" % rep)
-                                dsa_dn = guid_to_dnstr[str(reps_from.source_dsa_obj_guid)]
+                                dsa_guid = str(reps_from.source_dsa_obj_guid)
+                                dsa_dn = guid_to_dnstr[dsa_guid]
                                 dot_edges.append((dsa.dsa_dnstr, dsa_dn))
 
-                verify_and_dot('dsa_repsFrom_initial_all', dot_edges, directed=True,
-                               label=self.my_dsa_dnstr,
+                verify_and_dot('dsa_repsFrom_initial_all', dot_edges,
+                               directed=True, label=self.my_dsa_dnstr,
                                properties=(), debug=DEBUG, verify=opts.verify,
                                dot_files=opts.dot_files)
 
@@ -2573,9 +2588,10 @@ class KCC(object):
                 for link in self.sitelink_table.values():
                     for a, b in itertools.combinations(link.site_list, 2):
                         dot_edges.append((str(a), str(b)))
-                verify_properties = ('connected',)
-                verify_and_dot('dsa_sitelink_initial', dot_edges, directed=False,
-                               label=self.my_dsa_dnstr, properties=verify_properties,
+                properties = ('connected',)
+                verify_and_dot('dsa_sitelink_initial', dot_edges,
+                               directed=False,
+                               label=self.my_dsa_dnstr, properties=properties,
                                debug=DEBUG, verify=opts.verify,
                                dot_files=opts.dot_files)
 
@@ -2617,15 +2633,16 @@ class KCC(object):
             self.update_rodc_connection()
 
             if opts.verify or opts.dot_files:
-                self.plot_all_connections('dsa_final', ('connected', 'forest_of_rings'))
+                self.plot_all_connections('dsa_final',
+                                          ('connected', 'forest_of_rings'))
 
                 DEBUG_MAGENTA("there are %d dsa guids" % len(guid_to_dnstr))
 
                 dot_edges = []
                 edge_colors = []
                 my_dnstr = self.my_dsa.dsa_dnstr
-                current_rep_table, needed_rep_table = self.my_dsa.get_rep_tables()
-                for dnstr, n_rep in needed_rep_table.items():
+                current_reps, needed_reps = self.my_dsa.get_rep_tables()
+                for dnstr, n_rep in needed_reps.items():
                     for reps_from in n_rep.rep_repsFrom:
                         guid_str = str(reps_from.source_dsa_obj_guid)
                         dot_edges.append((my_dnstr, guid_to_dnstr[guid_str]))
@@ -2634,20 +2651,22 @@ class KCC(object):
                 verify_and_dot('dsa_repsFrom_final', dot_edges, directed=True,
                                label=self.my_dsa_dnstr,
                                properties=(), debug=DEBUG, verify=opts.verify,
-                               dot_files=opts.dot_files, edge_colors=edge_colors)
+                               dot_files=opts.dot_files,
+                               edge_colors=edge_colors)
 
                 dot_edges = []
 
                 for site in self.site_table.values():
                     for dsa in site.dsa_table.values():
-                        current_rep_table, needed_rep_table = dsa.get_rep_tables()
-                        for n_rep in needed_rep_table.values():
+                        current_reps, needed_reps = dsa.get_rep_tables()
+                        for n_rep in needed_reps.values():
                             for reps_from in n_rep.rep_repsFrom:
-                                dsa_dn = guid_to_dnstr[str(reps_from.source_dsa_obj_guid)]
+                                dsa_guid = str(reps_from.source_dsa_obj_guid)
+                                dsa_dn = guid_to_dnstr[dsa_guid]
                                 dot_edges.append((dsa.dsa_dnstr, dsa_dn))
 
-                verify_and_dot('dsa_repsFrom_final_all', dot_edges, directed=True,
-                               label=self.my_dsa_dnstr,
+                verify_and_dot('dsa_repsFrom_final_all', dot_edges,
+                               directed=True, label=self.my_dsa_dnstr,
                                properties=(), debug=DEBUG, verify=opts.verify,
                                dot_files=opts.dot_files)
 
@@ -3020,8 +3039,9 @@ def test_all_reps_from(lp, creds):
                 forget_intersite_links=opts.forget_intersite_links)
         current, needed = kcc.my_dsa.get_rep_tables()
 
-        for name, rep_table, rep_parts in (('needed', needed, needed_parts),
-                                           ('current', current, current_parts)):
+        for name, rep_table, rep_parts in (
+                ('needed', needed, needed_parts),
+                ('current', current, current_parts)):
             for part, nc_rep in rep_table.items():
                 edges = rep_parts.setdefault(part, [])
                 for reps_from in nc_rep.rep_repsFrom:

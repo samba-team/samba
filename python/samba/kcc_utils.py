@@ -413,14 +413,14 @@ class NCReplica(NamingContext):
         # Possibly no replUpToDateVector if this is a singleton DC
         if "replUpToDateVector" in msg:
             value = msg["replUpToDateVector"][0]
-            replUpToDateVectorBlob = ndr_unpack(drsblobs.replUpToDateVectorBlob,
-                                                value)
-            if replUpToDateVectorBlob.version != 2:
+            blob = ndr_unpack(drsblobs.replUpToDateVectorBlob,
+                              value)
+            if blob.version != 2:
                 # Samba only generates version 2, and this runs locally
                 raise AttributeError("Unexpected replUpToDateVector version %d"
-                                     % replUpToDateVectorBlob.version)
+                                     % blob.version)
 
-            self.rep_replUpToDateVector_cursors = replUpToDateVectorBlob.ctr.cursors
+            self.rep_replUpToDateVector_cursors = blob.ctr.cursors
         else:
             self.rep_replUpToDateVector_cursors = []
 
@@ -613,19 +613,20 @@ class DirectoryServiceAgent(object):
 
         :param samdb: database to query for DSA replica list
         """
-        ncattrs = [  # not RODC - default, config, schema (old style)
-                    "hasMasterNCs",
-                    # not RODC - default, config, schema, app NCs
-                    "msDS-hasMasterNCs",
-                    # domain NC partial replicas
-                    "hasPartialReplicaNCs",
-                    # default domain NC
-                    "msDS-HasDomainNCs",
-                    # RODC only - default, config, schema, app NCs
-                    "msDS-hasFullReplicaNCs",
-                    # Identifies if replica is coming, going, or stable
-                    "msDS-HasInstantiatedNCs"
-                    ]
+        ncattrs = [
+            # not RODC - default, config, schema (old style)
+            "hasMasterNCs",
+            # not RODC - default, config, schema, app NCs
+            "msDS-hasMasterNCs",
+            # domain NC partial replicas
+            "hasPartialReplicaNCs",
+            # default domain NC
+            "msDS-HasDomainNCs",
+            # RODC only - default, config, schema, app NCs
+            "msDS-hasFullReplicaNCs",
+            # Identifies if replica is coming, going, or stable
+            "msDS-HasInstantiatedNCs"
+        ]
         try:
             res = samdb.search(base=self.dsa_dnstr, scope=ldb.SCOPE_BASE,
                                attrs=ncattrs)
@@ -675,7 +676,7 @@ class DirectoryServiceAgent(object):
                     # if we've identified the default domain NC
                     # then save its DN string
                     if rep.is_default():
-                       self.default_dnstr = dnstr
+                        self.default_dnstr = dnstr
         else:
             raise Exception("No nTDSDSA NCs for (%s)" % self.dsa_dnstr)
 
@@ -811,8 +812,8 @@ class NTDSConnection(object):
         self.guid = None
         self.enabled = False
         self.whenCreated = 0
-        self.to_be_added = False # new connection needs to be added
-        self.to_be_deleted = False # old connection needs to be deleted
+        self.to_be_added = False  # new connection needs to be added
+        self.to_be_deleted = False  # old connection needs to be deleted
         self.to_be_modified = False
         self.options = 0
         self.system_flags = 0
@@ -1114,8 +1115,8 @@ class NTDSConnection(object):
             return False
 
         for slot in self.schedule.dataArray[0].slots:
-           if (slot & 0x0F) != 0x0:
-               return True
+            if (slot & 0x0F) != 0x0:
+                return True
         return False
 
     def is_equivalent_schedule(self, sched):
@@ -1126,13 +1127,13 @@ class NTDSConnection(object):
         """
         if self.schedule is not None:
             if sched is None:
-               return False
+                return False
         elif sched is None:
             return True
 
         if ((self.schedule.size != sched.size or
-            self.schedule.bandwidth != sched.bandwidth or
-            self.schedule.numberOfSchedules != sched.numberOfSchedules)):
+             self.schedule.bandwidth != sched.bandwidth or
+             self.schedule.numberOfSchedules != sched.numberOfSchedules)):
             return False
 
         for i, header in enumerate(self.schedule.headerArray):
@@ -1401,7 +1402,8 @@ class Site(object):
             self.site_options = int(msg["options"][0])
 
         if "interSiteTopologyGenerator" in msg:
-            self.site_topo_generator = str(msg["interSiteTopologyGenerator"][0])
+            self.site_topo_generator = \
+                str(msg["interSiteTopologyGenerator"][0])
 
         if "interSiteTopologyFailover" in msg:
             self.site_topo_failover = int(msg["interSiteTopologyFailover"][0])
@@ -2024,10 +2026,10 @@ class SiteLink(object):
         text = text + "\n\tinterval=%s" % self.interval
 
         if self.schedule is not None:
-            text = text + "\n\tschedule.size=%s" % self.schedule.size
-            text = text + "\n\tschedule.bandwidth=%s" % self.schedule.bandwidth
-            text = text + "\n\tschedule.numberOfSchedules=%s" % \
-                   self.schedule.numberOfSchedules
+            text += "\n\tschedule.size=%s" % self.schedule.size
+            text += "\n\tschedule.bandwidth=%s" % self.schedule.bandwidth
+            text += ("\n\tschedule.numberOfSchedules=%s" %
+                     self.schedule.numberOfSchedules)
 
             for i, header in enumerate(self.schedule.headerArray):
                 text += ("\n\tschedule.headerArray[%d].type=%d" %
@@ -2345,6 +2347,7 @@ def convert_schedule_to_repltimes(schedule):
         times.append((data[i * 2] & 0xF) << 4 | (data[i * 2 + 1] & 0xF))
 
     return times
+
 
 def new_connection_schedule():
     """Create a default schedule for an NTDSConnection or Sitelink. This
