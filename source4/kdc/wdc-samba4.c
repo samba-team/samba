@@ -824,21 +824,10 @@ static char *get_netbios_name(TALLOC_CTX *mem_ctx, HostAddresses *addrs)
 	return nb_name;
 }
 
-static krb5_data fill_krb5_data(void *data, size_t length)
-{
-	krb5_data kdata;
-
-	kdata.data = data;
-	kdata.length = length;
-
-	return kdata;
-}
-
 /* this function allocates 'data' using malloc.
  * The caller is responsible for freeing it */
-static void samba_kdc_build_edata_reply(NTSTATUS nt_status, DATA_BLOB *e_data)
+static void samba_kdc_build_edata_reply(NTSTATUS nt_status, krb5_data *e_data)
 {
-	krb5_error_code ret = 0;
 	e_data->data = malloc(12);
 	if (e_data->data == NULL) {
 		e_data->length = 0;
@@ -861,7 +850,7 @@ static krb5_error_code samba_wdc_check_client_access(void *priv,
 						     hdb_entry_ex *client_ex, const char *client_name,
 						     hdb_entry_ex *server_ex, const char *server_name,
 						     KDC_REQ *req,
-						     krb5_data *e_data)
+						     METHOD_DATA *md)
 {
 	struct samba_kdc_entry *kdc_entry;
 	bool password_change;
@@ -883,11 +872,21 @@ static krb5_error_code samba_wdc_check_client_access(void *priv,
 			return ENOMEM;
 		}
 
-		if (e_data) {
-			DATA_BLOB data;
+		if (md) {
+			int ret;
+			krb5_data kd;
 
-			samba_kdc_build_edata_reply(nt_status, &data);
-			*e_data = fill_krb5_data(data.data, data.length);
+			samba_kdc_build_edata_reply(nt_status, &kd);
+			ret = krb5_padata_add(context, md,
+					      KRB5_PADATA_PW_SALT,
+					      kd.data, kd.length);
+			if (ret != 0) {
+				/*
+				 * So we do not leak the allocated
+				 * memory on kd in the error case 
+				 */
+				krb5_data_free(&kd);
+			}
 		}
 
 		return samba_kdc_map_policy_err(nt_status);
