@@ -66,7 +66,7 @@ rm -rf $KRB5CCNAME_PATH
 testit "reset password policies beside of minimum password age of 0 days" $VALGRIND $PYTHON $samba_tool domain passwordsettings set $ADMIN_LDBMODIFY_CONFIG --complexity=default --history-length=default --min-pwd-length=default --min-pwd-age=0 --max-pwd-age=default || failed=`expr $failed + 1`
 
 echo $PASSWORD > $PREFIX/tmppassfile
-testit "kinit with password" $samba4kinit $enctype --password-file=$PREFIX/tmppassfile --request-pac $USERNAME@$REALM   || failed=`expr $failed + 1`
+testit "kinit with password (initial)" $samba4kinit $enctype --password-file=$PREFIX/tmppassfile --request-pac $USERNAME@$REALM   || failed=`expr $failed + 1`
 test_smbclient "Test login with user kerberos ccache" 'ls' "$unc" -k yes || failed=`expr $failed + 1`
 
 testit "kinit with password (enterprise style)" $samba4kinit $enctype --enterprise --password-file=$PREFIX/tmppassfile --request-pac $USERNAME@$REALM   || failed=`expr $failed + 1`
@@ -108,7 +108,7 @@ KRB5CCNAME="FILE:$KRB5CCNAME_PATH"
 export KRB5CCNAME
 
 rm -f $KRB5CCNAME_PATH
-testit "kinit with user password" $samba4kinit $enctype --password-file=$PREFIX/tmpuserpassfile --request-pac nettestuser@$REALM   || failed=`expr $failed + 1`
+testit "kinit with user password (after enable of user and password change)" $samba4kinit $enctype --password-file=$PREFIX/tmpuserpassfile --request-pac nettestuser@$REALM   || failed=`expr $failed + 1`
 
 test_smbclient "Test login with user kerberos ccache" 'ls' "$unc" -k yes || failed=`expr $failed + 1`
 
@@ -117,7 +117,7 @@ testit "change user password with 'samba-tool user password' (rpc)" $VALGRIND $P
 
 echo $NEWUSERPASS > $PREFIX/tmpuserpassfile
 rm -f $KRB5CCNAME_PATH
-testit "kinit with user password" $samba4kinit $enctype --password-file=$PREFIX/tmpuserpassfile --request-pac nettestuser@$REALM   || failed=`expr $failed + 1`
+testit "kinit with user password (after rpc password change)" $samba4kinit $enctype --password-file=$PREFIX/tmpuserpassfile --request-pac nettestuser@$REALM   || failed=`expr $failed + 1`
 
 test_smbclient "Test login with user kerberos ccache" 'ls' "$unc" -k yes || failed=`expr $failed + 1`
 
@@ -165,12 +165,12 @@ EOF
 testit "change user password with kpasswd" $texpect $PREFIX/tmpkpasswdscript $samba4kpasswd nettestuser@$REALM || failed=`expr $failed + 1`
 
 rm -f $KRB5CCNAME_PATH
-testit "kinit with user password" $samba4kinit $enctype --password-file=$PREFIX/tmpuserpassfile --request-pac nettestuser@$REALM   || failed=`expr $failed + 1`
+testit "kinit with user password (after kpasswd change)" $samba4kinit $enctype --password-file=$PREFIX/tmpuserpassfile --request-pac nettestuser@$REALM   || failed=`expr $failed + 1`
 
 NEWUSERPASS=testPaSS@78%
 echo $NEWUSERPASS > $PREFIX/tmpuserpassfile
 
-test_smbclient "Test login with user kerberos ccache" 'ls' "$unc" -k yes || failed=`expr $failed + 1`
+test_smbclient "Test login with user kerberos ccache (after kpasswd change)" 'ls' "$unc" -k yes || failed=`expr $failed + 1`
 
 cat > $PREFIX/tmpkpasswdscript <<EOF
 expect New password
@@ -183,9 +183,9 @@ EOF
 testit "set user password with kpasswd" $texpect $PREFIX/tmpkpasswdscript $samba4kpasswd --cache=$ADMIN_KRB5CCNAME nettestuser@$REALM || failed=`expr $failed + 1`
 
 rm -f $KRB5CCNAME_PATH
-testit "kinit with user password" $samba4kinit $enctype --password-file=$PREFIX/tmpuserpassfile --request-pac nettestuser@$REALM   || failed=`expr $failed + 1`
+testit "kinit with user password (after kpasswd set)" $samba4kinit $enctype --password-file=$PREFIX/tmpuserpassfile --request-pac nettestuser@$REALM   || failed=`expr $failed + 1`
 
-test_smbclient "Test login with user kerberos ccache" 'ls' "$unc" -k yes || failed=`expr $failed + 1`
+test_smbclient "Test login with user kerberos ccache (after kpasswd set)" 'ls' "$unc" -k yes || failed=`expr $failed + 1`
 
 NEWUSERPASS=testPaSS@910%
 echo $NEWUSERPASS > $PREFIX/tmpuserpassfile
@@ -200,9 +200,9 @@ EOF
 
 testit "set user password with kpasswd and servicePrincipalName" $texpect $PREFIX/tmpkpasswdscript $samba4kpasswd --cache=$PREFIX/tmpccache host/nettestuser@$REALM || failed=`expr $failed + 1`
 
-testit "kinit with user password" $samba4kinit $enctype --password-file=$PREFIX/tmpuserpassfile --request-pac nettestuser@$REALM   || failed=`expr $failed + 1`
+testit "kinit with user password (after set with kpasswd and spn)" $samba4kinit $enctype --password-file=$PREFIX/tmpuserpassfile --request-pac nettestuser@$REALM   || failed=`expr $failed + 1`
 
-test_smbclient "Test login with user kerberos ccache" 'ls' "$unc" -k yes || failed=`expr $failed + 1`
+test_smbclient "Test login with user kerberos ccache (after set with kpasswd and spn)" 'ls' "$unc" -k yes || failed=`expr $failed + 1`
 
 cat > $PREFIX/tmpldbmodify <<EOF
 dn: cn=nettestuser,cn=users,$BASEDN
@@ -233,7 +233,7 @@ testit "kinit with user password for expired password" $texpect $PREFIX/tmppassw
 test_smbclient "Test login with user kerberos ccache" 'ls' "$unc" -k yes || failed=`expr $failed + 1`
 
 echo $NEWUSERPASS > $PREFIX/tmpuserpassfile
-testit "kinit with user password" $samba4kinit $enctype --password-file=$PREFIX/tmpuserpassfile --request-pac nettestuser@$REALM   || failed=`expr $failed + 1`
+testit "kinit with user password (after password change forced by expiration)" $samba4kinit $enctype --password-file=$PREFIX/tmpuserpassfile --request-pac nettestuser@$REALM   || failed=`expr $failed + 1`
 
 test_smbclient "Test login with user kerberos ccache" 'ls' "$unc" -k yes || failed=`expr $failed + 1`
 
