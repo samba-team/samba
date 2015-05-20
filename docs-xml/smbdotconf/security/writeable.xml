@@ -1,6 +1,6 @@
 <samba:parameter name="writeable"
                  context="S"
-                 type="boolean"
+                 type="boolean-rev"
                  synonym="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <synonym>writable</synonym>
