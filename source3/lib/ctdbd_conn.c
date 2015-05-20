@@ -515,8 +515,7 @@ int ctdbd_conn_get_fd(struct ctdbd_connection *conn)
 /*
  * Packet handler to receive and handle a ctdb message
  */
-static NTSTATUS ctdb_handle_message(struct messaging_context *msg_ctx,
-				    struct ctdbd_connection *conn,
+static NTSTATUS ctdb_handle_message(struct ctdbd_connection *conn,
 				    struct ctdb_req_header *hdr)
 {
 	struct ctdb_req_message *msg;
@@ -549,8 +548,6 @@ static NTSTATUS ctdb_handle_message(struct messaging_context *msg_ctx,
 		return NT_STATUS_OK;
 	}
 
-	SMB_ASSERT(conn->msg_ctx != NULL);
-
 	ctdbd_msg_call_back(conn, msg);
 
 	return NT_STATUS_OK;
@@ -576,7 +573,7 @@ static void ctdbd_socket_handler(struct tevent_context *event_ctx,
 		cluster_fatal("ctdbd died\n");
 	}
 
-	status = ctdb_handle_message(conn->msg_ctx, conn, hdr);
+	status = ctdb_handle_message(conn, hdr);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("could not handle incoming message: %s\n",
 			   nt_errstr(status)));
