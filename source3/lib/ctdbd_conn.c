@@ -1496,7 +1496,7 @@ NTSTATUS ctdbd_register_ips(struct ctdbd_connection *conn,
 			    void *private_data)
 {
 	struct ctdb_control_tcp_addr p;
-	TDB_DATA data;
+	TDB_DATA data = { .dptr = (uint8_t *)&p, .dsize = sizeof(p) };
 	NTSTATUS status;
 	struct sockaddr_storage client;
 	struct sockaddr_storage server;
@@ -1513,14 +1513,10 @@ NTSTATUS ctdbd_register_ips(struct ctdbd_connection *conn,
 	case AF_INET:
 		memcpy(&p.dest.ip, &server, sizeof(p.dest.ip));
 		memcpy(&p.src.ip, &client, sizeof(p.src.ip));
-		data.dptr = (uint8_t *)&p;
-		data.dsize = sizeof(p);
 		break;
 	case AF_INET6:
 		memcpy(&p.dest.ip6, &server, sizeof(p.dest.ip6));
 		memcpy(&p.src.ip6, &client, sizeof(p.src.ip6));
-		data.dptr = (uint8_t *)&p;
-		data.dsize = sizeof(p);
 		break;
 	default:
 		return NT_STATUS_INTERNAL_ERROR;
