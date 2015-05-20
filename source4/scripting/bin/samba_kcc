@@ -605,7 +605,15 @@ class KCC(object):
              dsdb.NTDSCONN_OPT_OVERRIDE_NOTIFY_DEFAULT) != 0x0):
 
             if (cn_conn.options & dsdb.NTDSCONN_OPT_USE_NOTIFY) == 0x0:
-
+                # XXX WARNING
+                #
+                # it LOOKS as if this next test is a bit silly: it
+                # checks the flag then sets it if it not set; the same
+                # effect could be achieved by unconditionally setting
+                # it. But in fact the repsFrom object has special
+                # magic attached to it, and altering replica_flags has
+                # side-effects. That is bad in my opinion, but there
+                # you go.
                 if ((t_repsFrom.replica_flags &
                      drsuapi.DRSUAPI_DRS_NEVER_NOTIFY) == 0x0):
                     t_repsFrom.replica_flags |= \
