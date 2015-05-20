@@ -1655,8 +1655,9 @@ class KCC(object):
         if my_vertex.is_white():
             return all_connected, found_failed
 
-        edge_list, n_components = \
-            get_spanning_tree_edges(graph, self.my_site, label=part.partstr)
+        edge_list, n_components = get_spanning_tree_edges(graph,
+                                                          self.my_site,
+                                                          label=part.partstr)
 
         logger.debug("%s Number of components: %d" %
                      (part.nc_dnstr, n_components))
@@ -2601,7 +2602,8 @@ class KCC(object):
 # Global Functions
 ##################################################
 
-def get_spanning_tree_edges(graph, site_id, label=None):
+
+def get_spanning_tree_edges(graph, my_site, label=None):
     # Phase 1: Run Dijkstra's to get a list of internal edges, which are
     # just the shortest-paths connecting colored vertices
 
@@ -2688,31 +2690,25 @@ def get_spanning_tree_edges(graph, site_id, label=None):
                        debug=DEBUG, verify=opts.verify,
                        dot_files=opts.dot_files)
 
-    # count the components
-    return copy_output_edges(graph, output_edges, site_id), components
-
-# This ensures only one-way connections for partial-replicas
-def copy_output_edges(graph, output_edges, vid):
+    # Ensure only one-way connections for partial-replicas,
+    # and make sure they point the right way.
     edge_list = []
-
     for edge in output_edges:
-        # Three-way edges are no problem here since these were created by
-        # add_out_edge which only has two endpoints
-        v = edge.vertices[0]
-        w = edge.vertices[1]
-        if v.site is vid or w.site is vid:
+        # We know these edges only have two endpoints because we made
+        # them.
+        v, w = edge.vertices
+        if v.site is my_site or w.site is my_site:
             if (((v.is_black() or w.is_black()) and
                  v.dist_to_red != MAX_DWORD)):
                 edge.directed = True
 
                 if w.dist_to_red < v.dist_to_red:
-                    edge.vertices[0] = w
-                    edge.vertices[1] = v
-
+                    edge.vertices[:] = w, v
             edge_list.append(edge)
 
-    return edge_list
 
+    # count the components
+    return edge_list, components
 
 
 def sort_replica_by_dsa_guid(rep1, rep2):
