@@ -1458,6 +1458,41 @@ static DATA_BLOB smbd_smb2_signing_key(struct smbXsrv_session *session,
 	return key;
 }
 
+static NTSTATUS smb2_get_new_nonce(struct smbXsrv_session *session,
+				   uint64_t *new_nonce_high,
+				   uint64_t *new_nonce_low)
+{
+	uint64_t nonce_high;
+	uint64_t nonce_low;
+
+	session->nonce_low += 1;
+	if (session->nonce_low == 0) {
+		session->nonce_low += 1;
+		session->nonce_high += 1;
+	}
+
+	/*
+	 * CCM and GCM algorithms must never have their
+	 * nonce wrap, or the security of the whole
+	 * communication and the keys is destroyed.
+	 * We must drop the connection once we have
+	 * transfered too much data.
+	 *
+	 * NOTE: We assume nonces greater than 8 bytes.
+	 */
+	if (session->nonce_high >= session->nonce_high_max) {
+		return NT_STATUS_ENCRYPTION_FAILED;
+	}
+
+	nonce_high = session->nonce_high_random;
+	nonce_high += session->nonce_high;
+	nonce_low = session->nonce_low;
+
+	*new_nonce_high = nonce_high;
+	*new_nonce_low = nonce_low;
+	return NT_STATUS_OK;
+}
+
 static void smbd_smb2_request_pending_timer(struct tevent_context *ev,
 					    struct tevent_timer *te,
 					    struct timeval current_time,
@@ -1524,15 +1559,13 @@ static void smbd_smb2_request_pending_timer(struct tevent_context *ev,
 	dyn = body + 8;
 
 	if (req->do_encryption) {
-		struct smbXsrv_session *x = req->session;
-
-		nonce_high = x->nonce_high;
-		nonce_low = x->nonce_low;
-
-		x->nonce_low += 1;
-		if (x->nonce_low == 0) {
-			x->nonce_low += 1;
-			x->nonce_high += 1;
+		status = smb2_get_new_nonce(req->session,
+					    &nonce_high,
+					    &nonce_low);
+		if (!NT_STATUS_IS_OK(status)) {
+			smbd_server_connection_terminate(xconn,
+							 nt_errstr(status));
+			return;
 		}
 	}
 
@@ -2374,17 +2407,14 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 		DATA_BLOB encryption_key = req->session->global->encryption_key;
 		uint8_t *tf;
 		uint64_t session_id = req->session->global->session_wire_id;
-		struct smbXsrv_session *x = req->session;
 		uint64_t nonce_high;
 		uint64_t nonce_low;
 
-		nonce_high = x->nonce_high;
-		nonce_low = x->nonce_low;
-
-		x->nonce_low += 1;
-		if (x->nonce_low == 0) {
-			x->nonce_low += 1;
-			x->nonce_high += 1;
+		status = smb2_get_new_nonce(req->session,
+					    &nonce_high,
+					    &nonce_low);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
 		}
 
 		/*
@@ -2829,13 +2859,11 @@ static NTSTATUS smbd_smb2_send_break(struct smbXsrv_connection *xconn,
 	talloc_set_name_const(state, "struct smbd_smb2_send_break_state");
 
 	if (do_encryption) {
-		nonce_high = session->nonce_high;
-		nonce_low = session->nonce_low;
-
-		session->nonce_low += 1;
-		if (session->nonce_low == 0) {
-			session->nonce_low += 1;
-			session->nonce_high += 1;
+		status = smb2_get_new_nonce(session,
+					    &nonce_high,
+					    &nonce_low);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
 		}
 	}
 
