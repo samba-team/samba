@@ -441,3 +441,28 @@ done:
 	free(target_name);
 	return code;
 }
+
+void kdb_samba_db_audit_as_req(krb5_context context,
+			       krb5_kdc_req *request,
+			       krb5_db_entry *client,
+			       krb5_db_entry *server,
+			       krb5_timestamp authtime,
+			       krb5_error_code error_code)
+{
+	struct mit_samba_context *mit_ctx;
+
+	mit_ctx = ks_get_context(context);
+	if (mit_ctx == NULL) {
+		return;
+	}
+
+	switch (error_code) {
+	case 0:
+		mit_samba_zero_bad_password_count(client);
+		break;
+	case KRB5KDC_ERR_PREAUTH_FAILED:
+	case KRB5KRB_AP_ERR_BAD_INTEGRITY:
+		mit_samba_update_bad_password_count(client);
+		break;
+	}
+}

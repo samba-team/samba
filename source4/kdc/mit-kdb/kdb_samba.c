@@ -179,7 +179,7 @@ kdb_vftabl kdb_function_table = {
 	NULL,                              /* check_transited_realms */
 	kdb_samba_db_check_policy_as,      /* check_policy_as */
 	NULL,                              /* check_policy_tgs */
-	NULL,                              /* audit_as_req */
+	kdb_samba_db_audit_as_req,         /* audit_as_req */
 	NULL,                              /* refresh_config */
 	kdb_samba_db_check_allowed_to_delegate
 };
