@@ -608,34 +608,6 @@ NTSTATUS ctdbd_register_msg_ctx(struct ctdbd_connection *conn,
 	return NT_STATUS_OK;
 }
 
-/*
- * Send a messaging message across a ctdbd
- */
-
-NTSTATUS ctdbd_messaging_send(struct ctdbd_connection *conn,
-			      uint32_t dst_vnn, uint64_t dst_srvid,
-			      struct messaging_rec *msg)
-{
-	DATA_BLOB blob;
-	NTSTATUS status;
-	enum ndr_err_code ndr_err;
-
-	ndr_err = ndr_push_struct_blob(
-		&blob, talloc_tos(), msg,
-		(ndr_push_flags_fn_t)ndr_push_messaging_rec);
-
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		DEBUG(0, ("ndr_push_struct_blob failed: %s\n",
-			  ndr_errstr(ndr_err)));
-		return ndr_map_error2ntstatus(ndr_err);
-	}
-
-	status = ctdbd_messaging_send_blob(conn, dst_vnn, dst_srvid,
-					   blob.data, blob.length);
-	TALLOC_FREE(blob.data);
-	return status;
-}
-
 NTSTATUS ctdbd_messaging_send_blob(struct ctdbd_connection *conn,
 				   uint32_t dst_vnn, uint64_t dst_srvid,
 				   const uint8_t *buf, size_t buflen)

@@ -83,7 +83,9 @@ static int messaging_ctdb_send(struct server_id src,
 	struct messaging_rec msg;
 	uint8_t *buf;
 	ssize_t buflen;
+	DATA_BLOB blob;
 	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 
 	if (num_fds > 0) {
 		return ENOSYS;
@@ -108,8 +110,19 @@ static int messaging_ctdb_send(struct server_id src,
 		.buf		= data_blob_const(buf, talloc_get_size(buf)),
 	};
 
-	status = ctdbd_messaging_send(ctx->conn, pid.vnn, pid.pid, &msg);
+	ndr_err = ndr_push_struct_blob(
+		&blob, buf, &msg,
+		(ndr_push_flags_fn_t)ndr_push_messaging_rec);
 
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DEBUG(0, ("ndr_push_struct_blob failed: %s\n",
+			  ndr_errstr(ndr_err)));
+		TALLOC_FREE(buf);
+		return ndr_map_error2errno(ndr_err);
+	}
+
+	status = ctdbd_messaging_send_blob(ctx->conn, pid.vnn, pid.pid,
+					   blob.data, blob.length);
 	TALLOC_FREE(buf);
 
 	if (NT_STATUS_IS_OK(status)) {
