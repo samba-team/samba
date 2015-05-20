@@ -719,7 +719,7 @@ bld.SAMBA3_SUBSYSTEM('LIBNMB',
                      libsmb/namequery.c
                      libsmb/conncache.c
                      libads/sitename_cache.c''',
-                     deps='addns lmhosts resolv')
+                     deps='LIBTSOCKET samba3util addns lmhosts resolv')
 
 bld.SAMBA3_SUBSYSTEM('SERVICES',
                     source='''services/svc_spoolss.c

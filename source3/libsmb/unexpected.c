@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "../lib/util/tevent_ntstatus.h"
+#include "lib/tsocket/tsocket.h"
 #include "lib/async_req/async_sock.h"
 #include "libsmb/nmblib.h"
 
@@ -54,8 +55,12 @@ struct nb_packet_client {
 	int trn_id;
 	char *mailslot_name;
 
-	int sock;
-	struct tevent_req *read_req;
+	struct {
+		uint8_t byte;
+		struct iovec iov[1];
+	} ack;
+
+	struct tstream_context *sock;
 	struct tevent_queue *out_queue;
 };
 
@@ -127,6 +132,7 @@ static int nb_packet_client_destructor(struct nb_packet_client *c);
 static ssize_t nb_packet_client_more(uint8_t *buf, size_t buflen,
 				     void *private_data);
 static void nb_packet_got_query(struct tevent_req *req);
+static void nb_packet_client_ack_done(struct tevent_req *req);
 static void nb_packet_client_read_done(struct tevent_req *req);
 
 static void nb_packet_server_listener(struct tevent_context *ev,
@@ -141,6 +147,7 @@ static void nb_packet_server_listener(struct tevent_context *ev,
 	struct sockaddr_un sunaddr;
 	socklen_t len;
 	int sock;
+	int ret;
 
 	len = sizeof(sunaddr);
 
@@ -157,7 +164,13 @@ static void nb_packet_server_listener(struct tevent_context *ev,
 		close(sock);
 		return;
 	}
-	client->sock = sock;
+	ret = tstream_bsd_existing_socket(client, sock, &client->sock);
+	if (ret != 0) {
+		DEBUG(10, ("tstream_bsd_existing_socket failed\n"));
+		close(sock);
+		return;
+	}
+
 	client->server = server;
 	talloc_set_destructor(client, nb_packet_client_destructor);
 
@@ -169,11 +182,11 @@ static void nb_packet_server_listener(struct tevent_context *ev,
 		return;
 	}
 
-	req = read_packet_send(client, ev, client->sock,
-			       sizeof(struct nb_packet_query),
-			       nb_packet_client_more, NULL);
+	req = tstream_read_packet_send(client, ev, client->sock,
+				       sizeof(struct nb_packet_query),
+				       nb_packet_client_more, NULL);
 	if (req == NULL) {
-		DEBUG(10, ("read_packet_send failed\n"));
+		DEBUG(10, ("tstream_read_packet_send failed\n"));
 		TALLOC_FREE(client);
 		return;
 	}
@@ -211,10 +224,9 @@ static ssize_t nb_packet_client_more(uint8_t *buf, size_t buflen,
 
 static int nb_packet_client_destructor(struct nb_packet_client *c)
 {
-	if (c->sock != -1) {
-		close(c->sock);
-		c->sock = -1;
-	}
+	tevent_queue_stop(c->out_queue);
+	TALLOC_FREE(c->sock);
+
 	DLIST_REMOVE(c->server->clients, c);
 	c->server->num_clients -= 1;
 	return 0;
@@ -226,11 +238,10 @@ static void nb_packet_got_query(struct tevent_req *req)
 		req, struct nb_packet_client);
 	struct nb_packet_query q;
 	uint8_t *buf;
-	ssize_t nread, nwritten;
+	ssize_t nread;
 	int err;
-	char c;
 
-	nread = read_packet_recv(req, talloc_tos(), &buf, &err);
+	nread = tstream_read_packet_recv(req, talloc_tos(), &buf, &err);
 	TALLOC_FREE(req);
 	if (nread < (ssize_t)sizeof(struct nb_packet_query)) {
 		DEBUG(10, ("read_packet_recv returned %d (%s)\n",
@@ -261,30 +272,49 @@ static void nb_packet_got_query(struct tevent_req *req)
 		}
 	}
 
-	/*
-	 * Yes, this is a blocking write of 1 byte into a unix
-	 * domain socket that has never been written to. Highly
-	 * unlikely that this actually blocks.
-	 */
-	c = 0;
-	nwritten = sys_write(client->sock, &c, sizeof(c));
-	if (nwritten != sizeof(c)) {
-		DEBUG(10, ("Could not write success indicator to client: %s\n",
-			   strerror(errno)));
+	client->ack.byte = 0;
+	client->ack.iov[0].iov_base = &client->ack.byte;
+	client->ack.iov[0].iov_len = 1;
+	req = tstream_writev_queue_send(client, client->server->ev,
+					client->sock,
+					client->out_queue,
+					client->ack.iov, 1);
+	if (req == NULL) {
+		DEBUG(10, ("tstream_writev_queue_send failed\n"));
 		TALLOC_FREE(client);
 		return;
 	}
+	tevent_req_set_callback(req, nb_packet_client_ack_done, client);
 
-	client->read_req = read_packet_send(client, client->server->ev,
-					    client->sock, 1, NULL, NULL);
-	if (client->read_req == NULL) {
+	req = tstream_read_packet_send(client, client->server->ev,
+				       client->sock, 1, NULL, NULL);
+	if (req == NULL) {
 		DEBUG(10, ("Could not activate reader for client exit "
 			   "detection\n"));
 		TALLOC_FREE(client);
 		return;
 	}
-	tevent_req_set_callback(client->read_req, nb_packet_client_read_done,
+	tevent_req_set_callback(req, nb_packet_client_read_done,
 				client);
+}
+
+static void nb_packet_client_ack_done(struct tevent_req *req)
+{
+	struct nb_packet_client *client = tevent_req_callback_data(
+		req, struct nb_packet_client);
+	ssize_t nwritten;
+	int err;
+
+	nwritten = tstream_writev_queue_recv(req, &err);
+
+	TALLOC_FREE(req);
+
+	if (nwritten == -1) {
+		DEBUG(10, ("tstream_writev_queue_recv failed: %s\n",
+			   strerror(err)));
+		TALLOC_FREE(client);
+		return;
+	}
 }
 
 static void nb_packet_client_read_done(struct tevent_req *req)
@@ -295,7 +325,7 @@ static void nb_packet_client_read_done(struct tevent_req *req)
 	uint8_t *buf;
 	int err;
 
-	nread = read_packet_recv(req, talloc_tos(), &buf, &err);
+	nread = tstream_read_packet_recv(req, talloc_tos(), &buf, &err);
 	TALLOC_FREE(req);
 	if (nread == 1) {
 		DEBUG(10, ("Protocol error, received data on write-only "
@@ -408,12 +438,12 @@ static void nb_packet_client_send(struct nb_packet_client *client,
 	state->iov[1].iov_base = state->buf;
 	state->iov[1].iov_len = state->hdr.len;
 
-	TALLOC_FREE(client->read_req);
-
-	req = writev_send(client, client->server->ev, client->out_queue,
-			  client->sock, true, state->iov, 2);
+	req = tstream_writev_queue_send(state, client->server->ev,
+					client->sock,
+					client->out_queue,
+					state->iov, 2);
 	if (req == NULL) {
-		DEBUG(10, ("writev_send failed\n"));
+		DEBUG(10, ("tstream_writev_queue_send failed\n"));
 		return;
 	}
 	tevent_req_set_callback(req, nb_packet_client_send_done, state);
@@ -427,29 +457,15 @@ static void nb_packet_client_send_done(struct tevent_req *req)
 	ssize_t nwritten;
 	int err;
 
-	nwritten = writev_recv(req, &err);
+	nwritten = tstream_writev_queue_recv(req, &err);
 
 	TALLOC_FREE(req);
 	TALLOC_FREE(state);
 
 	if (nwritten == -1) {
-		DEBUG(10, ("writev failed: %s\n", strerror(err)));
+		DEBUG(10, ("tstream_writev_queue failed: %s\n", strerror(err)));
 		TALLOC_FREE(client);
-	}
-
-	if (tevent_queue_length(client->out_queue) == 0) {
-		client->read_req = read_packet_send(client, client->server->ev,
-						    client->sock, 1,
-						    NULL, NULL);
-		if (client->read_req == NULL) {
-			DEBUG(10, ("Could not activate reader for client exit "
-				   "detection\n"));
-			TALLOC_FREE(client);
-			return;
-		}
-		tevent_req_set_callback(client->read_req,
-					nb_packet_client_read_done,
-					client);
+		return;
 	}
 }
 
