@@ -2419,7 +2419,7 @@ class KCC(object):
                     for a, b in itertools.combinations(link.site_list, 2):
                         dot_edges.append((str(a), str(b)))
                 verify_properties = ('connected',)
-                verify_and_dot('dsa_sitelink_initial', dot_edges, directed=True, label=self.my_dsa_dnstr,
+                verify_and_dot('dsa_sitelink_initial', dot_edges, directed=False, label=self.my_dsa_dnstr,
                                properties=verify_properties, debug=DEBUG, verify=opts.verify,
                                dot_files=opts.dot_files)
 
