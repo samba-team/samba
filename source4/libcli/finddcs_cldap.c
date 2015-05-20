@@ -42,6 +42,7 @@ struct finddcs_cldap_state {
 	uint32_t srv_address_index;
 	struct cldap_socket *cldap;
 	struct cldap_netlogon *netlogon;
+	NTSTATUS status;
 };
 
 static void finddcs_cldap_srv_resolved(struct composite_context *ctx);
@@ -245,10 +246,15 @@ static void finddcs_cldap_next_server(struct finddcs_cldap_state *state)
 	struct tevent_req *subreq;
 	struct tsocket_address *dest;
 	int ret;
-	NTSTATUS status;
+
+	TALLOC_FREE(state->cldap);
 
 	if (state->srv_addresses[state->srv_address_index] == NULL) {
-		tevent_req_nterror(state->req, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+		if (NT_STATUS_IS_OK(state->status)) {
+			tevent_req_nterror(state->req, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+		} else {
+			tevent_req_nterror(state->req, state->status);
+		}
 		DEBUG(2,("finddcs: No matching CLDAP server found\n"));
 		return;
 	}
@@ -259,22 +265,29 @@ static void finddcs_cldap_next_server(struct finddcs_cldap_state *state)
 						389,
 						&dest);
 	if (ret == 0) {
-		status = NT_STATUS_OK;
+		state->status = NT_STATUS_OK;
 	} else {
-		status = map_nt_error_from_unix_common(errno);
+		state->status = map_nt_error_from_unix_common(errno);
 	}
-	if (tevent_req_nterror(state->req, status)) {
+	if (!NT_STATUS_IS_OK(state->status)) {
+		state->srv_address_index++;
+		finddcs_cldap_next_server(state);
 		return;
 	}
 
-	status = cldap_socket_init(state, NULL, dest, &state->cldap);
-	if (tevent_req_nterror(state->req, status)) {
+	state->status = cldap_socket_init(state, NULL, dest, &state->cldap);
+	if (!NT_STATUS_IS_OK(state->status)) {
+		state->srv_address_index++;
+		finddcs_cldap_next_server(state);
 		return;
 	}
 
 	TALLOC_FREE(state->netlogon);
 	state->netlogon = talloc_zero(state, struct cldap_netlogon);
-	if (tevent_req_nomem(state->netlogon, state->req)) {
+	if (state->netlogon == NULL) {
+		state->status = NT_STATUS_NO_MEMORY;
+		state->srv_address_index++;
+		finddcs_cldap_next_server(state);
 		return;
 	}
 
@@ -283,7 +296,10 @@ static void finddcs_cldap_next_server(struct finddcs_cldap_state *state)
 	}
 	if (state->domain_sid) {
 		state->netlogon->in.domain_sid = dom_sid_string(state, state->domain_sid);
-		if (tevent_req_nomem(state->netlogon->in.domain_sid, state->req)) {
+		if (state->netlogon->in.domain_sid == NULL) {
+			state->status = NT_STATUS_NO_MEMORY;
+			state->srv_address_index++;
+			finddcs_cldap_next_server(state);
 			return;
 		}
 	}
@@ -299,7 +315,10 @@ static void finddcs_cldap_next_server(struct finddcs_cldap_state *state)
 
 	subreq = cldap_netlogon_send(state, state->ev,
 				     state->cldap, state->netlogon);
-	if (tevent_req_nomem(subreq, state->req)) {
+	if (subreq == NULL) {
+		state->status = NT_STATUS_NO_MEMORY;
+		state->srv_address_index++;
+		finddcs_cldap_next_server(state);
 		return;
 	}
 
@@ -321,6 +340,7 @@ static void finddcs_cldap_netlogon_replied(struct tevent_req *subreq)
 	TALLOC_FREE(subreq);
 	TALLOC_FREE(state->cldap);
 	if (!NT_STATUS_IS_OK(status)) {
+		state->status = status;
 		state->srv_address_index++;
 		finddcs_cldap_next_server(state);
 		return;
@@ -364,6 +384,7 @@ static void finddcs_cldap_name_resolved(struct composite_context *ctx)
 
 	state->srv_address_index = 0;
 
+	state->status = NT_STATUS_OK;
 	finddcs_cldap_next_server(state);
 }
 
@@ -416,6 +437,7 @@ static void finddcs_cldap_srv_resolved(struct composite_context *ctx)
 
 	state->srv_address_index = 0;
 
+	state->status = NT_STATUS_OK;
 	finddcs_cldap_next_server(state);
 }
 
