@@ -33,6 +33,7 @@
 #include "kdc/db-glue.h"
 #include "auth/auth.h"
 #include "kdc/kpasswd_glue.h"
+#include "auth/auth_sam.h"
 
 #include "mit_samba.h"
 
@@ -687,4 +688,31 @@ out:
 	talloc_free(tmp_ctx);
 
 	return code;
+}
+
+void mit_samba_zero_bad_password_count(krb5_db_entry *db_entry)
+{
+	struct samba_kdc_entry *p;
+	struct ldb_dn *domain_dn;
+
+	p = (struct samba_kdc_entry *)db_entry->e_data;
+
+	domain_dn = ldb_get_default_basedn(p->kdc_db_ctx->samdb);
+
+	authsam_logon_success_accounting(p->kdc_db_ctx->samdb,
+					 p->msg,
+					 domain_dn,
+					 true);
+}
+
+
+void mit_samba_update_bad_password_count(krb5_db_entry *db_entry)
+{
+	struct samba_kdc_entry *p;
+
+	p = (struct samba_kdc_entry *)db_entry->e_data;
+
+	authsam_update_bad_pwd_count(p->kdc_db_ctx->samdb,
+				     p->msg,
+				     ldb_get_default_basedn(p->kdc_db_ctx->samdb));
 }

@@ -79,4 +79,8 @@ int mit_samba_kpasswd_change_password(struct mit_samba_context *ctx,
 				      char *pwd,
 				      krb5_db_entry *db_entry);
 
+void mit_samba_zero_bad_password_count(krb5_db_entry *db_entry);
+
+void mit_samba_update_bad_password_count(krb5_db_entry *db_entry);
+
 #endif /* _MIT_SAMBA_H */
