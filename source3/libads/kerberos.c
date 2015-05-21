@@ -663,7 +663,7 @@ static char *get_kdc_ip_string(char *mem_ctx,
 	char *result = NULL;
 	struct netlogon_samlogon_response **responses = NULL;
 	NTSTATUS status;
-	char *kdc_str = talloc_asprintf(mem_ctx, "%s\tkdc = %s\n", "",
+	char *kdc_str = talloc_asprintf(mem_ctx, "%s\t\tkdc = %s\n", "",
 					print_canonical_sockaddr_with_port(mem_ctx, pss));
 
 	if (kdc_str == NULL) {
@@ -754,7 +754,7 @@ static char *get_kdc_ip_string(char *mem_ctx,
 		}
 
 		/* Append to the string - inefficient but not done often. */
-		new_kdc_str = talloc_asprintf(mem_ctx, "%s\tkdc = %s\n",
+		new_kdc_str = talloc_asprintf(mem_ctx, "%s\t\tkdc = %s\n",
 					      kdc_str,
 					      print_canonical_sockaddr_with_port(mem_ctx, &dc_addrs[i]));
 		if (new_kdc_str == NULL) {
@@ -872,7 +872,7 @@ bool create_local_private_krb5_conf_for_domain(const char *realm,
 					"\tdefault_tkt_enctypes = %s RC4-HMAC DES-CBC-CRC DES-CBC-MD5\n"
 					"\tpreferred_enctypes = %s RC4-HMAC DES-CBC-CRC DES-CBC-MD5\n\n"
 					"[realms]\n\t%s = {\n"
-					"\t%s\t}\n",
+					"%s\t}\n",
 					realm_upper, aes_enctypes, aes_enctypes, aes_enctypes,
 					realm_upper, kdc_ip_string);
 
