@@ -217,6 +217,7 @@ int async_connect_recv(struct tevent_req *req, int *perrno)
 struct writev_state {
 	struct tevent_context *ev;
 	int fd;
+	struct tevent_fd *fde;
 	struct iovec *iov;
 	int count;
 	size_t total_size;
@@ -224,6 +225,8 @@ struct writev_state {
 	bool err_on_readability;
 };
 
+static void writev_cleanup(struct tevent_req *req,
+			   enum tevent_req_state req_state);
 static void writev_trigger(struct tevent_req *req, void *private_data);
 static void writev_handler(struct tevent_context *ev, struct tevent_fd *fde,
 			   uint16_t flags, void *private_data);
@@ -246,40 +249,46 @@ struct tevent_req *writev_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	state->count = count;
 	state->iov = (struct iovec *)talloc_memdup(
 		state, iov, sizeof(struct iovec) * count);
-	if (state->iov == NULL) {
-		goto fail;
+	if (tevent_req_nomem(state->iov, req)) {
+		return tevent_req_post(req, ev);
 	}
 	state->flags = TEVENT_FD_WRITE|TEVENT_FD_READ;
 	state->err_on_readability = err_on_readability;
 
+	tevent_req_set_cleanup_fn(req, writev_cleanup);
+
 	if (queue == NULL) {
-		struct tevent_fd *fde;
-		fde = tevent_add_fd(state->ev, state, state->fd,
+		state->fde = tevent_add_fd(state->ev, state, state->fd,
 				    state->flags, writev_handler, req);
-		if (tevent_req_nomem(fde, req)) {
+		if (tevent_req_nomem(state->fde, req)) {
 			return tevent_req_post(req, ev);
 		}
 		return req;
 	}
 
 	if (!tevent_queue_add(queue, ev, req, writev_trigger, NULL)) {
-		goto fail;
+		tevent_req_nomem(NULL, req);
+		return tevent_req_post(req, ev);
 	}
 	return req;
- fail:
-	TALLOC_FREE(req);
-	return NULL;
+}
+
+static void writev_cleanup(struct tevent_req *req,
+			   enum tevent_req_state req_state)
+{
+	struct writev_state *state = tevent_req_data(req, struct writev_state);
+
+	TALLOC_FREE(state->fde);
 }
 
 static void writev_trigger(struct tevent_req *req, void *private_data)
 {
 	struct writev_state *state = tevent_req_data(req, struct writev_state);
-	struct tevent_fd *fde;
 
-	fde = tevent_add_fd(state->ev, state, state->fd, state->flags,
+	state->fde = tevent_add_fd(state->ev, state, state->fd, state->flags,
 			    writev_handler, req);
-	if (fde == NULL) {
-		tevent_req_error(req, ENOMEM);
+	if (tevent_req_nomem(state->fde, req)) {
+		return;
 	}
 }
 
@@ -356,11 +365,15 @@ ssize_t writev_recv(struct tevent_req *req, int *perrno)
 {
 	struct writev_state *state =
 		tevent_req_data(req, struct writev_state);
+	ssize_t ret;
 
 	if (tevent_req_is_unix_error(req, perrno)) {
+		tevent_req_received(req);
 		return -1;
 	}
-	return state->total_size;
+	ret = state->total_size;
+	tevent_req_received(req);
+	return ret;
 }
 
 struct read_packet_state {
