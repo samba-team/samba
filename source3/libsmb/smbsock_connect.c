@@ -157,12 +157,13 @@ struct nb_connect_state {
 	const struct sockaddr_storage *addr;
 	const char *called_name;
 	int sock;
-
+	struct tevent_req *session_subreq;
 	struct nmb_name called;
 	struct nmb_name calling;
 };
 
-static int nb_connect_state_destructor(struct nb_connect_state *state);
+static void nb_connect_cleanup(struct tevent_req *req,
+			       enum tevent_req_state req_state);
 static void nb_connect_connected(struct tevent_req *subreq);
 static void nb_connect_done(struct tevent_req *subreq);
 
@@ -189,7 +190,7 @@ static struct tevent_req *nb_connect_send(TALLOC_CTX *mem_ctx,
 	make_nmb_name(&state->called, called_name, called_type);
 	make_nmb_name(&state->calling, calling_name, calling_type);
 
-	talloc_set_destructor(state, nb_connect_state_destructor);
+	tevent_req_set_cleanup_fn(req, nb_connect_cleanup);
 
 	subreq = open_socket_out_send(state, ev, addr, NBT_SMB_PORT, 5000);
 	if (tevent_req_nomem(subreq, req)) {
@@ -199,12 +200,31 @@ static struct tevent_req *nb_connect_send(TALLOC_CTX *mem_ctx,
 	return req;
 }
 
-static int nb_connect_state_destructor(struct nb_connect_state *state)
+static void nb_connect_cleanup(struct tevent_req *req,
+			       enum tevent_req_state req_state)
 {
+	struct nb_connect_state *state = tevent_req_data(
+		req, struct nb_connect_state);
+
+	/*
+	 * we need to free a pending request before closing the
+	 * socket, see bug #11141
+	 */
+	TALLOC_FREE(state->session_subreq);
+
+	if (req_state == TEVENT_REQ_DONE) {
+		/*
+		 * we keep the socket open for the caller to use
+		 */
+		return;
+	}
+
 	if (state->sock != -1) {
 		close(state->sock);
+		state->sock = -1;
 	}
-	return 0;
+
+	return;
 }
 
 static void nb_connect_connected(struct tevent_req *subreq)
@@ -227,6 +247,7 @@ static void nb_connect_connected(struct tevent_req *subreq)
 		return;
 	}
 	tevent_req_set_callback(subreq, nb_connect_done, req);
+	state->session_subreq = subreq;
 }
 
 static void nb_connect_done(struct tevent_req *subreq)
@@ -238,6 +259,8 @@ static void nb_connect_done(struct tevent_req *subreq)
 	bool ret;
 	int err;
 	uint8_t resp;
+
+	state->session_subreq = NULL;
 
 	ret = cli_session_request_recv(subreq, &err, &resp);
 	TALLOC_FREE(subreq);
@@ -286,7 +309,6 @@ static void nb_connect_done(struct tevent_req *subreq)
 
 	tevent_req_done(req);
 	return;
-
 }
 
 static NTSTATUS nb_connect_recv(struct tevent_req *req, int *sock)
@@ -296,10 +318,12 @@ static NTSTATUS nb_connect_recv(struct tevent_req *req, int *sock)
 	NTSTATUS status;
 
 	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
 		return status;
 	}
 	*sock = state->sock;
 	state->sock = -1;
+	tevent_req_received(req);
 	return NT_STATUS_OK;
 }
 
