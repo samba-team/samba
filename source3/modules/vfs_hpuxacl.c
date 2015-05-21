@@ -916,9 +916,9 @@ static int hpux_get_needed_class_perm(struct acl *aclp)
 
 /* hpux_internal_aclsort: aclsort for HPUX.
  *
- * -> The aclsort() system call is availabe on the latest HPUX General
- * -> Patch Bundles. So for HPUX, we developed our version of aclsort 
- * -> function. Because, we don't want to update to a new 
+ * -> The aclsort() system call is available on the latest HPUX General
+ * -> Patch Bundles. So for HPUX, we developed our version of aclsort
+ * -> function. Because, we don't want to update to a new
  * -> HPUX GR bundle just for aclsort() call.
  *
  * aclsort sorts the array of ACL structures as per the description in
