@@ -696,6 +696,11 @@ ROKEN_LIB_FUNCTION void ROKEN_LIB_CALL pidfile (const char*);
 #endif
 #endif
 
+#ifndef HAVE_BSWAP64
+#define bswap64 rk_bswap64
+ROKEN_LIB_FUNCTION uint64_t ROKEN_LIB_CALL bswap64(uint64_t);
+#endif
+
 #ifndef HAVE_BSWAP32
 #define bswap32 rk_bswap32
 ROKEN_LIB_FUNCTION unsigned int ROKEN_LIB_CALL bswap32(unsigned int);

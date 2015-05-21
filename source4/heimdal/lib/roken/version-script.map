@@ -38,6 +38,7 @@ HEIMDAL_ROKEN_1.0 {
 		rk_asprintf;
 		rk_bswap16;
 		rk_bswap32;
+		rk_bswap64;
 		rk_cgetent;
 		rk_cgetstr;
 		rk_cloexec;
