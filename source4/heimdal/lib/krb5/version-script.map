@@ -550,6 +550,7 @@ HEIMDAL_KRB5_2.0 {
 		krb5_ret_data;
 		krb5_ret_int16;
 		krb5_ret_int32;
+		krb5_ret_int64;
 		krb5_ret_int8;
 		krb5_ret_keyblock;
 		krb5_ret_principal;
@@ -559,6 +560,7 @@ HEIMDAL_KRB5_2.0 {
 		krb5_ret_times;
 		krb5_ret_uint16;
 		krb5_ret_uint32;
+		krb5_ret_uint64;
 		krb5_ret_uint8;
 		krb5_salttype_to_string;
 		krb5_sendauth;
@@ -623,6 +625,7 @@ HEIMDAL_KRB5_2.0 {
 		krb5_store_data;
 		krb5_store_int16;
 		krb5_store_int32;
+		krb5_store_int64;
 		krb5_store_int8;
 		krb5_store_keyblock;
 		krb5_store_principal;
@@ -632,6 +635,7 @@ HEIMDAL_KRB5_2.0 {
 		krb5_store_times;
 		krb5_store_uint16;
 		krb5_store_uint32;
+		krb5_store_uint64;
 		krb5_store_uint8;
 		krb5_string_to_deltat;
 		krb5_string_to_enctype;

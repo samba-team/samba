@@ -318,13 +318,13 @@ krb5_storage_to_data(krb5_storage *sp, krb5_data *data)
 
 static krb5_error_code
 krb5_store_int(krb5_storage *sp,
-	       int32_t value,
+	       int64_t value,
 	       size_t len)
 {
     int ret;
-    unsigned char v[16];
+    unsigned char v[8];
 
-    if(len > sizeof(v))
+    if (len > sizeof(v))
 	return EINVAL;
     _krb5_put_int(v, value, len);
     ret = sp->store(sp, v, len);
@@ -359,6 +359,33 @@ krb5_store_int32(krb5_storage *sp,
 }
 
 /**
+ * Store a int64 to storage, byte order is controlled by the settings
+ * on the storage, see krb5_storage_set_byteorder().
+ *
+ * @param sp the storage to write too
+ * @param value the value to store
+ *
+ * @return 0 for success, or a Kerberos 5 error code on failure.
+ *
+ * @ingroup krb5_storage
+ */
+
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
+krb5_store_int64(krb5_storage *sp,
+		 int64_t value)
+{
+    if (BYTEORDER_IS_HOST(sp))
+#ifdef WORDS_BIGENDIAN
+        ;
+#else
+	value = bswap64(value); /* There's no ntohll() */
+#endif
+    else if (BYTEORDER_IS_LE(sp))
+	value = bswap64(value);
+    return krb5_store_int(sp, value, 8);
+}
+
+/**
  * Store a uint32 to storage, byte order is controlled by the settings
  * on the storage, see krb5_storage_set_byteorder().
  *
@@ -377,22 +404,97 @@ krb5_store_uint32(krb5_storage *sp,
     return krb5_store_int32(sp, (int32_t)value);
 }
 
+/**
+ * Store a uint64 to storage, byte order is controlled by the settings
+ * on the storage, see krb5_storage_set_byteorder().
+ *
+ * @param sp the storage to write too
+ * @param value the value to store
+ *
+ * @return 0 for success, or a Kerberos 5 error code on failure.
+ *
+ * @ingroup krb5_storage
+ */
+
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
+krb5_store_uint64(krb5_storage *sp,
+		  uint64_t value)
+{
+    return krb5_store_int64(sp, (int64_t)value);
+}
+
 static krb5_error_code
 krb5_ret_int(krb5_storage *sp,
-	     int32_t *value,
+	     int64_t *value,
 	     size_t len)
 {
     int ret;
-    unsigned char v[4];
-    unsigned long w;
+    unsigned char v[8];
+    uint64_t w;
     ret = sp->fetch(sp, v, len);
     if (ret < 0)
 	return errno;
     if ((size_t)ret != len)
 	return sp->eof_code;
-    _krb5_get_int(v, &w, len);
+    _krb5_get_int64(v, &w, len);
     *value = w;
     return 0;
+}
+
+/**
+ * Read a int64 from storage, byte order is controlled by the settings
+ * on the storage, see krb5_storage_set_byteorder().
+ *
+ * @param sp the storage to write too
+ * @param value the value read from the buffer
+ *
+ * @return 0 for success, or a Kerberos 5 error code on failure.
+ *
+ * @ingroup krb5_storage
+ */
+
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
+krb5_ret_int64(krb5_storage *sp,
+	       int64_t *value)
+{
+    krb5_error_code ret = krb5_ret_int(sp, value, 8);
+    if(ret)
+	return ret;
+    if(BYTEORDER_IS_HOST(sp))
+#ifdef WORDS_BIGENDIAN
+        ;
+#else
+	*value = bswap64(*value); /* There's no ntohll() */
+#endif
+    else if(BYTEORDER_IS_LE(sp))
+	*value = bswap64(*value);
+    return 0;
+}
+
+/**
+ * Read a uint64 from storage, byte order is controlled by the settings
+ * on the storage, see krb5_storage_set_byteorder().
+ *
+ * @param sp the storage to write too
+ * @param value the value read from the buffer
+ *
+ * @return 0 for success, or a Kerberos 5 error code on failure.
+ *
+ * @ingroup krb5_storage
+ */
+
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
+krb5_ret_uint64(krb5_storage *sp,
+		uint64_t *value)
+{
+    krb5_error_code ret;
+    int64_t v;
+
+    ret = krb5_ret_int64(sp, &v);
+    if (ret == 0)
+	*value = (uint64_t)v;
+
+    return ret;
 }
 
 /**
@@ -411,12 +513,15 @@ KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_ret_int32(krb5_storage *sp,
 	       int32_t *value)
 {
-    krb5_error_code ret = krb5_ret_int(sp, value, 4);
-    if(ret)
+    int64_t v;
+
+    krb5_error_code ret = krb5_ret_int(sp, &v, 4);
+    if (ret)
 	return ret;
-    if(BYTEORDER_IS_HOST(sp))
+    *value = v;
+    if (BYTEORDER_IS_HOST(sp))
 	*value = htonl(*value);
-    else if(BYTEORDER_IS_LE(sp))
+    else if (BYTEORDER_IS_LE(sp))
 	*value = bswap32(*value);
     return 0;
 }
@@ -434,8 +539,7 @@ krb5_ret_int32(krb5_storage *sp,
  */
 
 KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
-krb5_ret_uint32(krb5_storage *sp,
-		uint32_t *value)
+krb5_ret_uint32(krb5_storage *sp, uint32_t *value)
 {
     krb5_error_code ret;
     int32_t v;
@@ -505,7 +609,7 @@ KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_ret_int16(krb5_storage *sp,
 	       int16_t *value)
 {
-    int32_t v = 0;
+    int64_t v;
     int ret;
     ret = krb5_ret_int(sp, &v, 2);
     if(ret)
