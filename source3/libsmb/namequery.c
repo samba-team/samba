@@ -27,6 +27,7 @@
 #include "lib/tsocket/tsocket.h"
 #include "libsmb/nmblib.h"
 #include "../libcli/nbt/libnbt.h"
+#include "libads/kerberos_proto.h"
 
 /* nmbd.c sets this to True. */
 bool global_in_nmbd = False;
@@ -3239,13 +3240,19 @@ static NTSTATUS get_dc_list(const char *domain,
 		/* added support for address:port syntax for ads
 		 * (not that I think anyone will ever run the LDAP
 		 * server in an AD domain on something other than
-		 * port 389 */
+		 * port 389
+		 * However, the port should not be used for kerberos
+		 */
 
-		port = (lp_security() == SEC_ADS) ? LDAP_PORT : PORT_NONE;
+		port = (lookup_type == DC_ADS_ONLY) ? LDAP_PORT :
+			((lookup_type == DC_KDC_ONLY) ? DEFAULT_KRB5_PORT :
+			 PORT_NONE);
 		if ((port_str=strchr(name, ':')) != NULL) {
 			*port_str = '\0';
-			port_str++;
-			port = atoi(port_str);
+			if (lookup_type != DC_KDC_ONLY) {
+				port_str++;
+				port = atoi(port_str);
+			}
 		}
 
 		/* explicit lookup; resolve_name() will
