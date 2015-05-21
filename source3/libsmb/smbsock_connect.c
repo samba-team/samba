@@ -598,6 +598,8 @@ struct smbsock_any_connect_state {
 	size_t chosen_index;
 };
 
+static void smbsock_any_connect_cleanup(struct tevent_req *req,
+					enum tevent_req_state req_state);
 static bool smbsock_any_connect_send_next(
 	struct tevent_req *req,	struct smbsock_any_connect_state *state);
 static void smbsock_any_connect_trynext(struct tevent_req *subreq);
@@ -628,6 +630,9 @@ struct tevent_req *smbsock_any_connect_send(TALLOC_CTX *mem_ctx,
 	state->calling_names = calling_names;
 	state->calling_types = calling_types;
 	state->port = port;
+	state->fd = -1;
+
+	tevent_req_set_cleanup_fn(req, smbsock_any_connect_cleanup);
 
 	if (num_addrs == 0) {
 		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
@@ -651,6 +656,27 @@ struct tevent_req *smbsock_any_connect_send(TALLOC_CTX *mem_ctx,
 	}
 	tevent_req_set_callback(subreq, smbsock_any_connect_trynext, req);
 	return req;
+}
+
+static void smbsock_any_connect_cleanup(struct tevent_req *req,
+					enum tevent_req_state req_state)
+{
+	struct smbsock_any_connect_state *state = tevent_req_data(
+		req, struct smbsock_any_connect_state);
+
+	TALLOC_FREE(state->requests);
+
+	if (req_state == TEVENT_REQ_DONE) {
+		/*
+		 * Keep the socket open for the caller.
+		 */
+		return;
+	}
+
+	if (state->fd != -1) {
+		close(state->fd);
+		state->fd = -1;
+	}
 }
 
 static void smbsock_any_connect_trynext(struct tevent_req *subreq)
@@ -742,9 +768,9 @@ static void smbsock_any_connect_connected(struct tevent_req *subreq)
 
 	if (NT_STATUS_IS_OK(status)) {
 		/*
-		 * This will kill all the other requests
+		 * tevent_req_done() will kill all the other requests
+		 * via smbsock_any_connect_cleanup().
 		 */
-		TALLOC_FREE(state->requests);
 		state->fd = fd;
 		state->chosen_port = chosen_port;
 		state->chosen_index = chosen_index;
@@ -776,15 +802,18 @@ NTSTATUS smbsock_any_connect_recv(struct tevent_req *req, int *pfd,
 	NTSTATUS status;
 
 	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
 		return status;
 	}
 	*pfd = state->fd;
+	state->fd = -1;
 	if (chosen_index != NULL) {
 		*chosen_index = state->chosen_index;
 	}
 	if (chosen_port != NULL) {
 		*chosen_port = state->chosen_port;
 	}
+	tevent_req_received(req);
 	return NT_STATUS_OK;
 }
 
