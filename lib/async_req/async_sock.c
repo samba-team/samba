@@ -396,12 +396,12 @@ struct tevent_req *read_packet_send(TALLOC_CTX *mem_ctx,
 						    void *private_data),
 				    void *private_data)
 {
-	struct tevent_req *result;
+	struct tevent_req *req;
 	struct read_packet_state *state;
 	struct tevent_fd *fde;
 
-	result = tevent_req_create(mem_ctx, &state, struct read_packet_state);
-	if (result == NULL) {
+	req = tevent_req_create(mem_ctx, &state, struct read_packet_state);
+	if (req == NULL) {
 		return NULL;
 	}
 	state->fd = fd;
@@ -415,13 +415,13 @@ struct tevent_req *read_packet_send(TALLOC_CTX *mem_ctx,
 	}
 
 	fde = tevent_add_fd(ev, state, fd, TEVENT_FD_READ, read_packet_handler,
-			    result);
+			    req);
 	if (fde == NULL) {
 		goto fail;
 	}
-	return result;
+	return req;
  fail:
-	TALLOC_FREE(result);
+	TALLOC_FREE(req);
 	return NULL;
 }
 
