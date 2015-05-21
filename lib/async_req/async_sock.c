@@ -378,12 +378,15 @@ ssize_t writev_recv(struct tevent_req *req, int *perrno)
 
 struct read_packet_state {
 	int fd;
+	struct tevent_fd *fde;
 	uint8_t *buf;
 	size_t nread;
 	ssize_t (*more)(uint8_t *buf, size_t buflen, void *private_data);
 	void *private_data;
 };
 
+static void read_packet_cleanup(struct tevent_req *req,
+				 enum tevent_req_state req_state);
 static void read_packet_handler(struct tevent_context *ev,
 				struct tevent_fd *fde,
 				uint16_t flags, void *private_data);
@@ -398,7 +401,6 @@ struct tevent_req *read_packet_send(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req;
 	struct read_packet_state *state;
-	struct tevent_fd *fde;
 
 	req = tevent_req_create(mem_ctx, &state, struct read_packet_state);
 	if (req == NULL) {
@@ -409,17 +411,29 @@ struct tevent_req *read_packet_send(TALLOC_CTX *mem_ctx,
 	state->more = more;
 	state->private_data = private_data;
 
+	tevent_req_set_cleanup_fn(req, read_packet_cleanup);
+
 	state->buf = talloc_array(state, uint8_t, initial);
 	if (tevent_req_nomem(state->buf, req)) {
 		return tevent_req_post(req, ev);
 	}
 
-	fde = tevent_add_fd(ev, state, fd, TEVENT_FD_READ, read_packet_handler,
-			    req);
-	if (tevent_req_nomem(fde, req)) {
+	state->fde = tevent_add_fd(ev, state, fd,
+				   TEVENT_FD_READ, read_packet_handler,
+				   req);
+	if (tevent_req_nomem(state->fde, req)) {
 		return tevent_req_post(req, ev);
 	}
 	return req;
+}
+
+static void read_packet_cleanup(struct tevent_req *req,
+			   enum tevent_req_state req_state)
+{
+	struct read_packet_state *state =
+		tevent_req_data(req, struct read_packet_state);
+
+	TALLOC_FREE(state->fde);
 }
 
 static void read_packet_handler(struct tevent_context *ev,
@@ -499,9 +513,11 @@ ssize_t read_packet_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 		tevent_req_data(req, struct read_packet_state);
 
 	if (tevent_req_is_unix_error(req, perrno)) {
+		tevent_req_received(req);
 		return -1;
 	}
 	*pbuf = talloc_move(mem_ctx, &state->buf);
+	tevent_req_received(req);
 	return talloc_get_size(*pbuf);
 }
 
