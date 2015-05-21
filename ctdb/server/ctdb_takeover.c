@@ -3188,7 +3188,17 @@ void ctdb_takeover_client_destructor_hook(struct ctdb_client *client)
 			continue;
 		}
 
-		ctdb_remove_connection(vnn, conn);
+		/* If the IP address is hosted on this node then
+		 * remove the connection. */
+		if (vnn->pnn == client->ctdb->pnn) {
+			ctdb_remove_connection(vnn, conn);
+		}
+
+		/* Otherwise this function has been called because the
+		 * server IP address has been released to another node
+		 * and the client has exited.  This means that we
+		 * should not delete the connection information.  The
+		 * takeover node processes connections too. */
 	}
 }
 
