@@ -538,10 +538,11 @@ ssize_t read_packet_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 }
 
 struct wait_for_read_state {
-	struct tevent_req *req;
 	struct tevent_fd *fde;
 };
 
+static void wait_for_read_cleanup(struct tevent_req *req,
+				  enum tevent_req_state req_state);
 static void wait_for_read_done(struct tevent_context *ev,
 			       struct tevent_fd *fde,
 			       uint16_t flags,
@@ -558,13 +559,24 @@ struct tevent_req *wait_for_read_send(TALLOC_CTX *mem_ctx,
 	if (req == NULL) {
 		return NULL;
 	}
-	state->req = req;
+
+	tevent_req_set_cleanup_fn(req, wait_for_read_cleanup);
+
 	state->fde = tevent_add_fd(ev, state, fd, TEVENT_FD_READ,
-				   wait_for_read_done, state);
+				   wait_for_read_done, req);
 	if (tevent_req_nomem(state->fde, req)) {
 		return tevent_req_post(req, ev);
 	}
 	return req;
+}
+
+static void wait_for_read_cleanup(struct tevent_req *req,
+				  enum tevent_req_state req_state)
+{
+	struct wait_for_read_state *state =
+		tevent_req_data(req, struct wait_for_read_state);
+
+	TALLOC_FREE(state->fde);
 }
 
 static void wait_for_read_done(struct tevent_context *ev,
@@ -572,22 +584,22 @@ static void wait_for_read_done(struct tevent_context *ev,
 			       uint16_t flags,
 			       void *private_data)
 {
-	struct wait_for_read_state *state = talloc_get_type_abort(
-		private_data, struct wait_for_read_state);
+	struct tevent_req *req = talloc_get_type_abort(
+		private_data, struct tevent_req);
 
 	if (flags & TEVENT_FD_READ) {
-		TALLOC_FREE(state->fde);
-		tevent_req_done(state->req);
+		tevent_req_done(req);
 	}
 }
 
 bool wait_for_read_recv(struct tevent_req *req, int *perr)
 {
-	int err;
+	int err = tevent_req_simple_recv_unix(req);
 
-	if (tevent_req_is_unix_error(req, &err)) {
+	if (err != 0) {
 		*perr = err;
 		return false;
 	}
+
 	return true;
 }
