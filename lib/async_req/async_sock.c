@@ -35,8 +35,8 @@
 
 struct async_connect_state {
 	int fd;
+	struct tevent_fd *fde;
 	int result;
-	int sys_errno;
 	long old_sockflags;
 	socklen_t address_len;
 	struct sockaddr_storage address;
@@ -46,6 +46,8 @@ struct async_connect_state {
 	void *private_data;
 };
 
+static void async_connect_cleanup(struct tevent_req *req,
+				  enum tevent_req_state req_state);
 static void async_connect_connected(struct tevent_context *ev,
 				    struct tevent_fd *fde, uint16_t flags,
 				    void *priv);
@@ -72,7 +74,6 @@ struct tevent_req *async_connect_send(
 {
 	struct tevent_req *req;
 	struct async_connect_state *state;
-	struct tevent_fd *fde;
 
 	req = tevent_req_create(mem_ctx, &state, struct async_connect_state);
 	if (req == NULL) {
@@ -85,20 +86,22 @@ struct tevent_req *async_connect_send(
 	 */
 
 	state->fd = fd;
-	state->sys_errno = 0;
 	state->before_connect = before_connect;
 	state->after_connect = after_connect;
 	state->private_data = private_data;
 
 	state->old_sockflags = fcntl(fd, F_GETFL, 0);
 	if (state->old_sockflags == -1) {
-		goto post_errno;
+		tevent_req_error(req, errno);
+		return tevent_req_post(req, ev);
 	}
+
+	tevent_req_set_cleanup_fn(req, async_connect_cleanup);
 
 	state->address_len = address_len;
 	if (address_len > sizeof(state->address)) {
-		errno = EINVAL;
-		goto post_errno;
+		tevent_req_error(req, EINVAL);
+		return tevent_req_post(req, ev);
 	}
 	memcpy(&state->address, address, address_len);
 
@@ -116,7 +119,7 @@ struct tevent_req *async_connect_send(
 
 	if (state->result == 0) {
 		tevent_req_done(req);
-		goto done;
+		return tevent_req_post(req, ev);
 	}
 
 	/**
@@ -131,23 +134,31 @@ struct tevent_req *async_connect_send(
 	      errno == EISCONN ||
 #endif
 	      errno == EAGAIN || errno == EINTR)) {
-		state->sys_errno = errno;
-		goto post_errno;
+		tevent_req_error(req, errno);
+		return tevent_req_post(req, ev);
 	}
 
-	fde = tevent_add_fd(ev, state, fd, TEVENT_FD_READ | TEVENT_FD_WRITE,
-			   async_connect_connected, req);
-	if (fde == NULL) {
-		state->sys_errno = ENOMEM;
-		goto post_errno;
+	state->fde = tevent_add_fd(ev, state, fd,
+				   TEVENT_FD_READ | TEVENT_FD_WRITE,
+				   async_connect_connected, req);
+	if (state->fde == NULL) {
+		tevent_req_error(req, ENOMEM);
+		return tevent_req_post(req, ev);
 	}
 	return req;
+}
 
- post_errno:
-	tevent_req_error(req, state->sys_errno);
- done:
-	fcntl(fd, F_SETFL, state->old_sockflags);
-	return tevent_req_post(req, ev);
+static void async_connect_cleanup(struct tevent_req *req,
+				  enum tevent_req_state req_state)
+{
+	struct async_connect_state *state =
+		tevent_req_data(req, struct async_connect_state);
+
+	TALLOC_FREE(state->fde);
+	if (state->fd != -1) {
+		fcntl(state->fd, F_SETFL, state->old_sockflags);
+		state->fd = -1;
+	}
 }
 
 /**
@@ -180,8 +191,6 @@ static void async_connect_connected(struct tevent_context *ev,
 	}
 
 	if (ret == 0) {
-		state->sys_errno = 0;
-		TALLOC_FREE(fde);
 		tevent_req_done(req);
 		return;
 	}
@@ -189,31 +198,20 @@ static void async_connect_connected(struct tevent_context *ev,
 		/* Try again later, leave the fde around */
 		return;
 	}
-	state->sys_errno = errno;
-	TALLOC_FREE(fde);
 	tevent_req_error(req, errno);
 	return;
 }
 
 int async_connect_recv(struct tevent_req *req, int *perrno)
 {
-	struct async_connect_state *state =
-		tevent_req_data(req, struct async_connect_state);
-	int err;
+	int err = tevent_req_simple_recv_unix(req);
 
-	fcntl(state->fd, F_SETFL, state->old_sockflags);
-
-	if (tevent_req_is_unix_error(req, &err)) {
+	if (err != 0) {
 		*perrno = err;
 		return -1;
 	}
 
-	if (state->sys_errno == 0) {
-		return 0;
-	}
-
-	*perrno = state->sys_errno;
-	return -1;
+	return 0;
 }
 
 struct writev_state {
