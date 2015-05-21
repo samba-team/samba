@@ -41,6 +41,7 @@ struct nb_packet_client;
 struct nb_packet_server {
 	struct tevent_context *ev;
 	int listen_sock;
+	struct tevent_fd *listen_fde;
 	int max_clients;
 	int num_clients;
 	struct nb_packet_client *clients;
@@ -71,7 +72,6 @@ NTSTATUS nb_packet_server_create(TALLOC_CTX *mem_ctx,
 				 struct nb_packet_server **presult)
 {
 	struct nb_packet_server *result;
-	struct tevent_fd *fde;
 	NTSTATUS status;
 	int rc;
 
@@ -96,9 +96,12 @@ NTSTATUS nb_packet_server_create(TALLOC_CTX *mem_ctx,
 	}
 	talloc_set_destructor(result, nb_packet_server_destructor);
 
-	fde = tevent_add_fd(ev, result, result->listen_sock, TEVENT_FD_READ,
-			    nb_packet_server_listener, result);
-	if (fde == NULL) {
+	result->listen_fde = tevent_add_fd(ev, result,
+					   result->listen_sock,
+					   TEVENT_FD_READ,
+					   nb_packet_server_listener,
+					   result);
+	if (result->listen_fde == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
 	}
@@ -112,6 +115,8 @@ fail:
 
 static int nb_packet_server_destructor(struct nb_packet_server *s)
 {
+	TALLOC_FREE(s->listen_fde);
+
 	if (s->listen_sock != -1) {
 		close(s->listen_sock);
 		s->listen_sock = -1;
