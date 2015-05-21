@@ -3061,19 +3061,11 @@ int32_t ctdb_control_tcp_add(struct ctdb_context *ctdb, TDB_DATA indata, bool tc
 }
 
 
-/*
-  called by a daemon to inform us of a TCP connection that one of its
-  clients managing that should tickled with an ACK when IP takeover is
-  done
- */
-static void ctdb_remove_connection(struct ctdb_context *ctdb, struct ctdb_connection *conn)
+static void ctdb_remove_connection(struct ctdb_vnn *vnn, struct ctdb_connection *conn)
 {
 	struct ctdb_connection *tcpp;
-	struct ctdb_vnn *vnn = find_public_ip_vnn(ctdb, &conn->dst);
 
 	if (vnn == NULL) {
-		DEBUG(DEBUG_ERR,(__location__ " unable to find public address %s\n",
-			ctdb_addr_to_str(&conn->dst)));
 		return;
 	}
 
@@ -3130,6 +3122,7 @@ static void ctdb_remove_connection(struct ctdb_context *ctdb, struct ctdb_connec
  */
 int32_t ctdb_control_tcp_remove(struct ctdb_context *ctdb, TDB_DATA indata)
 {
+	struct ctdb_vnn *vnn;
 	struct ctdb_connection *conn = (struct ctdb_connection *)indata.dptr;
 
 	/* If we don't have public IPs, tickles are useless */
@@ -3137,7 +3130,15 @@ int32_t ctdb_control_tcp_remove(struct ctdb_context *ctdb, TDB_DATA indata)
 		return 0;
 	}
 
-	ctdb_remove_connection(ctdb, conn);
+	vnn = find_public_ip_vnn(ctdb, &conn->dst);
+	if (vnn == NULL) {
+		DEBUG(DEBUG_ERR,
+		      (__location__ " unable to find public address %s\n",
+		       ctdb_addr_to_str(&conn->dst)));
+		return 0;
+	}
+
+	ctdb_remove_connection(vnn, conn);
 
 	return 0;
 }
@@ -3172,9 +3173,22 @@ int32_t ctdb_control_startup(struct ctdb_context *ctdb, uint32_t pnn)
 void ctdb_takeover_client_destructor_hook(struct ctdb_client *client)
 {
 	while (client->tcp_list) {
+		struct ctdb_vnn *vnn;
 		struct ctdb_tcp_list *tcp = client->tcp_list;
+		struct ctdb_connection *conn = &tcp->connection;
+
 		DLIST_REMOVE(client->tcp_list, tcp);
-		ctdb_remove_connection(client->ctdb, &tcp->connection);
+
+		vnn = find_public_ip_vnn(client->ctdb,
+					 &conn->dst);
+		if (vnn == NULL) {
+			DEBUG(DEBUG_ERR,
+			      (__location__ " unable to find public address %s\n",
+			       ctdb_addr_to_str(&conn->dst)));
+			continue;
+		}
+
+		ctdb_remove_connection(vnn, conn);
 	}
 }
 
