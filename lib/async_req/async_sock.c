@@ -426,19 +426,16 @@ struct tevent_req *read_packet_send(TALLOC_CTX *mem_ctx,
 	state->private_data = private_data;
 
 	state->buf = talloc_array(state, uint8_t, initial);
-	if (state->buf == NULL) {
-		goto fail;
+	if (tevent_req_nomem(state->buf, req)) {
+		return tevent_req_post(req, ev);
 	}
 
 	fde = tevent_add_fd(ev, state, fd, TEVENT_FD_READ, read_packet_handler,
 			    req);
-	if (fde == NULL) {
-		goto fail;
+	if (tevent_req_nomem(fde, req)) {
+		return tevent_req_post(req, ev);
 	}
 	return req;
- fail:
-	TALLOC_FREE(req);
-	return NULL;
 }
 
 static void read_packet_handler(struct tevent_context *ev,
