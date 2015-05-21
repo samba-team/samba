@@ -627,6 +627,48 @@ int _tsocket_address_unix_from_path(TALLOC_CTX *mem_ctx,
 char *tsocket_address_unix_path(const struct tsocket_address *addr,
 				TALLOC_CTX *mem_ctx);
 
+#ifdef DOXYGEN
+/**
+ * @brief Wrap an existing file descriptors into the tdgram abstraction.
+ *
+ * You can use this function to wrap an existing file descriptors into the
+ * tdgram abstraction. After that you're not able to use this file descriptor
+ * for anything else. The file descriptor will be closed when the stream gets
+ * freed. If you still want to use the fd you have have to create a duplicate.
+ *
+ * @param[in]  mem_ctx  The talloc memory context to use.
+ *
+ * @param[in]  fd       The non blocking fd to use!
+ *
+ * @param[out] dgram    A pointer to store an allocated tdgram_context.
+ *
+ * @return              0 on success, -1 on error.
+ *
+ * Example:
+ * @code
+ *   fd2 = dup(fd);
+ *   rc = tdgram_bsd_existing_socket(mem_ctx, fd2, &tdgram);
+ *   if (rc < 0) {
+ *     return;
+ *   }
+ * @endcode
+ *
+ * @warning This is an internal function. You should read the code to fully
+ *          understand it if you plan to use it.
+ */
+int tdgram_bsd_existing_socket(TALLOC_CTX *mem_ctx,
+			       int fd,
+			       struct tdgram_context **dgram);
+#else
+int _tdgram_bsd_existing_socket(TALLOC_CTX *mem_ctx,
+				int fd,
+				struct tdgram_context **_dgram,
+				const char *location);
+#define tdgram_bsd_existing_socket(mem_ctx, fd, dgram) \
+	_tdgram_bsd_existing_socket(mem_ctx, fd, dgram, \
+				    __location__)
+#endif
+
 /**
  * @brief Request a syscall optimization for tdgram_recvfrom_send()
  *
