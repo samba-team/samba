@@ -21,7 +21,6 @@
 #include "includes.h"
 #include "../lib/util/tevent_ntstatus.h"
 #include "lib/tsocket/tsocket.h"
-#include "lib/async_req/async_sock.h"
 #include "libsmb/nmblib.h"
 
 static const char *nmbd_socket_dir(void)
@@ -470,12 +469,11 @@ static void nb_packet_client_send_done(struct tevent_req *req)
 }
 
 struct nb_packet_reader {
-	int sock;
+	struct tstream_context *sock;
 };
 
 struct nb_packet_reader_state {
 	struct tevent_context *ev;
-	struct sockaddr_un addr;
 	struct nb_packet_query query;
 	const char *mailslot_name;
 	struct iovec iov[2];
@@ -483,7 +481,6 @@ struct nb_packet_reader_state {
 	struct nb_packet_reader *reader;
 };
 
-static int nb_packet_reader_destructor(struct nb_packet_reader *r);
 static void nb_packet_reader_connected(struct tevent_req *subreq);
 static void nb_packet_reader_sent_query(struct tevent_req *subreq);
 static void nb_packet_reader_got_ack(struct tevent_req *subreq);
@@ -496,7 +493,10 @@ struct tevent_req *nb_packet_reader_send(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req, *subreq;
 	struct nb_packet_reader_state *state;
-	char *path;
+	struct tsocket_address *laddr;
+	char *rpath;
+	struct tsocket_address *raddr;
+	int ret;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct nb_packet_reader_state);
@@ -517,39 +517,28 @@ struct tevent_req *nb_packet_reader_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	path = talloc_asprintf(talloc_tos(), "%s/%s", nmbd_socket_dir(),
-			       "unexpected");
-	if (tevent_req_nomem(path, req)) {
-		return tevent_req_post(req, ev);
-	}
-	state->addr.sun_family = AF_UNIX;
-	strlcpy(state->addr.sun_path, path, sizeof(state->addr.sun_path));
-	TALLOC_FREE(path);
-
-	state->reader->sock = socket(AF_UNIX, SOCK_STREAM, 0);
-	if (state->reader->sock == -1) {
+	ret = tsocket_address_unix_from_path(state, "", &laddr);
+	if (ret != 0) {
 		tevent_req_nterror(req, map_nt_error_from_unix(errno));
 		return tevent_req_post(req, ev);
 	}
-	talloc_set_destructor(state->reader, nb_packet_reader_destructor);
+	rpath = talloc_asprintf(state, "%s/%s", nmbd_socket_dir(),
+			       "unexpected");
+	if (tevent_req_nomem(rpath, req)) {
+		return tevent_req_post(req, ev);
+	}
+	ret = tsocket_address_unix_from_path(state, rpath, &raddr);
+	if (ret != 0) {
+		tevent_req_nterror(req, map_nt_error_from_unix(errno));
+		return tevent_req_post(req, ev);
+	}
 
-	subreq = async_connect_send(state, ev, state->reader->sock,
-				    (struct sockaddr *)(void *)&state->addr,
-				    sizeof(state->addr), NULL, NULL, NULL);
+	subreq = tstream_unix_connect_send(state, ev, laddr, raddr);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
 	tevent_req_set_callback(subreq, nb_packet_reader_connected, req);
 	return req;
-}
-
-static int nb_packet_reader_destructor(struct nb_packet_reader *r)
-{
-	if (r->sock != -1) {
-		close(r->sock);
-		r->sock = -1;
-	}
-	return 0;
 }
 
 static void nb_packet_reader_connected(struct tevent_req *subreq)
@@ -561,10 +550,11 @@ static void nb_packet_reader_connected(struct tevent_req *subreq)
 	int res, err;
 	int num_iovecs = 1;
 
-	res = async_connect_recv(subreq, &err);
+	res = tstream_unix_connect_recv(subreq, &err, state->reader,
+					&state->reader->sock);
 	TALLOC_FREE(subreq);
 	if (res == -1) {
-		DEBUG(10, ("async_connect failed: %s\n", strerror(err)));
+		DEBUG(10, ("tstream_unix_connect failed: %s\n", strerror(err)));
 		tevent_req_nterror(req, map_nt_error_from_unix(err));
 		return;
 	}
@@ -579,8 +569,8 @@ static void nb_packet_reader_connected(struct tevent_req *subreq)
 		state->iov[1].iov_len = state->query.mailslot_namelen;
 	}
 
-	subreq = writev_send(state, state->ev, NULL, state->reader->sock,
-			     true, state->iov, num_iovecs);
+	subreq = tstream_writev_send(state, state->ev, state->reader->sock,
+				     state->iov, num_iovecs);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
@@ -596,7 +586,7 @@ static void nb_packet_reader_sent_query(struct tevent_req *subreq)
 	ssize_t written;
 	int err;
 
-	written = writev_recv(subreq, &err);
+	written = tstream_writev_recv(subreq, &err);
 	TALLOC_FREE(subreq);
 	if (written == -1) {
 		tevent_req_nterror(req, map_nt_error_from_unix(err));
@@ -606,8 +596,9 @@ static void nb_packet_reader_sent_query(struct tevent_req *subreq)
 		tevent_req_nterror(req, NT_STATUS_UNEXPECTED_IO_ERROR);
 		return;
 	}
-	subreq = read_packet_send(state, state->ev, state->reader->sock,
-				  sizeof(state->c), NULL, NULL);
+	subreq = tstream_read_packet_send(state, state->ev,
+					  state->reader->sock,
+					  sizeof(state->c), NULL, NULL);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
@@ -624,7 +615,7 @@ static void nb_packet_reader_got_ack(struct tevent_req *subreq)
 	int err;
 	uint8_t *buf;
 
-	nread = read_packet_recv(subreq, state, &buf, &err);
+	nread = tstream_read_packet_recv(subreq, state, &buf, &err);
 	TALLOC_FREE(subreq);
 	if (nread == -1) {
 		DEBUG(10, ("read_packet_recv returned %s\n",
@@ -649,9 +640,11 @@ NTSTATUS nb_packet_reader_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 
 	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
 		return status;
 	}
 	*preader = talloc_move(mem_ctx, &state->reader);
+	tevent_req_received(req);
 	return NT_STATUS_OK;
 }
 
@@ -675,9 +668,9 @@ struct tevent_req *nb_packet_read_send(TALLOC_CTX *mem_ctx,
 	if (req == NULL) {
 		return NULL;
 	}
-	subreq = read_packet_send(state, ev, reader->sock,
-				  sizeof(struct nb_packet_client_header),
-				  nb_packet_read_more, state);
+	subreq = tstream_read_packet_send(state, ev, reader->sock,
+					  sizeof(struct nb_packet_client_header),
+					  nb_packet_read_more, state);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -709,7 +702,7 @@ static void nb_packet_read_done(struct tevent_req *subreq)
 	ssize_t nread;
 	int err;
 
-	nread = read_packet_recv(subreq, state, &state->buf, &err);
+	nread = tstream_read_packet_recv(subreq, state, &state->buf, &err);
 	if (nread == -1) {
 		tevent_req_nterror(req, map_nt_error_from_unix(err));
 		return;
@@ -728,6 +721,7 @@ NTSTATUS nb_packet_read_recv(struct tevent_req *req,
 	NTSTATUS status;
 
 	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
 		return status;
 	}
 
@@ -738,8 +732,10 @@ NTSTATUS nb_packet_read_recv(struct tevent_req *req,
 		state->buflen - sizeof(struct nb_packet_client_header),
 		state->hdr.type, state->hdr.ip, state->hdr.port);
 	if (packet == NULL) {
+		tevent_req_received(req);
 		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
 	*ppacket = packet;
+	tevent_req_received(req);
 	return NT_STATUS_OK;
 }
