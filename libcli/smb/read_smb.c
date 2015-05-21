@@ -105,8 +105,10 @@ ssize_t read_smb_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 		req, struct read_smb_state);
 
 	if (tevent_req_is_unix_error(req, perrno)) {
+		tevent_req_received(req);
 		return -1;
 	}
 	*pbuf = talloc_move(mem_ctx, &state->buf);
+	tevent_req_received(req);
 	return talloc_get_size(*pbuf);
 }
