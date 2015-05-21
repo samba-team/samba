@@ -1388,6 +1388,30 @@ static int tdgram_bsd_dgram_socket(const struct tsocket_address *local,
 	return 0;
 }
 
+int _tdgram_bsd_existing_socket(TALLOC_CTX *mem_ctx,
+				int fd,
+				struct tdgram_context **_dgram,
+				const char *location)
+{
+	struct tdgram_context *dgram;
+	struct tdgram_bsd *bsds;
+
+	dgram = tdgram_context_create(mem_ctx,
+				      &tdgram_bsd_ops,
+				      &bsds,
+				      struct tdgram_bsd,
+				      location);
+	if (!dgram) {
+		return -1;
+	}
+	ZERO_STRUCTP(bsds);
+	bsds->fd = fd;
+	talloc_set_destructor(bsds, tdgram_bsd_destructor);
+
+	*_dgram = dgram;
+	return 0;
+}
+
 int _tdgram_inet_udp_socket(const struct tsocket_address *local,
 			    const struct tsocket_address *remote,
 			    TALLOC_CTX *mem_ctx,
