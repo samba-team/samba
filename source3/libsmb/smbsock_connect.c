@@ -340,8 +340,8 @@ struct smbsock_connect_state {
 	uint16_t port;
 };
 
-static int smbsock_connect_state_destructor(
-	struct smbsock_connect_state *state);
+static void smbsock_connect_cleanup(struct tevent_req *req,
+				    enum tevent_req_state req_state);
 static void smbsock_connect_connected(struct tevent_req *subreq);
 static void smbsock_connect_do_139(struct tevent_req *subreq);
 
@@ -373,7 +373,7 @@ struct tevent_req *smbsock_connect_send(TALLOC_CTX *mem_ctx,
 	state->calling_type =
 		(calling_type != -1) ? calling_type : 0x00;
 
-	talloc_set_destructor(state, smbsock_connect_state_destructor);
+	tevent_req_set_cleanup_fn(req, smbsock_connect_cleanup);
 
 	if (port == NBT_SMB_PORT) {
 		state->req_139 = nb_connect_send(state, state->ev, state->addr,
@@ -424,14 +424,32 @@ struct tevent_req *smbsock_connect_send(TALLOC_CTX *mem_ctx,
 	return req;
 }
 
-static int smbsock_connect_state_destructor(
-	struct smbsock_connect_state *state)
+static void smbsock_connect_cleanup(struct tevent_req *req,
+				    enum tevent_req_state req_state)
 {
+	struct smbsock_connect_state *state = tevent_req_data(
+		req, struct smbsock_connect_state);
+
+	/*
+	 * we need to free a pending request before closing the
+	 * socket, see bug #11141
+	 */
+	TALLOC_FREE(state->req_445);
+	TALLOC_FREE(state->req_139);
+
+	if (req_state == TEVENT_REQ_DONE) {
+		/*
+		 * we keep the socket open for the caller to use
+		 */
+		return;
+	}
+
 	if (state->sock != -1) {
 		close(state->sock);
 		state->sock = -1;
 	}
-	return 0;
+
+	return;
 }
 
 static void smbsock_connect_do_139(struct tevent_req *subreq)
@@ -515,6 +533,7 @@ NTSTATUS smbsock_connect_recv(struct tevent_req *req, int *sock,
 	NTSTATUS status;
 
 	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
 		return status;
 	}
 	*sock = state->sock;
@@ -522,6 +541,7 @@ NTSTATUS smbsock_connect_recv(struct tevent_req *req, int *sock,
 	if (ret_port != NULL) {
 		*ret_port = state->port;
 	}
+	tevent_req_received(req);
 	return NT_STATUS_OK;
 }
 
