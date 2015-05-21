@@ -501,7 +501,7 @@ bool parse_ace(struct cli_state *cli, struct security_ace *ace,
 	}
 
 	if (strncmp(tok, "0x", 2) == 0) {
-		if (sscanf(tok, "%u", &amask) != 1) {
+		if (sscanf(tok, "%x", &amask) != 1) {
 			printf("ACE '%s': bad hex number at '%s'\n",
 				orig_str, tok);
 			SAFE_FREE(str);
