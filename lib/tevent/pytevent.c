@@ -25,6 +25,17 @@
 #include <Python.h>
 #include <tevent.h>
 
+#if PY_MAJOR_VERSION >= 3
+#define PyStr_Check PyUnicode_Check
+#define PyStr_FromString PyUnicode_FromString
+#define PyStr_AsUTF8 PyUnicode_AsUTF8
+#define PyInt_FromLong PyLong_FromLong
+#else
+#define PyStr_Check PyString_Check
+#define PyStr_FromString PyString_FromString
+#define PyStr_AsUTF8 PyString_AsString
+#endif
+
 void init_tevent(void);
 
 typedef struct {
@@ -176,13 +187,13 @@ static PyObject *py_register_backend(PyObject *self, PyObject *args)
 		return NULL;
 	}
 
-	if (!PyString_Check(name)) {
+	if (!PyStr_Check(name)) {
 		PyErr_SetNone(PyExc_TypeError);
 		Py_DECREF(name);
 		return NULL;
 	}
 
-	if (!tevent_register_backend(PyString_AsString(name), &py_tevent_ops)) { /* FIXME: What to do with backend */
+	if (!tevent_register_backend(PyStr_AsUTF8(name), &py_tevent_ops)) { /* FIXME: What to do with backend */
 		PyErr_SetNone(PyExc_RuntimeError);
 		Py_DECREF(name);
 		return NULL;
@@ -830,7 +841,7 @@ static PyObject *py_backend_list(PyObject *self)
 		goto err;
 	}
 	for (i = 0; backends[i]; i++) {
-		string = PyString_FromString(backends[i]);
+		string = PyStr_FromString(backends[i]);
 		if (!string) {
 			goto err;
 		}
@@ -863,31 +874,48 @@ static PyMethodDef tevent_methods[] = {
 	{ NULL },
 };
 
-void init_tevent(void)
+#define MODULE_DOC PyDoc_STR("Python wrapping of talloc-maintained objects.")
+
+#if PY_MAJOR_VERSION >= 3
+static struct PyModuleDef moduledef = {
+	PyModuleDef_HEAD_INIT,
+	.m_name = "_tevent",
+	.m_doc = MODULE_DOC,
+	.m_size = -1,
+	.m_methods = tevent_methods,
+};
+#endif
+
+PyObject * module_init(void);
+PyObject * module_init(void)
 {
 	PyObject *m;
 
 	if (PyType_Ready(&TeventContext_Type) < 0)
-		return;
+		return NULL;
 
 	if (PyType_Ready(&TeventQueue_Type) < 0)
-		return;
+		return NULL;
 
 	if (PyType_Ready(&TeventReq_Type) < 0)
-		return;
+		return NULL;
 
 	if (PyType_Ready(&TeventSignal_Type) < 0)
-		return;
+		return NULL;
 
 	if (PyType_Ready(&TeventTimer_Type) < 0)
-		return;
+		return NULL;
 
 	if (PyType_Ready(&TeventFd_Type) < 0)
-		return;
+		return NULL;
 
-	m = Py_InitModule3("_tevent", tevent_methods, "Tevent integration for twisted.");
+#if PY_MAJOR_VERSION >= 3
+	m = PyModule_Create(&moduledef);
+#else
+	m = Py_InitModule3("_tevent", tevent_methods, MODULE_DOC);
+#endif
 	if (m == NULL)
-		return;
+		return NULL;
 
 	Py_INCREF(&TeventContext_Type);
 	PyModule_AddObject(m, "Context", (PyObject *)&TeventContext_Type);
@@ -907,5 +935,21 @@ void init_tevent(void)
 	Py_INCREF(&TeventFd_Type);
 	PyModule_AddObject(m, "Fd", (PyObject *)&TeventFd_Type);
 
-	PyModule_AddObject(m, "__version__", PyString_FromString(PACKAGE_VERSION));
+	PyModule_AddStringConstant(m, "__version__", PACKAGE_VERSION);
+
+	return m;
 }
+
+#if PY_MAJOR_VERSION >= 3
+PyMODINIT_FUNC PyInit__tevent(void);
+PyMODINIT_FUNC PyInit__tevent(void)
+{
+	return module_init();
+}
+#else
+void init_tevent(void);
+void init_tevent(void)
+{
+	module_init();
+}
+#endif
