@@ -264,8 +264,6 @@ static int messaging_context_destructor(struct messaging_context *ctx)
 {
 	unsigned i;
 
-	messaging_dgm_destroy();
-
 	for (i=0; i<ctx->num_new_waiters; i++) {
 		if (ctx->new_waiters[i] != NULL) {
 			tevent_req_set_cleanup_fn(ctx->new_waiters[i], NULL);
