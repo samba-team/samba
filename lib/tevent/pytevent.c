@@ -415,6 +415,19 @@ static void py_fd_handler(struct tevent_context *ev,
 	Py_XDECREF(ret);
 }
 
+static void py_tevent_fp_dealloc(TeventFd_Object *self)
+{
+	talloc_free(self->fd);
+	PyObject_Del(self);
+}
+
+static PyTypeObject TeventFd_Type = {
+	.tp_name = "tevent.Fd",
+	.tp_basicsize = sizeof(TeventFd_Object),
+	.tp_dealloc = (destructor)py_tevent_fp_dealloc,
+	.tp_flags = Py_TPFLAGS_DEFAULT,
+};
+
 static PyObject *py_tevent_context_add_fd(TeventContext_Object *self, PyObject *args)
 {
 	int fd, flags;
