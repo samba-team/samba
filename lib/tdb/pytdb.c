@@ -31,13 +31,25 @@
 /* Include tdb headers */
 #include <tdb.h>
 
+#if PY_MAJOR_VERSION >= 3
+#define PyStr_FromString PyUnicode_FromString
+#define PyStr_FromFormat PyUnicode_FromFormat
+#define PyInt_FromLong PyLong_FromLong
+#define PyInt_Check PyLong_Check
+#define PyInt_AsLong PyLong_AsLong
+#define Py_TPFLAGS_HAVE_ITER 0
+#else
+#define PyStr_FromString PyString_FromString
+#define PyStr_FromFormat PyString_FromFormat
+#endif
+
 typedef struct {
 	PyObject_HEAD
 	TDB_CONTEXT *ctx;
 	bool closed;
 } PyTdbObject;
 
-staticforward PyTypeObject PyTdb;
+static PyTypeObject PyTdb;
 
 static void PyErr_SetTDBError(TDB_CONTEXT *tdb)
 {
@@ -45,21 +57,21 @@ static void PyErr_SetTDBError(TDB_CONTEXT *tdb)
 		Py_BuildValue("(i,s)", tdb_error(tdb), tdb_errorstr(tdb)));
 }
 
-static TDB_DATA PyString_AsTDB_DATA(PyObject *data)
+static TDB_DATA PyBytes_AsTDB_DATA(PyObject *data)
 {
 	TDB_DATA ret;
-	ret.dptr = (unsigned char *)PyString_AsString(data);
-	ret.dsize = PyString_Size(data);
+	ret.dptr = (unsigned char *)PyBytes_AsString(data);
+	ret.dsize = PyBytes_Size(data);
 	return ret;
 }
 
-static PyObject *PyString_FromTDB_DATA(TDB_DATA data)
+static PyObject *PyBytes_FromTDB_DATA(TDB_DATA data)
 {
 	if (data.dptr == NULL && data.dsize == 0) {
 		Py_RETURN_NONE;
 	} else {
-		PyObject *ret = PyString_FromStringAndSize((const char *)data.dptr, 
-												   data.dsize);
+		PyObject *ret = PyBytes_FromStringAndSize((const char *)data.dptr,
+												  data.dsize);
 		free(data.dptr);
 		return ret;
     }
@@ -233,11 +245,11 @@ static PyObject *obj_get(PyTdbObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "O", &py_key))
 		return NULL;
 
-	key = PyString_AsTDB_DATA(py_key);
+	key = PyBytes_AsTDB_DATA(py_key);
 	if (!key.dptr)
 		return NULL;
 
-	return PyString_FromTDB_DATA(tdb_fetch(self->ctx, key));
+	return PyBytes_FromTDB_DATA(tdb_fetch(self->ctx, key));
 }
 
 static PyObject *obj_append(PyTdbObject *self, PyObject *args)
@@ -251,10 +263,10 @@ static PyObject *obj_append(PyTdbObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "OO", &py_key, &py_data))
 		return NULL;
 
-	key = PyString_AsTDB_DATA(py_key);
+	key = PyBytes_AsTDB_DATA(py_key);
 	if (!key.dptr)
 		return NULL;
-	data = PyString_AsTDB_DATA(py_data);
+	data = PyBytes_AsTDB_DATA(py_data);
 	if (!data.dptr)
 		return NULL;
 
@@ -267,7 +279,7 @@ static PyObject *obj_firstkey(PyTdbObject *self)
 {
 	PyErr_TDB_RAISE_IF_CLOSED(self);
 
-	return PyString_FromTDB_DATA(tdb_firstkey(self->ctx));
+	return PyBytes_FromTDB_DATA(tdb_firstkey(self->ctx));
 }
 
 static PyObject *obj_nextkey(PyTdbObject *self, PyObject *args)
@@ -279,11 +291,11 @@ static PyObject *obj_nextkey(PyTdbObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "O", &py_key))
 		return NULL;
 
-	key = PyString_AsTDB_DATA(py_key);
+	key = PyBytes_AsTDB_DATA(py_key);
 	if (!key.dptr)
 		return NULL;
 	
-	return PyString_FromTDB_DATA(tdb_nextkey(self->ctx, key));
+	return PyBytes_FromTDB_DATA(tdb_nextkey(self->ctx, key));
 }
 
 static PyObject *obj_delete(PyTdbObject *self, PyObject *args)
@@ -296,7 +308,7 @@ static PyObject *obj_delete(PyTdbObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "O", &py_key))
 		return NULL;
 
-	key = PyString_AsTDB_DATA(py_key);
+	key = PyBytes_AsTDB_DATA(py_key);
 	if (!key.dptr)
 		return NULL;
 	ret = tdb_delete(self->ctx, key);
@@ -314,7 +326,7 @@ static PyObject *obj_has_key(PyTdbObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "O", &py_key))
 		return NULL;
 
-	key = PyString_AsTDB_DATA(py_key);
+	key = PyBytes_AsTDB_DATA(py_key);
 	if (!key.dptr)
 		return NULL;
 	ret = tdb_exists(self->ctx, key);
@@ -337,10 +349,10 @@ static PyObject *obj_store(PyTdbObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "OO|i", &py_key, &py_value, &flag))
 		return NULL;
 
-	key = PyString_AsTDB_DATA(py_key);
+	key = PyBytes_AsTDB_DATA(py_key);
 	if (!key.dptr)
 		return NULL;
-	value = PyString_AsTDB_DATA(py_value);
+	value = PyBytes_AsTDB_DATA(py_value);
 	if (!value.dptr)
 		return NULL;
 
@@ -389,7 +401,7 @@ static PyObject *tdb_iter_next(PyTdbIteratorObject *self)
 		return NULL;
 	current = self->current;
 	self->current = tdb_nextkey(self->iteratee->ctx, self->current);
-	ret = PyString_FromTDB_DATA(current);
+	ret = PyBytes_FromTDB_DATA(current);
 	return ret;
 }
 
@@ -538,7 +550,7 @@ static PyObject *obj_get_flags(PyTdbObject *self, void *closure)
 static PyObject *obj_get_filename(PyTdbObject *self, void *closure)
 {
 	PyErr_TDB_RAISE_IF_CLOSED(self);
-	return PyString_FromString(tdb_name(self->ctx));
+	return PyBytes_FromString(tdb_name(self->ctx));
 }
 
 static PyObject *obj_get_seqnum(PyTdbObject *self, void *closure)
@@ -571,9 +583,9 @@ static PyObject *tdb_object_repr(PyTdbObject *self)
 {
 	PyErr_TDB_RAISE_IF_CLOSED(self);
 	if (tdb_get_flags(self->ctx) & TDB_INTERNAL) {
-		return PyString_FromString("Tdb(<internal>)");
+		return PyStr_FromString("Tdb(<internal>)");
 	} else {
-		return PyString_FromFormat("Tdb('%s')", tdb_name(self->ctx));
+		return PyStr_FromFormat("Tdb('%s')", tdb_name(self->ctx));
 	}
 }
 
@@ -581,27 +593,27 @@ static void tdb_object_dealloc(PyTdbObject *self)
 {
 	if (!self->closed)
 		tdb_close(self->ctx);
-	self->ob_type->tp_free(self);
+	Py_TYPE(self)->tp_free(self);
 }
 
 static PyObject *obj_getitem(PyTdbObject *self, PyObject *key)
 {
 	TDB_DATA tkey, val;
 	PyErr_TDB_RAISE_IF_CLOSED(self);
-	if (!PyString_Check(key)) {
-		PyErr_SetString(PyExc_TypeError, "Expected string as key");
+	if (!PyBytes_Check(key)) {
+		PyErr_SetString(PyExc_TypeError, "Expected bytestring as key");
 		return NULL;
 	}
 
-	tkey.dptr = (unsigned char *)PyString_AsString(key);
-	tkey.dsize = PyString_Size(key);
+	tkey.dptr = (unsigned char *)PyBytes_AsString(key);
+	tkey.dsize = PyBytes_Size(key);
 
 	val = tdb_fetch(self->ctx, tkey);
 	if (val.dptr == NULL) {
 		PyErr_SetString(PyExc_KeyError, "No such TDB entry");
 		return NULL;
 	} else {
-		return PyString_FromTDB_DATA(val);
+		return PyBytes_FromTDB_DATA(val);
 	}
 }
 
@@ -610,22 +622,22 @@ static int obj_setitem(PyTdbObject *self, PyObject *key, PyObject *value)
 	TDB_DATA tkey, tval;
 	int ret;
 	PyErr_TDB_RAISE_RETURN_MINUS_1_IF_CLOSED(self);
-	if (!PyString_Check(key)) {
-		PyErr_SetString(PyExc_TypeError, "Expected string as key");
+	if (!PyBytes_Check(key)) {
+		PyErr_SetString(PyExc_TypeError, "Expected bytestring as key");
 		return -1;
 	}
 
-	tkey = PyString_AsTDB_DATA(key);
+	tkey = PyBytes_AsTDB_DATA(key);
 
 	if (value == NULL) { 
 		ret = tdb_delete(self->ctx, tkey);
 	} else { 
-		if (!PyString_Check(value)) {
+		if (!PyBytes_Check(value)) {
 			PyErr_SetString(PyExc_TypeError, "Expected string as value");
 			return -1;
 		}
 
-		tval = PyString_AsTDB_DATA(value);
+		tval = PyBytes_AsTDB_DATA(value);
 
 		ret = tdb_store(self->ctx, tkey, tval, TDB_REPLACE);
 	}
@@ -662,46 +674,78 @@ static PyMethodDef tdb_methods[] = {
 	{ NULL }
 };
 
-void inittdb(void);
-void inittdb(void)
+#define MODULE_DOC "simple key-value database that supports multiple writers."
+
+#if PY_MAJOR_VERSION >= 3
+static struct PyModuleDef moduledef = {
+    PyModuleDef_HEAD_INIT,
+    .m_name = "tdb",
+    .m_doc = MODULE_DOC,
+    .m_size = -1,
+    .m_methods = tdb_methods,
+};
+#endif
+
+PyObject* module_init(void);
+PyObject* module_init(void)
 {
 	PyObject *m;
 
 	if (PyType_Ready(&PyTdb) < 0)
-		return;
+		return NULL;
 
 	if (PyType_Ready(&PyTdbIterator) < 0)
-		return;
+		return NULL;
 
-	m = Py_InitModule3("tdb", tdb_methods,
-		"simple key-value database that supports multiple writers.");
+#if PY_MAJOR_VERSION >= 3
+	m = PyModule_Create(&moduledef);
+#else
+	m = Py_InitModule3("tdb", tdb_methods, MODULE_DOC);
+#endif
 	if (m == NULL)
-		return;
+		return NULL;
 
-	PyModule_AddObject(m, "REPLACE", PyInt_FromLong(TDB_REPLACE));
-	PyModule_AddObject(m, "INSERT", PyInt_FromLong(TDB_INSERT));
-	PyModule_AddObject(m, "MODIFY", PyInt_FromLong(TDB_MODIFY));
+	PyModule_AddIntConstant(m, "REPLACE", TDB_REPLACE);
+	PyModule_AddIntConstant(m, "INSERT", TDB_INSERT);
+	PyModule_AddIntConstant(m, "MODIFY", TDB_MODIFY);
 
-	PyModule_AddObject(m, "DEFAULT", PyInt_FromLong(TDB_DEFAULT));
-	PyModule_AddObject(m, "CLEAR_IF_FIRST", PyInt_FromLong(TDB_CLEAR_IF_FIRST));
-	PyModule_AddObject(m, "INTERNAL", PyInt_FromLong(TDB_INTERNAL));
-	PyModule_AddObject(m, "NOLOCK", PyInt_FromLong(TDB_NOLOCK));
-	PyModule_AddObject(m, "NOMMAP", PyInt_FromLong(TDB_NOMMAP));
-	PyModule_AddObject(m, "CONVERT", PyInt_FromLong(TDB_CONVERT));
-	PyModule_AddObject(m, "BIGENDIAN", PyInt_FromLong(TDB_BIGENDIAN));
-	PyModule_AddObject(m, "NOSYNC", PyInt_FromLong(TDB_NOSYNC));
-	PyModule_AddObject(m, "SEQNUM", PyInt_FromLong(TDB_SEQNUM));
-	PyModule_AddObject(m, "VOLATILE", PyInt_FromLong(TDB_VOLATILE));
-	PyModule_AddObject(m, "ALLOW_NESTING", PyInt_FromLong(TDB_ALLOW_NESTING));
-	PyModule_AddObject(m, "DISALLOW_NESTING", PyInt_FromLong(TDB_DISALLOW_NESTING));
-	PyModule_AddObject(m, "INCOMPATIBLE_HASH", PyInt_FromLong(TDB_INCOMPATIBLE_HASH));
+	PyModule_AddIntConstant(m, "DEFAULT", TDB_DEFAULT);
+	PyModule_AddIntConstant(m, "CLEAR_IF_FIRST", TDB_CLEAR_IF_FIRST);
+	PyModule_AddIntConstant(m, "INTERNAL", TDB_INTERNAL);
+	PyModule_AddIntConstant(m, "NOLOCK", TDB_NOLOCK);
+	PyModule_AddIntConstant(m, "NOMMAP", TDB_NOMMAP);
+	PyModule_AddIntConstant(m, "CONVERT", TDB_CONVERT);
+	PyModule_AddIntConstant(m, "BIGENDIAN", TDB_BIGENDIAN);
+	PyModule_AddIntConstant(m, "NOSYNC", TDB_NOSYNC);
+	PyModule_AddIntConstant(m, "SEQNUM", TDB_SEQNUM);
+	PyModule_AddIntConstant(m, "VOLATILE", TDB_VOLATILE);
+	PyModule_AddIntConstant(m, "ALLOW_NESTING", TDB_ALLOW_NESTING);
+	PyModule_AddIntConstant(m, "DISALLOW_NESTING", TDB_DISALLOW_NESTING);
+	PyModule_AddIntConstant(m, "INCOMPATIBLE_HASH", TDB_INCOMPATIBLE_HASH);
 
-	PyModule_AddObject(m, "__docformat__", PyString_FromString("restructuredText"));
+	PyModule_AddStringConstant(m, "__docformat__", "restructuredText");
 
-	PyModule_AddObject(m, "__version__", PyString_FromString(PACKAGE_VERSION));
+	PyModule_AddStringConstant(m, "__version__", PACKAGE_VERSION);
 
 	Py_INCREF(&PyTdb);
 	PyModule_AddObject(m, "Tdb", (PyObject *)&PyTdb);
 
 	Py_INCREF(&PyTdbIterator);
+
+    return m;
 }
+
+
+#if PY_MAJOR_VERSION >= 3
+PyMODINIT_FUNC PyInit_tdb(void);
+PyMODINIT_FUNC PyInit_tdb(void)
+{
+    return module_init();
+}
+#else
+void inittdb(void);
+void inittdb(void)
+{
+    module_init();
+}
+#endif

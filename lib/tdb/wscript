@@ -225,7 +225,10 @@ def testonly(ctx):
         print("testsuite returned %d" % ret)
         if ret != 0:
             ecode = ret
-    sys.exit(ecode)
+
+    pyret = samba_utils.RUN_PYTHON_TESTS(['python/tests/simple.py'])
+    print("python testsuite returned %d" % pyret)
+    sys.exit(ecode or pyret)
 
 # WAF doesn't build the unit tests for this, maybe because they don't link with tdb?
 # This forces it
