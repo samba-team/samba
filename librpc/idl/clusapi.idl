@@ -13,6 +13,11 @@ import "security.idl";
 	interface clusapi
 {
 #if 0
+	/*
+	 * pidl does not yet have a real [context_handle] implementation, so we
+	 * just use some defines here.
+	 */
+
 	typedef [context_handle] void *HCLUSTER_RPC;
 	typedef [context_handle] void *HNODE_RPC;
 	typedef [context_handle] void *HGROUP_RPC;
@@ -73,6 +78,13 @@ import "security.idl";
 	/* Function 0x00 */
 
 #if 0
+	/*
+	 * pidl cannot generate code for functions that return structures in
+	 * IDL, therefore pretend the function is void and add the returned
+	 * structure as an out parameter. This is what we do with pretty much
+	 * all the Open calls right now in this interface - gd
+	 */
+
 	HCLUSTER_RPC
 	clusapi_OpenCluster(
 		[ out ] WERROR *Status
