@@ -6,9 +6,12 @@
 # Copyright (C) 2007-2008 Jelmer Vernooij <jelmer@samba.org>
 # Published under the GNU LGPLv3 or later
 
-import tdb
+import sys
+import os
+import tempfile
 from unittest import TestCase
-import os, tempfile
+
+import tdb
 
 
 class OpenTdbTests(TestCase):
@@ -91,6 +94,10 @@ class SimpleTdbTests(TestCase):
     def test_contains(self):
         self.tdb[b"bla"] = b"bloe"
         self.assertTrue(b"bla" in self.tdb)
+        self.assertFalse(b"qwertyuiop" in self.tdb)
+        if sys.version_info < (3, 0):
+            self.assertTrue(self.tdb.has_key(b"bla"))
+            self.assertFalse(self.tdb.has_key(b"qwertyuiop"))
 
     def test_keyerror(self):
         self.assertRaises(KeyError, lambda: self.tdb[b"bla"])
@@ -139,7 +146,10 @@ class SimpleTdbTests(TestCase):
     def test_iterkeys(self):
         self.tdb[b"bloe"] = b"2"
         self.tdb[b"bla"] = b"25"
-        i = self.tdb.iterkeys()
+        if sys.version_info >= (3, 0):
+            i = self.tdb.keys()
+        else:
+            i = self.tdb.iterkeys()
         self.assertEquals(set([b"bloe", b"bla"]), set([next(i), next(i)]))
 
     def test_clear(self):

@@ -316,9 +316,26 @@ static PyObject *obj_delete(PyTdbObject *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
-static PyObject *obj_has_key(PyTdbObject *self, PyObject *args)
+static int obj_contains(PyTdbObject *self, PyObject *py_key)
 {
 	TDB_DATA key;
+	int ret;
+	PyErr_TDB_RAISE_RETURN_MINUS_1_IF_CLOSED(self);
+
+	key = PyBytes_AsTDB_DATA(py_key);
+	if (!key.dptr) {
+		PyErr_BadArgument();
+		return -1;
+	}
+	ret = tdb_exists(self->ctx, key);
+	if (ret)
+		return 1;
+	return 0;
+}
+
+#if PY_MAJOR_VERSION < 3
+static PyObject *obj_has_key(PyTdbObject *self, PyObject *args)
+{
 	int ret;
 	PyObject *py_key;
 	PyErr_TDB_RAISE_IF_CLOSED(self);
@@ -326,16 +343,15 @@ static PyObject *obj_has_key(PyTdbObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "O", &py_key))
 		return NULL;
 
-	key = PyBytes_AsTDB_DATA(py_key);
-	if (!key.dptr)
+	ret = obj_contains(self, py_key);
+	if (ret == -1)
 		return NULL;
-	ret = tdb_exists(self->ctx, key);
-	if (ret != TDB_ERR_NOEXIST) {
-		PyErr_TDB_ERROR_IS_ERR_RAISE(ret, self->ctx);
-	}
+	if (ret)
+		Py_RETURN_TRUE;
+	Py_RETURN_FALSE;
 
-	return (ret == TDB_ERR_NOEXIST)?Py_False:Py_True;
 }
+#endif
 
 static PyObject *obj_store(PyTdbObject *self, PyObject *args)
 {
@@ -496,13 +512,19 @@ static PyMethodDef tdb_object_methods[] = {
 		"Return the next key in this database." },
 	{ "delete", (PyCFunction)obj_delete, METH_VARARGS, "S.delete(key) -> None\n"
 		"Delete an entry." },
+#if PY_MAJOR_VERSION < 3
 	{ "has_key", (PyCFunction)obj_has_key, METH_VARARGS, "S.has_key(key) -> None\n"
 		"Check whether key exists in this database." },
+#endif
 	{ "store", (PyCFunction)obj_store, METH_VARARGS, "S.store(key, data, flag=REPLACE) -> None"
 		"Store data." },
 	{ "add_flags", (PyCFunction)obj_add_flags, METH_VARARGS, "S.add_flags(flags) -> None" },
 	{ "remove_flags", (PyCFunction)obj_remove_flags, METH_VARARGS, "S.remove_flags(flags) -> None" },
+#if PY_MAJOR_VERSION >= 3
+	{ "keys", (PyCFunction)tdb_object_iter, METH_NOARGS, "S.iterkeys() -> iterator" },
+#else
 	{ "iterkeys", (PyCFunction)tdb_object_iter, METH_NOARGS, "S.iterkeys() -> iterator" },
+#endif
 	{ "clear", (PyCFunction)obj_clear, METH_NOARGS, "S.clear() -> None\n"
 		"Wipe the entire database." },
 	{ "repack", (PyCFunction)obj_repack, METH_NOARGS, "S.repack() -> None\n"
@@ -654,6 +676,9 @@ static PyMappingMethods tdb_object_mapping = {
 	.mp_subscript = (binaryfunc)obj_getitem,
 	.mp_ass_subscript = (objobjargproc)obj_setitem,
 };
+static PySequenceMethods tdb_object_seq = {
+	.sq_contains = (objobjproc)obj_contains,
+};
 static PyTypeObject PyTdb = {
 	.tp_name = "tdb.Tdb",
 	.tp_basicsize = sizeof(PyTdbObject),
@@ -664,6 +689,7 @@ static PyTypeObject PyTdb = {
 	.tp_repr = (reprfunc)tdb_object_repr,
 	.tp_dealloc = (destructor)tdb_object_dealloc,
 	.tp_as_mapping = &tdb_object_mapping,
+	.tp_as_sequence = &tdb_object_seq,
 	.tp_flags = Py_TPFLAGS_DEFAULT|Py_TPFLAGS_BASETYPE|Py_TPFLAGS_HAVE_ITER,
 	.tp_iter = (getiterfunc)tdb_object_iter,
 };
