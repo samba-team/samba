@@ -3468,7 +3468,7 @@ int dsdb_find_nc_root(struct ldb_context *samdb, TALLOC_CTX *mem_ctx, struct ldb
 
 	ret = ldb_search(samdb, tmp_ctx, &root_res,
 			 ldb_dn_new(tmp_ctx, samdb, ""), LDB_SCOPE_BASE, root_attrs, NULL);
-	if (ret != LDB_SUCCESS) {
+	if (ret != LDB_SUCCESS || root_res->count == 0) {
 		DEBUG(1,("Searching for namingContexts in rootDSE failed: %s\n", ldb_errstring(samdb)));
 		talloc_free(tmp_ctx);
 		return ret;
