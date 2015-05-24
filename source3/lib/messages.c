@@ -83,6 +83,9 @@ struct messaging_context {
 	struct server_id_db *names_db;
 };
 
+static void messaging_dispatch_rec(struct messaging_context *msg_ctx,
+				   struct messaging_rec *rec);
+
 /****************************************************************************
  A useful function for testing the message system.
 ****************************************************************************/
@@ -923,8 +926,8 @@ static bool messaging_append_new_waiters(struct messaging_context *msg_ctx)
 /*
   Dispatch one messaging_rec
 */
-void messaging_dispatch_rec(struct messaging_context *msg_ctx,
-			    struct messaging_rec *rec)
+static void messaging_dispatch_rec(struct messaging_context *msg_ctx,
+				   struct messaging_rec *rec)
 {
 	struct messaging_callback *cb, *next;
 	unsigned i;
