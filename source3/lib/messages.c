@@ -213,13 +213,12 @@ static void messaging_recv_cb(const uint8_t *msg, size_t msg_len,
 {
 	struct messaging_context *msg_ctx = talloc_get_type_abort(
 		private_data, struct messaging_context);
-	uint8_t hdr[MESSAGE_HDR_LENGTH];
 	struct server_id_buf idbuf;
 	struct messaging_rec rec;
 	int64_t fds64[MIN(num_fds, INT8_MAX)];
 	size_t i;
 
-	if (msg_len < sizeof(hdr)) {
+	if (msg_len < MESSAGE_HDR_LENGTH) {
 		for (i=0; i < num_fds; i++) {
 			close(fds[i]);
 		}
@@ -246,8 +245,8 @@ static void messaging_recv_cb(const uint8_t *msg, size_t msg_len,
 
 	rec = (struct messaging_rec) {
 		.msg_version = MESSAGE_VERSION,
-		.buf.data = discard_const_p(uint8_t, msg) + sizeof(hdr),
-		.buf.length = msg_len - sizeof(hdr),
+		.buf.data = discard_const_p(uint8_t, msg) + MESSAGE_HDR_LENGTH,
+		.buf.length = msg_len - MESSAGE_HDR_LENGTH,
 		.num_fds = num_fds,
 		.fds = fds64,
 	};
