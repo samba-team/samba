@@ -21,6 +21,7 @@
 #include "messages.h"
 #include "util_tdb.h"
 #include "lib/util/iov_buf.h"
+#include "lib/messages_util.h"
 
 #include "ctdb.h"
 #include "ctdb_private.h"
@@ -80,55 +81,20 @@ static int messaging_ctdb_send(struct server_id src,
 {
 	struct messaging_ctdbd_context *ctx = talloc_get_type_abort(
 		backend->private_data, struct messaging_ctdbd_context);
-	struct messaging_rec msg;
-	uint8_t *buf;
-	ssize_t buflen;
-	DATA_BLOB blob;
-	struct iovec iov2;
+	uint8_t hdr[MESSAGE_HDR_LENGTH];
+	struct iovec iov2[iovlen+1];
 	NTSTATUS status;
-	enum ndr_err_code ndr_err;
 
 	if (num_fds > 0) {
 		return ENOSYS;
 	}
 
-	buflen = iov_buflen(iov, iovlen);
-	if (buflen == -1) {
-		return EMSGSIZE;
-	}
-
-	buf = talloc_array(talloc_tos(), uint8_t, buflen);
-	if (buf == NULL) {
-		return ENOMEM;
-	}
-	iov_buf(iov, iovlen, buf, buflen);
-
-	msg = (struct messaging_rec) {
-		.msg_version	= MESSAGE_VERSION,
-		.msg_type	= msg_type,
-		.dest		= pid,
-		.src		= src,
-		.buf		= data_blob_const(buf, talloc_get_size(buf)),
-	};
-
-	ndr_err = ndr_push_struct_blob(
-		&blob, buf, &msg,
-		(ndr_push_flags_fn_t)ndr_push_messaging_rec);
-
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		DEBUG(0, ("ndr_push_struct_blob failed: %s\n",
-			  ndr_errstr(ndr_err)));
-		TALLOC_FREE(buf);
-		return ndr_map_error2errno(ndr_err);
-	}
-
-	iov2 = (struct iovec) { .iov_base = blob.data,
-				.iov_len = blob.length };
+	message_hdr_put(hdr, msg_type, src, pid);
+	iov2[0] = (struct iovec){ .iov_base = hdr, .iov_len = sizeof(hdr) };
+	memcpy(&iov2[1], iov, iovlen * sizeof(*iov));
 
 	status = ctdbd_messaging_send_iov(ctx->conn, pid.vnn, pid.pid,
-					  &iov2, 1);
-	TALLOC_FREE(buf);
-
+					  iov2, iovlen+1);
 	if (NT_STATUS_IS_OK(status)) {
 		return 0;
 	}
@@ -145,81 +111,66 @@ static int messaging_ctdbd_destructor(struct messaging_ctdbd_context *ctx)
 	return 0;
 }
 
-static struct messaging_rec *ctdb_pull_messaging_rec(
-	TALLOC_CTX *mem_ctx, const struct ctdb_req_message *msg)
-{
-	struct messaging_rec *result;
-	DATA_BLOB blob;
-	enum ndr_err_code ndr_err;
-	size_t len = msg->hdr.length;
-
-	if (len < offsetof(struct ctdb_req_message, data)) {
-		return NULL;
-	}
-	len -= offsetof(struct ctdb_req_message, data);
-
-	if (len < msg->datalen) {
-		return NULL;
-	}
-
-	result = talloc(mem_ctx, struct messaging_rec);
-	if (result == NULL) {
-		return NULL;
-	}
-
-	blob = data_blob_const(msg->data, msg->datalen);
-
-	ndr_err = ndr_pull_struct_blob_all(
-		&blob, result, result,
-		(ndr_pull_flags_fn_t)ndr_pull_messaging_rec);
-
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		DEBUG(0, ("ndr_pull_struct_blob failed: %s\n",
-			  ndr_errstr(ndr_err)));
-		TALLOC_FREE(result);
-		return NULL;
-	}
-
-	if (DEBUGLEVEL >= 11) {
-		DEBUG(11, ("ctdb_pull_messaging_rec:\n"));
-		NDR_PRINT_DEBUG(messaging_rec, result);
-	}
-
-	return result;
-}
-
 static void messaging_ctdb_recv(struct ctdb_req_message *msg,
 				void *private_data)
 {
 	struct messaging_context *msg_ctx = talloc_get_type_abort(
 		private_data, struct messaging_context);
 	struct server_id me = messaging_server_id(msg_ctx);
-	struct messaging_rec *rec;
 	NTSTATUS status;
 	struct iovec iov;
+	size_t msg_len;
+	uint8_t *msg_buf;
+	struct server_id src, dst;
+	enum messaging_type msg_type;
+	struct server_id_buf idbuf;
 
-	rec = ctdb_pull_messaging_rec(msg_ctx, msg);
-	if (rec == NULL) {
-		DEBUG(10, ("%s: ctdb_pull_messaging_rec failed\n", __func__));
+	msg_len = msg->hdr.length;
+	if (msg_len < offsetof(struct ctdb_req_message, data)) {
+		DEBUG(10, ("%s: len %u too small\n", __func__,
+			   (unsigned)msg_len));
+		return;
+	}
+	msg_len -= offsetof(struct ctdb_req_message, data);
+
+	if (msg_len < msg->datalen) {
+		DEBUG(10, ("%s: msg_len=%u < msg->datalen=%u\n", __func__,
+			   (unsigned)msg_len, (unsigned)msg->datalen));
 		return;
 	}
 
-	if (!server_id_same_process(&me, &rec->dest)) {
+	if (msg_len < MESSAGE_HDR_LENGTH) {
+		DEBUG(1, ("%s: message too short: %u\n", __func__,
+			  (unsigned)msg_len));
+		return;
+	}
+
+	message_hdr_get(&msg_type, &src, &dst, msg->data);
+
+	msg_len -= MESSAGE_HDR_LENGTH;
+	msg_buf = msg->data + MESSAGE_HDR_LENGTH;
+
+	DEBUG(10, ("%s: Received message 0x%x len %u from %s\n",
+		   __func__, (unsigned)msg_type, (unsigned)msg_len,
+		   server_id_str_buf(src, &idbuf)));
+
+	if (!server_id_same_process(&me, &dst)) {
 		struct server_id_buf id1, id2;
 
 		DEBUG(10, ("%s: I'm %s, ignoring msg to %s\n", __func__,
 			   server_id_str_buf(me, &id1),
-			   server_id_str_buf(rec->dest, &id2)));
-		TALLOC_FREE(rec);
+			   server_id_str_buf(dst, &id2)));
 		return;
 	}
 
-	iov = (struct iovec) { .iov_base = rec->buf.data,
-			       .iov_len = rec->buf.length };
+	iov = (struct iovec) { .iov_base = msg_buf, .iov_len = msg_len };
 
-	status = messaging_send_iov_from(msg_ctx, rec->src, rec->dest,
-					 rec->msg_type, &iov, 1, NULL, 0);
-	TALLOC_FREE(rec);
+	/*
+	 * Go through the event loop
+	 */
+
+	status = messaging_send_iov_from(msg_ctx, src, dst, msg_type,
+					 &iov, 1, NULL, 0);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("%s: messaging_send_iov_from failed: %s\n",
