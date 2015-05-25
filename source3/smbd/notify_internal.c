@@ -627,6 +627,7 @@ void notify_trigger(struct notify_context *notify,
 	uint32_t last_vnn;
 	uint8_t *remote_blob = NULL;
 	size_t remote_blob_len = 0;
+	struct iovec iov;
 	char *path, *to_free;
 	char tmpbuf[PATH_MAX];
 	ssize_t len;
@@ -698,6 +699,9 @@ void notify_trigger(struct notify_context *notify,
 		goto done;
 	}
 
+	iov = (struct iovec) { .iov_base = remote_blob,
+			       .iov_len = remote_blob_len };
+
 	for (i=0; i<num_vnns; i++) {
 		uint32_t vnn = idx_state.vnns[i];
 		NTSTATUS status;
@@ -706,11 +710,11 @@ void notify_trigger(struct notify_context *notify,
 			continue;
 		}
 
-		status = ctdbd_messaging_send_blob(
+		status = ctdbd_messaging_send_iov(
 			ctdbd_conn, vnn, CTDB_SRVID_SAMBA_NOTIFY_PROXY,
-			remote_blob, remote_blob_len);
+			&iov, 1);
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(10, ("ctdbd_messaging_send_blob to vnn %d "
+			DEBUG(10, ("ctdbd_messaging_send_iov to vnn %d "
 				   "returned %s, ignoring\n", (int)vnn,
 				   nt_errstr(status)));
 		}

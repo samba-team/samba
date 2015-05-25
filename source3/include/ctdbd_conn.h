@@ -38,9 +38,9 @@ struct messaging_context *ctdb_conn_msg_ctx(struct ctdbd_connection *conn);
 
 int ctdbd_conn_get_fd(struct ctdbd_connection *conn);
 
-NTSTATUS ctdbd_messaging_send_blob(struct ctdbd_connection *conn,
-				   uint32_t dst_vnn, uint64_t dst_srvid,
-				   const uint8_t *buf, size_t buflen);
+NTSTATUS ctdbd_messaging_send_iov(struct ctdbd_connection *conn,
+				  uint32_t dst_vnn, uint64_t dst_srvid,
+				  const struct iovec *iov, int iovlen);
 
 bool ctdbd_process_exists(struct ctdbd_connection *conn, uint32_t vnn,
 			  pid_t pid);

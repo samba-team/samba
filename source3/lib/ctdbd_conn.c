@@ -24,6 +24,7 @@
 #include "ctdbd_conn.h"
 #include "system/select.h"
 #include "lib/sys_rw_data.h"
+#include "lib/util/iov_buf.h"
 
 #include "messages.h"
 
@@ -605,12 +606,13 @@ NTSTATUS ctdbd_register_msg_ctx(struct ctdbd_connection *conn,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ctdbd_messaging_send_blob(struct ctdbd_connection *conn,
-				   uint32_t dst_vnn, uint64_t dst_srvid,
-				   const uint8_t *buf, size_t buflen)
+NTSTATUS ctdbd_messaging_send_iov(struct ctdbd_connection *conn,
+				  uint32_t dst_vnn, uint64_t dst_srvid,
+				  const struct iovec *iov, int iovlen)
 {
 	struct ctdb_req_message r;
-	struct iovec iov[2];
+	struct iovec iov2[iovlen+1];
+	size_t buflen = iov_buflen(iov, iovlen);
 	ssize_t nwritten;
 
 	r.hdr.length = offsetof(struct ctdb_req_message, data) + buflen;
@@ -627,12 +629,11 @@ NTSTATUS ctdbd_messaging_send_blob(struct ctdbd_connection *conn,
 	DEBUG(10, ("ctdbd_messaging_send: Sending ctdb packet\n"));
 	ctdb_packet_dump(&r.hdr);
 
-	iov[0].iov_base = &r;
-	iov[0].iov_len = offsetof(struct ctdb_req_message, data);
-	iov[1].iov_base = discard_const_p(uint8_t, buf);
-	iov[1].iov_len = buflen;
+	iov2[0].iov_base = &r;
+	iov2[0].iov_len = offsetof(struct ctdb_req_message, data);
+	memcpy(&iov2[1], iov, iovlen * sizeof(struct iovec));
 
-	nwritten = write_data_iov(conn->fd, iov, ARRAY_SIZE(iov));
+	nwritten = write_data_iov(conn->fd, iov2, iovlen+1);
 	if (nwritten == -1) {
 		DEBUG(3, ("write_data_iov failed: %s\n", strerror(errno)));
 		cluster_fatal("cluster dispatch daemon msg write error\n");

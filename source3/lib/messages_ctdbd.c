@@ -84,6 +84,7 @@ static int messaging_ctdb_send(struct server_id src,
 	uint8_t *buf;
 	ssize_t buflen;
 	DATA_BLOB blob;
+	struct iovec iov2;
 	NTSTATUS status;
 	enum ndr_err_code ndr_err;
 
@@ -121,8 +122,11 @@ static int messaging_ctdb_send(struct server_id src,
 		return ndr_map_error2errno(ndr_err);
 	}
 
-	status = ctdbd_messaging_send_blob(ctx->conn, pid.vnn, pid.pid,
-					   blob.data, blob.length);
+	iov2 = (struct iovec) { .iov_base = blob.data,
+				.iov_len = blob.length };
+
+	status = ctdbd_messaging_send_iov(ctx->conn, pid.vnn, pid.pid,
+					  &iov2, 1);
 	TALLOC_FREE(buf);
 
 	if (NT_STATUS_IS_OK(status)) {

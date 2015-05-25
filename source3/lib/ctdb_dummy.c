@@ -30,9 +30,9 @@ NTSTATUS ctdbd_probe(void)
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-NTSTATUS ctdbd_messaging_send_blob(struct ctdbd_connection *conn,
-				   uint32_t dst_vnn, uint64_t dst_srvid,
-				   const uint8_t *buf, size_t buflen)
+NTSTATUS ctdbd_messaging_send_iov(struct ctdbd_connection *conn,
+				  uint32_t dst_vnn, uint64_t dst_srvid,
+				  const struct iovec *iov, int iovlen)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
