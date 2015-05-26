@@ -13,7 +13,7 @@ while not os.path.exists(srcdir+'/buildtools') and len(srcdir.split('/')) < 5:
     srcdir = srcdir + '/..'
 sys.path.insert(0, srcdir + '/buildtools/wafsamba')
 
-import wafsamba, samba_dist, Options, Logs
+import wafsamba, samba_dist, samba_utils, Options, Logs
 
 samba_dist.DIST_DIRS('lib/tevent:. lib/replace:lib/replace lib/talloc:lib/talloc buildtools:buildtools third_party/waf:third_party/waf')
 
@@ -129,6 +129,9 @@ def build(bld):
 def test(ctx):
     '''test tevent'''
     print("The tevent testsuite is part of smbtorture in samba4")
+
+    pyret = samba_utils.RUN_PYTHON_TESTS(['bindings.py'])
+    sys.exit(pyret)
 
 
 def dist():

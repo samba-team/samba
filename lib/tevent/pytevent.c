@@ -50,6 +50,7 @@ typedef struct {
 typedef struct {
 	PyObject_HEAD
 	struct tevent_timer *timer;
+	PyObject *callback;
 } TeventTimer_Object;
 
 typedef struct {
@@ -372,36 +373,146 @@ static void py_timer_handler(struct tevent_context *ev,
 				       struct timeval current_time,
 				       void *private_data)
 {
-	PyObject *callback = private_data, *ret;
-	ret = PyObject_CallFunction(callback, "l", te);
+	TeventTimer_Object *self = private_data;
+	PyObject *ret;
+
+	ret = PyObject_CallFunction(self->callback, "l", te);
+	if (ret == NULL) {
+		/* No Python stack to propagate exception to; just print traceback */
+		PyErr_PrintEx(0);
+	}
 	Py_XDECREF(ret);
 }
 
-static PyObject *py_tevent_context_add_timer(TeventContext_Object *self, PyObject *args)
+static void py_tevent_timer_dealloc(TeventTimer_Object *self)
 {
-	TeventTimer_Object *ret;
-	struct timeval next_event;
-	struct tevent_timer *timer;
-	PyObject *handler;
-	if (!PyArg_ParseTuple(args, "lO", &next_event, &handler))
-		return NULL;
-
-	timer = tevent_add_timer(self->ev, NULL, next_event, py_timer_handler,
-							 handler);
-	if (timer == NULL) {
-		PyErr_SetNone(PyExc_RuntimeError);
-		return NULL;
+	if (self->timer) {
+		talloc_free(self->timer);
 	}
+	Py_DECREF(self->callback);
+	PyObject_Del(self);
+}
+
+static int py_tevent_timer_traverse(TeventTimer_Object *self, visitproc visit, void *arg)
+{
+	Py_VISIT(self->callback);
+	return 0;
+}
+
+static PyObject* py_tevent_timer_get_active(TeventTimer_Object *self) {
+	return PyBool_FromLong(self->timer != NULL);
+}
+
+struct PyGetSetDef py_tevent_timer_getset[] = {
+	{
+		.name = "active",
+		.get = (getter)py_tevent_timer_get_active,
+		.doc = "true if the timer is scheduled to run",
+	},
+	{NULL},
+};
+
+static PyTypeObject TeventTimer_Type = {
+	.tp_name = "tevent.Timer",
+	.tp_basicsize = sizeof(TeventTimer_Object),
+	.tp_dealloc = (destructor)py_tevent_timer_dealloc,
+	.tp_traverse = (traverseproc)py_tevent_timer_traverse,
+	.tp_getset = py_tevent_timer_getset,
+	.tp_flags = Py_TPFLAGS_DEFAULT,
+};
+
+static int timer_destructor(void* ptr)
+{
+	TeventTimer_Object *obj = *(TeventTimer_Object **)ptr;
+	obj->timer = NULL;
+	Py_DECREF(obj);
+	return 0;
+}
+
+static PyObject *py_tevent_context_add_timer_internal(TeventContext_Object *self,
+                                                      struct timeval next_event,
+                                                      PyObject *callback)
+{
+	/* Ownership notes:
+	 *
+	 * There are 5 pieces in play; two tevent contexts and 3 Python objects:
+	 * - The tevent timer
+	 * - The tevent context
+	 * - The Python context -- "self"
+	 * - The Python timer (TeventTimer_Object) -- "ret"
+	 * - The Python callback function -- "callback"
+	 *
+	 * We only use the Python context for getting the tevent context,
+	 * afterwards it can be destroyed.
+	 *
+	 * The tevent context owns the tevent timer.
+	 *
+	 * The tevent timer holds a reference to the Python timer, so the Python
+	 * timer must always outlive the tevent timer.
+	 * The Python timer has a pointer to the tevent timer; a destructor is
+	 * used to set this to NULL when the tevent timer is deallocated.
+	 *
+	 * The tevent timer can be deallocated in these cases:
+	 *  1) when the context is destroyed
+	 *  2) after the event fires
+	 *  Posssibly, API might be added to cancel (free the tevent timer).
+	 *
+	 * The Python timer holds a reference to the callback.
+	 */
+	TeventTimer_Object *ret;
+	TeventTimer_Object **tmp_context;
 
 	ret = PyObject_New(TeventTimer_Object, &TeventTimer_Type);
 	if (ret == NULL) {
 		PyErr_NoMemory();
-		talloc_free(timer);
 		return NULL;
 	}
-	ret->timer = timer;
+	Py_INCREF(callback);
+	ret->callback = callback;
+	ret->timer = tevent_add_timer(self->ev, NULL, next_event, py_timer_handler,
+	                              ret);
+	if (ret->timer == NULL) {
+		Py_DECREF(ret);
+		PyErr_SetString(PyExc_RuntimeError, "Could not initialize timer");
+		return NULL;
+	}
+	tmp_context = talloc(ret->timer, TeventTimer_Object*);
+	if (tmp_context == NULL) {
+		talloc_free(ret->timer);
+		Py_DECREF(ret);
+		PyErr_SetString(PyExc_RuntimeError, "Could not initialize timer");
+		return NULL;
+	}
+	Py_INCREF(ret);
+	*tmp_context = ret;
+	talloc_set_destructor(tmp_context, timer_destructor);
 
 	return (PyObject *)ret;
+}
+
+static PyObject *py_tevent_context_add_timer(TeventContext_Object *self, PyObject *args)
+{
+	struct timeval next_event;
+	PyObject *callback;
+	if (!PyArg_ParseTuple(args, "lO", &next_event, &callback))
+		return NULL;
+
+	return py_tevent_context_add_timer_internal(self, next_event, callback);
+}
+
+static PyObject *py_tevent_context_add_timer_offset(TeventContext_Object *self, PyObject *args)
+{
+	struct timeval next_event;
+	double offset;
+	int seconds;
+	PyObject *callback;
+	if (!PyArg_ParseTuple(args, "dO", &offset, &callback))
+		return NULL;
+
+	seconds = offset;
+	offset -= seconds;
+	next_event = tevent_timeval_current_ofs(seconds, (int)(offset*1000000));
+	return py_tevent_context_add_timer_internal(self, next_event, callback);
 }
 
 static void py_fd_handler(struct tevent_context *ev,
@@ -479,6 +590,8 @@ static PyMethodDef py_tevent_context_methods[] = {
 		METH_VARARGS, "S.add_signal(signum, sa_flags, handler) -> signal" },
 	{ "add_timer", (PyCFunction)py_tevent_context_add_timer,
 		METH_VARARGS, "S.add_timer(next_event, handler) -> timer" },
+	{ "add_timer_offset", (PyCFunction)py_tevent_context_add_timer_offset,
+		METH_VARARGS, "S.add_timer(offset_seconds, handler) -> timer" },
 	{ "add_fd", (PyCFunction)py_tevent_context_add_fd, 
 		METH_VARARGS, "S.add_fd(fd, flags, handler) -> fd" },
 #ifdef TEVENT_DEPRECATED
