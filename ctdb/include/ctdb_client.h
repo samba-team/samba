@@ -84,11 +84,6 @@ const char *ctdb_get_socketname(struct ctdb_context *ctdb);
 int ctdb_ip_to_nodeid(struct ctdb_context *ctdb, const ctdb_sock_addr *nodeip);
 
 /*
-  start the ctdb protocol
-*/
-int ctdb_start(struct ctdb_context *ctdb);
-
-/*
   attach to a ctdb database
 */
 struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb,
@@ -125,19 +120,8 @@ int ctdb_set_call(struct ctdb_db_context *ctdb_db, ctdb_fn_t fn, uint32_t id);
 */
 int ctdb_call(struct ctdb_db_context *ctdb_db, struct ctdb_call *call);
 
-/*
-  initiate an ordered ctdb cluster shutdown
-  this function will never return
-*/
-void ctdb_shutdown(struct ctdb_context *ctdb);
-
 /* return pnn of this node */
 uint32_t ctdb_get_pnn(struct ctdb_context *ctdb);
-
-/*
-  return the number of nodes
-*/
-uint32_t ctdb_get_num_nodes(struct ctdb_context *ctdb);
 
 /* setup a handler for ctdb messages */
 typedef void (*ctdb_msg_fn_t)(struct ctdb_context *, uint64_t srvid,
@@ -229,10 +213,6 @@ int ctdb_ctrl_getnodesfile(struct ctdb_context *ctdb,
 			   struct timeval timeout, uint32_t destnode,
 			   TALLOC_CTX *mem_ctx, struct ctdb_node_map **nodemap);
 
-int ctdb_ctrl_getnodemapv4(struct ctdb_context *ctdb,
-		    struct timeval timeout, uint32_t destnode,
-		    TALLOC_CTX *mem_ctx, struct ctdb_node_map **nodemap);
-
 int ctdb_ctrl_reload_nodes_file(struct ctdb_context *ctdb,
 		    struct timeval timeout, uint32_t destnode);
 
@@ -258,26 +238,6 @@ int ctdb_ctrl_pulldb_recv(
        TALLOC_CTX *mem_ctx, struct ctdb_client_control_state *state,
        TDB_DATA *outdata);
 
-int ctdb_ctrl_pushdb(
-       struct ctdb_context *ctdb, uint32_t destnode, uint32_t dbid,
-       TALLOC_CTX *mem_ctx,
-       struct timeval timeout, TDB_DATA indata);
-
-struct ctdb_client_control_state *ctdb_ctrl_pushdb_send(
-       struct ctdb_context *ctdb, uint32_t destnode, uint32_t dbid,
-       TALLOC_CTX *mem_ctx, struct timeval timeout,
-       TDB_DATA indata);
-
-int ctdb_ctrl_pushdb_recv(
-       struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx,
-       struct ctdb_client_control_state *state);
-
-
-int ctdb_ctrl_copydb(struct ctdb_context *ctdb,
-	struct timeval timeout, uint32_t sourcenode,
-	uint32_t destnode, uint32_t dbid, uint32_t lmaster,
-	TALLOC_CTX *mem_ctx);
-
 int ctdb_ctrl_getdbpath(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, uint32_t dbid, TALLOC_CTX *mem_ctx, const char **path);
 int ctdb_ctrl_getdbname(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, uint32_t dbid, TALLOC_CTX *mem_ctx, const char **name);
 int ctdb_ctrl_getdbhealth(struct ctdb_context *ctdb,
@@ -298,8 +258,6 @@ int ctdb_ctrl_get_runstate(struct ctdb_context *ctdb,
 			   uint32_t destnode,
 			   uint32_t *runstate);
 
-int ctdb_ctrl_get_config(struct ctdb_context *ctdb);
-
 int ctdb_ctrl_get_debuglevel(struct ctdb_context *ctdb, uint32_t destnode, int32_t *level);
 int ctdb_ctrl_set_debuglevel(struct ctdb_context *ctdb, uint32_t destnode, int32_t level);
 
@@ -309,11 +267,6 @@ int ctdb_ctrl_set_debuglevel(struct ctdb_context *ctdb, uint32_t destnode, int32
 int ctdb_ctrl_setdmaster(struct ctdb_context *ctdb,
 	struct timeval timeout, uint32_t destnode,
 	TALLOC_CTX *mem_ctx, uint32_t dbid, uint32_t dmaster);
-
-/*
-  write a record on a specific db (this implicitely updates dmaster of the record to locally be the vnn of the node where the control is executed on)
- */
-int ctdb_ctrl_write_record(struct ctdb_context *ctdb, uint32_t destnode, TALLOC_CTX *mem_ctx, uint32_t dbid, TDB_DATA key, TDB_DATA data);
 
 #define CTDB_RECOVERY_NORMAL		0
 #define CTDB_RECOVERY_ACTIVE		1
