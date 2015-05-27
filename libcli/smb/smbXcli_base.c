@@ -130,6 +130,9 @@ struct smbXcli_conn {
 		uint16_t cur_credits;
 		uint16_t max_credits;
 
+		uint32_t cc_chunk_len;
+		uint32_t cc_max_chunks;
+
 		uint8_t io_priority;
 
 		uint8_t preauth_sha512[64];
@@ -408,6 +411,13 @@ struct smbXcli_conn *smbXcli_conn_create(TALLOC_CTX *mem_ctx,
 	conn->smb2.cur_credits = 1;
 	conn->smb2.max_credits = 0;
 	conn->smb2.io_priority = 1;
+
+	/*
+	 * Samba and Windows servers accept a maximum of 16 MiB with a maximum
+	 * chunk length of 1 MiB.
+	 */
+	conn->smb2.cc_chunk_len = 1024 * 1024;
+	conn->smb2.cc_max_chunks = 16;
 
 	talloc_set_destructor(conn, smbXcli_conn_destructor);
 	return conn;
@@ -2593,6 +2603,28 @@ void smb2cli_conn_set_io_priority(struct smbXcli_conn *conn,
 				  uint8_t io_priority)
 {
 	conn->smb2.io_priority = io_priority;
+}
+
+uint32_t smb2cli_conn_cc_chunk_len(struct smbXcli_conn *conn)
+{
+	return conn->smb2.cc_chunk_len;
+}
+
+void smb2cli_conn_set_cc_chunk_len(struct smbXcli_conn *conn,
+				    uint32_t chunk_len)
+{
+	conn->smb2.cc_chunk_len = chunk_len;
+}
+
+uint32_t smb2cli_conn_cc_max_chunks(struct smbXcli_conn *conn)
+{
+	return conn->smb2.cc_max_chunks;
+}
+
+void smb2cli_conn_set_cc_max_chunks(struct smbXcli_conn *conn,
+				    uint32_t max_chunks)
+{
+	conn->smb2.cc_max_chunks = max_chunks;
 }
 
 static void smb2cli_req_cancel_done(struct tevent_req *subreq);

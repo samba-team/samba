@@ -803,6 +803,13 @@ NTSTATUS cli_push(struct cli_state *cli, uint16_t fnum, uint16_t mode,
 		  size_t (*source)(uint8_t *buf, size_t n, void *priv),
 		  void *priv);
 
+NTSTATUS cli_splice(struct cli_state *srccli, struct cli_state *dstcli,
+		    uint16_t src_fnum, uint16_t dst_fnum,
+		    off_t size,
+		    off_t src_offset, off_t dst_offset,
+		    off_t *written,
+		    int (*splice_cb)(off_t n, void *priv), void *priv);
+
 /* The following definitions come from libsmb/clisecdesc.c  */
 
 NTSTATUS cli_query_security_descriptor(struct cli_state *cli,

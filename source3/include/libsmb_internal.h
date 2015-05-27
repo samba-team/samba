@@ -238,13 +238,12 @@ struct SMBC_internal_data {
         }               printing;
 #endif
 
-#if 0 /* None available yet */
         /* SMB high-level functions */
         struct
         {
+                smbc_splice_fn                  splice_fn;
         }               smb;
 
-#endif
 	uint16_t	port;
 };	
 
@@ -364,6 +363,14 @@ SMBC_write_ctx(SMBCCTX *context,
                SMBCFILE *file,
                const void *buf,
                size_t count);
+
+off_t
+SMBC_splice_ctx(SMBCCTX *context,
+                SMBCFILE *srcfile,
+                SMBCFILE *dstfile,
+                off_t count,
+                int (*splice_cb)(off_t n, void *priv),
+                void *priv);
 
 int
 SMBC_close_ctx(SMBCCTX *context,

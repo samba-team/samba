@@ -414,6 +414,7 @@ bld.SAMBA3_LIBRARY('libsmb',
                    SPNEGO_PARSE
                    LIBTSOCKET
                    KRBCLIENT
+                   NDR_IOCTL
                    cli_smb_common
                    util_cmdline
                    tevent''',

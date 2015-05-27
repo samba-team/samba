@@ -316,6 +316,115 @@ SMBC_read_ctx(SMBCCTX *context,
 	return ret;  /* Success, ret bytes of data ... */
 }
 
+off_t
+SMBC_splice_ctx(SMBCCTX *context,
+                SMBCFILE *srcfile,
+                SMBCFILE *dstfile,
+                off_t count,
+                int (*splice_cb)(off_t n, void *priv),
+                void *priv)
+{
+	off_t written;
+	char *server = NULL, *share = NULL, *user = NULL, *password = NULL;
+	char *path = NULL;
+	char *targetpath = NULL;
+	struct cli_state *srccli = NULL;
+	struct cli_state *dstcli = NULL;
+	uint16_t port = 0;
+	TALLOC_CTX *frame = talloc_stackframe();
+	NTSTATUS status;
+
+	if (!context || !context->internal->initialized) {
+		errno = EINVAL;
+		TALLOC_FREE(frame);
+		return -1;
+	}
+
+	if (!srcfile ||
+	    !SMBC_dlist_contains(context->internal->files, srcfile))
+	{
+		errno = EBADF;
+		TALLOC_FREE(frame);
+		return -1;
+	}
+
+	if (!dstfile ||
+	    !SMBC_dlist_contains(context->internal->files, dstfile))
+	{
+		errno = EBADF;
+		TALLOC_FREE(frame);
+		return -1;
+	}
+
+	if (SMBC_parse_path(frame,
+                            context,
+                            srcfile->fname,
+                            NULL,
+                            &server,
+                            &port,
+                            &share,
+                            &path,
+                            &user,
+                            &password,
+                            NULL)) {
+                errno = EINVAL;
+		TALLOC_FREE(frame);
+                return -1;
+        }
+
+	status = cli_resolve_path(frame, "", context->internal->auth_info,
+				  srcfile->srv->cli, path,
+				  &srccli, &targetpath);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("Could not resolve %s\n", path);
+                errno = ENOENT;
+		TALLOC_FREE(frame);
+		return -1;
+	}
+
+	if (SMBC_parse_path(frame,
+                            context,
+                            dstfile->fname,
+                            NULL,
+                            &server,
+                            &port,
+                            &share,
+                            &path,
+                            &user,
+                            &password,
+                            NULL)) {
+                errno = EINVAL;
+		TALLOC_FREE(frame);
+                return -1;
+        }
+
+	status = cli_resolve_path(frame, "", context->internal->auth_info,
+				  dstfile->srv->cli, path,
+				  &dstcli, &targetpath);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("Could not resolve %s\n", path);
+                errno = ENOENT;
+		TALLOC_FREE(frame);
+		return -1;
+	}
+
+	status = cli_splice(srccli, dstcli,
+			    srcfile->cli_fd, dstfile->cli_fd,
+			    count, srcfile->offset, dstfile->offset, &written,
+			    splice_cb, priv);
+	if (!NT_STATUS_IS_OK(status)) {
+		errno = SMBC_errno(context, srccli);
+		TALLOC_FREE(frame);
+		return -1;
+	}
+
+	srcfile->offset += written;
+	dstfile->offset += written;
+
+	TALLOC_FREE(frame);
+	return written;
+}
+
 /*
  * Routine to write() a file ...
  */

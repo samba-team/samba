@@ -194,6 +194,7 @@ smbc_new_context(void)
         smbc_setFunctionOpen(context, SMBC_open_ctx);
         smbc_setFunctionCreat(context, SMBC_creat_ctx);
         smbc_setFunctionRead(context, SMBC_read_ctx);
+        smbc_setFunctionSplice(context, SMBC_splice_ctx);
         smbc_setFunctionWrite(context, SMBC_write_ctx);
         smbc_setFunctionClose(context, SMBC_close_ctx);
         smbc_setFunctionUnlink(context, SMBC_unlink_ctx);

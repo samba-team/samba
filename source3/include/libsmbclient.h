@@ -872,6 +872,15 @@ typedef ssize_t (*smbc_write_fn)(SMBCCTX *c,
 smbc_write_fn smbc_getFunctionWrite(SMBCCTX *c);
 void smbc_setFunctionWrite(SMBCCTX *c, smbc_write_fn fn);
 
+typedef off_t (*smbc_splice_fn)(SMBCCTX *c,
+                                SMBCFILE *srcfile,
+                                SMBCFILE *dstfile,
+                                off_t count,
+                                int (*splice_cb)(off_t n, void *priv),
+                                void *priv);
+smbc_splice_fn smbc_getFunctionSplice(SMBCCTX *c);
+void smbc_setFunctionSplice(SMBCCTX *c, smbc_splice_fn fn);
+
 typedef int (*smbc_unlink_fn)(SMBCCTX *c,
                               const char *fname);
 smbc_unlink_fn smbc_getFunctionUnlink(SMBCCTX *c);

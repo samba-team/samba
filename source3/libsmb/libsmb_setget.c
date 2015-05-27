@@ -695,6 +695,18 @@ smbc_setFunctionWrite(SMBCCTX *c, smbc_write_fn fn)
         c->write = fn;
 }
 
+smbc_splice_fn
+smbc_getFunctionSplice(SMBCCTX *c)
+{
+        return c->internal->smb.splice_fn;
+}
+
+void
+smbc_setFunctionSplice(SMBCCTX *c, smbc_splice_fn fn)
+{
+        c->internal->smb.splice_fn = fn;
+}
+
 smbc_unlink_fn
 smbc_getFunctionUnlink(SMBCCTX *c)
 {
