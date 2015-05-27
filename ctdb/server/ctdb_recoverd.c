@@ -998,7 +998,6 @@ struct vacuum_info {
 	struct ctdb_rec_data *r;
 };
 
-static void vacuum_fetch_next(struct vacuum_info *v);
 
 /*
   called when a vacuum fetch has completed - just free it and do the next one
