@@ -36,7 +36,8 @@ static NTSTATUS smbd_smb2_tree_connect_recv(struct tevent_req *req,
 					    uint32_t *out_share_flags,
 					    uint32_t *out_capabilities,
 					    uint32_t *out_maximal_access,
-					    uint32_t *out_tree_id);
+					    uint32_t *out_tree_id,
+					    bool *disconnect);
 
 static void smbd_smb2_request_tcon_done(struct tevent_req *subreq);
 
@@ -113,6 +114,7 @@ static void smbd_smb2_request_tcon_done(struct tevent_req *subreq)
 	uint32_t out_capabilities = 0;
 	uint32_t out_maximal_access = 0;
 	uint32_t out_tree_id = 0;
+	bool disconnect = false;
 	NTSTATUS status;
 	NTSTATUS error;
 
@@ -121,9 +123,15 @@ static void smbd_smb2_request_tcon_done(struct tevent_req *subreq)
 					     &out_share_flags,
 					     &out_capabilities,
 					     &out_maximal_access,
-					     &out_tree_id);
+					     &out_tree_id,
+					     &disconnect);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
+		if (disconnect) {
+			smbd_server_connection_terminate(req->xconn,
+							 nt_errstr(status));
+			return;
+		}
 		error = smbd_smb2_request_error(req, status);
 		if (!NT_STATUS_IS_OK(error)) {
 			smbd_server_connection_terminate(req->xconn,
@@ -173,7 +181,8 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 				       uint32_t *out_share_flags,
 				       uint32_t *out_capabilities,
 				       uint32_t *out_maximal_access,
-				       uint32_t *out_tree_id)
+				       uint32_t *out_tree_id,
+				       bool *disconnect)
 {
 	struct smbXsrv_connection *conn = req->xconn;
 	const char *share = in_path;
@@ -186,6 +195,9 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 	NTSTATUS status;
 	bool encryption_required = req->session->global->encryption_required;
 	bool guest_session = false;
+	bool require_signed_tcon = false;
+
+	*disconnect = false;
 
 	if (strncmp(share, "\\\\", 2) == 0) {
 		const char *p = strchr(share+2, '\\');
@@ -196,6 +208,25 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 
 	DEBUG(10,("smbd_smb2_tree_connect: path[%s] share[%s]\n",
 		  in_path, share));
+
+	if (security_session_user_level(compat_vuser->session_info, NULL) < SECURITY_USER) {
+		guest_session = true;
+	}
+
+	if (conn->protocol >= PROTOCOL_SMB3_11 && !guest_session) {
+		require_signed_tcon = true;
+	}
+
+	if (require_signed_tcon && !req->do_encryption && !req->do_signing) {
+		DEBUG(1, ("smbd_smb2_tree_connect: reject request to share "
+			  "[%s] as '%s\\%s' without encryption or signing. "
+			  "Disconnecting.\n",
+			  share,
+			  req->session->global->auth_session_info->info->domain_name,
+			  req->session->global->auth_session_info->info->account_name));
+		*disconnect = true;
+		return NT_STATUS_ACCESS_DENIED;
+	}
 
 	service = talloc_strdup(talloc_tos(), share);
 	if(!service) {
@@ -242,10 +273,6 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 
 	if (lp_smb_encrypt(snum) == SMB_SIGNING_REQUIRED) {
 		encryption_required = true;
-	}
-
-	if (security_session_user_level(compat_vuser->session_info, NULL) < SECURITY_USER) {
-		guest_session = true;
 	}
 
 	if (guest_session && encryption_required) {
@@ -356,6 +383,7 @@ struct smbd_smb2_tree_connect_state {
 	uint32_t out_capabilities;
 	uint32_t out_maximal_access;
 	uint32_t out_tree_id;
+	bool disconnect;
 };
 
 static struct tevent_req *smbd_smb2_tree_connect_send(TALLOC_CTX *mem_ctx,
@@ -380,7 +408,8 @@ static struct tevent_req *smbd_smb2_tree_connect_send(TALLOC_CTX *mem_ctx,
 					&state->out_share_flags,
 					&state->out_capabilities,
 					&state->out_maximal_access,
-					&state->out_tree_id);
+					&state->out_tree_id,
+					&state->disconnect);
 	if (tevent_req_nterror(req, status)) {
 		return tevent_req_post(req, ev);
 	}
@@ -394,7 +423,8 @@ static NTSTATUS smbd_smb2_tree_connect_recv(struct tevent_req *req,
 					    uint32_t *out_share_flags,
 					    uint32_t *out_capabilities,
 					    uint32_t *out_maximal_access,
-					    uint32_t *out_tree_id)
+					    uint32_t *out_tree_id,
+					    bool *disconnect)
 {
 	struct smbd_smb2_tree_connect_state *state =
 		tevent_req_data(req,
@@ -411,6 +441,7 @@ static NTSTATUS smbd_smb2_tree_connect_recv(struct tevent_req *req,
 	*out_capabilities = state->out_capabilities;
 	*out_maximal_access = state->out_maximal_access;
 	*out_tree_id = state->out_tree_id;
+	*disconnect = state->disconnect;
 
 	tevent_req_received(req);
 	return NT_STATUS_OK;
