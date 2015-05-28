@@ -514,15 +514,19 @@ def send_email(subject, text, log_tar):
     s.set_debuglevel(1)
     s.quit()
 
-def email_failure(status, failed_task, failed_stage, failed_tag, errstr, log_base=None):
+def email_failure(status, failed_task, failed_stage, failed_tag, errstr,
+                  elapsed_time, log_base=None):
     '''send an email to options.email about the failure'''
+    elapsed_minutes = elapsed_time / 60.0
     user = os.getenv("USER")
     if log_base is None:
         log_base = gitroot
     text = '''
 Dear Developer,
 
-Your autobuild on %s failed when trying to test %s with the following error:
+Your autobuild on %s failed after %.1f minutes
+when trying to test %s with the following error:
+
    %s
 
 the autobuild has been abandoned. Please fix the error and resubmit.
@@ -530,7 +534,7 @@ the autobuild has been abandoned. Please fix the error and resubmit.
 A summary of the autobuild process is here:
 
   %s/autobuild.log
-''' % (platform.node(), failed_task, errstr, log_base)
+''' % (platform.node(), elapsed_minutes, failed_task, errstr, log_base)
 
     if failed_task != 'rebase':
         text += '''
@@ -554,7 +558,7 @@ The top commit for the tree that was built was:
                % (platform.node(), failed_task, failed_stage),
                text, logs)
 
-def email_success(log_base=None):
+def email_success(elapsed_time, log_base=None):
     '''send an email to options.email about a successful build'''
     user = os.getenv("USER")
     if log_base is None:
@@ -562,9 +566,9 @@ def email_success(log_base=None):
     text = '''
 Dear Developer,
 
-Your autobuild on %s has succeeded.
+Your autobuild on %s has succeeded after %.1f minutes.
 
-''' % platform.node()
+''' % (platform.node(), elapsed_time / 60.)
 
     if options.keeplogs:
         text += '''
@@ -611,6 +615,8 @@ if options.daemon:
 
 write_pidfile(gitroot + "/autobuild.pid")
 
+start_time = time.time()
+
 while True:
     try:
         run_cmd("rm -rf %s" % test_master)
@@ -627,9 +633,10 @@ while True:
         except Exception:
             cleanup_list.append(gitroot + "/autobuild.pid")
             cleanup()
+            elapsed_time = time.time() - start_time
             email_failure(-1, 'rebase', 'rebase', 'rebase',
                           'rebase on %s failed' % options.branch,
-                          log_base=options.log_base)
+                          elapsed_time, log_base=options.log_base)
             sys.exit(1)
         blist = buildlist(tasks, args, options.rebase, rebase_branch=options.branch)
         if options.tail:
@@ -649,6 +656,7 @@ if options.tail:
     print("waiting for tail to flush")
     time.sleep(1)
 
+elapsed_time = time.time() - start_time
 if status == 0:
     print errstr
     if options.passcmd is not None:
@@ -660,7 +668,7 @@ if status == 0:
         blist.tarlogs("logs.tar.gz")
         print("Logs in logs.tar.gz")
     if options.always_email:
-        email_success(log_base=options.log_base)
+        email_success(elapsed_time, log_base=options.log_base)
     blist.remove_logs()
     cleanup()
     print(errstr)
@@ -670,7 +678,8 @@ if status == 0:
 blist.tarlogs("logs.tar.gz")
 
 if options.email is not None:
-    email_failure(status, failed_task, failed_stage, failed_tag, errstr, log_base=options.log_base)
+    email_failure(status, failed_task, failed_stage, failed_tag, errstr,
+                  elapsed_time, log_base=options.log_base)
 
 cleanup()
 print(errstr)
