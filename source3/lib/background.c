@@ -34,6 +34,7 @@ struct background_job_state {
 
 	struct tevent_req *wakeup_req;
 	int pipe_fd;
+	struct tevent_req *pipe_req;
 };
 
 static int background_job_state_destructor(struct background_job_state *s);
@@ -103,14 +104,18 @@ struct tevent_req *background_job_send(TALLOC_CTX *mem_ctx,
 static int background_job_state_destructor(struct background_job_state *state)
 {
 	size_t i;
+
+	TALLOC_FREE(state->pipe_req);
 	if (state->pipe_fd != -1) {
 		close(state->pipe_fd);
 		state->pipe_fd = -1;
 	}
+
 	for (i=0; i<state->num_trigger_msgs; i++) {
 		messaging_deregister(state->msg, state->trigger_msgs[i],
 				     state);
 	}
+
 	return 0;
 }
 
@@ -207,6 +212,7 @@ static void background_job_waited(struct tevent_req *subreq)
 		return;
 	}
 	tevent_req_set_callback(subreq, background_job_done, req);
+	state->pipe_req = subreq;
 }
 
 static void background_job_done(struct tevent_req *subreq)
@@ -219,6 +225,8 @@ static void background_job_done(struct tevent_req *subreq)
 	uint8_t *buf;
 	int err;
 	int wait_secs;
+
+	state->pipe_req = NULL;
 
 	ret = read_packet_recv(subreq, talloc_tos(), &buf, &err);
 	TALLOC_FREE(subreq);
