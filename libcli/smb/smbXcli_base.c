@@ -997,15 +997,11 @@ static bool smbXcli_conn_receive_next(struct smbXcli_conn *conn)
 void smbXcli_conn_disconnect(struct smbXcli_conn *conn, NTSTATUS status)
 {
 	struct smbXcli_session *session;
+	int read_fd = conn->read_fd;
+	int write_fd = conn->write_fd;
 
 	tevent_queue_stop(conn->outgoing);
 
-	if (conn->read_fd != -1) {
-		close(conn->read_fd);
-	}
-	if (conn->write_fd != -1) {
-		close(conn->write_fd);
-	}
 	conn->read_fd = -1;
 	conn->write_fd = -1;
 
@@ -1087,6 +1083,13 @@ void smbXcli_conn_disconnect(struct smbXcli_conn *conn, NTSTATUS status)
 			tevent_req_nterror(req, status);
 		}
 		TALLOC_FREE(chain);
+	}
+
+	if (read_fd != -1) {
+		close(read_fd);
+	}
+	if (write_fd != -1) {
+		close(write_fd);
 	}
 }
 
