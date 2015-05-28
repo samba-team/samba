@@ -225,23 +225,27 @@ def build(bld):
         # enable building of public headers in the build tree
         bld.env.build_public_headers = 'include/public'
 
-    if bld.env.standalone_ctdb:
-        ctdb_mkversion = '../packaging/mkversion.sh'
-    else:
-        ctdb_mkversion = '../ctdb/packaging/mkversion.sh'
-    t = bld.SAMBA_GENERATOR('ctdb-version-header',
-                            target='include/ctdb_version.h',
-                            rule='%s ${TGT} %s' % (ctdb_mkversion, VERSION),
-                            dep_vars=['VERSION'])
-    t.env.VERSION = VERSION
+    version_h = samba_utils.os_path_relpath(os.path.join(Options.launch_dir,
+                                                         "version.h"),
+                                            bld.curdir)
 
     if bld.env.standalone_ctdb:
-        version_h = samba_utils.os_path_relpath(os.path.join(Options.launch_dir,
-                                                             "version.h"),
-                                                bld.curdir)
+        ctdb_mkversion = '../packaging/mkversion.sh'
+        t = bld.SAMBA_GENERATOR('ctdb-version-header',
+                                target='include/ctdb_version.h',
+                                rule='%s ${TGT} %s' % (ctdb_mkversion, VERSION),
+                                dep_vars=['VERSION'])
+        t.env.VERSION = VERSION
+
         t = bld.SAMBA_GENERATOR('ctdb-samba-version-header',
                                 target=version_h,
                                 rule='printf "#include \\"ctdb_version.h\\" \\n#define SAMBA_VERSION_STRING CTDB_VERSION_STRING\\n" > ${TGT}',
+                                dep_vars=['VERSION'])
+        t.env.VERSION = VERSION
+    else:
+        t = bld.SAMBA_GENERATOR('ctdb-samba-version-header',
+                                target='include/ctdb_version.h',
+                                rule='printf "#include \\"%s\\" \\n#define CTDB_VERSION_STRING SAMBA_VERSION_STRING\\n" > ${TGT}' % version_h,
                                 dep_vars=['VERSION'])
         t.env.VERSION = VERSION
 
