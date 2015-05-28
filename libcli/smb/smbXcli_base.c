@@ -34,6 +34,9 @@
 #include "librpc/ndr/libndr.h"
 #include "libcli/smb/smb2_negotiate_context.h"
 #include "lib/crypto/sha512.h"
+#include "lib/crypto/aes.h"
+#include "lib/crypto/aes_ccm_128.h"
+#include "lib/crypto/aes_gcm_128.h"
 
 struct smbXcli_conn;
 struct smbXcli_req;
@@ -150,6 +153,8 @@ struct smb2cli_session {
 	bool should_encrypt;
 	DATA_BLOB encryption_key;
 	DATA_BLOB decryption_key;
+	uint64_t nonce_high_random;
+	uint64_t nonce_high_max;
 	uint64_t nonce_high;
 	uint64_t nonce_low;
 	uint16_t channel_sequence;
@@ -2863,6 +2868,8 @@ NTSTATUS smb2cli_req_compound_submit(struct tevent_req **reqs,
 	int tf_iov = -1;
 	const DATA_BLOB *encryption_key = NULL;
 	uint64_t encryption_session_id = 0;
+	uint64_t nonce_high = UINT64_MAX;
+	uint64_t nonce_low = UINT64_MAX;
 
 	/*
 	 * 1 for the nbt length, optional TRANSFORM
@@ -2913,6 +2920,31 @@ NTSTATUS smb2cli_req_compound_submit(struct tevent_req **reqs,
 
 		encryption_session_id = state->session->smb2->session_id;
 
+		state->session->smb2->nonce_low += 1;
+		if (state->session->smb2->nonce_low == 0) {
+			state->session->smb2->nonce_high += 1;
+			state->session->smb2->nonce_low += 1;
+		}
+
+		/*
+		 * CCM and GCM algorithms must never have their
+		 * nonce wrap, or the security of the whole
+		 * communication and the keys is destroyed.
+		 * We must drop the connection once we have
+		 * transfered too much data.
+		 *
+		 * NOTE: We assume nonces greater than 8 bytes.
+		 */
+		if (state->session->smb2->nonce_high >=
+		    state->session->smb2->nonce_high_max)
+		{
+			return NT_STATUS_ENCRYPTION_FAILED;
+		}
+
+		nonce_high = state->session->smb2->nonce_high_random;
+		nonce_high += state->session->smb2->nonce_high;
+		nonce_low = state->session->smb2->nonce_low;
+
 		tf_iov = num_iov;
 		iov[num_iov].iov_base = state->smb2.transform;
 		iov[num_iov].iov_len  = sizeof(state->smb2.transform);
@@ -2920,17 +2952,11 @@ NTSTATUS smb2cli_req_compound_submit(struct tevent_req **reqs,
 
 		SBVAL(state->smb2.transform, SMB2_TF_PROTOCOL_ID, SMB2_TF_MAGIC);
 		SBVAL(state->smb2.transform, SMB2_TF_NONCE,
-		      state->session->smb2->nonce_low);
+		      nonce_low);
 		SBVAL(state->smb2.transform, SMB2_TF_NONCE+8,
-		      state->session->smb2->nonce_high);
+		      nonce_high);
 		SBVAL(state->smb2.transform, SMB2_TF_SESSION_ID,
 		      encryption_session_id);
-
-		state->session->smb2->nonce_low += 1;
-		if (state->session->smb2->nonce_low == 0) {
-			state->session->smb2->nonce_high += 1;
-			state->session->smb2->nonce_low += 1;
-		}
 
 		nbt_len += SMB2_TF_HDR_SIZE;
 		break;
@@ -5457,6 +5483,7 @@ NTSTATUS smb2cli_session_set_session_key(struct smbXcli_session *session,
 		struct _derivation decryption;
 		struct _derivation application;
 	} derivation = { };
+	size_t nonce_size = 0;
 
 	if (conn == NULL) {
 		return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -5649,9 +5676,31 @@ NTSTATUS smb2cli_session_set_session_key(struct smbXcli_session *session,
 		session->smb2->should_encrypt = false;
 	}
 
-	generate_random_buffer((uint8_t *)&session->smb2->nonce_high,
-			       sizeof(session->smb2->nonce_high));
-	session->smb2->nonce_low = 1;
+	/*
+	 * CCM and GCM algorithms must never have their
+	 * nonce wrap, or the security of the whole
+	 * communication and the keys is destroyed.
+	 * We must drop the connection once we have
+	 * transfered too much data.
+	 *
+	 * NOTE: We assume nonces greater than 8 bytes.
+	 */
+	generate_random_buffer((uint8_t *)&session->smb2->nonce_high_random,
+			       sizeof(session->smb2->nonce_high_random));
+	switch (conn->smb2.server.cipher) {
+	case SMB2_ENCRYPTION_AES128_CCM:
+		nonce_size = AES_CCM_128_NONCE_SIZE;
+		break;
+	case SMB2_ENCRYPTION_AES128_GCM:
+		nonce_size = AES_GCM_128_IV_SIZE;
+		break;
+	default:
+		nonce_size = 0;
+		break;
+	}
+	session->smb2->nonce_high_max = SMB2_NONCE_HIGH_MAX(nonce_size);
+	session->smb2->nonce_high = 0;
+	session->smb2->nonce_low = 0;
 
 	return NT_STATUS_OK;
 }

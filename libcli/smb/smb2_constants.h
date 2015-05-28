@@ -138,6 +138,11 @@
 /* Values for the SMB2_ENCRYPTION_CAPABILITIES Context (>= 0x310) */
 #define SMB2_ENCRYPTION_AES128_CCM         0x0001 /* only in dialect >= 0x224 */
 #define SMB2_ENCRYPTION_AES128_GCM         0x0002 /* only in dialect >= 0x310 */
+#define SMB2_NONCE_HIGH_MAX(nonce_len_bytes) ((uint64_t)(\
+	((nonce_len_bytes) >= 16) ? UINT64_MAX : \
+	((nonce_len_bytes) <= 8) ? 0 : \
+	(((uint64_t)1 << (((nonce_len_bytes) - 8)*8)) - 1) \
+	))
 
 /* SMB2 session (request) flags */
 #define SMB2_SESSION_FLAG_BINDING       0x01
