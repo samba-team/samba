@@ -100,6 +100,11 @@ struct smbc_dir_list {
  */
 struct _SMBCFILE {
 	int cli_fd;
+	/*
+	 * cache of cli_state we opened cli_fd on.
+	 * Due to DFS can be a subsidiary connection to srv->cli
+	 */
+	struct cli_state *targetcli;
 	char *fname;
 	off_t offset;
 	struct _SMBCSRV *srv;
