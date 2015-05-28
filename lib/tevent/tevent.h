@@ -616,8 +616,8 @@ void tevent_get_trace_callback(struct tevent_context *ev,
  * file descriptor (tevent_add_fd) and timer (tevent_add_timed) events
  * are considered too low-level to be used in larger computations. To
  * read and write from and to sockets, Samba provides two calls on top
- * of tevent_add_fd: read_packet_send/recv and writev_send/recv. These
- * requests are much easier to compose than the low-level event
+ * of tevent_add_fd: tstream_read_packet_send/recv and tstream_writev_send/recv.
+ * These requests are much easier to compose than the low-level event
  * handlers called from tevent_add_fd.
  *
  * A lot of the simplicity tevent_req has brought to the notoriously
