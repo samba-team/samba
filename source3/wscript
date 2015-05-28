@@ -212,14 +212,14 @@ main() {
 
     # check for libarchive (tar command in smbclient)
     # None means autodetect, True/False means enable/disable
-    conf.env['archive_lib'] = ''
+    conf.SET_TARGET_TYPE('archive', 'EMPTY')
     if Options.options.with_libarchive is not False:
         libarchive_mandatory = Options.options.with_libarchive == True
         Logs.info("Checking for libarchive existence")
-        if conf.CHECK_BUNDLED_SYSTEM('libarchive', minversion='3.1.2'):
-            conf.env['archive_lib'] = 'libarchive'
+        if conf.CHECK_HEADERS('archive.h') and conf.CHECK_LIB('archive', shlib=True):
+            conf.CHECK_FUNCS_IN('archive_read_support_filter_all archive_read_free', 'archive')
         elif libarchive_mandatory:
-            conf.fatal('libarchive support requested, but no suitable pkgconfig found')
+            conf.fatal('libarchive support requested, but not found')
 
     # check for DMAPI libs
     if Options.options.with_dmapi == False:

@@ -1071,7 +1071,8 @@ bld.SAMBA3_BINARY('client/smbclient',
                  msrpc3
                  RPC_NDR_SRVSVC
                  cli_smb_common
-                 ''' + bld.env['archive_lib'])
+		 archive
+                 ''')
 
 bld.SAMBA3_BINARY('net',
                  source='''utils/net.c

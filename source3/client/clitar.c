@@ -720,7 +720,11 @@ out_close:
 		}
 	}
 out:
+#ifdef HAVE_ARCHIVE_READ_FREE
 	archive_write_free(t->archive);
+#else
+	archive_write_finish(t->archive);
+#endif
 	talloc_free(ctx);
 	return err;
 }
@@ -1002,7 +1006,9 @@ static int tar_extract(struct tar *t)
 
 	t->archive = archive_read_new();
 	archive_read_support_format_all(t->archive);
+#ifdef HAVE_ARCHIVE_READ_SUPPORT_FILTER_ALL
 	archive_read_support_filter_all(t->archive);
+#endif
 
 	if (strequal(t->tar_path, "-")) {
 		r = archive_read_open_fd(t->archive, STDIN_FILENO, bsize);
@@ -1053,7 +1059,11 @@ static int tar_extract(struct tar *t)
 	}
 
 out:
+#ifdef HAVE_ARCHIVE_READ_FREE
 	r = archive_read_free(t->archive);
+#else
+	r = archive_read_finish(t->archive);
+#endif
 	if (r != ARCHIVE_OK) {
 		DBG(0, ("Can't close %s : %s\n", t->tar_path,
 					archive_error_string(t->archive)));
