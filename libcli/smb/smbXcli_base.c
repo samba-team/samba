@@ -206,6 +206,8 @@ struct smbXcli_req_state {
 
 	uint8_t *inbuf;
 
+	struct tevent_req *write_req;
+
 	struct {
 		/* Space for the header including the wct */
 		uint8_t hdr[HDR_VWV];
@@ -812,6 +814,8 @@ void smbXcli_req_unset_pending(struct tevent_req *req)
 	size_t num_pending = talloc_array_length(conn->pending);
 	size_t i;
 
+	TALLOC_FREE(state->write_req);
+
 	if (state->smb1.mid != 0) {
 		/*
 		 * This is a [nt]trans[2] request which waits
@@ -869,6 +873,8 @@ static void smbXcli_req_cleanup(struct tevent_req *req,
 	struct smbXcli_req_state *state =
 		tevent_req_data(req,
 		struct smbXcli_req_state);
+
+	TALLOC_FREE(state->write_req);
 
 	switch (req_state) {
 	case TEVENT_REQ_RECEIVED:
@@ -1572,6 +1578,8 @@ static NTSTATUS smb1cli_req_writev_submit(struct tevent_req *req,
 		return NT_STATUS_NO_MEMORY;
 	}
 	tevent_req_set_callback(subreq, smb1cli_req_writev_done, req);
+	state->write_req = subreq;
+
 	return NT_STATUS_OK;
 }
 
@@ -1627,6 +1635,8 @@ static void smb1cli_req_writev_done(struct tevent_req *subreq)
 		struct smbXcli_req_state);
 	ssize_t nwritten;
 	int err;
+
+	state->write_req = NULL;
 
 	nwritten = writev_recv(subreq, &err);
 	TALLOC_FREE(subreq);
@@ -3109,6 +3119,8 @@ skip_credits:
 		return NT_STATUS_NO_MEMORY;
 	}
 	tevent_req_set_callback(subreq, smb2cli_req_writev_done, reqs[0]);
+	state->write_req = subreq;
+
 	return NT_STATUS_OK;
 }
 
@@ -3169,6 +3181,8 @@ static void smb2cli_req_writev_done(struct tevent_req *subreq)
 		struct smbXcli_req_state);
 	ssize_t nwritten;
 	int err;
+
+	state->write_req = NULL;
 
 	nwritten = writev_recv(subreq, &err);
 	TALLOC_FREE(subreq);
