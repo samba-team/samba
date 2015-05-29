@@ -52,6 +52,7 @@ struct smbXcli_conn {
 	struct tevent_queue *outgoing;
 	struct tevent_req **pending;
 	struct tevent_req *read_smb_req;
+	struct tevent_req *suicide_req;
 
 	enum protocol_types min_protocol;
 	enum protocol_types max_protocol;
@@ -520,8 +521,11 @@ struct smbXcli_conn_samba_suicide_state {
 	struct smbXcli_conn *conn;
 	struct iovec iov;
 	uint8_t buf[9];
+	struct tevent_req *write_req;
 };
 
+static void smbXcli_conn_samba_suicide_cleanup(struct tevent_req *req,
+					       enum tevent_req_state req_state);
 static void smbXcli_conn_samba_suicide_done(struct tevent_req *subreq);
 
 struct tevent_req *smbXcli_conn_samba_suicide_send(TALLOC_CTX *mem_ctx,
@@ -542,6 +546,11 @@ struct tevent_req *smbXcli_conn_samba_suicide_send(TALLOC_CTX *mem_ctx,
 	SCVAL(state->buf, 8, exitcode);
 	_smb_setlen_nbt(state->buf, sizeof(state->buf)-4);
 
+	if (conn->suicide_req != NULL) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return tevent_req_post(req, ev);
+	}
+
 	state->iov.iov_base = state->buf;
 	state->iov.iov_len = sizeof(state->buf);
 
@@ -551,7 +560,37 @@ struct tevent_req *smbXcli_conn_samba_suicide_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 	tevent_req_set_callback(subreq, smbXcli_conn_samba_suicide_done, req);
+	state->write_req = subreq;
+
+	tevent_req_set_cleanup_fn(req, smbXcli_conn_samba_suicide_cleanup);
+
+	/*
+	 * We need to use tevent_req_defer_callback()
+	 * in order to allow smbXcli_conn_disconnect()
+	 * to do a safe cleanup.
+	 */
+	tevent_req_defer_callback(req, ev);
+	conn->suicide_req = req;
+
 	return req;
+}
+
+static void smbXcli_conn_samba_suicide_cleanup(struct tevent_req *req,
+					       enum tevent_req_state req_state)
+{
+	struct smbXcli_conn_samba_suicide_state *state = tevent_req_data(
+		req, struct smbXcli_conn_samba_suicide_state);
+
+	TALLOC_FREE(state->write_req);
+
+	if (state->conn == NULL) {
+		return;
+	}
+
+	if (state->conn->suicide_req == req) {
+		state->conn->suicide_req = NULL;
+	}
+	state->conn = NULL;
 }
 
 static void smbXcli_conn_samba_suicide_done(struct tevent_req *subreq)
@@ -563,9 +602,12 @@ static void smbXcli_conn_samba_suicide_done(struct tevent_req *subreq)
 	ssize_t nwritten;
 	int err;
 
+	state->write_req = NULL;
+
 	nwritten = writev_recv(subreq, &err);
 	TALLOC_FREE(subreq);
 	if (nwritten == -1) {
+		/* here, we need to notify all pending requests */
 		NTSTATUS status = map_nt_error_from_unix_common(err);
 		smbXcli_conn_disconnect(state->conn, status);
 		return;
@@ -1004,6 +1046,17 @@ void smbXcli_conn_disconnect(struct smbXcli_conn *conn, NTSTATUS status)
 	}
 	for (; session; session = session->next) {
 		smb2cli_session_increment_channel_sequence(session);
+	}
+
+	if (conn->suicide_req != NULL) {
+		/*
+		 * smbXcli_conn_samba_suicide_send()
+		 * used tevent_req_defer_callback() already.
+		 */
+		if (!NT_STATUS_IS_OK(status)) {
+			tevent_req_nterror(conn->suicide_req, status);
+		}
+		conn->suicide_req = NULL;
 	}
 
 	/*
