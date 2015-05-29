@@ -177,10 +177,10 @@ static bool test_event_context(struct torture_context *test,
 		}
 	}
 
-	talloc_free(fde_read);
-	talloc_free(fde_write);
 	talloc_free(fde_read_1);
 	talloc_free(fde_write_1);
+	talloc_free(fde_read);
+	talloc_free(fde_write);
 
 	while (alarm_count < fde_count+1) {
 		if (tevent_loop_once(ev_ctx) == -1) {
