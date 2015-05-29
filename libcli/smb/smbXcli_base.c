@@ -666,14 +666,9 @@ uint32_t smb1cli_conn_max_xmit(struct smbXcli_conn *conn)
 
 bool smb1cli_conn_req_possible(struct smbXcli_conn *conn)
 {
-	size_t pending;
+	size_t pending = talloc_array_length(conn->pending);
 	uint16_t possible = conn->smb1.server.max_mux;
 
-	pending = tevent_queue_length(conn->outgoing);
-	if (pending >= possible) {
-		return false;
-	}
-	pending += talloc_array_length(conn->pending);
 	if (pending >= possible) {
 		return false;
 	}
@@ -1607,6 +1602,10 @@ static NTSTATUS smb1cli_req_writev_submit(struct tevent_req *req,
 		state->conn->dispatch_incoming = smb1cli_conn_dispatch_incoming;
 	}
 
+	if (!smbXcli_req_set_pending(req)) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	tevent_req_set_cancel_fn(req, smbXcli_req_cancel);
 
 	subreq = writev_send(state, state->ev, state->conn->outgoing,
@@ -1674,20 +1673,15 @@ static void smb1cli_req_writev_done(struct tevent_req *subreq)
 	nwritten = writev_recv(subreq, &err);
 	TALLOC_FREE(subreq);
 	if (nwritten == -1) {
+		/* here, we need to notify all pending requests */
 		NTSTATUS status = map_nt_error_from_unix_common(err);
 		smbXcli_conn_disconnect(state->conn, status);
-		tevent_req_nterror(req, status);
 		return;
 	}
 
 	if (state->one_way) {
 		state->inbuf = NULL;
 		tevent_req_done(req);
-		return;
-	}
-
-	if (!smbXcli_req_set_pending(req)) {
-		tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
 		return;
 	}
 }
