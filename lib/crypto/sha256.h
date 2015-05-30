@@ -42,11 +42,14 @@
  */
 #define HEIM_SHA_H 1
 
-#if 0
+#if SHA1_RENAME_NEEDED
 /* symbol renaming */
 #define SHA1_Init hc_SHA1_Init
 #define SHA1_Update hc_SHA1_Update
 #define SHA1_Final hc_SHA1_Final
+#endif
+#if SHA256_RENAME_NEEDED
+/* symbol renaming */
 #define SHA256_Init hc_SHA256_Init
 #define SHA256_Update hc_SHA256_Update
 #define SHA256_Final hc_SHA256_Final
