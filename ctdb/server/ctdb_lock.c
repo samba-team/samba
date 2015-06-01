@@ -816,8 +816,6 @@ static void ctdb_lock_schedule(struct ctdb_context *ctdb)
 	/* Parent process */
 	close(lock_ctx->fd[1]);
 
-	talloc_set_destructor(lock_ctx, ctdb_lock_context_destructor);
-
 	talloc_free(tmp_ctx);
 
 	/* Set up timeout handler */
@@ -829,7 +827,6 @@ static void ctdb_lock_schedule(struct ctdb_context *ctdb)
 	if (lock_ctx->ttimer == NULL) {
 		ctdb_kill(ctdb, lock_ctx->child, SIGKILL);
 		lock_ctx->child = -1;
-		talloc_set_destructor(lock_ctx, NULL);
 		close(lock_ctx->fd[0]);
 		return;
 	}
@@ -845,7 +842,6 @@ static void ctdb_lock_schedule(struct ctdb_context *ctdb)
 		TALLOC_FREE(lock_ctx->ttimer);
 		ctdb_kill(ctdb, lock_ctx->child, SIGKILL);
 		lock_ctx->child = -1;
-		talloc_set_destructor(lock_ctx, NULL);
 		close(lock_ctx->fd[0]);
 		return;
 	}
@@ -943,6 +939,7 @@ static struct lock_request *ctdb_lock_internal(TALLOC_CTX *mem_ctx,
 	request->private_data = private_data;
 
 	talloc_set_destructor(request, ctdb_lock_request_destructor);
+	talloc_set_destructor(lock_ctx, ctdb_lock_context_destructor);
 
 	ctdb_lock_schedule(ctdb);
 
