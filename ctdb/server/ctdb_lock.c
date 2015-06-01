@@ -312,7 +312,13 @@ static int ctdb_lock_context_destructor(struct lock_context *lock_ctx)
  */
 static int ctdb_lock_request_destructor(struct lock_request *lock_request)
 {
+	if (lock_request->lctx == NULL) {
+		return 0;
+	}
+
+	lock_request->lctx->request = NULL;
 	TALLOC_FREE(lock_request->lctx);
+
 	return 0;
 }
 
