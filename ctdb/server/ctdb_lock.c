@@ -334,8 +334,9 @@ static int ctdb_lock_request_destructor(struct lock_request *lock_request)
 static void process_callbacks(struct lock_context *lock_ctx, bool locked)
 {
 	struct lock_request *request;
+	bool auto_mark = lock_ctx->auto_mark;
 
-	if (lock_ctx->auto_mark && locked) {
+	if (auto_mark && locked) {
 		switch (lock_ctx->type) {
 		case LOCK_RECORD:
 			tdb_chainlock_mark(lock_ctx->ctdb_db->ltdb->tdb, lock_ctx->key);
@@ -356,7 +357,7 @@ static void process_callbacks(struct lock_context *lock_ctx, bool locked)
 	}
 
 	request = lock_ctx->request;
-	if (lock_ctx->auto_mark) {
+	if (auto_mark) {
 		/* Since request may be freed in the callback, unset the lock
 		 * context, so request destructor will not free lock context.
 		 */
@@ -368,7 +369,11 @@ static void process_callbacks(struct lock_context *lock_ctx, bool locked)
 
 	request->callback(request->private_data, locked);
 
-	if (lock_ctx->auto_mark && locked) {
+	if (!auto_mark) {
+		return;
+	}
+
+	if (locked) {
 		switch (lock_ctx->type) {
 		case LOCK_RECORD:
 			tdb_chainlock_unmark(lock_ctx->ctdb_db->ltdb->tdb, lock_ctx->key);
