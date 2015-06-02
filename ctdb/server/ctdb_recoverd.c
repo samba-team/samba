@@ -1070,29 +1070,6 @@ static bool vacuum_fetch_process_one(struct ctdb_db_context *ctdb_db,
 	return true;
 }
 
-/*
-  process the next element from the vacuum list
-*/
-static void vacuum_fetch_next(struct vacuum_info *v)
-{
-	while (v->recs->count) {
-		struct ctdb_rec_data *r;
-		bool ok;
-
-		r = v->r;
-
-		ok = vacuum_fetch_process_one(v->ctdb_db, v->rec->ctdb->pnn, r);
-		if (!ok) {
-			break;
-		}
-
-		v->r = (struct ctdb_rec_data *)(r->length + (uint8_t *)r);
-		v->recs->count--;
-	}
-
-	talloc_free(v);
-}
-
 
 /*
   destroy a vacuum info structure
@@ -1190,7 +1167,21 @@ static void vacuum_fetch_handler(struct ctdb_context *ctdb, uint64_t srvid,
 
 	talloc_set_destructor(v, vacuum_info_destructor);
 
-	vacuum_fetch_next(v);
+	while (v->recs->count) {
+		bool ok;
+
+		r = v->r;
+
+		ok = vacuum_fetch_process_one(v->ctdb_db, v->rec->ctdb->pnn, r);
+		if (!ok) {
+			break;
+		}
+
+		v->r = (struct ctdb_rec_data *)(r->length + (uint8_t *)r);
+		v->recs->count--;
+	}
+
+	talloc_free(v);
 
 done:
 	talloc_free(tmp_ctx);
