@@ -1125,8 +1125,7 @@ static void vacuum_fetch_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	r = (struct ctdb_rec_data *)&recs->data[0];
 
 	if (recs->count == 0) {
-		talloc_free(tmp_ctx);
-		return;
+		goto done;
 	}
 
 	srcnode = r->reqid;
@@ -1134,8 +1133,7 @@ static void vacuum_fetch_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	for (v=rec->vacuum_info;v;v=v->next) {
 		if (srcnode == v->srcnode && recs->db_id == v->ctdb_db->db_id) {
 			/* we're already working on records from this node */
-			talloc_free(tmp_ctx);
-			return;
+			goto done;
 		}
 	}
 
@@ -1143,8 +1141,7 @@ static void vacuum_fetch_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	ret = ctdb_ctrl_getdbmap(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, tmp_ctx, &dbmap);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to get dbids from local node\n"));
-		talloc_free(tmp_ctx);
-		return;
+		goto done;
 	}
 
 	for (i=0;i<dbmap->num;i++) {
@@ -1155,30 +1152,26 @@ static void vacuum_fetch_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	}
 	if (i == dbmap->num) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to find db_id 0x%x on local node\n", recs->db_id));
-		talloc_free(tmp_ctx);
-		return;		
+		goto done;
 	}
 
 	/* find the name of this database */
 	if (ctdb_ctrl_getdbname(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, recs->db_id, tmp_ctx, &name) != 0) {
 		DEBUG(DEBUG_ERR,(__location__ " Failed to get name of db 0x%x\n", recs->db_id));
-		talloc_free(tmp_ctx);
-		return;
+		goto done;
 	}
 
 	/* attach to it */
 	ctdb_db = ctdb_attach(ctdb, CONTROL_TIMEOUT(), name, persistent, 0);
 	if (ctdb_db == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " Failed to attach to database '%s'\n", name));
-		talloc_free(tmp_ctx);
-		return;
+		goto done;
 	}
 
 	v = talloc_zero(rec, struct vacuum_info);
 	if (v == NULL) {
 		DEBUG(DEBUG_CRIT,(__location__ " Out of memory\n"));
-		talloc_free(tmp_ctx);
-		return;
+		goto done;
 	}
 
 	v->rec = rec;
@@ -1188,8 +1181,7 @@ static void vacuum_fetch_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	if (v->recs == NULL) {
 		DEBUG(DEBUG_CRIT,(__location__ " Out of memory\n"));
 		talloc_free(v);
-		talloc_free(tmp_ctx);
-		return;		
+		goto done;
 	}
 	v->r = 	(struct ctdb_rec_data *)&v->recs->data[0];
 
@@ -1198,6 +1190,8 @@ static void vacuum_fetch_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	talloc_set_destructor(v, vacuum_info_destructor);
 
 	vacuum_fetch_next(v);
+
+done:
 	talloc_free(tmp_ctx);
 }
 
