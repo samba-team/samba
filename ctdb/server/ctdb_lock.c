@@ -353,8 +353,10 @@ static void process_callbacks(struct lock_context *lock_ctx, bool locked)
 
 	request = lock_ctx->request;
 	if (lock_ctx->auto_mark) {
-		/* Reset the destructor, so request is not removed from the list */
-		talloc_set_destructor(request, NULL);
+		/* Since request may be freed in the callback, unset the lock
+		 * context, so request destructor will not free lock context.
+		 */
+		request->lctx = NULL;
 	}
 
 	/* Since request may be freed in the callback, unset the request */
