@@ -1013,13 +1013,12 @@ static void vacuum_fetch_callback(struct ctdb_client_call_state *state)
 */
 static void vacuum_fetch_next(struct vacuum_info *v)
 {
-	struct ctdb_call call;
-	struct ctdb_rec_data *r;
-
 	while (v->recs->count) {
 		struct ctdb_client_call_state *state;
 		TDB_DATA data;
 		struct ctdb_ltdb_header *hdr;
+		struct ctdb_call call;
+		struct ctdb_rec_data *r;
 
 		ZERO_STRUCT(call);
 		call.call_id = CTDB_NULL_FUNC;
