@@ -392,6 +392,8 @@ static void process_callbacks(struct lock_context *lock_ctx, bool locked)
 			break;
 		}
 	}
+
+	talloc_free(lock_ctx);
 }
 
 
@@ -437,7 +439,6 @@ static void ctdb_lock_handler(struct tevent_context *ev,
 			    void *private_data)
 {
 	struct lock_context *lock_ctx;
-	TALLOC_CTX *tmp_ctx = NULL;
 	char c;
 	bool locked;
 	double t;
@@ -450,11 +451,6 @@ static void ctdb_lock_handler(struct tevent_context *ev,
 
 	t = timeval_elapsed(&lock_ctx->start_time);
 	id = lock_bucket_id(t);
-
-	if (lock_ctx->auto_mark) {
-		tmp_ctx = talloc_new(ev);
-		talloc_steal(tmp_ctx, lock_ctx);
-	}
 
 	/* Read the status from the child process */
 	if (sys_read(lock_ctx->fd[0], &c, 1) != 1) {
@@ -487,10 +483,6 @@ static void ctdb_lock_handler(struct tevent_context *ev,
 	}
 
 	process_callbacks(lock_ctx, locked);
-
-	if (lock_ctx->auto_mark) {
-		talloc_free(tmp_ctx);
-	}
 }
 
 
