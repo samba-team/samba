@@ -1080,13 +1080,14 @@ static void vacuum_fetch_next(struct vacuum_info *v)
 		bool ok;
 
 		r = v->r;
-		v->r = (struct ctdb_rec_data *)(r->length + (uint8_t *)r);
-		v->recs->count--;
 
 		ok = vacuum_fetch_process_one(v->ctdb_db, v->rec->ctdb->pnn, r);
 		if (!ok) {
 			break;
 		}
+
+		v->r = (struct ctdb_rec_data *)(r->length + (uint8_t *)r);
+		v->recs->count--;
 	}
 
 	talloc_free(v);
