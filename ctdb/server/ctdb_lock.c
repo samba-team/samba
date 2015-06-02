@@ -905,6 +905,7 @@ static struct lock_request *ctdb_lock_internal(TALLOC_CTX *mem_ctx,
 		if (lock_ctx->key.dptr == NULL) {
 			DEBUG(DEBUG_ERR, (__location__ "Memory allocation error\n"));
 			talloc_free(lock_ctx);
+			talloc_free(request);
 			return NULL;
 		}
 		lock_ctx->key_hash = ctdb_hash(&key);
