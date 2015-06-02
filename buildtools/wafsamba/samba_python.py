@@ -25,7 +25,7 @@ def SAMBA_CHECK_PYTHON(conf, mandatory=True, version=(2,4,2)):
         try:
             conf.check_python_version((3, 3, 0))
         except Exception:
-            warn('extra-python needs to be Python 3.3 or later')
+            Logs.warn('extra-python needs to be Python 3.3 or later')
             raise
         interpreters.append(conf.env['PYTHON'])
         conf.setenv('default')
