@@ -41,6 +41,10 @@
  * ctdb_lock_alldb()       - get a lock on all DBs
  *
  *  auto_mark              - whether to mark/unmark DBs in before/after callback
+ *                           = false is used for freezing databases for
+ *                           recovery since the recovery cannot start till
+ *                           databases are locked on all the nodes.
+ *                           = true is used for record locks.
  */
 
 enum lock_type {
