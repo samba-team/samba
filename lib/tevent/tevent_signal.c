@@ -457,7 +457,7 @@ int tevent_common_check_signal(struct tevent_context *ev)
 		}
 
 #ifdef SA_SIGINFO
-		if (clear_processed_siginfo) {
+		if (clear_processed_siginfo && sig_state->sig_info[i] != NULL) {
 			uint32_t j;
 			for (j=0;j<count;j++) {
 				uint32_t ofs = (counter.seen + j)
