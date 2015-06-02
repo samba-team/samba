@@ -535,7 +535,7 @@ static int winbind_read_sock(struct winbindd_context *ctx,
 
 		if (ret == 0) {
 			/* Not ready for read yet... */
-			if (total_time >= 30) {
+			if (total_time >= 300) {
 				/* Timeout */
 				winbind_close_sock(ctx);
 				return -1;
@@ -719,20 +719,16 @@ NSS_STATUS winbindd_request_response(struct winbindd_context *ctx,
 				     struct winbindd_response *response)
 {
 	NSS_STATUS status = NSS_STATUS_UNAVAIL;
-	int count = 0;
 	struct winbindd_context *wb_ctx = ctx;
 
 	if (ctx == NULL) {
 		wb_ctx = &wb_global_ctx;
 	}
 
-	while ((status == NSS_STATUS_UNAVAIL) && (count < 10)) {
-		status = winbindd_send_request(wb_ctx, req_type, 0, request);
-		if (status != NSS_STATUS_SUCCESS)
-			return(status);
-		status = winbindd_get_response(wb_ctx, response);
-		count += 1;
-	}
+	status = winbindd_send_request(wb_ctx, req_type, 0, request);
+	if (status != NSS_STATUS_SUCCESS)
+		return (status);
+	status = winbindd_get_response(wb_ctx, response);
 
 	return status;
 }
@@ -743,20 +739,16 @@ NSS_STATUS winbindd_priv_request_response(struct winbindd_context *ctx,
 					  struct winbindd_response *response)
 {
 	NSS_STATUS status = NSS_STATUS_UNAVAIL;
-	int count = 0;
 	struct winbindd_context *wb_ctx = ctx;
 
 	if (ctx == NULL) {
 		wb_ctx = &wb_global_ctx;
 	}
 
-	while ((status == NSS_STATUS_UNAVAIL) && (count < 10)) {
-		status = winbindd_send_request(wb_ctx, req_type, 1, request);
-		if (status != NSS_STATUS_SUCCESS)
-			return(status);
-		status = winbindd_get_response(wb_ctx, response);
-		count += 1;
-	}
+	status = winbindd_send_request(wb_ctx, req_type, 1, request);
+	if (status != NSS_STATUS_SUCCESS)
+		return (status);
+	status = winbindd_get_response(wb_ctx, response);
 
 	return status;
 }
