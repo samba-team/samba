@@ -1008,67 +1008,85 @@ static void vacuum_fetch_callback(struct ctdb_client_call_state *state)
 }
 
 
+/**
+ * Process one elements of the vacuum fetch list:
+ * Migrate it over to us with the special flag
+ * CTDB_CALL_FLAG_VACUUM_MIGRATION.
+ */
+static bool vacuum_fetch_process_one(struct ctdb_db_context *ctdb_db,
+				     uint32_t pnn,
+				     struct ctdb_rec_data *r)
+{
+	struct ctdb_client_call_state *state;
+	TDB_DATA data;
+	struct ctdb_ltdb_header *hdr;
+	struct ctdb_call call;
+
+	ZERO_STRUCT(call);
+	call.call_id = CTDB_NULL_FUNC;
+	call.flags = CTDB_IMMEDIATE_MIGRATION;
+	call.flags |= CTDB_CALL_FLAG_VACUUM_MIGRATION;
+
+	call.key.dptr = &r->data[0];
+	call.key.dsize = r->keylen;
+
+	/* ensure we don't block this daemon - just skip a record if we can't get
+	   the chainlock */
+	if (tdb_chainlock_nonblock(ctdb_db->ltdb->tdb, call.key) != 0) {
+		return true;
+	}
+
+	data = tdb_fetch(ctdb_db->ltdb->tdb, call.key);
+	if (data.dptr == NULL) {
+		tdb_chainunlock(ctdb_db->ltdb->tdb, call.key);
+		return true;
+	}
+
+	if (data.dsize < sizeof(struct ctdb_ltdb_header)) {
+		free(data.dptr);
+		tdb_chainunlock(ctdb_db->ltdb->tdb, call.key);
+		return true;
+	}
+
+	hdr = (struct ctdb_ltdb_header *)data.dptr;
+	if (hdr->dmaster == pnn) {
+		/* its already local */
+		free(data.dptr);
+		tdb_chainunlock(ctdb_db->ltdb->tdb, call.key);
+		return true;
+	}
+
+	free(data.dptr);
+
+	state = ctdb_call_send(ctdb_db, &call);
+	tdb_chainunlock(ctdb_db->ltdb->tdb, call.key);
+	if (state == NULL) {
+		DEBUG(DEBUG_ERR,(__location__ " Failed to setup vacuum fetch call\n"));
+		return false;
+	}
+	state->async.fn = vacuum_fetch_callback;
+	state->async.private_data = NULL;
+
+	return true;
+}
+
 /*
   process the next element from the vacuum list
 */
 static void vacuum_fetch_next(struct vacuum_info *v)
 {
 	while (v->recs->count) {
-		struct ctdb_client_call_state *state;
-		TDB_DATA data;
-		struct ctdb_ltdb_header *hdr;
-		struct ctdb_call call;
 		struct ctdb_rec_data *r;
-
-		ZERO_STRUCT(call);
-		call.call_id = CTDB_NULL_FUNC;
-		call.flags = CTDB_IMMEDIATE_MIGRATION;
-		call.flags |= CTDB_CALL_FLAG_VACUUM_MIGRATION;
+		bool ok;
 
 		r = v->r;
 		v->r = (struct ctdb_rec_data *)(r->length + (uint8_t *)r);
 		v->recs->count--;
 
-		call.key.dptr = &r->data[0];
-		call.key.dsize = r->keylen;
-
-		/* ensure we don't block this daemon - just skip a record if we can't get
-		   the chainlock */
-		if (tdb_chainlock_nonblock(v->ctdb_db->ltdb->tdb, call.key) != 0) {
-			continue;
+		ok = vacuum_fetch_process_one(v->ctdb_db, v->rec->ctdb->pnn, r);
+		if (!ok) {
+			break;
 		}
-
-		data = tdb_fetch(v->ctdb_db->ltdb->tdb, call.key);
-		if (data.dptr == NULL) {
-			tdb_chainunlock(v->ctdb_db->ltdb->tdb, call.key);
-			continue;
-		}
-
-		if (data.dsize < sizeof(struct ctdb_ltdb_header)) {
-			free(data.dptr);
-			tdb_chainunlock(v->ctdb_db->ltdb->tdb, call.key);
-			continue;
-		}
-		
-		hdr = (struct ctdb_ltdb_header *)data.dptr;
-		if (hdr->dmaster == v->rec->ctdb->pnn) {
-			/* its already local */
-			free(data.dptr);
-			tdb_chainunlock(v->ctdb_db->ltdb->tdb, call.key);
-			continue;
-		}
-
-		free(data.dptr);
-
-		state = ctdb_call_send(v->ctdb_db, &call);
-		tdb_chainunlock(v->ctdb_db->ltdb->tdb, call.key);
-		if (state == NULL) {
-			DEBUG(DEBUG_ERR,(__location__ " Failed to setup vacuum fetch call\n"));
-			talloc_free(v);
-			return;
-		}
-		state->async.fn = vacuum_fetch_callback;
-		state->async.private_data = NULL;
 	}
 
 	talloc_free(v);
