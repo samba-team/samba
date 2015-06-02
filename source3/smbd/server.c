@@ -261,13 +261,14 @@ static void smbd_parent_id_cache_delete(struct messaging_context *ctx,
 	messaging_send_to_children(ctx, msg_type, msg_data);
 }
 
-static void smbd_parent_ctdb_reconfigured(struct ctdb_req_message *msg,
-					  void *private_data)
+static void smbd_parent_ctdb_reconfigured(
+	uint32_t src_vnn, uint32_t dst_vnn, uint64_t dst_srvid,
+	const uint8_t *msg, size_t msglen, void *private_data)
 {
 	struct messaging_context *msg_ctx = talloc_get_type_abort(
 		private_data, struct messaging_context);
 
-	DEBUG(10, ("Got %s message\n", (msg->srvid == CTDB_SRVID_RECONFIGURE)
+	DEBUG(10, ("Got %s message\n", (dst_srvid == CTDB_SRVID_RECONFIGURE)
 		   ? "cluster reconfigure" : "SAMBA_NOTIFY"));
 
 	/*

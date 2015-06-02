@@ -22,9 +22,6 @@
 #include "util_tdb.h"
 #include "lib/util/iov_buf.h"
 #include "lib/messages_util.h"
-
-#include "ctdb.h"
-#include "ctdb_private.h"
 #include "ctdbd_conn.h"
 
 
@@ -111,33 +108,18 @@ static int messaging_ctdbd_destructor(struct messaging_ctdbd_context *ctx)
 	return 0;
 }
 
-static void messaging_ctdb_recv(struct ctdb_req_message *msg,
-				void *private_data)
+static void messaging_ctdb_recv(
+	uint32_t src_vnn, uint32_t dst_vnn, uint64_t dst_srvid,
+	const uint8_t *msg, size_t msg_len, void *private_data)
 {
 	struct messaging_context *msg_ctx = talloc_get_type_abort(
 		private_data, struct messaging_context);
 	struct server_id me = messaging_server_id(msg_ctx);
 	NTSTATUS status;
 	struct iovec iov;
-	size_t msg_len;
-	uint8_t *msg_buf;
 	struct server_id src, dst;
 	enum messaging_type msg_type;
 	struct server_id_buf idbuf;
-
-	msg_len = msg->hdr.length;
-	if (msg_len < offsetof(struct ctdb_req_message, data)) {
-		DEBUG(10, ("%s: len %u too small\n", __func__,
-			   (unsigned)msg_len));
-		return;
-	}
-	msg_len -= offsetof(struct ctdb_req_message, data);
-
-	if (msg_len < msg->datalen) {
-		DEBUG(10, ("%s: msg_len=%u < msg->datalen=%u\n", __func__,
-			   (unsigned)msg_len, (unsigned)msg->datalen));
-		return;
-	}
 
 	if (msg_len < MESSAGE_HDR_LENGTH) {
 		DEBUG(1, ("%s: message too short: %u\n", __func__,
@@ -145,10 +127,12 @@ static void messaging_ctdb_recv(struct ctdb_req_message *msg,
 		return;
 	}
 
-	message_hdr_get(&msg_type, &src, &dst, msg->data);
+	message_hdr_get(&msg_type, &src, &dst, msg);
 
-	msg_len -= MESSAGE_HDR_LENGTH;
-	msg_buf = msg->data + MESSAGE_HDR_LENGTH;
+	iov = (struct iovec) {
+		.iov_base = discard_const_p(uint8_t, msg) + MESSAGE_HDR_LENGTH,
+		.iov_len = msg_len - MESSAGE_HDR_LENGTH
+	};
 
 	DEBUG(10, ("%s: Received message 0x%x len %u from %s\n",
 		   __func__, (unsigned)msg_type, (unsigned)msg_len,
@@ -162,8 +146,6 @@ static void messaging_ctdb_recv(struct ctdb_req_message *msg,
 			   server_id_str_buf(dst, &id2)));
 		return;
 	}
-
-	iov = (struct iovec) { .iov_base = msg_buf, .iov_len = msg_len };
 
 	/*
 	 * Go through the event loop
