@@ -315,14 +315,14 @@ static bool spoolss_child_init(struct tevent_context *ev_ctx,
 
 	status = rpc_winreg_init(NULL);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Failed to register winreg rpc inteface! (%s)\n",
+		DEBUG(0, ("Failed to register winreg rpc interface! (%s)\n",
 			  nt_errstr(status)));
 		return false;
 	}
 
 	status = rpc_spoolss_init(&spoolss_cb);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Failed to register spoolss rpc inteface! (%s)\n",
+		DEBUG(0, ("Failed to register spoolss rpc interface! (%s)\n",
 			  nt_errstr(status)));
 		return false;
 	}
@@ -742,14 +742,14 @@ pid_t start_spoolssd(struct tevent_context *ev_ctx,
 
 	status = rpc_winreg_init(NULL);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Failed to register winreg rpc inteface! (%s)\n",
+		DEBUG(0, ("Failed to register winreg rpc interface! (%s)\n",
 			  nt_errstr(status)));
 		exit(1);
 	}
 
 	status = rpc_spoolss_init(&spoolss_cb);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Failed to register spoolss rpc inteface! (%s)\n",
+		DEBUG(0, ("Failed to register spoolss rpc interface! (%s)\n",
 			  nt_errstr(status)));
 		exit(1);
 	}

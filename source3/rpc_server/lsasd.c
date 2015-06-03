@@ -278,21 +278,21 @@ static bool lsasd_child_init(struct tevent_context *ev_ctx,
 
 	status = rpc_lsarpc_init(NULL);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Failed to register lsarpc rpc inteface! (%s)\n",
+		DEBUG(0, ("Failed to register lsarpc rpc interface! (%s)\n",
 			  nt_errstr(status)));
 		return false;
 	}
 
 	status = rpc_samr_init(NULL);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Failed to register samr rpc inteface! (%s)\n",
+		DEBUG(0, ("Failed to register samr rpc interface! (%s)\n",
 			  nt_errstr(status)));
 		return false;
 	}
 
 	status = rpc_netlogon_init(NULL);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Failed to register netlogon rpc inteface! (%s)\n",
+		DEBUG(0, ("Failed to register netlogon rpc interface! (%s)\n",
 			  nt_errstr(status)));
 		return false;
 	}
@@ -446,7 +446,7 @@ static void lsasd_handle_client(struct tevent_req *req)
 		  (int)(data->pf->pid)));
 
 	if (tsocket_address_is_inet(srv_addr, "ip")) {
-		DEBUG(3, ("Got a tcpip client connection from %s on inteface %s\n",
+		DEBUG(3, ("Got a tcpip client connection from %s on interface %s\n",
 			   tsocket_address_string(cli_addr, tmp_ctx),
 			   tsocket_address_string(srv_addr, tmp_ctx)));
 
@@ -917,21 +917,21 @@ void start_lsasd(struct tevent_context *ev_ctx,
 
 	status = rpc_lsarpc_init(NULL);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Failed to register lsarpc rpc inteface in lsasd! (%s)\n",
+		DEBUG(0, ("Failed to register lsarpc rpc interface in lsasd! (%s)\n",
 			  nt_errstr(status)));
 		exit(1);
 	}
 
 	status = rpc_samr_init(NULL);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Failed to register samr rpc inteface in lsasd! (%s)\n",
+		DEBUG(0, ("Failed to register samr rpc interface in lsasd! (%s)\n",
 			  nt_errstr(status)));
 		exit(1);
 	}
 
 	status = rpc_netlogon_init(NULL);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Failed to register netlogon rpc inteface in lsasd! (%s)\n",
+		DEBUG(0, ("Failed to register netlogon rpc interface in lsasd! (%s)\n",
 			  nt_errstr(status)));
 		exit(1);
 	}

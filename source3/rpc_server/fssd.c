@@ -197,7 +197,7 @@ void start_fssd(struct tevent_context *ev_ctx,
 
 	status = rpc_FileServerVssAgent_init(&fss_cb);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Failed to register fssd rpc inteface! (%s)\n",
+		DEBUG(0, ("Failed to register fssd rpc interface! (%s)\n",
 			  nt_errstr(status)));
 		exit(1);
 	}

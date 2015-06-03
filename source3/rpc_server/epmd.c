@@ -190,7 +190,7 @@ void start_epmd(struct tevent_context *ev_ctx,
 
 	status = rpc_epmapper_init(&epmapper_cb);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Failed to register epmd rpc inteface! (%s)\n",
+		DEBUG(0, ("Failed to register epmd rpc interface! (%s)\n",
 			  nt_errstr(status)));
 		exit(1);
 	}
