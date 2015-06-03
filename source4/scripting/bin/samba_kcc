@@ -56,7 +56,7 @@ from samba.auth import system_session
 from samba.samdb import SamDB
 from samba.dcerpc import drsuapi
 from samba.kcc_utils import *
-from samba.graph_utils import *
+from samba.kcc.debug import *
 from samba import ldif_utils
 
 
@@ -3115,6 +3115,8 @@ def find_component(vertex):
     return root
 
 
+from samba.kcc.graph_utils import verify_and_dot, list_verify_tests
+from samba.kcc.graph_utils import GraphError
 def add_out_edge(graph, output_edges, e):
     v1 = e.v1
     v2 = e.v2
@@ -3131,6 +3133,7 @@ def add_out_edge(graph, output_edges, e):
 
     v1.edges.append(ee)
     v2.edges.append(ee)
+from samba.kcc.debug import logger, DEBUG, DEBUG_FN
 
 
 def test_all_reps_from(lp, creds, rng_seed=None):

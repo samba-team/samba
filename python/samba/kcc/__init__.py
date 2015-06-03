@@ -54,8 +54,12 @@ from samba.auth import system_session
 from samba.samdb import SamDB
 from samba.dcerpc import drsuapi
 from samba.kcc_utils import *
-from samba.graph_utils import *
+from samba.kcc.graph_utils import verify_and_dot
 from samba import ldif_utils
+
+from samba.kcc.debug import DEBUG, DEBUG_FN, logger
+from samba.kcc import debug
+
 
 
 class KCC(object):

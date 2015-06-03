@@ -20,23 +20,9 @@
 
 import itertools
 
-#colours for prettier logs
-C_NORMAL = "\033[00m"
-DARK_RED = "\033[00;31m"
-RED = "\033[01;31m"
-DARK_GREEN = "\033[00;32m"
-GREEN = "\033[01;32m"
-YELLOW = "\033[01;33m"
-DARK_YELLOW = "\033[00;33m"
-DARK_BLUE = "\033[00;34m"
-BLUE = "\033[01;34m"
-PURPLE = "\033[00;35m"
-MAGENTA = "\033[01;35m"
-DARK_CYAN = "\033[00;36m"
-CYAN = "\033[01;36m"
-GREY = "\033[00;37m"
-WHITE = "\033[01;37m"
-REV_RED = "\033[01;41m"
+from samba.kcc.debug import null_debug, PURPLE, MAGENTA, DARK_YELLOW, RED
+from samba.kcc.debug import DARK_GREEN, C_NORMAL, GREY
+
 
 
 def write_dot_file(basename, edge_list, vertices=None, label=None,
@@ -312,12 +298,8 @@ def verify_graph_directed_double_ring_or_small(edges, vertices, edge_vertices):
 
 
 def verify_graph(title, edges, vertices=None, directed=False, properties=(),
-                 fatal=True, debug=None):
+                 fatal=True, debug=null_debug):
     errors = []
-    if debug is None:
-        def debug(*args):
-            pass
-
     debug("%sStarting verify_graph for %s%s%s" % (PURPLE, MAGENTA, title,
                                                   C_NORMAL))
 
