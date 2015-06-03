@@ -2376,6 +2376,10 @@ NTSTATUS smbd_dirptr_lanman2_entry(TALLOC_CTX *ctx,
 				     ppdata,
 				     end_data,
 				     &last_entry_off);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_ILLEGAL_CHARACTER)) {
+		DEBUG(1,("Conversion error: illegal character: %s\n",
+			 smb_fname_str_dbg(smb_fname)));
+	}
 	TALLOC_FREE(fname);
 	TALLOC_FREE(smb_fname);
 	if (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
