@@ -783,10 +783,10 @@ void debug_set_settings(struct debug_settings *settings,
 	if (len == 0) {
 		if (syslog_only) {
 			snprintf(fake_param, sizeof(fake_param),
-				 "syslog:%d", syslog_level - 1);
+				 "syslog@%d", syslog_level - 1);
 		} else {
 			snprintf(fake_param, sizeof(fake_param),
-				 "syslog:%d file:%d", syslog_level -1,
+				 "syslog@%d file@%d", syslog_level -1,
 				 MAX_DEBUG_LEVEL);
 		}
 
