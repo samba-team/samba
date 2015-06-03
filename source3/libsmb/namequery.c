@@ -3076,6 +3076,7 @@ static NTSTATUS get_dc_list(const char *domain,
 	int auto_count = 0;
 	NTSTATUS status;
 	TALLOC_CTX *ctx = talloc_init("get_dc_list");
+	int auto_name_type = 0x1C;
 
 	*ip_list = NULL;
 	*count = 0;
@@ -3116,6 +3117,7 @@ static NTSTATUS get_dc_list(const char *domain,
 		   are already sorted by priority and weight */
 		*ordered = true;
 		resolve_order = kdc_order;
+		auto_name_type = KDC_NAME_TYPE;
 	}
 
 	/* fetch the server we have affinity for.  Add the
@@ -3159,7 +3161,8 @@ static NTSTATUS get_dc_list(const char *domain,
 	p = pserver;
 	while (next_token_talloc(ctx, &p, &name, LIST_SEP)) {
 		if (!done_auto_lookup && strequal(name, "*")) {
-			status = internal_resolve_name(domain, 0x1C, sitename,
+			status = internal_resolve_name(domain, auto_name_type,
+						       sitename,
 						       &auto_ip_list,
 						       &auto_count,
 						       resolve_order);
@@ -3183,7 +3186,8 @@ static NTSTATUS get_dc_list(const char *domain,
 			status = NT_STATUS_NO_LOGON_SERVERS;
 			goto out;
 		}
-		status = internal_resolve_name(domain, 0x1C, sitename, ip_list,
+		status = internal_resolve_name(domain, auto_name_type,
+					       sitename, ip_list,
 					     count, resolve_order);
 		goto out;
 	}
