@@ -374,7 +374,7 @@ again:
 			break;
 		case ID_TYPE_GID:
 			fltr_grp = talloc_asprintf_append_buffer(fltr_grp,
-					"(gidNumber=%d))", ids[idx]->xid.id);
+					"(gidNumber=%d)", ids[idx]->xid.id);
 			cnt_grp++;
 			break;
 		default:
