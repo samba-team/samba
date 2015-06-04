@@ -587,3 +587,15 @@ for env in ["ad_dc_ntvfs", "rodc", "promoted_dc", "ad_dc", "fl2000dc", "fl2003dc
 # check the databases are all OK. PLEASE LEAVE THIS AS THE LAST TEST
 for env in ["ad_dc_ntvfs", "ad_dc", "fl2000dc", "fl2003dc", "fl2008r2dc", 'vampire_dc', 'promoted_dc']:
     plantestsuite("samba4.blackbox.dbcheck(%s)" % env, env + ":local" , ["PYTHON=%s" % python, os.path.join(bbdir, "dbcheck.sh"), '$PREFIX/provision', configuration])
+
+for env in [
+        'vampire_dc',
+        'promoted_dc']:
+    planoldpythontestsuite(env, "samba.tests.kcc",
+                           name="samba.tests.kcc",
+                           environ={'TEST_SERVER': '$SERVER', 'TEST_USERNAME': '$USERNAME',
+                                    'TEST_PASSWORD': '$PASSWORD',
+                                    'TEST_ENV': env
+                                },
+                           extra_path=[os.path.join(srcdir(), "samba/python"), ]
+                           )
