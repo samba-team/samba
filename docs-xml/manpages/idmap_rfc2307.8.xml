@@ -36,6 +36,12 @@
 	<para>This id mapping approach allows the reuse of existing
 	LDAP authentication servers that store records in the RFC 2307
 	format.</para>
+
+	<para>When connecting to the LDAP server provided by an AD
+	server, the parameter <smbconfoption name="ldap ssl ads"/>
+	determines whether SSL should be used. When using a
+	stand-alone LDAP server, <smbconfoption name="ldap ssl"/>
+	applies.</para>
 </refsynopsisdiv>
 
 <refsect1>
