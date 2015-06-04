@@ -32,8 +32,6 @@
 
 #ifdef HAVE_KRB5
 
-#define DEFAULT_KRB5_PORT 88
-
 #define LIBADS_CCACHE_NAME "MEMORY:libads"
 
 /*
