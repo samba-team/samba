@@ -206,6 +206,21 @@ extern int  *DEBUGLEVEL_CLASS;
 #define DEBUGSEP(level)\
 	DEBUG((level),("===============================================================\n"))
 
+/*
+ * Debug levels matching RFC 3164
+ */
+#define DBGLVL_ERR	 0	/* error conditions */
+#define DBGLVL_WARNING	 1	/* warning conditions */
+#define DBGLVL_NOTICE	 3	/* normal, but significant, condition */
+#define DBGLVL_INFO	 5	/* informational message */
+#define DBGLVL_DEBUG	10	/* debug-level message */
+
+#define DBG_ERR(...)		DEBUG(DBGLVL_ERR,	(__VA_ARGS__))
+#define DBG_WARNING(...)	DEBUG(DBGLVL_WARNING,	(__VA_ARGS__))
+#define DBG_NOTICE(...)	DEBUG(DBGLVL_NOTICE,	(__VA_ARGS__))
+#define DBG_INFO(...)		DEBUG(DBGLVL_INFO,	(__VA_ARGS__))
+#define DBG_DEBUG(...)		DEBUG(DBGLVL_DEBUG,	(__VA_ARGS__))
+
 /* The following definitions come from lib/debug.c  */
 
 /** Possible destinations for the debug log (in order of precedence -
