@@ -1137,8 +1137,6 @@ done:
 static void detach_database_handler(struct ctdb_context *ctdb, uint64_t srvid,
 				    TDB_DATA data, void *private_data)
 {
-	struct ctdb_recoverd *rec = talloc_get_type(private_data,
-						    struct ctdb_recoverd);
 	uint32_t db_id;
 	struct ctdb_db_context *ctdb_db;
 
