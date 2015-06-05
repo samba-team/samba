@@ -161,7 +161,7 @@ samba3srcdir = source3dir()
 bbdir = os.path.join(srcdir(), "testprogs/blackbox")
 configuration = "--configfile=$SMB_CONF_PATH"
 
-smbtorture4 = binpath("smbtorture4")
+smbtorture4 = binpath("smbtorture")
 smbtorture4_testsuite_list = subprocess.Popen([smbtorture4, "--list-suites"], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate("")[0].splitlines()
 
 smbtorture4_options = [
@@ -187,9 +187,9 @@ def smbtorture4_testsuites(prefix):
     return filter(lambda x: x.startswith(prefix), smbtorture4_testsuite_list)
 
 
-smbclient3 = binpath('smbclient3')
+smbclient3 = binpath('smbclient')
 smbtorture3 = binpath('smbtorture3')
-ntlm_auth3 = binpath('ntlm_auth3')
+ntlm_auth3 = binpath('ntlm_auth')
 net = binpath('net')
 scriptdir = os.path.join(srcdir(), "script/tests")
 
