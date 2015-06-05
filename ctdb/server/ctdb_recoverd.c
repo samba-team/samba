@@ -233,7 +233,6 @@ struct ctdb_recoverd {
 	uint32_t node_flags;
 	struct timed_event *send_election_te;
 	struct timed_event *election_timeout;
-	struct vacuum_info *vacuum_info;
 	struct srvid_requests *reallocate_requests;
 	struct ctdb_op_state *takeover_run;
 	struct ctdb_op_state *recovery;
@@ -989,16 +988,6 @@ static int update_vnnmap_on_all_nodes(struct ctdb_context *ctdb, struct ctdb_nod
 }
 
 
-struct vacuum_info {
-	struct vacuum_info *next, *prev;
-	struct ctdb_recoverd *rec;
-	uint32_t srcnode;
-	struct ctdb_db_context *ctdb_db;
-	struct ctdb_marshall_buffer *recs;
-	struct ctdb_rec_data *r;
-};
-
-
 /*
   called when a vacuum fetch has completed - just free it and do the next one
  */
@@ -1072,16 +1061,6 @@ static bool vacuum_fetch_process_one(struct ctdb_db_context *ctdb_db,
 
 
 /*
-  destroy a vacuum info structure
- */
-static int vacuum_info_destructor(struct vacuum_info *v)
-{
-	DLIST_REMOVE(v->rec->vacuum_info, v);
-	return 0;
-}
-
-
-/*
   handler for vacuum fetch
 */
 static void vacuum_fetch_handler(struct ctdb_context *ctdb, uint64_t srvid, 
@@ -1096,23 +1075,11 @@ static void vacuum_fetch_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	bool persistent = false;
 	struct ctdb_db_context *ctdb_db;
 	struct ctdb_rec_data *r;
-	uint32_t srcnode;
-	struct vacuum_info *v;
 
 	recs = (struct ctdb_marshall_buffer *)data.dptr;
-	r = (struct ctdb_rec_data *)&recs->data[0];
 
 	if (recs->count == 0) {
 		goto done;
-	}
-
-	srcnode = r->reqid;
-
-	for (v=rec->vacuum_info;v;v=v->next) {
-		if (srcnode == v->srcnode && recs->db_id == v->ctdb_db->db_id) {
-			/* we're already working on records from this node */
-			goto done;
-		}
 	}
 
 	/* work out if the database is persistent */
@@ -1146,42 +1113,18 @@ static void vacuum_fetch_handler(struct ctdb_context *ctdb, uint64_t srvid,
 		goto done;
 	}
 
-	v = talloc_zero(rec, struct vacuum_info);
-	if (v == NULL) {
-		DEBUG(DEBUG_CRIT,(__location__ " Out of memory\n"));
-		goto done;
-	}
-
-	v->rec = rec;
-	v->srcnode = srcnode;
-	v->ctdb_db = ctdb_db;
-	v->recs = talloc_memdup(v, recs, data.dsize);
-	if (v->recs == NULL) {
-		DEBUG(DEBUG_CRIT,(__location__ " Out of memory\n"));
-		talloc_free(v);
-		goto done;
-	}
-	v->r = 	(struct ctdb_rec_data *)&v->recs->data[0];
-
-	DLIST_ADD(rec->vacuum_info, v);
-
-	talloc_set_destructor(v, vacuum_info_destructor);
-
-	while (v->recs->count) {
+	r = (struct ctdb_rec_data *)&recs->data[0];
+	while (recs->count) {
 		bool ok;
 
-		r = v->r;
-
-		ok = vacuum_fetch_process_one(v->ctdb_db, v->rec->ctdb->pnn, r);
+		ok = vacuum_fetch_process_one(ctdb_db, rec->ctdb->pnn, r);
 		if (!ok) {
 			break;
 		}
 
-		v->r = (struct ctdb_rec_data *)(r->length + (uint8_t *)r);
-		v->recs->count--;
+		r = (struct ctdb_rec_data *)(r->length + (uint8_t *)r);
+		recs->count--;
 	}
-
-	talloc_free(v);
 
 done:
 	talloc_free(tmp_ctx);
@@ -1197,7 +1140,6 @@ static void detach_database_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	struct ctdb_recoverd *rec = talloc_get_type(private_data,
 						    struct ctdb_recoverd);
 	uint32_t db_id;
-	struct vacuum_info *v, *vnext;
 	struct ctdb_db_context *ctdb_db;
 
 	if (data.dsize != sizeof(db_id)) {
@@ -1209,17 +1151,6 @@ static void detach_database_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	if (ctdb_db == NULL) {
 		/* database is not attached */
 		return;
-	}
-
-	/* Stop any active vacuum fetch */
-	v = rec->vacuum_info;
-	while (v != NULL) {
-		vnext = v->next;
-
-		if (v->ctdb_db->db_id == db_id) {
-			talloc_free(v);
-		}
-		v = vnext;
 	}
 
 	DLIST_REMOVE(ctdb->db_list, ctdb_db);
