@@ -1460,6 +1460,7 @@ int _tstream_npa_socketpair(uint16_t file_type,
 	int fd1;
 	int fd2;
 	int rc;
+	bool ok;
 
 	rc = socketpair(AF_UNIX, SOCK_STREAM, 0, fds);
 	if (rc == -1) {
@@ -1467,6 +1468,16 @@ int _tstream_npa_socketpair(uint16_t file_type,
 	}
 	fd1 = fds[0];
 	fd2 = fds[1];
+
+	ok = smb_set_close_on_exec(fd1);
+	if (!ok) {
+		goto close_fail;
+	}
+
+	ok = smb_set_close_on_exec(fd2);
+	if (!ok) {
+		goto close_fail;
+	}
 
 	rc = set_blocking(fd1, false);
 	if (rc == -1) {
