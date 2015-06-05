@@ -14,16 +14,15 @@ use target::Samba;
 use target::Samba3;
 
 sub new($$$$$) {
-	my ($classname, $bindir, $binary_mapping, $ldap, $srcdir, $server_maxtime) = @_;
+	my ($classname, $bindir, $ldap, $srcdir, $server_maxtime) = @_;
 
 	my $self = {
 		vars => {},
 		ldap => $ldap,
 		bindir => $bindir,
-		binary_mapping => $binary_mapping,
 		srcdir => $srcdir,
 		server_maxtime => $server_maxtime,
-		target3 => new Samba3($bindir, $binary_mapping, $srcdir, $server_maxtime)
+		target3 => new Samba3($bindir, $srcdir, $server_maxtime)
 	};
 	bless $self;
 	return $self;

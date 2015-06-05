@@ -50,7 +50,6 @@ my $opt_testenv = 0;
 my $opt_list = 0;
 my $ldap = undef;
 my $opt_resetup_env = undef;
-my $opt_binary_mapping = "";
 my $opt_load_list = undef;
 my $opt_libnss_wrapper_so_path = "";
 my $opt_libresolv_wrapper_so_path = "";
@@ -248,7 +247,6 @@ my $result = GetOptions (
 		'testlist=s' => \@testlists,
 		'random-order' => \$opt_random_order,
 		'load-list=s' => \$opt_load_list,
-		'binary-mapping=s' => \$opt_binary_mapping,
 		'nss_wrapper_so_path=s' => \$opt_libnss_wrapper_so_path,
 		'resolv_wrapper_so_path=s' => \$opt_libresolv_wrapper_so_path,
 		'socket_wrapper_so_path=s' => \$opt_libsocket_wrapper_so_path,
@@ -413,17 +411,6 @@ if ($opt_use_dns_faking) {
 my $target;
 my $testenv_default = "none";
 
-my %binary_mapping = ();
-if ($opt_binary_mapping) {
-    my @binmapping_list = split(/,/, $opt_binary_mapping);
-    foreach my $mapping (@binmapping_list) {
-	my ($bin, $map) = split(/\:/, $mapping);
-	$binary_mapping{$bin} = $map;
-    }
-}
-
-$ENV{BINARY_MAPPING} = $opt_binary_mapping;
-
 # After this many seconds, the server will self-terminate.  All tests
 # must terminate in this time, and testenv will only stay alive this
 # long
@@ -437,11 +424,11 @@ unless ($opt_list) {
 	if ($opt_target eq "samba") {
 		$testenv_default = "ad_dc_ntvfs";
 		require target::Samba;
-		$target = new Samba($bindir, \%binary_mapping, $ldap, $srcdir, $server_maxtime);
+		$target = new Samba($bindir, $ldap, $srcdir, $server_maxtime);
 	} elsif ($opt_target eq "samba3") {
 		$testenv_default = "nt4_member";
 		require target::Samba3;
-		$target = new Samba3($bindir, \%binary_mapping, $srcdir_abs, $server_maxtime);
+		$target = new Samba3($bindir, $srcdir_abs, $server_maxtime);
 	}
 }
 

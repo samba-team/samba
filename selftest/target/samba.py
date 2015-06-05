@@ -7,15 +7,13 @@ import os
 import sys
 
 
-def bindir_path(binary_mapping, bindir, path):
+def bindir_path(bindir, path):
     """Find the executable to use.
 
-    :param binary_mapping: Dictionary mapping binary names
     :param bindir: Directory with binaries
     :param path: Name of the executable to run
     :return: Full path to the executable to run
     """
-    path = binary_mapping.get(path, path)
     valpath = os.path.join(bindir, path)
     if os.path.isfile(valpath):
         return valpath

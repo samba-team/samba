@@ -49,10 +49,9 @@ sub get_fs_specific_conf($$)
 }
 
 sub new($$) {
-	my ($classname, $bindir, $binary_mapping, $srcdir, $server_maxtime) = @_;
+	my ($classname, $bindir, $srcdir, $server_maxtime) = @_;
 	my $self = { vars => {},
 		     bindir => $bindir,
-		     binary_mapping => $binary_mapping,
 		     srcdir => $srcdir,
 		     server_maxtime => $server_maxtime
 	};

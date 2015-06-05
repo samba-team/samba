@@ -12,11 +12,11 @@ use POSIX;
 use Cwd qw(abs_path);
 
 sub new($$$$$) {
-	my ($classname, $bindir, $binary_mapping,$ldap, $srcdir, $server_maxtime) = @_;
+	my ($classname, $bindir, $ldap, $srcdir, $server_maxtime) = @_;
 
 	my $self = {
-	    samba3 => new Samba3($bindir,$binary_mapping, $srcdir, $server_maxtime),
-	    samba4 => new Samba4($bindir,$binary_mapping, $ldap, $srcdir, $server_maxtime),
+	    samba3 => new Samba3($bindir, $srcdir, $server_maxtime),
+	    samba4 => new Samba4($bindir, $ldap, $srcdir, $server_maxtime),
 	};
 	bless $self;
 	return $self;
@@ -54,10 +54,6 @@ sub setup_env($$$)
 
 sub bindir_path($$) {
 	my ($object, $path) = @_;
-
-	if (defined($object->{binary_mapping}->{$path})) {
-	    $path = $object->{binary_mapping}->{$path};
-	}
 
 	my $valpath = "$object->{bindir}/$path";
 

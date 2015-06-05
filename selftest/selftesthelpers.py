@@ -34,21 +34,8 @@ def source3dir():
 def bindir():
     return os.path.normpath(os.getenv("BINDIR", "./bin"))
 
-binary_mapping = {}
-
 def binpath(name):
-    if name in binary_mapping:
-        name = binary_mapping[name]
     return os.path.join(bindir(), name)
-
-binary_mapping_string = os.getenv("BINARY_MAPPING", None)
-if binary_mapping_string is not None:
-    for binmapping_entry in binary_mapping_string.split(','):
-        try:
-            (from_path, to_path) = binmapping_entry.split(':', 1)
-        except ValueError:
-            continue
-        binary_mapping[from_path] = to_path
 
 # Split perl variable to allow $PERL to be set to e.g. "perl -W"
 perl = os.getenv("PERL", "perl").split()
