@@ -2153,20 +2153,12 @@ def combine_repl_info(info_a, info_b, info_c):
     if info_b.schedule is None:
         info_b.schedule = [0xFF] * 84
 
-    new_info = [0] * 84
-    i = 0
-    count = 0
-    while i < 84:
-        # Note that this operation is actually bitwise
-        new_info = info_a.schedule[i] & info_b.schedule[i]
-        if new_info != 0:
-            count += 1
-        i += 1
+    new_info = [a & b for a, b in zip(info_a.schedule, info_b.schedule)]
 
-    if count == 0:
+    if not any(new_info):
         return False
 
-        info_c.schedule = new_info
+    info_c.schedule = new_info
 
     # Truncate to MAX_DWORD
     info_c.cost = info_a.cost + info_b.cost
