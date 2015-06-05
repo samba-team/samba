@@ -329,6 +329,14 @@ def create_edge_set(graph, transport, site_link_bridge):
 def setup_vertices(graph):
     """Initialise vertices in the graph for the Dijkstra's run.
 
+    Part of MS-ADTS 6.2.2.3.4.4
+
+    The schedule and options are set to all-on, so that intersections
+    with real data defer to that data.
+
+    Refer to the convert_schedule_to_repltimes() docstring for an
+    explanation of the repltimes schedule values.
+
     :param graph: an IntersiteGraph object
     :return: None
     """
@@ -344,7 +352,8 @@ def setup_vertices(graph):
 
         v.repl_info.interval = 0
         v.repl_info.options = 0xFFFFFFFF
-        v.repl_info.schedule = None  # TODO highly suspicious
+        # repl_info.schedule == None means "always".
+        v.repl_info.schedule = None
         v.repl_info.duration = 84 * 8
         v.demoted = False
 
