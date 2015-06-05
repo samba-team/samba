@@ -1148,6 +1148,86 @@ static NTSTATUS lookup_useraliases(struct winbindd_domain *domain,
 						    alias_rids);
 }
 
+static NTSTATUS add_primary_group_members(
+	ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, uint32_t rid,
+	char ***all_members, size_t *num_all_members)
+{
+	char *filter;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+	ADS_STATUS rc;
+	const char *attrs[] = { "dn", NULL };
+	LDAPMessage *res = NULL;
+	LDAPMessage *msg;
+	char **members;
+	size_t num_members;
+	ads_control args;
+
+	filter = talloc_asprintf(
+		mem_ctx, "(&(objectCategory=user)(primaryGroupID=%u))",
+		(unsigned)rid);
+	if (filter == NULL) {
+		goto done;
+	}
+
+	args.control = ADS_EXTENDED_DN_OID;
+	args.val = ADS_EXTENDED_DN_HEX_STRING;
+	args.critical = True;
+
+	rc = ads_do_search_all_args(ads, ads->config.bind_path,
+				    LDAP_SCOPE_SUBTREE, filter, attrs, &args,
+				    &res);
+
+	if (!ADS_ERR_OK(rc)) {
+		status = ads_ntstatus(rc);
+		DEBUG(1,("%s: ads_search: %s\n", __func__, ads_errstr(rc)));
+		goto done;
+	}
+	if (res == NULL) {
+		DEBUG(1,("%s: ads_search returned NULL res\n", __func__));
+		goto done;
+	}
+
+	num_members = ads_count_replies(ads, res);
+
+	DEBUG(10, ("%s: Got %ju primary group members\n", __func__,
+		   (uintmax_t)num_members));
+
+	if (num_members == 0) {
+		status = NT_STATUS_OK;
+		goto done;
+	}
+
+	members = talloc_realloc(mem_ctx, *all_members, char *,
+				 *num_all_members + num_members);
+	if (members == NULL) {
+		DEBUG(1, ("%s: talloc_realloc failed\n", __func__));
+		goto done;
+	}
+	*all_members = members;
+
+	for (msg = ads_first_entry(ads, res); msg != NULL;
+	     msg = ads_next_entry(ads, msg)) {
+		char *dn;
+
+		dn = ads_get_dn(ads, members, msg);
+		if (dn == NULL) {
+			DEBUG(1, ("%s: ads_get_dn failed\n", __func__));
+			continue;
+		}
+
+		members[*num_all_members] = dn;
+		*num_all_members += 1;
+	}
+
+	status = NT_STATUS_OK;
+done:
+	if (res != NULL) {
+		ads_msgfree(ads, res);
+	}
+	TALLOC_FREE(filter);
+	return status;
+}
+
 /*
   find the members of a group, given a group rid and domain
  */
@@ -1174,6 +1254,7 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	char **domains_nocache = NULL;     /* only needed for rpccli_lsa_lookup_sids */
 	uint32_t num_nocache = 0;
 	TALLOC_CTX *tmp_ctx = NULL;
+	uint32_t rid;
 
 	DEBUG(10,("ads: lookup_groupmem %s sid=%s\n", domain->name,
 		  sid_string_dbg(group_sid)));
@@ -1184,6 +1265,12 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	if (!tmp_ctx) {
 		DEBUG(1, ("ads: lookup_groupmem: talloc failed\n"));
 		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	if (!sid_peek_rid(group_sid, &rid)) {
+		DEBUG(1, ("%s: sid_peek_rid failed\n", __func__));
+		status = NT_STATUS_INVALID_PARAMETER;
 		goto done;
 	}
 
@@ -1228,6 +1315,17 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	}
 
 	DEBUG(10, ("ads lookup_groupmem: got %d sids via extended dn call\n", (int)num_members));
+
+	status = add_primary_group_members(ads, mem_ctx, rid,
+					   &members, &num_members);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("%s: add_primary_group_members failed: %s\n",
+			   __func__, nt_errstr(status)));
+		goto done;
+	}
+
+	DEBUG(10, ("%s: Got %d sids after adding primary group members\n",
+		   __func__, (int)num_members));
 
 	/* Now that we have a list of sids, we need to get the
 	 * lists of names and name_types belonging to these sids.
