@@ -168,6 +168,12 @@ class KCC(object):
                                             transport)
             if transport.name == 'IP':
                 self.ip_transport = transport
+            elif transport.name == 'SMTP':
+                logger.info("Samba KCC is ignoring the obsolete SMTP transport.")
+
+            else:
+                logger.warning("Samba KCC does not support the transport called %r."
+                               % (transport.name,))
 
         if self.ip_transport is None:
             raise KCCError("there doesn't seem to be an IP transport")
@@ -1551,8 +1557,7 @@ class KCC(object):
         for t_guid, transport in self.transport_table.items():
             if transport.name != 'IP':
                 #XXX well this is cheating a bit
-                logger.warning("WARNING: we are ignoring a transport named %r"
-                               % transport.name)
+                DEBUG_FN("ignoring a transport named %r" % transport.name)
                 continue
 
             if vertex not in graph.connected_vertices:
