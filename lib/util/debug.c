@@ -106,14 +106,19 @@ static struct {
 static int debug_level_to_priority(int level)
 {
 	/*
-	 * map debug levels to syslog() priorities note that not all
-	 * DEBUG(0, ...) calls are necessarily errors
+	 * map debug levels to syslog() priorities
 	 */
-	static const int priority_map[4] = {
+	static const int priority_map[] = {
 		LOG_ERR,     /* 0 */
 		LOG_WARNING, /* 1 */
 		LOG_NOTICE,  /* 2 */
-		LOG_INFO,    /* 3 */
+		LOG_NOTICE,  /* 3 */
+		LOG_NOTICE,  /* 4 */
+		LOG_NOTICE,  /* 5 */
+		LOG_INFO,    /* 6 */
+		LOG_INFO,    /* 7 */
+		LOG_INFO,    /* 8 */
+		LOG_INFO,    /* 9 */
 	};
 	int priority;
 
