@@ -1,5 +1,4 @@
-#
-# LDIF helper fucntions, originally from the samba_kcc tool
+# LDIF helper functions for the samba_kcc tool
 #
 # Copyright (C) Dave Craft 2011
 # Copyright (C) Andrew Bartlett 2015

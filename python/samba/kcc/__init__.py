@@ -37,8 +37,8 @@ from samba.kcc.kcc_utils import convert_schedule_to_repltimes
 from samba.ndr import ndr_pack
 
 from samba.kcc.graph_utils import verify_and_dot
-from samba import ldif_utils
 
+from samba.kcc import ldif_import_export
 from samba.kcc.graph import setup_graph, get_spanning_tree_edges
 from samba.kcc.graph import Vertex
 
@@ -2667,9 +2667,9 @@ class KCC(object):
         :param ldif_file: path to the ldif file to import
         """
         try:
-            self.samdb = ldif_utils.ldif_to_samdb(dburl, lp, ldif_file,
-                                                  self.forced_local_dsa)
-        except ldif_utils.LdifError, e:
+            self.samdb = ldif_import_export.ldif_to_samdb(dburl, lp, ldif_file,
+                                                          self.forced_local_dsa)
+        except ldif_import_export.LdifError, e:
             print e
             return 1
         return 0
@@ -2690,9 +2690,9 @@ class KCC(object):
         :param ldif_file: output LDIF file name to create
         """
         try:
-            ldif_utils.samdb_to_ldif_file(self.samdb, dburl, lp, creds,
-                                          ldif_file)
-        except ldif_utils.LdifError, e:
+            ldif_import_export.samdb_to_ldif_file(self.samdb, dburl, lp, creds,
+                                                  ldif_file)
+        except ldif_import_export.LdifError, e:
             print e
             return 1
         return 0

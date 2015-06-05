@@ -1,4 +1,4 @@
-# Unix SMB/CIFS implementation. Tests for graph_utils.py routines
+# Unix SMB/CIFS implementation. Tests for samba.kcc.ldif_import_export.
 # Copyright (C) Andrew Bartlett 2015
 #
 # Written by Douglas Bagnall <douglas.bagnall@catalyst.net.nz>
@@ -17,14 +17,14 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-"""Tests for samba.ldif_utils"""
+"""Tests for samba.kcc.ldif_import_export"""
 
 import samba
 import os
 from tempfile import mkdtemp
 
 import samba.tests
-from samba import ldif_utils
+from samba.kcc import ldif_import_export
 from samba import ldb
 from samba.dcerpc import misc
 
