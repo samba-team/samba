@@ -27,6 +27,7 @@
 #include "tsocket.h"
 #include "tsocket_internal.h"
 #include "lib/util/iov_buf.h"
+#include "lib/util/blocking.h"
 
 static int tsocket_bsd_error_from_errno(int ret,
 					int sys_errno,
@@ -84,7 +85,8 @@ static int tsocket_bsd_common_prepare_fd(int fd, bool high_fd)
 	int fds[3];
 	int num_fds = 0;
 
-	int result, flags;
+	int result;
+	bool ok;
 
 	if (fd == -1) {
 		return -1;
@@ -109,40 +111,16 @@ static int tsocket_bsd_common_prepare_fd(int fd, bool high_fd)
 		}
 	}
 
-	/* fd should be nonblocking. */
-
-#ifdef O_NONBLOCK
-#define FLAG_TO_SET O_NONBLOCK
-#else
-#ifdef SYSV
-#define FLAG_TO_SET O_NDELAY
-#else /* BSD */
-#define FLAG_TO_SET FNDELAY
-#endif
-#endif
-
-	if ((flags = fcntl(fd, F_GETFL)) == -1) {
+	result = set_blocking(fd, false);
+	if (result == -1) {
 		goto fail;
 	}
 
-	flags |= FLAG_TO_SET;
-	if (fcntl(fd, F_SETFL, flags) == -1) {
+	ok = smb_set_close_on_exec(fd);
+	if (!ok) {
 		goto fail;
 	}
 
-#undef FLAG_TO_SET
-
-	/* fd should be closed on exec() */
-#ifdef FD_CLOEXEC
-	result = flags = fcntl(fd, F_GETFD, 0);
-	if (flags >= 0) {
-		flags |= FD_CLOEXEC;
-		result = fcntl(fd, F_SETFD, flags);
-	}
-	if (result < 0) {
-		goto fail;
-	}
-#endif
 	return fd;
 
  fail:
