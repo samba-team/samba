@@ -43,6 +43,15 @@ class ReplInfo(object):
         self.interval = 0
         self.options = 0
         self.schedule = None
+        self.duration = 84 * 8
+
+    def set_repltimes_from_schedule(self, schedule):
+        """Convert the schedule and calculate duration
+
+        :param schdule: the schedule to convert
+        """
+        self.schedule = convert_schedule_to_repltimes(schedule)
+        self.duration = total_schedule(self.schedule)
 
 
 def total_schedule(schedule):
@@ -137,6 +146,7 @@ def combine_repl_info(info_a, info_b, info_c):
     if info_c.cost > MAX_DWORD:
         info_c.cost = MAX_DWORD
 
+    info_c.duration = total_schedule(new_info)
     return True
 
 
@@ -293,7 +303,7 @@ def create_edge(con_type, site_link, guid_to_vertex):
     e.repl_info.cost = site_link.cost
     e.repl_info.options = site_link.options
     e.repl_info.interval = site_link.interval
-    e.repl_info.schedule = convert_schedule_to_repltimes(site_link.schedule)
+    e.repl_info.set_repltimes_from_schedule(site_link.schedule)
     e.con_type = con_type
     e.directed = False
     return e
@@ -342,6 +352,7 @@ def setup_vertices(graph):
         v.repl_info.interval = 0
         v.repl_info.options = 0xFFFFFFFF
         v.repl_info.schedule = None  # TODO highly suspicious
+        v.repl_info.duration = 84 * 8
         v.demoted = False
 
 
@@ -409,14 +420,14 @@ def try_new_path(graph, queue, vfrom, edge, vto):
     if newRI.cost > vto.repl_info.cost:
         return
 
+    # Cheaper or longer schedule goes in the heap
     if newRI.cost < vto.repl_info.cost and not intersect:
         return
 
-    new_duration = total_schedule(newRI.schedule)
-    old_duration = total_schedule(vto.repl_info.schedule)
 
     # Cheaper or longer schedule
-    if newRI.cost < vto.repl_info.cost or new_duration > old_duration:
+    if (newRI.cost < vto.repl_info.cost or
+        newRI.duration > vto.repl_info.duration):
         vto.root = vfrom.root
         vto.component_id = vfrom.component_id
         vto.repl_info = newRI
@@ -852,10 +863,8 @@ class InternalEdge(object):
         if self.repl_info.cost != other.repl_info.cost:
             return self.repl_info.cost < other.repl_info.cost
 
-        self_time = total_schedule(self.repl_info.schedule)
-        other_time = total_schedule(other.repl_info.schedule)
-        if self_time != other_time:
-            return self_time > other_time
+        if self.repl_info.duration != other.repl_info.duration:
+            return self.repl_info.duration > other.repl_info.duration
 
         if self.v1.guid != other.v1.guid:
             return self.v1.ndrpacked_guid < other.v1.ndrpacked_guid
