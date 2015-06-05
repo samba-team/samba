@@ -337,7 +337,7 @@ _nfs_check_rpc_common ()
     # Some platforms don't have separate programs for all services.
     case "$_prog_name" in
 	statd)
-	    which "rpc.${_prog_name}" >/dev/null 2>&1 || return 0
+	    type "rpc.${_prog_name}" >/dev/null 2>&1 || return 0
     esac
 
     case "$_prog_name" in
@@ -1430,7 +1430,7 @@ iptables_wrapper ()
 }
 
 # AIX (and perhaps others?) doesn't have mktemp
-if ! which mktemp >/dev/null 2>&1 ; then
+if ! type mktemp >/dev/null 2>&1 ; then
     mktemp ()
     {
 	_dir=false

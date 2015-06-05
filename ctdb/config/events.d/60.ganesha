@@ -229,7 +229,7 @@ case "$1" in
 	# For platforms where rpc.statd does not exist, we skip
         # the check completely
 	p="rpc.statd"
-	which $p >/dev/null 2>/dev/null && \
+	type $p >/dev/null 2>/dev/null && \
 	    nfs_check_rpc_service "statd" \
 		%  10 "verbose restart:b unhealthy" \
 		-ge 6 "verbose unhealthy" \

@@ -17,8 +17,8 @@ select_tdb_checker ()
 {
     # Find the best TDB consistency check available.
     use_tdb_tool_check=false
-    which tdbtool >/dev/null 2>&1 && found_tdbtool=true
-    which tdbdump >/dev/null 2>&1 && found_tdbdump=true
+    type tdbtool >/dev/null 2>&1 && found_tdbtool=true
+    type tdbdump >/dev/null 2>&1 && found_tdbdump=true
 
     if $found_tdbtool && echo "help" | tdbtool | grep -q check ; then
 	    use_tdb_tool_check=true
