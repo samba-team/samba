@@ -70,13 +70,12 @@ struct tevent_req *async_connect_send(
 	void (*after_connect)(void *private_data),
 	void *private_data)
 {
-	struct tevent_req *result;
+	struct tevent_req *req;
 	struct async_connect_state *state;
 	struct tevent_fd *fde;
 
-	result = tevent_req_create(
-		mem_ctx, &state, struct async_connect_state);
-	if (result == NULL) {
+	req = tevent_req_create(mem_ctx, &state, struct async_connect_state);
+	if (req == NULL) {
 		return NULL;
 	}
 
@@ -116,7 +115,7 @@ struct tevent_req *async_connect_send(
 	}
 
 	if (state->result == 0) {
-		tevent_req_done(result);
+		tevent_req_done(req);
 		goto done;
 	}
 
@@ -137,18 +136,18 @@ struct tevent_req *async_connect_send(
 	}
 
 	fde = tevent_add_fd(ev, state, fd, TEVENT_FD_READ | TEVENT_FD_WRITE,
-			   async_connect_connected, result);
+			   async_connect_connected, req);
 	if (fde == NULL) {
 		state->sys_errno = ENOMEM;
 		goto post_errno;
 	}
-	return result;
+	return req;
 
  post_errno:
-	tevent_req_error(result, state->sys_errno);
+	tevent_req_error(req, state->sys_errno);
  done:
 	fcntl(fd, F_SETFL, state->old_sockflags);
-	return tevent_req_post(result, ev);
+	return tevent_req_post(req, ev);
 }
 
 /**
