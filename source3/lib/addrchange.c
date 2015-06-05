@@ -126,7 +126,7 @@ static void addrchange_done(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct addrchange_state *state = tevent_req_data(
 		req, struct addrchange_state);
-	struct sockaddr_nl *addr;
+	struct sockaddr_nl *fromaddr;
 	struct nlmsghdr *h;
 	struct ifaddrmsg *ifa;
 	struct rtattr *rta;
@@ -148,10 +148,10 @@ static void addrchange_done(struct tevent_req *subreq)
 		goto retry;
 	}
 
-	addr = (struct sockaddr_nl *)(void *)&state->addr;
-	if (addr->nl_pid != 0) {
+	fromaddr = (struct sockaddr_nl *)(void *)&state->fromaddr;
+	if (fromaddr->nl_pid != 0) {
 		DEBUG(10, ("Got msg from pid %d, not from the kernel\n",
-			   (int)addr->nl_pid));
+			   (int)fromaddr->nl_pid));
 		goto retry;
 	}
 
