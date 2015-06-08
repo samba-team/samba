@@ -299,12 +299,6 @@ SMBC_splice_ctx(SMBCCTX *context,
                 void *priv)
 {
 	off_t written;
-	char *server = NULL, *share = NULL, *user = NULL, *password = NULL;
-	char *path = NULL;
-	char *targetpath = NULL;
-	struct cli_state *srccli = NULL;
-	struct cli_state *dstcli = NULL;
-	uint16_t port = 0;
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
 
@@ -330,64 +324,12 @@ SMBC_splice_ctx(SMBCCTX *context,
 		return -1;
 	}
 
-	if (SMBC_parse_path(frame,
-                            context,
-                            srcfile->fname,
-                            NULL,
-                            &server,
-                            &port,
-                            &share,
-                            &path,
-                            &user,
-                            &password,
-                            NULL)) {
-                errno = EINVAL;
-		TALLOC_FREE(frame);
-                return -1;
-        }
-
-	status = cli_resolve_path(frame, "", context->internal->auth_info,
-				  srcfile->srv->cli, path,
-				  &srccli, &targetpath);
-	if (!NT_STATUS_IS_OK(status)) {
-		d_printf("Could not resolve %s\n", path);
-                errno = ENOENT;
-		TALLOC_FREE(frame);
-		return -1;
-	}
-
-	if (SMBC_parse_path(frame,
-                            context,
-                            dstfile->fname,
-                            NULL,
-                            &server,
-                            &port,
-                            &share,
-                            &path,
-                            &user,
-                            &password,
-                            NULL)) {
-                errno = EINVAL;
-		TALLOC_FREE(frame);
-                return -1;
-        }
-
-	status = cli_resolve_path(frame, "", context->internal->auth_info,
-				  dstfile->srv->cli, path,
-				  &dstcli, &targetpath);
-	if (!NT_STATUS_IS_OK(status)) {
-		d_printf("Could not resolve %s\n", path);
-                errno = ENOENT;
-		TALLOC_FREE(frame);
-		return -1;
-	}
-
-	status = cli_splice(srccli, dstcli,
+	status = cli_splice(srcfile->targetcli, dstfile->targetcli,
 			    srcfile->cli_fd, dstfile->cli_fd,
 			    count, srcfile->offset, dstfile->offset, &written,
 			    splice_cb, priv);
 	if (!NT_STATUS_IS_OK(status)) {
-		errno = SMBC_errno(context, srccli);
+		errno = SMBC_errno(context, srcfile->targetcli);
 		TALLOC_FREE(frame);
 		return -1;
 	}
