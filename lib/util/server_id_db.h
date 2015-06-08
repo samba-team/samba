@@ -30,6 +30,7 @@ struct server_id_db *server_id_db_init(TALLOC_CTX *mem_ctx,
 				       const char *base_path,
 				       int hash_size, int tdb_flags);
 void server_id_db_reinit(struct server_id_db *db, struct server_id pid);
+struct server_id server_id_db_pid(struct server_id_db *db);
 int server_id_db_add(struct server_id_db *db, const char *name);
 int server_id_db_remove(struct server_id_db *db, const char *name);
 int server_id_db_prune_name(struct server_id_db *db, const char *name,

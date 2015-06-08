@@ -74,6 +74,11 @@ void server_id_db_reinit(struct server_id_db *db, struct server_id pid)
 	TALLOC_FREE(db->names);
 }
 
+struct server_id server_id_db_pid(struct server_id_db *db)
+{
+	return db->pid;
+}
+
 static int server_id_db_destructor(struct server_id_db *db)
 {
 	char *name = NULL;
