@@ -1713,7 +1713,7 @@ static void show_parameter(int parmIndex)
 	bool inverse;
 	const char *type[] = { "P_BOOL", "P_BOOLREV", "P_CHAR", "P_INTEGER",
 		"P_OCTAL", "P_LIST", "P_STRING", "P_USTRING",
-		"P_ENUM" };
+		"P_ENUM", "P_BYTES", "P_CMDLIST" };
 	unsigned flags[] = { FLAG_DEPRECATED, FLAG_SYNONYM };
 	const char *flag_names[] = { "FLAG_DEPRECATED", "FLAG_SYNONYM", NULL};
 
