@@ -9,6 +9,10 @@ from Configure import conf
 @conf
 def SAMBA_CHECK_PYTHON(conf, mandatory=True, version=(2,4,2)):
     # enable tool to build python extensions
+    if conf.env.HAVE_PYTHON_H:
+        conf.check_python_version(version)
+        return
+
     interpreters = []
 
     if conf.env['EXTRA_PYTHON']:
