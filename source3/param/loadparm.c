@@ -1726,7 +1726,7 @@ static void show_parameter(int parmIndex)
 	bool inverse;
 	const char *type[] = { "P_BOOL", "P_BOOLREV", "P_CHAR", "P_INTEGER",
 		"P_OCTAL", "P_LIST", "P_STRING", "P_USTRING",
-		"P_ENUM", "P_SEP"};
+		"P_ENUM", "P_BYTES", "P_CMDLIST", "P_SEP" };
 	unsigned flags[] = { FLAG_BASIC, FLAG_SHARE, FLAG_PRINT, FLAG_GLOBAL,
 		FLAG_WIZARD, FLAG_ADVANCED, FLAG_DEVELOPER, FLAG_DEPRECATED,
 		FLAG_HIDE};
