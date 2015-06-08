@@ -284,8 +284,15 @@ def test(ctx):
     cmd = 'tests/test-tdb.sh %s' % Utils.g_module.blddir
     ret = samba_utils.RUN_COMMAND(cmd)
     print("testsuite returned %d" % ret)
-    # FIXME: Run python testsuite
-    sys.exit(ret)
+
+    tmp_dir = os.path.join(test_prefix, 'tmp')
+    if not os.path.exists(tmp_dir):
+        os.mkdir(tmp_dir)
+    pyret = samba_utils.RUN_PYTHON_TESTS(
+        ['tests/python/api.py'],
+        extra_env={'SELFTEST_PREFIX': test_prefix})
+    print("Python testsuite returned %d" % pyret)
+    sys.exit(ret or pyret)
 
 def dist():
     '''makes a tarball for distribution'''

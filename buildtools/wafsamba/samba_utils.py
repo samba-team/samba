@@ -385,7 +385,7 @@ def RUN_COMMAND(cmd,
     return -1
 
 
-def RUN_PYTHON_TESTS(testfiles, pythonpath=None):
+def RUN_PYTHON_TESTS(testfiles, pythonpath=None, extra_env=None):
     env = LOAD_ENVIRONMENT()
     if pythonpath is None:
         pythonpath = os.path.join(Utils.g_module.blddir, 'python')
@@ -393,6 +393,9 @@ def RUN_PYTHON_TESTS(testfiles, pythonpath=None):
     for interp in env.python_interpreters:
         for testfile in testfiles:
             cmd = "PYTHONPATH=%s %s %s" % (pythonpath, interp, testfile)
+            if extra_env:
+                for key, value in extra_env.items():
+                    cmd = "%s=%s %s" % (key, value, cmd)
             print('Running Python test with %s: %s' % (interp, testfile))
             ret = RUN_COMMAND(cmd)
             if ret:
