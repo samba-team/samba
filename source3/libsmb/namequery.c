@@ -3141,15 +3141,6 @@ static NTSTATUS get_dc_list(const char *domain,
 		goto out;
 	}
 
-	/* if we are starting from scratch, just lookup DOMAIN<0x1c> */
-
-	if (!*pserver ) {
-		DEBUG(10,("get_dc_list: no preferred domain controllers.\n"));
-		status = internal_resolve_name(domain, 0x1C, sitename, ip_list,
-					     count, resolve_order);
-		goto out;
-	}
-
 	DEBUG(3,("get_dc_list: preferred server list: \"%s\"\n", pserver ));
 
 	/*
