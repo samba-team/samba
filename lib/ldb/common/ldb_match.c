@@ -271,6 +271,14 @@ static int ldb_wildcard_compare(struct ldb_context *ldb,
 		if (cnk.length > val.length) {
 			goto mismatch;
 		}
+		/*
+		 * Empty strings are returned as length 0. Ensure
+		 * we can cope with this.
+		 */
+		if (cnk.length == 0) {
+			goto mismatch;
+		}
+
 		if (memcmp((char *)val.data, (char *)cnk.data, cnk.length) != 0) goto mismatch;
 		val.length -= cnk.length;
 		val.data += cnk.length;
@@ -284,7 +292,13 @@ static int ldb_wildcard_compare(struct ldb_context *ldb,
 		chunk = tree->u.substring.chunks[c];
 		if(a->syntax->canonicalise_fn(ldb, ldb, chunk, &cnk) != 0) goto mismatch;
 
-		/* FIXME: case of embedded nulls */
+		/*
+		 * Empty strings are returned as length 0. Ensure
+		 * we can cope with this.
+		 */
+		if (cnk.length == 0) {
+			goto mismatch;
+		}
 		p = strstr((char *)val.data, (char *)cnk.data);
 		if (p == NULL) goto mismatch;
 		if ( (! tree->u.substring.chunks[c + 1]) && (! tree->u.substring.end_with_wildcard) ) {
