@@ -225,9 +225,10 @@ static struct tevent_req *fsctl_srv_copychunk_send(TALLOC_CTX *mem_ctx,
 	}
 
 	state->status = copychunk_check_limits(&cc_copy);
-	if (tevent_req_nterror(req, state->status)) {
+	if (!NT_STATUS_IS_OK(state->status)) {
 		DEBUG(3, ("copy chunk req exceeds limits\n"));
 		state->out_data = COPYCHUNK_OUT_LIMITS;
+		tevent_req_nterror(req, state->status);
 		return tevent_req_post(req, ev);
 	}
 
