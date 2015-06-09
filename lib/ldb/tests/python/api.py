@@ -54,7 +54,7 @@ class SimpleLdb(TestCase):
 
     def test_set_create_perms(self):
         x = ldb.Ldb()
-        x.set_create_perms(0600)
+        x.set_create_perms(0o600)
 
     def test_modules_none(self):
         x = ldb.Ldb()
@@ -434,7 +434,7 @@ class DnTests(TestCase):
 
     def test_parse_ldif(self):
         msgs = self.ldb.parse_ldif("dn: foo=bar\n")
-        msg = msgs.next()
+        msg = next(msgs)
         self.assertEquals("foo=bar", str(msg[1].dn))
         self.assertTrue(isinstance(msg[1], ldb.Message))
         ldif = self.ldb.write_ldif(msg[1], ldb.CHANGETYPE_NONE)
@@ -442,9 +442,9 @@ class DnTests(TestCase):
 
     def test_parse_ldif_more(self):
         msgs = self.ldb.parse_ldif("dn: foo=bar\n\n\ndn: bar=bar")
-        msg = msgs.next()
+        msg = next(msgs)
         self.assertEquals("foo=bar", str(msg[1].dn))
-        msg = msgs.next()
+        msg = next(msgs)
         self.assertEquals("bar=bar", str(msg[1].dn))
 
     def test_canonical_string(self):
@@ -504,7 +504,10 @@ class LdbMsgTests(TestCase):
     def test_repr(self):
         self.msg.dn = ldb.Dn(ldb.Ldb(filename()), "dc=foo29")
         self.msg["dc"] = "foo"
-        self.assertEquals("Message({'dn': Dn('dc=foo29'), 'dc': MessageElement(['foo'])})", repr(self.msg))
+        self.assertIn(repr(self.msg), [
+            "Message({'dn': Dn('dc=foo29'), 'dc': MessageElement(['foo'])})",
+            "Message({'dc': MessageElement(['foo']), 'dn': Dn('dc=foo29')})",
+        ])
 
     def test_len(self):
         self.assertEquals(0, len(self.msg))
@@ -578,8 +581,8 @@ class LdbMsgTests(TestCase):
     def test_msg_diff(self):
         l = ldb.Ldb()
         msgs = l.parse_ldif("dn: foo=bar\nfoo: bar\nbaz: do\n\ndn: foo=bar\nfoo: bar\nbaz: dont\n")
-        msg1 = msgs.next()[1]
-        msg2 = msgs.next()[1]
+        msg1 = next(msgs)[1]
+        msg2 = next(msgs)[1]
         msgdiff = l.msg_diff(msg1, msg2)
         self.assertEquals("foo=bar", msgdiff.get("dn").__str__())
         self.assertRaises(KeyError, lambda: msgdiff["foo"])

@@ -64,8 +64,25 @@ typedef inquiry lenfunc;
 typedef intargfunc ssizeargfunc;
 #endif
 
-#define SIGN(a) (((a) == 0)?0:((a) < 0?-1:1))
 
+
+
+static PyObject *richcmp(int cmp_val, int op)
+{
+	int ret;
+	switch (op) {
+		case Py_LT: ret = cmp_val < 0;  break;
+		case Py_LE: ret = cmp_val <= 0; break;
+		case Py_EQ: ret = cmp_val == 0; break;
+		case Py_NE: ret = cmp_val != 0; break;
+		case Py_GT: ret = cmp_val > 0;  break;
+		case Py_GE: ret = cmp_val >= 0; break;
+		default:
+			Py_INCREF(Py_NotImplemented);
+			return Py_NotImplemented;
+	}
+	return PyBool_FromLong(ret);
+}
 
 
 static PyObject *py_ldb_control_str(PyLdbControlObject *self)
@@ -464,13 +481,15 @@ static PyObject *py_ldb_dn_check_special(PyLdbDnObject *self, PyObject *args)
 	return PyBool_FromLong(ldb_dn_check_special(self->dn, name));
 }
 
-static int py_ldb_dn_compare(PyLdbDnObject *dn1, PyLdbDnObject *dn2)
+static PyObject *py_ldb_dn_richcmp(PyObject *dn1, PyObject *dn2, int op)
 {
 	int ret;
-	ret = ldb_dn_compare(dn1->dn, dn2->dn);
-	if (ret < 0) ret = -1;
-	if (ret > 0) ret = 1;
-	return ret;
+	if (!pyldb_Dn_Check(dn2)) {
+		Py_INCREF(Py_NotImplemented);
+		return Py_NotImplemented;
+	}
+	ret = ldb_dn_compare(pyldb_Dn_AsDn(dn1), pyldb_Dn_AsDn(dn2));
+	return richcmp(ret, op);
 }
 
 static PyObject *py_ldb_dn_get_parent(PyLdbDnObject *self)
@@ -820,7 +839,7 @@ static PyTypeObject PyLdbDn = {
 	.tp_methods = py_ldb_dn_methods,
 	.tp_str = (reprfunc)py_ldb_dn_get_linearized,
 	.tp_repr = (reprfunc)py_ldb_dn_repr,
-	.tp_compare = (cmpfunc)py_ldb_dn_compare,
+	.tp_richcompare = (richcmpfunc)py_ldb_dn_richcmp,
 	.tp_as_sequence = &py_ldb_dn_seq,
 	.tp_doc = "A LDB distinguished name.",
 	.tp_new = py_ldb_dn_new,
@@ -2466,11 +2485,16 @@ static PySequenceMethods py_ldb_msg_element_seq = {
 	.sq_item = (ssizeargfunc)py_ldb_msg_element_find,
 };
 
-static int py_ldb_msg_element_cmp(PyLdbMessageElementObject *self, PyLdbMessageElementObject *other)
+static PyObject *py_ldb_msg_element_richcmp(PyObject *self, PyObject *other, int op)
 {
-	int ret = ldb_msg_element_compare(pyldb_MessageElement_AsMessageElement(self),
+	int ret;
+	if (!pyldb_MessageElement_Check(other)) {
+		Py_INCREF(Py_NotImplemented);
+		return Py_NotImplemented;
+	}
+	ret = ldb_msg_element_compare(pyldb_MessageElement_AsMessageElement(self),
 									  pyldb_MessageElement_AsMessageElement(other));
-	return SIGN(ret);
+	return richcmp(ret, op);
 }
 
 static PyObject *py_ldb_msg_element_iter(PyLdbMessageElementObject *self)
@@ -2636,7 +2660,7 @@ static PyTypeObject PyLdbMessageElement = {
 	.tp_repr = (reprfunc)py_ldb_msg_element_repr,
 	.tp_str = (reprfunc)py_ldb_msg_element_str,
 	.tp_methods = py_ldb_msg_element_methods,
-	.tp_compare = (cmpfunc)py_ldb_msg_element_cmp,
+	.tp_richcompare = (richcmpfunc)py_ldb_msg_element_richcmp,
 	.tp_iter = (getiterfunc)py_ldb_msg_element_iter,
 	.tp_as_sequence = &py_ldb_msg_element_seq,
 	.tp_new = py_ldb_msg_element_new,
@@ -3029,41 +3053,48 @@ static void py_ldb_msg_dealloc(PyLdbMessageObject *self)
 	PyObject_Del(self);
 }
 
-static int py_ldb_msg_compare(PyLdbMessageObject *py_msg1,
-			      PyLdbMessageObject *py_msg2)
+static PyObject *py_ldb_msg_richcmp(PyLdbMessageObject *py_msg1,
+			      PyLdbMessageObject *py_msg2, int op)
 {
-	struct ldb_message *msg1 = pyldb_Message_AsMessage(py_msg1),
-			   *msg2 = pyldb_Message_AsMessage(py_msg2);
+	struct ldb_message *msg1, *msg2;
 	unsigned int i;
 	int ret;
+
+	if (!PyLdbMessage_Check(py_msg2)) {
+		Py_INCREF(Py_NotImplemented);
+		return Py_NotImplemented;
+	}
+
+	msg1 = pyldb_Message_AsMessage(py_msg1),
+	msg2 = pyldb_Message_AsMessage(py_msg2);
 
 	if ((msg1->dn != NULL) || (msg2->dn != NULL)) {
 		ret = ldb_dn_compare(msg1->dn, msg2->dn);
 		if (ret != 0) {
-			return SIGN(ret);
+			return richcmp(ret, op);
 		}
 	}
 
 	ret = msg1->num_elements - msg2->num_elements;
 	if (ret != 0) {
-		return SIGN(ret);
+		return richcmp(ret, op);
 	}
 
 	for (i = 0; i < msg1->num_elements; i++) {
 		ret = ldb_msg_element_compare_name(&msg1->elements[i],
 						   &msg2->elements[i]);
 		if (ret != 0) {
-			return SIGN(ret);
+			return richcmp(ret, op);
 		}
 
 		ret = ldb_msg_element_compare(&msg1->elements[i],
 					      &msg2->elements[i]);
 		if (ret != 0) {
-			return SIGN(ret);
+			return richcmp(ret, op);
 		}
 	}
 
-	return 0;
+	return richcmp(0, op);
 }
 
 static PyTypeObject PyLdbMessage = {
@@ -3077,7 +3108,7 @@ static PyTypeObject PyLdbMessage = {
 	.tp_repr = (reprfunc)py_ldb_msg_repr,
 	.tp_flags = Py_TPFLAGS_DEFAULT,
 	.tp_iter = (getiterfunc)py_ldb_msg_iter,
-	.tp_compare = (cmpfunc)py_ldb_msg_compare,
+	.tp_richcompare = (richcmpfunc)py_ldb_msg_richcmp,
 	.tp_doc = "A LDB Message",
 };
 
@@ -3518,102 +3549,122 @@ static PyMethodDef py_ldb_global_methods[] = {
 	{ NULL }
 };
 
-void initldb(void)
+#define MODULE_DOC "An interface to LDB, a LDAP-like API that can either to talk an embedded database (TDB-based) or a standards-compliant LDAP server."
+
+#if PY_MAJOR_VERSION >= 3
+static struct PyModuleDef moduledef = {
+	PyModuleDef_HEAD_INIT,
+	.m_name = "ldb",
+	.m_doc = MODULE_DOC,
+	.m_size = -1,
+	.m_methods = py_ldb_global_methods,
+};
+#endif
+
+static PyObject* module_init(void)
 {
 	PyObject *m;
 
 	if (PyType_Ready(&PyLdbDn) < 0)
-		return;
+		return NULL;
 
 	if (PyType_Ready(&PyLdbMessage) < 0)
-		return;
+		return NULL;
 
 	if (PyType_Ready(&PyLdbMessageElement) < 0)
-		return;
+		return NULL;
 
 	if (PyType_Ready(&PyLdb) < 0)
-		return;
+		return NULL;
 
 	if (PyType_Ready(&PyLdbModule) < 0)
-		return;
+		return NULL;
 
 	if (PyType_Ready(&PyLdbTree) < 0)
-		return;
+		return NULL;
 
 	if (PyType_Ready(&PyLdbResult) < 0)
-		return;
+		return NULL;
 
 	if (PyType_Ready(&PyLdbControl) < 0)
-		return;
+		return NULL;
 
-	m = Py_InitModule3("ldb", py_ldb_global_methods, 
-		"An interface to LDB, a LDAP-like API that can either to talk an embedded database (TDB-based) or a standards-compliant LDAP server.");
+#if PY_MAJOR_VERSION >= 3
+	m = PyModule_Create(&moduledef);
+#else
+	m = Py_InitModule3("ldb", py_ldb_global_methods, MODULE_DOC);
+#endif
 	if (m == NULL)
-		return;
+		return NULL;
 
-	PyModule_AddObject(m, "SEQ_HIGHEST_SEQ", PyInt_FromLong(LDB_SEQ_HIGHEST_SEQ));
-	PyModule_AddObject(m, "SEQ_HIGHEST_TIMESTAMP", PyInt_FromLong(LDB_SEQ_HIGHEST_TIMESTAMP));
-	PyModule_AddObject(m, "SEQ_NEXT", PyInt_FromLong(LDB_SEQ_NEXT));
-	PyModule_AddObject(m, "SCOPE_DEFAULT", PyInt_FromLong(LDB_SCOPE_DEFAULT));
-	PyModule_AddObject(m, "SCOPE_BASE", PyInt_FromLong(LDB_SCOPE_BASE));
-	PyModule_AddObject(m, "SCOPE_ONELEVEL", PyInt_FromLong(LDB_SCOPE_ONELEVEL));
-	PyModule_AddObject(m, "SCOPE_SUBTREE", PyInt_FromLong(LDB_SCOPE_SUBTREE));
+#define ADD_LDB_INT(val) PyModule_AddIntConstant(m, #val, LDB_ ## val)
 
-	PyModule_AddObject(m, "CHANGETYPE_NONE", PyInt_FromLong(LDB_CHANGETYPE_NONE));
-	PyModule_AddObject(m, "CHANGETYPE_ADD", PyInt_FromLong(LDB_CHANGETYPE_ADD));
-	PyModule_AddObject(m, "CHANGETYPE_DELETE", PyInt_FromLong(LDB_CHANGETYPE_DELETE));
-	PyModule_AddObject(m, "CHANGETYPE_MODIFY", PyInt_FromLong(LDB_CHANGETYPE_MODIFY));
+	ADD_LDB_INT(SEQ_HIGHEST_SEQ);
+	ADD_LDB_INT(SEQ_HIGHEST_TIMESTAMP);
+	ADD_LDB_INT(SEQ_NEXT);
+	ADD_LDB_INT(SCOPE_DEFAULT);
+	ADD_LDB_INT(SCOPE_BASE);
+	ADD_LDB_INT(SCOPE_ONELEVEL);
+	ADD_LDB_INT(SCOPE_SUBTREE);
 
-	PyModule_AddObject(m, "FLAG_MOD_ADD", PyInt_FromLong(LDB_FLAG_MOD_ADD));
-	PyModule_AddObject(m, "FLAG_MOD_REPLACE", PyInt_FromLong(LDB_FLAG_MOD_REPLACE));
-	PyModule_AddObject(m, "FLAG_MOD_DELETE", PyInt_FromLong(LDB_FLAG_MOD_DELETE));
+	ADD_LDB_INT(CHANGETYPE_NONE);
+	ADD_LDB_INT(CHANGETYPE_ADD);
+	ADD_LDB_INT(CHANGETYPE_DELETE);
+	ADD_LDB_INT(CHANGETYPE_MODIFY);
 
-	PyModule_AddObject(m, "SUCCESS", PyInt_FromLong(LDB_SUCCESS));
-	PyModule_AddObject(m, "ERR_OPERATIONS_ERROR", PyInt_FromLong(LDB_ERR_OPERATIONS_ERROR));
-	PyModule_AddObject(m, "ERR_PROTOCOL_ERROR", PyInt_FromLong(LDB_ERR_PROTOCOL_ERROR));
-	PyModule_AddObject(m, "ERR_TIME_LIMIT_EXCEEDED", PyInt_FromLong(LDB_ERR_TIME_LIMIT_EXCEEDED));
-	PyModule_AddObject(m, "ERR_SIZE_LIMIT_EXCEEDED", PyInt_FromLong(LDB_ERR_SIZE_LIMIT_EXCEEDED));
-	PyModule_AddObject(m, "ERR_COMPARE_FALSE", PyInt_FromLong(LDB_ERR_COMPARE_FALSE));
-	PyModule_AddObject(m, "ERR_COMPARE_TRUE", PyInt_FromLong(LDB_ERR_COMPARE_TRUE));
-	PyModule_AddObject(m, "ERR_AUTH_METHOD_NOT_SUPPORTED", PyInt_FromLong(LDB_ERR_AUTH_METHOD_NOT_SUPPORTED));
-	PyModule_AddObject(m, "ERR_STRONG_AUTH_REQUIRED", PyInt_FromLong(LDB_ERR_STRONG_AUTH_REQUIRED));
-	PyModule_AddObject(m, "ERR_REFERRAL", PyInt_FromLong(LDB_ERR_REFERRAL));
-	PyModule_AddObject(m, "ERR_ADMIN_LIMIT_EXCEEDED", PyInt_FromLong(LDB_ERR_ADMIN_LIMIT_EXCEEDED));
-	PyModule_AddObject(m, "ERR_UNSUPPORTED_CRITICAL_EXTENSION", PyInt_FromLong(LDB_ERR_UNSUPPORTED_CRITICAL_EXTENSION));
-	PyModule_AddObject(m, "ERR_CONFIDENTIALITY_REQUIRED", PyInt_FromLong(LDB_ERR_CONFIDENTIALITY_REQUIRED));
-	PyModule_AddObject(m, "ERR_SASL_BIND_IN_PROGRESS", PyInt_FromLong(LDB_ERR_SASL_BIND_IN_PROGRESS));
-	PyModule_AddObject(m, "ERR_NO_SUCH_ATTRIBUTE", PyInt_FromLong(LDB_ERR_NO_SUCH_ATTRIBUTE));
-	PyModule_AddObject(m, "ERR_UNDEFINED_ATTRIBUTE_TYPE", PyInt_FromLong(LDB_ERR_UNDEFINED_ATTRIBUTE_TYPE));
-	PyModule_AddObject(m, "ERR_INAPPROPRIATE_MATCHING", PyInt_FromLong(LDB_ERR_INAPPROPRIATE_MATCHING));
-	PyModule_AddObject(m, "ERR_CONSTRAINT_VIOLATION", PyInt_FromLong(LDB_ERR_CONSTRAINT_VIOLATION));
-	PyModule_AddObject(m, "ERR_ATTRIBUTE_OR_VALUE_EXISTS", PyInt_FromLong(LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS));
-	PyModule_AddObject(m, "ERR_INVALID_ATTRIBUTE_SYNTAX", PyInt_FromLong(LDB_ERR_INVALID_ATTRIBUTE_SYNTAX));
-	PyModule_AddObject(m, "ERR_NO_SUCH_OBJECT", PyInt_FromLong(LDB_ERR_NO_SUCH_OBJECT));
-	PyModule_AddObject(m, "ERR_ALIAS_PROBLEM", PyInt_FromLong(LDB_ERR_ALIAS_PROBLEM));
-	PyModule_AddObject(m, "ERR_INVALID_DN_SYNTAX", PyInt_FromLong(LDB_ERR_INVALID_DN_SYNTAX));
-	PyModule_AddObject(m, "ERR_ALIAS_DEREFERINCING_PROBLEM", PyInt_FromLong(LDB_ERR_ALIAS_DEREFERENCING_PROBLEM));
-	PyModule_AddObject(m, "ERR_INAPPROPRIATE_AUTHENTICATION", PyInt_FromLong(LDB_ERR_INAPPROPRIATE_AUTHENTICATION));
-	PyModule_AddObject(m, "ERR_INVALID_CREDENTIALS", PyInt_FromLong(LDB_ERR_INVALID_CREDENTIALS));
-	PyModule_AddObject(m, "ERR_INSUFFICIENT_ACCESS_RIGHTS", PyInt_FromLong(LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS));
-	PyModule_AddObject(m, "ERR_BUSY", PyInt_FromLong(LDB_ERR_BUSY));
-	PyModule_AddObject(m, "ERR_UNAVAILABLE", PyInt_FromLong(LDB_ERR_UNAVAILABLE));
-	PyModule_AddObject(m, "ERR_UNWILLING_TO_PERFORM", PyInt_FromLong(LDB_ERR_UNWILLING_TO_PERFORM));
-	PyModule_AddObject(m, "ERR_LOOP_DETECT", PyInt_FromLong(LDB_ERR_LOOP_DETECT));
-	PyModule_AddObject(m, "ERR_NAMING_VIOLATION", PyInt_FromLong(LDB_ERR_NAMING_VIOLATION));
-	PyModule_AddObject(m, "ERR_OBJECT_CLASS_VIOLATION", PyInt_FromLong(LDB_ERR_OBJECT_CLASS_VIOLATION));
-	PyModule_AddObject(m, "ERR_NOT_ALLOWED_ON_NON_LEAF", PyInt_FromLong(LDB_ERR_NOT_ALLOWED_ON_NON_LEAF));
-	PyModule_AddObject(m, "ERR_NOT_ALLOWED_ON_RDN", PyInt_FromLong(LDB_ERR_NOT_ALLOWED_ON_RDN));
-	PyModule_AddObject(m, "ERR_ENTRY_ALREADY_EXISTS", PyInt_FromLong(LDB_ERR_ENTRY_ALREADY_EXISTS));
-	PyModule_AddObject(m, "ERR_OBJECT_CLASS_MODS_PROHIBITED", PyInt_FromLong(LDB_ERR_OBJECT_CLASS_MODS_PROHIBITED));
-	PyModule_AddObject(m, "ERR_AFFECTS_MULTIPLE_DSAS", PyInt_FromLong(LDB_ERR_AFFECTS_MULTIPLE_DSAS));
-	PyModule_AddObject(m, "ERR_OTHER", PyInt_FromLong(LDB_ERR_OTHER));
+	ADD_LDB_INT(FLAG_MOD_ADD);
+	ADD_LDB_INT(FLAG_MOD_REPLACE);
+	ADD_LDB_INT(FLAG_MOD_DELETE);
 
-	PyModule_AddObject(m, "FLG_RDONLY", PyInt_FromLong(LDB_FLG_RDONLY));
-	PyModule_AddObject(m, "FLG_NOSYNC", PyInt_FromLong(LDB_FLG_NOSYNC));
-	PyModule_AddObject(m, "FLG_RECONNECT", PyInt_FromLong(LDB_FLG_RECONNECT));
-	PyModule_AddObject(m, "FLG_NOMMAP", PyInt_FromLong(LDB_FLG_NOMMAP));
+	ADD_LDB_INT(SUCCESS);
+	ADD_LDB_INT(ERR_OPERATIONS_ERROR);
+	ADD_LDB_INT(ERR_PROTOCOL_ERROR);
+	ADD_LDB_INT(ERR_TIME_LIMIT_EXCEEDED);
+	ADD_LDB_INT(ERR_SIZE_LIMIT_EXCEEDED);
+	ADD_LDB_INT(ERR_COMPARE_FALSE);
+	ADD_LDB_INT(ERR_COMPARE_TRUE);
+	ADD_LDB_INT(ERR_AUTH_METHOD_NOT_SUPPORTED);
+	ADD_LDB_INT(ERR_STRONG_AUTH_REQUIRED);
+	ADD_LDB_INT(ERR_REFERRAL);
+	ADD_LDB_INT(ERR_ADMIN_LIMIT_EXCEEDED);
+	ADD_LDB_INT(ERR_UNSUPPORTED_CRITICAL_EXTENSION);
+	ADD_LDB_INT(ERR_CONFIDENTIALITY_REQUIRED);
+	ADD_LDB_INT(ERR_SASL_BIND_IN_PROGRESS);
+	ADD_LDB_INT(ERR_NO_SUCH_ATTRIBUTE);
+	ADD_LDB_INT(ERR_UNDEFINED_ATTRIBUTE_TYPE);
+	ADD_LDB_INT(ERR_INAPPROPRIATE_MATCHING);
+	ADD_LDB_INT(ERR_CONSTRAINT_VIOLATION);
+	ADD_LDB_INT(ERR_ATTRIBUTE_OR_VALUE_EXISTS);
+	ADD_LDB_INT(ERR_INVALID_ATTRIBUTE_SYNTAX);
+	ADD_LDB_INT(ERR_NO_SUCH_OBJECT);
+	ADD_LDB_INT(ERR_ALIAS_PROBLEM);
+	ADD_LDB_INT(ERR_INVALID_DN_SYNTAX);
+	ADD_LDB_INT(ERR_ALIAS_DEREFERENCING_PROBLEM);
+	ADD_LDB_INT(ERR_INAPPROPRIATE_AUTHENTICATION);
+	ADD_LDB_INT(ERR_INVALID_CREDENTIALS);
+	ADD_LDB_INT(ERR_INSUFFICIENT_ACCESS_RIGHTS);
+	ADD_LDB_INT(ERR_BUSY);
+	ADD_LDB_INT(ERR_UNAVAILABLE);
+	ADD_LDB_INT(ERR_UNWILLING_TO_PERFORM);
+	ADD_LDB_INT(ERR_LOOP_DETECT);
+	ADD_LDB_INT(ERR_NAMING_VIOLATION);
+	ADD_LDB_INT(ERR_OBJECT_CLASS_VIOLATION);
+	ADD_LDB_INT(ERR_NOT_ALLOWED_ON_NON_LEAF);
+	ADD_LDB_INT(ERR_NOT_ALLOWED_ON_RDN);
+	ADD_LDB_INT(ERR_ENTRY_ALREADY_EXISTS);
+	ADD_LDB_INT(ERR_OBJECT_CLASS_MODS_PROHIBITED);
+	ADD_LDB_INT(ERR_AFFECTS_MULTIPLE_DSAS);
+	ADD_LDB_INT(ERR_OTHER);
 
-	PyModule_AddObject(m, "__docformat__", PyString_FromString("restructuredText"));
+	ADD_LDB_INT(FLG_RDONLY);
+	ADD_LDB_INT(FLG_NOSYNC);
+	ADD_LDB_INT(FLG_RECONNECT);
+	ADD_LDB_INT(FLG_NOMMAP);
+
+	/* Historical misspelling */
+	PyModule_AddIntConstant(m, "ERR_ALIAS_DEREFERINCING_PROBLEM", LDB_ERR_ALIAS_DEREFERENCING_PROBLEM);
+
+	PyModule_AddStringConstant(m, "__docformat__", "restructuredText");
 
 	PyExc_LdbError = PyErr_NewException(discard_const_p(char, "_ldb.LdbError"), NULL, NULL);
 	PyModule_AddObject(m, "LdbError", PyExc_LdbError);
@@ -3635,9 +3686,9 @@ void initldb(void)
 	PyModule_AddObject(m, "Tree", (PyObject *)&PyLdbTree);
 	PyModule_AddObject(m, "Control", (PyObject *)&PyLdbControl);
 
-	PyModule_AddObject(m, "__version__", PyString_FromString(PACKAGE_VERSION));
+	PyModule_AddStringConstant(m, "__version__", PACKAGE_VERSION);
 
-#define ADD_LDB_STRING(val)  PyModule_AddObject(m, #val, PyString_FromString(LDB_## val))
+#define ADD_LDB_STRING(val)  PyModule_AddStringConstant(m, #val, LDB_## val)
 
 	ADD_LDB_STRING(SYNTAX_DN);
 	ADD_LDB_STRING(SYNTAX_DIRECTORY_STRING);
@@ -3647,4 +3698,20 @@ void initldb(void)
 	ADD_LDB_STRING(SYNTAX_UTC_TIME);
 	ADD_LDB_STRING(OID_COMPARATOR_AND);
 	ADD_LDB_STRING(OID_COMPARATOR_OR);
+
+	return m;
 }
+
+#if PY_MAJOR_VERSION >= 3
+PyMODINIT_FUNC PyInit_ldb(void);
+PyMODINIT_FUNC PyInit_ldb(void)
+{
+	return module_init();
+}
+#else
+void initldb(void);
+void initldb(void)
+{
+	module_init();
+}
+#endif
