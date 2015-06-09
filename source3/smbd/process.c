@@ -2711,7 +2711,7 @@ static void msg_kill_client_ip(struct messaging_context *msg_ctx,
 	const char *ip = (char *) data->data;
 	char *client_ip;
 
-	DEBUG(10, ("Got kill request for client IP %s\n", ip));
+	DBG_DEBUG("Got kill request for client IP %s\n", ip);
 
 	client_ip = tsocket_address_inet_addr_string(sconn->remote_address,
 						     talloc_tos());
@@ -2720,8 +2720,8 @@ static void msg_kill_client_ip(struct messaging_context *msg_ctx,
 	}
 
 	if (strequal(ip, client_ip)) {
-		DEBUG(1, ("Got kill client message for %s - "
-			  "exiting immediately\n", ip));
+		DBG_WARNING("Got kill client message for %s - "
+			    "exiting immediately\n", ip);
 		exit_server_cleanly("Forced disconnect for client");
 	}
 
