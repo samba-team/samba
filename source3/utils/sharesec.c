@@ -182,7 +182,7 @@ static int change_share_sec(TALLOC_CTX *mem_ctx, const char *sharename, char *th
 		/* should not happen */
 		return 0;
 	case SMB_ACL_VIEW:
-		sec_desc_print(NULL, stdout, old, true);
+		sec_desc_print(NULL, stdout, old, false);
 		return 0;
 	case SMB_ACL_DELETE:
 	    for (i=0;sd->dacl && i<sd->dacl->num_aces;i++) {
@@ -203,7 +203,7 @@ static int change_share_sec(TALLOC_CTX *mem_ctx, const char *sharename, char *th
 
 		if (!found) {
 			printf("ACL for ACE:");
-			print_ace(NULL, stdout, &sd->dacl->aces[i], true);
+			print_ace(NULL, stdout, &sd->dacl->aces[i], false);
 			printf(" not found\n");
 		}
 	    }
