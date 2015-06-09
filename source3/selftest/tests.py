@@ -413,6 +413,9 @@ for s in signseal_options:
 
 plantestsuite("samba3.blackbox.rpcclient_samlogon", "s3member:local", [os.path.join(samba3srcdir, "script/tests/test_rpcclient_samlogon.sh"),
 								       "$DC_USERNAME", "$DC_PASSWORD", "ncacn_np:$DC_SERVER", configuration])
+plantestsuite("samba3.blackbox.sharesec", "simpleserver:local",
+              [os.path.join(samba3srcdir, "script/tests/test_sharesec.sh"),
+               configuration, os.path.join(bindir(), "sharesec"), "tmp"])
 
 options_list = ["", "-e"]
 for options in options_list:
