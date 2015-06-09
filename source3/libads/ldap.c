@@ -313,22 +313,85 @@ static bool ads_try_connect(ADS_STRUCT *ads, bool gc,
 }
 
 /**********************************************************************
+ resolve a name and perform an "ldap ping"
+**********************************************************************/
+
+static NTSTATUS resolve_and_ping(ADS_STRUCT *ads, const char *sitename,
+				 const char *resolve_target, bool use_dns,
+				 const char *realm)
+{
+	int count, i = 0;
+	struct ip_service *ip_list;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	bool ok = false;
+
+	DEBUG(6, ("resolve_and_ping: (cldap) looking for %s '%s'\n",
+		  (use_dns ? "realm" : "domain"), resolve_target));
+
+	status = get_sorted_dc_list(resolve_target, sitename, &ip_list, &count,
+				    use_dns);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	/* if we fail this loop, then giveup since all the IP addresses returned
+	 * were dead */
+	for (i = 0; i < count; i++) {
+		char server[INET6_ADDRSTRLEN];
+
+		print_sockaddr(server, sizeof(server), &ip_list[i].ss);
+
+		if (!NT_STATUS_IS_OK(
+			check_negative_conn_cache(resolve_target, server)))
+			continue;
+
+		if (!use_dns) {
+			/* resolve_target in this case is a workgroup name. We
+			   need
+			   to ignore any IP addresses in the negative connection
+			   cache that match ip addresses returned in the ad
+			   realm
+			   case.. */
+			if (realm && *realm &&
+			    !NT_STATUS_IS_OK(
+				check_negative_conn_cache(realm, server))) {
+				/* Ensure we add the workgroup name for this
+				   IP address as negative too. */
+				add_failed_connection_entry(
+				    resolve_target, server,
+				    NT_STATUS_UNSUCCESSFUL);
+				continue;
+			}
+		}
+
+		ok = ads_try_connect(ads, false, &ip_list[i].ss);
+		if (ok) {
+			SAFE_FREE(ip_list);
+			return NT_STATUS_OK;
+		}
+
+		/* keep track of failures */
+		add_failed_connection_entry(resolve_target, server,
+					    NT_STATUS_UNSUCCESSFUL);
+	}
+
+	SAFE_FREE(ip_list);
+
+	return NT_STATUS_NO_LOGON_SERVERS;
+}
+
+/**********************************************************************
  Try to find an AD dc using our internal name resolution routines
- Try the realm first and then then workgroup name if netbios is not 
+ Try the realm first and then then workgroup name if netbios is not
  disabled
 **********************************************************************/
 
 static NTSTATUS ads_find_dc(ADS_STRUCT *ads)
 {
-	const char *c_domain;
+	const char *c_domain = "";
 	const char *c_realm;
-	int count, i=0;
-	struct ip_service *ip_list;
-	const char *realm;
-	const char *domain;
-	bool got_realm = False;
 	bool use_own_domain = False;
-	char *sitename;
+	char *sitename = NULL;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	bool ok = false;
 
@@ -337,7 +400,10 @@ static NTSTATUS ads_find_dc(ADS_STRUCT *ads)
 	/* realm */
 	c_realm = ads->server.realm;
 
-	if ( !c_realm || !*c_realm ) {
+	if (c_realm == NULL)
+		c_realm = "";
+
+	if (!*c_realm) {
 		/* special case where no realm and no workgroup means our own */
 		if ( !ads->server.workgroup || !*ads->server.workgroup ) {
 			use_own_domain = True;
@@ -345,34 +411,26 @@ static NTSTATUS ads_find_dc(ADS_STRUCT *ads)
 		}
 	}
 
-	if (c_realm && *c_realm)
-		got_realm = True;
+	if (!lp_disable_netbios()) {
+		if (use_own_domain) {
+			c_domain = lp_workgroup();
+		} else {
+			c_domain = ads->server.workgroup;
+			if (!*c_realm && (!c_domain || !*c_domain)) {
+				c_domain = lp_workgroup();
+			}
+		}
 
-	/* we need to try once with the realm name and fallback to the
-	   netbios domain name if we fail (if netbios has not been disabled */
-
-	if ( !got_realm	&& !lp_disable_netbios() ) {
-		c_realm = ads->server.workgroup;
-		if (!c_realm || !*c_realm) {
-			if ( use_own_domain )
-				c_realm = lp_workgroup();
+		if (!c_domain) {
+			c_domain = "";
 		}
 	}
 
-	if ( !c_realm || !*c_realm ) {
+	if (!*c_realm && !*c_domain) {
 		DEBUG(1, ("ads_find_dc: no realm or workgroup!  Don't know "
 			  "what to do\n"));
 		return NT_STATUS_INVALID_PARAMETER; /* rather need MISSING_PARAMETER ... */
 	}
-
-	if ( use_own_domain ) {
-		c_domain = lp_workgroup();
-	} else {
-		c_domain = ads->server.workgroup;
-	}
-
-	realm = c_realm;
-	domain = c_domain;
 
 	/*
 	 * In case of LDAP we use get_dc_name() as that
@@ -382,10 +440,11 @@ static NTSTATUS ads_find_dc(ADS_STRUCT *ads)
 		fstring srv_name;
 		struct sockaddr_storage ip_out;
 
-		DEBUG(6,("ads_find_dc: (ldap) looking for %s '%s'\n",
-			(got_realm ? "realm" : "domain"), realm));
+		DEBUG(6, ("ads_find_dc: (ldap) looking for realm '%s'"
+			  " and falling back to domain '%s'\n",
+			  c_realm, c_domain));
 
-		ok = get_dc_name(domain, realm, srv_name, &ip_out);
+		ok = get_dc_name(c_domain, c_realm, srv_name, &ip_out);
 		if (ok) {
 			/*
 			 * we call ads_try_connect() to fill in the
@@ -400,80 +459,52 @@ static NTSTATUS ads_find_dc(ADS_STRUCT *ads)
 		return NT_STATUS_NO_LOGON_SERVERS;
 	}
 
-	sitename = sitename_fetch(talloc_tos(), realm);
+	if (*c_realm) {
+		sitename = sitename_fetch(talloc_tos(), c_realm);
+		status = resolve_and_ping(ads, sitename, c_realm, true, c_realm);
 
- again:
-
-	DEBUG(6,("ads_find_dc: (cldap) looking for %s '%s'\n",
-		(got_realm ? "realm" : "domain"), realm));
-
-	status = get_sorted_dc_list(realm, sitename, &ip_list, &count, got_realm);
-	if (!NT_STATUS_IS_OK(status)) {
-		/* fall back to netbios if we can */
-		if ( got_realm && !lp_disable_netbios() ) {
-			got_realm = False;
-			goto again;
-		}
-
-		TALLOC_FREE(sitename);
-		return status;
-	}
-
-	/* if we fail this loop, then giveup since all the IP addresses returned were dead */
-	for ( i=0; i<count; i++ ) {
-		char server[INET6_ADDRSTRLEN];
-
-		print_sockaddr(server, sizeof(server), &ip_list[i].ss);
-
-		if ( !NT_STATUS_IS_OK(check_negative_conn_cache(realm, server)) )
-			continue;
-
-		if (!got_realm) {
-			/* realm in this case is a workgroup name. We need
-			   to ignore any IP addresses in the negative connection
-			   cache that match ip addresses returned in the ad realm
-			   case. It sucks that I have to reproduce the logic above... */
-			c_realm = ads->server.realm;
-			if ( !c_realm || !*c_realm ) {
-				if ( !ads->server.workgroup || !*ads->server.workgroup ) {
-					c_realm = lp_realm();
-				}
-			}
-			if (c_realm && *c_realm &&
-					!NT_STATUS_IS_OK(check_negative_conn_cache(c_realm, server))) {
-				/* Ensure we add the workgroup name for this
-				   IP address as negative too. */
-				add_failed_connection_entry( realm, server, NT_STATUS_UNSUCCESSFUL );
-				continue;
-			}
-		}
-
-		ok = ads_try_connect(ads, false, &ip_list[i].ss);
-		if (ok) {
-			SAFE_FREE(ip_list);
+		if (NT_STATUS_IS_OK(status)) {
 			TALLOC_FREE(sitename);
-			return NT_STATUS_OK;
+			return status;
 		}
 
-		/* keep track of failures */
-		add_failed_connection_entry( realm, server, NT_STATUS_UNSUCCESSFUL );
-	}
+		/* In case we failed to contact one of our closest DC on our
+		 * site we
+		 * need to try to find another DC, retry with a site-less SRV
+		 * DNS query
+		 * - Guenther */
 
-	SAFE_FREE(ip_list);
+		if (sitename) {
+			DEBUG(1, ("ads_find_dc: failed to find a valid DC on "
+				  "our site (%s), "
+				  "trying to find another DC\n",
+				  sitename));
+			namecache_delete(c_realm, 0x1C);
+			status =
+			    resolve_and_ping(ads, NULL, c_realm, true, c_realm);
 
-	/* In case we failed to contact one of our closest DC on our site we
-	 * need to try to find another DC, retry with a site-less SRV DNS query
-	 * - Guenther */
+			if (NT_STATUS_IS_OK(status)) {
+				TALLOC_FREE(sitename);
+				return status;
+			}
+		}
 
-	if (sitename) {
-		DEBUG(1,("ads_find_dc: failed to find a valid DC on our site (%s), "
-				"trying to find another DC\n", sitename));
 		TALLOC_FREE(sitename);
-		namecache_delete(realm, 0x1C);
-		goto again;
 	}
 
-	return NT_STATUS_NO_LOGON_SERVERS;
+	/* try netbios as fallback - if permitted,
+	   or if configuration specifically requests it */
+	if (*c_domain) {
+		if (*c_realm) {
+			DEBUG(1, ("ads_find_dc: falling back to netbios "
+				  "name resolution for domain %s\n",
+				  c_domain));
+		}
+
+		status = resolve_and_ping(ads, NULL, c_domain, false, c_realm);
+	}
+
+	return status;
 }
 
 /*********************************************************************
