@@ -29,11 +29,12 @@
 
 static PyObject *ldb_module = NULL;
 
-/* There's no Py_ssize_t in 2.4, apparently */
-#if PY_MAJOR_VERSION == 2 && PY_MINOR_VERSION < 5
-typedef int Py_ssize_t;
-typedef inquiry lenfunc;
-typedef intargfunc ssizeargfunc;
+#if PY_MAJOR_VERSION >= 3
+#define PyStr_Check PyUnicode_Check
+#define PyStr_AsUTF8 PyUnicode_AsUTF8
+#else
+#define PyStr_Check PyString_Check
+#define PyStr_AsUTF8 PyString_AsString
 #endif
 
 /**
@@ -69,8 +70,14 @@ bool pyldb_Object_AsDn(TALLOC_CTX *mem_ctx, PyObject *object,
 	struct ldb_dn *odn;
 	PyTypeObject *PyLdb_Dn_Type;
 
-	if (ldb_ctx != NULL && PyString_Check(object)) {
-		odn = ldb_dn_new(mem_ctx, ldb_ctx, PyString_AsString(object));
+	if (ldb_ctx != NULL && PyStr_Check(object)) {
+		odn = ldb_dn_new(mem_ctx, ldb_ctx, PyStr_AsUTF8(object));
+		*dn = odn;
+		return true;
+	}
+
+	if (ldb_ctx != NULL && PyBytes_Check(object)) {
+		odn = ldb_dn_new(mem_ctx, ldb_ctx, PyBytes_AsString(object));
 		*dn = odn;
 		return true;
 	}

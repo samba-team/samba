@@ -133,6 +133,14 @@ def build(bld):
                           abi_directory='ABI',
                           abi_match='pyldb_*')
 
+    if not bld.env.disable_python:
+        for env in bld.gen_python_environments(['PKGCONFIGDIR']):
+            bld.SAMBA_SCRIPT('_ldb_text.py',
+                             pattern='_ldb_text.py',
+                             installdir='python')
+
+            bld.INSTALL_FILES('${PYTHONARCHDIR}', '_ldb_text.py')
+
     if not bld.CONFIG_SET('USING_SYSTEM_LDB'):
         if Options.is_install:
             modules_dir = bld.EXPAND_VARIABLES('${LDB_MODULESDIR}')
