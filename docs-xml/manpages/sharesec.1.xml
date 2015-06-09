@@ -154,10 +154,9 @@
 	If not specified it defaults to 1. Using values other than 1 may
 	cause strange behaviour.</para>
 
-	<para>The owner and group specify the owner and group SIDs for the
-	object. If a SID in the format S-1-x-y-z is specified this is used,
-	otherwise the name specified is resolved using the server on which
-	the file or directory resides.</para>
+	<para>The owner and group specify the owner and group SIDs for
+	the object. Share ACLs do not specify an owner or a group, so
+	these fields are empty.</para>
 
 	<para>ACLs specify permissions granted to the SID. This SID
 	can be specified in S-1-x-y-z format or as a name in which case
@@ -227,10 +226,11 @@
 	<programlisting>
 	host:~ # sharesec share -v
 	REVISION:1
-	OWNER:(NULL SID)
-	GROUP:(NULL SID)
-	ACL:S-1-1-0:ALLOWED/0/0x101f01ff
-	ACL:S-1-5-21-1866488690-1365729215-3963860297-17724:ALLOWED/0/FULL
+	CONTROL:SR|DP
+	OWNER:
+	GROUP:
+	ACL:S-1-1-0:ALLOWED/0x0/FULL
+	ACL:S-1-5-21-1866488690-1365729215-3963860297-17724:ALLOWED/0x0/FULL
 	</programlisting>
 </refsect1>
 
