@@ -1219,6 +1219,9 @@ sub provision($$$$$$$$)
 	change share command = $bindir_abs/smbchangeshare
 	delete share command = $bindir_abs/smbdeleteshare
 
+	# fruit:copyfile is a global option
+	fruit:copyfile = yes
+
 	# Begin extra options
 	$extra_options
 	# End extra options
