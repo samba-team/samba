@@ -837,6 +837,8 @@ static void py_ldb_debug(void *context, enum ldb_debug_level level, const char *
 	PyObject_CallFunction(fn, discard_const_p(char, "(i,O)"), level, PyString_FromFormatV(fmt, ap));
 }
 
+static PyObject *py_ldb_debug_func;
+
 static PyObject *py_ldb_set_debug(PyObject *self, PyObject *args)
 {
 	PyObject *cb;
@@ -845,8 +847,13 @@ static PyObject *py_ldb_set_debug(PyObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "O", &cb))
 		return NULL;
 
+	if (py_ldb_debug_func != NULL) {
+		Py_DECREF(py_ldb_debug_func);
+	}
+
 	Py_INCREF(cb);
-	/* FIXME: Where do we DECREF cb ? */
+	/* FIXME: DECREF cb when exiting program */
+	py_ldb_debug_func = cb;
 	ldb_ctx = pyldb_Ldb_AsLdbContext(self);
 	PyErr_LDB_ERROR_IS_ERR_RAISE(PyExc_LdbError,
 		ldb_set_debug(ldb_ctx, py_ldb_debug, cb),
