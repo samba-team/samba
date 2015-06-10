@@ -19,45 +19,23 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
-import sys
 import random
 import uuid
 
-# ensure we get messages out immediately, so they get in the samba logs,
-# and don't get swallowed by a timeout
-os.environ['PYTHONUNBUFFERED'] = '1'
-
-# forcing GMT avoids a problem in some timezones with kerberos. Both MIT
-# heimdal can get mutual authentication errors due to the 24 second difference
-# between UTC and GMT when using some zone files (eg. the PDT zone from
-# the US)
-os.environ["TZ"] = "GMT"
-
-# Find right directory when running from source tree
-sys.path.insert(0, "bin/python")
-
-import optparse
-import logging
 import itertools
-import heapq
-import time
-from functools import partial
-
-from samba import (
-    getopt as options,
-    ldb,
-    dsdb,
-    drs_utils,
-    nttime2unix)
+from samba import unix2nttime, nttime2unix
+from samba import ldb, dsdb, drs_utils
 from samba.auth import system_session
 from samba.samdb import SamDB
-from samba.dcerpc import drsuapi
+from samba.dcerpc import drsuapi, misc
 
 from samba.kcc.kcc_utils import Site, Partition, Transport, SiteLink
 from samba.kcc.kcc_utils import NCReplica, NCType, nctype_lut, GraphNode
 from samba.kcc.kcc_utils import RepsFromTo, KCCError, KCCFailedObject
 from samba.kcc.kcc_utils import convert_schedule_to_repltimes
+
+from samba.ndr import ndr_pack
+
 from samba.kcc.graph_utils import verify_and_dot
 from samba import ldif_utils
 
