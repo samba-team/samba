@@ -1013,8 +1013,11 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 					       hdb_entry_ex *entry_ex)
 {
 	struct loadparm_context *lp_ctx = kdc_db_ctx->lp_ctx;
-	const char *dnsdomain;
-	const char *realm = lpcfg_realm(lp_ctx);
+	const char *our_realm = lpcfg_realm(lp_ctx);
+	const char *dnsdomain = NULL;
+	char *partner_realm = NULL;
+	const char *realm = NULL;
+	const char *krbtgt_realm = NULL;
 	DATA_BLOB password_utf16 = data_blob_null;
 	DATA_BLOB password_utf8 = data_blob_null;
 	struct samr_Password _password_hash;
@@ -1043,18 +1046,38 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 	}
 
 	trust_direction_flags = ldb_msg_find_attr_as_int(msg, "trustDirection", 0);
+	if (!(trust_direction_flags & direction)) {
+		krb5_clear_error_message(context);
+		ret = HDB_ERR_NOENTRY;
+		goto out;
+	}
+
+	dnsdomain = ldb_msg_find_attr_as_string(msg, "trustPartner", NULL);
+	if (dnsdomain == NULL) {
+		krb5_clear_error_message(context);
+		ret = HDB_ERR_NOENTRY;
+		goto out;
+	}
+	partner_realm = strupper_talloc(mem_ctx, dnsdomain);
+	if (partner_realm == NULL) {
+		krb5_clear_error_message(context);
+		ret = ENOMEM;
+		goto out;
+	}
 
 	if (direction == INBOUND) {
-		password_val = ldb_msg_find_ldb_val(msg, "trustAuthIncoming");
+		realm = our_realm;
+		krbtgt_realm = partner_realm;
 
+		password_val = ldb_msg_find_ldb_val(msg, "trustAuthIncoming");
 	} else { /* OUTBOUND */
-		dnsdomain = ldb_msg_find_attr_as_string(msg, "trustPartner", NULL);
-		/* replace realm */
-		realm = strupper_talloc(mem_ctx, dnsdomain);
+		realm = partner_realm;
+		krbtgt_realm = our_realm;
+
 		password_val = ldb_msg_find_ldb_val(msg, "trustAuthOutgoing");
 	}
 
-	if (!password_val || !(trust_direction_flags & direction)) {
+	if (password_val == NULL) {
 		krb5_clear_error_message(context);
 		ret = HDB_ERR_NOENTRY;
 		goto out;
@@ -1097,25 +1120,18 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 		goto out;
 	}
 
-	ret = krb5_copy_principal(context, principal, &entry_ex->entry.principal);
-	if (ret) {
-		krb5_clear_error_message(context);
-		goto out;
-	}
-
 	/*
-	 * While we have copied the client principal, tests
-	 * show that Win2k3 returns the 'corrected' realm, not
-	 * the client-specified realm.  This code attempts to
-	 * replace the client principal's realm with the one
-	 * we determine from our records
+	 * We always need to generate the canonicalized principal
+	 * with the values of our database.
 	 */
-
-	ret = smb_krb5_principal_set_realm(context, entry_ex->entry.principal, realm);
+	ret = smb_krb5_make_principal(context, &entry_ex->entry.principal, realm,
+				      "krbtgt", krbtgt_realm, NULL);
 	if (ret) {
 		krb5_clear_error_message(context);
 		goto out;
 	}
+	smb_krb5_principal_set_type(context, entry_ex->entry.principal,
+				    KRB5_NT_SRV_INST);
 
 	entry_ex->entry.valid_start = NULL;
 
@@ -1373,10 +1389,11 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 		entry_ex->entry.etypes->val[i] = KRB5_KEY_TYPE(&entry_ex->entry.keys.val[i].key);
 	}
 
-
 	p->msg = talloc_steal(p, msg);
 
 out:
+	TALLOC_FREE(partner_realm);
+
 	if (ret != 0) {
 		/* This doesn't free ent itself, that is for the eventual caller to do */
 		hdb_free_entry(context, entry_ex);
