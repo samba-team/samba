@@ -811,6 +811,7 @@ bool pdb_set_nt_passwd(struct samu *sampass, const uint8_t pwd[NT_HASH_LEN], enu
 bool pdb_set_lanman_passwd(struct samu *sampass, const uint8_t pwd[LM_HASH_LEN], enum pdb_value_state flag);
 bool pdb_set_pw_history(struct samu *sampass, const uint8_t *pwd, uint32_t historyLen, enum pdb_value_state flag);
 bool pdb_set_plaintext_pw_only(struct samu *sampass, const char *password, enum pdb_value_state flag);
+bool pdb_update_history(struct samu *sampass, const uint8_t new_nt[NT_HASH_LEN]);
 bool pdb_set_bad_password_count(struct samu *sampass, uint16_t bad_password_count, enum pdb_value_state flag);
 bool pdb_set_logon_count(struct samu *sampass, uint16_t logon_count, enum pdb_value_state flag);
 bool pdb_set_country_code(struct samu *sampass, uint16_t country_code,
