@@ -769,7 +769,8 @@ class DirectoryServiceAgent(object):
         '''Debug dump string output of connect table'''
         return '\n'.join(str(x) for x in self.connect_table)
 
-    def new_connection(self, options, flags, transport, from_dnstr, sched):
+    def new_connection(self, options, system_flags, transport, from_dnstr,
+                       sched):
         """Set up a new connection for the DSA based on input
         parameters.  Connection will be added to the DSA
         connect_table and will be marked as "to be added" pending
@@ -782,7 +783,7 @@ class DirectoryServiceAgent(object):
         connect.enabled = True
         connect.from_dnstr = from_dnstr
         connect.options = options
-        connect.flags = flags
+        connect.system_flags = system_flags
 
         if transport is not None:
             connect.transport_dnstr = transport.dnstr
