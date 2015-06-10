@@ -1080,14 +1080,14 @@ class KCC(object):
 
         bhs = self.get_all_bridgeheads(site, part, transport,
                                        partial_ok, detect_failed)
-        if len(bhs) == 0:
-            debug.DEBUG_MAGENTA("get_bridgehead:\n\tsitedn=%s\n\tbhdn=None" %
+        if not bhs:
+            debug.DEBUG_MAGENTA("get_bridgehead FAILED:\nsitedn = %s" %
                                 site.site_dnstr)
             return None
-        else:
-            debug.DEBUG_GREEN("get_bridgehead:\n\tsitedn=%s\n\tbhdn=%s" %
-                              (site.site_dnstr, bhs[0].dsa_dnstr))
-            return bhs[0]
+
+        debug.DEBUG_GREEN("get_bridgehead:\n\tsitedn = %s\n\tbhdn = %s" %
+                          (site.site_dnstr, bhs[0].dsa_dnstr))
+        return bhs[0]
 
     def get_all_bridgeheads(self, site, part, transport,
                             partial_ok, detect_failed):
@@ -1115,7 +1115,6 @@ class KCC(object):
                            "non-IP transport! %r"
                            % (transport.name,))
 
-        DEBUG_FN("get_all_bridgeheads")
         DEBUG_FN(site.rw_dsa_table)
         for dsa in site.rw_dsa_table.values():
 
@@ -1163,7 +1162,7 @@ class KCC(object):
                 DEBUG("bridgehead is failed")
                 continue
 
-            DEBUG_FN("get_all_bridgeheads: dsadn=%s" % dsa.dsa_dnstr)
+            DEBUG_FN("found a bridgehead: %s" % dsa.dsa_dnstr)
             bhs.append(dsa)
 
         # IF bit NTDSSETTINGS_OPT_IS_RAND_BH_SELECTION_DISABLED is set in
