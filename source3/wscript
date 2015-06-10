@@ -83,7 +83,7 @@ def configure(conf):
     conf.CHECK_FUNCS('strtol strchr strupr chflags')
     conf.CHECK_FUNCS('getrlimit fsync fdatasync setpgid')
     conf.CHECK_FUNCS('setsid glob strpbrk crypt16 getauthuid')
-    conf.CHECK_FUNCS('sigprocmask sigblock sigaction sigset innetgr')
+    conf.CHECK_FUNCS('innetgr')
     conf.CHECK_FUNCS('initgroups select poll rdchk getgrnam getgrent pathconf')
     conf.CHECK_FUNCS('setpriv setgidx setuidx setgroups syscall sysconf')
     conf.CHECK_FUNCS('atexit grantpt posix_openpt fallocate posix_fallocate')
@@ -380,7 +380,7 @@ rdchk _read __read _readdir __readdir
 _seekdir __seekdir
 select setenv setgidx setgroups setlocale setluid
 setmntent setpgid setpriv setsid setuidx
-shmget shm_open sigaction sigblock sigprocmask sigset
+shmget shm_open
 _stat __stat statvfs
 strcasecmp strchr strpbrk strsignal strtol strupr sysconf sysctl sysctlbyname
 __sys_llseek syslog _telldir __telldir timegm
