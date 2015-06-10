@@ -108,7 +108,6 @@ class KCC(object):
         """
         self.part_table = {}    # partition objects
         self.site_table = {}
-        self.transport_table = {}
         self.ip_transport = None
         self.sitelink_table = {}
         self.dsa_by_dnstr = {}
@@ -143,7 +142,7 @@ class KCC(object):
         self.debug = debug
         self.dot_file_dir = dot_file_dir
 
-    def load_all_transports(self):
+    def load_ip_transport(self):
         """Loads the inter-site transport objects for Sites
 
         :return: None
@@ -164,8 +163,6 @@ class KCC(object):
             transport = Transport(dnstr)
 
             transport.load_transport(self.samdb)
-            self.transport_table.setdefault(str(transport.guid),
-                                            transport)
             if transport.name == 'IP':
                 self.ip_transport = transport
             elif transport.name == 'SMTP':
@@ -1072,8 +1069,9 @@ class KCC(object):
         # No documentation for this however, ntdsapi.h appears to have:
         # NTDSSETTINGS_OPT_W2K3_BRIDGES_REQUIRED = 0x00001000
         bridges_required = self.my_site.site_options & 0x00001002 == 0
+        transport_guid = str(self.ip_transport.guid)
 
-        g = setup_graph(part, self.site_table, self.transport_table,
+        g = setup_graph(part, self.site_table, transport_guid,
                         self.sitelink_table, bridges_required)
 
         if self.verify or self.dot_file_dir is not None:
@@ -1141,7 +1139,12 @@ class KCC(object):
         """
         bhs = []
 
-        DEBUG_FN("get_all_bridgeheads: %s" % transport.name)
+        if transport.name != "IP":
+            raise KCCError("get_all_bridgeheads has run into a "
+                           "non-IP transport! %r"
+                           % (transport.name,))
+
+        DEBUG_FN("get_all_bridgeheads")
         DEBUG_FN(site.rw_dsa_table)
         for dsa in site.rw_dsa_table.values():
 
@@ -1182,27 +1185,6 @@ class KCC(object):
             if self.my_dsa.is_ro() and rep is not None and rep.is_default():
                 if not dsa.is_minimum_behavior(dsdb.DS_DOMAIN_FUNCTION_2008):
                     continue
-
-            # IF t!name != "IP" and the parent object of dc has no value for
-            # the attribute specified by t!transportAddressAttribute
-            #     Skip dc
-            if transport.name != "IP":
-                # MS tech specification says we retrieve the named
-                # attribute in "transportAddressAttribute" from the parent
-                # of the DSA object
-                try:
-                    attrs = [transport.address_attr]
-
-                    res = self.samdb.search(base=pdnstr, scope=ldb.SCOPE_BASE,
-                                            attrs=attrs)
-                except ldb.LdbError, (enum, estr):
-                    continue
-
-                msg = res[0]
-                if transport.address_attr not in msg:
-                    continue
-                #XXX nastr is NEVER USED. It will be removed.
-                nastr = str(msg[transport.address_attr][0])
 
             # IF BridgeheadDCFailed(dc!objectGUID, detectFailedDCs) = TRUE
             #     Skip dc
@@ -1554,29 +1536,23 @@ class KCC(object):
         vertex.accept_red_red = []
         vertex.accept_black = []
         found_failed = False
-        for t_guid, transport in self.transport_table.items():
-            if transport.name != 'IP':
-                #XXX well this is cheating a bit
-                DEBUG_FN("ignoring a transport named %r" % transport.name)
-                continue
 
-            if vertex not in graph.connected_vertices:
-                continue
+        if vertex in graph.connected_vertices:
+            t_guid = str(self.ip_transport.guid)
 
-            partial_replica_okay = vertex.is_black()
-            bh = self.get_bridgehead(vertex.site, vertex.part, transport,
-                                     partial_replica_okay, detect_failed)
+            bh = self.get_bridgehead(vertex.site, vertex.part,
+                                     self.ip_transport,
+                                     vertex.is_black(), detect_failed)
             if bh is None:
                 if vertex.site.is_rodc_site():
                     vertex.accept_red_red.append(t_guid)
                 else:
                     found_failed = True
-                continue
+            else:
+                vertex.accept_red_red.append(t_guid)
+                vertex.accept_black.append(t_guid)
 
-            vertex.accept_red_red.append(t_guid)
-            vertex.accept_black.append(t_guid)
-
-        # Add additional transport to allow another run of Dijkstra
+        # Add additional transport to ensure another run of Dijkstra
         vertex.accept_red_red.append("EDGE_TYPE_ALL")
         vertex.accept_black.append("EDGE_TYPE_ALL")
 
@@ -2374,7 +2350,7 @@ class KCC(object):
 
         self.load_all_sites()
         self.load_all_partitions()
-        self.load_all_transports()
+        self.load_ip_transport()
         self.load_all_sitelinks()
         dsas = []
         for site in self.site_table.values():
@@ -2465,7 +2441,7 @@ class KCC(object):
 
             self.load_all_sites()
             self.load_all_partitions()
-            self.load_all_transports()
+            self.load_ip_transport()
             self.load_all_sitelinks()
 
             if self.verify or self.dot_file_dir is not None:

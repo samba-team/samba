@@ -507,7 +507,7 @@ def add_out_edge(graph, output_edges, e):
     v2.edges.append(ee)
 
 
-def setup_graph(part, site_table, transport_table, sitelink_table,
+def setup_graph(part, site_table, transport_guid, sitelink_table,
                 bridges_required):
     """Set up a GRAPH, populated with a VERTEX for each site
     object, a MULTIEDGE for each siteLink object, and a
@@ -529,30 +529,25 @@ def setup_graph(part, site_table, transport_table, sitelink_table,
         guid_vertices.append(vertex)
 
     connected_vertices = set()
-    for transport_guid, transport in transport_table.items():
-        # Currently only ever "IP"
-        if transport.name != 'IP':
-            DEBUG_FN("setup_graph is ignoring transport %s" %
-                     transport.name)
-            continue
-        for site_link_dn, site_link in sitelink_table.items():
-            new_edge = create_edge(transport_guid, site_link,
-                                   guid_to_vertex)
-            connected_vertices.update(new_edge.vertices)
-            g.edges.add(new_edge)
 
-        # If 'Bridge all site links' is enabled and Win2k3 bridges required
-        # is not set
-        # NTDSTRANSPORT_OPT_BRIDGES_REQUIRED 0x00000002
-        # No documentation for this however, ntdsapi.h appears to have:
-        # NTDSSETTINGS_OPT_W2K3_BRIDGES_REQUIRED = 0x00001000
-        if bridges_required:
-            g.edge_set.add(create_auto_edge_set(g, transport_guid))
-        else:
-            # TODO get all site link bridges
-            for site_link_bridge in []:
-                g.edge_set.add(create_edge_set(g, transport_guid,
-                                               site_link_bridge))
+    for site_link_dn, site_link in sitelink_table.items():
+        new_edge = create_edge(transport_guid, site_link,
+                               guid_to_vertex)
+        connected_vertices.update(new_edge.vertices)
+        g.edges.add(new_edge)
+
+    # If 'Bridge all site links' is enabled and Win2k3 bridges required
+    # is not set
+    # NTDSTRANSPORT_OPT_BRIDGES_REQUIRED 0x00000002
+    # No documentation for this however, ntdsapi.h appears to have:
+    # NTDSSETTINGS_OPT_W2K3_BRIDGES_REQUIRED = 0x00001000
+    if bridges_required:
+        g.edge_set.add(create_auto_edge_set(g, transport_guid))
+    else:
+        # TODO get all site link bridges
+        for site_link_bridge in []:
+            g.edge_set.add(create_edge_set(g, transport_guid,
+                                           site_link_bridge))
 
     g.connected_vertices = connected_vertices
 
