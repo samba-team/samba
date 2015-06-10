@@ -1501,7 +1501,7 @@ class KCC(object):
         # here, but using vertex seems to make more sense. That is,
         # the docs want this:
         #
-        #bh = self.get_bridgehead(vertex.site, vertex.part, transport,
+        #bh = self.get_bridgehead(local_vertex.site, vertex.part, transport,
         #                         local_vertex.is_black(), detect_failed)
         #
         # TODO WHY?????
