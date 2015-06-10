@@ -1464,7 +1464,10 @@ class KCC(object):
             # cn!options = opt, cn!transportType is a reference to t,
             # cn!fromServer is a reference to rbh, and cn!schedule = sch
             DEBUG_FN("new connection, KCC dsa: %s" % self.my_dsa.dsa_dnstr)
-            cn = lbh.new_connection(opt, 0, transport,
+            system_flags = (dsdb.SYSTEM_FLAG_CONFIG_ALLOW_RENAME |
+                            dsdb.SYSTEM_FLAG_CONFIG_ALLOW_MOVE)
+
+            cn = lbh.new_connection(opt, system_flags, transport,
                                     rbh.dsa_dnstr, link_sched)
 
             # Display any added connection
