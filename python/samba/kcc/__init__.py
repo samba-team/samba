@@ -53,9 +53,15 @@ from samba import (
 from samba.auth import system_session
 from samba.samdb import SamDB
 from samba.dcerpc import drsuapi
-from samba.kcc_utils import *
+
+from samba.kcc.kcc_utils import Site, Partition, Transport, SiteLink
+from samba.kcc.kcc_utils import NCReplica, NCType, nctype_lut, GraphNode
+from samba.kcc.kcc_utils import RepsFromTo, KCCError, KCCFailedObject
+from samba.kcc.kcc_utils import convert_schedule_to_repltimes
 from samba.kcc.graph_utils import verify_and_dot
 from samba import ldif_utils
+
+from samba.kcc.graph import Vertex
 
 from samba.kcc.debug import DEBUG, DEBUG_FN, logger
 from samba.kcc import debug

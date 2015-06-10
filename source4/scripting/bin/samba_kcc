@@ -51,14 +51,15 @@ from samba import (
     ldb,
     dsdb,
     drs_utils,
-    nttime2unix)
+    nttime2unix,
+    unix2nttime)
 from samba.auth import system_session
 from samba.samdb import SamDB
 from samba.dcerpc import drsuapi
-from samba.kcc_utils import *
-from samba.kcc.debug import *
 from samba import ldif_utils
-
+from samba.kcc.kcc_utils import *
+from samba.kcc.graph import *
+from samba.kcc.debug import *
 
 class KCC(object):
     """The Knowledge Consistency Checker class.

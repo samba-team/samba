@@ -23,14 +23,14 @@
 import ldb
 import uuid
 
-from samba import dsdb, unix2nttime
+from samba import dsdb
 from samba.dcerpc import (
     drsblobs,
     drsuapi,
     misc,
     )
 from samba.common import dsdb_Dn
-from samba.ndr import (ndr_unpack, ndr_pack)
+from samba.ndr import ndr_unpack, ndr_pack
 
 
 class KCCError(Exception):
@@ -1363,7 +1363,7 @@ class Site(object):
     """An individual site object discovered thru the configuration
     naming context.  Contains all DSAs that exist within the site
     """
-    def __init__(self, site_dnstr, unix_now):
+    def __init__(self, site_dnstr, nt_now):
         self.site_dnstr = site_dnstr
         self.site_guid = None
         self.site_options = 0
@@ -1371,7 +1371,7 @@ class Site(object):
         self.site_topo_failover = 0  # appears to be in minutes
         self.dsa_table = {}
         self.rw_dsa_table = {}
-        self.unix_now = unix_now
+        self.nt_now = nt_now
 
     def load_site(self, samdb):
         """Loads the NTDS Site Settions options attribute for the site
@@ -1492,7 +1492,6 @@ class Site(object):
         D_sort = sorted(self.rw_dsa_table.values(), cmp=sort_dsa_by_guid)
 
         # double word number of 100 nanosecond intervals since 1600s
-        ntnow = unix2nttime(self.unix_now)
 
         # Let f be the duration o!interSiteTopologyFailover seconds, or 2 hours
         # if o!interSiteTopologyFailover is 0 or has no value.
@@ -1555,7 +1554,7 @@ class Site(object):
             #XXX doc says current time < c.timeLastSyncSuccess - f
             # which is true only if f is negative or clocks are wrong.
             # f is not negative in the default case (2 hours).
-            elif ntnow - cursor.last_sync_success > f:
+            elif self.nt_now - cursor.last_sync_success > f:
                 i_idx = 0
                 t_time = 0
             else:
@@ -1568,7 +1567,7 @@ class Site(object):
         #     Let t = the current time.
         else:
             i_idx = D_sort.index(mydsa)
-            t_time = ntnow
+            t_time = self.nt_now
 
         # Compute a function that maintains the current ISTG if
         # it is alive, cycles through other candidates if not.
@@ -1578,7 +1577,7 @@ class Site(object):
         #
         # Note: We don't want to divide by zero here so they must
         #       have meant "f" instead of "o!interSiteTopologyFailover"
-        k_idx = (i_idx + ((ntnow - t_time) / f)) % len(D_sort)
+        k_idx = (i_idx + ((self.nt_now - t_time) / f)) % len(D_sort)
 
         # The local writable DC acts as an ISTG for its site if and
         # only if dk is the nTDSDSA object for the local DC. If the
@@ -2103,149 +2102,12 @@ class KCCFailedObject(object):
         self.dns_name = dns_name
 
 
-class VertexColor(object):
-    (red, black, white, unknown) = range(0, 4)
-
-
-class Vertex(object):
-    """Class encapsulation of a Site Vertex in the
-    intersite topology replication algorithm
-    """
-    def __init__(self, site, part):
-        self.site = site
-        self.part = part
-        self.color = VertexColor.unknown
-        self.edges = []
-        self.accept_red_red = []
-        self.accept_black = []
-        self.repl_info = ReplInfo()
-        self.root = self
-        self.guid = None
-        self.component_id = self
-        self.demoted = False
-        self.options = 0
-        self.interval = 0
-
-    def color_vertex(self):
-        """Color each vertex to indicate which kind of NC
-        replica it contains
-        """
-        # IF s contains one or more DCs with full replicas of the
-        # NC cr!nCName
-        #    SET v.Color to COLOR.RED
-        # ELSEIF s contains one or more partial replicas of the NC
-        #    SET v.Color to COLOR.BLACK
-        #ELSE
-        #    SET v.Color to COLOR.WHITE
-
-        # set to minimum (no replica)
-        self.color = VertexColor.white
-
-        for dnstr, dsa in self.site.dsa_table.items():
-            rep = dsa.get_current_replica(self.part.nc_dnstr)
-            if rep is None:
-                continue
-
-            # We have a full replica which is the largest
-            # value so exit
-            if not rep.is_partial():
-                self.color = VertexColor.red
-                break
-            else:
-                self.color = VertexColor.black
-
-    def is_red(self):
-        assert(self.color != VertexColor.unknown)
-        return (self.color == VertexColor.red)
-
-    def is_black(self):
-        assert(self.color != VertexColor.unknown)
-        return (self.color == VertexColor.black)
-
-    def is_white(self):
-        assert(self.color != VertexColor.unknown)
-        return (self.color == VertexColor.white)
-
-
-class IntersiteGraph(object):
-    """Graph for representing the intersite"""
-    def __init__(self):
-        self.vertices = set()
-        self.edges = set()
-        self.edge_set = set()
-        # All vertices that are endpoints of edges
-        self.connected_vertices = None
-
-
-class MultiEdgeSet(object):
-    """Defines a multi edge set"""
-    def __init__(self):
-        self.guid = 0  # objectGuid siteLinkBridge
-        self.edges = []
-
-
-class MultiEdge(object):
-    def __init__(self):
-        self.site_link = None  # object siteLink
-        self.vertices = []
-        self.con_type = None  # interSiteTransport GUID
-        self.repl_info = ReplInfo()
-        self.directed = True
-
-
 class ReplInfo(object):
     def __init__(self):
         self.cost = 0
         self.interval = 0
         self.options = 0
         self.schedule = None
-
-
-class InternalEdge(object):
-    def __init__(self, v1, v2, redred, repl, eType, site_link):
-        self.v1 = v1
-        self.v2 = v2
-        self.red_red = redred
-        self.repl_info = repl
-        self.e_type = eType
-        self.site_link = site_link
-
-    def __eq__(self, other):
-        return not self < other and not other < self
-
-    def __ne__(self, other):
-        return self < other or other < self
-
-    def __gt__(self, other):
-        return other < self
-
-    def __ge__(self, other):
-        return not self < other
-
-    def __le__(self, other):
-        return not other < self
-
-    # TODO compare options and interval
-    def __lt__(self, other):
-        if self.red_red != other.red_red:
-            return self.red_red
-
-        if self.repl_info.cost != other.repl_info.cost:
-            return self.repl_info.cost < other.repl_info.cost
-
-        self_time = total_schedule(self.repl_info.schedule)
-        other_time = total_schedule(other.repl_info.schedule)
-        if self_time != other_time:
-            return self_time > other_time
-
-        #XXX guid comparison using ndr_pack
-        if self.v1.guid != other.v1.guid:
-            return self.v1.ndrpacked_guid < other.v1.ndrpacked_guid
-
-        if self.v2.guid != other.v2.guid:
-            return self.v2.ndrpacked_guid < other.v2.ndrpacked_guid
-
-        return self.e_type < other.e_type
 
 
 ##################################################
