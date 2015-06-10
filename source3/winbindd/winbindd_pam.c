@@ -701,6 +701,11 @@ static NTSTATUS winbindd_raw_kerberos_login(TALLOC_CTX *mem_ctx,
 		break;
 	}
 
+	if (logon_info == NULL) {
+		DEBUG(10,("Missing logon_info in ticket of %s\n",
+			principal_s));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
 	DEBUG(10,("winbindd_raw_kerberos_login: winbindd validated ticket of %s\n",
 		principal_s));
