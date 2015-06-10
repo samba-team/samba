@@ -1723,7 +1723,7 @@ class GraphNode(object):
         for connect in dsa.connect_table.values():
             self.add_edge_from(connect.from_dnstr)
 
-    def add_connections_from_edges(self, dsa):
+    def add_connections_from_edges(self, dsa, transport):
         """For each edge directed to this graph node, ensure there
            is a corresponding nTDSConnection object in the dsa.
         """
@@ -1760,7 +1760,7 @@ class GraphNode(object):
             flags = (dsdb.SYSTEM_FLAG_CONFIG_ALLOW_RENAME |
                      dsdb.SYSTEM_FLAG_CONFIG_ALLOW_MOVE)
 
-            dsa.new_connection(opt, flags, None, edge_dnstr, None)
+            dsa.new_connection(opt, flags, transport, edge_dnstr, None)
 
     def has_sufficient_edges(self):
         '''Return True if we have met the maximum "from edges" criteria'''

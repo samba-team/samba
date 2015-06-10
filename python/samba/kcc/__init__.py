@@ -2207,7 +2207,7 @@ class KCC(object):
             # points to us that satisfies the KCC criteria
 
             if tnode.dsa_dnstr == dc_local.dsa_dnstr:
-                tnode.add_connections_from_edges(dc_local)
+                tnode.add_connections_from_edges(dc_local, self.ip_transport)
 
         if self.verify or do_dot_files:
             dot_edges = []
