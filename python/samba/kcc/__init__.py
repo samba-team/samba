@@ -61,6 +61,45 @@ from samba.kcc.debug import DEBUG, DEBUG_FN, logger
 from samba.kcc import debug
 
 
+def sort_replica_by_dsa_guid(rep1, rep2):
+    """Helper to sort NCReplicas by their DSA guids
+
+    The guids need to be sorted in their NDR form.
+
+    :param rep1: An NC replica
+    :param rep2: Another replica
+    :return: -1, 0, or 1, indicating sort order.
+    """
+    return cmp(ndr_pack(rep1.rep_dsa_guid), ndr_pack(rep2.rep_dsa_guid))
+
+
+def sort_dsa_by_gc_and_guid(dsa1, dsa2):
+    """Helper to sort DSAs by guid global catalog status
+
+    GC DSAs come before non-GC DSAs, other than that, the guids are
+    sorted in NDR form.
+
+    :param dsa1: A DSA object
+    :param dsa2: Another DSA
+    :return: -1, 0, or 1, indicating sort order.
+    """
+    if dsa1.is_gc() and not dsa2.is_gc():
+        return -1
+    if not dsa1.is_gc() and dsa2.is_gc():
+        return +1
+    return cmp(ndr_pack(dsa1.dsa_guid), ndr_pack(dsa2.dsa_guid))
+
+
+def is_smtp_replication_available():
+    """Can the KCC use SMTP replication?
+
+    Currently always returns false because Samba doesn't implement
+    SMTP transfer for NC changes between DCs.
+
+    :return: Boolean (always False)
+    """
+    return False
+
 
 class KCC(object):
     """The Knowledge Consistency Checker class.
@@ -2828,46 +2867,6 @@ def get_spanning_tree_edges(graph, my_site, label=None):
 
     # count the components
     return edge_list, components
-
-
-def sort_replica_by_dsa_guid(rep1, rep2):
-    """Helper to sort NCReplicas by their DSA guids
-
-    The guids need to be sorted in their NDR form.
-
-    :param rep1: An NC replica
-    :param rep2: Another replica
-    :return: -1, 0, or 1, indicating sort order.
-    """
-    return cmp(ndr_pack(rep1.rep_dsa_guid), ndr_pack(rep2.rep_dsa_guid))
-
-
-def sort_dsa_by_gc_and_guid(dsa1, dsa2):
-    """Helper to sort DSAs by guid global catalog status
-
-    GC DSAs come before non-GC DSAs, other than that, the guids are
-    sorted in NDR form.
-
-    :param dsa1: A DSA object
-    :param dsa2: Another DSA
-    :return: -1, 0, or 1, indicating sort order.
-    """
-    if dsa1.is_gc() and not dsa2.is_gc():
-        return -1
-    if not dsa1.is_gc() and dsa2.is_gc():
-        return +1
-    return cmp(ndr_pack(dsa1.dsa_guid), ndr_pack(dsa2.dsa_guid))
-
-
-def is_smtp_replication_available():
-    """Can the KCC use SMTP replication?
-
-    Currently always returns false because Samba doesn't implement
-    SMTP transfer for NC changes between DCs.
-
-    :return: Boolean (always False)
-    """
-    return False
 
 
 def create_edge(con_type, site_link, guid_to_vertex):
