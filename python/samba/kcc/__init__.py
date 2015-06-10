@@ -1285,7 +1285,7 @@ class KCC(object):
         """
         rbhs_all = self.get_all_bridgeheads(rsite, part, transport,
                                             partial_ok, False)
-        rbh_table = {x.dsa_dnstr: x for x in rbhs_all}
+        rbh_table = dict((x.dsa_dnstr, x) for x in rbhs_all)
 
         debug.DEBUG_GREY("rbhs_all: %s %s" % (len(rbhs_all),
                                               [x.dsa_dnstr for x in rbhs_all]))
@@ -2521,18 +2521,18 @@ class KCC(object):
 
             if forget_local_links:
                 for dsa in self.my_site.dsa_table.values():
-                    dsa.connect_table = {k: v for k, v in
-                                         dsa.connect_table.items()
-                                         if v.is_rodc_topology()}
+                    dsa.connect_table = dict((k, v) for k, v in
+                                             dsa.connect_table.items()
+                                             if v.is_rodc_topology())
                 self.plot_all_connections('dsa_forgotten_local')
 
             if forget_intersite_links:
                 for site in self.site_table.values():
                     for dsa in site.dsa_table.values():
-                        dsa.connect_table = {k: v for k, v in
-                                             dsa.connect_table.items()
-                                             if site is self.my_site and
-                                             v.is_rodc_topology()}
+                        dsa.connect_table = dict((k, v) for k, v in
+                                                 dsa.connect_table.items()
+                                                 if site is self.my_site and
+                                                 v.is_rodc_topology())
 
                 self.plot_all_connections('dsa_forgotten_all')
 

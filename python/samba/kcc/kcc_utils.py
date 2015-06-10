@@ -41,7 +41,7 @@ class NCType(object):
     (unknown, schema, domain, config, application) = range(0, 5)
 
 # map the NCType enum to strings for debugging
-nctype_lut = {v: k for k, v in NCType.__dict__.items() if k[:2] != '__'}
+nctype_lut = dict((v, k) for k, v in NCType.__dict__.items() if k[:2] != '__')
 
 
 class NamingContext(object):
