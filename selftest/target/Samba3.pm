@@ -1110,6 +1110,9 @@ sub provision($$$$$$)
         # sending messages works, and that the %m sub works.
         message command = mv %s $shrdir/message.%m
 
+	# fruit:copyfile is a global option
+	fruit:copyfile = yes
+
 	# Begin extra options
 	$extra_options
 	# End extra options

@@ -814,6 +814,9 @@ sub provision($$$$$$$$$)
 	lanman auth = yes
 	allow nt4 crypto = yes
 
+	# fruit:copyfile is a global option
+	fruit:copyfile = yes
+
 	$extra_smbconf_options
 
 [tmp]

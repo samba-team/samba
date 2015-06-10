@@ -34,8 +34,11 @@
 #include "torture/util.h"
 #include "torture/smb2/proto.h"
 #include "torture/vfs/proto.h"
+#include "librpc/gen_ndr/ndr_ioctl.h"
 
 #define BASEDIR "vfs_fruit_dir"
+#define FNAME_CC_SRC "testfsctl.dat"
+#define FNAME_CC_DST "testfsctl2.dat"
 
 #define CHECK_STATUS(status, correct) do { \
 	if (!NT_STATUS_EQUAL(status, correct)) { \
@@ -1565,7 +1568,8 @@ static bool test_aapl(struct torture_context *tctx,
 	aapl_server_caps = BVAL(aapl->data.data, 16);
 	if (aapl_server_caps != (SMB2_CRTCTX_AAPL_UNIX_BASED |
 				 SMB2_CRTCTX_AAPL_SUPPORTS_READ_DIR_ATTR |
-				 SMB2_CRTCTX_AAPL_SUPPORTS_NFS_ACE)) {
+				 SMB2_CRTCTX_AAPL_SUPPORTS_NFS_ACE |
+				 SMB2_CRTCTX_AAPL_SUPPORTS_OSX_COPYFILE)) {
 		torture_result(tctx, TORTURE_FAIL,
 			       "(%s) unexpected server_caps: %d",
 			       __location__, (int)aapl_server_caps);
@@ -1722,6 +1726,449 @@ done:
 	return ret;
 }
 
+static uint64_t patt_hash(uint64_t off)
+{
+	return off;
+}
+
+static bool write_pattern(struct torture_context *torture,
+			  struct smb2_tree *tree, TALLOC_CTX *mem_ctx,
+			  struct smb2_handle h, uint64_t off, uint64_t len,
+			  uint64_t patt_off)
+{
+	NTSTATUS status;
+	uint64_t i;
+	uint8_t *buf;
+	uint64_t io_sz = MIN(1024 * 64, len);
+
+	if (len == 0) {
+		return true;
+	}
+
+	torture_assert(torture, (len % 8) == 0, "invalid write len");
+
+	buf = talloc_zero_size(mem_ctx, io_sz);
+	torture_assert(torture, (buf != NULL), "no memory for file data buf");
+
+	while (len > 0) {
+		for (i = 0; i <= io_sz - 8; i += 8) {
+			SBVAL(buf, i, patt_hash(patt_off));
+			patt_off += 8;
+		}
+
+		status = smb2_util_write(tree, h,
+					 buf, off, io_sz);
+		torture_assert_ntstatus_ok(torture, status, "file write");
+
+		len -= io_sz;
+		off += io_sz;
+	}
+
+	talloc_free(buf);
+
+	return true;
+}
+
+static bool check_pattern(struct torture_context *torture,
+			  struct smb2_tree *tree, TALLOC_CTX *mem_ctx,
+			  struct smb2_handle h, uint64_t off, uint64_t len,
+			  uint64_t patt_off)
+{
+	if (len == 0) {
+		return true;
+	}
+
+	torture_assert(torture, (len % 8) == 0, "invalid read len");
+
+	while (len > 0) {
+		uint64_t i;
+		struct smb2_read r;
+		NTSTATUS status;
+		uint64_t io_sz = MIN(1024 * 64, len);
+
+		ZERO_STRUCT(r);
+		r.in.file.handle = h;
+		r.in.length      = io_sz;
+		r.in.offset      = off;
+		status = smb2_read(tree, mem_ctx, &r);
+		torture_assert_ntstatus_ok(torture, status, "read");
+
+		torture_assert_u64_equal(torture, r.out.data.length, io_sz,
+					 "read data len mismatch");
+
+		for (i = 0; i <= io_sz - 8; i += 8, patt_off += 8) {
+			uint64_t data = BVAL(r.out.data.data, i);
+			torture_assert_u64_equal(torture, data, patt_hash(patt_off),
+						 talloc_asprintf(torture, "read data "
+								 "pattern bad at %llu\n",
+								 (unsigned long long)off + i));
+		}
+		talloc_free(r.out.data.data);
+		len -= io_sz;
+		off += io_sz;
+	}
+
+	return true;
+}
+
+static bool test_setup_open(struct torture_context *torture,
+			    struct smb2_tree *tree, TALLOC_CTX *mem_ctx,
+			    const char *fname,
+			    struct smb2_handle *fh,
+			    uint32_t desired_access,
+			    uint32_t file_attributes)
+{
+	struct smb2_create io;
+	NTSTATUS status;
+
+	ZERO_STRUCT(io);
+	io.in.desired_access = desired_access;
+	io.in.file_attributes = file_attributes;
+	io.in.create_disposition = NTCREATEX_DISP_OPEN_IF;
+	io.in.share_access =
+		NTCREATEX_SHARE_ACCESS_DELETE|
+		NTCREATEX_SHARE_ACCESS_READ|
+		NTCREATEX_SHARE_ACCESS_WRITE;
+	if (file_attributes & FILE_ATTRIBUTE_DIRECTORY) {
+		io.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
+	}
+	io.in.fname = fname;
+
+	status = smb2_create(tree, mem_ctx, &io);
+	torture_assert_ntstatus_ok(torture, status, "file create");
+
+	*fh = io.out.file.handle;
+
+	return true;
+}
+
+static bool test_setup_create_fill(struct torture_context *torture,
+				   struct smb2_tree *tree, TALLOC_CTX *mem_ctx,
+				   const char *fname,
+				   struct smb2_handle *fh,
+				   uint64_t size,
+				   uint32_t desired_access,
+				   uint32_t file_attributes)
+{
+	bool ok;
+
+	ok = test_setup_open(torture, tree, mem_ctx,
+			     fname,
+			     fh,
+			     desired_access,
+			     file_attributes);
+	torture_assert(torture, ok, "file open");
+
+	if (size > 0) {
+		ok = write_pattern(torture, tree, mem_ctx, *fh, 0, size, 0);
+		torture_assert(torture, ok, "write pattern");
+	}
+	return true;
+}
+
+static bool test_setup_copy_chunk(struct torture_context *torture,
+				  struct smb2_tree *tree, TALLOC_CTX *mem_ctx,
+				  uint32_t nchunks,
+				  struct smb2_handle *src_h,
+				  uint64_t src_size,
+				  uint32_t src_desired_access,
+				  struct smb2_handle *dest_h,
+				  uint64_t dest_size,
+				  uint32_t dest_desired_access,
+				  struct srv_copychunk_copy *cc_copy,
+				  union smb_ioctl *ioctl)
+{
+	struct req_resume_key_rsp res_key;
+	bool ok;
+	NTSTATUS status;
+	enum ndr_err_code ndr_ret;
+
+	ok = test_setup_create_fill(torture, tree, mem_ctx, FNAME_CC_SRC,
+				    src_h, src_size, src_desired_access,
+				    FILE_ATTRIBUTE_NORMAL);
+	torture_assert(torture, ok, "src file create fill");
+
+	ok = test_setup_create_fill(torture, tree, mem_ctx, FNAME_CC_DST,
+				    dest_h, dest_size, dest_desired_access,
+				    FILE_ATTRIBUTE_NORMAL);
+	torture_assert(torture, ok, "dest file create fill");
+
+	ZERO_STRUCTPN(ioctl);
+	ioctl->smb2.level = RAW_IOCTL_SMB2;
+	ioctl->smb2.in.file.handle = *src_h;
+	ioctl->smb2.in.function = FSCTL_SRV_REQUEST_RESUME_KEY;
+	/* Allow for Key + ContextLength + Context */
+	ioctl->smb2.in.max_response_size = 32;
+	ioctl->smb2.in.flags = SMB2_IOCTL_FLAG_IS_FSCTL;
+
+	status = smb2_ioctl(tree, mem_ctx, &ioctl->smb2);
+	torture_assert_ntstatus_ok(torture, status,
+				   "FSCTL_SRV_REQUEST_RESUME_KEY");
+
+	ndr_ret = ndr_pull_struct_blob(&ioctl->smb2.out.out, mem_ctx, &res_key,
+			(ndr_pull_flags_fn_t)ndr_pull_req_resume_key_rsp);
+
+	torture_assert_ndr_success(torture, ndr_ret,
+				   "ndr_pull_req_resume_key_rsp");
+
+	ZERO_STRUCTPN(ioctl);
+	ioctl->smb2.level = RAW_IOCTL_SMB2;
+	ioctl->smb2.in.file.handle = *dest_h;
+	ioctl->smb2.in.function = FSCTL_SRV_COPYCHUNK;
+	ioctl->smb2.in.max_response_size = sizeof(struct srv_copychunk_rsp);
+	ioctl->smb2.in.flags = SMB2_IOCTL_FLAG_IS_FSCTL;
+
+	ZERO_STRUCTPN(cc_copy);
+	memcpy(cc_copy->source_key, res_key.resume_key, ARRAY_SIZE(cc_copy->source_key));
+	cc_copy->chunk_count = nchunks;
+	cc_copy->chunks = talloc_zero_array(mem_ctx, struct srv_copychunk, nchunks);
+	torture_assert(torture, (cc_copy->chunks != NULL), "no memory for chunks");
+
+	return true;
+}
+
+
+static bool check_copy_chunk_rsp(struct torture_context *torture,
+				 struct srv_copychunk_rsp *cc_rsp,
+				 uint32_t ex_chunks_written,
+				 uint32_t ex_chunk_bytes_written,
+				 uint32_t ex_total_bytes_written)
+{
+	torture_assert_int_equal(torture, cc_rsp->chunks_written,
+				 ex_chunks_written, "num chunks");
+	torture_assert_int_equal(torture, cc_rsp->chunk_bytes_written,
+				 ex_chunk_bytes_written, "chunk bytes written");
+	torture_assert_int_equal(torture, cc_rsp->total_bytes_written,
+				 ex_total_bytes_written, "chunk total bytes");
+	return true;
+}
+
+static bool neg_aapl_copyfile(struct torture_context *tctx,
+			      struct smb2_tree *tree,
+			      uint64_t flags)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	const char *fname = "aapl";
+	NTSTATUS status;
+	struct smb2_create io;
+	DATA_BLOB data;
+	struct smb2_create_blob *aapl = NULL;
+	uint32_t aapl_cmd;
+	uint32_t aapl_reply_bitmap;
+	uint32_t aapl_server_caps;
+	bool ret = true;
+
+	ZERO_STRUCT(io);
+	io.in.desired_access     = SEC_FLAG_MAXIMUM_ALLOWED;
+	io.in.file_attributes    = FILE_ATTRIBUTE_NORMAL;
+	io.in.create_disposition = NTCREATEX_DISP_OVERWRITE_IF;
+	io.in.share_access = (NTCREATEX_SHARE_ACCESS_DELETE |
+			      NTCREATEX_SHARE_ACCESS_READ |
+			      NTCREATEX_SHARE_ACCESS_WRITE);
+	io.in.fname = fname;
+
+	data = data_blob_talloc(mem_ctx, NULL, 3 * sizeof(uint64_t));
+	SBVAL(data.data, 0, SMB2_CRTCTX_AAPL_SERVER_QUERY);
+	SBVAL(data.data, 8, (SMB2_CRTCTX_AAPL_SERVER_CAPS));
+	SBVAL(data.data, 16, flags);
+
+	status = smb2_create_blob_add(tctx, &io.in.blobs, "AAPL", data);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	status = smb2_create(tree, tctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	aapl = smb2_create_blob_find(&io.out.blobs,
+				     SMB2_CREATE_TAG_AAPL);
+	if (aapl == NULL) {
+		ret = false;
+		goto done;
+
+	}
+	if (aapl->data.length < 24) {
+		ret = false;
+		goto done;
+	}
+
+	aapl_cmd = IVAL(aapl->data.data, 0);
+	if (aapl_cmd != SMB2_CRTCTX_AAPL_SERVER_QUERY) {
+		torture_result(tctx, TORTURE_FAIL,
+			       "(%s) unexpected cmd: %d",
+			       __location__, (int)aapl_cmd);
+		ret = false;
+		goto done;
+	}
+
+	aapl_reply_bitmap = BVAL(aapl->data.data, 8);
+	if (!(aapl_reply_bitmap & SMB2_CRTCTX_AAPL_SERVER_CAPS)) {
+		torture_result(tctx, TORTURE_FAIL,
+			       "(%s) unexpected reply_bitmap: %d",
+			       __location__, (int)aapl_reply_bitmap);
+		ret = false;
+		goto done;
+	}
+
+	aapl_server_caps = BVAL(aapl->data.data, 16);
+	if (!(aapl_server_caps & flags)) {
+		torture_result(tctx, TORTURE_FAIL,
+			       "(%s) unexpected server_caps: %d",
+			       __location__, (int)aapl_server_caps);
+		ret = false;
+		goto done;
+	}
+
+done:
+	status = smb2_util_close(tree, io.out.file.handle);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	smb2_util_unlink(tree, "aapl");
+	talloc_free(mem_ctx);
+	return ret;
+}
+
+static bool test_copyfile(struct torture_context *torture,
+			  struct smb2_tree *tree)
+{
+	struct smb2_handle src_h;
+	struct smb2_handle dest_h;
+	NTSTATUS status;
+	union smb_ioctl ioctl;
+	TALLOC_CTX *tmp_ctx = talloc_new(tree);
+	struct srv_copychunk_copy cc_copy;
+	struct srv_copychunk_rsp cc_rsp;
+	enum ndr_err_code ndr_ret;
+	bool ok;
+
+	/*
+	 * First test a copy_chunk with a 0 chunk count without having
+	 * enabled this via AAPL. The request must not fail and the
+	 * copied length in the response must be 0. This is verified
+	 * against Windows 2008r2.
+	 */
+
+	ok = test_setup_copy_chunk(torture, tree, tmp_ctx,
+				   0, /* 0 chunks, copyfile semantics */
+				   &src_h, 4096, /* fill 4096 byte src file */
+				   SEC_FILE_READ_DATA | SEC_FILE_WRITE_DATA,
+				   &dest_h, 0,	/* 0 byte dest file */
+				   SEC_FILE_READ_DATA | SEC_FILE_WRITE_DATA,
+				   &cc_copy,
+				   &ioctl);
+	if (!ok) {
+		torture_fail_goto(torture, done, "setup copy chunk error");
+	}
+
+	ndr_ret = ndr_push_struct_blob(&ioctl.smb2.in.out, tmp_ctx,
+				       &cc_copy,
+			(ndr_push_flags_fn_t)ndr_push_srv_copychunk_copy);
+	torture_assert_ndr_success(torture, ndr_ret,
+				   "ndr_push_srv_copychunk_copy");
+
+	status = smb2_ioctl(tree, tmp_ctx, &ioctl.smb2);
+	torture_assert_ntstatus_ok_goto(torture, status, ok, done, "FSCTL_SRV_COPYCHUNK");
+
+	ndr_ret = ndr_pull_struct_blob(&ioctl.smb2.out.out, tmp_ctx,
+				       &cc_rsp,
+			(ndr_pull_flags_fn_t)ndr_pull_srv_copychunk_rsp);
+	torture_assert_ndr_success(torture, ndr_ret,
+				   "ndr_pull_srv_copychunk_rsp");
+
+	ok = check_copy_chunk_rsp(torture, &cc_rsp,
+				  0,	/* chunks written */
+				  0,	/* chunk bytes unsuccessfully written */
+				  0); /* total bytes written */
+	if (!ok) {
+		torture_fail_goto(torture, done, "bad copy chunk response data");
+	}
+
+	/*
+	 * Now enable AAPL copyfile and test again, the file and the
+	 * stream must be copied by the server.
+	 */
+	ok = neg_aapl_copyfile(torture, tree,
+			       SMB2_CRTCTX_AAPL_SUPPORTS_OSX_COPYFILE);
+	if (!ok) {
+		torture_skip_goto(torture, done, "missing AAPL copyfile");
+		goto done;
+	}
+
+	smb2_util_close(tree, src_h);
+	smb2_util_close(tree, dest_h);
+	smb2_util_unlink(tree, FNAME_CC_SRC);
+	smb2_util_unlink(tree, FNAME_CC_DST);
+
+	ok = torture_setup_file(tmp_ctx, tree, FNAME_CC_SRC, false);
+	if (!ok) {
+		torture_fail(torture, "setup file error");
+	}
+	ok = write_stream(tree, __location__, torture, tmp_ctx,
+			    FNAME_CC_SRC, AFPRESOURCE_STREAM,
+			    10, 10, "1234567890");
+	if (!ok) {
+		torture_fail(torture, "setup stream error");
+	}
+
+	ok = test_setup_copy_chunk(torture, tree, tmp_ctx,
+				   0, /* 0 chunks, copyfile semantics */
+				   &src_h, 4096, /* fill 4096 byte src file */
+				   SEC_FILE_READ_DATA | SEC_FILE_WRITE_DATA,
+				   &dest_h, 0,	/* 0 byte dest file */
+				   SEC_FILE_READ_DATA | SEC_FILE_WRITE_DATA,
+				   &cc_copy,
+				   &ioctl);
+	if (!ok) {
+		torture_fail_goto(torture, done, "setup copy chunk error");
+	}
+
+	ndr_ret = ndr_push_struct_blob(&ioctl.smb2.in.out, tmp_ctx,
+				       &cc_copy,
+			(ndr_push_flags_fn_t)ndr_push_srv_copychunk_copy);
+	torture_assert_ndr_success(torture, ndr_ret,
+				   "ndr_push_srv_copychunk_copy");
+
+	status = smb2_ioctl(tree, tmp_ctx, &ioctl.smb2);
+	torture_assert_ntstatus_ok_goto(torture, status, ok, done, "FSCTL_SRV_COPYCHUNK");
+
+	ndr_ret = ndr_pull_struct_blob(&ioctl.smb2.out.out, tmp_ctx,
+				       &cc_rsp,
+			(ndr_pull_flags_fn_t)ndr_pull_srv_copychunk_rsp);
+	torture_assert_ndr_success(torture, ndr_ret,
+				   "ndr_pull_srv_copychunk_rsp");
+
+	ok = check_copy_chunk_rsp(torture, &cc_rsp,
+				  0,	/* chunks written */
+				  0,	/* chunk bytes unsuccessfully written */
+				  4096); /* total bytes written */
+	if (!ok) {
+		torture_fail_goto(torture, done, "bad copy chunk response data");
+	}
+
+	ok = test_setup_open(torture, tree, tmp_ctx, FNAME_CC_DST, &dest_h,
+			     SEC_FILE_READ_DATA, FILE_ATTRIBUTE_NORMAL);
+	if (!ok) {
+		torture_fail_goto(torture, done,"open failed");
+	}
+	ok = check_pattern(torture, tree, tmp_ctx, dest_h, 0, 4096, 0);
+	if (!ok) {
+		torture_fail_goto(torture, done, "inconsistent file data");
+	}
+
+	ok = check_stream(tree, __location__, torture, tmp_ctx,
+			    FNAME_CC_DST, AFPRESOURCE_STREAM,
+			    0, 20, 10, 10, "1234567890");
+	if (!ok) {
+		torture_fail_goto(torture, done, "inconsistent stream data");
+	}
+
+done:
+	smb2_util_close(tree, src_h);
+	smb2_util_close(tree, dest_h);
+	smb2_util_unlink(tree, FNAME_CC_SRC);
+	smb2_util_unlink(tree, FNAME_CC_DST);
+	talloc_free(tmp_ctx);
+	return true;
+}
+
 /*
  * Note: This test depends on "vfs objects = catia fruit
  * streams_xattr".  Note: To run this test, use
@@ -1736,6 +2183,7 @@ struct torture_suite *torture_vfs_fruit(void)
 
 	suite->description = talloc_strdup(suite, "vfs_fruit tests");
 
+	torture_suite_add_1smb2_test(suite, "copyfile", test_copyfile);
 	torture_suite_add_2ns_smb2_test(suite, "read metadata", test_read_atalk_metadata);
 	torture_suite_add_2ns_smb2_test(suite, "write metadata", test_write_atalk_metadata);
 	torture_suite_add_2ns_smb2_test(suite, "resource fork IO", test_write_atalk_rfork_io);
