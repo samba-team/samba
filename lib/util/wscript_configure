@@ -7,8 +7,6 @@ if Options.options.disable_fault_handling:
 # backtrace could be in libexecinfo or in libc
 conf.CHECK_FUNCS_IN('backtrace backtrace_symbols', 'execinfo', checklibc=True, headers='execinfo.h')
 
-conf.CHECK_FUNCS('sigprocmask sigblock sigaction')
-
 conf.CHECK_STRUCTURE_MEMBER('struct statvfs', 'f_frsize', define='HAVE_FRSIZE', headers='sys/statvfs.h')
 
 # all the different ways of doing statfs
