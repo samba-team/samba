@@ -999,10 +999,6 @@ bool pdb_set_plaintext_passwd(struct samu *sampass, const char *plaintext)
 {
 	uchar new_lanman_p16[LM_HASH_LEN];
 	uchar new_nt_p16[NT_HASH_LEN];
-	uchar *pwhistory;
-	uint32_t pwHistLen;
-	uint32_t current_history_len;
-	const uint8_t *current_history;
 
 	if (!plaintext)
 		return False;
@@ -1032,6 +1028,21 @@ bool pdb_set_plaintext_passwd(struct samu *sampass, const char *plaintext)
 	if (!pdb_set_pass_last_set_time (sampass, time(NULL), PDB_CHANGED))
 		return False;
 
+	
+	return pdb_update_history(sampass, new_nt_p16);
+}
+
+/*********************************************************************
+ Update password history after change 
+ ********************************************************************/
+
+bool pdb_update_history(struct samu *sampass, const uint8_t new_nt[NT_HASH_LEN])
+{
+	uchar *pwhistory;
+	uint32_t pwHistLen;
+	uint32_t current_history_len;
+	const uint8_t *current_history;
+
 	if ((pdb_get_acct_ctrl(sampass) & ACB_NORMAL) == 0) {
 		/*
 		 * No password history for non-user accounts
@@ -1055,7 +1066,7 @@ bool pdb_set_plaintext_passwd(struct samu *sampass, const char *plaintext)
 	 */
 	current_history = pdb_get_pw_history(sampass, &current_history_len);
 	if ((current_history_len != 0) && (current_history == NULL)) {
-		DEBUG(1, ("pdb_set_plaintext_passwd: pwhistory == NULL!\n"));
+		DEBUG(1, ("pdb_update_history: pwhistory == NULL!\n"));
 		return false;
 	}
 
@@ -1096,11 +1107,12 @@ bool pdb_set_plaintext_passwd(struct samu *sampass, const char *plaintext)
 	 * The old format was to store the md5 hash of
 	 * the salt+newpw.
 	 */
-	memcpy(&pwhistory[PW_HISTORY_SALT_LEN], new_nt_p16, SALTED_MD5_HASH_LEN);
+	memcpy(&pwhistory[PW_HISTORY_SALT_LEN], new_nt, SALTED_MD5_HASH_LEN);
 
 	pdb_set_pw_history(sampass, pwhistory, pwHistLen, PDB_CHANGED);
 
 	return True;
+
 }
 
 /* check for any PDB_SET/CHANGED field and fill the appropriate mask bit */
