@@ -111,43 +111,34 @@ def convert_schedule_to_repltimes(schedule):
     return times
 
 
-# Returns true if schedule intersect
-def combine_repl_info(info_a, info_b, info_c):
-    """Set a replInfo to be the intersection of two others
+def combine_repl_info(info_a, info_b):
+    """Generate an repl_info combining two others
 
-    If there is any overlap in the replication times specified by the
-    first two parameters, the third replInfo parameter is set up with
-    that overlap, and True is returned. If there is no overlap, the
-    third parameter is unchanged and False is returned.
+    The schedule is set to be the intersection of the two input schedules.
+    The duration is set to be the duration of the new schedule.
+    The cost is the sum of the costs (saturating at a huge value).
+    The options are the intersection of the input options.
+    The interval is the maximum of the two intervals.
 
     :param info_a: An input replInfo object
     :param info_b: An input replInfo object
-    :param info_c: The result replInfo, set to the intersection of A and B
-                   if the intersection is non-empty.
-    :return: True if info_c allows any replication at all, otherwise False
+    :return: a new ReplInfo combining the other 2
     """
+    info_c = ReplInfo()
     info_c.interval = max(info_a.interval, info_b.interval)
     info_c.options = info_a.options & info_b.options
 
+    #schedule of None defaults to "always"
     if info_a.schedule is None:
         info_a.schedule = [0xFF] * 84
     if info_b.schedule is None:
         info_b.schedule = [0xFF] * 84
 
-    new_info = [a & b for a, b in zip(info_a.schedule, info_b.schedule)]
+    info_c.schedule = [a & b for a, b in zip(info_a.schedule, info_b.schedule)]
+    info_c.duration = total_schedule(info_c.schedule)
 
-    if not any(new_info):
-        return False
-
-    info_c.schedule = new_info
-
-    # Truncate to MAX_DWORD
-    info_c.cost = info_a.cost + info_b.cost
-    if info_c.cost > MAX_DWORD:
-        info_c.cost = MAX_DWORD
-
-    info_c.duration = total_schedule(new_info)
-    return True
+    info_c.cost = min(info_a.cost + info_b.cost, MAX_DWORD)
+    return info_c
 
 
 def get_spanning_tree_edges(graph, my_site, label=None, verify=False,
@@ -410,27 +401,15 @@ def try_new_path(graph, queue, vfrom, edge, vto):
     :param vto: the other Vertex
     :return: None
     """
-    newRI = ReplInfo()
-    #This function combines the repl_info and checks is that there is
-    # a valid time frame for which replication can actually occur,
-    # despite being adequately connected
-    intersect = combine_repl_info(vfrom.repl_info, edge.repl_info, newRI)
-
-    # If the new path costs more than the current, then ignore the edge
-    if newRI.cost > vto.repl_info.cost:
-        return
+    new_repl_info = combine_repl_info(vfrom.repl_info, edge.repl_info)
 
     # Cheaper or longer schedule goes in the heap
-    if newRI.cost < vto.repl_info.cost and not intersect:
-        return
 
-
-    # Cheaper or longer schedule
-    if (newRI.cost < vto.repl_info.cost or
-        newRI.duration > vto.repl_info.duration):
+    if (new_repl_info.cost < vto.repl_info.cost or
+        new_repl_info.duration > vto.repl_info.duration):
         vto.root = vfrom.root
         vto.component_id = vfrom.component_id
-        vto.repl_info = newRI
+        vto.repl_info = new_repl_info
         heapq.heappush(queue, (vto.repl_info.cost, vto.guid, vto))
 
 
@@ -552,14 +531,13 @@ def add_int_edge(graph, internal_edges, examine, v1, v2):
           or examine.con_type not in root2.accept_black):
         return
 
-    ri = ReplInfo()
-    ri2 = ReplInfo()
-
     # Create the transitive replInfo for the two trees and this edge
-    if not combine_repl_info(v1.repl_info, v2.repl_info, ri):
+    ri = combine_repl_info(v1.repl_info, v2.repl_info)
+    if ri.duration == 0:
         return
-    # ri is now initialized
-    if not combine_repl_info(ri, examine.repl_info, ri2):
+
+    ri2 = combine_repl_info(ri, examine.repl_info)
+    if ri2.duration == 0:
         return
 
     # Order by vertex guid
