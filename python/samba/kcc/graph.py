@@ -71,6 +71,19 @@ def convert_schedule_to_repltimes(schedule):
 
 # Returns true if schedule intersect
 def combine_repl_info(info_a, info_b, info_c):
+    """Set a replInfo to be the intersection of two others
+
+    If there is any overlap in the replication times specified by the
+    first two parameters, the third replInfo parameter is set up with
+    that overlap, and True is returned. If there is no overlap, the
+    third parameter is unchanged and False is returned.
+
+    :param info_a: An input replInfo object
+    :param info_b: An input replInfo object
+    :param info_c: The result replInfo, set to the intersection of A and B
+                   if the intersection is non-empty.
+    :return: True if info_c allows any replication at all, otherwise False
+    """
     info_c.interval = max(info_a.interval, info_b.interval)
     info_c.options = info_a.options & info_b.options
 
