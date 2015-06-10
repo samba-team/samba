@@ -468,10 +468,6 @@ class KCC(object):
                 cn_conn.to_be_deleted = True
                 continue
 
-            # Get the source DSA no matter what site
-            # XXX s_dsa is NEVER USED. It will be removed.
-            s_dsa = self.get_dsa(s_dnstr)
-
             #XXX should an RODC be regarded as same site
             same_site = s_dnstr in self.my_site.dsa_table
 
