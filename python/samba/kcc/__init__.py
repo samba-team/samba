@@ -99,8 +99,8 @@ class KCC(object):
     :param debug: Write verbosely to stderr.
     "param dot_files: write Graphviz files in /tmp showing topology
     """
-    def __init__(self, unix_now, readonly=False, attempt_live_connections=True,
-                 verify=False, debug=False, dot_files=False):
+    def __init__(self, unix_now, readonly=False,verify=False, debug=False,
+                 dot_files=False):
         """Initializes the partitions class which can hold
         our local DCs partitions or all the partitions in
         the forest
@@ -138,7 +138,6 @@ class KCC(object):
         self.unix_now = unix_now
         self.nt_now = unix2nttime(unix_now)
         self.readonly = readonly
-        self.attempt_live_connections = attempt_live_connections
         self.verify = verify
         self.debug = debug
         self.dot_files = dot_files
@@ -347,10 +346,13 @@ class KCC(object):
                 logger.info("dsadn:%s\nncdn:%s\nneeded=%s:ro=%s:partial=%s\n" %
                             (dsadn, part.nc_dnstr, needed, ro, partial))
 
-    def refresh_failed_links_connections(self):
+    def refresh_failed_links_connections(self, ping=None):
         """Ensure the failed links list is up to date
 
         Based on MS-ADTS 6.2.2.1
+
+        :param ping: An oracle function of remote site availability
+        :return: None
         """
         # LINKS: Refresh failed links
         self.kcc_failed_links = {}
@@ -385,15 +387,13 @@ class KCC(object):
 
         # CONNECTIONS: Refresh failed connections
         restore_connections = set()
-        if self.attempt_live_connections:
+        if ping is not None:
             DEBUG("refresh_failed_links: checking if links are still down")
             for connection in self.kcc_failed_connections:
-                try:
-                    drs_utils.drsuapi_connect(connection.dns_name, lp, creds)
-                    # Failed connection is no longer failing
+                if ping(connection.dns_name):
+                    # Failed connection is no longer failing\
                     restore_connections.add(connection)
-                except drs_utils.drsException:
-                    # Failed connection still failing
+                else:
                     connection.failure_count += 1
         else:
             DEBUG("refresh_failed_links: not checking live links because we\n"
@@ -1125,7 +1125,7 @@ class KCC(object):
                 # Commit any modified repsFrom to the NC replica
                 n_rep.commit_repsFrom(self.samdb)
 
-    def merge_failed_links(self):
+    def merge_failed_links(self, ping=None):
         """Merge of kCCFailedLinks and kCCFailedLinks from bridgeheads.
 
         The KCC on a writable DC attempts to merge the link and connection
@@ -1143,7 +1143,7 @@ class KCC(object):
         #    site merge all the failure info
         #
         # XXX - not implemented yet
-        if self.attempt_live_connections:
+        if ping is not None:
             debug.DEBUG_RED("merge_failed_links() is NOT IMPLEMENTED")
         else:
             DEBUG_FN("skipping merge_failed_links() because it requires "
@@ -1872,7 +1872,7 @@ class KCC(object):
 
         return all_connected
 
-    def intersite(self):
+    def intersite(self, ping):
         """The head method for generating the inter-site KCC replica
         connection graph and attendant nTDSConnection objects
         in the samdb.
@@ -1908,7 +1908,7 @@ class KCC(object):
                      all_connected)
             return all_connected
 
-        self.merge_failed_links()
+        self.merge_failed_links(ping)
 
         # For each NC with an NC replica that "should be present" on the
         # local DC or "is present" on any DC in the same site as the
@@ -2507,7 +2507,8 @@ class KCC(object):
                        vertex_colors=vertex_colours)
 
     def run(self, dburl, lp, creds, forced_local_dsa=None,
-            forget_local_links=False, forget_intersite_links=False):
+            forget_local_links=False, forget_intersite_links=False,
+            attempt_live_connections=False):
         """Method to perform a complete run of the KCC and
         produce an updated topology for subsequent NC replica
         syncronization between domain controllers
@@ -2599,17 +2600,29 @@ class KCC(object):
                                              v.is_rodc_topology()}
 
                 self.plot_all_connections('dsa_forgotten_all')
+
+            if attempt_live_connections:
+                # Encapsulates lp and creds in a function that
+                # attempts connections to remote DSAs.
+                def ping(self, dnsname):
+                    try:
+                        drs_utils.drsuapi_connect(dnsname, self.lp, self.creds)
+                    except drs_utils.drsException:
+                        return False
+                    return True
+            else:
+                ping = None
             # These are the published steps (in order) for the
             # MS-TECH description of the KCC algorithm ([MS-ADTS] 6.2.2)
 
             # Step 1
-            self.refresh_failed_links_connections()
+            self.refresh_failed_links_connections(ping)
 
             # Step 2
             self.intrasite()
 
             # Step 3
-            all_connected = self.intersite()
+            all_connected = self.intersite(ping)
 
             # Step 4
             self.remove_unneeded_ntdsconn(all_connected)
