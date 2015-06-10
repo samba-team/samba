@@ -3002,10 +3002,16 @@ static PyGetSetDef py_ldb_msg_getset[] = {
 
 static PyObject *py_ldb_msg_repr(PyLdbMessageObject *self)
 {
-	PyObject *dict = PyDict_New(), *ret;
+	PyObject *dict = PyDict_New(), *ret, *repr;
 	if (PyDict_Update(dict, (PyObject *)self) != 0)
 		return NULL;
-	ret = PyString_FromFormat("Message(%s)", PyObject_REPR(dict));
+	repr = PyObject_Repr(dict);
+	if (repr == NULL) {
+		Py_DECREF(dict);
+		return NULL;
+	}
+	ret = PyString_FromFormat("Message(%s)", PyString_AsString(repr));
+	Py_DECREF(repr);
 	Py_DECREF(dict);
 	return ret;
 }
