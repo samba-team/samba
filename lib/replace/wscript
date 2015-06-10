@@ -136,6 +136,7 @@ def configure(conf):
     conf.CHECK_TYPE_IN('sa_family_t', 'sys/socket.h')
 
     conf.CHECK_TYPE_IN('sig_atomic_t', 'signal.h', define='HAVE_SIG_ATOMIC_T_TYPE')
+    conf.CHECK_FUNCS('sigsetmask siggetmask sigprocmask sigblock sigaction sigset')
 
     conf.CHECK_FUNCS_IN('''inet_ntoa inet_aton inet_ntop inet_pton connect gethostbyname
                            getaddrinfo getnameinfo freeaddrinfo gai_strerror socketpair''',
