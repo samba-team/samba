@@ -253,6 +253,14 @@ static void display_share_info_502(struct srvsvc_NetShareInfo502 *r)
 
 }
 
+static void display_share_info_1005(struct srvsvc_NetShareInfo1005 *r)
+{
+	printf("flags: 0x%x\n", r->dfs_flags);
+	printf("csc caching: %u\n",
+	       (r->dfs_flags & SHARE_1005_CSC_POLICY_MASK) >>
+	       SHARE_1005_CSC_POLICY_SHIFT);
+}
+
 static WERROR cmd_srvsvc_net_share_enum_int(struct rpc_pipe_client *cli,
 					    TALLOC_CTX *mem_ctx,
 					    int argc, const char **argv,
@@ -427,7 +435,8 @@ static WERROR cmd_srvsvc_net_share_get_info(struct rpc_pipe_client *cli,
 	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	if (argc < 2 || argc > 3) {
-		printf("Usage: %s [sharename] [infolevel]\n", argv[0]);
+		printf("Usage: %s sharename [infolevel 1|2|502|1005]\n",
+		       argv[0]);
 		return WERR_OK;
 	}
 
@@ -460,6 +469,9 @@ static WERROR cmd_srvsvc_net_share_get_info(struct rpc_pipe_client *cli,
 		break;
 	case 502:
 		display_share_info_502(info.info502);
+		break;
+	case 1005:
+		display_share_info_1005(info.info1005);
 		break;
 	default:
 		printf("unsupported info level %d\n", info_level);
