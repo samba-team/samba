@@ -191,8 +191,6 @@ pwdLastSet: 0
             "sAMAccountName": groupname,
             "objectClass": "group"}
 
-        ldbmessage["msSFU30Name"] = groupname
-
         if grouptype is not None:
             ldbmessage["groupType"] = normalise_int32(grouptype)
 
@@ -209,6 +207,7 @@ pwdLastSet: 0
             ldbmessage["gidNumber"] = normalise_int32(gidnumber)
 
         if nisdomain is not None:
+            ldbmessage["msSFU30Name"] = groupname
             ldbmessage["msSFU30NisDomain"] = nisdomain
 
         if sd is not None:
