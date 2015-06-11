@@ -109,7 +109,6 @@ def SAMBA_PYTHON(bld, name,
                       target_type='PYTHON',
                       install_path='${PYTHONARCHDIR}',
                       allow_undefined_symbols=True,
-                      allow_warnings=True,
                       install=install,
                       enabled=enabled)
 
