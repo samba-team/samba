@@ -1798,7 +1798,7 @@ static PyObject *py_ldb_get_opaque(PyLdbObject *self, PyObject *args)
 
 	/* FIXME: More interpretation */
 
-	return Py_True;
+	Py_RETURN_TRUE;
 }
 
 static PyObject *py_ldb_set_opaque(PyLdbObject *self, PyObject *args)
@@ -2759,6 +2759,7 @@ static PyObject *py_ldb_msg_get(PyLdbMessageObject *self, PyObject *args, PyObje
 
 	if (el == NULL || (idx != -1 && el->num_values <= idx)) {
 		if (def != NULL) {
+			Py_INCREF(def);
 			return def;
 		}
 		Py_RETURN_NONE;
