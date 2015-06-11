@@ -401,11 +401,14 @@ static PyTypeObject TeventTimer_Type = {
 	.tp_flags = Py_TPFLAGS_DEFAULT,
 };
 
-static int timer_destructor(void* ptr)
+struct TeventTimer_Object_ref {
+	TeventTimer_Object *obj;
+};
+
+static int TeventTimer_Object_ref_destructor(struct TeventTimer_Object_ref *ref)
 {
-	TeventTimer_Object *obj = *(TeventTimer_Object **)ptr;
-	obj->timer = NULL;
-	Py_DECREF(obj);
+	ref->obj->timer = NULL;
+	Py_DECREF(ref->obj);
 	return 0;
 }
 
@@ -440,7 +443,7 @@ static PyObject *py_tevent_context_add_timer_internal(TeventContext_Object *self
 	 * The Python timer holds a reference to the callback.
 	 */
 	TeventTimer_Object *ret;
-	TeventTimer_Object **tmp_context;
+	struct TeventTimer_Object_ref *ref;
 
 	ret = PyObject_New(TeventTimer_Object, &TeventTimer_Type);
 	if (ret == NULL) {
@@ -456,16 +459,17 @@ static PyObject *py_tevent_context_add_timer_internal(TeventContext_Object *self
 		PyErr_SetString(PyExc_RuntimeError, "Could not initialize timer");
 		return NULL;
 	}
-	tmp_context = talloc(ret->timer, TeventTimer_Object*);
-	if (tmp_context == NULL) {
+	ref = talloc(ret->timer, struct TeventTimer_Object_ref);
+	if (ref == NULL) {
 		talloc_free(ret->timer);
 		Py_DECREF(ret);
 		PyErr_SetString(PyExc_RuntimeError, "Could not initialize timer");
 		return NULL;
 	}
 	Py_INCREF(ret);
-	*tmp_context = ret;
-	talloc_set_destructor(tmp_context, timer_destructor);
+	ref->obj = ret;
+
+	talloc_set_destructor(ref, TeventTimer_Object_ref_destructor);
 
 	return (PyObject *)ret;
 }
