@@ -313,71 +313,111 @@ static bool ads_try_connect(ADS_STRUCT *ads, bool gc,
 }
 
 /**********************************************************************
- resolve a name and perform an "ldap ping"
+ send a cldap ping to list of servers, one at a time, until one of
+ them answers it's an ldap server. Record success in the ADS_STRUCT.
+ Take note of and update negative connection cache.
 **********************************************************************/
 
-static NTSTATUS resolve_and_ping(ADS_STRUCT *ads, const char *sitename,
-				 const char *resolve_target, bool use_dns,
-				 const char *realm)
+static NTSTATUS cldap_ping_list(ADS_STRUCT *ads,const char *domain,
+				struct ip_service *ip_list, int count)
 {
-	int count, i = 0;
-	struct ip_service *ip_list;
-	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
-	bool ok = false;
+	int i;
+	bool ok;
 
-	DEBUG(6, ("resolve_and_ping: (cldap) looking for %s '%s'\n",
-		  (use_dns ? "realm" : "domain"), resolve_target));
-
-	status = get_sorted_dc_list(resolve_target, sitename, &ip_list, &count,
-				    use_dns);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	/* if we fail this loop, then giveup since all the IP addresses returned
-	 * were dead */
 	for (i = 0; i < count; i++) {
 		char server[INET6_ADDRSTRLEN];
 
 		print_sockaddr(server, sizeof(server), &ip_list[i].ss);
 
 		if (!NT_STATUS_IS_OK(
-			check_negative_conn_cache(resolve_target, server)))
+			check_negative_conn_cache(domain, server)))
 			continue;
-
-		if (!use_dns) {
-			/* resolve_target in this case is a workgroup name. We
-			   need
-			   to ignore any IP addresses in the negative connection
-			   cache that match ip addresses returned in the ad
-			   realm
-			   case.. */
-			if (realm && *realm &&
-			    !NT_STATUS_IS_OK(
-				check_negative_conn_cache(realm, server))) {
-				/* Ensure we add the workgroup name for this
-				   IP address as negative too. */
-				add_failed_connection_entry(
-				    resolve_target, server,
-				    NT_STATUS_UNSUCCESSFUL);
-				continue;
-			}
-		}
 
 		ok = ads_try_connect(ads, false, &ip_list[i].ss);
 		if (ok) {
-			SAFE_FREE(ip_list);
 			return NT_STATUS_OK;
 		}
 
 		/* keep track of failures */
-		add_failed_connection_entry(resolve_target, server,
+		add_failed_connection_entry(domain, server,
 					    NT_STATUS_UNSUCCESSFUL);
 	}
 
+	return NT_STATUS_NO_LOGON_SERVERS;
+}
+
+/***************************************************************************
+ resolve a name and perform an "ldap ping" using NetBIOS and related methods
+****************************************************************************/
+
+static NTSTATUS resolve_and_ping_netbios(ADS_STRUCT *ads,
+					 const char *domain, const char *realm)
+{
+	int count, i;
+	struct ip_service *ip_list;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+
+	DEBUG(6, ("resolve_and_ping_netbios: (cldap) looking for domain '%s'\n",
+		  domain));
+
+	status = get_sorted_dc_list(domain, NULL, &ip_list, &count,
+				    false);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	/* remove servers which are known to be dead based on
+	   the corresponding DNS method */
+	if (*realm) {
+		for (i = 0; i < count; ++i) {
+			char server[INET6_ADDRSTRLEN];
+
+			print_sockaddr(server, sizeof(server), &ip_list[i].ss);
+
+			if(!NT_STATUS_IS_OK(
+				check_negative_conn_cache(realm, server))) {
+				/* Ensure we add the workgroup name for this
+				   IP address as negative too. */
+				add_failed_connection_entry(
+				    domain, server,
+				    NT_STATUS_UNSUCCESSFUL);
+			}
+		}
+	}
+
+	status = cldap_ping_list(ads, domain, ip_list, count);
+
 	SAFE_FREE(ip_list);
 
-	return NT_STATUS_NO_LOGON_SERVERS;
+	return status;
+}
+
+
+/**********************************************************************
+ resolve a name and perform an "ldap ping" using DNS
+**********************************************************************/
+
+static NTSTATUS resolve_and_ping_dns(ADS_STRUCT *ads, const char *sitename,
+				     const char *realm)
+{
+	int count;
+	struct ip_service *ip_list;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+
+	DEBUG(6, ("resolve_and_ping_dns: (cldap) looking for realm '%s'\n",
+		  realm));
+
+	status = get_sorted_dc_list(realm, sitename, &ip_list, &count,
+				    true);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = cldap_ping_list(ads, realm, ip_list, count);
+
+	SAFE_FREE(ip_list);
+
+	return status;
 }
 
 /**********************************************************************
@@ -461,7 +501,7 @@ static NTSTATUS ads_find_dc(ADS_STRUCT *ads)
 
 	if (*c_realm) {
 		sitename = sitename_fetch(talloc_tos(), c_realm);
-		status = resolve_and_ping(ads, sitename, c_realm, true, c_realm);
+		status = resolve_and_ping_dns(ads, sitename, c_realm);
 
 		if (NT_STATUS_IS_OK(status)) {
 			TALLOC_FREE(sitename);
@@ -481,7 +521,7 @@ static NTSTATUS ads_find_dc(ADS_STRUCT *ads)
 				  sitename));
 			namecache_delete(c_realm, 0x1C);
 			status =
-			    resolve_and_ping(ads, NULL, c_realm, true, c_realm);
+			    resolve_and_ping_dns(ads, NULL, c_realm);
 
 			if (NT_STATUS_IS_OK(status)) {
 				TALLOC_FREE(sitename);
@@ -501,7 +541,7 @@ static NTSTATUS ads_find_dc(ADS_STRUCT *ads)
 				  c_domain));
 		}
 
-		status = resolve_and_ping(ads, NULL, c_domain, false, c_realm);
+		status = resolve_and_ping_netbios(ads, c_domain, c_realm);
 	}
 
 	return status;
