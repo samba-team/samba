@@ -1650,7 +1650,8 @@ static krb5_error_code samba_kdc_lookup_server(krb5_context context,
 		 */
 		int lret;
 		char *short_princ;
-		krb5_principal enterprise_prinicpal = NULL;
+		krb5_principal enterprise_principal = NULL;
+		krb5_const_principal used_principal = NULL;
 
 		if (smb_krb5_principal_get_type(context, principal) == KRB5_NT_ENTERPRISE_PRINCIPAL) {
 			char *str = NULL;
@@ -1667,12 +1668,14 @@ static krb5_error_code samba_kdc_lookup_server(krb5_context context,
 				return KRB5_PARSE_MALFORMED;
 			}
 			ret = krb5_parse_name(context, str,
-					      &enterprise_prinicpal);
+					      &enterprise_principal);
 			talloc_free(str);
 			if (ret) {
 				return ret;
 			}
-			principal = enterprise_prinicpal;
+			used_principal = enterprise_principal;
+		} else {
+			used_principal = principal;
 		}
 
 		/* server as client principal case, but we must not lookup userPrincipalNames */
@@ -1680,10 +1683,13 @@ static krb5_error_code samba_kdc_lookup_server(krb5_context context,
 
 		/* TODO: Check if it is our realm, otherwise give referral */
 
-		ret = krb5_unparse_name_flags(context, principal,
+		ret = krb5_unparse_name_flags(context, used_principal,
 					      KRB5_PRINCIPAL_UNPARSE_NO_REALM |
 					      KRB5_PRINCIPAL_UNPARSE_DISPLAY,
 					      &short_princ);
+		used_principal = NULL;
+		krb5_free_principal(context, enterprise_principal);
+		enterprise_principal = NULL;
 
 		if (ret != 0) {
 			krb5_set_error_message(context, ret, "samba_kdc_lookup_principal: could not parse principal");
