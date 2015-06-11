@@ -445,7 +445,7 @@ NTSTATUS samu_to_SamInfo3(TALLOC_CTX *mem_ctx,
 	} } while(0)
 
 struct netr_SamInfo3 *copy_netr_SamInfo3(TALLOC_CTX *mem_ctx,
-					 struct netr_SamInfo3 *orig)
+					 const struct netr_SamInfo3 *orig)
 {
 	struct netr_SamInfo3 *info3;
 	unsigned int i;

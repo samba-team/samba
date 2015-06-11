@@ -1369,7 +1369,7 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 				const char *sent_nt_username,
 				const char *domain,
 				struct auth_serversupplied_info **server_info,
-				struct netr_SamInfo3 *info3)
+				const struct netr_SamInfo3 *info3)
 {
 	static const char zeros[16] = {0, };
 
