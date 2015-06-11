@@ -670,7 +670,7 @@ sub ParseElementPushLevel
 		$var_name = get_array_element($var_name, $counter);
 
 		if ((($primitives and not $l->{IS_DEFERRED}) or ($deferred and $l->{IS_DEFERRED})) and not $array_pointless) {
-			$self->pidl("for ($counter = 0; $counter < $length; $counter++) {");
+			$self->pidl("for ($counter = 0; $counter < ($length); $counter++) {");
 			$self->indent;
 			$self->ParseElementPushLevel($e, GetNextLevel($e, $l), $ndr, $var_name, $env, 1, 0);
 			$self->deindent;
@@ -678,7 +678,7 @@ sub ParseElementPushLevel
 		}
 
 		if ($deferred and ContainsDeferred($e, $l) and not $array_pointless) {
-			$self->pidl("for ($counter = 0; $counter < $length; $counter++) {");
+			$self->pidl("for ($counter = 0; $counter < ($length); $counter++) {");
 			$self->indent;
 			$self->ParseElementPushLevel($e, GetNextLevel($e, $l), $ndr, $var_name, $env, 0, 1);
 			$self->deindent;
@@ -875,7 +875,7 @@ sub ParseElementPrint($$$$$)
 
 				$self->pidl("$ndr->print($ndr, \"\%s: ARRAY(\%d)\", \"$e->{NAME}\", (int)$length);");
 				$self->pidl("$ndr->depth++;");
-				$self->pidl("for ($counter=0;$counter<$length;$counter++) {");
+				$self->pidl("for ($counter = 0; $counter < ($length); $counter++) {");
 				$self->indent;
 
 				$var_name = get_array_element($var_name, $counter);
@@ -1203,7 +1203,7 @@ sub ParseElementPullLevel
 				$self->CheckStringTerminator($ndr,$e,$l,$length);
 			}
 
-			$self->pidl("for ($counter = 0; $counter < $length; $counter++) {");
+			$self->pidl("for ($counter = 0; $counter < ($length); $counter++) {");
 			$self->indent;
 			$self->ParseElementPullLevel($e, $nl, $ndr, $var_name, $env, 1, 0);
 			$self->deindent;
@@ -1211,7 +1211,7 @@ sub ParseElementPullLevel
 		}
 
 		if ($deferred and ContainsDeferred($e, $l)) {
-			$self->pidl("for ($counter = 0; $counter < $length; $counter++) {");
+			$self->pidl("for ($counter = 0; $counter < ($length); $counter++) {");
 			$self->indent;
 			$self->ParseElementPullLevel($e,GetNextLevel($e,$l), $ndr, $var_name, $env, 0, 1);
 			$self->deindent;
