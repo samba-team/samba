@@ -295,38 +295,6 @@ static PyObject *py_tevent_context_loop_once(TeventContext_Object *self)
 	Py_RETURN_NONE;
 }
 
-#ifdef TEVENT_DEPRECATED
-static bool py_tevent_finished(PyObject *callback)
-{
-	PyObject *py_ret;
-	bool ret;
-
-	py_ret = PyObject_CallFunction(callback, "");
-	if (py_ret == NULL)
-		return true;
-	ret = PyObject_IsTrue(py_ret);
-	Py_DECREF(py_ret);
-	return ret;
-}
-
-static PyObject *py_tevent_context_loop_until(TeventContext_Object *self, PyObject *args)
-{
-	PyObject *callback;
-	if (!PyArg_ParseTuple(args, "O", &callback))
-		return NULL;
-
-	if (tevent_loop_until(self->ev, py_tevent_finished, callback) != 0) {
-		PyErr_SetNone(PyExc_RuntimeError);
-		return NULL;
-	}
-
-	if (PyErr_Occurred())
-		return NULL;
-
-	Py_RETURN_NONE;
-}
-#endif
-
 static void py_tevent_signal_handler(struct tevent_context *ev,
 					struct tevent_signal *se,
 					int signum,
@@ -576,14 +544,6 @@ static PyObject *py_tevent_context_add_fd(TeventContext_Object *self, PyObject *
 	return (PyObject *)ret;
 }
 
-#ifdef TEVENT_DEPRECATED
-static PyObject *py_tevent_context_set_allow_nesting(TeventContext_Object *self)
-{
-	tevent_loop_allow_nesting(self->ev);
-	Py_RETURN_NONE;
-}
-#endif
-
 static PyMethodDef py_tevent_context_methods[] = {
 	{ "reinitialise", (PyCFunction)py_tevent_context_reinitialise, METH_NOARGS,
 		"S.reinitialise()" },
@@ -593,10 +553,6 @@ static PyMethodDef py_tevent_context_methods[] = {
 		METH_NOARGS, "S.loop_wait()" },
 	{ "loop_once", (PyCFunction)py_tevent_context_loop_once,
 		METH_NOARGS, "S.loop_once()" },
-#ifdef TEVENT_DEPRECATED
-	{ "loop_until", (PyCFunction)py_tevent_context_loop_until,
-		METH_VARARGS, "S.loop_until(callback)" },
-#endif
 	{ "add_signal", (PyCFunction)py_tevent_context_add_signal,
 		METH_VARARGS, "S.add_signal(signum, sa_flags, handler) -> signal" },
 	{ "add_timer", (PyCFunction)py_tevent_context_add_timer,
@@ -605,10 +561,6 @@ static PyMethodDef py_tevent_context_methods[] = {
 		METH_VARARGS, "S.add_timer(offset_seconds, handler) -> timer" },
 	{ "add_fd", (PyCFunction)py_tevent_context_add_fd, 
 		METH_VARARGS, "S.add_fd(fd, flags, handler) -> fd" },
-#ifdef TEVENT_DEPRECATED
-	{ "allow_nesting", (PyCFunction)py_tevent_context_set_allow_nesting, 
-		METH_NOARGS, "Whether to allow nested tevent loops." },
-#endif
 	{ NULL },
 };
 
