@@ -941,6 +941,51 @@ static WERROR cmd_srvsvc_net_conn_enum(struct rpc_pipe_client *cli,
 	return result;
 }
 
+static WERROR cmd_srvsvc_net_share_add(struct rpc_pipe_client *cli,
+				       TALLOC_CTX *mem_ctx,
+				       int argc, const char **argv)
+{
+	struct srvsvc_NetShareInfo502 info502 = { 0 };
+	union srvsvc_NetShareInfo info = { .info502 = &info502 };
+	WERROR result;
+	NTSTATUS status;
+	uint32_t max_users = -1, parm_error;
+	struct sec_desc_buf sd_buf = { 0 };
+	const char *path, *share_name, *comment = NULL;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
+
+	if (argc < 3 || argc > 5) {
+		printf("Usage: %s path share_name [max_users] [comment]\n",
+		       argv[0]);
+		return WERR_OK;
+	}
+
+	path = argv[1];
+	share_name = argv[2];
+
+	if (argc >= 4) {
+		max_users = atoi(argv[3]);
+	}
+
+	if (argc >= 5) {
+		comment = argv[4];
+	}
+
+	info.info502->name = share_name;
+	info.info502->type = STYPE_DISKTREE;
+	info.info502->comment = comment;
+	info.info502->max_users = max_users;
+	info.info502->path = path;
+	info.info502->sd_buf = sd_buf;
+
+	status = dcerpc_srvsvc_NetShareAdd(b, mem_ctx, cli->desthost,
+					   502, &info, &parm_error, &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		result = ntstatus_to_werror(status);
+	}
+
+	return result;
+}
 
 /* List of commands exported by this module */
 
@@ -961,6 +1006,7 @@ struct cmd_set srvsvc_commands[] = {
 	{ "netsessenum", RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_sess_enum, &ndr_table_srvsvc, NULL, "Enumerate Sessions", "" },
 	{ "netdiskenum", RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_disk_enum, &ndr_table_srvsvc, NULL, "Enumerate Disks", "" },
 	{ "netconnenum", RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_conn_enum, &ndr_table_srvsvc, NULL, "Enumerate Connections", "" },
+	{ "netshareadd", RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_share_add, &ndr_table_srvsvc, NULL, "Add share", "" },
 
 	{ NULL }
 };
