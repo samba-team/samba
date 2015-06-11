@@ -2682,6 +2682,8 @@ static void election_handler(struct ctdb_context *ctdb, uint64_t srvid,
 		unban_all_nodes(ctdb);
 	}
 
+	clear_ip_assignment_tree(ctdb);
+
 	/* ok, let that guy become recmaster then */
 	ret = ctdb_ctrl_setrecmaster(ctdb, CONTROL_TIMEOUT(), ctdb_get_pnn(ctdb), em->pnn);
 	if (ret != 0) {
