@@ -197,9 +197,9 @@
           </listitem>
           <listitem>
             <para>
-	      you can talloc_free() the pointer itself.  That will destroy
-	      the most recently established parent to the pointer and leave
-	      the pointer as a child of its current parent.
+	      you can talloc_free() the pointer itself if it has at maximum one
+	      parent. This behaviour has been changed since the release of version
+	      2.0. Further informations in the description of "talloc_free".
             </para>
           </listitem>
         </itemizedlist>
