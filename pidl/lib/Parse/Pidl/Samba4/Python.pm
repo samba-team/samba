@@ -1349,7 +1349,7 @@ sub ConvertObjectToPythonLevel($$$$$$)
 			$self->indent;
 			my $counter = "$e->{NAME}_cntr_$l->{LEVEL_INDEX}";
 			$self->pidl("int $counter;");
-			$self->pidl("for ($counter = 0; $counter < $length; $counter++) {");
+			$self->pidl("for ($counter = 0; $counter < ($length); $counter++) {");
 			$self->indent;
 			my $member_var = "py_$e->{NAME}_$l->{LEVEL_INDEX}";
 			$self->pidl("PyObject *$member_var;");
