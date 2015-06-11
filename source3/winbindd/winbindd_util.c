@@ -27,6 +27,7 @@
 #include "../libcli/auth/pam_errors.h"
 #include "passdb/machine_sid.h"
 #include "passdb.h"
+#include "auth/credentials/credentials.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
@@ -603,6 +604,49 @@ enum winbindd_result winbindd_dual_init_connection(struct winbindd_domain *domai
 	return WINBINDD_OK;
 }
 
+/*
+ * We did not get the secret when we queried secrets.tdb, so read it
+ * from secrets.tdb and re-sync the databases
+ */
+static bool migrate_secrets_tdb_to_ldb(struct winbindd_domain *domain)
+{
+	bool ok;
+	struct cli_credentials *creds;
+	NTSTATUS can_migrate = pdb_get_trust_credentials(domain->name,
+							 NULL, domain, &creds);
+	if (!NT_STATUS_IS_OK(can_migrate)) {
+		DEBUG(0, ("Failed to fetch our own, local AD domain join password "
+			  "for winbindd's internal use, both from secrets.tdb "
+			  "and secrets.ldb: %s\n",
+			  nt_errstr(can_migrate)));
+		return false;
+	}
+
+	/*
+	 * NOTE: It is very unlikely we end up here if there is an
+	 * oldpass, because a new password is created at
+	 * classicupgrade, so this is not a concern.
+	 */
+	ok = secrets_store_machine_pw_sync(cli_credentials_get_password(creds),
+		   NULL /* oldpass */,
+		   cli_credentials_get_domain(creds),
+		   cli_credentials_get_realm(creds),
+		   cli_credentials_get_salt_principal(creds),
+		   0, /* Supported enc types, unused */
+		   &domain->sid,
+		   cli_credentials_get_password_last_changed_time(creds),
+		   cli_credentials_get_secure_channel_type(creds),
+		   false /* do_delete: Do not delete */);
+	TALLOC_FREE(creds);
+	if (ok == false) {
+		DEBUG(0, ("Failed to write our our own, "
+			  "local AD domain join password for "
+			  "winbindd's internal use into secrets.tdb\n"));
+		return false;
+	}
+	return true;
+}
+
 /* Look up global info for the winbind daemon */
 bool init_domain_list(void)
 {
@@ -647,13 +691,37 @@ bool init_domain_list(void)
 				       &account_name,
 				       &sec_chan_type);
 		if (!ok) {
-			DEBUG(0, ("Failed to fetch our own, local AD domain join password for winbindd's internal use\n"));
-			return false;
+			/*
+			 * If get_trust_pw_hash() fails, then try and
+			 * fetch the password from the more recent of
+			 * secrets.{ldb,tdb} using the
+			 * pdb_get_trust_credentials()
+			 */
+			ok = migrate_secrets_tdb_to_ldb(domain);
+
+			if (ok == false) {
+				DEBUG(0, ("Failed to migrate our own, "
+					  "local AD domain join password for "
+					  "winbindd's internal use into "
+					  "secrets.tdb\n"));
+				return false;
+			}
+			ok = get_trust_pw_hash(domain->name,
+					       current_nt_hash.hash,
+					       &account_name,
+					       &sec_chan_type);
+			if (ok == false) {
+				DEBUG(0, ("Failed to find our our own, just "
+					  "written local AD domain join "
+					  "password for winbindd's internal "
+					  "use in secrets.tdb\n"));
+				return false;
+			}
 		}
 		if (sec_chan_type == SEC_CHAN_RODC) {
 			domain->rodc = true;
 		}
-
+		
 	} else {
 		(void)add_trusted_domain(get_global_sam_name(), NULL,
 					 &cache_methods, get_global_sam_sid());
