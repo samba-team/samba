@@ -93,6 +93,8 @@ test_smbclient "Test login with user kerberos lowercase realm 2" 'ls' -k yes -U$
 SMBCLIENT_UNC="//$TRUST_SERVER.$TRUST_REALM/tmp"
 test_smbclient "Test user login with the first outgoing secret" 'ls' -k yes -U$USERNAME@$REALM%$PASSWORD || failed=`expr $failed + 1`
 
+testit_expect_failure "setpassword should not work" $VALGRIND $samba_tool user setpassword "${TRUST_DOMAIN}\$" --random-password || failed=`expr $failed + 1`
+
 testit "wbinfo ping dc" $VALGRIND $wbinfo --ping-dc --domain=$TRUST_DOMAIN || failed=`expr $failed + 1`
 testit "wbinfo change outgoing trust pw" $VALGRIND $wbinfo --change-secret --domain=$TRUST_DOMAIN || failed=`expr $failed + 1`
 testit "wbinfo check outgoing trust pw" $VALGRIND $wbinfo --check-secret --domain=$TRUST_DOMAIN || failed=`expr $failed + 1`
