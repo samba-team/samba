@@ -737,13 +737,15 @@ sub ParsePtrPush($$$$$)
 	my ($self,$e,$l,$ndr,$var_name) = @_;
 
 	if ($l->{POINTER_TYPE} eq "ref") {
-		$self->pidl("if ($var_name == NULL) {");
-		$self->indent;
-		$self->pidl("return ndr_push_error($ndr, NDR_ERR_INVALID_POINTER, \"NULL [ref] pointer\");");
-		$self->deindent;
-		$self->pidl("}");
+		if ($l->{LEVEL_INDEX} > 0) {
+			$self->pidl("if ($var_name == NULL) {");
+			$self->indent;
+			$self->pidl("return ndr_push_error($ndr, NDR_ERR_INVALID_POINTER, \"NULL [ref] pointer\");");
+			$self->deindent;
+			$self->pidl("}");
+		}
 		if ($l->{LEVEL} eq "EMBEDDED") {
-			$self->pidl("NDR_CHECK(ndr_push_ref_ptr(ndr));");
+			$self->pidl("NDR_CHECK(ndr_push_ref_ptr(ndr)); /* $var_name */");
 		}
 	} elsif ($l->{POINTER_TYPE} eq "relative") {
 		$self->pidl("NDR_CHECK(ndr_push_relative_ptr1($ndr, $var_name));");
@@ -1331,9 +1333,29 @@ sub ParsePtrPull($$$$$)
 	$self->pidl("}");
 }
 
+sub CheckRefPtrs($$$$)
+{
+	my ($self,$e,$ndr,$env) = @_;
+
+	return if ContainsPipe($e, $e->{LEVELS}[0]);
+	return if ($e->{LEVELS}[0]->{TYPE} ne "POINTER");
+	return if ($e->{LEVELS}[0]->{POINTER_TYPE} ne "ref");
+
+	my $var_name = $env->{$e->{NAME}};
+	$var_name = append_prefix($e, $var_name);
+
+	$self->pidl("if ($var_name == NULL) {");
+	$self->indent;
+	$self->pidl("return ndr_push_error($ndr, NDR_ERR_INVALID_POINTER, \"NULL [ref] pointer\");");
+	$self->deindent;
+	$self->pidl("}");
+}
+
 sub ParseStructPushPrimitives($$$$$)
 {
 	my ($self, $struct, $ndr, $varname, $env) = @_;
+
+	$self->CheckRefPtrs($_, $ndr, $env) foreach (@{$struct->{ELEMENTS}});
 
 	# see if the structure contains a conformant array. If it
 	# does, then it must be the last element of the structure, and
@@ -1834,7 +1856,9 @@ sub ParseUnionPushPrimitives($$$$)
 				$self->pidl("NDR_CHECK(ndr_push_setup_relative_base_offset1($ndr, $varname, $ndr->offset));");
 			}
 			$self->DeclareArrayVariables($el);
-			$self->ParseElementPush($el, $ndr, {$el->{NAME} => "$varname->$el->{NAME}"}, 1, 0);
+			my $el_env = {$el->{NAME} => "$varname->$el->{NAME}"};
+			$self->CheckRefPtrs($el, $ndr, $el_env);
+			$self->ParseElementPush($el, $ndr, $el_env, 1, 0);
 			$self->deindent;
 		}
 		$self->pidl("break; }");
@@ -2365,6 +2389,12 @@ sub ParseFunctionPush($$)
 
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		if (grep(/in/,@{$e->{DIRECTION}})) {
+			$self->CheckRefPtrs($e, $ndr, $env);
+		}
+	}
+
+	foreach my $e (@{$fn->{ELEMENTS}}) {
+		if (grep(/in/,@{$e->{DIRECTION}})) {
 			$self->ParseElementPush($e, $ndr, $env, 1, 1);
 		}
 	}
@@ -2376,6 +2406,14 @@ sub ParseFunctionPush($$)
 	$self->indent;
 
 	$env = GenerateFunctionOutEnv($fn);
+	EnvSubstituteValue($env, $fn);
+
+	foreach my $e (@{$fn->{ELEMENTS}}) {
+		if (grep(/out/,@{$e->{DIRECTION}})) {
+			$self->CheckRefPtrs($e, $ndr, $env);
+		}
+	}
+
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		if (grep(/out/,@{$e->{DIRECTION}})) {
 			$self->ParseElementPush($e, $ndr, $env, 1, 1);
