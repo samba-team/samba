@@ -23,6 +23,7 @@
 */
 
 #include <Python.h>
+#include "replace.h"
 #include <tevent.h>
 
 #if PY_MAJOR_VERSION >= 3
@@ -230,7 +231,7 @@ static void py_queue_trigger(struct tevent_req *req, void *private_data)
 {
 	PyObject *callback = private_data, *ret;
 
-	ret = PyObject_CallFunction(callback, "");
+	ret = PyObject_CallFunction(callback, discard_const_p(char, ""));
 	Py_XDECREF(ret);
 }
 
@@ -304,7 +305,7 @@ static void py_tevent_signal_handler(struct tevent_context *ev,
 {
 	PyObject *callback = (PyObject *)private_data, *ret;
 
-	ret = PyObject_CallFunction(callback, "ii", signum, count);
+	ret = PyObject_CallFunction(callback, discard_const_p(char, "ii"), signum, count);
 	Py_XDECREF(ret);
 }
 
@@ -355,7 +356,7 @@ static void py_timer_handler(struct tevent_context *ev,
 	TeventTimer_Object *self = private_data;
 	PyObject *ret;
 
-	ret = PyObject_CallFunction(self->callback, "l", te);
+	ret = PyObject_CallFunction(self->callback, discard_const_p(char, "l"), te);
 	if (ret == NULL) {
 		/* No Python stack to propagate exception to; just print traceback */
 		PyErr_PrintEx(0);
@@ -384,9 +385,9 @@ static PyObject* py_tevent_timer_get_active(TeventTimer_Object *self) {
 
 struct PyGetSetDef py_tevent_timer_getset[] = {
 	{
-		.name = "active",
+		.name = discard_const_p(char, "active"),
 		.get = (getter)py_tevent_timer_get_active,
-		.doc = "true if the timer is scheduled to run",
+		.doc = discard_const_p(char, "true if the timer is scheduled to run"),
 	},
 	{NULL},
 };
@@ -501,7 +502,7 @@ static void py_fd_handler(struct tevent_context *ev,
 {
 	PyObject *callback = private_data, *ret;
 
-	ret = PyObject_CallFunction(callback, "i", flags);
+	ret = PyObject_CallFunction(callback, discard_const_p(char, "i"), flags);
 	Py_XDECREF(ret);
 }
 
@@ -595,8 +596,11 @@ static PyObject *py_tevent_req_is_in_progress(PyObject *self)
 }
 
 static PyGetSetDef py_tevent_req_getsetters[] = {
-	{ "in_progress", (getter)py_tevent_req_is_in_progress, NULL,
-		"Whether the request is in progress" },
+	{
+		.name = discard_const_p(char, "in_progress"),
+		.get = (getter)py_tevent_req_is_in_progress,
+		.doc = discard_const_p(char, "Whether the request is in progress"),
+	},
 	{ NULL }
 };
 
@@ -684,8 +688,11 @@ static PyObject *py_tevent_queue_get_length(TeventQueue_Object *self)
 }
 
 static PyGetSetDef py_tevent_queue_getsetters[] = {
-	{ "length", (getter)py_tevent_queue_get_length,
-		NULL, "The number of elements in the queue." },
+	{
+		.name = discard_const_p(char, "length"),
+		.get = (getter)py_tevent_queue_get_length,
+		.doc = discard_const_p(char, "The number of elements in the queue."),
+	},
 	{ NULL },
 };
 
@@ -711,8 +718,11 @@ static PyObject *py_tevent_context_signal_support(PyObject *_self)
 }
 
 static PyGetSetDef py_tevent_context_getsetters[] = {
-	{ "signal_support", (getter)py_tevent_context_signal_support,
-		NULL, "if this platform and tevent context support signal handling" },
+	{
+		.name = discard_const_p(char, "signal_support"),
+		.get = (getter)py_tevent_context_signal_support,
+		.doc = discard_const_p(char, "if this platform and tevent context support signal handling"),
+	},
 	{ NULL }
 };
 
@@ -729,7 +739,7 @@ static PyObject *py_tevent_context_new(PyTypeObject *type, PyObject *args, PyObj
 	struct tevent_context *ev;
 	TeventContext_Object *ret;
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|s", kwnames, &name))
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|s", discard_const_p(char *, kwnames), &name))
 		return NULL;
 
 	if (name == NULL) {
