@@ -987,6 +987,33 @@ static WERROR cmd_srvsvc_net_share_add(struct rpc_pipe_client *cli,
 	return result;
 }
 
+static WERROR cmd_srvsvc_net_share_del(struct rpc_pipe_client *cli,
+				       TALLOC_CTX *mem_ctx,
+				       int argc, const char **argv)
+{
+	const char *share_name;
+	WERROR result;
+	NTSTATUS status;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
+
+	if (argc < 2) {
+		printf("Usage: %s share_name\n", argv[0]);
+		return WERR_OK;
+	}
+
+	share_name = argv[1];
+
+	status = dcerpc_srvsvc_NetShareDel(b, mem_ctx, cli->desthost,
+					   share_name, 0, &result);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		result = ntstatus_to_werror(status);
+	}
+
+	return result;
+}
+
+
 /* List of commands exported by this module */
 
 struct cmd_set srvsvc_commands[] = {
@@ -1007,6 +1034,7 @@ struct cmd_set srvsvc_commands[] = {
 	{ "netdiskenum", RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_disk_enum, &ndr_table_srvsvc, NULL, "Enumerate Disks", "" },
 	{ "netconnenum", RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_conn_enum, &ndr_table_srvsvc, NULL, "Enumerate Connections", "" },
 	{ "netshareadd", RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_share_add, &ndr_table_srvsvc, NULL, "Add share", "" },
+	{ "netsharedel", RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_share_del, &ndr_table_srvsvc, NULL, "Delete share", "" },
 
 	{ NULL }
 };
