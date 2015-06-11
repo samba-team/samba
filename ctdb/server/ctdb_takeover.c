@@ -4262,6 +4262,10 @@ int update_ip_assignment_tree(struct ctdb_context *ctdb, struct ctdb_public_ip *
 	return 0;
 }
 
+void clear_ip_assignment_tree(struct ctdb_context *ctdb)
+{
+	TALLOC_FREE(ctdb->ip_tree);
+}
 
 struct ctdb_reloadips_handle {
 	struct ctdb_context *ctdb;
