@@ -722,12 +722,23 @@ bool init_domain_list(void)
 		enum netr_SchannelType sec_chan_type;
 		const char *account_name;
 		struct samr_Password current_nt_hash;
+		struct pdb_domain_info *pdb_domain_info;
 		bool ok;
 
-		domain = add_trusted_domain(get_global_sam_name(), lp_dnsdomain(),
-					    &cache_methods, get_global_sam_sid());
+		pdb_domain_info = pdb_get_domain_info(talloc_tos());
+		if (pdb_domain_info == NULL) {
+			DEBUG(0, ("Failed to fetch our own, local AD "
+				"domain info from sam.ldb\n"));
+			return false;
+		}
+		domain = add_trusted_domain(pdb_domain_info->name,
+					pdb_domain_info->dns_domain,
+					&cache_methods,
+					&pdb_domain_info->sid);
+		TALLOC_FREE(pdb_domain_info);
 		if (domain == NULL) {
-			DEBUG(0, ("Failed to add our own, local AD domain to winbindd's internal list\n"));
+			DEBUG(0, ("Failed to add our own, local AD "
+				"domain to winbindd's internal list\n"));
 			return false;
 		}
 
