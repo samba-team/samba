@@ -28,7 +28,7 @@
 #include "libcli/util/pyerrors.h"
 #include "param/pyparam.h"
 
-void initxattr_tdb(void);
+void initposix_eadb(void);
 
 static PyObject *py_is_xattr_supported(PyObject *self)
 {
