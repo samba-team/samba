@@ -342,15 +342,6 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	ctx->names_db = server_id_db_init(
-		ctx, ctx->id, lp_lock_directory(), 0,
-		TDB_INCOMPATIBLE_HASH|TDB_CLEAR_IF_FIRST);
-	if (ctx->names_db == NULL) {
-		DEBUG(10, ("%s: server_id_db_init failed\n", __func__));
-		TALLOC_FREE(ctx);
-		return NULL;
-	}
-
 	talloc_set_destructor(ctx, messaging_context_destructor);
 
 	if (lp_clustering()) {
@@ -364,6 +355,15 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx,
 		}
 	}
 	ctx->id.vnn = get_my_vnn();
+
+	ctx->names_db = server_id_db_init(
+		ctx, ctx->id, lp_lock_directory(), 0,
+		TDB_INCOMPATIBLE_HASH|TDB_CLEAR_IF_FIRST);
+	if (ctx->names_db == NULL) {
+		DEBUG(10, ("%s: server_id_db_init failed\n", __func__));
+		TALLOC_FREE(ctx);
+		return NULL;
+	}
 
 	messaging_register(ctx, NULL, MSG_PING, ping_message);
 
