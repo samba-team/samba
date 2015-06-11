@@ -554,6 +554,61 @@ static WERROR cmd_srvsvc_net_share_set_info(struct rpc_pipe_client *cli,
 	return result;
 }
 
+static WERROR cmd_srvsvc_net_share_set_dfs_flags(struct rpc_pipe_client *cli,
+					    TALLOC_CTX *mem_ctx,
+					    int argc, const char **argv)
+{
+	struct srvsvc_NetShareInfo1005 info1005 = { 0 };
+	union srvsvc_NetShareInfo info = { .info1005 = &info1005 };
+	WERROR result;
+	NTSTATUS status;
+	uint32_t parm_err = 0;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
+
+	if (argc > 3) {
+		printf("Usage: %s [sharename] [dfsflags]\n", argv[0]);
+		return WERR_OK;
+	}
+
+	if (argc > 2) {
+		info.info1005->dfs_flags = strtol(argv[2], NULL, 0);
+	}
+
+	/* set share info */
+	status = dcerpc_srvsvc_NetShareSetInfo(b, mem_ctx,
+					       cli->desthost,
+					       argv[1],
+					       1005,
+					       &info,
+					       &parm_err,
+					       &result);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return ntstatus_to_werror(status);
+	}
+	if (!W_ERROR_IS_OK(result)) {
+		return result;
+	}
+
+	/* re-retrieve share info and display */
+	status = dcerpc_srvsvc_NetShareGetInfo(b, mem_ctx,
+					       cli->desthost,
+					       argv[1],
+					       1005,
+					       &info,
+					       &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ntstatus_to_werror(status);
+	}
+	if (!W_ERROR_IS_OK(result)) {
+		return result;
+	}
+
+	display_share_info_1005(info.info1005);
+
+	return result;
+}
+
 static WERROR cmd_srvsvc_net_remote_tod(struct rpc_pipe_client *cli, 
                                           TALLOC_CTX *mem_ctx,
                                           int argc, const char **argv)
@@ -1037,6 +1092,7 @@ struct cmd_set srvsvc_commands[] = {
 	{ "netshareenumall",RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_share_enum_all, &ndr_table_srvsvc, NULL, "Enumerate all shares", "" },
 	{ "netsharegetinfo",RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_share_get_info, &ndr_table_srvsvc, NULL, "Get Share Info", "" },
 	{ "netsharesetinfo",RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_share_set_info, &ndr_table_srvsvc, NULL, "Set Share Info", "" },
+	{ "netsharesetdfsflags",RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_share_set_dfs_flags, &ndr_table_srvsvc, NULL, "Set DFS flags", "" },
 	{ "netfileenum", RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_file_enum,  &ndr_table_srvsvc, NULL, "Enumerate open files", "" },
 	{ "netremotetod",RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_remote_tod, &ndr_table_srvsvc, NULL, "Fetch remote time of day", "" },
 	{ "netnamevalidate", RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_name_validate, &ndr_table_srvsvc, NULL, "Validate sharename", "" },
