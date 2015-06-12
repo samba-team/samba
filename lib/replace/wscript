@@ -459,6 +459,10 @@ removeea setea
             conf.CHECK_FUNCS_IN('pthread_mutexattr_setrobust_np', 'pthread',
                                 checklibc=True, headers='pthread.h')
 
+        conf.CHECK_DECLS('PTHREAD_MUTEX_ROBUST', headers='pthread.h')
+        if not conf.CONFIG_SET('HAVE_DECL_PTHREAD_MUTEX_ROBUST'):
+            conf.CHECK_DECLS('PTHREAD_MUTEX_ROBUST_NP', headers='pthread.h')
+
         conf.CHECK_DECLS('pthread_mutex_consistent', headers='pthread.h')
         if not conf.CONFIG_SET('HAVE_DECL_PTHREAD_MUTEX_CONSISTENT'):
             conf.CHECK_DECLS('pthread_mutex_consistent_np',
@@ -472,6 +476,8 @@ removeea setea
 
         if ((conf.CONFIG_SET('HAVE_PTHREAD_MUTEXATTR_SETROBUST') or
              conf.CONFIG_SET('HAVE_PTHREAD_MUTEXATTR_SETROBUST_NP')) and
+            (conf.CONFIG_SET('HAVE_DECL_PTHREAD_MUTEX_ROBUST') or
+             conf.CONFIG_SET('HAVE_DECL_PTHREAD_MUTEX_ROBUST_NP')) and
             (conf.CONFIG_SET('HAVE_PTHREAD_MUTEX_CONSISTENT') or
              conf.CONFIG_SET('HAVE_PTHREAD_MUTEX_CONSISTENT_NP'))):
             conf.DEFINE('HAVE_ROBUST_MUTEXES', 1)

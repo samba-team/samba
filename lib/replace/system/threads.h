@@ -29,15 +29,12 @@
 
 #if defined(HAVE_PTHREAD_MUTEXATTR_SETROBUST_NP) && \
 	!defined(HAVE_PTHREAD_MUTEXATTR_SETROBUST)
-
 #define pthread_mutexattr_setrobust pthread_mutexattr_setrobust_np
+#endif
 
-/*
- * We assume that PTHREAD_MUTEX_ROBUST_NP goes along with
- * pthread_mutexattr_setrobust_np()
- */
+#if defined(HAVE_DECL_PTHREAD_MUTEX_ROBUST_NP) && \
+	!defined(HAVE_DECL_PTHREAD_MUTEX_ROBUST)
 #define PTHREAD_MUTEX_ROBUST PTHREAD_MUTEX_ROBUST_NP
-
 #endif
 
 #if defined(HAVE_PTHREAD_MUTEX_CONSISTENT_NP) && \
