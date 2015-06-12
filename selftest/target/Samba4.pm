@@ -1432,6 +1432,10 @@ sub provision_ad_dc_ntvfs($$)
 {
 	my ($self, $prefix) = @_;
 
+	# We keep the old 'winbind' name here in server services to
+	# ensure upgrades which used that name still work with the now
+	# alias.
+
 	print "PROVISIONING AD DC (NTVFS)...";
         my $extra_conf_options = "netbios aliases = localDC1-a
         server services = +winbind -winbindd";
