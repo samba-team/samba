@@ -437,6 +437,11 @@ plantestsuite("samba3.blackbox.net_rpc_join", "nt4_dc",
                "$USERNAME", "$PASSWORD", "$SERVER", "$PREFIX/net_rpc_join",
                configuration])
 
+plantestsuite("samba3.blackbox.rpcclient_srvsvc", "simpleserver",
+              [os.path.join(samba3srcdir, "script/tests/test_rpcclientsrvsvc.sh"),
+               "$USERNAME", "$PASSWORD", "$SERVER",
+               os.path.join(bindir(), "rpcclient"), "tmp"])
+
 options_list = ["", "-e"]
 for options in options_list:
     plantestsuite("samba3.blackbox.smbclient_krb5 old ccache %s" % options, "ktest:local",
