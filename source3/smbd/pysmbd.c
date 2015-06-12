@@ -23,9 +23,9 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <Python.h>
 #include "includes.h"
 #include "smbd/smbd.h"
-#include <Python.h>
 #include "libcli/util/pyerrors.h"
 #include "librpc/rpc/pyrpc_util.h"
 #include <pytalloc.h>
