@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 APPNAME = 'tevent'
-VERSION = '0.9.24'
+VERSION = '0.9.25'
 
 blddir = 'bin'
 
