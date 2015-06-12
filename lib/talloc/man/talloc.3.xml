@@ -209,7 +209,7 @@
 	linkend="talloc_unlink"><quote>talloc_unlink()</quote></link>.
       </para>
     </refsect2>
-    <refsect2 id="talloc_unlink"><title>int talloc_unlink(const void *ctx, const void *ptr);</title>
+    <refsect2 id="talloc_unlink"><title>int talloc_unlink(const void *ctx, void *ptr);</title>
         <para>
 	  The talloc_unlink() function removes a specific parent from
 	  <emphasis role="italic">ptr</emphasis>. The <emphasis
