@@ -679,7 +679,7 @@ static void nbtd_wins_randomize1Clist(struct loadparm_context *lp_ctx,
 
 	/* 
 	 * choose a random address to be the first in the response to the client,
-	 * preferr the addresses inside the nbtd:wins_randomize1Clist_mask netmask
+	 * prefer the addresses inside the nbtd:wins_randomize1Clist_mask netmask
 	 */
 	r = random();
 	idx = sidx = r % num_addrs;

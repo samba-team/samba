@@ -855,7 +855,7 @@ static struct tevent_req *tdgram_bsd_recvfrom_send(TALLOC_CTX *mem_ctx,
 		 * recvfrom if the caller asked for it.
 		 *
 		 * This is needed because in most cases
-		 * we preferr to flush send buffers before
+		 * we prefer to flush send buffers before
 		 * receiving incoming requests.
 		 */
 		tdgram_bsd_recvfrom_handler(req);
@@ -1746,7 +1746,7 @@ static struct tevent_req *tstream_bsd_readv_send(TALLOC_CTX *mem_ctx,
 		 * readv if the caller asked for it.
 		 *
 		 * This is needed because in most cases
-		 * we preferr to flush send buffers before
+		 * we prefer to flush send buffers before
 		 * receiving incoming requests.
 		 */
 		tstream_bsd_readv_handler(req);
