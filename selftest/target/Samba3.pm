@@ -1214,6 +1214,11 @@ sub provision($$$$$$$$)
 	# fsrvp server requires registry shares
 	registry shares = yes
 
+	# Used by RPC SRVSVC tests
+	add share command = $bindir_abs/smbaddshare
+	change share command = $bindir_abs/smbchangeshare
+	delete share command = $bindir_abs/smbdeleteshare
+
 	# Begin extra options
 	$extra_options
 	# End extra options

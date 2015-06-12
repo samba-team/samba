@@ -1,0 +1,47 @@
+#!/bin/sh
+#
+# smbchangeshare
+#
+# Copyright (C) 2015 Christof Schmitt
+#
+# Example script that can be used with the 'change share command'
+# config option. This is mainly intended for use in the Samba selftest
+# suite, please review and adapt it before using elsewhere.
+#
+
+CONF="$1"
+SHARENAME="$2"
+SHAREPATH="$3"
+COMMENT="$4"
+MAX_CONN="$5"
+CSC_POLICY="$6"
+
+NETCONF="$BINDIR/net --configfile=$CONF conf"
+
+$NETCONF setparm "$SHARENAME" 'path' "$SHAREPATH"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+	echo Failure during setparm for path: rc=$RC
+	exit $RC
+fi
+
+$NETCONF setparm "$SHARENAME" 'comment' "$COMMENT"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+	echo Failed during setparm for comment: rc=$RC
+	exit $RC
+fi
+
+$NETCONF setparm "$SHARENAME" 'max connections' "$MAX_CONN"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+	echo Failure during setparm for max connections: rc=$RC
+	exit $RC
+fi
+
+$NETCONF setparm "$SHARENAME" 'csc policy' "$CSC_POLICY"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+	echo Failure during setparm for csc policy: rc=$RC
+	exit $RC
+fi
