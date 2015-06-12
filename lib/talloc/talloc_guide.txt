@@ -195,7 +195,7 @@ For more control on which parent to remove, see talloc_unlink()
 
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-int talloc_unlink(const void *context, const void *ptr);
+int talloc_unlink(const void *context, void *ptr);
 
 The talloc_unlink() function removes a specific parent from ptr. The
 context passed must either be a context used in talloc_reference()
