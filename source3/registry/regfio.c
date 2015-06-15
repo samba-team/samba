@@ -224,7 +224,7 @@ static bool hbin_block_close( REGF_FILE *file, REGF_HBIN *hbin )
 	/* remove the block from the open list and flush it to disk */
 
 	for ( p=file->block_list; p && p!=hbin; p=p->next )
-		;;
+		;
 
 	if ( p == hbin ) {
 		DLIST_REMOVE( file->block_list, hbin );
