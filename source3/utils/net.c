@@ -743,6 +743,14 @@ static struct functable net_func[] = {
 		   "'net serverid' commands.")
 	},
 
+	{	"notify",
+		net_notify,
+		NET_TRANSPORT_LOCAL,
+		N_("notifyd client code"),
+		N_("  Use 'net help notify' to get more information about "
+		   "'net notify' commands.")
+	},
+
 #ifdef WITH_FAKE_KASERVER
 	{	"afs",
 		net_afs,
