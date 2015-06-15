@@ -2834,7 +2834,7 @@ struct parm_struct parm_table[] = {
 		.label		= "ldap machine suffix",
 		.type		= P_STRING,
 		.p_class	= P_GLOBAL,
-		.offset		= GLOBAL_VAR(szLdapMachineSuffix),
+		.offset		= GLOBAL_VAR(_ldap_machine_suffix),
 		.special	= NULL,
 		.enum_list	= NULL,
 	},

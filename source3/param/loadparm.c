@@ -725,7 +725,7 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 
 	string_set(Globals.ctx, &Globals.passdb_backend, "tdbsam");
 	string_set(Globals.ctx, &Globals.ldap_suffix, "");
-	string_set(Globals.ctx, &Globals.szLdapMachineSuffix, "");
+	string_set(Globals.ctx, &Globals._ldap_machine_suffix, "");
 	string_set(Globals.ctx, &Globals._ldap_user_suffix, "");
 	string_set(Globals.ctx, &Globals._ldap_group_suffix, "");
 	string_set(Globals.ctx, &Globals._ldap_idmap_suffix, "");
@@ -2361,8 +2361,8 @@ static const char *append_ldap_suffix(TALLOC_CTX *ctx, const char *str )
 
 const char *lp_ldap_machine_suffix(TALLOC_CTX *ctx)
 {
-	if (Globals.szLdapMachineSuffix[0])
-		return append_ldap_suffix(ctx, Globals.szLdapMachineSuffix);
+	if (Globals._ldap_machine_suffix[0])
+		return append_ldap_suffix(ctx, Globals._ldap_machine_suffix);
 
 	return lp_string(ctx, Globals.ldap_suffix);
 }
