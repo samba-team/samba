@@ -257,7 +257,6 @@ enum case_handling {CASE_LOWER,CASE_UPPER};
 	char *szLdapMachineSuffix;					\
 	char *szLdapUserSuffix;						\
 	char *szLdapIdmapSuffix;					\
-	char *_ldap_group_suffix;					\
 	char *szIdmapUID;						\
 	char *szIdmapGID;						\
 	char *szIdmapBackend;						\
