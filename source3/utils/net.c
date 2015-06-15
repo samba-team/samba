@@ -889,7 +889,23 @@ static struct functable net_func[] = {
 		}
 	}
 
-	lp_load_global(get_dyn_CONFIGFILE());
+	if (!lp_load_initial_only(get_dyn_CONFIGFILE())) {
+		d_fprintf(stderr, "Can't load %s - run testparm to debug it\n",
+			  get_dyn_CONFIGFILE());
+		exit(1);
+	}
+
+	/*
+	 * Failing to init the msg_ctx isn't a fatal error. Only root-level
+	 * things (joining/leaving domains etc.) will be denied.
+	 */
+	c->msg_ctx = messaging_init(c, samba_tevent_context_init(c));
+
+	if (!lp_load_global(get_dyn_CONFIGFILE())) {
+		d_fprintf(stderr, "Can't load %s - run testparm to debug it\n",
+			  get_dyn_CONFIGFILE());
+		exit(1);
+	}
 
 #if defined(HAVE_BIND_TEXTDOMAIN_CODESET)
 	/* Bind our gettext results to 'unix charset'
@@ -952,11 +968,6 @@ static struct functable net_func[] = {
 	}
 
 	popt_burn_cmdline_password(argc, argv);
-
-	/* Failing to init the msg_ctx isn't a fatal error. Only
-	   root-level things (joining/leaving domains etc.) will be denied. */
-
-	c->msg_ctx = messaging_init(c, samba_tevent_context_init(c));
 
 	rc = net_run_function(c, argc_new-1, argv_new+1, "net", net_func);
 
