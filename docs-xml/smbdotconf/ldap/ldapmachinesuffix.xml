@@ -1,7 +1,7 @@
 <samba:parameter name="ldap machine suffix"
                  context="G"
                  type="string"
-                 generated_function="0"
+                 function="_ldap_machine_suffix"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 
 <description>
