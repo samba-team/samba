@@ -2818,7 +2818,7 @@ struct parm_struct parm_table[] = {
 		.label		= "ldap group suffix",
 		.type		= P_STRING,
 		.p_class	= P_GLOBAL,
-		.offset		= GLOBAL_VAR(szLdapGroupSuffix),
+		.offset		= GLOBAL_VAR(_ldap_group_suffix),
 		.special	= NULL,
 		.enum_list	= NULL,
 	},

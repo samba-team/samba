@@ -727,7 +727,7 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 	string_set(Globals.ctx, &Globals.ldap_suffix, "");
 	string_set(Globals.ctx, &Globals.szLdapMachineSuffix, "");
 	string_set(Globals.ctx, &Globals.szLdapUserSuffix, "");
-	string_set(Globals.ctx, &Globals.szLdapGroupSuffix, "");
+	string_set(Globals.ctx, &Globals._ldap_group_suffix, "");
 	string_set(Globals.ctx, &Globals.szLdapIdmapSuffix, "");
 
 	string_set(Globals.ctx, &Globals.ldap_admin_dn, "");
@@ -2377,8 +2377,8 @@ const char *lp_ldap_user_suffix(TALLOC_CTX *ctx)
 
 const char *lp_ldap_group_suffix(TALLOC_CTX *ctx)
 {
-	if (Globals.szLdapGroupSuffix[0])
-		return append_ldap_suffix(ctx, Globals.szLdapGroupSuffix);
+	if (Globals._ldap_group_suffix[0])
+		return append_ldap_suffix(ctx, Globals._ldap_group_suffix);
 
 	return lp_string(ctx, Globals.ldap_suffix);
 }
