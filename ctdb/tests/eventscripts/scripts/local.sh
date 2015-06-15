@@ -874,6 +874,27 @@ nfs_load_config ()
     done
 }
 
+program_stack_traces ()
+{
+    _prog="$1"
+    _max="${2:-1}"
+
+    _count=1
+    for _pid in ${FAKE_NFSD_THREAD_PIDS:-$FAKE_RPC_THREAD_PIDS} ; do
+	[ $_count -le $_max ] || break
+
+	cat <<EOF
+Stack trace for ${_prog}[${_pid}]:
+[<ffffffff87654321>] fake_stack_trace_for_pid_${_pid}/stack+0x0/0xff
+EOF
+	_count=$(($_count + 1))
+    done
+}
+
+mark_background ()
+{
+    sed -e 's@^@\&@'
+}
 
 # Set the required result for a particular RPC program having failed
 # for a certain number of iterations.  This is probably still a work
@@ -940,43 +961,27 @@ program $_pn version $_ver is not available"
 		    restart*)
 			_p="rpc.${_progname}"
 			case "$_action" in
-			    *:b) _bg="&" ;;
-			    *)   _bg=""  ;;
+			    *:b) _bg=mark_background ;;
+			    *)   _bg=cat  ;;
 			esac
 			case "$_progname" in
 			    nfsd)
+				_t=$(program_stack_traces "nfsd" 5)
+				_t="${_t}${_t:+${_nl}}Starting nfslock: OK
+Starting nfs: OK"
+				_t=$(echo "$_t" | $_bg)
 				_t="\
-Trying to restart NFS service"
-
-				if [ -n "$CTDB_NFS_DUMP_STUCK_THREADS" ] ; then
-				    for _pid in $FAKE_NFSD_THREAD_PIDS ; do
-					_t="\
-$_t
-${_bg}Stack trace for nfsd[${_pid}]:
-${_bg}[<ffffffff87654321>] fake_stack_trace_for_pid_${_pid}/stack+0x0/0xff"
-				    done
-				fi
-
-				_t="\
-${_t}
-${_bg}Starting nfslock: OK
-${_bg}Starting nfs: OK"
+Trying to restart NFS service
+${_t}"
 				;;
 			    lockd)
-				_t="\
-Trying to restart lock manager service
-${_bg}Starting nfslock: OK"
+				_t=$(echo "Starting nfslock: OK" | $_bg)
+				_t="Trying to restart lock manager service${_t:+${_nl}}${_t}"
 				;;
 			    *)
 				_t="Trying to restart $_progname [${_p}]"
-				if [ -n "$CTDB_NFS_DUMP_STUCK_THREADS" ] ; then
-				    for _pid in $FAKE_RPC_THREAD_PIDS ; do
-					_t="\
-$_t
-Stack trace for ${_p}[${_pid}]:
-[<ffffffff87654321>] fake_stack_trace_for_pid_${_pid}/stack+0x0/0xff"
-				    done
-				fi
+				_stacks=$(program_stack_traces "$_p" 5)
+				_t="${_t}${_stacks:+${_nl}}${_stacks}"
 			esac
 			_out="${_out}${_out:+${_nl}}${_t}"
 			;;
