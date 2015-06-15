@@ -1335,33 +1335,24 @@ static int init_fruit_config(vfs_handle_struct *handle)
 	}
 	config->encoding = (enum fruit_encoding)enumval;
 
-	if (lp_parm_bool(SNUM(handle->conn),
-			 FRUIT_PARAM_TYPE_NAME, "veto_appledouble", true)) {
-		config->veto_appledouble = true;
-	}
+	config->veto_appledouble = lp_parm_bool(
+		SNUM(handle->conn), FRUIT_PARAM_TYPE_NAME,
+		"veto_appledouble", true);
 
-	if (lp_parm_bool(-1, FRUIT_PARAM_TYPE_NAME, "aapl", true)) {
-		config->use_aapl = true;
-	}
+	config->use_aapl = lp_parm_bool(
+		-1, FRUIT_PARAM_TYPE_NAME, "aapl", true);
 
-	if (lp_parm_bool(-1, FRUIT_PARAM_TYPE_NAME, "nfs_aces", true)) {
-		config->unix_info_enabled = true;
-	}
+	config->unix_info_enabled = lp_parm_bool(
+		-1, FRUIT_PARAM_TYPE_NAME, "nfs_aces", true);
 
-	if (lp_parm_bool(SNUM(handle->conn),
-			 "readdir_attr", "aapl_rsize", true)) {
-		config->readdir_attr_rsize = true;
-	}
+	config->readdir_attr_rsize = lp_parm_bool(
+		SNUM(handle->conn), "readdir_attr", "aapl_rsize", true);
 
-	if (lp_parm_bool(SNUM(handle->conn),
-			 "readdir_attr", "aapl_finder_info", true)) {
-		config->readdir_attr_finder_info = true;
-	}
+	config->readdir_attr_finder_info = lp_parm_bool(
+		SNUM(handle->conn), "readdir_attr", "aapl_finder_info", true);
 
-	if (lp_parm_bool(SNUM(handle->conn),
-			 "readdir_attr", "aapl_max_access", true)) {
-		config->readdir_attr_max_access = true;
-	}
+	config->readdir_attr_max_access = lp_parm_bool(
+		SNUM(handle->conn), "readdir_attr", "aapl_max_access", true);
 
 	SMB_VFS_HANDLE_SET_DATA(handle, config,
 				NULL, struct fruit_config_data,
