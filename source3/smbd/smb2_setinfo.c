@@ -168,6 +168,12 @@ struct defer_rename_state {
 	int data_size;
 };
 
+static int defer_rename_state_destructor(struct defer_rename_state *rename_state)
+{
+	SAFE_FREE(rename_state->data);
+	return 0;
+}
+
 static void defer_rename_done(struct tevent_req *subreq);
 
 static struct tevent_req *delay_rename_for_lease_break(struct tevent_req *req,
@@ -239,6 +245,8 @@ static struct tevent_req *delay_rename_for_lease_break(struct tevent_req *req,
 	rename_state->fsp = fsp;
 	rename_state->data = data;
 	rename_state->data_size = data_size;
+
+	talloc_set_destructor(rename_state, defer_rename_state_destructor);
 
 	subreq = dbwrap_record_watch_send(
 				rename_state,
@@ -312,6 +320,7 @@ static void defer_rename_done(struct tevent_req *subreq)
 				state->data_size);
 	if (subreq) {
 		/* Yep - keep waiting. */
+		state->data = NULL;
 		TALLOC_FREE(state);
 		TALLOC_FREE(lck);
 		return;
