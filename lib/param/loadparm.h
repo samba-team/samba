@@ -255,7 +255,7 @@ enum case_handling {CASE_LOWER,CASE_UPPER};
 	int CupsEncrypt;						\
 	int  iPreferredMaster;						\
 	char *szLdapMachineSuffix;					\
-	char *szLdapUserSuffix;						\
+	char *_ldap_user_suffix;					\
 	char *szLdapIdmapSuffix;					\
 	char *szIdmapUID;						\
 	char *szIdmapGID;						\
