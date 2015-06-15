@@ -910,7 +910,7 @@ rpc_set_service_failure_response ()
     # The number of failures defaults to the iteration number.  This
     # will be true when we fail from the 1st iteration... but we need
     # the flexibility to set the number of failures.
-    _numfails="${2:-${iteration}}"
+    _numfails="${2:-${iteration:-1}}"
 
     nfs_load_config
 
