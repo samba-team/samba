@@ -157,6 +157,7 @@ struct krb5_krbhst_data {
 				krb5_krbhst_info**);
 
     unsigned int fallback_count;
+    unsigned int try_count;
 
     struct krb5_krbhst_info *hosts, **index, **end;
 };
@@ -1009,6 +1010,21 @@ krb5_krbhst_free(krb5_context context, krb5_krbhst_handle handle)
 
     free(handle->realm);
     free(handle);
+}
+
+void KRB5_LIB_FUNCTION
+krb5_krbhst_retry(krb5_context context, krb5_krbhst_handle handle)
+{
+    ++handle->try_count;
+}
+
+krb5_boolean KRB5_LIB_FUNCTION
+krb5_krbhst_retry_exceeded(krb5_context context, krb5_krbhst_handle handle)
+{
+    if (handle->try_count >= context->max_retries)
+        return TRUE;
+    else
+        return FALSE;
 }
 
 /* backwards compatibility ahead */

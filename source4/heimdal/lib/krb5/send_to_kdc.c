@@ -375,7 +375,7 @@ krb5_sendto (krb5_context context,
 
      krb5_data_zero(receive);
 
-     for (i = 0; i < context->max_retries; ++i) {
+     while (!krb5_krbhst_retry_exceeded(context, handle)) {
 	 krb5_krbhst_info *hi;
 
 	 while (krb5_krbhst_next(context, handle, &hi) == 0) {
@@ -443,6 +443,7 @@ krb5_sendto (krb5_context context,
 	     }
 	 }
 	 krb5_krbhst_reset(context, handle);
+	 krb5_krbhst_retry(context, handle);
      }
      krb5_clear_error_message (context);
      ret = KRB5_KDC_UNREACH;
