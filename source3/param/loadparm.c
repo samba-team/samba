@@ -728,7 +728,7 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 	string_set(Globals.ctx, &Globals.szLdapMachineSuffix, "");
 	string_set(Globals.ctx, &Globals._ldap_user_suffix, "");
 	string_set(Globals.ctx, &Globals._ldap_group_suffix, "");
-	string_set(Globals.ctx, &Globals.szLdapIdmapSuffix, "");
+	string_set(Globals.ctx, &Globals._ldap_idmap_suffix, "");
 
 	string_set(Globals.ctx, &Globals.ldap_admin_dn, "");
 	Globals.ldap_ssl = LDAP_SSL_START_TLS;
@@ -2385,8 +2385,8 @@ const char *lp_ldap_group_suffix(TALLOC_CTX *ctx)
 
 const char *lp_ldap_idmap_suffix(TALLOC_CTX *ctx)
 {
-	if (Globals.szLdapIdmapSuffix[0])
-		return append_ldap_suffix(ctx, Globals.szLdapIdmapSuffix);
+	if (Globals._ldap_idmap_suffix[0])
+		return append_ldap_suffix(ctx, Globals._ldap_idmap_suffix);
 
 	return lp_string(ctx, Globals.ldap_suffix);
 }

@@ -2826,7 +2826,7 @@ struct parm_struct parm_table[] = {
 		.label		= "ldap idmap suffix",
 		.type		= P_STRING,
 		.p_class	= P_GLOBAL,
-		.offset		= GLOBAL_VAR(szLdapIdmapSuffix),
+		.offset		= GLOBAL_VAR(_ldap_idmap_suffix),
 		.special	= NULL,
 		.enum_list	= NULL,
 	},
