@@ -1143,8 +1143,6 @@ static uint32_t reg_perfcount_get_perf_data_block(uint32_t base_index,
 		return 0;
 	}
 
-	reg_perfcount_get_last_counter(base_index);
-
 	retval = _reg_perfcount_assemble_global(block, mem_ctx, base_index, names);
 
 	buffer_size = _reg_perfcount_perf_data_block_fixup(block, mem_ctx);
