@@ -597,6 +597,9 @@ static void ctdbd_socket_handler(struct tevent_context *event_ctx,
 	}
 
 	status = ctdb_handle_message(conn, hdr);
+
+	TALLOC_FREE(hdr);
+
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("could not handle incoming message: %s\n",
 			   nt_errstr(status)));
