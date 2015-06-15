@@ -3117,10 +3117,6 @@ static NTSTATUS get_dc_list(const char *domain,
 		*ordered = true;
 		resolve_order = kdc_order;
 	}
-	if (!resolve_order) {
-		status = NT_STATUS_NO_MEMORY;
-		goto out;
-	}
 
 	/* fetch the server we have affinity for.  Add the
 	   'password server' list to a search for our domain controllers */
