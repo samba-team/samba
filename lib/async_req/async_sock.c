@@ -267,7 +267,7 @@ struct tevent_req *writev_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	}
 
 	if (!tevent_queue_add(queue, ev, req, writev_trigger, NULL)) {
-		tevent_req_nomem(NULL, req);
+		tevent_req_oom(req);
 		return tevent_req_post(req, ev);
 	}
 	return req;
