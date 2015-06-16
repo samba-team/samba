@@ -164,7 +164,7 @@ static __inline__ void st_le32(uint32_t *addr, const uint32_t val)
 /* now the reverse routines - these are used in nmb packets (mostly) */
 #define SREV(x) ((((x)&0xFF)<<8) | (((x)>>8)&0xFF))
 #define IREV(x) ((SREV(x)<<16) | (SREV((x)>>16)))
-#define BREV(x) ((IREV(x)<<32) | (IREV((x)>>32)))
+#define BREV(x) ((IREV((uint64_t)x)<<32) | (IREV(((uint64_t)x)>>32)))
 
 #define RSVAL(buf,pos) SREV(SVAL(buf,pos))
 #define RSVALS(buf,pos) SREV(SVALS(buf,pos))
