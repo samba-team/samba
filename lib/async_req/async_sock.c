@@ -156,7 +156,13 @@ static void async_connect_cleanup(struct tevent_req *req,
 
 	TALLOC_FREE(state->fde);
 	if (state->fd != -1) {
-		fcntl(state->fd, F_SETFL, state->old_sockflags);
+		int ret;
+
+		ret = fcntl(state->fd, F_SETFL, state->old_sockflags);
+		if (ret == -1) {
+			abort();
+		}
+
 		state->fd = -1;
 	}
 }
