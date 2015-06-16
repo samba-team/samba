@@ -372,8 +372,8 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 			nonce_size = AES_GCM_128_IV_SIZE;
 			break;
 		default:
-			ZERO_STRUCT(session_key);
-			return NT_STATUS_INVALID_PARAMETER;
+			nonce_size = 0;
+			break;
 		}
 		x->nonce_high_max = SMB2_NONCE_HIGH_MAX(nonce_size);
 		x->nonce_high = 0;
