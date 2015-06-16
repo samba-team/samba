@@ -1199,8 +1199,12 @@ sub ConvertScalarToPython($$$)
 
 	$ctypename = expandAlias($ctypename);
 
-	if ($ctypename =~ /^(u?int64|hyper|dlong|udlong|udlongr|NTTIME_hyper|NTTIME|NTTIME_1sec)$/) {
+	if ($ctypename =~ /^(int64|dlong)$/) {
 		return "PyLong_FromLongLong($cvar)";
+	}
+
+	if ($ctypename =~ /^(uint64|hyper|udlong|udlongr|NTTIME_hyper|NTTIME|NTTIME_1sec)$/) {
+		return "PyLong_FromUnsignedLongLong($cvar)";
 	}
 
 	if ($ctypename =~ /^(char|u?int[0-9]*|time_t|uid_t|gid_t)$/) {
