@@ -10,3 +10,10 @@ bld.SAMBA3_BINARY('notifyd-tests',
                   deps='''
                     param
                   ''')
+
+bld.SAMBA3_BINARY('notifydd',
+                  source='notifydd.c',
+                  install=False,
+                  deps='''notifyd
+                    param
+                  ''')
