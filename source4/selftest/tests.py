@@ -383,7 +383,7 @@ for env in ["nt4_dc", "fl2003dc"]:
     for t in winbind_wbclient_tests:
         plansmbtorture4testsuite(t, "%s:local" % env, '//$SERVER/tmp -U$DC_USERNAME%$DC_PASSWORD')
 
-for env in ["nt4_dc", "nt4_member", "ad_dc", "ad_dc_ntvfs", "ad_member", "s4member"]:
+for env in ["nt4_dc", "nt4_member", "ad_dc", "ad_dc_ntvfs", "ad_member", "s4member", "chgdcpass"]:
     tests = ["--ping", "--separator",
              "--own-domain",
              "--all-domains",

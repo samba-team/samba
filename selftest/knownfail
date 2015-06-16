@@ -255,6 +255,8 @@
 ^samba4.winbind.struct.show_sequence\(ad_dc_ntvfs:local\)
 ^samba.wbinfo_simple.\(ad_dc_ntvfs:local\).--allocate-uid
 ^samba.wbinfo_simple.\(ad_dc_ntvfs:local\).--allocate-gid
+^samba.wbinfo_simple.\(chgdcpass:local\).--allocate-uid
+^samba.wbinfo_simple.\(chgdcpass:local\).--allocate-gid
 ^samba.wbinfo_simple.\(s4member:local\).--allocate-uid
 ^samba.wbinfo_simple.\(s4member:local\).--allocate-gid
 ^samba.wbinfo_simple.\(ad_dc:local\).--allocate-uid
@@ -305,10 +307,21 @@
 ^samba.blackbox.wbinfo\(ad_dc_ntvfs:local\).wbinfo -I against ad_dc_ntvfs\(ad_dc_ntvfs:local\)
 ^samba.blackbox.wbinfo\(ad_dc_ntvfs:local\).wbinfo  --trusted-domains against ad_dc_ntvfs\(ad_dc_ntvfs:local\)
 ^samba.blackbox.wbinfo\(ad_dc_ntvfs:local\).wbinfo --all-domains against ad_dc_ntvfs\(ad_dc_ntvfs:local\)
+^samba.wbinfo_simple.\(chgdcpass:local\).--all-domains.wbinfo\(chgdcpass:local\)
+^samba.wbinfo_simple.\(chgdcpass:local\).--trusted-domains.wbinfo\(chgdcpass:local\)
+^samba.wbinfo_simple.\(chgdcpass:local\).--online-status.wbinfo\(chgdcpass:local\)
+^samba.wbinfo_simple.\(chgdcpass:local\).--online-status --domain=BUILTIN.wbinfo\(chgdcpass:local\)
+^samba.wbinfo_simple.\(chgdcpass:local\).--online-status --domain=CHDCDOMAIN.wbinfo\(chgdcpass:local\)
+^samba.wbinfo_simple.\(chgdcpass:local\).--change-secret --domain=CHDCDOMAIN.wbinfo\(chgdcpass:local\)
+^samba.wbinfo_simple.\(chgdcpass:local\).--online-status --domain=CHDCDOMAIN.wbinfo\(chgdcpass:local\)
+^samba.blackbox.wbinfo\(chgdcpass:local\).wbinfo -I against chgdcpass\(chgdcpass:local\)
+^samba.blackbox.wbinfo\(chgdcpass:local\).wbinfo  --trusted-domains against chgdcpass\(chgdcpass:local\)
+^samba.blackbox.wbinfo\(chgdcpass:local\).wbinfo --all-domains against chgdcpass\(chgdcpass:local\)
 #
 # This will fail against the NTVFS DC, because it requires functionality only in winbindd
 #
 ^samba4.winbind.pac.*\(ad_dc_ntvfs:local\) # Not implemented
+^samba4.winbind.pac.*\(chgdcpass:local\) # Not implemented
 #
 # These do not work against winbindd in member mode for unknown reasons
 #
@@ -318,6 +331,8 @@
 ^samba.blackbox.wbinfo\(ad_member:local\).wbinfo -G check for sane mapping\(ad_member:local\)
 ^samba.ntlm_auth.\(ad_dc_ntvfs:local\).ntlm_auth against winbindd with failed require-membership-of
 ^samba.ntlm_auth.\(ad_dc_ntvfs:local\).ntlm_auth with NTLMSSP gss-spnego-client and gss-spnego server against winbind with failed require-membership-of
+^samba.ntlm_auth.\(chgdcpass:local\).ntlm_auth against winbindd with failed require-membership-of
+^samba.ntlm_auth.\(chgdcpass:local\).ntlm_auth with NTLMSSP gss-spnego-client and gss-spnego server against winbind with failed require-membership-of
 ^samba4.winbind.struct.getdcname\(nt4_member:local\) # Works in other modes, just not against the classic/NT4 DC
 #
 # Differences in our KDC compared to windows
