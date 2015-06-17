@@ -799,7 +799,8 @@ setup_nfs ()
 	debug "Setting up NFS environment: all RPC services up, NFS managed by CTDB"
 
 	eventscript_call ctdb_service_managed
-	service "nfs" force-started  # might not be enough
+	service "nfs" force-started
+	service "nfslock" force-started
 
 	export CTDB_MANAGED_SERVICES="foo nfs bar"
 
@@ -808,7 +809,8 @@ setup_nfs ()
 	debug "Setting up NFS environment: all RPC services down, NFS not managed by CTDB"
 
 	eventscript_call ctdb_service_unmanaged
-	service "nfs" force-stopped  # might not be enough
+	service "nfs" force-stopped
+	service "nfslock" force-stopped
 	eventscript_call startstop_nfs stop
 
 	export CTDB_MANAGED_SERVICES="foo bar"
