@@ -305,7 +305,7 @@ class KCC(object):
                                     " it must be RODC.\n"
                                     "Let's add it, because my_dsa is special!"
                                     "\n(likewise for self.dsa_by_guid)" %
-                                    self.my_dsas_dnstr)
+                                    self.my_dsa_dnstr)
 
             self.dsa_by_dnstr[self.my_dsa_dnstr] = self.my_dsa
             self.dsa_by_guid[str(self.my_dsa.dsa_guid)] = self.my_dsa
