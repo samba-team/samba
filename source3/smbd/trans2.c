@@ -2363,6 +2363,7 @@ static void call_trans2findfirst(connection_struct *conn,
 	struct smbd_server_connection *sconn = req->sconn;
 	uint32_t ucf_flags = (UCF_SAVE_LCOMP | UCF_ALWAYS_ALLOW_WCARD_LCOMP);
 	bool backup_priv = false;
+	bool as_root = false;
 
 	if (total_params < 13) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
@@ -2428,6 +2429,7 @@ close_if_end = %d requires_resume_key = %d backup_priv = %d level = 0x%x, max_da
 
 	if (backup_priv) {
 		become_root();
+		as_root = true;
 		ntstatus = filename_convert_with_privilege(ctx,
 				conn,
 				req,
@@ -2683,7 +2685,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	}
  out:
 
-	if (backup_priv) {
+	if (as_root) {
 		unbecome_root();
 	}
 
@@ -2737,6 +2739,7 @@ static void call_trans2findnext(connection_struct *conn,
 	struct dptr_struct *dirptr;
 	struct smbd_server_connection *sconn = req->sconn;
 	bool backup_priv = false; 
+	bool as_root = false;
 
 	if (total_params < 13) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
@@ -2905,6 +2908,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 
 	if (backup_priv) {
 		become_root();
+		as_root = true;
 	}
 
 	/*
@@ -2996,7 +3000,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		dptr_close(sconn, &dptr_num); /* This frees up the saved mask */
 	}
 
-	if (backup_priv) {
+	if (as_root) {
 		unbecome_root();
 	}
 
