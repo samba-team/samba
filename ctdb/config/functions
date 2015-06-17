@@ -469,20 +469,19 @@ _nfs_restart_rpc_service ()
 }
 
 ######################################################
-# check that a rpc server is registered with portmap
-# and responding to requests
-# usage: ctdb_check_rpc SERVICE_NAME VERSION
+# Check an RPC service with rpcinfo
 ######################################################
 ctdb_check_rpc ()
 {
-    progname="$1"
-    version="$2"
-    _family="${3:-tcp}"
+    _progname="$1"        # passed to rpcinfo (looked up in /etc/rpc)
+    _version="$2"         # optional, not passed if empty/unset
+    _family="${3:-tcp}"   # optional, default is "tcp"
 
     _localhost="${CTDB_RPCINFO_LOCALHOST:-127.0.0.1}"
 
-    if ! ctdb_check_rpc_out=$(rpcinfo -T $_family $_localhost $progname $version 2>&1) ; then
-	ctdb_check_rpc_out="ERROR: $progname failed RPC check:
+    if ! ctdb_check_rpc_out=$(rpcinfo -T $_family $_localhost \
+				      $_progname $_version 2>&1) ; then
+	ctdb_check_rpc_out="ERROR: $_progname failed RPC check:
 $ctdb_check_rpc_out"
 	echo "$ctdb_check_rpc_out"
 	return 1
