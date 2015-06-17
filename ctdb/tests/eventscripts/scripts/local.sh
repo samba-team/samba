@@ -1259,3 +1259,58 @@ EOF
 
     result_footer "$_result"
 }
+
+# Run an NFS eventscript iteratively.
+#
+# - 1st argument is the number of iterations.
+#
+# - 2nd argument is the NFS/RPC service being tested
+#
+#   rpcinfo is used on each iteration to test the availability of the
+#   service
+#
+# - Subsequent arguments come in pairs: an iteration number and
+#   something to eval before that iteration.  Each time an iteration
+#   number is matched the associated argument is given to eval after
+#   the default setup is done.  The iteration numbers need to be given
+#   in ascending order.
+#
+#   These arguments can allow a service to be started or stopped
+#   before a particular iteration.
+#
+nfs_iterate_test ()
+{
+    _repeats="$1"
+    _rpc_service="$2"
+    shift 2
+
+    echo "Running $_repeats iterations of \"$script $event\" $args"
+
+    _iterate_failcount=0
+    for _iteration in $(seq 1 $_repeats) ; do
+	# This is not a numerical comparison because $1 will often not
+	# be set.
+	if [ "$_iteration" = "$1" ] ; then
+	    debug "##################################################"
+	    eval "$2"
+	    debug "##################################################"
+	    shift 2
+	fi
+	if rpcinfo -T tcp localhost "$_rpc_service" >/dev/null 2>&1 ; then
+	    _iterate_failcount=0
+	else
+	    _iterate_failcount=$(($_iterate_failcount + 1))
+	fi
+	rpc_set_service_failure_response "$_rpc_service" $_iterate_failcount
+	_out=$(simple_test 2>&1)
+	_ret=$?
+	if "$TEST_VERBOSE" || [ $_ret -ne 0 ] ; then
+	    echo "##################################################"
+	    echo "Iteration ${_iteration}:"
+	    echo "$_out"
+	fi
+	if [ $_ret -ne 0 ] ; then
+	    exit $_ret
+	fi
+    done
+}
