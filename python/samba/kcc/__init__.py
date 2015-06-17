@@ -2348,13 +2348,21 @@ class KCC(object):
                          for dsa in site.dsa_table.values()])
         return dsas
 
-    def load_samdb(self, dburl, lp, creds):
+    def load_samdb(self, dburl, lp, creds, force=False):
         """Load the database using an url, loadparm, and credentials
+
+        If force is False, the samdb won't be reloaded if it already
+        exists.
 
         :param dburl: a database url.
         :param lp: a loadparm object.
         :param creds: a Credentials object.
+        :param force: a boolean indicating whether to overwrite.
+
         """
+        if self.samdb is not None and not force:
+            return
+
         self.samdb = SamDB(url=dburl,
                            session_info=system_session(),
                            credentials=creds, lp=lp)
@@ -2411,15 +2419,12 @@ class KCC(object):
                determine link availability (boolean, default False)
         :return: 1 on error, 0 otherwise
         """
-        # We may already have a samdb setup if we are
-        # currently importing an ldif for a test run
-        if self.samdb is None:
-            try:
-                self.load_samdb(dburl, lp, creds)
-            except ldb.LdbError, (num, msg):
-                logger.error("Unable to open sam database %s : %s" %
-                             (dburl, msg))
-                return 1
+        try:
+            self.load_samdb(dburl, lp, creds, force=False)
+        except ldb.LdbError, (num, msg):
+            logger.error("Unable to open sam database %s : %s" %
+                         (dburl, msg))
+            return 1
 
         if forced_local_dsa:
             self.samdb.set_ntds_settings_dn("CN=NTDS Settings,%s" %

@@ -301,7 +301,7 @@ if opts.importldif:
         sys.exit(rc)
 
 if opts.list_valid_dsas:
-    kcc.load_samdb(opts.dburl, lp, creds)
+    kcc.load_samdb(opts.dburl, lp, creds, force=False)
     print '\n'.join(kcc.list_dsas())
     sys.exit()
 
