@@ -261,14 +261,15 @@ class KCC(object):
         :return: None
         :raise: KCCError if DSA can't be found
         """
-        dn = ldb.Dn(self.samdb, "<GUID=%s>" % self.samdb.get_ntds_GUID())
+        dn_query = "<GUID=%s>" % self.samdb.get_ntds_GUID()
+        dn = ldb.Dn(self.samdb, dn_query)
         try:
             res = self.samdb.search(base=dn, scope=ldb.SCOPE_BASE,
                                     attrs=["objectGUID"])
         except ldb.LdbError, (enum, estr):
-            logger.warning("Search for %s failed: %s.  This typically happens"
-                           " in --importldif mode due to lack of module"
-                           " support.", dn, estr)
+            logger.warning("Search for dn '%s' [from %s] failed: %s. "
+                           "This typically happens in --importldif mode due "
+                           "to lack of module support.", dn, dn_query, estr)
             try:
                 # We work around the failure above by looking at the
                 # dsServiceName that was put in the fake rootdse by
