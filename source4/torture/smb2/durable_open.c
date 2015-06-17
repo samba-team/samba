@@ -42,6 +42,13 @@
 		ret = false; \
 	}} while (0)
 
+#define CHECK_NOT_NULL(p) do { \
+	if ((p) == NULL) { \
+		torture_result(tctx, TORTURE_FAIL, "(%s): %s is NULL but it should not be.\n", \
+				__location__, #p); \
+		ret = false; \
+	}} while (0)
+
 #define CHECK_STATUS(status, correct) do { \
 	if (!NT_STATUS_EQUAL(status, correct)) { \
 		torture_result(tctx, TORTURE_FAIL, __location__": Incorrect status %s - should be %s", \
@@ -2267,7 +2274,7 @@ static bool test_durable_open_alloc_size(struct torture_context *tctx,
 
 	/* prepare buffer */
 	b = talloc_zero_size(mem_ctx, alloc_size_step);
-	CHECK_NOT_VAL(b, NULL);
+	CHECK_NOT_NULL(b);
 
 	previous_session_id = smb2cli_session_current_id(tree->session->smbXcli);
 
