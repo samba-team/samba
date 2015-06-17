@@ -9,6 +9,5 @@ define_test "statd down, 8 iterations, back up after 2"
 setup_nfs
 rpc_services_down "status"
 
-iterate_test 8 'ok_null' \
-    2 'rpc_set_service_failure_response "status"' \
+nfs_iterate_test 8 "status" \
     3 'rpc_services_up "status"'
