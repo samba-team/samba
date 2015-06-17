@@ -469,6 +469,146 @@ _nfs_restart_rpc_service ()
 }
 
 ######################################################
+# Check the health of NFS services
+#
+# Use .check files in given directory.
+# Default is "${CTDB_BASE}/nfs-checks.d/"
+######################################################
+nfs_check_services ()
+{
+    _dir="${1:-${CTDB_NFS_CHECKS_DIR:-${CTDB_BASE}/nfs-checks.d}}"
+
+    # Files must end with .check - avoids editor backups, RPM fu, ...
+    for _f in "$_dir"/[0-9][0-9].*.check ; do
+	_t="${_f%.check}"
+	_progname="${_t##*/[0-9][0-9].}"
+
+	nfs_check_service "$_progname" <"$_f"
+    done
+}
+
+######################################################
+# Check the health of an NFS service
+#
+# $1 - progname, passed to rpcinfo (looked up in /etc/rpc)
+#
+# Reads variables from stdin
+#
+# Variables are:
+#
+# * family             - "tcp" or "udp" or space separated list
+#                        default: tcp
+# * version            - optional, RPC service version number
+#                        default is to omit to check for any version
+# * unhealthy_after    - number of check fails before unhealthy
+#                        default: 1
+# * restart_every      - number of check fails before restart
+#                        default: 0, meaning no restart
+# * service_stop_cmd   - command to stop service
+#                        default: no default, must be provided if
+#                                 restart_every > 0
+# * service_start_cmd  - command to start service
+#                        default: no default, must be provided if
+#                                 restart_every > 0
+# * service_debug_cmd  - command to debug a service after trying to stop it;
+#                        for example, it can be useful to print stack
+#                        traces of threads that have not exited, since
+#                        they may be stuck doing I/O;
+#                        no default, see also function program_stack_traces()
+#
+# Quoting in values is not preserved
+#
+######################################################
+nfs_check_service ()
+{
+    _progname="$1"
+
+    (
+	# Subshell to restrict scope variables...
+
+	# Defaults
+	family="tcp"
+	version=""
+	unhealthy_after=1
+	restart_every=0
+	service_stop_cmd=""
+	service_start_cmd=""
+	service_debug_cmd=""
+
+	# Eval line-by-line.  Expands variable references in values.
+	# Also allows variable name checking, which seems useful.
+	while read _line ; do
+	    case "$_line" in
+		\#*|"") : ;; # Ignore comments, blank lines
+
+		family=*|version=*|\
+		unhealthy_after=*|restart_every=*|\
+		service_stop_cmd=*|service_start_cmd=*|\
+		service_debug_cmd=*)
+
+		    eval "$_line"
+		    ;;
+		*)
+		    echo "ERROR: Unknown variable for ${_progname}: ${_line}"
+		    exit 1
+	    esac
+	done
+
+	_service_name="nfs_${_progname}"
+
+	if nfs_check_rpcinfo \
+	       "$_progname" "$version" "$family" >/dev/null ; then
+	    if [ $unhealthy_after -ne 1 -o $restart_every -ne 0 ] ; then
+		ctdb_counter_init "$_service_name"
+	    fi
+	    exit 0
+	fi
+
+	ctdb_counter_incr "$_service_name"
+	_failcount=$(ctdb_counter_get "$_service_name")
+
+	_unhealthy=false
+	if [ $unhealthy_after -gt 0 ] ; then
+	    if [ $_failcount -ge $unhealthy_after ] ; then
+		_unhealthy=true
+		echo "ERROR: $ctdb_check_rpc_out"
+	    fi
+	fi
+
+	if [ $restart_every -gt 0 ] ; then
+	    if [ $(($_failcount % $restart_every)) -eq 0 ] ; then
+		if ! $_unhealthy ; then
+		    echo "WARNING: $ctdb_check_rpc_out"
+		fi
+		nfs_restart_service
+	    fi
+	fi
+
+	if $_unhealthy ; then
+	    exit 1
+	fi
+
+	return 0
+    ) || exit 1
+}
+
+# Uses: stop_service, start_service, debug_stuck_threads
+nfs_restart_service ()
+{
+    if [ -z "$service_stop_cmd" -o -z "$service_start_cmd" ] ; then
+	die "ERROR: Can not restart service \"${_progname}\" without corresponding service_start_cmd/service_stop_cmd settings"
+    fi
+
+    echo "Trying to restart service \"${_progname}\"..."
+    # Using eval means variables can contain semicolon separated commands
+    eval "$service_stop_cmd"
+    if [ -n "$service_debug_cmd" ] ; then
+	eval "$service_debug_cmd"
+    fi
+    background_with_logging eval "$service_start_cmd"
+}
+
+######################################################
 # Check an RPC service with rpcinfo
 ######################################################
 ctdb_check_rpc ()
@@ -486,6 +626,23 @@ $ctdb_check_rpc_out"
 	echo "$ctdb_check_rpc_out"
 	return 1
     fi
+}
+
+nfs_check_rpcinfo ()
+{
+    _progname="$1"        # passed to rpcinfo (looked up in /etc/rpc)
+    _versions="$2"        # optional, space separated, not passed if empty/unset
+    _families="${3:-tcp}" # optional, space separated, default is "tcp"
+
+    for _family in $_families ; do
+	if [ -n "$_versions" ] ; then
+	    for _version in $_versions ; do
+		ctdb_check_rpc $_progname $_version $_family || return $?
+	    done
+	else
+	    ctdb_check_rpc $_progname "" $_family || return $?
+	fi
+    done
 }
 
 ######################################################
