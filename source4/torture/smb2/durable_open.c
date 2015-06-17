@@ -35,10 +35,10 @@
 		ret = false; \
 	}} while (0)
 
-#define CHECK_NOT_VAL(v, correct) do { \
-	if ((v) == (correct)) { \
+#define CHECK_NOT_VAL(v, incorrect) do { \
+	if ((v) == (incorrect)) { \
 		torture_result(tctx, TORTURE_FAIL, "(%s): wrong value for %s got 0x%llx - should not be 0x%llx\n", \
-				__location__, #v, (unsigned long long)v, (unsigned long long)correct); \
+				__location__, #v, (unsigned long long)v, (unsigned long long)incorrect); \
 		ret = false; \
 	}} while (0)
 
