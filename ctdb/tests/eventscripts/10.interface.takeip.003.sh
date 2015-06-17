@@ -12,14 +12,11 @@ t="${public_address#* }"
 ip="${t% *}"
 bits="${t#* }"
 
-# This is a bit gross and contrived.  The method of quoting the error
-# message so it makes it to required_result() is horrible.  Hopefully
-# improvements will come.
+ok_null
+simple_test $public_address
 
-err2="\
+required_result 1 <<EOF
 RTNETLINK answers: File exists
-Failed to add $ip/$bits on dev $dev"
-
-#EVENTSCRIPTS_TESTS_TRACE="sh -x"
-iterate_test -- $public_address -- 2 "ok_null" \
-    2 'required_result 1 "$err2"'
+Failed to add $ip/$bits on dev $dev
+EOF
+simple_test $public_address
