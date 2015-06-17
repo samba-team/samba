@@ -484,9 +484,10 @@ class KCC(object):
             #     cn!objectGUID < cn2!objectGUID
             #
             # Bit NTDSCONN_OPT_RODC_TOPOLOGY is clear in cn!options
+            if not cn_conn.is_generated():
+                continue
+
             if same_site:
-                if not cn_conn.is_generated():
-                    continue
 
                 if self.my_site.is_cleanup_ntdsconn_disabled():
                     continue
@@ -542,9 +543,6 @@ class KCC(object):
             else:  # different site
 
                 if not mydsa.is_istg():
-                    continue
-
-                if not cn_conn.is_generated():
                     continue
 
                 # TODO
