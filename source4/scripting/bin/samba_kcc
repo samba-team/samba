@@ -54,7 +54,7 @@ from samba.kcc import KCC
 # If DEFAULT_RNG_SEED is None, /dev/urandom or system time is used.
 DEFAULT_RNG_SEED = None
 
-def test_all_reps_from(lp, creds, unix_now, rng_seed=None):
+def test_all_reps_from(kcc, lp, creds, unix_now, rng_seed=None):
     """Run the KCC from all DSAs in read-only mode
 
     The behaviour depends on the global opts variable which contains
@@ -69,11 +69,8 @@ def test_all_reps_from(lp, creds, unix_now, rng_seed=None):
     :return None:
     """
     # This implies readonly and attempt_live_connections
-    kcc = KCC(unix_now, readonly=True,
-              verify=opts.verify, debug=opts.debug,
-              dot_file_dir=opts.dot_file_dir)
-    kcc.load_samdb(opts.dburl, lp, creds)
     dsas = kcc.list_dsas()
+    samdb = kcc.samdb
     needed_parts = {}
     current_parts = {}
 
@@ -93,6 +90,7 @@ def test_all_reps_from(lp, creds, unix_now, rng_seed=None):
         kcc = KCC(unix_now, readonly=True,
                   verify=opts.verify, debug=opts.debug,
                   dot_file_dir=opts.dot_file_dir)
+        kcc.samdb = samdb
         kcc.run(opts.dburl, lp, creds, forced_local_dsa=dsa_dn,
                 forget_local_links=opts.forget_local_links,
                 forget_intersite_links=opts.forget_intersite_links,
@@ -243,6 +241,9 @@ if opts.list_verify_tests:
     list_verify_tests()
     sys.exit(0)
 
+if opts.test_all_reps_from:
+    opts.readonly = True
+
 if opts.debug:
     logger.setLevel(logging.DEBUG)
 elif opts.readonly:
@@ -273,15 +274,9 @@ creds = credopts.get_credentials(lp, fallback_machine=True)
 if opts.dburl is None:
     opts.dburl = lp.samdb_url()
 
-if opts.test_all_reps_from:
-    opts.readonly = True
-    test_all_reps_from(kcc, lp, creds, unix_now, rng_seed=opts.seed)
-    sys.exit()
-
 # Instantiate Knowledge Consistency Checker and perform run
 kcc = KCC(unix_now, readonly=opts.readonly, verify=opts.verify,
           debug=opts.debug, dot_file_dir=opts.dot_file_dir)
-
 
 if opts.exportldif:
     rc = kcc.export_ldif(opts.dburl, lp, creds, opts.exportldif)
@@ -296,6 +291,11 @@ if opts.importldif:
                          forced_local_dsa=opts.forced_local_dsa)
     if rc != 0:
         sys.exit(rc)
+
+if opts.test_all_reps_from:
+    kcc.load_samdb(opts.dburl, lp, creds, force=False)
+    test_all_reps_from(kcc, lp, creds, unix_now, rng_seed=opts.seed)
+    sys.exit()
 
 if opts.list_valid_dsas:
     kcc.load_samdb(opts.dburl, lp, creds, force=False)
