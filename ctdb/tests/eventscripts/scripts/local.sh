@@ -896,6 +896,17 @@ mark_background ()
     sed -e 's@^@\&@'
 }
 
+convert_progname ()
+{
+    case "$1" in
+	nfs)      echo "nfsd" ;;
+	nlockmgr) echo "lockd" ;;
+	status)   echo "statd" ;;
+	*)        echo "$1" ;;
+    esac
+}
+
+
 # Set the required result for a particular RPC program having failed
 # for a certain number of iterations.  This is probably still a work
 # in progress.  Note that we could hook aggressively
@@ -906,11 +917,13 @@ mark_background ()
 # function being incomplete.
 rpc_set_service_failure_response ()
 {
-    _progname="$1"
+    _rpc_service="$1"
     # The number of failures defaults to the iteration number.  This
     # will be true when we fail from the 1st iteration... but we need
     # the flexibility to set the number of failures.
     _numfails="${2:-${iteration:-1}}"
+
+    _progname=$(convert_progname "$_rpc_service")
 
     nfs_load_config
 
@@ -947,16 +960,14 @@ rpc_set_service_failure_response ()
 		case "$_action" in
 		    verbose)
 			_ver=1
-			_pn="$_progname"
-			case "$_progname" in
-			    nfsd) _ver=3 ; _pn="nfs" ;;
-			    lockd) _ver=4 ; _pn="nlockmgr" ;;
-			    statd) _pn="status" ;;
+			case "$_rpc_service" in
+			    nfs)      _ver=3 ;;
+			    nlockmgr) _ver=4 ;;
 			esac
 			_out="\
-ERROR: $_pn failed RPC check:
+ERROR: $_rpc_service failed RPC check:
 rpcinfo: RPC: Program not registered
-program $_pn version $_ver is not available"
+program $_rpc_service version $_ver is not available"
 			;;
 		    restart*)
 			_p="rpc.${_progname}"

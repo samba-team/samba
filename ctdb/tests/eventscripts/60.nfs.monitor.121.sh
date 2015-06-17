@@ -11,7 +11,6 @@ define_test "lockd down, 15 iterations"
 setup_nfs
 rpc_services_down "nlockmgr"
 
-#EVENTSCRIPTS_TESTS_TRACE="sh -x"
 iterate_test 15 "ok_null" \
-    10 "rpc_set_service_failure_response 'lockd'" \
-    15 "rpc_set_service_failure_response 'lockd'"
+    10 "rpc_set_service_failure_response 'nlockmgr'" \
+    15 "rpc_set_service_failure_response 'nlockmgr'"

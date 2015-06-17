@@ -12,4 +12,4 @@ CTDB_NFS_DUMP_STUCK_THREADS=2
 FAKE_RPC_THREAD_PIDS="1001"
 
 iterate_test 2 'ok_null' \
-    2 'rpc_set_service_failure_response "statd"'
+    2 'rpc_set_service_failure_response "status"'
