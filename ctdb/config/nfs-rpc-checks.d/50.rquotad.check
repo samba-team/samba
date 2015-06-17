@@ -1,1 +1,2 @@
--gt 0 verbose restart:b
+-ge 6 verbose restart:b unhealthy
+%   2 verbose restart:b
