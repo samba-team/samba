@@ -51,6 +51,8 @@ import logging
 from samba.kcc.debug import logger, DEBUG, DEBUG_FN
 from samba.kcc import KCC
 
+# If DEFAULT_RNG_SEED is None, /dev/urandom or system time is used.
+DEFAULT_RNG_SEED = None
 
 def test_all_reps_from(lp, creds, unix_now, rng_seed=None):
     """Run the KCC from all DSAs in read-only mode
@@ -86,7 +88,7 @@ def test_all_reps_from(lp, creds, unix_now, rng_seed=None):
     vertex_colours = []
 
     for dsa_dn in dsas:
-        if rng_seed:
+        if rng_seed is not None:
             random.seed(rng_seed)
         kcc = KCC(unix_now, readonly=True,
                   verify=opts.verify, debug=opts.debug,
@@ -185,7 +187,7 @@ parser.add_option("--dot-file-dir", default=None,
 
 parser.add_option("--seed",
                   help="random number seed",
-                  type=int)
+                  type=int, default=DEFAULT_RNG_SEED)
 
 parser.add_option("--importldif",
                   help="import topology ldif file",
@@ -248,11 +250,7 @@ elif opts.readonly:
 else:
     logger.setLevel(logging.WARNING)
 
-# initialize seed from optional input parameter
-if opts.seed:
-    random.seed(opts.seed)
-else:
-    random.seed(0xACE5CA11)
+random.seed(opts.seed)
 
 if opts.now:
     for timeformat in ("%Y%m%d%H%M%S%Z", "%Y%m%d%H%M%S"):
@@ -277,8 +275,7 @@ if opts.dburl is None:
 
 if opts.test_all_reps_from:
     opts.readonly = True
-    rng_seed = opts.seed or 0xACE5CA11
-    test_all_reps_from(lp, creds, unix_now, rng_seed=rng_seed)
+    test_all_reps_from(kcc, lp, creds, unix_now, rng_seed=opts.seed)
     sys.exit()
 
 # Instantiate Knowledge Consistency Checker and perform run
