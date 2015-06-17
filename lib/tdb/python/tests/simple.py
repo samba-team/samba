@@ -46,19 +46,18 @@ class InternalTdbTests(TestCase):
         self.assertEquals(repr(self.tdb), "Tdb(<internal>)")
 
 
-class SimpleTdbTests(TestCase):
+class CommonTdbTests(TestCase):
+    """Tests common to both the text & bytes interfaces"""
+
+    use_text = False
 
     def setUp(self):
-        super(SimpleTdbTests, self).setUp()
+        super(CommonTdbTests, self).setUp()
         self.tdb = tdb.Tdb(tempfile.mkstemp()[1], 0, tdb.DEFAULT,
                            os.O_CREAT|os.O_RDWR)
         self.assertNotEqual(None, self.tdb)
-
-    def tearDown(self):
-        del self.tdb
-
-    def test_repr(self):
-        self.assertTrue(repr(self.tdb).startswith("Tdb('"))
+        if self.use_text:
+            self.tdb = self.tdb.text
 
     def test_lockall(self):
         self.tdb.lock_all()
@@ -76,6 +75,39 @@ class SimpleTdbTests(TestCase):
 
     def test_reopen(self):
         self.tdb.reopen()
+
+    def test_hash_size(self):
+        self.tdb.hash_size
+
+    def test_map_size(self):
+        self.tdb.map_size
+
+    def test_freelist_size(self):
+        self.tdb.freelist_size
+
+    def test_name(self):
+        self.tdb.filename
+
+    def test_add_flags(self):
+        self.tdb.add_flags(tdb.NOMMAP)
+        self.tdb.remove_flags(tdb.NOMMAP)
+
+
+class TextCommonTdbTests(CommonTdbTests):
+
+    use_text = True
+
+
+class SimpleTdbTests(TestCase):
+
+    def setUp(self):
+        super(SimpleTdbTests, self).setUp()
+        self.tdb = tdb.Tdb(tempfile.mkstemp()[1], 0, tdb.DEFAULT,
+                           os.O_CREAT|os.O_RDWR)
+        self.assertNotEqual(None, self.tdb)
+
+    def test_repr(self):
+        self.assertTrue(repr(self.tdb).startswith("Tdb('"))
 
     def test_store(self):
         self.tdb.store(b"bar", b"bla")
@@ -101,18 +133,6 @@ class SimpleTdbTests(TestCase):
 
     def test_keyerror(self):
         self.assertRaises(KeyError, lambda: self.tdb[b"bla"])
-
-    def test_hash_size(self):
-        self.tdb.hash_size
-
-    def test_map_size(self):
-        self.tdb.map_size
-
-    def test_freelist_size(self):
-        self.tdb.freelist_size
-
-    def test_name(self):
-        self.tdb.filename
 
     def test_iterator(self):
         self.tdb[b"bla"] = b"1"
@@ -177,9 +197,107 @@ class SimpleTdbTests(TestCase):
         self.tdb[b"entry"] = b"value"
         self.assertEquals(1, len(list(self.tdb)))
 
-    def test_add_flags(self):
-        self.tdb.add_flags(tdb.NOMMAP)
-        self.tdb.remove_flags(tdb.NOMMAP)
+
+class TdbTextTests(TestCase):
+
+    def setUp(self):
+        super(TdbTextTests, self).setUp()
+        self.tdb = tdb.Tdb(tempfile.mkstemp()[1], 0, tdb.DEFAULT,
+                           os.O_CREAT|os.O_RDWR)
+        self.assertNotEqual(None, self.tdb)
+
+    def test_repr(self):
+        self.assertTrue(repr(self.tdb).startswith("Tdb('"))
+
+    def test_store(self):
+        self.tdb.text.store("bar", "bla")
+        self.assertEquals("bla", self.tdb.text.get("bar"))
+
+    def test_getitem(self):
+        self.tdb.text["bar"] = "foo"
+        self.tdb.reopen()
+        self.assertEquals("foo", self.tdb.text["bar"])
+
+    def test_delete(self):
+        self.tdb.text["bar"] = "foo"
+        del self.tdb.text["bar"]
+        self.assertRaises(KeyError, lambda: self.tdb.text["bar"])
+
+    def test_contains(self):
+        self.tdb.text["bla"] = "bloe"
+        self.assertTrue("bla" in self.tdb.text)
+        self.assertFalse("qwertyuiop" in self.tdb.text)
+        if sys.version_info < (3, 0):
+            self.assertTrue(self.tdb.text.has_key("bla"))
+            self.assertFalse(self.tdb.text.has_key("qwertyuiop"))
+
+    def test_keyerror(self):
+        self.assertRaises(KeyError, lambda: self.tdb.text["bla"])
+
+    def test_iterator(self):
+        self.tdb.text["bla"] = "1"
+        self.tdb.text["brainslug"] = "2"
+        l = list(self.tdb.text)
+        l.sort()
+        self.assertEquals(["bla", "brainslug"], l)
+
+    def test_transaction_cancel(self):
+        self.tdb.text["bloe"] = "2"
+        self.tdb.transaction_start()
+        self.tdb.text["bloe"] = "1"
+        self.tdb.transaction_cancel()
+        self.assertEquals("2", self.tdb.text["bloe"])
+
+    def test_transaction_commit(self):
+        self.tdb.text["bloe"] = "2"
+        self.tdb.transaction_start()
+        self.tdb.text["bloe"] = "1"
+        self.tdb.transaction_commit()
+        self.assertEquals("1", self.tdb.text["bloe"])
+
+    def test_transaction_prepare_commit(self):
+        self.tdb.text["bloe"] = "2"
+        self.tdb.transaction_start()
+        self.tdb.text["bloe"] = "1"
+        self.tdb.transaction_prepare_commit()
+        self.tdb.transaction_commit()
+        self.assertEquals("1", self.tdb.text["bloe"])
+
+    def test_iterkeys(self):
+        self.tdb.text["bloe"] = "2"
+        self.tdb.text["bla"] = "25"
+        if sys.version_info >= (3, 0):
+            i = self.tdb.text.keys()
+        else:
+            i = self.tdb.text.iterkeys()
+        self.assertEquals(set(["bloe", "bla"]), set([next(i), next(i)]))
+
+    def test_clear(self):
+        self.tdb.text["bloe"] = "2"
+        self.tdb.text["bla"] = "25"
+        self.assertEquals(2, len(list(self.tdb)))
+        self.tdb.clear()
+        self.assertEquals(0, len(list(self.tdb)))
+
+    def test_repack(self):
+        self.tdb.text["foo"] = "abc"
+        self.tdb.text["bar"] = "def"
+        del self.tdb.text["foo"]
+        self.tdb.repack()
+
+    def test_len(self):
+        self.assertEquals(0, len(list(self.tdb.text)))
+        self.tdb.text["entry"] = "value"
+        self.assertEquals(1, len(list(self.tdb.text)))
+
+    def test_text_and_binary(self):
+        text = u'\xfa\u0148\xef\xe7\xf8\xf0\xea'
+        bytestr = text.encode('utf-8')
+        self.tdb[b"entry"] = bytestr
+        self.tdb.text[u"entry2"] = text
+        self.assertEquals(self.tdb.text["entry"], text)
+        self.assertEquals(self.tdb[b"entry2"], bytestr)
+        assert self.tdb.text.raw == self.tdb
 
 
 class VersionTests(TestCase):
