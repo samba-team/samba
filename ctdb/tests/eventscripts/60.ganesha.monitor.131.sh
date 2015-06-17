@@ -7,11 +7,5 @@ define_test "rquotad down"
 setup_nfs_ganesha
 rpc_services_down "rquotad"
 
-ok<<EOF
-ERROR: rquotad failed RPC check:
-rpcinfo: RPC: Program not registered
-program rquotad version 1 is not available
-Trying to restart rquotad [rpc.rquotad]
-EOF
-
+rpc_set_service_failure_response "rquotad"
 simple_test
