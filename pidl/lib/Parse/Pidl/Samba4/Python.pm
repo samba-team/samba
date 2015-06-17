@@ -112,7 +112,7 @@ sub EnumAndBitmapConsts($$$)
 	foreach my $e (@{$d->{ELEMENTS}}) {
 		$e =~ /^([A-Za-z0-9_]+)/;
 		my $cname = $1;
-		
+
 		$self->register_constant($cname, $d, $cname);
 	}
 }
@@ -221,7 +221,7 @@ sub PythonStruct($$$$$$)
 			my $mem_ctx = "pytalloc_get_mem_ctx(py_obj)";
 			my $l = $e->{LEVELS}[0];
 			my $nl = GetNextLevel($e, $l);
-			if ($l->{TYPE} eq "POINTER" and 
+			if ($l->{TYPE} eq "POINTER" and
 				not ($nl->{TYPE} eq "ARRAY" and ($nl->{IS_FIXED} or is_charset_array($e, $nl))) and
 				not ($nl->{TYPE} eq "DATA" and Parse::Pidl::Typelist::scalar_is_reference($nl->{DATA_TYPE}))) {
 				$self->pidl("talloc_unlink(pytalloc_get_mem_ctx(py_obj), discard_const($varname));");
@@ -255,7 +255,7 @@ sub PythonStruct($$$$$$)
 
 	my $py_methods = "NULL";
 
-	# If the struct is not public there ndr_pull/ndr_push functions will 
+	# If the struct is not public there ndr_pull/ndr_push functions will
 	# be static so not callable from here
 	if (has_property($d, "public")) {
 		$self->pidl("static PyObject *py_$name\_ndr_pack(PyObject *py_obj)");
@@ -405,8 +405,8 @@ sub find_metadata_args($)
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		foreach my $dir (@{$e->{DIRECTION}}) {
 			 my $main = get_metadata_var($e);
-			 if ($main) { 
-				 $metadata_args->{$dir}->{$main} = $e->{NAME}; 
+			 if ($main) {
+				 $metadata_args->{$dir}->{$main} = $e->{NAME};
 			 }
 		 }
 	}
@@ -432,7 +432,7 @@ sub PythonFunctionUnpackOut($$$)
 	$self->pidl("PyObject *result;");
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		next unless (grep(/out/,@{$e->{DIRECTION}}));
-		next if (($metadata_args->{in}->{$e->{NAME}} and grep(/in/, @{$e->{DIRECTION}})) or 
+		next if (($metadata_args->{in}->{$e->{NAME}} and grep(/in/, @{$e->{DIRECTION}})) or
 		         ($metadata_args->{out}->{$e->{NAME}}) and grep(/out/, @{$e->{DIRECTION}}));
 		$self->pidl("PyObject *py_$e->{NAME};");
 		$result_size++;
@@ -515,7 +515,7 @@ sub PythonFunctionPackIn($$$)
 
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		next unless (grep(/in/,@{$e->{DIRECTION}}));
-		next if (($metadata_args->{in}->{$e->{NAME}} and grep(/in/, @{$e->{DIRECTION}})) or 
+		next if (($metadata_args->{in}->{$e->{NAME}} and grep(/in/, @{$e->{DIRECTION}})) or
 				 ($metadata_args->{out}->{$e->{NAME}}) and grep(/out/, @{$e->{DIRECTION}}));
 		$self->pidl("PyObject *py_$e->{NAME};");
 		$args_format .= "O";
@@ -739,10 +739,10 @@ sub Interface($$$)
 		$self->pidl("return py_dcerpc_interface_init_helper(type, args, kwargs, &ndr_table_$interface->{NAME});");
 		$self->deindent;
 		$self->pidl("}");
-	
+
 		$self->pidl("");
 
-		my $signature = 
+		my $signature =
 "\"$interface->{NAME}(binding, lp_ctx=None, credentials=None) -> connection\\n\"
 \"\\n\"
 \"binding should be a DCE/RPC binding string (for example: ncacn_ip_tcp:127.0.0.1)\\n\"
@@ -876,7 +876,7 @@ sub import_type_variable($$$)
 sub use_type_variable($$)
 {
 	my ($self, $orig_ctype) = @_;
-	# FIXME: Have a global lookup table for types that look different on the 
+	# FIXME: Have a global lookup table for types that look different on the
 	# wire than they are named in C?
 	if ($orig_ctype->{NAME} eq "dom_sid2" or
 	    $orig_ctype->{NAME} eq "dom_sid28" or
@@ -1020,7 +1020,7 @@ sub ConvertObjectFromPythonData($$$$$$;$)
 		return;
 	}
 
-	if ($actual_ctype->{TYPE} eq "SCALAR" and 
+	if ($actual_ctype->{TYPE} eq "SCALAR" and
 		($actual_ctype->{NAME} eq "string" or $actual_ctype->{NAME} eq "nbt_string" or $actual_ctype->{NAME} eq "nbt_name" or $actual_ctype->{NAME} eq "wrepl_nbt_name")) {
 		$self->pidl("$target = talloc_strdup($mem_ctx, PyString_AS_STRING($cvar));");
 		return;
@@ -1259,8 +1259,8 @@ sub ConvertObjectToPythonData($$$$$;$)
 	my $actual_ctype = $ctype;
 	if ($actual_ctype->{TYPE} eq "TYPEDEF") {
 		$actual_ctype = $actual_ctype->{DATA};
-	} 
-	
+	}
+
 	if ($actual_ctype->{TYPE} eq "ENUM") {
 		return $self->ConvertScalarToPython(Parse::Pidl::Typelist::enum_type_fn($actual_ctype), $cvar);
 	} elsif ($actual_ctype->{TYPE} eq "BITMAP") {
@@ -1412,7 +1412,7 @@ sub Parse($$$$$)
 		($x->{TYPE} eq "IMPORT") && $self->Import(@{$x->{PATHS}});
 	    ($x->{TYPE} eq "INTERFACE") && $self->Interface($x, $basename);
 	}
-	
+
 	$self->pidl("static PyMethodDef $basename\_methods[] = {");
 	$self->indent;
 	foreach (@{$self->{module_methods}}) {
