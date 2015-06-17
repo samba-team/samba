@@ -257,12 +257,12 @@
 ^samba4.winbind.struct.show_sequence\(dc\)
 ^samba.wbinfo_simple.\(dc:local\).--allocate-uid
 ^samba.wbinfo_simple.\(dc:local\).--allocate-gid
-^samba.wbinfo_simple.\(chgdcpass:local\).--allocate-uid
-^samba.wbinfo_simple.\(chgdcpass:local\).--allocate-gid
 ^samba.wbinfo_simple.\(s4member:local\).--allocate-uid
 ^samba.wbinfo_simple.\(s4member:local\).--allocate-gid
 ^samba.wbinfo_simple.\(plugin_s4_dc:local\).--allocate-uid
 ^samba.wbinfo_simple.\(plugin_s4_dc:local\).--allocate-gid
+^samba.wbinfo_simple.\(chgdcpass:local\).--allocate-uid
+^samba.wbinfo_simple.\(chgdcpass:local\).--allocate-gid
 #
 # These do not work against winbindd in member mode for unknown reasons
 #
@@ -289,16 +289,6 @@
 ^samba.blackbox.wbinfo\(dc:local\).wbinfo -I against dc\(dc:local\)
 ^samba.blackbox.wbinfo\(dc:local\).wbinfo  --trusted-domains against dc\(dc:local\)
 ^samba.blackbox.wbinfo\(dc:local\).wbinfo --all-domains against dc\(dc:local\)
-^samba.wbinfo_simple.\(chgdcpass:local\).--all-domains.wbinfo\(chgdcpass:local\)
-^samba.wbinfo_simple.\(chgdcpass:local\).--trusted-domains.wbinfo\(chgdcpass:local\)
-^samba.wbinfo_simple.\(chgdcpass:local\).--online-status.wbinfo\(chgdcpass:local\)
-^samba.wbinfo_simple.\(chgdcpass:local\).--online-status --domain=BUILTIN.wbinfo\(chgdcpass:local\)
-^samba.wbinfo_simple.\(chgdcpass:local\).--online-status --domain=CHDCDOMAIN.wbinfo\(chgdcpass:local\)
-^samba.wbinfo_simple.\(chgdcpass:local\).--change-secret --domain=CHDCDOMAIN.wbinfo\(chgdcpass:local\)
-^samba.wbinfo_simple.\(chgdcpass:local\).--online-status --domain=CHDCDOMAIN.wbinfo\(chgdcpass:local\)
-^samba.blackbox.wbinfo\(chgdcpass:local\).wbinfo -I against chgdcpass\(chgdcpass:local\)
-^samba.blackbox.wbinfo\(chgdcpass:local\).wbinfo  --trusted-domains against chgdcpass\(chgdcpass:local\)
-^samba.blackbox.wbinfo\(chgdcpass:local\).wbinfo --all-domains against chgdcpass\(chgdcpass:local\)
 #
 # These do not work against winbindd in member mode for unknown reasons
 #
@@ -308,5 +298,3 @@
 ^samba.blackbox.wbinfo\(s3member:local\).wbinfo -G check for sane mapping\(s3member:local\)
 ^samba.ntlm_auth.\(dc:local\).ntlm_auth against winbindd with failed require-membership-of
 ^samba.ntlm_auth.\(dc:local\).ntlm_auth with NTLMSSP gss-spnego-client and gss-spnego server against winbind with failed require-membership-of
-^samba.ntlm_auth.\(chgdcpass:local\).ntlm_auth against winbindd with failed require-membership-of
-^samba.ntlm_auth.\(chgdcpass:local\).ntlm_auth with NTLMSSP gss-spnego-client and gss-spnego server against winbind with failed require-membership-of

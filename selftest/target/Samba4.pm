@@ -1639,7 +1639,6 @@ sub provision_chgdcpass($$)
 	print "PROVISIONING CHGDCPASS...";
 	my $extra_provision_options = undef;
 	push (@{$extra_provision_options}, "--dns-backend=BIND9_DLZ");
-	my $extra_conf_options = "server services = +winbind -winbindd";
 	my $ret = $self->provision($prefix,
 				   "domain controller",
 				   "chgdcpass",
@@ -1647,8 +1646,7 @@ sub provision_chgdcpass($$)
 				   "chgdcpassword.samba.example.com",
 				   "2008",
 				   "chgDCpass1",
-				   undef, $extra_conf_options, "",
-				   $extra_provision_options);
+				   undef, "", "", $extra_provision_options);
 
 	return undef unless(defined $ret);
 	unless($self->add_wins_config("$prefix/private")) {
@@ -1658,8 +1656,7 @@ sub provision_chgdcpass($$)
 	
 	# Remove secrets.tdb from this environment to test that we
 	# still start up on systems without the new matching
-	# secrets.tdb records.  For this reason we don't run winbindd
-	# in this environment
+	# secrets.tdb records.  
 	unless (unlink("$ret->{PRIVATEDIR}/secrets.tdb") || unlink("$ret->{PRIVATEDIR}/secrets.ntdb")) {
 		warn("Unable to remove $ret->{PRIVATEDIR}/secrets.tdb added during provision");
 		return undef;
