@@ -936,7 +936,7 @@ rpc_set_service_failure_response ()
 		_hit=true
 	    fi
 	else
-	    if [ $(($_numfails $_op $_li)) -eq 0 ] ; then
+	    if [ $_numfails -gt 0 -a $(($_numfails $_op $_li)) -eq 0 ] ; then
 		_hit=true
 	    fi
 	fi
