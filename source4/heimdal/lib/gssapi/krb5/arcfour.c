@@ -69,7 +69,7 @@
 
 static krb5_error_code
 arcfour_mic_key(krb5_context context, krb5_keyblock *key,
-		void *cksum_data, size_t cksum_size,
+		const void *cksum_data, size_t cksum_size,
 		void *key6_data, size_t key6_size)
 {
     krb5_error_code ret;
