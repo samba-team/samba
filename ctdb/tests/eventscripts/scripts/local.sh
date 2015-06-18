@@ -1269,6 +1269,11 @@ EOF
 #   rpcinfo is used on each iteration to test the availability of the
 #   service
 #
+#   If this is not set or null then no RPC service is checked and the
+#   required output is not reset on each iteration.  This is useful in
+#   baseline tests to confirm that the eventscript and test
+#   infrastructure is working correctly.
+#
 # - Subsequent arguments come in pairs: an iteration number and
 #   something to eval before that iteration.  Each time an iteration
 #   number is matched the associated argument is given to eval after
@@ -1282,7 +1287,11 @@ nfs_iterate_test ()
 {
     _repeats="$1"
     _rpc_service="$2"
-    shift 2
+    if [ -n "$2" ] ; then
+	shift 2
+    else
+	shift
+    fi
 
     echo "Running $_repeats iterations of \"$script $event\" $args"
 
@@ -1296,12 +1305,14 @@ nfs_iterate_test ()
 	    debug "##################################################"
 	    shift 2
 	fi
-	if rpcinfo -T tcp localhost "$_rpc_service" >/dev/null 2>&1 ; then
-	    _iterate_failcount=0
-	else
-	    _iterate_failcount=$(($_iterate_failcount + 1))
+	if [ -n "$_rpc_service" ] ; then
+	    if rpcinfo -T tcp localhost "$_rpc_service" >/dev/null 2>&1 ; then
+		_iterate_failcount=0
+	    else
+		_iterate_failcount=$(($_iterate_failcount + 1))
+	    fi
+	    rpc_set_service_failure_response "$_rpc_service" $_iterate_failcount
 	fi
-	rpc_set_service_failure_response "$_rpc_service" $_iterate_failcount
 	_out=$(simple_test 2>&1)
 	_ret=$?
 	if "$TEST_VERBOSE" || [ $_ret -ne 0 ] ; then
