@@ -972,7 +972,9 @@ sub ConvertObjectFromPythonData($$$$$$;$)
 		return;
 	}
 	if ($actual_ctype->{TYPE} eq "SCALAR" ) {
-		if (expandAlias($actual_ctype->{NAME}) =~ /^(u?int64|hyper|dlong|udlong|udlongr|NTTIME_hyper|NTTIME|NTTIME_1sec)$/) {
+		if (expandAlias($actual_ctype->{NAME}) =~ /^(u?int64|hyper|dlong|udlong|udlongr
+                                                           |NTTIME_hyper|NTTIME|NTTIME_1sec
+                                                           |uid_t|gid_t)$/x) {
 			$self->pidl("if (PyLong_Check($cvar)) {");
 			$self->indent;
 			$self->pidl("$target = PyLong_AsLongLong($cvar);");
@@ -990,7 +992,7 @@ sub ConvertObjectFromPythonData($$$$$$;$)
 			$self->pidl("}");
 			return;
 		}
-		if (expandAlias($actual_ctype->{NAME}) =~ /^(char|u?int[0-9]*|time_t|uid_t|gid_t)$/) {
+		if (expandAlias($actual_ctype->{NAME}) =~ /^(char|u?int[0-9]*|time_t)$/) {
 			$self->pidl("PY_CHECK_TYPE(&PyInt_Type, $cvar, $fail);");
 			$self->pidl("$target = PyInt_AsLong($cvar);");
 			return;
@@ -1203,11 +1205,11 @@ sub ConvertScalarToPython($$$)
 		return "PyLong_FromLongLong($cvar)";
 	}
 
-	if ($ctypename =~ /^(uint64|hyper|udlong|udlongr|NTTIME_hyper|NTTIME|NTTIME_1sec)$/) {
+	if ($ctypename =~ /^(uint64|hyper|udlong|udlongr|NTTIME_hyper|NTTIME|NTTIME_1sec|uid_t|gid_t)$/) {
 		return "PyLong_FromUnsignedLongLong($cvar)";
 	}
 
-	if ($ctypename =~ /^(char|u?int[0-9]*|time_t|uid_t|gid_t)$/) {
+	if ($ctypename =~ /^(char|u?int[0-9]*|time_t)$/) {
 		return "PyInt_FromLong($cvar)";
 	}
 
