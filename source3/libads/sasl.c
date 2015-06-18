@@ -250,11 +250,12 @@ static ADS_STATUS ads_sasl_spnego_ntlmssp_bind(ADS_STRUCT *ads)
 	} while (rc == LDAP_SASL_BIND_IN_PROGRESS && !NT_STATUS_IS_OK(nt_status));
 	
 	if (ads->ldap.wrap_type > ADS_SASLWRAP_TYPE_PLAIN) {
-		uint32_t sig_size = gensec_sig_size(auth_generic_state->gensec_security, 0);
-		ads->ldap.out.max_unwrapped = ADS_SASL_WRAPPING_OUT_MAX_WRAPPED - sig_size;
-		ads->ldap.out.sig_size = sig_size;
+		size_t max_wrapped = gensec_max_wrapped_size(auth_generic_state->gensec_security);
+		ads->ldap.out.max_unwrapped = gensec_max_input_size(auth_generic_state->gensec_security);
+
+		ads->ldap.out.sig_size = max_wrapped - ads->ldap.out.max_unwrapped;
 		ads->ldap.in.min_wrapped = ads->ldap.out.sig_size;
-		ads->ldap.in.max_wrapped = ADS_SASL_WRAPPING_IN_MAX_WRAPPED;
+		ads->ldap.in.max_wrapped = max_wrapped;
 		status = ads_setup_sasl_wrapping(ads, &ads_sasl_ntlmssp_ops, auth_generic_state->gensec_security);
 		if (!ADS_ERR_OK(status)) {
 			DEBUG(0, ("ads_setup_sasl_wrapping() failed: %s\n",
