@@ -112,30 +112,73 @@ arcfour_mic_key(krb5_context context, krb5_keyblock *key,
 
 
 static krb5_error_code
-arcfour_mic_cksum(krb5_context context,
-		  krb5_keyblock *key, unsigned usage,
-		  u_char *sgn_cksum, size_t sgn_cksum_sz,
-		  const u_char *v1, size_t l1,
-		  const void *v2, size_t l2,
-		  const void *v3, size_t l3)
+arcfour_mic_cksum_iov(krb5_context context,
+		      krb5_keyblock *key, unsigned usage,
+		      u_char *sgn_cksum, size_t sgn_cksum_sz,
+		      const u_char *v1, size_t l1,
+		      const void *v2, size_t l2,
+		      const gss_iov_buffer_desc *iov,
+		      int iov_count,
+		      const gss_iov_buffer_desc *padding)
 {
     Checksum CKSUM;
     u_char *ptr;
     size_t len;
+    size_t ofs = 0;
+    int i;
     krb5_crypto crypto;
     krb5_error_code ret;
 
     assert(sgn_cksum_sz == 8);
 
-    len = l1 + l2 + l3;
+    len = l1 + l2;
+
+    for (i=0; i < iov_count; i++) {
+	switch (GSS_IOV_BUFFER_TYPE(iov[i].type)) {
+	case GSS_IOV_BUFFER_TYPE_DATA:
+	case GSS_IOV_BUFFER_TYPE_SIGN_ONLY:
+	    break;
+	default:
+	    continue;
+	}
+
+	len += iov[i].buffer.length;
+    }
+
+    if (padding) {
+	len += padding->buffer.length;
+    }
 
     ptr = malloc(len);
     if (ptr == NULL)
 	return ENOMEM;
 
-    memcpy(ptr, v1, l1);
-    memcpy(ptr + l1, v2, l2);
-    memcpy(ptr + l1 + l2, v3, l3);
+    memcpy(ptr + ofs, v1, l1);
+    ofs += l1;
+    memcpy(ptr + ofs, v2, l2);
+    ofs += l2;
+
+    for (i=0; i < iov_count; i++) {
+	switch (GSS_IOV_BUFFER_TYPE(iov[i].type)) {
+	case GSS_IOV_BUFFER_TYPE_DATA:
+	case GSS_IOV_BUFFER_TYPE_SIGN_ONLY:
+	    break;
+	default:
+	    continue;
+	}
+
+	memcpy(ptr + ofs,
+	       iov[i].buffer.value,
+	       iov[i].buffer.length);
+	ofs += iov[i].buffer.length;
+    }
+
+    if (padding) {
+	memcpy(ptr + ofs,
+	       padding->buffer.value,
+	       padding->buffer.length);
+	ofs += padding->buffer.length;
+    }
 
     ret = krb5_crypto_init(context, key, 0, &crypto);
     if (ret) {
@@ -158,6 +201,26 @@ arcfour_mic_cksum(krb5_context context,
     krb5_crypto_destroy(context, crypto);
 
     return ret;
+}
+
+static krb5_error_code
+arcfour_mic_cksum(krb5_context context,
+		  krb5_keyblock *key, unsigned usage,
+		  u_char *sgn_cksum, size_t sgn_cksum_sz,
+		  const u_char *v1, size_t l1,
+		  const void *v2, size_t l2,
+		  const void *v3, size_t l3)
+{
+    gss_iov_buffer_desc iov;
+
+    iov.type = GSS_IOV_BUFFER_TYPE_SIGN_ONLY;
+    iov.buffer.value = rk_UNCONST(v3);
+    iov.buffer.length = l3;
+
+    return arcfour_mic_cksum_iov(context, key, usage,
+				 sgn_cksum, sgn_cksum_sz,
+				 v1, l1, v2, l2,
+				 &iov, 1, NULL);
 }
 
 
