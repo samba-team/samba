@@ -1470,11 +1470,10 @@ static size_t gensec_gssapi_sig_size(struct gensec_security *gensec_security, si
 
 	if (gensec_gssapi_state->lucid->protocol == 1) {
 		if (gensec_gssapi_state->gss_got_flags & GSS_C_CONF_FLAG) {
-			/*
-			 * TODO: windows uses 76 here, but we don't know
-			 *       gss_wrap works with aes keys yet
-			 */
-			gensec_gssapi_state->sig_size = 76;
+			gensec_gssapi_state->sig_size = 60;
+			if (gensec_gssapi_state->gss_got_flags & GSS_C_DCE_STYLE) {
+				gensec_gssapi_state->sig_size += 16;
+			}
 		} else {
 			gensec_gssapi_state->sig_size = 28;
 		}
