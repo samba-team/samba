@@ -161,6 +161,11 @@ static NTSTATUS do_smb_load_module(const char *subsystem,
 	char *full_path = NULL;
 	TALLOC_CTX *ctx = talloc_stackframe();
 
+	if (module_name == NULL) {
+		TALLOC_FREE(ctx);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
 	/* Check for absolute path */
 
 	DEBUG(5, ("%s module '%s'\n", is_probe ? "Probing" : "Loading", module_name));
