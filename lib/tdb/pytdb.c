@@ -480,7 +480,7 @@ static PyMethodDef tdb_object_methods[] = {
 		"Append data to an existing key." },
 	{ "firstkey", (PyCFunction)obj_firstkey, METH_NOARGS, "S.firstkey() -> data\n"
 		"Return the first key in this database." },
-	{ "nextkey", (PyCFunction)obj_nextkey, METH_NOARGS, "S.nextkey(key) -> data\n"
+	{ "nextkey", (PyCFunction)obj_nextkey, METH_VARARGS, "S.nextkey(key) -> data\n"
 		"Return the next key in this database." },
 	{ "delete", (PyCFunction)obj_delete, METH_VARARGS, "S.delete(key) -> None\n"
 		"Delete an entry." },
