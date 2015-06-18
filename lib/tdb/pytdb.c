@@ -581,6 +581,22 @@ static PyObject *obj_get_seqnum(PyTdbObject *self, void *closure)
 	return PyInt_FromLong(tdb_get_seqnum(self->ctx));
 }
 
+static PyObject *obj_get_text(PyTdbObject *self, void *closure)
+{
+	PyObject *mod, *cls, *inst;
+	mod = PyImport_ImportModule("_tdb_text");
+	if (mod == NULL)
+		return NULL;
+	cls = PyObject_GetAttrString(mod, "TdbTextWrapper");
+	if (cls == NULL) {
+		Py_DECREF(mod);
+		return NULL;
+	}
+	inst = PyObject_CallFunction(cls, discard_const_p(char, "O"), self);
+	Py_DECREF(mod);
+	Py_DECREF(cls);
+	return inst;
+}
 
 static PyGetSetDef tdb_object_getsetters[] = {
 	{ discard_const_p(char, "hash_size"),
@@ -598,6 +614,8 @@ static PyGetSetDef tdb_object_getsetters[] = {
 	  discard_const_p(char, "The filename of this TDB file.") },
 	{ discard_const_p(char, "seqnum"),
 	  (getter)obj_get_seqnum, NULL, NULL },
+	{ discard_const_p(char, "text"),
+	  (getter)obj_get_text, NULL, NULL },
 	{ NULL }
 };
 
