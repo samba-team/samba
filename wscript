@@ -172,11 +172,6 @@ def configure(conf):
     if not conf.CHECK_NEED_LC("-lc not needed"):
         conf.ADD_LDFLAGS('-lc', testflags=False)
 
-    # we don't want PYTHONDIR in config.h, as otherwise changing
-    # --prefix causes a complete rebuild
-    del(conf.env.defines['PYTHONDIR'])
-    del(conf.env.defines['PYTHONARCHDIR'])
-
     if not conf.CHECK_CODE('#include "tests/summary.c"',
                            define='SUMMARY_PASSES',
                            addmain=False,

@@ -212,9 +212,6 @@ def configure(conf):
             conf.ADD_EXTRA_INCLUDES('#ctdb')
         conf.ADD_EXTRA_INCLUDES('#lib #lib/replace')
 
-        del(conf.env.defines['PYTHONDIR'])
-        del(conf.env.defines['PYTHONARCHDIR'])
-
         conf.DEFINE('HAVE_CONFIG_H', 1, add_to_cflags=True)
         conf.DEFINE('SAMBA_UTIL_CORE_ONLY', 1, add_to_cflags=True)
         conf.SAMBA_CONFIG_H()

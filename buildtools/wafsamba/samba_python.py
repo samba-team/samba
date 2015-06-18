@@ -55,6 +55,10 @@ def SAMBA_CHECK_PYTHON_HEADERS(conf, mandatory=True):
     else:
         conf.msg("python headers", "using cache")
 
+    # we don't want PYTHONDIR in config.h, as otherwise changing
+    # --prefix causes a complete rebuild
+    del(conf.env.defines['PYTHONDIR'])
+    del(conf.env.defines['PYTHONARCHDIR'])
 
 def _check_python_headers(conf, mandatory):
     conf.check_python_headers(mandatory=mandatory)
