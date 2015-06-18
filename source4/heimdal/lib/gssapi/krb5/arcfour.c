@@ -149,6 +149,7 @@ arcfour_mic_cksum(krb5_context context,
 			       0,
 			       ptr, len,
 			       &CKSUM);
+    memset(ptr, 0, len);
     free(ptr);
     if (ret == 0) {
 	memcpy(sgn_cksum, CKSUM.checksum.data, sgn_cksum_sz);
