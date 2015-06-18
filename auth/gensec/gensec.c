@@ -533,7 +533,7 @@ _PUBLIC_ void gensec_want_feature(struct gensec_security *gensec_security,
 _PUBLIC_ bool gensec_have_feature(struct gensec_security *gensec_security,
 			 uint32_t feature)
 {
-	if (!gensec_security->ops->have_feature) {
+	if (!gensec_security->ops || !gensec_security->ops->have_feature) {
 		return false;
 	}
 
