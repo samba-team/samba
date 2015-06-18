@@ -190,7 +190,7 @@ def CHECK_BUNDLED_SYSTEM(conf, libname, minversion='0.0.0',
         pkg = libname
 
     # try pkgconfig first
-    if (conf.check_cfg(package=pkg,
+    if (conf.CHECK_CFG(package=pkg,
                       args='"%s >= %s" --cflags --libs' % (pkg, minversion),
                       msg=msg, uselib_store=uselib_store) and
         check_functions_headers_code()):
