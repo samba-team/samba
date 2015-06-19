@@ -422,7 +422,7 @@ NTSTATUS dcerpc_add_auth_footer(struct pipe_auth_data *auth,
 				size_t pad_len, DATA_BLOB *rpc_out)
 {
 	struct gensec_security *gensec_security;
-	char pad[CLIENT_NDR_PADDING_SIZE] = { 0, };
+	const char pad[DCERPC_AUTH_PAD_ALIGNMENT] = { 0, };
 	DATA_BLOB auth_info;
 	DATA_BLOB auth_blob;
 	NTSTATUS status;
@@ -432,6 +432,8 @@ NTSTATUS dcerpc_add_auth_footer(struct pipe_auth_data *auth,
 	}
 
 	if (pad_len) {
+		SMB_ASSERT(pad_len <= ARRAY_SIZE(pad));
+
 		/* Copy the sign/seal padding data. */
 		if (!data_blob_append(NULL, rpc_out, pad, pad_len)) {
 			return NT_STATUS_NO_MEMORY;
