@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 bld.SAMBA_SUBSYSTEM('gensec_util',
-                    source='socket.c gensec_tstream.c',
+                    source='gensec_tstream.c',
                     deps='tevent-util tevent samba-util LIBTSOCKET',
                     autoproto='gensec_proto.h')
 
