@@ -90,7 +90,7 @@ struct tevent_req *_tstream_tls_connect_send(TALLOC_CTX *mem_ctx,
 					     struct tstream_context *plain_stream,
 					     struct tstream_tls_params *tls_params,
 					     const char *location);
-#define tstream_tls_connect_send(mem_ctx, ev, plain_stream, tls_params); \
+#define tstream_tls_connect_send(mem_ctx, ev, plain_stream, tls_params) \
 	_tstream_tls_connect_send(mem_ctx, ev, plain_stream, tls_params, __location__)
 
 int tstream_tls_connect_recv(struct tevent_req *req,
