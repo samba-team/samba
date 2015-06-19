@@ -232,7 +232,7 @@ for t in nbt_tests:
     plansmbtorture4testsuite(t, "ad_dc_ntvfs", "//$SERVER/_none_ -U\"$USERNAME%$PASSWORD\"")
 
 # Tests against the NTVFS POSIX backend
-ntvfsargs = ["--option=torture:sharedelay=10000", "--option=torture:oplocktimeout=3", "--option=torture:writetimeupdatedelay=50000"]
+ntvfsargs = ["--option=torture:sharedelay=100000", "--option=torture:oplocktimeout=3", "--option=torture:writetimeupdatedelay=500000"]
 
 smb2 = smbtorture4_testsuites("smb2.")
 #The QFILEINFO-IPC test needs to be on ipc$

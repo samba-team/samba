@@ -925,16 +925,16 @@ sub provision($$$$$$$$$$)
 [tmp]
 	path = $ctx->{share}
 	read only = no
-	posix:sharedelay = 10000
+	posix:sharedelay = 100000
 	posix:oplocktimeout = 3
-	posix:writetimeupdatedelay = 50000
+	posix:writetimeupdatedelay = 500000
 
 [xcopy_share]
 	path = $ctx->{share}
 	read only = no
-	posix:sharedelay = 10000
+	posix:sharedelay = 100000
 	posix:oplocktimeout = 3
-	posix:writetimeupdatedelay = 50000
+	posix:writetimeupdatedelay = 500000
 	create mask = 777
 	force create mode = 777
 
@@ -949,16 +949,16 @@ sub provision($$$$$$$$$$)
 [test1]
 	path = $ctx->{share}/test1
 	read only = no
-	posix:sharedelay = 10000
+	posix:sharedelay = 100000
 	posix:oplocktimeout = 3
-	posix:writetimeupdatedelay = 50000
+	posix:writetimeupdatedelay = 500000
 
 [test2]
 	path = $ctx->{share}/test2
 	read only = no
-	posix:sharedelay = 10000
+	posix:sharedelay = 100000
 	posix:oplocktimeout = 3
-	posix:writetimeupdatedelay = 50000
+	posix:writetimeupdatedelay = 500000
 
 [cifs]
 	path = $ctx->{share}/_ignore_cifs_
