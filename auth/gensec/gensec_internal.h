@@ -74,18 +74,6 @@ struct gensec_security_ops {
 			   TALLOC_CTX *mem_ctx,
 			   const DATA_BLOB *in,
 			   DATA_BLOB *out);
-	NTSTATUS (*wrap_packets)(struct gensec_security *gensec_security,
-				 TALLOC_CTX *mem_ctx,
-				 const DATA_BLOB *in,
-				 DATA_BLOB *out,
-				 size_t *len_processed);
-	NTSTATUS (*unwrap_packets)(struct gensec_security *gensec_security,
-				   TALLOC_CTX *mem_ctx,
-				   const DATA_BLOB *in,
-				   DATA_BLOB *out,
-				   size_t *len_processed);
-	NTSTATUS (*packet_full_request)(struct gensec_security *gensec_security,
-					DATA_BLOB blob, size_t *size);
 	NTSTATUS (*session_key)(struct gensec_security *gensec_security, TALLOC_CTX *mem_ctx,
 				DATA_BLOB *session_key);
 	NTSTATUS (*session_info)(struct gensec_security *gensec_security, TALLOC_CTX *mem_ctx,

@@ -107,29 +107,8 @@ const struct gensec_critical_sizes *gensec_interface_version(void);
 /* Socket wrapper */
 
 struct gensec_security;
-struct socket_context;
 struct auth4_context;
 struct auth_user_info_dc;
-
-/* These functions are for use here only (public because SPNEGO must
- * use them for recursion) */
-NTSTATUS gensec_wrap_packets(struct gensec_security *gensec_security,
-			     TALLOC_CTX *mem_ctx,
-			     const DATA_BLOB *in,
-			     DATA_BLOB *out,
-			     size_t *len_processed);
-/* These functions are for use here only (public because SPNEGO must
- * use them for recursion) */
-NTSTATUS gensec_unwrap_packets(struct gensec_security *gensec_security,
-			       TALLOC_CTX *mem_ctx,
-			       const DATA_BLOB *in,
-			       DATA_BLOB *out,
-			       size_t *len_processed);
-
-/* These functions are for use here only (public because SPNEGO must
- * use them for recursion) */
-NTSTATUS gensec_packet_full_request(struct gensec_security *gensec_security,
-				    DATA_BLOB blob, size_t *size);
 
 struct loadparm_context;
 
