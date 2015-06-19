@@ -1594,8 +1594,13 @@ static void dcerpc_ship_next_request(struct dcecli_connection *c)
 	chunk_size -= DCERPC_REQUEST_LENGTH;
 	if (c->security_state.auth_info &&
 	    c->security_state.generic_state) {
+		size_t max_payload = chunk_size;
+
+		max_payload -= DCERPC_AUTH_TRAILER_LENGTH;
+		max_payload -= (max_payload % DCERPC_AUTH_PAD_ALIGNMENT);
+
 		sig_size = gensec_sig_size(c->security_state.generic_state,
-					   p->conn->srv_max_recv_frag);
+					   max_payload);
 		if (sig_size) {
 			chunk_size -= DCERPC_AUTH_TRAILER_LENGTH;
 			chunk_size -= sig_size;
