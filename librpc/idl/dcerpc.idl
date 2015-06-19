@@ -259,6 +259,7 @@ interface dcerpc
 	} dcerpc_auth;
 
 	const uint8 DCERPC_AUTH_TRAILER_LENGTH = 8;
+	const uint8 DCERPC_AUTH_PAD_ALIGNMENT = 16;
 
 	typedef [public] struct {
 		[value(0)]	      uint32    _pad;
