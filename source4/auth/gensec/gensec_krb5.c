@@ -27,7 +27,6 @@
 #include "system/kerberos.h"
 #include "auth/kerberos/kerberos.h"
 #include "auth/auth.h"
-#include "lib/socket/socket.h"
 #include "lib/tsocket/tsocket.h"
 #include "librpc/gen_ndr/dcerpc.h"
 #include "auth/credentials/credentials.h"
