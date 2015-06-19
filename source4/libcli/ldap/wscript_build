@@ -3,9 +3,9 @@
 bld.SAMBA_LIBRARY('cli-ldap',
                   source='ldap_client.c ldap_bind.c ldap_ildap.c ldap_controls.c',
                   autoproto='ldap_proto.h',
-                  public_deps='errors tevent LIBPACKET',
+                  public_deps='errors tevent',
                   public_headers='libcli_ldap.h:ldap-util.h',
-                  deps='cli_composite samba_socket NDR_SAMR LIBTLS ndr LP_RESOLVE gensec cli-ldap-common',
+                  deps='cli_composite LIBSAMBA_TSOCKET samba_socket NDR_SAMR LIBTLS ndr LP_RESOLVE gensec cli-ldap-common',
                   private_library=True
                   )
 
