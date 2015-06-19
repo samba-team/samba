@@ -194,7 +194,7 @@ _PUBLIC_ NTSTATUS dcesrv_reply(struct dcesrv_call_state *call)
 			chunk_size -= sig_size;
 		}
 	}
-	chunk_size -= (chunk_size % 16);
+	chunk_size -= (chunk_size % DCERPC_AUTH_PAD_ALIGNMENT);
 
 	do {
 		uint32_t length;
