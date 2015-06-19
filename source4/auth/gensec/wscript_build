@@ -22,17 +22,6 @@ bld.SAMBA_MODULE('gensec_gssapi',
 	deps='gssapi samba-credentials authkrb5 com_err gensec_util'
 	)
 
-
-bld.SAMBA_MODULE('cyrus_sasl',
-	source='cyrus_sasl.c',
-	subsystem='gensec',
-	init_function='gensec_sasl_init',
-	deps='samba-credentials sasl2',
-	allow_warnings=True,
-	enabled=bld.CONFIG_SET('HAVE_SASL')
-	)
-
-
 bld.SAMBA_PYTHON('pygensec',
 	source='pygensec.c',
 	deps='gensec pytalloc-util pyparam_util',
