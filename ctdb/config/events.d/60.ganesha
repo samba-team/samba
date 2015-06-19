@@ -222,25 +222,28 @@ case "$1" in
 	update_tickles 2049
 	nfs_update_lock_info
 
-	# check that statd responds to rpc requests
-	# if statd is not running we try to restart it
-	# we only do this IF we have a rpc.statd command.
-	# For platforms where rpc.statd does not exist, we skip
-        # the check completely
-	p="rpc.statd"
-	type $p >/dev/null 2>/dev/null && \
-	    nfs_check_rpc_service "statd" \
-		-ge 6 "verbose restart:b unhealthy" \
-		%   2 "verbose restart:b"
+	nfs_check_service "status" <<EOF
+version="1"  # could drop this and use any version?
+restart_every=2
+unhealthy_after=6
+service_stop_cmd="killall -q -9 rpc.statd"
+service_start_cmd="rpc.statd ${STATD_HA_CALLOUT:+-H} $STATD_HA_CALLOUT ${STATD_HOSTNAME:+-n} $STATD_HOSTNAME ${STATD_PORT:+-p} $STATD_PORT ${STATD_OUTGOING_PORT:+-o} $STATD_OUTGOING_PORT"
+service_debug_cmd="program_stack_traces rpc.statd 5"
+EOF
 
 	if [ "$CTDB_SKIP_GANESHA_NFSD_CHECK" != "yes" ] ; then
 	    monitor_ganesha_nfsd
 	fi
 
 	# rquotad is sometimes not started correctly on RHEL5
-	nfs_check_rpc_service "rquotad" \
-	    -ge 6 "verbose restart:b unhealthy" \
-	    %   2 "verbose restart:b"
+	nfs_check_service "rquotad" <<EOF
+version="1"  # could drop this and use any version?
+restart_every=2
+unhealthy_after=6
+service_stop_cmd="killall -q -9 rpc.rquotad"
+service_start_cmd="rpc.rquotad ${RQUOTAD_PORT:+-p} $RQUOTAD_PORT"
+service_debug_cmd="program_stack_traces rpc.rquotad 5"
+EOF
 	;;
 
      *)

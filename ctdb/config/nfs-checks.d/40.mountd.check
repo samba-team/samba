@@ -1,0 +1,7 @@
+# mountd
+version="1"
+restart_every=2
+unhealthy_after=6
+service_stop_cmd="killall -q -9 rpc.mountd"
+service_start_cmd="rpc.mountd $RPCMOUNTDOPTS ${MOUNTD_PORT:+-p} $MOUNTD_PORT"
+service_debug_cmd="program_stack_traces rpc.mountd 5"

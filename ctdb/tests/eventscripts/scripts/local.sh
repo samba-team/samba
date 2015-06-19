@@ -893,21 +893,22 @@ EOF
     done
 }
 
-mark_background ()
-{
-    sed -e 's@^@\&@'
-}
-
-convert_progname ()
+guess_output ()
 {
     case "$1" in
-	nfs)      echo "nfsd" ;;
-	nlockmgr) echo "lockd" ;;
-	status)   echo "statd" ;;
-	*)        echo "$1" ;;
+	startstop_nfslock\ start)
+	    echo "&Starting nfslock: OK"
+	    ;;
+	startstop_nfs\ start)
+	    cat <<EOF
+&Starting nfslock: OK
+&Starting nfs: OK
+EOF
+	    ;;
+	*)
+	    : # Nothing
     esac
 }
-
 
 # Set the required result for a particular RPC program having failed
 # for a certain number of iterations.  This is probably still a work
@@ -920,12 +921,13 @@ convert_progname ()
 rpc_set_service_failure_response ()
 {
     _rpc_service="$1"
-    # The number of failures defaults to the iteration number.  This
-    # will be true when we fail from the 1st iteration... but we need
-    # the flexibility to set the number of failures.
-    _numfails="${2:-${iteration:-1}}"
+    _numfails="${2:-1}" # default 1
 
-    _progname=$(convert_progname "$_rpc_service")
+    # Default
+    ok_null
+    if [ $_numfails -eq 0 ] ; then
+	return
+    fi
 
     nfs_load_config
 
@@ -933,79 +935,69 @@ rpc_set_service_failure_response ()
     _nl="
 "
 
-    # Default
-    ok_null
+    _dir="${CTDB_NFS_CHECKS_DIR:-${CTDB_BASE}/nfs-checks.d}"
 
-    _file=$(ls "${CTDB_BASE}/nfs-rpc-checks.d/"[0-9][0-9]."${_progname}.check")
+    _file=$(ls "$_dir"/[0-9][0-9]."${_rpc_service}.check")
     [ -r "$_file" ] || die "RPC check file \"$_file\" does not exist or is not unique"
 
-    while read _op _li _actions ; do
-	# Skip comments
-	case "$_op" in
-	    \#*) continue ;;
-	esac
+    _out=$(mktemp --tmpdir="$EVENTSCRIPTS_TESTS_VAR_DIR")
+    _rc_file=$(mktemp --tmpdir="$EVENTSCRIPTS_TESTS_VAR_DIR")
 
-	_hit=false
-	if [ "$_op" != "%" ] ; then
-	    if [ $_numfails $_op $_li ] ; then
-		_hit=true
-	    fi
+    (
+	# Subshell to restrict scope variables...
+
+	# Defaults
+	family="tcp"
+	version=""
+	unhealthy_after=1
+	restart_every=0
+	service_stop_cmd=""
+	service_start_cmd=""
+	service_debug_cmd=""
+
+	# Don't bother syntax checking, eventscript does that...
+	. "$_file"
+
+	# Just use the first version, default to 1.  This is dumb but
+	# handles all the cases that we care about now...
+	if [ -n "$version" ] ; then
+	    _ver="${version%% *}"
 	else
-	    if [ $_numfails -gt 0 -a $(($_numfails $_op $_li)) -eq 0 ] ; then
-		_hit=true
-	    fi
+	    _ver=1
 	fi
-	if $_hit ; then
-	    _out=""
-	    _rc=0
-	    for _action in $_actions ; do
-		case "$_action" in
-		    verbose)
-			_ver=1
-			case "$_rpc_service" in
-			    nfs)      _ver=3 ;;
-			    nlockmgr) _ver=4 ;;
-			esac
-			_out="\
-ERROR: $_rpc_service failed RPC check:
+	_rpc_check_out="\
+$_rpc_service failed RPC check:
 rpcinfo: RPC: Program not registered
 program $_rpc_service version $_ver is not available"
-			;;
-		    restart*)
-			_p="rpc.${_progname}"
-			case "$_action" in
-			    *:b) _bg=mark_background ;;
-			    *)   _bg=cat  ;;
-			esac
-			case "$_progname" in
-			    nfsd)
-				_t=$(program_stack_traces "nfsd" 5)
-				_t="${_t}${_t:+${_nl}}Starting nfslock: OK
-Starting nfs: OK"
-				_t=$(echo "$_t" | $_bg)
-				_t="\
-Trying to restart NFS service
-${_t}"
-				;;
-			    lockd)
-				_t=$(echo "Starting nfslock: OK" | $_bg)
-				_t="Trying to restart lock manager service${_t:+${_nl}}${_t}"
-				;;
-			    *)
-				_t="Trying to restart $_progname [${_p}]"
-				_stacks=$(program_stack_traces "$_p" 5)
-				_t="${_t}${_stacks:+${_nl}}${_stacks}"
-			esac
-			_out="${_out}${_out:+${_nl}}${_t}"
-			;;
-		    unhealthy)
-			_rc=1
-		esac
-	    done
-	    required_result $_rc "$_out"
-	    return
+
+	if [ $unhealthy_after -gt 0 -a $_numfails -ge $unhealthy_after ] ; then
+	    _unhealthy=true
+	    echo 1 >"$_rc_file"
+	    echo "ERROR: ${_rpc_check_out}" >>"$_out"
+	else
+	    _unhealthy=false
+	    echo 0 >"$_rc_file"
 	fi
-    done <"$_file"
+
+	if [ $restart_every -gt 0 -a $(($_numfails % $restart_every)) -eq 0 ] ; then
+	    if ! $_unhealthy ; then
+		echo "WARNING: ${_rpc_check_out}" >>"$_out"
+	    fi
+
+	    echo "Trying to restart service \"${_rpc_service}\"..." >>"$_out"
+
+	    if [ -n "$service_debug_cmd" ] ; then
+		$service_debug_cmd 2>&1 >>"$_out"
+	    fi
+
+	    guess_output "$service_start_cmd" >>"$_out"
+	fi
+    )
+
+    read _rc <"$_rc_file"
+    required_result $_rc <"$_out"
+
+    rm -f "$_out" "$_rc_file"
 }
 
 ######################################################################

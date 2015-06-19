@@ -464,7 +464,7 @@ def build(bld):
 
     etc_subdirs = [
         'events.d',
-        'nfs-rpc-checks.d'
+        'nfs-checks.d'
     ]
 
     if bld.env.standalone_ctdb:
@@ -627,7 +627,7 @@ def build(bld):
     test_eventscript_links = [
         'events.d',
         'functions',
-        'nfs-rpc-checks.d',
+        'nfs-checks.d',
         'statd-callout'
     ]
 

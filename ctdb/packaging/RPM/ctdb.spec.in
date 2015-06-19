@@ -125,6 +125,8 @@ install -m755 config/ctdb.init $RPM_BUILD_ROOT%{initdir}/ctdb
 # This is a hack. All documents should be installed in /usr/share/doc.
 rm -f $RPM_BUILD_ROOT%{_sysconfdir}/ctdb/events.d/README
 cp config/events.d/README README.eventscripts
+rm -f $RPM_BUILD_ROOT%{_sysconfdir}/ctdb/nfs-checks.d/README
+cp config/nfs-checks.d/README README.nfs-checks.d
 cp config/notify.d.README README.notify.d
 
 # Remove "*.old" files
@@ -183,11 +185,11 @@ rm -rf $RPM_BUILD_ROOT
 %{_sysconfdir}/ctdb/events.d/70.iscsi
 %{_sysconfdir}/ctdb/events.d/91.lvs
 %{_sysconfdir}/ctdb/events.d/99.timeout
-%config(noreplace) %{_sysconfdir}/ctdb/nfs-rpc-checks.d/10.statd.check
-%config(noreplace) %{_sysconfdir}/ctdb/nfs-rpc-checks.d/20.nfsd.check
-%config(noreplace) %{_sysconfdir}/ctdb/nfs-rpc-checks.d/30.lockd.check
-%config(noreplace) %{_sysconfdir}/ctdb/nfs-rpc-checks.d/40.mountd.check
-%config(noreplace) %{_sysconfdir}/ctdb/nfs-rpc-checks.d/50.rquotad.check
+%config(noreplace) %{_sysconfdir}/ctdb/nfs-checks.d/10.status.check
+%config(noreplace) %{_sysconfdir}/ctdb/nfs-checks.d/20.nfs.check
+%config(noreplace) %{_sysconfdir}/ctdb/nfs-checks.d/30.nlockmgr.check
+%config(noreplace) %{_sysconfdir}/ctdb/nfs-checks.d/40.mountd.check
+%config(noreplace) %{_sysconfdir}/ctdb/nfs-checks.d/50.rquotad.check
 %{_sysconfdir}/ctdb/statd-callout
 %{_sbindir}/ctdbd
 %{_sbindir}/ctdbd_wrapper

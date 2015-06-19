@@ -92,7 +92,7 @@ case "$1" in
 	update_tickles 2049
 	nfs_update_lock_info
 
-	nfs_check_rpc_services
+	nfs_check_services
 
 	nfs_check_thread_count
        	;;

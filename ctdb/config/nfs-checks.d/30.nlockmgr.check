@@ -1,0 +1,6 @@
+# nlockmgr
+version="4"
+restart_every=2
+unhealthy_after=6
+service_stop_cmd="startstop_nfslock stop"
+service_start_cmd="startstop_nfslock start"

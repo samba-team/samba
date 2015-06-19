@@ -943,6 +943,11 @@ startstop_nfs() {
 			nfs_dump_some_threads
 			service nfsserver start
 			;;
+		restart-stop)
+			set_proc "fs/nfsd/threads" 0
+			service nfsserver stop > /dev/null 2>&1
+			pkill -9 nfsd
+			;;
 		esac
 		;;
 	rhel)
@@ -963,6 +968,12 @@ startstop_nfs() {
 			nfs_dump_some_threads
 			service nfslock start
 			service nfs start
+			;;
+		restart-stop)
+			set_proc "fs/nfsd/threads" 0
+			service nfs stop > /dev/null 2>&1
+			service nfslock stop > /dev/null 2>&1
+			pkill -9 nfsd
 			;;
 		esac
 		;;
