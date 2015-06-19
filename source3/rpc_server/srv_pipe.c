@@ -143,7 +143,6 @@ static NTSTATUS create_next_packet(TALLOC_CTX *mem_ctx,
 				    DCERPC_RESPONSE_LENGTH,
 				    data_left,
 				    RPC_MAX_PDU_FRAG_LEN,
-				    SERVER_NDR_PADDING_SIZE,
 				    &data_to_send, &frag_len,
 				    &auth_len, &pad_len);
 	if (!NT_STATUS_IS_OK(status)) {
