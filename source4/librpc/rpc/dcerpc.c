@@ -1601,7 +1601,7 @@ static void dcerpc_ship_next_request(struct dcecli_connection *c)
 			chunk_size -= sig_size;
 		}
 	}
-	chunk_size -= (chunk_size % 16);
+	chunk_size -= (chunk_size % DCERPC_AUTH_PAD_ALIGNMENT);
 
 	pkt.ptype = DCERPC_PKT_REQUEST;
 	pkt.call_id = req->call_id;
