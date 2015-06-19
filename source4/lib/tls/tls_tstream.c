@@ -919,7 +919,7 @@ NTSTATUS tstream_tls_params_client(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (ca_file && *ca_file) {
+	if (ca_file && *ca_file && file_exist(ca_file)) {
 		ret = gnutls_certificate_set_x509_trust_file(tlsp->x509_cred,
 							     ca_file,
 							     GNUTLS_X509_FMT_PEM);
@@ -931,7 +931,7 @@ NTSTATUS tstream_tls_params_client(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	if (crl_file && *crl_file) {
+	if (crl_file && *crl_file && file_exist(crl_file)) {
 		ret = gnutls_certificate_set_x509_crl_file(tlsp->x509_cred,
 							   crl_file, 
 							   GNUTLS_X509_FMT_PEM);
