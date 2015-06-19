@@ -1282,7 +1282,6 @@ static NTSTATUS prepare_next_frag(struct rpc_api_pipe_req_state *state,
 	status = dcerpc_guess_sizes(state->cli->auth,
 				    DCERPC_REQUEST_LENGTH, data_left,
 				    state->cli->max_xmit_frag,
-				    CLIENT_NDR_PADDING_SIZE,
 				    &data_sent_thistime,
 				    &frag_len, &auth_len, &pad_len);
 	if (!NT_STATUS_IS_OK(status)) {
