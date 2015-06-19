@@ -539,15 +539,15 @@ int ctdbd_conn_get_fd(struct ctdbd_connection *conn)
 /*
  * Packet handler to receive and handle a ctdb message
  */
-static NTSTATUS ctdb_handle_message(struct ctdbd_connection *conn,
-				    struct ctdb_req_header *hdr)
+static int ctdb_handle_message(struct ctdbd_connection *conn,
+			       struct ctdb_req_header *hdr)
 {
 	struct ctdb_req_message *msg;
 
 	if (hdr->operation != CTDB_REQ_MESSAGE) {
 		DEBUG(0, ("Received async msg of type %u, discarding\n",
 			  hdr->operation));
-		return NT_STATUS_INVALID_PARAMETER;
+		return EINVAL;
 	}
 
 	msg = (struct ctdb_req_message *)hdr;
@@ -569,12 +569,12 @@ static NTSTATUS ctdb_handle_message(struct ctdbd_connection *conn,
 			conn->release_ip_handler = NULL;
 			conn->release_ip_priv = NULL;
 		}
-		return NT_STATUS_OK;
+		return 0;
 	}
 
 	ctdbd_msg_call_back(conn, msg);
 
-	return NT_STATUS_OK;
+	return 0;
 }
 
 /*
@@ -589,7 +589,6 @@ static void ctdbd_socket_handler(struct tevent_context *event_ctx,
 	struct ctdbd_connection *conn = talloc_get_type_abort(
 		private_data, struct ctdbd_connection);
 	struct ctdb_req_header *hdr = NULL;
-	NTSTATUS status;
 	int ret;
 
 	ret = ctdb_read_packet(conn->fd, talloc_tos(), &hdr);
@@ -598,13 +597,13 @@ static void ctdbd_socket_handler(struct tevent_context *event_ctx,
 		cluster_fatal("ctdbd died\n");
 	}
 
-	status = ctdb_handle_message(conn, hdr);
+	ret = ctdb_handle_message(conn, hdr);
 
 	TALLOC_FREE(hdr);
 
-	if (!NT_STATUS_IS_OK(status)) {
+	if (ret != 0) {
 		DEBUG(10, ("could not handle incoming message: %s\n",
-			   nt_errstr(status)));
+			   strerror(ret)));
 	}
 }
 
