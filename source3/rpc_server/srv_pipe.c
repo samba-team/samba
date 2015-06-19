@@ -1065,7 +1065,6 @@ static bool api_pipe_alter_context(struct pipes_struct *p,
 	struct dcerpc_ack_ctx bind_ack_ctx;
 	DATA_BLOB auth_resp = data_blob_null;
 	DATA_BLOB auth_blob = data_blob_null;
-	int pad_len = 0;
 	struct gensec_security *gensec_security;
 
 	DEBUG(5,("api_pipe_alter_context: make response. %d\n", __LINE__));
@@ -1217,19 +1216,10 @@ static bool api_pipe_alter_context(struct pipes_struct *p,
 	}
 
 	if (auth_resp.length) {
-
-		/* Work out any padding needed before the auth footer. */
-		pad_len = p->out_data.frag.length % SERVER_NDR_PADDING_SIZE;
-		if (pad_len) {
-			pad_len = SERVER_NDR_PADDING_SIZE - pad_len;
-			DEBUG(10, ("auth pad_len = %u\n",
-				   (unsigned int)pad_len));
-		}
-
 		status = dcerpc_push_dcerpc_auth(pkt,
 						 auth_info.auth_type,
 						 auth_info.auth_level,
-						 pad_len,
+						 0, /* pad_len */
 						 1, /* auth_context_id */
 						 &auth_resp,
 						 &auth_blob);
@@ -1243,22 +1233,9 @@ static bool api_pipe_alter_context(struct pipes_struct *p,
 	 * the dcerpc header */
 	dcerpc_set_frag_length(&p->out_data.frag,
 				p->out_data.frag.length +
-					pad_len + auth_blob.length);
+				auth_blob.length);
 
 	if (auth_resp.length) {
-		if (pad_len) {
-			char pad[SERVER_NDR_PADDING_SIZE];
-			memset(pad, '\0', SERVER_NDR_PADDING_SIZE);
-			if (!data_blob_append(p->mem_ctx,
-						&p->out_data.frag,
-						pad, pad_len)) {
-				DEBUG(0, ("api_pipe_bind_req: failed to add "
-					  "%u bytes of pad data.\n",
-					  (unsigned int)pad_len));
-				goto err_exit;
-			}
-		}
-
 		if (!data_blob_append(p->mem_ctx, &p->out_data.frag,
 					auth_blob.data, auth_blob.length)) {
 			DEBUG(0, ("Append of auth info failed.\n"));
