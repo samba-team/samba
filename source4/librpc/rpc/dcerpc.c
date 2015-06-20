@@ -802,13 +802,16 @@ static NTSTATUS ncacn_push_request_sign(struct dcecli_connection *c,
 	size_t hdr_size = DCERPC_REQUEST_LENGTH;
 
 	/* non-signed packets are simpler */
-	if (sig_size == 0) {
+	if (c->security_state.auth_info == NULL) {
 		return ncacn_push_auth(blob, mem_ctx, pkt, NULL);
 	}
 
 	switch (c->security_state.auth_info->auth_level) {
 	case DCERPC_AUTH_LEVEL_PRIVACY:
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
+		if (sig_size == 0) {
+			return NT_STATUS_INTERNAL_ERROR;
+		}
 		break;
 
 	case DCERPC_AUTH_LEVEL_CONNECT:
