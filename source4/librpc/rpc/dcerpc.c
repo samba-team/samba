@@ -854,7 +854,7 @@ static NTSTATUS ncacn_push_request_sign(struct dcecli_connection *c,
 	   whole packet, whereas w2k8 wants it relative to the start
 	   of the stub */
 	c->security_state.auth_info->auth_pad_length =
-		(16 - (pkt->u.request.stub_and_verifier.length & 15)) & 15;
+		DCERPC_AUTH_PAD_LENGTH(pkt->u.request.stub_and_verifier.length);
 	ndr_err = ndr_push_zero(ndr, c->security_state.auth_info->auth_pad_length);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return ndr_map_error2ntstatus(ndr_err);
