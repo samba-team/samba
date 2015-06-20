@@ -370,4 +370,9 @@ bool dcerpc_sec_verification_trailer_check(
 		const struct dcerpc_sec_vt_pcontext *pcontext,
 		const struct dcerpc_sec_vt_header2 *header2);
 
+#define DCERPC_AUTH_PAD_LENGTH(stub_length) (\
+	(((stub_length) % DCERPC_AUTH_PAD_ALIGNMENT) > 0)?\
+	(DCERPC_AUTH_PAD_ALIGNMENT - (stub_length) % DCERPC_AUTH_PAD_ALIGNMENT):\
+	0)
+
 #endif /* __DEFAULT_LIBRPC_RPCCOMMON_H__ */
