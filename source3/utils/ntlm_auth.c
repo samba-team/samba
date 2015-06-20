@@ -1027,9 +1027,9 @@ static struct auth4_context *make_auth4_context_ntlm_auth(TALLOC_CTX *mem_ctx, b
 	return auth4_context;
 }
 
-static NTSTATUS ntlm_auth_start_ntlmssp_server(TALLOC_CTX *mem_ctx,
-					       struct loadparm_context *lp_ctx,
-					       struct gensec_security **gensec_security_out)
+static NTSTATUS ntlm_auth_prepare_gensec_server(TALLOC_CTX *mem_ctx,
+						struct loadparm_context *lp_ctx,
+						struct gensec_security **gensec_security_out)
 {
 	struct gensec_security *gensec_security;
 	NTSTATUS nt_status;
@@ -1135,12 +1135,6 @@ static NTSTATUS ntlm_auth_start_ntlmssp_server(TALLOC_CTX *mem_ctx,
 	talloc_unlink(tmp_ctx, gensec_settings);
 	talloc_unlink(tmp_ctx, auth4_context);
 
-	nt_status = gensec_start_mech_by_oid(gensec_security, GENSEC_OID_NTLMSSP);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		TALLOC_FREE(tmp_ctx);
-		return nt_status;
-	}
-	
 	*gensec_security_out = talloc_steal(mem_ctx, gensec_security);
 	TALLOC_FREE(tmp_ctx);
 	return NT_STATUS_OK;
@@ -1541,8 +1535,8 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 		case GSS_SPNEGO_SERVER:
 		case SQUID_2_5_NTLMSSP:
 		{
-			nt_status = ntlm_auth_start_ntlmssp_server(state, lp_ctx,
-								   &state->gensec_state);
+			nt_status = ntlm_auth_prepare_gensec_server(state, lp_ctx,
+								    &state->gensec_state);
 			if (!NT_STATUS_IS_OK(nt_status)) {
 				x_fprintf(x_stdout, "BH GENSEC mech failed to start: %s\n", nt_errstr(nt_status));
 				talloc_free(mem_ctx);
