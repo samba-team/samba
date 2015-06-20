@@ -385,7 +385,7 @@ bool dcesrv_auth_response(struct dcesrv_call_state *call,
 	DATA_BLOB creds2;
 
 	/* non-signed packets are simple */
-	if (sig_size == 0) {
+	if (dce_conn->auth_state.auth_info == NULL) {
 		status = ncacn_push_auth(blob, call, pkt, NULL);
 		return NT_STATUS_IS_OK(status);
 	}
@@ -393,6 +393,10 @@ bool dcesrv_auth_response(struct dcesrv_call_state *call,
 	switch (dce_conn->auth_state.auth_info->auth_level) {
 	case DCERPC_AUTH_LEVEL_PRIVACY:
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
+		if (sig_size == 0) {
+			return false;
+		}
+
 		break;
 
 	case DCERPC_AUTH_LEVEL_CONNECT:
