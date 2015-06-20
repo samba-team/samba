@@ -1,4 +1,85 @@
                    ==============================
+                   Release Notes for Samba 4.1.19
+                            June 23, 2015
+                   ==============================
+
+
+This is the latest stable release of Samba 4.1.
+
+
+Changes since 4.1.18:
+---------------------
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 11068: s3: smbcacls: Ensure we read a hex number as %x, not %u.
+    * BUG 11249: Make mangled names work with acl_xattr.
+    * BUG 11295: Excessive cli_resolve_path() usage can slow down transmission.
+
+
+o   Ralph Boehme <slow@samba.org>
+    * BUG 11244: Error code path doesn't call END_PROFILE.
+    * BUG 11277: s3:smb2: Add padding to last command in compound requests.
+
+
+o   Alexander Bokovoy <ab@samba.org>
+    * BUG 11284: s4: libcli/finddcs_cldap: Continue processing CLDAP until all
+      addresses are used.
+
+
+o   Evangelos Foutras <evangelos@foutrelis.com>
+    * BUG 8780: s4:lib/tls: Fix build with gnutls 3.4.
+
+
+o   David Holder <david.holder@erion.co.uk>
+    * BUG 11283: s3: IPv6 enabled DNS connections for ADS client.
+
+
+o   Steve Howells <steve.howells@moscowfirst.com>
+    * BUG 10924: s4.2/fsmo.py: Fix fsmo transfer exception.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 11141: s3:winbindd: Make sure we remove pending io requests before
+      closing client sockets.
+    * BUG 11182: Fix panic triggered by smbd_smb2_request_notify_done() ->
+      smbXsrv_session_find_channel() in smbd.
+
+
+o   Christof Schmitt <cs@samba.org>
+    * BUG 11313: idmap_rfc2307: Fix 'wbinfo --gid-to-sid' query.
+
+
+o   Uri Simchoni <urisimchoni@gmail.com>
+    * BUG 11267: libads: Record service ticket endtime for sealed ldap
+      connections.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+======================================================================
+
+                   ==============================
                    Release Notes for Samba 4.1.18
                             May 12, 2015
                    ==============================
@@ -124,10 +205,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
 
-======================================================================
 
                    ==============================
                    Release Notes for Samba 4.1.17
