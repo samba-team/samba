@@ -478,7 +478,7 @@ bool dcesrv_auth_response(struct dcesrv_call_state *call,
 	   whole packet, whereas w2k8 wants it relative to the start
 	   of the stub */
 	dce_conn->auth_state.auth_info->auth_pad_length =
-		(16 - (pkt->u.response.stub_and_verifier.length & 15)) & 15;
+		DCERPC_AUTH_PAD_LENGTH(pkt->u.response.stub_and_verifier.length);
 	ndr_err = ndr_push_zero(ndr,
 				dce_conn->auth_state.auth_info->auth_pad_length);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
