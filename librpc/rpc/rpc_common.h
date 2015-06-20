@@ -301,4 +301,10 @@ NTSTATUS dcerpc_binding_handle_call(struct dcerpc_binding_handle *h,
 				    TALLOC_CTX *r_mem,
 				    void *r_ptr);
 
+
+#define DCERPC_AUTH_PAD_LENGTH(stub_length) (\
+	(((stub_length) % DCERPC_AUTH_PAD_ALIGNMENT) > 0)?\
+	(DCERPC_AUTH_PAD_ALIGNMENT - (stub_length) % DCERPC_AUTH_PAD_ALIGNMENT):\
+	0)
+
 #endif /* __DEFAULT_LIBRPC_RPCCOMMON_H__ */
