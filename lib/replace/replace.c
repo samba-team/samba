@@ -518,11 +518,10 @@ long long int rep_strtoll(const char *str, char **endptr, int base)
 }
 #else
 #ifdef HAVE_BSD_STRTOLL
-#ifdef HAVE_STRTOQ
 long long int rep_strtoll(const char *str, char **endptr, int base)
 {
-	long long int nb = strtoq(str, endptr, base);
-	/* In linux EINVAL is only returned if base is not ok */
+	long long int nb = strtoll(str, endptr, base);
+	/* With glibc EINVAL is only returned if base is not ok */
 	if (errno == EINVAL) {
 		if (base == 0 || (base >1 && base <37)) {
 			/* Base was ok so it's because we were not
@@ -534,9 +533,6 @@ long long int rep_strtoll(const char *str, char **endptr, int base)
 	}
 	return nb;
 }
-#else
-#error "You need the strtoq function"
-#endif /* HAVE_STRTOQ */
 #endif /* HAVE_BSD_STRTOLL */
 #endif /* HAVE_STRTOLL */
 
