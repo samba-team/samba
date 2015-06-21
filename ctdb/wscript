@@ -60,7 +60,7 @@ def set_options(opt):
                    action="store", dest='ctdb_logdir', default=None)
     opt.add_option('--with-socketpath',
                    help=("path to CTDB daemon socket"),
-                   action="store_true", dest='ctdb_sockpath', default=False)
+                   action="store", dest='ctdb_sockpath', default=None)
 
 
 def configure(conf):
