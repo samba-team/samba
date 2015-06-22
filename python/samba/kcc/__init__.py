@@ -2361,12 +2361,14 @@ class KCC(object):
         :param force: a boolean indicating whether to overwrite.
 
         """
-        if self.samdb is not None and not force:
-            return
-
-        self.samdb = SamDB(url=dburl,
-                           session_info=system_session(),
-                           credentials=creds, lp=lp)
+        if force or self.samdb is None:
+            try:
+                self.samdb = SamDB(url=dburl,
+                                   session_info=system_session(),
+                                   credentials=creds, lp=lp)
+            except ldb.LdbError, (num, msg):
+                raise KCCError("Unable to open sam database %s : %s" %
+                               (dburl, msg))
 
     def plot_all_connections(self, basename, verify_properties=()):
         """Helper function to plot and verify NTDSConnections
@@ -2420,12 +2422,9 @@ class KCC(object):
                determine link availability (boolean, default False)
         :return: 1 on error, 0 otherwise
         """
-        try:
+        if self.samdb is None:
+            DEBUG_FN("samdb is None; let's load it from %s" % (dburl,))
             self.load_samdb(dburl, lp, creds, force=False)
-        except ldb.LdbError, (num, msg):
-            logger.error("Unable to open sam database %s : %s" %
-                         (dburl, msg))
-            return 1
 
         if forced_local_dsa:
             self.samdb.set_ntds_settings_dn("CN=NTDS Settings,%s" %

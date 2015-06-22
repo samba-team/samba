@@ -292,13 +292,14 @@ if opts.importldif:
     if rc != 0:
         sys.exit(rc)
 
+
+kcc.load_samdb(opts.dburl, lp, creds, force=False)
+
 if opts.test_all_reps_from:
-    kcc.load_samdb(opts.dburl, lp, creds, force=False)
     test_all_reps_from(kcc, lp, creds, unix_now, rng_seed=opts.seed)
     sys.exit()
 
 if opts.list_valid_dsas:
-    kcc.load_samdb(opts.dburl, lp, creds, force=False)
     print '\n'.join(kcc.list_dsas())
     sys.exit()
 
