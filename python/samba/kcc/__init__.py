@@ -2136,7 +2136,6 @@ class KCC(object):
                                   if not self.get_dsa(x).is_ro())
             rw_dot_edges = [(a, b) for a, b in dot_edges if
                             a in rw_dot_vertices and b in rw_dot_vertices]
-            print rw_dot_edges, rw_dot_vertices
             rw_verify_properties = ('connected',
                                     'directed_double_ring_or_small')
             verify_and_dot('intrasite_rw_pre_ntdscon', rw_dot_edges,
@@ -2232,7 +2231,6 @@ class KCC(object):
                                   if not self.get_dsa(x).is_ro())
             rw_dot_edges = [(a, b) for a, b in dot_edges if
                             a in rw_dot_vertices and b in rw_dot_vertices]
-            print rw_dot_edges, rw_dot_vertices
             rw_verify_properties = ('connected',
                                     'directed_double_ring_or_small')
             verify_and_dot('intrasite_rw_post_ntdscon', rw_dot_edges,
