@@ -165,7 +165,7 @@ class KCC(object):
             if transport.name == 'IP':
                 self.ip_transport = transport
             elif transport.name == 'SMTP':
-                logger.info("Samba KCC is ignoring the obsolete SMTP transport.")
+                logger.debug("Samba KCC is ignoring the obsolete SMTP transport.")
 
             else:
                 logger.warning("Samba KCC does not support the transport called %r."
@@ -267,9 +267,9 @@ class KCC(object):
             res = self.samdb.search(base=dn, scope=ldb.SCOPE_BASE,
                                     attrs=["objectGUID"])
         except ldb.LdbError, (enum, estr):
-            logger.warning("Search for dn '%s' [from %s] failed: %s. "
-                           "This typically happens in --importldif mode due "
-                           "to lack of module support.", dn, dn_query, estr)
+            DEBUG_FN("Search for dn '%s' [from %s] failed: %s. "
+                     "This typically happens in --importldif mode due "
+                     "to lack of module support." % (dn, dn_query, estr))
             try:
                 # We work around the failure above by looking at the
                 # dsServiceName that was put in the fake rootdse by
