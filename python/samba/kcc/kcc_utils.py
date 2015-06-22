@@ -1047,7 +1047,7 @@ class NTDSConnection(object):
             if enum == ldb.ERR_NO_SUCH_OBJECT:
                 raise KCCError("nTDSConnection for (%s) doesn't exist!" %
                                self.dnstr)
-            raise KccError("Unable to search for (%s) - (%s)" %
+            raise KCCError("Unable to search for (%s) - (%s)" %
                            (self.dnstr, estr))
 
         if self.enabled:
