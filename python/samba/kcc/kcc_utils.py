@@ -890,10 +890,13 @@ class NTDSConnection(object):
         if "systemFlags" in msg:
             self.system_flags = int(msg["systemFlags"][0])
 
-        if "objectGUID" in msg:
+        try:
             self.guid = \
                 misc.GUID(samdb.schema_format_value("objectGUID",
                                                     msg["objectGUID"][0]))
+        except KeyError:
+            raise KCCError("Unable to find objectGUID in nTDSConnection "
+                           "for (%s)" % (self.dnstr))
 
         if "transportType" in msg:
             dsdn = dsdb_Dn(samdb, msg["transportType"][0])
