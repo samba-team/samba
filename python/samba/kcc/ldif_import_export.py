@@ -73,7 +73,7 @@ dsServiceName: CN=NTDS Settings,%s
             """ % forced_local_dsa)
 
         tmpdb.add_ldif("""dn: @MODULES
-@LIST: rootdse,extended_dn_in,extended_dn_out_ldb
+@LIST: rootdse,extended_dn_in,extended_dn_out_ldb,objectguid
 -
 """)
 
