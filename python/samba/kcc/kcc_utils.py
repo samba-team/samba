@@ -84,8 +84,8 @@ class NamingContext(object):
                                scope=ldb.SCOPE_BASE, attrs=attrs)
 
         except ldb.LdbError, (enum, estr):
-            raise Exception("Unable to find naming context (%s) - (%s)" %
-                            (self.nc_dnstr, estr))
+            raise KCCError("Unable to find naming context (%s) - (%s)" %
+                           (self.nc_dnstr, estr))
         msg = res[0]
         if "objectGUID" in msg:
             self.nc_guid = misc.GUID(samdb.schema_format_value("objectGUID",
@@ -314,8 +314,8 @@ class NCReplica(NamingContext):
                                attrs=["repsFrom"])
 
         except ldb.LdbError, (enum, estr):
-            raise Exception("Unable to find NC for (%s) - (%s)" %
-                            (self.nc_dnstr, estr))
+            raise KCCError("Unable to find NC for (%s) - (%s)" %
+                           (self.nc_dnstr, estr))
 
         msg = res[0]
 
@@ -386,8 +386,8 @@ class NCReplica(NamingContext):
             samdb.modify(m)
 
         except ldb.LdbError, estr:
-            raise Exception("Could not set repsFrom for (%s) - (%s)" %
-                            (self.nc_dnstr, estr))
+            raise KCCError("Could not set repsFrom for (%s) - (%s)" %
+                           (self.nc_dnstr, estr))
 
     def load_replUpToDateVector(self, samdb):
         """Given an NC replica which has been discovered thru the nTDSDSA
@@ -402,8 +402,8 @@ class NCReplica(NamingContext):
                                attrs=["replUpToDateVector"])
 
         except ldb.LdbError, (enum, estr):
-            raise Exception("Unable to find NC for (%s) - (%s)" %
-                            (self.nc_dnstr, estr))
+            raise KCCError("Unable to find NC for (%s) - (%s)" %
+                           (self.nc_dnstr, estr))
 
         msg = res[0]
 
@@ -436,8 +436,8 @@ class NCReplica(NamingContext):
                                attrs=["fSMORoleOwner"])
 
         except ldb.LdbError, (enum, estr):
-            raise Exception("Unable to find NC for (%s) - (%s)" %
-                            (self.nc_dnstr, estr))
+            raise KCCError("Unable to find NC for (%s) - (%s)" %
+                           (self.nc_dnstr, estr))
 
         msg = res[0]
 
@@ -568,8 +568,8 @@ class DirectoryServiceAgent(object):
                                attrs=attrs)
 
         except ldb.LdbError, (enum, estr):
-            raise Exception("Unable to find nTDSDSA for (%s) - (%s)" %
-                            (self.dsa_dnstr, estr))
+            raise KCCError("Unable to find nTDSDSA for (%s) - (%s)" %
+                           (self.dsa_dnstr, estr))
 
         msg = res[0]
         self.dsa_guid = misc.GUID(samdb.schema_format_value("objectGUID",
@@ -629,8 +629,8 @@ class DirectoryServiceAgent(object):
                                attrs=ncattrs)
 
         except ldb.LdbError, (enum, estr):
-            raise Exception("Unable to find nTDSDSA NCs for (%s) - (%s)" %
-                            (self.dsa_dnstr, estr))
+            raise KCCError("Unable to find nTDSDSA NCs for (%s) - (%s)" %
+                           (self.dsa_dnstr, estr))
 
         # The table of NCs for the dsa we are searching
         tmp_table = {}
@@ -675,7 +675,7 @@ class DirectoryServiceAgent(object):
                     if rep.is_default():
                         self.default_dnstr = dnstr
         else:
-            raise Exception("No nTDSDSA NCs for (%s)" % self.dsa_dnstr)
+            raise KCCError("No nTDSDSA NCs for (%s)" % self.dsa_dnstr)
 
         # Assign our newly built NC replica table to this dsa
         self.current_rep_table = tmp_table
@@ -697,8 +697,8 @@ class DirectoryServiceAgent(object):
                                expression="(objectClass=nTDSConnection)")
 
         except ldb.LdbError, (enum, estr):
-            raise Exception("Unable to find nTDSConnection for (%s) - (%s)" %
-                            (self.dsa_dnstr, estr))
+            raise KCCError("Unable to find nTDSConnection for (%s) - (%s)" %
+                           (self.dsa_dnstr, estr))
 
         for msg in res:
             dnstr = str(msg.dn)
@@ -875,8 +875,8 @@ class NTDSConnection(object):
                                attrs=attrs)
 
         except ldb.LdbError, (enum, estr):
-            raise Exception("Unable to find nTDSConnection for (%s) - (%s)" %
-                            (self.dnstr, estr))
+            raise KCCError("Unable to find nTDSConnection for (%s) - (%s)" %
+                           (self.dnstr, estr))
 
         msg = res[0]
 
@@ -925,8 +925,8 @@ class NTDSConnection(object):
                                scope=ldb.SCOPE_BASE, attrs=attrs)
 
         except ldb.LdbError, (enum, estr):
-            raise Exception("Unable to find transport (%s) - (%s)" %
-                            (tdnstr, estr))
+            raise KCCError("Unable to find transport (%s) - (%s)" %
+                           (tdnstr, estr))
 
         if "objectGUID" in res[0]:
             msg = res[0]
@@ -952,8 +952,8 @@ class NTDSConnection(object):
         try:
             samdb.delete(self.dnstr)
         except ldb.LdbError, (enum, estr):
-            raise Exception("Could not delete nTDSConnection for (%s) - (%s)" %
-                            (self.dnstr, estr))
+            raise KCCError("Could not delete nTDSConnection for (%s) - (%s)" %
+                           (self.dnstr, estr))
 
     def commit_added(self, samdb, ro=False):
         """Local helper routine for commit_connections() which
@@ -977,11 +977,11 @@ class NTDSConnection(object):
 
         except ldb.LdbError, (enum, estr):
             if enum != ldb.ERR_NO_SUCH_OBJECT:
-                raise Exception("Unable to search for (%s) - (%s)" %
-                                (self.dnstr, estr))
+                raise KCCError("Unable to search for (%s) - (%s)" %
+                               (self.dnstr, estr))
         if found:
-            raise Exception("nTDSConnection for (%s) already exists!" %
-                            self.dnstr)
+            raise KCCError("nTDSConnection for (%s) already exists!" %
+                           self.dnstr)
 
         if self.enabled:
             enablestr = "TRUE"
@@ -1021,8 +1021,8 @@ class NTDSConnection(object):
         try:
             samdb.add(m)
         except ldb.LdbError, (enum, estr):
-            raise Exception("Could not add nTDSConnection for (%s) - (%s)" %
-                            (self.dnstr, estr))
+            raise KCCError("Could not add nTDSConnection for (%s) - (%s)" %
+                           (self.dnstr, estr))
 
     def commit_modified(self, samdb, ro=False):
         """Local helper routine for commit_connections() which
@@ -1090,8 +1090,8 @@ class NTDSConnection(object):
         try:
             samdb.modify(m)
         except ldb.LdbError, (enum, estr):
-            raise Exception("Could not modify nTDSConnection for (%s) - (%s)" %
-                            (self.dnstr, estr))
+            raise KCCError("Could not modify nTDSConnection for (%s) - (%s)" %
+                           (self.dnstr, estr))
 
     def set_modified(self, truefalse):
         self.to_be_modified = truefalse
@@ -1248,9 +1248,8 @@ class Partition(NamingContext):
                                attrs=attrs)
 
         except ldb.LdbError, (enum, estr):
-            raise Exception("Unable to find partition for (%s) - (%s)" % (
-                            self.partstr, estr))
-
+            raise KCCError("Unable to find partition for (%s) - (%s)" %
+                           (self.partstr, estr))
         msg = res[0]
         for k in msg.keys():
             if k == "dn":
@@ -1389,8 +1388,8 @@ class Site(object):
             self_res = samdb.search(base=self.site_dnstr, scope=ldb.SCOPE_BASE,
                                     attrs=['objectGUID'])
         except ldb.LdbError, (enum, estr):
-            raise Exception("Unable to find site settings for (%s) - (%s)" %
-                            (ssdn, estr))
+            raise KCCError("Unable to find site settings for (%s) - (%s)" %
+                           (ssdn, estr))
 
         msg = res[0]
         if "options" in msg:
@@ -1420,7 +1419,7 @@ class Site(object):
                                scope=ldb.SCOPE_SUBTREE,
                                expression="(objectClass=nTDSDSA)")
         except ldb.LdbError, (enum, estr):
-            raise Exception("Unable to find nTDSDSAs - (%s)" % estr)
+            raise KCCError("Unable to find nTDSDSAs - (%s)" % estr)
 
         for msg in res:
             dnstr = str(msg.dn)
@@ -1615,7 +1614,7 @@ class Site(object):
             samdb.modify(m)
 
         except ldb.LdbError, estr:
-            raise Exception(
+            raise KCCError(
                 "Could not set interSiteTopologyGenerator for (%s) - (%s)" %
                 (ssdn, estr))
         return True
@@ -1812,8 +1811,8 @@ class Transport(object):
                                attrs=attrs)
 
         except ldb.LdbError, (enum, estr):
-            raise Exception("Unable to find Transport for (%s) - (%s)" %
-                            (self.dnstr, estr))
+            raise KCCError("Unable to find Transport for (%s) - (%s)" %
+                           (self.dnstr, estr))
 
         msg = res[0]
         self.guid = misc.GUID(samdb.schema_format_value("objectGUID",
@@ -2072,8 +2071,8 @@ class SiteLink(object):
                                attrs=attrs, controls=['extended_dn:0'])
 
         except ldb.LdbError, (enum, estr):
-            raise Exception("Unable to find SiteLink for (%s) - (%s)" %
-                            (self.dnstr, estr))
+            raise KCCError("Unable to find SiteLink for (%s) - (%s)" %
+                           (self.dnstr, estr))
 
         msg = res[0]
 
