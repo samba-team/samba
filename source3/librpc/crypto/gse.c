@@ -201,7 +201,7 @@ static NTSTATUS gse_init_client(TALLOC_CTX *mem_ctx,
 {
 	struct gse_context *gse_ctx;
 	OM_uint32 gss_maj, gss_min;
-	gss_buffer_desc name_buffer = {0, NULL};
+	gss_buffer_desc name_buffer = GSS_C_EMPTY_BUFFER;
 	gss_OID_set_desc mech_set;
 	NTSTATUS status;
 
