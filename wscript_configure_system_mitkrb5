@@ -59,7 +59,8 @@ conf.CHECK_FUNCS_IN('_et_list', 'com_err')
 conf.CHECK_HEADERS('com_err.h', lib='com_err')
 
 conf.CHECK_HEADERS('krb5.h krb5/locate_plugin.h', lib='krb5')
-conf.CHECK_HEADERS('gssapi.h gssapi/gssapi_generic.h gssapi/gssapi.h gssapi/gssapi_ext.h gssapi/gssapi_krb5.h', lib='gssapi')
+possible_gssapi_headers="gssapi.h gssapi/gssapi_generic.h gssapi/gssapi.h gssapi/gssapi_ext.h gssapi/gssapi_krb5.h gssapi/gssapi_oid.h"
+conf.CHECK_HEADERS(possible_gssapi_headers, lib='gssapi')
 
 conf.CHECK_FUNCS_IN('krb5_encrypt_data', 'k5crypto')
 conf.CHECK_FUNCS_IN('des_set_key','crypto')
@@ -87,6 +88,7 @@ conf.CHECK_FUNCS_IN('''
        gss_krb5_export_lucid_sec_context
        gss_import_cred gss_export_cred
        ''', 'gssapi gssapi_krb5')
+conf.CHECK_VARIABLE('GSS_KRB5_CRED_NO_CI_FLAGS_X', headers=possible_gssapi_headers)
 conf.CHECK_FUNCS_IN('krb5_mk_req_extended krb5_kt_compare', 'krb5')
 conf.CHECK_FUNCS('''
        krb5_set_default_in_tkt_etypes krb5_set_default_tgs_enctypes
