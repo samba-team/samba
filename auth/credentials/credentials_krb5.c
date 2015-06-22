@@ -516,7 +516,7 @@ _PUBLIC_ int cli_credentials_get_client_gss_creds(struct cli_credentials *cred,
 	OM_uint32 maj_stat, min_stat;
 	struct gssapi_creds_container *gcc;
 	struct ccache_container *ccache;
-#ifdef SAMBA4_USES_HEIMDAL
+#ifdef HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X
 	gss_buffer_desc empty_buffer = GSS_C_EMPTY_BUFFER;
 #endif
 	krb5_enctype *etypes = NULL;
@@ -632,8 +632,7 @@ _PUBLIC_ int cli_credentials_get_client_gss_creds(struct cli_credentials *cred,
 		}
 	}
 
-#ifdef SAMBA4_USES_HEIMDAL /* MIT lacks GSS_KRB5_CRED_NO_CI_FLAGS_X */
-
+#ifdef HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X
 	/* don't force GSS_C_CONF_FLAG and GSS_C_INTEG_FLAG */
 	maj_stat = gss_set_cred_option(&min_stat, &gcc->creds,
 				       GSS_KRB5_CRED_NO_CI_FLAGS_X,
