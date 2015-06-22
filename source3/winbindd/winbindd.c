@@ -48,6 +48,7 @@
 
 static bool client_is_idle(struct winbindd_cli_state *state);
 static void remove_client(struct winbindd_cli_state *state);
+static void winbindd_setup_max_fds(void);
 
 static bool opt_nocache = False;
 static bool interactive = False;
@@ -145,6 +146,7 @@ static bool reload_services_file(const char *lfile)
 
 	reopen_logs();
 	load_interfaces();
+	winbindd_setup_max_fds();
 
 	return(ret);
 }
@@ -1128,6 +1130,35 @@ static void winbindd_listen_fde_handler(struct tevent_context *ev,
 char *get_winbind_priv_pipe_dir(void)
 {
 	return state_path(WINBINDD_PRIV_SOCKET_SUBDIR);
+}
+
+static void winbindd_setup_max_fds(void)
+{
+	int num_fds = MAX_OPEN_FUDGEFACTOR;
+	int actual_fds;
+
+	num_fds += lp_winbind_max_clients();
+	/* Add some more to account for 2 sockets open
+	   when the client transitions from unprivileged
+	   to privileged socket
+	*/
+	num_fds += lp_winbind_max_clients() / 10;
+
+	/* Add one socket per child process
+	   (yeah there are child processes other than the
+	   domain children but only domain children can vary
+	   with configuration
+	*/
+	num_fds += lp_winbind_max_domain_connections() *
+		   (lp_allow_trusted_domains() ? WINBIND_MAX_DOMAINS_HINT : 1);
+
+	actual_fds = set_maxfiles(num_fds);
+
+	if (actual_fds < num_fds) {
+		DEBUG(1, ("winbindd_setup_max_fds: Information only: "
+			  "requested %d open files, %d are available.\n",
+			  num_fds, actual_fds));
+	}
 }
 
 static bool winbindd_setup_listeners(void)
