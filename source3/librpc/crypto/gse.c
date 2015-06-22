@@ -203,6 +203,9 @@ static NTSTATUS gse_init_client(TALLOC_CTX *mem_ctx,
 	OM_uint32 gss_maj, gss_min;
 	gss_buffer_desc name_buffer = GSS_C_EMPTY_BUFFER;
 	gss_OID_set_desc mech_set;
+#ifdef HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X
+	gss_buffer_desc empty_buffer = GSS_C_EMPTY_BUFFER;
+#endif
 	NTSTATUS status;
 
 	if (!server || !service) {
@@ -260,6 +263,28 @@ static NTSTATUS gse_init_client(TALLOC_CTX *mem_ctx,
 		status = NT_STATUS_INTERNAL_ERROR;
 		goto err_out;
 	}
+
+#ifdef HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X
+	/*
+	 * Don't force GSS_C_CONF_FLAG and GSS_C_INTEG_FLAG.
+	 *
+	 * This allows us to disable SIGN and SEAL for
+	 * AUTH_LEVEL_CONNECT and AUTH_LEVEL_INTEGRITY.
+	 *
+	 * https://groups.yahoo.com/neo/groups/cat-ietf/conversations/topics/575
+	 * http://krbdev.mit.edu/rt/Ticket/Display.html?id=6938
+	 */
+	gss_maj = gss_set_cred_option(&gss_min, &gse_ctx->creds,
+				      GSS_KRB5_CRED_NO_CI_FLAGS_X,
+				      &empty_buffer);
+	if (gss_maj) {
+		DEBUG(0, ("gss_set_cred_option(GSS_KRB5_CRED_NO_CI_FLAGS_X), "
+			  "failed with [%s]\n",
+			  gse_errstr(gse_ctx, gss_maj, gss_min)));
+		status = NT_STATUS_INTERNAL_ERROR;
+		goto err_out;
+	}
+#endif
 
 	*_gse_ctx = gse_ctx;
 	TALLOC_FREE(name_buffer.value);
