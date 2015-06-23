@@ -167,10 +167,10 @@ static int sys_notify_watch_dummy(
 static void notifyd_handler_done(struct tevent_req *subreq);
 static void notifyd_broadcast_reclog_finished(struct tevent_req *subreq);
 static void notifyd_clean_peers_finished(struct tevent_req *subreq);
-static void notifyd_snoop_broadcast(uint32_t src_vnn, uint32_t dst_vnn,
-				    uint64_t dst_srvid,
-				    const uint8_t *msg, size_t msglen,
-				    void *private_data);
+static int notifyd_snoop_broadcast(uint32_t src_vnn, uint32_t dst_vnn,
+				   uint64_t dst_srvid,
+				   const uint8_t *msg, size_t msglen,
+				   void *private_data);
 
 struct tevent_req *notifyd_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 				struct messaging_context *msg_ctx,
@@ -1352,10 +1352,10 @@ fail:
  * broadcast, which will then trigger a fresh database pull.
  */
 
-static void notifyd_snoop_broadcast(uint32_t src_vnn, uint32_t dst_vnn,
-				    uint64_t dst_srvid,
-				    const uint8_t *msg, size_t msglen,
-				    void *private_data)
+static int notifyd_snoop_broadcast(uint32_t src_vnn, uint32_t dst_vnn,
+				   uint64_t dst_srvid,
+				   const uint8_t *msg, size_t msglen,
+				   void *private_data)
 {
 	struct notifyd_state *state = talloc_get_type_abort(
 		private_data, struct notifyd_state);
@@ -1369,18 +1369,18 @@ static void notifyd_snoop_broadcast(uint32_t src_vnn, uint32_t dst_vnn,
 
 	if (msglen < MESSAGE_HDR_LENGTH) {
 		DEBUG(10, ("%s: Got short broadcast\n", __func__));
-		return;
+		return 0;
 	}
 	message_hdr_get(&msg_type, &src, &dst, msg);
 
 	if (msg_type != MSG_SMB_NOTIFY_REC_CHANGES) {
 		DEBUG(10, ("%s Got message %u, ignoring\n", __func__,
 			   (unsigned)msg_type));
-		return;
+		return 0;
 	}
 	if (server_id_equal(&src, &my_id)) {
 		DEBUG(10, ("%s: Ignoring my own broadcast\n", __func__));
-		return;
+		return 0;
 	}
 
 	DEBUG(10, ("%s: Got MSG_SMB_NOTIFY_REC_CHANGES from %s\n",
@@ -1395,7 +1395,7 @@ static void notifyd_snoop_broadcast(uint32_t src_vnn, uint32_t dst_vnn,
 			notifyd_apply_reclog(state->peers[i],
 					     msg + MESSAGE_HDR_LENGTH,
 					     msglen - MESSAGE_HDR_LENGTH);
-			return;
+			return 0;
 		}
 	}
 
@@ -1405,7 +1405,7 @@ static void notifyd_snoop_broadcast(uint32_t src_vnn, uint32_t dst_vnn,
 	p = notifyd_peer_new(state, src);
 	if (p == NULL) {
 		DEBUG(10, ("%s: notifyd_peer_new failed\n", __func__));
-		return;
+		return 0;
 	}
 
 	status = messaging_send_buf(state->msg_ctx, src, MSG_SMB_NOTIFY_GET_DB,
@@ -1414,8 +1414,10 @@ static void notifyd_snoop_broadcast(uint32_t src_vnn, uint32_t dst_vnn,
 		DEBUG(10, ("%s: messaging_send_buf failed: %s\n",
 			   __func__, nt_errstr(status)));
 		TALLOC_FREE(p);
-		return;
+		return 0;
 	}
+
+	return 0;
 }
 
 struct notifyd_parse_db_state {

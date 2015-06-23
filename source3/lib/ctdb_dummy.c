@@ -37,10 +37,10 @@ NTSTATUS ctdbd_messaging_send_iov(struct ctdbd_connection *conn,
 }
 
 NTSTATUS register_with_ctdbd(struct ctdbd_connection *conn, uint64_t srvid,
-			     void (*cb)(uint32_t src_vnn, uint32_t dst_vnn,
-					uint64_t dst_srvid,
-					const uint8_t *msg, size_t msglen,
-					void *private_data),
+			     int (*cb)(uint32_t src_vnn, uint32_t dst_vnn,
+				       uint64_t dst_srvid,
+				       const uint8_t *msg, size_t msglen,
+				       void *private_data),
 			     void *private_data)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;

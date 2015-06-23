@@ -265,7 +265,7 @@ static void smbd_parent_id_cache_delete(struct messaging_context *ctx,
 	messaging_send_to_children(ctx, msg_type, msg_data);
 }
 
-static void smbd_parent_ctdb_reconfigured(
+static int smbd_parent_ctdb_reconfigured(
 	uint32_t src_vnn, uint32_t dst_vnn, uint64_t dst_srvid,
 	const uint8_t *msg, size_t msglen, void *private_data)
 {
@@ -281,6 +281,8 @@ static void smbd_parent_ctdb_reconfigured(
 
 	messaging_send_buf(msg_ctx, messaging_server_id(msg_ctx),
 			   MSG_SMB_BRL_VALIDATE, NULL, 0);
+
+	return 0;
 }
 
 static void add_child_pid(struct smbd_parent_context *parent,

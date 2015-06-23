@@ -109,7 +109,7 @@ static int messaging_ctdbd_destructor(struct messaging_ctdbd_context *ctx)
 	return 0;
 }
 
-static void messaging_ctdb_recv(
+static int messaging_ctdb_recv(
 	uint32_t src_vnn, uint32_t dst_vnn, uint64_t dst_srvid,
 	const uint8_t *msg, size_t msg_len, void *private_data)
 {
@@ -125,7 +125,7 @@ static void messaging_ctdb_recv(
 	if (msg_len < MESSAGE_HDR_LENGTH) {
 		DEBUG(1, ("%s: message too short: %u\n", __func__,
 			  (unsigned)msg_len));
-		return;
+		return 0;
 	}
 
 	message_hdr_get(&msg_type, &src, &dst, msg);
@@ -145,7 +145,7 @@ static void messaging_ctdb_recv(
 		DEBUG(10, ("%s: I'm %s, ignoring msg to %s\n", __func__,
 			   server_id_str_buf(me, &id1),
 			   server_id_str_buf(dst, &id2)));
-		return;
+		return 0;
 	}
 
 	/*
@@ -159,6 +159,8 @@ static void messaging_ctdb_recv(
 		DEBUG(10, ("%s: messaging_send_iov_from failed: %s\n",
 			   __func__, nt_errstr(status)));
 	}
+
+	return 0;
 }
 
 NTSTATUS messaging_ctdbd_init(struct messaging_context *msg_ctx,

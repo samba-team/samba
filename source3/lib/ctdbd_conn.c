@@ -35,10 +35,10 @@
 
 struct ctdbd_srvid_cb {
 	uint64_t srvid;
-	void (*cb)(uint32_t src_vnn, uint32_t dst_vnn,
-		   uint64_t dst_srvid,
-		   const uint8_t *msg, size_t msglen,
-		   void *private_data);
+	int (*cb)(uint32_t src_vnn, uint32_t dst_vnn,
+		  uint64_t dst_srvid,
+		  const uint8_t *msg, size_t msglen,
+		  void *private_data);
 	void *private_data;
 };
 
@@ -101,10 +101,10 @@ static void ctdb_packet_dump(struct ctdb_req_header *hdr)
  * Register a srvid with ctdbd
  */
 NTSTATUS register_with_ctdbd(struct ctdbd_connection *conn, uint64_t srvid,
-			     void (*cb)(uint32_t src_vnn, uint32_t dst_vnn,
-					uint64_t dst_srvid,
-					const uint8_t *msg, size_t msglen,
-					void *private_data),
+			     int (*cb)(uint32_t src_vnn, uint32_t dst_vnn,
+				       uint64_t dst_srvid,
+				       const uint8_t *msg, size_t msglen,
+				       void *private_data),
 			     void *private_data)
 {
 
