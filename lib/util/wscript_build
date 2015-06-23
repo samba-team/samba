@@ -65,7 +65,7 @@ if not bld.env.SAMBA_UTIL_CORE_ONLY:
     bld.SAMBA_LIBRARY('samba-util',
                   source='''talloc_stack.c smb_threads.c
                     rbtree.c rfc1738.c become_daemon.c system.c select.c getpass.c
-                    genrand.c fsusage.c
+                    genrand.c genrand_util.c fsusage.c
                     params.c util_id.c util_net.c
                     util_strlist.c util_paths.c idtree_random.c base64.c
                     util_str.c util_str_common.c ms_fnmatch.c
