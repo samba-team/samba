@@ -423,7 +423,12 @@ static int ctdb_read_req(struct ctdbd_connection *conn, uint32_t reqid,
 			goto next_pkt;
 		}
 
-		ctdbd_msg_call_back(conn, msg);
+		ret = ctdbd_msg_call_back(conn, msg);
+		if (ret != 0) {
+			TALLOC_FREE(hdr);
+			return ret;
+		}
+
 		TALLOC_FREE(hdr);
 		goto next_pkt;
 	}
