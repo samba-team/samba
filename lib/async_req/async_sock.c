@@ -74,6 +74,7 @@ struct tevent_req *async_connect_send(
 {
 	struct tevent_req *req;
 	struct async_connect_state *state;
+	int ret;
 
 	req = tevent_req_create(mem_ctx, &state, struct async_connect_state);
 	if (req == NULL) {
@@ -105,7 +106,11 @@ struct tevent_req *async_connect_send(
 	}
 	memcpy(&state->address, address, address_len);
 
-	set_blocking(fd, false);
+	ret = set_blocking(fd, false);
+	if (ret == -1) {
+		tevent_req_error(req, errno);
+		return tevent_req_post(req, ev);
+	}
 
 	if (state->before_connect != NULL) {
 		state->before_connect(state->private_data);
