@@ -219,19 +219,13 @@ static void messaging_recv_cb(const uint8_t *msg, size_t msg_len,
 	size_t i;
 
 	if (msg_len < MESSAGE_HDR_LENGTH) {
-		for (i=0; i < num_fds; i++) {
-			close(fds[i]);
-		}
 		DEBUG(1, ("message too short: %u\n", (unsigned)msg_len));
-		return;
+		goto close_fail;
 	}
 
 	if (num_fds > INT8_MAX) {
-		for (i=0; i < num_fds; i++) {
-			close(fds[i]);
-		}
 		DEBUG(1, ("too many fds: %u\n", (unsigned)num_fds));
-		return;
+		goto close_fail;
 	}
 
 	/*
@@ -260,6 +254,12 @@ static void messaging_recv_cb(const uint8_t *msg, size_t msg_len,
 		   server_id_str_buf(rec.src, &idbuf)));
 
 	messaging_dispatch_rec(msg_ctx, &rec);
+	return;
+
+close_fail:
+	for (i=0; i < num_fds; i++) {
+		close(fds[i]);
+	}
 }
 
 static int messaging_context_destructor(struct messaging_context *ctx)
