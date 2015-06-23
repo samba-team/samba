@@ -53,7 +53,9 @@ from samba.kcc import KCC
 # If DEFAULT_RNG_SEED is None, /dev/urandom or system time is used.
 DEFAULT_RNG_SEED = None
 
-def test_all_reps_from(kcc, lp, creds, unix_now, rng_seed=None):
+
+def test_all_reps_from(kcc, dburl, lp, creds, unix_now, rng_seed=None,
+                       ldif_file=None):
     """Run the KCC from all DSAs in read-only mode
 
     The behaviour depends on the global opts variable which contains
@@ -89,8 +91,23 @@ def test_all_reps_from(kcc, lp, creds, unix_now, rng_seed=None):
         kcc = KCC(unix_now, readonly=True,
                   verify=opts.verify, debug=opts.debug,
                   dot_file_dir=opts.dot_file_dir)
-        kcc.samdb = samdb
-        kcc.run(opts.dburl, lp, creds, forced_local_dsa=dsa_dn,
+        if ldif_file is not None:
+            try:
+                # The dburl in this case is a temporary database.
+                # Its non-existence is ensured at the script startup.
+                # If it exists, it is from a previous iteration of
+                # this loop -- unless we're in an unfortunate race.
+                # Because this database is temporary, it lacks some
+                # detail and needs to be re-created anew to set the
+                # local dsa.
+                os.unlink(dburl)
+            except OSError:
+                pass
+
+            kcc.import_ldif(dburl, lp, ldif_file, dsa_dn)
+        else:
+            kcc.samdb = samdb
+        kcc.run(dburl, lp, creds, forced_local_dsa=dsa_dn,
                 forget_local_links=opts.forget_local_links,
                 forget_intersite_links=opts.forget_intersite_links,
                 attempt_live_connections=opts.attempt_live_connections)
@@ -305,7 +322,9 @@ if opts.importldif:
 kcc.load_samdb(opts.dburl, lp, creds, force=False)
 
 if opts.test_all_reps_from:
-    test_all_reps_from(kcc, lp, creds, unix_now, rng_seed=opts.seed)
+    test_all_reps_from(kcc, opts.dburl, lp, creds, unix_now,
+                       rng_seed=opts.seed,
+                       ldif_file=opts.importldif)
     sys.exit()
 
 if opts.list_valid_dsas:
