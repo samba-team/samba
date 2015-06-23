@@ -321,13 +321,14 @@ static DNS_ERROR dns_receive_tcp(TALLOC_CTX *mem_ctx,
 
 	buf->size = ntohs(len);
 
-	if (buf->size) {
-		if (!(buf->data = talloc_array(buf, uint8_t, buf->size))) {
-			TALLOC_FREE(buf);
-			return ERROR_DNS_NO_MEMORY;
-		}
-	} else {
-		buf->data = NULL;
+	if (buf->size == 0) {
+		*presult = buf;
+		return ERROR_DNS_SUCCESS;
+	}
+
+	if (!(buf->data = talloc_array(buf, uint8_t, buf->size))) {
+		TALLOC_FREE(buf);
+		return ERROR_DNS_NO_MEMORY;
 	}
 
 	err = read_all(conn->s, buf->data, buf->size);
