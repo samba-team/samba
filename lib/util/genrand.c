@@ -19,10 +19,13 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
+#include "replace.h"
 #include "system/filesys.h"
 #include "../lib/crypto/crypto.h"
-#include "system/locale.h"
+#include "lib/util/genrand.h"
+#include "lib/util/blocking.h"
+#include "lib/util/time_basic.h"
+#include "lib/util/byteorder.h"
 
 /**
  * @file

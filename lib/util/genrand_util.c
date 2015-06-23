@@ -20,8 +20,6 @@
 */
 
 #include "includes.h"
-#include "system/filesys.h"
-#include "../lib/crypto/crypto.h"
 #include "system/locale.h"
 
 /**

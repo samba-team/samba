@@ -87,28 +87,8 @@ _PUBLIC_ int sys_getnameinfo(const struct sockaddr *psa,
 			     int flags);
 
 /* The following definitions come from lib/util/genrand.c  */
-/**
- Copy any user given reseed data.
-**/
-_PUBLIC_ void set_rand_reseed_callback(void (*fn)(void *, int *), void *);
 
-/**
- * Tell the random number generator it needs to reseed.
- */
-_PUBLIC_ void set_need_random_reseed(void);
-
-/**
- Interface to the (hopefully) good crypto random number generator.
- Will use our internal PRNG if more than 40 bytes of random generation
- has been requested, otherwise tries to read from /dev/random
-**/
-_PUBLIC_ void generate_random_buffer(uint8_t *out, int len);
-
-/**
- Interface to the (hopefully) good crypto random number generator.
- Will always use /dev/urandom if available.
-**/
-_PUBLIC_ void generate_secret_buffer(uint8_t *out, int len);
+#include "lib/util/genrand.h"
 
 /**
   generate a single random uint32_t
