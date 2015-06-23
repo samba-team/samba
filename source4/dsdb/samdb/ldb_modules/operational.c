@@ -617,9 +617,6 @@ static int construct_msds_keyversionnumber(struct ldb_module *module,
 		/* We can't make up a key version number without meta data */
 		return LDB_SUCCESS;
 	}
-	if (!omd_value) {
-		return LDB_SUCCESS;
-	}
 
 	omd = talloc(msg, struct replPropertyMetaDataBlob);
 	if (!omd) {
