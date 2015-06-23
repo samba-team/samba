@@ -46,7 +46,6 @@ struct gensec_gssapi_state {
 	NTTIME expire_time;
 
 	/* gensec_gssapi only */
-	gss_krb5_lucid_context_v1_t *lucid;
 	gss_OID gss_oid;
 
 	struct gss_channel_bindings_struct *input_chan_bindings;

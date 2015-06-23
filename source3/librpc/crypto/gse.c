@@ -33,6 +33,7 @@
 #if defined(HAVE_KRB5)
 
 #include "auth/kerberos/pac_utils.h"
+#include "auth/kerberos/gssapi_helper.h"
 #include "gse_krb5.h"
 
 static char *gse_errstr(TALLOC_CTX *mem_ctx, OM_uint32 maj, OM_uint32 min);
