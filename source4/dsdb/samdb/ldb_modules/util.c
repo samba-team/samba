@@ -1234,6 +1234,9 @@ int dsdb_module_constrainted_update_int64(struct ldb_module *module,
 	int ret;
 
 	msg = ldb_msg_new(module);
+	if (msg == NULL) {
+		return ldb_module_oom(module);
+	}
 	msg->dn = dn;
 
 	ret = dsdb_msg_constrainted_update_int64(module,
