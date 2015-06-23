@@ -635,7 +635,15 @@ _PUBLIC_ int cli_credentials_get_client_gss_creds(struct cli_credentials *cred,
 	}
 
 #ifdef HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X
-	/* don't force GSS_C_CONF_FLAG and GSS_C_INTEG_FLAG */
+	/*
+	 * Don't force GSS_C_CONF_FLAG and GSS_C_INTEG_FLAG.
+	 *
+	 * This allows us to disable SIGN and SEAL on a TLS connection with
+	 * GSS-SPNENO. For example ldaps:// connections.
+	 *
+	 * https://groups.yahoo.com/neo/groups/cat-ietf/conversations/topics/575
+	 * http://krbdev.mit.edu/rt/Ticket/Display.html?id=6938
+	 */
 	maj_stat = gss_set_cred_option(&min_stat, &gcc->creds,
 				       GSS_KRB5_CRED_NO_CI_FLAGS_X,
 				       &empty_buffer);
