@@ -331,7 +331,7 @@ static DNS_ERROR dns_receive_tcp(TALLOC_CTX *mem_ctx,
 		return ERROR_DNS_NO_MEMORY;
 	}
 
-	err = read_all(conn->s, buf->data, buf->size);
+	err = read_all(conn->s, buf->data, talloc_get_size(buf->data));
 	if (!ERR_DNS_IS_OK(err)) {
 		TALLOC_FREE(buf);
 		return err;
