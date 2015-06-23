@@ -69,8 +69,6 @@ struct regval_blob* regval_ctr_getvalue(struct regval_ctr *ctr,
 					const char *name);
 int regval_ctr_get_seqnum(struct regval_ctr *ctr);
 WERROR regval_ctr_set_seqnum(struct regval_ctr *ctr, int seqnum);
-uint32_t regval_dword(struct regval_blob *val);
-const char *regval_sz(struct regval_blob *val);
 
 
 #endif /* _REG_OBJECTS_H */
