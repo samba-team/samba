@@ -2227,9 +2227,8 @@ static int setup_io(struct ph_context *ac,
 { 
 	const struct ldb_val *quoted_utf16, *old_quoted_utf16, *lm_hash, *old_lm_hash;
 	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
-	struct loadparm_context *lp_ctx =
-		lp_ctx = talloc_get_type(ldb_get_opaque(ldb, "loadparm"),
-					 struct loadparm_context);
+	struct loadparm_context *lp_ctx = talloc_get_type(
+		ldb_get_opaque(ldb, "loadparm"), struct loadparm_context);
 	int ret;
 
 	ZERO_STRUCTP(io);
