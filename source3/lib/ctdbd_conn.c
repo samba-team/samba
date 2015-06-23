@@ -136,8 +136,8 @@ NTSTATUS register_with_ctdbd(struct ctdbd_connection *conn, uint64_t srvid,
 	return NT_STATUS_OK;
 }
 
-static void ctdbd_msg_call_back(struct ctdbd_connection *conn,
-				struct ctdb_req_message *msg)
+static int ctdbd_msg_call_back(struct ctdbd_connection *conn,
+			       struct ctdb_req_message *msg)
 {
 	size_t msg_len;
 	size_t i, num_callbacks;
@@ -146,14 +146,14 @@ static void ctdbd_msg_call_back(struct ctdbd_connection *conn,
 	if (msg_len < offsetof(struct ctdb_req_message, data)) {
 		DEBUG(10, ("%s: len %u too small\n", __func__,
 			   (unsigned)msg_len));
-		return;
+		return 0;
 	}
 	msg_len -= offsetof(struct ctdb_req_message, data);
 
 	if (msg_len < msg->datalen) {
 		DEBUG(10, ("%s: msg_len=%u < msg->datalen=%u\n", __func__,
 			   (unsigned)msg_len, (unsigned)msg->datalen));
-		return;
+		return 0;
 	}
 
 	num_callbacks = talloc_array_length(conn->callbacks);
@@ -162,11 +162,17 @@ static void ctdbd_msg_call_back(struct ctdbd_connection *conn,
 		struct ctdbd_srvid_cb *cb = &conn->callbacks[i];
 
 		if ((cb->srvid == msg->srvid) && (cb->cb != NULL)) {
-			cb->cb(msg->hdr.srcnode, msg->hdr.destnode,
-			       msg->srvid, msg->data, msg->datalen,
-			       cb->private_data);
+			int ret;
+
+			ret = cb->cb(msg->hdr.srcnode, msg->hdr.destnode,
+				     msg->srvid, msg->data, msg->datalen,
+				     cb->private_data);
+			if (ret != 0) {
+				return ret;
+			}
 		}
 	}
+	return 0;
 }
 
 /*
