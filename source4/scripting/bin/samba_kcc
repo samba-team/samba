@@ -291,6 +291,10 @@ if opts.importldif:
     if opts.tmpdb is None or opts.tmpdb.startswith('ldap'):
         logger.error("Specify a target temp database file with --tmpdb option")
         sys.exit(1)
+    if os.path.exists(opts.tmpdb):
+        logger.error("The temp database file (%s) specified with --tmpdb "
+                     "already exists. We refuse to clobber it." % opts.tmpdb)
+        sys.exit(1)
 
     rc = kcc.import_ldif(opts.tmpdb, lp, opts.importldif,
                          forced_local_dsa=opts.forced_local_dsa)
