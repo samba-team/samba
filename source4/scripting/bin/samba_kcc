@@ -271,7 +271,13 @@ lp = sambaopts.get_loadparm()
 creds = credopts.get_credentials(lp, fallback_machine=True)
 
 if opts.dburl is None:
-    opts.dburl = lp.samdb_url()
+    if opts.importldif:
+        opts.dburl = opts.tmpdb
+    else:
+        opts.dburl = lp.samdb_url()
+elif opts.importldif:
+    logger.error("Don't use -H/--URL with --importldif, use --tmpdb instead")
+    sys.exit(1)
 
 # Instantiate Knowledge Consistency Checker and perform run
 kcc = KCC(unix_now, readonly=opts.readonly, verify=opts.verify,
