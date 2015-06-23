@@ -3,10 +3,11 @@
 # Please add any new SAMBA_SUBSYSTEM/SAMBA_LIBRARY to the bottom of the file
 # unless they are also required to build standalone ctdb.
 
-bld.SAMBA_SUBSYSTEM('time-basic',
-                    source='time_basic.c',
-                    deps='replace',
-                    local_include=False)
+bld.SAMBA_LIBRARY('time-basic',
+                  source='time_basic.c',
+                  deps='replace',
+                  private_library=True,
+                  local_include=False)
 
 bld.SAMBA_SUBSYSTEM('tini',
                     source='tini.c',
