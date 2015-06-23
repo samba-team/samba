@@ -2136,12 +2136,14 @@ static bool test_durable_open_open2_lease(struct torture_context *tctx,
 	h1 = io1.out.file.handle;
 
  done:
+	if (tree1 != NULL){
+		smb2_util_close(tree1, h1);
+		smb2_util_unlink(tree1, fname);
+		talloc_free(tree1);
+	}
+
 	smb2_util_close(tree2, h2);
 	smb2_util_unlink(tree2, fname);
-	smb2_util_close(tree1, h1);
-	smb2_util_unlink(tree1, fname);
-
-	talloc_free(tree1);
 	talloc_free(tree2);
 
 	return ret;
