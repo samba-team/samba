@@ -165,11 +165,12 @@ class KCC(object):
             if transport.name == 'IP':
                 self.ip_transport = transport
             elif transport.name == 'SMTP':
-                logger.debug("Samba KCC is ignoring the obsolete SMTP transport.")
+                logger.debug("Samba KCC is ignoring the obsolete "
+                             "SMTP transport.")
 
             else:
-                logger.warning("Samba KCC does not support the transport called %r."
-                               % (transport.name,))
+                logger.warning("Samba KCC does not support the transport "
+                               "called %r." % (transport.name,))
 
         if self.ip_transport is None:
             raise KCCError("there doesn't seem to be an IP transport")
