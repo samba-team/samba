@@ -1,20 +1,20 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    Functions to create reasonable random numbers for crypto use.
 
    Copyright (C) Jeremy Allison 2001
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -69,7 +69,7 @@ static void get_rand_reseed_data(int *reseed_data)
 	}
 }
 
-/**************************************************************** 
+/****************************************************************
  Setup the seed.
 *****************************************************************/
 
@@ -95,7 +95,7 @@ static void seed_random_stream(unsigned char *seedval, size_t seedlen)
 	hash[257] = 0;
 }
 
-/**************************************************************** 
+/****************************************************************
  Get datasize bytes worth of random data.
 *****************************************************************/
 
@@ -125,7 +125,7 @@ static void get_random_stream(unsigned char *data, size_t datasize)
 }
 
 /****************************************************************
- Get a 16 byte hash from the contents of a file.  
+ Get a 16 byte hash from the contents of a file.
 
  Note that the hash is initialised, because the extra entropy is not
  worth the valgrind pain.
@@ -226,7 +226,7 @@ _PUBLIC_ void generate_random_buffer(uint8_t *out, int len)
 
 	if(!done_reseed) {
 		bytes_since_reseed += len;
-		
+
 		/* Magic constant to try and avoid reading 40 bytes
 		 * and setting up the PRNG if the app only ever wants
 		 * a few bytes */
@@ -280,6 +280,6 @@ _PUBLIC_ void generate_secret_buffer(uint8_t *out, int len)
 	if(urand_fd != -1 && (read(urand_fd, out, len) == len)) {
 		return;
 	}
-	
+
 	generate_random_buffer(out, len);
 }
