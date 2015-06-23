@@ -82,7 +82,7 @@ static int extended_dn_out_dereference_setup_control(struct ldb_context *ldb, st
 		dereference_control->dereference
 			= talloc_realloc(p, dereference_control->dereference,
 					 struct dsdb_openldap_dereference *, i + 2);
-		if (!dereference_control) {
+		if (!dereference_control->dereference) {
 			return ldb_oom(ldb);
 		}
 		dereference_control->dereference[i] = talloc(dereference_control->dereference,
