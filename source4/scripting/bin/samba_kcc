@@ -46,7 +46,6 @@ from samba import getopt as options
 from samba.kcc.graph_utils import verify_and_dot, list_verify_tests
 from samba.kcc.graph_utils import GraphError
 
-
 import logging
 from samba.kcc.debug import logger, DEBUG, DEBUG_FN
 from samba.kcc import KCC

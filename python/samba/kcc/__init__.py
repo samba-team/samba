@@ -586,7 +586,6 @@ class KCC(object):
         for dsa in self.my_site.dsa_table.values():
             self._commit_changes(dsa)
 
-
     def modify_repsFrom(self, n_rep, t_repsFrom, s_rep, s_dsa, cn_conn):
         """Update an repsFrom object if required.
 
@@ -826,7 +825,6 @@ class KCC(object):
             (not s_rep.is_ro() or n_rep.is_partial())):
             return s_dsa
         return None
-
 
     def translate_ntdsconn(self, current_dsa=None):
         """Adjust repsFrom to match NTDSConnections
