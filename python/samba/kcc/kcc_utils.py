@@ -1096,12 +1096,6 @@ class NTDSConnection(object):
     def set_modified(self, truefalse):
         self.to_be_modified = truefalse
 
-    def set_added(self, truefalse):
-        self.to_be_added = truefalse
-
-    def set_deleted(self, truefalse):
-        self.to_be_deleted = truefalse
-
     def is_schedule_minimum_once_per_week(self):
         """Returns True if our schedule includes at least one
         replication interval within the week.  False otherwise
