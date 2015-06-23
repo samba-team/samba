@@ -63,16 +63,22 @@ if not bld.env.SAMBA_UTIL_CORE_ONLY:
 
     bld.env.public_headers_skip.append('charset_compat.h')
 
+    bld.SAMBA_LIBRARY('genrand',
+                      source='genrand.c',
+                      deps='time-basic socket-blocking LIBCRYPTO',
+                      local_include=False,
+                      private_library=True)
+
     bld.SAMBA_LIBRARY('samba-util',
                   source='''talloc_stack.c smb_threads.c
                     rbtree.c rfc1738.c become_daemon.c system.c select.c getpass.c
-                    genrand.c genrand_util.c fsusage.c
+                    genrand_util.c fsusage.c
                     params.c util_id.c util_net.c
                     util_strlist.c util_paths.c idtree_random.c base64.c
                     util_str.c util_str_common.c ms_fnmatch.c
                     server_id.c dprintf.c parmlist.c bitmap.c pidfile.c
                     tevent_debug.c util_process.c memcache.c''',
-                  deps='samba-util-core DYNCONFIG close-low-fd tini tiniparser',
+                  deps='samba-util-core DYNCONFIG close-low-fd tini tiniparser genrand',
 
                   public_deps='talloc tevent execinfo pthread LIBCRYPTO charset util_setid systemd systemd-daemon',
                   public_headers='debug.h attr.h byteorder.h data_blob.h memory.h safe_string.h time.h talloc_stack.h xfile.h dlinklist.h samba_util.h string_wrappers.h idtree.h idtree_random.h blocking.h signal.h substitute.h fault.h genrand.h',
