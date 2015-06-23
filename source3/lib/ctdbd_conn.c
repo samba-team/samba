@@ -50,9 +50,6 @@ struct ctdbd_connection {
 	struct ctdbd_srvid_cb *callbacks;
 	int fd;
 	struct tevent_fd *fde;
-
-	bool (*release_ip_handler)(const char *ip_addr, void *private_data);
-	void *release_ip_priv;
 };
 
 static uint32_t ctdbd_next_reqid(struct ctdbd_connection *conn)
@@ -399,30 +396,6 @@ static int ctdb_read_req(struct ctdbd_connection *conn, uint32_t reqid,
 			goto next_pkt;
 		}
 
-		if ((conn->release_ip_handler != NULL)
-		    && (msg->srvid == CTDB_SRVID_RELEASE_IP)) {
-			bool ok;
-
-			/* must be dispatched immediately */
-			DEBUG(10, ("received CTDB_SRVID_RELEASE_IP\n"));
-			ok = conn->release_ip_handler((const char *)msg->data,
-						       conn->release_ip_priv);
-			TALLOC_FREE(hdr);
-
-			if (ok) {
-				/*
-				 * We need to release the ip,
-				 * so return an error to the upper layers.
-				 *
-				 * We make sure we don't trigger this again.
-				 */
-				conn->release_ip_handler = NULL;
-				conn->release_ip_priv = NULL;
-				return EADDRNOTAVAIL;
-			}
-			goto next_pkt;
-		}
-
 		ret = ctdbd_msg_call_back(conn, msg);
 		if (ret != 0) {
 			TALLOC_FREE(hdr);
@@ -561,26 +534,6 @@ static int ctdb_handle_message(struct ctdbd_connection *conn,
 	}
 
 	msg = (struct ctdb_req_message *)hdr;
-
-	if ((conn->release_ip_handler != NULL)
-	    && (msg->srvid == CTDB_SRVID_RELEASE_IP)) {
-		bool ret;
-
-		/* must be dispatched immediately */
-		DEBUG(10, ("received CTDB_SRVID_RELEASE_IP\n"));
-		ret = conn->release_ip_handler((const char *)msg->data,
-					       conn->release_ip_priv);
-		if (ret) {
-			/*
-			 * We need to release the ip.
-			 *
-			 * We make sure we don't trigger this again.
-			 */
-			conn->release_ip_handler = NULL;
-			conn->release_ip_priv = NULL;
-		}
-		return 0;
-	}
 
 	ctdbd_msg_call_back(conn, msg);
 
@@ -1499,8 +1452,10 @@ static void smbd_ctdb_canonicalize_ip(const struct sockaddr_storage *in,
 NTSTATUS ctdbd_register_ips(struct ctdbd_connection *conn,
 			    const struct sockaddr_storage *_server,
 			    const struct sockaddr_storage *_client,
-			    bool (*release_ip_handler)(const char *ip_addr,
-						       void *private_data),
+			    int (*cb)(uint32_t src_vnn, uint32_t dst_vnn,
+				      uint64_t dst_srvid,
+				      const uint8_t *msg, size_t msglen,
+				      void *private_data),
 			    void *private_data)
 {
 	struct ctdb_control_tcp_addr p;
@@ -1512,7 +1467,6 @@ NTSTATUS ctdbd_register_ips(struct ctdbd_connection *conn,
 	/*
 	 * Only one connection so far
 	 */
-	SMB_ASSERT(conn->release_ip_handler == NULL);
 
 	smbd_ctdb_canonicalize_ip(_client, &client);
 	smbd_ctdb_canonicalize_ip(_server, &server);
@@ -1530,14 +1484,12 @@ NTSTATUS ctdbd_register_ips(struct ctdbd_connection *conn,
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	conn->release_ip_handler = release_ip_handler;
-	conn->release_ip_priv = private_data;
-
 	/*
 	 * We want to be told about IP releases
 	 */
 
-	status = register_with_ctdbd(conn, CTDB_SRVID_RELEASE_IP, NULL, NULL);
+	status = register_with_ctdbd(conn, CTDB_SRVID_RELEASE_IP,
+				     cb, private_data);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

@@ -2616,18 +2616,31 @@ static void smbd_release_ip_immediate(struct tevent_context *ctx,
 /****************************************************************************
 received when we should release a specific IP
 ****************************************************************************/
-static bool release_ip(const char *ip, void *priv)
+static int release_ip(uint32_t src_vnn, uint32_t dst_vnn,
+		      uint64_t dst_srvid,
+		      const uint8_t *msg, size_t msglen,
+		      void *private_data)
 {
 	struct smbd_release_ip_state *state =
-		talloc_get_type_abort(priv,
+		talloc_get_type_abort(private_data,
 		struct smbd_release_ip_state);
 	struct smbXsrv_connection *xconn = state->xconn;
+	const char *ip;
 	const char *addr = state->addr;
 	const char *p = addr;
 
+	if (msglen == 0) {
+		return 0;
+	}
+	if (msg[msglen-1] != '\0') {
+		return 0;
+	}
+
+	ip = (const char *)msg;
+
 	if (!NT_STATUS_IS_OK(xconn->transport.status)) {
 		/* avoid recursion */
-		return false;
+		return 0;
 	}
 
 	if (strncmp("::ffff:", addr, 7) == 0) {
@@ -2668,10 +2681,10 @@ static bool release_ip(const char *ip, void *priv)
 		 * Make sure we don't get any io on the connection.
 		 */
 		xconn->transport.status = NT_STATUS_ADDRESS_CLOSED;
-		return true;
+		return EADDRNOTAVAIL;
 	}
 
-	return false;
+	return 0;
 }
 
 static NTSTATUS smbd_register_ips(struct smbXsrv_connection *xconn,
