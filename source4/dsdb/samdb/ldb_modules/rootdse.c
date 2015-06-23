@@ -1178,6 +1178,10 @@ static int rootdse_enable_recycle_bin(struct ldb_module *module,struct ldb_conte
 	}
 
 	msg = ldb_msg_new(tmp_ctx);
+	if (msg == NULL) {
+		talloc_free(tmp_ctx);
+		return ldb_module_oom(module);
+	}
 	msg->dn = ntds_settings_dn;
 
 	ldb_msg_add_linearized_dn(msg, "msDS-EnabledFeature", op_feature_msg->dn);
