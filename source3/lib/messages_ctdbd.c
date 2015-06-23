@@ -50,6 +50,7 @@ struct ctdbd_connection *messaging_ctdbd_connection(void)
 		ev = samba_tevent_context_init(NULL);
 		if (!ev) {
 			DEBUG(0,("samba_tevent_context_init failed\n"));
+			return NULL;
 		}
 
 		msg = messaging_init(NULL, ev);
