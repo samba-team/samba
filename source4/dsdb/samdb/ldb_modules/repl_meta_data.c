@@ -1837,7 +1837,7 @@ static int replmd_check_upgrade_links(struct parsed_dn *dns, uint32_t count, str
  */
 static int replmd_update_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct dsdb_dn *dsdb_dn,
 				struct dsdb_dn *old_dsdb_dn, const struct GUID *invocation_id,
-				uint64_t seq_num, uint64_t local_usn, NTTIME nttime,
+				uint64_t usn, uint64_t local_usn, NTTIME nttime,
 				uint32_t version, bool deleted)
 {
 	struct ldb_dn *dn = dsdb_dn->dn;
@@ -1860,7 +1860,7 @@ static int replmd_update_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct d
 	}
 	tval = data_blob_string_const(tstring);
 
-	usn_string = talloc_asprintf(mem_ctx, "%llu", (unsigned long long)seq_num);
+	usn_string = talloc_asprintf(mem_ctx, "%llu", (unsigned long long)usn);
 	if (!usn_string) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
