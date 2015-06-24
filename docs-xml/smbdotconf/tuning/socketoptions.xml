@@ -54,12 +54,24 @@
     	<listitem><para>SO_REUSEADDR</para></listitem>
     	<listitem><para>SO_BROADCAST</para></listitem>
     	<listitem><para>TCP_NODELAY</para></listitem>
+	<listitem><para>TCP_KEEPCNT *</para></listitem>
+	<listitem><para>TCP_KEEPIDLE *</para></listitem>
+	<listitem><para>TCP_KEEPINTVL *</para></listitem>
     	<listitem><para>IPTOS_LOWDELAY</para></listitem>
     	<listitem><para>IPTOS_THROUGHPUT</para></listitem>
+	<listitem><para>SO_REUSEPORT</para></listitem>
     	<listitem><para>SO_SNDBUF *</para></listitem>
     	<listitem><para>SO_RCVBUF *</para></listitem>
     	<listitem><para>SO_SNDLOWAT *</para></listitem>
     	<listitem><para>SO_RCVLOWAT *</para></listitem>
+	<listitem><para>SO_SNDTIMEO *</para></listitem>
+	<listitem><para>SO_RCVTIMEO *</para></listitem>
+	<listitem><para>TCP_FASTACK *</para></listitem>
+	<listitem><para>TCP_QUICKACK</para></listitem>
+	<listitem><para>TCP_NODELAYACK</para></listitem>
+	<listitem><para>TCP_KEEPALIVE_THRESHOLD *</para></listitem>
+	<listitem><para>TCP_KEEPALIVE_ABORT_THRESHOLD *</para></listitem>
+	<listitem><para>TCP_DEFER_ACCEPT *</para></listitem>
     </itemizedlist>
 
     <para>Those marked with a <emphasis>'*'</emphasis> take an integer 
