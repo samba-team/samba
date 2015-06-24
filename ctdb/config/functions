@@ -704,76 +704,6 @@ startstop_ganesha()
     esac
 }
 
-########################################################
-# start/stop the nfs service on different platforms
-########################################################
-startstop_nfs() {
-	PLATFORM="unknown"
-	[ -x $CTDB_ETCDIR/init.d/nfsserver ] && {
-		PLATFORM="sles"
-	}
-	[ -x $CTDB_ETCDIR/init.d/nfslock -o \
-	    -r /usr/lib/systemd/system/nfs-lock.service ] && {
-		PLATFORM="rhel"
-	}
-
-	case $PLATFORM in
-	sles)
-		case $1 in
-		start)
-			service nfsserver start
-			;;
-		stop)
-			service nfsserver stop > /dev/null 2>&1
-			;;
-		restart)
-			set_proc "fs/nfsd/threads" 0
-			service nfsserver stop > /dev/null 2>&1
-			pkill -9 nfsd
-			nfs_dump_some_threads
-			service nfsserver start
-			;;
-		restart-stop)
-			set_proc "fs/nfsd/threads" 0
-			service nfsserver stop > /dev/null 2>&1
-			pkill -9 nfsd
-			;;
-		esac
-		;;
-	rhel)
-		case $1 in
-		start)
-			service nfslock start
-			service nfs start
-			;;
-		stop)
-			service nfs stop
-			service nfslock stop
-			;;
-		restart)
-			set_proc "fs/nfsd/threads" 0
-			service nfs stop > /dev/null 2>&1
-			service nfslock stop > /dev/null 2>&1
-			pkill -9 nfsd
-			nfs_dump_some_threads
-			service nfslock start
-			service nfs start
-			;;
-		restart-stop)
-			set_proc "fs/nfsd/threads" 0
-			service nfs stop > /dev/null 2>&1
-			service nfslock stop > /dev/null 2>&1
-			pkill -9 nfsd
-			;;
-		esac
-		;;
-	*)
-		echo "Unknown platform. NFS is not supported with ctdb"
-		exit 1
-		;;
-	esac
-}
-
 # Dump up to the configured number of nfsd thread backtraces.
 nfs_dump_some_threads ()
 {
@@ -783,57 +713,6 @@ nfs_dump_some_threads ()
     [ $_num -gt 0 ] || return 0
 
     program_stack_traces "$_prog" $_num
-}
-
-########################################################
-# start/stop the nfs lockmanager service on different platforms
-########################################################
-startstop_nfslock() {
-	PLATFORM="unknown"
-	[ -x $CTDB_ETCDIR/init.d/nfsserver ] && {
-		PLATFORM="sles"
-	}
-	[ -x $CTDB_ETCDIR/init.d/nfslock -o \
-	    -r /usr/lib/systemd/system/nfs-lock.service ] && {
-		PLATFORM="rhel"
-	}
-
-	case $PLATFORM in
-	sles)
-		# for sles there is no service for lockmanager
-		# so we instead just shutdown/restart nfs
-		case $1 in
-		start)
-			service nfsserver start
-			;;
-		stop)
-			service nfsserver stop > /dev/null 2>&1
-			;;
-		restart)
-			service nfsserver stop > /dev/null 2>&1
-			service nfsserver start
-			;;
-		esac
-		;;
-	rhel)
-		case $1 in
-		start)
-			service nfslock start
-			;;
-		stop)
-			service nfslock stop > /dev/null 2>&1
-			;;
-		restart)
-			service nfslock stop > /dev/null 2>&1
-			service nfslock start
-			;;
-		esac
-		;;
-	*)
-		echo "Unknown platform. NFS locking is not supported with ctdb"
-		exit 1
-		;;
-	esac
 }
 
 ########################################################

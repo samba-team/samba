@@ -814,7 +814,6 @@ setup_nfs ()
 	eventscript_call ctdb_service_unmanaged
 	service "nfs" force-stopped
 	service "nfslock" force-stopped
-	eventscript_call startstop_nfs stop
 
 	export CTDB_MANAGED_SERVICES="foo bar"
 	unset CTDB_MANAGES_NFS
