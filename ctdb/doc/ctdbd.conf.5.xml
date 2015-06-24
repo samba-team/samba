@@ -1056,6 +1056,21 @@ CTDB_PER_IP_ROUTING_TABLE_ID_HIGH=9000
 	</varlistentry>
 
 	<varlistentry>
+	  <term>CTDB_NFS_CALLOUT=<parameter>COMMAND</parameter></term>
+	  <listitem>
+	    <para>
+	      COMMAND specifies the path to a callout to handle
+	      interactions with the configured NFS system, including
+	      startup, shutdown, monitoring.
+	    </para>
+	    <para>
+	      Default is the included
+	      <command>nfs-linux-kernel-callout</command>.
+	    </para>
+	  </listitem>
+	</varlistentry>
+
+	<varlistentry>
 	  <term>CTDB_NFS_DUMP_STUCK_THREADS=<parameter>NUM</parameter></term>
 	  <listitem>
 	    <para>

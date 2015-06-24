@@ -9,6 +9,6 @@ define_test "statd down, 2 iterations, stuck process"
 setup_nfs
 rpc_services_down "status"
 CTDB_NFS_DUMP_STUCK_THREADS=2
-FAKE_RPC_THREAD_PIDS="1001"
+nfs_setup_fake_threads "rpc.status" 1001
 
 nfs_iterate_test 2 "status"

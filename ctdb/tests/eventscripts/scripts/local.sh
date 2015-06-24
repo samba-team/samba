@@ -789,8 +789,8 @@ setup_nfs ()
 
     export CTDB_NFS_SKIP_SHARE_CHECK="no"
 
-    export CTDB_MONITOR_NFS_THREAD_COUNT RPCNFSDCOUNT FAKE_NFSD_THREAD_PIDS
-    export CTDB_NFS_DUMP_STUCK_THREADS FAKE_RPC_THREAD_PIDS
+    export CTDB_MONITOR_NFS_THREAD_COUNT RPCNFSDCOUNT
+    export CTDB_NFS_DUMP_STUCK_THREADS
 
     # Reset the failcounts for nfs services.
     eventscript_call eval rm -f '$ctdb_fail_dir/nfs_*'
@@ -805,6 +805,9 @@ setup_nfs ()
 	export CTDB_MANAGED_SERVICES="foo nfs bar"
 
 	rpc_services_up "nfs" "mountd" "rquotad" "nlockmgr" "status"
+
+	nfs_setup_fake_threads "nfsd"
+	nfs_setup_fake_threads "rpc.foobar"  # Just set the variable to empty
     else
 	debug "Setting up NFS environment: all RPC services down, NFS not managed by CTDB"
 
@@ -876,6 +879,24 @@ nfs_load_config ()
     done
 }
 
+nfs_setup_fake_threads ()
+{
+    _prog="$1" ; shift
+
+    case "$_prog" in
+	nfsd)
+	    export PROCFS_PATH=$(mktemp -d --tmpdir="$EVENTSCRIPTS_TESTS_VAR_DIR")
+	    _threads="${PROCFS_PATH}/fs/nfsd/threads"
+	    mkdir -p $(dirname "$_threads")
+	    echo $# >"$_threads"
+	    export FAKE_NFSD_THREAD_PIDS="$*"
+	    ;;
+	*)
+	    export FAKE_RPC_THREAD_PIDS="$*"
+	    ;;
+    esac
+}
+
 program_stack_traces ()
 {
     _prog="$1"
@@ -896,10 +917,10 @@ EOF
 guess_output ()
 {
     case "$1" in
-	startstop_nfslock\ start)
+	$CTDB_NFS_CALLOUT\ start\ nlockmgr)
 	    echo "&Starting nfslock: OK"
 	    ;;
-	startstop_nfs\ start)
+	$CTDB_NFS_CALLOUT\ start\ nfs)
 	    cat <<EOF
 &Starting nfslock: OK
 &Starting nfs: OK

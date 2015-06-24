@@ -10,6 +10,6 @@ rpc_services_down "nfs"
 
 # Additionally, any hung threads should have stack traces dumped.
 CTDB_NFS_DUMP_STUCK_THREADS=5
-FAKE_NFSD_THREAD_PIDS="1001 1002 1003"
+nfs_setup_fake_threads "nfsd" 1001 1002 1003
 
 nfs_iterate_test 10 "nfs"

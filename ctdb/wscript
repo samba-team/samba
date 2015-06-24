@@ -486,6 +486,7 @@ def build(bld):
         'debug-hung-script.sh',
         'debug_locks.sh',
         'gcore_trace.sh',
+        'nfs-linux-kernel-callout',
         'notify.sh',
         'statd-callout'
     ]
@@ -628,6 +629,7 @@ def build(bld):
         'events.d',
         'functions',
         'nfs-checks.d',
+        'nfs-linux-kernel-callout',
         'statd-callout'
     ]
 

@@ -7,45 +7,24 @@
 . $CTDB_BASE/functions
 
 service_name="nfs"
-service_start ()
+
+if [ -z "$CTDB_NFS_CALLOUT" ] ; then
+    CTDB_NFS_CALLOUT="${CTDB_BASE}/nfs-linux-kernel-callout"
+fi
+# Always export, for statd callout
+export CTDB_NFS_CALLOUT
+
+nfs_callout ()
 {
-    startstop_nfs stop
-    startstop_nfs start
-    set_proc "sys/net/ipv4/tcp_tw_recycle" 1
+    eval "$CTDB_NFS_CALLOUT" "$@"
 }
-service_stop ()
-{
-    startstop_nfs stop
-}
+
 service_reconfigure ()
 {
     # Restart lock manager, notify clients
     if [ -x "${CTDB_BASE}/statd-callout" ] ; then
 	"${CTDB_BASE}/statd-callout" notify &
     fi >/dev/null 2>&1
-}
-
-nfs_check_thread_count ()
-{
-    [ "$CTDB_MONITOR_NFS_THREAD_COUNT" = "yes" ] || return 0
-
-    # If $RPCNFSDCOUNT/$USE_KERNEL_NFSD_NUMBER isn't set then we could
-    # guess the default from the initscript.  However, let's just
-    # assume that those using the default don't care about the number
-    # of threads and that they have switched on this feature in error.
-    _configured_threads="${RPCNFSDCOUNT:-${USE_KERNEL_NFSD_NUMBER}}"
-    [ -n "$_configured_threads" ] || return 0
-
-    # nfsd should be running the configured number of threads.  If
-    # there are a different number of threads then tell nfsd the
-    # correct number.  
-    _running_threads=$(get_proc "fs/nfsd/threads")
-    # Intentionally not arithmetic comparison - avoids extra errors
-    # when get_proc() fails...
-    if [ "$_running_threads" != "$_configured_threads" ] ; then
-	echo "Attempting to correct number of nfsd threads from ${_running_threads} to ${_configured_threads}"
-	set_proc "fs/nfsd/threads" "$_configured_threads"
-    fi
 }
 
 loadconfig
@@ -60,41 +39,40 @@ is_ctdb_managed_service || exit 0
 
 ctdb_service_check_reconfigure
 
-case "$1" in 
-     init)
-	# read statd from persistent database
-	;;
-     startup)
-	ctdb_service_start
+case "$1" in
+    startup)
+	nfs_callout "$@"
 	;;
 
-     shutdown)
-	ctdb_service_stop
+    shutdown)
+	 nfs_callout "$@"
 	;;
 
-     takeip)
+    takeip)
+	nfs_callout "$@"
 	ctdb_service_set_reconfigure
 	;;
 
-     releaseip)
+    releaseip)
+	nfs_callout "$@"
 	ctdb_service_set_reconfigure
 	;;
 
-      monitor)
-	# Check that directories for shares actually exist.
-	[ "$CTDB_NFS_SKIP_SHARE_CHECK" = "yes" ] || {
-	    exportfs -v | grep '^/' | 
-	    sed -r -e 's@[[:space:]]+[^[:space:]()]+\([^[:space:]()]+\)$@@' | 
-	    sort -u | 
-	    ctdb_check_directories 
-	} || exit $?
+    monitor)
+	nfs_callout "monitor-pre" || exit $?
+
+	# Check that directories for shares actually exist
+	if [ "$CTDB_NFS_SKIP_SHARE_CHECK" != "yes" ] ; then
+	    nfs_callout "monitor-list-shares" | ctdb_check_directories || \
+		exit $?
+	fi
 
 	update_tickles 2049
 	nfs_update_lock_info
 
 	nfs_check_services
 
-	nfs_check_thread_count
+	nfs_callout "monitor-post" || exit $?
        	;;
 
     *)

@@ -191,6 +191,7 @@ rm -rf $RPM_BUILD_ROOT
 %config(noreplace) %{_sysconfdir}/ctdb/nfs-checks.d/40.mountd.check
 %config(noreplace) %{_sysconfdir}/ctdb/nfs-checks.d/50.rquotad.check
 %{_sysconfdir}/ctdb/statd-callout
+%{_sysconfdir}/ctdb/nfs-linux-kernel-callout
 %{_sbindir}/ctdbd
 %{_sbindir}/ctdbd_wrapper
 %{_bindir}/ctdb

@@ -11,7 +11,7 @@ setup_nfs
 
 CTDB_MONITOR_NFS_THREAD_COUNT="yes"
 RPCNFSDCOUNT=4
-FAKE_NFSD_THREAD_PIDS="1 2 3 4 5 6"
+nfs_setup_fake_threads "nfsd" 1 2 3 4 5 6
 
 ok "Attempting to correct number of nfsd threads from 6 to 4"
 
