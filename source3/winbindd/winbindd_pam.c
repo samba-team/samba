@@ -1212,7 +1212,6 @@ static NTSTATUS winbindd_dual_auth_passdb(TALLOC_CTX *mem_ctx,
 static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 					    TALLOC_CTX *mem_ctx,
 					    uint32_t logon_parameters,
-					    const char *server,
 					    const char *username,
 					    const char *domainname,
 					    const char *workstation,
@@ -1336,7 +1335,7 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 					netlogon_pipe,
 					mem_ctx,
 					logon_parameters,
-					server,		/* server name */
+					domain->dcname,	/* server name */
 					username,	/* user name */
 					domainname,	/* target domain */
 					workstation,	/* workstation */
@@ -1350,7 +1349,7 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 					netlogon_pipe,
 					mem_ctx,
 					logon_parameters,
-					server,		/* server name */
+					domain->dcname,	/* server name */
 					username,	/* user name */
 					domainname,	/* target domain */
 					workstation,	/* workstation */
@@ -1513,7 +1512,6 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(TALLOC_CTX *mem_ctx,
 	result = winbind_samlogon_retry_loop(domain,
 					     mem_ctx,
 					     0,
-					     domain->dcname,
 					     name_user,
 					     name_domain,
 					     lp_netbios_name(),
@@ -1936,7 +1934,6 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 	result = winbind_samlogon_retry_loop(domain,
 					     state->mem_ctx,
 					     state->request->data.auth_crap.logon_parameters,
-					     domain->dcname,
 					     name_user,
 					     name_domain,
 					     /* Bug #3248 - found by Stefan Burkei. */
