@@ -23,6 +23,7 @@ nice_service ()
 
 # Always succeeds
 set_proc () { : ; }
+set_proc_maybe () { : ; }
 
 get_proc ()
 {

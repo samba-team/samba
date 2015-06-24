@@ -221,6 +221,13 @@ set_proc ()
     echo "$2" >"/proc/$1"
 }
 
+set_proc_maybe ()
+{
+    if [ -w "/proc/$1" ] ; then
+	set_proc "$1" "$2"
+    fi
+}
+
 ######################################################
 # wrapper around getting file contents from /proc/ to allow
 # this to be hooked for testing
@@ -977,8 +984,8 @@ drop_all_public_ips ()
 
 flush_route_cache ()
 {
-    set_proc sys/net/ipv4/route/flush 1
-    set_proc sys/net/ipv6/route/flush 1
+    set_proc_maybe sys/net/ipv4/route/flush 1
+    set_proc_maybe sys/net/ipv6/route/flush 1
 }
 
 ########################################################
