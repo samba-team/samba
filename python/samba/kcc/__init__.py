@@ -553,9 +553,11 @@ class KCC(object):
         if dsa.is_ro() or self.readonly:
             for connect in dsa.connect_table.values():
                 if connect.to_be_deleted:
-                    DEBUG_FN("TO BE DELETED:\n%s" % connect)
+                    logger.info("TO BE DELETED:\n%s" % connect)
                 if connect.to_be_added:
-                    DEBUG_FN("TO BE ADDED:\n%s" % connect)
+                    logger.info("TO BE ADDED:\n%s" % connect)
+                if connect.to_be_modified:
+                    logger.info("TO BE MODIFIED:\n%s" % connect)
 
             # Peform deletion from our tables but perform
             # no database modification
@@ -2347,20 +2349,7 @@ class KCC(object):
                 self.construct_intrasite_graph(mysite, mydsa, part, True,
                                                False)  # don't detect stale
 
-        if self.readonly:
-            # Display any to be added or modified repsFrom
-            for connect in mydsa.connect_table.values():
-                if connect.to_be_deleted:
-                    logger.info("TO BE DELETED:\n%s" % connect)
-                if connect.to_be_modified:
-                    logger.info("TO BE MODIFIED:\n%s" % connect)
-                if connect.to_be_added:
-                    debug.DEBUG_GREEN("TO BE ADDED:\n%s" % connect)
-
-            mydsa.commit_connections(self.samdb, ro=True)
-        else:
-            # Commit any newly created connections to the samdb
-            mydsa.commit_connections(self.samdb)
+        self._commit_changes(mydsa)
 
     def list_dsas(self):
         """Compile a comprehensive list of DSA DNs
