@@ -353,10 +353,10 @@ static bool test_SetQuorumResource(struct torture_context *tctx,
 	return true;
 }
 
-static bool test_OpenResource_int(struct torture_context *tctx,
-				  struct dcerpc_pipe *p,
-				  const char *lpszResourceName,
-				  struct policy_handle *hResource)
+bool test_OpenResource_int(struct torture_context *tctx,
+			   struct dcerpc_pipe *p,
+			   const char *lpszResourceName,
+			   struct policy_handle *hResource)
 {
 	struct dcerpc_binding_handle *b = p->binding_handle;
 	struct clusapi_OpenResource r;
@@ -406,9 +406,9 @@ static bool test_OpenResourceEx_int(struct torture_context *tctx,
 	return true;
 }
 
-static bool test_CloseResource_int(struct torture_context *tctx,
-				   struct dcerpc_pipe *p,
-				   struct policy_handle *hResource)
+bool test_CloseResource_int(struct torture_context *tctx,
+			    struct dcerpc_pipe *p,
+			    struct policy_handle *hResource)
 {
 	struct dcerpc_binding_handle *b = p->binding_handle;
 	struct clusapi_CloseResource r;
@@ -782,9 +782,9 @@ static bool test_FailResource(struct torture_context *tctx,
 	return ret;
 }
 
-static bool test_OnlineResource_int(struct torture_context *tctx,
-				    struct dcerpc_pipe *p,
-				    struct policy_handle *hResource)
+bool test_OnlineResource_int(struct torture_context *tctx,
+			     struct dcerpc_pipe *p,
+			     struct policy_handle *hResource)
 {
 	struct dcerpc_binding_handle *b = p->binding_handle;
 	struct clusapi_OnlineResource r;
@@ -822,9 +822,9 @@ static bool test_OnlineResource(struct torture_context *tctx,
 	return ret;
 }
 
-static bool test_OfflineResource_int(struct torture_context *tctx,
-				     struct dcerpc_pipe *p,
-				     struct policy_handle *hResource)
+bool test_OfflineResource_int(struct torture_context *tctx,
+			      struct dcerpc_pipe *p,
+			      struct policy_handle *hResource)
 {
 	struct dcerpc_binding_handle *b = p->binding_handle;
 	struct clusapi_OfflineResource r;
