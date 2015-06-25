@@ -669,7 +669,9 @@ static NTSTATUS make_connection_snum(struct smbXsrv_connection *xconn,
 
 	if (SMB_VFS_CONNECT(conn, lp_servicename(talloc_tos(), snum),
 			    conn->session_info->unix_info->unix_name) < 0) {
-		DEBUG(0,("make_connection: VFS make connection failed!\n"));
+		DBG_WARNING("SMB_VFS_CONNECT for service '%s' at '%s' failed: %s\n",
+			    lp_servicename(talloc_tos(), snum), conn->connectpath,
+			    strerror(errno));
 		status = NT_STATUS_UNSUCCESSFUL;
 		goto err_root_exit;
 	}
