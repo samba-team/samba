@@ -845,13 +845,7 @@ class KCC(object):
         #     replica, cn!transportType has no value, or
         #     cn!transportType has an RDN of CN=IP.
         #
-        implied = (not s_rep.is_ro() or n_rep.is_partial()) and \
-                  (not n_rep.is_domain() or
-                   n_rep.is_partial() or
-                   cn_conn.transport_dnstr is None or
-                   cn_conn.transport_dnstr.find("CN=IP") == 0)
-
-        if implied:
+        if not s_rep.is_ro() or n_rep.is_partial():
             return s_dsa
         return None
 
