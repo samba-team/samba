@@ -46,6 +46,15 @@
 		goto done; \
 	}} while (0)
 
+#define CHECK_VALUE(v, correct) do { \
+	if ((v) != (correct)) { \
+		torture_result(tctx, TORTURE_FAIL, \
+			       "(%s) Incorrect value %s=%u - should be %u\n", \
+			       __location__, #v, (unsigned)v, (unsigned)correct); \
+		ret = false; \
+		goto done; \
+	}} while (0)
+
 /*
  * REVIEW:
  * This is hokey, but what else can we do?
@@ -929,6 +938,67 @@ static bool check_stream(struct smb2_tree *tree,
  * Read 'count' bytes at 'offset' from stream 'fname:sname' and
  * compare against buffer 'value'
  **/
+static ssize_t read_stream(struct smb2_tree *tree,
+			   const char *location,
+			   struct torture_context *tctx,
+			   TALLOC_CTX *mem_ctx,
+			   const char *fname,
+			   const char *sname,
+			   off_t read_offset,
+			   size_t read_count)
+{
+	struct smb2_handle handle;
+	struct smb2_create create;
+	struct smb2_read r;
+	NTSTATUS status;
+	const char *full_name;
+	bool ret = true;
+
+	full_name = talloc_asprintf(mem_ctx, "%s%s", fname, sname);
+	if (full_name == NULL) {
+	    torture_comment(tctx, "talloc_asprintf error\n");
+	    return -1;
+	}
+	ZERO_STRUCT(create);
+	create.in.desired_access = SEC_FILE_READ_DATA;
+	create.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	create.in.create_disposition = NTCREATEX_DISP_OPEN;
+	create.in.fname = full_name;
+
+	torture_comment(tctx, "Open stream %s\n", full_name);
+
+	status = smb2_create(tree, mem_ctx, &create);
+	if (!NT_STATUS_IS_OK(status)) {
+		torture_comment(tctx, "Unable to open stream %s\n",
+				full_name);
+		return -1;
+	}
+
+	handle = create.out.file.handle;
+
+	ZERO_STRUCT(r);
+	r.in.file.handle = handle;
+	r.in.length      = read_count;
+	r.in.offset      = read_offset;
+
+	status = smb2_read(tree, tree, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		CHECK_STATUS(status, NT_STATUS_END_OF_FILE);
+	}
+
+	smb2_util_close(tree, handle);
+
+done:
+	if (ret == false) {
+		return -1;
+	}
+	return r.out.data.length;
+}
+
+/**
+ * Read 'count' bytes at 'offset' from stream 'fname:sname' and
+ * compare against buffer 'value'
+ **/
 static bool write_stream(struct smb2_tree *tree,
 			 const char *location,
 			 struct torture_context *tctx,
@@ -1105,6 +1175,7 @@ static bool test_read_atalk_metadata(struct torture_context *tctx,
 	NTSTATUS status;
 	struct smb2_handle testdirh;
 	bool ret = true;
+	ssize_t len;
 
 	torture_comment(tctx, "Checking metadata access\n");
 
@@ -1131,6 +1202,27 @@ static bool test_read_atalk_metadata(struct torture_context *tctx,
 
 	ret &= check_stream(tree1, __location__, tctx, mem_ctx, fname, AFPINFO_STREAM,
 			    0, 60, 16, 8, "BARRFOOO");
+
+	ret &= check_stream(tree1, __location__, tctx, mem_ctx, fname, AFPINFO_STREAM,
+			    16, 8, 0, 8, "BARRFOOO");
+
+	/* Check reading offset and read size > sizeof(AFPINFO_STREAM) */
+
+	len = read_stream(tree1, __location__, tctx, mem_ctx, fname,
+			  AFPINFO_STREAM, 0, 61);
+	CHECK_VALUE(len, 60);
+
+	len = read_stream(tree1, __location__, tctx, mem_ctx, fname,
+			  AFPINFO_STREAM, 59, 2);
+	CHECK_VALUE(len, 1);
+
+	len = read_stream(tree1, __location__, tctx, mem_ctx, fname,
+			  AFPINFO_STREAM, 60, 1);
+	CHECK_VALUE(len, 0);
+
+	len = read_stream(tree1, __location__, tctx, mem_ctx, fname,
+			  AFPINFO_STREAM, 61, 1);
+	CHECK_VALUE(len, 0);
 
 done:
 	smb2_deltree(tree1, BASEDIR);
