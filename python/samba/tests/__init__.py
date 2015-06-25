@@ -35,6 +35,7 @@ except ImportError:
     class SkipTest(Exception):
         """Test skipped."""
 
+HEXDUMP_FILTER=''.join([(len(repr(chr(x)))==3) and chr(x) or '.' for x in range(256)])
 
 class TestCase(unittest.TestCase):
     """A Samba test case."""
@@ -53,6 +54,17 @@ class TestCase(unittest.TestCase):
 
     def get_credentials(self):
         return cmdline_credentials
+
+    def hexdump(self, src, length=8):
+        N = 0
+        result = ''
+        while src:
+            s, src = src[:length], src[length:]
+            hexa = ' '.join(["%02X" % ord(x) for x in s])
+            s = s.translate(HEXDUMP_FILTER)
+            result += "%04X   %-*s   %s\n" % (N, length*3, hexa, s)
+            N += length
+        return result
 
     # These functions didn't exist before Python2.7:
     if sys.version_info < (2, 7):
