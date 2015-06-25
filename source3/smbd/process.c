@@ -2859,7 +2859,7 @@ static struct tevent_req *smbd_echo_read_send(
 	state->ev = ev;
 	state->xconn = xconn;
 
-	subreq = wait_for_read_send(state, ev, xconn->transport.sock);
+	subreq = wait_for_read_send(state, ev, xconn->transport.sock, false);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -2934,7 +2934,7 @@ static void smbd_echo_read_waited(struct tevent_req *subreq)
 		}
 
 		subreq = wait_for_read_send(state, state->ev,
-					    xconn->transport.sock);
+					    xconn->transport.sock, false);
 		if (tevent_req_nomem(subreq, req)) {
 			return;
 		}

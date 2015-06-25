@@ -972,7 +972,8 @@ static void winbind_client_request_read(struct tevent_req *req)
 		return;
 	}
 
-	req = wait_for_read_send(state, winbind_event_context(), state->sock);
+	req = wait_for_read_send(state, winbind_event_context(), state->sock,
+				 false);
 	if (req == NULL) {
 		DEBUG(0, ("winbind_client_request_read[%d:%s]:"
 			  " wait_for_read_send failed - removing client\n",

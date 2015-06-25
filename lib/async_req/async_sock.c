@@ -534,6 +534,8 @@ ssize_t read_packet_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 
 struct wait_for_read_state {
 	struct tevent_fd *fde;
+	int fd;
+	bool check_errors;
 };
 
 static void wait_for_read_cleanup(struct tevent_req *req,
@@ -544,8 +546,8 @@ static void wait_for_read_done(struct tevent_context *ev,
 			       void *private_data);
 
 struct tevent_req *wait_for_read_send(TALLOC_CTX *mem_ctx,
-				      struct tevent_context *ev,
-				      int fd)
+				      struct tevent_context *ev, int fd,
+				      bool check_errors)
 {
 	struct tevent_req *req;
 	struct wait_for_read_state *state;
@@ -562,6 +564,9 @@ struct tevent_req *wait_for_read_send(TALLOC_CTX *mem_ctx,
 	if (tevent_req_nomem(state->fde, req)) {
 		return tevent_req_post(req, ev);
 	}
+
+	state->fd = fd;
+	state->check_errors = check_errors;
 	return req;
 }
 
@@ -581,10 +586,44 @@ static void wait_for_read_done(struct tevent_context *ev,
 {
 	struct tevent_req *req = talloc_get_type_abort(
 		private_data, struct tevent_req);
+	struct wait_for_read_state *state =
+	    tevent_req_data(req, struct wait_for_read_state);
+	ssize_t nread;
+	char c;
 
-	if (flags & TEVENT_FD_READ) {
-		tevent_req_done(req);
+	if ((flags & TEVENT_FD_READ) == 0) {
+		return;
 	}
+
+	if (!state->check_errors) {
+		tevent_req_done(req);
+		return;
+	}
+
+	nread = recv(state->fd, &c, 1, MSG_PEEK);
+
+	if (nread == 0) {
+		tevent_req_error(req, EPIPE);
+		return;
+	}
+
+	if ((nread == -1) && (errno == EINTR)) {
+		/* come back later */
+		return;
+	}
+
+	if ((nread == -1) && (errno == ENOTSOCK)) {
+		/* Ignore this specific error on pipes */
+		tevent_req_done(req);
+		return;
+	}
+
+	if (nread == -1) {
+		tevent_req_error(req, errno);
+		return;
+	}
+
+	tevent_req_done(req);
 }
 
 bool wait_for_read_recv(struct tevent_req *req, int *perr)
