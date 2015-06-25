@@ -1194,7 +1194,6 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 {
 	int res, ret = -1;
 	struct fd_event *fde;
-	const char *domain_socket_name;
 
 	/* create a unix domain stream socket to listen to */
 	res = ux_socket_bind(ctdb);
@@ -1238,13 +1237,6 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 			exit(1);
 		}
 		DEBUG(DEBUG_NOTICE, ("Set real-time scheduler priority\n"));
-	}
-
-	/* ensure the socket is deleted on exit of the daemon */
-	domain_socket_name = talloc_strdup(talloc_autofree_context(), ctdb->daemon.name);
-	if (domain_socket_name == NULL) {
-		DEBUG(DEBUG_ALERT,(__location__ " talloc_strdup failed.\n"));
-		exit(12);
 	}
 
 	ctdb->ev = event_context_init(NULL);
