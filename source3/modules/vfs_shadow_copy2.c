@@ -1875,8 +1875,9 @@ static int shadow_copy2_connect(struct vfs_handle_struct *handle,
 		config->mount_point = shadow_copy2_find_mount_point(config,
 								    handle);
 		if (config->mount_point == NULL) {
-			DEBUG(0, (__location__ ": shadow_copy2_find_mount_point"
-				  " failed: %s\n", strerror(errno)));
+			DBG_WARNING("shadow_copy2_find_mount_point "
+				    "of the share root '%s' failed: %s\n",
+				    handle->conn->connectpath, strerror(errno));
 			return -1;
 		}
 	}
