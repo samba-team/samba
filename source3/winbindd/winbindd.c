@@ -42,6 +42,7 @@
 #include "source4/lib/messaging/irpc.h"
 #include "source4/lib/messaging/messaging.h"
 #include "lib/param/param.h"
+#include "lib/async_req/async_sock.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
@@ -809,10 +810,14 @@ static void request_finished(struct winbindd_cli_state *state);
 
 static void winbind_client_request_read(struct tevent_req *req);
 static void winbind_client_response_written(struct tevent_req *req);
+static void winbind_client_activity(struct tevent_req *req);
 
 static void request_finished(struct winbindd_cli_state *state)
 {
 	struct tevent_req *req;
+
+	/* free client socket monitoring request */
+	TALLOC_FREE(state->io_req);
 
 	TALLOC_FREE(state->request);
 
@@ -966,7 +971,30 @@ static void winbind_client_request_read(struct tevent_req *req)
 		remove_client(state);
 		return;
 	}
+
+	req = wait_for_read_send(state, winbind_event_context(), state->sock);
+	if (req == NULL) {
+		DEBUG(0, ("winbind_client_request_read[%d:%s]:"
+			  " wait_for_read_send failed - removing client\n",
+			  (int)state->pid, state->cmd_name));
+		remove_client(state);
+		return;
+	}
+	tevent_req_set_callback(req, winbind_client_activity, state);
+	state->io_req = req;
+
 	process_request(state);
+}
+
+static void winbind_client_activity(struct tevent_req *req)
+{
+	struct winbindd_cli_state *state =
+	    tevent_req_callback_data(req, struct winbindd_cli_state);
+	int err;
+
+	wait_for_read_recv(req, &err);
+
+	remove_client(state);
 }
 
 /* Remove a client connection from client connection list */
