@@ -309,12 +309,6 @@ done:
 	return result;
 }
 
-enum {
-	RESOURCE_STATE_UNKNOWN     = 0x00,
-	RESOURCE_STATE_AVAILABLE   = 0x01,
-	RESOURCE_STATE_UNAVAILABLE = 0xff
-};
-
 static bool AsyncNotify_Change(TALLOC_CTX *mem_ctx, const uint8_t **ptr)
 {
 	const uint8_t *pos = *ptr;
@@ -329,11 +323,11 @@ static bool AsyncNotify_Change(TALLOC_CTX *mem_ctx, const uint8_t **ptr)
 		return false;
 	}
 
-	if (type == RESOURCE_STATE_UNKNOWN) {
+	if (type == WITNESS_RESOURCE_STATE_UNKNOWN) {
 		type_str = "Unknown";
-	} else if(type == RESOURCE_STATE_AVAILABLE) {
+	} else if(type == WITNESS_RESOURCE_STATE_AVAILABLE) {
 		type_str = "Available\n";
-	} else if(type == RESOURCE_STATE_UNAVAILABLE) {
+	} else if(type == WITNESS_RESOURCE_STATE_UNAVAILABLE) {
 		type_str = "Unavailable";
 	} else {
 		type_str = talloc_asprintf(name, "Invalid (%u)", type);
@@ -344,13 +338,6 @@ static bool AsyncNotify_Change(TALLOC_CTX *mem_ctx, const uint8_t **ptr)
 	*ptr += length;
 	return true;
 }
-
-enum {
-	IPADDR_V4      = 0x01,
-	IPADDR_V6      = 0x02,
-	IPADDR_ONLINE  = 0x08,
-	IPADDR_OFFLINE = 0x10,
-};
 
 /* IPADDR_INFO_LIST */
 static bool AsyncNotify_Move(TALLOC_CTX *mem_ctx, const uint8_t **ptr)
@@ -391,16 +378,16 @@ static bool AsyncNotify_Move(TALLOC_CTX *mem_ctx, const uint8_t **ptr)
 		pos += 16;
 
 		d_printf("Flags 0x%08x", flags);
-		if (flags & IPADDR_V4) {
+		if (flags & WITNESS_IPADDR_V4) {
 			d_printf(" %s", str4);
 		}
-		if (flags & IPADDR_V6) {
+		if (flags & WITNESS_IPADDR_V6) {
 			d_printf(" %s", str6);
 		}
-		if (flags & IPADDR_ONLINE) {
+		if (flags & WITNESS_IPADDR_ONLINE) {
 			d_printf(" Online");
 		}
-		if (flags & IPADDR_ONLINE) {
+		if (flags & WITNESS_IPADDR_ONLINE) {
 			d_printf(" Offline");
 		}
 		d_printf("\n");
