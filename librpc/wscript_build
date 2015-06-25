@@ -321,7 +321,7 @@ bld.SAMBA_SUBSYSTEM('NDR_FSRVP',
 	)
 
 bld.SAMBA_SUBSYSTEM('NDR_WITNESS',
-    source='gen_ndr/ndr_witness.c',
+    source='gen_ndr/ndr_witness.c ndr/ndr_witness.c',
     public_deps='ndr'
     )
 

@@ -475,6 +475,7 @@ static WERROR cmd_witness_AsyncNotify(struct rpc_pipe_client *cli,
 	}
 	d_printf(" with %d messages\n", response->num);
 
+#if 0
 	if (read_response) {
 		unsigned n;
 		const uint8_t *pos = response->messages->data;
@@ -483,6 +484,7 @@ static WERROR cmd_witness_AsyncNotify(struct rpc_pipe_client *cli,
 			read_response(frame, &pos);
 		}
 	}
+#endif
 
 done:
 	talloc_free(frame);

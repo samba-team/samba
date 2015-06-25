@@ -7,6 +7,7 @@ import "misc.idl";
   version(1.1),
   pointer_default(unique),
   helpstring("SMB Witness Service"),
+  helper("../librpc/ndr/ndr_witness.h"),
   endpoint("ncacn_ip_tcp:")
 ]
 interface witness
@@ -71,7 +72,7 @@ interface witness
 	/*****************/
 	/* Function 0x03 */
 
-	typedef [v1_enum] enum {
+	typedef [v1_enum,public] enum {
 		WITNESS_NOTIFY_RESOURCE_CHANGE = 1,
 		WITNESS_NOTIFY_CLIENT_MOVE     = 2,
 		WITNESS_NOTIFY_SHARE_MOVE      = 3,
@@ -118,13 +119,11 @@ interface witness
 		[default,flag(NDR_REMAINING)]          DATA_BLOB data;
 	} witness_notifyResponse_message;
 
-	typedef [flag(NDR_PAHEX)] struct {
+	typedef [flag(NDR_PAHEX),gensize,public,nopush,nopull] struct {
 		witness_notifyResponse_type type;
-		[value(messages->length)] uint32 length;
+		[value(ndr_size_witness_notifyResponse(r, ndr->flags)-20)] uint32 length;
 		uint32 num;
-		/* [switch_is(type), size_is(num)] witness_notifyResponse_message *messages; */
-		/* [size_is(length)] uint8 *messages; */
-		[subcontext(4), subcontext_size(length), flag(NDR_REMAINING)] DATA_BLOB *messages;
+		[subcontext(4), subcontext_size(length), flag(NDR_REMAINING), switch_is(type)] witness_notifyResponse_message messages[num];
 	} witness_notifyResponse;
 
 	[public] WERROR witness_AsyncNotify(
