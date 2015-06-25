@@ -213,7 +213,7 @@ static WERROR cmd_clusapi_open_resource(struct rpc_pipe_client *cli,
 	const char *lpszResourceName = "Cluster Name";
 	WERROR Status;
 	struct policy_handle hResource;
-	WERROR rpc_status;
+	WERROR rpc_status, ignore;
 
 	if (argc >= 2) {
 		lpszResourceName = argv[1];
@@ -234,6 +234,10 @@ static WERROR cmd_clusapi_open_resource(struct rpc_pipe_client *cli,
 	}
 
 	printf("rpc_status: %s\n", win_errstr(rpc_status));
+
+	dcerpc_clusapi_CloseResource(b, mem_ctx,
+				     &hResource,
+				     &ignore);
 
 	return WERR_OK;
 }
