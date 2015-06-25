@@ -557,6 +557,72 @@ static bool cluster_get_nodes(struct torture_context *tctx,
 }
 #endif
 
+static bool test_GetResourceState_int(struct torture_context *tctx,
+				      struct dcerpc_pipe *p,
+				      struct policy_handle *hResource,
+				      enum clusapi_ClusterResourceState *State)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_GetResourceState r;
+	const char *NodeName;
+	const char *GroupName;
+	WERROR rpc_status;
+
+	r.in.hResource = *hResource;
+	r.out.State = State;
+	r.out.NodeName = &NodeName;
+	r.out.GroupName = &GroupName;
+	r.out.rpc_status = &rpc_status;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_GetResourceState_r(b, tctx, &r),
+		"GetResourceState failed");
+	torture_assert_werr_ok(tctx,
+		r.out.result,
+		"GetResourceState failed");
+
+	return true;
+}
+
+static bool toggle_cluster_resource_state(struct torture_context *tctx,
+					  struct dcerpc_pipe *p,
+					  const char *resource_name)
+{
+	struct policy_handle hResource;
+	enum clusapi_ClusterResourceState State;
+
+	torture_assert(tctx,
+		test_OpenResource_int(tctx, p, resource_name, &hResource),
+		"failed to open resource");
+	torture_assert(tctx,
+		test_GetResourceState_int(tctx, p, &hResource, &State),
+		"failed to query resource state");
+
+	switch (State) {
+	case ClusterResourceOffline:
+		if (!test_OnlineResource_int(tctx, p, &hResource)) {
+			test_CloseResource_int(tctx, p, &hResource);
+			torture_warning(tctx, "failed to set resource online");
+			return false;
+		}
+		break;
+	case ClusterResourceOnline:
+		if (!test_OfflineResource_int(tctx, p, &hResource)) {
+			test_CloseResource_int(tctx, p, &hResource);
+			torture_warning(tctx, "failed to set resource offline");
+			return false;
+		}
+		break;
+
+	default:
+		break;
+	}
+
+	test_CloseResource_int(tctx, p, &hResource);
+
+	return true;
+}
+
 /* for this test to run, we need to have some basic clusapi client support
  * first, so that we can programmatically change something in the cluster and
  * then receive async notifications - Guenther */
