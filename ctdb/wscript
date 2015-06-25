@@ -416,7 +416,7 @@ def build(bld):
                          source='utils/pmda/pmda_ctdb.c',
                          includes='include include/internal',
                          deps='''ctdb-client ctdb-common ctdb-system
-                                 pcp_pmda pcp''',
+                                 ctdb-common-util pcp_pmda pcp''',
                          install_path='${CTDB_PMDADIR}')
         bld.INSTALL_FILES('${CTDB_PMDADIR}', 'utils/pmda/Install',
                           destname='Install')
