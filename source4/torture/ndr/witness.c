@@ -249,6 +249,7 @@ static bool witness_AsyncNotify_check_OUT(struct torture_context *tctx,
 					  struct witness_AsyncNotify *r)
 {
 	struct witness_notifyResponse *n;
+	struct witness_ResourceChange *c;
 
 	torture_assert(tctx, r->out.response, "r->out.response");
 
@@ -257,12 +258,13 @@ static bool witness_AsyncNotify_check_OUT(struct torture_context *tctx,
 	torture_assert_int_equal(tctx, n->type, WITNESS_NOTIFY_RESOURCE_CHANGE, "type");
 	torture_assert_int_equal(tctx, n->length, 18, "length");
 	torture_assert_int_equal(tctx, n->num, 1, "num");
-#if 0
-                        messages                 : *
-                            messages                 : DATA_BLOB length=18
-[0000] 12 00 00 00 FF 00 00 00   53 00 4F 00 46 00 53 00   ........ S.O.F.S.
-[0010] 00 00
-#endif
+
+	c = &n->messages[0].resource_change;
+
+	torture_assert_int_equal(tctx, c->length, 18, "c->length");
+	torture_assert_int_equal(tctx, c->type, WITNESS_RESOURCE_STATE_UNAVAILABLE, "c->type");
+	torture_assert_str_equal(tctx, c->name, "SOFS", "c->name");
+
 	return true;
 }
 
