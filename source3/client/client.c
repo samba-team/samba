@@ -3806,6 +3806,139 @@ static int cmd_rename(void)
 	return 0;
 }
 
+struct scopy_timing {
+	struct timespec tp_start;
+};
+
+static int scopy_status(off_t written, void *priv)
+{
+	struct timespec tp_end;
+	unsigned int scopy_total_time_ms;
+	struct scopy_timing *st = priv;
+
+	clock_gettime_mono(&tp_end);
+	scopy_total_time_ms = nsec_time_diff(&tp_end,&st->tp_start)/1000000;
+
+	DEBUG(5,("Copied %jd bytes at an average %3.1f kb/s\n",
+		 (intmax_t)written, written / (1.024*scopy_total_time_ms)));
+
+	return true;
+}
+
+/****************************************************************************
+ Server-Side copy some file.
+****************************************************************************/
+
+static int cmd_scopy(void)
+{
+	TALLOC_CTX *ctx = talloc_tos();
+	char *src, *dest;
+	char *buf, *buf2;
+	struct cli_state *targetcli;
+	char *targetsrc;
+	char *targetdest;
+	uint32_t DesiredAccess, ShareAccess, CreateDisposition, CreateOptions;
+	struct smb_create_returns cr;
+	uint16_t destfnum = (uint16_t)-1;
+	uint16_t srcfnum = (uint16_t)-1;
+	off_t written = 0;
+	struct scopy_timing st;
+	int rc = 0;
+	NTSTATUS status;
+
+	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL) ||
+			!next_token_talloc(ctx, &cmd_ptr,&buf2,NULL)) {
+		d_printf("scopy <src> <dest>\n");
+		return 1;
+	}
+
+	src = talloc_asprintf(ctx,
+			"%s%s",
+			client_get_cur_dir(),
+			buf);
+	if (!src) {
+		return 1;
+	}
+
+	dest = talloc_asprintf(ctx,
+			"%s%s",
+			client_get_cur_dir(),
+			buf2);
+	if (!dest) {
+		return 1;
+	}
+
+	status = cli_resolve_path(ctx, "", auth_info, cli, src, &targetcli,
+			&targetsrc);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("scopy %s: %s\n", src, nt_errstr(status));
+		return 1;
+	}
+
+	status = cli_resolve_path(ctx, "", auth_info, cli, dest, &targetcli,
+			&targetdest);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("scopy %s: %s\n", dest, nt_errstr(status));
+		return 1;
+	}
+
+
+	DesiredAccess = (FILE_READ_DATA|FILE_READ_EA|FILE_READ_ATTRIBUTES|
+			READ_CONTROL_ACCESS|SYNCHRONIZE_ACCESS);
+	ShareAccess = FILE_SHARE_READ|FILE_SHARE_DELETE;
+	CreateDisposition = FILE_OPEN;
+	CreateOptions = (FILE_SEQUENTIAL_ONLY|FILE_NON_DIRECTORY_FILE|
+			FILE_OPEN_REPARSE_POINT);
+	status = cli_ntcreate(targetcli, targetsrc, 0, DesiredAccess, 0,
+			ShareAccess, CreateDisposition, CreateOptions, 0x0,
+			&srcfnum, &cr);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("Failed to open file %s. %s\n",
+				targetsrc, nt_errstr(status));
+		return 1;
+	}
+
+	DesiredAccess = (FILE_READ_DATA|FILE_WRITE_DATA|FILE_APPEND_DATA|FILE_READ_EA|
+			FILE_WRITE_EA|FILE_READ_ATTRIBUTES|FILE_WRITE_ATTRIBUTES|
+			DELETE_ACCESS|READ_CONTROL_ACCESS|WRITE_DAC_ACCESS|SYNCHRONIZE_ACCESS);
+	ShareAccess = FILE_SHARE_NONE;
+	CreateDisposition = FILE_CREATE;
+	CreateOptions = FILE_SEQUENTIAL_ONLY|FILE_NON_DIRECTORY_FILE;
+	status = cli_ntcreate(targetcli, targetdest, 0, DesiredAccess,
+			FILE_ATTRIBUTE_ARCHIVE, ShareAccess, CreateDisposition,
+			CreateOptions, 0x0, &destfnum, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("Failed to create file %s. %s\n",
+				targetdest, nt_errstr(status));
+		cli_close(targetcli, srcfnum);
+		return 1;
+	}
+
+	clock_gettime_mono(&st.tp_start);
+	status = cli_splice(targetcli, targetcli, srcfnum, destfnum,
+			cr.end_of_file, 0, 0, &written, scopy_status, &st);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("%s copying file %s -> %s \n",
+				nt_errstr(status),
+				targetsrc,
+				targetdest);
+		rc = 1;
+	}
+
+	status = cli_close(targetcli, srcfnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("Error %s closing remote source file\n", nt_errstr(status));
+		rc = 1;
+	}
+	status = cli_close(targetcli, destfnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("Error %s closing remote dest file\n", nt_errstr(status));
+		rc = 1;
+	}
+
+	return rc;
+}
+
 /****************************************************************************
  Print the volume name.
 ****************************************************************************/
@@ -4699,6 +4832,7 @@ static struct {
   {"setea", cmd_setea, "<file name> <eaname> <eaval> Set an EA of a file",
    {COMPL_REMOTE, COMPL_LOCAL}},
   {"setmode",cmd_setmode,"<file name> <setmode string> change modes of file",{COMPL_REMOTE,COMPL_NONE}},
+  {"scopy",cmd_scopy,"<src> <dest> server-side copy file",{COMPL_REMOTE,COMPL_REMOTE}},
   {"stat",cmd_stat,"<file name> Do a UNIX extensions stat call on a file",{COMPL_REMOTE,COMPL_NONE}},
   {"symlink",cmd_symlink,"<oldname> <newname> create a UNIX symlink",{COMPL_REMOTE,COMPL_REMOTE}},
   {"tar",cmd_tar,"tar <c|x>[IXFqbgNan] current directory to/from <file name>",{COMPL_NONE,COMPL_NONE}},
