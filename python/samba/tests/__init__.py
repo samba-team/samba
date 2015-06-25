@@ -55,15 +55,19 @@ class TestCase(unittest.TestCase):
     def get_credentials(self):
         return cmdline_credentials
 
-    def hexdump(self, src, length=8):
+    def hexdump(self, src):
         N = 0
         result = ''
         while src:
-            s, src = src[:length], src[length:]
-            hexa = ' '.join(["%02X" % ord(x) for x in s])
-            s = s.translate(HEXDUMP_FILTER)
-            result += "%04X   %-*s   %s\n" % (N, length*3, hexa, s)
-            N += length
+            ll = src[:8]
+            lr = src[8:16]
+            src = src[16:]
+            hl = ' '.join(["%02X" % ord(x) for x in ll])
+            hr = ' '.join(["%02X" % ord(x) for x in lr])
+            ll = ll.translate(HEXDUMP_FILTER)
+            lr = lr.translate(HEXDUMP_FILTER)
+            result += "[%04X] %-*s  %-*s  %s %s\n" % (N, 8*3, hl, 8*3, hr, ll, lr)
+            N += 16
         return result
 
     # These functions didn't exist before Python2.7:
