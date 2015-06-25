@@ -2507,7 +2507,9 @@ class KCC(object):
                 for dsa in self.my_site.dsa_table.values():
                     dsa.connect_table = dict((k, v) for k, v in
                                              dsa.connect_table.items()
-                                             if v.is_rodc_topology())
+                                             if v.is_rodc_topology() or
+                                             (v.from_dnstr not in
+                                              self.my_site.dsa_table))
                 self.plot_all_connections('dsa_forgotten_local')
 
             if forget_intersite_links:
