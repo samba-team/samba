@@ -88,7 +88,7 @@ fi
 export CC
 
 CFLAGS="$RPM_OPT_FLAGS $EXTRA -D_GNU_SOURCE" ./buildtools/bin/waf configure \
-	--builtin-libraries=replace,popt,samba-debug,socket-blocking,tdb-wrap \
+	--builtin-libraries=replace,popt \
 	--bundled-libraries=!talloc,!tevent,!tdb \
 	--minimum-library-version=talloc:%libtalloc_version,tdb:%libtdb_version,tevent:%libtevent_version \
 %if %with_pcp_pmda
@@ -199,6 +199,8 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/ltdbtool
 %{_bindir}/ctdb_diagnostics
 %{_bindir}/onnode
+%dir %{_libdir}
+%{_libdir}/ctdb/lib*
 %{_mandir}/man1/ctdb.1.gz
 %{_mandir}/man1/ctdbd.1.gz
 %{_mandir}/man1/ctdbd_wrapper.1.gz
