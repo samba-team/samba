@@ -2617,6 +2617,17 @@ static ssize_t fruit_pread(vfs_handle_struct *handle,
 	}
 
 	if (ad->ad_type == ADOUBLE_META) {
+		char afpinfo_buf[AFP_INFO_SIZE];
+		size_t to_return;
+
+		if ((offset < 0) || (offset > AFP_INFO_SIZE)) {
+			len = 0;
+			rc = 0;
+			goto exit;
+		}
+
+		to_return = AFP_INFO_SIZE - offset;
+
 		ai = afpinfo_new(talloc_tos());
 		if (ai == NULL) {
 			rc = -1;
@@ -2632,11 +2643,14 @@ static ssize_t fruit_pread(vfs_handle_struct *handle,
 		memcpy(&ai->afpi_FinderInfo[0],
 		       ad_entry(ad, ADEID_FINDERI),
 		       ADEDLEN_FINDERI);
-		len = afpinfo_pack(ai, data);
+		len = afpinfo_pack(ai, afpinfo_buf);
 		if (len != AFP_INFO_SIZE) {
 			rc = -1;
 			goto exit;
 		}
+
+		memcpy(data, afpinfo_buf + offset, to_return);
+		len = to_return;
 	} else {
 		len = SMB_VFS_NEXT_PREAD(
 			handle, fsp, data, n,
