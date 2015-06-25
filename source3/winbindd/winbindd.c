@@ -973,7 +973,7 @@ static void winbind_client_request_read(struct tevent_req *req)
 	}
 
 	req = wait_for_read_send(state, winbind_event_context(), state->sock,
-				 false);
+				 true);
 	if (req == NULL) {
 		DEBUG(0, ("winbind_client_request_read[%d:%s]:"
 			  " wait_for_read_send failed - removing client\n",
@@ -992,8 +992,28 @@ static void winbind_client_activity(struct tevent_req *req)
 	struct winbindd_cli_state *state =
 	    tevent_req_callback_data(req, struct winbindd_cli_state);
 	int err;
+	bool has_data;
 
-	wait_for_read_recv(req, &err);
+	has_data = wait_for_read_recv(req, &err);
+
+	if (has_data) {
+		DEBUG(0, ("winbind_client_activity[%d:%s]:"
+			  "unexpected data from client - removing client\n",
+			  (int)state->pid, state->cmd_name));
+	} else {
+		if (err == EPIPE) {
+			DEBUG(6, ("winbind_client_activity[%d:%s]: "
+				  "client has closed connection - removing "
+				  "client\n",
+				  (int)state->pid, state->cmd_name));
+		} else {
+			DEBUG(2, ("winbind_client_activity[%d:%s]: "
+				  "client socket error (%s) - removing "
+				  "client\n",
+				  (int)state->pid, state->cmd_name,
+				  strerror(err)));
+		}
+	}
 
 	remove_client(state);
 }
