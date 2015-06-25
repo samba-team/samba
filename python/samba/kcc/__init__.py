@@ -800,14 +800,12 @@ class KCC(object):
         :param cn_conn: NTDS Connection
         :return: source DSA or None
         """
-        #XXX different conditions for "implies" than MS-ADTS 6.2.2
+        # XXX different conditions for "implies" than MS-ADTS 6.2.2
+        # preamble.
 
-        # NTDS Connection must satisfy all the following criteria
-        # to imply a repsFrom tuple is needed:
-        #
-        #    cn!enabledConnection = true.
-        #    cn!options does not contain NTDSCONN_OPT_RODC_TOPOLOGY.
-        #    cn!fromServer references an nTDSDSA object.
+        # It boils down to: we want an enabled, non-FRS connections to
+        # a valid remote DSA with a non-RO replica corresponding to
+        # n_rep.
 
         if not cn_conn.is_enabled() or cn_conn.is_rodc_topology():
             return None
@@ -819,35 +817,14 @@ class KCC(object):
         if s_dsa is None:
             return None
 
-        # To imply a repsFrom tuple is needed, each of these
-        # must be True:
-        #
-        #     An NC replica of the NC "is present" on the DC to
-        #     which the nTDSDSA object referenced by cn!fromServer
-        #     corresponds.
-        #
-        #     An NC replica of the NC "should be present" on
-        #     the local DC
         s_rep = s_dsa.get_current_replica(n_rep.nc_dnstr)
 
-        if s_rep is None or not s_rep.is_present():
-            return None
-
-        # To imply a repsFrom tuple is needed, each of these
-        # must be True:
-        #
-        #     The NC replica on the DC referenced by cn!fromServer is
-        #     a writable replica or the NC replica that "should be
-        #     present" on the local DC is a partial replica.
-        #
-        #     The NC is not a domain NC, the NC replica that
-        #     "should be present" on the local DC is a partial
-        #     replica, cn!transportType has no value, or
-        #     cn!transportType has an RDN of CN=IP.
-        #
-        if not s_rep.is_ro() or n_rep.is_partial():
+        if (s_rep is not None and
+            s_rep.is_present() and
+            (not s_rep.is_ro() or n_rep.is_partial())):
             return s_dsa
         return None
+
 
     def translate_ntdsconn(self, current_dsa=None):
         """Adjust repsFrom to match NTDSConnections
