@@ -288,7 +288,7 @@ void torture_result(struct torture_context *test,
 #define torture_assert_ndr_err_equal(torture_ctx,got,expected,cmt) \
 	do { enum ndr_err_code __got = got, __expected = expected; \
 	if (__got != __expected) { \
-		torture_result(torture_ctx, TORTURE_FAIL, __location__": "#got" was %d, expected %d (%s): %s", __got, __expected, __STRING(expected), cmt); \
+		torture_result(torture_ctx, TORTURE_FAIL, __location__": "#got" was %d (%s), expected %d (%s): %s", __got, ndr_errstr(__got), __expected, __STRING(expected), cmt); \
 		return false; \
 	}\
 	} while(0)
