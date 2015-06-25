@@ -432,6 +432,138 @@ class KCC(object):
         # that became active during this run.
         pass
 
+    def _ensure_connections_are_loaded(self, connections):
+        """Load or fake-load NTDSConnections lacking GUIDs
+
+        New connections don't have GUIDs and created times which are
+        needed for sorting. If we're in read-only mode, we make fake
+        GUIDs, otherwise we ask SamDB to do it for us.
+
+        :param connections: an iterable of NTDSConnection objects.
+        :return: None
+        """
+        for cn_conn in connections:
+            if cn_conn.guid is None:
+                if self.readonly:
+                    cn_conn.guid = misc.GUID(str(uuid.uuid4()))
+                    cn_conn.whenCreated = self.nt_now
+                else:
+                    cn_conn.load_connection(self.samdb)
+
+    def _mark_broken_ntdsconn(self):
+        """Find NTDS Connections that lack a remote
+
+        I'm not sure how they appear. Let's be rid of them by marking
+        them with the to_be_deleted attribute.
+
+        :return: None
+        """
+        for cn_conn in self.my_dsa.connect_table.values():
+            s_dnstr = cn_conn.get_from_dnstr()
+            if s_dnstr is None:
+                DEBUG_FN("%s has phantom connection %s" % (self.my_dsa,
+                                                           cn_conn))
+                cn_conn.to_be_deleted = True
+
+    def _mark_unneeded_local_ntdsconn(self):
+        """Find unneeded intrasite NTDS Connections for removal
+
+        Based on MS-ADTS 6.2.2.4 Removing Unnecessary Connections.
+        Every DC removes its own unnecessary intrasite connections.
+        This function tags them with the to_be_deleted attribute.
+
+        :return: None
+        """
+        # XXX should an RODC be regarded as same site? It isn't part
+        # of the intrasite ring.
+
+        if self.my_site.is_cleanup_ntdsconn_disabled():
+            DEBUG_FN("not doing ntdsconn cleanup for site %s, "
+                     "because it is disabled" % self.my_site)
+            return
+
+        mydsa = self.my_dsa
+
+        self._ensure_connections_are_loaded(mydsa.connect_table.values())
+
+        local_connections = []
+
+        for cn_conn in mydsa.connect_table.values():
+            s_dnstr = cn_conn.get_from_dnstr()
+            if s_dnstr in self.my_site.dsa_table:
+                removable = not (cn_conn.is_generated() or
+                                 cn_conn.is_rodc_topology())
+                packed_guid = ndr_pack(cn_conn.guid)
+                local_connections.append((cn_conn, s_dnstr,
+                                          packed_guid, removable))
+
+        for a, b in itertools.permutations(local_connections, 2):
+            cn_conn, s_dnstr, packed_guid, removable = a
+            cn_conn2, s_dnstr2, packed_guid2, removable2 = b
+            if (removable and
+                s_dnstr == s_dnstr2 and
+                cn_conn.whenCreated < cn_conn2.whenCreated or
+                (cn_conn.whenCreated == cn_conn2.whenCreated and
+                 packed_guid < packed_guid2)):
+                cn_conn.to_be_deleted = True
+
+    def _mark_unneeded_intersite_ntdsconn(self):
+        """find unneeded intersite NTDS Connections for removal
+
+        Based on MS-ADTS 6.2.2.4 Removing Unnecessary Connections. The
+        intersite topology generator removes links for all DCs in its
+        site. Here we just tag them with the to_be_deleted attribute.
+
+        :return: None
+        """
+        # Find the intersite connections
+        local_dsas = self.my_site.dsa_table
+        connections_and_dsas = []
+        for dsa in local_dsas.values():
+            for cn in dsa.connect_table.values():
+                s_dnstr = cn.get_from_dnstr()
+                if s_dnstr not in local_dsas:
+                    from_dsa = self.get_dsa(s_dnstr)
+                    connections_and_dsas.append((cn, dsa, from_dsa))
+
+        self._ensure_connections_are_loaded(x[0] for x in connections_and_dsas)
+        for cn, to_dsa, from_dsa in connections_and_dsas:
+            if not cn.is_generated() or cn.is_rodc_topology():
+                continue
+
+            # If the connection is in the kept_connections list, we
+            # only remove it if an endpoint seems down.
+            if (cn in self.kept_connections and
+                not (self.is_bridgehead_failed(to_dsa, True) or
+                     self.is_bridgehead_failed(from_dsa, True))):
+                continue
+
+            # this one is broken and might be superseded by another.
+            # But which other? Let's just say another link to the same
+            # site can supersede.
+            from_dnstr = from_dsa.dsa_dnstr
+            for site in self.site_table.values():
+                if from_dnstr in site.rw_dsa_table:
+                    for cn2, to_dsa2, from_dsa2 in connections_and_dsas:
+                        if (cn is not cn2 and
+                            from_dsa2 in site.rw_dsa_table):
+                            cn.to_be_deleted = True
+
+    def _commit_changes(self, dsa):
+        if dsa.is_ro() or self.readonly:
+            for connect in dsa.connect_table.values():
+                if connect.to_be_deleted:
+                    DEBUG_FN("TO BE DELETED:\n%s" % connect)
+                if connect.to_be_added:
+                    DEBUG_FN("TO BE ADDED:\n%s" % connect)
+
+            # Peform deletion from our tables but perform
+            # no database modification
+            dsa.commit_connections(self.samdb, ro=True)
+        else:
+            # Commit any modified connections
+            dsa.commit_connections(self.samdb)
+
     def remove_unneeded_ntdsconn(self, all_connected):
         """Remove unneeded NTDS Connections once topology is calculated
 
@@ -440,145 +572,16 @@ class KCC(object):
         :param all_connected: indicates whether all sites are connected
         :return: None
         """
-        mydsa = self.my_dsa
+        self._mark_broken_ntdsconn()
+        self._mark_unneeded_local_ntdsconn()
+        # if we are not the istg, we're done!
+        # if we are the istg, but all_connected is False, we also do nothing.
+        if self.my_dsa.is_istg() and all_connected:
+            self._mark_unneeded_intersite_ntdsconn()
 
-        # New connections won't have GUIDs which are needed for
-        # sorting. Add them.
-        for cn_conn in mydsa.connect_table.values():
-            if cn_conn.guid is None:
-                if self.readonly:
-                    cn_conn.guid = misc.GUID(str(uuid.uuid4()))
-                    cn_conn.whenCreated = self.nt_now
-                else:
-                    cn_conn.load_connection(self.samdb)
+        for dsa in self.my_site.dsa_table.values():
+            self._commit_changes(dsa)
 
-        for cn_conn in mydsa.connect_table.values():
-
-            s_dnstr = cn_conn.get_from_dnstr()
-            if s_dnstr is None:
-                cn_conn.to_be_deleted = True
-                continue
-
-            #XXX should an RODC be regarded as same site
-            same_site = s_dnstr in self.my_site.dsa_table
-
-            # Given an nTDSConnection object cn, if the DC with the
-            # nTDSDSA object dc that is the parent object of cn and
-            # the DC with the nTDSDA object referenced by cn!fromServer
-            # are in the same site, the KCC on dc deletes cn if all of
-            # the following are true:
-            #
-            # Bit NTDSCONN_OPT_IS_GENERATED is clear in cn!options.
-            #
-            # No site settings object s exists for the local DC's site, or
-            # bit NTDSSETTINGS_OPT_IS_TOPL_CLEANUP_DISABLED is clear in
-            # s!options.
-            #
-            # Another nTDSConnection object cn2 exists such that cn and
-            # cn2 have the same parent object, cn!fromServer = cn2!fromServer,
-            # and either
-            #
-            #     cn!whenCreated < cn2!whenCreated
-            #
-            #     cn!whenCreated = cn2!whenCreated and
-            #     cn!objectGUID < cn2!objectGUID
-            #
-            # Bit NTDSCONN_OPT_RODC_TOPOLOGY is clear in cn!options
-            if not cn_conn.is_generated():
-                continue
-
-            if same_site:
-
-                if self.my_site.is_cleanup_ntdsconn_disabled():
-                    continue
-
-                # Loop thru connections looking for a duplicate that
-                # fulfills the previous criteria
-                lesser = False
-                packed_guid = ndr_pack(cn_conn.guid)
-                for cn2_conn in mydsa.connect_table.values():
-                    if cn2_conn is cn_conn:
-                        continue
-
-                    s2_dnstr = cn2_conn.get_from_dnstr()
-
-                    # If the NTDS Connections has a different
-                    # fromServer field then no match
-                    if s2_dnstr != s_dnstr:
-                        continue
-
-                    lesser = (cn_conn.whenCreated < cn2_conn.whenCreated or
-                              (cn_conn.whenCreated == cn2_conn.whenCreated and
-                               packed_guid < ndr_pack(cn2_conn.guid)))
-
-                    if lesser:
-                        break
-
-                if lesser and not cn_conn.is_rodc_topology():
-                    cn_conn.to_be_deleted = True
-
-            # Given an nTDSConnection object cn, if the DC with the nTDSDSA
-            # object dc that is the parent object of cn and the DC with
-            # the nTDSDSA object referenced by cn!fromServer are in
-            # different sites, a KCC acting as an ISTG in dc's site
-            # deletes cn if all of the following are true:
-            #
-            #     Bit NTDSCONN_OPT_IS_GENERATED is clear in cn!options.
-            #
-            #     cn!fromServer references an nTDSDSA object for a DC
-            #     in a site other than the local DC's site.
-            #
-            #     The keepConnections sequence returned by
-            #     CreateIntersiteConnections() does not contain
-            #     cn!objectGUID, or cn is "superseded by" (see below)
-            #     another nTDSConnection cn2 and keepConnections
-            #     contains cn2!objectGUID.
-            #
-            #     The return value of CreateIntersiteConnections()
-            #     was true.
-            #
-            #     Bit NTDSCONN_OPT_RODC_TOPOLOGY is clear in
-            #     cn!options
-            #
-            else:  # different site
-
-                if not mydsa.is_istg():
-                    continue
-
-                # TODO
-                # We are directly using this connection in intersite or
-                # we are using a connection which can supersede this one.
-                #
-                # MS-ADTS 6.2.2.4 - Removing Unnecessary Connections does not
-                # appear to be correct.
-                #
-                # 1. cn!fromServer and cn!parent appear inconsistent with
-                #    no cn2
-                # 2. The repsFrom do not imply each other
-                #
-                if cn_conn in self.kept_connections:  # and not_superceded:
-                    continue
-
-                # This is the result of create_intersite_connections
-                if not all_connected:
-                    continue
-
-                if not cn_conn.is_rodc_topology():
-                    cn_conn.to_be_deleted = True
-
-        if mydsa.is_ro() or self.readonly:
-            for connect in mydsa.connect_table.values():
-                if connect.to_be_deleted:
-                    DEBUG_FN("TO BE DELETED:\n%s" % connect)
-                if connect.to_be_added:
-                    DEBUG_FN("TO BE ADDED:\n%s" % connect)
-
-            # Peform deletion from our tables but perform
-            # no database modification
-            mydsa.commit_connections(self.samdb, ro=True)
-        else:
-            # Commit any modified connections
-            mydsa.commit_connections(self.samdb)
 
     def modify_repsFrom(self, n_rep, t_repsFrom, s_rep, s_dsa, cn_conn):
         """Update an repsFrom object if required.
