@@ -238,6 +238,111 @@ static WERROR cmd_clusapi_open_resource(struct rpc_pipe_client *cli,
 	return WERR_OK;
 }
 
+static WERROR cmd_clusapi_online_resource(struct rpc_pipe_client *cli,
+					  TALLOC_CTX *mem_ctx,
+					  int argc,
+					  const char **argv)
+{
+	struct dcerpc_binding_handle *b = cli->binding_handle;
+	NTSTATUS status;
+	const char *lpszResourceName = "Cluster Name";
+	WERROR Status;
+	struct policy_handle hResource;
+	WERROR rpc_status, ignore;
+
+	if (argc >= 2) {
+		lpszResourceName = argv[1];
+	}
+
+	status = dcerpc_clusapi_OpenResource(b, mem_ctx,
+					     lpszResourceName,
+					     &Status,
+					     &rpc_status,
+					     &hResource);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ntstatus_to_werror(status);
+	}
+
+	if (!W_ERROR_IS_OK(Status)) {
+		printf("Status: %s\n", win_errstr(Status));
+		return Status;
+	}
+
+	status = dcerpc_clusapi_OnlineResource(b, mem_ctx,
+					       hResource,
+					       &Status,
+					       &rpc_status);
+	dcerpc_clusapi_CloseResource(b, mem_ctx,
+				     &hResource,
+				     &ignore);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return ntstatus_to_werror(status);
+	}
+
+	if (!W_ERROR_IS_OK(Status)) {
+		printf("Status: %s\n", win_errstr(Status));
+		return Status;
+	}
+
+	printf("rpc_status: %s\n", win_errstr(rpc_status));
+
+	return WERR_OK;
+}
+
+static WERROR cmd_clusapi_offline_resource(struct rpc_pipe_client *cli,
+					   TALLOC_CTX *mem_ctx,
+					   int argc,
+					   const char **argv)
+{
+	struct dcerpc_binding_handle *b = cli->binding_handle;
+	NTSTATUS status;
+	const char *lpszResourceName = "Cluster Name";
+	WERROR Status;
+	struct policy_handle hResource;
+	WERROR rpc_status, ignore;
+
+	if (argc >= 2) {
+		lpszResourceName = argv[1];
+	}
+
+	status = dcerpc_clusapi_OpenResource(b, mem_ctx,
+					     lpszResourceName,
+					     &Status,
+					     &rpc_status,
+					     &hResource);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ntstatus_to_werror(status);
+	}
+
+	if (!W_ERROR_IS_OK(Status)) {
+		printf("Status: %s\n", win_errstr(Status));
+		return Status;
+	}
+
+	status = dcerpc_clusapi_OfflineResource(b, mem_ctx,
+						hResource,
+						&Status,
+						&rpc_status);
+	dcerpc_clusapi_CloseResource(b, mem_ctx,
+				     &hResource,
+				     &ignore);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return ntstatus_to_werror(status);
+	}
+
+	if (!W_ERROR_IS_OK(Status)) {
+		printf("Status: %s\n", win_errstr(Status));
+		return Status;
+	}
+
+	printf("rpc_status: %s\n", win_errstr(rpc_status));
+
+	return WERR_OK;
+}
+
+
 struct cmd_set clusapi_commands[] = {
 
 	{ "CLUSAPI" },
@@ -247,5 +352,7 @@ struct cmd_set clusapi_commands[] = {
 	{ "clusapi_get_quorum_resource", RPC_RTYPE_WERROR, NULL, cmd_clusapi_get_quorum_resource, &ndr_table_clusapi, NULL, "bla", "" },
 	{ "clusapi_create_enum", RPC_RTYPE_WERROR, NULL, cmd_clusapi_create_enum, &ndr_table_clusapi, NULL, "bla", "" },
 	{ "clusapi_open_resource", RPC_RTYPE_WERROR, NULL, cmd_clusapi_open_resource, &ndr_table_clusapi, NULL, "bla", "" },
+	{ "clusapi_online_resource", RPC_RTYPE_WERROR, NULL, cmd_clusapi_online_resource, &ndr_table_clusapi, NULL, "bla", "" },
+	{ "clusapi_offline_resource", RPC_RTYPE_WERROR, NULL, cmd_clusapi_offline_resource, &ndr_table_clusapi, NULL, "bla", "" },
 	{ NULL }
 };
