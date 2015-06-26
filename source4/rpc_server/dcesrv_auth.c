@@ -39,7 +39,7 @@
 */
 bool dcesrv_auth_bind(struct dcesrv_call_state *call)
 {
-	struct cli_credentials *server_credentials;
+	struct cli_credentials *server_credentials = NULL;
 	struct ncacn_packet *pkt = &call->pkt;
 	struct dcesrv_connection *dce_conn = call->conn;
 	struct dcesrv_auth *auth = &dce_conn->auth_state;
@@ -69,9 +69,9 @@ bool dcesrv_auth_bind(struct dcesrv_call_state *call)
 	cli_credentials_set_conf(server_credentials, call->conn->dce_ctx->lp_ctx);
 	status = cli_credentials_set_machine_account(server_credentials, call->conn->dce_ctx->lp_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("Failed to obtain server credentials, perhaps a standalone server?: %s\n", nt_errstr(status)));
-		talloc_free(server_credentials);
-		server_credentials = NULL;
+		DEBUG(1, ("Failed to obtain server credentials: %s\n",
+			  nt_errstr(status)));
+		return false;
 	}
 
 	status = samba_server_gensec_start(dce_conn, call->event_ctx, 
