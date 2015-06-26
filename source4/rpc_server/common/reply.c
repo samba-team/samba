@@ -110,7 +110,7 @@ NTSTATUS dcesrv_fault(struct dcesrv_call_state *call, uint32_t fault_code)
 	pkt.call_id = call->pkt.call_id;
 	pkt.ptype = DCERPC_PKT_FAULT;
 	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
-	pkt.u.fault.alloc_hint = 0;
+	pkt.u.fault.alloc_hint = 24;
 	pkt.u.fault.context_id = 0;
 	pkt.u.fault.cancel_count = 0;
 	pkt.u.fault.status = fault_code;
