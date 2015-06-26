@@ -2027,7 +2027,7 @@ NTSTATUS cli_smb2_get_ea_list_path(struct cli_state *cli,
 		}
 		ea_count = 0;
 		for (eal = ea_list; eal; eal = eal->next) {
-			(*pea_array)[ea_count++] = ea_list->ea;
+			(*pea_array)[ea_count++] = eal->ea;
 		}
 		*pnum_eas = ea_count;
 	}
