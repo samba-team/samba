@@ -138,6 +138,11 @@ struct dcesrv_call_state {
 
 	/* the reason why we terminate the connection after sending a response */
 	const char *terminate_reason;
+
+	/* temporary auth_info fields */
+	struct dcerpc_auth in_auth_info;
+	struct dcerpc_auth _out_auth_info;
+	struct dcerpc_auth *out_auth_info;
 };
 
 #define DCESRV_HANDLE_ANY 255
@@ -157,12 +162,12 @@ struct dcesrv_auth {
 	enum dcerpc_AuthType auth_type;
 	enum dcerpc_AuthLevel auth_level;
 	uint32_t auth_context_id;
-	struct dcerpc_auth *auth_info;
 	struct gensec_security *gensec_security;
 	struct auth_session_info *session_info;
 	NTSTATUS (*session_key)(struct dcesrv_connection *, DATA_BLOB *session_key);
 	bool client_hdr_signing;
 	bool hdr_signing;
+	bool auth_finished;
 };
 
 struct dcesrv_connection_context {
