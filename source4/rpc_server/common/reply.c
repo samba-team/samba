@@ -111,7 +111,20 @@ NTSTATUS dcesrv_fault(struct dcesrv_call_state *call, uint32_t fault_code)
 	pkt.ptype = DCERPC_PKT_FAULT;
 	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
 	pkt.u.fault.alloc_hint = 24;
-	pkt.u.fault.context_id = 0;
+	switch (call->pkt.ptype) {
+	case DCERPC_PKT_REQUEST:
+		pkt.u.fault.context_id = call->pkt.u.request.context_id;
+		break;
+	default:
+		pkt.u.fault.context_id = 0;
+		break;
+	}
+	if (fault_code == DCERPC_NCA_S_PROTO_ERROR) {
+		/*
+		 * context_id = 0 is forced on protocol errors.
+		 */
+		pkt.u.fault.context_id = 0;
+	}
 	pkt.u.fault.cancel_count = 0;
 	pkt.u.fault.status = fault_code;
 	pkt.u.fault._pad = data_blob_const(zeros, sizeof(zeros));
