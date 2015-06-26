@@ -46,7 +46,7 @@ bool dcesrv_auth_bind(struct dcesrv_call_state *call)
 	NTSTATUS status;
 	uint32_t auth_length;
 
-	if (pkt->u.bind.auth_info.length == 0) {
+	if (pkt->auth_length == 0) {
 		dce_conn->auth_state.auth_info = NULL;
 		return true;
 	}
@@ -119,8 +119,13 @@ NTSTATUS dcesrv_auth_bind_ack(struct dcesrv_call_state *call, struct ncacn_packe
 	NTSTATUS status;
 	bool want_header_signing = false;
 
-	if (!call->conn->auth_state.gensec_security) {
+	if (call->pkt.auth_length == 0) {
 		return NT_STATUS_OK;
+	}
+
+	/* We can't work without an existing gensec state */
+	if (!call->conn->auth_state.gensec_security) {
+		return NT_STATUS_INTERNAL_ERROR;
 	}
 
 	if (call->pkt.pfc_flags & DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN) {
@@ -198,10 +203,16 @@ bool dcesrv_auth_auth3(struct dcesrv_call_state *call)
 	NTSTATUS status;
 	uint32_t auth_length;
 
-	/* We can't work without an existing gensec state, and an new blob to feed it */
-	if (!dce_conn->auth_state.auth_info ||
-	    !dce_conn->auth_state.gensec_security ||
-	    pkt->u.auth3.auth_info.length == 0) {
+	if (pkt->auth_length == 0) {
+		return false;
+	}
+
+	if (!dce_conn->auth_state.auth_info) {
+		return false;
+	}
+
+	/* We can't work without an existing gensec state */
+	if (!dce_conn->auth_state.gensec_security) {
 		return false;
 	}
 
@@ -247,7 +258,7 @@ bool dcesrv_auth_alter(struct dcesrv_call_state *call)
 	uint32_t auth_length;
 
 	/* on a pure interface change there is no auth blob */
-	if (pkt->u.alter.auth_info.length == 0) {
+	if (pkt->auth_length == 0) {
 		return true;
 	}
 
@@ -282,8 +293,7 @@ NTSTATUS dcesrv_auth_alter_ack(struct dcesrv_call_state *call, struct ncacn_pack
 
 	/* on a pure interface change there is no auth_info structure
 	   setup */
-	if (!call->conn->auth_state.auth_info ||
-	    dce_conn->auth_state.auth_info->credentials.length == 0) {
+	if (call->pkt.auth_length == 0) {
 		return NT_STATUS_OK;
 	}
 
