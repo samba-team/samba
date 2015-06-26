@@ -339,6 +339,8 @@ static int net_conf_import(struct net_context *c, struct smbconf_ctx *conf_ctx,
 
 		err = import_process_service(c, conf_ctx, service);
 		if (!SBC_ERROR_IS_OK(err)) {
+			d_printf(_("error importing service %s: %s\n"),
+				 servicename, sbcErrorString(err));
 			goto cancel;
 		}
 	} else {
@@ -376,6 +378,9 @@ static int net_conf_import(struct net_context *c, struct smbconf_ctx *conf_ctx,
 			err = import_process_service(c, conf_ctx,
 						     services[sidx]);
 			if (!SBC_ERROR_IS_OK(err)) {
+				d_printf(_("error importing service %s: %s\n"),
+					 services[sidx]->name,
+					 sbcErrorString(err));
 				goto cancel;
 			}
 
