@@ -79,6 +79,15 @@ _PUBLIC_ struct torture_test *_torture_suite_add_ndr_pull_inout_test(
 			 NDR_SCALARS|NDR_BUFFERS, 0, \
 			 (bool (*) (struct torture_context *, void *)) check_fn);
 
+#define torture_suite_add_ndr_pullpush_fn_test_flags(suite,name,data,flags,flags2,check_fn) \
+		_torture_suite_add_ndr_pullpush_test(suite, #name, \
+			 (ndr_pull_flags_fn_t)ndr_pull_ ## name, \
+			 (ndr_push_flags_fn_t)ndr_push_ ## name, \
+			 data_blob_const(data, sizeof(data)), \
+			 sizeof(struct name), \
+			 flags, flags2, \
+			 (bool (*) (struct torture_context *, void *)) check_fn);
+
 #define torture_suite_add_ndr_pull_io_test(suite,name,data_in,data_out,check_fn_out) \
 		_torture_suite_add_ndr_pull_inout_test(suite, #name "_INOUT", \
 			 (ndr_pull_flags_fn_t)ndr_pull_ ## name, \
