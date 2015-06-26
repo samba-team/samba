@@ -101,10 +101,10 @@ NTSTATUS dcesrv_fault(struct dcesrv_call_state *call, uint32_t fault_code)
 {
 	struct ncacn_packet pkt;
 	struct data_blob_list_item *rep;
-	uint8_t zeros[4];
+	static const uint8_t zeros[4] = { 0, };
 	NTSTATUS status;
 
-	/* setup a bind_ack */
+	/* setup a fault */
 	dcesrv_init_hdr(&pkt, lpcfg_rpc_big_endian(call->conn->dce_ctx->lp_ctx));
 	pkt.auth_length = 0;
 	pkt.call_id = call->pkt.call_id;
@@ -114,8 +114,6 @@ NTSTATUS dcesrv_fault(struct dcesrv_call_state *call, uint32_t fault_code)
 	pkt.u.fault.context_id = 0;
 	pkt.u.fault.cancel_count = 0;
 	pkt.u.fault.status = fault_code;
-
-	ZERO_STRUCT(zeros);
 	pkt.u.fault._pad = data_blob_const(zeros, sizeof(zeros));
 
 	rep = talloc_zero(call, struct data_blob_list_item);
