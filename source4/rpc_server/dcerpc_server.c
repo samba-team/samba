@@ -462,6 +462,7 @@ static NTSTATUS dcesrv_bind_nak(struct dcesrv_call_state *call, uint32_t reason)
 	struct dcerpc_bind_nak_version version;
 	struct data_blob_list_item *rep;
 	NTSTATUS status;
+	static const uint8_t _pad[3] = { 0, };
 
 	/* setup a bind_nak */
 	dcesrv_init_hdr(&pkt, lpcfg_rpc_big_endian(call->conn->dce_ctx->lp_ctx));
@@ -474,7 +475,7 @@ static NTSTATUS dcesrv_bind_nak(struct dcesrv_call_state *call, uint32_t reason)
 	version.rpc_vers_minor = 0;
 	pkt.u.bind_nak.num_versions = 1;
 	pkt.u.bind_nak.versions = &version;
-	pkt.u.bind_nak._pad = data_blob_null;
+	pkt.u.bind_nak._pad = data_blob_const(_pad, sizeof(_pad));
 
 	rep = talloc_zero(call, struct data_blob_list_item);
 	if (!rep) {
