@@ -1105,7 +1105,7 @@ static NTSTATUS dcesrv_alter_resp(struct dcesrv_call_state *call,
 static NTSTATUS dcesrv_alter(struct dcesrv_call_state *call)
 {
 	NTSTATUS status;
-	uint32_t context_id;
+	const struct dcerpc_ctx_list *ctx = NULL;
 
 	if (!call->conn->allow_alter) {
 		return dcesrv_fault_disconnect(call, DCERPC_NCA_S_PROTO_ERROR);
@@ -1135,12 +1135,18 @@ static NTSTATUS dcesrv_alter(struct dcesrv_call_state *call)
 				DCERPC_BIND_REASON_ASYNTAX);
 	}
 
-	context_id = call->pkt.u.alter.ctx_list[0].context_id;
+	if (call->pkt.u.alter.num_contexts < 1) {
+		return dcesrv_fault_disconnect(call, DCERPC_NCA_S_PROTO_ERROR);
+	}
+	ctx = &call->pkt.u.alter.ctx_list[0];
+	if (ctx->num_transfer_syntaxes < 1) {
+		return dcesrv_fault_disconnect(call, DCERPC_NCA_S_PROTO_ERROR);
+	}
 
 	/* see if they are asking for a new interface */
-	call->context = dcesrv_find_context(call->conn, context_id);
+	call->context = dcesrv_find_context(call->conn, ctx->context_id);
 	if (!call->context) {
-		status = dcesrv_alter_new_context(call, context_id);
+		status = dcesrv_alter_new_context(call, ctx->context_id);
 		if (!NT_STATUS_IS_OK(status)) {
 			return dcesrv_alter_resp(call,
 				DCERPC_BIND_PROVIDER_REJECT,
