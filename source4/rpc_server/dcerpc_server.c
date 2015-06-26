@@ -726,12 +726,6 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	}
 
 	context_id = call->pkt.u.bind.ctx_list[0].context_id;
-
-	/* you can't bind twice on one context */
-	if (dcesrv_find_context(call->conn, context_id) != NULL) {
-		return dcesrv_bind_nak(call, 0);
-	}
-
 	if_version = call->pkt.u.bind.ctx_list[0].abstract_syntax.if_version;
 	uuid = call->pkt.u.bind.ctx_list[0].abstract_syntax.uuid;
 
