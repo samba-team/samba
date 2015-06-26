@@ -130,7 +130,11 @@ NTSTATUS dcesrv_auth_bind_ack(struct dcesrv_call_state *call, struct ncacn_packe
 	NTSTATUS status;
 	bool want_header_signing = false;
 
+	dce_conn->allow_alter = true;
+	dce_conn->allow_auth3 = true;
+
 	if (call->pkt.auth_length == 0) {
+		dce_conn->allow_request = true;
 		return NT_STATUS_OK;
 	}
 
@@ -161,6 +165,7 @@ NTSTATUS dcesrv_auth_bind_ack(struct dcesrv_call_state *call, struct ncacn_packe
 			DEBUG(1, ("Failed to establish session_info: %s\n", nt_errstr(status)));
 			return status;
 		}
+		dce_conn->allow_request = true;
 
 		if (!gensec_have_feature(dce_conn->auth_state.gensec_security,
 					 GENSEC_FEATURE_SIGN_PKT_HEADER))
@@ -246,6 +251,8 @@ bool dcesrv_auth_auth3(struct dcesrv_call_state *call)
 			DEBUG(1, ("Failed to establish session_info: %s\n", nt_errstr(status)));
 			return false;
 		}
+		dce_conn->allow_request = true;
+
 		/* Now that we are authenticated, go back to the generic session key... */
 		dce_conn->auth_state.session_key = dcesrv_generic_session_key;
 		return true;
@@ -325,6 +332,7 @@ NTSTATUS dcesrv_auth_alter_ack(struct dcesrv_call_state *call, struct ncacn_pack
 			DEBUG(1, ("Failed to establish session_info: %s\n", nt_errstr(status)));
 			return status;
 		}
+		dce_conn->allow_request = true;
 
 		/* Now that we are authenticated, got back to the generic session key... */
 		dce_conn->auth_state.session_key = dcesrv_generic_session_key;
@@ -351,6 +359,10 @@ bool dcesrv_auth_request(struct dcesrv_call_state *call, DATA_BLOB *full_packet)
 	NTSTATUS status;
 	uint32_t auth_length;
 	size_t hdr_size = DCERPC_REQUEST_LENGTH;
+
+	if (!dce_conn->allow_request) {
+		return false;
+	}
 
 	if (!dce_conn->auth_state.auth_info ||
 	    !dce_conn->auth_state.gensec_security) {
