@@ -314,5 +314,11 @@ struct torture_suite *ndr_witness_suite(TALLOC_CTX *ctx)
 					   NDR_OUT,
 					   witness_AsyncNotify_check_OUT);
 
+	torture_suite_add_ndr_pullpush_fn_test_flags(suite,
+					    witness_AsyncNotify,
+					    witness_AsyncNotify_data_OUT,
+					    NDR_OUT,
+					    0,
+					    witness_AsyncNotify_check_OUT);
 	return suite;
 }
