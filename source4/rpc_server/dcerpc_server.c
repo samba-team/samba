@@ -1456,33 +1456,34 @@ static NTSTATUS dcesrv_process_ncacn_packet(struct dcesrv_connection *dce_conn,
 		struct dcesrv_call_state *call2 = call;
 		uint32_t alloc_size;
 
-		/* we only allow fragmented requests, no other packet types */
-		if (call->pkt.ptype != DCERPC_PKT_REQUEST) {
-			return dcesrv_fault(call2, DCERPC_FAULT_OTHER);
-		}
-
 		/* this is a continuation of an existing call - find the call
 		   then tack it on the end */
 		call = dcesrv_find_fragmented_call(dce_conn, call2->pkt.call_id);
 		if (!call) {
-			return dcesrv_fault(call2, DCERPC_FAULT_OTHER);
+			return dcesrv_fault_disconnect(call2,
+					DCERPC_NCA_S_PROTO_ERROR);
 		}
 
 		if (call->pkt.ptype != call2->pkt.ptype) {
 			/* trying to play silly buggers are we? */
-			return dcesrv_fault(call2, DCERPC_NCA_S_PROTO_ERROR);
+			return dcesrv_fault_disconnect(call,
+					DCERPC_NCA_S_PROTO_ERROR);
 		}
 		if (memcmp(call->pkt.drep, call2->pkt.drep, sizeof(pkt->drep)) != 0) {
-			return dcesrv_fault(call2, DCERPC_NCA_S_PROTO_ERROR);
+			return dcesrv_fault_disconnect(call,
+					DCERPC_NCA_S_PROTO_ERROR);
 		}
 		if (call->pkt.call_id != call2->pkt.call_id) {
-			return dcesrv_fault(call2, DCERPC_NCA_S_PROTO_ERROR);
+			return dcesrv_fault_disconnect(call,
+					DCERPC_NCA_S_PROTO_ERROR);
 		}
 		if (call->pkt.u.request.context_id != call2->pkt.u.request.context_id)  {
-			return dcesrv_fault(call2, DCERPC_NCA_S_PROTO_ERROR);
+			return dcesrv_fault_disconnect(call,
+					DCERPC_NCA_S_PROTO_ERROR);
 		}
 		if (call->pkt.u.request.opnum != call2->pkt.u.request.opnum)  {
-			return dcesrv_fault(call2, DCERPC_NCA_S_PROTO_ERROR);
+			return dcesrv_fault_disconnect(call,
+					DCERPC_NCA_S_PROTO_ERROR);
 		}
 
 		alloc_size = call->pkt.u.request.stub_and_verifier.length +
