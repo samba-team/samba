@@ -891,7 +891,7 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	}
 
 	status = ncacn_push_auth(&rep->blob, call, &pkt,
-							 call->conn->auth_state.auth_info);
+				 call->out_auth_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(call->context);
 		call->context = NULL;
@@ -921,6 +921,10 @@ static NTSTATUS dcesrv_auth3(struct dcesrv_call_state *call)
 	NTSTATUS status;
 
 	if (!call->conn->allow_auth3) {
+		return dcesrv_fault_disconnect(call, DCERPC_NCA_S_PROTO_ERROR);
+	}
+
+	if (call->conn->auth_state.auth_finished) {
 		return dcesrv_fault_disconnect(call, DCERPC_NCA_S_PROTO_ERROR);
 	}
 
@@ -1082,7 +1086,7 @@ static NTSTATUS dcesrv_alter_resp(struct dcesrv_call_state *call,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = ncacn_push_auth(&rep->blob, call, &pkt, call->conn->auth_state.auth_info);
+	status = ncacn_push_auth(&rep->blob, call, &pkt, call->out_auth_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

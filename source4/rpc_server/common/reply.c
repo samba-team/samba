@@ -201,7 +201,7 @@ _PUBLIC_ NTSTATUS dcesrv_reply(struct dcesrv_call_state *call)
 	   request header size */
 	chunk_size = call->conn->max_xmit_frag;
 	chunk_size -= DCERPC_REQUEST_LENGTH;
-	if (call->conn->auth_state.auth_info &&
+	if (call->conn->auth_state.auth_finished &&
 	    call->conn->auth_state.gensec_security) {
 		size_t max_payload = chunk_size;
 
