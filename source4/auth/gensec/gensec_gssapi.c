@@ -1014,8 +1014,8 @@ static NTSTATUS gensec_gssapi_seal_packet(struct gensec_security *gensec_securit
 				    whole_pdu, pdu_length,
 				    mem_ctx, sig);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("gssapi_seal_packet(hdr_signing=%u,sig_size=%ju,"
-			  "data=%ju,pdu=%ju) failed: %s\n",
+		DEBUG(0, ("gssapi_seal_packet(hdr_signing=%u,sig_size=%zu,"
+			  "data=%zu,pdu=%zu) failed: %s\n",
 			  hdr_signing, sig_size, length, pdu_length,
 			  nt_errstr(status)));
 		return status;
@@ -1045,8 +1045,8 @@ static NTSTATUS gensec_gssapi_unseal_packet(struct gensec_security *gensec_secur
 				      whole_pdu, pdu_length,
 				      sig);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("gssapi_unseal_packet(hdr_signing=%u,sig_size=%ju,"
-			  "data=%ju,pdu=%ju) failed: %s\n",
+		DEBUG(0, ("gssapi_unseal_packet(hdr_signing=%u,sig_size=%zu,"
+			  "data=%zu,pdu=%zu) failed: %s\n",
 			  hdr_signing, sig->length, length, pdu_length,
 			  nt_errstr(status)));
 		return status;
@@ -1078,7 +1078,7 @@ static NTSTATUS gensec_gssapi_sign_packet(struct gensec_security *gensec_securit
 				    mem_ctx, sig);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("gssapi_sign_packet(hdr_signing=%u,"
-			  "data=%ju,pdu=%ju) failed: %s\n",
+			  "data=%zu,pdu=%zu) failed: %s\n",
 			  hdr_signing, length, pdu_length,
 			  nt_errstr(status)));
 		return status;
@@ -1108,8 +1108,8 @@ static NTSTATUS gensec_gssapi_check_packet(struct gensec_security *gensec_securi
 				     whole_pdu, pdu_length,
 				     sig);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("gssapi_check_packet(hdr_signing=%u,sig_size=%ju,"
-			  "data=%ju,pdu=%ju) failed: %s\n",
+		DEBUG(0, ("gssapi_check_packet(hdr_signing=%u,sig_size=%zu,"
+			  "data=%zu,pdu=%zu) failed: %s\n",
 			  hdr_signing, sig->length, length, pdu_length,
 			  nt_errstr(status)));
 		return status;
