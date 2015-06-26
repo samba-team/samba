@@ -234,7 +234,7 @@ _PUBLIC_ NTSTATUS ldap_bind_sasl(struct ldap_connection *conn,
 	queue_length = tevent_queue_length(conn->sockets.send_queue);
 	if (queue_length != 0) {
 		status = NT_STATUS_INVALID_PARAMETER_MIX;
-		DEBUG(1, ("SASL bind triggered with non empty send_queue[%ju]: %s\n",
+		DEBUG(1, ("SASL bind triggered with non empty send_queue[%zu]: %s\n",
 			  queue_length, nt_errstr(status)));
 		goto failed;
 	}
