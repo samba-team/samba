@@ -408,6 +408,8 @@ _PUBLIC_ NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
 	p->msg_ctx = msg_ctx;
 	p->server_id = server_id;
 	p->state_flags = state_flags;
+	p->max_recv_frag = 5840;
+	p->max_xmit_frag = 5840;
 
 	*_p = p;
 	return NT_STATUS_OK;
@@ -633,6 +635,24 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	uint32_t context_id;
 	const struct dcesrv_interface *iface;
 	uint32_t extra_flags = 0;
+	uint16_t max_req = 0;
+	uint16_t max_rep = 0;
+
+	/* max_recv_frag and max_xmit_frag result always in the same value! */
+	max_req = MIN(call->pkt.u.bind.max_xmit_frag,
+		      call->pkt.u.bind.max_recv_frag);
+	/*
+	 * The values are between 2048 and 5840 tested against Windows 2012R2
+	 * via ncacn_ip_tcp on port 135.
+	 */
+	max_req = MAX(2048, max_req);
+	max_rep = MIN(max_req, call->conn->max_recv_frag);
+	/* They are truncated to an 8 byte boundary. */
+	max_rep &= 0xFFF8;
+
+	/* max_recv_frag and max_xmit_frag result always in the same value! */
+	call->conn->max_recv_frag = max_rep;
+	call->conn->max_xmit_frag = max_rep;
 
 	/*
 	  if provided, check the assoc_group is valid
@@ -722,10 +742,6 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 		}
 	}
 
-	if (call->conn->cli_max_recv_frag == 0) {
-		call->conn->cli_max_recv_frag = MIN(0x2000, call->pkt.u.bind.max_recv_frag);
-	}
-
 	if ((call->pkt.pfc_flags & DCERPC_PFC_FLAG_CONC_MPX) &&
 	    (call->state_flags & DCESRV_CALL_STATE_FLAG_MULTIPLEXED)) {
 		call->context->conn->state_flags |= DCESRV_CALL_STATE_FLAG_MULTIPLEXED;
@@ -749,8 +765,8 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	pkt.call_id = call->pkt.call_id;
 	pkt.ptype = DCERPC_PKT_BIND_ACK;
 	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST | extra_flags;
-	pkt.u.bind_ack.max_xmit_frag = call->conn->cli_max_recv_frag;
-	pkt.u.bind_ack.max_recv_frag = 0x2000;
+	pkt.u.bind_ack.max_xmit_frag = call->conn->max_xmit_frag;
+	pkt.u.bind_ack.max_recv_frag = call->conn->max_recv_frag;
 
 	/*
 	  make it possible for iface->bind() to specify the assoc_group_id
@@ -932,8 +948,8 @@ static NTSTATUS dcesrv_alter_resp(struct dcesrv_call_state *call,
 		}
 	}
 	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST | extra_flags;
-	pkt.u.alter_resp.max_xmit_frag = 0x2000;
-	pkt.u.alter_resp.max_recv_frag = 0x2000;
+	pkt.u.alter_resp.max_xmit_frag = call->conn->max_xmit_frag;
+	pkt.u.alter_resp.max_recv_frag = call->conn->max_recv_frag;
 	if (result == 0) {
 		pkt.u.alter_resp.assoc_group_id = call->context->assoc_group->id;
 	} else {
