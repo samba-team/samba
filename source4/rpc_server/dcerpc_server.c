@@ -408,6 +408,7 @@ _PUBLIC_ NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
 	p->msg_ctx = msg_ctx;
 	p->server_id = server_id;
 	p->state_flags = state_flags;
+	p->allow_bind = true;
 	p->max_recv_frag = 5840;
 	p->max_xmit_frag = 5840;
 
@@ -458,6 +459,11 @@ static void dcesrv_call_disconnect_after(struct dcesrv_call_state *call,
 	if (call->conn->terminate != NULL) {
 		return;
 	}
+
+	call->conn->allow_bind = false;
+	call->conn->allow_alter = false;
+	call->conn->allow_auth3 = false;
+	call->conn->allow_request = false;
 
 	call->terminate_reason = talloc_strdup(call, reason);
 	if (call->terminate_reason == NULL) {
@@ -914,6 +920,10 @@ static NTSTATUS dcesrv_auth3(struct dcesrv_call_state *call)
 {
 	NTSTATUS status;
 
+	if (!call->conn->allow_auth3) {
+		return dcesrv_fault_disconnect(call, DCERPC_NCA_S_PROTO_ERROR);
+	}
+
 	status = dcerpc_verify_ncacn_packet_header(&call->pkt,
 			DCERPC_PKT_AUTH3,
 			call->pkt.u.auth3.auth_info.length,
@@ -1099,6 +1109,10 @@ static NTSTATUS dcesrv_alter(struct dcesrv_call_state *call)
 	NTSTATUS status;
 	uint32_t context_id;
 
+	if (!call->conn->allow_alter) {
+		return dcesrv_fault_disconnect(call, DCERPC_NCA_S_PROTO_ERROR);
+	}
+
 	status = dcerpc_verify_ncacn_packet_header(&call->pkt,
 			DCERPC_PKT_ALTER,
 			call->pkt.u.alter.auth_info.length,
@@ -1223,6 +1237,10 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 	struct ndr_pull *pull;
 	NTSTATUS status;
 	struct dcesrv_connection_context *context;
+
+	if (!call->conn->allow_request) {
+		return dcesrv_fault_disconnect(call, DCERPC_NCA_S_PROTO_ERROR);
+	}
 
 	/* if authenticated, and the mech we use can't do async replies, don't use them... */
 	if (call->conn->auth_state.gensec_security && 
@@ -1390,9 +1408,22 @@ static NTSTATUS dcesrv_process_ncacn_packet(struct dcesrv_connection *dce_conn,
 
 	talloc_set_destructor(call, dcesrv_call_dequeue);
 
+	if (call->conn->allow_bind) {
+		/*
+		 * Only one bind is possible per connection
+		 */
+		call->conn->allow_bind = false;
+		return dcesrv_bind(call);
+	}
+
 	/* we have to check the signing here, before combining the
 	   pdus */
 	if (call->pkt.ptype == DCERPC_PKT_REQUEST) {
+		if (!call->conn->allow_request) {
+			return dcesrv_fault_disconnect(call,
+					DCERPC_NCA_S_PROTO_ERROR);
+		}
+
 		status = dcerpc_verify_ncacn_packet_header(&call->pkt,
 				DCERPC_PKT_REQUEST,
 				call->pkt.u.request.stub_and_verifier.length,
@@ -1488,7 +1519,8 @@ static NTSTATUS dcesrv_process_ncacn_packet(struct dcesrv_connection *dce_conn,
 
 	switch (call->pkt.ptype) {
 	case DCERPC_PKT_BIND:
-		status = dcesrv_bind(call);
+		status = dcesrv_bind_nak(call,
+			DCERPC_BIND_NAK_REASON_NOT_SPECIFIED);
 		break;
 	case DCERPC_PKT_AUTH3:
 		status = dcesrv_auth3(call);
@@ -1500,7 +1532,7 @@ static NTSTATUS dcesrv_process_ncacn_packet(struct dcesrv_connection *dce_conn,
 		status = dcesrv_request(call);
 		break;
 	default:
-		status = NT_STATUS_INVALID_PARAMETER;
+		status = dcesrv_fault_disconnect(call, DCERPC_NCA_S_PROTO_ERROR);
 		break;
 	}
 
@@ -1665,6 +1697,11 @@ static void dcesrv_terminate_connection(struct dcesrv_connection *dce_conn, cons
 	struct stream_connection *srv_conn;
 	srv_conn = talloc_get_type(dce_conn->transport.private_data,
 				   struct stream_connection);
+
+	dce_conn->allow_bind = false;
+	dce_conn->allow_auth3 = false;
+	dce_conn->allow_alter = false;
+	dce_conn->allow_request = false;
 
 	if (dce_conn->pending_call_list == NULL) {
 		char *full_reason = talloc_asprintf(dce_conn, "dcesrv: %s", reason);
