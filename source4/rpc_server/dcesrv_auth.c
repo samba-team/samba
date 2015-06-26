@@ -238,6 +238,18 @@ bool dcesrv_auth_auth3(struct dcesrv_call_state *call)
 		return false;
 	}
 
+	if (call->in_auth_info.auth_type != dce_conn->auth_state.auth_type) {
+		return false;
+	}
+
+	if (call->in_auth_info.auth_level != dce_conn->auth_state.auth_level) {
+		return false;
+	}
+
+	if (call->in_auth_info.auth_context_id != dce_conn->auth_state.auth_context_id) {
+		return false;
+	}
+
 	call->_out_auth_info = (struct dcerpc_auth) {
 		.auth_type = dce_conn->auth_state.auth_type,
 		.auth_level = dce_conn->auth_state.auth_level,
@@ -303,6 +315,18 @@ bool dcesrv_auth_alter(struct dcesrv_call_state *call)
 	status = dcerpc_pull_auth_trailer(pkt, call, &pkt->u.alter.auth_info,
 					  &call->in_auth_info, &auth_length, true);
 	if (!NT_STATUS_IS_OK(status)) {
+		return false;
+	}
+
+	if (call->in_auth_info.auth_type != dce_conn->auth_state.auth_type) {
+		return false;
+	}
+
+	if (call->in_auth_info.auth_level != dce_conn->auth_state.auth_level) {
+		return false;
+	}
+
+	if (call->in_auth_info.auth_context_id != dce_conn->auth_state.auth_context_id) {
 		return false;
 	}
 
