@@ -458,8 +458,8 @@ static NTSTATUS ctdbd_init_connection(TALLOC_CTX *mem_ctx,
 
 	ret = ctdbd_connect(&conn->fd);
 	if (ret != 0) {
-		status = map_nt_error_from_unix(errno);
-		DEBUG(1, ("ctdbd_connect failed: %s\n", strerror(errno)));
+		status = map_nt_error_from_unix(ret);
+		DEBUG(1, ("ctdbd_connect failed: %s\n", strerror(ret)));
 		goto fail;
 	}
 	talloc_set_destructor(conn, ctdbd_connection_destructor);
