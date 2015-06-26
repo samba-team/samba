@@ -452,6 +452,18 @@ static void dcesrv_call_set_list(struct dcesrv_call_state *call,
 	}
 }
 
+static void dcesrv_call_disconnect_after(struct dcesrv_call_state *call,
+					 const char *reason)
+{
+	if (call->conn->terminate != NULL) {
+		return;
+	}
+
+	call->terminate_reason = talloc_strdup(call, reason);
+	if (call->terminate_reason == NULL) {
+		call->terminate_reason = __location__;
+	}
+}
 
 /*
   return a dcerpc bind_nak
@@ -463,6 +475,12 @@ static NTSTATUS dcesrv_bind_nak(struct dcesrv_call_state *call, uint32_t reason)
 	struct data_blob_list_item *rep;
 	NTSTATUS status;
 	static const uint8_t _pad[3] = { 0, };
+
+	/*
+	 * We add the call to the pending_call_list
+	 * in order to defer the termination.
+	 */
+	dcesrv_call_disconnect_after(call, "dcesrv_bind_nak");
 
 	/* setup a bind_nak */
 	dcesrv_init_hdr(&pkt, lpcfg_rpc_big_endian(call->conn->dce_ctx->lp_ctx));
@@ -499,6 +517,19 @@ static NTSTATUS dcesrv_bind_nak(struct dcesrv_call_state *call, uint32_t reason)
 	}
 
 	return NT_STATUS_OK;	
+}
+
+static NTSTATUS dcesrv_fault_disconnect(struct dcesrv_call_state *call,
+				 uint32_t fault_code)
+{
+	/*
+	 * We add the call to the pending_call_list
+	 * in order to defer the termination.
+	 */
+	dcesrv_call_disconnect_after(call, "dcesrv_fault_disconnect");
+
+	return dcesrv_fault_with_flags(call, fault_code,
+				       DCERPC_PFC_FLAG_DID_NOT_EXECUTE);
 }
 
 static int dcesrv_connection_context_destructor(struct dcesrv_connection_context *c)
@@ -640,6 +671,23 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	uint16_t max_rep = 0;
 	const char *ep_prefix = "";
 	const char *endpoint = NULL;
+
+	status = dcerpc_verify_ncacn_packet_header(&call->pkt,
+			DCERPC_PKT_BIND,
+			call->pkt.u.bind.auth_info.length,
+			0, /* required flags */
+			DCERPC_PFC_FLAG_FIRST |
+			DCERPC_PFC_FLAG_LAST |
+			DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN |
+			0x08 | /* this is not defined, but should be ignored */
+			DCERPC_PFC_FLAG_CONC_MPX |
+			DCERPC_PFC_FLAG_DID_NOT_EXECUTE |
+			DCERPC_PFC_FLAG_MAYBE |
+			DCERPC_PFC_FLAG_OBJECT_UUID);
+	if (!NT_STATUS_IS_OK(status)) {
+		return dcesrv_bind_nak(call,
+			DCERPC_BIND_NAK_REASON_PROTOCOL_VERSION_NOT_SUPPORTED);
+	}
 
 	/* max_recv_frag and max_xmit_frag result always in the same value! */
 	max_req = MIN(call->pkt.u.bind.max_xmit_frag,
@@ -864,6 +912,24 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 */
 static NTSTATUS dcesrv_auth3(struct dcesrv_call_state *call)
 {
+	NTSTATUS status;
+
+	status = dcerpc_verify_ncacn_packet_header(&call->pkt,
+			DCERPC_PKT_AUTH3,
+			call->pkt.u.auth3.auth_info.length,
+			0, /* required flags */
+			DCERPC_PFC_FLAG_FIRST |
+			DCERPC_PFC_FLAG_LAST |
+			DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN |
+			0x08 | /* this is not defined, but should be ignored */
+			DCERPC_PFC_FLAG_CONC_MPX |
+			DCERPC_PFC_FLAG_DID_NOT_EXECUTE |
+			DCERPC_PFC_FLAG_MAYBE |
+			DCERPC_PFC_FLAG_OBJECT_UUID);
+	if (!NT_STATUS_IS_OK(status)) {
+		return dcesrv_fault_disconnect(call, DCERPC_NCA_S_PROTO_ERROR);
+	}
+
 	/* handle the auth3 in the auth code */
 	if (!dcesrv_auth_auth3(call)) {
 		return dcesrv_fault(call, DCERPC_FAULT_OTHER);
@@ -1032,6 +1098,22 @@ static NTSTATUS dcesrv_alter(struct dcesrv_call_state *call)
 {
 	NTSTATUS status;
 	uint32_t context_id;
+
+	status = dcerpc_verify_ncacn_packet_header(&call->pkt,
+			DCERPC_PKT_ALTER,
+			call->pkt.u.alter.auth_info.length,
+			0, /* required flags */
+			DCERPC_PFC_FLAG_FIRST |
+			DCERPC_PFC_FLAG_LAST |
+			DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN |
+			0x08 | /* this is not defined, but should be ignored */
+			DCERPC_PFC_FLAG_CONC_MPX |
+			DCERPC_PFC_FLAG_DID_NOT_EXECUTE |
+			DCERPC_PFC_FLAG_MAYBE |
+			DCERPC_PFC_FLAG_OBJECT_UUID);
+	if (!NT_STATUS_IS_OK(status)) {
+		return dcesrv_fault_disconnect(call, DCERPC_NCA_S_PROTO_ERROR);
+	}
 
 	/* handle any authentication that is being requested */
 	if (!dcesrv_auth_alter(call)) {
@@ -1310,9 +1392,27 @@ static NTSTATUS dcesrv_process_ncacn_packet(struct dcesrv_connection *dce_conn,
 
 	/* we have to check the signing here, before combining the
 	   pdus */
-	if (call->pkt.ptype == DCERPC_PKT_REQUEST &&
-	    !dcesrv_auth_request(call, &blob)) {
-		return dcesrv_fault(call, DCERPC_FAULT_ACCESS_DENIED);		
+	if (call->pkt.ptype == DCERPC_PKT_REQUEST) {
+		status = dcerpc_verify_ncacn_packet_header(&call->pkt,
+				DCERPC_PKT_REQUEST,
+				call->pkt.u.request.stub_and_verifier.length,
+				0, /* required_flags */
+				DCERPC_PFC_FLAG_FIRST |
+				DCERPC_PFC_FLAG_LAST |
+				DCERPC_PFC_FLAG_PENDING_CANCEL |
+				0x08 | /* this is not defined, but should be ignored */
+				DCERPC_PFC_FLAG_CONC_MPX |
+				DCERPC_PFC_FLAG_DID_NOT_EXECUTE |
+				DCERPC_PFC_FLAG_MAYBE |
+				DCERPC_PFC_FLAG_OBJECT_UUID);
+		if (!NT_STATUS_IS_OK(status)) {
+			return dcesrv_fault_disconnect(call,
+					DCERPC_NCA_S_PROTO_ERROR);
+		}
+
+		if (!dcesrv_auth_request(call, &blob)) {
+			return dcesrv_fault(call, DCERPC_FAULT_ACCESS_DENIED);
+		}
 	}
 
 	/* see if this is a continued packet */
