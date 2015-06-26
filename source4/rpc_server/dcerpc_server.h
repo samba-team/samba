@@ -255,6 +255,14 @@ struct dcesrv_connection {
 
 	/* the current authentication state */
 	struct dcesrv_auth auth_state;
+
+	/*
+	 * remember which pdu types are allowed
+	 */
+	bool allow_bind;
+	bool allow_auth3;
+	bool allow_alter;
+	bool allow_request;
 };
 
 
