@@ -50,25 +50,19 @@ bool dcesrv_auth_bind(struct dcesrv_call_state *call)
 		auth->auth_type = DCERPC_AUTH_TYPE_NONE;
 		auth->auth_level = DCERPC_AUTH_LEVEL_NONE;
 		auth->auth_context_id = 0;
-		dce_conn->auth_state.auth_info = NULL;
 		return true;
 	}
 
-	dce_conn->auth_state.auth_info = talloc(dce_conn, struct dcerpc_auth);
-	if (!dce_conn->auth_state.auth_info) {
-		return false;
-	}
-
 	status = dcerpc_pull_auth_trailer(pkt, call, &pkt->u.bind.auth_info,
-					  dce_conn->auth_state.auth_info,
+					  &call->in_auth_info,
 					  &auth_length, false);
 	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}
 
-	auth->auth_type = dce_conn->auth_state.auth_info->auth_type;
-	auth->auth_level = dce_conn->auth_state.auth_info->auth_level;
-	auth->auth_context_id = dce_conn->auth_state.auth_info->auth_context_id;
+	auth->auth_type = call->in_auth_info.auth_type;
+	auth->auth_level = call->in_auth_info.auth_level;
+	auth->auth_context_id = call->in_auth_info.auth_context_id;
 
 	server_credentials 
 		= cli_credentials_init(call);
@@ -134,6 +128,7 @@ NTSTATUS dcesrv_auth_bind_ack(struct dcesrv_call_state *call, struct ncacn_packe
 	dce_conn->allow_auth3 = true;
 
 	if (call->pkt.auth_length == 0) {
+		dce_conn->auth_state.auth_finished = true;
 		dce_conn->allow_request = true;
 		return NT_STATUS_OK;
 	}
@@ -152,10 +147,17 @@ NTSTATUS dcesrv_auth_bind_ack(struct dcesrv_call_state *call, struct ncacn_packe
 		want_header_signing = false;
 	}
 
+	call->_out_auth_info = (struct dcerpc_auth) {
+		.auth_type = dce_conn->auth_state.auth_type,
+		.auth_level = dce_conn->auth_state.auth_level,
+		.auth_context_id = dce_conn->auth_state.auth_context_id,
+	};
+	call->out_auth_info = &call->_out_auth_info;
+
 	status = gensec_update_ev(dce_conn->auth_state.gensec_security,
 			       call, call->event_ctx,
-			       dce_conn->auth_state.auth_info->credentials, 
-			       &dce_conn->auth_state.auth_info->credentials);
+			       call->in_auth_info.credentials,
+			       &call->out_auth_info->credentials);
 	
 	if (NT_STATUS_IS_OK(status)) {
 		status = gensec_session_info(dce_conn->auth_state.gensec_security,
@@ -165,6 +167,7 @@ NTSTATUS dcesrv_auth_bind_ack(struct dcesrv_call_state *call, struct ncacn_packe
 			DEBUG(1, ("Failed to establish session_info: %s\n", nt_errstr(status)));
 			return status;
 		}
+		dce_conn->auth_state.auth_finished = true;
 		dce_conn->allow_request = true;
 
 		if (!gensec_have_feature(dce_conn->auth_state.gensec_security,
@@ -184,9 +187,6 @@ NTSTATUS dcesrv_auth_bind_ack(struct dcesrv_call_state *call, struct ncacn_packe
 		dce_conn->auth_state.session_key = dcesrv_generic_session_key;
 		return NT_STATUS_OK;
 	} else if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		dce_conn->auth_state.auth_info->auth_pad_length = 0;
-		dce_conn->auth_state.auth_info->auth_reserved = 0;
-
 		if (!gensec_have_feature(dce_conn->auth_state.gensec_security,
 					 GENSEC_FEATURE_SIGN_PKT_HEADER))
 		{
@@ -223,7 +223,7 @@ bool dcesrv_auth_auth3(struct dcesrv_call_state *call)
 		return false;
 	}
 
-	if (!dce_conn->auth_state.auth_info) {
+	if (dce_conn->auth_state.auth_finished) {
 		return false;
 	}
 
@@ -233,16 +233,23 @@ bool dcesrv_auth_auth3(struct dcesrv_call_state *call)
 	}
 
 	status = dcerpc_pull_auth_trailer(pkt, call, &pkt->u.auth3.auth_info,
-					  dce_conn->auth_state.auth_info, &auth_length, true);
+					  &call->in_auth_info, &auth_length, true);
 	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}
 
+	call->_out_auth_info = (struct dcerpc_auth) {
+		.auth_type = dce_conn->auth_state.auth_type,
+		.auth_level = dce_conn->auth_state.auth_level,
+		.auth_context_id = dce_conn->auth_state.auth_context_id,
+	};
+	call->out_auth_info = &call->_out_auth_info;
+
 	/* Pass the extra data we got from the client down to gensec for processing */
 	status = gensec_update_ev(dce_conn->auth_state.gensec_security,
 			       call, call->event_ctx,
-			       dce_conn->auth_state.auth_info->credentials, 
-			       &dce_conn->auth_state.auth_info->credentials);
+			       call->in_auth_info.credentials,
+			       &call->out_auth_info->credentials);
 	if (NT_STATUS_IS_OK(status)) {
 		status = gensec_session_info(dce_conn->auth_state.gensec_security,
 					     dce_conn,
@@ -251,6 +258,7 @@ bool dcesrv_auth_auth3(struct dcesrv_call_state *call)
 			DEBUG(1, ("Failed to establish session_info: %s\n", nt_errstr(status)));
 			return false;
 		}
+		dce_conn->auth_state.auth_finished = true;
 		dce_conn->allow_request = true;
 
 		/* Now that we are authenticated, go back to the generic session key... */
@@ -277,7 +285,14 @@ bool dcesrv_auth_alter(struct dcesrv_call_state *call)
 
 	/* on a pure interface change there is no auth blob */
 	if (pkt->auth_length == 0) {
+		if (!dce_conn->auth_state.auth_finished) {
+			return false;
+		}
 		return true;
+	}
+
+	if (dce_conn->auth_state.auth_finished) {
+		return false;
 	}
 
 	/* We can't work without an existing gensec state */
@@ -285,14 +300,8 @@ bool dcesrv_auth_alter(struct dcesrv_call_state *call)
 		return false;
 	}
 
-	dce_conn->auth_state.auth_info = talloc(dce_conn, struct dcerpc_auth);
-	if (!dce_conn->auth_state.auth_info) {
-		return false;
-	}
-
 	status = dcerpc_pull_auth_trailer(pkt, call, &pkt->u.alter.auth_info,
-					  dce_conn->auth_state.auth_info,
-					  &auth_length, true);
+					  &call->in_auth_info, &auth_length, true);
 	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}
@@ -316,13 +325,20 @@ NTSTATUS dcesrv_auth_alter_ack(struct dcesrv_call_state *call, struct ncacn_pack
 	}
 
 	if (!call->conn->auth_state.gensec_security) {
-		return NT_STATUS_INVALID_PARAMETER;
+		return NT_STATUS_INTERNAL_ERROR;
 	}
+
+	call->_out_auth_info = (struct dcerpc_auth) {
+		.auth_type = dce_conn->auth_state.auth_type,
+		.auth_level = dce_conn->auth_state.auth_level,
+		.auth_context_id = dce_conn->auth_state.auth_context_id,
+	};
+	call->out_auth_info = &call->_out_auth_info;
 
 	status = gensec_update_ev(dce_conn->auth_state.gensec_security,
 			       call, call->event_ctx,
-			       dce_conn->auth_state.auth_info->credentials, 
-			       &dce_conn->auth_state.auth_info->credentials);
+			       call->in_auth_info.credentials,
+			       &call->out_auth_info->credentials);
 
 	if (NT_STATUS_IS_OK(status)) {
 		status = gensec_session_info(dce_conn->auth_state.gensec_security,
@@ -332,14 +348,13 @@ NTSTATUS dcesrv_auth_alter_ack(struct dcesrv_call_state *call, struct ncacn_pack
 			DEBUG(1, ("Failed to establish session_info: %s\n", nt_errstr(status)));
 			return status;
 		}
+		dce_conn->auth_state.auth_finished = true;
 		dce_conn->allow_request = true;
 
 		/* Now that we are authenticated, got back to the generic session key... */
 		dce_conn->auth_state.session_key = dcesrv_generic_session_key;
 		return NT_STATUS_OK;
 	} else if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		dce_conn->auth_state.auth_info->auth_pad_length = 0;
-		dce_conn->auth_state.auth_info->auth_reserved = 0;
 		return NT_STATUS_OK;
 	}
 
@@ -355,7 +370,6 @@ bool dcesrv_auth_request(struct dcesrv_call_state *call, DATA_BLOB *full_packet)
 {
 	struct ncacn_packet *pkt = &call->pkt;
 	struct dcesrv_connection *dce_conn = call->conn;
-	struct dcerpc_auth auth;
 	NTSTATUS status;
 	uint32_t auth_length;
 	size_t hdr_size = DCERPC_REQUEST_LENGTH;
@@ -364,19 +378,11 @@ bool dcesrv_auth_request(struct dcesrv_call_state *call, DATA_BLOB *full_packet)
 		return false;
 	}
 
-	if (!dce_conn->auth_state.auth_info ||
-	    !dce_conn->auth_state.gensec_security) {
-		if (pkt->auth_length != 0) {
-			return false;
-		}
-		return true;
-	}
-
 	if (pkt->pfc_flags & DCERPC_PFC_FLAG_OBJECT_UUID) {
 		hdr_size += 16;
 	}
 
-	switch (dce_conn->auth_state.auth_info->auth_level) {
+	switch (dce_conn->auth_state.auth_level) {
 	case DCERPC_AUTH_LEVEL_PRIVACY:
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
 		break;
@@ -396,36 +402,41 @@ bool dcesrv_auth_request(struct dcesrv_call_state *call, DATA_BLOB *full_packet)
 		return false;
 	}
 
+	if (!dce_conn->auth_state.gensec_security) {
+		return false;
+	}
+
 	status = dcerpc_pull_auth_trailer(pkt, call,
 					  &pkt->u.request.stub_and_verifier,
-					  &auth, &auth_length, false);
+					  &call->in_auth_info, &auth_length, false);
 	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}
 
-	if (auth.auth_type != dce_conn->auth_state.auth_info->auth_type) {
+	if (call->in_auth_info.auth_type != dce_conn->auth_state.auth_type) {
 		return false;
 	}
 
-	if (auth.auth_level != dce_conn->auth_state.auth_info->auth_level) {
+	if (call->in_auth_info.auth_level != dce_conn->auth_state.auth_level) {
 		return false;
 	}
 
-	if (auth.auth_context_id != dce_conn->auth_state.auth_info->auth_context_id) {
+	if (call->in_auth_info.auth_context_id != dce_conn->auth_state.auth_context_id) {
 		return false;
 	}
 
 	pkt->u.request.stub_and_verifier.length -= auth_length;
 
 	/* check signature or unseal the packet */
-	switch (dce_conn->auth_state.auth_info->auth_level) {
+	switch (dce_conn->auth_state.auth_level) {
 	case DCERPC_AUTH_LEVEL_PRIVACY:
 		status = gensec_unseal_packet(dce_conn->auth_state.gensec_security,
 					      full_packet->data + hdr_size,
 					      pkt->u.request.stub_and_verifier.length, 
 					      full_packet->data,
-					      full_packet->length-auth.credentials.length,
-					      &auth.credentials);
+					      full_packet->length-
+					      call->in_auth_info.credentials.length,
+					      &call->in_auth_info.credentials);
 		memcpy(pkt->u.request.stub_and_verifier.data, 
 		       full_packet->data + hdr_size,
 		       pkt->u.request.stub_and_verifier.length);
@@ -436,8 +447,9 @@ bool dcesrv_auth_request(struct dcesrv_call_state *call, DATA_BLOB *full_packet)
 					     pkt->u.request.stub_and_verifier.data, 
 					     pkt->u.request.stub_and_verifier.length,
 					     full_packet->data,
-					     full_packet->length-auth.credentials.length,
-					     &auth.credentials);
+					     full_packet->length-
+					     call->in_auth_info.credentials.length,
+					     &call->in_auth_info.credentials);
 		break;
 
 	case DCERPC_AUTH_LEVEL_CONNECT:
@@ -451,10 +463,10 @@ bool dcesrv_auth_request(struct dcesrv_call_state *call, DATA_BLOB *full_packet)
 	}
 
 	/* remove the indicated amount of padding */
-	if (pkt->u.request.stub_and_verifier.length < auth.auth_pad_length) {
+	if (pkt->u.request.stub_and_verifier.length < call->in_auth_info.auth_pad_length) {
 		return false;
 	}
-	pkt->u.request.stub_and_verifier.length -= auth.auth_pad_length;
+	pkt->u.request.stub_and_verifier.length -= call->in_auth_info.auth_pad_length;
 
 	return NT_STATUS_IS_OK(status);
 }
@@ -474,13 +486,7 @@ bool dcesrv_auth_response(struct dcesrv_call_state *call,
 	uint32_t payload_length;
 	DATA_BLOB creds2;
 
-	/* non-signed packets are simple */
-	if (dce_conn->auth_state.auth_info == NULL) {
-		status = ncacn_push_auth(blob, call, pkt, NULL);
-		return NT_STATUS_IS_OK(status);
-	}
-
-	switch (dce_conn->auth_state.auth_info->auth_level) {
+	switch (dce_conn->auth_state.auth_level) {
 	case DCERPC_AUTH_LEVEL_PRIVACY:
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
 		if (sig_size == 0) {
@@ -505,6 +511,10 @@ bool dcesrv_auth_response(struct dcesrv_call_state *call,
 		return false;
 	}
 
+	if (!dce_conn->auth_state.gensec_security) {
+		return false;
+	}
+
 	ndr = ndr_push_init_ctx(call);
 	if (!ndr) {
 		return false;
@@ -519,28 +529,31 @@ bool dcesrv_auth_response(struct dcesrv_call_state *call,
 		return false;
 	}
 
+	call->_out_auth_info = (struct dcerpc_auth) {
+		.auth_type = dce_conn->auth_state.auth_type,
+		.auth_level = dce_conn->auth_state.auth_level,
+		.auth_context_id = dce_conn->auth_state.auth_context_id,
+	};
+	call->out_auth_info = &call->_out_auth_info;
+
 	/* pad to 16 byte multiple in the payload portion of the
 	   packet. This matches what w2k3 does. Note that we can't use
 	   ndr_push_align() as that is relative to the start of the
 	   whole packet, whereas w2k8 wants it relative to the start
 	   of the stub */
-	dce_conn->auth_state.auth_info->auth_pad_length =
+	call->out_auth_info->auth_pad_length =
 		DCERPC_AUTH_PAD_LENGTH(pkt->u.response.stub_and_verifier.length);
-	ndr_err = ndr_push_zero(ndr,
-				dce_conn->auth_state.auth_info->auth_pad_length);
+	ndr_err = ndr_push_zero(ndr, call->out_auth_info->auth_pad_length);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return false;
 	}
 
 	payload_length = pkt->u.response.stub_and_verifier.length +
-		dce_conn->auth_state.auth_info->auth_pad_length;
-
-	/* we start without signature, it will appended later */
-	dce_conn->auth_state.auth_info->credentials = data_blob(NULL, 0);
+		call->out_auth_info->auth_pad_length;
 
 	/* add the auth verifier */
 	ndr_err = ndr_push_dcerpc_auth(ndr, NDR_SCALARS|NDR_BUFFERS,
-				       dce_conn->auth_state.auth_info);
+				       call->out_auth_info);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return false;
 	}
@@ -558,7 +571,7 @@ bool dcesrv_auth_response(struct dcesrv_call_state *call,
 	dcerpc_set_auth_length(blob, sig_size);
 
 	/* sign or seal the packet */
-	switch (dce_conn->auth_state.auth_info->auth_level) {
+	switch (dce_conn->auth_state.auth_level) {
 	case DCERPC_AUTH_LEVEL_PRIVACY:
 		status = gensec_seal_packet(dce_conn->auth_state.gensec_security, 
 					    call,
@@ -591,7 +604,7 @@ bool dcesrv_auth_response(struct dcesrv_call_state *call,
 	if (creds2.length != sig_size) {
 		DEBUG(3,("dcesrv_auth_response: creds2.length[%u] != sig_size[%u] pad[%u] stub[%u]\n",
 			 (unsigned)creds2.length, (uint32_t)sig_size,
-			 (unsigned)dce_conn->auth_state.auth_info->auth_pad_length,
+			 (unsigned)call->out_auth_info->auth_pad_length,
 			 (unsigned)pkt->u.response.stub_and_verifier.length));
 		dcerpc_set_frag_length(blob, blob->length + creds2.length);
 		dcerpc_set_auth_length(blob, creds2.length);
