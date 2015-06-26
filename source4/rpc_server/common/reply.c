@@ -97,7 +97,9 @@ void dcesrv_init_hdr(struct ncacn_packet *pkt, bool bigendian)
 /*
   return a dcerpc fault
 */
-NTSTATUS dcesrv_fault(struct dcesrv_call_state *call, uint32_t fault_code)
+NTSTATUS dcesrv_fault_with_flags(struct dcesrv_call_state *call,
+				 uint32_t fault_code,
+				 uint8_t extra_flags)
 {
 	struct ncacn_packet pkt;
 	struct data_blob_list_item *rep;
@@ -109,7 +111,7 @@ NTSTATUS dcesrv_fault(struct dcesrv_call_state *call, uint32_t fault_code)
 	pkt.auth_length = 0;
 	pkt.call_id = call->pkt.call_id;
 	pkt.ptype = DCERPC_PKT_FAULT;
-	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
+	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST | extra_flags;
 	pkt.u.fault.alloc_hint = 24;
 	switch (call->pkt.ptype) {
 	case DCERPC_PKT_REQUEST:
@@ -153,7 +155,10 @@ NTSTATUS dcesrv_fault(struct dcesrv_call_state *call, uint32_t fault_code)
 	return NT_STATUS_OK;
 }
 
-
+NTSTATUS dcesrv_fault(struct dcesrv_call_state *call, uint32_t fault_code)
+{
+	return dcesrv_fault_with_flags(call, fault_code, 0);
+}
 
 _PUBLIC_ NTSTATUS dcesrv_reply(struct dcesrv_call_state *call)
 {
