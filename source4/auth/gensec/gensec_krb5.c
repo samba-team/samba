@@ -285,13 +285,12 @@ static NTSTATUS gensec_krb5_common_client_creds(struct gensec_security *gensec_s
 	const char *error_string;
 	const char *principal;
 	const char *hostname;
-	krb5_data in_data;
+	krb5_data in_data = { .length = 0 };
 	krb5_data *in_data_p = NULL;
 	struct tevent_context *previous_ev;
 
 	if (lpcfg_parm_bool(gensec_security->settings->lp_ctx,
 			    NULL, "gensec_krb5", "send_authenticator_checksum", true)) {
-		in_data.length = 0;
 		in_data_p = &in_data;
 	}
 	
