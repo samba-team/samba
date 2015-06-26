@@ -1792,14 +1792,21 @@ static NTSTATUS dcesrv_process_ncacn_packet(struct dcesrv_connection *dce_conn,
 	case DCERPC_PKT_REQUEST:
 		status = dcesrv_request(call);
 		break;
+	case DCERPC_PKT_CO_CANCEL:
+	case DCERPC_PKT_ORPHANED:
+		/*
+		 * Window just ignores CO_CANCEL and ORPHANED,
+		 * so we do...
+		 */
+		status = NT_STATUS_OK;
+		TALLOC_FREE(call);
+		break;
 	case DCERPC_PKT_BIND_ACK:
 	case DCERPC_PKT_BIND_NAK:
 	case DCERPC_PKT_ALTER_RESP:
 	case DCERPC_PKT_RESPONSE:
 	case DCERPC_PKT_FAULT:
 	case DCERPC_PKT_SHUTDOWN:
-	case DCERPC_PKT_CO_CANCEL:
-	case DCERPC_PKT_ORPHANED:
 	default:
 		status = dcesrv_fault_disconnect(call, DCERPC_NCA_S_PROTO_ERROR);
 		break;
