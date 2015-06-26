@@ -59,6 +59,10 @@ bool dcesrv_auth_bind(struct dcesrv_call_state *call)
 	status = dcerpc_pull_auth_trailer(pkt, call, &pkt->u.bind.auth_info,
 					  dce_conn->auth_state.auth_info,
 					  &auth_length, false);
+	if (!NT_STATUS_IS_OK(status)) {
+		return false;
+	}
+
 	server_credentials 
 		= cli_credentials_init(call);
 	if (!server_credentials) {
