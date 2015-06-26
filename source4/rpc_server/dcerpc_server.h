@@ -130,6 +130,9 @@ struct dcesrv_call_state {
 
 	/* this is used by the boilerplate code to generate DCERPC faults */
 	uint32_t fault_code;
+
+	/* the reason why we terminate the connection after sending a response */
+	const char *terminate_reason;
 };
 
 #define DCESRV_HANDLE_ANY 255
