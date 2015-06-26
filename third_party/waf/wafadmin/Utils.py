@@ -455,8 +455,7 @@ def check_dir(path):
 			os.makedirs(path)
 		except OSError, e:
 			if not os.path.isdir(path):
-				raise Errors.WafError('Cannot create the folder %r' % path, ex=e)
-
+				raise WafError("Cannot create the folder '%s' (error: %s)" % (path, e))
 
 def cmd_output(cmd, **kw):
 
