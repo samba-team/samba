@@ -111,9 +111,7 @@ def smbdotconf_generate_parameter_list(task):
     t += "]>\n"
     t += "<section>\n"
     for article in articles:
-        f = open(article.abspath(task.env), 'r')
-        t += f.read()
-        f.close()
+        t += article.read()
 
     t += "</section>\n"
     save_file(parameter_all, t , create_dir=True)

@@ -8,14 +8,11 @@ from wafsamba import samba_version_file
 def write_version_header(task):
     '''print version.h contents'''
     src = task.inputs[0].srcpath(task.env)
-    tgt = task.outputs[0].bldpath(task.env)
 
     version = samba_version_file(src, task.env.srcdir, env=task.env, is_install=task.env.is_install)
     string = str(version)
 
-    f = open(tgt, 'w')
-    s = f.write(string)
-    f.close()
+    task.outputs[0].write(string)
     return 0
 
 

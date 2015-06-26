@@ -147,12 +147,10 @@ def abi_check(self):
 
 def abi_process_file(fname, version, symmap):
     '''process one ABI file, adding new symbols to the symmap'''
-    f = open(fname, mode='r')
-    for line in f:
+    for line in Utils.readf(fname).splitlines():
         symname = line.split(":")[0]
         if not symname in symmap:
             symmap[symname] = version
-    f.close()
 
 
 def abi_write_vscript(f, libname, current_version, versions, symmap, abi_match):

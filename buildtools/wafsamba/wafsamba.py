@@ -95,9 +95,7 @@ Build.BuildContext.ADD_INIT_FUNCTION = ADD_INIT_FUNCTION
 
 
 def generate_empty_file(task):
-    target_fname = installed_location=task.outputs[0].bldpath(task.env)
-    target_file = open(installed_location, 'w')
-    target_file.close()
+    task.outputs[0].write('')
     return 0
 
 #################################################################
