@@ -928,6 +928,18 @@ smbc_setFunctionFstatdir(SMBCCTX *c, smbc_fstatdir_fn fn)
         c->fstatdir = fn;
 }
 
+smbc_notify_fn
+smbc_getFunctionNotify(SMBCCTX *c)
+{
+        return c->internal->smb.notify_fn;
+}
+
+void
+smbc_setFunctionNotify(SMBCCTX *c, smbc_notify_fn fn)
+{
+        c->internal->smb.notify_fn = fn;
+}
+
 
 /**
  * Callable functions applicable to both files and directories.

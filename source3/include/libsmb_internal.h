@@ -247,6 +247,7 @@ struct SMBC_internal_data {
         struct
         {
                 smbc_splice_fn                  splice_fn;
+		smbc_notify_fn			notify_fn;
         }               smb;
 
 	uint16_t	port;
@@ -343,6 +344,12 @@ SMBC_rename_ctx(SMBCCTX *ocontext,
                 const char *oname,
                 SMBCCTX *ncontext,
                 const char *nname);
+
+int
+SMBC_notify_ctx(SMBCCTX *c, SMBCFILE *dir, smbc_bool recursive,
+		uint32_t completion_filter, unsigned callback_timeout_ms,
+		smbc_notify_callback_fn cb, void *private_data);
+
 
 
 /* Functions in libsmb_file.c */

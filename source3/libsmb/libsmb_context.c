@@ -214,6 +214,7 @@ smbc_new_context(void)
         smbc_setFunctionTelldir(context, SMBC_telldir_ctx);
         smbc_setFunctionLseekdir(context, SMBC_lseekdir_ctx);
         smbc_setFunctionFstatdir(context, SMBC_fstatdir_ctx);
+        smbc_setFunctionNotify(context, SMBC_notify_ctx);
         smbc_setFunctionChmod(context, SMBC_chmod_ctx);
         smbc_setFunctionUtimes(context, SMBC_utimes_ctx);
         smbc_setFunctionSetxattr(context, SMBC_setxattr_ctx);

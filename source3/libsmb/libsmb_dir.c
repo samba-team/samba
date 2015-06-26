@@ -31,6 +31,8 @@
 #include "../librpc/gen_ndr/ndr_srvsvc_c.h"
 #include "libsmb/nmblib.h"
 #include "../libcli/smb/smbXcli_base.h"
+#include "../libcli/security/security.h"
+#include "lib/util/tevent_ntstatus.h"
 
 /*
  * Routine to open a directory
@@ -2047,3 +2049,255 @@ SMBC_rename_ctx(SMBCCTX *ocontext,
 	return 0; /* Success */
 }
 
+struct smbc_notify_cb_state {
+	struct tevent_context *ev;
+	struct cli_state *cli;
+	uint16_t fnum;
+	bool recursive;
+	uint32_t completion_filter;
+	unsigned callback_timeout_ms;
+	smbc_notify_callback_fn cb;
+	void *private_data;
+};
+
+static void smbc_notify_cb_got_changes(struct tevent_req *subreq);
+static void smbc_notify_cb_timedout(struct tevent_req *subreq);
+
+static struct tevent_req *smbc_notify_cb_send(
+	TALLOC_CTX *mem_ctx, struct tevent_context *ev, struct cli_state *cli,
+	uint16_t fnum, bool recursive, uint32_t completion_filter,
+	unsigned callback_timeout_ms,
+	smbc_notify_callback_fn cb, void *private_data)
+{
+	struct tevent_req *req, *subreq;
+	struct smbc_notify_cb_state *state;
+
+	req = tevent_req_create(mem_ctx, &state, struct smbc_notify_cb_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->ev = ev;
+	state->cli = cli;
+	state->fnum = fnum;
+	state->recursive = recursive;
+	state->completion_filter = completion_filter;
+	state->callback_timeout_ms = callback_timeout_ms;
+	state->cb = cb;
+	state->private_data = private_data;
+
+	subreq = cli_notify_send(
+		state, state->ev, state->cli, state->fnum, 1000,
+		state->completion_filter, state->recursive);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, smbc_notify_cb_got_changes, req);
+
+	if (state->callback_timeout_ms == 0) {
+		return req;
+	}
+
+	subreq = tevent_wakeup_send(
+		state, state->ev,
+		tevent_timeval_current_ofs(state->callback_timeout_ms/1000,
+					   state->callback_timeout_ms*1000));
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, smbc_notify_cb_timedout, req);
+
+	return req;
+}
+
+static void smbc_notify_cb_got_changes(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct smbc_notify_cb_state *state = tevent_req_data(
+		req, struct smbc_notify_cb_state);
+	uint32_t num_changes;
+	struct notify_change *changes;
+	NTSTATUS status;
+	int cb_ret;
+
+	status = cli_notify_recv(subreq, state, &num_changes, &changes);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	{
+		struct smbc_notify_callback_action actions[num_changes];
+		uint32_t i;
+
+		for (i=0; i<num_changes; i++) {
+			actions[i].action = changes[i].action;
+			actions[i].filename = changes[i].name;
+		}
+
+		cb_ret = state->cb(actions, num_changes, state->private_data);
+	}
+
+	TALLOC_FREE(changes);
+
+	if (cb_ret != 0) {
+		tevent_req_done(req);
+		return;
+	}
+
+	subreq = cli_notify_send(
+		state, state->ev, state->cli, state->fnum, 1000,
+		state->completion_filter, state->recursive);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, smbc_notify_cb_got_changes, req);
+}
+
+static void smbc_notify_cb_timedout(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct smbc_notify_cb_state *state = tevent_req_data(
+		req, struct smbc_notify_cb_state);
+	int cb_ret;
+	bool ok;
+
+	ok = tevent_wakeup_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (!ok) {
+		tevent_req_oom(req);
+		return;
+	}
+
+	cb_ret = state->cb(NULL, 0, state->private_data);
+	if (cb_ret != 0) {
+		tevent_req_done(req);
+		return;
+	}
+
+	subreq = tevent_wakeup_send(
+		state, state->ev,
+		tevent_timeval_current_ofs(state->callback_timeout_ms/1000,
+					   state->callback_timeout_ms*1000));
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, smbc_notify_cb_timedout, req);
+}
+
+static NTSTATUS smbc_notify_cb_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
+}
+
+static NTSTATUS smbc_notify_cb(struct cli_state *cli, uint16_t fnum,
+			       bool recursive, uint32_t completion_filter,
+			       unsigned callback_timeout_ms,
+			       smbc_notify_callback_fn cb, void *private_data)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct tevent_context *ev;
+	struct tevent_req *req;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+
+	ev = samba_tevent_context_init(frame);
+	if (ev == NULL) {
+		goto fail;
+	}
+	req = smbc_notify_cb_send(frame, ev, cli, fnum, recursive,
+				  completion_filter,
+				  callback_timeout_ms, cb, private_data);
+	if (req == NULL) {
+		goto fail;
+	}
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
+		goto fail;
+	}
+	status = smbc_notify_cb_recv(req);
+	TALLOC_FREE(req);
+fail:
+	TALLOC_FREE(frame);
+	return status;
+}
+
+int
+SMBC_notify_ctx(SMBCCTX *context, SMBCFILE *dir, smbc_bool recursive,
+		uint32_t completion_filter, unsigned callback_timeout_ms,
+		smbc_notify_callback_fn cb, void *private_data)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct cli_state *cli = dir->srv->cli;
+	char *server = NULL;
+	char *share = NULL;
+	char *user = NULL;
+	char *password = NULL;
+	char *options = NULL;
+	char *workgroup = NULL;
+	char *path = NULL;
+	uint16_t port;
+	NTSTATUS status;
+	uint16_t fnum;
+
+	if ((context == NULL) || !context->internal->initialized) {
+		TALLOC_FREE(frame);
+		errno = EINVAL;
+		return -1;
+	}
+	if ((dir == NULL) ||
+	    !SMBC_dlist_contains(context->internal->files, dir)) {
+		TALLOC_FREE(frame);
+		errno = EBADF;
+		return -1;
+	}
+
+	if (SMBC_parse_path(frame,
+                            context,
+                            dir->fname,
+                            &workgroup,
+                            &server,
+                            &port,
+                            &share,
+                            &path,
+                            &user,
+                            &password,
+                            &options)) {
+	        DEBUG(4, ("no valid path\n"));
+		TALLOC_FREE(frame);
+		errno = EINVAL + 8194;
+		return -1;
+	}
+
+	DEBUG(4, ("parsed path: fname='%s' server='%s' share='%s' "
+                  "path='%s' options='%s'\n",
+                  dir->fname, server, share, path, options));
+
+	DEBUG(4, ("%s(%p, %d, %"PRIu32")\n", __func__, dir,
+		  (int)recursive, completion_filter));
+
+	status = cli_ntcreate(
+		cli, path, 0, FILE_READ_DATA, 0,
+		FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
+		FILE_OPEN, 0, 0, &fnum, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		int err = SMBC_errno(context, cli);
+		TALLOC_FREE(frame);
+		errno = err;
+		return -1;
+	}
+
+	status = smbc_notify_cb(cli, fnum, recursive != 0, completion_filter,
+				callback_timeout_ms, cb, private_data);
+	if (!NT_STATUS_IS_OK(status)) {
+		int err = SMBC_errno(context, cli);
+		cli_close(cli, fnum);
+		TALLOC_FREE(frame);
+		errno = err;
+		return -1;
+	}
+
+	cli_close(cli, fnum);
+
+	TALLOC_FREE(frame);
+	return 0;
+}
