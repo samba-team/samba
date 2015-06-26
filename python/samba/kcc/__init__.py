@@ -1570,7 +1570,7 @@ class KCC(object):
 
         for v in graph.vertices:
             v.color_vertex()
-            if self.add_transports(v, my_vertex, graph, False):
+            if self.add_transports(v, my_vertex, graph, detect_failed):
                 found_failed = True
 
         # No NC replicas for this NC in the site of the local DC,
