@@ -203,9 +203,8 @@ convert_sid_to_string(struct cli_state *ipc_cli,
 
 	/* Converted OK */
 
-	slprintf(str, sizeof(fstring) - 1, "%s%s%s",
-		 domains[0], lp_winbind_separator(),
-		 names[0]);
+	fstr_sprintf(str, "%s%s%s",
+		     domains[0], lp_winbind_separator(), names[0]);
 
 	TALLOC_FREE(ctx);
 }
