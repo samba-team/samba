@@ -165,7 +165,7 @@ def is_this_a_static_lib(self, name):
     try:
         return cache[name]
     except KeyError:
-        ret = cache[name] = 'cstaticlib' in self.bld.name_to_obj(name, self.env).features
+        ret = cache[name] = 'cstaticlib' in self.bld.get_tgen_by_name(name).features
         return ret
 TaskGen.task_gen.is_this_a_static_lib = is_this_a_static_lib
 
@@ -215,7 +215,7 @@ def apply_lib_vars(self):
         if lib_name in seen:
             continue
 
-        y = self.name_to_obj(lib_name)
+        y = self.get_tgen_by_name(lib_name)
         if not y:
             raise Utils.WafError('object %r was not found in uselib_local (required by %r)' % (lib_name, self.name))
         y.post()

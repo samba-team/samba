@@ -66,7 +66,7 @@ def ADD_LD_LIBRARY_PATH(path):
 def needs_private_lib(bld, target):
     '''return True if a target links to a private library'''
     for lib in getattr(target, "final_libs", []):
-        t = bld.name_to_obj(lib, bld.env)
+        t = bld.get_tgen_by_name(lib)
         if t and getattr(t, 'private_library', False):
             return True
     return False
@@ -173,7 +173,7 @@ def process_depends_on(self):
     if getattr(self , 'depends_on', None):
         lst = self.to_list(self.depends_on)
         for x in lst:
-            y = self.bld.name_to_obj(x, self.env)
+            y = self.bld.get_tgen_by_name(x)
             self.bld.ASSERT(y is not None, "Failed to find dependency %s of %s" % (x, self.name))
             y.post()
             if getattr(y, 'more_includes', None):
@@ -644,7 +644,7 @@ def get_tgt_list(bld):
         type = targets[tgt]
         if not type in ['SUBSYSTEM', 'MODULE', 'BINARY', 'LIBRARY', 'ASN1', 'PYTHON']:
             continue
-        t = bld.name_to_obj(tgt, bld.env)
+        t = bld.get_tgen_by_name(tgt)
         if t is None:
             Logs.error("Target %s of type %s has no task generator" % (tgt, type))
             sys.exit(1)
