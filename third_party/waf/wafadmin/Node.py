@@ -689,6 +689,13 @@ class Node(object):
 					child = self.ensure_dir_node_from_path(k)
 				child.update_build_dir(env)
 
+	def read(self, flags='r', encoding='ISO8859-1'):
+		"""backported from waf 1.8"""
+		return Utils.readf(self.abspath(), flags, encoding)
+
+	def write(self, data, flags='w', encoding='ISO8859-1'):
+		"""backported from waf 1.8"""
+		Utils.writef(self.abspath(self.bld.env), data, flags, encoding)
 
 class Nodu(Node):
 	pass

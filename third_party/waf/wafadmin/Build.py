@@ -645,6 +645,10 @@ class BuildContext(Utils.Context):
 						cache[v] = x
 		return cache.get(env.variant() + '_' + name, None)
 
+	def get_tgen_by_name(self, name):
+		"""waf 1.8 api"""
+		return self.name_to_obj(name, self.env)
+
 	def flush(self, all=1):
 		"""tell the task generators to create the tasks"""
 

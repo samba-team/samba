@@ -38,7 +38,7 @@ app_info = '''
 
 # see WAF issue 285
 # and also http://trac.macports.org/ticket/17059
-@feature('cc', 'cxx')
+@feature('c', 'cc', 'cxx')
 @before('apply_lib_vars')
 def set_macosx_deployment_target(self):
 	if self.env['MACOSX_DEPLOYMENT_TARGET']:
@@ -47,7 +47,7 @@ def set_macosx_deployment_target(self):
 		if sys.platform == 'darwin':
 			os.environ['MACOSX_DEPLOYMENT_TARGET'] = '.'.join(platform.mac_ver()[0].split('.')[:2])
 
-@feature('cc', 'cxx')
+@feature('c', 'cc', 'cxx')
 @after('apply_lib_vars')
 def apply_framework(self):
 	for x in self.to_list(self.env['FRAMEWORKPATH']):
@@ -145,7 +145,7 @@ def apply_link_osx(self):
 		self.env.append_value('LINKFLAGS', path)
 
 @before('apply_link', 'apply_lib_vars')
-@feature('cc', 'cxx')
+@feature('c', 'cc', 'cxx')
 def apply_bundle(self):
 	"""use env['MACBUNDLE'] to force all shlibs into mac bundles
 	or use obj.mac_bundle = True for specific targets only"""

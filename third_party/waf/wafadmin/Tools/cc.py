@@ -23,7 +23,7 @@ g_cc_type_vars = ['CCFLAGS', 'LINKFLAGS']
 class cc_taskgen(ccroot.ccroot_abstract):
 	pass
 
-@feature('cc')
+@feature('c', 'cc')
 @before('apply_type_vars')
 @after('default_cc')
 def init_cc(self):
@@ -33,7 +33,7 @@ def init_cc(self):
 	if not self.env['CC_NAME']:
 		raise Utils.WafError("At least one compiler (gcc, ..) must be selected")
 
-@feature('cc')
+@feature('c', 'cc')
 @after('apply_incpaths')
 def apply_obj_vars_cc(self):
 	"""after apply_incpaths for INC_PATHS"""
@@ -51,7 +51,7 @@ def apply_obj_vars_cc(self):
 	for i in env['CPPPATH']:
 		app('_CCINCFLAGS', cpppath_st % i)
 
-@feature('cc')
+@feature('c', 'cc')
 @after('apply_lib_vars')
 def apply_defines_cc(self):
 	"""after uselib is set for CCDEFINES"""

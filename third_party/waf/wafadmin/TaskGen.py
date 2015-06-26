@@ -242,6 +242,9 @@ class task_gen(object):
 	def name_to_obj(self, name):
 		return self.bld.name_to_obj(name, self.env)
 
+	def get_tgen_by_name(self, name):
+		return self.bld.get_tgen_by_name(name)
+
 	def find_sources_in_dirs(self, dirnames, excludes=[], exts=[]):
 		"""
 		The attributes "excludes" and "exts" must be lists to avoid the confusion

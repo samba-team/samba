@@ -190,7 +190,7 @@ def get_target_name(self):
 
 	return os.path.join(dir, pattern % name)
 
-@feature('cc', 'cxx')
+@feature('c', 'cc', 'cxx')
 @before('apply_core')
 def default_cc(self):
 	"""compiled_tasks attribute must be set before the '.c->.o' tasks can be created"""
@@ -253,7 +253,7 @@ def default_link_install(self):
 	if self.install_path:
 		self.bld.install_files(self.install_path, self.link_task.outputs[0], env=self.env, chmod=self.chmod)
 
-@feature('cc', 'cxx')
+@feature('c', 'cc', 'cxx')
 @after('apply_type_vars', 'apply_lib_vars', 'apply_core')
 def apply_incpaths(self):
 	"""used by the scanner
@@ -297,7 +297,7 @@ def apply_incpaths(self):
 	if USE_TOP_LEVEL:
 		self.env.append_value('INC_PATHS', self.bld.srcnode)
 
-@feature('cc', 'cxx')
+@feature('c', 'cc', 'cxx')
 @after('init_cc', 'init_cxx')
 @before('apply_lib_vars')
 def apply_type_vars(self):
@@ -339,7 +339,7 @@ def apply_link(self):
 
 	self.link_task = tsk
 
-@feature('cc', 'cxx')
+@feature('c', 'cc', 'cxx')
 @after('apply_link', 'init_cc', 'init_cxx', 'apply_core')
 def apply_lib_vars(self):
 	"""after apply_link because of 'link_task'
@@ -523,7 +523,7 @@ c_attrs = {
 'frameworkpath' : 'FRAMEWORKPATH'
 }
 
-@feature('cc', 'cxx')
+@feature('c', 'cc', 'cxx')
 @before('init_cxx', 'init_cc')
 @before('apply_lib_vars', 'apply_obj_vars', 'apply_incpaths', 'init_cc')
 def add_extra_flags(self):
