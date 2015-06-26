@@ -46,7 +46,7 @@ _PUBLIC_ struct dcesrv_handle *dcesrv_handle_new(struct dcesrv_connection_contex
 
 	sid = &context->conn->auth_state.session_info->security_token->sids[PRIMARY_USER_SID_INDEX];
 
-	h = talloc(context->assoc_group, struct dcesrv_handle);
+	h = talloc_zero(context->assoc_group, struct dcesrv_handle);
 	if (!h) {
 		return NULL;
 	}

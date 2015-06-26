@@ -118,7 +118,7 @@ NTSTATUS dcesrv_fault(struct dcesrv_call_state *call, uint32_t fault_code)
 	ZERO_STRUCT(zeros);
 	pkt.u.fault._pad = data_blob_const(zeros, sizeof(zeros));
 
-	rep = talloc(call, struct data_blob_list_item);
+	rep = talloc_zero(call, struct data_blob_list_item);
 	if (!rep) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -206,7 +206,7 @@ _PUBLIC_ NTSTATUS dcesrv_reply(struct dcesrv_call_state *call)
 		struct data_blob_list_item *rep;
 		struct ncacn_packet pkt;
 
-		rep = talloc(call, struct data_blob_list_item);
+		rep = talloc_zero(call, struct data_blob_list_item);
 		NT_STATUS_HAVE_NO_MEMORY(rep);
 
 		length = MIN(chunk_size, stub.length);
