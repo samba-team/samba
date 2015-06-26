@@ -183,7 +183,7 @@ _PUBLIC_ NTSTATUS dcesrv_reply(struct dcesrv_call_state *call)
 
 	/* we can write a full max_recv_frag size, minus the dcerpc
 	   request header size */
-	chunk_size = call->conn->cli_max_recv_frag;
+	chunk_size = call->conn->max_xmit_frag;
 	chunk_size -= DCERPC_REQUEST_LENGTH;
 	if (call->conn->auth_state.auth_info &&
 	    call->conn->auth_state.gensec_security) {
