@@ -1066,13 +1066,7 @@ static NTSTATUS dcesrv_alter_resp(struct dcesrv_call_state *call,
 
 	status = dcesrv_auth_alter_ack(call, &pkt);
 	if (!NT_STATUS_IS_OK(status)) {
-		if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)
-		    || NT_STATUS_EQUAL(status, NT_STATUS_LOGON_FAILURE)
-		    || NT_STATUS_EQUAL(status, NT_STATUS_NO_SUCH_USER)
-		    || NT_STATUS_EQUAL(status, NT_STATUS_WRONG_PASSWORD)) {
-			return dcesrv_fault(call, DCERPC_FAULT_ACCESS_DENIED);
-		}
-		return dcesrv_fault(call, 0);
+		return dcesrv_fault_disconnect(call, DCERPC_FAULT_SEC_PKG_ERROR);
 	}
 
 	rep = talloc_zero(call, struct data_blob_list_item);
