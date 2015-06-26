@@ -1106,6 +1106,7 @@ static NTSTATUS dcesrv_alter(struct dcesrv_call_state *call)
 {
 	NTSTATUS status;
 	const struct dcerpc_ctx_list *ctx = NULL;
+	bool auth_ok = false;
 
 	if (!call->conn->allow_alter) {
 		return dcesrv_fault_disconnect(call, DCERPC_NCA_S_PROTO_ERROR);
@@ -1127,12 +1128,12 @@ static NTSTATUS dcesrv_alter(struct dcesrv_call_state *call)
 		return dcesrv_fault_disconnect(call, DCERPC_NCA_S_PROTO_ERROR);
 	}
 
-	/* handle any authentication that is being requested */
-	if (!dcesrv_auth_alter(call)) {
-		/* TODO: work out the right reject code */
-		return dcesrv_alter_resp(call,
-				DCERPC_BIND_PROVIDER_REJECT,
-				DCERPC_BIND_REASON_ASYNTAX);
+	auth_ok = dcesrv_auth_alter(call);
+	if (!auth_ok) {
+		if (call->in_auth_info.auth_type == DCERPC_AUTH_TYPE_NONE) {
+			return dcesrv_fault_disconnect(call,
+					DCERPC_FAULT_ACCESS_DENIED);
+		}
 	}
 
 	if (call->pkt.u.alter.num_contexts < 1) {
@@ -1184,6 +1185,17 @@ static NTSTATUS dcesrv_alter(struct dcesrv_call_state *call)
 		return dcesrv_alter_resp(call,
 				DCERPC_BIND_PROVIDER_REJECT,
 				DCERPC_BIND_REASON_ASYNTAX);
+	}
+
+	/* handle any authentication that is being requested */
+	if (!auth_ok) {
+		if (call->in_auth_info.auth_type !=
+		    call->conn->auth_state.auth_type)
+		{
+			return dcesrv_fault_disconnect(call,
+					DCERPC_FAULT_SEC_PKG_ERROR);
+		}
+		return dcesrv_fault_disconnect(call, DCERPC_FAULT_ACCESS_DENIED);
 	}
 
 	return dcesrv_alter_resp(call,
