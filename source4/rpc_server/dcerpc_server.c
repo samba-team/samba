@@ -1152,6 +1152,27 @@ static NTSTATUS dcesrv_alter(struct dcesrv_call_state *call)
 				DCERPC_BIND_PROVIDER_REJECT,
 				DCERPC_BIND_REASON_ASYNTAX);
 		}
+	} else {
+		bool ok;
+
+		ok = ndr_syntax_id_equal(&ctx->abstract_syntax,
+					 &call->context->iface->syntax_id);
+		if (!ok) {
+			return dcesrv_fault_disconnect(call,
+					DCERPC_NCA_S_PROTO_ERROR);
+		}
+
+		if (ctx->num_transfer_syntaxes != 1) {
+			return dcesrv_fault_disconnect(call,
+					DCERPC_NCA_S_PROTO_ERROR);
+		}
+
+		ok = ndr_syntax_id_equal(&ctx->transfer_syntaxes[0],
+					 &ndr_transfer_syntax_ndr);
+		if (!ok) {
+			return dcesrv_fault_disconnect(call,
+					DCERPC_NCA_S_PROTO_ERROR);
+		}
 	}
 
 	if (call->pkt.u.alter.assoc_group_id != 0 &&
