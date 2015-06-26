@@ -1282,9 +1282,9 @@ _PUBLIC_ const struct tsocket_address *dcesrv_connection_get_remote_address(stru
 /*
   process some input to a dcerpc endpoint server.
 */
-NTSTATUS dcesrv_process_ncacn_packet(struct dcesrv_connection *dce_conn,
-				     struct ncacn_packet *pkt,
-				     DATA_BLOB blob)
+static NTSTATUS dcesrv_process_ncacn_packet(struct dcesrv_connection *dce_conn,
+					    struct ncacn_packet *pkt,
+					    DATA_BLOB blob)
 {
 	NTSTATUS status;
 	struct dcesrv_call_state *call;
