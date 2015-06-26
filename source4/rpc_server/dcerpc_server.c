@@ -1637,6 +1637,7 @@ struct dcesrv_sock_reply_state {
 };
 
 static void dcesrv_sock_reply_done(struct tevent_req *subreq);
+static void dcesrv_call_terminate_step1(struct tevent_req *subreq);
 
 static void dcesrv_sock_report_output_data(struct dcesrv_connection *dce_conn)
 {
@@ -1663,7 +1664,7 @@ static void dcesrv_sock_report_output_data(struct dcesrv_connection *dce_conn)
 
 		DLIST_REMOVE(call->replies, rep);
 
-		if (call->replies == NULL) {
+		if (call->replies == NULL && call->terminate_reason == NULL) {
 			substate->call = call;
 		}
 
@@ -1681,6 +1682,20 @@ static void dcesrv_sock_report_output_data(struct dcesrv_connection *dce_conn)
 		}
 		tevent_req_set_callback(subreq, dcesrv_sock_reply_done,
 					substate);
+	}
+
+	if (call->terminate_reason != NULL) {
+		struct tevent_req *subreq;
+
+		subreq = tevent_queue_wait_send(call,
+						dce_conn->event_ctx,
+						dce_conn->send_queue);
+		if (!subreq) {
+			dcesrv_terminate_connection(dce_conn, __location__);
+			return;
+		}
+		tevent_req_set_callback(subreq, dcesrv_call_terminate_step1,
+					call);
 	}
 
 	DLIST_REMOVE(call->conn->call_list, call);
@@ -1710,8 +1725,51 @@ static void dcesrv_sock_reply_done(struct tevent_req *subreq)
 	}
 }
 
+static void dcesrv_call_terminate_step2(struct tevent_req *subreq);
 
+static void dcesrv_call_terminate_step1(struct tevent_req *subreq)
+{
+	struct dcesrv_call_state *call = tevent_req_callback_data(subreq,
+						struct dcesrv_call_state);
+	bool ok;
+	struct timeval tv;
 
+	/* make sure we stop send queue before removing subreq */
+	tevent_queue_stop(call->conn->send_queue);
+
+	ok = tevent_queue_wait_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (!ok) {
+		dcesrv_terminate_connection(call->conn, __location__);
+		return;
+	}
+
+	/* disconnect after 200 usecs */
+	tv = timeval_current_ofs_usec(200);
+	subreq = tevent_wakeup_send(call, call->conn->event_ctx, tv);
+	if (subreq == NULL) {
+		dcesrv_terminate_connection(call->conn, __location__);
+		return;
+	}
+	tevent_req_set_callback(subreq, dcesrv_call_terminate_step2,
+				call);
+}
+
+static void dcesrv_call_terminate_step2(struct tevent_req *subreq)
+{
+	struct dcesrv_call_state *call = tevent_req_callback_data(subreq,
+						struct dcesrv_call_state);
+	bool ok;
+
+	ok = tevent_wakeup_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (!ok) {
+		dcesrv_terminate_connection(call->conn, __location__);
+		return;
+	}
+
+	dcesrv_terminate_connection(call->conn, call->terminate_reason);
+}
 
 struct dcesrv_socket_context {
 	const struct dcesrv_endpoint *endpoint;
