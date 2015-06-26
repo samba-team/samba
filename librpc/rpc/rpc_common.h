@@ -192,6 +192,11 @@ NTSTATUS dcerpc_pull_auth_trailer(const struct ncacn_packet *pkt,
 				  struct dcerpc_auth *auth,
 				  uint32_t *auth_length,
 				  bool auth_data_only);
+NTSTATUS dcerpc_verify_ncacn_packet_header(const struct ncacn_packet *pkt,
+					   enum dcerpc_pkt_type ptype,
+					   size_t max_auth_info,
+					   uint8_t required_flags,
+					   uint8_t optional_flags);
 struct tevent_req *dcerpc_read_ncacn_packet_send(TALLOC_CTX *mem_ctx,
 						 struct tevent_context *ev,
 						 struct tstream_context *stream);
