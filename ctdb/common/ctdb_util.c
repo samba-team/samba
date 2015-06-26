@@ -548,15 +548,26 @@ struct ctdb_node_map *ctdb_read_nodes_file(TALLOC_CTX *mem_ctx,
 	}
 
 	for (i=0; i < nlines; i++) {
-		const char *node;
+		char *node;
 		uint32_t flags;
+		size_t len;
 
 		node = lines[i];
 		/* strip leading spaces */
 		while((*node == ' ') || (*node == '\t')) {
 			node++;
 		}
-		if (strcmp(node, "") == 0) {
+
+		len = strlen(node);
+
+		while ((len > 1) &&
+		       ((node[len-1] == ' ') || (node[len-1] == '\t')))
+		{
+			node[len-1] = '\0';
+			len--;
+		}
+
+		if (len == 0) {
 			continue;
 		}
 		if (*node == '#') {
@@ -566,7 +577,7 @@ struct ctdb_node_map *ctdb_read_nodes_file(TALLOC_CTX *mem_ctx,
 			   would cause subsequent nodes to change
 			   their PNN. */
 			flags = NODE_FLAGS_DELETED;
-			node = "0.0.0.0";
+			node = discard_const("0.0.0.0");
 		} else {
 			flags = 0;
 		}
