@@ -269,7 +269,7 @@ _PUBLIC_ NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
 	/* check if this endpoint exists
 	 */
 	if ((ep=find_endpoint(dce_ctx, binding))==NULL) {
-		ep = talloc(dce_ctx, struct dcesrv_endpoint);
+		ep = talloc_zero(dce_ctx, struct dcesrv_endpoint);
 		if (!ep) {
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -278,7 +278,7 @@ _PUBLIC_ NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
 		add_ep = true;
 
 		/* add mgmt interface */
-		ifl = talloc(ep, struct dcesrv_if_list);
+		ifl = talloc_zero(ep, struct dcesrv_if_list);
 		if (!ifl) {
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -297,7 +297,7 @@ _PUBLIC_ NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
 	}
 
 	/* talloc a new interface list element */
-	ifl = talloc(ep, struct dcesrv_if_list);
+	ifl = talloc_zero(ep, struct dcesrv_if_list);
 	if (!ifl) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -474,7 +474,7 @@ static NTSTATUS dcesrv_bind_nak(struct dcesrv_call_state *call, uint32_t reason)
 	pkt.u.bind_nak.versions = &version;
 	pkt.u.bind_nak._pad = data_blob_null;
 
-	rep = talloc(call, struct data_blob_list_item);
+	rep = talloc_zero(call, struct data_blob_list_item);
 	if (!rep) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -682,7 +682,7 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 
 	if (iface) {
 		/* add this context to the list of available context_ids */
-		struct dcesrv_connection_context *context = talloc(call->conn, 
+		struct dcesrv_connection_context *context = talloc_zero(call->conn,
 								   struct dcesrv_connection_context);
 		if (context == NULL) {
 			return dcesrv_bind_nak(call, 0);
@@ -771,7 +771,7 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 		pkt.u.bind_ack.secondary_address = "";
 	}
 	pkt.u.bind_ack.num_results = 1;
-	pkt.u.bind_ack.ctx_list = talloc(call, struct dcerpc_ack_ctx);
+	pkt.u.bind_ack.ctx_list = talloc_zero(call, struct dcerpc_ack_ctx);
 	if (!pkt.u.bind_ack.ctx_list) {
 		talloc_free(call->context);
 		call->context = NULL;
@@ -789,7 +789,7 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 		return dcesrv_bind_nak(call, 0);
 	}
 
-	rep = talloc(call, struct data_blob_list_item);
+	rep = talloc_zero(call, struct data_blob_list_item);
 	if (!rep) {
 		talloc_free(call->context);
 		call->context = NULL;
@@ -868,7 +868,7 @@ static NTSTATUS dcesrv_alter_new_context(struct dcesrv_call_state *call, uint32_
 	}
 
 	/* add this context to the list of available context_ids */
-	context = talloc(call->conn, struct dcesrv_connection_context);
+	context = talloc_zero(call->conn, struct dcesrv_connection_context);
 	if (context == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -940,7 +940,7 @@ static NTSTATUS dcesrv_alter_resp(struct dcesrv_call_state *call,
 		pkt.u.alter_resp.assoc_group_id = 0;
 	}
 	pkt.u.alter_resp.num_results = 1;
-	pkt.u.alter_resp.ctx_list = talloc_array(call, struct dcerpc_ack_ctx, 1);
+	pkt.u.alter_resp.ctx_list = talloc_zero(call, struct dcerpc_ack_ctx);
 	if (!pkt.u.alter_resp.ctx_list) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -961,7 +961,7 @@ static NTSTATUS dcesrv_alter_resp(struct dcesrv_call_state *call,
 		return dcesrv_fault(call, 0);
 	}
 
-	rep = talloc(call, struct data_blob_list_item);
+	rep = talloc_zero(call, struct data_blob_list_item);
 	if (!rep) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1392,7 +1392,7 @@ _PUBLIC_ NTSTATUS dcesrv_init_context(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	dce_ctx = talloc(mem_ctx, struct dcesrv_context);
+	dce_ctx = talloc_zero(mem_ctx, struct dcesrv_context);
 	NT_STATUS_HAVE_NO_MEMORY(dce_ctx);
 	dce_ctx->endpoint_list	= NULL;
 	dce_ctx->lp_ctx = lp_ctx;
@@ -1608,7 +1608,7 @@ static void dcesrv_sock_report_output_data(struct dcesrv_connection *dce_conn)
 		struct dcesrv_sock_reply_state *substate;
 		struct tevent_req *subreq;
 
-		substate = talloc(call, struct dcesrv_sock_reply_state);
+		substate = talloc_zero(call, struct dcesrv_sock_reply_state);
 		if (!substate) {
 			dcesrv_terminate_connection(dce_conn, "no memory");
 			return;
@@ -1852,7 +1852,7 @@ static NTSTATUS dcesrv_add_ep_unix(struct dcesrv_context *dce_ctx,
 	NTSTATUS status;
 	const char *endpoint;
 
-	dcesrv_sock = talloc(event_ctx, struct dcesrv_socket_context);
+	dcesrv_sock = talloc_zero(event_ctx, struct dcesrv_socket_context);
 	NT_STATUS_HAVE_NO_MEMORY(dcesrv_sock);
 
 	/* remember the endpoint of this socket */
@@ -1908,7 +1908,7 @@ static NTSTATUS dcesrv_add_ep_ncalrpc(struct dcesrv_context *dce_ctx,
 	full_path = talloc_asprintf(dce_ctx, "%s/%s", lpcfg_ncalrpc_dir(lp_ctx),
 				    endpoint);
 
-	dcesrv_sock = talloc(event_ctx, struct dcesrv_socket_context);
+	dcesrv_sock = talloc_zero(event_ctx, struct dcesrv_socket_context);
 	NT_STATUS_HAVE_NO_MEMORY(dcesrv_sock);
 
 	/* remember the endpoint of this socket */
@@ -1942,7 +1942,7 @@ static NTSTATUS dcesrv_add_ep_np(struct dcesrv_context *dce_ctx,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	dcesrv_sock = talloc(event_ctx, struct dcesrv_socket_context);
+	dcesrv_sock = talloc_zero(event_ctx, struct dcesrv_socket_context);
 	NT_STATUS_HAVE_NO_MEMORY(dcesrv_sock);
 
 	/* remember the endpoint of this socket */
@@ -1980,7 +1980,7 @@ static NTSTATUS add_socket_rpc_tcp_iface(struct dcesrv_context *dce_ctx, struct 
 		port = atoi(endpoint);
 	}
 
-	dcesrv_sock = talloc(event_ctx, struct dcesrv_socket_context);
+	dcesrv_sock = talloc_zero(event_ctx, struct dcesrv_socket_context);
 	NT_STATUS_HAVE_NO_MEMORY(dcesrv_sock);
 
 	/* remember the endpoint of this socket */
