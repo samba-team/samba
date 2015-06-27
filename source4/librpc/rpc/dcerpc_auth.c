@@ -355,7 +355,12 @@ struct composite_context *dcerpc_bind_auth_send(TALLOC_CTX *mem_ctx,
 
 	sec->auth_type = auth_type;
 	sec->auth_level = auth_level,
-	sec->auth_context_id = random();
+	/*
+	 * We use auth_context_id = 1 as some older
+	 * Samba versions (<= 4.2.3) use that value hardcoded
+	 * in a response.
+	 */
+	sec->auth_context_id = 1;
 
 	sec->auth_info = talloc(p, struct dcerpc_auth);
 	if (composite_nomem(sec->auth_info, c)) return c;
