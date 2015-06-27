@@ -1464,8 +1464,7 @@ static void dcerpc_request_recv_data(struct dcecli_connection *c,
 	  to run the auth routines so that we don't get the sign/seal
 	  info out of step with the server
 	*/
-	if (c->security_state.auth_info && c->security_state.generic_state &&
-	    pkt->ptype == DCERPC_PKT_RESPONSE) {
+	if (pkt->ptype == DCERPC_PKT_RESPONSE) {
 		status = ncacn_pull_request_auth(c, raw_packet->data, raw_packet, pkt);
 	}
 
