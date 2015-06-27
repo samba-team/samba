@@ -308,11 +308,7 @@ _PUBLIC_ size_t strlen_m(const char *s)
 **/
 _PUBLIC_ size_t strlen_m_term(const char *s)
 {
-	if (!s) {
-		return 0;
-	}
-
-	return strlen_m(s) + 1;
+	return strlen_m_ext_term(s, CH_UNIX, CH_UTF16LE);
 }
 
 /*
@@ -322,16 +318,7 @@ _PUBLIC_ size_t strlen_m_term(const char *s)
 
 _PUBLIC_ size_t strlen_m_term_null(const char *s)
 {
-	size_t len;
-	if (!s) {
-		return 0;
-	}
-	len = strlen_m(s);
-	if (len == 0) {
-		return 0;
-	}
-
-	return len+1;
+	return strlen_m_ext_term_null(s, CH_UNIX, CH_UTF16LE);
 }
 
 /**
