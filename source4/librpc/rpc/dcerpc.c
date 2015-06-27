@@ -1639,11 +1639,7 @@ static NTSTATUS dcerpc_request_prepare_vt(struct rpc_request *req)
 	struct ndr_push *ndr = NULL;
 	enum ndr_err_code ndr_err;
 
-	if (sec->auth_info == NULL) {
-		return NT_STATUS_OK;
-	}
-
-	if (sec->auth_info->auth_level < DCERPC_AUTH_LEVEL_INTEGRITY) {
+	if (sec->auth_level < DCERPC_AUTH_LEVEL_INTEGRITY) {
 		return NT_STATUS_OK;
 	}
 
