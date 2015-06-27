@@ -743,6 +743,15 @@ static NTSTATUS ncacn_pull_request_auth(struct dcecli_connection *c, TALLOC_CTX 
 	struct dcerpc_auth auth;
 	uint32_t auth_length;
 
+	status = dcerpc_verify_ncacn_packet_header(pkt, DCERPC_PKT_RESPONSE,
+					pkt->u.response.stub_and_verifier.length,
+					0, /* required_flags */
+					DCERPC_PFC_FLAG_FIRST |
+					DCERPC_PFC_FLAG_LAST);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
 	switch (c->security_state.auth_level) {
 	case DCERPC_AUTH_LEVEL_PRIVACY:
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
@@ -1344,8 +1353,20 @@ static void dcerpc_bind_recv_handler(struct rpc_request *subreq,
 		return;
 	}
 
-	if ((pkt->ptype != DCERPC_PKT_BIND_ACK) ||
-	    (pkt->u.bind_ack.num_results == 0)) {
+	status = dcerpc_verify_ncacn_packet_header(pkt,
+					DCERPC_PKT_BIND_ACK,
+					pkt->u.bind_ack.auth_info.length,
+					DCERPC_PFC_FLAG_FIRST |
+					DCERPC_PFC_FLAG_LAST,
+					DCERPC_PFC_FLAG_CONC_MPX |
+					DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN);
+	if (!NT_STATUS_IS_OK(status)) {
+		state->p->last_fault_code = DCERPC_NCA_S_PROTO_ERROR;
+		tevent_req_nterror(req, NT_STATUS_NET_WRITE_FAULT);
+		return;
+	}
+
+	if (pkt->u.bind_ack.num_results != 1) {
 		state->p->last_fault_code = DCERPC_NCA_S_PROTO_ERROR;
 		tevent_req_nterror(req, NT_STATUS_NET_WRITE_FAULT);
 		return;
@@ -2367,22 +2388,31 @@ static void dcerpc_alter_context_recv_handler(struct rpc_request *subreq,
 		return;
 	}
 
-	if (pkt->ptype == DCERPC_PKT_ALTER_RESP &&
-	    pkt->u.alter_resp.num_results == 1 &&
-	    pkt->u.alter_resp.ctx_list[0].result != 0) {
+	status = dcerpc_verify_ncacn_packet_header(pkt,
+					DCERPC_PKT_ALTER_RESP,
+					pkt->u.alter_resp.auth_info.length,
+					DCERPC_PFC_FLAG_FIRST |
+					DCERPC_PFC_FLAG_LAST,
+					DCERPC_PFC_FLAG_CONC_MPX |
+					DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN);
+	if (!NT_STATUS_IS_OK(status)) {
+		state->p->last_fault_code = DCERPC_NCA_S_PROTO_ERROR;
+		tevent_req_nterror(req, NT_STATUS_NET_WRITE_FAULT);
+		return;
+	}
+
+	if (pkt->u.alter_resp.num_results != 1) {
+		state->p->last_fault_code = DCERPC_NCA_S_PROTO_ERROR;
+		tevent_req_nterror(req, NT_STATUS_NET_WRITE_FAULT);
+		return;
+	}
+
+	if (pkt->u.alter_resp.ctx_list[0].result != 0) {
 		status = dcerpc_map_ack_reason(&pkt->u.alter_resp.ctx_list[0]);
 		DEBUG(2,("dcerpc: alter_resp failed - reason %d - %s\n",
 			 pkt->u.alter_resp.ctx_list[0].reason.value,
 			 nt_errstr(status)));
 		tevent_req_nterror(req, status);
-		return;
-	}
-
-	if (pkt->ptype != DCERPC_PKT_ALTER_RESP ||
-	    pkt->u.alter_resp.num_results == 0 ||
-	    pkt->u.alter_resp.ctx_list[0].result != 0) {
-		state->p->last_fault_code = DCERPC_NCA_S_PROTO_ERROR;
-		tevent_req_nterror(req, NT_STATUS_NET_WRITE_FAULT);
 		return;
 	}
 
