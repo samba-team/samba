@@ -1776,25 +1776,9 @@ static void dcerpc_ship_next_request(struct dcecli_connection *c)
 		need_async = true;
 	}
 
-	if (c->security_state.auth_info &&
-	    c->security_state.generic_state)
-	{
-		struct gensec_security *gensec = c->security_state.generic_state;
-
-		switch (c->security_state.auth_info->auth_level) {
-		case DCERPC_AUTH_LEVEL_PRIVACY:
-		case DCERPC_AUTH_LEVEL_INTEGRITY:
-			can_async = gensec_have_feature(gensec,
+	if (c->security_state.auth_level >= DCERPC_AUTH_LEVEL_INTEGRITY) {
+		can_async = gensec_have_feature(c->security_state.generic_state,
 						GENSEC_FEATURE_ASYNC_REPLIES);
-			break;
-		case DCERPC_AUTH_LEVEL_CONNECT:
-		case DCERPC_AUTH_LEVEL_NONE:
-			can_async = true;
-			break;
-		default:
-			can_async = false;
-			break;
-		}
 	}
 
 	if (need_async && !can_async) {
@@ -1814,8 +1798,7 @@ static void dcerpc_ship_next_request(struct dcecli_connection *c)
 	   request header size */
 	chunk_size = p->conn->srv_max_recv_frag;
 	chunk_size -= DCERPC_REQUEST_LENGTH;
-	if (c->security_state.auth_info &&
-	    c->security_state.generic_state) {
+	if (c->security_state.auth_level >= DCERPC_AUTH_LEVEL_INTEGRITY) {
 		size_t max_payload = chunk_size;
 
 		max_payload -= DCERPC_AUTH_TRAILER_LENGTH;
