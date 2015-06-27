@@ -142,6 +142,21 @@ static void bind_auth_next_step(struct composite_context *c)
 	state = talloc_get_type(c->private_data, struct bind_auth_state);
 	sec = &state->pipe->conn->security_state;
 
+	if (state->in_auth_info.auth_type != sec->auth_type) {
+		composite_error(c, NT_STATUS_RPC_PROTOCOL_ERROR);
+		return;
+	}
+
+	if (state->in_auth_info.auth_level != sec->auth_level) {
+		composite_error(c, NT_STATUS_RPC_PROTOCOL_ERROR);
+		return;
+	}
+
+	if (state->in_auth_info.auth_context_id != sec->auth_context_id) {
+		composite_error(c, NT_STATUS_RPC_PROTOCOL_ERROR);
+		return;
+	}
+
 	state->out_auth_info = (struct dcerpc_auth) {
 		.auth_type = sec->auth_type,
 		.auth_level = sec->auth_level,
