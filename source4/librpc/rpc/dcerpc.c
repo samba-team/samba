@@ -144,7 +144,6 @@ static struct dcecli_connection *dcerpc_connection_init(TALLOC_CTX *mem_ctx,
 	c->security_state.auth_type = DCERPC_AUTH_TYPE_NONE;
 	c->security_state.auth_level = DCERPC_AUTH_LEVEL_NONE;
 	c->security_state.auth_context_id = 0;
-	c->security_state.auth_info = NULL;
 	c->security_state.session_key = dcerpc_generic_session_key;
 	c->security_state.generic_state = NULL;
 	c->flags = 0;
@@ -1226,7 +1225,7 @@ struct tevent_req *dcerpc_bind_send(TALLOC_CTX *mem_ctx,
 
 	/* construct the NDR form of the packet */
 	status = ncacn_push_auth(&blob, state, &pkt,
-				 p->conn->security_state.auth_info);
+				 p->conn->security_state.tmp_auth_info.out);
 	if (tevent_req_nterror(req, status)) {
 		return tevent_req_post(req, ev);
 	}
@@ -1299,6 +1298,7 @@ static void dcerpc_bind_recv_handler(struct rpc_request *subreq,
 		tevent_req_data(req,
 		struct dcerpc_bind_state);
 	struct dcecli_connection *conn = state->p->conn;
+	struct dcecli_security *sec = &conn->security_state;
 	struct dcerpc_binding *b = NULL;
 	NTSTATUS status;
 	uint32_t flags;
@@ -1372,11 +1372,13 @@ static void dcerpc_bind_recv_handler(struct rpc_request *subreq,
 	}
 
 	/* the bind_ack might contain a reply set of credentials */
-	if (conn->security_state.auth_info && pkt->u.bind_ack.auth_info.length) {
+	if (pkt->auth_length != 0 && sec->tmp_auth_info.in != NULL) {
 		uint32_t auth_length;
 
-		status = dcerpc_pull_auth_trailer(pkt, conn, &pkt->u.bind_ack.auth_info,
-						  conn->security_state.auth_info, &auth_length, true);
+		status = dcerpc_pull_auth_trailer(pkt, sec->tmp_auth_info.mem,
+						  &pkt->u.bind_ack.auth_info,
+						  sec->tmp_auth_info.in,
+						  &auth_length, true);
 		if (tevent_req_nterror(req, status)) {
 			return;
 		}
@@ -1426,9 +1428,8 @@ NTSTATUS dcerpc_auth3(struct dcerpc_pipe *p,
 	}
 
 	/* construct the NDR form of the packet */
-	status = ncacn_push_auth(&blob, mem_ctx,
-				 &pkt,
-				 p->conn->security_state.auth_info);
+	status = ncacn_push_auth(&blob, mem_ctx, &pkt,
+				 p->conn->security_state.tmp_auth_info.out);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -2234,7 +2235,7 @@ struct tevent_req *dcerpc_alter_context_send(TALLOC_CTX *mem_ctx,
 
 	/* construct the NDR form of the packet */
 	status = ncacn_push_auth(&blob, state, &pkt,
-				 p->conn->security_state.auth_info);
+				 p->conn->security_state.tmp_auth_info.out);
 	if (tevent_req_nterror(req, status)) {
 		return tevent_req_post(req, ev);
 	}
@@ -2307,6 +2308,7 @@ static void dcerpc_alter_context_recv_handler(struct rpc_request *subreq,
 		tevent_req_data(req,
 		struct dcerpc_alter_context_state);
 	struct dcecli_connection *conn = state->p->conn;
+	struct dcecli_security *sec = &conn->security_state;
 	NTSTATUS status;
 
 	/*
@@ -2365,12 +2367,13 @@ static void dcerpc_alter_context_recv_handler(struct rpc_request *subreq,
 	}
 
 	/* the alter_resp might contain a reply set of credentials */
-	if (conn->security_state.auth_info &&
-	    pkt->u.alter_resp.auth_info.length) {
+	if (pkt->auth_length != 0 && sec->tmp_auth_info.in != NULL) {
 		uint32_t auth_length;
 
-		status = dcerpc_pull_auth_trailer(pkt, conn, &pkt->u.alter_resp.auth_info,
-						  conn->security_state.auth_info, &auth_length, true);
+		status = dcerpc_pull_auth_trailer(pkt, sec->tmp_auth_info.mem,
+						  &pkt->u.alter_resp.auth_info,
+						  sec->tmp_auth_info.in,
+						  &auth_length, true);
 		if (tevent_req_nterror(req, status)) {
 			return;
 		}

@@ -49,7 +49,11 @@ struct dcecli_security {
 	enum dcerpc_AuthType auth_type;
 	enum dcerpc_AuthLevel auth_level;
 	uint32_t auth_context_id;
-	struct dcerpc_auth *auth_info;
+	struct {
+		struct dcerpc_auth *out;
+		struct dcerpc_auth *in;
+		TALLOC_CTX *mem;
+	} tmp_auth_info;
 	struct gensec_security *generic_state;
 
 	/* get the session key */
