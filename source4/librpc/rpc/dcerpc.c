@@ -1345,10 +1345,18 @@ static void dcerpc_bind_recv_handler(struct rpc_request *subreq,
 	}
 
 	if ((pkt->ptype != DCERPC_PKT_BIND_ACK) ||
-	    (pkt->u.bind_ack.num_results == 0) ||
-	    (pkt->u.bind_ack.ctx_list[0].result != 0)) {
+	    (pkt->u.bind_ack.num_results == 0)) {
 		state->p->last_fault_code = DCERPC_NCA_S_PROTO_ERROR;
 		tevent_req_nterror(req, NT_STATUS_NET_WRITE_FAULT);
+		return;
+	}
+
+	if (pkt->u.bind_ack.ctx_list[0].result != 0) {
+		status = dcerpc_map_ack_reason(&pkt->u.bind_ack.ctx_list[0]);
+		DEBUG(2,("dcerpc: bind_ack failed - reason %d - %s\n",
+			 pkt->u.bind_ack.ctx_list[0].reason.value,
+			 nt_errstr(status)));
+		tevent_req_nterror(req, status);
 		return;
 	}
 
