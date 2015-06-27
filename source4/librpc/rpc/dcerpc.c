@@ -778,6 +778,18 @@ static NTSTATUS ncacn_pull_request_auth(struct dcecli_connection *c, TALLOC_CTX 
 
 	pkt->u.response.stub_and_verifier.length -= auth_length;
 
+	if (auth.auth_type != c->security_state.auth_type) {
+		return NT_STATUS_RPC_PROTOCOL_ERROR;
+	}
+
+	if (auth.auth_level != c->security_state.auth_level) {
+		return NT_STATUS_RPC_PROTOCOL_ERROR;
+	}
+
+	if (auth.auth_context_id != c->security_state.auth_context_id) {
+		return NT_STATUS_RPC_PROTOCOL_ERROR;
+	}
+
 	/* check signature or unseal the packet */
 	switch (c->security_state.auth_level) {
 	case DCERPC_AUTH_LEVEL_PRIVACY:
