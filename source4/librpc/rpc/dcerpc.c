@@ -742,12 +742,7 @@ static NTSTATUS ncacn_pull_request_auth(struct dcecli_connection *c, TALLOC_CTX 
 	struct dcerpc_auth auth;
 	uint32_t auth_length;
 
-	if (!c->security_state.auth_info ||
-	    !c->security_state.generic_state) {
-		return NT_STATUS_OK;
-	}
-
-	switch (c->security_state.auth_info->auth_level) {
+	switch (c->security_state.auth_level) {
 	case DCERPC_AUTH_LEVEL_PRIVACY:
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
 		break;
@@ -767,6 +762,14 @@ static NTSTATUS ncacn_pull_request_auth(struct dcecli_connection *c, TALLOC_CTX 
 		return NT_STATUS_INVALID_LEVEL;
 	}
 
+	if (pkt->auth_length == 0) {
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+
+	if (c->security_state.generic_state == NULL) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
 	status = dcerpc_pull_auth_trailer(pkt, mem_ctx,
 					  &pkt->u.response.stub_and_verifier,
 					  &auth, &auth_length, false);
@@ -775,7 +778,7 @@ static NTSTATUS ncacn_pull_request_auth(struct dcecli_connection *c, TALLOC_CTX 
 	pkt->u.response.stub_and_verifier.length -= auth_length;
 
 	/* check signature or unseal the packet */
-	switch (c->security_state.auth_info->auth_level) {
+	switch (c->security_state.auth_level) {
 	case DCERPC_AUTH_LEVEL_PRIVACY:
 		status = gensec_unseal_packet(c->security_state.generic_state, 
 					      raw_packet->data + DCERPC_REQUEST_LENGTH,
