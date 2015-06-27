@@ -225,12 +225,8 @@ static void dcerpc_bh_auth_info(struct dcerpc_binding_handle *h,
 		return;
 	}
 
-	if (hs->p->conn->security_state.auth_info == NULL) {
-		return;
-	}
-
-	*auth_type = hs->p->conn->security_state.auth_info->auth_type;
-	*auth_level = hs->p->conn->security_state.auth_info->auth_level;
+	*auth_type = hs->p->conn->security_state.auth_type;
+	*auth_level = hs->p->conn->security_state.auth_level;
 }
 
 struct dcerpc_bh_raw_call_state {
