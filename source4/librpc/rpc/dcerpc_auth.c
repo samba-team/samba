@@ -353,14 +353,18 @@ struct composite_context *dcerpc_bind_auth_send(TALLOC_CTX *mem_ctx,
 		return c;
 	}
 
+	sec->auth_type = auth_type;
+	sec->auth_level = auth_level,
+	sec->auth_context_id = random();
+
 	sec->auth_info = talloc(p, struct dcerpc_auth);
 	if (composite_nomem(sec->auth_info, c)) return c;
 
-	sec->auth_info->auth_type = auth_type;
-	sec->auth_info->auth_level = auth_level,
+	sec->auth_info->auth_type = sec->auth_type;
+	sec->auth_info->auth_level = sec->auth_level,
 	sec->auth_info->auth_pad_length = 0;
 	sec->auth_info->auth_reserved = 0;
-	sec->auth_info->auth_context_id = random();
+	sec->auth_info->auth_context_id = sec->auth_context_id;
 	sec->auth_info->credentials = data_blob(NULL, 0);
 
 	/* The status value here, from GENSEC is vital to the security

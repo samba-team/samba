@@ -46,6 +46,9 @@ struct dcecli_connection;
 struct gensec_settings;
 struct cli_credentials;
 struct dcecli_security {
+	enum dcerpc_AuthType auth_type;
+	enum dcerpc_AuthLevel auth_level;
+	uint32_t auth_context_id;
 	struct dcerpc_auth *auth_info;
 	struct gensec_security *generic_state;
 
