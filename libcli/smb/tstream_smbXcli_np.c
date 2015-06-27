@@ -632,7 +632,7 @@ static void tstream_smbXcli_np_writev_write_done(struct tevent_req *subreq)
 	}
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		tstream_smbXcli_np_writev_disconnect_now(req, EIO, __location__);
+		tstream_smbXcli_np_writev_disconnect_now(req, EPIPE, __location__);
 		return;
 	}
 
@@ -980,7 +980,7 @@ static void tstream_smbXcli_np_readv_trans_done(struct tevent_req *subreq)
 		status = NT_STATUS_OK;
 	}
 	if (!NT_STATUS_IS_OK(status)) {
-		tstream_smbXcli_np_readv_disconnect_now(req, EIO, __location__);
+		tstream_smbXcli_np_readv_disconnect_now(req, EPIPE, __location__);
 		return;
 	}
 
@@ -1064,7 +1064,7 @@ static void tstream_smbXcli_np_readv_read_done(struct tevent_req *subreq)
 	}
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(subreq);
-		tstream_smbXcli_np_readv_disconnect_now(req, EIO, __location__);
+		tstream_smbXcli_np_readv_disconnect_now(req, EPIPE, __location__);
 		return;
 	}
 
@@ -1290,7 +1290,7 @@ static void tstream_smbXcli_np_disconnect_done(struct tevent_req *subreq)
 	}
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_error(req, EIO);
+		tevent_req_error(req, EPIPE);
 		return;
 	}
 
