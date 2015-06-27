@@ -837,13 +837,13 @@ static NTSTATUS ncacn_push_request_sign(struct dcecli_connection *c,
 	size_t payload_length;
 	enum ndr_err_code ndr_err;
 	size_t hdr_size = DCERPC_REQUEST_LENGTH;
+	struct dcerpc_auth auth_info = {
+		.auth_type = c->security_state.auth_type,
+		.auth_level = c->security_state.auth_level,
+		.auth_context_id = c->security_state.auth_context_id,
+	};
 
-	/* non-signed packets are simpler */
-	if (c->security_state.auth_info == NULL) {
-		return ncacn_push_auth(blob, mem_ctx, pkt, NULL);
-	}
-
-	switch (c->security_state.auth_info->auth_level) {
+	switch (c->security_state.auth_level) {
 	case DCERPC_AUTH_LEVEL_PRIVACY:
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
 		if (sig_size == 0) {
@@ -890,21 +890,18 @@ static NTSTATUS ncacn_push_request_sign(struct dcecli_connection *c,
 	   ndr_push_align() as that is relative to the start of the
 	   whole packet, whereas w2k8 wants it relative to the start
 	   of the stub */
-	c->security_state.auth_info->auth_pad_length =
+	auth_info.auth_pad_length =
 		DCERPC_AUTH_PAD_LENGTH(pkt->u.request.stub_and_verifier.length);
-	ndr_err = ndr_push_zero(ndr, c->security_state.auth_info->auth_pad_length);
+	ndr_err = ndr_push_zero(ndr, auth_info.auth_pad_length);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return ndr_map_error2ntstatus(ndr_err);
 	}
 
 	payload_length = pkt->u.request.stub_and_verifier.length + 
-		c->security_state.auth_info->auth_pad_length;
-
-	/* we start without signature, it will appended later */
-	c->security_state.auth_info->credentials = data_blob(NULL,0);
+		auth_info.auth_pad_length;
 
 	/* add the auth verifier */
-	ndr_err = ndr_push_dcerpc_auth(ndr, NDR_SCALARS|NDR_BUFFERS, c->security_state.auth_info);
+	ndr_err = ndr_push_dcerpc_auth(ndr, NDR_SCALARS|NDR_BUFFERS, &auth_info);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return ndr_map_error2ntstatus(ndr_err);
 	}
@@ -922,7 +919,7 @@ static NTSTATUS ncacn_push_request_sign(struct dcecli_connection *c,
 	dcerpc_set_auth_length(blob, sig_size);
 
 	/* sign or seal the packet */
-	switch (c->security_state.auth_info->auth_level) {
+	switch (c->security_state.auth_level) {
 	case DCERPC_AUTH_LEVEL_PRIVACY:
 		status = gensec_seal_packet(c->security_state.generic_state, 
 					    mem_ctx, 
@@ -962,7 +959,7 @@ static NTSTATUS ncacn_push_request_sign(struct dcecli_connection *c,
 		DEBUG(3,("ncacn_push_request_sign: creds2.length[%u] != sig_size[%u] pad[%u] stub[%u]\n",
 			(unsigned) creds2.length,
 			(unsigned) sig_size,
-			(unsigned) c->security_state.auth_info->auth_pad_length,
+			(unsigned) auth_info.auth_pad_length,
 			(unsigned) pkt->u.request.stub_and_verifier.length));
 		dcerpc_set_frag_length(blob, blob->length + creds2.length);
 		dcerpc_set_auth_length(blob, creds2.length);
