@@ -467,7 +467,7 @@ static NTSTATUS ads_find_dc(ADS_STRUCT *ads)
 	}
 
 	if (!*c_realm && !*c_domain) {
-		DEBUG(1, ("ads_find_dc: no realm or workgroup!  Don't know "
+		DEBUG(0, ("ads_find_dc: no realm or workgroup!  Don't know "
 			  "what to do\n"));
 		return NT_STATUS_INVALID_PARAMETER; /* rather need MISSING_PARAMETER ... */
 	}
@@ -515,10 +515,10 @@ static NTSTATUS ads_find_dc(ADS_STRUCT *ads)
 		 * - Guenther */
 
 		if (sitename) {
-			DEBUG(1, ("ads_find_dc: failed to find a valid DC on "
-				  "our site (%s), "
-				  "trying to find another DC\n",
-				  sitename));
+			DEBUG(3, ("ads_find_dc: failed to find a valid DC on "
+				  "our site (%s), Trying to find another DC "
+				  "for realm '%s' (domain '%s')\n",
+				  sitename, c_realm, c_domain));
 			namecache_delete(c_realm, 0x1C);
 			status =
 			    resolve_and_ping_dns(ads, NULL, c_realm);
@@ -536,14 +536,20 @@ static NTSTATUS ads_find_dc(ADS_STRUCT *ads)
 	   or if configuration specifically requests it */
 	if (*c_domain) {
 		if (*c_realm) {
-			DEBUG(1, ("ads_find_dc: falling back to netbios "
-				  "name resolution for domain %s\n",
-				  c_domain));
+			DEBUG(3, ("ads_find_dc: falling back to netbios "
+				  "name resolution for domain '%s' (realm '%s')\n",
+				  c_domain, c_realm));
 		}
 
 		status = resolve_and_ping_netbios(ads, c_domain, c_realm);
+		if (NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 	}
 
+	DEBUG(1, ("ads_find_dc: "
+		  "name resolution for realm '%s' (domain '%s') failed: %s\n",
+		  c_realm, c_domain, nt_errstr(status)));
 	return status;
 }
 
