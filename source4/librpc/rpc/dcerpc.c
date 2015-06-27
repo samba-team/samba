@@ -2350,17 +2350,6 @@ static void dcerpc_alter_context_recv_handler(struct rpc_request *subreq,
 	 */
 	tevent_req_defer_callback(req, state->ev);
 
-	if (pkt->ptype == DCERPC_PKT_ALTER_RESP &&
-	    pkt->u.alter_resp.num_results == 1 &&
-	    pkt->u.alter_resp.ctx_list[0].result != 0) {
-		status = dcerpc_map_ack_reason(&pkt->u.alter_resp.ctx_list[0]);
-		DEBUG(2,("dcerpc: alter_resp failed - reason %d - %s\n",
-			 pkt->u.alter_resp.ctx_list[0].reason.value,
-			 nt_errstr(status)));
-		tevent_req_nterror(req, status);
-		return;
-	}
-
 	if (pkt->ptype == DCERPC_PKT_FAULT) {
 		DEBUG(5,("dcerpc: alter_resp - rpc fault: %s\n",
 			 dcerpc_errstr(state, pkt->u.fault.status)));
@@ -2375,6 +2364,17 @@ static void dcerpc_alter_context_recv_handler(struct rpc_request *subreq,
 			status = dcerpc_fault_to_nt_status(pkt->u.fault.status);
 			tevent_req_nterror(req, status);
 		}
+		return;
+	}
+
+	if (pkt->ptype == DCERPC_PKT_ALTER_RESP &&
+	    pkt->u.alter_resp.num_results == 1 &&
+	    pkt->u.alter_resp.ctx_list[0].result != 0) {
+		status = dcerpc_map_ack_reason(&pkt->u.alter_resp.ctx_list[0]);
+		DEBUG(2,("dcerpc: alter_resp failed - reason %d - %s\n",
+			 pkt->u.alter_resp.ctx_list[0].reason.value,
+			 nt_errstr(status)));
+		tevent_req_nterror(req, status);
 		return;
 	}
 
