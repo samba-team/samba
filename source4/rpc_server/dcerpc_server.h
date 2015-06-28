@@ -189,6 +189,9 @@ struct dcesrv_connection_context {
 	 */
 	enum dcerpc_AuthLevel min_auth_level;
 	bool allow_connect;
+
+	/* the negotiated transfer syntax */
+	struct ndr_syntax_id transfer_syntax;
 };
 
 
