@@ -2226,6 +2226,12 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 	if (!r->in.dc_name) {
 		struct netr_DsRGetDCNameInfo *info;
 		const char *dc;
+		uint32_t name_type_flags = 0;
+		if (r->in.domain_name_type == JoinDomNameTypeDNS) {
+			name_type_flags = DS_IS_DNS_NAME;
+		} else if (r->in.domain_name_type == JoinDomNameTypeNBT) {
+			name_type_flags = DS_IS_FLAT_NAME;
+		}
 		status = dsgetdcname(mem_ctx,
 				     r->in.msg_ctx,
 				     r->in.domain_name,
@@ -2234,7 +2240,8 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 				     DS_FORCE_REDISCOVERY |
 				     DS_DIRECTORY_SERVICE_REQUIRED |
 				     DS_WRITABLE_REQUIRED |
-				     DS_RETURN_DNS_NAME,
+				     DS_RETURN_DNS_NAME |
+				     name_type_flags,
 				     &info);
 		if (!NT_STATUS_IS_OK(status)) {
 			libnet_join_set_error_string(mem_ctx, r,

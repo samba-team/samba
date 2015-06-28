@@ -1439,6 +1439,7 @@ int net_ads_join(struct net_context *c, int argc, const char **argv)
 	const char *os_version = NULL;
 	const char *os_servicepack = NULL;
 	bool modify_config = lp_config_backend_is_registry();
+	enum libnetjoin_JoinDomNameType domain_name_type = JoinDomNameTypeDNS;
 
 	if (c->display_usage)
 		return net_ads_join_usage(c, argc, argv);
@@ -1511,6 +1512,11 @@ int net_ads_join(struct net_context *c, int argc, const char **argv)
 		}
 		else {
 			domain = argv[i];
+			if (strchr(domain, '.') == NULL) {
+				domain_name_type = JoinDomNameTypeUnknown;
+			} else {
+				domain_name_type = JoinDomNameTypeDNS;
+			}
 		}
 	}
 
@@ -1530,6 +1536,7 @@ int net_ads_join(struct net_context *c, int argc, const char **argv)
 	/* Do the domain join here */
 
 	r->in.domain_name	= domain;
+	r->in.domain_name_type	= domain_name_type;
 	r->in.create_upn	= createupn;
 	r->in.upn		= machineupn;
 	r->in.account_ou	= create_in_ou;
@@ -1552,6 +1559,7 @@ int net_ads_join(struct net_context *c, int argc, const char **argv)
 	if (W_ERROR_EQUAL(werr, WERR_DCNOTFOUND) &&
 	    strequal(domain, lp_realm())) {
 		r->in.domain_name = lp_workgroup();
+		r->in.domain_name_type = JoinDomNameTypeNBT;
 		werr = libnet_Join(ctx, r);
 	}
 	if (!W_ERROR_IS_OK(werr)) {
