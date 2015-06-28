@@ -440,6 +440,7 @@ static const char *default_classname_table[] = {
 	[DBGC_SCAVENGER] =	"scavenger",
 	[DBGC_DNS] =		"dns",
 	[DBGC_LDB] =		"ldb",
+	[DBGC_TEVENT] =		"tevent",
 };
 
 /*

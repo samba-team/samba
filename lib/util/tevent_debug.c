@@ -19,6 +19,9 @@
 #include "includes.h"
 #include <tevent.h>
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_TEVENT
+
 static void samba_tevent_debug(void *context,
 			       enum tevent_debug_level level,
 			       const char *fmt,
