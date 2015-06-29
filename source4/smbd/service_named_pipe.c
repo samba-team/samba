@@ -195,7 +195,7 @@ NTSTATUS tstream_setup_named_pipe(TALLOC_CTX *mem_ctx,
 	}
 
 	/* remember the details about the pipe */
-	pipe_sock->pipe_name	= talloc_strdup(pipe_sock, pipe_name);
+	pipe_sock->pipe_name	= strlower_talloc(pipe_sock, pipe_name);
 	if (pipe_sock->pipe_name == NULL) {
 		goto fail;
 	}
