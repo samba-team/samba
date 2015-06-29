@@ -964,7 +964,8 @@ savedeps_version = 3
 savedeps_inputs  = ['samba_deps', 'samba_includes', 'local_include', 'local_include_first', 'samba_cflags',
                     'source', 'grouping_library', 'samba_ldflags', 'allow_undefined_symbols',
                     'use_global_deps', 'global_include' ]
-savedeps_outputs = ['uselib', 'uselib_local', 'add_objects', 'includes', 'ccflags', 'ldflags', 'samba_deps_extended']
+savedeps_outputs = ['uselib', 'uselib_local', 'add_objects', 'includes',
+                    'ccflags', 'ldflags', 'samba_deps_extended', 'final_libs']
 savedeps_outenv  = ['INC_PATHS']
 savedeps_envvars = ['NONSHARED_BINARIES', 'GLOBAL_DEPENDENCIES', 'EXTRA_CFLAGS', 'EXTRA_LDFLAGS', 'EXTRA_INCLUDES' ]
 savedeps_caches  = ['GLOBAL_DEPENDENCIES', 'TARGET_TYPE', 'INIT_FUNCTIONS', 'SYSLIB_DEPS']
