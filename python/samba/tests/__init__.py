@@ -79,6 +79,18 @@ class TestCase(unittest.TestCase):
         def assertIsNone(self, a, msg=None):
             self.assertTrue(a is None, msg)
 
+        def assertGreater(self, a, b, msg=None):
+            self.assertTrue(a > b, msg)
+
+        def assertGreaterEqual(self, a, b, msg=None):
+            self.assertTrue(a >= b, msg)
+
+        def assertLess(self, a, b, msg=None):
+            self.assertTrue(a < b, msg)
+
+        def assertLessEqual(self, a, b, msg=None):
+            self.assertTrue(a <= b, msg)
+
         def addCleanup(self, fn, *args, **kwargs):
             self._cleanups = getattr(self, "_cleanups", []) + [
                 (fn, args, kwargs)]
