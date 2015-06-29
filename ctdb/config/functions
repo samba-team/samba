@@ -398,7 +398,7 @@ _nfs_check_rpc_action ()
     for _action in $_actions ; do
 	case "$_action" in
 	    verbose)
-		echo "$ctdb_check_rpc_out"
+		echo "ERROR: $ctdb_check_rpc_out"
 		;;
 	    restart)
 		_nfs_restart_rpc_service "$_prog_name"
@@ -481,7 +481,7 @@ ctdb_check_rpc ()
 
     if ! ctdb_check_rpc_out=$(rpcinfo -T $_family $_localhost \
 				      $_progname $_version 2>&1) ; then
-	ctdb_check_rpc_out="ERROR: $_progname failed RPC check:
+	ctdb_check_rpc_out="$_progname failed RPC check:
 $ctdb_check_rpc_out"
 	echo "$ctdb_check_rpc_out"
 	return 1
