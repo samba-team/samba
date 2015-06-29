@@ -246,44 +246,8 @@ static PyObject *py_iface_request(PyObject *self, PyObject *args, PyObject *kwar
 	return ret;
 }
 
-static PyObject *py_iface_alter_context(PyObject *self, PyObject *args, PyObject *kwargs)
-{
-	dcerpc_InterfaceObject *iface = (dcerpc_InterfaceObject *)self;
-	NTSTATUS status;
-	const char *kwnames[] = { "abstract_syntax", "transfer_syntax", NULL };
-	PyObject *py_abstract_syntax = Py_None, *py_transfer_syntax = Py_None;
-	struct ndr_syntax_id abstract_syntax, transfer_syntax;
-
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|O:alter_context", 
-		discard_const_p(char *, kwnames), &py_abstract_syntax,
-		&py_transfer_syntax)) {
-		return NULL;
-	}
-
-	if (!ndr_syntax_from_py_object(py_abstract_syntax, &abstract_syntax))
-		return NULL;
-
-	if (py_transfer_syntax == Py_None) {
-		transfer_syntax = ndr_transfer_syntax_ndr;
-	} else {
-		if (!ndr_syntax_from_py_object(py_transfer_syntax, &transfer_syntax))
-			return NULL;
-	}
-
-	status = dcerpc_alter_context(iface->pipe, iface->pipe, &abstract_syntax, 
-				      &transfer_syntax);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		PyErr_SetDCERPCStatus(iface->pipe, status);
-		return NULL;
-	}
-
-	Py_RETURN_NONE;
-}
-
 static PyMethodDef dcerpc_interface_methods[] = {
 	{ "request", (PyCFunction)py_iface_request, METH_VARARGS|METH_KEYWORDS, "S.request(opnum, data, object=None) -> data\nMake a raw request" },
-	{ "alter_context", (PyCFunction)py_iface_alter_context, METH_VARARGS|METH_KEYWORDS, "S.alter_context(syntax)\nChange to a different interface" },
 	{ NULL, NULL, 0, NULL },
 };
 
