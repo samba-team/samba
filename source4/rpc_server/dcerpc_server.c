@@ -1514,7 +1514,9 @@ static NTSTATUS dcesrv_process_ncacn_packet(struct dcesrv_connection *dce_conn,
 	if (call->pkt.ptype == DCERPC_PKT_REQUEST &&
 	    !(call->pkt.pfc_flags & DCERPC_PFC_FLAG_FIRST)) {
 		struct dcesrv_call_state *call2 = call;
-		uint32_t alloc_size;
+		size_t available;
+		size_t alloc_size;
+		size_t alloc_hint;
 
 		/* this is a continuation of an existing call - find the call
 		   then tack it on the end */
@@ -1546,18 +1548,43 @@ static NTSTATUS dcesrv_process_ncacn_packet(struct dcesrv_connection *dce_conn,
 					DCERPC_NCA_S_PROTO_ERROR);
 		}
 
+		/*
+		 * Up to 4 MByte are allowed by all fragments
+		 */
+		available = DCERPC_NCACN_PAYLOAD_MAX_SIZE;
+		if (call->pkt.u.request.stub_and_verifier.length > available) {
+			dcesrv_call_disconnect_after(call,
+				"dcesrv_auth_request - current payload too large");
+			return dcesrv_fault(call, DCERPC_FAULT_ACCESS_DENIED);
+		}
+		available -= call->pkt.u.request.stub_and_verifier.length;
+		if (call2->pkt.u.request.alloc_hint > available) {
+			dcesrv_call_disconnect_after(call,
+				"dcesrv_auth_request - alloc hint too large");
+			return dcesrv_fault(call, DCERPC_FAULT_ACCESS_DENIED);
+		}
+		if (call2->pkt.u.request.stub_and_verifier.length > available) {
+			dcesrv_call_disconnect_after(call,
+				"dcesrv_auth_request - new payload too large");
+			return dcesrv_fault(call, DCERPC_FAULT_ACCESS_DENIED);
+		}
+		alloc_hint = call->pkt.u.request.stub_and_verifier.length +
+			call2->pkt.u.request.alloc_hint;
+		/* allocate at least 1 byte */
+		alloc_hint = MAX(alloc_hint, 1);
 		alloc_size = call->pkt.u.request.stub_and_verifier.length +
 			call2->pkt.u.request.stub_and_verifier.length;
-		if (call->pkt.u.request.alloc_hint > alloc_size) {
-			alloc_size = call->pkt.u.request.alloc_hint;
-		}
+		alloc_size = MAX(alloc_size, alloc_hint);
 
 		call->pkt.u.request.stub_and_verifier.data = 
 			talloc_realloc(call, 
 				       call->pkt.u.request.stub_and_verifier.data, 
 				       uint8_t, alloc_size);
 		if (!call->pkt.u.request.stub_and_verifier.data) {
-			return dcesrv_fault(call2, DCERPC_FAULT_OTHER);
+			TALLOC_FREE(call2);
+			return dcesrv_fault_with_flags(call,
+						       DCERPC_FAULT_OUT_OF_RESOURCES,
+						       DCERPC_PFC_FLAG_DID_NOT_EXECUTE);
 		}
 		memcpy(call->pkt.u.request.stub_and_verifier.data +
 		       call->pkt.u.request.stub_and_verifier.length,
@@ -1575,6 +1602,14 @@ static NTSTATUS dcesrv_process_ncacn_packet(struct dcesrv_connection *dce_conn,
 	   just put it on the incoming_fragmented_call_list and wait for the rest */
 	if (call->pkt.ptype == DCERPC_PKT_REQUEST &&
 	    !(call->pkt.pfc_flags & DCERPC_PFC_FLAG_LAST)) {
+		/*
+		 * Up to 4 MByte are allowed by all fragments
+		 */
+		if (call->pkt.u.request.alloc_hint > DCERPC_NCACN_PAYLOAD_MAX_SIZE) {
+			dcesrv_call_disconnect_after(call,
+				"dcesrv_auth_request - initial alloc hint too large");
+			return dcesrv_fault(call, DCERPC_FAULT_ACCESS_DENIED);
+		}
 		dcesrv_call_set_list(call, DCESRV_LIST_FRAGMENTED_CALL_LIST);
 		return NT_STATUS_OK;
 	} 
