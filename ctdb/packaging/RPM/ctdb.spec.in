@@ -197,6 +197,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/ctdb
 %{_bindir}/ctdb_lock_helper
 %{_bindir}/ctdb_event_helper
+%{_bindir}/ctdb_recovery_helper
 %{_bindir}/smnotify
 %{_bindir}/ping_pong
 %{_bindir}/ltdbtool
