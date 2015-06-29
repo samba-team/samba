@@ -711,7 +711,7 @@ reconnect:
 					  logon_server, NETLOGON_CONTROL_QUERY,
 					  2, &info, &werr);
 
-	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_DEVICE_ERROR) && !retry) {
+	if (!dcerpc_binding_handle_is_connected(b) && !retry) {
 		DEBUG(10, ("Session might have expired. "
 			   "Reconnect and retry once.\n"));
 		invalidate_cm_connection(&domain->conn);
