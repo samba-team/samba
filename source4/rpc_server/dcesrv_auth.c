@@ -47,6 +47,9 @@ bool dcesrv_auth_bind(struct dcesrv_call_state *call)
 	uint32_t auth_length;
 
 	if (pkt->auth_length == 0) {
+		auth->auth_type = DCERPC_AUTH_TYPE_NONE;
+		auth->auth_level = DCERPC_AUTH_LEVEL_NONE;
+		auth->auth_context_id = 0;
 		dce_conn->auth_state.auth_info = NULL;
 		return true;
 	}
@@ -62,6 +65,10 @@ bool dcesrv_auth_bind(struct dcesrv_call_state *call)
 	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}
+
+	auth->auth_type = dce_conn->auth_state.auth_info->auth_type;
+	auth->auth_level = dce_conn->auth_state.auth_info->auth_level;
+	auth->auth_context_id = dce_conn->auth_state.auth_info->auth_context_id;
 
 	server_credentials 
 		= cli_credentials_init(call);
@@ -100,12 +107,12 @@ bool dcesrv_auth_bind(struct dcesrv_call_state *call)
 		}
 	}
 
-	status = gensec_start_mech_by_authtype(auth->gensec_security, auth->auth_info->auth_type, 
-					       auth->auth_info->auth_level);
+	status = gensec_start_mech_by_authtype(auth->gensec_security, auth->auth_type,
+					       auth->auth_level);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("Failed to start GENSEC mechanism for DCERPC server: auth_type=%d, auth_level=%d: %s\n",
-			  (int)auth->auth_info->auth_type,
-			  (int)auth->auth_info->auth_level,
+			  (int)auth->auth_type,
+			  (int)auth->auth_level,
 			  nt_errstr(status)));
 		return false;
 	}

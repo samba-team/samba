@@ -151,6 +151,9 @@ struct dcesrv_handle {
 
 /* hold the authentication state information */
 struct dcesrv_auth {
+	enum dcerpc_AuthType auth_type;
+	enum dcerpc_AuthLevel auth_level;
+	uint32_t auth_context_id;
 	struct dcerpc_auth *auth_info;
 	struct gensec_security *gensec_security;
 	struct auth_session_info *session_info;
@@ -210,8 +213,15 @@ struct dcesrv_connection {
 
 	DATA_BLOB partial_input;
 
-	/* the current authentication state */
-	struct dcesrv_auth auth_state;
+	/* This can be removed in master... */
+	struct  {
+		struct dcerpc_auth *auth_info;
+		struct gensec_security *gensec_security;
+		struct auth_session_info *session_info;
+		NTSTATUS (*session_key)(struct dcesrv_connection *, DATA_BLOB *session_key);
+		bool client_hdr_signing;
+		bool hdr_signing;
+	} _unused_auth_state;
 
 	/* the event_context that will be used for this connection */
 	struct tevent_context *event_ctx;
@@ -243,6 +253,9 @@ struct dcesrv_connection {
 
 	const struct tsocket_address *local_address;
 	const struct tsocket_address *remote_address;
+
+	/* the current authentication state */
+	struct dcesrv_auth auth_state;
 };
 
 
