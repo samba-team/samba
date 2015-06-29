@@ -415,7 +415,7 @@ my $testenv_default = "none";
 # must terminate in this time, and testenv will only stay alive this
 # long
 
-my $server_maxtime = 9000;
+my $server_maxtime = 10800;
 if (defined($ENV{SMBD_MAXTIME}) and $ENV{SMBD_MAXTIME} ne "") {
     $server_maxtime = $ENV{SMBD_MAXTIME};
 }
