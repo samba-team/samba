@@ -192,13 +192,19 @@ bool torture_bind_authcontext(struct torture_context *torture)
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_HANDLE)) {
 		torture_comment(torture, "dcerpc_lsa_OpenPolicy2 with wrong vuid gave %s, "
-			 "expected NT_STATUS_IO_DEVICE_ERROR\n",
+			 "expected NT_STATUS_CONNECTION_DISCONNECTED\n",
 			 nt_errstr(status));
-		status = NT_STATUS_IO_DEVICE_ERROR;
+		status = NT_STATUS_CONNECTION_DISCONNECTED;
+	}
+	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_DEVICE_ERROR)) {
+		torture_comment(torture, "dcerpc_lsa_OpenPolicy2 with wrong vuid gave %s, "
+			 "expected NT_STATUS_CONNECTION_DISCONNECTED\n",
+			 nt_errstr(status));
+		status = NT_STATUS_CONNECTION_DISCONNECTED;
 	}
 
-	torture_assert_ntstatus_equal(torture, status, NT_STATUS_IO_DEVICE_ERROR,
-				      "lsa io device error");
+	torture_assert_ntstatus_equal(torture, status, NT_STATUS_CONNECTION_DISCONNECTED,
+				      "lsa connection disconnected");
 
 	smb1cli_session_set_id(tmp->smbXcli, tmp_vuid);
 	cli->tree->session = tmp;
