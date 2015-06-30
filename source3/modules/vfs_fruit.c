@@ -3802,9 +3802,8 @@ static void fruit_copy_chunk_done(struct tevent_req *subreq)
 	}
 
 	for (i = 0; i < num_streams; i++) {
-		DEBUG(10, ("%s: stream: '%s'/%ju\n",
-			   __func__, streams[i].name,
-			   (uintmax_t)streams[i].size));
+		DEBUG(10, ("%s: stream: '%s'/%zu\n",
+			  __func__, streams[i].name, (size_t)streams[i].size));
 
 		src_fname_tmp = synthetic_smb_fname(
 			req,
