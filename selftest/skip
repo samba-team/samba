@@ -103,6 +103,7 @@ bench # don't run benchmarks in our selftest
 ^samba4.*.base.delaywrite # This is randomly failing, depending on timing and filesystem features
 ^samba4.*.base.winattr
 ^samba4.*.base.birthtime
+^samba4.*base.defer_open
 ^samba4.smb2.acls # new test which doesn't pass yet
 # ktutil might not be installed or from mit...
 # we should build a samba4ktutil and use that instead
