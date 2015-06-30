@@ -31,11 +31,15 @@
 	<para>
 		This parameter can be set globally and on a per-share bases.
 		Possible values are
-		<emphasis>off</emphasis> or <emphasis>disabled</emphasis>,
-		<emphasis>auto</emphasis> or <emphasis>enabled</emphasis>, and
-		<emphasis>mandatory</emphasis> or <emphasis>required</emphasis>.
+		<emphasis>off</emphasis> (or <emphasis>disabled</emphasis>),
+		<emphasis>enabled</emphasis> (or <emphasis>auto</emphasis>, or
+		<emphasis>if_required</emphasis>),
+		<emphasis>desired</emphasis>,
+		and
+		<emphasis>required</emphasis>
+		(or <emphasis>mandatory</emphasis>).
 		A special value is <emphasis>default</emphasis> which is
-		the implicit default setting.
+		the implicit default setting of <emphasis>enabled</emphasis>.
 	</para>
 
 	<variablelist>
@@ -104,7 +108,7 @@
 			<listitem>
 			<para>
 			The capability to perform SMB encryption can be
-			negotiated during prorocol negotiation.
+			negotiated during protocol negotiation.
 			</para>
 			</listitem>
 
@@ -146,8 +150,9 @@
 		<itemizedlist>
 			<listitem>
 			<para>
-			Leaving it as default or explicitly setting
-			<emphasis>default</emphasis> globally will enable
+			Leaving it as default, explicitly setting
+			<emphasis>default</emphasis>, or setting it to
+			<emphasis>enabled</emphasis> globally will enable
 			negotiation of encryption but will not turn on
 			data encryption globally or per share.
 			</para>
@@ -155,16 +160,20 @@
 
 			<listitem>
 			<para>
-			Setting it to <emphasis>enabled</emphasis> globally will
-			enable negotiation and turn on data encryption globally.
+			Setting it to <emphasis>desired</emphasis> globally
+			will enable negotiation and will turn on data encryption
+			on sessions and share connections for those clients
+			that support it.
 			</para>
 			</listitem>
 
 			<listitem>
 			<para>
 			Setting it to <emphasis>required</emphasis> globally
-			will enable negotiation and enforce data encryption
-			globally.
+			will enable negotiation and turn on data encryption
+			on sessions and share connections. Clients that do
+			not support encryption will be denied access to the
+			server.
 			</para>
 			</listitem>
 
@@ -177,9 +186,10 @@
 
 			<listitem>
 			<para>
-			Setting it to <emphasis>enabled</emphasis> on a share
-			will turn on data encryption for this share if
-			negotiation has been enabled globally.
+			Setting it to <emphasis>desired</emphasis> on a share
+			will turn on data encryption for this share for clients
+			that support encryption if negotiation has been
+			enabled globally.
 			</para>
 			</listitem>
 
@@ -187,16 +197,34 @@
 			<para>
 			Setting it to <emphasis>required</emphasis> on a share
 			will enforce data encryption for this share if
-			negotiation has been enabled globally. Note that this
-			allows enforcing to be controlled in Samba more
-			fine-grainedly than in Windows.  This is a small
-			deviation from the MS-SMB2 protocol document.
+			negotiation has been enabled globally. I.e. clients that
+			do not support encryption will be denied access to the
+			share.
+			</para>
+			<para>
+			Note that this allows per-share enforcing to be
+			controlled in Samba differently from Windows:
+			In Windows, <emphasis>RejectUnencryptedAccess</emphasis>
+			is a global setting, and if it is set, all shares with
+			data encryption turned on
+			are automatically enforcing encryption. In order to
+			achieve the same effect in Samba, one
+			has to globally set <emphasis>smb encrypt</emphasis> to
+			<emphasis>enabled</emphasis>, and then set all shares
+			that should be encrypted to
+			<emphasis>required</emphasis>.
+			Additionally, it is possible in Samba to have some
+			shares with encryption <emphasis>required</emphasis>
+			and some other shares with encryption only
+			<emphasis>desired</emphasis>, which is not possible in
+			Windows.
 			</para>
 			</listitem>
 
 			<listitem>
 			<para>
-			Setting it to <emphasis>off</emphasis> for a share has
+			Setting it to <emphasis>off</emphasis> or
+			<emphasis>enabled</emphasis> for a share has
 			no effect.
 			</para>
 			</listitem>
