@@ -1306,7 +1306,7 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomain(struct dcesrv_call_state *dce_cal
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	r2.in.info->domain_name.string = NULL;
+	r2.in.info->domain_name = r->in.info->name;
 	r2.in.info->netbios_name = r->in.info->name;
 	r2.in.info->sid = r->in.info->sid;
 	r2.in.info->trust_direction = LSA_TRUST_DIRECTION_OUTBOUND;
