@@ -2478,6 +2478,13 @@ static NTSTATUS resolve_ads(const char *name,
 		return status;
 	}
 
+	if (numdcs == 0) {
+		*return_iplist = NULL;
+		*return_count = 0;
+		talloc_destroy(ctx);
+		return NT_STATUS_OK;
+	}
+
 	for (i=0;i<numdcs;i++) {
 		if (!dcs[i].ss_s) {
 			numaddrs += 1;
