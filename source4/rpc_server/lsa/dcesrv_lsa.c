@@ -1006,7 +1006,6 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomain_base(struct dcesrv_call_state *dc
 	};
 	const char *netbios_name;
 	const char *dns_name;
-	const char *name;
 	DATA_BLOB trustAuthIncoming, trustAuthOutgoing, auth_blob;
 	struct trustDomainPasswords auth_struct;
 	int ret;
@@ -1015,6 +1014,13 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomain_base(struct dcesrv_call_state *dc
 	struct server_id *server_ids = NULL;
 	uint32_t num_server_ids = 0;
 	NTSTATUS status;
+	struct dom_sid *tmp_sid1;
+	struct dom_sid *tmp_sid2;
+	uint32_t tmp_rid;
+	bool ok;
+	char *dns_encoded = NULL;
+	char *netbios_encoded = NULL;
+	char *sid_encoded = NULL;
 
 	DCESRV_PULL_HANDLE(policy_handle, r->in.policy_handle, LSA_HANDLE_POLICY);
 	ZERO_STRUCTP(r->out.trustdom_handle);
@@ -1028,6 +1034,63 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomain_base(struct dcesrv_call_state *dc
 	}
 
 	dns_name = r->in.info->domain_name.string;
+	if (dns_name == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (r->in.info->sid == NULL) {
+		return NT_STATUS_INVALID_SID;
+	}
+
+	/*
+	 * We expect S-1-5-21-A-B-C, but we don't
+	 * allow S-1-5-21-0-0-0 as this is used
+	 * for claims and compound identities.
+	 *
+	 * So we call dom_sid_split_rid() 3 times
+	 * and compare the result to S-1-5-21
+	 */
+	status = dom_sid_split_rid(mem_ctx, r->in.info->sid, &tmp_sid1, &tmp_rid);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	status = dom_sid_split_rid(mem_ctx, tmp_sid1, &tmp_sid2, &tmp_rid);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	status = dom_sid_split_rid(mem_ctx, tmp_sid2, &tmp_sid1, &tmp_rid);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	ok = dom_sid_parse("S-1-5-21", tmp_sid2);
+	if (!ok) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+	ok = dom_sid_equal(tmp_sid1, tmp_sid2);
+	if (!ok) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	ok = dom_sid_parse("S-1-5-21-0-0-0", tmp_sid2);
+	if (!ok) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+	ok = !dom_sid_equal(r->in.info->sid, tmp_sid2);
+	if (!ok) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	dns_encoded = ldb_binary_encode_string(mem_ctx, dns_name);
+	if (dns_encoded == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	netbios_encoded = ldb_binary_encode_string(mem_ctx, netbios_name);
+	if (netbios_encoded == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	sid_encoded = ldap_encode_ndr_dom_sid(mem_ctx, r->in.info->sid);
+	if (sid_encoded == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	trusted_domain_state = talloc_zero(mem_ctx, struct lsa_trusted_domain_state);
 	if (!trusted_domain_state) {
@@ -1036,15 +1099,15 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomain_base(struct dcesrv_call_state *dc
 	trusted_domain_state->policy = policy_state;
 
 	if (strcasecmp(netbios_name, "BUILTIN") == 0
-	    || (dns_name && strcasecmp(dns_name, "BUILTIN") == 0)
+	    || (strcasecmp(dns_name, "BUILTIN") == 0)
 	    || (dom_sid_in_domain(policy_state->builtin_sid, r->in.info->sid))) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	if (strcasecmp(netbios_name, policy_state->domain_name) == 0
 	    || strcasecmp(netbios_name, policy_state->domain_dns) == 0
-	    || (dns_name && strcasecmp(dns_name, policy_state->domain_dns) == 0)
-	    || (dns_name && strcasecmp(dns_name, policy_state->domain_name) == 0)
+	    || strcasecmp(dns_name, policy_state->domain_dns) == 0
+	    || strcasecmp(dns_name, policy_state->domain_name) == 0
 	    || (dom_sid_equal(policy_state->domain_sid, r->in.info->sid))) {
 		return NT_STATUS_CURRENT_DOMAIN_NOT_ALLOWED;
 	}
@@ -1103,37 +1166,24 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomain_base(struct dcesrv_call_state *dc
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	if (dns_name) {
-		char *dns_encoded = ldb_binary_encode_string(mem_ctx, dns_name);
-		char *netbios_encoded = ldb_binary_encode_string(mem_ctx, netbios_name);
-		/* search for the trusted_domain record */
-		ret = gendb_search(sam_ldb,
-				   mem_ctx, policy_state->system_dn, &msgs, attrs,
-				   "(&(|(flatname=%s)(cn=%s)(trustPartner=%s)(flatname=%s)(cn=%s)(trustPartner=%s))(objectclass=trustedDomain))",
-				   dns_encoded, dns_encoded, dns_encoded, netbios_encoded, netbios_encoded, netbios_encoded);
-		if (ret > 0) {
-			ldb_transaction_cancel(sam_ldb);
-			return NT_STATUS_OBJECT_NAME_COLLISION;
-		}
-	} else {
-		char *netbios_encoded = ldb_binary_encode_string(mem_ctx, netbios_name);
-		/* search for the trusted_domain record */
-		ret = gendb_search(sam_ldb,
-				   mem_ctx, policy_state->system_dn, &msgs, attrs,
-				   "(&(|(flatname=%s)(cn=%s)(trustPartner=%s))(objectclass=trustedDomain))",
-				   netbios_encoded, netbios_encoded, netbios_encoded);
-		if (ret > 0) {
-			ldb_transaction_cancel(sam_ldb);
-			return NT_STATUS_OBJECT_NAME_COLLISION;
-		}
+	/* search for the trusted_domain record */
+	ret = gendb_search(sam_ldb,
+			   mem_ctx, policy_state->system_dn, &msgs, attrs,
+			   "(&(objectClass=trustedDomain)(|"
+			     "(flatname=%s)(trustPartner=%s)"
+			     "(flatname=%s)(trustPartner=%s)"
+			     "(securityIdentifier=%s)))",
+			   dns_encoded, dns_encoded,
+			   netbios_encoded, netbios_encoded,
+			   sid_encoded);
+	if (ret > 0) {
+		ldb_transaction_cancel(sam_ldb);
+		return NT_STATUS_OBJECT_NAME_COLLISION;
 	}
-
-	if (ret < 0 ) {
+	if (ret < 0) {
 		ldb_transaction_cancel(sam_ldb);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
-
-	name = dns_name ? dns_name : netbios_name;
 
 	msg = ldb_msg_new(mem_ctx);
 	if (msg == NULL) {
@@ -1141,31 +1191,52 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomain_base(struct dcesrv_call_state *dc
 	}
 
 	msg->dn = ldb_dn_copy(mem_ctx, policy_state->system_dn);
-	if ( ! ldb_dn_add_child_fmt(msg->dn, "cn=%s", name)) {
+	if ( ! ldb_dn_add_child_fmt(msg->dn, "cn=%s", dns_name)) {
 			ldb_transaction_cancel(sam_ldb);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	ldb_msg_add_string(msg, "flatname", netbios_name);
-
-	if (r->in.info->sid) {
-		ret = samdb_msg_add_dom_sid(sam_ldb, mem_ctx, msg, "securityIdentifier", r->in.info->sid);
-		if (ret != LDB_SUCCESS) {
-			ldb_transaction_cancel(sam_ldb);
-			return NT_STATUS_INVALID_PARAMETER;
-		}
+	ret = ldb_msg_add_string(msg, "objectClass", "trustedDomain");
+	if (ret != LDB_SUCCESS) {
+		ldb_transaction_cancel(sam_ldb);
+		return NT_STATUS_NO_MEMORY;;
 	}
 
-	ldb_msg_add_string(msg, "objectClass", "trustedDomain");
+	ret = ldb_msg_add_string(msg, "flatname", netbios_name);
+	if (ret != LDB_SUCCESS) {
+		ldb_transaction_cancel(sam_ldb);
+		return NT_STATUS_NO_MEMORY;
+	}
 
-	samdb_msg_add_int(sam_ldb, mem_ctx, msg, "trustType", r->in.info->trust_type);
+	ret = ldb_msg_add_string(msg, "trustPartner", dns_name);
+	if (ret != LDB_SUCCESS) {
+		ldb_transaction_cancel(sam_ldb);
+		return NT_STATUS_NO_MEMORY;;
+	}
 
-	samdb_msg_add_int(sam_ldb, mem_ctx, msg, "trustAttributes", r->in.info->trust_attributes);
+	ret = samdb_msg_add_dom_sid(sam_ldb, mem_ctx, msg, "securityIdentifier",
+				    r->in.info->sid);
+	if (ret != LDB_SUCCESS) {
+		ldb_transaction_cancel(sam_ldb);
+		return NT_STATUS_NO_MEMORY;;
+	}
 
-	samdb_msg_add_int(sam_ldb, mem_ctx, msg, "trustDirection", r->in.info->trust_direction);
+	ret = samdb_msg_add_int(sam_ldb, mem_ctx, msg, "trustType", r->in.info->trust_type);
+	if (ret != LDB_SUCCESS) {
+		ldb_transaction_cancel(sam_ldb);
+		return NT_STATUS_NO_MEMORY;;
+	}
 
-	if (dns_name) {
-		ldb_msg_add_string(msg, "trustPartner", dns_name);
+	ret = samdb_msg_add_int(sam_ldb, mem_ctx, msg, "trustAttributes", r->in.info->trust_attributes);
+	if (ret != LDB_SUCCESS) {
+		ldb_transaction_cancel(sam_ldb);
+		return NT_STATUS_NO_MEMORY;;
+	}
+
+	ret = samdb_msg_add_int(sam_ldb, mem_ctx, msg, "trustDirection", r->in.info->trust_direction);
+	if (ret != LDB_SUCCESS) {
+		ldb_transaction_cancel(sam_ldb);
+		return NT_STATUS_NO_MEMORY;;
 	}
 
 	if (trustAuthIncoming.data) {
