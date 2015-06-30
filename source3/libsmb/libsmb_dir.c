@@ -1129,7 +1129,7 @@ SMBC_getdents_ctx(SMBCCTX *context,
 
 		/* Try and align the struct for the next entry
 		   on a valid pointer boundary by appending zeros */
-		while((rem > 0) && ((unsigned long long)ndir & (sizeof(void*) - 1))) {
+		while((rem > 0) && ((uintptr_t)ndir & (sizeof(void*) - 1))) {
 			*ndir = '\0';
 			rem--;
 			ndir++;
