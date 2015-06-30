@@ -3207,6 +3207,7 @@ bool lpcfg_server_signing_allowed(struct loadparm_context *lp_ctx, bool *mandato
 	case SMB_SIGNING_REQUIRED:
 		*mandatory = true;
 		break;
+	case SMB_SIGNING_DESIRED:
 	case SMB_SIGNING_IF_REQUIRED:
 		break;
 	case SMB_SIGNING_DEFAULT:
