@@ -2138,6 +2138,12 @@ static bool test_query_each_TrustDom(struct dcerpc_binding_handle *b,
 			torture_assert_ntstatus_ok(tctx, dcerpc_lsa_OpenTrustedDomain_r(b, tctx, &trust),
 				"OpenTrustedDomain failed");
 
+			if (NT_STATUS_EQUAL(trust.out.result, NT_STATUS_NO_SUCH_DOMAIN)) {
+				torture_comment(tctx, "DOMAIN(%s, %s) not a direct trust?\n",
+						domains->domains[i].name.string,
+						dom_sid_string(tctx, domains->domains[i].sid));
+				continue;
+			}
 			if (!NT_STATUS_IS_OK(trust.out.result)) {
 				torture_comment(tctx, "OpenTrustedDomain failed - %s\n", nt_errstr(trust.out.result));
 				return false;
@@ -2220,6 +2226,12 @@ static bool test_query_each_TrustDom(struct dcerpc_binding_handle *b,
 		torture_assert_ntstatus_ok(tctx, dcerpc_lsa_OpenTrustedDomainByName_r(b, tctx, &trust_by_name),
 			"OpenTrustedDomainByName failed");
 
+		if (NT_STATUS_EQUAL(trust_by_name.out.result, NT_STATUS_NO_SUCH_DOMAIN)) {
+			torture_comment(tctx, "DOMAIN(%s, %s) not a direct trust?\n",
+					domains->domains[i].name.string,
+					dom_sid_string(tctx, domains->domains[i].sid));
+			continue;
+		}
 		if (!NT_STATUS_IS_OK(trust_by_name.out.result)) {
 			torture_comment(tctx, "OpenTrustedDomainByName failed - %s\n", nt_errstr(trust_by_name.out.result));
 			return false;
