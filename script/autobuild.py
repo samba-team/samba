@@ -362,6 +362,16 @@ class buildlist(object):
         self.kill_kids()
         return (0, None, None, None, "All OK")
 
+    def write_system_info(self):
+        filename = 'system-info.txt'
+        f = open(filename, 'w')
+        for cmd in ['uname -a', 'free', 'cat /proc/cpuinfo']:
+            print >>f, '### %s' % cmd
+            print >>f, run_cmd(cmd, output=True, checkfail=False)
+            print >>f
+        f.close()
+        return filename
+
     def tarlogs(self, fname):
         tar = tarfile.open(fname, "w:gz")
         for b in self.tlist:
@@ -369,6 +379,8 @@ class buildlist(object):
             tar.add(b.stderr_path, arcname="%s.stderr" % b.tag)
         if os.path.exists("autobuild.log"):
             tar.add("autobuild.log")
+        sys_info = self.write_system_info()
+        tar.add(sys_info)
         tar.close()
 
     def remove_logs(self):
