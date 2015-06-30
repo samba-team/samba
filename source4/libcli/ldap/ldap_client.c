@@ -514,7 +514,13 @@ static void ldap_connect_got_sock(struct composite_context *ctx,
 	TALLOC_FREE(state->sock);
 
 	smb_set_close_on_exec(fd);
-	set_blocking(fd, false);
+
+	ret = set_blocking(fd, false);
+	if (ret == -1) {
+		NTSTATUS status = map_nt_error_from_unix_common(errno);
+		composite_error(state->ctx, status);
+		return;
+	}
 
 	ret = tstream_bsd_existing_socket(state, fd, &state->raw);
 	if (ret == -1) {
