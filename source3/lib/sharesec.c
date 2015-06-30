@@ -331,8 +331,6 @@ struct security_descriptor *get_share_security( TALLOC_CTX *ctx, const char *ser
 	TALLOC_FREE(data.dptr);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("unmarshall_sec_desc failed: %s\n",
-			  nt_errstr(status)));
 		return get_share_security_default(ctx, psize,
 						  SEC_RIGHTS_DIR_ALL);
 	}
