@@ -387,10 +387,12 @@ static bool test_SetQuorumResource(struct torture_context *tctx,
 	return true;
 }
 
-bool test_OpenResource_int(struct torture_context *tctx,
-			   struct dcerpc_pipe *p,
-			   const char *lpszResourceName,
-			   struct policy_handle *hResource)
+static bool test_OpenResource_int_exp(struct torture_context *tctx,
+				      struct dcerpc_pipe *p,
+				      const char *lpszResourceName,
+				      struct policy_handle *hResource,
+				      WERROR expected_Status,
+				      WERROR expected_rpc_status)
 {
 	struct dcerpc_binding_handle *b = p->binding_handle;
 	struct clusapi_OpenResource r;
@@ -405,11 +407,25 @@ bool test_OpenResource_int(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx,
 		dcerpc_clusapi_OpenResource_r(b, tctx, &r),
 		"OpenResource failed");
-	torture_assert_werr_ok(tctx,
-		*r.out.Status,
+	torture_assert_werr_equal(tctx,
+		*r.out.Status, expected_Status,
+		"OpenResource failed");
+	torture_assert_werr_equal(tctx,
+		*r.out.rpc_status, expected_rpc_status,
 		"OpenResource failed");
 
 	return true;
+}
+
+bool test_OpenResource_int(struct torture_context *tctx,
+			   struct dcerpc_pipe *p,
+			   const char *lpszResourceName,
+			   struct policy_handle *hResource)
+{
+	return test_OpenResource_int_exp(tctx, p,
+					 lpszResourceName,
+					 hResource,
+					 WERR_OK, WERR_OK);
 }
 
 static bool test_OpenResourceEx_int(struct torture_context *tctx,
@@ -475,6 +491,22 @@ static bool test_OpenResource(struct torture_context *tctx,
 	}
 
 	test_CloseResource_int(tctx, t->p, &hResource);
+
+	if (!test_OpenResource_int_exp(tctx, t->p, "", &hResource, WERR_RESOURCE_NOT_FOUND, WERR_OK)) {
+		return false;
+	}
+
+	torture_assert(tctx,
+		ndr_policy_handle_empty(&hResource),
+		"expected empty policy handle");
+
+	if (!test_OpenResource_int_exp(tctx, t->p, "jfUF38fjSNcfn", &hResource, WERR_RESOURCE_NOT_FOUND, WERR_OK)) {
+		return false;
+	}
+
+	torture_assert(tctx,
+		ndr_policy_handle_empty(&hResource),
+		"expected empty policy handle");
 
 	return true;
 }
