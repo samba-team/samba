@@ -22,15 +22,8 @@
 */
 
 #include "replace.h"
-#include "system/network.h"
 #include "system/filesys.h"
-#include "system/locale.h"
 #include "blocking.h"
-#undef malloc
-#undef strcasecmp
-#undef strncasecmp
-#undef strdup
-#undef realloc
 
 /**
  Set a fd into blocking/nonblocking mode. Uses POSIX O_NONBLOCK if available,
