@@ -185,6 +185,7 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 	connection_struct *compat_conn = NULL;
 	struct user_struct *compat_vuser = req->session->compat;
 	NTSTATUS status;
+	bool encryption_desired = req->session->encryption_desired;
 	bool encryption_required = req->session->global->encryption_required;
 	bool guest_session = false;
 
@@ -236,12 +237,13 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 		return NT_STATUS_BAD_NETWORK_NAME;
 	}
 
-	if ((lp_smb_encrypt(snum) > SMB_SIGNING_OFF) &&
+	if ((lp_smb_encrypt(snum) >= SMB_SIGNING_DESIRED) &&
 	    (conn->smb2.client.capabilities & SMB2_CAP_ENCRYPTION)) {
-		encryption_required = true;
+		encryption_desired = true;
 	}
 
 	if (lp_smb_encrypt(snum) == SMB_SIGNING_REQUIRED) {
+		encryption_desired = true;
 		encryption_required = true;
 	}
 
@@ -270,6 +272,7 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 		return status;
 	}
 
+	tcon->encryption_desired = encryption_desired;
 	tcon->global->encryption_required = encryption_required;
 
 	compat_conn = make_connection_smb2(req->sconn,
@@ -340,7 +343,7 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 		*out_share_flags |= SMB2_SHAREFLAG_ACCESS_BASED_DIRECTORY_ENUM;
 	}
 
-	if (encryption_required) {
+	if (encryption_desired) {
 		*out_share_flags |= SMB2_SHAREFLAG_ENCRYPT_DATA;
 	}
 
