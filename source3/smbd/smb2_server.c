@@ -2685,12 +2685,12 @@ NTSTATUS smbd_smb2_send_oplock_break(struct smbd_server_connection *sconn,
 	size_t body_len;
 	uint8_t *dyn;
 	size_t dyn_len;
-	bool do_encryption = session->global->encryption_required;
+	bool do_encryption = session->encryption_desired;
 	uint64_t nonce_high = 0;
 	uint64_t nonce_low = 0;
 	NTSTATUS status;
 
-	if (tcon->global->encryption_required) {
+	if (tcon->encryption_desired) {
 		do_encryption = true;
 	}
 
