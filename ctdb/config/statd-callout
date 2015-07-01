@@ -121,11 +121,9 @@ case "$1" in
 	# where the lock manager will respond "strangely" immediately
 	# after restarting it, which causes clients to fail to reclaim
 	# their locks.
-	if [ "${CTDB_NFS_SERVER_MODE:-${NFS_SERVER_MODE}}" != "ganesha" ] ; then
-	    "$CTDB_NFS_CALLOUT" "stop" "nlockmgr" >/dev/null 2>&1
-            sleep 2
-	    "$CTDB_NFS_CALLOUT" "start" "nlockmgr" >/dev/null 2>&1
-	fi
+	"$CTDB_NFS_CALLOUT" "stop" "nlockmgr" >/dev/null 2>&1
+        sleep 2
+	"$CTDB_NFS_CALLOUT" "start" "nlockmgr" >/dev/null 2>&1
 
 	# we now need to send out additional statd notifications to ensure
 	# that clients understand that the lockmanager has restarted.

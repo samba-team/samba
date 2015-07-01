@@ -830,14 +830,11 @@ setup_nfs ()
 setup_nfs_ganesha ()
 {
     setup_nfs "$@"
-    export CTDB_NFS_SERVER_MODE="ganesha"
+    export CTDB_NFS_CALLOUT="${CTDB_BASE}/nfs-ganesha-callout"
     if [ "$1" != "down" ] ; then
 	export CTDB_MANAGES_NFS="yes"
     fi
 
-    # We do not support testing the Ganesha-nfsd-specific part of the
-    # eventscript.
-    export CTDB_SKIP_GANESHA_NFSD_CHECK="yes"
     export CTDB_NFS_SKIP_SHARE_CHECK="yes"
 }
 

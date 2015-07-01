@@ -1,0 +1,8 @@
+# nfs_ganesha
+restart_every=2
+unhealthy_after=6
+service_stop_cmd="$CTDB_NFS_CALLOUT stop nfs"
+service_start_cmd="$CTDB_NFS_CALLOUT start nfs"
+service_check_cmd="$CTDB_NFS_CALLOUT check nfs"
+# Ganesha initscript restarts rpc.statd and stack trace is desirable!
+service_debug_cmd="program_stack_traces status 5"
