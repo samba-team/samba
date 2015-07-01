@@ -151,6 +151,7 @@ interface smbXsrv
 		[ignore] gensec_security		*gensec;
 		[ignore] user_struct			*compat;
 		[ignore] smbXsrv_tcon_table		*tcon_table;
+		boolean8				encryption_desired;
 	} smbXsrv_session;
 
 	typedef union {
@@ -245,6 +246,7 @@ interface smbXsrv
 		NTSTATUS				status;
 		NTTIME					idle_time;
 		[ignore] connection_struct		*compat;
+		boolean8				encryption_desired;
 	} smbXsrv_tcon;
 
 	typedef union {
