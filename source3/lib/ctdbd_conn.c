@@ -390,6 +390,7 @@ static NTSTATUS ctdb_read_req(struct ctdbd_connection *conn, uint32_t reqid,
 			DEBUG(1, ("Got a message without having a msg ctx, "
 				  "dropping msg %llu\n",
 				  (long long unsigned)msg->srvid));
+			TALLOC_FREE(hdr);
 			goto next_pkt;
 		}
 
