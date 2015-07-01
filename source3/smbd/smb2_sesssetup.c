@@ -190,12 +190,13 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 		x->global->signing_required = true;
 	}
 
-	if ((lp_smb_encrypt(-1) > SMB_SIGNING_OFF) &&
+	if ((lp_smb_encrypt(-1) >= SMB_SIGNING_DESIRED) &&
 	    (conn->smb2.client.capabilities & SMB2_CAP_ENCRYPTION)) {
-		x->global->encryption_required = true;
+		x->encryption_desired = true;
 	}
 
 	if (lp_smb_encrypt(-1) == SMB_SIGNING_REQUIRED) {
+		x->encryption_desired = true;
 		x->global->encryption_required = true;
 	}
 
@@ -222,7 +223,7 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 		}
 	}
 
-	if (x->global->encryption_required) {
+	if (x->encryption_desired) {
 		*out_session_flags |= SMB2_SESSION_FLAG_ENCRYPT_DATA;
 	}
 
