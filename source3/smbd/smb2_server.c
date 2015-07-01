@@ -2000,6 +2000,7 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 	NTSTATUS return_value;
 	struct smbXsrv_session *x = NULL;
 	bool signing_required = false;
+	bool encryption_desired = false;
 	bool encryption_required = false;
 
 	inhdr = SMBD_SMB2_IN_HDR_PTR(req);
@@ -2047,11 +2048,13 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 	x = req->session;
 	if (x != NULL) {
 		signing_required = x->global->signing_required;
+		encryption_desired = x->encryption_desired;
 		encryption_required = x->global->encryption_required;
 	}
 
 	req->do_signing = false;
 	req->do_encryption = false;
+	req->was_encrypted = false;
 	if (intf_v->iov_len == SMB2_TF_HDR_SIZE) {
 		const uint8_t *intf = SMBD_SMB2_IN_TF_PTR(req);
 		uint64_t tf_session_id = BVAL(intf, SMB2_TF_SESSION_ID);
@@ -2073,10 +2076,10 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 					NT_STATUS_ACCESS_DENIED);
 		}
 
-		req->do_encryption = true;
+		req->was_encrypted = true;
 	}
 
-	if (encryption_required && !req->do_encryption) {
+	if (encryption_required && !req->was_encrypted) {
 		return smbd_smb2_request_error(req,
 				NT_STATUS_ACCESS_DENIED);
 	}
@@ -2116,7 +2119,7 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		req->compat_chain_fsp = NULL;
 	}
 
-	if (req->do_encryption) {
+	if (req->was_encrypted) {
 		signing_required = false;
 	} else if (signing_required || (flags & SMB2_HDR_FLAG_SIGNED)) {
 		DATA_BLOB signing_key = data_blob_null;
@@ -2202,13 +2205,20 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		if (!NT_STATUS_IS_OK(status)) {
 			return smbd_smb2_request_error(req, status);
 		}
+		if (req->tcon->encryption_desired) {
+			encryption_desired = true;
+		}
 		if (req->tcon->global->encryption_required) {
 			encryption_required = true;
 		}
-		if (encryption_required && !req->do_encryption) {
+		if (encryption_required && !req->was_encrypted) {
 			return smbd_smb2_request_error(req,
 				NT_STATUS_ACCESS_DENIED);
 		}
+	}
+
+	if (req->was_encrypted || encryption_desired) {
+		req->do_encryption = true;
 	}
 
 	if (call->fileid_ofs != 0) {
