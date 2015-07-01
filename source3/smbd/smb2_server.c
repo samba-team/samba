@@ -2780,8 +2780,8 @@ static NTSTATUS smbd_smb2_send_break(struct smbXsrv_connection *xconn,
 
 	if (session != NULL) {
 		session_wire_id = session->global->session_wire_id;
-		do_encryption = session->global->encryption_required;
-		if (tcon->global->encryption_required) {
+		do_encryption = session->encryption_desired;
+		if (tcon->encryption_desired) {
 			do_encryption = true;
 		}
 	}
