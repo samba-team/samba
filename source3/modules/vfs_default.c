@@ -1395,7 +1395,7 @@ static NTSTATUS vfswrap_fsctl(struct vfs_handle_struct *handle,
 
 struct vfs_cc_state {
 	off_t copied;
-	uint8_t buf[65536];
+	uint8_t *buf;
 };
 
 static struct tevent_req *vfswrap_copy_chunk_send(struct vfs_handle_struct *handle,
@@ -1417,6 +1417,12 @@ static struct tevent_req *vfswrap_copy_chunk_send(struct vfs_handle_struct *hand
 	req = tevent_req_create(mem_ctx, &vfs_cc_state, struct vfs_cc_state);
 	if (req == NULL) {
 		return NULL;
+	}
+
+	vfs_cc_state->buf = talloc_array(vfs_cc_state, uint8_t,
+					 MIN(num, 8*1024*1024));
+	if (tevent_req_nomem(vfs_cc_state->buf, req)) {
+		return tevent_req_post(req, ev);
 	}
 
 	status = vfs_stat_fsp(src_fsp);
@@ -1444,7 +1450,7 @@ static struct tevent_req *vfswrap_copy_chunk_send(struct vfs_handle_struct *hand
 		struct lock_struct lck;
 		int saved_errno;
 
-		off_t this_num = MIN(sizeof(vfs_cc_state->buf),
+		off_t this_num = MIN(talloc_array_length(vfs_cc_state->buf),
 				     num - vfs_cc_state->copied);
 
 		if (src_fsp->op == NULL) {
