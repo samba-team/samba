@@ -26,6 +26,7 @@
 #include "librpc/gen_ndr/ndr_clusapi_c.h"
 #include "param/param.h"
 #include <tevent.h>
+#include "lib/cmdline/popt_common.h"
 
 struct torture_test_clusapi_state {
 	struct dcerpc_pipe *p;
@@ -516,17 +517,30 @@ static bool test_witness_RegisterEx(struct torture_context *tctx,
 static bool setup_clusapi_connection(struct torture_context *tctx,
 				     struct torture_test_witness_state *s)
 {
-	NTSTATUS status;
+	struct dcerpc_binding *binding;
 
 	if (s->clusapi.p) {
 		return true;
 	}
 
-	status = torture_rpc_connection_transport(tctx, &s->clusapi.p, &ndr_table_clusapi, NCACN_IP_TCP, 0);
-	if (!NT_STATUS_IS_OK(status)) {
-		torture_comment(tctx, "clusapi interface not available\n");
-		return true;
-	}
+	torture_assert_ntstatus_ok(tctx,
+		torture_rpc_binding(tctx, &binding),
+		"failed to retrieve torture binding");
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_binding_set_transport(binding, NCACN_IP_TCP),
+		"failed to set transport");
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_binding_set_flags(binding, DCERPC_SEAL, 0),
+		"failed to set dcerpc flags");
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_pipe_connect_b(tctx, &s->clusapi.p, binding,
+				      &ndr_table_clusapi,
+				      cmdline_credentials,
+				      tctx->ev, tctx->lp_ctx),
+		"failed to connect dcerpc pipe");
 
 	return true;
 }
