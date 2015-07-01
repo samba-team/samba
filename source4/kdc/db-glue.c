@@ -1030,7 +1030,10 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 	int ret, trust_direction_flags;
 	unsigned int i;
 	struct AuthenticationInformationArray *auth_array;
+	struct timeval tv;
+	NTTIME an_hour_ago;
 	uint32_t *auth_kvno;
+	bool preferr_current = false;
 	uint32_t supported_enctypes = ENC_RC4_HMAC_MD5;
 
 	if (dsdb_functional_level(kdc_db_ctx->samdb) >= DS_DOMAIN_FUNCTION_2008) {
@@ -1124,11 +1127,24 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 	 * then we use the previous substrucure.
 	 */
 
+	/*
+	 * Windows preferrs the previous key for one hour.
+	 */
+	tv = timeval_current();
+	if (tv.tv_sec > 3600) {
+		tv.tv_sec -= 3600;
+	}
+	an_hour_ago = timeval_to_nttime(&tv);
+
 	/* first work out the current kvno */
 	current_kvno = 0;
 	for (i=0; i < password_blob.count; i++) {
 		struct AuthenticationInformation *a =
 			&password_blob.current.array[i];
+
+		if (a->LastUpdateTime <= an_hour_ago) {
+			preferr_current = true;
+		}
 
 		if (a->AuthType == TRUST_AUTH_TYPE_VERSION) {
 			current_kvno = a->AuthInfo.version.version;
@@ -1155,9 +1171,16 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 		use_previous = false;
 	} else if (!(flags & HDB_F_KVNO_SPECIFIED)) {
 		/*
-		 * If not specified we use the current one.
+		 * If not specified we use the lowest kvno
+		 * for the first hour after an update.
 		 */
-		use_previous = false;
+		if (preferr_current) {
+			use_previous = false;
+		} else if (previous_kvno < current_kvno) {
+			use_previous = true;
+		} else {
+			use_previous = false;
+		}
 	} else if (kvno == current_kvno) {
 		/*
 		 * Exact match ...
