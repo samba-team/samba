@@ -587,7 +587,9 @@ static bool test_GetResourceState_int(struct torture_context *tctx,
 
 static bool toggle_cluster_resource_state(struct torture_context *tctx,
 					  struct dcerpc_pipe *p,
-					  const char *resource_name)
+					  const char *resource_name,
+					  enum clusapi_ClusterResourceState *old_state,
+					  enum clusapi_ClusterResourceState *new_state)
 {
 	struct policy_handle hResource;
 	enum clusapi_ClusterResourceState State;
@@ -598,6 +600,10 @@ static bool toggle_cluster_resource_state(struct torture_context *tctx,
 	torture_assert(tctx,
 		test_GetResourceState_int(tctx, p, &hResource, &State),
 		"failed to query resource state");
+
+	if (old_state) {
+		*old_state = State;
+	}
 
 	switch (State) {
 	case ClusterResourceOffline:
@@ -617,6 +623,14 @@ static bool toggle_cluster_resource_state(struct torture_context *tctx,
 
 	default:
 		break;
+	}
+
+	torture_assert(tctx,
+		test_GetResourceState_int(tctx, p, &hResource, &State),
+		"failed to query resource state");
+
+	if (new_state) {
+		*new_state = State;
 	}
 
 	test_CloseResource_int(tctx, p, &hResource);
@@ -645,6 +659,7 @@ static bool test_witness_AsyncNotify(struct torture_context *tctx,
 		struct witness_interfaceInfo interface = state->list->interfaces[i];
 		struct witness_Register reg;
 		struct tevent_req *req;
+		enum clusapi_ClusterResourceState old_state, new_state;
 
 		if (!check_valid_interface(tctx, &interface)) {
 			continue;
@@ -675,8 +690,9 @@ static bool test_witness_AsyncNotify(struct torture_context *tctx,
 		torture_assert(tctx, req, "failed to create request");
 
 		torture_assert(tctx,
-			toggle_cluster_resource_state(tctx, state->clusapi.p, state->net_name),
+			toggle_cluster_resource_state(tctx, state->clusapi.p, state->net_name, &old_state, &new_state),
 			"failed to toggle cluster resource state");
+		torture_assert(tctx, old_state != new_state, "failed to change cluster resource state");
 
 		torture_assert(tctx,
 			tevent_req_poll(req, tctx->ev),
@@ -691,6 +707,11 @@ static bool test_witness_AsyncNotify(struct torture_context *tctx,
 			"Failed to unregister");
 
 		ZERO_STRUCT(state->context_handle);
+
+		torture_assert(tctx,
+			toggle_cluster_resource_state(tctx, state->clusapi.p, state->net_name, &old_state, &new_state),
+			"failed to toggle cluster resource state");
+		torture_assert(tctx, old_state != new_state, "failed to change cluster resource state");
 	}
 
 	return true;
