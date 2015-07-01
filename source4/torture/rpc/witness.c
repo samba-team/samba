@@ -702,6 +702,21 @@ static bool test_witness_AsyncNotify(struct torture_context *tctx,
 			dcerpc_witness_AsyncNotify_r_recv(req, tctx),
 			"failed to receive reply");
 
+		torture_assert_int_equal(tctx, response->num, 1, "num");
+		torture_assert_int_equal(tctx, response->type, WITNESS_NOTIFY_RESOURCE_CHANGE, "type");
+
+		/*
+		 * TODO: find out how ClusterResourceOfflinePending and
+		 * ClusterResourceOnlinePending are represented as witness
+		 * types.
+		 */
+
+		if (new_state == ClusterResourceOffline) {
+			torture_assert_int_equal(tctx, response->messages[0].resource_change.type, WITNESS_RESOURCE_STATE_UNAVAILABLE, "resource_change.type");
+		}
+		if (new_state == ClusterResourceOnline) {
+			torture_assert_int_equal(tctx, response->messages[0].resource_change.type, WITNESS_RESOURCE_STATE_AVAILABLE, "resource_change.type");
+		}
 		torture_assert(tctx,
 			test_witness_UnRegister_with_handle(tctx, p, &state->context_handle),
 			"Failed to unregister");
