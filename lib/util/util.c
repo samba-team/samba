@@ -22,8 +22,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <talloc.h>
 #include "replace.h"
+#include <talloc.h>
 #include "system/network.h"
 #include "system/filesys.h"
 #include "system/locale.h"
