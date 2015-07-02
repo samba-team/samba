@@ -4231,8 +4231,17 @@ static int control_pstore(struct ctdb_context *ctdb, int argc, const char **argv
 		return -1;
 	}
 
-	key.dptr  = discard_const(argv[1]);
-	key.dsize = strlen(argv[1]);
+	if (!strncmp(argv[1], "0x", 2)) {
+		key = hextodata(tmp_ctx, argv[1] + 2);
+		if (key.dsize == 0) {
+			printf("Failed to convert \"%s\" into a TDB_DATA\n", argv[1]);
+			return -1;
+		}
+	} else {
+		key.dptr  = discard_const(argv[1]);
+		key.dsize = strlen(argv[1]);
+	}
+
 	ret = ctdb_transaction_store(h, key, data);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,("Failed to store record\n"));
