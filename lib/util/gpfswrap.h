@@ -24,7 +24,7 @@
 #ifndef __GPFSWRAP_H__
 #define __GPFSWRAP_H__
 
-#include <gpfs_fcntl.h>
+#include <gpfs.h>
 
 int gpfswrap_init(void);
 int gpfswrap_set_share(int fd, unsigned int allow, unsigned int deny);

@@ -136,5 +136,5 @@ else:
     conf.undefine('HAVE_LTTNG_TRACEF')
 
 conf.env['CPPPATH_GPFS'] = '/usr/lpp/mmfs/include/'
-if conf.CHECK_HEADERS('gpfs_fcntl.h', False, False, "gpfs"):
+if conf.CHECK_HEADERS('gpfs.h', False, False, "gpfs"):
     conf.DEFINE('HAVE_GPFS', '1')
