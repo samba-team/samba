@@ -115,6 +115,7 @@ interface witness
 		[case(WITNESS_NOTIFY_CLIENT_MOVE)]     witness_IPaddrInfoList client_move;
 		[case(WITNESS_NOTIFY_SHARE_MOVE)]      witness_IPaddrInfoList share_move;
 		[case(WITNESS_NOTIFY_IP_CHANGE)]       witness_IPaddrInfoList ip_change;
+		[default,flag(NDR_REMAINING)]          DATA_BLOB data;
 	} witness_notifyResponse_message;
 
 	typedef [flag(NDR_PAHEX)] struct {
