@@ -38,7 +38,6 @@ static int (*gpfs_lib_init_fn)(int flags);
 static int (*gpfs_set_times_path_fn)(char *pathname, int flags,
 				     gpfs_timestruc_t times[4]);
 static int (*gpfs_quotactl_fn)(char *pathname, int cmd, int id, void *bufp);
-static int (*gpfs_fcntl_fn)(int fd, void *argp);
 static int (*gpfs_getfilesetid_fn)(char *pathname, char *name, int *idp);
 static int (*gpfs_init_trace_fn)(void);
 static int (*gpfs_query_trace_fn)(void);
@@ -71,7 +70,6 @@ int gpfswrap_init(void)
 	gpfs_lib_init_fn	      = dlsym(l, "gpfs_lib_init");
 	gpfs_set_times_path_fn	      = dlsym(l, "gpfs_set_times_path");
 	gpfs_quotactl_fn	      = dlsym(l, "gpfs_quotactl");
-	gpfs_fcntl_fn		      = dlsym(l, "gpfs_fcntl");
 	gpfs_getfilesetid_fn	      = dlsym(l, "gpfs_getfilesetid");
 	gpfs_init_trace_fn	      = dlsym(l, "gpfs_init_trace");
 	gpfs_query_trace_fn	      = dlsym(l, "gpfs_query_trace");
@@ -211,16 +209,6 @@ int gpfswrap_quotactl(char *pathname, int cmd, int id, void *bufp)
 	}
 
 	return gpfs_quotactl_fn(pathname, cmd, id, bufp);
-}
-
-int gpfswrap_fcntl(int fd, void *argp)
-{
-	if (gpfs_fcntl_fn == NULL) {
-		errno = ENOSYS;
-		return -1;
-	}
-
-	return gpfs_fcntl_fn(fd, argp);
 }
 
 int gpfswrap_getfilesetid(char *pathname, char *name, int *idp)
