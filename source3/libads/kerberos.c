@@ -879,7 +879,8 @@ bool create_local_private_krb5_conf_for_domain(const char *realm,
 					"[libdefaults]\n\tdefault_realm = %s\n"
 					"\tdefault_tgs_enctypes = %s RC4-HMAC DES-CBC-CRC DES-CBC-MD5\n"
 					"\tdefault_tkt_enctypes = %s RC4-HMAC DES-CBC-CRC DES-CBC-MD5\n"
-					"\tpreferred_enctypes = %s RC4-HMAC DES-CBC-CRC DES-CBC-MD5\n\n"
+					"\tpreferred_enctypes = %s RC4-HMAC DES-CBC-CRC DES-CBC-MD5\n"
+					"\tdns_lookup_realm = false\n\n"
 					"[realms]\n\t%s = {\n"
 					"%s\t}\n",
 					realm_upper, aes_enctypes, aes_enctypes, aes_enctypes,
