@@ -273,20 +273,53 @@ static bool test_CreateEnum(struct torture_context *tctx,
 		talloc_get_type_abort(data, struct torture_clusapi_context);
 	struct dcerpc_binding_handle *b = t->p->binding_handle;
 	struct clusapi_CreateEnum r;
-	uint32_t dwType = CLUSTER_ENUM_RESOURCE;
+	uint32_t dwType[] = {
+		CLUSTER_ENUM_NODE,
+		CLUSTER_ENUM_RESTYPE,
+		CLUSTER_ENUM_RESOURCE,
+		CLUSTER_ENUM_GROUP,
+		CLUSTER_ENUM_NETWORK,
+		CLUSTER_ENUM_NETINTERFACE,
+		CLUSTER_ENUM_INTERNAL_NETWORK,
+		CLUSTER_ENUM_SHARED_VOLUME_RESOURCE
+	};
+	uint32_t dwType_invalid[] = {
+		0x00000040,
+		0x00000080,
+		0x00000100 /* and many more ... */
+	};
 	struct ENUM_LIST *ReturnEnum;
 	WERROR rpc_status;
+	int i;
 
-	r.in.dwType = dwType;
-	r.out.ReturnEnum = &ReturnEnum;
-	r.out.rpc_status = &rpc_status;
+	for (i=0; i < ARRAY_SIZE(dwType); i++) {
 
-	torture_assert_ntstatus_ok(tctx,
-		dcerpc_clusapi_CreateEnum_r(b, tctx, &r),
-		"CreateEnum failed");
-	torture_assert_werr_ok(tctx,
-		r.out.result,
-		"CreateEnum failed");
+		r.in.dwType = dwType[i];
+		r.out.ReturnEnum = &ReturnEnum;
+		r.out.rpc_status = &rpc_status;
+
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_clusapi_CreateEnum_r(b, tctx, &r),
+			"CreateEnum failed");
+		torture_assert_werr_ok(tctx,
+			r.out.result,
+			"CreateEnum failed");
+	}
+
+	for (i=0; i < ARRAY_SIZE(dwType_invalid); i++) {
+
+		r.in.dwType = dwType_invalid[i];
+		r.out.ReturnEnum = &ReturnEnum;
+		r.out.rpc_status = &rpc_status;
+
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_clusapi_CreateEnum_r(b, tctx, &r),
+			"CreateEnum failed");
+		torture_assert_werr_equal(tctx,
+			r.out.result,
+			WERR_INVALID_PARAMETER,
+			"CreateEnum failed");
+	}
 
 	return true;
 }
