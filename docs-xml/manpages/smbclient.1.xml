@@ -857,6 +857,20 @@
 		</varlistentry>
 
 		<varlistentry>
+		<term>notify &lt;dir name&gt;</term>
+		<listitem><para>Query a directory for change
+		notifications. This command issues a recursive
+		filechangenotify call for all possible changes. As
+		changes come in will print one line per change. See
+		<ulink url="https://msdn.microsoft.com/en-us/library/dn392331.aspx">https://msdn.microsoft.com/en-us/library/dn392331.aspx</ulink>
+		for a description of the action numbers that this
+		command prints.</para>
+		<para>This command never ends, it waits for event
+		indefinitely.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
 		<term>posix</term>
 		<listitem><para>Query the remote server to see if it supports the CIFS UNIX
 		extensions and prints out the list of capabilities supported. If so, turn
