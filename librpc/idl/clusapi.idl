@@ -1,4 +1,4 @@
-import "security.idl";
+import "security.idl", "winreg.idl";
 
 #include "idl_types.h"
 
@@ -464,14 +464,14 @@ import "security.idl";
 #if 0
 	HKEY_RPC
 	clusapi_GetRootKey(
-		[ in ] uint32 samDesired,
+		[ in ] winreg_AccessMask samDesired,
 		[ out ] WERROR *Status,
 		[ out ] WERROR *rpc_status
 	);
 #else
 	void
 	clusapi_GetRootKey(
-		[ in ] uint32 samDesired,
+		[ in ] winreg_AccessMask samDesired,
 		[ out ] WERROR *Status,
 		[ out ] WERROR *rpc_status,
 		[ out ] HKEY_RPC *phKey
@@ -485,7 +485,7 @@ import "security.idl";
 		[ in ] HKEY_RPC hKey,
 		[ in, string ] [charset(UTF16)] uint16 *lpSubKey,
 		[ in ] uint32 dwOptions,
-		[ in ] uint32 samDesired,
+		[ in ] winreg_AccessMask samDesired,
 		[ in, unique ] RPC_SECURITY_ATTRIBUTES *lpSecurityAttributes,
 		[ out ] uint32 *lpdwDisposition,
 		[ out ] WERROR *Status,
@@ -497,7 +497,7 @@ import "security.idl";
 		[ in ] HKEY_RPC hKey,
 		[ in, string ] [charset(UTF16)] uint16 *lpSubKey,
 		[ in ] uint32 dwOptions,
-		[ in ] uint32 samDesired,
+		[ in ] winreg_AccessMask samDesired,
 		[ in, unique ] RPC_SECURITY_ATTRIBUTES *lpSecurityAttributes,
 		[ out ] uint32 *lpdwDisposition,
 		[ out ] WERROR *Status,
@@ -512,7 +512,7 @@ import "security.idl";
 	clusapi_OpenKey(
 		[ in ] HKEY_RPC hKey,
 		[ in, string ] [charset(UTF16)] uint16 *lpSubKey,
-		[ in ] uint32 samDesired,
+		[ in ] winreg_AccessMask samDesired,
 		[ out ] WERROR *Status,
 		[ out ] WERROR *rpc_status
 	);
@@ -521,7 +521,7 @@ import "security.idl";
 	clusapi_OpenKey(
 		[ in ] HKEY_RPC hKey,
 		[ in, string ] [charset(UTF16)] uint16 *lpSubKey,
-		[ in ] uint32 samDesired,
+		[ in ] winreg_AccessMask samDesired,
 		[ out ] WERROR *Status,
 		[ out ] WERROR *rpc_status,
 		[ out ] HKEY_RPC *phKey
