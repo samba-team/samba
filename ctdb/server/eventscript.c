@@ -910,14 +910,23 @@ struct eventscript_callback_state {
 static void run_eventscripts_callback(struct ctdb_context *ctdb, int status,
 				 void *private_data)
 {
+	const char *errmsg = NULL;
+
 	struct eventscript_callback_state *state =
 		talloc_get_type(private_data, struct eventscript_callback_state);
 
 	if (status != 0) {
-		DEBUG(DEBUG_ERR,(__location__ " Failed to run eventscripts\n"));
+		if (status == -ECANCELED) {
+			DEBUG(DEBUG_WARNING,
+			      (__location__ " Eventscript cancelled\n"));
+			errmsg = "cancelled";
+		} else {
+			DEBUG(DEBUG_ERR,
+			      (__location__ " Failed to run eventscripts\n"));
+		}
 	}
 
-	ctdb_request_control_reply(ctdb, state->c, NULL, status, NULL);
+	ctdb_request_control_reply(ctdb, state->c, NULL, status, errmsg);
 	/* This will free the struct ctdb_event_script_state we are in! */
 	talloc_free(state);
 	return;
