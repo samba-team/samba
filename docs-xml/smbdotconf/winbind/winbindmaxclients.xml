@@ -6,6 +6,12 @@
 	<para>This parameter specifies the maximum number of clients
 	the <citerefentry><refentrytitle>winbindd</refentrytitle>
 	<manvolnum>8</manvolnum></citerefentry> daemon can connect with.
+	The parameter is not a hard limit.
+	The <citerefentry><refentrytitle>winbindd</refentrytitle>
+	<manvolnum>8</manvolnum></citerefentry> daemon configures
+	itself to be able to accept at least that many connections,
+	and if the limit is reached, an attempt is made to disconnect
+	idle clients.
 	</para>
 </description>
 
