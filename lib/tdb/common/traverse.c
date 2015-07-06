@@ -245,13 +245,25 @@ _PUBLIC_ int tdb_traverse(struct tdb_context *tdb,
 		 tdb_traverse_func fn, void *private_data)
 {
 	struct tdb_traverse_lock tl = { NULL, 0, 0, F_WRLCK };
+	enum tdb_lock_flags lock_flags;
 	int ret;
 
 	if (tdb->read_only || tdb->traverse_read) {
 		return tdb_traverse_read(tdb, fn, private_data);
 	}
 
-	if (tdb_transaction_lock(tdb, F_WRLCK, TDB_LOCK_WAIT)) {
+	lock_flags = TDB_LOCK_WAIT;
+
+	if (tdb->allrecord_lock.count != 0) {
+		/*
+		 * This avoids a deadlock between tdb_lockall() and
+		 * tdb_traverse(). See
+		 * https://bugzilla.samba.org/show_bug.cgi?id=11381
+		 */
+		lock_flags = TDB_LOCK_NOWAIT;
+	}
+
+	if (tdb_transaction_lock(tdb, F_WRLCK, lock_flags)) {
 		return -1;
 	}
 
