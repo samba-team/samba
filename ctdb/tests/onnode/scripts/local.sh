@@ -46,7 +46,7 @@ ctdb_set_output ()
     _rc="$ONNODE_TESTS_VAR_DIR/ctdb.rc"
     echo "${1:-0}" >"$_rc"
 
-    trap "rm -f $_out $_rc" 0
+    test_cleanup "rm -f $_out $_rc"
 }
 
 extra_footer ()

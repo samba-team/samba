@@ -209,6 +209,15 @@ script_test ()
     result_check || exit $?
 }
 
+test_cleanup_hooks=""
+
+test_cleanup ()
+{
+    test_cleanup_hooks="${test_cleanup_hooks}${test_cleanup_hooks:+ ; }$*"
+}
+
+trap 'eval $test_cleanup_hooks' 0
+
 local="${TEST_SUBDIR}/scripts/local.sh"
 if [ -r "$local" ] ; then
     . "$local"
