@@ -47,6 +47,8 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
+#define SCRUB_CLIENTS_INTERVAL 5
+
 static bool client_is_idle(struct winbindd_cli_state *state);
 static void remove_client(struct winbindd_cli_state *state);
 static void winbindd_setup_max_fds(void);
@@ -1143,6 +1145,20 @@ static void remove_timed_out_clients(void)
 	}
 }
 
+static void winbindd_scrub_clients_handler(struct tevent_context *ev,
+					   struct tevent_timer *te,
+					   struct timeval current_time,
+					   void *private_data)
+{
+	remove_timed_out_clients();
+	if (tevent_add_timer(ev, ev,
+			     timeval_current_ofs(SCRUB_CLIENTS_INTERVAL, 0),
+			     winbindd_scrub_clients_handler, NULL) == NULL) {
+		DEBUG(0, ("winbindd: failed to reschedule client scrubber\n"));
+		exit(1);
+	}
+}
+
 struct winbindd_listen_state {
 	bool privileged;
 	int fd;
@@ -1276,6 +1292,8 @@ static bool winbindd_setup_listeners(void)
 	}
 	tevent_fd_set_auto_close(fde);
 
+	winbindd_scrub_clients_handler(winbind_event_context(), NULL,
+				       timeval_current(), NULL);
 	return true;
 failed:
 	TALLOC_FREE(pub_state);
