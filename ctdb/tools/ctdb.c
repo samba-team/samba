@@ -180,12 +180,11 @@ static int h2i(char h)
 	return h - '0';
 }
 
-static TDB_DATA hextodata(TALLOC_CTX *mem_ctx, const char *str)
+static TDB_DATA hextodata(TALLOC_CTX *mem_ctx, const char *str, size_t len)
 {
-	int i, len;
+	int i;
 	TDB_DATA key = {NULL, 0};
 
-	len = strlen(str);
 	if (len & 0x01) {
 		DEBUG(DEBUG_ERR,("Key specified with odd number of hexadecimal digits\n"));
 		return key;
@@ -197,6 +196,20 @@ static TDB_DATA hextodata(TALLOC_CTX *mem_ctx, const char *str)
 	for (i=0; i < len/2; i++) {
 		key.dptr[i] = h2i(str[i*2]) << 4 | h2i(str[i*2+1]);
 	}
+	return key;
+}
+
+static TDB_DATA strtodata(TALLOC_CTX *mem_ctx, const char *str, size_t len)
+{
+	TDB_DATA key;
+
+	if (!strncmp(str, "0x", 2)) {
+		key = hextodata(mem_ctx, str + 2, len - 2);
+	} else {
+		key.dptr  = talloc_memdup(mem_ctx, str, len);
+		key.dsize = len;
+	}
+
 	return key;
 }
 
@@ -4031,15 +4044,10 @@ static int control_tfetch(struct ctdb_context *ctdb, int argc, const char **argv
 		return -1;
 	}
 
-	if (!strncmp(argv[1], "0x", 2)) {
-		key = hextodata(tmp_ctx, argv[1] + 2);
-		if (key.dsize == 0) {
-			printf("Failed to convert \"%s\" into a TDB_DATA\n", argv[1]);
-			return -1;
-		}
-	} else {
-		key.dptr  = discard_const(argv[1]);
-		key.dsize = strlen(argv[1]);
+	key = strtodata(tmp_ctx, argv[1], strlen(argv[1]));
+	if (key.dptr == NULL) {
+		printf("Failed to convert \"%s\" into a TDB_DATA\n", argv[1]);
+		return -1;
 	}
 
 	data = tdb_fetch(tdb, key);
@@ -4098,26 +4106,16 @@ static int control_tstore(struct ctdb_context *ctdb, int argc, const char **argv
 		return -1;
 	}
 
-	if (!strncmp(argv[1], "0x", 2)) {
-		key = hextodata(tmp_ctx, argv[1] + 2);
-		if (key.dsize == 0) {
-			printf("Failed to convert \"%s\" into a TDB_DATA\n", argv[1]);
-			return -1;
-		}
-	} else {
-		key.dptr  = discard_const(argv[1]);
-		key.dsize = strlen(argv[1]);
+	key = strtodata(tmp_ctx, argv[1], strlen(argv[1]));
+	if (key.dptr == NULL) {
+		printf("Failed to convert \"%s\" into a TDB_DATA\n", argv[1]);
+		return -1;
 	}
 
-	if (!strncmp(argv[2], "0x", 2)) {
-		value = hextodata(tmp_ctx, argv[2] + 2);
-		if (value.dsize == 0) {
-			printf("Failed to convert \"%s\" into a TDB_DATA\n", argv[2]);
-			return -1;
-		}
-	} else {
-		value.dptr  = discard_const(argv[2]);
-		value.dsize = strlen(argv[2]);
+	value = strtodata(tmp_ctx, argv[2], strlen(argv[2]));
+	if (value.dptr == NULL) {
+		printf("Failed to convert \"%s\" into a TDB_DATA\n", argv[2]);
+		return -1;
 	}
 
 	ZERO_STRUCT(header);
@@ -4231,15 +4229,10 @@ static int control_pstore(struct ctdb_context *ctdb, int argc, const char **argv
 		return -1;
 	}
 
-	if (!strncmp(argv[1], "0x", 2)) {
-		key = hextodata(tmp_ctx, argv[1] + 2);
-		if (key.dsize == 0) {
-			printf("Failed to convert \"%s\" into a TDB_DATA\n", argv[1]);
-			return -1;
-		}
-	} else {
-		key.dptr  = discard_const(argv[1]);
-		key.dsize = strlen(argv[1]);
+	key = strtodata(tmp_ctx, argv[1], strlen(argv[1]));
+	if (key.dptr == NULL) {
+		printf("Failed to convert \"%s\" into a TDB_DATA\n", argv[1]);
+		return -1;
 	}
 
 	ret = ctdb_transaction_store(h, key, data);
