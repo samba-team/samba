@@ -4299,8 +4299,12 @@ static int control_pdelete(struct ctdb_context *ctdb, int argc, const char **arg
 		return -1;
 	}
 
-	key.dptr = discard_const(argv[1]);
-	key.dsize = strlen(argv[1]);
+	key = strtodata(tmp_ctx, argv[1], strlen(argv[1]));
+	if (key.dptr == NULL) {
+		printf("Failed to convert \"%s\" into a TDB_DATA\n", argv[1]);
+		return -1;
+	}
+
 	ret = ctdb_transaction_store(h, key, tdb_null);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, ("Failed to delete record\n"));
@@ -4341,8 +4345,7 @@ static const char *ptrans_parse_string(TALLOC_CTX *mem_ctx, const char *s,
 		n = strcspn(t, "\"");
 		if (t[n] == '"') {
 			if (n > 0) {
-				data->dsize = n;
-				data->dptr = talloc_memdup(mem_ctx, t, n);
+				*data = strtodata(mem_ctx, t, n);
 				CTDB_NOMEM_ABORT(data->dptr);
 			}
 			ret = t + n + 1;
