@@ -156,6 +156,54 @@ test_fail ()
     return 1
 }
 
+test_header_default ()
+{
+    echo "=================================================="
+    echo "Running \"$*\""
+}
+
+reset_test_header ()
+{
+    # Re-define this function to get different header
+    test_header ()
+    {
+        test_header_default "$@"
+    }
+}
+
+reset_test_header
+
+# Simple test harness for running binary unit tests
+unit_test ()
+{
+    test_header "$@"
+
+    _wrapper="$VALGRIND"
+    if $TEST_COMMAND_TRACE ; then
+	_wrapper="strace"
+    fi
+    _out=$($_wrapper "$@" 2>&1)
+
+    result_check || exit $?
+}
+
+# Simple test harness for running shell script unit tests
+script_test ()
+{
+    test_header "$@"
+
+    _shell=""
+    if ${TEST_COMMAND_TRACE} ; then
+	_shell="sh -x"
+    else
+	_shell="sh"
+    fi
+
+    _out=$($_shell "$@" 2>&1)
+
+    result_check || exit $?
+}
+
 local="${TEST_SUBDIR}/scripts/local.sh"
 if [ -r "$local" ] ; then
     . "$local"
