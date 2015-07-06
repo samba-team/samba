@@ -79,17 +79,6 @@ else
     debug () { : ; }
 fi
 
-eventscripts_tests_cleanup_hooks=""
-
-# This loses quoting!
-eventscripts_test_add_cleanup ()
-{
-    eventscripts_tests_cleanup_hooks="${eventscripts_tests_cleanup_hooks}${eventscripts_tests_cleanup_hooks:+ ; }$*"
-}
-
-trap 'eval $eventscripts_tests_cleanup_hooks' 0
-
-
 ######################################################################
 
 # General setup fakery
@@ -262,18 +251,6 @@ eventscript_call ()
 	. "$CTDB_BASE/functions"
 	"$@"
     )
-}
-
-# Set output for ctdb command.  Option 1st argument is return code.
-ctdb_set_output ()
-{
-    _out="$EVENTSCRIPTS_TESTS_VAR_DIR/ctdb.out"
-    cat >"$_out"
-
-    _rc="$EVENTSCRIPTS_TESTS_VAR_DIR/ctdb.rc"
-    echo "${1:-0}" >"$_rc"
-
-    eventscripts_test_add_cleanup "rm -f $_out $_rc"
 }
 
 # For now this creates the same public addresses each time.  However,
