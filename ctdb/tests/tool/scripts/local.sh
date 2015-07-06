@@ -71,7 +71,5 @@ simple_test ()
     : ${CTDB_DEBUGLEVEL:=3}
     export CTDB_DEBUGLEVEL
 
-    _out=$($VALGRIND $test_prog "$@" 2>&1)
-
-    result_check
+    unit_test $test_prog "$@"
 }

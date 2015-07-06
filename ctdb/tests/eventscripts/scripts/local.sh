@@ -1119,15 +1119,7 @@ ip command is "$(which ip)"
 EOF
     }
 
-    _shell=""
-    if $TEST_COMMAND_TRACE ; then
-	_shell="sh -x"
-    else
-	_shell="sh"
-    fi
-    _out=$($_shell "${script_dir}/${script}" "$event" "$@" 2>&1)
-
-    result_check
+    script_test "${script_dir}/${script}" "$event" "$@"
 
     reset_test_header
     reset_extra_header
@@ -1146,15 +1138,7 @@ simple_test_event ()
 
 simple_test_command ()
 {
-    # If something has previously failed then don't continue.
-    : ${_passed:=true}
-    $_passed || return 1
-
-    echo "=================================================="
-    echo "Running command \"$*\""
-    _out=$("$@" 2>&1)
-
-    result_check
+    unit_test "$@"
 }
 
 # Run an eventscript iteratively.

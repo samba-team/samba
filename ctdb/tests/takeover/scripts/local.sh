@@ -26,7 +26,5 @@ EOF
 
 simple_test ()
 {
-    _out=$($VALGRIND $test_prog "$@" 2>&1)
-
-    result_check
+    unit_test $test_prog "$@"
 }
