@@ -387,6 +387,7 @@ static void ctdb_check_health(struct tevent_context *ev,
 	int ret = 0;
 
 	if (ctdb->recovery_mode != CTDB_RECOVERY_NORMAL ||
+	    ctdb->nodes[ctdb->pnn]->flags & NODE_FLAGS_INACTIVE ||
 	    ctdb->monitor->monitoring_mode == CTDB_MONITORING_DISABLED) {
 		skip_monitoring = true;
 	} else {
