@@ -1114,16 +1114,6 @@ define_test ()
     printf "%-17s %-10s %-4s - %s\n\n" "$script" "$event" "$_num" "$desc"
 }
 
-_extra_header ()
-{
-    cat <<EOF
-CTDB_BASE="$CTDB_BASE"
-CTDB_ETCDIR="$CTDB_ETCDIR"
-ctdb client is "$(which ctdb)"
-ip command is "$(which ip)"
-EOF
-}
-
 # Run an eventscript once.  The test passes if the return code and
 # output match those required.
 
@@ -1133,9 +1123,25 @@ simple_test ()
 {
     [ -n "$event" ] || die 'simple_test: $event not set'
 
-    _extra_header=$(_extra_header)
+    args="$@"
 
-    echo "Running script \"$script $event${1:+ }$*\""
+    test_header ()
+    {
+	echo "Running script \"$script $event${args:+ }$args\""
+    }
+
+    extra_header ()
+    {
+	cat <<EOF
+
+##################################################
+CTDB_BASE="$CTDB_BASE"
+CTDB_ETCDIR="$CTDB_ETCDIR"
+ctdb client is "$(which ctdb)"
+ip command is "$(which ip)"
+EOF
+    }
+
     _shell=""
     if $TEST_COMMAND_TRACE ; then
 	_shell="sh -x"
@@ -1144,7 +1150,10 @@ simple_test ()
     fi
     _out=$($_shell "${script_dir}/${script}" "$event" "$@" 2>&1)
 
-    result_check "$_extra_header"
+    result_check
+
+    reset_test_header
+    reset_extra_header
 }
 
 simple_test_event ()
@@ -1211,6 +1220,18 @@ iterate_test ()
 
     _result=true
 
+    extra_footer ()
+    {
+	cat <<EOF
+--------------------------------------------------
+CTDB_BASE="$CTDB_BASE"
+CTDB_ETCDIR="$CTDB_ETCDIR"
+ctdb client is "$(which ctdb)"
+ip command is "$(which ip)"
+--------------------------------------------------
+EOF
+    }
+
     for iteration in $(seq 1 $_repeats) ; do
 	# This is inefficient because the iteration-specific setup
 	# might completely replace the default one.  However, running
@@ -1221,6 +1242,15 @@ iterate_test ()
 	    eval $2
 	    shift 2
 	fi
+
+	extra_header ()
+	{
+	    cat <<EOF
+
+##################################################
+Iteration $iteration
+EOF
+	}
 
 	_shell=""
 	if $TEST_COMMAND_TRACE ; then
@@ -1240,8 +1270,8 @@ iterate_test ()
 	    _result=false
 	fi
 
-	result_print "$_passed" "$_out" "$_rc" "Iteration $iteration"
+	result_print "$_passed" "$_out" "$_rc"
     done
 
-    result_footer "$_result" "$(_extra_header)"
+    result_footer "$_result"
 }

@@ -40,21 +40,35 @@ ok_null ()
     ok --
 }
 
+reset_extra_header ()
+{
+    # Re-define this function to output extra header information
+    extra_header ()
+    {
+	:
+    }
+}
+
+reset_extra_footer ()
+{
+    # Re-define this function to output extra footer information
+    extra_footer ()
+    {
+	:
+    }
+}
+
+reset_extra_header
+reset_extra_footer
+
 result_print ()
 {
     _passed="$1"
     _out="$2"
     _rc="$3"
-    _extra_header="$4"
 
     if "$TEST_VERBOSE" || ! $_passed ; then
-	if [ -n "$_extra_header" ] ; then
-	    cat <<EOF
-
-##################################################
-$_extra_header
-EOF
-	fi
+	extra_header
 
 cat <<EOF
 --------------------------------------------------
@@ -93,16 +107,9 @@ EOF
 result_footer ()
 {
     _passed="$1"
-    _extra_footer="$2"
 
     if "$TEST_VERBOSE" || ! $_passed ; then
-	if [ -n "$_extra_footer" ] ; then
-	    cat <<EOF
---------------------------------------------------
-$_extra_footer
---------------------------------------------------
-EOF
-	fi
+	extra_footer
     fi
 
     if $_passed ; then
@@ -136,8 +143,6 @@ result_check ()
 {
     _rc=$?
 
-    _extra_header="$1"
-
     _fout=$(echo "$_out" | result_filter)
 
     if [ "$_fout" = "$required_output" -a $_rc = $required_rc ] ; then
@@ -146,7 +151,7 @@ result_check ()
 	_passed=false
     fi
 
-    result_print "$_passed" "$_out" "$_rc" "$_extra_header"
+    result_print "$_passed" "$_out" "$_rc"
     result_footer "$_passed"
 }
 

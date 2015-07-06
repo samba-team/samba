@@ -15,9 +15,18 @@ define_test ()
     printf "%-12s - %s\n" "$_f" "$1"
 }
 
+extra_footer ()
+{
+    cat <<EOF
+--------------------------------------------------
+Algorithm: $CTDB_IP_ALGORITHM
+--------------------------------------------------
+EOF
+}
+
 simple_test ()
 {
     _out=$($VALGRIND $test_prog "$@" 2>&1)
 
-    result_check "Algorithm: $CTDB_IP_ALGORITHM"
+    result_check
 }
