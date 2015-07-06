@@ -22,6 +22,7 @@
 #include "librpc/gen_ndr/ndr_clusapi_c.h"
 #include "torture/rpc/torture_rpc.h"
 #include "param/param.h"
+#include "libcli/registry/util_reg.h"
 
 struct torture_clusapi_context {
 	struct dcerpc_pipe *p;
@@ -2606,6 +2607,73 @@ static bool test_EnumKey(struct torture_context *tctx,
 	return ret;
 }
 
+static bool test_QueryValue_int(struct torture_context *tctx,
+				struct dcerpc_pipe *p,
+				struct policy_handle *hKey,
+				const char *ValueName)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_QueryValue r;
+	uint32_t lpValueType;
+	uint32_t lpcbRequired;
+	WERROR rpc_status;
+
+	r.in.hKey = *hKey;
+	r.in.lpValueName = ValueName;
+	r.in.cbData = 0;
+	r.out.lpValueType = &lpValueType;
+	r.out.lpData = NULL;
+	r.out.lpcbRequired = &lpcbRequired;
+	r.out.rpc_status = &rpc_status;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_QueryValue_r(b, tctx, &r),
+		"QueryValue failed");
+
+	if (W_ERROR_EQUAL(r.out.result, WERR_MORE_DATA)) {
+
+		r.in.cbData = lpcbRequired;
+		r.out.lpData = talloc_zero_array(tctx, uint8_t, r.in.cbData);
+
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_clusapi_QueryValue_r(b, tctx, &r),
+			"QueryValue failed");
+	}
+
+	torture_assert_werr_ok(tctx,
+		r.out.result,
+		"QueryValue failed");
+
+	if (lpValueType == REG_SZ) {
+		const char *s;
+		DATA_BLOB blob = data_blob_const(r.out.lpData, lpcbRequired);
+		pull_reg_sz(tctx, &blob, &s);
+		torture_comment(tctx, "got: %s\n", s);
+	}
+
+	return true;
+}
+
+static bool test_QueryValue(struct torture_context *tctx,
+			    void *data)
+{
+	struct torture_clusapi_context *t =
+		talloc_get_type_abort(data, struct torture_clusapi_context);
+	struct policy_handle hKey;
+	bool ret = true;
+
+	if (!test_GetRootKey_int(tctx, t->p, &hKey)) {
+		return false;
+	}
+
+	ret = test_QueryValue_int(tctx, t->p, &hKey, "ClusterInstanceID");
+
+	test_CloseKey_int(tctx, t->p, &hKey);
+
+	return ret;
+}
+
+
 static bool test_one_key(struct torture_context *tctx,
 			 struct dcerpc_pipe *p,
 			 struct policy_handle *hKey,
@@ -2880,6 +2948,8 @@ void torture_tcase_registry(struct torture_tcase *tcase)
 				      test_CloseKey);
 	torture_tcase_add_simple_test(tcase, "EnumKey",
 				      test_EnumKey);
+	torture_tcase_add_simple_test(tcase, "QueryValue",
+				      test_QueryValue);
 	torture_tcase_add_simple_test(tcase, "all_keys",
 				      test_all_keys);
 }
