@@ -30,7 +30,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "srv_pipe_internal.h"
-#include "../librpc/gen_ndr/dcerpc.h"
+#include "../librpc/gen_ndr/ndr_dcerpc.h"
 #include "../librpc/rpc/rpc_common.h"
 #include "dcesrv_auth_generic.h"
 #include "rpc_server.h"
@@ -645,6 +645,25 @@ static bool api_pipe_bind_req(struct pipes_struct *p,
 	}
 	p->allow_bind = false;
 
+	status = dcerpc_verify_ncacn_packet_header(pkt,
+			DCERPC_PKT_BIND,
+			pkt->u.bind.auth_info.length,
+			0, /* required flags */
+			DCERPC_PFC_FLAG_FIRST |
+			DCERPC_PFC_FLAG_LAST |
+			DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN |
+			0x08 | /* this is not defined, but should be ignored */
+			DCERPC_PFC_FLAG_CONC_MPX |
+			DCERPC_PFC_FLAG_DID_NOT_EXECUTE |
+			DCERPC_PFC_FLAG_MAYBE |
+			DCERPC_PFC_FLAG_OBJECT_UUID);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("api_pipe_bind_req: invalid pdu: %s\n",
+			  nt_errstr(status)));
+		NDR_PRINT_DEBUG(ncacn_packet, pkt);
+		goto err_exit;
+	}
+
 	if (pkt->u.bind.num_contexts == 0) {
 		DEBUG(1, ("api_pipe_bind_req: no rpc contexts around\n"));
 		goto err_exit;
@@ -887,6 +906,25 @@ bool api_pipe_bind_auth3(struct pipes_struct *p, struct ncacn_packet *pkt)
 		goto err;
 	}
 
+	status = dcerpc_verify_ncacn_packet_header(pkt,
+			DCERPC_PKT_AUTH3,
+			pkt->u.auth3.auth_info.length,
+			0, /* required flags */
+			DCERPC_PFC_FLAG_FIRST |
+			DCERPC_PFC_FLAG_LAST |
+			DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN |
+			0x08 | /* this is not defined, but should be ignored */
+			DCERPC_PFC_FLAG_CONC_MPX |
+			DCERPC_PFC_FLAG_DID_NOT_EXECUTE |
+			DCERPC_PFC_FLAG_MAYBE |
+			DCERPC_PFC_FLAG_OBJECT_UUID);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("api_pipe_bind_auth3: invalid pdu: %s\n",
+			  nt_errstr(status)));
+		NDR_PRINT_DEBUG(ncacn_packet, pkt);
+		goto err;
+	}
+
 	/* We can only finish if the pipe is unbound for now */
 	if (p->pipe_bound) {
 		DEBUG(0, (__location__ ": Pipe already bound, "
@@ -990,6 +1028,25 @@ static bool api_pipe_alter_context(struct pipes_struct *p,
 
 	if (!p->allow_alter) {
 		DEBUG(1, ("Pipe not in allow alter state.\n"));
+		goto err_exit;
+	}
+
+	status = dcerpc_verify_ncacn_packet_header(pkt,
+			DCERPC_PKT_ALTER,
+			pkt->u.alter.auth_info.length,
+			0, /* required flags */
+			DCERPC_PFC_FLAG_FIRST |
+			DCERPC_PFC_FLAG_LAST |
+			DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN |
+			0x08 | /* this is not defined, but should be ignored */
+			DCERPC_PFC_FLAG_CONC_MPX |
+			DCERPC_PFC_FLAG_DID_NOT_EXECUTE |
+			DCERPC_PFC_FLAG_MAYBE |
+			DCERPC_PFC_FLAG_OBJECT_UUID);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("api_pipe_alter_context: invalid pdu: %s\n",
+			  nt_errstr(status)));
+		NDR_PRINT_DEBUG(ncacn_packet, pkt);
 		goto err_exit;
 	}
 
@@ -1474,6 +1531,29 @@ static bool process_request_pdu(struct pipes_struct *p, struct ncacn_packet *pkt
 		DEBUG(0,("process_request_pdu: rpc request with no bind.\n"));
 		set_incoming_fault(p);
 		return False;
+	}
+
+	/*
+	 * We don't ignore DCERPC_PFC_FLAG_PENDING_CANCEL.
+	 * TODO: we can reject it with DCERPC_FAULT_NO_CALL_ACTIVE later.
+	 */
+	status = dcerpc_verify_ncacn_packet_header(pkt,
+			DCERPC_PKT_REQUEST,
+			pkt->u.request.stub_and_verifier.length,
+			0, /* required_flags */
+			DCERPC_PFC_FLAG_FIRST |
+			DCERPC_PFC_FLAG_LAST |
+			0x08 | /* this is not defined, but should be ignored */
+			DCERPC_PFC_FLAG_CONC_MPX |
+			DCERPC_PFC_FLAG_DID_NOT_EXECUTE |
+			DCERPC_PFC_FLAG_MAYBE |
+			DCERPC_PFC_FLAG_OBJECT_UUID);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("process_request_pdu: invalid pdu: %s\n",
+			  nt_errstr(status)));
+		NDR_PRINT_DEBUG(ncacn_packet, pkt);
+		set_incoming_fault(p);
+		return false;
 	}
 
 	hdr2 = dcerpc_sec_vt_header2_from_ncacn_packet(pkt);
