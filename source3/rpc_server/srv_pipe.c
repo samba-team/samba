@@ -646,7 +646,12 @@ static bool api_pipe_bind_req(struct pipes_struct *p,
 	p->allow_bind = false;
 
 	if (pkt->u.bind.num_contexts == 0) {
-		DEBUG(0, ("api_pipe_bind_req: no rpc contexts around\n"));
+		DEBUG(1, ("api_pipe_bind_req: no rpc contexts around\n"));
+		goto err_exit;
+	}
+
+	if (pkt->u.bind.ctx_list[0].num_transfer_syntaxes == 0) {
+		DEBUG(1, ("api_pipe_bind_req: no transfer syntaxes around\n"));
 		goto err_exit;
 	}
 
@@ -985,6 +990,16 @@ static bool api_pipe_alter_context(struct pipes_struct *p,
 
 	if (!p->allow_alter) {
 		DEBUG(1, ("Pipe not in allow alter state.\n"));
+		goto err_exit;
+	}
+
+	if (pkt->u.alter.num_contexts == 0) {
+		DEBUG(1, ("api_pipe_alter_context: no rpc contexts around\n"));
+		goto err_exit;
+	}
+
+	if (pkt->u.alter.ctx_list[0].num_transfer_syntaxes == 0) {
+		DEBUG(1, ("api_pipe_alter_context: no transfer syntaxes around\n"));
 		goto err_exit;
 	}
 
