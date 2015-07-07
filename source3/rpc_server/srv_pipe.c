@@ -733,25 +733,12 @@ static bool api_pipe_bind_req(struct pipes_struct *p,
 	 * Check if this is an authenticated bind request.
 	 */
 	if (pkt->auth_length) {
-		/* Quick length check. Won't catch a bad auth footer,
-		 * prevents overrun. */
-
-		if (pkt->frag_length < RPC_HEADER_LEN +
-					DCERPC_AUTH_TRAILER_LENGTH +
-					pkt->auth_length) {
-			DEBUG(0,("api_pipe_bind_req: auth_len (%u) "
-				"too long for fragment %u.\n",
-				(unsigned int)pkt->auth_length,
-				(unsigned int)pkt->frag_length));
-			goto err_exit;
-		}
-
 		/*
 		 * Decode the authentication verifier.
 		 */
-		status = dcerpc_pull_dcerpc_auth(pkt,
-						 &pkt->u.bind.auth_info,
-						 &auth_info, p->endian);
+		status = dcerpc_pull_auth_trailer(pkt, pkt,
+						  &pkt->u.bind.auth_info,
+						  &auth_info, NULL, true);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("Unable to unmarshall dcerpc_auth.\n"));
 			goto err_exit;
@@ -910,23 +897,13 @@ bool api_pipe_bind_auth3(struct pipes_struct *p, struct ncacn_packet *pkt)
 		goto err;
 	}
 
-	/* Ensure there's enough data for an authenticated request. */
-	if (pkt->frag_length < RPC_HEADER_LEN
-				+ DCERPC_AUTH_TRAILER_LENGTH
-				+ pkt->auth_length) {
-			DEBUG(1,("api_pipe_ntlmssp_auth_process: auth_len "
-				"%u is too large.\n",
-                        (unsigned int)pkt->auth_length));
-		goto err;
-	}
-
 	/*
 	 * Decode the authentication verifier response.
 	 */
 
-	status = dcerpc_pull_dcerpc_auth(pkt,
-					 &pkt->u.auth3.auth_info,
-					 &auth_info, p->endian);
+	status = dcerpc_pull_auth_trailer(pkt, pkt,
+					  &pkt->u.auth3.auth_info,
+					  &auth_info, NULL, true);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to unmarshall dcerpc_auth.\n"));
 		goto err;
@@ -1034,31 +1011,18 @@ static bool api_pipe_alter_context(struct pipes_struct *p,
 	 * Check if this is an authenticated alter context request.
 	 */
 	if (pkt->auth_length) {
-		/* Quick length check. Won't catch a bad auth footer,
-		 * prevents overrun. */
-
-		if (pkt->frag_length < RPC_HEADER_LEN +
-					DCERPC_AUTH_TRAILER_LENGTH +
-					pkt->auth_length) {
-			DEBUG(0,("api_pipe_alter_context: auth_len (%u) "
-				"too long for fragment %u.\n",
-				(unsigned int)pkt->auth_length,
-				(unsigned int)pkt->frag_length ));
-			goto err_exit;
-		}
-
-		status = dcerpc_pull_dcerpc_auth(pkt,
-						 &pkt->u.bind.auth_info,
-						 &auth_info, p->endian);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0, ("Unable to unmarshall dcerpc_auth.\n"));
-			goto err_exit;
-		}
-
 		/* We can only finish if the pipe is unbound for now */
 		if (p->pipe_bound) {
 			DEBUG(0, (__location__ ": Pipe already bound, "
 				  "Altering Context not yet supported!\n"));
+			goto err_exit;
+		}
+
+		status = dcerpc_pull_auth_trailer(pkt, pkt,
+						  &pkt->u.bind.auth_info,
+						  &auth_info, NULL, true);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("Unable to unmarshall dcerpc_auth.\n"));
 			goto err_exit;
 		}
 
