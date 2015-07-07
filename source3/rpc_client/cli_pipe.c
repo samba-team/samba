@@ -881,14 +881,6 @@ static void rpc_api_pipe_got_pdu(struct tevent_req *subreq)
 		return;
 	}
 
-	if (state->incoming_frag.length != state->pkt->frag_length) {
-		DEBUG(5, ("Incorrect pdu length %u, expected %u\n",
-			  (unsigned int)state->incoming_frag.length,
-			  (unsigned int)state->pkt->frag_length));
-		tevent_req_nterror(req,  NT_STATUS_INVALID_PARAMETER);
-		return;
-	}
-
 	status = cli_pipe_validate_current_pdu(state,
 						state->cli, state->pkt,
 						&state->incoming_frag,
