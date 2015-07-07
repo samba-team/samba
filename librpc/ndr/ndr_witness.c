@@ -96,8 +96,8 @@ _PUBLIC_ enum ndr_err_code ndr_pull_witness_notifyResponse(struct ndr_pull *ndr,
 						}
 						NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_messages, 4, r->length));
 					}
+					NDR_PULL_SET_MEM_CTX(ndr, _mem_save_messages_0, 0);
 				}
-				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_messages_0, 0);
 				ndr->flags = _flags_save_witness_notifyResponse_message;
 			}
 			NDR_CHECK(ndr_pull_trailer_align(ndr, 4));
