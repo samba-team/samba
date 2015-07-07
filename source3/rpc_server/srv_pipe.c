@@ -976,7 +976,7 @@ static bool api_pipe_alter_context(struct pipes_struct *p,
 	uint16_t assoc_gid;
 	NTSTATUS status;
 	union dcerpc_payload u;
-	struct dcerpc_ack_ctx bind_ack_ctx;
+	struct dcerpc_ack_ctx alter_ack_ctx;
 	DATA_BLOB auth_resp = data_blob_null;
 	DATA_BLOB auth_blob = data_blob_null;
 	struct gensec_security *gensec_security;
@@ -988,8 +988,8 @@ static bool api_pipe_alter_context(struct pipes_struct *p,
 		goto err_exit;
 	}
 
-	if (pkt->u.bind.assoc_group_id != 0) {
-		assoc_gid = pkt->u.bind.assoc_group_id;
+	if (pkt->u.alter.assoc_group_id != 0) {
+		assoc_gid = pkt->u.alter.assoc_group_id;
 	} else {
 		assoc_gid = 0x53f0;
 	}
@@ -999,24 +999,24 @@ static bool api_pipe_alter_context(struct pipes_struct *p,
 	 */
 
 	/* If the requested abstract synt uuid doesn't match our client pipe,
-		reject the bind_ack & set the transfer interface synt to all 0's,
+		reject the alter_ack & set the transfer interface synt to all 0's,
 		ver 0 (observed when NT5 attempts to bind to abstract interfaces
 		unknown to NT4)
 		Needed when adding entries to a DACL from NT5 - SK */
 
 	if (check_bind_req(p,
-			&pkt->u.bind.ctx_list[0].abstract_syntax,
-			&pkt->u.bind.ctx_list[0].transfer_syntaxes[0],
-			pkt->u.bind.ctx_list[0].context_id)) {
+			&pkt->u.alter.ctx_list[0].abstract_syntax,
+			&pkt->u.alter.ctx_list[0].transfer_syntaxes[0],
+			pkt->u.alter.ctx_list[0].context_id)) {
 
-		bind_ack_ctx.result = 0;
-		bind_ack_ctx.reason.value = 0;
-		bind_ack_ctx.syntax = pkt->u.bind.ctx_list[0].transfer_syntaxes[0];
+		alter_ack_ctx.result = 0;
+		alter_ack_ctx.reason.value = 0;
+		alter_ack_ctx.syntax = pkt->u.alter.ctx_list[0].transfer_syntaxes[0];
 	} else {
 		/* Rejection reason: abstract syntax not supported */
-		bind_ack_ctx.result = DCERPC_BIND_PROVIDER_REJECT;
-		bind_ack_ctx.reason.value = DCERPC_BIND_REASON_ASYNTAX;
-		bind_ack_ctx.syntax = ndr_syntax_id_null;
+		alter_ack_ctx.result = DCERPC_BIND_PROVIDER_REJECT;
+		alter_ack_ctx.reason.value = DCERPC_BIND_REASON_ASYNTAX;
+		alter_ack_ctx.syntax = ndr_syntax_id_null;
 	}
 
 	/*
@@ -1031,7 +1031,7 @@ static bool api_pipe_alter_context(struct pipes_struct *p,
 		}
 
 		status = dcerpc_pull_auth_trailer(pkt, pkt,
-						  &pkt->u.bind.auth_info,
+						  &pkt->u.alter.auth_info,
 						  &auth_info, NULL, true);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("Unable to unmarshall dcerpc_auth.\n"));
@@ -1088,7 +1088,7 @@ static bool api_pipe_alter_context(struct pipes_struct *p,
 	u.alter_resp.secondary_address_size = 1;
 
 	u.alter_resp.num_results = 1;
-	u.alter_resp.ctx_list = &bind_ack_ctx;
+	u.alter_resp.ctx_list = &alter_ack_ctx;
 
 	/* NOTE: We leave the auth_info empty so we can calculate the padding
 	 * later and then append the auth_info --simo */
@@ -1108,7 +1108,7 @@ static bool api_pipe_alter_context(struct pipes_struct *p,
 					  &u,
 					  &p->out_data.frag);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Failed to marshall bind_ack packet. (%s)\n",
+		DEBUG(0, ("Failed to marshall alter_resp packet. (%s)\n",
 			  nt_errstr(status)));
 		goto err_exit;
 	}
