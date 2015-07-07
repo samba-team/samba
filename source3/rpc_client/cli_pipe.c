@@ -416,16 +416,88 @@ static NTSTATUS cli_pipe_validate_current_pdu(TALLOC_CTX *mem_ctx,
 
 	/* Ensure we have the correct type. */
 	switch (pkt->ptype) {
-	case DCERPC_PKT_ALTER_RESP:
-	case DCERPC_PKT_BIND_ACK:
+	case DCERPC_PKT_BIND_NAK:
+		DEBUG(1, (__location__ ": Bind NACK received from %s!\n",
+			  rpccli_pipe_txt(talloc_tos(), cli)));
 
-		/* Client code never receives this kind of packets */
+		ret = dcerpc_verify_ncacn_packet_header(pkt,
+						DCERPC_PKT_BIND_NAK,
+						0, /* max_auth_info */
+						DCERPC_PFC_FLAG_FIRST |
+						DCERPC_PFC_FLAG_LAST,
+						0); /* optional flags */
+		if (!NT_STATUS_IS_OK(ret)) {
+			DEBUG(1, (__location__ ": Connection to %s got an unexpected "
+				  "RPC packet type - %u, expected %u: %s\n",
+				  rpccli_pipe_txt(talloc_tos(), cli),
+				  pkt->ptype, expected_pkt_type,
+				  nt_errstr(ret)));
+			NDR_PRINT_DEBUG(ncacn_packet, pkt);
+			return ret;
+		}
+
+		/* Use this for now... */
+		return NT_STATUS_NETWORK_ACCESS_DENIED;
+
+	case DCERPC_PKT_BIND_ACK:
+		ret = dcerpc_verify_ncacn_packet_header(pkt,
+					expected_pkt_type,
+					pkt->u.bind_ack.auth_info.length,
+					DCERPC_PFC_FLAG_FIRST |
+					DCERPC_PFC_FLAG_LAST,
+					DCERPC_PFC_FLAG_CONC_MPX |
+					DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN);
+		if (!NT_STATUS_IS_OK(ret)) {
+			DEBUG(1, (__location__ ": Connection to %s got an unexpected "
+				  "RPC packet type - %u, expected %u: %s\n",
+				  rpccli_pipe_txt(talloc_tos(), cli),
+				  pkt->ptype, expected_pkt_type,
+				  nt_errstr(ret)));
+			NDR_PRINT_DEBUG(ncacn_packet, pkt);
+			return ret;
+		}
+
 		break;
 
+	case DCERPC_PKT_ALTER_RESP:
+		ret = dcerpc_verify_ncacn_packet_header(pkt,
+					expected_pkt_type,
+					pkt->u.alter_resp.auth_info.length,
+					DCERPC_PFC_FLAG_FIRST |
+					DCERPC_PFC_FLAG_LAST,
+					DCERPC_PFC_FLAG_CONC_MPX |
+					DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN);
+		if (!NT_STATUS_IS_OK(ret)) {
+			DEBUG(1, (__location__ ": Connection to %s got an unexpected "
+				  "RPC packet type - %u, expected %u: %s\n",
+				  rpccli_pipe_txt(talloc_tos(), cli),
+				  pkt->ptype, expected_pkt_type,
+				  nt_errstr(ret)));
+			NDR_PRINT_DEBUG(ncacn_packet, pkt);
+			return ret;
+		}
+
+		break;
 
 	case DCERPC_PKT_RESPONSE:
 
 		r = &pkt->u.response;
+
+		ret = dcerpc_verify_ncacn_packet_header(pkt,
+						expected_pkt_type,
+						r->stub_and_verifier.length,
+						0, /* required_flags */
+						DCERPC_PFC_FLAG_FIRST |
+						DCERPC_PFC_FLAG_LAST);
+		if (!NT_STATUS_IS_OK(ret)) {
+			DEBUG(1, (__location__ ": Connection to %s got an unexpected "
+				  "RPC packet type - %u, expected %u: %s\n",
+				  rpccli_pipe_txt(talloc_tos(), cli),
+				  pkt->ptype, expected_pkt_type,
+				  nt_errstr(ret)));
+			NDR_PRINT_DEBUG(ncacn_packet, pkt);
+			return ret;
+		}
 
 		tmp_stub.data = r->stub_and_verifier.data;
 		tmp_stub.length = r->stub_and_verifier.length;
@@ -436,6 +508,12 @@ static NTSTATUS cli_pipe_validate_current_pdu(TALLOC_CTX *mem_ctx,
 					DCERPC_RESPONSE_LENGTH,
 					pdu);
 		if (!NT_STATUS_IS_OK(ret)) {
+			DEBUG(1, (__location__ ": Connection to %s got an unexpected "
+				  "RPC packet type - %u, expected %u: %s\n",
+				  rpccli_pipe_txt(talloc_tos(), cli),
+				  pkt->ptype, expected_pkt_type,
+				  nt_errstr(ret)));
+			NDR_PRINT_DEBUG(ncacn_packet, pkt);
 			return ret;
 		}
 
@@ -465,13 +543,23 @@ static NTSTATUS cli_pipe_validate_current_pdu(TALLOC_CTX *mem_ctx,
 
 		break;
 
-	case DCERPC_PKT_BIND_NAK:
-		DEBUG(1, (__location__ ": Bind NACK received from %s!\n",
-			  rpccli_pipe_txt(talloc_tos(), cli)));
-		/* Use this for now... */
-		return NT_STATUS_NETWORK_ACCESS_DENIED;
-
 	case DCERPC_PKT_FAULT:
+
+		ret = dcerpc_verify_ncacn_packet_header(pkt,
+						DCERPC_PKT_FAULT,
+						0, /* max_auth_info */
+						DCERPC_PFC_FLAG_FIRST |
+						DCERPC_PFC_FLAG_LAST,
+						DCERPC_PFC_FLAG_DID_NOT_EXECUTE);
+		if (!NT_STATUS_IS_OK(ret)) {
+			DEBUG(1, (__location__ ": Connection to %s got an unexpected "
+				  "RPC packet type - %u, expected %u: %s\n",
+				  rpccli_pipe_txt(talloc_tos(), cli),
+				  pkt->ptype, expected_pkt_type,
+				  nt_errstr(ret)));
+			NDR_PRINT_DEBUG(ncacn_packet, pkt);
+			return ret;
+		}
 
 		DEBUG(1, (__location__ ": RPC fault code %s received "
 			  "from %s!\n",
@@ -489,13 +577,6 @@ static NTSTATUS cli_pipe_validate_current_pdu(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_RPC_PROTOCOL_ERROR;
 	}
 
-	if (pkt->ptype != expected_pkt_type) {
-		DEBUG(3, (__location__ ": Connection to %s got an unexpected "
-			  "RPC packet type - %u, not %u\n",
-			  rpccli_pipe_txt(talloc_tos(), cli),
-			  pkt->ptype, expected_pkt_type));
-		return NT_STATUS_RPC_PROTOCOL_ERROR;
-	}
 
 	if (pkt->call_id != call_id) {
 		DEBUG(3, (__location__ ": Connection to %s got an unexpected "
