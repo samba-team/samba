@@ -403,7 +403,7 @@ NTSTATUS dcerpc_add_auth_footer(struct pipe_auth_data *auth,
 					 auth->auth_type,
 					 auth->auth_level,
 					 pad_len,
-					 1 /* context id. */,
+					 auth->auth_context_id,
 					 &auth_blob,
 					 &auth_info);
 	if (!NT_STATUS_IS_OK(status)) {
