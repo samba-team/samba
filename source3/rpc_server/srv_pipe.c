@@ -365,6 +365,30 @@ static bool check_bind_req(struct pipes_struct *p,
 		return false;
 	}
 
+	for (context_fns = p->contexts;
+	     context_fns != NULL;
+	     context_fns = context_fns->next)
+	{
+		if (context_fns->context_id != context_id) {
+			continue;
+		}
+
+		ok = ndr_syntax_id_equal(&context_fns->syntax,
+					 abstract);
+		if (ok) {
+			return true;
+		}
+
+		DEBUG(1,("check_bind_req: changing abstract syntax for "
+			 "%s context_id=%u into %s not supported\n",
+			 ndr_interface_name(&context_fns->syntax.uuid,
+					    context_fns->syntax.if_version),
+			 (unsigned)context_id,
+			 ndr_interface_name(&abstract->uuid,
+					    abstract->if_version)));
+		return false;
+	}
+
 	/* we have to check all now since win2k introduced a new UUID on the lsaprpc pipe */
 	if (!rpc_srv_pipe_exists_by_id(abstract)) {
 		return false;
