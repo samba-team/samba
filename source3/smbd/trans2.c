@@ -3447,6 +3447,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			case SMB_SIGNING_OFF:
 				encrypt_caps = 0;
 				break;
+			case SMB_SIGNING_DESIRED:
 			case SMB_SIGNING_IF_REQUIRED:
 			case SMB_SIGNING_DEFAULT:
 				encrypt_caps = CIFS_UNIX_TRANSPORT_ENCRYPTION_CAP;
