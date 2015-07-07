@@ -1921,6 +1921,14 @@ static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq)
 			return;
 		}
 
+		if (auth.auth_context_id != pauth->auth_context_id) {
+			DEBUG(0, (__location__ " Auth context id %u mismatch expected %u.\n",
+				  (unsigned)auth.auth_context_id,
+				  (unsigned)pauth->auth_context_id));
+			tevent_req_nterror(req, NT_STATUS_RPC_PROTOCOL_ERROR);
+			return;
+		}
+
 		break;
 	}
 
