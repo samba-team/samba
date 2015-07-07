@@ -1807,17 +1807,15 @@ static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq)
 		return;
 
 	default:
-		/* Paranoid lenght checks */
-		if (pkt->frag_length < DCERPC_AUTH_TRAILER_LENGTH
-						+ pkt->auth_length) {
-			tevent_req_nterror(req,
-					NT_STATUS_INFO_LENGTH_MISMATCH);
+		if (pkt->auth_length == 0) {
+			tevent_req_nterror(req, NT_STATUS_RPC_PROTOCOL_ERROR);
 			return;
 		}
+
 		/* get auth credentials */
-		status = dcerpc_pull_dcerpc_auth(talloc_tos(),
-						 &pkt->u.bind_ack.auth_info,
-						 &auth, false);
+		status = dcerpc_pull_auth_trailer(pkt, talloc_tos(),
+						  &pkt->u.bind_ack.auth_info,
+						  &auth, NULL, true);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("Failed to pull dcerpc auth: %s.\n",
 				  nt_errstr(status)));
