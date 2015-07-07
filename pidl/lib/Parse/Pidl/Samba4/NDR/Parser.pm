@@ -1688,7 +1688,7 @@ sub DeclareMemCtxVariables($$)
 		}
 
 		if (defined($mem_flags)) {
-			$self->pidl("TALLOC_CTX *_mem_save_$e->{NAME}_$l->{LEVEL_INDEX};");
+			$self->pidl("TALLOC_CTX *_mem_save_$e->{NAME}_$l->{LEVEL_INDEX} = NULL;");
 		}
 	}
 }
