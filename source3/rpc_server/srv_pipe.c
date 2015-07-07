@@ -860,8 +860,15 @@ bool api_pipe_bind_auth3(struct pipes_struct *p, struct ncacn_packet *pkt)
 
 	DEBUG(5, ("api_pipe_bind_auth3: decode request. %d\n", __LINE__));
 
+	/* We can only finish if the pipe is unbound for now */
+	if (p->pipe_bound) {
+		DEBUG(0, (__location__ ": Pipe already bound, "
+			  "AUTH3 not supported!\n"));
+		goto err;
+	}
+
 	if (pkt->auth_length == 0) {
-		DEBUG(1, ("No auth field sent for bind request!\n"));
+		DEBUG(1, ("No auth field sent for auth3 request!\n"));
 		goto err;
 	}
 
