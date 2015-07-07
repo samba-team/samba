@@ -401,6 +401,19 @@ static NTSTATUS cli_pipe_validate_current_pdu(TALLOC_CTX *mem_ctx,
 	 */
 	*rdata = *pdu;
 
+	if ((pkt->ptype == DCERPC_PKT_BIND_ACK) &&
+	    !(pkt->pfc_flags & DCERPC_PFC_FLAG_LAST)) {
+		/*
+		 * TODO: do we still need this hack which was introduced
+		 * in commit a42afcdcc7ab9aa9ed193ae36d3dbb10843447f0.
+		 *
+		 * I don't even know what AS/U might be...
+		 */
+		DEBUG(5, (__location__ ": bug in server (AS/U?), setting "
+			  "fragment first/last ON.\n"));
+		pkt->pfc_flags |= DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
+	}
+
 	/* Ensure we have the correct type. */
 	switch (pkt->ptype) {
 	case DCERPC_PKT_ALTER_RESP:
@@ -503,17 +516,6 @@ static NTSTATUS cli_pipe_validate_current_pdu(TALLOC_CTX *mem_ctx,
 			  rpccli_pipe_txt(talloc_tos(), cli),
 			  pkt->call_id, call_id));
 		return NT_STATUS_RPC_PROTOCOL_ERROR;
-	}
-
-	/* Do this just before return - we don't want to modify any rpc header
-	   data before now as we may have needed to do cryptographic actions on
-	   it before. */
-
-	if ((pkt->ptype == DCERPC_PKT_BIND_ACK) &&
-	    !(pkt->pfc_flags & DCERPC_PFC_FLAG_LAST)) {
-		DEBUG(5, (__location__ ": bug in server (AS/U?), setting "
-			  "fragment first/last ON.\n"));
-		pkt->pfc_flags |= DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
 	}
 
 	return NT_STATUS_OK;
