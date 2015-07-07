@@ -485,10 +485,12 @@ static void dcerpc_bh_ndr_pull_failed(struct dcerpc_binding_handle *h,
 
 	for (i=0;i<num_examples;i++) {
 		char *name=NULL;
-		asprintf(&name, "%s/rpclog/%s-out.%d",
-			 hs->p->conn->packet_log_dir,
-			 call->name, i);
-		if (name == NULL) {
+		int ret;
+
+		ret = asprintf(&name, "%s/rpclog/%s-out.%d",
+			       hs->p->conn->packet_log_dir,
+			       call->name, i);
+		if (ret == -1) {
 			return;
 		}
 		if (!file_exist(name)) {
