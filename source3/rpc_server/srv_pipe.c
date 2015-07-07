@@ -350,19 +350,29 @@ static bool check_bind_req(struct pipes_struct *p,
 	bool ok;
 	const char *interface_name = NULL;
 
-	DEBUG(3,("check_bind_req for %s\n",
+	DEBUG(3,("check_bind_req for %s context_id=%u\n",
 		 ndr_interface_name(&abstract->uuid,
-				    abstract->if_version)));
+				    abstract->if_version),
+		 (unsigned)context_id));
 
-	/* we have to check all now since win2k introduced a new UUID on the lsaprpc pipe */
-	if (rpc_srv_pipe_exists_by_id(abstract) &&
-	   ndr_syntax_id_equal(transfer, &ndr_transfer_syntax_ndr)) {
-		DEBUG(3, ("check_bind_req: %s -> %s rpc service\n",
-			  rpc_srv_get_pipe_cli_name(abstract),
-			  rpc_srv_get_pipe_srv_name(abstract)));
-	} else {
+	ok = ndr_syntax_id_equal(transfer, &ndr_transfer_syntax_ndr);
+	if (!ok) {
+		DEBUG(1,("check_bind_req unknown transfer syntax for "
+			 "%s context_id=%u\n",
+			 ndr_interface_name(&abstract->uuid,
+				    abstract->if_version),
+			 (unsigned)context_id));
 		return false;
 	}
+
+	/* we have to check all now since win2k introduced a new UUID on the lsaprpc pipe */
+	if (!rpc_srv_pipe_exists_by_id(abstract)) {
+		return false;
+	}
+
+	DEBUG(3, ("check_bind_req: %s -> %s rpc service\n",
+		  rpc_srv_get_pipe_cli_name(abstract),
+		  rpc_srv_get_pipe_srv_name(abstract)));
 
 	ok = init_pipe_handles(p, abstract);
 	if (!ok) {
