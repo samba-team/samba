@@ -1908,6 +1908,21 @@ static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq)
 			tevent_req_nterror(req, status);
 			return;
 		}
+
+		if (auth.auth_type != pauth->auth_type) {
+			DEBUG(0, (__location__ " Auth type %u mismatch expected %u.\n",
+				  auth.auth_type, pauth->auth_type));
+			tevent_req_nterror(req, NT_STATUS_RPC_PROTOCOL_ERROR);
+			return;
+		}
+
+		if (auth.auth_level != pauth->auth_level) {
+			DEBUG(0, (__location__ " Auth level %u mismatch expected %u.\n",
+				  auth.auth_level, pauth->auth_level));
+			tevent_req_nterror(req, NT_STATUS_RPC_PROTOCOL_ERROR);
+			return;
+		}
+
 		break;
 	}
 
