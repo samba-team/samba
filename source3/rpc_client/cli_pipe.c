@@ -1190,7 +1190,7 @@ static NTSTATUS create_rpc_bind_req(TALLOC_CTX *mem_ctx,
 						auth->auth_type,
 						auth->auth_level,
 						0, /* auth_pad_length */
-						1, /* auth_context_id */
+						auth->auth_context_id,
 						&auth_token,
 						&auth_info);
 		if (!NT_STATUS_IS_OK(ret)) {
@@ -1709,7 +1709,7 @@ static NTSTATUS create_rpc_bind_auth3(TALLOC_CTX *mem_ctx,
 					 auth->auth_type,
 					 auth->auth_level,
 					 0, /* auth_pad_length */
-					 1, /* auth_context_id */
+					 auth->auth_context_id,
 					 pauth_blob,
 					 &u.auth3.auth_info);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1753,7 +1753,7 @@ static NTSTATUS create_rpc_alter_context(TALLOC_CTX *mem_ctx,
 					 auth->auth_type,
 					 auth->auth_level,
 					 0, /* auth_pad_length */
-					 1, /* auth_context_id */
+					 auth->auth_context_id,
 					 pauth_blob,
 					 &auth_info);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2370,6 +2370,7 @@ NTSTATUS rpccli_anon_bind_data(TALLOC_CTX *mem_ctx,
 
 	result->auth_type = DCERPC_AUTH_TYPE_NONE;
 	result->auth_level = DCERPC_AUTH_LEVEL_NONE;
+	result->auth_context_id = 0;
 
 	status = auth_generic_client_prepare(result,
 					     &auth_generic_ctx);
@@ -2430,6 +2431,7 @@ static NTSTATUS rpccli_generic_bind_data(TALLOC_CTX *mem_ctx,
 
 	result->auth_type = auth_type;
 	result->auth_level = auth_level;
+	result->auth_context_id = 1;
 
 	status = auth_generic_client_prepare(result,
 					     &auth_generic_ctx);
