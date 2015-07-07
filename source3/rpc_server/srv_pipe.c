@@ -798,6 +798,7 @@ static bool api_pipe_bind_req(struct pipes_struct *p,
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Failed to marshall bind_ack packet. (%s)\n",
 			  nt_errstr(status)));
+		goto err_exit;
 	}
 
 	if (auth_resp.length) {
@@ -1058,6 +1059,7 @@ static bool api_pipe_alter_context(struct pipes_struct *p,
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Failed to marshall bind_ack packet. (%s)\n",
 			  nt_errstr(status)));
+		goto err_exit;
 	}
 
 	if (auth_resp.length) {
