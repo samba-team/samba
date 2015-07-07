@@ -131,6 +131,13 @@ struct pipes_struct {
 	bool pipe_bound;
 
 	/*
+	 * States we can be in.
+	 */
+	bool allow_alter;
+	bool allow_bind;
+	bool allow_auth3;
+
+	/*
 	 * Set the DCERPC_FAULT to return.
 	 */
 	int fault_state;
