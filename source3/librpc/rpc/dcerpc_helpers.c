@@ -515,6 +515,10 @@ NTSTATUS dcerpc_check_auth(struct pipe_auth_data *auth,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
+	if (auth_info.auth_context_id != auth->auth_context_id) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
 	pkt_trailer->length -= auth_length;
 	data = data_blob_const(raw_pkt->data + header_size,
 			       pkt_trailer->length);
