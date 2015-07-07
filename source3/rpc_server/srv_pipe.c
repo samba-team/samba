@@ -282,6 +282,9 @@ static bool setup_bind_nak(struct pipes_struct *p, struct ncacn_packet *pkt)
 	p->auth.auth_level = DCERPC_AUTH_LEVEL_NONE;
 	p->auth.auth_type = DCERPC_AUTH_TYPE_NONE;
 	p->pipe_bound = False;
+	p->allow_bind = false;
+	p->allow_alter = false;
+	p->allow_auth3 = false;
 
 	return True;
 }
@@ -636,11 +639,11 @@ static bool api_pipe_bind_req(struct pipes_struct *p,
 	DATA_BLOB auth_blob = data_blob_null;
 	const struct ndr_interface_table *table;
 
-	/* No rebinds on a bound pipe - use alter context. */
-	if (p->pipe_bound) {
-		DEBUG(2,("Rejecting bind request on bound rpc connection\n"));
+	if (!p->allow_bind) {
+		DEBUG(2,("Pipe not in allow bind state\n"));
 		return setup_bind_nak(p, pkt);
 	}
+	p->allow_bind = false;
 
 	if (pkt->u.bind.num_contexts == 0) {
 		DEBUG(0, ("api_pipe_bind_req: no rpc contexts around\n"));
@@ -722,7 +725,6 @@ static bool api_pipe_bind_req(struct pipes_struct *p,
 		bind_ack_ctx.reason.value = 0;
 		bind_ack_ctx.syntax = pkt->u.bind.ctx_list[0].transfer_syntaxes[0];
 	} else {
-		p->pipe_bound = False;
 		/* Rejection reason: abstract syntax not supported */
 		bind_ack_ctx.result = DCERPC_BIND_PROVIDER_REJECT;
 		bind_ack_ctx.reason.value = DCERPC_BIND_REASON_ASYNTAX;
@@ -751,7 +753,6 @@ static bool api_pipe_bind_req(struct pipes_struct *p,
 	} else {
 		p->auth.auth_type = DCERPC_AUTH_TYPE_NONE;
 		p->auth.auth_level = DCERPC_AUTH_LEVEL_NONE;
-		p->pipe_bound = True;
 	}
 
 	ZERO_STRUCT(u.bind_ack);
@@ -838,6 +839,22 @@ static bool api_pipe_bind_req(struct pipes_struct *p,
 	p->out_data.current_pdu_sent = 0;
 
 	TALLOC_FREE(auth_blob.data);
+
+	if (bind_ack_ctx.result == 0) {
+		p->allow_alter = true;
+		p->allow_auth3 = true;
+		if (p->auth.auth_type == DCERPC_AUTH_TYPE_NONE) {
+			status = pipe_auth_verify_final(p);
+			if (!NT_STATUS_IS_OK(status)) {
+				DEBUG(0, ("pipe_auth_verify_final failed: %s\n",
+					  nt_errstr(status)));
+				goto err_exit;
+			}
+		}
+	} else {
+		goto err_exit;
+	}
+
 	return True;
 
   err_exit:
@@ -859,6 +876,11 @@ bool api_pipe_bind_auth3(struct pipes_struct *p, struct ncacn_packet *pkt)
 	NTSTATUS status;
 
 	DEBUG(5, ("api_pipe_bind_auth3: decode request. %d\n", __LINE__));
+
+	if (!p->allow_auth3) {
+		DEBUG(1, ("Pipe not in allow auth3 state.\n"));
+		goto err;
+	}
 
 	/* We can only finish if the pipe is unbound for now */
 	if (p->pipe_bound) {
@@ -934,6 +956,10 @@ bool api_pipe_bind_auth3(struct pipes_struct *p, struct ncacn_packet *pkt)
 
 err:
 	p->pipe_bound = false;
+	p->allow_bind = false;
+	p->allow_alter = false;
+	p->allow_auth3 = false;
+
 	TALLOC_FREE(p->auth.auth_ctx);
 	return false;
 }
@@ -956,6 +982,11 @@ static bool api_pipe_alter_context(struct pipes_struct *p,
 	struct gensec_security *gensec_security;
 
 	DEBUG(5,("api_pipe_alter_context: make response. %d\n", __LINE__));
+
+	if (!p->allow_alter) {
+		DEBUG(1, ("Pipe not in allow alter state.\n"));
+		goto err_exit;
+	}
 
 	if (pkt->u.bind.assoc_group_id != 0) {
 		assoc_gid = pkt->u.bind.assoc_group_id;
@@ -982,7 +1013,6 @@ static bool api_pipe_alter_context(struct pipes_struct *p,
 		bind_ack_ctx.reason.value = 0;
 		bind_ack_ctx.syntax = pkt->u.bind.ctx_list[0].transfer_syntaxes[0];
 	} else {
-		p->pipe_bound = False;
 		/* Rejection reason: abstract syntax not supported */
 		bind_ack_ctx.result = DCERPC_BIND_PROVIDER_REJECT;
 		bind_ack_ctx.reason.value = DCERPC_BIND_REASON_ASYNTAX;
@@ -1382,6 +1412,10 @@ void set_incoming_fault(struct pipes_struct *p)
 	p->in_data.pdu_needed_len = 0;
 	p->in_data.pdu.length = 0;
 	p->fault_state = DCERPC_FAULT_CANT_PERFORM;
+
+	p->allow_alter = false;
+	p->allow_auth3 = false;
+	p->pipe_bound = false;
 
 	DEBUG(10, ("Setting fault state\n"));
 }
