@@ -60,9 +60,6 @@ _PUBLIC_ enum ndr_err_code ndr_push_witness_notifyResponse(struct ndr_push *ndr,
 
 _PUBLIC_ enum ndr_err_code ndr_pull_witness_notifyResponse(struct ndr_pull *ndr, int ndr_flags, struct witness_notifyResponse *r)
 {
-	uint32_t size_messages_0 = 0;
-	uint32_t cntr_messages_0;
-	TALLOC_CTX *_mem_save_messages_0;
 	{
 		uint32_t _flags_save_STRUCT = ndr->flags;
 		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);
@@ -83,6 +80,10 @@ _PUBLIC_ enum ndr_err_code ndr_pull_witness_notifyResponse(struct ndr_pull *ndr,
 					r->messages = NULL;
 				}
 				if (r->messages) {
+					uint32_t size_messages_0 = 0;
+					uint32_t cntr_messages_0;
+					TALLOC_CTX *_mem_save_messages_0;
+
 					size_messages_0 = r->num;
 					NDR_PULL_ALLOC_N(ndr, r->messages, size_messages_0);
 					_mem_save_messages_0 = NDR_PULL_GET_MEM_CTX(ndr);
