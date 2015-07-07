@@ -500,6 +500,7 @@ static bool pipe_auth_generic_bind(struct pipes_struct *p,
 
 	p->auth.auth_ctx = gensec_security;
 	p->auth.auth_type = auth_info->auth_type;
+	p->auth.auth_level = auth_info->auth_level;
 
 	if (pkt->pfc_flags & DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN) {
 		p->auth.client_hdr_signing = true;
@@ -626,7 +627,6 @@ static bool api_pipe_bind_req(struct pipes_struct *p,
 {
 	struct dcerpc_auth auth_info = {0};
 	uint16_t assoc_gid;
-	unsigned int auth_type = DCERPC_AUTH_TYPE_NONE;
 	NTSTATUS status;
 	struct ndr_syntax_id id;
 	uint8_t pfc_flags = 0;
@@ -744,47 +744,14 @@ static bool api_pipe_bind_req(struct pipes_struct *p,
 			goto err_exit;
 		}
 
-		auth_type = auth_info.auth_type;
-
-		/* Work out if we have to sign or seal etc. */
-		switch (auth_info.auth_level) {
-		case DCERPC_AUTH_LEVEL_INTEGRITY:
-			p->auth.auth_level = DCERPC_AUTH_LEVEL_INTEGRITY;
-			break;
-		case DCERPC_AUTH_LEVEL_PRIVACY:
-			p->auth.auth_level = DCERPC_AUTH_LEVEL_PRIVACY;
-			break;
-		case DCERPC_AUTH_LEVEL_CONNECT:
-			p->auth.auth_level = DCERPC_AUTH_LEVEL_CONNECT;
-			break;
-		default:
-			DEBUG(0, ("Unexpected auth level (%u).\n",
-				(unsigned int)auth_info.auth_level ));
+		if (!pipe_auth_generic_bind(p, pkt,
+					    &auth_info, &auth_resp)) {
 			goto err_exit;
 		}
-
-		switch (auth_type) {
-		case DCERPC_AUTH_TYPE_NONE:
-			break;
-
-		default:
-			if (!pipe_auth_generic_bind(p, pkt,
-						    &auth_info, &auth_resp)) {
-				goto err_exit;
-			}
-			break;
-		}
-	}
-
-	if (auth_type == DCERPC_AUTH_TYPE_NONE) {
-		/* Unauthenticated bind request. */
-		/* We're finished - no more packets. */
+	} else {
 		p->auth.auth_type = DCERPC_AUTH_TYPE_NONE;
-		/* We must set the pipe auth_level here also. */
 		p->auth.auth_level = DCERPC_AUTH_LEVEL_NONE;
 		p->pipe_bound = True;
-		/* The session key was initialized from the SMB
-		 * session in make_internal_rpc_pipe_p */
 	}
 
 	ZERO_STRUCT(u.bind_ack);
@@ -836,8 +803,8 @@ static bool api_pipe_bind_req(struct pipes_struct *p,
 	if (auth_resp.length) {
 
 		status = dcerpc_push_dcerpc_auth(pkt,
-						 auth_type,
-						 auth_info.auth_level,
+						 p->auth.auth_type,
+						 p->auth.auth_level,
 						 0,
 						 1, /* auth_context_id */
 						 &auth_resp,
