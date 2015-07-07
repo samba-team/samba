@@ -2624,7 +2624,7 @@ static ssize_t fruit_pread(vfs_handle_struct *handle,
 		char afpinfo_buf[AFP_INFO_SIZE];
 		size_t to_return;
 
-		if ((offset < 0) || (offset > AFP_INFO_SIZE)) {
+		if ((offset < 0) || (offset >= AFP_INFO_SIZE)) {
 			len = 0;
 			rc = 0;
 			goto exit;
