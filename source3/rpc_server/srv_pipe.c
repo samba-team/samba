@@ -896,6 +896,13 @@ bool api_pipe_bind_auth3(struct pipes_struct *p, struct ncacn_packet *pkt)
 		goto err;
 	}
 
+	if (auth_info.auth_level != p->auth.auth_level) {
+		DEBUG(1, ("Auth level mismatch! Client sent %d, "
+			  "but auth was started as level %d!\n",
+			  auth_info.auth_level, p->auth.auth_level));
+		goto err;
+	}
+
 	gensec_security = p->auth.auth_ctx;
 
 	status = auth_generic_server_step(gensec_security,
@@ -1005,6 +1012,13 @@ static bool api_pipe_alter_context(struct pipes_struct *p,
 			DEBUG(0, ("Auth type mismatch! Client sent %d, "
 				  "but auth was started as type %d!\n",
 				  auth_info.auth_type, p->auth.auth_type));
+			goto err_exit;
+		}
+
+		if (auth_info.auth_level != p->auth.auth_level) {
+			DEBUG(0, ("Auth level mismatch! Client sent %d, "
+				  "but auth was started as level %d!\n",
+				  auth_info.auth_level, p->auth.auth_level));
 			goto err_exit;
 		}
 
