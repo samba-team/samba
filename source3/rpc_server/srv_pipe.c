@@ -539,6 +539,7 @@ static bool pipe_auth_generic_bind(struct pipes_struct *p,
 	p->auth.auth_ctx = gensec_security;
 	p->auth.auth_type = auth_info->auth_type;
 	p->auth.auth_level = auth_info->auth_level;
+	p->auth.auth_context_id = auth_info->auth_context_id;
 
 	if (pkt->pfc_flags & DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN) {
 		p->auth.client_hdr_signing = true;
@@ -812,6 +813,7 @@ static bool api_pipe_bind_req(struct pipes_struct *p,
 	} else {
 		p->auth.auth_type = DCERPC_AUTH_TYPE_NONE;
 		p->auth.auth_level = DCERPC_AUTH_LEVEL_NONE;
+		p->auth.auth_context_id = 0;
 	}
 
 	ZERO_STRUCT(u.bind_ack);
@@ -862,12 +864,11 @@ static bool api_pipe_bind_req(struct pipes_struct *p,
 	}
 
 	if (auth_resp.length) {
-
 		status = dcerpc_push_dcerpc_auth(pkt,
 						 p->auth.auth_type,
 						 p->auth.auth_level,
-						 0,
-						 1, /* auth_context_id */
+						 0, /* pad_len */
+						 p->auth.auth_context_id,
 						 &auth_resp,
 						 &auth_blob);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -1222,10 +1223,10 @@ static bool api_pipe_alter_context(struct pipes_struct *p,
 
 	if (auth_resp.length) {
 		status = dcerpc_push_dcerpc_auth(pkt,
-						 auth_info.auth_type,
-						 auth_info.auth_level,
+						 p->auth.auth_type,
+						 p->auth.auth_level,
 						 0, /* pad_len */
-						 1, /* auth_context_id */
+						 p->auth.auth_context_id,
 						 &auth_resp,
 						 &auth_blob);
 		if (!NT_STATUS_IS_OK(status)) {
