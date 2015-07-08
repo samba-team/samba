@@ -23,8 +23,50 @@ ip_link ()
 	    esac
 	    ;;
 	show) shift ; ip_link_show "$@" ;;
+	add*) shift ; ip_link_add "$@" ;;
 	del*) shift ; ip_link_delete "$@" ;;
 	*) not_implemented "$*" ;;
+    esac
+}
+
+ip_link_add ()
+{
+    _link=""
+    _name=""
+    _type=""
+
+    while [ -n "$1" ] ; do
+	case "$1" in
+	    link)
+		_link="$2"
+		shift 2
+		;;
+	    name)
+		_name="$2"
+		shift 2
+		;;
+	    type)
+		if [ "$2" != "vlan" ] ; then
+		    not_implemented "link type $1"
+		fi
+		_type="$2"
+		shift 2
+		;;
+	    id) shift 2 ;;
+	    *) not_implemented "$1" ;;
+	esac
+    done
+
+    case "$_type" in
+	vlan)
+	    if [ -z "$_name" -o -z "$_link" ] ; then
+		not_implemented "ip link add with null name or link"
+	    fi
+
+	    mkdir -p "${FAKE_IP_STATE}/interfaces-vlan"
+	    echo "$_link" >"${FAKE_IP_STATE}/interfaces-vlan/${_name}"
+	    ip_link_set_down "$_name"
+	    ;;
     esac
 }
 
@@ -32,6 +74,7 @@ ip_link_delete ()
 {
     mkdir -p "${FAKE_IP_STATE}/interfaces-deleted"
     touch "${FAKE_IP_STATE}/interfaces-deleted/$1"
+    rm -f "${FAKE_IP_STATE}/interfaces-vlan/$1"
 }
 
 ip_link_set_up ()
@@ -57,6 +100,11 @@ ip_link_show ()
     if [ -e "${FAKE_IP_STATE}/interfaces-deleted/$dev" ] ; then
 	echo "Device \"${dev}\" does not exist." >&2
 	exit 255
+    fi
+
+    if [ -r "${FAKE_IP_STATE}/interfaces-vlan/${dev}" ] ; then
+	read _link <"${FAKE_IP_STATE}/interfaces-vlan/${dev}"
+	dev="${dev}@${_link}"
     fi
 
     mac=$(echo $dev | md5sum | sed -r -e 's@(..)(..)(..)(..)(..)(..).*@\1:\2:\3:\4:\5:\6@')
