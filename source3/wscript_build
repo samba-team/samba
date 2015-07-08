@@ -510,12 +510,14 @@ bld.SAMBA3_SUBSYSTEM('sysquotas',
                      deps='samba3-util samba-util')
 
 NOTIFY_SOURCES=''
+NOTIFY_DEPS=''
 
 if bld.CONFIG_SET("HAVE_INOTIFY"):
     NOTIFY_SOURCES += ' smbd/notify_inotify.c'
 
 if bld.CONFIG_SET('SAMBA_FAM_LIBS'):
     NOTIFY_SOURCES += ' smbd/notify_fam.c'
+    NOTIFY_DEPS += ' ' + bld.CONFIG_GET('SAMBA_FAM_LIBS')
 
 bld.SAMBA3_LIBRARY('smbd_base',
                    source='''
@@ -637,9 +639,9 @@ bld.SAMBA3_LIBRARY('smbd_base',
                    netapi
                    NDR_IOCTL
                    notifyd
-                   ''' + bld.env['dmapi_lib']
-                   + (bld.CONFIG_GET('SAMBA_FAM_LIBS')
-                         if bld.CONFIG_SET('SAMBA_FAM_LIBS') else ''),
+                   ''' +
+                   bld.env['dmapi_lib'] +
+                   NOTIFY_DEPS,
                    private_library=True)
 
 bld.SAMBA3_SUBSYSTEM('LOCKING',
