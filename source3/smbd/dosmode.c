@@ -192,8 +192,9 @@ mode_t unix_mode(connection_struct *conn, int dosmode,
 		}
 	}
 
-	DEBUG(3,("unix_mode(%s) returning 0%o\n", smb_fname_str_dbg(smb_fname),
-		 (int)result));
+	DBG_INFO("unix_mode(%s) returning 0%o\n",
+		 smb_fname_str_dbg(smb_fname), (int)result);
+
 	return(result);
 }
 
