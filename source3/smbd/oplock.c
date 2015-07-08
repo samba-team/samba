@@ -1211,7 +1211,7 @@ static void do_break_to_none(struct tevent_context *ctx,
 		/* Paranoia .... */
 		if (EXCLUSIVE_OPLOCK_TYPE(e->op_type)) {
 			DEBUG(0,("%s: PANIC. "
-				 "share mode entry %d is an exlusive "
+				 "share mode entry %d is an exclusive "
 				 "oplock !\n", __func__, i ));
 			TALLOC_FREE(lck);
 			abort();
