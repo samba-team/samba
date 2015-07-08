@@ -26,11 +26,10 @@ service_stop ()
 
 service_reconfigure ()
 {
-    # if the ips have been reallocated, we must restart ganesha
-    # across all nodes and ping all statd listeners
-    [ -x $CTDB_BASE/statd-callout ] && {
-	$CTDB_BASE/statd-callout notify &
-    } >/dev/null 2>&1
+    # Restart lock manager, notify clients
+    if [ -x "${CTDB_BASE}/statd-callout" ] ; then
+	"${CTDB_BASE}/statd-callout" notify &
+    fi >/dev/null 2>&1
 }
 
 loadconfig "nfs"
