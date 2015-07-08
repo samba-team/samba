@@ -1140,7 +1140,7 @@ NTSTATUS check_reduced_name(connection_struct *conn, const char *fname)
 	bool allow_symlinks = true;
 	bool allow_widelinks = false;
 
-	DEBUG(3,("check_reduced_name [%s] [%s]\n", fname, conn->connectpath));
+	DBG_DEBUG("check_reduced_name [%s] [%s]\n", fname, conn->connectpath);
 
 	resolved_name = SMB_VFS_REALPATH(conn,fname);
 
