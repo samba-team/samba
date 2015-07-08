@@ -65,6 +65,8 @@ struct rpc_request {
 	DATA_BLOB request_data;
 	bool ignore_timeout;
 	bool wait_for_sync;
+	bool verify_bitmask1;
+	bool verify_pcontext;
 
 	struct {
 		void (*callback)(struct rpc_request *);
@@ -1547,6 +1549,13 @@ static void dcerpc_request_recv_data(struct dcecli_connection *c,
 		return;
 	}
 
+	if (req->verify_bitmask1) {
+		req->p->conn->security_state.verified_bitmask1 = true;
+	}
+	if (req->verify_pcontext) {
+		req->p->verified_pcontext = true;
+	}
+
 	if (!(pkt->drep[0] & DCERPC_DREP_LE)) {
 		req->flags |= DCERPC_PULL_BIGENDIAN;
 	} else {
@@ -1571,6 +1580,8 @@ req_done:
 	}
 }
 
+static NTSTATUS dcerpc_request_prepare_vt(struct rpc_request *req);
+
 /*
   perform the send side of a async dcerpc request
 */
@@ -1581,6 +1592,7 @@ static struct rpc_request *dcerpc_request_send(TALLOC_CTX *mem_ctx,
 					       DATA_BLOB *stub_data)
 {
 	struct rpc_request *req;
+	NTSTATUS status;
 
 	req = talloc_zero(mem_ctx, struct rpc_request);
 	if (req == NULL) {
@@ -1603,6 +1615,12 @@ static struct rpc_request *dcerpc_request_send(TALLOC_CTX *mem_ctx,
 	req->request_data.length = stub_data->length;
 	req->request_data.data = stub_data->data;
 
+	status = dcerpc_request_prepare_vt(req);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(req);
+		return NULL;
+	}
+
 	DLIST_ADD_END(p->conn->request_queue, req, struct rpc_request *);
 	talloc_set_destructor(req, dcerpc_req_dequeue);
 
@@ -1615,6 +1633,124 @@ static struct rpc_request *dcerpc_request_send(TALLOC_CTX *mem_ctx,
 	}
 
 	return req;
+}
+
+static NTSTATUS dcerpc_request_prepare_vt(struct rpc_request *req)
+{
+	struct dcecli_security *sec = &req->p->conn->security_state;
+	struct dcerpc_sec_verification_trailer *t;
+	struct dcerpc_sec_vt *c = NULL;
+	struct ndr_push *ndr = NULL;
+	enum ndr_err_code ndr_err;
+
+	if (sec->auth_info == NULL) {
+		return NT_STATUS_OK;
+	}
+
+	if (sec->auth_info->auth_level < DCERPC_AUTH_LEVEL_INTEGRITY) {
+		return NT_STATUS_OK;
+	}
+
+	t = talloc_zero(req, struct dcerpc_sec_verification_trailer);
+	if (t == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (!sec->verified_bitmask1) {
+		t->commands = talloc_realloc(t, t->commands,
+					     struct dcerpc_sec_vt,
+					     t->count.count + 1);
+		if (t->commands == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		c = &t->commands[t->count.count++];
+		ZERO_STRUCTP(c);
+
+		c->command = DCERPC_SEC_VT_COMMAND_BITMASK1;
+		if (req->p->conn->flags & DCERPC_PROPOSE_HEADER_SIGNING) {
+			c->u.bitmask1 = DCERPC_SEC_VT_CLIENT_SUPPORTS_HEADER_SIGNING;
+		}
+		req->verify_bitmask1 = true;
+	}
+
+	if (!req->p->verified_pcontext) {
+		t->commands = talloc_realloc(t, t->commands,
+					     struct dcerpc_sec_vt,
+					     t->count.count + 1);
+		if (t->commands == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		c = &t->commands[t->count.count++];
+		ZERO_STRUCTP(c);
+
+		c->command = DCERPC_SEC_VT_COMMAND_PCONTEXT;
+		c->u.pcontext.abstract_syntax = req->p->syntax;
+		c->u.pcontext.transfer_syntax = req->p->transfer_syntax;
+
+		req->verify_pcontext = true;
+	}
+
+	if (!(req->p->conn->flags & DCERPC_HEADER_SIGNING)) {
+		t->commands = talloc_realloc(t, t->commands,
+					     struct dcerpc_sec_vt,
+					     t->count.count + 1);
+		if (t->commands == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		c = &t->commands[t->count.count++];
+		ZERO_STRUCTP(c);
+
+		c->command = DCERPC_SEC_VT_COMMAND_HEADER2;
+		c->u.header2.ptype = DCERPC_PKT_REQUEST;
+		if (req->p->conn->flags & DCERPC_PUSH_BIGENDIAN) {
+			c->u.header2.drep[0] = 0;
+		} else {
+			c->u.header2.drep[0] = DCERPC_DREP_LE;
+		}
+		c->u.header2.drep[1] = 0;
+		c->u.header2.drep[2] = 0;
+		c->u.header2.drep[3] = 0;
+		c->u.header2.call_id = req->call_id;
+		c->u.header2.context_id = req->p->context_id;
+		c->u.header2.opnum = req->opnum;
+	}
+
+	if (t->count.count == 0) {
+		TALLOC_FREE(t);
+		return NT_STATUS_OK;
+	}
+
+	c = &t->commands[t->count.count - 1];
+	c->command |= DCERPC_SEC_VT_COMMAND_END;
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_DEBUG(dcerpc_sec_verification_trailer, t);
+	}
+
+	ndr = ndr_push_init_ctx(req);
+	if (ndr == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/*
+	 * for now we just copy and append
+	 */
+
+	ndr_err = ndr_push_bytes(ndr, req->request_data.data,
+				 req->request_data.length);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return ndr_map_error2ntstatus(ndr_err);
+	}
+
+	ndr_err = ndr_push_dcerpc_sec_verification_trailer(ndr,
+						NDR_SCALARS | NDR_BUFFERS,
+						t);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return ndr_map_error2ntstatus(ndr_err);
+	}
+	req->request_data = ndr_push_blob(ndr);
+
+	return NT_STATUS_OK;
 }
 
 /*
