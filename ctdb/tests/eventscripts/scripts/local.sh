@@ -814,6 +814,13 @@ setup_nfs ()
 	export CTDB_MANAGED_SERVICES="foo bar"
 	unset CTDB_MANAGES_NFS
     fi
+
+    # This is really nasty.  However, when we test NFS we don't
+    # actually test statd-callout. If we leave it there then left
+    # over, backgrounded instances of statd-callout will do horrible
+    # things with the "ctdb ip" stub and cause the actual
+    # statd-callout tests that follow to fail.
+    rm "${CTDB_BASE}/statd-callout"
 }
 
 setup_nfs_ganesha ()
