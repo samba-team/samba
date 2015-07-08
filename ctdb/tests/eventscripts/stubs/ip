@@ -66,7 +66,7 @@ ip_link_show ()
 	_state="DOWN"
 	_flags=""
     fi
-    echo "${n}: ${dev}: <BROADCAST,MULTICAST${_flags}> mtu 1500 qdisc pfifo_fast state ${_state} qlen 1000"
+    echo "${n:-42}: ${dev}: <BROADCAST,MULTICAST${_flags}> mtu 1500 qdisc pfifo_fast state ${_state} qlen 1000"
     echo "    link/ether ${mac} brd ff:ff:ff:ff:ff:ff"
 }
 
