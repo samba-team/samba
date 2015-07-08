@@ -12,7 +12,7 @@ rapidly bounce between nodes and acts as a scalability limitation.
 This primarily affects locking.tdb and brlock.tdb, two databases where record access is 
 read-mostly and where writes are semi-rare.
 
-For the common case, if CTDB provided shared non-exlusive Read-Only lock semantincs
+For the common case, if CTDB provided shared non-exclusive Read-Only lock semantics
 this would greatly improve scaling for these workloads.
 
 
