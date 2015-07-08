@@ -51,6 +51,9 @@ struct dcecli_security {
 
 	/* get the session key */
 	NTSTATUS (*session_key)(struct dcecli_connection *, DATA_BLOB *);
+
+	bool verified_bitmask1;
+
 };
 
 /*
@@ -126,6 +129,8 @@ struct dcerpc_pipe {
 	 */
 	bool inhibit_timeout_processing;
 	bool timed_out;
+
+	bool verified_pcontext;
 };
 
 /* default timeout for all rpc requests, in seconds */
