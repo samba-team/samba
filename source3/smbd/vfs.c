@@ -1269,8 +1269,7 @@ NTSTATUS check_reduced_name(connection_struct *conn, const char *fname)
 
   out:
 
-	DEBUG(3,("check_reduced_name: %s reduced to %s\n", fname,
-		 resolved_name));
+	DBG_INFO("%s reduced to %s\n", fname, resolved_name);
 	SAFE_FREE(resolved_name);
 	return NT_STATUS_OK;
 }
