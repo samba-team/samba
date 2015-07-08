@@ -1553,6 +1553,7 @@ int main(int argc, const char **argv)
 	smb_init_locale();
 
 	setup_logging(argv[0], DEBUG_STDOUT);
+	lp_set_cmdline("log level", "0");
 
 	/* Parse command line arguments using popt */
 
