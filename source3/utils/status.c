@@ -374,6 +374,7 @@ int main(int argc, const char *argv[])
 	smb_init_locale();
 
 	setup_logging(argv[0], DEBUG_STDERR);
+	lp_set_cmdline("log level", "0");
 
 	if (getuid() != geteuid()) {
 		d_printf("smbstatus should not be run setuid\n");
