@@ -1283,7 +1283,7 @@ int ctdb_ctrl_dbstatistics(struct ctdb_context *ctdb, uint32_t destnode, uint32_
 	}
 
 	wire = (struct ctdb_db_statistics *)outdata.dptr;
-	*s = *wire;
+	memcpy(s, wire, offsetof(struct ctdb_db_statistics, hot_keys_wire));
 	ptr = &wire->hot_keys_wire[0];
 	for (i=0; i<wire->num_hot_keys; i++) {
 		s->hot_keys[i].key.dptr = talloc_size(mem_ctx, s->hot_keys[i].key.dsize);

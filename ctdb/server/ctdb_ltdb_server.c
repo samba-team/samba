@@ -1627,7 +1627,8 @@ int32_t ctdb_control_get_db_statistics(struct ctdb_context *ctdb,
 		return -1;
 	}
 
-	*stats = ctdb_db->statistics;
+	memcpy(stats, &ctdb_db->statistics,
+	       offsetof(struct ctdb_db_statistics, hot_keys_wire));
 
 	stats->num_hot_keys = MAX_HOT_KEYS;
 
