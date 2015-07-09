@@ -3237,30 +3237,30 @@ static bool check_pw_with_krb5(struct torture_context *tctx,
 	upn_realm_string = talloc_asprintf(ctx, "user@%s",
 					   trusted_realm_name);
 	torture_assert_int_equal(tctx,
-			krb5_make_principal(ctx->smb_krb5_context->krb5_context,
-					    &ctx->upn_realm,
-					    realm, upn_realm_string, NULL),
-			0, "krb5_make_principal failed");
+			smb_krb5_make_principal(ctx->smb_krb5_context->krb5_context,
+						&ctx->upn_realm,
+						realm, upn_realm_string, NULL),
+			0, "smb_krb5_make_principal failed");
 	krb5_principal_set_type(ctx->smb_krb5_context->krb5_context,
 				ctx->upn_realm, KRB5_NT_ENTERPRISE_PRINCIPAL);
 
 	upn_dns_string = talloc_asprintf(ctx, "user@%s",
 					 trusted_dns_name);
 	torture_assert_int_equal(tctx,
-			krb5_make_principal(ctx->smb_krb5_context->krb5_context,
-					    &ctx->upn_dns,
-					    realm, upn_dns_string, NULL),
-			0, "krb5_make_principal failed");
+			smb_krb5_make_principal(ctx->smb_krb5_context->krb5_context,
+						&ctx->upn_dns,
+						realm, upn_dns_string, NULL),
+			0, "smb_krb5_make_principal failed");
 	krb5_principal_set_type(ctx->smb_krb5_context->krb5_context,
 				ctx->upn_dns, KRB5_NT_ENTERPRISE_PRINCIPAL);
 
 	upn_netbios_string = talloc_asprintf(ctx, "user@%s",
 					 trusted_netbios_name);
 	torture_assert_int_equal(tctx,
-			krb5_make_principal(ctx->smb_krb5_context->krb5_context,
-					    &ctx->upn_netbios,
-					    realm, upn_netbios_string, NULL),
-			0, "krb5_make_principal failed");
+			smb_krb5_make_principal(ctx->smb_krb5_context->krb5_context,
+						&ctx->upn_netbios,
+						realm, upn_netbios_string, NULL),
+			0, "smb_krb5_make_principal failed");
 	krb5_principal_set_type(ctx->smb_krb5_context->krb5_context,
 				ctx->upn_netbios, KRB5_NT_ENTERPRISE_PRINCIPAL);
 
@@ -3413,29 +3413,29 @@ static bool check_pw_with_krb5(struct torture_context *tctx,
 	krbtgt_trust_realm_string = talloc_asprintf(ctx, "krbtgt/%s@%s",
 						    trusted_realm_name, realm);
 	torture_assert_int_equal(tctx,
-			krb5_make_principal(ctx->smb_krb5_context->krb5_context,
-					    &ctx->krbtgt_trust_realm,
-					    realm, "krbtgt",
-					    trusted_realm_name, NULL),
-			0, "krb5_make_principal failed");
+			smb_krb5_make_principal(ctx->smb_krb5_context->krb5_context,
+						&ctx->krbtgt_trust_realm,
+						realm, "krbtgt",
+						trusted_realm_name, NULL),
+			0, "smb_krb5_make_principal failed");
 
 	krbtgt_trust_dns_string = talloc_asprintf(ctx, "krbtgt/%s@%s",
 						  trusted_dns_name, realm);
 	torture_assert_int_equal(tctx,
-			krb5_make_principal(ctx->smb_krb5_context->krb5_context,
-					    &ctx->krbtgt_trust_dns,
-					    realm, "krbtgt",
-					    trusted_dns_name, NULL),
-			0, "krb5_make_principal failed");
+			smb_krb5_make_principal(ctx->smb_krb5_context->krb5_context,
+						&ctx->krbtgt_trust_dns,
+						realm, "krbtgt",
+						trusted_dns_name, NULL),
+			0, "smb_krb5_make_principal failed");
 
 	krbtgt_trust_netbios_string = talloc_asprintf(ctx, "krbtgt/%s@%s",
 						      trusted_netbios_name, realm);
 	torture_assert_int_equal(tctx,
-			krb5_make_principal(ctx->smb_krb5_context->krb5_context,
-					    &ctx->krbtgt_trust_netbios,
-					    realm, "krbtgt",
-					    trusted_netbios_name, NULL),
-			0, "krb5_make_principal failed");
+			smb_krb5_make_principal(ctx->smb_krb5_context->krb5_context,
+						&ctx->krbtgt_trust_netbios,
+						realm, "krbtgt",
+						trusted_netbios_name, NULL),
+			0, "smb_krb5_make_principal failed");
 
 	/* Confirm if we can do a TGS for krbtgt/trusted_realm */
 	ZERO_STRUCT(ctx->counts);
@@ -3785,11 +3785,11 @@ static bool check_pw_with_krb5(struct torture_context *tctx,
 	cifs_trust_dns_string = talloc_asprintf(ctx, "cifs/%s@%s",
 						trusted_dns_name, realm);
 	torture_assert_int_equal(tctx,
-			krb5_make_principal(ctx->smb_krb5_context->krb5_context,
-					    &ctx->cifs_trust_dns,
-					    realm, "cifs",
-					    trusted_dns_name, NULL),
-			0, "krb5_make_principal failed");
+			smb_krb5_make_principal(ctx->smb_krb5_context->krb5_context,
+						&ctx->cifs_trust_dns,
+						realm, "cifs",
+						trusted_dns_name, NULL),
+			0, "smb_krb5_make_principal failed");
 
 	/* Confirm if we get krbtgt/trusted_realm back when asking for cifs/trusted_realm */
 	ZERO_STRUCT(ctx->counts);
@@ -3852,11 +3852,11 @@ static bool check_pw_with_krb5(struct torture_context *tctx,
 	cifs_trust_netbios_string = talloc_asprintf(ctx, "cifs/%s@%s",
 						trusted_netbios_name, realm);
 	torture_assert_int_equal(tctx,
-			krb5_make_principal(ctx->smb_krb5_context->krb5_context,
-					    &ctx->cifs_trust_netbios,
-					    realm, "cifs",
-					    trusted_netbios_name, NULL),
-			0, "krb5_make_principal failed");
+			smb_krb5_make_principal(ctx->smb_krb5_context->krb5_context,
+						&ctx->cifs_trust_netbios,
+						realm, "cifs",
+						trusted_netbios_name, NULL),
+			0, "smb_krb5_make_principal failed");
 
 	/* Confirm if we get krbtgt/trusted_realm back when asking for cifs/trusted_realm */
 	ZERO_STRUCT(ctx->counts);
@@ -3920,11 +3920,11 @@ static bool check_pw_with_krb5(struct torture_context *tctx,
 			"E3514235-4B06-11D1-AB04-00C04FC2DCD2/%s/%s@%s",
 			workstation, trusted_dns_name, realm);
 	torture_assert_int_equal(tctx,
-			krb5_make_principal(ctx->smb_krb5_context->krb5_context,
-					    &ctx->drs_trust_dns,
-					    realm, "E3514235-4B06-11D1-AB04-00C04FC2DCD2",
-					    workstation, trusted_dns_name, NULL),
-			0, "krb5_make_principal failed");
+			smb_krb5_make_principal(ctx->smb_krb5_context->krb5_context,
+						&ctx->drs_trust_dns,
+						realm, "E3514235-4B06-11D1-AB04-00C04FC2DCD2",
+						workstation, trusted_dns_name, NULL),
+			0, "smb_krb5_make_principal failed");
 
 	/* Confirm if we get krbtgt/trusted_realm back when asking for a 3 part principal */
 	ZERO_STRUCT(ctx->counts);
@@ -3988,11 +3988,11 @@ static bool check_pw_with_krb5(struct torture_context *tctx,
 			"E3514235-4B06-11D1-AB04-00C04FC2DCD2/%s/%s@%s",
 			workstation, trusted_netbios_name, realm);
 	torture_assert_int_equal(tctx,
-			krb5_make_principal(ctx->smb_krb5_context->krb5_context,
-					    &ctx->drs_trust_netbios,
-					    realm, "E3514235-4B06-11D1-AB04-00C04FC2DCD2",
-					    workstation, trusted_netbios_name, NULL),
-			0, "krb5_make_principal failed");
+			smb_krb5_make_principal(ctx->smb_krb5_context->krb5_context,
+						&ctx->drs_trust_netbios,
+						realm, "E3514235-4B06-11D1-AB04-00C04FC2DCD2",
+						workstation, trusted_netbios_name, NULL),
+			0, "smb_krb5_make_principal failed");
 
 	/* Confirm if we get krbtgt/trusted_realm back when asking for a 3 part principal */
 	ZERO_STRUCT(ctx->counts);
@@ -4055,11 +4055,11 @@ static bool check_pw_with_krb5(struct torture_context *tctx,
 	four_trust_dns_string = talloc_asprintf(ctx, "four/tree/two/%s@%s",
 						trusted_dns_name, realm);
 	torture_assert_int_equal(tctx,
-			krb5_make_principal(ctx->smb_krb5_context->krb5_context,
-					    &ctx->four_trust_dns,
-					    realm, "four", "tree", "two",
-					    trusted_dns_name, NULL),
-			0, "krb5_make_principal failed");
+			smb_krb5_make_principal(ctx->smb_krb5_context->krb5_context,
+						&ctx->four_trust_dns,
+						realm, "four", "tree", "two",
+						trusted_dns_name, NULL),
+			0, "smb_krb5_make_principal failed");
 
 	/* Confirm if we get an error back for a 4 part principal */
 	ZERO_STRUCT(ctx->counts);
