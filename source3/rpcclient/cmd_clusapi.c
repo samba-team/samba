@@ -405,6 +405,46 @@ static WERROR cmd_clusapi_get_resource_state(struct rpc_pipe_client *cli,
 	return WERR_OK;
 }
 
+static WERROR cmd_clusapi_get_cluster_version2(struct rpc_pipe_client *cli,
+					       TALLOC_CTX *mem_ctx,
+					       int argc,
+					       const char **argv)
+{
+	struct dcerpc_binding_handle *b = cli->binding_handle;
+	NTSTATUS status;
+	uint16_t lpwMajorVersion;
+	uint16_t lpwMinorVersion;
+	uint16_t lpwBuildNumber;
+	const char *lpszVendorId;
+	const char *lpszCSDVersion;
+	struct CLUSTER_OPERATIONAL_VERSION_INFO *ppClusterOpVerInfo;
+	WERROR rpc_status;
+	WERROR result;
+
+	status = dcerpc_clusapi_GetClusterVersion2(b, mem_ctx,
+						   &lpwMajorVersion,
+						   &lpwMinorVersion,
+						   &lpwBuildNumber,
+						   &lpszVendorId,
+						   &lpszCSDVersion,
+						   &ppClusterOpVerInfo,
+						   &rpc_status,
+						   &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ntstatus_to_werror(status);
+	}
+
+	if (!W_ERROR_IS_OK(result)) {
+		printf("result: %s\n", win_errstr(result));
+		return result;
+	}
+
+	printf("rpc_status: %s\n", win_errstr(rpc_status));
+
+	return WERR_OK;
+}
+
+
 struct cmd_set clusapi_commands[] = {
 
 	{ "CLUSAPI" },
@@ -417,5 +457,6 @@ struct cmd_set clusapi_commands[] = {
 	{ "clusapi_online_resource", RPC_RTYPE_WERROR, NULL, cmd_clusapi_online_resource, &ndr_table_clusapi, NULL, "bla", "" },
 	{ "clusapi_offline_resource", RPC_RTYPE_WERROR, NULL, cmd_clusapi_offline_resource, &ndr_table_clusapi, NULL, "bla", "" },
 	{ "clusapi_get_resource_state", RPC_RTYPE_WERROR, NULL, cmd_clusapi_get_resource_state, &ndr_table_clusapi, NULL, "bla", "" },
+	{ "clusapi_get_cluster_version2", RPC_RTYPE_WERROR, NULL, cmd_clusapi_get_cluster_version2, &ndr_table_clusapi, NULL, "bla", "" },
 	{ NULL }
 };
