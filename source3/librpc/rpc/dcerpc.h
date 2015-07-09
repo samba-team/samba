@@ -83,8 +83,7 @@ NTSTATUS dcerpc_add_auth_footer(struct pipe_auth_data *auth,
 NTSTATUS dcerpc_check_auth(struct pipe_auth_data *auth,
 			   struct ncacn_packet *pkt,
 			   DATA_BLOB *pkt_trailer,
-			   size_t header_size,
-			   DATA_BLOB *raw_pkt,
-			   size_t *pad_len);
+			   uint8_t header_size,
+			   DATA_BLOB *raw_pkt);
 
 #endif /* __S3_DCERPC_H__ */
