@@ -1304,8 +1304,8 @@ bool sl_unpack(DALLOC_CTX *query, const char *buf, size_t bufsize)
 	}
 	total_octets--;
 	data_octets--;
-	data_bytes = data_octets * 8;
-	total_bytes = total_octets * 8;
+	data_bytes = ((uint64_t)data_octets) * 8;
+	total_bytes = ((uint64_t)total_octets) * 8;
 
 	if (data_bytes >= total_bytes) {
 		DEBUG(1,("%s: data_bytes: %" PRIu64 ", total_bytes: %" PRIu64 "\n",
