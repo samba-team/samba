@@ -40,18 +40,18 @@ struct dc_set {
 
 static void shuffle_dc_set(struct dc_set *list)
 {
-       uint32_t i;
+	uint32_t i;
 
-       for (i = list->count; i > 1; i--) {
-               uint32_t r;
-               const char *tmp;
+	for (i = list->count; i > 1; i--) {
+		uint32_t r;
+		const char *tmp;
 
 		r = generate_random() % i;
 
-               tmp = list->names[i - 1];
-               list->names[i - 1] = list->names[r];
-               list->names[r] = tmp;
-       }
+		tmp = list->names[i - 1];
+		list->names[i - 1] = list->names[r];
+		list->names[r] = tmp;
+	}
 }
 
 /*
