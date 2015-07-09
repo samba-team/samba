@@ -391,9 +391,9 @@ static NTSTATUS cli_pipe_validate_current_pdu(TALLOC_CTX *mem_ctx,
 						DATA_BLOB *rdata,
 						DATA_BLOB *reply_pdu)
 {
-	struct dcerpc_response *r;
+	const struct dcerpc_response *r = NULL;
+	DATA_BLOB tmp_stub = data_blob_null;
 	NTSTATUS ret = NT_STATUS_OK;
-	size_t pad_len = 0;
 
 	/*
 	 * Point the return values at the real data including the RPC
@@ -427,37 +427,24 @@ static NTSTATUS cli_pipe_validate_current_pdu(TALLOC_CTX *mem_ctx,
 
 		r = &pkt->u.response;
 
+		tmp_stub.data = r->stub_and_verifier.data;
+		tmp_stub.length = r->stub_and_verifier.length;
+
 		/* Here's where we deal with incoming sign/seal. */
 		ret = dcerpc_check_auth(cli->auth, pkt,
-					&r->stub_and_verifier,
+					&tmp_stub,
 					DCERPC_RESPONSE_LENGTH,
-					pdu, &pad_len);
+					pdu);
 		if (!NT_STATUS_IS_OK(ret)) {
 			return ret;
 		}
 
-		if (pkt->frag_length < DCERPC_RESPONSE_LENGTH + pad_len) {
-			return NT_STATUS_BUFFER_TOO_SMALL;
-		}
-
 		/* Point the return values at the NDR data. */
-		rdata->data = r->stub_and_verifier.data;
+		*rdata = tmp_stub;
 
-		if (pkt->auth_length) {
-			/* We've already done integer wrap tests in
-			 * dcerpc_check_auth(). */
-			rdata->length = r->stub_and_verifier.length
-					 - pad_len
-					 - DCERPC_AUTH_TRAILER_LENGTH
-					 - pkt->auth_length;
-		} else {
-			rdata->length = r->stub_and_verifier.length;
-		}
-
-		DEBUG(10, ("Got pdu len %lu, data_len %lu, ss_len %u\n",
+		DEBUG(10, ("Got pdu len %lu, data_len %lu\n",
 			   (long unsigned int)pdu->length,
-			   (long unsigned int)rdata->length,
-			   (unsigned int)pad_len));
+			   (long unsigned int)rdata->length));
 
 		/*
 		 * If this is the first reply, and the allocation hint is

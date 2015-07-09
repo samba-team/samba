@@ -1437,7 +1437,6 @@ static NTSTATUS dcesrv_auth_request(struct pipe_auth_data *auth,
 {
 	NTSTATUS status;
 	size_t hdr_size = DCERPC_REQUEST_LENGTH;
-	size_t pad_len;
 
 	DEBUG(10, ("Checking request auth.\n"));
 
@@ -1448,23 +1447,9 @@ static NTSTATUS dcesrv_auth_request(struct pipe_auth_data *auth,
 	/* in case of sealing this function will unseal the data in place */
 	status = dcerpc_check_auth(auth, pkt,
 				   &pkt->u.request.stub_and_verifier,
-				   hdr_size, raw_pkt,
-				   &pad_len);
+				   hdr_size, raw_pkt);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-
-	/* remove padding and auth trailer,
-	 * this way the caller will get just the data */
-	if (pkt->auth_length) {
-		size_t trail_len = pad_len
-					+ DCERPC_AUTH_TRAILER_LENGTH
-					+ pkt->auth_length;
-		if (pkt->u.request.stub_and_verifier.length < trail_len) {
-			return NT_STATUS_INFO_LENGTH_MISMATCH;
-		}
-		pkt->u.request.stub_and_verifier.length -= trail_len;
 	}
 
 	return NT_STATUS_OK;
