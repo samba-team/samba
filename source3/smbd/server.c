@@ -399,8 +399,7 @@ static bool smbd_notifyd_init(struct messaging_context *msg, bool interactive)
 		exit(1);
 	}
 	tevent_req_set_callback(req, notifyd_stopped, msg);
-	tevent_req_poll(req, ev);
-	return true;
+	return tevent_req_poll(req, ev);
 }
 
 /*
