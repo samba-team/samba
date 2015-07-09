@@ -342,6 +342,9 @@ static bool add_filemeta(sl_array_t *reqinfo,
 
 	for (i = 0; i < metacount; i++) {
 		attribute = dalloc_get_object(reqinfo, i);
+		if (attribute == NULL) {
+			return false;
+		}
 		if (strcmp(attribute, "kMDItemDisplayName") == 0
 		    || strcmp(attribute, "kMDItemFSName") == 0) {
 			p = strrchr(path, '/');
