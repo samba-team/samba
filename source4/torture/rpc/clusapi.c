@@ -972,6 +972,48 @@ static bool test_CreateResEnum(struct torture_context *tctx,
 	return ret;
 }
 
+static bool test_GetResourceDependencyExpression_int(struct torture_context *tctx,
+						     struct dcerpc_pipe *p,
+						     struct policy_handle *hResource)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_GetResourceDependencyExpression r;
+	const char *lpszDependencyExpression;
+	WERROR rpc_status;
+
+	r.in.hResource = *hResource;
+	r.out.lpszDependencyExpression = &lpszDependencyExpression;
+	r.out.rpc_status = &rpc_status;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_GetResourceDependencyExpression_r(b, tctx, &r),
+		"GetResourceDependencyExpression failed");
+	torture_assert_werr_ok(tctx,
+		r.out.result,
+		"GetResourceDependencyExpression failed");
+
+	return true;
+}
+
+static bool test_GetResourceDependencyExpression(struct torture_context *tctx,
+						 void *data)
+{
+	struct torture_clusapi_context *t =
+		talloc_get_type_abort(data, struct torture_clusapi_context);
+	struct policy_handle hResource;
+	bool ret = true;
+
+	if (!test_OpenResource_int(tctx, t->p, "Cluster Name", &hResource)) {
+		return false;
+	}
+
+	ret = test_GetResourceDependencyExpression_int(tctx, t->p, &hResource);
+
+	test_CloseResource_int(tctx, t->p, &hResource);
+
+	return ret;
+}
+
 static bool test_one_resource(struct torture_context *tctx,
 			      struct dcerpc_pipe *p,
 			      const char *resource_name)
@@ -999,6 +1041,9 @@ static bool test_one_resource(struct torture_context *tctx,
 	torture_assert(tctx,
 		test_CreateResEnum_int(tctx, p, &hResource),
 		"failed to query resource enum");
+	torture_assert(tctx,
+		test_GetResourceDependencyExpression_int(tctx, p, &hResource),
+		"failed to query resource dependency expression");
 
 	test_CloseResource_int(tctx, p, &hResource);
 
@@ -2957,6 +3002,8 @@ void torture_tcase_resource(struct torture_tcase *tcase)
 	test = torture_tcase_add_simple_test(tcase, "OfflineResource",
 				      test_OfflineResource);
 	test->dangerous = true;
+	torture_tcase_add_simple_test(tcase, "GetResourceDependencyExpression",
+				      test_GetResourceDependencyExpression);
 	torture_tcase_add_simple_test(tcase, "all_resources",
 				      test_all_resources);
 }
