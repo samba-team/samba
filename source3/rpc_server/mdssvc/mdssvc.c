@@ -1656,9 +1656,7 @@ static bool slrpc_fetch_attributes(struct mds_ctx *mds_ctx,
 		goto error;
 	}
 
-	ok = add_filemeta(reqinfo, fm_array,
-			  elem ? elem->path : NULL,
-			  elem ? &sb : NULL);
+	ok = add_filemeta(reqinfo, fm_array, elem->path, &sb);
 	if (!ok) {
 		goto error;
 	}
