@@ -270,12 +270,8 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 	case CTDB_CONTROL_DB_ATTACH_PERSISTENT:
 	  return ctdb_control_db_attach(ctdb, indata, outdata, srvid, true, client_id, c, async_reply);
 
-	case CTDB_CONTROL_SET_CALL: {
-		struct ctdb_control_set_call *sc = 
-			(struct ctdb_control_set_call *)indata.dptr;
-		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_control_set_call));
-		return ctdb_daemon_set_call(ctdb, sc->db_id, sc->fn, sc->id);
-	}
+	case CTDB_CONTROL_SET_CALL:
+		return control_not_implemented("SET_CALL", NULL);
 
 	case CTDB_CONTROL_TRAVERSE_START:
 		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_traverse_start));

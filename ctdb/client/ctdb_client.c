@@ -2161,34 +2161,12 @@ int ctdb_set_call(struct ctdb_db_context *ctdb_db, ctdb_fn_t fn, uint32_t id)
 {
 	struct ctdb_registered_call *call;
 
-#if 0
-	TDB_DATA data;
-	int32_t status;
-	struct ctdb_control_set_call c;
-	int ret;
-
-	/* this is no longer valid with the separate daemon architecture */
-	c.db_id = ctdb_db->db_id;
-	c.fn    = fn;
-	c.id    = id;
-
-	data.dptr = (uint8_t *)&c;
-	data.dsize = sizeof(c);
-
-	ret = ctdb_control(ctdb_db->ctdb, CTDB_CURRENT_NODE, 0, CTDB_CONTROL_SET_CALL, 0,
-			   data, NULL, NULL, &status, NULL, NULL);
-	if (ret != 0 || status != 0) {
-		DEBUG(DEBUG_ERR,("ctdb_set_call failed for call %u\n", id));
-		return -1;
-	}
-#endif
-
-	/* also register locally */
+	/* register locally */
 	call = talloc(ctdb_db, struct ctdb_registered_call);
 	call->fn = fn;
 	call->id = id;
 
-	DLIST_ADD(ctdb_db->calls, call);	
+	DLIST_ADD(ctdb_db->calls, call);
 	return 0;
 }
 

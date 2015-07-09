@@ -608,15 +608,6 @@ struct ctdb_db_context {
 	  }} while (0)
 
 /*
-  structure passed in set_call control
- */
-struct ctdb_control_set_call {
-	uint32_t db_id;
-	ctdb_fn_t fn;
-	uint32_t id;
-};
-
-/*
   struct for kill_tcp control
  */
 struct ctdb_control_killtcp {
