@@ -1605,7 +1605,10 @@ static bool slrpc_fetch_attributes(struct mds_ctx *mds_ctx,
 		goto error;
 	}
 	/* For some reason the list of results always starts with a nil entry */
-	dalloc_add_copy(fm_array, &nil, sl_nil_t);
+	result = dalloc_add_copy(fm_array, &nil, sl_nil_t);
+	if (result == -1) {
+		goto error;
+	}
 
 	reqinfo = dalloc_get(query, "DALLOC_CTX", 0, "sl_array_t", 1);
 	if (reqinfo == NULL) {
