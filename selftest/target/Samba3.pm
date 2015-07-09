@@ -1118,6 +1118,12 @@ sub provision($$$$$$$$)
 	my $manglenames_shrdir="$shrdir/manglenames";
 	push(@dirs,$manglenames_shrdir);
 
+	my $widelinks_shrdir="$shrdir/widelinks";
+	push(@dirs,$widelinks_shrdir);
+
+	my $widelinks_linkdir="$shrdir/widelinks_foo";
+	push(@dirs,$widelinks_linkdir);
+
 	# this gets autocreated by winbindd
 	my $wbsockdir="$prefix_abs/winbindd";
 	my $wbsockprivdir="$lockdir/winbindd_privileged";
@@ -1206,6 +1212,25 @@ sub provision($$$$$$$$)
 	##
         my $manglename_target = "$manglenames_shrdir/foo:bar";
 	mkdir($manglename_target, 0777);
+
+	##
+	## create symlinks for widelinks tests.
+	##
+	my $widelinks_target = "$widelinks_linkdir/target";
+	unless (open(WIDELINKS_TARGET, ">$widelinks_target")) {
+		warn("Unable to open $widelinks_target");
+		return undef;
+	}
+	close(WIDELINKS_TARGET);
+	chmod 0666, $widelinks_target;
+	##
+	## This link should get ACCESS_DENIED
+	##
+	symlink "$widelinks_target", "$widelinks_shrdir/source";
+	##
+	## This link should be allowed
+	##
+	symlink "$widelinks_shrdir", "$widelinks_shrdir/dot";
 
 	my $conffile="$libdir/server.conf";
 
@@ -1510,6 +1535,11 @@ sub provision($$$$$$$$)
 
 [dynamic_share]
 	path = $shrdir/%R
+	guest ok = yes
+
+[widelinks_share]
+	path = $widelinks_shrdir
+	wide links = no
 	guest ok = yes
 
 [fsrvp_share]

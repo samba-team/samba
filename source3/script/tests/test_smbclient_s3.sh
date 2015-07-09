@@ -1003,6 +1003,62 @@ EOF
     fi
 }
 
+# Test wide links are restricted.
+test_widelinks()
+{
+    tmpfile=$PREFIX/smbclient_interactive_prompt_commands
+    cat > $tmpfile <<EOF
+cd dot
+ls
+quit
+EOF
+    cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT "$@" -U$USERNAME%$PASSWORD //$SERVER/widelinks_share -I $SERVER_IP $ADDARGS < $tmpfile 2>&1'
+    eval echo "$cmd"
+    out=`eval $cmd`
+    ret=$?
+    rm -f $tmpfile
+
+    if [ $ret != 0 ] ; then
+	echo "$out"
+	echo "failed accessing widelinks_share with error $ret"
+	false
+	return
+    fi
+
+    echo "$out" | grep 'NT_STATUS'
+    ret=$?
+    if [ $ret == 0 ] ; then
+	echo "$out"
+	echo "failed - NT_STATUS_XXXX listing \\widelinks_share\\dot"
+	false
+    fi
+
+    cat > $tmpfile <<EOF
+allinfo source
+quit
+EOF
+    cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT "$@" -U$USERNAME%$PASSWORD //$SERVER/widelinks_share -I $SERVER_IP $ADDARGS < $tmpfile 2>&1'
+    eval echo "$cmd"
+    out=`eval $cmd`
+    ret=$?
+    rm -f $tmpfile
+
+    if [ $ret != 0 ] ; then
+	echo "$out"
+	echo "failed accessing widelinks_share with error $ret"
+	false
+	return
+    fi
+
+# This should fail with NT_STATUS_ACCESS_DENIED
+    echo "$out" | grep 'NT_STATUS_ACCESS_DENIED'
+    ret=$?
+    if [ $ret != 0 ] ; then
+	echo "$out"
+	echo "failed - should get NT_STATUS_ACCESS_DENIED listing \\widelinks_share\\source"
+	false
+    fi
+}
 
 LOGDIR_PREFIX=test_smbclient_s3
 
@@ -1093,6 +1149,10 @@ testit "server-side file copy" \
 
 testit "creating a :stream at root of share" \
     test_toplevel_stream || \
+    failed=`expr $failed + 1`
+
+testit "Ensure widelinks are restricted" \
+    test_widelinks || \
     failed=`expr $failed + 1`
 
 testit "rm -rf $LOGDIR" \
