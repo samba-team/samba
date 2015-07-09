@@ -103,7 +103,7 @@
 
     nested = dalloc_get(d, "DALLOC_CTX", 2);
 
-  But you can fetch elements from the neseted DALLOC_CTX:
+  But you can fetch elements from the nested DALLOC_CTX:
 
     p = dalloc_get(d, "DALLOC_CTX", 2, "uint64_t", 0);
 
