@@ -799,6 +799,7 @@ NTSTATUS dfs_server_ad_get_referrals(struct loadparm_context *lp_ctx,
 	const char *netbios_name;
 	const char *dns_name;
 	const char **netbios_aliases;
+	char path_separator;
 
 	if (!lpcfg_host_msdfs(lp_ctx)) {
 		return NT_STATUS_FS_DRIVER_REQUIRED;
@@ -826,16 +827,18 @@ NTSTATUS dfs_server_ad_get_referrals(struct loadparm_context *lp_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	while(*server_name && *server_name == '\\') {
+	path_separator = (*server_name == '/') ? '/' : '\\';
+
+	while(*server_name && *server_name == path_separator) {
 		server_name++;
 	}
 
-	dfs_name = strchr(server_name, '\\');
+	dfs_name = strchr(server_name, path_separator);
 	if (dfs_name != NULL) {
 		dfs_name[0] = '\0';
 		dfs_name++;
 
-		link_path = strchr(dfs_name, '\\');
+		link_path = strchr(dfs_name, path_separator);
 		if (link_path != NULL) {
 			link_path[0] = '\0';
 			link_path++;
