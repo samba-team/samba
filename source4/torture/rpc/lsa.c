@@ -3463,8 +3463,8 @@ static bool check_pw_with_krb5(struct torture_context *tctx,
 				      ctx->krbtgt_trust_realm_creds->server,
 				      ctx->krbtgt_trust_realm);
 	torture_assert(tctx, k5ok, assertion_message);
-	type = krb5_principal_get_type(ctx->smb_krb5_context->krb5_context,
-				       ctx->krbtgt_trust_realm_creds->server);
+	type = smb_krb5_principal_get_type(ctx->smb_krb5_context->krb5_context,
+					   ctx->krbtgt_trust_realm_creds->server);
 	torture_assert_int_equal(tctx, type, KRB5_NT_SRV_INST, assertion_message);
 
 	/* Confirm if we have no referral ticket in the cache */
@@ -3525,8 +3525,8 @@ static bool check_pw_with_krb5(struct torture_context *tctx,
 				      ctx->krbtgt_referral_creds.server,
 				      ctx->krbtgt_trust_realm);
 	torture_assert(tctx, k5ok, assertion_message);
-	type = krb5_principal_get_type(ctx->smb_krb5_context->krb5_context,
-				       ctx->krbtgt_referral_creds.server);
+	type = smb_krb5_principal_get_type(ctx->smb_krb5_context->krb5_context,
+					   ctx->krbtgt_referral_creds.server);
 	torture_assert_int_equal(tctx, type, KRB5_NT_SRV_INST, assertion_message);
 	k5ret = decode_Ticket(ctx->krbtgt_referral_creds.ticket.data,
 			      ctx->krbtgt_referral_creds.ticket.length,
@@ -3615,8 +3615,8 @@ static bool check_pw_with_krb5(struct torture_context *tctx,
 				      ctx->krbtgt_trust_dns_creds->server,
 				      ctx->krbtgt_trust_realm);
 	torture_assert(tctx, k5ok, assertion_message);
-	type = krb5_principal_get_type(ctx->smb_krb5_context->krb5_context,
-				       ctx->krbtgt_trust_dns_creds->server);
+	type = smb_krb5_principal_get_type(ctx->smb_krb5_context->krb5_context,
+					   ctx->krbtgt_trust_dns_creds->server);
 	torture_assert_int_equal(tctx, type, KRB5_NT_SRV_INST, assertion_message);
 
 	/* Confirm if we have the referral ticket in the cache */
@@ -3639,8 +3639,8 @@ static bool check_pw_with_krb5(struct torture_context *tctx,
 				      ctx->krbtgt_referral_creds.server,
 				      ctx->krbtgt_trust_realm);
 	torture_assert(tctx, k5ok, assertion_message);
-	type = krb5_principal_get_type(ctx->smb_krb5_context->krb5_context,
-				       ctx->krbtgt_referral_creds.server);
+	type = smb_krb5_principal_get_type(ctx->smb_krb5_context->krb5_context,
+					   ctx->krbtgt_referral_creds.server);
 	torture_assert_int_equal(tctx, type, KRB5_NT_SRV_INST, assertion_message);
 
 	/* Delete the referral ticket from the cache */
@@ -3698,8 +3698,8 @@ static bool check_pw_with_krb5(struct torture_context *tctx,
 				      ctx->krbtgt_referral_creds.server,
 				      ctx->krbtgt_trust_realm);
 	torture_assert(tctx, k5ok, assertion_message);
-	type = krb5_principal_get_type(ctx->smb_krb5_context->krb5_context,
-				       ctx->krbtgt_referral_creds.server);
+	type = smb_krb5_principal_get_type(ctx->smb_krb5_context->krb5_context,
+					   ctx->krbtgt_referral_creds.server);
 	torture_assert_int_equal(tctx, type, KRB5_NT_SRV_INST, assertion_message);
 
 	/* Delete the referral ticket from the cache */
@@ -3741,8 +3741,8 @@ static bool check_pw_with_krb5(struct torture_context *tctx,
 				      ctx->krbtgt_trust_netbios_creds->server,
 				      ctx->krbtgt_trust_realm);
 	torture_assert(tctx, k5ok, assertion_message);
-	type = krb5_principal_get_type(ctx->smb_krb5_context->krb5_context,
-				       ctx->krbtgt_trust_netbios_creds->server);
+	type = smb_krb5_principal_get_type(ctx->smb_krb5_context->krb5_context,
+					   ctx->krbtgt_trust_netbios_creds->server);
 	torture_assert_int_equal(tctx, type, KRB5_NT_SRV_INST, assertion_message);
 
 	/* Confirm if we have the referral ticket in the cache */
@@ -3765,8 +3765,8 @@ static bool check_pw_with_krb5(struct torture_context *tctx,
 				      ctx->krbtgt_referral_creds.server,
 				      ctx->krbtgt_trust_realm);
 	torture_assert(tctx, k5ok, assertion_message);
-	type = krb5_principal_get_type(ctx->smb_krb5_context->krb5_context,
-				       ctx->krbtgt_referral_creds.server);
+	type = smb_krb5_principal_get_type(ctx->smb_krb5_context->krb5_context,
+					   ctx->krbtgt_referral_creds.server);
 	torture_assert_int_equal(tctx, type, KRB5_NT_SRV_INST, assertion_message);
 
 	/* Delete the referral ticket from the cache */
@@ -3832,8 +3832,8 @@ static bool check_pw_with_krb5(struct torture_context *tctx,
 				      ctx->krbtgt_referral_creds.server,
 				      ctx->krbtgt_trust_realm);
 	torture_assert(tctx, k5ok, assertion_message);
-	type = krb5_principal_get_type(ctx->smb_krb5_context->krb5_context,
-				       ctx->krbtgt_referral_creds.server);
+	type = smb_krb5_principal_get_type(ctx->smb_krb5_context->krb5_context,
+					   ctx->krbtgt_referral_creds.server);
 	torture_assert_int_equal(tctx, type, KRB5_NT_SRV_INST, assertion_message);
 
 	/* Delete the referral ticket from the cache */
@@ -3899,8 +3899,8 @@ static bool check_pw_with_krb5(struct torture_context *tctx,
 				      ctx->krbtgt_referral_creds.server,
 				      ctx->krbtgt_trust_realm);
 	torture_assert(tctx, k5ok, assertion_message);
-	type = krb5_principal_get_type(ctx->smb_krb5_context->krb5_context,
-				       ctx->krbtgt_referral_creds.server);
+	type = smb_krb5_principal_get_type(ctx->smb_krb5_context->krb5_context,
+					   ctx->krbtgt_referral_creds.server);
 	torture_assert_int_equal(tctx, type, KRB5_NT_SRV_INST, assertion_message);
 
 	/* Delete the referral ticket from the cache */
@@ -3967,8 +3967,8 @@ static bool check_pw_with_krb5(struct torture_context *tctx,
 				      ctx->krbtgt_referral_creds.server,
 				      ctx->krbtgt_trust_realm);
 	torture_assert(tctx, k5ok, assertion_message);
-	type = krb5_principal_get_type(ctx->smb_krb5_context->krb5_context,
-				       ctx->krbtgt_referral_creds.server);
+	type = smb_krb5_principal_get_type(ctx->smb_krb5_context->krb5_context,
+					   ctx->krbtgt_referral_creds.server);
 	torture_assert_int_equal(tctx, type, KRB5_NT_SRV_INST, assertion_message);
 
 	/* Delete the referral ticket from the cache */
@@ -4035,8 +4035,8 @@ static bool check_pw_with_krb5(struct torture_context *tctx,
 				      ctx->krbtgt_referral_creds.server,
 				      ctx->krbtgt_trust_realm);
 	torture_assert(tctx, k5ok, assertion_message);
-	type = krb5_principal_get_type(ctx->smb_krb5_context->krb5_context,
-				       ctx->krbtgt_referral_creds.server);
+	type = smb_krb5_principal_get_type(ctx->smb_krb5_context->krb5_context,
+					   ctx->krbtgt_referral_creds.server);
 	torture_assert_int_equal(tctx, type, KRB5_NT_SRV_INST, assertion_message);
 
 	/* Delete the referral ticket from the cache */
