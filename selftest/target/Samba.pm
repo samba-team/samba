@@ -89,7 +89,7 @@ sub mk_krb5_conf($$)
 
 [libdefaults]
  default_realm = $ctx->{realm}
- dns_lookup_realm = true
+ dns_lookup_realm = false
  dns_lookup_kdc = true
  ticket_lifetime = 24h
  forwardable = yes
