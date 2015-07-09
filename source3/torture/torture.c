@@ -3264,8 +3264,7 @@ static bool run_trans2test(int dummy)
 		printf("ERROR: qfilename failed (%s)\n", nt_errstr(status));
 		correct = False;
 	}
-
-	if (strcmp(pname, fname)) {
+	else if (strcmp(pname, fname)) {
 		printf("qfilename gave different name? [%s] [%s]\n",
 		       fname, pname);
 		correct = False;
