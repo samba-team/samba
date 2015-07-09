@@ -3242,8 +3242,8 @@ static bool check_pw_with_krb5(struct torture_context *tctx,
 						&ctx->upn_realm,
 						realm, upn_realm_string, NULL),
 			0, "smb_krb5_make_principal failed");
-	krb5_principal_set_type(ctx->smb_krb5_context->krb5_context,
-				ctx->upn_realm, KRB5_NT_ENTERPRISE_PRINCIPAL);
+	smb_krb5_principal_set_type(ctx->smb_krb5_context->krb5_context,
+				    ctx->upn_realm, KRB5_NT_ENTERPRISE_PRINCIPAL);
 
 	upn_dns_string = talloc_asprintf(ctx, "user@%s",
 					 trusted_dns_name);
@@ -3252,8 +3252,8 @@ static bool check_pw_with_krb5(struct torture_context *tctx,
 						&ctx->upn_dns,
 						realm, upn_dns_string, NULL),
 			0, "smb_krb5_make_principal failed");
-	krb5_principal_set_type(ctx->smb_krb5_context->krb5_context,
-				ctx->upn_dns, KRB5_NT_ENTERPRISE_PRINCIPAL);
+	smb_krb5_principal_set_type(ctx->smb_krb5_context->krb5_context,
+				    ctx->upn_dns, KRB5_NT_ENTERPRISE_PRINCIPAL);
 
 	upn_netbios_string = talloc_asprintf(ctx, "user@%s",
 					 trusted_netbios_name);
@@ -3262,8 +3262,8 @@ static bool check_pw_with_krb5(struct torture_context *tctx,
 						&ctx->upn_netbios,
 						realm, upn_netbios_string, NULL),
 			0, "smb_krb5_make_principal failed");
-	krb5_principal_set_type(ctx->smb_krb5_context->krb5_context,
-				ctx->upn_netbios, KRB5_NT_ENTERPRISE_PRINCIPAL);
+	smb_krb5_principal_set_type(ctx->smb_krb5_context->krb5_context,
+				    ctx->upn_netbios, KRB5_NT_ENTERPRISE_PRINCIPAL);
 
 	k5ret = principal_from_credentials(ctx, credentials, ctx->smb_krb5_context,
 					   &principal, &obtained,  &error_string);
