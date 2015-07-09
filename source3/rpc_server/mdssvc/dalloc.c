@@ -171,12 +171,15 @@ void *dalloc_value_for_key(const DALLOC_CTX *d, ...)
 		array_len = talloc_array_length(d->dd_talloc_array);
 		elem = va_arg(args, int);
 		if (elem >= array_len) {
+			va_end(args);
 			result = -1;
 			goto done;
 		}
 		d = d->dd_talloc_array[elem];
 		type = va_arg(args, const char *);
 	}
+
+	va_end(args);
 
 	array_len = talloc_array_length(d->dd_talloc_array);
 
@@ -190,7 +193,6 @@ void *dalloc_value_for_key(const DALLOC_CTX *d, ...)
 			break;
 		}
 	}
-	va_end(args);
 
 done:
 	if (result != 0) {
