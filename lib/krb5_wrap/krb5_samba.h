@@ -109,6 +109,12 @@ typedef struct {
 #define KRB5_KEY_DATA_CAST	krb5_octet
 #endif /* HAVE_KRB5_KEYBLOCK_KEYVALUE */
 
+#ifdef HAVE_E_DATA_POINTER_IN_KRB5_ERROR /* Heimdal */
+#define KRB5_ERROR_CODE(k)	((k)->error_code)
+#else /* MIT */
+#define KRB5_ERROR_CODE(k)	((k)->error)
+#endif /* HAVE_E_DATA_POINTER_IN_KRB5_ERROR */
+
 krb5_error_code smb_krb5_parse_name(krb5_context context,
 				const char *name, /* in unix charset */
                                 krb5_principal *principal);
