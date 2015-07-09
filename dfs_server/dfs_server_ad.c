@@ -833,12 +833,12 @@ NTSTATUS dfs_server_ad_get_referrals(struct loadparm_context *lp_ctx,
 		server_name++;
 	}
 
-	dfs_name = strchr(server_name, path_separator);
+	dfs_name = strchr_m(server_name, path_separator);
 	if (dfs_name != NULL) {
 		dfs_name[0] = '\0';
 		dfs_name++;
 
-		link_path = strchr(dfs_name, path_separator);
+		link_path = strchr_m(dfs_name, path_separator);
 		if (link_path != NULL) {
 			link_path[0] = '\0';
 			link_path++;
