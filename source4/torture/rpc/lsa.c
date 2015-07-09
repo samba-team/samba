@@ -2926,7 +2926,7 @@ struct check_pw_with_krb5_ctx {
 		unsigned error_io;
 		unsigned ok;
 	} counts;
-	KRB_ERROR error;
+	krb5_error error;
 	struct smb_krb5_context *smb_krb5_context;
 	krb5_get_init_creds_opt *krb_options;
 	krb5_creds my_creds;
@@ -3288,7 +3288,7 @@ static bool check_pw_with_krb5(struct torture_context *tctx,
 	torture_assert_int_equal(tctx, k5ret, KRB5_KDC_UNREACH, assertion_message);
 	torture_assert_int_equal(tctx, ctx->counts.io, 1, assertion_message);
 	torture_assert_int_equal(tctx, ctx->counts.error_io, 1, assertion_message);
-	torture_assert_int_equal(tctx, ctx->error.error_code, 68, assertion_message);
+	torture_assert_int_equal(tctx, KRB5_ERROR_CODE(&ctx->error), 68, assertion_message);
 	torture_assert(tctx, ctx->error.crealm != NULL, assertion_message);
 	torture_assert_str_equal(tctx, *ctx->error.crealm, trusted_realm_name, assertion_message);
 	torture_assert(tctx, ctx->error.cname == NULL, assertion_message);
@@ -3313,7 +3313,7 @@ static bool check_pw_with_krb5(struct torture_context *tctx,
 	torture_assert_int_equal(tctx, k5ret, KRB5_KDC_UNREACH, assertion_message);
 	torture_assert_int_equal(tctx, ctx->counts.io, 1, assertion_message);
 	torture_assert_int_equal(tctx, ctx->counts.error_io, 1, assertion_message);
-	torture_assert_int_equal(tctx, ctx->error.error_code, 68, assertion_message);
+	torture_assert_int_equal(tctx, KRB5_ERROR_CODE(&ctx->error), 68, assertion_message);
 	torture_assert(tctx, ctx->error.crealm != NULL, assertion_message);
 	torture_assert_str_equal(tctx, *ctx->error.crealm, trusted_realm_name, assertion_message);
 	torture_assert(tctx, ctx->error.cname == NULL, assertion_message);
@@ -3338,7 +3338,7 @@ static bool check_pw_with_krb5(struct torture_context *tctx,
 	torture_assert_int_equal(tctx, k5ret, KRB5_KDC_UNREACH, assertion_message);
 	torture_assert_int_equal(tctx, ctx->counts.io, 1, assertion_message);
 	torture_assert_int_equal(tctx, ctx->counts.error_io, 1, assertion_message);
-	torture_assert_int_equal(tctx, ctx->error.error_code, 68, assertion_message);
+	torture_assert_int_equal(tctx, KRB5_ERROR_CODE(&ctx->error), 68, assertion_message);
 	torture_assert(tctx, ctx->error.crealm != NULL, assertion_message);
 	torture_assert_str_equal(tctx, *ctx->error.crealm, trusted_realm_name, assertion_message);
 	torture_assert(tctx, ctx->error.cname == NULL, assertion_message);
@@ -4082,7 +4082,7 @@ static bool check_pw_with_krb5(struct torture_context *tctx,
 	torture_assert_int_equal(tctx, k5ret, KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN, assertion_message);
 	torture_assert_int_equal(tctx, ctx->counts.io, 1, assertion_message);
 	torture_assert_int_equal(tctx, ctx->counts.error_io, 1, assertion_message);
-	torture_assert_int_equal(tctx, ctx->error.error_code, 7, assertion_message);
+	torture_assert_int_equal(tctx, KRB5_ERROR_CODE(&ctx->error), 7, assertion_message);
 
 	/* Confirm if we have no referral ticket in the cache */
 	krb5_free_cred_contents(ctx->smb_krb5_context->krb5_context,
