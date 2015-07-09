@@ -431,13 +431,12 @@ NTSTATUS create_conn_struct_cwd(TALLOC_CTX *ctx,
 
 static void shuffle_strlist(char **list, int count)
 {
-	int i, r;
+	int i;
+	uint32_t r;
 	char *tmp;
 
-	srandom(time(NULL));
-
 	for (i = count; i > 1; i--) {
-		r = random() % i;
+		r = generate_random() % i;
 
 		tmp = list[i-1];
 		list[i-1] = list[r];
