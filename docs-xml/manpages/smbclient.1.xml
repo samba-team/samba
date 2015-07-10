@@ -1011,6 +1011,14 @@
 		</varlistentry>
 
 		<varlistentry>
+		<term>scopy &lt;source filename&gt; &lt;destination filename&gt;</term>
+		<listitem><para>Attempt to copy a file on the server using the
+		most efficient server-side copy calls. Falls back to using
+		read then write if server doesn't support server-side copy.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
 		<term>setmode &lt;filename&gt; &lt;perm=[+|\-]rsha&gt;</term>
 		<listitem><para>A version of the DOS attrib command to set
 		file permissions. For example: </para>
