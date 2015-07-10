@@ -60,6 +60,30 @@ bool dcesrv_auth_bind(struct dcesrv_call_state *call)
 		return false;
 	}
 
+	switch (call->in_auth_info.auth_level) {
+	case DCERPC_AUTH_LEVEL_CONNECT:
+	case DCERPC_AUTH_LEVEL_CALL:
+	case DCERPC_AUTH_LEVEL_PACKET:
+	case DCERPC_AUTH_LEVEL_INTEGRITY:
+	case DCERPC_AUTH_LEVEL_PRIVACY:
+		/*
+		 * We evaluate auth_type only if auth_level was valid
+		 */
+		break;
+	default:
+		/*
+		 * Setting DCERPC_AUTH_LEVEL_NONE,
+		 * gives the caller a chance to decide what
+		 * reject_reason to use
+		 *
+		 * Note: DCERPC_AUTH_LEVEL_NONE == 1
+		 */
+		auth->auth_type = DCERPC_AUTH_TYPE_NONE;
+		auth->auth_level = DCERPC_AUTH_LEVEL_NONE;
+		auth->auth_context_id = 0;
+		return false;
+	}
+
 	auth->auth_type = call->in_auth_info.auth_type;
 	auth->auth_level = call->in_auth_info.auth_level;
 	auth->auth_context_id = call->in_auth_info.auth_context_id;

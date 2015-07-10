@@ -805,9 +805,20 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 
 	/* handle any authentication that is being requested */
 	if (!dcesrv_auth_bind(call)) {
-		talloc_free(call->context);
-		call->context = NULL;
-		return dcesrv_bind_nak(call, DCERPC_BIND_REASON_INVALID_AUTH_TYPE);
+		struct dcesrv_auth *auth = &call->conn->auth_state;
+
+		TALLOC_FREE(call->context);
+
+		if (auth->auth_level != DCERPC_AUTH_LEVEL_NONE) {
+			/*
+			 * We only give INVALID_AUTH_TYPE if the auth_level was
+			 * valid.
+			 */
+			return dcesrv_bind_nak(call,
+					DCERPC_BIND_NAK_REASON_INVALID_AUTH_TYPE);
+		}
+		return dcesrv_bind_nak(call,
+					DCERPC_BIND_NAK_REASON_NOT_SPECIFIED);
 	}
 
 	/* setup a bind_ack */
