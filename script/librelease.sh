@@ -70,10 +70,10 @@ release_lib() {
     }
 
     echo "Transferring for FTP"
-    rsync -Pav $tarname.asc $tgzname master.samba.org:~ftp/pub/$ftpdir/ || {
+    rsync -Pav $tarname.asc $tgzname download-master.samba.org:~ftp/pub/$ftpdir/ || {
 	exit 1
     }
-    rsync master.samba.org:~ftp/pub/$ftpdir/$tarname.*
+    rsync download-master.samba.org:~ftp/pub/$ftpdir/$tarname.*
 
     popd
 }
