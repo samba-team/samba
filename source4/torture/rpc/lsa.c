@@ -2903,6 +2903,8 @@ static bool check_pw_with_ServerAuthenticate3(struct dcerpc_pipe *p,
 	return true;
 }
 
+#ifdef SAMBA4_USES_HEIMDAL
+
 /*
  * This function is set in torture_krb5_init_context as krb5
  * send_and_recv function.  This allows us to override what server the
@@ -4103,6 +4105,7 @@ static bool check_pw_with_krb5(struct torture_context *tctx,
 	TALLOC_FREE(ctx);
 	return true;
 }
+#endif
 
 static bool check_dom_trust_pw(struct dcerpc_pipe *p,
 			       struct torture_context *tctx,
@@ -4234,9 +4237,13 @@ static bool check_dom_trust_pw(struct dcerpc_pipe *p,
 				 "check_pw_with_ServerAuthenticate3");
 
 	if (trusted->trust_type != LSA_TRUST_TYPE_DOWNLEVEL) {
+#ifdef SAMBA4_USES_HEIMDAL
 		ok = check_pw_with_krb5(tctx, incoming_creds, trusted);
 		torture_assert_int_equal(tctx, ok, expected_result,
 					 "check_pw_with_krb5");
+#else
+		torture_comment(tctx, "skipping check_pw_with_krb5 for MIT Kerberos build");
+#endif
 	}
 
 	if (expected_result != true || next_password == NULL) {
@@ -4319,8 +4326,12 @@ static bool check_dom_trust_pw(struct dcerpc_pipe *p,
 	torture_assert(tctx, ok, "check_pw_with_ServerAuthenticate3 with changed password");
 
 	if (trusted->trust_type != LSA_TRUST_TYPE_DOWNLEVEL) {
+#if SAMBA4_USES_HEIMDAL
 		ok = check_pw_with_krb5(tctx, incoming_creds, trusted);
 		torture_assert(tctx, ok, "check_pw_with_krb5 with changed password");
+#else
+		torture_comment(tctx, "skipping check_pw_with_krb5 for MIT Kerberos build");
+#endif
 	}
 
 	TALLOC_FREE(p2);
