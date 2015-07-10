@@ -977,7 +977,7 @@ int32_t ctdb_run_eventscripts(struct ctdb_context *ctdb,
 	DEBUG(DEBUG_NOTICE,("Running eventscripts with arguments %s\n", indata.dptr));
 
 	ret = ctdb_event_script_callback(ctdb,
-			 state, run_eventscripts_callback, state,
+			 ctdb, run_eventscripts_callback, state,
 			 call, "%s", options);
 
 	if (ret != 0) {
