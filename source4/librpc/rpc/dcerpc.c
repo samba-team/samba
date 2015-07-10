@@ -1567,6 +1567,15 @@ static void dcerpc_request_recv_data(struct dcecli_connection *c,
 
 	length = pkt->u.response.stub_and_verifier.length;
 
+	if (req->payload.length + length > DCERPC_NCACN_PAYLOAD_MAX_SIZE) {
+		DEBUG(2,("Unexpected total payload 0x%X > 0x%X dcerpc response\n",
+			 (unsigned)req->payload.length + length,
+			 DCERPC_NCACN_PAYLOAD_MAX_SIZE));
+		req->fault_code = DCERPC_FAULT_OTHER;
+		req->status = NT_STATUS_NET_WRITE_FAULT;
+		goto req_done;
+	}
+
 	if (length > 0) {
 		req->payload.data = talloc_realloc(req, 
 						   req->payload.data, 
