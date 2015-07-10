@@ -990,6 +990,11 @@ static void rpc_api_pipe_got_pdu(struct tevent_req *subreq)
 		return;
 	}
 
+	if (state->reply_pdu_offset + rdata.length > MAX_RPC_DATA_SIZE) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return;
+	}
+
 	/* Now copy the data portion out of the pdu into rbuf. */
 	if (state->reply_pdu.length < state->reply_pdu_offset + rdata.length) {
 		if (!data_blob_realloc(NULL, &state->reply_pdu,
