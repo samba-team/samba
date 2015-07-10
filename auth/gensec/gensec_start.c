@@ -234,7 +234,13 @@ _PUBLIC_ const struct gensec_security_ops *gensec_security_by_auth_type(
 	int i;
 	const struct gensec_security_ops **backends;
 	const struct gensec_security_ops *backend;
-	TALLOC_CTX *mem_ctx = talloc_new(gensec_security);
+	TALLOC_CTX *mem_ctx;
+
+	if (auth_type == DCERPC_AUTH_TYPE_NONE) {
+		return NULL;
+	}
+
+	mem_ctx = talloc_new(gensec_security);
 	if (!mem_ctx) {
 		return NULL;
 	}
