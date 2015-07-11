@@ -177,47 +177,6 @@ NTSTATUS dcerpc_push_dcerpc_auth(TALLOC_CTX *mem_ctx,
 }
 
 /**
-* @brief Decodes a dcerpc_auth blob
-*
-* @param mem_ctx	The memory context on which to allocate the packet
-*			elements
-* @param blob		The blob of data to decode
-* @param r		An empty dcerpc_auth structure, must not be NULL
-*
-* @return a NTSTATUS error code
-*/
-NTSTATUS dcerpc_pull_dcerpc_auth(TALLOC_CTX *mem_ctx,
-				 const DATA_BLOB *blob,
-				 struct dcerpc_auth *r,
-				 bool bigendian)
-{
-	enum ndr_err_code ndr_err;
-	struct ndr_pull *ndr;
-
-	ndr = ndr_pull_init_blob(blob, mem_ctx);
-	if (!ndr) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	if (bigendian) {
-		ndr->flags |= LIBNDR_FLAG_BIGENDIAN;
-	}
-
-	ndr_err = ndr_pull_dcerpc_auth(ndr, NDR_SCALARS|NDR_BUFFERS, r);
-
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		talloc_free(ndr);
-		return ndr_map_error2ntstatus(ndr_err);
-	}
-	talloc_free(ndr);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_DEBUG(dcerpc_auth, r);
-	}
-
-	return NT_STATUS_OK;
-}
-
-/**
 * @brief Calculate how much data we can in a packet, including calculating
 *	 auth token and pad lengths.
 *
