@@ -1006,15 +1006,19 @@ ctdb_counter_incr () {
     # unary counting!
     echo -n 1 >> "$_counter_file"
 }
+ctdb_counter_get () {
+    _ctdb_counter_common "$1"
+    # unary counting!
+    stat -c "%s" "$_counter_file" 2>/dev/null || echo 0
+}
 ctdb_check_counter () {
     _msg="${1:-error}"  # "error"  - anything else is silent on fail
     _op="${2:--ge}"  # an integer operator supported by test
     _limit="${3:-${service_fail_limit}}"
     shift 3
-    _ctdb_counter_common "$1"
 
-    # unary counting!
-    _size=$(stat -c "%s" "$_counter_file" 2>/dev/null || echo 0)
+    _size=$(ctdb_counter_get "$1")
+
     _hit=false
     if [ "$_op" != "%" ] ; then
 	if [ $_size $_op $_limit ] ; then
