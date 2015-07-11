@@ -396,15 +396,15 @@ static NTSTATUS ctdb_read_req(struct ctdbd_connection *conn, uint32_t reqid,
 
 		if ((conn->release_ip_handler != NULL)
 		    && (msg->srvid == CTDB_SRVID_RELEASE_IP)) {
-			bool ret;
+			bool ok;
 
 			/* must be dispatched immediately */
 			DEBUG(10, ("received CTDB_SRVID_RELEASE_IP\n"));
-			ret = conn->release_ip_handler((const char *)msg->data,
+			ok = conn->release_ip_handler((const char *)msg->data,
 						       conn->release_ip_priv);
 			TALLOC_FREE(hdr);
 
-			if (ret) {
+			if (ok) {
 				/*
 				 * We need to release the ip,
 				 * so return an error to the upper layers.
