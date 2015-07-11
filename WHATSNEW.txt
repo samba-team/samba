@@ -1,4 +1,160 @@
                    =============================
+                   Release Notes for Samba 4.2.3
+                           July 14, 2015
+                   =============================
+
+
+This is the latest stable release of Samba 4.2.
+
+
+Changes since 4.2.2:
+--------------------
+
+o   Michael Adam <obnox@samba.org>
+    * BUG 11366: docs: Overhaul the description of "smb encrypt" to include SMB3
+      encryption.
+
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 11068: s3: lib: util: Ensure we read a hex number as %x, not %u.
+    * BUG 11295: Excessive cli_resolve_path() usage can slow down transmission.
+    * BUG 11328: winbindd: winbindd_raw_kerberos_login - ensure logon_info
+      exists in PAC.
+    * BUG 11339: s3: smbd: Use separate flag to track
+      become_root()/unbecome_root() state.
+    * BUG 11342: s3: smbd: Codenomicon crash in do_smb_load_module().
+
+
+o   Christian Ambach <ambi@samba.org>
+    * BUG 11170: s3:param/loadparm: Fix 'testparm --show-all-parameters'.
+
+
+o   Andrew Bartlett <abartlet@samba.org>
+    * BUG 10991: winbindd: Sync secrets.ldb into secrets.tdb on startup.
+
+
+o   Ralph Boehme <slow@samba.org>
+    * BUG 11277: s3:smb2: Add padding to last command in compound requests.
+    * BUG 11305: vfs_fruit: Add option "veto_appledouble".
+    * BUG 11323: smbd/trans2: Add a useful diagnostic for files with bad
+      encoding.
+    * BUG 11363: vfs_fruit: Check offset and length for AFP_AfpInfo read
+      requests.
+    * BUG 11371: ncacn_http: Fix GNUism.
+
+
+o   Günther Deschner <gd@samba.org>
+    * BUG 11245: s3-rpc_server: Fix rpc_create_tcpip_sockets() processing of
+      interfaces.
+
+
+o   Alexander Drozdov <al.drozdov@gmail.com>
+    * BUG 11331: tdb: version 1.3.5: ABI change: tdb_chainlock_read_nonblock()
+      has been added.
+
+
+o   Evangelos Foutras <evangelos@foutrelis.com>
+    * BUG 8780: s4:lib/tls: Fix build with gnutls 3.4.
+
+
+o   David Holder <david.holder@erion.co.uk>
+    * BUG 11281: Add IPv6 support to ADS client side LDAP connects.
+    * BUG 11282: Add IPv6 support for determining FQDN during ADS join.
+    * BUG 11283: s3: IPv6 enabled DNS connections for ADS client.
+
+
+o   Steve Howells <steve.howells@moscowfirst.com>
+    * BUG 10924: s4.2/fsmo.py: Fixed fsmo transfer exception.
+
+
+o   Amitay Isaacs <amitay@gmail.com>
+    * BUG 11293: Fix invalid write in ctdb_lock_context_destructor.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 11218: smbd: Fix a use-after-free.
+    * BUG 11312: tstream: Make socketpair nonblocking.
+    * BUG 11330: tevent: Fix CID 1035381 Unchecked return value.
+    * BUG 11331: tdb: Fix CID 1034842 and 1034841 Resource leaks.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 11061: Logon via MS Remote Desktop hangs.
+    * BUG 11141: tevent: Add a note to tevent_add_fd().
+    * BUG 11293: Fix invalid write in ctdb_lock_context_destructor.
+    * BUG 11316: tevent_fd needs to be destroyed before closing the fd.
+    * BUG 11319: Build fails on Solaris 11 with "‘PTHREAD_MUTEX_ROBUST’
+      undeclared".
+    * BUG 11326: Robust mutex support broken in 1.3.5.
+    * BUG 11329: s3:smb2_setinfo: Fix memory leak in the defer_rename case.
+    * BUG 11330: Backport tevent-0.9.25.
+    * BUG 11331: Backport tdb-1.3.6.
+    * BUG 11367: s3:auth_domain: Fix talloc problem in
+      connect_to_domain_password_server().
+
+
+o   Marc Muehlfeld <mmuehlfeld@samba.org>
+    * BUG 11315: Group creation: Add msSFU30Name only when --nis-domain was
+      given.
+
+o   Matthieu Patou <mat@matws.net>
+    * BUG 11356: pidl: Make the compilation of PIDL producing the same results
+      if the content hasn't change.
+
+
+o   Noel Power <noel.power@suse.com>
+    * BUG 11328: Kerberos auth info3 should contain resource group ids available
+      from pac_logon.
+
+
+o   Gordon Ross <gordon.w.ross@gmail.com>
+    * BUG 11330: lib: tevent: Fix compile error in Solaris ports backend.
+
+
+o   Christof Schmitt <cs@samba.org>
+    * BUG 11313: idmap_rfc2307: Fix wbinfo '--gid-to-sid' query.
+    * BUG 11324: Change sharesec output back to previous format.
+
+
+o   Uri Simchoni <urisimchoni@gmail.com>
+    * BUG 11358: winbindd: Disconnect child process if request is cancelled at
+      main process.
+
+
+o   Petr Viktorin <pviktori@redhat.com>
+    * BUG 11330: Backport tevent-0.9.25.
+
+
+o   Youzhong Yang <yyang@mathworks.com>
+    * BUG 11217: s3-unix_msg: Remove socket file after closing socket fd.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.2 product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+======================================================================
+
+                   =============================
                    Release Notes for Samba 4.2.2
                            May 27, 2015
                    =============================
@@ -130,10 +286,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
 
-======================================================================
 
                    =============================
                    Release Notes for Samba 4.2.1
