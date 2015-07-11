@@ -301,8 +301,8 @@ static int ctdbd_connect(int *pfd)
 	return 0;
 }
 
-static NTSTATUS ctdb_read_packet(int fd, TALLOC_CTX *mem_ctx,
-				 struct ctdb_req_header **result)
+static int ctdb_read_packet(int fd, TALLOC_CTX *mem_ctx,
+			    struct ctdb_req_header **result)
 {
 	int timeout = lp_ctdb_timeout();
 	struct ctdb_req_header *req;
@@ -317,31 +317,31 @@ static NTSTATUS ctdb_read_packet(int fd, TALLOC_CTX *mem_ctx,
 	if (timeout != -1) {
 		ret = poll_one_fd(fd, POLLIN, timeout, &revents);
 		if (ret == -1) {
-			return map_nt_error_from_unix(errno);
+			return errno;
 		}
 		if (ret == 0) {
-			return NT_STATUS_IO_TIMEOUT;
+			return ETIMEDOUT;
 		}
 		if (ret != 1) {
-			return NT_STATUS_UNEXPECTED_IO_ERROR;
+			return EIO;
 		}
 	}
 
 	nread = read_data(fd, &msglen, sizeof(msglen));
 	if (nread == -1) {
-		return map_nt_error_from_unix(errno);
+		return errno;
 	}
 	if (nread == 0) {
-		return NT_STATUS_UNEXPECTED_IO_ERROR;
+		return EIO;
 	}
 
 	if (msglen < sizeof(struct ctdb_req_header)) {
-		return NT_STATUS_UNEXPECTED_IO_ERROR;
+		return EIO;
 	}
 
 	req = talloc_size(mem_ctx, msglen);
 	if (req == NULL) {
-		return NT_STATUS_NO_MEMORY;
+		return ENOMEM;
 	}
 	talloc_set_name_const(req, "struct ctdb_req_header");
 
@@ -350,14 +350,14 @@ static NTSTATUS ctdb_read_packet(int fd, TALLOC_CTX *mem_ctx,
 	nread = read_data(fd, ((char *)req) + sizeof(msglen),
 			  msglen - sizeof(msglen));
 	if (nread == -1) {
-		return map_nt_error_from_unix(errno);
+		return errno;
 	}
 	if (nread == 0) {
-		return NT_STATUS_UNEXPECTED_IO_ERROR;
+		return EIO;
 	}
 
 	*result = req;
-	return NT_STATUS_OK;
+	return 0;
 }
 
 /*
@@ -370,13 +370,13 @@ static NTSTATUS ctdb_read_req(struct ctdbd_connection *conn, uint32_t reqid,
 			      struct ctdb_req_header **result)
 {
 	struct ctdb_req_header *hdr;
-	NTSTATUS status;
+	int ret;
 
  next_pkt:
 
-	status = ctdb_read_packet(conn->fd, mem_ctx, &hdr);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("ctdb_read_packet failed: %s\n", nt_errstr(status)));
+	ret = ctdb_read_packet(conn->fd, mem_ctx, &hdr);
+	if (ret != 0) {
+		DEBUG(0, ("ctdb_read_packet failed: %s\n", strerror(ret)));
 		cluster_fatal("ctdbd died\n");
 	}
 
@@ -590,10 +590,11 @@ static void ctdbd_socket_handler(struct tevent_context *event_ctx,
 		private_data, struct ctdbd_connection);
 	struct ctdb_req_header *hdr = NULL;
 	NTSTATUS status;
+	int ret;
 
-	status = ctdb_read_packet(conn->fd, talloc_tos(), &hdr);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("ctdb_read_packet failed: %s\n", nt_errstr(status)));
+	ret = ctdb_read_packet(conn->fd, talloc_tos(), &hdr);
+	if (ret != 0) {
+		DEBUG(0, ("ctdb_read_packet failed: %s\n", strerror(ret)));
 		cluster_fatal("ctdbd died\n");
 	}
 
@@ -1402,11 +1403,12 @@ NTSTATUS ctdbd_traverse(uint32_t db_id,
 		struct ctdb_req_header *hdr = NULL;
 		struct ctdb_req_message *m;
 		struct ctdb_rec_data *d;
+		int ret;
 
-		status = ctdb_read_packet(conn->fd, conn, &hdr);
-		if (!NT_STATUS_IS_OK(status)) {
+		ret = ctdb_read_packet(conn->fd, conn, &hdr);
+		if (ret != 0) {
 			DEBUG(0, ("ctdb_read_packet failed: %s\n",
-				  nt_errstr(status)));
+				  strerror(ret)));
 			cluster_fatal("ctdbd died\n");
 		}
 
