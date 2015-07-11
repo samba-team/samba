@@ -3511,8 +3511,8 @@ static struct tevent_req *fruit_copy_chunk_send(struct vfs_handle_struct *handle
 	struct fruit_config_data *config;
 	off_t to_copy = num;
 
-	DEBUG(10,("soff: %zd, doff: %zd, len: %zd\n",
-		  src_off, dest_off, num));
+	DEBUG(10,("soff: %ju, doff: %ju, len: %ju\n",
+		  (uintmax_t)src_off, (uintmax_t)dest_off, (uintmax_t)num));
 
 	SMB_VFS_HANDLE_GET_DATA(handle, config,
 				struct fruit_config_data,
@@ -3607,8 +3607,9 @@ static void fruit_copy_chunk_done(struct tevent_req *subreq)
 	}
 
 	for (i = 0; i < num_streams; i++) {
-		DEBUG(10, ("%s: stream: '%s'/%zd\n",
-			  __func__, streams[i].name, streams[i].size));
+		DEBUG(10, ("%s: stream: '%s'/%ju\n",
+			   __func__, streams[i].name,
+			   (uintmax_t)streams[i].size));
 
 		src_fname_tmp = synthetic_smb_fname(
 			req,
