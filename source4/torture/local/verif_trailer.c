@@ -19,11 +19,9 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <sys/types.h>
-#include <sys/stat.h>
+#include "includes.h"
 #include <unistd.h>
 
-#include "includes.h"
 #include "librpc/gen_ndr/security.h"
 #include "lib/param/param.h"
 #include "lib/util/dlinklist.h"
