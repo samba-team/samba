@@ -20,6 +20,7 @@
 #include "replace.h"
 #include "server_id_db_util.h"
 #include "serverid.h"
+#include "lib/util/samba_util.h"
 
 static int server_id_db_check_exclusive(
 	struct server_id_db *db, const char *name,
