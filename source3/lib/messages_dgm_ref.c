@@ -17,8 +17,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <talloc.h>
 #include "replace.h"
+#include <talloc.h>
 #include "messages_dgm.h"
 #include "messages_dgm_ref.h"
 #include "lib/util/debug.h"
