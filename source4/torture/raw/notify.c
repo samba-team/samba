@@ -440,6 +440,7 @@ static bool test_notify_recursive(struct torture_context *tctx,
 	smbcli_rmdir(cli2->tree, BASEDIR "\\subdir-name");
 	smbcli_unlink(cli->tree, BASEDIR "\\subname3-r");
 
+	smb_msleep(200);
 	notify.nttrans.in.recursive = false;
 	req2 = smb_raw_changenotify_send(cli->tree, &notify);
 
