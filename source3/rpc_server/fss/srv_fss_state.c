@@ -17,8 +17,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <fcntl.h>
 #include "source3/include/includes.h"
+#include <fcntl.h>
 #include "source3/include/util_tdb.h"
 #include "lib/dbwrap/dbwrap.h"
 #include "lib/dbwrap/dbwrap_open.h"
