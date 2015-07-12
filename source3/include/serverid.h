@@ -20,7 +20,7 @@
 #ifndef __SERVERID_H__
 #define __SERVERID_H__
 
-#include "includes.h"
+#include "replace.h"
 #include "lib/dbwrap/dbwrap.h"
 
 /*
