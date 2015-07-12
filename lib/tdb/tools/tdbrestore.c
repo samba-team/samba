@@ -17,8 +17,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <assert.h>
 #include "replace.h"
+#include <assert.h>
 #include "system/locale.h"
 #include "system/time.h"
 #include "system/filesys.h"
