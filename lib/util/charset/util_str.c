@@ -545,13 +545,13 @@ char *strstr_m(const char *src, const char *findstr)
 	frame = talloc_stackframe();
 
 	if (!push_ucs2_talloc(frame, &src_w, src, &converted_size)) {
-		DEBUG(0,("strstr_m: src malloc fail\n"));
+		DBG_WARNING("strstr_m: src malloc fail\n");
 		TALLOC_FREE(frame);
 		return NULL;
 	}
 
 	if (!push_ucs2_talloc(frame, &find_w, findstr, &converted_size)) {
-		DEBUG(0,("strstr_m: find malloc fail\n"));
+		DBG_WARNING("strstr_m: find malloc fail\n");
 		TALLOC_FREE(frame);
 		return NULL;
 	}
