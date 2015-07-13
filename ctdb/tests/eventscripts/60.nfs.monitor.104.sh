@@ -9,7 +9,6 @@ define_test "all services available, check nfsd thread count, too many threads"
 
 setup_nfs
 
-CTDB_MONITOR_NFS_THREAD_COUNT="yes"
 RPCNFSDCOUNT=4
 nfs_setup_fake_threads "nfsd" 1 2 3 4 5 6
 

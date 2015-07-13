@@ -789,7 +789,7 @@ setup_nfs ()
 
     export CTDB_NFS_SKIP_SHARE_CHECK="no"
 
-    export CTDB_MONITOR_NFS_THREAD_COUNT RPCNFSDCOUNT
+    export RPCNFSDCOUNT
     export CTDB_NFS_DUMP_STUCK_THREADS
 
     # Reset the failcounts for nfs services.

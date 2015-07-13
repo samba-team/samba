@@ -1031,31 +1031,6 @@ CTDB_PER_IP_ROUTING_TABLE_ID_HIGH=9000
 	</varlistentry>
 
 	<varlistentry>
-	  <term>CTDB_MONITOR_NFS_THREAD_COUNT=yes|no</term>
-	  <listitem>
-	    <para>
-	      Whether to monitor the NFS kernel server thread count.
-	    </para>
-	    <para>
-	      This works around a limitation in some NFS initscripts
-	      where some threads can be stuck in host filesystem calls
-	      (perhaps due to slow storage), a restart occurs, some
-	      threads don't exit, the start only adds the missing
-	      number of threads, the stuck threads exit, and the
-	      result is a lower than expected thread count.  Note that
-	      if you must also set <varname>RPCNFSDCOUNT</varname>
-	      (RedHat/Debian) or <varname>USE_KERNEL_NFSD_NUMBER</varname>
-	      (SUSE) in your NFS configuration so the monitoring code
-	      knows how many threads there should be - if neither of
-	      these are set then this option will be ignored.
-	    </para>
-	    <para>
-	      Default is no.
-	    </para>
-	  </listitem>
-	</varlistentry>
-
-	<varlistentry>
 	  <term>CTDB_NFS_CALLOUT=<parameter>COMMAND</parameter></term>
 	  <listitem>
 	    <para>
