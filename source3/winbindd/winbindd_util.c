@@ -1206,6 +1206,21 @@ struct winbindd_cli_state *winbindd_client_list(void)
 	return _client_list;
 }
 
+/* Return list-tail of all connected clients */
+
+struct winbindd_cli_state *winbindd_client_list_tail(void)
+{
+	return DLIST_TAIL(_client_list);
+}
+
+/* Return previous (read:newer) client in list */
+
+struct winbindd_cli_state *
+winbindd_client_list_prev(struct winbindd_cli_state *cli)
+{
+	return DLIST_PREV(cli);
+}
+
 /* Add a connection to the list */
 
 void winbindd_add_client(struct winbindd_cli_state *cli)
@@ -1220,6 +1235,13 @@ void winbindd_remove_client(struct winbindd_cli_state *cli)
 {
 	DLIST_REMOVE(_client_list, cli);
 	_num_clients--;
+}
+
+/* Move a client to head or list */
+
+void winbindd_promote_client(struct winbindd_cli_state *cli)
+{
+	DLIST_PROMOTE(_client_list, cli);
 }
 
 /* Return number of open clients */

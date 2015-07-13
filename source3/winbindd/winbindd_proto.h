@@ -430,8 +430,12 @@ char *fill_domain_username_talloc(TALLOC_CTX *ctx,
 				  const char *user,
 				  bool can_assume);
 struct winbindd_cli_state *winbindd_client_list(void);
+struct winbindd_cli_state *winbindd_client_list_tail(void);
+struct winbindd_cli_state *
+winbindd_client_list_prev(struct winbindd_cli_state *cli);
 void winbindd_add_client(struct winbindd_cli_state *cli);
 void winbindd_remove_client(struct winbindd_cli_state *cli);
+void winbindd_promote_client(struct winbindd_cli_state *cli);
 int winbindd_num_clients(void);
 NTSTATUS lookup_usergroups_cached(struct winbindd_domain *domain,
 				  TALLOC_CTX *mem_ctx,
