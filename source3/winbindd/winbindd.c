@@ -1086,16 +1086,13 @@ static bool client_is_idle(struct winbindd_cli_state *state) {
 static bool remove_idle_client(void)
 {
 	struct winbindd_cli_state *state, *remove_state = NULL;
-	time_t last_access = 0;
 	int nidle = 0;
 
 	for (state = winbindd_client_list(); state; state = state->next) {
 		if (client_is_idle(state)) {
 			nidle++;
-			if (!last_access || state->last_access < last_access) {
-				last_access = state->last_access;
-				remove_state = state;
-			}
+			/* list is sorted by access time */
+			remove_state = state;
 		}
 	}
 
@@ -1117,14 +1114,14 @@ static bool remove_idle_client(void)
 
 static void remove_timed_out_clients(void)
 {
-	struct winbindd_cli_state *state, *next = NULL;
+	struct winbindd_cli_state *state, *prev = NULL;
 	time_t curr_time = time(NULL);
 	int timeout_val = lp_winbind_request_timeout();
 
-	for (state = winbindd_client_list(); state; state = next) {
+	for (state = winbindd_client_list_tail(); state; state = prev) {
 		time_t expiry_time;
 
-		next = state->next;
+		prev = winbindd_client_list_prev(state);
 		expiry_time = state->last_access + timeout_val;
 
 		if (curr_time > expiry_time) {
@@ -1140,6 +1137,10 @@ static void remove_timed_out_clients(void)
 					(unsigned int)state->pid));
 			}
 			remove_client(state);
+		} else {
+			/* list is sorted, previous clients in
+			   list are newer */
+			break;
 		}
 	}
 }
