@@ -701,7 +701,8 @@ static void process_request(struct winbindd_cli_state *state)
 
 	state->cmd_name = "unknown request";
 	state->recv_fn = NULL;
-	state->last_access = time(NULL);
+	/* client is newest */
+	winbindd_promote_client(state);
 
 	/* Process command */
 
@@ -929,8 +930,6 @@ static void new_connection(int listen_sock, bool privileged)
 		TALLOC_FREE(state);
 		return;
 	}
-
-	state->last_access = time(NULL);	
 
 	state->privileged = privileged;
 

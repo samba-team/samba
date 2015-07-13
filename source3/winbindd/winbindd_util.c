@@ -1225,6 +1225,7 @@ winbindd_client_list_prev(struct winbindd_cli_state *cli)
 
 void winbindd_add_client(struct winbindd_cli_state *cli)
 {
+	cli->last_access = time(NULL);
 	DLIST_ADD(_client_list, cli);
 	_num_clients++;
 }
@@ -1241,6 +1242,7 @@ void winbindd_remove_client(struct winbindd_cli_state *cli)
 
 void winbindd_promote_client(struct winbindd_cli_state *cli)
 {
+	cli->last_access = time(NULL);
 	DLIST_PROMOTE(_client_list, cli);
 }
 
