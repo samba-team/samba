@@ -184,6 +184,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_sysconfdir}/ctdb/events.d/70.iscsi
 %{_sysconfdir}/ctdb/events.d/91.lvs
 %{_sysconfdir}/ctdb/events.d/99.timeout
+%config(noreplace) %{_sysconfdir}/ctdb/nfs-checks.d/00.portmapper.check
 %config(noreplace) %{_sysconfdir}/ctdb/nfs-checks.d/10.status.check
 %config(noreplace) %{_sysconfdir}/ctdb/nfs-checks.d/20.nfs.check
 %config(noreplace) %{_sysconfdir}/ctdb/nfs-checks.d/20.nfs_ganesha.disabled

@@ -803,7 +803,8 @@ setup_nfs ()
 
 	export CTDB_MANAGED_SERVICES="foo nfs bar"
 
-	rpc_services_up "nfs" "mountd" "rquotad" "nlockmgr" "status"
+	rpc_services_up \
+	    "portmapper" "nfs" "mountd" "rquotad" "nlockmgr" "status"
 
 	nfs_setup_fake_threads "nfsd"
 	nfs_setup_fake_threads "rpc.foobar"  # Just set the variable to empty
@@ -850,11 +851,12 @@ rpc_services_up ()
     for _i ; do
 	debug "Marking RPC service \"${_i}\" as available"
 	case "$_i" in
-	    nfs)      _t="2:3" ;;
-	    mountd)   _t="1:3" ;;
-	    rquotad)  _t="1:2" ;;
-	    nlockmgr) _t="3:4" ;;
-	    status)   _t="1:1" ;;
+	    portmapper) _t="2:4" ;;
+	    nfs)        _t="2:3" ;;
+	    mountd)     _t="1:3" ;;
+	    rquotad)    _t="1:2" ;;
+	    nlockmgr)   _t="3:4" ;;
+	    status)     _t="1:1" ;;
 	    *) die "Internal error - unsupported RPC service \"${_i}\"" ;;
 	esac
 
@@ -975,17 +977,20 @@ rpc_set_service_failure_response ()
 	# Don't bother syntax checking, eventscript does that...
 	. "$_file"
 
-	# Just use the first version, default to 1.  This is dumb but
+	# Just use the first version, or use default.  This is dumb but
 	# handles all the cases that we care about now...
 	if [ -n "$version" ] ; then
 	    _ver="${version%% *}"
 	else
-	    _ver=1
+	    case "$_rpc_service" in
+		portmapper) _ver="" ;;
+		*) 	    _ver=1  ;;
+	    esac
 	fi
 	_rpc_check_out="\
 $_rpc_service failed RPC check:
 rpcinfo: RPC: Program not registered
-program $_rpc_service version $_ver is not available"
+program $_rpc_service${_ver:+ version }${_ver} is not available"
 
 	if [ $unhealthy_after -gt 0 -a $_numfails -ge $unhealthy_after ] ; then
 	    _unhealthy=true
