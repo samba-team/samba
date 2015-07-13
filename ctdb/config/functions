@@ -699,27 +699,6 @@ nfs_update_lock_info ()
     fi
 }
 
-########################################################
-# start/stop the Ganesha nfs service
-########################################################
-startstop_ganesha()
-{
-    _service_name="nfs-ganesha-$CTDB_CLUSTER_FILESYSTEM_TYPE"
-    case "$1" in
-	start)
-	    service "$_service_name" start
-	    ;;
-	stop)
-	    service "$_service_name" stop
-	    ;;
-	restart)
-	    service "$_service_name" stop
-	    nfs_dump_some_threads "rpc.statd"
-	    service "$_service_name" start
-	    ;;
-    esac
-}
-
 # Dump up to the configured number of nfsd thread backtraces.
 nfs_dump_some_threads ()
 {
