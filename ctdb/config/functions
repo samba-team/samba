@@ -699,17 +699,6 @@ nfs_update_lock_info ()
     fi
 }
 
-# Dump up to the configured number of nfsd thread backtraces.
-nfs_dump_some_threads ()
-{
-    _prog="${1:-nfsd}"
-
-    _num="${CTDB_NFS_DUMP_STUCK_THREADS:-5}"
-    [ $_num -gt 0 ] || return 0
-
-    program_stack_traces "$_prog" $_num
-}
-
 ########################################################
 
 add_ip_to_iface ()

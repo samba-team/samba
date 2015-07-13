@@ -790,7 +790,6 @@ setup_nfs ()
     export CTDB_NFS_SKIP_SHARE_CHECK="no"
 
     export RPCNFSDCOUNT
-    export CTDB_NFS_DUMP_STUCK_THREADS
 
     # Reset the failcounts for nfs services.
     eventscript_call eval rm -f '$ctdb_fail_dir/nfs_*'
