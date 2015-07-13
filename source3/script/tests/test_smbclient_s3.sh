@@ -896,6 +896,81 @@ EOF
     fi
 }
 
+# Test using scopy to copy a file on the server.
+test_scopy()
+{
+    tmpfile=$PREFIX/smbclient_interactive_prompt_commands
+    scopy_file=$PREFIX/scopy_file
+
+    rm -f $scopy_file
+    cat > $tmpfile <<EOF
+put ${SMBCLIENT}
+scopy smbclient scopy_file
+lcd ${PREFIX}
+get scopy_file
+del smbclient
+del scopy_file
+quit
+EOF
+    cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT "$@" -mSMB3 -U$USERNAME%$PASSWORD //$SERVER/tmp -I $SERVER_IP $ADDARGS < $tmpfile 2>&1'
+    eval echo "$cmd"
+    out=`eval $cmd`
+    ret=$?
+    out1=`md5sum ${SMBCLIENT} | sed -e 's/ .*//'`
+    out2=`md5sum ${scopy_file} | sed -e 's/ .*//'`
+    rm -f $tmpfile
+    rm -f $scopy_file
+
+    if [ $ret != 0 ] ; then
+	echo "$out"
+	echo "failed scopy test (1) with output $ret"
+	false
+	return
+    fi
+
+    if [ $out1 != $out2 ] ; then
+	echo "$out1 $out2"
+	echo "failed md5sum (1)"
+	false
+    fi
+
+#
+# Now do again using SMB1
+# to force client-side fallback.
+#
+
+    cat > $tmpfile <<EOF
+put ${SMBCLIENT}
+scopy smbclient scopy_file
+lcd ${PREFIX}
+get scopy_file
+del smbclient
+del scopy_file
+quit
+EOF
+    cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT "$@" -mNT1 -U$USERNAME%$PASSWORD //$SERVER/tmp -I $SERVER_IP $ADDARGS < $tmpfile 2>&1'
+    eval echo "$cmd"
+    out=`eval $cmd`
+    ret=$?
+    out1=`md5sum ${SMBCLIENT} | sed -e 's/ .*//'`
+    out2=`md5sum ${scopy_file} | sed -e 's/ .*//'`
+    rm -f $tmpfile
+    rm -f $scopy_file
+
+    if [ $ret != 0 ] ; then
+	echo "$out"
+	echo "failed scopy test (2) with output $ret"
+	false
+	return
+    fi
+
+    if [ $out1 != $out2 ] ; then
+	echo "$out1 $out2"
+	echo "failed md5sum (2)"
+	false
+    fi
+}
+
 
 LOGDIR_PREFIX=test_smbclient_s3
 
@@ -978,6 +1053,10 @@ testit "list a share with bad names (won't convert)" \
 
 testit "list a share with a mangled name + acl_xattr object" \
     test_mangled_names || \
+    failed=`expr $failed + 1`
+
+testit "server-side file copy" \
+    test_scopy || \
     failed=`expr $failed + 1`
 
 testit "rm -rf $LOGDIR" \
