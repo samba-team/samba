@@ -325,6 +325,90 @@ static bool test_CreateEnum(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_CreateEnumEx_int(struct torture_context *tctx,
+				  struct dcerpc_pipe *p,
+				  struct policy_handle *Cluster)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_CreateEnumEx r;
+	uint32_t dwType[] = {
+		CLUSTER_ENUM_NODE,
+		CLUSTER_ENUM_RESTYPE,
+		CLUSTER_ENUM_RESOURCE,
+		CLUSTER_ENUM_GROUP,
+		CLUSTER_ENUM_NETWORK,
+		CLUSTER_ENUM_NETINTERFACE,
+		CLUSTER_ENUM_INTERNAL_NETWORK,
+		CLUSTER_ENUM_SHARED_VOLUME_RESOURCE
+	};
+	uint32_t dwType_invalid[] = {
+		0x00000040,
+		0x00000080,
+		0x00000100 /* and many more ... */
+	};
+	struct ENUM_LIST *ReturnIdEnum;
+	struct ENUM_LIST *ReturnNameEnum;
+	WERROR rpc_status;
+	int i;
+
+	for (i=0; i < ARRAY_SIZE(dwType); i++) {
+
+		r.in.hCluster = *Cluster;
+		r.in.dwType = dwType[i];
+		r.in.dwOptions = 0;
+		r.out.ReturnIdEnum = &ReturnIdEnum;
+		r.out.ReturnNameEnum = &ReturnNameEnum;
+		r.out.rpc_status = &rpc_status;
+
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_clusapi_CreateEnumEx_r(b, tctx, &r),
+			"CreateEnumEx failed");
+		torture_assert_werr_ok(tctx,
+			r.out.result,
+			"CreateEnumEx failed");
+	}
+
+	for (i=0; i < ARRAY_SIZE(dwType_invalid); i++) {
+
+		r.in.hCluster = *Cluster;
+		r.in.dwType = dwType_invalid[i];
+		r.in.dwOptions = 0;
+		r.out.ReturnIdEnum = &ReturnIdEnum;
+		r.out.ReturnNameEnum = &ReturnNameEnum;
+		r.out.rpc_status = &rpc_status;
+
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_clusapi_CreateEnumEx_r(b, tctx, &r),
+			"CreateEnumEx failed");
+		torture_assert_werr_equal(tctx,
+			r.out.result,
+			WERR_INVALID_PARAMETER,
+			"CreateEnumEx failed");
+	}
+
+	return true;
+}
+
+static bool test_CreateEnumEx(struct torture_context *tctx,
+			      void *data)
+{
+	struct torture_clusapi_context *t =
+		talloc_get_type_abort(data, struct torture_clusapi_context);
+	struct policy_handle Cluster;
+	bool ret;
+
+	if (!test_OpenCluster_int(tctx, t->p, &Cluster)) {
+		return false;
+	}
+
+	ret = test_CreateEnumEx_int(tctx, t->p, &Cluster);
+
+	test_CloseCluster_int(tctx, t->p, &Cluster);
+
+	return ret;
+}
+
+
 static bool test_GetQuorumResource(struct torture_context *tctx,
 				   void *data)
 {
@@ -3000,6 +3084,8 @@ void torture_tcase_cluster(struct torture_tcase *tcase)
 				      test_GetClusterVersion);
 	torture_tcase_add_simple_test(tcase, "CreateEnum",
 				      test_CreateEnum);
+	torture_tcase_add_simple_test(tcase, "CreateEnumEx",
+				      test_CreateEnumEx);
 	torture_tcase_add_simple_test(tcase, "GetClusterVersion2",
 				      test_GetClusterVersion2);
 	torture_tcase_add_simple_test(tcase, "BackupClusterDatabase",
