@@ -287,9 +287,10 @@ nfs_check_services ()
 # Variables are:
 #
 # * family             - "tcp" or "udp" or space separated list
-#                        default: tcp
+#                        default: tcp, not used with "service_check_cmd"
 # * version            - optional, RPC service version number
-#                        default is to omit to check for any version
+#                        default is to omit to check for any version,
+#                        not used with "service_check_cmd"
 # * unhealthy_after    - number of check fails before unhealthy
 #                        default: 1
 # * restart_every      - number of check fails before restart
@@ -300,6 +301,8 @@ nfs_check_services ()
 # * service_start_cmd  - command to start service
 #                        default: no default, must be provided if
 #                                 restart_every > 0
+# * service_check_cmd  - command to check health of service
+#                        default is to check RPC service using rpcinfo
 # * service_debug_cmd  - command to debug a service after trying to stop it;
 #                        for example, it can be useful to print stack
 #                        traces of threads that have not exited, since
@@ -323,6 +326,7 @@ nfs_check_service ()
 	restart_every=0
 	service_stop_cmd=""
 	service_start_cmd=""
+	service_check_cmd=""
 	service_debug_cmd=""
 
 	# Eval line-by-line.  Expands variable references in values.
@@ -334,7 +338,7 @@ nfs_check_service ()
 		family=*|version=*|\
 		unhealthy_after=*|restart_every=*|\
 		service_stop_cmd=*|service_start_cmd=*|\
-		service_debug_cmd=*)
+		service_check_cmd=*|service_debug_cmd=*)
 
 		    eval "$_line"
 		    ;;
@@ -346,8 +350,20 @@ nfs_check_service ()
 
 	_service_name="nfs_${_progname}"
 
-	if nfs_check_rpcinfo \
-	       "$_progname" "$version" "$family" >/dev/null ; then
+	_ok=false
+	if [ -n "$service_check_cmd" ] ; then
+	    # Using eval means variables can contain semicolon separated commands
+	    if eval "$service_check_cmd" ; then
+		_ok=true
+	    fi
+	else
+	    if nfs_check_rpcinfo \
+		   "$_progname" "$version" "$family" >/dev/null ; then
+		_ok=true
+	    fi
+	fi
+
+	if $_ok ; then
 	    if [ $unhealthy_after -ne 1 -o $restart_every -ne 0 ] ; then
 		ctdb_counter_init "$_service_name"
 	    fi
