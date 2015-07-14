@@ -275,6 +275,13 @@ bool dcesrv_auth_auth3(struct dcesrv_call_state *call)
 
 		/* Now that we are authenticated, go back to the generic session key... */
 		dce_conn->auth_state.session_key = dcesrv_generic_session_key;
+
+		if (call->out_auth_info->credentials.length != 0) {
+
+			DEBUG(4, ("GENSEC produced output token (len=%u) at bind_auth3\n",
+				  (unsigned)call->out_auth_info->credentials.length));
+			return false;
+		}
 		return true;
 	} else {
 		DEBUG(4, ("GENSEC mech rejected the incoming authentication at bind_auth3: %s\n",
@@ -399,6 +406,10 @@ bool dcesrv_auth_request(struct dcesrv_call_state *call, DATA_BLOB *full_packet)
 	size_t hdr_size = DCERPC_REQUEST_LENGTH;
 
 	if (!dce_conn->allow_request) {
+		return false;
+	}
+
+	if (dce_conn->auth_state.auth_invalid) {
 		return false;
 	}
 

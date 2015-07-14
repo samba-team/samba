@@ -163,6 +163,7 @@ struct dcesrv_auth {
 	bool client_hdr_signing;
 	bool hdr_signing;
 	bool auth_finished;
+	bool auth_invalid;
 };
 
 struct dcesrv_connection_context {
