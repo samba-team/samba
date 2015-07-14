@@ -1226,7 +1226,7 @@ reconnect:
 			DEBUG(0,("%s:%s: local_lsa.lsaRSetForestTrustInformation(%s) returned %s\n",
 				 __location__, __func__, domain->name, nt_errstr(result)));
 			TALLOC_FREE(frame);
-			return ntstatus_to_werror(status);
+			return ntstatus_to_werror(result);
 		}
 	}
 
