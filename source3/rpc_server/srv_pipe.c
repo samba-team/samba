@@ -926,7 +926,7 @@ bool api_pipe_bind_auth3(struct pipes_struct *p, struct ncacn_packet *pkt)
 	return true;
 
 err:
-
+	p->pipe_bound = false;
 	TALLOC_FREE(p->auth.auth_ctx);
 	return false;
 }
