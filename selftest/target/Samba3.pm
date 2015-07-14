@@ -563,6 +563,7 @@ sub setup_fileserver($$)
 {
 	my ($self, $path) = @_;
 	my $prefix_abs = abs_path($path);
+	my $srcdir_abs = abs_path($self->{srcdir});
 
 	print "PROVISIONING file server ...\n";
 
@@ -579,6 +580,9 @@ sub setup_fileserver($$)
 	my $lower_case_share_dir_30000="$share_dir/lower-case-30000";
 	push(@dirs, $lower_case_share_dir_30000);
 
+	my $dfree_share_dir="$share_dir/dfree";
+	push(@dirs, $dfree_share_dir);
+
 	my $fileserver_options = "
 [lowercase]
 	path = $lower_case_share_dir
@@ -594,6 +598,10 @@ sub setup_fileserver($$)
 	default case = lower
 	preserve case = no
 	short preserve case = no
+[dfree]
+	path = $dfree_share_dir
+	comment = smb username is [%U]
+	dfree command = $srcdir_abs/testprogs/blackbox/dfree.sh
 	";
 
 	my $vars = $self->provision($path,
