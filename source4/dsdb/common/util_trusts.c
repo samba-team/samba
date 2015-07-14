@@ -156,7 +156,7 @@ static NTSTATUS dsdb_trust_forest_record_to_lsa(TALLOC_CTX *mem_ctx,
 
 	lftr->flags = ftr->flags;
 	lftr->time = ftr->timestamp;
-	lftr->type = ftr->type;
+	lftr->type = (enum lsa_ForestTrustRecordType)ftr->type;
 
 	switch (lftr->type) {
 	case LSA_FOREST_TRUST_TOP_LEVEL_NAME:

@@ -2227,7 +2227,7 @@ SMBC_notify_ctx(SMBCCTX *context, SMBCFILE *dir, smbc_bool recursive,
 		smbc_notify_callback_fn cb, void *private_data)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct cli_state *cli = dir->srv->cli;
+	struct cli_state *cli;
 	char *server = NULL;
 	char *share = NULL;
 	char *user = NULL;
@@ -2275,6 +2275,7 @@ SMBC_notify_ctx(SMBCCTX *context, SMBCFILE *dir, smbc_bool recursive,
 	DEBUG(4, ("%s(%p, %d, %"PRIu32")\n", __func__, dir,
 		  (int)recursive, completion_filter));
 
+	cli = dir->srv->cli;
 	status = cli_ntcreate(
 		cli, path, 0, FILE_READ_DATA, 0,
 		FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
