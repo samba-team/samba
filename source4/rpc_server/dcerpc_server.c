@@ -510,6 +510,35 @@ static int dcesrv_connection_context_destructor(struct dcesrv_connection_context
 	return 0;
 }
 
+static void dcesrv_prepare_context_auth(struct dcesrv_call_state *dce_call)
+{
+	struct dcesrv_connection_context *context = dce_call->context;
+
+	context->min_auth_level = DCERPC_AUTH_LEVEL_NONE;
+}
+
+NTSTATUS dcesrv_interface_bind_require_integrity(struct dcesrv_call_state *dce_call,
+						 const struct dcesrv_interface *iface)
+{
+	if (dce_call->context == NULL) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	dce_call->context->min_auth_level = DCERPC_AUTH_LEVEL_INTEGRITY;
+	return NT_STATUS_OK;
+}
+
+NTSTATUS dcesrv_interface_bind_require_privacy(struct dcesrv_call_state *dce_call,
+					       const struct dcesrv_interface *iface)
+{
+	if (dce_call->context == NULL) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	dce_call->context->min_auth_level = DCERPC_AUTH_LEVEL_PRIVACY;
+	return NT_STATUS_OK;
+}
+
 /*
   handle a bind request
 */
@@ -596,6 +625,8 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 		DLIST_ADD(call->conn->contexts, context);
 		call->context = context;
 		talloc_set_destructor(context, dcesrv_connection_context_destructor);
+
+		dcesrv_prepare_context_auth(call);
 
 		status = iface->bind(call, iface, if_version);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -780,6 +811,8 @@ static NTSTATUS dcesrv_alter_new_context(struct dcesrv_call_state *call, uint32_
 	DLIST_ADD(call->conn->contexts, context);
 	call->context = context;
 	talloc_set_destructor(context, dcesrv_connection_context_destructor);
+
+	dcesrv_prepare_context_auth(call);
 
 	status = iface->bind(call, iface, if_version);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -982,9 +1015,14 @@ done:
 */
 static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 {
+	const struct dcesrv_endpoint *endpoint = call->conn->endpoint;
+	enum dcerpc_transport_t transport =
+		dcerpc_binding_get_transport(endpoint->ep_description);
 	struct ndr_pull *pull;
 	NTSTATUS status;
 	struct dcesrv_connection_context *context;
+	uint32_t auth_type = DCERPC_AUTH_TYPE_NONE;
+	uint32_t auth_level = DCERPC_AUTH_LEVEL_NONE;
 
 	/* if authenticated, and the mech we use can't do async replies, don't use them... */
 	if (call->conn->auth_state.gensec_security && 
@@ -995,6 +1033,28 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 	context = dcesrv_find_context(call->conn, call->pkt.u.request.context_id);
 	if (context == NULL) {
 		return dcesrv_fault(call, DCERPC_FAULT_UNK_IF);
+	}
+
+	if (call->conn->auth_state.auth_info != NULL) {
+		auth_type = call->conn->auth_state.auth_info->auth_type;
+		auth_level = call->conn->auth_state.auth_info->auth_level;
+	}
+
+	if (auth_level < context->min_auth_level) {
+		char *addr;
+
+		addr = tsocket_address_string(call->conn->remote_address, call);
+
+		DEBUG(2, ("%s: restrict access by min_auth_level[0x%x] "
+			  "to [%s] with auth[type=0x%x,level=0x%x] "
+			  "on [%s] from [%s]\n",
+			  __func__,
+			  context->min_auth_level,
+			  context->iface->name,
+			  auth_type, auth_level,
+			  derpc_transport_string_by_transport(transport),
+			  addr));
+		return dcesrv_fault(call, DCERPC_FAULT_ACCESS_DENIED);
 	}
 
 	pull = ndr_pull_init_blob(&call->pkt.u.request.stub_and_verifier, call);

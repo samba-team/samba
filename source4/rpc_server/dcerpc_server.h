@@ -168,6 +168,11 @@ struct dcesrv_connection_context {
 
 	/* private data for the interface implementation */
 	void *private_data;
+
+	/*
+	 * the minimum required auth level for this interface
+	 */
+	enum dcerpc_AuthLevel min_auth_level;
 };
 
 
@@ -414,5 +419,9 @@ _PUBLIC_ bool dcesrv_call_authenticated(struct dcesrv_call_state *dce_call);
  */
 _PUBLIC_ const char *dcesrv_call_account_name(struct dcesrv_call_state *dce_call);
 
+_PUBLIC_ NTSTATUS dcesrv_interface_bind_require_integrity(struct dcesrv_call_state *dce_call,
+							  const struct dcesrv_interface *iface);
+_PUBLIC_ NTSTATUS dcesrv_interface_bind_require_privacy(struct dcesrv_call_state *dce_call,
+						        const struct dcesrv_interface *iface);
 
 #endif /* SAMBA_DCERPC_SERVER_H */
