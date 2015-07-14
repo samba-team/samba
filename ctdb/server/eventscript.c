@@ -715,8 +715,12 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 		}
 	}
 
-	/* Do not run new monitor events if some event is already running */
-	if (call == CTDB_EVENT_MONITOR && ctdb->active_events > 0) {
+	/* Do not run new monitor events if some event is already
+	 * running, unless the running event is a monitor event, in
+	 * which case running a new one should cancel the old one. */
+	if (call == CTDB_EVENT_MONITOR &&
+	    ctdb->active_events > 0 &&
+	    ctdb->current_monitor == NULL) {
 		if (callback != NULL) {
 			callback(ctdb, -ECANCELED, private_data);
 		}
