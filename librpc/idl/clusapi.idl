@@ -1572,7 +1572,7 @@ import "security.idl", "winreg.idl";
 		[value(CLUSPROP_SYNTAX_ENDMARK)] CLUSTER_PROPERTY_SYNTAX end_mark;
 	} clusapi_propertyValue;
 
-	typedef struct {
+	typedef [public] struct {
 		uint32 propertyCount;
 		clusapi_propertyValue propertyValues[propertyCount];
 		[value(CLUSPROP_SYNTAX_ENDMARK)] CLUSTER_PROPERTY_SYNTAX end_mark;
