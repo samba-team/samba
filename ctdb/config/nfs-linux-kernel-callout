@@ -178,6 +178,20 @@ nfs_monitor_list_shares ()
 
 ##################################################
 
+nfs_register ()
+{
+    cat <<EOF
+shutdown
+startup
+stop
+start
+monitor-list-shares
+monitor-post
+EOF
+}
+
+##################################################
+
 case "$1" in
     shutdown)
 	nfs_shutdown
@@ -198,7 +212,7 @@ case "$1" in
 	nfs_check_thread_count
 	;;
     register)
-	: # Nothing yet
+	nfs_register
 	;;
     monitor-pre|releaseip|takeip)
 	# Not required/implemented
