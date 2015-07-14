@@ -32,6 +32,7 @@ usage ()
 usage: $_c { shutdown | startup }
        $_c { stop | start } { nfs | nlockmgr }
        $_c { monitor-list-shares | monitor-post }
+       $_c { register }
 EOF
     exit 1
 }
@@ -195,6 +196,9 @@ case "$1" in
 	;;
     monitor-post)
 	nfs_check_thread_count
+	;;
+    register)
+	: # Nothing yet
 	;;
     monitor-pre|releaseip|takeip)
 	# Not required/implemented

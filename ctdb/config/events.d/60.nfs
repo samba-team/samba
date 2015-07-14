@@ -7,6 +7,10 @@
 . $CTDB_BASE/functions
 
 service_name="nfs"
+loadconfig
+ctdb_setup_service_state_dir
+
+######################################################################
 
 if [ -z "$CTDB_NFS_CALLOUT" ] ; then
     CTDB_NFS_CALLOUT="${CTDB_BASE}/nfs-linux-kernel-callout"
@@ -14,9 +18,44 @@ fi
 # Always export, for statd callout
 export CTDB_NFS_CALLOUT
 
+nfs_callout_cache="${service_state_dir}/nfs_callout_cache"
+nfs_callout_cache_callout="${nfs_callout_cache}/CTDB_NFS_CALLOUT"
+nfs_callout_cache_ops="${nfs_callout_cache}/ops"
+
+nfs_callout_register ()
+{
+    mkdir -p "$nfs_callout_cache_ops"
+    rm -f "$nfs_callout_cache_ops"/*
+
+    echo "$CTDB_NFS_CALLOUT" >"$nfs_callout_cache_callout"
+
+    _t=$(eval "$CTDB_NFS_CALLOUT" "register")
+    if [ -n "$_t" ] ; then
+	echo "$_t" |
+	    while IFS="" read _op ; do
+		touch "${nfs_callout_cache_ops}/${_op}"
+	    done
+    else
+	touch "${nfs_callout_cache_ops}/ALL"
+    fi
+}
+
 nfs_callout ()
 {
-    eval "$CTDB_NFS_CALLOUT" "$@"
+    # Re-run registration if $CTDB_NFS_CALLOUT has changed
+    _prev=""
+    if [ -r "$nfs_callout_cache_callout" ] ; then
+	read _prev <"$nfs_callout_cache_callout"
+    fi
+    if [ "$CTDB_NFS_CALLOUT" != "$_prev" ] ; then
+	nfs_callout_register
+    fi
+
+    # Run the operation if it is registered...
+    if [ -e "${nfs_callout_cache_ops}/${1}" ] || \
+	   [ -e "${nfs_callout_cache_ops}/ALL" ]; then
+	eval "$CTDB_NFS_CALLOUT" "$@"
+    fi
 }
 
 service_reconfigure ()
@@ -233,10 +272,6 @@ nfs_update_lock_info ()
 }
 
 ######################################################################
-
-loadconfig
-
-ctdb_setup_service_state_dir
 
 ctdb_start_stop_service
 

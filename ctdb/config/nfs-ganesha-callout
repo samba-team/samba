@@ -290,7 +290,7 @@ case "$action" in
     releaseip)           nfs_releaseip "$@"      ;;
     takeip)              nfs_takeip "$@"         ;;
     monitor-list-shares) nfs_monitor_list_shares ;;
-    monitor-pre|monitor-post)
+    register|monitor-pre|monitor-post)
 	# Not required/implemented
 	:
 	;;
