@@ -940,7 +940,7 @@ static NTSTATUS dcesrv_auth3(struct dcesrv_call_state *call)
 
 	/* handle the auth3 in the auth code */
 	if (!dcesrv_auth_auth3(call)) {
-		return dcesrv_fault(call, DCERPC_FAULT_OTHER);
+		call->conn->auth_state.auth_invalid = true;
 	}
 
 	talloc_free(call);
