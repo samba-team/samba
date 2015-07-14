@@ -48,6 +48,13 @@
 #include <gcrypt.h>
 #endif
 
+#define DCESRV_INTERFACE_BACKUPKEY_BIND(call, iface) \
+	dcesrv_interface_backupkey_bind(call, iface)
+static NTSTATUS dcesrv_interface_backupkey_bind(struct dcesrv_call_state *dce_call,
+						const struct dcesrv_interface *iface)
+{
+	return dcesrv_interface_bind_require_privacy(dce_call, iface);
+}
 
 static const unsigned rsa_with_var_num[] = { 1, 2, 840, 113549, 1, 1, 1 };
 /* Equivalent to asn1_oid_id_pkcs1_rsaEncryption*/
@@ -1801,11 +1808,6 @@ static WERROR dcesrv_bkrp_BackupKey(struct dcesrv_call_state *dce_call,
 
 	if (lpcfg_server_role(dce_call->conn->dce_ctx->lp_ctx) != ROLE_ACTIVE_DIRECTORY_DC) {
 		return WERR_NOT_SUPPORTED;
-	}
-
-	if (!dce_call->conn->auth_state.auth_info ||
-		dce_call->conn->auth_state.auth_info->auth_level != DCERPC_AUTH_LEVEL_PRIVACY) {
-		DCESRV_FAULT(DCERPC_FAULT_ACCESS_DENIED);
 	}
 
 	ldb_ctx = samdb_connect(mem_ctx, dce_call->event_ctx,
