@@ -369,13 +369,10 @@ int32_t ctdb_control_get_db_seqnum(struct ctdb_context *ctdb,
 	}
 
 	outdata->dsize = sizeof(uint64_t);
-	outdata->dptr = (uint8_t *)talloc_zero(outdata, uint64_t);
+	outdata->dptr = talloc_memdup(outdata, &seqnum, sizeof(uint64_t));
 	if (outdata->dptr == NULL) {
 		ret = -1;
-		goto done;
 	}
-
-	*(outdata->dptr) = seqnum;
 
 done:
 	return ret;
