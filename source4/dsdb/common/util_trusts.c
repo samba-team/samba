@@ -233,7 +233,7 @@ NTSTATUS dsdb_trust_forest_info_to_lsa(TALLOC_CTX *mem_ctx,
 	}
 
 	lfti = talloc_zero(mem_ctx, struct lsa_ForestTrustInformation);
-	if (fti == NULL) {
+	if (lfti == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
