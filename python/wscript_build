@@ -16,14 +16,6 @@ bld.SAMBA_SUBSYSTEM('LIBPYTHON',
 	)
 
 
-bld.SAMBA_PYTHON('python_uuid',
-	source='uuidmodule.c',
-	deps='ndr',
-	realname='uuid.so',
-	enabled = float(bld.env.PYTHON_VERSION) <= 2.4
-	)
-
-
 bld.SAMBA_PYTHON('python_glue',
 	source='pyglue.c',
 	deps='pyparam_util samba-util netif pytalloc-util',
