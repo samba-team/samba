@@ -657,7 +657,7 @@ static int dns_cmp(const char *s1, const char *s2)
 		if (i == 0) {
 			p1 = s1;
 
-			if (l1 == 0 && l1 >= UINT16_MAX) {
+			if (l1 == 0 || l1 >= UINT16_MAX) {
 				/* just use one single component on overflow */
 				break;
 			}
@@ -687,7 +687,7 @@ static int dns_cmp(const char *s1, const char *s2)
 		if (i == 0) {
 			p2 = s2;
 
-			if (l2 == 0 && l2 >= UINT16_MAX) {
+			if (l2 == 0 || l2 >= UINT16_MAX) {
 				/* just use one single component on overflow */
 				break;
 			}
