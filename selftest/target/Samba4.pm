@@ -568,10 +568,6 @@ sub provision_raw_step1($$)
 
         vfs objects = dfs_samba4 acl_xattr fake_acls xattr_tdb streams_depot
 
-	# remove this again, when our smb2 client library
-	# supports signin on compound related requests
-	server signing = on
-
         idmap_ldb:use rfc2307=yes
 	winbind enum users = yes
 	winbind enum groups = yes
@@ -948,6 +944,9 @@ sub provision_s4member($$$)
 	my $extra_smb_conf = "
         passdb backend = samba_dsdb
 winbindd:use external pipes = true
+
+# the source4 smb server doesn't allow signing by default
+server signing = enabled
 
 rpc_server:default = external
 rpc_server:svcctl = embedded
@@ -1638,7 +1637,6 @@ sub provision_ad_dc($$)
 
 	max protocol = SMB3
 	read only = no
-	server signing = auto
 
 	smbd:sharedelay = 100000
 	smbd:writetimeupdatedelay = 500000

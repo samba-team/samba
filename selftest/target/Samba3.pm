@@ -314,7 +314,6 @@ sub setup_nt4_member($$$)
 
 	my $member_options = "
 	security = domain
-	server signing = on
 	dbwrap_tdb_mutexes:* = yes
 	${require_mutexes}
 ";
@@ -379,7 +378,6 @@ sub setup_admember($$$$)
 
 	my $member_options = "
 	security = ads
-	server signing = on
         workgroup = $dcvars->{DOMAIN}
         realm = $dcvars->{REALM}
 ";
@@ -463,7 +461,6 @@ sub setup_admember_rfc2307($$$$)
 
 	my $member_options = "
 	security = ads
-	server signing = on
         workgroup = $dcvars->{DOMAIN}
         realm = $dcvars->{REALM}
         idmap config $dcvars->{DOMAIN} : backend = rfc2307
@@ -1415,7 +1412,6 @@ sub provision($$$$$$$$)
 #	min receivefile size = 4000
 
 	read only = no
-	server signing = auto
 
 	smbd:sharedelay = 100000
 	smbd:writetimeupdatedelay = 500000

@@ -327,3 +327,6 @@
 #
 ^samba3.blackbox.rpcclient.*ncacn_np.*with.*connect.*rpcclient # we don't allow auth_level_connect anymore
 ^samba.tests.dns.__main__.TestComplexQueries.test_cname_two_chain_not_matching_qtype
+# ad_dc requires signing
+#
+^samba4.smb.signing.*disabled.*signing=off.*\(ad_dc\)
