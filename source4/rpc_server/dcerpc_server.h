@@ -224,16 +224,6 @@ struct dcesrv_connection {
 
 	DATA_BLOB partial_input;
 
-	/* This can be removed in master... */
-	struct  {
-		struct dcerpc_auth *auth_info;
-		struct gensec_security *gensec_security;
-		struct auth_session_info *session_info;
-		NTSTATUS (*session_key)(struct dcesrv_connection *, DATA_BLOB *session_key);
-		bool client_hdr_signing;
-		bool hdr_signing;
-	} _unused_auth_state;
-
 	/* the event_context that will be used for this connection */
 	struct tevent_context *event_ctx;
 
