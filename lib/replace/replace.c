@@ -467,6 +467,26 @@ char *rep_strcasestr(const char *haystack, const char *needle)
 }
 #endif
 
+#ifndef HAVE_STRSEP
+char *rep_strsep(char **pps, const char *delim)
+{
+	char *ret = *pps;
+	char *p = *pps;
+
+	if (p == NULL) {
+		return NULL;
+	}
+	p += strcspn(p, delim);
+	if (*p == '\0') {
+		*pps = NULL;
+	} else {
+		*p = '\0';
+		*pps = p + 1;
+	}
+	return ret;
+}
+#endif
+
 #ifndef HAVE_STRTOK_R
 /* based on GLIBC version, copyright Free Software Foundation */
 char *rep_strtok_r(char *s, const char *delim, char **save_ptr)
