@@ -10,7 +10,7 @@
     </para>
 
     <para>By default, and when smb signing is set to
-    <emphasis>default</emphasis>, smb signing enabled when
+    <emphasis>default</emphasis>, smb signing is required when
     <smbconfoption name="server role"/> is <emphasis>active directory
     domain controller</emphasis> and disabled otherwise.</para>
 
