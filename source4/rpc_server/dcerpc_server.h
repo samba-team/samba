@@ -173,7 +173,7 @@ struct dcesrv_auth {
 
 struct dcesrv_connection_context {
 	struct dcesrv_connection_context *next, *prev;
-	uint32_t context_id;
+	uint16_t context_id;
 
 	/* TODO: remove this legacy (for openchange) in master */
 	struct dcesrv_assoc_group *assoc_group;

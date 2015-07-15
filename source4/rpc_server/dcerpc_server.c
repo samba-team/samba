@@ -169,7 +169,7 @@ static struct dcesrv_endpoint *find_endpoint(struct dcesrv_context *dce_ctx,
   find a registered context_id from a bind or alter_context
 */
 static struct dcesrv_connection_context *dcesrv_find_context(struct dcesrv_connection *conn, 
-								   uint32_t context_id)
+							     uint16_t context_id)
 {
 	struct dcesrv_connection_context *c;
 	for (c=conn->contexts;c;c=c->next) {
@@ -668,7 +668,7 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	struct data_blob_list_item *rep;
 	NTSTATUS status;
 	uint32_t result=0, reason=0;
-	uint32_t context_id;
+	uint16_t context_id;
 	const struct dcesrv_interface *iface;
 	uint32_t extra_flags = 0;
 	uint16_t max_req = 0;
@@ -949,7 +949,7 @@ static NTSTATUS dcesrv_auth3(struct dcesrv_call_state *call)
 /*
   handle a bind request
 */
-static NTSTATUS dcesrv_alter_new_context(struct dcesrv_call_state *call, uint32_t context_id)
+static NTSTATUS dcesrv_alter_new_context(struct dcesrv_call_state *call, uint16_t context_id)
 {
 	uint32_t if_version, transfer_syntax_version;
 	struct dcesrv_connection_context *context;
