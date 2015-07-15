@@ -1483,6 +1483,21 @@ static NTSTATUS dcesrv_process_ncacn_packet(struct dcesrv_connection *dce_conn,
 					DCERPC_NCA_S_PROTO_ERROR);
 		}
 
+		if (call->pkt.frag_length > DCERPC_FRAG_MAX_SIZE) {
+			/*
+			 * We don't use dcesrv_fault_disconnect()
+			 * here, because we don't want to set
+			 * DCERPC_PFC_FLAG_DID_NOT_EXECUTE
+			 *
+			 * Note that we don't check against the negotiated
+			 * max_recv_frag, but a hard coded value.
+			 */
+			dcesrv_call_disconnect_after(call,
+				"dcesrv_auth_request - frag_length too large");
+			return dcesrv_fault(call,
+					DCERPC_NCA_S_PROTO_ERROR);
+		}
+
 		if (!dcesrv_auth_request(call, &blob)) {
 			/*
 			 * We don't use dcesrv_fault_disconnect()
