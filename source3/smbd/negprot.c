@@ -518,6 +518,7 @@ void reply_negprot(struct smb_request *req)
 	size_t converted_size;
 	struct smbXsrv_connection *xconn = req->xconn;
 	struct smbd_server_connection *sconn = req->sconn;
+	bool signing_required = true;
 
 	START_PROFILE(SMBnegprot);
 
@@ -689,8 +690,9 @@ void reply_negprot(struct smb_request *req)
 
 	DEBUG( 5, ( "negprot index=%d\n", choice ) );
 
-	if ((lp_server_signing() == SMB_SIGNING_REQUIRED)
-	    && (chosen_level < PROTOCOL_NT1)) {
+	/* We always have xconn->smb1.signing_state also for >= SMB2_02 */
+	signing_required = smb_signing_is_mandatory(xconn->smb1.signing_state);
+	if (signing_required && (chosen_level < PROTOCOL_NT1)) {
 		exit_server_cleanly("SMB signing is required and "
 			"client negotiated a downlevel protocol");
 	}
