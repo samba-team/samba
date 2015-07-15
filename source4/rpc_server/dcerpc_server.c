@@ -1468,6 +1468,10 @@ static NTSTATUS dcesrv_process_ncacn_packet(struct dcesrv_connection *dce_conn,
 				return dcesrv_fault(call,
 						DCERPC_NCA_S_PROTO_ERROR);
 			}
+			if (call->pkt.pfc_flags & DCERPC_PFC_FLAG_PENDING_CANCEL) {
+				return dcesrv_fault_disconnect(call,
+						DCERPC_FAULT_NO_CALL_ACTIVE);
+			}
 		} else {
 			const struct dcerpc_request *nr = &call->pkt.u.request;
 			const struct dcerpc_request *er = NULL;
