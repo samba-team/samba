@@ -1886,7 +1886,7 @@ static bool nwrap_he_parse_line(struct nwrap_cache *nwrap, char *line)
 	struct nwrap_entdata *ed;
 	size_t list_size;
 	bool do_aliases = true;
-	int aliases_count = 0;
+	ssize_t aliases_count = 0;
 	char *p;
 	char *i;
 	char *n;
