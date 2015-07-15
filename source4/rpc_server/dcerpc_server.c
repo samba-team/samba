@@ -765,8 +765,6 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 		context->conn = call->conn;
 		context->iface = iface;
 		context->context_id = context_id;
-		/* legacy for openchange dcesrv_mapiproxy.c */
-		context->assoc_group = call->conn->assoc_group;
 		context->private_data = NULL;
 		DLIST_ADD(call->conn->contexts, context);
 		call->context = context;
@@ -984,8 +982,6 @@ static NTSTATUS dcesrv_alter_new_context(struct dcesrv_call_state *call, uint16_
 	context->conn = call->conn;
 	context->iface = iface;
 	context->context_id = context_id;
-	/* legacy for openchange dcesrv_mapiproxy.c */
-	context->assoc_group = call->conn->assoc_group;
 	context->private_data = NULL;
 	DLIST_ADD(call->conn->contexts, context);
 	call->context = context;
