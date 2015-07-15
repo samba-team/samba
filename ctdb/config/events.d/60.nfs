@@ -233,7 +233,13 @@ ctdb_check_rpc ()
     _version="$2"         # optional, not passed if empty/unset
     _family="${3:-tcp}"   # optional, default is "tcp"
 
-    _localhost="${CTDB_RPCINFO_LOCALHOST:-127.0.0.1}"
+    case "$_family" in
+	tcp6|udp6)
+	    _localhost="${CTDB_RPCINFO_LOCALHOST6:-::1}"
+	    ;;
+	*)
+	    _localhost="${CTDB_RPCINFO_LOCALHOST:-127.0.0.1}"
+    esac
 
     if ! ctdb_check_rpc_out=$(rpcinfo -T $_family $_localhost \
 				      $_progname $_version 2>&1) ; then
