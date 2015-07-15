@@ -117,9 +117,9 @@ static NTSTATUS remote_op_bind(struct dcesrv_call_state *dce_call, const struct 
 	}
 
 	/* If we already have a remote association group ID, then use that */
-	if (dce_call->context->assoc_group->proxied_id != 0) {
+	if (dce_call->conn->assoc_group->proxied_id != 0) {
 		status = dcerpc_binding_set_assoc_group_id(b,
-			dce_call->context->assoc_group->proxied_id);
+			dce_call->conn->assoc_group->proxied_id);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("dcerpc_binding_set_assoc_group_id() - %s'\n",
 				  nt_errstr(status)));
@@ -148,8 +148,8 @@ static NTSTATUS remote_op_bind(struct dcesrv_call_state *dce_call, const struct 
 		return status;
 	}
 
-	if (dce_call->context->assoc_group->proxied_id == 0) {
-		dce_call->context->assoc_group->proxied_id =
+	if (dce_call->conn->assoc_group->proxied_id == 0) {
+		dce_call->conn->assoc_group->proxied_id =
 			dcerpc_binding_get_assoc_group_id(priv->c_pipe->binding);
 	}
 

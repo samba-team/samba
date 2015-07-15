@@ -42,9 +42,6 @@
 #include "lib/util/samba_modules.h"
 #include "librpc/gen_ndr/ndr_dcerpc.h"
 
-/* this is only used when the client asks for an unknown interface */
-#define DUMMY_ASSOC_GROUP 0x0FFFFFFF
-
 extern const struct dcesrv_interface dcesrv_mgmt_interface;
 
 
@@ -74,7 +71,7 @@ static struct dcesrv_assoc_group *dcesrv_assoc_group_reference(TALLOC_CTX *mem_c
 
 	assoc_group = dcesrv_assoc_group_find(dce_ctx, id);
 	if (assoc_group == NULL) {
-		DEBUG(0,(__location__ ": Failed to find assoc_group 0x%08x\n", id));
+		DEBUG(2,(__location__ ": Failed to find assoc_group 0x%08x\n", id));
 		return NULL;
 	}
 	return talloc_reference(mem_ctx, assoc_group);
@@ -714,10 +711,16 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	/*
 	  if provided, check the assoc_group is valid
 	 */
-	if (call->pkt.u.bind.assoc_group_id != 0 &&
-	    lpcfg_parm_bool(call->conn->dce_ctx->lp_ctx, NULL, "dcesrv","assoc group checking", true) &&
-	    dcesrv_assoc_group_find(call->conn->dce_ctx, call->pkt.u.bind.assoc_group_id) == NULL) {
-		return dcesrv_bind_nak(call, 0);	
+	if (call->pkt.u.bind.assoc_group_id != 0) {
+		call->conn->assoc_group = dcesrv_assoc_group_reference(call->conn,
+								       call->conn->dce_ctx,
+								       call->pkt.u.bind.assoc_group_id);
+	} else {
+		call->conn->assoc_group = dcesrv_assoc_group_new(call->conn,
+								 call->conn->dce_ctx);
+	}
+	if (call->conn->assoc_group == NULL) {
+		return dcesrv_bind_nak(call, 0);
 	}
 
 	if (call->pkt.u.bind.num_contexts < 1 ||
@@ -761,17 +764,8 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 		context->conn = call->conn;
 		context->iface = iface;
 		context->context_id = context_id;
-		if (call->pkt.u.bind.assoc_group_id != 0) {
-			context->assoc_group = dcesrv_assoc_group_reference(context,
-									    call->conn->dce_ctx, 
-									    call->pkt.u.bind.assoc_group_id);
-		} else {
-			context->assoc_group = dcesrv_assoc_group_new(context, call->conn->dce_ctx);
-		}
-		if (context->assoc_group == NULL) {
-			talloc_free(context);
-			return dcesrv_bind_nak(call, 0);
-		}
+		/* legacy for openchange dcesrv_mapiproxy.c */
+		context->assoc_group = call->conn->assoc_group;
 		context->private_data = NULL;
 		DLIST_ADD(call->conn->contexts, context);
 		call->context = context;
@@ -829,18 +823,7 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST | extra_flags;
 	pkt.u.bind_ack.max_xmit_frag = call->conn->max_xmit_frag;
 	pkt.u.bind_ack.max_recv_frag = call->conn->max_recv_frag;
-
-	/*
-	  make it possible for iface->bind() to specify the assoc_group_id
-	  This helps the openchange mapiproxy plugin to work correctly.
-	  
-	  metze
-	*/
-	if (call->context) {
-		pkt.u.bind_ack.assoc_group_id = call->context->assoc_group->id;
-	} else {
-		pkt.u.bind_ack.assoc_group_id = DUMMY_ASSOC_GROUP;
-	}
+	pkt.u.bind_ack.assoc_group_id = call->conn->assoc_group->id;
 
 	if (iface) {
 		endpoint = dcerpc_binding_get_string_option(
@@ -1000,18 +983,8 @@ static NTSTATUS dcesrv_alter_new_context(struct dcesrv_call_state *call, uint32_
 	context->conn = call->conn;
 	context->iface = iface;
 	context->context_id = context_id;
-	if (call->pkt.u.alter.assoc_group_id != 0) {
-		context->assoc_group = dcesrv_assoc_group_reference(context,
-								    call->conn->dce_ctx, 
-								    call->pkt.u.alter.assoc_group_id);
-	} else {
-		context->assoc_group = dcesrv_assoc_group_new(context, call->conn->dce_ctx);
-	}
-	if (context->assoc_group == NULL) {
-		talloc_free(context);
-		call->context = NULL;
-		return NT_STATUS_NO_MEMORY;
-	}
+	/* legacy for openchange dcesrv_mapiproxy.c */
+	context->assoc_group = call->conn->assoc_group;
 	context->private_data = NULL;
 	DLIST_ADD(call->conn->contexts, context);
 	call->context = context;
@@ -1059,11 +1032,7 @@ static NTSTATUS dcesrv_alter_resp(struct dcesrv_call_state *call,
 	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST | extra_flags;
 	pkt.u.alter_resp.max_xmit_frag = call->conn->max_xmit_frag;
 	pkt.u.alter_resp.max_recv_frag = call->conn->max_recv_frag;
-	if (result == 0) {
-		pkt.u.alter_resp.assoc_group_id = call->context->assoc_group->id;
-	} else {
-		pkt.u.alter_resp.assoc_group_id = 0;
-	}
+	pkt.u.alter_resp.assoc_group_id = call->conn->assoc_group->id;
 	pkt.u.alter_resp.num_results = 1;
 	pkt.u.alter_resp.ctx_list = talloc_zero(call, struct dcerpc_ack_ctx);
 	if (!pkt.u.alter_resp.ctx_list) {
@@ -1179,17 +1148,6 @@ static NTSTATUS dcesrv_alter(struct dcesrv_call_state *call)
 			return dcesrv_fault_disconnect(call,
 					DCERPC_NCA_S_PROTO_ERROR);
 		}
-	}
-
-	if (call->pkt.u.alter.assoc_group_id != 0 &&
-	    lpcfg_parm_bool(call->conn->dce_ctx->lp_ctx, NULL, "dcesrv","assoc group checking", true) &&
-	    call->pkt.u.alter.assoc_group_id != call->context->assoc_group->id) {
-		DEBUG(0,(__location__ ": Failed attempt to use new assoc_group in alter context (0x%08x 0x%08x)\n",
-			 call->context->assoc_group->id, call->pkt.u.alter.assoc_group_id));
-		/* TODO: can they ask for a new association group? */
-		return dcesrv_alter_resp(call,
-				DCERPC_BIND_PROVIDER_REJECT,
-				DCERPC_BIND_REASON_ASYNTAX);
 	}
 
 	/* handle any authentication that is being requested */
