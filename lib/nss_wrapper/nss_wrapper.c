@@ -2433,6 +2433,130 @@ static bool nwrap_add_ai(char *const ip_addr, struct nwrap_entdata *const ed)
 	return true;
 }
 
+
+static bool nwrap_add_hname_add_new(char *const h_name,
+				    struct nwrap_entdata *const ed)
+{
+	/* No element found.. inventarize new item */
+	ENTRY e;
+	ENTRY *p;
+
+	e.key = h_name;
+	e.data = (void *)ed;
+	ed->ed_tail = NULL;
+	ed->ed_next = NULL;
+
+	p = hsearch(e, ENTER);
+	if (p == NULL) {
+		NWRAP_LOG(NWRAP_LOG_DEBUG, "Hash table is full!");
+		return false;
+	}
+
+	return true;
+}
+
+static void nwrap_add_hname_add_to_existing(struct nwrap_entdata *const ed,
+					    struct nwrap_entdata *const ed_dst)
+{
+	if (ed_dst->ed_tail != NULL) {
+		ed_dst->ed_tail->ed_next = ed;
+		if (ed_dst->ed_tail != ed) {
+			ed_dst->ed_tail = ed;
+			ed->ed_next = NULL;
+		}
+	} else {
+		ed_dst->ed_tail = ed;
+	}
+}
+
+static bool nwrap_add_hname_alias(const char *const h_name_a,
+				  struct nwrap_entdata *const ed)
+{
+	/* One of argument 'h_hame_a' are "optional" */
+	char *const h_name = (char *const) ((h_name_a == NULL) ? ed->ht.h_name : h_name_a);
+	ENTRY e;
+	ENTRY *p;
+
+	/* Maybe it's little bit late ... */
+	assert(ed != NULL);
+	assert(h_name != NULL);
+
+	e.key = h_name;
+	e.data = NULL;
+	NWRAP_LOG(NWRAP_LOG_DEBUG, "Searching name: %s", e.key);
+	p = hsearch(e, FIND);
+	if (p == NULL) {
+		NWRAP_LOG(NWRAP_LOG_DEBUG, "Name %s not found. Adding...", h_name);
+		/* Just add alias and don't mess with metadata */
+		nwrap_add_hname_add_new(h_name, ed);
+	} else {
+		/* Element found. Add them to end of list */
+		struct nwrap_entdata *ed_dst = (struct nwrap_entdata *)p->data;
+
+		assert(p->data != NULL);
+		NWRAP_LOG(NWRAP_LOG_DEBUG, "Name %s found. Add record to list.", h_name);
+		nwrap_add_hname_add_to_existing(ed, ed_dst);
+	}
+
+	return true;
+}
+
+static bool nwrap_add_hname(const char *const h_name_a,
+			    struct nwrap_entdata *const ed)
+{
+	/* One of argument 'h_hame_a' are "optional" */
+	char *const h_name = (char *const) ((h_name_a == NULL) ? ed->ht.h_name : h_name_a);
+	ENTRY e;
+	ENTRY *p;
+	char *h_name_alias;
+	unsigned i;
+
+	/* Maybe it's little bit late ... */
+	assert(ed != NULL);
+	assert(h_name != NULL);
+
+	e.key = h_name;
+	e.data = NULL;
+	NWRAP_LOG(NWRAP_LOG_DEBUG, "Searching name: %s", e.key);
+	p = hsearch(e, FIND);
+	if (p == NULL) {
+		NWRAP_LOG(NWRAP_LOG_DEBUG, "Name %s not found. Adding...", h_name);
+		/* Just add alias and don't mess with metadata */
+		nwrap_add_hname_add_new(h_name, ed);
+
+		if (ed->ed_tail == NULL) {
+			ed->ed_tail = ed;
+		}
+	} else {
+		/* Element found. Add them to end of list */
+		struct nwrap_entdata *ed_dst = (struct nwrap_entdata *)p->data;
+
+		assert(p->data != NULL);
+		NWRAP_LOG(NWRAP_LOG_DEBUG, "Name %s found. Add record to list.", h_name);
+		nwrap_add_hname_add_to_existing(ed, ed_dst);
+	}
+
+	/* Return true when list of aliases is empty */
+	if (ed->ht.h_aliases == NULL) {
+		return true;
+	}
+
+	/* Itemize aliases */
+	for (i = 0; ed->ht.h_aliases[i] != NULL; ++i) {
+		h_name_alias = ed->ht.h_aliases[i];
+		assert(h_name_alias != NULL);
+
+		NWRAP_LOG(NWRAP_LOG_DEBUG, "Add alias: %s", h_name_alias);
+
+		if (!nwrap_add_hname_alias(h_name_alias, ed)) {
+			NWRAP_LOG(NWRAP_LOG_DEBUG,
+				  "Unable to add alias: %s", h_name_alias);
+		}
+	}
+
+	return true;
+}
+
 static bool nwrap_he_parse_line(struct nwrap_cache *nwrap, char *line)
 {
 	struct nwrap_he *nwrap_he = (struct nwrap_he *)nwrap->private_data;
