@@ -345,6 +345,11 @@ void rep_setlinebuf(FILE *);
 char *rep_strcasestr(const char *haystack, const char *needle);
 #endif
 
+#ifndef HAVE_STRSEP
+#define strsep rep_strsep
+char *rep_strsep(char **pps, const char *delim);
+#endif
+
 #ifndef HAVE_STRTOK_R
 #define strtok_r rep_strtok_r
 char *rep_strtok_r(char *s, const char *delim, char **save_ptr);

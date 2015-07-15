@@ -271,7 +271,7 @@ struct foo bar = { .y = 'X', .x = 1 };
     conf.CHECK_FUNCS('lstat getpgrp utime utimes setuid seteuid setreuid setresuid setgid setegid')
     conf.CHECK_FUNCS('setregid setresgid chroot strerror vsyslog setlinebuf mktime')
     conf.CHECK_FUNCS('ftruncate chsize rename waitpid wait4')
-    conf.CHECK_FUNCS('initgroups pread pwrite strndup strcasestr')
+    conf.CHECK_FUNCS('initgroups pread pwrite strndup strcasestr strsep')
     conf.CHECK_FUNCS('strtok_r mkdtemp dup2 dprintf vdprintf isatty chown lchown')
     conf.CHECK_FUNCS('link readlink symlink realpath snprintf vsnprintf')
     conf.CHECK_FUNCS('asprintf vasprintf setenv unsetenv strnlen strtoull __strtoull')
@@ -605,7 +605,7 @@ REPLACEMENT_FUNCTIONS = {
                   'memmove', 'strdup', 'setlinebuf', 'vsyslog', 'strnlen',
                   'strndup', 'waitpid', 'seteuid', 'setegid', 'chroot',
                   'mkstemp', 'mkdtemp', 'pread', 'pwrite', 'strcasestr',
-                  'strtok_r', 'strtoll', 'strtoull', 'setenv', 'unsetenv',
+                  'strsep', 'strtok_r', 'strtoll', 'strtoull', 'setenv', 'unsetenv',
                   'utime', 'utimes', 'dup2', 'chown', 'link', 'readlink',
                   'symlink', 'lchown', 'realpath', 'memmem', 'vdprintf',
                   'dprintf', 'get_current_dir_name',
