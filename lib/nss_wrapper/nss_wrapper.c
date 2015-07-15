@@ -50,6 +50,7 @@
 #include <unistd.h>
 #include <ctype.h>
 
+#include <search.h>
 #include <assert.h>
 
 /*
@@ -680,15 +681,25 @@ struct nwrap_addrdata {
 	char *h_addr_ptrs[2]; /* host_addr pointer + NULL */
 };
 
+static size_t max_hostents = 100;
+
 struct nwrap_entdata {
 	struct nwrap_addrdata *addr;
 	struct hostent ht;
+
+	struct nwrap_vector nwrap_addrdata;
+
+	ssize_t aliases_count;
+
+	struct nwrap_entdata *ed_next;
+	struct nwrap_entdata *ed_tail;
 };
 
 struct nwrap_he {
 	struct nwrap_cache *cache;
 
 	struct nwrap_entdata *list;
+	struct nwrap_vector entdata;
 	int num;
 	int idx;
 };
@@ -1415,9 +1426,35 @@ static void nwrap_backend_init(struct nwrap_main *r)
 static void nwrap_init(void)
 {
 	static bool initialized;
+	const char *env;
+	char *endptr;
+	size_t max_hostents_tmp;
 
 	if (initialized) return;
 	initialized = true;
+
+	env = getenv("NSS_WRAPPER_MAX_HOSTENTS");
+	if (env != NULL) {
+		max_hostents_tmp = (size_t)strtol(env, &endptr, 10);
+		if (((env != '\0') && (endptr == '\0')) ||
+		    (max_hostents_tmp == 0)) {
+			NWRAP_LOG(NWRAP_LOG_DEBUG,
+				  "Error parsing NSS_WRAPPER_MAX_HOSTENTS "
+				  "value or value is too small. "
+				  "Using default value: %lu.",
+				  max_hostents);
+		} else {
+			max_hostents = max_hostents_tmp;
+		}
+	}
+	/* Initialize hash table */
+	NWRAP_LOG(NWRAP_LOG_DEBUG,
+		  "Initializing hash table of size %lu items.", max_hostents);
+	if (hcreate(max_hostents) == 0) {
+		NWRAP_LOG(NWRAP_LOG_ERROR,
+			  "Failed to initialize hash table");
+		return;
+	}
 
 	nwrap_main_global = &__nwrap_main_global;
 
@@ -4915,4 +4952,6 @@ void nwrap_destructor(void)
 		SAFE_FREE(nwrap_he_global.list);
 		nwrap_he_global.num = 0;
 	}
+
+	hdestroy();
 }
