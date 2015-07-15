@@ -2416,6 +2416,23 @@ static int nwrap_gr_copy_r(const struct group *src, struct group *dst,
 	return 0;
 }
 
+static bool nwrap_add_ai(char *const ip_addr, struct nwrap_entdata *const ed)
+{
+	ENTRY e = {
+		.key = ip_addr,
+		.data = (void *)ed,
+	};
+	ENTRY *p;
+
+	p = hsearch(e, ENTER);
+	if (p == NULL) {
+		NWRAP_LOG(NWRAP_LOG_DEBUG, "Hash table is full");
+		return false;
+	}
+
+	return true;
+}
+
 static bool nwrap_he_parse_line(struct nwrap_cache *nwrap, char *line)
 {
 	struct nwrap_he *nwrap_he = (struct nwrap_he *)nwrap->private_data;
