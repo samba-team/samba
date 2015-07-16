@@ -707,9 +707,7 @@ static bool vfswrap_init_asys_ctx(struct smbd_server_connection *conn)
 	ret = set_blocking(fd, false);
 	if (ret != 0) {
 		DBG_WARNING("set_blocking failed: %s\n", strerror(ret));
-		asys_context_destroy(conn->asys_ctx);
-		conn->asys_ctx = NULL;
-		return false;
+		goto fail;
 	}
 
 	conn->asys_fde = tevent_add_fd(conn->ev_ctx, conn, fd,
@@ -718,11 +716,14 @@ static bool vfswrap_init_asys_ctx(struct smbd_server_connection *conn)
 				       conn->asys_ctx);
 	if (conn->asys_fde == NULL) {
 		DEBUG(1, ("tevent_add_fd failed\n"));
-		asys_context_destroy(conn->asys_ctx);
-		conn->asys_ctx = NULL;
-		return false;
+		goto fail;
 	}
 	return true;
+
+fail:
+	asys_context_destroy(conn->asys_ctx);
+	conn->asys_ctx = NULL;
+	return false;
 }
 
 struct vfswrap_asys_state {
