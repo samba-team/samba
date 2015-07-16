@@ -704,7 +704,13 @@ static bool vfswrap_init_asys_ctx(struct smbd_server_connection *conn)
 
 	fd = asys_signalfd(conn->asys_ctx);
 
-	set_blocking(fd, false);
+	ret = set_blocking(fd, false);
+	if (ret != 0) {
+		DBG_WARNING("set_blocking failed: %s\n", strerror(ret));
+		asys_context_destroy(conn->asys_ctx);
+		conn->asys_ctx = NULL;
+		return false;
+	}
 
 	conn->asys_fde = tevent_add_fd(conn->ev_ctx, conn, fd,
 				       TEVENT_FD_READ,
