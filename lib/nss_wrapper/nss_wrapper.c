@@ -477,8 +477,17 @@ struct nwrap_main {
 	struct nwrap_libc *libc;
 };
 
-struct nwrap_main *nwrap_main_global;
-struct nwrap_main __nwrap_main_global;
+static struct nwrap_main *nwrap_main_global;
+static struct nwrap_main __nwrap_main_global;
+
+/*
+ * PROTOTYPES
+ */
+static int nwrap_convert_he_ai(const struct hostent *he,
+			       unsigned short port,
+			       const struct addrinfo *hints,
+			       struct addrinfo **pai,
+			       bool skip_canonname);
 
 /*
  * VECTORS
@@ -678,13 +687,12 @@ static void nwrap_he_unload(struct nwrap_cache *nwrap);
 
 struct nwrap_addrdata {
 	unsigned char host_addr[16]; /* IPv4 or IPv6 address */
-	char *h_addr_ptrs[2]; /* host_addr pointer + NULL */
 };
 
 static size_t max_hostents = 100;
 
 struct nwrap_entdata {
-	struct nwrap_addrdata *addr;
+	struct nwrap_addrdata addr;
 	struct hostent ht;
 
 	struct nwrap_vector nwrap_addrdata;
@@ -700,12 +708,13 @@ struct nwrap_he {
 
 	struct nwrap_entdata *list;
 	struct nwrap_vector entdata;
+
 	int num;
 	int idx;
 };
 
-struct nwrap_cache __nwrap_cache_he;
-struct nwrap_he nwrap_he_global;
+static struct nwrap_cache __nwrap_cache_he;
+static struct nwrap_he nwrap_he_global;
 
 
 /*********************************************************
@@ -2591,31 +2600,22 @@ static bool nwrap_add_hname(const char *const h_name_a,
 static bool nwrap_he_parse_line(struct nwrap_cache *nwrap, char *line)
 {
 	struct nwrap_he *nwrap_he = (struct nwrap_he *)nwrap->private_data;
-	struct nwrap_entdata *ed;
-	size_t list_size;
 	bool do_aliases = true;
 	ssize_t aliases_count = 0;
 	char *p;
 	char *i;
 	char *n;
 
-	list_size = sizeof(struct nwrap_entdata) * (nwrap_he->num + 1);
+	char *ip;
 
-	ed = (struct nwrap_entdata *)realloc(nwrap_he->list, list_size);
+	struct nwrap_entdata *ed = (struct nwrap_entdata *)
+				   malloc(sizeof(struct nwrap_entdata));
 	if (ed == NULL) {
-		NWRAP_LOG(NWRAP_LOG_ERROR, "realloc[%zd] failed", list_size);
+		NWRAP_LOG(NWRAP_LOG_ERROR,
+			  "Unable to allocate memory for nwrap_entdata");
 		return false;
 	}
-	nwrap_he->list = ed;
-
-	/* set it to the last element */
-	ed = &(nwrap_he->list[nwrap_he->num]);
-
-	ed->addr = malloc(sizeof(struct nwrap_addrdata));
-	if (ed->addr == NULL) {
-		NWRAP_LOG(NWRAP_LOG_ERROR, "realloc[%zd] failed", list_size);
-		return false;
-	}
+	ZERO_STRUCTP(ed);
 
 	i = line;
 
@@ -2629,6 +2629,7 @@ static bool nwrap_he_parse_line(struct nwrap_cache *nwrap, char *line)
 			NWRAP_LOG(NWRAP_LOG_ERROR,
 				  "Invalid line[%s]: '%s'",
 				  line, i);
+			free(ed);
 			return false;
 		}
 	}
@@ -2638,17 +2639,18 @@ static bool nwrap_he_parse_line(struct nwrap_cache *nwrap, char *line)
 			NWRAP_LOG(NWRAP_LOG_ERROR,
 				  "Invalid line[%s]: '%s'",
 				  line, i);
+			free(ed);
 			return false;
 		}
 	}
 
 	*p = '\0';
 
-	if (inet_pton(AF_INET, i, ed->addr->host_addr)) {
+	if (inet_pton(AF_INET, i, ed->addr.host_addr)) {
 		ed->ht.h_addrtype = AF_INET;
 		ed->ht.h_length = 4;
 #ifdef HAVE_IPV6
-	} else if (inet_pton(AF_INET6, i, ed->addr->host_addr)) {
+	} else if (inet_pton(AF_INET6, i, ed->addr.host_addr)) {
 		ed->ht.h_addrtype = AF_INET6;
 		ed->ht.h_length = 16;
 #endif
@@ -2657,13 +2659,14 @@ static bool nwrap_he_parse_line(struct nwrap_cache *nwrap, char *line)
 			  "Invalid line[%s]: '%s'",
 			  line, i);
 
+		free(ed);
 		return false;
 	}
+	ip = i;
 
-	ed->addr->h_addr_ptrs[0] = (char *)ed->addr->host_addr;
-	ed->addr->h_addr_ptrs[1] = NULL;
-
-	ed->ht.h_addr_list = ed->addr->h_addr_ptrs;
+	nwrap_vector_add_item(&(ed->nwrap_addrdata),
+			      (void *const)ed->addr.host_addr);
+	ed->ht.h_addr_list = nwrap_vector_head(&ed->nwrap_addrdata);
 
 	p++;
 
@@ -2678,6 +2681,7 @@ static bool nwrap_he_parse_line(struct nwrap_cache *nwrap, char *line)
 				  "Invalid line[%s]: '%s'",
 				  line, n);
 
+			free(ed);
 			return false;
 		}
 	}
@@ -2691,11 +2695,14 @@ static bool nwrap_he_parse_line(struct nwrap_cache *nwrap, char *line)
 
 	*p = '\0';
 
+	/* Convert to lowercase. This operate on same memory region */
+	str_tolower(n, n);
 	ed->ht.h_name = n;
 
 	/* glib's getent always dereferences he->h_aliases */
 	ed->ht.h_aliases = malloc(sizeof(char *));
 	if (ed->ht.h_aliases == NULL) {
+		free(ed);
 		return false;
 	}
 	ed->ht.h_aliases[0] = NULL;
@@ -2732,15 +2739,24 @@ static bool nwrap_he_parse_line(struct nwrap_cache *nwrap, char *line)
 
 		aliases = realloc(ed->ht.h_aliases, sizeof(char *) * (aliases_count + 2));
 		if (aliases == NULL) {
+			free(ed);
 			return false;
 		}
 		ed->ht.h_aliases = aliases;
 
+		str_tolower(a, a);
 		aliases[aliases_count] = a;
 		aliases[aliases_count + 1] = NULL;
 
-		aliases_count++;
+		aliases_count += 1;
 	}
+
+	nwrap_vector_add_item(&(nwrap_he->entdata), (void *const)ed);
+
+	ed->aliases_count = aliases_count;
+	/* Inventarize item */
+	nwrap_add_hname(NULL, ed);
+	nwrap_add_ai(ip, ed);
 
 	nwrap_he->num++;
 	return true;
@@ -2750,15 +2766,16 @@ static void nwrap_he_unload(struct nwrap_cache *nwrap)
 {
 	struct nwrap_he *nwrap_he =
 		(struct nwrap_he *)nwrap->private_data;
-	int i;
+	struct nwrap_entdata *ed;
+	size_t i;
 
-	if (nwrap_he->list != NULL) {
-		for (i = 0; i < nwrap_he->num; i++) {
-			SAFE_FREE(nwrap_he->list[i].ht.h_aliases);
-			SAFE_FREE(nwrap_he->list[i].addr);
-		}
-		SAFE_FREE(nwrap_he->list);
+	nwrap_vector_foreach (ed, nwrap_he->entdata, i)
+	{
+		SAFE_FREE(ed->ht.h_aliases);
+		SAFE_FREE(ed);
 	}
+	SAFE_FREE(nwrap_he->entdata.items);
+	nwrap_he->entdata.count = nwrap_he->entdata.capacity = 0;
 
 	nwrap_he->num = 0;
 	nwrap_he->idx = 0;
@@ -3181,12 +3198,19 @@ static void nwrap_files_endgrent(struct nwrap_backend *b)
 }
 
 /* hosts functions */
-static struct hostent *nwrap_files_gethostbyname(const char *name, int af)
+static int nwrap_files_gethostbyname(const char *name, int af,
+				     struct hostent *result,
+				     struct nwrap_vector *addr_list)
 {
+	struct nwrap_entdata *ed_head;
+	struct nwrap_entdata *ed_cur;
 	struct hostent *he;
+	char *h_name_lower;
+	ENTRY e;
+	ENTRY *e_p;
 	char canon_name[DNS_NAME_MAX] = { 0 };
 	size_t name_len;
-	int i;
+	bool he_found = false;
 
 	nwrap_files_cache_reload(nwrap_he_global.cache);
 
@@ -3196,37 +3220,69 @@ static struct hostent *nwrap_files_gethostbyname(const char *name, int af)
 		name = canon_name;
 	}
 
-	for (i = 0; i < nwrap_he_global.num; i++) {
-		int j;
+	if (!str_tolower_copy(&h_name_lower, name)) {
+		NWRAP_LOG(NWRAP_LOG_DEBUG,
+			  "Out of memory while converting to lower case");
+		goto no_ent;
+	}
 
-		he = &nwrap_he_global.list[i].ht;
+	/* Look at hash table for element */
+	NWRAP_LOG(NWRAP_LOG_DEBUG, "Searching for name: %s", h_name_lower);
+	e.key = h_name_lower;
+	e.data = NULL;
+	e_p = hsearch(e, FIND);
+	if (e_p == NULL) {
+		NWRAP_LOG(NWRAP_LOG_DEBUG, "Name %s not found.", h_name_lower);
+		SAFE_FREE(h_name_lower);
+		goto no_ent;
+	}
+	SAFE_FREE(h_name_lower);
+
+	/* Always cleanup vector and results */
+	if (!nwrap_vector_init(addr_list)) {
+		NWRAP_LOG(NWRAP_LOG_DEBUG,
+			  "Unable to initialize memory for addr_list vector");
+		goto no_ent;
+	}
+
+	/* Iterate through results */
+	ed_head = (struct nwrap_entdata *)e_p->data;
+	for (ed_cur = ed_head; ed_cur != NULL; ed_cur = ed_cur->ed_next) {
+		he = &(ed_cur->ht);
 
 		/* Filter by address familiy if provided */
 		if (af != AF_UNSPEC && he->h_addrtype != af) {
 			continue;
 		}
 
-		if (strcasecmp(he->h_name, name) == 0) {
-			NWRAP_LOG(NWRAP_LOG_DEBUG, "name[%s] found", name);
-			return he;
-		}
-
-		if (he->h_aliases == NULL) {
+		/*
+		 * GLIBC HACK?
+		 * glibc doesn't return ipv6 addresses when AF_UNSPEC is used
+		 */
+		if (af == AF_UNSPEC && he->h_addrtype != AF_INET) {
 			continue;
 		}
 
-		for (j = 0; he->h_aliases[j] != NULL; j++) {
-			if (strcasecmp(he->h_aliases[j], name) == 0) {
-				NWRAP_LOG(NWRAP_LOG_DEBUG,
-					  "name[%s] found",
-					  name);
-				return he;
-			}
+		if (!he_found) {
+			memcpy(result, he, sizeof(struct hostent));
+			NWRAP_LOG(NWRAP_LOG_DEBUG,
+				  "Name found. Returning record for %s",
+				  he->h_name);
+			he_found = true;
 		}
+		nwrap_vector_merge(addr_list, &ed_cur->nwrap_addrdata);
+		result->h_addr_list = nwrap_vector_head(addr_list);
 	}
 
+	if (he_found) {
+		return 0;
+	}
+	NWRAP_LOG(NWRAP_LOG_DEBUG,
+		  "Name found in database. No records matches type.");
+
+no_ent:
 	errno = ENOENT;
-	return NULL;
+	return -1;
 }
 
 #ifdef HAVE_GETHOSTBYNAME_R
@@ -3235,15 +3291,32 @@ static int nwrap_gethostbyname_r(const char *name,
 				 char *buf, size_t buflen,
 				 struct hostent **result, int *h_errnop)
 {
-	*result = nwrap_files_gethostbyname(name, AF_UNSPEC);
-	if (*result != NULL) {
-		memset(buf, '\0', buflen);
-		*ret = **result;
-		return 0;
-	} else {
-		*h_errnop = h_errno;
+	struct nwrap_vector *addr_list = malloc(sizeof(struct nwrap_vector));
+	int rc;
+
+	if (addr_list == NULL) {
+		NWRAP_LOG(NWRAP_LOG_ERROR,
+			  "Unable to allocate memory for address list");
+		errno = ENOENT;
 		return -1;
 	}
+
+	ZERO_STRUCTP(addr_list);
+
+	rc = nwrap_files_gethostbyname(name, AF_UNSPEC, ret, addr_list);
+	if (rc == -1) {
+		*h_errnop = h_errno;
+		if (addr_list->items != NULL) {
+			free(addr_list->items);
+		}
+		SAFE_FREE(addr_list);
+		errno = ENOENT;
+		return -1;
+	}
+
+	memset(buf, '\0', buflen);
+	*result = ret;
+	return 0;
 }
 
 int gethostbyname_r(const char *name,
@@ -3264,13 +3337,98 @@ int gethostbyname_r(const char *name,
 }
 #endif
 
+static struct addrinfo *nwrap_files_getaddrinfo(const char *name,
+					        unsigned short port,
+					        const struct addrinfo *hints,
+					        struct addrinfo **ai_tail)
+{
+	struct nwrap_entdata *ed_head;
+	struct nwrap_entdata *ed_cur;
+	struct hostent *he;
+	struct addrinfo *ai = NULL;
+	struct addrinfo *ai_head = NULL;
+	struct addrinfo *ai_prev = NULL;
+	char *h_name_lower;
+	size_t name_len;
+	char canon_name[DNS_NAME_MAX] = { 0 };
+	bool skip_canonname = false;
+	ENTRY e;
+	ENTRY *e_p;
+
+	nwrap_files_cache_reload(nwrap_he_global.cache);
+
+	name_len = strlen(name);
+	if (name_len < DNS_NAME_MAX && name[name_len - 1] == '.') {
+		strncpy(canon_name, name, name_len - 1);
+		name = canon_name;
+	}
+
+	if (!str_tolower_copy(&h_name_lower, name)) {
+		NWRAP_LOG(NWRAP_LOG_DEBUG,
+			  "Out of memory while converting to lower case");
+		return NULL;
+	}
+
+	NWRAP_LOG(NWRAP_LOG_DEBUG, "Searching for name: %s", h_name_lower);
+	e.key = h_name_lower;
+	e.data = NULL;
+	e_p = hsearch(e, FIND);
+	if (e_p == NULL) {
+		NWRAP_LOG(NWRAP_LOG_DEBUG, "Name %s not found.", h_name_lower);
+		SAFE_FREE(h_name_lower);
+		errno = ENOENT;
+		return NULL;
+	}
+	NWRAP_LOG(NWRAP_LOG_DEBUG, "Name: %s found.", h_name_lower);
+	SAFE_FREE(h_name_lower);
+
+	ed_head = (struct nwrap_entdata *)e_p->data;
+
+	for (ed_cur = ed_head; ed_cur != NULL; ed_cur = ed_cur->ed_next) {
+		int rc;
+
+		he = &(ed_cur->ht);
+
+		if (hints->ai_family != AF_UNSPEC &&
+		    he->h_addrtype != hints->ai_family) {
+			continue;
+		}
+
+		/* Function allocates memory and returns it in ai. */
+		rc = nwrap_convert_he_ai(he,
+					 port,
+					 hints,
+					 &ai,
+					 skip_canonname);
+		if (rc != 0) {
+			/* FIXME: Investigate if this is nice to do... */
+			NWRAP_LOG(NWRAP_LOG_ERROR,
+				  "Error in converting he to ai! Skipping.");
+			continue;
+		}
+		skip_canonname = true;
+
+		if (ai_head == NULL) {
+			ai_head = ai;
+		}
+		if (ai_prev != NULL) {
+			ai_prev->ai_next = ai;
+		}
+		ai_prev = ai;
+	}
+
+	*ai_tail = ai;
+	return ai_head;
+}
+
 static struct hostent *nwrap_files_gethostbyaddr(const void *addr,
 						 socklen_t len, int type)
 {
 	struct hostent *he;
 	char ip[NWRAP_INET_ADDRSTRLEN] = {0};
+	struct nwrap_entdata *ed;
 	const char *a;
-	int i;
+	size_t i;
 
 	(void) len; /* unused */
 
@@ -3282,9 +3440,9 @@ static struct hostent *nwrap_files_gethostbyaddr(const void *addr,
 		return NULL;
 	}
 
-	for (i = 0; i < nwrap_he_global.num; i++) {
-		he = &nwrap_he_global.list[i].ht;
-
+	nwrap_vector_foreach(ed, nwrap_he_global.entdata, i)
+	{
+		he = &(ed->ht);
 		if (he->h_addrtype != type) {
 			continue;
 		}
@@ -3354,7 +3512,7 @@ static struct hostent *nwrap_files_gethostent(void)
 		return NULL;
 	}
 
-	he = &nwrap_he_global.list[nwrap_he_global.idx++].ht;
+	he = &((struct nwrap_entdata *)nwrap_he_global.entdata.items[nwrap_he_global.idx++])->ht;
 
 	NWRAP_LOG(NWRAP_LOG_DEBUG, "return hosts[%s]", he->h_name);
 
@@ -4588,9 +4746,14 @@ void endhostent(void)
 }
 #endif /* HAVE_SOLARIS_ENDHOSTENT */
 
+static struct hostent user_he;
+static struct nwrap_vector user_addrlist;
 static struct hostent *nwrap_gethostbyname(const char *name)
 {
-	return nwrap_files_gethostbyname(name, AF_UNSPEC);
+	if (nwrap_files_gethostbyname(name, AF_UNSPEC, &user_he, &user_addrlist) == -1) {
+		return NULL;
+	}
+	return &user_he;
 }
 
 struct hostent *gethostbyname(const char *name)
@@ -4602,11 +4765,15 @@ struct hostent *gethostbyname(const char *name)
 	return nwrap_gethostbyname(name);
 }
 
-/* This is a GNU extension */
 #ifdef HAVE_GETHOSTBYNAME2
+static struct hostent user_he2;
+static struct nwrap_vector user_addrlist2;
 static struct hostent *nwrap_gethostbyname2(const char *name, int af)
 {
-	return nwrap_files_gethostbyname(name, af);
+	if (nwrap_files_gethostbyname(name, af, &user_he2, &user_addrlist2) == -1) {
+		return NULL;
+	}
+	return &user_he2;
 }
 
 struct hostent *gethostbyname2(const char *name, int af)
@@ -4650,10 +4817,15 @@ static const struct addrinfo default_hints =
 static int nwrap_convert_he_ai(const struct hostent *he,
 			       unsigned short port,
 			       const struct addrinfo *hints,
-			       struct addrinfo **pai)
+			       struct addrinfo **pai,
+			       bool skip_canonname)
 {
 	struct addrinfo *ai;
 	socklen_t socklen;
+
+	if (he == NULL) {
+		return EAI_MEMORY;
+	}
 
 	switch (he->h_addrtype) {
 		case AF_INET:
@@ -4677,6 +4849,7 @@ static int nwrap_convert_he_ai(const struct hostent *he,
 	ai->ai_family = he->h_addrtype;
 	ai->ai_socktype = hints->ai_socktype;
 	ai->ai_protocol = hints->ai_protocol;
+	ai->ai_canonname = NULL;
 
 	ai->ai_addrlen = socklen;
 	ai->ai_addr = (void *)(ai + 1);
@@ -4713,7 +4886,9 @@ static int nwrap_convert_he_ai(const struct hostent *he,
 			sin6p->sin6_port = htons(port);
 			sin6p->sin6_family = AF_INET6;
 
-			memcpy(&sin6p->sin6_addr, he->h_addr_list[0], he->h_length);
+			memcpy(&sin6p->sin6_addr,
+			       he->h_addr_list[0],
+			       he->h_length);
 		}
 		break;
 #endif
@@ -4721,7 +4896,7 @@ static int nwrap_convert_he_ai(const struct hostent *he,
 
 	ai->ai_next = NULL;
 
-	if (he->h_name) {
+	if (he->h_name && !skip_canonname) {
 		ai->ai_canonname = strdup(he->h_name);
 		if (ai->ai_canonname == NULL) {
 			freeaddrinfo(ai);
@@ -4740,8 +4915,8 @@ static int nwrap_getaddrinfo(const char *node,
 {
 	struct addrinfo *ai = NULL;
 	struct addrinfo *p = NULL;
+	struct addrinfo *ai_tail;
 	unsigned short port = 0;
-	struct hostent *he;
 	struct {
 		int family;
 		union {
@@ -4761,22 +4936,25 @@ static int nwrap_getaddrinfo(const char *node,
 		return EAI_NONAME;
 	}
 
-	ret = libc_getaddrinfo(node, service, hints, &p);
-	if (ret == 0) {
-		*res = p;
-	}
-
-	/* If no node has been specified, let glibc deal with it */
-	if (node == NULL) {
-		return ret;
-	}
-
 	if (hints == NULL) {
 		hints = &default_hints;
 	}
 
-	if ((hints->ai_flags & AI_CANONNAME) && node == NULL) {
+        /* EAI_BADFLAGS
+              hints.ai_flags   contains   invalid  flags;  or,  hints.ai_flags
+              included AI_CANONNAME and name was NULL.
+	*/
+	if ((hints->ai_flags & AI_CANONNAME) && (node == NULL)) {
 		return EAI_BADFLAGS;
+	}
+
+	ret = libc_getaddrinfo(node, service, hints, &p);
+	if (ret == 0) {
+		*res = p;
+	}
+	/* If no node has been specified, let glibc deal with it */
+	if (node == NULL) {
+		return ret;
 	}
 
 	if (service != NULL && service[0] != '\0') {
@@ -4822,37 +5000,23 @@ static int nwrap_getaddrinfo(const char *node,
 #endif
 	}
 
+	rc = -1;
 	if (addr.family == AF_INET) {
-		he = nwrap_files_gethostbyaddr(&addr.in.v4,
-					       sizeof(struct in_addr),
-					       addr.family);
-		if (he != NULL) {
-			rc = nwrap_convert_he_ai(he, port, hints, &ai);
-		} else {
-			eai = EAI_NODATA;
-			rc = -1;
+		ai = nwrap_files_getaddrinfo(node, port, hints, &ai_tail);
+		if (ai != NULL) {
+			rc = 1;
 		}
 #ifdef HAVE_IPV6
 	} else if (addr.family == AF_INET6) {
-		he = nwrap_files_gethostbyaddr(&addr.in.v6,
-					       sizeof(struct in6_addr),
-					       addr.family);
-		if (he != NULL) {
-			rc = nwrap_convert_he_ai(he, port, hints, &ai);
-			eai = rc;
-		} else {
-			eai = EAI_NODATA;
-			rc = -1;
+		ai = nwrap_files_getaddrinfo(node, port, hints, &ai_tail);
+		if (ai != NULL) {
+			rc = 1;
 		}
 #endif
 	} else {
-		he = nwrap_files_gethostbyname(node, hints->ai_family);
-		if (he != NULL) {
-			rc = nwrap_convert_he_ai(he, port, hints, &ai);
-			eai = rc;
-		} else {
-			eai = EAI_NODATA;
-			rc = -1;
+		ai = nwrap_files_getaddrinfo(node, port, hints, &ai_tail);
+		if (ai != NULL) {
+			rc = 1;
 		}
 	}
 
@@ -4878,25 +5042,46 @@ static int nwrap_getaddrinfo(const char *node,
 
 	if (hints->ai_socktype == 0) {
 		/* Add second ai */
-		rc = nwrap_convert_he_ai(he, port, hints, &ai->ai_next);
-		if (rc < 0) {
-			freeaddrinfo(ai);
-			return rc;
-		}
+		struct addrinfo *ai_head = ai;
+		struct addrinfo *ai_tmp;
+		struct addrinfo *ai_new_tail = ai_tail;
 
-		if (ai->ai_next->ai_flags == 0) {
-			ai->ai_next->ai_flags = hints->ai_flags;
-		}
-		if (ai->ai_socktype == SOCK_DGRAM) {
-			ai->ai_next->ai_socktype = SOCK_STREAM;
-		} else if (ai->ai_socktype == SOCK_STREAM) {
-			ai->ai_next->ai_socktype = SOCK_DGRAM;
-		}
-		if (ai->ai_next->ai_socktype == SOCK_DGRAM) {
-			ai->ai_next->ai_protocol = 17; /* UDP */
-		} else if (ai->ai_next->ai_socktype == SOCK_STREAM) {
-			ai->ai_next->ai_protocol = 6; /* TCP */
-		}
+		/* Add at least one more struct */
+		do {
+			/* CHECKS! */
+			ai_tmp = malloc(sizeof(struct addrinfo));
+			memcpy(ai_tmp, ai_head, sizeof(struct addrinfo));
+			ai_tmp->ai_next = NULL;
+
+			/* We need a deep copy or freeaddrinfo() will blow up */
+			if (ai_head->ai_canonname != NULL) {
+				ai_tmp->ai_canonname =
+					strdup(ai_head->ai_canonname);
+			}
+			ai_tmp->ai_addr = malloc(sizeof(struct sockaddr));
+			memcpy(ai_tmp->ai_addr, ai_head, sizeof(struct sockaddr));
+
+			if (ai_head->ai_flags == 0) {
+				ai_tmp->ai_flags = hints->ai_flags;
+			}
+			if (ai_head->ai_socktype == SOCK_DGRAM) {
+				ai_tmp->ai_socktype = SOCK_STREAM;
+			} else if (ai_head->ai_socktype == SOCK_STREAM) {
+				ai_tmp->ai_socktype = SOCK_DGRAM;
+			}
+			if (ai_head->ai_socktype == SOCK_DGRAM) {
+				ai_tmp->ai_protocol = 17; /* UDP */
+			} else if (ai_head->ai_socktype == SOCK_STREAM) {
+				ai_tmp->ai_protocol = 6; /* TCP */
+			}
+			ai_new_tail->ai_next = ai_tmp;
+			ai_new_tail = ai_tmp;
+
+			if (ai_head == ai_tail) {
+				break;
+			}
+			ai_head = ai_head->ai_next;
+		} while (1);
 	}
 
 	*res = ai;
@@ -5121,7 +5306,6 @@ void nwrap_destructor(void)
 			c->fd = -1;
 		}
 
-		SAFE_FREE(nwrap_he_global.list);
 		nwrap_he_global.num = 0;
 	}
 
