@@ -650,7 +650,11 @@ static PyObject *obj_getitem(PyTdbObject *self, PyObject *key)
 
 	val = tdb_fetch(self->ctx, tkey);
 	if (val.dptr == NULL) {
-		PyErr_SetString(PyExc_KeyError, "No such TDB entry");
+		/*
+		 * if the key doesn't exist raise KeyError(key) to be
+		 * consistent with python dict
+		 */
+		PyErr_SetObject(PyExc_KeyError, key);
 		return NULL;
 	} else {
 		return PyBytes_FromTDB_DATA(val);
