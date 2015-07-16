@@ -1423,6 +1423,88 @@ static bool test_GetNodeId(struct torture_context *tctx,
 	return ret;
 }
 
+static bool test_NodeControl_int(struct torture_context *tctx,
+				 struct dcerpc_pipe *p,
+				 struct policy_handle *hNode)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_NodeControl r;
+	uint32_t lpBytesReturned;
+	uint32_t lpcbRequired;
+	WERROR rpc_status;
+
+	r.in.hNode = *hNode;
+	r.in.dwControlCode = 0;
+	r.in.lpInBuffer = NULL;
+	r.in.nInBufferSize = 0;
+	r.in.nOutBufferSize = 0;
+	r.out.lpOutBuffer = NULL;
+	r.out.lpBytesReturned = &lpBytesReturned;
+	r.out.lpcbRequired = &lpcbRequired;
+	r.out.rpc_status = &rpc_status;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_NodeControl_r(b, tctx, &r),
+		"NodeControl failed");
+	torture_assert_werr_equal(tctx,
+		r.out.result,
+		WERR_INVALID_FUNCTION,
+		"NodeControl failed");
+
+	r.in.dwControlCode = CLUSCTL_NODE_GET_RO_COMMON_PROPERTIES;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_NodeControl_r(b, tctx, &r),
+		"NodeControl failed");
+
+	if (W_ERROR_EQUAL(r.out.result, WERR_MORE_DATA)) {
+		r.out.lpOutBuffer = talloc_zero_array(tctx, uint8_t, *r.out.lpcbRequired);
+		r.in.nOutBufferSize = *r.out.lpcbRequired;
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_clusapi_NodeControl_r(b, tctx, &r),
+			"NodeControl failed");
+	}
+	torture_assert_werr_ok(tctx,
+		r.out.result,
+		"NodeControl failed");
+
+	/* now try what happens when we query with a buffer large enough to hold
+	 * the entire packet */
+
+	r.in.nOutBufferSize = 0x400;
+	r.out.lpOutBuffer = talloc_zero_array(tctx, uint8_t, r.in.nOutBufferSize);
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_NodeControl_r(b, tctx, &r),
+		"NodeControl failed");
+	torture_assert_werr_ok(tctx,
+		r.out.result,
+		"NodeControl failed");
+	torture_assert(tctx, *r.out.lpBytesReturned < r.in.nOutBufferSize,
+		"lpBytesReturned expected to be smaller than input size nOutBufferSize");
+
+	return true;
+}
+
+static bool test_NodeControl(struct torture_context *tctx,
+			     void *data)
+{
+	struct torture_clusapi_context *t =
+		talloc_get_type_abort(data, struct torture_clusapi_context);
+	struct policy_handle hNode;
+	bool ret = true;
+
+	if (!test_OpenNode_int(tctx, t->p, t->NodeName, &hNode)) {
+		return false;
+	}
+
+	ret = test_NodeControl_int(tctx, t->p, &hNode);
+
+	test_CloseNode_int(tctx, t->p, &hNode);
+
+	return ret;
+}
+
 static bool test_PauseNode_int(struct torture_context *tctx,
 			       struct dcerpc_pipe *p,
 			       struct policy_handle *hNode)
@@ -3261,6 +3343,8 @@ void torture_tcase_node(struct torture_tcase *tcase)
 				      test_GetNodeState);
 	torture_tcase_add_simple_test(tcase, "GetNodeId",
 				      test_GetNodeId);
+	torture_tcase_add_simple_test(tcase, "NodeControl",
+				      test_NodeControl);
 	test = torture_tcase_add_simple_test(tcase, "PauseNode",
 					     test_PauseNode);
 	test->dangerous = true;
