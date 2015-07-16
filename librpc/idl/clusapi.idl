@@ -1,4 +1,4 @@
-import "security.idl", "winreg.idl";
+import "security.idl", "winreg.idl", "misc.idl";
 
 #include "idl_types.h"
 
@@ -546,7 +546,7 @@ import "security.idl", "winreg.idl";
 	clusapi_SetValue(
 		[ in ] HKEY_RPC hKey,
 		[ in, string ] [charset(UTF16)] uint16 *lpValueName,
-		[ in ] uint32 dwType,
+		[ in ] winreg_Type dwType,
 		[ in, size_is(cbData) ] uint8 *lpData,
 		[ in ] uint32 cbData,
 		[ out ] WERROR *rpc_status
@@ -569,7 +569,7 @@ import "security.idl", "winreg.idl";
 	clusapi_QueryValue(
 		[ in ] HKEY_RPC hKey,
 		[ in, string ] [charset(UTF16)] uint16 *lpValueName,
-		[ out ] uint32 *lpValueType,
+		[ out ] winreg_Type *lpValueType,
 		[ out, size_is(cbData) ] uint8 *lpData,
 		[ in ] uint32 cbData,
 		[ out ] uint32 *lpcbRequired,
@@ -594,7 +594,7 @@ import "security.idl", "winreg.idl";
 		[ in ] HKEY_RPC hKey,
 		[ in ] uint32 dwIndex,
 		[ out, string ] [charset(UTF16)] uint16 **lpValueName,
-		[ out ] uint32 *lpType,
+		[ out ] winreg_Type *lpType,
 		[ out, size_is(*lpcbData) ] uint8 *lpData,
 		[ in, out ] uint32 *lpcbData,
 		[ out ] uint32 *TotalSize,
