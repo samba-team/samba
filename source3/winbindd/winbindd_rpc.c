@@ -1081,7 +1081,7 @@ static NTSTATUS rpc_try_lookup_sids3(TALLOC_CTX *mem_ctx,
 {
 	struct lsa_TransNameArray2 lsa_names2;
 	struct lsa_TransNameArray *names = *pnames;
-	uint32_t i, count;
+	uint32_t i, count = 0;
 	NTSTATUS status, result;
 
 	ZERO_STRUCT(lsa_names2);
