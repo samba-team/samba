@@ -1816,6 +1816,97 @@ static bool test_GetGroupId(struct torture_context *tctx,
 	return ret;
 }
 
+static bool test_GroupControl_int(struct torture_context *tctx,
+				  struct dcerpc_pipe *p,
+				  struct policy_handle *hGroup,
+				  enum clusapi_GroupControlCode dwControlCode)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_GroupControl r;
+	uint32_t lpBytesReturned;
+	uint32_t lpcbRequired;
+	WERROR rpc_status;
+
+	r.in.hGroup = *hGroup;
+	r.in.dwControlCode = 0;
+	r.in.lpInBuffer = NULL;
+	r.in.nInBufferSize = 0;
+	r.in.nOutBufferSize = 0;
+	r.out.lpOutBuffer = NULL;
+	r.out.lpBytesReturned = &lpBytesReturned;
+	r.out.lpcbRequired = &lpcbRequired;
+	r.out.rpc_status = &rpc_status;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_GroupControl_r(b, tctx, &r),
+		"GroupControl failed");
+	torture_assert_werr_equal(tctx,
+		r.out.result,
+		WERR_INVALID_FUNCTION,
+		"GroupControl failed");
+
+	r.in.dwControlCode = dwControlCode;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_GroupControl_r(b, tctx, &r),
+		"GroupControl failed");
+
+	if (W_ERROR_EQUAL(r.out.result, WERR_MORE_DATA)) {
+		r.out.lpOutBuffer = talloc_zero_array(tctx, uint8_t, *r.out.lpcbRequired);
+		r.in.nOutBufferSize = *r.out.lpcbRequired;
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_clusapi_GroupControl_r(b, tctx, &r),
+			"GroupControl failed");
+	}
+	torture_assert_werr_ok(tctx,
+		r.out.result,
+		"GroupControl failed");
+
+	/* now try what happens when we query with a buffer large enough to hold
+	 * the entire packet */
+
+	r.in.nOutBufferSize = 0x400;
+	r.out.lpOutBuffer = talloc_zero_array(tctx, uint8_t, r.in.nOutBufferSize);
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_GroupControl_r(b, tctx, &r),
+		"GroupControl failed");
+	torture_assert_werr_ok(tctx,
+		r.out.result,
+		"GroupControl failed");
+	torture_assert(tctx, *r.out.lpBytesReturned < r.in.nOutBufferSize,
+		"lpBytesReturned expected to be smaller than input size nOutBufferSize");
+
+	return true;
+}
+
+static bool test_GroupControl(struct torture_context *tctx,
+			      void *data)
+{
+	struct torture_clusapi_context *t =
+		talloc_get_type_abort(data, struct torture_clusapi_context);
+	struct policy_handle hGroup;
+	bool ret = true;
+
+	if (!test_OpenGroup_int(tctx, t->p, "Cluster Group", &hGroup)) {
+		return false;
+	}
+
+	ret = test_GroupControl_int(tctx, t->p, &hGroup, CLUSCTL_GROUP_GET_CHARACTERISTICS);
+	if (ret) {
+		return false;
+	}
+
+	ret = test_GroupControl_int(tctx, t->p, &hGroup, CLUSCTL_GROUP_GET_RO_COMMON_PROPERTIES);
+	if (ret) {
+		return false;
+	}
+
+	test_CloseGroup_int(tctx, t->p, &hGroup);
+
+	return ret;
+}
+
 static bool test_OnlineGroup_int(struct torture_context *tctx,
 				 struct dcerpc_pipe *p,
 				 struct policy_handle *hGroup)
@@ -3196,6 +3287,8 @@ void torture_tcase_group(struct torture_tcase *tcase)
 				      test_GetGroupState);
 	torture_tcase_add_simple_test(tcase, "GetGroupId",
 				      test_GetGroupId);
+	torture_tcase_add_simple_test(tcase, "GroupControl",
+				      test_GroupControl);
 	torture_tcase_add_simple_test(tcase, "OnlineGroup",
 				      test_OnlineGroup);
 	test = torture_tcase_add_simple_test(tcase, "OfflineGroup",
