@@ -120,7 +120,7 @@ NTSTATUS rpc_query_user_list(TALLOC_CTX *mem_ctx,
 
 			dst->homedir = NULL;
 			dst->shell = NULL;
-
+			dst->primary_gid = (gid_t)-1;
 			sid_compose(&dst->user_sid, domain_sid, rid);
 
 			/* For the moment we set the primary group for
