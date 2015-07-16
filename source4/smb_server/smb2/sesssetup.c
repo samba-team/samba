@@ -201,14 +201,6 @@ static void smb2srv_sesssetup_backend(struct smb2srv_request *req, union smb_ses
 	   set SMB2_NEGOTIATE_SIGNING_REQUIRED */
 	if (io->smb2.in.security_mode & SMB2_NEGOTIATE_SIGNING_REQUIRED) {
 		smb_sess->smb2_signing.required = true;
-	} else if (req->smb_conn->smb2_signing_required) {
-		/*
-		 * if required signing was negotiates in SMB2 Negotiate
-		 * then the client made an error not using it here
-		 */
-		DEBUG(1, ("SMB2 signing required on the connection but not used on session\n"));
-		req->status = NT_STATUS_FOOBAR;
-		goto failed;
 	}
 
 	/* disable receipt of more packets on this socket until we've
