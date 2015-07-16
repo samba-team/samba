@@ -2056,6 +2056,21 @@ static bool test_ClusterControl_int(struct torture_context *tctx,
 		r.out.result,
 		"ClusterControl failed");
 
+	/* now try what happens when we query with a buffer large enough to hold
+	 * the entire packet */
+
+	r.in.nOutBufferSize = 0x400;
+	r.out.lpOutBuffer = talloc_zero_array(tctx, uint8_t, r.in.nOutBufferSize);
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_ClusterControl_r(b, tctx, &r),
+		"ClusterControl failed");
+	torture_assert_werr_ok(tctx,
+		r.out.result,
+		"ClusterControl failed");
+	torture_assert(tctx, *r.out.lpBytesReturned < r.in.nOutBufferSize,
+		"lpBytesReturned expected to be smaller than input size nOutBufferSize");
+
 	return true;
 }
 
