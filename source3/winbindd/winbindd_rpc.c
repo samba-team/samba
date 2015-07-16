@@ -190,10 +190,12 @@ NTSTATUS rpc_enum_dom_groups(TALLOC_CTX *mem_ctx,
 		}
 
 		for (g = 0; g < count; g++) {
-			fstrcpy(info[num_info + g].acct_name,
-				sam_array->entries[g].name.string);
+			struct wb_acct_info *i = &info[num_info + g];
 
-			info[num_info + g].rid = sam_array->entries[g].idx;
+			fstrcpy(i->acct_name,
+				sam_array->entries[g].name.string);
+			fstrcpy(i->acct_desc, "");
+			i->rid = sam_array->entries[g].idx;
 		}
 
 		num_info += count;
@@ -250,9 +252,12 @@ NTSTATUS rpc_enum_local_groups(TALLOC_CTX *mem_ctx,
 		}
 
 		for (g = 0; g < count; g++) {
-			fstrcpy(info[num_info + g].acct_name,
+			struct wb_acct_info *i = &info[num_info + g];
+
+			fstrcpy(i->acct_name,
 				sam_array->entries[g].name.string);
-			info[num_info + g].rid = sam_array->entries[g].idx;
+			fstrcpy(i->acct_desc, "");
+			i->rid = sam_array->entries[g].idx;
 		}
 
 		num_info += count;
