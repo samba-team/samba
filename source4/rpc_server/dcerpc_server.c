@@ -1430,6 +1430,7 @@ static NTSTATUS dcesrv_process_ncacn_packet(struct dcesrv_connection *dce_conn,
 {
 	NTSTATUS status;
 	struct dcesrv_call_state *call;
+	struct dcesrv_call_state *existing = NULL;
 
 	call = talloc_zero(dce_conn, struct dcesrv_call_state);
 	if (!call) {
@@ -1498,6 +1499,54 @@ static NTSTATUS dcesrv_process_ncacn_packet(struct dcesrv_connection *dce_conn,
 					DCERPC_NCA_S_PROTO_ERROR);
 		}
 
+		if (call->pkt.pfc_flags & DCERPC_PFC_FLAG_FIRST) {
+			/* only one request is possible in the fragmented list */
+			if (dce_conn->incoming_fragmented_call_list != NULL) {
+				TALLOC_FREE(call);
+				call = dce_conn->incoming_fragmented_call_list;
+				dcesrv_call_disconnect_after(call,
+					"dcesrv_auth_request - "
+					"existing fragmented call");
+				return dcesrv_fault(call,
+						DCERPC_NCA_S_PROTO_ERROR);
+			}
+		} else {
+			const struct dcerpc_request *nr = &call->pkt.u.request;
+			const struct dcerpc_request *er = NULL;
+			int cmp;
+
+			existing = dcesrv_find_fragmented_call(dce_conn,
+							call->pkt.call_id);
+			if (existing == NULL) {
+				dcesrv_call_disconnect_after(call,
+					"dcesrv_auth_request - "
+					"no existing fragmented call");
+				return dcesrv_fault(call,
+						DCERPC_NCA_S_PROTO_ERROR);
+			}
+			er = &existing->pkt.u.request;
+
+			if (call->pkt.ptype != existing->pkt.ptype) {
+				/* trying to play silly buggers are we? */
+				return dcesrv_fault_disconnect(existing,
+						DCERPC_NCA_S_PROTO_ERROR);
+			}
+			cmp = memcmp(call->pkt.drep, existing->pkt.drep,
+				     sizeof(pkt->drep));
+			if (cmp != 0) {
+				return dcesrv_fault_disconnect(existing,
+						DCERPC_NCA_S_PROTO_ERROR);
+			}
+			if (nr->context_id != er->context_id)  {
+				return dcesrv_fault_disconnect(existing,
+						DCERPC_NCA_S_PROTO_ERROR);
+			}
+			if (nr->opnum != er->opnum)  {
+				return dcesrv_fault_disconnect(existing,
+						DCERPC_NCA_S_PROTO_ERROR);
+			}
+		}
+
 		if (!dcesrv_auth_request(call, &blob)) {
 			/*
 			 * We don't use dcesrv_fault_disconnect()
@@ -1511,91 +1560,60 @@ static NTSTATUS dcesrv_process_ncacn_packet(struct dcesrv_connection *dce_conn,
 	}
 
 	/* see if this is a continued packet */
-	if (call->pkt.ptype == DCERPC_PKT_REQUEST &&
-	    !(call->pkt.pfc_flags & DCERPC_PFC_FLAG_FIRST)) {
-		struct dcesrv_call_state *call2 = call;
+	if (existing != NULL) {
+		struct dcerpc_request *er = &existing->pkt.u.request;
+		const struct dcerpc_request *nr = &call->pkt.u.request;
 		size_t available;
 		size_t alloc_size;
 		size_t alloc_hint;
-
-		/* this is a continuation of an existing call - find the call
-		   then tack it on the end */
-		call = dcesrv_find_fragmented_call(dce_conn, call2->pkt.call_id);
-		if (!call) {
-			return dcesrv_fault_disconnect(call2,
-					DCERPC_NCA_S_PROTO_ERROR);
-		}
-
-		if (call->pkt.ptype != call2->pkt.ptype) {
-			/* trying to play silly buggers are we? */
-			return dcesrv_fault_disconnect(call,
-					DCERPC_NCA_S_PROTO_ERROR);
-		}
-		if (memcmp(call->pkt.drep, call2->pkt.drep, sizeof(pkt->drep)) != 0) {
-			return dcesrv_fault_disconnect(call,
-					DCERPC_NCA_S_PROTO_ERROR);
-		}
-		if (call->pkt.call_id != call2->pkt.call_id) {
-			return dcesrv_fault_disconnect(call,
-					DCERPC_NCA_S_PROTO_ERROR);
-		}
-		if (call->pkt.u.request.context_id != call2->pkt.u.request.context_id)  {
-			return dcesrv_fault_disconnect(call,
-					DCERPC_NCA_S_PROTO_ERROR);
-		}
-		if (call->pkt.u.request.opnum != call2->pkt.u.request.opnum)  {
-			return dcesrv_fault_disconnect(call,
-					DCERPC_NCA_S_PROTO_ERROR);
-		}
 
 		/*
 		 * Up to 4 MByte are allowed by all fragments
 		 */
 		available = DCERPC_NCACN_PAYLOAD_MAX_SIZE;
-		if (call->pkt.u.request.stub_and_verifier.length > available) {
-			dcesrv_call_disconnect_after(call,
-				"dcesrv_auth_request - current payload too large");
-			return dcesrv_fault(call, DCERPC_FAULT_ACCESS_DENIED);
+		if (er->stub_and_verifier.length > available) {
+			dcesrv_call_disconnect_after(existing,
+				"dcesrv_auth_request - existing payload too large");
+			return dcesrv_fault(existing, DCERPC_FAULT_ACCESS_DENIED);
 		}
-		available -= call->pkt.u.request.stub_and_verifier.length;
-		if (call2->pkt.u.request.alloc_hint > available) {
-			dcesrv_call_disconnect_after(call,
+		available -= er->stub_and_verifier.length;
+		if (nr->alloc_hint > available) {
+			dcesrv_call_disconnect_after(existing,
 				"dcesrv_auth_request - alloc hint too large");
-			return dcesrv_fault(call, DCERPC_FAULT_ACCESS_DENIED);
+			return dcesrv_fault(existing, DCERPC_FAULT_ACCESS_DENIED);
 		}
-		if (call2->pkt.u.request.stub_and_verifier.length > available) {
-			dcesrv_call_disconnect_after(call,
+		if (nr->stub_and_verifier.length > available) {
+			dcesrv_call_disconnect_after(existing,
 				"dcesrv_auth_request - new payload too large");
-			return dcesrv_fault(call, DCERPC_FAULT_ACCESS_DENIED);
+			return dcesrv_fault(existing, DCERPC_FAULT_ACCESS_DENIED);
 		}
-		alloc_hint = call->pkt.u.request.stub_and_verifier.length +
-			call2->pkt.u.request.alloc_hint;
+		alloc_hint = er->stub_and_verifier.length + nr->alloc_hint;
 		/* allocate at least 1 byte */
 		alloc_hint = MAX(alloc_hint, 1);
-		alloc_size = call->pkt.u.request.stub_and_verifier.length +
-			call2->pkt.u.request.stub_and_verifier.length;
+		alloc_size = er->stub_and_verifier.length +
+			     nr->stub_and_verifier.length;
 		alloc_size = MAX(alloc_size, alloc_hint);
 
-		call->pkt.u.request.stub_and_verifier.data = 
-			talloc_realloc(call, 
-				       call->pkt.u.request.stub_and_verifier.data, 
+		er->stub_and_verifier.data =
+			talloc_realloc(existing,
+				       er->stub_and_verifier.data,
 				       uint8_t, alloc_size);
-		if (!call->pkt.u.request.stub_and_verifier.data) {
-			TALLOC_FREE(call2);
-			return dcesrv_fault_with_flags(call,
+		if (er->stub_and_verifier.data == NULL) {
+			TALLOC_FREE(call);
+			return dcesrv_fault_with_flags(existing,
 						       DCERPC_FAULT_OUT_OF_RESOURCES,
 						       DCERPC_PFC_FLAG_DID_NOT_EXECUTE);
 		}
-		memcpy(call->pkt.u.request.stub_and_verifier.data +
-		       call->pkt.u.request.stub_and_verifier.length,
-		       call2->pkt.u.request.stub_and_verifier.data,
-		       call2->pkt.u.request.stub_and_verifier.length);
-		call->pkt.u.request.stub_and_verifier.length += 
-			call2->pkt.u.request.stub_and_verifier.length;
+		memcpy(er->stub_and_verifier.data +
+		       er->stub_and_verifier.length,
+		       nr->stub_and_verifier.data,
+		       nr->stub_and_verifier.length);
+		er->stub_and_verifier.length += nr->stub_and_verifier.length;
 
-		call->pkt.pfc_flags |= (call2->pkt.pfc_flags & DCERPC_PFC_FLAG_LAST);
+		existing->pkt.pfc_flags |= (call->pkt.pfc_flags & DCERPC_PFC_FLAG_LAST);
 
-		talloc_free(call2);
+		TALLOC_FREE(call);
+		call = existing;
 	}
 
 	/* this may not be the last pdu in the chain - if its isn't then
