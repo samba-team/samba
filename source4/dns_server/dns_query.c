@@ -314,12 +314,13 @@ static WERROR handle_question(struct dns_server *dns,
 	struct ldb_dn *dn = NULL;
 
 	werror = dns_name2dn(dns, mem_ctx, question->name, &dn);
-	W_ERROR_NOT_OK_RETURN(werror);
+	if (!W_ERROR_IS_OK(werror)) {
+		return werror;
+	}
 
 	werror = dns_lookup_records(dns, mem_ctx, dn, &recs, &rec_count);
 	if (!W_ERROR_IS_OK(werror)) {
 		werror_return = werror;
-		add_zone_authority_record(dns, mem_ctx, question, &ns, &ni);
 		goto done;
 	}
 
@@ -369,7 +370,7 @@ static WERROR handle_question(struct dns_server *dns,
 			/* and then call the lookup again */
 			werror = handle_question(dns, mem_ctx, new_q, &ans, &ai, &ns, &ni);
 			if (!W_ERROR_IS_OK(werror)) {
-				return werror;
+				goto done;
 			}
 			werror_return = WERR_OK;
 
@@ -389,6 +390,9 @@ static WERROR handle_question(struct dns_server *dns,
 	}
 
 done:
+	/* Always add an authority record to replies we should know about */
+	add_zone_authority_record(dns, mem_ctx, question, &ns, &ni);
+
 	*ancount = ai;
 	*answers = ans;
 	*nscount = ni;
@@ -670,7 +674,9 @@ struct tevent_req *dns_server_process_query_send(
 				      &state->answers, &state->ancount,
 				      &state->nsrecs, &state->nscount);
 		if (tevent_req_werror(req, err)) {
-			return tevent_req_post(req, ev);
+			if (!W_ERROR_EQUAL(err, DNS_ERR(NAME_ERROR))) {
+				return tevent_req_post(req, ev);
+			}
 		}
 		tevent_req_done(req);
 		return tevent_req_post(req, ev);
@@ -724,10 +730,14 @@ WERROR dns_server_process_query_recv(
 {
 	struct dns_server_process_query_state *state = tevent_req_data(
 		req, struct dns_server_process_query_state);
-	WERROR err;
+	WERROR err = WERR_OK;
 
 	if (tevent_req_is_werror(req, &err)) {
-		return err;
+
+		if ((!W_ERROR_EQUAL(err, DNS_ERR(NAME_ERROR))) &&
+		    (!W_ERROR_EQUAL(err, WERR_DNS_ERROR_NAME_DOES_NOT_EXIST))) {
+			return err;
+		}
 	}
 	*answers = talloc_move(mem_ctx, &state->answers);
 	*ancount = state->ancount;
@@ -735,5 +745,5 @@ WERROR dns_server_process_query_recv(
 	*nscount = state->nscount;
 	*additional = talloc_move(mem_ctx, &state->additional);
 	*arcount = state->arcount;
-	return WERR_OK;
+	return err;
 }
