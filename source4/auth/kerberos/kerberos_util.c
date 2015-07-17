@@ -522,6 +522,7 @@ krb5_error_code smb_krb5_remove_obsolete_keytab_entries(TALLOC_CTX *mem_ctx,
 	}
 
 	do {
+		krb5_kvno old_kvno = kvno - 1;
 		krb5_keytab_entry entry;
 		bool matched = false;
 		uint32_t i;
@@ -556,8 +557,14 @@ krb5_error_code smb_krb5_remove_obsolete_keytab_entries(TALLOC_CTX *mem_ctx,
 			continue;
 		}
 
-		/* Delete it, if it is not kvno - 1 */
-		if (entry.vno != (kvno - 1)) {
+		/*
+		 * Delete it, if it is not kvno - 1.
+		 *
+		 * Some keytab files store the kvno only in 8bits. Limit the
+		 * compare to 8bits, so that we don't miss old keys and delete
+		 * them.
+		 */
+		if ((entry.vno & 0xff) != (old_kvno & 0xff)) {
 			krb5_error_code rc;
 
 			/* Release the enumeration.  We are going to
