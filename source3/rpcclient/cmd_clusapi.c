@@ -203,6 +203,63 @@ static WERROR cmd_clusapi_create_enum(struct rpc_pipe_client *cli,
 	return WERR_OK;
 }
 
+static WERROR cmd_clusapi_create_enumex(struct rpc_pipe_client *cli,
+					TALLOC_CTX *mem_ctx,
+					int argc,
+					const char **argv)
+{
+	struct dcerpc_binding_handle *b = cli->binding_handle;
+	NTSTATUS status;
+	WERROR error;
+	uint32_t dwType = 1;
+	struct ENUM_LIST *ReturnIdEnum;
+	struct ENUM_LIST *ReturnNameEnum;
+	WERROR rpc_status, ignore;
+	struct policy_handle Cluster;
+
+	status = dcerpc_clusapi_OpenCluster(b, mem_ctx,
+					    &error,
+					    &Cluster);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ntstatus_to_werror(status);
+	}
+
+	if (!W_ERROR_IS_OK(error)) {
+		printf("error: %s\n", win_errstr(error));
+		return error;
+	}
+
+	if (argc >= 2) {
+		sscanf(argv[1],"%x",&dwType);
+	}
+
+	status = dcerpc_clusapi_CreateEnumEx(b, mem_ctx,
+					     Cluster,
+					     dwType,
+					     0,
+					     &ReturnIdEnum,
+					     &ReturnNameEnum,
+					     &rpc_status,
+					     &error);
+	dcerpc_clusapi_CloseCluster(b, mem_ctx,
+				    &Cluster,
+				    &ignore);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return ntstatus_to_werror(status);
+	}
+
+	if (!W_ERROR_IS_OK(error)) {
+		printf("error: %s\n", win_errstr(error));
+		return error;
+	}
+
+	printf("rpc_status: %s\n", win_errstr(rpc_status));
+
+	return WERR_OK;
+}
+
+
 static WERROR cmd_clusapi_open_resource(struct rpc_pipe_client *cli,
 					TALLOC_CTX *mem_ctx,
 					int argc,
@@ -453,6 +510,7 @@ struct cmd_set clusapi_commands[] = {
 	{ "clusapi_get_cluster_version", RPC_RTYPE_WERROR, NULL, cmd_clusapi_get_cluster_version, &ndr_table_clusapi, NULL, "bla", "" },
 	{ "clusapi_get_quorum_resource", RPC_RTYPE_WERROR, NULL, cmd_clusapi_get_quorum_resource, &ndr_table_clusapi, NULL, "bla", "" },
 	{ "clusapi_create_enum", RPC_RTYPE_WERROR, NULL, cmd_clusapi_create_enum, &ndr_table_clusapi, NULL, "bla", "" },
+	{ "clusapi_create_enumex", RPC_RTYPE_WERROR, NULL, cmd_clusapi_create_enumex, &ndr_table_clusapi, NULL, "bla", "" },
 	{ "clusapi_open_resource", RPC_RTYPE_WERROR, NULL, cmd_clusapi_open_resource, &ndr_table_clusapi, NULL, "bla", "" },
 	{ "clusapi_online_resource", RPC_RTYPE_WERROR, NULL, cmd_clusapi_online_resource, &ndr_table_clusapi, NULL, "bla", "" },
 	{ "clusapi_offline_resource", RPC_RTYPE_WERROR, NULL, cmd_clusapi_offline_resource, &ndr_table_clusapi, NULL, "bla", "" },
