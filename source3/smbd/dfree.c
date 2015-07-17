@@ -83,7 +83,7 @@ uint64_t sys_disk_free(connection_struct *conn, const char *path,
 		DEBUG (3, ("disk_free: Running command '%s'\n", syscmd));
 
 		lines = file_lines_pload(syscmd, NULL);
-		if (lines) {
+		if (lines != NULL) {
 			char *line = lines[0];
 
 			DEBUG (3, ("Read input from dfree, \"%s\"\n", line));
@@ -107,22 +107,18 @@ uint64_t sys_disk_free(connection_struct *conn, const char *path,
 				*dsize = 2048;
 			if (!*dfree)
 				*dfree = 1024;
-		} else {
-			DEBUG (0, ("disk_free: file_lines_load() failed for "
-				   "command '%s'. Error was : %s\n",
-				   syscmd, strerror(errno) ));
-			if (sys_fsusage(path, dfree, dsize) != 0) {
-				DEBUG (0, ("disk_free: sys_fsusage() failed. Error was : %s\n",
-					strerror(errno) ));
-				return (uint64_t)-1;
-			}
+
+			goto dfree_done;
 		}
-	} else {
-		if (sys_fsusage(path, dfree, dsize) != 0) {
-			DEBUG (0, ("disk_free: sys_fsusage() failed. Error was : %s\n",
-				strerror(errno) ));
-			return (uint64_t)-1;
-		}
+		DEBUG (0, ("disk_free: file_lines_load() failed for "
+			   "command '%s'. Error was : %s\n",
+			   syscmd, strerror(errno) ));
+	}
+
+	if (sys_fsusage(path, dfree, dsize) != 0) {
+		DEBUG (0, ("disk_free: sys_fsusage() failed. Error was : %s\n",
+			strerror(errno) ));
+		return (uint64_t)-1;
 	}
 
 	if (disk_quotas(path, &bsize_q, &dfree_q, &dsize_q)) {
@@ -146,6 +142,7 @@ uint64_t sys_disk_free(connection_struct *conn, const char *path,
 		*dfree = MAX(1,*dfree);
 	}
 
+dfree_done:
 	disk_norm(bsize, dfree, dsize);
 
 	if ((*bsize) < 1024) {
