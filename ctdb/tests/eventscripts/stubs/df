@@ -1,0 +1,27 @@
+#!/bin/sh
+
+usage ()
+{
+    echo "usage: df -kP <mount-point>"
+    exit 1
+}
+
+if [ "$1" != "-kP" ] ; then
+    usage
+fi
+
+shift
+if [ -z "$1" ] ; then
+    usage
+fi
+
+fs="$1"
+
+echo "Filesystem             1024-blocks      Used Available Capacity Mounted on"
+
+blocks="1000000"
+used=$(($blocks * $FAKE_FS_USE / 100))
+available=$(($blocks - $used))
+
+printf "%-36s %10d %10d %10d %10d%% %s\n" \
+       "/dev/sda1" "$blocks" "$used" "$available" "$FAKE_FS_USE" "$fs"

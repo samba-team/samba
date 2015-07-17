@@ -327,6 +327,15 @@ setup_config ()
     cat >"$FAKE_CTDB_EXTRA_CONFIG"
 }
 
+validate_percentage ()
+{
+    case "$1" in
+	[0-9]|[0-9][0-9]|100) return 0 ;;
+	*) echo "WARNING: ${1} is an invalid percentage${2:+\" in }${2}${2:+\"}"
+	   return 1
+    esac
+}
+
 setup_memcheck ()
 {
     setup_ctdb
@@ -370,6 +379,16 @@ Swap:         5719        246       5473"
     export CTDB_MONITOR_FREE_MEMORY
     export CTDB_MONITOR_FREE_MEMORY_WARN
     export CTDB_CHECK_SWAP_IS_NOT_USED
+}
+
+setup_fscheck ()
+{
+    export FAKE_FS_USE="${1:-10}"  # Default is 10% usage
+
+    # Causes some variables to be exported
+    setup_ctdb
+
+    export CTDB_MONITOR_FILESYSTEM_USAGE
 }
 
 ctdb_get_interfaces ()
