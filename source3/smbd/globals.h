@@ -30,8 +30,6 @@ struct smbd_dmapi_context;
 extern struct smbd_dmapi_context *dmapi_ctx;
 #endif
 
-extern bool dfree_broken;
-
 /* how many write cache buffers have been allocated */
 extern unsigned int allocated_write_caches;
 

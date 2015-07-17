@@ -31,9 +31,6 @@ int outstanding_aio_calls = 0;
 struct smbd_dmapi_context *dmapi_ctx = NULL;
 #endif
 
-
-bool dfree_broken = false;
-
 /* how many write cache buffers have been allocated */
 unsigned int allocated_write_caches = 0;
 

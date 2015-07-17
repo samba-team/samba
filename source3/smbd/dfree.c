@@ -57,6 +57,7 @@ uint64_t sys_disk_free(connection_struct *conn, const char *path,
 	uint64_t bsize_q = 0;
 	uint64_t dsize_q = 0;
 	const char *dfree_command;
+	static bool dfree_broken = false;
 
 	(*dfree) = (*dsize) = 0;
 	(*bsize) = 512;
