@@ -153,7 +153,9 @@ NTSTATUS auth3_check_password(struct auth4_context *auth4_context,
 							&server_info,
 							user_info->client.account_name,
 							user_info->client.domain_name);
-		*server_returned_info = talloc_steal(mem_ctx, server_info);
+		if (NT_STATUS_IS_OK(nt_status)) {
+			*server_returned_info = talloc_steal(mem_ctx, server_info);
+		}
 		return nt_status;
 	}
 
