@@ -38,13 +38,6 @@ struct db_rbt_rec {
 struct db_rbt_node {
 	struct rb_node rb_node;
 	size_t keysize, valuesize;
-
-	/*
-	 * key and value are appended implicitly, "data" is only here as a
-	 * target for offsetof()
-	 */
-
-	char data[1];
 };
 
 /*
@@ -83,10 +76,41 @@ static int db_rbt_compare(TDB_DATA a, TDB_DATA b)
 static void db_rbt_parse_node(struct db_rbt_node *node,
 			      TDB_DATA *key, TDB_DATA *value)
 {
-	key->dptr = ((uint8_t *)node) + offsetof(struct db_rbt_node, data);
+	size_t key_offset, value_offset;
+
+	key_offset = DBWRAP_RBT_ALIGN(sizeof(struct db_rbt_node));
+	key->dptr = ((uint8_t *)node) + key_offset;
 	key->dsize = node->keysize;
-	value->dptr = key->dptr + node->keysize;
+
+	value_offset = DBWRAP_RBT_ALIGN(node->keysize);
+	value->dptr = key->dptr + value_offset;
 	value->dsize = node->valuesize;
+}
+
+static ssize_t db_rbt_reclen(size_t keylen, size_t valuelen)
+{
+	size_t len, tmp;
+
+	len = DBWRAP_RBT_ALIGN(sizeof(struct db_rbt_node));
+
+	tmp = DBWRAP_RBT_ALIGN(keylen);
+	if (tmp < keylen) {
+		goto overflow;
+	}
+
+	len += tmp;
+	if (len < tmp) {
+		goto overflow;
+	}
+
+	len += valuelen;
+	if (len < valuelen) {
+		goto overflow;
+	}
+
+	return len;
+overflow:
+	return -1;
 }
 
 static NTSTATUS db_rbt_store(struct db_record *rec, TDB_DATA data, int flag)
@@ -99,6 +123,7 @@ static NTSTATUS db_rbt_store(struct db_record *rec, TDB_DATA data, int flag)
 	struct rb_node ** p;
 	struct rb_node * parent;
 
+	ssize_t reclen;
 	TDB_DATA this_key, this_val;
 
 	if (rec_priv->node != NULL) {
@@ -123,10 +148,12 @@ static NTSTATUS db_rbt_store(struct db_record *rec, TDB_DATA data, int flag)
 		}
 	}
 
-	node = (struct db_rbt_node *)talloc_size(db_ctx,
-		offsetof(struct db_rbt_node, data) + rec->key.dsize
-		+ data.dsize);
+	reclen = db_rbt_reclen(rec->key.dsize, data.dsize);
+	if (reclen == -1) {
+		return NT_STATUS_INSUFFICIENT_RESOURCES;
+	}
 
+	node = talloc_size(db_ctx, reclen);
 	if (node == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
