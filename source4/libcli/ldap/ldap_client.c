@@ -464,7 +464,7 @@ _PUBLIC_ struct composite_context *ldap_connect_send(struct ldap_connection *con
 		if (conn->ldaps) {
 			char *ca_file = lpcfg_tls_cafile(state, conn->lp_ctx);
 			char *crl_file = lpcfg_tls_crlfile(state, conn->lp_ctx);
-
+			const char *tls_priority = lpcfg_tls_priority(conn->lp_ctx);
 			if (!ca_file || !*ca_file) {
 				composite_error(result,
 						NT_STATUS_INVALID_PARAMETER_MIX);
@@ -474,6 +474,7 @@ _PUBLIC_ struct composite_context *ldap_connect_send(struct ldap_connection *con
 			status = tstream_tls_params_client(state,
 							   ca_file,
 							   crl_file,
+							   tls_priority,
 							   &state->tls_params);
 			if (!NT_STATUS_IS_OK(status)) {
 				composite_error(result, status);
