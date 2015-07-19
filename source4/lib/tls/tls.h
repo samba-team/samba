@@ -71,6 +71,7 @@ struct tstream_tls_params;
 NTSTATUS tstream_tls_params_client(TALLOC_CTX *mem_ctx,
 				   const char *ca_file,
 				   const char *crl_file,
+				   const char *tls_priority,
 				   struct tstream_tls_params **_tlsp);
 
 NTSTATUS tstream_tls_params_server(TALLOC_CTX *mem_ctx,
@@ -81,6 +82,7 @@ NTSTATUS tstream_tls_params_server(TALLOC_CTX *mem_ctx,
 				   const char *ca_file,
 				   const char *crl_file,
 				   const char *dhp_file,
+				   const char *tls_priority,
 				   struct tstream_tls_params **_params);
 
 bool tstream_tls_params_enabled(struct tstream_tls_params *params);

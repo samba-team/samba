@@ -4433,6 +4433,14 @@ struct parm_struct parm_table[] = {
 		.special	= NULL,
 		.enum_list	= NULL
 	},
+	{
+		.label		= "tls priority",
+		.type		= P_STRING,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(tls_priority),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
 
 	{NULL,  P_BOOL,  P_NONE,  0,  NULL,  NULL,  0}
 };

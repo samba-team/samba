@@ -833,6 +833,7 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 	lpcfg_string_set(Globals.ctx, &Globals._tls_keyfile, "tls/key.pem");
 	lpcfg_string_set(Globals.ctx, &Globals._tls_certfile, "tls/cert.pem");
 	lpcfg_string_set(Globals.ctx, &Globals._tls_cafile, "tls/ca.pem");
+	lpcfg_string_set(Globals.ctx, &Globals.tls_priority, "NORMAL");
 
 	lpcfg_string_set(Globals.ctx, &Globals.share_backend, "classic");
 

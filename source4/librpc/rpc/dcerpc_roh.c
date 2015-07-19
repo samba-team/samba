@@ -31,6 +31,7 @@
 #include "librpc/rpc/dcerpc.h"
 #include "librpc/rpc/dcerpc_roh.h"
 #include "librpc/rpc/dcerpc_proto.h"
+#include "lib/param/param.h"
 
 static ssize_t tstream_roh_pending_bytes(struct tstream_context *stream);
 static struct tevent_req * tstream_roh_readv_send(
@@ -185,6 +186,7 @@ struct tevent_req *dcerpc_pipe_open_roh_send(struct dcecli_connection *conn,
 	/* Initialize TLS */
 	if (use_tls) {
 		status = tstream_tls_params_client(state->roh, NULL, NULL,
+						   lpcfg_tls_priority(lp_ctx),
 						   &state->tls_params);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,("%s: Failed tstream_tls_params_client - %s\n",
