@@ -1009,8 +1009,6 @@ struct tevent_req *_tstream_tls_connect_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	gnutls_priority_set_direct(tlss->tls_session, "NORMAL:+CTYPE-OPENPGP", NULL);
-
 	ret = gnutls_credentials_set(tlss->tls_session,
 				     GNUTLS_CRD_CERTIFICATE,
 				     tls_params->x509_cred);
