@@ -2556,7 +2556,7 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lpcfg_do_global_parameter(lp_ctx, "tls keyfile", "tls/key.pem");
 	lpcfg_do_global_parameter(lp_ctx, "tls certfile", "tls/cert.pem");
 	lpcfg_do_global_parameter(lp_ctx, "tls cafile", "tls/ca.pem");
-	lpcfg_do_global_parameter(lp_ctx, "tls priority", "NORMAL");
+	lpcfg_do_global_parameter(lp_ctx, "tls priority", "NORMAL:-VERS-SSL3.0");
 	lpcfg_do_global_parameter(lp_ctx, "prefork children:smb", "4");
 
 	lpcfg_do_global_parameter(lp_ctx, "rndc command", "/usr/sbin/rndc");
