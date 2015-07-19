@@ -187,7 +187,6 @@ rm -rf $RPM_BUILD_ROOT
 %config(noreplace) %{_sysconfdir}/ctdb/nfs-checks.d/00.portmapper.check
 %config(noreplace) %{_sysconfdir}/ctdb/nfs-checks.d/10.status.check
 %config(noreplace) %{_sysconfdir}/ctdb/nfs-checks.d/20.nfs.check
-%config(noreplace) %{_sysconfdir}/ctdb/nfs-checks.d/20.nfs_ganesha.disabled
 %config(noreplace) %{_sysconfdir}/ctdb/nfs-checks.d/30.nlockmgr.check
 %config(noreplace) %{_sysconfdir}/ctdb/nfs-checks.d/40.mountd.check
 %config(noreplace) %{_sysconfdir}/ctdb/nfs-checks.d/50.rquotad.check

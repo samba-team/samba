@@ -17,7 +17,7 @@
 # * Rename nfs-checks.d/{20.nfs.check,30.nlockmgr.check,50.mountd.check}
 #   so that they no longer have the ".check" suffix
 #
-# * Rename nfs-checks.d/20.nfs-ganesha.disabled to nfs-checks.d/20.nfs.check
+# * Install 20.nfs-ganesha.check to nfs-checks.d/20.nfs.check
 
 # I (Martin Schwenke) hereby relicense all of my contributions to this
 # callout (and, previously, to 60.ganesha) to a license compatible
