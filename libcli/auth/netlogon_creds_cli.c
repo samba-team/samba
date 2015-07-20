@@ -3528,7 +3528,6 @@ NTSTATUS netlogon_creds_cli_GetForestTrustInformation(
 	TALLOC_FREE(frame);
 	return status;
 }
-
 struct netlogon_creds_cli_SendToSam_state {
 	struct tevent_context *ev;
 	struct netlogon_creds_cli_context *context;
@@ -3789,6 +3788,286 @@ NTSTATUS netlogon_creds_cli_SendToSam(struct netlogon_creds_cli_context *context
 	}
 
 	/* Ignore the result */
+ fail:
+	TALLOC_FREE(frame);
+	return status;
+}
+
+struct netlogon_creds_cli_LogonGetDomainInfo_state {
+	struct tevent_context *ev;
+	struct netlogon_creds_cli_context *context;
+	struct dcerpc_binding_handle *binding_handle;
+
+	char *srv_name_slash;
+	enum dcerpc_AuthType auth_type;
+	enum dcerpc_AuthLevel auth_level;
+
+	uint32_t level;
+	union netr_WorkstationInfo *query;
+	union netr_DomainInfo *info;
+
+	struct netlogon_creds_CredentialState *creds;
+	struct netlogon_creds_CredentialState tmp_creds;
+	struct netr_Authenticator req_auth;
+	struct netr_Authenticator rep_auth;
+};
+
+static void netlogon_creds_cli_LogonGetDomainInfo_cleanup(struct tevent_req *req,
+						     NTSTATUS status);
+static void netlogon_creds_cli_LogonGetDomainInfo_locked(struct tevent_req *subreq);
+
+struct tevent_req *netlogon_creds_cli_LogonGetDomainInfo_send(TALLOC_CTX *mem_ctx,
+					struct tevent_context *ev,
+					struct netlogon_creds_cli_context *context,
+					struct dcerpc_binding_handle *b,
+					uint32_t level,
+					union netr_WorkstationInfo *query)
+{
+	struct tevent_req *req;
+	struct netlogon_creds_cli_LogonGetDomainInfo_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct netlogon_creds_cli_LogonGetDomainInfo_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	state->ev = ev;
+	state->context = context;
+	state->binding_handle = b;
+
+	state->srv_name_slash = talloc_asprintf(state, "\\\\%s",
+						context->server.computer);
+	if (tevent_req_nomem(state->srv_name_slash, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	state->level = level;
+	state->query = query;
+	state->info = talloc_zero(state, union netr_DomainInfo);
+	if (tevent_req_nomem(state->info, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	dcerpc_binding_handle_auth_info(state->binding_handle,
+					&state->auth_type,
+					&state->auth_level);
+
+	subreq = netlogon_creds_cli_lock_send(state, state->ev,
+					      state->context);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	tevent_req_set_callback(subreq,
+				netlogon_creds_cli_LogonGetDomainInfo_locked,
+				req);
+
+	return req;
+}
+
+static void netlogon_creds_cli_LogonGetDomainInfo_cleanup(struct tevent_req *req,
+							 NTSTATUS status)
+{
+	struct netlogon_creds_cli_LogonGetDomainInfo_state *state =
+		tevent_req_data(req,
+		struct netlogon_creds_cli_LogonGetDomainInfo_state);
+
+	if (state->creds == NULL) {
+		return;
+	}
+
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_ACCESS_DENIED) &&
+	    !NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT) &&
+	    !NT_STATUS_EQUAL(status, NT_STATUS_DOWNGRADE_DETECTED) &&
+	    !NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED) &&
+	    !NT_STATUS_EQUAL(status, NT_STATUS_RPC_SEC_PKG_ERROR)) {
+		TALLOC_FREE(state->creds);
+		return;
+	}
+
+	netlogon_creds_cli_delete(state->context, state->creds);
+}
+
+static void netlogon_creds_cli_LogonGetDomainInfo_done(struct tevent_req *subreq);
+
+static void netlogon_creds_cli_LogonGetDomainInfo_locked(struct tevent_req *subreq)
+{
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq,
+		struct tevent_req);
+	struct netlogon_creds_cli_LogonGetDomainInfo_state *state =
+		tevent_req_data(req,
+		struct netlogon_creds_cli_LogonGetDomainInfo_state);
+	NTSTATUS status;
+
+	status = netlogon_creds_cli_lock_recv(subreq, state,
+					      &state->creds);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	if (state->auth_type == DCERPC_AUTH_TYPE_SCHANNEL) {
+		switch (state->auth_level) {
+		case DCERPC_AUTH_LEVEL_INTEGRITY:
+		case DCERPC_AUTH_LEVEL_PRIVACY:
+			break;
+		default:
+			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER_MIX);
+			return;
+		}
+	} else {
+		uint32_t tmp = state->creds->negotiate_flags;
+
+		if (tmp & NETLOGON_NEG_AUTHENTICATED_RPC) {
+			/*
+			 * if DCERPC_AUTH_TYPE_SCHANNEL is supported
+			 * it should be used, which means
+			 * we had a chance to verify no downgrade
+			 * happened.
+			 *
+			 * This relies on netlogon_creds_cli_check*
+			 * being called before, as first request after
+			 * the DCERPC bind.
+			 */
+			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER_MIX);
+			return;
+		}
+	}
+
+	/*
+	 * we defer all callbacks in order to cleanup
+	 * the database record.
+	 */
+	tevent_req_defer_callback(req, state->ev);
+
+	state->tmp_creds = *state->creds;
+	netlogon_creds_client_authenticator(&state->tmp_creds,
+					    &state->req_auth);
+	ZERO_STRUCT(state->rep_auth);
+
+	subreq = dcerpc_netr_LogonGetDomainInfo_send(state, state->ev,
+						state->binding_handle,
+						state->srv_name_slash,
+						state->tmp_creds.computer_name,
+						&state->req_auth,
+						&state->rep_auth,
+						state->level,
+						state->query,
+						state->info);
+	if (tevent_req_nomem(subreq, req)) {
+		status = NT_STATUS_NO_MEMORY;
+		netlogon_creds_cli_LogonGetDomainInfo_cleanup(req, status);
+		return;
+	}
+
+	tevent_req_set_callback(subreq,
+				netlogon_creds_cli_LogonGetDomainInfo_done,
+				req);
+}
+
+static void netlogon_creds_cli_LogonGetDomainInfo_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq,
+		struct tevent_req);
+	struct netlogon_creds_cli_LogonGetDomainInfo_state *state =
+		tevent_req_data(req,
+		struct netlogon_creds_cli_LogonGetDomainInfo_state);
+	NTSTATUS status;
+	NTSTATUS result;
+	bool ok;
+
+	/*
+	 * We use state->dns_names as the memory context, as this is
+	 * the only in/out variable and it has been overwritten by the
+	 * out parameter from the server.
+	 *
+	 * We need to preserve the return value until the caller can use it.
+	 */
+	status = dcerpc_netr_LogonGetDomainInfo_recv(subreq, state->info, &result);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		netlogon_creds_cli_LogonGetDomainInfo_cleanup(req, status);
+		return;
+	}
+
+	ok = netlogon_creds_client_check(&state->tmp_creds,
+					 &state->rep_auth.cred);
+	if (!ok) {
+		status = NT_STATUS_ACCESS_DENIED;
+		tevent_req_nterror(req, status);
+		netlogon_creds_cli_LogonGetDomainInfo_cleanup(req, status);
+		return;
+	}
+
+	if (tevent_req_nterror(req, result)) {
+		netlogon_creds_cli_LogonGetDomainInfo_cleanup(req, result);
+		return;
+	}
+
+	*state->creds = state->tmp_creds;
+	status = netlogon_creds_cli_store(state->context,
+					  state->creds);
+	if (tevent_req_nterror(req, status)) {
+		netlogon_creds_cli_LogonGetDomainInfo_cleanup(req, status);
+		return;
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS netlogon_creds_cli_LogonGetDomainInfo_recv(struct tevent_req *req,
+			TALLOC_CTX *mem_ctx,
+			union netr_DomainInfo **info)
+{
+	struct netlogon_creds_cli_LogonGetDomainInfo_state *state =
+		tevent_req_data(req,
+		struct netlogon_creds_cli_LogonGetDomainInfo_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		netlogon_creds_cli_LogonGetDomainInfo_cleanup(req, status);
+		tevent_req_received(req);
+		return status;
+	}
+
+	*info = talloc_move(mem_ctx, &state->info);
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
+NTSTATUS netlogon_creds_cli_LogonGetDomainInfo(
+			struct netlogon_creds_cli_context *context,
+			struct dcerpc_binding_handle *b,
+			TALLOC_CTX *mem_ctx,
+			uint32_t level,
+			union netr_WorkstationInfo *query,
+			union netr_DomainInfo **info)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct tevent_context *ev;
+	struct tevent_req *req;
+	NTSTATUS status = NT_STATUS_OK;
+
+	ev = samba_tevent_context_init(frame);
+	if (ev == NULL) {
+		goto fail;
+	}
+	req = netlogon_creds_cli_LogonGetDomainInfo_send(frame, ev, context, b,
+							 level, query);
+	if (req == NULL) {
+		goto fail;
+	}
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
+		goto fail;
+	}
+	status = netlogon_creds_cli_LogonGetDomainInfo_recv(req,
+							    mem_ctx,
+							    info);
  fail:
 	TALLOC_FREE(frame);
 	return status;

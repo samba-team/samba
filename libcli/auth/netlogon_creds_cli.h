@@ -214,4 +214,21 @@ NTSTATUS netlogon_creds_cli_SendToSam(
 				struct dcerpc_binding_handle *b,
 				struct netr_SendToSamBase *message);
 
+struct tevent_req *netlogon_creds_cli_LogonGetDomainInfo_send(TALLOC_CTX *mem_ctx,
+					struct tevent_context *ev,
+					struct netlogon_creds_cli_context *context,
+					struct dcerpc_binding_handle *b,
+					uint32_t level,
+					union netr_WorkstationInfo *query);
+NTSTATUS netlogon_creds_cli_LogonGetDomainInfo_recv(struct tevent_req *req,
+			TALLOC_CTX *mem_ctx,
+			union netr_DomainInfo **info);
+NTSTATUS netlogon_creds_cli_LogonGetDomainInfo(
+			struct netlogon_creds_cli_context *context,
+			struct dcerpc_binding_handle *b,
+			TALLOC_CTX *mem_ctx,
+			uint32_t level,
+			union netr_WorkstationInfo *query,
+			union netr_DomainInfo **info);
+
 #endif /* NETLOGON_CREDS_CLI_H */
