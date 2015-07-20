@@ -1279,7 +1279,7 @@ CTDB_PER_IP_ROUTING_TABLE_ID_HIGH=9000
 
       <para>
 	CTDB can experience seemingly random (performance and other)
-	issues if system resources become too contrained.  Options in
+	issues if system resources become too constrained.  Options in
 	this section can be enabled to allow certain system resources to
 	be checked.
       </para>
@@ -1288,12 +1288,11 @@ CTDB_PER_IP_ROUTING_TABLE_ID_HIGH=9000
 	<title>Eventscripts</title>
 
 	<simplelist>
-	  <member><filename>00.ctdb</filename></member>
 	  <member><filename>05.system</filename></member>
 	</simplelist>
 
 	<para>
-	  Filesystem usage monitoring is in
+	  Filesystem and memory usage monitoring is in
 	  <filename>05.system</filename>.  This eventscript is not
 	  enabled by default.  Use <command>ctdb
 	  enablescript</command> to enable it.
@@ -1317,13 +1316,6 @@ CTDB_PER_IP_ROUTING_TABLE_ID_HIGH=9000
 
 	    <para>
 	      No default.
-	    </para>
-
-	    <para>
-	      Note that this feature uses the
-	      <filename>05.system</filename> eventscript, which is not
-	      enabled by default.  Use <command>ctdb
-	      enablescript</command> to enable it.
 	    </para>
 	  </listitem>
 	</varlistentry>
