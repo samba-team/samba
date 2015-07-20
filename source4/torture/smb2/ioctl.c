@@ -2586,11 +2586,16 @@ static bool test_ioctl_network_interface_info(struct torture_context *torture,
 	return true;
 }
 
-static NTSTATUS test_ioctl_sparse_fs_supported(struct torture_context *torture,
-					       struct smb2_tree *tree,
-					       TALLOC_CTX *mem_ctx,
-					       struct smb2_handle *fh,
-					       bool *sparse_support)
+/*
+ * Check whether all @fs_support_flags are set in the server's
+ * RAW_QFS_ATTRIBUTE_INFORMATION FileSystemAttributes response.
+ */
+static NTSTATUS test_ioctl_fs_supported(struct torture_context *torture,
+					struct smb2_tree *tree,
+					TALLOC_CTX *mem_ctx,
+					struct smb2_handle *fh,
+					uint64_t fs_support_flags,
+					bool *supported)
 {
 	NTSTATUS status;
 	union smb_fsinfo info;
@@ -2603,10 +2608,11 @@ static NTSTATUS test_ioctl_sparse_fs_supported(struct torture_context *torture,
 		return status;
 	}
 
-	if (info.attribute_info.out.fs_attr & FILE_SUPPORTS_SPARSE_FILES) {
-		*sparse_support = true;
+	if ((info.attribute_info.out.fs_attr & fs_support_flags)
+							== fs_support_flags) {
+		*supported = true;
 	} else {
-		*sparse_support = false;
+		*supported = false;
 	}
 	return NT_STATUS_OK;
 }
@@ -2671,8 +2677,8 @@ static bool test_ioctl_sparse_file_flag(struct torture_context *torture,
 				    FILE_ATTRIBUTE_NORMAL);
 	torture_assert(torture, ok, "setup file");
 
-	status = test_ioctl_sparse_fs_supported(torture, tree, tmp_ctx, &fh,
-						&ok);
+	status = test_ioctl_fs_supported(torture, tree, tmp_ctx, &fh,
+					 FILE_SUPPORTS_SPARSE_FILES, &ok);
 	torture_assert_ntstatus_ok(torture, status, "SMB2_GETINFO_FS");
 	if (!ok) {
 		smb2_util_close(tree, fh);
@@ -2722,8 +2728,8 @@ static bool test_ioctl_sparse_file_attr(struct torture_context *torture,
 			(FILE_ATTRIBUTE_NORMAL | FILE_ATTRIBUTE_SPARSE));
 	torture_assert(torture, ok, "setup file");
 
-	status = test_ioctl_sparse_fs_supported(torture, tree, tmp_ctx, &fh,
-						&ok);
+	status = test_ioctl_fs_supported(torture, tree, tmp_ctx, &fh,
+					 FILE_SUPPORTS_SPARSE_FILES, &ok);
 	torture_assert_ntstatus_ok(torture, status, "SMB2_GETINFO_FS");
 	if (!ok) {
 		smb2_util_close(tree, fh);
@@ -2753,8 +2759,8 @@ static bool test_ioctl_sparse_dir_flag(struct torture_context *torture,
 				    FILE_ATTRIBUTE_DIRECTORY);
 	torture_assert(torture, ok, "setup sparse directory");
 
-	status = test_ioctl_sparse_fs_supported(torture, tree, tmp_ctx, &dirh,
-						&ok);
+	status = test_ioctl_fs_supported(torture, tree, tmp_ctx, &dirh,
+					 FILE_SUPPORTS_SPARSE_FILES, &ok);
 	torture_assert_ntstatus_ok(torture, status, "SMB2_GETINFO_FS");
 	if (!ok) {
 		smb2_util_close(tree, dirh);
@@ -2794,8 +2800,8 @@ static bool test_ioctl_sparse_set_nobuf(struct torture_context *torture,
 				    FILE_ATTRIBUTE_NORMAL);
 	torture_assert(torture, ok, "setup file");
 
-	status = test_ioctl_sparse_fs_supported(torture, tree, tmp_ctx, &fh,
-						&ok);
+	status = test_ioctl_fs_supported(torture, tree, tmp_ctx, &fh,
+					 FILE_SUPPORTS_SPARSE_FILES, &ok);
 	torture_assert_ntstatus_ok(torture, status, "SMB2_GETINFO_FS");
 	if (!ok) {
 		smb2_util_close(tree, fh);
@@ -2864,8 +2870,8 @@ static bool test_ioctl_sparse_set_oversize(struct torture_context *torture,
 				    FILE_ATTRIBUTE_NORMAL);
 	torture_assert(torture, ok, "setup file");
 
-	status = test_ioctl_sparse_fs_supported(torture, tree, tmp_ctx, &fh,
-						&ok);
+	status = test_ioctl_fs_supported(torture, tree, tmp_ctx, &fh,
+					 FILE_SUPPORTS_SPARSE_FILES, &ok);
 	torture_assert_ntstatus_ok(torture, status, "SMB2_GETINFO_FS");
 	if (!ok) {
 		smb2_util_close(tree, fh);
@@ -3024,8 +3030,8 @@ static bool test_ioctl_sparse_qar(struct torture_context *torture,
 				    FILE_ATTRIBUTE_NORMAL);
 	torture_assert(torture, ok, "setup file");
 
-	status = test_ioctl_sparse_fs_supported(torture, tree, tmp_ctx, &fh,
-						&ok);
+	status = test_ioctl_fs_supported(torture, tree, tmp_ctx, &fh,
+					 FILE_SUPPORTS_SPARSE_FILES, &ok);
 	torture_assert_ntstatus_ok(torture, status, "SMB2_GETINFO_FS");
 	if (!ok) {
 		smb2_util_close(tree, fh);
@@ -3149,8 +3155,8 @@ static bool test_ioctl_sparse_qar_malformed(struct torture_context *torture,
 				    FILE_ATTRIBUTE_NORMAL);
 	torture_assert(torture, ok, "setup file");
 
-	status = test_ioctl_sparse_fs_supported(torture, tree, tmp_ctx, &fh,
-						&ok);
+	status = test_ioctl_fs_supported(torture, tree, tmp_ctx, &fh,
+					 FILE_SUPPORTS_SPARSE_FILES, &ok);
 	torture_assert_ntstatus_ok(torture, status, "SMB2_GETINFO_FS");
 	if (!ok) {
 		smb2_util_close(tree, fh);
@@ -3282,8 +3288,8 @@ static bool test_ioctl_sparse_punch(struct torture_context *torture,
 				    FILE_ATTRIBUTE_NORMAL);
 	torture_assert(torture, ok, "setup file");
 
-	status = test_ioctl_sparse_fs_supported(torture, tree, tmp_ctx, &fh,
-						&ok);
+	status = test_ioctl_fs_supported(torture, tree, tmp_ctx, &fh,
+					 FILE_SUPPORTS_SPARSE_FILES, &ok);
 	torture_assert_ntstatus_ok(torture, status, "SMB2_GETINFO_FS");
 	if (!ok) {
 		smb2_util_close(tree, fh);
@@ -3423,8 +3429,8 @@ static bool test_ioctl_sparse_hole_dealloc(struct torture_context *torture,
 	torture_assert(torture, ok, "setup file 1");
 
 	/* check for FS sparse file */
-	status = test_ioctl_sparse_fs_supported(torture, tree, tmp_ctx, &fh,
-						&ok);
+	status = test_ioctl_fs_supported(torture, tree, tmp_ctx, &fh,
+					 FILE_SUPPORTS_SPARSE_FILES, &ok);
 	torture_assert_ntstatus_ok(torture, status, "SMB2_GETINFO_FS");
 	if (!ok) {
 		smb2_util_close(tree, fh);
@@ -3680,8 +3686,8 @@ static bool test_ioctl_sparse_compressed(struct torture_context *torture,
 	torture_assert(torture, ok, "setup file 1");
 
 	/* check for FS sparse file and compression support */
-	status = test_ioctl_sparse_fs_supported(torture, tree, tmp_ctx, &fh,
-						&ok);
+	status = test_ioctl_fs_supported(torture, tree, tmp_ctx, &fh,
+					 FILE_SUPPORTS_SPARSE_FILES, &ok);
 	torture_assert_ntstatus_ok(torture, status, "SMB2_GETINFO_FS");
 	if (!ok) {
 		smb2_util_close(tree, fh);
@@ -3788,8 +3794,8 @@ static bool test_ioctl_sparse_copy_chunk(struct torture_context *torture,
 	torture_assert(torture, ok, "setup file");
 
 	/* check for FS sparse file support */
-	status = test_ioctl_sparse_fs_supported(torture, tree, tmp_ctx, &src_h,
-						&ok);
+	status = test_ioctl_fs_supported(torture, tree, tmp_ctx, &src_h,
+					 FILE_SUPPORTS_SPARSE_FILES, &ok);
 	torture_assert_ntstatus_ok(torture, status, "SMB2_GETINFO_FS");
 	smb2_util_close(tree, src_h);
 	if (!ok) {
@@ -3988,8 +3994,8 @@ static bool test_ioctl_sparse_punch_invalid(struct torture_context *torture,
 				    FILE_ATTRIBUTE_NORMAL);
 	torture_assert(torture, ok, "setup file");
 
-	status = test_ioctl_sparse_fs_supported(torture, tree, tmp_ctx, &fh,
-						&ok);
+	status = test_ioctl_fs_supported(torture, tree, tmp_ctx, &fh,
+					 FILE_SUPPORTS_SPARSE_FILES, &ok);
 	torture_assert_ntstatus_ok(torture, status, "SMB2_GETINFO_FS");
 	if (!ok) {
 		smb2_util_close(tree, fh);
@@ -4096,8 +4102,8 @@ static bool test_ioctl_sparse_perms(struct torture_context *torture,
 				    FILE_ATTRIBUTE_NORMAL);
 	torture_assert(torture, ok, "setup file");
 
-	status = test_ioctl_sparse_fs_supported(torture, tree, tmp_ctx, &fh,
-						&ok);
+	status = test_ioctl_fs_supported(torture, tree, tmp_ctx, &fh,
+					 FILE_SUPPORTS_SPARSE_FILES, &ok);
 	torture_assert_ntstatus_ok(torture, status, "SMB2_GETINFO_FS");
 	smb2_util_close(tree, fh);
 	if (!ok) {
@@ -4339,8 +4345,8 @@ static bool test_ioctl_sparse_lck(struct torture_context *torture,
 				    FILE_ATTRIBUTE_NORMAL);
 	torture_assert(torture, ok, "setup file");
 
-	status = test_ioctl_sparse_fs_supported(torture, tree, tmp_ctx, &fh,
-						&ok);
+	status = test_ioctl_fs_supported(torture, tree, tmp_ctx, &fh,
+					 FILE_SUPPORTS_SPARSE_FILES, &ok);
 	torture_assert_ntstatus_ok(torture, status, "SMB2_GETINFO_FS");
 	if (!ok) {
 		torture_skip(torture, "Sparse files not supported\n");
@@ -4446,8 +4452,8 @@ static bool test_ioctl_sparse_qar_ob1(struct torture_context *torture,
 				    FILE_ATTRIBUTE_NORMAL);
 	torture_assert(torture, ok, "setup file");
 
-	status = test_ioctl_sparse_fs_supported(torture, tree, tmp_ctx, &fh,
-						&ok);
+	status = test_ioctl_fs_supported(torture, tree, tmp_ctx, &fh,
+					 FILE_SUPPORTS_SPARSE_FILES, &ok);
 	torture_assert_ntstatus_ok(torture, status, "SMB2_GETINFO_FS");
 	if (!ok) {
 		torture_skip(torture, "Sparse files not supported\n");
@@ -4602,8 +4608,8 @@ static bool test_ioctl_sparse_qar_multi(struct torture_context *torture,
 				    FILE_ATTRIBUTE_NORMAL);
 	torture_assert(torture, ok, "setup file");
 
-	status = test_ioctl_sparse_fs_supported(torture, tree, tmp_ctx, &fh,
-						&ok);
+	status = test_ioctl_fs_supported(torture, tree, tmp_ctx, &fh,
+					 FILE_SUPPORTS_SPARSE_FILES, &ok);
 	torture_assert_ntstatus_ok(torture, status, "SMB2_GETINFO_FS");
 	if (!ok) {
 		torture_skip(torture, "Sparse files not supported\n");
@@ -4675,8 +4681,8 @@ static bool test_ioctl_sparse_qar_overflow(struct torture_context *torture,
 				    FILE_ATTRIBUTE_NORMAL);
 	torture_assert(torture, ok, "setup file");
 
-	status = test_ioctl_sparse_fs_supported(torture, tree, tmp_ctx, &fh,
-						&ok);
+	status = test_ioctl_fs_supported(torture, tree, tmp_ctx, &fh,
+					 FILE_SUPPORTS_SPARSE_FILES, &ok);
 	torture_assert_ntstatus_ok(torture, status, "SMB2_GETINFO_FS");
 	if (!ok) {
 		smb2_util_close(tree, fh);
