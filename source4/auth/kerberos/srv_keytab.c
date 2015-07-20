@@ -70,6 +70,8 @@ static krb5_error_code keytab_add_keys(TALLOC_CTX *parent_ctx,
 						      enctypes[i],
 						      KRB5_KT_KEY(&entry));
 		if (ret != 0) {
+			*error_string = talloc_strdup(parent_ctx,
+						      "Failed to create key from string");
 			return ret;
 		}
 
@@ -119,12 +121,13 @@ static krb5_error_code create_keytab(TALLOC_CTX *parent_ctx,
 				     krb5_context context,
 				     krb5_keytab keytab,
 				     bool add_old,
-				     const char **error_string)
+				     const char **perror_string)
 {
 	krb5_error_code ret;
 	krb5_principal salt_princ = NULL;
 	krb5_enctype *enctypes;
 	TALLOC_CTX *mem_ctx;
+	const char *error_string = NULL;
 
 	if (!new_secret) {
 		/* There is no password here, so nothing to do */
@@ -133,7 +136,7 @@ static krb5_error_code create_keytab(TALLOC_CTX *parent_ctx,
 
 	mem_ctx = talloc_new(parent_ctx);
 	if (!mem_ctx) {
-		*error_string = talloc_strdup(parent_ctx,
+		*perror_string = talloc_strdup(parent_ctx,
 			"unable to allocate tmp_ctx for create_keytab");
 		return ENOMEM;
 	}
@@ -142,7 +145,7 @@ static krb5_error_code create_keytab(TALLOC_CTX *parent_ctx,
 	 * fetch that */
 	ret = krb5_parse_name(context, saltPrincipal, &salt_princ);
 	if (ret) {
-		*error_string = smb_get_krb5_error_message(context,
+		*perror_string = smb_get_krb5_error_message(context,
 							   ret,
 							   parent_ctx);
 		talloc_free(mem_ctx);
@@ -151,7 +154,7 @@ static krb5_error_code create_keytab(TALLOC_CTX *parent_ctx,
 
 	ret = ms_suptypes_to_ietf_enctypes(mem_ctx, supp_enctypes, &enctypes);
 	if (ret) {
-		*error_string = talloc_asprintf(parent_ctx,
+		*perror_string = talloc_asprintf(parent_ctx,
 					"create_keytab: generating list of "
 					"encryption types failed (%s)\n",
 					smb_get_krb5_error_message(context,
@@ -163,9 +166,9 @@ static krb5_error_code create_keytab(TALLOC_CTX *parent_ctx,
 			      num_principals,
 			      principals,
 			      salt_princ, kvno, new_secret,
-			      context, enctypes, keytab, error_string);
+			      context, enctypes, keytab, &error_string);
 	if (ret) {
-		talloc_steal(parent_ctx, *error_string);
+		*perror_string = talloc_steal(parent_ctx, error_string);
 		goto done;
 	}
 
@@ -174,9 +177,9 @@ static krb5_error_code create_keytab(TALLOC_CTX *parent_ctx,
 				      num_principals,
 				      principals,
 				      salt_princ, kvno - 1, old_secret,
-				      context, enctypes, keytab, error_string);
+				      context, enctypes, keytab, &error_string);
 		if (ret) {
-			talloc_steal(parent_ctx, *error_string);
+			*perror_string = talloc_steal(parent_ctx, error_string);
 		}
 	}
 
@@ -200,7 +203,7 @@ krb5_error_code smb_krb5_update_keytab(TALLOC_CTX *parent_ctx,
 				uint32_t supp_enctypes,
 				bool delete_all_kvno,
 			        krb5_keytab *_keytab,
-				const char **error_string)
+				const char **perror_string)
 {
 	krb5_keytab keytab;
 	krb5_error_code ret;
@@ -209,19 +212,21 @@ krb5_error_code smb_krb5_update_keytab(TALLOC_CTX *parent_ctx,
 	krb5_principal *principals = NULL;
 	uint32_t num_principals = 0;
 	char *upper_realm;
+	const char *error_string = NULL;
 
 	if (keytab_name == NULL) {
 		return ENOENT;
 	}
 
 	if (saltPrincipal == NULL) {
-		*error_string = "No saltPrincipal provided";
+		*perror_string = talloc_strdup(parent_ctx,
+					      "No saltPrincipal provided");
 		return EINVAL;
 	}
 
 	ret = krb5_kt_resolve(context, keytab_name, &keytab);
 	if (ret) {
-		*error_string = smb_get_krb5_error_message(context,
+		*perror_string = smb_get_krb5_error_message(context,
 							   ret, parent_ctx);
 		return ret;
 	}
@@ -230,12 +235,15 @@ krb5_error_code smb_krb5_update_keytab(TALLOC_CTX *parent_ctx,
 
 	tmp_ctx = talloc_new(parent_ctx);
 	if (!tmp_ctx) {
+		*perror_string = talloc_strdup(parent_ctx,
+					      "Failed to allocate memory context");
 		return ENOMEM;
 	}
 
 	upper_realm = strupper_talloc(tmp_ctx, realm);
 	if (upper_realm == NULL) {
-		*error_string = "Cannot allocate memory to upper case realm";
+		*perror_string = talloc_strdup(parent_ctx,
+					      "Cannot allocate memory to upper case realm");
 		talloc_free(tmp_ctx);
 		return ENOMEM;
 	}
@@ -248,11 +256,11 @@ krb5_error_code smb_krb5_update_keytab(TALLOC_CTX *parent_ctx,
 					       SPNs,
 					       &num_principals,
 					       &principals,
-					       error_string);
+					       &error_string);
 	if (ret != 0) {
-		*error_string = talloc_asprintf(parent_ctx,
+		*perror_string = talloc_asprintf(parent_ctx,
 			"Failed to load principals from ldb message: %s\n",
-			*error_string);
+			error_string);
 		goto done;
 	}
 
@@ -263,11 +271,11 @@ krb5_error_code smb_krb5_update_keytab(TALLOC_CTX *parent_ctx,
 						      principals,
 						      kvno,
 						      &found_previous,
-						      error_string);
+						      &error_string);
 	if (ret != 0) {
-		*error_string = talloc_asprintf(parent_ctx,
+		*perror_string = talloc_asprintf(parent_ctx,
 			"Failed to remove old principals from keytab: %s\n",
-			*error_string);
+			error_string);
 		goto done;
 	}
 
@@ -284,9 +292,9 @@ krb5_error_code smb_krb5_update_keytab(TALLOC_CTX *parent_ctx,
 				    principals,
 				    context, keytab,
 				    found_previous ? false : true,
-				    error_string);
+				    &error_string);
 		if (ret) {
-			talloc_steal(parent_ctx, *error_string);
+			*perror_string = talloc_steal(parent_ctx, error_string);
 		}
 	}
 
@@ -317,7 +325,7 @@ krb5_error_code smb_krb5_create_memory_keytab(TALLOC_CTX *parent_ctx,
 	krb5_error_code ret;
 	TALLOC_CTX *mem_ctx = talloc_new(parent_ctx);
 	const char *rand_string;
-	const char *error_string;
+	const char *error_string = NULL;
 	if (!mem_ctx) {
 		return ENOMEM;
 	}
