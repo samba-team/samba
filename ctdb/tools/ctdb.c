@@ -1424,6 +1424,14 @@ static int control_one_scriptstatus(struct ctdb_context *ctdb,
 	for (i=0; i<script_status->num_scripts; i++) {
 		const char *status = NULL;
 
+		/* The ETIME status is ignored for certain events.
+		 * In that case the status is 0, but endtime is not set.
+		 */
+		if (script_status->scripts[i].status == 0 &&
+		    timeval_is_zero(&script_status->scripts[i].finished)) {
+			script_status->scripts[i].status = -ETIME;
+		}
+
 		switch (script_status->scripts[i].status) {
 		case -ETIME:
 			status = "TIMEDOUT";
