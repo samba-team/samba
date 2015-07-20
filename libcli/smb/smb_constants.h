@@ -402,6 +402,7 @@ enum csc_policy {
 #define FILE_SUPPORTS_ENCRYPTION        0x00020000
 #define FILE_NAMED_STREAMS              0x00040000
 #define FILE_READ_ONLY_VOLUME           0x00080000
+#define FILE_SUPPORTS_BLOCK_REFCOUNTING	0x08000000
 
 /* ShareAccess field. */
 #define FILE_SHARE_NONE 0 /* Cannot be used in bitmask. */
