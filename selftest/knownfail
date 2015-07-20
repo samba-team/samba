@@ -286,3 +286,7 @@
 # This will fail against the classic DC, because it requires kerberos
 #
 ^samba4.winbind.pac.*\(nt4_member:local\) # No KDC on a classic DC
+#
+# This fails because it requires the tombstone_reanimation module to be enabled
+#
+^samba4.ldap.acl.python\(.*\).__main__.AclUndeleteTests.test_undelete\(.*\)
