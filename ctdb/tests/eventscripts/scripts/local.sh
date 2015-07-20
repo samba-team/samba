@@ -344,19 +344,17 @@ setup_memcheck ()
 
     if [ "$1" = "bad" ] ; then
 	_swap_free="   4352"
-	_mem_cached=" 112"
-	_mem_free=" 468"
+	_mem_cached="108568"
     else
 	_swap_free="$_swap_total"
-	_mem_cached="1112"
-	_mem_free="1468"
+	_mem_cached="1139348"
     fi
 
     export FAKE_PROC_MEMINFO="\
 MemTotal:        3940712 kB
 MemFree:          225268 kB
 Buffers:          146120 kB
-Cached:          1139348 kB
+Cached:          ${_mem_cached} kB
 SwapCached:        56016 kB
 Active:          2422104 kB
 Inactive:        1019928 kB
@@ -369,12 +367,6 @@ Mlocked:            4844 kB
 SwapTotal:       ${_swap_total} kB
 SwapFree:        ${_swap_free} kB
 ..."
-
-    export FAKE_FREE_M="\
-             total       used       free     shared    buffers     cached
-Mem:          3848       3634        213          0        142       ${_mem_cached}
--/+ buffers/cache:       2379       ${_mem_free}
-Swap:         5719        246       5473"
 
     export CTDB_MONITOR_FREE_MEMORY
     export CTDB_MONITOR_FREE_MEMORY_WARN

@@ -64,18 +64,34 @@ monitor_filesystem_usage ()
 
 monitor_memory_usage ()
 {
-    # If monitoring free memory then calculate how much there is
-    if [ -n "$CTDB_MONITOR_FREE_MEMORY_WARN" -o \
-	-n "$CTDB_MONITOR_FREE_MEMORY" ] ; then
-	free_mem=$(free -m | awk '$2 == "buffers/cache:" { print $4 }')
+    if [ -z "$CTDB_MONITOR_FREE_MEMORY_WARN" -a \
+	 -z "$CTDB_MONITOR_FREE_MEMORY" -a \
+	 "$CTDB_CHECK_SWAP_IS_NOT_USED" != "yes" ] ; then
+	return
     fi
+
+    _meminfo=$(get_proc "meminfo")
+    set -- $(echo "$_meminfo" | awk '
+$1 == "MemFree:"      { memfree  += $2 / 1024 }
+$1 == "Cached:"       { memfree  += $2 / 1024 }
+$1 == "Buffers:"      { memfree  += $2 / 1024 }
+$1 == "MemTotal:"     { memtotal  = $2 / 1024 }
+$1 == "SwapFree:"     { swapfree  = $2 / 1024 }
+$1 == "SwapTotal:"    { swaptotal = $2 / 1024 }
+END {
+    print int(memfree), int(memtotal), int(swapfree) , int(swaptotal)
+}')
+    _mem_free="$1"
+    _mem_total="$2"
+    _swap_free="$3"
+    _swap_total="$4"
 
     # Shutdown CTDB when memory is below the configured limit
     if [ -n "$CTDB_MONITOR_FREE_MEMORY" ] ; then
-	if [ $free_mem -le $CTDB_MONITOR_FREE_MEMORY ] ; then
-	    echo "CRITICAL: OOM - ${free_mem}MB free <= ${CTDB_MONITOR_FREE_MEMORY}MB (CTDB threshold)"
+	if [ $_mem_free -le $CTDB_MONITOR_FREE_MEMORY ] ; then
+	    echo "CRITICAL: OOM - ${_mem_free}MB free <= ${CTDB_MONITOR_FREE_MEMORY}MB (CTDB threshold)"
 	    echo "CRITICAL: Shutting down CTDB!!!"
-	    get_proc "meminfo"
+	    echo "$_meminfo"
 	    ps auxfww
 	    set_proc "sysrq-trigger" "m"
 	    ctdb disable
@@ -86,17 +102,16 @@ monitor_memory_usage ()
 
     # Warn when low on memory
     if [ -n "$CTDB_MONITOR_FREE_MEMORY_WARN" ] ; then
-	if [ $free_mem -le $CTDB_MONITOR_FREE_MEMORY_WARN ] ; then
-	    echo "WARNING: free memory is low - ${free_mem}MB free <=  ${CTDB_MONITOR_FREE_MEMORY_WARN}MB (CTDB threshold)"
+	if [ $_mem_free -le $CTDB_MONITOR_FREE_MEMORY_WARN ] ; then
+	    echo "WARNING: free memory is low - ${_mem_free}MB free <=  ${CTDB_MONITOR_FREE_MEMORY_WARN}MB (CTDB threshold)"
 	fi
     fi
 
     # We should never enter swap, so SwapTotal == SwapFree.
     if [ "$CTDB_CHECK_SWAP_IS_NOT_USED" = "yes" ] ; then
-	set -- $(get_proc "meminfo" | awk '$1 ~ /Swap(Total|Free):/ { print $2 }')
-	if [ "$1" != "$2" ] ; then
+	if [ "$_swap_total" != "$_swap_free" ] ; then
 	    echo We are swapping:
-	    get_proc "meminfo"
+	    echo "$_meminfo"
 	    ps auxfww
 	fi
     fi
