@@ -31,7 +31,7 @@ struct unixid;
 #define LOOKUP_NAME_NONE		0x00000000
 #define LOOKUP_NAME_ISOLATED             0x00000001  /* Look up unqualified names */
 #define LOOKUP_NAME_REMOTE               0x00000002  /* Ask others */
-#define LOOKUP_NAME_GROUP                0x00000004  /* (unused) This is a NASTY hack for
+#define LOOKUP_NAME_GROUP                0x00000004  /* This is a NASTY hack for
 							valid users = @foo where foo also
 							exists in as user. */
 #define LOOKUP_NAME_NO_NSS		 0x00000008  /* no NSS calls to avoid
