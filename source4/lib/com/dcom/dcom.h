@@ -50,7 +50,7 @@ typedef enum ndr_err_code (*unmarshal_fn)(TALLOC_CTX *mem_ctx, struct OBJREF *o,
 struct dcom_client_context *dcom_client_init(struct com_context *ctx, struct cli_credentials *credentials);
 struct dcom_object_exporter *object_exporter_by_oxid(struct com_context *ctx, uint64_t oxid);
 struct dcom_object_exporter *object_exporter_by_ip(struct com_context *ctx, struct IUnknown *ip);
-WERROR dcom_create_object(struct com_context *ctx, struct GUID *clsid, const char *server, int num_ifaces, struct GUID *iid, struct IUnknown ***ip, WERROR *results);
+WERROR dcom_create_object(struct com_context *ctx, struct GUID *clsid, const char *server, int num_ifaces, struct GUID *iid, struct IUnknown ***ip, HRESULT *results);
 WERROR dcom_get_class_object(struct com_context *ctx, struct GUID *clsid, const char *server, struct GUID *iid, struct IUnknown **ip);
 NTSTATUS dcom_get_pipe(struct IUnknown *iface, struct dcerpc_pipe **pp);
 NTSTATUS dcom_OBJREF_from_IUnknown(struct OBJREF *o, struct IUnknown *p);
