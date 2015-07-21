@@ -28,7 +28,7 @@
 #define DCERPC_ICLASSFACTORY_UUID "00000001-0000-0000-c000-000000000046"
 
 static bool test_RemoteActivation(struct torture_context *tctx,
-								 struct dcerpc_pipe *p)
+				  struct dcerpc_pipe *p)
 {
 	struct RemoteActivation r;
 	NTSTATUS status;
@@ -62,16 +62,13 @@ static bool test_RemoteActivation(struct torture_context *tctx,
 	r.in.Mode = MODE_GET_CLASS_OBJECT;
 
 	status = dcerpc_RemoteActivation_r(b, tctx, &r);
-	torture_assert_ntstatus_ok(tctx, status,
-							   "RemoteActivation(GetClassObject)");
+	torture_assert_ntstatus_ok(tctx, status, "RemoteActivation(GetClassObject)");
 
-	torture_assert_werr_ok(tctx, r.out.result,
-						   "RemoteActivation(GetClassObject)");
+	torture_assert_werr_ok(tctx, r.out.result, "RemoteActivation(GetClassObject)");
 
 	torture_assert_werr_ok(tctx, *r.out.hr, "RemoteActivation(GetClassObject)");
 
-	torture_assert_werr_ok(tctx, r.out.results[0],
-						   "RemoteActivation(GetClassObject)");
+	torture_assert_werr_ok(tctx, r.out.results[0], "RemoteActivation(GetClassObject)");
 
 	return true;
 }
