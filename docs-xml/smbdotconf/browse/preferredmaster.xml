@@ -2,7 +2,7 @@
                  context="G"
                  type="enum"
                  enumlist="enum_bool_auto"
-                 generated_function="0"
+                 function="_preferred_master"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <synonym>prefered master</synonym>
  <description>

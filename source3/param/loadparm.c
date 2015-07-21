@@ -4101,10 +4101,12 @@ static bool lp_domain_master_true_or_auto(void)
 
 bool lp_preferred_master(void)
 {
-	if (Globals._preferred_master == Auto)
+	int preferred_master = lp__preferred_master();
+
+	if (preferred_master == Auto)
 		return (lp_local_master() && lp_domain_master());
 
-	return (bool)Globals._preferred_master;
+	return (bool)preferred_master;
 }
 
 /*******************************************************************
