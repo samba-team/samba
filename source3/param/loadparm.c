@@ -850,7 +850,7 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 	/* By default no shares out of the registry */
 	Globals.registry_shares = false;
 
-	Globals.iminreceivefile = 0;
+	Globals.min_receivefile_size = 0;
 
 	Globals.map_untrusted_to_domain = false;
 	Globals.multicast_dns_register = true;
@@ -4287,10 +4287,10 @@ void lp_set_posix_default_cifsx_readwrite_locktype(enum brl_flavour val)
 
 int lp_min_receive_file_size(void)
 {
-	if (Globals.iminreceivefile < 0) {
+	if (Globals.min_receivefile_size < 0) {
 		return 0;
 	}
-	return Globals.iminreceivefile;
+	return Globals.min_receivefile_size;
 }
 
 /*******************************************************************

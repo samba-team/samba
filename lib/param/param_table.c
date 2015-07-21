@@ -1314,7 +1314,7 @@ struct parm_struct parm_table[] = {
 		.label		= "min receivefile size",
 		.type		= P_BYTES,
 		.p_class	= P_GLOBAL,
-		.offset		= GLOBAL_VAR(iminreceivefile),
+		.offset		= GLOBAL_VAR(min_receivefile_size),
 		.special	= NULL,
 		.enum_list	= NULL,
 	},
