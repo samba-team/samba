@@ -1,7 +1,6 @@
 <samba:parameter name="min receivefile size"
                  type="integer"
                  context="G"
-                 generated_function="0"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 <para>This option changes the behavior of <citerefentry><refentrytitle>smbd</refentrytitle>

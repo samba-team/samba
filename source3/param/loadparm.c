@@ -4287,10 +4287,12 @@ void lp_set_posix_default_cifsx_readwrite_locktype(enum brl_flavour val)
 
 int lp_min_receive_file_size(void)
 {
-	if (Globals.min_receivefile_size < 0) {
+	int min_receivefile_size = lp_min_receivefile_size();
+
+	if (min_receivefile_size < 0) {
 		return 0;
 	}
-	return Globals.min_receivefile_size;
+	return min_receivefile_size;
 }
 
 /*******************************************************************
