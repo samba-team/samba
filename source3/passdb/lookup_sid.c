@@ -120,7 +120,7 @@ bool lookup_name(TALLOC_CTX *mem_ctx,
 			goto ok;
 	}
 
-	if (((flags & LOOKUP_NAME_NO_NSS) == 0)
+	if (((flags & (LOOKUP_NAME_NO_NSS|LOOKUP_NAME_GROUP)) == 0)
 	    && strequal(domain, unix_users_domain_name())) {
 		if (lookup_unix_user_name(name, &sid)) {
 			type = SID_NAME_USER;
@@ -293,7 +293,7 @@ bool lookup_name(TALLOC_CTX *mem_ctx,
 	/* 11. Ok, windows would end here. Samba has two more options:
                Unmapped users and unmapped groups */
 
-	if (((flags & LOOKUP_NAME_NO_NSS) == 0)
+	if (((flags & (LOOKUP_NAME_NO_NSS|LOOKUP_NAME_GROUP)) == 0)
 	    && lookup_unix_user_name(name, &sid)) {
 		domain = talloc_strdup(tmp_ctx, unix_users_domain_name());
 		type = SID_NAME_USER;
