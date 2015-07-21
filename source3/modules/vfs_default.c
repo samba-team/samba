@@ -706,7 +706,7 @@ static bool vfswrap_init_asys_ctx(struct smbd_server_connection *conn)
 
 	ret = set_blocking(fd, false);
 	if (ret != 0) {
-		DBG_WARNING("set_blocking failed: %s\n", strerror(ret));
+		DBG_WARNING("set_blocking failed: %s\n", strerror(errno));
 		goto fail;
 	}
 
