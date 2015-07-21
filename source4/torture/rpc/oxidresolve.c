@@ -63,25 +63,10 @@ static bool test_RemoteActivation(struct torture_context *tctx,
 	r.out.ipidRemUnknown = oid;
 
 	status = dcerpc_RemoteActivation_r(b, tctx, &r);
-	if(NT_STATUS_IS_ERR(status)) {
-		fprintf(stderr, "RemoteActivation: %s\n", nt_errstr(status));
-		return false;
-	}
-
-	if(!W_ERROR_IS_OK(r.out.result)) {
-		fprintf(stderr, "RemoteActivation: %s\n", win_errstr(r.out.result));
-		return false;
-	}
-
-	if(!W_ERROR_IS_OK(*r.out.hr)) {
-		fprintf(stderr, "RemoteActivation: %s\n", win_errstr(*r.out.hr));
-		return false;
-	}
-
-	if(!W_ERROR_IS_OK(r.out.results[0])) {
-		fprintf(stderr, "RemoteActivation: %s\n", win_errstr(r.out.results[0]));
-		return false;
-	}
+	torture_assert_ntstatus_ok(tctx, status, "RemoteActivation failed");
+	torture_assert_werr_ok(tctx, r.out.result, "RemoteActivation failed");
+	torture_assert_werr_ok(tctx, *r.out.hr, "RemoteActivation failed");
+	torture_assert_werr_ok(tctx, r.out.results[0], "RemoteActivation failed");
 
 	return true;
 }
