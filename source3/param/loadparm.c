@@ -714,7 +714,7 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 	Globals.reset_on_zero_vc = false;
 	Globals.log_writeable_files_on_exit = false;
 	Globals.create_krb5_conf = true;
-	Globals.winbindMaxDomainConnections = 1;
+	Globals._winbind_max_domain_connections = 1;
 
 	/* hostname lookups can be very expensive and are broken on
 	   a large number of sites (tridge) */
@@ -1020,7 +1020,7 @@ char *lp_ ## fn_name(TALLOC_CTX *ctx,int i) {return(lp_string((ctx), (LP_SNUM_OK
  char lp_ ## fn_name(const struct share_params *p) {return(LP_SNUM_OK(p->service)? ServicePtrs[(p->service)]->val : sDefault.val);}
 
 static FN_GLOBAL_INTEGER(winbind_max_domain_connections_int,
-		  winbindMaxDomainConnections)
+		  _winbind_max_domain_connections)
 
 int lp_winbind_max_domain_connections(void)
 {

@@ -3785,7 +3785,7 @@ struct parm_struct parm_table[] = {
 		.label		= "winbind max domain connections",
 		.type		= P_INTEGER,
 		.p_class	= P_GLOBAL,
-		.offset		= GLOBAL_VAR(winbindMaxDomainConnections),
+		.offset		= GLOBAL_VAR(_winbind_max_domain_connections),
 		.special	= NULL,
 		.enum_list	= NULL,
 	},

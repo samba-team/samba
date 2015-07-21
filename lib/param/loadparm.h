@@ -252,7 +252,7 @@ enum case_handling {CASE_LOWER,CASE_UPPER};
 	char *szIdmapUID;						\
 	char *szIdmapGID;						\
 	char *szIdmapBackend;						\
-	int winbindMaxDomainConnections;
+	int _winbind_max_domain_connections;
 
 const char* server_role_str(uint32_t role);
 int lp_find_server_role(int server_role, int security, int domain_logons, int domain_master);
