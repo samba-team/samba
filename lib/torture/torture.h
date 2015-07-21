@@ -293,6 +293,14 @@ void torture_result(struct torture_context *test,
 	}\
 	} while(0)
 
+#define torture_assert_hresult_equal(torture_ctx, got, expected, cmt) \
+	do { HRESULT __got = got, __expected = expected; \
+	if (!HRES_IS_EQUAL(__got, __expected)) { \
+		torture_result(torture_ctx, TORTURE_FAIL, __location__": "#got" was %s, expected %s: %s", hresult_errstr(__got), hresult_errstr(__expected), cmt); \
+		return false; \
+	} \
+	} while (0)
+
 #define torture_assert_casestr_equal(torture_ctx,got,expected,cmt) \
 	do { const char *__got = (got), *__expected = (expected); \
 	if (!strequal(__got, __expected)) { \
@@ -562,6 +570,9 @@ void torture_result(struct torture_context *test,
 
 #define torture_assert_ndr_success(torture_ctx,expr,cmt) \
 		torture_assert_ndr_err_equal(torture_ctx,expr,NDR_ERR_SUCCESS,cmt)
+
+#define torture_assert_hresult_ok(torture_ctx,expr,cmt) \
+		torture_assert_hresult_equal(torture_ctx,expr,HRES_ERROR(0), cmt)
 
 /* Getting settings */
 const char *torture_setting_string(struct torture_context *test, \
