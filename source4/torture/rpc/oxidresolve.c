@@ -1,19 +1,19 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    test suite for oxidresolve operations
 
    Copyright (C) Jelmer Vernooij 2004
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -30,7 +30,7 @@ const struct GUID IUnknown_uuid = {
 	0x00000000,0x0000,0x0000,{0xc0,0x00},{0x00,0x00,0x00,0x00,0x00,0x46}
 };
 
-static bool test_RemoteActivation(struct torture_context *tctx, 
+static bool test_RemoteActivation(struct torture_context *tctx,
 				 uint64_t *oxid, struct GUID *oid)
 {
 	struct RemoteActivation r;
@@ -40,9 +40,9 @@ static bool test_RemoteActivation(struct torture_context *tctx,
 	struct dcerpc_pipe *p;
 	struct dcerpc_binding_handle *b;
 
-	status = torture_rpc_connection(tctx, &p, 
+	status = torture_rpc_connection(tctx, &p,
 					&ndr_table_IRemoteActivation);
-			
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}
@@ -86,7 +86,7 @@ static bool test_RemoteActivation(struct torture_context *tctx,
 	return true;
 }
 
-static bool test_SimplePing(struct torture_context *tctx, 
+static bool test_SimplePing(struct torture_context *tctx,
 			   struct dcerpc_pipe *p)
 {
 	struct SimplePing r;
@@ -103,7 +103,7 @@ static bool test_SimplePing(struct torture_context *tctx,
 	return true;
 }
 
-static bool test_ComplexPing(struct torture_context *tctx, 
+static bool test_ComplexPing(struct torture_context *tctx,
 			     struct dcerpc_pipe *p)
 {
 	struct ComplexPing r;
@@ -135,12 +135,12 @@ static bool test_ComplexPing(struct torture_context *tctx,
 		return 0;
 	}
 
-	
+
 
 	return 1;
 }
 
-static bool test_ServerAlive(struct torture_context *tctx, 
+static bool test_ServerAlive(struct torture_context *tctx,
 			    struct dcerpc_pipe *p)
 {
 	struct ServerAlive r;
@@ -154,12 +154,12 @@ static bool test_ServerAlive(struct torture_context *tctx,
 	return true;
 }
 
-static bool test_ResolveOxid(struct torture_context *tctx, 
+static bool test_ResolveOxid(struct torture_context *tctx,
 			     struct dcerpc_pipe *p)
 {
 	struct ResolveOxid r;
 	NTSTATUS status;
-	uint16_t protseq[2] = { EPM_PROTOCOL_TCP, EPM_PROTOCOL_SMB };	
+	uint16_t protseq[2] = { EPM_PROTOCOL_TCP, EPM_PROTOCOL_SMB };
 	uint64_t oxid;
 	struct GUID oid;
 	struct dcerpc_binding_handle *b = p->binding_handle;
@@ -178,12 +178,12 @@ static bool test_ResolveOxid(struct torture_context *tctx,
 	return true;
 }
 
-static bool test_ResolveOxid2(struct torture_context *tctx, 
+static bool test_ResolveOxid2(struct torture_context *tctx,
 			      struct dcerpc_pipe *p)
 {
 	struct ResolveOxid2 r;
 	NTSTATUS status;
-	uint16_t protseq[2] = { EPM_PROTOCOL_TCP, EPM_PROTOCOL_SMB };	
+	uint16_t protseq[2] = { EPM_PROTOCOL_TCP, EPM_PROTOCOL_SMB };
 	uint64_t oxid;
 	struct GUID oid;
 	struct dcerpc_binding_handle *b = p->binding_handle;
@@ -199,13 +199,13 @@ static bool test_ResolveOxid2(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx, status, "ResolveOxid2");
 
 	torture_assert_werr_ok(tctx, r.out.result, "ResolveOxid2");
-	
+
 	torture_comment(tctx, "Remote server versions: %d, %d\n", r.out.ComVersion->MajorVersion, r.out.ComVersion->MinorVersion);
 
 	return true;
 }
 
-static bool test_ServerAlive2(struct torture_context *tctx, 
+static bool test_ServerAlive2(struct torture_context *tctx,
 			     struct dcerpc_pipe *p)
 {
 	struct ServerAlive2 r;
@@ -224,7 +224,7 @@ struct torture_suite *torture_rpc_oxidresolve(TALLOC_CTX *mem_ctx)
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "oxidresolve");
 	struct torture_rpc_tcase *tcase;
 
-	tcase = torture_suite_add_rpc_iface_tcase(suite, "oxidresolver", 
+	tcase = torture_suite_add_rpc_iface_tcase(suite, "oxidresolver",
 					  &ndr_table_IOXIDResolver);
 
 	torture_rpc_tcase_add_test(tcase, "ServerAlive", test_ServerAlive);
@@ -234,7 +234,7 @@ struct torture_suite *torture_rpc_oxidresolve(TALLOC_CTX *mem_ctx)
 	torture_rpc_tcase_add_test(tcase, "ComplexPing", test_ComplexPing);
 
 	torture_rpc_tcase_add_test(tcase, "SimplePing", test_SimplePing);
-	
+
 	torture_rpc_tcase_add_test(tcase, "ResolveOxid", test_ResolveOxid);
 
 	torture_rpc_tcase_add_test(tcase, "ResolveOxid2", test_ResolveOxid2);
