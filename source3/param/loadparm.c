@@ -1035,7 +1035,7 @@ int lp_winbind_max_domain_connections(void)
 
 int lp_smb2_max_credits(void)
 {
-	if (Globals.ismb2_max_credits == 0) {
+	if (Globals.ismb2_max_credits <= 0) {
 		Globals.ismb2_max_credits = DEFAULT_SMB2_MAX_CREDITS;
 	}
 	return Globals.ismb2_max_credits;
