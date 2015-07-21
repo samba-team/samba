@@ -41,7 +41,7 @@ interface ObjectRpcBaseTypes
 	/* Component Object Model version number */
 
 
-	typedef [public] struct 
+	typedef [public] struct
 	{
 		uint16 MajorVersion; /* Major version number */
 		uint16 MinorVersion; /* Minor version number */
@@ -58,8 +58,8 @@ interface ObjectRpcBaseTypes
 	} ORPC_FLAGS;
 
 	/* Extension to implicit parameters. */
-	typedef [public] struct 
-	{ 	
+	typedef [public] struct
+	{
 		GUID id; /* Extension identifier. */
 		uint32 size; /* Extension size. */
 		[size_is(((size+7)&~7))] uint8 data[]; /* Extension data. */
@@ -67,7 +67,7 @@ interface ObjectRpcBaseTypes
 
 
 	/* Array of extensions. */
-	typedef struct 
+	typedef struct
 	{
 		uint32 size; /* Num extents. */
 		uint32 reserved; /* Must be zero. */
@@ -77,7 +77,7 @@ interface ObjectRpcBaseTypes
 
 	/* implicit 'this' pointer which is the first [in] parameter on */
 	/* every ORPC call. */
-	typedef [public] struct 
+	typedef [public] struct
 	{
 		COMVERSION version; /* COM version number */
 		uint32 flags; /* ORPCF flags for presence of other data */
@@ -90,7 +90,7 @@ interface ObjectRpcBaseTypes
 
 	/* implicit 'that' pointer which is the first [out] parameter on */
 	/* every ORPC call. */
-	typedef [public] struct 
+	typedef [public] struct
 	{
 		uint32 flags; /* ORPCF flags for presence of other data */
 		/* Extensions. */
@@ -100,33 +100,33 @@ interface ObjectRpcBaseTypes
 
 	/* DUALSTRINGARRAYS are the return type for arrays of network addresses, */
 	/* arrays of endpoints and arrays of both used in many ORPC interfaces */
-	typedef [public,flag(NDR_NOALIGN)] struct 
+	typedef [public,flag(NDR_NOALIGN)] struct
 	{
 		uint16 wTowerId; /* Cannot be zero. */
-		nstring NetworkAddr; 
+		nstring NetworkAddr;
 	} 	STRINGBINDING;
 
-	typedef [public,nopush,nopull,noprint] struct 
+	typedef [public,nopush,nopull,noprint] struct
 	{
 		STRINGBINDING **stringbindings;
 	} STRINGARRAY;
 
-	typedef [public,nopush,nopull,noprint] struct 
+	typedef [public,nopush,nopull,noprint] struct
 	{
 		STRINGBINDING **stringbindings;
 		SECURITYBINDING **securitybindings;
 	} DUALSTRINGARRAY;
 
 	const uint16 COM_C_AUTHZ_NONE = 0xffff;
-	typedef [public,flag(NDR_NOALIGN)] struct 
+	typedef [public,flag(NDR_NOALIGN)] struct
 	{
 		uint16 wAuthnSvc; /* Cannot be zero. */
 		uint16 wAuthzSvc;
-		nstring PrincName; 
+		nstring PrincName;
 	} 	SECURITYBINDING;
 
 	/* signature value for OBJREF (object reference, actually the */
-	/* marshaled form of a COM interface). 
+	/* marshaled form of a COM interface).
 	 * MEOW apparently stands for "Microsoft Extended Object Wireformat"
 	 */
 	const uint32 OBJREF_SIGNATURE = 0x574f454d; /* 'MEOW' */
@@ -156,7 +156,7 @@ interface ObjectRpcBaseTypes
 	} STDOBJREF_FLAGS;
 
 	/* standard object reference */
-	typedef [public] struct 
+	typedef [public] struct
 	{
 		uint32 flags; /* STDOBJREF flags (see above) */
 		uint32 cPublicRefs; /* count of references passed */
@@ -190,7 +190,7 @@ interface ObjectRpcBaseTypes
 	{
 	} u_null;
 
-	typedef [nodiscriminant] union 
+	typedef [nodiscriminant] union
 	{
 		[case(OBJREF_NULL)] u_null u_null;
 		[case(OBJREF_STANDARD)] u_standard u_standard;
@@ -199,7 +199,7 @@ interface ObjectRpcBaseTypes
 	} OBJREF_Types;
 
 	/* OBJREF is the format of a marshaled interface pointer. */
-	typedef [public,flag(NDR_LITTLE_ENDIAN)] struct 
+	typedef [public,flag(NDR_LITTLE_ENDIAN)] struct
 	{
 		uint32 signature;
 		uint32 flags; /* OBJREF flags (see above) */
@@ -208,13 +208,13 @@ interface ObjectRpcBaseTypes
 	} OBJREF;
 
 	/* wire representation of a marshalled interface pointer */
-	typedef [public] struct 
+	typedef [public] struct
 	{
 		uint32 size;
 		[subcontext(4)] OBJREF obj;
 	} MInterfacePointer;
 
-	typedef [v1_enum,public] enum 
+	typedef [v1_enum,public] enum
 	{
 		COM_OK 				= 0x00000000,
 		COM_OUTOFMEMORY 	= 0x80000002,
