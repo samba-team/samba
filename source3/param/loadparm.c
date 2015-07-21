@@ -204,7 +204,7 @@ static struct loadparm_service sDefault =
 	.level2_oplocks = true,
 	.only_user = false,
 	.mangled_names = true,
-	.bWidelinks = false,
+	.wide_links = false,
 	.follow_symlinks = true,
 	.sync_always = false,
 	.strict_allocate = false,
@@ -4298,8 +4298,8 @@ int lp_min_receive_file_size(void)
 
 static bool lp_widelinks_internal(int snum)
 {
-	return (bool)(LP_SNUM_OK(snum)? ServicePtrs[(snum)]->bWidelinks :
-			sDefault.bWidelinks);
+	return (bool)(LP_SNUM_OK(snum)? ServicePtrs[(snum)]->wide_links :
+			sDefault.wide_links);
 }
 
 void widelinks_warning(int snum)

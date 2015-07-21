@@ -3403,7 +3403,7 @@ struct parm_struct parm_table[] = {
 		.label		= "wide links",
 		.type		= P_BOOL,
 		.p_class	= P_LOCAL,
-		.offset		= LOCAL_VAR(bWidelinks),
+		.offset		= LOCAL_VAR(wide_links),
 		.special	= NULL,
 		.enum_list	= NULL,
 	},
