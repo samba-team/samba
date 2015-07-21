@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the first preview release of Samba 4.3.  This is *not*
+This is the first release candidate of Samba 4.3.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -12,9 +12,13 @@ Samba 4.3 will be the next version of the Samba suite.
 UPGRADING
 =========
 
+Nothing special.
 
 NEW FEATURES
 ============
+
+Logging
+-------
 
 The logging code now supports logging to multiple backends.  In
 addition to the previously available syslog and file backends, the
@@ -23,13 +27,133 @@ added. Please consult the section for the 'logging' parameter in the
 smb.conf manpage for details.
 
 Spotlight
-=========
+---------
 
 Support for Apple's Spotlight has been added by integrating with Gnome
 Tracker.
 
 For detailed instructions how to build and setup Samba for Spotlight,
 please see the Samba wiki: <https://wiki.samba.org/index.php/Spotlight>
+
+New FileChangeNotify subsystem
+------------------------------
+
+Samba now contains a new subsystem to do FileChangeNotify. The
+previous system used a central database, notify_index.tdb, to store
+all notification requests. In particular in a cluster this turned out
+to be a major bottleneck, because some hot records need to be bounced
+back and forth between nodes on every change event like a new created
+file.
+
+The new FileChangeNotify subsystem works with a central daemon per
+node. Every FileChangeNotify request and every event are handled by an
+asynchronous message from smbd to the notify daemon. The notify daemon
+maintains a database of all FileChangeNotify requests in memory and
+will distribute the notify events accordingly. This database is
+asynchronously distributed in the cluster by the notify daemons.
+
+The notify daemon is supposed to scale a lot better than the previous
+implementation. The functional advantage is cross-node kernel change
+notify: Files created via NFS will be seen by SMB clients on other
+nodes per FileChangeNotify, despite the fact that popular cluster file
+systems do not offer cross-node inotify.
+
+Two changes to the configuration were required for this new subsystem:
+The parameters "change notify" and "kernel change notify" are not
+per-share anymore but must be set globally. So it is no longer
+possible to enable or disable notify per share, the notify daemon has
+no notion of a share, it only works on absolute paths.
+
+New SMB profiling code
+----------------------
+
+The code for SMB (SMB1, SMB2 and SMB3) profiling uses a tdb instead
+of sysv IPC shared memory. This avoids performance problems and NUMA
+effects. The profile stats are a bit more detailed than before.
+
+Improved DCERPC man in the middle detection for kerberos
+--------------------------------------------------------
+
+The gssapi based kerberos backends for gensec have support for
+DCERPC header signing when using DCERPC_AUTH_LEVEL_PRIVACY.
+
+SMB signing required in winbindd by default
+-------------------------------------------
+
+The effective value for "client signing" is required
+by default for winbindd, if the primary domain uses active directory.
+
+Experimental NTDB was removed
+-----------------------------
+
+The experimental NTDB library introduced in Samba 4.0 has been
+removed again.
+
+Improved support for trusted domains (as AD DC)
+-----------------------------------------------
+
+The support for trusted domains/forests has improved a lot.
+
+samba-tool got "domain trust" subcommands to manage trusts:
+
+  create      - Create a domain or forest trust.
+  delete      - Delete a domain trust.
+  list        - List domain trusts.
+  namespaces  - Manage forest trust namespaces.
+  show        - Show trusted domain details.
+  validate    - Validate a domain trust.
+
+External trusts between individual domains work in both ways
+(inbound and outbound). The same applies to root domains of
+a forest trust. The transitive routing into the other forest
+is fully functional for kerberos, but not yet supported for NTLMSSP.
+
+While a lot of things are working fine, there are currently a few limitations:
+
+  - Both sides of the trust need to fully trust each other!
+  - No SID filtering rules are applied at all!
+  - This means DCs of domain A can grant domain admin rights
+    in domain B.
+  - It's not possible to add users/groups of a trusted domain
+    into domain groups.
+
+SMB 3.1.1 supported
+-------------------
+
+Both client and server have support for SMB 3.1.1 now.
+
+This is the dialect introduced with Windows 10, it improves the secure
+negotiation of SMB dialects and features.
+
+New smbclient subcommands
+-------------------------
+
+  - Query a directory for change notifications: notify <dir name>
+  - Server side copy: scopy <source filename> <destination filename>
+
+New rpcclient subcommands
+-------------------------
+
+  netshareenumall 	- Enumerate all shares
+  netsharegetinfo 	- Get Share Info
+  netsharesetinfo 	- Set Share Info
+  netsharesetdfsflags	- Set DFS flags
+  netfileenum		- Enumerate open files
+  netnamevalidate	- Validate sharename
+  netfilegetsec		- Get File security
+  netsessdel		- Delete Session
+  netsessenum		- Enumerate Sessions
+  netdiskenum		- Enumerate Disks
+  netconnenum		- Enumerate Connections
+  netshareadd		- Add share
+  netsharedel		- Delete share
+
+New modules
+-----------
+
+  idmap_script 		- see 'man 8 idmap_script'
+  vfs_unityed_media	- see 'man 8 vfs_unityed_media'
+  vfs_shell_snap	- see 'man 8 vfs_shell_snap'
 
 ######################################################################
 Changes
@@ -38,14 +162,28 @@ Changes
 smb.conf changes
 ----------------
 
-   Parameter Name			Description	Default
-   --------------			-----------	-------
-   logging				New		(empty)
+  Parameter Name		Description		Default
+  --------------		-----------		-------
+  logging			New			(empty)
+  msdfs shuffle referrals	New			no
+  smbd profiling level		New			off
+  spotlight			New			no
+  tls priority			New 			NORMAL:-VERS-SSL3.0
+  use ntdb			Removed
+  change notify			Changed to [global]
+  kernel change notify		Changed to [global]
+  client max protocol		Changed	default		SMB3_11
+  server max protocol		Changed default		SMB3_11
 
+Removed modules
+---------------
+
+vfs_notify_fam - see section 'New FileChangeNotify subsystem'.
 
 KNOWN ISSUES
 ============
 
+Currently none.
 
 #######################################
 Reporting bugs & Development Discussion
