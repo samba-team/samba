@@ -39,6 +39,12 @@ static bool test_RemoteActivation(struct torture_context *tctx,
 	uint16_t protseq[3] = { EPM_PROTOCOL_TCP, EPM_PROTOCOL_NCALRPC, EPM_PROTOCOL_UUID };
 	struct dcerpc_pipe *p;
 	struct dcerpc_binding_handle *b;
+	struct ORPCTHAT that;
+	struct DUALSTRINGARRAY *pdsaOxidBindings;
+	uint32_t AuthnHint;
+	struct COMVERSION ServerVersion;
+	WERROR hr;
+	struct MInterfacePointer *ifaces;
 
 	status = torture_rpc_connection(tctx, &p,
 					&ndr_table_IRemoteActivation);
@@ -48,7 +54,8 @@ static bool test_RemoteActivation(struct torture_context *tctx,
 	}
 	b = p->binding_handle;
 
-	ZERO_STRUCT(r.in);
+	ZERO_STRUCT(r);
+
 	r.in.this_object.version.MajorVersion = 5;
 	r.in.this_object.version.MinorVersion = 1;
 	r.in.this_object.cid = GUID_random();
@@ -59,8 +66,15 @@ static bool test_RemoteActivation(struct torture_context *tctx,
 	r.in.Interfaces = 1;
 	iids[0] = IUnknown_uuid;
 	r.in.pIIDs = iids;
+
+	r.out.that = &that;
 	r.out.pOxid = oxid;
+	r.out.pdsaOxidBindings = &pdsaOxidBindings;
 	r.out.ipidRemUnknown = oid;
+	r.out.AuthnHint = &AuthnHint;
+	r.out.ServerVersion = &ServerVersion;
+	r.out.hr = &hr;
+	r.out.ifaces = &ifaces;
 
 	status = dcerpc_RemoteActivation_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "RemoteActivation failed");
