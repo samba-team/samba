@@ -3,8 +3,8 @@
   http://www.grimes.demon.co.uk/DCOM/DCOMSpec.htm
  */
 
-/* 
- The OXID Resolver can turn a OXID (Object Exporter ID) into a 
+/*
+ The OXID Resolver can turn a OXID (Object Exporter ID) into a
  RPC binding string that can be used to contact an object
 
  (used by DCOM)
@@ -12,7 +12,7 @@
 
 import "misc.idl", "orpc.idl";
 
-[ 
+[
 	uuid("99fcfec4-5260-101b-bbcb-00aa0021347a"),
 	helpstring("Object Exporter ID Resolver"),
 	endpoint("ncacn_np:[\\pipe\\epmapper]", "ncacn_ip_tcp:[135]", "ncalrpc:"),
@@ -45,7 +45,7 @@ interface IOXIDResolver
 	[idempotent] WERROR SimplePing (
 		[in] SETID *SetId /* Must not be zero */
 		);
-	
+
 	/* Complex ping is used to create sets of OIDs to ping. The */
 	/* whole set can subsequently be pinged using SimplePing, */
 	/* thus reducing network traffic. */
@@ -71,7 +71,7 @@ interface IOXIDResolver
 	/* Method to get the protocol sequences, string bindings, */
 	/* RemoteUnknown IPID and COM version for an object server */
 	/* given its OXID. Supported by DCOM */
-	/* version 5.2 and above. Looks like that means 
+	/* version 5.2 and above. Looks like that means
 	 * Windows 2003/XP and above */
 	[idempotent] WERROR ResolveOxid2 (
 											  [in] OXID pOxid,
