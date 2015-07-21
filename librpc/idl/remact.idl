@@ -12,7 +12,7 @@ import "misc.idl", "orpc.idl";
 ]
 interface IRemoteActivation
 {
-	typedef enum 
+	typedef enum
 	{
 		RPC_C_IMP_LEVEL_DEFAULT = 0,
 		RPC_C_IMP_LEVEL_ANONYMOUS = 1,
