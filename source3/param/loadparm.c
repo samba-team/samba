@@ -4143,7 +4143,8 @@ void lp_set_logfile(const char *name)
 
 int lp_maxprintjobs(int snum)
 {
-	int maxjobs = LP_SNUM_OK(snum) ? ServicePtrs[snum]->max_print_jobs : sDefault.max_print_jobs;
+	int maxjobs = lp_max_print_jobs(snum);
+
 	if (maxjobs <= 0 || maxjobs >= PRINT_MAX_JOBID)
 		maxjobs = PRINT_MAX_JOBID - 1;
 

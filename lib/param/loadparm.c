@@ -3089,7 +3089,8 @@ const char *lpcfg_printername(struct loadparm_service *service, struct loadparm_
  */
 int lpcfg_maxprintjobs(struct loadparm_service *service, struct loadparm_service *sDefault)
 {
-	int maxjobs = (service != NULL) ? service->max_print_jobs : sDefault->max_print_jobs;
+	int maxjobs = lpcfg_max_print_jobs(service, sDefault);
+
 	if (maxjobs <= 0 || maxjobs >= PRINT_MAX_JOBID)
 		maxjobs = PRINT_MAX_JOBID - 1;
 
