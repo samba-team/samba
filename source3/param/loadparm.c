@@ -4296,19 +4296,13 @@ int lp_min_receive_file_size(void)
  even after a configuration file reload.
 ********************************************************************/
 
-static bool lp_widelinks_internal(int snum)
-{
-	return (bool)(LP_SNUM_OK(snum)? ServicePtrs[(snum)]->wide_links :
-			sDefault.wide_links);
-}
-
 void widelinks_warning(int snum)
 {
 	if (lp_allow_insecure_wide_links()) {
 		return;
 	}
 
-	if (lp_unix_extensions() && lp_widelinks_internal(snum)) {
+	if (lp_unix_extensions() && lp_wide_links(snum)) {
 		DEBUG(0,("Share '%s' has wide links and unix extensions enabled. "
 			"These parameters are incompatible. "
 			"Wide links will be disabled for this share.\n",
@@ -4329,7 +4323,7 @@ bool lp_widelinks(int snum)
 		}
 	}
 
-	return lp_widelinks_internal(snum);
+	return lp_wide_links(snum);
 }
 
 int lp_server_role(void)
