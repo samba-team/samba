@@ -584,7 +584,7 @@ static NTSTATUS tdbsam_getsampwnam (struct pdb_methods *my_methods,
 	}
 
 	/* set search key */
-	slprintf(keystr, sizeof(keystr)-1, "%s%s", USERPREFIX, name);
+	fstr_sprintf(keystr, "%s%s", USERPREFIX, name);
 
 	/* open the database */
 
@@ -642,7 +642,7 @@ static NTSTATUS tdbsam_getsampwrid (struct pdb_methods *my_methods,
 
 	/* set search key */
 
-	slprintf(keystr, sizeof(keystr)-1, "%s%.8x", RIDPREFIX, rid);
+	fstr_sprintf(keystr, "%s%.8x", RIDPREFIX, rid);
 
 	/* open the database */
 
@@ -689,7 +689,7 @@ static bool tdb_delete_samacct_only( struct samu *sam_pass )
 
   	/* set the search key */
 
-	slprintf(keystr, sizeof(keystr)-1, "%s%s", USERPREFIX, name);
+	fstr_sprintf(keystr, "%s%s", USERPREFIX, name);
 
 	/* it's outaa here!  8^) */
 	if ( !tdbsam_open( tdbsam_filename ) ) {
@@ -735,7 +735,7 @@ static NTSTATUS tdbsam_delete_sam_account(struct pdb_methods *my_methods,
 
   	/* set the search key */
 
-	slprintf(keystr, sizeof(keystr)-1, "%s%s", USERPREFIX, name);
+	fstr_sprintf(keystr, "%s%s", USERPREFIX, name);
 
 	rid = pdb_get_user_rid(sam_pass);
 
@@ -755,7 +755,7 @@ static NTSTATUS tdbsam_delete_sam_account(struct pdb_methods *my_methods,
 
   	/* set the search key */
 
-	slprintf(keystr, sizeof(keystr)-1, "%s%.8x", RIDPREFIX, rid);
+	fstr_sprintf(keystr, "%s%.8x", RIDPREFIX, rid);
 
 	/* it's outaa here!  8^) */
 
@@ -813,7 +813,7 @@ static bool tdb_update_samacct_only( struct samu* newpwd, int flag )
 		  pdb_get_user_rid(newpwd)));
 
   	/* setup the USER index key */
-	slprintf(keystr, sizeof(keystr)-1, "%s%s", USERPREFIX, name);
+	fstr_sprintf(keystr, "%s%s", USERPREFIX, name);
 
 	/* add the account */
 
@@ -852,8 +852,7 @@ static bool tdb_update_ridrec_only( struct samu* newpwd, int flag )
 	data = string_term_tdb_data(name);
 
 	/* setup the RID index key */
-	slprintf(keystr, sizeof(keystr)-1, "%s%.8x", RIDPREFIX,
-		 pdb_get_user_rid(newpwd));
+	fstr_sprintf(keystr, "%s%.8x", RIDPREFIX, pdb_get_user_rid(newpwd));
 
 	/* add the reference */
 	status = dbwrap_store_bystring(db_sam, keystr, data, flag);
@@ -933,7 +932,7 @@ static bool tdb_update_sam(struct pdb_methods *my_methods, struct samu* newpwd,
 
 		/* Delete old RID key */
 		DEBUG(10, ("tdb_update_sam: Deleting key for RID %u\n", oldrid));
-		slprintf(keystr, sizeof(keystr) - 1, "%s%.8x", RIDPREFIX, oldrid);
+		fstr_sprintf(keystr, "%s%.8x", RIDPREFIX, oldrid);
 		if (!NT_STATUS_IS_OK(dbwrap_delete_bystring(db_sam, keystr))) {
 			DEBUG(0, ("tdb_update_sam: Can't delete %s\n", keystr));
 			goto cancel;
