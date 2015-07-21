@@ -192,6 +192,10 @@ static bool test_ResolveOxid2(struct torture_context *tctx,
 	uint64_t oxid;
 	struct GUID oid;
 	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct DUALSTRINGARRAY *pdsaOxidBindings;
+	struct GUID ipidRemUnknown;
+	uint32_t AuthnHint;
+	struct COMVERSION ComVersion;
 
 	if (!test_RemoteActivation(tctx, &oxid, &oid))
 		return false;
@@ -199,6 +203,10 @@ static bool test_ResolveOxid2(struct torture_context *tctx,
 	r.in.pOxid = oxid;
 	r.in.cRequestedProtseqs = 2;
 	r.in.arRequestedProtseqs = protseq;
+	r.out.pdsaOxidBindings = &pdsaOxidBindings;
+	r.out.ipidRemUnknown = &ipidRemUnknown;
+	r.out.AuthnHint = &AuthnHint;
+	r.out.ComVersion = &ComVersion;
 
 	status = dcerpc_ResolveOxid2_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "ResolveOxid2");
