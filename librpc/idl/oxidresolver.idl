@@ -29,13 +29,13 @@ interface IOXIDResolver
 	/* and machine id for an object server given its OXID. */
 
 	[idempotent] WERROR ResolveOxid (
-		 [in] OXID pOxid,
-		 [in] uint16 cRequestedProtseqs,
-		 [in, size_is(cRequestedProtseqs)] uint16 arRequestedProtseqs[],
-		 [out] DUALSTRINGARRAY **ppdsaOxidBindings,
-		 [out,ref] IPID *pipidRemUnknown,
-		 [out,ref] uint32 *pAuthnHint
-			 );
+		[in] OXID pOxid,
+		[in] uint16 cRequestedProtseqs,
+		[in, size_is(cRequestedProtseqs)] uint16 arRequestedProtseqs[],
+		[out] DUALSTRINGARRAY **ppdsaOxidBindings,
+		[out,ref] IPID *pipidRemUnknown,
+		[out,ref] uint32 *pAuthnHint
+		);
 
 	/* Simple ping is used to ping a Set. Client machines use this */
 	/* to inform the object exporter that it is still using the */
@@ -59,7 +59,7 @@ interface IOXIDResolver
 		/*remove these OIDs from the set */
 		[in, size_is(cDelFromSet)] OID DelFromSet[],
 		[out,ref] uint16 *PingBackoffFactor/* 2^factor = multipler */
-			 );
+		 );
 
 	/* In some cases the client maybe unsure that a particular */
 	/* binding will reach the server. (For example, when the oxid */
@@ -81,7 +81,7 @@ interface IOXIDResolver
 		[out,ref] IPID *ipidRemUnknown,
 		[out,ref] uint32 *AuthnHint,
 		[out,ref] COMVERSION *ComVersion
-	);
+		);
 
 	typedef struct {
 		COMVERSION version;
@@ -89,9 +89,10 @@ interface IOXIDResolver
 	} COMINFO;
 
 	[idempotent] WERROR ServerAlive2 (
-	  [out,ref] COMINFO *info,
-	  [out,ref] DUALSTRINGARRAY *dualstring,
-	  [out,ref] uint8 *unknown2,
-	  [out,ref] uint8 *unknown3,
-	  [out,ref] uint8 *unknown4);
+		[out,ref] COMINFO *info,
+		[out,ref] DUALSTRINGARRAY *dualstring,
+		[out,ref] uint8 *unknown2,
+		[out,ref] uint8 *unknown3,
+		[out,ref] uint8 *unknown4
+		);
 }
