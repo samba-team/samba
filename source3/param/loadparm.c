@@ -4155,9 +4155,9 @@ int lp_maxprintjobs(int snum)
 
 const char *lp_printcapname(void)
 {
-	if ((Globals.szPrintcapname != NULL) &&
-	    (Globals.szPrintcapname[0] != '\0'))
-		return Globals.szPrintcapname;
+	if ((Globals.printcap_name != NULL) &&
+	    (Globals.printcap_name[0] != '\0'))
+		return Globals.printcap_name;
 
 	if (sDefault.printing == PRINT_CUPS) {
 		return "cups";
