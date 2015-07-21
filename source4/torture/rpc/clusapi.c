@@ -1425,7 +1425,8 @@ static bool test_GetNodeId(struct torture_context *tctx,
 
 static bool test_NodeControl_int(struct torture_context *tctx,
 				 struct dcerpc_pipe *p,
-				 struct policy_handle *hNode)
+				 struct policy_handle *hNode,
+				 enum clusapi_NodeControlCode dwControlCode)
 {
 	struct dcerpc_binding_handle *b = p->binding_handle;
 	struct clusapi_NodeControl r;
@@ -1451,7 +1452,7 @@ static bool test_NodeControl_int(struct torture_context *tctx,
 		WERR_INVALID_FUNCTION,
 		"NodeControl failed");
 
-	r.in.dwControlCode = CLUSCTL_NODE_GET_RO_COMMON_PROPERTIES;
+	r.in.dwControlCode = dwControlCode;
 
 	torture_assert_ntstatus_ok(tctx,
 		dcerpc_clusapi_NodeControl_r(b, tctx, &r),
@@ -1483,6 +1484,20 @@ static bool test_NodeControl_int(struct torture_context *tctx,
 	torture_assert(tctx, *r.out.lpBytesReturned < r.in.nOutBufferSize,
 		"lpBytesReturned expected to be smaller than input size nOutBufferSize");
 
+	if (dwControlCode == CLUSCTL_NODE_GET_ID) {
+		const char *str;
+		DATA_BLOB blob = data_blob_const(r.out.lpOutBuffer, *r.out.lpBytesReturned);
+
+		torture_assert(tctx, *r.out.lpBytesReturned < 4, "unexpected size");
+		torture_assert(tctx, *r.out.lpBytesReturned % 2, "must be a multiple of 2");
+
+		torture_assert(tctx,
+			pull_reg_sz(tctx, &blob, &str),
+			"failed to pull unicode string");
+
+		torture_comment(tctx, "got this node id: '%s'", str);
+	}
+
 	return true;
 }
 
@@ -1498,7 +1513,15 @@ static bool test_NodeControl(struct torture_context *tctx,
 		return false;
 	}
 
-	ret = test_NodeControl_int(tctx, t->p, &hNode);
+	ret = test_NodeControl_int(tctx, t->p, &hNode, CLUSCTL_NODE_GET_RO_COMMON_PROPERTIES);
+	if (ret) {
+		return false;
+	}
+
+	ret = test_NodeControl_int(tctx, t->p, &hNode, CLUSCTL_NODE_GET_ID);
+	if (ret) {
+		return false;
+	}
 
 	test_CloseNode_int(tctx, t->p, &hNode);
 
