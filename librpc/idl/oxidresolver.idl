@@ -90,9 +90,7 @@ interface IOXIDResolver
 
 	[idempotent] WERROR ServerAlive2 (
 		[out,ref] COMINFO *info,
-		[out,ref] DUALSTRINGARRAY *dualstring,
-		[out,ref] uint8 *unknown2,
-		[out,ref] uint8 *unknown3,
-		[out,ref] uint8 *unknown4
+		[out,ref] DUALSTRINGARRAY **dualstring,
+		[out,ref] uint8 *pReserved
 		);
 }

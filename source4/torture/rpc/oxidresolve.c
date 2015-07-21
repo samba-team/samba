@@ -211,6 +211,13 @@ static bool test_ServerAlive2(struct torture_context *tctx,
 	struct ServerAlive2 r;
 	NTSTATUS status;
 	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct COMINFO info;
+	struct DUALSTRINGARRAY *dualstring;
+	uint8_t pReserved;
+
+	r.out.info = &info;
+	r.out.dualstring = &dualstring;
+	r.out.pReserved = &pReserved;
 
 	status = dcerpc_ServerAlive2_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "ServerAlive2");
