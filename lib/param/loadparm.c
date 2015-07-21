@@ -2372,7 +2372,7 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lp_ctx->sDefault = talloc_zero(lp_ctx, struct loadparm_service);
 	lp_ctx->flags = talloc_zero_array(lp_ctx, unsigned int, num_parameters());
 
-	lp_ctx->sDefault->iMaxPrintJobs = 1000;
+	lp_ctx->sDefault->max_print_jobs = 1000;
 	lp_ctx->sDefault->bAvailable = true;
 	lp_ctx->sDefault->browseable = true;
 	lp_ctx->sDefault->read_only = true;
@@ -3089,7 +3089,7 @@ const char *lpcfg_printername(struct loadparm_service *service, struct loadparm_
  */
 int lpcfg_maxprintjobs(struct loadparm_service *service, struct loadparm_service *sDefault)
 {
-	int maxjobs = (service != NULL) ? service->iMaxPrintJobs : sDefault->iMaxPrintJobs;
+	int maxjobs = (service != NULL) ? service->max_print_jobs : sDefault->max_print_jobs;
 	if (maxjobs <= 0 || maxjobs >= PRINT_MAX_JOBID)
 		maxjobs = PRINT_MAX_JOBID - 1;
 

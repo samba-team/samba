@@ -158,7 +158,7 @@ static struct loadparm_service sDefault =
 	.aio_write_behind = NULL,
 	.dfree_command = NULL,
 	.min_print_space = 0,
-	.iMaxPrintJobs = 1000,
+	.max_print_jobs = 1000,
 	.max_reported_print_jobs = 0,
 	.write_cache_size = 0,
 	.create_mask = 0744,
@@ -4143,7 +4143,7 @@ void lp_set_logfile(const char *name)
 
 int lp_maxprintjobs(int snum)
 {
-	int maxjobs = LP_SNUM_OK(snum) ? ServicePtrs[snum]->iMaxPrintJobs : sDefault.iMaxPrintJobs;
+	int maxjobs = LP_SNUM_OK(snum) ? ServicePtrs[snum]->max_print_jobs : sDefault.max_print_jobs;
 	if (maxjobs <= 0 || maxjobs >= PRINT_MAX_JOBID)
 		maxjobs = PRINT_MAX_JOBID - 1;
 

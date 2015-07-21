@@ -1893,7 +1893,7 @@ struct parm_struct parm_table[] = {
 		.label		= "max print jobs",
 		.type		= P_INTEGER,
 		.p_class	= P_LOCAL,
-		.offset		= LOCAL_VAR(iMaxPrintJobs),
+		.offset		= LOCAL_VAR(max_print_jobs),
 		.special	= NULL,
 		.enum_list	= NULL,
 	},
