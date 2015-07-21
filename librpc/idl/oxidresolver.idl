@@ -74,14 +74,15 @@ interface IOXIDResolver
 	/* version 5.2 and above. Looks like that means
 	 * Windows 2003/XP and above */
 	[idempotent] WERROR ResolveOxid2 (
-											  [in] OXID pOxid,
-											  [in] uint16 cRequestedProtseqs,
-											  [in, size_is(cRequestedProtseqs)] uint16 arRequestedProtseqs[],
-											  [out] DUALSTRINGARRAY **pdsaOxidBindings,
-											  [out,ref] IPID *ipidRemUnknown,
-											  [out,ref] uint32 *AuthnHint,
-											  [out,ref] COMVERSION *ComVersion
-											 );
+		[in] OXID pOxid,
+		[in] uint16 cRequestedProtseqs,
+		[in, size_is(cRequestedProtseqs)] uint16 arRequestedProtseqs[],
+		[out] DUALSTRINGARRAY **pdsaOxidBindings,
+		[out,ref] IPID *ipidRemUnknown,
+		[out,ref] uint32 *AuthnHint,
+		[out,ref] COMVERSION *ComVersion
+	);
+
 	typedef struct {
 		COMVERSION version;
 	  	uint32 unknown1;
