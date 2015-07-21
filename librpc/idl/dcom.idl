@@ -26,7 +26,7 @@ interface IUnknown
 {
 	/*****************/
 	/* Function 0x00 */
-	/* Returns the interface with the specified IID 
+	/* Returns the interface with the specified IID
 	   if implemented by this object */
 	[local] WERROR QueryInterface([in,unique] GUID *iid,
 	   [out,iid_is(riid)] IUnknown **data);
@@ -47,7 +47,7 @@ interface IUnknown
 	pointer_default(unique)
 ] interface IClassFactory : IUnknown
 {
-	[local] WERROR CreateInstance([in,unique] MInterfacePointer *pUnknown, 
+	[local] WERROR CreateInstance([in,unique] MInterfacePointer *pUnknown,
 			       [in,unique] GUID *iid,
 			       [out, iid_is(riid),unique] MInterfacePointer *ppv);
 
@@ -75,7 +75,7 @@ interface IUnknown
 ]
 interface IRemUnknown : IUnknown
 {
-	typedef [public] struct 
+	typedef [public] struct
 	{
 		WERROR hResult; /* result of call */
 		STDOBJREF std; /* data for returned interface */
@@ -90,7 +90,7 @@ interface IRemUnknown : IUnknown
 		[out, size_is(cIids), unique] MInterfacePointer *ip
 		);
 
-	typedef struct 
+	typedef struct
 	{
 		GUID ipid; /* ipid to AddRef/Release */
 		uint32 cPublicRefs;
@@ -114,7 +114,7 @@ interface IRemUnknown : IUnknown
 	object
 ] interface IClassActivator : IUnknown
 {
-	void GetClassObject([in] GUID clsid, 
+	void GetClassObject([in] GUID clsid,
 		                [in] uint32 context,
 						[in] uint32 locale,
 						[in] GUID iid,
@@ -133,7 +133,7 @@ interface IRemUnknown : IUnknown
 [
 	pointer_default(unique),
 	uuid("c6f3ee72-ce7e-11d1-b71e-00c04fc3111a")
-] interface IMachineLocalActivator 
+] interface IMachineLocalActivator
 {
 	WERROR IMachineLocalActivator_foo();
 }
@@ -146,7 +146,7 @@ interface IRemUnknown : IUnknown
 	WERROR ILocalObjectExporter_Foo();
 }
 
-/* Looks like this is the equivalent of .NET's 
+/* Looks like this is the equivalent of .NET's
    System.Activator class */
 [
 	uuid("000001a0-0000-0000-c000-000000000046"),
@@ -157,7 +157,7 @@ interface IRemUnknown : IUnknown
 	WERROR ISystemActivatorRemoteCreateInstance([in] hyper unknown1,  /* OXID ? */
 											  [in] MInterfacePointer iface1,
 											  [in] hyper unknown2,
-											  [out] uint32 *unknown3, 
+											  [out] uint32 *unknown3,
 											  [out] MInterfacePointer *iface2);
 }
 
@@ -277,7 +277,7 @@ interface IStream : IUnknown
 {
 	WERROR Read(
 				[out, size_is(num_requested), length_is(*num_read)] uint8 pv[],
-				[in] uint32 num_requested, 
+				[in] uint32 num_requested,
 				[in, unique] uint32 *num_readx,
 				[out] uint32 *num_read
 				);
@@ -293,7 +293,7 @@ interface IStream : IUnknown
 	progid("Samba.Simple"),
 	helpstring("simple class"),
 	internal
-] coclass simple 
+] coclass simple
 {
 	interface IStream;
 }
