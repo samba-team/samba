@@ -1555,7 +1555,8 @@ static bool set_variable_helper(TALLOC_CTX *mem_ctx, int parmnum, void *parm_ptr
 
 }
 
-bool set_variable(TALLOC_CTX *mem_ctx, struct loadparm_service *service, int parmnum, void *parm_ptr,
+static bool set_variable(TALLOC_CTX *mem_ctx, struct loadparm_service *service,
+			 int parmnum, void *parm_ptr,
 			 const char *pszParmName, const char *pszParmValue,
 			 struct loadparm_context *lp_ctx, bool on_globals)
 {
