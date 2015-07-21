@@ -128,7 +128,11 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 	if (WIFEXITED(status)) {
-		output = -WEXITSTATUS(status);
+		output = WEXITSTATUS(status);
+		/* Only errors should be returned as -ve values */
+		if (output == ENOENT || output == ENOEXEC) {
+			output = -output;
+		}
 		sys_write(write_fd, &output, sizeof(output));
 		exit(0);
 	}
