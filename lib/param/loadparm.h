@@ -252,7 +252,7 @@ enum case_handling {CASE_LOWER,CASE_UPPER};
 	int iminreceivefile;						\
 	char *szPrintcapname;						\
 	int CupsEncrypt;						\
-	int  iPreferredMaster;						\
+	int  _preferred_master;						\
 	char *szIdmapUID;						\
 	char *szIdmapGID;						\
 	char *szIdmapBackend;						\

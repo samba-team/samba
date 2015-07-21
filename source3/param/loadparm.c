@@ -876,7 +876,7 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 
 	string_set(Globals.ctx, &Globals.share_backend, "classic");
 
-	Globals.iPreferredMaster = Auto;
+	Globals._preferred_master = Auto;
 
 	Globals.allow_dns_updates = DNS_UPDATE_SIGNED;
 
@@ -4101,10 +4101,10 @@ static bool lp_domain_master_true_or_auto(void)
 
 bool lp_preferred_master(void)
 {
-	if (Globals.iPreferredMaster == Auto)
+	if (Globals._preferred_master == Auto)
 		return (lp_local_master() && lp_domain_master());
 
-	return (bool)Globals.iPreferredMaster;
+	return (bool)Globals._preferred_master;
 }
 
 /*******************************************************************
