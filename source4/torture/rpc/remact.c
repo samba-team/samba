@@ -41,7 +41,7 @@ static bool test_RemoteActivation(struct torture_context *tctx,
 	struct GUID ipidRemUnknown;
 	uint32_t AuthnHint;
 	struct COMVERSION ServerVersion;
-	WERROR hr;
+	HRESULT hr;
 	struct MInterfacePointer *ifaces;
 
 	ZERO_STRUCT(r);
@@ -71,9 +71,9 @@ static bool test_RemoteActivation(struct torture_context *tctx,
 
 	torture_assert_werr_ok(tctx, r.out.result, "RemoteActivation");
 
-	torture_assert_werr_ok(tctx, *r.out.hr, "RemoteActivation");
+	torture_assert_hresult_ok(tctx, *r.out.hr, "RemoteActivation");
 
-	torture_assert_werr_ok(tctx, r.out.results[0], "RemoteActivation");
+	torture_assert_hresult_ok(tctx, r.out.results[0], "RemoteActivation");
 
 	GUID_from_string(DCERPC_ICLASSFACTORY_UUID, &iids[0]);
 	r.in.Interfaces = 1;
@@ -84,9 +84,9 @@ static bool test_RemoteActivation(struct torture_context *tctx,
 
 	torture_assert_werr_ok(tctx, r.out.result, "RemoteActivation(GetClassObject)");
 
-	torture_assert_werr_ok(tctx, *r.out.hr, "RemoteActivation(GetClassObject)");
+	torture_assert_hresult_ok(tctx, *r.out.hr, "RemoteActivation(GetClassObject)");
 
-	torture_assert_werr_ok(tctx, r.out.results[0], "RemoteActivation(GetClassObject)");
+	torture_assert_hresult_ok(tctx, r.out.results[0], "RemoteActivation(GetClassObject)");
 
 	return true;
 }

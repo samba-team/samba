@@ -43,7 +43,7 @@ static bool test_RemoteActivation(struct torture_context *tctx,
 	struct DUALSTRINGARRAY *pdsaOxidBindings;
 	uint32_t AuthnHint;
 	struct COMVERSION ServerVersion;
-	WERROR hr;
+	HRESULT hr;
 	struct MInterfacePointer *ifaces;
 
 	status = torture_rpc_connection(tctx, &p,
@@ -79,8 +79,8 @@ static bool test_RemoteActivation(struct torture_context *tctx,
 	status = dcerpc_RemoteActivation_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "RemoteActivation failed");
 	torture_assert_werr_ok(tctx, r.out.result, "RemoteActivation failed");
-	torture_assert_werr_ok(tctx, *r.out.hr, "RemoteActivation failed");
-	torture_assert_werr_ok(tctx, r.out.results[0], "RemoteActivation failed");
+	torture_assert_hresult_ok(tctx, *r.out.hr, "RemoteActivation failed");
+	torture_assert_hresult_ok(tctx, r.out.results[0], "RemoteActivation failed");
 
 	return true;
 }

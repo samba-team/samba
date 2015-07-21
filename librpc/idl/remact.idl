@@ -40,8 +40,8 @@ interface IRemoteActivation
 		[out,ref] GUID *ipidRemUnknown,
 		[out,ref] uint32 *AuthnHint,
 		[out,ref] COMVERSION *ServerVersion,
-		[out,ref] WERROR *hr,
+		[out,ref] HRESULT *hr,
 		[out,size_is(Interfaces)] MInterfacePointer **ifaces,
-		[out,size_is(Interfaces)] WERROR results[]
+		[out,size_is(Interfaces)] HRESULT results[]
 		);
 }
