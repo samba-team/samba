@@ -251,8 +251,7 @@ enum case_handling {CASE_LOWER,CASE_UPPER};
 	int CupsEncrypt;						\
 	char *szIdmapUID;						\
 	char *szIdmapGID;						\
-	char *szIdmapBackend;						\
-	int _winbind_max_domain_connections;
+	char *szIdmapBackend;
 
 const char* server_role_str(uint32_t role);
 int lp_find_server_role(int server_role, int security, int domain_logons, int domain_master);

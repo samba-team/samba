@@ -1019,18 +1019,15 @@ char *lp_ ## fn_name(TALLOC_CTX *ctx,int i) {return(lp_string((ctx), (LP_SNUM_OK
 #define FN_LOCAL_PARM_CHAR(fn_name,val) \
  char lp_ ## fn_name(const struct share_params *p) {return(LP_SNUM_OK(p->service)? ServicePtrs[(p->service)]->val : sDefault.val);}
 
-static FN_GLOBAL_INTEGER(winbind_max_domain_connections_int,
-		  _winbind_max_domain_connections)
-
 int lp_winbind_max_domain_connections(void)
 {
 	if (lp_winbind_offline_logon() &&
-	    lp_winbind_max_domain_connections_int() > 1) {
+	    lp__winbind_max_domain_connections() > 1) {
 		DEBUG(1, ("offline logons active, restricting max domain "
 			  "connections to 1\n"));
 		return 1;
 	}
-	return MAX(1, lp_winbind_max_domain_connections_int());
+	return MAX(1, lp__winbind_max_domain_connections());
 }
 
 int lp_cups_encrypt(void)
