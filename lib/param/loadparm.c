@@ -1366,6 +1366,21 @@ bool handle_smb_ports(struct loadparm_context *lp_ctx, struct loadparm_service *
 	return true;
 }
 
+bool handle_smb2_max_credits(struct loadparm_context *lp_ctx,
+			     struct loadparm_service *service,
+			     const char *pszParmValue, char **ptr)
+{
+	int value = lp_int(pszParmValue);
+
+	if (value <= 0) {
+		value = DEFAULT_SMB2_MAX_CREDITS;
+	}
+
+	*(int *)ptr = value;
+
+	return true;
+}
+
 /***************************************************************************
  Initialise a copymap.
 ***************************************************************************/

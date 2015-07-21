@@ -858,7 +858,7 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 	Globals.smb2_max_read = DEFAULT_SMB2_MAX_READ;
 	Globals.smb2_max_write = DEFAULT_SMB2_MAX_WRITE;
 	Globals.smb2_max_trans = DEFAULT_SMB2_MAX_TRANSACT;
-	Globals.ismb2_max_credits = DEFAULT_SMB2_MAX_CREDITS;
+	Globals.smb2_max_credits = DEFAULT_SMB2_MAX_CREDITS;
 	Globals.smb2_leases = false;
 
 	string_set(Globals.ctx, &Globals.ncalrpc_dir, get_dyn_NCALRPCDIR());
@@ -1033,13 +1033,6 @@ int lp_winbind_max_domain_connections(void)
 	return MAX(1, lp_winbind_max_domain_connections_int());
 }
 
-int lp_smb2_max_credits(void)
-{
-	if (Globals.ismb2_max_credits <= 0) {
-		Globals.ismb2_max_credits = DEFAULT_SMB2_MAX_CREDITS;
-	}
-	return Globals.ismb2_max_credits;
-}
 int lp_cups_encrypt(void)
 {
 	int result = 0;

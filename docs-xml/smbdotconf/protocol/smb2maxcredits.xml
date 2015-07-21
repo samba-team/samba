@@ -1,7 +1,7 @@
 <samba:parameter name="smb2 max credits"
                  type="integer"
                  context="G"
-                 generated_function="0"
+                 handler="handle_smb2_max_credits"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 <para>This option controls the maximum number of outstanding simultaneous SMB2 operations

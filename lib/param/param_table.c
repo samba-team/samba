@@ -1877,8 +1877,8 @@ struct parm_struct parm_table[] = {
 		.label		= "smb2 max credits",
 		.type		= P_INTEGER,
 		.p_class	= P_GLOBAL,
-		.offset		= GLOBAL_VAR(ismb2_max_credits),
-		.special	= NULL,
+		.offset		= GLOBAL_VAR(smb2_max_credits),
+		.special	= handle_smb2_max_credits,
 		.enum_list	= NULL,
 	},
 	{
