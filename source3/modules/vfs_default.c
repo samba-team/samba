@@ -690,19 +690,22 @@ static void vfswrap_asys_finished(struct tevent_context *ev,
 
 static bool vfswrap_init_asys_ctx(struct smbd_server_connection *conn)
 {
+	struct asys_context *ctx;
+	struct tevent_fd *fde;
 	int ret;
 	int fd;
 
 	if (conn->asys_ctx != NULL) {
 		return true;
 	}
-	ret = asys_context_init(&conn->asys_ctx, aio_pending_size);
+
+	ret = asys_context_init(&ctx, aio_pending_size);
 	if (ret != 0) {
 		DEBUG(1, ("asys_context_init failed: %s\n", strerror(ret)));
 		return false;
 	}
 
-	fd = asys_signalfd(conn->asys_ctx);
+	fd = asys_signalfd(ctx);
 
 	ret = set_blocking(fd, false);
 	if (ret != 0) {
@@ -710,19 +713,19 @@ static bool vfswrap_init_asys_ctx(struct smbd_server_connection *conn)
 		goto fail;
 	}
 
-	conn->asys_fde = tevent_add_fd(conn->ev_ctx, conn, fd,
-				       TEVENT_FD_READ,
-				       vfswrap_asys_finished,
-				       conn->asys_ctx);
-	if (conn->asys_fde == NULL) {
+	fde = tevent_add_fd(conn->ev_ctx, conn, fd, TEVENT_FD_READ,
+			    vfswrap_asys_finished, ctx);
+	if (fde == NULL) {
 		DEBUG(1, ("tevent_add_fd failed\n"));
 		goto fail;
 	}
+
+	conn->asys_ctx = ctx;
+	conn->asys_fde = fde;
 	return true;
 
 fail:
-	asys_context_destroy(conn->asys_ctx);
-	conn->asys_ctx = NULL;
+	asys_context_destroy(ctx);
 	return false;
 }
 
