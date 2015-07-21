@@ -1219,6 +1219,7 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 		}
 	}
 	ignore_signal(SIGPIPE);
+	ignore_signal(SIGUSR1);
 
 	ctdb->ctdbd_pid = getpid();
 	DEBUG(DEBUG_ERR, ("Starting CTDBD (Version %s) as PID: %u\n",
