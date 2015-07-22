@@ -12,8 +12,8 @@ dNSHostName: ${DNSNAME}
 # "MSDFSR-ComputerReferenceBL" doesn't exist since we still miss DFSR support
 # "isCritcalSystemObject" is now filled in by the samldb LDB module
 localPolicyFlags: 0
-operatingSystem: Samba
-operatingSystemVersion: ${SAMBA_VERSION_STRING}
+operatingSystem: ${OPERATING_SYSTEM}
+operatingSystemVersion: ${OPERATING_SYSTEM_VERSION}
 sAMAccountName: ${NETBIOSNAME}$
 userAccountControl: 532480
 clearTextPassword:: ${MACHINEPASS_B64}

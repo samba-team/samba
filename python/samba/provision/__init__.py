@@ -1137,6 +1137,14 @@ def setup_self_join(samdb, admin_session_info, names, fill, machinepass,
     if dc_rid is None:
         dc_rid = next_rid
 
+    # Some clients/applications (like exchange) make use of
+    # the operatingSystemVersion attribute in order to
+    # find if a DC is good enough.
+    #
+    # So we better use a value matching a Windows DC
+    # with the same domainControllerFunctionality level
+    operatingSystemVersion = samba.dsdb.dc_operatingSystemVersion(domainControllerFunctionality)
+
     setup_add_ldif(samdb, setup_path("provision_self_join.ldif"), {
               "CONFIGDN": names.configdn,
               "SCHEMADN": names.schemadn,
@@ -1148,7 +1156,8 @@ def setup_self_join(samdb, admin_session_info, names, fill, machinepass,
               "MACHINEPASS_B64": b64encode(machinepass.encode('utf-16-le')).decode('utf8'),
               "DOMAINSID": str(domainsid),
               "DCRID": str(dc_rid),
-              "SAMBA_VERSION_STRING": version,
+              "OPERATING_SYSTEM": "Samba-%s" % version,
+              "OPERATING_SYSTEM_VERSION": operatingSystemVersion,
               "NTDSGUID": ntdsguid_line,
               "DOMAIN_CONTROLLER_FUNCTIONALITY": str(
                   domainControllerFunctionality),
