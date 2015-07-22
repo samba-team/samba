@@ -187,12 +187,13 @@ def build(bld):
                              realname='tdb.so',
                              cflags='-DPACKAGE_VERSION=\"%s\"' % VERSION)
 
-        for env in bld.gen_python_environments(['PKGCONFIGDIR']):
-            bld.SAMBA_SCRIPT('_tdb_text.py',
-                             pattern='_tdb_text.py',
-                             installdir='python')
+        if not bld.env.disable_python:
+            for env in bld.gen_python_environments(['PKGCONFIGDIR']):
+                bld.SAMBA_SCRIPT('_tdb_text.py',
+                                 pattern='_tdb_text.py',
+                                 installdir='python')
 
-            bld.INSTALL_FILES('${PYTHONARCHDIR}', '_tdb_text.py')
+                bld.INSTALL_FILES('${PYTHONARCHDIR}', '_tdb_text.py')
 
 def testonly(ctx):
     '''run tdb testsuite'''
