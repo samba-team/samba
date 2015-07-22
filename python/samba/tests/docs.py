@@ -151,34 +151,45 @@ class SmbDotConfTests(TestCase):
         finally:
             f.close()
 
+        self.topdir = os.path.abspath(samba.source_tree_topdir())
+
+        try:
+            self.documented = set(get_documented_parameters(self.topdir))
+        except:
+            self.fail("Unable to load documented parameters")
+
+        try:
+            self.parameters = set(get_implementation_parameters(self.topdir))
+        except:
+            self.fail("Unable to load implemented parameters")
+
+        try:
+            self.defaults = set(get_documented_tuples(self.topdir))
+        except:
+            self.fail("Unable to load parameters")
+
+        try:
+            self.defaults_all = set(get_documented_tuples(self.topdir, False))
+        except:
+            self.fail("Unable to load parameters")
+
+
     def tearDown(self):
         super(SmbDotConfTests, self).tearDown()
         os.unlink(self.smbconf)
         os.unlink(self.blankconf)
 
     def test_unknown(self):
-        topdir = os.path.abspath(samba.source_tree_topdir())
-        try:
-            documented = set(get_documented_parameters(topdir))
-        except e:
-            self.fail("Unable to load parameters")
-        parameters = set(get_implementation_parameters(topdir))
         # Filter out parametric options, since we can't find them in the parm
         # table
-        documented = set([p for p in documented if not ":" in p])
-        unknown = documented.difference(parameters)
+        documented = set([p for p in self.documented if not ":" in p])
+        unknown = documented.difference(self.parameters)
         if len(unknown) > 0:
             self.fail(self._format_message(unknown,
                 "Parameters that are documented but not in the implementation:"))
 
     def test_undocumented(self):
-        topdir = os.path.abspath(samba.source_tree_topdir())
-        try:
-            documented = set(get_documented_parameters(topdir))
-        except:
-            self.fail("Unable to load parameters")
-        parameters = set(get_implementation_parameters(topdir))
-        undocumented = parameters.difference(documented)
+        undocumented = self.parameters.difference(self.documented)
         if len(undocumented) > 0:
             self.fail(self._format_message(undocumented,
                 "Parameters that are in the implementation but undocumented:"))
@@ -203,16 +214,10 @@ class SmbDotConfTests(TestCase):
         self._test_empty(['bin/samba-tool', 'testparm'])
 
     def _test_default(self, program):
-        topdir = os.path.abspath(samba.source_tree_topdir())
-        try:
-            defaults = set(get_documented_tuples(topdir))
-        except:
-            self.fail("Unable to load parameters")
-        bindir = os.path.join(topdir, "bin")
         failset = set()
         count = 0
 
-        for tuples in defaults:
+        for tuples in self.defaults:
             param, default, context, param_type = tuples
             if param in self.special_cases:
                 continue
@@ -225,7 +230,7 @@ class SmbDotConfTests(TestCase):
                  self.fail("%s has no valid context" % param)
             p = subprocess.Popen(program + ["-s", self.smbconf,
                     "--section-name", section, "--parameter-name", param],
-                    stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=topdir).communicate()
+                    stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=self.topdir).communicate()
             if p[0].upper().strip() != default.upper():
                 if not (p[0].upper().strip() == "" and default == '""'):
                     doc_triple = "%s\n      Expected: %s" % (param, default)
@@ -236,16 +241,10 @@ class SmbDotConfTests(TestCase):
                 "Parameters that do not have matching defaults:"))
 
     def _set_defaults(self, program):
-        topdir = os.path.abspath(samba.source_tree_topdir())
-        try:
-            defaults = set(get_documented_tuples(topdir))
-        except:
-            self.fail("Unable to load parameters")
-        bindir = os.path.join(topdir, "bin")
         failset = set()
         count = 0
 
-        for tuples in defaults:
+        for tuples in self.defaults:
             param, default, context, param_type = tuples
 
             if param in ['printing']:
@@ -261,7 +260,7 @@ class SmbDotConfTests(TestCase):
             p = subprocess.Popen(program + ["-s", self.smbconf,
                     "--section-name", section, "--parameter-name", param,
                     "--option", "%s = %s" % (param, default)],
-                    stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=topdir).communicate()
+                    stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=self.topdir).communicate()
             if p[0].upper().strip() != default.upper():
                 if not (p[0].upper().strip() == "" and default == '""'):
                     doc_triple = "%s\n      Expected: %s" % (param, default)
@@ -286,16 +285,11 @@ class SmbDotConfTests(TestCase):
                               'octal': '0567',
                               'ustring': 'ustring2',
                               'enum':'', 'boolean-auto': '', 'char': 'b', 'list': 'd, e, f'}
-        topdir = os.path.abspath(samba.source_tree_topdir())
-        try:
-            defaults = set(get_documented_tuples(topdir, False))
-        except Exception,e:
-            self.fail("Unable to load parameters" + e)
-        bindir = os.path.join(topdir, "bin")
+
         failset = set()
         count = 0
 
-        for tuples in defaults:
+        for tuples in self.defaults_all:
             param, default, context, param_type = tuples
 
             if param in ['printing', 'copy', 'include', 'log level']:
@@ -324,7 +318,7 @@ class SmbDotConfTests(TestCase):
             p = subprocess.Popen(program + ["-s", self.smbconf,
                     "--section-name", section, "--parameter-name", param,
                     "--option", "%s = %s" % (param, value_to_use)],
-                    stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=topdir).communicate()
+                    stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=self.topdir).communicate()
             if p[0].upper().strip() != value_to_use.upper():
                 # currently no way to distinguish command lists
                 if param_type == 'list':
@@ -354,7 +348,7 @@ class SmbDotConfTests(TestCase):
 
             p = subprocess.Popen(program + ["-s", tempconf, "--suppress-prompt",
                     "--option", "%s = %s" % (param, value_to_use)],
-                    stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=topdir).communicate()
+                    stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=self.topdir).communicate()
 
             os.unlink(tempconf)
 
@@ -388,10 +382,8 @@ class SmbDotConfTests(TestCase):
                 "Parameters that were unexpectedly not set:"))
 
     def _test_empty(self, program):
-        topdir = os.path.abspath(samba.source_tree_topdir())
-
         p = subprocess.Popen(program + ["-s", self.blankconf, "--suppress-prompt"],
-                stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=topdir).communicate()
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=self.topdir).communicate()
         output = ""
 
         for line in p[0].splitlines():
