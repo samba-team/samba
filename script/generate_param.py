@@ -241,7 +241,6 @@ def make_param_defs(path_in, path_out, scope):
             file_out.write("struct loadparm_global \n")
             file_out.write("{\n")
             file_out.write("\tTALLOC_CTX *ctx; /* Context for talloced members */\n")
-            file_out.write("\tchar *  dnsdomain;\n")
         elif scope == "LOCAL":
             file_out.write("/**\n")
             file_out.write(" * This structure describes a single service.\n")

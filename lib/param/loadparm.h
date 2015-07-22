@@ -243,6 +243,7 @@ enum case_handling {CASE_LOWER,CASE_UPPER};
 
 #define LOADPARM_EXTRA_GLOBALS \
 	struct parmlist_entry *param_opt;				\
+	char *dnsdomain;						\
 	char *realm_original;
 
 const char* server_role_str(uint32_t role);
