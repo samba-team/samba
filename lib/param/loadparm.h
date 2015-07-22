@@ -248,7 +248,7 @@ enum case_handling {CASE_LOWER,CASE_UPPER};
 #define LOADPARM_EXTRA_GLOBALS \
 	struct parmlist_entry *param_opt;				\
 	char *realm_original;						\
-	int CupsEncrypt;						\
+	int cups_encrypt;						\
 	char *szIdmapUID;						\
 	char *szIdmapGID;						\
 	char *szIdmapBackend;

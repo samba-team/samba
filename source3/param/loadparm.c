@@ -1034,7 +1034,7 @@ int lp_cups_encrypt(void)
 {
 	int result = 0;
 #ifdef HAVE_HTTPCONNECTENCRYPT
-	switch (Globals.CupsEncrypt) {
+	switch (Globals.cups_encrypt) {
 		case Auto:
 			result = HTTP_ENCRYPT_REQUIRED;
 			break;

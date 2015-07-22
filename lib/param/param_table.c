@@ -1983,7 +1983,7 @@ struct parm_struct parm_table[] = {
 		.label          = "cups encrypt",
 		.type           = P_ENUM,
 		.p_class        = P_GLOBAL,
-		.offset         = GLOBAL_VAR(CupsEncrypt),
+		.offset         = GLOBAL_VAR(cups_encrypt),
 		.special        = NULL,
 		.enum_list      = enum_bool_auto,
 	},
