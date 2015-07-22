@@ -1,0 +1,322 @@
+/**
+@page tevent_context Chapter 6: Tevent with threads
+
+@section context Tevent with threads
+
+In order to use tevent with threads, you must first understand
+how to use the talloc library in threaded programs. For more
+information about working with talloc, please visit <a
+href="https://talloc.samba.org/">talloc website</a> where tutorial and
+documentation are located.
+
+If a tevent context structure is talloced from a NULL, thread-safe talloc
+context, then it can be safe to use in a threaded program. The function
+<code>talloc_disable_null_tracking()</code> <b>must</b> be called from the initial
+program thread before any talloc calls are made to ensure talloc is thread-safe.
+
+Each thread must create it's own tevent context structure as follows
+<code>tevent_context_init(NULL)</code> and no talloc memory contexts
+can be shared between threads.
+
+Separate threads using tevent in this way can communicate
+by writing data into file descriptors that are being monitored
+by a tevent context on another thread. For example (simplified
+with no error handling):
+
+@code
+Main thread:
+
+main()
+{
+	talloc_disable_null_tracking();
+
+	struct tevent_context *master_ev = tevent_context_init(NULL);
+	void *mem_ctx = talloc_new(master_ev);
+
+	// Create file descriptor to monitor.
+	int pipefds[2];
+
+	pipe(pipefds);
+
+	struct tevent_fd *fde = tevent_add_fd(master_ev,
+				mem_ctx,
+				pipefds[0], // read side of pipe
+				TEVENT_FD_READ,
+				pipe_read_handler, // callback function
+				private_data_pointer);
+
+	// Create sub thread, pass pipefds[1] write side of pipe to it.
+	// The above code not shown here..
+
+	// Process events.
+	tevent_loop_wait(master_ev);
+
+	// Cleanup if loop exits.
+	talloc_free(master_ev);
+}
+
+@endcode
+
+When the subthread writes to pipefds[1], the function
+<code>pipe_read_handler()</code> will be called in the main thread.
+
+@subsection More sophisticated use
+
+A popular way to use an event library within threaded programs
+is to allow a sub-thread to asynchronously schedule a tevent_immediate
+function call from the event loop of another thread. This can be built
+out of the basic functions and isolation mechanisms of tevent,
+but tevent also comes with some utility functions that make
+this easier, so long as you understand the limitations that
+using threads with talloc and tevent impose.
+
+To allow a tevent context to receive an asynchronous tevent_immediate
+function callback from another thread, create a struct tevent_thread_proxy *
+by calling @code
+
+struct tevent_thread_proxy *tevent_thread_proxy_create(
+                struct tevent_context *dest_ev_ctx);
+
+@endcode
+
+This function allocates the internal data structures to
+allow asynchronous callbacks as a talloc child of the
+struct tevent_context *, and returns a struct tevent_thread_proxy *
+that can be passed to another thread.
+
+When you have finished receiving asynchronous callbacks, simply
+talloc_free the struct tevent_thread_proxy *, or talloc_free
+the struct tevent_context *, which will deallocate the resources
+used.
+
+To schedule an asynchronous tevent_immediate function call from one
+thread on the tevent loop of another thread, use
+@code
+
+void tevent_thread_proxy_schedule(struct tevent_thread_proxy *tp,
+                                struct tevent_immediate **pp_im,
+                                tevent_immediate_handler_t handler,
+                                void **pp_private_data);
+
+@endcode
+
+This function causes the function <code>handler()</code>
+to be invoked as a tevent_immediate callback from the event loop
+of the thread that created the struct tevent_thread_proxy *
+(so the owning <code>struct tevent_context *</code> should be
+long-lived and not in the process of being torn down).
+
+The <code>struct tevent_thread_proxy</code> object being
+used here is a child of the event context of the target
+thread. So external synchronization mechanisms must be
+used to ensure that the target object is still in use
+at the time of the <code>tevent_thread_proxy_schedule()</code>
+call. In the example below, the request/response nature
+of the communication ensures this.
+
+The <code>struct tevent_immediate **pp_im</code> passed into this function
+should be a struct tevent_immediate * allocated on a talloc context
+local to this thread, and will be reparented via talloc_move
+to be owned by <code>struct tevent_thread_proxy *tp</code>.
+<code>*pp_im</code> will be set to NULL on successful scheduling
+of the tevent_immediate call.
+
+<code>handler()</code> will be called as a normal tevent_immediate
+callback from the <code>struct tevent_context *</code> of the destination
+event loop that created the <code>struct tevent_thread_proxy *</code>
+
+Returning from this functions does not mean that the <code>handler</code>
+has been invoked, merely that it has been scheduled to be called in the
+destination event loop.
+
+Because the calling thread does not wait for the
+callback to be scheduled and run on the destination
+thread, this is a fire-and-forget call. If you wish
+confirmation of the <code>handler()</code> being
+successfully invoked, you must ensure it replies to the
+caller in some way.
+
+Because of asynchronous nature of this call, the nature
+of the parameter passed to the destination thread has some
+restructions. If you don't need parameters, merely pass
+<code>NULL</code> as the value of
+<code>void **pp_private_data</code>.
+
+If you wish to pass a pointer to data between the threads,
+it <b>MUST</b> be a pointer to a talloced pointer, which is
+not part of a talloc-pool, and it must not have a destructor
+attached. The ownership of the memory pointed to will
+be passed from the calling thread to the tevent library,
+and if the receiving thread does not talloc-reparent
+it to its own contexts, it will be freed once the
+<code>handler</code> is called.
+
+On success, <code>*pp_private</code> will be <code>NULL</code>
+to signify the talloc memory ownership has been moved.
+
+In practice for message passing between threads in
+event loops these restrictions are not very onerous.
+
+The easiest way to to a request-reply pair between
+tevent loops on different threads is to pass the
+parameter block of memory back and forth using
+a reply <code>tevent_thread_proxy_schedule()</code>
+call.
+
+Here is an example (without error checking for
+simplicity):
+
+@code
+------------------------------------------------
+// Master thread.
+
+main()
+{
+	// Make talloc thread-safe.
+
+	talloc_disable_null_tracking();
+
+	// Create the master event context.
+
+	struct tevent_context *master_ev = tevent_context_init(NULL);
+
+	// Create the master thread proxy to allow it to receive
+	// async callbacks from other threads.
+
+	struct tevent_thread_proxy *master_tp =
+			tevent_thread_proxy_create(master_ev);
+
+	// Create sub-threads, passing master_tp in
+	// some way to them.
+	// This code not shown..
+
+	// Process events.
+	// Function master_callback() below
+	// will be invoked on this thread on
+	// master_ev event context.
+
+	tevent_loop_wait(master_ev);
+
+	// Cleanup if loop exits.
+
+	talloc_free(master_ev);
+}
+
+// Data passed between threads.
+struct reply_state {
+	struct tevent_thread_proxy *reply_tp;
+	pthread_t thread_id;
+	bool *p_finished;
+};
+
+// Callback Called in child thread context.
+
+static void thread_callback(struct tevent_context *ev,
+                                struct tevent_immediate *im,
+                                void *private_ptr)
+{
+	// Move the ownership of what private_ptr
+	// points to from the tevent library back to this thread.
+
+	struct reply_state *rsp =
+		talloc_get_type_abort(private_ptr, struct reply_state);
+
+	talloc_steal(ev, rsp);
+
+	*rsp->p_finished = true;
+
+	// im will be talloc_freed on return from this call.
+	// but rsp will not.
+}
+
+// Callback Called in master thread context.
+
+static void master_callback(struct tevent_context *ev,
+                                struct tevent_immediate *im,
+                                void *private_ptr)
+{
+	// Move the ownership of what private_ptr
+	// points to from the tevent library to this thread.
+
+	struct reply_state *rsp =
+		talloc_get_type_abort(private_ptr, struct reply_state);
+
+	talloc_steal(ev, rsp);
+
+	printf("Callback from thread %s\n", thread_id_to_string(rsp->thread_id));
+
+	/* Now reply to the thread ! */
+	tevent_thread_proxy_schedule(rsp->reply_tp,
+				&im,
+				thread_callback,
+				&rsp);
+
+	// Note - rsp and im are now NULL as the tevent library
+	// owns the memory.
+}
+
+// Child thread.
+
+static void *thread_fn(void *private_ptr)
+{
+	struct tevent_thread_proxy *master_tp =
+		talloc_get_type_abort(private_ptr, struct tevent_thread_proxy);
+	bool finished = false;
+	int ret;
+
+	// Create our own event context.
+
+	struct tevent_context *ev = tevent_context_init(NULL);
+
+	// Create the local thread proxy to allow us to receive
+	// async callbacks from other threads.
+
+	struct tevent_thread_proxy *local_tp =
+			tevent_thread_proxy_create(master_ev);
+
+	// Setup the data to send.
+
+	struct reply_state *rsp = talloc(ev, struct reply_state);
+
+	rsp->reply_tp = local_tp;
+	rsp->thread_id = pthread_self();
+	rsp->p_finished = &finished;
+
+	// Create the immediate event to use.
+
+	struct tevent_immediate *im = tevent_create_immediate(ev);
+
+	// Call the master thread.
+
+	tevent_thread_proxy_schedule(master_tp,
+				&im,
+				master_callback,
+				&rsp);
+
+	// Note - rsp and im are now NULL as the tevent library
+	// owns the memory.
+
+	// Wait for the reply.
+
+	while (!finished) {
+		tevent_loop_once(ev);
+	}
+
+	// Cleanup.
+
+	talloc_free(ev);
+	return NULL;
+}
+
+@endcode
+
+Note this doesn't have to be a master-subthread communication.
+Any thread that has access to the <code>struct tevent_thread_proxy *</code>
+pointer of another thread that has called <code>tevent_thread_proxy_create()
+</code> can send an async tevent_immediate request.
+
+But remember the caveat that external synchronization must be used
+to ensure the target <code>struct tevent_thread_proxy *</code> object
+exists at the time of the <code>tevent_thread_proxy_schedule()</code>
+call or unreproducible crashes will result.
+*/
