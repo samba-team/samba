@@ -69,6 +69,10 @@
 #include "tdb.h"
 #include "librpc/gen_ndr/nbt.h"
 
+#ifdef HAVE_HTTPCONNECTENCRYPT
+#include <cups/http.h>
+#endif
+
 #define standard_sub_basic talloc_strdup
 
 #include "lib/param/param_global.h"
@@ -1377,6 +1381,34 @@ bool handle_smb2_max_credits(struct loadparm_context *lp_ctx,
 	}
 
 	*(int *)ptr = value;
+
+	return true;
+}
+
+bool handle_cups_encrypt(struct loadparm_context *lp_ctx,
+			 struct loadparm_service *service,
+			 const char *pszParmValue, char **ptr)
+{
+	int result = 0;
+#ifdef HAVE_HTTPCONNECTENCRYPT
+	int value = lp_int(pszParmValue);
+
+	switch (value) {
+		case Auto:
+			result = HTTP_ENCRYPT_REQUIRED;
+			break;
+		case true:
+			result = HTTP_ENCRYPT_ALWAYS;
+			break;
+		case false:
+			result = HTTP_ENCRYPT_NEVER;
+			break;
+		default:
+			result = 0;
+			break;
+	}
+#endif
+	*(int *)ptr = result;
 
 	return true;
 }

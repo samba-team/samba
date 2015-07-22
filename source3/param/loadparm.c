@@ -75,10 +75,6 @@
 #include <sys/sysctl.h>
 #endif
 
-#ifdef HAVE_HTTPCONNECTENCRYPT
-#include <cups/http.h>
-#endif
-
 bool bLoaded = false;
 
 extern userdom_struct current_user_info;
@@ -1028,25 +1024,6 @@ int lp_winbind_max_domain_connections(void)
 		return 1;
 	}
 	return MAX(1, lp__winbind_max_domain_connections());
-}
-
-int lp_cups_encrypt(void)
-{
-	int result = 0;
-#ifdef HAVE_HTTPCONNECTENCRYPT
-	switch (Globals.cups_encrypt) {
-		case Auto:
-			result = HTTP_ENCRYPT_REQUIRED;
-			break;
-		case true:
-			result = HTTP_ENCRYPT_ALWAYS;
-			break;
-		case false:
-			result = HTTP_ENCRYPT_NEVER;
-			break;
-	}
-#endif
-	return result;
 }
 
 /* These functions remain in source3/param for now */
