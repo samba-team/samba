@@ -179,7 +179,7 @@ static struct loadparm_service sDefault =
 	.hide_unwriteable_files = false,
 	.browseable = true,
 	.access_based_share_enum = false,
-	.bAvailable = true,
+	.available = true,
 	.read_only = true,
 	.spotlight = false,
 	.guest_only = false,
@@ -1457,7 +1457,7 @@ static bool lp_add_ipc(const char *ipc_name, bool guest_ok)
 	string_set(ServicePtrs[i], &ServicePtrs[i]->comment, comment);
 	string_set(ServicePtrs[i], &ServicePtrs[i]->fstype, "IPC");
 	ServicePtrs[i]->max_connections = 0;
-	ServicePtrs[i]->bAvailable = true;
+	ServicePtrs[i]->available = true;
 	ServicePtrs[i]->read_only = true;
 	ServicePtrs[i]->guest_only = false;
 	ServicePtrs[i]->administrative_share = true;
@@ -2630,7 +2630,7 @@ static void dump_copy_map(bool *pcopymap)
 
 bool lp_snum_ok(int iService)
 {
-	return (LP_SNUM_OK(iService) && ServicePtrs[iService]->bAvailable);
+	return (LP_SNUM_OK(iService) && ServicePtrs[iService]->available);
 }
 
 /***************************************************************************

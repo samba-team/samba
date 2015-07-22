@@ -3307,7 +3307,7 @@ struct parm_struct parm_table[] = {
 		.label		= "available",
 		.type		= P_BOOL,
 		.p_class	= P_LOCAL,
-		.offset		= LOCAL_VAR(bAvailable),
+		.offset		= LOCAL_VAR(available),
 		.special	= NULL,
 		.enum_list	= NULL,
 	},

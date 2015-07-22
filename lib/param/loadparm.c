@@ -655,7 +655,7 @@ bool lpcfg_add_home(struct loadparm_context *lp_ctx,
 	if (!(*(service->comment))) {
 		service->comment = talloc_asprintf(service, "Home directory of %s", user);
 	}
-	service->bAvailable = default_service->bAvailable;
+	service->available = default_service->available;
 	service->browseable = default_service->browseable;
 
 	DEBUG(3, ("adding home's share [%s] for user '%s' at '%s'\n",
@@ -955,10 +955,10 @@ bool lpcfg_service_ok(struct loadparm_service *service)
 	{
 		DEBUG(0, ("WARNING: No path in service %s - making it unavailable!\n",
 			service->szService));
-		service->bAvailable = false;
+		service->available = false;
 	}
 
-	if (!service->bAvailable)
+	if (!service->available)
 		DEBUG(1, ("NOTE: Service %s is flagged unavailable.\n",
 			  service->szService));
 
@@ -2420,7 +2420,7 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lp_ctx->flags = talloc_zero_array(lp_ctx, unsigned int, num_parameters());
 
 	lp_ctx->sDefault->max_print_jobs = 1000;
-	lp_ctx->sDefault->bAvailable = true;
+	lp_ctx->sDefault->available = true;
 	lp_ctx->sDefault->browseable = true;
 	lp_ctx->sDefault->read_only = true;
 	lp_ctx->sDefault->map_archive = true;

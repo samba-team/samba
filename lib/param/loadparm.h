@@ -238,7 +238,7 @@ enum case_handling {CASE_LOWER,CASE_UPPER};
 	char *szCopy;							\
 	char *szService;						\
 	char *szInclude;						\
-	bool bAvailable;							\
+	bool available;							\
 	struct parmlist_entry *param_opt;				\
 	struct bitmap *copymap;						\
 	char dummy[3];		/* for alignment */
