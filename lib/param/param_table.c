@@ -3243,7 +3243,7 @@ struct parm_struct parm_table[] = {
 		.label		= "include",
 		.type		= P_STRING,
 		.p_class	= P_LOCAL,
-		.offset		= LOCAL_VAR(szInclude),
+		.offset		= LOCAL_VAR(include),
 		.special	= handle_include,
 		.enum_list	= NULL,
 	},

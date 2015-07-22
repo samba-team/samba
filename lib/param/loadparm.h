@@ -237,7 +237,7 @@ enum case_handling {CASE_LOWER,CASE_UPPER};
 	struct timespec usershare_last_mod;				\
 	char *copy;							\
 	char *szService;						\
-	char *szInclude;						\
+	char *include;							\
 	bool available;							\
 	struct parmlist_entry *param_opt;				\
 	struct bitmap *copymap;						\
