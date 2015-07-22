@@ -249,7 +249,7 @@ enum case_handling {CASE_LOWER,CASE_UPPER};
 	struct parmlist_entry *param_opt;				\
 	char *realm_original;						\
 	char *idmap_uid;						\
-	char *szIdmapGID;						\
+	char *idmap_gid;						\
 	char *idmap_backend;
 
 const char* server_role_str(uint32_t role);
