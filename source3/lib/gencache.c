@@ -423,7 +423,7 @@ bool gencache_del(const char *keystr)
 	return result;
 }
 
-static bool gencache_pull_timeout(uint8_t *val, time_t *pres, char **pendptr)
+static bool gencache_pull_timeout(uint8_t *val, time_t *pres, char **payload)
 {
 	time_t res;
 	char *endptr;
@@ -441,8 +441,8 @@ static bool gencache_pull_timeout(uint8_t *val, time_t *pres, char **pendptr)
 	if (pres != NULL) {
 		*pres = res;
 	}
-	if (pendptr != NULL) {
-		*pendptr = endptr;
+	if (payload != NULL) {
+		*payload = endptr+1;
 	}
 	return true;
 }
@@ -457,19 +457,19 @@ static int gencache_parse_fn(TDB_DATA key, TDB_DATA data, void *private_data)
 	struct gencache_parse_state *state;
 	DATA_BLOB blob;
 	time_t t;
-	char *endptr;
+	char *payload;
 	bool ret;
 
 	if (data.dptr == NULL) {
 		return -1;
 	}
-	ret = gencache_pull_timeout(data.dptr, &t, &endptr);
+	ret = gencache_pull_timeout(data.dptr, &t, &payload);
 	if (!ret) {
 		return -1;
 	}
 	state = (struct gencache_parse_state *)private_data;
 	blob = data_blob_const(
-		endptr+1, data.dsize - PTR_DIFF(endptr+1, data.dptr));
+		payload, data.dsize - PTR_DIFF(payload, data.dptr));
 	state->parser(t, blob, state->private_data);
 
 	return 0;
@@ -840,7 +840,7 @@ static int gencache_iterate_blobs_fn(struct tdb_context *tdb, TDB_DATA key,
 	char *keystr;
 	char *free_key = NULL;
 	time_t timeout;
-	char *endptr;
+	char *payload;
 
 	if (tdb_data_cmp(key, last_stabilize_key()) == 0) {
 		return 0;
@@ -860,10 +860,9 @@ static int gencache_iterate_blobs_fn(struct tdb_context *tdb, TDB_DATA key,
 		}
 	}
 
-	if (!gencache_pull_timeout(data.dptr, &timeout, &endptr)) {
+	if (!gencache_pull_timeout(data.dptr, &timeout, &payload)) {
 		goto done;
 	}
-	endptr += 1;
 
 	if (timeout == 0) {
 		/* delete marker */
@@ -879,8 +878,8 @@ static int gencache_iterate_blobs_fn(struct tdb_context *tdb, TDB_DATA key,
 		   keystr, timestring(talloc_tos(), timeout)));
 
 	state->fn(keystr,
-		  data_blob_const(endptr,
-				  data.dsize - PTR_DIFF(endptr, data.dptr)),
+		  data_blob_const(payload,
+				  data.dsize - PTR_DIFF(payload, data.dptr)),
 		  timeout, state->private_data);
 
  done:
