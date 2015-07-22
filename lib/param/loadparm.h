@@ -232,13 +232,9 @@ enum case_handling {CASE_LOWER,CASE_UPPER};
 #define DEFAULT_SMB2_MAX_CREDITS 8192
 
 #define LOADPARM_EXTRA_LOCALS						\
-	bool valid;						        \
 	int usershare;							\
 	struct timespec usershare_last_mod;				\
-	char *copy;							\
 	char *szService;						\
-	char *include;							\
-	bool available;							\
 	struct parmlist_entry *param_opt;				\
 	struct bitmap *copymap;						\
 	char dummy[3];		/* for alignment */
@@ -247,10 +243,7 @@ enum case_handling {CASE_LOWER,CASE_UPPER};
 
 #define LOADPARM_EXTRA_GLOBALS \
 	struct parmlist_entry *param_opt;				\
-	char *realm_original;						\
-	char *idmap_uid;						\
-	char *idmap_gid;						\
-	char *idmap_backend;
+	char *realm_original;
 
 const char* server_role_str(uint32_t role);
 int lp_find_server_role(int server_role, int security, int domain_logons, int domain_master);

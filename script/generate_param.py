@@ -256,8 +256,6 @@ def make_param_defs(path_in, path_out, scope):
                 continue
             if parameter['synonym'] == "1":
                 continue
-            if parameter['generated'] == "0":
-                continue
 
             if (scope == "GLOBAL" and parameter['context'] != "G" or
                 scope == "LOCAL" and parameter['context'] != "S"):
