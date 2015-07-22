@@ -8,18 +8,11 @@ package Parse::Pidl::Samba3::Template;
 use vars qw($VERSION);
 $VERSION = '0.01';
 
+use Parse::Pidl::Util qw(genpad);
+
 use strict;
 
 my($res);
-
-sub genpad($)
-{
-	my ($s) = @_;
-	my $nt = int((length($s)+1)/8);
-	my $lt = ($nt*8)-1;
-	my $ns = (length($s)-$lt);
-	return "\t"x($nt)." "x($ns);
-}
 
 #####################################################################
 # produce boilerplate code for a interface
