@@ -148,6 +148,13 @@ static int tdb_traverse_internal(struct tdb_context *tdb,
 	struct tdb_record rec;
 	int ret = 0, count = 0;
 	tdb_off_t off;
+	size_t recbuf_len;
+
+	recbuf_len = 4096;
+	key.dptr = malloc(recbuf_len);
+	if (key.dptr == NULL) {
+		return -1;
+	}
 
 	/* This was in the initialization, above, but the IRIX compiler
 	 * did not like it.  crh
@@ -159,15 +166,44 @@ static int tdb_traverse_internal(struct tdb_context *tdb,
 
 	/* tdb_next_lock places locks on the record returned, and its chain */
 	while ((off = tdb_next_lock(tdb, tl, &rec)) != 0) {
+		tdb_len_t full_len = rec.key_len + rec.data_len;
+		int nread;
+
+		if (full_len > recbuf_len) {
+			recbuf_len = full_len;
+
+			/*
+			 * No realloc, we don't need the old data and thus can
+			 * do without the memcpy
+			 */
+			free(key.dptr);
+			key.dptr = malloc(recbuf_len);
+
+			if (key.dptr == NULL) {
+				ret = -1;
+				if (tdb_unlock(tdb, tl->hash, tl->lock_rw)
+				    != 0) {
+					goto out;
+				}
+				if (tdb_unlock_record(tdb, tl->off) != 0) {
+					TDB_LOG((tdb, TDB_DEBUG_FATAL,
+						 "tdb_traverse: malloc "
+						 "failed and unlock_record "
+						 "failed!\n"));
+				}
+				goto out;
+			}
+		}
+
 		if (off == TDB_NEXT_LOCK_ERR) {
 			ret = -1;
 			goto out;
 		}
 		count++;
 		/* now read the full record */
-		key.dptr = tdb_alloc_read(tdb, tl->off + sizeof(rec),
-					  rec.key_len + rec.data_len);
-		if (!key.dptr) {
+		nread = tdb->methods->tdb_read(tdb, tl->off + sizeof(rec),
+					       key.dptr, full_len, 0);
+		if (nread == -1) {
 			ret = -1;
 			if (tdb_unlock(tdb, tl->hash, tl->lock_rw) != 0)
 				goto out;
@@ -184,7 +220,6 @@ static int tdb_traverse_internal(struct tdb_context *tdb,
 		/* Drop chain lock, call out */
 		if (tdb_unlock(tdb, tl->hash, tl->lock_rw) != 0) {
 			ret = -1;
-			SAFE_FREE(key.dptr);
 			goto out;
 		}
 		if (fn && fn(tdb, key, dbuf, private_data)) {
@@ -194,13 +229,12 @@ static int tdb_traverse_internal(struct tdb_context *tdb,
 				TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_traverse: unlock_record failed!\n"));;
 				ret = -1;
 			}
-			SAFE_FREE(key.dptr);
 			goto out;
 		}
-		SAFE_FREE(key.dptr);
 	}
 	tdb_trace(tdb, "tdb_traverse_end");
 out:
+	SAFE_FREE(key.dptr);
 	tdb->travlocks.next = tl->next;
 	if (ret < 0)
 		return -1;
