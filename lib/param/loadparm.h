@@ -250,7 +250,7 @@ enum case_handling {CASE_LOWER,CASE_UPPER};
 	char *realm_original;						\
 	char *szIdmapUID;						\
 	char *szIdmapGID;						\
-	char *szIdmapBackend;
+	char *idmap_backend;
 
 const char* server_role_str(uint32_t role);
 int lp_find_server_role(int server_role, int security, int domain_logons, int domain_master);

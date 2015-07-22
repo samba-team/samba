@@ -776,7 +776,7 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 	Globals.wins_dns_proxy = true;
 
 	Globals.allow_trusted_domains = true;
-	string_set(Globals.ctx, &Globals.szIdmapBackend, "tdb");
+	string_set(Globals.ctx, &Globals.idmap_backend, "tdb");
 
 	string_set(Globals.ctx, &Globals.template_shell, "/bin/false");
 	string_set(Globals.ctx, &Globals.template_homedir, "/home/%D/%U");
@@ -3633,7 +3633,7 @@ static bool lp_load_ex(const char *pszFname,
 		apply_lp_set_cmdline();
 	}
 
-	lp_do_parameter(-1, "idmap config * : backend", Globals.szIdmapBackend);
+	lp_do_parameter(-1, "idmap config * : backend", Globals.idmap_backend);
 
 	/* We get sections first, so have to start 'behind' to make up */
 	iServiceIndex = -1;
