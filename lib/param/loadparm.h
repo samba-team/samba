@@ -235,7 +235,7 @@ enum case_handling {CASE_LOWER,CASE_UPPER};
 	bool valid;						        \
 	int usershare;							\
 	struct timespec usershare_last_mod;				\
-	char *szCopy;							\
+	char *copy;							\
 	char *szService;						\
 	char *szInclude;						\
 	bool available;							\
