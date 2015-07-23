@@ -136,6 +136,9 @@ def configure(conf):
 
     conf.RECURSE('lib/ldb')
 
+    if not (Options.options.without_ad_dc):
+        conf.DEFINE('AD_DC_BUILD_IS_ENABLED', 1)
+
     if Options.options.with_system_mitkrb5:
         conf.PROCESS_SEPARATE_RULE('system_mitkrb5')
     if not (Options.options.without_ad_dc or Options.options.with_system_mitkrb5):

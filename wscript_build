@@ -138,6 +138,7 @@ else:
 bld.RECURSE('libcli/smbreadline')
 if bld.AD_DC_BUILD_IS_ENABLED():
     bld.RECURSE('source4/setup')
+    bld.RECURSE('source4/kdc')
 if bld.env.with_ctdb:
     bld.RECURSE('ctdb')
 bld.RECURSE('source4/scripting')
