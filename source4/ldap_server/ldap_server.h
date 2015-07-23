@@ -24,6 +24,7 @@
 #include "system/network.h"
 
 struct ldapsrv_connection {
+	struct ldapsrv_connection *next, *prev;
 	struct loadparm_context *lp_ctx;
 	struct stream_connection *connection;
 	struct gensec_security *gensec;
@@ -48,15 +49,19 @@ struct ldapsrv_connection {
 		int initial_timeout;
 		int conn_idle_time;
 		int max_page_size;
+		int max_notifications;
 		int search_timeout;
 		struct timeval endtime;
 		const char *reason;
 	} limits;
 
 	struct tevent_req *active_call;
+
+	struct ldapsrv_call *pending_calls;
 };
 
 struct ldapsrv_call {
+	struct ldapsrv_call *prev, *next;
 	struct ldapsrv_connection *conn;
 	struct ldap_message *request;
 	struct ldapsrv_reply {
@@ -70,12 +75,22 @@ struct ldapsrv_call {
 					       void *private_data);
 	NTSTATUS (*postprocess_recv)(struct tevent_req *req);
 	void *postprocess_private;
+
+	struct {
+		bool busy;
+		uint64_t generation;
+	} notification;
 };
 
 struct ldapsrv_service {
 	struct tstream_tls_params *tls_params;
 	struct task_server *task;
 	struct tevent_queue *call_queue;
+	struct ldapsrv_connection *connections;
+	struct {
+		uint64_t generation;
+		struct tevent_req *retry;
+	} notification;
 };
 
 #include "ldap_server/proto.h"

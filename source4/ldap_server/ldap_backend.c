@@ -513,6 +513,7 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 	struct ldb_search_options_control *search_options;
 	struct ldb_control *extended_dn_control;
 	struct ldb_extended_dn_control *extended_dn_decoded = NULL;
+	struct ldb_control *notification_control = NULL;
 	enum ldb_scope scope = LDB_SCOPE_DEFAULT;
 	const char **attrs = NULL;
 	const char *scope_str, *errstr = NULL;
@@ -617,6 +618,31 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 		}
 	}
 
+	notification_control = ldb_request_get_control(lreq, LDB_CONTROL_NOTIFICATION_OID);
+	if (notification_control != NULL) {
+		const struct ldapsrv_call *pc = NULL;
+		size_t count = 0;
+
+		for (pc = call->conn->pending_calls; pc != NULL; pc = pc->next) {
+			count += 1;
+		}
+
+		if (count >= call->conn->limits.max_notifications) {
+			DEBUG(10,("SearchRequest: error MaxNotificationPerConn\n"));
+			result = map_ldb_error(local_ctx,
+					       LDB_ERR_ADMIN_LIMIT_EXCEEDED,
+					       "MaxNotificationPerConn reached",
+					       &errstr);
+			goto reply;
+		}
+
+		/*
+		 * For now we need to do periodic retries on our own.
+		 * As the dsdb_notification module will return after each run.
+		 */
+		call->notification.busy = true;
+	}
+
 	ldb_set_timeout(samdb, lreq, req->timelimit);
 
 	if (!call->conn->is_privileged) {
@@ -667,6 +693,22 @@ queue_reply:
 			ldapsrv_queue_reply(call, ent_r);
 		}
 
+		if (call->notification.busy) {
+			/* Move/Add it to the end */
+			DLIST_DEMOTE(call->conn->pending_calls, call);
+			call->notification.generation =
+				call->conn->service->notification.generation;
+
+			if (res->count != 0) {
+				call->notification.generation += 1;
+				ldapsrv_notification_retry_setup(call->conn->service,
+								 true);
+			}
+
+			talloc_free(local_ctx);
+			return NT_STATUS_OK;
+		}
+
 		/* Send back referrals if they do exist (search operations) */
 		if (res->refs != NULL) {
 			char **ref;
@@ -691,6 +733,9 @@ queue_reply:
 	}
 
 reply:
+	DLIST_REMOVE(call->conn->pending_calls, call);
+	call->notification.busy = false;
+
 	done_r = ldapsrv_init_reply(call, LDAP_TAG_SearchResultDone);
 	NT_STATUS_HAVE_NO_MEMORY(done_r);
 
@@ -1157,8 +1202,23 @@ static NTSTATUS ldapsrv_CompareRequest(struct ldapsrv_call *call)
 
 static NTSTATUS ldapsrv_AbandonRequest(struct ldapsrv_call *call)
 {
-/*	struct ldap_AbandonRequest *req = &call->request.r.AbandonRequest;*/
+	struct ldap_AbandonRequest *req = &call->request->r.AbandonRequest;
+	struct ldapsrv_call *c = NULL;
+	struct ldapsrv_call *n = NULL;
+
 	DEBUG(10, ("AbandonRequest\n"));
+
+	for (c = call->conn->pending_calls; c != NULL; c = n) {
+		n = c->next;
+
+		if (c->request->messageid != req->messageid) {
+			continue;
+		}
+
+		DLIST_REMOVE(call->conn->pending_calls, c);
+		TALLOC_FREE(c);
+	}
+
 	return NT_STATUS_OK;
 }
 
@@ -1169,6 +1229,8 @@ NTSTATUS ldapsrv_do_call(struct ldapsrv_call *call)
 	struct ldb_context *samdb = call->conn->ldb;
 	NTSTATUS status;
 	time_t *lastts;
+	bool recheck_schema = false;
+
 	/* Check for undecoded critical extensions */
 	for (i=0; msg->controls && msg->controls[i]; i++) {
 		if (!msg->controls_decoded[i] && 
@@ -1187,26 +1249,31 @@ NTSTATUS ldapsrv_do_call(struct ldapsrv_call *call)
 	case LDAP_TAG_SearchRequest:
 		return ldapsrv_SearchRequest(call);
 	case LDAP_TAG_ModifyRequest:
+		recheck_schema = true;
 		status = ldapsrv_ModifyRequest(call);
 		break;
 	case LDAP_TAG_AddRequest:
+		recheck_schema = true;
 		status = ldapsrv_AddRequest(call);
 		break;
 	case LDAP_TAG_DelRequest:
-		return ldapsrv_DelRequest(call);
+		status = ldapsrv_DelRequest(call);
+		break;
 	case LDAP_TAG_ModifyDNRequest:
-		return ldapsrv_ModifyDNRequest(call);
+		status = ldapsrv_ModifyDNRequest(call);
+		break;
 	case LDAP_TAG_CompareRequest:
 		return ldapsrv_CompareRequest(call);
 	case LDAP_TAG_AbandonRequest:
 		return ldapsrv_AbandonRequest(call);
 	case LDAP_TAG_ExtendedRequest:
-		return ldapsrv_ExtendedRequest(call);
+		status = ldapsrv_ExtendedRequest(call);
+		break;
 	default:
 		return ldapsrv_unwilling(call, LDAP_PROTOCOL_ERROR);
 	}
 
-	if (NT_STATUS_IS_OK(status)) {
+	if (NT_STATUS_IS_OK(status) && recheck_schema) {
 		lastts = (time_t *)ldb_get_opaque(samdb, DSDB_OPAQUE_LAST_SCHEMA_UPDATE_MSG_OPAQUE_NAME);
 		if (lastts && !*lastts) {
 			DEBUG(10, ("Schema update now was requested, "
@@ -1222,5 +1289,10 @@ NTSTATUS ldapsrv_do_call(struct ldapsrv_call *call)
 			ldb_set_opaque(samdb, DSDB_OPAQUE_LAST_SCHEMA_UPDATE_MSG_OPAQUE_NAME, lastts);
 		}
 	}
+
+	if (NT_STATUS_IS_OK(status)) {
+		ldapsrv_notification_retry_setup(call->conn->service, true);
+	}
+
 	return status;
 }

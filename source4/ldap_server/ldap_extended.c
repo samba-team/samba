@@ -112,8 +112,7 @@ static NTSTATUS ldapsrv_StartTLS(struct ldapsrv_call *call,
 
 	/*
 	 * TODO: give LDAP_OPERATIONS_ERROR also when
-	 *       there're pending requests or there's
-	 *       a SASL bind in progress
+	 *       there's a SASL bind in progress
 	 *       (see rfc4513 section 3.1.1)
 	 */
 	if (call->conn->sockets.tls) {
@@ -124,6 +123,11 @@ static NTSTATUS ldapsrv_StartTLS(struct ldapsrv_call *call,
 	if (call->conn->sockets.sasl) {
 		(*errstr) = talloc_asprintf(reply, "START-TLS: SASL is already enabled on this LDAP session");
 		return NT_STATUS_LDAP(LDAP_OPERATIONS_ERROR);
+	}
+
+	if (call->conn->pending_calls != NULL) {
+		(*errstr) = talloc_asprintf(reply, "START-TLS: pending requests on this LDAP session");
+		return NT_STATUS_LDAP(LDAP_BUSY);
 	}
 
 	context = talloc(call, struct ldapsrv_starttls_postprocess_context);

@@ -333,11 +333,25 @@ NTSTATUS ldapsrv_BindRequest(struct ldapsrv_call *call)
 	struct ldapsrv_reply *reply;
 	struct ldap_BindResponse *resp;
 
+	if (call->conn->pending_calls != NULL) {
+		reply = ldapsrv_init_reply(call, LDAP_TAG_BindResponse);
+		if (!reply) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		resp = &reply->msg->r.BindResponse;
+		resp->response.resultcode = LDAP_BUSY;
+		resp->response.dn = NULL;
+		resp->response.errormessage = talloc_asprintf(reply, "Pending requests on this LDAP session");
+		resp->response.referral = NULL;
+		resp->SASL.secblob = NULL;
+
+		ldapsrv_queue_reply(call, reply);
+		return NT_STATUS_OK;
+	}
+
 	/* 
-	 * TODO: we should fail the bind request
-	 *       if there're any pending requests.
-	 *
-	 *       also a simple bind should cancel an
+	 * TODO: a simple bind should cancel an
 	 *       inprogress SASL bind.
 	 *       (see RFC 4513)
 	 */
