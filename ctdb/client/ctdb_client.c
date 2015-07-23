@@ -1138,7 +1138,7 @@ int ctdb_control_recv(struct ctdb_context *ctdb,
 			state->async.fn(state);
 		}
 		talloc_free(tmp_ctx);
-		return -1;
+		return (status == 0 ? -1 : state->status);
 	}
 
 	if (outdata) {
