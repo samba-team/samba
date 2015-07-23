@@ -3236,7 +3236,6 @@ struct parm_struct parm_table[] = {
 		.offset		= LOCAL_VAR(valid),
 		.special	= NULL,
 		.enum_list	= NULL,
-		.flags		= FLAG_SYNONYM,
 	},
 	{
 		.label		= "copy",
@@ -3245,7 +3244,6 @@ struct parm_struct parm_table[] = {
 		.offset		= LOCAL_VAR(copy),
 		.special	= handle_copy,
 		.enum_list	= NULL,
-		.flags		= FLAG_SYNONYM,
 	},
 	{
 		.label		= "include",
