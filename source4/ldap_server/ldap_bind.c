@@ -354,7 +354,7 @@ NTSTATUS ldapsrv_BindRequest(struct ldapsrv_call *call)
 	}
 
 	resp = &reply->msg->r.BindResponse;
-	resp->response.resultcode = 7;
+	resp->response.resultcode = LDAP_AUTH_METHOD_NOT_SUPPORTED;
 	resp->response.dn = NULL;
 	resp->response.errormessage = talloc_asprintf(reply, "Bad AuthenticationChoice [%d]", req->mechanism);
 	resp->response.referral = NULL;
