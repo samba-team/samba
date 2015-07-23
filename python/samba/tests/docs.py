@@ -223,6 +223,12 @@ class SmbDotConfTests(TestCase):
             self.fail("Unable to load implemented parameters")
 
         try:
+            self.table_static = set(get_param_table_full(self.topdir,
+                                   "lib/param/param_table_static.c"))
+        except:
+            self.fail("Unable to load static parameter table")
+
+        try:
             self.defaults = set(get_documented_tuples(self.topdir))
         except:
             self.fail("Unable to load parameters")
