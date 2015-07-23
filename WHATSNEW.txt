@@ -155,6 +155,21 @@ New modules
   vfs_unityed_media	- see 'man 8 vfs_unityed_media'
   vfs_shell_snap	- see 'man 8 vfs_shell_snap'
 
+New sparsely connected replia graph (Improved KCC)
+--------------------------------------------------
+
+The Knowledge Consistency Checker (KCC) maintains a replication graph
+for DCs across an AD network. The existing Samba KCC uses a fully
+connected graph, so that each DC replicates from all the others, which
+does not scale well with large networks. In 4.3 there is an
+experimental new KCC that creates a sparsely connected replication
+graph and closely follows Microsoft's specification. It is turned off
+by default. To use the new KCC, set "kccsrv:samba_kcc=true" in
+smb.conf and let us know how it goes. You should consider doing this
+if you are making a large new network. For small networks there is
+little benefit and you can always switch over at a later date.
+
+
 ######################################################################
 Changes
 #######
