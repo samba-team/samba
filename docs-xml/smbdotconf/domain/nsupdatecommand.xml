@@ -1,6 +1,6 @@
 <samba:parameter name="nsupdate command"
                  context="G"
-                 type="list"
+                 type="cmdlist"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This option sets the path to the <filename>nsupdate</filename>

@@ -1,6 +1,6 @@
 <samba:parameter name="usershare prefix deny list"
                  context="G"
-                 type="list"
+                 type="cmdlist"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This parameter specifies a list of absolute pathnames

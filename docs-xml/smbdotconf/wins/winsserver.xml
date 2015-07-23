@@ -1,6 +1,6 @@
 <samba:parameter name="wins server"
                  context="G"
-				 type="list"
+                 type="cmdlist"
                  function="wins_server_list"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>

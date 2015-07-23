@@ -1,6 +1,6 @@
 <samba:parameter name="samba kcc command"
                  context="G"
-                 type="list"
+                 type="cmdlist"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This option specifies the path to the Samba KCC command.

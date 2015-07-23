@@ -1,6 +1,6 @@
 <samba:parameter name="rndc command"
                  context="G"
-                 type="list"
+                 type="cmdlist"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This option specifies the path to the name server control utility.

@@ -1,5 +1,5 @@
 <samba:parameter name="vfs objects"
-				type="list"
+                 type="cmdlist"
                  context="S"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <synonym>vfs object</synonym>

@@ -1,6 +1,6 @@
 <samba:parameter name="auth methods"
                  context="G"
-                 type="list"
+                 type="cmdlist"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 

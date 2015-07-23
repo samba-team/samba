@@ -1,6 +1,6 @@
 <samba:parameter name="spn update command"
                  context="G"
-                 type="list"
+                 type="cmdlist"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This option sets the command that for updating
