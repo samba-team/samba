@@ -169,6 +169,13 @@ smb.conf and let us know how it goes. You should consider doing this
 if you are making a large new network. For small networks there is
 little benefit and you can always switch over at a later date.
 
+Configurable TLS protocol support, with better defaults
+-------------------------------------------------------
+
+The "tls priority" option can be used to change the supported TLS
+protocols. The default is to disable SSLv3, which is no longer
+considered secure.
+
 
 ######################################################################
 Changes
