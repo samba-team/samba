@@ -10,12 +10,22 @@ such as the configured shares, default parameter values and host secret keys.
 Adding a parameter
 ------------------
 
-To add or change an smb.conf option, you only have to modify
-lib/param/param_table.c and add the documentation to docs-xml/smbdotconf.
-If special defaults are needed, the functions loadparm_int() in
-lib/param/loadparm.c and/or init_globals() in source3/param/loadparm.c
-need to be adapted accordingly.
+To add or change an smb.conf option, in general you only have to add
+the documentation to docs-xml/smbdotconf, or change it.
+In addition to that, if special defaults are needed, the functions
+loadparm_init() in lib/param/loadparm.c and/or init_globals() in
+source3/param/loadparm.c need to be adapted accordingly.
 The rest is generated for you.
+
+It is important to get the attributes right in the <samba:parameter ...>
+tag of the xml files.  These determine the details of the generated code.
+
+- Supported attributes are name, context, type, constant, function,
+  generated_function, synonym, parm, enumlist, handler, and deprecated.
+- Supported contexts are 'G' (for global) and 'S' (for share).
+- Supported types are boolean, boolean-rev, boolean-auto, list,
+  cmdlist, string, ustring, char, integer, bytes, octal, and enum.
+
 
 
 Using smb.conf parameters in the code
