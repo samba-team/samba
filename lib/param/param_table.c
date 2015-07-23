@@ -1143,6 +1143,7 @@ struct parm_struct parm_table[] = {
 		.offset		= GLOBAL_VAR(timestamp_logs),
 		.special	= NULL,
 		.enum_list	= NULL,
+		.flags		= FLAG_SYNONYM,
 	},
 	{
 		.label		= "timestamp logs",

@@ -1,13 +1,12 @@
-<samba:parameter name="debug timestamp"
+<samba:parameter name="timestamp logs"
                  context="G"
                  type="boolean"
-                 function="timestamp_logs"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
-<synonym>timestamp logs</synonym>
+<synonym>debug timestamp</synonym>
 <description>
     <para>
-    Samba debug log messages are timestamped by default. If you are running at a high 
-    <smbconfoption name="debug level"/> these timestamps can be distracting. This 
+    Samba debug log messages are timestamped by default. If you are running at a high
+    <smbconfoption name="debug level"/> these timestamps can be distracting. This
     boolean parameter allows timestamping to be turned off.
 	</para>
 </description>
