@@ -282,7 +282,7 @@ static const struct enum_list enum_case[] = {
 #define GLOBAL_VAR(name) offsetof(struct loadparm_global, name)
 #define LOCAL_VAR(name) offsetof(struct loadparm_service, name)
 
-#include "lib/param/param_table_static.c"
+#include "lib/param/param_table_gen.c"
 
 int num_parameters(void)
 {
