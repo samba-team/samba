@@ -1,17 +1,16 @@
-<samba:parameter name="preload"
+<samba:parameter name="auto services"
                  context="G"
                  type="string"
-                 function="auto_services"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
-<synonym>auto services</synonym>
+<synonym>preload</synonym>
 <description>
-	<para>This is a list of services that you want to be 
-	automatically added to the browse lists. This is most useful 
-	for homes and printers services that would otherwise not be 
+	<para>This is a list of services that you want to be
+	automatically added to the browse lists. This is most useful
+	for homes and printers services that would otherwise not be
 	visible.</para>
 
 	<para>
-	Note that if you just want all printers in your 
+	Note that if you just want all printers in your
 	printcap file loaded then the <smbconfoption name="load printers"/>
 	 option is easier.
 	</para>
