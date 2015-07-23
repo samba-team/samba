@@ -1,5 +1,5 @@
 <samba:parameter name="min receivefile size"
-                 type="integer"
+                 type="bytes"
                  context="G"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>

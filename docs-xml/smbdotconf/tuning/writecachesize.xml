@@ -1,6 +1,6 @@
 <samba:parameter name="write cache size"
                  context="S"
-				 type="integer"
+                 type="bytes"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>If this integer parameter is set to non-zero value,

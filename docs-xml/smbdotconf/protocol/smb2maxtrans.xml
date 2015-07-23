@@ -1,5 +1,5 @@
 <samba:parameter name="smb2 max trans"
-                 type="integer"
+                 type="bytes"
                  context="G"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
