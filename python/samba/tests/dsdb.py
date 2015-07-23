@@ -65,6 +65,30 @@ class DsdbTests(TestCase):
         msg["replPropertyMetaData"] = ldb.MessageElement(replBlob, ldb.FLAG_MOD_REPLACE, "replPropertyMetaData")
         self.assertRaises(ldb.LdbError, self.samdb.modify, msg, ["local_oid:1.3.6.1.4.1.7165.4.3.14:0"])
 
+    def test_error_replpropertymetadata_nochange(self):
+        res = self.samdb.search(expression="cn=Administrator",
+                            scope=ldb.SCOPE_SUBTREE,
+                            attrs=["replPropertyMetaData"])
+        repl = ndr_unpack(drsblobs.replPropertyMetaDataBlob,
+                            str(res[0]["replPropertyMetaData"]))
+        replBlob = ndr_pack(repl)
+        msg = ldb.Message()
+        msg.dn = res[0].dn
+        msg["replPropertyMetaData"] = ldb.MessageElement(replBlob, ldb.FLAG_MOD_REPLACE, "replPropertyMetaData")
+        self.assertRaises(ldb.LdbError, self.samdb.modify, msg, ["local_oid:1.3.6.1.4.1.7165.4.3.14:0"])
+
+    def test_error_replpropertymetadata_allow_sort(self):
+        res = self.samdb.search(expression="cn=Administrator",
+                            scope=ldb.SCOPE_SUBTREE,
+                            attrs=["replPropertyMetaData"])
+        repl = ndr_unpack(drsblobs.replPropertyMetaDataBlob,
+                            str(res[0]["replPropertyMetaData"]))
+        replBlob = ndr_pack(repl)
+        msg = ldb.Message()
+        msg.dn = res[0].dn
+        msg["replPropertyMetaData"] = ldb.MessageElement(replBlob, ldb.FLAG_MOD_REPLACE, "replPropertyMetaData")
+        self.samdb.modify(msg, ["local_oid:1.3.6.1.4.1.7165.4.3.14:0", "local_oid:1.3.6.1.4.1.7165.4.3.25:0"])
+
     def test_twoatt_replpropertymetadata(self):
         res = self.samdb.search(expression="cn=Administrator",
                             scope=ldb.SCOPE_SUBTREE,
