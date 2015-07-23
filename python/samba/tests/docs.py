@@ -229,6 +229,12 @@ class SmbDotConfTests(TestCase):
             self.fail("Unable to load static parameter table")
 
         try:
+            self.table_gen = set(get_param_table_full(self.topdir,
+                                 "bin/default/lib/param/param_table_gen.c"))
+        except:
+            self.fail("Unable to load generated parameter table")
+
+        try:
             self.defaults = set(get_documented_tuples(self.topdir))
         except:
             self.fail("Unable to load parameters")
