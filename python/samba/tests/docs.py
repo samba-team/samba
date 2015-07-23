@@ -59,29 +59,6 @@ def get_documented_parameters(sourcedir):
     p.close()
 
 
-def get_implementation_parameters(sourcedir):
-    # Reading entries from source code
-    f = open(os.path.join(sourcedir, "lib/param/param_table_static.c"), "r")
-    try:
-        # burn through the preceding lines
-        while True:
-            l = f.readline()
-            if l.startswith("struct parm_struct parm_table"):
-                break
-
-        for l in f.readlines():
-            if re.match("^\s*\}\;\s*$", l):
-                break
-            # pull in the param names only
-            m = re.match("\s*\.label\s*=\s*\"(.*)\".*", l)
-            if not m:
-                continue
-
-            name = m.group(1)
-            yield name
-    finally:
-        f.close()
-
 def get_param_table_full(sourcedir, filename="lib/param/param_table_static.c"):
     # Reading entries from source code
     f = open(os.path.join(sourcedir, filename), "r")
@@ -218,17 +195,6 @@ class SmbDotConfTests(TestCase):
             self.fail("Unable to load documented parameters")
 
         try:
-            self.parameters = set(get_implementation_parameters(self.topdir))
-        except:
-            self.fail("Unable to load implemented parameters")
-
-        try:
-            self.table_static = set(get_param_table_full(self.topdir,
-                                   "lib/param/param_table_static.c"))
-        except:
-            self.fail("Unable to load static parameter table")
-
-        try:
             self.table_gen = set(get_param_table_full(self.topdir,
                                  "bin/default/lib/param/param_table_gen.c"))
         except:
@@ -249,21 +215,6 @@ class SmbDotConfTests(TestCase):
         super(SmbDotConfTests, self).tearDown()
         os.unlink(self.smbconf)
         os.unlink(self.blankconf)
-
-    def test_unknown(self):
-        # Filter out parametric options, since we can't find them in the parm
-        # table
-        documented = set([p for p in self.documented if not ":" in p])
-        unknown = documented.difference(self.parameters)
-        if len(unknown) > 0:
-            self.fail(self._format_message(unknown,
-                "Parameters that are documented but not in the implementation:"))
-
-    def test_undocumented(self):
-        undocumented = self.parameters.difference(self.documented)
-        if len(undocumented) > 0:
-            self.fail(self._format_message(undocumented,
-                "Parameters that are in the implementation but undocumented:"))
 
     def test_default_s3(self):
         self._test_default(['bin/testparm'])
