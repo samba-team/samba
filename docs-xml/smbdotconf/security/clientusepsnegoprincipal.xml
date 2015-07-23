@@ -1,6 +1,7 @@
 <samba:parameter name="client use spnego principal"
                  context="G"
                  type="boolean"
+                 deprecated="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>This parameter determines whether or not

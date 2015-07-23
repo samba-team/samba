@@ -1,6 +1,7 @@
 <samba:parameter name="enable privileges"
                  context="G"
-		 type="boolean"
+                 type="boolean"
+                 deprecated="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>

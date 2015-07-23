@@ -1,6 +1,7 @@
 <samba:parameter name="syslog only"
                  context="G"
                  type="boolean"
+                 deprecated="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>
