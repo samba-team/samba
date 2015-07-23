@@ -274,9 +274,17 @@ class SmbDotConfTests(TestCase):
     def _set_arbitrary(self, program, exceptions=None):
         arbitrary = {'string': 'string', 'boolean': 'yes', 'integer': '5',
                      'boolean-rev': 'yes',
+                     'cmdlist': 'a b c',
+                     'bytes': '10',
+                     'octal': '0123',
+                     'ustring': 'ustring',
                      'enum':'', 'boolean-auto': '', 'char': 'a', 'list': 'a, b, c'}
         opposite_arbitrary = {'string': 'string2', 'boolean': 'no', 'integer': '6',
                               'boolean-rev': 'no',
+                              'cmdlist': 'd e f',
+                              'bytes': '11',
+                              'octal': '0567',
+                              'ustring': 'ustring2',
                               'enum':'', 'boolean-auto': '', 'char': 'b', 'list': 'd, e, f'}
         topdir = os.path.abspath(samba.source_tree_topdir())
         try:
