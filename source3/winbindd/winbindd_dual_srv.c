@@ -380,7 +380,7 @@ NTSTATUS _wbint_QueryGroupList(struct pipes_struct *p,
 {
 	struct winbindd_domain *domain = wb_child_domain();
 	uint32_t i, num_groups;
-	struct wb_acct_info *groups;
+	struct wb_acct_info *groups = NULL;
 	struct wbint_Principal *result;
 	NTSTATUS status;
 
