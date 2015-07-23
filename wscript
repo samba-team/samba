@@ -51,6 +51,11 @@ def set_options(opt):
                    help='build Samba with system MIT Kerberos. ' +
                         'You may specify list of paths where Kerberos is installed (e.g. /usr/local /usr/kerberos) to search krb5-config',
                    action='callback', callback=system_mitkrb5_callback, dest='with_system_mitkrb5', default=False)
+    opt.add_option('--with-system-mitkdc',
+                   help=('Specify the path to the krb5kdc binary from MIT Kerberos'),
+                   type="string",
+                   dest='with_system_mitkdc',
+                   default=None)
 
     opt.add_option('--without-ad-dc',
                    help='disable AD DC functionality (enables only Samba FS (File Server, Winbind, NMBD) and client utilities.',

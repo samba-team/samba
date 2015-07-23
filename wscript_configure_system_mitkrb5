@@ -293,3 +293,16 @@ conf.CHECK_CODE('''
     'HAVE_FLAGS_IN_KRB5_CREDS',
     headers='krb5.h', lib='krb5', execute=False,
     msg="Checking whether krb5_creds have flags property")
+
+# Check for MIT KDC
+if conf.CONFIG_SET('AD_DC_BUILD_IS_ENABLED'):
+    Logs.info("Looking for MIT KDC")
+    conf.DEFINE('SAMBA_USES_MITKDC', 1);
+
+    kdc_path_list = [ '/usr/sbin', '/usr/lib/mit/sbin']
+
+    if getattr(Options.options, 'with_system_mitkdc', None):
+        conf.DEFINE('MIT_KDC_PATH', '"' + Options.options.with_system_mitkdc + '"')
+    else:
+        conf.find_program('krb5kdc', path_list=kdc_path_list, var='MIT_KDC_BINARY', mandatory=True)
+        conf.DEFINE('MIT_KDC_PATH', '"' + conf.env.MIT_KDC_BINARY + '"')
