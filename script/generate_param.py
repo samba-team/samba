@@ -89,9 +89,15 @@ def iterate_all(path):
 
 # map doc attributes to a section of the generated function
 context_dict = {"G": "_GLOBAL", "S": "_LOCAL"}
-param_type_dict = {"boolean": "_BOOL", "list": "_LIST", "string": "_STRING",
-                   "integer": "_INTEGER", "enum": "_INTEGER", "char" : "_CHAR",
-                   "boolean-auto": "_INTEGER"}
+param_type_dict = {
+                    "boolean"      : "_BOOL",
+                    "list"         : "_LIST",
+                    "string"       : "_STRING",
+                    "integer"      : "_INTEGER",
+                    "enum"         : "_INTEGER",
+                    "char"         : "_CHAR",
+                    "boolean-auto" : "_INTEGER",
+                  }
 
 def generate_functions(path_in, path_out):
     f = open(path_out, 'w')
@@ -123,8 +129,15 @@ def generate_functions(path_in, path_out):
     finally:
         f.close()
 
-mapping = {'boolean': 'bool ', 'string': 'char *', 'integer': 'int ', 'char': 'char ',
-           'list': 'const char **', 'enum': 'int ', 'boolean-auto': 'int '}
+mapping = {
+            'boolean'      : 'bool ',
+            'string'       : 'char *',
+            'integer'      : 'int ',
+            'char'         : 'char ',
+            'list'         : 'const char **',
+            'enum'         : 'int ',
+            'boolean-auto' : 'int ',
+          }
 
 def make_s3_param_proto(path_in, path_out):
     file_out = open(path_out, 'w')
