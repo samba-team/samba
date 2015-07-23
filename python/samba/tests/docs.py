@@ -82,6 +82,64 @@ def get_implementation_parameters(sourcedir):
     finally:
         f.close()
 
+def get_param_table_full(sourcedir, filename="lib/param/param_table_static.c"):
+    # Reading entries from source code
+    f = open(os.path.join(sourcedir, filename), "r")
+    try:
+        # burn through the preceding lines
+        while True:
+            l = f.readline()
+            if l.startswith("struct parm_struct parm_table"):
+                break
+
+        for l in f.readlines():
+
+            if re.match("^\s*\}\;\s*$", l):
+                # end of the table reached
+                break
+
+            if re.match("^\s*\{\s*$", l):
+                # start a new entry
+                _label = ""
+                _type = ""
+                _class = ""
+                _offset = ""
+                _special = ""
+                _enum_list = ""
+                _flags = ""
+                continue
+
+            if re.match("^\s*\},\s*$", l):
+                # finish the entry
+                yield _label, _type, _class, _offset, _special, _enum_list, _flags
+                continue
+
+            m = re.match("^\s*\.([^\s]+)\s*=\s*(.*),.*", l)
+            if not m:
+                continue
+
+            attrib = m.group(1)
+            value = m.group(2)
+
+            if attrib == "label":
+                _label = value
+            elif attrib == "type":
+                _type = value
+            elif attrib == "p_class":
+                _class = value
+            elif attrib == "offset":
+                _offset = value
+            elif attrib == "special":
+                _special = value
+            elif attrib == "enum_list":
+                _special = value
+            elif attrib == "flags":
+                _flags = value
+
+    finally:
+        f.close()
+
+
 def get_documented_tuples(sourcedir, omit_no_default=True):
     path = os.path.join(sourcedir, "bin", "default", "docs-xml", "smbdotconf")
     if not os.path.exists(os.path.join(path, "parameters.all.xml")):
