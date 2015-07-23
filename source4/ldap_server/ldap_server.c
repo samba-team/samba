@@ -65,6 +65,7 @@ static void ldapsrv_terminate_connection(struct ldapsrv_connection *conn,
 	conn->limits.endtime = timeval_current_ofs(0, 500);
 
 	tevent_queue_stop(conn->sockets.send_queue);
+	TALLOC_FREE(conn->sockets.read_req);
 	if (conn->active_call) {
 		tevent_req_cancel(conn->active_call);
 		conn->active_call = NULL;
@@ -412,6 +413,10 @@ static bool ldapsrv_call_read_next(struct ldapsrv_connection *conn)
 			timeval_current_ofs(conn->limits.conn_idle_time, 0);
 	}
 
+	if (conn->sockets.read_req != NULL) {
+		return true;
+	}
+
 	/*
 	 * The minimun size of a LDAP pdu is 7 bytes
 	 *
@@ -455,6 +460,7 @@ static bool ldapsrv_call_read_next(struct ldapsrv_connection *conn)
 			       conn->connection->event.ctx,
 			       conn->limits.endtime);
 	tevent_req_set_callback(subreq, ldapsrv_call_read_done, conn);
+	conn->sockets.read_req = subreq;
 	return true;
 }
 
@@ -469,6 +475,8 @@ static void ldapsrv_call_read_done(struct tevent_req *subreq)
 	struct ldapsrv_call *call;
 	struct asn1_data *asn1;
 	DATA_BLOB blob;
+
+	conn->sockets.read_req = NULL;
 
 	call = talloc_zero(conn, struct ldapsrv_call);
 	if (!call) {

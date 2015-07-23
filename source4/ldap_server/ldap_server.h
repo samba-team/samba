@@ -34,6 +34,7 @@ struct ldapsrv_connection {
 
 	struct {
 		struct tevent_queue *send_queue;
+		struct tevent_req *read_req;
 		struct tstream_context *raw;
 		struct tstream_context *tls;
 		struct tstream_context *sasl;
