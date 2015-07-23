@@ -798,6 +798,7 @@ struct parm_struct parm_table[] = {
 		.offset		= LOCAL_VAR(force_group),
 		.special	= NULL,
 		.enum_list	= NULL,
+		.flags		= FLAG_SYNONYM,
 	},
 	{
 		.label		= "read only",
@@ -916,6 +917,7 @@ struct parm_struct parm_table[] = {
 		.offset		= LOCAL_VAR(directory_mask),
 		.special	= NULL,
 		.enum_list	= NULL,
+		.flags		= FLAG_SYNONYM,
 	},
 	{
 		.label		= "force directory mode",
@@ -1261,6 +1263,7 @@ struct parm_struct parm_table[] = {
 		.offset		= GLOBAL_VAR(server_max_protocol),
 		.special	= NULL,
 		.enum_list	= enum_protocol,
+		.flags		= FLAG_SYNONYM,
 	},
 	{
 		.label		= "protocol",
@@ -1269,6 +1272,7 @@ struct parm_struct parm_table[] = {
 		.offset		= GLOBAL_VAR(server_max_protocol),
 		.special	= NULL,
 		.enum_list	= enum_protocol,
+		.flags		= FLAG_SYNONYM,
 	},
 	{
 		.label		= "server min protocol",
@@ -1285,6 +1289,7 @@ struct parm_struct parm_table[] = {
 		.offset		= GLOBAL_VAR(server_min_protocol),
 		.special	= NULL,
 		.enum_list	= enum_protocol,
+		.flags		= FLAG_SYNONYM,
 	},
 	{
 		.label		= "client max protocol",
@@ -2998,6 +3003,7 @@ struct parm_struct parm_table[] = {
 		.offset		= GLOBAL_VAR(auto_services),
 		.special	= NULL,
 		.enum_list	= NULL,
+		.flags		= FLAG_SYNONYM,
 	},
 	{
 		.label		= "auto services",
@@ -3098,6 +3104,7 @@ struct parm_struct parm_table[] = {
 		.offset		= GLOBAL_VAR(defaultservice),
 		.special	= NULL,
 		.enum_list	= NULL,
+		.flags		= FLAG_SYNONYM,
 	},
 	{
 		.label		= "message command",
@@ -3171,7 +3178,7 @@ struct parm_struct parm_table[] = {
 		.offset		= GLOBAL_VAR(nbt_client_socket_address),
 		.special	= NULL,
 		.enum_list	= NULL,
-		.flags		= FLAG_DEPRECATED,
+		.flags		= FLAG_SYNONYM,
 	},
 	{
 		.label		= "nmbd bind explicit broadcast",
@@ -3262,6 +3269,7 @@ struct parm_struct parm_table[] = {
 		.offset		= LOCAL_VAR(preexec),
 		.special	= NULL,
 		.enum_list	= NULL,
+		.flags		= FLAG_SYNONYM,
 	},
 	{
 		.label		= "preexec close",
