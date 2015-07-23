@@ -265,6 +265,25 @@ class SmbDotConfTests(TestCase):
             self.fail(self._format_message(undocumented,
                 "Parameters that are in the implementation but undocumented:"))
 
+    def test_generated(self):
+        diff1 = self.table_static.difference(self.table_gen)
+        diff1_txt = ""
+        if len(diff1) > 0:
+            diff1_txt = self._format_message(diff1,
+                "Parameter diff viewed from static (%d entries):"
+                % (len(diff1)))
+
+        diff2 = self.table_gen.difference(self.table_static)
+        diff2_txt = ""
+        if len(diff2) > 0:
+            diff2_txt = self._format_message(diff2,
+                "Parameter diff viewed from generated (%d entries):" %
+                (len(diff2)))
+
+        if len(diff1) > 0 or len(diff2) > 0:
+            self.fail("Parameter tables are different.\n%s\n%s" %
+                      (diff1_txt, diff2_txt))
+
     def test_default_s3(self):
         self._test_default(['bin/testparm'])
         self._set_defaults(['bin/testparm'])
