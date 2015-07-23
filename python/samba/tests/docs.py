@@ -60,7 +60,7 @@ def get_documented_parameters(sourcedir):
 
 def get_implementation_parameters(sourcedir):
     # Reading entries from source code
-    f = open(os.path.join(sourcedir, "lib/param/param_table.c"), "r")
+    f = open(os.path.join(sourcedir, "lib/param/param_table_static.c"), "r")
     try:
         # burn through the preceding lines
         while True:
