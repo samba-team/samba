@@ -97,6 +97,10 @@ param_type_dict = {
                     "enum"         : "_INTEGER",
                     "char"         : "_CHAR",
                     "boolean-auto" : "_INTEGER",
+                    "cmdlist"      : "_LIST",
+                    "bytes"        : "_INTEGER",
+                    "octal"        : "_INTEGER",
+                    "ustring"      : "_STRING",
                   }
 
 def generate_functions(path_in, path_out):
@@ -137,6 +141,10 @@ mapping = {
             'list'         : 'const char **',
             'enum'         : 'int ',
             'boolean-auto' : 'int ',
+            'cmdlist'      : 'const char **',
+            'bytes'        : 'int ',
+            'octal'        : 'int ',
+            'ustring'      : 'char *',
           }
 
 def make_s3_param_proto(path_in, path_out):
