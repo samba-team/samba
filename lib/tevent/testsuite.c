@@ -929,6 +929,206 @@ static bool test_multi_tevent_threaded(struct torture_context *test,
 	talloc_free(master_ev);
 	return true;
 }
+
+struct reply_state {
+	struct tevent_thread_proxy *reply_tp;
+	pthread_t thread_id;
+	int *p_finished;
+};
+
+static void thread_timeout_fn(struct tevent_context *ev,
+			struct tevent_timer *te,
+			struct timeval tv, void *p)
+{
+	int *p_finished = (int *)p;
+
+	*p_finished = 2;
+}
+
+/* Called in child-thread context */
+static void thread_callback(struct tevent_context *ev,
+				struct tevent_immediate *im,
+				void *private_ptr)
+{
+	struct reply_state *rsp =
+		talloc_get_type_abort(private_ptr, struct reply_state);
+
+	talloc_steal(ev, rsp);
+	*rsp->p_finished = 1;
+}
+
+/* Called in master thread context */
+static void master_callback(struct tevent_context *ev,
+				struct tevent_immediate *im,
+				void *private_ptr)
+{
+	struct reply_state *rsp =
+		talloc_get_type_abort(private_ptr, struct reply_state);
+	unsigned i;
+
+	talloc_steal(ev, rsp);
+
+	for (i = 0; i < NUM_TEVENT_THREADS; i++) {
+		if (pthread_equal(rsp->thread_id,
+				thread_map[i])) {
+			break;
+		}
+	}
+	torture_comment(thread_test_ctx,
+			"Callback %u from thread %u\n",
+			thread_counter,
+			i);
+	/* Now reply to the thread ! */
+	tevent_thread_proxy_schedule(rsp->reply_tp,
+				&im,
+				thread_callback,
+				&rsp);
+
+	thread_counter++;
+}
+
+static void *thread_fn_1(void *private_ptr)
+{
+	struct tevent_thread_proxy *master_tp =
+		talloc_get_type_abort(private_ptr, struct tevent_thread_proxy);
+	struct tevent_thread_proxy *tp;
+	struct tevent_immediate *im;
+	struct tevent_context *ev;
+	struct reply_state *rsp;
+	int finished = 0;
+	int ret;
+
+	ev = tevent_context_init(NULL);
+	if (ev == NULL) {
+		return NULL;
+	}
+
+	tp = tevent_thread_proxy_create(ev);
+	if (tp == NULL) {
+		talloc_free(ev);
+		return NULL;
+	}
+
+	im = tevent_create_immediate(ev);
+	if (im == NULL) {
+		talloc_free(ev);
+		return NULL;
+	}
+
+	rsp = talloc(ev, struct reply_state);
+	if (rsp == NULL) {
+		talloc_free(ev);
+		return NULL;
+	}
+
+	rsp->thread_id = pthread_self();
+	rsp->reply_tp = tp;
+	rsp->p_finished = &finished;
+
+	/* Introduce a little randomness into the mix.. */
+	usleep(random() % 7000);
+
+	tevent_thread_proxy_schedule(master_tp,
+				&im,
+				master_callback,
+				&rsp);
+
+	/* Ensure we don't wait more than 10 seconds. */
+	tevent_add_timer(ev,
+			ev,
+			timeval_current_ofs(10,0),
+			thread_timeout_fn,
+			&finished);
+
+	while (finished == 0) {
+		ret = tevent_loop_once(ev);
+		assert(ret == 0);
+	}
+
+	if (finished > 1) {
+		/* Timeout ! */
+		abort();
+	}
+
+	/*
+	 * NB. We should talloc_free(ev) here, but if we do
+	 * we currently get hit by helgrind Fix #323432
+	 * "When calling pthread_cond_destroy or pthread_mutex_destroy
+	 * with initializers as argument Helgrind (incorrectly) reports errors."
+	 *
+	 * http://valgrind.10908.n7.nabble.com/Helgrind-3-9-0-false-positive-
+	 * with-pthread-mutex-destroy-td47757.html
+	 *
+	 * Helgrind doesn't understand that the request/reply
+	 * messages provide synchronization between the lock/unlock
+	 * in tevent_thread_proxy_schedule(), and the pthread_destroy()
+	 * when the struct tevent_thread_proxy object is talloc_free'd.
+	 *
+	 * As a work-around for now return ev for the parent thread to free.
+	 */
+	return ev;
+}
+
+static bool test_multi_tevent_threaded_1(struct torture_context *test,
+					const void *test_data)
+{
+	unsigned i;
+	struct tevent_context *master_ev;
+	struct tevent_thread_proxy *master_tp;
+	int ret;
+
+	talloc_disable_null_tracking();
+
+	/* Ugly global stuff. */
+	thread_test_ctx = test;
+	thread_counter = 0;
+
+	master_ev = tevent_context_init(NULL);
+	if (master_ev == NULL) {
+		return false;
+	}
+	tevent_set_debug_stderr(master_ev);
+
+	master_tp = tevent_thread_proxy_create(master_ev);
+	if (master_tp == NULL) {
+		torture_fail(test,
+			talloc_asprintf(test,
+				"tevent_thread_proxy_create failed\n"));
+		talloc_free(master_ev);
+		return false;
+	}
+
+	for (i = 0; i < NUM_TEVENT_THREADS; i++) {
+		ret = pthread_create(&thread_map[i],
+				NULL,
+				thread_fn_1,
+				master_tp);
+		if (ret != 0) {
+			torture_fail(test,
+				talloc_asprintf(test,
+					"Failed to create thread %i, %d\n",
+					i, ret));
+				return false;
+		}
+	}
+
+	while (thread_counter < NUM_TEVENT_THREADS) {
+		ret = tevent_loop_once(master_ev);
+		torture_assert(test, ret == 0, "tevent_loop_once failed");
+	}
+
+	/* Wait for all the threads to finish - join 'em. */
+	for (i = 0; i < NUM_TEVENT_THREADS; i++) {
+		void *retval;
+		ret = pthread_join(thread_map[i], &retval);
+		torture_assert(test, ret == 0, "pthread_join failed");
+		/* Free the child thread event context. */
+		talloc_free(retval);
+	}
+
+	talloc_free(master_ev);
+	return true;
+}
 #endif
 
 struct torture_suite *torture_local_event(TALLOC_CTX *mem_ctx)
@@ -966,6 +1166,11 @@ struct torture_suite *torture_local_event(TALLOC_CTX *mem_ctx)
 	torture_suite_add_simple_tcase_const(suite, "multi_tevent_threaded",
 					     test_multi_tevent_threaded,
 					     NULL);
+
+	torture_suite_add_simple_tcase_const(suite, "multi_tevent_threaded_1",
+					     test_multi_tevent_threaded_1,
+					     NULL);
+
 #endif
 
 	return suite;
