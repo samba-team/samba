@@ -17,19 +17,22 @@ monitor_filesystem_usage ()
         _fs_threshold="${_fs#*:}"
 
         if [ ! -d "$_fs_mount" ]; then
-            die "Directory ${_fs_mount} does not exist"
+            echo "WARNING: Directory ${_fs_mount} does not exist"
+	    continue
         fi
 
 	case "$_fs_threshold" in
 	    [0-9]|[0-9][0-9]|100) : ;;
-	    *) die "Threshold ${_fs_threshold} is invalid number"
+	    *) echo "WARNING: Threshold ${_fs_threshold} is invalid number"
+	       continue
 	esac
 
         # Get current utilization
         _fs_usage=$(df -kP "$_fs_mount" | \
 			   sed -n -e 's@.*[[:space:]]\([[:digit:]]*\)%.*@\1@p')
         if [ -z "$_fs_usage" ] ; then
-            die "Unable to get FS utilization for ${_fs_mount}"
+            echo "WARNING: Unable to get FS utilization for ${_fs_mount}"
+	    continue
         fi
 
         if [ "$_fs_usage" -ge "$_fs_threshold" ] ; then
