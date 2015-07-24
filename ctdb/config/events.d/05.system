@@ -72,6 +72,7 @@ monitor_memory_usage ()
 
     _meminfo=$(get_proc "meminfo")
     set -- $(echo "$_meminfo" | awk '
+$1 == "MemAvailable:" { memavail += $2 / 1024 }
 $1 == "MemFree:"      { memfree  += $2 / 1024 }
 $1 == "Cached:"       { memfree  += $2 / 1024 }
 $1 == "Buffers:"      { memfree  += $2 / 1024 }
@@ -79,6 +80,7 @@ $1 == "MemTotal:"     { memtotal  = $2 / 1024 }
 $1 == "SwapFree:"     { swapfree  = $2 / 1024 }
 $1 == "SwapTotal:"    { swaptotal = $2 / 1024 }
 END {
+    if (memavail != 0) { memfree = memavail ; }
     print int(memfree), int(memtotal), int(swapfree) , int(swaptotal)
 }')
     _mem_free="$1"
