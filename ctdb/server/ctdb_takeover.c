@@ -3128,9 +3128,6 @@ void ctdb_takeover_client_destructor_hook(struct ctdb_client *client)
 }
 
 
-/*
-  release all IPs on shutdown
- */
 void ctdb_release_all_ips(struct ctdb_context *ctdb)
 {
 	struct ctdb_vnn *vnn;
@@ -3149,6 +3146,20 @@ void ctdb_release_all_ips(struct ctdb_context *ctdb)
 			continue;
 		}
 
+		/* Don't allow multiple releases at once.  Some code,
+		 * particularly ctdb_tickle_sentenced_connections() is
+		 * not re-entrant */
+		if (vnn->update_in_flight) {
+			DEBUG(DEBUG_WARNING,
+			      (__location__
+			       " Not releasing IP %s/%u on interface %s, an update is already in progess\n",
+				    ctdb_addr_to_str(&vnn->public_address),
+				    vnn->public_netmask_bits,
+				    ctdb_vnn_iface_string(vnn)));
+			continue;
+		}
+		vnn->update_in_flight = true;
+
 		DEBUG(DEBUG_INFO,("Release of IP %s/%u on interface %s node:-1\n",
 				    ctdb_addr_to_str(&vnn->public_address),
 				    vnn->public_netmask_bits,
@@ -3160,6 +3171,7 @@ void ctdb_release_all_ips(struct ctdb_context *ctdb)
 				  vnn->public_netmask_bits);
 		release_kill_clients(ctdb, &vnn->public_address);
 		ctdb_vnn_unassign_iface(ctdb, vnn);
+		vnn->update_in_flight = false;
 		count++;
 	}
 
