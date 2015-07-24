@@ -1998,7 +1998,7 @@ static krb5_error_code samba_kdc_lookup_realm(krb5_context context,
 		return ENOMEM;
 	}
 
-	if (krb5_principal_get_type(context, principal) == KRB5_NT_ENTERPRISE_PRINCIPAL) {
+	if (smb_krb5_principal_get_type(context, principal) == KRB5_NT_ENTERPRISE_PRINCIPAL) {
 		char *principal_string = NULL;
 		krb5_principal enterprise_principal = NULL;
 		char *enterprise_realm = NULL;
@@ -2132,9 +2132,9 @@ static krb5_error_code samba_kdc_lookup_realm(krb5_context context,
 		return ENOMEM;
 	}
 
-	ret = krb5_principal_set_realm(context,
-				       entry_ex->entry.principal,
-				       upper);
+	ret = smb_krb5_principal_set_realm(context,
+					   entry_ex->entry.principal,
+					   upper);
 	if (ret) {
 		TALLOC_FREE(frame);
 		return ret;
