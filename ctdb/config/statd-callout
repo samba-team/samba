@@ -93,7 +93,7 @@ case "$1" in
 
     notify)
 	# we must restart the lockmanager (on all nodes) so that we get
-	# a clusterwide grace period (so other clients dont take out
+	# a clusterwide grace period (so other clients don't take out
 	# conflicting locks through other nodes before all locks have been
 	# reclaimed)
 
@@ -103,7 +103,7 @@ case "$1" in
 	#echo 0 > /proc/sys/net/ipv4/tcp_max_tw_buckets
 	#echo 0 > /proc/sys/net/ipv4/tcp_max_orphans
 
-	# Delete the notification list for statd, we dont want it to 
+	# Delete the notification list for statd, we don't want it to 
 	# ping any clients
 	rm -f /var/lib/nfs/statd/sm/*
 	rm -f /var/lib/nfs/statd/sm.bak/*

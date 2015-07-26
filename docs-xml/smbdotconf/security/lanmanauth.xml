@@ -20,7 +20,7 @@
     will also result in sambaLMPassword in Samba's passdb being
     blanked after the next password change. As a result of that
     lanman clients won't be able to authenticate, even if lanman
-    auth is reenabled later on.
+    auth is re-enabled later on.
     </para>
 		
     <para>Unlike the <command moreinfo="none">encrypt

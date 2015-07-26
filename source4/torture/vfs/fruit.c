@@ -1779,7 +1779,7 @@ static bool test_aapl(struct torture_context *tctx,
 	/*
 	 * Now check returned AAPL context
 	 */
-	torture_comment(tctx, "Comparing returned AAPL capabilites\n");
+	torture_comment(tctx, "Comparing returned AAPL capabilities\n");
 
 	aapl = smb2_create_blob_find(&io.out.blobs,
 				     SMB2_CREATE_TAG_AAPL);

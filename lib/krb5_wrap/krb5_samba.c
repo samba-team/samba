@@ -143,7 +143,7 @@ bool setup_kaddr( krb5_address *pkaddr, struct sockaddr_storage *paddr)
 *
 * @param context	The krb5_context
 * @param host_princ	The krb5_principal to use
-* @param salt		The optional salt, if ommitted, salt is calculated with
+* @param salt		The optional salt, if omitted, salt is calculated with
 *			the provided principal.
 * @param password	The krb5_data containing the password
 * @param enctype	The krb5_enctype to use for the keyblock generation
@@ -1276,7 +1276,7 @@ krb5_error_code smb_krb5_enctype_to_string(krb5_context context,
 
 /**********************************************************************
  * Open a krb5 keytab with flags, handles readonly or readwrite access and
- * allows to process non-default keytab names.
+ * allows one to process non-default keytab names.
  * @param context krb5_context
  * @param keytab_name_req string
  * @param write_access bool if writable keytab is required

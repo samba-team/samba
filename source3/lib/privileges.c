@@ -271,7 +271,7 @@ static int priv_traverse_fn(struct db_record *rec, void *state)
 }
 
 /*********************************************************************
- Retreive list of privileged SIDs (for _lsa_enumerate_accounts()
+ Retrieve list of privileged SIDs (for _lsa_enumerate_accounts()
 *********************************************************************/
 
 NTSTATUS privilege_enumerate_accounts(struct dom_sid **sids, int *num_sids)

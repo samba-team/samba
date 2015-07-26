@@ -7475,7 +7475,7 @@ static bool test_AddPrinter_normal(struct torture_context *tctx,
 		"failed to add printer");
 	result = ex ? rex.out.result : r.out.result;
 
-	/* w2k8r2 allows to add printer w/o defining printprocessor */
+	/* w2k8r2 allows one to add printer w/o defining printprocessor */
 
 	if (!W_ERROR_IS_OK(result)) {
 		torture_assert_werr_equal(tctx, result, WERR_UNKNOWN_PRINTPROCESSOR,

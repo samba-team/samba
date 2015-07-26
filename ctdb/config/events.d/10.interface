@@ -130,7 +130,7 @@ monitor_interfaces()
 		mark_up $iface
 		;;
 	    ib*)
-		# we dont know how to test ib links
+		# we don't know how to test ib links
 		mark_up $iface
 		;;
 	    *)

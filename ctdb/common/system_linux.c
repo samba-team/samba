@@ -419,7 +419,7 @@ int ctdb_sys_send_tcp(const ctdb_sock_addr *dest,
 			return -1;
 
 		}
-		/* sendto() dont like if the port is set and the socket is
+		/* sendto() don't like if the port is set and the socket is
 		   in raw mode.
 		*/
 		tmpdest = discard_const(dest);
@@ -577,7 +577,7 @@ bool ctdb_sys_check_iface_exists(const char *iface)
 
 	s = socket(PF_PACKET, SOCK_RAW, 0);
 	if (s == -1){
-		/* We dont know if the interface exists, so assume yes */
+		/* We don't know if the interface exists, so assume yes */
 		DEBUG(DEBUG_CRIT,(__location__ " failed to open raw socket\n"));
 		return true;
 	}

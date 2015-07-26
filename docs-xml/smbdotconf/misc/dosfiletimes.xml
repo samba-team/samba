@@ -6,7 +6,7 @@
 	<para>Under DOS and Windows, if a user can write to a 
 	file they can change the timestamp on it. Under POSIX semantics, 
 	only the owner of the file or root may change the timestamp. By 
-	default, Samba emulates the DOS semantics and allows to change the 
+	default, Samba emulates the DOS semantics and allows one to change the 
 	timestamp on a file if the user <command moreinfo="none">smbd</command> is acting 
 	on behalf has write permissions.
 	Due to changes in Microsoft Office 2000 and beyond,

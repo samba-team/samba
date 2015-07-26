@@ -5,7 +5,7 @@
 <description>
 
 	<para>This parameter is designed to control whether Winbind should
-	allow to login with the <parameter moreinfo="none">pam_winbind</parameter> 
+	allow one to login with the <parameter moreinfo="none">pam_winbind</parameter> 
 	module using Cached Credentials. If enabled, winbindd will store user credentials
 	from successful logins encrypted in a local cache.
 	</para>

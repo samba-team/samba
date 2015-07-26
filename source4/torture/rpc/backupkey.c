@@ -513,7 +513,7 @@ static DATA_BLOB *encrypt_blob_pk(struct torture_context *tctx,
 }
 
 
-static struct bkrp_BackupKey *createRetreiveBackupKeyGUIDStruct(struct torture_context *tctx,
+static struct bkrp_BackupKey *createRetrieveBackupKeyGUIDStruct(struct torture_context *tctx,
 				struct dcerpc_pipe *p, int version, DATA_BLOB *out)
 {
 	struct dcerpc_binding *binding;
@@ -586,7 +586,7 @@ static struct bkrp_BackupKey *createRestoreGUIDStruct(struct torture_context *tc
 	enum ndr_err_code ndr_err;
 	NTSTATUS status;
 	const char *user;
-	struct bkrp_BackupKey *r = createRetreiveBackupKeyGUIDStruct(tctx, p, version, &out_blob);
+	struct bkrp_BackupKey *r = createRetrieveBackupKeyGUIDStruct(tctx, p, version, &out_blob);
 	if (r == NULL) {
 		return NULL;
 	}
@@ -605,7 +605,7 @@ static struct bkrp_BackupKey *createRestoreGUIDStruct(struct torture_context *tc
 			       "Get GUID");
 
 	/*
-	 * We have to set it outside of the function createRetreiveBackupKeyGUIDStruct
+	 * We have to set it outside of the function createRetrieveBackupKeyGUIDStruct
 	 * the len of the blob, this is due to the fact that they don't have the
 	 * same size (one is 32bits the other 64bits)
 	 */
@@ -740,12 +740,12 @@ static struct bkrp_BackupKey *createRestoreGUIDStruct(struct torture_context *tc
 /* Check that we are able to receive the certificate of the DCs
  * used for client wrap version of the backup key protocol
  */
-static bool test_RetreiveBackupKeyGUID(struct torture_context *tctx,
+static bool test_RetrieveBackupKeyGUID(struct torture_context *tctx,
 					struct dcerpc_pipe *p)
 {
 	struct dcerpc_binding_handle *b = p->binding_handle;
 	DATA_BLOB out_blob;
-	struct bkrp_BackupKey *r = createRetreiveBackupKeyGUIDStruct(tctx, p, 2, &out_blob);
+	struct bkrp_BackupKey *r = createRetrieveBackupKeyGUIDStruct(tctx, p, 2, &out_blob);
 	enum dcerpc_AuthType auth_type;
 	enum dcerpc_AuthLevel auth_level;
 
@@ -799,7 +799,7 @@ static bool test_RestoreGUID_ko(struct torture_context *tctx,
 		torture_assert_int_equal(tctx, NDR_ERR_CODE_IS_SUCCESS(ndr_err), 0, "Unable to unmarshall bkrp_client_side_unwrapped");
 		torture_assert_werr_equal(tctx, r->out.result, WERR_INVALID_PARAM, "Wrong error code");
 	} else {
-		struct bkrp_BackupKey *r = createRetreiveBackupKeyGUIDStruct(tctx, p, 2, &out_blob);
+		struct bkrp_BackupKey *r = createRetrieveBackupKeyGUIDStruct(tctx, p, 2, &out_blob);
 		torture_assert_ntstatus_equal(tctx, dcerpc_bkrp_BackupKey_r(b, tctx, r),
 			NT_STATUS_ACCESS_DENIED, "Get GUID");
 	}
@@ -828,7 +828,7 @@ static bool test_RestoreGUID_wrongversion(struct torture_context *tctx,
 		torture_assert_int_equal(tctx, NDR_ERR_CODE_IS_SUCCESS(ndr_err), 0, "Unable to unmarshall bkrp_client_side_unwrapped");
 		torture_assert_werr_equal(tctx, r->out.result, WERR_INVALID_PARAM, "Wrong error code on wrong version");
 	} else {
-		struct bkrp_BackupKey *r = createRetreiveBackupKeyGUIDStruct(tctx, p, 2, &out_blob);
+		struct bkrp_BackupKey *r = createRetrieveBackupKeyGUIDStruct(tctx, p, 2, &out_blob);
 		torture_assert_ntstatus_equal(tctx, dcerpc_bkrp_BackupKey_r(b, tctx, r),
 			NT_STATUS_ACCESS_DENIED, "Get GUID");
 	}
@@ -857,7 +857,7 @@ static bool test_RestoreGUID_wronguser(struct torture_context *tctx,
 		torture_assert_int_equal(tctx, NDR_ERR_CODE_IS_SUCCESS(ndr_err), 0, "Unable to unmarshall bkrp_client_side_unwrapped");
 		torture_assert_werr_equal(tctx, r->out.result, WERR_INVALID_ACCESS, "Restore GUID");
 	} else {
-		struct bkrp_BackupKey *r = createRetreiveBackupKeyGUIDStruct(tctx, p, 2, &out_blob);
+		struct bkrp_BackupKey *r = createRetrieveBackupKeyGUIDStruct(tctx, p, 2, &out_blob);
 		torture_assert_ntstatus_equal(tctx, dcerpc_bkrp_BackupKey_r(b, tctx, r),
 			NT_STATUS_ACCESS_DENIED, "Get GUID");
 	}
@@ -887,7 +887,7 @@ static bool test_RestoreGUID_v3(struct torture_context *tctx,
 		torture_assert_werr_equal(tctx, r->out.result, WERR_OK, "Restore GUID");
 		torture_assert_str_equal(tctx, (char*)resp.secret.data, secret, "Wrong secret");
 	} else {
-		struct bkrp_BackupKey *r = createRetreiveBackupKeyGUIDStruct(tctx, p, 2, &out_blob);
+		struct bkrp_BackupKey *r = createRetrieveBackupKeyGUIDStruct(tctx, p, 2, &out_blob);
 		torture_assert_ntstatus_equal(tctx, dcerpc_bkrp_BackupKey_r(b, tctx, r),
 			NT_STATUS_ACCESS_DENIED, "Get GUID");
 	}
@@ -919,7 +919,7 @@ static bool test_RestoreGUID(struct torture_context *tctx,
 					     "Unable to unmarshall bkrp_client_side_unwrapped");
 		torture_assert_str_equal(tctx, (char*)resp.secret.data, secret, "Wrong secret");
 	} else {
-		struct bkrp_BackupKey *r = createRetreiveBackupKeyGUIDStruct(tctx, p, 2, &out_blob);
+		struct bkrp_BackupKey *r = createRetrieveBackupKeyGUIDStruct(tctx, p, 2, &out_blob);
 		torture_assert_ntstatus_equal(tctx, dcerpc_bkrp_BackupKey_r(b, tctx, r),
 			NT_STATUS_ACCESS_DENIED, "Get GUID");
 	}
@@ -948,7 +948,7 @@ static bool test_RestoreGUID_badmagiconsecret(struct torture_context *tctx,
 		torture_assert_int_equal(tctx, NDR_ERR_CODE_IS_SUCCESS(ndr_err), 0, "Unable to unmarshall bkrp_client_side_unwrapped");
 		torture_assert_werr_equal(tctx, r->out.result, WERR_INVALID_DATA, "Wrong error code while providing bad magic in secret");
 	} else {
-		struct bkrp_BackupKey *r = createRetreiveBackupKeyGUIDStruct(tctx, p, 2, &out_blob);
+		struct bkrp_BackupKey *r = createRetrieveBackupKeyGUIDStruct(tctx, p, 2, &out_blob);
 		torture_assert_ntstatus_equal(tctx, dcerpc_bkrp_BackupKey_r(b, tctx, r),
 			NT_STATUS_ACCESS_DENIED, "Get GUID");
 	}
@@ -977,7 +977,7 @@ static bool test_RestoreGUID_emptyrequest(struct torture_context *tctx,
 		out_blob.length = *r->out.data_out_len;
 		torture_assert_werr_equal(tctx, r->out.result, WERR_INVALID_PARAM, "Bad error code on wrong has in access check");
 	} else {
-		struct bkrp_BackupKey *r = createRetreiveBackupKeyGUIDStruct(tctx, p, 2, &out_blob);
+		struct bkrp_BackupKey *r = createRetrieveBackupKeyGUIDStruct(tctx, p, 2, &out_blob);
 		torture_assert_ntstatus_equal(tctx, dcerpc_bkrp_BackupKey_r(b, tctx, r),
 			NT_STATUS_ACCESS_DENIED, "Get GUID");
 	}
@@ -1013,7 +1013,7 @@ static bool test_RestoreGUID_badcertguid(struct torture_context *tctx,
 			torture_assert_werr_equal(tctx, r->out.result, WERR_INVALID_DATA, "Bad error code on wrong has in access check");
 		}
 	} else {
-		struct bkrp_BackupKey *r = createRetreiveBackupKeyGUIDStruct(tctx, p, 2, &out_blob);
+		struct bkrp_BackupKey *r = createRetrieveBackupKeyGUIDStruct(tctx, p, 2, &out_blob);
 		torture_assert_ntstatus_equal(tctx, dcerpc_bkrp_BackupKey_r(b, tctx, r),
 			NT_STATUS_ACCESS_DENIED, "Get GUID");
 	}
@@ -1042,7 +1042,7 @@ static bool test_RestoreGUID_badmagicaccesscheck(struct torture_context *tctx,
 		torture_assert_int_equal(tctx, NDR_ERR_CODE_IS_SUCCESS(ndr_err), 0, "Unable to unmarshall bkrp_client_side_unwrapped");
 		torture_assert_werr_equal(tctx, r->out.result, WERR_INVALID_DATA, "Bad error code on wrong has in access check");
 	} else {
-		struct bkrp_BackupKey *r = createRetreiveBackupKeyGUIDStruct(tctx, p, 2, &out_blob);
+		struct bkrp_BackupKey *r = createRetrieveBackupKeyGUIDStruct(tctx, p, 2, &out_blob);
 		torture_assert_ntstatus_equal(tctx, dcerpc_bkrp_BackupKey_r(b, tctx, r),
 			NT_STATUS_ACCESS_DENIED, "Get GUID");
 	}
@@ -1071,7 +1071,7 @@ static bool test_RestoreGUID_badhashaccesscheck(struct torture_context *tctx,
 		torture_assert_int_equal(tctx, NDR_ERR_CODE_IS_SUCCESS(ndr_err), 0, "Unable to unmarshall bkrp_client_side_unwrapped");
 		torture_assert_werr_equal(tctx, r->out.result, WERR_INVALID_DATA, "Bad error code on wrong has in access check");
 	} else {
-		struct bkrp_BackupKey *r = createRetreiveBackupKeyGUIDStruct(tctx, p, 2, &out_blob);
+		struct bkrp_BackupKey *r = createRetrieveBackupKeyGUIDStruct(tctx, p, 2, &out_blob);
 		torture_assert_ntstatus_equal(tctx, dcerpc_bkrp_BackupKey_r(b, tctx, r),
 			NT_STATUS_ACCESS_DENIED, "Get GUID");
 	}
@@ -1081,12 +1081,12 @@ static bool test_RestoreGUID_badhashaccesscheck(struct torture_context *tctx,
 /* 
  * Check that the RSA modulus in the certificate of the DCs has 2048 bits.
  */
-static bool test_RetreiveBackupKeyGUID_2048bits(struct torture_context *tctx,
+static bool test_RetrieveBackupKeyGUID_2048bits(struct torture_context *tctx,
 					struct dcerpc_pipe *p)
 {
 	struct dcerpc_binding_handle *b = p->binding_handle;
 	DATA_BLOB out_blob;
-	struct bkrp_BackupKey *r = createRetreiveBackupKeyGUIDStruct(tctx, p, 2, &out_blob);
+	struct bkrp_BackupKey *r = createRetrieveBackupKeyGUIDStruct(tctx, p, 2, &out_blob);
 	enum dcerpc_AuthType auth_type;
 	enum dcerpc_AuthLevel auth_level;
 
@@ -1097,7 +1097,7 @@ static bool test_RetreiveBackupKeyGUID_2048bits(struct torture_context *tctx,
 	RSA *rsa;
 	int RSA_returned_bits;
 
-	torture_assert(tctx, r != NULL, "createRetreiveBackupKeyGUIDStruct failed");
+	torture_assert(tctx, r != NULL, "createRetrieveBackupKeyGUIDStruct failed");
 	
 	hx509_context_init(&hctx);
 
@@ -2056,7 +2056,7 @@ struct torture_suite *torture_rpc_backupkey(TALLOC_CTX *mem_ctx)
 						  &ndr_table_backupkey);
 
 	torture_rpc_tcase_add_test(tcase, "retreive_backup_key_guid",
-				   test_RetreiveBackupKeyGUID);
+				   test_RetrieveBackupKeyGUID);
 
 	torture_rpc_tcase_add_test(tcase, "restore_guid",
 				   test_RestoreGUID);
@@ -2094,7 +2094,7 @@ struct torture_suite *torture_rpc_backupkey(TALLOC_CTX *mem_ctx)
 				   test_RestoreGUID_emptyrequest);
 
 	torture_rpc_tcase_add_test(tcase, "retreive_backup_key_guid_2048_bits",
-				   test_RetreiveBackupKeyGUID_2048bits);
+				   test_RetrieveBackupKeyGUID_2048bits);
 
 	torture_rpc_tcase_add_test(tcase, "server_wrap_encrypt_decrypt",
 				   test_ServerWrap_encrypt_decrypt);

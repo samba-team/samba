@@ -183,7 +183,7 @@
 
 	<varlistentry>
 	<term>--request-lm-key</term>
-	<listitem><para>Retreive LM session key</para></listitem>
+	<listitem><para>Retrieve LM session key</para></listitem>
 	</varlistentry>
 
 	<varlistentry>

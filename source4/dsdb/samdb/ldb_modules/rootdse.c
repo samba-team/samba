@@ -831,7 +831,7 @@ static int rootdse_search(struct ldb_module *module, struct ldb_request *req)
 
 	if (do_attribute_explicit(req->op.search.attrs, "netlogon")) {
 		ret = rootdse_handle_netlogon(ac);
-		/* We have to return an empty result, so dont forward `ret' */
+		/* We have to return an empty result, so don't forward `ret' */
 		if (ret != LDB_SUCCESS) {
 			return ldb_module_done(ac->req, NULL, NULL, LDB_SUCCESS);
 		}

@@ -428,7 +428,7 @@ account policy value for bad lockout attempt is now 3
 		then <parameter>-i in-backend -e out-backend</parameter>
 		applies to the account policies instead of the user database.</para>
 
-		<para>This option will allow to migrate account policies from their default
+		<para>This option will allow one to migrate account policies from their default
 		tdb-store into a passdb backend, e.g. an LDAP directory server.</para>
 
 		<para>Example: <command>pdbedit -y -i tdbsam: -e ldapsam:ldap://my.ldap.host</command></para>

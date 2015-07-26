@@ -6,7 +6,7 @@ Released under the GPLv3
 Important context for porting to MIT
 ------------------------------------
 
-This document should be read in conjuction with the Samba4 source code.  
+This document should be read in conjunction with the Samba4 source code.  
 DAL and KDC requirements are expressed (as an implementation against Heimdal's 
 HDB abstraction layer) in Samba4's source4/kdc/hdb-samba4.c in particular.
 hbd-samba4.c is the biggest piece of samba-to-krb glue layer, so the main

@@ -400,7 +400,7 @@
 	<listitem>
 	  <para>
 	    IPADDR specifies the single IP that CTDB will use in
-	    conjuction with LVS.
+	    conjunction with LVS.
 	  </para>
 	  <para>
 	    Please see the <citetitle>LVS</citetitle> section in

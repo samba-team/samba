@@ -239,7 +239,7 @@
 		<term>--single-obj-repl</term>
 		<listitem><para>
 				When calling "net rpc vampire keytab" this option
-				allows to replicate just a single object to the generated keytab file.
+				allows one to replicate just a single object to the generated keytab file.
 		</para></listitem>
 		</varlistentry>
 
@@ -247,7 +247,7 @@
 		<term>--clean-old-entries</term>
 		<listitem><para>
 				When calling "net rpc vampire keytab" this option
-				allows to cleanup old entries from the generated keytab file.
+				allows one to cleanup old entries from the generated keytab file.
 		</para></listitem>
 		</varlistentry>
 
@@ -299,7 +299,7 @@
 
 		<varlistentry>
 		<term>-X|--exclude DIRECTORY</term>
-		<listitem><para>Allows to exclude directories when copying with "net rpc share migrate".
+		<listitem><para>Allows one to exclude directories when copying with "net rpc share migrate".
 		</para></listitem>
 		</varlistentry>
 
@@ -1354,7 +1354,7 @@ to show in the result.
 </para>
 
 <para>
-	This attribute allows to control which Kerberos encryption types are used for the generation of initial and service tickets. The value consists of an integer bitmask with the following values:
+	This attribute allows one to control which Kerberos encryption types are used for the generation of initial and service tickets. The value consists of an integer bitmask with the following values:
 </para>
 
 <para>0x00000001 DES-CBC-CRC</para>
@@ -1380,7 +1380,7 @@ to show in the result.
 	<title>ADS ENCTYPES SET <replaceable>&lt;ACCOUNTNAME&gt;</replaceable> <replaceable>[enctypes]</replaceable></title>
 
 <para>
-	Set the value of the "msDS-SupportedEncryptionTypes" attribute of the LDAP object of ACCOUNTNAME to a given value. If the value is ommitted, the value is set to 31 which enables all the currently supported encryption types.
+	Set the value of the "msDS-SupportedEncryptionTypes" attribute of the LDAP object of ACCOUNTNAME to a given value. If the value is omitted, the value is set to 31 which enables all the currently supported encryption types.
 </para>
 
 <para>Example: <userinput>net ads enctypes set Computername 24</userinput></para>

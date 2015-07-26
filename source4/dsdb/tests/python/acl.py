@@ -702,7 +702,7 @@ class AclSearchTests(AclTests):
         res = anonymous.search("", expression="(objectClass=*)", scope=SCOPE_BASE)
         self.assertEquals(len(res), 1)
         #verify some of the attributes
-        #dont care about values
+        #don't care about values
         self.assertTrue("ldapServiceName" in res[0])
         self.assertTrue("namingContexts" in res[0])
         self.assertTrue("isSynchronized" in res[0])

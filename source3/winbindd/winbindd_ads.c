@@ -646,7 +646,7 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 		TALLOC_FREE(user);
 
 		if (info->full_name == NULL) {
-			/* this might fail so we dont check the return code */
+			/* this might fail so we don't check the return code */
 			wcache_query_user_fullname(domain,
 						   mem_ctx,
 						   sid,

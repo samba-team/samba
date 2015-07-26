@@ -1171,7 +1171,7 @@ static void callback_do_change(GtkWidget *widget,
 	box1 = gtk_vbox_new(FALSE, 0);
 	gtk_container_add(GTK_CONTAINER(window), box1);
 
-	label = gtk_label_new("You can change the name and membership of this computer. Changes may affect access to network ressources.");
+	label = gtk_label_new("You can change the name and membership of this computer. Changes may affect access to network resources.");
 	gtk_label_set_line_wrap(GTK_LABEL(label), TRUE);
 	gtk_misc_set_alignment(GTK_MISC(label), 0, 0);
 	gtk_box_pack_start(GTK_BOX(box1), label, TRUE, TRUE, 0);

@@ -1168,7 +1168,7 @@ static WERROR dcesrv_spoolss_RemoteFindFirstPrinterChangeNotifyEx(struct dcesrv_
 	/*
 	 * TODO: for now just open a connection to the client and drop it again
 	 *       to keep the w2k3 PrintServer 
-	 *       happy to allow to open the Add Printer GUI
+	 *       happy to allow one to open the Add Printer GUI
 	 *       and the torture suite passing
 	 */
 

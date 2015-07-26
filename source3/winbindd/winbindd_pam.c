@@ -1838,7 +1838,7 @@ process_result:
 						      cached_info3->base.full_name.string);
 			} else {
 
-				/* this might fail so we dont check the return code */
+				/* this might fail so we don't check the return code */
 				wcache_query_user_fullname(domain,
 						info3,
 						&user_sid,
@@ -1999,7 +1999,7 @@ process_result:
 						      cached_info3->base.full_name.string);
 			} else {
 
-				/* this might fail so we dont check the return code */
+				/* this might fail so we don't check the return code */
 				wcache_query_user_fullname(domain,
 						*info3,
 						&user_sid,

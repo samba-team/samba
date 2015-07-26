@@ -695,7 +695,7 @@ static int samldb_fill_object(struct samldb_ctx *ac)
 						  "rdnAttId", "cn");
 		if (ret != LDB_SUCCESS) return ret;
 
-		/* do not allow to mark an attributeSchema as RODC filtered if it
+		/* do not allow one to mark an attributeSchema as RODC filtered if it
 		 * is system-critical */
 		if (check_rodc_critical_attribute(ac->msg)) {
 			ldb_asprintf_errstring(ldb, "Refusing schema add of %s - cannot combine critical class with RODC filtering",
@@ -796,7 +796,7 @@ static int samldb_fill_object(struct samldb_ctx *ac)
 			}
 		}
 
-		/* do not allow to mark an attributeSchema as RODC filtered if it
+		/* do not allow one to mark an attributeSchema as RODC filtered if it
 		 * is system-critical */
 		if (check_rodc_critical_attribute(ac->msg)) {
 			ldb_asprintf_errstring(ldb,

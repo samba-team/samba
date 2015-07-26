@@ -73,7 +73,7 @@ static int ctdb_add_local_iface(struct ctdb_context *ctdb, const char *iface)
 {
 	struct ctdb_iface *i;
 
-	/* Verify that we dont have an entry for this ip yet */
+	/* Verify that we don't have an entry for this ip yet */
 	for (i=ctdb->ifaces;i;i=i->next) {
 		if (strcmp(i->name, iface) == 0) {
 			return 0;
@@ -1059,7 +1059,7 @@ static int ctdb_add_public_address(struct ctdb_context *ctdb,
 	}
 	free(tmp);
 
-	/* Verify that we dont have an entry for this ip yet */
+	/* Verify that we don't have an entry for this ip yet */
 	for (vnn=ctdb->vnn;vnn;vnn=vnn->next) {
 		if (ctdb_same_sockaddr(addr, &vnn->public_address)) {
 			DEBUG(DEBUG_CRIT,("Same ip '%s' specified multiple times in the public address list \n", 
@@ -2659,7 +2659,7 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap,
 		for (tmp_ip=all_ips;tmp_ip;tmp_ip=tmp_ip->next) {
 			if (tmp_ip->pnn == nodemap->nodes[i].pnn) {
 				/* This node should be serving this
-				   vnn so dont tell it to release the ip
+				   vnn so don't tell it to release the ip
 				*/
 				continue;
 			}
@@ -3041,7 +3041,7 @@ static void ctdb_remove_tcp_connection(struct ctdb_context *ctdb, struct ctdb_tc
 	}
 
 	/* if the array is empty we cant remove it
-	   and we dont need to do anything
+	   and we don't need to do anything
 	 */
 	if (vnn->tcp_array == NULL) {
 		DEBUG(DEBUG_INFO,("Trying to remove tickle that doesnt exist (array is empty) %s:%u\n",
@@ -3052,7 +3052,7 @@ static void ctdb_remove_tcp_connection(struct ctdb_context *ctdb, struct ctdb_tc
 
 
 	/* See if we know this connection
-	   if we dont know this connection  then we dont need to do anything
+	   if we don't know this connection  then we dont need to do anything
 	 */
 	tcpp = ctdb_tcp_find(vnn->tcp_array, conn);
 	if (tcpp == NULL) {
@@ -3608,7 +3608,7 @@ static int ctdb_killtcp_destructor(struct ctdb_kill_tcp *killtcp)
 /* nothing fancy here, just unconditionally replace any existing
    connection structure with the new one.
 
-   dont even free the old one if it did exist, that one is talloc_stolen
+   don't even free the old one if it did exist, that one is talloc_stolen
    by the same node in the tree anyway and will be deleted when the new data 
    is deleted
 */
@@ -3685,7 +3685,7 @@ static int ctdb_killtcp_add_connection(struct ctdb_context *ctdb,
 			add_killtcp_callback, con);
 
 	/* 
-	   If we dont have a socket to listen on yet we must create it
+	   If we don't have a socket to listen on yet we must create it
 	 */
 	if (killtcp->capture_fd == -1) {
 		const char *iface = ctdb_vnn_iface_string(vnn);
@@ -4233,7 +4233,7 @@ int verify_remote_ip_allocation(struct ctdb_context *ctdb,
 	int i;
 
 	if (ctdb->ip_tree == NULL) {
-		/* dont know the expected allocation yet, assume remote node
+		/* don't know the expected allocation yet, assume remote node
 		   is correct. */
 		return 0;
 	}

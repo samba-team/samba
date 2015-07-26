@@ -213,7 +213,7 @@ void ctdb_input_pkt(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	case CTDB_REPLY_CALL:
 	case CTDB_REQ_DMASTER:
 	case CTDB_REPLY_DMASTER:
-		/* we dont allow these calls when banned */
+		/* we don't allow these calls when banned */
 		if (ctdb->nodes[ctdb->pnn]->flags & NODE_FLAGS_BANNED) {
 			DEBUG(DEBUG_DEBUG,(__location__ " ctdb operation %u"
 				" request %u"

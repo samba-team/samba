@@ -153,7 +153,7 @@ NTSTATUS smbd_check_access_rights(struct connection_struct *conn,
 	 * Samba 3.6 and earlier granted execute access even
 	 * if the ACL did not contain execute rights.
 	 * Samba 4.0 is more correct and checks it.
-	 * The compatibilty mode allows to skip this check
+	 * The compatibilty mode allows one to skip this check
 	 * to smoothen upgrades.
 	 */
 	if (lp_acl_allow_execute_always(SNUM(conn))) {

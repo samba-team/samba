@@ -136,7 +136,7 @@ newer.
 <indexterm id="ch02-idx-947333-0"><primary>makefiles</primary></indexterm> that accompanies the binary distribution should list any special requirements.<footnote label="2" id="ch02-pgfId-943622">
 
 
-<para>This is especially true with programs that use <emphasis>glibc-2.1</emphasis> (which comes standard with Red Hat Linux 6). This library caused quite a consternation in the development community when it was released because it was incompatable with previous versions of <emphasis>g</emphasis><filename>libc</filename>.</para>
+<para>This is especially true with programs that use <emphasis>glibc-2.1</emphasis> (which comes standard with Red Hat Linux 6). This library caused quite a consternation in the development community when it was released because it was incompatible with previous versions of <emphasis>g</emphasis><filename>libc</filename>.</para>
 
 
 </footnote></para>

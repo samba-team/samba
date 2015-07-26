@@ -301,7 +301,7 @@ static void smbldap_set_mod_internal(LDAPMod *** modlist, int modop, const char 
 		return;	
 	}
 
-#if 0	/* commented out after discussion with abartlet.  Do not reenable.
+#if 0	/* commented out after discussion with abartlet.  Do not re-enable.
 	   left here so other do not re-add similar code   --jerry */
        	if (value == NULL || *value == '\0')
 		return;

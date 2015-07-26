@@ -80,7 +80,7 @@ static uint16_t tcp_checksum6(uint16_t *data, size_t n, struct ip6_hdr *ip6)
  */
 int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 {
-	/* FIXME GNU/Hurd: We dont do gratuitous arp yet */
+	/* FIXME GNU/Hurd: We don't do gratuitous arp yet */
 	return -1;
 }
 
@@ -215,7 +215,7 @@ int ctdb_sys_send_tcp(const ctdb_sock_addr *dest,
 			return -1;
 
 		}
-		/* sendto() dont like if the port is set and the socket is
+		/* sendto() don't like if the port is set and the socket is
 		   in raw mode.
 		*/
 		tmpdest = discard_const(dest);

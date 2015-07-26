@@ -25,7 +25,7 @@
     <para><anchor id="AUTO"/><emphasis>SERVER ROLE = AUTO</emphasis></para>
 
     <para>This is the default server role in Samba, and causes Samba to consult
-    the <smbconfoption name="security"/> parameter (if set) to determine the server role, giving compatable behaviours to previous Samba versions.</para>
+    the <smbconfoption name="security"/> parameter (if set) to determine the server role, giving compatible behaviours to previous Samba versions.</para>
 
     <para><anchor id="STANDALONE"/><emphasis>SERVER ROLE = STANDALONE</emphasis></para>
 
