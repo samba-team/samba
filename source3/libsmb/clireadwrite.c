@@ -296,7 +296,7 @@ struct cli_pull_state {
 	 * The maximum is 256:
 	 * - which would be a window of 256 MByte
 	 *   for SMB2 with multi-credit
-	 *   or smb1 unix extentions.
+	 *   or smb1 unix extensions.
 	 */
 	uint16_t max_chunks;
 	uint16_t num_chunks;
@@ -1111,7 +1111,7 @@ struct cli_push_state {
 	 * The maximum is 256:
 	 * - which would be a window of 256 MByte
 	 *   for SMB2 with multi-credit
-	 *   or smb1 unix extentions.
+	 *   or smb1 unix extensions.
 	 */
 	uint16_t max_chunks;
 	uint16_t num_chunks;

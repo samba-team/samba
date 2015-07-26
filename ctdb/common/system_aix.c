@@ -212,7 +212,7 @@ int ctdb_sys_close_capture_socket(void *private_data)
  */
 int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 {
-	/* FIXME AIX: We dont do gratuitous arp yet */
+	/* FIXME AIX: We don't do gratuitous arp yet */
 	return -1;
 }
 

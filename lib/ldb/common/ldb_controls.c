@@ -407,7 +407,7 @@ char *ldb_control_to_string(TALLOC_CTX *mem_ctx, const struct ldb_control *contr
 
 
 /*
- * A little trick to allow to use constants defined in headers rather than
+ * A little trick to allow one to use constants defined in headers rather than
  * hardwritten in the file.
  * "sizeof" will return the \0 char as well so it will take the place of ":"
  * in the length of the string.

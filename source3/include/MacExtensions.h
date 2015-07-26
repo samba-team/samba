@@ -80,18 +80,18 @@ typedef struct _SambaAfpInfo
 */
 
 /*
-** These extentions are only supported with the NT LM 0.12 Dialect. These extentions
+** These extensions are only supported with the NT LM 0.12 Dialect. These extentions
 ** will be process on a share by share bases.
 */
 
 /*
-** Trans2_Query_FS_Information Call is used by the MacCIFS extentions for three reasons.
-** First to see if the remote server share supports the basic Macintosh CIFS extentions.
+** Trans2_Query_FS_Information Call is used by the MacCIFS extensions for three reasons.
+** First to see if the remote server share supports the basic Macintosh CIFS extensions.
 ** Second to return some basic need information about the share to the Macintosh.
-** Third to see if this share support any other Macintosh extentions.
+** Third to see if this share support any other Macintosh extensions.
 **
 ** We will be using infromation levels that are betwwen 0x300 and 0x399 for all Macintosh
-** extentions calls. The first of these will be the SMB_MAC_QUERY_FS_INFO level which
+** extensions calls. The first of these will be the SMB_MAC_QUERY_FS_INFO level which
 ** will allow the server to return the MacQueryFSInfo structure. All fields are Little
 ** Endian unless other wise specified.
 */

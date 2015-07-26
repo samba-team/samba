@@ -97,7 +97,7 @@
 		<varlistentry>
 			<term>ldap_domain</term>
 			<listitem><para>When using the LDAP server in
-			the Active Directory server, this allows to
+			the Active Directory server, this allows one to
 			specify the domain where to access the Active
 			Directory server. This allows using trust
 			relationships while keeping all RFC 2307

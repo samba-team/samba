@@ -1055,7 +1055,7 @@ static BOOL test_OnePrinter(struct torture_context *tctx,
 	ret &= test_EnumPrinterDataEx(tctx, printername, "PrinterDriverData", handle, NULL, NULL);
 	ret &= test_DeviceModes(tctx, printername, handle);
 #if 0
-	/* dont run these at the moment, behaviour is PrinterData API calls (not
+	/* don't run these at the moment, behaviour is PrinterData API calls (not
 	 * dcerpc calls) is almost unpredictable - gd */
 	ret &= test_PrinterData(tctx, printername, handle);
 	ret &= test_PrinterDataW(tctx, printername, handle);
@@ -1765,7 +1765,7 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "\t                 from the printserver\n");
 		fprintf(stderr, "\t[samba3]         will skip some tests samba servers are known\n");
 		fprintf(stderr, "\t                 not to have implemented\n");
-		fprintf(stderr, "\t[architecture=X] allows to define a specific\n");
+		fprintf(stderr, "\t[architecture=X] allows one to define a specific\n");
 		fprintf(stderr, "\t                 architecture to test with. choose between:\n");
 		fprintf(stderr, "\t                 \"Windows NT x86\" or \"Windows x64\"\n");
 		exit(-1);

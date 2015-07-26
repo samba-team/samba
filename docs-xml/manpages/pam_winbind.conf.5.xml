@@ -152,7 +152,7 @@
 		<varlistentry>
 		<term>cached_login = yes|no</term>
 		<listitem><para>
-		Winbind allows to logon using cached credentials when <parameter>winbind offline logon</parameter> is enabled. To use this feature from the PAM module this option must be set. Defaults to "no".
+		Winbind allows one to logon using cached credentials when <parameter>winbind offline logon</parameter> is enabled. To use this feature from the PAM module this option must be set. Defaults to "no".
 		</para></listitem>
 		</varlistentry>
 

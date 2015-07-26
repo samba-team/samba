@@ -277,7 +277,7 @@ Performance Co-Pilot (PCP) support for CTDB
 * Tue Nov 8 2011 : Version 1.12
  - Add new tunable : AllowClientDBAttach that can be used to stop
    client db access during maintenance operations
- - Updated logging for interfaces that are missing or dont exist but are
+ - Updated logging for interfaces that are missing or don't exist but are
    configured to be used.
  - Add timeout argument to ctdb_cmdline_client
  - PDMA support
@@ -343,7 +343,7 @@ Performance Co-Pilot (PCP) support for CTDB
    just do a less disruptive ip-reallocation
  - When starting ctdbd, wait until all initial recoveries have finished 
    before we issue the "startup" event.
-   So dont start services or monitoring until the cluster has
+   So don't start services or monitoring until the cluster has
    stabilized.
  - Major eventscript overhaul by Ronnie, Rusty and Martins and fixes of a few
    bugs found.
@@ -392,14 +392,14 @@ Performance Co-Pilot (PCP) support for CTDB
    "time since last ..." if from either the last recovery OR the last failover
  - Michael A: transaction updates
 * Wed Oct 28 2009 : Version 1.0.101
- - create a separate context for non-monitoring events so they dont interfere with the monitor event
+ - create a separate context for non-monitoring events so they don't interfere with the monitor event
  - make sure to return status 0 in teh callback when we abort an event
 * Wed Oct 28 2009 : Version 1.0.100
  - Change eventscript handling to allow EventScriptTimeout for each individual script instead of for all scripts as a whole.
  - Enhanced logging from the eventscripts, log the name and the duration for each script as it finishes.
  - Add a check to use wbinfo -t for the startup event of samba
  - TEMP: allow clients to attach to databases even when teh node is in recovery mode
- - dont run the monitor event as frequently after an event has failed
+ - don't run the monitor event as frequently after an event has failed
  - DEBUG: in the eventloops, check the local time and warn if the time changes backward or rapidly forward
  - From Metze, fix a bug where recovery master becoming unhealthy did not trigger an ip failover.
  - Disable the multipath script by default
@@ -411,7 +411,7 @@ Performance Co-Pilot (PCP) support for CTDB
  - Fix a SEGV in the new db priority code.
  - From Wolfgang : eliminate a ctdb_fatal() if there is a dmaster violation detected.
  - During testing we often add/delete eventscripts at runtime. This could cause an eventscript to fail and mark the node unhealthy if an eventscript was deleted while we were listing the names. Handle the errorcode and make sure the node does not becomne unhealthy in this case.
- - Lower the debuglevel for the messages when ctdb creates a filedescruiptor so we dont spam the logs with these messages.
+ - Lower the debuglevel for the messages when ctdb creates a filedescruiptor so we don't spam the logs with these messages.
  - Dont have the RPM automatically restart ctdb
  - Volker : add a missing transaction_cancel() in the handling of persistent databases
  - Treat interfaces with the anme ethX* as bond devices in 10.interfaces so we do the correct test for if they are up or not.
@@ -434,7 +434,7 @@ Performance Co-Pilot (PCP) support for CTDB
  - Add more debugging output when eventscripts have trouble. Print a 
    "pstree -p" to the log when scripts have hung.
  - Update the initscript,  only print the "No reclock file used" warning
-   when we do "service ctdb start", dont also print them for all other
+   when we do "service ctdb start", don't also print them for all other
    actions.
  - When changing between unhealthy/healthy state, push a request to the
    recovery master to perform an ip reallocation   instead of waiting for the
@@ -477,7 +477,7 @@ Performance Co-Pilot (PCP) support for CTDB
  - Add machinereadable output to the ctdb getreclock command
  - merge transaction updates from Michael Adam
  - In the new banning code, reset the culprit count to 0 for all nodes that could successfully compelte a full recovery.
- - dont mark the recovery master as a ban culprit because a node in the cluster needs a recovery. this happens naturally when using ctdb recover command so dont make this cause a node to be banned.
+ - don't mark the recovery master as a ban culprit because a node in the cluster needs a recovery. this happens naturally when using ctdb recover command so dont make this cause a node to be banned.
 * Sat Sep 12 2009 : Version 1.0.90
  - Be more forgiving for eventscripts that hang during startup
  - Fix for a banning bug in the new banning logic
@@ -565,7 +565,7 @@ Performance Co-Pilot (PCP) support for CTDB
  - When building initial vnnmap, ignode any nonexisting nodes
  - Add a new nodestate : DELETED that is used when deleting a node from an
    existing cluster.
- - dont remove the ctdb socket when shutting down. This prevents a race in the
+ - don't remove the ctdb socket when shutting down. This prevents a race in the
    initscripts when restarting ctdb quickly after stopping it.
  - TDB nesting reworked.
  - Remove obsolete ipmux
@@ -612,7 +612,7 @@ Performance Co-Pilot (PCP) support for CTDB
  - if we can not pull a database from a remote node during recovery, mark that node as a culprit so it becomes banned
  - increase the loglevel when we volunteer to drop all ip addresses after beeing in recovery mode for too long. Make this timeout tuneable with "RecoveryDropAllIPs" and have it default to 60 seconds
  - Add a new flag TDB_NO_NESTING to the tdb layer to prevent nested transactions which ctdb does not use and does not expect. Have ctdb set this flag to prevent nested transactions from occuring.
- - dont unconditionally kill off ctdb and restrat it on "service ctdb start". Fail "service ctdb start" with an error if ctdb is already running.
+ - don't unconditionally kill off ctdb and restrat it on "service ctdb start". Fail "service ctdb start" with an error if ctdb is already running.
  - Add a new tunable "VerifyRecoveryLock" that can be set to 0 to prevent the main ctdb daemon to verify that the recovery master has locked the reclock file correctly before allowing it to set the recovery mode to active.
  - fix a cosmetic bug with ctdb statistics where certain counters could become negative.
 * Wed Apr 8 2009 : Version 1.0.79
@@ -621,7 +621,7 @@ Performance Co-Pilot (PCP) support for CTDB
  - add a funciton remove_ip to safely remove an ip from an interface, taking care to workaround an issue with linux alias interfaces.
  - Update the natgw eventscript to use the safe remove_ip() function
  - fix a bug in the eventscript child process that would cause the socket to be removed.
- - dont verify nodemap on banned nodes during cluster monitoring
+ - don't verify nodemap on banned nodes during cluster monitoring
  - Update the dodgy SeqnumInterval to have ms resolution
 * Tue Mar 31 2009 : Version 1.0.78
  - Add a notify mechanism so we can send snmptraps/email to external management systems when the node becomes unhealthy
@@ -799,7 +799,7 @@ Performance Co-Pilot (PCP) support for CTDB
 * Fri Jul 18 2008 : Version 1.0.50
  - Dont assume that just because we can establish a TCP connection
    that we are actually talking to a functioning ctdb daemon.
-   So dont mark the node as CONNECTED just because the tcp handshake
+   So don't mark the node as CONNECTED just because the tcp handshake
    was successful.
  - Dont try to set the recmaster to ourself during elections for those
    cases we know this will fail. To remove some annoying benign but scary
@@ -867,7 +867,7 @@ Performance Co-Pilot (PCP) support for CTDB
  - zero out ctdb->freeze_handle when we free/destroy a freeze-child.
    This prevent a heap corruption/ctdb crash bug that could trigger
    if the freeze child times out.
- - we dont need to explicitely thaw the databases from the recovery daemon
+ - we don't need to explicitely thaw the databases from the recovery daemon
    since this is done implicitely when we restore the recovery mode back to normal.
  - track when we start and stop a recovery. Add the 'time it took to complete the
    recovery' to the 'ctdb uptime' output.

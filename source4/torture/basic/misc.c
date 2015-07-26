@@ -750,7 +750,7 @@ static void benchrw_callback(struct smbcli_request *req)
 	struct benchrw_state *state = req->async.private_data;
 	struct torture_context *tctx = state->tctx;
 	
-	/*dont send new requests when torture_numops is reached*/
+	/*don't send new requests when torture_numops is reached*/
 	if ((state->mode == READ_WRITE_DATA)
 	    && (state->completed >= torture_numops)) {
 		state->mode=MAX_OPS_REACHED;

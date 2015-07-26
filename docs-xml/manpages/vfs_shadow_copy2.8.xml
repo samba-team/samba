@@ -182,7 +182,7 @@
 		</term>
                 <listitem>
 		<para>
-		The basedir option allows to specify a directory
+		The basedir option allows one to specify a directory
 		between the share's mount point and the share root,
 		relative to which the file system's snapshots are taken.
 		</para>
@@ -272,7 +272,7 @@
 		<term>shadow:sscanf = yes/no</term>
 		<listitem>
 		<para>
-		This paramter can be used to specify that the time in
+		This parameter can be used to specify that the time in
 		format string is given as an unsigned long integer (%lu)
 		rather than a time strptime() can parse.
 		The result must be a unix time_t time.

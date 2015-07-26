@@ -137,7 +137,7 @@ int main(int argc, const char *argv[])
 		exit(10);
 	}
 
-	/* we dont want to wait for any reply */
+	/* we don't want to wait for any reply */
 	w.tv_sec = 0;
 	w.tv_usec = 0;
 	clnt_control(clnt, CLSET_TIMEOUT, (char *)&w);

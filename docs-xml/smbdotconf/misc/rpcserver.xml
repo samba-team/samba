@@ -49,7 +49,7 @@
 	</para>
 
 	<para>
-		Choosing the <emphasis>external</emphasis> option allows to run
+		Choosing the <emphasis>external</emphasis> option allows one to run
 		a separate daemon or even a completely independent (3rd party)
 		server capable of interfacing with samba via the MS-RPC
 		interface over named pipes.

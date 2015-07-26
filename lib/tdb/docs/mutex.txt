@@ -8,11 +8,11 @@ forming a linked list of records that share a hash value. The individual
 linked lists are protected across processes with 1-byte fcntl locks on the
 starting pointer of the linked list representing a hash value.
 
-The external locking API of tdb allows to lock individual records. Instead of
+The external locking API of tdb allows one to lock individual records. Instead of
 really locking individual records, the tdb API locks a complete linked list
 with a fcntl lock.
 
-The external locking API of tdb also allows to lock the complete database, and
+The external locking API of tdb also allows one to lock the complete database, and
 ctdb uses this facility to freeze databases during a recovery. While the
 so-called allrecord lock is held, all linked lists and all individual records
 are frozen alltogether. Tdb achieves this by locking the complete file range

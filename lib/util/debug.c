@@ -780,7 +780,7 @@ void debug_set_settings(struct debug_settings *settings,
 
 	/*
 	 * If 'logging' is not set, create backend settings from
-	 * deprecated 'syslog' and 'syslog only' paramters
+	 * deprecated 'syslog' and 'syslog only' parameters
 	 */
 	if (logging_param != NULL) {
 		len = strlen(logging_param);

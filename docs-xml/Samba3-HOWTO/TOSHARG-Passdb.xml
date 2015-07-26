@@ -1566,7 +1566,7 @@ refuse machine password change
 			<listitem><para>maximum password age = 90 days.</para></listitem>
 			<listitem><para>minimum password age = 7 days.</para></listitem>
 			<listitem><para>bad lockout attempt = 8 bad logon attempts.</para></listitem>
-			<listitem><para>lockout duration = forever, account must be manually reenabled.</para></listitem>
+			<listitem><para>lockout duration = forever, account must be manually re-enabled.</para></listitem>
 		</orderedlist>
 
 		<para>

@@ -1387,7 +1387,7 @@ static NTSTATUS tar_create_skip_path(struct tar *t,
 
 	if (!isdir) {
 
-		/* 1. if we dont want X and we have X, skip */
+		/* 1. if we don't want X and we have X, skip */
 		if (!t->mode.system && (mode & FILE_ATTRIBUTE_SYSTEM)) {
 			*_skip = true;
 			return NT_STATUS_OK;

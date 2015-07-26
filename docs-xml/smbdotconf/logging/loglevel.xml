@@ -11,7 +11,7 @@
     </para>
 
     <para>This parameter has been extended since the 2.2.x 
-    series, now it allows to specify the debug level for multiple 
+    series, now it allows one to specify the debug level for multiple 
     debug classes. This is to give greater flexibility in the configuration 
     of the system. The following debug classes are currently implemented:
     </para>

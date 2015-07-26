@@ -3100,7 +3100,7 @@ void wcache_invalidate_samlogon(struct winbindd_domain *domain,
         fstring key_str, sid_string;
 	struct winbind_cache *cache;
 
-	/* dont clear cached U/SID and UG/SID entries when we want to logon
+	/* don't clear cached U/SID and UG/SID entries when we want to logon
 	 * offline - gd */
 
 	if (lp_winbind_offline_logon()) {

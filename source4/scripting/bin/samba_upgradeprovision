@@ -1232,7 +1232,7 @@ def rebuild_sd(samdb, names):
     During the different pre release of samba4 security descriptors
     (SD) were notarly broken (up to alpha11 included)
 
-    This function allows to get them back in order, this function works
+    This function allows one to get them back in order, this function works
     only after the database comparison that --full mode uses and which
     populates the dnToRecalculate and dnNotToRecalculate lists.
 

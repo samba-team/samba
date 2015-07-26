@@ -74,7 +74,7 @@
 		<term>ceph:config_file = path</term>
 		<listitem>
 		<para>
-			Allows to define a ceph configfile to use. Empty by default.
+			Allows one to define a ceph configfile to use. Empty by default.
 		</para>
 		<para>
 			Example: ceph:config_file =

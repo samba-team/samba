@@ -1014,7 +1014,7 @@ static void ctdb_client_reply_control(struct ctdb_context *ctdb,
 						 c->errorlen);
 	}
 
-	/* state->outdata now uses resources from c so we dont want c
+	/* state->outdata now uses resources from c so we don't want c
 	   to just dissappear from under us while state is still alive
 	*/
 	talloc_steal(state, c);

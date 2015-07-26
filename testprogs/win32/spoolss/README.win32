@@ -35,7 +35,7 @@ usage: testspoolss.exe <name> [print] [samba3] [architecture=ARCHITECTURE]
                          from the printserver
         [samba3]         will skip some tests samba servers are known
                          not to have implemented
-        [architecture=X] allows to define a specific
+        [architecture=X] allows one to define a specific
                          architecture to test with. choose between:
                          "Windows NT x86" or "Windows x64"
 ..............................................................................

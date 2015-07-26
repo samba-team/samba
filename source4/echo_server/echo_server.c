@@ -264,7 +264,7 @@ static NTSTATUS echo_startup_interfaces(struct echo_server *echo,
 
 	model_ops = process_model_startup("single");
 	if (model_ops == NULL) {
-		DEBUG(0, ("Can't find 'single' proces model_ops\n"));
+		DEBUG(0, ("Can't find 'single' process model_ops\n"));
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 

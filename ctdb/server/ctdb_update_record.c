@@ -43,7 +43,7 @@ struct ctdb_persistent_write_state {
 	uint32_t flags;
 };
 
-/* dont create/update records that does not exist locally */
+/* don't create/update records that does not exist locally */
 #define UPDATE_FLAGS_REPLACE_ONLY	1
 
 /*

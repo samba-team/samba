@@ -1442,7 +1442,7 @@ static void ctdb_vacuum_event(struct tevent_context *ev,
 	struct tevent_fd *fde;
 	int ret;
 
-	/* we dont vacuum if we are in recovery mode, or db frozen */
+	/* we don't vacuum if we are in recovery mode, or db frozen */
 	if (ctdb->recovery_mode == CTDB_RECOVERY_ACTIVE ||
 	    ctdb->freeze_mode[ctdb_db->priority] != CTDB_FREEZE_NONE) {
 		DEBUG(DEBUG_INFO, ("Not vacuuming %s (%s)\n", ctdb_db->db_name,
@@ -1745,7 +1745,7 @@ int32_t ctdb_local_schedule_for_deletion(struct ctdb_db_context *ctdb_db,
 		return ret;
 	}
 
-	/* if we dont have a connection to the daemon we can not send
+	/* if we don't have a connection to the daemon we can not send
 	   a control. For example sometimes from update_record control child
 	   process.
 	*/

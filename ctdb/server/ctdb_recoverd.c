@@ -605,11 +605,11 @@ static int create_missing_remote_databases(struct ctdb_context *ctdb, struct ctd
 
 	/* verify that all other nodes have all our databases */
 	for (j=0; j<nodemap->num; j++) {
-		/* we dont need to ourself ourselves */
+		/* we don't need to ourself ourselves */
 		if (nodemap->nodes[j].pnn == pnn) {
 			continue;
 		}
-		/* dont check nodes that are unavailable */
+		/* don't check nodes that are unavailable */
 		if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
 			continue;
 		}
@@ -669,11 +669,11 @@ static int create_missing_local_databases(struct ctdb_context *ctdb, struct ctdb
 
 	/* verify that we have all database any other node has */
 	for (j=0; j<nodemap->num; j++) {
-		/* we dont need to ourself ourselves */
+		/* we don't need to ourself ourselves */
 		if (nodemap->nodes[j].pnn == pnn) {
 			continue;
 		}
-		/* dont check nodes that are unavailable */
+		/* don't check nodes that are unavailable */
 		if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
 			continue;
 		}
@@ -947,7 +947,7 @@ static int pull_remote_database(struct ctdb_context *ctdb,
 	   (this merges based on rsn)
 	*/
 	for (j=0; j<nodemap->num; j++) {
-		/* dont merge from nodes that are unavailable */
+		/* don't merge from nodes that are unavailable */
 		if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
 			continue;
 		}
@@ -989,7 +989,7 @@ static int update_vnnmap_on_all_nodes(struct ctdb_context *ctdb, struct ctdb_nod
 
 	/* push the new vnn map out to all the nodes */
 	for (j=0; j<nodemap->num; j++) {
-		/* dont push to nodes that are unavailable */
+		/* don't push to nodes that are unavailable */
 		if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
 			continue;
 		}
@@ -1792,7 +1792,7 @@ static bool do_takeover_run(struct ctdb_recoverd *rec,
 		if (ctdb_client_send_message(rec->ctdb, nodes[i],
 					     CTDB_SRVID_DISABLE_TAKEOVER_RUNS,
 					     data) != 0) {
-			DEBUG(DEBUG_INFO,("Failed to reenable takeover runs\n"));
+			DEBUG(DEBUG_INFO,("Failed to re-enable takeover runs\n"));
 		}
 	}
 
@@ -2410,7 +2410,7 @@ static bool ctdb_election_win(struct ctdb_recoverd *rec, struct election_message
 
 	ctdb_election_data(rec, &myem);
 
-	/* we cant win if we dont have the recmaster capability */
+	/* we cant win if we don't have the recmaster capability */
 	if ((rec->ctdb->capabilities & CTDB_CAP_RECMASTER) == 0) {
 		return false;
 	}
@@ -3371,7 +3371,7 @@ static int verify_local_ip_allocation(struct ctdb_context *ctdb, struct ctdb_rec
 	}
 
 	/* verify that we have the ip addresses we should have
-	   and we dont have ones we shouldnt have.
+	   and we don't have ones we shouldnt have.
 	   if we find an inconsistency we set recmode to
 	   active on the local node and wait for the recmaster
 	   to do a full blown recovery.

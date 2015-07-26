@@ -426,7 +426,7 @@ Example2 shows how to set the account expiration of user User2 so it will never 
 Example3:
 samba-tool user setexpiry --days=20 --filter=samaccountname=User3
 
-Example3 shows how to set the account expiration date to end of day 20 days from the current day.  The username or sAMAccountName is specified using the --filter= paramter and the username in this example is User3.
+Example3 shows how to set the account expiration date to end of day 20 days from the current day.  The username or sAMAccountName is specified using the --filter= parameter and the username in this example is User3.
 
 Example4:
 samba-tool user setexpiry --noexpiry User4

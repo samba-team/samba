@@ -295,7 +295,7 @@ ADS_STATUS ads_add_gpo_link(ADS_STRUCT *ads,
 	const char *gp_link, *gp_link_new;
 	ADS_MODLIST mods;
 
-	/* although ADS allows to set anything here, we better check here if
+	/* although ADS allows one to set anything here, we better check here if
 	 * the gpo_dn is sane */
 
 	if (!strnequal(gpo_dn, "LDAP://CN={", strlen("LDAP://CN={")) != 0) {

@@ -25,7 +25,7 @@
 
 	<para>
 	Choosing the <emphasis>fork</emphasis> option will cause samba to fork
-	a separate proces for each daemon configured this way. Each daemon may
+	a separate process for each daemon configured this way. Each daemon may
 	in turn fork a number of children used to handle requests from multiple
 	smbds and direct tcp/ip connections (if the Endpoint Mapper is
 	enabled). Communication with smbd happens over named pipes and require

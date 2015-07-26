@@ -1108,7 +1108,7 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 		return -1;
 	}
 
-	/* dont allow any local clients to attach while we are in recovery mode
+	/* don't allow any local clients to attach while we are in recovery mode
 	 * except for the recovery daemon.
 	 * allow all attach from the network since these are always from remote
 	 * recovery daemons.

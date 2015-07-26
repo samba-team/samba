@@ -72,7 +72,7 @@ try_again:
 
 	status = smb_raw_lock(cli->tree, &io);
 
-	/* If we dont use timeouts and we got file lock conflict
+	/* If we don't use timeouts and we got file lock conflict
 	   just try the lock again.
 	*/
 	if (lock_timeout==0) {

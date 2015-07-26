@@ -123,7 +123,7 @@
 </refsect1>
 <refsect1>
 	<title>Version 2 of the protocol</title>
-	<para>Protocol version 2 is an approach to solve the problems introduced with protcol v1.
+	<para>Protocol version 2 is an approach to solve the problems introduced with protocol  v1.
 	From the users perspective, the following changes are most prominent among other enhancements:
 	</para>
 	<itemizedlist>

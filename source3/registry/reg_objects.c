@@ -304,7 +304,7 @@ int regsubkey_ctr_numkeys( struct regsubkey_ctr *ctr )
 }
 
 /***********************************************************************
- Retreive a specific key string
+ Retrieve a specific key string
  **********************************************************************/
 
 char* regsubkey_ctr_specific_key( struct regsubkey_ctr *ctr, uint32_t key_index )
@@ -378,7 +378,7 @@ uint32_t regval_type(struct regval_blob *val)
 }
 
 /***********************************************************************
- Retreive a pointer to a specific value.  Caller shoud dup the structure
+ Retrieve a pointer to a specific value.  Caller shoud dup the structure
  since this memory will go away when the ctr is free()'d
  **********************************************************************/
 

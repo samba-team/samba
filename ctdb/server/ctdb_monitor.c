@@ -486,7 +486,7 @@ int32_t ctdb_control_modflags(struct ctdb_context *ctdb, TDB_DATA indata)
 	node->flags   = c->new_flags & ~NODE_FLAGS_DISCONNECTED;
 	node->flags  |= (c->old_flags & NODE_FLAGS_DISCONNECTED);
 
-	/* we dont let other nodes modify our STOPPED status */
+	/* we don't let other nodes modify our STOPPED status */
 	if (c->pnn == ctdb->pnn) {
 		node->flags &= ~NODE_FLAGS_STOPPED;
 		if (old_flags & NODE_FLAGS_STOPPED) {
@@ -494,7 +494,7 @@ int32_t ctdb_control_modflags(struct ctdb_context *ctdb, TDB_DATA indata)
 		}
 	}
 
-	/* we dont let other nodes modify our BANNED status */
+	/* we don't let other nodes modify our BANNED status */
 	if (c->pnn == ctdb->pnn) {
 		node->flags &= ~NODE_FLAGS_BANNED;
 		if (old_flags & NODE_FLAGS_BANNED) {
