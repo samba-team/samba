@@ -10,7 +10,7 @@ use Exporter;
 
 use strict;
 use Parse::Pidl qw(warning fatal error);
-use Parse::Pidl::Typelist qw(hasType resolveType getType mapTypeName expandAlias);
+use Parse::Pidl::Typelist qw(hasType resolveType getType mapTypeName expandAlias bitmap_type_fn enum_type_fn);
 use Parse::Pidl::Util qw(has_property ParseExpr unmake_str);
 use Parse::Pidl::NDR qw(GetPrevLevel GetNextLevel ContainsDeferred ContainsPipe is_charset_array);
 use Parse::Pidl::CUtil qw(get_value_of get_pointer_to);
@@ -953,14 +953,58 @@ sub ConvertObjectFromPythonData($$$$$$;$)
 		$actual_ctype = $actual_ctype->{DATA};
 	}
 
-	if ($actual_ctype->{TYPE} eq "ENUM" or $actual_ctype->{TYPE} eq "BITMAP") {
+	# We need to cover ENUMs, BITMAPS and SCALAR values here, as
+	# all could otherwise be assigned invalid integer values
+	my $ctype_alias = "";
+	my $uint_max = "";
+	if ($actual_ctype->{TYPE} eq "ENUM") {
+	        # Importantly, ENUM values are unsigned in pidl, and
+	        # typically map to uint32
+	        $ctype_alias = enum_type_fn($actual_ctype);
+	} elsif ($actual_ctype->{TYPE} eq "BITMAP") {
+	        $ctype_alias = bitmap_type_fn($actual_ctype);
+	} elsif ($actual_ctype->{TYPE} eq "SCALAR") {
+	        $ctype_alias = expandAlias($actual_ctype->{NAME});
+	}
+
+	# This is the unsigned Python Integer -> C integer validation
+	# case.  The signed case is below.
+	if ($ctype_alias  =~ /^(uint[0-9]*|hyper|udlong|udlongr
+                                |NTTIME_hyper|NTTIME|NTTIME_1sec
+                                |uid_t|gid_t)$/x) {
+	        $self->pidl("{");
+		$self->indent;
+		$self->pidl("const unsigned long long uint_max = (sizeof($target) == 8) ? UINT64_MAX : (unsigned long long)((1ULL << (sizeof($target) * 8)) - 1);");
 		$self->pidl("if (PyLong_Check($cvar)) {");
 		$self->indent;
-		$self->pidl("$target = PyLong_AsLongLong($cvar);");
+		$self->pidl("unsigned long long test_var;");
+		$self->pidl("test_var = PyLong_AsUnsignedLongLong($cvar);");
+		$self->pidl("if (PyErr_Occurred() != NULL) {");
+		$self->indent;
+		$self->pidl($fail);
+		$self->deindent;
+		$self->pidl("}");
+		$self->pidl("if (test_var > uint_max) {");
+		$self->indent;
+		$self->pidl("PyErr_Format(PyExc_OverflowError, \"Expected type %s or %s within range 0 - %llu, got %llu\",\\");
+		$self->pidl("  PyInt_Type.tp_name, PyLong_Type.tp_name, uint_max, test_var);");
+		$self->pidl($fail);
+		$self->deindent;
+		$self->pidl("}");
+		$self->pidl("$target = test_var;");
 		$self->deindent;
 		$self->pidl("} else if (PyInt_Check($cvar)) {");
 		$self->indent;
-		$self->pidl("$target = PyInt_AsLong($cvar);");
+		$self->pidl("long test_var;");
+		$self->pidl("test_var = PyInt_AsLong($cvar);");
+		$self->pidl("if (test_var < 0 || test_var > uint_max) {");
+		$self->indent;
+		$self->pidl("PyErr_Format(PyExc_OverflowError, \"Expected type %s or %s within range 0 - %llu, got %ld\",\\");
+		$self->pidl("  PyInt_Type.tp_name, PyLong_Type.tp_name, uint_max, test_var);");
+		$self->pidl($fail);
+		$self->deindent;
+		$self->pidl("}");
+		$self->pidl("$target = test_var;");
 		$self->deindent;
 		$self->pidl("} else {");
 		$self->indent;
@@ -969,34 +1013,61 @@ sub ConvertObjectFromPythonData($$$$$$;$)
 		$self->pidl($fail);
 		$self->deindent;
 		$self->pidl("}");
+		$self->deindent;
+		$self->pidl("}");
 		return;
 	}
-	if ($actual_ctype->{TYPE} eq "SCALAR" ) {
-		if (expandAlias($actual_ctype->{NAME}) =~ /^(u?int64|hyper|dlong|udlong|udlongr
-                                                           |NTTIME_hyper|NTTIME|NTTIME_1sec
-                                                           |uid_t|gid_t)$/x) {
-			$self->pidl("if (PyLong_Check($cvar)) {");
-			$self->indent;
-			$self->pidl("$target = PyLong_AsLongLong($cvar);");
-			$self->deindent;
-			$self->pidl("} else if (PyInt_Check($cvar)) {");
-			$self->indent;
-			$self->pidl("$target = PyInt_AsLong($cvar);");
-			$self->deindent;
-			$self->pidl("} else {");
-			$self->indent;
-			$self->pidl("PyErr_Format(PyExc_TypeError, \"Expected type %s or %s\",\\");
-			$self->pidl("  PyInt_Type.tp_name, PyLong_Type.tp_name);");
-			$self->pidl($fail);
-			$self->deindent;
-			$self->pidl("}");
-			return;
-		}
-		if (expandAlias($actual_ctype->{NAME}) =~ /^(char|u?int[0-9]*|time_t)$/) {
-			$self->pidl("PY_CHECK_TYPE(&PyInt_Type, $cvar, $fail);");
-			$self->pidl("$target = PyInt_AsLong($cvar);");
-			return;
-		}
+
+	# Confirm the signed python integer fits in the C type
+	# correctly.  It is subtly different from the unsigned case
+	# above, so while it looks like a duplicate, it is not
+	# actually a duplicate.
+	if ($ctype_alias  =~ /^(dlong|char|int[0-9]*|time_t)$/x) {
+	        $self->pidl("{");
+		$self->indent;
+		$self->pidl("const long long int_max = (long long)((1ULL << (sizeof($target) * 8 - 1)) - 1);");
+		$self->pidl("const long long int_min = -int_max - 1;");
+		$self->pidl("if (PyLong_Check($cvar)) {");
+		$self->indent;
+		$self->pidl("long long test_var;");
+		$self->pidl("test_var = PyLong_AsLongLong($cvar);");
+		$self->pidl("if (PyErr_Occurred() != NULL) {");
+		$self->indent;
+		$self->pidl($fail);
+		$self->deindent;
+		$self->pidl("}");
+		$self->pidl("if (test_var < int_min || test_var > int_max) {");
+		$self->indent;
+		$self->pidl("PyErr_Format(PyExc_OverflowError, \"Expected type %s or %s within range %lld - %lld, got %lld\",\\");
+		$self->pidl("  PyInt_Type.tp_name, PyLong_Type.tp_name, int_min, int_max, test_var);");
+		$self->pidl($fail);
+		$self->deindent;
+		$self->pidl("}");
+		$self->pidl("$target = test_var;");
+		$self->deindent;
+		$self->pidl("} else if (PyInt_Check($cvar)) {");
+		$self->indent;
+		$self->pidl("long test_var;");
+		$self->pidl("test_var = PyInt_AsLong($cvar);");
+		$self->pidl("if (test_var < int_min || test_var > int_max) {");
+		$self->indent;
+		$self->pidl("PyErr_Format(PyExc_OverflowError, \"Expected type %s or %s within range %lld - %lld, got %ld\",\\");
+		$self->pidl("  PyInt_Type.tp_name, PyLong_Type.tp_name, int_min, int_max, test_var);");
+		$self->pidl($fail);
+		$self->deindent;
+		$self->pidl("}");
+		$self->pidl("$target = test_var;");
+		$self->deindent;
+		$self->pidl("} else {");
+		$self->indent;
+		$self->pidl("PyErr_Format(PyExc_TypeError, \"Expected type %s or %s\",\\");
+		$self->pidl("  PyInt_Type.tp_name, PyLong_Type.tp_name);");
+		$self->pidl($fail);
+		$self->deindent;
+		$self->pidl("}");
+		$self->deindent;
+		$self->pidl("}");
+		return;
 	}
 
 	if ($actual_ctype->{TYPE} eq "STRUCT" or $actual_ctype->{TYPE} eq "INTERFACE") {
@@ -1202,15 +1273,27 @@ sub ConvertScalarToPython($$$)
 	$ctypename = expandAlias($ctypename);
 
 	if ($ctypename =~ /^(int64|dlong)$/) {
-		return "PyLong_FromLongLong($cvar)";
+		return "($cvar > LONG_MAX || $cvar < LONG_MIN) ? PyLong_FromLongLong($cvar) : PyInt_FromLong($cvar)";
 	}
 
-	if ($ctypename =~ /^(uint64|hyper|udlong|udlongr|NTTIME_hyper|NTTIME|NTTIME_1sec|uid_t|gid_t)$/) {
-		return "PyLong_FromUnsignedLongLong($cvar)";
+	if ($ctypename =~ /^(uint64|hyper|NTTIME_hyper|NTTIME|NTTIME_1sec|udlong|udlongr|uid_t|gid_t)$/) {
+		return "$cvar > LONG_MAX ? PyLong_FromUnsignedLongLong($cvar) : PyInt_FromLong($cvar)";
 	}
 
-	if ($ctypename =~ /^(char|u?int[0-9]*|time_t)$/) {
+	if ($ctypename =~ /^(char|int|int8|int16|int32|time_t)$/) {
 		return "PyInt_FromLong($cvar)";
+	}
+
+	# Needed to ensure unsigned values in a 32 or 16 bit enum is
+	# cast correctly to a uint32_t, not sign extended to a a
+	# possibly 64 bit unsigned long.  (enums are signed in C,
+	# unsigned in NDR)
+	if ($ctypename =~ /^(uint32|uint3264)$/) {
+		return "(uint32_t)$cvar > LONG_MAX ? PyLong_FromUnsignedLong((uint32_t)$cvar) : PyInt_FromLong((uint32_t)$cvar)";
+	}
+
+	if ($ctypename =~ /^(uint|uint8|uint16|uint1632)$/) {
+		return "PyInt_FromLong((uint16_t)$cvar)";
 	}
 
 	if ($ctypename eq "DATA_BLOB") {
@@ -1487,7 +1570,7 @@ sub Parse($$$$$)
 		my $py_obj;
 		my ($ctype, $cvar) = @{$h->{'val'}};
 		if ($cvar =~ /^[0-9]+$/ or $cvar =~ /^0x[0-9a-fA-F]+$/) {
-			$py_obj = "PyInt_FromLong($cvar)";
+			$py_obj = "$cvar > LONG_MAX ? PyLong_FromUnsignedLongLong($cvar) : PyInt_FromLong($cvar)";
 		} elsif ($cvar =~ /^".*"$/) {
 			$py_obj = "PyString_FromString($cvar)";
 		} else {
