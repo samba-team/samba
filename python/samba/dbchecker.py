@@ -82,6 +82,8 @@ class dbcheck(object):
         self.wellknown_sds = get_wellknown_sds(self.samdb)
         self.fix_all_missing_objectclass = False
 
+        self.dn_set = set()
+
         self.name_map = {}
         try:
             res = samdb.search(base="CN=DnsAdmins,CN=Users,%s" % samdb.domain_dn(), scope=ldb.SCOPE_BASE,
@@ -127,12 +129,12 @@ class dbcheck(object):
 
     def check_database(self, DN=None, scope=ldb.SCOPE_SUBTREE, controls=[], attrs=['*']):
         '''perform a database check, returning the number of errors found'''
-
         res = self.samdb.search(base=DN, scope=scope, attrs=['dn'], controls=controls)
         self.report('Checking %u objects' % len(res))
         error_count = 0
 
         for object in res:
+            self.dn_set.add(str(object.dn))
             error_count += self.check_object(object.dn, attrs=attrs)
 
         if DN is None:
@@ -1433,7 +1435,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                 error_count += 1
 
         try:
-            if dn != self.samdb.get_root_basedn():
+            if dn != self.samdb.get_root_basedn() and str(dn.parent()) not in self.dn_set:
                 res = self.samdb.search(base=dn.parent(), scope=ldb.SCOPE_BASE,
                                         controls=["show_recycled:1", "show_deleted:1"])
         except ldb.LdbError, (enum, estr):
