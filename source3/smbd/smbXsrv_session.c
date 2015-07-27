@@ -1776,6 +1776,15 @@ NTSTATUS smb2srv_session_lookup_conn(struct smbXsrv_connection *conn,
 					  session);
 }
 
+NTSTATUS smb2srv_session_lookup_client(struct smbXsrv_client *client,
+				       uint64_t session_id, NTTIME now,
+				       struct smbXsrv_session **session)
+{
+	struct smbXsrv_session_table *table = client->session_table;
+	return smb2srv_session_lookup_raw(table, NULL, session_id, now,
+					  session);
+}
+
 struct smbXsrv_session_global_traverse_state {
 	int (*fn)(struct smbXsrv_session_global0 *, void *);
 	void *private_data;
