@@ -30,6 +30,7 @@ bld.SAMBA_SUBSYSTEM('close-low-fd',
                     local_include=False)
 
 samba_debug_add_deps = ''
+samba_debug_add_inc  = ''
 
 if bld.CONFIG_SET('HAVE_GPFS'):
     bld.SAMBA_SUBSYSTEM('gpfswrap',
@@ -38,12 +39,14 @@ if bld.CONFIG_SET('HAVE_GPFS'):
                         local_include=False,
                         includes=bld.CONFIG_GET('CPPPATH_GPFS'))
     samba_debug_add_deps += ' gpfswrap'
+    samba_debug_add_inc  += bld.CONFIG_GET('CPPPATH_GPFS')
 
 bld.SAMBA_LIBRARY('samba-debug',
                   source='debug.c',
                   deps='replace time-basic close-low-fd talloc socket-blocking' + samba_debug_add_deps,
                   public_deps='systemd systemd-journal lttng-ust',
                   local_include=False,
+                  includes=samba_debug_add_inc,
                   private_library=True)
 
 bld.SAMBA_LIBRARY('socket-blocking',
