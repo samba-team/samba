@@ -1833,10 +1833,26 @@ static NTSTATUS smbd_smb2_request_check_session(struct smbd_smb2_request *req)
 
 	req->last_session_id = 0;
 
-	/* lookup an existing session */
-	status = smb2srv_session_lookup_conn(req->xconn,
-					     in_session_id, now,
-					     &session);
+	/* look an existing session up */
+	switch (in_opcode) {
+	case SMB2_OP_SESSSETUP:
+		/*
+		 * For a session bind request, we don't have the
+		 * channel set up at this point yet, so we defer
+		 * the verification that the connection belongs
+		 * to the session to the session setup code, which
+		 * can look at the session binding flags.
+		 */
+		status = smb2srv_session_lookup_client(req->xconn->client,
+						       in_session_id, now,
+						       &session);
+		break;
+	default:
+		status = smb2srv_session_lookup_conn(req->xconn,
+						     in_session_id, now,
+						     &session);
+		break;
+	}
 	if (session) {
 		req->session = session;
 		req->last_session_id = in_session_id;
