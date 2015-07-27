@@ -17,3 +17,7 @@ def set_options(opt):
     opt.add_option('--without-lttng',
                    help=("Disable lttng integration"),
                    action='store_false', dest='enable_lttng')
+
+    opt.add_option('--with-gpfs',
+                   help=("Directory under which gpfs headers are installed"),
+                   action="store", dest='gpfs_headers_dir', default="/usr/lpp/mmfs/include/")
