@@ -705,7 +705,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         '''Read metadata properties and list attributes in it.
            raises KeyError if the attid is unknown.'''
 
-        list_att = []
+        set_att = set()
         list_attid = []
 
         repl = ndr_unpack(drsblobs.replPropertyMetaDataBlob, str(val))
@@ -713,10 +713,10 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
 
         for o in repl.ctr.array:
             att = self.samdb_schema.get_lDAPDisplayName_by_attid(o.attid)
-            list_att.append(att.lower())
+            set_att.add(att.lower())
             list_attid.append(o.attid)
 
-        return (list_att, list_attid)
+        return (set_att, list_attid)
 
 
     def fix_metadata(self, dn, attr):
@@ -1173,8 +1173,8 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             return 1
         obj = res[0]
         error_count = 0
-        list_attrs_from_md = []
-        list_attrs_seen = []
+        set_attrs_from_md = set()
+        set_attrs_seen = set()
         got_repl_property_meta_data = False
         got_objectclass = False
 
@@ -1230,7 +1230,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                     # based on what other attributes we see.
 
                 try:
-                    (list_attrs_from_md, list_attid_from_md) = self.process_metadata(obj[attrname])
+                    (set_attrs_from_md, list_attid_from_md) = self.process_metadata(obj[attrname])
                 except KeyError:
                     error_count += 1
                     self.err_replmetadata_unknown_attid(dn, attrname, obj[attrname])
@@ -1346,7 +1346,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             if (not flag & dsdb.DS_FLAG_ATTR_NOT_REPLICATED
                 and not flag & dsdb.DS_FLAG_ATTR_IS_CONSTRUCTED
                 and not self.samdb_schema.get_linkId_from_lDAPDisplayName(attrname)):
-                list_attrs_seen.append(str(attrname).lower())
+                set_attrs_seen.add(str(attrname).lower())
 
             if syntax_oid in [ dsdb.DSDB_SYNTAX_BINARY_DN, dsdb.DSDB_SYNTAX_OR_NAME,
                                dsdb.DSDB_SYNTAX_STRING_DN, ldb.SYNTAX_DN ]:
@@ -1417,17 +1417,17 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
 
                     else:
                         self.report("Not fixing isDeleted originating_change_time on '%s'" % str(dn))
-            for att in list_attrs_seen:
-                if not att in list_attrs_from_md:
-                    if show_dn:
-                        self.report("On object %s" % dn)
-                        show_dn = False
-                    error_count += 1
-                    self.report("ERROR: Attribute %s not present in replication metadata" % att)
-                    if not self.confirm_all("Fix missing replPropertyMetaData element '%s'" % att, 'fix_all_metadata'):
-                        self.report("Not fixing missing replPropertyMetaData element '%s'" % att)
-                        continue
-                    self.fix_metadata(dn, att)
+
+            for att in set_attrs_seen.difference(set_attrs_from_md):
+                if show_dn:
+                    self.report("On object %s" % dn)
+                    show_dn = False
+                error_count += 1
+                self.report("ERROR: Attribute %s not present in replication metadata" % att)
+                if not self.confirm_all("Fix missing replPropertyMetaData element '%s'" % att, 'fix_all_metadata'):
+                    self.report("Not fixing missing replPropertyMetaData element '%s'" % att)
+                    continue
+                self.fix_metadata(dn, att)
 
         if self.is_fsmo_role(dn):
             if "fSMORoleOwner" not in obj and ("*" in attrs or "fsmoroleowner" in map(str.lower, attrs)):
