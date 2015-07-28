@@ -1237,6 +1237,20 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                 if sorted(list_attid_from_md[:-1]) != list_attid_from_md[:-1]:
                     error_count += 1
                     self.err_replmetadata_unsorted_attid(dn, attrname, obj[attrname])
+                else:
+                    # Here we check that the first attid is 0
+                    # (objectClass) and that the last on is the RDN
+                    # from the DN.
+                    rdn_attid = self.samdb_schema.get_attid_from_lDAPDisplayName(dn.get_rdn_name())
+                    if list_attid_from_md[-1] != rdn_attid:
+                        error_count += 1
+                        self.report("ERROR: Not fixing incorrect final attributeID in '%s' on '%s', it should match the RDN %s" %
+                                    (attrname, str(dn), dn.get_rdn_name()))
+
+                    if list_attid_from_md[0] != 0:
+                        error_count += 1
+                        self.report("ERROR: Not fixing incorrect inital attributeID in '%s' on '%s', it should be objectClass" %
+                                    (attrname, str(dn)))
 
                 got_repl_property_meta_data = True
                 continue
