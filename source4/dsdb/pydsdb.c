@@ -259,7 +259,7 @@ static PyObject *py_dsdb_get_oid_from_attid(PyObject *self, PyObject *args)
 	WERROR status;
 	TALLOC_CTX *mem_ctx;
 
-	if (!PyArg_ParseTuple(args, "Oi", &py_ldb, &attid))
+	if (!PyArg_ParseTuple(args, "OI", &py_ldb, &attid))
 		return NULL;
 
 	PyErr_LDB_OR_RAISE(py_ldb, ldb);
@@ -452,7 +452,7 @@ static PyObject *py_dsdb_get_lDAPDisplayName_by_attid(PyObject *self, PyObject *
 	const struct dsdb_attribute *a;
 	uint32_t attid;
 
-	if (!PyArg_ParseTuple(args, "Oi", &py_ldb, &attid))
+	if (!PyArg_ParseTuple(args, "OI", &py_ldb, &attid))
 		return NULL;
 
 	PyErr_LDB_OR_RAISE(py_ldb, ldb);
