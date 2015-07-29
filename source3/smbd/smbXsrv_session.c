@@ -1387,6 +1387,26 @@ NTSTATUS smbXsrv_session_find_channel(const struct smbXsrv_session *session,
 	return NT_STATUS_USER_SESSION_DELETED;
 }
 
+NTSTATUS smbXsrv_session_find_auth(const struct smbXsrv_session *session,
+				   const struct smbXsrv_connection *conn,
+				   NTTIME now,
+				   struct smbXsrv_session_auth0 **_a)
+{
+	struct smbXsrv_session_auth0 *a;
+
+	for (a = session->pending_auth; a != NULL; a = a->next) {
+		if (a->connection == conn) {
+			if (now != 0) {
+				a->idle_time = now;
+			}
+			*_a = a;
+			return NT_STATUS_OK;
+		}
+	}
+
+	return NT_STATUS_USER_SESSION_DELETED;
+}
+
 struct smb2srv_session_shutdown_state {
 	struct tevent_queue *wait_queue;
 };
