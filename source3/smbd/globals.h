@@ -545,6 +545,12 @@ NTSTATUS smbXsrv_session_find_auth(const struct smbXsrv_session *session,
 				   const struct smbXsrv_connection *conn,
 				   NTTIME now,
 				   struct smbXsrv_session_auth0 **_a);
+NTSTATUS smbXsrv_session_create_auth(struct smbXsrv_session *session,
+				     struct smbXsrv_connection *conn,
+				     NTTIME now,
+				     uint8_t in_flags,
+				     uint8_t in_security_mode,
+				     struct smbXsrv_session_auth0 **_a);
 struct tevent_req *smb2srv_session_shutdown_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
 					struct smbXsrv_session *session,

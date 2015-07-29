@@ -1407,6 +1407,59 @@ NTSTATUS smbXsrv_session_find_auth(const struct smbXsrv_session *session,
 	return NT_STATUS_USER_SESSION_DELETED;
 }
 
+static int smbXsrv_session_auth0_destructor(struct smbXsrv_session_auth0 *a)
+{
+	if (a->session == NULL) {
+		return 0;
+	}
+
+	DLIST_REMOVE(a->session->pending_auth, a);
+	a->session = NULL;
+	return 0;
+}
+
+NTSTATUS smbXsrv_session_create_auth(struct smbXsrv_session *session,
+				     struct smbXsrv_connection *conn,
+				     NTTIME now,
+				     uint8_t in_flags,
+				     uint8_t in_security_mode,
+				     struct smbXsrv_session_auth0 **_a)
+{
+	struct smbXsrv_session_auth0 *a;
+	NTSTATUS status;
+
+	status = smbXsrv_session_find_auth(session, conn, 0, &a);
+	if (NT_STATUS_IS_OK(status)) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	a = talloc_zero(session, struct smbXsrv_session_auth0);
+	if (a == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	a->session = session;
+	a->connection = conn;
+	a->in_flags = in_flags;
+	a->in_security_mode = in_security_mode;
+	a->creation_time = now;
+	a->idle_time = now;
+
+	if (conn->protocol >= PROTOCOL_SMB3_10) {
+		a->preauth = talloc(a, struct smbXsrv_preauth);
+		if (a->preauth == NULL) {
+			TALLOC_FREE(session);
+			return NT_STATUS_NO_MEMORY;
+		}
+		*a->preauth = conn->smb2.preauth;
+	}
+
+	talloc_set_destructor(a, smbXsrv_session_auth0_destructor);
+	DLIST_ADD_END(session->pending_auth, a, NULL);
+
+	*_a = a;
+	return NT_STATUS_OK;
+}
+
 struct smb2srv_session_shutdown_state {
 	struct tevent_queue *wait_queue;
 };
