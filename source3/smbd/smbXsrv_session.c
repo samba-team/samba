@@ -51,12 +51,6 @@ struct smbXsrv_session_table {
 	} global;
 };
 
-static NTSTATUS smb2srv_session_lookup_raw(struct smbXsrv_session_table *table,
-					   /* conn: optional */
-					   struct smbXsrv_connection *conn,
-					   uint64_t session_id, NTTIME now,
-					   struct smbXsrv_session **session);
-
 static struct db_context *smbXsrv_session_global_db_ctx = NULL;
 
 NTSTATUS smbXsrv_session_global_init(void)
