@@ -177,6 +177,7 @@ static void smbd_smb2_request_sesssetup_done(struct tevent_req *subreq)
 }
 
 static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
+					struct smbXsrv_session_auth0 **_auth,
 					struct smbd_smb2_request *smb2req,
 					uint8_t in_security_mode,
 					struct auth_session_info *session_info,
@@ -187,6 +188,7 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 	bool guest = false;
 	uint8_t session_key[16];
 	struct smbXsrv_session *x = session;
+	struct smbXsrv_session_auth0 *auth = *_auth;
 	struct smbXsrv_connection *xconn = smb2req->xconn;
 	struct _derivation {
 		DATA_BLOB label;
@@ -199,6 +201,8 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 		struct _derivation application;
 	} derivation = { };
 
+	*_auth = NULL;
+
 	if (xconn->protocol >= PROTOCOL_SMB3_10) {
 		struct smbXsrv_preauth *preauth;
 		struct _derivation *d;
@@ -206,7 +210,7 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 		struct hc_sha512state sctx;
 		size_t i;
 
-		preauth = talloc_move(smb2req, &session->preauth);
+		preauth = talloc_move(smb2req, &auth->preauth);
 
 		samba_SHA512_Init(&sctx);
 		samba_SHA512_Update(&sctx, preauth->sha512_value,
@@ -440,7 +444,7 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 	session->global->channels[0].auth_session_info_seqnum =
 		session->global->auth_session_info_seqnum;
 	session->global->auth_time = timeval_to_nttime(&smb2req->request_time);
-	session->global->expiration_time = gensec_expire_time(session->gensec);
+	session->global->expiration_time = gensec_expire_time(auth->gensec);
 
 	if (!session_claim(session)) {
 		DEBUG(1, ("smb2: Failed to claim session "
@@ -449,6 +453,7 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 		return NT_STATUS_LOGON_FAILURE;
 	}
 
+	TALLOC_FREE(auth);
 	status = smbXsrv_session_update(session);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("smb2: Failed to update session for vuid=%llu - %s\n",
@@ -473,6 +478,7 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 }
 
 static NTSTATUS smbd_smb2_reauth_generic_return(struct smbXsrv_session *session,
+					struct smbXsrv_session_auth0 **_auth,
 					struct smbd_smb2_request *smb2req,
 					struct auth_session_info *session_info,
 					uint16_t *out_session_flags,
@@ -480,6 +486,9 @@ static NTSTATUS smbd_smb2_reauth_generic_return(struct smbXsrv_session *session,
 {
 	NTSTATUS status;
 	struct smbXsrv_session *x = session;
+	struct smbXsrv_session_auth0 *auth = *_auth;
+
+	*_auth = NULL;
 
 	data_blob_clear_free(&session_info->session_key);
 	session_info->session_key = data_blob_dup_talloc(session_info,
@@ -507,8 +516,9 @@ static NTSTATUS smbd_smb2_reauth_generic_return(struct smbXsrv_session *session,
 	session->global->channels[0].auth_session_info_seqnum =
 		session->global->auth_session_info_seqnum;
 	session->global->auth_time = timeval_to_nttime(&smb2req->request_time);
-	session->global->expiration_time = gensec_expire_time(session->gensec);
+	session->global->expiration_time = gensec_expire_time(auth->gensec);
 
+	TALLOC_FREE(auth);
 	status = smbXsrv_session_update(session);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("smb2: Failed to update session for vuid=%llu - %s\n",
@@ -537,6 +547,7 @@ struct smbd_smb2_session_setup_state {
 	uint64_t in_previous_session_id;
 	DATA_BLOB in_security_buffer;
 	struct smbXsrv_session *session;
+	struct smbXsrv_session_auth0 *auth;
 	struct auth_session_info *session_info;
 	uint16_t out_session_flags;
 	DATA_BLOB out_security_buffer;
@@ -608,14 +619,14 @@ static struct tevent_req *smbd_smb2_session_setup_send(TALLOC_CTX *mem_ctx,
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_SESSION_EXPIRED)) {
 			status = NT_STATUS_OK;
 		}
-		if (NT_STATUS_IS_OK(status)) {
-			state->session->status = NT_STATUS_MORE_PROCESSING_REQUIRED;
-			status = NT_STATUS_MORE_PROCESSING_REQUIRED;
-			TALLOC_FREE(state->session->gensec);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+			status = NT_STATUS_OK;
 		}
-		if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-			tevent_req_nterror(req, status);
+		if (tevent_req_nterror(req, status)) {
 			return tevent_req_post(req, ev);
+		}
+		if (!(in_flags & SMB2_SESSION_FLAG_BINDING)) {
+			state->session->status = NT_STATUS_MORE_PROCESSING_REQUIRED;
 		}
 	}
 
@@ -626,27 +637,44 @@ static struct tevent_req *smbd_smb2_session_setup_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	if (state->session->gensec == NULL) {
-		status = auth_generic_prepare(state->session,
+	status = smbXsrv_session_find_auth(state->session, smb2req->xconn,
+					   now, &state->auth);
+	if (!NT_STATUS_IS_OK(status)) {
+		status = smbXsrv_session_create_auth(state->session,
+						     smb2req->xconn, now,
+						     in_flags, in_security_mode,
+						     &state->auth);
+		if (tevent_req_nterror(req, status)) {
+			return tevent_req_post(req, ev);
+		}
+	}
+
+	if (state->auth->gensec == NULL) {
+		status = auth_generic_prepare(state->auth,
 					      state->smb2req->xconn->remote_address,
-					      &state->session->gensec);
+					      &state->auth->gensec);
 		if (tevent_req_nterror(req, status)) {
 			return tevent_req_post(req, ev);
 		}
 
-		gensec_want_feature(state->session->gensec, GENSEC_FEATURE_SESSION_KEY);
-		gensec_want_feature(state->session->gensec, GENSEC_FEATURE_UNIX_TOKEN);
+		gensec_want_feature(state->auth->gensec, GENSEC_FEATURE_SESSION_KEY);
+		gensec_want_feature(state->auth->gensec, GENSEC_FEATURE_UNIX_TOKEN);
 
-		status = gensec_start_mech_by_oid(state->session->gensec,
+		status = gensec_start_mech_by_oid(state->auth->gensec,
 						  GENSEC_OID_SPNEGO);
 		if (tevent_req_nterror(req, status)) {
 			return tevent_req_post(req, ev);
 		}
 	}
 
+	status = smbXsrv_session_update(state->session);
+	if (tevent_req_nterror(req, status)) {
+		return tevent_req_post(req, ev);
+	}
+
 	become_root();
 	subreq = gensec_update_send(state, state->ev,
-				    state->session->gensec,
+				    state->auth->gensec,
 				    state->in_security_buffer);
 	unbecome_root();
 	if (tevent_req_nomem(subreq, req)) {
@@ -680,12 +708,12 @@ static void smbd_smb2_session_setup_gensec_done(struct tevent_req *subreq)
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		state->out_session_id = state->session->global->session_wire_id;
-		state->smb2req->preauth = state->session->preauth;
+		state->smb2req->preauth = state->auth->preauth;
 		tevent_req_nterror(req, status);
 		return;
 	}
 
-	status = gensec_session_info(state->session->gensec,
+	status = gensec_session_info(state->auth->gensec,
 				     state->session->global,
 				     &state->session_info);
 	if (tevent_req_nterror(req, status)) {
@@ -738,6 +766,7 @@ static void smbd_smb2_session_setup_auth_return(struct tevent_req *req)
 
 	if (state->session->global->auth_session_info != NULL) {
 		status = smbd_smb2_reauth_generic_return(state->session,
+							 &state->auth,
 							 state->smb2req,
 							 state->session_info,
 							 &state->out_session_flags,
@@ -750,6 +779,7 @@ static void smbd_smb2_session_setup_auth_return(struct tevent_req *req)
 	}
 
 	status = smbd_smb2_auth_generic_return(state->session,
+					       &state->auth,
 					       state->smb2req,
 					       state->in_security_mode,
 					       state->session_info,
