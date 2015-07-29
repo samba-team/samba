@@ -493,6 +493,7 @@ static NTSTATUS smbd_smb2_reauth_generic_return(struct smbXsrv_session *session,
 	NTSTATUS status;
 	struct smbXsrv_session *x = session;
 	struct smbXsrv_session_auth0 *auth = *_auth;
+	size_t i;
 
 	*_auth = NULL;
 
@@ -520,8 +521,13 @@ static NTSTATUS smbd_smb2_reauth_generic_return(struct smbXsrv_session *session,
 	session->global->auth_session_info = talloc_move(session->global,
 							 &session_info);
 	session->global->auth_session_info_seqnum += 1;
-	session->global->channels[0].auth_session_info_seqnum =
-		session->global->auth_session_info_seqnum;
+	for (i=0; i < session->global->num_channels; i++) {
+		struct smbXsrv_channel_global0 *_c =
+			&session->global->channels[i];
+
+		_c->auth_session_info_seqnum =
+			session->global->auth_session_info_seqnum;
+	}
 	session->global->auth_time = timeval_to_nttime(&smb2req->request_time);
 	session->global->expiration_time = gensec_expire_time(auth->gensec);
 
