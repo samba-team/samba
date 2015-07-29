@@ -910,13 +910,6 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 			}
 		}
 
-		if (svhdx != NULL) {
-			/* SharedVHD is not yet supported */
-			tevent_req_nterror(
-				req, NT_STATUS_INVALID_DEVICE_REQUEST);
-			return tevent_req_post(req, ev);
-		}
-
 		/* these are ignored for SMB2 */
 		in_create_options &= ~(0x10);/* NTCREATEX_OPTIONS_SYNC_ALERT */
 		in_create_options &= ~(0x20);/* NTCREATEX_OPTIONS_ASYNC_ALERT */
