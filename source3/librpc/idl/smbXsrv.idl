@@ -203,10 +203,8 @@ interface smbXsrv
 		hyper					nonce_high_max;
 		hyper					nonce_high;
 		hyper					nonce_low;
-		[ignore] gensec_security		*gensec;
 		[ignore] user_struct			*compat;
 		[ignore] smbXsrv_tcon_table		*tcon_table;
-		[ignore] smbXsrv_preauth		*preauth;
 		smbXsrv_session_auth0			*pending_auth;
 		boolean8				encryption_desired;
 	} smbXsrv_session;
