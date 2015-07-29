@@ -282,10 +282,9 @@ static void smbXsrv_session_close_loop(struct tevent_req *subreq)
 		goto next;
 	}
 
-	status = smb2srv_session_lookup_raw(client->session_table,
-					    NULL, /* smbXsrv_connection */
-					    close_info0->old_session_wire_id,
-					    now, &session);
+	status = smb2srv_session_lookup_client(client,
+					       close_info0->old_session_wire_id,
+					       now, &session);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_USER_SESSION_DELETED)) {
 		DEBUG(4,("smbXsrv_session_close_loop: "
 			 "old_session_wire_id %llu not found\n",
