@@ -439,7 +439,8 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 	reload_services(smb2req->sconn, conn_snum_used, true);
 
 	session->status = NT_STATUS_OK;
-	session->global->auth_session_info = session_info;
+	session->global->auth_session_info = talloc_move(session->global,
+							 &session_info);
 	session->global->auth_session_info_seqnum += 1;
 	session->global->channels[0].auth_session_info_seqnum =
 		session->global->auth_session_info_seqnum;
@@ -511,7 +512,8 @@ static NTSTATUS smbd_smb2_reauth_generic_return(struct smbXsrv_session *session,
 
 	session->status = NT_STATUS_OK;
 	TALLOC_FREE(session->global->auth_session_info);
-	session->global->auth_session_info = session_info;
+	session->global->auth_session_info = talloc_move(session->global,
+							 &session_info);
 	session->global->auth_session_info_seqnum += 1;
 	session->global->channels[0].auth_session_info_seqnum =
 		session->global->auth_session_info_seqnum;
@@ -714,7 +716,7 @@ static void smbd_smb2_session_setup_gensec_done(struct tevent_req *subreq)
 	}
 
 	status = gensec_session_info(state->auth->gensec,
-				     state->session->global,
+				     state,
 				     &state->session_info);
 	if (tevent_req_nterror(req, status)) {
 		return;
