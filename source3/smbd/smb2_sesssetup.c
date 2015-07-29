@@ -554,6 +554,116 @@ static NTSTATUS smbd_smb2_reauth_generic_return(struct smbXsrv_session *session,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS smbd_smb2_bind_auth_return(struct smbXsrv_session *session,
+					   struct smbXsrv_session_auth0 **_auth,
+					   struct smbd_smb2_request *smb2req,
+					   struct auth_session_info *session_info,
+					   uint16_t *out_session_flags,
+					   uint64_t *out_session_id)
+{
+	NTSTATUS status;
+	struct smbXsrv_session *x = session;
+	struct smbXsrv_session_auth0 *auth = *_auth;
+	struct smbXsrv_connection *xconn = smb2req->xconn;
+	struct smbXsrv_channel_global0 *c = NULL;
+	uint8_t session_key[16];
+	size_t i;
+	struct _derivation {
+		DATA_BLOB label;
+		DATA_BLOB context;
+	};
+	struct {
+		struct _derivation signing;
+	} derivation = { };
+	bool ok;
+
+	*_auth = NULL;
+
+	if (xconn->protocol >= PROTOCOL_SMB3_10) {
+		struct smbXsrv_preauth *preauth;
+		struct _derivation *d;
+		DATA_BLOB p;
+		struct hc_sha512state sctx;
+
+		preauth = talloc_move(smb2req, &auth->preauth);
+
+		samba_SHA512_Init(&sctx);
+		samba_SHA512_Update(&sctx, preauth->sha512_value,
+				    sizeof(preauth->sha512_value));
+		for (i = 1; i < smb2req->in.vector_count; i++) {
+			samba_SHA512_Update(&sctx,
+					    smb2req->in.vector[i].iov_base,
+					    smb2req->in.vector[i].iov_len);
+		}
+		samba_SHA512_Final(preauth->sha512_value, &sctx);
+
+		p = data_blob_const(preauth->sha512_value,
+				    sizeof(preauth->sha512_value));
+
+		d = &derivation.signing;
+		d->label = data_blob_string_const_null("SMBSigningKey");
+		d->context = p;
+
+	} else if (xconn->protocol >= PROTOCOL_SMB2_24) {
+		struct _derivation *d;
+
+		d = &derivation.signing;
+		d->label = data_blob_string_const_null("SMB2AESCMAC");
+		d->context = data_blob_string_const_null("SmbSign");
+	}
+
+	status = smbXsrv_session_find_channel(session, xconn, &c);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	ok = security_token_is_sid(session_info->security_token,
+			&x->global->auth_session_info->security_token->sids[0]);
+	if (!ok) {
+		return NT_STATUS_NOT_SUPPORTED;
+	}
+
+	if (session_info->session_key.length == 0) {
+		/* See [MS-SMB2] 3.3.5.2.4 for the return code. */
+		return NT_STATUS_NOT_SUPPORTED;
+	}
+
+	ZERO_STRUCT(session_key);
+	memcpy(session_key, session_info->session_key.data,
+	       MIN(session_info->session_key.length, sizeof(session_key)));
+
+	c->signing_key = data_blob_talloc(x->global,
+					  session_key,
+					  sizeof(session_key));
+	if (c->signing_key.data == NULL) {
+		ZERO_STRUCT(session_key);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (xconn->protocol >= PROTOCOL_SMB2_24) {
+		struct _derivation *d = &derivation.signing;
+
+		smb2_key_derivation(session_key, sizeof(session_key),
+				    d->label.data, d->label.length,
+				    d->context.data, d->context.length,
+				    c->signing_key.data);
+	}
+	ZERO_STRUCT(session_key);
+
+	TALLOC_FREE(auth);
+	status = smbXsrv_session_update(session);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("smb2: Failed to update session for vuid=%llu - %s\n",
+			  (unsigned long long)session->compat->vuid,
+			  nt_errstr(status)));
+		return NT_STATUS_LOGON_FAILURE;
+	}
+
+	*out_session_id = session->global->session_wire_id;
+
+	return NT_STATUS_OK;
+}
+
 struct smbd_smb2_session_setup_state {
 	struct tevent_context *ev;
 	struct smbd_smb2_request *smb2req;
@@ -779,6 +889,20 @@ static void smbd_smb2_session_setup_auth_return(struct tevent_req *req)
 		tevent_req_data(req,
 		struct smbd_smb2_session_setup_state);
 	NTSTATUS status;
+
+	if (state->in_flags & SMB2_SESSION_FLAG_BINDING) {
+		status = smbd_smb2_bind_auth_return(state->session,
+						    &state->auth,
+						    state->smb2req,
+						    state->session_info,
+						    &state->out_session_flags,
+						    &state->out_session_id);
+		if (tevent_req_nterror(req, status)) {
+			return;
+		}
+		tevent_req_done(req);
+		return;
+	}
 
 	if (state->session->global->auth_session_info != NULL) {
 		status = smbd_smb2_reauth_generic_return(state->session,
