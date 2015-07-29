@@ -393,7 +393,8 @@ static NTSTATUS smbd_smb2_inbuf_parse_compound(struct smbXsrv_connection *xconn,
 				goto inval;
 			}
 
-			status = smb2srv_session_lookup(xconn, uid, now, &s);
+			status = smb2srv_session_lookup_conn(xconn, uid, now,
+							     &s);
 			if (s == NULL) {
 				DEBUG(1, ("invalid session[%llu] in "
 					  "SMB2_TRANSFORM header\n",
@@ -1833,9 +1834,9 @@ static NTSTATUS smbd_smb2_request_check_session(struct smbd_smb2_request *req)
 	req->last_session_id = 0;
 
 	/* lookup an existing session */
-	status = smb2srv_session_lookup(req->xconn,
-					in_session_id, now,
-					&session);
+	status = smb2srv_session_lookup_conn(req->xconn,
+					     in_session_id, now,
+					     &session);
 	if (session) {
 		req->session = session;
 		req->last_session_id = in_session_id;
