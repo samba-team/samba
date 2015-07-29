@@ -87,27 +87,10 @@ int32_t ctdb_control_set_ban_state(struct ctdb_context *ctdb, TDB_DATA indata)
 	DEBUG(DEBUG_INFO,("SET BAN STATE\n"));
 
 	if (bantime->pnn != ctdb->pnn) {
-		if (bantime->pnn >= ctdb->num_nodes) {
-			DEBUG(DEBUG_ERR,(__location__ " ERROR: Invalid ban request. PNN:%d is invalid. Max nodes %d\n", bantime->pnn, ctdb->num_nodes));
-			return -1;
-		}
-		if (bantime->time == 0) {
-			DEBUG(DEBUG_NOTICE,("unbanning node %d\n", bantime->pnn));
-			ctdb->nodes[bantime->pnn]->flags &= ~NODE_FLAGS_BANNED;
-		} else {
-			DEBUG(DEBUG_NOTICE,("banning node %d\n", bantime->pnn));
-			if (ctdb->tunable.enable_bans == 0) {
-				/* FIXME: This is bogus. We really should be
-				 * taking decision based on the tunables on
-				 * the banned node and not local node.
-				 */
-				DEBUG(DEBUG_WARNING,("Bans are disabled - ignoring ban of node %u\n", bantime->pnn));
-				return 0;
-			}
-
-			ctdb->nodes[bantime->pnn]->flags |= NODE_FLAGS_BANNED;
-		}
-		return 0;
+		DEBUG(DEBUG_WARNING,
+		      ("SET_BAN_STATE control for PNN %d ignored\n",
+		       bantime->pnn));
+		return -1;
 	}
 
 	already_banned = false;
