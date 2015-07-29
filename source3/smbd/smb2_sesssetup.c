@@ -561,6 +561,7 @@ static struct tevent_req *smbd_smb2_session_setup_send(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	NTTIME now = timeval_to_nttime(&smb2req->request_time);
 	struct tevent_req *subreq;
+	struct smbXsrv_channel_global0 *c = NULL;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct smbd_smb2_session_setup_state);
@@ -616,6 +617,13 @@ static struct tevent_req *smbd_smb2_session_setup_send(TALLOC_CTX *mem_ctx,
 			tevent_req_nterror(req, status);
 			return tevent_req_post(req, ev);
 		}
+	}
+
+	status = smbXsrv_session_find_channel(smb2req->session,
+					      smb2req->xconn, &c);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return tevent_req_post(req, ev);
 	}
 
 	if (state->session->gensec == NULL) {
