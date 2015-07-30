@@ -102,6 +102,21 @@ done:
 	return ret;
 }
 
+static krb5_error_code ks_is_tgs_principal(struct mit_samba_context *ctx,
+					   krb5_const_principal principal)
+{
+	char *p;
+	int eq = -1;
+
+	p = smb_krb5_principal_get_comp_string(ctx, ctx->context, principal, 0);
+
+	eq = krb5_princ_size(ctx->context, principal) == 2 &&
+	     (strcmp(p, KRB5_TGS_NAME) == 0);
+
+	talloc_free(p);
+
+	return eq;
+}
 
 int mit_samba_get_principal(struct mit_samba_context *ctx,
 			    krb5_const_principal principal,
