@@ -31,6 +31,125 @@
 #include "librpc/gen_ndr/ndr_ioctl.h"
 #include "smb2_ioctl_private.h"
 
+struct fsctl_dup_extents_state {
+	struct tevent_context *ev;
+	struct connection_struct *conn;
+	struct fsctl_dup_extents_to_file dup_extents;
+};
+
+static void fsctl_dup_extents_vfs_done(struct tevent_req *subreq);
+
+static struct tevent_req *fsctl_dup_extents_send(TALLOC_CTX *mem_ctx,
+						 struct tevent_context *ev,
+						 struct files_struct *dst_fsp,
+						 DATA_BLOB *in_input,
+						 struct smbd_smb2_request *smb2req)
+{
+	struct tevent_req *req = NULL;
+	struct tevent_req *subreq = NULL;
+	struct fsctl_dup_extents_state *state = NULL;
+	uint64_t src_fid_persistent = 0;
+	uint64_t src_fid_volatile = 0;
+	struct files_struct *src_fsp = NULL;
+	int ndr_ret;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct fsctl_dup_extents_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	*state = (struct fsctl_dup_extents_state) {
+		.conn = dst_fsp->conn,
+		.ev = ev,
+	};
+
+	if (dst_fsp == NULL) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return tevent_req_post(req, ev);
+	}
+
+	if ((dst_fsp->conn->fs_capabilities
+				& FILE_SUPPORTS_BLOCK_REFCOUNTING) == 0) {
+		DBG_INFO("FS does not advertise block refcounting support\n");
+		tevent_req_nterror(req, NT_STATUS_INVALID_DEVICE_REQUEST);
+		return tevent_req_post(req, ev);
+	}
+
+	ndr_ret = ndr_pull_struct_blob(in_input, state, &state->dup_extents,
+		       (ndr_pull_flags_fn_t)ndr_pull_fsctl_dup_extents_to_file);
+	if (ndr_ret != NDR_ERR_SUCCESS) {
+		DBG_ERR("failed to unmarshall dup extents to file req\n");
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return tevent_req_post(req, ev);
+	}
+
+	src_fid_persistent = BVAL(state->dup_extents.source_fid, 0);
+	src_fid_volatile = BVAL(state->dup_extents.source_fid, 8);
+	src_fsp = file_fsp_get(smb2req, src_fid_persistent, src_fid_volatile);
+	if ((src_fsp == NULL)
+		      || (src_fsp->file_id.devid != dst_fsp->file_id.devid)) {
+		/*
+		 * [MS-FSCC] 2.3.8 FSCTL_DUPLICATE_EXTENTS_TO_FILE Reply
+		 * STATUS_INVALID_PARAMETER:
+		 * The FileHandle parameter is either invalid or does not
+		 * represent a handle to an opened file on the same volume.
+		 *
+		 * Windows Server responds with NT_STATUS_INVALID_HANDLE instead
+		 * of STATUS_INVALID_PARAMETER here, despite the above spec.
+		 */
+		DBG_ERR("invalid src_fsp for dup_extents\n");
+		tevent_req_nterror(req, NT_STATUS_INVALID_HANDLE);
+		return tevent_req_post(req, ev);
+	}
+
+	if (state->dup_extents.byte_count == 0) {
+		DBG_ERR("skipping zero length dup extents\n");
+		tevent_req_done(req);
+		return tevent_req_post(req, ev);
+	}
+
+	subreq = SMB_VFS_COPY_CHUNK_SEND(dst_fsp->conn, state, ev,
+					 src_fsp, state->dup_extents.source_off,
+					 dst_fsp, state->dup_extents.target_off,
+					 state->dup_extents.byte_count,
+					 VFS_COPY_CHUNK_FL_MUST_CLONE);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	tevent_req_set_callback(subreq, fsctl_dup_extents_vfs_done, req);
+
+	return subreq;
+}
+
+static void fsctl_dup_extents_vfs_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct fsctl_dup_extents_state *state = tevent_req_data(
+		req, struct fsctl_dup_extents_state);
+	off_t nb_chunk;
+	NTSTATUS status;
+
+	status = SMB_VFS_COPY_CHUNK_RECV(state->conn, subreq, &nb_chunk);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	if (nb_chunk != state->dup_extents.byte_count) {
+		tevent_req_nterror(req, NT_STATUS_IO_DEVICE_ERROR);
+		return;
+	}
+
+	tevent_req_done(req);
+}
+
+static NTSTATUS fsctl_dup_extents_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
+}
+
 static NTSTATUS fsctl_get_cmprn(TALLOC_CTX *mem_ctx,
 				struct tevent_context *ev,
 				struct files_struct *fsp,
@@ -437,6 +556,8 @@ static NTSTATUS fsctl_qar(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+static void smb2_ioctl_filesys_dup_extents_done(struct tevent_req *subreq);
+
 struct tevent_req *smb2_ioctl_filesys(uint32_t ctl_code,
 				      struct tevent_context *ev,
 				      struct tevent_req *req,
@@ -480,6 +601,22 @@ struct tevent_req *smb2_ioctl_filesys(uint32_t ctl_code,
 		}
 		return tevent_req_post(req, ev);
 		break;
+	case FSCTL_DUP_EXTENTS_TO_FILE: {
+		struct tevent_req *subreq = NULL;
+
+		subreq = fsctl_dup_extents_send(state, ev,
+						state->fsp,
+						&state->in_input,
+						state->smb2req);
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_set_callback(subreq,
+					smb2_ioctl_filesys_dup_extents_done,
+					req);
+		return req;
+		break;
+	}
 	default: {
 		uint8_t *out_data = NULL;
 		uint32_t out_data_len = 0;
@@ -519,4 +656,17 @@ struct tevent_req *smb2_ioctl_filesys(uint32_t ctl_code,
 
 	tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
 	return tevent_req_post(req, ev);
+}
+
+static void smb2_ioctl_filesys_dup_extents_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(subreq,
+							  struct tevent_req);
+	NTSTATUS status;
+
+	status = fsctl_dup_extents_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (!tevent_req_nterror(req, status)) {
+		tevent_req_done(req);
+	}
 }
