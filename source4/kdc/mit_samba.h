@@ -33,8 +33,8 @@ int mit_samba_context_init(struct mit_samba_context **_ctx);
 void mit_samba_context_free(struct mit_samba_context *ctx);
 
 int mit_samba_get_principal(struct mit_samba_context *ctx,
-				   char *principal_string,
-				   unsigned int flags,
+				   krb5_const_principal principal,
+				   unsigned int kflags,
 				   krb5_db_entry **_kentry);
 
 int mit_samba_get_firstkey(struct mit_samba_context *ctx,

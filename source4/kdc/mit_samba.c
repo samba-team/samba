@@ -104,11 +104,10 @@ done:
 
 
 int mit_samba_get_principal(struct mit_samba_context *ctx,
-			    char *principal_string,
-			    unsigned int flags,
+			    krb5_const_principal principal,
+			    unsigned int kflags,
 			    krb5_db_entry **_kentry)
 {
-	krb5_principal principal;
 	struct sdb_entry_ex sentry;
 	krb5_db_entry *kentry;
 	int ret;
@@ -119,10 +118,21 @@ int mit_samba_get_principal(struct mit_samba_context *ctx,
 		return ENOMEM;
 	}
 
-	ret = krb5_parse_name(ctx->context, principal_string, &principal);
-	if (ret) {
-		goto done;
+	if (kflags & KRB5_KDB_FLAG_CANONICALIZE) {
+		sflags |= SDB_F_CANON;
 	}
+	if (kflags & (KRB5_KDB_FLAG_CLIENT_REFERRALS_ONLY |
+		      KRB5_KDB_FLAG_INCLUDE_PAC)) {
+		sflags |= SDB_F_GET_CLIENT;
+	} else if (ks_is_tgs_principal(ctx, principal)) {
+		sflags |= SDB_F_GET_KRBTGT;
+	} else {
+		sflags |= SDB_F_GET_ANY;
+	}
+
+	/* always set this or the created_by data will not be populated by samba's
+	 * backend and we will fail to parse the entry later */
+	sflags |= SDB_F_ADMIN_DATA;
 
 	ret = samba_kdc_fetch(ctx->context, ctx->db_ctx,
 			      principal, sflags, 0, &sentry);
@@ -143,7 +153,6 @@ int mit_samba_get_principal(struct mit_samba_context *ctx,
 
 	ret = sdb_entry_ex_to_kdb_entry_ex(ctx->context, &sentry, kentry);
 
-	krb5_free_principal(NULL, principal);
 	sdb_free_entry(&sentry);
 
 done:
