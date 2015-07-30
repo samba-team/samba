@@ -39,7 +39,8 @@ static uint32_t btrfs_fs_capabilities(struct vfs_handle_struct *handle,
 
 	/* inherit default capabilities, expose compression support */
 	fs_capabilities = SMB_VFS_NEXT_FS_CAPABILITIES(handle, &ts_res);
-	fs_capabilities |= FILE_FILE_COMPRESSION;
+	fs_capabilities |= (FILE_FILE_COMPRESSION
+			    | FILE_SUPPORTS_BLOCK_REFCOUNTING);
 	*_ts_res = ts_res;
 
 	return fs_capabilities;
