@@ -37,8 +37,6 @@ struct param_section {
 struct param_context;
 struct smbsrv_connection;
 
-typedef bool (*lpcfg_defaults_hook) (struct loadparm_context *);
-
 #define Auto (2)
 
 #include "libds/common/roles.h"
@@ -50,6 +48,8 @@ struct smbcli_session_options;
 struct gensec_settings;
 struct bitmap;
 struct file_lists;
+
+typedef bool (*lpcfg_defaults_hook) (struct loadparm_context *);
 
 #ifdef CONFIG_H_IS_FROM_SAMBA
 #include "lib/param/param_proto.h"
