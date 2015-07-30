@@ -565,6 +565,28 @@ char *secrets_fetch_prev_machine_password(const char *domain)
 }
 
 /************************************************************************
+ Routine to fetch the last change time of the machine account password
+  for a realm
+************************************************************************/
+
+time_t secrets_fetch_pass_last_set_time(const char *domain)
+{
+	uint32_t *last_set_time;
+	time_t pass_last_set_time;
+
+	last_set_time = secrets_fetch(machine_last_change_time_keystr(domain),
+				      NULL);
+	if (last_set_time) {
+		pass_last_set_time = IVAL(last_set_time,0);
+		SAFE_FREE(last_set_time);
+	} else {
+		pass_last_set_time = 0;
+	}
+
+	return pass_last_set_time;
+}
+
+/************************************************************************
  Routine to fetch the plaintext machine account password for a realm
  the password is assumed to be a null terminated ascii string.
 ************************************************************************/
@@ -577,15 +599,7 @@ char *secrets_fetch_machine_password(const char *domain,
 	ret = (char *)secrets_fetch(machine_password_keystr(domain), NULL);
 
 	if (pass_last_set_time) {
-		size_t size;
-		uint32_t *last_set_time;
-		last_set_time = (unsigned int *)secrets_fetch(machine_last_change_time_keystr(domain), &size);
-		if (last_set_time) {
-			*pass_last_set_time = IVAL(last_set_time,0);
-			SAFE_FREE(last_set_time);
-		} else {
-			*pass_last_set_time = 0;
-		}
+		*pass_last_set_time = secrets_fetch_pass_last_set_time(domain);
 	}
 
 	if (channel) {
