@@ -114,6 +114,7 @@ bld.SAMBA_SUBSYSTEM('MIT_SAMBA',
                          samba-credentials
                          db-glue
                          PAC_GLUE
+                         KPASSWD_GLUE
                          samba-hostconfig
                          com_err
                          sdb_kdb

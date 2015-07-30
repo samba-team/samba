@@ -24,12 +24,15 @@
 #include "dsdb/samdb/samdb.h"
 #include "system/kerberos.h"
 #include <kdb.h>
+#include <kadm5/kadm_err.h>
 #include "kdc/sdb.h"
 #include "kdc/sdb_kdb.h"
 #include "auth/kerberos/kerberos.h"
 #include "kdc/samba_kdc.h"
 #include "kdc/pac-glue.h"
 #include "kdc/db-glue.h"
+#include "auth/auth.h"
+#include "kdc/kpasswd_glue.h"
 
 #include "mit_samba.h"
 
@@ -474,4 +477,165 @@ int mit_samba_check_s4u2proxy(struct mit_samba_context *ctx,
 
 	return ret;
 #endif
+}
+
+static krb5_error_code mit_samba_change_pwd_error(krb5_context context,
+						  NTSTATUS result,
+						  enum samPwdChangeReason reject_reason,
+						  struct samr_DomInfo1 *dominfo)
+{
+	krb5_error_code code = KADM5_PASS_Q_GENERIC;
+
+	if (NT_STATUS_EQUAL(result, NT_STATUS_NO_SUCH_USER)) {
+		code = KADM5_BAD_PRINCIPAL;
+		krb5_set_error_message(context,
+				       code,
+				       "No such user when changing password");
+	}
+	if (NT_STATUS_EQUAL(result, NT_STATUS_ACCESS_DENIED)) {
+		code = KADM5_PASS_Q_GENERIC;
+		krb5_set_error_message(context,
+				       code,
+				       "Not permitted to change password");
+	}
+	if (NT_STATUS_EQUAL(result, NT_STATUS_PASSWORD_RESTRICTION) &&
+	    dominfo != NULL) {
+		switch (reject_reason) {
+		case SAM_PWD_CHANGE_PASSWORD_TOO_SHORT:
+			code = KADM5_PASS_Q_TOOSHORT;
+			krb5_set_error_message(context,
+					       code,
+					       "Password too short, password "
+					       "must be at least %d characters "
+					       "long.",
+					       dominfo->min_password_length);
+			break;
+		case SAM_PWD_CHANGE_NOT_COMPLEX:
+			code = KADM5_PASS_Q_DICT;
+			krb5_set_error_message(context,
+					       code,
+					       "Password does not meet "
+					       "complexity requirements");
+			break;
+		case SAM_PWD_CHANGE_PWD_IN_HISTORY:
+			code = KADM5_PASS_TOOSOON;
+			krb5_set_error_message(context,
+					       code,
+					       "Password is already in password "
+					       "history. New password must not "
+					       "match any of your %d previous "
+					       "passwords.",
+					       dominfo->password_history_length);
+			break;
+		default:
+			code = KADM5_PASS_Q_GENERIC;
+			krb5_set_error_message(context,
+					       code,
+					       "Password change rejected, "
+					       "password changes may not be "
+					       "permitted on this account, or "
+					       "the minimum password age may "
+					       "not have elapsed.");
+			break;
+		}
+	}
+
+	return code;
+}
+
+int mit_samba_kpasswd_change_password(struct mit_samba_context *ctx,
+				      char *pwd,
+				      krb5_db_entry *db_entry)
+{
+	NTSTATUS status;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	TALLOC_CTX *tmp_ctx;
+	DATA_BLOB password;
+	enum samPwdChangeReason reject_reason;
+	struct samr_DomInfo1 *dominfo;
+	const char *error_string = NULL;
+	struct auth_user_info_dc *user_info_dc;
+	struct samba_kdc_entry *p;
+	krb5_error_code code = 0;
+
+#ifdef DEBUG_PASSWORD
+	DEBUG(1,("mit_samba_kpasswd_change_password called with: %s\n", pwd));
+#endif
+
+	tmp_ctx = talloc_named(ctx, 0, "mit_samba_kpasswd_change_password");
+	if (tmp_ctx == NULL) {
+		return ENOMEM;
+	}
+
+	p = (struct samba_kdc_entry *)db_entry->e_data;
+
+	status = authsam_make_user_info_dc(tmp_ctx,
+					   ctx->db_ctx->samdb,
+					   lpcfg_netbios_name(ctx->db_ctx->lp_ctx),
+					   lpcfg_sam_name(ctx->db_ctx->lp_ctx),
+					   p->realm_dn,
+					   p->msg,
+					   data_blob(NULL, 0),
+					   data_blob(NULL, 0),
+					   &user_info_dc);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1,("authsam_make_user_info_dc failed: %s\n",
+			nt_errstr(status)));
+		talloc_free(tmp_ctx);
+		return EINVAL;
+	}
+
+	status = auth_generate_session_info(tmp_ctx,
+					    ctx->db_ctx->lp_ctx,
+					    ctx->db_ctx->samdb,
+					    user_info_dc,
+					    0, /* session_info_flags */
+					    &ctx->session_info);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1,("auth_generate_session_info failed: %s\n",
+			nt_errstr(status)));
+		talloc_free(tmp_ctx);
+		return EINVAL;
+	}
+
+	/* password is expected as UTF16 */
+
+	if (!convert_string_talloc(tmp_ctx, CH_UTF8, CH_UTF16,
+				   pwd, strlen(pwd),
+				   &password.data, &password.length)) {
+		DEBUG(1,("convert_string_talloc failed\n"));
+		talloc_free(tmp_ctx);
+		return EINVAL;
+	}
+
+	status = samdb_kpasswd_change_password(tmp_ctx,
+					       ctx->db_ctx->lp_ctx,
+					       ctx->db_ctx->ev_ctx,
+					       ctx->db_ctx->samdb,
+					       ctx->session_info,
+					       &password,
+					       &reject_reason,
+					       &dominfo,
+					       &error_string,
+					       &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1,("samdb_kpasswd_change_password failed: %s\n",
+			nt_errstr(status)));
+		code = KADM5_PASS_Q_GENERIC;
+		krb5_set_error_message(ctx->context, code, "%s", error_string);
+		goto out;
+	}
+
+	if (!NT_STATUS_IS_OK(result)) {
+		code = mit_samba_change_pwd_error(ctx->context,
+						  result,
+						  reject_reason,
+						  dominfo);
+	}
+
+out:
+	talloc_free(tmp_ctx);
+
+	return code;
 }

@@ -71,4 +71,8 @@ int mit_samba_check_s4u2proxy(struct mit_samba_context *ctx,
 			      const char *target_name,
 			      bool is_nt_enterprise_name);
 
+int mit_samba_kpasswd_change_password(struct mit_samba_context *ctx,
+				      char *pwd,
+				      krb5_db_entry *db_entry);
+
 #endif /* _MIT_SAMBA_H */
