@@ -177,6 +177,7 @@ static int net_ads_info(struct net_context *c, int argc, const char **argv)
 {
 	ADS_STRUCT *ads;
 	char addr[INET6_ADDRSTRLEN];
+	time_t pass_time;
 
 	if (c->display_usage) {
 		d_printf("%s\n"
@@ -206,6 +207,8 @@ static int net_ads_info(struct net_context *c, int argc, const char **argv)
 		d_fprintf( stderr, _("Failed to get server's current time!\n"));
 	}
 
+	pass_time = secrets_fetch_pass_last_set_time(ads->server.workgroup);
+
 	print_sockaddr(addr, sizeof(addr), &ads->ldap.ss);
 
 	d_printf(_("LDAP server: %s\n"), addr);
@@ -218,6 +221,9 @@ static int net_ads_info(struct net_context *c, int argc, const char **argv)
 
 	d_printf(_("KDC server: %s\n"), ads->auth.kdc_server );
 	d_printf(_("Server time offset: %d\n"), ads->auth.time_offset );
+
+	d_printf(_("Last machine account password change: %s\n"),
+		 http_timestring(talloc_tos(), pass_time));
 
 	ads_destroy(&ads);
 	return 0;
