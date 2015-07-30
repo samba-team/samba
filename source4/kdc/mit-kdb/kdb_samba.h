@@ -145,5 +145,13 @@ krb5_error_code kdb_samba_db_check_allowed_to_delegate(krb5_context context,
 						       krb5_const_principal client,
 						       const krb5_db_entry *server,
 						       krb5_const_principal proxy);
+/* from kdb_samba_change_pwd.c */
+
+krb5_error_code kdb_samba_change_pwd(krb5_context context,
+				     krb5_keyblock *master_key,
+				     krb5_key_salt_tuple *ks_tuple,
+				     int ks_tuple_count, char *passwd,
+				     int new_kvno, krb5_boolean keepold,
+				     krb5_db_entry *db_entry);
 
 #endif /* _KDB_SAMBA_H_ */

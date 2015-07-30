@@ -170,7 +170,7 @@ kdb_vftabl kdb_function_table = {
 	kdb_samba_fetch_master_key_list,   /* fetch_master_key_list */
 	NULL,                              /* store_master_key_list */
 	NULL,                              /* dbe_search_enctype */
-	NULL,                              /* change_pwd */
+	kdb_samba_change_pwd,              /* change_pwd */
 	NULL,                              /* promote_db */
 	kdb_samba_dbekd_decrypt_key_data,  /* decrypt_key_data */
 	kdb_samba_dbekd_encrypt_key_data,  /* encrypt_key_data */

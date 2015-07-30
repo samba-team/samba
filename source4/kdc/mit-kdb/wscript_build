@@ -8,6 +8,7 @@ bld.SAMBA_LIBRARY('mit-kdb-samba',
                          kdb_samba_pac.c
                          kdb_samba_policies.c
                          kdb_samba_principals.c
+                         kdb_samba_change_pwd.c
                          ''',
                   private_library=True,
                   realname='samba.so',
