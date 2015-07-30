@@ -662,10 +662,13 @@ if opts.update_cache:
 else:
     dns_update_cache = lp.private_path('dns_update_cache')
 
-# use our private krb5.conf to avoid problems with the wrong domain
-# bind9 nsupdate wants the default domain set
-krb5conf = lp.private_path('krb5.conf')
-os.environ['KRB5_CONFIG'] = krb5conf
+krb5conf = None
+# only change the krb5.conf if we are not in selftest
+if 'SOCKET_WRAPPER_DIR' not in os.environ:
+    # use our private krb5.conf to avoid problems with the wrong domain
+    # bind9 nsupdate wants the default domain set
+    krb5conf = lp.private_path('krb5.conf')
+    os.environ['KRB5_CONFIG'] = krb5conf
 
 file = open(dns_update_list, "r")
 
