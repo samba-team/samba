@@ -303,3 +303,8 @@
 ^samba4.ldap.match_rules.python.__main__.MatchRulesTests.test_u2_groups
 ^samba4.ldap.match_rules.python.__main__.MatchRulesTests.test_u3_groups
 ^samba4.ldap.match_rules.python.__main__.MatchRulesTests.test_u4_groups
+#
+# This fails because our python bindings create python Lists, not a type
+# we can watch for set methods on.
+#
+^samba.tests.dcerpc.integer.samba.tests.dcerpc.integer.IntegerTests.test_.*_into_uint8_list
