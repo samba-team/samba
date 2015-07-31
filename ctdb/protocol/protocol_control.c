@@ -461,6 +461,26 @@ static size_t ctdb_req_control_data_len(struct ctdb_req_control_data *cd)
 
 	case CTDB_CONTROL_GET_NODES_FILE:
 		break;
+
+	case CTDB_CONTROL_DB_FREEZE:
+		len = ctdb_uint32_len(cd->data.db_id);
+		break;
+
+	case CTDB_CONTROL_DB_THAW:
+		len = ctdb_uint32_len(cd->data.db_id);
+		break;
+
+	case CTDB_CONTROL_DB_TRANSACTION_START:
+		len = ctdb_transdb_len(cd->data.transdb);
+		break;
+
+	case CTDB_CONTROL_DB_TRANSACTION_COMMIT:
+		len = ctdb_transdb_len(cd->data.transdb);
+		break;
+
+	case CTDB_CONTROL_DB_TRANSACTION_CANCEL:
+		len = ctdb_uint32_len(cd->data.db_id);
+		break;
 	}
 
 	return len;
@@ -749,6 +769,26 @@ static void ctdb_req_control_data_push(struct ctdb_req_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_DB_DETACH:
+		ctdb_uint32_push(cd->data.db_id, buf);
+		break;
+
+	case CTDB_CONTROL_DB_FREEZE:
+		ctdb_uint32_push(cd->data.db_id, buf);
+		break;
+
+	case CTDB_CONTROL_DB_THAW:
+		ctdb_uint32_push(cd->data.db_id, buf);
+		break;
+
+	case CTDB_CONTROL_DB_TRANSACTION_START:
+		ctdb_transdb_push(cd->data.transdb, buf);
+		break;
+
+	case CTDB_CONTROL_DB_TRANSACTION_COMMIT:
+		ctdb_transdb_push(cd->data.transdb, buf);
+		break;
+
+	case CTDB_CONTROL_DB_TRANSACTION_CANCEL:
 		ctdb_uint32_push(cd->data.db_id, buf);
 		break;
 	}
@@ -1111,6 +1151,31 @@ static int ctdb_req_control_data_pull(uint8_t *buf, size_t buflen,
 	case CTDB_CONTROL_DB_DETACH:
 		ret = ctdb_uint32_pull(buf, buflen, mem_ctx,
 				       &cd->data.db_id);
+		break;
+
+	case CTDB_CONTROL_DB_FREEZE:
+		ret = ctdb_uint32_pull(buf, buflen, mem_ctx,
+				       &cd->data.db_id);
+		break;
+
+	case CTDB_CONTROL_DB_THAW:
+		ret = ctdb_uint32_pull(buf, buflen, mem_ctx,
+				       &cd->data.db_id);
+		break;
+
+	case CTDB_CONTROL_DB_TRANSACTION_START:
+		ret = ctdb_transdb_pull(buf, buflen, mem_ctx,
+					&cd->data.transdb);
+		break;
+
+	case CTDB_CONTROL_DB_TRANSACTION_COMMIT:
+		ret = ctdb_transdb_pull(buf, buflen, mem_ctx,
+					&cd->data.transdb);
+		break;
+
+	case CTDB_CONTROL_DB_TRANSACTION_CANCEL:
+		ret = ctdb_uint32_pull(buf, buflen, mem_ctx,
+					&cd->data.db_id);
 		break;
 	}
 
@@ -1493,6 +1558,21 @@ static size_t ctdb_reply_control_data_len(struct ctdb_reply_control_data *cd)
 
 	case CTDB_CONTROL_GET_NODES_FILE:
 		len = ctdb_node_map_len(cd->data.nodemap);
+		break;
+
+	case CTDB_CONTROL_DB_FREEZE:
+		break;
+
+	case CTDB_CONTROL_DB_THAW:
+		break;
+
+	case CTDB_CONTROL_DB_TRANSACTION_START:
+		break;
+
+	case CTDB_CONTROL_DB_TRANSACTION_COMMIT:
+		break;
+
+	case CTDB_CONTROL_DB_TRANSACTION_CANCEL:
 		break;
 	}
 

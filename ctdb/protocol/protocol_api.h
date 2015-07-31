@@ -610,6 +610,26 @@ int ctdb_reply_control_get_nodes_file(struct ctdb_reply_control *reply,
 				      TALLOC_CTX *mem_ctx,
 				      struct ctdb_node_map **nodemap);
 
+void ctdb_req_control_db_freeze(struct ctdb_req_control *request,
+				uint32_t db_id);
+int ctdb_reply_control_db_freeze(struct ctdb_reply_control *reply);
+
+void ctdb_req_control_db_thaw(struct ctdb_req_control *request,
+			      uint32_t db_id);
+int ctdb_reply_control_db_thaw(struct ctdb_reply_control *reply);
+
+void ctdb_req_control_db_transaction_start(struct ctdb_req_control *request,
+					   struct ctdb_transdb *transdb);
+int ctdb_reply_control_db_transaction_start(struct ctdb_reply_control *reply);
+
+void ctdb_req_control_db_transaction_commit(struct ctdb_req_control *request,
+					    struct ctdb_transdb *transdb);
+int ctdb_reply_control_db_transaction_commit(struct ctdb_reply_control *reply);
+
+void ctdb_req_control_db_transaction_cancel(struct ctdb_req_control *request,
+					    uint32_t db_id);
+int ctdb_reply_control_db_transaction_cancel(struct ctdb_reply_control *reply);
+
 /* From protocol/protocol_message.c */
 
 int ctdb_req_message_push(struct ctdb_req_header *h,

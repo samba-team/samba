@@ -633,6 +633,29 @@ static void fill_ctdb_req_control_data(TALLOC_CTX *mem_ctx,
 	case CTDB_CONTROL_GET_NODES_FILE:
 		break;
 
+	case CTDB_CONTROL_DB_FREEZE:
+		cd->data.db_id = rand32();
+		break;
+
+	case CTDB_CONTROL_DB_THAW:
+		cd->data.db_id = rand32();
+		break;
+
+	case CTDB_CONTROL_DB_TRANSACTION_START:
+		cd->data.transdb = talloc(mem_ctx, struct ctdb_transdb);
+		assert(cd->data.transdb != NULL);
+		fill_ctdb_transdb(mem_ctx, cd->data.transdb);
+		break;
+
+	case CTDB_CONTROL_DB_TRANSACTION_COMMIT:
+		cd->data.transdb = talloc(mem_ctx, struct ctdb_transdb);
+		assert(cd->data.transdb != NULL);
+		fill_ctdb_transdb(mem_ctx, cd->data.transdb);
+		break;
+
+	case CTDB_CONTROL_DB_TRANSACTION_CANCEL:
+		cd->data.db_id = rand32();
+		break;
 	}
 }
 
@@ -1061,6 +1084,25 @@ static void verify_ctdb_req_control_data(struct ctdb_req_control_data *cd,
 	case CTDB_CONTROL_GET_NODES_FILE:
 		break;
 
+	case CTDB_CONTROL_DB_FREEZE:
+		assert(cd->data.db_id == cd2->data.db_id);
+		break;
+
+	case CTDB_CONTROL_DB_THAW:
+		assert(cd->data.db_id == cd2->data.db_id);
+		break;
+
+	case CTDB_CONTROL_DB_TRANSACTION_START:
+		verify_ctdb_transdb(cd->data.transdb, cd2->data.transdb);
+		break;
+
+	case CTDB_CONTROL_DB_TRANSACTION_COMMIT:
+		verify_ctdb_transdb(cd->data.transdb, cd2->data.transdb);
+		break;
+
+	case CTDB_CONTROL_DB_TRANSACTION_CANCEL:
+		assert(cd->data.db_id == cd2->data.db_id);
+		break;
 	}
 }
 
@@ -2119,7 +2161,7 @@ static void test_reply_dmaster_test(void)
 	talloc_free(mem_ctx);
 }
 
-#define NUM_CONTROLS	141
+#define NUM_CONTROLS	146
 
 static void test_req_control_data_test(void)
 {

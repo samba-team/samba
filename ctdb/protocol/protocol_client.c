@@ -2368,3 +2368,103 @@ int ctdb_reply_control_get_nodes_file(struct ctdb_reply_control *reply,
 	}
 	return reply->status;
 }
+
+/* CTDB_CONTROL_DB_FREEZE */
+
+void ctdb_req_control_db_freeze(struct ctdb_req_control *request,
+				uint32_t db_id)
+{
+	request->opcode = CTDB_CONTROL_DB_FREEZE;
+	request->pad = 0;
+	request->srvid = 0;
+	request->client_id = 0;
+	request->flags = 0;
+
+	request->rdata.opcode = CTDB_CONTROL_DB_FREEZE;
+	request->rdata.data.db_id = db_id;
+}
+
+int ctdb_reply_control_db_freeze(struct ctdb_reply_control *reply)
+{
+	return ctdb_reply_control_generic(reply);
+}
+
+/* CTDB_CONTROL_DB_THAW */
+
+void ctdb_req_control_db_thaw(struct ctdb_req_control *request,
+			      uint32_t db_id)
+{
+	request->opcode = CTDB_CONTROL_DB_THAW;
+	request->pad = 0;
+	request->srvid = 0;
+	request->client_id = 0;
+	request->flags = 0;
+
+	request->rdata.opcode = CTDB_CONTROL_DB_THAW;
+	request->rdata.data.db_id = db_id;
+}
+
+int ctdb_reply_control_db_thaw(struct ctdb_reply_control *reply)
+{
+	return ctdb_reply_control_generic(reply);
+}
+
+/* CTDB_CONTROL_DB_TRANSACTION_START */
+
+void ctdb_req_control_db_transaction_start(struct ctdb_req_control *request,
+					   struct ctdb_transdb *transdb)
+{
+	request->opcode = CTDB_CONTROL_DB_TRANSACTION_START;
+	request->pad = 0;
+	request->srvid = 0;
+	request->client_id = 0;
+	request->flags = 0;
+
+	request->rdata.opcode = CTDB_CONTROL_DB_TRANSACTION_START;
+	request->rdata.data.transdb = transdb;
+}
+
+int ctdb_reply_control_db_transaction_start(struct ctdb_reply_control *reply)
+{
+	return ctdb_reply_control_generic(reply);
+}
+
+/* CTDB_CONTROL_DB_TRANSACTION_COMMIT */
+
+void ctdb_req_control_db_transaction_commit(struct ctdb_req_control *request,
+					    struct ctdb_transdb *transdb)
+{
+	request->opcode = CTDB_CONTROL_DB_TRANSACTION_COMMIT;
+	request->pad = 0;
+	request->srvid = 0;
+	request->client_id = 0;
+	request->flags = 0;
+
+	request->rdata.opcode = CTDB_CONTROL_DB_TRANSACTION_COMMIT;
+	request->rdata.data.transdb = transdb;
+}
+
+int ctdb_reply_control_db_transaction_commit(struct ctdb_reply_control *reply)
+{
+	return ctdb_reply_control_generic(reply);
+}
+
+/* CTDB_CONTROL_DB_TRANSACTION_CANCEL */
+
+void ctdb_req_control_db_transaction_cancel(struct ctdb_req_control *request,
+					    uint32_t db_id)
+{
+	request->opcode = CTDB_CONTROL_DB_TRANSACTION_CANCEL;
+	request->pad = 0;
+	request->srvid = 0;
+	request->client_id = 0;
+	request->flags = 0;
+
+	request->rdata.opcode = CTDB_CONTROL_DB_TRANSACTION_CANCEL;
+	request->rdata.data.db_id = db_id;
+}
+
+int ctdb_reply_control_db_transaction_cancel(struct ctdb_reply_control *reply)
+{
+	return ctdb_reply_control_generic(reply);
+}
