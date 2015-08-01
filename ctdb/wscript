@@ -336,7 +336,8 @@ def build(bld):
     bld.SAMBA_SUBSYSTEM('ctdb-util',
                         source=bld.SUBDIR('common',
                                           '''db_hash.c srvid.c reqid.c
-                                             pkt_read.c pkt_write.c comm.c'''),
+                                             pkt_read.c pkt_write.c comm.c
+                                             logging.c'''),
                         deps='replace talloc tevent tdb tevent-unix-util')
 
     bld.SAMBA_SUBSYSTEM('ctdb-client',
