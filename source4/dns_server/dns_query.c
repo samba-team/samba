@@ -91,6 +91,7 @@ static WERROR create_response_rr(const struct dns_name_question *question,
 		break;
 	case DNS_QTYPE_PTR:
 		ans[ai].rdata.ptr_record = talloc_strdup(ans, rec->data.ptr);
+		W_ERROR_HAVE_NO_MEMORY(ans[ai].rdata.ptr_record);
 		break;
 	case DNS_QTYPE_MX:
 		ans[ai].rdata.mx_record.preference = rec->data.mx.wPriority;
