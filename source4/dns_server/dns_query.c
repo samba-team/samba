@@ -309,11 +309,7 @@ static WERROR handle_question(struct dns_server *dns,
 			/* First build up the new question */
 			new_q->question_type = question->question_type;
 			new_q->question_class = question->question_class;
-			if (new_q->question_type == DNS_QTYPE_A) {
-				new_q->name = talloc_strdup(new_q, recs[ri].data.ipv4);
-			} else if (new_q->question_type == DNS_QTYPE_AAAA) {
-				new_q->name = talloc_strdup(new_q, recs[ri].data.ipv6);
-			}
+			new_q->name = talloc_strdup(new_q, recs[ri].data.cname);
 			if (new_q->name == NULL) {
 				TALLOC_FREE(new_q);
 				return WERR_NOMEM;
