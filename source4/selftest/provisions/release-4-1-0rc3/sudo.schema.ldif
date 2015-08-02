@@ -1,0 +1,235 @@
+# Copyright (c) 1994-1996, 1998-2015
+#        Todd C. Miller <Todd.Miller@courtesan.com>
+#
+#   Permission to use, copy, modify, and distribute this software for any
+#   purpose with or without fee is hereby granted, provided that the above
+#   copyright notice and this permission notice appear in all copies.
+#
+#   THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+#   WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+#   MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+#   ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+#   WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+#   ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+#   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+#
+#   Sponsored in part by the Defense Advanced Research Projects
+#   Agency (DARPA) and Air Force Research Laboratory, Air Force
+#   Materiel Command, USAF, under agreement number F39502-99-1-0512.
+#
+#
+# Active Directory Schema for sudo configuration (sudoers)
+#
+# To extend your Active Directory schema, run one of the following command
+# on your Windows DC (default port - Active Directory):
+#
+#  ldifde -i -f schema.ActiveDirectory -c "CN=Schema,CN=Configuration,DC=X" #schemaNamingContext
+#
+# or on your Windows DC if using another port (with Active Directory LightWeight Directory Services / ADAM-Active Directory Application Mode)
+# Port 50000 by example (or any other port specified when defining the ADLDS/ADAM instance
+#
+#  ldifde -i -f schema.ActiveDirectory -t 50000 -c "CN=Schema,CN=Configuration,DC=X" #schemaNamingContext
+#
+# or
+#
+#  ldifde -i -f schema.ActiveDirectory -s server:port -c "CN=Schema,CN=Configuration,DC=X" #schemaNamingContext
+#
+# Can add username domain and password
+#
+# -b username domain password
+#
+# Can create Log file in current or any directory
+#
+# -j .
+#
+
+dn: CN=sudoUser,CN=Schema,CN=Configuration,DC=release-4-1-0rc3,DC=samba,DC=corp
+changetype: add
+objectClass: top
+objectClass: attributeSchema
+cn: sudoUser
+distinguishedName: CN=sudoUser,CN=Schema,CN=Configuration,DC=release-4-1-0rc3,DC=samba,DC=corp
+instanceType: 4
+attributeID: 1.3.6.1.4.1.15953.9.1.1
+attributeSyntax: 2.5.5.5
+isSingleValued: FALSE
+showInAdvancedViewOnly: TRUE
+adminDisplayName: sudoUser
+adminDescription: User(s) who may run sudo
+oMSyntax: 22
+searchFlags: 1
+lDAPDisplayName: sudoUser
+name: sudoUser
+schemaIDGUID:: JrGcaKpnoU+0s+HgeFjAbg==
+objectCategory: CN=Attribute-Schema,CN=Schema,CN=Configuration,DC=release-4-1-0rc3,DC=samba,DC=corp
+
+dn: CN=sudoHost,CN=Schema,CN=Configuration,DC=release-4-1-0rc3,DC=samba,DC=corp
+changetype: add
+objectClass: top
+objectClass: attributeSchema
+cn: sudoHost
+distinguishedName: CN=sudoHost,CN=Schema,CN=Configuration,DC=release-4-1-0rc3,DC=samba,DC=corp
+instanceType: 4
+attributeID: 1.3.6.1.4.1.15953.9.1.2
+attributeSyntax: 2.5.5.5
+isSingleValued: FALSE
+showInAdvancedViewOnly: TRUE
+adminDisplayName: sudoHost
+adminDescription: Host(s) who may run sudo
+oMSyntax: 22
+lDAPDisplayName: sudoHost
+name: sudoHost
+schemaIDGUID:: d0TTjg+Y6U28g/Y+ns2k4w==
+objectCategory: CN=Attribute-Schema,CN=Schema,CN=Configuration,DC=release-4-1-0rc3,DC=samba,DC=corp
+
+dn: CN=sudoCommand,CN=Schema,CN=Configuration,DC=release-4-1-0rc3,DC=samba,DC=corp
+changetype: add
+objectClass: top
+objectClass: attributeSchema
+cn: sudoCommand
+distinguishedName: CN=sudoCommand,CN=Schema,CN=Configuration,DC=release-4-1-0rc3,DC=samba,DC=corp
+instanceType: 4
+attributeID: 1.3.6.1.4.1.15953.9.1.3
+attributeSyntax: 2.5.5.5
+isSingleValued: FALSE
+showInAdvancedViewOnly: TRUE
+adminDisplayName: sudoCommand
+adminDescription: Command(s) to be executed by sudo
+oMSyntax: 22
+lDAPDisplayName: sudoCommand
+name: sudoCommand
+schemaIDGUID:: D6QR4P5UyUen3RGYJCHCPg==
+objectCategory: CN=Attribute-Schema,CN=Schema,CN=Configuration,DC=release-4-1-0rc3,DC=samba,DC=corp
+
+dn: CN=sudoRunAs,CN=Schema,CN=Configuration,DC=release-4-1-0rc3,DC=samba,DC=corp
+changetype: add
+objectClass: top
+objectClass: attributeSchema
+cn: sudoRunAs
+distinguishedName: CN=sudoRunAs,CN=Schema,CN=Configuration,DC=release-4-1-0rc3,DC=samba,DC=corp
+instanceType: 4
+attributeID: 1.3.6.1.4.1.15953.9.1.4
+attributeSyntax: 2.5.5.5
+isSingleValued: FALSE
+showInAdvancedViewOnly: TRUE
+adminDisplayName: sudoRunAs
+adminDescription: User(s) impersonated by sudo (deprecated)
+oMSyntax: 22
+lDAPDisplayName: sudoRunAs
+name: sudoRunAs
+schemaIDGUID:: CP98mCQTyUKKxGrQeM80hQ==
+objectCategory: CN=Attribute-Schema,CN=Schema,CN=Configuration,DC=release-4-1-0rc3,DC=samba,DC=corp
+
+dn: CN=sudoOption,CN=Schema,CN=Configuration,DC=release-4-1-0rc3,DC=samba,DC=corp
+changetype: add
+objectClass: top
+objectClass: attributeSchema
+cn: sudoOption
+distinguishedName: CN=sudoOption,CN=Schema,CN=Configuration,DC=release-4-1-0rc3,DC=samba,DC=corp
+instanceType: 4
+attributeID: 1.3.6.1.4.1.15953.9.1.5
+attributeSyntax: 2.5.5.5
+isSingleValued: FALSE
+showInAdvancedViewOnly: TRUE
+adminDisplayName: sudoOption
+adminDescription: Option(s) followed by sudo
+oMSyntax: 22
+lDAPDisplayName: sudoOption
+name: sudoOption
+schemaIDGUID:: ojaPzBBlAEmsvrHxQctLnA==
+objectCategory: CN=Attribute-Schema,CN=Schema,CN=Configuration,DC=release-4-1-0rc3,DC=samba,DC=corp
+
+dn: CN=sudoRunAsUser,CN=Schema,CN=Configuration,DC=release-4-1-0rc3,DC=samba,DC=corp
+changetype: add
+objectClass: top
+objectClass: attributeSchema
+cn: sudoRunAsUser
+distinguishedName: CN=sudoRunAsUser,CN=Schema,CN=Configuration,DC=release-4-1-0rc3,DC=samba,DC=corp
+instanceType: 4
+attributeID: 1.3.6.1.4.1.15953.9.1.6
+attributeSyntax: 2.5.5.5
+isSingleValued: FALSE
+showInAdvancedViewOnly: TRUE
+adminDisplayName: sudoRunAsUser
+adminDescription: User(s) impersonated by sudo
+oMSyntax: 22
+lDAPDisplayName: sudoRunAsUser
+name: sudoRunAsUser
+schemaIDGUID:: 9C52yPYd3RG3jMR2VtiVkw==
+objectCategory: CN=Attribute-Schema,CN=Schema,CN=Configuration,DC=release-4-1-0rc3,DC=samba,DC=corp
+
+dn: CN=sudoRunAsGroup,CN=Schema,CN=Configuration,DC=release-4-1-0rc3,DC=samba,DC=corp
+changetype: add
+objectClass: top
+objectClass: attributeSchema
+cn: sudoRunAsGroup
+distinguishedName: CN=sudoRunAsGroup,CN=Schema,CN=Configuration,DC=release-4-1-0rc3,DC=samba,DC=corp
+instanceType: 4
+attributeID: 1.3.6.1.4.1.15953.9.1.7
+attributeSyntax: 2.5.5.5
+isSingleValued: FALSE
+showInAdvancedViewOnly: TRUE
+adminDisplayName: sudoRunAsGroup
+adminDescription: Groups(s) impersonated by sudo
+oMSyntax: 22
+lDAPDisplayName: sudoRunAsGroup
+name: sudoRunAsGroup
+schemaIDGUID:: xJhSt/Yd3RGJPTB1VtiVkw==
+objectCategory: CN=Attribute-Schema,CN=Schema,CN=Configuration,DC=release-4-1-0rc3,DC=samba,DC=corp
+
+dn: CN=sudoNotBefore,CN=Schema,CN=Configuration,DC=release-4-1-0rc3,DC=samba,DC=corp
+changetype: add
+objectClass: top
+objectClass: attributeSchema
+cn: sudoNotBefore
+distinguishedName: CN=sudoNotBefore,CN=Schema,CN=Configuration,DC=release-4-1-0rc3,DC=samba,DC=corp
+instanceType: 4
+attributeID: 1.3.6.1.4.1.15953.9.1.8
+attributeSyntax: 2.5.5.11
+isSingleValued: TRUE
+showInAdvancedViewOnly: TRUE
+adminDisplayName: sudoNotBefore
+adminDescription: Start of time interval for which the entry is valid
+oMSyntax: 24
+lDAPDisplayName:  sudoNotBefore
+name: sudoNotBefore
+schemaIDGUID:: dm1HnRfY4RGf4gopYYhwmw==
+objectCategory: CN=Attribute-Schema,CN=Schema,CN=Configuration,DC=release-4-1-0rc3,DC=samba,DC=corp
+
+dn: CN=sudoNotAfter,CN=Schema,CN=Configuration,DC=release-4-1-0rc3,DC=samba,DC=corp
+changetype: add
+objectClass: top
+objectClass: attributeSchema
+cn: sudoNotAfter
+distinguishedName: CN=sudoNotAfter,CN=Schema,CN=Configuration,DC=release-4-1-0rc3,DC=samba,DC=corp
+instanceType: 4
+attributeID: 1.3.6.1.4.1.15953.9.1.9
+attributeSyntax: 2.5.5.11
+isSingleValued: TRUE
+showInAdvancedViewOnly: TRUE
+adminDisplayName: sudoNotAfter
+adminDescription: End of time interval for which the entry is valid
+oMSyntax: 24
+lDAPDisplayName:  sudoNotAfter
+name: sudoNotAfter
+schemaIDGUID:: OAr/pBfY4RG9dBIpYYhwmw==
+objectCategory: CN=Attribute-Schema,CN=Schema,CN=Configuration,DC=release-4-1-0rc3,DC=samba,DC=corp
+
+dn: CN=sudoOrder,CN=Schema,CN=Configuration,DC=release-4-1-0rc3,DC=samba,DC=corp
+changetype: add
+objectClass: top
+objectClass: attributeSchema
+cn: sudoOrder
+distinguishedName: CN=sudoOrder,CN=Schema,CN=Configuration,DC=release-4-1-0rc3,DC=samba,DC=corp
+instanceType: 4
+attributeID: 1.3.6.1.4.1.15953.9.1.10
+attributeSyntax: 2.5.5.9
+isSingleValued: TRUE
+showInAdvancedViewOnly: TRUE
+adminDisplayName: sudoOrder
+adminDescription: an integer to order the sudoRole entries
+oMSyntax: 2
+lDAPDisplayName:  sudoOrder
+name: sudoOrder
+schemaIDGUID:: 0J8yrRfY4RGIYBUpYYhwmw==
+objectCategory: CN=Attribute-Schema,CN=Schema,CN=Configuration,DC=release-4-1-0rc3,DC=samba,DC=corp
