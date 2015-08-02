@@ -1,0 +1,30 @@
+# To reproduce the domain in this snapshot:
+
+git checkout 6a03c817b3a0ef278d10893eafd327ee20bdca58
+git cherry-pick f80d6500b93537e5513a9042006ae95a093e1484
+patch -p1 < rename-domains.patch
+
+# MASTER_SRC needs to point at where the schema files can be found, not the 4.1.0rc1 checkout
+
+SELFTEST_TESTENV=promoted_dc:local ./buildtools/bin/waf test --testenv
+
+# then in the testenv, run:
+
+bin/ldbadd -H st/dc/private/sam.ldb --configfile st/dc/private/sam.ldb  $MASTER_SRC/source4/selftest/provisions/release-4-1-0rc3/sudo.schema.ldif --option='dsdb:schema update allowed=yes'
+bin/ldbadd -H st/dc/private/sam.ldb --configfile st/dc/private/sam.ldb $MASTER_SRC/source4/selftest/provisions/release-4-1-0rc3/sudo.schema.2.ldif --option='dsdb:schema update allowed=yes'
+bin/ldbadd -H st/dc/private/sam.ldb --configfile st/dc/private/sam.ldb $MASTER_SRC/source4/selftest/provisions/release-4-1-0rc3/sudoers.ldif
+
+(wait some time, retry until successful)
+
+bin/samba-tool drs replicate $SERVER.$REALM $DC_SERVER.$REALM DC=release-4-1-0rc3,DC=samba,DC=corp -U$DC_USERNAME%$DC_PASSWORD
+bin/samba-tool drs replicate $DC_SERVER.$REALM $SERVER.$REALM DC=release-4-1-0rc3,DC=samba,DC=corp -U$DC_USERNAME%$DC_PASSWORD
+
+bin/ldbmodify -H st/promoted_dc/private/sam.ldb $MASTER_SRC/source4/selftest/provisions/release-4-1-0rc3/sudoers-mod.ldif
+
+bin/ldbsearch -H st/promoted_dc/private/sam.ldb cn=ops_run_anything \* replpropertymetadata --show-binary > source4/selftest/provisions/release-4-1-0rc3/expected-replpropertymetadata-before-dbcheck.ldif
+
+# Then these modified files can be pushed back into master by running
+
+$MASTER_SRC/source4/selftest/provisions/dump.sh st/promoted_dc $MASTER_SRC/source4/selftest/provisions/release-4-1-0rc3
+
+# Finally copy in expected-replpropertymetadata-before-dbcheck.ldif
