@@ -16,11 +16,11 @@ data(78) = "g\19\01&\02\00\00\00@OPTIONS\00checkBaseOnSearch\00\01\00\00\00\04\0
 }
 {
 key(12) = "DN=@ROOTDSE\00"
-data(781) = "g\19\01&\0A\00\00\00@ROOTDSE\00configurationNamingContext\00\01\00\00\005\00\00\00CN=Configuration,DC=release-4-1-0rc3,DC=samba,DC=corp\00defaultNamingContext\00\01\00\00\00$\00\00\00DC=release-4-1-0rc3,DC=samba,DC=corp\00rootDomainNamingContext\00\01\00\00\00$\00\00\00DC=release-4-1-0rc3,DC=samba,DC=corp\00schemaNamingContext\00\01\00\00\00?\00\00\00CN=Schema,CN=Configuration,DC=release-4-1-0rc3,DC=samba,DC=corp\00subschemaSubentry\00\01\00\00\00L\00\00\00CN=Aggregate,CN=Schema,CN=Configuration,DC=release-4-1-0rc3,DC=samba,DC=corp\00supportedCapabilities\00\05\00\00\00\16\00\00\001.2.840.113556.1.4.800\00\17\00\00\001.2.840.113556.1.4.1670\00\17\00\00\001.2.840.113556.1.4.1791\00\17\00\00\001.2.840.113556.1.4.1935\00\17\00\00\001.2.840.113556.1.4.2080\00supportedLDAPVersion\00\02\00\00\00\01\00\00\002\00\01\00\00\003\00vendorName\00\01\00\00\00\1D\00\00\00Samba Team (http://samba.org)\00isSynchronized\00\01\00\00\00\04\00\00\00TRUE\00dsServiceName\00\01\00\00\00+\00\00\00<GUID=4931fee3-29c8-4893-b6ba-00347758a3fe>\00"
+data(781) = "g\19\01&\0A\00\00\00@ROOTDSE\00configurationNamingContext\00\01\00\00\005\00\00\00CN=Configuration,DC=release-4-1-0rc3,DC=samba,DC=corp\00defaultNamingContext\00\01\00\00\00$\00\00\00DC=release-4-1-0rc3,DC=samba,DC=corp\00rootDomainNamingContext\00\01\00\00\00$\00\00\00DC=release-4-1-0rc3,DC=samba,DC=corp\00schemaNamingContext\00\01\00\00\00?\00\00\00CN=Schema,CN=Configuration,DC=release-4-1-0rc3,DC=samba,DC=corp\00subschemaSubentry\00\01\00\00\00L\00\00\00CN=Aggregate,CN=Schema,CN=Configuration,DC=release-4-1-0rc3,DC=samba,DC=corp\00supportedCapabilities\00\05\00\00\00\16\00\00\001.2.840.113556.1.4.800\00\17\00\00\001.2.840.113556.1.4.1670\00\17\00\00\001.2.840.113556.1.4.1791\00\17\00\00\001.2.840.113556.1.4.1935\00\17\00\00\001.2.840.113556.1.4.2080\00supportedLDAPVersion\00\02\00\00\00\01\00\00\002\00\01\00\00\003\00vendorName\00\01\00\00\00\1D\00\00\00Samba Team (http://samba.org)\00isSynchronized\00\01\00\00\00\04\00\00\00TRUE\00dsServiceName\00\01\00\00\00+\00\00\00<GUID=5a3712ce-77fa-4628-86ae-ccfd7713f5da>\00"
 }
 {
 key(13) = "DN=@BASEINFO\00"
-data(82) = "g\19\01&\02\00\00\00@BASEINFO\00sequenceNumber\00\01\00\00\00\02\00\00\0015\00whenChanged\00\01\00\00\00\11\00\00\0020130922054005.0Z\00"
+data(82) = "g\19\01&\02\00\00\00@BASEINFO\00sequenceNumber\00\01\00\00\00\02\00\00\0015\00whenChanged\00\01\00\00\00\11\00\00\0020150802224956.0Z\00"
 }
 {
 key(14) = "DN=@PARTITION\00"
