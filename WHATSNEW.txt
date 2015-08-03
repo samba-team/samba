@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the first release candidate of Samba 4.3.  This is *not*
+This is the second release candidate of Samba 4.3.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -13,6 +13,7 @@ UPGRADING
 =========
 
 Nothing special.
+
 
 NEW FEATURES
 ============
@@ -202,10 +203,28 @@ Removed modules
 
 vfs_notify_fam - see section 'New FileChangeNotify subsystem'.
 
+
 KNOWN ISSUES
 ============
 
 Currently none.
+
+
+CHANGES SINCE 4.2.0rc1
+======================
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 11359: strsep is not available on Solaris
+
+o   Björn Baumbach <bb@sernet.de>
+    * BUG 11421: Build with GPFS support is broken
+
+o   Justin Maggard <jmaggard@netgear.com>
+    * BUG 11320: "force group" with local group not working
+
+o   Martin Schwenke <martin@meltin.net
+    * BUG 11424: Build broken with --disable-python
+
 
 #######################################
 Reporting bugs & Development Discussion
@@ -217,7 +236,7 @@ joining the #samba-technical IRC channel on irc.freenode.net.
 If you do report problems then please try to send high quality
 feedback. If you don't provide vital information to help us track down
 the problem then you will probably be ignored.  All bug reports should
-be filed under the Samba 4.3 product in the project's Bugzilla
+be filed under the "Samba 4.1 and newer" product in the project's Bugzilla
 database (https://bugzilla.samba.org/).
 
 
