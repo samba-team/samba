@@ -38,7 +38,6 @@ bool fast_start;
 #include "common/ctdb_message.c"
 #include "common/cmdline.c"
 #include "common/rb_tree.c"
-#include "common/system_common.c"
 #include "common/ctdb_logging.c"
 #include "common/ctdb_fork.c"
 #include "common/system_util.c"

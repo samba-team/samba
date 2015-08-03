@@ -175,7 +175,6 @@ ctdb_get_capabilities(struct ctdb_context *ctdb,
 #include "common/ctdb_ltdb.c"
 #include "common/ctdb_message.c"
 #include "common/rb_tree.c"
-#include "common/system_common.c"
 #include "common/ctdb_logging.c"
 #include "common/ctdb_fork.c"
 #include "common/system_util.c"
