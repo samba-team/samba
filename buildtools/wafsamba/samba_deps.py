@@ -214,6 +214,9 @@ def add_init_functions(self):
     if m is not None:
         modules.append(m)
 
+    if 'pyembed' in self.features:
+        return
+
     sentinel = getattr(self, 'init_function_sentinel', 'NULL')
 
     targets    = LOCAL_CACHE(bld, 'TARGET_TYPE')
