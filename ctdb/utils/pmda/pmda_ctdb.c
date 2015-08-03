@@ -23,7 +23,6 @@
 #include <pcp/impl.h>
 #include <pcp/pmda.h>
 #include "includes.h"
-#include "ctdb.h"
 #include "ctdb_private.h"
 #include "ctdb_protocol.h"
 #include "domain.h"
@@ -535,6 +534,8 @@ err_stats:
 err_out:
 	return ret;
 }
+
+void pmda_ctdb_init(pmdaInterface *dp);
 
 /*
  * Initialise the agent
