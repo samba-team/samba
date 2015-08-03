@@ -26,7 +26,6 @@
 #include "lib/util/dlinklist.h"
 #include "librpc/gen_ndr/ndr_dnsserver.h"
 #include "dnsserver.h"
-#include "lib/ldb/include/ldb_private.h"
 
 struct dnsserver_state {
 	struct loadparm_context *lp_ctx;
