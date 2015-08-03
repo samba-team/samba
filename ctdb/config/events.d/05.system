@@ -17,6 +17,35 @@ validate_percentage ()
     esac
 }
 
+check_thresholds ()
+{
+    _thing="$1"
+    _thresholds="$2"
+    _usage="$3"
+
+    case "$_thresholds" in
+	*:*)
+	    _warn_threshold="${_thresholds%:*}"
+	    _unhealthy_threshold="${_thresholds#*:}"
+	    ;;
+	*)
+	    _warn_threshold="$_thresholds"
+	    _unhealthy_threshold=""
+    esac
+
+    if validate_percentage "$_unhealthy_threshold" "$_thing" ; then
+        if [ "$_usage" -ge "$_unhealthy_threshold" ] ; then
+	    die "ERROR: ${_thing} utilization ${_usage}% >= threshold ${_unhealthy_threshold}%"
+        fi
+    fi
+
+    if validate_percentage "$_warn_threshold" "$_what" ; then
+        if [ "$_usage" -ge "$_warn_threshold" ] ; then
+	    echo "WARNING: ${_thing} utilization ${_usage}% >= threshold ${_warn_threshold}%"
+        fi
+    fi
+}
+
 monitor_filesystem_usage ()
 {
     # Check each specified filesystem, specified in format
@@ -38,27 +67,9 @@ monitor_filesystem_usage ()
 	    continue
         fi
 
-	case "$_fs_thresholds" in
-	    *:*)
-		_fs_warn_threshold="${_fs_thresholds%:*}"
-		_fs_unhealthy_threshold="${_fs_thresholds#*:}"
-		;;
-	    *)
-		_fs_warn_threshold="$_fs_thresholds"
-		_fs_unhealthy_threshold=""
-	esac
-
-	if validate_percentage "$_fs_unhealthy_threshold" "$_fs" ; then
-            if [ "$_fs_usage" -ge "$_fs_unhealthy_threshold" ] ; then
-		die "ERROR: Filesystem ${_fs_mount} utilization ${_fs_usage}% >= threshold ${_fs_unhealthy_threshold}%"
-            fi
-	fi
-
-	if validate_percentage "$_fs_warn_threshold" "$_fs" ; then
-            if [ "$_fs_usage" -ge "$_fs_warn_threshold" ] ; then
-		echo "WARNING: Filesystem ${_fs_mount} utilization ${_fs_usage}% >= threshold ${_fs_warn_threshold}%"
-            fi
-	fi
+	check_thresholds "Filesystem ${_fs_mount}" \
+			 "$_fs_thresholds" \
+			 "$_fs_usage"
     done
 }
 
