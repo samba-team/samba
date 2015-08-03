@@ -4,7 +4,7 @@
 
 define_test "Memory check, bad situation, only swap check"
 
-setup_memcheck "bad"
+setup_memcheck 100 10
 
 CTDB_MONITOR_FREE_MEMORY=""
 CTDB_MONITOR_FREE_MEMORY_WARN=""

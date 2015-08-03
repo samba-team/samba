@@ -338,22 +338,23 @@ validate_percentage ()
 
 setup_memcheck ()
 {
+    _mem_usage="${1:-10}" # Default is 10%
+    _swap_usage="${2:-0}" # Default is  0%
+
     setup_ctdb
 
-    _swap_total="5857276"
+    _swap_total=5857276
+    _swap_free=$(( (100 - $_swap_usage) * $_swap_total / 100 ))
 
-    if [ "$1" = "bad" ] ; then
-	_swap_free="   4352"
-	_mem_cached="108568"
-    else
-	_swap_free="$_swap_total"
-	_mem_cached="1139348"
-    fi
+    _mem_total=3940712
+    _mem_free=225268
+    _mem_buffers=146120
+    _mem_cached=$(( $_mem_total * (100 - $_mem_usage) / 100 - $_mem_free - $_mem_buffers ))
 
     export FAKE_PROC_MEMINFO="\
-MemTotal:        3940712 kB
-MemFree:          225268 kB
-Buffers:          146120 kB
+MemTotal:        ${_mem_total} kB
+MemFree:          ${_mem_free} kB
+Buffers:          ${_mem_buffers} kB
 Cached:          ${_mem_cached} kB
 SwapCached:        56016 kB
 Active:          2422104 kB

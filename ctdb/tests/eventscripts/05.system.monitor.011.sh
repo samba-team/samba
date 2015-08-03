@@ -4,7 +4,7 @@
 
 define_test "Memory check, bad situation, no checks enabled"
 
-setup_memcheck "bad"
+setup_memcheck 100 100
 
 CTDB_MONITOR_FREE_MEMORY=""
 CTDB_MONITOR_FREE_MEMORY_WARN=""

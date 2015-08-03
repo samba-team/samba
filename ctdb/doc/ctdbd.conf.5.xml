@@ -1336,11 +1336,11 @@ CTDB_PER_IP_ROUTING_TABLE_ID_HIGH=9000
 	  <term>CTDB_MONITOR_FREE_MEMORY=<parameter>NUM</parameter></term>
 	  <listitem>
 	    <para>
-	      NUM is a lower limit on available system memory, expressed
-	      in megabytes.  If this is set and the amount of available
-	      memory falls below this limit then some debug information
-	      will be logged, the node will be disabled and then CTDB
-	      will be shut down.
+	      NUM is threshold of acceptable memory usage, expressed
+	      as a percentage.  If this is set and memory usage
+	      reaches this limit then some debug information will be
+	      logged, the node will be disabled and then CTDB will be
+	      shut down.
 	    </para>
 	    <para>
 	      No default.
@@ -1352,10 +1352,9 @@ CTDB_PER_IP_ROUTING_TABLE_ID_HIGH=9000
 	  <term>CTDB_MONITOR_FREE_MEMORY_WARN=<parameter>NUM</parameter></term>
 	  <listitem>
 	    <para>
-	      NUM is a lower limit on available system memory, expressed
-	      in megabytes.  If this is set and the amount of available
-	      memory falls below this limit then a warning will be
-	      logged.
+	      NUM is threshold of acceptable memory usage, expressed
+	      as a percentage.  If this is set and memory usage
+	      reaches this limit then a warning will be logged.
 	    </para>
 	    <para>
 	      No default.
