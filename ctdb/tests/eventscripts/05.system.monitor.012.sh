@@ -6,9 +6,8 @@ define_test "Memory check, good situation, all enabled"
 
 setup_memcheck
 
-CTDB_MONITOR_FREE_MEMORY="90"
-CTDB_MONITOR_FREE_MEMORY_WARN="80"
-CTDB_CHECK_SWAP_IS_NOT_USED="yes"
+CTDB_MONITOR_MEMORY_USAGE="80:90"
+CTDB_MONITOR_SWAP_USAGE="1:50"
 
 ok_null
 

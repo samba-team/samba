@@ -369,9 +369,8 @@ SwapTotal:       ${_swap_total} kB
 SwapFree:        ${_swap_free} kB
 ..."
 
-    export CTDB_MONITOR_FREE_MEMORY
-    export CTDB_MONITOR_FREE_MEMORY_WARN
-    export CTDB_CHECK_SWAP_IS_NOT_USED
+    export CTDB_MONITOR_MEMORY_USAGE
+    export CTDB_MONITOR_SWAP_USAGE
 }
 
 setup_fscheck ()

@@ -4,16 +4,17 @@
 
 define_test "Memory check, bad situation, only swap check"
 
-setup_memcheck 100 10
+setup_memcheck 100 90
 
-CTDB_MONITOR_FREE_MEMORY=""
-CTDB_MONITOR_FREE_MEMORY_WARN=""
-CTDB_CHECK_SWAP_IS_NOT_USED="yes"
+CTDB_MONITOR_MEMORY_USAGE=""
+CTDB_MONITOR_SWAP_USAGE=":50"
 
-ok <<EOF
-We are swapping:
+required_result 1 <<EOF
+ERROR: System swap utilization 90% >= threshold 50%
+CRITICAL: Shutting down CTDB!!!
 $FAKE_PROC_MEMINFO
 $(ps foobar)
+CTDB says BYE!
 EOF
 
 simple_test

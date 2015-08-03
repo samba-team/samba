@@ -22,6 +22,7 @@ check_thresholds ()
     _thing="$1"
     _thresholds="$2"
     _usage="$3"
+    _unhealthy_callout="$4"
 
     case "$_thresholds" in
 	*:*)
@@ -35,7 +36,9 @@ check_thresholds ()
 
     if validate_percentage "$_unhealthy_threshold" "$_thing" ; then
         if [ "$_usage" -ge "$_unhealthy_threshold" ] ; then
-	    die "ERROR: ${_thing} utilization ${_usage}% >= threshold ${_unhealthy_threshold}%"
+	    echo "ERROR: ${_thing} utilization ${_usage}% >= threshold ${_unhealthy_threshold}%"
+	    eval "$_unhealthy_callout"
+	    exit 1
         fi
     fi
 
@@ -73,11 +76,21 @@ monitor_filesystem_usage ()
     done
 }
 
+dump_memory_info ()
+{
+    echo "CRITICAL: Shutting down CTDB!!!"
+    get_proc "meminfo"
+    ps auxfww
+    set_proc "sysrq-trigger" "m"
+    ctdb disable
+    sleep 3
+    ctdb shutdown
+}
+
 monitor_memory_usage ()
 {
-    if [ -z "$CTDB_MONITOR_FREE_MEMORY_WARN" -a \
-	 -z "$CTDB_MONITOR_FREE_MEMORY" -a \
-	 "$CTDB_CHECK_SWAP_IS_NOT_USED" != "yes" ] ; then
+    if [ -z "$CTDB_MONITOR_MEMORY_USAGE" -a \
+	 -z "$CTDB_MONITOR_SWAP_USAGE" ] ; then
 	return
     fi
 
@@ -98,35 +111,15 @@ END {
     _mem_usage="$1"
     _swap_usage="$2"
 
-    # Shutdown CTDB when memory is below the configured limit
-    if [ -n "$CTDB_MONITOR_FREE_MEMORY" ] ; then
-	if [ $_mem_usage -ge $CTDB_MONITOR_FREE_MEMORY ] ; then
-	    echo "CRITICAL: OOM - ${_mem_usage}% usage >= ${CTDB_MONITOR_FREE_MEMORY}% (CTDB threshold)"
-	    echo "CRITICAL: Shutting down CTDB!!!"
-	    echo "$_meminfo"
-	    ps auxfww
-	    set_proc "sysrq-trigger" "m"
-	    ctdb disable
-	    sleep 3
-	    ctdb shutdown
-	fi
-    fi
+    check_thresholds "System memory" \
+		     "$CTDB_MONITOR_MEMORY_USAGE" \
+		     "$_mem_usage" \
+		     dump_memory_info
 
-    # Warn when low on memory
-    if [ -n "$CTDB_MONITOR_FREE_MEMORY_WARN" ] ; then
-	if [ $_mem_usage -ge $CTDB_MONITOR_FREE_MEMORY_WARN ] ; then
-	    echo "WARNING: memory usage is excessive - ${_mem_usage}% >=  ${CTDB_MONITOR_FREE_MEMORY_WARN}% (CTDB threshold)"
-	fi
-    fi
-
-    # We should never enter swap, so SwapTotal == SwapFree.
-    if [ "$CTDB_CHECK_SWAP_IS_NOT_USED" = "yes" ] ; then
-	if [ $_swap_usage -gt 0 ] ; then
-	    echo We are swapping:
-	    echo "$_meminfo"
-	    ps auxfww
-	fi
-    fi
+    check_thresholds "System swap" \
+		     "$CTDB_MONITOR_SWAP_USAGE" \
+		     "$_swap_usage" \
+		     dump_memory_info
 }
 
 

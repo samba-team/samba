@@ -1321,26 +1321,16 @@ CTDB_PER_IP_ROUTING_TABLE_ID_HIGH=9000
 	</varlistentry>
 
 	<varlistentry>
-	  <term>CTDB_CHECK_SWAP_IS_NOT_USED=yes|no</term>
+	  <term>CTDB_MONITOR_MEMORY_USAGE=<parameter>MEM-LIMITS</parameter></term>
 	  <listitem>
 	    <para>
-	      Should a warning be logged if swap space is in use.
-	    </para>
-	    <para>
-	      Default is no.
-	    </para>
-	  </listitem>
-	</varlistentry>
-
-	<varlistentry>
-	  <term>CTDB_MONITOR_FREE_MEMORY=<parameter>NUM</parameter></term>
-	  <listitem>
-	    <para>
-	      NUM is threshold of acceptable memory usage, expressed
-	      as a percentage.  If this is set and memory usage
-	      reaches this limit then some debug information will be
-	      logged, the node will be disabled and then CTDB will be
-	      shut down.
+	      MEM-LIMITS takes the form
+	      <parameter>WARN_LIMIT</parameter><optional>:<parameter>UNHEALTHY_LIMIT</parameter></optional>
+	      indicating that warnings should be logged if memory
+	      usage reaches WARN_LIMIT%.  If usage reaches
+	      UNHEALTHY_LIMIT then the node should be flagged
+	      unhealthy.  Either WARN_LIMIT or UNHEALTHY_LIMIT may be
+	      left blank, meaning that check will be omitted.
 	    </para>
 	    <para>
 	      No default.
@@ -1349,12 +1339,16 @@ CTDB_PER_IP_ROUTING_TABLE_ID_HIGH=9000
 	</varlistentry>
 
 	<varlistentry>
-	  <term>CTDB_MONITOR_FREE_MEMORY_WARN=<parameter>NUM</parameter></term>
+	  <term>CTDB_MONITOR_SWAP_USAGE=<parameter>SWAP-LIMITS</parameter></term>
 	  <listitem>
 	    <para>
-	      NUM is threshold of acceptable memory usage, expressed
-	      as a percentage.  If this is set and memory usage
-	      reaches this limit then a warning will be logged.
+	      SWAP-LIMITS takes the form
+	      <parameter>WARN_LIMIT</parameter><optional>:<parameter>UNHEALTHY_LIMIT</parameter></optional>
+	       indicating that warnings should be logged if
+	      swap usage reaches WARN_LIMIT%.  If usage reaches
+	      UNHEALTHY_LIMIT then the node should be flagged
+	      unhealthy.  Either WARN_LIMIT or UNHEALTHY_LIMIT may be
+	      left blank, meaning that check will be omitted.
 	    </para>
 	    <para>
 	      No default.

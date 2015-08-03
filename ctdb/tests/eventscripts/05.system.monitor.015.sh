@@ -6,12 +6,11 @@ define_test "Memory check, bad situation, only memory critical"
 
 setup_memcheck 90 0
 
-CTDB_MONITOR_FREE_MEMORY="85"
-CTDB_MONITOR_FREE_MEMORY_WARN=""
-CTDB_CHECK_SWAP_IS_NOT_USED="no"
+CTDB_MONITOR_MEMORY_USAGE=":85"
+CTDB_MONITOR_SWAP_USAGE=""
 
-ok <<EOF
-CRITICAL: OOM - 90% usage >= 85% (CTDB threshold)
+required_result 1 <<EOF
+ERROR: System memory utilization 90% >= threshold 85%
 CRITICAL: Shutting down CTDB!!!
 $FAKE_PROC_MEMINFO
 $(ps foobar)
