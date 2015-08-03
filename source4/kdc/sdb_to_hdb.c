@@ -31,8 +31,40 @@
 static void sdb_flags_to_hdb_flags(const struct SDBFlags *s,
 				   HDBFlags *h)
 {
-	/* as long as we are a 100% copy... */
-	memcpy(h, s, sizeof(*s));
+	SMB_ASSERT(sizeof(struct SDBFlags) == sizeof(HDBFlags));
+
+	h->initial = s->initial;
+	h->forwardable = s->forwardable;
+	h->proxiable = s->proxiable;
+	h->renewable = s->renewable;
+	h->postdate = s->postdate;
+	h->server = s->server;
+	h->client = s->client;
+	h->invalid = s->invalid;
+	h->require_preauth = s->require_preauth;
+	h->change_pw = s->change_pw;
+	h->require_hwauth = s->require_hwauth;
+	h->ok_as_delegate = s->ok_as_delegate;
+	h->user_to_user = s->user_to_user;
+	h->immutable = s->immutable;
+	h->trusted_for_delegation = s->trusted_for_delegation;
+	h->allow_kerberos4 = s->allow_kerberos4;
+	h->allow_digest = s->allow_digest;
+	h->locked_out = s->locked_out;
+	h->_unused18 = s->_unused18;
+	h->_unused19 = s->_unused19;
+	h->_unused20 = s->_unused20;
+	h->_unused21 = s->_unused21;
+	h->_unused22 = s->_unused22;
+	h->_unused23 = s->_unused23;
+	h->_unused24 = s->_unused24;
+	h->_unused25 = s->_unused25;
+	h->_unused26 = s->_unused26;
+	h->_unused27 = s->_unused27;
+	h->_unused28 = s->_unused28;
+	h->_unused29 = s->_unused29;
+	h->_unused30 = s->_unused30;
+	h->do_not_store = s->do_not_store;
 }
 
 static int sdb_salt_to_Salt(const struct sdb_salt *s, Salt *h)
