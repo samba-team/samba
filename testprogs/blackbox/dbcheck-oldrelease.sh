@@ -20,6 +20,11 @@ if [ -x "$BINDIR/ldbmodify" ]; then
     ldbmodify="$BINDIR/ldbmodify"
 fi
 
+ldbsearch="ldbsearch"
+if [ -x "$BINDIR/ldbsearch" ]; then
+    ldbsearch="$BINDIR/ldbsearch"
+fi
+
 undump() {
        if test -x $BINDIR/tdbrestore;
        then
@@ -136,10 +141,35 @@ reindex() {
        $PYTHON $BINDIR/samba-tool dbcheck --reindex -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb $@
 }
 
+check_expected_before_values() {
+    if [ x$RELEASE = x"release-4-1-0rc3" ]; then
+	tmpldif=$PREFIX_ABS/$RELEASE/expected-replpropertymetadata-before-dbcheck.ldif.tmp
+	TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb -s base -b CN=ops_run_anything,OU=SUDOers,DC=release-4-1-0rc3,DC=samba,DC=corp \* replpropertymetadata --show-binary > $tmpldif
+	diff $tmpldif $release_dir/expected-replpropertymetadata-before-dbcheck.ldif
+	if [ "$?" != "0" ]; then
+	    return 1
+	fi
+    fi
+    return 0
+}
+
 # This should 'fail', because it returns the number of modified records
 dbcheck() {
        $PYTHON $BINDIR/samba-tool dbcheck --cross-ncs --fix --yes -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb $@
 }
+
+check_expected_after_values() {
+    if [ x$RELEASE = x"release-4-1-0rc3" ]; then
+	tmpldif=$PREFIX_ABS/$RELEASE/expected-replpropertymetadata-after-dbcheck.ldif.tmp
+	TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb -s base -b CN=ops_run_anything,OU=SUDOers,DC=release-4-1-0rc3,DC=samba,DC=corp \* replpropertymetadata --show-binary > $tmpldif
+	diff -u $tmpldif $release_dir/expected-replpropertymetadata-after-dbcheck.ldif
+	if [ "$?" != "0" ]; then
+	    return 1
+	fi
+    fi
+    return 0
+}
+
 # But having fixed it all up, this should pass
 dbcheck_clean() {
        $PYTHON $BINDIR/samba-tool dbcheck --cross-ncs -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb $@
@@ -198,7 +228,9 @@ ldapcmp_sd() {
 if [ -d $release_dir ]; then
     testit $RELEASE undump
     testit "reindex" reindex
+    testit "check_expected_before_values" check_expected_before_values
     testit_expect_failure "dbcheck" dbcheck
+    testit "check_expected_after_values" check_expected_after_values
     testit "dbcheck_clean" dbcheck_clean
     testit_expect_failure "dbcheck_acl_reset" dbcheck_acl_reset
     testit "dbcheck_acl_reset_clean" dbcheck_acl_reset_clean
@@ -221,12 +253,20 @@ EOF
     subunit_skip_test "reindex" <<EOF
 no test provision
 EOF
+    subunit_start_test check_expected_before_values
+    subunit_skip_test check_expected_before_values<<EOF
+no test provision
+EOF
     subunit_start_test "dbcheck"
     subunit_skip_test "dbcheck" <<EOF
 no test provision
 EOF
     subunit_start_test "dbcheck_clean"
     subunit_skip_test "dbcheck_clean" <<EOF
+no test provision
+EOF
+    subunit_start_test check_expected_after_values
+    subunit_skip_test check_expected_after_values<<EOF
 no test provision
 EOF
     subunit_start_test "dbcheck_acl_reset"
@@ -257,6 +297,11 @@ EOF
 no test provision
 EOF
 
+    subunit_start_test check_expected_before_values
+    subunit_skip_test check_expected_before_values<<EOF
+no test provision
+EOF
+
     subunit_start_test "dbcheck2"
     subunit_skip_test "dbcheck2" <<EOF
 no test provision
@@ -277,7 +322,7 @@ EOF
 fi
 
 if [ -d $PREFIX_ABS/${RELEASE} ]; then
-  rm -fr $PREFIX_ABS/${RELEASE}
+    rm -fr $PREFIX_ABS/${RELEASE}
 fi
 
 if [ -d $PREFIX_ABS/${RELEASE}_reference ]; then
