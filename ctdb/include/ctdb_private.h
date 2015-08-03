@@ -1136,10 +1136,7 @@ struct ctdb_lock_info {
 	bool read_only;
 };
 
-char *ctdb_get_process_name(pid_t pid);
 int ctdb_set_process_name(const char *name);
-bool ctdb_get_lock_info(pid_t req_pid, struct ctdb_lock_info *lock_info);
-bool ctdb_get_blocker_pid(struct ctdb_lock_info *reqlock, pid_t *blocker_pid);
 
 typedef void (*client_async_callback)(struct ctdb_context *ctdb, uint32_t node_pnn, int32_t res, TDB_DATA outdata, void *callback_data);
 
