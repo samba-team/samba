@@ -11,7 +11,6 @@ CTDB_MONITOR_SWAP_USAGE=""
 
 required_result 1 <<EOF
 ERROR: System memory utilization 87% >= threshold 80%
-CRITICAL: Shutting down CTDB!!!
 MemTotal:        3940712 kB
 MemFree:          225268 kB
 Buffers:          146120 kB
@@ -36,7 +35,6 @@ root         1  0.0  0.0   2976   624 ?        Ss   Aug28   0:07 init [2]
 root       495  0.0  0.0   3888  1640 ?        Ss   Aug28   0:00 udevd --daemon
 ...
 [MORE FAKE ps OUTPUT]
-CTDB says BYE!
 EOF
 
 simple_test

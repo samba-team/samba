@@ -78,13 +78,9 @@ monitor_filesystem_usage ()
 
 dump_memory_info ()
 {
-    echo "CRITICAL: Shutting down CTDB!!!"
     get_proc "meminfo"
     ps auxfww
     set_proc "sysrq-trigger" "m"
-    ctdb disable
-    sleep 3
-    ctdb shutdown
 }
 
 monitor_memory_usage ()
