@@ -1303,13 +1303,16 @@ CTDB_PER_IP_ROUTING_TABLE_ID_HIGH=9000
       <variablelist>
 
 	<varlistentry>
-	  <term>CTDB_CHECK_FS_USE=<parameter>FS-LIMIT-LIST</parameter></term>
+	  <term>CTDB_MONITOR_FILESYSTEM_USAGE=<parameter>FS-LIMIT-LIST</parameter></term>
 	  <listitem>
 	    <para>
 	      FS-LIMIT-LIST is a space-separated list of
-	      <parameter>FILESYSTEM</parameter>:<parameter>LIMIT</parameter>
-	      pairs indicating that a node should be flagged unhealthy
-	      if the space used on FILESYSTEM reaches LIMIT%.
+	      <parameter>FILESYSTEM</parameter>:<parameter>WARN_LIMIT</parameter><optional>:<parameter>UNHEALTHY_LIMIT</parameter></optional>
+	      triples indicating that warnings should be logged if the
+	      space used on FILESYSTEM reaches WARN_LIMIT%.  If usage
+	      reaches UNHEALTHY_LIMIT then the node should be flagged
+	      unhealthy.  Either WARN_LIMIT or UNHEALTHY_LIMIT may be
+	      left blank, meaning that check will be omitted.
 	    </para>
 
 	    <para>

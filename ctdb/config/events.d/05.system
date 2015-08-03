@@ -7,25 +7,28 @@
 . $CTDB_BASE/functions
 loadconfig
 
+validate_percentage ()
+{
+    case "$1" in
+	"") return 1 ;;  # A failure that doesn't need a warning
+	[0-9]|[0-9][0-9]|100) return 0 ;;
+	*) echo "WARNING: ${1} is an invalid percentage${2:+ in \"}${2}${2:+\"} check"
+	   return 1
+    esac
+}
+
 monitor_filesystem_usage ()
 {
     # Check each specified filesystem, specified in format
-    # <fs_mount>:<fs_threshold>, where <fs_threshold> is a
-    # percentage.
-    for _fs in $CTDB_CHECK_FS_USE ; do
-        _fs_mount="${_fs%:*}"
-        _fs_threshold="${_fs#*:}"
+    # <fs_mount>:<fs_warn_threshold>[:fs_unhealthy_threshold]
+    for _fs in $CTDB_MONITOR_FILESYSTEM_USAGE ; do
+	_fs_mount="${_fs%%:*}"
+	_fs_thresholds="${_fs#*:}"
 
         if [ ! -d "$_fs_mount" ]; then
             echo "WARNING: Directory ${_fs_mount} does not exist"
 	    continue
         fi
-
-	case "$_fs_threshold" in
-	    [0-9]|[0-9][0-9]|100) : ;;
-	    *) echo "WARNING: Threshold ${_fs_threshold} is invalid number"
-	       continue
-	esac
 
         # Get current utilization
         _fs_usage=$(df -kP "$_fs_mount" | \
@@ -35,9 +38,27 @@ monitor_filesystem_usage ()
 	    continue
         fi
 
-        if [ "$_fs_usage" -ge "$_fs_threshold" ] ; then
-            die "ERROR: Utilization of ${_fs_mount} ${_fs_usage}% >= threshold ${_fs_threshold}%"
-        fi
+	case "$_fs_thresholds" in
+	    *:*)
+		_fs_warn_threshold="${_fs_thresholds%:*}"
+		_fs_unhealthy_threshold="${_fs_thresholds#*:}"
+		;;
+	    *)
+		_fs_warn_threshold="$_fs_thresholds"
+		_fs_unhealthy_threshold=""
+	esac
+
+	if validate_percentage "$_fs_unhealthy_threshold" "$_fs" ; then
+            if [ "$_fs_usage" -ge "$_fs_unhealthy_threshold" ] ; then
+		die "ERROR: Filesystem ${_fs_mount} utilization ${_fs_usage}% >= threshold ${_fs_unhealthy_threshold}%"
+            fi
+	fi
+
+	if validate_percentage "$_fs_warn_threshold" "$_fs" ; then
+            if [ "$_fs_usage" -ge "$_fs_warn_threshold" ] ; then
+		echo "WARNING: Filesystem ${_fs_mount} utilization ${_fs_usage}% >= threshold ${_fs_warn_threshold}%"
+            fi
+	fi
     done
 }
 
