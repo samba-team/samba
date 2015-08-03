@@ -1747,6 +1747,7 @@ static void *thread_fn(void *arg)
 		ret = pthread_cond_wait(&condvar, &mtx);
 		if (ret != 0) {
 			talloc_free(top_ctx);
+			pthread_mutex_unlock(&mtx);
 			return NULL;
 		}
 	}
