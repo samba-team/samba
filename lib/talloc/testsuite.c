@@ -1828,6 +1828,7 @@ static bool test_pthread_talloc_passing(void)
 				printf("pthread_cond_wait %d failed (%d)\n", i,
 					ret);
 				talloc_free(mem_ctx);
+				pthread_mutex_unlock(&mtx);
 				return false;
 			}
 		}
