@@ -573,6 +573,16 @@ ip_route_add ()
     mkdir -p "$FAKE_IP_STATE/routes"
     touch "$_f"
 
+    # Check for duplicate
+    _prefix_regexp=$(echo "^${_prefix}" | sed -e 's@\.@\\.@g')
+    if [ -n "$_metric" ] ; then
+	_prefix_regexp="${_prefix_regexp} .*metric ${_metric} "
+    fi
+    if grep -q "$_prefix_regexp" "$_f" ; then
+	echo "RTNETLINK answers: File exists" >&2
+	exit 1
+    fi
+
     (
 	flock 0
 
