@@ -61,13 +61,13 @@ bld.SAMBA_SUBSYSTEM('WDC_SAMBA4',
 bld.SAMBA_SUBSYSTEM('sdb',
 	source='sdb.c',
 	includes=kdc_include,
-	deps='krb5',
+	deps='talloc krb5',
 	)
 
 bld.SAMBA_SUBSYSTEM('sdb_hdb',
 	source='sdb_to_hdb.c',
 	includes=kdc_include,
-	deps='sdb hdb',
+	deps='talloc sdb hdb',
 	autoproto='sdb_hdb.h',
 	enabled=bld.CONFIG_SET('SAMBA4_USES_HEIMDAL')
 	)
