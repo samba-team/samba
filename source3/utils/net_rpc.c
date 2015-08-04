@@ -4342,10 +4342,25 @@ static struct full_alias *server_aliases;
 /*
  * Add an alias to the static list.
  */
-static void push_alias(TALLOC_CTX *mem_ctx, struct full_alias *alias)
+static void push_alias(struct full_alias *alias)
 {
-	if (server_aliases == NULL)
-		server_aliases = SMB_MALLOC_ARRAY(struct full_alias, 100);
+	size_t array_size;
+
+	if (server_aliases == NULL) {
+		server_aliases = talloc_array(NULL, struct full_alias, 100);
+		if (server_aliases == NULL) {
+			smb_panic("talloc_array failed");
+		}
+	}
+
+	array_size = talloc_array_length(server_aliases);
+	if (array_size == num_server_aliases) {
+		server_aliases = talloc_realloc(NULL, server_aliases,
+						struct full_alias, array_size + 100);
+		if (server_aliases == NULL) {
+			smb_panic("talloc_realloc failed");
+		}
+	}
 
 	server_aliases[num_server_aliases] = *alias;
 	num_server_aliases += 1;
@@ -4454,7 +4469,7 @@ static NTSTATUS rpc_fetch_domain_aliases(struct rpc_pipe_client *pipe_hnd,
 			sid_compose(&alias.sid, domain_sid,
 				    groups->entries[i].idx);
 
-			push_alias(mem_ctx, &alias);
+			push_alias(&alias);
 		}
 	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
 
@@ -5084,6 +5099,7 @@ static NTSTATUS rpc_share_allowedusers_internals(struct net_context *c,
 		free_user_token(&tokens[i].token);
 	}
 	SAFE_FREE(tokens);
+	TALLOC_FREE(server_aliases);
 
 	return nt_status;
 }
