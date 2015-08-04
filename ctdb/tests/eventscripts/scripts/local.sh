@@ -470,7 +470,7 @@ create_policy_routing_config ()
     fi |
     while read _dev _ip _bits ; do
 	_net=$(ipv4_host_addr_to_net "$_ip" "$_bits")
-	_gw="${_net%.*}.1" # a dumb, calculated default
+	_gw="${_net%.*}.254" # a dumb, calculated default
 
 	echo "$_ip $_net"
 
@@ -499,7 +499,7 @@ check_routes ()
     fi | {
 	while read _dev _ip _bits ; do
 	    _net=$(ipv4_host_addr_to_net "$_ip" "$_bits")
-	    _gw="${_net%.*}.1" # a dumb, calculated default
+	    _gw="${_net%.*}.254" # a dumb, calculated default
 
 	    _policy_rules="${_policy_rules}
 ${CTDB_PER_IP_ROUTING_RULE_PREF}:	from $_ip lookup ctdb.$_ip "
