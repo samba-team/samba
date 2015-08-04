@@ -1197,7 +1197,7 @@ bool is_myname(const char *s)
 	for (n=0; my_netbios_names(n); n++) {
 		const char *nbt_name = my_netbios_names(n);
 
-		if (strncasecmp_m(nbt_name, s, strlen(nbt_name)) == 0) {
+		if (strncasecmp_m(nbt_name, s, MAX_NETBIOSNAME_LEN-1) == 0) {
 			ret=True;
 			break;
 		}
