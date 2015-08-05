@@ -177,6 +177,22 @@ The "tls priority" option can be used to change the supported TLS
 protocols. The default is to disable SSLv3, which is no longer
 considered secure.
 
+Samba-tool now supports all 7 FSMO roles
+-------------------------------------------------------
+
+Previously "samba-tool fsmo" could only show, transfer or seize the
+five well-known FSMO roles:
+
+	Schema Master
+	Domain Naming Master
+	RID Master
+	PDC Emulator
+	Infrastructure Master
+
+It can now also show, transfer or seize the DNS infrastructure roles:
+
+	DomainDnsZones Infrastructure Master
+	ForestDnsZones Infrastructure Master
 
 ######################################################################
 Changes
