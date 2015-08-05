@@ -210,11 +210,11 @@ KNOWN ISSUES
 Currently none.
 
 
-CHANGES SINCE 4.2.0rc2
+CHANGES SINCE 4.3.0rc2
 ======================
 
 
-CHANGES SINCE 4.2.0rc1
+CHANGES SINCE 4.3.0rc1
 ======================
 
 o   Jeremy Allison <jra@samba.org>
