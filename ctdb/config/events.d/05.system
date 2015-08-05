@@ -7,6 +7,8 @@
 . $CTDB_BASE/functions
 loadconfig
 
+ctdb_setup_service_state_dir "system-monitoring"
+
 validate_percentage ()
 {
     case "$1" in
@@ -34,17 +36,33 @@ check_thresholds ()
 	    _unhealthy_threshold=""
     esac
 
+    _t=$(echo "$_thing" | sed -e 's@/@SLASH_@g' -e 's@ @_@g')
+    _cache="${service_state_dir}/cache_${_t}"
     if validate_percentage "$_unhealthy_threshold" "$_thing" ; then
         if [ "$_usage" -ge "$_unhealthy_threshold" ] ; then
 	    echo "ERROR: ${_thing} utilization ${_usage}% >= threshold ${_unhealthy_threshold}%"
 	    eval "$_unhealthy_callout"
+	    echo "$_usage" >"$_cache"
 	    exit 1
         fi
     fi
 
     if validate_percentage "$_warn_threshold" "$_what" ; then
         if [ "$_usage" -ge "$_warn_threshold" ] ; then
-	    echo "WARNING: ${_thing} utilization ${_usage}% >= threshold ${_warn_threshold}%"
+	    if [ -r "$_cache" ] ; then
+		read _prev <"$_cache"
+	    else
+		_prev=""
+	    fi
+	    if [ "$_usage" != "$_prev" ] ; then
+		echo "WARNING: ${_thing} utilization ${_usage}% >= threshold ${_warn_threshold}%"
+		echo "$_usage" >"$_cache"
+	    fi
+	else
+	    if [ -r "$_cache" ] ; then
+		echo "NOTICE: ${_thing} utilization ${_usage}% < threshold ${_warn_threshold}%"
+	    fi
+	    rm -f "$_cache"
         fi
     fi
 }
