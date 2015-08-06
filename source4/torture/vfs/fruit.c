@@ -1060,6 +1060,7 @@ static bool write_stream(struct smb2_tree *tree,
 static bool torture_setup_local_xattr(struct torture_context *tctx,
 				      const char *path_option,
 				      const char *name,
+				      const char *xattr,
 				      const char *metadata,
 				      size_t size)
 {
@@ -1076,7 +1077,7 @@ static bool torture_setup_local_xattr(struct torture_context *tctx,
 
 	path = talloc_asprintf(tctx, "%s/%s", spath, name);
 
-	result = setxattr(path, AFPINFO_EA_NETATALK, metadata, size, 0);
+	result = setxattr(path, xattr, metadata, size, 0);
 	if (result != 0) {
 		ret = false;
 	}
@@ -1195,6 +1196,7 @@ static bool test_read_atalk_metadata(struct torture_context *tctx,
 
 	ret = torture_setup_local_xattr(tctx, "localdir",
 					BASEDIR "/torture_read_metadata",
+					AFPINFO_EA_NETATALK,
 					metadata_xattr, sizeof(metadata_xattr));
 	if (ret == false) {
 		goto done;
