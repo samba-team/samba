@@ -1421,6 +1421,123 @@ done:
 	return ret;
 }
 
+static bool test_rfork_truncate(struct torture_context *tctx,
+				struct smb2_tree *tree1,
+				struct smb2_tree *tree2)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	const char *fname = BASEDIR "\\torture_rfork_truncate";
+	const char *rfork = BASEDIR "\\torture_rfork_truncate" AFPRESOURCE_STREAM;
+	const char *rfork_content = "1234567890";
+	NTSTATUS status;
+	struct smb2_handle testdirh;
+	bool ret = true;
+	struct smb2_create create;
+	struct smb2_handle fh1, fh2, fh3;
+	union smb_setfileinfo sinfo;
+
+	smb2_util_unlink(tree1, fname);
+
+	status = torture_smb2_testdir(tree1, BASEDIR, &testdirh);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "torture_smb2_testdir");
+	smb2_util_close(tree1, testdirh);
+
+	ret = torture_setup_file(mem_ctx, tree1, fname, false);
+	if (ret == false) {
+		goto done;
+	}
+
+	ret &= write_stream(tree1, __location__, tctx, mem_ctx,
+			    fname, AFPRESOURCE_STREAM,
+			    10, 10, rfork_content);
+
+	/* Truncate back to size 0, further access MUST return ENOENT */
+
+	torture_comment(tctx, "(%s) truncate resource fork to size 0\n",
+			__location__);
+
+	ZERO_STRUCT(create);
+	create.in.create_disposition  = NTCREATEX_DISP_OPEN;
+	create.in.desired_access      = SEC_STD_READ_CONTROL | SEC_FILE_ALL;
+	create.in.file_attributes     = FILE_ATTRIBUTE_NORMAL;
+	create.in.fname               = fname;
+	create.in.share_access        = NTCREATEX_SHARE_ACCESS_DELETE |
+		NTCREATEX_SHARE_ACCESS_READ |
+		NTCREATEX_SHARE_ACCESS_WRITE;
+	status = smb2_create(tree1, mem_ctx, &create);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "smb2_create");
+	fh1 = create.out.file.handle;
+
+	ZERO_STRUCT(create);
+	create.in.create_disposition  = NTCREATEX_DISP_OPEN_IF;
+	create.in.desired_access      = SEC_STD_READ_CONTROL | SEC_FILE_ALL;
+	create.in.file_attributes     = FILE_ATTRIBUTE_NORMAL;
+	create.in.fname               = rfork;
+	create.in.share_access        = NTCREATEX_SHARE_ACCESS_DELETE |
+		NTCREATEX_SHARE_ACCESS_READ |
+		NTCREATEX_SHARE_ACCESS_WRITE;
+	status = smb2_create(tree1, mem_ctx, &create);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "smb2_create");
+	fh2 = create.out.file.handle;
+
+	ZERO_STRUCT(sinfo);
+	sinfo.end_of_file_info.level = RAW_SFILEINFO_END_OF_FILE_INFORMATION;
+	sinfo.end_of_file_info.in.file.handle = fh2;
+	sinfo.end_of_file_info.in.size = 0;
+	status = smb2_setinfo_file(tree1, &sinfo);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "smb2_setinfo_file");
+
+	/*
+	 * Now check size, we should get OBJECT_NAME_NOT_FOUND (!)
+	 */
+	ZERO_STRUCT(create);
+	create.in.create_disposition  = NTCREATEX_DISP_OPEN;
+	create.in.desired_access      = SEC_FILE_ALL;
+	create.in.file_attributes     = FILE_ATTRIBUTE_NORMAL;
+	create.in.fname               = rfork;
+	create.in.share_access        = NTCREATEX_SHARE_ACCESS_DELETE |
+		NTCREATEX_SHARE_ACCESS_READ |
+		NTCREATEX_SHARE_ACCESS_WRITE;
+	status = smb2_create(tree1, mem_ctx, &create);
+	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_OBJECT_NAME_NOT_FOUND, ret, done, "smb2_create");
+
+	/*
+	 * Do another open on the rfork and write to the new handle. A
+	 * naive server might unlink the AppleDouble resource fork
+	 * file when its truncated to 0 bytes above, so in case both
+	 * open handles share the same underlying fd, the unlink would
+	 * cause the below write to be lost.
+	 */
+	ZERO_STRUCT(create);
+	create.in.create_disposition  = NTCREATEX_DISP_OPEN_IF;
+	create.in.desired_access      = SEC_STD_READ_CONTROL | SEC_FILE_ALL;
+	create.in.file_attributes     = FILE_ATTRIBUTE_NORMAL;
+	create.in.fname               = rfork;
+	create.in.share_access        = NTCREATEX_SHARE_ACCESS_DELETE |
+		NTCREATEX_SHARE_ACCESS_READ |
+		NTCREATEX_SHARE_ACCESS_WRITE;
+	status = smb2_create(tree1, mem_ctx, &create);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "smb2_create");
+	fh3 = create.out.file.handle;
+
+	status = smb2_util_write(tree1, fh3, "foo", 0, 3);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "smb2_util_write");
+
+	smb2_util_close(tree1, fh3);
+	smb2_util_close(tree1, fh2);
+	smb2_util_close(tree1, fh1);
+
+	ret = check_stream(tree1, __location__, tctx, mem_ctx, fname, AFPRESOURCE_STREAM,
+			   0, 3, 0, 3, "foo");
+	torture_assert_goto(tctx, ret == true, ret, done, "check_stream");
+
+done:
+	smb2_util_unlink(tree1, fname);
+	smb2_deltree(tree1, BASEDIR);
+	talloc_free(mem_ctx);
+	return ret;
+}
+
 static bool test_adouble_conversion(struct torture_context *tctx,
 				    struct smb2_tree *tree1,
 				    struct smb2_tree *tree2)
@@ -2330,6 +2447,7 @@ struct torture_suite *torture_vfs_fruit(void)
 	torture_suite_add_2ns_smb2_test(suite, "OS X AppleDouble file conversion", test_adouble_conversion);
 	torture_suite_add_2ns_smb2_test(suite, "SMB2/CREATE context AAPL", test_aapl);
 	torture_suite_add_2ns_smb2_test(suite, "stream names", test_stream_names);
+	torture_suite_add_2ns_smb2_test(suite, "truncate resource fork to 0 bytes", test_rfork_truncate);
 
 	return suite;
 }
