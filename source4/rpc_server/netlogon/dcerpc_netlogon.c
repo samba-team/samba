@@ -170,17 +170,6 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 		}
 	}
 
-	/*
-	 * At this point we can cleanup the cache entry,
-	 * if we fail the client needs to call netr_ServerReqChallenge
-	 * again.
-	 *
-	 * Note: this handles global_challenge_table == NULL
-	 * and also a non existing record just fine.
-	 */
-	memcache_delete(global_challenge_table,
-			SINGLETON_CACHE, challenge_key);
-
 	server_flags = NETLOGON_NEG_ACCOUNT_LOCKOUT |
 		       NETLOGON_NEG_PERSISTENT_SAMREPL |
 		       NETLOGON_NEG_ARCFOUR |
@@ -225,6 +214,17 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 		*r->out.negotiate_flags = 0;
 		return NT_STATUS_DOWNGRADE_DETECTED;
 	}
+
+	/*
+	 * At this point we can cleanup the cache entry,
+	 * if we fail the client needs to call netr_ServerReqChallenge
+	 * again.
+	 *
+	 * Note: this handles global_challenge_table == NULL
+	 * and also a non existing record just fine.
+	 */
+	memcache_delete(global_challenge_table,
+			SINGLETON_CACHE, challenge_key);
 
 	/*
 	 * According to Microsoft (see bugid #6099)
