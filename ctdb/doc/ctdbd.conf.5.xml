@@ -1293,9 +1293,7 @@ CTDB_PER_IP_ROUTING_TABLE_ID_HIGH=9000
 
 	<para>
 	  Filesystem and memory usage monitoring is in
-	  <filename>05.system</filename>.  This eventscript is not
-	  enabled by default.  Use <command>ctdb
-	  enablescript</command> to enable it.
+	  <filename>05.system</filename>.
 	</para>
       </refsect3>
 
