@@ -354,6 +354,7 @@ static WERROR handle_question(struct dns_server *dns,
 			/* First put in the CNAME record */
 			werror = create_response_rr(question->name, &recs[ri], &ans, &ai);
 			if (!W_ERROR_IS_OK(werror)) {
+				TALLOC_FREE(new_q);
 				return werror;
 			}
 
