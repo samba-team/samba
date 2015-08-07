@@ -180,8 +180,8 @@ sub get_interface($)
     $interfaces{"fileserver"} = 35;
 
     # update lib/socket_wrapper/socket_wrapper.c
-    #  #define MAX_WRAPPED_INTERFACES 32
-    # if you wish to have more than 32 interfaces
+    #  #define MAX_WRAPPED_INTERFACES 40
+    # if you wish to have more than 40 interfaces
 
     if (not defined($interfaces{$netbiosname})) {
 	die();
