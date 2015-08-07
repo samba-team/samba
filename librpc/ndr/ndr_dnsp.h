@@ -27,3 +27,7 @@ void ndr_print_dnsp_string(struct ndr_print *ndr, const char *name,
 				  const char *dns_string);
 enum ndr_err_code ndr_pull_dnsp_string(struct ndr_pull *ndr, int ndr_flags, const char **string);
 enum ndr_err_code ndr_push_dnsp_string(struct ndr_push *ndr, int ndr_flags, const char *string);
+
+enum ndr_err_code ndr_dnsp_string_list_copy(TALLOC_CTX *mem_ctx,
+					    const struct dnsp_string_list *src,
+					    struct dnsp_string_list *dst);
