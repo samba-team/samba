@@ -167,7 +167,7 @@ bld.SAMBA_PYTHON('python_echo',
 
 bld.SAMBA_PYTHON('python_dns',
 	source='../../librpc/gen_ndr/py_dns.c',
-	deps='RPC_NDR_DNS pytalloc-util pyrpc_util',
+	deps='NDR_DNS pytalloc-util pyrpc_util',
 	realname='samba/dcerpc/dns.so'
 	)
 
@@ -324,7 +324,7 @@ bld.SAMBA_PYTHON('python_dcerpc_drsblobs',
 
 bld.SAMBA_PYTHON('python_dcerpc_dnsp',
 	source='../../librpc/gen_ndr/py_dnsp.c',
-	deps='pytalloc-util pyrpc_util NDR_SECURITY RPC_NDR_DNSP',
+	deps='pytalloc-util pyrpc_util NDR_SECURITY NDR_DNSP',
 	realname='samba/dcerpc/dnsp.so'
 	)
 
