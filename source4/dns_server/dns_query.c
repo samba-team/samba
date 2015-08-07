@@ -46,8 +46,7 @@ static WERROR add_response_rr(const char *name,
 {
 	struct dns_res_rec *ans = *answers;
 	uint16_t ai = talloc_array_length(ans);
-	char *tmp;
-	uint32_t i;
+	enum ndr_err_code ndr_err;
 
 	if (ai == UINT16_MAX) {
 		return WERR_BUFFER_OVERFLOW;
@@ -114,14 +113,12 @@ static WERROR add_response_rr(const char *name,
 		}
 		break;
 	case DNS_QTYPE_TXT:
-		tmp = talloc_asprintf(ans, "\"%s\"", rec->data.txt.str[0]);
-		W_ERROR_HAVE_NO_MEMORY(tmp);
-		for (i=1; i<rec->data.txt.count; i++) {
-			tmp = talloc_asprintf_append_buffer(
-				tmp, " \"%s\"", rec->data.txt.str[i]);
-			W_ERROR_HAVE_NO_MEMORY(tmp);
+		ndr_err = ndr_dnsp_string_list_copy(ans,
+						    &rec->data.txt,
+						    &ans[ai].rdata.txt_record.txt);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			return WERR_NOMEM;
 		}
-		ans[ai].rdata.txt_record.txt = tmp;
 		break;
 	default:
 		DEBUG(0, ("Got unhandled type %u query.\n", rec->wType));
@@ -145,6 +142,7 @@ static WERROR add_dns_res_rec(struct dns_res_rec **pdst,
 {
 	struct dns_res_rec *dst = *pdst;
 	uint16_t di = talloc_array_length(dst);
+	enum ndr_err_code ndr_err;
 
 	if (di == UINT16_MAX) {
 		return WERR_BUFFER_OVERFLOW;
@@ -248,9 +246,10 @@ static WERROR add_dns_res_rec(struct dns_res_rec **pdst,
 		}
 		break;
 	case DNS_QTYPE_TXT:
-		dst[di].rdata.txt_record.txt = talloc_strdup(
-			dst, src->rdata.txt_record.txt);
-		if (dst[di].rdata.txt_record.txt == NULL) {
+		ndr_err = ndr_dnsp_string_list_copy(dst,
+						    &src->rdata.txt_record.txt,
+						    &dst[di].rdata.txt_record.txt);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			return WERR_NOMEM;
 		}
 		break;
