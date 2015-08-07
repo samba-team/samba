@@ -328,3 +328,7 @@
 ^samba4.ldb.simple.ldaps.*SERVER_IP.*tlsverifypeer=ca_and_name\(
 ^samba4.ldb.simple.ldaps.*SERVER_IP.*tlsverifypeer=as_strict_as_possible\(
 ^samba4.ldb.simple.ldaps.*SERVER.REALM.*tlsverifypeer=as_strict_as_possible.*fl2008r2dc
+#
+# we don't allow auth_level_connect anymore...
+#
+^samba3.blackbox.rpcclient.*ncacn_np.*with.*connect.*rpcclient # we don't allow auth_level_connect anymore

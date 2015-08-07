@@ -45,6 +45,9 @@
 #include "auth/gensec/gensec.h"
 #include "librpc/ndr/ndr_dcerpc.h"
 #include "lib/tsocket/tsocket.h"
+#include "../librpc/gen_ndr/ndr_samr.h"
+#include "../librpc/gen_ndr/ndr_lsa.h"
+#include "../librpc/gen_ndr/ndr_netlogon.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
@@ -378,6 +381,22 @@ static bool check_bind_req(struct pipes_struct *p,
 	context_fns->syntax = *abstract;
 
 	context_fns->allow_connect = lp_allow_dcerpc_auth_level_connect();
+	/*
+	 * for the samr, lsarpc and netlogon interfaces we don't allow "connect"
+	 * auth_level by default.
+	 */
+	ok = ndr_syntax_id_equal(abstract, &ndr_table_samr.syntax_id);
+	if (ok) {
+		context_fns->allow_connect = false;
+	}
+	ok = ndr_syntax_id_equal(abstract, &ndr_table_lsarpc.syntax_id);
+	if (ok) {
+		context_fns->allow_connect = false;
+	}
+	ok = ndr_syntax_id_equal(abstract, &ndr_table_netlogon.syntax_id);
+	if (ok) {
+		context_fns->allow_connect = false;
+	}
 	/*
 	 * every interface can be modified to allow "connect" auth_level by
 	 * using a parametric option like:
