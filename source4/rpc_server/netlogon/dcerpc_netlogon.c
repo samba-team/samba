@@ -993,6 +993,16 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 		break;
 
 	case 6:
+		if (dce_call->conn->auth_state.auth_info == NULL) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		if (dce_call->conn->auth_state.auth_info->auth_level !=
+		    DCERPC_AUTH_LEVEL_PRIVACY)
+		{
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
 		nt_status = auth_convert_user_info_dc_saminfo3(mem_ctx,
 							   user_info_dc,
 							   &sam3);
