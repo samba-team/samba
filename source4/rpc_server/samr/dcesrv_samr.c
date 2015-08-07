@@ -41,6 +41,14 @@
 #include "lib/util/tsort.h"
 #include "libds/common/flag_mapping.h"
 
+#define DCESRV_INTERFACE_SAMR_BIND(call, iface) \
+       dcesrv_interface_samr_bind(call, iface)
+static NTSTATUS dcesrv_interface_samr_bind(struct dcesrv_call_state *dce_call,
+					     const struct dcesrv_interface *iface)
+{
+	return dcesrv_interface_bind_reject_connect(dce_call, iface);
+}
+
 /* these query macros make samr_Query[User|Group|Alias]Info a bit easier to read */
 
 #define QUERY_STRING(msg, field, attr) \
