@@ -263,11 +263,11 @@ interface dnsp
 	/*
 	  these are convenience hooks for ndrdump
 	 */
-	void decode_DnssrvRpcRecord(
+	[nopython] void decode_DnssrvRpcRecord(
 		[in] dnsp_DnssrvRpcRecord blob
 		);
 
-	void decode_DnsProperty(
+	[nopython] void decode_DnsProperty(
 		[in] dnsp_DnsProperty blob
 		);
 }
