@@ -32,7 +32,7 @@ bld.SAMBA_SUBSYSTEM('NDR_DNSSERVER',
 
 bld.SAMBA_SUBSYSTEM('NDR_DNS',
     source='gen_ndr/ndr_dns.c ndr/ndr_dns.c',
-    public_deps='ndr'
+    public_deps='ndr NDR_DNSP'
     )
 
 bld.SAMBA_SUBSYSTEM('NDR_DSBACKUP',

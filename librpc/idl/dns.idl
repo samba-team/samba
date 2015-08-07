@@ -8,7 +8,7 @@
    encoding if it doesn't work out
 */
 
-import "misc.idl";
+import "misc.idl", "dnsp.idl";
 [
 	helper("librpc/ndr/ndr_dns.h"),
 	helpstring("DNS records"),
@@ -163,9 +163,8 @@ interface dns
 		dns_string exchange;
 	} dns_mx_record;
 
-	typedef [public] struct {
-		[value(strlen(txt))] uint8 length;
-		[charset(DOS)] uint8 txt[length];
+	typedef [public,nopull] struct {
+		dnsp_string_list txt;
 	} dns_txt_record;
 
 	typedef [public] struct {
