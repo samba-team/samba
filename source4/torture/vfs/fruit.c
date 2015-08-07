@@ -59,6 +59,13 @@
 		goto done; \
 	}} while (0)
 
+static bool check_stream_list(struct smb2_tree *tree,
+			      struct torture_context *tctx,
+			      const char *fname,
+			      int num_exp,
+			      const char **exp,
+			      struct smb2_handle h);
+
 static int qsort_string(char * const *s1, char * const *s2)
 {
 	return strcmp(*s1, *s2);
@@ -1538,6 +1545,127 @@ done:
 	return ret;
 }
 
+static bool test_rfork_create(struct torture_context *tctx,
+			      struct smb2_tree *tree1,
+			      struct smb2_tree *tree2)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	const char *fname = BASEDIR "\\torture_rfork_create";
+	const char *rfork = BASEDIR "\\torture_rfork_create" AFPRESOURCE_STREAM;
+	NTSTATUS status;
+	struct smb2_handle testdirh;
+	bool ret = true;
+	struct smb2_create create;
+	struct smb2_handle fh1;
+	const char *streams[] = {
+		"::$DATA"
+	};
+	union smb_fileinfo finfo;
+
+	smb2_util_unlink(tree1, fname);
+
+	status = torture_smb2_testdir(tree1, BASEDIR, &testdirh);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "torture_smb2_testdir");
+	smb2_util_close(tree1, testdirh);
+
+	ret = torture_setup_file(mem_ctx, tree1, fname, false);
+	if (ret == false) {
+		goto done;
+	}
+
+	torture_comment(tctx, "(%s) open rfork, should return ENOENT\n",
+			__location__);
+
+	ZERO_STRUCT(create);
+	create.in.create_disposition  = NTCREATEX_DISP_OPEN;
+	create.in.desired_access      = SEC_STD_READ_CONTROL | SEC_FILE_ALL;
+	create.in.file_attributes     = FILE_ATTRIBUTE_NORMAL;
+	create.in.fname               = rfork;
+	create.in.share_access        = NTCREATEX_SHARE_ACCESS_DELETE |
+		NTCREATEX_SHARE_ACCESS_READ |
+		NTCREATEX_SHARE_ACCESS_WRITE;
+	status = smb2_create(tree1, mem_ctx, &create);
+	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_OBJECT_NAME_NOT_FOUND, ret, done, "smb2_create");
+
+	torture_comment(tctx, "(%s) create resource fork\n", __location__);
+
+	ZERO_STRUCT(create);
+	create.in.create_disposition  = NTCREATEX_DISP_OPEN_IF;
+	create.in.desired_access      = SEC_STD_READ_CONTROL | SEC_FILE_ALL;
+	create.in.file_attributes     = FILE_ATTRIBUTE_NORMAL;
+	create.in.fname               = rfork;
+	create.in.share_access        = NTCREATEX_SHARE_ACCESS_DELETE |
+		NTCREATEX_SHARE_ACCESS_READ |
+		NTCREATEX_SHARE_ACCESS_WRITE;
+	status = smb2_create(tree1, mem_ctx, &create);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "smb2_create");
+	fh1 = create.out.file.handle;
+
+	torture_comment(tctx, "(%s) getinfo on create handle\n",
+			__location__);
+
+	ZERO_STRUCT(finfo);
+	finfo.generic.level = RAW_FILEINFO_ALL_INFORMATION;
+	finfo.generic.in.file.handle = fh1;
+	status = smb2_getinfo_file(tree1, mem_ctx, &finfo);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "smb2_getinfo_file");
+	if (finfo.all_info.out.size != 0) {
+		torture_result(tctx, TORTURE_FAIL,
+			       "(%s) Incorrect resource fork size\n",
+			       __location__);
+		ret = false;
+		smb2_util_close(tree1, fh1);
+		goto done;
+	}
+
+	torture_comment(tctx, "(%s) open rfork, should still return ENOENT\n",
+			__location__);
+
+	ZERO_STRUCT(create);
+	create.in.create_disposition  = NTCREATEX_DISP_OPEN;
+	create.in.desired_access      = SEC_STD_READ_CONTROL | SEC_FILE_ALL;
+	create.in.file_attributes     = FILE_ATTRIBUTE_NORMAL;
+	create.in.fname               = rfork;
+	create.in.share_access        = NTCREATEX_SHARE_ACCESS_DELETE |
+		NTCREATEX_SHARE_ACCESS_READ |
+		NTCREATEX_SHARE_ACCESS_WRITE;
+	status = smb2_create(tree1, mem_ctx, &create);
+	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_OBJECT_NAME_NOT_FOUND, ret, done, "smb2_create");
+
+	ZERO_STRUCT(create);
+	create.in.fname = fname;
+	create.in.create_disposition = NTCREATEX_DISP_OPEN;
+	create.in.desired_access = SEC_STD_READ_CONTROL | SEC_FILE_ALL;
+	create.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	status = smb2_create(tree1, mem_ctx, &create);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "smb2_create");
+
+	ret = check_stream_list(tree1, tctx, fname, 1, streams,
+				create.out.file.handle);
+	torture_assert_goto(tctx, ret == true, ret, done, "check_stream_list");
+	smb2_util_close(tree1, create.out.file.handle);
+
+	torture_comment(tctx, "(%s) close empty created rfork, open should return ENOENT\n",
+			__location__);
+	smb2_util_close(tree1, fh1);
+	ZERO_STRUCT(create);
+	create.in.create_disposition  = NTCREATEX_DISP_OPEN;
+	create.in.desired_access      = SEC_STD_READ_CONTROL | SEC_FILE_ALL;
+	create.in.file_attributes     = FILE_ATTRIBUTE_NORMAL;
+	create.in.fname               = rfork;
+	create.in.share_access        = NTCREATEX_SHARE_ACCESS_DELETE |
+		NTCREATEX_SHARE_ACCESS_READ |
+		NTCREATEX_SHARE_ACCESS_WRITE;
+	status = smb2_create(tree1, mem_ctx, &create);
+	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_OBJECT_NAME_NOT_FOUND, ret, done, "smb2_create");
+
+done:
+	smb2_util_unlink(tree1, fname);
+	smb2_deltree(tree1, BASEDIR);
+	talloc_free(mem_ctx);
+	return ret;
+}
+
 static bool test_adouble_conversion(struct torture_context *tctx,
 				    struct smb2_tree *tree1,
 				    struct smb2_tree *tree2)
@@ -2448,6 +2576,7 @@ struct torture_suite *torture_vfs_fruit(void)
 	torture_suite_add_2ns_smb2_test(suite, "SMB2/CREATE context AAPL", test_aapl);
 	torture_suite_add_2ns_smb2_test(suite, "stream names", test_stream_names);
 	torture_suite_add_2ns_smb2_test(suite, "truncate resource fork to 0 bytes", test_rfork_truncate);
+	torture_suite_add_2ns_smb2_test(suite, "opening and creating resource fork", test_rfork_create);
 
 	return suite;
 }
