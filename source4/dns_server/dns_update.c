@@ -299,9 +299,7 @@ static WERROR dns_rr_to_dnsp(TALLOC_CTX *mem_ctx,
 			     const struct dns_res_rec *rrec,
 			     struct dnsp_DnssrvRpcRecord *r)
 {
-	char *tmp;
-	char *txt_record_txt;
-	char *saveptr = NULL;
+	enum ndr_err_code ndr_err;
 
 	if (rrec->rr_type == DNS_QTYPE_ALL) {
 		return DNS_ERR(FORMAT_ERROR);
@@ -354,28 +352,11 @@ static WERROR dns_rr_to_dnsp(TALLOC_CTX *mem_ctx,
 		W_ERROR_HAVE_NO_MEMORY(r->data.mx.nameTarget);
 		break;
 	case DNS_QTYPE_TXT:
-		r->data.txt.count = 0;
-		r->data.txt.str = talloc_array(mem_ctx, const char *,
-					       r->data.txt.count);
-		W_ERROR_HAVE_NO_MEMORY(r->data.txt.str);
-
-		txt_record_txt = talloc_strdup(r->data.txt.str,
-					       rrec->rdata.txt_record.txt);
-		W_ERROR_HAVE_NO_MEMORY(txt_record_txt);
-
-		tmp = strtok_r(txt_record_txt, "\"", &saveptr);
-		while (tmp) {
-			if (strcmp(tmp, " ") == 0) {
-				tmp = strtok_r(NULL, "\"", &saveptr);
-				continue;
-			}
-			r->data.txt.str = talloc_realloc(mem_ctx, r->data.txt.str, const char *,
-							r->data.txt.count+1);
-			r->data.txt.str[r->data.txt.count] = talloc_strdup(r->data.txt.str, tmp);
-			W_ERROR_HAVE_NO_MEMORY(r->data.txt.str[r->data.txt.count]);
-
-			r->data.txt.count++;
-			tmp = strtok_r(NULL, "\"", &saveptr);
+		ndr_err = ndr_dnsp_string_list_copy(mem_ctx,
+						    &rrec->rdata.txt_record.txt,
+						    &r->data.txt);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			return WERR_NOMEM;
 		}
 
 		break;
