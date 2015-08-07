@@ -41,6 +41,14 @@
 #include "librpc/gen_ndr/ndr_irpc.h"
 #include "lib/socket/netif.h"
 
+#define DCESRV_INTERFACE_NETLOGON_BIND(call, iface) \
+       dcesrv_interface_netlogon_bind(call, iface)
+static NTSTATUS dcesrv_interface_netlogon_bind(struct dcesrv_call_state *dce_call,
+					       const struct dcesrv_interface *iface)
+{
+	return dcesrv_interface_bind_reject_connect(dce_call, iface);
+}
+
 static struct memcache *global_challenge_table;
 
 struct netlogon_server_pipe_state {
