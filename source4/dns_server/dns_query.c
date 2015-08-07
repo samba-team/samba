@@ -673,11 +673,15 @@ struct tevent_req *dns_server_process_query_send(
 		err = handle_question(dns, state, &in->questions[0],
 				      &state->answers, &state->ancount,
 				      &state->nsrecs, &state->nscount);
-		if (tevent_req_werror(req, err)) {
-			if (!W_ERROR_EQUAL(err, DNS_ERR(NAME_ERROR))) {
-				return tevent_req_post(req, ev);
-			}
+
+		if (W_ERROR_EQUAL(err, DNS_ERR(NAME_ERROR))) {
+			err = WERR_OK;
 		}
+
+		if (tevent_req_werror(req, err)) {
+			return tevent_req_post(req, ev);
+		}
+
 		tevent_req_done(req);
 		return tevent_req_post(req, ev);
 	}
