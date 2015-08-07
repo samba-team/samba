@@ -30,6 +30,7 @@
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_dns.h"
 #include "librpc/gen_ndr/ndr_misc.h"
+#include "librpc/gen_ndr/ndr_dnsp.h"
 #include "system/locale.h"
 #include "lib/util/util_net.h"
 
@@ -230,6 +231,29 @@ _PUBLIC_ enum ndr_err_code ndr_push_dns_string(struct ndr_push *ndr,
 	return ndr_push_bytes(ndr, (const uint8_t *)"", 1);
 }
 
+_PUBLIC_ enum ndr_err_code ndr_pull_dns_txt_record(struct ndr_pull *ndr, int ndr_flags, struct dns_txt_record *r)
+{
+	NDR_PULL_CHECK_FLAGS(ndr, ndr_flags);
+	if (ndr_flags & NDR_SCALARS) {
+		enum ndr_err_code ndr_err;
+		uint32_t data_size = ndr->data_size;
+		uint32_t record_size = 0;
+		ndr_err = ndr_token_retrieve(&ndr->array_size_list, r,
+					     &record_size);
+		if (NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			NDR_PULL_NEED_BYTES(ndr, record_size);
+			ndr->data_size = ndr->offset + record_size;
+		}
+		NDR_CHECK(ndr_pull_align(ndr, 1));
+		NDR_CHECK(ndr_pull_dnsp_string_list(ndr, NDR_SCALARS, &r->txt));
+		NDR_CHECK(ndr_pull_trailer_align(ndr, 1));
+		ndr->data_size = data_size;
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
 _PUBLIC_ enum ndr_err_code ndr_push_dns_res_rec(struct ndr_push *ndr,
 						int ndr_flags,
 						const struct dns_res_rec *r)
@@ -302,6 +326,9 @@ _PUBLIC_ enum ndr_err_code ndr_pull_dns_res_rec(struct ndr_pull *ndr,
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->length));
 		_saved_offset1 = ndr->offset;
 		if (r->length > 0) {
+			NDR_CHECK(ndr_token_store(ndr, &ndr->array_size_list,
+						  &r->rdata,
+						  r->length));
 			NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->rdata,
 							    r->rr_type));
 			NDR_CHECK(ndr_pull_dns_rdata(ndr, NDR_SCALARS,
