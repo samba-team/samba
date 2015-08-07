@@ -270,7 +270,7 @@ interface dns
         /*
 	   this is a convenience hook for ndrdump
 	*/
-	void decode_dns_name_packet(
+	[nopython] void decode_dns_name_packet(
 				    [in] dns_name_packet packet
 				   );
 }
