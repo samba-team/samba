@@ -40,14 +40,23 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_DNS
 
-static WERROR create_response_rr(const char *name,
-				 const struct dnsp_DnssrvRpcRecord *rec,
-				 struct dns_res_rec **answers, uint16_t *ancount)
+static WERROR add_response_rr(TALLOC_CTX *mem_ctx, const char *name,
+			      const struct dnsp_DnssrvRpcRecord *rec,
+			      struct dns_res_rec **answers, uint16_t *ancount)
 {
 	struct dns_res_rec *ans = *answers;
 	uint16_t ai = *ancount;
 	char *tmp;
 	uint32_t i;
+
+	if (ai == UINT16_MAX) {
+		return WERR_BUFFER_OVERFLOW;
+	}
+
+	ans = talloc_realloc(mem_ctx, ans, struct dns_res_rec, ai+1);
+	if (ans == NULL) {
+		return WERR_NOMEM;
+	}
 
 	ZERO_STRUCT(ans[ai]);
 
@@ -281,13 +290,10 @@ static WERROR add_zone_authority_record(struct dns_server *dns,
 		return werror;
 	}
 
-	ns = talloc_realloc(mem_ctx, ns, struct dns_res_rec, rec_count + ni);
-	if (ns == NULL) {
-		return WERR_NOMEM;
-	}
 	for (ri = 0; ri < rec_count; ri++) {
 		if (recs[ri].wType == DNS_TYPE_SOA) {
-			werror = create_response_rr(zone, &recs[ri], &ns, &ni);
+			werror = add_response_rr(mem_ctx, zone, &recs[ri],
+						 &ns, &ni);
 			if (!W_ERROR_IS_OK(werror)) {
 				return werror;
 			}
@@ -326,11 +332,6 @@ static WERROR handle_question(struct dns_server *dns,
 		goto done;
 	}
 
-	ans = talloc_realloc(mem_ctx, ans, struct dns_res_rec, rec_count + ai);
-	if (ans == NULL) {
-		return WERR_NOMEM;
-	}
-
 	/* Set up for an NXDOMAIN reply if no match is found */
 	werror_return = DNS_ERR(NAME_ERROR);
 
@@ -345,16 +346,9 @@ static WERROR handle_question(struct dns_server *dns,
 				return WERR_NOMEM;
 			}
 
-			/* We reply with one more record, so grow the array */
-			ans = talloc_realloc(mem_ctx, ans, struct dns_res_rec,
-					     rec_count + 1);
-			if (ans == NULL) {
-				TALLOC_FREE(new_q);
-				return WERR_NOMEM;
-			}
-
 			/* First put in the CNAME record */
-			werror = create_response_rr(question->name, &recs[ri], &ans, &ai);
+			werror = add_response_rr(mem_ctx, question->name,
+						 &recs[ri], &ans, &ai);
 			if (!W_ERROR_IS_OK(werror)) {
 				TALLOC_FREE(new_q);
 				return werror;
@@ -385,7 +379,8 @@ static WERROR handle_question(struct dns_server *dns,
 			werror_return = WERR_OK;
 			continue;
 		}
-		werror = create_response_rr(question->name, &recs[ri], &ans, &ai);
+		werror = add_response_rr(mem_ctx, question->name, &recs[ri],
+					 &ans, &ai);
 		if (!W_ERROR_IS_OK(werror)) {
 			return werror;
 		}
