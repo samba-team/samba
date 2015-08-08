@@ -3085,7 +3085,7 @@ static NTSTATUS fruit_streaminfo(vfs_handle_struct *handle,
 	if (config->rsrc != FRUIT_RSRC_STREAM) {
 		ad = ad_get(talloc_tos(), handle, smb_fname->base_name,
 			    ADOUBLE_RSRC);
-		if (ad) {
+		if (ad && (ad_getentrylen(ad, ADEID_RFORK) > 0)) {
 			if (!add_fruit_stream(
 				    mem_ctx, pnum_streams, pstreams,
 				    AFPRESOURCE_STREAM_NAME,
@@ -3246,6 +3246,7 @@ static NTSTATUS fruit_create_file(vfs_handle_struct *handle,
 {
 	NTSTATUS status;
 	struct fruit_config_data *config = NULL;
+	files_struct *fsp = NULL;
 
 	status = check_aapl(handle, req, in_context_blobs, out_context_blobs);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -3267,6 +3268,7 @@ static NTSTATUS fruit_create_file(vfs_handle_struct *handle,
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
+	fsp = *result;
 
 	if (config->copyfile_enabled) {
 		/*
@@ -3275,11 +3277,27 @@ static NTSTATUS fruit_create_file(vfs_handle_struct *handle,
 		 * for copychunk should be allowed in a copychunk
 		 * request with a count of 0.
 		 */
-		(*result)->aapl_copyfile_supported = true;
+		fsp->aapl_copyfile_supported = true;
 	}
+
+	/*
+	 * If this is a plain open for existing files, opening an 0
+	 * byte size resource fork MUST fail with
+	 * NT_STATUS_OBJECT_NAME_NOT_FOUND.
+	 *
+	 * Cf the vfs_fruit torture tests in test_rfork_create().
+	 */
+	if (is_afpresource_stream(fsp->fsp_name) &&
+	    create_disposition == FILE_OPEN)
+	{
+		if (fsp->fsp_name->st.st_ex_size == 0) {
+			status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+			goto fail;
+		}
+	}
+
 	if (is_ntfs_stream_smb_fname(smb_fname)
-	    || (*result == NULL)
-	    || ((*result)->is_directory)) {
+	    || fsp->is_directory) {
 		return status;
 	}
 
@@ -3296,11 +3314,11 @@ static NTSTATUS fruit_create_file(vfs_handle_struct *handle,
 	return status;
 
 fail:
-	DEBUG(1, ("fruit_create_file: %s\n", nt_errstr(status)));
+	DEBUG(10, ("fruit_create_file: %s\n", nt_errstr(status)));
 
-	if (*result) {
-		close_file(req, *result, ERROR_CLOSE);
-		*result = NULL;
+	if (fsp) {
+		close_file(req, fsp, ERROR_CLOSE);
+		*result = fsp = NULL;
 	}
 
 	return status;
