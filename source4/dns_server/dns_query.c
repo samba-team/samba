@@ -140,6 +140,130 @@ static WERROR add_response_rr(const char *name,
 	return WERR_OK;
 }
 
+static WERROR add_dns_res_rec(struct dns_res_rec **pdst,
+			      const struct dns_res_rec *src)
+{
+	struct dns_res_rec *dst = *pdst;
+	uint16_t di = talloc_array_length(dst);
+
+	if (di == UINT16_MAX) {
+		return WERR_BUFFER_OVERFLOW;
+	}
+
+	dst = talloc_realloc(dst, dst, struct dns_res_rec, di+1);
+	if (dst == NULL) {
+		return WERR_NOMEM;
+	}
+
+	ZERO_STRUCT(dst[di]);
+
+	dst[di] = (struct dns_res_rec) {
+		.name = talloc_strdup(dst, src->name),
+		.rr_type = src->rr_type,
+		.rr_class = src->rr_class,
+		.ttl = src->ttl,
+		.length = src->length
+	};
+
+	if (dst[di].name == NULL) {
+		return WERR_NOMEM;
+	}
+
+	switch (src->rr_type) {
+	case DNS_QTYPE_CNAME:
+		dst[di].rdata.cname_record = talloc_strdup(
+			dst, src->rdata.cname_record);
+		if (dst[di].rdata.cname_record == NULL) {
+			return WERR_NOMEM;
+		}
+		break;
+	case DNS_QTYPE_A:
+		dst[di].rdata.ipv4_record = talloc_strdup(
+			dst, src->rdata.ipv4_record);
+		if (dst[di].rdata.ipv4_record == NULL) {
+			return WERR_NOMEM;
+		}
+		break;
+	case DNS_QTYPE_AAAA:
+		dst[di].rdata.ipv6_record = talloc_strdup(
+			dst, src->rdata.ipv6_record);
+		if (dst[di].rdata.ipv6_record == NULL) {
+			return WERR_NOMEM;
+		}
+		break;
+	case DNS_TYPE_NS:
+		dst[di].rdata.ns_record = talloc_strdup(
+			dst, src->rdata.ns_record);
+		if (dst[di].rdata.ns_record == NULL) {
+			return WERR_NOMEM;
+		}
+		break;
+	case DNS_QTYPE_SRV:
+		dst[di].rdata.srv_record = (struct dns_srv_record) {
+			.priority = src->rdata.srv_record.priority,
+			.weight   = src->rdata.srv_record.weight,
+			.port     = src->rdata.srv_record.port,
+			.target   = talloc_strdup(
+				dst, src->rdata.srv_record.target)
+		};
+		if (dst[di].rdata.srv_record.target == NULL) {
+			return WERR_NOMEM;
+		}
+		break;
+	case DNS_QTYPE_SOA:
+		dst[di].rdata.soa_record = (struct dns_soa_record) {
+			.mname	 = talloc_strdup(
+				dst, src->rdata.soa_record.mname),
+			.rname	 = talloc_strdup(
+				dst, src->rdata.soa_record.rname),
+			.serial	 = src->rdata.soa_record.serial,
+			.refresh = src->rdata.soa_record.refresh,
+			.retry   = src->rdata.soa_record.retry,
+			.expire  = src->rdata.soa_record.expire,
+			.minimum = src->rdata.soa_record.minimum
+		};
+
+		if ((dst[di].rdata.soa_record.mname == NULL) ||
+		    (dst[di].rdata.soa_record.rname == NULL)) {
+			return WERR_NOMEM;
+		}
+
+		break;
+	case DNS_QTYPE_PTR:
+		dst[di].rdata.ptr_record = talloc_strdup(
+			dst, src->rdata.ptr_record);
+		if (dst[di].rdata.ptr_record == NULL) {
+			return WERR_NOMEM;
+		}
+		break;
+	case DNS_QTYPE_MX:
+		dst[di].rdata.mx_record = (struct dns_mx_record) {
+			.preference = src->rdata.mx_record.preference,
+			.exchange   = talloc_strdup(
+				src, src->rdata.mx_record.exchange)
+		};
+
+		if (dst[di].rdata.mx_record.exchange == NULL) {
+			return WERR_NOMEM;
+		}
+		break;
+	case DNS_QTYPE_TXT:
+		dst[di].rdata.txt_record.txt = talloc_strdup(
+			dst, src->rdata.txt_record.txt);
+		if (dst[di].rdata.txt_record.txt == NULL) {
+			return WERR_NOMEM;
+		}
+		break;
+	default:
+		DBG_WARNING("Got unhandled type %u query.\n", src->rr_type);
+		return DNS_ERR(NOT_IMPLEMENTED);
+	}
+
+	*pdst = dst;
+
+	return WERR_OK;
+}
+
 struct ask_forwarder_state {
 	struct tevent_context *ev;
 	uint16_t id;
