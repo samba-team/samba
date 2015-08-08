@@ -40,7 +40,7 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_DNS
 
-static WERROR add_response_rr(TALLOC_CTX *mem_ctx, const char *name,
+static WERROR add_response_rr(const char *name,
 			      const struct dnsp_DnssrvRpcRecord *rec,
 			      struct dns_res_rec **answers, uint16_t *ancount)
 {
@@ -53,7 +53,10 @@ static WERROR add_response_rr(TALLOC_CTX *mem_ctx, const char *name,
 		return WERR_BUFFER_OVERFLOW;
 	}
 
-	ans = talloc_realloc(mem_ctx, ans, struct dns_res_rec, ai+1);
+	/*
+	 * "ans" is always non-NULL and thus its own talloc context
+	 */
+	ans = talloc_realloc(ans, ans, struct dns_res_rec, ai+1);
 	if (ans == NULL) {
 		return WERR_NOMEM;
 	}
@@ -292,7 +295,7 @@ static WERROR add_zone_authority_record(struct dns_server *dns,
 
 	for (ri = 0; ri < rec_count; ri++) {
 		if (recs[ri].wType == DNS_TYPE_SOA) {
-			werror = add_response_rr(mem_ctx, zone, &recs[ri],
+			werror = add_response_rr(zone, &recs[ri],
 						 &ns, &ni);
 			if (!W_ERROR_IS_OK(werror)) {
 				return werror;
@@ -347,8 +350,8 @@ static WERROR handle_question(struct dns_server *dns,
 			}
 
 			/* First put in the CNAME record */
-			werror = add_response_rr(mem_ctx, question->name,
-						 &recs[ri], &ans, &ai);
+			werror = add_response_rr(question->name, &recs[ri],
+						 &ans, &ai);
 			if (!W_ERROR_IS_OK(werror)) {
 				TALLOC_FREE(new_q);
 				return werror;
@@ -379,7 +382,7 @@ static WERROR handle_question(struct dns_server *dns,
 			werror_return = WERR_OK;
 			continue;
 		}
-		werror = add_response_rr(mem_ctx, question->name, &recs[ri],
+		werror = add_response_rr(question->name, &recs[ri],
 					 &ans, &ai);
 		if (!W_ERROR_IS_OK(werror)) {
 			return werror;
@@ -668,6 +671,21 @@ struct tevent_req *dns_server_process_query_send(
 		WERROR err;
 
 		req_state->flags |= DNS_FLAG_AUTHORITATIVE;
+
+		/*
+		 * Initialize the response arrays, so that we can use
+		 * them as their own talloc contexts when doing the
+		 * realloc
+		 */
+		state->answers = talloc_array(state, struct dns_res_rec, 0);
+		if (tevent_req_nomem(state->answers, req)) {
+			return tevent_req_post(req, ev);
+		}
+		state->nsrecs = talloc_array(state, struct dns_res_rec, 0);
+		if (tevent_req_nomem(state->nsrecs, req)) {
+			return tevent_req_post(req, ev);
+		}
+
 		err = handle_question(dns, state, &in->questions[0],
 				      &state->answers, &state->ancount,
 				      &state->nsrecs, &state->nscount);
