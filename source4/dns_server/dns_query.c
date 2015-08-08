@@ -42,10 +42,10 @@
 
 static WERROR add_response_rr(const char *name,
 			      const struct dnsp_DnssrvRpcRecord *rec,
-			      struct dns_res_rec **answers, uint16_t *ancount)
+			      struct dns_res_rec **answers)
 {
 	struct dns_res_rec *ans = *answers;
-	uint16_t ai = *ancount;
+	uint16_t ai = talloc_array_length(ans);
 	char *tmp;
 	uint32_t i;
 
@@ -134,10 +134,8 @@ static WERROR add_response_rr(const char *name,
 	ans[ai].rr_class = DNS_QCLASS_IN;
 	ans[ai].ttl = rec->dwTtlSeconds;
 	ans[ai].length = UINT16_MAX;
-	ai++;
 
 	*answers = ans;
-	*ancount = ai;
 
 	return WERR_OK;
 }
@@ -270,12 +268,12 @@ static WERROR ask_forwarder_recv(
 static WERROR add_zone_authority_record(struct dns_server *dns,
 					TALLOC_CTX *mem_ctx,
 					const struct dns_name_question *question,
-					struct dns_res_rec **nsrecs, uint16_t *nscount)
+					struct dns_res_rec **nsrecs)
 {
 	const char *zone = NULL;
 	struct dnsp_DnssrvRpcRecord *recs;
 	struct dns_res_rec *ns = *nsrecs;
-	uint16_t rec_count, ni = *nscount;
+	uint16_t rec_count;
 	struct ldb_dn *dn = NULL;
 	unsigned int ri;
 	WERROR werror;
@@ -295,15 +293,13 @@ static WERROR add_zone_authority_record(struct dns_server *dns,
 
 	for (ri = 0; ri < rec_count; ri++) {
 		if (recs[ri].wType == DNS_TYPE_SOA) {
-			werror = add_response_rr(zone, &recs[ri],
-						 &ns, &ni);
+			werror = add_response_rr(zone, &recs[ri], &ns);
 			if (!W_ERROR_IS_OK(werror)) {
 				return werror;
 			}
 		}
 	}
 
-	*nscount = ni;
 	*nsrecs = ns;
 
 	return WERR_OK;
@@ -313,15 +309,15 @@ static WERROR add_zone_authority_record(struct dns_server *dns,
 static WERROR handle_question(struct dns_server *dns,
 			      TALLOC_CTX *mem_ctx,
 			      const struct dns_name_question *question,
-			      struct dns_res_rec **answers, uint16_t *ancount,
-			      struct dns_res_rec **nsrecs, uint16_t *nscount)
+			      struct dns_res_rec **answers,
+			      struct dns_res_rec **nsrecs)
 {
 	struct dns_res_rec *ans = *answers;
 	struct dns_res_rec *ns = *nsrecs;
 	WERROR werror, werror_return;
 	unsigned int ri;
 	struct dnsp_DnssrvRpcRecord *recs;
-	uint16_t rec_count, ai = *ancount, ni = *nscount;
+	uint16_t rec_count;
 	struct ldb_dn *dn = NULL;
 
 	werror = dns_name2dn(dns, mem_ctx, question->name, &dn);
@@ -351,7 +347,7 @@ static WERROR handle_question(struct dns_server *dns,
 
 			/* First put in the CNAME record */
 			werror = add_response_rr(question->name, &recs[ri],
-						 &ans, &ai);
+						 &ans);
 			if (!W_ERROR_IS_OK(werror)) {
 				TALLOC_FREE(new_q);
 				return werror;
@@ -368,7 +364,8 @@ static WERROR handle_question(struct dns_server *dns,
 				return WERR_NOMEM;
 			}
 			/* and then call the lookup again */
-			werror = handle_question(dns, mem_ctx, new_q, &ans, &ai, &ns, &ni);
+			werror = handle_question(dns, mem_ctx, new_q,
+						 &ans, &ns);
 			if (!W_ERROR_IS_OK(werror)) {
 				goto done;
 			}
@@ -382,8 +379,7 @@ static WERROR handle_question(struct dns_server *dns,
 			werror_return = WERR_OK;
 			continue;
 		}
-		werror = add_response_rr(question->name, &recs[ri],
-					 &ans, &ai);
+		werror = add_response_rr(question->name, &recs[ri], &ans);
 		if (!W_ERROR_IS_OK(werror)) {
 			return werror;
 		}
@@ -392,11 +388,9 @@ static WERROR handle_question(struct dns_server *dns,
 
 done:
 	/* Always add an authority record to replies we should know about */
-	add_zone_authority_record(dns, mem_ctx, question, &ns, &ni);
+	add_zone_authority_record(dns, mem_ctx, question, &ns);
 
-	*ancount = ai;
 	*answers = ans;
-	*nscount = ni;
 	*nsrecs = ns;
 
 	return werror_return;
@@ -687,8 +681,7 @@ struct tevent_req *dns_server_process_query_send(
 		}
 
 		err = handle_question(dns, state, &in->questions[0],
-				      &state->answers, &state->ancount,
-				      &state->nsrecs, &state->nscount);
+				      &state->answers, &state->nsrecs);
 
 		if (W_ERROR_EQUAL(err, DNS_ERR(NAME_ERROR))) {
 			err = WERR_OK;
@@ -697,6 +690,9 @@ struct tevent_req *dns_server_process_query_send(
 		if (tevent_req_werror(req, err)) {
 			return tevent_req_post(req, ev);
 		}
+
+		state->ancount = talloc_array_length(state->answers);
+		state->nscount = talloc_array_length(state->nsrecs);
 
 		tevent_req_done(req);
 		return tevent_req_post(req, ev);
