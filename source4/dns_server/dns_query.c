@@ -149,8 +149,8 @@ struct ask_forwarder_state {
 static void ask_forwarder_done(struct tevent_req *subreq);
 
 static struct tevent_req *ask_forwarder_send(
-	struct dns_server *dns,
 	TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+	struct dns_server *dns,
 	const char *forwarder, struct dns_name_question *question)
 {
 	struct tevent_req *req, *subreq;
@@ -704,8 +704,7 @@ struct tevent_req *dns_server_process_query_send(
 			  in->questions[0].name));
 
 		subreq = ask_forwarder_send(
-			dns,
-			state, ev, lpcfg_dns_forwarder(dns->task->lp_ctx),
+			state, ev, dns, lpcfg_dns_forwarder(dns->task->lp_ctx),
 			&in->questions[0]);
 		if (tevent_req_nomem(subreq, req)) {
 			return tevent_req_post(req, ev);
