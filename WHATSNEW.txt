@@ -218,6 +218,39 @@ sample call-out is provided for NFS Ganesha, based on this script.
 The method of configuring NFS RPC checks has been improved.  See
 ctdb/config/nfs-checks.d/README for details.
 
+Improved Cross-Compiling Support
+--------------------------------
+
+A new "hybrid" build configuration mode is added to improve
+cross-compilation support.
+
+A common challenge in cross-compilation is that of obtaining the results
+of tests that have to run on the target, during the configuration
+phase of the build. The Samba build system already supports the following
+means to do so:
+
+  - Executing configure tests using the --cross-execute parameter
+  - Obtaining the results from an answers file using the --cross-answers
+    parameter
+
+The first method has the drawback of inaccurate results if the tests are
+run using an emulator, or a need to be connected to a running target
+while building, if the tests are to be run on an actual target. The
+second method presents a challenge of figuring out the test results.
+
+The new hybrid mode runs the tests and records the result in an answer file.
+To activate this mode, use both --cross-execute and --cross-answers in the
+same configure invocation. This mode can be activated once against a
+running target, and then the generated answers file can be used in
+subsequent builds.
+
+Also supplied is an example script that can be used as the
+cross-execute program. This script copies the test to a running target
+and runs the test on the target, obtaining the result. The obtained
+results are more accurate than running the test with an emulator, because
+they reflect the exact kernel and system libraries that exist on the
+target.
+
 
 ######################################################################
 Changes
