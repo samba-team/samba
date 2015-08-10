@@ -289,9 +289,18 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 
 	if (xconn->smb2.server.cipher == 0) {
 		if (x->global->encryption_flags & SMBXSRV_ENCRYPTION_REQUIRED) {
-			DEBUG(1,("reject session with dialect[0x%04X] "
-				 "as encryption is required\n",
-				 xconn->smb2.server.dialect));
+			char *addr;
+
+			addr = tsocket_address_string(xconn->remote_address,
+						      talloc_tos());
+
+			DBG_WARNING("reject session from %s with dialect[0x%04X] "
+				    "as encryption is required\n",
+				    addr ? addr : "[UNKNOWN]",
+				    xconn->smb2.server.dialect);
+
+			TALLOC_FREE(addr);
+
 			return NT_STATUS_ACCESS_DENIED;
 		}
 	}
