@@ -110,9 +110,7 @@ if opts.verbose:
 def get_credentials(lp):
     """# get credentials if we haven't got them already."""
     from samba import credentials
-    global ccachename, creds
-    if creds is not None:
-        return
+    global ccachename
     creds = credentials.Credentials()
     creds.guess(lp)
     creds.set_machine_account(lp)
@@ -623,6 +621,9 @@ if len(delete_list) == 0 and len(update_list) == 0 and not rebuild_cache:
     if opts.verbose:
         print "No DNS updates needed"
     sys.exit(0)
+else:
+    if opts.verbose:
+        print "%d DNS updates and %d DNS deletes needed" % (len(update_list), len(delete_list))
 
 # get our krb5 creds
 if len(delete_list) != 0 or len(update_list) != 0:
