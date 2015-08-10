@@ -194,6 +194,31 @@ It can now also show, transfer or seize the DNS infrastructure roles:
 	DomainDnsZones Infrastructure Master
 	ForestDnsZones Infrastructure Master
 
+CTDB logging changes
+--------------------
+
+The destination for CTDB logging is now set via a single new
+configuration variable CTDB_LOGGING.  This replaces CTDB_LOGFILE and
+CTDB_SYSLOG, which have both been removed.  See ctdbd.conf(5) for
+details of CTDB_LOGGING.
+
+CTDB no longer runs a separate logging daemon.
+
+CTDB NFS support changes
+------------------------
+
+CTDB's NFS service management has been combined into a single 60.nfs
+event script.  This updated 60.nfs script now uses a call-out to
+interact with different NFS implementations.  See the CTDB_NFS_CALLOUT
+option in the ctdbd.conf(5) manual page for details.  A default
+call-out is provided to interact with the Linux kernel NFS
+implementation.  The 60.ganesha event script has been removed - a
+sample call-out is provided for NFS Ganesha, based on this script.
+
+The method of configuring NFS RPC checks has been improved.  See
+ctdb/config/nfs-checks.d/README for details.
+
+
 ######################################################################
 Changes
 #######
