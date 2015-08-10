@@ -102,7 +102,6 @@ def build(bld):
         # breaks preloading!
         bld.SAMBA_LIBRARY('nss_wrapper',
                           source='nss_wrapper.c',
-                          cflags='-DNDEBUG',
                           deps='dl',
                           install=False,
                           realname='libnss-wrapper.so')

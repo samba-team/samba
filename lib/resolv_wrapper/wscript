@@ -92,7 +92,6 @@ def build(bld):
         # breaks preloading!
         bld.SAMBA_LIBRARY('resolv_wrapper',
                           source='resolv_wrapper.c',
-                          cflags='-DNDEBUG',
                           deps='dl resolv',
                           install=False,
                           realname='libresolv-wrapper.so')
