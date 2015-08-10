@@ -700,43 +700,6 @@ is_ctdb_previously_managed_service ()
     [ -f "$_ctdb_managed_file" ]
 }
 
-########################################################
-# Check and set status
-
-log_status_cat ()
-{
-    echo "node is \"$1\", \"${script_name}\" reports problem: $(cat $2)"
-}
-
-ctdb_checkstatus ()
-{
-    if [ -r "$ctdb_status_dir/$script_name/unhealthy" ] ; then
-	log_status_cat "unhealthy" "$ctdb_status_dir/$script_name/unhealthy"
-	return 1
-    elif [ -r "$ctdb_status_dir/$script_name/banned" ] ; then
-	log_status_cat "banned" "$ctdb_status_dir/$script_name/banned"
-	return 2
-    else
-	return 0
-    fi
-}
-
-ctdb_setstatus ()
-{
-    d="$ctdb_status_dir/$script_name"
-    case "$1" in
-	unhealthy|banned)
-	    mkdir -p "$d"
-	    cat "$2" >"$d/$1"
-	    ;;
-	*)
-	    for i in "banned" "unhealthy" ; do
-		rm -f "$d/$i"
-	    done
-	    ;;
-    esac
-}
-
 ##################################################################
 # Reconfigure a service on demand
 
@@ -1031,17 +994,7 @@ service_stop ()
 
 ctdb_standard_event_handler ()
 {
-    case "$1" in
-	status)
-	    ctdb_checkstatus
-	    exit
-	    ;;
-	setstatus)
-            shift
-	    ctdb_setstatus "$@"
-	    exit
-	    ;;
-    esac
+    :
 }
 
 iptables_wrapper ()
