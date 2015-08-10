@@ -134,30 +134,35 @@ def get_credentials(lp):
     try:
         creds.get_named_ccache(lp, ccachename)
 
-        if opts.use_file is None:
-            # Now confirm we can get a ticket to a DNS server
-            ans = check_one_dns_name(sub_vars['DNSDOMAIN'] + '.', 'NS')
-            for i in range(len(ans)):
-                target_hostname = str(ans[i].target).rstrip('.')
-                settings = {}
-                settings["lp_ctx"] = lp
-                settings["target_hostname"] = target_hostname
+        if opts.use_file is not None:
+            return
 
-                gensec_client = gensec.Security.start_client(settings)
-                gensec_client.set_credentials(creds)
-                gensec_client.set_target_service("DNS")
-                gensec_client.set_target_hostname(target_hostname)
-                gensec_client.want_feature(gensec.FEATURE_SEAL)
-                gensec_client.start_mech_by_sasl_name("GSSAPI")
-                server_to_client = ""
-                try:
-                    (client_finished, client_to_server) = gensec_client.update(server_to_client)
-                    return
-                except RuntimeError:
-                    # Only raise an exception if they all failed
-                    if i != len(ans) - 1:
-                        pass
-                    raise
+        # Now confirm we can get a ticket to a DNS server
+        ans = check_one_dns_name(sub_vars['DNSDOMAIN'] + '.', 'NS')
+        for i in range(len(ans)):
+            target_hostname = str(ans[i].target).rstrip('.')
+            settings = {}
+            settings["lp_ctx"] = lp
+            settings["target_hostname"] = target_hostname
+
+            gensec_client = gensec.Security.start_client(settings)
+            gensec_client.set_credentials(creds)
+            gensec_client.set_target_service("DNS")
+            gensec_client.set_target_hostname(target_hostname)
+            gensec_client.want_feature(gensec.FEATURE_SEAL)
+            gensec_client.start_mech_by_sasl_name("GSSAPI")
+            server_to_client = ""
+            try:
+                (client_finished, client_to_server) = gensec_client.update(server_to_client)
+                if opts.verbose:
+                    print "Successfully obtained Kerberos ticket to DNS/%s as %s" \
+                            % (target_hostname, creds.get_username())
+                return
+            except RuntimeError:
+                # Only raise an exception if they all failed
+                if i != len(ans) - 1:
+                    pass
+                raise
 
     except RuntimeError as e:
         os.unlink(ccachename)
@@ -754,21 +759,20 @@ else:
 use_samba_tool = opts.use_samba_tool
 use_nsupdate = opts.use_nsupdate
 # get our krb5 creds
-if len(delete_list) != 0 or len(update_list) != 0:
-    if not opts.nocreds:
-        try:
-            get_credentials(lp)
-        except RuntimeError as e:
-            ccachename = None
+if len(delete_list) != 0 or len(update_list) != 0 and not opts.nocreds:
+    try:
+        creds = get_credentials(lp)
+    except RuntimeError as e:
+        ccachename = None
 
-            if sub_vars['IF_RWDNS_DOMAIN'] == "# ":
-                raise
+        if sub_vars['IF_RWDNS_DOMAIN'] == "# ":
+            raise
 
-            if use_nsupdate:
-                raise
+        if use_nsupdate:
+            raise
 
-            print "Failed to get Kerberos credentials, falling back to samba-tool: %s" % e
-            use_samba_tool = True
+        print "Failed to get Kerberos credentials, falling back to samba-tool: %s" % e
+        use_samba_tool = True
 
 
 # ask nsupdate to delete entries as needed
