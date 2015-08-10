@@ -307,7 +307,8 @@ ctdb_check_directories()
 _ctdb_check_tcp_common ()
 {
     assert_service_name
-    _ctdb_service_started_file="$ctdb_fail_dir/$service_name.started"
+    _d="${CTDB_VARDIR}/state/failcount"
+    _ctdb_service_started_file="${_d}/${service_name}.started"
 }
 
 ctdb_check_tcp_init ()
@@ -610,7 +611,7 @@ flush_route_cache ()
 # Simple counters
 _ctdb_counter_common () {
     _service_name="${1:-${service_name:-${script_name}}}"
-    _counter_file="$ctdb_fail_dir/$_service_name"
+    _counter_file="${CTDB_VARDIR}/state/failcount/${_service_name}"
     mkdir -p "${_counter_file%/*}" # dirname
 }
 ctdb_counter_init () {
@@ -659,9 +660,6 @@ ctdb_check_counter () {
 
 ########################################################
 
-ctdb_status_dir="$CTDB_VARDIR/state/service_status"
-ctdb_fail_dir="$CTDB_VARDIR/state/failcount"
-
 ctdb_setup_service_state_dir ()
 {
     service_state_dir="$CTDB_VARDIR/state/service_state/${1:-${service_name}}"
@@ -674,17 +672,15 @@ ctdb_setup_service_state_dir ()
 ########################################################
 # Managed status history, for auto-start/stop
 
-ctdb_managed_dir="$CTDB_VARDIR/state/managed_history"
-
 _ctdb_managed_common ()
 {
-    _ctdb_managed_file="$ctdb_managed_dir/$service_name"
+    _ctdb_managed_file="${CTDB_VARDIR}/state/managed_history/${service_name}"
 }
 
 ctdb_service_managed ()
 {
     _ctdb_managed_common
-    mkdir -p "$ctdb_managed_dir"
+    mkdir -p "${_ctdb_managed_file%/*}" # dirname
     touch "$_ctdb_managed_file"
 }
 
@@ -705,7 +701,7 @@ is_ctdb_previously_managed_service ()
 
 _ctdb_service_reconfigure_common ()
 {
-    _d="$ctdb_status_dir/${service_name}"
+    _d="${CTDB_VARDIR}/state/service_status/${service_name}"
     mkdir -p "$_d"
     _ctdb_service_reconfigure_flag="$_d/reconfigure"
 }
