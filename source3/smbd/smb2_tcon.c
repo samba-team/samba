@@ -27,6 +27,7 @@
 #include "lib/param/loadparm.h"
 #include "../lib/util/tevent_ntstatus.h"
 #include "smbd/smbXsrv_session.h"
+#include "lib/tsocket/tsocket.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_SMB2
@@ -325,9 +326,18 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 
 	if (conn->smb2.server.cipher == 0) {
 		if (encryption_required) {
-			DEBUG(1,("reject tcon with dialect[0x%04X] "
-				 "as encryption is required for service %s\n",
-				 conn->smb2.server.dialect, service));
+			char *addr;
+
+			addr = tsocket_address_string(conn->remote_address,
+						      talloc_tos());
+
+			DBG_WARNING("reject tcon from %s with dialect[0x%04X] "
+				    "as encryption is required for service %s\n",
+				    addr ? addr : "[UNKNOWN]",
+				    conn->smb2.server.dialect, service);
+
+			TALLOC_FREE(addr);
+
 			return NT_STATUS_ACCESS_DENIED;
 		}
 	}
