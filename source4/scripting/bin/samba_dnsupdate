@@ -594,8 +594,15 @@ for d in dns_list:
             break
     if not found:
         rebuild_cache = True
-    if opts.all_names or not check_dns_name(d):
+    if opts.all_names:
         update_list.append(d)
+        if opts.verbose:
+            print "force update: %s" % d
+    elif not check_dns_name(d):
+        update_list.append(d)
+        if opts.verbose:
+            print "need update: %s" % d
+
 
 for c in cache_list:
     found = False
@@ -609,6 +616,8 @@ for c in cache_list:
     if not opts.all_names and not check_dns_name(c):
         continue
     delete_list.append(c)
+    if opts.verbose:
+        print "need delete: %s" % c
 
 if len(delete_list) == 0 and len(update_list) == 0 and not rebuild_cache:
     if opts.verbose:
@@ -624,24 +633,40 @@ if len(delete_list) != 0 or len(update_list) != 0:
 for d in delete_list:
     if am_rodc:
         if d.name.lower() == domain.lower():
+            if opts.verbose:
+                print "skip delete (rodc): %s" % d
             continue
         if not d.type in [ 'A', 'AAAA' ]:
+            if opts.verbose:
+                print "delete (rodc): %s" % d
             call_rodc_update(d, op="delete")
         else:
+            if opts.verbose:
+                print "delete (nsupdate): %s" % d
             call_nsupdate(d, op="delete")
     else:
+        if opts.verbose:
+            print "delete (nsupdate): %s" % d
         call_nsupdate(d, op="delete")
 
 # ask nsupdate to add entries as needed
 for d in update_list:
     if am_rodc:
         if d.name.lower() == domain.lower():
+            if opts.verbose:
+                print "skip (rodc): %s" % d
             continue
         if not d.type in [ 'A', 'AAAA' ]:
+            if opts.verbose:
+                print "update (rodc): %s" % d
             call_rodc_update(d)
         else:
+            if opts.verbose:
+                print "update (nsupdate): %s" % d
             call_nsupdate(d)
     else:
+        if opts.verbose:
+            print "update(nsupdate): %s" % d
         call_nsupdate(d)
 
 if rebuild_cache:
