@@ -37,10 +37,8 @@
 
 extern const struct generic_mapping file_generic_mapping;
 
-#define SMB_ACE4_INT_MAGIC 0x76F8A967
 struct SMB4ACE_T
 {
-	uint32_t magic;
 	SMB_ACE4PROP_T	prop;
 	struct SMB4ACE_T *next;
 };
@@ -170,24 +168,6 @@ static uint32_t map_windows_ace_flags_to_nfs4_ace_flags(uint32_t win_ace_flags)
 	return nfs4_ace_flags;
 }
 
-static struct SMB4ACE_T *get_validated_aceint(struct SMB4ACE_T *ace)
-{
-	struct SMB4ACE_T *aceint = (struct SMB4ACE_T *)ace;
-	if (ace==NULL)
-	{
-		DEBUG(2, ("ace is NULL\n"));
-		errno = EINVAL;
-		return NULL;
-	}
-	if (aceint->magic!=SMB_ACE4_INT_MAGIC)
-	{
-		DEBUG(2, ("aceint bad magic 0x%x\n", aceint->magic));
-		errno = EINVAL;
-		return NULL;
-	}
-	return aceint;
-}
-
 struct SMB4ACL_T *smb_create_smb4acl(TALLOC_CTX *mem_ctx)
 {
 	struct SMB4ACL_T	*theacl = (struct SMB4ACL_T *)TALLOC_ZERO_SIZE(
@@ -215,7 +195,6 @@ struct SMB4ACE_T *smb_add_ace4(struct SMB4ACL_T *acl, SMB_ACE4PROP_T *prop)
 		errno = ENOMEM;
 		return NULL;
 	}
-	ace->magic = SMB_ACE4_INT_MAGIC;
 	/* ace->next = NULL not needed */
 	memcpy(&ace->prop, prop, sizeof(SMB_ACE4PROP_T));
 
@@ -234,20 +213,20 @@ struct SMB4ACE_T *smb_add_ace4(struct SMB4ACL_T *acl, SMB_ACE4PROP_T *prop)
 
 SMB_ACE4PROP_T *smb_get_ace4(struct SMB4ACE_T *ace)
 {
-	struct SMB4ACE_T *aceint = get_validated_aceint(ace);
-	if (aceint==NULL)
+	if (ace == NULL) {
 		return NULL;
+	}
 
-	return &aceint->prop;
+	return &ace->prop;
 }
 
 struct SMB4ACE_T *smb_next_ace4(struct SMB4ACE_T *ace)
 {
-	struct SMB4ACE_T *aceint = get_validated_aceint(ace);
-	if (aceint==NULL)
+	if (ace == NULL) {
 		return NULL;
+	}
 
-	return (struct SMB4ACE_T *)aceint->next;
+	return ace->next;
 }
 
 struct SMB4ACE_T *smb_first_ace4(struct SMB4ACL_T *acl)
@@ -355,12 +334,10 @@ static bool smbacl4_nfs42win(TALLOC_CTX *mem_ctx,
 		SMB_ACE4PROP_T	*ace = &aceint->prop;
 		uint32_t win_ace_flags;
 
-		DEBUG(10, ("magic: 0x%x, type: %d, iflags: %x, flags: %x, "
+		DEBUG(10, ("type: %d, iflags: %x, flags: %x, "
 			   "mask: %x, who: %d\n",
-			   aceint->magic, ace->aceType, ace->flags,
+			   ace->aceType, ace->flags,
 			   ace->aceFlags, ace->aceMask, ace->who.id));
-
-		SMB_ASSERT(aceint->magic==SMB_ACE4_INT_MAGIC);
 
 		if (ace->flags & SMB_ACE4_ID_SPECIAL) {
 			switch (ace->who.special_id) {
