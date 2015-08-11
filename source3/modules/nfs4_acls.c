@@ -495,7 +495,7 @@ static NTSTATUS smb_get_nt_acl_nfs4_common(const SMB_STRUCT_STAT *sbuf,
 	uid_to_sid(&sid_owner, sbuf->st_ex_uid);
 	gid_to_sid(&sid_group, sbuf->st_ex_gid);
 
-	ok = smbacl4_nfs42win(mem_ctx, params, theacl, &sid_owner, &sid_group,
+	ok = smbacl4_nfs42win(frame, params, theacl, &sid_owner, &sid_group,
 			      S_ISDIR(sbuf->st_ex_mode),
 			      &nt_ace_list, &good_aces);
 	if (!ok) {
