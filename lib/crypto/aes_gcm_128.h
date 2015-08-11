@@ -24,17 +24,20 @@
 
 struct aes_gcm_128_context {
 	AES_KEY aes_key;
+
+	uint64_t __align;
+
+	struct aes_gcm_128_tmp {
+		size_t ofs;
+		size_t total;
+		uint8_t block[AES_BLOCK_SIZE];
+	} A, C, c, v, y;
+
 	uint8_t H[AES_BLOCK_SIZE];
 	uint8_t J0[AES_BLOCK_SIZE];
 	uint8_t CB[AES_BLOCK_SIZE];
 	uint8_t Y[AES_BLOCK_SIZE];
 	uint8_t AC[AES_BLOCK_SIZE];
-
-	struct aes_gcm_128_tmp {
-		uint8_t block[AES_BLOCK_SIZE];
-		size_t ofs;
-		size_t total;
-	} A, C, c, y;
 };
 
 void aes_gcm_128_init(struct aes_gcm_128_context *ctx,

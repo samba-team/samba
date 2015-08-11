@@ -30,35 +30,12 @@ static inline void aes_gcm_128_inc32(uint8_t inout[AES_BLOCK_SIZE])
 	RSIVAL(inout, AES_BLOCK_SIZE - 4, v);
 }
 
-static inline void aes_gcm_128_xor(const uint8_t in1[AES_BLOCK_SIZE],
-				   const uint8_t in2[AES_BLOCK_SIZE],
-				   uint8_t out[AES_BLOCK_SIZE])
-{
-	uint8_t i;
-
-	for (i = 0; i < AES_BLOCK_SIZE; i++) {
-		out[i] = in1[i] ^ in2[i];
-	}
-}
-
-static inline void aes_gcm_128_rightshift(uint8_t x[AES_BLOCK_SIZE])
-{
-	int8_t i;
-
-	for (i = AES_BLOCK_SIZE - 1; i >=0; i--) {
-		x[i] >>= 1;
-		if (i > 0) {
-			x[i] |= (x[i-1] & 1) << 7;
-		}
-	}
-}
-
 static inline void aes_gcm_128_mul(const uint8_t x[AES_BLOCK_SIZE],
 				   const uint8_t y[AES_BLOCK_SIZE],
+				   uint8_t v[AES_BLOCK_SIZE],
 				   uint8_t z[AES_BLOCK_SIZE])
 {
 	uint8_t i;
-	uint8_t v[AES_BLOCK_SIZE];
 	/* 11100001 || 0^120 */
 	static const uint8_t r[AES_BLOCK_SIZE] = {
 		0xE1, 0x00, 0x00, 0x00,
@@ -75,12 +52,12 @@ static inline void aes_gcm_128_mul(const uint8_t x[AES_BLOCK_SIZE],
 		for (mask = 0x80; mask != 0 ; mask >>= 1) {
 			uint8_t v_lsb = v[AES_BLOCK_SIZE-1] & 1;
 			if (x[i] & mask) {
-				aes_gcm_128_xor(z, v, z);
+				aes_block_xor(z, v, z);
 			}
 
-			aes_gcm_128_rightshift(v);
+			aes_block_rshift(v, v);
 			if (v_lsb != 0) {
-				aes_gcm_128_xor(v, r, v);
+				aes_block_xor(v, r, v);
 			}
 		}
 	}
@@ -89,8 +66,8 @@ static inline void aes_gcm_128_mul(const uint8_t x[AES_BLOCK_SIZE],
 static inline void aes_gcm_128_ghash_block(struct aes_gcm_128_context *ctx,
 					   const uint8_t in[AES_BLOCK_SIZE])
 {
-	aes_gcm_128_xor(ctx->Y, in, ctx->y.block);
-	aes_gcm_128_mul(ctx->y.block, ctx->H, ctx->Y);
+	aes_block_xor(ctx->Y, in, ctx->y.block);
+	aes_gcm_128_mul(ctx->y.block, ctx->H, ctx->v.block, ctx->Y);
 }
 
 void aes_gcm_128_init(struct aes_gcm_128_context *ctx,
@@ -184,6 +161,15 @@ static inline void aes_gcm_128_crypt_tmp(struct aes_gcm_128_context *ctx,
 			tmp->ofs = 0;
 		}
 
+		if (likely(tmp->ofs == 0 && m_len >= AES_BLOCK_SIZE)) {
+			aes_block_xor(m, tmp->block, m);
+			m += AES_BLOCK_SIZE;
+			m_len -= AES_BLOCK_SIZE;
+			aes_gcm_128_inc32(ctx->CB);
+			AES_encrypt(ctx->CB, tmp->block, &ctx->aes_key);
+			continue;
+		}
+
 		m[0] ^= tmp->block[tmp->ofs];
 		m += 1;
 		m_len -= 1;
@@ -215,7 +201,7 @@ void aes_gcm_128_digest(struct aes_gcm_128_context *ctx,
 	aes_gcm_128_ghash_block(ctx, ctx->AC);
 
 	AES_encrypt(ctx->J0, ctx->c.block, &ctx->aes_key);
-	aes_gcm_128_xor(ctx->c.block, ctx->Y, T);
+	aes_block_xor(ctx->c.block, ctx->Y, T);
 
 	ZERO_STRUCTP(ctx);
 }
