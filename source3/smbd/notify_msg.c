@@ -183,6 +183,11 @@ NTSTATUS notify_remove(struct notify_context *ctx, void *private_data)
 	struct iovec iov[2];
 	NTSTATUS status;
 
+	/* see if change notify is enabled at all */
+	if (ctx == NULL) {
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
+
 	for (listel = ctx->list; listel != NULL; listel = listel->next) {
 		if (listel->private_data == private_data) {
 			DLIST_REMOVE(ctx->list, listel);
