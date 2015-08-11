@@ -188,8 +188,7 @@ struct SMB4ACE_T *smb_add_ace4(struct SMB4ACL_T *acl, SMB_ACE4PROP_T *prop)
 {
 	struct SMB4ACE_T *ace;
 
-	ace = (struct SMB4ACE_T *)TALLOC_ZERO_SIZE(
-		acl, sizeof(struct SMB4ACE_T));
+	ace = talloc_zero(acl, struct SMB4ACE_T);
 	if (ace==NULL)
 	{
 		DEBUG(0, ("TALLOC_SIZE failed\n"));
