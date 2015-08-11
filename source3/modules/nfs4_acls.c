@@ -456,9 +456,9 @@ static bool smbacl4_nfs42win(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	nt_ace_list = (struct security_ace *)
-		TALLOC_REALLOC(mem_ctx, nt_ace_list,
-				       good_aces * sizeof(struct security_ace));
+	nt_ace_list = talloc_realloc(mem_ctx, nt_ace_list, struct security_ace,
+				     good_aces);
+
 	/* returns a NULL ace list when good_aces is zero. */
 	if (good_aces && nt_ace_list == NULL) {
 		DEBUG(10, ("realloc error with %d aces", good_aces));
