@@ -45,10 +45,8 @@ struct SMB4ACE_T
 	struct SMB4ACE_T *next;
 };
 
-#define SMB_ACL4_INT_MAGIC 0x29A3E792
 struct SMB4ACL_T
 {
-	uint32_t magic;
 	uint16_t controlflags;
 	uint32_t naces;
 	struct SMB4ACE_T	*first;
@@ -172,24 +170,6 @@ static uint32_t map_windows_ace_flags_to_nfs4_ace_flags(uint32_t win_ace_flags)
 	return nfs4_ace_flags;
 }
 
-static struct SMB4ACL_T *get_validated_aclint(struct SMB4ACL_T *theacl)
-{
-	struct SMB4ACL_T *aclint = (struct SMB4ACL_T *)theacl;
-	if (theacl==NULL)
-	{
-		DEBUG(2, ("acl is NULL\n"));
-		errno = EINVAL;
-		return NULL;
-	}
-	if (aclint->magic!=SMB_ACL4_INT_MAGIC)
-	{
-		DEBUG(2, ("aclint bad magic 0x%x\n", aclint->magic));
-		errno = EINVAL;
-		return NULL;
-	}
-	return aclint;
-}
-
 static struct SMB4ACE_T *get_validated_aceint(struct SMB4ACE_T *ace)
 {
 	struct SMB4ACE_T *aceint = (struct SMB4ACE_T *)ace;
@@ -218,19 +198,17 @@ struct SMB4ACL_T *smb_create_smb4acl(TALLOC_CTX *mem_ctx)
 		errno = ENOMEM;
 		return NULL;
 	}
-	theacl->magic = SMB_ACL4_INT_MAGIC;
 	theacl->controlflags = SEC_DESC_SELF_RELATIVE;
 	/* theacl->first, last = NULL not needed */
 	return (struct SMB4ACL_T *)theacl;
 }
 
-struct SMB4ACE_T *smb_add_ace4(struct SMB4ACL_T *theacl, SMB_ACE4PROP_T *prop)
+struct SMB4ACE_T *smb_add_ace4(struct SMB4ACL_T *acl, SMB_ACE4PROP_T *prop)
 {
-	struct SMB4ACL_T *aclint = get_validated_aclint(theacl);
 	struct SMB4ACE_T *ace;
 
 	ace = (struct SMB4ACE_T *)TALLOC_ZERO_SIZE(
-		theacl, sizeof(struct SMB4ACE_T));
+		acl, sizeof(struct SMB4ACE_T));
 	if (ace==NULL)
 	{
 		DEBUG(0, ("TALLOC_SIZE failed\n"));
@@ -241,15 +219,15 @@ struct SMB4ACE_T *smb_add_ace4(struct SMB4ACL_T *theacl, SMB_ACE4PROP_T *prop)
 	/* ace->next = NULL not needed */
 	memcpy(&ace->prop, prop, sizeof(SMB_ACE4PROP_T));
 
-	if (aclint->first==NULL)
+	if (acl->first==NULL)
 	{
-		aclint->first = ace;
-		aclint->last = ace;
+		acl->first = ace;
+		acl->last = ace;
 	} else {
-		aclint->last->next = (void *)ace;
-		aclint->last = ace;
+		acl->last->next = (void *)ace;
+		acl->last = ace;
 	}
-	aclint->naces++;
+	acl->naces++;
 
 	return (struct SMB4ACE_T *)ace;
 }
@@ -272,40 +250,40 @@ struct SMB4ACE_T *smb_next_ace4(struct SMB4ACE_T *ace)
 	return (struct SMB4ACE_T *)aceint->next;
 }
 
-struct SMB4ACE_T *smb_first_ace4(struct SMB4ACL_T *theacl)
+struct SMB4ACE_T *smb_first_ace4(struct SMB4ACL_T *acl)
 {
-	struct SMB4ACL_T *aclint = get_validated_aclint(theacl);
-	if (aclint==NULL)
+	if (acl == NULL) {
 		return NULL;
+	}
 
-	return (struct SMB4ACE_T *)aclint->first;
+	return acl->first;
 }
 
-uint32_t smb_get_naces(struct SMB4ACL_T *theacl)
+uint32_t smb_get_naces(struct SMB4ACL_T *acl)
 {
-	struct SMB4ACL_T *aclint = get_validated_aclint(theacl);
-	if (aclint==NULL)
+	if (acl == NULL) {
 		return 0;
+	}
 
-	return aclint->naces;
+	return acl->naces;
 }
 
-uint16_t smbacl4_get_controlflags(struct SMB4ACL_T *theacl)
+uint16_t smbacl4_get_controlflags(struct SMB4ACL_T *acl)
 {
-	struct SMB4ACL_T *aclint = get_validated_aclint(theacl);
-	if (aclint==NULL)
+	if (acl == NULL) {
 		return 0;
+	}
 
-	return aclint->controlflags;
+	return acl->controlflags;
 }
 
-bool smbacl4_set_controlflags(struct SMB4ACL_T *theacl, uint16_t controlflags)
+bool smbacl4_set_controlflags(struct SMB4ACL_T *acl, uint16_t controlflags)
 {
-	struct SMB4ACL_T *aclint = get_validated_aclint(theacl);
-	if (aclint==NULL)
+	if (acl == NULL) {
 		return false;
+	}
 
-	aclint->controlflags = controlflags;
+	acl->controlflags = controlflags;
 	return true;
 }
 
@@ -346,7 +324,7 @@ static int smbacl4_fGetFileOwner(files_struct *fsp, SMB_STRUCT_STAT *psbuf)
 
 static bool smbacl4_nfs42win(TALLOC_CTX *mem_ctx,
 	smbacl4_vfs_params *params,
-	struct SMB4ACL_T *theacl, /* in */
+	struct SMB4ACL_T *acl, /* in */
 	struct dom_sid *psid_owner, /* in */
 	struct dom_sid *psid_group, /* in */
 	bool is_directory, /* in */
@@ -354,28 +332,22 @@ static bool smbacl4_nfs42win(TALLOC_CTX *mem_ctx,
 	int *pgood_aces /* out */
 )
 {
-	struct SMB4ACL_T *aclint = (struct SMB4ACL_T *)theacl;
 	struct SMB4ACE_T *aceint;
 	struct security_ace *nt_ace_list = NULL;
 	int good_aces = 0;
 
 	DEBUG(10, ("%s entered\n", __func__));
 
-	aclint = get_validated_aclint(theacl);
-	/* We do not check for theacl being NULL here
-	   because this is already checked in smb_get_nt_acl_nfs4().
-	   We reserve twice the number of input aces because one nfs4
-	   ace might result in 2 nt aces.*/
 	nt_ace_list = (struct security_ace *)TALLOC_ZERO_SIZE(
-		mem_ctx, 2 * aclint->naces * sizeof(struct security_ace));
+		mem_ctx, 2 * acl->naces * sizeof(struct security_ace));
 	if (nt_ace_list==NULL)
 	{
-		DEBUG(10, ("talloc error with %d aces", aclint->naces));
+		DEBUG(10, ("talloc error with %d aces", acl->naces));
 		errno = ENOMEM;
 		return false;
 	}
 
-	for (aceint=aclint->first;
+	for (aceint=acl->first;
 	     aceint!=NULL;
 	     aceint=(struct SMB4ACE_T *)aceint->next) {
 		uint32_t mask;
@@ -631,14 +603,13 @@ NTSTATUS smb_get_nt_acl_nfs4(struct connection_struct *conn,
 					  mem_ctx, ppdesc, theacl);
 }
 
-static void smbacl4_dump_nfs4acl(int level, struct SMB4ACL_T *theacl)
+static void smbacl4_dump_nfs4acl(int level, struct SMB4ACL_T *acl)
 {
-	struct SMB4ACL_T *aclint = get_validated_aclint(theacl);
 	struct SMB4ACE_T *aceint;
 
-	DEBUG(level, ("NFS4ACL: size=%d\n", aclint->naces));
+	DEBUG(level, ("NFS4ACL: size=%d\n", acl->naces));
 
-	for (aceint = aclint->first;
+	for (aceint = acl->first;
 	     aceint!=NULL;
 	     aceint=(struct SMB4ACE_T *)aceint->next) {
 		SMB_ACE4PROP_T *ace = &aceint->prop;
@@ -658,13 +629,12 @@ static void smbacl4_dump_nfs4acl(int level, struct SMB4ACL_T *theacl)
  * return ace if found matching; otherwise NULL
  */
 static SMB_ACE4PROP_T *smbacl4_find_equal_special(
-	struct SMB4ACL_T *theacl,
+	struct SMB4ACL_T *acl,
 	SMB_ACE4PROP_T *aceNew)
 {
-	struct SMB4ACL_T *aclint = get_validated_aclint(theacl);
 	struct SMB4ACE_T *aceint;
 
-	for (aceint = aclint->first; aceint != NULL;
+	for (aceint = acl->first; aceint != NULL;
 	     aceint=(struct SMB4ACE_T *)aceint->next) {
 		SMB_ACE4PROP_T *ace = &aceint->prop;
 
@@ -828,15 +798,15 @@ static int smbacl4_MergeIgnoreReject(
 }
 
 static int smbacl4_substitute_special(
-	struct SMB4ACL_T *theacl,
+	struct SMB4ACL_T *acl,
 	uid_t ownerUID,
 	gid_t ownerGID
 )
 {
-	struct SMB4ACL_T *aclint = get_validated_aclint(theacl);
 	struct SMB4ACE_T *aceint;
 
-	for(aceint = aclint->first; aceint!=NULL; aceint=(struct SMB4ACE_T *)aceint->next) {
+	for(aceint = acl->first; aceint!=NULL;
+	    aceint=(struct SMB4ACE_T *)aceint->next) {
 		SMB_ACE4PROP_T *ace = &aceint->prop;
 
 		DEBUG(10,("ace type: %d, iflags: %x, flags: %x, "
@@ -864,15 +834,15 @@ static int smbacl4_substitute_special(
 }
 
 static int smbacl4_substitute_simple(
-	struct SMB4ACL_T *theacl,
+	struct SMB4ACL_T *acl,
 	uid_t ownerUID,
 	gid_t ownerGID
 )
 {
-	struct SMB4ACL_T *aclint = get_validated_aclint(theacl);
 	struct SMB4ACE_T *aceint;
 
-	for(aceint = aclint->first; aceint!=NULL; aceint=(struct SMB4ACE_T *)aceint->next) {
+	for(aceint = acl->first; aceint!=NULL;
+	    aceint=(struct SMB4ACE_T *)aceint->next) {
 		SMB_ACE4PROP_T *ace = &aceint->prop;
 
 		DEBUG(10,("ace type: %d, iflags: %x, flags: %x, "
