@@ -88,7 +88,7 @@ static int smbacl4_get_vfs_params(
 	};
 	int enumval;
 
-	memset(params, 0, sizeof(smbacl4_vfs_params));
+	ZERO_STRUCTP(params);
 
 	enumval = lp_parm_enum(SNUM(conn), type_name, "mode",
 			       enum_smbacl4_modes, e_simple);
@@ -313,7 +313,7 @@ static int smbacl4_GetFileOwner(struct connection_struct *conn,
 				const char *filename,
 				SMB_STRUCT_STAT *psbuf)
 {
-	memset(psbuf, 0, sizeof(SMB_STRUCT_STAT));
+	ZERO_STRUCTP(psbuf);
 
 	/* Get the stat struct for the owner info. */
 	if (vfs_stat_smb_basename(conn, filename, psbuf) != 0)
@@ -328,7 +328,7 @@ static int smbacl4_GetFileOwner(struct connection_struct *conn,
 
 static int smbacl4_fGetFileOwner(files_struct *fsp, SMB_STRUCT_STAT *psbuf)
 {
-	memset(psbuf, 0, sizeof(SMB_STRUCT_STAT));
+	ZERO_STRUCTP(psbuf);
 
 	if (fsp->fh->fd == -1) {
 		return smbacl4_GetFileOwner(fsp->conn,
@@ -711,7 +711,7 @@ static bool smbacl4_fill_ace4(
 {
 	DEBUG(10, ("got ace for %s\n", sid_string_dbg(&ace_nt->trustee)));
 
-	memset(ace_v4, 0, sizeof(SMB_ACE4PROP_T));
+	ZERO_STRUCTP(ace_v4);
 
 	/* only ACCESS|DENY supported right now */
 	ace_v4->aceType = ace_nt->type;
