@@ -65,7 +65,6 @@ typedef struct _smbacl4_vfs_params {
  * Gather special parameters for NFS4 ACL handling
  */
 static int smbacl4_get_vfs_params(
-	const char *type_name,
 	struct connection_struct *conn,
 	smbacl4_vfs_params *params
 )
@@ -86,21 +85,23 @@ static int smbacl4_get_vfs_params(
 
 	ZERO_STRUCTP(params);
 
-	enumval = lp_parm_enum(SNUM(conn), type_name, "mode",
+	enumval = lp_parm_enum(SNUM(conn), SMBACL4_PARAM_TYPE_NAME, "mode",
 			       enum_smbacl4_modes, e_simple);
 	if (enumval == -1) {
-		DEBUG(10, ("value for %s:mode unknown\n", type_name));
+		DEBUG(10, ("value for %s:mode unknown\n",
+			   SMBACL4_PARAM_TYPE_NAME));
 		return -1;
 	}
 	params->mode = (enum smbacl4_mode_enum)enumval;
 
-	params->do_chown = lp_parm_bool(SNUM(conn), type_name,
+	params->do_chown = lp_parm_bool(SNUM(conn), SMBACL4_PARAM_TYPE_NAME,
 		"chown", true);
 
-	enumval = lp_parm_enum(SNUM(conn), type_name, "acedup",
+	enumval = lp_parm_enum(SNUM(conn), SMBACL4_PARAM_TYPE_NAME, "acedup",
 			       enum_smbacl4_acedups, e_dontcare);
 	if (enumval == -1) {
-		DEBUG(10, ("value for %s:acedup unknown\n", type_name));
+		DEBUG(10, ("value for %s:acedup unknown\n",
+			   SMBACL4_PARAM_TYPE_NAME));
 		return -1;
 	}
 	params->acedup = (enum smbacl4_acedup_enum)enumval;
@@ -547,7 +548,7 @@ NTSTATUS smb_fget_nt_acl_nfs4(files_struct *fsp,
 	}
 
 	/* Special behaviours */
-	if (smbacl4_get_vfs_params(SMBACL4_PARAM_TYPE_NAME, fsp->conn, &params)) {
+	if (smbacl4_get_vfs_params(fsp->conn, &params)) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -572,7 +573,7 @@ NTSTATUS smb_get_nt_acl_nfs4(struct connection_struct *conn,
 	}
 
 	/* Special behaviours */
-	if (smbacl4_get_vfs_params(SMBACL4_PARAM_TYPE_NAME, conn, &params)) {
+	if (smbacl4_get_vfs_params(conn, &params)) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -929,8 +930,7 @@ NTSTATUS smb_set_nt_acl_nfs4(vfs_handle_struct *handle, files_struct *fsp,
 	}
 
 	/* Special behaviours */
-	if (smbacl4_get_vfs_params(SMBACL4_PARAM_TYPE_NAME,
-				   fsp->conn, &params)) {
+	if (smbacl4_get_vfs_params(fsp->conn, &params)) {
 		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
