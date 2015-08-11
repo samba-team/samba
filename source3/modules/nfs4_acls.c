@@ -483,6 +483,7 @@ static NTSTATUS smb_get_nt_acl_nfs4_common(const SMB_STRUCT_STAT *sbuf,
 	struct security_ace *nt_ace_list = NULL;
 	struct security_acl *psa = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
+	bool ok;
 
 	if (theacl==NULL) {
 		TALLOC_FREE(frame);
@@ -494,9 +495,10 @@ static NTSTATUS smb_get_nt_acl_nfs4_common(const SMB_STRUCT_STAT *sbuf,
 	uid_to_sid(&sid_owner, sbuf->st_ex_uid);
 	gid_to_sid(&sid_group, sbuf->st_ex_gid);
 
-	if (smbacl4_nfs42win(mem_ctx, params, theacl, &sid_owner, &sid_group,
-			     S_ISDIR(sbuf->st_ex_mode),
-			     &nt_ace_list, &good_aces)==false) {
+	ok = smbacl4_nfs42win(mem_ctx, params, theacl, &sid_owner, &sid_group,
+			      S_ISDIR(sbuf->st_ex_mode),
+			      &nt_ace_list, &good_aces);
+	if (!ok) {
 		DEBUG(8,("smbacl4_nfs42win failed\n"));
 		TALLOC_FREE(frame);
 		return map_nt_error_from_unix(errno);
