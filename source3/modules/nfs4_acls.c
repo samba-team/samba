@@ -317,8 +317,8 @@ static bool smbacl4_nfs42win(TALLOC_CTX *mem_ctx,
 
 	DEBUG(10, ("%s entered\n", __func__));
 
-	nt_ace_list = (struct security_ace *)TALLOC_ZERO_SIZE(
-		mem_ctx, 2 * acl->naces * sizeof(struct security_ace));
+	nt_ace_list = talloc_zero_array(mem_ctx, struct security_ace,
+					2 * acl->naces);
 	if (nt_ace_list==NULL)
 	{
 		DEBUG(10, ("talloc error with %d aces", acl->naces));
