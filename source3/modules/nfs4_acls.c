@@ -181,7 +181,7 @@ struct SMB4ACL_T *smb_create_smb4acl(TALLOC_CTX *mem_ctx)
 	}
 	theacl->controlflags = SEC_DESC_SELF_RELATIVE;
 	/* theacl->first, last = NULL not needed */
-	return (struct SMB4ACL_T *)theacl;
+	return theacl;
 }
 
 struct SMB4ACE_T *smb_add_ace4(struct SMB4ACL_T *acl, SMB_ACE4PROP_T *prop)
@@ -203,12 +203,12 @@ struct SMB4ACE_T *smb_add_ace4(struct SMB4ACL_T *acl, SMB_ACE4PROP_T *prop)
 		acl->first = ace;
 		acl->last = ace;
 	} else {
-		acl->last->next = (void *)ace;
+		acl->last->next = ace;
 		acl->last = ace;
 	}
 	acl->naces++;
 
-	return (struct SMB4ACE_T *)ace;
+	return ace;
 }
 
 SMB_ACE4PROP_T *smb_get_ace4(struct SMB4ACE_T *ace)
@@ -326,9 +326,7 @@ static bool smbacl4_nfs42win(TALLOC_CTX *mem_ctx,
 		return false;
 	}
 
-	for (aceint=acl->first;
-	     aceint!=NULL;
-	     aceint=(struct SMB4ACE_T *)aceint->next) {
+	for (aceint = acl->first; aceint != NULL; aceint = aceint->next) {
 		uint32_t mask;
 		struct dom_sid sid;
 		SMB_ACE4PROP_T	*ace = &aceint->prop;
@@ -586,9 +584,7 @@ static void smbacl4_dump_nfs4acl(int level, struct SMB4ACL_T *acl)
 
 	DEBUG(level, ("NFS4ACL: size=%d\n", acl->naces));
 
-	for (aceint = acl->first;
-	     aceint!=NULL;
-	     aceint=(struct SMB4ACE_T *)aceint->next) {
+	for (aceint = acl->first; aceint != NULL; aceint = aceint->next) {
 		SMB_ACE4PROP_T *ace = &aceint->prop;
 
 		DEBUG(level, ("\tACE: type=%d, flags=0x%x, fflags=0x%x, "
@@ -611,8 +607,7 @@ static SMB_ACE4PROP_T *smbacl4_find_equal_special(
 {
 	struct SMB4ACE_T *aceint;
 
-	for (aceint = acl->first; aceint != NULL;
-	     aceint=(struct SMB4ACE_T *)aceint->next) {
+	for (aceint = acl->first; aceint != NULL; aceint = aceint->next) {
 		SMB_ACE4PROP_T *ace = &aceint->prop;
 
 		DEBUG(10,("ace type:0x%x flags:0x%x aceFlags:0x%x "
@@ -782,8 +777,7 @@ static int smbacl4_substitute_special(
 {
 	struct SMB4ACE_T *aceint;
 
-	for(aceint = acl->first; aceint!=NULL;
-	    aceint=(struct SMB4ACE_T *)aceint->next) {
+	for (aceint = acl->first; aceint != NULL; aceint = aceint->next) {
 		SMB_ACE4PROP_T *ace = &aceint->prop;
 
 		DEBUG(10,("ace type: %d, iflags: %x, flags: %x, "
@@ -818,8 +812,7 @@ static int smbacl4_substitute_simple(
 {
 	struct SMB4ACE_T *aceint;
 
-	for(aceint = acl->first; aceint!=NULL;
-	    aceint=(struct SMB4ACE_T *)aceint->next) {
+	for (aceint = acl->first; aceint != NULL; aceint = aceint->next) {
 		SMB_ACE4PROP_T *ace = &aceint->prop;
 
 		DEBUG(10,("ace type: %d, iflags: %x, flags: %x, "
