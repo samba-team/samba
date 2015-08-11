@@ -22,10 +22,16 @@
 struct aes_cmac_128_context {
 	AES_KEY aes_key;
 
+	uint64_t __align;
+
 	uint8_t K1[AES_BLOCK_SIZE];
 	uint8_t K2[AES_BLOCK_SIZE];
 
+	uint8_t L[AES_BLOCK_SIZE];
 	uint8_t X[AES_BLOCK_SIZE];
+	uint8_t Y[AES_BLOCK_SIZE];
+
+	uint8_t tmp[AES_BLOCK_SIZE];
 
 	uint8_t last[AES_BLOCK_SIZE];
 	size_t last_len;
