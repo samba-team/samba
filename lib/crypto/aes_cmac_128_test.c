@@ -87,6 +87,32 @@ bool torture_local_crypto_aes_cmac_128(struct torture_context *torture)
 			ret = false;
 		}
 	}
+	for (i=0; testarray[i].cmac.length != 0; i++) {
+		struct aes_cmac_128_context ctx;
+		uint8_t cmac[AES_BLOCK_SIZE];
+		int e;
+		size_t j;
+
+		aes_cmac_128_init(&ctx, key.data);
+		for (j=0; j < testarray[i].data.length; j++) {
+			aes_cmac_128_update(&ctx, NULL, 0);
+			aes_cmac_128_update(&ctx,
+					    &testarray[i].data.data[j],
+					    1);
+			aes_cmac_128_update(&ctx, NULL, 0);
+		}
+		aes_cmac_128_final(&ctx, cmac);
+
+		e = memcmp(testarray[i].cmac.data, cmac, sizeof(cmac));
+		if (e != 0) {
+			printf("aes_cmac_128 chunked test[%u]: failed\n", i);
+			dump_data(0, key.data, key.length);
+			dump_data(0, testarray[i].data.data, testarray[i].data.length);
+			dump_data(0, testarray[i].cmac.data, testarray[i].cmac.length);
+			dump_data(0, cmac, sizeof(cmac));
+			ret = false;
+		}
+	}
 	talloc_free(tctx);
 	return ret;
 }
