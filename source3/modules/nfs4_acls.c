@@ -38,7 +38,7 @@
 extern const struct generic_mapping file_generic_mapping;
 
 #define SMB_ACE4_INT_MAGIC 0x76F8A967
-typedef struct _SMB_ACE4_INT_T
+typedef struct SMB4ACE_T
 {
 	uint32_t magic;
 	SMB_ACE4PROP_T	prop;
