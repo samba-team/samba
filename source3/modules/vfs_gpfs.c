@@ -632,7 +632,7 @@ static struct gpfs_acl *vfs_gpfs_smbacl2gpfsacl(TALLOC_CTX *mem_ctx,
 {
 	struct gpfs_acl *gacl;
 	gpfs_aclLen_t gacl_len;
-	SMB4ACE_T *smbace;
+	struct SMB4ACE_T *smbace;
 
 	gacl_len = offsetof(gpfs_acl_t, ace_v4) + sizeof(unsigned int)
 		+ smb_get_naces(smbacl) * sizeof(gpfs_ace_v4_t);
@@ -1300,7 +1300,7 @@ static int gpfsacl_emu_chmod(vfs_handle_struct *handle,
 	bool    haveAllowEntry[SMB_ACE4_WHO_EVERYONE + 1] = {False, False, False, False};
 	int     i;
 	files_struct fake_fsp = { 0 }; /* TODO: rationalize parametrization */
-	SMB4ACE_T       *smbace;
+	struct SMB4ACE_T *smbace;
 	TALLOC_CTX *frame = talloc_stackframe();
 
 	DEBUG(10, ("gpfsacl_emu_chmod invoked for %s mode %o\n", path, mode));

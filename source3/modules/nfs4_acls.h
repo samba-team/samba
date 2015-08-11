@@ -112,21 +112,21 @@ typedef struct _SMB_ACE4PROP_T {
  * use create_smb4acl instead
  */
 struct SMB4ACL_T;
-typedef struct _SMB4ACE_T {char dontuse;} SMB4ACE_T;
+struct SMB4ACE_T;
 
 struct SMB4ACL_T *smb_create_smb4acl(TALLOC_CTX *mem_ctx);
 
 /* prop's contents are copied */
 /* it doesn't change the order, appends */
-SMB4ACE_T *smb_add_ace4(struct SMB4ACL_T *theacl, SMB_ACE4PROP_T *prop);
+struct SMB4ACE_T *smb_add_ace4(struct SMB4ACL_T *theacl, SMB_ACE4PROP_T *prop);
 
-SMB_ACE4PROP_T *smb_get_ace4(SMB4ACE_T *ace);
+SMB_ACE4PROP_T *smb_get_ace4(struct SMB4ACE_T *ace);
 
 /* Returns NULL if none - or error */
-SMB4ACE_T *smb_first_ace4(struct SMB4ACL_T *theacl);
+struct SMB4ACE_T *smb_first_ace4(struct SMB4ACL_T *theacl);
 
 /* Returns NULL in the end - or error */
-SMB4ACE_T *smb_next_ace4(SMB4ACE_T *ace);
+struct SMB4ACE_T *smb_next_ace4(struct SMB4ACE_T *ace);
 
 uint32_t smb_get_naces(struct SMB4ACL_T *theacl);
 

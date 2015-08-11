@@ -349,7 +349,7 @@ static bool aixjfs2_process_smbacl(vfs_handle_struct *handle,
 				   files_struct *fsp,
 				   struct SMB4ACL_T *smbacl)
 {
-	SMB4ACE_T	*smbace;
+	struct SMB4ACE_T *smbace;
 	TALLOC_CTX	*mem_ctx;
 	nfs4_acl_int_t	*jfs2acl;
 	int32_t		entryLen;

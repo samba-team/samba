@@ -190,7 +190,7 @@ static SMB_ACL4_INT_T *get_validated_aclint(struct SMB4ACL_T *theacl)
 	return aclint;
 }
 
-static SMB_ACE4_INT_T *get_validated_aceint(SMB4ACE_T *ace)
+static SMB_ACE4_INT_T *get_validated_aceint(struct SMB4ACE_T *ace)
 {
 	SMB_ACE4_INT_T *aceint = (SMB_ACE4_INT_T *)ace;
 	if (ace==NULL)
@@ -224,7 +224,7 @@ struct SMB4ACL_T *smb_create_smb4acl(TALLOC_CTX *mem_ctx)
 	return (struct SMB4ACL_T *)theacl;
 }
 
-SMB4ACE_T *smb_add_ace4(struct SMB4ACL_T *theacl, SMB_ACE4PROP_T *prop)
+struct SMB4ACE_T *smb_add_ace4(struct SMB4ACL_T *theacl, SMB_ACE4PROP_T *prop)
 {
 	SMB_ACL4_INT_T *aclint = get_validated_aclint(theacl);
 	SMB_ACE4_INT_T *ace;
@@ -251,10 +251,10 @@ SMB4ACE_T *smb_add_ace4(struct SMB4ACL_T *theacl, SMB_ACE4PROP_T *prop)
 	}
 	aclint->naces++;
 
-	return (SMB4ACE_T *)ace;
+	return (struct SMB4ACE_T *)ace;
 }
 
-SMB_ACE4PROP_T *smb_get_ace4(SMB4ACE_T *ace)
+SMB_ACE4PROP_T *smb_get_ace4(struct SMB4ACE_T *ace)
 {
 	SMB_ACE4_INT_T *aceint = get_validated_aceint(ace);
 	if (aceint==NULL)
@@ -263,22 +263,22 @@ SMB_ACE4PROP_T *smb_get_ace4(SMB4ACE_T *ace)
 	return &aceint->prop;
 }
 
-SMB4ACE_T *smb_next_ace4(SMB4ACE_T *ace)
+struct SMB4ACE_T *smb_next_ace4(struct SMB4ACE_T *ace)
 {
 	SMB_ACE4_INT_T *aceint = get_validated_aceint(ace);
 	if (aceint==NULL)
 		return NULL;
 
-	return (SMB4ACE_T *)aceint->next;
+	return (struct SMB4ACE_T *)aceint->next;
 }
 
-SMB4ACE_T *smb_first_ace4(struct SMB4ACL_T *theacl)
+struct SMB4ACE_T *smb_first_ace4(struct SMB4ACL_T *theacl)
 {
 	SMB_ACL4_INT_T *aclint = get_validated_aclint(theacl);
 	if (aclint==NULL)
 		return NULL;
 
-	return (SMB4ACE_T *)aclint->first;
+	return (struct SMB4ACE_T *)aclint->first;
 }
 
 uint32_t smb_get_naces(struct SMB4ACL_T *theacl)

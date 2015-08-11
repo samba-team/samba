@@ -182,7 +182,7 @@ static bool nfs4acl_smb4acl2nfs4acl(TALLOC_CTX *mem_ctx,
 				    bool denymissingspecial)
 {
 	struct nfs4acl *nfs4acl;
-	SMB4ACE_T *smbace;
+	struct SMB4ACE_T *smbace;
 	bool have_special_id = false;
 	int i;
 
@@ -343,7 +343,7 @@ static NTSTATUS nfs4_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 static struct SMB4ACL_T *nfs4acls_defaultacl(TALLOC_CTX *mem_ctx)
 {
 	struct SMB4ACL_T *pacl = NULL;
-	SMB4ACE_T *pace;
+	struct SMB4ACE_T *pace;
 	SMB_ACE4PROP_T ace = {
 		.flags = SMB_ACE4_ID_SPECIAL,
 		.who = {
@@ -408,7 +408,7 @@ static struct SMB4ACL_T *nfs4acls_inheritacl(vfs_handle_struct *handle,
 	char *parent_dir = NULL;
 	struct SMB4ACL_T *pparentacl = NULL;
 	struct SMB4ACL_T *pchildacl = NULL;
-	SMB4ACE_T *pace;
+	struct SMB4ACE_T *pace;
 	SMB_ACE4PROP_T ace;
 	bool isdir;
 	struct smb_filename *smb_fname = NULL;
@@ -469,7 +469,7 @@ static struct SMB4ACL_T *nfs4acls_inheritacl(vfs_handle_struct *handle,
 
 	for (pace = smb_first_ace4(pparentacl); pace != NULL;
 	     pace = smb_next_ace4(pace)) {
-		SMB4ACE_T *pchildace;
+		struct SMB4ACE_T *pchildace;
 		ace = *smb_get_ace4(pace);
 		if ((isdir && !(ace.aceFlags & SMB_ACE4_DIRECTORY_INHERIT_ACE)) ||
 		    (!isdir && !(ace.aceFlags & SMB_ACE4_FILE_INHERIT_ACE))) {

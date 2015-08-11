@@ -110,7 +110,7 @@ static bool zfs_process_smbacl(vfs_handle_struct *handle, files_struct *fsp,
 {
 	int naces = smb_get_naces(smbacl), i;
 	ace_t *acebuf;
-	SMB4ACE_T *smbace;
+	struct SMB4ACE_T *smbace;
 	TALLOC_CTX	*mem_ctx;
 	bool have_special_id = false;
 
