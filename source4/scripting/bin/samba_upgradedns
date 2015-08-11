@@ -415,7 +415,6 @@ if __name__ == '__main__':
         try:
             dn = 'samAccountName=dns-%s,CN=Principals' % hostname
             msg = ldbs.secrets.search(expression='(dn=%s)' % dn, attrs=['secret'])
-            dnssecret = msg[0]['secret'][0]
         except IndexError:
 
             logger.info("Adding dns-%s account" % hostname)
