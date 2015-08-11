@@ -26,16 +26,20 @@
 
 struct aes_ccm_128_context {
 	AES_KEY aes_key;
+
 	uint8_t nonce[AES_CCM_128_NONCE_SIZE];
 
 	size_t a_remain;
 	size_t m_remain;
 
+	uint64_t __align;
+
 	uint8_t X_i[AES_BLOCK_SIZE];
 	uint8_t B_i[AES_BLOCK_SIZE];
-	size_t B_i_ofs;
-
+	uint8_t A_i[AES_BLOCK_SIZE];
 	uint8_t S_i[AES_BLOCK_SIZE];
+
+	size_t B_i_ofs;
 	size_t S_i_ofs;
 	size_t S_i_ctr;
 };
