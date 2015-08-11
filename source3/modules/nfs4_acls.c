@@ -46,7 +46,7 @@ typedef struct _SMB_ACE4_INT_T
 } SMB_ACE4_INT_T;
 
 #define SMB_ACL4_INT_MAGIC 0x29A3E792
-typedef struct _SMB_ACL4_INT_T
+typedef struct SMB4ACL_T
 {
 	uint32_t magic;
 	uint16_t controlflags;
