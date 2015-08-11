@@ -94,7 +94,7 @@ static AIXJFS2_ACL_T *aixjfs2_getacl_alloc(const char *fname, acl_type_t *type)
 }
 
 static bool aixjfs2_get_nfs4_acl(TALLOC_CTX *mem_ctx, const char *name,
-	SMB4ACL_T **ppacl, bool *pretryPosix)
+	struct SMB4ACL_T **ppacl, bool *pretryPosix)
 {
 	int32_t i;
 	
@@ -159,7 +159,7 @@ static NTSTATUS aixjfs2_fget_nt_acl(vfs_handle_struct *handle,
 	struct security_descriptor **ppdesc)
 {
 	NTSTATUS status;
-	SMB4ACL_T *pacl = NULL;
+	struct SMB4ACL_T *pacl = NULL;
 	bool	result;
 	bool	retryPosix = False;
 	TALLOC_CTX *frame = talloc_stackframe();
@@ -191,7 +191,7 @@ static NTSTATUS aixjfs2_get_nt_acl(vfs_handle_struct *handle,
 	TALLOC_CTX *mem_ctx,
 	struct security_descriptor **ppdesc)
 {
-	SMB4ACL_T *pacl = NULL;
+	struct SMB4ACL_T *pacl = NULL;
 	bool	result;
 	bool	retryPosix = False;
 
@@ -213,7 +213,7 @@ static NTSTATUS aixjfs2_get_nt_acl(vfs_handle_struct *handle,
 
 static int aixjfs2_sys_acl_blob_get_file(vfs_handle_struct *handle, const char *path_p, TALLOC_CTX *mem_ctx, char **blob_description, DATA_BLOB *blob)
 {
-	SMB4ACL_T *pacl = NULL;
+	struct SMB4ACL_T *pacl = NULL;
 	bool	result;
 	bool	retryPosix = False;
 
@@ -230,7 +230,7 @@ static int aixjfs2_sys_acl_blob_get_file(vfs_handle_struct *handle, const char *
 
 static int aixjfs2_sys_acl_blob_get_fd(vfs_handle_struct *handle, files_struct *fsp, TALLOC_CTX *mem_ctx, char **blob_description, DATA_BLOB *blob)
 {
-	SMB4ACL_T *pacl = NULL;
+	struct SMB4ACL_T *pacl = NULL;
 	bool	result;
 	bool	retryPosix = False;
 
@@ -345,7 +345,9 @@ static int aixjfs2_query_acl_support(
 	return 1; /* haven't found that ACL type. */
 }
 
-static bool aixjfs2_process_smbacl(vfs_handle_struct *handle, files_struct *fsp, SMB4ACL_T *smbacl)
+static bool aixjfs2_process_smbacl(vfs_handle_struct *handle,
+				   files_struct *fsp,
+				   struct SMB4ACL_T *smbacl)
 {
 	SMB4ACE_T	*smbace;
 	TALLOC_CTX	*mem_ctx;

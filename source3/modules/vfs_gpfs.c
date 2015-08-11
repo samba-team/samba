@@ -435,7 +435,8 @@ again:
  * On failure returns -1 if there is system (GPFS) error, check errno.
  * Returns 0 on success
  */
-static int gpfs_get_nfs4_acl(TALLOC_CTX *mem_ctx, const char *fname, SMB4ACL_T **ppacl)
+static int gpfs_get_nfs4_acl(TALLOC_CTX *mem_ctx, const char *fname,
+			     struct SMB4ACL_T **ppacl)
 {
 	gpfs_aclCount_t i;
 	struct gpfs_acl *gacl = NULL;
@@ -536,7 +537,7 @@ static NTSTATUS gpfsacl_fget_nt_acl(vfs_handle_struct *handle,
 	TALLOC_CTX *mem_ctx,
 	struct security_descriptor **ppdesc)
 {
-	SMB4ACL_T *pacl = NULL;
+	struct SMB4ACL_T *pacl = NULL;
 	int	result;
 	struct gpfs_config_data *config;
 	TALLOC_CTX *frame = talloc_stackframe();
@@ -583,7 +584,7 @@ static NTSTATUS gpfsacl_get_nt_acl(vfs_handle_struct *handle,
 	uint32_t security_info,
 	TALLOC_CTX *mem_ctx, struct security_descriptor **ppdesc)
 {
-	SMB4ACL_T *pacl = NULL;
+	struct SMB4ACL_T *pacl = NULL;
 	int	result;
 	struct gpfs_config_data *config;
 	TALLOC_CTX *frame = talloc_stackframe();
@@ -626,7 +627,7 @@ static NTSTATUS gpfsacl_get_nt_acl(vfs_handle_struct *handle,
 
 static struct gpfs_acl *vfs_gpfs_smbacl2gpfsacl(TALLOC_CTX *mem_ctx,
 						files_struct *fsp,
-						SMB4ACL_T *smbacl,
+						struct SMB4ACL_T *smbacl,
 						bool controlflags)
 {
 	struct gpfs_acl *gacl;
@@ -719,7 +720,7 @@ static struct gpfs_acl *vfs_gpfs_smbacl2gpfsacl(TALLOC_CTX *mem_ctx,
 
 static bool gpfsacl_process_smbacl(vfs_handle_struct *handle,
 				   files_struct *fsp,
-				   SMB4ACL_T *smbacl)
+				   struct SMB4ACL_T *smbacl)
 {
 	int ret;
 	struct gpfs_acl *gacl;
@@ -1294,7 +1295,7 @@ static uint32_t gpfsacl_mask_filter(uint32_t aceType, uint32_t aceMask, uint32_t
 static int gpfsacl_emu_chmod(vfs_handle_struct *handle,
 			     const char *path, mode_t mode)
 {
-	SMB4ACL_T *pacl = NULL;
+	struct SMB4ACL_T *pacl = NULL;
 	int     result;
 	bool    haveAllowEntry[SMB_ACE4_WHO_EVERYONE + 1] = {False, False, False, False};
 	int     i;

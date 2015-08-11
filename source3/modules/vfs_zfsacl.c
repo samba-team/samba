@@ -42,11 +42,11 @@
  */
 static NTSTATUS zfs_get_nt_acl_common(TALLOC_CTX *mem_ctx,
 				      const char *name,
-				      SMB4ACL_T **ppacl)
+				      struct SMB4ACL_T **ppacl)
 {
 	int naces, i;
 	ace_t *acebuf;
-	SMB4ACL_T *pacl;
+	struct SMB4ACL_T *pacl;
 
 	/* read the number of file aces */
 	if((naces = acl(name, ACE_GETACLCNT, 0, NULL)) == -1) {
@@ -105,7 +105,8 @@ static NTSTATUS zfs_get_nt_acl_common(TALLOC_CTX *mem_ctx,
 }
 
 /* call-back function processing the NT acl -> ZFS acl using NFSv4 conv. */
-static bool zfs_process_smbacl(vfs_handle_struct *handle, files_struct *fsp, SMB4ACL_T *smbacl)
+static bool zfs_process_smbacl(vfs_handle_struct *handle, files_struct *fsp,
+			       struct SMB4ACL_T *smbacl)
 {
 	int naces = smb_get_naces(smbacl), i;
 	ace_t *acebuf;
@@ -196,7 +197,7 @@ static NTSTATUS zfsacl_fget_nt_acl(struct vfs_handle_struct *handle,
 				   TALLOC_CTX *mem_ctx,
 				   struct security_descriptor **ppdesc)
 {
-	SMB4ACL_T *pacl;
+	struct SMB4ACL_T *pacl;
 	NTSTATUS status;
 	TALLOC_CTX *frame = talloc_stackframe();
 
@@ -218,7 +219,7 @@ static NTSTATUS zfsacl_get_nt_acl(struct vfs_handle_struct *handle,
 				  TALLOC_CTX *mem_ctx,
 				  struct security_descriptor **ppdesc)
 {
-	SMB4ACL_T *pacl;
+	struct SMB4ACL_T *pacl;
 	NTSTATUS status;
 	TALLOC_CTX *frame = talloc_stackframe();
 

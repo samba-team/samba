@@ -111,43 +111,45 @@ typedef struct _SMB_ACE4PROP_T {
  * Never allocate these structures on your own
  * use create_smb4acl instead
  */
-typedef struct _SMB4ACL_T {char dontuse;} SMB4ACL_T;
+struct SMB4ACL_T;
 typedef struct _SMB4ACE_T {char dontuse;} SMB4ACE_T;
 
-SMB4ACL_T *smb_create_smb4acl(TALLOC_CTX *mem_ctx);
+struct SMB4ACL_T *smb_create_smb4acl(TALLOC_CTX *mem_ctx);
 
 /* prop's contents are copied */
 /* it doesn't change the order, appends */
-SMB4ACE_T *smb_add_ace4(SMB4ACL_T *theacl, SMB_ACE4PROP_T *prop);
+SMB4ACE_T *smb_add_ace4(struct SMB4ACL_T *theacl, SMB_ACE4PROP_T *prop);
 
 SMB_ACE4PROP_T *smb_get_ace4(SMB4ACE_T *ace);
 
 /* Returns NULL if none - or error */
-SMB4ACE_T *smb_first_ace4(SMB4ACL_T *theacl);
+SMB4ACE_T *smb_first_ace4(struct SMB4ACL_T *theacl);
 
 /* Returns NULL in the end - or error */
 SMB4ACE_T *smb_next_ace4(SMB4ACE_T *ace);
 
-uint32_t smb_get_naces(SMB4ACL_T *theacl);
+uint32_t smb_get_naces(struct SMB4ACL_T *theacl);
 
-uint16_t smbacl4_get_controlflags(SMB4ACL_T *theacl);
+uint16_t smbacl4_get_controlflags(struct SMB4ACL_T *theacl);
 
-bool smbacl4_set_controlflags(SMB4ACL_T *theacl, uint16_t controlflags);
+bool smbacl4_set_controlflags(struct SMB4ACL_T *theacl, uint16_t controlflags);
 
 NTSTATUS smb_fget_nt_acl_nfs4(files_struct *fsp,
 	uint32_t security_info,
 	TALLOC_CTX *mem_ctx,
-	struct security_descriptor **ppdesc, SMB4ACL_T *theacl);
+	struct security_descriptor **ppdesc, struct SMB4ACL_T *theacl);
 
 NTSTATUS smb_get_nt_acl_nfs4(connection_struct *conn,
 	const char *name,
 	uint32_t security_info,
 	TALLOC_CTX *mem_ctx,
-	struct security_descriptor **ppdesc, SMB4ACL_T *theacl);
+	struct security_descriptor **ppdesc, struct SMB4ACL_T *theacl);
 
 /* Callback function needed to set the native acl
  * when applicable */
-typedef bool (*set_nfs4acl_native_fn_t)(vfs_handle_struct *handle, files_struct *, SMB4ACL_T *);
+typedef bool (*set_nfs4acl_native_fn_t)(vfs_handle_struct *handle,
+					files_struct *,
+					struct SMB4ACL_T *);
 
 NTSTATUS smb_set_nt_acl_nfs4(vfs_handle_struct *handle, files_struct *fsp,
 	uint32_t security_info_sent,
