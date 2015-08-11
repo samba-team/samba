@@ -6,6 +6,10 @@ ${IF_RWDNS_DOMAIN}NS   ${DNSDOMAIN}                                          ${H
 ${IF_RWDNS_FOREST}NS   ${DNSFOREST}                                          ${HOSTNAME}
 ${IF_RWDNS_FOREST}NS   _msdcs.${DNSFOREST}                                   ${HOSTNAME}
 
+# Stub entries in the parent zone
+${IF_RWDNS_DOMAIN}RPC ${DNSFOREST}   NS ${DNSDOMAIN}                         ${HOSTNAME}
+${IF_RWDNS_FOREST}RPC ${DNSFOREST}   NS _msdcs.${DNSFOREST}                  ${HOSTNAME}
+
 # RW domain controller
 ${IF_RWDC}A            ${DNSDOMAIN}                                          $IP
 ${IF_RWDC}AAAA         ${DNSDOMAIN}                                          $IP

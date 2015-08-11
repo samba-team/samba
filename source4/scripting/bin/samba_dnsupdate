@@ -182,6 +182,12 @@ class dnsobj(object):
         self.existing_port = None
         self.existing_weight = None
         self.existing_cname_target = None
+        self.rpc = False
+        self.zone = None
+        if list[0] == "RPC":
+            self.rpc = True
+            self.zone = list[1]
+            list = list[2:]
         self.type = list[0]
         self.name = list[1]
         self.nameservers = []
@@ -469,7 +475,7 @@ def call_nsupdate(d, op="add"):
     os.environ["SOCKET_WRAPPER_MTU"] = "0"
 
 
-def call_samba_tool(d, op="add"):
+def call_samba_tool(d, op="add", zone=None):
     """call samba-tool dns to update an entry."""
 
     assert(op in ["add", "delete"])
@@ -483,23 +489,27 @@ def call_samba_tool(d, op="add"):
         print "Calling samba-tool dns for %s (%s)" % (d, op)
 
     normalised_name = d.name.rstrip('.') + '.'
-    if normalised_name == (sub_vars['DNSDOMAIN'] + '.'):
-        short_name = '@'
-        zone = sub_vars['DNSDOMAIN']
-    elif normalised_name == (sub_vars['DNSFOREST'] + '.'):
-        short_name = '@'
-        zone = sub_vars['DNSFOREST']
-    elif normalised_name == ('_msdcs.' + sub_vars['DNSFOREST'] + '.'):
-        short_name = '@'
-        zone = '_msdcs.' + sub_vars['DNSFOREST']
-    else:
-        if not normalised_name.endswith('.' + sub_vars['DNSDOMAIN'] + '.'):
-            print "Not Calling samba-tool dns for %s (%s), %s not in %s" % (d, op, normalised_name, sub_vars['DNSDOMAIN'] + '.')
-            return False
-        elif normalised_name.endswith('._msdcs.' + sub_vars['DNSFOREST'] + '.'):
+    if zone is None:
+        if normalised_name == (sub_vars['DNSDOMAIN'] + '.'):
+            short_name = '@'
+            zone = sub_vars['DNSDOMAIN']
+        elif normalised_name == (sub_vars['DNSFOREST'] + '.'):
+            short_name = '@'
+            zone = sub_vars['DNSFOREST']
+        elif normalised_name == ('_msdcs.' + sub_vars['DNSFOREST'] + '.'):
+            short_name = '@'
             zone = '_msdcs.' + sub_vars['DNSFOREST']
         else:
-            zone = sub_vars['DNSDOMAIN']
+            if not normalised_name.endswith('.' + sub_vars['DNSDOMAIN'] + '.'):
+                print "Not Calling samba-tool dns for %s (%s), %s not in %s" % (d, op, normalised_name, sub_vars['DNSDOMAIN'] + '.')
+                return False
+            elif normalised_name.endswith('._msdcs.' + sub_vars['DNSFOREST'] + '.'):
+                zone = '_msdcs.' + sub_vars['DNSFOREST']
+            else:
+                zone = sub_vars['DNSDOMAIN']
+            len_zone = len(zone)+2
+            short_name = normalised_name[:-len_zone]
+    else:
         len_zone = len(zone)+2
         short_name = normalised_name[:-len_zone]
 
@@ -777,8 +787,10 @@ if len(delete_list) != 0 or len(update_list) != 0 and not opts.nocreds:
 
 # ask nsupdate to delete entries as needed
 for d in delete_list:
-    if not use_nsupdate and use_samba_tool:
-        call_samba_tool(d, op="delete")
+    if d.rpc or (not use_nsupdate and use_samba_tool):
+        if opts.verbose:
+            print "update (samba-tool): %s" % d
+        call_samba_tool(d, op="delete", zone=d.zone)
 
     elif am_rodc:
         if d.name.lower() == domain.lower():
@@ -800,8 +812,10 @@ for d in delete_list:
 
 # ask nsupdate to add entries as needed
 for d in update_list:
-    if not use_nsupdate and use_samba_tool:
-        call_samba_tool(d)
+    if d.rpc or (not use_nsupdate and use_samba_tool):
+        if opts.verbose:
+            print "update (samba-tool): %s" % d
+        call_samba_tool(d, zone=d.zone)
 
     elif am_rodc:
         if d.name.lower() == domain.lower():
