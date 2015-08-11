@@ -107,10 +107,6 @@ typedef struct _SMB_ACE4PROP_T {
 | SMB_ACE4_WRITE_ACL | SMB_ACE4_WRITE_OWNER | SMB_ACE4_SYNCHRONIZE )
 } SMB_ACE4PROP_T;
 
-/*
- * Never allocate these structures on your own
- * use create_smb4acl instead
- */
 struct SMB4ACL_T;
 struct SMB4ACE_T;
 
