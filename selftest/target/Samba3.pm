@@ -535,6 +535,7 @@ sub setup_simpleserver($$)
 	my $simpleserver_options = "
 	lanman auth = yes
 	vfs objects = xattr_tdb streams_depot
+	change notify = no
 
 [vfs_aio_fork]
 	path = $prefix_abs/share
