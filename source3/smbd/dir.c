@@ -1465,9 +1465,8 @@ bool is_visible_file(connection_struct *conn, const char *dir_path,
 			if (SMB_VFS_STAT(conn, smb_fname_base) != 0) {
 				ret = true;
 				goto out;
-			} else {
-				*pst = smb_fname_base->st;
 			}
+			*pst = smb_fname_base->st;
 		}
 
 		/* Honour _hide unreadable_ option */
