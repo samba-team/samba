@@ -36,6 +36,11 @@
 #ifndef LIB_CRYPTO_AES_H
 #define LIB_CRYPTO_AES_H 1
 
+#define SAMBA_RIJNDAEL 1
+#define SAMBA_AES_CBC_ENCRYPT 1
+#define SAMBA_AES_CFB8_ENCRYPT 1
+#define SAMBA_AES_BLOCK_XOR 1
+
 /* symbol renaming */
 #define AES_set_encrypt_key samba_AES_set_encrypt_key
 #define AES_set_decrypt_key samba_AES_decrypt_key
@@ -84,6 +89,7 @@ void AES_cfb8_encrypt(const unsigned char *in, unsigned char *out,
 }
 #endif
 
+#ifdef SAMBA_AES_BLOCK_XOR
 static inline void aes_block_xor(const uint8_t in1[AES_BLOCK_SIZE],
 				 const uint8_t in2[AES_BLOCK_SIZE],
 				 uint8_t out[AES_BLOCK_SIZE])
@@ -111,6 +117,7 @@ static inline void aes_block_xor(const uint8_t in1[AES_BLOCK_SIZE],
 		memcpy(out, o, AES_BLOCK_SIZE);
 	}
 }
+#endif /* SAMBA_AES_BLOCK_XOR */
 
 static inline void aes_block_lshift(const uint8_t in[AES_BLOCK_SIZE],
 				    uint8_t out[AES_BLOCK_SIZE])

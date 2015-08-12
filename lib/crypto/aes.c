@@ -32,9 +32,10 @@
  */
 
 #include "replace.h"
-
-#include "rijndael-alg-fst.h"
 #include "aes.h"
+
+#ifdef SAMBA_RIJNDAEL
+#include "rijndael-alg-fst.h"
 
 int
 AES_set_encrypt_key(const unsigned char *userkey, const int bits, AES_KEY *key)
@@ -65,7 +66,9 @@ AES_decrypt(const unsigned char *in, unsigned char *out, const AES_KEY *key)
 {
     rijndaelDecrypt(key->key, key->rounds, in, out);
 }
+#endif /* SAMBA_RIJNDAEL */
 
+#ifdef SAMBA_AES_CBC_ENCRYPT
 void
 AES_cbc_encrypt(const unsigned char *in, unsigned char *out,
 		unsigned long size, const AES_KEY *key,
@@ -112,7 +115,9 @@ AES_cbc_encrypt(const unsigned char *in, unsigned char *out,
 	}
     }
 }
+#endif /* SAMBA_AES_CBC_ENCRYPT */
 
+#ifdef SAMBA_AES_CFB8_ENCRYPT
 void
 AES_cfb8_encrypt(const unsigned char *in, unsigned char *out,
                  unsigned long size, const AES_KEY *key,
@@ -135,3 +140,4 @@ AES_cfb8_encrypt(const unsigned char *in, unsigned char *out,
         memcpy(iv, &tmp[1], AES_BLOCK_SIZE);
     }
 }
+#endif /* SAMBA_AES_CFB8_ENCRYPT */
