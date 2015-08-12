@@ -235,7 +235,9 @@ for t in nbt_tests:
 # Tests against the NTVFS POSIX backend
 ntvfsargs = ["--option=torture:sharedelay=100000", "--option=torture:oplocktimeout=3", "--option=torture:writetimeupdatedelay=500000"]
 
-smb2 = smbtorture4_testsuites("smb2.")
+# smb2.change_notify_disabled must only run against env fileserver-notify-disabled
+smb2 = filter(lambda x: "smb2.change_notify_disabled" not in x, smbtorture4_testsuites("smb2."))
+
 #The QFILEINFO-IPC test needs to be on ipc$
 raw = filter(lambda x: "raw.qfileinfo.ipc" not in x, smbtorture4_testsuites("raw."))
 base = smbtorture4_testsuites("base.")

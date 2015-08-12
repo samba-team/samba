@@ -387,6 +387,8 @@ for t in tests:
     elif t == "local.nss":
         for env in ["nt4_dc:local", "ad_member:local", "nt4_member:local", "ad_dc:local", "ad_dc_ntvfs:local"]:
             plansmbtorture4testsuite(t, env, '//$SERVER/tmp -U$USERNAME%$PASSWORD')
+    elif t == "smb2.change_notify_disabled":
+        plansmbtorture4testsuite(t, "simpleserver", '//$SERVER/tmp -U$USERNAME%$PASSWORD')
     elif t == "smb2.notify":
         plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD --signing=required')
         plansmbtorture4testsuite(t, "ad_dc", '//$SERVER/tmp -U$USERNAME%$PASSWORD --signing=required')
