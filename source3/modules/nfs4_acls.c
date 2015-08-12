@@ -170,8 +170,9 @@ static uint32_t map_windows_ace_flags_to_nfs4_ace_flags(uint32_t win_ace_flags)
 
 struct SMB4ACL_T *smb_create_smb4acl(TALLOC_CTX *mem_ctx)
 {
-	struct SMB4ACL_T	*theacl = (struct SMB4ACL_T *)TALLOC_ZERO_SIZE(
-		mem_ctx, sizeof(struct SMB4ACL_T));
+	struct SMB4ACL_T *theacl;
+
+	theacl = talloc_zero(mem_ctx, struct SMB4ACL_T);
 	if (theacl==NULL)
 	{
 		DEBUG(0, ("TALLOC_SIZE failed\n"));
