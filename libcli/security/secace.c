@@ -69,25 +69,6 @@ void init_sec_ace(struct security_ace *t, const struct dom_sid *sid, enum securi
 	t->trustee = *sid;
 }
 
-/*******************************************************************
-  modify SID's permissions at ACL 
-********************************************************************/
-
-NTSTATUS sec_ace_mod_sid(struct security_ace *ace, size_t num, const struct dom_sid *sid, uint32_t mask)
-{
-	unsigned int i = 0;
-
-	if (!ace || !sid)  return NT_STATUS_INVALID_PARAMETER;
-
-	for (i = 0; i < num; i ++) {
-		if (dom_sid_equal(&ace[i].trustee, sid)) {
-			ace[i].access_mask = mask;
-			return NT_STATUS_OK;
-		}
-	}
-	return NT_STATUS_NOT_FOUND;
-}
-
 int nt_ace_inherit_comp(const struct security_ace *a1, const struct security_ace *a2)
 {
 	int a1_inh = a1->flags & SEC_ACE_FLAG_INHERITED_ACE;
