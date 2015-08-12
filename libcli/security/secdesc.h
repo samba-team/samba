@@ -89,11 +89,6 @@ struct sec_desc_buf *make_sec_desc_buf(TALLOC_CTX *ctx, size_t len, struct secur
 ********************************************************************/
 struct sec_desc_buf *dup_sec_desc_buf(TALLOC_CTX *ctx, struct sec_desc_buf *src);
 
-/*******************************************************************
- Modify a SID's permissions in a struct security_descriptor.
-********************************************************************/
-NTSTATUS sec_desc_mod_sid(struct security_descriptor *sd, struct dom_sid *sid, uint32_t mask);
-
 bool sd_has_inheritable_components(const struct security_descriptor *parent_ctr, bool container);
 NTSTATUS se_create_child_secdesc(TALLOC_CTX *ctx,
 					struct security_descriptor **ppsd,
