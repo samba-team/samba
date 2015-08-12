@@ -41,7 +41,7 @@
 #include "torture/torture.h"
 #include "torture/smb2/proto.h"
 #include "torture/rpc/torture_rpc.h"
-#include "librpc/gen_ndr/ndr_security.c"
+#include "librpc/gen_ndr/ndr_security.h"
 #include "librpc/gen_ndr/ndr_srvsvc_c.h"
 #include "librpc/gen_ndr/ndr_fsrvp_c.h"
 
