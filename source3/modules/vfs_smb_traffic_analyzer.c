@@ -175,7 +175,7 @@ static char *smb_traffic_analyzer_encrypt( TALLOC_CTX *ctx,
 	unsigned char filler[17]= "................";
 	char *output;
 	if (akey == NULL) return NULL;
-	samba_AES_set_encrypt_key((const unsigned char *) akey, 128, &key);
+	AES_set_encrypt_key((const unsigned char *) akey, 128, &key);
 	s1 = strlen(str) / 16;
 	s2 = strlen(str) % 16;
 	memcpy(filler, str + (s1*16), s2);
@@ -185,10 +185,10 @@ static char *smb_traffic_analyzer_encrypt( TALLOC_CTX *ctx,
 	*len = ((s1 + 1)*16);
 	output = talloc_array(ctx, char, *len);
 	for (h = 0; h < s1; h++) {
-		samba_AES_encrypt((const unsigned char *) str+(16*h), (unsigned char *)output+16*h,
+		AES_encrypt((const unsigned char *) str+(16*h), (unsigned char *)output+16*h,
 			&key);
 	}
-	samba_AES_encrypt(filler, (unsigned char *)(output+(16*h)), &key);
+	AES_encrypt(filler, (unsigned char *)(output+(16*h)), &key);
 	*len = (s1*16)+16;
 	return output;
 }
