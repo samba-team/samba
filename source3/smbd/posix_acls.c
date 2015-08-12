@@ -2624,7 +2624,6 @@ static canon_ace *canonicalise_acl(struct connection_struct *conn,
 
 		entry_id = SMB_ACL_NEXT_ENTRY;
 
-		/* Is this a MASK entry ? */
 		if (sys_acl_get_tag_type(entry, &tagtype) == -1)
 			continue;
 
