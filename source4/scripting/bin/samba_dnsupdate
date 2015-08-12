@@ -273,10 +273,20 @@ def check_dns_name(d):
 
     try:
         ans = check_one_dns_name(normalised_name, d.type, d)
-    except dns.exception.DNSException:
+    except dns.exception.Timeout:
+        raise Exception("Timeout while waiting to contact a working DNS server while looking for %s as %s" % (d, normalised_name))
+    except dns.resolver.NoNameservers:
+        raise Exception("Unable to contact a working DNS server while looking for %s as %s" % (d, normalised_name))
+    except dns.resolver.NXDOMAIN:
         if opts.verbose:
-            print "Failed to find DNS entry %s" % d
+            print "The DNS entry %s, queried as %s does not exist" % (d, normalised_name)
         return False
+    except dns.resolver.NoAnswer:
+        if opts.verbose:
+            print "The DNS entry %s, queried as %s does not hold this record type" % (d, normalised_name)
+        return False
+    except dns.exception.DNSException:
+        raise Exception("Failure while trying to resolve %s as %s" % (d, normalised_name))
     if d.type in ['A', 'AAAA']:
         # we need to be sure that our IP is there
         for rdata in ans:
@@ -304,7 +314,7 @@ def check_dns_name(d):
                     d.existing_weight = str(rdata.weight)
 
     if opts.verbose:
-        print "Failed to find matching DNS entry %s" % d
+        print "Lookup of %s succeeded, but we failed to find a matching DNS entry for %s" % (normalised_name, d)
 
     return False
 
@@ -836,10 +846,13 @@ for d in update_list:
         call_nsupdate(d)
 
 if rebuild_cache:
+    print "Rebuilding cache at %s" % dns_update_cache
     (file_dir, file_name) = os.path.split(dns_update_cache)
     (tmp_fd, tmpfile) = tempfile.mkstemp(dir=file_dir, prefix=file_name, suffix="XXXXXX")
     wfile = os.fdopen(tmp_fd, 'a')
     for d in dns_list:
+        if opts.verbose:
+            print "Adding %s to %s" % (str(d), file_name)
         wfile.write(str(d)+"\n")
     os.rename(tmpfile, dns_update_cache)
 fcntl.lockf(cfile, fcntl.LOCK_UN)
