@@ -3163,6 +3163,62 @@ static int fruit_fallocate(struct vfs_handle_struct *handle,
 	return -1;
 }
 
+static int fruit_ftruncate_meta(struct vfs_handle_struct *handle,
+				struct files_struct *fsp,
+				off_t offset,
+				struct adouble *ad)
+{
+	/*
+	 * As this request hasn't been seen in the wild,
+	 * the only sensible use I can imagine is the client
+	 * truncating the stream to 0 bytes size.
+	 * We simply remove the metadata on such a request.
+	 */
+	if (offset != 0) {
+		DBG_WARNING("ftruncate %s to %jd",
+			    fsp_str_dbg(fsp), (intmax_t)offset);
+		return -1;
+	}
+
+	return SMB_VFS_FREMOVEXATTR(fsp, AFPRESOURCE_EA_NETATALK);
+}
+
+static int fruit_ftruncate_rsrc(struct vfs_handle_struct *handle,
+				struct files_struct *fsp,
+				off_t offset,
+				struct adouble *ad)
+{
+	int rc;
+	struct fruit_config_data *config;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct fruit_config_data, return -1);
+
+	if (config->rsrc == FRUIT_RSRC_XATTR && offset == 0) {
+		return SMB_VFS_FREMOVEXATTR(fsp,
+					    AFPRESOURCE_EA_NETATALK);
+	}
+
+	rc = SMB_VFS_NEXT_FTRUNCATE(
+		handle, fsp,
+		offset + ad_getentryoff(ad, ADEID_RFORK));
+	if (rc != 0) {
+		return -1;
+	}
+
+	if (config->rsrc == FRUIT_RSRC_ADFILE) {
+		ad_setentrylen(ad, ADEID_RFORK, offset);
+		rc = ad_write(ad, NULL);
+		if (rc != 0) {
+			return -1;
+		}
+		DEBUG(10, ("fruit_ftruncate_rsrc file %s offset %jd\n",
+			   fsp_str_dbg(fsp), (intmax_t)offset));
+	}
+
+	return 0;
+}
+
 static int fruit_ftruncate(struct vfs_handle_struct *handle,
 			   struct files_struct *fsp,
 			   off_t offset)
@@ -3170,7 +3226,6 @@ static int fruit_ftruncate(struct vfs_handle_struct *handle,
 	int rc = 0;
         struct adouble *ad =
 		(struct adouble *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
-	struct fruit_config_data *config;
 
 	DEBUG(10, ("streams_xattr_ftruncate called for file %s offset %.0f\n",
 		   fsp_str_dbg(fsp), (double)offset));
@@ -3183,40 +3238,15 @@ static int fruit_ftruncate(struct vfs_handle_struct *handle,
 		return -1;
 	}
 
-	SMB_VFS_HANDLE_GET_DATA(handle, config,
-				struct fruit_config_data, return -1);
-
 	switch (ad->ad_type) {
 	case ADOUBLE_META:
-		/*
-		 * As this request hasn't been seen in the wild,
-		 * the only sensible use I can imagine is the client
-		 * truncating the stream to 0 bytes size.
-		 * We simply remove the metadata on such a request.
-		 */
-		if (offset == 0) {
-			rc = SMB_VFS_FREMOVEXATTR(fsp,
-						  AFPRESOURCE_EA_NETATALK);
-		}
+		rc = fruit_ftruncate_meta(handle, fsp, offset, ad);
 		break;
+
 	case ADOUBLE_RSRC:
-		if (config->rsrc == FRUIT_RSRC_XATTR && offset == 0) {
-			rc = SMB_VFS_FREMOVEXATTR(fsp,
-						  AFPRESOURCE_EA_NETATALK);
-		} else {
-			rc = SMB_VFS_NEXT_FTRUNCATE(
-				handle, fsp,
-				offset + ad_getentryoff(ad, ADEID_RFORK));
-			if (rc != 0) {
-				return -1;
-			}
-			ad_setentrylen(ad, ADEID_RFORK, offset);
-			rc = ad_write(ad, NULL);
-			if (rc != 0) {
-				return -1;
-			}
-		}
+		rc = fruit_ftruncate_rsrc(handle, fsp, offset, ad);
 		break;
+
 	default:
 		return -1;
 	}
