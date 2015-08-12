@@ -2694,14 +2694,15 @@ static canon_ace *canonicalise_acl(struct connection_struct *conn,
 		if ((ace = talloc(talloc_tos(), canon_ace)) == NULL)
 			goto fail;
 
-		ZERO_STRUCTP(ace);
-		ace->type = tagtype;
-		ace->perms = convert_permset_to_mode_t(permset);
-		ace->attr = ALLOW_ACE;
-		ace->trustee = sid;
-		ace->unix_ug = unix_ug;
-		ace->owner_type = owner_type;
-		ace->ace_flags = get_pai_flags(pal, ace, is_default_acl);
+		*ace = (canon_ace) {
+			.type = tagtype,
+			.perms = convert_permset_to_mode_t(permset),
+			.attr = ALLOW_ACE,
+			.trustee = sid,
+			.unix_ug = unix_ug,
+			.owner_type = owner_type,
+			.ace_flags = get_pai_flags(pal, ace, is_default_acl)
+		};
 
 		DLIST_ADD(l_head, ace);
 	}
