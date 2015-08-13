@@ -281,10 +281,6 @@ bld.SAMBA3_MODULE('vfs_gpfs',
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_gpfs'),
                  includes=bld.CONFIG_GET('CPPPATH_GPFS'))
 
-vfs_notify_fam_deps='samba-util '
-if bld.CONFIG_SET('SAMBA_FAM_LIBS'):
-   vfs_notify_fam_deps += bld.CONFIG_GET('SAMBA_FAM_LIBS')
-
 bld.SAMBA3_MODULE('vfs_readahead',
                  subsystem='vfs',
                  source='vfs_readahead.c',

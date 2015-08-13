@@ -1640,9 +1640,6 @@ main() {
       and conf.CONFIG_SET('HAVE_BASENAME') and conf.CONFIG_SET('HAVE_DIRNAME')):
 	default_shared_modules.extend(TO_LIST('vfs_btrfs'))
 
-    if conf.CONFIG_SET('SAMBA_FAM_LIBS'):
-        default_shared_modules.extend(TO_LIST('vfs_notify_fam'))
-
     if conf.CONFIG_SET("HAVE_CEPH"):
         default_shared_modules.extend(TO_LIST('vfs_ceph'))
 
