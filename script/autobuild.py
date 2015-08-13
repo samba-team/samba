@@ -41,6 +41,12 @@ defaulttasks = [ "ctdb", "samba", "samba-xc", "samba-ctdb", "samba-libs", "ldb",
 
 samba_configure_params = " --picky-developer ${PREFIX} --with-profiling-data"
 
+samba_libs_envvars =  "PYTHONPATH=${PYTHON_PREFIX}/site-packages:$PYTHONPATH"
+samba_libs_envvars += " PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX_DIR}/lib/pkgconfig"
+samba_libs_configure_base = samba_libs_envvars + " ./configure --abi-check --enable-debug -C ${PREFIX}"
+samba_libs_configure_libs = samba_libs_configure_base + " --bundled-libraries=NONE"
+samba_libs_configure_samba = samba_libs_configure_base + " --bundled-libraries=!talloc,!tdb,!pytdb,!ldb,!pyldb,!tevent,!pytevent"
+
 tasks = {
     "ctdb" : [ ("random-sleep", "../script/random-sleep.sh 60 600", "text/plain"),
                ("configure", "./configure ${PREFIX}", "text/plain"),
@@ -89,23 +95,23 @@ tasks = {
 
     "samba-libs" : [
                       ("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
-                      ("talloc-configure", "cd lib/talloc && PYTHONPATH=${PYTHON_PREFIX}/site-packages:$PYTHONPATH PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX_DIR}/lib/pkgconfig ./configure --bundled-libraries=NONE --abi-check --enable-debug -C ${PREFIX}", "text/plain"),
+                      ("talloc-configure", "cd lib/talloc && " + samba_libs_configure_libs, "text/plain"),
                       ("talloc-make", "cd lib/talloc && make", "text/plain"),
                       ("talloc-install", "cd lib/talloc && make install", "text/plain"),
 
-                      ("tdb-configure", "cd lib/tdb && PYTHONPATH=${PYTHON_PREFIX}/site-packages:$PYTHONPATH PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX_DIR}/lib/pkgconfig ./configure --bundled-libraries=NONE --abi-check --enable-debug -C ${PREFIX}", "text/plain"),
+                      ("tdb-configure", "cd lib/tdb && " + samba_libs_configure_libs, "text/plain"),
                       ("tdb-make", "cd lib/tdb && make", "text/plain"),
                       ("tdb-install", "cd lib/tdb && make install", "text/plain"),
 
-                      ("tevent-configure", "cd lib/tevent && PYTHONPATH=${PYTHON_PREFIX}/site-packages:$PYTHONPATH PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX_DIR}/lib/pkgconfig ./configure --bundled-libraries=NONE --abi-check --enable-debug -C ${PREFIX}", "text/plain"),
+                      ("tevent-configure", "cd lib/tevent && " + samba_libs_configure_libs, "text/plain"),
                       ("tevent-make", "cd lib/tevent && make", "text/plain"),
                       ("tevent-install", "cd lib/tevent && make install", "text/plain"),
 
-                      ("ldb-configure", "cd lib/ldb && PYTHONPATH=${PYTHON_PREFIX}/site-packages:$PYTHONPATH PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX_DIR}/lib/pkgconfig ./configure --bundled-libraries=NONE --abi-check --enable-debug -C ${PREFIX}", "text/plain"),
+                      ("ldb-configure", "cd lib/ldb && " + samba_libs_configure_libs, "text/plain"),
                       ("ldb-make", "cd lib/ldb && make", "text/plain"),
                       ("ldb-install", "cd lib/ldb && make install", "text/plain"),
 
-                      ("configure", "PYTHONPATH=${PYTHON_PREFIX}/site-packages:$PYTHONPATH PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX_DIR}/lib/pkgconfig ./configure --bundled-libraries=!talloc,!tdb,!pytdb,!ldb,!pyldb,!tevent,!pytevent --abi-check --enable-debug -C ${PREFIX}", "text/plain"),
+                      ("configure", samba_libs_configure_samba, "text/plain"),
                       ("make", "make", "text/plain"),
                       ("install", "make install", "text/plain"),
                       ("dist", "make dist", "text/plain")],
