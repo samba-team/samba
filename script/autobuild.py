@@ -130,7 +130,12 @@ tasks = {
                       # retry without any required modules
                       ("none-distclean", "make distclean", "text/plain"),
                       ("none-configure", samba_libs_configure_samba + " --with-static-modules=!FORCED,!DEFAULT --with-shared-modules=!FORCED,!DEFAULT", "text/plain"),
-                      ("none-make", "make", "text/plain")],
+                      ("none-make", "make", "text/plain"),
+
+                      # retry with nonshared smbd and smbtorture
+                      ("nonshared-distclean", "make distclean", "text/plain"),
+                      ("nonshared-configure", samba_libs_configure_base + " --bundled-libraries=talloc,tdb,pytdb,ldb,pyldb,tevent,pytevent --with-static-modules=ALL --nonshared-binary=smbtorture,smbd/smbd", "text/plain"),
+                      ("nonshared-make", "make", "text/plain")],
 
     "ldb" : [
               ("random-sleep", "../../script/random-sleep.sh 60 600", "text/plain"),
