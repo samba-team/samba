@@ -56,4 +56,4 @@ fi
 	mv "$tmp" "$CTDB_DEBUG_HUNG_SCRIPT_LOGFILE"
     fi
 
-) 9>"${CTDB_VARDIR}/debug-hung-script.lock"
+) 9>"${CTDB_SCRIPT_VARDIR}/debug-hung-script.lock"
