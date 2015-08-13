@@ -283,6 +283,7 @@ static struct vfs_fn_pointers vfs_audit_fns = {
 	.fchmod_acl_fn = audit_fchmod_acl
 };
 
+static_decl_vfs;
 NTSTATUS vfs_audit_init(void)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "audit",

@@ -358,6 +358,7 @@ static struct vfs_fn_pointers vfs_dirsort_fns = {
 	.closedir_fn = dirsort_closedir,
 };
 
+static_decl_vfs;
 NTSTATUS vfs_dirsort_init(void)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "dirsort",

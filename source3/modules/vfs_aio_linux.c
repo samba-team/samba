@@ -348,6 +348,7 @@ static struct vfs_fn_pointers vfs_aio_linux_fns = {
 	.fsync_recv_fn = aio_linux_int_recv,
 };
 
+static_decl_vfs;
 NTSTATUS vfs_aio_linux_init(void)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION,

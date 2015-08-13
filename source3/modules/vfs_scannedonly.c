@@ -1036,6 +1036,7 @@ static struct vfs_fn_pointers vfs_scannedonly_fns = {
 	.connect_fn = scannedonly_connect
 };
 
+static_decl_vfs;
 NTSTATUS vfs_scannedonly_init(void)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "scannedonly",

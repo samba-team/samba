@@ -431,7 +431,7 @@ static struct vfs_fn_pointers vfs_posix_eadb_fns = {
 	.connect_fn = posix_eadb_connect,
 };
 
-NTSTATUS vfs_posix_eadb_init(void);
+static_decl_vfs;
 NTSTATUS vfs_posix_eadb_init(void)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "posix_eadb",

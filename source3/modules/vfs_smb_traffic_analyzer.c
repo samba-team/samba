@@ -919,6 +919,7 @@ static struct vfs_fn_pointers vfs_smb_traffic_analyzer_fns = {
 };
 
 /* Module initialization */
+static_decl_vfs;
 NTSTATUS vfs_smb_traffic_analyzer_init(void)
 {
 	NTSTATUS ret = smb_register_vfs(SMB_VFS_INTERFACE_VERSION,

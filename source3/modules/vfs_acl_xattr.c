@@ -214,6 +214,7 @@ static struct vfs_fn_pointers vfs_acl_xattr_fns = {
 	.sys_acl_set_fd_fn = sys_acl_set_fd_xattr
 };
 
+static_decl_vfs;
 NTSTATUS vfs_acl_xattr_init(void)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "acl_xattr",

@@ -2323,6 +2323,7 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.set_offline_fn = smb_full_audit_set_offline,
 };
 
+static_decl_vfs;
 NTSTATUS vfs_full_audit_init(void)
 {
 	NTSTATUS ret = smb_register_vfs(SMB_VFS_INTERFACE_VERSION,

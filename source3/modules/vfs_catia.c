@@ -1005,6 +1005,7 @@ static struct vfs_fn_pointers vfs_catia_fns = {
 	.setxattr_fn = catia_setxattr,
 };
 
+static_decl_vfs;
 NTSTATUS vfs_catia_init(void)
 {
 	NTSTATUS ret;
