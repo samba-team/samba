@@ -185,6 +185,7 @@ static struct idmap_methods rid_methods = {
 	.sids_to_unixids = idmap_rid_sids_to_unixids,
 };
 
+static_decl_idmap;
 NTSTATUS idmap_rid_init(void)
 {
 	return smb_register_idmap(SMB_IDMAP_INTERFACE_VERSION, "rid", &rid_methods);

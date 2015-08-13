@@ -962,6 +962,7 @@ static struct nss_info_methods nss_sfu20_methods = {
  Initialize the plugins
  ***********************************************************************/
 
+static_decl_idmap;
 NTSTATUS idmap_ad_init(void)
 {
 	static NTSTATUS status_idmap_ad = NT_STATUS_UNSUCCESSFUL;
