@@ -72,7 +72,7 @@
 	    should not be stored on the shared cluster filesystem.
 	  </para>
 	  <para>
-	    This directory would usually be <filename>/var/lib/ctdb</filename>
+	    Defaults to <filename>/usr/local/var/lib/ctdb</filename>.
 	  </para>
 	</listitem>
       </varlistentry>
@@ -87,8 +87,7 @@
 	    filesystem.
 	  </para>
 	  <para>
-	    This directory would usually be
-	    <filename>/var/lib/ctdb/persistent</filename>
+	    Defaults to <filename>/usr/local/var/lib/ctdb/persistent</filename>.
 	  </para>
 	</listitem>
       </varlistentry>
@@ -102,8 +101,7 @@
 	    should not be stored on the shared cluster filesystem.
 	  </para>
 	  <para>
-	    This directory would usually be
-	    <filename>/var/lib/ctdb/state</filename>
+	    Defaults to <filename>/usr/local/var/lib/ctdb/state</filename>.
 	  </para>
 	</listitem>
       </varlistentry>

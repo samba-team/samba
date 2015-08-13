@@ -2,16 +2,15 @@
 
 # utility functions for ctdb event scripts
 
-[ -z "$CTDB_VARDIR" ] && {
-    if [ -d "/var/lib/ctdb" ] ; then
-	export CTDB_VARDIR="/var/lib/ctdb"
-    else
-	export CTDB_VARDIR="/var/ctdb"
-    fi
-}
-[ -z "$CTDB_ETCDIR" ] && {
-    export CTDB_ETCDIR="/etc"
-}
+# Only (and always) override these variables in test code
+
+if [ -z "$CTDB_VARDIR" ] ; then
+    CTDB_VARDIR="/usr/local/var/lib/ctdb"
+fi
+
+if [ -z "$CTDB_ETCDIR" ] ; then
+    CTDB_ETCDIR="/etc"
+fi
 
 #######################################
 # pull in a system config file, if any

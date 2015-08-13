@@ -114,9 +114,7 @@
 	    runtime.
 	  </para>
 	  <para>
-	    Defaults to <filename>/var/ctdb</filename>, unless
-	    <filename>/var/lib/ctdb</filename> already exists in which
-	    case it is used.
+	    Defaults to <filename>/usr/local/var/lib/ctdb</filename>.
 	  </para>
 	</listitem>
       </varlistentry>
@@ -172,8 +170,10 @@
 	<term>CTDB_DBDIR=<parameter>DIRECTORY</parameter></term>
 	<listitem>
 	  <para>
-	    Defaults to <varname>CTDB_VARDIR</varname>.  Corresponds to
-	    <option>--dbdir</option>.
+	    Defaults to <filename>/usr/local/var/lib/ctdb</filename>.
+	  </para>
+	  <para>
+	    Corresponds to <option>--dbdir</option>.
 	  </para>
 	</listitem>
       </varlistentry>
@@ -182,7 +182,9 @@
 	<term>CTDB_DBDIR_PERSISTENT=<parameter>DIRECTORY</parameter></term>
 	<listitem>
 	  <para>
-	    Defaults to <varname>CTDB_VARDIR</varname>/persistent.
+	    Defaults to <filename>/usr/local/var/lib/ctdb/persistent</filename>.
+	  </para>
+	  <para>
 	    Corresponds to <option>--dbdir-persistent</option>.
 	  </para>
 	</listitem>
@@ -192,7 +194,9 @@
 	<term>CTDB_DBDIR_STATE=<parameter>DIRECTORY</parameter></term>
 	<listitem>
 	  <para>
-	    Defaults to <varname>CTDB_VARDIR</varname>/state.
+	    Defaults to <filename>/usr/local/var/lib/ctdb/state</filename>.
+	  </para>
+	  <para>
 	    Corresponds to <option>--dbdir-state</option>.
 	  </para>
 	</listitem>
