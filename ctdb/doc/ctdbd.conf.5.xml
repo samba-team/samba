@@ -106,20 +106,6 @@
 	</listitem>
       </varlistentry>
 
-      <varlistentry>
-	<term>CTDB_VARDIR=<parameter>DIRECTORY</parameter></term>
-	<listitem>
-	  <para>
-	    DIRECTORY containing CTDB files that are modified at
-	    runtime.
-	  </para>
-	  <para>
-	    Defaults to <filename>/usr/local/var/lib/ctdb</filename>.
-	  </para>
-	</listitem>
-      </varlistentry>
-
-
     </variablelist>
   </refsect1>
 
@@ -1653,6 +1639,19 @@ CTDB_SET_MonitorInterval=20
 	  </para>
 	  <para>
 	    Default is no.
+	  </para>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term>CTDB_VARDIR=<parameter>DIRECTORY</parameter></term>
+	<listitem>
+	  <para>
+	    DIRECTORY containing CTDB files that are modified at
+	    runtime.
+	  </para>
+	  <para>
+	    Defaults to <filename>/usr/local/var/lib/ctdb</filename>.
 	  </para>
 	</listitem>
       </varlistentry>

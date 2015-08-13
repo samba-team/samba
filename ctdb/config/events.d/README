@@ -31,7 +31,7 @@ init
 	and prepare the basic setup.
 	At this stage 'ctdb' commands won't work.
 
-	Example: 00.ctdb cleans up $CTDB_VARDIR/state
+	Example: 00.ctdb cleans up $CTDB_SCRIPT_VARDIR
 
 setup
 	This event does not take any additional arguments.

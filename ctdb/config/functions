@@ -2,10 +2,12 @@
 
 # utility functions for ctdb event scripts
 
+CTDB_VARDIR="/usr/local/var/lib/ctdb"
+
 # Only (and always) override these variables in test code
 
-if [ -z "$CTDB_VARDIR" ] ; then
-    CTDB_VARDIR="/usr/local/var/lib/ctdb"
+if [ -z "$CTDB_SCRIPT_VARDIR" ] ; then
+    CTDB_SCRIPT_VARDIR="/usr/local/var/lib/ctdb/state"
 fi
 
 if [ -z "$CTDB_ETCDIR" ] ; then
@@ -203,7 +205,7 @@ nice_service()
 # This sets $pnn - this avoid an unnecessary subprocess.
 ctdb_get_pnn ()
 {
-    _pnn_file="$CTDB_VARDIR/state/my-pnn"
+    _pnn_file="${CTDB_SCRIPT_VARDIR}/my-pnn"
     if [ ! -f "$_pnn_file" ] ; then
 	ctdb pnn | sed -e 's@.*:@@' >"$_pnn_file"
     fi
@@ -306,7 +308,7 @@ ctdb_check_directories()
 _ctdb_check_tcp_common ()
 {
     assert_service_name
-    _d="${CTDB_VARDIR}/state/failcount"
+    _d="${CTDB_SCRIPT_VARDIR}/failcount"
     _ctdb_service_started_file="${_d}/${service_name}.started"
 }
 
@@ -610,7 +612,7 @@ flush_route_cache ()
 # Simple counters
 _ctdb_counter_common () {
     _service_name="${1:-${service_name:-${script_name}}}"
-    _counter_file="${CTDB_VARDIR}/state/failcount/${_service_name}"
+    _counter_file="${CTDB_SCRIPT_VARDIR}/failcount/${_service_name}"
     mkdir -p "${_counter_file%/*}" # dirname
 }
 ctdb_counter_init () {
@@ -661,7 +663,7 @@ ctdb_check_counter () {
 
 ctdb_setup_service_state_dir ()
 {
-    service_state_dir="$CTDB_VARDIR/state/service_state/${1:-${service_name}}"
+    service_state_dir="${CTDB_SCRIPT_VARDIR}/service_state/${1:-${service_name}}"
     mkdir -p "$service_state_dir" || {
 	echo "Error creating state dir \"$service_state_dir\""
 	exit 1
@@ -673,7 +675,7 @@ ctdb_setup_service_state_dir ()
 
 _ctdb_managed_common ()
 {
-    _ctdb_managed_file="${CTDB_VARDIR}/state/managed_history/${service_name}"
+    _ctdb_managed_file="${CTDB_SCRIPT_VARDIR}/managed_history/${service_name}"
 }
 
 ctdb_service_managed ()
@@ -700,7 +702,7 @@ is_ctdb_previously_managed_service ()
 
 _ctdb_service_reconfigure_common ()
 {
-    _d="${CTDB_VARDIR}/state/service_status/${service_name}"
+    _d="${CTDB_SCRIPT_VARDIR}/service_status/${service_name}"
     mkdir -p "$_d"
     _ctdb_service_reconfigure_flag="$_d/reconfigure"
 }
@@ -1039,7 +1041,7 @@ update_tickles ()
 {
 	_port="$1"
 
-	tickledir="$CTDB_VARDIR/state/tickles"
+	tickledir="${CTDB_SCRIPT_VARDIR}/tickles"
 	mkdir -p "$tickledir"
 
 	ctdb_get_pnn

@@ -25,13 +25,13 @@ if [ -d "$EVENTSCRIPTS_TESTS_VAR_DIR" -a \
     rm -r "$EVENTSCRIPTS_TESTS_VAR_DIR"
 fi
 mkdir -p "$EVENTSCRIPTS_TESTS_VAR_DIR"
-export CTDB_VARDIR="$EVENTSCRIPTS_TESTS_VAR_DIR/ctdb"
+export CTDB_SCRIPT_VARDIR="$EVENTSCRIPTS_TESTS_VAR_DIR/script-state"
 
 export CTDB_LOGGING="file:${EVENTSCRIPTS_TESTS_VAR_DIR}/log.ctdb"
 touch "${CTDB_LOGGING#file:}" || \
     die "Unable to setup logging for \"$CTDB_LOGGING\""
 
-if [ -d "${TEST_SUBDIR}/etc" ] ; then    
+if [ -d "${TEST_SUBDIR}/etc" ] ; then
     cp -a "${TEST_SUBDIR}/etc" "$EVENTSCRIPTS_TESTS_VAR_DIR"
     export CTDB_ETCDIR="${EVENTSCRIPTS_TESTS_VAR_DIR}/etc"
 else
@@ -291,8 +291,8 @@ ctdb_set_pnn ()
     export FAKE_CTDB_PNN="$1"
     echo "Setting up PNN ${FAKE_CTDB_PNN}"
 
-    export CTDB_VARDIR="$EVENTSCRIPTS_TESTS_VAR_DIR/ctdb/${FAKE_CTDB_PNN}"
-    mkdir -p "$CTDB_VARDIR"
+    export CTDB_SCRIPT_VARDIR="$EVENTSCRIPTS_TESTS_VAR_DIR/script-state/${FAKE_CTDB_PNN}"
+    mkdir -p "$CTDB_SCRIPT_VARDIR"
 }
 
 setup_ctdb ()

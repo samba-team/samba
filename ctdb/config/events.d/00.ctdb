@@ -123,12 +123,9 @@ ctdb_check_args "$@"
 case "$1" in
      init)
         # make sure we have a blank state directory for the scripts to work with
-	rm -rf $CTDB_VARDIR/state
-	mkdir -p $CTDB_VARDIR/state || {
-	    ret=$?
-	    echo "mkdir -p $CTDB_VARDIR/state - failed - $ret"
-	    exit $ret
-	}
+	rm -rf "$CTDB_SCRIPT_VARDIR"
+	mkdir -p "$CTDB_SCRIPT_VARDIR" || \
+	    die "mkdir -p ${CTDB_SCRIPT_VARDIR} - failed - ${ret}" $?
 
 	if select_tdb_checker ; then
 	    check_persistent_databases || exit $?
