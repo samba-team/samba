@@ -83,6 +83,7 @@ static struct vfs_fn_pointers vfs_test_shadow_copy_fns = {
 	.get_shadow_copy_data_fn = test_get_shadow_copy_data
 };
 
+static_decl_vfs;
 NTSTATUS vfs_shadow_copy_test_init(void)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION,

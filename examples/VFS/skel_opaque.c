@@ -961,6 +961,7 @@ struct vfs_fn_pointers skel_opaque_fns = {
 	.set_offline_fn = skel_set_offline
 };
 
+static_decl_vfs;
 NTSTATUS vfs_skel_opaque_init(void)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "skel_opaque",
