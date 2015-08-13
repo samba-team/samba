@@ -105,29 +105,20 @@ bld.SAMBA3_SUBSYSTEM('TLDAP',
 # when modules are not linked statically. In the latter case
 # symbols will not be present in the libpdb anyway so no hurt is
 # done to the version script.
-static_pdb_match = ['tdbsam', 'smbpasswd', 'wbc_sam']
 private_pdb_match = []
-
-# AD DC module when linked statically will pull in few source4/winbind
-# dependencies which are not used outside AD DC module
-static_pdb_match.append('samba_dsdb')
 private_pdb_match.append('!idmap_init')
 private_pdb_match.append('!idmap_sids_to_xids')
 private_pdb_match.append('!idmap_xids_to_sids')
 
-# ldap module is actually three modules merged together: ldapsam, ipa, and nds
-static_pdb_match = static_pdb_match + ['ldap', 'ipa', 'nds']
 ldapsam_pdb_match = ['!priv2ld', '!smbldap_search_domain_info',
                      '!ldapsam_*', '!groupmap_attr_list*', '!get_userattr_list',
                      '!dominfo_attr_list', '!get_attr_key2string',
                      '!sidmap_attr_list', '!attrib_map_*', '!idpool_attr_list',
                      '!get_attr_list']
 private_pdb_match.append('!pdb_nds_*')
-private_pdb_match.append('!pdb_init_ldapsam')
 private_pdb_match.append('!pdb_ldapsam_init*')
+private_pdb_match.append('!pdb_*_init')
 private_pdb_match = private_pdb_match + ldapsam_pdb_match
-
-private_pdb_match = private_pdb_match + map(lambda x: '!pdb_%s_init' % x, static_pdb_match)
 
 bld.SAMBA3_LIBRARY('samba-passdb',
                    source='',
