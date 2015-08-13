@@ -115,7 +115,22 @@ tasks = {
                       ("configure", samba_libs_configure_samba, "text/plain"),
                       ("make", "make", "text/plain"),
                       ("install", "make install", "text/plain"),
-                      ("dist", "make dist", "text/plain")],
+                      ("dist", "make dist", "text/plain"),
+
+                      # retry with all modules shared
+                      ("allshared-distclean", "make distclean", "text/plain"),
+                      ("allshared-configure", samba_libs_configure_samba + " --with-shared-modules=ALL", "text/plain"),
+                      ("allshared-make", "make", "text/plain"),
+
+                      # retry with all modules static
+                      ("allstatic-distclean", "make distclean", "text/plain"),
+                      ("allstatic-configure", samba_libs_configure_samba + " --with-static-modules=ALL", "text/plain"),
+                      ("allstatic-make", "make", "text/plain"),
+
+                      # retry without any required modules
+                      ("none-distclean", "make distclean", "text/plain"),
+                      ("none-configure", samba_libs_configure_samba + " --with-static-modules=!FORCED,!DEFAULT --with-shared-modules=!FORCED,!DEFAULT", "text/plain"),
+                      ("none-make", "make", "text/plain")],
 
     "ldb" : [
               ("random-sleep", "../../script/random-sleep.sh 60 600", "text/plain"),
