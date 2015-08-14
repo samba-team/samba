@@ -19,8 +19,9 @@ bld.SAMBA_SUBSYSTEM('LIBCRYPTO',
         )
 
 bld.SAMBA_SUBSYSTEM('TORTURE_LIBCRYPTO',
-	source='md4test.c md5test.c hmacmd5test.c aes_cmac_128_test.c aes_gcm_128_test.c',
-	autoproto='test_proto.h',
-	deps='LIBCRYPTO'
-	)
-
+        source='''md4test.c md5test.c hmacmd5test.c
+            aes_cmac_128_test.c aes_ccm_128_test.c aes_gcm_128_test.c
+        ''',
+        autoproto='test_proto.h',
+        deps='LIBCRYPTO'
+        )
