@@ -912,6 +912,12 @@ struct tevent_req *wb_xids2sids_send(TALLOC_CTX *mem_ctx,
 				     uint32_t num_xids);
 NTSTATUS wb_xids2sids_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 			   struct dom_sid **sids);
+struct tevent_req *winbindd_xids_to_sids_send(TALLOC_CTX *mem_ctx,
+					      struct tevent_context *ev,
+					      struct winbindd_cli_state *cli,
+					      struct winbindd_request *request);
+NTSTATUS winbindd_xids_to_sids_recv(struct tevent_req *req,
+				    struct winbindd_response *response);
 struct tevent_req *winbindd_wins_byip_send(TALLOC_CTX *mem_ctx,
 					   struct tevent_context *ev,
 					   struct winbindd_cli_state *cli,

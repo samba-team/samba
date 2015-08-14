@@ -951,6 +951,7 @@ bld.SAMBA3_BINARY('winbindd/winbindd',
                  winbindd/winbindd_uid_to_sid.c
                  winbindd/winbindd_gid_to_sid.c
                  winbindd/winbindd_sids_to_xids.c
+                 winbindd/winbindd_xids_to_sids.c
                  winbindd/winbindd_allocate_uid.c
                  winbindd/winbindd_allocate_gid.c
                  winbindd/winbindd_getpwsid.c

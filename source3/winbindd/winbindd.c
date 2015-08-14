@@ -618,6 +618,8 @@ static struct winbindd_async_dispatch_table async_nonpriv_table[] = {
 	  winbindd_gid_to_sid_send, winbindd_gid_to_sid_recv },
 	{ WINBINDD_SIDS_TO_XIDS, "SIDS_TO_XIDS",
 	  winbindd_sids_to_xids_send, winbindd_sids_to_xids_recv },
+	{ WINBINDD_XIDS_TO_SIDS, "XIDS_TO_SIDS",
+	  winbindd_xids_to_sids_send, winbindd_xids_to_sids_recv },
 	{ WINBINDD_GETPWSID, "GETPWSID",
 	  winbindd_getpwsid_send, winbindd_getpwsid_recv },
 	{ WINBINDD_GETPWNAM, "GETPWNAM",
