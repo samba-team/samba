@@ -1610,3 +1610,67 @@ bool parse_sidlist(TALLOC_CTX *mem_ctx, const char *sidstr,
 	}
 	return True;
 }
+
+bool parse_xidlist(TALLOC_CTX *mem_ctx, const char *xidstr,
+		   struct unixid **pxids, uint32_t *pnum_xids)
+{
+	const char *p;
+	struct unixid *xids = NULL;
+	uint32_t num_xids = 0;
+
+	p = xidstr;
+	if (p == NULL) {
+		return false;
+	}
+
+	while (p[0] != '\0') {
+		struct unixid *tmp;
+		struct unixid xid;
+		unsigned long long id;
+		char *endp;
+
+		switch (p[0]) {
+		case 'U':
+			xid = (struct unixid) { .type = ID_TYPE_UID };
+			break;
+		case 'G':
+			xid = (struct unixid) { .type = ID_TYPE_GID };
+			break;
+		default:
+			return false;
+		}
+
+		p += 1;
+
+		id = strtoull(p, &endp, 10);
+		if ((id == ULLONG_MAX) && (errno == ERANGE)) {
+			goto fail;
+		}
+		if (*endp != '\n') {
+			goto fail;
+		}
+		p = endp+1;
+
+		xid.id = id;
+		if ((unsigned long long)xid.id != id) {
+			goto fail;
+		}
+
+		tmp = talloc_realloc(mem_ctx, xids, struct unixid, num_xids+1);
+		if (tmp == NULL) {
+			return 0;
+		}
+		xids = tmp;
+
+		xids[num_xids] = xid;
+		num_xids += 1;
+	}
+
+	*pxids = xids;
+	*pnum_xids = num_xids;
+	return true;
+
+fail:
+	TALLOC_FREE(xids);
+	return false;
+}

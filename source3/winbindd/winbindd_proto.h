@@ -468,6 +468,8 @@ bool is_domain_offline(const struct winbindd_domain *domain);
 bool is_domain_online(const struct winbindd_domain *domain);
 bool parse_sidlist(TALLOC_CTX *mem_ctx, const char *sidstr,
 		   struct dom_sid **sids, uint32_t *num_sids);
+bool parse_xidlist(TALLOC_CTX *mem_ctx, const char *xidstr,
+		   struct unixid **pxids, uint32_t *pnum_xids);
 
 /* The following definitions come from winbindd/winbindd_wins.c  */
 
