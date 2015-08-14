@@ -701,6 +701,7 @@ static void open_socket_out_connected(struct tevent_req *subreq)
 			tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
 			return;
 		}
+		state->connect_subreq = subreq;
 		tevent_req_set_callback(subreq, open_socket_out_connected, req);
 		return;
 	}
@@ -723,10 +724,12 @@ NTSTATUS open_socket_out_recv(struct tevent_req *req, int *pfd)
 	NTSTATUS status;
 
 	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
 		return status;
 	}
 	*pfd = state->fd;
 	state->fd = -1;
+	tevent_req_received(req);
 	return NT_STATUS_OK;
 }
 
