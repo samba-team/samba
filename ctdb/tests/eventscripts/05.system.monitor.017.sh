@@ -2,7 +2,7 @@
 
 . "${TEST_SCRIPTS_DIR}/unit.sh"
 
-define_test "Memory check, bad situation, both memory checks, causes unhealthy"
+define_test "Memory check, bad situation, both custom memory checks, causes unhealthy"
 
 setup_memcheck 87 0
 

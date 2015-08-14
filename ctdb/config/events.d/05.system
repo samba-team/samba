@@ -103,9 +103,12 @@ dump_memory_info ()
 
 monitor_memory_usage ()
 {
-    if [ -z "$CTDB_MONITOR_MEMORY_USAGE" -a \
-	 -z "$CTDB_MONITOR_SWAP_USAGE" ] ; then
-	return
+    # Defaults
+    if [ -z "$CTDB_MONITOR_MEMORY_USAGE" ] ; then
+	CTDB_MONITOR_MEMORY_USAGE=80
+    fi
+    if [ -z "$CTDB_MONITOR_SWAP_USAGE" ] ; then
+	CTDB_MONITOR_SWAP_USAGE=25
     fi
 
     _meminfo=$(get_proc "meminfo")

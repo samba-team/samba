@@ -2,7 +2,7 @@
 
 . "${TEST_SCRIPTS_DIR}/unit.sh"
 
-define_test "Memory check, bad situation, only memory warning"
+define_test "Memory check, bad memory situation, custom memory warning"
 
 setup_memcheck 90 10
 

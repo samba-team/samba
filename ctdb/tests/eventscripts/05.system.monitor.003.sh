@@ -4,6 +4,8 @@
 
 define_test "Filesystem use check, error situation, 1 error check enabled"
 
+setup_memcheck
+
 CTDB_MONITOR_FILESYSTEM_USAGE="/var::80"
 setup_fscheck 90
 required_result 1 <<EOF

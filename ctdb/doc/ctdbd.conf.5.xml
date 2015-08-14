@@ -1280,8 +1280,16 @@ CTDB_PER_IP_ROUTING_TABLE_ID_HIGH=9000
       <para>
 	CTDB can experience seemingly random (performance and other)
 	issues if system resources become too constrained.  Options in
-	this section can be enabled to allow certain system resources to
-	be checked.
+	this section can be enabled to allow certain system resources
+	to be checked.  They allows warnings to be logged and nodes to
+	be marked unhealthy when system resource usage reaches the
+	configured thresholds.
+      </para>
+
+      <para>
+	Some checks are enabled by default.  It is recommended that
+	these checks remain enabled or are augmented by extra checks.
+	There is no supported way of completely disabling the checks.
       </para>
 
       <refsect3>
@@ -1331,7 +1339,8 @@ CTDB_PER_IP_ROUTING_TABLE_ID_HIGH=9000
 	      left blank, meaning that check will be omitted.
 	    </para>
 	    <para>
-	      No default.
+	      Default is 80, so warnings will be logged when memory
+	      usage reaches 80%.
 	    </para>
 	  </listitem>
 	</varlistentry>
@@ -1349,7 +1358,8 @@ CTDB_PER_IP_ROUTING_TABLE_ID_HIGH=9000
 	      left blank, meaning that check will be omitted.
 	    </para>
 	    <para>
-	      No default.
+	      Default is 25, so warnings will be logged when swap
+	      usage reaches 25%.
 	    </para>
 	  </listitem>
 	</varlistentry>

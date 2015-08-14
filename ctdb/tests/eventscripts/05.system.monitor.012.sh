@@ -2,7 +2,7 @@
 
 . "${TEST_SCRIPTS_DIR}/unit.sh"
 
-define_test "Memory check, good situation, all enabled"
+define_test "Memory check, good situation, all memory checks enabled"
 
 setup_memcheck
 
