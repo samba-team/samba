@@ -43,7 +43,8 @@ samba_configure_params = " --picky-developer ${PREFIX} --with-profiling-data"
 
 samba_libs_envvars =  "PYTHONPATH=${PYTHON_PREFIX}/site-packages:$PYTHONPATH"
 samba_libs_envvars += " PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX_DIR}/lib/pkgconfig"
-samba_libs_configure_base = samba_libs_envvars + " ./configure --abi-check --enable-debug -C ${PREFIX}"
+samba_libs_envvars += " ADDITIONAL_CFLAGS='-Wmissing-prototypes'"
+samba_libs_configure_base = samba_libs_envvars + " ./configure --abi-check --enable-debug --picky-developer -C ${PREFIX}"
 samba_libs_configure_libs = samba_libs_configure_base + " --bundled-libraries=NONE"
 samba_libs_configure_samba = samba_libs_configure_base + " --bundled-libraries=!talloc,!tdb,!pytdb,!ldb,!pyldb,!tevent,!pytevent"
 
