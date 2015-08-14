@@ -73,9 +73,10 @@ const char *wbcErrorString(wbcErr error);
  *  0.10: Added wbcPingDc2()
  *  0.11: Extended wbcAuthenticateUserEx to provide PAC parsing
  *  0.12: Added wbcCtxCreate and friends
+ *  0.13: Added wbcCtxUnixIdsToSids and wbcUnixIdsToSids
  **/
 #define WBCLIENT_MAJOR_VERSION 0
-#define WBCLIENT_MINOR_VERSION 12
+#define WBCLIENT_MINOR_VERSION 13
 #define WBCLIENT_VENDOR_VERSION "Samba libwbclient"
 struct wbcLibraryDetails {
 	uint16_t major_version;
@@ -1029,6 +1030,12 @@ wbcErr wbcCtxSidsToUnixIds(struct wbcContext *ctx,
  **/
 wbcErr wbcSidsToUnixIds(const struct wbcDomainSid *sids, uint32_t num_sids,
 			struct wbcUnixId *ids);
+
+wbcErr wbcCtxUnixIdsToSids(struct wbcContext *ctx,
+			   const struct wbcUnixId *ids, uint32_t num_ids,
+			   struct wbcDomainSid *sids);
+wbcErr wbcUnixIdsToSids(const struct wbcUnixId *ids, uint32_t num_ids,
+			struct wbcDomainSid *sids);
 
 /**
  * @brief Obtain a new uid from Winbind

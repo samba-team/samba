@@ -433,3 +433,88 @@ wbcErr wbcSidsToUnixIds(const struct wbcDomainSid *sids, uint32_t num_sids,
 {
 	return wbcCtxSidsToUnixIds(NULL, sids, num_sids, ids);
 }
+
+wbcErr wbcCtxUnixIdsToSids(struct wbcContext *ctx,
+			   const struct wbcUnixId *ids, uint32_t num_ids,
+			   struct wbcDomainSid *sids)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+	wbcErr wbc_status;
+	char *buf;
+	char *s;
+	size_t ofs, buflen;
+	uint32_t i;
+
+	buflen = num_ids * (1 /* U/G */ + 10 /* 2^32 */ + 1 /* \n */) + 1;
+	buf = malloc(buflen);
+	if (buf == NULL) {
+		return WBC_ERR_NO_MEMORY;
+	}
+
+	ofs = 0;
+
+	for (i=0; i<num_ids; i++) {
+		const struct wbcUnixId *id = &ids[i];
+		int len;
+
+		switch (id->type) {
+		case WBC_ID_TYPE_UID:
+			len = snprintf(buf+ofs, buflen-ofs, "U%"PRIu32"\n",
+				       (uint32_t)id->id.uid);
+			break;
+		case WBC_ID_TYPE_GID:
+			len = snprintf(buf+ofs, buflen-ofs, "G%"PRIu32"\n",
+				       (uint32_t)id->id.gid);
+			break;
+		default:
+			free(buf);
+			return WBC_ERR_INVALID_PARAM;
+		}
+
+		if (len + ofs >= buflen) { /* >= for the terminating '\0' */
+			free(buf);
+			return WBC_ERR_UNKNOWN_FAILURE;
+		}
+		ofs += len;
+	}
+
+	request = (struct winbindd_request) {
+		.extra_data.data = buf, .extra_len = ofs+1
+	};
+	response = (struct winbindd_response) {0};
+
+	wbc_status = wbcRequestResponse(ctx, WINBINDD_XIDS_TO_SIDS,
+					&request, &response);
+	free(buf);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		return wbc_status;
+	}
+
+	s = response.extra_data.data;
+	for (i=0; i<num_ids; i++) {
+		char *n = strchr(s, '\n');
+
+		if (n == NULL) {
+			goto fail;
+		}
+		*n = '\0';
+
+		wbc_status = wbcStringToSid(s, &sids[i]);
+		if (!WBC_ERROR_IS_OK(wbc_status)) {
+			sids[i] = (struct wbcDomainSid) {0};
+		}
+		s = n+1;
+	}
+
+	wbc_status = WBC_ERR_SUCCESS;
+fail:
+	winbindd_free_response(&response);
+	return wbc_status;
+}
+
+wbcErr wbcUnixIdsToSids(const struct wbcUnixId *ids, uint32_t num_ids,
+			struct wbcDomainSid *sids)
+{
+	return wbcCtxUnixIdsToSids(NULL, ids, num_ids, sids);
+}
