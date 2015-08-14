@@ -120,20 +120,28 @@ def build(bld):
         bld.env.PACKAGE_VERSION = VERSION
         bld.env.PKGCONFIGDIR = '${LIBDIR}/pkgconfig'
 
-    if not bld.CONFIG_SET('USING_SYSTEM_PYLDB_UTIL'):
-        bld.SAMBA_LIBRARY('pyldb-util',
-                          deps='ldb',
-                          source='pyldb_util.c',
-                          public_headers='pyldb.h',
-                          public_headers_install=not private_library,
-                          vnum=VERSION,
-                          private_library=private_library,
-                          pc_files='pyldb-util.pc',
-                          pyembed=True,
-                          abi_directory='ABI',
-                          abi_match='pyldb_*')
-
     if not bld.env.disable_python:
+        if not bld.CONFIG_SET('USING_SYSTEM_PYLDB_UTIL'):
+            for env in bld.gen_python_environments(['PKGCONFIGDIR']):
+                name = bld.pyembed_libname('pyldb-util')
+                bld.SAMBA_LIBRARY(name,
+                                  deps='ldb',
+                                  source='pyldb_util.c',
+                                  public_headers='pyldb.h',
+                                  public_headers_install=not private_library,
+                                  vnum=VERSION,
+                                  private_library=private_library,
+                                  pc_files='pyldb-util.pc',
+                                  pyembed=True,
+                                  abi_directory='ABI',
+                                  abi_match='pyldb_*')
+
+                if not bld.CONFIG_SET('USING_SYSTEM_LDB'):
+                    bld.SAMBA_PYTHON('pyldb', 'pyldb.c',
+                                     deps='ldb ' + name,
+                                     realname='ldb.so',
+                                     cflags='-DPACKAGE_VERSION=\"%s\"' % VERSION)
+
         for env in bld.gen_python_environments(['PKGCONFIGDIR']):
             bld.SAMBA_SCRIPT('_ldb_text.py',
                              pattern='_ldb_text.py',
@@ -174,11 +182,6 @@ def build(bld):
                                 public_headers_install=not private_library)
         t.env.LDB_VERSION = VERSION
 
-
-        bld.SAMBA_PYTHON('pyldb', 'pyldb.c',
-                         deps='ldb pyldb-util',
-                         realname='ldb.so',
-                         cflags='-DPACKAGE_VERSION=\"%s\"' % VERSION)
 
         bld.SAMBA_MODULE('ldb_paged_results',
                          'modules/paged_results.c',
