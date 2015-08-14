@@ -137,7 +137,8 @@ def abi_check(self):
     topsrc = self.bld.srcnode.abspath()
     abi_gen = os.path.join(topsrc, 'buildtools/scripts/abi_gen.sh')
 
-    abi_file = "%s/%s-%s.sigs" % (self.abi_directory, self.name, self.vnum)
+    abi_file = "%s/%s-%s.sigs" % (self.abi_directory, self.version_libname,
+                                  self.vnum)
 
     tsk = self.create_task('abi_check', self.link_task.outputs[0])
     tsk.ABI_FILE = abi_file

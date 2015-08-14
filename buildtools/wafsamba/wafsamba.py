@@ -253,6 +253,15 @@ def SAMBA_LIBRARY(bld, libname, source,
     if abi_directory:
         features += ' abi_check'
 
+    if pyembed and bld.env['PYTHON_SO_ABI_FLAG']:
+        # For ABI checking, we don't care about the exact Python version.
+        # Replace the Python ABI tag (e.g. ".cpython-35m") by a generic ".py3"
+        abi_flag = bld.env['PYTHON_SO_ABI_FLAG']
+        replacement = '.py%s' % bld.env['PYTHON_VERSION'].split('.')[0]
+        version_libname = libname.replace(abi_flag, replacement)
+    else:
+        version_libname = libname
+
     vscript = None
     if bld.env.HAVE_LD_VERSION_SCRIPT:
         if private_library:
@@ -263,7 +272,7 @@ def SAMBA_LIBRARY(bld, libname, source,
             version = None
         if version:
             vscript = "%s.vscript" % libname
-            bld.ABI_VSCRIPT(libname, abi_directory, version, vscript,
+            bld.ABI_VSCRIPT(version_libname, abi_directory, version, vscript,
                             abi_match)
             fullname = apply_pattern(bundled_name, bld.env.shlib_PATTERN)
             fullpath = bld.path.find_or_declare(fullname)
@@ -289,6 +298,7 @@ def SAMBA_LIBRARY(bld, libname, source,
         samba_deps      = deps,
         samba_includes  = includes,
         version_script  = vscript,
+        version_libname = version_libname,
         local_include   = local_include,
         global_include  = global_include,
         vnum            = vnum,
