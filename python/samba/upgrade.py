@@ -407,7 +407,7 @@ def get_posix_attr_from_ldap_backend(logger, ldb_object, base_dn, user, attr):
                         expression=("(&(objectClass=posixAccount)(uid=%s))"
                         % (user)), attrs=[attr])
     except ldb.LdbError, e:
-        raise ProvisioningError("Failed to retrieve attribute %s for user %s, the error is: %s", attr, user, e)
+        raise ProvisioningError("Failed to retrieve attribute %s for user %s, the error is: %s" % (attr, user, e))
     else:
         if msg.count <= 1:
             # This will raise KeyError (which is what we want) if there isn't a entry for this user
