@@ -104,7 +104,7 @@ bool torture_local_crypto_aes_gcm_128(struct torture_context *torture)
 	testarray[3].T = strhex_to_data_blob(tctx,
 				"5bc94fbc3221a5db94fae95ae7121a47");
 
-	for (i=1; testarray[i].T.length != 0; i++) {
+	for (i=0; testarray[i].T.length != 0; i++) {
 		struct aes_gcm_128_context ctx;
 		uint8_t T[AES_BLOCK_SIZE];
 		DATA_BLOB C;
@@ -167,7 +167,7 @@ bool torture_local_crypto_aes_gcm_128(struct torture_context *torture)
 		}
 	}
 
-	for (i=1; testarray[i].T.length != 0; i++) {
+	for (i=0; testarray[i].T.length != 0; i++) {
 		struct aes_gcm_128_context ctx;
 		uint8_t T[AES_BLOCK_SIZE];
 		DATA_BLOB C;
@@ -233,7 +233,7 @@ bool torture_local_crypto_aes_gcm_128(struct torture_context *torture)
 		}
 	}
 
-	for (i=1; testarray[i].T.length != 0; i++) {
+	for (i=0; testarray[i].T.length != 0; i++) {
 		struct aes_gcm_128_context ctx;
 		uint8_t T[AES_BLOCK_SIZE];
 		DATA_BLOB P;
@@ -299,7 +299,7 @@ bool torture_local_crypto_aes_gcm_128(struct torture_context *torture)
 		}
 	}
 
-	for (i=1; testarray[i].T.length != 0; i++) {
+	for (i=0; testarray[i].T.length != 0; i++) {
 		struct aes_gcm_128_context ctx;
 		uint8_t T[AES_BLOCK_SIZE];
 		DATA_BLOB P;
