@@ -251,6 +251,16 @@ static const char dda1d01d_ldif[] = ""
 "objectCategory: <GUID=52429038-e435-4fe3-964e-80da15499c9c>;CN=Container,CN=Sc\n"
 " hema,CN=Configuration,DC=addc,DC=samba,DC=example,DC=com\n\n";
 
+static const char *dda1d01d_ldif_reduced = ""
+"dn: CN=dda1d01d-4bd7-4c49-a184-46f9241b560e,CN=Operations,CN=DomainUpdates,CN=System,DC=addc,DC=samba,DC=example,DC=com\n"
+"objectClass: top\n"
+"objectClass: container\n"
+"instanceType: 4\n"
+"whenChanged: 20150708224310.0Z\n"
+"uSNCreated: 3467\n"
+"showInAdvancedViewOnly: TRUE\n"
+"name: dda1d01d-4bd7-4c49-a184-46f9241b560e\n\n";
+
 static bool torture_ldb_attrs(struct torture_context *torture)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(torture);
@@ -1124,6 +1134,116 @@ static bool torture_ldb_parse_ldif(struct torture_context *torture)
 	return true;
 }
 
+static bool torture_ldb_unpack_only_attr_list(struct torture_context *torture)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(torture);
+	struct ldb_context *ldb;
+	struct ldb_val data = data_blob_const(dda1d01d_bin, sizeof(dda1d01d_bin));
+	struct ldb_message *msg = ldb_msg_new(mem_ctx);
+	const char *lookup_names[] = {"instanceType", "nonexistant", "whenChanged",
+				      "objectClass", "uSNCreated",
+				      "showInAdvancedViewOnly", "name", "cnNotHere"};
+	unsigned int nb_elements_in_db;
+	const char *ldif_text;
+	struct ldb_ldif ldif;
+
+	torture_assert(torture,
+		       ldb=samba_ldb_init(mem_ctx, torture->ev, NULL, NULL, NULL),
+		       "Failed to init samba");
+
+	torture_assert_int_equal(torture,
+				 ldb_unpack_data_only_attr_list(ldb, &data, msg,
+							  lookup_names, ARRAY_SIZE(lookup_names),
+							  &nb_elements_in_db), 0,
+				 "ldb_unpack_data_only_attr_list failed");
+	torture_assert_int_equal(torture, nb_elements_in_db, 13,
+				 "Got wrong count of elements");
+
+	/* Compare data in binary form */
+	torture_assert_int_equal(torture, msg->num_elements, 6,
+				 "Got wrong number of parsed elements");
+
+	torture_assert_str_equal(torture, msg->elements[0].name, "objectClass",
+				 "First element has wrong name");
+	torture_assert_int_equal(torture, msg->elements[0].num_values, 2,
+				 "First element has wrong count of values");
+	torture_assert_int_equal(torture,
+				 msg->elements[0].values[0].length, 3,
+				 "First element's first value is of wrong length");
+	torture_assert_mem_equal(torture,
+				 msg->elements[0].values[0].data, "top", 3,
+				 "First element's first value is incorrect");
+	torture_assert_int_equal(torture,
+				 msg->elements[0].values[1].length, strlen("container"),
+				 "First element's second value is of wrong length");
+	torture_assert_mem_equal(torture, msg->elements[0].values[1].data,
+				 "container", strlen("container"),
+				 "First element's second value is incorrect");
+
+	torture_assert_str_equal(torture, msg->elements[1].name, "instanceType",
+				 "Second element has wrong name");
+	torture_assert_int_equal(torture, msg->elements[1].num_values, 1,
+				 "Second element has too many values");
+	torture_assert_int_equal(torture, msg->elements[1].values[0].length, 1,
+				 "Second element's value is of wrong length");
+	torture_assert_mem_equal(torture, msg->elements[1].values[0].data,
+				 "4", 1,
+				 "Second element's value is incorrect");
+
+	torture_assert_str_equal(torture, msg->elements[2].name, "whenChanged",
+				 "Third element has wrong name");
+	torture_assert_int_equal(torture, msg->elements[2].num_values, 1,
+				 "Third element has too many values");
+	torture_assert_int_equal(torture, msg->elements[2].values[0].length,
+				 strlen("20150708224310.0Z"),
+				 "Third element's value is of wrong length");
+	torture_assert_mem_equal(torture, msg->elements[2].values[0].data,
+				 "20150708224310.0Z", strlen("20150708224310.0Z"),
+				 "Third element's value is incorrect");
+
+	torture_assert_str_equal(torture, msg->elements[3].name, "uSNCreated",
+				 "Fourth element has wrong name");
+	torture_assert_int_equal(torture, msg->elements[3].num_values, 1,
+				 "Fourth element has too many values");
+	torture_assert_int_equal(torture, msg->elements[3].values[0].length, 4,
+				 "Fourth element's value is of wrong length");
+	torture_assert_mem_equal(torture, msg->elements[3].values[0].data,
+				 "3467", 4,
+				 "Fourth element's value is incorrect");
+
+	torture_assert_str_equal(torture, msg->elements[4].name, "showInAdvancedViewOnly",
+				 "Fifth element has wrong name");
+	torture_assert_int_equal(torture, msg->elements[4].num_values, 1,
+				 "Fifth element has too many values");
+	torture_assert_int_equal(torture, msg->elements[4].values[0].length, 4,
+				 "Fifth element's value is of wrong length");
+	torture_assert_mem_equal(torture, msg->elements[4].values[0].data,
+				 "TRUE", 4,
+				 "Fourth element's value is incorrect");
+
+	torture_assert_str_equal(torture, msg->elements[5].name, "name",
+				 "Sixth element has wrong name");
+	torture_assert_int_equal(torture, msg->elements[5].num_values, 1,
+				 "Sixth element has too many values");
+	torture_assert_int_equal(torture, msg->elements[5].values[0].length,
+				 strlen("dda1d01d-4bd7-4c49-a184-46f9241b560e"),
+				 "Sixth element's value is of wrong length");
+	torture_assert_mem_equal(torture, msg->elements[5].values[0].data,
+				 "dda1d01d-4bd7-4c49-a184-46f9241b560e",
+				 strlen("dda1d01d-4bd7-4c49-a184-46f9241b560e"),
+				 "Sixth element's value is incorrect");
+
+	/* Compare data in ldif form */
+	ldif.changetype = LDB_CHANGETYPE_NONE;
+	ldif.msg = msg;
+	ldif_text = ldb_ldif_write_string(ldb, mem_ctx, &ldif);
+
+	torture_assert_str_equal(torture, ldif_text, dda1d01d_ldif_reduced,
+				 "Expected fields did not match");
+
+	return true;
+}
+
 struct torture_suite *torture_ldb(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "ldb");
@@ -1134,11 +1254,17 @@ struct torture_suite *torture_ldb(TALLOC_CTX *mem_ctx)
 
 	torture_suite_add_simple_test(suite, "attrs", torture_ldb_attrs);
 	torture_suite_add_simple_test(suite, "dn-attrs", torture_ldb_dn_attrs);
-	torture_suite_add_simple_test(suite, "dn-extended", torture_ldb_dn_extended);
-	torture_suite_add_simple_test(suite, "dn-invalid-extended", torture_ldb_dn_invalid_extended);
+	torture_suite_add_simple_test(suite, "dn-extended",
+				      torture_ldb_dn_extended);
+	torture_suite_add_simple_test(suite, "dn-invalid-extended",
+				      torture_ldb_dn_invalid_extended);
 	torture_suite_add_simple_test(suite, "dn", torture_ldb_dn);
-	torture_suite_add_simple_test(suite, "unpack-data", torture_ldb_unpack);
-	torture_suite_add_simple_test(suite, "parse-ldif", torture_ldb_parse_ldif);
+	torture_suite_add_simple_test(suite, "unpack-data",
+				      torture_ldb_unpack);
+	torture_suite_add_simple_test(suite, "parse-ldif",
+				      torture_ldb_parse_ldif);
+	torture_suite_add_simple_test(suite, "unpack-data-only-attr-list",
+				      torture_ldb_unpack_only_attr_list);
 
 	suite->description = talloc_strdup(suite, "LDB (samba-specific behaviour) tests");
 
