@@ -1046,6 +1046,72 @@ static bool wbinfo_sids_to_unix_ids(const char *arg)
 	return true;
 }
 
+static bool wbinfo_xids_to_sids(const char *arg)
+{
+	fstring idstr;
+	struct wbcUnixId *xids = NULL;
+	struct wbcDomainSid *sids;
+	wbcErr wbc_status;
+	int num_xids = 0;
+	const char *p;
+	int i;
+
+	p = arg;
+
+	while (next_token(&p, idstr, LIST_SEP, sizeof(idstr))) {
+		xids = talloc_realloc(talloc_tos(), xids, struct wbcUnixId,
+				      num_xids+1);
+		if (xids == NULL) {
+			d_fprintf(stderr, "talloc failed\n");
+			return false;
+		}
+
+		switch (idstr[0]) {
+		case 'u':
+			xids[num_xids] = (struct wbcUnixId) {
+				.type = WBC_ID_TYPE_UID,
+				.id.uid = atoi(&idstr[1])
+			};
+			break;
+		case 'g':
+			xids[num_xids] = (struct wbcUnixId) {
+				.type = WBC_ID_TYPE_GID,
+				.id.gid = atoi(&idstr[1])
+			};
+			break;
+		default:
+			d_fprintf(stderr, "%s is an invalid id\n", idstr);
+			TALLOC_FREE(xids);
+			return false;
+		}
+		num_xids += 1;
+	}
+
+	sids = talloc_array(talloc_tos(), struct wbcDomainSid, num_xids);
+	if (sids == NULL) {
+		d_fprintf(stderr, "talloc failed\n");
+		TALLOC_FREE(xids);
+		return false;
+	}
+
+	wbc_status = wbcUnixIdsToSids(xids, num_xids, sids);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		d_fprintf(stderr, "wbcUnixIdsToSids failed: %s\n",
+			  wbcErrorString(wbc_status));
+		TALLOC_FREE(sids);
+		TALLOC_FREE(xids);
+		return false;
+	}
+
+	for (i=0; i<num_xids; i++) {
+		char str[WBC_SID_STRING_BUFLEN];
+		wbcSidToStringBuf(&sids[i], str, sizeof(str));
+		d_printf("%s\n", str);
+	}
+
+	return true;
+}
+
 static bool wbinfo_allocate_uid(void)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
@@ -2149,6 +2215,7 @@ enum {
 	OPT_REMOVE_UID_MAPPING,
 	OPT_REMOVE_GID_MAPPING,
 	OPT_SIDS_TO_XIDS,
+	OPT_XIDS_TO_SIDS,
 	OPT_SEPARATOR,
 	OPT_LIST_ALL_DOMAINS,
 	OPT_LIST_OWN_DOMAIN,
@@ -2220,6 +2287,9 @@ int main(int argc, const char **argv, char **envp)
 		{ "remove-gid-mapping", 0, POPT_ARG_STRING, &string_arg, OPT_REMOVE_GID_MAPPING, "Remove gid to sid mapping in idmap", "GID,SID" },
 		{ "sids-to-unix-ids", 0, POPT_ARG_STRING, &string_arg,
 		  OPT_SIDS_TO_XIDS, "Translate SIDs to Unix IDs", "Sid-List" },
+		{ "unix-ids-to-sids", 0, POPT_ARG_STRING, &string_arg,
+		  OPT_XIDS_TO_SIDS, "Translate Unix IDs to SIDs",
+		  "ID-List (u<num> g<num>)" },
 		{ "check-secret", 't', POPT_ARG_NONE, 0, 't', "Check shared secret" },
 		{ "change-secret", 'c', POPT_ARG_NONE, 0, 'c', "Change shared secret" },
 		{ "ping-dc", 'P', POPT_ARG_NONE, 0, 'P',
@@ -2472,6 +2542,13 @@ int main(int argc, const char **argv, char **envp)
 		case OPT_SIDS_TO_XIDS:
 			if (!wbinfo_sids_to_unix_ids(string_arg)) {
 				d_fprintf(stderr, "wbinfo_sids_to_unix_ids "
+					  "failed\n");
+				goto done;
+			}
+			break;
+		case OPT_XIDS_TO_SIDS:
+			if (!wbinfo_xids_to_sids(string_arg)) {
+				d_fprintf(stderr, "wbinfo_xids_to_sids "
 					  "failed\n");
 				goto done;
 			}
