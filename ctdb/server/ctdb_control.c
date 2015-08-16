@@ -24,6 +24,7 @@
 #include "../include/ctdb_private.h"
 #include "lib/util/dlinklist.h"
 #include "lib/tdb_wrap/tdb_wrap.h"
+#include "lib/util/talloc_report.h"
 
 
 struct ctdb_control_state {
@@ -40,34 +41,23 @@ struct ctdb_control_state {
  */
 int32_t ctdb_dump_memory(struct ctdb_context *ctdb, TDB_DATA *outdata)
 {
-	/* dump to a file, then send the file as a blob */
-	FILE *f;
-	long fsize;
-	f = tmpfile();
-	if (f == NULL) {
-		DEBUG(DEBUG_ERR,(__location__ " Unable to open tmpfile - %s\n", strerror(errno)));
+	char *report;
+	size_t reportlen;
+
+	report = talloc_report_str(outdata, NULL);
+	if (report == NULL) {
+		DEBUG(DEBUG_ERR,
+		      (__location__ " talloc_report_str failed\n"));
 		return -1;
 	}
-	talloc_report_full(NULL, f);
-	fsize = ftell(f);
-	if (fsize == -1) {
-		DEBUG(DEBUG_ERR, (__location__ " Unable to get file size - %s\n",
-				  strerror(errno)));
-		fclose(f);
-		return -1;
+	reportlen = talloc_get_size(report);
+
+	if (reportlen > 0) {
+		reportlen -= 1;	/* strip trailing zero */
 	}
-	rewind(f);
-	outdata->dptr = talloc_size(outdata, fsize);
-	if (outdata->dptr == NULL) {
-		fclose(f);
-		CTDB_NO_MEMORY(ctdb, outdata->dptr);
-	}
-	outdata->dsize = fread(outdata->dptr, 1, fsize, f);
-	fclose(f);
-	if (outdata->dsize != fsize) {
-		DEBUG(DEBUG_ERR,(__location__ " Unable to read tmpfile\n"));
-		return -1;
-	}
+
+	outdata->dptr = (uint8_t *)report;
+	outdata->dsize = reportlen;
 	return 0;
 }
 

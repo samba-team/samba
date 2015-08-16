@@ -54,6 +54,13 @@ bld.SAMBA_LIBRARY('socket-blocking',
                   local_include=False,
                   private_library=True)
 
+bld.SAMBA_LIBRARY('talloc_report',
+                  source='talloc_report.c',
+                  local_include=False,
+                  public_deps='talloc',
+                  private_library=True
+                  )
+
 bld.SAMBA_SUBSYSTEM('samba-util-core',
                     source='''xfile.c data_blob.c util_file.c time.c
                               signal.c util.c idtree.c fault.c
@@ -116,13 +123,6 @@ if not bld.env.SAMBA_UTIL_CORE_ONLY:
                       source='util_tdb.c',
                       local_include=False,
                       public_deps='tdb talloc',
-                      private_library=True
-                      )
-
-    bld.SAMBA_LIBRARY('talloc_report',
-                      source='talloc_report.c',
-                      local_include=False,
-                      public_deps='talloc',
                       private_library=True
                       )
 
