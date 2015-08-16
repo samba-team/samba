@@ -1184,6 +1184,7 @@ static NTSTATUS gensec_spnego_update_out(struct gensec_security *gensec_security
 {
 	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
 	DATA_BLOB out = data_blob_null;
+	bool ok;
 
 	*_out = data_blob_null;
 
@@ -1222,7 +1223,11 @@ static NTSTATUS gensec_spnego_update_out(struct gensec_security *gensec_security
 	/*
 	 * truncate the buffer
 	 */
-	data_blob_realloc(spnego_state, &out, spnego_state->out_max_length);
+	ok = data_blob_realloc(spnego_state, &out,
+			       spnego_state->out_max_length);
+	if (!ok) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	talloc_steal(out_mem_ctx, out.data);
 	*_out = out;
