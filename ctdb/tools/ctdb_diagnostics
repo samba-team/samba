@@ -233,6 +233,7 @@ show_all "ctdb statistics"
 show_all "ctdb uptime"
 show_all "ctdb listvars"
 show_all "ctdb getdbmap"
+show_all "ctdb -X getdbmap | awk -F'|' 'NR > 1 {print \$3}' | sort | xargs -n 1 ctdb dbstatistics"
 
 echo "Showing log.ctdb"
 show_all "test -f /var/log/log.ctdb && tail -100 /var/log/log.ctdb"
