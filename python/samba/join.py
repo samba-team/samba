@@ -54,12 +54,13 @@ class dc_join(object):
     def __init__(ctx, logger=None, server=None, creds=None, lp=None, site=None,
                  netbios_name=None, targetdir=None, domain=None,
                  machinepass=None, use_ntvfs=False, dns_backend=None,
-                 promote_existing=False):
+                 promote_existing=False, clone_only=False):
+        ctx.clone_only=clone_only
+
         ctx.logger = logger
         ctx.creds = creds
         ctx.lp = lp
         ctx.site = site
-        ctx.netbios_name = netbios_name
         ctx.targetdir = targetdir
         ctx.use_ntvfs = use_ntvfs
 
@@ -89,8 +90,6 @@ class dc_join(object):
             raise DCJoinException(estr)
 
 
-        ctx.myname = netbios_name
-        ctx.samname = "%s$" % ctx.myname
         ctx.base_dn = str(ctx.samdb.get_default_basedn())
         ctx.root_dn = str(ctx.samdb.get_root_basedn())
         ctx.schema_dn = str(ctx.samdb.get_schema_basedn())
@@ -110,17 +109,34 @@ class dc_join(object):
         else:
             ctx.acct_pass = samba.generate_random_password(32, 40)
 
-        # work out the DNs of all the objects we will be adding
-        ctx.server_dn = "CN=%s,CN=Servers,CN=%s,CN=Sites,%s" % (ctx.myname, ctx.site, ctx.config_dn)
-        ctx.ntds_dn = "CN=NTDS Settings,%s" % ctx.server_dn
-        topology_base = "CN=Topology,CN=Domain System Volume,CN=DFSR-GlobalSettings,CN=System,%s" % ctx.base_dn
-        if ctx.dn_exists(topology_base):
-            ctx.topology_dn = "CN=%s,%s" % (ctx.myname, topology_base)
-        else:
-            ctx.topology_dn = None
-
         ctx.dnsdomain = ctx.samdb.domain_dns_name()
-        ctx.dnsforest = ctx.samdb.forest_dns_name()
+        if clone_only:
+            # As we don't want to create or delete these DNs, we set them to None
+            ctx.server_dn = None
+            ctx.ntds_dn = None
+            ctx.acct_dn = None
+            ctx.myname = ctx.server.split('.')[0]
+            ctx.ntds_guid = None
+        else:
+            # work out the DNs of all the objects we will be adding
+            ctx.myname = netbios_name
+            ctx.samname = "%s$" % ctx.myname
+            ctx.server_dn = "CN=%s,CN=Servers,CN=%s,CN=Sites,%s" % (ctx.myname, ctx.site, ctx.config_dn)
+            ctx.ntds_dn = "CN=NTDS Settings,%s" % ctx.server_dn
+            ctx.acct_dn = "CN=%s,OU=Domain Controllers,%s" % (ctx.myname, ctx.base_dn)
+            ctx.dnshostname = "%s.%s" % (ctx.myname.lower(), ctx.dnsdomain)
+            ctx.dnsforest = ctx.samdb.forest_dns_name()
+
+            topology_base = "CN=Topology,CN=Domain System Volume,CN=DFSR-GlobalSettings,CN=System,%s" % ctx.base_dn
+            if ctx.dn_exists(topology_base):
+                ctx.topology_dn = "CN=%s,%s" % (ctx.myname, topology_base)
+            else:
+                ctx.topology_dn = None
+
+            ctx.SPNs = [ "HOST/%s" % ctx.myname,
+                         "HOST/%s" % ctx.dnshostname,
+                         "GC/%s/%s" % (ctx.dnshostname, ctx.dnsforest) ]
+
         ctx.domaindns_zone = 'DC=DomainDnsZones,%s' % ctx.base_dn
         ctx.forestdns_zone = 'DC=ForestDnsZones,%s' % ctx.root_dn
 
@@ -137,17 +153,9 @@ class dc_join(object):
             else:
                 ctx.dns_backend = dns_backend
 
-        ctx.dnshostname = "%s.%s" % (ctx.myname.lower(), ctx.dnsdomain)
-
         ctx.realm = ctx.dnsdomain
 
-        ctx.acct_dn = "CN=%s,OU=Domain Controllers,%s" % (ctx.myname, ctx.base_dn)
-
         ctx.tmp_samdb = None
-
-        ctx.SPNs = [ "HOST/%s" % ctx.myname,
-                     "HOST/%s" % ctx.dnshostname,
-                     "GC/%s/%s" % (ctx.dnshostname, ctx.dnsforest) ]
 
         # these elements are optional
         ctx.never_reveal_sid = None
@@ -538,28 +546,30 @@ class dc_join(object):
         if ctx.krbtgt_dn:
             ctx.add_krbtgt_account()
 
-        print "Adding %s" % ctx.server_dn
-        rec = {
-            "dn": ctx.server_dn,
-            "objectclass" : "server",
-            # windows uses 50000000 decimal for systemFlags. A windows hex/decimal mixup bug?
-            "systemFlags" : str(samba.dsdb.SYSTEM_FLAG_CONFIG_ALLOW_RENAME |
-                                samba.dsdb.SYSTEM_FLAG_CONFIG_ALLOW_LIMITED_MOVE |
-                                samba.dsdb.SYSTEM_FLAG_DISALLOW_MOVE_ON_DELETE),
-            # windows seems to add the dnsHostName later
-            "dnsHostName" : ctx.dnshostname}
+        if ctx.server_dn:
+            print "Adding %s" % ctx.server_dn
+            rec = {
+                "dn": ctx.server_dn,
+                "objectclass" : "server",
+                # windows uses 50000000 decimal for systemFlags. A windows hex/decimal mixup bug?
+                "systemFlags" : str(samba.dsdb.SYSTEM_FLAG_CONFIG_ALLOW_RENAME |
+                                    samba.dsdb.SYSTEM_FLAG_CONFIG_ALLOW_LIMITED_MOVE |
+                                    samba.dsdb.SYSTEM_FLAG_DISALLOW_MOVE_ON_DELETE),
+                # windows seems to add the dnsHostName later
+                "dnsHostName" : ctx.dnshostname}
 
-        if ctx.acct_dn:
-            rec["serverReference"] = ctx.acct_dn
+            if ctx.acct_dn:
+                rec["serverReference"] = ctx.acct_dn
 
-        ctx.samdb.add(rec)
+            ctx.samdb.add(rec)
 
         if ctx.subdomain:
             # the rest is done after replication
             ctx.ntds_guid = None
             return
 
-        ctx.join_add_ntdsdsa()
+        if ctx.ntds_dn:
+            ctx.join_add_ntdsdsa()
 
         if ctx.connection_dn is not None:
             print "Adding %s" % ctx.connection_dn
@@ -876,15 +886,17 @@ class dc_join(object):
         """Finalise the join, mark us synchronised and setup secrets db."""
 
         # FIXME we shouldn't do this in all cases
+
         # If for some reasons we joined in another site than the one of
         # DC we just replicated from then we don't need to send the updatereplicateref
         # as replication between sites is time based and on the initiative of the
         # requesting DC
-        ctx.logger.info("Sending DsReplicaUpdateRefs for all the replicated partitions")
-        for nc in ctx.nc_list:
-            ctx.send_DsReplicaUpdateRefs(nc)
+        if not ctx.clone_only:
+          ctx.logger.info("Sending DsReplicaUpdateRefs for all the replicated partitions")
+          for nc in ctx.nc_list:
+                ctx.send_DsReplicaUpdateRefs(nc)
 
-        if ctx.RODC:
+        if not ctx.clone_only and ctx.RODC:
             print "Setting RODC invocationId"
             ctx.local_samdb.set_invocation_id(str(ctx.invocation_id))
             ctx.local_samdb.set_opaque_integer("domainFunctionality",
@@ -914,11 +926,18 @@ class dc_join(object):
         m = ldb.Message()
         m.dn = ldb.Dn(ctx.local_samdb, '@ROOTDSE')
         m["isSynchronized"] = ldb.MessageElement("TRUE", ldb.FLAG_MOD_REPLACE, "isSynchronized")
-        m["dsServiceName"] = ldb.MessageElement("<GUID=%s>" % str(ctx.ntds_guid),
+
+        # We want to appear to be the server we just cloned
+        if ctx.clone_only:
+            guid = ctx.samdb.get_ntds_GUID()
+        else:
+            guid = ctx.ntds_guid
+
+        m["dsServiceName"] = ldb.MessageElement("<GUID=%s>" % str(guid),
                                                 ldb.FLAG_MOD_REPLACE, "dsServiceName")
         ctx.local_samdb.modify(m)
 
-        if ctx.subdomain:
+        if ctx.clone_only or ctx.subdomain:
             return
 
         secrets_ldb = Ldb(ctx.paths.secrets, session_info=system_session(), lp=ctx.lp)
@@ -1077,23 +1096,26 @@ class dc_join(object):
                 ctx.full_nc_list += [ctx.domaindns_zone]
                 ctx.full_nc_list += [ctx.forestdns_zone]
 
-        if ctx.promote_existing:
-            ctx.promote_possible()
-        else:
-            ctx.cleanup_old_join()
+        if not ctx.clone_only:
+            if ctx.promote_existing:
+                ctx.promote_possible()
+            else:
+                ctx.cleanup_old_join()
 
         try:
-            ctx.join_add_objects()
+            if not ctx.clone_only:
+                ctx.join_add_objects()
             ctx.join_provision()
             ctx.join_replicate()
-            if ctx.subdomain:
+            if (not ctx.clone_only and ctx.subdomain):
                 ctx.join_add_objects2()
                 ctx.join_provision_own_domain()
                 ctx.join_setup_trusts()
             ctx.join_finalise()
         except:
             print "Join failed - cleaning up"
-            ctx.cleanup_old_join()
+            if not ctx.clone_only:
+                ctx.cleanup_old_join()
             raise
 
 
@@ -1182,6 +1204,28 @@ def join_DC(logger=None, server=None, creds=None, lp=None, site=None, netbios_na
 
     ctx.do_join()
     logger.info("Joined domain %s (SID %s) as a DC" % (ctx.domain_name, ctx.domsid))
+
+def join_clone(logger=None, server=None, creds=None, lp=None,
+            targetdir=None, domain=None):
+    """Join as a DC."""
+    ctx = dc_join(logger, server, creds, lp, site=None, netbios_name=None, targetdir=targetdir, domain=domain,
+                  machinepass=None, use_ntvfs=False, dns_backend="NONE", promote_existing=False, clone_only=True)
+
+    lp.set("workgroup", ctx.domain_name)
+    logger.info("workgroup is %s" % ctx.domain_name)
+
+    lp.set("realm", ctx.realm)
+    logger.info("realm is %s" % ctx.realm)
+
+    ctx.replica_flags = (drsuapi.DRSUAPI_DRS_WRIT_REP |
+                         drsuapi.DRSUAPI_DRS_INIT_SYNC |
+                         drsuapi.DRSUAPI_DRS_PER_SYNC |
+                         drsuapi.DRSUAPI_DRS_FULL_SYNC_IN_PROGRESS |
+                         drsuapi.DRSUAPI_DRS_NEVER_SYNCED)
+    ctx.domain_replica_flags = ctx.replica_flags
+
+    ctx.do_join()
+    logger.info("Cloned domain %s (SID %s)" % (ctx.domain_name, ctx.domsid))
 
 def join_subdomain(logger=None, server=None, creds=None, lp=None, site=None,
         netbios_name=None, targetdir=None, parent_domain=None, dnsdomain=None,

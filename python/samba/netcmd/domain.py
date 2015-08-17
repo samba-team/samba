@@ -34,7 +34,7 @@ import logging
 from getpass import getpass
 from samba.net import Net, LIBNET_JOIN_AUTOMATIC
 import samba.ntacls
-from samba.join import join_RODC, join_DC, join_subdomain
+from samba.join import join_RODC, join_DC, join_subdomain, join_clone
 from samba.auth import system_session
 from samba.samdb import SamDB
 from samba.ndr import ndr_unpack, ndr_pack, ndr_print
@@ -640,6 +640,45 @@ class cmd_domain_join(Command):
                            adminpass=adminpass)
         else:
             raise CommandError("Invalid role '%s' (possible values: MEMBER, DC, RODC, SUBDOMAIN)" % role)
+
+
+class cmd_domain_clone(Command):
+    """Clone a domain but DO NOT JOIN it."""
+
+    synopsis = "%prog <dnsdomain> [options]"
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions,
+        "credopts": options.CredentialsOptions,
+    }
+
+    takes_options = [
+        Option("--server", help="DC to join", type=str),
+        Option("--targetdir", help="where to store provision", type=str),
+        Option("--quiet", help="Be quiet", action="store_true"),
+        Option("--verbose", help="Be verbose", action="store_true")
+       ]
+
+    takes_args = ["domain"]
+
+    def run(self, domain, sambaopts=None, credopts=None,
+            versionopts=None, server=None, targetdir=None,
+            quiet=False, verbose=False):
+        lp = sambaopts.get_loadparm()
+        creds = credopts.get_credentials(lp)
+        net = Net(creds, lp, server=credopts.ipaddress)
+
+        logger = self.get_logger()
+        if verbose:
+            logger.setLevel(logging.DEBUG)
+        elif quiet:
+            logger.setLevel(logging.WARNING)
+        else:
+            logger.setLevel(logging.INFO)
+
+        join_clone(logger=logger, server=server, creds=creds, lp=lp, domain=domain,
+                   targetdir=targetdir)
 
 
 class cmd_domain_demote(Command):
@@ -3676,6 +3715,7 @@ class cmd_domain(SuperCommand):
     subcommands["info"] = cmd_domain_info()
     subcommands["provision"] = cmd_domain_provision()
     subcommands["join"] = cmd_domain_join()
+    subcommands["clone"] = cmd_domain_clone()
     subcommands["dcpromo"] = cmd_domain_dcpromo()
     subcommands["level"] = cmd_domain_level()
     subcommands["passwordsettings"] = cmd_domain_passwordsettings()
