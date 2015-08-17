@@ -824,20 +824,14 @@ void set_param_opt(TALLOC_CTX *mem_ctx,
 		opt = opt->next;
 	}
 
-	new_opt = talloc(mem_ctx, struct parmlist_entry);
+	new_opt = talloc_pooled_object(
+		mem_ctx, struct parmlist_entry,
+		2, strlen(opt_name) + 1 + strlen(opt_value) + 1);
 	if (new_opt == NULL) {
 		smb_panic("OOM");
 	}
-
 	new_opt->key = talloc_strdup(new_opt, opt_name);
-	if (new_opt->key == NULL) {
-		smb_panic("talloc_strdup failed");
-	}
-
 	new_opt->value = talloc_strdup(new_opt, opt_value);
-	if (new_opt->value == NULL) {
-		smb_panic("talloc_strdup failed");
-	}
 
 	new_opt->list = NULL;
 	new_opt->priority = priority;
