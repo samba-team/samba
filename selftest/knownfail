@@ -290,3 +290,16 @@
 # This fails because it requires the tombstone_reanimation module to be enabled
 #
 ^samba4.ldap.acl.python\(.*\).__main__.AclUndeleteTests.test_undelete\(.*\)
+#
+# This fails because the code for transitive extended matching rule
+# LDAP_MATCH_RULE_TRANSITIVE_EVAL had to be disabled
+#
+^samba4.ldap.match_rules.python.__main__.MatchRulesTests.test_extended_dn
+^samba4.ldap.match_rules.python.__main__.MatchRulesTests.test_g1_member_of_g4
+^samba4.ldap.match_rules.python.__main__.MatchRulesTests.test_object_dn_binary
+^samba4.ldap.match_rules.python.__main__.MatchRulesTests.test_one_way_links
+^samba4.ldap.match_rules.python.__main__.MatchRulesTests.test_u1_groups
+^samba4.ldap.match_rules.python.__main__.MatchRulesTests.test_u1_member_of_g4
+^samba4.ldap.match_rules.python.__main__.MatchRulesTests.test_u2_groups
+^samba4.ldap.match_rules.python.__main__.MatchRulesTests.test_u3_groups
+^samba4.ldap.match_rules.python.__main__.MatchRulesTests.test_u4_groups
