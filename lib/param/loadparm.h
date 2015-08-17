@@ -31,7 +31,18 @@
 #define _LOADPARM_H
 
 #include <talloc.h>
-#include "../lib/util/parmlist.h"
+
+struct parmlist_entry {
+	struct parmlist_entry *prev, *next;
+	char *key;
+	char *value;
+	char **list; /* For the source3 parametric options, to save the parsed list */
+	int priority;
+};
+
+struct parmlist {
+	struct parmlist_entry *entries;
+};
 
 /* the following are used by loadparm for option lists */
 typedef enum {

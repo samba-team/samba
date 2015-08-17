@@ -86,7 +86,7 @@ if not bld.env.SAMBA_UTIL_CORE_ONLY:
                     params.c util_id.c util_net.c
                     util_strlist.c util_paths.c idtree_random.c base64.c
                     util_str.c util_str_common.c ms_fnmatch.c
-                    server_id.c dprintf.c parmlist.c bitmap.c pidfile.c
+                    server_id.c dprintf.c bitmap.c pidfile.c
                     tevent_debug.c util_process.c memcache.c''',
                   deps='samba-util-core DYNCONFIG close-low-fd tini tiniparser genrand',
 

@@ -5,7 +5,7 @@ TORTURE_LOCAL_SOURCE = '''../../../lib/util/charset/tests/iconv.c
 	../../lib/messaging/tests/irpc.c ../../librpc/tests/binding_string.c
 	../../../lib/util/tests/idtree.c ../../../lib/util/tests/dlinklist.c
 	../../lib/socket/testsuite.c ../../libcli/resolve/testsuite.c
-	../../../lib/util/tests/strlist.c ../../../lib/util/tests/parmlist.c
+	../../../lib/util/tests/strlist.c
 	../../../lib/util/tests/str.c ../../../lib/util/tests/time.c
 	../../../lib/util/tests/asn1_tests.c ../../../lib/util/tests/data_blob.c
 	../../../lib/util/tests/file.c ../../../lib/util/tests/genrand.c
