@@ -95,7 +95,7 @@ ipv4_host_addr_to_net ()
 
 ensure_rt_tables ()
 {
-    rt_tables="$CTDB_ETCDIR/iproute2/rt_tables"
+    rt_tables="$CTDB_SYS_ETCDIR/iproute2/rt_tables"
 
     # This file should always exist.  Even if this didn't exist on the
     # system, adding a route will have created it.  What if we startup

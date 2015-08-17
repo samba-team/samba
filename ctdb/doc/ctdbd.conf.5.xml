@@ -1498,7 +1498,7 @@ CTDB_SET_MonitorInterval=20
       </varlistentry>
 
       <varlistentry>
-	<term>CTDB_ETCDIR=<parameter>DIRECTORY</parameter></term>
+	<term>CTDB_SYS_ETCDIR=<parameter>DIRECTORY</parameter></term>
 	<listitem>
 	  <para>
 	    DIRECTORY containing system configuration files.  This is

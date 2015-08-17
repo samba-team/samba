@@ -15,8 +15,8 @@ if [ -z "$CTDB_SCRIPT_VARDIR" ] ; then
     CTDB_SCRIPT_VARDIR="/usr/local/var/lib/ctdb/state"
 fi
 
-if [ -z "$CTDB_ETCDIR" ] ; then
-    CTDB_ETCDIR="/etc"
+if [ -z "$CTDB_SYS_ETCDIR" ] ; then
+    CTDB_SYS_ETCDIR="/etc"
 fi
 
 #######################################
@@ -39,10 +39,10 @@ _loadconfig() {
 	return
     fi
 
-    if [ -f $CTDB_ETCDIR/sysconfig/$1 ]; then
-	. $CTDB_ETCDIR/sysconfig/$1
-    elif [ -f $CTDB_ETCDIR/default/$1 ]; then
-	. $CTDB_ETCDIR/default/$1
+    if [ -f $CTDB_SYS_ETCDIR/sysconfig/$1 ]; then
+	. $CTDB_SYS_ETCDIR/sysconfig/$1
+    elif [ -f $CTDB_SYS_ETCDIR/default/$1 ]; then
+	. $CTDB_SYS_ETCDIR/default/$1
     elif [ -f $CTDB_BASE/sysconfig/$1 ]; then
 	. $CTDB_BASE/sysconfig/$1
     fi
@@ -183,10 +183,10 @@ _service ()
       $_nice /sbin/service "$_service_name" "$_op"
   elif [ -x /usr/sbin/service ]; then
       $_nice /usr/sbin/service "$_service_name" "$_op"
-  elif [ -x $CTDB_ETCDIR/init.d/$_service_name ]; then
-      $_nice $CTDB_ETCDIR/init.d/$_service_name "$_op"
-  elif [ -x $CTDB_ETCDIR/rc.d/init.d/$_service_name ]; then
-      $_nice $CTDB_ETCDIR/rc.d/init.d/$_service_name "$_op"
+  elif [ -x $CTDB_SYS_ETCDIR/init.d/$_service_name ]; then
+      $_nice $CTDB_SYS_ETCDIR/init.d/$_service_name "$_op"
+  elif [ -x $CTDB_SYS_ETCDIR/rc.d/init.d/$_service_name ]; then
+      $_nice $CTDB_SYS_ETCDIR/rc.d/init.d/$_service_name "$_op"
   fi
 }
 

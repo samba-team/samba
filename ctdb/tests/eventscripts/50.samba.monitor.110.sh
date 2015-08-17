@@ -9,7 +9,7 @@ setup_samba
 export FAKE_TESTPARM_FAIL="yes"
 required_result 1 <<EOF
 ERROR: smb.conf cache create failed - testparm failed with:
-Load smb config files from ${CTDB_ETCDIR}/samba/smb.conf
+Load smb config files from ${CTDB_SYS_ETCDIR}/samba/smb.conf
 rlimit_max: increasing rlimit_max (2048) to minimum Windows limit (16384)
 Processing section "[1_existing]"
 Processing section "[2_existing]"

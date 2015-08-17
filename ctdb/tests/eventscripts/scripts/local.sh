@@ -33,9 +33,9 @@ touch "${CTDB_LOGGING#file:}" || \
 
 if [ -d "${TEST_SUBDIR}/etc" ] ; then
     cp -a "${TEST_SUBDIR}/etc" "$EVENTSCRIPTS_TESTS_VAR_DIR"
-    export CTDB_ETCDIR="${EVENTSCRIPTS_TESTS_VAR_DIR}/etc"
+    export CTDB_SYS_ETCDIR="${EVENTSCRIPTS_TESTS_VAR_DIR}/etc"
 else
-    die "Unable to setup \$CTDB_ETCDIR"
+    die "Unable to setup \$CTDB_SYS_ETCDIR"
 fi
 
 if [ -d "${TEST_SUBDIR}/etc-ctdb" ] ; then
@@ -881,7 +881,7 @@ rpc_services_up ()
 
 nfs_load_config ()
 {
-    _etc="$CTDB_ETCDIR" # shortcut for readability
+    _etc="$CTDB_SYS_ETCDIR" # shortcut for readability
     for _c in "$_etc/sysconfig/nfs" "$_etc/default/nfs" "$_etc/ctdb/sysconfig/nfs" ; do
 	if [ -r "$_c" ] ; then
 	    . "$_c"
@@ -1166,7 +1166,7 @@ simple_test ()
 
 ##################################################
 CTDB_BASE="$CTDB_BASE"
-CTDB_ETCDIR="$CTDB_ETCDIR"
+CTDB_SYS_ETCDIR="$CTDB_SYS_ETCDIR"
 ctdb client is "$(which ctdb)"
 ip command is "$(which ip)"
 EOF
