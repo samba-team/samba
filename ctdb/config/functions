@@ -2,6 +2,11 @@
 
 # utility functions for ctdb event scripts
 
+if [ -z "$CTDB_BASE" ] ; then
+    echo 'CTDB_BASE unset in CTDB functions file'
+    exit 1
+fi
+
 CTDB_VARDIR="/usr/local/var/lib/ctdb"
 
 # Only (and always) override these variables in test code
