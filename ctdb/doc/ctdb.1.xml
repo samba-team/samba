@@ -1105,7 +1105,7 @@ DB Statistics: locking.tdb
 	</listitem>
 	<listitem>
 	  <para>
-	    On all nodes, edit <filename>/etc/ctdb/nodes</filename>
+	    On all nodes, edit <filename>/usr/local/etc/ctdb/nodes</filename>
 	    and <emphasis>add the new nodes at the end of this
 	    file</emphasis>.
 	  </para>
@@ -1113,7 +1113,7 @@ DB Statistics: locking.tdb
 	<listitem>
 	  <para>
 	    Verify that all the nodes have identical
-	    <filename>/etc/ctdb/nodes</filename> files after adding
+	    <filename>/usr/local/etc/ctdb/nodes</filename> files after adding
 	    the new nodes.
 	  </para>
 	</listitem>
@@ -1156,7 +1156,7 @@ DB Statistics: locking.tdb
 	<listitem>
 	  <para>
 	    On all other nodes, edit the
-	    <filename>/etc/ctdb/nodes</filename> file and
+	    <filename>/usr/local/etc/ctdb/nodes</filename> file and
 	    <emphasis>comment out</emphasis> the nodes to be removed.
 	    <emphasis>Do not delete the lines for the deleted
 	    nodes</emphasis>, just comment them out by adding a '#' at
@@ -1217,24 +1217,24 @@ DB Statistics: locking.tdb
 	<screen>
 # ctdb getdbmap
 Number of databases:10
-dbid:0x435d3410 name:notify.tdb path:/var/ctdb/notify.tdb.0 
-dbid:0x42fe72c5 name:locking.tdb path:/var/ctdb/locking.tdb.0
-dbid:0x1421fb78 name:brlock.tdb path:/var/ctdb/brlock.tdb.0 
-dbid:0x17055d90 name:connections.tdb path:/var/ctdb/connections.tdb.0 
-dbid:0xc0bdde6a name:sessionid.tdb path:/var/ctdb/sessionid.tdb.0 
-dbid:0x122224da name:test.tdb path:/var/ctdb/test.tdb.0 
-dbid:0x2672a57f name:idmap2.tdb path:/var/ctdb/persistent/idmap2.tdb.0 PERSISTENT
-dbid:0xb775fff6 name:secrets.tdb path:/var/ctdb/persistent/secrets.tdb.0 PERSISTENT
-dbid:0xe98e08b6 name:group_mapping.tdb path:/var/ctdb/persistent/group_mapping.tdb.0 PERSISTENT
-dbid:0x7bbbd26c name:passdb.tdb path:/var/ctdb/persistent/passdb.tdb.0 PERSISTENT
+dbid:0x435d3410 name:notify.tdb path:/usr/local/var/lib/ctdb/notify.tdb.0
+dbid:0x42fe72c5 name:locking.tdb path:/usr/local/var/lib/ctdb/locking.tdb.0
+dbid:0x1421fb78 name:brlock.tdb path:/usr/local/var/lib/ctdb/brlock.tdb.0
+dbid:0x17055d90 name:connections.tdb path:/usr/local/var/lib/ctdb/connections.tdb.0
+dbid:0xc0bdde6a name:sessionid.tdb path:/usr/local/var/lib/ctdb/sessionid.tdb.0
+dbid:0x122224da name:test.tdb path:/usr/local/var/lib/ctdb/test.tdb.0
+dbid:0x2672a57f name:idmap2.tdb path:/usr/local/var/lib/ctdb/persistent/idmap2.tdb.0 PERSISTENT
+dbid:0xb775fff6 name:secrets.tdb path:/usr/local/var/lib/ctdb/persistent/secrets.tdb.0 PERSISTENT
+dbid:0xe98e08b6 name:group_mapping.tdb path:/usr/local/var/lib/ctdb/persistent/group_mapping.tdb.0 PERSISTENT
+dbid:0x7bbbd26c name:passdb.tdb path:/usr/local/var/lib/ctdb/persistent/passdb.tdb.0 PERSISTENT
 
 # ctdb getdbmap  # example for unhealthy database
 Number of databases:1
-dbid:0xb775fff6 name:secrets.tdb path:/var/ctdb/persistent/secrets.tdb.0 PERSISTENT UNHEALTHY
+dbid:0xb775fff6 name:secrets.tdb path:/usr/local/var/lib/ctdb/persistent/secrets.tdb.0 PERSISTENT UNHEALTHY
 
 # ctdb -X getdbmap
 |ID|Name|Path|Persistent|Unhealthy|
-|0x7bbbd26c|passdb.tdb|/var/ctdb/persistent/passdb.tdb.0|1|0|
+|0x7bbbd26c|passdb.tdb|/usr/local/var/lib/ctdb/persistent/passdb.tdb.0|1|0|
 	</screen>
       </refsect3>
     </refsect2>
@@ -1534,16 +1534,16 @@ RUNNING
 # ctdb getdbstatus test.tdb.0
 dbid: 0x122224da
 name: test.tdb
-path: /var/ctdb/test.tdb.0
+path: /usr/local/var/lib/ctdb/test.tdb.0
 PERSISTENT: no
 HEALTH: OK
 
 # ctdb getdbstatus registry.tdb  # with a corrupted TDB
 dbid: 0xf2a58948
 name: registry.tdb
-path: /var/ctdb/persistent/registry.tdb.0
+path: /usr/local/var/lib/ctdb/persistent/registry.tdb.0
 PERSISTENT: yes
-HEALTH: NO-HEALTHY-NODES - ERROR - Backup of corrupted TDB in '/var/ctdb/persistent/registry.tdb.0.corrupted.20091208091949.0Z'
+HEALTH: NO-HEALTHY-NODES - ERROR - Backup of corrupted TDB in '/usr/local/var/lib/ctdb/persistent/registry.tdb.0.corrupted.20091208091949.0Z'
 	</screen>
       </refsect3>
     </refsect2>

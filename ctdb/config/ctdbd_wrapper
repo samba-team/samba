@@ -15,14 +15,16 @@ action="$2"
 
 ############################################################
 
-[ -n "$CTDB_BASE" ] || export CTDB_BASE="/etc/ctdb"
+if [ -z "$CTDB_BASE" ] ; then
+    export CTDB_BASE="/usr/local/etc/ctdb"
+fi
 
 . "${CTDB_BASE}/functions"
 loadconfig "ctdb"
 
 [ -n "$CTDB_SOCKET" ] && export CTDB_SOCKET
 
-ctdbd="${CTDBD:-/usr/sbin/ctdbd}"
+ctdbd="${CTDBD:-/usr/local/sbin/ctdbd}"
 
 ############################################################
 
@@ -184,7 +186,7 @@ start()
 
     if [ -n "$CTDB_VALGRIND" -a "$CTDB_VALGRIND" != "no" ] ; then
 	if [ "$CTDB_VALGRIND" = "yes" ] ; then
-	    ctdbd="valgrind -q --log-file=/var/log/ctdb_valgrind ${ctdbd}"
+	    ctdbd="valgrind -q --log-file=/usr/local/var/log/ctdb_valgrind ${ctdbd}"
 	else
 	    ctdbd="${CTDB_VALGRIND} ${ctdbd}"
 	fi

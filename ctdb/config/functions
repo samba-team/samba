@@ -101,7 +101,7 @@ script_log ()
 	    if [ -n "$CTDB_LOGGING" ] ; then
 		_file="${CTDB_LOGGING#file:}"
 	    else
-		_file="/var/log/log.ctdb"
+		_file="/usr/local/var/log/log.ctdb"
 	    fi
 	    {
 		if [ -n "$*" ] ; then

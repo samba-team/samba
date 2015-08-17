@@ -117,7 +117,7 @@
 	  </para>
 	  <para>
 	    Default is <envar>CTDB_BASE</envar>/events.d, so usually
-	    <filename>/etc/ctdb/events.d</filename>, which is part of
+	    <filename>/usr/local/etc/ctdb/events.d</filename>, which is part of
 	    the CTDB installation.
 	  </para>
 	</listitem>
@@ -150,9 +150,8 @@
 	<listitem>
 	  <para>
 	    STRING specifies where ctdbd will write its log. The
-	    default is file:<filename>/var/log/log.ctdb</filename> or
-	    similar - the prefix may differ depending on how CTDB was
-	    built.
+	    default is
+	    file:<filename>/usr/local/var/log/log.ctdb</filename>.
 	  </para>
 	  <para>
 	    Valid values are:
@@ -163,7 +162,7 @@
 	      <listitem>
 		<para>
 		  FILENAME where ctdbd will write its log. This is usually
-		  <filename>/var/log/log.ctdb</filename>.
+		  <filename>/usr/local/var/log/log.ctdb</filename>.
 		</para>
 	      </listitem>
 	    </varlistentry>
@@ -269,7 +268,7 @@
 	  </para>
 	  <para>
 	    Default is <envar>CTDB_BASE</envar>/nodes, so usually
-	    <filename>/etc/ctdb/nodes</filename>.
+	    <filename>/usr/local/etc/ctdb/nodes</filename>.
 	  </para>
 	</listitem>
       </varlistentry>
@@ -318,7 +317,7 @@
 	  </para>
 	  <para>
 	    This file is usually
-	    <filename>/etc/ctdb/notify.sh</filename>.
+	    <filename>/usr/local/etc/ctdb/notify.sh</filename>.
 	  </para>
 	  <para>
 	    Please see the <citetitle>NOTIFICATION SCRIPT</citetitle>
@@ -359,7 +358,7 @@
 	  </para>
 	  <para>
 	    This is usually the file
-	    <filename>/etc/ctdb/public_addresses</filename>
+	    <filename>/usr/local/etc/ctdb/public_addresses</filename>
 	  </para>
 	</listitem>
       </varlistentry>

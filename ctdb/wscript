@@ -449,7 +449,12 @@ def build(bld):
                           destname='README')
 
     sed_expr1 = 's|/usr/local/var/lib/ctdb|%s|g'  % (bld.env.CTDB_VARDIR)
-    sed_cmdline = '-e "%s"' % (sed_expr1)
+    sed_expr2 = 's|/usr/local/etc/ctdb|%s|g'      % (bld.env.CTDB_ETCDIR)
+    sed_expr3 = 's|/usr/local/var/log|%s|g'       % (bld.env.CTDB_LOGDIR)
+    sed_expr4 = 's|/usr/local/var/run/ctdb|%s|g'  % (bld.env.CTDB_RUNDIR)
+    sed_expr5 = 's|/usr/local/sbin|%s|g'          % (bld.env.SBINDIR)
+    sed_cmdline = '-e "%s" -e "%s" -e "%s" -e "%s" -e "%s"' % \
+                       (sed_expr1, sed_expr2, sed_expr3, sed_expr4, sed_expr5)
 
     for f in manpages:
         x = '%s.xml' % (f)
@@ -463,11 +468,25 @@ def build(bld):
                         ctdb.7 ctdb-statistics.7 ctdb-tunables.7''',
                       True)
 
-    bld.INSTALL_FILES('${BINDIR}', 'tools/onnode',
+    bld.SAMBA_GENERATOR('ctdb-onnode',
+                        source='tools/onnode',
+                        target='onnode',
+                        rule='sed %s ${SRC} > ${TGT}' % (sed_cmdline))
+    bld.INSTALL_FILES('${BINDIR}', 'onnode',
                       destname='onnode', chmod=0755)
-    bld.INSTALL_FILES('${BINDIR}', 'tools/ctdb_diagnostics',
+
+    bld.SAMBA_GENERATOR('ctdb-diagnostics',
+                        source='tools/ctdb_diagnostics',
+                        target='ctdb_diagnostics',
+                        rule='sed %s ${SRC} > ${TGT}' % (sed_cmdline))
+    bld.INSTALL_FILES('${BINDIR}', 'ctdb_diagnostics',
                       destname='ctdb_diagnostics', chmod=0755)
-    bld.INSTALL_FILES('${SBINDIR}', 'config/ctdbd_wrapper',
+
+    bld.SAMBA_GENERATOR('ctdbd-wrapper',
+                        source='config/ctdbd_wrapper',
+                        target='ctdbd_wrapper',
+                        rule='sed %s ${SRC} > ${TGT}' % (sed_cmdline))
+    bld.INSTALL_FILES('${SBINDIR}', 'ctdbd_wrapper',
                       destname='ctdbd_wrapper', chmod=0755)
 
     def SUBDIR_MODE_callback(arg, dirname, fnames):
@@ -521,7 +540,11 @@ def build(bld):
         bld.INSTALL_FILES(bld.env.CTDB_ETCDIR, 'config/%s' % t,
                           destname=t, chmod=0755)
 
-    bld.INSTALL_FILES('${SYSCONFDIR}/sudoers.d', 'config/ctdb.sudoers',
+    bld.SAMBA_GENERATOR('ctdb-sudoers',
+                        source='config/ctdb.sudoers',
+                        target='ctdb.sudoers',
+                        rule='sed %s ${SRC} > ${TGT}' % (sed_cmdline))
+    bld.INSTALL_FILES('${SYSCONFDIR}/sudoers.d', 'ctdb.sudoers',
                       destname='ctdb')
 
     bld.INSTALL_FILES('${CTDB_ETCDIR}/notify.d', 'config/notify.d.README',
@@ -664,6 +687,17 @@ def build(bld):
     for t in test_eventscript_links:
         bld.symlink_as(os.path.join(test_link_dir, t),
                        os.path.join(bld.env.CTDB_ETCDIR, t))
+
+    # Tests that use onnode need to overwrite link to in-tree
+    # functions file when installed
+    bld.symlink_as(os.path.join(bld.env.CTDB_TEST_DATADIR, 'onnode/functions'),
+                   os.path.join(bld.env.CTDB_ETCDIR, 'functions'))
+    bld.symlink_as(os.path.join(bld.env.CTDB_TEST_DATADIR, 'simple/functions'),
+                   os.path.join(bld.env.CTDB_ETCDIR, 'functions'))
+
+    # Need a link to nodes file because $CTDB_BASE is overridden
+    bld.symlink_as(os.path.join(bld.env.CTDB_TEST_DATADIR, 'simple/nodes'),
+                   os.path.join(bld.env.CTDB_ETCDIR, 'nodes'))
 
 
 def testonly(ctx):

@@ -67,7 +67,12 @@ names_ok=false
 push=false
 stdin=false
 
-ctdb_base="${CTDB_BASE:-/etc/ctdb}"
+if [ -z "$CTDB_BASE" ] ; then
+    CTDB_BASE="/usr/local/etc/ctdb"
+fi
+
+. "${CTDB_BASE}/functions"
+loadconfig "ctdb"
 
 parse_options ()
 {
@@ -258,13 +263,15 @@ get_nodes ()
     if [ -n "$CTDB_NODES_SOCKETS" ] ; then 
 	all_nodes="$CTDB_NODES_SOCKETS"
     else
-	local f="${ctdb_base}/nodes"
+	local f="${CTDB_BASE}/nodes"
 	if [ -n "$CTDB_NODES_FILE" ] ; then
 	    f="$CTDB_NODES_FILE"
 	    if [ ! -e "$f" -a "${f#/}" = "$f" ] ; then
-		# $f is relative, try in $ctdb_base
-		f="${ctdb_base}/${f}"
+		# $f is relative, try in $CTDB_BASE
+		f="${CTDB_BASE}/${f}"
 	    fi
+	elif [ -n "$CTDB_NODES" ] ; then
+	    f="$CTDB_NODES"
 	fi
 
 	if [ ! -r "$f" ] ; then
@@ -367,7 +374,7 @@ else
 	EXTRA_SSH_OPTS=""
     else 
 	# Could "2>/dev/null || true" but want to see errors from typos in file.
-	[ -r "${ctdb_base}/onnode.conf" ] && . "${ctdb_base}/onnode.conf"
+	[ -r "${CTDB_BASE}/onnode.conf" ] && . "${CTDB_BASE}/onnode.conf"
 	[ -n "$SSH" ] || SSH=ssh
 	if [ "$SSH" = "ssh" ] ; then
 	    if $parallel || ! $stdin ; then

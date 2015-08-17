@@ -61,8 +61,8 @@
           <para>
             Specify an alternative nodes FILENAME to use instead of
             the default.  This option overrides the CTDB_NODES_FILE
-            environment variable.  See the discussion of
-            <filename>/etc/ctdb/nodes</filename> in the FILES section
+            and CTDB_NODES variables.  See the discussion of
+            <filename>/usr/local/etc/ctdb/nodes</filename> in the FILES section
             for more details.
 	  </para>
         </listitem>
@@ -235,7 +235,7 @@
       node, preceded by the node's hostname
     </para>
     <screen format="linespecific">
-      onnode all "hostname; tail -5 /var/log/log.ctdb"
+      onnode all "hostname; tail -5 /usr/local/var/log/log.ctdb"
     </screen>
 
     <para>
@@ -263,7 +263,7 @@
         <listitem>
           <para>
 	    Directory containing CTDB configuration files.  The
-	    default is <filename>/etc/ctdb</filename>.
+	    default is <filename>/usr/local/etc/ctdb</filename>.
 	  </para>
         </listitem>
       </varlistentry>
@@ -285,26 +285,35 @@
     <title>FILES</title>
 
     <variablelist>
-      <varlistentry><term><filename>/etc/ctdb/nodes</filename></term>
+      <varlistentry><term><filename>/usr/local/etc/ctdb/nodes</filename></term>
         <listitem>
           <para>
             Default file containing a list of each node's IP address
             or hostname.
 	  </para>
 	  <para>
-	    Actually, the default is
+	    As above, a file specified via the <option>-f</option> or
+	    <envar>CTDB_NODES_FILE</envar> is given precedence.  If a
+	    relative path is specified and no corresponding file
+	    exists relative to the current directory then the file is
+	    also searched for in the <filename>$CTDB_BASE</filename>
+	    directory.
+	  </para>
+	  <para>
+	    If <envar>CTDB_NODES_FILE</envar> is not set and
+	    <envar>CTDB_NODES</envar> is set in configuration then the
+	    file pointed to by <envar>CTDB_NODES</envar> is used.
+	  </para>
+	  <para>
+	    Otherwise the default is
 	    <filename>$CTDB_BASE/nodes</filename>, where
 	    <envar>CTDB_BASE</envar> defaults to
-	    <filename>/etc/ctdb</filename>.  If a relative path is
-	    given (via the -f option or <envar>CTDB_BASE</envar>) and
-	    no corresponding file exists relative to the current
-	    directory then the file is also searched for in the
-	    <filename>$CTDB_BASE</filename> directory.
-	  </para>
-        </listitem>
+	    <filename>/usr/local/etc/ctdb</filename>.
+          </para>
+	</listitem>
       </varlistentry>
 
-      <varlistentry><term><filename>/etc/ctdb/onnode.conf</filename></term>
+      <varlistentry><term><filename>/usr/local/etc/ctdb/onnode.conf</filename></term>
         <listitem>
           <para>
             If this file exists it is sourced by onnode.  The main
