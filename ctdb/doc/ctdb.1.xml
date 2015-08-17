@@ -217,7 +217,7 @@
 	  Specify that FILENAME is the name of the Unix domain
 	  socket to use when connecting to the local CTDB
 	  daemon. The default is
-	  <filename>/tmp/ctdb.socket</filename>.
+	  <filename>/usr/local/var/run/ctdb/ctdbd.socket</filename>.
 	</para>
       </listitem>
       </varlistentry>

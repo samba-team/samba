@@ -409,7 +409,7 @@
 	<term>CTDB_SOCKET=<parameter>FILENAME</parameter></term>
 	<listitem>
 	  <para>
-	    Defaults to <filename>/tmp/ctdb.socket</filename>.
+	    Defaults to <filename>/usr/local/var/run/ctdb/ctdbd.socket</filename>.
 	    Corresponds to <option>--socket</option>.
 	  </para>
 	  <para>

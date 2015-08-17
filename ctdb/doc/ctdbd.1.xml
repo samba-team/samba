@@ -537,10 +537,10 @@
 	    communicate with ctdbd.
 	  </para>
 	  <para>
-	    The default is <filename>/tmp/ctdb.socket</filename> . You
-	    only need to use this option if you plan to run multiple
-	    ctdbd daemons on the same physical host, usually for
-	    testing.
+	    The default is <filename>/usr/local/var/run/ctdb/ctdbd.socket</filename>.
+	    You only need to use this option if you plan to run
+	    multiple ctdbd daemons on the same physical host, usually
+	    for testing.
 	  </para>
 	</listitem>
       </varlistentry>
