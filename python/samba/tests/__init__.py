@@ -253,7 +253,7 @@ class BlackboxProcessError(Exception):
         return "Command '%s'; exit status %d; stdout: '%s'; stderr: '%s'" % (self.cmd, self.returncode,
                                                                              self.stdout, self.stderr)
 
-class BlackboxTestCase(TestCase):
+class BlackboxTestCase(TestCaseInTempDir):
     """Base test case for blackbox tests."""
 
     def _make_cmdline(self, line):
