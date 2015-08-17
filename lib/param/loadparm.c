@@ -802,10 +802,8 @@ void set_param_opt(TALLOC_CTX *mem_ctx,
 		   unsigned priority)
 {
 	struct parmlist_entry *new_opt, *opt;
-	bool not_added;
 
 	opt = *opt_list;
-	not_added = true;
 
 	/* Traverse destination */
 	while (opt) {
@@ -821,31 +819,29 @@ void set_param_opt(TALLOC_CTX *mem_ctx,
 			TALLOC_FREE(opt->list);
 			opt->value = talloc_strdup(opt, opt_value);
 			opt->priority = priority;
-			not_added = false;
-			break;
+			return;
 		}
 		opt = opt->next;
 	}
-	if (not_added) {
-		new_opt = talloc(mem_ctx, struct parmlist_entry);
-		if (new_opt == NULL) {
-			smb_panic("OOM");
-		}
 
-		new_opt->key = talloc_strdup(new_opt, opt_name);
-		if (new_opt->key == NULL) {
-			smb_panic("talloc_strdup failed");
-		}
-
-		new_opt->value = talloc_strdup(new_opt, opt_value);
-		if (new_opt->value == NULL) {
-			smb_panic("talloc_strdup failed");
-		}
-
-		new_opt->list = NULL;
-		new_opt->priority = priority;
-		DLIST_ADD(*opt_list, new_opt);
+	new_opt = talloc(mem_ctx, struct parmlist_entry);
+	if (new_opt == NULL) {
+		smb_panic("OOM");
 	}
+
+	new_opt->key = talloc_strdup(new_opt, opt_name);
+	if (new_opt->key == NULL) {
+		smb_panic("talloc_strdup failed");
+	}
+
+	new_opt->value = talloc_strdup(new_opt, opt_value);
+	if (new_opt->value == NULL) {
+		smb_panic("talloc_strdup failed");
+	}
+
+	new_opt->list = NULL;
+	new_opt->priority = priority;
+	DLIST_ADD(*opt_list, new_opt);
 }
 
 /**
