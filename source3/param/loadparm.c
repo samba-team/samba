@@ -1099,6 +1099,79 @@ static struct parmlist_entry *get_parametrics(int snum, const char *type,
 	}
 }
 
+static void discard_whitespace(char *str)
+{
+	size_t len = strlen(str);
+	size_t i = 0;
+
+	while (i < len) {
+		if (isspace(str[i])) {
+			memmove(&str[i], &str[i+1], len-i);
+			len -= 1;
+			continue;
+		}
+		i += 1;
+	}
+}
+
+/**
+ * @brief Go through all global parametric parameters
+ *
+ * @param regex_str	A regular expression to scan param for
+ * @param max_matches   Max number of submatches the regexp expects
+ * @param cb		Function to call on match. Should return true
+ *                      when it wants wi_scan_global_parametrics to stop
+ *                      scanning
+ * @param private_data  Anonymous pointer passed to cb
+ *
+ * @return              0: success, regcomp/regexec return value on error.
+ *                      See "man regexec" for possible errors
+ */
+
+int lp_wi_scan_global_parametrics(
+	const char *regex_str, size_t max_matches,
+	bool (*cb)(const char *string, regmatch_t matches[],
+		   void *private_data),
+	void *private_data)
+{
+	struct parmlist_entry *data;
+	regex_t regex;
+	int ret;
+
+	ret = regcomp(&regex, regex_str, REG_ICASE);
+	if (ret != 0) {
+		return ret;
+	}
+
+	for (data = Globals.param_opt; data != NULL; data = data->next) {
+		size_t keylen = strlen(data->key);
+		char key[keylen+1];
+		regmatch_t matches[max_matches];
+		bool stop;
+
+		memcpy(key, data->key, sizeof(key));
+		discard_whitespace(key);
+
+		ret = regexec(&regex, key, max_matches, matches, 0);
+		if (ret == REG_NOMATCH) {
+			continue;
+		}
+		if (ret != 0) {
+			goto fail;
+		}
+
+		stop = cb(key, matches, private_data);
+		if (stop) {
+			break;
+		}
+	}
+
+	ret = 0;
+fail:
+	regfree(&regex);
+	return ret;
+}
+
 
 #define MISSING_PARAMETER(name) \
     DEBUG(0, ("%s(): value is NULL or empty!\n", #name))
