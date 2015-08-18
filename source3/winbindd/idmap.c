@@ -32,21 +32,6 @@
 
 static_decl_idmap;
 
-static void idmap_init(void)
-{
-	static bool initialized;
-
-	if (initialized) {
-		return;
-	}
-
-	DEBUG(10, ("idmap_init(): calling static_init_idmap\n"));
-
-	static_init_idmap;
-
-	initialized = true;
-}
-
 /**
  * Pointer to the backend methods. Modules register themselves here via
  * smb_register_idmap.
@@ -78,6 +63,21 @@ static struct idmap_domain *passdb_idmap_domain;
  */
 static struct idmap_domain **idmap_domains = NULL;
 static int num_domains = 0;
+
+static void idmap_init(void)
+{
+	static bool initialized;
+
+	if (initialized) {
+		return;
+	}
+
+	DEBUG(10, ("idmap_init(): calling static_init_idmap\n"));
+
+	static_init_idmap;
+
+	initialized = true;
+}
 
 static struct idmap_methods *get_methods(const char *name)
 {
