@@ -538,6 +538,7 @@ long long int rep_strtoll(const char *str, char **endptr, int base)
 }
 #else
 #ifdef HAVE_BSD_STRTOLL
+#undef strtoll
 long long int rep_strtoll(const char *str, char **endptr, int base)
 {
 	long long int nb = strtoll(str, endptr, base);
