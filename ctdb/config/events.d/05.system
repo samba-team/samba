@@ -67,8 +67,30 @@ check_thresholds ()
     fi
 }
 
+set_monitor_filsystem_usage_defaults ()
+{
+    _fs_defaults_cache="${service_state_dir}/cache_monitor_filsystem_usage_defaults"
+
+    if [ ! -r "$_fs_defaults_cache" ] ; then
+	# Determine filesystem for each database directory, generate
+	# an entry to warn at 90%, de-duplicate entries, put all items
+	# on 1 line (so the read below gets everything)
+	for _t in "${CTDB_DBDIR:-${CTDB_VARDIR}}" \
+		      "${CTDB_DBDIR_PERSISTENT:-${CTDB_VARDIR}/persistent}" \
+		      "${CTDB_DBDIR_STATE:-${CTDB_VARDIR}/state}" ; do
+	    df -kP "$_t" | awk 'NR == 2 { printf "%s:90\n", $6 }'
+	done | sort -u | xargs >"$_fs_defaults_cache"
+    fi
+
+    read CTDB_MONITOR_FILESYSTEM_USAGE <"$_fs_defaults_cache"
+}
+
 monitor_filesystem_usage ()
 {
+    if [ -z "$CTDB_MONITOR_FILESYSTEM_USAGE" ] ; then
+	set_monitor_filsystem_usage_defaults
+    fi
+
     # Check each specified filesystem, specified in format
     # <fs_mount>:<fs_warn_threshold>[:fs_unhealthy_threshold]
     for _fs in $CTDB_MONITOR_FILESYSTEM_USAGE ; do

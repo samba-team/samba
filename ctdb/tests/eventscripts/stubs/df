@@ -17,6 +17,17 @@ fi
 
 fs="$1"
 
+# Anything starting with CTDB_DBDIR gets canonicalised to CTDB_DBDIR.
+# This helps with the setting of defaults for the filesystem checks.
+if [ "${fs#${CTDB_DBDIR}}" != "$fs" ] ; then
+    fs="$CTDB_DBDIR"
+fi
+
+# A default, for tests that don't initialise this...
+if [ -z "$FAKE_FS_USE" ] ; then
+    FAKE_FS_USE=10
+fi
+
 echo "Filesystem             1024-blocks      Used Available Capacity Mounted on"
 
 blocks="1000000"

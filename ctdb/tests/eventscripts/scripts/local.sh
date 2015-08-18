@@ -112,7 +112,10 @@ setup_generic ()
 
 
     export CTDB_DBDIR="${EVENTSCRIPTS_TESTS_VAR_DIR}/db"
-    mkdir -p "${CTDB_DBDIR}/persistent"
+    export CTDB_DBDIR_PERSISTENT="${CTDB_DBDIR}/persistent"
+    export CTDB_DBDIR_STATE="${CTDB_DBDIR}/state"
+    mkdir -p "$CTDB_DBDIR_PERSISTENT"
+    mkdir -p "$CTDB_DBDIR_STATE"
 
     export FAKE_TDBTOOL_SUPPORTS_CHECK="yes"
     export FAKE_TDB_IS_OK
