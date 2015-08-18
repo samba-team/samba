@@ -507,6 +507,7 @@ NTSTATUS idmap_backends_unixid_to_sid(const char *domname, struct id_map *id)
 	struct idmap_domain *dom;
 	struct id_map *maps[2];
 	bool ok;
+	int i;
 
 	ok = idmap_init();
 	if (!ok) {
@@ -531,7 +532,16 @@ NTSTATUS idmap_backends_unixid_to_sid(const char *domname, struct id_map *id)
 		return NT_STATUS_OK;
 	}
 
-	dom = idmap_find_domain(domname);
+	dom = default_idmap_domain;
+
+	for (i=0; i<num_domains; i++) {
+		if ((id->xid.id >= idmap_domains[i]->low_id) &&
+		    (id->xid.id <= idmap_domains[i]->high_id)) {
+			dom = idmap_domains[i];
+			break;
+		}
+	}
+
 	if (dom == NULL) {
 		return NT_STATUS_NONE_MAPPED;
 	}
