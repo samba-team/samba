@@ -23,6 +23,9 @@
 #ifndef _PROTO_H_
 #define _PROTO_H_
 
+#include <sys/types.h>
+#include <regex.h>
+
 /* The following definitions come from lib/access.c  */
 
 bool client_match(const char *tok, const void *item);
@@ -985,6 +988,12 @@ int lp_winbindd_max_protocol(void);
 int lp_smb2_max_credits(void);
 int lp_cups_encrypt(void);
 bool lp_widelinks(int );
+
+int lp_wi_scan_global_parametrics(
+	const char *regex, size_t max_matches,
+	bool (*cb)(const char *string, regmatch_t matches[],
+		   void *private_data),
+	void *private_data);
 
 char *lp_parm_talloc_string(TALLOC_CTX *ctx, int snum, const char *type, const char *option, const char *def);
 const char *lp_parm_const_string(int snum, const char *type, const char *option, const char *def);
