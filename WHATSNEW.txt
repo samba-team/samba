@@ -126,6 +126,12 @@ Both client and server have support for SMB 3.1.1 now.
 This is the dialect introduced with Windows 10, it improves the secure
 negotiation of SMB dialects and features.
 
+There's also a new optinal encryption algorithm aes-gcm-128,
+but for now this is only selected as fallback and aes-ccm-128
+is preferred because of the better performance. This might change
+in future versions when hardware encryption will be supported.
+See https://bugzilla.samba.org/show_bug.cgi?id=11451.
+
 New smbclient subcommands
 -------------------------
 
@@ -286,6 +292,31 @@ Currently none.
 
 CHANGES SINCE 4.3.0rc2
 ======================
+
+o   Andrew Bartlett <abartlet@samba.org>
+    * Bug 11436: samba-tool uncaught exception error
+    * Bug 10493: revert LDAP extended rule 1.2.840.113556.1.4.1941
+                 LDAP_MATCHING_RULE_IN_CHAIN changes
+
+o   Ralph Boehme <slow@samba.org>
+    * Bug 11278: Stream names with colon don't work with
+                 fruit:encoding = native
+    * Bug 11426: net share allowedusers crashes
+
+o   Amitay Isaacs <amitay@gmail.com>
+    * Bug 11432: Fix crash in nested ctdb banning
+    * Bug 11434: Cannot build ctdbpmda
+    * Bug 11431: CTDB's eventscript error handling is broken
+
+o   Stefan Metzmacher <metze@samba.org>
+    * Bug 11451: Poor SMB3 encryption performance with AES-GCM (part1)
+    * Bug 11316: tevent_fd needs to be destroyed before closing the fd
+
+o   Arvid Requate <requate@univention.de>
+    * Bug 11291: NetApp joined to a Samba/ADDC cannot resolve SIDs
+
+o   Martin Schwenke <martin@meltin.net>
+    * Bug 11432: Fix crash in nested ctdb banning
 
 
 CHANGES SINCE 4.3.0rc1
