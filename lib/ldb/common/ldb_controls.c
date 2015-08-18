@@ -492,7 +492,7 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 		p = &(control_strings[sizeof(LDB_CONTROL_DIRSYNC_NAME)]);
 		ret = sscanf(p, "%d:%u:%d:%1023[^$]", &crit, &flags, &max_attrs, cookie);
 
-		if ((ret < 3) || (crit < 0) || (crit > 1) || (flags < 0) || (max_attrs < 0)) {
+		if ((ret < 3) || (crit < 0) || (crit > 1) || (max_attrs < 0)) {
 			error_string = talloc_asprintf(mem_ctx, "invalid dirsync control syntax\n");
 			error_string = talloc_asprintf_append(error_string, " syntax: crit(b):flags(n):max_attrs(n)[:cookie(o)]\n");
 			error_string = talloc_asprintf_append(error_string, "   note: b = boolean, n = number, o = b64 binary blob");
@@ -598,7 +598,7 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 
 		p = &(control_strings[sizeof(LDB_CONTROL_SD_FLAGS_NAME)]);
 		ret = sscanf(p, "%d:%u", &crit, &secinfo_flags);
-		if ((ret != 2) || (crit < 0) || (crit > 1) || (secinfo_flags < 0) || (secinfo_flags > 0xF)) {
+		if ((ret != 2) || (crit < 0) || (crit > 1) || (secinfo_flags > 0xF)) {
 			error_string = talloc_asprintf(mem_ctx, "invalid sd_flags control syntax\n");
 			error_string = talloc_asprintf_append(error_string, " syntax: crit(b):secinfo_flags(n)\n");
 			error_string = talloc_asprintf_append(error_string, "   note: b = boolean, n = number");
@@ -625,7 +625,7 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 
 		p = &(control_strings[sizeof(LDB_CONTROL_SEARCH_OPTIONS_NAME)]);
 		ret = sscanf(p, "%d:%u", &crit, &search_options);
-		if ((ret != 2) || (crit < 0) || (crit > 1) || (search_options < 0) || (search_options > 0xF)) {
+		if ((ret != 2) || (crit < 0) || (crit > 1) || (search_options > 0xF)) {
 			error_string = talloc_asprintf(mem_ctx, "invalid search_options control syntax\n");
 			error_string = talloc_asprintf_append(error_string, " syntax: crit(b):search_options(n)\n");
 			error_string = talloc_asprintf_append(error_string, "   note: b = boolean, n = number");
