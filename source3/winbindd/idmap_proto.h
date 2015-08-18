@@ -34,8 +34,7 @@ NTSTATUS smb_register_idmap(int version, const char *name,
 void idmap_close(void);
 NTSTATUS idmap_allocate_uid(struct unixid *id);
 NTSTATUS idmap_allocate_gid(struct unixid *id);
-NTSTATUS idmap_backends_unixid_to_sid(const char *domname,
-				      struct id_map *id);
+NTSTATUS idmap_backends_unixid_to_sid(struct id_map *id);
 
 /* The following definitions come from winbindd/idmap_nss.c  */
 

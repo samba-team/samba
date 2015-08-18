@@ -502,7 +502,7 @@ NTSTATUS idmap_allocate_gid(struct unixid *id)
 	return idmap_allocate_unixid(id);
 }
 
-NTSTATUS idmap_backends_unixid_to_sid(const char *domname, struct id_map *id)
+NTSTATUS idmap_backends_unixid_to_sid(struct id_map *id)
 {
 	struct idmap_domain *dom;
 	struct id_map *maps[2];
@@ -514,9 +514,8 @@ NTSTATUS idmap_backends_unixid_to_sid(const char *domname, struct id_map *id)
 		return NT_STATUS_NONE_MAPPED;
 	}
 
-	 DEBUG(10, ("idmap_backend_unixid_to_sid: domain = '%s', xid = %d "
-		    "(type %d)\n",
-		    domname?domname:"NULL", id->xid.id, id->xid.type));
+	DEBUG(10, ("idmap_backend_unixid_to_sid: xid = %d (type %d)\n",
+		   id->xid.id, id->xid.type));
 
 	maps[0] = id;
 	maps[1] = NULL;

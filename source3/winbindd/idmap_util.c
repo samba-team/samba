@@ -66,7 +66,7 @@ backend:
 	map.xid.type = ID_TYPE_UID;
 	map.xid.id = uid;
 
-	ret = idmap_backends_unixid_to_sid(domname, &map);
+	ret = idmap_backends_unixid_to_sid(&map);
 	if ( ! NT_STATUS_IS_OK(ret)) {
 		DEBUG(10, ("error mapping uid [%lu]: %s\n", (unsigned long)uid,
 			   nt_errstr(ret)));
@@ -130,7 +130,7 @@ backend:
 	map.xid.type = ID_TYPE_GID;
 	map.xid.id = gid;
 
-	ret = idmap_backends_unixid_to_sid(domname, &map);
+	ret = idmap_backends_unixid_to_sid(&map);
 	if ( ! NT_STATUS_IS_OK(ret)) {
 		DEBUG(10, ("error mapping gid [%lu]: %s\n", (unsigned long)gid,
 			   nt_errstr(ret)));
