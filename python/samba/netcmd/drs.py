@@ -530,6 +530,7 @@ class cmd_drs_clone_dc_database(Command):
         Option("--server", help="DC to join", type=str),
         Option("--targetdir", help="where to store provision", type=str),
         Option("--quiet", help="Be quiet", action="store_true"),
+        Option("--include-secrets", help="Also replicate secret values", action="store_true"),
         Option("--verbose", help="Be verbose", action="store_true")
        ]
 
@@ -537,7 +538,7 @@ class cmd_drs_clone_dc_database(Command):
 
     def run(self, domain, sambaopts=None, credopts=None,
             versionopts=None, server=None, targetdir=None,
-            quiet=False, verbose=False):
+            quiet=False, verbose=False, include_secrets=False):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
 
@@ -550,7 +551,7 @@ class cmd_drs_clone_dc_database(Command):
             logger.setLevel(logging.INFO)
 
         join_clone(logger=logger, server=server, creds=creds, lp=lp, domain=domain,
-                   targetdir=targetdir)
+                   targetdir=targetdir, include_secrets=include_secrets)
 
 
 class cmd_drs(SuperCommand):
