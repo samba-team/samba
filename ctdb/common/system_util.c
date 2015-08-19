@@ -157,7 +157,7 @@ bool parse_ipv4(const char *s, unsigned port, struct sockaddr_in *sin)
 	}
 
 #ifdef HAVE_SOCK_SIN_LEN
-	sin->ip.sin_len = sizeof(*sin);
+	sin->sin_len = sizeof(*sin);
 #endif
 	return true;
 }
