@@ -123,6 +123,44 @@ class SambaToolDrsTests(samba.tests.BlackboxTestCase):
         # The clone should pretend to be the source server
         self.assertEqual(ds_name, server_ds_name)
         self.assertEqual(ldap_service_name, server_ldap_service_name)
+
+        samdb = samba.tests.connect_samdb("tdb://" + os.path.join(self.tempdir, "private", "sam.ldb"),
+                                          ldap_only=False, lp=self.get_loadparm())
+        def get_krbtgt_pw():
+            krbtgt_pw = samdb.searchone("unicodePwd", "cn=krbtgt,CN=users,%s" % nc_name)
+        self.assertRaises(KeyError, get_krbtgt_pw)
+        shutil.rmtree(os.path.join(self.tempdir, "private"))
+        shutil.rmtree(os.path.join(self.tempdir, "etc"))
+        shutil.rmtree(os.path.join(self.tempdir, "msg"))
+        shutil.rmtree(os.path.join(self.tempdir, "state"))
+
+    def test_samba_tool_domain_clone_secrets(self):
+        """Tests 'samba-tool domain clone --include-secrets' command ."""
+        server_rootdse = self._get_rootDSE(self.dc1)
+        server_nc_name = server_rootdse["defaultNamingContext"]
+        server_ds_name = server_rootdse["dsServiceName"]
+        server_ldap_service_name = str(server_rootdse["ldapServiceName"][0])
+        server_realm = server_ldap_service_name.split(":")[0]
+        creds = self.get_credentials()
+        out = self.check_output("samba-tool domain clone %s --server=%s %s --targetdir=%s --include-secrets"
+                                % (server_realm,
+                                   self.dc1,
+                                   self.cmdline_creds,
+                                   self.tempdir))
+        ldb_rootdse = self._get_rootDSE("tdb://" + os.path.join(self.tempdir, "private", "sam.ldb"), ldap_only=False)
+        nc_name = ldb_rootdse["defaultNamingContext"]
+        ds_name = ldb_rootdse["dsServiceName"]
+        ldap_service_name = str(server_rootdse["ldapServiceName"][0])
+
+        samdb = samba.tests.connect_samdb("tdb://" + os.path.join(self.tempdir, "private", "sam.ldb"),
+                                          ldap_only=False, lp=self.get_loadparm())
+        krbtgt_pw = samdb.searchone("unicodePwd", "cn=krbtgt,CN=users,%s" % nc_name)
+        self.assertIsNotNone(krbtgt_pw)
+
+        self.assertEqual(nc_name, server_nc_name)
+        # The clone should pretend to be the source server
+        self.assertEqual(ds_name, server_ds_name)
+        self.assertEqual(ldap_service_name, server_ldap_service_name)
         shutil.rmtree(os.path.join(self.tempdir, "private"))
         shutil.rmtree(os.path.join(self.tempdir, "etc"))
         shutil.rmtree(os.path.join(self.tempdir, "msg"))
