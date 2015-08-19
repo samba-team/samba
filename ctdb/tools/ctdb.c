@@ -4914,7 +4914,7 @@ static int control_getreclock(struct ctdb_context *ctdb, int argc, const char **
 static int control_setreclock(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	int ret;
-	const char *reclock;
+	const char *reclock = NULL;
 
 	if (argc == 0) {
 		reclock = NULL;
@@ -4938,7 +4938,7 @@ static int control_setreclock(struct ctdb_context *ctdb, int argc, const char **
 static int control_setnatgwstate(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	int ret;
-	uint32_t natgwstate;
+	uint32_t natgwstate = 0;
 
 	if (argc == 0) {
 		usage();
@@ -4967,7 +4967,7 @@ static int control_setnatgwstate(struct ctdb_context *ctdb, int argc, const char
 static int control_setlmasterrole(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	int ret;
-	uint32_t lmasterrole;
+	uint32_t lmasterrole = 0;
 
 	if (argc == 0) {
 		usage();
@@ -4996,7 +4996,7 @@ static int control_setlmasterrole(struct ctdb_context *ctdb, int argc, const cha
 static int control_setrecmasterrole(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	int ret;
-	uint32_t recmasterrole;
+	uint32_t recmasterrole = 0;
 
 	if (argc == 0) {
 		usage();
