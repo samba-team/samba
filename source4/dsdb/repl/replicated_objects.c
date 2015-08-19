@@ -347,7 +347,7 @@ WERROR dsdb_convert_object_ex(struct ldb_context *ldb,
 			      struct dsdb_extended_replicated_object *out)
 {
 	NTSTATUS nt_status;
-	WERROR status;
+	WERROR status = WERR_OK;
 	uint32_t i;
 	struct ldb_message *msg;
 	struct replPropertyMetaDataBlob *md;
@@ -444,8 +444,25 @@ WERROR dsdb_convert_object_ex(struct ldb_context *ldb,
 		}
 
 		for (j=0; j<a->value_ctr.num_values; j++) {
-			status = drsuapi_decrypt_attribute(a->value_ctr.values[j].blob, gensec_skey, rid, a);
-			W_ERROR_NOT_OK_RETURN(status);
+			status = drsuapi_decrypt_attribute(a->value_ctr.values[j].blob,
+							   gensec_skey, rid,
+							   dsdb_repl_flags, a);
+			if (!W_ERROR_IS_OK(status)) {
+				break;
+			}
+		}
+		if (W_ERROR_EQUAL(status, WERR_TOO_MANY_SECRETS)) {
+			WERROR get_name_status = dsdb_attribute_drsuapi_to_ldb(ldb, schema, pfm_remote,
+									       a, msg->elements, e);
+			if (W_ERROR_IS_OK(get_name_status)) {
+				DEBUG(0, ("Unxpectedly got secret value %s on %s from DRS server\n",
+					  e->name, ldb_dn_get_linearized(msg->dn)));
+			} else {
+				DEBUG(0, ("Unxpectedly got secret value on %s from DRS server",
+					  ldb_dn_get_linearized(msg->dn)));
+			}
+		} else if (!W_ERROR_IS_OK(status)) {
+			return status;
 		}
 
 		status = dsdb_attribute_drsuapi_to_ldb(ldb, schema, pfm_remote,
