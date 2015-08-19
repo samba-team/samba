@@ -1392,9 +1392,12 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 
 	/* this call will try to create the user if necessary */
 
-	nt_status = check_account(mem_ctx, nt_domain, sent_nt_username,
-				     &found_username, &pwd,
-				     &username_was_mapped);
+	nt_status = check_account(mem_ctx,
+				  nt_domain,
+				  nt_username,
+				  &found_username,
+				  &pwd,
+				  &username_was_mapped);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		/* Handle 'map to guest = Bad Uid */
