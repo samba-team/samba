@@ -228,8 +228,7 @@ NTSTATUS _wbint_Uid2Sid(struct pipes_struct *p, struct wbint_Uid2Sid *r)
 
 NTSTATUS _wbint_Gid2Sid(struct pipes_struct *p, struct wbint_Gid2Sid *r)
 {
-	return idmap_gid_to_sid(r->in.dom_name ? r->in.dom_name : "",
-				r->out.sid, r->in.gid);
+	return idmap_gid_to_sid(r->out.sid, r->in.gid);
 }
 
 NTSTATUS _wbint_AllocateUid(struct pipes_struct *p, struct wbint_AllocateUid *r)
