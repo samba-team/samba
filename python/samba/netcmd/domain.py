@@ -194,7 +194,7 @@ class cmd_domain_provision(Command):
          Option("--dnspass", type="string", metavar="PASSWORD",
                 help="choose dns password (otherwise random)"),
          Option("--ldapadminpass", type="string", metavar="PASSWORD",
-                help="choose password to set between Samba and it's LDAP backend (otherwise random)"),
+                help="choose password to set between Samba and its LDAP backend (otherwise random)"),
          Option("--root", type="string", metavar="USERNAME",
                 help="choose 'root' unix username"),
          Option("--nobody", type="string", metavar="USERNAME",
