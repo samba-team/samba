@@ -680,6 +680,10 @@ NTSTATUS libnet_vampire_cb_store_chunk(void *private_data,
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
+	if (req_replica_flags & DRSUAPI_DRS_FULL_SYNC_IN_PROGRESS) {
+		dsdb_repl_flags |= DSDB_REPL_FLAG_PRIORITISE_INCOMING;
+	}
+
 	if (req_replica_flags & DRSUAPI_DRS_SPECIAL_SECRET_PROCESSING) {
 		dsdb_repl_flags |= DSDB_REPL_FLAG_EXPECT_NO_SECRETS;
 	}
