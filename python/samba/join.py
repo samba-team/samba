@@ -1206,7 +1206,7 @@ def join_DC(logger=None, server=None, creds=None, lp=None, site=None, netbios_na
     logger.info("Joined domain %s (SID %s) as a DC" % (ctx.domain_name, ctx.domsid))
 
 def join_clone(logger=None, server=None, creds=None, lp=None,
-            targetdir=None, domain=None):
+               targetdir=None, domain=None, include_secrets=False):
     """Join as a DC."""
     ctx = dc_join(logger, server, creds, lp, site=None, netbios_name=None, targetdir=targetdir, domain=domain,
                   machinepass=None, use_ntvfs=False, dns_backend="NONE", promote_existing=False, clone_only=True)
@@ -1222,6 +1222,8 @@ def join_clone(logger=None, server=None, creds=None, lp=None,
                          drsuapi.DRSUAPI_DRS_PER_SYNC |
                          drsuapi.DRSUAPI_DRS_FULL_SYNC_IN_PROGRESS |
                          drsuapi.DRSUAPI_DRS_NEVER_SYNCED)
+    if not include_secrets:
+        ctx.replica_flags |= drsuapi.DRSUAPI_DRS_SPECIAL_SECRET_PROCESSING
     ctx.domain_replica_flags = ctx.replica_flags
 
     ctx.do_join()
