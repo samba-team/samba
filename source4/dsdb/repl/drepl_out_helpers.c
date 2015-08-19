@@ -740,6 +740,9 @@ static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req
 	if (state->op->options & DRSUAPI_DRS_FULL_SYNC_IN_PROGRESS) {
 		dsdb_repl_flags |= DSDB_REPL_FLAG_PRIORITISE_INCOMING;
 	}
+	if (state->op->options & DRSUAPI_DRS_SPECIAL_SECRET_PROCESSING) {
+		dsdb_repl_flags |= DSDB_REPL_FLAG_EXPECT_NO_SECRETS;
+	}
 
 	status = dsdb_replicated_objects_convert(service->samdb,
 						 working_schema ? working_schema : schema,
