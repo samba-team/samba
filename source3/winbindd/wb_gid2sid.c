@@ -78,7 +78,7 @@ struct tevent_req *wb_gid2sid_send(TALLOC_CTX *mem_ctx,
 	child = idmap_child();
 
 	subreq = dcerpc_wbint_Gid2Sid_send(
-		state, ev, child->binding_handle, state->dom_name,
+		state, ev, child->binding_handle,
 		gid, &state->sid);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
