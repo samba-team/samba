@@ -1349,6 +1349,7 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 	bool username_was_mapped;
 	struct passwd *pwd;
 	struct auth_serversupplied_info *result;
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 
 	/* 
 	   Here is where we should check the list of
@@ -1357,15 +1358,17 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 	*/
 
 	if (!sid_compose(&user_sid, info3->base.domain_sid, info3->base.rid)) {
-		return NT_STATUS_INVALID_PARAMETER;
+		nt_status = NT_STATUS_INVALID_PARAMETER;
+		goto out;
 	}
 
 	if (!sid_compose(&group_sid, info3->base.domain_sid,
 			 info3->base.primary_gid)) {
-		return NT_STATUS_INVALID_PARAMETER;
+		nt_status = NT_STATUS_INVALID_PARAMETER;
+		goto out;
 	}
 
-	nt_username = talloc_strdup(mem_ctx, info3->base.account_name.string);
+	nt_username = talloc_strdup(tmp_ctx, info3->base.account_name.string);
 	if (!nt_username) {
 		/* If the server didn't give us one, just use the one we sent
 		 * them */
@@ -1392,7 +1395,7 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 
 	/* this call will try to create the user if necessary */
 
-	nt_status = check_account(mem_ctx,
+	nt_status = check_account(tmp_ctx,
 				  nt_domain,
 				  nt_username,
 				  &found_username,
@@ -1406,15 +1409,19 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 		    lp_map_to_guest() == MAP_TO_GUEST_ON_BAD_UID) {
 			DEBUG(2, ("Try to map %s to guest account",
 				  nt_username));
-			return make_server_info_guest(mem_ctx, server_info);
+			nt_status = make_server_info_guest(tmp_ctx, &result);
+			if (NT_STATUS_IS_OK(nt_status)) {
+				*server_info = talloc_move(mem_ctx, &result);
+			}
 		}
-		return nt_status;
+		goto out;
 	}
 
-	result = make_server_info(NULL);
+	result = make_server_info(tmp_ctx);
 	if (result == NULL) {
 		DEBUG(4, ("make_server_info failed!\n"));
-		return NT_STATUS_NO_MEMORY;
+		nt_status = NT_STATUS_NO_MEMORY;
+		goto out;
 	}
 
 	result->unix_name = talloc_strdup(result, found_username);
@@ -1422,8 +1429,8 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 	/* copy in the info3 */
 	result->info3 = copy_netr_SamInfo3(result, info3);
 	if (result->info3 == NULL) {
-		TALLOC_FREE(result);
-		return NT_STATUS_NO_MEMORY;
+		nt_status = NT_STATUS_NO_MEMORY;
+		goto out;
 	}
 
 	/* Fill in the unix info we found on the way */
@@ -1453,9 +1460,13 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 
 	result->guest = (info3->base.user_flags & NETLOGON_GUEST);
 
-	*server_info = result;
+	*server_info = talloc_move(mem_ctx, &result);
 
-	return NT_STATUS_OK;
+	nt_status = NT_STATUS_OK;
+out:
+	talloc_free(tmp_ctx);
+
+	return nt_status;
 }
 
 /*****************************************************************************
