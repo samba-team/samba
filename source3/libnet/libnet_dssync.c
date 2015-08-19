@@ -113,6 +113,7 @@ static void libnet_dssync_decrypt_attributes(TALLOC_CTX *mem_ctx,
 			drsuapi_decrypt_attribute(mem_ctx,
 						  session_key,
 						  rid,
+						  0,
 						  attr);
 		}
 	}
