@@ -1397,6 +1397,14 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 				     &username_was_mapped);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
+		/* Handle 'map to guest = Bad Uid */
+		if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_SUCH_USER) &&
+		    (lp_security() == SEC_ADS || lp_security() == SEC_DOMAIN) &&
+		    lp_map_to_guest() == MAP_TO_GUEST_ON_BAD_UID) {
+			DEBUG(2, ("Try to map %s to guest account",
+				  nt_username));
+			return make_server_info_guest(mem_ctx, server_info);
+		}
 		return nt_status;
 	}
 
