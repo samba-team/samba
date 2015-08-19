@@ -26,7 +26,6 @@
 
 struct wb_gid2sid_state {
 	struct tevent_context *ev;
-	char *dom_name;
 	struct dom_sid sid;
 };
 
@@ -38,7 +37,6 @@ struct tevent_req *wb_gid2sid_send(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req, *subreq;
 	struct wb_gid2sid_state *state;
-	struct winbindd_domain *domain;
 	struct winbindd_child *child;
 	bool expired;
 
@@ -61,17 +59,6 @@ struct tevent_req *wb_gid2sid_send(TALLOC_CTX *mem_ctx,
 				tevent_req_done(req);
 			}
 			return tevent_req_post(req, ev);
-		}
-	}
-
-	state->dom_name = NULL;
-
-	for (domain = domain_list(); domain != NULL; domain = domain->next) {
-		if (domain->have_idmap_config
-		    && (gid >= domain->id_range_low)
-		    && (gid <= domain->id_range_high)) {
-			state->dom_name = domain->name;
-			break;
 		}
 	}
 
