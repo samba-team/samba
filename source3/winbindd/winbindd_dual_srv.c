@@ -223,8 +223,7 @@ nomem:
 
 NTSTATUS _wbint_Uid2Sid(struct pipes_struct *p, struct wbint_Uid2Sid *r)
 {
-	return idmap_uid_to_sid(r->in.dom_name ? r->in.dom_name : "",
-				r->out.sid, r->in.uid);
+	return idmap_uid_to_sid(r->out.sid, r->in.uid);
 }
 
 NTSTATUS _wbint_Gid2Sid(struct pipes_struct *p, struct wbint_Gid2Sid *r)
