@@ -97,14 +97,13 @@ backend:
  If mapping is not possible returns an error.
 *****************************************************************/  
 
-NTSTATUS idmap_gid_to_sid(const char *domname, struct dom_sid *sid, gid_t gid)
+NTSTATUS idmap_gid_to_sid(struct dom_sid *sid, gid_t gid)
 {
 	NTSTATUS ret;
 	struct id_map map;
 	bool expired;
 
-	DEBUG(10,("idmap_gid_to_sid: gid = [%lu], domain = '%s'\n",
-		  (unsigned long)gid, domname?domname:"NULL"));
+	DEBUG(10, ("idmap_gid_to_sid: gid = [%lu]\n", (unsigned long)gid));
 
 	if (winbindd_use_idmap_cache()
 	    && idmap_cache_find_gid2sid(gid, sid, &expired)) {
