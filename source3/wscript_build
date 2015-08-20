@@ -927,6 +927,7 @@ bld.SAMBA3_BINARY('winbindd/winbindd',
                  winbindd/wb_uid2sid.c
                  winbindd/wb_gid2sid.c
                  winbindd/wb_sids2xids.c
+                 winbindd/wb_xids2sids.c
                  winbindd/wb_queryuser.c
                  winbindd/wb_lookupuseraliases.c
                  winbindd/wb_lookupusergroups.c
