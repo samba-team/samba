@@ -1,0 +1,13 @@
+dn: ou=SUDOers,DC=release-4-1-0rc3,DC=samba,DC=corp
+objectclass: organizationalunit
+-
+
+dn: CN=ops_run_anything,OU=SUDOers,DC=release-4-1-0rc3,DC=samba,DC=corp
+changetype: add
+sudoUser: %ops
+sudoHost: ALL
+sudoCommand: ALL
+sudoRunAsUser: ALL
+sudoRunAsGroup: ALL
+objectClass: top
+objectClass: sudoRole

@@ -39,6 +39,7 @@ class SamDB(samba.Ldb):
     """The SAM database."""
 
     hash_oid_name = {}
+    hash_well_known = {}
 
     def __init__(self, url=None, lp=None, modules_dir=None, session_info=None,
                  credentials=None, flags=0, options=None, global_schema=True,
@@ -793,7 +794,19 @@ accountExpires: %u
         return dsdb._dsdb_get_nc_root(self, dn)
 
     def get_wellknown_dn(self, nc_root, wkguid):
-        return dsdb._dsdb_get_wellknown_dn(self, nc_root, wkguid)
+        h_nc = self.hash_well_known.get(str(nc_root))
+        dn = None
+        if h_nc is not None:
+            dn = h_nc.get(wkguid)
+        if dn is None:
+            dn = dsdb._dsdb_get_wellknown_dn(self, nc_root, wkguid)
+            if dn is None:
+                return dn
+            if h_nc is None:
+                self.hash_well_known[str(nc_root)] = {}
+                h_nc = self.hash_well_known[str(nc_root)]
+            h_nc[wkguid] = dn
+        return dn
 
     def set_minPwdAge(self, value):
         m = ldb.Message()

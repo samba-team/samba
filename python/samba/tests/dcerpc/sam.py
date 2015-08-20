@@ -45,6 +45,6 @@ class SamrTests(RpcInterfaceTestCase):
 
     def test_EnumDomains(self):
         handle = self.conn.Connect2(None, security.SEC_FLAG_MAXIMUM_ALLOWED)
-        domains = toArray(self.conn.EnumDomains(handle, 0, -1))
+        domains = toArray(self.conn.EnumDomains(handle, 0, 4294967295L))
         self.conn.Close(handle)
 

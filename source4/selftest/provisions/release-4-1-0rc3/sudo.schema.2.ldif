@@ -1,0 +1,52 @@
+# Copyright (c) 1994-1996, 1998-2015
+#        Todd C. Miller <Todd.Miller@courtesan.com>
+#
+#   Permission to use, copy, modify, and distribute this software for any
+#   purpose with or without fee is hereby granted, provided that the above
+#   copyright notice and this permission notice appear in all copies.
+#
+#   THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+#   WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+#   MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+#   ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+#   WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+#   ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+#   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+#
+#   Sponsored in part by the Defense Advanced Research Projects
+#   Agency (DARPA) and Air Force Research Laboratory, Air Force
+#   Materiel Command, USAF, under agreement number F39502-99-1-0512.
+#
+
+dn: CN=sudoRole,CN=Schema,CN=Configuration,DC=release-4-1-0rc3,DC=samba,DC=corp
+changetype: add
+objectClass: top
+objectClass: classSchema
+cn: sudoRole
+distinguishedName: CN=sudoRole,CN=Schema,CN=Configuration,DC=release-4-1-0rc3,DC=samba,DC=corp
+instanceType: 4
+possSuperiors: container
+possSuperiors: top
+subClassOf: top
+governsID: 1.3.6.1.4.1.15953.9.2.1
+mayContain: sudoCommand
+mayContain: sudoHost
+mayContain: sudoOption
+mayContain: sudoRunAs
+mayContain: sudoRunAsUser
+mayContain: sudoRunAsGroup
+mayContain: sudoUser
+mayContain: sudoNotBefore
+mayContain: sudoNotAfter
+mayContain: sudoOrder
+rDNAttID: cn
+showInAdvancedViewOnly: FALSE
+adminDisplayName: sudoRole
+adminDescription: Sudoer Entries
+objectClassCategory: 1
+lDAPDisplayName: sudoRole
+name: sudoRole
+schemaIDGUID:: SQn432lnZ0+ukbdh3+gN3w==
+systemOnly: FALSE
+objectCategory: CN=Class-Schema,CN=Schema,CN=Configuration,DC=release-4-1-0rc3,DC=samba,DC=corp
+defaultObjectCategory: CN=sudoRole,CN=Schema,CN=Configuration,DC=release-4-1-0rc3,DC=samba,DC=corp
