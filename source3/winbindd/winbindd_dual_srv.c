@@ -232,6 +232,36 @@ NTSTATUS _wbint_Gid2Sid(struct pipes_struct *p, struct wbint_Gid2Sid *r)
 	return idmap_gid_to_sid(r->out.sid, r->in.gid);
 }
 
+NTSTATUS _wbint_UnixIDs2Sids(struct pipes_struct *p,
+			     struct wbint_UnixIDs2Sids *r)
+{
+	uint32_t i;
+
+	for (i=0; i<r->in.num_ids; i++) {
+		struct unixid *xid = &r->in.xids[i];
+		struct dom_sid *sid = &r->out.sids[i];
+		NTSTATUS status;
+
+		switch (xid->type) {
+		    case ID_TYPE_UID:
+			    status = idmap_uid_to_sid(sid, xid->id);
+			    break;
+		    case ID_TYPE_GID:
+			    status = idmap_gid_to_sid(sid, xid->id);
+			    break;
+		    default:
+			    status = NT_STATUS_NONE_MAPPED;
+			    break;
+		}
+
+		if (!NT_STATUS_IS_OK(status)) {
+			*sid = (struct dom_sid) {0};
+		}
+	}
+
+	return NT_STATUS_OK;
+}
+
 NTSTATUS _wbint_AllocateUid(struct pipes_struct *p, struct wbint_AllocateUid *r)
 {
 	struct unixid xid;

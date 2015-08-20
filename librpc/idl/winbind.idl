@@ -66,6 +66,12 @@ interface winbind
 	[out] dom_sid *sid
 	);
 
+    NTSTATUS wbint_UnixIDs2Sids(
+	[in] uint32 num_ids,
+	[in] unixid xids[num_ids],
+	[out] dom_sid sids[num_ids]
+	);
+
     NTSTATUS wbint_AllocateUid(
 	[out] hyper *uid
 	);
