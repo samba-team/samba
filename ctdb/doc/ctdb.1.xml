@@ -1088,54 +1088,94 @@ DB Statistics: locking.tdb
     <refsect2>
       <title>reloadnodes</title>
       <para>
-	This command is used when adding new nodes, or removing existing nodes from an existing cluster.
+	This command is used when adding new nodes, or removing
+	existing nodes from an existing cluster.
       </para>
       <para>
-	Procedure to add a node:
+	Procedure to add nodes:
       </para>
+      <orderedlist>
+	<listitem>
+	  <para>
+	     To expand an existing cluster, first ensure with
+	     <command>ctdb status</command> that all nodes are up and
+	     running and that they are all healthy.  Do not try to
+	     expand a cluster unless it is completely healthy!
+	  </para>
+	</listitem>
+	<listitem>
+	  <para>
+	    On all nodes, edit <filename>/etc/ctdb/nodes</filename>
+	    and <emphasis>add the new nodes at the end of this
+	    file</emphasis>.
+	  </para>
+	</listitem>
+	<listitem>
+	  <para>
+	    Verify that all the nodes have identical
+	    <filename>/etc/ctdb/nodes</filename> files after adding
+	    the new nodes.
+	  </para>
+	</listitem>
+	<listitem>
+	  <para>
+	    Run <command>ctdb reloadnodes</command> to force all nodes
+	    to reload the nodes file.
+	  </para>
+	</listitem>
+	<listitem>
+	  <para>
+	    Use <command>ctdb status</command> on all nodes and verify
+	    that they now show the additional nodes.
+	  </para>
+	</listitem>
+	<listitem>
+	  <para>
+	    Install and configure the new node and bring it online.
+	  </para>
+	</listitem>
+      </orderedlist>
       <para>
-	1, To expand an existing cluster, first ensure with 'ctdb status' that
-	all nodes are up and running and that they are all healthy.
-	Do not try to expand a cluster unless it is completely healthy!
+	Procedure to remove nodes:
       </para>
-      <para>
-	2, On all nodes, edit /etc/ctdb/nodes and add the new node as the last
-	entry to the file. The new node MUST be added to the end of this file!
-      </para>
-      <para>
-	3, Verify that all the nodes have identical /etc/ctdb/nodes files after you edited them and added the new node!
-      </para>
-      <para>
-	4, Run 'ctdb reloadnodes' to force all nodes to reload the nodesfile.
-      </para>
-      <para>
-	5, Use 'ctdb status' on all nodes and verify that they now show the additional node.
-      </para>
-      <para>
-	6, Install and configure the new node and bring it online.
-      </para>
-      <para>
-	Procedure to remove a node:
-      </para>
-      <para>
-	1, To remove a node from an existing cluster, first ensure with 'ctdb status' that
-	all nodes, except the node to be deleted, are up and running and that they are all healthy.
-	Do not try to remove a node from a cluster unless the cluster is completely healthy!
-      </para>
-      <para>
-	2, Shutdown and poweroff the node to be removed.
-      </para>
-      <para>
-	3, On all other nodes, edit the /etc/ctdb/nodes file and comment out the node to be removed. Do not delete the line for that node, just comment it out by adding a '#' at the beginning of the line.
-      </para>
-      <para>
-	4, Run 'ctdb reloadnodes' to force all nodes to reload the nodesfile.
-      </para>
-      <para>
-	5, Use 'ctdb status' on all nodes and verify that the deleted node no longer shows up in the list..
-      </para>
-      <para>
-      </para>
+      <orderedlist>
+	<listitem>
+	  <para>
+	    To remove nodes from an existing cluster, first ensure
+	    with <command>ctdb status</command> that all nodes, except
+	    the node to be deleted, are up and running and that they
+	    are all healthy.  Do not try to remove nodes from a
+	    cluster unless the cluster is completely healthy!
+	  </para>
+	</listitem>
+	<listitem>
+	  <para>
+	    Shutdown and power off the node to be removed.
+	  </para>
+	</listitem>
+	<listitem>
+	  <para>
+	    On all other nodes, edit the
+	    <filename>/etc/ctdb/nodes</filename> file and
+	    <emphasis>comment out</emphasis> the nodes to be removed.
+	    <emphasis>Do not delete the lines for the deleted
+	    nodes</emphasis>, just comment them out by adding a '#' at
+	    the beginning of the lines.
+	  </para>
+	</listitem>
+	<listitem>
+	  <para>
+	    Run <command>ctdb reloadnodes</command> to force all nodes
+	    to reload the nodes file.
+	  </para>
+	</listitem>
+	<listitem>
+	  <para>
+	    Use <command>ctdb status</command> on all nodes and verify
+	    that the deleted nodes are no longer listed.
+	  </para>
+	</listitem>
+      </orderedlist>
 
     </refsect2>
 
