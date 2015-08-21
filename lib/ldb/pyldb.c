@@ -253,6 +253,11 @@ static PyObject *PyObject_FromLdbValue(const struct ldb_val *val)
 	return PyBytes_FromStringAndSize((const char *)val->data, val->length);
 }
 
+static PyObject *PyStr_FromLdbValue(const struct ldb_val *val)
+{
+	return PyStr_FromStringAndSize((const char *)val->data, val->length);
+}
+
 /**
  * Create a Python object from a ldb_result.
  *
@@ -481,23 +486,19 @@ static PyObject *py_ldb_dn_get_extended_component(PyLdbDnObject *self, PyObject 
 static PyObject *py_ldb_dn_set_extended_component(PyLdbDnObject *self, PyObject *args)
 {
 	char *name;
-	PyObject *value;
-	int err, result;
-	Py_ssize_t size;
+	int err;
+	uint8_t *value;
+	int size = 0;
 
-	if (!PyArg_ParseTuple(args, "sO", &name, &value))
+	if (!PyArg_ParseTuple(args, "sz#", &name, (const char**)&value, &size))
 		return NULL;
 
-	if (value == Py_None) {
+	if (value == NULL) {
 		err = ldb_dn_set_extended_component(self->dn, name, NULL);
 	} else {
 		struct ldb_val val;
-		result = PyBytes_AsStringAndSize(value, (char **) &val.data, &size);
+		val.data = (uint8_t *)value;
 		val.length = size;
-		if (result != 0) {
-			PyErr_SetString(PyExc_TypeError, "Expected a bytestring argument");
-			return NULL;
-		}
 		err = ldb_dn_set_extended_component(self->dn, name, &val);
 	}
 
@@ -663,29 +664,22 @@ static PyObject *py_ldb_dn_get_component_value(PyLdbDnObject *self, PyObject *ar
 		Py_RETURN_NONE;
 	}
 
-	return PyObject_FromLdbValue(val);
+	return PyStr_FromLdbValue(val);
 }
 
 static PyObject *py_ldb_dn_set_component(PyLdbDnObject *self, PyObject *args)
 {
 	unsigned int num = 0;
-	char *name = NULL;
-	PyObject *value = Py_None;
+	char *name = NULL, *value = NULL;
 	struct ldb_val val = { NULL, };
-	int err, ret;
-	Py_ssize_t size;
+	int err;
+	Py_ssize_t size = 0;
 
-	if (!PyArg_ParseTuple(args, "IsO", &num, &name, &value))
+	if (!PyArg_ParseTuple(args, "Iss#", &num, &name, &value, &size))
 		return NULL;
 
-	if (value != Py_None) {
-		ret = PyBytes_AsStringAndSize(value, (char **) &val.data, &size);
-		if (ret != 0) {
-			PyErr_SetString(PyExc_TypeError, "Expected a bytestring argument");
-			return NULL;
-		}
-		val.length = size;
-	}
+	val.data = (unsigned char*) value;
+	val.length = size;
 
 	err = ldb_dn_set_component(self->dn, num, name, val);
 	if (err != LDB_SUCCESS) {
@@ -723,7 +717,7 @@ static PyObject *py_ldb_dn_get_rdn_value(PyLdbDnObject *self)
 		Py_RETURN_NONE;
 	}
 
-	return PyObject_FromLdbValue(val);
+	return PyStr_FromLdbValue(val);
 }
 
 static PyMethodDef py_ldb_dn_methods[] = {
