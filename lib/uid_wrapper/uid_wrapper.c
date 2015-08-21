@@ -1537,7 +1537,7 @@ static long int uwrap_syscall (long int sysno, va_list vp)
 			}
 			break;
 #endif /* SYS_setresgid */
-#ifdef SYS_getresgid
+#if defined(SYS_getresgid) && defined(HAVE_GETRESGID)
 		case SYS_getresgid:
 #ifdef HAVE_LINUX_32BIT_SYSCALLS
 		case SYS_getresgid32:
@@ -1550,7 +1550,7 @@ static long int uwrap_syscall (long int sysno, va_list vp)
 				rc = uwrap_getresgid(rgid, egid, sgid);
 			}
 			break;
-#endif /* SYS_getresgid */
+#endif /* SYS_getresgid && HAVE_GETRESGID */
 
 		/* uid */
 		case SYS_getuid:
@@ -1606,7 +1606,7 @@ static long int uwrap_syscall (long int sysno, va_list vp)
 			}
 			break;
 #endif /* SYS_setresuid */
-#ifdef SYS_getresuid
+#if defined(SYS_getresuid) && defined(HAVE_GETRESUID)
 		case SYS_getresuid:
 #ifdef HAVE_LINUX_32BIT_SYSCALLS
 		case SYS_getresuid32:
@@ -1619,7 +1619,7 @@ static long int uwrap_syscall (long int sysno, va_list vp)
 				rc = uwrap_getresuid(ruid, euid, suid);
 			}
 			break;
-#endif /* SYS_getresuid */
+#endif /* SYS_getresuid && HAVE_GETRESUID*/
 		/* groups */
 		case SYS_setgroups:
 #ifdef HAVE_LINUX_32BIT_SYSCALLS
