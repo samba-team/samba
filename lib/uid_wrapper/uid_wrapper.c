@@ -1634,7 +1634,7 @@ static long int uwrap_syscall (long int sysno, va_list vp)
 			break;
 		default:
 			UWRAP_LOG(UWRAP_LOG_DEBUG,
-				  "UID_WRAPPER calling non-wrapped syscall %lu\n",
+				  "UID_WRAPPER calling non-wrapped syscall %lu",
 				  sysno);
 
 			rc = libc_vsyscall(sysno, vp);
