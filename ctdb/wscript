@@ -697,7 +697,9 @@ def dist():
         'ctdbd_wrapper.1',
         'ctdb-statistics.7',
         'ctdb-tunables.7',
-        'ltdbtool.1'
+        'ltdbtool.1',
+        'onnode.1',
+        'ping_pong.1'
     ]
 
     cmd = 'make -C doc'
