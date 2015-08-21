@@ -135,6 +135,7 @@ class SimpleLdb(TestCase):
         l.add(m)
         try:
             self.assertTrue(ldb.Dn(l, "dc=foo3") in l)
+            self.assertFalse(ldb.Dn(l, "dc=foo4") in l)
         finally:
             l.delete(m.dn)
 
@@ -619,6 +620,87 @@ class DnTests(TestCase):
         self.assertTrue(dn4.is_child_of(dn3_str))
         self.assertFalse(dn3.is_child_of(dn2_str))
         self.assertFalse(dn1.is_child_of(dn4_str))
+
+    def test_get_component_name(self):
+        dn = ldb.Dn(self.ldb, "cn=foo,dc=base")
+        self.assertEqual(dn.get_component_name(0), 'cn')
+        self.assertEqual(dn.get_component_name(1), 'dc')
+        self.assertEqual(dn.get_component_name(2), None)
+        self.assertEqual(dn.get_component_name(-1), None)
+
+    def test_get_component_value(self):
+        dn = ldb.Dn(self.ldb, "cn=foo,dc=base")
+        self.assertEqual(dn.get_component_value(0), 'foo')
+        self.assertEqual(dn.get_component_value(1), 'base')
+        self.assertEqual(dn.get_component_name(2), None)
+        self.assertEqual(dn.get_component_name(-1), None)
+
+    def test_set_component(self):
+        dn = ldb.Dn(self.ldb, "cn=foo,dc=base")
+        dn.set_component(0, 'cn', 'bar')
+        self.assertEqual(str(dn), "cn=bar,dc=base")
+        dn.set_component(1, 'o', 'asep')
+        self.assertEqual(str(dn), "cn=bar,o=asep")
+        self.assertRaises(TypeError, dn.set_component, 2, 'dc', 'base')
+        self.assertEqual(str(dn), "cn=bar,o=asep")
+        dn.set_component(1, 'o', 'a,b+c')
+        self.assertEqual(str(dn), r"cn=bar,o=a\,b\+c")
+
+    def test_set_component_bytes(self):
+        dn = ldb.Dn(self.ldb, "cn=foo,dc=base")
+        dn.set_component(0, 'cn', b'bar')
+        self.assertEqual(str(dn), "cn=bar,dc=base")
+        dn.set_component(1, 'o', b'asep')
+        self.assertEqual(str(dn), "cn=bar,o=asep")
+
+    def test_set_component_none(self):
+        dn = ldb.Dn(self.ldb, "cn=foo,cn=bar,dc=base")
+        self.assertRaises(TypeError, dn.set_component, 1, 'cn', None)
+
+    def test_get_extended_component_null(self):
+        dn = ldb.Dn(self.ldb, "cn=foo,cn=bar,dc=base")
+        self.assertEqual(dn.get_extended_component("TEST"), None)
+
+    def test_get_extended_component(self):
+        self.ldb._register_test_extensions()
+        dn = ldb.Dn(self.ldb, "<TEST=foo>;cn=bar,dc=base")
+        self.assertEqual(dn.get_extended_component("TEST"), b"foo")
+
+    def test_set_extended_component(self):
+        self.ldb._register_test_extensions()
+        dn = ldb.Dn(self.ldb, "dc=base")
+        dn.set_extended_component("TEST", "foo")
+        self.assertEqual(dn.get_extended_component("TEST"), b"foo")
+        dn.set_extended_component("TEST", b"bar")
+        self.assertEqual(dn.get_extended_component("TEST"), b"bar")
+
+    def test_extended_str(self):
+        self.ldb._register_test_extensions()
+        dn = ldb.Dn(self.ldb, "<TEST=foo>;cn=bar,dc=base")
+        self.assertEqual(dn.extended_str(), "<TEST=foo>;cn=bar,dc=base")
+
+    def test_get_rdn_name(self):
+        dn = ldb.Dn(self.ldb, "cn=foo,dc=base")
+        self.assertEqual(dn.get_rdn_name(), 'cn')
+
+    def test_get_rdn_value(self):
+        dn = ldb.Dn(self.ldb, "cn=foo,dc=base")
+        self.assertEqual(dn.get_rdn_value(), 'foo')
+
+    def test_get_casefold(self):
+        dn = ldb.Dn(self.ldb, "cn=foo,dc=base")
+        self.assertEqual(dn.get_casefold(), 'CN=FOO,DC=BASE')
+
+    def test_get_linearized(self):
+        dn = ldb.Dn(self.ldb, "cn=foo,dc=base")
+        self.assertEqual(dn.get_linearized(), 'cn=foo,dc=base')
+
+    def test_is_null(self):
+        dn = ldb.Dn(self.ldb, "cn=foo,dc=base")
+        self.assertFalse(dn.is_null())
+
+        dn = ldb.Dn(self.ldb, '')
+        self.assertTrue(dn.is_null())
 
 class LdbMsgTests(TestCase):
 

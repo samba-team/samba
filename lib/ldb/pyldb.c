@@ -30,6 +30,7 @@
 
 #include <Python.h>
 #include "ldb_private.h"
+#include "ldb_handlers.h"
 #include "pyldb.h"
 
 void initldb(void);
@@ -1931,6 +1932,28 @@ static PyObject *py_ldb_sequence_number(PyLdbObject *self, PyObject *args)
 
 	return PyLong_FromLongLong(value);
 }
+
+
+static const struct ldb_dn_extended_syntax test_dn_syntax = {
+	.name             = "TEST",
+	.read_fn          = ldb_handler_copy,
+	.write_clear_fn   = ldb_handler_copy,
+	.write_hex_fn     = ldb_handler_copy,
+};
+
+static PyObject *py_ldb_register_test_extensions(PyLdbObject *self)
+{
+	struct ldb_context *ldb = pyldb_Ldb_AsLdbContext(self);
+	int ret;
+
+	ret = ldb_dn_extended_add_syntax(ldb, LDB_ATTR_FLAG_FIXED, &test_dn_syntax);
+
+	PyErr_LDB_ERROR_IS_ERR_RAISE(PyExc_LdbError, ret, ldb);
+
+	Py_RETURN_NONE;
+}
+
+
 static PyMethodDef py_ldb_methods[] = {
 	{ "set_debug", (PyCFunction)py_ldb_set_debug, METH_VARARGS, 
 		"S.set_debug(callback) -> None\n"
@@ -2020,6 +2043,9 @@ static PyMethodDef py_ldb_methods[] = {
 	{ "sequence_number", (PyCFunction)py_ldb_sequence_number, METH_VARARGS,
 		"S.sequence_number(type) -> value\n"
 		"Return the value of the sequence according to the requested type" },
+	{ "_register_test_extensions", (PyCFunction)py_ldb_register_test_extensions, METH_NOARGS,
+		"S._register_test_extensions() -> None\n"
+		"Register internal extensions used in testing" },
 	{ NULL },
 };
 
