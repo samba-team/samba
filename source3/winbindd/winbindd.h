@@ -179,13 +179,6 @@ struct winbindd_domain {
 
 	void *private_data;
 
-	/*
-	 * idmap config settings, used to tell the idmap child which
-	 * special domain config to use for a mapping
-	 */
-	bool have_idmap_config;
-	uint32_t id_range_low, id_range_high;
-
 	/* A working DC */
 	pid_t dc_probe_pid; /* Child we're using to detect the DC. */
 	char *dcname;
