@@ -2045,7 +2045,11 @@ static PyObject *PyLdbModule_FromModule(struct ldb_module *mod)
 
 static PyObject *py_ldb_get_firstmodule(PyLdbObject *self, void *closure)
 {
-	return PyLdbModule_FromModule(pyldb_Ldb_AsLdbContext(self)->modules);
+	struct ldb_module *mod = pyldb_Ldb_AsLdbContext(self)->modules;
+	if (mod == NULL) {
+		Py_RETURN_NONE;
+	}
+	return PyLdbModule_FromModule(mod);
 }
 
 static PyGetSetDef py_ldb_getset[] = {

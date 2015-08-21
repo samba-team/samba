@@ -70,6 +70,15 @@ class SimpleLdb(TestCase):
         x = ldb.Ldb(filename())
         self.assertEqual("[<ldb module 'tdb'>]", repr(x.modules()))
 
+    def test_firstmodule_none(self):
+        x = ldb.Ldb()
+        self.assertEqual(x.firstmodule, None)
+
+    def test_firstmodule_tdb(self):
+        x = ldb.Ldb(filename())
+        mod = x.firstmodule
+        self.assertEqual(repr(mod), "<ldb module 'tdb'>")
+
     def test_search(self):
         l = ldb.Ldb(filename())
         self.assertEqual(len(l.search()), 0)
