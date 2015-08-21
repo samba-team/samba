@@ -73,7 +73,6 @@ manpages='''
          manpages/vfs_readahead.8
          manpages/vfs_readonly.8
          manpages/vfs_recycle.8
-         manpages/vfs_scannedonly.8
          manpages/vfs_shadow_copy.8
          manpages/vfs_shadow_copy2.8
 	 manpages/vfs_shell_snap.8

@@ -385,14 +385,6 @@ bld.SAMBA3_MODULE('vfs_dirsort',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_dirsort'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_dirsort'))
 
-bld.SAMBA3_MODULE('vfs_scannedonly',
-                 subsystem='vfs',
-                 source='vfs_scannedonly.c',
-                 deps='samba-util',
-                 init_function='',
-                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_scannedonly'),
-                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_scannedonly'))
-
 bld.SAMBA3_MODULE('vfs_crossrename',
                  subsystem='vfs',
                  source='vfs_crossrename.c',
