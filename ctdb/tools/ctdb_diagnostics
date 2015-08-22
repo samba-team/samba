@@ -242,7 +242,6 @@ echo "Showing log.ctdb"
 show_all "test -f /var/log/log.ctdb && tail -100 /var/log/log.ctdb"
 
 show_all "tail -200 /var/log/messages"
-show_all "tail -200 /etc/ctdb/state/vacuum.log"
 show_all "ls -lRs /var/ctdb"
 show_all "ls -lRs /etc/ctdb"
 
