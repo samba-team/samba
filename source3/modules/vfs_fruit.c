@@ -1523,6 +1523,37 @@ static bool add_fruit_stream(TALLOC_CTX *mem_ctx, unsigned int *num_streams,
 	return true;
 }
 
+static bool del_fruit_stream(TALLOC_CTX *mem_ctx, unsigned int *num_streams,
+			     struct stream_struct **streams,
+			     const char *name)
+{
+	struct stream_struct *tmp = *streams;
+	int i;
+
+	if (*num_streams == 0) {
+		return true;
+	}
+
+	for (i = 0; i < *num_streams; i++) {
+		if (strequal_m(tmp[i].name, name)) {
+			break;
+		}
+	}
+
+	if (i == *num_streams) {
+		return true;
+	}
+
+	TALLOC_FREE(tmp[i].name);
+	if (*num_streams - 1 > i) {
+		memmove(&tmp[i], &tmp[i+1],
+			(*num_streams - i - 1) * sizeof(struct stream_struct));
+	}
+
+	*num_streams -= 1;
+	return true;
+}
+
 static bool empty_finderinfo(const struct adouble *ad)
 {
 
@@ -3096,6 +3127,7 @@ static NTSTATUS fruit_streaminfo(vfs_handle_struct *handle,
 	struct fruit_config_data *config = NULL;
 	struct smb_filename *smb_fname = NULL;
 	struct adouble *ad = NULL;
+	NTSTATUS status;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, config, struct fruit_config_data,
 				return NT_STATUS_UNSUCCESSFUL);
@@ -3144,8 +3176,23 @@ static NTSTATUS fruit_streaminfo(vfs_handle_struct *handle,
 
 	TALLOC_FREE(smb_fname);
 
-	return SMB_VFS_NEXT_STREAMINFO(handle, fsp, fname, mem_ctx,
-				       pnum_streams, pstreams);
+	status = SMB_VFS_NEXT_STREAMINFO(handle, fsp, fname, mem_ctx,
+					 pnum_streams, pstreams);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (config->meta == FRUIT_META_NETATALK) {
+		/* Remove the Netatalk xattr from the list */
+		if (!del_fruit_stream(mem_ctx, pnum_streams, pstreams,
+				      ":" NETATALK_META_XATTR ":$DATA")) {
+				TALLOC_FREE(ad);
+				TALLOC_FREE(smb_fname);
+				return NT_STATUS_NO_MEMORY;
+		}
+	}
+
+	return NT_STATUS_OK;
 }
 
 static int fruit_ntimes(vfs_handle_struct *handle,
