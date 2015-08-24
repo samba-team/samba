@@ -103,11 +103,12 @@ static int vfs_fruit_debug_level = DBGC_VFS;
  * REVIEW:
  * This is hokey, but what else can we do?
  */
+#define NETATALK_META_XATTR "org.netatalk.Metadata"
 #if defined(HAVE_ATTROPEN) || defined(FREEBSD)
-#define AFPINFO_EA_NETATALK "org.netatalk.Metadata"
+#define AFPINFO_EA_NETATALK NETATALK_META_XATTR
 #define AFPRESOURCE_EA_NETATALK "org.netatalk.ResourceFork"
 #else
-#define AFPINFO_EA_NETATALK "user.org.netatalk.Metadata"
+#define AFPINFO_EA_NETATALK "user." NETATALK_META_XATTR
 #define AFPRESOURCE_EA_NETATALK "user.org.netatalk.ResourceFork"
 #endif
 
