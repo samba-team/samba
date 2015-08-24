@@ -93,7 +93,6 @@ bool sid_split_rid(struct dom_sid *sid, uint32_t *rid);
 bool sid_peek_rid(const struct dom_sid *sid, uint32_t *rid);
 bool sid_peek_check_rid(const struct dom_sid *exp_dom_sid, const struct dom_sid *sid, uint32_t *rid);
 void sid_copy(struct dom_sid *dst, const struct dom_sid *src);
-bool sid_blob_parse(DATA_BLOB in, struct dom_sid *sid);
 bool sid_parse(const uint8_t *inbuf, size_t len, struct dom_sid *sid);
 int sid_compare_domain(const struct dom_sid *sid1, const struct dom_sid *sid2);
 NTSTATUS add_sid_to_array(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,

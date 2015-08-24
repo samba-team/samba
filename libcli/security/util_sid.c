@@ -254,28 +254,20 @@ void sid_copy(struct dom_sid *dst, const struct dom_sid *src)
 }
 
 /*****************************************************************
- Parse a on-the-wire SID (in a DATA_BLOB) to a struct dom_sid.
-*****************************************************************/
-
-bool sid_blob_parse(DATA_BLOB in, struct dom_sid *sid)
-{
-	enum ndr_err_code ndr_err;
-	ndr_err = ndr_pull_struct_blob_all(&in, NULL, sid,
-					   (ndr_pull_flags_fn_t)ndr_pull_dom_sid);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		return false;
-	}
-	return true;
-}
-
-/*****************************************************************
  Parse a on-the-wire SID to a struct dom_sid.
 *****************************************************************/
 
 bool sid_parse(const uint8_t *inbuf, size_t len, struct dom_sid *sid)
 {
 	DATA_BLOB in = data_blob_const(inbuf, len);
-	return sid_blob_parse(in, sid);
+	enum ndr_err_code ndr_err;
+
+	ndr_err = ndr_pull_struct_blob_all(
+		&in, NULL, sid, (ndr_pull_flags_fn_t)ndr_pull_dom_sid);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return false;
+	}
+	return true;
 }
 
 /*****************************************************************
