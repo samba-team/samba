@@ -2361,7 +2361,8 @@ static void dump_sid(ADS_STRUCT *ads, const char *field, struct berval **values)
 	for (i=0; values[i]; i++) {
 		struct dom_sid sid;
 		fstring tmp;
-		if (!sid_parse(values[i]->bv_val, values[i]->bv_len, &sid)) {
+		if (!sid_parse((const uint8_t *)values[i]->bv_val,
+			       values[i]->bv_len, &sid)) {
 			return;
 		}
 		printf("%s: %s\n", field, sid_to_fstring(tmp, &sid));
@@ -2891,7 +2892,8 @@ int ads_count_replies(ADS_STRUCT *ads, void *res)
 
 	count = 0;
 	for (i=0; values[i]; i++) {
-		ret = sid_parse(values[i]->bv_val, values[i]->bv_len, &(*sids)[count]);
+		ret = sid_parse((const uint8_t *)values[i]->bv_val,
+				values[i]->bv_len, &(*sids)[count]);
 		if (ret) {
 			DEBUG(10, ("pulling SID: %s\n",
 				   sid_string_dbg(&(*sids)[count])));
@@ -3456,7 +3458,7 @@ ADS_STATUS ads_get_sid_from_extended_dn(TALLOC_CTX *mem_ctx,
 			return ADS_ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 		}
 
-		if (!sid_parse(buf, buf_len, sid)) {
+		if (!sid_parse((const uint8_t *)buf, buf_len, sid)) {
 			DEBUG(10,("failed to parse sid\n"));
 			return ADS_ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 		}

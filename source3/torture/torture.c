@@ -8563,7 +8563,7 @@ static bool run_local_sid_to_string(int dummy) {
 
 static bool run_local_binary_to_sid(int dummy) {
 	struct dom_sid *sid = talloc(NULL, struct dom_sid);
-	static const char good_binary_sid[] = {
+	static const uint8_t good_binary_sid[] = {
 		0x1, /* revision number */
 		15, /* num auths */
 		0x1, 0x1, 0x1, 0x1, 0x1, 0x1, /* id_auth */
@@ -8584,7 +8584,7 @@ static bool run_local_binary_to_sid(int dummy) {
 		0x1, 0x1, 0x1, 0x1, /* auth[14] */
 	};
 
-	static const char long_binary_sid[] = {
+	static const uint8_t long_binary_sid[] = {
 		0x1, /* revision number */
 		15, /* num auths */
 		0x1, 0x1, 0x1, 0x1, 0x1, 0x1, /* id_auth */
@@ -8608,7 +8608,7 @@ static bool run_local_binary_to_sid(int dummy) {
 		0x1, 0x1, 0x1, 0x1, /* auth[17] */
 	};
 
-	static const char long_binary_sid2[] = {
+	static const uint8_t long_binary_sid2[] = {
 		0x1, /* revision number */
 		32, /* num auths */
 		0x1, 0x1, 0x1, 0x1, 0x1, 0x1, /* id_auth */

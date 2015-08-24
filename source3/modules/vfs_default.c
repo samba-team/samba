@@ -1281,7 +1281,7 @@ static NTSTATUS vfswrap_fsctl(struct vfs_handle_struct *handle,
 		/* unknown 4 bytes: this is not the length of the sid :-(  */
 		/*unknown = IVAL(pdata,0);*/
 
-		if (!sid_parse(in_data + 4, sid_len, &sid)) {
+		if (!sid_parse(_in_data + 4, sid_len, &sid)) {
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 		DEBUGADD(10, ("for SID: %s\n", sid_string_dbg(&sid)));

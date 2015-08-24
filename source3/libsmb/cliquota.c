@@ -89,7 +89,7 @@ static bool parse_user_quota_record(const uint8_t *rdata,
 	/* the hard quotas 8 bytes (uint64_t)*/
 	qt.hardlim = BVAL(rdata,32);
 
-	if (!sid_parse((const char *)rdata+40,sid_len,&qt.sid)) {
+	if (!sid_parse(rdata+40,sid_len,&qt.sid)) {
 		return false;
 	}
 

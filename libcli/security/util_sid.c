@@ -272,7 +272,7 @@ bool sid_blob_parse(DATA_BLOB in, struct dom_sid *sid)
  Parse a on-the-wire SID to a struct dom_sid.
 *****************************************************************/
 
-bool sid_parse(const char *inbuf, size_t len, struct dom_sid *sid)
+bool sid_parse(const uint8_t *inbuf, size_t len, struct dom_sid *sid)
 {
 	DATA_BLOB in = data_blob_const(inbuf, len);
 	return sid_blob_parse(in, sid);

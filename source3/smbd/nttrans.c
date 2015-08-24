@@ -2433,7 +2433,8 @@ static void call_nt_transact_get_user_quota(connection_struct *conn,
 				break;
 			}
 
-			if (!sid_parse(pdata+8,sid_len,&sid)) {
+			if (!sid_parse((const uint8_t *)(pdata+8), sid_len,
+				       &sid)) {
 				reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 				return;
 			}
@@ -2586,7 +2587,7 @@ static void call_nt_transact_set_user_quota(connection_struct *conn,
 	/* the hard quotas 8 bytes (uint64_t)*/
 	qt.hardlim = BVAL(pdata,32);
 
-	if (!sid_parse(pdata+40,sid_len,&sid)) {
+	if (!sid_parse((const uint8_t *)(pdata+40), sid_len, &sid)) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		return;
 	}
