@@ -360,7 +360,7 @@ struct dom_sid *samdb_result_dom_sid(TALLOC_CTX *mem_ctx, const struct ldb_messa
 	if (sid == NULL) {
 		return NULL;
 	}
-	ok = sid_blob_parse(*v, sid);
+	ok = sid_parse(v->data, v->length, sid);
 	if (!ok) {
 		talloc_free(sid);
 		return NULL;
