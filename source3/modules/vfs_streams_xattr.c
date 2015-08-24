@@ -106,11 +106,17 @@ static NTSTATUS streams_xattr_get_name(vfs_handle_struct *handle,
 				       const char *stream_name,
 				       char **xattr_name)
 {
+	char *sname;
 	char *stype;
 	struct streams_xattr_config *config;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, config, struct streams_xattr_config,
 				return NT_STATUS_UNSUCCESSFUL);
+
+	sname = talloc_strdup(ctx, stream_name + 1);
+	if (sname == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	/*
 	 * With vfs_fruit option "fruit:encoding = native" we're
@@ -126,41 +132,34 @@ static NTSTATUS streams_xattr_get_name(vfs_handle_struct *handle,
 	 * In check_path_syntax() we've already ensured the streamname
 	 * we got from the client is valid.
 	 */
-	stype = strrchr_m(stream_name + 1, ':');
+	stype = strrchr_m(sname, ':');
 
 	if (stype) {
-		if (strcasecmp_m(stype, ":$DATA") != 0) {
-			return NT_STATUS_INVALID_PARAMETER;
-		}
-	}
-
-	*xattr_name = talloc_asprintf(ctx, "%s%s",
-				      config->prefix,
-				      stream_name + 1);
-	if (*xattr_name == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	if (stype != NULL) {
-		/* Normalize the stream type to upercase. */
-		if (!strupper_m(strrchr_m(*xattr_name, ':') + 1)) {
-			return NT_STATUS_INVALID_PARAMETER;
-		}
-	} else if (config->store_stream_type) {
 		/*
-		 * Append an explicit stream type if one wasn't
-		 * specified.
+		 * We only support one stream type: "$DATA"
 		 */
-		*xattr_name = talloc_asprintf(ctx, "%s%s",
-					      *xattr_name, ":$DATA");
-		if (*xattr_name == NULL) {
-			return NT_STATUS_NO_MEMORY;
+		if (strcasecmp_m(stype, ":$DATA") != 0) {
+			talloc_free(sname);
+			return NT_STATUS_INVALID_PARAMETER;
 		}
+
+		/* Split name and type */
+		stype[0] = '\0';
+	}
+
+	*xattr_name = talloc_asprintf(ctx, "%s%s%s",
+				      config->prefix,
+				      sname,
+				      config->store_stream_type ? ":$DATA" : "");
+	if (*xattr_name == NULL) {
+		talloc_free(sname);
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	DEBUG(10, ("xattr_name: %s, stream_name: %s\n", *xattr_name,
 		   stream_name));
 
+	talloc_free(sname);
 	return NT_STATUS_OK;
 }
 
