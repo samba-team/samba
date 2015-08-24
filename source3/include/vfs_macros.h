@@ -415,10 +415,10 @@
 #define SMB_VFS_NEXT_FSET_DOS_ATTRIBUTES(handle, fsp, attributes) \
 	smb_vfs_call_fset_dos_attributes((handle)->next, (fsp), (attributes))
 
-#define SMB_VFS_COPY_CHUNK_SEND(conn, mem_ctx, ev, src_fsp, src_off, dest_fsp, dest_off, num) \
-	smb_vfs_call_copy_chunk_send((conn)->vfs_handles, (mem_ctx), (ev), (src_fsp), (src_off), (dest_fsp), (dest_off), (num))
-#define SMB_VFS_NEXT_COPY_CHUNK_SEND(handle, mem_ctx, ev, src_fsp, src_off, dest_fsp, dest_off, num) \
-	smb_vfs_call_copy_chunk_send((handle)->next, (mem_ctx), (ev), (src_fsp), (src_off), (dest_fsp), (dest_off), (num))
+#define SMB_VFS_COPY_CHUNK_SEND(conn, mem_ctx, ev, src_fsp, src_off, dest_fsp, dest_off, num, flags) \
+	smb_vfs_call_copy_chunk_send((conn)->vfs_handles, (mem_ctx), (ev), (src_fsp), (src_off), (dest_fsp), (dest_off), (num), (flags))
+#define SMB_VFS_NEXT_COPY_CHUNK_SEND(handle, mem_ctx, ev, src_fsp, src_off, dest_fsp, dest_off, num, flags) \
+	smb_vfs_call_copy_chunk_send((handle)->next, (mem_ctx), (ev), (src_fsp), (src_off), (dest_fsp), (dest_off), (num), (flags))
 
 #define SMB_VFS_COPY_CHUNK_RECV(conn, req, copied) \
 	smb_vfs_call_copy_chunk_recv((conn)->vfs_handles, (req), (copied))

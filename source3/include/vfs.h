@@ -196,6 +196,7 @@
 /* Bump to version 36 - Samba 4.6 will ship with that */
 /* Version 36 - Remove is_offline and set_offline */
 /* Version 37 - Module init functions now take a TALLOC_CTX * parameter. */
+/* Version 37 - Add vfs_copy_chunk_flags for DUP_EXTENTS_TO_FILE */
 
 #define SMB_VFS_INTERFACE_VERSION 37
 
@@ -548,6 +549,17 @@ enum vfs_fallocate_flags {
 	VFS_FALLOCATE_FL_PUNCH_HOLE		= 0x0002,
 };
 
+/*
+ * @VFS_COPY_CHUNK_FL_MUST_CLONE: indicates that copy_chunk_send_fn() copy must
+ *				  be handled as a COW clone, AKA reflink.
+ * @VFS_COPY_CHUNK_FL_MASK_ALL: all valid copychunk flags.
+ */
+enum vfs_copy_chunk_flags {
+	VFS_COPY_CHUNK_FL_MUST_CLONE		= 0x0001,
+
+	VFS_COPY_CHUNK_FL_MASK_ALL		= 0x0001,
+};
+
 struct vfs_aio_state {
 	int error;
 	uint64_t duration;
@@ -709,7 +721,8 @@ struct vfs_fn_pointers {
 						 off_t src_off,
 						 struct files_struct *dest_fsp,
 						 off_t dest_off,
-						 off_t num);
+						 off_t to_copy,
+						 uint32_t flags);
 	NTSTATUS (*copy_chunk_recv_fn)(struct vfs_handle_struct *handle,
 				       struct tevent_req *req,
 				       off_t *copied);
@@ -1241,7 +1254,8 @@ struct tevent_req *smb_vfs_call_copy_chunk_send(struct vfs_handle_struct *handle
 						off_t src_off,
 						struct files_struct *dest_fsp,
 						off_t dest_off,
-						off_t num);
+						off_t num,
+						uint32_t flags);
 NTSTATUS smb_vfs_call_copy_chunk_recv(struct vfs_handle_struct *handle,
 				      struct tevent_req *req,
 				      off_t *copied);

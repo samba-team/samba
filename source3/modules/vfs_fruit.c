@@ -5233,7 +5233,8 @@ static struct tevent_req *fruit_copy_chunk_send(struct vfs_handle_struct *handle
 						off_t src_off,
 						struct files_struct *dest_fsp,
 						off_t dest_off,
-						off_t num)
+						off_t num,
+						uint32_t flags)
 {
 	struct tevent_req *req, *subreq;
 	struct fruit_copy_chunk_state *fruit_copy_chunk_state;
@@ -5283,7 +5284,8 @@ static struct tevent_req *fruit_copy_chunk_send(struct vfs_handle_struct *handle
 					      src_off,
 					      dest_fsp,
 					      dest_off,
-					      to_copy);
+					      to_copy,
+					      flags);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}

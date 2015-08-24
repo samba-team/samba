@@ -1889,12 +1889,14 @@ static struct tevent_req *smb_full_audit_copy_chunk_send(struct vfs_handle_struc
 							 off_t src_off,
 							 struct files_struct *dest_fsp,
 							 off_t dest_off,
-							 off_t num)
+							 off_t num,
+							 uint32_t flags)
 {
 	struct tevent_req *req;
 
 	req = SMB_VFS_NEXT_COPY_CHUNK_SEND(handle, mem_ctx, ev, src_fsp,
-					   src_off, dest_fsp, dest_off, num);
+					   src_off, dest_fsp, dest_off, num,
+					   flags);
 
 	do_log(SMB_VFS_OP_COPY_CHUNK_SEND, req, handle, "");
 

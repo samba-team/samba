@@ -531,7 +531,8 @@ static struct tevent_req *skel_copy_chunk_send(struct vfs_handle_struct *handle,
 					       off_t src_off,
 					       struct files_struct *dest_fsp,
 					       off_t dest_off,
-					       off_t num)
+					       off_t num,
+					       uint32_t flags)
 {
 	struct tevent_req *req;
 	struct skel_cc_state *cc_state;

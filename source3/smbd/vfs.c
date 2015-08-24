@@ -2305,11 +2305,13 @@ struct tevent_req *smb_vfs_call_copy_chunk_send(struct vfs_handle_struct *handle
 						off_t src_off,
 						struct files_struct *dest_fsp,
 						off_t dest_off,
-						off_t num)
+						off_t num,
+						uint32_t flags)
 {
 	VFS_FIND(copy_chunk_send);
 	return handle->fns->copy_chunk_send_fn(handle, mem_ctx, ev, src_fsp,
-					       src_off, dest_fsp, dest_off, num);
+					       src_off, dest_fsp, dest_off, num,
+					       flags);
 }
 
 NTSTATUS smb_vfs_call_copy_chunk_recv(struct vfs_handle_struct *handle,

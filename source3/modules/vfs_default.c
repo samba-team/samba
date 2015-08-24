@@ -1616,7 +1616,8 @@ static struct tevent_req *vfswrap_copy_chunk_send(struct vfs_handle_struct *hand
 						  off_t src_off,
 						  struct files_struct *dest_fsp,
 						  off_t dest_off,
-						  off_t to_copy)
+						  off_t to_copy,
+						  uint32_t flags)
 {
 	struct tevent_req *req;
 	struct vfs_cc_state *state = NULL;
@@ -1628,6 +1629,17 @@ static struct tevent_req *vfswrap_copy_chunk_send(struct vfs_handle_struct *hand
 	req = tevent_req_create(mem_ctx, &state, struct vfs_cc_state);
 	if (req == NULL) {
 		return NULL;
+	}
+
+	if (flags & ~VFS_COPY_CHUNK_FL_MASK_ALL) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return tevent_req_post(req, ev);
+	}
+
+	if (flags & VFS_COPY_CHUNK_FL_MUST_CLONE) {
+		DEBUG(10, ("COW clones not supported by vfs_default\n"));
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return tevent_req_post(req, ev);
 	}
 
 	*state = (struct vfs_cc_state) {

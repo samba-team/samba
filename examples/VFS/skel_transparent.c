@@ -619,7 +619,8 @@ static struct tevent_req *skel_copy_chunk_send(struct vfs_handle_struct *handle,
 					       off_t src_off,
 					       struct files_struct *dest_fsp,
 					       off_t dest_off,
-					       off_t num)
+					       off_t num,
+					       uint32_t flags)
 {
 	struct tevent_req *req;
 	struct tevent_req *subreq;
@@ -633,7 +634,7 @@ static struct tevent_req *skel_copy_chunk_send(struct vfs_handle_struct *handle,
 	cc_state->handle = handle;
 	subreq = SMB_VFS_NEXT_COPY_CHUNK_SEND(handle, cc_state, ev,
 					      src_fsp, src_off,
-					      dest_fsp, dest_off, num);
+					      dest_fsp, dest_off, num, flags);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
