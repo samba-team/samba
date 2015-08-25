@@ -2396,14 +2396,43 @@ static int fruit_unlink(vfs_handle_struct *handle,
 {
 	int rc = -1;
 	struct fruit_config_data *config = NULL;
-	char *adp = NULL;
-
-	if (!is_ntfs_stream_smb_fname(smb_fname)) {
-		return SMB_VFS_NEXT_UNLINK(handle, smb_fname);
-	}
 
 	SMB_VFS_HANDLE_GET_DATA(handle, config,
 				struct fruit_config_data, return -1);
+
+	if (!is_ntfs_stream_smb_fname(smb_fname)) {
+		char *adp = NULL;
+
+		rc = SMB_VFS_NEXT_UNLINK(handle, smb_fname);
+		if (rc != 0) {
+			return -1;
+		}
+
+		if (config->rsrc != FRUIT_RSRC_ADFILE) {
+			return 0;
+		}
+
+		/*
+		 * 0 byte resource fork streams are not listed by
+		 * vfs_streaminfo, as a result stream cleanup/deletion of file
+		 * deletion doesn't remove the resourcefork stream.
+		 */
+		rc = adouble_path(talloc_tos(),
+				  smb_fname->base_name, &adp);
+		if (rc != 0) {
+			return -1;
+		}
+
+		/* FIXME: direct unlink(), missing smb_fname */
+		DEBUG(1,("fruit_unlink: %s\n", adp));
+		rc = unlink(adp);
+		if ((rc == -1) && (errno == ENOENT)) {
+			rc = 0;
+		}
+
+		TALLOC_FREE(adp);
+		return 0;
+	}
 
 	if (is_afpinfo_stream(smb_fname)) {
 		if (config->meta == FRUIT_META_STREAM) {
@@ -2413,8 +2442,14 @@ static int fruit_unlink(vfs_handle_struct *handle,
 						 smb_fname->base_name,
 						 AFPINFO_EA_NETATALK);
 		}
-	} else if (is_afpresource_stream(smb_fname)) {
+
+		return rc;
+	}
+
+	if (is_afpresource_stream(smb_fname)) {
 		if (config->rsrc == FRUIT_RSRC_ADFILE) {
+			char *adp = NULL;
+
 			rc = adouble_path(talloc_tos(),
 					  smb_fname->base_name, &adp);
 			if (rc != 0) {
@@ -2425,17 +2460,20 @@ static int fruit_unlink(vfs_handle_struct *handle,
 			if ((rc == -1) && (errno == ENOENT)) {
 				rc = 0;
 			}
+			TALLOC_FREE(adp);
 		} else {
 			rc = SMB_VFS_REMOVEXATTR(handle->conn,
-                                     smb_fname->base_name,
-                                     AFPRESOURCE_EA_NETATALK);
+						 smb_fname->base_name,
+						 AFPRESOURCE_EA_NETATALK);
 		}
-	} else {
-		rc = SMB_VFS_NEXT_UNLINK(handle, smb_fname);
+
+		return rc;
 	}
 
-	TALLOC_FREE(adp);
-	return rc;
+	return SMB_VFS_NEXT_UNLINK(handle, smb_fname);
+
+
+	return 0;
 }
 
 static int fruit_chmod(vfs_handle_struct *handle,
