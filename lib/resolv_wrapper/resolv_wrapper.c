@@ -1157,7 +1157,7 @@ static void *_rwrap_load_lib_function(enum rwrap_lib lib, const char *fn_name)
 #if 0
 static int libc_res_init(void)
 {
-#if defined(HAVE_RES_INIT)
+#if !defined(res_init) && defined(HAVE_RES_INIT)
 	rwrap_load_lib_function(RWRAP_LIBRESOLV, res_init);
 
 	return rwrap.fns.libc_res_init();
@@ -1171,7 +1171,7 @@ static int libc_res_init(void)
 
 static int libc_res_ninit(struct __res_state *state)
 {
-#if defined(HAVE_RES_NINIT)
+#if !defined(res_ninit) && defined(HAVE_RES_NINIT)
 
 #if defined(HAVE_RES_NINIT_IN_LIBRESOLV)
 	rwrap_load_lib_function(RWRAP_LIBRESOLV, res_ninit);
@@ -1191,7 +1191,7 @@ static int libc_res_ninit(struct __res_state *state)
 
 static void libc_res_nclose(struct __res_state *state)
 {
-#if defined(HAVE_RES_NCLOSE)
+#if !defined(res_close) && defined(HAVE_RES_NCLOSE)
 
 #if defined(HAVE_RES_NCLOSE_IN_LIBRESOLV)
 	rwrap_load_lib_function(RWRAP_LIBRESOLV, res_nclose);
@@ -1216,7 +1216,7 @@ static int libc_res_nquery(struct __res_state *state,
 			   unsigned char *answer,
 			   int anslen)
 {
-#if defined(HAVE_RES_NQUERY)
+#if !defined(res_nquery) && defined(HAVE_RES_NQUERY)
 	rwrap_load_lib_function(RWRAP_LIBRESOLV, res_nquery);
 
 	return rwrap.fns.libc_res_nquery(state,
@@ -1246,7 +1246,7 @@ static int libc_res_nsearch(struct __res_state *state,
 			    unsigned char *answer,
 			    int anslen)
 {
-#if defined(HAVE_RES_NSEARCH)
+#if !defined(res_nsearch) && defined(HAVE_RES_NSEARCH)
 	rwrap_load_lib_function(RWRAP_LIBRESOLV, res_nsearch);
 
 	return rwrap.fns.libc_res_nsearch(state,
@@ -1418,7 +1418,7 @@ static int rwrap_res_ninit(struct __res_state *state)
 	return rc;
 }
 
-#if defined(HAVE_RES_NINIT)
+#if !defined(res_ninit) && defined(HAVE_RES_NINIT)
 int res_ninit(struct __res_state *state)
 #elif defined(HAVE___RES_NINIT)
 int __res_ninit(struct __res_state *state)
@@ -1442,7 +1442,7 @@ static int rwrap_res_init(void)
 	return rc;
 }
 
-#if defined(HAVE_RES_INIT)
+#if !defined(res_ninit) && defined(HAVE_RES_INIT)
 int res_init(void)
 #elif defined(HAVE___RES_INIT)
 int __res_init(void)
@@ -1472,7 +1472,7 @@ static void rwrap_res_nclose(struct __res_state *state)
 #endif
 }
 
-#if defined(HAVE_RES_NCLOSE)
+#if !defined(res_nclose) && defined(HAVE_RES_NCLOSE)
 void res_nclose(struct __res_state *state)
 #elif defined(HAVE___RES_NCLOSE)
 void __res_nclose(struct __res_state *state)
@@ -1545,7 +1545,7 @@ static int rwrap_res_nquery(struct __res_state *state,
 	return rc;
 }
 
-#if defined(HAVE_RES_NQUERY)
+#if !defined(res_nquery) && defined(HAVE_RES_NQUERY)
 int res_nquery(struct __res_state *state,
 	       const char *dname,
 	       int class,
@@ -1591,7 +1591,7 @@ static int rwrap_res_query(const char *dname,
 	return rc;
 }
 
-#if defined(HAVE_RES_QUERY)
+#if !defined(res_query) && defined(HAVE_RES_QUERY)
 int res_query(const char *dname,
 	      int class,
 	      int type,
@@ -1653,7 +1653,7 @@ static int rwrap_res_nsearch(struct __res_state *state,
 	return rc;
 }
 
-#if defined(HAVE_RES_NSEARCH)
+#if !defined(res_nsearch) && defined(HAVE_RES_NSEARCH)
 int res_nsearch(struct __res_state *state,
 		const char *dname,
 		int class,
@@ -1699,7 +1699,7 @@ static int rwrap_res_search(const char *dname,
 	return rc;
 }
 
-#if defined(HAVE_RES_SEARCH)
+#if !defined(res_search) && defined(HAVE_RES_SEARCH)
 int res_search(const char *dname,
 	       int class,
 	       int type,
