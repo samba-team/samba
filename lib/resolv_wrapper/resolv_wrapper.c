@@ -981,51 +981,68 @@ static int rwrap_res_fake_hosts(const char *hostfile,
 
 #include <dlfcn.h>
 
-struct rwrap_libc_fns {
-	int (*libc_res_init)(void);
-	int (*libc___res_init)(void);
-	int (*libc_res_ninit)(struct __res_state *state);
-	int (*libc___res_ninit)(struct __res_state *state);
-	void (*libc_res_nclose)(struct __res_state *state);
-	void (*libc___res_nclose)(struct __res_state *state);
-	void (*libc_res_close)(void);
-	void (*libc___res_close)(void);
-	int (*libc_res_nquery)(struct __res_state *state,
-			       const char *dname,
-			       int class,
-			       int type,
-			       unsigned char *answer,
-			       int anslen);
-	int (*libc___res_nquery)(struct __res_state *state,
+typedef int (*__libc_res_ninit)(struct __res_state *state);
+typedef int (*__libc___res_ninit)(struct __res_state *state);
+typedef void (*__libc_res_nclose)(struct __res_state *state);
+typedef void (*__libc___res_nclose)(struct __res_state *state);
+typedef int (*__libc_res_nquery)(struct __res_state *state,
 				 const char *dname,
 				 int class,
 				 int type,
 				 unsigned char *answer,
 				 int anslen);
-	int (*libc_res_nsearch)(struct __res_state *state,
-				const char *dname,
-				int class,
-				int type,
-				unsigned char *answer,
-				int anslen);
-	int (*libc___res_nsearch)(struct __res_state *state,
+typedef int (*__libc___res_nquery)(struct __res_state *state,
+				   const char *dname,
+				   int class,
+				   int type,
+				   unsigned char *answer,
+				   int anslen);
+typedef int (*__libc_res_nsearch)(struct __res_state *state,
 				  const char *dname,
 				  int class,
 				  int type,
 				  unsigned char *answer,
 				  int anslen);
+typedef int (*__libc___res_nsearch)(struct __res_state *state,
+				    const char *dname,
+				    int class,
+				    int type,
+				    unsigned char *answer,
+				    int anslen);
+
+#define RWRAP_SYMBOL_ENTRY(i) \
+	union { \
+		__libc_##i f; \
+		void *obj; \
+	} _libc_##i
+
+struct rwrap_libc_symbols {
+	RWRAP_SYMBOL_ENTRY(res_ninit);
+	RWRAP_SYMBOL_ENTRY(__res_ninit);
+	RWRAP_SYMBOL_ENTRY(res_nclose);
+	RWRAP_SYMBOL_ENTRY(__res_nclose);
+	RWRAP_SYMBOL_ENTRY(res_nquery);
+	RWRAP_SYMBOL_ENTRY(__res_nquery);
+	RWRAP_SYMBOL_ENTRY(res_nsearch);
+	RWRAP_SYMBOL_ENTRY(__res_nsearch);
 };
+#undef RWRAP_SYMBOL_ENTRY
 
 struct rwrap {
-	void *libc_handle;
-	void *libresolv_handle;
+	struct {
+		void *handle;
+		struct rwrap_libc_symbols symbols;
+	} libc;
+
+	struct {
+		void *handle;
+		struct rwrap_libc_symbols symbols;
+	} libresolv;
 
 	bool initialised;
 	bool enabled;
 
 	char *socket_dir;
-
-	struct rwrap_libc_fns fns;
 };
 
 static struct rwrap rwrap;
@@ -1063,7 +1080,7 @@ static void *rwrap_load_lib_handle(enum rwrap_lib lib)
 	switch (lib) {
 	case RWRAP_LIBRESOLV:
 #ifdef HAVE_LIBRESOLV
-		handle = rwrap.libresolv_handle;
+		handle = rwrap.libresolv.handle;
 		if (handle == NULL) {
 			for (i = 10; i >= 0; i--) {
 				char soname[256] = {0};
@@ -1075,18 +1092,18 @@ static void *rwrap_load_lib_handle(enum rwrap_lib lib)
 				}
 			}
 
-			rwrap.libresolv_handle = handle;
+			rwrap.libresolv.handle = handle;
 		}
 		break;
 #endif
 		/* FALL TROUGH */
 	case RWRAP_LIBC:
-		handle = rwrap.libc_handle;
+		handle = rwrap.libc.handle;
 #ifdef LIBC_SO
 		if (handle == NULL) {
 			handle = dlopen(LIBC_SO, flags);
 
-			rwrap.libc_handle = handle;
+			rwrap.libc.handle = handle;
 		}
 #endif
 		if (handle == NULL) {
@@ -1100,14 +1117,14 @@ static void *rwrap_load_lib_handle(enum rwrap_lib lib)
 				}
 			}
 
-			rwrap.libc_handle = handle;
+			rwrap.libc.handle = handle;
 		}
 		break;
 	}
 
 	if (handle == NULL) {
 #ifdef RTLD_NEXT
-		handle = rwrap.libc_handle = rwrap.libresolv_handle = RTLD_NEXT;
+		handle = rwrap.libc.handle = rwrap.libresolv.handle = RTLD_NEXT;
 #else
 		RWRAP_LOG(RWRAP_LOG_ERROR,
 			  "Failed to dlopen library: %s\n",
@@ -1119,7 +1136,7 @@ static void *rwrap_load_lib_handle(enum rwrap_lib lib)
 	return handle;
 }
 
-static void *_rwrap_load_lib_function(enum rwrap_lib lib, const char *fn_name)
+static void *_rwrap_bind_symbol(enum rwrap_lib lib, const char *fn_name)
 {
 	void *handle;
 	void *func;
@@ -1140,10 +1157,16 @@ static void *_rwrap_load_lib_function(enum rwrap_lib lib, const char *fn_name)
 	return func;
 }
 
-#define rwrap_load_lib_function(lib, fn_name) \
-	if (rwrap.fns.libc_##fn_name == NULL) { \
-		*(void **) (&rwrap.fns.libc_##fn_name) = \
-			_rwrap_load_lib_function(lib, #fn_name); \
+#define rwrap_bind_symbol_libc(sym_name) \
+	if (rwrap.libc.symbols._libc_##sym_name.obj == NULL) { \
+		rwrap.libc.symbols._libc_##sym_name.obj = \
+			_rwrap_bind_symbol(RWRAP_LIBC, #sym_name); \
+	}
+
+#define rwrap_bind_symbol_libresolv(sym_name) \
+	if (rwrap.libresolv.symbols._libc_##sym_name.obj == NULL) { \
+		rwrap.libresolv.symbols._libc_##sym_name.obj = \
+			_rwrap_bind_symbol(RWRAP_LIBRESOLV, #sym_name); \
 	}
 
 /*
@@ -1154,36 +1177,25 @@ static void *_rwrap_load_lib_function(enum rwrap_lib lib, const char *fn_name)
  * has probably something todo with with the linker.
  * So we need load each function at the point it is called the first time.
  */
-#if 0
-static int libc_res_init(void)
-{
-#if !defined(res_init) && defined(HAVE_RES_INIT)
-	rwrap_load_lib_function(RWRAP_LIBRESOLV, res_init);
-
-	return rwrap.fns.libc_res_init();
-#elif defined(HAVE___RES_INIT)
-	rwrap_load_lib_function(RWRAP_LIBRESOLV, __res_init);
-
-	return rwrap.fns.libc___res_init();
-#endif
-}
-#endif
 
 static int libc_res_ninit(struct __res_state *state)
 {
 #if !defined(res_ninit) && defined(HAVE_RES_NINIT)
 
 #if defined(HAVE_RES_NINIT_IN_LIBRESOLV)
-	rwrap_load_lib_function(RWRAP_LIBRESOLV, res_ninit);
+	rwrap_bind_symbol_libresolv(res_ninit);
+
+	return rwrap.libresolv.symbols._libc_res_ninit.f(state);
 #else /* HAVE_RES_NINIT_IN_LIBRESOLV */
-	rwrap_load_lib_function(RWRAP_LIBC, res_ninit);
+	rwrap_bind_symbol_libc(res_ninit);
+
+	return rwrap.libc.symbols._libc_res_ninit.f(state);
 #endif /* HAVE_RES_NINIT_IN_LIBRESOLV */
 
-	return rwrap.fns.libc_res_ninit(state);
 #elif defined(HAVE___RES_NINIT)
-	rwrap_load_lib_function(RWRAP_LIBC, __res_ninit);
+	rwrap_bind_symbol_libc(__res_ninit);
 
-	return rwrap.fns.libc___res_ninit(state);
+	return rwrap.libc.symbols._libc___res_ninit.f(state);
 #else
 #error "No res_ninit function"
 #endif
@@ -1194,16 +1206,21 @@ static void libc_res_nclose(struct __res_state *state)
 #if !defined(res_close) && defined(HAVE_RES_NCLOSE)
 
 #if defined(HAVE_RES_NCLOSE_IN_LIBRESOLV)
-	rwrap_load_lib_function(RWRAP_LIBRESOLV, res_nclose);
+	rwrap_bind_symbol_libresolv(res_nclose);
+
+	rwrap.libresolv.symbols._libc_res_nclose.f(state);
+	return;
 #else /* HAVE_RES_NCLOSE_IN_LIBRESOLV */
-	rwrap_load_lib_function(RWRAP_LIBC, res_nclose);
+	rwrap_bind_symbol_libc(res_nclose);
+
+	rwrap.libc.symbols._libc_res_nclose.f(state);
+	return;
 #endif /* HAVE_RES_NCLOSE_IN_LIBRESOLV */
 
-	rwrap.fns.libc_res_nclose(state);
 #elif defined(HAVE___RES_NCLOSE)
-	rwrap_load_lib_function(RWRAP_LIBC, __res_nclose);
+	rwrap_bind_symbol_libc(__res_nclose);
 
-	rwrap.fns.libc___res_nclose(state);
+	rwrap.libc.symbols._libc___res_nclose.f(state);
 #else
 #error "No res_nclose function"
 #endif
@@ -1217,23 +1234,23 @@ static int libc_res_nquery(struct __res_state *state,
 			   int anslen)
 {
 #if !defined(res_nquery) && defined(HAVE_RES_NQUERY)
-	rwrap_load_lib_function(RWRAP_LIBRESOLV, res_nquery);
+	rwrap_bind_symbol_libresolv(res_nquery);
 
-	return rwrap.fns.libc_res_nquery(state,
-					 dname,
-					 class,
-					 type,
-					 answer,
-					 anslen);
+	return rwrap.libresolv.symbols._libc_res_nquery.f(state,
+							  dname,
+							  class,
+							  type,
+							  answer,
+							  anslen);
 #elif defined(HAVE___RES_NQUERY)
-	rwrap_load_lib_function(RWRAP_LIBRESOLV, __res_nquery);
+	rwrap_bind_symbol_libresolv(__res_nquery);
 
-	return rwrap.fns.libc___res_nquery(state,
-					   dname,
-					   class,
-					   type,
-					   answer,
-					   anslen);
+	return rwrap.libresolv.symbols._libc___res_nquery.f(state,
+							    dname,
+							    class,
+							    type,
+							    answer,
+							    anslen);
 #else
 #error "No res_nquery function"
 #endif
@@ -1247,23 +1264,23 @@ static int libc_res_nsearch(struct __res_state *state,
 			    int anslen)
 {
 #if !defined(res_nsearch) && defined(HAVE_RES_NSEARCH)
-	rwrap_load_lib_function(RWRAP_LIBRESOLV, res_nsearch);
+	rwrap_bind_symbol_libresolv(res_nsearch);
 
-	return rwrap.fns.libc_res_nsearch(state,
-					  dname,
-					  class,
-					  type,
-					  answer,
-					  anslen);
+	return rwrap.libresolv.symbols._libc_res_nsearch.f(state,
+							   dname,
+							   class,
+							   type,
+							   answer,
+							   anslen);
 #elif defined(HAVE___RES_NSEARCH)
-	rwrap_load_lib_function(RWRAP_LIBRESOLV, __res_nsearch);
+	rwrap_bind_symbol_libresolv(__res_nsearch);
 
-	return rwrap.fns.libc___res_nsearch(state,
-					    dname,
-					    class,
-					    type,
-					    answer,
-					    anslen);
+	return rwrap.libresolv.symbols._libc___res_nsearch.f(state,
+							     dname,
+							     class,
+							     type,
+							     answer,
+							     anslen);
 #else
 #error "No res_nsearch function"
 #endif
