@@ -147,7 +147,7 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 	DATA_BLOB encrypted_session_key = data_blob(NULL, 0);
 	NTSTATUS nt_status;
 	int flags = 0;
-	const char *user, *domain;
+	const char *user = NULL, *domain = NULL, *workstation = NULL;
 
 	TALLOC_CTX *mem_ctx = talloc_new(out_mem_ctx);
 	if (!mem_ctx) {
@@ -256,6 +256,23 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 	cli_credentials_get_ntlm_username_domain(gensec_security->credentials, mem_ctx,
 						 &user, &domain);
 
+	workstation = cli_credentials_get_workstation(gensec_security->credentials);
+
+	if (user == NULL) {
+		DEBUG(10, ("User is NULL, returning INVALID_PARAMETER\n"));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (domain == NULL) {
+		DEBUG(10, ("Domain is NULL, returning INVALID_PARAMETER\n"));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (workstation == NULL) {
+		DEBUG(10, ("Workstation is NULL, returning INVALID_PARAMETER\n"));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
 	if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
 		flags |= CLI_CRED_NTLM2;
 	}
@@ -337,7 +354,7 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 		       nt_response.data, nt_response.length,
 		       domain,
 		       user,
-		       cli_credentials_get_workstation(gensec_security->credentials),
+		       workstation,
 		       encrypted_session_key.data, encrypted_session_key.length,
 		       ntlmssp_state->neg_flags);
 	if (!NT_STATUS_IS_OK(nt_status)) {
