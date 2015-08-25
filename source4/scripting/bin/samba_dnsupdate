@@ -382,6 +382,9 @@ def call_nsupdate(d, op="add"):
     f.write("send\n")
     f.close()
 
+    # Set a bigger MTU size to work around a bug in nsupdate's doio_send()
+    os.environ["SOCKET_WRAPPER_MTU"] = "2000"
+
     global error_count
     if ccachename:
         os.environ["KRB5CCNAME"] = ccachename
@@ -410,6 +413,8 @@ def call_nsupdate(d, op="add"):
             print("Failed nsupdate: %s : %s" % (str(d), estr))
     os.unlink(tmpfile)
 
+    # Let socket_wrapper set the default MTU size
+    os.environ["SOCKET_WRAPPER_MTU"] = "0"
 
 
 def rodc_dns_update(d, t, op):
