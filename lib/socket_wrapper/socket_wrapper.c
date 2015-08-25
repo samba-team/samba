@@ -4051,6 +4051,19 @@ static int swrap_recvmsg_after(int fd,
 		avail += msg->msg_iov[i].iov_len;
 	}
 
+	/* Convert the socket address before we leave */
+	if (si->type == SOCK_DGRAM && un_addr != NULL) {
+		rc = sockaddr_convert_from_un(si,
+					      un_addr,
+					      un_addrlen,
+					      si->family,
+					      msg->msg_name,
+					      &msg->msg_namelen);
+		if (rc == -1) {
+			goto done;
+		}
+	}
+
 	if (avail == 0) {
 		rc = 0;
 		goto done;
@@ -4096,16 +4109,6 @@ static int swrap_recvmsg_after(int fd,
 		}
 
 		if (un_addr != NULL) {
-			rc = sockaddr_convert_from_un(si,
-						      un_addr,
-						      un_addrlen,
-						      si->family,
-						      msg->msg_name,
-						      &msg->msg_namelen);
-			if (rc == -1) {
-				goto done;
-			}
-
 			swrap_pcap_dump_packet(si,
 					  msg->msg_name,
 					  SWRAP_RECVFROM,
@@ -4549,9 +4552,6 @@ static ssize_t swrap_recvmsg(int s, struct msghdr *omsg, int flags)
 
 	ret = libc_recvmsg(s, &msg, flags);
 
-	msg.msg_name = omsg->msg_name;
-	msg.msg_namelen = omsg->msg_namelen;
-
 #ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
 	msg_ctrllen_filled += msg.msg_controllen;
 	msg_ctrllen_left -= msg.msg_controllen;
@@ -4592,6 +4592,23 @@ static ssize_t swrap_recvmsg(int s, struct msghdr *omsg, int flags)
 	omsg->msg_flags = msg.msg_flags;
 #endif
 	omsg->msg_iovlen = msg.msg_iovlen;
+
+	/*
+	 * From the manpage:
+	 *
+	 * The  msg_name  field  points  to a caller-allocated buffer that is
+	 * used to return the source address if the socket is unconnected.  The
+	 * caller should set msg_namelen to the size of this buffer before this
+	 * call; upon return from a successful call, msg_name will contain the
+	 * length of the returned address.  If the application  does  not  need
+	 * to know the source address, msg_name can be specified as NULL.
+	 */
+	if (omsg->msg_name != NULL &&
+	    omsg->msg_namelen != 0 &&
+	    omsg->msg_namelen >= msg.msg_namelen) {
+		memcpy(omsg->msg_name, msg.msg_name, msg.msg_namelen);
+		omsg->msg_namelen = msg.msg_namelen;
+	}
 
 	return ret;
 }
