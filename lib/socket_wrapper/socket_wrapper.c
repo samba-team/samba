@@ -4603,9 +4603,11 @@ static ssize_t swrap_recvmsg(int s, struct msghdr *omsg, int flags)
 	 * length of the returned address.  If the application  does  not  need
 	 * to know the source address, msg_name can be specified as NULL.
 	 */
-	if (omsg->msg_name != NULL &&
-	    omsg->msg_namelen != 0 &&
-	    omsg->msg_namelen >= msg.msg_namelen) {
+	if (si->type == SOCK_STREAM) {
+		omsg->msg_namelen = 0;
+	} else if (omsg->msg_name != NULL &&
+	           omsg->msg_namelen != 0 &&
+	           omsg->msg_namelen >= msg.msg_namelen) {
 		memcpy(omsg->msg_name, msg.msg_name, msg.msg_namelen);
 		omsg->msg_namelen = msg.msg_namelen;
 	}
@@ -4644,8 +4646,11 @@ static ssize_t swrap_sendmsg(int s, const struct msghdr *omsg, int flags)
 	tmp.iov_len = 0;
 
 	ZERO_STRUCT(msg);
-	msg.msg_name = omsg->msg_name;             /* optional address */
-	msg.msg_namelen = omsg->msg_namelen;       /* size of address */
+
+	if (si->connected == 0) {
+		msg.msg_name = omsg->msg_name;             /* optional address */
+		msg.msg_namelen = omsg->msg_namelen;       /* size of address */
+	}
 	msg.msg_iov = omsg->msg_iov;               /* scatter/gather array */
 	msg.msg_iovlen = omsg->msg_iovlen;         /* # elements in msg_iov */
 #ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
