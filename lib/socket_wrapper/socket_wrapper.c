@@ -5131,4 +5131,11 @@ void swrap_destructor(void)
 		}
 		s = sockets;
 	}
+
+	if (swrap.libc_handle != NULL) {
+		dlclose(swrap.libc_handle);
+	}
+	if (swrap.libsocket_handle) {
+		dlclose(swrap.libsocket_handle);
+	}
 }
