@@ -37,7 +37,6 @@ from samba.netcmd.spn import cmd_spn
 from samba.netcmd.testparm import cmd_testparm
 from samba.netcmd.time import cmd_time
 from samba.netcmd.user import cmd_user
-from samba.netcmd.vampire import cmd_vampire
 from samba.netcmd.processes import cmd_processes
 
 
@@ -66,5 +65,4 @@ class cmd_sambatool(SuperCommand):
     subcommands["testparm"] =  cmd_testparm()
     subcommands["time"] = cmd_time()
     subcommands["user"] = cmd_user()
-    subcommands["vampire"] = cmd_vampire()
     subcommands["processes"] = cmd_processes()
