@@ -203,11 +203,12 @@ enum swrap_dbglvl_e {
 #define SOCKET_TYPE_CHAR_UDP_V6		'Y'
 
 /*
- * Cut down to 1500 byte packets for stream sockets,
- * which makes it easier to format PCAP capture files
- * (as the caller will simply continue from here)
+ * Set the packet MTU to 1500 bytes for stream sockets to make it it easier to
+ * format PCAP capture files (as the caller will simply continue from here).
  */
-#define SOCKET_MAX_PACKET 1500
+#define SOCKET_WRAPPER_MTU_DEFAULT 1500
+#define SOCKET_WRAPPER_MTU_MIN     512
+#define SOCKET_WRAPPER_MTU_MAX     32768
 
 #define SOCKET_MAX_SOCKETS 1024
 
@@ -910,6 +911,38 @@ static const char *socket_wrapper_dir(void)
 
 	SWRAP_LOG(SWRAP_LOG_TRACE, "socket_wrapper_dir: %s", s);
 	return s;
+}
+
+static unsigned int socket_wrapper_mtu(void)
+{
+	static unsigned int max_mtu = 0;
+	unsigned int tmp;
+	const char *s;
+	char *endp;
+
+	if (max_mtu != 0) {
+		return max_mtu;
+	}
+
+	max_mtu = SOCKET_WRAPPER_MTU_DEFAULT;
+
+	s = getenv("SOCKET_WRAPPER_MTU");
+	if (s == NULL) {
+		goto done;
+	}
+
+	tmp = strtol(s, &endp, 10);
+	if (s == endp) {
+		goto done;
+	}
+
+	if (tmp < SOCKET_WRAPPER_MTU_MIN || tmp > SOCKET_WRAPPER_MTU_MAX) {
+		goto done;
+	}
+	max_mtu = tmp;
+
+done:
+	return max_mtu;
 }
 
 bool socket_wrapper_enabled(void)
@@ -3743,7 +3776,9 @@ static ssize_t swrap_sendmsg_before(int fd,
 	}
 
 	switch (si->type) {
-	case SOCK_STREAM:
+	case SOCK_STREAM: {
+		unsigned long mtu;
+
 		if (!si->connected) {
 			errno = ENOTCONN;
 			return -1;
@@ -3753,22 +3788,23 @@ static ssize_t swrap_sendmsg_before(int fd,
 			break;
 		}
 
+		mtu = socket_wrapper_mtu();
 		for (i = 0; i < (size_t)msg->msg_iovlen; i++) {
 			size_t nlen;
 			nlen = len + msg->msg_iov[i].iov_len;
-			if (nlen > SOCKET_MAX_PACKET) {
+			if (nlen > mtu) {
 				break;
 			}
 		}
 		msg->msg_iovlen = i;
 		if (msg->msg_iovlen == 0) {
 			*tmp_iov = msg->msg_iov[0];
-			tmp_iov->iov_len = MIN(tmp_iov->iov_len, SOCKET_MAX_PACKET);
+			tmp_iov->iov_len = MIN(tmp_iov->iov_len, mtu);
 			msg->msg_iov = tmp_iov;
 			msg->msg_iovlen = 1;
 		}
 		break;
-
+	}
 	case SOCK_DGRAM:
 		if (si->connected) {
 			if (msg->msg_name) {
@@ -3958,7 +3994,8 @@ static int swrap_recvmsg_before(int fd,
 	(void)fd; /* unused */
 
 	switch (si->type) {
-	case SOCK_STREAM:
+	case SOCK_STREAM: {
+		unsigned int mtu;
 		if (!si->connected) {
 			errno = ENOTCONN;
 			return -1;
@@ -3968,22 +4005,23 @@ static int swrap_recvmsg_before(int fd,
 			break;
 		}
 
+		mtu = socket_wrapper_mtu();
 		for (i = 0; i < (size_t)msg->msg_iovlen; i++) {
 			size_t nlen;
 			nlen = len + msg->msg_iov[i].iov_len;
-			if (nlen > SOCKET_MAX_PACKET) {
+			if (nlen > mtu) {
 				break;
 			}
 		}
 		msg->msg_iovlen = i;
 		if (msg->msg_iovlen == 0) {
 			*tmp_iov = msg->msg_iov[0];
-			tmp_iov->iov_len = MIN(tmp_iov->iov_len, SOCKET_MAX_PACKET);
+			tmp_iov->iov_len = MIN(tmp_iov->iov_len, mtu);
 			msg->msg_iov = tmp_iov;
 			msg->msg_iovlen = 1;
 		}
 		break;
-
+	}
 	case SOCK_DGRAM:
 		if (msg->msg_name == NULL) {
 			errno = EINVAL;
