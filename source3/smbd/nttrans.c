@@ -2384,7 +2384,8 @@ static void call_nt_transact_get_user_quota(connection_struct *conn,
 				SBIG_UINT(entry,32,tmp_list->quotas->hardlim);
 
 				/* and now the SID */
-				sid_linearize(entry+40, sid_len, &tmp_list->quotas->sid);
+				sid_linearize((uint8_t *)(entry+40), sid_len,
+					      &tmp_list->quotas->sid);
 			}
 
 			qt_handle->tmp_list = tmp_list;
@@ -2486,7 +2487,7 @@ static void call_nt_transact_get_user_quota(connection_struct *conn,
 			SBIG_UINT(entry,32,qt.hardlim);
 
 			/* and now the SID */
-			sid_linearize(entry+40, sid_len, &sid);
+			sid_linearize((uint8_t *)(entry+40), sid_len, &sid);
 
 			break;
 

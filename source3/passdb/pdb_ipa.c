@@ -768,7 +768,7 @@ static struct pdb_domain_info *pdb_ipasam_get_domain_info(struct pdb_methods *pd
 	struct pdb_domain_info *info;
 	struct ldapsam_privates *ldap_state =
 			(struct ldapsam_privates *)pdb_methods->private_data;
-	char sid_buf[24];
+	uint8_t sid_buf[24];
 	DATA_BLOB sid_blob;
 	NTSTATUS status;
 

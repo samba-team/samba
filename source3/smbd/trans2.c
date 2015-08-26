@@ -3796,7 +3796,8 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 					&conn->session_info->security_token->sids[i],
 					0);
 
-				sid_linearize(pdata + data_len, sid_len,
+				sid_linearize((uint8_t *)(pdata + data_len),
+					      sid_len,
 				    &conn->session_info->security_token->sids[i]);
 				data_len += sid_len;
 			}
