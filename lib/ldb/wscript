@@ -56,11 +56,11 @@ def configure(conf):
 
     if not conf.env.standalone_ldb:
         if conf.CHECK_BUNDLED_SYSTEM_PKG('pyldb-util', minversion=VERSION,
-                                     onlyif='talloc tdb tevent ldb',
+                                     onlyif='talloc tdb tevent',
                                      implied_deps='replace talloc tdb tevent ldb'):
             conf.define('USING_SYSTEM_PYLDB_UTIL', 1)
             if conf.CHECK_BUNDLED_SYSTEM_PKG('ldb', minversion=VERSION,
-                                         onlyif='talloc tdb tevent',
+                                         onlyif='talloc tdb tevent pyldb-util',
                                          implied_deps='replace talloc tdb tevent'):
                 conf.define('USING_SYSTEM_LDB', 1)
 
