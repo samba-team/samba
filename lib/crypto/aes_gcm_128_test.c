@@ -178,11 +178,17 @@ bool torture_local_crypto_aes_gcm_128(struct torture_context *torture)
 
 		aes_gcm_128_init(&ctx, testarray[i].K.data, testarray[i].IV.data);
 		for (j=0; j < testarray[i].A.length; j++) {
+			aes_gcm_128_updateA(&ctx, NULL, 0);
 			aes_gcm_128_updateA(&ctx, &testarray[i].A.data[j], 1);
+			aes_gcm_128_updateA(&ctx, NULL, 0);
 		}
 		for (j=0; j < C.length; j++) {
+			aes_gcm_128_crypt(&ctx, NULL, 0);
+			aes_gcm_128_updateC(&ctx, NULL, 0);
 			aes_gcm_128_crypt(&ctx, &C.data[j], 1);
 			aes_gcm_128_updateC(&ctx, &C.data[j], 1);
+			aes_gcm_128_crypt(&ctx, NULL, 0);
+			aes_gcm_128_updateC(&ctx, NULL, 0);
 		}
 		aes_gcm_128_digest(&ctx, T);
 
@@ -244,11 +250,17 @@ bool torture_local_crypto_aes_gcm_128(struct torture_context *torture)
 
 		aes_gcm_128_init(&ctx, testarray[i].K.data, testarray[i].IV.data);
 		for (j=0; j < testarray[i].A.length; j++) {
+			aes_gcm_128_updateA(&ctx, NULL, 0);
 			aes_gcm_128_updateA(&ctx, &testarray[i].A.data[j], 1);
+			aes_gcm_128_updateA(&ctx, NULL, 0);
 		}
 		for (j=0; j < P.length; j++) {
+			aes_gcm_128_updateC(&ctx, NULL, 0);
+			aes_gcm_128_crypt(&ctx, NULL, 0);
 			aes_gcm_128_updateC(&ctx, &P.data[j], 1);
 			aes_gcm_128_crypt(&ctx, &P.data[j], 1);
+			aes_gcm_128_updateC(&ctx, NULL, 0);
+			aes_gcm_128_crypt(&ctx, NULL, 0);
 		}
 		aes_gcm_128_digest(&ctx, T);
 
