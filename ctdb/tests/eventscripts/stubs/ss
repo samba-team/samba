@@ -1,0 +1,88 @@
+#!/bin/bash
+
+prog="ss"
+
+usage ()
+{
+    cat >&2 <<EOF
+Usage: $prog -tn state established [ '(' ip-filter ')' ] [ '(' port-filter ')' ]
+
+A fake ss stub that prints items depending on the variables
+FAKE_NETSTAT_TCP_ESTABLISHED and FAKE_NETSTAT_TCP_ESTABLISHED_FILE.
+
+Note that "-tn state established" must be given.
+
+EOF
+    exit 1
+}
+
+if [ "$1" != "-tn" -o "$2" != "state" -o "$3" != "established" ] ; then
+    usage
+fi
+
+shift 3
+
+# Check if socket has matches in both ok_ips and ok_ports
+filter_socket ()
+{
+    ok_ips="$1"
+    ok_ports="$2"
+    socket="$3"
+
+    ip="${socket%:*}"
+    port="${socket##*:}"
+
+    if [ "$ok_ports" != "|" -a "${ok_ports#*|${port}|}" = "$ok_ports" ] ; then
+	return 1
+    fi
+    if [ "$ok_ips" != "|" -a "${ok_ips#*|${ip}|}" = "$ok_ips" ] ; then
+	return 1
+    fi
+
+    return 0
+}
+
+ss_tcp_established ()
+{
+    echo "Recv-Q Send-Q Local Address:Port Peer Address:Port"
+
+    # Very limited implementation:
+    # We only expect to find || inside parentheses
+    # We don't expect to see && - it is implied by juxtaposition
+    # Operator for port comparison is ignored and assumed to be ==
+
+    # Build lists of source ports and source IP addresses where each
+    # entry is surrounded by '|' characters.  These lists can be
+    # easily "searched" using the POSIX prefix and suffix removal
+    # operators.
+    in_parens=false
+    sports="|"
+    srcs="|"
+
+    while [ -n "$1" ] ; do
+	case "$1" in
+	    \() in_parens=true ; shift ;;
+	    \)) in_parens=false ; shift ;;
+	    \|\|) if ! $in_parens ; then usage ; fi ; shift ;;
+	    sport) p="${3#:}" ; sports="${sports}${p}|" ; shift 3 ;;
+	    src) ip="${2#\[}" ; ip="${ip%\]}" ; srcs="${srcs}${ip}|" ; shift 2 ;;
+	    *) usage ;;
+	esac
+    done
+
+    for i in $FAKE_NETSTAT_TCP_ESTABLISHED ; do
+	src="${i%|*}"
+	dst="${i#*|}"
+	if filter_socket "$srcs" "$sports" "$src" ; then
+	    echo 0 0 "$src" "$dst"
+	fi
+    done
+    while read src dst ; do
+	if filter_socket "$srcs" "$sports" "$src" ; then
+	    echo 0 0 "$src" "$dst"
+	fi
+    done <"$FAKE_NETSTAT_TCP_ESTABLISHED_FILE"
+}
+
+# Yes, lose the quoting so we can do a hacky parsing job
+ss_tcp_established $*

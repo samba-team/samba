@@ -531,11 +531,7 @@ get_tcp_connections_for_ip ()
 {
     _ip="$1"
 
-    netstat -tn | awk -v ip=$_ip \
-	'index($1, "tcp") == 1 && \
-	 (index($4, ip ":") == 1 || index($4, "::ffff:" ip ":") == 1) \
-	 && $6 == "ESTABLISHED" \
-	 {print $4" "$5}'
+    ss -tn state established "src [$_ip]" | awk 'NR > 1 {print $3, $4}'
 }
 
 ########################################################
@@ -1183,17 +1179,24 @@ update_tickles ()
 	# What public IPs do I hold?
 	_ips=$(ctdb -X ip | awk -F'|' -v pnn=$pnn '$3 == pnn {print $2}')
 
-	# IPs as a regexp choice
-	_ipschoice="($(echo $_ips | sed -e 's/ /|/g' -e 's/\./\\\\./g'))"
+	# IPs and port as ss filters
+	_ip_filter=""
+	for _ip in $_ips ; do
+	    _ip_filter="${_ip_filter}${_ip_filter:+ || }src [${_ip}]"
+	done
+	_port_filter="sport == :${_port}"
 
 	# Record connections to our public IPs in a temporary file.
 	# This temporary file is in CTDB's private state directory and
 	# $$ is used to avoid a very rare race involving CTDB's script
 	# debugging.  No security issue, nothing to see here...
 	_my_connections="${tickledir}/${_port}.connections.$$"
-	netstat -tn |
-	awk -v destpat="^${_ipschoice}:${_port}\$" \
-	  '$1 == "tcp" && $6 == "ESTABLISHED" && $4 ~ destpat {print $5, $4}' |
+	# Parentheses are needed around the filters for precedence but
+	# the parentheses can't be empty!
+	ss -tn state established \
+	   "${_ip_filter:+( ${_ip_filter} )}" \
+	   "${_port_filter:+( ${_port_filter} )}" |
+	awk 'NR > 1 {print $4, $3}' |
 	sort >"$_my_connections"
 
 	# Record our current tickles in a temporary file
