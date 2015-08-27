@@ -187,9 +187,6 @@ if krb5_config:
     finally:
         f.close()
 
-if conf.CHECK_BUNDLED_SYSTEM('com_err', checkfunctions='com_right_r com_err', headers='com_err.h'):
-    conf.define('USING_SYSTEM_COM_ERR', 1)
-
 def check_system_heimdal_lib(name, functions='', headers='', onlyif=None):
     # Only use system library if the user requested the bundled one not be
     # used.
@@ -210,6 +207,8 @@ def check_system_heimdal_binary(name):
         return False
     conf.define('USING_SYSTEM_%s' % name.upper(), 1)
     return True
+
+check_system_heimdal_lib("com_err", "com_right_r com_err", "com_err.h")
 
 if check_system_heimdal_lib("roken", "rk_socket_set_reuseaddr", "roken.h"):
     conf.env.CPPPATH_ROKEN_HOSTCC = conf.env.CPPPATH_ROKEN
