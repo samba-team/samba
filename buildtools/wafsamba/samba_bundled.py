@@ -108,16 +108,6 @@ def LIB_MUST_BE_PRIVATE(conf, libname):
     return ('ALL' in conf.env.PRIVATE_LIBS or
             libname in conf.env.PRIVATE_LIBS)
 
-@conf
-def CHECK_PREREQUISITES(conf, prereqs):
-    missing = []
-    for syslib in TO_LIST(prereqs):
-        f = 'FOUND_SYSTEMLIB_%s' % syslib
-        if not f in conf.env:
-            missing.append(syslib)
-    return missing
-
-
 @runonce
 @conf
 def CHECK_BUNDLED_SYSTEM_PKG(conf, libname, minversion='0.0.0',
@@ -142,11 +132,34 @@ def CHECK_BUNDLED_SYSTEM(conf, libname, minversion='0.0.0',
     this first tries via pkg-config, then if that fails
     tries by testing for a specified function in the specified lib
     '''
-    if conf.LIB_MUST_BE_BUNDLED(libname):
-        return False
+    # We always do a logic validation of 'onlyif' first
+    missing = []
+    if onlyif:
+        for l in TO_LIST(onlyif):
+            f = 'FOUND_SYSTEMLIB_%s' % l
+            if not f in conf.env:
+                Logs.error('ERROR: CHECK_BUNDLED_SYSTEM(%s) - ' % (libname) +
+                           'missing prerequisite check for ' +
+                           'system library %s, onlyif=%r' % (l, onlyif))
+                sys.exit(1)
+            if not conf.env[f]:
+                missing.append(l)
     found = 'FOUND_SYSTEMLIB_%s' % libname
     if found in conf.env:
         return conf.env[found]
+    if conf.LIB_MUST_BE_BUNDLED(libname):
+        conf.env[found] = False
+        return False
+
+    # see if the library should only use a system version if another dependent
+    # system version is found. That prevents possible use of mixed library
+    # versions
+    if missing:
+        if not conf.LIB_MAY_BE_BUNDLED(libname):
+            Logs.error('ERROR: Use of system library %s depends on missing system library/libraries %r' % (libname, missing))
+            sys.exit(1)
+        conf.env[found] = False
+        return False
 
     def check_functions_headers_code():
         '''helper function for CHECK_BUNDLED_SYSTEM'''
@@ -166,19 +179,6 @@ def CHECK_BUNDLED_SYSTEM(conf, libname, minversion='0.0.0',
             if not ok:
                 return False
         return True
-
-
-    # see if the library should only use a system version if another dependent
-    # system version is found. That prevents possible use of mixed library
-    # versions
-    if onlyif:
-        missing = conf.CHECK_PREREQUISITES(onlyif)
-        if missing:
-            if not conf.LIB_MAY_BE_BUNDLED(libname):
-                Logs.error('ERROR: Use of system library %s depends on missing system library/libraries %r' % (libname, missing))
-                sys.exit(1)
-            conf.env[found] = False
-            return False
 
     minversion = minimum_library_version(conf, libname, minversion)
 
