@@ -197,8 +197,9 @@ def check_system_heimdal_lib(name, functions='', headers='', onlyif=None):
         return False
     setattr(conf.env, "CPPPATH_%s" % name.upper(), heimdal_includedirs)
     setattr(conf.env, "LIBPATH_%s" % name.upper(), heimdal_libdirs)
-    conf.CHECK_BUNDLED_SYSTEM(name, checkfunctions=functions, headers=headers,
-        onlyif=onlyif)
+    if not conf.CHECK_BUNDLED_SYSTEM(name, checkfunctions=functions, headers=headers,
+                                     onlyif=onlyif):
+        return False
     conf.define('USING_SYSTEM_%s' % name.upper(), 1)
     return True
 
