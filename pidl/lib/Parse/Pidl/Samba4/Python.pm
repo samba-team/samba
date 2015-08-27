@@ -974,7 +974,7 @@ sub ConvertObjectFromPythonData($$$$$$;$)
                                 |uid_t|gid_t)$/x) {
 	        $self->pidl("{");
 		$self->indent;
-		$self->pidl("const unsigned long long uint_max = (sizeof($target) == 8) ? UINT64_MAX : (unsigned long long)((1ULL << (sizeof($target) * 8)) - 1);");
+		$self->pidl("const unsigned long long uint_max = ndr_sizeof2uintmax(sizeof($target));");
 		$self->pidl("if (PyLong_Check($cvar)) {");
 		$self->indent;
 		$self->pidl("unsigned long long test_var;");
@@ -1025,7 +1025,7 @@ sub ConvertObjectFromPythonData($$$$$$;$)
 	if ($ctype_alias  =~ /^(dlong|char|int[0-9]*|time_t)$/x) {
 	        $self->pidl("{");
 		$self->indent;
-		$self->pidl("const long long int_max = (long long)((1ULL << (sizeof($target) * 8 - 1)) - 1);");
+		$self->pidl("const long long int_max = ndr_sizeof2intmax(sizeof($target));");
 		$self->pidl("const long long int_min = -int_max - 1;");
 		$self->pidl("if (PyLong_Check($cvar)) {");
 		$self->indent;
@@ -1497,6 +1497,43 @@ sub Parse($$$$$)
 #include \"librpc/rpc/pyrpc_util.h\"
 #include \"$hdr\"
 #include \"$ndr_hdr\"
+
+/*
+ * These functions are here to ensure they can be optomised out by
+ * the compiler based on the constant input values
+ */
+
+static inline unsigned long long ndr_sizeof2uintmax(size_t var_size)
+{
+	switch (var_size) {
+	case 8:
+		return UINT64_MAX;
+	case 4:
+		return UINT32_MAX;
+	case 2:
+		return UINT16_MAX;
+	case 1:
+		return UINT8_MAX;
+	}
+
+	return 0;
+}
+
+static inline long long ndr_sizeof2intmax(size_t var_size)
+{
+	switch (var_size) {
+	case 8:
+		return INT64_MAX;
+	case 4:
+		return INT32_MAX;
+	case 2:
+		return INT16_MAX;
+	case 1:
+		return INT8_MAX;
+	}
+
+	return 0;
+}
 
 ");
 
