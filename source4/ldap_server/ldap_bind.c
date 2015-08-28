@@ -45,6 +45,23 @@ static NTSTATUS ldapsrv_BindSimple(struct ldapsrv_call *call)
 
 	DEBUG(10, ("BindSimple dn: %s\n",req->dn));
 
+	reply = ldapsrv_init_reply(call, LDAP_TAG_BindResponse);
+	if (!reply) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (req->dn != NULL &&
+	    strlen(req->dn) != 0 &&
+	    call->conn->require_strong_auth > LDAP_SERVER_REQUIRE_STRONG_AUTH_NO &&
+	    call->conn->sockets.active != call->conn->sockets.tls)
+	{
+		status = NT_STATUS_NETWORK_ACCESS_DENIED;
+		result = LDAP_STRONG_AUTH_REQUIRED;
+		errstr = talloc_asprintf(reply,
+					 "BindSimple: Transport encryption required.");
+		goto do_reply;
+	}
+
 	status = crack_auto_name_to_nt4_name(call, call->conn->connection->event.ctx, call->conn->lp_ctx, req->dn, &nt4_domain, &nt4_account);
 	if (NT_STATUS_IS_OK(status)) {
 		status = authenticate_username_pw(call,
@@ -56,11 +73,6 @@ static NTSTATUS ldapsrv_BindSimple(struct ldapsrv_call *call)
 						  MSV1_0_ALLOW_SERVER_TRUST_ACCOUNT |
 						  MSV1_0_ALLOW_WORKSTATION_TRUST_ACCOUNT,
 						  &session_info);
-	}
-
-	reply = ldapsrv_init_reply(call, LDAP_TAG_BindResponse);
-	if (!reply) {
-		return NT_STATUS_NO_MEMORY;
 	}
 
 	if (NT_STATUS_IS_OK(status)) {
@@ -86,6 +98,7 @@ static NTSTATUS ldapsrv_BindSimple(struct ldapsrv_call *call)
 		errstr = talloc_asprintf(reply, "Simple Bind Failed: %s", nt_errstr(status));
 	}
 
+do_reply:
 	resp = &reply->msg->r.BindResponse;
 	resp->response.resultcode = result;
 	resp->response.errormessage = errstr;
@@ -261,6 +274,28 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 				if (!talloc_reference(context->sasl, conn->gensec)) {
 					status = NT_STATUS_NO_MEMORY;
 				}
+			}
+		} else {
+			switch (call->conn->require_strong_auth) {
+			case LDAP_SERVER_REQUIRE_STRONG_AUTH_NO:
+				break;
+			case LDAP_SERVER_REQUIRE_STRONG_AUTH_ALLOW_SASL_OVER_TLS:
+				if (call->conn->sockets.active == call->conn->sockets.tls) {
+					break;
+				}
+				status = NT_STATUS_NETWORK_ACCESS_DENIED;
+				result = LDAP_STRONG_AUTH_REQUIRED;
+				errstr = talloc_asprintf(reply,
+						"SASL:[%s]: not allowed if TLS is used.",
+						 req->creds.SASL.mechanism);
+				break;
+			case LDAP_SERVER_REQUIRE_STRONG_AUTH_YES:
+				status = NT_STATUS_NETWORK_ACCESS_DENIED;
+				result = LDAP_STRONG_AUTH_REQUIRED;
+				errstr = talloc_asprintf(reply,
+						 "SASL:[%s]: Sign or Seal are required.",
+						 req->creds.SASL.mechanism);
+				break;
 			}
 		}
 
