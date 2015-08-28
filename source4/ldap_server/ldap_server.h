@@ -22,6 +22,7 @@
 #include "lib/socket/socket.h"
 #include "lib/stream/packet.h"
 #include "system/network.h"
+#include "lib/param/loadparm.h"
 
 struct ldapsrv_connection {
 	struct ldapsrv_connection *next, *prev;
@@ -44,6 +45,7 @@ struct ldapsrv_connection {
 
 	bool global_catalog;
 	bool is_privileged;
+	enum ldap_server_require_strong_auth require_strong_auth;
 
 	struct {
 		int initial_timeout;
