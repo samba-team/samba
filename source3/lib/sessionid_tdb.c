@@ -67,6 +67,12 @@ static int sessionid_traverse_read_fn(struct smbXsrv_session_global0 *global,
 	case SMB3_DIALECT_REVISION_302:
 		fstrcpy(session.protocol_ver, "SMB3_02");
 		break;
+	case SMB3_DIALECT_REVISION_310:
+		fstrcpy(session.protocol_ver, "SMB3_10");
+		break;
+	case SMB3_DIALECT_REVISION_311:
+		fstrcpy(session.protocol_ver, "SMB3_11");
+		break;
 	default:
 		fstr_sprintf(session.protocol_ver, "Unknown (0x%04x)",
 			     global->connection_dialect);
