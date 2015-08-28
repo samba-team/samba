@@ -438,7 +438,7 @@ sub provision_raw_prepare($$$$$$$$$$$)
 		$ctx->{samba_dnsupdate} = "$ENV{SRCDIR_ABS}/source4/scripting/bin/samba_dnsupdate -s $ctx->{smb_conf} --all-interfaces --use-file=$ctx->{dns_host_file}";
 	} else {
 		$ctx->{resolv_conf} = "$ctx->{etcdir}/resolv.conf";
-		$ctx->{samba_dnsupdate} = "$ENV{SRCDIR_ABS}/source4/scripting/bin/samba_dnsupdate -s $ctx->{smb_conf}";
+		$ctx->{samba_dnsupdate} = "$ENV{SRCDIR_ABS}/source4/scripting/bin/samba_dnsupdate -s $ctx->{smb_conf} --all-interfaces";
 	}
 
 	$ctx->{tlsdir} = "$ctx->{privatedir}/tls";
