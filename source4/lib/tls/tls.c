@@ -42,6 +42,7 @@ struct tls_params {
 	gnutls_certificate_credentials x509_cred;
 	gnutls_dh_params dh_params;
 	bool tls_enabled;
+	const char *tls_priority;
 };
 #endif
 
@@ -390,6 +391,8 @@ struct tls_params *tls_initialise(TALLOC_CTX *mem_ctx, struct loadparm_context *
 		return params;
 	}
 
+	params->tls_priority = lpcfg_tls_priority(lp_ctx);
+
 	if (!file_exist(cafile)) {
 		char *hostname = talloc_asprintf(mem_ctx, "%s.%s",
 						 lpcfg_netbios_name(lp_ctx),
@@ -499,6 +502,7 @@ struct socket_context *tls_init_server(struct tls_params *params,
 	int ret;
 	struct socket_context *new_sock;
 	NTSTATUS nt_status;
+	const char *error_pos;
 
 	nt_status = socket_create_with_ops(socket_ctx, &tls_socket_ops, &new_sock,
 					   SOCKET_TYPE_STREAM,
@@ -527,7 +531,16 @@ struct socket_context *tls_init_server(struct tls_params *params,
 
 	talloc_set_destructor(tls, tls_destructor);
 
-	TLSCHECK(gnutls_set_default_priority(tls->session));
+	ret = gnutls_priority_set_direct(tls->session,
+					 params->tls_priority,
+					 &error_pos);
+	if (ret != GNUTLS_E_SUCCESS) {
+		DEBUG(0,("TLS %s - %s.  Check 'tls priority' option at '%s'\n",
+			 __location__, gnutls_strerror(ret), error_pos));
+		talloc_free(new_sock);
+		return NULL;
+	}
+
 	TLSCHECK(gnutls_credentials_set(tls->session, GNUTLS_CRD_CERTIFICATE,
 					params->x509_cred));
 	gnutls_certificate_server_set_request(tls->session, GNUTLS_CERT_REQUEST);
