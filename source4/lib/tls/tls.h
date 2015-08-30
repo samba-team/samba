@@ -51,13 +51,6 @@ void tls_cert_generate(TALLOC_CTX *mem_ctx,
 		       const char *cafile);
 
 /*
-  call tls_init_client() on each new client connection
-*/
-struct socket_context *tls_init_client(struct socket_context *sock, 
-				    struct tevent_fd *fde,
-				    const char *cafile);
-
-/*
   return True if a connection used tls
 */
 bool tls_enabled(struct socket_context *tls);

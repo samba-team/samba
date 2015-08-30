@@ -563,69 +563,6 @@ failed:
 }
 
 
-/*
-  setup for a new client connection
-*/
-struct socket_context *tls_init_client(struct socket_context *socket_ctx,
-				       struct tevent_fd *fde,
-				       const char *ca_path)
-{
-	struct tls_context *tls;
-	int ret = 0;
-	struct socket_context *new_sock;
-	NTSTATUS nt_status;
-
-	nt_status = socket_create_with_ops(socket_ctx, &tls_socket_ops, &new_sock,
-					   SOCKET_TYPE_STREAM,
-					   socket_ctx->flags | SOCKET_FLAG_ENCRYPT);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		return NULL;
-	}
-
-	tls = talloc(new_sock, struct tls_context);
-	if (tls == NULL) return NULL;
-
-	tls->socket          = socket_ctx;
-	talloc_steal(tls, socket_ctx);
-	tls->fde             = fde;
-
-	new_sock->private_data    = tls;
-
-	gnutls_global_init();
-
-	gnutls_certificate_allocate_credentials(&tls->xcred);
-	gnutls_certificate_set_x509_trust_file(tls->xcred, ca_path, GNUTLS_X509_FMT_PEM);
-	TLSCHECK(gnutls_init(&tls->session, GNUTLS_CLIENT));
-	TLSCHECK(gnutls_set_default_priority(tls->session));
-	gnutls_priority_set_direct(tls->session, "NORMAL:+CTYPE-OPENPGP", NULL);
-	TLSCHECK(gnutls_credentials_set(tls->session, GNUTLS_CRD_CERTIFICATE, tls->xcred));
-
-	talloc_set_destructor(tls, tls_destructor);
-
-	gnutls_transport_set_ptr(tls->session, (gnutls_transport_ptr)tls);
-	gnutls_transport_set_pull_function(tls->session, (gnutls_pull_func)tls_pull);
-	gnutls_transport_set_push_function(tls->session, (gnutls_push_func)tls_push);
-#if GNUTLS_VERSION_MAJOR < 3
-	gnutls_transport_set_lowat(tls->session, 0);
-#endif
-	tls->tls_detect = false;
-
-	tls->output_pending  = false;
-	tls->done_handshake  = false;
-	tls->have_first_byte = false;
-	tls->tls_enabled     = true;
-	tls->interrupted     = false;
-
-	new_sock->state = SOCKET_STATE_CLIENT_CONNECTED;
-
-	return new_sock;
-
-failed:
-	DEBUG(0,("TLS init connection failed - %s\n", gnutls_strerror(ret)));
-	tls->tls_enabled = false;
-	return new_sock;
-}
-
 static NTSTATUS tls_socket_set_option(struct socket_context *sock, const char *option, const char *val)
 {
 	set_socket_options(socket_get_fd(sock), option);
@@ -692,16 +629,6 @@ struct socket_context *tls_init_server(struct tls_params *params,
 	return NULL;
 }
 
-
-/*
-  setup for a new client connection
-*/
-struct socket_context *tls_init_client(struct socket_context *socket,
-				       struct tevent_fd *fde,
-				       const char *ca_path)
-{
-	return NULL;
-}
 
 #endif
 
