@@ -4186,7 +4186,10 @@ static bool check_dom_trust_pw(struct dcerpc_pipe *p,
 					       host,
 					       lpcfg_cldap_port(tctx->lp_ctx),
 					       &dest_addr);
-	torture_assert_int_equal(tctx, rc, 0, "tsocket_address_inet_from_strings");
+	torture_assert_int_equal(tctx, rc, 0,
+				 talloc_asprintf(tctx,
+						 "tsocket_address_inet_from_strings failed parsing %s:%d",
+						 host, lpcfg_cldap_port(tctx->lp_ctx)));
 
 	/* cldap_socket_init should now know about the dest. address */
 	status = cldap_socket_init(tctx, NULL, dest_addr, &cldap);
