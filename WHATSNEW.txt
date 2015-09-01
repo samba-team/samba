@@ -1,4 +1,92 @@
                    ==============================
+                   Release Notes for Samba 4.1.20
+                          September 1, 2015
+                   ==============================
+
+
+This is the latest stable release of Samba 4.1.
+
+
+Changes since 4.1.19:
+---------------------
+
+o   Michael Adam <obnox@samba.org>
+    * BUG 11366: docs: Overhaul the description of "smb encrypt" to include SMB3
+      encryption.
+    * BUG 11372: smbd: Fix SMB3 functionality of "smb encrypt".
+
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 10823: s3: winbindd: Fix TALLOC_FREE of uninitialized groups variable.
+    * BUG 11328: Use resource group sids obtained from pac logon_info.
+    * BUG 11339: s3: smbd: Use separate flag to track
+      become_root()/unbecome_root() state.
+    * BUG 11342: s3: smbd: Codenomicon crash in do_smb_load_module().
+    * BUG 11359: lib: replace: Add strsep function (missing on Solaris).
+
+
+o   Christian Ambach <ambi@samba.org>
+    * BUG 11170: s3:param/loadparm fix 'testparm --show-all-parameters'.
+
+
+o   Ralph Boehme <slow@samba.org>
+    * BUG 11426: s3-net: Use talloc array in share allowedusers.
+
+
+o   Günther Deschner <gd@samba.org>
+    * BUG 11373: s3-smbd: Reset protocol in smbXsrv_connection_init_tables
+      failure paths.
+
+
+o   Justin Maggard <jmaggard@netgear.com>
+    * BUG 11320: s3-passdb: Respect LOOKUP_NAME_GROUP flag in sid lookup.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 11061: Fix logon via MS Remote Desktop.
+    * BUG 11081: s3:winbindd: make sure we pass a valid server to
+      rpccli_netlogon_sam_network_logon*().
+
+
+o   Anubhav Rakshit <anubhav.rakshit@gmail.com>
+    * BUG 11361: s3:libsmb: Fix a bug in conversion of ea list to ea array.
+
+
+o   Andreas Schneider <asn@samba.org>
+    * BUG 11403: s3-smbd: Leave sys_disk_free() if dfree command is used.
+    * BUG 11404: s3-auth: Fix a possible null pointer dereference.
+
+
+o   Roel van Meer <roel@1afa.com>
+    * BUG 11427: s3-util: Compare the maximum allowed length of a NetBIOS name.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+======================================================================
+
+                   ==============================
                    Release Notes for Samba 4.1.19
                             June 23, 2015
                    ==============================
@@ -74,10 +162,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
 
-======================================================================
 
                    ==============================
                    Release Notes for Samba 4.1.18
