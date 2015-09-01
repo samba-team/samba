@@ -373,7 +373,7 @@ int ldb_unpack_data_only_attr_list(struct ldb_context *ldb,
 			}
 		}
 		element = &message->elements[nelem];
-		element->name = talloc_strndup(message->elements, attr, attr_len);
+		element->name = talloc_memdup(message->elements, attr, attr_len+1);
 
 		if (element->name == NULL) {
 			errno = ENOMEM;
