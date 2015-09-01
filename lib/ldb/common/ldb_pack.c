@@ -260,18 +260,23 @@ int ldb_unpack_data_only_attr_list(struct ldb_context *ldb,
 
 	for (i=0;i<message->num_elements;i++) {
 		const char *attr = NULL;
+		size_t attr_len;
 		struct ldb_message_element *element = NULL;
 
 		if (remaining < 10) {
 			errno = EIO;
 			goto failed;
 		}
-		len = strnlen((char *)p, remaining-6);
-		if (len == remaining-6) {
+		/*
+		 * With this check, we know that the attribute name at
+		 * p is \0 terminated.
+		 */
+		attr_len = strnlen((char *)p, remaining-6);
+		if (attr_len == remaining-6) {
 			errno = EIO;
 			goto failed;
 		}
-		if (len == 0) {
+		if (attr_len == 0) {
 			errno = EIO;
 			goto failed;
 		}
@@ -302,8 +307,8 @@ int ldb_unpack_data_only_attr_list(struct ldb_context *ldb,
 			}
 
 			if (!keep) {
-				remaining -= len + 1;
-				p += len + 1;
+				remaining -= attr_len + 1;
+				p += attr_len + 1;
 				if (!ldb_consume_element_data(&p, &remaining)) {
 					errno = EIO;
 					goto failed;
@@ -312,14 +317,14 @@ int ldb_unpack_data_only_attr_list(struct ldb_context *ldb,
 			}
 		}
 		element = &message->elements[nelem];
-		element->name = talloc_strndup(message->elements, (char *)p, len);
+		element->name = talloc_strndup(message->elements, (char *)p, attr_len);
 		if (element->name == NULL) {
 			errno = ENOMEM;
 			goto failed;
 		}
 		element->flags = 0;
-		remaining -= len + 1;
-		p += len + 1;
+		remaining -= attr_len + 1;
+		p += attr_len + 1;
 		element->num_values = pull_uint32(p, 0);
 		element->values = NULL;
 		if (element->num_values != 0) {
