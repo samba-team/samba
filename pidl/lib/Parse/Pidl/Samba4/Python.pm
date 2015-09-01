@@ -1284,7 +1284,7 @@ sub ConvertScalarToPython($$$)
 	}
 
 	if ($ctypename =~ /^(uint64|hyper|NTTIME_hyper|NTTIME|NTTIME_1sec|udlong|udlongr|uid_t|gid_t)$/) {
-		return "$cvar > LONG_MAX ? PyLong_FromUnsignedLongLong($cvar) : PyInt_FromLong($cvar)";
+		return "ndr_PyLong_FromUnsignedLongLong($cvar)";
 	}
 
 	if ($ctypename =~ /^(char|int|int8|int16|int32|time_t)$/) {
@@ -1296,7 +1296,7 @@ sub ConvertScalarToPython($$$)
 	# possibly 64 bit unsigned long.  (enums are signed in C,
 	# unsigned in NDR)
 	if ($ctypename =~ /^(uint32|uint3264)$/) {
-		return "(uint32_t)$cvar > LONG_MAX ? PyLong_FromUnsignedLong((uint32_t)$cvar) : PyInt_FromLong((uint32_t)$cvar)";
+		return "ndr_PyLong_FromUnsignedLongLong((uint32_t)$cvar)";
 	}
 
 	if ($ctypename =~ /^(uint|uint8|uint16|uint1632)$/) {
@@ -1535,6 +1535,15 @@ static inline long long ndr_sizeof2intmax(size_t var_size)
 	return 0;
 }
 
+static inline PyObject *ndr_PyLong_FromUnsignedLongLong(unsigned long long v)
+{
+	if (v > LONG_MAX) {
+		return PyLong_FromUnsignedLongLong(v);
+	} else {
+		return PyInt_FromLong(v);
+	}
+}
+
 ");
 
 	foreach my $x (@$ndr) {
@@ -1614,7 +1623,7 @@ static inline long long ndr_sizeof2intmax(size_t var_size)
 		my $py_obj;
 		my ($ctype, $cvar) = @{$h->{'val'}};
 		if ($cvar =~ /^[0-9]+$/ or $cvar =~ /^0x[0-9a-fA-F]+$/) {
-			$py_obj = "$cvar > LONG_MAX ? PyLong_FromUnsignedLongLong($cvar) : PyInt_FromLong($cvar)";
+			$py_obj = "ndr_PyLong_FromUnsignedLongLong($cvar)";
 		} elsif ($cvar =~ /^".*"$/) {
 			$py_obj = "PyString_FromString($cvar)";
 		} else {
