@@ -300,6 +300,28 @@ Currently none.
 CHANGES SINCE 4.2.0rc3
 ======================
 
+o   Ralph Boehme <slow@samba.org>
+    * Bug 11444: Crash in notify_remove caused by change notify = no
+
+o   Günther Deschner <gd@samba.org>
+    * Bug 11411: smbtorture does not build when configured --with-system-mitkrb5
+
+o   Volker Lendecke <vl@samba.org>
+    * Bug 11455: fix recursion problem in rep_strtoll in lib/replace/replace.c
+    * Bug 11464: xid2sid gives inconsistent results
+    * Bug 11465: ctdb: Fix the build on FreeBSD 10.1
+
+o   Roel van Meer <roel@1afa.com>
+    * Bug 11427: nmbd incorrectly matches netbios names as own name
+
+o   Stefan Metzmacher <metze@samba.org>
+    * Bug 11451: Poor SMB3 encryption performance with AES-GCM
+    * Bug 11458: --bundled-libraries=!ldb,!pyldb,!pyldb-util doesn't
+      disable ldb build and install
+
+o   Andreas Schneider <asn@samba.org>
+    * Bug 9862: Samba "map to guest = Bad uid" doesn't work
+
 
 CHANGES SINCE 4.3.0rc2
 ======================
