@@ -257,6 +257,13 @@ results are more accurate than running the test with an emulator, because
 they reflect the exact kernel and system libraries that exist on the
 target.
 
+Improved Sparse File Support
+----------------------------
+Support for the FSCTL_SET_ZERO_DATA and FSCTL_QUERY_ALLOCATED_RANGES
+SMB2 requests has been added to the smbd file server.
+This allows for clients to deallocate (hole punch) regions within a
+sparse file, and check which portions of a file are allocated.
+
 
 ######################################################################
 Changes
