@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the fourth release candidate of Samba 4.3.  This is *not*
+This is the fifth release candidate of Samba 4.3.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -295,6 +295,10 @@ KNOWN ISSUES
 ============
 
 Currently none.
+
+
+CHANGES SINCE 4.2.0rc4
+======================
 
 
 CHANGES SINCE 4.2.0rc3
