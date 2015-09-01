@@ -3572,17 +3572,23 @@ static NTSTATUS dcesrv_samr_GetGroupsForUser(struct dcesrv_call_state *dce_call,
 	const char * const attrs[2] = { "objectSid", NULL };
 	struct samr_RidWithAttributeArray *array;
 	int i, count;
+	char membersidstr[DOM_SID_STR_BUFLEN];
 
 	DCESRV_PULL_HANDLE(h, r->in.user_handle, SAMR_HANDLE_USER);
 
 	a_state = h->data;
 	d_state = a_state->domain_state;
 
+	dom_sid_string_buf(a_state->account_sid,
+			   membersidstr, sizeof(membersidstr)),
+
 	count = samdb_search_domain(a_state->sam_ctx, mem_ctx,
 				    d_state->domain_dn, &res,
 				    attrs, d_state->domain_sid,
-				    "(&(member=%s)(|(grouptype=%d)(grouptype=%d))(objectclass=group))",
-				    ldb_dn_get_linearized(a_state->account_dn),
+				    "(&(member=<SID=%s>)"
+				     "(|(grouptype=%d)(grouptype=%d))"
+				     "(objectclass=group))",
+				    membersidstr,
 				    GTYPE_SECURITY_UNIVERSAL_GROUP,
 				    GTYPE_SECURITY_GLOBAL_GROUP);
 	if (count < 0)
