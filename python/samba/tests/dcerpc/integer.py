@@ -17,7 +17,7 @@
 
 """Tests for integer handling in PIDL generated bindings samba.dcerpc.*"""
 
-from samba.dcerpc import server_id, misc, srvsvc
+from samba.dcerpc import server_id, misc, srvsvc, samr
 import samba.tests
 
 class IntegerTests(samba.tests.TestCase):
@@ -145,6 +145,32 @@ class IntegerTests(samba.tests.TestCase):
         def assign():
             g.time_mid = misc.SV_TYPE_DOMAIN_ENUM
         self.assertRaises(OverflowError, assign)
+
+    def test_hyper_into_int64(self):
+        s = samr.DomInfo1()
+        def assign():
+            s.max_password_age = server_id.SERVERID_UNIQUE_ID_NOT_TO_VERIFY
+        self.assertRaises(OverflowError, assign)
+
+    def test_int_into_int64(self):
+        s = samr.DomInfo1()
+        s.max_password_age = 5
+        self.assertEquals(s.max_password_age, 5)
+
+    def test_negative_int_into_int64(self):
+        s = samr.DomInfo1()
+        s.max_password_age = -5
+        self.assertEquals(s.max_password_age, -5)
+
+    def test_larger_int_into_int64(self):
+        s = samr.DomInfo1()
+        s.max_password_age = server_id.NONCLUSTER_VNN
+        self.assertEquals(s.max_password_age, 0xFFFFFFFFL)
+
+    def test_larger_negative_int_into_int64(self):
+        s = samr.DomInfo1()
+        s.max_password_age = -2147483649
+        self.assertEquals(s.max_password_age, -2147483649L)
 
     def test_int_list_over_list(self):
         g = misc.GUID()
