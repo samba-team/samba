@@ -30,6 +30,7 @@ class IntegerTests(samba.tests.TestCase):
     def test_int_into_hyper(self):
         s = server_id.server_id()
         s.unique_id = 1
+        self.assertEquals(s.unique_id, 1)
 
     def test_negative_int_into_hyper(self):
         s = server_id.server_id()
@@ -52,6 +53,7 @@ class IntegerTests(samba.tests.TestCase):
     def test_int_into_int32(self):
         s = srvsvc.NetRemoteTODInfo()
         s.timezone = 5
+        self.assertEquals(s.timezone, 5)
 
     def test_uint32_into_int32(self):
         s = srvsvc.NetRemoteTODInfo()
@@ -62,6 +64,7 @@ class IntegerTests(samba.tests.TestCase):
     def test_long_into_int32(self):
         s = srvsvc.NetRemoteTODInfo()
         s.timezone = 5L
+        self.assertEquals(s.timezone, 5)
 
     def test_larger_long_int_into_int32(self):
         s = srvsvc.NetRemoteTODInfo()
@@ -72,6 +75,7 @@ class IntegerTests(samba.tests.TestCase):
     def test_larger_int_into_int32(self):
         s = srvsvc.NetRemoteTODInfo()
         s.timezone = 2147483647
+        self.assertEquals(s.timezone, 2147483647)
 
     def test_float_into_int32(self):
         s = srvsvc.NetRemoteTODInfo()
@@ -88,6 +92,7 @@ class IntegerTests(samba.tests.TestCase):
     def test_negative_int_into_int32(self):
         s = srvsvc.NetRemoteTODInfo()
         s.timezone = -2147483648
+        self.assertEquals(s.timezone, -2147483648)
 
     def test_negative_into_uint32(self):
         s = server_id.server_id()
@@ -128,6 +133,7 @@ class IntegerTests(samba.tests.TestCase):
     def test_enum_into_uint16(self):
         g = misc.GUID()
         g.time_mid = misc.SEC_CHAN_DOMAIN
+        self.assertEquals(g.time_mid, misc.SEC_CHAN_DOMAIN)
 
     def test_bitmap_into_uint16(self):
         g = misc.GUID()
