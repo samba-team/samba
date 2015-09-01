@@ -18,6 +18,9 @@ fi
 # Always export, for statd callout
 export CTDB_NFS_CALLOUT
 
+# If the callout wants to use this then it must create it
+export CTDB_NFS_CALLOUT_STATE_DIR="${service_state_dir}/callout-state"
+
 nfs_callout_cache="${service_state_dir}/nfs_callout_cache"
 nfs_callout_cache_callout="${nfs_callout_cache}/CTDB_NFS_CALLOUT"
 nfs_callout_cache_ops="${nfs_callout_cache}/ops"
