@@ -1280,7 +1280,7 @@ sub ConvertScalarToPython($$$)
 	$ctypename = expandAlias($ctypename);
 
 	if ($ctypename =~ /^(int64|dlong)$/) {
-		return "($cvar > LONG_MAX || $cvar < LONG_MIN) ? PyLong_FromLongLong($cvar) : PyInt_FromLong($cvar)";
+		return "ndr_PyLong_FromLongLong($cvar)";
 	}
 
 	if ($ctypename =~ /^(uint64|hyper|NTTIME_hyper|NTTIME|NTTIME_1sec|udlong|udlongr|uid_t|gid_t)$/) {
@@ -1533,6 +1533,15 @@ static inline long long ndr_sizeof2intmax(size_t var_size)
 	}
 
 	return 0;
+}
+
+static inline PyObject *ndr_PyLong_FromLongLong(long long v)
+{
+	if (v > LONG_MAX || v < LONG_MIN) {
+		return PyLong_FromLongLong(v);
+	} else {
+		return PyInt_FromLong(v);
+	}
 }
 
 static inline PyObject *ndr_PyLong_FromUnsignedLongLong(unsigned long long v)
