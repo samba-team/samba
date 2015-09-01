@@ -805,6 +805,9 @@ setup_nfs ()
 
     export RPCNFSDCOUNT
 
+    # This doesn't even need to exist
+    export CTDB_NFS_EXPORTS_FILE="$EVENTSCRIPTS_TESTS_VAR_DIR/etc-exports"
+
     # Reset the failcounts for nfs services.
     eventscript_call eval rm -f '$ctdb_fail_dir/nfs_*'
 

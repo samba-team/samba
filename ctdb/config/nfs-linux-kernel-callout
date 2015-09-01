@@ -3,6 +3,15 @@
 # Exit on 1st error
 set -e
 
+# NFS exports file.  Some code below keeps a cache of output derived
+# from exportfs(8).  When this file is updated the cache is invalid
+# and needs to be regenerated.
+#
+# To change the file, edit the default value below.  Do not set
+# CTDB_NFS_EXPORTS_FILE - it isn't a configuration variable, just a
+# hook for testing.
+nfs_exports_file="${CTDB_NFS_EXPORTS_FILE:-/var/lib/nfs/etab}"
+
 # Red Hat
 nfs_service="nfs"
 nfslock_service="nfslock"
@@ -170,10 +179,25 @@ nfs_check_thread_count ()
 
 nfs_monitor_list_shares ()
 {
-    exportfs -v |
-	grep '^/' |
-	sed -e 's@[[:space:]][[:space:]]*[^[:space:]()][^[:space:]()]*([^[:space:]()][^[:space:]()]*)$@@' |
-	sort -u
+    _cache_file="${CTDB_NFS_CALLOUT_STATE_DIR}/list_shares_cache"
+    if  [ ! -r "$nfs_exports_file" ] || [ ! -r "$_cache_file" ] || \
+	    [ "$nfs_exports_file" -nt "$_cache_file" ] ; then
+	mkdir -p "$CTDB_NFS_CALLOUT_STATE_DIR"
+	# We could just use the contents of $nfs_exports_file.
+	# However, let's regard that file as internal to NFS and use
+	# exportfs, which is the public API.
+	if ! _exports=$(exportfs -v) ; then
+	    echo "WARNING: failed to run exportfs to list NFS shares" >&2
+	    return
+	fi
+
+	echo "$_exports" |
+	    grep '^/' |
+	    sed -e 's@[[:space:]][[:space:]]*[^[:space:]()][^[:space:]()]*([^[:space:]()][^[:space:]()]*)$@@' |
+	    sort -u >"$_cache_file"
+    fi
+
+    cat "$_cache_file"
 }
 
 ##################################################
