@@ -662,6 +662,9 @@ for env in ['vampire_dc', 'promoted_dc']:
                            extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
 
 
+planoldpythontestsuite("chgdcpass:local", "samba.tests.blackbox.samba_dnsupdate",
+                       environ={'DNS_SERVER_IP': '$SERVER_IP'})
+
 for env in ["ad_dc_ntvfs", "s4member", "rodc", "promoted_dc", "ad_dc", "ad_member"]:
     plantestsuite("samba.blackbox.wbinfo(%s:local)" % env, "%s:local" % env, [os.path.join(samba4srcdir, "../nsswitch/tests/test_wbinfo.sh"), '$DOMAIN', '$DC_USERNAME', '$DC_PASSWORD', env])
 
