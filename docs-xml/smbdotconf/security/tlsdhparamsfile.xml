@@ -6,7 +6,7 @@
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
  <description>
 	 <para>This option can be set to a file with Diffie-Hellman parameters
-		 which will be used with EDH ciphers.
+		 which will be used with DH ciphers.
 	 </para>
 	 <para>This path is relative to <smbconfoption name="private dir"/> if the path
 	 does not start with a /.</para>
