@@ -533,11 +533,6 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 			OM_uint32 lifetime = 0;
 			gss_cred_usage_t usage;
 			const char *role = NULL;
-			DEBUG(0, ("GSS %s Update(krb5)(%d) Update failed, credentials expired during GSSAPI handshake!\n",
-				  role,
-				  gensec_gssapi_state->gss_exchange_count));
-
-			
 			switch (gensec_security->gensec_role) {
 			case GENSEC_CLIENT:
 				creds = gensec_gssapi_state->client_cred->creds;
@@ -548,6 +543,10 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 				role = "server";
 				break;
 			}
+
+			DEBUG(0, ("GSS %s Update(krb5)(%d) Update failed, credentials expired during GSSAPI handshake!\n",
+				  role,
+				  gensec_gssapi_state->gss_exchange_count));
 
 			maj_stat = gss_inquire_cred(&min_stat, 
 						    creds,
@@ -591,15 +590,52 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 					     gss_mech_krb5)) {
 			switch (min_stat) {
 			case KRB5KRB_AP_ERR_TKT_NYV:
-				DEBUG(1, ("Error with ticket to contact %s: possible clock skew between us and the KDC or target server: %s\n",
-					  gensec_gssapi_state->target_principal,
-					  gssapi_error_string(out_mem_ctx, maj_stat, min_stat, gensec_gssapi_state->gss_oid)));
-				return NT_STATUS_TIME_DIFFERENCE_AT_DC; /* Make SPNEGO ignore us, we can't go any further here */
+				switch (gensec_security->gensec_role) {
+				case GENSEC_CLIENT:
+					DEBUG(1, ("Error with our ticket used to contact %s: "
+						  "possible clock skew between us and the "
+						  "KDC or target server: %s\n",
+						  gensec_gssapi_state->target_principal,
+						  gssapi_error_string(out_mem_ctx, maj_stat,
+								      min_stat,
+								      gensec_gssapi_state->gss_oid)));
+					break;
+				case GENSEC_SERVER:
+					DEBUG(1, ("Error with ticket used by client: "
+						  "possible clock skew between us and the "
+						  "KDC or client: %s\n",
+						  gssapi_error_string(out_mem_ctx, maj_stat,
+								      min_stat,
+								      gensec_gssapi_state->gss_oid)));
+					break;
+				}
+				/* Make SPNEGO ignore us, we can't go any further here */
+				return NT_STATUS_TIME_DIFFERENCE_AT_DC;
 			case KRB5KRB_AP_ERR_TKT_EXPIRED:
-				DEBUG(1, ("Error with ticket to contact %s: ticket is expired, possible clock skew between us and the KDC or target server: %s\n",
-					  gensec_gssapi_state->target_principal,
-					  gssapi_error_string(out_mem_ctx, maj_stat, min_stat, gensec_gssapi_state->gss_oid)));
-				return NT_STATUS_INVALID_PARAMETER; /* Make SPNEGO ignore us, we can't go any further here */
+				switch (gensec_security->gensec_role) {
+				case GENSEC_CLIENT:
+					DEBUG(1, ("Error with ticket to contact %s: "
+						  "ticket is expired, possible "
+						  "clock skew between us and "
+						  "the KDC or target server: %s\n",
+						  gensec_gssapi_state->target_principal,
+						  gssapi_error_string(out_mem_ctx,
+								      maj_stat,
+								      min_stat,
+								      gensec_gssapi_state->gss_oid)));
+					break;
+				case GENSEC_SERVER:
+					DEBUG(1, ("Error with ticket used by client: "
+						  "ticket is expired, possible "
+						  "clock skew between us and the "
+						  "KDC or client: %s\n",
+						  gssapi_error_string(out_mem_ctx,
+								      maj_stat,
+								      min_stat,
+								      gensec_gssapi_state->gss_oid)));
+				}
+				/* Make SPNEGO ignore us, we can't go any further here */
+				return NT_STATUS_INVALID_PARAMETER;
 			case KRB5_KDC_UNREACH:
 				DEBUG(3, ("Cannot reach a KDC we require in order to obtain a ticket to %s: %s\n",
 					  gensec_gssapi_state->target_principal,
