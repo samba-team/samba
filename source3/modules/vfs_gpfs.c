@@ -54,6 +54,10 @@ struct gpfs_config_data {
 	bool recalls;
 };
 
+struct gpfs_fsp_extension {
+	bool offline;
+};
+
 static inline unsigned int gpfs_acl_flags(gpfs_acl_t *gacl)
 {
 	if (gacl->acl_level == GPFS_ACL_LEVEL_V4FLAGS) {
@@ -1958,7 +1962,26 @@ static bool vfs_gpfs_is_offline(struct vfs_handle_struct *handle,
 static bool vfs_gpfs_fsp_is_offline(struct vfs_handle_struct *handle,
 				    struct files_struct *fsp)
 {
-	return vfs_gpfs_is_offline(handle, fsp->fsp_name, &fsp->fsp_name->st);
+	struct gpfs_fsp_extension *ext;
+
+	ext = VFS_FETCH_FSP_EXTENSION(handle, fsp);
+	if (ext == NULL) {
+		/*
+		 * Something bad happened, always ask.
+		 */
+		return vfs_gpfs_is_offline(handle, fsp->fsp_name,
+					   &fsp->fsp_name->st);
+	}
+
+	if (ext->offline) {
+		/*
+		 * As long as it's offline, ask.
+		 */
+		ext->offline = vfs_gpfs_is_offline(handle, fsp->fsp_name,
+						   &fsp->fsp_name->st);
+	}
+
+	return ext->offline;
 }
 
 static bool vfs_gpfs_aio_force(struct vfs_handle_struct *handle,
@@ -2207,6 +2230,8 @@ static int vfs_gpfs_open(struct vfs_handle_struct *handle,
 			 int flags, mode_t mode)
 {
 	struct gpfs_config_data *config;
+	int ret;
+	struct gpfs_fsp_extension *ext;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, config,
 				struct gpfs_config_data,
@@ -2223,7 +2248,24 @@ static int vfs_gpfs_open(struct vfs_handle_struct *handle,
 	if (config->syncio) {
 		flags |= O_SYNC;
 	}
-	return SMB_VFS_NEXT_OPEN(handle, smb_fname, fsp, flags, mode);
+
+	ext = VFS_ADD_FSP_EXTENSION(handle, fsp, struct gpfs_fsp_extension,
+				    NULL);
+	if (ext == NULL) {
+		errno = ENOMEM;
+		return -1;
+	}
+
+	/*
+	 * Assume the file is offline until gpfs tells us it's online.
+	 */
+	*ext = (struct gpfs_fsp_extension) { .offline = true };
+
+	ret = SMB_VFS_NEXT_OPEN(handle, smb_fname, fsp, flags, mode);
+	if (ret == -1) {
+		VFS_REMOVE_FSP_EXTENSION(handle, fsp);
+	}
+	return ret;
 }
 
 static ssize_t vfs_gpfs_pread(vfs_handle_struct *handle, files_struct *fsp,
