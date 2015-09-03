@@ -1083,7 +1083,7 @@ static void ctdb_tevent_trace(enum tevent_trace_point tp,
 			if (diff.tv_sec > 3) {
 				DEBUG(DEBUG_ERR,
 				      ("Handling event took %ld seconds!\n",
-				       diff.tv_sec));
+				       (long)diff.tv_sec));
 			}
 		}
 		tevent_before_wait_ts = now;
@@ -1095,7 +1095,7 @@ static void ctdb_tevent_trace(enum tevent_trace_point tp,
 			if (diff.tv_sec > 3) {
 				DEBUG(DEBUG_CRIT,
 				      ("No event for %ld seconds!\n",
-				       diff.tv_sec));
+				       (long)diff.tv_sec));
 			}
 		}
 		tevent_after_wait_ts = now;
