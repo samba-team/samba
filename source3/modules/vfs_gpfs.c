@@ -1955,18 +1955,23 @@ static bool vfs_gpfs_is_offline(struct vfs_handle_struct *handle,
 	return SMB_VFS_NEXT_IS_OFFLINE(handle, fname, sbuf);
 }
 
+static bool vfs_gpfs_fsp_is_offline(struct vfs_handle_struct *handle,
+				    struct files_struct *fsp)
+{
+	return vfs_gpfs_is_offline(handle, fsp->fsp_name, &fsp->fsp_name->st);
+}
+
 static bool vfs_gpfs_aio_force(struct vfs_handle_struct *handle,
 			       struct files_struct *fsp)
 {
-	return vfs_gpfs_is_offline(handle, fsp->fsp_name, &fsp->fsp_name->st);
+	return vfs_gpfs_fsp_is_offline(handle, fsp);
 }
 
 static ssize_t vfs_gpfs_sendfile(vfs_handle_struct *handle, int tofd,
 				 files_struct *fsp, const DATA_BLOB *hdr,
 				 off_t offset, size_t n)
 {
-	if (SMB_VFS_IS_OFFLINE(handle->conn, fsp->fsp_name, &fsp->fsp_name->st))
-	{
+	if (vfs_gpfs_fsp_is_offline(handle, fsp)) {
 		errno = ENOSYS;
 		return -1;
 	}
@@ -2207,14 +2212,12 @@ static int vfs_gpfs_open(struct vfs_handle_struct *handle,
 				struct gpfs_config_data,
 				return -1);
 
-	if (config->hsm && !config->recalls) {
-		if (SMB_VFS_IS_OFFLINE(handle->conn, smb_fname, &smb_fname->st))
-		{
-			DEBUG(10, ("Refusing access to offline file %s\n",
-				  fsp_str_dbg(fsp)));
-			errno = EACCES;
-			return -1;
-		}
+	if (config->hsm && !config->recalls &&
+	    vfs_gpfs_fsp_is_offline(handle, fsp)) {
+		DEBUG(10, ("Refusing access to offline file %s\n",
+			   fsp_str_dbg(fsp)));
+		errno = EACCES;
+		return -1;
 	}
 
 	if (config->syncio) {
@@ -2229,8 +2232,7 @@ static ssize_t vfs_gpfs_pread(vfs_handle_struct *handle, files_struct *fsp,
 	ssize_t ret;
 	bool was_offline;
 
-	was_offline = SMB_VFS_IS_OFFLINE(handle->conn, fsp->fsp_name,
-					 &fsp->fsp_name->st);
+	was_offline = vfs_gpfs_fsp_is_offline(handle, fsp);
 
 	ret = SMB_VFS_NEXT_PREAD(handle, fsp, data, n, offset);
 
@@ -2266,8 +2268,7 @@ static struct tevent_req *vfs_gpfs_pread_send(struct vfs_handle_struct *handle,
 	if (req == NULL) {
 		return NULL;
 	}
-	state->was_offline = SMB_VFS_IS_OFFLINE(handle->conn, fsp->fsp_name,
-						&fsp->fsp_name->st);
+	state->was_offline = vfs_gpfs_fsp_is_offline(handle, fsp);
 	state->fsp = fsp;
 	subreq = SMB_VFS_NEXT_PREAD_SEND(state, ev, handle, fsp, data,
 					 n, offset);
@@ -2317,8 +2318,7 @@ static ssize_t vfs_gpfs_pwrite(vfs_handle_struct *handle, files_struct *fsp,
 	ssize_t ret;
 	bool was_offline;
 
-	was_offline = SMB_VFS_IS_OFFLINE(handle->conn, fsp->fsp_name,
-					 &fsp->fsp_name->st);
+	was_offline = vfs_gpfs_fsp_is_offline(handle, fsp);
 
 	ret = SMB_VFS_NEXT_PWRITE(handle, fsp, data, n, offset);
 
@@ -2355,8 +2355,7 @@ static struct tevent_req *vfs_gpfs_pwrite_send(
 	if (req == NULL) {
 		return NULL;
 	}
-	state->was_offline = SMB_VFS_IS_OFFLINE(handle->conn, fsp->fsp_name,
-						&fsp->fsp_name->st);
+	state->was_offline = vfs_gpfs_fsp_is_offline(handle, fsp);
 	state->fsp = fsp;
 	subreq = SMB_VFS_NEXT_PWRITE_SEND(state, ev, handle, fsp, data,
 					 n, offset);
