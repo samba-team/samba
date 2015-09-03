@@ -501,9 +501,6 @@ NTSTATUS add_ccache_to_list(const char *princ_name,
 	struct WINBINDD_CCACHE_ENTRY *entry = NULL;
 	struct timeval t;
 	NTSTATUS ntret;
-#ifdef HAVE_KRB5
-	int ret;
-#endif
 
 	if ((username == NULL && princ_name == NULL) ||
 	    ccname == NULL || uid < 0) {
@@ -515,27 +512,6 @@ NTSTATUS add_ccache_to_list(const char *princ_name,
 			"max number of ccaches reached\n"));
 		return NT_STATUS_NO_MORE_ENTRIES;
 	}
-
-	/* If it is cached login, destroy krb5 ticket
-	 * to avoid surprise. */
-#ifdef HAVE_KRB5
-	if (postponed_request) {
-		/* ignore KRB5_FCC_NOFILE error here */
-		ret = ads_kdestroy(ccname);
-		if (ret == KRB5_FCC_NOFILE) {
-			ret = 0;
-		}
-		if (ret) {
-			DEBUG(0, ("add_ccache_to_list: failed to destroy "
-				   "user krb5 ccache %s with %s\n", ccname,
-				   error_message(ret)));
-			return krb5_to_nt_status(ret);
-		}
-		DEBUG(10, ("add_ccache_to_list: successfully destroyed "
-			   "krb5 ccache %s for user %s\n", ccname,
-			   username));
-	}
-#endif
 
 	/* Reference count old entries */
 	entry = get_ccache_by_username(username);
