@@ -1,8 +1,8 @@
 <samba:parameter name="server schannel"
                  context="G"
-				 type="enum"
-                 basic="1"
-		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+                 type="enum"
+                 enumlist="enum_bool_auto"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>
 	This controls whether the server offers or even demands the use of the netlogon schannel.

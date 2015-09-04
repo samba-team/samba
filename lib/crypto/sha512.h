@@ -36,7 +36,7 @@
 #ifndef HEIM_SHA_H
 #define HEIM_SHA_H 1
 
-#if 0
+#if SHA512_RENAME_NEEDED
 /* symbol renaming */
 #define SHA512_Init hc_SHA512_Init
 #define SHA512_Update hc_SHA512_Update

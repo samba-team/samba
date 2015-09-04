@@ -143,7 +143,7 @@ static int construct_generic_token_groups(struct ldb_module *module,
 	TALLOC_CTX *tmp_ctx = talloc_new(msg);
 	unsigned int i;
 	int ret;
-	const char *filter;
+	const char *filter = NULL;
 
 	NTSTATUS status;
 
@@ -615,9 +615,6 @@ static int construct_msds_keyversionnumber(struct ldb_module *module,
 	omd_value = ldb_msg_find_ldb_val(msg, "replPropertyMetaData");
 	if (!omd_value) {
 		/* We can't make up a key version number without meta data */
-		return LDB_SUCCESS;
-	}
-	if (!omd_value) {
 		return LDB_SUCCESS;
 	}
 

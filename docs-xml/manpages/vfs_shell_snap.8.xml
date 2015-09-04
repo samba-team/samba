@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE refentry PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
+<refentry id="vfs_shell_snap.8">
+
+<refmeta>
+	<refentrytitle>vfs_shell_snap</refentrytitle>
+	<manvolnum>8</manvolnum>
+	<refmiscinfo class="source">Samba</refmiscinfo>
+	<refmiscinfo class="manual">System Administration tools</refmiscinfo>
+	<refmiscinfo class="version">4.3</refmiscinfo>
+</refmeta>
+
+
+<refnamediv>
+	<refname>vfs_shell_snap</refname>
+	<refpurpose>
+		Shell script callouts for snapshot creation and deletion
+	</refpurpose>
+</refnamediv>
+
+<refsynopsisdiv>
+	<cmdsynopsis>
+		<command>vfs objects = shell_snap</command>
+	</cmdsynopsis>
+</refsynopsisdiv>
+
+<refsect1>
+	<title>DESCRIPTION</title>
+
+	<para>This VFS module is part of the
+	<citerefentry><refentrytitle>samba</refentrytitle>
+	<manvolnum>8</manvolnum></citerefentry> suite.</para>
+
+	<para>
+		The <command>vfs_shell_snap</command> VFS provides shell-script
+		callouts for snapshot creation and deletion operations issued
+		by remote clients using the File Server Remote VSS Protocol
+		(FSRVP).
+	</para>
+
+	<para>
+		The following shell callouts may be configured in smb.conf:
+	</para>
+	<para>
+		<smbconfoption name="shell_snap:check path command"></smbconfoption>
+		<itemizedlist>
+			<listitem><para>
+				Called when an FSRVP client wishes to check
+				whether a given share supports snapshot
+				create/delete requests.
+			</para></listitem>
+			<listitem><para>
+				The command is called with a single
+				<parameter>share_path</parameter> argument.
+			</para></listitem>
+			<listitem><para>
+				The command must return 0 if
+				<parameter>share_path</parameter> is capable of
+				being snapshotted.
+			</para></listitem>
+		</itemizedlist>
+	</para>
+	<para>
+		<smbconfoption name="shell_snap:create command"></smbconfoption>
+		<itemizedlist>
+			<listitem><para>
+				Called when an FSRVP client wishes to create
+				a snapshot.
+			</para></listitem>
+			<listitem><para>
+				The command is called with a single
+				<parameter>share_path</parameter> argument.
+			</para></listitem>
+			<listitem><para>
+				The command must return 0 status if the
+				snapshot was successfully taken.
+			</para></listitem>
+			<listitem><para>
+				The command must output the path of the newly
+				created snapshot to stdout.
+			</para></listitem>
+		</itemizedlist>
+	</para>
+	<para>
+		<smbconfoption name="shell_snap:delete command"></smbconfoption>
+		<itemizedlist>
+			<listitem><para>
+				Called when an FSRVP client wishes to delete
+				a snapshot.
+			</para></listitem>
+			<listitem><para>
+				The command is called with
+				<parameter>base_share_path</parameter> and
+				<parameter>snapshot_share_path</parameter>
+				arguments.
+			</para></listitem>
+			<listitem><para>
+				The command must return 0 status if the
+				snapshot was successfully removed.
+			</para></listitem>
+		</itemizedlist>
+		All commands are executed as the authenticated FSRVP client
+		user.
+	</para>
+
+	<para>
+		This module is stackable.
+	</para>
+</refsect1>
+
+<refsect1>
+	<title>CONFIGURATION</title>
+
+	<programlisting>
+		<smbconfsection name="[share]"/>
+		<smbconfoption name="vfs objects">shell_snap</smbconfoption>
+		<smbconfoption name="shell_snap:check path command">
+			snap_check_path.sh</smbconfoption>
+		<smbconfoption name="shell_snap:create command">
+			snap_create.sh</smbconfoption>
+		<smbconfoption name="shell_snap:delete command">
+			snap_delete.sh</smbconfoption>
+	</programlisting>
+
+	<para>
+		Samba's FSRVP server must be configured in the [global] section:
+	</para>
+
+	<programlisting>
+		<smbconfsection name="[global]"/>
+		<smbconfoption name="rpc_daemon:fssd">fork</smbconfoption>
+		<smbconfoption name="registry shares">yes</smbconfoption>
+		<smbconfoption name="include">registry</smbconfoption>
+	</programlisting>
+</refsect1>
+
+<refsect1>
+	<title>VERSION</title>
+
+	<para>
+		This man page is correct for version 4.2.0 of the Samba suite.
+	</para>
+</refsect1>
+
+<refsect1>
+	<title>AUTHOR</title>
+
+	<para>The original Samba software and related utilities
+	were created by Andrew Tridgell. Samba is now developed
+	by the Samba Team as an Open Source project similar
+	to the way the Linux kernel is developed.</para>
+
+</refsect1>
+
+</refentry>

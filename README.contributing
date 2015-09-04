@@ -3,7 +3,7 @@ How to contribute a patch to Samba
 
 Simple, just make the code change, and email it as either a "diff -u"
 change, or as a "git format-patch" change against the original source
-code to samba-technical@samba.org, or attach it to a bug report at
+code to samba-technical@lists.samba.org, or attach it to a bug report at
 http://bugzilla.samba.org
 
 For larger code changes, breaking the changes up into a set of simple

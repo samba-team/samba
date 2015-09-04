@@ -79,8 +79,8 @@ static double create_procs(bool (*fn)(int), bool *result);
 static bool force_cli_encryption(struct cli_state *c,
 			const char *sharename)
 {
-	uint16 major, minor;
-	uint32 caplow, caphigh;
+	uint16_t major, minor;
+	uint32_t caplow, caphigh;
 	NTSTATUS status;
 
 	if (!SERVER_HAS_UNIX_CIFS(c)) {
@@ -409,7 +409,7 @@ bool torture_init_connection(struct cli_state **pcli)
 	return true;
 }
 
-bool torture_cli_session_setup2(struct cli_state *cli, uint16 *new_vuid)
+bool torture_cli_session_setup2(struct cli_state *cli, uint16_t *new_vuid)
 {
 	uint16_t old_vuid = cli_state_get_uid(cli);
 	size_t passlen = strlen(password);
@@ -447,11 +447,11 @@ bool torture_close_connection(struct cli_state *c)
 
 /* check if the server produced the expected dos or nt error code */
 static bool check_both_error(int line, NTSTATUS status,
-			     uint8 eclass, uint32 ecode, NTSTATUS nterr)
+			     uint8_t eclass, uint32_t ecode, NTSTATUS nterr)
 {
 	if (NT_STATUS_IS_DOS(status)) {
-		uint8 cclass;
-		uint32 num;
+		uint8_t cclass;
+		uint32_t num;
 
 		/* Check DOS error */
 		cclass = NT_STATUS_DOS_CLASS(status);
@@ -481,11 +481,11 @@ static bool check_both_error(int line, NTSTATUS status,
 
 /* check if the server produced the expected error code */
 static bool check_error(int line, NTSTATUS status,
-			uint8 eclass, uint32 ecode, NTSTATUS nterr)
+			uint8_t eclass, uint32_t ecode, NTSTATUS nterr)
 {
 	if (NT_STATUS_IS_DOS(status)) {
-                uint8 cclass;
-                uint32 num;
+                uint8_t cclass;
+                uint32_t num;
 
                 /* Check DOS error */
 
@@ -517,7 +517,7 @@ static bool check_error(int line, NTSTATUS status,
 }
 
 
-static bool wait_lock(struct cli_state *c, int fnum, uint32 offset, uint32 len)
+static bool wait_lock(struct cli_state *c, int fnum, uint32_t offset, uint32_t len)
 {
 	NTSTATUS status;
 
@@ -677,7 +677,7 @@ static bool rw_torture3(struct cli_state *c, char *lockfname)
 	NTSTATUS status = NT_STATUS_OK;
 
 	srandom(1);
-	for (i = 0; i < sizeof(buf); i += sizeof(uint32))
+	for (i = 0; i < sizeof(buf); i += sizeof(uint32_t))
 	{
 		SIVAL(buf, i, sys_random());
 	}
@@ -1307,9 +1307,9 @@ static bool run_tcon_test(int dummy)
 {
 	static struct cli_state *cli;
 	const char *fname = "\\tcontest.tmp";
-	uint16 fnum1;
-	uint16 cnum1, cnum2, cnum3;
-	uint16 vuid1, vuid2;
+	uint16_t fnum1;
+	uint16_t cnum1, cnum2, cnum3;
+	uint16_t vuid1, vuid2;
 	char buf[4];
 	bool ret = True;
 	NTSTATUS status;
@@ -1424,7 +1424,7 @@ static bool run_tcon_test(int dummy)
 static bool run_tcon2_test(int dummy)
 {
 	static struct cli_state *cli;
-	uint16 cnum, max_xmit;
+	uint16_t cnum, max_xmit;
 	char *service;
 	NTSTATUS status;
 
@@ -1741,11 +1741,11 @@ static bool run_locktest3(int dummy)
 	const char *fname = "\\lockt3.lck";
 	uint16_t fnum1, fnum2;
 	int i;
-	uint32 offset;
+	uint32_t offset;
 	bool correct = True;
 	NTSTATUS status;
 
-#define NEXT_OFFSET offset += (~(uint32)0) / torture_numops
+#define NEXT_OFFSET offset += (~(uint32_t)0) / torture_numops
 
 	if (!torture_open_connection(&cli1, 0) || !torture_open_connection(&cli2, 1)) {
 		return False;
@@ -2766,10 +2766,10 @@ static bool run_fdpasstest(int dummy)
 static bool run_fdsesstest(int dummy)
 {
 	struct cli_state *cli;
-	uint16 new_vuid;
-	uint16 saved_vuid;
-	uint16 new_cnum;
-	uint16 saved_cnum;
+	uint16_t new_vuid;
+	uint16_t saved_vuid;
+	uint16_t new_cnum;
+	uint16_t saved_cnum;
 	const char *fname = "\\fdsess.tst";
 	const char *fname1 = "\\fdsess1.tst";
 	uint16_t fnum1;
@@ -3106,7 +3106,7 @@ static bool run_randomipc(int dummy)
 
 
 
-static void browse_callback(const char *sname, uint32 stype, 
+static void browse_callback(const char *sname, uint32_t stype,
 			    const char *comment, void *state)
 {
 	printf("\t%20.20s %08x %s\n", sname, stype, comment);
@@ -3264,8 +3264,7 @@ static bool run_trans2test(int dummy)
 		printf("ERROR: qfilename failed (%s)\n", nt_errstr(status));
 		correct = False;
 	}
-
-	if (strcmp(pname, fname)) {
+	else if (strcmp(pname, fname)) {
 		printf("qfilename gave different name? [%s] [%s]\n",
 		       fname, pname);
 		correct = False;
@@ -3380,7 +3379,7 @@ static bool run_trans2test(int dummy)
 static NTSTATUS new_trans(struct cli_state *pcli, int fnum, int level)
 {
 	uint8_t *buf = NULL;
-	uint32 len;
+	uint32_t len;
 	NTSTATUS status;
 
 	status = cli_qfileinfo(talloc_tos(), pcli, fnum, level, 0,
@@ -3390,7 +3389,7 @@ static NTSTATUS new_trans(struct cli_state *pcli, int fnum, int level)
 		       nt_errstr(status));
 	} else {
 		printf("qfileinfo: level %d, len = %u\n", level, len);
-		dump_data(0, (uint8 *)buf, len);
+		dump_data(0, (uint8_t *)buf, len);
 		printf("\n");
 	}
 	TALLOC_FREE(buf);
@@ -5322,8 +5321,8 @@ static bool run_opentest(int dummy)
 
 NTSTATUS torture_setup_unix_extensions(struct cli_state *cli)
 {
-	uint16 major, minor;
-	uint32 caplow, caphigh;
+	uint16_t major, minor;
+	uint32_t caplow, caphigh;
 	NTSTATUS status;
 
 	if (!SERVER_HAS_UNIX_CIFS(cli)) {
@@ -5751,7 +5750,7 @@ static bool run_simple_posix_open_test(int dummy)
 }
 
 
-static uint32 open_attrs_table[] = {
+static uint32_t open_attrs_table[] = {
 		FILE_ATTRIBUTE_NORMAL,
 		FILE_ATTRIBUTE_ARCHIVE,
 		FILE_ATTRIBUTE_READONLY,
@@ -5773,9 +5772,9 @@ static uint32 open_attrs_table[] = {
 
 struct trunc_open_results {
 	unsigned int num;
-	uint32 init_attr;
-	uint32 trunc_attr;
-	uint32 result_attr;
+	uint32_t init_attr;
+	uint32_t trunc_attr;
+	uint32_t result_attr;
 };
 
 static struct trunc_open_results attr_results[] = {
@@ -5813,7 +5812,7 @@ static bool run_openattrtest(int dummy)
 	const char *fname = "\\openattr.file";
 	uint16_t fnum1;
 	bool correct = True;
-	uint16 attr;
+	uint16_t attr;
 	unsigned int i, j, k, l;
 	NTSTATUS status;
 
@@ -5825,7 +5824,7 @@ static bool run_openattrtest(int dummy)
 
 	smbXcli_conn_set_sockopt(cli1->conn, sockops);
 
-	for (k = 0, i = 0; i < sizeof(open_attrs_table)/sizeof(uint32); i++) {
+	for (k = 0, i = 0; i < sizeof(open_attrs_table)/sizeof(uint32_t); i++) {
 		cli_setatr(cli1, fname, 0, 0);
 		cli_unlink(cli1, fname, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
 
@@ -5843,7 +5842,7 @@ static bool run_openattrtest(int dummy)
 			return False;
 		}
 
-		for (j = 0; j < sizeof(open_attrs_table)/sizeof(uint32); j++) {
+		for (j = 0; j < sizeof(open_attrs_table)/sizeof(uint32_t); j++) {
 			status = cli_ntcreate(cli1, fname, 0,
 					      FILE_READ_DATA|FILE_WRITE_DATA,
 					      open_attrs_table[j],
@@ -6049,7 +6048,7 @@ bool torture_ioctl_test(int dummy)
 	for (device=0;device<0x100;device++) {
 		printf("ioctl test with device = 0x%x\n", device);
 		for (function=0;function<0x100;function++) {
-			uint32 code = (device<<16) | function;
+			uint32_t code = (device<<16) | function;
 
 			status = cli_raw_ioctl(cli, fnum, code, &blob);
 
@@ -6383,10 +6382,10 @@ static bool run_error_map_extract(int dummy) {
 	static struct cli_state *c_nt;
 	NTSTATUS status;
 
-	uint32 error;
+	uint32_t error;
 
-	uint32 errnum;
-        uint8 errclass;
+	uint32_t errnum;
+        uint8_t errclass;
 
 	NTSTATUS nt_status;
 
@@ -8564,7 +8563,7 @@ static bool run_local_sid_to_string(int dummy) {
 
 static bool run_local_binary_to_sid(int dummy) {
 	struct dom_sid *sid = talloc(NULL, struct dom_sid);
-	static const char good_binary_sid[] = {
+	static const uint8_t good_binary_sid[] = {
 		0x1, /* revision number */
 		15, /* num auths */
 		0x1, 0x1, 0x1, 0x1, 0x1, 0x1, /* id_auth */
@@ -8585,7 +8584,7 @@ static bool run_local_binary_to_sid(int dummy) {
 		0x1, 0x1, 0x1, 0x1, /* auth[14] */
 	};
 
-	static const char long_binary_sid[] = {
+	static const uint8_t long_binary_sid[] = {
 		0x1, /* revision number */
 		15, /* num auths */
 		0x1, 0x1, 0x1, 0x1, 0x1, 0x1, /* id_auth */
@@ -8609,7 +8608,7 @@ static bool run_local_binary_to_sid(int dummy) {
 		0x1, 0x1, 0x1, 0x1, /* auth[17] */
 	};
 
-	static const char long_binary_sid2[] = {
+	static const uint8_t long_binary_sid2[] = {
 		0x1, /* revision number */
 		32, /* num auths */
 		0x1, 0x1, 0x1, 0x1, 0x1, 0x1, /* id_auth */
@@ -8935,7 +8934,7 @@ static void wbclient_done(struct tevent_req *req)
 	d_printf("wb_trans_recv %d returned %s\n", *i, wbcErrorString(wbc_err));
 }
 
-static bool run_local_wbclient(int dummy)
+static bool run_wbclient_multi_ping(int dummy)
 {
 	struct tevent_context *ev;
 	struct wb_context **wb_ctx;
@@ -9597,7 +9596,6 @@ static struct {
 	{ "LOCAL-SUBSTITUTE", run_local_substitute, 0},
 	{ "LOCAL-GENCACHE", run_local_gencache, 0},
 	{ "LOCAL-TALLOC-DICT", run_local_talloc_dict, 0},
-	{ "LOCAL-CTDB-CONN", run_ctdb_conn, 0},
 	{ "LOCAL-DBWRAP-WATCH1", run_dbwrap_watch1, 0 },
 	{ "LOCAL-MESSAGING-READ1", run_messaging_read1, 0 },
 	{ "LOCAL-MESSAGING-READ2", run_messaging_read2, 0 },
@@ -9605,11 +9603,13 @@ static struct {
 	{ "LOCAL-MESSAGING-READ4", run_messaging_read4, 0 },
 	{ "LOCAL-MESSAGING-FDPASS1", run_messaging_fdpass1, 0 },
 	{ "LOCAL-MESSAGING-FDPASS2", run_messaging_fdpass2, 0 },
+	{ "LOCAL-MESSAGING-FDPASS2a", run_messaging_fdpass2a, 0 },
+	{ "LOCAL-MESSAGING-FDPASS2b", run_messaging_fdpass2b, 0 },
 	{ "LOCAL-BASE64", run_local_base64, 0},
 	{ "LOCAL-RBTREE", run_local_rbtree, 0},
 	{ "LOCAL-MEMCACHE", run_local_memcache, 0},
 	{ "LOCAL-STREAM-NAME", run_local_stream_name, 0},
-	{ "LOCAL-WBCLIENT", run_local_wbclient, 0},
+	{ "WBCLIENT-MULTI-PING", run_wbclient_multi_ping, 0},
 	{ "LOCAL-string_to_sid", run_local_string_to_sid, 0},
 	{ "LOCAL-sid_to_string", run_local_sid_to_string, 0},
 	{ "LOCAL-binary_to_sid", run_local_binary_to_sid, 0},
@@ -9747,7 +9747,7 @@ static void usage(void)
 
 	setup_logging("smbtorture", DEBUG_STDOUT);
 
-	load_case_tables();
+	smb_init_locale();
 	fault_setup();
 
 	if (is_default_dyn_CONFIGFILE()) {

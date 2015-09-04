@@ -32,7 +32,7 @@ int non_posix_sys_acl_blob_get_file_helper(vfs_handle_struct *handle,
 	struct xattr_sys_acl_hash_wrapper acl_wrapper = {};
 	struct smb_filename *smb_fname;
 
-	smb_fname = synthetic_smb_fname_split(frame, path_p, NULL);
+	smb_fname = synthetic_smb_fname(frame, path_p, NULL, NULL);
 	if (smb_fname == NULL) {
 		TALLOC_FREE(frame);
 		errno = ENOMEM;

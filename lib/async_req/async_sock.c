@@ -27,194 +27,16 @@
 #include <talloc.h>
 #include <tevent.h>
 #include "lib/async_req/async_sock.h"
-#include "lib/iov_buf.h"
+#include "lib/util/iov_buf.h"
 
 /* Note: lib/util/ is currently GPL */
 #include "lib/util/tevent_unix.h"
 #include "lib/util/samba_util.h"
 
-#ifndef TALLOC_FREE
-#define TALLOC_FREE(ctx) do { talloc_free(ctx); ctx=NULL; } while(0)
-#endif
-
-struct sendto_state {
-	int fd;
-	const void *buf;
-	size_t len;
-	int flags;
-	const struct sockaddr_storage *addr;
-	socklen_t addr_len;
-	ssize_t sent;
-};
-
-static void sendto_handler(struct tevent_context *ev,
-			       struct tevent_fd *fde,
-			       uint16_t flags, void *private_data);
-
-struct tevent_req *sendto_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-			       int fd, const void *buf, size_t len, int flags,
-			       const struct sockaddr_storage *addr)
-{
-	struct tevent_req *result;
-	struct sendto_state *state;
-	struct tevent_fd *fde;
-
-	result = tevent_req_create(mem_ctx, &state, struct sendto_state);
-	if (result == NULL) {
-		return result;
-	}
-	state->fd = fd;
-	state->buf = buf;
-	state->len = len;
-	state->flags = flags;
-	state->addr = addr;
-
-	switch (addr->ss_family) {
-	case AF_INET:
-		state->addr_len = sizeof(struct sockaddr_in);
-		break;
-#if defined(HAVE_IPV6)
-	case AF_INET6:
-		state->addr_len = sizeof(struct sockaddr_in6);
-		break;
-#endif
-	case AF_UNIX:
-		state->addr_len = sizeof(struct sockaddr_un);
-		break;
-	default:
-		state->addr_len = sizeof(struct sockaddr_storage);
-		break;
-	}
-
-	fde = tevent_add_fd(ev, state, fd, TEVENT_FD_WRITE, sendto_handler,
-			    result);
-	if (fde == NULL) {
-		TALLOC_FREE(result);
-		return NULL;
-	}
-	return result;
-}
-
-static void sendto_handler(struct tevent_context *ev,
-			       struct tevent_fd *fde,
-			       uint16_t flags, void *private_data)
-{
-	struct tevent_req *req = talloc_get_type_abort(
-		private_data, struct tevent_req);
-	struct sendto_state *state =
-		tevent_req_data(req, struct sendto_state);
-
-	state->sent = sendto(state->fd, state->buf, state->len, state->flags,
-			     (const struct sockaddr *)state->addr,
-			     state->addr_len);
-	if ((state->sent == -1) && (errno == EINTR)) {
-		/* retry */
-		return;
-	}
-	if (state->sent == -1) {
-		tevent_req_error(req, errno);
-		return;
-	}
-	tevent_req_done(req);
-}
-
-ssize_t sendto_recv(struct tevent_req *req, int *perrno)
-{
-	struct sendto_state *state =
-		tevent_req_data(req, struct sendto_state);
-
-	if (tevent_req_is_unix_error(req, perrno)) {
-		return -1;
-	}
-	return state->sent;
-}
-
-struct recvfrom_state {
-	int fd;
-	void *buf;
-	size_t len;
-	int flags;
-	struct sockaddr_storage *addr;
-	socklen_t *addr_len;
-	ssize_t received;
-};
-
-static void recvfrom_handler(struct tevent_context *ev,
-			       struct tevent_fd *fde,
-			       uint16_t flags, void *private_data);
-
-struct tevent_req *recvfrom_send(TALLOC_CTX *mem_ctx,
-				 struct tevent_context *ev,
-				 int fd, void *buf, size_t len, int flags,
-				 struct sockaddr_storage *addr,
-				 socklen_t *addr_len)
-{
-	struct tevent_req *result;
-	struct recvfrom_state *state;
-	struct tevent_fd *fde;
-
-	result = tevent_req_create(mem_ctx, &state, struct recvfrom_state);
-	if (result == NULL) {
-		return result;
-	}
-	state->fd = fd;
-	state->buf = buf;
-	state->len = len;
-	state->flags = flags;
-	state->addr = addr;
-	state->addr_len = addr_len;
-
-	fde = tevent_add_fd(ev, state, fd, TEVENT_FD_READ, recvfrom_handler,
-			    result);
-	if (fde == NULL) {
-		TALLOC_FREE(result);
-		return NULL;
-	}
-	return result;
-}
-
-static void recvfrom_handler(struct tevent_context *ev,
-			       struct tevent_fd *fde,
-			       uint16_t flags, void *private_data)
-{
-	struct tevent_req *req = talloc_get_type_abort(
-		private_data, struct tevent_req);
-	struct recvfrom_state *state =
-		tevent_req_data(req, struct recvfrom_state);
-
-	state->received = recvfrom(state->fd, state->buf, state->len,
-				   state->flags, (struct sockaddr *)state->addr,
-				   state->addr_len);
-	if ((state->received == -1) && (errno == EINTR)) {
-		/* retry */
-		return;
-	}
-	if (state->received == 0) {
-		tevent_req_error(req, EPIPE);
-		return;
-	}
-	if (state->received == -1) {
-		tevent_req_error(req, errno);
-		return;
-	}
-	tevent_req_done(req);
-}
-
-ssize_t recvfrom_recv(struct tevent_req *req, int *perrno)
-{
-	struct recvfrom_state *state =
-		tevent_req_data(req, struct recvfrom_state);
-
-	if (tevent_req_is_unix_error(req, perrno)) {
-		return -1;
-	}
-	return state->received;
-}
-
 struct async_connect_state {
 	int fd;
+	struct tevent_fd *fde;
 	int result;
-	int sys_errno;
 	long old_sockflags;
 	socklen_t address_len;
 	struct sockaddr_storage address;
@@ -224,6 +46,8 @@ struct async_connect_state {
 	void *private_data;
 };
 
+static void async_connect_cleanup(struct tevent_req *req,
+				  enum tevent_req_state req_state);
 static void async_connect_connected(struct tevent_context *ev,
 				    struct tevent_fd *fde, uint16_t flags,
 				    void *priv);
@@ -248,13 +72,12 @@ struct tevent_req *async_connect_send(
 	void (*after_connect)(void *private_data),
 	void *private_data)
 {
-	struct tevent_req *result;
+	struct tevent_req *req;
 	struct async_connect_state *state;
-	struct tevent_fd *fde;
+	int ret;
 
-	result = tevent_req_create(
-		mem_ctx, &state, struct async_connect_state);
-	if (result == NULL) {
+	req = tevent_req_create(mem_ctx, &state, struct async_connect_state);
+	if (req == NULL) {
 		return NULL;
 	}
 
@@ -264,24 +87,30 @@ struct tevent_req *async_connect_send(
 	 */
 
 	state->fd = fd;
-	state->sys_errno = 0;
 	state->before_connect = before_connect;
 	state->after_connect = after_connect;
 	state->private_data = private_data;
 
 	state->old_sockflags = fcntl(fd, F_GETFL, 0);
 	if (state->old_sockflags == -1) {
-		goto post_errno;
+		tevent_req_error(req, errno);
+		return tevent_req_post(req, ev);
 	}
+
+	tevent_req_set_cleanup_fn(req, async_connect_cleanup);
 
 	state->address_len = address_len;
 	if (address_len > sizeof(state->address)) {
-		errno = EINVAL;
-		goto post_errno;
+		tevent_req_error(req, EINVAL);
+		return tevent_req_post(req, ev);
 	}
 	memcpy(&state->address, address, address_len);
 
-	set_blocking(fd, false);
+	ret = set_blocking(fd, false);
+	if (ret == -1) {
+		tevent_req_error(req, errno);
+		return tevent_req_post(req, ev);
+	}
 
 	if (state->before_connect != NULL) {
 		state->before_connect(state->private_data);
@@ -294,8 +123,8 @@ struct tevent_req *async_connect_send(
 	}
 
 	if (state->result == 0) {
-		tevent_req_done(result);
-		goto done;
+		tevent_req_done(req);
+		return tevent_req_post(req, ev);
 	}
 
 	/**
@@ -310,23 +139,37 @@ struct tevent_req *async_connect_send(
 	      errno == EISCONN ||
 #endif
 	      errno == EAGAIN || errno == EINTR)) {
-		state->sys_errno = errno;
-		goto post_errno;
+		tevent_req_error(req, errno);
+		return tevent_req_post(req, ev);
 	}
 
-	fde = tevent_add_fd(ev, state, fd, TEVENT_FD_READ | TEVENT_FD_WRITE,
-			   async_connect_connected, result);
-	if (fde == NULL) {
-		state->sys_errno = ENOMEM;
-		goto post_errno;
+	state->fde = tevent_add_fd(ev, state, fd,
+				   TEVENT_FD_READ | TEVENT_FD_WRITE,
+				   async_connect_connected, req);
+	if (state->fde == NULL) {
+		tevent_req_error(req, ENOMEM);
+		return tevent_req_post(req, ev);
 	}
-	return result;
+	return req;
+}
 
- post_errno:
-	tevent_req_error(result, state->sys_errno);
- done:
-	fcntl(fd, F_SETFL, state->old_sockflags);
-	return tevent_req_post(result, ev);
+static void async_connect_cleanup(struct tevent_req *req,
+				  enum tevent_req_state req_state)
+{
+	struct async_connect_state *state =
+		tevent_req_data(req, struct async_connect_state);
+
+	TALLOC_FREE(state->fde);
+	if (state->fd != -1) {
+		int ret;
+
+		ret = fcntl(state->fd, F_SETFL, state->old_sockflags);
+		if (ret == -1) {
+			abort();
+		}
+
+		state->fd = -1;
+	}
 }
 
 /**
@@ -359,8 +202,6 @@ static void async_connect_connected(struct tevent_context *ev,
 	}
 
 	if (ret == 0) {
-		state->sys_errno = 0;
-		TALLOC_FREE(fde);
 		tevent_req_done(req);
 		return;
 	}
@@ -368,36 +209,26 @@ static void async_connect_connected(struct tevent_context *ev,
 		/* Try again later, leave the fde around */
 		return;
 	}
-	state->sys_errno = errno;
-	TALLOC_FREE(fde);
 	tevent_req_error(req, errno);
 	return;
 }
 
 int async_connect_recv(struct tevent_req *req, int *perrno)
 {
-	struct async_connect_state *state =
-		tevent_req_data(req, struct async_connect_state);
-	int err;
+	int err = tevent_req_simple_recv_unix(req);
 
-	fcntl(state->fd, F_SETFL, state->old_sockflags);
-
-	if (tevent_req_is_unix_error(req, &err)) {
+	if (err != 0) {
 		*perrno = err;
 		return -1;
 	}
 
-	if (state->sys_errno == 0) {
-		return 0;
-	}
-
-	*perrno = state->sys_errno;
-	return -1;
+	return 0;
 }
 
 struct writev_state {
 	struct tevent_context *ev;
 	int fd;
+	struct tevent_fd *fde;
 	struct iovec *iov;
 	int count;
 	size_t total_size;
@@ -405,6 +236,8 @@ struct writev_state {
 	bool err_on_readability;
 };
 
+static void writev_cleanup(struct tevent_req *req,
+			   enum tevent_req_state req_state);
 static void writev_trigger(struct tevent_req *req, void *private_data);
 static void writev_handler(struct tevent_context *ev, struct tevent_fd *fde,
 			   uint16_t flags, void *private_data);
@@ -427,40 +260,46 @@ struct tevent_req *writev_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	state->count = count;
 	state->iov = (struct iovec *)talloc_memdup(
 		state, iov, sizeof(struct iovec) * count);
-	if (state->iov == NULL) {
-		goto fail;
+	if (tevent_req_nomem(state->iov, req)) {
+		return tevent_req_post(req, ev);
 	}
 	state->flags = TEVENT_FD_WRITE|TEVENT_FD_READ;
 	state->err_on_readability = err_on_readability;
 
+	tevent_req_set_cleanup_fn(req, writev_cleanup);
+
 	if (queue == NULL) {
-		struct tevent_fd *fde;
-		fde = tevent_add_fd(state->ev, state, state->fd,
+		state->fde = tevent_add_fd(state->ev, state, state->fd,
 				    state->flags, writev_handler, req);
-		if (tevent_req_nomem(fde, req)) {
+		if (tevent_req_nomem(state->fde, req)) {
 			return tevent_req_post(req, ev);
 		}
 		return req;
 	}
 
 	if (!tevent_queue_add(queue, ev, req, writev_trigger, NULL)) {
-		goto fail;
+		tevent_req_oom(req);
+		return tevent_req_post(req, ev);
 	}
 	return req;
- fail:
-	TALLOC_FREE(req);
-	return NULL;
+}
+
+static void writev_cleanup(struct tevent_req *req,
+			   enum tevent_req_state req_state)
+{
+	struct writev_state *state = tevent_req_data(req, struct writev_state);
+
+	TALLOC_FREE(state->fde);
 }
 
 static void writev_trigger(struct tevent_req *req, void *private_data)
 {
 	struct writev_state *state = tevent_req_data(req, struct writev_state);
-	struct tevent_fd *fde;
 
-	fde = tevent_add_fd(state->ev, state, state->fd, state->flags,
+	state->fde = tevent_add_fd(state->ev, state, state->fd, state->flags,
 			    writev_handler, req);
-	if (fde == NULL) {
-		tevent_req_error(req, ENOMEM);
+	if (tevent_req_nomem(state->fde, req)) {
+		return;
 	}
 }
 
@@ -537,21 +376,28 @@ ssize_t writev_recv(struct tevent_req *req, int *perrno)
 {
 	struct writev_state *state =
 		tevent_req_data(req, struct writev_state);
+	ssize_t ret;
 
 	if (tevent_req_is_unix_error(req, perrno)) {
+		tevent_req_received(req);
 		return -1;
 	}
-	return state->total_size;
+	ret = state->total_size;
+	tevent_req_received(req);
+	return ret;
 }
 
 struct read_packet_state {
 	int fd;
+	struct tevent_fd *fde;
 	uint8_t *buf;
 	size_t nread;
 	ssize_t (*more)(uint8_t *buf, size_t buflen, void *private_data);
 	void *private_data;
 };
 
+static void read_packet_cleanup(struct tevent_req *req,
+				 enum tevent_req_state req_state);
 static void read_packet_handler(struct tevent_context *ev,
 				struct tevent_fd *fde,
 				uint16_t flags, void *private_data);
@@ -564,12 +410,11 @@ struct tevent_req *read_packet_send(TALLOC_CTX *mem_ctx,
 						    void *private_data),
 				    void *private_data)
 {
-	struct tevent_req *result;
+	struct tevent_req *req;
 	struct read_packet_state *state;
-	struct tevent_fd *fde;
 
-	result = tevent_req_create(mem_ctx, &state, struct read_packet_state);
-	if (result == NULL) {
+	req = tevent_req_create(mem_ctx, &state, struct read_packet_state);
+	if (req == NULL) {
 		return NULL;
 	}
 	state->fd = fd;
@@ -577,20 +422,29 @@ struct tevent_req *read_packet_send(TALLOC_CTX *mem_ctx,
 	state->more = more;
 	state->private_data = private_data;
 
+	tevent_req_set_cleanup_fn(req, read_packet_cleanup);
+
 	state->buf = talloc_array(state, uint8_t, initial);
-	if (state->buf == NULL) {
-		goto fail;
+	if (tevent_req_nomem(state->buf, req)) {
+		return tevent_req_post(req, ev);
 	}
 
-	fde = tevent_add_fd(ev, state, fd, TEVENT_FD_READ, read_packet_handler,
-			    result);
-	if (fde == NULL) {
-		goto fail;
+	state->fde = tevent_add_fd(ev, state, fd,
+				   TEVENT_FD_READ, read_packet_handler,
+				   req);
+	if (tevent_req_nomem(state->fde, req)) {
+		return tevent_req_post(req, ev);
 	}
-	return result;
- fail:
-	TALLOC_FREE(result);
-	return NULL;
+	return req;
+}
+
+static void read_packet_cleanup(struct tevent_req *req,
+			   enum tevent_req_state req_state)
+{
+	struct read_packet_state *state =
+		tevent_req_data(req, struct read_packet_state);
+
+	TALLOC_FREE(state->fde);
 }
 
 static void read_packet_handler(struct tevent_context *ev,
@@ -670,25 +524,30 @@ ssize_t read_packet_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 		tevent_req_data(req, struct read_packet_state);
 
 	if (tevent_req_is_unix_error(req, perrno)) {
+		tevent_req_received(req);
 		return -1;
 	}
 	*pbuf = talloc_move(mem_ctx, &state->buf);
+	tevent_req_received(req);
 	return talloc_get_size(*pbuf);
 }
 
 struct wait_for_read_state {
-	struct tevent_req *req;
 	struct tevent_fd *fde;
+	int fd;
+	bool check_errors;
 };
 
+static void wait_for_read_cleanup(struct tevent_req *req,
+				  enum tevent_req_state req_state);
 static void wait_for_read_done(struct tevent_context *ev,
 			       struct tevent_fd *fde,
 			       uint16_t flags,
 			       void *private_data);
 
 struct tevent_req *wait_for_read_send(TALLOC_CTX *mem_ctx,
-				      struct tevent_context *ev,
-				      int fd)
+				      struct tevent_context *ev, int fd,
+				      bool check_errors)
 {
 	struct tevent_req *req;
 	struct wait_for_read_state *state;
@@ -697,13 +556,27 @@ struct tevent_req *wait_for_read_send(TALLOC_CTX *mem_ctx,
 	if (req == NULL) {
 		return NULL;
 	}
-	state->req = req;
+
+	tevent_req_set_cleanup_fn(req, wait_for_read_cleanup);
+
 	state->fde = tevent_add_fd(ev, state, fd, TEVENT_FD_READ,
-				   wait_for_read_done, state);
+				   wait_for_read_done, req);
 	if (tevent_req_nomem(state->fde, req)) {
 		return tevent_req_post(req, ev);
 	}
+
+	state->fd = fd;
+	state->check_errors = check_errors;
 	return req;
+}
+
+static void wait_for_read_cleanup(struct tevent_req *req,
+				  enum tevent_req_state req_state)
+{
+	struct wait_for_read_state *state =
+		tevent_req_data(req, struct wait_for_read_state);
+
+	TALLOC_FREE(state->fde);
 }
 
 static void wait_for_read_done(struct tevent_context *ev,
@@ -711,22 +584,56 @@ static void wait_for_read_done(struct tevent_context *ev,
 			       uint16_t flags,
 			       void *private_data)
 {
-	struct wait_for_read_state *state = talloc_get_type_abort(
-		private_data, struct wait_for_read_state);
+	struct tevent_req *req = talloc_get_type_abort(
+		private_data, struct tevent_req);
+	struct wait_for_read_state *state =
+	    tevent_req_data(req, struct wait_for_read_state);
+	ssize_t nread;
+	char c;
 
-	if (flags & TEVENT_FD_READ) {
-		TALLOC_FREE(state->fde);
-		tevent_req_done(state->req);
+	if ((flags & TEVENT_FD_READ) == 0) {
+		return;
 	}
+
+	if (!state->check_errors) {
+		tevent_req_done(req);
+		return;
+	}
+
+	nread = recv(state->fd, &c, 1, MSG_PEEK);
+
+	if (nread == 0) {
+		tevent_req_error(req, EPIPE);
+		return;
+	}
+
+	if ((nread == -1) && (errno == EINTR)) {
+		/* come back later */
+		return;
+	}
+
+	if ((nread == -1) && (errno == ENOTSOCK)) {
+		/* Ignore this specific error on pipes */
+		tevent_req_done(req);
+		return;
+	}
+
+	if (nread == -1) {
+		tevent_req_error(req, errno);
+		return;
+	}
+
+	tevent_req_done(req);
 }
 
 bool wait_for_read_recv(struct tevent_req *req, int *perr)
 {
-	int err;
+	int err = tevent_req_simple_recv_unix(req);
 
-	if (tevent_req_is_unix_error(req, &err)) {
+	if (err != 0) {
 		*perr = err;
 		return false;
 	}
+
 	return true;
 }

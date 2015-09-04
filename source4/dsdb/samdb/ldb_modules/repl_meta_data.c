@@ -1383,6 +1383,7 @@ static int replmd_update_rpmd(struct ldb_module *module,
 	struct ldb_message_element *objectclass_el;
 	enum urgent_situation situation;
 	bool rmd_is_provided;
+	bool rmd_is_just_resorted = false;
 
 	if (rename_attrs) {
 		attrs = rename_attrs;
@@ -1404,6 +1405,9 @@ static int replmd_update_rpmd(struct ldb_module *module,
 
 	if (ldb_request_get_control(req, DSDB_CONTROL_CHANGEREPLMETADATA_OID)) {
 		rmd_is_provided = true;
+		if (ldb_request_get_control(req, DSDB_CONTROL_CHANGEREPLMETADATA_RESORT_OID)) {
+			rmd_is_just_resorted = true;
+		}
 	} else {
 		rmd_is_provided = false;
 	}
@@ -1422,7 +1426,7 @@ static int replmd_update_rpmd(struct ldb_module *module,
 		/* In this case the change_replmetadata control was supplied */
 		/* We check that it's the only attribute that is provided
 		 * (it's a rare case so it's better to keep the code simplier)
-		 * We also check that the highest local_usn is bigger than
+		 * We also check that the highest local_usn is bigger or the same as
 		 * uSNChanged. */
 		uint64_t db_seq;
 		if( msg->num_elements != 1 ||
@@ -1449,7 +1453,6 @@ static int replmd_update_rpmd(struct ldb_module *module,
 				 ldb_dn_get_linearized(msg->dn)));
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
-		*seq_num = find_max_local_usn(omd);
 
 		ret = dsdb_module_search_dn(module, msg, &res, msg->dn, attrs2,
 					    DSDB_FLAG_NEXT_MODULE |
@@ -1462,12 +1465,22 @@ static int replmd_update_rpmd(struct ldb_module *module,
 			return ret;
 		}
 
-		db_seq = ldb_msg_find_attr_as_uint64(res->msgs[0], "uSNChanged", 0);
-		if (*seq_num <= db_seq) {
-			DEBUG(0,(__location__ ": changereplmetada control provided but max(local_usn)"\
-					      " is less or equal to uSNChanged (max = %lld uSNChanged = %lld)\n",
-				 (long long)*seq_num, (long long)db_seq));
-			return LDB_ERR_OPERATIONS_ERROR;
+		if (rmd_is_just_resorted == false) {
+			*seq_num = find_max_local_usn(omd);
+
+			db_seq = ldb_msg_find_attr_as_uint64(res->msgs[0], "uSNChanged", 0);
+
+			/*
+			 * The test here now allows for a new
+			 * replPropertyMetaData with no change, if was
+			 * just dbcheck re-sorting the values.
+			 */
+			if (*seq_num <= db_seq) {
+				DEBUG(0,(__location__ ": changereplmetada control provided but max(local_usn)" \
+					 " is less than uSNChanged (max = %lld uSNChanged = %lld)\n",
+					 (long long)*seq_num, (long long)db_seq));
+				return LDB_ERR_OPERATIONS_ERROR;
+			}
 		}
 
 	} else {
@@ -1547,7 +1560,7 @@ static int replmd_update_rpmd(struct ldb_module *module,
 	 * replmd_update_rpmd_element has done an update if the
 	 * seq_num is set
 	 */
-	if (*seq_num != 0) {
+	if (*seq_num != 0 || rmd_is_just_resorted == true) {
 		struct ldb_val *md_value;
 		struct ldb_message_element *el;
 
@@ -1837,7 +1850,7 @@ static int replmd_check_upgrade_links(struct parsed_dn *dns, uint32_t count, str
  */
 static int replmd_update_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct dsdb_dn *dsdb_dn,
 				struct dsdb_dn *old_dsdb_dn, const struct GUID *invocation_id,
-				uint64_t seq_num, uint64_t local_usn, NTTIME nttime,
+				uint64_t usn, uint64_t local_usn, NTTIME nttime,
 				uint32_t version, bool deleted)
 {
 	struct ldb_dn *dn = dsdb_dn->dn;
@@ -1860,7 +1873,7 @@ static int replmd_update_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct d
 	}
 	tval = data_blob_string_const(tstring);
 
-	usn_string = talloc_asprintf(mem_ctx, "%llu", (unsigned long long)seq_num);
+	usn_string = talloc_asprintf(mem_ctx, "%llu", (unsigned long long)usn);
 	if (!usn_string) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}

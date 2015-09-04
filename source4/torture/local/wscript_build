@@ -5,7 +5,7 @@ TORTURE_LOCAL_SOURCE = '''../../../lib/util/charset/tests/iconv.c
 	../../lib/messaging/tests/irpc.c ../../librpc/tests/binding_string.c
 	../../../lib/util/tests/idtree.c ../../../lib/util/tests/dlinklist.c
 	../../lib/socket/testsuite.c ../../libcli/resolve/testsuite.c
-	../../../lib/util/tests/strlist.c ../../../lib/util/tests/parmlist.c
+	../../../lib/util/tests/strlist.c
 	../../../lib/util/tests/str.c ../../../lib/util/tests/time.c
 	../../../lib/util/tests/asn1_tests.c ../../../lib/util/tests/data_blob.c
 	../../../lib/util/tests/file.c ../../../lib/util/tests/genrand.c
@@ -17,9 +17,11 @@ TORTURE_LOCAL_SOURCE = '''../../../lib/util/charset/tests/iconv.c
 	dbspeed.c torture.c ../ldb/ldb.c ../../dsdb/common/tests/dsdb_dn.c
 	../../dsdb/schema/tests/schema_syntax.c
 	../../../lib/util/tests/anonymous_shared.c
-	verif_trailer.c'''
+	verif_trailer.c
+	nss_tests.c
+	fsrvp_state.c'''
 
-TORTURE_LOCAL_DEPS = 'RPC_NDR_ECHO TDR LIBCLI_SMB MESSAGING iconv POPT_CREDENTIALS TORTURE_AUTH TORTURE_UTIL TORTURE_NDR TORTURE_LIBCRYPTO share torture_registry PROVISION ldb samdb replace-test'
+TORTURE_LOCAL_DEPS = 'RPC_NDR_ECHO TDR LIBCLI_SMB MESSAGING iconv POPT_CREDENTIALS TORTURE_AUTH TORTURE_UTIL TORTURE_NDR TORTURE_LIBCRYPTO share torture_registry PROVISION ldb samdb replace-test RPC_FSS_STATE'
 
 bld.SAMBA_MODULE('TORTURE_LOCAL',
 	source=TORTURE_LOCAL_SOURCE,

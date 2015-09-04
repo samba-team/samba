@@ -45,17 +45,17 @@ int tdb_trans_store_bystring(TDB_CONTEXT *tdb, const char *keystr,
  integers and strings.
 ****************************************************************************/
 
-static size_t tdb_pack_va(uint8 *buf, int bufsize, const char *fmt, va_list ap)
+static size_t tdb_pack_va(uint8_t *buf, int bufsize, const char *fmt, va_list ap)
 {
-	uint8 bt;
-	uint16 w;
-	uint32 d;
+	uint8_t bt;
+	uint16_t w;
+	uint32_t d;
 	int i;
 	void *p;
 	int len;
 	char *s;
 	char c;
-	uint8 *buf0 = buf;
+	uint8_t *buf0 = buf;
 	const char *fmt0 = fmt;
 	int bufsize0 = bufsize;
 
@@ -63,19 +63,19 @@ static size_t tdb_pack_va(uint8 *buf, int bufsize, const char *fmt, va_list ap)
 		switch ((c = *fmt++)) {
 		case 'b': /* unsigned 8-bit integer */
 			len = 1;
-			bt = (uint8)va_arg(ap, int);
+			bt = (uint8_t)va_arg(ap, int);
 			if (bufsize && bufsize >= len)
 				SSVAL(buf, 0, bt);
 			break;
 		case 'w': /* unsigned 16-bit integer */
 			len = 2;
-			w = (uint16)va_arg(ap, int);
+			w = (uint16_t)va_arg(ap, int);
 			if (bufsize && bufsize >= len)
 				SSVAL(buf, 0, w);
 			break;
 		case 'd': /* signed 32-bit integer (standard int in most systems) */
 			len = 4;
-			d = va_arg(ap, uint32);
+			d = va_arg(ap, uint32_t);
 			if (bufsize && bufsize >= len)
 				SIVAL(buf, 0, d);
 			break;
@@ -129,7 +129,7 @@ static size_t tdb_pack_va(uint8 *buf, int bufsize, const char *fmt, va_list ap)
 	return PTR_DIFF(buf, buf0);
 }
 
-size_t tdb_pack(uint8 *buf, int bufsize, const char *fmt, ...)
+size_t tdb_pack(uint8_t *buf, int bufsize, const char *fmt, ...)
 {
 	va_list ap;
 	size_t result;
@@ -140,7 +140,7 @@ size_t tdb_pack(uint8 *buf, int bufsize, const char *fmt, ...)
 	return result;
 }
 
-bool tdb_pack_append(TALLOC_CTX *mem_ctx, uint8 **buf, size_t *len,
+bool tdb_pack_append(TALLOC_CTX *mem_ctx, uint8_t **buf, size_t *len,
 		     const char *fmt, ...)
 {
 	va_list ap;
@@ -151,10 +151,10 @@ bool tdb_pack_append(TALLOC_CTX *mem_ctx, uint8 **buf, size_t *len,
 	va_end(ap);
 
 	if (mem_ctx != NULL) {
-		*buf = talloc_realloc(mem_ctx, *buf, uint8,
+		*buf = talloc_realloc(mem_ctx, *buf, uint8_t,
 					    (*len) + len1);
 	} else {
-		*buf = SMB_REALLOC_ARRAY(*buf, uint8, (*len) + len1);
+		*buf = SMB_REALLOC_ARRAY(*buf, uint8_t, (*len) + len1);
 	}
 
 	if (*buf == NULL) {
@@ -179,18 +179,18 @@ bool tdb_pack_append(TALLOC_CTX *mem_ctx, uint8 **buf, size_t *len,
  integers and strings.
 ****************************************************************************/
 
-int tdb_unpack(const uint8 *buf, int bufsize, const char *fmt, ...)
+int tdb_unpack(const uint8_t *buf, int bufsize, const char *fmt, ...)
 {
 	va_list ap;
-	uint8 *bt;
-	uint16 *w;
-	uint32 *d;
+	uint8_t *bt;
+	uint16_t *w;
+	uint32_t *d;
 	int len;
 	int *i;
 	void **p;
 	char *s, **b, **ps;
 	char c;
-	const uint8 *buf0 = buf;
+	const uint8_t *buf0 = buf;
 	const char *fmt0 = fmt;
 	int bufsize0 = bufsize;
 
@@ -200,21 +200,21 @@ int tdb_unpack(const uint8 *buf, int bufsize, const char *fmt, ...)
 		switch ((c=*fmt++)) {
 		case 'b': /* unsigned 8-bit integer */
 			len = 1;
-			bt = va_arg(ap, uint8 *);
+			bt = va_arg(ap, uint8_t *);
 			if (bufsize < len)
 				goto no_space;
 			*bt = SVAL(buf, 0);
 			break;
 		case 'w': /* unsigned 16-bit integer */
 			len = 2;
-			w = va_arg(ap, uint16 *);
+			w = va_arg(ap, uint16_t *);
 			if (bufsize < len)
 				goto no_space;
 			*w = SVAL(buf, 0);
 			break;
 		case 'd': /* unsigned 32-bit integer (standard int in most systems) */
 			len = 4;
-			d = va_arg(ap, uint32 *);
+			d = va_arg(ap, uint32_t *);
 			if (bufsize < len)
 				goto no_space;
 			*d = IVAL(buf, 0);
@@ -323,6 +323,7 @@ TDB_CONTEXT *tdb_open_log(const char *name, int hash_size, int tdb_flags,
 			  int open_flags, mode_t mode)
 {
 	TDB_CONTEXT *tdb;
+	struct tdb_logging_context log_ctx = { .log_fn = tdb_log };
 
 	if (!lp_use_mmap())
 		tdb_flags |= TDB_NOMMAP;
@@ -338,8 +339,8 @@ TDB_CONTEXT *tdb_open_log(const char *name, int hash_size, int tdb_flags,
 		hash_size = lp_parm_int(-1, "tdb_hashsize", base, 0);
 	}
 
-	tdb = tdb_open_compat(name, hash_size, tdb_flags,
-			      open_flags, mode, tdb_log, NULL);
+	tdb = tdb_open_ex(name, hash_size, tdb_flags,
+			  open_flags, mode, &log_ctx, NULL);
 	if (!tdb)
 		return NULL;
 

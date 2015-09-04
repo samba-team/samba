@@ -20,7 +20,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "system/dir.h"
-#include "../lib/tdb_compat/tdb_compat.h"
+#include <tdb.h>
 #include "../lib/util/util_tdb.h"
 #include "libcli/libcli.h"
 #include "torture/util.h"
@@ -167,7 +167,7 @@ bool torture_mangle(struct torture_context *torture,
 	int i;
 
 	/* we will use an internal tdb to store the names we have used */
-	tdb = tdb_open_compat(NULL, 100000, TDB_INTERNAL, 0, 0, NULL, NULL);
+	tdb = tdb_open(NULL, 100000, TDB_INTERNAL, 0, 0);
 	if (!tdb) {
 		printf("ERROR: Failed to open tdb\n");
 		return false;

@@ -1,9 +1,8 @@
 <samba:parameter name="ldap user suffix"
-	context="G"
-	type="string"
-	advanced="1" developer="1"
-                 generated_function="0"
-        xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+                 context="G"
+                 type="string"
+                 function="_ldap_user_suffix"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>
 	This parameter specifies where users are added to the tree. If this parameter is unset, 

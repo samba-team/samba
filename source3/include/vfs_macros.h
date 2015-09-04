@@ -39,10 +39,10 @@
 #define SMB_VFS_NEXT_DISCONNECT(handle) \
 	smb_vfs_call_disconnect((handle)->next)
 
-#define SMB_VFS_DISK_FREE(conn, path, small_query, bsize, dfree ,dsize) \
-	smb_vfs_call_disk_free((conn)->vfs_handles, (path), (small_query), (bsize), (dfree), (dsize))
-#define SMB_VFS_NEXT_DISK_FREE(handle, path, small_query, bsize, dfree ,dsize)\
-	smb_vfs_call_disk_free((handle)->next, (path), (small_query), (bsize), (dfree), (dsize))
+#define SMB_VFS_DISK_FREE(conn, path, bsize, dfree ,dsize) \
+	smb_vfs_call_disk_free((conn)->vfs_handles, (path), (bsize), (dfree), (dsize))
+#define SMB_VFS_NEXT_DISK_FREE(handle, path, bsize, dfree ,dsize)\
+	smb_vfs_call_disk_free((handle)->next, (path), (bsize), (dfree), (dsize))
 
 #define SMB_VFS_GET_QUOTA(conn, qtype, id, qt) \
 	smb_vfs_call_get_quota((conn)->vfs_handles, (qtype), (id), (qt))
@@ -336,11 +336,6 @@
 #define SMB_VFS_NEXT_REALPATH(handle, path) \
 	smb_vfs_call_realpath((handle)->next, (path))
 
-#define SMB_VFS_NOTIFY_WATCH(conn, ctx, path, filter, subdir_filter, callback, private_data, handle_p) \
-	smb_vfs_call_notify_watch((conn)->vfs_handles, (ctx), (path), (filter), (subdir_filter), (callback), (private_data), (handle_p))
-#define SMB_VFS_NEXT_NOTIFY_WATCH(conn, ctx, path, filter, subdir_filter, callback, private_data, handle_p) \
-	smb_vfs_call_notify_watch((conn)->next, (ctx), (path), (filter), (subdir_filter), (callback), (private_data), (handle_p))
-
 #define SMB_VFS_CHFLAGS(conn, path, flags) \
 	smb_vfs_call_chflags((conn)->vfs_handles, (path), (flags))
 #define SMB_VFS_NEXT_CHFLAGS(handle, path, flags) \
@@ -421,6 +416,21 @@
 	smb_vfs_call_set_compression((conn)->vfs_handles, (mem_ctx), (fsp), (compression_fmt))
 #define SMB_VFS_NEXT_SET_COMPRESSION(handle, mem_ctx, fsp, compression_fmt)		\
 	smb_vfs_call_set_compression((handle)->next, (mem_ctx), (fsp), (compression_fmt))
+
+#define SMB_VFS_SNAP_CHECK_PATH(conn, mem_ctx, service_path, base_volume) \
+	smb_vfs_call_snap_check_path((conn)->vfs_handles, (mem_ctx), (service_path), (base_volume))
+#define SMB_VFS_NEXT_SNAP_CHECK_PATH(handle, mem_ctx, service_path, base_volume) \
+	smb_vfs_call_snap_check_path((handle)->next, (mem_ctx), (service_path), (base_volume))
+
+#define SMB_VFS_SNAP_CREATE(conn, mem_ctx, base_volume, tstamp, rw, base_path, snap_path) \
+	smb_vfs_call_snap_create((conn)->vfs_handles, (mem_ctx), (base_volume), (tstamp), (rw), (base_path), (snap_path))
+#define SMB_VFS_NEXT_SNAP_CREATE(handle, mem_ctx, base_volume, tstamp, rw, base_path, snap_path) \
+	smb_vfs_call_snap_create((handle)->next, (mem_ctx), (base_volume), (tstamp), (rw), (base_path), (snap_path))
+
+#define SMB_VFS_SNAP_DELETE(conn, mem_ctx, base_path, snap_path) \
+	smb_vfs_call_snap_delete((conn)->vfs_handles, (mem_ctx), (base_path), (snap_path))
+#define SMB_VFS_NEXT_SNAP_DELETE(handle, mem_ctx, base_path, snap_path) \
+	smb_vfs_call_snap_delete((handle)->next, (mem_ctx), (base_path), (snap_path))
 
 #define SMB_VFS_FGET_NT_ACL(fsp, security_info, mem_ctx, ppdesc)		\
 	smb_vfs_call_fget_nt_acl((fsp)->conn->vfs_handles, (fsp), (security_info), (mem_ctx), (ppdesc))

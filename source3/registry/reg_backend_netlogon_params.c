@@ -36,7 +36,7 @@ extern struct registry_ops regdb_ops;
 
 static int netlogon_params_fetch_values(const char *key, struct regval_ctr *regvals)
 {
-	uint32 dwValue;
+	uint32_t dwValue;
 
 	if (!pdb_get_account_policy(PDB_POLICY_REFUSE_MACHINE_PW_CHANGE, &dwValue)) {
 		dwValue = 0;

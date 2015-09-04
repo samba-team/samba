@@ -101,12 +101,11 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
     struct samu *sampass = NULL;
     void (*oldsig_handler)(int);
     const char *user;
-    char *pass_old;
-    char *pass_new;
+    char *pass_old = NULL;
+    char *pass_new = NULL;
     TALLOC_CTX *frame = talloc_stackframe();
 
     /* Samba initialization. */
-    load_case_tables_library();
 
     ctrl = set_ctrl(pamh, flags, argc, argv);
 

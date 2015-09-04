@@ -146,7 +146,7 @@ ace_compare(struct security_ace *ace1,
 static void
 sort_acl(struct security_acl *the_acl)
 {
-	uint32 i;
+	uint32_t i;
 	if (!the_acl) return;
 
 	TYPESAFE_QSORT(the_acl->aces, the_acl->num_aces, ace_compare);
@@ -203,9 +203,8 @@ convert_sid_to_string(struct cli_state *ipc_cli,
 
 	/* Converted OK */
 
-	slprintf(str, sizeof(fstring) - 1, "%s%s%s",
-		 domains[0], lp_winbind_separator(),
-		 names[0]);
+	fstr_sprintf(str, "%s%s%s",
+		     domains[0], lp_winbind_separator(), names[0]);
 
 	TALLOC_FREE(ctx);
 }
@@ -272,7 +271,7 @@ parse_ace(struct cli_state *ipc_cli,
 	const struct perm_value *v;
         struct perm_value {
                 const char perm[7];
-                uint32 mask;
+                uint32_t mask;
         };
 	TALLOC_CTX *frame = talloc_stackframe();
 
@@ -558,7 +557,7 @@ dos_attr_query(SMBCCTX *context,
         struct timespec access_time_ts;
         struct timespec change_time_ts;
         off_t size = 0;
-        uint16 mode = 0;
+        uint16_t mode = 0;
 	SMB_INO_T inode = 0;
         DOS_ATTR_DESC *ret;
 
@@ -708,7 +707,7 @@ cacl_get(SMBCCTX *context,
          char *buf,
          int bufsize)
 {
-	uint32 i;
+	uint32_t i;
         int n = 0;
         int n_used;
         bool all;
@@ -746,7 +745,7 @@ cacl_get(SMBCCTX *context,
         time_t access_time = (time_t)0;
         time_t change_time = (time_t)0;
 	off_t size = 0;
-	uint16 mode = 0;
+	uint16_t mode = 0;
 	SMB_INO_T ino = 0;
 	struct cli_state *cli = srv->cli;
         struct {
@@ -1515,7 +1514,7 @@ cacl_set(SMBCCTX *context,
         struct security_acl *dacl = NULL;
 	struct dom_sid *owner_sid = NULL;
 	struct dom_sid *group_sid = NULL;
-	uint32 i, j;
+	uint32_t i, j;
 	size_t sd_size;
 	int ret = 0;
         char *p;
@@ -1595,7 +1594,7 @@ cacl_set(SMBCCTX *context,
 			for (j=0;old->dacl && j<old->dacl->num_aces;j++) {
                                 if (security_ace_equal(&sd->dacl->aces[i],
 						       &old->dacl->aces[j])) {
-					uint32 k;
+					uint32_t k;
 					for (k=j; k<old->dacl->num_aces-1;k++) {
 						old->dacl->aces[k] =
                                                         old->dacl->aces[k+1];
@@ -2073,6 +2072,25 @@ SMBC_getxattr_ctx(SMBCCTX *context,
         if (! srv->no_nt_session) {
                 ipc_srv = SMBC_attr_server(frame, context, server, port, share,
                                            &workgroup, &user, &password);
+		/*
+		 * SMBC_attr_server() can cause the original
+		 * server to be removed from the cache.
+		 * If so we must error out here as the srv
+		 * pointer has been freed.
+		 */
+		if (smbc_getFunctionGetCachedServer(context)(context,
+				server,
+				share,
+				workgroup,
+				user) != srv) {
+#if defined(ECONNRESET)
+			errno = ECONNRESET;
+#else
+			errno = ETIMEDOUT;
+#endif
+			TALLOC_FREE(frame);
+			return -1;
+		}
                 if (! ipc_srv) {
                         srv->no_nt_session = True;
                 }
@@ -2208,9 +2226,31 @@ SMBC_removexattr_ctx(SMBCCTX *context,
         }
 
         if (! srv->no_nt_session) {
+		int saved_errno;
                 ipc_srv = SMBC_attr_server(frame, context, server, port, share,
                                            &workgroup, &user, &password);
+		saved_errno = errno;
+		/*
+		 * SMBC_attr_server() can cause the original
+		 * server to be removed from the cache.
+		 * If so we must error out here as the srv
+		 * pointer has been freed.
+		 */
+		if (smbc_getFunctionGetCachedServer(context)(context,
+				server,
+				share,
+				workgroup,
+				user) != srv) {
+#if defined(ECONNRESET)
+			errno = ECONNRESET;
+#else
+			errno = ETIMEDOUT;
+#endif
+			TALLOC_FREE(frame);
+			return -1;
+		}
                 if (! ipc_srv) {
+			errno = saved_errno;
                         srv->no_nt_session = True;
                 }
         } else {

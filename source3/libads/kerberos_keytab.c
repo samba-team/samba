@@ -507,8 +507,8 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 	krb5_error_code ret = 0;
 	krb5_context context = NULL;
 	krb5_keytab keytab = NULL;
-	krb5_kt_cursor cursor;
-	krb5_keytab_entry kt_entry;
+	krb5_kt_cursor cursor = {0};
+	krb5_keytab_entry kt_entry = {0};
 	krb5_kvno kvno;
 	size_t found = 0;
 	char *sam_account_name, *upn;
@@ -519,6 +519,9 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 	size_t num_spns;
 	size_t i;
 	ADS_STATUS status;
+
+	ZERO_STRUCT(kt_entry);
+	ZERO_STRUCT(cursor);
 
 	frame = talloc_stackframe();
 	if (frame == NULL) {
@@ -575,8 +578,6 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 #endif
 
 	memset(princ_s, '\0', sizeof(princ_s));
-	ZERO_STRUCT(kt_entry);
-	ZERO_STRUCT(cursor);
 
 	initialize_krb5_error_table();
 	ret = krb5_init_context(&context);
@@ -730,13 +731,14 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 		smb_krb5_kt_free_entry(context, &kt_entry);
 		ZERO_STRUCT(kt_entry);
 	}
+	krb5_kt_end_seq_get(context, keytab, &cursor);
+	ZERO_STRUCT(cursor);
+
 	ret = 0;
 	for (i = 0; oldEntries[i]; i++) {
 		ret |= ads_keytab_add_entry(ads, oldEntries[i]);
 		TALLOC_FREE(oldEntries[i]);
 	}
-	krb5_kt_end_seq_get(context, keytab, &cursor);
-	ZERO_STRUCT(cursor);
 
 done:
 	TALLOC_FREE(oldEntries);

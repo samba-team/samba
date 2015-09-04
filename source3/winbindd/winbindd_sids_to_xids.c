@@ -89,7 +89,7 @@ static void winbindd_sids_to_xids_done(struct tevent_req *subreq)
 		return;
 	}
 
-	status = wb_sids2xids_recv(subreq, state->xids);
+	status = wb_sids2xids_recv(subreq, state->xids, state->num_sids);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		return;

@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
 <!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN" "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd">
 <refentry>
+  <refentryinfo><date>2015-04-10</date></refentryinfo>
   <refmeta>
     <refentrytitle>talloc</refentrytitle>
     <manvolnum>3</manvolnum>
@@ -196,9 +197,9 @@
           </listitem>
           <listitem>
             <para>
-	      you can talloc_free() the pointer itself.  That will destroy
-	      the most recently established parent to the pointer and leave
-	      the pointer as a child of its current parent.
+	      you can talloc_free() the pointer itself if it has at maximum one
+	      parent. This behaviour has been changed since the release of version
+	      2.0. Further informations in the description of "talloc_free".
             </para>
           </listitem>
         </itemizedlist>
@@ -208,7 +209,7 @@
 	linkend="talloc_unlink"><quote>talloc_unlink()</quote></link>.
       </para>
     </refsect2>
-    <refsect2 id="talloc_unlink"><title>int talloc_unlink(const void *ctx, const void *ptr);</title>
+    <refsect2 id="talloc_unlink"><title>int talloc_unlink(const void *ctx, void *ptr);</title>
         <para>
 	  The talloc_unlink() function removes a specific parent from
 	  <emphasis role="italic">ptr</emphasis>. The <emphasis

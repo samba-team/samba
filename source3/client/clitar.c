@@ -216,7 +216,7 @@ static int make_remote_path(const char *full_path);
 static int max_token (const char *str);
 static NTSTATUS is_subpath(const char *sub, const char *full,
 			   bool *_subpath_match);
-static int set_remote_attr(const char *filename, uint16 new_attr, int mode);
+static int set_remote_attr(const char *filename, uint16_t new_attr, int mode);
 
 /**
  * tar_get_ctx - retrieve global tar context handle
@@ -394,7 +394,7 @@ int cmd_setmode(void)
 	const extern char *cmd_ptr;
 	char *buf;
 	char *fname = NULL;
-	uint16 attr[2] = {0};
+	uint16_t attr[2] = {0};
 	int mode = ATTR_SET;
 	int err = 0;
 	bool ok;
@@ -1639,10 +1639,10 @@ out:
  *
  * Update the file attributes with the one provided.
  */
-static int set_remote_attr(const char *filename, uint16 new_attr, int mode)
+static int set_remote_attr(const char *filename, uint16_t new_attr, int mode)
 {
 	extern struct cli_state *cli;
-	uint16 old_attr;
+	uint16_t old_attr;
 	NTSTATUS status;
 
 	status = cli_getatr(cli, filename, &old_attr, NULL, NULL);

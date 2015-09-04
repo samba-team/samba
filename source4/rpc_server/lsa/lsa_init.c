@@ -22,9 +22,36 @@
 
 #include "rpc_server/lsa/lsa.h"
 
-NTSTATUS dcesrv_lsa_get_policy_state(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+/*
+ * This matches a Windows 2012R2 dc in
+ * a domain with function level 2012R2.
+ */
+#define DCESRV_LSA_POLICY_SD_SDDL \
+	"O:BAG:SY" \
+	"D:" \
+	"(D;;0x00000800;;;AN)" \
+	"(A;;GA;;;BA)" \
+	"(A;;GX;;;WD)" \
+	"(A;;0x00000801;;;AN)" \
+	"(A;;0x00001000;;;LS)" \
+	"(A;;0x00001000;;;NS)" \
+	"(A;;0x00001000;;;IS)" \
+	"(A;;0x00000801;;;S-1-15-2-1)"
+
+static const struct generic_mapping dcesrv_lsa_policy_mapping = {
+	LSA_POLICY_READ,
+	LSA_POLICY_WRITE,
+	LSA_POLICY_EXECUTE,
+	LSA_POLICY_ALL_ACCESS
+};
+
+NTSTATUS dcesrv_lsa_get_policy_state(struct dcesrv_call_state *dce_call,
+				     TALLOC_CTX *mem_ctx,
+				     uint32_t access_desired,
 				     struct lsa_policy_state **_state)
 {
+	struct auth_session_info *session_info = dce_call->conn->auth_state.session_info;
+	enum security_user_level security_level;
 	struct lsa_policy_state *state;
 	struct ldb_result *dom_res;
 	const char *dom_attrs[] = {
@@ -37,7 +64,7 @@ NTSTATUS dcesrv_lsa_get_policy_state(struct dcesrv_call_state *dce_call, TALLOC_
 	char *p;
 	int ret;
 
-	state = talloc(mem_ctx, struct lsa_policy_state);
+	state = talloc_zero(mem_ctx, struct lsa_policy_state);
 	if (!state) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -143,6 +170,49 @@ NTSTATUS dcesrv_lsa_get_policy_state(struct dcesrv_call_state *dce_call, TALLOC_
 		return NT_STATUS_NO_SUCH_DOMAIN;		
 	}
 
+	state->sd = sddl_decode(state, DCESRV_LSA_POLICY_SD_SDDL,
+				state->domain_sid);
+	if (state->sd == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	state->sd->dacl->revision = SECURITY_ACL_REVISION_NT4;
+
+	se_map_generic(&access_desired, &dcesrv_lsa_policy_mapping);
+	security_acl_map_generic(state->sd->dacl, &dcesrv_lsa_policy_mapping);
+
+	security_level = security_session_user_level(session_info, NULL);
+	if (security_level >= SECURITY_SYSTEM) {
+		/*
+		 * The security descriptor doesn't allow system,
+		 * but we want to allow system via ncalrpc as root.
+		 */
+		state->access_mask = access_desired;
+		if (state->access_mask & SEC_FLAG_MAXIMUM_ALLOWED) {
+			state->access_mask &= ~SEC_FLAG_MAXIMUM_ALLOWED;
+			state->access_mask |= LSA_POLICY_ALL_ACCESS;
+		}
+	} else {
+		NTSTATUS status;
+
+		status = se_access_check(state->sd,
+					 session_info->security_token,
+					 access_desired,
+					 &state->access_mask);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(2,("%s: access desired[0x%08X] rejected[0x%08X] - %s\n",
+				 __func__,
+				 (unsigned)access_desired,
+				 (unsigned)state->access_mask,
+				 nt_errstr(status)));
+			return status;
+		}
+	}
+
+	DEBUG(10,("%s: access desired[0x%08X] granted[0x%08X] - success.\n",
+		  __func__,
+		 (unsigned)access_desired,
+		 (unsigned)state->access_mask));
+
 	*_state = state;
 
 	return NT_STATUS_OK;
@@ -172,7 +242,9 @@ NTSTATUS dcesrv_lsa_OpenPolicy2(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	status = dcesrv_lsa_get_policy_state(dce_call, mem_ctx, &state);
+	status = dcesrv_lsa_get_policy_state(dce_call, mem_ctx,
+					     r->in.access_mask,
+					     &state);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -184,9 +256,6 @@ NTSTATUS dcesrv_lsa_OpenPolicy2(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 
 	handle->data = talloc_steal(handle, state);
 
-	/* need to check the access mask against - need ACLs - fails
-	   WSPP test */
-	state->access_mask = r->in.access_mask;
 	state->handle = handle;
 	*r->out.handle = handle->wire_handle;
 

@@ -106,7 +106,7 @@ static void audit_disconnect(vfs_handle_struct *handle)
 	return;
 }
 
-static DIR *audit_opendir(vfs_handle_struct *handle, const char *fname, const char *mask, uint32 attr)
+static DIR *audit_opendir(vfs_handle_struct *handle, const char *fname, const char *mask, uint32_t attr)
 {
 	DIR *result;
 	
@@ -283,6 +283,7 @@ static struct vfs_fn_pointers vfs_audit_fns = {
 	.fchmod_acl_fn = audit_fchmod_acl
 };
 
+static_decl_vfs;
 NTSTATUS vfs_audit_init(void)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "audit",

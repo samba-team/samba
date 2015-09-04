@@ -55,7 +55,7 @@ static NTSTATUS populate_tree(struct torture_context *tctx,
 	struct smb2_create create;
 	char **strs = NULL;
 	NTSTATUS status;
-	bool ret;
+	bool ret = true;
 	int i;
 
 	smb2_deltree(tree, DNAME);
@@ -94,6 +94,10 @@ static NTSTATUS populate_tree(struct torture_context *tctx,
 		smb2_util_close(tree, create.out.file.handle);
 	}
  done:
+	if (!ret) {
+		return status;
+	}
+
 	return status;
 }
 
@@ -132,7 +136,7 @@ static bool test_find(struct torture_context *tctx,
 		for (i = 0; i < count; i++) {
 			bool expected;
 			const char *found = d[i].both_directory_info.name.s;
-			NTTIME ctime = d[i].both_directory_info.create_time;
+			NTTIME ct = d[i].both_directory_info.create_time;
 
 			if (!strcmp(found, ".") || !strcmp(found, ".."))
 				continue;
@@ -143,13 +147,12 @@ static bool test_find(struct torture_context *tctx,
 					continue;
 				}
 
-				if (files[j].create_time != ctime) {
-					torture_result(tctx, TORTURE_FAIL,
-					    "(%s): create_time mismatch for %s"
-					    "\n", __location__, found);
-					ret = false;
-					goto done;
-				}
+				torture_assert_u64_equal_goto(tctx,
+							files[j].create_time,
+							ct, ret, done,
+							talloc_asprintf(tctx,
+							"file[%d]\n", j));
+
 				files[j].found = true;
 				expected = true;
 				break;
@@ -727,6 +730,9 @@ static NTSTATUS multiple_smb2_search(struct smb2_tree *tree,
 		}
 	} while (count != 0);
 done:
+	if (!ret) {
+		return status;
+	}
 	return status;
 }
 
@@ -825,8 +831,6 @@ static bool test_many_files(struct torture_context *tctx,
 
 		for (i=0;i<result.count;i++) {
 			const char *s;
-			enum smb_search_level level;
-			level = RAW_SEARCH_SMB2;
 			s = extract_name(&result.list[i],
 					 search_types[t].level,
 					 compare_data_level);

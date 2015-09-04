@@ -23,9 +23,9 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <Python.h>
 #include "includes.h"
 #include "smbd/smbd.h"
-#include <Python.h>
 #include "libcli/util/pyerrors.h"
 #include "librpc/rpc/pyrpc_util.h"
 #include <pytalloc.h>
@@ -98,7 +98,7 @@ static int set_sys_acl_conn(const char *fname,
 }
 
 static NTSTATUS set_nt_acl_conn(const char *fname,
-				uint32 security_info_sent, const struct security_descriptor *sd,
+				uint32_t security_info_sent, const struct security_descriptor *sd,
 				connection_struct *conn)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
@@ -191,7 +191,7 @@ static NTSTATUS set_nt_acl_conn(const char *fname,
 static NTSTATUS get_nt_acl_conn(TALLOC_CTX *mem_ctx,
 				const char *fname,
 				connection_struct *conn,
-				uint32 security_info_wanted,
+				uint32_t security_info_wanted,
 				struct security_descriptor **sd)
 {
 	TALLOC_CTX *frame = talloc_stackframe();

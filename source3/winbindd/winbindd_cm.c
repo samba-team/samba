@@ -446,7 +446,7 @@ void set_domain_offline(struct winbindd_domain *domain)
 		messaging_send_buf(winbind_messaging_context(),
 				   pid_to_procid(parent_pid),
 				   MSG_WINBIND_DOMAIN_OFFLINE,
-				   (uint8 *)domain->name,
+				   (uint8_t *)domain->name,
 				   strlen(domain->name) + 1);
 	}
 
@@ -532,7 +532,7 @@ static void set_domain_online(struct winbindd_domain *domain)
 		messaging_send_buf(winbind_messaging_context(),
 				   pid_to_procid(parent_pid),
 				   MSG_WINBIND_DOMAIN_ONLINE,
-				   (uint8 *)domain->name,
+				   (uint8_t *)domain->name,
 				   strlen(domain->name) + 1);
 	}
 
@@ -1162,6 +1162,7 @@ static NTSTATUS cm_prepare_connection(struct winbindd_domain *domain,
 	if (NT_STATUS_EQUAL(result, NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT)
 	    || NT_STATUS_EQUAL(result, NT_STATUS_TRUSTED_DOMAIN_FAILURE)
 	    || NT_STATUS_EQUAL(result, NT_STATUS_INVALID_ACCOUNT_NAME)
+	    || NT_STATUS_EQUAL(result, NT_STATUS_NO_LOGON_SERVERS)
 	    || NT_STATUS_EQUAL(result, NT_STATUS_LOGON_FAILURE))
 	{
 		if (cli_credentials_is_anonymous(creds)) {
@@ -1225,6 +1226,8 @@ static NTSTATUS cm_prepare_connection(struct winbindd_domain *domain,
 	 */
 	if (NT_STATUS_EQUAL(result, NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT)
 	    || NT_STATUS_EQUAL(result, NT_STATUS_TRUSTED_DOMAIN_FAILURE)
+	    || NT_STATUS_EQUAL(result, NT_STATUS_INVALID_ACCOUNT_NAME)
+	    || NT_STATUS_EQUAL(result, NT_STATUS_NO_LOGON_SERVERS)
 	    || NT_STATUS_EQUAL(result, NT_STATUS_LOGON_FAILURE))
 	{
 		goto anon_fallback;
@@ -1350,7 +1353,7 @@ static bool add_one_dc_unique(TALLOC_CTX *mem_ctx, const char *domain_name,
 }
 
 static bool add_sockaddr_to_array(TALLOC_CTX *mem_ctx,
-				  struct sockaddr_storage *pss, uint16 port,
+				  struct sockaddr_storage *pss, uint16_t port,
 				  struct sockaddr_storage **addrs, int *num)
 {
 	*addrs = talloc_realloc(mem_ctx, *addrs, struct sockaddr_storage, (*num)+1);
@@ -1381,7 +1384,9 @@ static bool dcip_to_name(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	const char *dc_name;
 	fstring nbtname;
-
+#ifdef HAVE_ADS
+	bool is_ad_domain = false;
+#endif
 	ip_list.ss = *pss;
 	ip_list.port = 0;
 
@@ -1390,6 +1395,12 @@ static bool dcip_to_name(TALLOC_CTX *mem_ctx,
 	   None of these failures should be considered critical for now */
 
 	if ((lp_security() == SEC_ADS) && (domain->alt_name != NULL)) {
+		is_ad_domain = true;
+	} else if (lp_server_role() == ROLE_ACTIVE_DIRECTORY_DC) {
+		is_ad_domain = domain->active_directory;
+	}
+
+	if (is_ad_domain) {
 		ADS_STRUCT *ads;
 		ADS_STATUS ads_status;
 		char addr[INET6_ADDRSTRLEN];
@@ -2201,7 +2212,7 @@ static bool set_dc_type_and_flags_trustinfo( struct winbindd_domain *domain )
 	WERROR werr;
 	struct netr_DomainTrustList trusts;
 	int i;
-	uint32 flags = (NETR_TRUST_FLAG_IN_FOREST |
+	uint32_t flags = (NETR_TRUST_FLAG_IN_FOREST |
 			NETR_TRUST_FLAG_OUTBOUND |
 			NETR_TRUST_FLAG_INBOUND);
 	struct rpc_pipe_client *cli;

@@ -240,7 +240,7 @@ struct dcom_object_exporter *object_exporter_by_ip(struct com_context *ctx, stru
 	return object_exporter_by_oxid(ctx, ip->obj.u_objref.u_standard.std.oxid);
 }
 
-WERROR dcom_create_object(struct com_context *ctx, struct GUID *clsid, const char *server, int num_ifaces, struct GUID *iid, struct IUnknown ***ip, WERROR *results)
+WERROR dcom_create_object(struct com_context *ctx, struct GUID *clsid, const char *server, int num_ifaces, struct GUID *iid, struct IUnknown ***ip, HRESULT *results)
 {
 	uint16_t protseq[] = DCOM_NEGOTIATED_PROTOCOLS;
 	struct dcerpc_pipe *p;
@@ -249,7 +249,7 @@ WERROR dcom_create_object(struct com_context *ctx, struct GUID *clsid, const cha
 	struct RemoteActivation r;
 	struct DUALSTRINGARRAY *pds;
 	int i;
-	WERROR hr;
+	HRESULT hr;
 	uint64_t oxid;
 	struct GUID ipidRemUnknown;
 	struct IUnknown *ru_template;
@@ -301,8 +301,8 @@ WERROR dcom_create_object(struct com_context *ctx, struct GUID *clsid, const cha
 		hr = r.out.result;
 		goto end;
 	}
-	
-	if(!W_ERROR_IS_OK(hr)) {
+
+	if(!HRES_IS_OK(hr)) {
 		goto end;
 	}
 

@@ -1,0 +1,64 @@
+#ifndef MIDLTESTS_C_CODE
+
+/*
+ * For midltests_tcp.exe you may want to
+ * redirect the traffic via rinetd
+ * with a /etc/rinetd.conf like this:
+ *
+ * 172.31.9.1 5032 172.31.9.8 5032
+ * 172.31.9.1 5064 172.31.9.8 5064
+ *
+ * This is useful to watch the traffic with
+ * a network sniffer.
+ */
+/*
+cpp_quote("#define LISTEN_IP \"0.0.0.0\"")
+cpp_quote("#define FORWARD_IP \"127.0.0.1\"")
+cpp_quote("#define CONNECT_IP \"172.31.9.1\"")
+*/
+
+/*
+ * With midltests_tcp.exe NDR64 is enforced by default.
+ * For testing it might be needed to allow downgrades
+ * to NDR32. This is needed when you use 'pipe'.
+ */
+//cpp_quote("#define DONOT_FORCE_NDR64 1")
+
+[
+  uuid("225b9fcb-eb3d-497b-8b0b-591f049a2507"),
+  pointer_default(unique)
+]
+interface midltests
+{
+
+	typedef struct {
+		[range(1,10000)] long cb;
+		[size_is(cb)] char rcg[];
+	} DRS_EXTENSIONS;
+
+	long midltests_fn(
+		[out] DRS_EXTENSIONS **e
+	);
+}
+
+#elif MIDLTESTS_C_CODE
+
+static void midltests(void)
+{
+	DRS_EXTENSIONS *e = NULL;
+	cli_midltests_fn(&e);
+}
+
+long srv_midltests_fn(DRS_EXTENSIONS **_e)
+{
+	DRS_EXTENSIONS *e;
+	printf("srv_midltests_fn: Start\n");
+	e = (DRS_EXTENSIONS *)malloc(sizeof(DRS_EXTENSIONS) + 0x34);
+	e->cb = 0x34;
+	memset(e->rcg, 0xcd, e->cb);
+	*_e = e;
+	printf("srv_midltests_fn: End\n");
+	return 0x65757254;
+}
+
+#endif

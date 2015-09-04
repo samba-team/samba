@@ -68,9 +68,6 @@ NET_API_STATUS libnetapi_init(struct libnetapi_ctx **context)
 #endif
 	frame = talloc_stackframe();
 
-	/* Case tables must be loaded before any string comparisons occour */
-	load_case_tables_library();
-
 	/* When libnetapi is invoked from an application, it does not
 	 * want to be swamped with level 10 debug messages, even if
 	 * this has been set for the server in smb.conf */

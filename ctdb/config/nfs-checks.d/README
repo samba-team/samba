@@ -1,0 +1,31 @@
+NFS check configuration files.
+
+Files are named NN.RPCSERVICE.check.  Files without a .check suffix
+are ignored.
+
+Supported variables are:
+
+* family             - "tcp" or "udp" or space separated list
+                       default: tcp, not used with "service_check_cmd"
+* version            - optional, RPC service version number
+                       default is to omit to check for any version,
+                       not used with "service_check_cmd"
+* unhealthy_after    - number of check fails before unhealthy
+                       default: 1
+* restart_every      - number of check fails before restart
+                       default: 0, meaning no restart
+* service_stop_cmd   - command to stop service
+                       default: no default, must be provided if
+                                restart_every > 0
+* service_start_cmd  - command to start service
+                       default: no default, must be provided if
+                                restart_every > 0
+* service_check_cmd  - command to check health of service
+                       default is to check RPC service using rpcinfo
+* service_debug_cmd  - command to debug a service after trying to stop it;
+                       for example, it can be useful to print stack
+                       traces of threads that have not exited, since
+                       they may be stuck doing I/O;
+                       no default, see also function program_stack_traces()
+
+Quoting inside values is not preserved.

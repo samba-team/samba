@@ -66,6 +66,7 @@ static bool test_afdgets(struct torture_context *tctx)
 	int fd;
 	char *line;
 	TALLOC_CTX *mem_ctx = tctx;
+	bool ret = false;
 	
 	torture_assert(tctx, file_save(TEST_FILENAME, (const void *)TEST_DATA, 
 							 strlen(TEST_DATA)),
@@ -76,18 +77,22 @@ static bool test_afdgets(struct torture_context *tctx)
 	torture_assert(tctx, fd != -1, "opening file");
 
 	line = afdgets(fd, mem_ctx, 8);
-	torture_assert(tctx, strcmp(line, TEST_LINE1) == 0, "line 1 mismatch");
+	torture_assert_goto(tctx, strcmp(line, TEST_LINE1) == 0, ret, done,
+			    "line 1 mismatch");
 
 	line = afdgets(fd, mem_ctx, 8);
-	torture_assert(tctx, strcmp(line, TEST_LINE2) == 0, "line 2 mismatch");
+	torture_assert_goto(tctx, strcmp(line, TEST_LINE2) == 0, ret, done,
+			    "line 2 mismatch");
 
 	line = afdgets(fd, mem_ctx, 8);
-	torture_assert(tctx, strcmp(line, TEST_LINE3) == 0, "line 3 mismatch");
-
+	torture_assert_goto(tctx, strcmp(line, TEST_LINE3) == 0, ret, done,
+			    "line 3 mismatch");
+	ret = true;
+done:
 	close(fd);
 
 	unlink(TEST_FILENAME);
-	return true;
+	return ret;
 }
 
 struct torture_suite *torture_local_util_file(TALLOC_CTX *mem_ctx)

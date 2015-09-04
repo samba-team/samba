@@ -48,6 +48,10 @@ mkdir -p ${DOCS_DIR}/manpages
 
 rsync -Ca ${DOCS_XML_DIR}/output/manpages/ ${DOCS_DIR}/manpages
 
+pushd ${DOCS_XML_DIR} || exit 1
+make realdistclean || _exit "Error running make realdistclean"
+popd
+
 echo "Success"
 exit
 

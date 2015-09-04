@@ -212,7 +212,7 @@ bool run_events_poll(struct tevent_context *ev, int pollrtn,
 
 	for (fde = ev->fd_events; fde; fde = fde->next) {
 		struct pollfd *pfd;
-		uint16 flags = 0;
+		uint16_t flags = 0;
 
 		if ((fde->flags & (TEVENT_FD_READ|TEVENT_FD_WRITE)) == 0) {
 			continue;

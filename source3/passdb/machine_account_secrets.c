@@ -284,23 +284,6 @@ static const char *trust_keystr(const char *domain)
 }
 
 /************************************************************************
- Lock the trust password entry.
-************************************************************************/
-
-void *secrets_get_trust_account_lock(TALLOC_CTX *mem_ctx, const char *domain)
-{
-	struct db_context *db_ctx;
-	if (!secrets_init()) {
-		return NULL;
-	}
-
-	db_ctx = secrets_db_ctx();
-
-	return dbwrap_fetch_locked(
-		db_ctx, mem_ctx, string_term_tdb_data(trust_keystr(domain)));
-}
-
-/************************************************************************
  Routine to get the default secure channel type for trust accounts
 ************************************************************************/
 
@@ -582,6 +565,28 @@ char *secrets_fetch_prev_machine_password(const char *domain)
 }
 
 /************************************************************************
+ Routine to fetch the last change time of the machine account password
+  for a realm
+************************************************************************/
+
+time_t secrets_fetch_pass_last_set_time(const char *domain)
+{
+	uint32_t *last_set_time;
+	time_t pass_last_set_time;
+
+	last_set_time = secrets_fetch(machine_last_change_time_keystr(domain),
+				      NULL);
+	if (last_set_time) {
+		pass_last_set_time = IVAL(last_set_time,0);
+		SAFE_FREE(last_set_time);
+	} else {
+		pass_last_set_time = 0;
+	}
+
+	return pass_last_set_time;
+}
+
+/************************************************************************
  Routine to fetch the plaintext machine account password for a realm
  the password is assumed to be a null terminated ascii string.
 ************************************************************************/
@@ -594,15 +599,7 @@ char *secrets_fetch_machine_password(const char *domain,
 	ret = (char *)secrets_fetch(machine_password_keystr(domain), NULL);
 
 	if (pass_last_set_time) {
-		size_t size;
-		uint32_t *last_set_time;
-		last_set_time = (unsigned int *)secrets_fetch(machine_last_change_time_keystr(domain), &size);
-		if (last_set_time) {
-			*pass_last_set_time = IVAL(last_set_time,0);
-			SAFE_FREE(last_set_time);
-		} else {
-			*pass_last_set_time = 0;
-		}
+		*pass_last_set_time = secrets_fetch_pass_last_set_time(domain);
 	}
 
 	if (channel) {

@@ -991,7 +991,13 @@ static inline int _talloc_free_internal(void *ptr, const char *location)
 		}
 		tc->destructor = (talloc_destructor_t)-1;
 		if (d(ptr) == -1) {
-			tc->destructor = d;
+			/*
+			 * Only replace the destructor pointer if
+			 * calling the destructor didn't modify it.
+			 */
+			if (tc->destructor == (talloc_destructor_t)-1) {
+				tc->destructor = d;
+			}
 			return -1;
 		}
 		tc->destructor = NULL;
@@ -1058,7 +1064,7 @@ static inline int _talloc_free_internal(void *ptr, const char *location)
 	return 0;
 }
 
-static size_t _talloc_total_limit_size(const void *ptr,
+static inline size_t _talloc_total_limit_size(const void *ptr,
 					struct talloc_memlimit *old_limit,
 					struct talloc_memlimit *new_limit);
 
@@ -1464,6 +1470,13 @@ static inline void _talloc_free_children_internal(struct talloc_chunk *tc,
 			if (p) new_parent = TC_PTR_FROM_CHUNK(p);
 		}
 		if (unlikely(_talloc_free_internal(child, location) == -1)) {
+			if (talloc_parent_chunk(child) != tc) {
+				/*
+				 * Destructor already reparented this child.
+				 * No further reparenting needed.
+				 */
+				return;
+			}
 			if (new_parent == null_context) {
 				struct talloc_chunk *p = talloc_parent_chunk(ptr);
 				if (p) new_parent = TC_PTR_FROM_CHUNK(p);

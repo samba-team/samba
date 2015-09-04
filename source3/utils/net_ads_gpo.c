@@ -34,8 +34,8 @@ static int net_ads_gpo_refresh(struct net_context *c, int argc, const char **arg
 	const char *dn = NULL;
 	struct GROUP_POLICY_OBJECT *gpo_list = NULL;
 	struct GROUP_POLICY_OBJECT *read_list = NULL;
-	uint32 uac = 0;
-	uint32 flags = 0;
+	uint32_t uac = 0;
+	uint32_t flags = 0;
 	struct GROUP_POLICY_OBJECT *gpo;
 	NTSTATUS result;
 	struct security_token *token = NULL;
@@ -305,8 +305,8 @@ static int net_ads_gpo_list(struct net_context *c, int argc, const char **argv)
 	LDAPMessage *res = NULL;
 	TALLOC_CTX *mem_ctx;
 	const char *dn = NULL;
-	uint32 uac = 0;
-	uint32 flags = 0;
+	uint32_t uac = 0;
+	uint32_t flags = 0;
 	struct GROUP_POLICY_OBJECT *gpo_list;
 	struct security_token *token = NULL;
 
@@ -376,8 +376,8 @@ static int net_ads_gpo_apply(struct net_context *c, int argc, const char **argv)
 	ADS_STATUS status;
 	const char *dn = NULL;
 	struct GROUP_POLICY_OBJECT *gpo_list;
-	uint32 uac = 0;
-	uint32 flags = 0;
+	uint32_t uac = 0;
+	uint32_t flags = 0;
 	struct security_token *token = NULL;
 	const char *filter = NULL;
 
@@ -501,7 +501,7 @@ static int net_ads_gpo_link_add(struct net_context *c, int argc, const char **ar
 {
 	ADS_STRUCT *ads;
 	ADS_STATUS status;
-	uint32 gpo_opt = 0;
+	uint32_t gpo_opt = 0;
 	TALLOC_CTX *mem_ctx;
 
 	if (argc < 2 || c->display_usage) {

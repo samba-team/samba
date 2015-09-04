@@ -1,9 +1,0 @@
-#!/bin/sh
-
-if [ "$1" = "-m" ] ; then
-    echo "$FAKE_FREE_M"
-    exit 0
-else
-    echo "free: not implemented - $*"
-    exit 1
-fi

@@ -1,22 +1,23 @@
 Release Announcements
 =====================
 
-This is the first preview release of Samba 4.3.  This is *not*
+This is the first preview release of Samba 4.4.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
 
-Samba 4.3 will be the next version of the Samba suite.
+Samba 4.4 will be the next version of the Samba suite.
 
 
 UPGRADING
 =========
 
+Nothing special.
 
 NEW FEATURES
 ============
 
-
+TODO...
 
 ######################################################################
 Changes
@@ -25,13 +26,13 @@ Changes
 smb.conf changes
 ----------------
 
-   Parameter Name			Description	Default
-   --------------			-----------	-------
-
+  Parameter Name		Description		Default
+  --------------		-----------		-------
 
 KNOWN ISSUES
 ============
 
+Currently none.
 
 #######################################
 Reporting bugs & Development Discussion

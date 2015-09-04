@@ -318,7 +318,7 @@ uint16_t cli_state_get_vc_num(struct cli_state *cli)
  Set the PID to use for smb messages. Return the old pid.
 ****************************************************************************/
 
-uint16 cli_setpid(struct cli_state *cli, uint16 pid)
+uint16_t cli_setpid(struct cli_state *cli, uint16_t pid)
 {
 	uint16_t ret = cli->smb1.pid;
 	cli->smb1.pid = pid;
@@ -529,8 +529,7 @@ NTSTATUS cli_echo(struct cli_state *cli, uint16_t num_echos, DATA_BLOB data)
 		goto fail;
 	}
 
-	if (!tevent_req_poll(req, ev)) {
-		status = map_nt_error_from_unix(errno);
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
 		goto fail;
 	}
 

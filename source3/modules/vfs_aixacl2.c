@@ -94,7 +94,7 @@ static AIXJFS2_ACL_T *aixjfs2_getacl_alloc(const char *fname, acl_type_t *type)
 }
 
 static bool aixjfs2_get_nfs4_acl(TALLOC_CTX *mem_ctx, const char *name,
-	SMB4ACL_T **ppacl, bool *pretryPosix)
+	struct SMB4ACL_T **ppacl, bool *pretryPosix)
 {
 	int32_t i;
 	
@@ -154,12 +154,12 @@ static bool aixjfs2_get_nfs4_acl(TALLOC_CTX *mem_ctx, const char *name,
 }
 
 static NTSTATUS aixjfs2_fget_nt_acl(vfs_handle_struct *handle,
-	files_struct *fsp, uint32 security_info,
+	files_struct *fsp, uint32_t security_info,
 	TALLOC_CTX *mem_ctx,
 	struct security_descriptor **ppdesc)
 {
 	NTSTATUS status;
-	SMB4ACL_T *pacl = NULL;
+	struct SMB4ACL_T *pacl = NULL;
 	bool	result;
 	bool	retryPosix = False;
 	TALLOC_CTX *frame = talloc_stackframe();
@@ -187,11 +187,11 @@ static NTSTATUS aixjfs2_fget_nt_acl(vfs_handle_struct *handle,
 
 static NTSTATUS aixjfs2_get_nt_acl(vfs_handle_struct *handle,
 	const char *name,
-	uint32 security_info,
+	uint32_t security_info,
 	TALLOC_CTX *mem_ctx,
 	struct security_descriptor **ppdesc)
 {
-	SMB4ACL_T *pacl = NULL;
+	struct SMB4ACL_T *pacl = NULL;
 	bool	result;
 	bool	retryPosix = False;
 
@@ -213,7 +213,7 @@ static NTSTATUS aixjfs2_get_nt_acl(vfs_handle_struct *handle,
 
 static int aixjfs2_sys_acl_blob_get_file(vfs_handle_struct *handle, const char *path_p, TALLOC_CTX *mem_ctx, char **blob_description, DATA_BLOB *blob)
 {
-	SMB4ACL_T *pacl = NULL;
+	struct SMB4ACL_T *pacl = NULL;
 	bool	result;
 	bool	retryPosix = False;
 
@@ -230,7 +230,7 @@ static int aixjfs2_sys_acl_blob_get_file(vfs_handle_struct *handle, const char *
 
 static int aixjfs2_sys_acl_blob_get_fd(vfs_handle_struct *handle, files_struct *fsp, TALLOC_CTX *mem_ctx, char **blob_description, DATA_BLOB *blob)
 {
-	SMB4ACL_T *pacl = NULL;
+	struct SMB4ACL_T *pacl = NULL;
 	bool	result;
 	bool	retryPosix = False;
 
@@ -321,9 +321,9 @@ static int aixjfs2_query_acl_support(
 	acl_type_t *pacl_type_info
 )
 {
-	acl_types_list_t	acl_type_list;
-	size_t  acl_type_list_len = sizeof(acl_types_list_t);
-	uint32_t	i;
+	acl_types_list_t acl_type_list;
+	size_t acl_type_list_len = sizeof(acl_types_list_t);
+	uint32_t i;
 
 	memset(&acl_type_list, 0, sizeof(acl_type_list));
 
@@ -345,14 +345,16 @@ static int aixjfs2_query_acl_support(
 	return 1; /* haven't found that ACL type. */
 }
 
-static bool aixjfs2_process_smbacl(vfs_handle_struct *handle, files_struct *fsp, SMB4ACL_T *smbacl)
+static bool aixjfs2_process_smbacl(vfs_handle_struct *handle,
+				   files_struct *fsp,
+				   struct SMB4ACL_T *smbacl)
 {
-	SMB4ACE_T	*smbace;
+	struct SMB4ACE_T *smbace;
 	TALLOC_CTX	*mem_ctx;
 	nfs4_acl_int_t	*jfs2acl;
-	int32_t	entryLen;
-	uint32	aclLen, naces;
-	int	rc;
+	int32_t		entryLen;
+	uint32_t	aclLen, naces;
+	int		rc;
 	acl_type_t	acltype;
 
 	DEBUG(10, ("jfs2_process_smbacl invoked on %s\n", fsp_str_dbg(fsp)));
@@ -420,7 +422,7 @@ static bool aixjfs2_process_smbacl(vfs_handle_struct *handle, files_struct *fsp,
 	return True;
 }
 
-static NTSTATUS aixjfs2_set_nt_acl_common(vfs_handle_struct *handle, files_struct *fsp, uint32 security_info_sent, const struct security_descriptor *psd)
+static NTSTATUS aixjfs2_set_nt_acl_common(vfs_handle_struct *handle, files_struct *fsp, uint32_t security_info_sent, const struct security_descriptor *psd)
 {
 	acl_type_t	acl_type_info;
 	NTSTATUS	result = NT_STATUS_ACCESS_DENIED;
@@ -444,7 +446,7 @@ static NTSTATUS aixjfs2_set_nt_acl_common(vfs_handle_struct *handle, files_struc
 	return result;
 }
 
-NTSTATUS aixjfs2_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp, uint32 security_info_sent, const struct security_descriptor *psd)
+NTSTATUS aixjfs2_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp, uint32_t security_info_sent, const struct security_descriptor *psd)
 {
 	return aixjfs2_set_nt_acl_common(handle, fsp, security_info_sent, psd);
 }

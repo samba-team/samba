@@ -106,7 +106,6 @@ NTSTATUS kerberos_decode_pac(TALLOC_CTX *mem_ctx,
 	DATA_BLOB modified_pac_blob;
 
 	NTTIME tgs_authtime_nttime;
-	krb5_principal client_principal_pac = NULL;
 	int i;
 
 	struct PAC_SIGNATURE_DATA *srv_sig_ptr = NULL;
@@ -357,28 +356,30 @@ NTSTATUS kerberos_decode_pac(TALLOC_CTX *mem_ctx,
 	}
 
 	if (client_principal) {
-		ret = smb_krb5_parse_name_norealm(context,
-						  logon_name->account_name,
-						  &client_principal_pac);
+		char *client_principal_string;
+		ret = krb5_unparse_name_flags(context, client_principal,
+					      KRB5_PRINCIPAL_UNPARSE_NO_REALM|KRB5_PRINCIPAL_UNPARSE_DISPLAY,
+					      &client_principal_string);
 		if (ret) {
-			DEBUG(2, ("Could not parse name from PAC: [%s]:%s\n",
+			DEBUG(2, ("Could not unparse name from ticket to match with name from PAC: [%s]:%s\n",
 				  logon_name->account_name, error_message(ret)));
 			talloc_free(tmp_ctx);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 
-		bool_ret = smb_krb5_principal_compare_any_realm(context,
-								client_principal,
-								client_principal_pac);
-
-		krb5_free_principal(context, client_principal_pac);
+		bool_ret = strcmp(client_principal_string, logon_name->account_name) == 0;
 
 		if (!bool_ret) {
 			DEBUG(2, ("Name in PAC [%s] does not match principal name "
-				  "in ticket\n", logon_name->account_name));
+				  "in ticket [%s]\n",
+				  logon_name->account_name,
+				  client_principal_string));
+			SAFE_FREE(client_principal_string);
 			talloc_free(tmp_ctx);
 			return NT_STATUS_ACCESS_DENIED;
 		}
+		SAFE_FREE(client_principal_string);
+
 	}
 
 	DEBUG(3,("Found account name from PAC: %s [%s]\n",

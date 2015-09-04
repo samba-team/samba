@@ -452,7 +452,7 @@ static NTSTATUS smb2srv_reply(struct smb2srv_request *req)
 	case SMB2_OP_KEEPALIVE:
 		smb2srv_keepalive_recv(req);
 		return NT_STATUS_OK;
-	case SMB2_OP_FIND:
+	case SMB2_OP_QUERY_DIRECTORY:
 		if (!req->session) goto nosession;
 		if (!req->tcon)	goto notcon;
 		smb2srv_find_recv(req);

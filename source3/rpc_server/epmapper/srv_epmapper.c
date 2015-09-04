@@ -774,7 +774,7 @@ error_status_t _epm_Lookup(struct pipes_struct *p,
 		if (match) {
 			if (r->in.inquiry_type == RPC_C_EP_MATCH_BY_IF ||
 			    r->in.inquiry_type == RPC_C_EP_MATCH_BY_OBJ) {
-				/* Check inteface version */
+				/* Check interface version */
 
 				match = false;
 				switch (r->in.vers_option) {

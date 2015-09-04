@@ -179,6 +179,10 @@ _PUBLIC_ enum ndr_err_code ndr_push_nbt_string(struct ndr_push *ndr, int ndr_fla
 					      (unsigned)complen, (unsigned)complen);
 		}
 
+		if (s[complen] == '.' && s[complen+1] == '\0') {
+			complen++;
+		}
+
 		compname = talloc_asprintf(ndr, "%c%*.*s",
 						(unsigned char)complen,
 						(unsigned char)complen,

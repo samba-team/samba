@@ -824,6 +824,7 @@ static struct idmap_methods autorid_methods = {
 	.allocate_id	 = idmap_autorid_allocate_id
 };
 
+static_decl_idmap;
 NTSTATUS idmap_autorid_init(void)
 {
 	return smb_register_idmap(SMB_IDMAP_INTERFACE_VERSION,

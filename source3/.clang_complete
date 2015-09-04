@@ -6,7 +6,6 @@
 -I./../lib/tevent
 -I./../lib/popt
 -I./../lib/tdb/include
--I./../lib/tdb_compat
 -I./include/autoconf
 -I./include
 -I./librpc

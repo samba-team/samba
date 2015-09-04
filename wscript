@@ -8,7 +8,7 @@ VERSION=None
 
 import sys, os, tempfile
 sys.path.insert(0, srcdir+"/buildtools/wafsamba")
-import wafsamba, Options, samba_dist, Scripting, Utils, samba_version
+import wafsamba, Options, samba_dist, samba_git, Scripting, Utils, samba_version
 
 
 samba_dist.DIST_DIRS('.')
@@ -37,7 +37,6 @@ def set_options(opt):
     opt.RECURSE('lib/replace')
     opt.RECURSE('dynconfig')
     opt.RECURSE('lib/ldb')
-    opt.RECURSE('lib/ntdb')
     opt.RECURSE('selftest')
     opt.RECURSE('source4/lib/tls')
     opt.RECURSE('pidl')
@@ -70,14 +69,6 @@ def set_options(opt):
                   help=("Disable RELRO builds"),
                   action="store_false", dest='enable_relro')
 
-    opt.add_option('--with-systemd',
-                   help=("Enable systemd integration"),
-                   action='store_true', dest='enable_systemd')
-
-    opt.add_option('--without-systemd',
-                   help=("Disable systemd integration"),
-                   action='store_false', dest='enable_systemd')
-
     gr = opt.option_group('developer options')
 
     opt.tool_options('python') # options for disabling pyc or pyo compilation
@@ -103,7 +94,7 @@ def configure(conf):
     conf.SAMBA_CHECK_PERL(mandatory=True)
     conf.find_program('xsltproc', var='XSLTPROC')
 
-    conf.SAMBA_CHECK_PYTHON(mandatory=True, version=(2,5,0))
+    conf.SAMBA_CHECK_PYTHON(mandatory=True, version=(2, 6, 0))
     conf.SAMBA_CHECK_PYTHON_HEADERS(mandatory=True)
 
     if sys.platform == 'darwin' and not conf.env['HAVE_ENVIRON_DECL']:
@@ -123,8 +114,7 @@ def configure(conf):
     conf.RECURSE('dynconfig')
 
     if conf.CHECK_FOR_THIRD_PARTY():
-        conf.RECURSE('third_party/zlib')
-        conf.RECURSE('third_party/popt')
+        conf.RECURSE('third_party')
     else:
         if not conf.CHECK_ZLIB():
             raise Utils.WafError('zlib development packages have not been found.\nIf third_party is installed, check that it is in the proper place.')
@@ -152,20 +142,18 @@ def configure(conf):
     conf.RECURSE('source4/lib/tls')
     conf.RECURSE('source4/ntvfs/sysdep')
     conf.RECURSE('lib/util')
-    conf.RECURSE('lib/ccan')
-    conf.RECURSE('lib/ntdb')
     conf.RECURSE('lib/util/charset')
     conf.RECURSE('source4/auth')
-    conf.RECURSE('lib/nss_wrapper')
     conf.RECURSE('nsswitch')
-    conf.RECURSE('lib/resolv_wrapper')
-    conf.RECURSE('lib/socket_wrapper')
-    conf.RECURSE('lib/uid_wrapper')
-    conf.RECURSE('lib/subunit/c')
     conf.RECURSE('libcli/smbreadline')
     conf.RECURSE('lib/crypto')
     conf.RECURSE('pidl')
     conf.RECURSE('selftest')
+    if conf.CONFIG_GET('ENABLE_SELFTEST'):
+        conf.RECURSE('lib/nss_wrapper')
+        conf.RECURSE('lib/resolv_wrapper')
+        conf.RECURSE('lib/socket_wrapper')
+        conf.RECURSE('lib/uid_wrapper')
     conf.RECURSE('source3')
     conf.RECURSE('lib/texpect')
     if conf.env.with_ctdb:
@@ -183,11 +171,6 @@ def configure(conf):
 
     if not conf.CHECK_NEED_LC("-lc not needed"):
         conf.ADD_LDFLAGS('-lc', testflags=False)
-
-    # we don't want PYTHONDIR in config.h, as otherwise changing
-    # --prefix causes a complete rebuild
-    del(conf.env.defines['PYTHONDIR'])
-    del(conf.env.defines['PYTHONARCHDIR'])
 
     if not conf.CHECK_CODE('#include "tests/summary.c"',
                            define='SUMMARY_PASSES',
@@ -215,20 +198,6 @@ def configure(conf):
                          msg="Checking compiler for full RELRO support"):
             conf.env['ENABLE_RELRO'] = True
 
-    if Options.options.enable_systemd != False:
-        conf.check_cfg(package='libsystemd-daemon', args='--cflags --libs',
-                       msg='Checking for libsystemd-daemon', uselib_store="SYSTEMD-DAEMON")
-        conf.CHECK_HEADERS('systemd/sd-daemon.h', lib='systemd-daemon')
-        conf.CHECK_LIB('systemd-daemon', shlib=True)
-
-    if (conf.CONFIG_SET('HAVE_SYSTEMD_SD_DAEMON_H') and
-        conf.CONFIG_SET('HAVE_LIBSYSTEMD_DAEMON')):
-        conf.DEFINE('HAVE_SYSTEMD', '1')
-        conf.env['ENABLE_SYSTEMD'] = True
-    else:
-        conf.SET_TARGET_TYPE('systemd-daemon', 'EMPTY')
-        conf.undefine('HAVE_SYSTEMD')
-
     conf.SAMBA_CONFIG_H('include/config.h')
 
 def etags(ctx):
@@ -251,6 +220,7 @@ def ctags(ctx):
     if os.WEXITSTATUS(status):
         raise Utils.WafError('ctags failed')
 
+
 # putting this here enabled build in the list
 # of commands in --help
 def build(bld):
@@ -262,7 +232,7 @@ def pydoctor(ctx):
     '''build python apidocs'''
     bp = os.path.abspath('bin/python')
     mpaths = {}
-    modules = ['talloc', 'tdb', 'ldb', 'ntdb']
+    modules = ['talloc', 'tdb', 'ldb']
     for m in modules:
         f = os.popen("PYTHONPATH=%s python -c 'import %s; print %s.__file__'" % (bp, m, m), 'r')
         try:
@@ -346,6 +316,7 @@ def wildcard_cmd(cmd):
 
 def main():
     from samba_wildcard import wildcard_main
+
     wildcard_main(wildcard_cmd)
 Scripting.main = main
 
@@ -353,3 +324,10 @@ def reconfigure(ctx):
     '''reconfigure if config scripts have changed'''
     import samba_utils
     samba_utils.reconfigure(ctx)
+
+
+if os.path.isdir(os.path.join(srcdir, ".git")):
+    # Check if there are submodules that are checked out but out of date.
+    for submodule, status in samba_git.read_submodule_status(srcdir):
+        if status == "out-of-date":
+            raise Utils.WafError("some submodules are out of date. Please run 'git submodule update'")

@@ -1,0 +1,73 @@
+#!/usr/bin/env python
+
+import samba_git
+import Utils
+import os
+import sys
+
+# work out what python external libraries we need to install
+external_pkgs = {
+    "dns.resolver": "dnspython/dns",
+    "iso8601": "pyiso8601/iso8601",
+    }
+
+
+def find_third_party_module(conf, module, package):
+    conf.COMPOUND_START("Checking for third party Python module %s" % module)
+    try:
+        __import__(module)
+    except ImportError:
+        pass
+    else:
+        # Installed on the system
+        conf.COMPOUND_END("system")
+
+    old_path = sys.path
+    try:
+        sys.path.append(os.path.join(conf.curdir, os.path.dirname(package)))
+        try:
+            __import__(module)
+        except ImportError:
+            if samba_git.has_submodules(conf.srcdir):
+                raise Utils.WafError("""\
+Unable to find Python module '%s'. Please install the system package or check \
+out the relevant submodule by running 'git submodule update --init'.
+""" % module)
+            else:
+                raise Utils.WafError("""\
+Unable to find Python module '%s'. Please install the system package or place a copy in
+%s.
+""" % (module, package))
+        else:
+            conf.COMPOUND_END("bundled")
+    finally:
+        sys.path = old_path
+
+
+def configure(conf):
+    for module, package in external_pkgs.items():
+        find_third_party_module(conf, module, package)
+    conf.RECURSE('popt')
+    conf.RECURSE('zlib')
+
+
+def build(bld):
+    list = []
+
+    for module, package in external_pkgs.items():
+        try:
+            __import__(module)
+        except ImportError:
+            list.append(package)
+
+    for e in list:
+        bld.INSTALL_WILDCARD('${PYTHONARCHDIR}/samba/third_party', e + '/**/*', flat=False,
+                             exclude='*.pyc', trim_path=os.path.dirname(e))
+
+    bld.SAMBA_GENERATOR('third_party_init_py',
+                        rule='touch ${TGT}',
+                        target='empty_file')
+
+    bld.INSTALL_FILES('${PYTHONARCHDIR}/samba/third_party', 'empty_file', destname='__init__.py')
+    bld.RECURSE('zlib')
+    bld.RECURSE('popt')

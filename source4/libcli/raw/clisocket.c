@@ -36,11 +36,14 @@
 struct smbcli_transport_connect_state {
 	struct tevent_context *ev;
 	struct socket_context *sock;
+	struct tevent_req *io_req;
 	uint8_t *request;
 	struct iovec iov;
 	uint8_t *response;
 };
 
+static void smbcli_transport_connect_cleanup(struct tevent_req *req,
+					     enum tevent_req_state req_state);
 static void smbcli_transport_connect_writev_done(struct tevent_req *subreq);
 static void smbcli_transport_connect_read_smb_done(struct tevent_req *subreq);
 
@@ -71,6 +74,8 @@ static struct tevent_req *smbcli_transport_connect_send(TALLOC_CTX *mem_ctx,
 		tevent_req_done(req);
 		return tevent_req_post(req, ev);
 	}
+
+	tevent_req_set_cleanup_fn(req, smbcli_transport_connect_cleanup);
 
 	status = nbt_name_to_blob(state, &calling_blob, calling);
 	if (tevent_req_nterror(req, status)) {
@@ -115,6 +120,7 @@ static struct tevent_req *smbcli_transport_connect_send(TALLOC_CTX *mem_ctx,
 	tevent_req_set_callback(subreq,
 				smbcli_transport_connect_writev_done,
 				req);
+	state->io_req = subreq;
 
 	if (timeout_msec > 0) {
 		struct timeval endtime;
@@ -128,6 +134,36 @@ static struct tevent_req *smbcli_transport_connect_send(TALLOC_CTX *mem_ctx,
 	return req;
 }
 
+static void smbcli_transport_connect_cleanup(struct tevent_req *req,
+					     enum tevent_req_state req_state)
+{
+	struct smbcli_transport_connect_state *state =
+		tevent_req_data(req,
+		struct smbcli_transport_connect_state);
+
+	TALLOC_FREE(state->io_req);
+
+	if (state->sock == NULL) {
+		return;
+	}
+
+	if (state->sock->fd == -1) {
+		return;
+	}
+
+	if (req_state == TEVENT_REQ_DONE) {
+		/*
+		 * we keep the socket open for the caller to use
+		 */
+		state->sock = NULL;
+		return;
+	}
+
+	close(state->sock->fd);
+	state->sock->fd = -1;
+	state->sock = NULL;
+}
+
 static void smbcli_transport_connect_writev_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req =
@@ -139,14 +175,12 @@ static void smbcli_transport_connect_writev_done(struct tevent_req *subreq)
 	ssize_t ret;
 	int err;
 
+	state->io_req = NULL;
+
 	ret = writev_recv(subreq, &err);
 	TALLOC_FREE(subreq);
 	if (ret == -1) {
 		NTSTATUS status = map_nt_error_from_unix_common(err);
-
-		close(state->sock->fd);
-		state->sock->fd = -1;
-
 		tevent_req_nterror(req, status);
 		return;
 	}
@@ -159,6 +193,7 @@ static void smbcli_transport_connect_writev_done(struct tevent_req *subreq)
 	tevent_req_set_callback(subreq,
 				smbcli_transport_connect_read_smb_done,
 				req);
+	state->io_req = subreq;
 }
 
 static void smbcli_transport_connect_read_smb_done(struct tevent_req *subreq)
@@ -174,22 +209,18 @@ static void smbcli_transport_connect_read_smb_done(struct tevent_req *subreq)
 	NTSTATUS status;
 	uint8_t error;
 
+	state->io_req = NULL;
+
 	ret = read_smb_recv(subreq, state,
 			    &state->response, &err);
+	TALLOC_FREE(subreq);
 	if (ret == -1) {
 		status = map_nt_error_from_unix_common(err);
-
-		close(state->sock->fd);
-		state->sock->fd = -1;
-
 		tevent_req_nterror(req, status);
 		return;
 	}
 
 	if (ret < 4) {
-		close(state->sock->fd);
-		state->sock->fd = -1;
-
 		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
 		return;
 	}
@@ -201,9 +232,6 @@ static void smbcli_transport_connect_read_smb_done(struct tevent_req *subreq)
 
 	case NBSSnegative:
 		if (ret < 5) {
-			close(state->sock->fd);
-			state->sock->fd = -1;
-
 			tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
 			return;
 		}
@@ -235,9 +263,6 @@ static void smbcli_transport_connect_read_smb_done(struct tevent_req *subreq)
 		status = NT_STATUS_INVALID_NETWORK_RESPONSE;
 		break;
 	}
-
-	close(state->sock->fd);
-	state->sock->fd = -1;
 
 	tevent_req_nterror(req, status);
 }

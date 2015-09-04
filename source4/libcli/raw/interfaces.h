@@ -1167,7 +1167,9 @@ enum smb_fsinfo_level {
 		   RAW_QFS_ATTRIBUTE_INFORMATION          = SMB_QFS_ATTRIBUTE_INFORMATION,
 		   RAW_QFS_QUOTA_INFORMATION              = SMB_QFS_QUOTA_INFORMATION,
 		   RAW_QFS_FULL_SIZE_INFORMATION          = SMB_QFS_FULL_SIZE_INFORMATION,
-		   RAW_QFS_OBJECTID_INFORMATION           = SMB_QFS_OBJECTID_INFORMATION};
+		   RAW_QFS_OBJECTID_INFORMATION           = SMB_QFS_OBJECTID_INFORMATION,
+		   RAW_QFS_SECTOR_SIZE_INFORMATION        = SMB_QFS_SECTOR_SIZE_INFORMATION,
+};
 
 
 /* union for fsinfo() backend call. Note that there are no in
@@ -1331,6 +1333,22 @@ union smb_fsinfo {
 			uint64_t unknown[6];
 		} out;
 	} objectid_information;	
+
+	/* trans2 RAW_QFS_SECTOR_SIZE_INFORMATION interface */
+	struct {
+		enum smb_fsinfo_level level;
+		struct smb2_handle handle; /* only for smb2 */
+
+		struct {
+			uint32_t logical_bytes_per_sector;
+			uint32_t phys_bytes_per_sector_atomic;
+			uint32_t phys_bytes_per_sector_perf;
+			uint32_t fs_effective_phys_bytes_per_sector_atomic;
+			uint32_t flags;
+			uint32_t byte_off_sector_align;
+			uint32_t byte_off_partition_align;
+		} out;
+	} sector_size_info;
 };
 
 

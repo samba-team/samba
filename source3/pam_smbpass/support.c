@@ -122,7 +122,7 @@ int converse( pam_handle_t * pamh, int ctrl, int nargs
 	      , struct pam_response **response )
 {
 	int retval;
-	struct pam_conv *conv;
+	struct pam_conv *conv = NULL;
 
 	retval = _pam_get_item(pamh, PAM_CONV, &conv);
 	if (retval == PAM_SUCCESS) {
@@ -162,11 +162,15 @@ int make_remark( pam_handle_t * pamh, unsigned int ctrl
 
 /* set the control flags for the SMB module. */
 
-int set_ctrl( pam_handle_t *pamh, int flags, int argc, const char **argv )
+unsigned int set_ctrl(pam_handle_t *pamh,
+		      int flags,
+		      int argc,
+		      const char **argv)
 {
     int i = 0;
     const char *service_file = NULL;
     unsigned int ctrl;
+    bool ok;
 
     ctrl = SMB_DEFAULTS;	/* the default selection of options */
 
@@ -207,7 +211,10 @@ int set_ctrl( pam_handle_t *pamh, int flags, int argc, const char **argv )
 	_log_err(pamh, LOG_ERR, "Error loading service file %s", service_file);
     }
 
-    secrets_init();
+	ok = secrets_init();
+	if (!ok) {
+		_log_err(pamh, LOG_ERR, "Error loading secrets database");
+	}
 
     if (lp_null_passwords()) {
         set( SMB__NULLOK, ctrl );
@@ -370,7 +377,7 @@ int _smb_verify_password( pam_handle_t * pamh, struct samu *sampass,
         { /* this means we've succeeded */
             return PAM_SUCCESS;
         } else {
-            const char *service;
+            const char *service = NULL;
 
             _pam_get_item( pamh, PAM_SERVICE, &service );
             _log_err(pamh, LOG_NOTICE, "failed auth request by %s for service %s as %s",
@@ -402,7 +409,9 @@ int _smb_verify_password( pam_handle_t * pamh, struct samu *sampass,
         }
     } else {
 
-        const char *service;
+        const char *service = NULL;
+
+        retval = PAM_AUTH_ERR;
 
         _pam_get_item( pamh, PAM_SERVICE, &service );
 
@@ -453,7 +462,6 @@ int _smb_verify_password( pam_handle_t * pamh, struct samu *sampass,
                   "failed auth request by %s for service %s as %s(%d)",
                   uidtoname(getuid()),
                   service ? service : "**unknown**", name);
-        retval = PAM_AUTH_ERR;
     }
 
     _pam_delete( data_name );

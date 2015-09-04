@@ -65,7 +65,7 @@ enum lsa_handle_type {
 struct lsa_info {
 	struct dom_sid sid;
 	const char *name;
-	uint32 access;
+	uint32_t access;
 	enum lsa_handle_type type;
 	struct security_descriptor *sd;
 };
@@ -134,7 +134,7 @@ static NTSTATUS lookup_lsa_rids(TALLOC_CTX *mem_ctx,
 				int flags,
 				uint32_t *pmapped_count)
 {
-	uint32 mapped_count, i;
+	uint32_t mapped_count, i;
 
 	SMB_ASSERT(num_entries <= MAX_LOOKUP_SIDS);
 
@@ -143,7 +143,7 @@ static NTSTATUS lookup_lsa_rids(TALLOC_CTX *mem_ctx,
 
 	for (i = 0; i < num_entries; i++) {
 		struct dom_sid sid;
-		uint32 rid;
+		uint32_t rid;
 		int dom_idx;
 		const char *full_name;
 		const char *domain;
@@ -215,9 +215,9 @@ static NTSTATUS lookup_lsa_sids(TALLOC_CTX *mem_ctx,
 				uint32_t num_entries,
 				struct lsa_String *name,
 				int flags,
-				uint32 *pmapped_count)
+				uint32_t *pmapped_count)
 {
-	uint32 mapped_count, i;
+	uint32_t mapped_count, i;
 
 	SMB_ASSERT(num_entries <= MAX_LOOKUP_SIDS);
 
@@ -226,7 +226,7 @@ static NTSTATUS lookup_lsa_sids(TALLOC_CTX *mem_ctx,
 
 	for (i = 0; i < num_entries; i++) {
 		struct dom_sid sid;
-		uint32 rid;
+		uint32_t rid;
 		int dom_idx;
 		const char *full_name;
 		const char *domain;
@@ -386,8 +386,8 @@ NTSTATUS _lsa_OpenPolicy2(struct pipes_struct *p,
 {
 	struct security_descriptor *psd = NULL;
 	size_t sd_size;
-	uint32 des_access = r->in.access_mask;
-	uint32 acc_granted;
+	uint32_t des_access = r->in.access_mask;
+	uint32_t acc_granted;
 	NTSTATUS status;
 
 	if (p->transport != NCACN_NP && p->transport != NCALRPC) {
@@ -634,7 +634,7 @@ NTSTATUS _lsa_QueryInfoPolicy(struct pipes_struct *p,
 	case LSA_POLICY_INFO_AUDIT_EVENTS:
 		{
 
-		uint32 policy_def = LSA_AUDIT_POLICY_ALL;
+		uint32_t policy_def = LSA_AUDIT_POLICY_ALL;
 
 		/* check if the user has enough rights */
 		if (!(handle->access & LSA_POLICY_VIEW_AUDIT_INFORMATION)) {
@@ -810,7 +810,7 @@ static NTSTATUS _lsa_lookup_sids_internal(struct pipes_struct *p,
 	int i;
 	const struct dom_sid **sids = NULL;
 	struct lsa_RefDomainList *ref = NULL;
-	uint32 mapped_count = 0;
+	uint32_t mapped_count = 0;
 	struct lsa_dom_info *dom_infos = NULL;
 	struct lsa_name_info *name_infos = NULL;
 	struct lsa_TranslatedName2 *names = NULL;
@@ -912,7 +912,7 @@ NTSTATUS _lsa_LookupSids(struct pipes_struct *p,
 	NTSTATUS status;
 	struct lsa_info *handle;
 	int num_sids = r->in.sids->num_sids;
-	uint32 mapped_count = 0;
+	uint32_t mapped_count = 0;
 	struct lsa_RefDomainList *domains = NULL;
 	struct lsa_TranslatedName *names_out = NULL;
 	struct lsa_TranslatedName2 *names = NULL;
@@ -994,7 +994,7 @@ static NTSTATUS _lsa_LookupSids_common(struct pipes_struct *p,
 	NTSTATUS status;
 	struct lsa_info *handle;
 	int num_sids = r->in.sids->num_sids;
-	uint32 mapped_count = 0;
+	uint32_t mapped_count = 0;
 	struct lsa_RefDomainList *domains = NULL;
 	struct lsa_TranslatedName2 *names = NULL;
 	bool check_policy = true;
@@ -1143,10 +1143,10 @@ NTSTATUS _lsa_LookupNames(struct pipes_struct *p,
 	NTSTATUS status = NT_STATUS_NONE_MAPPED;
 	struct lsa_info *handle;
 	struct lsa_String *names = r->in.names;
-	uint32 num_entries = r->in.num_names;
+	uint32_t num_entries = r->in.num_names;
 	struct lsa_RefDomainList *domains = NULL;
 	struct lsa_TranslatedSid *rids = NULL;
-	uint32 mapped_count = 0;
+	uint32_t mapped_count = 0;
 	int flags = 0;
 
 	if (p->transport != NCACN_NP && p->transport != NCALRPC) {
@@ -1279,10 +1279,10 @@ static NTSTATUS _lsa_LookupNames_common(struct pipes_struct *p,
 	NTSTATUS status;
 	struct lsa_info *handle;
 	struct lsa_String *names = r->in.names;
-	uint32 num_entries = r->in.num_names;
+	uint32_t num_entries = r->in.num_names;
 	struct lsa_RefDomainList *domains = NULL;
 	struct lsa_TranslatedSid3 *trans_sids = NULL;
-	uint32 mapped_count = 0;
+	uint32_t mapped_count = 0;
 	int flags = 0;
 	bool check_policy = true;
 
@@ -1705,6 +1705,51 @@ static NTSTATUS get_trustauth_inout_blob(TALLOC_CTX *mem_ctx,
 					 DATA_BLOB *trustauth_blob)
 {
 	enum ndr_err_code ndr_err;
+
+	if (iopw->current.count != iopw->count) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (iopw->previous.count > iopw->current.count) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (iopw->previous.count == 0) {
+		/*
+		 * If the previous credentials are not present
+		 * we need to make a copy.
+		 */
+		iopw->previous = iopw->current;
+	}
+
+	if (iopw->previous.count < iopw->current.count) {
+		struct AuthenticationInformationArray *c = &iopw->current;
+		struct AuthenticationInformationArray *p = &iopw->previous;
+
+		/*
+		 * The previous array needs to have the same size
+		 * as the current one.
+		 *
+		 * We may have to fill with TRUST_AUTH_TYPE_NONE
+		 * elements.
+		 */
+		p->array = talloc_realloc(mem_ctx, p->array,
+				   struct AuthenticationInformation,
+				   c->count);
+		if (p->array == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		while (p->count < c->count) {
+			struct AuthenticationInformation *a =
+				&p->array[p->count++];
+
+			*a = (struct AuthenticationInformation) {
+				.LastUpdateTime = p->array[0].LastUpdateTime,
+				.AuthType = TRUST_AUTH_TYPE_NONE,
+			};
+		}
+	}
 
 	ndr_err = ndr_push_struct_blob(trustauth_blob, mem_ctx,
 				       iopw,
@@ -2501,8 +2546,8 @@ NTSTATUS _lsa_EnumPrivs(struct pipes_struct *p,
 			struct lsa_EnumPrivs *r)
 {
 	struct lsa_info *handle;
-	uint32 i;
-	uint32 enum_context = *r->in.resume_handle;
+	uint32_t i;
+	uint32_t enum_context = *r->in.resume_handle;
 	int num_privs = num_privileges_in_short_list();
 	struct lsa_PrivEntry *entries = NULL;
 
@@ -3332,7 +3377,7 @@ static NTSTATUS init_lsa_right_set(TALLOC_CTX *mem_ctx,
 				   struct lsa_RightSet *r,
 				   PRIVILEGE_SET *privileges)
 {
-	uint32 i;
+	uint32_t i;
 	const char *privname;
 	const char **privname_array = NULL;
 	size_t num_priv = 0;
@@ -4318,7 +4363,7 @@ static NTSTATUS add_collision(struct lsa_ForestTrustCollisionInfo *c_info,
 
 	es[i]->index = idx;
 	es[i]->type = collision_type;
-	es[i]->flags.flags = conflict_type;
+	es[i]->flags = conflict_type;
 	es[i]->name.string = talloc_strdup(es[i], tdo_name);
 	if (!es[i]->name.string) {
 		return NT_STATUS_NO_MEMORY;
@@ -4522,7 +4567,9 @@ NTSTATUS _lsa_lsaRSetForestTrustInformation(struct pipes_struct *p,
 		}
 	}
 
-	*r->out.collision_info = c_info;
+	if (c_info->count != 0) {
+		*r->out.collision_info = c_info;
+	}
 
 	if (r->in.check_only != 0) {
 		return NT_STATUS_OK;

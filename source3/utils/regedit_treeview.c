@@ -253,7 +253,7 @@ void tree_node_insert_sorted(struct tree_node *list, struct tree_node *node)
 WERROR tree_node_load_children(struct tree_node *node)
 {
 	struct registry_key *key;
-	const char *key_name, *klass;
+	const char *reg_key_name, *klass;
 	NTTIME modified;
 	uint32_t i, nsubkeys, count;
 	WERROR rv;
@@ -274,18 +274,18 @@ WERROR tree_node_load_children(struct tree_node *node)
 
 	for (count = 0, i = 0; i < nsubkeys; ++i) {
 		rv = reg_key_get_subkey_by_index(node, node->key, i,
-						 &key_name, &klass,
+						 &reg_key_name, &klass,
 						 &modified);
 		if (!W_ERROR_IS_OK(rv)) {
 			goto finish;
 		}
 
-		rv = reg_open_key(node, node->key, key_name, &key);
+		rv = reg_open_key(node, node->key, reg_key_name, &key);
 		if (!W_ERROR_IS_OK(rv)) {
 			continue;
 		}
 
-		array[count] = tree_node_new(array, node, key_name, key);
+		array[count] = tree_node_new(array, node, reg_key_name, key);
 		if (array[count] == NULL) {
 			rv = WERR_NOMEM;
 			goto finish;

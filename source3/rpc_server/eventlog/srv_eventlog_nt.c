@@ -41,11 +41,11 @@
 typedef struct {
 	char *logname;
 	ELOG_TDB *etdb;
-	uint32 current_record;
-	uint32 num_records;
-	uint32 oldest_entry;
-	uint32 flags;
-	uint32 access_granted;
+	uint32_t current_record;
+	uint32_t num_records;
+	uint32_t oldest_entry;
+	uint32_t flags;
+	uint32_t access_granted;
 } EVENTLOG_INFO;
 
 /********************************************************************

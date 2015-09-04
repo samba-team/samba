@@ -81,12 +81,7 @@ const char *ctdb_get_socketname(struct ctdb_context *ctdb);
   Check that a specific ip address exists in the node list and returns
   the id for the node or -1
 */
-int ctdb_ip_to_nodeid(struct ctdb_context *ctdb, const char *nodeip);
-
-/*
-  start the ctdb protocol
-*/
-int ctdb_start(struct ctdb_context *ctdb);
+int ctdb_ip_to_nodeid(struct ctdb_context *ctdb, const ctdb_sock_addr *nodeip);
 
 /*
   attach to a ctdb database
@@ -125,19 +120,8 @@ int ctdb_set_call(struct ctdb_db_context *ctdb_db, ctdb_fn_t fn, uint32_t id);
 */
 int ctdb_call(struct ctdb_db_context *ctdb_db, struct ctdb_call *call);
 
-/*
-  initiate an ordered ctdb cluster shutdown
-  this function will never return
-*/
-void ctdb_shutdown(struct ctdb_context *ctdb);
-
 /* return pnn of this node */
 uint32_t ctdb_get_pnn(struct ctdb_context *ctdb);
-
-/*
-  return the number of nodes
-*/
-uint32_t ctdb_get_num_nodes(struct ctdb_context *ctdb);
 
 /* setup a handler for ctdb messages */
 typedef void (*ctdb_msg_fn_t)(struct ctdb_context *, uint64_t srvid,
@@ -225,9 +209,9 @@ int ctdb_ctrl_getnodemap(struct ctdb_context *ctdb,
 		    struct timeval timeout, uint32_t destnode,
 		    TALLOC_CTX *mem_ctx, struct ctdb_node_map **nodemap);
 
-int ctdb_ctrl_getnodemapv4(struct ctdb_context *ctdb,
-		    struct timeval timeout, uint32_t destnode,
-		    TALLOC_CTX *mem_ctx, struct ctdb_node_map **nodemap);
+int ctdb_ctrl_getnodesfile(struct ctdb_context *ctdb,
+			   struct timeval timeout, uint32_t destnode,
+			   TALLOC_CTX *mem_ctx, struct ctdb_node_map **nodemap);
 
 int ctdb_ctrl_reload_nodes_file(struct ctdb_context *ctdb,
 		    struct timeval timeout, uint32_t destnode);
@@ -254,26 +238,6 @@ int ctdb_ctrl_pulldb_recv(
        TALLOC_CTX *mem_ctx, struct ctdb_client_control_state *state,
        TDB_DATA *outdata);
 
-int ctdb_ctrl_pushdb(
-       struct ctdb_context *ctdb, uint32_t destnode, uint32_t dbid,
-       TALLOC_CTX *mem_ctx,
-       struct timeval timeout, TDB_DATA indata);
-
-struct ctdb_client_control_state *ctdb_ctrl_pushdb_send(
-       struct ctdb_context *ctdb, uint32_t destnode, uint32_t dbid,
-       TALLOC_CTX *mem_ctx, struct timeval timeout,
-       TDB_DATA indata);
-
-int ctdb_ctrl_pushdb_recv(
-       struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx,
-       struct ctdb_client_control_state *state);
-
-
-int ctdb_ctrl_copydb(struct ctdb_context *ctdb,
-	struct timeval timeout, uint32_t sourcenode,
-	uint32_t destnode, uint32_t dbid, uint32_t lmaster,
-	TALLOC_CTX *mem_ctx);
-
 int ctdb_ctrl_getdbpath(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, uint32_t dbid, TALLOC_CTX *mem_ctx, const char **path);
 int ctdb_ctrl_getdbname(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, uint32_t dbid, TALLOC_CTX *mem_ctx, const char **name);
 int ctdb_ctrl_getdbhealth(struct ctdb_context *ctdb,
@@ -294,8 +258,6 @@ int ctdb_ctrl_get_runstate(struct ctdb_context *ctdb,
 			   uint32_t destnode,
 			   uint32_t *runstate);
 
-int ctdb_ctrl_get_config(struct ctdb_context *ctdb);
-
 int ctdb_ctrl_get_debuglevel(struct ctdb_context *ctdb, uint32_t destnode, int32_t *level);
 int ctdb_ctrl_set_debuglevel(struct ctdb_context *ctdb, uint32_t destnode, int32_t level);
 
@@ -305,11 +267,6 @@ int ctdb_ctrl_set_debuglevel(struct ctdb_context *ctdb, uint32_t destnode, int32
 int ctdb_ctrl_setdmaster(struct ctdb_context *ctdb,
 	struct timeval timeout, uint32_t destnode,
 	TALLOC_CTX *mem_ctx, uint32_t dbid, uint32_t dmaster);
-
-/*
-  write a record on a specific db (this implicitely updates dmaster of the record to locally be the vnn of the node where the control is executed on)
- */
-int ctdb_ctrl_write_record(struct ctdb_context *ctdb, uint32_t destnode, TALLOC_CTX *mem_ctx, uint32_t dbid, TDB_DATA key, TDB_DATA data);
 
 #define CTDB_RECOVERY_NORMAL		0
 #define CTDB_RECOVERY_ACTIVE		1
@@ -466,17 +423,6 @@ struct ctdb_uptime {
 	struct timeval last_recovery_finished;
 };
 
-/*
-  struct for tcp_client control
-  this is an ipv4 only version of this structure used by samba
-  samba will later be migrated over to use the
-  ctdb_control_tcp_addr structure instead
- */
-struct ctdb_control_tcp {
-	struct sockaddr_in src;  /* samba uses this */
-	struct sockaddr_in dest; /* samba uses this */
-};
-/* new style structure */
 struct ctdb_control_tcp_addr {
 	ctdb_sock_addr src;
 	ctdb_sock_addr dest;
@@ -502,6 +448,28 @@ int ctdb_ctrl_setreclock(struct ctdb_context *ctdb,
 	struct timeval timeout, uint32_t destnode,
 	const char *reclock);
 
+struct ctdb_node_capabilities {
+	bool retrieved;
+	uint32_t capabilities;
+};
+
+/* Retrieve capabilities for all connected nodes.  The length of the
+ * returned array can be calculated using talloc_array_length(). */
+struct ctdb_node_capabilities *
+ctdb_get_capabilities(struct ctdb_context *ctdb,
+		      TALLOC_CTX *mem_ctx,
+		      struct timeval timeout,
+		      struct ctdb_node_map *nodemap);
+
+/* Get capabilities for specified node, NULL if not found */
+uint32_t *
+ctdb_get_node_capabilities(struct ctdb_node_capabilities *caps,
+			   uint32_t pnn);
+
+/* True if the given node has all of the required capabilities */
+bool ctdb_node_has_capabilities(struct ctdb_node_capabilities *caps,
+				uint32_t pnn,
+				uint32_t capabilities_required);
 
 uint32_t *list_of_nodes(struct ctdb_context *ctdb,
 			struct ctdb_node_map *node_map,

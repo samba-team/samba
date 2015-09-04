@@ -31,7 +31,7 @@
 #if ENABLE_GNUTLS
 #include <gnutls/gnutls.h>
 
-#define DH_BITS 1024
+#define DH_BITS 2048
 
 #if defined(HAVE_GNUTLS_DATUM) && !defined(HAVE_GNUTLS_DATUM_T)
 typedef gnutls_datum gnutls_datum_t;
@@ -42,6 +42,7 @@ struct tls_params {
 	gnutls_certificate_credentials x509_cred;
 	gnutls_dh_params dh_params;
 	bool tls_enabled;
+	const char *tls_priority;
 };
 #endif
 
@@ -390,6 +391,8 @@ struct tls_params *tls_initialise(TALLOC_CTX *mem_ctx, struct loadparm_context *
 		return params;
 	}
 
+	params->tls_priority = lpcfg_tls_priority(lp_ctx);
+
 	if (!file_exist(cafile)) {
 		char *hostname = talloc_asprintf(mem_ctx, "%s.%s",
 						 lpcfg_netbios_name(lp_ctx),
@@ -499,6 +502,7 @@ struct socket_context *tls_init_server(struct tls_params *params,
 	int ret;
 	struct socket_context *new_sock;
 	NTSTATUS nt_status;
+	const char *error_pos;
 
 	nt_status = socket_create_with_ops(socket_ctx, &tls_socket_ops, &new_sock,
 					   SOCKET_TYPE_STREAM,
@@ -527,7 +531,16 @@ struct socket_context *tls_init_server(struct tls_params *params,
 
 	talloc_set_destructor(tls, tls_destructor);
 
-	TLSCHECK(gnutls_set_default_priority(tls->session));
+	ret = gnutls_priority_set_direct(tls->session,
+					 params->tls_priority,
+					 &error_pos);
+	if (ret != GNUTLS_E_SUCCESS) {
+		DEBUG(0,("TLS %s - %s.  Check 'tls priority' option at '%s'\n",
+			 __location__, gnutls_strerror(ret), error_pos));
+		talloc_free(new_sock);
+		return NULL;
+	}
+
 	TLSCHECK(gnutls_credentials_set(tls->session, GNUTLS_CRD_CERTIFICATE,
 					params->x509_cred));
 	gnutls_certificate_server_set_request(tls->session, GNUTLS_CERT_REQUEST);
@@ -562,70 +575,6 @@ failed:
 	return NULL;
 }
 
-
-/*
-  setup for a new client connection
-*/
-struct socket_context *tls_init_client(struct socket_context *socket_ctx,
-				       struct tevent_fd *fde,
-				       const char *ca_path)
-{
-	struct tls_context *tls;
-	int ret = 0;
-	const int cert_type_priority[] = { GNUTLS_CRT_X509, GNUTLS_CRT_OPENPGP, 0 };
-	struct socket_context *new_sock;
-	NTSTATUS nt_status;
-
-	nt_status = socket_create_with_ops(socket_ctx, &tls_socket_ops, &new_sock,
-					   SOCKET_TYPE_STREAM,
-					   socket_ctx->flags | SOCKET_FLAG_ENCRYPT);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		return NULL;
-	}
-
-	tls = talloc(new_sock, struct tls_context);
-	if (tls == NULL) return NULL;
-
-	tls->socket          = socket_ctx;
-	talloc_steal(tls, socket_ctx);
-	tls->fde             = fde;
-
-	new_sock->private_data    = tls;
-
-	gnutls_global_init();
-
-	gnutls_certificate_allocate_credentials(&tls->xcred);
-	gnutls_certificate_set_x509_trust_file(tls->xcred, ca_path, GNUTLS_X509_FMT_PEM);
-	TLSCHECK(gnutls_init(&tls->session, GNUTLS_CLIENT));
-	TLSCHECK(gnutls_set_default_priority(tls->session));
-	gnutls_certificate_type_set_priority(tls->session, cert_type_priority);
-	TLSCHECK(gnutls_credentials_set(tls->session, GNUTLS_CRD_CERTIFICATE, tls->xcred));
-
-	talloc_set_destructor(tls, tls_destructor);
-
-	gnutls_transport_set_ptr(tls->session, (gnutls_transport_ptr)tls);
-	gnutls_transport_set_pull_function(tls->session, (gnutls_pull_func)tls_pull);
-	gnutls_transport_set_push_function(tls->session, (gnutls_push_func)tls_push);
-#if GNUTLS_VERSION_MAJOR < 3
-	gnutls_transport_set_lowat(tls->session, 0);
-#endif
-	tls->tls_detect = false;
-
-	tls->output_pending  = false;
-	tls->done_handshake  = false;
-	tls->have_first_byte = false;
-	tls->tls_enabled     = true;
-	tls->interrupted     = false;
-
-	new_sock->state = SOCKET_STATE_CLIENT_CONNECTED;
-
-	return new_sock;
-
-failed:
-	DEBUG(0,("TLS init connection failed - %s\n", gnutls_strerror(ret)));
-	tls->tls_enabled = false;
-	return new_sock;
-}
 
 static NTSTATUS tls_socket_set_option(struct socket_context *sock, const char *option, const char *val)
 {
@@ -693,16 +642,6 @@ struct socket_context *tls_init_server(struct tls_params *params,
 	return NULL;
 }
 
-
-/*
-  setup for a new client connection
-*/
-struct socket_context *tls_init_client(struct socket_context *socket,
-				       struct tevent_fd *fde,
-				       const char *ca_path)
-{
-	return NULL;
-}
 
 #endif
 

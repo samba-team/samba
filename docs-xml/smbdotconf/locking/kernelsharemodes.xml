@@ -1,6 +1,6 @@
 <samba:parameter name="kernel share modes"
-		 type="boolean"
-		 context="S"
+                 type="boolean"
+                 context="S"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>

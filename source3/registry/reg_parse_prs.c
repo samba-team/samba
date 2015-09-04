@@ -48,7 +48,7 @@ void prs_debug(prs_struct *ps, int depth, const char *desc, const char *fn_name)
  * @return False if allocation fails, otherwise True.
  **/
 
-bool prs_init(prs_struct *ps, uint32 size, TALLOC_CTX *ctx, bool io)
+bool prs_init(prs_struct *ps, uint32_t size, TALLOC_CTX *ctx, bool io)
 {
 	ZERO_STRUCTP(ps);
 	ps->io = io;
@@ -131,9 +131,9 @@ TALLOC_CTX *prs_get_mem_context(prs_struct *ps)
  Also depends on the data stream mode (io).
  ********************************************************************/
 
-bool prs_grow(prs_struct *ps, uint32 extra_space)
+bool prs_grow(prs_struct *ps, uint32_t extra_space)
 {
-	uint32 new_size;
+	uint32_t new_size;
 
 	ps->grow_size = MAX(ps->grow_size, ps->data_offset + extra_space);
 
@@ -209,7 +209,7 @@ char *prs_data_p(prs_struct *ps)
  Get the current data size (external interface).
  ********************************************************************/
 
-uint32 prs_data_size(prs_struct *ps)
+uint32_t prs_data_size(prs_struct *ps)
 {
 	return ps->buffer_size;
 }
@@ -218,7 +218,7 @@ uint32 prs_data_size(prs_struct *ps)
  Fetch the current offset (external interface).
  ********************************************************************/
 
-uint32 prs_offset(prs_struct *ps)
+uint32_t prs_offset(prs_struct *ps)
 {
 	return ps->data_offset;
 }
@@ -227,7 +227,7 @@ uint32 prs_offset(prs_struct *ps)
  Set the current offset (external interface).
  ********************************************************************/
 
-bool prs_set_offset(prs_struct *ps, uint32 offset)
+bool prs_set_offset(prs_struct *ps, uint32_t offset)
 {
 	if ((offset > ps->data_offset)
 	    && !prs_grow(ps, offset - ps->data_offset)) {
@@ -242,7 +242,7 @@ bool prs_set_offset(prs_struct *ps, uint32 offset)
  Append the data from a buffer into a parse_struct.
  ********************************************************************/
 
-bool prs_copy_data_in(prs_struct *dst, const char *src, uint32 len)
+bool prs_copy_data_in(prs_struct *dst, const char *src, uint32_t len)
 {
 	if (len == 0)
 		return True;
@@ -263,10 +263,10 @@ bool prs_copy_data_in(prs_struct *dst, const char *src, uint32 len)
 
 bool prs_align(prs_struct *ps)
 {
-	uint32 mod = ps->data_offset & (ps->align-1);
+	uint32_t mod = ps->data_offset & (ps->align-1);
 
 	if (ps->align != 0 && mod != 0) {
-		uint32 extra_space = (ps->align - mod);
+		uint32_t extra_space = (ps->align - mod);
 		if(!prs_grow(ps, extra_space))
 			return False;
 		memset(&ps->data_p[ps->data_offset], '\0', (size_t)extra_space);
@@ -283,7 +283,7 @@ bool prs_align(prs_struct *ps)
 bool prs_align_uint64(prs_struct *ps)
 {
 	bool ret;
-	uint8 old_align = ps->align;
+	uint8_t old_align = ps->align;
 
 	ps->align = 8;
 	ret = prs_align(ps);
@@ -296,7 +296,7 @@ bool prs_align_uint64(prs_struct *ps)
  Ensure we can read/write to a given offset.
  ********************************************************************/
 
-char *prs_mem_get(prs_struct *ps, uint32 extra_size)
+char *prs_mem_get(prs_struct *ps, uint32_t extra_size)
 {
 	if(UNMARSHALLING(ps)) {
 		/*
@@ -333,9 +333,9 @@ void prs_switch_type(prs_struct *ps, bool io)
  Stream a uint16.
  ********************************************************************/
 
-bool prs_uint16(const char *name, prs_struct *ps, int depth, uint16 *data16)
+bool prs_uint16(const char *name, prs_struct *ps, int depth, uint16_t *data16)
 {
-	char *q = prs_mem_get(ps, sizeof(uint16));
+	char *q = prs_mem_get(ps, sizeof(uint16_t));
 	if (q == NULL)
 		return False;
 
@@ -353,7 +353,7 @@ bool prs_uint16(const char *name, prs_struct *ps, int depth, uint16 *data16)
 
 	DEBUGADD(5,("%s%04x %s: %04x\n", tab_depth(5,depth), ps->data_offset, name, *data16));
 
-	ps->data_offset += sizeof(uint16);
+	ps->data_offset += sizeof(uint16_t);
 
 	return True;
 }
@@ -362,9 +362,9 @@ bool prs_uint16(const char *name, prs_struct *ps, int depth, uint16 *data16)
  Stream a uint32.
  ********************************************************************/
 
-bool prs_uint32(const char *name, prs_struct *ps, int depth, uint32 *data32)
+bool prs_uint32(const char *name, prs_struct *ps, int depth, uint32_t *data32)
 {
-	char *q = prs_mem_get(ps, sizeof(uint32));
+	char *q = prs_mem_get(ps, sizeof(uint32_t));
 	if (q == NULL)
 		return False;
 
@@ -382,7 +382,7 @@ bool prs_uint32(const char *name, prs_struct *ps, int depth, uint32 *data32)
 
 	DEBUGADD(5,("%s%04x %s: %08x\n", tab_depth(5,depth), ps->data_offset, name, *data32));
 
-	ps->data_offset += sizeof(uint32);
+	ps->data_offset += sizeof(uint32_t);
 
 	return True;
 }
@@ -390,10 +390,10 @@ bool prs_uint32(const char *name, prs_struct *ps, int depth, uint32 *data32)
 /*******************************************************************
  Stream a uint64_struct
  ********************************************************************/
-bool prs_uint64(const char *name, prs_struct *ps, int depth, uint64 *data64)
+bool prs_uint64(const char *name, prs_struct *ps, int depth, uint64_t *data64)
 {
 	if (UNMARSHALLING(ps)) {
-		uint32 high, low;
+		uint32_t high, low;
 
 		if (!prs_uint32(name, ps, depth+1, &low))
 			return False;
@@ -405,7 +405,7 @@ bool prs_uint64(const char *name, prs_struct *ps, int depth, uint64 *data64)
 
 		return True;
 	} else {
-		uint32 high = (*data64) >> 32, low = (*data64) & 0xFFFFFFFF;
+		uint32_t high = (*data64) >> 32, low = (*data64) & 0xFFFFFFFF;
 		return prs_uint32(name, ps, depth+1, &low) &&
 			   prs_uint32(name, ps, depth+1, &high);
 	}
@@ -415,7 +415,7 @@ bool prs_uint64(const char *name, prs_struct *ps, int depth, uint64 *data64)
  Stream an array of uint8s. Length is number of uint8s.
  ********************************************************************/
 
-bool prs_uint8s(bool charmode, const char *name, prs_struct *ps, int depth, uint8 *data8s, int len)
+bool prs_uint8s(bool charmode, const char *name, prs_struct *ps, int depth, uint8_t *data8s, int len)
 {
 	int i;
 	char *q = prs_mem_get(ps, len);

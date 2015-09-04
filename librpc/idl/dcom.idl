@@ -26,10 +26,12 @@ interface IUnknown
 {
 	/*****************/
 	/* Function 0x00 */
-	/* Returns the interface with the specified IID 
+	/* Returns the interface with the specified IID
 	   if implemented by this object */
-	[local] WERROR QueryInterface([in,unique] GUID *iid,
-	   [out,iid_is(riid)] IUnknown **data);
+	[local] WERROR QueryInterface(
+		[in,unique] GUID *iid,
+		[out,iid_is(riid)] IUnknown **data
+		);
 
 	/*****************/
 	/* Function 0x01 */
@@ -47,15 +49,19 @@ interface IUnknown
 	pointer_default(unique)
 ] interface IClassFactory : IUnknown
 {
-	[local] WERROR CreateInstance([in,unique] MInterfacePointer *pUnknown, 
-			       [in,unique] GUID *iid,
-			       [out, iid_is(riid),unique] MInterfacePointer *ppv);
+	[local] WERROR CreateInstance(
+		[in,unique] MInterfacePointer *pUnknown,
+		[in,unique] GUID *iid,
+		[out, iid_is(riid),unique] MInterfacePointer *ppv
+		);
 
 	[call_as(CreateInstance)] WERROR RemoteCreateInstance();
 
 	/* Set lock to TRUE when you want to do a lock
 	and set it to FALSE when you want to unlock */
-	[local] WERROR LockServer([in] uint8 lock);
+	[local] WERROR LockServer(
+		[in] uint8 lock
+		);
 
 	[call_as(LockServer)] WERROR RemoteLockServer();
 }
@@ -75,7 +81,7 @@ interface IUnknown
 ]
 interface IRemUnknown : IUnknown
 {
-	typedef [public] struct 
+	typedef [public] struct
 	{
 		WERROR hResult; /* result of call */
 		STDOBJREF std; /* data for returned interface */
@@ -90,7 +96,7 @@ interface IRemUnknown : IUnknown
 		[out, size_is(cIids), unique] MInterfacePointer *ip
 		);
 
-	typedef struct 
+	typedef struct
 	{
 		GUID ipid; /* ipid to AddRef/Release */
 		uint32 cPublicRefs;
@@ -98,14 +104,14 @@ interface IRemUnknown : IUnknown
 	} REMINTERFACEREF;
 
 	[call_as(AddRef)] WERROR RemAddRef (
-		 [in] uint16 cInterfaceRefs,
-		 [in, size_is(cInterfaceRefs)] REMINTERFACEREF InterfaceRefs[],
-		 [out, size_is(cInterfaceRefs), unique] WERROR *pResults
+		[in] uint16 cInterfaceRefs,
+		[in, size_is(cInterfaceRefs)] REMINTERFACEREF InterfaceRefs[],
+		[out, size_is(cInterfaceRefs), unique] WERROR *pResults
 		);
 
 	[call_as(Release)] WERROR RemRelease (
-		 [in] uint16 cInterfaceRefs,
-		 [in, size_is(cInterfaceRefs)] REMINTERFACEREF InterfaceRefs[]
+		[in] uint16 cInterfaceRefs,
+		[in, size_is(cInterfaceRefs)] REMINTERFACEREF InterfaceRefs[]
 		);
 }
 
@@ -114,11 +120,13 @@ interface IRemUnknown : IUnknown
 	object
 ] interface IClassActivator : IUnknown
 {
-	void GetClassObject([in] GUID clsid, 
-		                [in] uint32 context,
-						[in] uint32 locale,
-						[in] GUID iid,
-						[out, iid_is(iid)] MInterfacePointer *data);
+	void GetClassObject(
+		[in] GUID clsid,
+		[in] uint32 context,
+		[in] uint32 locale,
+		[in] GUID iid,
+		[out, iid_is(iid)] MInterfacePointer *data
+		);
 }
 
 [
@@ -133,7 +141,7 @@ interface IRemUnknown : IUnknown
 [
 	pointer_default(unique),
 	uuid("c6f3ee72-ce7e-11d1-b71e-00c04fc3111a")
-] interface IMachineLocalActivator 
+] interface IMachineLocalActivator
 {
 	WERROR IMachineLocalActivator_foo();
 }
@@ -146,7 +154,7 @@ interface IRemUnknown : IUnknown
 	WERROR ILocalObjectExporter_Foo();
 }
 
-/* Looks like this is the equivalent of .NET's 
+/* Looks like this is the equivalent of .NET's
    System.Activator class */
 [
 	uuid("000001a0-0000-0000-c000-000000000046"),
@@ -154,11 +162,13 @@ interface IRemUnknown : IUnknown
 ]
 	interface ISystemActivator : IClassActivator
 {
-	WERROR ISystemActivatorRemoteCreateInstance([in] hyper unknown1,  /* OXID ? */
-											  [in] MInterfacePointer iface1,
-											  [in] hyper unknown2,
-											  [out] uint32 *unknown3, 
-											  [out] MInterfacePointer *iface2);
+	WERROR ISystemActivatorRemoteCreateInstance(
+		[in] hyper unknown1,  /* OXID ? */
+		[in] MInterfacePointer iface1,
+		[in] hyper unknown2,
+		[out] uint32 *unknown3,
+		[out] MInterfacePointer *iface2
+		);
 }
 
 
@@ -175,11 +185,11 @@ interface IRemUnknown : IUnknown
 interface IRemUnknown2 : IRemUnknown
 {
 	[call_as(QueryInterface2)] WERROR RemQueryInterface2 (
-		 [in, unique] GUID *ripid,
-		 [in] uint16 cIids,
-		 [in, size_is(cIids), unique] GUID *iids,
-		 [out, size_is(cIids), unique] WERROR *phr,
-		 [out, size_is(cIids), unique] MInterfacePointer *ppMIF
+		[in, unique] GUID *ripid,
+		[in] uint16 cIids,
+		[in, size_is(cIids), unique] GUID *iids,
+		[out, size_is(cIids), unique] WERROR *phr,
+		[out, size_is(cIids), unique] MInterfacePointer *ppMIF
 		);
 }
 
@@ -192,7 +202,8 @@ interface IRemUnknown2 : IRemUnknown
 	/*****************/
 	/* Function 0x03 */
 	WERROR GetTypeInfoCount(
-			[out, unique] uint16 *pctinfo);
+		[out, unique] uint16 *pctinfo
+		);
 
 	typedef struct {
 	} REF_ITypeInfo;
@@ -200,18 +211,20 @@ interface IRemUnknown2 : IRemUnknown
 	/*****************/
 	/* Function 0x04 */
 	WERROR GetTypeInfo (
-			[in] uint16 iTInfo,
-			[in] uint32 lcid,
-			[out, unique] REF_ITypeInfo *ppTInfo);
+		[in] uint16 iTInfo,
+		[in] uint32 lcid,
+		[out, unique] REF_ITypeInfo *ppTInfo
+		);
 
 	/*****************/
 	/* Function 0x05 */
 	WERROR GetIDsOfNames(
-			[in, unique] GUID *riid,
-			/*FIXME[in,size_is(cNames)] OLESTR *rgszNames[], */
-			[in] uint16 cNames,
-			[in] uint32 lcid,
-			[out,size_is(cNames), unique] uint32 *rgDispId);
+		[in, unique] GUID *riid,
+		/*FIXME[in,size_is(cNames)] OLESTR *rgszNames[], */
+		[in] uint16 cNames,
+		[in] uint32 lcid,
+		[out,size_is(cNames), unique] uint32 *rgDispId
+		);
 
 	typedef struct {
 		uint16 vartype;
@@ -230,14 +243,15 @@ interface IRemUnknown2 : IRemUnknown
 	/*****************/
 	/* Function 0x06 */
 	WERROR Invoke(
-			[in] uint32 dispIdMember,
-			[in, unique] GUID *riid,
-			[in] uint32 lcid,
-			[in] uint16 wFlags,
-			[out,in, unique] DISPPARAMS *pDispParams,
-			[out, unique] VARIANT *pVarResult,
-			[out, unique] EXCEPINFO *pExcepInfo,
-			[out, unique] uint16 *puArgErr);
+		[in] uint32 dispIdMember,
+		[in, unique] GUID *riid,
+		[in] uint32 lcid,
+		[in] uint16 wFlags,
+		[out,in, unique] DISPPARAMS *pDispParams,
+		[out, unique] VARIANT *pVarResult,
+		[out, unique] EXCEPINFO *pExcepInfo,
+		[out, unique] uint16 *puArgErr
+		);
 }
 
 [
@@ -276,16 +290,17 @@ interface IRemUnknown2 : IRemUnknown
 interface IStream : IUnknown
 {
 	WERROR Read(
-				[out, size_is(num_requested), length_is(*num_read)] uint8 pv[],
-				[in] uint32 num_requested, 
-				[in, unique] uint32 *num_readx,
-				[out] uint32 *num_read
-				);
+		[out, size_is(num_requested), length_is(*num_read)] uint8 pv[],
+		[in] uint32 num_requested,
+		[in, unique] uint32 *num_readx,
+		[out] uint32 *num_read
+		);
 
 	WERROR Write(
-				[in,size_is(num_requested),unique] uint8 *data,
-				 [in] uint32 num_requested,
-				 [out] uint32 *num_written);
+		[in,size_is(num_requested),unique] uint8 *data,
+		[in] uint32 num_requested,
+		[out] uint32 *num_written
+		 );
 }
 
 [
@@ -293,7 +308,7 @@ interface IStream : IUnknown
 	progid("Samba.Simple"),
 	helpstring("simple class"),
 	internal
-] coclass simple 
+] coclass simple
 {
 	interface IStream;
 }

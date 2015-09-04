@@ -24,7 +24,7 @@
 
 /* Make sure we can't write a string past the end of the buffer */
 
-NTSTATUS srvstr_push_fn(const char *base_ptr, uint16 smb_flags2, void *dest,
+NTSTATUS srvstr_push_fn(const char *base_ptr, uint16_t smb_flags2, void *dest,
 		      const char *src, int dest_len, int flags, size_t *ret_len)
 {
 	size_t len;
@@ -81,12 +81,12 @@ NTSTATUS srvstr_push_fn(const char *base_ptr, uint16 smb_flags2, void *dest,
  Return the bytes added
 ********************************************************************/
 
-ssize_t message_push_string(uint8 **outbuf, const char *str, int flags)
+ssize_t message_push_string(uint8_t **outbuf, const char *str, int flags)
 {
 	size_t buf_size = smb_len(*outbuf) + 4;
 	size_t grow_size;
 	size_t result = 0;
-	uint8 *tmp;
+	uint8_t *tmp;
 	NTSTATUS status;
 
 	/*
@@ -97,7 +97,7 @@ ssize_t message_push_string(uint8 **outbuf, const char *str, int flags)
 	 */
 	grow_size = (strlen(str) + 2) * 4;
 
-	if (!(tmp = talloc_realloc(NULL, *outbuf, uint8,
+	if (!(tmp = talloc_realloc(NULL, *outbuf, uint8_t,
 					 buf_size + grow_size))) {
 		DEBUG(0, ("talloc failed\n"));
 		return -1;

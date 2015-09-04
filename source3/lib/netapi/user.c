@@ -1201,9 +1201,6 @@ static NTSTATUS libnetapi_samr_lookup_user_map_USER_INFO(TALLOC_CTX *mem_ctx,
 	}
 
 	switch (level) {
-		case 0:
-			/* already returned above */
-			break;
 		case 1:
 			status = info21_to_USER_INFO_1(mem_ctx, info21, &info1);
 			NT_STATUS_NOT_OK_RETURN(status);

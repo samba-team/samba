@@ -257,7 +257,7 @@ const char *get_short_archi(const char *long_archi)
  returns -1 on error, 1 on version info found, and 0 on no version info found.
 ****************************************************************************/
 
-static int get_file_version(files_struct *fsp, char *fname,uint32 *major, uint32 *minor)
+static int get_file_version(files_struct *fsp, char *fname,uint32_t *major, uint32_t *minor)
 {
 	int     i;
 	char    *buf = NULL;
@@ -495,12 +495,12 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 {
 	bool use_version = true;
 
-	uint32 new_major;
-	uint32 new_minor;
+	uint32_t new_major;
+	uint32_t new_minor;
 	time_t new_create_time;
 
-	uint32 old_major;
-	uint32 old_minor;
+	uint32_t old_major;
+	uint32_t old_minor;
 	time_t old_create_time;
 
 	struct smb_filename *smb_fname = NULL;
@@ -663,7 +663,7 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 /****************************************************************************
 Determine the correct cVersion associated with an architecture and driver
 ****************************************************************************/
-static uint32 get_correct_cversion(struct auth_session_info *session_info,
+static uint32_t get_correct_cversion(struct auth_session_info *session_info,
 				   const char *architecture,
 				   const char *driverpath_in,
 				   WERROR *perr)
@@ -781,8 +781,8 @@ static uint32 get_correct_cversion(struct auth_session_info *session_info,
 		*perr = WERR_ACCESS_DENIED;
 		goto error_exit;
 	} else {
-		uint32 major;
-		uint32 minor;
+		uint32_t major;
+		uint32_t minor;
 		int    ret;
 
 		ret = get_file_version(fsp, smb_fname->base_name, &major, &minor);
@@ -1504,7 +1504,7 @@ bool printer_driver_files_in_use(TALLOC_CTX *mem_ctx,
 				 struct spoolss_DriverInfo8 *info)
 {
 	int 				i;
-	uint32 				version;
+	uint32_t 				version;
 	struct spoolss_DriverInfo8 	*driver;
 	bool in_use = false;
 	uint32_t num_drivers;
@@ -1799,7 +1799,7 @@ WERROR print_access_check(const struct auth_session_info *session_info,
 			  int access_type)
 {
 	struct spoolss_security_descriptor *secdesc = NULL;
-	uint32 access_granted;
+	uint32_t access_granted;
 	size_t sd_size;
 	NTSTATUS status;
 	WERROR result;
@@ -1887,7 +1887,7 @@ bool print_time_access_check(const struct auth_session_info *session_info,
 	bool ok = False;
 	time_t now = time(NULL);
 	struct tm *t;
-	uint32 mins;
+	uint32_t mins;
 
 	result = winreg_get_printer_internal(NULL, session_info, msg_ctx,
 				    servicename, &pinfo2);
@@ -1900,7 +1900,7 @@ bool print_time_access_check(const struct auth_session_info *session_info,
 	}
 
 	t = gmtime(&now);
-	mins = (uint32)t->tm_hour*60 + (uint32)t->tm_min;
+	mins = (uint32_t)t->tm_hour*60 + (uint32_t)t->tm_min;
 
 	if (mins >= pinfo2->starttime && mins <= pinfo2->untiltime) {
 		ok = True;

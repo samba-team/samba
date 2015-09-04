@@ -71,7 +71,7 @@ typedef struct _SMB_NTQUOTA_STRUCT {
 	uint64_t usedspace;
 	uint64_t softlim;
 	uint64_t hardlim;
-	uint32 qflags;
+	uint32_t qflags;
 	struct dom_sid sid;
 } SMB_NTQUOTA_STRUCT;
 

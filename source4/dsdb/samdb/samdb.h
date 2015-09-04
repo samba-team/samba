@@ -29,6 +29,8 @@ struct dsdb_extended_replicated_objects;
 struct loadparm_context;
 struct tevent_context;
 
+struct dsdb_trust_routing_table;
+
 #include "librpc/gen_ndr/security.h"
 #include <ldb.h>
 #include "lib/ldb-samba/ldif_handlers.h"
@@ -134,6 +136,26 @@ struct dsdb_control_password_change {
  * modifying the replPropertyMetaData.
  */
 #define DSDB_CONTROL_SEC_DESC_PROPAGATION_OID "1.3.6.1.4.1.7165.4.3.21"
+
+/*
+ * passed when creating a interdomain trust account through LSA
+ * to relax constraints in the samldb ldb module.
+ */
+#define DSDB_CONTROL_PERMIT_INTERDOMAIN_TRUST_UAC_OID "1.3.6.1.4.1.7165.4.3.23"
+
+/*
+ * Internal control to mark requests as being part of Tombstone restoring
+ * procedure - it requires slightly special behavior like:
+ *  - a bit different security checks
+ *  - restoring certain attributes to their default values, etc
+ */
+#define DSDB_CONTROL_RESTORE_TOMBSTONE_OID "1.3.6.1.4.1.7165.4.3.24"
+
+/**
+  OID used to allow the replacement of replPropertyMetaData.
+  It is used when the current replmetadata needs only to be re-sorted, but not edited.
+*/
+#define DSDB_CONTROL_CHANGEREPLMETADATA_RESORT_OID "1.3.6.1.4.1.7165.4.3.25"
 
 #define DSDB_EXTENDED_REPLICATED_OBJECTS_OID "1.3.6.1.4.1.7165.4.4.1"
 struct dsdb_extended_replicated_object {

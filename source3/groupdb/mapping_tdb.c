@@ -101,7 +101,7 @@ static bool init_group_mapping(void)
 			vers_id = DATABASE_VERSION_V2;
 		}
 
-		/* if its an unknown version we remove everthing in the db */
+		/* if its an unknown version we remove everything in the db */
 
 		if (vers_id != DATABASE_VERSION_V2) {
 			tdb_wipe_all(tdb);
@@ -165,7 +165,7 @@ static bool add_mapping_entry(GROUP_MAP *map, int flag)
 		TALLOC_FREE(key);
 		return false;
 	}
-	len = tdb_pack((uint8 *)buf, len, "ddff", map->gid,
+	len = tdb_pack((uint8_t *)buf, len, "ddff", map->gid,
 		       map->sid_name_use, map->nt_name, map->comment);
 
 	status = dbwrap_trans_store(

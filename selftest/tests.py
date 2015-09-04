@@ -51,6 +51,7 @@ planpythontestsuite("none", "samba.tests.auth")
 planpythontestsuite("none", "samba.tests.getopt")
 planpythontestsuite("none", "samba.tests.security")
 planpythontestsuite("none", "samba.tests.dcerpc.misc")
+planpythontestsuite("none", "samba.tests.dcerpc.integer")
 planpythontestsuite("none", "samba.tests.param")
 planpythontestsuite("none", "samba.tests.upgrade")
 planpythontestsuite("none", "samba.tests.core")
@@ -60,12 +61,12 @@ planpythontestsuite("none", "samba.tests.strings")
 planpythontestsuite("none", "samba.tests.netcmd")
 planpythontestsuite("none", "samba.tests.dcerpc.rpc_talloc")
 planpythontestsuite("none", "samba.tests.hostconfig")
-planpythontestsuite("dc:local", "samba.tests.messaging")
+planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.messaging")
 planpythontestsuite("none", "samba.tests.samba3sam")
 planpythontestsuite(
     "none", "wafsamba.tests.test_suite",
     extra_path=[os.path.join(samba4srcdir, "..", "buildtools"),
-                os.path.join(samba4srcdir, "..", "buildtools", "wafadmin")])
+                os.path.join(samba4srcdir, "..", "third_party", "waf", "wafadmin")])
 plantestsuite(
     "samba4.blackbox.dbcheck.alpha13", "none",
     ["PYTHON=%s" % python, os.path.join(bbdir, "dbcheck-oldrelease.sh"),
@@ -96,4 +97,8 @@ planpythontestsuite("none", "samba.tests.upgradeprovision")
 planpythontestsuite("none", "samba.tests.xattr")
 planpythontestsuite("none", "samba.tests.ntacls")
 planpythontestsuite("none", "samba.tests.policy")
+planpythontestsuite("none", "samba.tests.kcc.graph")
+planpythontestsuite("none", "samba.tests.kcc.graph_utils")
+planpythontestsuite("none", "samba.tests.kcc.kcc_utils")
+planpythontestsuite("none", "samba.tests.kcc.ldif_import_export")
 plantestsuite("wafsamba.duplicate_symbols", "none", [os.path.join(srcdir(), "buildtools/wafsamba/test_duplicate_symbol.sh")])

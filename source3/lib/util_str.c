@@ -566,7 +566,7 @@ bool strupper_m(char *s)
 	if (!*s)
 		return true;
 
-	/* I assume that lowercased string takes the same number of bytes
+	/* I assume that uppercased string takes the same number of bytes
 	 * as source string even in multibyte encoding. (VIV) */
 	len = strlen(s) + 1;
 	ret = unix_strupper(s,len,s,len);
@@ -910,7 +910,7 @@ uint64_t conv_str_size(const char * str)
 }
 
 /* Append an sprintf'ed string. Double buffer size on demand. Usable without
- * error checking in between. The indiation that something weird happened is
+ * error checking in between. The indication that something weird happened is
  * string==NULL */
 
 void sprintf_append(TALLOC_CTX *mem_ctx, char **string, ssize_t *len,

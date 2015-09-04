@@ -195,7 +195,7 @@ static int net_groupmap_add(struct net_context *c, int argc, const char **argv)
 	fstring type = "";
 	fstring ntcomment = "";
 	enum lsa_SidType sid_type = SID_NAME_DOM_GRP;
-	uint32 rid = 0;
+	uint32_t rid = 0;
 	gid_t gid;
 	int i;
 	GROUP_MAP *map;
@@ -222,7 +222,7 @@ static int net_groupmap_add(struct net_context *c, int argc, const char **argv)
 			if ( rid < DOMAIN_RID_ADMINS ) {
 				d_fprintf(stderr,
 					  _("RID must be greater than %d\n"),
-					  (uint32)DOMAIN_RID_ADMINS-1);
+					  (uint32_t)DOMAIN_RID_ADMINS-1);
 				return -1;
 			}
 		}
@@ -654,7 +654,7 @@ static int net_groupmap_set(struct net_context *c, int argc, const char **argv)
 
 		if (c->opt_rid == 0) {
 			if ( pdb_capabilities() & PDB_CAP_STORE_RIDS ) {
-				if ( !pdb_new_rid((uint32*)&c->opt_rid) ) {
+				if ( !pdb_new_rid((uint32_t *)&c->opt_rid) ) {
 					d_fprintf( stderr,
 					    _("Could not allocate new RID\n"));
 					TALLOC_FREE(map);
@@ -860,7 +860,7 @@ static bool print_alias_memberships(TALLOC_CTX *mem_ctx,
 				    const struct dom_sid *domain_sid,
 				    const struct dom_sid *member)
 {
-	uint32 *alias_rids;
+	uint32_t *alias_rids;
 	size_t i, num_alias_rids;
 
 	alias_rids = NULL;

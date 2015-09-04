@@ -291,6 +291,7 @@ static struct vfs_fn_pointers vfs_syncops_fns = {
 	.close_fn = syncops_close,
 };
 
+static_decl_vfs;
 NTSTATUS vfs_syncops_init(void)
 {
 	NTSTATUS ret;

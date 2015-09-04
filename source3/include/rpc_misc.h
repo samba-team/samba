@@ -28,7 +28,7 @@
  **********************************************************************/
 
 #define OUR_HANDLE(hnd) (((hnd)==NULL) ? "NULL" :\
-	( IVAL((hnd)->uuid.node,2) == (uint32)getpid() ? "OURS" : \
+	( IVAL((hnd)->uuid.node,2) == (uint32_t)getpid() ? "OURS" : \
 		"OTHER")), ((unsigned int)IVAL((hnd)->uuid.node,2)),\
 		((unsigned int)getpid() )
 

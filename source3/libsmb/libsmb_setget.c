@@ -695,6 +695,18 @@ smbc_setFunctionWrite(SMBCCTX *c, smbc_write_fn fn)
         c->write = fn;
 }
 
+smbc_splice_fn
+smbc_getFunctionSplice(SMBCCTX *c)
+{
+        return c->internal->smb.splice_fn;
+}
+
+void
+smbc_setFunctionSplice(SMBCCTX *c, smbc_splice_fn fn)
+{
+        c->internal->smb.splice_fn = fn;
+}
+
 smbc_unlink_fn
 smbc_getFunctionUnlink(SMBCCTX *c)
 {
@@ -914,6 +926,18 @@ void
 smbc_setFunctionFstatdir(SMBCCTX *c, smbc_fstatdir_fn fn)
 {
         c->fstatdir = fn;
+}
+
+smbc_notify_fn
+smbc_getFunctionNotify(SMBCCTX *c)
+{
+        return c->internal->smb.notify_fn;
+}
+
+void
+smbc_setFunctionNotify(SMBCCTX *c, smbc_notify_fn fn)
+{
+        c->internal->smb.notify_fn = fn;
 }
 
 

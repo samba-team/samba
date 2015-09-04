@@ -7,8 +7,13 @@ from subprocess import call, check_call,Popen, PIPE
 import os, tarfile, sys, time
 from optparse import OptionParser
 import smtplib
+import email
 from email.mime.text import MIMEText
+from email.mime.base import MIMEBase
+from email.mime.application import MIMEApplication
+from email.mime.multipart import MIMEMultipart
 from distutils.sysconfig import get_python_lib
+import platform
 
 # This speeds up testing remarkably.
 os.environ['TDB_NO_FSYNC'] = '1'
@@ -18,11 +23,11 @@ cleanup_list = []
 builddirs = {
     "ctdb"    : "ctdb",
     "samba"  : ".",
+    "samba-xc" : ".",
     "samba-ctdb" : ".",
     "samba-libs"  : ".",
     "ldb"     : "lib/ldb",
     "tdb"     : "lib/tdb",
-    "ntdb"    : "lib/ntdb",
     "talloc"  : "lib/talloc",
     "replace" : "lib/replace",
     "tevent"  : "lib/tevent",
@@ -32,7 +37,16 @@ builddirs = {
     "retry"   : "."
     }
 
-defaulttasks = [ "ctdb", "samba", "samba-ctdb", "samba-libs", "ldb", "tdb", "ntdb", "talloc", "replace", "tevent", "pidl" ]
+defaulttasks = [ "ctdb", "samba", "samba-xc", "samba-ctdb", "samba-libs", "ldb", "tdb", "talloc", "replace", "tevent", "pidl" ]
+
+samba_configure_params = " --picky-developer ${PREFIX} --with-profiling-data"
+
+samba_libs_envvars =  "PYTHONPATH=${PYTHON_PREFIX}/site-packages:$PYTHONPATH"
+samba_libs_envvars += " PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX_DIR}/lib/pkgconfig"
+samba_libs_envvars += " ADDITIONAL_CFLAGS='-Wmissing-prototypes'"
+samba_libs_configure_base = samba_libs_envvars + " ./configure --abi-check --enable-debug --picky-developer -C ${PREFIX}"
+samba_libs_configure_libs = samba_libs_configure_base + " --bundled-libraries=NONE"
+samba_libs_configure_samba = samba_libs_configure_base + " --bundled-libraries=!talloc,!tdb,!pytdb,!ldb,!pyldb,!tevent,!pytevent"
 
 tasks = {
     "ctdb" : [ ("random-sleep", "../script/random-sleep.sh 60 600", "text/plain"),
@@ -44,12 +58,21 @@ tasks = {
                ("clean", "make clean", "text/plain") ],
 
     # We have 'test' before 'install' because, 'test' should work without 'install'
-    "samba" : [ ("configure", "./configure.developer --picky-developer ${PREFIX} --with-selftest-prefix=./bin/ab", "text/plain"),
+    "samba" : [ ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
                 ("make", "make -j", "text/plain"),
                 ("test", "make test FAIL_IMMEDIATELY=1", "text/plain"),
                 ("install", "make install", "text/plain"),
                 ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
                 ("clean", "make clean", "text/plain") ],
+
+    # Test cross-compile infrastructure
+    "samba-xc" : [ ("configure-native", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
+                   ("configure-cross-execute", "./configure.developer -b ./bin-xe --cross-compile --cross-execute=script/identity_cc.sh" \
+                    " --cross-answers=./bin-xe/cross-answers.txt --with-selftest-prefix=./bin-xe/ab" + samba_configure_params, "text/plain"),
+                   ("configure-cross-answers", "./configure.developer -b ./bin-xa --cross-compile" \
+                    " --cross-answers=./bin-xe/cross-answers.txt --with-selftest-prefix=./bin-xa/ab" + samba_configure_params, "text/plain"),
+                   ("compare-results", "script/compare_cc_results.py ./bin/c4che/default.cache.py ./bin-xe/c4che/default.cache.py ./bin-xa/c4che/default.cache.py", "text/plain")],
+
 
     "samba-ctdb" : [ ("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
 
@@ -73,30 +96,46 @@ tasks = {
 
     "samba-libs" : [
                       ("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
-                      ("talloc-configure", "cd lib/talloc && PYTHONPATH=${PYTHON_PREFIX}/site-packages:$PYTHONPATH PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX_DIR}/lib/pkgconfig ./configure --bundled-libraries=NONE --abi-check --enable-debug -C ${PREFIX}", "text/plain"),
+                      ("talloc-configure", "cd lib/talloc && " + samba_libs_configure_libs, "text/plain"),
                       ("talloc-make", "cd lib/talloc && make", "text/plain"),
                       ("talloc-install", "cd lib/talloc && make install", "text/plain"),
 
-                      ("tdb-configure", "cd lib/tdb && PYTHONPATH=${PYTHON_PREFIX}/site-packages:$PYTHONPATH PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX_DIR}/lib/pkgconfig ./configure --bundled-libraries=NONE --abi-check --enable-debug -C ${PREFIX}", "text/plain"),
+                      ("tdb-configure", "cd lib/tdb && " + samba_libs_configure_libs, "text/plain"),
                       ("tdb-make", "cd lib/tdb && make", "text/plain"),
                       ("tdb-install", "cd lib/tdb && make install", "text/plain"),
 
-                      ("ntdb-configure", "cd lib/ntdb && PYTHONPATH=${PYTHON_PREFIX}/site-packages:$PYTHONPATH PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX_DIR}/lib/pkgconfig ./configure --bundled-libraries=NONE --abi-check --enable-debug -C ${PREFIX}", "text/plain"),
-                      ("ntdb-make", "cd lib/ntdb && make", "text/plain"),
-                      ("ntdb-install", "cd lib/ntdb && make install", "text/plain"),
-
-                      ("tevent-configure", "cd lib/tevent && PYTHONPATH=${PYTHON_PREFIX}/site-packages:$PYTHONPATH PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX_DIR}/lib/pkgconfig ./configure --bundled-libraries=NONE --abi-check --enable-debug -C ${PREFIX}", "text/plain"),
+                      ("tevent-configure", "cd lib/tevent && " + samba_libs_configure_libs, "text/plain"),
                       ("tevent-make", "cd lib/tevent && make", "text/plain"),
                       ("tevent-install", "cd lib/tevent && make install", "text/plain"),
 
-                      ("ldb-configure", "cd lib/ldb && PYTHONPATH=${PYTHON_PREFIX}/site-packages:$PYTHONPATH PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX_DIR}/lib/pkgconfig ./configure --bundled-libraries=NONE --abi-check --enable-debug -C ${PREFIX}", "text/plain"),
+                      ("ldb-configure", "cd lib/ldb && " + samba_libs_configure_libs, "text/plain"),
                       ("ldb-make", "cd lib/ldb && make", "text/plain"),
                       ("ldb-install", "cd lib/ldb && make install", "text/plain"),
 
-                      ("configure", "PYTHONPATH=${PYTHON_PREFIX}/site-packages:$PYTHONPATH PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX_DIR}/lib/pkgconfig ./configure --bundled-libraries=!talloc,!tdb,!pytdb,!ntdb,!pyntdb,!ldb,!pyldb,!tevent,!pytevent --abi-check --enable-debug -C ${PREFIX}", "text/plain"),
+                      ("configure", samba_libs_configure_samba, "text/plain"),
                       ("make", "make", "text/plain"),
                       ("install", "make install", "text/plain"),
-                      ("dist", "make dist", "text/plain")],
+                      ("dist", "make dist", "text/plain"),
+
+                      # retry with all modules shared
+                      ("allshared-distclean", "make distclean", "text/plain"),
+                      ("allshared-configure", samba_libs_configure_samba + " --with-shared-modules=ALL", "text/plain"),
+                      ("allshared-make", "make", "text/plain"),
+
+                      # retry with all modules static
+                      ("allstatic-distclean", "make distclean", "text/plain"),
+                      ("allstatic-configure", samba_libs_configure_samba + " --with-static-modules=ALL", "text/plain"),
+                      ("allstatic-make", "make", "text/plain"),
+
+                      # retry without any required modules
+                      ("none-distclean", "make distclean", "text/plain"),
+                      ("none-configure", samba_libs_configure_samba + " --with-static-modules=!FORCED,!DEFAULT --with-shared-modules=!FORCED,!DEFAULT", "text/plain"),
+                      ("none-make", "make", "text/plain"),
+
+                      # retry with nonshared smbd and smbtorture
+                      ("nonshared-distclean", "make distclean", "text/plain"),
+                      ("nonshared-configure", samba_libs_configure_base + " --bundled-libraries=talloc,tdb,pytdb,ldb,pyldb,tevent,pytevent --with-static-modules=ALL --nonshared-binary=smbtorture,smbd/smbd", "text/plain"),
+                      ("nonshared-make", "make", "text/plain")],
 
     "ldb" : [
               ("random-sleep", "../../script/random-sleep.sh 60 600", "text/plain"),
@@ -117,16 +156,6 @@ tasks = {
               ("check-clean-tree", "../../script/clean-source-tree.sh", "text/plain"),
               ("distcheck", "make distcheck", "text/plain"),
               ("clean", "make clean", "text/plain") ],
-
-    "ntdb" : [
-               ("random-sleep", "../../script/random-sleep.sh 60 600", "text/plain"),
-               ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
-               ("make", "make", "text/plain"),
-               ("install", "make install", "text/plain"),
-               ("test", "make test", "text/plain"),
-               ("check-clean-tree", "../../script/clean-source-tree.sh", "text/plain"),
-               ("distcheck", "make distcheck", "text/plain"),
-               ("clean", "make clean", "text/plain") ],
 
     "talloc" : [
                  ("random-sleep", "../../script/random-sleep.sh 60 600", "text/plain"),
@@ -165,6 +194,7 @@ tasks = {
                ("make", "make", "text/plain"),
                ("test", "make test", "text/plain"),
                ("install", "make install", "text/plain"),
+               ("checkout-yapp-generated", "git checkout lib/Parse/Pidl/IDL.pm lib/Parse/Pidl/Expr.pm", "text/plain"),
                ("check-clean-tree", "../script/clean-source-tree.sh", "text/plain"),
                ("clean", "make clean", "text/plain") ],
 
@@ -212,7 +242,7 @@ class builder(object):
         cleanup_list.append(self.prefix)
         os.makedirs(self.sdir)
         run_cmd("rm -rf %s" % self.sdir)
-        run_cmd("git clone --shared %s %s" % (test_master, self.sdir), dir=test_master, show=True)
+        run_cmd("git clone --recursive --shared %s %s" % (test_master, self.sdir), dir=test_master, show=True)
         self.start_next()
 
     def start_next(self):
@@ -245,6 +275,11 @@ class buildlist(object):
         self.retry = None
         if tasknames == []:
             tasknames = defaulttasks
+        else:
+            # If we are only running one test,
+            # do not sleep randomly to wait for it to start
+            os.environ['AUTOBUILD_RANDOM_SLEEP_OVERRIDE'] = '1'
+
         for n in tasknames:
             b = builder(n, tasks[n])
             self.tlist.append(b)
@@ -470,6 +505,10 @@ parser.add_option("", "--retry", help="automatically retry if master changes",
                   default=False, action="store_true")
 parser.add_option("", "--email", help="send email to the given address on failure",
                   type='str', default=None)
+parser.add_option("", "--email-from", help="send email from the given address",
+                  type='str', default="autobuild@samba.org")
+parser.add_option("", "--email-server", help="send email via the given server",
+                  type='str', default='localhost')
 parser.add_option("", "--always-email", help="always send email, even on success",
                   action="store_true")
 parser.add_option("", "--daemon", help="daemonize after initial setup",
@@ -478,16 +517,43 @@ parser.add_option("", "--branch", help="the branch to work on (default=master)",
                   default="master", type='str')
 parser.add_option("", "--log-base", help="location where the logs can be found (default=cwd)",
                   default=gitroot, type='str')
+parser.add_option("", "--attach-logs", help="Attach logs to mails sent on success/failure?",
+                  default=False, action="store_true")
 
-def email_failure(status, failed_task, failed_stage, failed_tag, errstr, log_base=None):
+def send_email(subject, text, log_tar):
+    outer = MIMEMultipart()
+    outer['Subject'] = subject
+    outer['To'] = options.email
+    outer['From'] = options.email_from
+    outer['Date'] = email.utils.formatdate(localtime = True)
+    outer.preamble = 'Autobuild mails are now in MIME because we optionally attach the logs.\n'
+    outer.attach(MIMEText(text, 'plain'))
+    if options.attach_logs:
+        fp = open(log_tar, 'rb')
+        msg = MIMEApplication(fp.read(), 'gzip', email.encoders.encode_base64)
+        fp.close()
+        # Set the filename parameter
+        msg.add_header('Content-Disposition', 'attachment', filename=os.path.basename(log_tar))
+        outer.attach(msg)
+    content = outer.as_string()
+    s = smtplib.SMTP(options.email_server)
+    s.sendmail(options.email_from, [options.email], content)
+    s.set_debuglevel(1)
+    s.quit()
+
+def email_failure(status, failed_task, failed_stage, failed_tag, errstr,
+                  elapsed_time, log_base=None):
     '''send an email to options.email about the failure'''
+    elapsed_minutes = elapsed_time / 60.0
     user = os.getenv("USER")
     if log_base is None:
         log_base = gitroot
     text = '''
 Dear Developer,
 
-Your autobuild failed when trying to test %s with the following error:
+Your autobuild on %s failed after %.1f minutes
+when trying to test %s with the following error:
+
    %s
 
 the autobuild has been abandoned. Please fix the error and resubmit.
@@ -495,8 +561,8 @@ the autobuild has been abandoned. Please fix the error and resubmit.
 A summary of the autobuild process is here:
 
   %s/autobuild.log
-''' % (failed_task, errstr, log_base)
-    
+''' % (platform.node(), elapsed_minutes, failed_task, errstr, log_base)
+
     if failed_task != 'rebase':
         text += '''
 You can see logs of the failed task here:
@@ -513,17 +579,13 @@ The top commit for the tree that was built was:
 %s
 
 ''' % (log_base, failed_tag, log_base, failed_tag, log_base, top_commit_msg)
-    msg = MIMEText(text)
-    msg['Subject'] = 'autobuild failure for task %s during %s' % (failed_task, failed_stage)
-    msg['From'] = 'autobuild@samba.org'
-    msg['To'] = options.email
 
-    s = smtplib.SMTP()
-    s.connect()
-    s.sendmail(msg['From'], [msg['To']], msg.as_string())
-    s.quit()
+    logs = os.path.join(gitroot, 'logs.tar.gz')
+    send_email('autobuild failure on %s for task %s during %s'
+               % (platform.node(), failed_task, failed_stage),
+               text, logs)
 
-def email_success(log_base=None):
+def email_success(elapsed_time, log_base=None):
     '''send an email to options.email about a successful build'''
     user = os.getenv("USER")
     if log_base is None:
@@ -531,9 +593,9 @@ def email_success(log_base=None):
     text = '''
 Dear Developer,
 
-Your autobuild has succeeded.
+Your autobuild on %s has succeeded after %.1f minutes.
 
-'''
+''' % (platform.node(), elapsed_time / 60.)
 
     if options.keeplogs:
         text += '''
@@ -550,15 +612,9 @@ The top commit for the tree that was built was:
 %s
 ''' % top_commit_msg
 
-    msg = MIMEText(text)
-    msg['Subject'] = 'autobuild success'
-    msg['From'] = 'autobuild@samba.org'
-    msg['To'] = options.email
-
-    s = smtplib.SMTP()
-    s.connect()
-    s.sendmail(msg['From'], [msg['To']], msg.as_string())
-    s.quit()
+    logs = os.path.join(gitroot, 'logs.tar.gz')
+    send_email('autobuild sucess on %s ' % platform.node(),
+               text, logs)
 
 
 (options, args) = parser.parse_args()
@@ -586,11 +642,13 @@ if options.daemon:
 
 write_pidfile(gitroot + "/autobuild.pid")
 
+start_time = time.time()
+
 while True:
     try:
         run_cmd("rm -rf %s" % test_master)
         cleanup_list.append(test_master)
-        run_cmd("git clone --shared %s %s" % (gitroot, test_master), show=True, dir=gitroot)
+        run_cmd("git clone --recursive --shared %s %s" % (gitroot, test_master), show=True, dir=gitroot)
     except Exception:
         cleanup()
         raise
@@ -602,9 +660,10 @@ while True:
         except Exception:
             cleanup_list.append(gitroot + "/autobuild.pid")
             cleanup()
+            elapsed_time = time.time() - start_time
             email_failure(-1, 'rebase', 'rebase', 'rebase',
                           'rebase on %s failed' % options.branch,
-                          log_base=options.log_base)
+                          elapsed_time, log_base=options.log_base)
             sys.exit(1)
         blist = buildlist(tasks, args, options.rebase, rebase_branch=options.branch)
         if options.tail:
@@ -624,6 +683,7 @@ if options.tail:
     print("waiting for tail to flush")
     time.sleep(1)
 
+elapsed_time = time.time() - start_time
 if status == 0:
     print errstr
     if options.passcmd is not None:
@@ -631,11 +691,11 @@ if status == 0:
         run_cmd(options.passcmd, dir=test_master)
     if options.pushto is not None:
         push_to(options.pushto, push_branch=options.branch)
-    if options.keeplogs:
+    if options.keeplogs or options.attach_logs:
         blist.tarlogs("logs.tar.gz")
         print("Logs in logs.tar.gz")
     if options.always_email:
-        email_success(log_base=options.log_base)
+        email_success(elapsed_time, log_base=options.log_base)
     blist.remove_logs()
     cleanup()
     print(errstr)
@@ -645,7 +705,8 @@ if status == 0:
 blist.tarlogs("logs.tar.gz")
 
 if options.email is not None:
-    email_failure(status, failed_task, failed_stage, failed_tag, errstr, log_base=options.log_base)
+    email_failure(status, failed_task, failed_stage, failed_tag, errstr,
+                  elapsed_time, log_base=options.log_base)
 
 cleanup()
 print(errstr)

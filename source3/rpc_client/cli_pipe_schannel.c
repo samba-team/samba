@@ -41,7 +41,6 @@ NTSTATUS cli_rpc_pipe_open_schannel(struct cli_state *cli,
 				    struct messaging_context *msg_ctx,
 				    const struct ndr_interface_table *table,
 				    enum dcerpc_transport_t transport,
-				    enum dcerpc_AuthLevel auth_level,
 				    const char *domain,
 				    struct rpc_pipe_client **presult,
 				    TALLOC_CTX *mem_ctx,
@@ -51,83 +50,69 @@ NTSTATUS cli_rpc_pipe_open_schannel(struct cli_state *cli,
 	const char *dc_name = smbXcli_conn_remote_name(cli->conn);
 	struct rpc_pipe_client *result = NULL;
 	NTSTATUS status;
+	struct cli_credentials *cli_creds = NULL;
 	struct netlogon_creds_cli_context *netlogon_creds = NULL;
 	struct netlogon_creds_CredentialState *creds = NULL;
-	uint32_t netlogon_flags = 0;
-	enum netr_SchannelType sec_chan_type = 0;
-	const char *_account_name = NULL;
-	const char *account_name = NULL;
-	struct samr_Password current_nt_hash;
-	struct samr_Password *previous_nt_hash = NULL;
-	bool ok;
+	uint32_t netlogon_flags;
 
-	ok = get_trust_pw_hash(domain,
-			       current_nt_hash.hash,
-			       &_account_name,
-			       &sec_chan_type);
-	if (!ok) {
-		TALLOC_FREE(frame);
-		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
-	}
-
-	account_name = talloc_asprintf(frame, "%s$", _account_name);
-	if (account_name == NULL) {
-		SAFE_FREE(previous_nt_hash);
-		TALLOC_FREE(frame);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	status = rpccli_create_netlogon_creds(dc_name,
-					      domain,
-					      account_name,
-					      sec_chan_type,
-					      msg_ctx,
-					      frame,
-					      &netlogon_creds);
+	status = pdb_get_trust_credentials(domain, NULL,
+					   frame, &cli_creds);
 	if (!NT_STATUS_IS_OK(status)) {
-		SAFE_FREE(previous_nt_hash);
 		TALLOC_FREE(frame);
 		return status;
 	}
 
-	status = rpccli_setup_netlogon_creds(cli, transport,
+	status = rpccli_create_netlogon_creds_with_creds(cli_creds,
+							 dc_name,
+							 msg_ctx,
+							 frame,
+							 &netlogon_creds);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
+		return status;
+	}
+
+	status = rpccli_setup_netlogon_creds_with_creds(cli, transport,
 					     netlogon_creds,
 					     false, /* force_reauth */
-					     current_nt_hash,
-					     previous_nt_hash);
-	SAFE_FREE(previous_nt_hash);
+					     cli_creds);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(frame);
 		return status;
 	}
 
-	status = netlogon_creds_cli_get(netlogon_creds,
-					frame,
-					&creds);
+	status = netlogon_creds_cli_get(netlogon_creds, frame, &creds);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(frame);
 		return status;
 	}
+
 	netlogon_flags = creds->negotiate_flags;
 	TALLOC_FREE(creds);
 
-	if (!(netlogon_flags & NETLOGON_NEG_AUTHENTICATED_RPC)) {
-		TALLOC_FREE(frame);
-		return NT_STATUS_DOWNGRADE_DETECTED;
-	}
-
-	status = cli_rpc_pipe_open_schannel_with_key(
-		cli, table, transport, domain,
-		netlogon_creds,
-		&result);
-
-	if (NT_STATUS_IS_OK(status)) {
-		*presult = result;
-		if (pcreds != NULL) {
-			*pcreds = talloc_move(mem_ctx, &netlogon_creds);
+	if (netlogon_flags & NETLOGON_NEG_AUTHENTICATED_RPC) {
+		status = cli_rpc_pipe_open_schannel_with_creds(cli, table,
+							       transport,
+							       cli_creds,
+							       netlogon_creds,
+							       &result);
+		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(frame);
+			return status;
+		}
+	} else {
+		status = cli_rpc_pipe_open_noauth(cli, table, &result);
+		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(frame);
+			return status;
 		}
 	}
 
+	*presult = result;
+	if (pcreds != NULL) {
+		*pcreds = talloc_move(mem_ctx, &netlogon_creds);
+	}
+
 	TALLOC_FREE(frame);
-	return status;
+	return NT_STATUS_OK;
 }

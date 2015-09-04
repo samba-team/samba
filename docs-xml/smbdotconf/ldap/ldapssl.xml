@@ -1,7 +1,7 @@
 <samba:parameter name="ldap ssl"
                  context="G"
-				 type="enum"
-                 advanced="1" developer="1"
+                 type="enum"
+                 enumlist="enum_ldap_ssl"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This option is used to define whether or not Samba should

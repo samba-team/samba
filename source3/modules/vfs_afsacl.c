@@ -52,7 +52,7 @@ struct afs_ace {
 	char *name;
 	struct dom_sid sid;
 	enum lsa_SidType type;
-	uint32 rights;
+	uint32_t rights;
 	struct afs_ace *next;
 };
 
@@ -65,7 +65,7 @@ struct afs_acl {
 
 struct afs_iob {
 	char *in, *out;
-	uint16 in_size, out_size;
+	uint16_t in_size, out_size;
 };
 
 
@@ -110,7 +110,7 @@ static struct afs_ace *clone_afs_ace(TALLOC_CTX *mem_ctx, struct afs_ace *ace)
 	
 static struct afs_ace *new_afs_ace(TALLOC_CTX *mem_ctx,
 				   bool positive,
-				   const char *name, uint32 rights)
+				   const char *name, uint32_t rights)
 {
 	struct dom_sid sid;
 	enum lsa_SidType type;
@@ -193,7 +193,7 @@ static struct afs_ace *new_afs_ace(TALLOC_CTX *mem_ctx,
 
 static void add_afs_ace(struct afs_acl *acl,
 			bool positive,
-			const char *name, uint32 rights)
+			const char *name, uint32_t rights)
 {
 	struct afs_ace *ace;
 
@@ -262,7 +262,7 @@ static bool parse_afs_acl(struct afs_acl *acl, const char *acl_str)
 
 		const char *namep;
 		fstring name;
-		uint32 rights;
+		uint32_t rights;
 		char *space;
 
 		namep = p;
@@ -333,9 +333,9 @@ static bool unparse_afs_acl(struct afs_acl *acl, char *acl_str)
 	return true;
 }
 
-static uint32 afs_to_nt_file_rights(uint32 rights)
+static uint32_t afs_to_nt_file_rights(uint32_t rights)
 {
-	uint32 result = 0;
+	uint32_t result = 0;
 
 	if (rights & PRSFS_READ)
 		result |= FILE_READ_DATA | FILE_READ_EA | 
@@ -355,8 +355,8 @@ static uint32 afs_to_nt_file_rights(uint32 rights)
 	return result;
 }
 
-static void afs_to_nt_dir_rights(uint32 afs_rights, uint32 *nt_rights,
-				 uint8 *flag)
+static void afs_to_nt_dir_rights(uint32_t afs_rights, uint32_t *nt_rights,
+				 uint8_t *flag)
 {
 	*nt_rights = 0;
 	*flag = SEC_ACE_FLAG_OBJECT_INHERIT |
@@ -475,10 +475,10 @@ static void merge_afs_acls(struct afs_acl *dir_acl,
 #define PERMS_FULL   0x001f01ff
 
 static struct static_dir_ace_mapping {
-	uint8 type;
-	uint8 flags;
-	uint32 mask;
-	uint32 afs_rights;
+	uint8_t type;
+	uint8_t flags;
+	uint32_t mask;
+	uint32_t afs_rights;
 } ace_mappings[] = {
 
 	/* Full control */
@@ -532,11 +532,11 @@ static struct static_dir_ace_mapping {
 	{ 0, 0, 0, 9999 }
 };
 
-static uint32 nt_to_afs_dir_rights(const char *filename, const struct security_ace *ace)
+static uint32_t nt_to_afs_dir_rights(const char *filename, const struct security_ace *ace)
 {
-	uint32 result = 0;
-	uint32 rights = ace->access_mask;
-	uint8 flags = ace->flags;
+	uint32_t result = 0;
+	uint32_t rights = ace->access_mask;
+	uint8_t flags = ace->flags;
 
 	struct static_dir_ace_mapping *m;
 
@@ -573,10 +573,10 @@ static uint32 nt_to_afs_dir_rights(const char *filename, const struct security_a
 	return result;
 }
 
-static uint32 nt_to_afs_file_rights(const char *filename, const struct security_ace *ace)
+static uint32_t nt_to_afs_file_rights(const char *filename, const struct security_ace *ace)
 {
-	uint32 result = 0;
-	uint32 rights = ace->access_mask;
+	uint32_t result = 0;
+	uint32_t rights = ace->access_mask;
 
 	if (rights & (GENERIC_READ_ACCESS|FILE_READ_DATA)) {
 		result |= PRSFS_READ;
@@ -591,7 +591,7 @@ static uint32 nt_to_afs_file_rights(const char *filename, const struct security_
 
 static size_t afs_to_nt_acl_common(struct afs_acl *afs_acl,
 				   SMB_STRUCT_STAT *psbuf,
-				   uint32 security_info,
+				   uint32_t security_info,
 				   TALLOC_CTX *mem_ctx,
 				   struct security_descriptor **ppdesc)
 {
@@ -620,7 +620,7 @@ static size_t afs_to_nt_acl_common(struct afs_acl *afs_acl,
 
 	while (afs_ace != NULL) {
 		uint32_t nt_rights;
-		uint8 flag = SEC_ACE_FLAG_OBJECT_INHERIT |
+		uint8_t flag = SEC_ACE_FLAG_OBJECT_INHERIT |
 			SEC_ACE_FLAG_CONTAINER_INHERIT;
 
 		if (afs_ace->type == SID_NAME_UNKNOWN) {
@@ -660,7 +660,7 @@ static size_t afs_to_nt_acl_common(struct afs_acl *afs_acl,
 static size_t afs_to_nt_acl(struct afs_acl *afs_acl,
 			    struct connection_struct *conn,
 			    struct smb_filename *smb_fname,
-			    uint32 security_info,
+			    uint32_t security_info,
 			     TALLOC_CTX *mem_ctx,
 			    struct security_descriptor **ppdesc)
 {
@@ -682,7 +682,7 @@ static size_t afs_to_nt_acl(struct afs_acl *afs_acl,
 
 static size_t afs_fto_nt_acl(struct afs_acl *afs_acl,
 			     struct files_struct *fsp,
-			     uint32 security_info,
+			     uint32_t security_info,
 			     TALLOC_CTX *mem_ctx,
 			     struct security_descriptor **ppdesc)
 {
@@ -727,9 +727,9 @@ static bool mappable_sid(const struct dom_sid *sid)
 }
 
 static bool nt_to_afs_acl(const char *filename,
-			  uint32 security_info_sent,
+			  uint32_t security_info_sent,
 			  const struct security_descriptor *psd,
-			  uint32 (*nt_to_afs_rights)(const char *filename,
+			  uint32_t (*nt_to_afs_rights)(const char *filename,
 						     const struct security_ace *ace),
 			  struct afs_acl *afs_acl)
 {
@@ -899,7 +899,7 @@ static void merge_unknown_aces(struct afs_acl *src, struct afs_acl *dst)
 }
 
 static NTSTATUS afs_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
-			   uint32 security_info_sent,
+			   uint32_t security_info_sent,
 			   const struct security_descriptor *psd)
 {
 	struct afs_acl old_afs_acl, new_afs_acl;
@@ -1008,7 +1008,7 @@ static NTSTATUS afs_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 
 static NTSTATUS afsacl_fget_nt_acl(struct vfs_handle_struct *handle,
 				   struct files_struct *fsp,
-				   uint32 security_info,
+				   uint32_t security_info,
 				   TALLOC_CTX *mem_ctx,
 				   struct security_descriptor **ppdesc)
 {
@@ -1031,7 +1031,7 @@ static NTSTATUS afsacl_fget_nt_acl(struct vfs_handle_struct *handle,
 }
 
 static NTSTATUS afsacl_get_nt_acl(struct vfs_handle_struct *handle,
-				  const char *name, uint32 security_info,
+				  const char *name, uint32_t security_info,
 				  TALLOC_CTX *mem_ctx,
 				  struct security_descriptor **ppdesc)
 {
@@ -1064,7 +1064,7 @@ static NTSTATUS afsacl_get_nt_acl(struct vfs_handle_struct *handle,
 
 static NTSTATUS afsacl_fset_nt_acl(vfs_handle_struct *handle,
 			 files_struct *fsp,
-			 uint32 security_info_sent,
+			 uint32_t security_info_sent,
 			 const struct security_descriptor *psd)
 {
 	return afs_set_nt_acl(handle, fsp, security_info_sent, psd);

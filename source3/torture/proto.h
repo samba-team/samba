@@ -67,7 +67,7 @@ bool smbcli_parse_unc(const char *unc_name, TALLOC_CTX *mem_ctx,
 		      char **hostname, char **sharename);
 bool torture_open_connection(struct cli_state **c, int conn_index);
 bool torture_init_connection(struct cli_state **pcli);
-bool torture_cli_session_setup2(struct cli_state *cli, uint16 *new_vuid);
+bool torture_cli_session_setup2(struct cli_state *cli, uint16_t *new_vuid);
 bool torture_close_connection(struct cli_state *c);
 bool torture_ioctl_test(int dummy);
 bool torture_chkpath_test(int dummy);
@@ -105,7 +105,6 @@ bool run_cleanup1(int dummy);
 bool run_cleanup2(int dummy);
 bool run_cleanup3(int dummy);
 bool run_cleanup4(int dummy);
-bool run_ctdb_conn(int dummy);
 bool run_notify_bench2(int dummy);
 bool run_notify_bench3(int dummy);
 bool run_dbwrap_watch1(int dummy);
@@ -119,6 +118,8 @@ bool run_messaging_read3(int dummy);
 bool run_messaging_read4(int dummy);
 bool run_messaging_fdpass1(int dummy);
 bool run_messaging_fdpass2(int dummy);
+bool run_messaging_fdpass2a(int dummy);
+bool run_messaging_fdpass2b(int dummy);
 bool run_oplock_cancel(int dummy);
 
 #endif /* __TORTURE_H__ */

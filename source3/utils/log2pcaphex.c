@@ -74,47 +74,47 @@ int hexformat = 0;
 
 /* tcpdump file format */
 struct tcpdump_file_header {
-	uint32 magic;
-	uint16 major;
-	uint16 minor;
-	int32 zone;
-	uint32 sigfigs;
-	uint32 snaplen;
-	uint32 linktype;
+	uint32_t magic;
+	uint16_t major;
+	uint16_t minor;
+	int32_t zone;
+	uint32_t sigfigs;
+	uint32_t snaplen;
+	uint32_t linktype;
 };
 
 struct tcpdump_packet {
 	struct timeval ts;
-	uint32 caplen;
-	uint32 len;
+	uint32_t caplen;
+	uint32_t len;
 };
 
 typedef struct {
-    uint8  ver_hdrlen;
-    uint8  dscp;
-    uint16 packet_length;
-    uint16 identification;
-    uint8  flags;
-    uint8  fragment;
-    uint8  ttl;
-    uint8  protocol;
-    uint16 hdr_checksum;
-    uint32 src_addr;
-    uint32 dest_addr;
+    uint8_t  ver_hdrlen;
+    uint8_t  dscp;
+    uint16_t packet_length;
+    uint16_t identification;
+    uint8_t  flags;
+    uint8_t  fragment;
+    uint8_t  ttl;
+    uint8_t  protocol;
+    uint16_t hdr_checksum;
+    uint32_t src_addr;
+    uint32_t dest_addr;
 } hdr_ip_t;
 
 static hdr_ip_t HDR_IP = {0x45, 0, 0, 0x3412, 0, 0, 0xff, 6, 0, 0x01010101, 0x02020202};
 
 typedef struct {
-    uint16 source_port;
-    uint16 dest_port;
-    uint32 seq_num;
-    uint32 ack_num;
-    uint8  hdr_length;
-    uint8  flags;
-    uint16 window;
-    uint16 checksum;
-    uint16 urg;
+    uint16_t source_port;
+    uint16_t dest_port;
+    uint32_t seq_num;
+    uint32_t ack_num;
+    uint8_t  hdr_length;
+    uint8_t  flags;
+    uint16_t window;
+    uint16_t checksum;
+    uint16_t urg;
 } hdr_tcp_t;
 
 static hdr_tcp_t HDR_TCP = {139, 139, 0, 0, 0x50, 0, 0, 0, 0};

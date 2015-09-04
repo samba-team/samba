@@ -89,7 +89,7 @@ static void display_reg_value(const char *subkey, const char *name, struct regis
 
 	switch(value->type) {
 	case REG_DWORD:
-		if (value->data.length == sizeof(uint32)) {
+		if (value->data.length == sizeof(uint32_t)) {
 			d_printf(_("\t[%s:%s]: REG_DWORD: 0x%08x\n"), subkey,
 				 name, IVAL(value->data.data,0));
 		} else {

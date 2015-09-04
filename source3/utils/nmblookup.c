@@ -247,7 +247,7 @@ int main(int argc, const char *argv[])
 
 	*lookup = 0;
 
-	load_case_tables();
+	smb_init_locale();
 
 	setup_logging(argv[0], DEBUG_STDOUT);
 
@@ -320,6 +320,7 @@ int main(int argc, const char *argv[])
 	while(poptPeekArg(pc)) {
 		char *p;
 		struct in_addr ip;
+		size_t nbt_len;
 
 		fstrcpy(lookup,poptGetArg(pc));
 
@@ -348,6 +349,14 @@ int main(int argc, const char *argv[])
 			*p = '\0';
 			sscanf(++p,"%x",&lookup_type);
 		}
+
+		nbt_len = strlen(lookup);
+		if (nbt_len > MAX_NETBIOSNAME_LEN - 1) {
+			d_printf("The specified netbios name [%s] is too long!\n",
+				 lookup);
+			continue;
+		}
+
 
 		if (!query_one(lookup, lookup_type)) {
 			rc = 1;

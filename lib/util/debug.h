@@ -20,12 +20,12 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef _DEBUG_H
-#define _DEBUG_H
+#ifndef _SAMBA_DEBUG_H
+#define _SAMBA_DEBUG_H
 
 #include <stdbool.h>
 #include <stddef.h>
-
+#include <stdarg.h>
 #include "attr.h"
 
 
@@ -88,9 +88,7 @@ bool dbghdr( int level, const char *location, const char *func);
 #define DBGC_SCAVENGER		20
 #define DBGC_DNS		21
 #define DBGC_LDB		22
-
-/* Always ensure this is updated when new fixed classes area added, to ensure the array in debug.c is the right size */
-#define DBGC_MAX_FIXED		22
+#define DBGC_TEVENT		23
 
 /* So you can define DBGC_CLASS before including debug.h */
 #ifndef DBGC_CLASS
@@ -206,6 +204,21 @@ extern int  *DEBUGLEVEL_CLASS;
 #define DEBUGSEP(level)\
 	DEBUG((level),("===============================================================\n"))
 
+/*
+ * Debug levels matching RFC 3164
+ */
+#define DBGLVL_ERR	 0	/* error conditions */
+#define DBGLVL_WARNING	 1	/* warning conditions */
+#define DBGLVL_NOTICE	 3	/* normal, but significant, condition */
+#define DBGLVL_INFO	 5	/* informational message */
+#define DBGLVL_DEBUG	10	/* debug-level message */
+
+#define DBG_ERR(...)		DEBUG(DBGLVL_ERR,	(__VA_ARGS__))
+#define DBG_WARNING(...)	DEBUG(DBGLVL_WARNING,	(__VA_ARGS__))
+#define DBG_NOTICE(...)	DEBUG(DBGLVL_NOTICE,	(__VA_ARGS__))
+#define DBG_INFO(...)		DEBUG(DBGLVL_INFO,	(__VA_ARGS__))
+#define DBG_DEBUG(...)		DEBUG(DBGLVL_DEBUG,	(__VA_ARGS__))
+
 /* The following definitions come from lib/debug.c  */
 
 /** Possible destinations for the debug log (in order of precedence -
@@ -224,8 +237,6 @@ enum debug_logtype {
 
 struct debug_settings {
 	size_t max_log_size;
-	int syslog;
-	bool syslog_only;
 	bool timestamp_logs;
 	bool debug_prefix_timestamp;
 	bool debug_hires_timestamp;
@@ -236,21 +247,20 @@ struct debug_settings {
 
 void setup_logging(const char *prog_name, enum debug_logtype new_logtype);
 
-void debug_close_dbf(void);
 void gfree_debugsyms(void);
 int debug_add_class(const char *classname);
-int debug_lookup_classname(const char *classname);
 bool debug_parse_levels(const char *params_str);
 void debug_setup_talloc_log(void);
 void debug_set_logfile(const char *name);
-void debug_set_settings(struct debug_settings *settings);
+void debug_set_settings(struct debug_settings *settings,
+			const char *logging_param,
+			int syslog_level, bool syslog_only);
 bool reopen_logs_internal( void );
 void force_check_log_size( void );
 bool need_to_check_log_size( void );
 void check_log_size( void );
 void dbgflush( void );
 bool dbghdrclass(int level, int cls, const char *location, const char *func);
-bool dbghdr(int level, const char *location, const char *func);
 bool debug_get_output_is_stderr(void);
 bool debug_get_output_is_stdout(void);
 void debug_schedule_reopen_logs(void);
@@ -263,4 +273,4 @@ typedef void (*debug_callback_fn)(void *private_ptr, int level, const char *msg)
  */
 void debug_set_callback(void *private_ptr, debug_callback_fn fn);
 
-#endif
+#endif /* _SAMBA_DEBUG_H */

@@ -78,7 +78,7 @@ def SAMBA_PIDL(bld, pname, source,
     t = bld(rule='cd .. && %s %s ${PERL} "${PIDL}" --quiet ${OPTIONS} --outputdir ${OUTPUTDIR} -- "${SRC[0].abspath(env)}"' % (cpp, cc),
             ext_out    = '.c',
             before     = 'cc',
-            on_results = True,
+            update_outputs = True,
             shell      = True,
             source     = source,
             target     = out_files,
@@ -118,7 +118,7 @@ from TaskGen import feature, before
 def collect(self):
     pidl_headers = LOCAL_CACHE(self.bld, 'PIDL_HEADERS')
     for (name, hd) in pidl_headers.items():
-        y = self.bld.name_to_obj(name, self.env)
+        y = self.bld.get_tgen_by_name(name)
         self.bld.ASSERT(y is not None, 'Failed to find PIDL header %s' % name)
         y.post()
         for node in hd:
@@ -135,7 +135,7 @@ def SAMBA_PIDL_TABLES(bld, name, target):
             rule     = '${PERL} ${SRC} --output ${TGT} | sed "s|default/||" > ${TGT}',
             ext_out  = '.c',
             before   = 'cc',
-            on_results = True,
+            update_outputs = True,
             shell    = True,
             source   = '../../librpc/tables.pl',
             target   = target,

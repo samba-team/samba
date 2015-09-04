@@ -37,23 +37,19 @@
 
 extern const struct generic_mapping file_generic_mapping;
 
-#define SMB_ACE4_INT_MAGIC 0x76F8A967
-typedef struct _SMB_ACE4_INT_T
+struct SMB4ACE_T
 {
-	uint32	magic;
 	SMB_ACE4PROP_T	prop;
-	void	*next;
-} SMB_ACE4_INT_T;
+	struct SMB4ACE_T *next;
+};
 
-#define SMB_ACL4_INT_MAGIC 0x29A3E792
-typedef struct _SMB_ACL4_INT_T
+struct SMB4ACL_T
 {
-	uint32	magic;
 	uint16_t controlflags;
-	uint32	naces;
-	SMB_ACE4_INT_T	*first;
-	SMB_ACE4_INT_T	*last;
-} SMB_ACL4_INT_T;
+	uint32_t naces;
+	struct SMB4ACE_T	*first;
+	struct SMB4ACE_T	*last;
+};
 
 enum smbacl4_mode_enum {e_simple=0, e_special=1};
 enum smbacl4_acedup_enum {e_dontcare=0, e_reject=1, e_ignore=2, e_merge=3};
@@ -69,7 +65,6 @@ typedef struct _smbacl4_vfs_params {
  * Gather special parameters for NFS4 ACL handling
  */
 static int smbacl4_get_vfs_params(
-	const char *type_name,
 	struct connection_struct *conn,
 	smbacl4_vfs_params *params
 )
@@ -88,23 +83,25 @@ static int smbacl4_get_vfs_params(
 	};
 	int enumval;
 
-	memset(params, 0, sizeof(smbacl4_vfs_params));
+	ZERO_STRUCTP(params);
 
-	enumval = lp_parm_enum(SNUM(conn), type_name, "mode",
+	enumval = lp_parm_enum(SNUM(conn), SMBACL4_PARAM_TYPE_NAME, "mode",
 			       enum_smbacl4_modes, e_simple);
 	if (enumval == -1) {
-		DEBUG(10, ("value for %s:mode unknown\n", type_name));
+		DEBUG(10, ("value for %s:mode unknown\n",
+			   SMBACL4_PARAM_TYPE_NAME));
 		return -1;
 	}
 	params->mode = (enum smbacl4_mode_enum)enumval;
 
-	params->do_chown = lp_parm_bool(SNUM(conn), type_name,
+	params->do_chown = lp_parm_bool(SNUM(conn), SMBACL4_PARAM_TYPE_NAME,
 		"chown", true);
 
-	enumval = lp_parm_enum(SNUM(conn), type_name, "acedup",
+	enumval = lp_parm_enum(SNUM(conn), SMBACL4_PARAM_TYPE_NAME, "acedup",
 			       enum_smbacl4_acedups, e_dontcare);
 	if (enumval == -1) {
-		DEBUG(10, ("value for %s:acedup unknown\n", type_name));
+		DEBUG(10, ("value for %s:acedup unknown\n",
+			   SMBACL4_PARAM_TYPE_NAME));
 		return -1;
 	}
 	params->acedup = (enum smbacl4_acedup_enum)enumval;
@@ -172,140 +169,101 @@ static uint32_t map_windows_ace_flags_to_nfs4_ace_flags(uint32_t win_ace_flags)
 	return nfs4_ace_flags;
 }
 
-static SMB_ACL4_INT_T *get_validated_aclint(SMB4ACL_T *theacl)
+struct SMB4ACL_T *smb_create_smb4acl(TALLOC_CTX *mem_ctx)
 {
-	SMB_ACL4_INT_T *aclint = (SMB_ACL4_INT_T *)theacl;
-	if (theacl==NULL)
-	{
-		DEBUG(2, ("acl is NULL\n"));
-		errno = EINVAL;
-		return NULL;
-	}
-	if (aclint->magic!=SMB_ACL4_INT_MAGIC)
-	{
-		DEBUG(2, ("aclint bad magic 0x%x\n", aclint->magic));
-		errno = EINVAL;
-		return NULL;
-	}
-	return aclint;
-}
+	struct SMB4ACL_T *theacl;
 
-static SMB_ACE4_INT_T *get_validated_aceint(SMB4ACE_T *ace)
-{
-	SMB_ACE4_INT_T *aceint = (SMB_ACE4_INT_T *)ace;
-	if (ace==NULL)
-	{
-		DEBUG(2, ("ace is NULL\n"));
-		errno = EINVAL;
-		return NULL;
-	}
-	if (aceint->magic!=SMB_ACE4_INT_MAGIC)
-	{
-		DEBUG(2, ("aceint bad magic 0x%x\n", aceint->magic));
-		errno = EINVAL;
-		return NULL;
-	}
-	return aceint;
-}
-
-SMB4ACL_T *smb_create_smb4acl(TALLOC_CTX *mem_ctx)
-{
-	SMB_ACL4_INT_T	*theacl = (SMB_ACL4_INT_T *)TALLOC_ZERO_SIZE(
-		mem_ctx, sizeof(SMB_ACL4_INT_T));
+	theacl = talloc_zero(mem_ctx, struct SMB4ACL_T);
 	if (theacl==NULL)
 	{
 		DEBUG(0, ("TALLOC_SIZE failed\n"));
 		errno = ENOMEM;
 		return NULL;
 	}
-	theacl->magic = SMB_ACL4_INT_MAGIC;
 	theacl->controlflags = SEC_DESC_SELF_RELATIVE;
 	/* theacl->first, last = NULL not needed */
-	return (SMB4ACL_T *)theacl;
+	return theacl;
 }
 
-SMB4ACE_T *smb_add_ace4(SMB4ACL_T *theacl, SMB_ACE4PROP_T *prop)
+struct SMB4ACE_T *smb_add_ace4(struct SMB4ACL_T *acl, SMB_ACE4PROP_T *prop)
 {
-	SMB_ACL4_INT_T *aclint = get_validated_aclint(theacl);
-	SMB_ACE4_INT_T *ace;
+	struct SMB4ACE_T *ace;
 
-	ace = (SMB_ACE4_INT_T *)TALLOC_ZERO_SIZE(
-		theacl, sizeof(SMB_ACE4_INT_T));
+	ace = talloc_zero(acl, struct SMB4ACE_T);
 	if (ace==NULL)
 	{
 		DEBUG(0, ("TALLOC_SIZE failed\n"));
 		errno = ENOMEM;
 		return NULL;
 	}
-	ace->magic = SMB_ACE4_INT_MAGIC;
 	/* ace->next = NULL not needed */
 	memcpy(&ace->prop, prop, sizeof(SMB_ACE4PROP_T));
 
-	if (aclint->first==NULL)
+	if (acl->first==NULL)
 	{
-		aclint->first = ace;
-		aclint->last = ace;
+		acl->first = ace;
+		acl->last = ace;
 	} else {
-		aclint->last->next = (void *)ace;
-		aclint->last = ace;
+		acl->last->next = ace;
+		acl->last = ace;
 	}
-	aclint->naces++;
+	acl->naces++;
 
-	return (SMB4ACE_T *)ace;
+	return ace;
 }
 
-SMB_ACE4PROP_T *smb_get_ace4(SMB4ACE_T *ace)
+SMB_ACE4PROP_T *smb_get_ace4(struct SMB4ACE_T *ace)
 {
-	SMB_ACE4_INT_T *aceint = get_validated_aceint(ace);
-	if (aceint==NULL)
+	if (ace == NULL) {
 		return NULL;
+	}
 
-	return &aceint->prop;
+	return &ace->prop;
 }
 
-SMB4ACE_T *smb_next_ace4(SMB4ACE_T *ace)
+struct SMB4ACE_T *smb_next_ace4(struct SMB4ACE_T *ace)
 {
-	SMB_ACE4_INT_T *aceint = get_validated_aceint(ace);
-	if (aceint==NULL)
+	if (ace == NULL) {
 		return NULL;
+	}
 
-	return (SMB4ACE_T *)aceint->next;
+	return ace->next;
 }
 
-SMB4ACE_T *smb_first_ace4(SMB4ACL_T *theacl)
+struct SMB4ACE_T *smb_first_ace4(struct SMB4ACL_T *acl)
 {
-	SMB_ACL4_INT_T *aclint = get_validated_aclint(theacl);
-	if (aclint==NULL)
+	if (acl == NULL) {
 		return NULL;
+	}
 
-	return (SMB4ACE_T *)aclint->first;
+	return acl->first;
 }
 
-uint32 smb_get_naces(SMB4ACL_T *theacl)
+uint32_t smb_get_naces(struct SMB4ACL_T *acl)
 {
-	SMB_ACL4_INT_T *aclint = get_validated_aclint(theacl);
-	if (aclint==NULL)
+	if (acl == NULL) {
 		return 0;
+	}
 
-	return aclint->naces;
+	return acl->naces;
 }
 
-uint16_t smbacl4_get_controlflags(SMB4ACL_T *theacl)
+uint16_t smbacl4_get_controlflags(struct SMB4ACL_T *acl)
 {
-	SMB_ACL4_INT_T *aclint = get_validated_aclint(theacl);
-	if (aclint==NULL)
+	if (acl == NULL) {
 		return 0;
+	}
 
-	return aclint->controlflags;
+	return acl->controlflags;
 }
 
-bool smbacl4_set_controlflags(SMB4ACL_T *theacl, uint16_t controlflags)
+bool smbacl4_set_controlflags(struct SMB4ACL_T *acl, uint16_t controlflags)
 {
-	SMB_ACL4_INT_T *aclint = get_validated_aclint(theacl);
-	if (aclint==NULL)
+	if (acl == NULL) {
 		return false;
+	}
 
-	aclint->controlflags = controlflags;
+	acl->controlflags = controlflags;
 	return true;
 }
 
@@ -313,12 +271,12 @@ static int smbacl4_GetFileOwner(struct connection_struct *conn,
 				const char *filename,
 				SMB_STRUCT_STAT *psbuf)
 {
-	memset(psbuf, 0, sizeof(SMB_STRUCT_STAT));
+	ZERO_STRUCTP(psbuf);
 
 	/* Get the stat struct for the owner info. */
-	if (vfs_stat_smb_fname(conn, filename, psbuf) != 0)
+	if (vfs_stat_smb_basename(conn, filename, psbuf) != 0)
 	{
-		DEBUG(8, ("vfs_stat_smb_fname failed with error %s\n",
+		DEBUG(8, ("vfs_stat_smb_basename failed with error %s\n",
 			strerror(errno)));
 		return -1;
 	}
@@ -328,7 +286,7 @@ static int smbacl4_GetFileOwner(struct connection_struct *conn,
 
 static int smbacl4_fGetFileOwner(files_struct *fsp, SMB_STRUCT_STAT *psbuf)
 {
-	memset(psbuf, 0, sizeof(SMB_STRUCT_STAT));
+	ZERO_STRUCTP(psbuf);
 
 	if (fsp->fh->fd == -1) {
 		return smbacl4_GetFileOwner(fsp->conn,
@@ -346,7 +304,7 @@ static int smbacl4_fGetFileOwner(files_struct *fsp, SMB_STRUCT_STAT *psbuf)
 
 static bool smbacl4_nfs42win(TALLOC_CTX *mem_ctx,
 	smbacl4_vfs_params *params,
-	SMB4ACL_T *theacl, /* in */
+	struct SMB4ACL_T *acl, /* in */
 	struct dom_sid *psid_owner, /* in */
 	struct dom_sid *psid_group, /* in */
 	bool is_directory, /* in */
@@ -354,41 +312,31 @@ static bool smbacl4_nfs42win(TALLOC_CTX *mem_ctx,
 	int *pgood_aces /* out */
 )
 {
-	SMB_ACL4_INT_T *aclint = (SMB_ACL4_INT_T *)theacl;
-	SMB_ACE4_INT_T *aceint;
+	struct SMB4ACE_T *aceint;
 	struct security_ace *nt_ace_list = NULL;
 	int good_aces = 0;
 
-	DEBUG(10, ("smbacl_nfs42win entered\n"));
+	DEBUG(10, ("%s entered\n", __func__));
 
-	aclint = get_validated_aclint(theacl);
-	/* We do not check for theacl being NULL here
-	   because this is already checked in smb_get_nt_acl_nfs4().
-	   We reserve twice the number of input aces because one nfs4
-	   ace might result in 2 nt aces.*/
-	nt_ace_list = (struct security_ace *)TALLOC_ZERO_SIZE(
-		mem_ctx, 2 * aclint->naces * sizeof(struct security_ace));
+	nt_ace_list = talloc_zero_array(mem_ctx, struct security_ace,
+					2 * acl->naces);
 	if (nt_ace_list==NULL)
 	{
-		DEBUG(10, ("talloc error with %d aces", aclint->naces));
+		DEBUG(10, ("talloc error with %d aces", acl->naces));
 		errno = ENOMEM;
 		return false;
 	}
 
-	for (aceint=aclint->first;
-	     aceint!=NULL;
-	     aceint=(SMB_ACE4_INT_T *)aceint->next) {
+	for (aceint = acl->first; aceint != NULL; aceint = aceint->next) {
 		uint32_t mask;
 		struct dom_sid sid;
 		SMB_ACE4PROP_T	*ace = &aceint->prop;
 		uint32_t win_ace_flags;
 
-		DEBUG(10, ("magic: 0x%x, type: %d, iflags: %x, flags: %x, "
+		DEBUG(10, ("type: %d, iflags: %x, flags: %x, "
 			   "mask: %x, who: %d\n",
-			   aceint->magic, ace->aceType, ace->flags,
+			   ace->aceType, ace->flags,
 			   ace->aceFlags, ace->aceMask, ace->who.id));
-
-		SMB_ASSERT(aceint->magic==SMB_ACE4_INT_MAGIC);
 
 		if (ace->flags & SMB_ACE4_ID_SPECIAL) {
 			switch (ace->who.special_id) {
@@ -507,9 +455,9 @@ static bool smbacl4_nfs42win(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	nt_ace_list = (struct security_ace *)
-		TALLOC_REALLOC(mem_ctx, nt_ace_list,
-				       good_aces * sizeof(struct security_ace));
+	nt_ace_list = talloc_realloc(mem_ctx, nt_ace_list, struct security_ace,
+				     good_aces);
+
 	/* returns a NULL ace list when good_aces is zero. */
 	if (good_aces && nt_ace_list == NULL) {
 		DEBUG(10, ("realloc error with %d aces", good_aces));
@@ -525,10 +473,10 @@ static bool smbacl4_nfs42win(TALLOC_CTX *mem_ctx,
 
 static NTSTATUS smb_get_nt_acl_nfs4_common(const SMB_STRUCT_STAT *sbuf,
 					   smbacl4_vfs_params *params,
-					   uint32 security_info,
+					   uint32_t security_info,
 					   TALLOC_CTX *mem_ctx,
 					   struct security_descriptor **ppdesc,
-					   SMB4ACL_T *theacl)
+					   struct SMB4ACL_T *theacl)
 {
 	int good_aces = 0;
 	struct dom_sid sid_owner, sid_group;
@@ -536,6 +484,7 @@ static NTSTATUS smb_get_nt_acl_nfs4_common(const SMB_STRUCT_STAT *sbuf,
 	struct security_ace *nt_ace_list = NULL;
 	struct security_acl *psa = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
+	bool ok;
 
 	if (theacl==NULL) {
 		TALLOC_FREE(frame);
@@ -547,9 +496,10 @@ static NTSTATUS smb_get_nt_acl_nfs4_common(const SMB_STRUCT_STAT *sbuf,
 	uid_to_sid(&sid_owner, sbuf->st_ex_uid);
 	gid_to_sid(&sid_group, sbuf->st_ex_gid);
 
-	if (smbacl4_nfs42win(mem_ctx, params, theacl, &sid_owner, &sid_group,
-			     S_ISDIR(sbuf->st_ex_mode),
-			     &nt_ace_list, &good_aces)==false) {
+	ok = smbacl4_nfs42win(frame, params, theacl, &sid_owner, &sid_group,
+			      S_ISDIR(sbuf->st_ex_mode),
+			      &nt_ace_list, &good_aces);
+	if (!ok) {
 		DEBUG(8,("smbacl4_nfs42win failed\n"));
 		TALLOC_FREE(frame);
 		return map_nt_error_from_unix(errno);
@@ -583,10 +533,10 @@ static NTSTATUS smb_get_nt_acl_nfs4_common(const SMB_STRUCT_STAT *sbuf,
 }
 
 NTSTATUS smb_fget_nt_acl_nfs4(files_struct *fsp,
-			      uint32 security_info,
+			      uint32_t security_info,
 			      TALLOC_CTX *mem_ctx,
 			      struct security_descriptor **ppdesc,
-			      SMB4ACL_T *theacl)
+			      struct SMB4ACL_T *theacl)
 {
 	SMB_STRUCT_STAT sbuf;
 	smbacl4_vfs_params params;
@@ -598,7 +548,7 @@ NTSTATUS smb_fget_nt_acl_nfs4(files_struct *fsp,
 	}
 
 	/* Special behaviours */
-	if (smbacl4_get_vfs_params(SMBACL4_PARAM_TYPE_NAME, fsp->conn, &params)) {
+	if (smbacl4_get_vfs_params(fsp->conn, &params)) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -608,10 +558,10 @@ NTSTATUS smb_fget_nt_acl_nfs4(files_struct *fsp,
 
 NTSTATUS smb_get_nt_acl_nfs4(struct connection_struct *conn,
 			     const char *name,
-			     uint32 security_info,
+			     uint32_t security_info,
 			     TALLOC_CTX *mem_ctx,
 			     struct security_descriptor **ppdesc,
-			     SMB4ACL_T *theacl)
+			     struct SMB4ACL_T *theacl)
 {
 	SMB_STRUCT_STAT sbuf;
 	smbacl4_vfs_params params;
@@ -623,7 +573,7 @@ NTSTATUS smb_get_nt_acl_nfs4(struct connection_struct *conn,
 	}
 
 	/* Special behaviours */
-	if (smbacl4_get_vfs_params(SMBACL4_PARAM_TYPE_NAME, conn, &params)) {
+	if (smbacl4_get_vfs_params(conn, &params)) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -631,16 +581,13 @@ NTSTATUS smb_get_nt_acl_nfs4(struct connection_struct *conn,
 					  mem_ctx, ppdesc, theacl);
 }
 
-static void smbacl4_dump_nfs4acl(int level, SMB4ACL_T *theacl)
+static void smbacl4_dump_nfs4acl(int level, struct SMB4ACL_T *acl)
 {
-	SMB_ACL4_INT_T *aclint = get_validated_aclint(theacl);
-	SMB_ACE4_INT_T *aceint;
+	struct SMB4ACE_T *aceint;
 
-	DEBUG(level, ("NFS4ACL: size=%d\n", aclint->naces));
+	DEBUG(level, ("NFS4ACL: size=%d\n", acl->naces));
 
-	for (aceint = aclint->first;
-	     aceint!=NULL;
-	     aceint=(SMB_ACE4_INT_T *)aceint->next) {
+	for (aceint = acl->first; aceint != NULL; aceint = aceint->next) {
 		SMB_ACE4PROP_T *ace = &aceint->prop;
 
 		DEBUG(level, ("\tACE: type=%d, flags=0x%x, fflags=0x%x, "
@@ -658,14 +605,12 @@ static void smbacl4_dump_nfs4acl(int level, SMB4ACL_T *theacl)
  * return ace if found matching; otherwise NULL
  */
 static SMB_ACE4PROP_T *smbacl4_find_equal_special(
-	SMB4ACL_T *theacl,
+	struct SMB4ACL_T *acl,
 	SMB_ACE4PROP_T *aceNew)
 {
-	SMB_ACL4_INT_T *aclint = get_validated_aclint(theacl);
-	SMB_ACE4_INT_T *aceint;
+	struct SMB4ACE_T *aceint;
 
-	for (aceint = aclint->first; aceint != NULL;
-	     aceint=(SMB_ACE4_INT_T *)aceint->next) {
+	for (aceint = acl->first; aceint != NULL; aceint = aceint->next) {
 		SMB_ACE4PROP_T *ace = &aceint->prop;
 
 		DEBUG(10,("ace type:0x%x flags:0x%x aceFlags:0x%x "
@@ -711,7 +656,7 @@ static bool smbacl4_fill_ace4(
 {
 	DEBUG(10, ("got ace for %s\n", sid_string_dbg(&ace_nt->trustee)));
 
-	memset(ace_v4, 0, sizeof(SMB_ACE4PROP_T));
+	ZERO_STRUCTP(ace_v4);
 
 	/* only ACCESS|DENY supported right now */
 	ace_v4->aceType = ace_nt->type;
@@ -795,7 +740,7 @@ static bool smbacl4_fill_ace4(
 
 static int smbacl4_MergeIgnoreReject(
 	enum smbacl4_acedup_enum acedup,
-	SMB4ACL_T *theacl, /* may modify it */
+	struct SMB4ACL_T *theacl, /* may modify it */
 	SMB_ACE4PROP_T *ace, /* the "new" ACE */
 	bool	*paddNewACE,
 	int	i
@@ -828,15 +773,14 @@ static int smbacl4_MergeIgnoreReject(
 }
 
 static int smbacl4_substitute_special(
-	SMB4ACL_T *theacl,
+	struct SMB4ACL_T *acl,
 	uid_t ownerUID,
 	gid_t ownerGID
 )
 {
-	SMB_ACL4_INT_T *aclint = get_validated_aclint(theacl);
-	SMB_ACE4_INT_T *aceint;
+	struct SMB4ACE_T *aceint;
 
-	for(aceint = aclint->first; aceint!=NULL; aceint=(SMB_ACE4_INT_T *)aceint->next) {
+	for (aceint = acl->first; aceint != NULL; aceint = aceint->next) {
 		SMB_ACE4PROP_T *ace = &aceint->prop;
 
 		DEBUG(10,("ace type: %d, iflags: %x, flags: %x, "
@@ -864,15 +808,14 @@ static int smbacl4_substitute_special(
 }
 
 static int smbacl4_substitute_simple(
-	SMB4ACL_T *theacl,
+	struct SMB4ACL_T *acl,
 	uid_t ownerUID,
 	gid_t ownerGID
 )
 {
-	SMB_ACL4_INT_T *aclint = get_validated_aclint(theacl);
-	SMB_ACE4_INT_T *aceint;
+	struct SMB4ACE_T *aceint;
 
-	for(aceint = aclint->first; aceint!=NULL; aceint=(SMB_ACE4_INT_T *)aceint->next) {
+	for (aceint = acl->first; aceint != NULL; aceint = aceint->next) {
 		SMB_ACE4PROP_T *ace = &aceint->prop;
 
 		DEBUG(10,("ace type: %d, iflags: %x, flags: %x, "
@@ -905,7 +848,7 @@ static int smbacl4_substitute_simple(
 	return true; /* OK */
 }
 
-static SMB4ACL_T *smbacl4_win2nfs4(
+static struct SMB4ACL_T *smbacl4_win2nfs4(
 	TALLOC_CTX *mem_ctx,
 	const files_struct *fsp,
 	const struct security_acl *dacl,
@@ -914,8 +857,8 @@ static SMB4ACL_T *smbacl4_win2nfs4(
 	gid_t ownerGID
 )
 {
-	SMB4ACL_T *theacl;
-	uint32	i;
+	struct SMB4ACL_T *theacl;
+	uint32_t i;
 	const char *filename = fsp->fsp_name->base_name;
 
 	DEBUG(10, ("smbacl4_win2nfs4 invoked\n"));
@@ -959,12 +902,12 @@ static SMB4ACL_T *smbacl4_win2nfs4(
 }
 
 NTSTATUS smb_set_nt_acl_nfs4(vfs_handle_struct *handle, files_struct *fsp,
-	uint32 security_info_sent,
+	uint32_t security_info_sent,
 	const struct security_descriptor *psd,
 	set_nfs4acl_native_fn_t set_nfs4_native)
 {
 	smbacl4_vfs_params params;
-	SMB4ACL_T *theacl = NULL;
+	struct SMB4ACL_T *theacl = NULL;
 	bool	result;
 
 	SMB_STRUCT_STAT sbuf;
@@ -987,8 +930,7 @@ NTSTATUS smb_set_nt_acl_nfs4(vfs_handle_struct *handle, files_struct *fsp,
 	}
 
 	/* Special behaviours */
-	if (smbacl4_get_vfs_params(SMBACL4_PARAM_TYPE_NAME,
-				   fsp->conn, &params)) {
+	if (smbacl4_get_vfs_params(fsp->conn, &params)) {
 		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
 	}

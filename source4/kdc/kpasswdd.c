@@ -31,6 +31,7 @@
 #include "param/param.h"
 #include "kdc/kdc-glue.h"
 #include "dsdb/common/util.h"
+#include "kdc/kpasswd_glue.h"
 
 /* Return true if there is a valid error packet formed in the error_blob */
 static bool kpasswdd_make_error_reply(struct kdc_server *kdc,
@@ -156,73 +157,35 @@ static bool kpasswdd_change_password(struct kdc_server *kdc,
 				     DATA_BLOB *reply)
 {
 	NTSTATUS status;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	enum samPwdChangeReason reject_reason;
 	struct samr_DomInfo1 *dominfo;
-	struct samr_Password *oldLmHash, *oldNtHash;
-	struct ldb_context *samdb;
-	const char * const attrs[] = { "dBCSPwd", "unicodePwd", NULL };
-	struct ldb_message *msg;
-	int ret;
+	const char *error_string;
 
-	/* Fetch the old hashes to get the old password in order to perform
-	 * the password change operation. Naturally it would be much better to
-	 * have a password hash from an authentication around but this doesn't
-	 * seem to be the case here. */
-	ret = dsdb_search_one(kdc->samdb, mem_ctx, &msg, ldb_get_default_basedn(kdc->samdb),
-			      LDB_SCOPE_SUBTREE,
-			      attrs,
-			      DSDB_SEARCH_NO_GLOBAL_CATALOG,
-			      "(&(objectClass=user)(sAMAccountName=%s))",
-			      session_info->info->account_name);
-	if (ret != LDB_SUCCESS) {
-		return kpasswdd_make_error_reply(kdc, mem_ctx,
-						KRB5_KPASSWD_ACCESSDENIED,
-						"No such user when changing password",
-						reply);
-	}
-
-	/*
-	 * No need to check for password lockout here, the KDC will
-	 * have done that when issuing the ticket, which is not based
-	 * on the user's password
-	 */
-	status = samdb_result_passwords_no_lockout(mem_ctx, kdc->task->lp_ctx, msg,
-						   &oldLmHash, &oldNtHash);
+	status = samdb_kpasswd_change_password(mem_ctx,
+					       kdc->task->lp_ctx,
+					       kdc->task->event_ctx,
+					       kdc->samdb,
+					       session_info,
+					       password,
+					       &reject_reason,
+					       &dominfo,
+					       &error_string,
+					       &result);
 	if (!NT_STATUS_IS_OK(status)) {
-		return kpasswdd_make_error_reply(kdc, mem_ctx,
-						KRB5_KPASSWD_ACCESSDENIED,
-						"Not permitted to change password",
-						reply);
+		return kpasswdd_make_error_reply(kdc,
+						 mem_ctx,
+						 KRB5_KPASSWD_ACCESSDENIED,
+						 error_string,
+						 reply);
 	}
 
-	/* Start a SAM with user privileges for the password change */
-	samdb = samdb_connect(mem_ctx, kdc->task->event_ctx, kdc->task->lp_ctx,
-			      session_info, 0);
-	if (!samdb) {
-		return kpasswdd_make_error_reply(kdc, mem_ctx,
-						KRB5_KPASSWD_HARDERROR,
-						"Failed to open samdb",
-						reply);
-	}
-
-	DEBUG(3, ("Changing password of %s\\%s (%s)\n",
-		  session_info->info->domain_name,
-		  session_info->info->account_name,
-		  dom_sid_string(mem_ctx, &session_info->security_token->sids[PRIMARY_USER_SID_INDEX])));
-
-	/* Performs the password change */
-	status = samdb_set_password_sid(samdb, mem_ctx,
-					&session_info->security_token->sids[PRIMARY_USER_SID_INDEX],
-					password, NULL, NULL,
-					oldLmHash, oldNtHash, /* this is a user password change */
-					&reject_reason,
-					&dominfo);
-	return kpasswd_make_pwchange_reply(kdc, mem_ctx,
-					   status,
+	return kpasswd_make_pwchange_reply(kdc,
+					   mem_ctx,
+					   result,
 					   reject_reason,
 					   dominfo,
 					   reply);
-
 }
 
 static bool kpasswd_process_request(struct kdc_server *kdc,

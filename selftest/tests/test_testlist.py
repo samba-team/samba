@@ -22,7 +22,7 @@
 import os
 import tempfile
 
-from selftest.tests import TestCase
+from samba.tests import TestCase
 
 from selftest.testlist import (
     RestrictedTestManager,

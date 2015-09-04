@@ -40,6 +40,11 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS
 
+#ifndef LIBCEPHFS_VERSION
+#define LIBCEPHFS_VERSION(maj, min, extra) ((maj << 16) + (min << 8) + extra)
+#define LIBCEPHFS_VERSION_CODE LIBCEPHFS_VERSION(0, 0, 0)
+#endif
+
 /*
  * Use %llu whenever we have a 64bit unsigned int, and cast to (long long unsigned)
  */
@@ -156,8 +161,9 @@ static void cephwrap_disconnect(struct vfs_handle_struct *handle)
 
 /* Disk operations */
 
-static uint64_t cephwrap_disk_free(struct vfs_handle_struct *handle,  const char *path, bool small_query, uint64_t *bsize,
-			       uint64_t *dfree, uint64_t *dsize)
+static uint64_t cephwrap_disk_free(struct vfs_handle_struct *handle,
+				   const char *path, uint64_t *bsize,
+				   uint64_t *dfree, uint64_t *dsize)
 {
 	struct statvfs statvfs_buf;
 	int ret;
@@ -167,8 +173,9 @@ static uint64_t cephwrap_disk_free(struct vfs_handle_struct *handle,  const char
 		 * Provide all the correct values.
 		 */
 		*bsize = statvfs_buf.f_bsize;
-		*dfree = statvfs_buf.f_bsize * statvfs_buf.f_bavail;
-		*dsize = statvfs_buf.f_bsize * statvfs_buf.f_blocks;
+		*dfree = statvfs_buf.f_bavail;
+		*dsize = statvfs_buf.f_blocks;
+		disk_norm(bsize, dfree, dsize);
 		DEBUG(10, ("[CEPH] bsize: %llu, dfree: %llu, dsize: %llu\n",
 			llu(*bsize), llu(*dfree), llu(*dsize)));
 		return *dfree;
@@ -244,7 +251,7 @@ static int cephwrap_statvfs(struct vfs_handle_struct *handle,  const char *path,
 
 /* Directory operations */
 
-static DIR *cephwrap_opendir(struct vfs_handle_struct *handle,  const char *fname, const char *mask, uint32 attr)
+static DIR *cephwrap_opendir(struct vfs_handle_struct *handle,  const char *fname, const char *mask, uint32_t attr)
 {
 	int ret = 0;
 	struct ceph_dir_result *result;
@@ -264,7 +271,7 @@ static DIR *cephwrap_opendir(struct vfs_handle_struct *handle,  const char *fnam
 static DIR *cephwrap_fdopendir(struct vfs_handle_struct *handle,
 			       struct files_struct *fsp,
 			       const char *mask,
-			       uint32 attributes)
+			       uint32_t attributes)
 {
 	int ret = 0;
 	struct ceph_dir_result *result;
@@ -518,26 +525,6 @@ static int cephwrap_fsync(struct vfs_handle_struct *handle, files_struct *fsp)
 	WRAP_RETURN(result);
 }
 
-static void cephwrap_init_stat_ex_from_stat(struct stat_ex *dst, const struct stat *src)
-{
-	ZERO_STRUCT(*dst);
-
-	dst->st_ex_dev = src->st_dev;
-	dst->st_ex_ino = src->st_ino;
-	dst->st_ex_mode = src->st_mode;
-	dst->st_ex_nlink = src->st_nlink;
-	dst->st_ex_uid = src->st_uid;
-	dst->st_ex_gid = src->st_gid;
-	dst->st_ex_rdev = src->st_rdev;
-	dst->st_ex_size = src->st_size;
-	dst->st_ex_atime.tv_sec = src->st_atime;
-	dst->st_ex_mtime.tv_sec = src->st_mtime;
-	dst->st_ex_ctime.tv_sec = src->st_ctime;
-	dst->st_ex_btime.tv_sec = src->st_mtime;
-	dst->st_ex_blksize = src->st_blksize;
-	dst->st_ex_blocks = src->st_blocks;
-}
-
 static int cephwrap_stat(struct vfs_handle_struct *handle,
 			struct smb_filename *smb_fname)
 {
@@ -563,7 +550,9 @@ static int cephwrap_stat(struct vfs_handle_struct *handle,
 			   stbuf.st_uid, stbuf.st_gid, llu(stbuf.st_rdev), llu(stbuf.st_size), llu(stbuf.st_blksize),
 			   llu(stbuf.st_blocks), llu(stbuf.st_atime), llu(stbuf.st_mtime), llu(stbuf.st_ctime)));
 	}
-	cephwrap_init_stat_ex_from_stat(&(smb_fname->st), &stbuf);
+	init_stat_ex_from_stat(
+			&smb_fname->st, &stbuf,
+			lp_fake_directory_create_times(SNUM(handle->conn)));
 	DEBUG(10, ("[CEPH] mode = 0x%x\n", smb_fname->st.st_ex_mode));
 	return result;
 }
@@ -587,7 +576,9 @@ static int cephwrap_fstat(struct vfs_handle_struct *handle, files_struct *fsp, S
 			   llu(stbuf.st_blocks), llu(stbuf.st_atime), llu(stbuf.st_mtime), llu(stbuf.st_ctime)));
 	}
 
-	cephwrap_init_stat_ex_from_stat(sbuf, &stbuf);
+	init_stat_ex_from_stat(
+			sbuf, &stbuf,
+			lp_fake_directory_create_times(SNUM(handle->conn)));
 	DEBUG(10, ("[CEPH] mode = 0x%x\n", sbuf->st_ex_mode));
 	return result;
 }
@@ -610,7 +601,9 @@ static int cephwrap_lstat(struct vfs_handle_struct *handle,
 	if (result < 0) {
 		WRAP_RETURN(result);
 	}
-	cephwrap_init_stat_ex_from_stat(&(smb_fname->st), &stbuf);
+	init_stat_ex_from_stat(
+			&smb_fname->st, &stbuf,
+			lp_fake_directory_create_times(SNUM(handle->conn)));
 	return result;
 }
 
@@ -750,9 +743,28 @@ static int cephwrap_ntimes(struct vfs_handle_struct *handle,
 			 struct smb_file_time *ft)
 {
 	struct utimbuf buf;
-	buf.actime = ft->atime.tv_sec;
-	buf.modtime = ft->mtime.tv_sec;
-	int result = ceph_utime(handle->data, smb_fname->base_name, &buf);
+	int result;
+
+	if (null_timespec(ft->atime)) {
+		buf.actime = smb_fname->st.st_ex_atime.tv_sec;
+	} else {
+		buf.actime = ft->atime.tv_sec;
+	}
+	if (null_timespec(ft->mtime)) {
+		buf.modtime = smb_fname->st.st_ex_mtime.tv_sec;
+	} else {
+		buf.modtime = ft->mtime.tv_sec;
+	}
+	if (!null_timespec(ft->create_time)) {
+		set_create_timespec_ea(handle->conn, smb_fname,
+				       ft->create_time);
+	}
+	if (buf.actime == smb_fname->st.st_ex_atime.tv_sec &&
+	    buf.modtime == smb_fname->st.st_ex_mtime.tv_sec) {
+		return 0;
+	}
+
+	result = ceph_utime(handle->data, smb_fname->base_name, &buf);
 	DEBUG(10, ("[CEPH] ntimes(%p, %s, {%ld, %ld, %ld, %ld}) = %d\n", handle, smb_fname_str_dbg(smb_fname),
 				ft->mtime.tv_sec, ft->atime.tv_sec, ft->ctime.tv_sec,
 				ft->create_time.tv_sec, result));
@@ -793,8 +805,7 @@ static int strict_allocate_ftruncate(struct vfs_handle_struct *handle, files_str
 	   emulation is being done by the libc (like on AIX with JFS1). In that
 	   case we do our own emulation. fallocate implementations can
 	   return ENOTSUP or EINVAL in cases like that. */
-	ret = SMB_VFS_FALLOCATE(fsp, VFS_FALLOCATE_EXTEND_SIZE,
-				pst->st_ex_size, space_to_write);
+	ret = SMB_VFS_FALLOCATE(fsp, 0, pst->st_ex_size, space_to_write);
 	if (ret == -1 && errno == ENOSPC) {
 		return -1;
 	}
@@ -806,8 +817,8 @@ static int strict_allocate_ftruncate(struct vfs_handle_struct *handle, files_str
 
 	/* available disk space is enough or not? */
 	space_avail = get_dfree_info(fsp->conn,
-				     fsp->fsp_name->base_name, false,
-				     &bsize,&dfree,&dsize);
+				     fsp->fsp_name->base_name,
+				     &bsize, &dfree, &dsize);
 	/* space_avail is 1k blocks */
 	if (space_avail == (uint64_t)-1 ||
 			((uint64_t)space_to_write/1024 > space_avail) ) {
@@ -899,7 +910,7 @@ static bool cephwrap_lock(struct vfs_handle_struct *handle, files_struct *fsp, i
 }
 
 static int cephwrap_kernel_flock(struct vfs_handle_struct *handle, files_struct *fsp,
-				uint32 share_mode, uint32 access_mask)
+				uint32_t share_mode, uint32_t access_mask)
 {
 	DEBUG(10, ("[CEPH] kernel_flock\n"));
 	/*
@@ -1000,23 +1011,6 @@ static char *cephwrap_realpath(struct vfs_handle_struct *handle,  const char *pa
 	return result;
 }
 
-static NTSTATUS cephwrap_notify_watch(struct vfs_handle_struct *vfs_handle,
-				     struct sys_notify_context *ctx,
-				     const char *path,
-				     uint32_t *filter,
-				     uint32_t *subdir_filter,
-				     void (*callback)(struct sys_notify_context *ctx,
-						      void *private_data,
-						      struct notify_event *ev),
-				     void *private_data,
-				     void *handle_p)
-{
-	/*
-	 * We cannot call inotify on files the kernel does not know about
-	 */
-	return NT_STATUS_OK;
-}
-
 static int cephwrap_chflags(struct vfs_handle_struct *handle, const char *path,
 			   unsigned int flags)
 {
@@ -1050,8 +1044,9 @@ static const char *cephwrap_connectpath(struct vfs_handle_struct *handle,
 
 static ssize_t cephwrap_getxattr(struct vfs_handle_struct *handle,const char *path, const char *name, void *value, size_t size)
 {
+	int ret;
 	DEBUG(10, ("[CEPH] getxattr(%p, %s, %s, %p, %llu)\n", handle, path, name, value, llu(size)));
-	int ret = ceph_getxattr(handle->data, path, name, value, size);
+	ret = ceph_getxattr(handle->data, path, name, value, size);
 	DEBUG(10, ("[CEPH] getxattr(...) = %d\n", ret));
 	if (ret < 0) {
 		WRAP_RETURN(ret);
@@ -1062,8 +1057,13 @@ static ssize_t cephwrap_getxattr(struct vfs_handle_struct *handle,const char *pa
 
 static ssize_t cephwrap_fgetxattr(struct vfs_handle_struct *handle, struct files_struct *fsp, const char *name, void *value, size_t size)
 {
+	int ret;
 	DEBUG(10, ("[CEPH] fgetxattr(%p, %p, %s, %p, %llu)\n", handle, fsp, name, value, llu(size)));
-	int ret = ceph_getxattr(handle->data, fsp->fsp_name->base_name, name, value, size);
+#if LIBCEPHFS_VERSION_CODE >= LIBCEPHFS_VERSION(0, 94, 0)
+	ret = ceph_fgetxattr(handle->data, fsp->fh->fd, name, value, size);
+#else
+	ret = ceph_getxattr(handle->data, fsp->fsp_name->base_name, name, value, size);
+#endif
 	DEBUG(10, ("[CEPH] fgetxattr(...) = %d\n", ret));
 	if (ret < 0) {
 		WRAP_RETURN(ret);
@@ -1074,8 +1074,9 @@ static ssize_t cephwrap_fgetxattr(struct vfs_handle_struct *handle, struct files
 
 static ssize_t cephwrap_listxattr(struct vfs_handle_struct *handle, const char *path, char *list, size_t size)
 {
+	int ret;
 	DEBUG(10, ("[CEPH] listxattr(%p, %s, %p, %llu)\n", handle, path, list, llu(size)));
-	int ret = ceph_listxattr(handle->data, path, list, size);
+	ret = ceph_listxattr(handle->data, path, list, size);
 	DEBUG(10, ("[CEPH] listxattr(...) = %d\n", ret));
 	if (ret < 0) {
 		WRAP_RETURN(ret);
@@ -1087,8 +1088,9 @@ static ssize_t cephwrap_listxattr(struct vfs_handle_struct *handle, const char *
 #if 0
 static ssize_t cephwrap_llistxattr(struct vfs_handle_struct *handle, const char *path, char *list, size_t size)
 {
+	int ret;
 	DEBUG(10, ("[CEPH] llistxattr(%p, %s, %p, %llu)\n", handle, path, list, llu(size)));
-	int ret = ceph_llistxattr(handle->data, path, list, size);
+	ret = ceph_llistxattr(handle->data, path, list, size);
 	DEBUG(10, ("[CEPH] listxattr(...) = %d\n", ret));
 	if (ret < 0) {
 		WRAP_RETURN(ret);
@@ -1100,8 +1102,13 @@ static ssize_t cephwrap_llistxattr(struct vfs_handle_struct *handle, const char 
 
 static ssize_t cephwrap_flistxattr(struct vfs_handle_struct *handle, struct files_struct *fsp, char *list, size_t size)
 {
+	int ret;
 	DEBUG(10, ("[CEPH] flistxattr(%p, %p, %s, %llu)\n", handle, fsp, list, llu(size)));
-	int ret = ceph_listxattr(handle->data, fsp->fsp_name->base_name, list, size);
+#if LIBCEPHFS_VERSION_CODE >= LIBCEPHFS_VERSION(0, 94, 0)
+	ret = ceph_flistxattr(handle->data, fsp->fh->fd, list, size);
+#else
+	ret = ceph_listxattr(handle->data, fsp->fsp_name->base_name, list, size);
+#endif
 	DEBUG(10, ("[CEPH] flistxattr(...) = %d\n", ret));
 	if (ret < 0) {
 		WRAP_RETURN(ret);
@@ -1112,32 +1119,45 @@ static ssize_t cephwrap_flistxattr(struct vfs_handle_struct *handle, struct file
 
 static int cephwrap_removexattr(struct vfs_handle_struct *handle, const char *path, const char *name)
 {
+	int ret;
 	DEBUG(10, ("[CEPH] removexattr(%p, %s, %s)\n", handle, path, name));
-	int ret = ceph_removexattr(handle->data, path, name);
+	ret = ceph_removexattr(handle->data, path, name);
 	DEBUG(10, ("[CEPH] removexattr(...) = %d\n", ret));
 	WRAP_RETURN(ret);
 }
 
 static int cephwrap_fremovexattr(struct vfs_handle_struct *handle, struct files_struct *fsp, const char *name)
 {
+	int ret;
 	DEBUG(10, ("[CEPH] fremovexattr(%p, %p, %s)\n", handle, fsp, name));
-	int ret = ceph_removexattr(handle->data, fsp->fsp_name->base_name, name);
+#if LIBCEPHFS_VERSION_CODE >= LIBCEPHFS_VERSION(0, 94, 0)
+	ret = ceph_fremovexattr(handle->data, fsp->fh->fd, name);
+#else
+	ret = ceph_removexattr(handle->data, fsp->fsp_name->base_name, name);
+#endif
 	DEBUG(10, ("[CEPH] fremovexattr(...) = %d\n", ret));
 	WRAP_RETURN(ret);
 }
 
 static int cephwrap_setxattr(struct vfs_handle_struct *handle, const char *path, const char *name, const void *value, size_t size, int flags)
 {
+	int ret;
 	DEBUG(10, ("[CEPH] setxattr(%p, %s, %s, %p, %llu, %d)\n", handle, path, name, value, llu(size), flags));
-	int ret = ceph_setxattr(handle->data, path, name, value, size, flags);
+	ret = ceph_setxattr(handle->data, path, name, value, size, flags);
 	DEBUG(10, ("[CEPH] setxattr(...) = %d\n", ret));
 	WRAP_RETURN(ret);
 }
 
 static int cephwrap_fsetxattr(struct vfs_handle_struct *handle, struct files_struct *fsp, const char *name, const void *value, size_t size, int flags)
 {
+	int ret;
 	DEBUG(10, ("[CEPH] fsetxattr(%p, %p, %s, %p, %llu, %d)\n", handle, fsp, name, value, llu(size), flags));
-	int ret = ceph_setxattr(handle->data, fsp->fsp_name->base_name, name, value, size, flags);
+#if LIBCEPHFS_VERSION_CODE >= LIBCEPHFS_VERSION(0, 94, 0)
+	ret = ceph_fsetxattr(handle->data, fsp->fh->fd,
+			     name, value, size, flags);
+#else
+	ret = ceph_setxattr(handle->data, fsp->fsp_name->base_name, name, value, size, flags);
+#endif
 	DEBUG(10, ("[CEPH] fsetxattr(...) = %d\n", ret));
 	WRAP_RETURN(ret);
 }
@@ -1163,6 +1183,47 @@ static bool cephwrap_is_offline(struct vfs_handle_struct *handle,
 
 static int cephwrap_set_offline(struct vfs_handle_struct *handle,
 				const struct smb_filename *fname)
+{
+	errno = ENOTSUP;
+	return -1;
+}
+
+static SMB_ACL_T cephwrap_sys_acl_get_file(struct vfs_handle_struct *handle,
+					   const char *path_p,
+					   SMB_ACL_TYPE_T type,
+					   TALLOC_CTX *mem_ctx)
+{
+	errno = ENOTSUP;
+	return NULL;
+}
+
+static SMB_ACL_T cephwrap_sys_acl_get_fd(struct vfs_handle_struct *handle,
+					 struct files_struct *fsp,
+					 TALLOC_CTX *mem_ctx)
+{
+	errno = ENOTSUP;
+	return NULL;
+}
+
+static int cephwrap_sys_acl_set_file(struct vfs_handle_struct *handle,
+				     const char *name,
+				     SMB_ACL_TYPE_T acltype,
+				     SMB_ACL_T theacl)
+{
+	errno = ENOTSUP;
+	return -1;
+}
+
+static int cephwrap_sys_acl_set_fd(struct vfs_handle_struct *handle,
+				   struct files_struct *fsp,
+				   SMB_ACL_T theacl)
+{
+	errno = ENOTSUP;
+	return -1;
+}
+
+static int cephwrap_sys_acl_delete_def_file(struct vfs_handle_struct *handle,
+					    const char *path)
 {
 	errno = ENOTSUP;
 	return -1;
@@ -1225,7 +1286,6 @@ static struct vfs_fn_pointers ceph_fns = {
 	.link_fn = cephwrap_link,
 	.mknod_fn = cephwrap_mknod,
 	.realpath_fn = cephwrap_realpath,
-	.notify_watch_fn = cephwrap_notify_watch,
 	.chflags_fn = cephwrap_chflags,
 	.get_real_filename_fn = cephwrap_get_real_filename,
 	.connectpath_fn = cephwrap_connectpath,
@@ -1239,6 +1299,13 @@ static struct vfs_fn_pointers ceph_fns = {
 	.fremovexattr_fn = cephwrap_fremovexattr,
 	.setxattr_fn = cephwrap_setxattr,
 	.fsetxattr_fn = cephwrap_fsetxattr,
+
+	/* Posix ACL Operations */
+	.sys_acl_get_file_fn = cephwrap_sys_acl_get_file,
+	.sys_acl_get_fd_fn = cephwrap_sys_acl_get_fd,
+	.sys_acl_set_file_fn = cephwrap_sys_acl_set_file,
+	.sys_acl_set_fd_fn = cephwrap_sys_acl_set_fd,
+	.sys_acl_delete_def_file_fn = cephwrap_sys_acl_delete_def_file,
 
 	/* aio operations */
 	.aio_force_fn = cephwrap_aio_force,

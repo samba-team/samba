@@ -143,7 +143,7 @@ int dsdb_module_schema_info_blob_write(struct ldb_module *ldb_module,
 				       struct ldb_request *parent)
 {
 	int ldb_err;
-	struct ldb_message *msg;
+	struct ldb_message *msg = NULL;
 	TALLOC_CTX *temp_ctx;
 
 	temp_ctx = talloc_new(ldb_module);
@@ -240,7 +240,7 @@ static int dsdb_module_schema_info_write(struct ldb_module *ldb_module,
 
 	temp_ctx = talloc_new(ldb_module);
 	if (temp_ctx == NULL) {
-		return ldb_module_oom(temp_ctx);
+		return ldb_module_oom(ldb_module);
 	}
 
 	/* convert schema_info to a blob */

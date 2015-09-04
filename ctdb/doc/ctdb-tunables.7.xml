@@ -448,15 +448,6 @@
     </refsect2>
 
     <refsect2>
-      <title>VerifyRecoveryLock</title>
-      <para>Default: 1</para>
-      <para>
-	Should we take a fcntl() lock on the reclock file to verify that we are the
-	sole recovery master node on the cluster or not.
-      </para>
-    </refsect2>
-
-    <refsect2>
       <title>VacuumInterval</title>
       <para>Default: 10</para>
       <para>

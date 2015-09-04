@@ -44,7 +44,7 @@ static int simple_dn_search(struct ldb_module *module, struct ldb_request *req)
 
 	new_base = ldb_dn_copy(req, req->op.search.base);
 	if (!new_base) {
-		ldb_module_oom(module);
+		return ldb_module_oom(module);
 	}
 
 	ldb_dn_remove_extended_components(new_base);

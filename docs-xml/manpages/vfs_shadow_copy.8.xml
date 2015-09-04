@@ -7,13 +7,13 @@
 	<manvolnum>8</manvolnum>
 	<refmiscinfo class="source">Samba</refmiscinfo>
 	<refmiscinfo class="manual">System Administration tools</refmiscinfo>
-	<refmiscinfo class="version">4.2</refmiscinfo>
+	<refmiscinfo class="version">4.3</refmiscinfo>
 </refmeta>
 
 
 <refnamediv>
 	<refname>vfs_shadow_copy</refname>
-	<refpurpose>Make a Samba share read only for a specified time period</refpurpose>
+	<refpurpose>Expose snapshots to Windows clients as shadow copies.</refpurpose>
 </refnamediv>
 
 <refsynopsisdiv>

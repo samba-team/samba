@@ -1,19 +1,19 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    test suite for oxidresolve operations
 
    Copyright (C) Jelmer Vernooij 2004
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -30,7 +30,7 @@ const struct GUID IUnknown_uuid = {
 	0x00000000,0x0000,0x0000,{0xc0,0x00},{0x00,0x00,0x00,0x00,0x00,0x46}
 };
 
-static bool test_RemoteActivation(struct torture_context *tctx, 
+static bool test_RemoteActivation(struct torture_context *tctx,
 				 uint64_t *oxid, struct GUID *oid)
 {
 	struct RemoteActivation r;
@@ -39,16 +39,23 @@ static bool test_RemoteActivation(struct torture_context *tctx,
 	uint16_t protseq[3] = { EPM_PROTOCOL_TCP, EPM_PROTOCOL_NCALRPC, EPM_PROTOCOL_UUID };
 	struct dcerpc_pipe *p;
 	struct dcerpc_binding_handle *b;
+	struct ORPCTHAT that;
+	struct DUALSTRINGARRAY *pdsaOxidBindings;
+	uint32_t AuthnHint;
+	struct COMVERSION ServerVersion;
+	HRESULT hr;
+	struct MInterfacePointer *ifaces;
 
-	status = torture_rpc_connection(tctx, &p, 
+	status = torture_rpc_connection(tctx, &p,
 					&ndr_table_IRemoteActivation);
-			
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}
 	b = p->binding_handle;
 
-	ZERO_STRUCT(r.in);
+	ZERO_STRUCT(r);
+
 	r.in.this_object.version.MajorVersion = 5;
 	r.in.this_object.version.MinorVersion = 1;
 	r.in.this_object.cid = GUID_random();
@@ -59,34 +66,26 @@ static bool test_RemoteActivation(struct torture_context *tctx,
 	r.in.Interfaces = 1;
 	iids[0] = IUnknown_uuid;
 	r.in.pIIDs = iids;
+
+	r.out.that = &that;
 	r.out.pOxid = oxid;
+	r.out.pdsaOxidBindings = &pdsaOxidBindings;
 	r.out.ipidRemUnknown = oid;
+	r.out.AuthnHint = &AuthnHint;
+	r.out.ServerVersion = &ServerVersion;
+	r.out.hr = &hr;
+	r.out.ifaces = &ifaces;
 
 	status = dcerpc_RemoteActivation_r(b, tctx, &r);
-	if(NT_STATUS_IS_ERR(status)) {
-		fprintf(stderr, "RemoteActivation: %s\n", nt_errstr(status));
-		return false;
-	}
-
-	if(!W_ERROR_IS_OK(r.out.result)) {
-		fprintf(stderr, "RemoteActivation: %s\n", win_errstr(r.out.result));
-		return false;
-	}
-
-	if(!W_ERROR_IS_OK(*r.out.hr)) {
-		fprintf(stderr, "RemoteActivation: %s\n", win_errstr(*r.out.hr));
-		return false;
-	}
-
-	if(!W_ERROR_IS_OK(r.out.results[0])) {
-		fprintf(stderr, "RemoteActivation: %s\n", win_errstr(r.out.results[0]));
-		return false;
-	}
+	torture_assert_ntstatus_ok(tctx, status, "RemoteActivation failed");
+	torture_assert_werr_ok(tctx, r.out.result, "RemoteActivation failed");
+	torture_assert_hresult_ok(tctx, *r.out.hr, "RemoteActivation failed");
+	torture_assert_hresult_ok(tctx, r.out.results[0], "RemoteActivation failed");
 
 	return true;
 }
 
-static bool test_SimplePing(struct torture_context *tctx, 
+static bool test_SimplePing(struct torture_context *tctx,
 			   struct dcerpc_pipe *p)
 {
 	struct SimplePing r;
@@ -103,7 +102,7 @@ static bool test_SimplePing(struct torture_context *tctx,
 	return true;
 }
 
-static bool test_ComplexPing(struct torture_context *tctx, 
+static bool test_ComplexPing(struct torture_context *tctx,
 			     struct dcerpc_pipe *p)
 {
 	struct ComplexPing r;
@@ -135,12 +134,12 @@ static bool test_ComplexPing(struct torture_context *tctx,
 		return 0;
 	}
 
-	
+
 
 	return 1;
 }
 
-static bool test_ServerAlive(struct torture_context *tctx, 
+static bool test_ServerAlive(struct torture_context *tctx,
 			    struct dcerpc_pipe *p)
 {
 	struct ServerAlive r;
@@ -154,15 +153,18 @@ static bool test_ServerAlive(struct torture_context *tctx,
 	return true;
 }
 
-static bool test_ResolveOxid(struct torture_context *tctx, 
+static bool test_ResolveOxid(struct torture_context *tctx,
 			     struct dcerpc_pipe *p)
 {
 	struct ResolveOxid r;
 	NTSTATUS status;
-	uint16_t protseq[2] = { EPM_PROTOCOL_TCP, EPM_PROTOCOL_SMB };	
+	uint16_t protseq[2] = { EPM_PROTOCOL_TCP, EPM_PROTOCOL_SMB };
 	uint64_t oxid;
 	struct GUID oid;
 	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct DUALSTRINGARRAY *ppdsaOxidBindings;
+	struct GUID pipidRemUnknown;
+	uint32_t pAuthnHint;
 
 	if (!test_RemoteActivation(tctx, &oxid, &oid))
 		return false;
@@ -170,6 +172,9 @@ static bool test_ResolveOxid(struct torture_context *tctx,
 	r.in.pOxid = oxid;
 	r.in.cRequestedProtseqs = 2;
 	r.in.arRequestedProtseqs = protseq;
+	r.out.ppdsaOxidBindings = &ppdsaOxidBindings;
+	r.out.pipidRemUnknown = &pipidRemUnknown;
+	r.out.pAuthnHint = &pAuthnHint;
 
 	status = dcerpc_ResolveOxid_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "ResolveOxid");
@@ -178,15 +183,19 @@ static bool test_ResolveOxid(struct torture_context *tctx,
 	return true;
 }
 
-static bool test_ResolveOxid2(struct torture_context *tctx, 
+static bool test_ResolveOxid2(struct torture_context *tctx,
 			      struct dcerpc_pipe *p)
 {
 	struct ResolveOxid2 r;
 	NTSTATUS status;
-	uint16_t protseq[2] = { EPM_PROTOCOL_TCP, EPM_PROTOCOL_SMB };	
+	uint16_t protseq[2] = { EPM_PROTOCOL_TCP, EPM_PROTOCOL_SMB };
 	uint64_t oxid;
 	struct GUID oid;
 	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct DUALSTRINGARRAY *pdsaOxidBindings;
+	struct GUID ipidRemUnknown;
+	uint32_t AuthnHint;
+	struct COMVERSION ComVersion;
 
 	if (!test_RemoteActivation(tctx, &oxid, &oid))
 		return false;
@@ -194,23 +203,34 @@ static bool test_ResolveOxid2(struct torture_context *tctx,
 	r.in.pOxid = oxid;
 	r.in.cRequestedProtseqs = 2;
 	r.in.arRequestedProtseqs = protseq;
+	r.out.pdsaOxidBindings = &pdsaOxidBindings;
+	r.out.ipidRemUnknown = &ipidRemUnknown;
+	r.out.AuthnHint = &AuthnHint;
+	r.out.ComVersion = &ComVersion;
 
 	status = dcerpc_ResolveOxid2_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "ResolveOxid2");
 
 	torture_assert_werr_ok(tctx, r.out.result, "ResolveOxid2");
-	
+
 	torture_comment(tctx, "Remote server versions: %d, %d\n", r.out.ComVersion->MajorVersion, r.out.ComVersion->MinorVersion);
 
 	return true;
 }
 
-static bool test_ServerAlive2(struct torture_context *tctx, 
+static bool test_ServerAlive2(struct torture_context *tctx,
 			     struct dcerpc_pipe *p)
 {
 	struct ServerAlive2 r;
 	NTSTATUS status;
 	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct COMINFO info;
+	struct DUALSTRINGARRAY *dualstring;
+	uint8_t pReserved;
+
+	r.out.info = &info;
+	r.out.dualstring = &dualstring;
+	r.out.pReserved = &pReserved;
 
 	status = dcerpc_ServerAlive2_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "ServerAlive2");
@@ -224,7 +244,7 @@ struct torture_suite *torture_rpc_oxidresolve(TALLOC_CTX *mem_ctx)
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "oxidresolve");
 	struct torture_rpc_tcase *tcase;
 
-	tcase = torture_suite_add_rpc_iface_tcase(suite, "oxidresolver", 
+	tcase = torture_suite_add_rpc_iface_tcase(suite, "oxidresolver",
 					  &ndr_table_IOXIDResolver);
 
 	torture_rpc_tcase_add_test(tcase, "ServerAlive", test_ServerAlive);
@@ -234,7 +254,7 @@ struct torture_suite *torture_rpc_oxidresolve(TALLOC_CTX *mem_ctx)
 	torture_rpc_tcase_add_test(tcase, "ComplexPing", test_ComplexPing);
 
 	torture_rpc_tcase_add_test(tcase, "SimplePing", test_SimplePing);
-	
+
 	torture_rpc_tcase_add_test(tcase, "ResolveOxid", test_ResolveOxid);
 
 	torture_rpc_tcase_add_test(tcase, "ResolveOxid2", test_ResolveOxid2);

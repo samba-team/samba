@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
 <!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN" "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd">
 <refentry id="tdbdump.8">
+<refentryinfo><date>2015-04-25</date></refentryinfo>
 
 <refmeta>
 	<refentrytitle>tdbdump</refentrytitle>

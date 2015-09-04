@@ -35,10 +35,17 @@
 		ret = false; \
 	}} while (0)
 
-#define CHECK_NOT_VAL(v, correct) do { \
-	if ((v) == (correct)) { \
+#define CHECK_NOT_VAL(v, incorrect) do { \
+	if ((v) == (incorrect)) { \
 		torture_result(tctx, TORTURE_FAIL, "(%s): wrong value for %s got 0x%llx - should not be 0x%llx\n", \
-				__location__, #v, (unsigned long long)v, (unsigned long long)correct); \
+				__location__, #v, (unsigned long long)v, (unsigned long long)incorrect); \
+		ret = false; \
+	}} while (0)
+
+#define CHECK_NOT_NULL(p) do { \
+	if ((p) == NULL) { \
+		torture_result(tctx, TORTURE_FAIL, "(%s): %s is NULL but it should not be.\n", \
+				__location__, #p); \
 		ret = false; \
 	}} while (0)
 
@@ -2129,12 +2136,14 @@ static bool test_durable_open_open2_lease(struct torture_context *tctx,
 	h1 = io1.out.file.handle;
 
  done:
+	if (tree1 != NULL){
+		smb2_util_close(tree1, h1);
+		smb2_util_unlink(tree1, fname);
+		talloc_free(tree1);
+	}
+
 	smb2_util_close(tree2, h2);
 	smb2_util_unlink(tree2, fname);
-	smb2_util_close(tree1, h1);
-	smb2_util_unlink(tree1, fname);
-
-	talloc_free(tree1);
 	talloc_free(tree2);
 
 	return ret;
@@ -2267,7 +2276,7 @@ static bool test_durable_open_alloc_size(struct torture_context *tctx,
 
 	/* prepare buffer */
 	b = talloc_zero_size(mem_ctx, alloc_size_step);
-	CHECK_NOT_VAL(b, NULL);
+	CHECK_NOT_NULL(b);
 
 	previous_session_id = smb2cli_session_current_id(tree->session->smbXcli);
 

@@ -13,7 +13,8 @@ bld.SAMBA_PIDL_LIST('PIDL',
                        notify.idl
                        smb2_lease_struct.idl
                        policyagent.idl scerpc.idl svcctl.idl wkssvc.idl eventlog6.idl backupkey.idl
-                       fsrvp.idl bkupblobs.idl fscc.idl frsblobs.idl witness.idl''',
+                       fsrvp.idl bkupblobs.idl fscc.idl frsblobs.idl witness.idl clusapi.idl
+                       mdssvc.idl''',
                     options='--header --ndr-parser --samba3-ndr-server --server --client --python',
                     output_dir='../gen_ndr')
 
@@ -28,7 +29,13 @@ bld.SAMBA_PIDL_LIST('PIDL',
                     output_dir='../gen_ndr')
 
 bld.SAMBA_PIDL_LIST('PIDL',
-                    'rap.idl ntprinting.idl preg.idl ioctl.idl printcap.idl',
+                    'messaging.idl',
+                    options='--header --ndr-parser',
+                    output_dir='../gen_ndr')
+
+bld.SAMBA_PIDL_LIST('PIDL',
+                    '''rap.idl ntprinting.idl preg.idl ioctl.idl printcap.idl
+                       fsrvp_state.idl''',
                     options='--header --ndr-parser',
                     output_dir='../gen_ndr')
 

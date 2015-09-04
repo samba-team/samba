@@ -243,14 +243,10 @@ struct dom_sid *dom_sid_parse_talloc(TALLOC_CTX *mem_ctx, const char *sidstr)
 */
 struct dom_sid *dom_sid_parse_length(TALLOC_CTX *mem_ctx, const DATA_BLOB *sid)
 {
-	struct dom_sid *ret;
-	char *p = talloc_strndup(mem_ctx, (char *)sid->data, sid->length);
-	if (!p) {
-		return NULL;
-	}
-	ret = dom_sid_parse_talloc(mem_ctx, p);
-	talloc_free(p);
-	return ret;
+	char p[sid->length+1];
+	memcpy(p, sid->data, sid->length);
+	p[sid->length] = '\0';
+	return dom_sid_parse_talloc(mem_ctx, p);
 }
 
 /*

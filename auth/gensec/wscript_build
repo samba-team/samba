@@ -3,7 +3,7 @@ bld.SAMBA_LIBRARY('gensec',
 	source='gensec.c gensec_start.c gensec_util.c',
 	pc_files='gensec.pc',
 	autoproto='gensec_toplevel_proto.h',
-	public_deps='tevent-util samba-util errors LIBPACKET auth_system_session samba-modules gensec_util asn1util',
+	public_deps='tevent-util samba-util errors auth_system_session samba-modules gensec_util asn1util',
 	public_headers='gensec.h',
 	deps='com_err',
 	vnum='0.0.1'
@@ -36,5 +36,6 @@ bld.SAMBA_MODULE('gensec_external',
 	source='external.c',
 	autoproto='external_proto.h',
 	subsystem='gensec',
+	deps='samba-debug talloc',
 	init_function='gensec_external_init'
 	)

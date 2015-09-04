@@ -54,7 +54,7 @@ done
 setup_tickles ()
 {
     # Make sure tickles file exists.
-    tickles_file="$CTDB_VARDIR/fake-ctdb/tickles"
+    tickles_file="$EVENTSCRIPTS_TESTS_VAR_DIR/fake-ctdb/tickles"
     mkdir -p $(dirname "$tickles_file")
     touch "$tickles_file"
 }
@@ -64,12 +64,6 @@ ctdb_killtcp ()
     while read _src _dst ; do
 	sed -i -e "/^$_dst $_src\$/d" "$FAKE_NETSTAT_TCP_ESTABLISHED_FILE"
     done
-}
-
-setup_pstore ()
-{
-    pstore_dir="$CTDB_VARDIR/fake-ctdb/pstore/$1"
-    mkdir -p "$pstore_dir"
 }
 
 parse_nodespec ()
@@ -152,13 +146,17 @@ ctdb_ip ()
     # If nobody has done any IP-fu then generate a layout.
     [ -f "$FAKE_CTDB_IP_LAYOUT" ] || ip_reallocate
 
-    if $verbose ; then
-	echo ":Public IP:Node:ActiveInterface:AvailableInterfaces:ConfiguredInterfaces:"
-    else
-	echo ":Public IP:Node:"
-    fi
-
     _mypnn=$(ctdb_pnn | sed -e 's@PNN:@@')
+
+    if $machine_readable ; then
+	if $verbose ; then
+	    echo "|Public IP|Node|ActiveInterface|AvailableInterfaces|ConfiguredInterfaces|"
+	else
+	    echo "|Public IP|Node|"
+	fi
+    else
+	echo "Public IPs on node ${_mypnn}"
+    fi
 
     # Join public addresses file with $FAKE_CTDB_IP_LAYOUT, and
     # process output line by line...
@@ -173,9 +171,17 @@ ctdb_ip ()
 	    if [ "$_pnn" = "$_mypnn" ]; then
 		_my_iface="$_first_iface"
 	    fi
-	    echo "|${_ip}|${_pnn}|${_my_iface}|${_first_iface}|${_ifaces}|"
+	    if $machine_readable ; then
+		echo "|${_ip}|${_pnn}|${_my_iface}|${_first_iface}|${_ifaces}|"
+	    else
+		echo "${_ip} node[${_pnn}] active[${_my_iface}] available[${_first_iface}] configured[[${_ifaces}]"
+	    fi
 	else
-	    echo "|${_ip}|${_pnn}|"
+	    if $machine_readable ; then
+		echo "|${_ip}|${_pnn}|"
+	    else
+		echo "${_ip} ${_pnn}"
+	    fi
 	fi
     done
 }
@@ -304,6 +310,113 @@ ctdb_natgwlist ()
 
 ######################################################################
 
+ctdb_setvar ()
+{
+    shift
+    _var="$1"
+
+    for _i in $FAKE_CTDB_TUNABLES_OK ; do
+	if [ "$_var" = "$_i" ] ; then
+	    return 0
+	fi
+    done
+
+    for _i in $FAKE_CTDB_TUNABLES_OBSOLETE ; do
+	if [ "$_var" = "$_i" ] ; then
+	    echo "Setting obsolete tunable variable '${_var}'"
+	    return 0
+	fi
+    done
+
+    echo "Unable to set tunable variable '${_var}'"
+    return 1
+}
+
+######################################################################
+
+_t_setup ()
+{
+    _t_dir="$EVENTSCRIPTS_TESTS_VAR_DIR/fake-ctdb/fake-tdb/$1"
+    mkdir -p "$_t_dir"
+}
+
+_t_put ()
+{
+    echo "$2" >"${_t_dir}/$1"
+}
+
+_t_get ()
+{
+    cat "${_t_dir}/$1"
+}
+
+_t_del ()
+{
+    rm -f "${_t_dir}/$1"
+}
+
+ctdb_pstore ()
+{
+    _t_setup "$2"
+    _t_put "$3" "$4"
+}
+
+ctdb_pdelete ()
+{
+    _t_setup "$2"
+    _t_del "$3"
+}
+
+ctdb_pfetch ()
+{
+    _t_setup "$2"
+    _t_get "$3" >"$4" 2>/dev/null
+}
+
+ctdb_ptrans ()
+{
+    _t_setup "$2"
+
+    while IFS="" read _line ; do
+	_k=$(echo "$_line" | sed -n -e 's@^"\([^"]*\)" "[^"]*"$@\1@p')
+	_v=$(echo "$_line" | sed -e 's@^"[^"]*" "\([^"]*\)"$@\1@')
+	[ -n "$_k" ] || die "ctdb ptrans: bad line \"${line}\""
+	if [ -n "$_v" ] ; then
+	    _t_put "$_k" "$_v"
+	else
+	    _t_del "$_k"
+	fi
+    done
+}
+
+ctdb_catdb ()
+{
+    _t_setup "$2"
+
+    # This will break on keys with spaces but we don't have any of
+    # those yet.
+    _count=0
+    for _i in "${_t_dir}/"* ; do
+	[ -r "$_i" ] || continue
+	_k="${_i##*/}" # basename
+	_v=$(_t_get "$_k")
+	_kn=$(echo -n "$_k" | wc -c)
+	_vn=$(echo -n "$_v" | wc -c)
+	cat <<EOF
+key(${_kn}) = "${_k}"
+dmaster: 0
+rsn: 1
+data(${_vn}) = "${_v}"
+
+EOF
+	_count=$(($_count + 1))
+    done
+
+    echo "Dumped ${_count} records"
+}
+
+######################################################################
+
 case "$1" in
     gettickles)
 	setup_tickles
@@ -321,14 +434,11 @@ case "$1" in
 	_t=$(grep -F -v "$2 $3" "$tickles_file")
 	echo "$_t" >"$tickles_file"
 	;;
-    pstore)
-	setup_pstore "$2"
-	cat "$4" >"${pstore_dir}/$3"
-	;;
-    pfetch)
-	setup_pstore "$2"
-	cat "${pstore_dir}/$3" >"$4" 2>/dev/null
-	;;
+    pstore)  ctdb_pstore  "$@" ;;
+    pdelete) ctdb_pdelete "$@" ;;
+    pfetch)  ctdb_pfetch  "$@" ;;
+    ptrans)  ctdb_ptrans  "$@" ;;
+    catdb)   ctdb_catdb   "$@" ;;
     ifaces)
 	# Assume -Y.
 	echo "|Name|LinkStatus|References|"
@@ -371,7 +481,7 @@ case "$1" in
 	exit 0
 	;;
     scriptstatus)
-	$machine_readable || not_implemented "$1, without -Y"
+	$machine_readable || not_implemented "$1, without -X"
 	[ "$2" != "all" ] || not_implemented "scriptstatus all"
 	# For now just assume everything is good.
 	echo "|Type|Name|Code|Status|Start|End|Error Output...|"
@@ -405,5 +515,6 @@ case "$1" in
     shutdown)      ctdb_shutdown "$@";;
     setnatgwstate) ctdb_setnatgwstate "$@" ;;
     natgwlist)     ctdb_natgwlist "$@" ;;
+    setvar)	   ctdb_setvar "$@" ;;
     *) not_implemented "$1" ;;
 esac

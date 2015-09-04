@@ -1060,6 +1060,30 @@ _kdc_as_rep(krb5_context context,
     if(ret == HDB_ERR_NOT_FOUND_HERE) {
 	kdc_log(context, config, 5, "client %s does not have secrets at this KDC, need to proxy", client_name);
 	goto out;
+    } else if (ret == HDB_ERR_WRONG_REALM) {
+	char *fixed_client_name = NULL;
+
+	ret = krb5_unparse_name(context, client->entry.principal,
+				&fixed_client_name);
+	if (ret) {
+	    goto out;
+	}
+
+	kdc_log(context, config, 0, "WRONG_REALM - %s -> %s",
+		client_name, fixed_client_name);
+	free(fixed_client_name);
+
+	ret = krb5_mk_error_ext(context,
+				KRB5_KDC_ERR_WRONG_REALM,
+				NULL, /* e_text */
+				NULL, /* e_data */
+				server_princ,
+				NULL, /* client_name */
+				&client->entry.principal->realm,
+				NULL, /* client_time */
+				NULL, /* client_usec */
+				reply);
+	goto out;
     } else if(ret){
 	const char *msg = krb5_get_error_message(context, ret);
 	kdc_log(context, config, 0, "UNKNOWN -- %s: %s", client_name, msg);
@@ -1706,58 +1730,6 @@ _kdc_as_rep(krb5_context context,
     if (ret)
 	goto out;
 
-    /* Add signing of alias referral */
-    if (f.canonicalize) {
-	PA_ClientCanonicalized canon;
-	krb5_data data;
-	PA_DATA pa;
-	krb5_crypto cryptox;
-	size_t len = 0;
-
-	memset(&canon, 0, sizeof(canon));
-
-	canon.names.requested_name = *b->cname;
-	canon.names.mapped_name = client->entry.principal->name;
-
-	ASN1_MALLOC_ENCODE(PA_ClientCanonicalizedNames, data.data, data.length,
-			   &canon.names, &len, ret);
-	if (ret)
-	    goto out;
-	if (data.length != len)
-	    krb5_abortx(context, "internal asn.1 error");
-
-	/* sign using "returned session key" */
-	ret = krb5_crypto_init(context, &et.key, 0, &cryptox);
-	if (ret) {
-	    free(data.data);
-	    goto out;
-	}
-
-	ret = krb5_create_checksum(context, cryptox,
-				   KRB5_KU_CANONICALIZED_NAMES, 0,
-				   data.data, data.length,
-				   &canon.canon_checksum);
-	free(data.data);
-	krb5_crypto_destroy(context, cryptox);
-	if (ret)
-	    goto out;
-
-	ASN1_MALLOC_ENCODE(PA_ClientCanonicalized, data.data, data.length,
-			   &canon, &len, ret);
-	free_Checksum(&canon.canon_checksum);
-	if (ret)
-	    goto out;
-	if (data.length != len)
-	    krb5_abortx(context, "internal asn.1 error");
-
-	pa.padata_type = KRB5_PADATA_CLIENT_CANONICALIZED;
-	pa.padata_value = data;
-	ret = add_METHOD_DATA(rep.padata, &pa);
-	free(data.data);
-	if (ret)
-	    goto out;
-    }
-
     if (rep.padata->len == 0) {
 	free(rep.padata);
 	rep.padata = NULL;
@@ -1831,7 +1803,7 @@ _kdc_as_rep(krb5_context context,
 
 out:
     free_AS_REP(&rep);
-    if(ret != 0 && ret != HDB_ERR_NOT_FOUND_HERE){
+    if(ret != 0 && ret != HDB_ERR_NOT_FOUND_HERE && reply->length == 0) {
 	krb5_mk_error(context,
 		      ret,
 		      e_text,

@@ -420,7 +420,7 @@ fcc_initialize(krb5_context context,
 {
     krb5_fcache *f = FCACHE(id);
     int ret = 0;
-    int fd;
+    int fd = 0;
 
     if (f == NULL)
         return krb5_einval(context, 2);
@@ -500,7 +500,7 @@ fcc_store_cred(krb5_context context,
 	       krb5_creds *creds)
 {
     int ret;
-    int fd;
+    int fd = 0;
 
     ret = fcc_open(context, id, &fd, O_WRONLY | O_APPEND | O_BINARY | O_CLOEXEC, 0);
     if(ret)
@@ -541,7 +541,7 @@ init_fcc (krb5_context context,
 	  int *ret_fd,
 	  krb5_deltat *kdc_offset)
 {
-    int fd;
+    int fd = 0;
     int8_t pvno, tag;
     krb5_storage *sp;
     krb5_error_code ret;
@@ -973,7 +973,8 @@ fcc_move(krb5_context context, krb5_ccache from, krb5_ccache to)
     } else if (ret && errno == EXDEV) {
 	/* make a copy and delete the orignal */
 	krb5_ssize_t sz1, sz2;
-	int fd1, fd2;
+	int fd1;
+	int fd2 = 0;
 	char buf[BUFSIZ];
 
 	ret = fcc_open(context, from, &fd1, O_RDONLY | O_BINARY | O_CLOEXEC, 0);
@@ -1050,7 +1051,7 @@ fcc_lastchange(krb5_context context, krb5_ccache id, krb5_timestamp *mtime)
 {
     krb5_error_code ret;
     struct stat sb;
-    int fd;
+    int fd = 0;
 
     ret = fcc_open(context, id, &fd, O_RDONLY | O_BINARY | O_CLOEXEC, 0);
     if(ret)
@@ -1077,7 +1078,7 @@ fcc_get_kdc_offset(krb5_context context, krb5_ccache id, krb5_deltat *kdc_offset
 {
     krb5_error_code ret;
     krb5_storage *sp = NULL;
-    int fd;
+    int fd = 0;
     ret = init_fcc(context, id, &sp, &fd, kdc_offset);
     if (sp)
 	krb5_storage_free(sp);

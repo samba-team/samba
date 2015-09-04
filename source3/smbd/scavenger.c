@@ -49,9 +49,11 @@ struct scavenger_message {
 
 static int smbd_scavenger_main(struct smbd_scavenger_state *state)
 {
+	struct server_id_buf tmp1, tmp2;
+
 	DEBUG(10, ("scavenger: %s started, parent: %s\n",
-		   server_id_str(talloc_tos(), state->scavenger_id),
-		   server_id_str(talloc_tos(), &state->parent_id)));
+		   server_id_str_buf(*state->scavenger_id, &tmp1),
+		   server_id_str_buf(state->parent_id, &tmp2)));
 
 	while (true) {
 		TALLOC_CTX *frame = talloc_stackframe();
@@ -66,7 +68,7 @@ static int smbd_scavenger_main(struct smbd_scavenger_state *state)
 		}
 
 		DEBUG(10, ("scavenger: %s event loop iteration\n",
-			   server_id_str(talloc_tos(), state->scavenger_id)));
+			   server_id_str_buf(*state->scavenger_id, &tmp1)));
 		TALLOC_FREE(frame);
 	}
 
@@ -78,9 +80,10 @@ static void smbd_scavenger_done(struct tevent_context *event_ctx, struct tevent_
 {
 	struct smbd_scavenger_state *state = talloc_get_type_abort(
 		private_data, struct smbd_scavenger_state);
+	struct server_id_buf tmp;
 
 	DEBUG(2, ("scavenger: %s died\n",
-		  server_id_str(talloc_tos(), state->scavenger_id)));
+		  server_id_str_buf(*state->scavenger_id, &tmp)));
 
 	TALLOC_FREE(state->scavenger_id);
 }
@@ -91,10 +94,11 @@ static void smbd_scavenger_parent_dead(struct tevent_context *event_ctx,
 {
 	struct smbd_scavenger_state *state = talloc_get_type_abort(
 		private_data, struct smbd_scavenger_state);
+	struct server_id_buf tmp1, tmp2;
 
 	DEBUG(2, ("scavenger: %s parent %s died\n",
-		  server_id_str(talloc_tos(), state->scavenger_id),
-		  server_id_str(talloc_tos(), &state->parent_id)));
+		  server_id_str_buf(*state->scavenger_id, &tmp1),
+		  server_id_str_buf(state->parent_id, &tmp2)));
 
 	exit_server("smbd_scavenger_parent_dead");
 }
@@ -143,6 +147,7 @@ static bool scavenger_say_hello(int fd, struct server_id self)
 	const uint8_t *msg = (const uint8_t *)&self;
 	size_t remaining = sizeof(self);
 	size_t ofs = 0;
+	struct server_id_buf tmp;
 
 	while (remaining > 0) {
 		ssize_t ret;
@@ -157,7 +162,7 @@ static bool scavenger_say_hello(int fd, struct server_id self)
 	}
 
 	DEBUG(4, ("scavenger_say_hello: self[%s]\n",
-		  server_id_str(talloc_tos(), &self)));
+		  server_id_str_buf(self, &tmp)));
 	return true;
 }
 
@@ -166,6 +171,7 @@ static bool scavenger_wait_hello(int fd, struct server_id *child)
 	uint8_t *msg = (uint8_t *)child;
 	size_t remaining = sizeof(*child);
 	size_t ofs = 0;
+	struct server_id_buf tmp;
 
 	while (remaining > 0) {
 		ssize_t ret;
@@ -180,7 +186,7 @@ static bool scavenger_wait_hello(int fd, struct server_id *child)
 	}
 
 	DEBUG(4, ("scavenger_say_hello: child[%s]\n",
-		  server_id_str(talloc_tos(), child)));
+		  server_id_str_buf(*child, &tmp)));
 	return true;
 }
 
@@ -196,16 +202,18 @@ static bool smbd_scavenger_start(struct smbd_scavenger_state *state)
 	SMB_ASSERT(server_id_equal(&state->parent_id, &self));
 
 	if (smbd_scavenger_running(state)) {
+		struct server_id_buf tmp;
 		DEBUG(10, ("scavenger %s already running\n",
-			   server_id_str(talloc_tos(),
-					 state->scavenger_id)));
+			   server_id_str_buf(*state->scavenger_id,
+					     &tmp)));
 		return true;
 	}
 
 	if (state->scavenger_id != NULL) {
+		struct server_id_buf tmp;
 		DEBUG(10, ("scavenger zombie %s, cleaning up\n",
-			   server_id_str(talloc_tos(),
-					 state->scavenger_id)));
+			   server_id_str_buf(*state->scavenger_id,
+					     &tmp)));
 		TALLOC_FREE(state->scavenger_id);
 	}
 
@@ -244,11 +252,9 @@ static bool smbd_scavenger_start(struct smbd_scavenger_state *state)
 
 		close(fds[0]);
 
-		am_parent = NULL;
-
 		set_my_unique_id(unique_id);
 
-		status = reinit_after_fork(state->msg, state->ev, true);
+		status = smbd_reinit_after_fork(state->msg, state->ev, true);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(2, ("reinit_after_fork failed: %s\n",
 				  nt_errstr(status)));
@@ -263,7 +269,12 @@ static bool smbd_scavenger_start(struct smbd_scavenger_state *state)
 
 		scavenger_setup_sig_term_handler(state->ev);
 
-		serverid_register(*state->scavenger_id, FLAG_MSG_GENERAL);
+		if (!serverid_register(*state->scavenger_id,
+				       FLAG_MSG_GENERAL)) {
+			DBG_WARNING("serverid_register failed");
+			exit_server("serverid_register failed");
+			return false;
+		}
 
 		ok = scavenger_say_hello(fds[1], *state->scavenger_id);
 		if (!ok) {
@@ -330,10 +341,11 @@ static void smbd_scavenger_msg(struct messaging_context *msg_ctx,
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct server_id self = messaging_server_id(msg_ctx);
 	struct scavenger_message *msg = NULL;
+	struct server_id_buf tmp1, tmp2;
 
 	DEBUG(10, ("smbd_scavenger_msg: %s got message from %s\n",
-		   server_id_str(talloc_tos(), &self),
-		   server_id_str(talloc_tos(), &src)));
+		   server_id_str_buf(self, &tmp1),
+		   server_id_str_buf(src, &tmp2)));
 
 	if (server_id_equal(&state->parent_id, &self)) {
 		NTSTATUS status;
@@ -418,6 +430,7 @@ void scavenger_schedule_disconnected(struct files_struct *fsp)
 	uint64_t timeout_usec;
 	struct scavenger_message msg;
 	DATA_BLOB msg_blob;
+	struct server_id_buf tmp;
 
 	if (fsp->op == NULL) {
 		return;
@@ -435,7 +448,7 @@ void scavenger_schedule_disconnected(struct files_struct *fsp)
 
 	DEBUG(10, ("smbd: %s mark file %s as disconnected at %s with timeout "
 		   "at %s in %fs\n",
-		   server_id_str(talloc_tos(), &self),
+		   server_id_str_buf(self, &tmp),
 		   file_id_string_tos(&fsp->file_id),
 		   timeval_string(talloc_tos(), &disconnect_time, true),
 		   timeval_string(talloc_tos(), &until, true),
@@ -453,11 +466,12 @@ void scavenger_schedule_disconnected(struct files_struct *fsp)
 				MSG_SMB_SCAVENGER,
 				&msg_blob);
 	if (!NT_STATUS_IS_OK(status)) {
+		struct server_id_buf tmp1, tmp2;
 		DEBUG(2, ("Failed to send message to parent smbd %s "
 			  "from %s: %s\n",
-			  server_id_str(talloc_tos(),
-					&smbd_scavenger_state->parent_id),
-			  server_id_str(talloc_tos(), &self),
+			  server_id_str_buf(smbd_scavenger_state->parent_id,
+					    &tmp1),
+			  server_id_str_buf(self, &tmp2),
 			  nt_errstr(status)));
 	}
 }

@@ -157,7 +157,8 @@ import "misc.idl", "security.idl";
 		LSA_POLICY_SET_AUDIT_REQUIREMENTS	|
 		LSA_POLICY_AUDIT_LOG_ADMIN		|
 		LSA_POLICY_SERVER_ADMIN			|
-		LSA_POLICY_LOOKUP_NAMES);
+		LSA_POLICY_LOOKUP_NAMES			|
+		LSA_POLICY_NOTIFICATION);
 
 	const int LSA_POLICY_READ =
 		(STANDARD_RIGHTS_READ_ACCESS		|
@@ -733,7 +734,7 @@ import "misc.idl", "security.idl";
 		dom_sid2      *sid;
 	} lsa_TrustDomainInfoBasic;
 
-	typedef struct {
+	typedef [public] struct {
 		lsa_StringLarge     domain_name;
 		lsa_StringLarge     netbios_name;
 		dom_sid2           *sid;
@@ -1255,6 +1256,37 @@ import "misc.idl", "security.idl";
 	[todo] NTSTATUS lsa_LSARUNREGISTERAUDITEVENT();
 
 	/* Function 0x49 */
+	typedef [bitmap32bit,public] bitmap {
+		/* these apply to LSA_FOREST_TRUST_TOP_LEVEL_NAME */
+		LSA_TLN_DISABLED_NEW		= 0x00000001,
+		LSA_TLN_DISABLED_ADMIN		= 0x00000002,
+		LSA_TLN_DISABLED_CONFLICT	= 0x00000004,
+
+		/* these apply to LSA_FOREST_TRUST_DOMAIN_INFO */
+		LSA_SID_DISABLED_ADMIN		= 0x00000001,
+		LSA_SID_DISABLED_CONFLICT	= 0x00000002,
+		LSA_NB_DISABLED_ADMIN		= 0x00000004,
+		LSA_NB_DISABLED_CONFLICT	= 0x00000008
+	} lsa_ForestTrustRecordFlags;
+
+	const uint32 LSA_TLN_DISABLED_MASK = (
+					LSA_TLN_DISABLED_NEW |
+					LSA_TLN_DISABLED_ADMIN |
+					LSA_TLN_DISABLED_CONFLICT);
+	const uint32 LSA_SID_DISABLED_MASK = (
+					LSA_SID_DISABLED_ADMIN |
+					LSA_SID_DISABLED_CONFLICT);
+	const uint32 LSA_NB_DISABLED_MASK = (
+					LSA_NB_DISABLED_ADMIN |
+					LSA_NB_DISABLED_CONFLICT);
+
+	typedef enum {
+		LSA_FOREST_TRUST_TOP_LEVEL_NAME = 0,
+		LSA_FOREST_TRUST_TOP_LEVEL_NAME_EX = 1,
+		LSA_FOREST_TRUST_DOMAIN_INFO = 2,
+		LSA_FOREST_TRUST_RECORD_TYPE_LAST = 3
+	} lsa_ForestTrustRecordType;
+
 	typedef struct {
 		[range(0,131072)] uint3264 length;
 		[size_is(length)] uint8 *data;
@@ -1266,24 +1298,17 @@ import "misc.idl", "security.idl";
 		lsa_StringLarge netbios_domain_name;
 	} lsa_ForestTrustDomainInfo;
 
-	typedef [switch_type(uint32)] union {
+	typedef [switch_type(lsa_ForestTrustRecordType)] union {
 		[case(LSA_FOREST_TRUST_TOP_LEVEL_NAME)] lsa_StringLarge top_level_name;
 		[case(LSA_FOREST_TRUST_TOP_LEVEL_NAME_EX)] lsa_StringLarge top_level_name_ex;
 		[case(LSA_FOREST_TRUST_DOMAIN_INFO)] lsa_ForestTrustDomainInfo domain_info;
 		[default] lsa_ForestTrustBinaryData data;
 	} lsa_ForestTrustData;
 
-	typedef [v1_enum] enum {
-		LSA_FOREST_TRUST_TOP_LEVEL_NAME = 0,
-		LSA_FOREST_TRUST_TOP_LEVEL_NAME_EX = 1,
-		LSA_FOREST_TRUST_DOMAIN_INFO = 2,
-		LSA_FOREST_TRUST_RECORD_TYPE_LAST = 3
-	} lsa_ForestTrustRecordType;
-
 	typedef struct {
-		uint32 flags;
+		lsa_ForestTrustRecordFlags flags;
 		lsa_ForestTrustRecordType type;
-		hyper time;
+		NTTIME_hyper time;
 		[switch_is(type)] lsa_ForestTrustData forest_trust_data;
 	} lsa_ForestTrustRecord;
 
@@ -1292,10 +1317,10 @@ import "misc.idl", "security.idl";
 		[size_is(count)] lsa_ForestTrustRecord **entries;
 	} lsa_ForestTrustInformation;
 
-	NTSTATUS lsa_lsaRQueryForestTrustInformation(
+	[public] NTSTATUS lsa_lsaRQueryForestTrustInformation(
 		[in] policy_handle *handle,
 		[in,ref] lsa_String *trusted_domain_name,
-		[in] uint16 unknown, /* level ? */
+		[in] lsa_ForestTrustRecordType highest_record_type,
 		[out,ref] lsa_ForestTrustInformation **forest_trust_info
 		);
 
@@ -1308,31 +1333,10 @@ import "misc.idl", "security.idl";
 		LSA_FOREST_TRUST_COLLISION_OTHER = 2
 	} lsa_ForestTrustCollisionRecordType;
 
-	/* if type is CollisionTdo, flags can be */
-	typedef [bitmap32bit] bitmap {
-		LSA_TLN_DISABLED_NEW		= 0x00000001,
-		LSA_TLN_DISABLED_ADMIN		= 0x00000002,
-		LSA_TLN_DISABLED_CONFLICT	= 0x00000004
-	} lsa_ForestTrustCollisionTDOFlags;
-
-	/* if type is CollisionXref, flags can be */
-	typedef [bitmap32bit] bitmap {
-		LSA_SID_DISABLED_ADMIN		= 0x00000001,
-		LSA_SID_DISABLED_CONFLICT	= 0x00000002,
-		LSA_NB_DISABLED_ADMIN		= 0x00000004,
-		LSA_NB_DISABLED_CONFLICT	= 0x00000008
-	} lsa_ForestTrustCollisionXrefFlags;
-
-	typedef [nodiscriminant] union {
-		[case(LSA_FOREST_TRUST_COLLISION_TDO)] lsa_ForestTrustCollisionTDOFlags flags;
-		[case(LSA_FOREST_TRUST_COLLISION_XREF)] lsa_ForestTrustCollisionXrefFlags flags;
-		[default] uint32 flags;
-	} lsa_ForestTrustCollisionFlags;
-
 	typedef [public] struct {
 		uint32 index;
 		lsa_ForestTrustCollisionRecordType type;
-		[switch_is(type)] lsa_ForestTrustCollisionFlags flags;
+		lsa_ForestTrustRecordFlags flags;
 		lsa_String name;
 	} lsa_ForestTrustCollisionRecord;
 
@@ -1344,9 +1348,9 @@ import "misc.idl", "security.idl";
 	[public] NTSTATUS lsa_lsaRSetForestTrustInformation(
 		[in]      policy_handle *handle,
 		[in,ref]  lsa_StringLarge *trusted_domain_name,
-		[in]      uint16 highest_record_type,
+		[in]      lsa_ForestTrustRecordType highest_record_type,
 		[in,ref]  lsa_ForestTrustInformation *forest_trust_info,
-		[in]      uint8 check_only,
+		[in]      boolean8 check_only,
 		[out,ref] lsa_ForestTrustCollisionInfo **collision_info
 		);
 

@@ -212,7 +212,7 @@ mkdir a_test_dir
 quit
 EOF
 
-    cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT -U% //$SERVER/$1" -I $SERVER_IP $ADDARGS < $tmpfile 2>&1'
+    cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT -U% "//$SERVER/$1" -I $SERVER_IP $ADDARGS < $tmpfile 2>&1'
     eval echo "$cmd"
     out=`eval $cmd`
     ret=$?
@@ -863,6 +863,115 @@ test_bad_names()
     fi
 }
 
+# Test accessing an share with a name that must be mangled - with acl_xattrs.
+# We know foo:bar gets mangled to FF4GBY~Q with the default name-mangling algorithm (hash2).
+test_mangled_names()
+{
+    tmpfile=$PREFIX/smbclient_interactive_prompt_commands
+    cat > $tmpfile <<EOF
+ls
+cd FF4GBY~Q
+ls
+quit
+EOF
+    cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT "$@" -U$USERNAME%$PASSWORD //$SERVER/manglenames_share -I $SERVER_IP $ADDARGS < $tmpfile 2>&1'
+    eval echo "$cmd"
+    out=`eval $cmd`
+    ret=$?
+    rm -f $tmpfile
+
+    if [ $ret != 0 ] ; then
+	echo "$out"
+	echo "failed accessing manglenames_share with error $ret"
+	false
+	return
+    fi
+
+    echo "$out" | grep 'NT_STATUS'
+    ret=$?
+    if [ $ret == 0 ] ; then
+	echo "$out"
+	echo "failed - NT_STATUS_XXXX listing \\manglenames_share\\FF4GBY~Q"
+	false
+    fi
+}
+
+# Test using scopy to copy a file on the server.
+test_scopy()
+{
+    tmpfile=$PREFIX/smbclient_interactive_prompt_commands
+    scopy_file=$PREFIX/scopy_file
+
+    rm -f $scopy_file
+    cat > $tmpfile <<EOF
+put ${SMBCLIENT}
+scopy smbclient scopy_file
+lcd ${PREFIX}
+get scopy_file
+del smbclient
+del scopy_file
+quit
+EOF
+    cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT "$@" -mSMB3 -U$USERNAME%$PASSWORD //$SERVER/tmp -I $SERVER_IP $ADDARGS < $tmpfile 2>&1'
+    eval echo "$cmd"
+    out=`eval $cmd`
+    ret=$?
+    out1=`md5sum ${SMBCLIENT} | sed -e 's/ .*//'`
+    out2=`md5sum ${scopy_file} | sed -e 's/ .*//'`
+    rm -f $tmpfile
+    rm -f $scopy_file
+
+    if [ $ret != 0 ] ; then
+	echo "$out"
+	echo "failed scopy test (1) with output $ret"
+	false
+	return
+    fi
+
+    if [ $out1 != $out2 ] ; then
+	echo "$out1 $out2"
+	echo "failed md5sum (1)"
+	false
+    fi
+
+#
+# Now do again using SMB1
+# to force client-side fallback.
+#
+
+    cat > $tmpfile <<EOF
+put ${SMBCLIENT}
+scopy smbclient scopy_file
+lcd ${PREFIX}
+get scopy_file
+del smbclient
+del scopy_file
+quit
+EOF
+    cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT "$@" -mNT1 -U$USERNAME%$PASSWORD //$SERVER/tmp -I $SERVER_IP $ADDARGS < $tmpfile 2>&1'
+    eval echo "$cmd"
+    out=`eval $cmd`
+    ret=$?
+    out1=`md5sum ${SMBCLIENT} | sed -e 's/ .*//'`
+    out2=`md5sum ${scopy_file} | sed -e 's/ .*//'`
+    rm -f $tmpfile
+    rm -f $scopy_file
+
+    if [ $ret != 0 ] ; then
+	echo "$out"
+	echo "failed scopy test (2) with output $ret"
+	false
+	return
+    fi
+
+    if [ $out1 != $out2 ] ; then
+	echo "$out1 $out2"
+	echo "failed md5sum (2)"
+	false
+    fi
+}
+
+
 LOGDIR_PREFIX=test_smbclient_s3
 
 # possibly remove old logdirs:
@@ -940,6 +1049,14 @@ testit "list with backup privilege" \
 
 testit "list a share with bad names (won't convert)" \
     test_bad_names || \
+    failed=`expr $failed + 1`
+
+testit "list a share with a mangled name + acl_xattr object" \
+    test_mangled_names || \
+    failed=`expr $failed + 1`
+
+testit "server-side file copy" \
+    test_scopy || \
     failed=`expr $failed + 1`
 
 testit "rm -rf $LOGDIR" \

@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE refentry PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
+<refentry id="idmap_script.8">
+
+<refmeta>
+	<refentrytitle>idmap_script</refentrytitle>
+	<manvolnum>8</manvolnum>
+	<refmiscinfo class="source">Samba</refmiscinfo>
+	<refmiscinfo class="manual">System Administration tools</refmiscinfo>
+	<refmiscinfo class="version">4.3</refmiscinfo>
+</refmeta>
+
+
+<refnamediv>
+	<refname>idmap_script</refname>
+	<refpurpose>Samba's idmap_script Backend for Winbind</refpurpose>
+</refnamediv>
+
+<refsynopsisdiv>
+	<title>DESCRIPTION</title>
+
+	<para>
+	The idmap_script plugin is a substitute for the idmap_tdb2
+	backend used by winbindd for storing SID/uid/gid mapping tables
+	in clustered environments with Samba and CTDB. It is a read only
+	backend that uses a script to perform mapping.
+	</para>
+
+	<para>
+	It was developed out of the idmap_tdb2 back end and does not store
+	SID/uid/gid mappings in a TDB, since the winbind_cache tdb will
+	store the mappings once they are provided.
+	</para>
+</refsynopsisdiv>
+
+<refsect1>
+	<title>IDMAP OPTIONS</title>
+
+	<variablelist>
+		<varlistentry>
+		<term>range = low - high</term>
+		<listitem><para>
+			Defines the available matching uid and gid range for which the
+			backend is authoritative.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>script</term>
+		<listitem><para>
+			This option can be used to configure an external program
+			for performing id mappings.
+		</para></listitem>
+		</varlistentry>
+	</variablelist>
+</refsect1>
+
+<refsect1>
+	<title>IDMAP SCRIPT</title>
+
+	<para>
+	The tdb2 idmap backend supports an external program for performing id mappings
+	through the smb.conf option <parameter>idmap config * : script</parameter> or
+	its deprecated legacy form <parameter>idmap : script</parameter>.
+	</para>
+
+	<para>
+	The mappings obtained by the script are then stored in the idmap tdb2
+	database instead of mappings created by the incrementing id counters.
+	It is therefore important that the script covers the complete range of
+	SIDs that can be passed in for SID to Unix ID mapping, since otherwise
+	SIDs unmapped by the script might get mapped to IDs that had
+	previously been mapped by the script.
+	</para>
+
+	<para>
+	The script should accept the following command line options.
+	</para>
+
+	<programlisting>
+	SIDTOID S-1-xxxx
+	IDTOSID UID xxxx
+	IDTOSID GID xxxx
+	IDTOSID XID xxxx
+	</programlisting>
+
+	<para>
+	And it should return one of the following responses as a single line of
+	text.
+	</para>
+
+	<programlisting>
+	UID:yyyy
+	GID:yyyy
+	XID:yyyy
+	SID:ssss
+	ERR:yyyy
+	</programlisting>
+
+	<para>
+	XID indicates that the ID returned should be both a UID and a GID.
+	That is, it requests an ID_TYPE_BOTH, but it is ultimately up to
+	the script whether or not it can honor that request. It can choose
+	to return a UID or a GID mapping only.
+	</para>
+</refsect1>
+
+<refsect1>
+	<title>EXAMPLES</title>
+
+	<para>
+	This example shows how script is used as a the default idmap backend
+	using an external program via the script parameter:
+	</para>
+
+	<programlisting>
+	[global]
+	idmap config * : backend = script
+	idmap config * : range = 1000000-2000000
+	idmap config * : script = /usr/local/samba/bin/idmap_script.sh
+	</programlisting>
+
+	<para>
+	This shows a simple script to partially perform the task:
+	</para>
+
+	<programlisting>
+	#!/bin/sh
+	#
+	# Uncomment this if you want some logging
+	#echo $@ >> /tmp/idmap.sh.log
+	if [ "$1" == "SIDTOID" ]
+	then
+		# Note. The number returned has to be within the range defined
+		#echo "Sending UID:1000005" >> /tmp/idmap.sh.log
+		echo "UID:1000005"
+		exit 0
+	else
+		#echo "Sending ERR: No idea what to do" >> /tmp/idmap.sh.log
+		echo "ERR: No idea what to do"
+		exit 1
+	fi
+	</programlisting>
+
+	<para>
+	Clearly, this script is not enough, as it should probably use wbinfo
+	to determine if an incoming SID is a user or group SID and then
+	look up the mapping in a table or use some other mechanism for
+	mapping SIDs to UIDs and etc.
+	</para>
+</refsect1>
+
+<refsect1>
+	<title>AUTHOR</title>
+
+	<para>
+	The original Samba software and related utilities
+	were created by Andrew Tridgell. Samba is now developed
+	by the Samba Team as an Open Source project similar
+	to the way the Linux kernel is developed.
+	</para>
+</refsect1>
+
+</refentry>

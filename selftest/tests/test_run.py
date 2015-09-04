@@ -21,7 +21,11 @@
 
 import datetime
 import os
-import subunit
+from samba.subunit import (
+    PROGRESS_PUSH,
+    PROGRESS_POP,
+    )
+from samba.tests import TestCase
 import tempfile
 
 from selftest.run import (
@@ -33,7 +37,6 @@ from selftest.run import (
     run_testsuite_command,
     )
 
-from selftest.tests import TestCase
 
 
 class ExpandEnvironmentStringsTests(TestCase):
@@ -133,10 +136,10 @@ class RunTestsuiteCommandTests(TestCase):
         exit_code = run_testsuite_command("thetestsuitename", "echo doing something", subunit_ops, outf=outf)
         self.assertEquals([
             ("start-testsuite", "thetestsuitename"),
-            ("progress", None, subunit.PROGRESS_PUSH),
+            ("progress", None, PROGRESS_PUSH),
             ("time", ),
             ("time", ),
-            ("progress", None, subunit.PROGRESS_POP),
+            ("progress", None, PROGRESS_POP),
             ("end-testsuite", "thetestsuitename", "success", None),
             ], subunit_ops.calls)
         self.assertEquals(0, exit_code)
@@ -153,10 +156,10 @@ expanded command: echo doing something
         exit_code = run_testsuite_command("thetestsuitename", "exit 3", subunit_ops, outf=outf)
         self.assertEquals([
             ("start-testsuite", "thetestsuitename"),
-            ("progress", None, subunit.PROGRESS_PUSH),
+            ("progress", None, PROGRESS_PUSH),
             ("time", ),
             ("time", ),
-            ("progress", None, subunit.PROGRESS_POP),
+            ("progress", None, PROGRESS_POP),
             ("end-testsuite", "thetestsuitename", "failure", "Exit code was 3"),
             ], subunit_ops.calls)
         self.assertEquals(3, exit_code)
@@ -173,10 +176,10 @@ expanded command: exit 3
             "thisisacommandthatdoesnotexist 2>/dev/null", subunit_ops, outf=outf)
         self.assertEquals([
             ("start-testsuite", "thetestsuitename"),
-            ("progress", None, subunit.PROGRESS_PUSH),
+            ("progress", None, PROGRESS_PUSH),
             ("time", ),
             ("time", ),
-            ("progress", None, subunit.PROGRESS_POP),
+            ("progress", None, PROGRESS_POP),
             ("end-testsuite", "thetestsuitename", "failure", "Exit code was 127"),
             ], subunit_ops.calls)
         self.assertEquals(127, exit_code)

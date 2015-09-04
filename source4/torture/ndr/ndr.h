@@ -45,25 +45,48 @@ _PUBLIC_ struct torture_test *_torture_suite_add_ndr_pull_inout_test(
 
 #define torture_suite_add_ndr_pull_test(suite,name,data,check_fn) \
 		_torture_suite_add_ndr_pullpush_test(suite, #name, \
-			 (ndr_pull_flags_fn_t)ndr_pull_ ## name, NULL, data_blob_const(data, sizeof(data)), \
-			 sizeof(struct name), NDR_SCALARS|NDR_BUFFERS, 0, (bool (*) (struct torture_context *, void *)) check_fn);
+			 (ndr_pull_flags_fn_t)ndr_pull_ ## name, \
+			 NULL, \
+			 data_blob_const(data, sizeof(data)), \
+			 sizeof(struct name), \
+			 NDR_SCALARS|NDR_BUFFERS, 0, \
+			 (bool (*) (struct torture_context *, void *)) check_fn);
 
 #define torture_suite_add_ndr_pull_fn_test(suite,name,data,flags,check_fn) \
 		_torture_suite_add_ndr_pullpush_test(suite, #name "_" #flags, \
-			 (ndr_pull_flags_fn_t)ndr_pull_ ## name, NULL, data_blob_const(data, sizeof(data)), \
-			 sizeof(struct name), flags, 0, (bool (*) (struct torture_context *, void *)) check_fn);
+			 (ndr_pull_flags_fn_t)ndr_pull_ ## name, \
+			 NULL, \
+			 data_blob_const(data, sizeof(data)), \
+			 sizeof(struct name), \
+			 flags, 0, \
+			 (bool (*) (struct torture_context *, void *)) check_fn);
 
 #define torture_suite_add_ndr_pull_fn_test_flags(suite,name,data,flags,flags2,check_fn) \
 		_torture_suite_add_ndr_pullpush_test(suite, #name "_" #flags "_" #flags2, \
-			 (ndr_pull_flags_fn_t)ndr_pull_ ## name, NULL, data_blob_const(data, sizeof(data)), \
-			 sizeof(struct name), flags, flags2, (bool (*) (struct torture_context *, void *)) check_fn);
+			 (ndr_pull_flags_fn_t)ndr_pull_ ## name, \
+			 NULL, \
+			 data_blob_const(data, sizeof(data)), \
+			 sizeof(struct name), \
+			 flags, flags2, \
+			 (bool (*) (struct torture_context *, void *)) check_fn);
 
 #define torture_suite_add_ndr_pullpush_test(suite,name,data_blob,check_fn) \
 		_torture_suite_add_ndr_pullpush_test(suite, #name, \
 			 (ndr_pull_flags_fn_t)ndr_pull_ ## name, \
 			 (ndr_push_flags_fn_t)ndr_push_ ## name, \
 			 data_blob, \
-			 sizeof(struct name), NDR_SCALARS|NDR_BUFFERS, 0, (bool (*) (struct torture_context *, void *)) check_fn);
+			 sizeof(struct name), \
+			 NDR_SCALARS|NDR_BUFFERS, 0, \
+			 (bool (*) (struct torture_context *, void *)) check_fn);
+
+#define torture_suite_add_ndr_pullpush_fn_test_flags(suite,name,data,flags,flags2,check_fn) \
+		_torture_suite_add_ndr_pullpush_test(suite, #name, \
+			 (ndr_pull_flags_fn_t)ndr_pull_ ## name, \
+			 (ndr_push_flags_fn_t)ndr_push_ ## name, \
+			 data_blob_const(data, sizeof(data)), \
+			 sizeof(struct name), \
+			 flags, flags2, \
+			 (bool (*) (struct torture_context *, void *)) check_fn);
 
 #define torture_suite_add_ndr_pull_io_test(suite,name,data_in,data_out,check_fn_out) \
 		_torture_suite_add_ndr_pull_inout_test(suite, #name "_INOUT", \
@@ -72,15 +95,5 @@ _PUBLIC_ struct torture_test *_torture_suite_add_ndr_pull_inout_test(
 			 data_blob_const(data_out, sizeof(data_out)), \
 			 sizeof(struct name), \
 			 (bool (*) (struct torture_context *, void *)) check_fn_out);
-
-#define torture_assert_sid_equal(torture_ctx,got,expected,cmt)\
-	do { struct dom_sid *__got = (got), *__expected = (expected); \
-	if (!dom_sid_equal(__got, __expected)) { \
-		torture_result(torture_ctx, TORTURE_FAIL, \
-					   __location__": "#got" was %s, expected %s: %s", \
-					   dom_sid_string(torture_ctx, __got), dom_sid_string(torture_ctx, __expected), cmt); \
-		return false; \
-	} \
-	} while(0)
 
 #endif /* __TORTURE_NDR_H__ */

@@ -31,19 +31,38 @@ struct wb_next_pwent_state {
 static void wb_next_pwent_fetch_done(struct tevent_req *subreq);
 static void wb_next_pwent_fill_done(struct tevent_req *subreq);
 
-static struct winbindd_domain *wb_next_find_domain(struct winbindd_domain *domain)
+static void wb_next_pwent_send_do(struct tevent_req *req,
+				  struct wb_next_pwent_state *state)
 {
-	if (domain == NULL) {
-		domain = domain_list();
-	} else {
-		domain = domain->next;
+	struct tevent_req *subreq;
+
+	if (state->gstate->next_user >= state->gstate->num_users) {
+		TALLOC_FREE(state->gstate->users);
+
+		state->gstate->domain = wb_next_domain(state->gstate->domain);
+		if (state->gstate->domain == NULL) {
+			tevent_req_nterror(req, NT_STATUS_NO_MORE_ENTRIES);
+			return;
+		}
+
+		subreq = wb_query_user_list_send(state, state->ev,
+						 state->gstate->domain);
+		if (tevent_req_nomem(subreq, req)) {
+			return;
+		}
+
+		tevent_req_set_callback(subreq, wb_next_pwent_fetch_done, req);
+		return;
 	}
 
-	if ((domain != NULL)
-	    && sid_check_is_our_sam(&domain->sid)) {
-		domain = domain->next;
+	subreq = wb_fill_pwent_send(state, state->ev,
+				&state->gstate->users[state->gstate->next_user],
+				state->pw);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
 	}
-	return domain;
+
+	tevent_req_set_callback(subreq, wb_next_pwent_fill_done, req);
 }
 
 struct tevent_req *wb_next_pwent_send(TALLOC_CTX *mem_ctx,
@@ -51,7 +70,7 @@ struct tevent_req *wb_next_pwent_send(TALLOC_CTX *mem_ctx,
 				      struct getpwent_state *gstate,
 				      struct winbindd_pw *pw)
 {
-	struct tevent_req *req, *subreq;
+	struct tevent_req *req;
 	struct wb_next_pwent_state *state;
 
 	req = tevent_req_create(mem_ctx, &state, struct wb_next_pwent_state);
@@ -62,31 +81,11 @@ struct tevent_req *wb_next_pwent_send(TALLOC_CTX *mem_ctx,
 	state->gstate = gstate;
 	state->pw = pw;
 
-	if (state->gstate->next_user >= state->gstate->num_users) {
-		TALLOC_FREE(state->gstate->users);
-
-		state->gstate->domain = wb_next_find_domain(state->gstate->domain);
-		if (state->gstate->domain == NULL) {
-			tevent_req_nterror(req, NT_STATUS_NO_MORE_ENTRIES);
-			return tevent_req_post(req, ev);
-		}
-		subreq = wb_query_user_list_send(state, state->ev,
-						 state->gstate->domain);
-		if (tevent_req_nomem(subreq, req)) {
-			return tevent_req_post(req, ev);
-		}
-		tevent_req_set_callback(subreq, wb_next_pwent_fetch_done, req);
-		return req;
-	}
-
-	subreq = wb_fill_pwent_send(
-		state, state->ev,
-		&state->gstate->users[state->gstate->next_user],
-		state->pw);
-	if (tevent_req_nomem(subreq, req)) {
+	wb_next_pwent_send_do(req, state);
+	if (!tevent_req_is_in_progress(req)) {
 		return tevent_req_post(req, ev);
 	}
-	tevent_req_set_callback(subreq, wb_next_pwent_fill_done, req);
+
 	return req;
 }
 
@@ -110,37 +109,9 @@ static void wb_next_pwent_fetch_done(struct tevent_req *subreq)
 		state->gstate->num_users = 0;
 	}
 
-	if (state->gstate->num_users == 0) {
-		state->gstate->domain = state->gstate->domain->next;
-
-		if ((state->gstate->domain != NULL)
-		    && sid_check_is_our_sam(&state->gstate->domain->sid)) {
-			state->gstate->domain = state->gstate->domain->next;
-		}
-
-		if (state->gstate->domain == NULL) {
-			tevent_req_nterror(req, NT_STATUS_NO_MORE_ENTRIES);
-			return;
-		}
-		subreq = wb_query_user_list_send(state, state->ev,
-						 state->gstate->domain);
-		if (tevent_req_nomem(subreq, req)) {
-			return;
-		}
-		tevent_req_set_callback(subreq, wb_next_pwent_fetch_done, req);
-		return;
-	}
-
 	state->gstate->next_user = 0;
 
-	subreq = wb_fill_pwent_send(
-		state, state->ev,
-		&state->gstate->users[state->gstate->next_user],
-		state->pw);
-	if (tevent_req_nomem(subreq, req)) {
-		return;
-	}
-	tevent_req_set_callback(subreq, wb_next_pwent_fill_done, req);
+	wb_next_pwent_send_do(req, state);
 }
 
 static void wb_next_pwent_fill_done(struct tevent_req *subreq)
@@ -160,32 +131,7 @@ static void wb_next_pwent_fill_done(struct tevent_req *subreq)
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NONE_MAPPED)) {
 		state->gstate->next_user += 1;
 
-		if (state->gstate->next_user >= state->gstate->num_users) {
-			TALLOC_FREE(state->gstate->users);
-
-			state->gstate->domain = wb_next_find_domain(state->gstate->domain);
-			if (state->gstate->domain == NULL) {
-				tevent_req_nterror(req, NT_STATUS_NO_MORE_ENTRIES);
-				return;
-			}
-
-			subreq = wb_query_user_list_send(state, state->ev,
-					state->gstate->domain);
-			if (tevent_req_nomem(subreq, req)) {
-				return;
-			}
-			tevent_req_set_callback(subreq, wb_next_pwent_fetch_done, req);
-			return;
-		}
-
-		subreq = wb_fill_pwent_send(state,
-					    state->ev,
-					    &state->gstate->users[state->gstate->next_user],
-					    state->pw);
-		if (tevent_req_nomem(subreq, req)) {
-			return;
-		}
-		tevent_req_set_callback(subreq, wb_next_pwent_fill_done, req);
+		wb_next_pwent_send_do(req, state);
 
 		return;
 	} else if (tevent_req_nterror(req, status)) {

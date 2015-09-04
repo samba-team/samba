@@ -1,0 +1,223 @@
+#!/bin/sh
+
+# Exit on 1st error
+set -e
+
+# Red Hat
+nfs_service="nfs"
+nfslock_service="nfslock"
+nfs_config="/etc/sysconfig/nfs"
+
+# SUSE
+#nfs_service="nfsserver"
+#nfslock_service=""
+#nfs_config="/etc/sysconfig/nfs"
+
+# Debian
+#nfs_service="nfs-kernel-server"
+#nfslock_service=""
+#nfs_config="/etc/default/nfs-kernel-server"
+
+# Override for unit testing
+if [ -z "$PROCFS_PATH" ] ; then
+    PROCFS_PATH="/proc"
+fi
+
+##################################################
+
+usage ()
+{
+    _c=$(basename $0)
+    cat <<EOF
+usage: $_c { shutdown | startup }
+       $_c { stop | start } { nfs | nlockmgr }
+       $_c { monitor-list-shares | monitor-post }
+       $_c { register }
+EOF
+    exit 1
+}
+
+
+##################################################
+# Basic service stop and start
+
+basic_stop ()
+{
+    case "$1" in
+	nfs)
+	    service "$nfs_service" stop
+	    if [ -n "$nfslock_service" ] ; then
+		service "$nfslock_service" stop
+	    fi
+	    ;;
+	nfslock)
+	    if [ -n "$nfslock_service" ] ; then
+		service "$nfslock_service" stop
+	    else
+		service "$nfs_service" stop
+	    fi
+	    ;;
+	*)
+	    usage
+    esac
+}
+
+basic_start ()
+{
+    case "$1" in
+	nfs)
+	    if [ -n "$nfslock_service" ] ; then
+		service "$nfslock_service" start
+	    fi
+	    service "$nfs_service" start
+	    ;;
+	nfslock)
+	    if [ -n "$nfslock_service" ] ; then
+		service "$nfslock_service" start
+	    else
+		service "$nfs_service" start
+	    fi
+	    ;;
+	*)
+	    usage
+    esac
+}
+
+##################################################
+# service "stop" and "start" options for restarting
+
+service_stop ()
+{
+    case "$1" in
+	nfs)
+	    echo 0 >"${PROCFS_PATH}/fs/nfsd/threads"
+	    basic_stop "nfs" >/dev/null 2>&1 || true
+	    pkill -9 nfsd
+	    ;;
+	nlockmgr)
+	    basic_stop "nfslock" >/dev/null 2>&1 || true
+	    ;;
+	*)
+	    usage
+    esac
+}
+
+service_start ()
+{
+    case "$1" in
+	nfs)
+	    basic_start "nfs"
+	    ;;
+	nlockmgr)
+	    basic_start "nfslock"
+	    ;;
+	*)
+	    usage
+    esac
+}
+
+##################################################
+# service init startup and final shutdown
+
+nfs_shutdown ()
+{
+    basic_stop "nfs"
+}
+
+nfs_startup ()
+{
+    basic_stop "nfs" || true
+    basic_start "nfs"
+    _f="${PROCFS_PATH}/sys/net/ipv4/tcp_tw_recycle"
+    if [ "$_f" ] ; then
+	echo 1 >"$_f"
+    fi
+}
+
+##################################################
+# monitor-post support
+
+nfs_check_thread_count ()
+{
+    # Load NFS configuration to get desired number of threads.
+    if [ -r "$nfs_config" ] ; then
+	. "$nfs_config"
+    fi
+
+    # If $RPCNFSDCOUNT/$USE_KERNEL_NFSD_NUMBER isn't set then we could
+    # guess the default from the initscript.  However, let's just
+    # assume that those using the default don't care about the number
+    # of threads and that they have switched on this feature in error.
+    _configured_threads="${RPCNFSDCOUNT:-${USE_KERNEL_NFSD_NUMBER}}"
+    [ -n "$_configured_threads" ] || return 0
+
+    _threads_file="${PROCFS_PATH}/fs/nfsd/threads"
+
+    # nfsd should be running the configured number of threads.  If
+    # there are a different number of threads then tell nfsd the
+    # correct number.
+    read _running_threads <"$_threads_file"
+    # Intentionally not arithmetic comparison - avoids extra errors
+    # when above fails...
+    if [ "$_running_threads" != "$_configured_threads" ] ; then
+	echo "Attempting to correct number of nfsd threads from ${_running_threads} to ${_configured_threads}"
+	echo "$_configured_threads" >"$_threads_file"
+    fi
+}
+
+##################################################
+# list share directories
+
+nfs_monitor_list_shares ()
+{
+    exportfs -v |
+	grep '^/' |
+	sed -e 's@[[:space:]][[:space:]]*[^[:space:]()][^[:space:]()]*([^[:space:]()][^[:space:]()]*)$@@' |
+	sort -u
+}
+
+##################################################
+
+nfs_register ()
+{
+    cat <<EOF
+shutdown
+startup
+stop
+start
+monitor-list-shares
+monitor-post
+EOF
+}
+
+##################################################
+
+case "$1" in
+    shutdown)
+	nfs_shutdown
+	;;
+    startup)
+	nfs_startup
+	;;
+    stop)
+	service_stop "$2"
+	;;
+    start)
+	service_start "$2"
+	;;
+    monitor-list-shares)
+	nfs_monitor_list_shares
+	;;
+    monitor-post)
+	nfs_check_thread_count
+	;;
+    register)
+	nfs_register
+	;;
+    monitor-pre|releaseip|takeip)
+	# Not required/implemented
+	:
+	;;
+    *)
+	usage
+esac

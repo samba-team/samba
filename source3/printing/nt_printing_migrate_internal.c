@@ -69,7 +69,7 @@ static NTSTATUS migrate_internal(TALLOC_CTX *mem_ctx,
 				 struct rpc_pipe_client *winreg_pipe)
 {
 	const char *backup_suffix = ".bak";
-	TDB_DATA kbuf, dbuf;
+	TDB_DATA kbuf, newkey, dbuf;
 	TDB_CONTEXT *tdb;
 	NTSTATUS status;
 	int rc;
@@ -86,11 +86,11 @@ static NTSTATUS migrate_internal(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_SUCH_FILE;
 	}
 
-	for (kbuf = tdb_firstkey_compat(tdb);
+	for (kbuf = tdb_firstkey(tdb);
 	     kbuf.dptr;
-	     kbuf = tdb_nextkey_compat(tdb, kbuf))
+	     newkey = tdb_nextkey(tdb, kbuf), free(kbuf.dptr), kbuf = newkey)
 	{
-		dbuf = tdb_fetch_compat(tdb, kbuf);
+		dbuf = tdb_fetch(tdb, kbuf);
 		if (!dbuf.dptr) {
 			continue;
 		}
@@ -143,11 +143,11 @@ static NTSTATUS migrate_internal(TALLOC_CTX *mem_ctx,
 		SAFE_FREE(dbuf.dptr);
 	}
 
-	for (kbuf = tdb_firstkey_compat(tdb);
+	for (kbuf = tdb_firstkey(tdb);
 	     kbuf.dptr;
-	     kbuf = tdb_nextkey_compat(tdb, kbuf))
+	     newkey = tdb_nextkey(tdb, kbuf), free(kbuf.dptr), kbuf = newkey)
 	{
-		dbuf = tdb_fetch_compat(tdb, kbuf);
+		dbuf = tdb_fetch(tdb, kbuf);
 		if (!dbuf.dptr) {
 			continue;
 		}

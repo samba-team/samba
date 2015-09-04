@@ -214,7 +214,7 @@ static WERROR kccdrs_replica_get_info_obj_metadata2(TALLOC_CTX *mem_ctx,
 		const struct dsdb_attribute *schema_attr;
 		uint32_t attr_version;
 		NTTIME attr_change_time;
-		uint32_t attr_originating_usn;
+		uint32_t attr_originating_usn = 0;
 
 		/*
 		  attr := attrsSeq[i]

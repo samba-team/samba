@@ -431,3 +431,18 @@ _PUBLIC_ NTSTATUS dcerpc_secondary_auth_connection_recv(struct composite_context
 	talloc_free(c);
 	return status;
 }
+
+_PUBLIC_ NTSTATUS dcerpc_secondary_auth_connection(struct dcerpc_pipe *p,
+					const struct dcerpc_binding *binding,
+					const struct ndr_interface_table *table,
+					struct cli_credentials *credentials,
+					struct loadparm_context *lp_ctx,
+					TALLOC_CTX *mem_ctx,
+					struct dcerpc_pipe **p2)
+{
+	struct composite_context *c;
+
+	c = dcerpc_secondary_auth_connection_send(p, binding, table,
+						  credentials, lp_ctx);
+	return dcerpc_secondary_auth_connection_recv(c, mem_ctx, p2);
+}

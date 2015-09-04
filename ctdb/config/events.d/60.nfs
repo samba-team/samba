@@ -7,53 +7,277 @@
 . $CTDB_BASE/functions
 
 service_name="nfs"
-service_start ()
-{
-    startstop_nfs stop
-    startstop_nfs start
-    set_proc "sys/net/ipv4/tcp_tw_recycle" 1
-}
-service_stop ()
-{
-    startstop_nfs stop
-}
-service_reconfigure ()
-{
-    # if the ips have been reallocated, we must restart the lockmanager
-    # across all nodes and ping all statd listeners
-    [ -x $CTDB_BASE/statd-callout ] && {
-	$CTDB_BASE/statd-callout notify &
-    } >/dev/null 2>&1
-}
+loadconfig
+ctdb_setup_service_state_dir
 
-nfs_check_thread_count ()
+######################################################################
+
+if [ -z "$CTDB_NFS_CALLOUT" ] ; then
+    CTDB_NFS_CALLOUT="${CTDB_BASE}/nfs-linux-kernel-callout"
+fi
+# Always export, for statd callout
+export CTDB_NFS_CALLOUT
+
+nfs_callout_cache="${service_state_dir}/nfs_callout_cache"
+nfs_callout_cache_callout="${nfs_callout_cache}/CTDB_NFS_CALLOUT"
+nfs_callout_cache_ops="${nfs_callout_cache}/ops"
+
+nfs_callout_register ()
 {
-    [ "$CTDB_MONITOR_NFS_THREAD_COUNT" = "yes" ] || return 0
+    mkdir -p "$nfs_callout_cache_ops"
+    rm -f "$nfs_callout_cache_ops"/*
 
-    # If $RPCNFSDCOUNT/$USE_KERNEL_NFSD_NUMBER isn't set then we could
-    # guess the default from the initscript.  However, let's just
-    # assume that those using the default don't care about the number
-    # of threads and that they have switched on this feature in error.
-    _configured_threads="${RPCNFSDCOUNT:-${USE_KERNEL_NFSD_NUMBER}}"
-    [ -n "$_configured_threads" ] || return 0
+    echo "$CTDB_NFS_CALLOUT" >"$nfs_callout_cache_callout"
 
-    # nfsd should be running the configured number of threads.  If
-    # there are a different number of threads then tell nfsd the
-    # correct number.  
-    _running_threads=$(get_proc "fs/nfsd/threads")
-    # Intentionally not arithmetic comparison - avoids extra errors
-    # when get_proc() fails...
-    if [ "$_running_threads" != "$_configured_threads" ] ; then
-	echo "Attempting to correct number of nfsd threads from ${_running_threads} to ${_configured_threads}"
-	set_proc "fs/nfsd/threads" "$_configured_threads"
+    _t=$(eval "$CTDB_NFS_CALLOUT" "register")
+    if [ -n "$_t" ] ; then
+	echo "$_t" |
+	    while IFS="" read _op ; do
+		touch "${nfs_callout_cache_ops}/${_op}"
+	    done
+    else
+	touch "${nfs_callout_cache_ops}/ALL"
     fi
 }
 
-loadconfig
+nfs_callout ()
+{
+    # Re-run registration if $CTDB_NFS_CALLOUT has changed
+    _prev=""
+    if [ -r "$nfs_callout_cache_callout" ] ; then
+	read _prev <"$nfs_callout_cache_callout"
+    fi
+    if [ "$CTDB_NFS_CALLOUT" != "$_prev" ] ; then
+	nfs_callout_register
+    fi
 
-[ "${CTDB_NFS_SERVER_MODE:-${NFS_SERVER_MODE}}" != "ganesha" ] || exit 0
+    # Run the operation if it is registered...
+    if [ -e "${nfs_callout_cache_ops}/${1}" ] || \
+	   [ -e "${nfs_callout_cache_ops}/ALL" ]; then
+	eval "$CTDB_NFS_CALLOUT" "$@"
+    fi
+}
 
-ctdb_setup_service_state_dir
+service_reconfigure ()
+{
+    # Restart lock manager, notify clients
+    if [ -x "${CTDB_BASE}/statd-callout" ] ; then
+	"${CTDB_BASE}/statd-callout" notify &
+    fi >/dev/null 2>&1
+}
+
+######################################################################
+
+######################################################
+# Check the health of NFS services
+#
+# Use .check files in given directory.
+# Default is "${CTDB_BASE}/nfs-checks.d/"
+######################################################
+nfs_check_services ()
+{
+    _dir="${1:-${CTDB_NFS_CHECKS_DIR:-${CTDB_BASE}/nfs-checks.d}}"
+
+    # Files must end with .check - avoids editor backups, RPM fu, ...
+    for _f in "$_dir"/[0-9][0-9].*.check ; do
+	_t="${_f%.check}"
+	_progname="${_t##*/[0-9][0-9].}"
+
+	nfs_check_service "$_progname" <"$_f"
+    done
+}
+
+######################################################
+# Check the health of an NFS service
+#
+# $1 - progname, passed to rpcinfo (looked up in /etc/rpc)
+#
+# Reads variables from stdin
+#
+# Variables are:
+#
+# * family             - "tcp" or "udp" or space separated list
+#                        default: tcp, not used with "service_check_cmd"
+# * version            - optional, RPC service version number
+#                        default is to omit to check for any version,
+#                        not used with "service_check_cmd"
+# * unhealthy_after    - number of check fails before unhealthy
+#                        default: 1
+# * restart_every      - number of check fails before restart
+#                        default: 0, meaning no restart
+# * service_stop_cmd   - command to stop service
+#                        default: no default, must be provided if
+#                                 restart_every > 0
+# * service_start_cmd  - command to start service
+#                        default: no default, must be provided if
+#                                 restart_every > 0
+# * service_check_cmd  - command to check health of service
+#                        default is to check RPC service using rpcinfo
+# * service_debug_cmd  - command to debug a service after trying to stop it;
+#                        for example, it can be useful to print stack
+#                        traces of threads that have not exited, since
+#                        they may be stuck doing I/O;
+#                        no default, see also function program_stack_traces()
+#
+# Quoting in values is not preserved
+#
+######################################################
+nfs_check_service ()
+{
+    _progname="$1"
+
+    (
+	# Subshell to restrict scope variables...
+
+	# Defaults
+	family="tcp"
+	version=""
+	unhealthy_after=1
+	restart_every=0
+	service_stop_cmd=""
+	service_start_cmd=""
+	service_check_cmd=""
+	service_debug_cmd=""
+
+	# Eval line-by-line.  Expands variable references in values.
+	# Also allows variable name checking, which seems useful.
+	while read _line ; do
+	    case "$_line" in
+		\#*|"") : ;; # Ignore comments, blank lines
+
+		family=*|version=*|\
+		unhealthy_after=*|restart_every=*|\
+		service_stop_cmd=*|service_start_cmd=*|\
+		service_check_cmd=*|service_debug_cmd=*)
+
+		    eval "$_line"
+		    ;;
+		*)
+		    echo "ERROR: Unknown variable for ${_progname}: ${_line}"
+		    exit 1
+	    esac
+	done
+
+	_service_name="nfs_${_progname}"
+
+	_ok=false
+	if [ -n "$service_check_cmd" ] ; then
+	    # Using eval means variables can contain semicolon separated commands
+	    if eval "$service_check_cmd" ; then
+		_ok=true
+	    fi
+	else
+	    if nfs_check_rpcinfo \
+		   "$_progname" "$version" "$family" >/dev/null ; then
+		_ok=true
+	    fi
+	fi
+
+	if $_ok ; then
+	    if [ $unhealthy_after -ne 1 -o $restart_every -ne 0 ] ; then
+		ctdb_counter_init "$_service_name"
+	    fi
+	    exit 0
+	fi
+
+	ctdb_counter_incr "$_service_name"
+	_failcount=$(ctdb_counter_get "$_service_name")
+
+	_unhealthy=false
+	if [ $unhealthy_after -gt 0 ] ; then
+	    if [ $_failcount -ge $unhealthy_after ] ; then
+		_unhealthy=true
+		echo "ERROR: $ctdb_check_rpc_out"
+	    fi
+	fi
+
+	if [ $restart_every -gt 0 ] ; then
+	    if [ $(($_failcount % $restart_every)) -eq 0 ] ; then
+		if ! $_unhealthy ; then
+		    echo "WARNING: $ctdb_check_rpc_out"
+		fi
+		nfs_restart_service
+	    fi
+	fi
+
+	if $_unhealthy ; then
+	    exit 1
+	fi
+
+	return 0
+    ) || exit 1
+}
+
+# Uses: stop_service, start_service, debug_stuck_threads
+nfs_restart_service ()
+{
+    if [ -z "$service_stop_cmd" -o -z "$service_start_cmd" ] ; then
+	die "ERROR: Can not restart service \"${_progname}\" without corresponding service_start_cmd/service_stop_cmd settings"
+    fi
+
+    echo "Trying to restart service \"${_progname}\"..."
+    # Using eval means variables can contain semicolon separated commands
+    eval "$service_stop_cmd"
+    if [ -n "$service_debug_cmd" ] ; then
+	eval "$service_debug_cmd"
+    fi
+    background_with_logging eval "$service_start_cmd"
+}
+
+######################################################
+# Check an RPC service with rpcinfo
+######################################################
+ctdb_check_rpc ()
+{
+    _progname="$1"        # passed to rpcinfo (looked up in /etc/rpc)
+    _version="$2"         # optional, not passed if empty/unset
+    _family="${3:-tcp}"   # optional, default is "tcp"
+
+    case "$_family" in
+	tcp6|udp6)
+	    _localhost="${CTDB_RPCINFO_LOCALHOST6:-::1}"
+	    ;;
+	*)
+	    _localhost="${CTDB_RPCINFO_LOCALHOST:-127.0.0.1}"
+    esac
+
+    if ! ctdb_check_rpc_out=$(rpcinfo -T $_family $_localhost \
+				      $_progname $_version 2>&1) ; then
+	ctdb_check_rpc_out="$_progname failed RPC check:
+$ctdb_check_rpc_out"
+	echo "$ctdb_check_rpc_out"
+	return 1
+    fi
+}
+
+nfs_check_rpcinfo ()
+{
+    _progname="$1"        # passed to rpcinfo (looked up in /etc/rpc)
+    _versions="$2"        # optional, space separated, not passed if empty/unset
+    _families="${3:-tcp}" # optional, space separated, default is "tcp"
+
+    for _family in $_families ; do
+	if [ -n "$_versions" ] ; then
+	    for _version in $_versions ; do
+		ctdb_check_rpc $_progname $_version $_family || return $?
+	    done
+	else
+	    ctdb_check_rpc $_progname "" $_family || return $?
+	fi
+    done
+}
+
+##################################################################
+# use statd-callout to update NFS lock info
+##################################################################
+nfs_update_lock_info ()
+{
+    if [ -x "$CTDB_BASE/statd-callout" ] ; then
+	"$CTDB_BASE/statd-callout" update
+    fi
+}
+
+######################################################################
 
 ctdb_start_stop_service
 
@@ -61,40 +285,40 @@ is_ctdb_managed_service || exit 0
 
 ctdb_service_check_reconfigure
 
-case "$1" in 
-     init)
-	# read statd from persistent database
-	;;
-     startup)
-	ctdb_service_start
+case "$1" in
+    startup)
+	nfs_callout "$@"
 	;;
 
-     shutdown)
-	ctdb_service_stop
+    shutdown)
+	 nfs_callout "$@"
 	;;
 
-     takeip)
+    takeip)
+	nfs_callout "$@"
 	ctdb_service_set_reconfigure
 	;;
 
-     releaseip)
+    releaseip)
+	nfs_callout "$@"
 	ctdb_service_set_reconfigure
 	;;
 
-      monitor)
-	# Check that directories for shares actually exist.
-	[ "$CTDB_NFS_SKIP_SHARE_CHECK" = "yes" ] || {
-	    exportfs -v | grep '^/' | 
-	    sed -r -e 's@[[:space:]]+[^[:space:]()]+\([^[:space:]()]+\)$@@' | 
-	    sort -u | 
-	    ctdb_check_directories 
-	} || exit $?
+    monitor)
+	nfs_callout "monitor-pre" || exit $?
+
+	# Check that directories for shares actually exist
+	if [ "$CTDB_NFS_SKIP_SHARE_CHECK" != "yes" ] ; then
+	    nfs_callout "monitor-list-shares" | ctdb_check_directories || \
+		exit $?
+	fi
 
 	update_tickles 2049
+	nfs_update_lock_info
 
-	nfs_check_rpc_services
+	nfs_check_services
 
-	nfs_check_thread_count
+	nfs_callout "monitor-post" || exit $?
        	;;
 
     *)

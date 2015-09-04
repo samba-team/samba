@@ -19,8 +19,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <talloc.h>
 #include "replace.h"
+#include <talloc.h>
 #include "system/filesys.h"
 #include "system/syslog.h"
 #include "system/locale.h"
@@ -37,14 +37,13 @@
 
 /* -------------------------------------------------------------------------- **
  * Defines...
- *
- *  FORMAT_BUFR_MAX - Index of the last byte of the format buffer;
- *                    format_bufr[FORMAT_BUFR_MAX] should always be reserved
- *                    for a terminating null byte.
  */
 
+/*
+ * format_bufr[FORMAT_BUFR_SIZE - 1] should always be reserved
+ * for a terminating null byte.
+ */
 #define FORMAT_BUFR_SIZE 1024
-#define FORMAT_BUFR_MAX (FORMAT_BUFR_SIZE - 1)
 
 /* -------------------------------------------------------------------------- **
  * This module implements Samba's debugging utility.
@@ -103,6 +102,310 @@ static struct {
 	.fd = 2 /* stderr by default */
 };
 
+#if defined(WITH_SYSLOG) || defined(HAVE_LIBSYSTEMD_JOURNAL)
+static int debug_level_to_priority(int level)
+{
+	/*
+	 * map debug levels to syslog() priorities
+	 */
+	static const int priority_map[] = {
+		LOG_ERR,     /* 0 */
+		LOG_WARNING, /* 1 */
+		LOG_NOTICE,  /* 2 */
+		LOG_NOTICE,  /* 3 */
+		LOG_NOTICE,  /* 4 */
+		LOG_NOTICE,  /* 5 */
+		LOG_INFO,    /* 6 */
+		LOG_INFO,    /* 7 */
+		LOG_INFO,    /* 8 */
+		LOG_INFO,    /* 9 */
+	};
+	int priority;
+
+	if( level >= ARRAY_SIZE(priority_map) || level < 0)
+		priority = LOG_DEBUG;
+	else
+		priority = priority_map[level];
+
+	return priority;
+}
+#endif
+
+/* -------------------------------------------------------------------------- **
+ * Debug backends. When logging to DEBUG_FILE, send the log entries to
+ * all active backends.
+ */
+
+static void debug_file_log(int msg_level,
+			   const char *msg, const char *msg_no_nl)
+{
+	check_log_size();
+	write(state.fd, msg, strlen(msg));
+}
+
+#ifdef WITH_SYSLOG
+static void debug_syslog_reload(bool enabled, bool previously_enabled,
+				const char *prog_name)
+{
+	if (enabled && !previously_enabled) {
+#ifdef LOG_DAEMON
+		openlog(prog_name, LOG_PID, SYSLOG_FACILITY);
+#else
+		/* for old systems that have no facility codes. */
+		openlog(prog_name, LOG_PID );
+#endif
+		return;
+	}
+
+	if (!enabled && previously_enabled) {
+		closelog();
+	}
+}
+
+static void debug_syslog_log(int msg_level,
+			     const char *msg, const char *msg_no_nl)
+{
+	int priority;
+
+	priority = debug_level_to_priority(msg_level);
+
+	/*
+	 * Specify the facility to interoperate with other syslog
+	 * callers (vfs_full_audit for example).
+	 */
+	priority |= SYSLOG_FACILITY;
+
+	syslog(priority, "%s", msg);
+}
+#endif /* WITH_SYSLOG */
+
+#ifdef HAVE_LIBSYSTEMD_JOURNAL
+#include <systemd/sd-journal.h>
+static void debug_systemd_log(int msg_level,
+			      const char *msg, const char *msg_no_nl)
+{
+	sd_journal_send("MESSAGE=%s", msg_no_nl,
+			"PRIORITY=%d", debug_level_to_priority(msg_level),
+			"LEVEL=%d", msg_level,
+			NULL);
+}
+#endif
+
+#ifdef HAVE_LTTNG_TRACEF
+#include <lttng/tracef.h>
+static void debug_lttng_log(int msg_level,
+			    const char *msg, const char *msg_no_nl)
+{
+	tracef(msg_no_nl);
+}
+#endif /* WITH_LTTNG_TRACEF */
+
+#ifdef HAVE_GPFS
+#include "gpfswrap.h"
+static void debug_gpfs_reload(bool enabled, bool previously_enabled,
+			      const char *prog_name)
+{
+	gpfswrap_init();
+
+	if (enabled && !previously_enabled) {
+		gpfswrap_init_trace();
+		return;
+	}
+
+	if (!enabled && previously_enabled) {
+		gpfswrap_fini_trace();
+		return;
+	}
+
+	if (enabled) {
+		/*
+		 * Trigger GPFS library to adjust state if necessary.
+		 */
+		gpfswrap_query_trace();
+	}
+}
+
+static void debug_gpfs_log(int msg_level,
+			   const char *msg, const char *msg_no_nl)
+{
+	gpfswrap_add_trace(msg_level, msg_no_nl);
+}
+#endif /* HAVE_GPFS */
+
+static struct debug_backend {
+	const char *name;
+	int log_level;
+	int new_log_level;
+	void (*reload)(bool enabled, bool prev_enabled, const char *prog_name);
+	void (*log)(int msg_level, const char *msg, const char *msg_no_nl);
+} debug_backends[] = {
+	{
+		.name = "file",
+		.log = debug_file_log,
+	},
+#ifdef WITH_SYSLOG
+	{
+		.name = "syslog",
+		.reload = debug_syslog_reload,
+		.log = debug_syslog_log,
+	},
+#endif
+
+#ifdef HAVE_LIBSYSTEMD_JOURNAL
+	{
+		.name = "systemd",
+		.log = debug_systemd_log,
+	},
+#endif
+
+#ifdef HAVE_LTTNG_TRACEF
+	{
+		.name = "lttng",
+		.log = debug_lttng_log,
+	},
+#endif
+
+#ifdef HAVE_GPFS
+	{
+		.name = "gpfs",
+		.reload = debug_gpfs_reload,
+		.log = debug_gpfs_log,
+	},
+#endif
+};
+
+static struct debug_backend *debug_find_backend(const char *name)
+{
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(debug_backends); i++) {
+		if (strcmp(name, debug_backends[i].name) == 0) {
+			return &debug_backends[i];
+		}
+	}
+
+	return NULL;
+}
+
+/*
+ * parse "backend[:option][@loglevel]
+ */
+static void debug_backend_parse_token(char *tok)
+{
+	char *backend_name_option, *backend_name,*backend_level, *saveptr;
+	struct debug_backend *b;
+
+	/*
+	 * First parse into backend[:option] and loglevel
+	 */
+	backend_name_option = strtok_r(tok, "@\0", &saveptr);
+	if (backend_name_option == NULL) {
+		return;
+	}
+
+	backend_level = strtok_r(NULL, "\0", &saveptr);
+
+	/*
+	 * Now parse backend[:option]
+	 */
+	backend_name = strtok_r(backend_name_option, ":\0", &saveptr);
+	if (backend_name == NULL) {
+		return;
+	}
+
+	/*
+	 * No backend is using the option yet.
+	 */
+#if 0
+	backend_option = strtok_r(NULL, "\0", &saveptr);
+#endif
+
+	/*
+	 * Find and update backend
+	 */
+	b = debug_find_backend(backend_name);
+	if (b == NULL) {
+		return;
+	}
+
+	if (backend_level == NULL) {
+		b->new_log_level = MAX_DEBUG_LEVEL;
+	} else {
+		b->new_log_level = atoi(backend_level);
+	}
+}
+
+/*
+ * parse "backend1[:option1][@loglevel1] backend2[option2][@loglevel2] ... "
+ * and enable/disable backends accordingly
+ */
+static void debug_set_backends(const char *param)
+{
+	size_t str_len = strlen(param);
+	char str[str_len+1];
+	char *tok, *saveptr;
+	int i;
+
+	/*
+	 * initialize new_log_level to detect backends that have been
+	 * disabled
+	 */
+	for (i = 0; i < ARRAY_SIZE(debug_backends); i++) {
+		debug_backends[i].new_log_level = -1;
+	}
+
+	memcpy(str, param, str_len + 1);
+
+	tok = strtok_r(str, LIST_SEP, &saveptr);
+	if (tok == NULL) {
+		return;
+	}
+
+	while (tok != NULL) {
+		debug_backend_parse_token(tok);
+		tok = strtok_r(NULL, LIST_SEP, &saveptr);
+	}
+
+	/*
+	 * Let backends react to config changes
+	 */
+	for (i = 0; i < ARRAY_SIZE(debug_backends); i++) {
+		struct debug_backend *b = &debug_backends[i];
+
+		if (b->reload) {
+			bool enabled = b->new_log_level > -1;
+			bool previously_enabled = b->log_level > -1;
+
+			b->reload(enabled, previously_enabled, state.prog_name);
+		}
+		b->log_level = b->new_log_level;
+	}
+}
+
+static void debug_backends_log(const char *msg, int msg_level)
+{
+	char msg_no_nl[FORMAT_BUFR_SIZE];
+	int i, len;
+
+	/*
+	 * Some backends already add an extra newline, so also provide
+	 * a buffer without the newline character.
+	 */
+	len = MIN(strlen(msg), FORMAT_BUFR_SIZE - 1);
+	if (msg[len - 1] == '\n') {
+		len--;
+	}
+
+	memcpy(msg_no_nl, msg, len);
+	msg_no_nl[len] = '\0';
+
+	for (i = 0; i < ARRAY_SIZE(debug_backends); i++) {
+		if (msg_level <= debug_backends[i].log_level) {
+			debug_backends[i].log(msg_level, msg, msg_no_nl);
+		}
+	}
+}
+
 /* -------------------------------------------------------------------------- **
  * External variables.
  */
@@ -113,11 +416,38 @@ static struct {
 */
 bool    override_logfile;
 
+static const char *default_classname_table[] = {
+	[DBGC_ALL] =		"all",
+	[DBGC_TDB] =		"tdb",
+	[DBGC_PRINTDRIVERS] =	"printdrivers",
+	[DBGC_LANMAN] =		"lanman",
+	[DBGC_SMB] =		"smb",
+	[DBGC_RPC_PARSE] =	"rpc_parse",
+	[DBGC_RPC_SRV] =	"rpc_srv",
+	[DBGC_RPC_CLI] =	"rpc_cli",
+	[DBGC_PASSDB] =		"passdb",
+	[DBGC_SAM] =		"sam",
+	[DBGC_AUTH] =		"auth",
+	[DBGC_WINBIND] =	"winbind",
+	[DBGC_VFS] =		"vfs",
+	[DBGC_IDMAP] =		"idmap",
+	[DBGC_QUOTA] =		"quota",
+	[DBGC_ACLS] =		"acls",
+	[DBGC_LOCKING] =	"locking",
+	[DBGC_MSDFS] =		"msdfs",
+	[DBGC_DMAPI] =		"dmapi",
+	[DBGC_REGISTRY] =	"registry",
+	[DBGC_SCAVENGER] =	"scavenger",
+	[DBGC_DNS] =		"dns",
+	[DBGC_LDB] =		"ldb",
+	[DBGC_TEVENT] =		"tevent",
+};
+
 /*
  * This is to allow reading of DEBUGLEVEL_CLASS before the debug
  * system has been initialized.
  */
-static const int debug_class_list_initial[DBGC_MAX_FIXED + 1];
+static const int debug_class_list_initial[ARRAY_SIZE(default_classname_table)];
 
 static int debug_num_classes = 0;
 int     *DEBUGLEVEL_CLASS = discard_const_p(int, debug_class_list_initial);
@@ -157,32 +487,6 @@ static bool    log_overflow   = false;
  * white space. There must be one name for each DBGC_<class name>, and they
  * must be in the table in the order of DBGC_<class name>..
  */
-static const char *default_classname_table[] = {
-	"all",               /* DBGC_ALL; index refs traditional DEBUGLEVEL */
-	"tdb",               /* DBGC_TDB	  */
-	"printdrivers",      /* DBGC_PRINTDRIVERS */
-	"lanman",            /* DBGC_LANMAN       */
-	"smb",               /* DBGC_SMB          */
-	"rpc_parse",         /* DBGC_RPC_PARSE    */
-	"rpc_srv",           /* DBGC_RPC_SRV      */
-	"rpc_cli",           /* DBGC_RPC_CLI      */
-	"passdb",            /* DBGC_PASSDB       */
-	"sam",               /* DBGC_SAM          */
-	"auth",              /* DBGC_AUTH         */
-	"winbind",           /* DBGC_WINBIND      */
-	"vfs",		     /* DBGC_VFS	  */
-	"idmap",	     /* DBGC_IDMAP	  */
-	"quota",	     /* DBGC_QUOTA	  */
-	"acls",		     /* DBGC_ACLS	  */
-	"locking",	     /* DBGC_LOCKING	  */
-	"msdfs",	     /* DBGC_MSDFS	  */
-	"dmapi",	     /* DBGC_DMAPI	  */
-	"registry",          /* DBGC_REGISTRY     */
-	"scavenger",         /* DBGC_SCAVENGER    */
-	"dns",               /* DBGC_DNS          */
-	"ldb",               /* DBGC_LDB          */
-	NULL
-};
 
 static char **classname_table = NULL;
 
@@ -306,7 +610,7 @@ int debug_add_class(const char *classname)
  Utility to translate names to debug class index's (public version).
 ****************************************************************************/
 
-int debug_lookup_classname(const char *classname)
+static int debug_lookup_classname(const char *classname)
 {
 	int ndx;
 
@@ -441,7 +745,7 @@ Init debugging (one time stuff)
 
 static void debug_init(void)
 {
-	const char **p;
+	size_t i;
 
 	if (state.initialized)
 		return;
@@ -450,17 +754,51 @@ static void debug_init(void)
 
 	debug_setup_talloc_log();
 
-	for(p = default_classname_table; *p; p++) {
-		debug_add_class(*p);
+	for (i = 0; i < ARRAY_SIZE(default_classname_table); i++) {
+		debug_add_class(default_classname_table[i]);
+	}
+
+	for (i = 0; i < ARRAY_SIZE(debug_backends); i++) {
+		debug_backends[i].log_level = -1;
+		debug_backends[i].new_log_level = -1;
 	}
 }
 
-/* This forces in some smb.conf derived values into the debug system.
- * There are no pointers in this structure, so we can just
- * structure-assign it in */
-void debug_set_settings(struct debug_settings *settings)
+void debug_set_settings(struct debug_settings *settings,
+			const char *logging_param,
+			int syslog_level, bool syslog_only)
 {
+	char fake_param[256];
+	size_t len = 0;
+
+	/*
+	 * This forces in some smb.conf derived values into the debug
+	 * system. There are no pointers in this structure, so we can
+	 * just structure-assign it in
+	 */
 	state.settings = *settings;
+
+	/*
+	 * If 'logging' is not set, create backend settings from
+	 * deprecated 'syslog' and 'syslog only' paramters
+	 */
+	if (logging_param != NULL) {
+		len = strlen(logging_param);
+	}
+	if (len == 0) {
+		if (syslog_only) {
+			snprintf(fake_param, sizeof(fake_param),
+				 "syslog@%d", syslog_level - 1);
+		} else {
+			snprintf(fake_param, sizeof(fake_param),
+				 "syslog@%d file@%d", syslog_level -1,
+				 MAX_DEBUG_LEVEL);
+		}
+
+		logging_param = fake_param;
+	}
+
+	debug_set_backends(logging_param);
 }
 
 /**
@@ -480,23 +818,15 @@ void setup_logging(const char *prog_name, enum debug_logtype new_logtype)
 		state.logtype = new_logtype;
 	}
 	if (prog_name) {
+		const char *p = strrchr(prog_name, '/');
+
+		if (p) {
+			prog_name = p + 1;
+		}
+
 		state.prog_name = prog_name;
 	}
 	reopen_logs_internal();
-
-	if (state.logtype == DEBUG_FILE) {
-#ifdef WITH_SYSLOG
-		const char *p = strrchr(prog_name, '/');
-		if (p)
-			prog_name = p + 1;
-#ifdef LOG_DAEMON
-		openlog( prog_name, LOG_PID, SYSLOG_FACILITY );
-#else
-		/* for old systems that have no facility codes. */
-		openlog( prog_name, LOG_PID );
-#endif
-#endif
-	}
 }
 
 /***************************************************************************
@@ -542,6 +872,20 @@ void debug_set_callback(void *private_ptr, debug_callback_fn fn)
 		state.callback_private = NULL;
 		state.callback = NULL;
 	}
+}
+
+static void debug_callback_log(const char *msg, int msg_level)
+{
+	size_t msg_len = strlen(msg);
+	char msg_copy[msg_len];
+
+	if ((msg_len > 0) && (msg[msg_len-1] == '\n')) {
+		memcpy(msg_copy, msg, msg_len-1);
+		msg_copy[msg_len-1] = '\0';
+		msg = msg_copy;
+	}
+
+	state.callback(state.callback_private, msg_level, msg);
 }
 
 /**************************************************************************
@@ -604,6 +948,7 @@ bool reopen_logs_internal(void)
 		log_overflow = false;
 		ret = false;
 	} else {
+		smb_set_close_on_exec(new_fd);
 		old_fd = state.fd;
 		state.fd = new_fd;
 		debug_close_fd(old_fd);
@@ -735,6 +1080,7 @@ void check_log_size( void )
 		 */
 		int fd = open( "/dev/console", O_WRONLY, 0);
 		if (fd != -1) {
+			smb_set_close_on_exec(fd);
 			state.fd = fd;
 			DEBUG(0,("check_log_size: open of debug file %s failed - using console.\n",
 					state.debugf ));
@@ -753,94 +1099,31 @@ void check_log_size( void )
  This is called by dbghdr() and format_debug_text().
 ************************************************************************/
 
-static int Debug1(const char *msg)
+static void Debug1(const char *msg)
 {
 	int old_errno = errno;
 
 	debug_count++;
 
-	if (state.logtype == DEBUG_CALLBACK) {
-		size_t msg_len = strlen(msg);
-		char msg_copy[msg_len];
-
-		if ((msg_len > 0) && (msg[msg_len-1] == '\n')) {
-			memcpy(msg_copy, msg, msg_len-1);
-			msg_copy[msg_len-1] = '\0';
-			msg = msg_copy;
-		}
-
-		state.callback(state.callback_private, current_msg_level, msg);
-		goto done;
-	}
-
-	if ( state.logtype != DEBUG_FILE ) {
+	switch(state.logtype) {
+	case DEBUG_CALLBACK:
+		debug_callback_log(msg, current_msg_level);
+		break;
+	case DEBUG_STDOUT:
+	case DEBUG_STDERR:
+	case DEBUG_DEFAULT_STDOUT:
+	case DEBUG_DEFAULT_STDERR:
 		if (state.fd > 0) {
 			write(state.fd, msg, strlen(msg));
 		}
-		goto done;
-	}
+		break;
+	case DEBUG_FILE:
+		debug_backends_log(msg, current_msg_level);
+		break;
+	};
 
-#ifdef WITH_SYSLOG
-	if( !state.settings.syslog_only)
-#endif
-	{
-		if( state.fd <= 0 ) {
-			mode_t oldumask = umask( 022 );
-			int fd = open( state.debugf, O_WRONLY|O_APPEND|O_CREAT, 0644 );
-			(void)umask( oldumask );
-			if(fd == -1) {
-				goto done;
-			}
-			state.fd = fd;
-		}
-	}
-
-
-#ifdef WITH_SYSLOG
-	if( current_msg_level < state.settings.syslog ) {
-		/* map debug levels to syslog() priorities
-		 * note that not all DEBUG(0, ...) calls are
-		 * necessarily errors */
-		static const int priority_map[4] = {
-			LOG_ERR,     /* 0 */
-			LOG_WARNING, /* 1 */
-			LOG_NOTICE,  /* 2 */
-			LOG_INFO,    /* 3 */
-		};
-		int     priority;
-
-		if( current_msg_level >= ARRAY_SIZE(priority_map) || current_msg_level < 0)
-			priority = LOG_DEBUG;
-		else
-			priority = priority_map[current_msg_level];
-
-		/*
-		 * Specify the facility to interoperate with other syslog
-		 * callers (vfs_full_audit for example).
-		 */
-		priority |= SYSLOG_FACILITY;
-
-		syslog(priority, "%s", msg);
-	}
-#endif
-
-	check_log_size();
-
-#ifdef WITH_SYSLOG
-	if( !state.settings.syslog_only)
-#endif
-	{
-		if (state.fd > 0) {
-			write(state.fd, msg, strlen(msg));
-		}
-	}
-
- done:
 	errno = old_errno;
-
-	return( 0 );
 }
-
 
 /**************************************************************************
  Print the buffer content via Debug1(), then reset the buffer.
@@ -886,7 +1169,7 @@ static void format_debug_text( const char *msg )
 		}
 
 		/* If there's room, copy the character to the format buffer. */
-		if( format_pos < FORMAT_BUFR_MAX )
+		if (format_pos < FORMAT_BUFR_SIZE - 1)
 			format_bufr[format_pos++] = msg[i];
 
 		/* If a newline is encountered, print & restart. */
@@ -896,7 +1179,7 @@ static void format_debug_text( const char *msg )
 		/* If the buffer is full dump it out, reset it, and put out a line
 		 * continuation indicator.
 		 */
-		if( format_pos >= FORMAT_BUFR_MAX ) {
+		if (format_pos >= FORMAT_BUFR_SIZE - 1) {
 			bufr_print();
 			(void)Debug1( " +>\n" );
 		}

@@ -23,6 +23,7 @@
 #include "smb_common.h"
 #include "smbXcli_base.h"
 #include "librpc/ndr/libndr.h"
+#include "librpc/gen_ndr/ioctl.h"
 
 struct smb2cli_ioctl_state {
 	uint8_t fixed[0x38];
@@ -32,6 +33,7 @@ struct smb2cli_ioctl_state {
 	struct iovec *recv_iov;
 	DATA_BLOB out_input_buffer;
 	DATA_BLOB out_output_buffer;
+	uint32_t ctl_code;
 };
 
 static void smb2cli_ioctl_done(struct tevent_req *subreq);
@@ -69,6 +71,7 @@ struct tevent_req *smb2cli_ioctl_send(TALLOC_CTX *mem_ctx,
 	if (req == NULL) {
 		return NULL;
 	}
+	state->ctl_code = in_ctl_code;
 	state->max_input_length = in_max_input_length;
 	state->max_output_length = in_max_output_length;
 
@@ -158,6 +161,32 @@ struct tevent_req *smb2cli_ioctl_send(TALLOC_CTX *mem_ctx,
 	return req;
 }
 
+/*
+ * 3.3.4.4 Sending an Error Response
+ * An error code other than one of the following indicates a failure:
+ */
+static bool smb2cli_ioctl_is_failure(uint32_t ctl_code, NTSTATUS status,
+				     size_t data_size)
+{
+	if (NT_STATUS_IS_OK(status)) {
+		return false;
+	}
+
+	/*
+	 * STATUS_INVALID_PARAMETER in a FSCTL_SRV_COPYCHUNK or
+	 * FSCTL_SRV_COPYCHUNK_WRITE Response, when returning an
+	 * SRV_COPYCHUNK_RESPONSE as described in section 2.2.32.1.
+	 */
+	if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER) &&
+	    (ctl_code == FSCTL_SRV_COPYCHUNK ||
+	     ctl_code == FSCTL_SRV_COPYCHUNK_WRITE) &&
+	    data_size == sizeof(struct srv_copychunk_rsp)) {
+		return false;
+	}
+
+	return true;
+}
+
 static void smb2cli_ioctl_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req =
@@ -195,12 +224,16 @@ static void smb2cli_ioctl_done(struct tevent_req *subreq)
 		.status = NT_STATUS_FILE_CLOSED,
 		.body_size = 0x09,
 	},
+	{
+		.status = NT_STATUS_INVALID_PARAMETER,
+		.body_size = 0x31
+	},
 	};
 
 	status = smb2cli_req_recv(subreq, state, &iov,
 				  expected, ARRAY_SIZE(expected));
 	TALLOC_FREE(subreq);
-	if (tevent_req_nterror(req, status)) {
+	if (iov == NULL && tevent_req_nterror(req, status)) {
 		return;
 	}
 
@@ -213,6 +246,11 @@ static void smb2cli_ioctl_done(struct tevent_req *subreq)
 	input_buffer_length = IVAL(fixed, 0x1C);
 	output_buffer_offset = IVAL(fixed, 0x20);
 	output_buffer_length = IVAL(fixed, 0x24);
+
+	if (smb2cli_ioctl_is_failure(state->ctl_code, status, output_buffer_length) &&
+	    tevent_req_nterror(req, status)) {
+		return;
+	}
 
 	if ((input_buffer_offset > 0) && (input_buffer_length > 0)) {
 		uint32_t ofs;
@@ -294,6 +332,10 @@ static void smb2cli_ioctl_done(struct tevent_req *subreq)
 		state->out_output_buffer.length = output_buffer_length;
 	}
 
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
 	tevent_req_done(req);
 }
 
@@ -305,9 +347,10 @@ NTSTATUS smb2cli_ioctl_recv(struct tevent_req *req,
 	struct smb2cli_ioctl_state *state =
 		tevent_req_data(req,
 		struct smb2cli_ioctl_state);
-	NTSTATUS status;
+	NTSTATUS status = NT_STATUS_OK;
 
-	if (tevent_req_is_nterror(req, &status)) {
+	if (tevent_req_is_nterror(req, &status) &&
+	    smb2cli_ioctl_is_failure(state->ctl_code, status, state->out_output_buffer.length)) {
 		tevent_req_received(req);
 		return status;
 	}
@@ -321,7 +364,7 @@ NTSTATUS smb2cli_ioctl_recv(struct tevent_req *req,
 	}
 
 	tevent_req_received(req);
-	return NT_STATUS_OK;
+	return status;
 }
 
 NTSTATUS smb2cli_ioctl(struct smbXcli_conn *conn,

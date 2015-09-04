@@ -337,7 +337,7 @@ static NTSTATUS msrpc_sid_to_name(struct winbindd_domain *domain,
 static NTSTATUS msrpc_rids_to_names(struct winbindd_domain *domain,
 				    TALLOC_CTX *mem_ctx,
 				    const struct dom_sid *sid,
-				    uint32 *rids,
+				    uint32_t *rids,
 				    size_t num_rids,
 				    char **domain_name,
 				    char ***names,
@@ -556,9 +556,9 @@ done:
 
 static NTSTATUS msrpc_lookup_useraliases(struct winbindd_domain *domain,
 					 TALLOC_CTX *mem_ctx,
-					 uint32 num_sids, const struct dom_sid *sids,
-					 uint32 *pnum_aliases,
-					 uint32 **palias_rids)
+					 uint32_t num_sids, const struct dom_sid *sids,
+					 uint32_t *pnum_aliases,
+					 uint32_t **palias_rids)
 {
 	struct rpc_pipe_client *samr_pipe;
 	struct policy_handle dom_pol;
@@ -627,11 +627,11 @@ static NTSTATUS msrpc_lookup_groupmem(struct winbindd_domain *domain,
 				      uint32_t **name_types)
 {
 	NTSTATUS status, result;
-        uint32 i, total_names = 0;
+	uint32_t i, total_names = 0;
         struct policy_handle dom_pol, group_pol;
-        uint32 des_access = SEC_FLAG_MAXIMUM_ALLOWED;
-	uint32 *rid_mem = NULL;
-	uint32 group_rid;
+	uint32_t des_access = SEC_FLAG_MAXIMUM_ALLOWED;
+	uint32_t *rid_mem = NULL;
+	uint32_t group_rid;
 	unsigned int j, r;
 	struct rpc_pipe_client *cli;
 	unsigned int orig_timeout;
@@ -718,7 +718,7 @@ static NTSTATUS msrpc_lookup_groupmem(struct winbindd_domain *domain,
 #define MAX_LOOKUP_RIDS 900
 
         *names = talloc_zero_array(mem_ctx, char *, *num_names);
-        *name_types = talloc_zero_array(mem_ctx, uint32, *num_names);
+        *name_types = talloc_zero_array(mem_ctx, uint32_t, *num_names);
         *sid_mem = talloc_zero_array(mem_ctx, struct dom_sid, *num_names);
 
 	for (j=0;j<(*num_names);j++)
@@ -786,7 +786,7 @@ static NTSTATUS msrpc_lookup_groupmem(struct winbindd_domain *domain,
 
 #include "ads.h"
 
-static int get_ldap_seq(const char *server, struct sockaddr_storage *ss, int port, uint32 *seq)
+static int get_ldap_seq(const char *server, struct sockaddr_storage *ss, int port, uint32_t *seq)
 {
 	int ret = -1;
 	struct timeval to;
@@ -840,7 +840,7 @@ static int get_ldap_seq(const char *server, struct sockaddr_storage *ss, int por
  LDAP queries.
 **********************************************************************/
 
-static int get_ldap_sequence_number(struct winbindd_domain *domain, uint32 *seq)
+static int get_ldap_sequence_number(struct winbindd_domain *domain, uint32_t *seq)
 {
 	int ret = -1;
 	char addr[INET6_ADDRSTRLEN];
@@ -862,7 +862,7 @@ static NTSTATUS msrpc_sequence_number(struct winbindd_domain *domain,
 {
 	struct rpc_pipe_client *samr_pipe;
 	struct policy_handle dom_pol;
-	uint32_t seq;
+	uint32_t seq = DOM_SEQUENCE_NONE;
 	TALLOC_CTX *tmp_ctx;
 	NTSTATUS status;
 

@@ -2,6 +2,7 @@
 
 # top level waf build script for samba4
 
+import Options
 import os
 srcdir = "."
 
@@ -40,10 +41,6 @@ bld.RECURSE('lib/talloc')
 bld.RECURSE('lib/tevent')
 bld.RECURSE('lib/texpect')
 bld.RECURSE('lib/addns')
-bld.RECURSE('lib/ccan')
-bld.RECURSE('lib/tdb_compat')
-if not bld.env.disable_ntdb:
-    bld.RECURSE('lib/ntdb')
 bld.RECURSE('lib/ldb')
 bld.RECURSE('lib/param')
 bld.RECURSE('dynconfig')
@@ -70,10 +67,14 @@ bld.RECURSE('source4/lib/messaging')
 bld.RECURSE('source4/lib/events')
 bld.RECURSE('source4/lib/cmdline')
 bld.RECURSE('source4/lib/http')
-bld.RECURSE('lib/socket_wrapper')
-bld.RECURSE('lib/resolv_wrapper')
-bld.RECURSE('lib/nss_wrapper')
-bld.RECURSE('lib/uid_wrapper')
+if bld.CONFIG_GET('NSS_WRAPPER'):
+    bld.RECURSE('lib/nss_wrapper')
+if bld.CONFIG_GET('SOCKET_WRAPPER'):
+    bld.RECURSE('lib/socket_wrapper')
+if bld.CONFIG_GET('RESOLV_WRAPPER'):
+    bld.RECURSE('lib/resolv_wrapper')
+if bld.CONFIG_GET('UID_WRAPPER'):
+    bld.RECURSE('lib/uid_wrapper')
 if bld.CHECK_FOR_THIRD_PARTY():
     bld.RECURSE('third_party')
 bld.RECURSE('source4/lib/stream')
@@ -106,7 +107,6 @@ bld.RECURSE('source4/libcli')
 bld.RECURSE('libcli/smb')
 bld.RECURSE('libcli/util')
 bld.RECURSE('libcli/cldap')
-bld.RECURSE('lib/subunit/c')
 bld.RECURSE('lib/smbconf')
 bld.RECURSE('lib/async_req')
 bld.RECURSE('lib/dbwrap')
@@ -136,7 +136,6 @@ else:
     bld.PROCESS_SEPARATE_RULE('system_mitkrb5')
 
 bld.RECURSE('libcli/smbreadline')
-bld.RECURSE('codepages')
 if bld.AD_DC_BUILD_IS_ENABLED():
     bld.RECURSE('source4/setup')
 if bld.env.with_ctdb:

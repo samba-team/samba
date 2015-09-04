@@ -35,9 +35,8 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "smb_share_modes.h"
-#include "tdb_compat.h"
+#include <tdb.h>
 #include "librpc/gen_ndr/open_files.h"
-#include <ccan/hash/hash.h>
 
 /* Database context handle. */
 struct smbdb_ctx {
@@ -60,7 +59,7 @@ struct locking_data {
 			int num_share_mode_entries;
 			struct timespec old_write_time;
 			struct timespec changed_write_time;
-			uint32 num_delete_token_entries;
+			uint32_t num_delete_token_entries;
 		} s;
 		struct share_mode_entry dummy; /* Needed for alignment. */
 	} u;
@@ -108,11 +107,10 @@ struct smbdb_ctx *smb_share_mode_db_open(const char *db_path)
 	memset(smb_db, '\0', sizeof(struct smbdb_ctx));
 
 	/* FIXME: We should *never* open a tdb without logging! */
-	smb_db->smb_tdb = tdb_open_compat(db_path,
-					  0, TDB_DEFAULT|TDB_CLEAR_IF_FIRST|TDB_INCOMPATIBLE_HASH,
-					  O_RDWR|O_CREAT,
-					  0644,
-					  NULL, NULL);
+	smb_db->smb_tdb = tdb_open(db_path,
+				   0, TDB_DEFAULT|TDB_CLEAR_IF_FIRST|TDB_INCOMPATIBLE_HASH,
+				   O_RDWR|O_CREAT,
+				   0644);
 
 	if (!smb_db->smb_tdb) {
 		free(smb_db);
@@ -146,7 +144,7 @@ static TDB_DATA get_locking_key(struct locking_key *lk, uint64_t dev,
 	lk->dev = (SMB_DEV_T)dev;
 	lk->inode = (SMB_INO_T)ino;
 	lk->extid = extid;
-	ld.dptr = (uint8 *)lk;
+	ld.dptr = (uint8_t *)lk;
 	ld.dsize = sizeof(*lk);
 	return ld;
 }
@@ -213,7 +211,7 @@ static void create_share_mode_entry(struct share_mode_entry *out,
 	out->id.devid = in->dev;
 	out->id.inode = in->ino;
 	out->id.extid = in->extid;
-	out->uid = (uint32)geteuid();
+	out->uid = (uint32_t)geteuid();
 	out->flags = 0;
 	out->name_hash = name_hash;
 }
@@ -242,8 +240,8 @@ int smb_get_share_mode_entries(struct smbdb_ctx *db_ctx,
 	*pp_list = NULL;
 	*p_delete_on_close = 0;
 
-	db_data = tdb_fetch_compat(db_ctx->smb_tdb,
-				   get_locking_key(&lk, dev, ino, extid));
+	db_data = tdb_fetch(db_ctx->smb_tdb,
+			    get_locking_key(&lk, dev, ino, extid));
 	if (!db_data.dptr) {
 		return 0;
 	}
@@ -308,6 +306,7 @@ static uint32_t smb_name_hash(const char *sharepath, const char *filename, int *
 	size_t sharepath_size = strlen(sharepath);
 	size_t filename_size = strlen(filename);
 	uint32_t name_hash;
+	TDB_DATA key;
 
 	*err = 0;
 	fullpath = (char *)malloc(sharepath_size + filename_size + 2);
@@ -319,7 +318,9 @@ static uint32_t smb_name_hash(const char *sharepath, const char *filename, int *
 	fullpath[sharepath_size] = '/';
 	memcpy(&fullpath[sharepath_size + 1], filename, filename_size + 1);
 
-	name_hash = hash(fullpath, strlen(fullpath) + 1, 0);
+	key = (TDB_DATA) { .dptr = (uint8_t *)fullpath,
+			   .dsize = strlen(fullpath) + 1 };
+	name_hash = tdb_jenkins_hash(&key);
 	free(fullpath);
 	return name_hash;
 }
@@ -342,7 +343,7 @@ int smb_create_share_mode_entry_ex(struct smbdb_ctx *db_ctx,
 	int orig_num_share_modes = 0;
 	struct locking_data *ld = NULL; /* internal samba db state. */
 	struct share_mode_entry *shares = NULL;
-	uint8 *new_data_p = NULL;
+	uint8_t *new_data_p = NULL;
 	size_t new_data_size = 0;
 	int err = 0;
 	uint32_t name_hash = smb_name_hash(sharepath, filename, &err);
@@ -351,10 +352,10 @@ int smb_create_share_mode_entry_ex(struct smbdb_ctx *db_ctx,
 		return -1;
 	}
 
-	db_data = tdb_fetch_compat(db_ctx->smb_tdb, locking_key);
+	db_data = tdb_fetch(db_ctx->smb_tdb, locking_key);
 	if (!db_data.dptr) {
 		/* We must create the entry. */
-		db_data.dptr = (uint8 *)malloc(
+		db_data.dptr = (uint8_t *)malloc(
 			sizeof(struct locking_data) +
 			sizeof(struct share_mode_entry) +
 			strlen(sharepath) + 1 +
@@ -389,7 +390,7 @@ int smb_create_share_mode_entry_ex(struct smbdb_ctx *db_ctx,
 	}
 
 	/* Entry exists, we must add a new entry. */
-	new_data_p = (uint8 *)malloc(
+	new_data_p = (uint8_t *)malloc(
 		db_data.dsize + sizeof(struct share_mode_entry));
 	if (!new_data_p) {
 		free(db_data.dptr);
@@ -463,12 +464,12 @@ int smb_delete_share_mode_entry(struct smbdb_ctx *db_ctx,
 	int orig_num_share_modes = 0;
 	struct locking_data *ld = NULL; /* internal samba db state. */
 	struct share_mode_entry *shares = NULL;
-	uint8 *new_data_p = NULL;
+	uint8_t *new_data_p = NULL;
 	size_t remaining_size = 0;
 	size_t i, num_share_modes;
-	const uint8 *remaining_ptr = NULL;
+	const uint8_t *remaining_ptr = NULL;
 
-	db_data = tdb_fetch_compat(db_ctx->smb_tdb, locking_key);
+	db_data = tdb_fetch(db_ctx->smb_tdb, locking_key);
 	if (!db_data.dptr) {
 		return -1; /* Error - missing entry ! */
 	}
@@ -490,7 +491,7 @@ int smb_delete_share_mode_entry(struct smbdb_ctx *db_ctx,
 	}
 
 	/* More than one - allocate a new record minus the one we'll delete. */
-	new_data_p = (uint8 *)malloc(
+	new_data_p = (uint8_t *)malloc(
 		db_data.dsize - sizeof(struct share_mode_entry));
 	if (!new_data_p) {
 		free(db_data.dptr);
@@ -570,7 +571,7 @@ int smb_change_share_mode_entry(struct smbdb_ctx *db_ctx,
 	size_t i;
 	int found_entry = 0;
 
-	db_data = tdb_fetch_compat(db_ctx->smb_tdb, locking_key);
+	db_data = tdb_fetch(db_ctx->smb_tdb, locking_key);
 	if (!db_data.dptr) {
 		return -1; /* Error - missing entry ! */
 	}

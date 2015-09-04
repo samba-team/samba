@@ -4,6 +4,7 @@
    Winbind client API
 
    Copyright (C) Gerald (Jerry) Carter 2007
+   Copyright (C) Matthew Newton 2015
 
 
    This library is free software; you can redistribute it and/or
@@ -167,7 +168,8 @@ fail:
 }
 
 /* Fill in a struct passwd* for a domain user based on username */
-wbcErr wbcGetpwnam(const char *name, struct passwd **pwd)
+wbcErr wbcCtxGetpwnam(struct wbcContext *ctx,
+		      const char *name, struct passwd **pwd)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
 	struct winbindd_request request;
@@ -187,7 +189,7 @@ wbcErr wbcGetpwnam(const char *name, struct passwd **pwd)
 
 	strncpy(request.data.username, name, sizeof(request.data.username)-1);
 
-	wbc_status = wbcRequestResponse(WINBINDD_GETPWNAM,
+	wbc_status = wbcRequestResponse(ctx, WINBINDD_GETPWNAM,
 					&request,
 					&response);
 	BAIL_ON_WBC_ERROR(wbc_status);
@@ -199,8 +201,13 @@ wbcErr wbcGetpwnam(const char *name, struct passwd **pwd)
 	return wbc_status;
 }
 
+wbcErr wbcGetpwnam(const char *name, struct passwd **pwd)
+{
+	return wbcCtxGetpwnam(NULL, name, pwd);
+}
+
 /* Fill in a struct passwd* for a domain user based on uid */
-wbcErr wbcGetpwuid(uid_t uid, struct passwd **pwd)
+wbcErr wbcCtxGetpwuid(struct wbcContext *ctx, uid_t uid, struct passwd **pwd)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
 	struct winbindd_request request;
@@ -218,7 +225,7 @@ wbcErr wbcGetpwuid(uid_t uid, struct passwd **pwd)
 
 	request.data.uid = uid;
 
-	wbc_status = wbcRequestResponse(WINBINDD_GETPWUID,
+	wbc_status = wbcRequestResponse(ctx, WINBINDD_GETPWUID,
 					&request,
 					&response);
 	BAIL_ON_WBC_ERROR(wbc_status);
@@ -230,8 +237,14 @@ wbcErr wbcGetpwuid(uid_t uid, struct passwd **pwd)
 	return wbc_status;
 }
 
+wbcErr wbcGetpwuid(uid_t uid, struct passwd **pwd)
+{
+	return wbcCtxGetpwuid(NULL, uid, pwd);
+}
+
 /* Fill in a struct passwd* for a domain user based on sid */
-wbcErr wbcGetpwsid(struct wbcDomainSid *sid, struct passwd **pwd)
+wbcErr wbcCtxGetpwsid(struct wbcContext *ctx,
+		      struct wbcDomainSid *sid, struct passwd **pwd)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
 	struct winbindd_request request;
@@ -249,7 +262,7 @@ wbcErr wbcGetpwsid(struct wbcDomainSid *sid, struct passwd **pwd)
 
         wbcSidToStringBuf(sid, request.data.sid, sizeof(request.data.sid));
 
-	wbc_status = wbcRequestResponse(WINBINDD_GETPWSID,
+	wbc_status = wbcRequestResponse(ctx, WINBINDD_GETPWSID,
 					&request,
 					&response);
 	BAIL_ON_WBC_ERROR(wbc_status);
@@ -261,8 +274,14 @@ wbcErr wbcGetpwsid(struct wbcDomainSid *sid, struct passwd **pwd)
 	return wbc_status;
 }
 
+wbcErr wbcGetpwsid(struct wbcDomainSid *sid, struct passwd **pwd)
+{
+	return wbcCtxGetpwsid(NULL, sid, pwd);
+}
+
 /* Fill in a struct passwd* for a domain user based on username */
-wbcErr wbcGetgrnam(const char *name, struct group **grp)
+wbcErr wbcCtxGetgrnam(struct wbcContext *ctx,
+		      const char *name, struct group **grp)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
 	struct winbindd_request request;
@@ -282,7 +301,7 @@ wbcErr wbcGetgrnam(const char *name, struct group **grp)
 
 	strncpy(request.data.groupname, name, sizeof(request.data.groupname)-1);
 
-	wbc_status = wbcRequestResponse(WINBINDD_GETGRNAM,
+	wbc_status = wbcRequestResponse(ctx, WINBINDD_GETGRNAM,
 					&request,
 					&response);
 	BAIL_ON_WBC_ERROR(wbc_status);
@@ -297,8 +316,13 @@ wbcErr wbcGetgrnam(const char *name, struct group **grp)
 	return wbc_status;
 }
 
+wbcErr wbcGetgrnam(const char *name, struct group **grp)
+{
+	return wbcCtxGetgrnam(NULL, name, grp);
+}
+
 /* Fill in a struct passwd* for a domain user based on uid */
-wbcErr wbcGetgrgid(gid_t gid, struct group **grp)
+wbcErr wbcCtxGetgrgid(struct wbcContext *ctx, gid_t gid, struct group **grp)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
 	struct winbindd_request request;
@@ -316,7 +340,7 @@ wbcErr wbcGetgrgid(gid_t gid, struct group **grp)
 
 	request.data.gid = gid;
 
-	wbc_status = wbcRequestResponse(WINBINDD_GETGRGID,
+	wbc_status = wbcRequestResponse(ctx, WINBINDD_GETGRGID,
 					&request,
 					&response);
 	BAIL_ON_WBC_ERROR(wbc_status);
@@ -331,15 +355,10 @@ wbcErr wbcGetgrgid(gid_t gid, struct group **grp)
 	return wbc_status;
 }
 
-/** @brief Number of cached passwd structs
- *
- */
-static uint32_t pw_cache_size;
-
-/** @brief Position of the pwent context
- *
- */
-static uint32_t pw_cache_idx;
+wbcErr wbcGetgrgid(gid_t gid, struct group **grp)
+{
+	return wbcCtxGetgrgid(NULL, gid, grp);
+}
 
 /** @brief Winbindd response containing the passwd structs
  *
@@ -347,36 +366,49 @@ static uint32_t pw_cache_idx;
 static struct winbindd_response pw_response;
 
 /* Reset the passwd iterator */
-wbcErr wbcSetpwent(void)
+wbcErr wbcCtxSetpwent(struct wbcContext *ctx)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
 
-	if (pw_cache_size > 0) {
-		pw_cache_idx = pw_cache_size = 0;
+	if (!ctx) {
+		ctx = wbcGetGlobalCtx();
+	}
+
+	if (ctx->pw_cache_size > 0) {
+		ctx->pw_cache_idx = ctx->pw_cache_size = 0;
 		winbindd_free_response(&pw_response);
 	}
 
 	ZERO_STRUCT(pw_response);
 
-	wbc_status = wbcRequestResponse(WINBINDD_SETPWENT,
+	wbc_status = wbcRequestResponse(ctx, WINBINDD_SETPWENT,
 					NULL, NULL);
 	BAIL_ON_WBC_ERROR(wbc_status);
 
  done:
 	return wbc_status;
+}
+
+wbcErr wbcSetpwent(void)
+{
+	return wbcCtxSetpwent(NULL);
 }
 
 /* Close the passwd iterator */
-wbcErr wbcEndpwent(void)
+wbcErr wbcCtxEndpwent(struct wbcContext *ctx)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
 
-	if (pw_cache_size > 0) {
-		pw_cache_idx = pw_cache_size = 0;
+	if (!ctx) {
+		ctx = wbcGetGlobalCtx();
+	}
+
+	if (ctx->pw_cache_size > 0) {
+		ctx->pw_cache_idx = ctx->pw_cache_size = 0;
 		winbindd_free_response(&pw_response);
 	}
 
-	wbc_status = wbcRequestResponse(WINBINDD_ENDPWENT,
+	wbc_status = wbcRequestResponse(ctx, WINBINDD_ENDPWENT,
 					NULL, NULL);
 	BAIL_ON_WBC_ERROR(wbc_status);
 
@@ -384,57 +416,61 @@ wbcErr wbcEndpwent(void)
 	return wbc_status;
 }
 
+wbcErr wbcEndpwent(void)
+{
+	return wbcCtxEndpwent(NULL);
+}
+
 /* Return the next struct passwd* entry from the pwent iterator */
-wbcErr wbcGetpwent(struct passwd **pwd)
+wbcErr wbcCtxGetpwent(struct wbcContext *ctx, struct passwd **pwd)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
 	struct winbindd_request request;
 	struct winbindd_pw *wb_pw;
 
+	if (!ctx) {
+		ctx = wbcGetGlobalCtx();
+	}
+
 	/* If there's a cached result, return that. */
-	if (pw_cache_idx < pw_cache_size) {
+	if (ctx->pw_cache_idx < ctx->pw_cache_size) {
 		goto return_result;
 	}
 
 	/* Otherwise, query winbindd for some entries. */
 
-	pw_cache_idx = 0;
+	ctx->pw_cache_idx = 0;
 
 	winbindd_free_response(&pw_response);
 
 	ZERO_STRUCT(request);
 	request.data.num_entries = MAX_GETPWENT_USERS;
 
-	wbc_status = wbcRequestResponse(WINBINDD_GETPWENT, &request,
+	wbc_status = wbcRequestResponse(ctx, WINBINDD_GETPWENT, &request,
 					&pw_response);
 
 	BAIL_ON_WBC_ERROR(wbc_status);
 
-	pw_cache_size = pw_response.data.num_entries;
+	ctx->pw_cache_size = pw_response.data.num_entries;
 
 return_result:
 
 	wb_pw = (struct winbindd_pw *) pw_response.extra_data.data;
 
-	*pwd = copy_passwd_entry(&wb_pw[pw_cache_idx]);
+	*pwd = copy_passwd_entry(&wb_pw[ctx->pw_cache_idx]);
 
 	BAIL_ON_PTR_ERROR(*pwd, wbc_status);
 
-	pw_cache_idx++;
+	ctx->pw_cache_idx++;
 
 done:
 	return wbc_status;
 }
 
-/** @brief Number of cached group structs
- *
- */
-static uint32_t gr_cache_size;
-
-/** @brief Position of the grent context
- *
- */
-static uint32_t gr_cache_idx;
+wbcErr wbcGetpwent(struct passwd **pwd)
+{
+	return wbcCtxGetpwent(NULL, pwd);
+}
 
 /** @brief Winbindd response containing the group structs
  *
@@ -442,36 +478,49 @@ static uint32_t gr_cache_idx;
 static struct winbindd_response gr_response;
 
 /* Reset the group iterator */
-wbcErr wbcSetgrent(void)
+wbcErr wbcCtxSetgrent(struct wbcContext *ctx)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
 
-	if (gr_cache_size > 0) {
-		gr_cache_idx = gr_cache_size = 0;
+	if (!ctx) {
+		ctx = wbcGetGlobalCtx();
+	}
+
+	if (ctx->gr_cache_size > 0) {
+		ctx->gr_cache_idx = ctx->gr_cache_size = 0;
 		winbindd_free_response(&gr_response);
 	}
 
 	ZERO_STRUCT(gr_response);
 
-	wbc_status = wbcRequestResponse(WINBINDD_SETGRENT,
+	wbc_status = wbcRequestResponse(ctx, WINBINDD_SETGRENT,
 					NULL, NULL);
 	BAIL_ON_WBC_ERROR(wbc_status);
 
  done:
 	return wbc_status;
+}
+
+wbcErr wbcSetgrent(void)
+{
+	return wbcCtxSetgrent(NULL);
 }
 
 /* Close the group iterator */
-wbcErr wbcEndgrent(void)
+wbcErr wbcCtxEndgrent(struct wbcContext *ctx)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
 
-	if (gr_cache_size > 0) {
-		gr_cache_idx = gr_cache_size = 0;
+	if (!ctx) {
+		ctx = wbcGetGlobalCtx();
+	}
+
+	if (ctx->gr_cache_size > 0) {
+		ctx->gr_cache_idx = ctx->gr_cache_size = 0;
 		winbindd_free_response(&gr_response);
 	}
 
-	wbc_status = wbcRequestResponse(WINBINDD_ENDGRENT,
+	wbc_status = wbcRequestResponse(ctx, WINBINDD_ENDGRENT,
 					NULL, NULL);
 	BAIL_ON_WBC_ERROR(wbc_status);
 
@@ -479,68 +528,86 @@ wbcErr wbcEndgrent(void)
 	return wbc_status;
 }
 
+wbcErr wbcEndgrent(void)
+{
+	return wbcCtxEndgrent(NULL);
+}
+
 /* Return the next struct group* entry from the pwent iterator */
-wbcErr wbcGetgrent(struct group **grp)
+wbcErr wbcCtxGetgrent(struct wbcContext *ctx, struct group **grp)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
 	struct winbindd_request request;
 	struct winbindd_gr *wb_gr;
 	uint32_t mem_ofs;
 
+	if (!ctx) {
+		ctx = wbcGetGlobalCtx();
+	}
+
 	/* If there's a cached result, return that. */
-	if (gr_cache_idx < gr_cache_size) {
+	if (ctx->gr_cache_idx < ctx->gr_cache_size) {
 		goto return_result;
 	}
 
 	/* Otherwise, query winbindd for some entries. */
 
-	gr_cache_idx = 0;
+	ctx->gr_cache_idx = 0;
 
 	winbindd_free_response(&gr_response);
 
 	ZERO_STRUCT(request);
 	request.data.num_entries = MAX_GETGRENT_GROUPS;
 
-	wbc_status = wbcRequestResponse(WINBINDD_GETGRENT, &request,
-					&gr_response);
+	wbc_status = wbcRequestResponse(ctx, WINBINDD_GETGRENT,
+					&request, &gr_response);
 
 	BAIL_ON_WBC_ERROR(wbc_status);
 
-	gr_cache_size = gr_response.data.num_entries;
+	ctx->gr_cache_size = gr_response.data.num_entries;
 
 return_result:
 
 	wb_gr = (struct winbindd_gr *) gr_response.extra_data.data;
 
-	mem_ofs = wb_gr[gr_cache_idx].gr_mem_ofs +
-		  gr_cache_size * sizeof(struct winbindd_gr);
+	mem_ofs = wb_gr[ctx->gr_cache_idx].gr_mem_ofs +
+		  ctx->gr_cache_size * sizeof(struct winbindd_gr);
 
-	*grp = copy_group_entry(&wb_gr[gr_cache_idx],
+	*grp = copy_group_entry(&wb_gr[ctx->gr_cache_idx],
 				((char *)gr_response.extra_data.data)+mem_ofs);
 
 	BAIL_ON_PTR_ERROR(*grp, wbc_status);
 
-	gr_cache_idx++;
+	ctx->gr_cache_idx++;
 
 done:
 	return wbc_status;
 }
 
+wbcErr wbcGetgrent(struct group **grp)
+{
+	return wbcCtxGetgrent(NULL, grp);
+}
+
 /* Return the next struct group* entry from the pwent iterator */
-wbcErr wbcGetgrlist(struct group **grp)
+wbcErr wbcCtxGetgrlist(struct wbcContext *ctx, struct group **grp)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
 	struct winbindd_request request;
 	struct winbindd_gr *wb_gr;
 
+	if (!ctx) {
+		ctx = wbcGetGlobalCtx();
+	}
+
 	/* If there's a cached result, return that. */
-	if (gr_cache_idx < gr_cache_size) {
+	if (ctx->gr_cache_idx < ctx->gr_cache_size) {
 		goto return_result;
 	}
 
 	/* Otherwise, query winbindd for some entries. */
 
-	gr_cache_idx = 0;
+	ctx->gr_cache_idx = 0;
 
 	winbindd_free_response(&gr_response);
 	ZERO_STRUCT(gr_response);
@@ -548,31 +615,35 @@ wbcErr wbcGetgrlist(struct group **grp)
 	ZERO_STRUCT(request);
 	request.data.num_entries = MAX_GETGRENT_GROUPS;
 
-	wbc_status = wbcRequestResponse(WINBINDD_GETGRLST, &request,
-					&gr_response);
+	wbc_status = wbcRequestResponse(ctx, WINBINDD_GETGRLST,
+					&request, &gr_response);
 
 	BAIL_ON_WBC_ERROR(wbc_status);
 
-	gr_cache_size = gr_response.data.num_entries;
+	ctx->gr_cache_size = gr_response.data.num_entries;
 
 return_result:
 
 	wb_gr = (struct winbindd_gr *) gr_response.extra_data.data;
 
-	*grp = copy_group_entry(&wb_gr[gr_cache_idx], NULL);
+	*grp = copy_group_entry(&wb_gr[ctx->gr_cache_idx], NULL);
 
 	BAIL_ON_PTR_ERROR(*grp, wbc_status);
 
-	gr_cache_idx++;
+	ctx->gr_cache_idx++;
 
 done:
 	return wbc_status;
 }
 
+wbcErr wbcGetgrlist(struct group **grp)
+{
+	return wbcCtxGetgrlist(NULL, grp);
+}
+
 /* Return the unix group array belonging to the given user */
-wbcErr wbcGetGroups(const char *account,
-		    uint32_t *num_groups,
-		    gid_t **_groups)
+wbcErr wbcCtxGetGroups(struct wbcContext *ctx, const char *account,
+		       uint32_t *num_groups, gid_t **_groups)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
 	struct winbindd_request request;
@@ -594,7 +665,7 @@ wbcErr wbcGetGroups(const char *account,
 
 	strncpy(request.data.username, account, sizeof(request.data.username)-1);
 
-	wbc_status = wbcRequestResponse(WINBINDD_GETGROUPS,
+	wbc_status = wbcRequestResponse(ctx, WINBINDD_GETGROUPS,
 					&request,
 					&response);
 	BAIL_ON_WBC_ERROR(wbc_status);
@@ -617,4 +688,9 @@ wbcErr wbcGetGroups(const char *account,
 	winbindd_free_response(&response);
 	wbcFreeMemory(groups);
 	return wbc_status;
+}
+
+wbcErr wbcGetGroups(const char *account, uint32_t *num_groups, gid_t **_groups)
+{
+	return wbcCtxGetGroups(NULL, account, num_groups, _groups);
 }

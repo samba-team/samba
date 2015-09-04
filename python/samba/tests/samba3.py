@@ -72,6 +72,7 @@ class PassdbTestCase(TestCaseInTempDir):
         self.lp.set("private dir", datadir)
         self.lp.set("state directory", datadir)
         self.lp.set("lock directory", datadir)
+        self.lp.set("cache directory", datadir)
         passdb.set_secrets_dir(datadir)
         self.pdb = passdb.PDB("tdbsam")
 

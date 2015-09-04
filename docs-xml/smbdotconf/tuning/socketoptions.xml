@@ -1,7 +1,6 @@
 <samba:parameter name="socket options"
                  context="G"
 				 type="string"
-                 developer="1"
                  constant="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
@@ -41,8 +40,8 @@
     &quot;Unknown socket option&quot; when you supply an option. This means you 
     either incorrectly  typed it or you need to add an include file 
     to includes.h for your OS.  If the latter is the case please 
-    send the patch to <ulink url="mailto:samba-technical@samba.org">
-    samba-technical@samba.org</ulink>.</para>
+    send the patch to <ulink url="mailto:samba-technical@lists.samba.org">
+    samba-technical@lists.samba.org</ulink>.</para>
 
     <para>Any of the supported socket options may be combined 
     in any way you like, as long as your OS allows it.</para>
@@ -55,12 +54,24 @@
     	<listitem><para>SO_REUSEADDR</para></listitem>
     	<listitem><para>SO_BROADCAST</para></listitem>
     	<listitem><para>TCP_NODELAY</para></listitem>
+	<listitem><para>TCP_KEEPCNT *</para></listitem>
+	<listitem><para>TCP_KEEPIDLE *</para></listitem>
+	<listitem><para>TCP_KEEPINTVL *</para></listitem>
     	<listitem><para>IPTOS_LOWDELAY</para></listitem>
     	<listitem><para>IPTOS_THROUGHPUT</para></listitem>
+	<listitem><para>SO_REUSEPORT</para></listitem>
     	<listitem><para>SO_SNDBUF *</para></listitem>
     	<listitem><para>SO_RCVBUF *</para></listitem>
     	<listitem><para>SO_SNDLOWAT *</para></listitem>
     	<listitem><para>SO_RCVLOWAT *</para></listitem>
+	<listitem><para>SO_SNDTIMEO *</para></listitem>
+	<listitem><para>SO_RCVTIMEO *</para></listitem>
+	<listitem><para>TCP_FASTACK *</para></listitem>
+	<listitem><para>TCP_QUICKACK</para></listitem>
+	<listitem><para>TCP_NODELAYACK</para></listitem>
+	<listitem><para>TCP_KEEPALIVE_THRESHOLD *</para></listitem>
+	<listitem><para>TCP_KEEPALIVE_ABORT_THRESHOLD *</para></listitem>
+	<listitem><para>TCP_DEFER_ACCEPT *</para></listitem>
     </itemizedlist>
 
     <para>Those marked with a <emphasis>'*'</emphasis> take an integer 

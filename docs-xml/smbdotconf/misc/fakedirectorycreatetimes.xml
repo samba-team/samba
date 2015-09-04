@@ -1,7 +1,7 @@
 <samba:parameter name="fake directory create times"
-		 context="S"
-		 type="boolean"
-		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+                 context="S"
+                 type="boolean"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>NTFS and Windows VFAT file systems keep a create 
 	time for all files and directories. This is not the same as the 

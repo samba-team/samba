@@ -38,7 +38,7 @@
 #include "libcli/security/security_descriptor.h"
 #include "librpc/rpc/pyrpc_util.h"
 
-staticforward PyTypeObject PySMB;
+static PyTypeObject PySMB;
 
 void initsmb(void);
 

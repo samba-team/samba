@@ -88,6 +88,11 @@ static int do_global_checks(void)
 				"must differ.\n\n");
 	}
 
+	if (strlen(lp_netbios_name()) > 15) {
+		fprintf(stderr, "WARNING: The 'netbios name' is too long "
+				"(max. 15 chars).\n\n");
+	}
+
 	if (!directory_exist_stat(lp_lock_directory(), &st)) {
 		fprintf(stderr, "ERROR: lock directory %s does not exist\n\n",
 		       lp_lock_directory());
@@ -454,7 +459,7 @@ static void do_per_share_checks(int s)
 
 	TALLOC_CTX *frame = talloc_stackframe();
 
-	load_case_tables();
+	smb_init_locale();
 	/*
 	 * Set the default debug level to 2.
 	 * Allow it to be overridden by the command line,
@@ -491,7 +496,7 @@ static void do_per_share_checks(int s)
 
 	fprintf(stderr,"Load smb config files from %s\n",config_file);
 
-	if (!lp_load_with_registry_shares(config_file,False,True,False,True)) {
+	if (!lp_load_with_registry_shares(config_file)) {
 		fprintf(stderr,"Error loading services.\n");
 		ret = 1;
 		goto done;

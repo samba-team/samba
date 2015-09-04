@@ -153,7 +153,7 @@ void nb_createx(const char *fname,
 	uint16_t fd = (uint16_t)-1;
 	int i;
 	NTSTATUS status;
-	uint32 desired_access;
+	uint32_t desired_access;
 
 	if (create_options & FILE_DIRECTORY_FILE) {
 		desired_access = FILE_READ_DATA;

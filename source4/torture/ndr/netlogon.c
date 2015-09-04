@@ -169,6 +169,7 @@ static bool netrlogonsamlogon_w2k_in_check(struct torture_context *tctx,
 	return true;
 }
 
+#if 0
 static const uint8_t netrlogonsamlogon_w2k_out_data[] = {
 	0x6c, 0xdb, 0x14, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x06, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00,
@@ -189,6 +190,7 @@ static bool netrlogonsamlogon_w2k_out_check(struct torture_context *tctx,
 
 	return true;
 }
+#endif
 
 struct torture_suite *ndr_netlogon_suite(TALLOC_CTX *ctx)
 {

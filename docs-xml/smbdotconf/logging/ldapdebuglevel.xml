@@ -1,8 +1,8 @@
 <samba:parameter name="ldap debug level"
-		 type="integer"
-		context="G"
-		developer="1" advanced="1"
-		xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+                 type="integer"
+                 context="G"
+                 handler="handle_ldap_debug_level"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>
 		This parameter controls the debug level of the LDAP library

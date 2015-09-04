@@ -1,12 +1,13 @@
 <samba:parameter name="nbt port"
                  context="G"
-				 type="integer"
-                 advanced="1" developer="1"
+                 type="integer"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>Specifies which port the server should use for NetBIOS over IP name
 		services traffic.</para>
 </description>
 
+<para>This parameter is deprecated, as it is not honoured in the
+majority of the code base.</para>
 <value type="default">137</value>
 </samba:parameter>

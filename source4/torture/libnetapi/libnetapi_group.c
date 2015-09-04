@@ -361,7 +361,7 @@ bool torture_libnetapi_group(struct torture_context *tctx)
 	torture_comment(tctx, "Testing NetGroupSetInfo level 0\n");
 
 	status = NetGroupSetInfo(hostname, groupname, 0, (uint8_t *)&g0, &parm_err);
-	switch (status) {
+	switch ((uint32_t)status) {
 		case 0:
 			break;
 		case 50: /* not supported */

@@ -120,9 +120,9 @@ NTSTATUS cli_unix_extensions_version_recv(struct tevent_req *req,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS cli_unix_extensions_version(struct cli_state *cli, uint16 *pmajor,
-				     uint16 *pminor, uint32 *pcaplow,
-				     uint32 *pcaphigh)
+NTSTATUS cli_unix_extensions_version(struct cli_state *cli, uint16_t *pmajor,
+				     uint16_t *pminor, uint32_t *pcaplow,
+				     uint32_t *pcaphigh)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct tevent_context *ev;
@@ -149,8 +149,7 @@ NTSTATUS cli_unix_extensions_version(struct cli_state *cli, uint16 *pmajor,
 		goto fail;
 	}
 
-	if (!tevent_req_poll(req, ev)) {
-		status = map_nt_error_from_unix(errno);
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
 		goto fail;
 	}
 
@@ -235,8 +234,8 @@ NTSTATUS cli_set_unix_extensions_capabilities_recv(struct tevent_req *req)
 }
 
 NTSTATUS cli_set_unix_extensions_capabilities(struct cli_state *cli,
-					      uint16 major, uint16 minor,
-					      uint32 caplow, uint32 caphigh)
+					      uint16_t major, uint16_t minor,
+					      uint32_t caplow, uint32_t caphigh)
 {
 	struct tevent_context *ev;
 	struct tevent_req *req;
@@ -432,7 +431,7 @@ NTSTATUS cli_get_fs_full_size_info(struct cli_state *cli,
 				   uint64_t *sectors_per_allocation_unit,
 				   uint64_t *bytes_per_sector)
 {
-	uint16 setup[1];
+	uint16_t setup[1];
 	uint8_t param[2];
 	uint8_t *rdata = NULL;
 	uint32_t rdata_count;
@@ -476,8 +475,8 @@ fail:
 }
 
 NTSTATUS cli_get_posix_fs_info(struct cli_state *cli,
-			       uint32 *optimal_transfer_size,
-			       uint32 *block_size,
+			       uint32_t *optimal_transfer_size,
+			       uint32_t *block_size,
 			       uint64_t *total_blocks,
 			       uint64_t *blocks_available,
 			       uint64_t *user_blocks_available,
@@ -485,7 +484,7 @@ NTSTATUS cli_get_posix_fs_info(struct cli_state *cli,
 			       uint64_t *free_file_nodes,
 			       uint64_t *fs_identifier)
 {
-	uint16 setup[1];
+	uint16_t setup[1];
 	uint8_t param[2];
 	uint8_t *rdata = NULL;
 	uint32_t rdata_count;
@@ -748,8 +747,8 @@ NTSTATUS cli_force_encryption(struct cli_state *c,
 			const char *password,
 			const char *domain)
 {
-	uint16 major, minor;
-	uint32 caplow, caphigh;
+	uint16_t major, minor;
+	uint32_t caplow, caphigh;
 	NTSTATUS status;
 
 	if (!SERVER_HAS_UNIX_CIFS(c)) {

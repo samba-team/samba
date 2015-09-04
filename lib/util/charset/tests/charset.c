@@ -217,6 +217,7 @@ static bool test_strlen_m(struct torture_context *tctx)
 {
 	torture_assert_int_equal(tctx, strlen_m("foo"), 3, "simple len");
 	torture_assert_int_equal(tctx, strlen_m("foo\x83l"), 6, "extended len");
+	torture_assert_int_equal(tctx, strlen_m(""), 0, "empty");
 	torture_assert_int_equal(tctx, strlen_m(NULL), 0, "NULL");
 	return true;
 }
@@ -225,7 +226,17 @@ static bool test_strlen_m_term(struct torture_context *tctx)
 {
 	torture_assert_int_equal(tctx, strlen_m_term("foo"), 4, "simple len");
 	torture_assert_int_equal(tctx, strlen_m_term("foo\x83l"), 7, "extended len");
-	torture_assert_int_equal(tctx, strlen_m(NULL), 0, "NULL");
+	torture_assert_int_equal(tctx, strlen_m_term(""), 1, "empty");
+	torture_assert_int_equal(tctx, strlen_m_term(NULL), 0, "NULL");
+	return true;
+}
+
+static bool test_strlen_m_term_null(struct torture_context *tctx)
+{
+	torture_assert_int_equal(tctx, strlen_m_term_null("foo"), 4, "simple len");
+	torture_assert_int_equal(tctx, strlen_m_term_null("foo\x83l"), 7, "extended len");
+	torture_assert_int_equal(tctx, strlen_m_term_null(""), 0, "empty");
+	torture_assert_int_equal(tctx, strlen_m_term_null(NULL), 0, "NULL");
 	return true;
 }
 
@@ -278,6 +289,7 @@ struct torture_suite *torture_local_charset(TALLOC_CTX *mem_ctx)
 	torture_suite_add_simple_test(suite, "next_token_quote_wrong", test_next_token_quote_wrong);
 	torture_suite_add_simple_test(suite, "strlen_m", test_strlen_m);
 	torture_suite_add_simple_test(suite, "strlen_m_term", test_strlen_m_term);
+	torture_suite_add_simple_test(suite, "strlen_m_term_null", test_strlen_m_term_null);
 	torture_suite_add_simple_test(suite, "strhaslower", test_strhaslower);
 	torture_suite_add_simple_test(suite, "strhasupper", test_strhasupper);
 	torture_suite_add_simple_test(suite, "count_chars_m", test_count_chars_m);

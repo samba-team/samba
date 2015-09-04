@@ -1,7 +1,7 @@
 <samba:parameter name="syslog"
                  context="G"
-				 type="integer"
-                 developer="1" advanced="1"
+                 type="integer"
+                 deprecated="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>
@@ -16,6 +16,10 @@
     level less than this value will be sent to syslog. There still will be some
     logging to log.[sn]mbd even if <emphasis>syslog only</emphasis> is enabled.
     </para>
+
+    <para>The <smbconfoption name="logging"/> parameter should be used
+      instead. When <smbconfoption name="logging"/> is set, it
+      overrides the <smbconfoption name="syslog"/> parameter.</para>
 </description>
 <value type="default">1</value>
 </samba:parameter>

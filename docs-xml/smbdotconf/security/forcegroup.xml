@@ -1,6 +1,6 @@
 <samba:parameter name="force group"
                  context="S"
-				 type="string"
+                 type="string"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <synonym>group</synonym>
 <description>

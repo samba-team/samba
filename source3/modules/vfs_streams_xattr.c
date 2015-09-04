@@ -112,7 +112,21 @@ static NTSTATUS streams_xattr_get_name(vfs_handle_struct *handle,
 	SMB_VFS_HANDLE_GET_DATA(handle, config, struct streams_xattr_config,
 				return NT_STATUS_UNSUCCESSFUL);
 
-	stype = strchr_m(stream_name + 1, ':');
+	/*
+	 * With vfs_fruit option "fruit:encoding = native" we're
+	 * already converting stream names that contain illegal NTFS
+	 * characters from their on-the-wire Unicode Private Range
+	 * encoding to their native ASCII representation.
+	 *
+	 * As as result the name of xattrs storing the streams (via
+	 * vfs_streams_xattr) may contain a colon, so we have to use
+	 * strrchr_m() instead of strchr_m() for matching the stream
+	 * type suffix.
+	 *
+	 * In check_path_syntax() we've already ensured the streamname
+	 * we got from the client is valid.
+	 */
+	stype = strrchr_m(stream_name + 1, ':');
 
 	if (stype) {
 		if (strcasecmp_m(stype, ":$DATA") != 0) {
@@ -944,9 +958,9 @@ static ssize_t streams_xattr_pwrite(vfs_handle_struct *handle,
 	}
 
         if ((offset + n) > ea.value.length-1) {
-		uint8 *tmp;
+		uint8_t *tmp;
 
-		tmp = talloc_realloc(talloc_tos(), ea.value.data, uint8,
+		tmp = talloc_realloc(talloc_tos(), ea.value.data, uint8_t,
 					   offset + n + 1);
 
 		if (tmp == NULL) {
@@ -1029,7 +1043,7 @@ static int streams_xattr_ftruncate(struct vfs_handle_struct *handle,
 					off_t offset)
 {
 	int ret;
-	uint8 *tmp;
+	uint8_t *tmp;
 	struct ea_struct ea;
 	NTSTATUS status;
         struct stream_io *sio =
@@ -1052,7 +1066,7 @@ static int streams_xattr_ftruncate(struct vfs_handle_struct *handle,
 		return -1;
 	}
 
-	tmp = talloc_realloc(talloc_tos(), ea.value.data, uint8,
+	tmp = talloc_realloc(talloc_tos(), ea.value.data, uint8_t,
 				   offset + 1);
 
 	if (tmp == NULL) {
@@ -1093,7 +1107,7 @@ static int streams_xattr_ftruncate(struct vfs_handle_struct *handle,
 
 static int streams_xattr_fallocate(struct vfs_handle_struct *handle,
 					struct files_struct *fsp,
-					enum vfs_fallocate_mode mode,
+					uint32_t mode,
 					off_t offset,
 					off_t len)
 {

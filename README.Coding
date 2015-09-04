@@ -280,8 +280,8 @@ Good Examples:
 		int ret = 0;
 
 		if (y < 10) {
-			z = malloc(sizeof(int)*y);
-			if (!z) {
+			z = malloc(sizeof(int) * y);
+			if (z == NULL) {
 				ret = 1;
 				goto done;
 			}
@@ -290,30 +290,11 @@ Good Examples:
 		print("Allocated %d elements.\n", y);
 
 	 done:
-		if (z) {
+		if (z != NULL) {
 			free(z);
 		}
 
 		return ret;
-	}
-
-
-Checking Pointer Values
------------------------
-
-When invoking functions that return pointer values, either of the following
-are acceptable. Use your best judgement and choose the more readable option.
-Remember that many other persons will review it:
-
-	if ((x = malloc(sizeof(short)*10)) == NULL ) {
-		fprintf(stderr, "Unable to alloc memory!\n");
-	}
-
-or:
-
-	x = malloc(sizeof(short)*10);
-	if (!x) {
-		fprintf(stderr, "Unable to alloc memory!\n");
 	}
 
 
@@ -363,6 +344,33 @@ Bad Example:
 
 	ret = some_function_my_name(get_some_name());
 	...
+
+Please try to avoid passing function return values to if- or
+while-conditions. The reason for this is better handling of code under a
+debugger.
+
+Good example:
+
+	x = malloc(sizeof(short)*10);
+	if (x == NULL) {
+		fprintf(stderr, "Unable to alloc memory!\n");
+	}
+
+Bad example:
+
+	if ((x = malloc(sizeof(short)*10)) == NULL ) {
+		fprintf(stderr, "Unable to alloc memory!\n");
+	}
+
+There are exceptions to this rule. One example is walking a data structure in
+an iterator style:
+
+	while ((opt = poptGetNextOpt(pc)) != -1) {
+		   ... do something with opt ...
+	}
+
+But in general, please try to avoid this pattern.
+
 
 Control-Flow changing macros
 ----------------------------

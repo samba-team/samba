@@ -98,7 +98,7 @@ static void display_domain_info(struct netr_DELTA_DOMAIN *r)
 			nt_errstr(status));
 	}
 
-	u_logout = uint64s_nt_time_to_unix_abs((const uint64 *)&r->force_logoff_time);
+	u_logout = uint64s_nt_time_to_unix_abs((const uint64_t *)&r->force_logoff_time);
 
 	d_printf("Domain name: %s\n", r->domain_name.string);
 

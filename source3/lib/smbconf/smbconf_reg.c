@@ -93,7 +93,7 @@ bool smbconf_reg_parameter_is_valid(const char *param_name)
 static sbcErr smbconf_reg_open_service_key(TALLOC_CTX *mem_ctx,
 					   struct smbconf_ctx *ctx,
 					   const char *servicename,
-					   uint32 desired_access,
+					   uint32_t desired_access,
 					   struct registry_key **key)
 {
 	WERROR werr;
@@ -338,7 +338,7 @@ static char *smbconf_format_registry_value(TALLOC_CTX *mem_ctx,
 		break;
 	}
 	case REG_MULTI_SZ: {
-		uint32 j;
+		uint32_t j;
 		const char **a = NULL;
 		if (!pull_reg_multi_sz(mem_ctx, &value->data, &a)) {
 			break;
@@ -528,29 +528,6 @@ static sbcErr smbconf_reg_get_values(TALLOC_CTX *mem_ctx,
 done:
 	talloc_free(tmp_ctx);
 	return err;
-}
-
-static bool smbconf_reg_key_has_values(struct registry_key *key)
-{
-	WERROR werr;
-	uint32_t num_subkeys;
-	uint32_t max_subkeylen;
-	uint32_t max_subkeysize;
-	uint32_t num_values;
-	uint32_t max_valnamelen;
-	uint32_t max_valbufsize;
-	uint32_t secdescsize;
-	NTTIME last_changed_time;
-
-	werr = reg_queryinfokey(key, &num_subkeys, &max_subkeylen,
-				&max_subkeysize, &num_values, &max_valnamelen,
-				&max_valbufsize, &secdescsize,
-				&last_changed_time);
-	if (!W_ERROR_IS_OK(werr)) {
-		return false;
-	}
-
-	return (num_values != 0);
 }
 
 /**
@@ -805,17 +782,6 @@ static sbcErr smbconf_reg_get_share_names(struct smbconf_ctx *ctx,
 	}
 
 	tmp_ctx = talloc_stackframe();
-
-	/* if there are values in the base key, return NULL as share name */
-
-	if (smbconf_reg_key_has_values(rpd(ctx)->base_key)) {
-		err = smbconf_add_string_to_array(tmp_ctx, &tmp_share_names,
-						   0, NULL);
-		if (!SBC_ERROR_IS_OK(err)) {
-			goto done;
-		}
-		added_count++;
-	}
 
 	/* make sure "global" is always listed first */
 	if (smbconf_share_exists(ctx, GLOBAL_NAME)) {

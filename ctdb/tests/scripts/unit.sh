@@ -40,21 +40,35 @@ ok_null ()
     ok --
 }
 
+reset_extra_header ()
+{
+    # Re-define this function to output extra header information
+    extra_header ()
+    {
+	:
+    }
+}
+
+reset_extra_footer ()
+{
+    # Re-define this function to output extra footer information
+    extra_footer ()
+    {
+	:
+    }
+}
+
+reset_extra_header
+reset_extra_footer
+
 result_print ()
 {
     _passed="$1"
     _out="$2"
     _rc="$3"
-    _extra_header="$4"
 
     if "$TEST_VERBOSE" || ! $_passed ; then
-	if [ -n "$_extra_header" ] ; then
-	    cat <<EOF
-
-##################################################
-$_extra_header
-EOF
-	fi
+	extra_header
 
 cat <<EOF
 --------------------------------------------------
@@ -93,16 +107,9 @@ EOF
 result_footer ()
 {
     _passed="$1"
-    _extra_footer="$2"
 
     if "$TEST_VERBOSE" || ! $_passed ; then
-	if [ -n "$_extra_footer" ] ; then
-	    cat <<EOF
---------------------------------------------------
-$_extra_footer
---------------------------------------------------
-EOF
-	fi
+	extra_footer
     fi
 
     if $_passed ; then
@@ -136,8 +143,6 @@ result_check ()
 {
     _rc=$?
 
-    _extra_header="$1"
-
     _fout=$(echo "$_out" | result_filter)
 
     if [ "$_fout" = "$required_output" -a $_rc = $required_rc ] ; then
@@ -146,9 +151,72 @@ result_check ()
 	_passed=false
     fi
 
-    result_print "$_passed" "$_out" "$_rc" "$_extra_header"
+    result_print "$_passed" "$_out" "$_rc"
     result_footer "$_passed"
 }
+
+test_fail ()
+{
+    _passed=false
+    return 1
+}
+
+test_header_default ()
+{
+    echo "=================================================="
+    echo "Running \"$*\""
+}
+
+reset_test_header ()
+{
+    # Re-define this function to get different header
+    test_header ()
+    {
+        test_header_default "$@"
+    }
+}
+
+reset_test_header
+
+# Simple test harness for running binary unit tests
+unit_test ()
+{
+    test_header "$@"
+
+    _wrapper="$VALGRIND"
+    if $TEST_COMMAND_TRACE ; then
+	_wrapper="strace"
+    fi
+    _out=$($_wrapper "$@" 2>&1)
+
+    result_check || exit $?
+}
+
+# Simple test harness for running shell script unit tests
+script_test ()
+{
+    test_header "$@"
+
+    _shell=""
+    if ${TEST_COMMAND_TRACE} ; then
+	_shell="sh -x"
+    else
+	_shell="sh"
+    fi
+
+    _out=$($_shell "$@" 2>&1)
+
+    result_check || exit $?
+}
+
+test_cleanup_hooks=""
+
+test_cleanup ()
+{
+    test_cleanup_hooks="${test_cleanup_hooks}${test_cleanup_hooks:+ ; }$*"
+}
+
+trap 'eval $test_cleanup_hooks' 0
 
 local="${TEST_SUBDIR}/scripts/local.sh"
 if [ -r "$local" ] ; then

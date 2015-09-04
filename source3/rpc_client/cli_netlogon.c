@@ -236,12 +236,15 @@ NTSTATUS rpccli_setup_netlogon_creds_with_creds(struct cli_state *cli,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	previous_nt_hash = cli_credentials_get_old_nt_hash(creds, talloc_tos());
+
 	status = rpccli_setup_netlogon_creds(cli, transport,
 					     netlogon_creds,
 					     force_reauth,
 					     *current_nt_hash,
 					     previous_nt_hash);
 	TALLOC_FREE(current_nt_hash);
+	TALLOC_FREE(previous_nt_hash);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -368,7 +371,7 @@ NTSTATUS rpccli_netlogon_password_logon(struct netlogon_creds_cli_context *creds
 	}
 	case NetlogonNetworkInformation: {
 		struct netr_NetworkInfo *network_info;
-		uint8 chal[8];
+		uint8_t chal[8];
 		unsigned char local_lm_response[24];
 		unsigned char local_nt_response[24];
 		struct netr_ChallengeResponse lm;
@@ -456,7 +459,7 @@ NTSTATUS rpccli_netlogon_network_logon(struct netlogon_creds_cli_context *creds,
 				       const char *username,
 				       const char *domain,
 				       const char *workstation,
-				       const uint8 chal[8],
+				       const uint8_t chal[8],
 				       DATA_BLOB lm_response,
 				       DATA_BLOB nt_response,
 				       uint8_t *authoritative,

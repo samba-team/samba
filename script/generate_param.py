@@ -35,8 +35,8 @@ parser.add_option("-f", "--file", dest="filename",
                   help="input file", metavar="FILE")
 parser.add_option("-o", "--output", dest="output",
                   help='output file', metavar="FILE")
-parser.add_option("--mode", type="choice", metavar="<FUNCTIONS|S3PROTO|LIBPROTO|PARAMDEFS>",
-                 choices=["FUNCTIONS", "S3PROTO", "LIBPROTO", "PARAMDEFS"], default="FUNCTIONS")
+parser.add_option("--mode", type="choice", metavar="<FUNCTIONS|S3PROTO|LIBPROTO|PARAMDEFS|PARAMTABLE>",
+                 choices=["FUNCTIONS", "S3PROTO", "LIBPROTO", "PARAMDEFS", "PARAMTABLE"], default="FUNCTIONS")
 parser.add_option("--scope", metavar="<GLOBAL|LOCAL>",
                   choices = ["GLOBAL", "LOCAL"], default="GLOBAL")
 
@@ -69,26 +69,52 @@ def iterate_all(path):
         synonym = parameter.attrib.get("synonym")
         removed = parameter.attrib.get("removed")
         generated = parameter.attrib.get("generated_function")
-        if synonym == "1" or removed == "1" or generated == "0":
+        handler = parameter.attrib.get("handler")
+        enumlist = parameter.attrib.get("enumlist")
+        deprecated = parameter.attrib.get("deprecated")
+        synonyms = parameter.findall('synonym')
+
+        if removed == "1":
             continue
+
         constant = parameter.attrib.get("constant")
         parm = parameter.attrib.get("parm")
         if name is None or param_type is None or context is None:
             raise Exception("Error parsing parameter: " + name)
         if func is None:
             func = name.replace(" ", "_").lower()
+        if enumlist is None:
+            enumlist = "NULL"
+        if handler is None:
+            handler = "NULL"
         yield {'name': name,
                'type': param_type,
                'context': context,
                'function': func,
                'constant': (constant == '1'),
-               'parm': (parm == '1')}
+               'parm': (parm == '1'),
+               'synonym' : synonym,
+               'generated' : generated,
+               'enumlist' : enumlist,
+               'handler' : handler,
+               'deprecated' : deprecated,
+               'synonyms' : synonyms }
 
 # map doc attributes to a section of the generated function
 context_dict = {"G": "_GLOBAL", "S": "_LOCAL"}
-param_type_dict = {"boolean": "_BOOL", "list": "_LIST", "string": "_STRING",
-                   "integer": "_INTEGER", "enum": "_INTEGER", "char" : "_CHAR",
-                   "boolean-auto": "_INTEGER"}
+param_type_dict = {
+                    "boolean"      : "_BOOL",
+                    "list"         : "_LIST",
+                    "string"       : "_STRING",
+                    "integer"      : "_INTEGER",
+                    "enum"         : "_INTEGER",
+                    "char"         : "_CHAR",
+                    "boolean-auto" : "_INTEGER",
+                    "cmdlist"      : "_LIST",
+                    "bytes"        : "_INTEGER",
+                    "octal"        : "_INTEGER",
+                    "ustring"      : "_STRING",
+                  }
 
 def generate_functions(path_in, path_out):
     f = open(path_out, 'w')
@@ -98,6 +124,11 @@ def generate_functions(path_in, path_out):
             # filter out parameteric options
             if ':' in parameter['name']:
                 continue
+            if parameter['synonym'] == "1":
+                continue
+            if parameter['generated'] == "0":
+                continue
+
             output_string = "FN"
             temp = context_dict.get(parameter['context'])
             if temp is None: 
@@ -115,8 +146,19 @@ def generate_functions(path_in, path_out):
     finally:
         f.close()
 
-mapping = {'boolean': 'bool ', 'string': 'char *', 'integer': 'int ', 'char': 'char ',
-           'list': 'const char **', 'enum': 'int ', 'boolean-auto': 'int '}
+mapping = {
+            'boolean'      : 'bool ',
+            'string'       : 'char *',
+            'integer'      : 'int ',
+            'char'         : 'char ',
+            'list'         : 'const char **',
+            'enum'         : 'int ',
+            'boolean-auto' : 'int ',
+            'cmdlist'      : 'const char **',
+            'bytes'        : 'int ',
+            'octal'        : 'int ',
+            'ustring'      : 'char *',
+          }
 
 def make_s3_param_proto(path_in, path_out):
     file_out = open(path_out, 'w')
@@ -128,6 +170,10 @@ def make_s3_param_proto(path_in, path_out):
         for parameter in iterate_all(path_in):
             # filter out parameteric options
             if ':' in parameter['name']:
+                continue
+            if parameter['synonym'] == "1":
+                continue
+            if parameter['generated'] == "0":
                 continue
 
             output_string = ""
@@ -174,6 +220,10 @@ def make_lib_proto(path_in, path_out):
         for parameter in iterate_all(path_in):
             # filter out parameteric options
             if ':' in parameter['name']:
+                continue
+            if parameter['synonym'] == "1":
+                continue
+            if parameter['generated'] == "0":
                 continue
 
             output_string = ""
@@ -225,7 +275,6 @@ def make_param_defs(path_in, path_out, scope):
             file_out.write("struct loadparm_global \n")
             file_out.write("{\n")
             file_out.write("\tTALLOC_CTX *ctx; /* Context for talloced members */\n")
-            file_out.write("\tchar *  dnsdomain;\n")
         elif scope == "LOCAL":
             file_out.write("/**\n")
             file_out.write(" * This structure describes a single service.\n")
@@ -237,6 +286,8 @@ def make_param_defs(path_in, path_out, scope):
         for parameter in iterate_all(path_in):
             # filter out parameteric options
             if ':' in parameter['name']:
+                continue
+            if parameter['synonym'] == "1":
                 continue
 
             if (scope == "GLOBAL" and parameter['context'] != "G" or
@@ -258,6 +309,92 @@ def make_param_defs(path_in, path_out, scope):
     finally:
         file_out.close()
 
+type_dict = {
+              "boolean"      : "P_BOOL",
+              "boolean-rev"  : "P_BOOLREV",
+              "boolean-auto" : "P_ENUM",
+              "list"         : "P_LIST",
+              "string"       : "P_STRING",
+              "integer"      : "P_INTEGER",
+              "enum"         : "P_ENUM",
+              "char"         : "P_CHAR",
+              "cmdlist"      : "P_CMDLIST",
+              "bytes"        : "P_BYTES",
+              "octal"        : "P_OCTAL",
+              "ustring"      : "P_USTRING",
+            }
+
+def make_param_table(path_in, path_out):
+    file_out = open(path_out, 'w')
+    try:
+        file_out.write('/* This file was automatically generated by generate_param.py. DO NOT EDIT */\n\n')
+        header = get_header(path_out)
+        file_out.write("#ifndef %s\n" % header)
+        file_out.write("#define %s\n\n" % header)
+
+        file_out.write("struct parm_struct parm_table[] = {\n")
+
+        for parameter in iterate_all(path_in):
+            # filter out parameteric options
+            if ':' in parameter['name']:
+                continue
+            if parameter['context'] == 'G':
+                p_class = "P_GLOBAL"
+            else:
+                p_class = "P_LOCAL"
+
+            p_type = type_dict.get(parameter['type'])
+
+            if parameter['context'] == 'G':
+                temp = "GLOBAL"
+            else:
+                temp = "LOCAL"
+            offset = "%s_VAR(%s)" % (temp, parameter['function'])
+
+            enumlist = parameter['enumlist']
+            handler = parameter['handler']
+            synonym = parameter['synonym']
+            deprecated = parameter['deprecated']
+            flags_list = []
+            if synonym == "1":
+                flags_list.append("FLAG_SYNONYM")
+            if deprecated == "1":
+                flags_list.append("FLAG_DEPRECATED")
+            flags = "|".join(flags_list)
+            synonyms = parameter['synonyms']
+
+            file_out.write("\t{\n")
+            file_out.write("\t\t.label\t\t= \"%s\",\n" % parameter['name'])
+            file_out.write("\t\t.type\t\t= %s,\n" % p_type)
+            file_out.write("\t\t.p_class\t= %s,\n" % p_class)
+            file_out.write("\t\t.offset\t\t= %s,\n" % offset)
+            file_out.write("\t\t.special\t= %s,\n" % handler)
+            file_out.write("\t\t.enum_list\t= %s,\n" % enumlist)
+            if flags != "":
+                file_out.write("\t\t.flags\t\t= %s,\n" % flags)
+            file_out.write("\t},\n")
+
+            if synonyms is not None:
+                # for synonyms, we only list the synonym flag:
+                flags = "FLAG_SYNONYM"
+                for syn in synonyms:
+                    file_out.write("\t{\n")
+                    file_out.write("\t\t.label\t\t= \"%s\",\n" % syn.text)
+                    file_out.write("\t\t.type\t\t= %s,\n" % p_type)
+                    file_out.write("\t\t.p_class\t= %s,\n" % p_class)
+                    file_out.write("\t\t.offset\t\t= %s,\n" % offset)
+                    file_out.write("\t\t.special\t= %s,\n" % handler)
+                    file_out.write("\t\t.enum_list\t= %s,\n" % enumlist)
+                    if flags != "":
+                        file_out.write("\t\t.flags\t\t= %s,\n" % flags)
+                    file_out.write("\t},\n")
+
+        file_out.write("\n\t{NULL,  P_BOOL,  P_NONE,  0,  NULL,  NULL,  0}\n");
+        file_out.write("};\n")
+        file_out.write("\n#endif /* %s */\n\n" % header)
+    finally:
+        file_out.close()
+
 if options.mode == 'FUNCTIONS':
     generate_functions(options.filename, options.output)
 elif options.mode == 'S3PROTO':
@@ -266,3 +403,5 @@ elif options.mode == 'LIBPROTO':
     make_lib_proto(options.filename, options.output)
 elif options.mode == 'PARAMDEFS':
     make_param_defs(options.filename, options.output, options.scope)
+elif options.mode == 'PARAMTABLE':
+    make_param_table(options.filename, options.output)

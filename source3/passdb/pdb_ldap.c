@@ -482,7 +482,7 @@ static bool init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 			*workstations = NULL,
 			*munged_dial = NULL;
 	uint32_t 		user_rid;
-	uint8 		smblmpwd[LM_HASH_LEN],
+	uint8_t 	smblmpwd[LM_HASH_LEN],
 			smbntpwd[NT_HASH_LEN];
 	bool 		use_samba_attrs = True;
 	uint32_t 		acct_ctrl = 0;
@@ -490,7 +490,7 @@ static bool init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 	uint16_t 		bad_password_count = 0,
 			logon_count = 0;
 	uint32_t hours_len;
-	uint8 		hours[MAX_HOURS_LEN];
+	uint8_t 	hours[MAX_HOURS_LEN];
 	char *temp = NULL;
 	struct login_cache cache_entry;
 	uint32_t 		pwHistLen;
@@ -844,7 +844,7 @@ static bool init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 
 	pdb_get_account_policy(PDB_POLICY_PASSWORD_HISTORY, &pwHistLen);
 	if (pwHistLen > 0){
-		uint8 *pwhist = NULL;
+		uint8_t *pwhist = NULL;
 		int i;
 		char *history_string = talloc_array(ctx, char,
 						MAX_PW_HISTORY_LEN*64);
@@ -855,7 +855,7 @@ static bool init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 
 		pwHistLen = MIN(pwHistLen, MAX_PW_HISTORY_LEN);
 
-		pwhist = talloc_zero_array(ctx, uint8,
+		pwhist = talloc_zero_array(ctx, uint8_t,
 					   pwHistLen * PW_HISTORY_ENTRY_LEN);
 		if (pwhist == NULL) {
 			DEBUG(0, ("init_sam_from_ldap: talloc failed!\n"));
@@ -1306,7 +1306,7 @@ static bool init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 			} else {
 				int i;
 				uint32_t currHistLen = 0;
-				const uint8 *pwhist = pdb_get_pw_history(sampass, &currHistLen);
+				const uint8_t *pwhist = pdb_get_pw_history(sampass, &currHistLen);
 				if (pwhist != NULL) {
 					/* We can only store (1024-1/64 password history entries. */
 					pwHistLen = MIN(pwHistLen, ((1024-1)/64));
@@ -1339,7 +1339,7 @@ static bool init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 	}
 
 	if (need_update(sampass, PDB_HOURS)) {
-		const uint8 *hours = pdb_get_hours(sampass);
+		const uint8_t *hours = pdb_get_hours(sampass);
 		if (hours) {
 			char hourstr[44];
 			pdb_sethexhours(hourstr, hours);

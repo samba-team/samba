@@ -22,7 +22,7 @@ import os
 import sys
 import signal
 import subprocess
-import subunit
+from samba import subunit
 import traceback
 import warnings
 
@@ -70,7 +70,6 @@ parser.add_option("--exclude", action="callback", help="Add file to exclude file
 parser.add_option("--include", action="callback", help="Add file to include files", callback=read_includes)
 parser.add_option("--testenv", help="run a shell in the requested test environment", action="store_true", default=False)
 parser.add_option("--resetup-environment", help="Re-setup environment", action="store_true", default=False)
-parser.add_option("--binary-mapping", help="Map binaries to use", type=str)
 parser.add_option("--load-list", help="Load list of tests to load from a file", type=str)
 parser.add_option("--prefix", help="prefix to run tests in", type=str, default="./st")
 parser.add_option("--srcdir", type=str, default=".", help="source directory")
@@ -232,13 +231,6 @@ elif not opts.list:
 
 testenv_default = "none"
 
-if opts.binary_mapping:
-    binary_mapping = dict([l.split(":") for l in opts.binary_mapping.split(",")])
-    os.environ["BINARY_MAPPING"] = opts.binary_mapping
-else:
-    binary_mapping = {}
-    os.environ["BINARY_MAPPING"] = ""
-
 # After this many seconds, the server will self-terminate.  All tests
 # must terminate in this time, and testenv will only stay alive this
 # long
@@ -265,16 +257,16 @@ if not opts.list:
         if opts.socket_wrapper and not has_socket_wrapper(opts.bindir):
             sys.stderr.write("You must include --enable-socket-wrapper when compiling Samba in order to execute 'make test'.  Exiting....\n")
             sys.exit(1)
-        testenv_default = "dc"
+        testenv_default = "ad_dc_ntvfs"
         from selftest.target.samba import Samba
-        target = Samba(opts.bindir, binary_mapping, ldap, opts.srcdir, server_maxtime)
+        target = Samba(opts.bindir, ldap, opts.srcdir, server_maxtime)
     elif opts.target == "samba3":
         if opts.socket_wrapper and not has_socket_wrapper(opts.bindir):
             sys.stderr.write("You must include --enable-socket-wrapper when compiling Samba in order to execute 'make test'.  Exiting....\n")
             sys.exit(1)
         testenv_default = "member"
         from selftest.target.samba3 import Samba3
-        target = Samba3(opts.bindir, binary_mapping, srcdir_abs, server_maxtime)
+        target = Samba3(opts.bindir, srcdir_abs, server_maxtime)
     elif opts.target == "none":
         testenv_default = "none"
         target = NoneTarget()

@@ -1,6 +1,7 @@
 <samba:parameter name="map readonly"
                  context="S"
-		 type="enum"
+                 type="enum"
+                 enumlist="enum_map_readonly"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>

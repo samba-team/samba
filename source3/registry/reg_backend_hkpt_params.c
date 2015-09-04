@@ -36,8 +36,8 @@ extern struct registry_ops regdb_ops;
 
 static int hkpt_params_fetch_values(const char *key, struct regval_ctr *regvals)
 {
-	uint32 base_index;
-	uint32 buffer_size;
+	uint32_t base_index;
+	uint32_t buffer_size;
 	char *buffer = NULL;
 
 	/* This is ALMOST the same as perflib_009_params, but HKPT has
@@ -45,7 +45,7 @@ static int hkpt_params_fetch_values(const char *key, struct regval_ctr *regvals)
 
 	base_index = reg_perfcount_get_base_index();
 	buffer_size = reg_perfcount_get_counter_names(base_index, &buffer);
-	regval_ctr_addvalue(regvals, "Counters", REG_MULTI_SZ, (uint8 *)buffer,
+	regval_ctr_addvalue(regvals, "Counters", REG_MULTI_SZ, (uint8_t *)buffer,
 			    buffer_size);
 
 	if(buffer_size > 0) {
@@ -53,7 +53,7 @@ static int hkpt_params_fetch_values(const char *key, struct regval_ctr *regvals)
 	}
 
 	buffer_size = reg_perfcount_get_counter_help(base_index, &buffer);
-	regval_ctr_addvalue(regvals, "Help", REG_MULTI_SZ, (uint8 *)buffer, buffer_size);
+	regval_ctr_addvalue(regvals, "Help", REG_MULTI_SZ, (uint8_t *)buffer, buffer_size);
 	if(buffer_size > 0) {
 		SAFE_FREE(buffer);
 	}

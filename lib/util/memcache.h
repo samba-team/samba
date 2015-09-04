@@ -40,7 +40,8 @@ enum memcache_number {
 	PDB_GETPWSID_CACHE,	/* talloc */
 	SINGLETON_CACHE_TALLOC,	/* talloc */
 	SINGLETON_CACHE,
-	SMB1_SEARCH_OFFSET_MAP
+	SMB1_SEARCH_OFFSET_MAP,
+	SHARE_MODE_LOCK_CACHE	/* talloc */
 };
 
 /*

@@ -9,10 +9,19 @@
     export CTDB_BASE=$(cd -P $(dirname "$0") ; dirname "$PWD")
 
 . $CTDB_BASE/functions
+
+service_name=natgw
+
 loadconfig
 
 [ -n "$CTDB_NATGW_NODES" ] || exit 0
 export CTDB_NATGW_NODES
+
+ctdb_setup_service_state_dir
+
+natgw_cfg_new="${service_state_dir}/cfg_new"
+natgw_cfg_old="${service_state_dir}/cfg_old"
+natgw_master_old="${service_state_dir}/master_old"
 
 natgw_check_config ()
 {
@@ -31,6 +40,39 @@ natgw_check_config ()
     [ -n "$CTDB_NATGW_STATIC_ROUTES" ] || CTDB_NATGW_STATIC_ROUTES="0.0.0.0/0"
 }
 
+natgw_write_config ()
+{
+    _f="$1"
+
+    cat >"$_f" <<EOF
+CTDB_NATGW_NODES="$CTDB_NATGW_NODES"
+CTDB_NATGW_PUBLIC_IP="$CTDB_NATGW_PUBLIC_IP"
+CTDB_NATGW_PUBLIC_IFACE="$CTDB_NATGW_PUBLIC_IFACE"
+CTDB_NATGW_DEFAULT_GATEWAY="$CTDB_NATGW_DEFAULT_GATEWAY"
+CTDB_NATGW_PRIVATE_NETWORK="$CTDB_NATGW_PRIVATE_NETWORK"
+CTDB_NATGW_STATIC_ROUTES="$CTDB_NATGW_STATIC_ROUTES"
+CTDB_NATGW_SLAVE_ONLY="$CTDB_NATGW_SLAVE_ONLY"
+EOF
+}
+
+natgw_config_has_changed ()
+{
+    natgw_write_config "$natgw_cfg_new"
+
+    # Non-existent old returns true, no log message
+    if [ ! -f "$natgw_cfg_old" ] ; then
+	return 0
+    fi
+
+    # Handle no change
+    if cmp "$natgw_cfg_old" "$natgw_cfg_new" >/dev/null 2>&1 ; then
+	return 1
+    fi
+
+    echo "NAT gateway configuration has changed"
+    return 0
+}
+
 natgw_set_capability ()
 {
     # Set NATGW capability depending on configuration
@@ -41,7 +83,7 @@ natgw_set_capability ()
     fi
 }
 
-natgw_clear ()
+_natgw_clear ()
 {
     _ip="${CTDB_NATGW_PUBLIC_IP%/*}"
     _maskbits="${CTDB_NATGW_PUBLIC_IP#*/}"
@@ -60,6 +102,15 @@ natgw_clear ()
 	-j MASQUERADE >/dev/null 2>/dev/null
 
     iptables -D INPUT -p tcp --syn -d $_ip/32 -j REJECT 2>/dev/null
+}
+
+natgw_clear ()
+{
+    if [ -r "$natgw_cfg_old" ] ; then
+	(. $natgw_cfg_old ; _natgw_clear)
+    else
+	_natgw_clear
+    fi
 }
 
 natgw_set_master ()
@@ -116,6 +167,24 @@ natgw_ensure_master ()
     fi
 }
 
+natgw_master_has_changed ()
+{
+    if [ -r "$natgw_master_old" ] ; then
+	read _old_natgwmaster <"$natgw_master_old"
+    else
+	_old_natgwmaster=""
+    fi
+    [ "$_old_natgwmaster" != "$natgwmaster" ]
+}
+
+natgw_save_state ()
+{
+    echo "$natgwmaster" >"$natgw_master_old"
+    # Created by natgw_config_has_changed()
+    mv "$natgw_cfg_new" "$natgw_cfg_old"
+}
+
+
 case "$1" in 
     setup)
 	natgw_check_config
@@ -139,14 +208,16 @@ case "$1" in
     updatenatgw|ipreallocated)
 	natgw_check_config
 
-	mypnn=$(ctdb pnn | cut -d: -f2)
+	ctdb_get_pnn
 
 	natgw_set_capability
 	natgw_ensure_master
 
+	natgw_config_has_changed || natgw_master_has_changed || exit 0
+
 	natgw_clear
 
-	if [ "$mypnn" = "$natgwmaster" ]; then
+	if [ "$pnn" = "$natgwmaster" ]; then
 	    natgw_set_master
 	else
 	    natgw_set_slave "$natgwip"
@@ -154,6 +225,9 @@ case "$1" in
 
 	# flush our route cache
 	set_proc sys/net/ipv4/route/flush 1
+
+	# Only update saved state when NATGW successfully updated
+	natgw_save_state
 	;;
 
     shutdown|removenatgw)

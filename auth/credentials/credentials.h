@@ -146,6 +146,8 @@ struct cli_credentials *cli_credentials_init_anon(TALLOC_CTX *mem_ctx);
 void cli_credentials_parse_string(struct cli_credentials *credentials, const char *data, enum credentials_obtained obtained);
 struct samr_Password *cli_credentials_get_nt_hash(struct cli_credentials *cred,
 						  TALLOC_CTX *mem_ctx);
+struct samr_Password *cli_credentials_get_old_nt_hash(struct cli_credentials *cred,
+						      TALLOC_CTX *mem_ctx);
 bool cli_credentials_set_realm(struct cli_credentials *cred, 
 			       const char *val, 
 			       enum credentials_obtained obtained);
@@ -194,9 +196,13 @@ void cli_credentials_set_kvno(struct cli_credentials *cred,
 bool cli_credentials_set_utf16_password(struct cli_credentials *cred,
 					const DATA_BLOB *password_utf16,
 					enum credentials_obtained obtained);
+bool cli_credentials_set_old_utf16_password(struct cli_credentials *cred,
+					    const DATA_BLOB *password_utf16);
 bool cli_credentials_set_nt_hash(struct cli_credentials *cred,
 				 const struct samr_Password *nt_hash, 
 				 enum credentials_obtained obtained);
+bool cli_credentials_set_old_nt_hash(struct cli_credentials *cred,
+				     const struct samr_Password *nt_hash);
 bool cli_credentials_set_ntlm_response(struct cli_credentials *cred,
 				       const DATA_BLOB *lm_response, 
 				       const DATA_BLOB *nt_response, 

@@ -32,9 +32,8 @@
 #include "../lib/crypto/md4.h"
 #include "system/kerberos.h"
 #include "auth/kerberos/kerberos.h"
-#include <hdb.h>
+#include "kdc/sdb.h"
 #include "kdc/samba_kdc.h"
-#include "kdc/kdc-glue.h"
 #include "kdc/db-glue.h"
 
 #define SAMBA_KVNO_GET_KRBTGT(kvno) \
@@ -67,7 +66,7 @@ static const char *trust_attrs[] = {
 };
 
 
-static KerberosTime ldb_msg_find_krb5time_ldap_time(struct ldb_message *msg, const char *attr, KerberosTime default_val)
+static time_t ldb_msg_find_krb5time_ldap_time(struct ldb_message *msg, const char *attr, time_t default_val)
 {
     const char *tmp;
     const char *gentime;
@@ -85,9 +84,9 @@ static KerberosTime ldb_msg_find_krb5time_ldap_time(struct ldb_message *msg, con
     return timegm(&tm);
 }
 
-static HDBFlags uf2HDBFlags(krb5_context context, uint32_t userAccountControl, enum samba_kdc_ent_type ent_type)
+static struct SDBFlags uf2SDBFlags(krb5_context context, uint32_t userAccountControl, enum samba_kdc_ent_type ent_type)
 {
-	HDBFlags flags = int2HDBFlags(0);
+	struct SDBFlags flags = int2SDBFlags(0);
 
 	/* we don't allow kadmin deletes */
 	flags.immutable = 1;
@@ -189,21 +188,12 @@ static HDBFlags uf2HDBFlags(krb5_context context, uint32_t userAccountControl, e
 
 static int samba_kdc_entry_destructor(struct samba_kdc_entry *p)
 {
-    hdb_entry_ex *entry_ex = p->entry_ex;
-    free_hdb_entry(&entry_ex->entry);
-    return 0;
-}
+	if (p->entry_ex != NULL) {
+		struct sdb_entry_ex *entry_ex = p->entry_ex;
+		free_sdb_entry(&entry_ex->entry);
+	}
 
-static void samba_kdc_free_entry(krb5_context context, hdb_entry_ex *entry_ex)
-{
-	/* this function is called only from hdb_free_entry().
-	 * Make sure we neutralize the destructor or we will
-	 * get a double free later when hdb_free_entry() will
-	 * try to call free_hdb_entry() */
-	talloc_set_destructor(entry_ex->ctx, NULL);
-
-	/* now proceed to free the talloc part */
-	talloc_free(entry_ex->ctx);
+	return 0;
 }
 
 static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
@@ -214,7 +204,7 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 						    bool is_rodc,
 						    uint32_t userAccountControl,
 						    enum samba_kdc_ent_type ent_type,
-						    hdb_entry_ex *entry_ex)
+						    struct sdb_entry_ex *entry_ex)
 {
 	krb5_error_code ret = 0;
 	enum ndr_err_code ndr_err;
@@ -374,7 +364,8 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 	if (allocated_keys == 0) {
 		if (kdc_db_ctx->rodc) {
 			/* We are on an RODC, but don't have keys for this account.  Signal this to the caller */
-			return HDB_ERR_NOT_FOUND_HERE;
+			/* TODO:  We need to call a generalised version of auth_sam_trigger_repl_secret from here */
+			return SDB_ERR_NOT_FOUND_HERE;
 		}
 
 		/* oh, no password.  Apparently (comment in
@@ -385,22 +376,20 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 
 	/* allocate space to decode into */
 	entry_ex->entry.keys.len = 0;
-	entry_ex->entry.keys.val = calloc(allocated_keys, sizeof(Key));
+	entry_ex->entry.keys.val = calloc(allocated_keys, sizeof(struct sdb_key));
 	if (entry_ex->entry.keys.val == NULL) {
 		ret = ENOMEM;
 		goto out;
 	}
 
 	if (hash && (supported_enctypes & ENC_RC4_HMAC_MD5)) {
-		Key key;
+		struct sdb_key key = {};
 
-		key.mkvno = 0;
-		key.salt = NULL; /* No salt for this enc type */
-
-		ret = krb5_keyblock_init(context,
-					 ENCTYPE_ARCFOUR_HMAC,
-					 hash->hash, sizeof(hash->hash),
-					 &key.key);
+		ret = smb_krb5_keyblock_init_contents(context,
+						      ENCTYPE_ARCFOUR_HMAC,
+						      hash->hash,
+						      sizeof(hash->hash),
+						      &key.key);
 		if (ret) {
 			goto out;
 		}
@@ -411,16 +400,13 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 
 	if (pkb4) {
 		for (i=0; i < pkb4->num_keys; i++) {
-			Key key;
+			struct sdb_key key = {};
 
 			if (!pkb4->keys[i].value) continue;
 
 			if (!(kerberos_enctype_to_bitmap(pkb4->keys[i].keytype) & supported_enctypes)) {
 				continue;
 			}
-
-			key.mkvno = 0;
-			key.salt = NULL;
 
 			if (pkb4->salt.string) {
 				DATA_BLOB salt;
@@ -433,9 +419,11 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 					goto out;
 				}
 
-				key.salt->type = hdb_pw_salt;
+				key.salt->type = KRB5_PW_SALT;
 
-				ret = krb5_data_copy(&key.salt->salt, salt.data, salt.length);
+				ret = krb5_copy_data_contents(&key.salt->salt,
+							      salt.data,
+							      salt.length);
 				if (ret) {
 					free(key.salt);
 					key.salt = NULL;
@@ -445,11 +433,11 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 
 			/* TODO: maybe pass the iteration_count somehow... */
 
-			ret = krb5_keyblock_init(context,
-						 pkb4->keys[i].keytype,
-						 pkb4->keys[i].value->data,
-						 pkb4->keys[i].value->length,
-						 &key.key);
+			ret = smb_krb5_keyblock_init_contents(context,
+							      pkb4->keys[i].keytype,
+							      pkb4->keys[i].value->data,
+							      pkb4->keys[i].value->length,
+							      &key.key);
 			if (ret == KRB5_PROG_ETYPE_NOSUPP) {
 				DEBUG(2,("Unsupported keytype ignored - type %u\n",
 					 pkb4->keys[i].keytype));
@@ -458,7 +446,7 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 			}
 			if (ret) {
 				if (key.salt) {
-					free_Salt(key.salt);
+					kerberos_free_data_contents(context, &key.salt->salt);
 					free(key.salt);
 					key.salt = NULL;
 				}
@@ -470,16 +458,13 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 		}
 	} else if (pkb3) {
 		for (i=0; i < pkb3->num_keys; i++) {
-			Key key;
+			struct sdb_key key = {};
 
 			if (!pkb3->keys[i].value) continue;
 
 			if (!(kerberos_enctype_to_bitmap(pkb3->keys[i].keytype) & supported_enctypes)) {
 				continue;
 			}
-
-			key.mkvno = 0;
-			key.salt = NULL;
 
 			if (pkb3->salt.string) {
 				DATA_BLOB salt;
@@ -492,9 +477,11 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 					goto out;
 				}
 
-				key.salt->type = hdb_pw_salt;
+				key.salt->type = KRB5_PW_SALT;
 
-				ret = krb5_data_copy(&key.salt->salt, salt.data, salt.length);
+				ret = krb5_copy_data_contents(&key.salt->salt,
+							      salt.data,
+							      salt.length);
 				if (ret) {
 					free(key.salt);
 					key.salt = NULL;
@@ -502,14 +489,14 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 				}
 			}
 
-			ret = krb5_keyblock_init(context,
-						 pkb3->keys[i].keytype,
-						 pkb3->keys[i].value->data,
-						 pkb3->keys[i].value->length,
-						 &key.key);
+			ret = smb_krb5_keyblock_init_contents(context,
+							      pkb3->keys[i].keytype,
+							      pkb3->keys[i].value->data,
+							      pkb3->keys[i].value->length,
+							      &key.key);
 			if (ret) {
 				if (key.salt) {
-					free_Salt(key.salt);
+					kerberos_free_data_contents(context, &key.salt->salt);
 					free(key.salt);
 					key.salt = NULL;
 				}
@@ -532,17 +519,72 @@ out:
 	return ret;
 }
 
+static int principal_comp_strcmp_int(krb5_context context,
+				     krb5_const_principal principal,
+				     unsigned int component,
+				     const char *string,
+				     bool do_strcasecmp)
+{
+	const char *p;
+	size_t len;
+
+#if defined(HAVE_KRB5_PRINCIPAL_GET_COMP_STRING)
+	p = krb5_principal_get_comp_string(context, principal, component);
+	if (p == NULL) {
+		return -1;
+	}
+	len = strlen(p);
+#else
+	krb5_data *d;
+	if (component >= krb5_princ_size(context, principal)) {
+		return -1;
+	}
+
+	d = krb5_princ_component(context, principal, component);
+	if (d == NULL) {
+		return -1;
+	}
+
+	p = d->data;
+	len = d->length;
+#endif
+	if (do_strcasecmp) {
+		return strncasecmp(p, string, len);
+	} else {
+		return strncmp(p, string, len);
+	}
+}
+
+static int principal_comp_strcasecmp(krb5_context context,
+				     krb5_const_principal principal,
+				     unsigned int component,
+				     const char *string)
+{
+	return principal_comp_strcmp_int(context, principal,
+					 component, string, true);
+}
+
+static int principal_comp_strcmp(krb5_context context,
+				 krb5_const_principal principal,
+				 unsigned int component,
+				 const char *string)
+{
+	return principal_comp_strcmp_int(context, principal,
+					 component, string, false);
+}
+
 /*
  * Construct an hdb_entry from a directory entry.
  */
 static krb5_error_code samba_kdc_message2entry(krb5_context context,
 					       struct samba_kdc_db_context *kdc_db_ctx,
-					       TALLOC_CTX *mem_ctx, krb5_const_principal principal,
+					       TALLOC_CTX *mem_ctx,
+					       krb5_const_principal principal,
 					       enum samba_kdc_ent_type ent_type,
 					       unsigned flags,
 					       struct ldb_dn *realm_dn,
 					       struct ldb_message *msg,
-					       hdb_entry_ex *entry_ex)
+					       struct sdb_entry_ex *entry_ex)
 {
 	struct loadparm_context *lp_ctx = kdc_db_ctx->lp_ctx;
 	uint32_t userAccountControl;
@@ -579,16 +621,15 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 		is_computer = TRUE;
 	}
 
-	memset(entry_ex, 0, sizeof(*entry_ex));
+	ZERO_STRUCTP(entry_ex);
 
-	p = talloc(mem_ctx, struct samba_kdc_entry);
+	p = talloc_zero(mem_ctx, struct samba_kdc_entry);
 	if (!p) {
 		ret = ENOMEM;
 		goto out;
 	}
 
 	p->kdc_db_ctx = kdc_db_ctx;
-	p->entry_ex = entry_ex;
 	p->realm_dn = talloc_reference(p, realm_dn);
 	if (!p->realm_dn) {
 		ret = ENOMEM;
@@ -597,11 +638,7 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 
 	talloc_set_destructor(p, samba_kdc_entry_destructor);
 
-	/* make sure we do not have bogus data in there */
-	memset(&entry_ex->entry, 0, sizeof(hdb_entry));
-
 	entry_ex->ctx = p;
-	entry_ex->free_entry = samba_kdc_free_entry;
 
 	userAccountControl = ldb_msg_find_attr_as_uint(msg, "userAccountControl", 0);
 
@@ -625,30 +662,92 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 		userAccountControl |= msDS_User_Account_Control_Computed;
 	}
 
-	entry_ex->entry.principal = malloc(sizeof(*(entry_ex->entry.principal)));
-	if (ent_type == SAMBA_KDC_ENT_TYPE_ANY && principal == NULL) {
-		krb5_make_principal(context, &entry_ex->entry.principal, lpcfg_realm(lp_ctx), samAccountName, NULL);
-	} else if (principal->name.name_type == KRB5_NT_ENTERPRISE_PRINCIPAL) {
-		krb5_make_principal(context, &entry_ex->entry.principal, lpcfg_realm(lp_ctx), samAccountName, NULL);
+	/* 
+	 * If we are set to canonicalize, we get back the fixed UPPER
+	 * case realm, and the real username (ie matching LDAP
+	 * samAccountName) 
+	 *
+	 * Otherwise, if we are set to enterprise, we
+	 * get back the whole principal as-sent 
+	 *
+	 * Finally, if we are not set to canonicalize, we get back the
+	 * fixed UPPER case realm, but the as-sent username
+	 */
+
+	if (ent_type == SAMBA_KDC_ENT_TYPE_KRBTGT) {
+		if (flags & (SDB_F_CANON)) {
+			/*
+			 * When requested to do so, ensure that the
+			 * both realm values in the principal are set
+			 * to the upper case, canonical realm
+			 */
+			ret = smb_krb5_make_principal(context, &entry_ex->entry.principal,
+						      lpcfg_realm(lp_ctx), "krbtgt",
+						      lpcfg_realm(lp_ctx), NULL);
+			if (ret) {
+				krb5_clear_error_message(context);
+				goto out;
+			}
+			smb_krb5_principal_set_type(context, entry_ex->entry.principal, KRB5_NT_SRV_INST);
+		} else {
+			ret = krb5_copy_principal(context, principal, &entry_ex->entry.principal);
+			if (ret) {
+				krb5_clear_error_message(context);
+				goto out;
+			}
+			/*
+			 * this appears to be required regardless of
+			 * the canonicalize flag from the client
+			 */
+			ret = smb_krb5_principal_set_realm(context, entry_ex->entry.principal, lpcfg_realm(lp_ctx));
+			if (ret) {
+				krb5_clear_error_message(context);
+				goto out;
+			}
+		}
+
+	} else if (ent_type == SAMBA_KDC_ENT_TYPE_ANY && principal == NULL) {
+		ret = smb_krb5_make_principal(context, &entry_ex->entry.principal, lpcfg_realm(lp_ctx), samAccountName, NULL);
+		if (ret) {
+			krb5_clear_error_message(context);
+			goto out;
+		}
+	} else if (flags & SDB_F_CANON && flags & SDB_F_FOR_AS_REQ) {
+		/*
+		 * SDB_F_CANON maps from the canonicalize flag in the
+		 * packet, and has a different meaning between AS-REQ
+		 * and TGS-REQ.  We only change the principal in the AS-REQ case
+		 */
+		ret = smb_krb5_make_principal(context, &entry_ex->entry.principal, lpcfg_realm(lp_ctx), samAccountName, NULL);
+		if (ret) {
+			krb5_clear_error_message(context);
+			goto out;
+		}
 	} else {
-		ret = copy_Principal(principal, entry_ex->entry.principal);
+		ret = krb5_copy_principal(context, principal, &entry_ex->entry.principal);
 		if (ret) {
 			krb5_clear_error_message(context);
 			goto out;
 		}
 
-		/* While we have copied the client principal, tests
-		 * show that Win2k3 returns the 'corrected' realm, not
-		 * the client-specified realm.  This code attempts to
-		 * replace the client principal's realm with the one
-		 * we determine from our records */
-
-		/* this has to be with malloc() */
-		krb5_principal_set_realm(context, entry_ex->entry.principal, lpcfg_realm(lp_ctx));
+		if (smb_krb5_principal_get_type(context, principal) != KRB5_NT_ENTERPRISE_PRINCIPAL) {
+			/* While we have copied the client principal, tests
+			 * show that Win2k3 returns the 'corrected' realm, not
+			 * the client-specified realm.  This code attempts to
+			 * replace the client principal's realm with the one
+			 * we determine from our records */
+			
+			/* this has to be with malloc() */
+			ret = smb_krb5_principal_set_realm(context, entry_ex->entry.principal, lpcfg_realm(lp_ctx));
+			if (ret) {
+				krb5_clear_error_message(context);
+				goto out;
+			}
+		}
 	}
 
 	/* First try and figure out the flags based on the userAccountControl */
-	entry_ex->entry.flags = uf2HDBFlags(context, userAccountControl, ent_type);
+	entry_ex->entry.flags = uf2SDBFlags(context, userAccountControl, ent_type);
 
 	/* Windows 2008 seems to enforce this (very sensible) rule by
 	 * default - don't allow offline attacks on a user's password
@@ -661,8 +760,19 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 			entry_ex->entry.flags.server = 0;
 		}
 	}
-
-	if (flags & HDB_F_ADMIN_DATA) {
+	/*
+	 * To give the correct type of error to the client, we must
+	 * not just return the entry without .server set, we must
+	 * pretend the principal does not exist.  Otherwise we may
+	 * return ERR_POLICY instead of
+	 * KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN
+	 */
+	if (ent_type == SAMBA_KDC_ENT_TYPE_SERVER && entry_ex->entry.flags.server == 0) {
+		ret = SDB_ERR_NOENTRY;
+		krb5_set_error_message(context, ret, "samba_kdc_message2entry: no servicePrincipalName present for this server, refusing with no-such-entry");
+		goto out;
+	}
+	if (flags & SDB_F_ADMIN_DATA) {
 		/* These (created_by, modified_by) parts of the entry are not relevant for Samba4's use
 		 * of the Heimdal KDC.  They are stored in a the traditional
 		 * DB for audit purposes, and still form part of the structure
@@ -671,11 +781,16 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 		/* use 'whenCreated' */
 		entry_ex->entry.created_by.time = ldb_msg_find_krb5time_ldap_time(msg, "whenCreated", 0);
 		/* use 'kadmin' for now (needed by mit_samba) */
-		krb5_make_principal(context,
-				    &entry_ex->entry.created_by.principal,
-				    lpcfg_realm(lp_ctx), "kadmin", NULL);
 
-		entry_ex->entry.modified_by = (Event *) malloc(sizeof(Event));
+		ret = smb_krb5_make_principal(context,
+					      &entry_ex->entry.created_by.principal,
+					      lpcfg_realm(lp_ctx), "kadmin", NULL);
+		if (ret) {
+			krb5_clear_error_message(context);
+			goto out;
+		}
+
+		entry_ex->entry.modified_by = (struct sdb_event *) malloc(sizeof(struct sdb_event));
 		if (entry_ex->entry.modified_by == NULL) {
 			ret = ENOMEM;
 			krb5_set_error_message(context, ret, "malloc: out of memory");
@@ -685,9 +800,13 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 		/* use 'whenChanged' */
 		entry_ex->entry.modified_by->time = ldb_msg_find_krb5time_ldap_time(msg, "whenChanged", 0);
 		/* use 'kadmin' for now (needed by mit_samba) */
-		krb5_make_principal(context,
-				    &entry_ex->entry.modified_by->principal,
-				    lpcfg_realm(lp_ctx), "kadmin", NULL);
+		ret = smb_krb5_make_principal(context,
+					      &entry_ex->entry.modified_by->principal,
+					      lpcfg_realm(lp_ctx), "kadmin", NULL);
+		if (ret) {
+			krb5_clear_error_message(context);
+			goto out;
+		}
 	}
 
 
@@ -701,23 +820,34 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 	}
 
 	if (rid == DOMAIN_RID_KRBTGT) {
+		char *realm = NULL;
+
 		entry_ex->entry.valid_end = NULL;
 		entry_ex->entry.pw_end = NULL;
 
 		entry_ex->entry.flags.invalid = 0;
 		entry_ex->entry.flags.server = 1;
 
+		realm = smb_krb5_principal_get_realm(context, principal);
+		if (realm == NULL) {
+			ret = ENOMEM;
+			goto out;
+		}
+
 		/* Don't mark all requests for the krbtgt/realm as
 		 * 'change password', as otherwise we could get into
 		 * trouble, and not enforce the password expirty.
 		 * Instead, only do it when request is for the kpasswd service */
 		if (ent_type == SAMBA_KDC_ENT_TYPE_SERVER
-		    && principal->name.name_string.len == 2
-		    && (strcmp(principal->name.name_string.val[0], "kadmin") == 0)
-		    && (strcmp(principal->name.name_string.val[1], "changepw") == 0)
-		    && lpcfg_is_my_domain_or_realm(lp_ctx, principal->realm)) {
+		    && krb5_princ_size(context, principal) == 2
+		    && (principal_comp_strcmp(context, principal, 0, "kadmin") == 0)
+		    && (principal_comp_strcmp(context, principal, 1, "changepw") == 0)
+		    && lpcfg_is_my_domain_or_realm(lp_ctx, realm)) {
 			entry_ex->entry.flags.change_pw = 1;
 		}
+
+		SAFE_FREE(realm);
+
 		entry_ex->entry.flags.client = 0;
 		entry_ex->entry.flags.forwardable = 1;
 		entry_ex->entry.flags.ok_as_delegate = 1;
@@ -801,14 +931,12 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 
 	*entry_ex->entry.max_renew = kdc_db_ctx->policy.renewal_lifetime;
 
-	entry_ex->entry.generation = NULL;
-
 	/* Get keys from the db */
 	ret = samba_kdc_message2entry_keys(context, kdc_db_ctx, p, msg,
 					   rid, is_rodc, userAccountControl,
 					   ent_type, entry_ex);
 	if (ret) {
-		/* Could be bougus data in the entry, or out of memory */
+		/* Could be bogus data in the entry, or out of memory */
 		goto out;
 	}
 
@@ -826,7 +954,7 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 		goto out;
 	}
 	for (i=0; i < entry_ex->entry.etypes->len; i++) {
-		entry_ex->entry.etypes->val[i] = entry_ex->entry.keys.val[i].key.keytype;
+		entry_ex->entry.etypes->val[i] = KRB5_KEY_TYPE(&entry_ex->entry.keys.val[i].key);
 	}
 
 
@@ -835,7 +963,8 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 out:
 	if (ret != 0) {
 		/* This doesn't free ent itself, that is for the eventual caller to do */
-		hdb_free_entry(context, entry_ex);
+		sdb_free_entry(entry_ex);
+		ZERO_STRUCTP(entry_ex);
 	} else {
 		talloc_steal(kdc_db_ctx, entry_ex->ctx);
 	}
@@ -855,11 +984,14 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 					       unsigned flags,
 					       uint32_t kvno,
 					       struct ldb_message *msg,
-					       hdb_entry_ex *entry_ex)
+					       struct sdb_entry_ex *entry_ex)
 {
 	struct loadparm_context *lp_ctx = kdc_db_ctx->lp_ctx;
-	const char *dnsdomain;
-	const char *realm = lpcfg_realm(lp_ctx);
+	const char *our_realm = lpcfg_realm(lp_ctx);
+	const char *dnsdomain = NULL;
+	char *partner_realm = NULL;
+	const char *realm = NULL;
+	const char *krbtgt_realm = NULL;
 	DATA_BLOB password_utf16 = data_blob_null;
 	DATA_BLOB password_utf8 = data_blob_null;
 	struct samr_Password _password_hash;
@@ -867,19 +999,70 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 	const struct ldb_val *password_val;
 	struct trustAuthInOutBlob password_blob;
 	struct samba_kdc_entry *p;
-	bool use_previous;
+	bool use_previous = false;
 	uint32_t current_kvno;
+	uint32_t previous_kvno;
 	uint32_t num_keys = 0;
 	enum ndr_err_code ndr_err;
 	int ret, trust_direction_flags;
 	unsigned int i;
 	struct AuthenticationInformationArray *auth_array;
-	uint32_t supported_enctypes = ENCTYPE_ARCFOUR_HMAC;
+	struct timeval tv;
+	NTTIME an_hour_ago;
+	uint32_t *auth_kvno;
+	bool preferr_current = false;
+	uint32_t supported_enctypes = ENC_RC4_HMAC_MD5;
 
 	if (dsdb_functional_level(kdc_db_ctx->samdb) >= DS_DOMAIN_FUNCTION_2008) {
 		supported_enctypes = ldb_msg_find_attr_as_uint(msg,
 					"msDS-SupportedEncryptionTypes",
 					supported_enctypes);
+	}
+
+	trust_direction_flags = ldb_msg_find_attr_as_int(msg, "trustDirection", 0);
+	if (!(trust_direction_flags & direction)) {
+		krb5_clear_error_message(context);
+		ret = SDB_ERR_NOENTRY;
+		goto out;
+	}
+
+	dnsdomain = ldb_msg_find_attr_as_string(msg, "trustPartner", NULL);
+	if (dnsdomain == NULL) {
+		krb5_clear_error_message(context);
+		ret = SDB_ERR_NOENTRY;
+		goto out;
+	}
+	partner_realm = strupper_talloc(mem_ctx, dnsdomain);
+	if (partner_realm == NULL) {
+		krb5_clear_error_message(context);
+		ret = ENOMEM;
+		goto out;
+	}
+
+	if (direction == INBOUND) {
+		realm = our_realm;
+		krbtgt_realm = partner_realm;
+
+		password_val = ldb_msg_find_ldb_val(msg, "trustAuthIncoming");
+	} else { /* OUTBOUND */
+		realm = partner_realm;
+		krbtgt_realm = our_realm;
+
+		password_val = ldb_msg_find_ldb_val(msg, "trustAuthOutgoing");
+	}
+
+	if (password_val == NULL) {
+		krb5_clear_error_message(context);
+		ret = SDB_ERR_NOENTRY;
+		goto out;
+	}
+
+	ndr_err = ndr_pull_struct_blob(password_val, mem_ctx, &password_blob,
+				       (ndr_pull_flags_fn_t)ndr_pull_trustAuthInOutBlob);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		krb5_clear_error_message(context);
+		ret = EINVAL;
+		goto out;
 	}
 
 	p = talloc(mem_ctx, struct samba_kdc_entry);
@@ -889,75 +1072,40 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 	}
 
 	p->kdc_db_ctx = kdc_db_ctx;
-	p->entry_ex = entry_ex;
 	p->realm_dn = realm_dn;
 
 	talloc_set_destructor(p, samba_kdc_entry_destructor);
 
 	/* make sure we do not have bogus data in there */
-	memset(&entry_ex->entry, 0, sizeof(hdb_entry));
+	memset(&entry_ex->entry, 0, sizeof(struct sdb_entry));
 
 	entry_ex->ctx = p;
-	entry_ex->free_entry = samba_kdc_free_entry;
 
 	/* use 'whenCreated' */
 	entry_ex->entry.created_by.time = ldb_msg_find_krb5time_ldap_time(msg, "whenCreated", 0);
 	/* use 'kadmin' for now (needed by mit_samba) */
-	krb5_make_principal(context,
-			    &entry_ex->entry.created_by.principal,
-			    realm, "kadmin", NULL);
-
-	entry_ex->entry.principal = malloc(sizeof(*(entry_ex->entry.principal)));
-	if (entry_ex->entry.principal == NULL) {
-		krb5_clear_error_message(context);
-		ret = ENOMEM;
-		goto out;
-	}
-
-	ret = copy_Principal(principal, entry_ex->entry.principal);
+	ret = smb_krb5_make_principal(context,
+				      &entry_ex->entry.created_by.principal,
+				      realm, "kadmin", NULL);
 	if (ret) {
 		krb5_clear_error_message(context);
 		goto out;
 	}
 
 	/*
-	 * While we have copied the client principal, tests
-	 * show that Win2k3 returns the 'corrected' realm, not
-	 * the client-specified realm.  This code attempts to
-	 * replace the client principal's realm with the one
-	 * we determine from our records
+	 * We always need to generate the canonicalized principal
+	 * with the values of our database.
 	 */
-
-	krb5_principal_set_realm(context, entry_ex->entry.principal, realm);
+	ret = smb_krb5_make_principal(context, &entry_ex->entry.principal, realm,
+				      "krbtgt", krbtgt_realm, NULL);
+	if (ret) {
+		krb5_clear_error_message(context);
+		goto out;
+	}
+	smb_krb5_principal_set_type(context, entry_ex->entry.principal,
+				    KRB5_NT_SRV_INST);
 
 	entry_ex->entry.valid_start = NULL;
-
-	trust_direction_flags = ldb_msg_find_attr_as_int(msg, "trustDirection", 0);
-
-	if (direction == INBOUND) {
-		password_val = ldb_msg_find_ldb_val(msg, "trustAuthIncoming");
-
-	} else { /* OUTBOUND */
-		dnsdomain = ldb_msg_find_attr_as_string(msg, "trustPartner", NULL);
-		/* replace realm */
-		realm = strupper_talloc(mem_ctx, dnsdomain);
-		password_val = ldb_msg_find_ldb_val(msg, "trustAuthOutgoing");
-	}
-
-	if (!password_val || !(trust_direction_flags & direction)) {
-		krb5_clear_error_message(context);
-		ret = HDB_ERR_NOENTRY;
-		goto out;
-	}
-
-	ndr_err = ndr_pull_struct_blob(password_val, mem_ctx, &password_blob,
-					   (ndr_pull_flags_fn_t)ndr_pull_trustAuthInOutBlob);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		krb5_clear_error_message(context);
-		ret = EINVAL;
-		goto out;
-	}
-
 
 	/* we need to work out if we are going to use the current or
 	 * the previous password hash.
@@ -967,11 +1115,40 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 	 * then we use the previous substrucure.
 	 */
 
+	/*
+	 * Windows preferrs the previous key for one hour.
+	 */
+	tv = timeval_current();
+	if (tv.tv_sec > 3600) {
+		tv.tv_sec -= 3600;
+	}
+	an_hour_ago = timeval_to_nttime(&tv);
+
 	/* first work out the current kvno */
 	current_kvno = 0;
 	for (i=0; i < password_blob.count; i++) {
-		if (password_blob.current.array[i].AuthType == TRUST_AUTH_TYPE_VERSION) {
-			current_kvno = password_blob.current.array[i].AuthInfo.version.version;
+		struct AuthenticationInformation *a =
+			&password_blob.current.array[i];
+
+		if (a->LastUpdateTime <= an_hour_ago) {
+			preferr_current = true;
+		}
+
+		if (a->AuthType == TRUST_AUTH_TYPE_VERSION) {
+			current_kvno = a->AuthInfo.version.version;
+		}
+	}
+	if (current_kvno == 0) {
+		previous_kvno = 255;
+	} else {
+		previous_kvno = current_kvno - 1;
+	}
+	for (i=0; i < password_blob.count; i++) {
+		struct AuthenticationInformation *a =
+			&password_blob.previous.array[i];
+
+		if (a->AuthType == TRUST_AUTH_TYPE_VERSION) {
+			previous_kvno = a->AuthInfo.version.version;
 		}
 	}
 
@@ -980,31 +1157,48 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 	if (password_blob.previous.count == 0) {
 		/* there is no previous password */
 		use_previous = false;
-	} else if (!(flags & HDB_F_KVNO_SPECIFIED) ||
-	    kvno == current_kvno) {
+	} else if (!(flags & SDB_F_KVNO_SPECIFIED)) {
+		/*
+		 * If not specified we use the lowest kvno
+		 * for the first hour after an update.
+		 */
+		if (preferr_current) {
+			use_previous = false;
+		} else if (previous_kvno < current_kvno) {
+			use_previous = true;
+		} else {
+			use_previous = false;
+		}
+	} else if (kvno == current_kvno) {
+		/*
+		 * Exact match ...
+		 */
 		use_previous = false;
-	} else if ((kvno+1 == current_kvno) ||
-		   (kvno == 255 && current_kvno == 0)) {
+	} else if (kvno == previous_kvno) {
+		/*
+		 * Exact match ...
+		 */
 		use_previous = true;
 	} else {
-		DEBUG(1,(__location__ ": Request for unknown kvno %u - current kvno is %u\n",
-			 kvno, current_kvno));
-		krb5_clear_error_message(context);
-		ret = HDB_ERR_NOENTRY;
-		goto out;
+		/*
+		 * Fallback to the current one for anything else
+		 */
+		use_previous = false;
 	}
 
 	if (use_previous) {
 		auth_array = &password_blob.previous;
+		auth_kvno = &previous_kvno;
 	} else {
 		auth_array = &password_blob.current;
+		auth_kvno = &current_kvno;
 	}
 
 	/* use the kvno the client specified, if available */
-	if (flags & HDB_F_KVNO_SPECIFIED) {
+	if (flags & SDB_F_KVNO_SPECIFIED) {
 		entry_ex->entry.kvno = kvno;
 	} else {
-		entry_ex->entry.kvno = current_kvno;
+		entry_ex->entry.kvno = *auth_kvno;
 	}
 
 	for (i=0; i < auth_array->count; i++) {
@@ -1017,7 +1211,7 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 				break;
 			}
 
-			if (supported_enctypes & ENCTYPE_ARCFOUR_HMAC) {
+			if (supported_enctypes & ENC_RC4_HMAC_MD5) {
 				mdfour(_password_hash.hash, password_utf16.data, password_utf16.length);
 				if (password_hash == NULL) {
 					num_keys += 1;
@@ -1049,7 +1243,7 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 			}
 			break;
 		} else if (auth_array->array[i].AuthType == TRUST_AUTH_TYPE_NT4OWF) {
-			if (supported_enctypes & ENCTYPE_ARCFOUR_HMAC) {
+			if (supported_enctypes & ENC_RC4_HMAC_MD5) {
 				password_hash = &auth_array->array[i].AuthInfo.nt4owf.password;
 				num_keys += 1;
 			}
@@ -1060,11 +1254,11 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 	if (num_keys == 0) {
 		DEBUG(1,(__location__ ": no usable key found\n"));
 		krb5_clear_error_message(context);
-		ret = HDB_ERR_NOENTRY;
+		ret = SDB_ERR_NOENTRY;
 		goto out;
 	}
 
-	entry_ex->entry.keys.val = calloc(num_keys, sizeof(Key));
+	entry_ex->entry.keys.val = calloc(num_keys, sizeof(struct sdb_key));
 	if (entry_ex->entry.keys.val == NULL) {
 		krb5_clear_error_message(context);
 		ret = ENOMEM;
@@ -1072,29 +1266,30 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 	}
 
 	if (password_utf8.length != 0) {
-		Key key = {};
-		krb5_const_principal salt_principal = principal;
-		krb5_salt salt;
+		struct sdb_key key = {};
+		krb5_const_principal salt_principal = entry_ex->entry.principal;
+		krb5_data salt;
 		krb5_data cleartext_data;
 
-		cleartext_data.data = password_utf8.data;
+		cleartext_data.data = discard_const_p(char, password_utf8.data);
 		cleartext_data.length = password_utf8.length;
 
-		ret = krb5_get_pw_salt(context,
-				       salt_principal,
-				       &salt);
+		ret = smb_krb5_get_pw_salt(context,
+					   salt_principal,
+					   &salt);
 		if (ret != 0) {
 			goto out;
 		}
 
-		if (supported_enctypes & ENCTYPE_AES256_CTS_HMAC_SHA1_96) {
-			ret = krb5_string_to_key_data_salt(context,
-							   ENCTYPE_AES256_CTS_HMAC_SHA1_96,
-							   cleartext_data,
-							   salt,
-							   &key.key);
+		if (supported_enctypes & ENC_HMAC_SHA1_96_AES256) {
+			ret = smb_krb5_create_key_from_string(context,
+							      salt_principal,
+							      &salt,
+							      &cleartext_data,
+							      ENCTYPE_AES256_CTS_HMAC_SHA1_96,
+							      &key.key);
 			if (ret != 0) {
-				krb5_free_salt(context, salt);
+				kerberos_free_data_contents(context, &salt);
 				goto out;
 			}
 
@@ -1102,14 +1297,15 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 			entry_ex->entry.keys.len++;
 		}
 
-		if (supported_enctypes & ENCTYPE_AES128_CTS_HMAC_SHA1_96) {
-			ret = krb5_string_to_key_data_salt(context,
-							   ENCTYPE_AES128_CTS_HMAC_SHA1_96,
-							   cleartext_data,
-							   salt,
-							   &key.key);
+		if (supported_enctypes & ENC_HMAC_SHA1_96_AES128) {
+			ret = smb_krb5_create_key_from_string(context,
+							      salt_principal,
+							      &salt,
+							      &cleartext_data,
+							      ENCTYPE_AES128_CTS_HMAC_SHA1_96,
+							      &key.key);
 			if (ret != 0) {
-				krb5_free_salt(context, salt);
+				kerberos_free_data_contents(context, &salt);
 				goto out;
 			}
 
@@ -1117,17 +1313,17 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 			entry_ex->entry.keys.len++;
 		}
 
-		krb5_free_salt(context, salt);
+		kerberos_free_data_contents(context, &salt);
 	}
 
 	if (password_hash != NULL) {
-		Key key = {};
+		struct sdb_key key = {};
 
-		ret = krb5_keyblock_init(context,
-					 ENCTYPE_ARCFOUR_HMAC,
-					 password_hash->hash,
-					 sizeof(password_hash->hash),
-					 &key.key);
+		ret = smb_krb5_keyblock_init_contents(context,
+						      ENCTYPE_ARCFOUR_HMAC,
+						      password_hash->hash,
+						      sizeof(password_hash->hash),
+						      &key.key);
 		if (ret != 0) {
 			goto out;
 		}
@@ -1136,7 +1332,7 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 		entry_ex->entry.keys.len++;
 	}
 
-	entry_ex->entry.flags = int2HDBFlags(0);
+	entry_ex->entry.flags = int2SDBFlags(0);
 	entry_ex->entry.flags.immutable = 1;
 	entry_ex->entry.flags.invalid = 0;
 	entry_ex->entry.flags.server = 1;
@@ -1147,8 +1343,6 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 	entry_ex->entry.max_life = NULL;
 
 	entry_ex->entry.max_renew = NULL;
-
-	entry_ex->entry.generation = NULL;
 
 	entry_ex->entry.etypes = malloc(sizeof(*(entry_ex->entry.etypes)));
 	if (entry_ex->entry.etypes == NULL) {
@@ -1164,16 +1358,17 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 		goto out;
 	}
 	for (i=0; i < entry_ex->entry.etypes->len; i++) {
-		entry_ex->entry.etypes->val[i] = entry_ex->entry.keys.val[i].key.keytype;
+		entry_ex->entry.etypes->val[i] = KRB5_KEY_TYPE(&entry_ex->entry.keys.val[i].key);
 	}
-
 
 	p->msg = talloc_steal(p, msg);
 
 out:
+	TALLOC_FREE(partner_realm);
+
 	if (ret != 0) {
 		/* This doesn't free ent itself, that is for the eventual caller to do */
-		hdb_free_entry(context, entry_ex);
+		sdb_free_entry(entry_ex);
 	} else {
 		talloc_steal(kdc_db_ctx, entry_ex->ctx);
 	}
@@ -1191,13 +1386,12 @@ static krb5_error_code samba_kdc_lookup_trust(krb5_context context, struct ldb_c
 	NTSTATUS status;
 	const char * const *attrs = trust_attrs;
 
-	status = sam_get_results_trust(ldb_ctx,
-				       mem_ctx, realm, realm, attrs,
-				       pmsg);
+	status = dsdb_trust_search_tdo(ldb_ctx, realm, realm,
+				       attrs, mem_ctx, pmsg);
 	if (NT_STATUS_IS_OK(status)) {
 		return 0;
-	} else if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
-		return HDB_ERR_NOENTRY;
+	} else if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+		return SDB_ERR_NOENTRY;
 	} else if (NT_STATUS_EQUAL(status, NT_STATUS_NO_MEMORY)) {
 		int ret = ENOMEM;
 		krb5_set_error_message(context, ret, "get_sam_result_trust: out of memory");
@@ -1215,16 +1409,24 @@ static krb5_error_code samba_kdc_lookup_client(krb5_context context,
 						krb5_const_principal principal,
 						const char **attrs,
 						struct ldb_dn **realm_dn,
-						struct ldb_message **msg) {
+						struct ldb_message **msg)
+{
 	NTSTATUS nt_status;
+<<<<<<< HEAD
 	char *principal_string;
 
 	if (principal->name.name_type == KRB5_NT_ENTERPRISE_PRINCIPAL) {
+=======
+	char *principal_string = NULL;
+
+	if (smb_krb5_principal_get_type(context, principal) == KRB5_NT_ENTERPRISE_PRINCIPAL) {
+>>>>>>> replmetadata-sort-minimal
 		principal_string = smb_krb5_principal_get_comp_string(mem_ctx, context,
 								      principal, 0);
 		if (principal_string == NULL) {
 			return ENOMEM;
 		}
+<<<<<<< HEAD
 		nt_status = sam_get_results_principal(kdc_db_ctx->samdb,
 						      mem_ctx, principal_string, attrs,
 						      realm_dn, msg);
@@ -1241,8 +1443,116 @@ static krb5_error_code samba_kdc_lookup_client(krb5_context context,
 		free(principal_string);
 	}
 
+=======
+	} else {
+		char *principal_string_m = NULL;
+		krb5_error_code ret;
+
+		ret = krb5_unparse_name(context, principal, &principal_string_m);
+		if (ret != 0) {
+			return ret;
+		}
+
+		principal_string = talloc_strdup(mem_ctx, principal_string_m);
+		SAFE_FREE(principal_string_m);
+		if (principal_string == NULL) {
+			return ENOMEM;
+		}
+	}
+
+	nt_status = sam_get_results_principal(kdc_db_ctx->samdb,
+					      mem_ctx, principal_string, attrs,
+					      realm_dn, msg);
+>>>>>>> replmetadata-sort-minimal
 	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_SUCH_USER)) {
-		return HDB_ERR_NOENTRY;
+		krb5_principal fallback_principal = NULL;
+		unsigned int num_comp;
+		char *fallback_realm = NULL;
+		char *fallback_account = NULL;
+		krb5_error_code ret;
+
+		ret = krb5_parse_name(context, principal_string,
+				      &fallback_principal);
+		TALLOC_FREE(principal_string);
+		if (ret != 0) {
+			return ret;
+		}
+
+		num_comp = krb5_princ_size(context, fallback_principal);
+		fallback_realm = smb_krb5_principal_get_realm(context,
+							      fallback_principal);
+		if (fallback_realm == NULL) {
+			krb5_free_principal(context, fallback_principal);
+			return ENOMEM;
+		}
+
+		if (num_comp == 1) {
+			size_t len;
+
+			fallback_account = smb_krb5_principal_get_comp_string(mem_ctx,
+						context, fallback_principal, 0);
+			if (fallback_account == NULL) {
+				krb5_free_principal(context, fallback_principal);
+				SAFE_FREE(fallback_realm);
+				return ENOMEM;
+			}
+
+			len = strlen(fallback_account);
+			if (len >= 2 && fallback_account[len - 1] == '$') {
+				TALLOC_FREE(fallback_account);
+			}
+		}
+		krb5_free_principal(context, fallback_principal);
+		fallback_principal = NULL;
+
+		if (fallback_account != NULL) {
+			char *with_dollar;
+
+			with_dollar = talloc_asprintf(mem_ctx, "%s$",
+						     fallback_account);
+			if (with_dollar == NULL) {
+				SAFE_FREE(fallback_realm);
+				return ENOMEM;
+			}
+			TALLOC_FREE(fallback_account);
+
+			ret = smb_krb5_make_principal(context,
+						      &fallback_principal,
+						      fallback_realm,
+						      with_dollar, NULL);
+			TALLOC_FREE(with_dollar);
+			if (ret != 0) {
+				SAFE_FREE(fallback_realm);
+				return ret;
+			}
+		}
+		SAFE_FREE(fallback_realm);
+
+		if (fallback_principal != NULL) {
+			char *fallback_string = NULL;
+
+			ret = krb5_unparse_name(context,
+						fallback_principal,
+						&fallback_string);
+			if (ret != 0) {
+				krb5_free_principal(context, fallback_principal);
+				return ret;
+			}
+
+			nt_status = sam_get_results_principal(kdc_db_ctx->samdb,
+							      mem_ctx,
+							      fallback_string,
+							      attrs,
+							      realm_dn, msg);
+			SAFE_FREE(fallback_string);
+		}
+		krb5_free_principal(context, fallback_principal);
+		fallback_principal = NULL;
+	}
+	TALLOC_FREE(principal_string);
+
+	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_SUCH_USER)) {
+		return SDB_ERR_NOENTRY;
 	} else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_MEMORY)) {
 		return ENOMEM;
 	} else if (!NT_STATUS_IS_OK(nt_status)) {
@@ -1257,14 +1567,14 @@ static krb5_error_code samba_kdc_fetch_client(krb5_context context,
 					       TALLOC_CTX *mem_ctx,
 					       krb5_const_principal principal,
 					       unsigned flags,
-					       hdb_entry_ex *entry_ex) {
+					       struct sdb_entry_ex *entry_ex) {
 	struct ldb_dn *realm_dn;
 	krb5_error_code ret;
 	struct ldb_message *msg = NULL;
 
 	ret = samba_kdc_lookup_client(context, kdc_db_ctx,
-				       mem_ctx, principal, user_attrs,
-				       &realm_dn, &msg);
+				      mem_ctx, principal, user_attrs,
+				      &realm_dn, &msg);
 	if (ret != 0) {
 		return ret;
 	}
@@ -1282,24 +1592,36 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 					      krb5_const_principal principal,
 					      unsigned flags,
 					      uint32_t kvno,
-					      hdb_entry_ex *entry_ex)
+					      struct sdb_entry_ex *entry_ex)
 {
 	struct loadparm_context *lp_ctx = kdc_db_ctx->lp_ctx;
 	krb5_error_code ret;
 	struct ldb_message *msg = NULL;
 	struct ldb_dn *realm_dn = ldb_get_default_basedn(kdc_db_ctx->samdb);
+	char *realm_from_princ, *realm_from_princ_malloc;
+	char *realm_princ_comp = smb_krb5_principal_get_comp_string(mem_ctx, context, principal, 1);
 
-	krb5_principal alloc_principal = NULL;
-	if (principal->name.name_string.len != 2
-	    || (strcmp(principal->name.name_string.val[0], KRB5_TGS_NAME) != 0)) {
+	realm_from_princ_malloc = smb_krb5_principal_get_realm(context, principal);
+	if (realm_from_princ_malloc == NULL) {
+		/* can't happen */
+		return SDB_ERR_NOENTRY;
+	}
+	realm_from_princ = talloc_strdup(mem_ctx, realm_from_princ_malloc);
+	free(realm_from_princ_malloc);
+	if (realm_from_princ == NULL) {
+		return SDB_ERR_NOENTRY;
+	}
+
+	if (krb5_princ_size(context, principal) != 2
+	    || (principal_comp_strcmp(context, principal, 0, KRB5_TGS_NAME) != 0)) {
 		/* Not a krbtgt */
-		return HDB_ERR_NOENTRY;
+		return SDB_ERR_NOENTRY;
 	}
 
 	/* krbtgt case.  Either us or a trusted realm */
 
-	if (lpcfg_is_my_domain_or_realm(lp_ctx, principal->realm)
-	    && lpcfg_is_my_domain_or_realm(lp_ctx, principal->name.name_string.val[1])) {
+	if (lpcfg_is_my_domain_or_realm(lp_ctx, realm_from_princ)
+	    && lpcfg_is_my_domain_or_realm(lp_ctx, realm_princ_comp)) {
 		/* us, or someone quite like us */
  		/* Cludge, cludge cludge.  If the realm part of krbtgt/realm,
  		 * is in our db, then direct the caller at our primary
@@ -1310,11 +1632,11 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 		/* w2k8r2 sometimes gives us a kvno of 255 for inter-domain
 		   trust tickets. We don't yet know what this means, but we do
 		   seem to need to treat it as unspecified */
-		if (flags & HDB_F_KVNO_SPECIFIED) {
+		if (flags & SDB_F_KVNO_SPECIFIED) {
 			krbtgt_number = SAMBA_KVNO_GET_KRBTGT(kvno);
 			if (kdc_db_ctx->rodc) {
 				if (krbtgt_number != kdc_db_ctx->my_krbtgt_number) {
-					return HDB_ERR_NOT_FOUND_HERE;
+					return SDB_ERR_NOT_FOUND_HERE;
 				}
 			}
 		} else {
@@ -1340,50 +1662,22 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 		if (lret == LDB_ERR_NO_SUCH_OBJECT) {
 			krb5_warnx(context, "samba_kdc_fetch: could not find KRBTGT number %u in DB!",
 				   (unsigned)(krbtgt_number));
-			krb5_set_error_message(context, HDB_ERR_NOENTRY,
+			krb5_set_error_message(context, SDB_ERR_NOENTRY,
 					       "samba_kdc_fetch: could not find KRBTGT number %u in DB!",
 					       (unsigned)(krbtgt_number));
-			return HDB_ERR_NOENTRY;
+			return SDB_ERR_NOENTRY;
 		} else if (lret != LDB_SUCCESS) {
 			krb5_warnx(context, "samba_kdc_fetch: could not find KRBTGT number %u in DB!",
 				   (unsigned)(krbtgt_number));
-			krb5_set_error_message(context, HDB_ERR_NOENTRY,
+			krb5_set_error_message(context, SDB_ERR_NOENTRY,
 					       "samba_kdc_fetch: could not find KRBTGT number %u in DB!",
 					       (unsigned)(krbtgt_number));
-			return HDB_ERR_NOENTRY;
-		}
-
-		/*
-		 * Windows seems to canonicalize the principal
-		 * in a TGS REP even if the client did not specify
-		 * the canonicalize flag.
-		 */
-		if (flags & (HDB_F_CANON|HDB_F_FOR_TGS_REQ)) {
-			ret = krb5_copy_principal(context, principal, &alloc_principal);
-			if (ret) {
-				return ret;
-			}
-
-			/* When requested to do so, ensure that the
-			 * both realm values in the principal are set
-			 * to the upper case, canonical realm */
-			free(alloc_principal->name.name_string.val[1]);
-			alloc_principal->name.name_string.val[1] = strdup(lpcfg_realm(lp_ctx));
-			if (!alloc_principal->name.name_string.val[1]) {
-				ret = ENOMEM;
-				krb5_set_error_message(context, ret, "samba_kdc_fetch: strdup() failed!");
-				return ret;
-			}
-			principal = alloc_principal;
+			return SDB_ERR_NOENTRY;
 		}
 
 		ret = samba_kdc_message2entry(context, kdc_db_ctx, mem_ctx,
 					      principal, SAMBA_KDC_ENT_TYPE_KRBTGT,
 					      flags, realm_dn, msg, entry_ex);
-		if (alloc_principal) {
-			/* This is again copied in the message2entry call */
-			krb5_free_principal(context, alloc_principal);
-		}
 		if (ret != 0) {
 			krb5_warnx(context, "samba_kdc_fetch: self krbtgt message2entry failed");
 		}
@@ -1395,20 +1689,22 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 
 		/* Either an inbound or outbound trust */
 
-		if (strcasecmp(lpcfg_realm(lp_ctx), principal->realm) == 0) {
+		if (strcasecmp(lpcfg_realm(lp_ctx), realm_from_princ) == 0) {
 			/* look for inbound trust */
 			direction = INBOUND;
-			realm = principal->name.name_string.val[1];
-		} else if (strcasecmp(lpcfg_realm(lp_ctx), principal->name.name_string.val[1]) == 0) {
+			realm = realm_princ_comp;
+		} else if (principal_comp_strcasecmp(context, principal, 1, lpcfg_realm(lp_ctx)) == 0) {
 			/* look for outbound trust */
 			direction = OUTBOUND;
-			realm = principal->realm;
+			realm = realm_from_princ;
 		} else {
 			krb5_warnx(context, "samba_kdc_fetch: not our realm for trusts ('%s', '%s')",
-				   principal->realm, principal->name.name_string.val[1]);
-			krb5_set_error_message(context, HDB_ERR_NOENTRY, "samba_kdc_fetch: not our realm for trusts ('%s', '%s')",
-					       principal->realm, principal->name.name_string.val[1]);
-			return HDB_ERR_NOENTRY;
+				   realm_from_princ,
+				   realm_princ_comp);
+			krb5_set_error_message(context, SDB_ERR_NOENTRY, "samba_kdc_fetch: not our realm for trusts ('%s', '%s')",
+					       realm_from_princ,
+					       realm_princ_comp);
+			return SDB_ERR_NOENTRY;
 		}
 
 		/* Trusted domains are under CN=system */
@@ -1439,15 +1735,17 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 }
 
 static krb5_error_code samba_kdc_lookup_server(krb5_context context,
-						struct samba_kdc_db_context *kdc_db_ctx,
-						TALLOC_CTX *mem_ctx,
-						krb5_const_principal principal,
-						const char **attrs,
-						struct ldb_dn **realm_dn,
-						struct ldb_message **msg)
+					       struct samba_kdc_db_context *kdc_db_ctx,
+					       TALLOC_CTX *mem_ctx,
+					       krb5_const_principal principal,
+					       unsigned flags,
+					       const char **attrs,
+					       struct ldb_dn **realm_dn,
+					       struct ldb_message **msg)
 {
 	krb5_error_code ret;
-	if (principal->name.name_string.len >= 2) {
+	if ((smb_krb5_principal_get_type(context, principal) != KRB5_NT_ENTERPRISE_PRINCIPAL)
+	    && krb5_princ_size(context, principal) >= 2) {
 		/* 'normal server' case */
 		int ldb_ret;
 		NTSTATUS nt_status;
@@ -1470,7 +1768,7 @@ static krb5_error_code samba_kdc_lookup_server(krb5_context context,
 		free(principal_string);
 
 		if (!NT_STATUS_IS_OK(nt_status)) {
-			return HDB_ERR_NOENTRY;
+			return SDB_ERR_NOENTRY;
 		}
 
 		ldb_ret = dsdb_search_one(kdc_db_ctx->samdb,
@@ -1480,20 +1778,76 @@ static krb5_error_code samba_kdc_lookup_server(krb5_context context,
 					  DSDB_SEARCH_SHOW_EXTENDED_DN | DSDB_SEARCH_NO_GLOBAL_CATALOG,
 					  "(objectClass=*)");
 		if (ldb_ret != LDB_SUCCESS) {
-			return HDB_ERR_NOENTRY;
+			return SDB_ERR_NOENTRY;
 		}
-
+		return 0;
+	} else if (!(flags & SDB_F_FOR_AS_REQ)
+		   && smb_krb5_principal_get_type(context, principal) == KRB5_NT_ENTERPRISE_PRINCIPAL) {
+		/*
+		 * The behaviour of accepting an
+		 * KRB5_NT_ENTERPRISE_PRINCIPAL server principal
+		 * containing a UPN only applies to TGS-REQ packets,
+		 * not AS-REQ packets.
+		 */
+		return samba_kdc_lookup_client(context, kdc_db_ctx,
+					       mem_ctx, principal, attrs,
+					       realm_dn, msg);
 	} else {
+		/*
+		 * This case is for:
+		 *  - the AS-REQ, where we only accept
+		 *    samAccountName based lookups for the server, no
+		 *    matter if the name is an
+		 *    KRB5_NT_ENTERPRISE_PRINCIPAL or not
+		 *  - for the TGS-REQ when we are not given an
+		 *    KRB5_NT_ENTERPRISE_PRINCIPAL, which also must
+		 *    only lookup samAccountName based names.
+		 */
 		int lret;
 		char *short_princ;
-		/* const char *realm; */
+		krb5_principal enterprise_principal = NULL;
+		krb5_const_principal used_principal = NULL;
+		char *name1 = NULL;
+		size_t len1 = 0;
+		char *filter = NULL;
+
+		if (smb_krb5_principal_get_type(context, principal) == KRB5_NT_ENTERPRISE_PRINCIPAL) {
+			char *str = NULL;
+			/* Need to reparse the enterprise principal to find the real target */
+			if (krb5_princ_size(context, principal) != 1) {
+				ret = KRB5_PARSE_MALFORMED;
+				krb5_set_error_message(context, ret, "samba_kdc_lookup_server: request for an "
+						       "enterprise principal with wrong (%d) number of components",
+						       krb5_princ_size(context, principal));
+				return ret;
+			}
+			str = smb_krb5_principal_get_comp_string(mem_ctx, context, principal, 0);
+			if (str == NULL) {
+				return KRB5_PARSE_MALFORMED;
+			}
+			ret = krb5_parse_name(context, str,
+					      &enterprise_principal);
+			talloc_free(str);
+			if (ret) {
+				return ret;
+			}
+			used_principal = enterprise_principal;
+		} else {
+			used_principal = principal;
+		}
+
 		/* server as client principal case, but we must not lookup userPrincipalNames */
 		*realm_dn = ldb_get_default_basedn(kdc_db_ctx->samdb);
-		/* realm = krb5_principal_get_realm(context, principal); */
 
 		/* TODO: Check if it is our realm, otherwise give referral */
 
-		ret = krb5_unparse_name_flags(context, principal,  KRB5_PRINCIPAL_UNPARSE_NO_REALM, &short_princ);
+		ret = krb5_unparse_name_flags(context, used_principal,
+					      KRB5_PRINCIPAL_UNPARSE_NO_REALM |
+					      KRB5_PRINCIPAL_UNPARSE_DISPLAY,
+					      &short_princ);
+		used_principal = NULL;
+		krb5_free_principal(context, enterprise_principal);
+		enterprise_principal = NULL;
 
 		if (ret != 0) {
 			krb5_set_error_message(context, ret, "samba_kdc_lookup_principal: could not parse principal");
@@ -1501,42 +1855,68 @@ static krb5_error_code samba_kdc_lookup_server(krb5_context context,
 			return ret;
 		}
 
+		name1 = ldb_binary_encode_string(mem_ctx, short_princ);
+		SAFE_FREE(short_princ);
+		if (name1 == NULL) {
+			return ENOMEM;
+		}
+		len1 = strlen(name1);
+		if (len1 >= 1 && name1[len1 - 1] != '$') {
+			filter = talloc_asprintf(mem_ctx,
+					"(&(objectClass=user)(|(samAccountName=%s)(samAccountName=%s$)))",
+					name1, name1);
+			if (filter == NULL) {
+				return ENOMEM;
+			}
+		} else {
+			filter = talloc_asprintf(mem_ctx,
+					"(&(objectClass=user)(samAccountName=%s))",
+					name1);
+			if (filter == NULL) {
+				return ENOMEM;
+			}
+		}
+
 		lret = dsdb_search_one(kdc_db_ctx->samdb, mem_ctx, msg,
 				       *realm_dn, LDB_SCOPE_SUBTREE,
 				       attrs,
 				       DSDB_SEARCH_SHOW_EXTENDED_DN | DSDB_SEARCH_NO_GLOBAL_CATALOG,
-				       "(&(objectClass=user)(samAccountName=%s))",
-				       ldb_binary_encode_string(mem_ctx, short_princ));
+				       "%s", filter);
 		if (lret == LDB_ERR_NO_SUCH_OBJECT) {
-			DEBUG(3, ("Failed to find an entry for %s\n", short_princ));
-			free(short_princ);
-			return HDB_ERR_NOENTRY;
+			DEBUG(10, ("Failed to find an entry for %s filter:%s\n",
+				  name1, filter));
+			return SDB_ERR_NOENTRY;
+		}
+		if (lret == LDB_ERR_CONSTRAINT_VIOLATION) {
+			DEBUG(10, ("Failed to find unique entry for %s filter:%s\n",
+				  name1, filter));
+			return SDB_ERR_NOENTRY;
 		}
 		if (lret != LDB_SUCCESS) {
-			DEBUG(3, ("Failed single search for %s - %s\n",
-				  short_princ, ldb_errstring(kdc_db_ctx->samdb)));
-			free(short_princ);
-			return HDB_ERR_NOENTRY;
+			DEBUG(0, ("Failed single search for %s - %s\n",
+				  name1, ldb_errstring(kdc_db_ctx->samdb)));
+			return SDB_ERR_NOENTRY;
 		}
-		free(short_princ);
+		return 0;
 	}
-
-	return 0;
+	return SDB_ERR_NOENTRY;
 }
+
+
 
 static krb5_error_code samba_kdc_fetch_server(krb5_context context,
 					      struct samba_kdc_db_context *kdc_db_ctx,
 					      TALLOC_CTX *mem_ctx,
 					      krb5_const_principal principal,
 					      unsigned flags,
-					      hdb_entry_ex *entry_ex)
+					      struct sdb_entry_ex *entry_ex)
 {
 	krb5_error_code ret;
 	struct ldb_dn *realm_dn;
 	struct ldb_message *msg;
 
 	ret = samba_kdc_lookup_server(context, kdc_db_ctx, mem_ctx, principal,
-				       server_attrs, &realm_dn, &msg);
+				      flags, server_attrs, &realm_dn, &msg);
 	if (ret != 0) {
 		return ret;
 	}
@@ -1552,14 +1932,223 @@ static krb5_error_code samba_kdc_fetch_server(krb5_context context,
 	return ret;
 }
 
+static krb5_error_code samba_kdc_lookup_realm(krb5_context context,
+					      struct samba_kdc_db_context *kdc_db_ctx,
+					      TALLOC_CTX *mem_ctx,
+					      krb5_const_principal principal,
+					      unsigned flags,
+					      struct sdb_entry_ex *entry_ex)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	NTSTATUS status;
+	krb5_error_code ret;
+	char *_realm = NULL;
+	bool check_realm = false;
+	const char *realm = NULL;
+	struct dsdb_trust_routing_table *trt = NULL;
+	const struct lsa_TrustDomainInfoInfoEx *tdo = NULL;
+	unsigned int num_comp;
+	bool ok;
+	char *upper = NULL;
+
+	num_comp = krb5_princ_size(context, principal);
+
+	if (flags & SDB_F_GET_CLIENT) {
+		if (flags & SDB_F_FOR_AS_REQ) {
+			check_realm = true;
+		}
+	}
+	if (flags & SDB_F_GET_SERVER) {
+		if (flags & SDB_F_FOR_TGS_REQ) {
+			check_realm = true;
+		}
+	}
+
+	if (!check_realm) {
+		TALLOC_FREE(frame);
+		return 0;
+	}
+
+	_realm = smb_krb5_principal_get_realm(context, principal);
+	if (_realm == NULL) {
+		TALLOC_FREE(frame);
+		return ENOMEM;
+	}
+
+	/*
+	 * The requested realm needs to be our own
+	 */
+	ok = lpcfg_is_my_domain_or_realm(kdc_db_ctx->lp_ctx, _realm);
+	if (!ok) {
+		/*
+		 * The request is not for us...
+		 */
+		SAFE_FREE(_realm);
+		TALLOC_FREE(frame);
+		return SDB_ERR_NOENTRY;
+	}
+
+	realm = talloc_strdup(frame, _realm);
+	SAFE_FREE(_realm);
+	if (realm == NULL) {
+		TALLOC_FREE(frame);
+		return ENOMEM;
+	}
+
+	if (smb_krb5_principal_get_type(context, principal) == KRB5_NT_ENTERPRISE_PRINCIPAL) {
+		char *principal_string = NULL;
+		krb5_principal enterprise_principal = NULL;
+		char *enterprise_realm = NULL;
+
+		if (num_comp != 1) {
+			TALLOC_FREE(frame);
+			return SDB_ERR_NOENTRY;
+		}
+
+		principal_string = smb_krb5_principal_get_comp_string(frame, context,
+								      principal, 0);
+		if (principal_string == NULL) {
+			TALLOC_FREE(frame);
+			return ENOMEM;
+		}
+
+		ret = krb5_parse_name(context, principal_string,
+				      &enterprise_principal);
+		TALLOC_FREE(principal_string);
+		if (ret) {
+			TALLOC_FREE(frame);
+			return ret;
+		}
+
+		enterprise_realm = smb_krb5_principal_get_realm(context,
+							enterprise_principal);
+		krb5_free_principal(context, enterprise_principal);
+		if (enterprise_realm != NULL) {
+			realm = talloc_strdup(frame, enterprise_realm);
+			SAFE_FREE(enterprise_realm);
+			if (realm == NULL) {
+				TALLOC_FREE(frame);
+				return ENOMEM;
+			}
+		}
+	}
+
+	if (flags & SDB_F_GET_SERVER) {
+		char *service_realm = NULL;
+
+		ret = principal_comp_strcmp(context, principal, 0, KRB5_TGS_NAME);
+		if (ret == 0) {
+			/*
+			 * we need to search krbtgt/ locally
+			 */
+			TALLOC_FREE(frame);
+			return 0;
+		}
+
+		/*
+		 * We need to check the last component against the routing table.
+		 *
+		 * Note this works only with 2 or 3 component principals, e.g:
+		 *
+		 * servicePrincipalName: ldap/W2K8R2-219.bla.base
+		 * servicePrincipalName: ldap/W2K8R2-219.bla.base/bla.base
+		 * servicePrincipalName: ldap/W2K8R2-219.bla.base/ForestDnsZones.bla.base
+		 * servicePrincipalName: ldap/W2K8R2-219.bla.base/DomainDnsZones.bla.base
+		 */
+
+		if (num_comp == 2 || num_comp == 3) {
+			service_realm = smb_krb5_principal_get_comp_string(frame,
+									   context,
+									   principal,
+									   num_comp - 1);
+		}
+
+		if (service_realm != NULL) {
+			realm = service_realm;
+		}
+	}
+
+	ok = lpcfg_is_my_domain_or_realm(kdc_db_ctx->lp_ctx, realm);
+	if (ok) {
+		/*
+		 * skip the expensive routing lookup
+		 */
+		TALLOC_FREE(frame);
+		return 0;
+	}
+
+	status = dsdb_trust_routing_table_load(kdc_db_ctx->samdb,
+					       frame, &trt);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
+		return EINVAL;
+	}
+
+	tdo = dsdb_trust_routing_by_name(trt, realm);
+	if (tdo == NULL) {
+		/*
+		 * This principal has to be local
+		 */
+		TALLOC_FREE(frame);
+		return 0;
+	}
+
+	if (tdo->trust_attributes & LSA_TRUST_ATTRIBUTE_WITHIN_FOREST) {
+		/*
+		 * TODO: handle the routing within the forest
+		 *
+		 * This should likely be handled in
+		 * samba_kdc_message2entry() in case we're
+		 * a global catalog. We'd need to check
+		 * if realm_dn is our own domain and derive
+		 * the dns domain name from realm_dn and check that
+		 * against the routing table or fallback to
+		 * the tdo we found here.
+		 *
+		 * But for now we don't support multiple domains
+		 * in our forest correctly anyway.
+		 *
+		 * Just search in our local database.
+		 */
+		TALLOC_FREE(frame);
+		return 0;
+	}
+
+	ZERO_STRUCT(entry_ex->entry);
+
+	ret = krb5_copy_principal(context, principal,
+				  &entry_ex->entry.principal);
+	if (ret) {
+		TALLOC_FREE(frame);
+		return ret;
+	}
+
+	upper = strupper_talloc(frame, tdo->domain_name.string);
+	if (upper == NULL) {
+		TALLOC_FREE(frame);
+		return ENOMEM;
+	}
+
+	ret = smb_krb5_principal_set_realm(context,
+					   entry_ex->entry.principal,
+					   upper);
+	if (ret) {
+		TALLOC_FREE(frame);
+		return ret;
+	}
+
+	TALLOC_FREE(frame);
+	return SDB_ERR_WRONG_REALM;
+}
+
 krb5_error_code samba_kdc_fetch(krb5_context context,
 				struct samba_kdc_db_context *kdc_db_ctx,
 				krb5_const_principal principal,
 				unsigned flags,
 				krb5_kvno kvno,
-				hdb_entry_ex *entry_ex)
+				struct sdb_entry_ex *entry_ex)
 {
-	krb5_error_code ret = HDB_ERR_NOENTRY;
+	krb5_error_code ret = SDB_ERR_NOENTRY;
 	TALLOC_CTX *mem_ctx;
 
 	mem_ctx = talloc_named(kdc_db_ctx, 0, "samba_kdc_fetch context");
@@ -1569,22 +2158,30 @@ krb5_error_code samba_kdc_fetch(krb5_context context,
 		return ret;
 	}
 
-	if (flags & HDB_F_GET_CLIENT) {
-		ret = samba_kdc_fetch_client(context, kdc_db_ctx, mem_ctx, principal, flags, entry_ex);
-		if (ret != HDB_ERR_NOENTRY) goto done;
+	ret = samba_kdc_lookup_realm(context, kdc_db_ctx, mem_ctx,
+				     principal, flags, entry_ex);
+	if (ret != 0) {
+		goto done;
 	}
-	if (flags & HDB_F_GET_SERVER) {
+
+	ret = SDB_ERR_NOENTRY;
+
+	if (flags & SDB_F_GET_CLIENT) {
+		ret = samba_kdc_fetch_client(context, kdc_db_ctx, mem_ctx, principal, flags, entry_ex);
+		if (ret != SDB_ERR_NOENTRY) goto done;
+	}
+	if (flags & SDB_F_GET_SERVER) {
 		/* krbtgt fits into this situation for trusted realms, and for resolving different versions of our own realm name */
 		ret = samba_kdc_fetch_krbtgt(context, kdc_db_ctx, mem_ctx, principal, flags, kvno, entry_ex);
-		if (ret != HDB_ERR_NOENTRY) goto done;
+		if (ret != SDB_ERR_NOENTRY) goto done;
 
 		/* We return 'no entry' if it does not start with krbtgt/, so move to the common case quickly */
 		ret = samba_kdc_fetch_server(context, kdc_db_ctx, mem_ctx, principal, flags, entry_ex);
-		if (ret != HDB_ERR_NOENTRY) goto done;
+		if (ret != SDB_ERR_NOENTRY) goto done;
 	}
-	if (flags & HDB_F_GET_KRBTGT) {
+	if (flags & SDB_F_GET_KRBTGT) {
 		ret = samba_kdc_fetch_krbtgt(context, kdc_db_ctx, mem_ctx, principal, flags, kvno, entry_ex);
-		if (ret != HDB_ERR_NOENTRY) goto done;
+		if (ret != SDB_ERR_NOENTRY) goto done;
 	}
 
 done:
@@ -1601,16 +2198,18 @@ struct samba_kdc_seq {
 
 static krb5_error_code samba_kdc_seq(krb5_context context,
 				     struct samba_kdc_db_context *kdc_db_ctx,
-				     hdb_entry_ex *entry)
+				     struct sdb_entry_ex *entry)
 {
 	krb5_error_code ret;
 	struct samba_kdc_seq *priv = kdc_db_ctx->seq_ctx;
+	const char *realm = lpcfg_realm(kdc_db_ctx->lp_ctx);
+	struct ldb_message *msg = NULL;
+	const char *sAMAccountName = NULL;
+	krb5_principal principal = NULL;
 	TALLOC_CTX *mem_ctx;
-	hdb_entry_ex entry_ex;
-	memset(&entry_ex, '\0', sizeof(entry_ex));
 
 	if (!priv) {
-		return HDB_ERR_NOENTRY;
+		return SDB_ERR_NOENTRY;
 	}
 
 	mem_ctx = talloc_named(priv, 0, "samba_kdc_seq context");
@@ -1621,13 +2220,34 @@ static krb5_error_code samba_kdc_seq(krb5_context context,
 		return ret;
 	}
 
-	if (priv->index < priv->count) {
-		ret = samba_kdc_message2entry(context, kdc_db_ctx, mem_ctx,
-					      NULL, SAMBA_KDC_ENT_TYPE_ANY,
-					      HDB_F_ADMIN_DATA|HDB_F_GET_ANY,
-					      priv->realm_dn, priv->msgs[priv->index++], entry);
-	} else {
-		ret = HDB_ERR_NOENTRY;
+	while (priv->index < priv->count) {
+		msg = priv->msgs[priv->index++];
+
+		sAMAccountName = ldb_msg_find_attr_as_string(msg, "sAMAccountName", NULL);
+		if (sAMAccountName != NULL) {
+			break;
+		}
+	}
+
+	if (sAMAccountName == NULL) {
+		ret = SDB_ERR_NOENTRY;
+		goto out;
+	}
+
+	ret = smb_krb5_make_principal(context, &principal,
+				      realm, sAMAccountName, NULL);
+	if (ret != 0) {
+		goto out;
+	}
+
+	ret = samba_kdc_message2entry(context, kdc_db_ctx, mem_ctx,
+				      principal, SAMBA_KDC_ENT_TYPE_ANY,
+				      SDB_F_ADMIN_DATA|SDB_F_GET_ANY,
+				      priv->realm_dn, msg, entry);
+
+out:
+	if (principal != NULL) {
+		krb5_free_principal(context, principal);
 	}
 
 	if (ret != 0) {
@@ -1642,7 +2262,7 @@ static krb5_error_code samba_kdc_seq(krb5_context context,
 
 krb5_error_code samba_kdc_firstkey(krb5_context context,
 				   struct samba_kdc_db_context *kdc_db_ctx,
-				   hdb_entry_ex *entry)
+				   struct sdb_entry_ex *entry)
 {
 	struct ldb_context *ldb_ctx = kdc_db_ctx->samdb;
 	struct samba_kdc_seq *priv = kdc_db_ctx->seq_ctx;
@@ -1691,7 +2311,7 @@ krb5_error_code samba_kdc_firstkey(krb5_context context,
 
 	if (lret != LDB_SUCCESS) {
 		TALLOC_FREE(priv);
-		return HDB_ERR_NOENTRY;
+		return SDB_ERR_NOENTRY;
 	}
 
 	priv->count = res->count;
@@ -1713,7 +2333,7 @@ krb5_error_code samba_kdc_firstkey(krb5_context context,
 
 krb5_error_code samba_kdc_nextkey(krb5_context context,
 				  struct samba_kdc_db_context *kdc_db_ctx,
-				  hdb_entry_ex *entry)
+				  struct sdb_entry_ex *entry)
 {
 	return samba_kdc_seq(context, kdc_db_ctx, entry);
 }
@@ -1725,16 +2345,14 @@ krb5_error_code samba_kdc_nextkey(krb5_context context,
 krb5_error_code
 samba_kdc_check_s4u2self(krb5_context context,
 			 struct samba_kdc_db_context *kdc_db_ctx,
-			 hdb_entry_ex *entry,
+			 struct samba_kdc_entry *skdc_entry,
 			 krb5_const_principal target_principal)
 {
 	krb5_error_code ret;
-	krb5_principal enterprise_prinicpal = NULL;
 	struct ldb_dn *realm_dn;
 	struct ldb_message *msg;
 	struct dom_sid *orig_sid;
 	struct dom_sid *target_sid;
-	struct samba_kdc_entry *p = talloc_get_type(entry->ctx, struct samba_kdc_entry);
 	const char *delegation_check_attrs[] = {
 		"objectSid", NULL
 	};
@@ -1747,35 +2365,16 @@ samba_kdc_check_s4u2self(krb5_context context,
 		return ret;
 	}
 
-	if (target_principal->name.name_type == KRB5_NT_ENTERPRISE_PRINCIPAL) {
-		/* Need to reparse the enterprise principal to find the real target */
-		if (target_principal->name.name_string.len != 1) {
-			ret = KRB5_PARSE_MALFORMED;
-			krb5_set_error_message(context, ret, "samba_kdc_check_s4u2self: request for delegation to enterprise principal with wrong (%d) number of components",
-					       target_principal->name.name_string.len);
-			talloc_free(mem_ctx);
-			return ret;
-		}
-		ret = krb5_parse_name(context, target_principal->name.name_string.val[0],
-				      &enterprise_prinicpal);
-		if (ret) {
-			talloc_free(mem_ctx);
-			return ret;
-		}
-		target_principal = enterprise_prinicpal;
-	}
-
 	ret = samba_kdc_lookup_server(context, kdc_db_ctx, mem_ctx, target_principal,
-				       delegation_check_attrs, &realm_dn, &msg);
-
-	krb5_free_principal(context, enterprise_prinicpal);
+				      SDB_F_GET_CLIENT|SDB_F_GET_SERVER,
+				      delegation_check_attrs, &realm_dn, &msg);
 
 	if (ret != 0) {
 		talloc_free(mem_ctx);
 		return ret;
 	}
 
-	orig_sid = samdb_result_dom_sid(mem_ctx, p->msg, "objectSid");
+	orig_sid = samdb_result_dom_sid(mem_ctx, skdc_entry->msg, "objectSid");
 	target_sid = samdb_result_dom_sid(mem_ctx, msg, "objectSid");
 
 	/* Allow delegation to the same principal, even if by a different
@@ -1798,7 +2397,7 @@ samba_kdc_check_s4u2self(krb5_context context,
 krb5_error_code
 samba_kdc_check_pkinit_ms_upn_match(krb5_context context,
 				    struct samba_kdc_db_context *kdc_db_ctx,
-				     hdb_entry_ex *entry,
+				    struct samba_kdc_entry *skdc_entry,
 				     krb5_const_principal certificate_principal)
 {
 	krb5_error_code ret;
@@ -1806,7 +2405,6 @@ samba_kdc_check_pkinit_ms_upn_match(krb5_context context,
 	struct ldb_message *msg;
 	struct dom_sid *orig_sid;
 	struct dom_sid *target_sid;
-	struct samba_kdc_entry *p = talloc_get_type(entry->ctx, struct samba_kdc_entry);
 	const char *ms_upn_check_attrs[] = {
 		"objectSid", NULL
 	};
@@ -1820,15 +2418,15 @@ samba_kdc_check_pkinit_ms_upn_match(krb5_context context,
 	}
 
 	ret = samba_kdc_lookup_client(context, kdc_db_ctx,
-				       mem_ctx, certificate_principal,
-				       ms_upn_check_attrs, &realm_dn, &msg);
+				      mem_ctx, certificate_principal,
+				      ms_upn_check_attrs, &realm_dn, &msg);
 
 	if (ret != 0) {
 		talloc_free(mem_ctx);
 		return ret;
 	}
 
-	orig_sid = samdb_result_dom_sid(mem_ctx, p->msg, "objectSid");
+	orig_sid = samdb_result_dom_sid(mem_ctx, skdc_entry->msg, "objectSid");
 	target_sid = samdb_result_dom_sid(mem_ctx, msg, "objectSid");
 
 	/* Consider these to be the same principal, even if by a different
@@ -1836,7 +2434,11 @@ samba_kdc_check_pkinit_ms_upn_match(krb5_context context,
 	 * comparison */
 	if (!(orig_sid && target_sid && dom_sid_equal(orig_sid, target_sid))) {
 		talloc_free(mem_ctx);
+#ifdef KRB5_KDC_ERR_CLIENT_NAME_MISMATCH /* Heimdal */
 		return KRB5_KDC_ERR_CLIENT_NAME_MISMATCH;
+#elif defined(KRB5KDC_ERR_CLIENT_NAME_MISMATCH) /* MIT */
+		return KRB5KDC_ERR_CLIENT_NAME_MISMATCH;
+#endif
 	}
 
 	talloc_free(mem_ctx);
@@ -1850,7 +2452,7 @@ samba_kdc_check_pkinit_ms_upn_match(krb5_context context,
 krb5_error_code
 samba_kdc_check_s4u2proxy(krb5_context context,
 			  struct samba_kdc_db_context *kdc_db_ctx,
-			  hdb_entry_ex *entry,
+			  struct samba_kdc_entry *skdc_entry,
 			  krb5_const_principal target_principal)
 {
 	krb5_error_code ret;
@@ -1861,7 +2463,6 @@ samba_kdc_check_s4u2proxy(krb5_context context,
 	struct ldb_val val;
 	unsigned int i;
 	bool found = false;
-	struct samba_kdc_entry *p = talloc_get_type(entry->ctx, struct samba_kdc_entry);
 
 	TALLOC_CTX *mem_ctx = talloc_named(kdc_db_ctx, 0, "samba_kdc_check_s4u2proxy");
 
@@ -1873,7 +2474,7 @@ samba_kdc_check_s4u2proxy(krb5_context context,
 		return ret;
 	}
 
-	client_dn = ldb_dn_get_linearized(p->msg->dn);
+	client_dn = ldb_dn_get_linearized(skdc_entry->msg->dn);
 	if (!client_dn) {
 		if (errno == 0) {
 			errno = ENOMEM;
@@ -1915,7 +2516,7 @@ samba_kdc_check_s4u2proxy(krb5_context context,
 		return ret;
 	}
 
-	el = ldb_msg_find_element(p->msg, "msDS-AllowedToDelegateTo");
+	el = ldb_msg_find_element(skdc_entry->msg, "msDS-AllowedToDelegateTo");
 	if (el == NULL) {
 		goto bad_option;
 	}
@@ -1998,7 +2599,7 @@ NTSTATUS samba_kdc_setup_db_ctx(TALLOC_CTX *mem_ctx, struct samba_kdc_base_conte
 	kdc_db_ctx->samdb = samdb_connect(kdc_db_ctx, base_ctx->ev_ctx,
 					  base_ctx->lp_ctx, session_info, 0);
 	if (kdc_db_ctx->samdb == NULL) {
-		DEBUG(1, ("hdb_samba4_create: Cannot open samdb for KDC backend!"));
+		DEBUG(1, ("samba_kdc_setup_db_ctx: Cannot open samdb for KDC backend!"));
 		talloc_free(kdc_db_ctx);
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
@@ -2006,7 +2607,7 @@ NTSTATUS samba_kdc_setup_db_ctx(TALLOC_CTX *mem_ctx, struct samba_kdc_base_conte
 	/* Find out our own krbtgt kvno */
 	ldb_ret = samdb_rodc(kdc_db_ctx->samdb, &kdc_db_ctx->rodc);
 	if (ldb_ret != LDB_SUCCESS) {
-		DEBUG(1, ("hdb_samba4_create: Cannot determine if we are an RODC in KDC backend: %s\n",
+		DEBUG(1, ("samba_kdc_setup_db_ctx: Cannot determine if we are an RODC in KDC backend: %s\n",
 			  ldb_errstring(kdc_db_ctx->samdb)));
 		talloc_free(kdc_db_ctx);
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
@@ -2017,7 +2618,7 @@ NTSTATUS samba_kdc_setup_db_ctx(TALLOC_CTX *mem_ctx, struct samba_kdc_base_conte
 		struct ldb_dn *account_dn;
 		struct ldb_dn *server_dn = samdb_server_dn(kdc_db_ctx->samdb, kdc_db_ctx);
 		if (!server_dn) {
-			DEBUG(1, ("hdb_samba4_create: Cannot determine server DN in KDC backend: %s\n",
+			DEBUG(1, ("samba_kdc_setup_db_ctx: Cannot determine server DN in KDC backend: %s\n",
 				  ldb_errstring(kdc_db_ctx->samdb)));
 			talloc_free(kdc_db_ctx);
 			return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
@@ -2026,7 +2627,7 @@ NTSTATUS samba_kdc_setup_db_ctx(TALLOC_CTX *mem_ctx, struct samba_kdc_base_conte
 		ldb_ret = samdb_reference_dn(kdc_db_ctx->samdb, kdc_db_ctx, server_dn,
 					     "serverReference", &account_dn);
 		if (ldb_ret != LDB_SUCCESS) {
-			DEBUG(1, ("hdb_samba4_create: Cannot determine server account in KDC backend: %s\n",
+			DEBUG(1, ("samba_kdc_setup_db_ctx: Cannot determine server account in KDC backend: %s\n",
 				  ldb_errstring(kdc_db_ctx->samdb)));
 			talloc_free(kdc_db_ctx);
 			return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
@@ -2036,7 +2637,7 @@ NTSTATUS samba_kdc_setup_db_ctx(TALLOC_CTX *mem_ctx, struct samba_kdc_base_conte
 					     "msDS-KrbTgtLink", &kdc_db_ctx->krbtgt_dn);
 		talloc_free(account_dn);
 		if (ldb_ret != LDB_SUCCESS) {
-			DEBUG(1, ("hdb_samba4_create: Cannot determine RODC krbtgt account in KDC backend: %s\n",
+			DEBUG(1, ("samba_kdc_setup_db_ctx: Cannot determine RODC krbtgt account in KDC backend: %s\n",
 				  ldb_errstring(kdc_db_ctx->samdb)));
 			talloc_free(kdc_db_ctx);
 			return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
@@ -2048,7 +2649,7 @@ NTSTATUS samba_kdc_setup_db_ctx(TALLOC_CTX *mem_ctx, struct samba_kdc_base_conte
 					  DSDB_SEARCH_NO_GLOBAL_CATALOG,
 					  "(&(objectClass=user)(msDS-SecondaryKrbTgtNumber=*))");
 		if (ldb_ret != LDB_SUCCESS) {
-			DEBUG(1, ("hdb_samba4_create: Cannot read krbtgt account %s in KDC backend to get msDS-SecondaryKrbTgtNumber: %s: %s\n",
+			DEBUG(1, ("samba_kdc_setup_db_ctx: Cannot read krbtgt account %s in KDC backend to get msDS-SecondaryKrbTgtNumber: %s: %s\n",
 				  ldb_dn_get_linearized(kdc_db_ctx->krbtgt_dn),
 				  ldb_errstring(kdc_db_ctx->samdb),
 				  ldb_strerror(ldb_ret)));
@@ -2057,7 +2658,7 @@ NTSTATUS samba_kdc_setup_db_ctx(TALLOC_CTX *mem_ctx, struct samba_kdc_base_conte
 		}
 		my_krbtgt_number = ldb_msg_find_attr_as_int(msg, "msDS-SecondaryKrbTgtNumber", -1);
 		if (my_krbtgt_number == -1) {
-			DEBUG(1, ("hdb_samba4_create: Cannot read msDS-SecondaryKrbTgtNumber from krbtgt account %s in KDC backend: got %d\n",
+			DEBUG(1, ("samba_kdc_setup_db_ctx: Cannot read msDS-SecondaryKrbTgtNumber from krbtgt account %s in KDC backend: got %d\n",
 				  ldb_dn_get_linearized(kdc_db_ctx->krbtgt_dn),
 				  my_krbtgt_number));
 			talloc_free(kdc_db_ctx);

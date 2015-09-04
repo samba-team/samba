@@ -109,6 +109,12 @@ typedef struct {
 #define KRB5_KEY_DATA_CAST	krb5_octet
 #endif /* HAVE_KRB5_KEYBLOCK_KEYVALUE */
 
+#ifdef HAVE_E_DATA_POINTER_IN_KRB5_ERROR /* Heimdal */
+#define KRB5_ERROR_CODE(k)	((k)->error_code)
+#else /* MIT */
+#define KRB5_ERROR_CODE(k)	((k)->error)
+#endif /* HAVE_E_DATA_POINTER_IN_KRB5_ERROR */
+
 krb5_error_code smb_krb5_parse_name(krb5_context context,
 				const char *name, /* in unix charset */
                                 krb5_principal *principal);
@@ -263,6 +269,10 @@ krb5_error_code smb_krb5_make_pac_checksum(TALLOC_CTX *mem_ctx,
 char *smb_krb5_principal_get_realm(krb5_context context,
 				   krb5_const_principal principal);
 
+void smb_krb5_principal_set_type(krb5_context context,
+				 krb5_principal principal,
+				 int type);
+
 krb5_error_code smb_krb5_principal_set_realm(krb5_context context,
 					     krb5_principal principal,
 					     const char *realm);
@@ -309,11 +319,11 @@ krb5_error_code ms_suptypes_to_ietf_enctypes(TALLOC_CTX *mem_ctx,
 					     uint32_t enctype_bitmap,
 					     krb5_enctype **enctypes);
 int smb_krb5_get_pw_salt(krb5_context context,
-			 krb5_principal host_princ,
+			 krb5_const_principal host_princ,
 			 krb5_data *psalt);
 
 int smb_krb5_create_key_from_string(krb5_context context,
-				    krb5_principal *host_princ,
+				    krb5_const_principal host_princ,
 				    krb5_data *salt,
 				    krb5_data *password,
 				    krb5_enctype enctype,

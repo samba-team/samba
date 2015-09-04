@@ -100,6 +100,12 @@ enum swrap_dbglvl_e {
 #define DESTRUCTOR_ATTRIBUTE
 #endif
 
+#ifdef HAVE_ADDRESS_SANITIZER_ATTRIBUTE
+#define DO_NOT_SANITIZE_ADDRESS_ATTRIBUTE __attribute__((no_sanitize_address))
+#else
+#define DO_NOT_SANITIZE_ADDRESS_ATTRIBUTE
+#endif
+
 #ifdef HAVE_GCC_THREAD_LOCAL_STORAGE
 # define SWRAP_THREAD __thread
 #else
@@ -452,11 +458,14 @@ static void *swrap_load_lib_handle(enum swrap_lib lib)
 #ifdef HAVE_LIBSOCKET
 		handle = swrap.libsocket_handle;
 		if (handle == NULL) {
-			for (handle = NULL, i = 10; handle == NULL && i >= 0; i--) {
+			for (i = 10; i >= 0; i--) {
 				char soname[256] = {0};
 
 				snprintf(soname, sizeof(soname), "libsocket.so.%d", i);
 				handle = dlopen(soname, flags);
+				if (handle != NULL) {
+					break;
+				}
 			}
 
 			swrap.libsocket_handle = handle;
@@ -474,11 +483,14 @@ static void *swrap_load_lib_handle(enum swrap_lib lib)
 		}
 #endif
 		if (handle == NULL) {
-			for (handle = NULL, i = 10; handle == NULL && i >= 0; i--) {
+			for (i = 10; i >= 0; i--) {
 				char soname[256] = {0};
 
 				snprintf(soname, sizeof(soname), "libc.so.%d", i);
 				handle = dlopen(soname, flags);
+				if (handle != NULL) {
+					break;
+				}
 			}
 
 			swrap.libc_handle = handle;
@@ -592,6 +604,7 @@ static int libc_eventfd(int count, int flags)
 }
 #endif
 
+DO_NOT_SANITIZE_ADDRESS_ATTRIBUTE
 static int libc_vfcntl(int fd, int cmd, va_list ap)
 {
 	long int args[4];
@@ -643,6 +656,7 @@ static int libc_getsockopt(int sockfd,
 	return swrap.fns.libc_getsockopt(sockfd, level, optname, optval, optlen);
 }
 
+DO_NOT_SANITIZE_ADDRESS_ATTRIBUTE
 static int libc_vioctl(int d, unsigned long int request, va_list ap)
 {
 	long int args[4];
@@ -1404,6 +1418,10 @@ static void swrap_remove_stale(int fd)
 
 		if (si->fds == NULL) {
 			SWRAP_DLIST_REMOVE(sockets, si);
+			if (si->un_addr.sun_path[0] != '\0') {
+				unlink(si->un_addr.sun_path);
+			}
+			free(si);
 		}
 	}
 }

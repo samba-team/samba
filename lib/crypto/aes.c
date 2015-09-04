@@ -32,9 +32,10 @@
  */
 
 #include "replace.h"
-
-#include "rijndael-alg-fst.h"
 #include "aes.h"
+
+#ifdef SAMBA_RIJNDAEL
+#include "rijndael-alg-fst.h"
 
 int
 AES_set_encrypt_key(const unsigned char *userkey, const int bits, AES_KEY *key)
@@ -65,7 +66,9 @@ AES_decrypt(const unsigned char *in, unsigned char *out, const AES_KEY *key)
 {
     rijndaelDecrypt(key->key, key->rounds, in, out);
 }
+#endif /* SAMBA_RIJNDAEL */
 
+#ifdef SAMBA_AES_CBC_ENCRYPT
 void
 AES_cbc_encrypt(const unsigned char *in, unsigned char *out,
 		unsigned long size, const AES_KEY *key,
@@ -112,25 +115,29 @@ AES_cbc_encrypt(const unsigned char *in, unsigned char *out,
 	}
     }
 }
+#endif /* SAMBA_AES_CBC_ENCRYPT */
 
-void aes_cfb8_encrypt(const uint8_t *in, uint8_t *out,
-		      size_t length, const AES_KEY *key,
-		      uint8_t *iv, int forward)
+#ifdef SAMBA_AES_CFB8_ENCRYPT
+void
+AES_cfb8_encrypt(const unsigned char *in, unsigned char *out,
+                 unsigned long size, const AES_KEY *key,
+                 unsigned char *iv, int forward_encrypt)
 {
-	size_t i;
+    int i;
 
-	for (i=0; i < length; i++) {
-		uint8_t tiv[AES_BLOCK_SIZE*2];
+    for (i = 0; i < size; i++) {
+        unsigned char tmp[AES_BLOCK_SIZE + 1];
 
-		memcpy(tiv, iv, AES_BLOCK_SIZE);
-		AES_encrypt(iv, iv, key);
-		if (!forward) {
-			tiv[AES_BLOCK_SIZE] = in[i];
-		}
-		out[i] = in[i] ^ iv[0];
-		if (forward) {
-			tiv[AES_BLOCK_SIZE] = out[i];
-		}
-		memcpy(iv, tiv+1, AES_BLOCK_SIZE);
-	}
+        memcpy(tmp, iv, AES_BLOCK_SIZE);
+        AES_encrypt(iv, iv, key);
+        if (!forward_encrypt) {
+            tmp[AES_BLOCK_SIZE] = in[i];
+        }
+        out[i] = in[i] ^ iv[0];
+        if (forward_encrypt) {
+            tmp[AES_BLOCK_SIZE] = out[i];
+        }
+        memcpy(iv, &tmp[1], AES_BLOCK_SIZE);
+    }
 }
+#endif /* SAMBA_AES_CFB8_ENCRYPT */

@@ -28,6 +28,7 @@
 #include "lib/util/tevent_unix.h"
 #include "lib/sys_rw.h"
 #include "lib/sys_rw_data.h"
+#include "lib/msghdr.h"
 
 #if !defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL) && !defined(HAVE_STRUCT_MSGHDR_MSG_ACCRIGHTS)
 # error Can not pass file descriptors
@@ -50,7 +51,7 @@ struct mmap_area {
 
 static int mmap_area_destructor(struct mmap_area *area)
 {
-	munmap((void *)area->ptr, area->size);
+	munmap(discard_const(area->ptr), area->size);
 	return 0;
 }
 
@@ -153,110 +154,68 @@ static void free_aio_children(void **p)
 
 static ssize_t read_fd(int fd, void *ptr, size_t nbytes, int *recvfd)
 {
-	struct msghdr msg;
 	struct iovec iov[1];
+	struct msghdr msg = { .msg_iov = iov, .msg_iovlen = 1 };
 	ssize_t n;
-#ifndef HAVE_STRUCT_MSGHDR_MSG_CONTROL
-	int newfd;
+	size_t bufsize = msghdr_prep_recv_fds(NULL, NULL, 0, 1);
+	uint8_t buf[bufsize];
 
-	ZERO_STRUCT(msg);
-	msg.msg_accrights = (caddr_t) &newfd;
-	msg.msg_accrightslen = sizeof(int);
-#else
-
-	union {
-	  struct cmsghdr	cm;
-	  char				control[CMSG_SPACE(sizeof(int))];
-	} control_un;
-	struct cmsghdr	*cmptr;
-
-	ZERO_STRUCT(msg);
-	ZERO_STRUCT(control_un);
-
-	msg.msg_control = control_un.control;
-	msg.msg_controllen = sizeof(control_un.control);
-#endif
-
-	msg.msg_name = NULL;
-	msg.msg_namelen = 0;
+	msghdr_prep_recv_fds(&msg, buf, bufsize, 1);
 
 	iov[0].iov_base = (void *)ptr;
 	iov[0].iov_len = nbytes;
-	msg.msg_iov = iov;
-	msg.msg_iovlen = 1;
 
-	if ( (n = recvmsg(fd, &msg, 0)) <= 0) {
-		return(n);
+	do {
+		n = recvmsg(fd, &msg, 0);
+	} while ((n == -1) && (errno == EINTR));
+
+	if (n <= 0) {
+		return n;
 	}
 
-#ifdef	HAVE_STRUCT_MSGHDR_MSG_CONTROL
-	if ((cmptr = CMSG_FIRSTHDR(&msg)) != NULL
-	    && cmptr->cmsg_len == CMSG_LEN(sizeof(int))) {
-		if (cmptr->cmsg_level != SOL_SOCKET) {
-			DEBUG(10, ("control level != SOL_SOCKET"));
-			errno = EINVAL;
-			return -1;
+	{
+		size_t num_fds = msghdr_extract_fds(&msg, NULL, 0);
+		int fds[num_fds];
+
+		msghdr_extract_fds(&msg, fds, num_fds);
+
+		if (num_fds != 1) {
+			size_t i;
+
+			for (i=0; i<num_fds; i++) {
+				close(fds[i]);
+			}
+
+			*recvfd = -1;
+			return n;
 		}
-		if (cmptr->cmsg_type != SCM_RIGHTS) {
-			DEBUG(10, ("control type != SCM_RIGHTS"));
-			errno = EINVAL;
-			return -1;
-		}
-		memcpy(recvfd, CMSG_DATA(cmptr), sizeof(*recvfd));
-	} else {
-		*recvfd = -1;		/* descriptor was not passed */
+
+		*recvfd = fds[0];
 	}
-#else
-	if (msg.msg_accrightslen == sizeof(int)) {
-		*recvfd = newfd;
-	}
-	else {
-		*recvfd = -1;		/* descriptor was not passed */
-	}
-#endif
 
 	return(n);
 }
 
 static ssize_t write_fd(int fd, void *ptr, size_t nbytes, int sendfd)
 {
-	struct msghdr	msg;
-	struct iovec	iov[1];
+	struct msghdr msg = {0};
+	size_t bufsize = msghdr_prep_fds(NULL, NULL, 0, &sendfd, 1);
+	uint8_t buf[bufsize];
+	struct iovec iov;
+	ssize_t sent;
 
-#ifdef	HAVE_STRUCT_MSGHDR_MSG_CONTROL
-	union {
-		struct cmsghdr	cm;
-		char control[CMSG_SPACE(sizeof(int))];
-	} control_un;
-	struct cmsghdr	*cmptr;
+	msghdr_prep_fds(&msg, buf, bufsize, &sendfd, 1);
 
-	ZERO_STRUCT(msg);
-	ZERO_STRUCT(control_un);
-
-	msg.msg_control = control_un.control;
-	msg.msg_controllen = sizeof(control_un.control);
-
-	cmptr = CMSG_FIRSTHDR(&msg);
-	cmptr->cmsg_len = CMSG_LEN(sizeof(int));
-	cmptr->cmsg_level = SOL_SOCKET;
-	cmptr->cmsg_type = SCM_RIGHTS;
-	memcpy(CMSG_DATA(cmptr), &sendfd, sizeof(sendfd));
-#else
-	ZERO_STRUCT(msg);
-	msg.msg_accrights = (caddr_t) &sendfd;
-	msg.msg_accrightslen = sizeof(int);
-#endif
-
-	msg.msg_name = NULL;
-	msg.msg_namelen = 0;
-
-	ZERO_STRUCT(iov);
-	iov[0].iov_base = (void *)ptr;
-	iov[0].iov_len = nbytes;
-	msg.msg_iov = iov;
+	iov.iov_base = (void *)ptr;
+	iov.iov_len = nbytes;
+	msg.msg_iov = &iov;
 	msg.msg_iovlen = 1;
 
-	return (sendmsg(fd, &msg, 0));
+	do {
+		sent = sendmsg(fd, &msg, 0);
+	} while ((sent == -1) && (errno == EINTR));
+
+	return sent;
 }
 
 static void aio_child_cleanup(struct tevent_context *event_ctx,
@@ -385,7 +344,7 @@ static void aio_child_loop(int sockfd, struct mmap_area *map)
 		switch (cmd_struct.cmd) {
 		case READ_CMD:
 			ret_struct.size = sys_pread(
-				fd, (void *)map->ptr, cmd_struct.n,
+				fd, discard_const(map->ptr), cmd_struct.n,
 				cmd_struct.offset);
 #if 0
 /* This breaks "make test" when run with aio_fork module. */
@@ -396,7 +355,7 @@ static void aio_child_loop(int sockfd, struct mmap_area *map)
 			break;
 		case WRITE_CMD:
 			ret_struct.size = sys_pwrite(
-				fd, (void *)map->ptr, cmd_struct.n,
+				fd, discard_const(map->ptr), cmd_struct.n,
 				cmd_struct.offset);
 			break;
 		case FSYNC_CMD:
@@ -439,7 +398,7 @@ static int aio_child_destructor(struct aio_child *child)
 	SMB_ASSERT(!child->busy);
 
 	DEBUG(10, ("aio_child_destructor: removing child %d on fd %d\n",
-			child->pid, child->sockfd));
+		   (int)child->pid, child->sockfd));
 
 	/*
 	 * closing the sockfd makes the child not return from recvmsg() on RHEL
@@ -512,7 +471,7 @@ static int create_aio_child(struct smbd_server_connection *sconn,
 	}
 
 	DEBUG(10, ("Child %d created with sockfd %d\n",
-			result->pid, fdpair[0]));
+		   (int)result->pid, fdpair[0]));
 
 	result->sockfd = fdpair[0];
 	close(fdpair[1]);

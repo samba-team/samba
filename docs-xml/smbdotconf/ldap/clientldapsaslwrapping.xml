@@ -1,7 +1,7 @@
 <samba:parameter name="client ldap sasl wrapping"
                  context="G"
-		 type="enum"
-		 advanced="1" 
+                 type="enum"
+                 enumlist="enum_ldap_sasl_wrapping"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>

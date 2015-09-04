@@ -636,8 +636,10 @@ _PUBLIC_ enum ndr_err_code ndr_pull_subcontext_start(struct ndr_pull *ndr,
 		uint16_t content_size;
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &content_size));
 		if (size_is >= 0 && size_is != content_size) {
-			return ndr_pull_error(ndr, NDR_ERR_SUBCONTEXT, "Bad subcontext (PULL) size_is(%d) mismatch content_size %d", 
-						(int)size_is, (int)content_size);
+			return ndr_pull_error(ndr, NDR_ERR_SUBCONTEXT, "Bad subcontext (PULL) size_is(%d) (0x%04x) mismatch content_size %d (0x%04x)",
+						(int)size_is, (int)size_is,
+						(int)content_size,
+						(int)content_size);
 		}
 		r_content_size = content_size;
 		break;
@@ -647,8 +649,10 @@ _PUBLIC_ enum ndr_err_code ndr_pull_subcontext_start(struct ndr_pull *ndr,
 		uint32_t content_size;
 		NDR_CHECK(ndr_pull_uint3264(ndr, NDR_SCALARS, &content_size));
 		if (size_is >= 0 && size_is != content_size) {
-			return ndr_pull_error(ndr, NDR_ERR_SUBCONTEXT, "Bad subcontext (PULL) size_is(%d) mismatch content_size %d", 
-						(int)size_is, (int)content_size);
+			return ndr_pull_error(ndr, NDR_ERR_SUBCONTEXT, "Bad subcontext (PULL) size_is(%d) (0x%08x) mismatch content_size %d (0x%08x)",
+						(int)size_is, (int)size_is,
+						(int)content_size,
+						(int)content_size);
 		}
 		r_content_size = content_size;
 		break;

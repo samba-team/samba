@@ -1,6 +1,8 @@
-<samba:parameter name="ldap deref" context="G" type="enum"
-	advanced="1" developer="1"
-	xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<samba:parameter name="ldap deref"
+                 context="G"
+                 type="enum"
+                 enumlist="enum_ldap_deref"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 
 <description>
 

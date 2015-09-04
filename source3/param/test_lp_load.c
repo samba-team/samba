@@ -38,7 +38,7 @@ int main(int argc, const char **argv)
 
 	TALLOC_CTX *frame = talloc_stackframe();
 
-	load_case_tables();
+	smb_init_locale();
 	lp_set_cmdline("log level", "0");
 
 	pc = poptGetContext(NULL, argc, argv, long_options,
@@ -61,12 +61,7 @@ int main(int argc, const char **argv)
 
 	for (i=0; i < count; i++) {
 		printf("call lp_load() #%d: ", i+1);
-		if (!lp_load_with_registry_shares(config_file,
-						  False, /* global only */
-						  True,  /* save defaults */
-						  False, /*add_ipc */
-						  True)) /*init globals */
-		{
+		if (!lp_load_with_registry_shares(config_file)) {
 			printf("ERROR.\n");
 			ret = 1;
 			goto done;

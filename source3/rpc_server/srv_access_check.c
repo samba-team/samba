@@ -47,12 +47,12 @@
 
 NTSTATUS access_check_object( struct security_descriptor *psd, struct security_token *token,
 			      enum sec_privilege needed_priv_1, enum sec_privilege needed_priv_2,
-			      uint32 rights_mask,
-			      uint32 des_access, uint32 *acc_granted,
+			      uint32_t rights_mask,
+			      uint32_t des_access, uint32_t *acc_granted,
 			      const char *debug )
 {
 	NTSTATUS status = NT_STATUS_ACCESS_DENIED;
-	uint32 saved_mask = 0;
+	uint32_t saved_mask = 0;
 	bool priv_granted = false;
 	bool is_system = false;
 	bool is_root = false;
@@ -134,7 +134,7 @@ void map_max_allowed_access(const struct security_token *nt_token,
 	*pacc_requested &= ~MAXIMUM_ALLOWED_ACCESS;
 
 	/* At least try for generic read|execute - Everyone gets that. */
-	*pacc_requested = GENERIC_READ_ACCESS|GENERIC_EXECUTE_ACCESS;
+	*pacc_requested |= GENERIC_READ_ACCESS|GENERIC_EXECUTE_ACCESS;
 
 	/* root gets anything. */
 	if (unix_token->uid == sec_initial_uid()) {

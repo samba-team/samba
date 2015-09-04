@@ -91,13 +91,13 @@ bld.SAMBA3_SUBSYSTEM('AVAHI',
 
 bld.SAMBA3_SUBSYSTEM('GROUPDB',
                     source='groupdb/mapping.c groupdb/mapping_tdb.c',
-                    deps='tdb_compat')
+                    deps='tdb')
 
 bld.SAMBA3_SUBSYSTEM('TLDAP',
                     source='''lib/tldap.c
                     lib/tldap_util.c
-                    lib/util_tsock.c''',
-                    deps='asn1util LIBTSOCKET')
+                    ''',
+                    deps='asn1util LIBTSOCKET samba3util')
 
 # libpdb.so should not expose internal symbols that are only usable
 # to the statically linked modules that are merged into libpdb.
@@ -105,29 +105,20 @@ bld.SAMBA3_SUBSYSTEM('TLDAP',
 # when modules are not linked statically. In the latter case
 # symbols will not be present in the libpdb anyway so no hurt is
 # done to the version script.
-static_pdb_match = ['tdbsam', 'smbpasswd', 'wbc_sam']
 private_pdb_match = []
-
-# AD DC module when linked statically will pull in few source4/winbind
-# dependencies which are not used outside AD DC module
-static_pdb_match.append('samba_dsdb')
 private_pdb_match.append('!idmap_init')
 private_pdb_match.append('!idmap_sids_to_xids')
 private_pdb_match.append('!idmap_xids_to_sids')
 
-# ldap module is actually three modules merged together: ldapsam, ipa, and nds
-static_pdb_match = static_pdb_match + ['ldap', 'ipa', 'nds']
 ldapsam_pdb_match = ['!priv2ld', '!smbldap_search_domain_info',
                      '!ldapsam_*', '!groupmap_attr_list*', '!get_userattr_list',
                      '!dominfo_attr_list', '!get_attr_key2string',
                      '!sidmap_attr_list', '!attrib_map_*', '!idpool_attr_list',
                      '!get_attr_list']
 private_pdb_match.append('!pdb_nds_*')
-private_pdb_match.append('!pdb_init_ldapsam')
 private_pdb_match.append('!pdb_ldapsam_init*')
+private_pdb_match.append('!pdb_*_init')
 private_pdb_match = private_pdb_match + ldapsam_pdb_match
-
-private_pdb_match = private_pdb_match + map(lambda x: '!pdb_%s_init' % x, static_pdb_match)
 
 bld.SAMBA3_LIBRARY('samba-passdb',
                    source='',
@@ -252,11 +243,6 @@ bld.SAMBA3_LIBRARY('sys_rw',
                    deps='replace iov_buf',
                    private_library=True)
 
-bld.SAMBA3_LIBRARY('iov_buf',
-                   source='lib/iov_buf.c',
-                   deps='replace',
-                   private_library=True)
-
 bld.SAMBA3_SUBSYSTEM('samba3util',
                    source='''lib/system.c
                    lib/sendfile.c
@@ -266,9 +252,10 @@ bld.SAMBA3_SUBSYSTEM('samba3util',
                    lib/util_file.c
                    lib/util.c
                    lib/util_sock.c
+                   lib/util_tsock.c
                    lib/util_transfer_file.c
                    lib/sock_exec.c''',
-                   deps='ndr samba-security NDR_SECURITY samba-util util_tdb ccan-hash sys_rw iov_buf')
+                   deps='ndr LIBTSOCKET samba-security NDR_SECURITY samba-util util_tdb sys_rw iov_buf')
 
 if bld.CONFIG_GET("CTDB_CFLAGS") and bld.CONFIG_GET("CTDB_INCLUDE"):
     SAMBA_CLUSTER_SUPPORT_SOURCES='''
@@ -276,8 +263,6 @@ if bld.CONFIG_GET("CTDB_CFLAGS") and bld.CONFIG_GET("CTDB_INCLUDE"):
                      lib/dbwrap/dbwrap_ctdb.c
                      lib/messages_ctdbd.c
                      lib/ctdbd_conn.c
-                     lib/ctdb_conn.c
-                     torture/test_ctdbconn.c
                    '''
     SAMBA_CLUSTER_SUPPORT_DEPS='''
                      talloc
@@ -308,13 +293,23 @@ bld.SAMBA3_SUBSYSTEM('TDB_LIB',
                      lib/g_lock.c''',
                      deps='dbwrap samba-cluster-support')
 
+bld.SAMBA3_LIBRARY('messages_dgm',
+                   source='''lib/messages_dgm.c lib/messages_dgm_ref.c''',
+                   deps='talloc UNIX_MSG POLL_FUNCS_TEVENT samba-debug',
+                   private_library=True)
+
+bld.SAMBA3_LIBRARY('messages_util',
+                   source='''lib/messages_util.c''',
+                   deps='samba-util',
+                   private_library=True)
+
 bld.SAMBA3_SUBSYSTEM('samba3core',
                    source='''lib/messages.c
-                   lib/messages_dgm.c
                    lib/util_cluster.c
                    lib/id_cache.c
                    lib/talloc_dict.c
                    lib/serverid.c
+                   lib/server_id_db_util.c
                    lib/addrchange.c
                    ../lib/util/debug_s3.c
                    lib/dumpcore.c
@@ -358,6 +353,9 @@ bld.SAMBA3_SUBSYSTEM('samba3core',
                         samba3-util
                         errors3
                         server_id_db
+                        messages_util
+                        messages_dgm
+                        talloc_report
                         TDB_LIB''')
 
 bld.SAMBA3_LIBRARY('smbd_shim',
@@ -407,6 +405,7 @@ bld.SAMBA3_LIBRARY('libsmb',
                    SPNEGO_PARSE
                    LIBTSOCKET
                    KRBCLIENT
+                   NDR_IOCTL
                    cli_smb_common
                    util_cmdline
                    tevent''',
@@ -502,9 +501,14 @@ bld.SAMBA3_SUBSYSTEM('sysquotas',
                      deps='samba3-util samba-util')
 
 NOTIFY_SOURCES=''
+NOTIFY_DEPS=''
 
 if bld.CONFIG_SET("HAVE_INOTIFY"):
     NOTIFY_SOURCES += ' smbd/notify_inotify.c'
+
+if bld.CONFIG_SET('SAMBA_FAM_LIBS'):
+    NOTIFY_SOURCES += ' smbd/notify_fam.c'
+    NOTIFY_DEPS += ' ' + bld.CONFIG_GET('SAMBA_FAM_LIBS')
 
 bld.SAMBA3_LIBRARY('smbd_base',
                    source='''
@@ -576,7 +580,7 @@ bld.SAMBA3_LIBRARY('smbd_base',
                    smbd/smb2_ioctl_named_pipe.c
                    smbd/smb2_ioctl_network_fs.c
                    smbd/smb2_keepalive.c
-                   smbd/smb2_find.c
+                   smbd/smb2_query_directory.c
                    smbd/smb2_notify.c
                    smbd/smb2_getinfo.c
                    smbd/smb2_setinfo.c
@@ -595,7 +599,7 @@ bld.SAMBA3_LIBRARY('smbd_base',
                    smbd/oplock_irix.c
                    smbd/oplock_linux.c
                    smbd/notify.c
-                   smbd/notify_internal.c
+                   smbd/notify_msg.c
                    smbd/build_options.c''' + NOTIFY_SOURCES,
                    deps='''
                    talloc
@@ -622,11 +626,13 @@ bld.SAMBA3_LIBRARY('smbd_base',
                    LEASES_DB
                    LIBASYS
                    sysquotas
-                   ccan-hash
                    NDR_SMB_ACL
                    netapi
                    NDR_IOCTL
-                   ''' + bld.env['dmapi_lib'],
+                   notifyd
+                   ''' +
+                   bld.env['dmapi_lib'] +
+                   NOTIFY_DEPS,
                    private_library=True)
 
 bld.SAMBA3_SUBSYSTEM('LOCKING',
@@ -635,7 +641,7 @@ bld.SAMBA3_SUBSYSTEM('LOCKING',
                     locking/posix.c
                     locking/share_mode_lock.c''',
                     deps='''
-                    tdb_compat
+                    tdb
                     talloc
                     LEASES_DB
                     NDR_OPEN_FILES
@@ -656,7 +662,7 @@ else:
 
 bld.SAMBA3_SUBSYSTEM('PRINTBASE',
                     source='''printing/notify.c printing/printing_db.c''',
-                    deps='samba-util tdb_compat')
+                    deps='samba-util tdb')
 
 bld.SAMBA3_SUBSYSTEM('PRINTBACKEND',
                     source='''printing/printing.c
@@ -665,7 +671,7 @@ bld.SAMBA3_SUBSYSTEM('PRINTBACKEND',
                     printing/nt_printing_migrate_internal.c
                     printing/nt_printing_ads.c
                     printing/queue_process.c''',
-                    deps='PRINTBASE LIBADS_PRINTER tdb_compat printing_migrate')
+                    deps='PRINTBASE LIBADS_PRINTER tdb printing_migrate')
 
 bld.SAMBA3_LIBRARY('printing_migrate',
                     source='printing/nt_printing_migrate.c rpc_client/cli_winreg_spoolss.c printing/nt_printing_os2.c',
@@ -683,7 +689,7 @@ bld.SAMBA3_SUBSYSTEM('PRINTING',
                     printing/print_standard.c
                     printing/print_iprint.c
                     printing/printer_list.c''',
-                    deps='NDR_PRINTCAP tdb_compat cups')
+                    deps='NDR_PRINTCAP tdb cups')
 
 bld.SAMBA3_SUBSYSTEM('PASSWD_UTIL',
                     source='utils/passwd_util.c',
@@ -707,7 +713,6 @@ bld.SAMBA3_SUBSYSTEM('LIBNET_DSSYNC',
                     source='''libnet/libnet_dssync.c
                     libnet/libnet_dssync_passdb.c
                     libnet/libnet_dssync_keytab.c''',
-                    allow_warnings=True,
                     deps='LIBNET RPC_NDR_DRSUAPI')
 
 bld.SAMBA3_SUBSYSTEM('LIBNET_SAMSYNC',
@@ -720,7 +725,7 @@ bld.SAMBA3_SUBSYSTEM('LIBNET_SAMSYNC',
 
 bld.SAMBA3_SUBSYSTEM('LIBEVENTLOG',
                     source='lib/eventlog/eventlog.c',
-                    deps='NDR_EVENTLOG tdb_compat')
+                    deps='NDR_EVENTLOG tdb')
 
 bld.SAMBA3_SUBSYSTEM('LIBNMB',
                      source='''libsmb/unexpected.c
@@ -729,7 +734,7 @@ bld.SAMBA3_SUBSYSTEM('LIBNMB',
                      libsmb/namequery.c
                      libsmb/conncache.c
                      libads/sitename_cache.c''',
-                     deps='addns lmhosts resolv')
+                     deps='LIBTSOCKET samba3util addns lmhosts resolv')
 
 bld.SAMBA3_SUBSYSTEM('SERVICES',
                     source='''services/svc_spoolss.c
@@ -757,7 +762,7 @@ bld.SAMBA3_SUBSYSTEM('SAMBA_VERSION',
 
 bld.SAMBA3_SUBSYSTEM('SLCACHE',
                     source='libsmb/samlogon_cache.c',
-                    deps='samba-util tdb_compat')
+                    deps='samba-util tdb')
 
 bld.SAMBA3_SUBSYSTEM('DCUTIL',
                     source='''libsmb/namequery_dc.c
@@ -773,6 +778,11 @@ bld.SAMBA3_LIBRARY('trusts_util',
 bld.SAMBA3_SUBSYSTEM('tdb-wrap3',
                     source='lib/util_tdb.c',
                     deps='talloc samba3-util')
+
+bld.SAMBA3_LIBRARY('msghdr',
+                   source='lib/msghdr.c',
+                   deps='replace iov_buf',
+                   private_library=True)
 
 bld.SAMBA3_LIBRARY('samba3-util',
                    source='''lib/util_sec.c lib/util_str.c lib/adt_tree.c lib/util_malloc.c lib/namearray.c lib/file_id.c''',
@@ -845,7 +855,7 @@ bld.SAMBA3_SUBSYSTEM('LIBLSA',
 
 bld.SAMBA3_BINARY('smbd/smbd',
                  source='smbd/server.c',
-                 deps='smbd_base EPMD LSASD',
+                 deps='smbd_base EPMD LSASD FSSD MDSSD',
                  install_path='${SBINDIR}')
 
 bld.SAMBA3_BINARY('nmbd/nmbd',
@@ -919,6 +929,7 @@ bld.SAMBA3_BINARY('winbindd/winbindd',
                  winbindd/wb_group_members.c
                  winbindd/wb_getgrsid.c
                  winbindd/wb_query_user_list.c
+                 winbindd/wb_query_group_list.c
                  winbindd/wb_fill_pwent.c
                  winbindd/wb_next_pwent.c
                  winbindd/wb_next_grent.c
@@ -1009,7 +1020,8 @@ bld.SAMBA3_BINARY('rpcclient/rpcclient',
                  rpcclient/cmd_eventlog.c
                  rpcclient/cmd_winreg.c
                  rpcclient/cmd_fss.c
-                 rpcclient/cmd_witness.c''',
+                 rpcclient/cmd_witness.c
+                 rpcclient/cmd_clusapi.c''',
                  deps='''
                  talloc
                  popt_samba3
@@ -1038,6 +1050,7 @@ bld.SAMBA3_BINARY('rpcclient/rpcclient',
                  INIT_SAMR
                  RPC_NDR_FSRVP
                  RPC_NDR_WITNESS
+                 RPC_NDR_CLUSAPI
                  ''')
 
 bld.SAMBA3_BINARY('client/smbclient',
@@ -1101,6 +1114,7 @@ bld.SAMBA3_BINARY('net',
                  utils/net_rpc_trust.c
                  utils/net_rpc_conf.c
                  utils/net_afs.c
+                 utils/net_notify.c
                  registry/reg_parse.c
                  registry/reg_format.c
                  registry/reg_import.c
@@ -1176,7 +1190,7 @@ bld.SAMBA3_BINARY('smbta-util',
                  secrets3
                  param''')
 
-smbstatus_source = 'utils/status.c smbd/notify_internal.c'
+smbstatus_source = 'utils/status.c smbd/notify_msg.c'
 
 if bld.CONFIG_GET("WITH_PROFILE"):
     smbstatus_source += ' utils/status_profile.c'
@@ -1287,6 +1301,7 @@ bld.SAMBA3_BINARY('smbtorture' + bld.env.suffix3,
                  LOCKING
                  NDR_OPEN_FILES
                  idmap
+                 IDMAP_TDB_COMMON
                  samba-cluster-support
                  ''',
                  cflags='-DWINBINDD_SOCKET_DIR=\"%s\"' % bld.env.WINBINDD_SOCKET_DIR,
@@ -1327,7 +1342,7 @@ bld.SAMBA3_BINARY('msg_source',
                  install=False)
 
 bld.SAMBA3_BINARY('smbcacls',
-                 source='utils/smbcacls.c',
+                 source='utils/smbcacls.c lib/util_sd.c',
                  deps='''
                  talloc
                  popt_samba3
@@ -1352,9 +1367,11 @@ bld.SAMBA3_BINARY('eventlogadm',
                  LIBEVENTLOG''')
 
 bld.SAMBA3_BINARY('sharesec',
-                 source='utils/sharesec.c',
+                 source='utils/sharesec.c lib/util_sd.c',
                  deps='''
                  talloc
+                 msrpc3
+                 libcli_lsa3
                  popt_samba3''')
 
 bld.SAMBA3_BINARY('pdbtest',
@@ -1479,6 +1496,16 @@ bld.SAMBA3_BINARY('samba-regedit',
                   deps='ncurses menu panel form registry param popt_samba3 smbregistry',
                   enabled=bld.env.build_regedit)
 
+bld.SAMBA3_BINARY('spotlight2sparql',
+                 source='''
+                 rpc_server/mdssvc/sparql_parser_test.c
+                 rpc_server/mdssvc/sparql_parser.c
+                 rpc_server/mdssvc/sparql_lexer.c
+                 rpc_server/mdssvc/sparql_mapping.c''',
+                 deps='samba3-util talloc ' + bld.env['libtracker'],
+                 enabled=bld.env.with_spotlight,
+                 install=False)
+
 ########################## INCLUDES #################################
 
 bld.RECURSE('auth')
@@ -1503,6 +1530,7 @@ bld.RECURSE('../examples/pdb')
 bld.RECURSE('../examples/VFS')
 bld.RECURSE('lib/netapi/tests')
 bld.RECURSE('lib/netapi/examples')
+bld.RECURSE('smbd/notifyd')
 
 bld.ENFORCE_GROUP_ORDERING()
 bld.CHECK_PROJECT_RULES()

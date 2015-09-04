@@ -46,16 +46,17 @@ ctdb_set_output ()
     _rc="$ONNODE_TESTS_VAR_DIR/ctdb.rc"
     echo "${1:-0}" >"$_rc"
 
-    trap "rm -f $_out $_rc" 0
+    test_cleanup "rm -f $_out $_rc"
 }
 
-_extra_header ()
+extra_footer ()
 {
     cat <<EOF
+--------------------------------------------------
 CTDB_NODES_FILE="${CTDB_NODES_FILE}"
 CTDB_BASE="$CTDB_BASE"
-$(which ctdb)
-
+ctdb client is $(which ctdb)
+--------------------------------------------------
 EOF
 }
 
@@ -76,11 +77,8 @@ simple_test ()
     _rc=$?
     _out=$(echo "$_out" | $_sort )
 
-    # Can't do this inline or it affects return code
-    _extra_header="$(_extra_header)"
-
     # Get the return code back into $?
     (exit $_rc)
 
-    result_check "$_extra_header"
+    result_check
 }

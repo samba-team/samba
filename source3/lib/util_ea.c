@@ -28,7 +28,7 @@
 struct ea_list *read_ea_list_entry(TALLOC_CTX *ctx, const char *pdata, size_t data_size, size_t *pbytes_used)
 {
 	struct ea_list *eal = talloc_zero(ctx, struct ea_list);
-	uint16 val_len;
+	uint16_t val_len;
 	unsigned int namelen;
 	size_t converted_size;
 

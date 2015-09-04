@@ -48,6 +48,7 @@
 #include "../librpc/gen_ndr/ndr_open_files.h"
 #include "source3/lib/dbwrap/dbwrap_watch.h"
 #include "locking/leases_db.h"
+#include "../lib/util/memcache.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_LOCKING
@@ -121,25 +122,188 @@ static TDB_DATA locking_key(const struct file_id *id)
 }
 
 /*******************************************************************
+ Share mode cache utility functions that store/delete/retrieve
+ entries from memcache.
+
+ For now share the statcache (global cache) memory space. If
+ a lock record gets orphaned (which shouldn't happen as we're
+ using the same locking_key data as lookup) it will eventually
+ fall out of the cache via the normal LRU trim mechanism. If
+ necessary we can always make this a separate (smaller) cache.
+******************************************************************/
+
+static const DATA_BLOB memcache_key(const struct file_id *id)
+{
+	return data_blob_const((const void *)id, sizeof(*id));
+}
+
+static void share_mode_memcache_delete(struct share_mode_data *d)
+{
+	const DATA_BLOB key = memcache_key(&d->id);
+
+	DEBUG(10,("deleting entry for file %s seq 0x%llu key %s\n",
+		d->base_name,
+		(unsigned long long) d->sequence_number,
+		file_id_string(talloc_tos(), &d->id)));
+
+	memcache_delete(NULL,
+			SHARE_MODE_LOCK_CACHE,
+			key);
+}
+
+static void share_mode_memcache_store(struct share_mode_data *d)
+{
+	const DATA_BLOB key = memcache_key(&d->id);
+
+	DEBUG(10,("stored entry for file %s seq 0x%llu key %s\n",
+		d->base_name,
+		(unsigned long long) d->sequence_number,
+		file_id_string(talloc_tos(), &d->id)));
+
+	/* Ensure everything stored in the cache is pristine. */
+	d->modified = false;
+	d->fresh = false;
+
+	/*
+	 * Ensure the memory going into the cache
+	 * doesn't have a destructor so it can be
+	 * cleanly freed by share_mode_memcache_delete().
+	 */
+	talloc_set_destructor(d, NULL);
+
+	/* Cache will own d after this call. */
+	memcache_add_talloc(NULL,
+			SHARE_MODE_LOCK_CACHE,
+			key,
+			&d);
+}
+
+/*
+ * NB. We use ndr_pull_hyper on a stack-created
+ * struct ndr_pull with no talloc allowed, as we
+ * need this to be really fast as an ndr-peek into
+ * the first 8 bytes of the blob.
+ */
+
+static enum ndr_err_code get_blob_sequence_number(DATA_BLOB *blob,
+						uint64_t *pseq)
+{
+	struct ndr_pull ndr = {.data = blob->data, .data_size = blob->length};
+	NDR_CHECK(ndr_pull_hyper(&ndr, NDR_SCALARS, pseq));
+	return NDR_ERR_SUCCESS;
+}
+
+static int share_mode_data_nofree_destructor(struct share_mode_data *d)
+{
+	return -1;
+}
+
+static struct share_mode_data *share_mode_memcache_fetch(TALLOC_CTX *mem_ctx,
+					const TDB_DATA id_key,
+					DATA_BLOB *blob)
+{
+	enum ndr_err_code ndr_err;
+	struct share_mode_data *d;
+	uint64_t sequence_number;
+	void *ptr;
+	struct file_id id;
+	DATA_BLOB key;
+
+	/* Ensure this is a locking_key record. */
+	if (id_key.dsize != sizeof(id)) {
+		return NULL;
+	}
+
+	memcpy(&id, id_key.dptr, id_key.dsize);
+	key = memcache_key(&id);
+
+	ptr = memcache_lookup_talloc(NULL,
+			SHARE_MODE_LOCK_CACHE,
+			key);
+	if (ptr == NULL) {
+		DEBUG(10,("failed to find entry for key %s\n",
+			file_id_string(mem_ctx, &id)));
+		return NULL;
+	}
+	/* sequence number key is at start of blob. */
+	ndr_err = get_blob_sequence_number(blob, &sequence_number);
+	if (ndr_err != NDR_ERR_SUCCESS) {
+		/* Bad blob. Remove entry. */
+		DEBUG(10,("bad blob %u key %s\n",
+			(unsigned int)ndr_err,
+			file_id_string(mem_ctx, &id)));
+		memcache_delete(NULL,
+			SHARE_MODE_LOCK_CACHE,
+			key);
+		return NULL;
+	}
+
+	d = (struct share_mode_data *)ptr;
+	if (d->sequence_number != sequence_number) {
+		DEBUG(10,("seq changed (cached 0x%llu) (new 0x%llu) "
+			"for key %s\n",
+			(unsigned long long)d->sequence_number,
+			(unsigned long long)sequence_number,
+			file_id_string(mem_ctx, &id)));
+		/* Cache out of date. Remove entry. */
+		memcache_delete(NULL,
+			SHARE_MODE_LOCK_CACHE,
+			key);
+		return NULL;
+	}
+
+	/* Move onto mem_ctx. */
+	d = talloc_move(mem_ctx, &ptr);
+
+	/*
+	 * Now we own d, prevent the cache from freeing it
+	 * when we delete the entry.
+	 */
+	talloc_set_destructor(d, share_mode_data_nofree_destructor);
+
+	/* Remove from the cache. We own it now. */
+	memcache_delete(NULL,
+			SHARE_MODE_LOCK_CACHE,
+			key);
+
+	/* And reset the destructor to none. */
+	talloc_set_destructor(d, NULL);
+
+	DEBUG(10,("fetched entry for file %s seq 0x%llu key %s\n",
+		d->base_name,
+		(unsigned long long)d->sequence_number,
+		file_id_string(mem_ctx, &id)));
+
+	return d;
+}
+
+/*******************************************************************
  Get all share mode entries for a dev/inode pair.
 ********************************************************************/
 
 static struct share_mode_data *parse_share_modes(TALLOC_CTX *mem_ctx,
-						 const TDB_DATA dbuf)
+						const TDB_DATA key,
+						const TDB_DATA dbuf)
 {
 	struct share_mode_data *d;
 	enum ndr_err_code ndr_err;
 	uint32_t i;
 	DATA_BLOB blob;
 
+	blob.data = dbuf.dptr;
+	blob.length = dbuf.dsize;
+
+	/* See if we already have a cached copy of this key. */
+	d = share_mode_memcache_fetch(mem_ctx, key, &blob);
+	if (d != NULL) {
+		return d;
+	}
+
 	d = talloc(mem_ctx, struct share_mode_data);
 	if (d == NULL) {
 		DEBUG(0, ("talloc failed\n"));
 		goto fail;
 	}
-
-	blob.data = dbuf.dptr;
-	blob.length = dbuf.dsize;
 
 	ndr_err = ndr_pull_struct_blob_all(
 		&blob, d, d, (ndr_pull_flags_fn_t)ndr_pull_share_mode_data);
@@ -195,6 +359,11 @@ static TDB_DATA unparse_share_modes(struct share_mode_data *d)
 		NDR_PRINT_DEBUG(share_mode_data, d);
 	}
 
+	share_mode_memcache_delete(d);
+
+	/* Update the sequence number. */
+	d->sequence_number += 1;
+
 	remove_stale_share_mode_entries(d);
 
 	if (d->num_share_modes == 0) {
@@ -246,7 +415,11 @@ static int share_mode_data_destructor(struct share_mode_data *d)
 				smb_panic(errmsg);
 			}
 		}
-		goto done;
+		/*
+		 * Nothing to store in cache - allow the normal
+		 * release of record lock and memory free.
+		 */
+		return 0;
 	}
 
 	status = dbwrap_record_store(d->record, data, TDB_REPLACE);
@@ -262,9 +435,19 @@ static int share_mode_data_destructor(struct share_mode_data *d)
 		smb_panic(errmsg);
 	}
 
- done:
+	/*
+	 * Release the record lock before putting in the cache.
+	 */
+	TALLOC_FREE(d->record);
 
-	return 0;
+	/*
+	 * Reparent d into the in-memory cache so it can be reused if the
+	 * sequence number matches. See parse_share_modes()
+	 * for details.
+	 */
+
+	share_mode_memcache_store(d);
+	return -1;
 }
 
 /*******************************************************************
@@ -288,6 +471,9 @@ static struct share_mode_data *fresh_share_mode_lock(
 	if (d == NULL) {
 		goto fail;
 	}
+	/* New record - new sequence number. */
+	generate_random_buffer((uint8_t *)&d->sequence_number, 8);
+
 	d->base_name = talloc_strdup(d, smb_fname->base_name);
 	if (d->base_name == NULL) {
 		goto fail;
@@ -340,7 +526,7 @@ static struct share_mode_lock *get_share_mode_lock_internal(
 		d = fresh_share_mode_lock(mem_ctx, servicepath, smb_fname,
 					  old_write_time);
 	} else {
-		d = parse_share_modes(mem_ctx, value);
+		d = parse_share_modes(mem_ctx, key, value);
 	}
 
 	if (d == NULL) {
@@ -349,6 +535,7 @@ static struct share_mode_lock *get_share_mode_lock_internal(
 		TALLOC_FREE(rec);
 		return NULL;
 	}
+	d->id = id;
 	d->record = talloc_move(d, &rec);
 	talloc_set_destructor(d, share_mode_data_destructor);
 
@@ -428,7 +615,7 @@ static void fetch_share_mode_unlocked_parser(
 	struct share_mode_lock *lck = talloc_get_type_abort(
 		private_data, struct share_mode_lock);
 
-	lck->data = parse_share_modes(lck, data);
+	lck->data = parse_share_modes(lck, key, data);
 }
 
 /*******************************************************************
@@ -605,6 +792,7 @@ bool share_mode_cleanup_disconnected(struct file_id fid,
 		struct share_mode_entry *entry = &data->share_modes[n];
 
 		if (!server_id_is_disconnected(&entry->pid)) {
+			struct server_id_buf tmp;
 			DEBUG(5, ("share_mode_cleanup_disconnected: "
 				  "file (file-id='%s', servicepath='%s', "
 				  "base_name='%s%s%s') "
@@ -616,7 +804,7 @@ bool share_mode_cleanup_disconnected(struct file_id fid,
 				  ? "" : "', stream_name='",
 				  (data->stream_name == NULL)
 				  ? "" : data->stream_name,
-				  server_id_str(frame, &entry->pid)));
+				  server_id_str_buf(entry->pid, &tmp)));
 			goto done;
 		}
 		if (open_persistent_id != entry->share_file_id) {

@@ -7,15 +7,13 @@ import os
 import sys
 
 
-def bindir_path(binary_mapping, bindir, path):
+def bindir_path(bindir, path):
     """Find the executable to use.
 
-    :param binary_mapping: Dictionary mapping binary names
     :param bindir: Directory with binaries
     :param path: Name of the executable to run
     :return: Full path to the executable to run
     """
-    path = binary_mapping.get(path, path)
     valpath = os.path.join(bindir, path)
     if os.path.isfile(valpath):
         return valpath
@@ -127,8 +125,8 @@ def get_interface(netbiosname):
     netbiosname = netbiosname.lower()
 
     interfaces = {
-        "locals3dc2": 2,
-        "localmember3": 3,
+        "localnt4dc2": 2,
+        "localnt4member3": 3,
         "localshare4": 4,
         "localserver5": 5,
         "localktest6": 6,
@@ -144,7 +142,7 @@ def get_interface(netbiosname):
         "dc7": 27,
         "rodc": 28,
         "localadmember": 29,
-        "plugindc": 30,
+        "addc": 30,
         "localsubdc": 31,
         "chgdcpass": 32,
     }

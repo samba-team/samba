@@ -1460,6 +1460,7 @@ int _tstream_npa_socketpair(uint16_t file_type,
 	int fd1;
 	int fd2;
 	int rc;
+	bool ok;
 
 	rc = socketpair(AF_UNIX, SOCK_STREAM, 0, fds);
 	if (rc == -1) {
@@ -1468,17 +1469,33 @@ int _tstream_npa_socketpair(uint16_t file_type,
 	fd1 = fds[0];
 	fd2 = fds[1];
 
+	ok = smb_set_close_on_exec(fd1);
+	if (!ok) {
+		goto close_fail;
+	}
+
+	ok = smb_set_close_on_exec(fd2);
+	if (!ok) {
+		goto close_fail;
+	}
+
+	rc = set_blocking(fd1, false);
+	if (rc == -1) {
+		goto close_fail;
+	}
+
+	rc = set_blocking(fd2, false);
+	if (rc == -1) {
+		goto close_fail;
+	}
+
 	rc = _tstream_npa_existing_socket(mem_ctx1,
 					  fd1,
 					  file_type,
 					  &stream1,
 					  location);
 	if (rc == -1) {
-		int sys_errno = errno;
-		close(fd1);
-		close(fd2);
-		errno = sys_errno;
-		return -1;
+		goto close_fail;
 	}
 
 	rc = _tstream_npa_existing_socket(mem_ctx2,
@@ -1498,4 +1515,13 @@ int _tstream_npa_socketpair(uint16_t file_type,
 	*pstream2 = stream2;
 
 	return 0;
+
+close_fail:
+	{
+		int sys_errno = errno;
+		close(fd1);
+		close(fd2);
+		errno = sys_errno;
+		return -1;
+	}
 }

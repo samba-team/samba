@@ -278,7 +278,7 @@ static bool test_QueryServiceObjectSecurity(struct torture_context *tctx,
 	struct policy_handle h, s;
 	struct dcerpc_binding_handle *b = p->binding_handle;
 
-	uint8_t *buffer;
+	uint8_t *buffer = NULL;
 	uint32_t needed;
 
 	enum ndr_err_code ndr_err;

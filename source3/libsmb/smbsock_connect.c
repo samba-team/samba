@@ -29,7 +29,7 @@
 struct cli_session_request_state {
 	struct tevent_context *ev;
 	int sock;
-	uint32 len_hdr;
+	uint32_t len_hdr;
 	struct iovec iov[3];
 	uint8_t nb_session_response;
 };
@@ -157,12 +157,13 @@ struct nb_connect_state {
 	const struct sockaddr_storage *addr;
 	const char *called_name;
 	int sock;
-
+	struct tevent_req *session_subreq;
 	struct nmb_name called;
 	struct nmb_name calling;
 };
 
-static int nb_connect_state_destructor(struct nb_connect_state *state);
+static void nb_connect_cleanup(struct tevent_req *req,
+			       enum tevent_req_state req_state);
 static void nb_connect_connected(struct tevent_req *subreq);
 static void nb_connect_done(struct tevent_req *subreq);
 
@@ -189,7 +190,7 @@ static struct tevent_req *nb_connect_send(TALLOC_CTX *mem_ctx,
 	make_nmb_name(&state->called, called_name, called_type);
 	make_nmb_name(&state->calling, calling_name, calling_type);
 
-	talloc_set_destructor(state, nb_connect_state_destructor);
+	tevent_req_set_cleanup_fn(req, nb_connect_cleanup);
 
 	subreq = open_socket_out_send(state, ev, addr, NBT_SMB_PORT, 5000);
 	if (tevent_req_nomem(subreq, req)) {
@@ -199,12 +200,31 @@ static struct tevent_req *nb_connect_send(TALLOC_CTX *mem_ctx,
 	return req;
 }
 
-static int nb_connect_state_destructor(struct nb_connect_state *state)
+static void nb_connect_cleanup(struct tevent_req *req,
+			       enum tevent_req_state req_state)
 {
+	struct nb_connect_state *state = tevent_req_data(
+		req, struct nb_connect_state);
+
+	/*
+	 * we need to free a pending request before closing the
+	 * socket, see bug #11141
+	 */
+	TALLOC_FREE(state->session_subreq);
+
+	if (req_state == TEVENT_REQ_DONE) {
+		/*
+		 * we keep the socket open for the caller to use
+		 */
+		return;
+	}
+
 	if (state->sock != -1) {
 		close(state->sock);
+		state->sock = -1;
 	}
-	return 0;
+
+	return;
 }
 
 static void nb_connect_connected(struct tevent_req *subreq)
@@ -227,6 +247,7 @@ static void nb_connect_connected(struct tevent_req *subreq)
 		return;
 	}
 	tevent_req_set_callback(subreq, nb_connect_done, req);
+	state->session_subreq = subreq;
 }
 
 static void nb_connect_done(struct tevent_req *subreq)
@@ -238,6 +259,8 @@ static void nb_connect_done(struct tevent_req *subreq)
 	bool ret;
 	int err;
 	uint8_t resp;
+
+	state->session_subreq = NULL;
 
 	ret = cli_session_request_recv(subreq, &err, &resp);
 	TALLOC_FREE(subreq);
@@ -286,7 +309,6 @@ static void nb_connect_done(struct tevent_req *subreq)
 
 	tevent_req_done(req);
 	return;
-
 }
 
 static NTSTATUS nb_connect_recv(struct tevent_req *req, int *sock)
@@ -296,10 +318,12 @@ static NTSTATUS nb_connect_recv(struct tevent_req *req, int *sock)
 	NTSTATUS status;
 
 	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
 		return status;
 	}
 	*sock = state->sock;
 	state->sock = -1;
+	tevent_req_received(req);
 	return NT_STATUS_OK;
 }
 
@@ -316,8 +340,8 @@ struct smbsock_connect_state {
 	uint16_t port;
 };
 
-static int smbsock_connect_state_destructor(
-	struct smbsock_connect_state *state);
+static void smbsock_connect_cleanup(struct tevent_req *req,
+				    enum tevent_req_state req_state);
 static void smbsock_connect_connected(struct tevent_req *subreq);
 static void smbsock_connect_do_139(struct tevent_req *subreq);
 
@@ -349,7 +373,7 @@ struct tevent_req *smbsock_connect_send(TALLOC_CTX *mem_ctx,
 	state->calling_type =
 		(calling_type != -1) ? calling_type : 0x00;
 
-	talloc_set_destructor(state, smbsock_connect_state_destructor);
+	tevent_req_set_cleanup_fn(req, smbsock_connect_cleanup);
 
 	if (port == NBT_SMB_PORT) {
 		state->req_139 = nb_connect_send(state, state->ev, state->addr,
@@ -400,14 +424,32 @@ struct tevent_req *smbsock_connect_send(TALLOC_CTX *mem_ctx,
 	return req;
 }
 
-static int smbsock_connect_state_destructor(
-	struct smbsock_connect_state *state)
+static void smbsock_connect_cleanup(struct tevent_req *req,
+				    enum tevent_req_state req_state)
 {
+	struct smbsock_connect_state *state = tevent_req_data(
+		req, struct smbsock_connect_state);
+
+	/*
+	 * we need to free a pending request before closing the
+	 * socket, see bug #11141
+	 */
+	TALLOC_FREE(state->req_445);
+	TALLOC_FREE(state->req_139);
+
+	if (req_state == TEVENT_REQ_DONE) {
+		/*
+		 * we keep the socket open for the caller to use
+		 */
+		return;
+	}
+
 	if (state->sock != -1) {
 		close(state->sock);
 		state->sock = -1;
 	}
-	return 0;
+
+	return;
 }
 
 static void smbsock_connect_do_139(struct tevent_req *subreq)
@@ -491,6 +533,7 @@ NTSTATUS smbsock_connect_recv(struct tevent_req *req, int *sock,
 	NTSTATUS status;
 
 	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
 		return status;
 	}
 	*sock = state->sock;
@@ -498,6 +541,7 @@ NTSTATUS smbsock_connect_recv(struct tevent_req *req, int *sock,
 	if (ret_port != NULL) {
 		*ret_port = state->port;
 	}
+	tevent_req_received(req);
 	return NT_STATUS_OK;
 }
 
@@ -554,6 +598,8 @@ struct smbsock_any_connect_state {
 	size_t chosen_index;
 };
 
+static void smbsock_any_connect_cleanup(struct tevent_req *req,
+					enum tevent_req_state req_state);
 static bool smbsock_any_connect_send_next(
 	struct tevent_req *req,	struct smbsock_any_connect_state *state);
 static void smbsock_any_connect_trynext(struct tevent_req *subreq);
@@ -584,6 +630,9 @@ struct tevent_req *smbsock_any_connect_send(TALLOC_CTX *mem_ctx,
 	state->calling_names = calling_names;
 	state->calling_types = calling_types;
 	state->port = port;
+	state->fd = -1;
+
+	tevent_req_set_cleanup_fn(req, smbsock_any_connect_cleanup);
 
 	if (num_addrs == 0) {
 		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
@@ -607,6 +656,27 @@ struct tevent_req *smbsock_any_connect_send(TALLOC_CTX *mem_ctx,
 	}
 	tevent_req_set_callback(subreq, smbsock_any_connect_trynext, req);
 	return req;
+}
+
+static void smbsock_any_connect_cleanup(struct tevent_req *req,
+					enum tevent_req_state req_state)
+{
+	struct smbsock_any_connect_state *state = tevent_req_data(
+		req, struct smbsock_any_connect_state);
+
+	TALLOC_FREE(state->requests);
+
+	if (req_state == TEVENT_REQ_DONE) {
+		/*
+		 * Keep the socket open for the caller.
+		 */
+		return;
+	}
+
+	if (state->fd != -1) {
+		close(state->fd);
+		state->fd = -1;
+	}
 }
 
 static void smbsock_any_connect_trynext(struct tevent_req *subreq)
@@ -698,9 +768,9 @@ static void smbsock_any_connect_connected(struct tevent_req *subreq)
 
 	if (NT_STATUS_IS_OK(status)) {
 		/*
-		 * This will kill all the other requests
+		 * tevent_req_done() will kill all the other requests
+		 * via smbsock_any_connect_cleanup().
 		 */
-		TALLOC_FREE(state->requests);
 		state->fd = fd;
 		state->chosen_port = chosen_port;
 		state->chosen_index = chosen_index;
@@ -732,15 +802,18 @@ NTSTATUS smbsock_any_connect_recv(struct tevent_req *req, int *pfd,
 	NTSTATUS status;
 
 	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
 		return status;
 	}
 	*pfd = state->fd;
+	state->fd = -1;
 	if (chosen_index != NULL) {
 		*chosen_index = state->chosen_index;
 	}
 	if (chosen_port != NULL) {
 		*chosen_port = state->chosen_port;
 	}
+	tevent_req_received(req);
 	return NT_STATUS_OK;
 }
 

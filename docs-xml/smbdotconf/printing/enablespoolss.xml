@@ -1,6 +1,7 @@
 <samba:parameter name="enable spoolss"
                  context="G"
-		 type="boolean"
+                 type="boolean-rev"
+                 function="_disable_spoolss"
                  synonym="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>

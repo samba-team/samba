@@ -80,9 +80,9 @@ NTSTATUS open_internal_samr_conn(TALLOC_CTX *mem_ctx,
 	return result;
 }
 
-static NTSTATUS open_internal_lsa_conn(TALLOC_CTX *mem_ctx,
-				       struct rpc_pipe_client **lsa_pipe,
-				       struct policy_handle *lsa_hnd)
+NTSTATUS open_internal_lsa_conn(TALLOC_CTX *mem_ctx,
+				struct rpc_pipe_client **lsa_pipe,
+				struct policy_handle *lsa_hnd)
 {
 	NTSTATUS status;
 
@@ -425,7 +425,7 @@ done:
 /* List all domain groups */
 static NTSTATUS builtin_enum_dom_groups(struct winbindd_domain *domain,
 				TALLOC_CTX *mem_ctx,
-				uint32 *num_entries,
+				uint32_t *num_entries,
 				struct wb_acct_info **info)
 {
 	/* BUILTIN doesn't have domain groups */
@@ -437,7 +437,7 @@ static NTSTATUS builtin_enum_dom_groups(struct winbindd_domain *domain,
 /* Query display info for a domain */
 static NTSTATUS builtin_query_user_list(struct winbindd_domain *domain,
 				TALLOC_CTX *mem_ctx,
-				uint32 *num_entries,
+				uint32_t *num_entries,
 				struct wbint_userinfo **info)
 {
 	/* We don't have users */
@@ -670,7 +670,7 @@ done:
 static NTSTATUS sam_rids_to_names(struct winbindd_domain *domain,
 				  TALLOC_CTX *mem_ctx,
 				  const struct dom_sid *domain_sid,
-				  uint32 *rids,
+				  uint32_t *rids,
 				  size_t num_rids,
 				  char **pdomain_name,
 				  char ***pnames,
@@ -983,7 +983,7 @@ static NTSTATUS sam_sequence_number(struct winbindd_domain *domain,
 {
 	struct rpc_pipe_client *samr_pipe;
 	struct policy_handle dom_pol;
-	uint32_t seq;
+	uint32_t seq = DOM_SEQUENCE_NONE;
 	TALLOC_CTX *tmp_ctx;
 	NTSTATUS status, result;
 	struct dcerpc_binding_handle *b = NULL;

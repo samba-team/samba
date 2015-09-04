@@ -366,6 +366,7 @@ static struct nss_info_methods hash_nss_methods = {
  state.
  **********************************************************************/
 
+static_decl_idmap;
 NTSTATUS idmap_hash_init(void)
 {
 	static NTSTATUS idmap_status = NT_STATUS_UNSUCCESSFUL;

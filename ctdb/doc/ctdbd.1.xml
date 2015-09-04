@@ -52,9 +52,7 @@
 	  <para>
 	    This option sets the debug level to DEBUGLEVEL, which
 	    controls what will be written by the logging
-	    subsystem. The default is 0 which will only log important
-	    events and errors. A larger number will provide additional
-	    logging.
+	    subsystem.  The default is 2.
 	  </para>
 	  <para>
 	    See the <citetitle>DEBUG LEVELS</citetitle> section in
@@ -123,6 +121,28 @@
 	    Default is <envar>CTDB_BASE</envar>/events.d, so usually
 	    <filename>/etc/ctdb/events.d</filename>, which is part of
 	    the CTDB installation.
+	  </para>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term>--listen=<parameter>IPADDR</parameter></term>
+	<listitem>
+	  <para>
+	    IPADDR is the private IP address that ctdbd will bind to.
+	  </para>
+	  <para>
+	    By default ctdbd will select the first address from the
+	    nodes list that in can bind to.  See also
+	    <citetitle>--nlist</citetitle>.
+	  </para>
+	  <para>
+	    This option is only required when automatic address
+	    detection can not be used.  This can be the case when
+	    running multiple ctdbd daemons/nodes on the same physical
+	    host (usually for testing), using InfiniBand for the
+	    private network or on Linux when sysctl
+	    net.ipv4.ip_nonlocal_bind=1.
 	  </para>
 	</listitem>
       </varlistentry>
@@ -362,18 +382,18 @@
       </varlistentry>
 
       <varlistentry>
-	<term>--reclock=<parameter>FILENAME</parameter></term>
+	<term>--reclock=<parameter>FILE</parameter></term>
 	<listitem>
 	  <para>
-	    FILENAME is the name of the recovery lock file stored in
-	    <emphasis>shared storage</emphasis> that ctdbd uses to
-	    prevent split brains from occuring.
+	    FILE is the name of the recovery lock file, stored in
+	    <emphasis>shared storage</emphasis>, that CTDB uses to
+	    prevent split brains.
 	  </para>
 	  <para>
-	    It is possible to run CTDB without a recovery lock file, but
-	    then there will be no protection against split brain if the
-	    cluster/network becomes partitioned. Using CTDB without a
-	    reclock file is strongly discouraged.
+	    For information about the recovery lock please see the
+	    <citetitle>RECOVERY LOCK</citetitle> section in
+	    <citerefentry><refentrytitle>ctdb</refentrytitle>
+	    <manvolnum>7</manvolnum></citerefentry>.
 	  </para>
 	</listitem>
       </varlistentry>
@@ -483,27 +503,6 @@
 	    foreground and not detach from the terminal.  By default
 	    ctdbd will detach itself and run in the background as a
 	    daemon.
-	  </para>
-	</listitem>
-      </varlistentry>
-
-      <varlistentry>
-	<term>--listen=<parameter>IPADDR</parameter></term>
-	<listitem>
-	  <para>
-	    This specifies which IP address that ctdbd will bind to.
-	  </para>
-	  <para>
-	    By default ctdbd will bind to the first address it finds in
-	    the <filename>/etc/ctdb/nodes</filename> file that is also
-	    present on the local system.
-	  </para>
-	  <para>
-	    This option is only required when you want to run multiple
-	    ctdbd daemons/nodes on the same physical host in which case
-	    there would be multiple entries in
-	    <filename>/etc/ctdb/nodes</filename> that would match a
-	    local interface.
 	  </para>
 	</listitem>
       </varlistentry>

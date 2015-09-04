@@ -1,5 +1,6 @@
 #!/bin/sh
-# ctdb event script for TGTD based iSCSI
+
+# CTDB event script for TGTD based iSCSI
 
 [ -n "$CTDB_BASE" ] || \
     export CTDB_BASE=$(cd -P $(dirname "$0") ; dirname "$PWD")
@@ -19,42 +20,63 @@ is_ctdb_managed_service || exit 0
 	exit 0
 }
 
-case "$1" in 
+case "$1" in
     ipreallocated)
-	# block the iscsi port
-	iptables -I INPUT 1 -p tcp --dport 3260 -j DROP
-	
-	# shut down the iscsi service
-	killall -9 tgtd >/dev/null 2>/dev/null
+	all_ips=$(ctdb -X ip | tail -n +2)
 
-	this_node=$(ctdb xpnn | sed -e 's@PNN:@@')
-	if [ -z "$this_node" ] ; then
-		echo "Failed to get node pnn"
-		exit 0
+	# Block the iSCSI port.  Only block for the address families
+	# we have configured.  This copes with, for example, ip6tables
+	# being unavailable on an IPv4-only system.
+	have_ipv4=false
+	have_ipv6=false
+	while IFS='|' read x ip pnn x ; do
+	    case "$ip" in
+		*:*) have_ipv6=true ;;
+		*)   have_ipv4=true ;;
+		esac
+	done <<EOF
+$all_ips
+EOF
+	if $have_ipv4 ; then
+	    iptables -I INPUT 1 -p tcp --dport 3260 -j DROP
+	fi
+	if $have_ipv6 ; then
+	    ip6tables -I INPUT 1 -p tcp --dport 3260 -j DROP
 	fi
 
-	# start the iscsi daemon
-	tgtd >/dev/null 2>/dev/null
+	# Stop iSCSI daemon
+	killall -9 tgtd >/dev/null 2>/dev/null
 
-	ips=$(ctdb -X ip | awk -F'|' -v pnn=$this_node '$3 == pnn {print $2}')
+	ctdb_get_pnn
+	[ -n "$pnn" ] || die "Failed to get node pnn"
+
+	# Start iSCSI daemon
+	tgtd >/dev/null 2>&1
+
+	# Run a script for each currently hosted public IP address
+	ips=$(echo "$all_ips" | awk -F'|' -v pnn=$pnn '$3 == pnn {print $2}')
 	for ip in $ips ; do
 	    script="${CTDB_START_ISCSI_SCRIPTS}/${ip}.sh"
 	    if [ -x "$script" ] ; then
-		echo "Starting iscsi service for public address ${ip}"
+		echo "Starting iSCSI service for public address ${ip}"
 		"$script"
 	    fi
 	done
 
-	# remove all iptables rules
+	# Unblock iSCSI port.  These can be unconditional (compared to
+	# blocking above), since errors are redirected.
 	while iptables -D INPUT -p tcp --dport 3260 -j DROP >/dev/null 2>&1 ; do
+	    :
+	done
+	while ip6tables -D INPUT -p tcp --dport 3260 -j DROP >/dev/null 2>&1 ; do
 	    :
 	done
 
 	;;
 
     shutdown)
-	# shutdown iscsi when ctdb goes down
-	killall -9 tgtd >/dev/null 2>/dev/null
+	# Shutdown iSCSI daemon when ctdb goes down
+	killall -9 tgtd >/dev/null 2>&1
 	;;
 
     monitor)

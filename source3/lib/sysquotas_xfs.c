@@ -72,7 +72,7 @@
 int sys_get_xfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *dp)
 {
 	int ret = -1;
-	uint32 qflags = 0;
+	uint32_t qflags = 0;
 	uint64_t bsize = (uint64_t)BBSIZE;
 	struct fs_disk_quota D;
 	struct fs_quota_stat F;
@@ -159,7 +159,7 @@ int sys_get_xfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qt
 int sys_set_xfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *dp)
 {
 	int ret = -1;
-	uint32 qflags = 0;
+	uint32_t qflags = 0;
 	uint64_t bsize = (uint64_t)BBSIZE;
 	struct fs_disk_quota D;
 	struct fs_quota_stat F;

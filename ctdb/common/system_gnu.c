@@ -363,26 +363,8 @@ int ctdb_get_peer_pid(const int fd, pid_t *peer_pid)
 	return 1;
 }
 
-char *ctdb_get_process_name(pid_t pid)
-{
-	/* FIXME GNU/Hurd: get_process_name not implemented */
-	return NULL;
-}
-
 int ctdb_set_process_name(const char *name)
 {
 	/* FIXME GNU/Hurd: set_process_name not implemented */
 	return -ENOSYS;
-}
-
-bool ctdb_get_lock_info(pid_t req_pid, struct ctdb_lock_info *lock_info)
-{
-	/* FIXME GNU/Hurd: get_lock_info not implemented */
-	return false;
-}
-
-bool ctdb_get_blocker_pid(struct ctdb_lock_info *reqlock, pid_t *blocker_pid)
-{
-	/* FIXME GNU/Hurd: get_blocker_pid not implemented */
-	return false;
 }

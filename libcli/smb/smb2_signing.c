@@ -22,6 +22,7 @@
 #include "system/filesys.h"
 #include "../libcli/smb/smb_common.h"
 #include "../lib/crypto/crypto.h"
+#include "lib/util/iov_buf.h"
 
 NTSTATUS smb2_signing_sign_pdu(DATA_BLOB signing_key,
 			       enum protocol_types protocol,
@@ -217,7 +218,7 @@ NTSTATUS smb2_signing_encrypt_pdu(DATA_BLOB encryption_key,
 	uint8_t sig[16];
 	int i;
 	size_t a_total;
-	size_t m_total = 0;
+	ssize_t m_total;
 	union {
 		struct aes_ccm_128_context ccm;
 		struct aes_gcm_128_context gcm;
@@ -241,8 +242,10 @@ NTSTATUS smb2_signing_encrypt_pdu(DATA_BLOB encryption_key,
 	}
 
 	a_total = SMB2_TF_HDR_SIZE - SMB2_TF_NONCE;
-	for (i=1; i < count; i++) {
-		m_total += vector[i].iov_len;
+
+	m_total = iov_buflen(&vector[1], count-1);
+	if (m_total == -1) {
+		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
 
 	SSVAL(tf, SMB2_TF_FLAGS, SMB2_TF_FLAGS_ENCRYPTED);
@@ -311,7 +314,7 @@ NTSTATUS smb2_signing_decrypt_pdu(DATA_BLOB decryption_key,
 	uint8_t sig[16];
 	int i;
 	size_t a_total;
-	size_t m_total = 0;
+	ssize_t m_total;
 	uint32_t msg_size = 0;
 	union {
 		struct aes_ccm_128_context ccm;
@@ -336,8 +339,10 @@ NTSTATUS smb2_signing_decrypt_pdu(DATA_BLOB decryption_key,
 	}
 
 	a_total = SMB2_TF_HDR_SIZE - SMB2_TF_NONCE;
-	for (i=1; i < count; i++) {
-		m_total += vector[i].iov_len;
+
+	m_total = iov_buflen(&vector[1], count-1);
+	if (m_total == -1) {
+		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
 
 	flags = SVAL(tf, SMB2_TF_FLAGS);

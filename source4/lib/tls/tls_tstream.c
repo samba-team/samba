@@ -28,7 +28,7 @@
 #if ENABLE_GNUTLS
 #include <gnutls/gnutls.h>
 
-#define DH_BITS 1024
+#define DH_BITS 2048
 
 #if defined(HAVE_GNUTLS_DATUM) && !defined(HAVE_GNUTLS_DATUM_T)
 typedef gnutls_datum gnutls_datum_t;
@@ -868,6 +868,7 @@ struct tstream_tls_params {
 #if ENABLE_GNUTLS
 	gnutls_certificate_credentials x509_cred;
 	gnutls_dh_params dh_params;
+	const char *tls_priority;
 #endif /* ENABLE_GNUTLS */
 	bool tls_enabled;
 };
@@ -895,6 +896,7 @@ bool tstream_tls_params_enabled(struct tstream_tls_params *tlsp)
 NTSTATUS tstream_tls_params_client(TALLOC_CTX *mem_ctx,
 				   const char *ca_file,
 				   const char *crl_file,
+				   const char *tls_priority,
 				   struct tstream_tls_params **_tlsp)
 {
 #if ENABLE_GNUTLS
@@ -919,7 +921,7 @@ NTSTATUS tstream_tls_params_client(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (ca_file && *ca_file) {
+	if (ca_file && *ca_file && file_exist(ca_file)) {
 		ret = gnutls_certificate_set_x509_trust_file(tlsp->x509_cred,
 							     ca_file,
 							     GNUTLS_X509_FMT_PEM);
@@ -931,7 +933,7 @@ NTSTATUS tstream_tls_params_client(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	if (crl_file && *crl_file) {
+	if (crl_file && *crl_file && file_exist(crl_file)) {
 		ret = gnutls_certificate_set_x509_crl_file(tlsp->x509_cred,
 							   crl_file, 
 							   GNUTLS_X509_FMT_PEM);
@@ -941,6 +943,12 @@ NTSTATUS tstream_tls_params_client(TALLOC_CTX *mem_ctx,
 			talloc_free(tlsp);
 			return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 		}
+	}
+
+	tlsp->tls_priority = talloc_strdup(tlsp, tls_priority);
+	if (tlsp->tls_priority == NULL) {
+		talloc_free(tlsp);
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	tlsp->tls_enabled = true;
@@ -964,14 +972,10 @@ struct tevent_req *_tstream_tls_connect_send(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req;
 	struct tstream_tls_connect_state *state;
+	const char *error_pos;
 #if ENABLE_GNUTLS
 	struct tstream_tls *tlss;
 	int ret;
-	static const int cert_type_priority[] = {
-		GNUTLS_CRT_X509,
-		GNUTLS_CRT_OPENPGP,
-		0
-	};
 #endif /* ENABLE_GNUTLS */
 
 	req = tevent_req_create(mem_ctx, &state,
@@ -1007,14 +1011,15 @@ struct tevent_req *_tstream_tls_connect_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	ret = gnutls_set_default_priority(tlss->tls_session);
+	ret = gnutls_priority_set_direct(tlss->tls_session,
+					 tls_params->tls_priority,
+					 &error_pos);
 	if (ret != GNUTLS_E_SUCCESS) {
-		DEBUG(0,("TLS %s - %s\n", __location__, gnutls_strerror(ret)));
+		DEBUG(0,("TLS %s - %s.  Check 'tls priority' option at '%s'\n",
+			 __location__, gnutls_strerror(ret), error_pos));
 		tevent_req_error(req, EINVAL);
 		return tevent_req_post(req, ev);
 	}
-
-	gnutls_certificate_type_set_priority(tlss->tls_session, cert_type_priority);
 
 	ret = gnutls_credentials_set(tlss->tls_session,
 				     GNUTLS_CRD_CERTIFICATE,
@@ -1066,8 +1071,6 @@ int tstream_tls_connect_recv(struct tevent_req *req,
 	return 0;
 }
 
-extern void tls_cert_generate(TALLOC_CTX *, const char *, const char *, const char *, const char *);
-
 /*
   initialise global tls state
 */
@@ -1079,6 +1082,7 @@ NTSTATUS tstream_tls_params_server(TALLOC_CTX *mem_ctx,
 				   const char *ca_file,
 				   const char *crl_file,
 				   const char *dhp_file,
+				   const char *tls_priority,
 				   struct tstream_tls_params **_tlsp)
 {
 	struct tstream_tls_params *tlsp;
@@ -1209,6 +1213,12 @@ NTSTATUS tstream_tls_params_server(TALLOC_CTX *mem_ctx,
 
 	gnutls_certificate_set_dh_params(tlsp->x509_cred, tlsp->dh_params);
 
+	tlsp->tls_priority = talloc_strdup(tlsp, tls_priority);
+	if (tlsp->tls_priority == NULL) {
+		talloc_free(tlsp);
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	tlsp->tls_enabled = true;
 
 #else /* ENABLE_GNUTLS */
@@ -1235,6 +1245,7 @@ struct tevent_req *_tstream_tls_accept_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req;
 	struct tstream_tls_accept_state *state;
 	struct tstream_tls *tlss;
+	const char *error_pos;
 #if ENABLE_GNUTLS
 	int ret;
 #endif /* ENABLE_GNUTLS */
@@ -1272,9 +1283,12 @@ struct tevent_req *_tstream_tls_accept_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	ret = gnutls_set_default_priority(tlss->tls_session);
+	ret = gnutls_priority_set_direct(tlss->tls_session,
+					 tlsp->tls_priority,
+					 &error_pos);
 	if (ret != GNUTLS_E_SUCCESS) {
-		DEBUG(0,("TLS %s - %s\n", __location__, gnutls_strerror(ret)));
+		DEBUG(0,("TLS %s - %s.  Check 'tls priority' option at '%s'\n",
+			 __location__, gnutls_strerror(ret), error_pos));
 		tevent_req_error(req, EINVAL);
 		return tevent_req_post(req, ev);
 	}

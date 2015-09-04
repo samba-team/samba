@@ -7,7 +7,7 @@
 	<manvolnum>8</manvolnum>
 	<refmiscinfo class="source">Samba</refmiscinfo>
 	<refmiscinfo class="manual">System Administration tools</refmiscinfo>
-	<refmiscinfo class="version">4.2</refmiscinfo>
+	<refmiscinfo class="version">4.3</refmiscinfo>
 </refmeta>
 
 
@@ -281,10 +281,12 @@
 		Adjust reporting of the size and free space of a share
 		according to quotas. If this setting is "yes", a
 		request for size and free space will also evaluate the
-		user quota of the user requesting the data, the group
-		quota of the primary group of the user and the fileset
-		quota for the fileset containing the top level
-		directory of the share.
+		user quota of the user requesting the data and the
+		group quota of the primary group of the user. Fileset
+		quotas are not queried, since GPFS already provides
+		the option --dfreequota to reflect the fileset quota
+		in the free space query. Please use that option to
+		include fileset quotas in the reported disk space.
 		</para>
 
 		<para>

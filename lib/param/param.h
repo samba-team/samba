@@ -49,6 +49,8 @@ struct gensec_settings;
 struct bitmap;
 struct file_lists;
 
+typedef bool (*lpcfg_defaults_hook) (struct loadparm_context *);
+
 #ifdef CONFIG_H_IS_FROM_SAMBA
 #include "lib/param/param_proto.h"
 #include "lib/param/param_functions.h"
@@ -212,27 +214,19 @@ const char *lpcfg_socket_options(struct loadparm_context *);
 struct dcerpc_server_info *lpcfg_dcerpc_server_info(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx);
 struct gensec_settings *lpcfg_gensec_settings(TALLOC_CTX *, struct loadparm_context *);
 
-
-/* The following definitions come from param/generic.c  */
-
-struct param_section *param_get_section(struct param_context *ctx, const char *name);
-struct parmlist_entry *param_section_get(struct param_section *section, 
-				    const char *name);
-struct parmlist_entry *param_get (struct param_context *ctx, const char *name, const char *section_name);
-struct param_section *param_add_section(struct param_context *ctx, const char *section_name);
-struct parmlist_entry *param_get_add(struct param_context *ctx, const char *name, const char *section_name);
-const char *param_get_string(struct param_context *ctx, const char *param, const char *section);
-int param_set_string(struct param_context *ctx, const char *param, const char *value, const char *section);
-const char **param_get_string_list(struct param_context *ctx, const char *param, const char *separator, const char *section);
-int param_set_string_list(struct param_context *ctx, const char *param, const char **list, const char *section);
-int param_get_int(struct param_context *ctx, const char *param, int default_v, const char *section);
-void param_set_int(struct param_context *ctx, const char *param, int value, const char *section);
-unsigned long param_get_ulong(struct param_context *ctx, const char *param, unsigned long default_v, const char *section);
-void param_set_ulong(struct param_context *ctx, const char *name, unsigned long value, const char *section);
-struct param_context *param_init(TALLOC_CTX *mem_ctx);
-int param_read(struct param_context *ctx, const char *fn);
-int param_use(struct loadparm_context *lp_ctx, struct param_context *ctx);
-int param_write(struct param_context *ctx, const char *fn);
+/* Hooks to override defaults.
+ *
+ * Every time a loadparm context is initialized, the hooks are
+ * called on it, once Samba itself has set defaults.
+ *
+ * This allows modules to tweak defaults (before any smb.conf file or registry
+ * is loaded). Usually they would do this by calling lpcfg_do_global_parameter
+ * or lpcfg_do_service_parameter.
+ *
+ * A good use case for this is OpenChange, which by default enables its
+ * DCE/RPC services when it is installed.
+ * */
+bool lpcfg_register_defaults_hook(const char *name, lpcfg_defaults_hook hook);
 
 /* The following definitions come from param/util.c  */
 
@@ -285,9 +279,7 @@ char *lpcfg_private_path(TALLOC_CTX* mem_ctx,
  * @brief Returns an absolute path to a NTDB or TDB file in the Samba
  * private directory.
  *
- * @param name File to find, relative to PRIVATEDIR, without .(n)tdb extension.
- * Only provide fixed-string names which are supposed to change with "use ntdb"
- * option.
+ * @param name File to find, relative to PRIVATEDIR, without .tdb extension.
  *
  * @retval Pointer to a talloc'ed string containing the full path, for
  * use with dbwrap_local_open().

@@ -309,110 +309,63 @@ done:
 	return result;
 }
 
-enum {
-	RESOURCE_STATE_UNKNOWN     = 0x00,
-	RESOURCE_STATE_AVAILABLE   = 0x01,
-	RESOURCE_STATE_UNAVAILABLE = 0xff
-};
-
-static bool AsyncNotify_Change(TALLOC_CTX *mem_ctx, const uint8_t **ptr)
+static void print_notify_response_resource_change(struct witness_ResourceChange *r)
 {
-	const uint8_t *pos = *ptr;
-	uint32_t length = IVAL(pos,0);
-	uint32_t type   = IVAL(pos,4);
-	char *name = NULL;
 	const char *type_str;
-	bool ok;
-	ok = convert_string_talloc(mem_ctx, CH_UTF16LE, CH_UNIX, pos + 8,
-				   length - 8, &name, NULL);
-	if (!ok) {
-		return false;
-	}
 
-	if (type == RESOURCE_STATE_UNKNOWN) {
+	if (r->type == WITNESS_RESOURCE_STATE_UNKNOWN) {
 		type_str = "Unknown";
-	} else if(type == RESOURCE_STATE_AVAILABLE) {
+	} else if (r->type == WITNESS_RESOURCE_STATE_AVAILABLE) {
 		type_str = "Available\n";
-	} else if(type == RESOURCE_STATE_UNAVAILABLE) {
+	} else if (r->type == WITNESS_RESOURCE_STATE_UNAVAILABLE) {
 		type_str = "Unavailable";
 	} else {
-		type_str = talloc_asprintf(name, "Invalid (%u)", type);
+		type_str = talloc_asprintf(r, "Invalid (%u)", r->type);
 	}
-	d_printf("%s -> %s\n", name, type_str);
-
-	TALLOC_FREE(name);
-	*ptr += length;
-	return true;
+	d_printf("%s -> %s\n", r->name, type_str);
 }
 
-enum {
-	IPADDR_V4      = 0x01,
-	IPADDR_V6      = 0x02,
-	IPADDR_ONLINE  = 0x08,
-	IPADDR_OFFLINE = 0x10,
-};
-
-/* IPADDR_INFO_LIST */
-static bool AsyncNotify_Move(TALLOC_CTX *mem_ctx, const uint8_t **ptr)
+static void print_notify_response_ip_addr_info_list(struct witness_IPaddrInfoList *r)
 {
-	const uint8_t *pos = *ptr;
-	uint32_t length   = IVAL(pos,0);
-	/* uint32_t reserved = IVAL(pos,4); */
-	uint32_t num      = IVAL(pos,8);
-	uint32_t n;
+	int i;
 
-	pos += 12;
-
-	for (n=0; n<num; n++) {
-		uint32_t flags = IVAL(pos,0);
-		struct in_addr ipv4;
-		struct sockaddr_storage sas4;
-		char *str4, *str6;
-		pos += 4;
-
-		ipv4.s_addr = *((const in_addr_t*)pos);
-		in_addr_to_sockaddr_storage(&sas4, ipv4);
-		str4 = print_canonical_sockaddr(mem_ctx, &sas4);
-		pos += 4;
-
-		{
-#ifdef HAVE_IPV6
-			struct in6_addr ipv6;
-			struct sockaddr_storage sas6;
-
-			memcpy(&ipv6.s6_addr, pos, 16);
-			in6_addr_to_sockaddr_storage(&sas6, ipv6);
-			str6 = print_canonical_sockaddr(mem_ctx, &sas6);
-#else
-			DATA_BLOB ipv6 = data_blob(pos, 16);
-			str6 = data_blob_hex_string_upper(mem_ctx, &ipv6);
-#endif
-		}
-		pos += 16;
+	for (i=0; i < r->num; i++) {
+		uint32_t flags = r->addr[i].flags;
+		const char *str4 = r->addr[i].ipv4;
+		const char *str6 = r->addr[i].ipv6;
 
 		d_printf("Flags 0x%08x", flags);
-		if (flags & IPADDR_V4) {
+		if (flags & WITNESS_IPADDR_V4) {
 			d_printf(" %s", str4);
 		}
-		if (flags & IPADDR_V6) {
+		if (flags & WITNESS_IPADDR_V6) {
 			d_printf(" %s", str6);
 		}
-		if (flags & IPADDR_ONLINE) {
+		if (flags & WITNESS_IPADDR_ONLINE) {
 			d_printf(" Online");
 		}
-		if (flags & IPADDR_ONLINE) {
+		if (flags & WITNESS_IPADDR_ONLINE) {
 			d_printf(" Offline");
 		}
 		d_printf("\n");
-		TALLOC_FREE(str4);
-		TALLOC_FREE(str6);
 	}
+}
 
-	if (pos - *ptr == length) {
-		*ptr = pos;
-		return true;
+static void print_notify_response(union witness_notifyResponse_message *r,
+				  uint32_t type)
+{
+	switch (type) {
+	case WITNESS_NOTIFY_RESOURCE_CHANGE:
+		print_notify_response_resource_change(&r->resource_change);
+		break;
+	case WITNESS_NOTIFY_CLIENT_MOVE:
+	case WITNESS_NOTIFY_SHARE_MOVE:
+	case WITNESS_NOTIFY_IP_CHANGE:
+		print_notify_response_ip_addr_info_list(&r->client_move);
+		break;
+	default:
+		break;
 	}
-	return false;
 }
 
 static WERROR cmd_witness_AsyncNotify(struct rpc_pipe_client *cli,
@@ -425,7 +378,7 @@ static WERROR cmd_witness_AsyncNotify(struct rpc_pipe_client *cli,
 	struct policy_handle hnd;
 	struct witness_notifyResponse *response = NULL;
 	uint32_t timeout;
-	bool (*read_response)(TALLOC_CTX*, const uint8_t**) = NULL;
+	int i;
 
 	use_only_one_rpc_pipe_hack(cli);
 
@@ -453,37 +406,27 @@ static WERROR cmd_witness_AsyncNotify(struct rpc_pipe_client *cli,
 		goto done;
 	}
 
-	switch(response->message_type) {
+	switch(response->type) {
 	case WITNESS_NOTIFY_RESOURCE_CHANGE:
 		d_printf("Resource change");
-		read_response = AsyncNotify_Change;
 		break;
 	case WITNESS_NOTIFY_CLIENT_MOVE:
 		d_printf("Client move");
-		read_response = AsyncNotify_Move;
 		break;
 	case WITNESS_NOTIFY_SHARE_MOVE:
 		d_printf("Share move");
-		read_response = AsyncNotify_Move;
 		break;
 	case WITNESS_NOTIFY_IP_CHANGE:
 		d_printf("IP change");
-		read_response = AsyncNotify_Move;
 		break;
 	default:
-		d_printf("Unknown (0x%x)", (int)response->message_type);
+		d_printf("Unknown (0x%x)", (int)response->type);
 	}
-	d_printf(" with %d messages\n", response->num_messages);
+	d_printf(" with %d messages\n", response->num);
 
-	if (read_response) {
-		unsigned n;
-		const uint8_t *pos = response->message_buffer;
-
-		for (n=0; n<response->num_messages; n++) {
-			read_response(frame, &pos);
-		}
+	for (i=0; i < response->num; i++) {
+		print_notify_response(&response->messages[i], response->type);
 	}
-
 done:
 	talloc_free(frame);
 	return result;

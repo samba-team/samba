@@ -1,0 +1,11 @@
+#!/usr/bin/env python
+if bld.CONFIG_SET('SAMBA4_USES_HEIMDAL'):
+      bld.SAMBA_MODULE('TORTURE_KRB5',
+                       source='kdc.c kdc-canon.c',
+                       autoproto='proto.h',
+                       subsystem='smbtorture',
+                       init_function='torture_krb5_init',
+                       deps='authkrb5 popt POPT_CREDENTIALS torture KERBEROS_UTIL',
+                       internal_module=True
+                 )
+      

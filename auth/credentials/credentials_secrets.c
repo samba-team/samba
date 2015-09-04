@@ -270,7 +270,7 @@ _PUBLIC_ NTSTATUS cli_credentials_set_machine_account_db_ctx(struct cli_credenti
 {
 	NTSTATUS status;
 	char *filter;
-	char *error_string;
+	char *error_string = NULL;
 	const char *domain;
 	bool secrets_tdb_password_more_recent;
 	time_t secrets_tdb_lct = 0;
@@ -372,7 +372,8 @@ _PUBLIC_ NTSTATUS cli_credentials_set_machine_account_db_ctx(struct cli_credenti
 				= talloc_asprintf(cred,
 						  "Failed to fetch machine account password for %s from both "
 						  "secrets.ldb (%s) and from %s",
-						  domain, error_string,
+						  domain,
+						  error_string == NULL ? "error" : error_string,
 						  dbwrap_name(db_ctx));
 		} else {
 			char *secrets_tdb_path;
@@ -387,10 +388,12 @@ _PUBLIC_ NTSTATUS cli_credentials_set_machine_account_db_ctx(struct cli_credenti
 			error_string = talloc_asprintf(cred,
 						       "Failed to fetch machine account password from "
 						       "secrets.ldb: %s and failed to open %s",
-						       error_string, secrets_tdb_path);
+						       error_string == NULL ? "error" : error_string,
+						       secrets_tdb_path);
 		}
-		DEBUG(1, ("Could not find machine account in secrets database: %s: %s\n", 
-			  error_string, nt_errstr(status)));
+		DEBUG(1, ("Could not find machine account in secrets database: %s: %s\n",
+			  error_string == NULL ? "error" : error_string,
+			  nt_errstr(status)));
 		/* set anonymous as the fallback, if the machine account won't work */
 		cli_credentials_set_anonymous(cred);
 	}
@@ -411,7 +414,7 @@ _PUBLIC_ NTSTATUS cli_credentials_set_stored_principal(struct cli_credentials *c
 {
 	NTSTATUS status;
 	char *filter;
-	char *error_string;
+	char *error_string = NULL;
 	/* Bleh, nasty recursion issues: We are setting a machine
 	 * account here, so we don't want the 'pending' flag around
 	 * any more */
@@ -424,7 +427,9 @@ _PUBLIC_ NTSTATUS cli_credentials_set_stored_principal(struct cli_credentials *c
 					     SECRETS_PRINCIPALS_DN, filter,
 					     0, NULL, &error_string);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Could not find %s principal in secrets database: %s: %s\n", serviceprincipal, nt_errstr(status), error_string));
+		DEBUG(1, ("Could not find %s principal in secrets database: %s: %s\n",
+			  serviceprincipal, nt_errstr(status),
+			  error_string ? error_string : "<no error>"));
 	}
 	return status;
 }

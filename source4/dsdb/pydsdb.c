@@ -259,7 +259,7 @@ static PyObject *py_dsdb_get_oid_from_attid(PyObject *self, PyObject *args)
 	WERROR status;
 	TALLOC_CTX *mem_ctx;
 
-	if (!PyArg_ParseTuple(args, "Oi", &py_ldb, &attid))
+	if (!PyArg_ParseTuple(args, "OI", &py_ldb, &attid))
 		return NULL;
 
 	PyErr_LDB_OR_RAISE(py_ldb, ldb);
@@ -452,7 +452,7 @@ static PyObject *py_dsdb_get_lDAPDisplayName_by_attid(PyObject *self, PyObject *
 	const struct dsdb_attribute *a;
 	uint32_t attid;
 
-	if (!PyArg_ParseTuple(args, "Oi", &py_ldb, &attid))
+	if (!PyArg_ParseTuple(args, "OI", &py_ldb, &attid))
 		return NULL;
 
 	PyErr_LDB_OR_RAISE(py_ldb, ldb);
@@ -1152,6 +1152,7 @@ void initdsdb(void)
 	ADD_DSDB_FLAG(UF_TRUSTED_TO_AUTHENTICATE_FOR_DELEGATION);
 	ADD_DSDB_FLAG(UF_NO_AUTH_DATA_REQUIRED);
 	ADD_DSDB_FLAG(UF_PARTIAL_SECRETS_ACCOUNT);
+	ADD_DSDB_FLAG(UF_USE_AES_KEYS);
 
 	/* groupType flags */
 	ADD_DSDB_FLAG(GTYPE_SECURITY_BUILTIN_LOCAL_GROUP);
@@ -1281,6 +1282,7 @@ void initdsdb(void)
 	ADD_DSDB_STRING(DSDB_SYNTAX_OR_NAME);
 	ADD_DSDB_STRING(DSDB_CONTROL_DBCHECK);
 	ADD_DSDB_STRING(DSDB_CONTROL_DBCHECK_MODIFY_RO_REPLICA);
+	ADD_DSDB_STRING(DSDB_CONTROL_PERMIT_INTERDOMAIN_TRUST_UAC_OID);
 
 	ADD_DSDB_STRING(DS_GUID_COMPUTERS_CONTAINER);
 	ADD_DSDB_STRING(DS_GUID_DELETED_OBJECTS_CONTAINER);

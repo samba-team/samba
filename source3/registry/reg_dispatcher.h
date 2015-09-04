@@ -29,8 +29,8 @@ WERROR delete_reg_subkey(struct registry_key_handle *key, const char *subkey, bo
 int fetch_reg_keys(struct registry_key_handle *key,
 		   struct regsubkey_ctr *subkey_ctr);
 int fetch_reg_values(struct registry_key_handle *key, struct regval_ctr *val);
-bool regkey_access_check(struct registry_key_handle *key, uint32 requested,
-			 uint32 *granted,
+bool regkey_access_check(struct registry_key_handle *key, uint32_t requested,
+			 uint32_t *granted,
 			 const struct security_token *token);
 WERROR regkey_get_secdesc(TALLOC_CTX *mem_ctx, struct registry_key_handle *key,
 			  struct security_descriptor **psecdesc);

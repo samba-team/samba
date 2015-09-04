@@ -1,4 +1,3 @@
-# Adds a new user to a Samba4 server
 # Copyright Jelmer Vernooij 2008
 #
 # Based on the original in EJS:
@@ -72,7 +71,7 @@ sudo samba-tool group add Group2 --group-type=Distribution
 Example2 adds a new distribution group to the local server.  The command is run under root using the sudo command.
 
 Example3:
-samba-tool group add Group3 --nis-domain=samdom --gid=12345
+samba-tool group add Group3 --nis-domain=samdom --gid-number=12345
 
 Example3 adds a new RFC2307 enabled group for NIS domain samdom and GID 12345 (both options are required to enable this feature).
 """

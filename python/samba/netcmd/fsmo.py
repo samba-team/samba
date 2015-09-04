@@ -17,10 +17,11 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import samba
 import samba.getopt as options
 import ldb
 from ldb import LdbError
-
+from samba.dcerpc import drsuapi, misc
 from samba.auth import system_session
 from samba.netcmd import (
     Command,
@@ -30,15 +31,131 @@ from samba.netcmd import (
     )
 from samba.samdb import SamDB
 
+def get_fsmo_roleowner(samdb, roledn):
+    """Gets the owner of an FSMO role
+
+    :param roledn: The DN of the FSMO role
+    """
+    res = samdb.search(roledn,
+                       scope=ldb.SCOPE_BASE, attrs=["fSMORoleOwner"])
+    assert len(res) == 1
+    master_owner = res[0]["fSMORoleOwner"][0]
+    return master_owner
+
+
+def transfer_dns_role(outf, sambaopts, credopts, role, samdb):
+    """Transfer dns FSMO role. """
+
+    if role == "domaindns":
+        domain_dn = samdb.domain_dn()
+        role_object = "CN=Infrastructure,DC=DomainDnsZones," + domain_dn
+    elif role == "forestdns":
+        forest_dn = samba.dn_from_dns_name(samdb.forest_dns_name())
+        role_object = "CN=Infrastructure,DC=ForestDnsZones," + forest_dn
+
+    try:
+        res = samdb.search(role_object,
+                           attrs=["fSMORoleOwner"],
+                           scope=ldb.SCOPE_BASE,
+                           controls=["extended_dn:1:1"])
+
+        if 'fSMORoleOwner' in res[0]:
+            try:
+                master_guid = str(misc.GUID(ldb.Dn(samdb,
+                                  res[0]['fSMORoleOwner'][0])
+                                  .get_extended_component('GUID')))
+                master_owner = str(ldb.Dn(samdb, res[0]['fSMORoleOwner'][0]))
+            except LdbError, (num, msg):
+                raise CommandError("GUID not found in partition naming master DN %s : %s \n" %
+                                   (res[0]['fSMORoleOwner'][0], msg))
+    except LdbError, (num, msg):
+        raise CommandError("DNS partion %s not found : %s" % (role, msg))
+
+    if role == "domaindns":
+        master_dns_name = '%s._msdcs.%s' % (master_guid,
+                                            samdb.domain_dns_name())
+        new_dns_name = '%s._msdcs.%s' % (samdb.get_ntds_GUID(),
+                                         samdb.domain_dns_name())
+    elif role == "forestdns":
+        master_dns_name = '%s._msdcs.%s' % (master_guid,
+                                            samdb.forest_dns_name())
+        new_dns_name = '%s._msdcs.%s' % (samdb.get_ntds_GUID(),
+                                         samdb.forest_dns_name())
+
+    new_owner = samdb.get_dsServiceName()
+
+    if master_dns_name != new_dns_name:
+        lp = sambaopts.get_loadparm()
+        creds = credopts.get_credentials(lp, fallback_machine=True)
+        samdb = SamDB(url="ldap://%s" % (master_dns_name),
+                      session_info=system_session(),
+                      credentials=creds, lp=lp)
+
+        m = ldb.Message()
+        m.dn = ldb.Dn(samdb, role_object)
+        m["fSMORoleOwner"] = ldb.MessageElement(master_owner,
+                                                ldb.FLAG_MOD_DELETE,
+                                                "fSMORoleOwner")
+
+        try:
+            samdb.modify(m)
+        except LdbError, (num, msg):
+            raise CommandError("Failed to delete role '%s': %s" %
+                               (role, msg))
+
+        m = ldb.Message()
+        m.dn = ldb.Dn(samdb, role_object)
+        m["fSMORoleOwner"]= ldb.MessageElement(new_owner,
+                                               ldb.FLAG_MOD_ADD,
+                                               "fSMORoleOwner")
+        try:
+            samdb.modify(m)
+        except LdbError, (num, msg):
+            raise CommandError("Failed to add role '%s': %s" % (role, msg))
+
+        try:
+            connection = samba.drs_utils.drsuapi_connect(samdb.host_dns_name(),
+                                                         lp, creds)
+        except samba.drs_utils.drsException, e:
+            raise CommandError("Drsuapi Connect failed", e)
+
+        try:
+            drsuapi_connection = connection[0]
+            drsuapi_handle = connection[1]
+            req_options = drsuapi.DRSUAPI_DRS_WRIT_REP
+            NC = role_object[18:]
+            samba.drs_utils.sendDsReplicaSync(drsuapi_connection,
+                                              drsuapi_handle,
+                                              master_guid,
+                                              NC, req_options)
+        except samba.drs_utils.drsException, estr:
+            raise CommandError("Replication failed", estr)
+
+        outf.write("FSMO transfer of '%s' role successful\n" % role)
+        return True
+    else:
+        outf.write("This DC already has the '%s' FSMO role\n" % role)
+        return False
+
 def transfer_role(outf, role, samdb):
+    """Transfer standard FSMO role. """
+
+    domain_dn = samdb.domain_dn()
+    rid_dn = "CN=RID Manager$,CN=System," + domain_dn
+    naming_dn = "CN=Partitions,%s" % samdb.get_config_basedn()
+    infrastructure_dn = "CN=Infrastructure," + domain_dn
+    schema_dn = str(samdb.get_schema_basedn())
+    new_owner = samdb.get_dsServiceName()
     m = ldb.Message()
     m.dn = ldb.Dn(samdb, "")
     if role == "rid":
+        master_owner = get_fsmo_roleowner(samdb, rid_dn)
         m["becomeRidMaster"]= ldb.MessageElement(
             "1", ldb.FLAG_MOD_REPLACE,
             "becomeRidMaster")
     elif role == "pdc":
-        domain_dn = samdb.domain_dn()
+        master_owner = get_fsmo_roleowner(samdb, domain_dn)
+
         res = samdb.search(domain_dn,
                            scope=ldb.SCOPE_BASE, attrs=["objectSid"])
         assert len(res) == 1
@@ -47,26 +164,35 @@ def transfer_role(outf, role, samdb):
             sid, ldb.FLAG_MOD_REPLACE,
             "becomePdc")
     elif role == "naming":
+        master_owner = get_fsmo_roleowner(samdb, naming_dn)
         m["becomeDomainMaster"]= ldb.MessageElement(
             "1", ldb.FLAG_MOD_REPLACE,
             "becomeDomainMaster")
-        samdb.modify(m)
     elif role == "infrastructure":
+        master_owner = get_fsmo_roleowner(samdb, infrastructure_dn)
         m["becomeInfrastructureMaster"]= ldb.MessageElement(
             "1", ldb.FLAG_MOD_REPLACE,
             "becomeInfrastructureMaster")
     elif role == "schema":
+        master_owner = get_fsmo_roleowner(samdb, schema_dn)
         m["becomeSchemaMaster"]= ldb.MessageElement(
             "1", ldb.FLAG_MOD_REPLACE,
             "becomeSchemaMaster")
     else:
         raise CommandError("Invalid FSMO role.")
-    try:
-        samdb.modify(m)
-    except LdbError, (num, msg):
-        raise CommandError("Failed to initiate transfer of '%s' role: %s" % (role, msg))
-    outf.write("FSMO transfer of '%s' role successful\n" % role)
 
+    if master_owner != new_owner:
+        try:
+            samdb.modify(m)
+        except LdbError, (num, msg):
+            raise CommandError("Transfer of '%s' role failed: %s" %
+                               (role, msg))
+
+        outf.write("FSMO transfer of '%s' role successful\n" % role)
+        return True
+    else:
+        outf.write("This DC already has the '%s' FSMO role\n" % role)
+        return False
 
 class cmd_fsmo_seize(Command):
     """Seize the role."""
@@ -80,26 +206,31 @@ class cmd_fsmo_seize(Command):
         }
 
     takes_options = [
-        Option("-H", "--URL", help="LDB URL for database or target server", type=str,
-               metavar="URL", dest="H"),
-        Option("--force", help="Force seizing of the role without attempting to transfer first.", action="store_true"),
-        Option("--role", type="choice", choices=["rid", "pdc", "infrastructure","schema","naming","all"],
+        Option("-H", "--URL", help="LDB URL for database or target server",
+               type=str, metavar="URL", dest="H"),
+        Option("--force",
+               help="Force seizing of the role without attempting to transfer first.",
+               action="store_true"),
+        Option("--role", type="choice", choices=["rid", "pdc", "infrastructure",
+               "schema", "naming", "domaindns", "forestdns", "all"],
                help="""The FSMO role to seize or transfer.\n
 rid=RidAllocationMasterRole\n
 schema=SchemaMasterRole\n
 pdc=PdcEmulationMasterRole\n
 naming=DomainNamingMasterRole\n
 infrastructure=InfrastructureMasterRole\n
-all=all of the above"""),
+domaindns=DomainDnsZonesMasterRole\n
+forestdns=ForestDnsZonesMasterRole\n
+all=all of the above\n
+You must provide an Admin user and password."""),
         ]
 
     takes_args = []
 
     def seize_role(self, role, samdb, force):
-        res = samdb.search("",
-                           scope=ldb.SCOPE_BASE, attrs=["dsServiceName"])
-        assert len(res) == 1
-        serviceName = res[0]["dsServiceName"][0]
+        """Seize standard fsmo role. """
+
+        serviceName = samdb.get_dsServiceName()
         domain_dn = samdb.domain_dn()
         self.infrastructure_dn = "CN=Infrastructure," + domain_dn
         self.naming_dn = "CN=Partitions,%s" % samdb.get_config_basedn()
@@ -120,26 +251,80 @@ all=all of the above"""),
         else:
             raise CommandError("Invalid FSMO role.")
         #first try to transfer to avoid problem if the owner is still active
-        if force is None:
-            self.message("Attempting transfer...")
-            try:
-                transfer_role(self.outf, role, samdb)
-                self.outf.write("FSMO seize was not required, as transfer of '%s' role was successful\n" % role)
-                return
-            except CommandError:
-            #transfer failed, use the big axe...
-                self.message("Transfer unsuccessful, seizing...")
-        else:
-            self.message("Will not attempt transfer, seizing...")
+        seize = False
+        master_owner = get_fsmo_roleowner(samdb, m.dn)
+        if master_owner != serviceName:
+            if force is None:
+                self.message("Attempting transfer...")
+                if not transfer_role(self.outf, role, samdb):
+                    #transfer failed, use the big axe...
+                    seize = True
+                    self.message("Transfer unsuccessful, seizing...")
+                else:
+                    self.message("Not seizing role as transfer was successful")
 
-        m["fSMORoleOwner"]= ldb.MessageElement(
-            serviceName, ldb.FLAG_MOD_REPLACE,
-            "fSMORoleOwner")
-        try:
-            samdb.modify(m)
-        except LdbError, (num, msg):
-            raise CommandError("Failed to initiate role seize of '%s' role: %s" % (role, msg))
-        self.outf.write("FSMO seize of '%s' role successful\n" % role)
+            if force is not None or seize == True:
+                self.message("Seizing %s FSMO role..." % role)
+                m["fSMORoleOwner"]= ldb.MessageElement(
+                    serviceName, ldb.FLAG_MOD_REPLACE,
+                    "fSMORoleOwner")
+                try:
+                    samdb.modify(m)
+                except LdbError, (num, msg):
+                    raise CommandError("Failed to seize '%s' role: %s" %
+                                       (role, msg))
+                self.outf.write("FSMO seize of '%s' role successful\n" % role)
+                return True
+        else:
+            self.outf.write("This DC already has the '%s' FSMO role\n" % role)
+            return False
+
+    def seize_dns_role(self, role, samdb, credopts, sambaopts,
+                       versionopts, force):
+        """Seize DNS FSMO role. """
+
+        serviceName = samdb.get_dsServiceName()
+        domain_dn = samdb.domain_dn()
+        forest_dn = samba.dn_from_dns_name(samdb.forest_dns_name())
+        self.domaindns_dn = "CN=Infrastructure,DC=DomainDnsZones," + domain_dn
+        self.forestdns_dn = "CN=Infrastructure,DC=ForestDnsZones," + forest_dn
+
+        m = ldb.Message()
+        if role == "domaindns":
+            m.dn = ldb.Dn(samdb, self.domaindns_dn)
+        elif role == "forestdns":
+            m.dn = ldb.Dn(samdb, self.forestdns_dn)
+        else:
+            raise CommandError("Invalid FSMO role.")
+        #first try to transfer to avoid problem if the owner is still active
+        seize = False
+        master_owner = get_fsmo_roleowner(samdb, m.dn)
+        if master_owner != serviceName:
+            if force is None:
+                self.message("Attempting transfer...")
+                if not transfer_dns_role(self.outf, sambaopts, credopts, role,
+                                      samdb):
+                    #transfer failed, use the big axe...
+                    seize = True
+                    self.message("Transfer unsuccessful, seizing...")
+                else:
+                    self.message("Not seizing role as transfer was successful\n")
+
+            if force is not None or seize == True:
+                self.message("Seizing %s FSMO role..." % role)
+                m["fSMORoleOwner"]= ldb.MessageElement(
+                    serviceName, ldb.FLAG_MOD_REPLACE,
+                    "fSMORoleOwner")
+                try:
+                    samdb.modify(m)
+                except LdbError, (num, msg):
+                    raise CommandError("Failed to seize '%s' role: %s" %
+                                       (role, msg))
+                self.outf.write("FSMO seize of '%s' role successful\n" % role)
+                return True
+        else:
+            self.outf.write("This DC already has the '%s' FSMO role\n" % role)
+            return False
 
     def run(self, force=None, H=None, role=None,
             credopts=None, sambaopts=None, versionopts=None):
@@ -156,8 +341,16 @@ all=all of the above"""),
             self.seize_role("naming", samdb, force)
             self.seize_role("infrastructure", samdb, force)
             self.seize_role("schema", samdb, force)
+            self.seize_dns_role("domaindns", samdb, credopts, sambaopts,
+                                versionopts, force)
+            self.seize_dns_role("forestdns", samdb, credopts, sambaopts,
+                                versionopts, force)
         else:
-            self.seize_role(role, samdb, force)
+            if role == "domaindns" or role == "forestdns":
+                self.seize_dns_role(role, samdb, credopts, sambaopts,
+                                    versionopts, force)
+            else:
+                self.seize_role(role, samdb, force)
 
 
 class cmd_fsmo_show(Command):
@@ -172,8 +365,8 @@ class cmd_fsmo_show(Command):
         }
 
     takes_options = [
-        Option("-H", "--URL", help="LDB URL for database or target server", type=str,
-               metavar="URL", dest="H"),
+        Option("-H", "--URL", help="LDB URL for database or target server",
+               type=str, metavar="URL", dest="H"),
         ]
 
     takes_args = []
@@ -186,42 +379,29 @@ class cmd_fsmo_show(Command):
             credentials=creds, lp=lp)
 
         domain_dn = samdb.domain_dn()
-        self.infrastructure_dn = "CN=Infrastructure," + domain_dn
-        self.naming_dn = "CN=Partitions,%s" % samdb.get_config_basedn()
-        self.schema_dn = samdb.get_schema_basedn()
-        self.rid_dn = "CN=RID Manager$,CN=System," + domain_dn
+        forest_dn = samba.dn_from_dns_name(samdb.forest_dns_name())
+        infrastructure_dn = "CN=Infrastructure," + domain_dn
+        naming_dn = "CN=Partitions,%s" % samdb.get_config_basedn()
+        schema_dn = samdb.get_schema_basedn()
+        rid_dn = "CN=RID Manager$,CN=System," + domain_dn
+        domaindns_dn = "CN=Infrastructure,DC=DomainDnsZones," + domain_dn
+        forestdns_dn = "CN=Infrastructure,DC=ForestDnsZones," + forest_dn
 
-        res = samdb.search(self.infrastructure_dn,
-                           scope=ldb.SCOPE_BASE, attrs=["fSMORoleOwner"])
-        assert len(res) == 1
-        self.infrastructureMaster = res[0]["fSMORoleOwner"][0]
+        infrastructureMaster = get_fsmo_roleowner(samdb, infrastructure_dn)
+        pdcEmulator = get_fsmo_roleowner(samdb, domain_dn)
+        namingMaster = get_fsmo_roleowner(samdb, naming_dn)
+        schemaMaster = get_fsmo_roleowner(samdb, schema_dn)
+        ridMaster = get_fsmo_roleowner(samdb, rid_dn)
+        domaindnszonesMaster = get_fsmo_roleowner(samdb, domaindns_dn)
+        forestdnszonesMaster = get_fsmo_roleowner(samdb, forestdns_dn)
 
-        res = samdb.search(domain_dn,
-                           scope=ldb.SCOPE_BASE, attrs=["fSMORoleOwner"])
-        assert len(res) == 1
-        self.pdcEmulator = res[0]["fSMORoleOwner"][0]
-
-        res = samdb.search(self.naming_dn,
-                           scope=ldb.SCOPE_BASE, attrs=["fSMORoleOwner"])
-        assert len(res) == 1
-        self.namingMaster = res[0]["fSMORoleOwner"][0]
-
-        res = samdb.search(self.schema_dn,
-                           scope=ldb.SCOPE_BASE, attrs=["fSMORoleOwner"])
-        assert len(res) == 1
-        self.schemaMaster = res[0]["fSMORoleOwner"][0]
-
-        res = samdb.search(self.rid_dn,
-                           scope=ldb.SCOPE_BASE, attrs=["fSMORoleOwner"])
-        assert len(res) == 1
-        self.ridMaster = res[0]["fSMORoleOwner"][0]
-
-        self.message("InfrastructureMasterRole owner: " + self.infrastructureMaster)
-        self.message("RidAllocationMasterRole owner: " + self.ridMaster)
-        self.message("PdcEmulationMasterRole owner: " + self.pdcEmulator)
-        self.message("DomainNamingMasterRole owner: " + self.namingMaster)
-        self.message("SchemaMasterRole owner: " + self.schemaMaster)
-
+        self.message("SchemaMasterRole owner: " + schemaMaster)
+        self.message("InfrastructureMasterRole owner: " + infrastructureMaster)
+        self.message("RidAllocationMasterRole owner: " + ridMaster)
+        self.message("PdcEmulationMasterRole owner: " + pdcEmulator)
+        self.message("DomainNamingMasterRole owner: " + namingMaster)
+        self.message("DomainDnsZonesMasterRole owner: " + domaindnszonesMaster)
+        self.message("ForestDnsZonesMasterRole owner: " + forestdnszonesMaster)
 
 class cmd_fsmo_transfer(Command):
     """Transfer the role."""
@@ -235,16 +415,20 @@ class cmd_fsmo_transfer(Command):
         }
 
     takes_options = [
-        Option("-H", "--URL", help="LDB URL for database or target server", type=str,
-               metavar="URL", dest="H"),
-        Option("--role", type="choice", choices=["rid", "pdc", "infrastructure","schema","naming","all"],
+        Option("-H", "--URL", help="LDB URL for database or target server",
+               type=str, metavar="URL", dest="H"),
+        Option("--role", type="choice", choices=["rid", "pdc", "infrastructure",
+               "schema", "naming", "domaindns", "forestdns", "all"],
                help="""The FSMO role to seize or transfer.\n
 rid=RidAllocationMasterRole\n
 schema=SchemaMasterRole\n
 pdc=PdcEmulationMasterRole\n
 naming=DomainNamingMasterRole\n
 infrastructure=InfrastructureMasterRole\n
-all=all of the above"""),
+domaindns=DomainDnsZonesMasterRole\n
+forestdns=ForestDnsZonesMasterRole\n
+all=all of the above\n
+You must provide an Admin user and password."""),
         ]
 
     takes_args = []
@@ -264,8 +448,13 @@ all=all of the above"""),
             transfer_role(self.outf, "naming", samdb)
             transfer_role(self.outf, "infrastructure", samdb)
             transfer_role(self.outf, "schema", samdb)
+            transfer_dns_role(self.outf, sambaopts, credopts, "domaindns", samdb)
+            transfer_dns_role(self.outf, sambaopts, credopts, "forestdns", samdb)
         else:
-            transfer_role(self.outf, role, samdb)
+            if role == "domaindns" or role == "forestdns":
+                transfer_dns_role(self.outf, sambaopts, credopts, role, samdb)
+            else:
+                transfer_role(self.outf, role, samdb)
 
 
 class cmd_fsmo(SuperCommand):

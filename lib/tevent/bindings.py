@@ -22,8 +22,10 @@
 #   License along with this library; if not, see <http://www.gnu.org/licenses/>.
 
 import signal
+from unittest import TestCase, TestProgram
+import gc
+
 import _tevent
-from unittest import TestCase
 
 class BackendListTests(TestCase):
 
@@ -60,3 +62,51 @@ class ContextTests(TestCase):
     def test_add_signal(self):
         sig = self.ctx.add_signal(signal.SIGINT, 0, lambda callback: None)
         self.assertTrue(isinstance(sig, _tevent.Signal))
+
+    def test_timer(self):
+        """Test a timer is can be scheduled"""
+        collecting_list = []
+        # time "0" has already passed, callback will be scheduled immediately
+        timer = self.ctx.add_timer(0, lambda t: collecting_list.append(True))
+        self.assertTrue(timer.active)
+        self.assertEqual(collecting_list, [])
+        self.ctx.loop_once()
+        self.assertFalse(timer.active)
+        self.assertEqual(collecting_list, [True])
+
+    def test_timer_deallocate_timer(self):
+        """Test timer is scheduled even if reference to it isn't held"""
+        collecting_list = []
+        def callback(t):
+            collecting_list.append(True)
+        timer = self.ctx.add_timer(0, lambda t: collecting_list.append(True))
+        gc.collect()
+        self.assertEqual(collecting_list, [])
+        self.ctx.loop_once()
+        self.assertEqual(collecting_list, [True])
+
+    def test_timer_deallocate_context(self):
+        """Test timer is unscheduled when context is freed"""
+        collecting_list = []
+        def callback(t):
+            collecting_list.append(True)
+        timer = self.ctx.add_timer(0, lambda t: collecting_list.append(True))
+        self.assertTrue(timer.active)
+        del self.ctx
+        gc.collect()
+        self.assertEqual(collecting_list, [])
+        self.assertFalse(timer.active)
+
+    def test_timer_offset(self):
+        """Test scheduling timer with an offset"""
+        collecting_list = []
+        self.ctx.add_timer_offset(0.2, lambda t: collecting_list.append(2))
+        self.ctx.add_timer_offset(0.1, lambda t: collecting_list.append(1))
+        self.assertEqual(collecting_list, [])
+        self.ctx.loop_once()
+        self.assertEqual(collecting_list, [1])
+        self.ctx.loop_once()
+        self.assertEqual(collecting_list, [1, 2])
+
+if __name__ == '__main__':
+    TestProgram()

@@ -141,7 +141,8 @@ static void rpc_transport_np_init_pipe_open(struct tevent_req *subreq)
 				 timeval_current_ofs_msec(100 * state->retries),
 				 rpc_transport_np_init_pipe_open_retry, req);
 		if (tevent_req_nomem(te, req)) {
-			return;
+			DEBUG(2, ("Failed to create asynchronous "
+					"tevent_timer"));
 		}
 		return;
 	} else if (!NT_STATUS_IS_OK(status)) {
@@ -197,8 +198,7 @@ NTSTATUS rpc_transport_np_init(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 		goto fail;
 	}
 
-	if (!tevent_req_poll(req, ev)) {
-		status = map_nt_error_from_unix(errno);
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
 		goto fail;
 	}
 

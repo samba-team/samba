@@ -21,7 +21,7 @@
 
 from cStringIO import StringIO
 
-from selftest.tests import TestCase
+from samba.tests import TestCase
 
 from selftest.target.samba import (
     bindir_path,
@@ -34,15 +34,15 @@ from selftest.target.samba import (
 class BinDirPathTests(TestCase):
 
     def test_mapping(self):
-        self.assertEquals("exe4",
-            bindir_path({"exe": "exe4"}, "/some/path", "exe"))
-        self.assertEquals("/bin/ls",
-            bindir_path({"exe": "ls"}, "/bin", "exe"))
+        self.assertEquals("exe",
+            bindir_path("/some/path", "exe"))
+        self.assertEquals("/bin/exe",
+            bindir_path("/bin", "/bin/exe"))
 
     def test_no_mapping(self):
-        self.assertEqual("exe", bindir_path({}, "/some/path", "exe"))
+        self.assertEqual("exe", bindir_path("/some/path", "exe"))
         self.assertEqual("/bin/ls",
-            bindir_path({}, "/bin", "ls"))
+            bindir_path("/bin", "ls"))
 
 
 class MkRealmsStanzaTests(TestCase):

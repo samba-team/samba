@@ -1,8 +1,8 @@
 <samba:parameter name="directory security mask"
-		 context="S"
-		 removed="1"
-		 type="string"
-		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+                 context="S"
+                 removed="1"
+                 type="string"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>
 	This parameter has been removed for Samba 4.0.0.

@@ -41,22 +41,15 @@
 #include "api/glfs.h"
 #include "lib/util/dlinklist.h"
 #include "lib/util/tevent_unix.h"
-#ifdef HAVE_SYS_EVENTFD_H
-#include <sys/eventfd.h>
-#endif
-#include <pthread.h>
+#include "lib/tevent/tevent_internal.h"
 #include "smbd/globals.h"
+#include "lib/sys_rw.h"
 
 #define DEFAULT_VOLFILE_SERVER "localhost"
 
-#ifdef HAVE_EVENTFD
-static pthread_mutex_t lock_req_list = PTHREAD_MUTEX_INITIALIZER;
-static int event_fd = -1;
+static int read_fd = -1;
+static int write_fd = -1;
 static struct tevent_fd *aio_read_event = NULL;
-static struct tevent_req **req_producer_list = NULL;
-static struct tevent_req **req_consumer_list = NULL;
-static uint64_t req_counter = 0;
-#endif
 
 /**
  * Helper to convert struct stat to struct stat_ex.
@@ -278,9 +271,8 @@ static void vfs_gluster_disconnect(struct vfs_handle_struct *handle)
 }
 
 static uint64_t vfs_gluster_disk_free(struct vfs_handle_struct *handle,
-				      const char *path, bool small_query,
-				      uint64_t *bsize_p, uint64_t *dfree_p,
-				      uint64_t *dsize_p)
+				      const char *path, uint64_t *bsize_p,
+				      uint64_t *dfree_p, uint64_t *dsize_p)
 {
 	struct statvfs statvfs = { 0, };
 	int ret;
@@ -363,7 +355,7 @@ static uint32_t vfs_gluster_fs_capabilities(struct vfs_handle_struct *handle,
 
 static DIR *vfs_gluster_opendir(struct vfs_handle_struct *handle,
 				const char *path, const char *mask,
-				uint32 attributes)
+				uint32_t attributes)
 {
 	glfs_fd_t *fd;
 
@@ -378,7 +370,7 @@ static DIR *vfs_gluster_opendir(struct vfs_handle_struct *handle,
 
 static DIR *vfs_gluster_fdopendir(struct vfs_handle_struct *handle,
 				  files_struct *fsp, const char *mask,
-				  uint32 attributes)
+				  uint32_t attributes)
 {
 	return (DIR *) *(glfs_fd_t **)VFS_FETCH_FSP_EXTENSION(handle, fsp);
 }
@@ -503,15 +495,13 @@ struct glusterfs_aio_state {
 /*
  * This function is the callback that will be called on glusterfs
  * threads once the async IO submitted is complete. To notify
- * Samba of the completion we use eventfd mechanism.
+ * Samba of the completion we use a pipe based queue.
  */
 static void aio_glusterfs_done(glfs_fd_t *fd, ssize_t ret, void *data)
 {
-#if HAVE_EVENTFD
 	struct tevent_req *req = NULL;
 	struct glusterfs_aio_state *state = NULL;
-	int i, sts = 0;
-	uint64_t u = 1;
+	int sts = 0;
 
 	req = talloc_get_type_abort(data, struct tevent_req);
 	state = tevent_req_data(req, struct glusterfs_aio_state);
@@ -525,88 +515,82 @@ static void aio_glusterfs_done(glfs_fd_t *fd, ssize_t ret, void *data)
 	}
 
 	/*
-	 * Store the reqs that needs to be completed by calling
-	 * tevent_req_done(). tevent_req_done() cannot be called
-	 * here, as it is not designed to be executed in the
-	 * multithread environment, tevent_req_done() should be
+	 * Write the pointer to each req that needs to be completed
+	 * by calling tevent_req_done(). tevent_req_done() cannot
+	 * be called here, as it is not designed to be executed
+	 * in the multithread environment, tevent_req_done() must be
 	 * executed from the smbd main thread.
+	 *
+	 * write(2) on pipes with sizes under _POSIX_PIPE_BUF
+	 * in size is atomic, without this, the use op pipes in this
+	 * code would not work.
+	 *
+	 * sys_write is a thin enough wrapper around write(2)
+	 * that we can trust it here.
 	 */
-	pthread_mutex_lock (&lock_req_list);
-	{
-		for (i = 0 ; i < aio_pending_size ; i++) {
-			if(!req_producer_list[i]) {
-				req_producer_list[i] = req;
-				req_counter = req_counter + 1;
-				break;
-			}
-		}
-	}
-	pthread_mutex_unlock (&lock_req_list);
 
-	/*
-	 * For a bunch of fops notify only once
-	 */
-	if (req_counter == 1) {
-		sts = write (event_fd, &u, sizeof(uint64_t));
-		if (sts < 0 && errno == EAGAIN)
-			DEBUG(0,("\nWRITE: reached max value"));
+	sts = sys_write(write_fd, &req, sizeof(struct tevent_req *));
+	if (sts < 0) {
+		DEBUG(0,("\nWrite to pipe failed (%s)", strerror(errno)));
 	}
+
 	return;
-#endif
 }
 
-#ifdef HAVE_EVENTFD
+/*
+ * Read each req off the pipe and process it.
+ */
 static void aio_tevent_fd_done(struct tevent_context *event_ctx,
 				struct tevent_fd *fde,
-				uint16 flags, void *data)
+				uint16_t flags, void *data)
 {
 	struct tevent_req *req = NULL;
-	struct tevent_req **temp = NULL;
-	int i = 0, sts = 0;
-	uint64_t u = 0;
+	int sts = 0;
 
-	sts = read (event_fd, &u, sizeof(uint64_t));
-	if (sts < 0 && errno == EAGAIN)
-		DEBUG(0,("\nREAD: eventfd read failed (%s)",strerror(errno)));
+	/*
+	 * read(2) on pipes is atomic if the needed data is available
+	 * in the pipe, per SUS and POSIX.  Because we always write
+	 * to the pipe in sizeof(struct tevent_req *) chunks, we can
+	 * always read in those chunks, atomically.
+	 *
+	 * sys_read is a thin enough wrapper around read(2) that we
+	 * can trust it here.
+	 */
 
-	pthread_mutex_lock (&lock_req_list);
-	{
-		temp = req_producer_list;
-		req_producer_list = req_consumer_list;
-		req_consumer_list = temp;
-		req_counter = 0;
+	sts = sys_read(read_fd, &req, sizeof(struct tevent_req *));
+	if (sts < 0) {
+		DEBUG(0,("\nRead from pipe failed (%s)", strerror(errno)));
 	}
-	pthread_mutex_unlock (&lock_req_list);
 
-	for (i = 0 ; i < aio_pending_size ; i++) {
-		req = req_consumer_list[i];
-		if (req) {
-			tevent_req_done(req);
-			req_consumer_list[i] = 0;
-		}
+	if (req) {
+		tevent_req_done(req);
 	}
 	return;
 }
-#endif
 
 static bool init_gluster_aio(struct vfs_handle_struct *handle)
 {
-#ifdef HAVE_EVENTFD
-	if (event_fd != -1) {
+	int fds[2];
+	int ret = -1;
+
+	if (read_fd != -1) {
 		/*
 		 * Already initialized.
 		 */
 		return true;
 	}
 
-	event_fd = eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
-	if (event_fd == -1) {
+	ret = pipe(fds);
+	if (ret == -1) {
 		goto fail;
 	}
 
+	read_fd = fds[0];
+	write_fd = fds[1];
+
 	aio_read_event = tevent_add_fd(handle->conn->sconn->ev_ctx,
 					NULL,
-					event_fd,
+					read_fd,
 					TEVENT_FD_READ,
 					aio_tevent_fd_done,
 					NULL);
@@ -614,19 +598,15 @@ static bool init_gluster_aio(struct vfs_handle_struct *handle)
 		goto fail;
 	}
 
-	req_producer_list = talloc_zero_array(NULL, struct tevent_req *,
-						aio_pending_size);
-	req_consumer_list = talloc_zero_array(NULL, struct tevent_req *,
-						aio_pending_size);
-
 	return true;
 fail:
 	TALLOC_FREE(aio_read_event);
-	if (event_fd != -1) {
-		close(event_fd);
-		event_fd = -1;
+	if (read_fd != -1) {
+		close(read_fd);
+		close(write_fd);
+		read_fd = -1;
+		write_fd = -1;
 	}
-#endif
 	return false;
 }
 
@@ -639,11 +619,6 @@ static struct tevent_req *vfs_gluster_pread_send(struct vfs_handle_struct
 	struct tevent_req *req = NULL;
 	struct glusterfs_aio_state *state = NULL;
 	int ret = 0;
-
-#ifndef HAVE_EVENTFD
-	errno = ENOTSUP;
-	return NULL;
-#endif
 
 	req = tevent_req_create(mem_ctx, &state, struct glusterfs_aio_state);
 	if (req == NULL) {
@@ -689,11 +664,6 @@ static struct tevent_req *vfs_gluster_pwrite_send(struct vfs_handle_struct
 	struct glusterfs_aio_state *state = NULL;
 	int ret = 0;
 
-#ifndef HAVE_EVENTFD
-	errno = ENOTSUP;
-	return NULL;
-#endif
-
 	req = tevent_req_create(mem_ctx, &state, struct glusterfs_aio_state);
 	if (req == NULL) {
 		return NULL;
@@ -716,10 +686,6 @@ static ssize_t vfs_gluster_recv(struct tevent_req *req, int *err)
 {
 	struct glusterfs_aio_state *state = NULL;
 
-#ifndef HAVE_EVENTFD
-	errno = ENOTSUP;
-	return -1;
-#endif
 	state = tevent_req_data(req, struct glusterfs_aio_state);
 	if (state == NULL) {
 		return -1;
@@ -779,11 +745,6 @@ static struct tevent_req *vfs_gluster_fsync_send(struct vfs_handle_struct
 	struct tevent_req *req = NULL;
 	struct glusterfs_aio_state *state = NULL;
 	int ret = 0;
-
-#ifndef HAVE_EVENTFD
-	errno = ENOTSUP;
-	return NULL;
-#endif
 
 	req = tevent_req_create(mem_ctx, &state, struct glusterfs_aio_state);
 	if (req == NULL) {
@@ -966,9 +927,10 @@ static int vfs_gluster_ftruncate(struct vfs_handle_struct *handle,
 
 static int vfs_gluster_fallocate(struct vfs_handle_struct *handle,
 				 struct files_struct *fsp,
-				 enum vfs_fallocate_mode mode,
+				 uint32_t mode,
 				 off_t offset, off_t len)
 {
+	/* TODO: add support using glfs_fallocate() and glfs_zerofill() */
 	errno = ENOTSUP;
 	return -1;
 }
@@ -1012,7 +974,7 @@ static bool vfs_gluster_lock(struct vfs_handle_struct *handle,
 }
 
 static int vfs_gluster_kernel_flock(struct vfs_handle_struct *handle,
-				    files_struct *fsp, uint32 share_mode,
+				    files_struct *fsp, uint32_t share_mode,
 				    uint32_t access_mask)
 {
 	errno = ENOSYS;
@@ -1075,18 +1037,6 @@ static int vfs_gluster_mknod(struct vfs_handle_struct *handle, const char *path,
 			     mode_t mode, SMB_DEV_T dev)
 {
 	return glfs_mknod(handle->data, path, mode, dev);
-}
-
-static NTSTATUS vfs_gluster_notify_watch(struct vfs_handle_struct *handle,
-					 struct sys_notify_context *ctx,
-					 const char *path, uint32_t *filter,
-					 uint32_t *subdir_filter,
-					 void (*callback) (struct sys_notify_context *ctx,
-							   void *private_data,
-							   struct notify_event *ev),
-					 void *private_data, void *handle_p)
-{
-	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
 static int vfs_gluster_chflags(struct vfs_handle_struct *handle,
@@ -1798,7 +1748,6 @@ static struct vfs_fn_pointers glusterfs_fns = {
 	.link_fn = vfs_gluster_link,
 	.mknod_fn = vfs_gluster_mknod,
 	.realpath_fn = vfs_gluster_realpath,
-	.notify_watch_fn = vfs_gluster_notify_watch,
 	.chflags_fn = vfs_gluster_chflags,
 	.file_id_create_fn = NULL,
 	.copy_chunk_send_fn = NULL,

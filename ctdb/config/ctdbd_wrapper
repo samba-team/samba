@@ -114,6 +114,7 @@ build_ctdb_options ()
     maybe_set "--logging"                "$CTDB_LOGGING"
     maybe_set "--nlist"                  "$CTDB_NODES"
     maybe_set "--socket"                 "$CTDB_SOCKET"
+    maybe_set "--listen"                 "$CTDB_NODE_ADDRESS"
     maybe_set "--public-addresses"       "$CTDB_PUBLIC_ADDRESSES"
     maybe_set "--public-interface"       "$CTDB_PUBLIC_INTERFACE"
     maybe_set "--dbdir"                  "$CTDB_DBDIR"
@@ -154,7 +155,7 @@ kill_ctdbd ()
 start()
 {
     if _session=$(ctdbd_is_running) ; then
-	echo $"CTDB is already running"
+	echo "CTDB is already running"
 	return 0
     fi
 
@@ -173,6 +174,10 @@ start()
 	ulimit -c 0
     else
 	ulimit -c unlimited
+    fi
+
+    if [ -n "$CTDB_MAX_OPEN_FILES" ]; then
+	ulimit -n $CTDB_MAX_OPEN_FILES
     fi
 
     mkdir -p $(dirname "$pidfile")

@@ -23,7 +23,7 @@
 #include "includes.h"
 #include "nmbd/nmbd.h"
 
-extern uint16 samba_nb_type; /* Samba's NetBIOS type. */
+extern uint16_t samba_nb_type; /* Samba's NetBIOS type. */
 
 /****************************************************************************
  Fail funtion when registering my netbios names.
@@ -83,7 +83,7 @@ Exiting.\n", lp_workgroup(), subrec->subnet_name));
 ******************************************************************/
 
 static void insert_refresh_name_into_unicast( struct subnet_record *subrec,
-                                                struct nmb_name *nmbname, uint16 nb_type )
+                                                struct nmb_name *nmbname, uint16_t nb_type )
 {
 	struct name_record *namerec;
 

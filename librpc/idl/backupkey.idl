@@ -47,6 +47,9 @@ interface backupkey
 		uint8 key[256];
 	} bkrp_dc_serverwrap_key;
 
+	[public] typedef struct {
+	} bkrp_empty;
+
 	[public,gensize] typedef struct {
 		uint32 version;
 		uint32 encrypted_secret_len;
@@ -95,15 +98,45 @@ interface backupkey
 		uint8 hash[64];
 	} bkrp_access_check_v3;
 
+	[public] typedef struct {
+		uint8 r3[32];
+		uint8 mac[20];
+		dom_sid sid;
+		[subcontext(0),flag(NDR_REMAINING)] DATA_BLOB secret_data;
+	} bkrp_rc4encryptedpayload;
+
+	[public] typedef struct {
+		[value(0x00000001)] uint32 magic;
+		uint32 payload_length;
+		uint32 ciphertext_length;
+		GUID guid;
+		uint8 r2[68];
+		uint8 rc4encryptedpayload[ciphertext_length];
+	} bkrp_server_side_wrapped;
+
+	[public] typedef struct {
+		[flag(NDR_REMAINING)] DATA_BLOB opaque;
+	} bkrp_opaque_blob;
+
+	typedef enum {
+	        BACKUPKEY_SERVER_WRAP_VERSION = 1,
+	        BACKUPKEY_CLIENT_WRAP_VERSION2 = 2,
+		BACKUPKEY_CLIENT_WRAP_VERSION3 = 3
+	} bkrp_versions;
+  
 	typedef enum {
 		BACKUPKEY_INVALID_GUID_INTEGER = 0xFFFF,
 		BACKUPKEY_RESTORE_GUID_INTEGER = 0x0000,
-		BACKUPKEY_RETRIEVE_BACKUP_KEY_GUID_INTEGER = 0x0001
+		BACKUPKEY_RETRIEVE_BACKUP_KEY_GUID_INTEGER = 0x0001,
+		BACKUPKEY_RESTORE_GUID_WIN2K_INTEGER = 0x0002,
+		BACKUPKEY_BACKUP_GUID_INTEGER = 0x0003
 	} bkrp_guid_to_integer;
 
 	[public] typedef [nodiscriminant] union {
 		[case(BACKUPKEY_RESTORE_GUID_INTEGER)] bkrp_client_side_wrapped restore_req;
-		[case(BACKUPKEY_RETRIEVE_BACKUP_KEY_GUID_INTEGER)] bkrp_client_side_wrapped cert_req;
+		[case(BACKUPKEY_RETRIEVE_BACKUP_KEY_GUID_INTEGER)] bkrp_empty empty;
+		[case(BACKUPKEY_RESTORE_GUID_WIN2K_INTEGER)] bkrp_server_side_wrapped unsign_req;
+		[case(BACKUPKEY_BACKUP_GUID_INTEGER)] bkrp_opaque_blob sign_req;
 	} bkrp_data_in_blob;
 
 	/******************/

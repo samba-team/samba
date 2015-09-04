@@ -161,7 +161,7 @@ static NTSTATUS check_parent_exists(TALLOC_CTX *ctx,
 	}
 
 	/* Parent exists - set "start" to be the
-	 * last compnent to shorten the tree walk. */
+	 * last component to shorten the tree walk. */
 
 	/*
 	 * Safe to use discard_const_p
@@ -1012,10 +1012,10 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 }
 
 /****************************************************************************
- Ensure a path is not vetod.
+ Ensure a path is not vetoed.
 ****************************************************************************/
 
-NTSTATUS check_veto_path(connection_struct *conn, const char *name)
+static NTSTATUS check_veto_path(connection_struct *conn, const char *name)
 {
 	if (IS_VETO_PATH(conn, name))  {
 		/* Is it not dot or dot dot. */

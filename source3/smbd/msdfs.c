@@ -4,6 +4,7 @@
    MSDFS services for Samba
    Copyright (C) Shirish Kalele 2000
    Copyright (C) Jeremy Allison 2007
+   Copyright (C) Robin McCorkell 2015
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -296,7 +297,7 @@ static NTSTATUS create_conn_struct_as_root(TALLOC_CTX *ctx,
 	set_conn_connectpath(conn, connpath);
 
 	/*
-	 * New code to check if there's a share security descripter
+	 * New code to check if there's a share security descriptor
 	 * added from NT server manager. This is done after the
 	 * smb.conf checks are done as we need a uid and token. JRA.
 	 *
@@ -428,6 +429,21 @@ NTSTATUS create_conn_struct_cwd(TALLOC_CTX *ctx,
 	return NT_STATUS_OK;
 }
 
+static void shuffle_strlist(char **list, int count)
+{
+	int i;
+	uint32_t r;
+	char *tmp;
+
+	for (i = count; i > 1; i--) {
+		r = generate_random() % i;
+
+		tmp = list[i-1];
+		list[i-1] = list[r];
+		list[r] = tmp;
+	}
+}
+
 /**********************************************************************
  Parse the contents of a symlink to verify if it is an msdfs referral
  A valid referral is of the form:
@@ -448,6 +464,7 @@ NTSTATUS create_conn_struct_cwd(TALLOC_CTX *ctx,
  **********************************************************************/
 
 static bool parse_msdfs_symlink(TALLOC_CTX *ctx,
+				int snum,
 				const char *target,
 				struct referral **preflist,
 				int *refcount)
@@ -478,6 +495,11 @@ static bool parse_msdfs_symlink(TALLOC_CTX *ctx,
 	while((count<MAX_REFERRAL_COUNT) &&
 	      ((alt_path[count] = strtok_r(NULL, ",", &saveptr)) != NULL)) {
 		count++;
+	}
+
+	/* shuffle alternate paths */
+	if (lp_msdfs_shuffle_referrals(snum)) {
+		shuffle_strlist(alt_path, count);
 	}
 
 	DEBUG(10,("parse_msdfs_symlink: count=%d\n", count));
@@ -1007,7 +1029,7 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		if (!parse_msdfs_symlink(ctx, tmp, &ref, &refcount)) {
+		if (!parse_msdfs_symlink(ctx, snum, tmp, &ref, &refcount)) {
 			TALLOC_FREE(tmp);
 			TALLOC_FREE(pdp);
 			return NT_STATUS_INVALID_PARAMETER;
@@ -1056,7 +1078,7 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 	}
 
 	/* We know this is a valid dfs link. Parse the targetpath. */
-	if (!parse_msdfs_symlink(ctx, targetpath,
+	if (!parse_msdfs_symlink(ctx, snum, targetpath,
 				&jucn->referral_list,
 				&jucn->referral_count)) {
 		DEBUG(3,("get_referred_path: failed to parse symlink "
@@ -1517,7 +1539,7 @@ static int form_junctions(TALLOC_CTX *ctx,
 					conn,
 					dname, &link_target,
 					NULL)) {
-			if (parse_msdfs_symlink(ctx,
+			if (parse_msdfs_symlink(ctx, snum,
 					link_target,
 					&jucn[cnt].referral_list,
 					&jucn[cnt].referral_count)) {

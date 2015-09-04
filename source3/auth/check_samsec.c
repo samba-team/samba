@@ -119,11 +119,11 @@ static NTSTATUS sam_password_ok(TALLOC_CTX *mem_ctx,
 static bool logon_hours_ok(struct samu *sampass)
 {
 	/* In logon hours first bit is Sunday from 12AM to 1AM */
-	const uint8 *hours;
+	const uint8_t *hours;
 	struct tm *utctime;
 	time_t lasttime;
 	const char *asct;
-	uint8 bitmask, bitpos;
+	uint8_t bitmask, bitpos;
 
 	hours = pdb_get_hours(sampass);
 	if (!hours) {
@@ -176,7 +176,7 @@ static NTSTATUS sam_account_ok(TALLOC_CTX *mem_ctx,
 			       struct samu *sampass,
 			       const struct auth_usersupplied_info *user_info)
 {
-	uint32	acct_ctrl = pdb_get_acct_ctrl(sampass);
+	uint32_t acct_ctrl = pdb_get_acct_ctrl(sampass);
 	char *workstation_list;
 	time_t kickoff_time;
 

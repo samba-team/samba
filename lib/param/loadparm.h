@@ -31,16 +31,27 @@
 #define _LOADPARM_H
 
 #include <talloc.h>
-#include "../lib/util/parmlist.h"
+
+struct parmlist_entry {
+	struct parmlist_entry *prev, *next;
+	char *key;
+	char *value;
+	char **list; /* For the source3 parametric options, to save the parsed list */
+	int priority;
+};
+
+struct parmlist {
+	struct parmlist_entry *entries;
+};
 
 /* the following are used by loadparm for option lists */
 typedef enum {
 	P_BOOL,P_BOOLREV,P_CHAR,P_INTEGER,P_OCTAL,P_LIST,
-	P_STRING,P_USTRING,P_ENUM,P_BYTES,P_CMDLIST,P_SEP
+	P_STRING,P_USTRING,P_ENUM,P_BYTES,P_CMDLIST
 } parm_type;
 
 typedef enum {
-	P_LOCAL,P_GLOBAL,P_SEPARATOR,P_NONE
+	P_LOCAL,P_GLOBAL,P_NONE
 } parm_class;
 
 struct enum_list {
@@ -94,17 +105,8 @@ struct file_lists {
 	time_t modtime;
 };
 
-/* The following flags are used in SWAT */
-#define FLAG_BASIC 	0x0001 /* Display only in BASIC view */
-#define FLAG_SHARE 	0x0002 /* file sharing options */
-#define FLAG_PRINT 	0x0004 /* printing options */
-#define FLAG_GLOBAL 	0x0008 /* local options that should be globally settable in SWAT */
-#define FLAG_WIZARD 	0x0010 /* Parameters that the wizard will operate on */
-#define FLAG_ADVANCED 	0x0020 /* Parameters that will be visible in advanced view */
-#define FLAG_DEVELOPER 	0x0040 /* No longer used */
 #define FLAG_DEPRECATED 0x1000 /* options that should no longer be used */
-#define FLAG_HIDE  	0x2000 /* options that should be hidden in SWAT */
-#define FLAG_META	0x8000 /* A meta directive - not a real parameter */
+#define FLAG_SYNONYM	0x2000 /* options that is a synonym of another option */
 #define FLAG_CMDLINE	0x10000 /* option has been overridden */
 #define FLAG_DEFAULT    0x20000 /* this option was a default */
 
@@ -241,15 +243,9 @@ enum case_handling {CASE_LOWER,CASE_UPPER};
 #define DEFAULT_SMB2_MAX_CREDITS 8192
 
 #define LOADPARM_EXTRA_LOCALS						\
-	bool valid;						        \
 	int usershare;							\
 	struct timespec usershare_last_mod;				\
-	int iMaxPrintJobs;						\
-	char *szCopy;							\
 	char *szService;						\
-	char *szInclude;						\
-	bool bWidelinks;						\
-	bool bAvailable;							\
 	struct parmlist_entry *param_opt;				\
 	struct bitmap *copymap;						\
 	char dummy[3];		/* for alignment */
@@ -258,20 +254,8 @@ enum case_handling {CASE_LOWER,CASE_UPPER};
 
 #define LOADPARM_EXTRA_GLOBALS \
 	struct parmlist_entry *param_opt;				\
-	char *realm_original;						\
-	int iminreceivefile;						\
-	char *szPrintcapname;						\
-	int CupsEncrypt;						\
-	int  iPreferredMaster;						\
-	char *szLdapMachineSuffix;					\
-	char *szLdapUserSuffix;						\
-	char *szLdapIdmapSuffix;					\
-	char *szLdapGroupSuffix;					\
-	char *szIdmapUID;						\
-	char *szIdmapGID;						\
-	char *szIdmapBackend;						\
-	int winbindMaxDomainConnections;				\
-	int ismb2_max_credits;
+	char *dnsdomain;						\
+	char *realm_original;
 
 const char* server_role_str(uint32_t role);
 int lp_find_server_role(int server_role, int security, int domain_logons, int domain_master);

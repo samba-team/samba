@@ -7,7 +7,7 @@
 	<manvolnum>1</manvolnum>
 	<refmiscinfo class="source">Samba</refmiscinfo>
 	<refmiscinfo class="manual">User Commands</refmiscinfo>
-	<refmiscinfo class="version">4.2</refmiscinfo>
+	<refmiscinfo class="version">4.3</refmiscinfo>
 </refmeta>
 
 
@@ -857,6 +857,20 @@
 		</varlistentry>
 
 		<varlistentry>
+		<term>notify &lt;dir name&gt;</term>
+		<listitem><para>Query a directory for change
+		notifications. This command issues a recursive
+		filechangenotify call for all possible changes. As
+		changes come in will print one line per change. See
+		<ulink url="https://msdn.microsoft.com/en-us/library/dn392331.aspx">https://msdn.microsoft.com/en-us/library/dn392331.aspx</ulink>
+		for a description of the action numbers that this
+		command prints.</para>
+		<para>This command never ends, it waits for event
+		indefinitely.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
 		<term>posix</term>
 		<listitem><para>Query the remote server to see if it supports the CIFS UNIX
 		extensions and prints out the list of capabilities supported. If so, turn
@@ -994,6 +1008,14 @@
 		<term>rmdir &lt;directory name&gt;</term>
 		<listitem><para>Remove the specified directory (user access
 		privileges permitting) from the server. </para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>scopy &lt;source filename&gt; &lt;destination filename&gt;</term>
+		<listitem><para>Attempt to copy a file on the server using the
+		most efficient server-side copy calls. Falls back to using
+		read then write if server doesn't support server-side copy.
+		</para></listitem>
 		</varlistentry>
 
 		<varlistentry>

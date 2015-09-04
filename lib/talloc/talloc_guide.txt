@@ -69,7 +69,8 @@ order to be safe. In particular:
 - when using talloc_enable_leak_report(), giving directly NULL as a  
 parent context implicitly refers to a hidden "null context" global  
 variable, so this should not be used in a multi-threaded environment  
-without proper synchronization ;
+without proper synchronization. In threaded code turn off null tracking using
+talloc_disable_null_tracking(). ;
 - the context returned by talloc_autofree_context() is also global so  
 shouldn't be used by several threads simultaneously without  
 synchronization.
@@ -194,7 +195,7 @@ For more control on which parent to remove, see talloc_unlink()
 
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-int talloc_unlink(const void *context, const void *ptr);
+int talloc_unlink(const void *context, void *ptr);
 
 The talloc_unlink() function removes a specific parent from ptr. The
 context passed must either be a context used in talloc_reference()

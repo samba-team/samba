@@ -132,7 +132,7 @@ NTSTATUS do_unlock(struct messaging_context *msg_ctx,
 			uint64_t offset,
 			enum brl_flavour lock_flav);
 NTSTATUS do_lock_cancel(files_struct *fsp,
-			uint64 smblctx,
+			uint64_t smblctx,
 			uint64_t count,
 			uint64_t offset,
 			enum brl_flavour lock_flav);
@@ -185,9 +185,10 @@ bool get_delete_on_close_token(struct share_mode_lock *lck,
 				uint32_t name_hash,
 				const struct security_token **pp_nt_tok,
 				const struct security_unix_token **pp_tok);
+void reset_delete_on_close_lck(files_struct *fsp,
+			       struct share_mode_lock *lck);
 void set_delete_on_close_lck(files_struct *fsp,
 			struct share_mode_lock *lck,
-			bool delete_on_close,
 			const struct security_token *nt_tok,
 			const struct security_unix_token *tok);
 bool set_delete_on_close(files_struct *fsp, bool delete_on_close,

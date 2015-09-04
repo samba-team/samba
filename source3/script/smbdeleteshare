@@ -1,0 +1,21 @@
+#!/bin/sh
+#
+# smbdeleteshare
+#
+# Copyright (C) 2015 Christof Schmitt
+#
+# Example script that can be used with the 'delete share command'
+# config option. This is mainly intended for use in the Samba selftest
+# suite, please review and adapt it before using elsewhere.
+#
+
+CONF="$1"
+SHARENAME="$2"
+
+NETCONF="$BINDIR/net --configfile=$CONF conf"
+$NETCONF delshare "$SHARENAME"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+	echo Failure during delshare command: rc=$RC
+	exit $RC
+fi

@@ -690,8 +690,7 @@ NTSTATUS cli_pull(struct cli_state *cli, uint16_t fnum,
 		goto fail;
 	}
 
-	if (!tevent_req_poll(req, ev)) {
-		status = map_nt_error_from_unix(errno);
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
 		goto fail;
 	}
 
@@ -1076,8 +1075,7 @@ NTSTATUS cli_writeall(struct cli_state *cli, uint16_t fnum, uint16_t mode,
 	if (req == NULL) {
 		goto fail;
 	}
-	if (!tevent_req_poll(req, ev)) {
-		status = map_nt_error_from_unix(errno);
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
 		goto fail;
 	}
 	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
@@ -1435,13 +1433,128 @@ NTSTATUS cli_push(struct cli_state *cli, uint16_t fnum, uint16_t mode,
 		goto fail;
 	}
 
-	if (!tevent_req_poll(req, ev)) {
-		status = map_nt_error_from_unix(errno);
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
 		goto fail;
 	}
 
 	status = cli_push_recv(req);
  fail:
+	TALLOC_FREE(frame);
+	return status;
+}
+
+#define SPLICE_BLOCK_SIZE 1024 * 1024
+
+static NTSTATUS cli_splice_fallback(TALLOC_CTX *frame,
+				    struct cli_state *srccli,
+				    struct cli_state *dstcli,
+				    uint16_t src_fnum, uint16_t dst_fnum,
+				    off_t initial_size,
+				    off_t src_offset, off_t dst_offset,
+				    off_t *written,
+				    int (*splice_cb)(off_t n, void *priv),
+				    void *priv)
+{
+	NTSTATUS status;
+	uint8_t *buf = talloc_size(frame, SPLICE_BLOCK_SIZE);
+	size_t nread;
+	off_t remaining = initial_size;
+
+	while (remaining) {
+		status = cli_read(srccli, src_fnum,
+				  (char *)buf, src_offset, SPLICE_BLOCK_SIZE,
+				  &nread);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		status = cli_writeall(dstcli, dst_fnum, 0,
+				      buf, dst_offset, nread, NULL);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		if ((src_offset > INT64_MAX - nread) ||
+		    (dst_offset > INT64_MAX - nread)) {
+			return NT_STATUS_FILE_TOO_LARGE;
+		}
+		src_offset += nread;
+		dst_offset += nread;
+		if (remaining < nread) {
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+		remaining -= nread;
+		if (!splice_cb(initial_size - remaining, priv)) {
+			return NT_STATUS_CANCELLED;
+		}
+	}
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS cli_splice(struct cli_state *srccli, struct cli_state *dstcli,
+		    uint16_t src_fnum, uint16_t dst_fnum,
+		    off_t size,
+		    off_t src_offset, off_t dst_offset,
+		    off_t *written,
+		    int (*splice_cb)(off_t n, void *priv), void *priv)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct tevent_context *ev;
+	struct tevent_req *req;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+	bool retry_fallback = false;
+
+	if (smbXcli_conn_has_async_calls(srccli->conn) ||
+	    smbXcli_conn_has_async_calls(dstcli->conn))
+	{
+		/*
+		 * Can't use sync call while an async call is in flight
+		 */
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto out;
+	}
+
+	do {
+		ev = samba_tevent_context_init(frame);
+		if (ev == NULL) {
+			goto out;
+		}
+		if (srccli == dstcli &&
+		    smbXcli_conn_protocol(srccli->conn) >= PROTOCOL_SMB2_02 &&
+		    !retry_fallback)
+		{
+			req = cli_smb2_splice_send(frame, ev,
+						   srccli, src_fnum, dst_fnum,
+						   size, src_offset, dst_offset,
+						   splice_cb, priv);
+		} else {
+			status = cli_splice_fallback(frame,
+						     srccli, dstcli,
+						     src_fnum, dst_fnum,
+						     size,
+						     src_offset, dst_offset,
+						     written,
+						     splice_cb, priv);
+			goto out;
+		}
+		if (req == NULL) {
+			goto out;
+		}
+		if (!tevent_req_poll(req, ev)) {
+			status = map_nt_error_from_unix(errno);
+			goto out;
+		}
+		status = cli_smb2_splice_recv(req, written);
+
+		/*
+		 * Older versions of Samba don't support
+		 * FSCTL_SRV_COPYCHUNK_WRITE so use the fallback.
+		 */
+		retry_fallback = NT_STATUS_EQUAL(status, NT_STATUS_INVALID_DEVICE_REQUEST);
+	} while (retry_fallback);
+
+ out:
 	TALLOC_FREE(frame);
 	return status;
 }

@@ -153,9 +153,110 @@ static NTSTATUS wb_irpc_SamLogon(struct irpc_message *msg,
 					domain, IRPC_CALL_TIMEOUT);
 }
 
+static NTSTATUS wb_irpc_LogonControl(struct irpc_message *msg,
+				     struct winbind_LogonControl *req)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	char *domain_name = NULL;
+	struct winbindd_domain *domain = NULL;
+
+	DEBUG(5, ("wb_irpc_LogonControl called\n"));
+
+	switch (req->in.function_code) {
+	case NETLOGON_CONTROL_REDISCOVER:
+	case NETLOGON_CONTROL_TC_QUERY:
+	case NETLOGON_CONTROL_CHANGE_PASSWORD:
+	case NETLOGON_CONTROL_TC_VERIFY:
+		if (req->in.data->domain == NULL) {
+			TALLOC_FREE(frame);
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		domain_name = talloc_strdup(frame, req->in.data->domain);
+		if (domain_name == NULL) {
+			req->out.result = WERR_NOMEM;
+			TALLOC_FREE(frame);
+			return NT_STATUS_OK;
+		}
+
+		break;
+	default:
+		TALLOC_FREE(frame);
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
+
+	if (req->in.function_code == NETLOGON_CONTROL_REDISCOVER) {
+		char *p = NULL;
+
+		/*
+		 * NETLOGON_CONTROL_REDISCOVER
+		 * get's an optional \dcname appended to the domain name
+		 */
+		p = strchr_m(domain_name, '\\');
+		if (p != NULL) {
+			*p = '\0';
+		}
+	}
+
+	domain = find_domain_from_name_noinit(domain_name);
+	if (domain == NULL) {
+		req->out.result = WERR_NO_SUCH_DOMAIN;
+		TALLOC_FREE(frame);
+		return NT_STATUS_OK;
+	}
+
+	TALLOC_FREE(frame);
+	return wb_irpc_forward_rpc_call(msg, msg,
+					winbind_event_context(),
+					req, NDR_WINBIND_LOGONCONTROL,
+					"winbind_LogonControl",
+					domain, 45 /* timeout */);
+}
+
+static NTSTATUS wb_irpc_GetForestTrustInformation(struct irpc_message *msg,
+				     struct winbind_GetForestTrustInformation *req)
+{
+	struct winbindd_domain *domain = NULL;
+
+	if (req->in.trusted_domain_name == NULL) {
+		req->out.result = WERR_NO_SUCH_DOMAIN;
+		return NT_STATUS_OK;
+	}
+
+	domain = find_domain_from_name_noinit(req->in.trusted_domain_name);
+	if (domain == NULL) {
+		req->out.result = WERR_NO_SUCH_DOMAIN;
+		return NT_STATUS_OK;
+	}
+
+	/*
+	 * checking for domain->internal and domain->primary
+	 * makes sure we only do some work when running as DC.
+	 */
+
+	if (domain->internal) {
+		req->out.result = WERR_NO_SUCH_DOMAIN;
+		return NT_STATUS_OK;
+	}
+
+	if (domain->primary) {
+		req->out.result = WERR_NO_SUCH_DOMAIN;
+		return NT_STATUS_OK;
+	}
+
+	DEBUG(5, ("wb_irpc_GetForestTrustInformation called\n"));
+
+	return wb_irpc_forward_rpc_call(msg, msg,
+					winbind_event_context(),
+					req, NDR_WINBIND_GETFORESTTRUSTINFORMATION,
+					"winbind_GetForestTrustInformation",
+					domain, 45 /* timeout */);
+}
+
 NTSTATUS wb_irpc_register(void)
 {
 	NTSTATUS status;
+
 	status = IRPC_REGISTER(winbind_imessaging_context(), winbind, WINBIND_DSRUPDATEREADONLYSERVERDNSRECORDS,
 			       wb_irpc_DsrUpdateReadOnlyServerDnsRecords, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -163,5 +264,21 @@ NTSTATUS wb_irpc_register(void)
 	}
 	status = IRPC_REGISTER(winbind_imessaging_context(), winbind, WINBIND_SAMLOGON,
 			       wb_irpc_SamLogon, NULL);
-	return status;
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	status = IRPC_REGISTER(winbind_imessaging_context(), winbind,
+			       WINBIND_LOGONCONTROL,
+			       wb_irpc_LogonControl, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	status = IRPC_REGISTER(winbind_imessaging_context(), winbind,
+			       WINBIND_GETFORESTTRUSTINFORMATION,
+			       wb_irpc_GetForestTrustInformation, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	return NT_STATUS_OK;
 }

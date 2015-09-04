@@ -177,7 +177,7 @@ static void atalk_rrmdir(TALLOC_CTX *ctx, char *path)
 
 /* Directory operations */
 
-static DIR *atalk_opendir(struct vfs_handle_struct *handle, const char *fname, const char *mask, uint32 attr)
+static DIR *atalk_opendir(struct vfs_handle_struct *handle, const char *fname, const char *mask, uint32_t attr)
 {
 	DIR *ret = 0;
 
@@ -198,7 +198,7 @@ static DIR *atalk_opendir(struct vfs_handle_struct *handle, const char *fname, c
 	return ret;
 }
 
-static DIR *atalk_fdopendir(struct vfs_handle_struct *handle, files_struct *fsp, const char *mask, uint32 attr)
+static DIR *atalk_fdopendir(struct vfs_handle_struct *handle, files_struct *fsp, const char *mask, uint32_t attr)
 {
 	DIR *ret = 0;
 

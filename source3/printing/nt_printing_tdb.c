@@ -88,25 +88,25 @@ static TDB_DATA make_printers_secdesc_tdbkey(TALLOC_CTX *ctx,
 
 static bool upgrade_to_version_3(void)
 {
-	TDB_DATA kbuf, dbuf;
+	TDB_DATA kbuf, newkey, dbuf;
 
 	DEBUG(0,("upgrade_to_version_3: upgrading print tdb's to version 3\n"));
 
-	for (kbuf = tdb_firstkey_compat(tdb_drivers); kbuf.dptr;
-			kbuf = tdb_nextkey_compat(tdb_drivers, kbuf)) {
+	for (kbuf = tdb_firstkey(tdb_drivers); kbuf.dptr;
+	     newkey = tdb_nextkey(tdb_drivers, kbuf), free(kbuf.dptr), kbuf=newkey) {
 
-		dbuf = tdb_fetch_compat(tdb_drivers, kbuf);
+		dbuf = tdb_fetch(tdb_drivers, kbuf);
 
 		if (strncmp((const char *)kbuf.dptr, FORMS_PREFIX, strlen(FORMS_PREFIX)) == 0) {
 			DEBUG(0,("upgrade_to_version_3:moving form\n"));
 			if (tdb_store(tdb_forms, kbuf, dbuf, TDB_REPLACE) != 0) {
 				SAFE_FREE(dbuf.dptr);
-				DEBUG(0,("upgrade_to_version_3: failed to move form. Error (%s).\n", tdb_errorstr_compat(tdb_forms)));
+				DEBUG(0,("upgrade_to_version_3: failed to move form. Error (%s).\n", tdb_errorstr(tdb_forms)));
 				return False;
 			}
 			if (tdb_delete(tdb_drivers, kbuf) != 0) {
 				SAFE_FREE(dbuf.dptr);
-				DEBUG(0,("upgrade_to_version_3: failed to delete form. Error (%s)\n", tdb_errorstr_compat(tdb_drivers)));
+				DEBUG(0,("upgrade_to_version_3: failed to delete form. Error (%s)\n", tdb_errorstr(tdb_drivers)));
 				return False;
 			}
 		}
@@ -115,12 +115,12 @@ static bool upgrade_to_version_3(void)
 			DEBUG(0,("upgrade_to_version_3:moving printer\n"));
 			if (tdb_store(tdb_printers, kbuf, dbuf, TDB_REPLACE) != 0) {
 				SAFE_FREE(dbuf.dptr);
-				DEBUG(0,("upgrade_to_version_3: failed to move printer. Error (%s)\n", tdb_errorstr_compat(tdb_printers)));
+				DEBUG(0,("upgrade_to_version_3: failed to move printer. Error (%s)\n", tdb_errorstr(tdb_printers)));
 				return False;
 			}
 			if (tdb_delete(tdb_drivers, kbuf) != 0) {
 				SAFE_FREE(dbuf.dptr);
-				DEBUG(0,("upgrade_to_version_3: failed to delete printer. Error (%s)\n", tdb_errorstr_compat(tdb_drivers)));
+				DEBUG(0,("upgrade_to_version_3: failed to delete printer. Error (%s)\n", tdb_errorstr(tdb_drivers)));
 				return False;
 			}
 		}
@@ -129,12 +129,12 @@ static bool upgrade_to_version_3(void)
 			DEBUG(0,("upgrade_to_version_3:moving secdesc\n"));
 			if (tdb_store(tdb_printers, kbuf, dbuf, TDB_REPLACE) != 0) {
 				SAFE_FREE(dbuf.dptr);
-				DEBUG(0,("upgrade_to_version_3: failed to move secdesc. Error (%s)\n", tdb_errorstr_compat(tdb_printers)));
+				DEBUG(0,("upgrade_to_version_3: failed to move secdesc. Error (%s)\n", tdb_errorstr(tdb_printers)));
 				return False;
 			}
 			if (tdb_delete(tdb_drivers, kbuf) != 0) {
 				SAFE_FREE(dbuf.dptr);
-				DEBUG(0,("upgrade_to_version_3: failed to delete secdesc. Error (%s)\n", tdb_errorstr_compat(tdb_drivers)));
+				DEBUG(0,("upgrade_to_version_3: failed to delete secdesc. Error (%s)\n", tdb_errorstr(tdb_drivers)));
 				return False;
 			}
 		}

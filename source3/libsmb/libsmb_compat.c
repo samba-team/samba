@@ -314,6 +314,17 @@ smbc_rmdir(const char *durl)
 }
 
 int
+smbc_notify(int dh, smbc_bool recursive, uint32_t completion_filter,
+	    unsigned callback_timeout_ms,
+	    smbc_notify_callback_fn cb, void *private_data)
+{
+	SMBCFILE *dir = find_fd(dh);
+	return smbc_getFunctionNotify(statcont)(
+		statcont, dir, recursive, completion_filter,
+		callback_timeout_ms, cb, private_data);
+}
+
+int
 smbc_stat(const char *url,
           struct stat *st)
 {

@@ -1,6 +1,6 @@
 <samba:parameter name="store dos attributes"
                  context="S"
-		 type="boolean"
+                 type="boolean"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>

@@ -41,7 +41,13 @@ _PUBLIC_ NTSTATUS gensec_unseal_packet(struct gensec_security *gensec_security,
 	if (!gensec_security->ops->unseal_packet) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
+	if (!gensec_have_feature(gensec_security, GENSEC_FEATURE_SIGN)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 	if (!gensec_have_feature(gensec_security, GENSEC_FEATURE_SEAL)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	if (!gensec_have_feature(gensec_security, GENSEC_FEATURE_DCE_STYLE)) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -81,6 +87,9 @@ _PUBLIC_ NTSTATUS gensec_seal_packet(struct gensec_security *gensec_security,
 	if (!gensec_have_feature(gensec_security, GENSEC_FEATURE_SIGN)) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
+	if (!gensec_have_feature(gensec_security, GENSEC_FEATURE_DCE_STYLE)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
 	return gensec_security->ops->seal_packet(gensec_security, mem_ctx, data, length, whole_pdu, pdu_length, sig);
 }
@@ -108,6 +117,11 @@ _PUBLIC_ size_t gensec_sig_size(struct gensec_security *gensec_security, size_t 
 	}
 	if (!gensec_have_feature(gensec_security, GENSEC_FEATURE_SIGN)) {
 		return 0;
+	}
+	if (gensec_have_feature(gensec_security, GENSEC_FEATURE_SEAL)) {
+		if (!gensec_have_feature(gensec_security, GENSEC_FEATURE_DCE_STYLE)) {
+			return 0;
+		}
 	}
 
 	return gensec_security->ops->sig_size(gensec_security, data_size);
@@ -533,7 +547,7 @@ _PUBLIC_ void gensec_want_feature(struct gensec_security *gensec_security,
 _PUBLIC_ bool gensec_have_feature(struct gensec_security *gensec_security,
 			 uint32_t feature)
 {
-	if (!gensec_security->ops->have_feature) {
+	if (!gensec_security->ops || !gensec_security->ops->have_feature) {
 		return false;
 	}
 

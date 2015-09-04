@@ -240,7 +240,7 @@ WERROR NetFileEnum_r(struct libnetapi_ctx *ctx,
 	}
 
 	for (i=0; i < info_ctr.ctr.ctr2->count; i++) {
-		union srvsvc_NetFileInfo _i;
+		union srvsvc_NetFileInfo _i = {0};
 		switch (r->in.level) {
 			case 2:
 				_i.info2 = &info_ctr.ctr.ctr2->array[i];

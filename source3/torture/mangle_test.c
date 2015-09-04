@@ -107,7 +107,7 @@ static bool test_one(struct cli_state *cli, const char *name)
 	} else {
 		TDB_DATA namedata;
 		/* store it for later */
-		namedata.dptr = discard_const_p(uint8, name);
+		namedata.dptr = discard_const_p(uint8_t, name);
 		namedata.dsize = strlen(name)+1;
 		tdb_store_bystring(tdb, shortname, namedata, TDB_REPLACE);
 	}
@@ -181,7 +181,7 @@ bool torture_mangle(int dummy)
 	}
 
 	/* we will use an internal tdb to store the names we have used */
-	tdb = tdb_open_compat(NULL, 100000, TDB_INTERNAL, 0, 0, NULL, NULL);
+	tdb = tdb_open(NULL, 100000, TDB_INTERNAL, 0, 0);
 	if (!tdb) {
 		printf("ERROR: Failed to open tdb\n");
 		return False;

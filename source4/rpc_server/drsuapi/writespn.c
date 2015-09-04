@@ -57,7 +57,7 @@ static bool writespn_check_spn(struct drsuapi_bind_state *b_state,
 	krb5_context krb_ctx;
 	krb5_error_code kerr;
 	krb5_principal principal;
-	krb5_data *component;
+	const krb5_data *component;
 	const char *dns_name, *dnsHostName;
 
 	/* The service principal name shouldn't be NULL */
@@ -147,7 +147,6 @@ WERROR dcesrv_drsuapi_DsWriteAccountSpn(struct dcesrv_call_state *dce_call, TALL
 {
 	struct drsuapi_bind_state *b_state;
 	struct dcesrv_handle *h;
-	enum security_user_level level;
 
 	*r->out.level_out = r->in.level;
 
@@ -156,8 +155,6 @@ WERROR dcesrv_drsuapi_DsWriteAccountSpn(struct dcesrv_call_state *dce_call, TALL
 
 	r->out.res = talloc(mem_ctx, union drsuapi_DsWriteAccountSpnResult);
 	W_ERROR_HAVE_NO_MEMORY(r->out.res);
-
-	level = security_session_user_level(dce_call->conn->auth_state.session_info, NULL);
 
 	switch (r->in.level) {
 		case 1: {

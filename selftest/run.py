@@ -18,10 +18,10 @@
 """Test command running."""
 
 import datetime
-from subunit import iso8601
 import os
 import subprocess
-import subunit
+from samba import subunit
+from iso8601 import iso8601
 import sys
 import tempfile
 import warnings

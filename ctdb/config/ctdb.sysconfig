@@ -20,13 +20,13 @@ CTDB_PUBLIC_ADDRESSES=/etc/ctdb/public_addresses
 # CTDB_MANAGES_NFS=yes
 
 # Raise the file descriptor limit for CTDB?
-# ulimit -n 10000
+# CTDB_MAX_OPEN_FILES=10000
 
 # Default is to use the log file below instead of syslog.
 # CTDB_LOGGING=file:/var/log/log.ctdb
 
-# Default log level is ERR.  NOTICE is a little more verbose.
-CTDB_DEBUGLEVEL=NOTICE
+# Default log level is NOTICE.  Want less logging?
+# CTDB_DEBUGLEVEL=ERR
 
 # Set some CTDB tunable variables during CTDB startup?
 # CTDB_SET_TraverseTimeout=60

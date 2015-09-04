@@ -510,13 +510,8 @@ gsskrb5_acceptor_start(OM_uint32 * minor_status,
 	    return ret;
 	}
 
-	if (authenticator->cksum == NULL) {
-	    krb5_free_authenticator(context, &authenticator);
-	    *minor_status = 0;
-	    return GSS_S_BAD_BINDINGS;
-	}
-
-        if (authenticator->cksum->cksumtype == CKSUMTYPE_GSSAPI) {
+        if (authenticator->cksum != NULL
+	    && authenticator->cksum->cksumtype == CKSUMTYPE_GSSAPI) {
             ret = _gsskrb5_verify_8003_checksum(minor_status,
 						input_chan_bindings,
 						authenticator->cksum,
@@ -528,44 +523,48 @@ gsskrb5_acceptor_start(OM_uint32 * minor_status,
 		return ret;
 	    }
         } else {
-	    krb5_crypto crypto;
+	    if (authenticator->cksum != NULL) {
+		krb5_crypto crypto;
 
-	    kret = krb5_crypto_init(context,
-				    ctx->auth_context->keyblock,
-				    0, &crypto);
-	    if(kret) {
+		kret = krb5_crypto_init(context,
+					ctx->auth_context->keyblock,
+					0, &crypto);
+		if(kret) {
+		    krb5_free_authenticator(context, &authenticator);
+
+		    ret = GSS_S_FAILURE;
+		    *minor_status = kret;
+		    return ret;
+		}
+
+		/*
+		 * Windows accepts Samba3's use of a kerberos, rather than
+		 * GSSAPI checksum here
+		 */
+
+		kret = krb5_verify_checksum(context,
+					    crypto, KRB5_KU_AP_REQ_AUTH_CKSUM, NULL, 0,
+					    authenticator->cksum);
 		krb5_free_authenticator(context, &authenticator);
+		krb5_crypto_destroy(context, crypto);
 
-		ret = GSS_S_FAILURE;
-		*minor_status = kret;
-		return ret;
+		if(kret) {
+		    ret = GSS_S_BAD_SIG;
+		    *minor_status = kret;
+		    return ret;
+		}
 	    }
 
 	    /*
-	     * Windows accepts Samba3's use of a kerberos, rather than
-	     * GSSAPI checksum here
+	     * If there is no checksum or a kerberos checksum (which Windows
+	     * and Samba accept), we use the ap_options to guess the mutual
+	     * flag.
 	     */
 
-	    kret = krb5_verify_checksum(context,
-					crypto, KRB5_KU_AP_REQ_AUTH_CKSUM, NULL, 0,
-					authenticator->cksum);
-	    krb5_free_authenticator(context, &authenticator);
-	    krb5_crypto_destroy(context, crypto);
-
-	    if(kret) {
-		ret = GSS_S_BAD_SIG;
-		*minor_status = kret;
-		return ret;
-	    }
-
-	    /*
-	     * Samba style get some flags (but not DCE-STYLE), use
-	     * ap_options to guess the mutual flag.
-	     */
- 	    ctx->flags = GSS_C_REPLAY_FLAG | GSS_C_SEQUENCE_FLAG;
+	    ctx->flags = GSS_C_REPLAY_FLAG | GSS_C_SEQUENCE_FLAG;
 	    if (ap_options & AP_OPTS_MUTUAL_REQUIRED)
 		ctx->flags |= GSS_C_MUTUAL_FLAG;
-        }
+	}
     }
 
     if(ctx->flags & GSS_C_MUTUAL_FLAG) {

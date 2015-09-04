@@ -736,7 +736,9 @@ NTSTATUS dcesrv_lsa_LookupSids3(struct dcesrv_call_state *dce_call,
 		DCESRV_FAULT(DCERPC_FAULT_ACCESS_DENIED);
 	}
 
-	status = dcesrv_lsa_get_policy_state(dce_call, mem_ctx, &policy_state);
+	status = dcesrv_lsa_get_policy_state(dce_call, mem_ctx,
+					     0, /* we skip access checks */
+					     &policy_state);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -962,7 +964,9 @@ NTSTATUS dcesrv_lsa_LookupNames4(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 		DCESRV_FAULT(DCERPC_FAULT_ACCESS_DENIED);
 	}
 
-	status = dcesrv_lsa_get_policy_state(dce_call, mem_ctx, &policy_state);
+	status = dcesrv_lsa_get_policy_state(dce_call, mem_ctx,
+					     0, /* we skip access checks */
+					     &policy_state);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

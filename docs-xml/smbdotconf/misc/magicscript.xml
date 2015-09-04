@@ -1,7 +1,7 @@
 <samba:parameter name="magic script"
-		 context="S"
-		 type="string"
-		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+                 context="S"
+                 type="string"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This parameter specifies the name of a file which, 
 	if opened, will be executed by the server when the file is closed. 

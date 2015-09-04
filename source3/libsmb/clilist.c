@@ -56,7 +56,7 @@ static size_t interpret_long_filename(TALLOC_CTX *ctx,
 					const char *p,
 					const char *pdata_end,
 					struct file_info *finfo,
-					uint32 *p_resume_key,
+					uint32_t *p_resume_key,
 					DATA_BLOB *p_last_name_raw)
 {
 	int len;
@@ -479,7 +479,7 @@ static NTSTATUS cli_list_old_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 }
 
 NTSTATUS cli_list_old(struct cli_state *cli, const char *mask,
-		      uint16 attribute,
+		      uint16_t attribute,
 		      NTSTATUS (*fn)(const char *, struct file_info *,
 				 const char *, void *), void *state)
 {
@@ -505,8 +505,7 @@ NTSTATUS cli_list_old(struct cli_state *cli, const char *mask,
 	if (req == NULL) {
 		goto fail;
 	}
-	if (!tevent_req_poll(req, ev)) {
-		status = map_nt_error_from_unix(errno);
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
 		goto fail;
 	}
 	status = cli_list_old_recv(req, frame, &finfo);
@@ -929,7 +928,7 @@ NTSTATUS cli_list_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS cli_list(struct cli_state *cli, const char *mask, uint16 attribute,
+NTSTATUS cli_list(struct cli_state *cli, const char *mask, uint16_t attribute,
 		  NTSTATUS (*fn)(const char *, struct file_info *, const char *,
 			     void *), void *state)
 {
@@ -966,8 +965,7 @@ NTSTATUS cli_list(struct cli_state *cli, const char *mask, uint16 attribute,
 	if (req == NULL) {
 		goto fail;
 	}
-	if (!tevent_req_poll(req, ev)) {
-		status = map_nt_error_from_unix(errno);
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
 		goto fail;
 	}
 

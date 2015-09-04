@@ -40,7 +40,7 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_DNS
 
-static WERROR create_response_rr(const struct dns_name_question *question,
+static WERROR create_response_rr(const char *name,
 				 const struct dnsp_DnssrvRpcRecord *rec,
 				 struct dns_res_rec **answers, uint16_t *ancount)
 {
@@ -91,6 +91,7 @@ static WERROR create_response_rr(const struct dns_name_question *question,
 		break;
 	case DNS_QTYPE_PTR:
 		ans[ai].rdata.ptr_record = talloc_strdup(ans, rec->data.ptr);
+		W_ERROR_HAVE_NO_MEMORY(ans[ai].rdata.ptr_record);
 		break;
 	case DNS_QTYPE_MX:
 		ans[ai].rdata.mx_record.preference = rec->data.mx.wPriority;
@@ -115,7 +116,7 @@ static WERROR create_response_rr(const struct dns_name_question *question,
 		return DNS_ERR(NOT_IMPLEMENTED);
 	}
 
-	ans[ai].name = talloc_strdup(ans, question->name);
+	ans[ai].name = talloc_strdup(ans, name);
 	W_ERROR_HAVE_NO_MEMORY(ans[ai].name);
 	ans[ai].rr_type = rec->wType;
 	ans[ai].rr_class = DNS_QCLASS_IN;
@@ -252,23 +253,76 @@ static WERROR ask_forwarder_recv(
 	return WERR_OK;
 }
 
+static WERROR add_zone_authority_record(struct dns_server *dns,
+					TALLOC_CTX *mem_ctx,
+					const struct dns_name_question *question,
+					struct dns_res_rec **nsrecs, uint16_t *nscount)
+{
+	const char *zone = NULL;
+	struct dnsp_DnssrvRpcRecord *recs;
+	struct dns_res_rec *ns = *nsrecs;
+	uint16_t rec_count, ni = *nscount;
+	struct ldb_dn *dn = NULL;
+	unsigned int ri;
+	WERROR werror;
+
+	zone = dns_get_authoritative_zone(dns, question->name);
+	DEBUG(10, ("Creating zone authority record for '%s'\n", zone));
+
+	werror = dns_name2dn(dns, mem_ctx, zone, &dn);
+	if (!W_ERROR_IS_OK(werror)) {
+		return werror;
+	}
+
+	werror = dns_lookup_records(dns, mem_ctx, dn, &recs, &rec_count);
+	if (!W_ERROR_IS_OK(werror)) {
+		return werror;
+	}
+
+	ns = talloc_realloc(mem_ctx, ns, struct dns_res_rec, rec_count + ni);
+	if (ns == NULL) {
+		return WERR_NOMEM;
+	}
+	for (ri = 0; ri < rec_count; ri++) {
+		if (recs[ri].wType == DNS_TYPE_SOA) {
+			werror = create_response_rr(zone, &recs[ri], &ns, &ni);
+			if (!W_ERROR_IS_OK(werror)) {
+				return werror;
+			}
+		}
+	}
+
+	*nscount = ni;
+	*nsrecs = ns;
+
+	return WERR_OK;
+}
+
+
 static WERROR handle_question(struct dns_server *dns,
 			      TALLOC_CTX *mem_ctx,
 			      const struct dns_name_question *question,
-			      struct dns_res_rec **answers, uint16_t *ancount)
+			      struct dns_res_rec **answers, uint16_t *ancount,
+			      struct dns_res_rec **nsrecs, uint16_t *nscount)
 {
 	struct dns_res_rec *ans = *answers;
+	struct dns_res_rec *ns = *nsrecs;
 	WERROR werror, werror_return;
 	unsigned int ri;
 	struct dnsp_DnssrvRpcRecord *recs;
-	uint16_t rec_count, ai = *ancount;
+	uint16_t rec_count, ai = *ancount, ni = *nscount;
 	struct ldb_dn *dn = NULL;
 
 	werror = dns_name2dn(dns, mem_ctx, question->name, &dn);
-	W_ERROR_NOT_OK_RETURN(werror);
+	if (!W_ERROR_IS_OK(werror)) {
+		return werror;
+	}
 
 	werror = dns_lookup_records(dns, mem_ctx, dn, &recs, &rec_count);
-	W_ERROR_NOT_OK_RETURN(werror);
+	if (!W_ERROR_IS_OK(werror)) {
+		werror_return = werror;
+		goto done;
+	}
 
 	ans = talloc_realloc(mem_ctx, ans, struct dns_res_rec, rec_count + ai);
 	if (ans == NULL) {
@@ -298,8 +352,9 @@ static WERROR handle_question(struct dns_server *dns,
 			}
 
 			/* First put in the CNAME record */
-			werror = create_response_rr(question, &recs[ri], &ans, &ai);
+			werror = create_response_rr(question->name, &recs[ri], &ans, &ai);
 			if (!W_ERROR_IS_OK(werror)) {
+				TALLOC_FREE(new_q);
 				return werror;
 			}
 
@@ -308,19 +363,15 @@ static WERROR handle_question(struct dns_server *dns,
 			/* First build up the new question */
 			new_q->question_type = question->question_type;
 			new_q->question_class = question->question_class;
-			if (new_q->question_type == DNS_QTYPE_A) {
-				new_q->name = talloc_strdup(new_q, recs[ri].data.ipv4);
-			} else if (new_q->question_type == DNS_QTYPE_AAAA) {
-				new_q->name = talloc_strdup(new_q, recs[ri].data.ipv6);
-			}
+			new_q->name = talloc_strdup(new_q, recs[ri].data.cname);
 			if (new_q->name == NULL) {
 				TALLOC_FREE(new_q);
 				return WERR_NOMEM;
 			}
 			/* and then call the lookup again */
-			werror = handle_question(dns, mem_ctx, new_q, &ans, &ai);
+			werror = handle_question(dns, mem_ctx, new_q, &ans, &ai, &ns, &ni);
 			if (!W_ERROR_IS_OK(werror)) {
-				return werror;
+				goto done;
 			}
 			werror_return = WERR_OK;
 
@@ -332,15 +383,21 @@ static WERROR handle_question(struct dns_server *dns,
 			werror_return = WERR_OK;
 			continue;
 		}
-		werror = create_response_rr(question, &recs[ri], &ans, &ai);
+		werror = create_response_rr(question->name, &recs[ri], &ans, &ai);
 		if (!W_ERROR_IS_OK(werror)) {
 			return werror;
 		}
 		werror_return = WERR_OK;
 	}
 
+done:
+	/* Always add an authority record to replies we should know about */
+	add_zone_authority_record(dns, mem_ctx, question, &ns, &ni);
+
 	*ancount = ai;
 	*answers = ans;
+	*nscount = ni;
+	*nsrecs = ns;
 
 	return werror_return;
 }
@@ -615,10 +672,17 @@ struct tevent_req *dns_server_process_query_send(
 
 		req_state->flags |= DNS_FLAG_AUTHORITATIVE;
 		err = handle_question(dns, state, &in->questions[0],
-				      &state->answers, &state->ancount);
+				      &state->answers, &state->ancount,
+				      &state->nsrecs, &state->nscount);
+
+		if (W_ERROR_EQUAL(err, DNS_ERR(NAME_ERROR))) {
+			err = WERR_OK;
+		}
+
 		if (tevent_req_werror(req, err)) {
 			return tevent_req_post(req, ev);
 		}
+
 		tevent_req_done(req);
 		return tevent_req_post(req, ev);
 	}
@@ -671,10 +735,14 @@ WERROR dns_server_process_query_recv(
 {
 	struct dns_server_process_query_state *state = tevent_req_data(
 		req, struct dns_server_process_query_state);
-	WERROR err;
+	WERROR err = WERR_OK;
 
 	if (tevent_req_is_werror(req, &err)) {
-		return err;
+
+		if ((!W_ERROR_EQUAL(err, DNS_ERR(NAME_ERROR))) &&
+		    (!W_ERROR_EQUAL(err, WERR_DNS_ERROR_NAME_DOES_NOT_EXIST))) {
+			return err;
+		}
 	}
 	*answers = talloc_move(mem_ctx, &state->answers);
 	*ancount = state->ancount;
@@ -682,5 +750,5 @@ WERROR dns_server_process_query_recv(
 	*nscount = state->nscount;
 	*additional = talloc_move(mem_ctx, &state->additional);
 	*arcount = state->arcount;
-	return WERR_OK;
+	return err;
 }

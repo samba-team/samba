@@ -34,6 +34,14 @@
 		goto done; \
 	}} while (0)
 
+#define CHECK_VALUE(v, correct) do { \
+	if ((v) != (correct)) { \
+		torture_result(tctx, TORTURE_FAIL, \
+		    "(%s) Incorrect value %s=%d - should be %d\n", \
+		    __location__, #v, (int)v, (int)correct); \
+		ret = false; \
+	}} while (0)
+
 static struct {
 	struct smb2_handle handle;
 	uint8_t level;
@@ -424,6 +432,236 @@ static bool test_compound_related3(struct torture_context *tctx,
 	CHECK_STATUS(status, NT_STATUS_OK);
 	status = smb2_close_recv(req[2], &cl);
 	CHECK_STATUS(status, NT_STATUS_OK);
+
+	status = smb2_util_unlink(tree, fname);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	ret = true;
+done:
+	return ret;
+}
+
+static bool test_compound_padding(struct torture_context *tctx,
+				  struct smb2_tree *tree)
+{
+	struct smb2_handle h;
+	struct smb2_create cr;
+	struct smb2_read r;
+	const char *fname = "compound_read.dat";
+	const char *sname = "compound_read.dat:foo";
+	struct smb2_request *req[3];
+	NTSTATUS status;
+	bool ret = false;
+
+	smb2_util_unlink(tree, fname);
+
+	/* Write file */
+	ZERO_STRUCT(cr);
+	cr.in.desired_access = SEC_FILE_WRITE_DATA;
+	cr.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	cr.in.create_disposition = NTCREATEX_DISP_CREATE;
+	cr.in.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS;
+	cr.in.fname = fname;
+	cr.in.share_access = NTCREATEX_SHARE_ACCESS_READ|
+		NTCREATEX_SHARE_ACCESS_WRITE|
+		NTCREATEX_SHARE_ACCESS_DELETE;
+	status = smb2_create(tree, tctx, &cr);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h = cr.out.file.handle;
+
+	status = smb2_util_write(tree, h, "123", 0, 3);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	smb2_util_close(tree, h);
+
+	/* Write stream */
+	ZERO_STRUCT(cr);
+	cr.in.desired_access = SEC_FILE_WRITE_DATA;
+	cr.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	cr.in.create_disposition = NTCREATEX_DISP_CREATE;
+	cr.in.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS;
+	cr.in.fname = sname;
+	cr.in.share_access = NTCREATEX_SHARE_ACCESS_READ|
+		NTCREATEX_SHARE_ACCESS_WRITE|
+		NTCREATEX_SHARE_ACCESS_DELETE;
+	status = smb2_create(tree, tctx, &cr);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h = cr.out.file.handle;
+
+	status = smb2_util_write(tree, h, "456", 0, 3);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	smb2_util_close(tree, h);
+
+	/* Check compound read from basefile */
+	smb2_transport_compound_start(tree->session->transport, 2);
+
+	ZERO_STRUCT(cr);
+	cr.in.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS;
+	cr.in.desired_access	= SEC_FILE_READ_DATA;
+	cr.in.file_attributes	= FILE_ATTRIBUTE_NORMAL;
+	cr.in.create_disposition = NTCREATEX_DISP_OPEN;
+	cr.in.fname		= fname;
+	cr.in.share_access = NTCREATEX_SHARE_ACCESS_READ|
+		NTCREATEX_SHARE_ACCESS_WRITE|
+		NTCREATEX_SHARE_ACCESS_DELETE;
+	req[0] = smb2_create_send(tree, &cr);
+
+	smb2_transport_compound_set_related(tree->session->transport, true);
+
+	ZERO_STRUCT(r);
+	h.data[0] = UINT64_MAX;
+	h.data[1] = UINT64_MAX;
+	r.in.file.handle = h;
+	r.in.length      = 3;
+	r.in.offset      = 0;
+	r.in.min_count      = 1;
+	req[1] = smb2_read_send(tree, &r);
+
+	status = smb2_create_recv(req[0], tree, &cr);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/*
+	 * We must do a manual smb2_request_receive() in order to be
+	 * able to check the transport layer info, as smb2_read_recv()
+	 * will destroy the req. smb2_read_recv() will call
+	 * smb2_request_receive() again, but that's ok.
+	 */
+	if (!smb2_request_receive(req[1]) ||
+	    !smb2_request_is_ok(req[1])) {
+		torture_fail(tctx, "failed to receive read request");
+	}
+
+	/*
+	 * size must be 24: 16 byte read response header plus 3
+	 * requested bytes padded to an 8 byte boundary.
+	 */
+	CHECK_VALUE(req[1]->in.body_size, 24);
+
+	status = smb2_read_recv(req[1], tree, &r);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	smb2_util_close(tree, cr.out.file.handle);
+
+	/* Check compound read from stream */
+	smb2_transport_compound_start(tree->session->transport, 2);
+
+	ZERO_STRUCT(cr);
+	cr.in.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS;
+	cr.in.desired_access	= SEC_FILE_READ_DATA;
+	cr.in.file_attributes	= FILE_ATTRIBUTE_NORMAL;
+	cr.in.create_disposition = NTCREATEX_DISP_OPEN;
+	cr.in.fname		= sname;
+	cr.in.share_access = NTCREATEX_SHARE_ACCESS_READ|
+		NTCREATEX_SHARE_ACCESS_WRITE|
+		NTCREATEX_SHARE_ACCESS_DELETE;
+	req[0] = smb2_create_send(tree, &cr);
+
+	smb2_transport_compound_set_related(tree->session->transport, true);
+
+	ZERO_STRUCT(r);
+	h.data[0] = UINT64_MAX;
+	h.data[1] = UINT64_MAX;
+	r.in.file.handle = h;
+	r.in.length      = 3;
+	r.in.offset      = 0;
+	r.in.min_count   = 1;
+	req[1] = smb2_read_send(tree, &r);
+
+	status = smb2_create_recv(req[0], tree, &cr);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/*
+	 * We must do a manual smb2_request_receive() in order to be
+	 * able to check the transport layer info, as smb2_read_recv()
+	 * will destroy the req. smb2_read_recv() will call
+	 * smb2_request_receive() again, but that's ok.
+	 */
+	if (!smb2_request_receive(req[1]) ||
+	    !smb2_request_is_ok(req[1])) {
+		torture_fail(tctx, "failed to receive read request");
+	}
+
+	/*
+	 * size must be 24: 16 byte read response header plus 3
+	 * requested bytes padded to an 8 byte boundary.
+	 */
+	CHECK_VALUE(req[1]->in.body_size, 24);
+
+	status = smb2_read_recv(req[1], tree, &r);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	h = cr.out.file.handle;
+
+	/* Check 2 compound (unrelateated) reads from existing stream handle */
+	smb2_transport_compound_start(tree->session->transport, 2);
+
+	ZERO_STRUCT(r);
+	r.in.file.handle = h;
+	r.in.length      = 3;
+	r.in.offset      = 0;
+	r.in.min_count   = 1;
+	req[0] = smb2_read_send(tree, &r);
+	req[1] = smb2_read_send(tree, &r);
+
+	/*
+	 * We must do a manual smb2_request_receive() in order to be
+	 * able to check the transport layer info, as smb2_read_recv()
+	 * will destroy the req. smb2_read_recv() will call
+	 * smb2_request_receive() again, but that's ok.
+	 */
+	if (!smb2_request_receive(req[0]) ||
+	    !smb2_request_is_ok(req[0])) {
+		torture_fail(tctx, "failed to receive read request");
+	}
+	if (!smb2_request_receive(req[1]) ||
+	    !smb2_request_is_ok(req[1])) {
+		torture_fail(tctx, "failed to receive read request");
+	}
+
+	/*
+	 * size must be 24: 16 byte read response header plus 3
+	 * requested bytes padded to an 8 byte boundary.
+	 */
+	CHECK_VALUE(req[0]->in.body_size, 24);
+	CHECK_VALUE(req[1]->in.body_size, 24);
+
+	status = smb2_read_recv(req[0], tree, &r);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	status = smb2_read_recv(req[1], tree, &r);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/*
+	 * now try a single read from the stream and verify there's no padding
+	 */
+	ZERO_STRUCT(r);
+	r.in.file.handle = h;
+	r.in.length      = 3;
+	r.in.offset      = 0;
+	r.in.min_count   = 1;
+	req[0] = smb2_read_send(tree, &r);
+
+	/*
+	 * We must do a manual smb2_request_receive() in order to be
+	 * able to check the transport layer info, as smb2_read_recv()
+	 * will destroy the req. smb2_read_recv() will call
+	 * smb2_request_receive() again, but that's ok.
+	 */
+	if (!smb2_request_receive(req[0]) ||
+	    !smb2_request_is_ok(req[0])) {
+		torture_fail(tctx, "failed to receive read request");
+	}
+
+	/*
+	 * size must be 19: 16 byte read response header plus 3
+	 * requested bytes without padding.
+	 */
+	CHECK_VALUE(req[0]->in.body_size, 19);
+
+	status = smb2_read_recv(req[0], tree, &r);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	smb2_util_close(tree, h);
 
 	status = smb2_util_unlink(tree, fname);
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -880,6 +1118,7 @@ struct torture_suite *torture_smb2_compound_init(void)
 	torture_suite_add_1smb2_test(suite, "interim1",  test_compound_interim1);
 	torture_suite_add_1smb2_test(suite, "interim2",  test_compound_interim2);
 	torture_suite_add_1smb2_test(suite, "compound-break", test_compound_break);
+	torture_suite_add_1smb2_test(suite, "compound-padding", test_compound_padding);
 
 	suite->description = talloc_strdup(suite, "SMB2-COMPOUND tests");
 

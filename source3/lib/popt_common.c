@@ -286,7 +286,7 @@ static void get_credentials_file(struct user_auth_info *auth_info,
 {
 	XFILE *auth;
 	fstring buf;
-	uint16 len = 0;
+	uint16_t len = 0;
 	char *ptr, *val, *param;
 
 	if ((auth=x_fopen(file, O_RDONLY, 0)) == NULL)
@@ -368,11 +368,8 @@ static void popt_common_credentials_callback(poptContext con,
 		}
 
 		if (getenv("USER")) {
-			char *puser = SMB_STRDUP(getenv("USER"));
-			if (!puser) {
-				exit(ENOMEM);
-			}
-			set_cmdline_auth_info_username(auth_info, puser);
+			set_cmdline_auth_info_username(auth_info,
+						       getenv("USER"));
 		}
 
 		if (getenv("PASSWD")) {

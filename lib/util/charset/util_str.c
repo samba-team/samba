@@ -274,6 +274,22 @@ _PUBLIC_ size_t strlen_m_ext_term(const char *s, const charset_t src_charset,
 	return strlen_m_ext(s, src_charset, dst_charset) + 1;
 }
 
+_PUBLIC_ size_t strlen_m_ext_term_null(const char *s,
+				       const charset_t src_charset,
+				       const charset_t dst_charset)
+{
+	size_t len;
+	if (!s) {
+		return 0;
+	}
+	len = strlen_m_ext(s, src_charset, dst_charset);
+	if (len == 0) {
+		return 0;
+	}
+
+	return len+1;
+}
+
 /**
  * Calculate the number of 16-bit units that would be needed to convert
  * the input string which is expected to be in CH_UNIX encoding to UTF16.
@@ -292,11 +308,7 @@ _PUBLIC_ size_t strlen_m(const char *s)
 **/
 _PUBLIC_ size_t strlen_m_term(const char *s)
 {
-	if (!s) {
-		return 0;
-	}
-
-	return strlen_m(s) + 1;
+	return strlen_m_ext_term(s, CH_UNIX, CH_UTF16LE);
 }
 
 /*
@@ -306,16 +318,7 @@ _PUBLIC_ size_t strlen_m_term(const char *s)
 
 _PUBLIC_ size_t strlen_m_term_null(const char *s)
 {
-	size_t len;
-	if (!s) {
-		return 0;
-	}
-	len = strlen_m(s);
-	if (len == 0) {
-		return 0;
-	}
-
-	return len+1;
+	return strlen_m_ext_term_null(s, CH_UNIX, CH_UTF16LE);
 }
 
 /**
@@ -369,7 +372,7 @@ _PUBLIC_ char *strchr_m(const char *src, char c)
  */
 _PUBLIC_ char *strrchr_m(const char *s, char c)
 {
-	struct smb_iconv_handle *ic = get_iconv_handle();
+	struct smb_iconv_handle *ic;
 	char *ret = NULL;
 
 	if (s == NULL) {
@@ -415,6 +418,8 @@ _PUBLIC_ char *strrchr_m(const char *s, char c)
 		if (!got_mb)
 			return NULL;
 	}
+
+	ic = get_iconv_handle();
 
 	while (*s) {
 		size_t size;
@@ -540,13 +545,13 @@ char *strstr_m(const char *src, const char *findstr)
 	frame = talloc_stackframe();
 
 	if (!push_ucs2_talloc(frame, &src_w, src, &converted_size)) {
-		DEBUG(0,("strstr_m: src malloc fail\n"));
+		DBG_WARNING("strstr_m: src malloc fail\n");
 		TALLOC_FREE(frame);
 		return NULL;
 	}
 
 	if (!push_ucs2_talloc(frame, &find_w, findstr, &converted_size)) {
-		DEBUG(0,("strstr_m: find malloc fail\n"));
+		DBG_WARNING("strstr_m: find malloc fail\n");
 		TALLOC_FREE(frame);
 		return NULL;
 	}

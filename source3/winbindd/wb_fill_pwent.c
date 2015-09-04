@@ -70,9 +70,9 @@ static void wb_fill_pwent_sid2uid_done(struct tevent_req *subreq)
 	struct wb_fill_pwent_state *state = tevent_req_data(
 		req, struct wb_fill_pwent_state);
 	NTSTATUS status;
-	struct unixid xid;
+	struct unixid xids[1];
 
-	status = wb_sids2xids_recv(subreq, &xid);
+	status = wb_sids2xids_recv(subreq, xids, ARRAY_SIZE(xids));
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		return;
@@ -84,12 +84,12 @@ static void wb_fill_pwent_sid2uid_done(struct tevent_req *subreq)
 	 * by lookupsids). Here we need to filter for the type of object
 	 * actually requested, in this case uid.
 	 */
-	if (!(xid.type == ID_TYPE_UID || xid.type == ID_TYPE_BOTH)) {
+	if (!(xids[0].type == ID_TYPE_UID || xids[0].type == ID_TYPE_BOTH)) {
 		tevent_req_nterror(req, NT_STATUS_NONE_MAPPED);
 		return;
 	}
 
-	state->pw->pw_uid = (uid_t)xid.id;
+	state->pw->pw_uid = (uid_t)xids[0].id;
 
 	subreq = wb_getgrsid_send(state, state->ev, &state->info->group_sid, 0);
 	if (tevent_req_nomem(subreq, req)) {

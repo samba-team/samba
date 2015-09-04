@@ -73,7 +73,7 @@ static bool shadow_copy_match_name(const char *name)
 	return False;
 }
 
-static DIR *shadow_copy_opendir(vfs_handle_struct *handle, const char *fname, const char *mask, uint32 attr)
+static DIR *shadow_copy_opendir(vfs_handle_struct *handle, const char *fname, const char *mask, uint32_t attr)
 {
 	shadow_copy_Dir *dirp;
 	DIR *p = SMB_VFS_NEXT_OPENDIR(handle,fname,mask,attr);
@@ -120,7 +120,7 @@ static DIR *shadow_copy_opendir(vfs_handle_struct *handle, const char *fname, co
 	return((DIR *)dirp);
 }
 
-static DIR *shadow_copy_fdopendir(vfs_handle_struct *handle, files_struct *fsp, const char *mask, uint32 attr)
+static DIR *shadow_copy_fdopendir(vfs_handle_struct *handle, files_struct *fsp, const char *mask, uint32_t attr)
 {
 	shadow_copy_Dir *dirp;
 	DIR *p = SMB_VFS_NEXT_FDOPENDIR(handle,fsp,mask,attr);

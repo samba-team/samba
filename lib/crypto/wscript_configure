@@ -6,3 +6,10 @@ if not conf.CHECK_FUNCS_IN('MD5Init', 'bsd', headers='bsd/md5.h',
                         checklibc=True)
 conf.CHECK_FUNCS_IN('CC_MD5_Init', '', headers='CommonCrypto/CommonDigest.h',
     checklibc=True)
+
+if conf.CHECK_FUNCS('SHA1_Update'):
+	conf.DEFINE('SHA1_RENAME_NEEDED', 1)
+if conf.CHECK_FUNCS('SHA256_Update'):
+	conf.DEFINE('SHA256_RENAME_NEEDED', 1)
+if conf.CHECK_FUNCS('SHA512_Update'):
+	conf.DEFINE('SHA512_RENAME_NEEDED', 1)

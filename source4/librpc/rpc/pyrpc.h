@@ -56,6 +56,9 @@ union netr_LogonLevel *py_export_netr_LogonLevel(TALLOC_CTX *mem_ctx, int level,
 union netr_Validation;
 PyObject *py_import_netr_Validation(TALLOC_CTX *mem_ctx, int level, union netr_Validation *in);
 
+union netr_CONTROL_DATA_INFORMATION *py_export_netr_CONTROL_DATA_INFORMATION(TALLOC_CTX *mem_ctx, int level, PyObject *in);
+union netr_CONTROL_QUERY_INFORMATION;
+PyObject *py_import_netr_CONTROL_QUERY_INFORMATION(TALLOC_CTX *mem_ctx, int level, union netr_CONTROL_QUERY_INFORMATION *in);
 
 #ifndef NDR_DCERPC_REQUEST_OBJECT_PRESENT
 #define NDR_DCERPC_REQUEST_OBJECT_PRESENT LIBNDR_FLAG_OBJECT_PRESENT

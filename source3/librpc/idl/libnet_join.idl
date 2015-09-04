@@ -15,10 +15,17 @@ interface libnetjoin
 	typedef bitmap wkssvc_joinflags wkssvc_joinflags;
 	typedef enum netr_SchannelType netr_SchannelType;
 
+	typedef [public] enum {
+		JoinDomNameTypeUnknown = 0,
+		JoinDomNameTypeDNS = 1,
+		JoinDomNameTypeNBT = 2
+	} libnetjoin_JoinDomNameType;
+
 	[nopush,nopull,noopnum] WERROR libnet_JoinCtx(
 		[in] string dc_name,
 		[in] string machine_name,
 		[in,ref] string *domain_name,
+		[in] libnetjoin_JoinDomNameType domain_name_type,
 		[in] string account_ou,
 		[in] string admin_account,
 		[in] string admin_domain,
@@ -27,6 +34,7 @@ interface libnetjoin
 		[in] wkssvc_joinflags join_flags,
 		[in] string os_version,
 		[in] string os_name,
+		[in] string os_servicepack,
 		[in] boolean8 create_upn,
 		[in] string upn,
 		[in] boolean8 modify_config,

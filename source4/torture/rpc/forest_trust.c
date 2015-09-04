@@ -49,9 +49,7 @@ static bool test_get_policy_handle(struct torture_context *tctx,
 	NTSTATUS status;
 
 	h = talloc(tctx, struct policy_handle);
-	if (!h) {
-		return false;
-	}
+	torture_assert(tctx, h != NULL, "talloc(tctx, struct policy_handle)");
 
 	attr.len = 0;
 	attr.root_dir = NULL;
@@ -66,14 +64,8 @@ static bool test_get_policy_handle(struct torture_context *tctx,
 	pr.out.handle = h;
 
 	status = dcerpc_lsa_OpenPolicy2_r(p->binding_handle, tctx, &pr);
-	torture_assert_ntstatus_equal(tctx, status, NT_STATUS_OK,
-				      "OpenPolicy2 failed");
-	if (!NT_STATUS_IS_OK(pr.out.result)) {
-		torture_comment(tctx, "OpenPolicy2 failed - %s\n",
-				nt_errstr(pr.out.result));
-		talloc_free(h);
-		return false;
-	}
+	torture_assert_ntstatus_ok(tctx, status, "OpenPolicy2 failed");
+	torture_assert_ntstatus_ok(tctx, pr.out.result, "OpenPolicy2 failed");
 
 	*handle = h;
 	return true;
@@ -87,12 +79,10 @@ static bool test_create_trust_and_set_info(struct dcerpc_pipe *p,
 					   struct lsa_TrustDomainInfoAuthInfoInternal *authinfo)
 {
 	struct policy_handle *handle;
-	NTSTATUS status;
 	struct lsa_lsaRSetForestTrustInformation fti;
 	struct lsa_ForestTrustCollisionInfo *collision_info = NULL;
 	struct lsa_Close cr;
 	struct policy_handle closed_handle;
-	bool ret = true;
 	struct lsa_CreateTrustedDomainEx2 r;
 	struct lsa_TrustDomainInfoInfoEx trustinfo;
 	struct policy_handle trustdom_handle;
@@ -117,13 +107,16 @@ static bool test_create_trust_and_set_info(struct dcerpc_pipe *p,
 
 	trustinfo.trust_type = LSA_TRUST_TYPE_UPLEVEL;
 
-	/* MS-LSAD: Section 3.1.4.7.10 makes it clear that Win2k3
+	/*
+	 * MS-LSAD: Section 3.1.4.7.10 makes it clear that Win2k3
 	 * functional level and above return
 	 * NT_STATUS_INVALID_DOMAIN_STATE if
 	 * TRUST_ATTRIBUTE_FOREST_TRANSITIVE or
 	 * TRUST_ATTRIBUTE_CROSS_ORGANIZATION is set here.
-	*/
-	trustinfo.trust_attributes = 0;
+	 *
+	 * But we really want to test forest trusts here.
+	 */
+	trustinfo.trust_attributes = LSA_TRUST_ATTRIBUTE_FOREST_TRANSITIVE;
 
 	r.in.policy_handle = handle;
 	r.in.info = &trustinfo;
@@ -137,110 +130,64 @@ static bool test_create_trust_and_set_info(struct dcerpc_pipe *p,
 	torture_assert_ntstatus_ok(tctx,
 				   dcerpc_lsa_CreateTrustedDomainEx2_r(p->binding_handle, tctx, &r),
 				   "CreateTrustedDomainEx2 failed");
-	if (!NT_STATUS_IS_OK(r.out.result)) {
-		torture_comment(tctx, "CreateTrustedDomainEx2 failed - %s\n", nt_errstr(r.out.result));
-		ret = false;
-	} else {
+	torture_assert_ntstatus_ok(tctx, r.out.result, "CreateTrustedDomainEx2 failed");
 
-		q.in.trustdom_handle = &trustdom_handle;
-		q.in.level = LSA_TRUSTED_DOMAIN_INFO_INFO_EX;
-		q.out.info = &info;
+	q.in.trustdom_handle = &trustdom_handle;
+	q.in.level = LSA_TRUSTED_DOMAIN_INFO_INFO_EX;
+	q.out.info = &info;
 
-		torture_assert_ntstatus_ok(tctx,
-					   dcerpc_lsa_QueryTrustedDomainInfo_r(p->binding_handle, tctx, &q),
-					   "QueryTrustedDomainInfo failed");
-		if (!NT_STATUS_IS_OK(q.out.result)) {
-			torture_comment(tctx,
-					"QueryTrustedDomainInfo level 1 failed - %s\n",
-					nt_errstr(q.out.result));
-			ret = false;
-		} else if (!q.out.info) {
-			torture_comment(tctx,
-					"QueryTrustedDomainInfo level 1 failed to return an info pointer\n");
-			ret = false;
-		} else {
-			if (strcmp(info->info_ex.netbios_name.string, trustinfo.netbios_name.string) != 0) {
-				torture_comment(tctx,
-						"QueryTrustedDomainInfo returned inconsistent short name: %s != %s\n",
-						info->info_ex.netbios_name.string,
-						trustinfo.netbios_name.string);
-				ret = false;
-			}
-			if (info->info_ex.trust_type != trustinfo.trust_type) {
-				torture_comment(tctx,
-						"QueryTrustedDomainInfo of %s returned incorrect trust type %d != %d\n",
-						trust_name,
-						info->info_ex.trust_type,
-						trustinfo.trust_type);
-				ret = false;
-			}
-			if (info->info_ex.trust_attributes != trustinfo.trust_attributes) {
-				torture_comment(tctx,
-						"QueryTrustedDomainInfo of %s returned incorrect trust attributes %d != %d\n",
-						trust_name,
-						info->info_ex.trust_attributes,
-						trustinfo.trust_attributes);
-				ret = false;
-			}
-			if (info->info_ex.trust_direction != trustinfo.trust_direction) {
-				torture_comment(tctx,
-						"QueryTrustedDomainInfo of %s returned incorrect trust direction %d != %d\n",
-						trust_name,
-						info->info_ex.trust_direction,
-						trustinfo.trust_direction);
-				ret = false;
-			}
-		}
-	}
+	torture_assert_ntstatus_ok(tctx,
+				   dcerpc_lsa_QueryTrustedDomainInfo_r(p->binding_handle, tctx, &q),
+				   "QueryTrustedDomainInfo failed");
+	torture_assert_ntstatus_ok(tctx, q.out.result, "QueryTrustedDomainInfo level 1");
+	torture_assert(tctx, q.out.info != NULL, "QueryTrustedDomainInfo level 1 failed to return an info pointer");
+	torture_assert_str_equal(tctx, info->info_ex.netbios_name.string,
+				 trustinfo.netbios_name.string,
+				 "QueryTrustedDomainInfo returned inconsistent short name");
+	torture_assert_int_equal(tctx, info->info_ex.trust_type, trustinfo.trust_type,
+				 "QueryTrustedDomainInfo returned incorrect trust type");
+	torture_assert_int_equal(tctx, info->info_ex.trust_attributes, trustinfo.trust_attributes,
+				 "QueryTrustedDomainInfo of returned incorrect trust attributes");
+	torture_assert_int_equal(tctx, info->info_ex.trust_direction, trustinfo.trust_direction,
+				 "QueryTrustedDomainInfo of returned incorrect trust direction");
 
-	if (ret != false) {
-		fti.in.handle = handle;
-		fti.in.trusted_domain_name = talloc_zero(tctx, struct lsa_StringLarge);
-		fti.in.trusted_domain_name->string = trust_name_dns;
-		fti.in.highest_record_type = 2;
-		fti.in.forest_trust_info = talloc_zero(tctx, struct lsa_ForestTrustInformation);
-		fti.in.forest_trust_info->count = 2;
-		fti.in.forest_trust_info->entries = talloc_array(tctx, struct lsa_ForestTrustRecord *, 2);
-		fti.in.forest_trust_info->entries[0] = talloc_zero(tctx, struct lsa_ForestTrustRecord);
-		fti.in.forest_trust_info->entries[0]->flags = 0;
-		fti.in.forest_trust_info->entries[0]->type = LSA_FOREST_TRUST_TOP_LEVEL_NAME;
-		fti.in.forest_trust_info->entries[0]->time = 0;
-		fti.in.forest_trust_info->entries[0]->forest_trust_data.top_level_name.string = trust_name_dns;
-		fti.in.forest_trust_info->entries[1] = talloc_zero(tctx, struct lsa_ForestTrustRecord);
-		fti.in.forest_trust_info->entries[1]->flags = 0;
-		fti.in.forest_trust_info->entries[1]->type = LSA_FOREST_TRUST_DOMAIN_INFO;
-		fti.in.forest_trust_info->entries[1]->time = 0;
-		fti.in.forest_trust_info->entries[1]->forest_trust_data.domain_info.domain_sid = domsid;
-		fti.in.forest_trust_info->entries[1]->forest_trust_data.domain_info.dns_domain_name.string = trust_name_dns;
-		fti.in.forest_trust_info->entries[1]->forest_trust_data.domain_info.netbios_domain_name.string = trust_name;
-		fti.in.check_only = 0;
-		fti.out.collision_info = &collision_info;
+	fti.in.handle = handle;
+	fti.in.trusted_domain_name = talloc_zero(tctx, struct lsa_StringLarge);
+	fti.in.trusted_domain_name->string = trust_name_dns;
+	fti.in.highest_record_type = 2;
+	fti.in.forest_trust_info = talloc_zero(tctx, struct lsa_ForestTrustInformation);
+	fti.in.forest_trust_info->count = 2;
+	fti.in.forest_trust_info->entries = talloc_array(tctx, struct lsa_ForestTrustRecord *, 2);
+	fti.in.forest_trust_info->entries[0] = talloc_zero(tctx, struct lsa_ForestTrustRecord);
+	fti.in.forest_trust_info->entries[0]->flags = 0;
+	fti.in.forest_trust_info->entries[0]->type = LSA_FOREST_TRUST_TOP_LEVEL_NAME;
+	fti.in.forest_trust_info->entries[0]->time = 0;
+	fti.in.forest_trust_info->entries[0]->forest_trust_data.top_level_name.string = trust_name_dns;
+	fti.in.forest_trust_info->entries[1] = talloc_zero(tctx, struct lsa_ForestTrustRecord);
+	fti.in.forest_trust_info->entries[1]->flags = 0;
+	fti.in.forest_trust_info->entries[1]->type = LSA_FOREST_TRUST_DOMAIN_INFO;
+	fti.in.forest_trust_info->entries[1]->time = 0;
+	fti.in.forest_trust_info->entries[1]->forest_trust_data.domain_info.domain_sid = domsid;
+	fti.in.forest_trust_info->entries[1]->forest_trust_data.domain_info.dns_domain_name.string = trust_name_dns;
+	fti.in.forest_trust_info->entries[1]->forest_trust_data.domain_info.netbios_domain_name.string = trust_name;
+	fti.in.check_only = 0;
+	fti.out.collision_info = &collision_info;
 
-		torture_comment(tctx, "\nTesting SetForestTrustInformation\n");
+	torture_comment(tctx, "\nTesting SetForestTrustInformation\n");
 
-		torture_assert_ntstatus_ok(tctx,
-					   dcerpc_lsa_lsaRSetForestTrustInformation_r(p->binding_handle, tctx, &fti),
-					   "lsaRSetForestTrustInformation failed");
-		if (!NT_STATUS_IS_OK(fti.out.result)) {
-			torture_comment(tctx,
-					"lsaRSetForestTrustInformation failed - %s\n",
-					nt_errstr(fti.out.result));
-			ret = false;
-		}
-	}
+	torture_assert_ntstatus_ok(tctx,
+				   dcerpc_lsa_lsaRSetForestTrustInformation_r(p->binding_handle, tctx, &fti),
+				   "lsaRSetForestTrustInformation failed");
+	torture_assert_ntstatus_ok(tctx, fti.out.result, "lsaRSetForestTrustInformation failed");
 
 	cr.in.handle = handle;
 	cr.out.handle = &closed_handle;
-	status =  dcerpc_lsa_Close_r(p->binding_handle, tctx, &cr);
-	torture_assert_ntstatus_equal(tctx, status, NT_STATUS_OK,
-				      "Close failed");
-	if (!NT_STATUS_IS_OK(cr.out.result)) {
-		torture_comment(tctx, "Close failed - %s\n",
-				nt_errstr(cr.out.result));
-		ret = false;
-	}
+	torture_assert_ntstatus_ok(tctx,
+				   dcerpc_lsa_Close_r(p->binding_handle, tctx, &cr),
+				   "Close failed");
+	torture_assert_ntstatus_ok(tctx, cr.out.result, "Close failed");
 
-	return ret;
+	return true;
 }
 
 struct get_set_info {
@@ -297,7 +244,8 @@ static bool get_and_set_info(struct dcerpc_pipe *p,
 	sr.in.info = info;
 
 	for (c = 0; il[c].info_level != -1; c++) {
-	torture_comment(tctx, "\nGetting/Setting dom info [%d]\n",il[c].info_level);
+		torture_comment(tctx, "\nGetting/Setting dom info [%d]\n",il[c].info_level);
+
 		qr.in.level = il[c].info_level;
 		status = dcerpc_lsa_QueryTrustedDomainInfoByName_r(p->binding_handle,
 								   tctx, &qr);
@@ -333,14 +281,10 @@ static bool get_and_set_info(struct dcerpc_pipe *p,
 
 	cr.in.handle = handle;
 	cr.out.handle = &closed_handle;
-	status =  dcerpc_lsa_Close_r(p->binding_handle, tctx, &cr);
-	torture_assert_ntstatus_equal(tctx, status, NT_STATUS_OK,
-				      "Close failed");
-	if (!NT_STATUS_IS_OK(cr.out.result)) {
-		torture_comment(tctx, "Close failed - %s\n",
-				nt_errstr(cr.out.result));
-		return false;
-	}
+	torture_assert_ntstatus_ok(tctx,
+				   dcerpc_lsa_Close_r(p->binding_handle, tctx, &cr),
+				   "Close failed");
+	torture_assert_ntstatus_ok(tctx, cr.out.result, "Close failed");
 
 	return true;
 }
@@ -369,24 +313,18 @@ static bool check_name(struct dcerpc_pipe *p, struct torture_context *tctx,
 	qr.out.info = &info;
 	status = dcerpc_lsa_QueryTrustedDomainInfoByName_r(p->binding_handle,
 							   tctx, &qr);
-	torture_assert_ntstatus_equal(tctx, status, NT_STATUS_OK,
-				      "QueryInfoPolicy2 failed");
-	if (!NT_STATUS_EQUAL(qr.out.result, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
-		torture_comment(tctx, "QueryInfoPolicy2 did not return "
-				      "NT_STATUS_OBJECT_NAME_NOT_FOUND\n");
-		return false;
-	}
+	torture_assert_ntstatus_ok(tctx, status,
+				   "QueryInfoPolicy2 failed");
+	torture_assert_ntstatus_equal(tctx, qr.out.result, NT_STATUS_OBJECT_NAME_NOT_FOUND,
+				      "QueryInfoPolicy2 did not return "
+				      "NT_STATUS_OBJECT_NAME_NOT_FOUND");
 
 	cr.in.handle = handle;
 	cr.out.handle = &closed_handle;
-	status =  dcerpc_lsa_Close_r(p->binding_handle, tctx, &cr);
-	torture_assert_ntstatus_equal(tctx, status, NT_STATUS_OK,
-				      "Close failed");
-	if (!NT_STATUS_IS_OK(cr.out.result)) {
-		torture_comment(tctx, "Close failed - %s\n",
-				nt_errstr(cr.out.result));
-		return false;
-	}
+	torture_assert_ntstatus_ok(tctx,
+				   dcerpc_lsa_Close_r(p->binding_handle, tctx, &cr),
+				   "Close failed");
+	torture_assert_ntstatus_ok(tctx, cr.out.result, "Close failed");
 
 	return true;
 }
@@ -422,14 +360,10 @@ static bool get_lsa_policy_info_dns(struct dcerpc_pipe *p,
 
 	cr.in.handle = handle;
 	cr.out.handle = &closed_handle;
-	status =  dcerpc_lsa_Close_r(p->binding_handle, tctx, &cr);
-	torture_assert_ntstatus_equal(tctx, status, NT_STATUS_OK,
-				      "Close failed");
-	if (!NT_STATUS_IS_OK(cr.out.result)) {
-		torture_comment(tctx, "Close failed - %s\n",
-				nt_errstr(cr.out.result));
-		return false;
-	}
+	torture_assert_ntstatus_ok(tctx,
+				   dcerpc_lsa_Close_r(p->binding_handle, tctx, &cr),
+				   "Close failed");
+	torture_assert_ntstatus_ok(tctx, cr.out.result, "Close failed");
 
 	return true;
 }
@@ -439,11 +373,9 @@ static bool delete_trusted_domain_by_sid(struct dcerpc_pipe *p,
 					 struct dom_sid *domsid)
 {
 	struct policy_handle *handle;
-	NTSTATUS status;
 	struct lsa_Close cr;
 	struct policy_handle closed_handle;
 	struct lsa_DeleteTrustedDomain dr;
-	bool ret = true;
 
 	torture_comment(tctx, "\nDeleting trusted domain.\n");
 
@@ -461,24 +393,16 @@ static bool delete_trusted_domain_by_sid(struct dcerpc_pipe *p,
 	torture_assert_ntstatus_ok(tctx,
 				   dcerpc_lsa_DeleteTrustedDomain_r(p->binding_handle, tctx, &dr),
 				   "DeleteTrustedDomain failed");
-	if (!NT_STATUS_IS_OK(dr.out.result)) {
-		torture_comment(tctx, "DeleteTrustedDomain failed - %s\n",
-				nt_errstr(dr.out.result));
-		return false;
-	}
+	torture_assert_ntstatus_ok(tctx, dr.out.result, "DeleteTrustedDomain failed");
 
 	cr.in.handle = handle;
 	cr.out.handle = &closed_handle;
-	status =  dcerpc_lsa_Close_r(p->binding_handle, tctx, &cr);
-	torture_assert_ntstatus_equal(tctx, status, NT_STATUS_OK,
-				      "Close failed");
-	if (!NT_STATUS_IS_OK(cr.out.result)) {
-		torture_comment(tctx, "Close failed - %s\n",
-				nt_errstr(cr.out.result));
-		ret = false;
-	}
+	torture_assert_ntstatus_ok(tctx,
+				   dcerpc_lsa_Close_r(p->binding_handle, tctx, &cr),
+				   "Close failed");
+	torture_assert_ntstatus_ok(tctx, cr.out.result, "Close failed");
 
-	return ret;
+	return true;
 }
 
 static const uint8_t my_blob[] = {
@@ -596,17 +520,19 @@ static bool test_validate_trust(struct torture_context *tctx,
 
 	struct netr_GetForestTrustInformation fr;
 	struct lsa_ForestTrustInformation *forest_trust_info;
+	struct lsa_ForestTrustRecord *tln = NULL;
+	struct lsa_ForestTrustRecord *di = NULL;
 	int i;
-	struct samr_Password nt_hash;
+	struct samr_Password *new_nt_hash;
+	struct samr_Password *old_nt_hash;
 	char *dummy;
+	uint32_t trust_attributes = LSA_TRUST_ATTRIBUTE_FOREST_TRANSITIVE;
 
 	status = dcerpc_parse_binding(tctx, binding, &b);
 	torture_assert_ntstatus_ok(tctx, status, "Bad binding string");
 
 	credentials = cli_credentials_init(tctx);
-	if (credentials == NULL) {
-		return false;
-	}
+	torture_assert(tctx, credentials != NULL, "cli_credentials_init()");
 
 	dummy = talloc_asprintf(tctx, "%s$", trusted_dom_name);
 	cli_credentials_set_username(credentials, dummy,
@@ -616,6 +542,7 @@ static bool test_validate_trust(struct torture_context *tctx,
 	cli_credentials_set_realm(credentials, trusting_dom_dns_name,
 				  CRED_SPECIFIED);
 	cli_credentials_set_password(credentials, trust_password, CRED_SPECIFIED);
+	cli_credentials_set_old_password(credentials, trust_password, CRED_SPECIFIED);
 	cli_credentials_set_workstation(credentials,
 					trusted_dom_name, CRED_SPECIFIED);
 	cli_credentials_set_secure_channel_type(credentials, SEC_CHAN_DOMAIN);
@@ -658,29 +585,31 @@ static bool test_validate_trust(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx, r.out.result,
 				   "ServerGetTrustInfo failed");
 
-	if (trust_info->count != 1) {
-		torture_comment(tctx, "Unexpected number of results, "
-				      "expected %d, got %d.\n",
-				      1, trust_info->count);
-		return false;
-	}
-	if (trust_info->data[0] != 0) {
-		torture_comment(tctx, "Unexpected result, "
-				      "expected %d, got %d.\n",
-				      0,
-				      trust_info->data[0]);
-		return false;
-	}
+	torture_assert(tctx, trust_info != NULL, "ServerGetTrustInfo got no trust_info");
+	torture_assert_int_equal(tctx, trust_info->count, 1,
+				 "Unexpected number of results");
+	torture_assert_int_equal(tctx, trust_info->data[0], trust_attributes,
+				 "Unexpected trust_attributes");
 
-	E_md4hash(cli_credentials_get_password(credentials), nt_hash.hash);
+	new_nt_hash = cli_credentials_get_nt_hash(credentials, tctx);
+	torture_assert(tctx, new_nt_hash != NULL, "cli_credentials_get_nt_hash()");
+
+	old_nt_hash = cli_credentials_get_old_nt_hash(credentials, tctx);
+	torture_assert(tctx, old_nt_hash != NULL, "cli_credentials_get_old_nt_hash()");
 
 	netlogon_creds_des_decrypt(creds, &new_owf_password);
+	netlogon_creds_des_decrypt(creds, &old_owf_password);
 
 	dump_data(1, new_owf_password.hash, 16);
-	dump_data(1, nt_hash.hash, 16);
+	dump_data(1, new_nt_hash->hash, 16);
+	dump_data(1, old_owf_password.hash, 16);
+	dump_data(1, old_nt_hash->hash, 16);
 
-	torture_assert_mem_equal(tctx, new_owf_password.hash, nt_hash.hash, 16,
-		"received unexpected owf password\n");
+	torture_assert_mem_equal(tctx, new_owf_password.hash, new_nt_hash->hash, 16,
+		"received unexpected new owf password\n");
+
+	torture_assert_mem_equal(tctx, old_owf_password.hash, old_nt_hash->hash, 16,
+		"received unexpected old owf password\n");
 
 	netlogon_creds_client_authenticator(creds, &a);
 
@@ -695,55 +624,47 @@ static bool test_validate_trust(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx,
 				   dcerpc_netr_GetForestTrustInformation_r(p->binding_handle, tctx, &fr),
 				   "netr_GetForestTrustInformation failed");
-	if (NT_STATUS_IS_ERR(fr.out.result)) {
-		torture_comment(tctx,
-				"netr_GetForestTrustInformation failed - %s.\n",
-				nt_errstr(fr.out.result));
-		return false;
-	}
+	torture_assert_ntstatus_ok(tctx, r.out.result,
+				   "netr_GetForestTrustInformation failed");
 
-	if (forest_trust_info->count != 2) {
-		torture_comment(tctx, "Unexpected number of results, "
-				      "expected %d, got %d.\n", 2,
-				      forest_trust_info->count);
-		return false;
-	}
 	for(i = 0; i < forest_trust_info->count; i++) {
-		switch(forest_trust_info->entries[i]->type) {
-			case LSA_FOREST_TRUST_TOP_LEVEL_NAME:
-				if (strcmp(forest_trust_info->entries[i]->forest_trust_data.top_level_name.string, trusting_dom_dns_name) != 0) {
-					torture_comment(tctx, "Unexpected result, "
-							"expected %s, got %s.\n",
-							trusting_dom_dns_name,
-							forest_trust_info->entries[i]->forest_trust_data.top_level_name.string);
-					return false;
-				}
+		struct lsa_ForestTrustRecord *e = forest_trust_info->entries[i];
+
+		switch (e->type) {
+		case LSA_FOREST_TRUST_TOP_LEVEL_NAME:
+			if (strcmp(e->forest_trust_data.top_level_name.string, trusting_dom_dns_name) != 0) {
 				break;
-			case LSA_FOREST_TRUST_DOMAIN_INFO:
-				if (strcmp(forest_trust_info->entries[i]->forest_trust_data.domain_info.netbios_domain_name.string, trusting_dom_name) != 0) {
-					torture_comment(tctx, "Unexpected result, "
-							"expected %s, got %s.\n",
-							trusting_dom_dns_name,
-							forest_trust_info->entries[i]->forest_trust_data.domain_info.netbios_domain_name.string);
-					return false;
-				}
-				if (strcmp(forest_trust_info->entries[i]->forest_trust_data.domain_info.dns_domain_name.string, trusting_dom_dns_name) != 0) {
-					torture_comment(tctx, "Unexpected result, "
-							"expected %s, got %s.\n",
-							trusting_dom_dns_name,
-							forest_trust_info->entries[i]->forest_trust_data.domain_info.dns_domain_name.string);
-					return false;
-				}
+			}
+
+			torture_assert(tctx, tln == NULL, "TOP_LEVEL_NAME found twice");
+
+			tln = e;
+			break;
+
+		case LSA_FOREST_TRUST_TOP_LEVEL_NAME_EX:
+			break;
+
+		case LSA_FOREST_TRUST_DOMAIN_INFO:
+			if (strcmp(e->forest_trust_data.domain_info.dns_domain_name.string, trusting_dom_dns_name) != 0) {
 				break;
-			default:
-				torture_comment(tctx, "Unexpected result type, "
-					        "expected %d|%d, got %d.\n",
-					        LSA_FOREST_TRUST_TOP_LEVEL_NAME,
-					        LSA_FOREST_TRUST_DOMAIN_INFO,
-					        forest_trust_info->entries[i]->type);
-				return false;
+			}
+
+			torture_assert(tctx, di == NULL, "DOMAIN_INFO found twice");
+
+			di = e;
+			break;
+		default:
+			torture_assert_int_equal(tctx, e->type, LSA_FOREST_TRUST_TOP_LEVEL_NAME,
+						 "Unexptected LSA_FOREST_TRUST_* type");
 		}
 	}
+
+	torture_assert(tctx, tln != NULL, "TOP_LEVEL_NAME entry missing");
+	torture_assert(tctx, di != NULL, "DOMAIN_INFO entry missing");
+
+	torture_assert_str_equal(tctx, di->forest_trust_data.domain_info.netbios_domain_name.string,
+				 trusting_dom_name,
+				 "netbios_domain_name mismatch");
 
 	return true;
 }
@@ -795,7 +716,6 @@ static bool test_setup_trust(struct torture_context *tctx,
 static bool testcase_ForestTrusts(struct torture_context *tctx,
 				  struct dcerpc_pipe *p)
 {
-	bool ret = true;
 	const char *dom2_binding_string;
 	const char * dom2_cred_string;
 	NTSTATUS status;
@@ -836,7 +756,7 @@ static bool testcase_ForestTrusts(struct torture_context *tctx,
 
 	if (!test_setup_trust(tctx, p, TEST_DOM, TEST_DOM_DNS, domsid,
 			      &auth_blob)) {
-		ret = false;
+		return false;
 	}
 
 	if (!get_lsa_policy_info_dns(p, tctx, &dom1_info_dns)) {
@@ -851,38 +771,30 @@ static bool testcase_ForestTrusts(struct torture_context *tctx,
 				 dom1_info_dns->dns.name.string,
 				 dom1_info_dns->dns.dns_domain.string,
 				 TEST_DOM, TEST_DOM_DNS, test_password)) {
-		ret = false;
+		return false;
 	}
 
 	if (!delete_trusted_domain_by_sid(p, tctx, domsid)) {
-		ret = false;
+		return false;
 	}
 
 	dom2_binding_string = torture_setting_string(tctx,
 						     "Forest_Trust_Dom2_Binding",
 						     NULL);
 	if (dom2_binding_string == NULL) {
-		return ret;
+		torture_skip(tctx, "torture:Forest_Trust_Dom2_Binding not specified\n");
 	}
 
 	status = dcerpc_parse_binding(tctx, dom2_binding_string, &dom2_binding);
-	if (NT_STATUS_IS_ERR(status)) {
-		DEBUG(0,("Failed to parse dcerpc binding '%s'\n",
-			 dom2_binding_string));
-		return false;
-	}
+	torture_assert_ntstatus_ok(tctx, status, "dcerpc_parse_binding()");
 
 	dom2_cred_string = torture_setting_string(tctx,
 						  "Forest_Trust_Dom2_Creds",
 						  NULL);
-	if (dom2_cred_string == NULL) {
-		return false;
-	}
+	torture_assert(tctx, dom2_cred_string != NULL, "torture:Forest_Trust_Dom2_Creds missing");
 
 	dom2_credentials = cli_credentials_init(tctx);
-	if (dom2_credentials == NULL) {
-		return false;
-	}
+	torture_assert(tctx, dom2_credentials != NULL, "cli_credentials_init()");
 
 	cli_credentials_parse_string(dom2_credentials, dom2_cred_string,
 				     CRED_SPECIFIED);
@@ -892,13 +804,9 @@ static bool testcase_ForestTrusts(struct torture_context *tctx,
 	status = dcerpc_pipe_connect_b(tctx, &dom2_p, dom2_binding,
 				       &ndr_table_lsarpc, dom2_credentials,
 				       tctx->ev, tctx->lp_ctx);
-
-	if (NT_STATUS_IS_ERR(status)) {
-		torture_comment(tctx, "Failed to connect to remote server: %s %s\n",
-				dcerpc_binding_string(tctx, dom2_binding),
-				nt_errstr(status));
-		return false;
-	}
+	torture_assert_ntstatus_ok(tctx, status, talloc_asprintf(tctx,
+				   "Failed to connect to remote server: %s\n",
+				   dcerpc_binding_string(tctx, dom2_binding)));
 
 	if (!get_lsa_policy_info_dns(dom2_p, tctx, &dom2_info_dns)) {
 		return false;
@@ -909,20 +817,24 @@ static bool testcase_ForestTrusts(struct torture_context *tctx,
 	    strcasecmp(dom1_info_dns->dns.dns_domain.string,
 		       dom2_info_dns->dns.dns_domain.string) == 0)
 	{
-		torture_comment(tctx, "Trusting and trusted domain have the "
-				      "same name.\n");
-		return false;
+		torture_assert(tctx, false, talloc_asprintf(tctx,
+			       "Trusting (%s;%s) and trusted domain (%s;%s) have the "
+			       "same name",
+			       dom1_info_dns->dns.name.string,
+			       dom1_info_dns->dns.dns_domain.string,
+			       dom2_info_dns->dns.name.string,
+			       dom2_info_dns->dns.dns_domain.string));
 	}
 
 	if (!test_setup_trust(tctx, p, dom2_info_dns->dns.name.string,
 			       dom2_info_dns->dns.dns_domain.string,
 			       dom2_info_dns->dns.sid, &auth_blob)) {
-		ret = false;
+		return false;
 	}
 	if (!test_setup_trust(tctx, dom2_p, dom1_info_dns->dns.name.string,
 			      dom1_info_dns->dns.dns_domain.string,
 			      dom1_info_dns->dns.sid, &auth_blob)) {
-		ret = false;
+		return false;
 	}
 
 	if (!test_validate_trust(tctx, binding,
@@ -930,7 +842,7 @@ static bool testcase_ForestTrusts(struct torture_context *tctx,
 				 dom1_info_dns->dns.dns_domain.string,
 				 dom2_info_dns->dns.name.string,
 				 dom2_info_dns->dns.dns_domain.string, test_password)) {
-		ret = false;
+		return false;
 	}
 
 	if (!test_validate_trust(tctx, dom2_binding_string,
@@ -938,18 +850,18 @@ static bool testcase_ForestTrusts(struct torture_context *tctx,
 				 dom2_info_dns->dns.dns_domain.string,
 				 dom1_info_dns->dns.name.string,
 				 dom1_info_dns->dns.dns_domain.string, test_password)) {
-		ret = false;
+		return false;
 	}
 
 	if (!delete_trusted_domain_by_sid(p, tctx, dom2_info_dns->dns.sid)) {
-		ret = false;
+		return false;
 	}
 
 	if (!delete_trusted_domain_by_sid(dom2_p, tctx, dom1_info_dns->dns.sid)) {
-		ret = false;
+		return false;
 	}
 
-	return ret;
+	return true;
 }
 
 /* By default this test creates a trust object in the destination server to a

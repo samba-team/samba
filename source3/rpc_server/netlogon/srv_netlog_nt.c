@@ -75,6 +75,19 @@ WERROR _netr_LogonControl(struct pipes_struct *p,
 		return WERR_UNKNOWN_LEVEL;
 	}
 
+	switch (r->in.function_code) {
+	case NETLOGON_CONTROL_QUERY:
+	case NETLOGON_CONTROL_REPLICATE:
+	case NETLOGON_CONTROL_SYNCHRONIZE:
+	case NETLOGON_CONTROL_PDC_REPLICATE:
+	case NETLOGON_CONTROL_BREAKPOINT:
+	case NETLOGON_CONTROL_BACKUP_CHANGE_LOG:
+	case NETLOGON_CONTROL_TRUNCATE_LOG:
+		break;
+	default:
+		return WERR_NOT_SUPPORTED;
+	}
+
 	l.in.logon_server	= r->in.logon_server;
 	l.in.function_code	= r->in.function_code;
 	l.in.level		= r->in.level;
@@ -184,7 +197,6 @@ WERROR _netr_LogonControl2Ex(struct pipes_struct *p,
 	struct netr_NETLOGON_INFO_3 *info3;
 	struct netr_NETLOGON_INFO_4 *info4;
 	const char *fn;
-	uint32_t acct_ctrl;
 	NTSTATUS status;
 	struct netr_DsRGetDCNameInfo *dc_info;
 
@@ -202,20 +214,26 @@ WERROR _netr_LogonControl2Ex(struct pipes_struct *p,
 		return WERR_INVALID_PARAM;
 	}
 
-	acct_ctrl = p->session_info->info->acct_flags;
-
-	switch (r->in.function_code) {
-	case NETLOGON_CONTROL_TC_VERIFY:
-	case NETLOGON_CONTROL_CHANGE_PASSWORD:
-	case NETLOGON_CONTROL_REDISCOVER:
-		if ((geteuid() != sec_initial_uid()) &&
-		    !nt_token_check_domain_rid(p->session_info->security_token, DOMAIN_RID_ADMINS) &&
-		    !nt_token_check_sid(&global_sid_Builtin_Administrators, p->session_info->security_token) &&
-		    !(acct_ctrl & (ACB_WSTRUST | ACB_SVRTRUST))) {
-			return WERR_ACCESS_DENIED;
-		}
+	switch (r->in.level) {
+	case 1:
+	case 2:
+	case 3:
+	case 4:
 		break;
 	default:
+		return WERR_INVALID_LEVEL;
+	}
+
+	switch (r->in.function_code) {
+	case NETLOGON_CONTROL_QUERY:
+		break;
+	default:
+		if ((geteuid() != sec_initial_uid()) &&
+		    !nt_token_check_domain_rid(p->session_info->security_token, DOMAIN_RID_ADMINS) &&
+		    !nt_token_check_sid(&global_sid_Builtin_Administrators, p->session_info->security_token))
+		{
+			return WERR_ACCESS_DENIED;
+		}
 		break;
 	}
 
@@ -223,6 +241,14 @@ WERROR _netr_LogonControl2Ex(struct pipes_struct *p,
 
 	switch (r->in.function_code) {
 	case NETLOGON_CONTROL_QUERY:
+		switch (r->in.level) {
+		case 1:
+		case 3:
+			break;
+		default:
+			return WERR_INVALID_PARAMETER;
+		}
+
 		tc_status = WERR_OK;
 		break;
 	case NETLOGON_CONTROL_REPLICATE:
@@ -230,26 +256,12 @@ WERROR _netr_LogonControl2Ex(struct pipes_struct *p,
 	case NETLOGON_CONTROL_PDC_REPLICATE:
 	case NETLOGON_CONTROL_BACKUP_CHANGE_LOG:
 	case NETLOGON_CONTROL_BREAKPOINT:
-		if (acct_ctrl & ACB_NORMAL) {
-			return WERR_NOT_SUPPORTED;
-		} else if (acct_ctrl & (ACB_WSTRUST | ACB_SVRTRUST)) {
-			return WERR_ACCESS_DENIED;
-		} else {
-			return WERR_ACCESS_DENIED;
-		}
 	case NETLOGON_CONTROL_TRUNCATE_LOG:
-		if (acct_ctrl & ACB_NORMAL) {
-			break;
-		} else if (acct_ctrl & (ACB_WSTRUST | ACB_SVRTRUST)) {
-			return WERR_ACCESS_DENIED;
-		} else {
-			return WERR_ACCESS_DENIED;
-		}
-
 	case NETLOGON_CONTROL_TRANSPORT_NOTIFY:
 	case NETLOGON_CONTROL_FORCE_DNS_REG:
 	case NETLOGON_CONTROL_QUERY_DNS_REG:
 		return WERR_NOT_SUPPORTED;
+
 	case NETLOGON_CONTROL_FIND_USER:
 		if (!r->in.data || !r->in.data->user) {
 			return WERR_NOT_SUPPORTED;
@@ -336,7 +348,7 @@ WERROR _netr_LogonControl2Ex(struct pipes_struct *p,
 		/* no idea what this should be */
 		DEBUG(0,("%s: unimplemented function level [%d]\n",
 			fn, r->in.function_code));
-		return WERR_UNKNOWN_LEVEL;
+		return WERR_NOT_SUPPORTED;
 	}
 
 	/* prepare the response */
@@ -1100,6 +1112,10 @@ static NTSTATUS netr_creds_server_step_check(struct pipes_struct *p,
 	bool schannel_global_required = (lp_server_schannel() == true) ? true:false;
 	struct loadparm_context *lp_ctx;
 
+	if (creds_out != NULL) {
+		*creds_out = NULL;
+	}
+
 	if (schannel_global_required) {
 		status = schannel_check_required(&p->auth,
 						 computer_name,
@@ -1257,7 +1273,7 @@ NTSTATUS _netr_ServerPasswordSet(struct pipes_struct *p,
 {
 	NTSTATUS status = NT_STATUS_OK;
 	int i;
-	struct netlogon_creds_CredentialState *creds;
+	struct netlogon_creds_CredentialState *creds = NULL;
 
 	DEBUG(5,("_netr_ServerPasswordSet: %d\n", __LINE__));
 
@@ -1270,9 +1286,14 @@ NTSTATUS _netr_ServerPasswordSet(struct pipes_struct *p,
 	unbecome_root();
 
 	if (!NT_STATUS_IS_OK(status)) {
+		const char *computer_name = "<unknown>";
+
+		if (creds != NULL && creds->computer_name != NULL) {
+			computer_name = creds->computer_name;
+		}
 		DEBUG(2,("_netr_ServerPasswordSet: netlogon_creds_server_step failed. Rejecting auth "
 			"request from client %s machine account %s\n",
-			r->in.computer_name, creds->computer_name));
+			r->in.computer_name, computer_name));
 		TALLOC_FREE(creds);
 		return status;
 	}
@@ -2182,11 +2203,11 @@ NTSTATUS _netr_LogonGetDomainInfo(struct pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _netr_ServerPasswordGet(struct pipes_struct *p,
-			       struct netr_ServerPasswordGet *r)
+NTSTATUS _netr_ServerPasswordGet(struct pipes_struct *p,
+				 struct netr_ServerPasswordGet *r)
 {
 	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
-	return WERR_NOT_SUPPORTED;
+	return NT_STATUS_NOT_SUPPORTED;
 }
 
 /****************************************************************

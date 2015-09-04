@@ -94,6 +94,9 @@ def ADD_INIT_FUNCTION(bld, subsystem, target, init_function):
 Build.BuildContext.ADD_INIT_FUNCTION = ADD_INIT_FUNCTION
 
 
+def generate_empty_file(task):
+    task.outputs[0].write('')
+    return 0
 
 #################################################################
 def SAMBA_LIBRARY(bld, libname, source,
@@ -125,6 +128,7 @@ def SAMBA_LIBRARY(bld, libname, source,
                   pyext=False,
                   target_type='LIBRARY',
                   bundled_extension=False,
+                  bundled_name=None,
                   link_name=None,
                   abi_directory=None,
                   abi_match=None,
@@ -136,6 +140,9 @@ def SAMBA_LIBRARY(bld, libname, source,
                   allow_warnings=False,
                   enabled=True):
     '''define a Samba library'''
+
+    if pyembed and bld.env['IS_EXTRA_PYTHON']:
+        public_headers = pc_files = None
 
     if LIB_MUST_BE_PRIVATE(bld, libname):
         private_library=True
@@ -149,9 +156,15 @@ def SAMBA_LIBRARY(bld, libname, source,
         source = bld.SUBDIR(subdir, source)
 
     # remember empty libraries, so we can strip the dependencies
-    if ((source == '') or (source == [])) and deps == '' and public_deps == '':
-        SET_TARGET_TYPE(bld, libname, 'EMPTY')
-        return
+    if ((source == '') or (source == [])):
+        if deps == '' and public_deps == '':
+            SET_TARGET_TYPE(bld, libname, 'EMPTY')
+            return
+        empty_c = libname + '.empty.c'
+        bld.SAMBA_GENERATOR('%s_empty_c' % libname,
+                            rule=generate_empty_file,
+                            target=empty_c)
+        source=empty_c
 
     if BUILTIN_LIBRARY(bld, libname):
         obj_target = libname
@@ -205,14 +218,16 @@ def SAMBA_LIBRARY(bld, libname, source,
         if vnum is None and soname is None:
             raise Utils.WafError("public library '%s' must have a vnum" %
                     libname)
-        if pc_files is None:
+        if pc_files is None and not bld.env['IS_EXTRA_PYTHON']:
             raise Utils.WafError("public library '%s' must have pkg-config file" %
                        libname)
-        if public_headers is None:
+        if public_headers is None and not bld.env['IS_EXTRA_PYTHON']:
             raise Utils.WafError("public library '%s' must have header files" %
                        libname)
 
-    if target_type == 'PYTHON' or realname or not private_library:
+    if bundled_name is not None:
+        pass
+    elif target_type == 'PYTHON' or realname or not private_library:
         if keep_underscore:
             bundled_name = libname
         else:
@@ -225,6 +240,8 @@ def SAMBA_LIBRARY(bld, libname, source,
                                     bundled_extension, private_library)
 
     ldflags = TO_LIST(ldflags)
+    if bld.env['ENABLE_RELRO'] is True:
+        ldflags.extend(TO_LIST('-Wl,-z,relro,-z,now'))
 
     features = 'cc cshlib symlink_lib install_lib'
     if pyext:
@@ -431,13 +448,15 @@ def SAMBA_MODULE(bld, modname, source,
                  ):
     '''define a Samba module.'''
 
+    bld.ASSERT(subsystem, "You must specify a subsystem for SAMBA_MODULE(%s)" % modname)
+
     source = bld.EXPAND_VARIABLES(source, vars=vars)
     if subdir:
         source = bld.SUBDIR(subdir, source)
 
     if internal_module or BUILTIN_LIBRARY(bld, modname):
         # Do not create modules for disabled subsystems
-        if subsystem and GET_TARGET_TYPE(bld, subsystem) == 'DISABLED':
+        if GET_TARGET_TYPE(bld, subsystem) == 'DISABLED':
             return
         bld.SAMBA_SUBSYSTEM(modname, source,
                     deps=deps,
@@ -458,18 +477,17 @@ def SAMBA_MODULE(bld, modname, source,
         return
 
     # Do not create modules for disabled subsystems
-    if subsystem and GET_TARGET_TYPE(bld, subsystem) == 'DISABLED':
+    if GET_TARGET_TYPE(bld, subsystem) == 'DISABLED':
         return
 
-    obj_target = modname + '.objlist'
-
     realname = modname
-    if subsystem is not None:
-        deps += ' ' + subsystem
-        while realname.startswith("lib"+subsystem+"_"):
-            realname = realname[len("lib"+subsystem+"_"):]
-        while realname.startswith(subsystem+"_"):
-            realname = realname[len(subsystem+"_"):]
+    deps += ' ' + subsystem
+    while realname.startswith("lib"+subsystem+"_"):
+        realname = realname[len("lib"+subsystem+"_"):]
+    while realname.startswith(subsystem+"_"):
+        realname = realname[len(subsystem+"_"):]
+
+    build_name = "%s_module_%s" % (subsystem, realname)
 
     realname = bld.make_libname(realname)
     while realname.startswith("lib"):
@@ -490,6 +508,7 @@ def SAMBA_MODULE(bld, modname, source,
                       local_include=local_include,
                       global_include=global_include,
                       vars=vars,
+                      bundled_name=build_name,
                       link_name=build_link_name,
                       install_path="${MODULESDIR}/%s" % subsystem,
                       pyembed=pyembed,
@@ -537,9 +556,15 @@ def SAMBA_SUBSYSTEM(bld, modname, source,
         return
 
     # remember empty subsystems, so we can strip the dependencies
-    if ((source == '') or (source == [])) and deps == '' and public_deps == '':
-        SET_TARGET_TYPE(bld, modname, 'EMPTY')
-        return
+    if ((source == '') or (source == [])):
+        if deps == '' and public_deps == '':
+            SET_TARGET_TYPE(bld, modname, 'EMPTY')
+            return
+        empty_c = modname + '.empty.c'
+        bld.SAMBA_GENERATOR('%s_empty_c' % modname,
+                            rule=generate_empty_file,
+                            target=empty_c)
+        source=empty_c
 
     if not SET_TARGET_TYPE(bld, modname, 'SUBSYSTEM'):
         return
@@ -616,7 +641,7 @@ def SAMBA_GENERATOR(bld, name, rule, source='', target='',
         source=bld.EXPAND_VARIABLES(source, vars=vars),
         target=target,
         shell=isinstance(rule, str),
-        on_results=True,
+        update_outputs=True,
         before='cc',
         ext_out='.c',
         samba_type='GENERATOR',
@@ -864,7 +889,8 @@ def SAMBAMANPAGES(bld, manpages, extra_source=None):
     '''build and install manual pages'''
     bld.env.SAMBA_EXPAND_XSL = bld.srcnode.abspath() + '/docs-xml/xslt/expand-sambadoc.xsl'
     bld.env.SAMBA_MAN_XSL = bld.srcnode.abspath() + '/docs-xml/xslt/man.xsl'
-    bld.env.SAMBA_CATALOGS = 'file:///etc/xml/catalog file:///usr/local/share/xml/catalog file://' + bld.srcnode.abspath() + '/bin/default/docs-xml/build/catalog.xml'
+    bld.env.SAMBA_CATALOG = bld.srcnode.abspath() + '/bin/default/docs-xml/build/catalog.xml'
+    bld.env.SAMBA_CATALOGS = 'file:///etc/xml/catalog file:///usr/local/share/xml/catalog file://' + bld.env.SAMBA_CATALOG
 
     for m in manpages.split():
         source = m + '.xml'
@@ -874,6 +900,7 @@ def SAMBAMANPAGES(bld, manpages, extra_source=None):
                             source=source,
                             target=m,
                             group='final',
+                            dep_vars=['SAMBA_MAN_XSL', 'SAMBA_EXPAND_XSL', 'SAMBA_CATALOG'],
                             rule='''XML_CATALOG_FILES="${SAMBA_CATALOGS}"
                                     export XML_CATALOG_FILES
                                     ${XSLTPROC} --xinclude --stringparam noreference 0 -o ${TGT}.xml --nonet ${SAMBA_EXPAND_XSL} ${SRC[0].abspath(env)}

@@ -158,7 +158,7 @@ static const struct
 /****************************************************************************
 return a SMB error name from a class and code
 ****************************************************************************/
-const char *smb_dos_err_name(uint8 e_class, uint16 num)
+const char *smb_dos_err_name(uint8_t e_class, uint16_t num)
 {
 	char *result;
 	int i,j;
@@ -187,7 +187,7 @@ const char *smb_dos_err_name(uint8 e_class, uint16 num)
 
 const char *get_dos_error_msg(WERROR result)
 {
-	uint16 errnum;
+	uint16_t errnum;
 
 	errnum = W_ERROR_V(result);
 
@@ -197,7 +197,7 @@ const char *get_dos_error_msg(WERROR result)
 /****************************************************************************
 return a SMB error class name as a string.
 ****************************************************************************/
-const char *smb_dos_err_class(uint8 e_class)
+const char *smb_dos_err_class(uint8_t e_class)
 {
 	char *result;
 	int i;

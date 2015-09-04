@@ -149,7 +149,7 @@ static bool preopen_helper_open_one(int sock_fd, char **pnamebuf,
 				    size_t to_read, void *filebuf)
 {
 	char *namebuf = *pnamebuf;
-	ssize_t nwritten, nread;
+	ssize_t nread;
 	char c = 0;
 	int fd;
 
@@ -185,7 +185,7 @@ static bool preopen_helper_open_one(int sock_fd, char **pnamebuf,
 	close(fd);
 
  done:
-	nwritten = write(sock_fd, &c, 1);
+	(void)write(sock_fd, &c, 1);
 	return true;
 }
 
@@ -341,7 +341,8 @@ static struct preopen_state *preopen_state_get(vfs_handle_struct *handle)
 static bool preopen_parse_fname(const char *fname, unsigned long *pnum,
 				size_t *pstart_idx, int *pnum_digits)
 {
-	const char *p, *q;
+	const char *p;
+	char *q = NULL;
 	unsigned long num;
 
 	p = strrchr_m(fname, '/');

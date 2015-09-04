@@ -23,21 +23,21 @@ import samba
 import samba.auth
 from samba import param
 from samba.samdb import SamDB
+from samba import credentials
 import subprocess
+import sys
 import tempfile
+import unittest
 
-samba.ensure_external_module("mimeparse", "mimeparse")
-samba.ensure_external_module("extras", "extras")
-samba.ensure_external_module("testtools", "testtools")
+try:
+    from unittest import SkipTest
+except ImportError:
+    class SkipTest(Exception):
+        """Test skipped."""
 
-# Other modules import these two classes from here, for convenience:
-from testtools.testcase import (
-    TestCase as TesttoolsTestCase,
-    TestSkipped,
-    )
+HEXDUMP_FILTER=''.join([(len(repr(chr(x)))==3) and chr(x) or '.' for x in range(256)])
 
-
-class TestCase(TesttoolsTestCase):
+class TestCase(unittest.TestCase):
     """A Samba test case."""
 
     def setUp(self):
@@ -55,8 +55,119 @@ class TestCase(TesttoolsTestCase):
     def get_credentials(self):
         return cmdline_credentials
 
+    def hexdump(self, src):
+        N = 0
+        result = ''
+        while src:
+            ll = src[:8]
+            lr = src[8:16]
+            src = src[16:]
+            hl = ' '.join(["%02X" % ord(x) for x in ll])
+            hr = ' '.join(["%02X" % ord(x) for x in lr])
+            ll = ll.translate(HEXDUMP_FILTER)
+            lr = lr.translate(HEXDUMP_FILTER)
+            result += "[%04X] %-*s  %-*s  %s %s\n" % (N, 8*3, hl, 8*3, hr, ll, lr)
+            N += 16
+        return result
 
-class LdbTestCase(TesttoolsTestCase):
+    # These functions didn't exist before Python2.7:
+    if sys.version_info < (2, 7):
+        import warnings
+
+        def skipTest(self, reason):
+            raise SkipTest(reason)
+
+        def assertIn(self, member, container, msg=None):
+            self.assertTrue(member in container, msg)
+
+        def assertIs(self, a, b, msg=None):
+            self.assertTrue(a is b, msg)
+
+        def assertIsNot(self, a, b, msg=None):
+            self.assertTrue(a is not b, msg)
+
+        def assertIsNotNone(self, a, msg=None):
+            self.assertTrue(a is not None)
+
+        def assertIsInstance(self, a, b, msg=None):
+            self.assertTrue(isinstance(a, b), msg)
+
+        def assertIsNone(self, a, msg=None):
+            self.assertTrue(a is None, msg)
+
+        def assertGreater(self, a, b, msg=None):
+            self.assertTrue(a > b, msg)
+
+        def assertGreaterEqual(self, a, b, msg=None):
+            self.assertTrue(a >= b, msg)
+
+        def assertLess(self, a, b, msg=None):
+            self.assertTrue(a < b, msg)
+
+        def assertLessEqual(self, a, b, msg=None):
+            self.assertTrue(a <= b, msg)
+
+        def addCleanup(self, fn, *args, **kwargs):
+            self._cleanups = getattr(self, "_cleanups", []) + [
+                (fn, args, kwargs)]
+
+        def _addSkip(self, result, reason):
+            addSkip = getattr(result, 'addSkip', None)
+            if addSkip is not None:
+                addSkip(self, reason)
+            else:
+                warnings.warn("TestResult has no addSkip method, skips not reported",
+                              RuntimeWarning, 2)
+                result.addSuccess(self)
+
+        def run(self, result=None):
+            if result is None: result = self.defaultTestResult()
+            result.startTest(self)
+            testMethod = getattr(self, self._testMethodName)
+            try:
+                try:
+                    self.setUp()
+                except SkipTest, e:
+                    self._addSkip(result, str(e))
+                    return
+                except KeyboardInterrupt:
+                    raise
+                except:
+                    result.addError(self, self._exc_info())
+                    return
+
+                ok = False
+                try:
+                    testMethod()
+                    ok = True
+                except SkipTest, e:
+                    self._addSkip(result, str(e))
+                    return
+                except self.failureException:
+                    result.addFailure(self, self._exc_info())
+                except KeyboardInterrupt:
+                    raise
+                except:
+                    result.addError(self, self._exc_info())
+
+                try:
+                    self.tearDown()
+                except SkipTest, e:
+                    self._addSkip(result, str(e))
+                except KeyboardInterrupt:
+                    raise
+                except:
+                    result.addError(self, self._exc_info())
+                    ok = False
+
+                for (fn, args, kwargs) in reversed(getattr(self, "_cleanups", [])):
+                    fn(*args, **kwargs)
+                if ok: result.addSuccess(self)
+            finally:
+                result.stopTest(self)
+
+
+class LdbTestCase(TestCase):
     """Trivial test case for running tests against a LDB."""
 
     def setUp(self):
@@ -185,7 +296,6 @@ def connect_samdb(samdb_url, lp=None, session_info=None, credentials=None,
     to make proper URL for ldb.connect() while using default
     parameters for connection based on test environment
     """
-    samdb_url = samdb_url.lower()
     if not "://" in samdb_url:
         if not ldap_only and os.path.isfile(samdb_url):
             samdb_url = "tdb://%s" % samdb_url
@@ -235,8 +345,28 @@ def connect_samdb_ex(samdb_url, lp=None, session_info=None, credentials=None,
     return (sam_db, res[0])
 
 
+def connect_samdb_env(env_url, env_username, env_password, lp=None):
+    """Connect to SamDB by getting URL and Credentials from environment
+
+    :param env_url: Environment variable name to get lsb url from
+    :param env_username: Username environment variable
+    :param env_password: Password environment variable
+    :return: sam_db_connection
+    """
+    samdb_url = env_get_var_value(env_url)
+    creds = credentials.Credentials()
+    if lp is None:
+        # guess Credentials parameters here. Otherwise workstation
+        # and domain fields are NULL and gencache code segfalts
+        lp = param.LoadParm()
+        creds.guess(lp)
+    creds.set_username(env_get_var_value(env_username))
+    creds.set_password(env_get_var_value(env_password))
+    return connect_samdb(samdb_url, credentials=creds, lp=lp)
+
+
 def delete_force(samdb, dn):
     try:
         samdb.delete(dn)
-    except ldb.LdbError, (num, _):
-        assert(num == ldb.ERR_NO_SUCH_OBJECT)
+    except ldb.LdbError, (num, errstr):
+        assert num == ldb.ERR_NO_SUCH_OBJECT, "ldb.delete() failed: %s" % errstr

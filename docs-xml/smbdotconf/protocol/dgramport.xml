@@ -1,11 +1,11 @@
 <samba:parameter name="dgram port"
                  context="G"
-				 type="integer"
-                 advanced="1" developer="1"
+                 type="integer"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>Specifies which ports the server should listen on for NetBIOS datagram traffic.</para>
 </description>
-
+<para>This parameter is deprecated, as it is not honoured in the
+majority of the code base.</para>
 <value type="default">138</value>
 </samba:parameter>

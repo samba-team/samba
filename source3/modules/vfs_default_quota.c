@@ -120,7 +120,7 @@ static int default_quota_get_quota(vfs_handle_struct *handle, enum SMB_QUOTA_TYP
 		case SMB_USER_FS_QUOTA_TYPE:
 			{
 				unid_t qid;
-				uint32 qflags = dq->qflags;
+				uint32_t qflags = dq->qflags;
 				qid.uid = DEFAULT_QUOTA_UID(handle);
 				SMB_VFS_NEXT_GET_QUOTA(handle, SMB_USER_QUOTA_TYPE, qid, dq);
 				dq->qflags = qflags;
@@ -130,7 +130,7 @@ static int default_quota_get_quota(vfs_handle_struct *handle, enum SMB_QUOTA_TYP
 		case SMB_GROUP_FS_QUOTA_TYPE:
 			{
 				unid_t qid;
-				uint32 qflags = dq->qflags;
+				uint32_t qflags = dq->qflags;
 				qid.gid = DEFAULT_QUOTA_GID(handle);
 				SMB_VFS_NEXT_GET_QUOTA(handle, SMB_GROUP_QUOTA_TYPE, qid, dq);
 				dq->qflags = qflags;

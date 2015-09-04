@@ -1,7 +1,8 @@
 <samba:parameter name="smbd profiling level"
-	         context="G"
-		 type="enum"
-		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+                 context="G"
+                 type="enum"
+                 enumlist="enum_smbd_profiling_level"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>
 	  This parameter allows the administrator to enable profiling support.

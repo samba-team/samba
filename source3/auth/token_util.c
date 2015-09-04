@@ -47,7 +47,7 @@ bool nt_token_check_sid ( const struct dom_sid *sid, const struct security_token
 	return security_token_has_sid(token, sid);
 }
 
-bool nt_token_check_domain_rid( struct security_token *token, uint32 rid )
+bool nt_token_check_domain_rid( struct security_token *token, uint32_t rid )
 {
 	struct dom_sid domain_sid;
 
@@ -129,7 +129,7 @@ struct security_token *get_root_nt_token( void )
 NTSTATUS add_aliases(const struct dom_sid *domain_sid,
 		     struct security_token *token)
 {
-	uint32 *aliases;
+	uint32_t *aliases;
 	size_t i, num_aliases;
 	NTSTATUS status;
 	TALLOC_CTX *tmp_ctx;
@@ -672,7 +672,6 @@ static NTSTATUS create_token_from_sid(TALLOC_CTX *mem_ctx,
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 	gid_t *gids;
 	struct dom_sid *group_sids;
-	struct dom_sid unix_group_sid;
 	uint32_t num_group_sids;
 	uint32_t num_gids;
 	uint32_t i;
@@ -716,8 +715,6 @@ static NTSTATUS create_token_from_sid(TALLOC_CTX *mem_ctx,
 
 		/* see the smb_panic() in pdb_default_enum_group_memberships */
 		SMB_ASSERT(num_group_sids > 0);
-
-		*gid = gids[0];
 
 		/* Ensure we're returning the found_username on the right context. */
 		*found_username = talloc_strdup(mem_ctx,
@@ -796,15 +793,11 @@ static NTSTATUS create_token_from_sid(TALLOC_CTX *mem_ctx,
 		}
 		num_group_sids = getgroups_num_group_sids;
 
-		if (num_group_sids) {
-			group_sids = talloc_array(tmp_ctx, struct dom_sid, num_group_sids);
-			if (group_sids == NULL) {
-				DEBUG(1, ("talloc_array failed\n"));
-				result = NT_STATUS_NO_MEMORY;
-				goto done;
-			}
-		} else {
-			group_sids = NULL;
+		group_sids = talloc_array(tmp_ctx, struct dom_sid, num_group_sids);
+		if (group_sids == NULL) {
+			DEBUG(1, ("talloc_array failed\n"));
+			result = NT_STATUS_NO_MEMORY;
+			goto done;
 		}
 
 		for (i=0; i<num_group_sids; i++) {
@@ -813,8 +806,6 @@ static NTSTATUS create_token_from_sid(TALLOC_CTX *mem_ctx,
 
 		/* In getgroups_unix_user we always set the primary gid */
 		SMB_ASSERT(num_group_sids > 0);
-
-		*gid = gids[0];
 
 		/* Ensure we're returning the found_username on the right context. */
 		*found_username = talloc_strdup(mem_ctx, pass->pw_name);
@@ -847,20 +838,26 @@ static NTSTATUS create_token_from_sid(TALLOC_CTX *mem_ctx,
 			goto done;
 		}
 
+		gids = talloc_array(tmp_ctx, gid_t, num_group_sids);
+		if (gids == NULL) {
+			result = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
+
 		sid_copy(&group_sids[0], user_sid);
 		sid_split_rid(&group_sids[0], NULL);
 		sid_append_rid(&group_sids[0], DOMAIN_RID_USERS);
 
-		if (!sid_to_gid(&group_sids[0], gid)) {
+		if (!sid_to_gid(&group_sids[0], &gids[0])) {
 			DEBUG(1, ("sid_to_gid(%s) failed\n",
 				  sid_string_dbg(&group_sids[0])));
 			goto done;
 		}
 
-		gids = gid;
-
 		*found_username = NULL;
 	}
+
+	*gid = gids[0];
 
 	/* Add the "Unix Group" SID for each gid to catch mapped groups
 	   and their Unix equivalent.  This is to solve the backwards
@@ -872,6 +869,7 @@ static NTSTATUS create_token_from_sid(TALLOC_CTX *mem_ctx,
 	num_gids = num_group_sids;
 	range_ok = lp_idmap_default_range(&low, &high);
 	for ( i=0; i<num_gids; i++ ) {
+		struct dom_sid unix_group_sid;
 
 		/* don't pickup anything managed by Winbind */
 		if (range_ok && (gids[i] >= low) && (gids[i] <= high)) {

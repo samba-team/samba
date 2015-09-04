@@ -65,8 +65,12 @@ debug ()
 	# here document.
 	if [ -n "$1" ] ; then
 	    echo "DEBUG: $*"
-	elif ! tty -s ; then
+	else
 	    sed -e 's@^@DEBUG: @'
+	fi
+    else
+	if [ -z "$1" ] ; then
+	    cat >/dev/null
 	fi
     fi
 }
@@ -171,6 +175,8 @@ _service ()
 
   if [ -x /sbin/service ]; then
       $_nice /sbin/service "$_service_name" "$_op"
+  elif [ -x /usr/sbin/service ]; then
+      $_nice /usr/sbin/service "$_service_name" "$_op"
   elif [ -x $CTDB_ETCDIR/init.d/$_service_name ]; then
       $_nice $CTDB_ETCDIR/init.d/$_service_name "$_op"
   elif [ -x $CTDB_ETCDIR/rc.d/init.d/$_service_name ]; then
@@ -193,12 +199,33 @@ nice_service()
 }
 
 ######################################################
+# Cached retrieval of PNN from local node.  This never changes so why
+# open a client connection to the server each time this is needed?
+# This sets $pnn - this avoid an unnecessary subprocess.
+ctdb_get_pnn ()
+{
+    _pnn_file="$CTDB_VARDIR/state/my-pnn"
+    if [ ! -f "$_pnn_file" ] ; then
+	ctdb pnn | sed -e 's@.*:@@' >"$_pnn_file"
+    fi
+
+    read pnn <"$_pnn_file"
+}
+
+######################################################
 # wrapper around /proc/ settings to allow them to be hooked
 # for testing
 # 1st arg is relative path under /proc/, 2nd arg is value to set
 set_proc ()
 {
     echo "$2" >"/proc/$1"
+}
+
+set_proc_maybe ()
+{
+    if [ -w "/proc/$1" ] ; then
+	set_proc "$1" "$2"
+    fi
 }
 
 ######################################################
@@ -229,225 +256,6 @@ program_stack_traces ()
 	    _count=$(($_count + 1))
 	fi
     done
-}
-
-######################################################
-# Check that an RPC service is healthy -
-# this includes allowing a certain number of failures
-# before marking the NFS service unhealthy.
-#
-# usage: nfs_check_rpc_service SERVICE_NAME [ triple ...]
-#
-# each triple is a set of 3 arguments: an operator, a 
-# fail count limit and an action string.
-#
-# For example:
-#
-# 	nfs_check_rpc_service "lockd" \
-#	    -ge 15 "verbose restart unhealthy" \
-#	    -eq 10 "restart:bs"
-#
-# says that if lockd is down for 15 iterations then do
-# a verbose restart of lockd and mark the node unhealthy.
-# Before this, after 10 iterations of failure, the
-# service is restarted silently in the background.
-# Order is important: the number of failures need to be
-# specified in reverse order because processing stops
-# after the first condition that is true.
-######################################################
-nfs_check_rpc_service ()
-{
-    _prog_name="$1" ; shift
-
-    if _nfs_check_rpc_common "$_prog_name" ; then
-	return
-    fi
-
-    while [ -n "$3" ] ; do
-	if _nfs_check_rpc_action "$1" "$2" "$3" ; then
-	    break
-	fi
-	shift 3
-    done
-}
-
-# The new way of doing things...
-nfs_check_rpc_services ()
-{
-    # Files must end with .check - avoids editor backups, RPM fu, ...
-    for _f in "${CTDB_BASE}/nfs-rpc-checks.d/"[0-9][0-9].*.check ; do
-	_t="${_f%.check}"
-	_prog_name="${_t##*/[0-9][0-9].}"
-
-	if _nfs_check_rpc_common "$_prog_name" ; then
-	    # This RPC service is up, check next service...
-	    continue
-	fi
-
-	# Check each line in the file in turn until one of the limit
-	# checks is hit...
-	while read _cmp _lim _rest ; do
-	    # Skip comments
-	    case "$_cmp" in
-		\#*) continue ;;
-	    esac
-
-	    if _nfs_check_rpc_action "$_cmp" "$_lim" "$_rest" ; then
-		# Limit was hit on this line, no further checking...
-		break
-	    fi
-	done <"$_f"
-    done
-}
-
-_nfs_check_rpc_common ()
-{
-    _prog_name="$1"
-
-    # Some platforms don't have separate programs for all services.
-    case "$_prog_name" in
-	statd)
-	    which "rpc.${_prog_name}" >/dev/null 2>&1 || return 0
-    esac
-
-    case "$_prog_name" in
-	nfsd)
-	    _rpc_prog=nfs
-	    _version=3
-	    ;;
-	mountd)
-	    _rpc_prog=mountd
-	    _version=1
-	    ;;
-	rquotad)
-	    _rpc_prog=rquotad
-	    _version=1
-	    ;;
-	lockd)
-	    _rpc_prog=nlockmgr
-	    _version=4
-	    ;;
-	statd)
-	    _rpc_prog=status
-	    _version=1
-	    ;;
-	*)
-	    echo "Internal error: unknown RPC program \"$_prog_name\"."
-	    exit 1
-    esac
-
-    _service_name="nfs_${_prog_name}"
-
-    if ctdb_check_rpc "$_rpc_prog" $_version >/dev/null ; then
-	ctdb_counter_init "$_service_name"
-	return 0
-    fi
-
-    ctdb_counter_incr "$_service_name"
-
-    return 1
-}
-
-_nfs_check_rpc_action ()
-{
-    _cmp="$1"
-    _limit="$2"
-    _actions="$3"
-
-    if ctdb_check_counter "quiet" "$_cmp" "$_limit" "$_service_name" ; then
-	return 1
-    fi
-
-    for _action in $_actions ; do
-	case "$_action" in
-	    verbose)
-		echo "$ctdb_check_rpc_out"
-		;;
-	    restart)
-		_nfs_restart_rpc_service "$_prog_name"
-		;;
-	    restart:b)
-		_nfs_restart_rpc_service "$_prog_name" true
-		;;
-	    unhealthy)
-		exit 1
-		;;
-	    *)
-		echo "Internal error: unknown action \"$_action\"."
-		exit 1
-	esac
-    done
-
-    return 0
-}
-
-_nfs_restart_rpc_service ()
-{
-    _prog_name="$1"
-    _background="${2:-false}"
-
-    if $_background ; then
-	_maybe_background="background_with_logging"
-    else
-	_maybe_background=""
-    fi
-
-    _p="rpc.${_prog_name}"
-
-    case "$_prog_name" in
-	nfsd)
-	    echo "Trying to restart NFS service"
-	    $_maybe_background startstop_nfs restart
-	    ;;
-	mountd)
-	    echo "Trying to restart $_prog_name [${_p}]"
-	    killall -q -9 "$_p"
-	    nfs_dump_some_threads "$_p"
-	    $_maybe_background $_p ${MOUNTD_PORT:+-p} $MOUNTD_PORT
-	    ;;
-	rquotad)
-	    echo "Trying to restart $_prog_name [${_p}]"
-	    killall -q -9 "$_p"
-	    nfs_dump_some_threads "$_p"
-	    $_maybe_background $_p ${RQUOTAD_PORT:+-p} $RQUOTAD_PORT
-	    ;;
-	lockd)
-	    echo "Trying to restart lock manager service"
-	    $_maybe_background startstop_nfslock restart
-	    ;;
-	statd)
-	    echo "Trying to restart $_prog_name [${_p}]"
-	    killall -q -9 "$_p"
-	    nfs_dump_some_threads "$_p"
-	    $_maybe_background $_p \
-		${STATD_HOSTNAME:+-n} $STATD_HOSTNAME \
-		${STATD_PORT:+-p} $STATD_PORT \
-		${STATD_OUTGOING_PORT:+-o} $STATD_OUTGOING_PORT
-	    ;;
-	*)
-	    echo "Internal error: unknown RPC program \"$_prog_name\"."
-	    exit 1
-    esac
-}
-
-######################################################
-# check that a rpc server is registered with portmap
-# and responding to requests
-# usage: ctdb_check_rpc SERVICE_NAME VERSION
-######################################################
-ctdb_check_rpc ()
-{
-    progname="$1"
-    version="$2"
-
-    _localhost="${CTDB_RPCINFO_LOCALHOST:-127.0.0.1}"
-
-    if ! ctdb_check_rpc_out=$(rpcinfo -u $_localhost $progname $version 2>&1) ; then
-	ctdb_check_rpc_out="ERROR: $progname failed RPC check:
-$ctdb_check_rpc_out"
-	echo "$ctdb_check_rpc_out"
-	return 1
-    fi
 }
 
 ######################################################
@@ -689,165 +497,6 @@ get_tcp_connections_for_ip ()
 }
 
 ########################################################
-# start/stop the Ganesha nfs service
-########################################################
-startstop_ganesha()
-{
-    _service_name="nfs-ganesha-$CTDB_CLUSTER_FILESYSTEM_TYPE"
-    case "$1" in
-	start)
-	    service "$_service_name" start
-	    ;;
-	stop)
-	    service "$_service_name" stop
-	    ;;
-	restart)
-	    service "$_service_name" stop
-	    nfs_dump_some_threads "rpc.statd"
-	    service "$_service_name" start
-	    ;;
-    esac
-}
-
-########################################################
-# start/stop the nfs service on different platforms
-########################################################
-startstop_nfs() {
-	PLATFORM="unknown"
-	[ -x $CTDB_ETCDIR/init.d/nfsserver ] && {
-		PLATFORM="sles"
-	}
-	[ -x $CTDB_ETCDIR/init.d/nfslock -o \
-	    -r /usr/lib/systemd/system/nfs-lock.service ] && {
-		PLATFORM="rhel"
-	}
-
-	case $PLATFORM in
-	sles)
-		case $1 in
-		start)
-			service nfsserver start
-			;;
-		stop)
-			service nfsserver stop > /dev/null 2>&1
-			;;
-		restart)
-			set_proc "fs/nfsd/threads" 0
-			service nfsserver stop > /dev/null 2>&1
-			pkill -9 nfsd
-			nfs_dump_some_threads
-			service nfsserver start
-			;;
-		esac
-		;;
-	rhel)
-		case $1 in
-		start)
-			service nfslock start
-			service nfs start
-			;;
-		stop)
-			service nfs stop
-			service nfslock stop
-			;;
-		restart)
-			set_proc "fs/nfsd/threads" 0
-			service nfs stop > /dev/null 2>&1
-			service nfslock stop > /dev/null 2>&1
-			pkill -9 nfsd
-			nfs_dump_some_threads
-			service nfslock start
-			service nfs start
-			;;
-		esac
-		;;
-	*)
-		echo "Unknown platform. NFS is not supported with ctdb"
-		exit 1
-		;;
-	esac
-}
-
-# Dump up to the configured number of nfsd thread backtraces.
-nfs_dump_some_threads ()
-{
-    _prog="${1:-nfsd}"
-
-    _num="${CTDB_NFS_DUMP_STUCK_THREADS:-5}"
-    [ $_num -gt 0 ] || return 0
-
-    program_stack_traces "$_prog" $_num
-}
-
-########################################################
-# start/stop the nfs lockmanager service on different platforms
-########################################################
-startstop_nfslock() {
-	PLATFORM="unknown"
-	[ -x $CTDB_ETCDIR/init.d/nfsserver ] && {
-		PLATFORM="sles"
-	}
-	[ -x $CTDB_ETCDIR/init.d/nfslock -o \
-	    -r /usr/lib/systemd/system/nfs-lock.service ] && {
-		PLATFORM="rhel"
-	}
-
-	case $PLATFORM in
-	sles)
-		# for sles there is no service for lockmanager
-		# so we instead just shutdown/restart nfs
-		case $1 in
-		start)
-			service nfsserver start
-			;;
-		stop)
-			service nfsserver stop > /dev/null 2>&1
-			;;
-		restart)
-			service nfsserver stop > /dev/null 2>&1
-			service nfsserver start
-			;;
-		esac
-		;;
-	rhel)
-		case $1 in
-		start)
-			service nfslock start
-			;;
-		stop)
-			service nfslock stop > /dev/null 2>&1
-			;;
-		restart)
-			service nfslock stop > /dev/null 2>&1
-			service nfslock start
-			;;
-		esac
-		;;
-	*)
-		echo "Unknown platform. NFS locking is not supported with ctdb"
-		exit 1
-		;;
-	esac
-}
-
-# Periodically update the statd database
-nfs_statd_update ()
-{
-    _update_period="$1"
-
-    _statd_update_trigger="$service_state_dir/update-trigger"
-    [ -f "$_statd_update_trigger" ] || touch "$_statd_update_trigger"
-
-    _last_update=$(stat --printf="%Y" "$_statd_update_trigger")
-    _current_time=$(date +"%s")
-    if [ $(( $_current_time - $_last_update)) -ge $_update_period ] ; then
-	touch "$_statd_update_trigger"
-	$CTDB_BASE/statd-callout updatelocal &
-	$CTDB_BASE/statd-callout updateremote &
-    fi
-}
-
-########################################################
 
 add_ip_to_iface ()
 {
@@ -913,7 +562,7 @@ delete_ip_from_iface()
     }
 }
 
-# If the given IP is hosted then print 2 items: maskbits and iface 
+# If the given IP is hosted then print 2 items: maskbits and iface
 ip_maskbits_iface ()
 {
     _addr="$1"
@@ -925,8 +574,10 @@ ip_maskbits_iface ()
 
     ip addr show to "${_addr}/${_bits}" 2>/dev/null | \
 	awk -v family="${_family}" \
-	    'NR == 1 { iface = gensub(":$", "", 1, $2) } \
-             $1 ~ /inet/ { print gensub(".*/", "", 1, $2), iface, family }'
+	    'NR == 1 { iface = $2; sub(":$", "", iface) ; \
+		       sub("@.*", "", iface) } \
+             $1 ~ /inet/ { mask = $2; sub(".*/", "", mask); \
+                           print mask, iface, family }'
 }
 
 drop_ip ()
@@ -951,8 +602,8 @@ drop_all_public_ips ()
 
 flush_route_cache ()
 {
-    set_proc sys/net/ipv4/route/flush 1
-    set_proc sys/net/ipv6/route/flush 1
+    set_proc_maybe sys/net/ipv4/route/flush 1
+    set_proc_maybe sys/net/ipv6/route/flush 1
 }
 
 ########################################################
@@ -973,15 +624,19 @@ ctdb_counter_incr () {
     # unary counting!
     echo -n 1 >> "$_counter_file"
 }
+ctdb_counter_get () {
+    _ctdb_counter_common "$1"
+    # unary counting!
+    stat -c "%s" "$_counter_file" 2>/dev/null || echo 0
+}
 ctdb_check_counter () {
     _msg="${1:-error}"  # "error"  - anything else is silent on fail
     _op="${2:--ge}"  # an integer operator supported by test
     _limit="${3:-${service_fail_limit}}"
     shift 3
-    _ctdb_counter_common "$1"
 
-    # unary counting!
-    _size=$(stat -c "%s" "$_counter_file" 2>/dev/null || echo 0)
+    _size=$(ctdb_counter_get "$1")
+
     _hit=false
     if [ "$_op" != "%" ] ; then
 	if [ $_size $_op $_limit ] ; then
@@ -1285,7 +940,6 @@ is_ctdb_managed_service ()
     ctdb_compat_managed_service "$CTDB_MANAGES_ISCSI"    "iscsi"
     ctdb_compat_managed_service "$CTDB_MANAGES_CLAMD"    "clamd"
     ctdb_compat_managed_service "$CTDB_MANAGES_NFS"      "nfs"
-    ctdb_compat_managed_service "$CTDB_MANAGES_NFS"      "nfs-ganesha-gpfs"
 
     t=" $CTDB_MANAGED_SERVICES "
 
@@ -1390,27 +1044,21 @@ ctdb_standard_event_handler ()
     esac
 }
 
-# iptables doesn't like being re-entered, so flock-wrap it.
-iptables ()
-{
-	flock -w 30 $CTDB_VARDIR/iptables-ctdb.flock /sbin/iptables "$@"
-}
-ip6tables ()
-{
-	flock -w 30 $CTDB_VARDIR/iptables-ctdb.flock /sbin/ip6tables "$@"
-}
 iptables_wrapper ()
 {
     _family="$1" ; shift
     if [ "$_family" = "inet6" ] ; then
-	ip6tables "$@"
+	_iptables_cmd="ip6tables"
     else
-	iptables "$@"
+	_iptables_cmd="iptables"
     fi
+
+    # iptables doesn't like being re-entered, so flock-wrap it.
+    flock -w 30 "${CTDB_VARDIR}/iptables-ctdb.flock" "$_iptables_cmd" "$@"
 }
 
 # AIX (and perhaps others?) doesn't have mktemp
-if ! which mktemp >/dev/null 2>&1 ; then
+if ! type mktemp >/dev/null 2>&1 ; then
     mktemp ()
     {
 	_dir=false
@@ -1446,11 +1094,10 @@ update_tickles ()
 	tickledir="$CTDB_VARDIR/state/tickles"
 	mkdir -p "$tickledir"
 
-	# Who am I?
-	_pnn=$(ctdb pnn) ; _pnn=${_pnn#PNN:}
+	ctdb_get_pnn
 
 	# What public IPs do I hold?
-	_ips=$(ctdb -X ip | awk -F'|' -v pnn=$_pnn '$3 == pnn {print $2}')
+	_ips=$(ctdb -X ip | awk -F'|' -v pnn=$pnn '$3 == pnn {print $2}')
 
 	# IPs as a regexp choice
 	_ipschoice="($(echo $_ips | sed -e 's/ /|/g' -e 's/\./\\\\./g'))"

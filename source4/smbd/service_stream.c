@@ -215,6 +215,7 @@ static void stream_new_connection(struct tevent_context *ev,
 	{
 		TALLOC_CTX *tmp_ctx;
 		const char *title;
+		struct server_id_buf idbuf;
 
 		tmp_ctx = talloc_new(srv_conn);
 
@@ -222,7 +223,7 @@ static void stream_new_connection(struct tevent_context *ev,
 					stream_socket->ops->name, 
 					tsocket_address_string(srv_conn->remote_address, tmp_ctx),
 					tsocket_address_string(srv_conn->local_address, tmp_ctx),
-					server_id_str(tmp_ctx, &server_id));
+					server_id_str_buf(server_id, &idbuf));
 		if (title) {
 			stream_connection_set_title(srv_conn, title);
 		}

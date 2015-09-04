@@ -1,7 +1,7 @@
 #!/bin/sh
 # Verify that samba3dump completes.
 
-. lib/subunit/shell/share/subunit.sh
+. testprogs/blackbox/subunit.sh
 
 subunit_start_test samba3dump
 

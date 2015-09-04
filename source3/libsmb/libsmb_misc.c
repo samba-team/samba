@@ -53,8 +53,8 @@ SMBC_errno(SMBCCTX *context,
 	int ret = cli_errno(c);
 
         if (cli_is_dos_error(c)) {
-                uint8 eclass;
-                uint32 ecode;
+                uint8_t eclass;
+                uint32_t ecode;
 
                 cli_dos_error(c, &eclass, &ecode);
 

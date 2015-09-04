@@ -25,13 +25,11 @@
 #include "asm/types.h"
 #include "linux/netlink.h"
 #include "linux/rtnetlink.h"
-#include "lib/async_req/async_sock.h"
+#include "lib/tsocket/tsocket.h"
 
 struct addrchange_context {
-	int sock;
+	struct tdgram_context *sock;
 };
-
-static int addrchange_context_destructor(struct addrchange_context *c);
 
 NTSTATUS addrchange_context_create(TALLOC_CTX *mem_ctx,
 				   struct addrchange_context **pctx)
@@ -39,19 +37,32 @@ NTSTATUS addrchange_context_create(TALLOC_CTX *mem_ctx,
 	struct addrchange_context *ctx;
 	struct sockaddr_nl addr;
 	NTSTATUS status;
+	int sock = -1;
 	int res;
+	bool ok;
 
 	ctx = talloc(mem_ctx, struct addrchange_context);
 	if (ctx == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	ctx->sock = socket(AF_NETLINK, SOCK_RAW, NETLINK_ROUTE);
-	if (ctx->sock == -1) {
+	sock = socket(AF_NETLINK, SOCK_RAW, NETLINK_ROUTE);
+	if (sock == -1) {
 		status = map_nt_error_from_unix(errno);
 		goto fail;
 	}
-	talloc_set_destructor(ctx, addrchange_context_destructor);
+
+	ok = smb_set_close_on_exec(sock);
+	if (!ok) {
+		status = map_nt_error_from_unix(errno);
+		goto fail;
+	}
+
+	res = set_blocking(sock, false);
+	if (res == -1) {
+		status = map_nt_error_from_unix(errno);
+		goto fail;
+	}
 
 	/*
 	 * We're interested in address changes
@@ -60,7 +71,13 @@ NTSTATUS addrchange_context_create(TALLOC_CTX *mem_ctx,
 	addr.nl_family = AF_NETLINK;
 	addr.nl_groups = RTMGRP_IPV6_IFADDR | RTMGRP_IPV4_IFADDR;
 
-	res = bind(ctx->sock, (struct sockaddr *)(void *)&addr, sizeof(addr));
+	res = bind(sock, (struct sockaddr *)(void *)&addr, sizeof(addr));
+	if (res == -1) {
+		status = map_nt_error_from_unix(errno);
+		goto fail;
+	}
+
+	res = tdgram_bsd_existing_socket(ctx, sock, &ctx->sock);
 	if (res == -1) {
 		status = map_nt_error_from_unix(errno);
 		goto fail;
@@ -69,25 +86,18 @@ NTSTATUS addrchange_context_create(TALLOC_CTX *mem_ctx,
 	*pctx = ctx;
 	return NT_STATUS_OK;
 fail:
+	if (sock != -1) {
+		close(sock);
+	}
 	TALLOC_FREE(ctx);
 	return status;
-}
-
-static int addrchange_context_destructor(struct addrchange_context *c)
-{
-	if (c->sock != -1) {
-		close(c->sock);
-		c->sock = -1;
-	}
-	return 0;
 }
 
 struct addrchange_state {
 	struct tevent_context *ev;
 	struct addrchange_context *ctx;
-	uint8_t buf[8192];
-	struct sockaddr_storage fromaddr;
-	socklen_t fromaddr_len;
+	uint8_t *buf;
+	struct tsocket_address *fromaddr;
 
 	enum addrchange_type type;
 	struct sockaddr_storage addr;
@@ -109,10 +119,7 @@ struct tevent_req *addrchange_send(TALLOC_CTX *mem_ctx,
 	state->ev = ev;
 	state->ctx = ctx;
 
-	state->fromaddr_len = sizeof(state->fromaddr);
-	subreq = recvfrom_send(state, state->ev, state->ctx->sock,
-			       state->buf, sizeof(state->buf), 0,
-			       &state->fromaddr, &state->fromaddr_len);
+	subreq = tdgram_recvfrom_send(state, state->ev, state->ctx->sock);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, state->ev);
 	}
@@ -126,7 +133,11 @@ static void addrchange_done(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct addrchange_state *state = tevent_req_data(
 		req, struct addrchange_state);
-	struct sockaddr_nl *addr;
+	union {
+		struct sockaddr sa;
+		struct sockaddr_nl nl;
+		struct sockaddr_storage ss;
+	} fromaddr;
 	struct nlmsghdr *h;
 	struct ifaddrmsg *ifa;
 	struct rtattr *rta;
@@ -135,23 +146,29 @@ static void addrchange_done(struct tevent_req *subreq)
 	int err;
 	bool found;
 
-	received = recvfrom_recv(subreq, &err);
+	received = tdgram_recvfrom_recv(subreq, &err, state,
+					&state->buf,
+					&state->fromaddr);
 	TALLOC_FREE(subreq);
 	if (received == -1) {
-		DEBUG(10, ("recvfrom returned %s\n", strerror(errno)));
+		DEBUG(10, ("tdgram_recvfrom_recv returned %s\n", strerror(err)));
 		tevent_req_nterror(req, map_nt_error_from_unix(err));
 		return;
 	}
-	if ((state->fromaddr_len != sizeof(struct sockaddr_nl))
-	    || (state->fromaddr.ss_family != AF_NETLINK)) {
+	len = tsocket_address_bsd_sockaddr(state->fromaddr,
+					   &fromaddr.sa,
+					   sizeof(fromaddr));
+
+	if ((len != sizeof(fromaddr.nl) ||
+	    fromaddr.sa.sa_family != AF_NETLINK))
+	{
 		DEBUG(10, ("Got message from wrong addr\n"));
 		goto retry;
 	}
 
-	addr = (struct sockaddr_nl *)(void *)&state->addr;
-	if (addr->nl_pid != 0) {
+	if (fromaddr.nl.nl_pid != 0) {
 		DEBUG(10, ("Got msg from pid %d, not from the kernel\n",
-			   (int)addr->nl_pid));
+			   (int)fromaddr.nl.nl_pid));
 		goto retry;
 	}
 
@@ -246,10 +263,10 @@ static void addrchange_done(struct tevent_req *subreq)
 	return;
 
 retry:
-	state->fromaddr_len = sizeof(state->fromaddr);
-	subreq = recvfrom_send(state, state->ev, state->ctx->sock,
-			       state->buf, sizeof(state->buf), 0,
-			       &state->fromaddr, &state->fromaddr_len);
+	TALLOC_FREE(state->buf);
+	TALLOC_FREE(state->fromaddr);
+
+	subreq = tdgram_recvfrom_send(state, state->ev, state->ctx->sock);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
@@ -264,11 +281,13 @@ NTSTATUS addrchange_recv(struct tevent_req *req, enum addrchange_type *type,
 	NTSTATUS status;
 
 	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
 		return status;
 	}
 
 	*type = state->type;
 	*addr = state->addr;
+	tevent_req_received(req);
 	return NT_STATUS_OK;
 }
 

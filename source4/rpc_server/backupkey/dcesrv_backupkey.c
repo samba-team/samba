@@ -34,12 +34,19 @@
 #include <hcrypto/rsa.h>
 #include <hcrypto/bn.h>
 #include <hcrypto/sha.h>
+#include <hcrypto/evp.h>
+#include <hcrypto/hmac.h>
 #include <der.h>
 #include "../lib/tsocket/tsocket.h"
 #include "../libcli/security/security.h"
+#include "librpc/gen_ndr/ndr_security.h"
+#include "lib/crypto/arcfour.h"
+#include <gnutls/gnutls.h>
+#include <gnutls/x509.h>
+#if defined(HAVE_GCRYPT_H) && !defined(HAVE_GNUTLS3)
+#include <gcrypt.h>
+#endif
 
-#define BACKUPKEY_MIN_VERSION 2
-#define BACKUPKEY_MAX_VERSION 3
 
 static const unsigned rsa_with_var_num[] = { 1, 2, 840, 113549, 1, 1, 1 };
 /* Equivalent to asn1_oid_id_pkcs1_rsaEncryption*/
@@ -50,7 +57,7 @@ static const AlgorithmIdentifier _hx509_signature_rsa_with_var_num = {
 static NTSTATUS set_lsa_secret(TALLOC_CTX *mem_ctx,
 			       struct ldb_context *ldb,
 			       const char *name,
-			       const DATA_BLOB *secret)
+			       const DATA_BLOB *lsa_secret)
 {
 	struct ldb_message *msg;
 	struct ldb_result *res;
@@ -137,8 +144,8 @@ static NTSTATUS set_lsa_secret(TALLOC_CTX *mem_ctx,
 		talloc_free(msg);
 		return NT_STATUS_NO_MEMORY;
 	}
-	val.data = secret->data;
-	val.length = secret->length;
+	val.data = lsa_secret->data;
+	val.length = lsa_secret->length;
 	ret = ldb_msg_add_value(msg, "currentValue", &val, NULL);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(msg);
@@ -172,7 +179,7 @@ static NTSTATUS set_lsa_secret(TALLOC_CTX *mem_ctx,
 static NTSTATUS get_lsa_secret(TALLOC_CTX *mem_ctx,
 			       struct ldb_context *ldb,
 			       const char *name,
-			       DATA_BLOB *secret)
+			       DATA_BLOB *lsa_secret)
 {
 	TALLOC_CTX *tmp_mem;
 	struct ldb_result *res;
@@ -186,8 +193,8 @@ static NTSTATUS get_lsa_secret(TALLOC_CTX *mem_ctx,
 	};
 	int ret;
 
-	secret->data = NULL;
-	secret->length = 0;
+	lsa_secret->data = NULL;
+	lsa_secret->length = 0;
 
 	domain_dn = ldb_get_default_basedn(ldb);
 	if (!domain_dn) {
@@ -209,17 +216,14 @@ static NTSTATUS get_lsa_secret(TALLOC_CTX *mem_ctx,
 			   "(&(cn=%s Secret)(objectclass=secret))",
 			   ldb_binary_encode_string(tmp_mem, name));
 
-	if (ret != LDB_SUCCESS || res->count == 0) {
+	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_mem);
-		/*
-		 * Important NOT to use NT_STATUS_OBJECT_NAME_NOT_FOUND
-		 * as this return value is used to detect the case
-		 * when we have the secret but without the currentValue
-		 * (case RODC)
-		 */
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+	if (res->count == 0) {
+		talloc_free(tmp_mem);
 		return NT_STATUS_RESOURCE_NAME_NOT_FOUND;
 	}
-
 	if (res->count > 1) {
 		DEBUG(2, ("Secret %s collision\n", name));
 		talloc_free(tmp_mem);
@@ -232,13 +236,14 @@ static NTSTATUS get_lsa_secret(TALLOC_CTX *mem_ctx,
 		 * The secret object is here but we don't have the secret value
 		 * The most common case is a RODC
 		 */
+		*lsa_secret = data_blob_null;
 		talloc_free(tmp_mem);
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		return NT_STATUS_OK;
 	}
 
 	data = val->data;
-	secret->data = talloc_move(mem_ctx, &data);
-	secret->length = val->length;
+	lsa_secret->data = talloc_move(mem_ctx, &data);
+	lsa_secret->length = val->length;
 
 	talloc_free(tmp_mem);
 	return NT_STATUS_OK;
@@ -301,6 +306,7 @@ static NTSTATUS get_pk_from_raw_keypair_params(TALLOC_CTX *ctx,
 	hx509_context hctx;
 	RSA *rsa;
 	struct hx509_private_key_ops *ops;
+	hx509_private_key privkey = NULL;
 
 	hx509_context_init(&hctx);
 	ops = hx509_find_private_alg(&_hx509_signature_rsa_with_var_num.algorithm);
@@ -309,13 +315,14 @@ static NTSTATUS get_pk_from_raw_keypair_params(TALLOC_CTX *ctx,
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	if (hx509_private_key_init(pk, ops, NULL) != 0) {
+	if (hx509_private_key_init(&privkey, ops, NULL) != 0) {
 		hx509_context_free(&hctx);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	rsa = RSA_new();
 	if (rsa ==NULL) {
+		hx509_private_key_free(&privkey);
 		hx509_context_free(&hctx);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -323,51 +330,61 @@ static NTSTATUS get_pk_from_raw_keypair_params(TALLOC_CTX *ctx,
 	rsa->n = reverse_and_get_bignum(ctx, &(keypair->modulus));
 	if (rsa->n == NULL) {
 		RSA_free(rsa);
+		hx509_private_key_free(&privkey);
 		hx509_context_free(&hctx);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	rsa->d = reverse_and_get_bignum(ctx, &(keypair->private_exponent));
 	if (rsa->d == NULL) {
 		RSA_free(rsa);
+		hx509_private_key_free(&privkey);
 		hx509_context_free(&hctx);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	rsa->p = reverse_and_get_bignum(ctx, &(keypair->prime1));
 	if (rsa->p == NULL) {
 		RSA_free(rsa);
+		hx509_private_key_free(&privkey);
 		hx509_context_free(&hctx);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	rsa->q = reverse_and_get_bignum(ctx, &(keypair->prime2));
 	if (rsa->q == NULL) {
 		RSA_free(rsa);
+		hx509_private_key_free(&privkey);
 		hx509_context_free(&hctx);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	rsa->dmp1 = reverse_and_get_bignum(ctx, &(keypair->exponent1));
 	if (rsa->dmp1 == NULL) {
 		RSA_free(rsa);
+		hx509_private_key_free(&privkey);
 		hx509_context_free(&hctx);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	rsa->dmq1 = reverse_and_get_bignum(ctx, &(keypair->exponent2));
 	if (rsa->dmq1 == NULL) {
 		RSA_free(rsa);
+		hx509_private_key_free(&privkey);
 		hx509_context_free(&hctx);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	rsa->iqmp = reverse_and_get_bignum(ctx, &(keypair->coefficient));
 	if (rsa->iqmp == NULL) {
 		RSA_free(rsa);
+		hx509_private_key_free(&privkey);
 		hx509_context_free(&hctx);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	rsa->e = reverse_and_get_bignum(ctx, &(keypair->public_exponent));
 	if (rsa->e == NULL) {
 		RSA_free(rsa);
+		hx509_private_key_free(&privkey);
 		hx509_context_free(&hctx);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
+
+	*pk = privkey;
 
 	hx509_private_key_assign_rsa(*pk, rsa);
 
@@ -380,7 +397,7 @@ static WERROR get_and_verify_access_check(TALLOC_CTX *sub_ctx,
 					  uint8_t *key_and_iv,
 					  uint8_t *access_check,
 					  uint32_t access_check_len,
-					  struct dom_sid **access_sid)
+					  struct auth_session_info *session_info)
 {
 	heim_octet_string iv;
 	heim_octet_string access_check_os;
@@ -393,10 +410,12 @@ static WERROR get_and_verify_access_check(TALLOC_CTX *sub_ctx,
 	enum ndr_err_code ndr_err;
 	hx509_context hctx;
 
+	struct dom_sid *access_sid = NULL;
+	struct dom_sid *caller_sid = NULL;
+
 	/* This one should not be freed */
 	const AlgorithmIdentifier *alg;
 
-	*access_sid = NULL;
 	switch (version) {
 	case 2:
 		key_len = 24;
@@ -451,7 +470,9 @@ static WERROR get_and_verify_access_check(TALLOC_CTX *sub_ctx,
 
 	hx509_crypto_destroy(crypto);
 
-	if (version == 2) {
+	switch (version) {
+	case 2:
+	{
 		uint32_t hash_size = 20;
 		uint8_t hash[hash_size];
 		struct sha sctx;
@@ -483,14 +504,11 @@ static WERROR get_and_verify_access_check(TALLOC_CTX *sub_ctx,
 			DEBUG(2, ("Wrong hash value in the access check in backup key remote protocol\n"));
 			return WERR_INVALID_DATA;
 		}
-		*access_sid = dom_sid_dup(sub_ctx, &(uncrypted_accesscheckv2.sid));
-		if (*access_sid == NULL) {
-			return WERR_NOMEM;
-		}
-		return WERR_OK;
+		access_sid = &(uncrypted_accesscheckv2.sid);
+		break;
 	}
-
-	if (version == 3) {
+	case 3:
+	{
 		uint32_t hash_size = 64;
 		uint8_t hash[hash_size];
 		struct hc_sha512state sctx;
@@ -522,36 +540,70 @@ static WERROR get_and_verify_access_check(TALLOC_CTX *sub_ctx,
 			DEBUG(2, ("Wrong hash value in the access check in backup key remote protocol\n"));
 			return WERR_INVALID_DATA;
 		}
-		*access_sid = dom_sid_dup(sub_ctx, &(uncrypted_accesscheckv3.sid));
-		if (*access_sid == NULL) {
-			return WERR_NOMEM;
-		}
-		return WERR_OK;
+		access_sid = &(uncrypted_accesscheckv3.sid);
+		break;
+	}
+	default:
+		/* Never reached normally as we filtered at the switch / case level */
+		return WERR_INVALID_DATA;
 	}
 
-	/* Never reached normally as we filtered at the switch / case level */
-	return WERR_INVALID_DATA;
+	caller_sid = &session_info->security_token->sids[PRIMARY_USER_SID_INDEX];
+
+	if (!dom_sid_equal(caller_sid, access_sid)) {
+		return WERR_INVALID_ACCESS;
+	}
+	return WERR_OK;
 }
 
-static WERROR bkrp_do_uncrypt_client_wrap_key(struct dcesrv_call_state *dce_call,
-					      TALLOC_CTX *mem_ctx,
-					      struct bkrp_BackupKey *r,
-					      struct ldb_context *ldb_ctx)
+/*
+ * We have some data, such as saved website or IMAP passwords that the
+ * client has in profile on-disk.  This needs to be decrypted.  This
+ * version gives the server the data over the network (protected by
+ * the X.509 certificate and public key encryption, and asks that it
+ * be decrypted returned for short-term use, protected only by the
+ * negotiated transport encryption.
+ *
+ * The data is NOT stored in the LSA, but a X.509 certificate, public
+ * and private keys used to encrypt the data will be stored.  There is
+ * only one active encryption key pair and certificate per domain, it
+ * is pointed at with G$BCKUPKEY_PREFERRED in the LSA secrets store.
+ *
+ * The potentially multiple valid decrypting key pairs are in turn
+ * stored in the LSA secrets store as G$BCKUPKEY_keyGuidString.
+ *
+ */
+static WERROR bkrp_client_wrap_decrypt_data(struct dcesrv_call_state *dce_call,
+					    TALLOC_CTX *mem_ctx,
+					    struct bkrp_BackupKey *r,
+					    struct ldb_context *ldb_ctx)
 {
 	struct bkrp_client_side_wrapped uncrypt_request;
 	DATA_BLOB blob;
 	enum ndr_err_code ndr_err;
 	char *guid_string;
 	char *cert_secret_name;
-	DATA_BLOB secret;
-	DATA_BLOB *uncrypted;
+	DATA_BLOB lsa_secret;
+	DATA_BLOB *uncrypted_data = NULL;
 	NTSTATUS status;
+	uint32_t requested_version;
 
 	blob.data = r->in.data_in;
 	blob.length = r->in.data_in_len;
 
-	if (r->in.data_in_len == 0 || r->in.data_in == NULL) {
+	if (r->in.data_in_len < 4 || r->in.data_in == NULL) {
 		return WERR_INVALID_PARAM;
+	}
+
+	/*
+	 * We check for the version here, so we can actually print the
+	 * message as we are unlikely to parse it with NDR.
+	 */
+	requested_version = IVAL(r->in.data_in, 0);
+	if ((requested_version != BACKUPKEY_CLIENT_WRAP_VERSION2)
+	    && (requested_version != BACKUPKEY_CLIENT_WRAP_VERSION3)) {
+		DEBUG(1, ("Request for unknown BackupKey sub-protocol %d\n", requested_version));
+		return WERR_INVALID_PARAMETER;
 	}
 
 	ndr_err = ndr_pull_struct_blob(&blob, mem_ctx, &uncrypt_request,
@@ -560,11 +612,9 @@ static WERROR bkrp_do_uncrypt_client_wrap_key(struct dcesrv_call_state *dce_call
 		return WERR_INVALID_PARAM;
 	}
 
-	if (uncrypt_request.version < BACKUPKEY_MIN_VERSION) {
-		return WERR_INVALID_PARAMETER;
-	}
-
-	if (uncrypt_request.version > BACKUPKEY_MAX_VERSION) {
+	if ((uncrypt_request.version != BACKUPKEY_CLIENT_WRAP_VERSION2)
+	    && (uncrypt_request.version != BACKUPKEY_CLIENT_WRAP_VERSION3)) {
+		DEBUG(1, ("Request for unknown BackupKey sub-protocol %d\n", uncrypt_request.version));
 		return WERR_INVALID_PARAMETER;
 	}
 
@@ -583,31 +633,25 @@ static WERROR bkrp_do_uncrypt_client_wrap_key(struct dcesrv_call_state *dce_call
 	status = get_lsa_secret(mem_ctx,
 				ldb_ctx,
 				cert_secret_name,
-				&secret);
+				&lsa_secret);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("Error while fetching secret %s\n", cert_secret_name));
-		if (NT_STATUS_EQUAL(status,NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
-			/* we do not have the real secret attribute */
-			return WERR_INVALID_PARAMETER;
-		} else {
-			return WERR_FILE_NOT_FOUND;
-		}
-	}
-
-	if (secret.length != 0) {
+		return WERR_INVALID_DATA;
+	} else if (lsa_secret.length == 0) {
+		/* we do not have the real secret attribute, like if we are an RODC */
+		return WERR_INVALID_PARAMETER;
+	} else {
 		hx509_context hctx;
 		struct bkrp_exported_RSA_key_pair keypair;
 		hx509_private_key pk;
 		uint32_t i, res;
-		struct dom_sid *access_sid = NULL;
 		heim_octet_string reversed_secret;
 		heim_octet_string uncrypted_secret;
 		AlgorithmIdentifier alg;
-		struct dom_sid *caller_sid;
 		DATA_BLOB blob_us;
 		WERROR werr;
 
-		ndr_err = ndr_pull_struct_blob(&secret, mem_ctx, &keypair, (ndr_pull_flags_fn_t)ndr_pull_bkrp_exported_RSA_key_pair);
+		ndr_err = ndr_pull_struct_blob(&lsa_secret, mem_ctx, &keypair, (ndr_pull_flags_fn_t)ndr_pull_bkrp_exported_RSA_key_pair);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			DEBUG(2, ("Unable to parse the ndr encoded cert in key %s\n", cert_secret_name));
 			return WERR_FILE_NOT_FOUND;
@@ -645,7 +689,7 @@ static WERROR bkrp_do_uncrypt_client_wrap_key(struct dcesrv_call_state *dce_call
 		hx509_private_key_free(&pk);
 		if (res != 0) {
 			/* We are not able to decrypt the secret, looks like something is wrong */
-			return WERR_INVALID_DATA;
+			return WERR_INVALID_PARAMETER;
 		}
 		blob_us.data = uncrypted_secret.data;
 		blob_us.length = uncrypted_secret.length;
@@ -669,17 +713,17 @@ static WERROR bkrp_do_uncrypt_client_wrap_key(struct dcesrv_call_state *dce_call
 							   uncrypted_secretv2.payload_key,
 							   uncrypt_request.access_check,
 							   uncrypt_request.access_check_len,
-							   &access_sid);
+							   dce_call->conn->auth_state.session_info);
 			if (!W_ERROR_IS_OK(werr)) {
 				return werr;
 			}
-			uncrypted = talloc(mem_ctx, DATA_BLOB);
-			if (uncrypted == NULL) {
+			uncrypted_data = talloc(mem_ctx, DATA_BLOB);
+			if (uncrypted_data == NULL) {
 				return WERR_INVALID_DATA;
 			}
 
-			uncrypted->data = uncrypted_secretv2.secret;
-			uncrypted->length = uncrypted_secretv2.secret_len;
+			uncrypted_data->data = uncrypted_secretv2.secret;
+			uncrypted_data->length = uncrypted_secretv2.secret_len;
 		}
 		if (uncrypt_request.version == 3) {
 			struct bkrp_encrypted_secret_v3 uncrypted_secretv3;
@@ -700,29 +744,31 @@ static WERROR bkrp_do_uncrypt_client_wrap_key(struct dcesrv_call_state *dce_call
 				return WERR_INVALID_DATA;
 			}
 
+			/*
+			 * Confirm that the caller is permitted to
+			 * read this particular data.  Because one key
+			 * pair is used per domain, the caller could
+			 * have stolen the profile data on-disk and
+			 * would otherwise be able to read the
+			 * passwords.
+			 */
+
 			werr = get_and_verify_access_check(mem_ctx, 3,
 							   uncrypted_secretv3.payload_key,
 							   uncrypt_request.access_check,
 							   uncrypt_request.access_check_len,
-							   &access_sid);
+							   dce_call->conn->auth_state.session_info);
 			if (!W_ERROR_IS_OK(werr)) {
 				return werr;
 			}
 
-			uncrypted = talloc(mem_ctx, DATA_BLOB);
-			if (uncrypted == NULL) {
+			uncrypted_data = talloc(mem_ctx, DATA_BLOB);
+			if (uncrypted_data == NULL) {
 				return WERR_INVALID_DATA;
 			}
 
-			uncrypted->data = uncrypted_secretv3.secret;
-			uncrypted->length = uncrypted_secretv3.secret_len;
-		}
-
-		caller_sid = &dce_call->conn->auth_state.session_info->security_token->sids[PRIMARY_USER_SID_INDEX];
-
-		if (!dom_sid_equal(caller_sid, access_sid)) {
-			talloc_free(uncrypted);
-			return WERR_INVALID_ACCESS;
+			uncrypted_data->data = uncrypted_secretv3.secret;
+			uncrypted_data->length = uncrypted_secretv3.secret_len;
 		}
 
 		/*
@@ -733,7 +779,7 @@ static WERROR bkrp_do_uncrypt_client_wrap_key(struct dcesrv_call_state *dce_call
 		 */
 	}
 
-	if (uncrypted->data == NULL) {
+	if (uncrypted_data->data == NULL) {
 		return WERR_INVALID_DATA;
 	}
 
@@ -742,65 +788,95 @@ static WERROR bkrp_do_uncrypt_client_wrap_key(struct dcesrv_call_state *dce_call
 	 * parent structure is just an array of bytes it a lot of work
 	 * work just prepending 4 bytes
 	 */
-	*(r->out.data_out) = talloc_zero_array(mem_ctx, uint8_t, uncrypted->length + 4);
+	*(r->out.data_out) = talloc_zero_array(mem_ctx, uint8_t, uncrypted_data->length + 4);
 	W_ERROR_HAVE_NO_MEMORY(*(r->out.data_out));
-	memcpy(4+*(r->out.data_out), uncrypted->data, uncrypted->length);
-	*(r->out.data_out_len) = uncrypted->length + 4;
+	memcpy(4+*(r->out.data_out), uncrypted_data->data, uncrypted_data->length);
+	*(r->out.data_out_len) = uncrypted_data->length + 4;
 
 	return WERR_OK;
 }
 
+/*
+ * Strictly, this function no longer uses Heimdal in order to generate an RSA
+ * key, but GnuTLS.
+ *
+ * The resulting key is then imported into Heimdal's RSA structure.
+ *
+ * We use GnuTLS because it can reliably generate 2048 bit keys every time.
+ * Windows clients strictly require 2048, no more since it won't fit and no
+ * less either. Heimdal would almost always generate a smaller key.
+ */
 static WERROR create_heimdal_rsa_key(TALLOC_CTX *ctx, hx509_context *hctx,
-				     hx509_private_key *pk, RSA **_rsa)
+				     hx509_private_key *pk, RSA **rsa)
 {
-	BIGNUM *pub_expo;
-	RSA *rsa;
 	int ret;
-	uint8_t *p0, *p;
+	uint8_t *p0 = NULL;
+	const uint8_t *p;
 	size_t len;
 	int bits = 2048;
+	int RSA_returned_bits;
+	gnutls_x509_privkey gtls_key;
+	WERROR werr;
 
-	*_rsa = NULL;
+	*rsa = NULL;
 
-	pub_expo = BN_new();
-	if(pub_expo == NULL) {
+	gnutls_global_init();
+#if defined(HAVE_GCRYPT_H) && !defined(HAVE_GNUTLS3)
+	DEBUG(3,("Enabling QUICK mode in gcrypt\n"));
+	gcry_control(GCRYCTL_ENABLE_QUICK_RANDOM, 0);
+#endif
+	ret = gnutls_x509_privkey_init(&gtls_key);
+	if (ret != 0) {
+		gnutls_global_deinit();
 		return WERR_INTERNAL_ERROR;
 	}
 
-	/* set the public expo to 65537 like everyone */
-	BN_set_word(pub_expo, 0x10001);
+	/*
+	 * Unlike Heimdal's RSA_generate_key_ex(), this generates a
+	 * 2048 bit key 100% of the time.  The heimdal code had a ~1/8
+	 * chance of doing so, chewing vast quantities of computation
+	 * and entropy in the process.
+	 */
 
-	rsa = RSA_new();
-	if(rsa == NULL) {
-		BN_free(pub_expo);
-		return WERR_INTERNAL_ERROR;
+	ret = gnutls_x509_privkey_generate(gtls_key, GNUTLS_PK_RSA, bits, 0);
+	if (ret != 0) {
+		werr = WERR_INTERNAL_ERROR;
+		goto done;
 	}
 
-	ret = RSA_generate_key_ex(rsa, bits, pub_expo, NULL);
-	if(ret != 1) {
-		RSA_free(rsa);
-		BN_free(pub_expo);
-		return WERR_INTERNAL_ERROR;
-	}
-	BN_free(pub_expo);
+	/* No need to check error code, this SHOULD fail */
+	gnutls_x509_privkey_export(gtls_key, GNUTLS_X509_FMT_DER, NULL, &len);
 
-	len = i2d_RSAPrivateKey(rsa, NULL);
 	if (len < 1) {
-		RSA_free(rsa);
-		return WERR_INTERNAL_ERROR;
+		werr = WERR_INTERNAL_ERROR;
+		goto done;
 	}
 
-	p0 = p = talloc_array(ctx, uint8_t, len);
-	if (p == NULL) {
-		RSA_free(rsa);
-		return WERR_INTERNAL_ERROR;
+	p0 = talloc_size(ctx, len);
+	if (p0 == NULL) {
+		werr = WERR_NOMEM;
+		goto done;
 	}
+	p = p0;
 
-	len = i2d_RSAPrivateKey(rsa, &p);
-	if (len < 1) {
-		RSA_free(rsa);
-		talloc_free(p0);
-		return WERR_INTERNAL_ERROR;
+	/*
+	 * Only this GnuTLS export function correctly exports the key,
+	 * we can't use gnutls_rsa_params_export_raw() because while
+	 * it appears to be fixed in more recent versions, in the
+	 * Ubuntu 14.04 version 2.12.23 (at least) it incorrectly
+	 * exports one of the key parameters (qInv).  Additionally, we
+	 * would have to work around subtle differences in big number
+	 * representations.
+	 *
+	 * We need access to the RSA parameters directly (in the
+	 * parameter RSA **rsa) as the caller has to manually encode
+	 * them in a non-standard data structure.
+	 */
+	ret = gnutls_x509_privkey_export(gtls_key, GNUTLS_X509_FMT_DER, p0, &len);
+
+	if (ret != 0) {
+		werr = WERR_INTERNAL_ERROR;
+		goto done;
 	}
 
 	/*
@@ -809,15 +885,42 @@ static WERROR create_heimdal_rsa_key(TALLOC_CTX *ctx, hx509_context *hctx,
 	 */
 	ret = hx509_parse_private_key(*hctx, &_hx509_signature_rsa_with_var_num ,
 				       p0, len, HX509_KEY_FORMAT_DER, pk);
-	memset(p0, 0, len);
-	talloc_free(p0);
-	if (ret !=0) {
-		RSA_free(rsa);
-		return WERR_INTERNAL_ERROR;
+
+	if (ret != 0) {
+		werr = WERR_INTERNAL_ERROR;
+		goto done;
 	}
 
-	*_rsa = rsa;
-	return WERR_OK;
+	*rsa = d2i_RSAPrivateKey(NULL, &p, len);
+	TALLOC_FREE(p0);
+
+	if (*rsa == NULL) {
+		hx509_private_key_free(pk);
+		werr = WERR_INTERNAL_ERROR;
+		goto done;
+	}
+
+	RSA_returned_bits = BN_num_bits((*rsa)->n);
+	DEBUG(6, ("GnuTLS returned an RSA private key with %d bits\n", RSA_returned_bits));
+
+	if (RSA_returned_bits != bits) {
+		DEBUG(0, ("GnuTLS unexpectedly returned an RSA private key with %d bits, needed %d\n", RSA_returned_bits, bits));
+		hx509_private_key_free(pk);
+		werr = WERR_INTERNAL_ERROR;
+		goto done;
+	}
+
+	werr = WERR_OK;
+
+done:
+	if (p0 != NULL) {
+		memset(p0, 0, len);
+		TALLOC_FREE(p0);
+	}
+
+	gnutls_x509_privkey_deinit(gtls_key);
+	gnutls_global_deinit();
+	return werr;
 }
 
 static WERROR self_sign_cert(TALLOC_CTX *ctx, hx509_context *hctx, hx509_request *req,
@@ -828,90 +931,95 @@ static WERROR self_sign_cert(TALLOC_CTX *ctx, hx509_context *hctx, hx509_request
 	hx509_name subject = NULL;
 	hx509_ca_tbs tbs;
 	struct heim_bit_string uniqueid;
-	int ret;
+	struct heim_integer serialnumber;
+	int ret, i;
 
 	uniqueid.data = talloc_memdup(ctx, guidblob->data, guidblob->length);
+	if (uniqueid.data == NULL) {
+		return WERR_NOMEM;
+	}
 	/* uniqueid is a bit string in which each byte represent 1 bit (1 or 0)
 	 * so as 1 byte is 8 bits we need to provision 8 times more space as in the
 	 * blob
 	 */
 	uniqueid.length = 8 * guidblob->length;
 
+	serialnumber.data = talloc_array(ctx, uint8_t,
+					    guidblob->length);
+	if (serialnumber.data == NULL) {
+		talloc_free(uniqueid.data);
+		return WERR_NOMEM;
+	}
+
+	/* Native AD generates certificates with serialnumber in reversed notation */
+	for (i = 0; i < guidblob->length; i++) {
+		uint8_t *reversed = (uint8_t *)serialnumber.data;
+		uint8_t *uncrypt = guidblob->data;
+		reversed[i] = uncrypt[guidblob->length - 1 - i];
+	}
+	serialnumber.length = guidblob->length;
+	serialnumber.negative = 0;
+
 	memset(&spki, 0, sizeof(spki));
 
 	ret = hx509_request_get_name(*hctx, *req, &subject);
 	if (ret !=0) {
-		talloc_free(uniqueid.data);
-		return WERR_INTERNAL_ERROR;
+		goto fail_subject;
 	}
 	ret = hx509_request_get_SubjectPublicKeyInfo(*hctx, *req, &spki);
 	if (ret !=0) {
-		talloc_free(uniqueid.data);
-		hx509_name_free(&subject);
-		return WERR_INTERNAL_ERROR;
+		goto fail_spki;
 	}
 
 	ret = hx509_ca_tbs_init(*hctx, &tbs);
 	if (ret !=0) {
-		talloc_free(uniqueid.data);
-		hx509_name_free(&subject);
-		free_SubjectPublicKeyInfo(&spki);
-		return WERR_INTERNAL_ERROR;
+		goto fail_tbs;
 	}
 
 	ret = hx509_ca_tbs_set_spki(*hctx, tbs, &spki);
 	if (ret !=0) {
-		talloc_free(uniqueid.data);
-		hx509_name_free(&subject);
-		free_SubjectPublicKeyInfo(&spki);
-		hx509_ca_tbs_free(&tbs);
-		return WERR_INTERNAL_ERROR;
+		goto fail;
 	}
 	ret = hx509_ca_tbs_set_subject(*hctx, tbs, subject);
 	if (ret !=0) {
-		talloc_free(uniqueid.data);
-		hx509_name_free(&subject);
-		free_SubjectPublicKeyInfo(&spki);
-		hx509_ca_tbs_free(&tbs);
-		return WERR_INTERNAL_ERROR;
+		goto fail;
 	}
 	ret = hx509_ca_tbs_set_ca(*hctx, tbs, 1);
 	if (ret !=0) {
-		talloc_free(uniqueid.data);
-		hx509_name_free(&subject);
-		free_SubjectPublicKeyInfo(&spki);
-		hx509_ca_tbs_free(&tbs);
-		return WERR_INTERNAL_ERROR;
+		goto fail;
 	}
 	ret = hx509_ca_tbs_set_notAfter_lifetime(*hctx, tbs, lifetime);
 	if (ret !=0) {
-		talloc_free(uniqueid.data);
-		hx509_name_free(&subject);
-		free_SubjectPublicKeyInfo(&spki);
-		hx509_ca_tbs_free(&tbs);
-		return WERR_INTERNAL_ERROR;
+		goto fail;
 	}
 	ret = hx509_ca_tbs_set_unique(*hctx, tbs, &uniqueid, &uniqueid);
 	if (ret !=0) {
-		talloc_free(uniqueid.data);
-		hx509_name_free(&subject);
-		free_SubjectPublicKeyInfo(&spki);
-		hx509_ca_tbs_free(&tbs);
-		return WERR_INTERNAL_ERROR;
+		goto fail;
+	}
+	ret = hx509_ca_tbs_set_serialnumber(*hctx, tbs, &serialnumber);
+	if (ret !=0) {
+		goto fail;
 	}
 	ret = hx509_ca_sign_self(*hctx, tbs, *private_key, cert);
 	if (ret !=0) {
-		talloc_free(uniqueid.data);
-		hx509_name_free(&subject);
-		free_SubjectPublicKeyInfo(&spki);
-		hx509_ca_tbs_free(&tbs);
-		return WERR_INTERNAL_ERROR;
+		goto fail;
 	}
 	hx509_name_free(&subject);
 	free_SubjectPublicKeyInfo(&spki);
 	hx509_ca_tbs_free(&tbs);
 
 	return WERR_OK;
+
+fail:
+	hx509_ca_tbs_free(&tbs);
+fail_tbs:
+	free_SubjectPublicKeyInfo(&spki);
+fail_spki:
+	hx509_name_free(&subject);
+fail_subject:
+	talloc_free(uniqueid.data);
+	talloc_free(serialnumber.data);
+	return WERR_INTERNAL_ERROR;
 }
 
 static WERROR create_req(TALLOC_CTX *ctx, hx509_context *hctx, hx509_request *req,
@@ -921,11 +1029,11 @@ static WERROR create_req(TALLOC_CTX *ctx, hx509_context *hctx, hx509_request *re
 	SubjectPublicKeyInfo key;
 
 	hx509_name name;
-	WERROR w_err;
+	WERROR werr;
 
-	w_err = create_heimdal_rsa_key(ctx, hctx, signer, rsa);
-	if (!W_ERROR_IS_OK(w_err)) {
-		return w_err;
+	werr = create_heimdal_rsa_key(ctx, hctx, signer, rsa);
+	if (!W_ERROR_IS_OK(werr)) {
+		return werr;
 	}
 
 	hx509_request_init(*hctx, req);
@@ -973,7 +1081,7 @@ static WERROR create_req(TALLOC_CTX *ctx, hx509_context *hctx, hx509_request *re
 static WERROR generate_bkrp_cert(TALLOC_CTX *ctx, struct dcesrv_call_state *dce_call, struct ldb_context *ldb_ctx, const char *dn)
 {
 	heim_octet_string data;
-	WERROR w_err;
+	WERROR werr;
 	RSA *rsa;
 	hx509_context hctx;
 	hx509_private_key pk;
@@ -989,14 +1097,14 @@ static WERROR generate_bkrp_cert(TALLOC_CTX *ctx, struct dcesrv_call_state *dce_
 	char *secret_name;
 	struct bkrp_exported_RSA_key_pair keypair;
 	enum ndr_err_code ndr_err;
-	uint32_t nb_days_validity = 365;
+	uint32_t nb_seconds_validity = 3600 * 24 * 365;
 
 	DEBUG(6, ("Trying to generate a certificate\n"));
 	hx509_context_init(&hctx);
-	w_err = create_req(ctx, &hctx, &req, &pk, &rsa, dn);
-	if (!W_ERROR_IS_OK(w_err)) {
+	werr = create_req(ctx, &hctx, &req, &pk, &rsa, dn);
+	if (!W_ERROR_IS_OK(werr)) {
 		hx509_context_free(&hctx);
-		return w_err;
+		return werr;
 	}
 
 	status = GUID_to_ndr_blob(&guid, ctx, &blob);
@@ -1007,8 +1115,8 @@ static WERROR generate_bkrp_cert(TALLOC_CTX *ctx, struct dcesrv_call_state *dce_
 		return WERR_INVALID_DATA;
 	}
 
-	w_err = self_sign_cert(ctx, &hctx, &req, nb_days_validity, &pk, &cert, &blob);
-	if (!W_ERROR_IS_OK(w_err)) {
+	werr = self_sign_cert(ctx, &hctx, &req, nb_seconds_validity, &pk, &cert, &blob);
+	if (!W_ERROR_IS_OK(werr)) {
 		hx509_private_key_free(&pk);
 		hx509_context_free(&hctx);
 		return WERR_INVALID_DATA;
@@ -1151,12 +1259,12 @@ static WERROR generate_bkrp_cert(TALLOC_CTX *ctx, struct dcesrv_call_state *dce_
 	return WERR_OK;
 }
 
-static WERROR bkrp_do_retreive_client_wrap_key(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		struct bkrp_BackupKey *r ,struct ldb_context *ldb_ctx)
+static WERROR bkrp_retrieve_client_wrap_key(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+					    struct bkrp_BackupKey *r, struct ldb_context *ldb_ctx)
 {
 	struct GUID guid;
 	char *guid_string;
-	DATA_BLOB secret;
+	DATA_BLOB lsa_secret;
 	enum ndr_err_code ndr_err;
 	NTSTATUS status;
 
@@ -1168,42 +1276,38 @@ static WERROR bkrp_do_retreive_client_wrap_key(struct dcesrv_call_state *dce_cal
 	status = get_lsa_secret(mem_ctx,
 				ldb_ctx,
 				"BCKUPKEY_PREFERRED",
-				&secret);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("Error while fetching secret BCKUPKEY_PREFERRED\n"));
-		if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
-			/* Ok we can be in this case if there was no certs */
-			struct loadparm_context *lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
-			char *dn = talloc_asprintf(mem_ctx, "CN=%s.%s",
-							lpcfg_netbios_name(lp_ctx),
-							lpcfg_realm(lp_ctx));
+				&lsa_secret);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_RESOURCE_NAME_NOT_FOUND)) {
+		/* Ok we can be in this case if there was no certs */
+		struct loadparm_context *lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
+		char *dn = talloc_asprintf(mem_ctx, "CN=%s",
+					   lpcfg_realm(lp_ctx));
 
-			WERROR werr =  generate_bkrp_cert(mem_ctx, dce_call, ldb_ctx, dn);
-			if (!W_ERROR_IS_OK(werr)) {
-				return WERR_INVALID_PARAMETER;
-			}
-			status = get_lsa_secret(mem_ctx,
-					ldb_ctx,
-					"BCKUPKEY_PREFERRED",
-					&secret);
-
-			if (!NT_STATUS_IS_OK(status)) {
-				/* Ok we really don't manage to get this certs ...*/
-				DEBUG(2, ("Unable to locate BCKUPKEY_PREFERRED after cert generation\n"));
-				return WERR_FILE_NOT_FOUND;
-			}
-		} else {
-			/* In theory we should NEVER reach this point as it
-			   should only appear in a rodc server */
-			/* we do not have the real secret attribute */
+		WERROR werr =  generate_bkrp_cert(mem_ctx, dce_call, ldb_ctx, dn);
+		if (!W_ERROR_IS_OK(werr)) {
 			return WERR_INVALID_PARAMETER;
 		}
+		status = get_lsa_secret(mem_ctx,
+					ldb_ctx,
+					"BCKUPKEY_PREFERRED",
+					&lsa_secret);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			/* Ok we really don't manage to get this certs ...*/
+			DEBUG(2, ("Unable to locate BCKUPKEY_PREFERRED after cert generation\n"));
+			return WERR_FILE_NOT_FOUND;
+		}
+	} else if (!NT_STATUS_IS_OK(status)) {
+		return WERR_INTERNAL_ERROR;
 	}
 
-	if (secret.length != 0) {
+	if (lsa_secret.length == 0) {
+		DEBUG(1, ("No secret in BCKUPKEY_PREFERRED, are we an undetected RODC?\n"));
+		return WERR_INTERNAL_ERROR;
+	} else {
 		char *cert_secret_name;
 
-		status = GUID_from_ndr_blob(&secret, &guid);
+		status = GUID_from_ndr_blob(&lsa_secret, &guid);
 		if (!NT_STATUS_IS_OK(status)) {
 			return WERR_FILE_NOT_FOUND;
 		}
@@ -1215,21 +1319,21 @@ static WERROR bkrp_do_retreive_client_wrap_key(struct dcesrv_call_state *dce_cal
 			 */
 			return WERR_FILE_NOT_FOUND;
 		}
-				
+
 		cert_secret_name = talloc_asprintf(mem_ctx,
 							"BCKUPKEY_%s",
 							guid_string);
 		status = get_lsa_secret(mem_ctx,
 					ldb_ctx,
 					cert_secret_name,
-					&secret);
+					&lsa_secret);
 		if (!NT_STATUS_IS_OK(status)) {
 			return WERR_FILE_NOT_FOUND;
 		}
 
-		if (secret.length != 0) {
+		if (lsa_secret.length != 0) {
 			struct bkrp_exported_RSA_key_pair keypair;
-			ndr_err = ndr_pull_struct_blob(&secret, mem_ctx, &keypair,
+			ndr_err = ndr_pull_struct_blob(&lsa_secret, mem_ctx, &keypair,
 					(ndr_pull_flags_fn_t)ndr_pull_bkrp_exported_RSA_key_pair);
 			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 				return WERR_FILE_NOT_FOUND;
@@ -1239,15 +1343,443 @@ static WERROR bkrp_do_retreive_client_wrap_key(struct dcesrv_call_state *dce_cal
 			W_ERROR_HAVE_NO_MEMORY(*(r->out.data_out));
 			return WERR_OK;
 		} else {
-			DEBUG(10, ("No or broken secret called %s\n", cert_secret_name));
-			return WERR_FILE_NOT_FOUND;
+			DEBUG(1, ("No or broken secret called %s\n", cert_secret_name));
+			return WERR_INTERNAL_ERROR;
 		}
-	} else {
-		DEBUG(10, ("No secret BCKUPKEY_PREFERRED\n"));
-		return WERR_FILE_NOT_FOUND;
 	}
 
 	return WERR_NOT_SUPPORTED;
+}
+
+static WERROR generate_bkrp_server_wrap_key(TALLOC_CTX *ctx, struct ldb_context *ldb_ctx)
+{
+	struct GUID guid = GUID_random();
+	enum ndr_err_code ndr_err;
+	DATA_BLOB blob_wrap_key, guid_blob;
+	struct bkrp_dc_serverwrap_key wrap_key;
+	NTSTATUS status;
+	char *secret_name;
+	TALLOC_CTX *frame = talloc_stackframe();
+
+	generate_random_buffer(wrap_key.key, sizeof(wrap_key.key));
+
+	ndr_err = ndr_push_struct_blob(&blob_wrap_key, ctx, &wrap_key, (ndr_push_flags_fn_t)ndr_push_bkrp_dc_serverwrap_key);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		TALLOC_FREE(frame);
+		return WERR_INVALID_DATA;
+	}
+
+	secret_name = talloc_asprintf(frame, "BCKUPKEY_%s", GUID_string(ctx, &guid));
+	if (secret_name == NULL) {
+		TALLOC_FREE(frame);
+		return WERR_NOMEM;
+	}
+
+	status = set_lsa_secret(frame, ldb_ctx, secret_name, &blob_wrap_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(2, ("Failed to save the secret %s\n", secret_name));
+		TALLOC_FREE(frame);
+		return WERR_INTERNAL_ERROR;
+	}
+
+	status = GUID_to_ndr_blob(&guid, frame, &guid_blob);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(2, ("Failed to save the secret %s\n", secret_name));
+		TALLOC_FREE(frame);
+	}
+
+	status = set_lsa_secret(frame, ldb_ctx, "BCKUPKEY_P", &guid_blob);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(2, ("Failed to save the secret %s\n", secret_name));
+		TALLOC_FREE(frame);
+		return WERR_INTERNAL_ERROR;
+	}
+
+	TALLOC_FREE(frame);
+
+	return WERR_OK;
+}
+
+/*
+ * Find the specified decryption keys from the LSA secrets store as
+ * G$BCKUPKEY_keyGuidString.
+ */
+
+static WERROR bkrp_do_retrieve_server_wrap_key(TALLOC_CTX *mem_ctx, struct ldb_context *ldb_ctx,
+					       struct bkrp_dc_serverwrap_key *server_key,
+					       struct GUID *guid)
+{
+	NTSTATUS status;
+	DATA_BLOB lsa_secret;
+	char *secret_name;
+	char *guid_string;
+	enum ndr_err_code ndr_err;
+
+	guid_string = GUID_string(mem_ctx, guid);
+	if (guid_string == NULL) {
+		/* We return file not found because the client
+		 * expect this error
+		 */
+		return WERR_FILE_NOT_FOUND;
+	}
+
+	secret_name = talloc_asprintf(mem_ctx, "BCKUPKEY_%s", guid_string);
+	if (secret_name == NULL) {
+		return WERR_NOMEM;
+	}
+
+	status = get_lsa_secret(mem_ctx, ldb_ctx, secret_name, &lsa_secret);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("Error while fetching secret %s\n", secret_name));
+		return WERR_INVALID_DATA;
+	}
+	if (lsa_secret.length == 0) {
+		/* RODC case, we do not have secrets locally */
+		DEBUG(1, ("Unable to fetch value for secret %s, are we an undetected RODC?\n",
+			  secret_name));
+		return WERR_INTERNAL_ERROR;
+	}
+	ndr_err = ndr_pull_struct_blob(&lsa_secret, mem_ctx, server_key,
+				       (ndr_pull_flags_fn_t)ndr_pull_bkrp_dc_serverwrap_key);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DEBUG(2, ("Unable to parse the ndr encoded server wrap key %s\n", secret_name));
+		return WERR_INVALID_DATA;
+	}
+
+	return WERR_OK;
+}
+
+/*
+ * Find the current, preferred ServerWrap Key by looking at
+ * G$BCKUPKEY_P in the LSA secrets store.
+ *
+ * Then find the current decryption keys from the LSA secrets store as
+ * G$BCKUPKEY_keyGuidString.
+ */
+
+static WERROR bkrp_do_retrieve_default_server_wrap_key(TALLOC_CTX *mem_ctx,
+						       struct ldb_context *ldb_ctx,
+						       struct bkrp_dc_serverwrap_key *server_key,
+						       struct GUID *returned_guid)
+{
+	NTSTATUS status;
+	DATA_BLOB guid_binary;
+
+	status = get_lsa_secret(mem_ctx, ldb_ctx, "BCKUPKEY_P", &guid_binary);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("Error while fetching secret BCKUPKEY_P to find current GUID\n"));
+		return WERR_FILE_NOT_FOUND;
+	} else if (guid_binary.length == 0) {
+		/* RODC case, we do not have secrets locally */
+		DEBUG(1, ("Unable to fetch value for secret BCKUPKEY_P, are we an undetected RODC?\n"));
+		return WERR_INTERNAL_ERROR;
+	}
+
+	status = GUID_from_ndr_blob(&guid_binary, returned_guid);
+	if (!NT_STATUS_IS_OK(status)) {
+		return WERR_FILE_NOT_FOUND;
+	}
+
+	return bkrp_do_retrieve_server_wrap_key(mem_ctx, ldb_ctx,
+						server_key, returned_guid);
+}
+
+static WERROR bkrp_server_wrap_decrypt_data(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+					    struct bkrp_BackupKey *r ,struct ldb_context *ldb_ctx)
+{
+	WERROR werr;
+	struct bkrp_server_side_wrapped decrypt_request;
+	DATA_BLOB sid_blob, encrypted_blob, symkey_blob;
+	DATA_BLOB blob;
+	enum ndr_err_code ndr_err;
+	struct bkrp_dc_serverwrap_key server_key;
+	struct bkrp_rc4encryptedpayload rc4payload;
+	struct dom_sid *caller_sid;
+	uint8_t symkey[20]; /* SHA-1 hash len */
+	uint8_t mackey[20]; /* SHA-1 hash len */
+	uint8_t mac[20]; /* SHA-1 hash len */
+	unsigned int hash_len;
+	HMAC_CTX ctx;
+
+	blob.data = r->in.data_in;
+	blob.length = r->in.data_in_len;
+
+	if (r->in.data_in_len == 0 || r->in.data_in == NULL) {
+		return WERR_INVALID_PARAM;
+	}
+
+	ndr_err = ndr_pull_struct_blob_all(&blob, mem_ctx, &decrypt_request,
+					   (ndr_pull_flags_fn_t)ndr_pull_bkrp_server_side_wrapped);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return WERR_INVALID_PARAM;
+	}
+
+	if (decrypt_request.magic != BACKUPKEY_SERVER_WRAP_VERSION) {
+		return WERR_INVALID_PARAM;
+	}
+
+	werr = bkrp_do_retrieve_server_wrap_key(mem_ctx, ldb_ctx, &server_key,
+						&decrypt_request.guid);
+	if (!W_ERROR_IS_OK(werr)) {
+		return werr;
+	}
+
+	dump_data_pw("server_key: \n", server_key.key, sizeof(server_key.key));
+
+	dump_data_pw("r2: \n", decrypt_request.r2, sizeof(decrypt_request.r2));
+
+	/*
+	 * This is *not* the leading 64 bytes, as indicated in MS-BKRP 3.1.4.1.1
+	 * BACKUPKEY_BACKUP_GUID, it really is the whole key
+	 */
+	HMAC(EVP_sha1(), server_key.key, sizeof(server_key.key),
+	     decrypt_request.r2, sizeof(decrypt_request.r2),
+	     symkey, &hash_len);
+
+	dump_data_pw("symkey: \n", symkey, hash_len);
+
+	/* rc4 decrypt sid and secret using sym key */
+	symkey_blob = data_blob_const(symkey, sizeof(symkey));
+
+	encrypted_blob = data_blob_const(decrypt_request.rc4encryptedpayload,
+					 decrypt_request.ciphertext_length);
+
+	arcfour_crypt_blob(encrypted_blob.data, encrypted_blob.length, &symkey_blob);
+
+	ndr_err = ndr_pull_struct_blob_all(&encrypted_blob, mem_ctx, &rc4payload,
+					   (ndr_pull_flags_fn_t)ndr_pull_bkrp_rc4encryptedpayload);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return WERR_INVALID_PARAM;
+	}
+
+	if (decrypt_request.payload_length != rc4payload.secret_data.length) {
+		return WERR_INVALID_PARAM;
+	}
+
+	dump_data_pw("r3: \n", rc4payload.r3, sizeof(rc4payload.r3));
+
+	/*
+	 * This is *not* the leading 64 bytes, as indicated in MS-BKRP 3.1.4.1.1
+	 * BACKUPKEY_BACKUP_GUID, it really is the whole key
+	 */
+	HMAC(EVP_sha1(), server_key.key, sizeof(server_key.key),
+	     rc4payload.r3, sizeof(rc4payload.r3),
+	     mackey, &hash_len);
+
+	dump_data_pw("mackey: \n", mackey, sizeof(mackey));
+
+	ndr_err = ndr_push_struct_blob(&sid_blob, mem_ctx, &rc4payload.sid,
+				       (ndr_push_flags_fn_t)ndr_push_dom_sid);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return WERR_INTERNAL_ERROR;
+	}
+
+	HMAC_CTX_init(&ctx);
+	HMAC_Init_ex(&ctx, mackey, hash_len, EVP_sha1(), NULL);
+	/* SID field */
+	HMAC_Update(&ctx, sid_blob.data, sid_blob.length);
+	/* Secret field */
+	HMAC_Update(&ctx, rc4payload.secret_data.data, rc4payload.secret_data.length);
+	HMAC_Final(&ctx, mac, &hash_len);
+	HMAC_CTX_cleanup(&ctx);
+
+	dump_data_pw("mac: \n", mac, sizeof(mac));
+	dump_data_pw("rc4payload.mac: \n", rc4payload.mac, sizeof(rc4payload.mac));
+
+	if (memcmp(mac, rc4payload.mac, sizeof(mac)) != 0) {
+		return WERR_INVALID_ACCESS;
+	}
+
+	caller_sid = &dce_call->conn->auth_state.session_info->security_token->sids[PRIMARY_USER_SID_INDEX];
+
+	if (!dom_sid_equal(&rc4payload.sid, caller_sid)) {
+		return WERR_INVALID_ACCESS;
+	}
+
+	*(r->out.data_out) = rc4payload.secret_data.data;
+	*(r->out.data_out_len) = rc4payload.secret_data.length;
+
+	return WERR_OK;
+}
+
+/*
+ * For BACKUPKEY_RESTORE_GUID we need to check the first 4 bytes to
+ * determine what type of restore is wanted.
+ *
+ * See MS-BKRP 3.1.4.1.4 BACKUPKEY_RESTORE_GUID point 1.
+ */
+
+static WERROR bkrp_generic_decrypt_data(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+					struct bkrp_BackupKey *r, struct ldb_context *ldb_ctx)
+{
+	if (r->in.data_in_len < 4 || r->in.data_in == NULL) {
+		return WERR_INVALID_PARAM;
+	}
+
+	if (IVAL(r->in.data_in, 0) == BACKUPKEY_SERVER_WRAP_VERSION) {
+		return bkrp_server_wrap_decrypt_data(dce_call, mem_ctx, r, ldb_ctx);
+	}
+
+	return bkrp_client_wrap_decrypt_data(dce_call, mem_ctx, r, ldb_ctx);
+}
+
+/*
+ * We have some data, such as saved website or IMAP passwords that the
+ * client would like to put into the profile on-disk.  This needs to
+ * be encrypted.  This version gives the server the data over the
+ * network (protected only by the negotiated transport encryption),
+ * and asks that it be encrypted and returned for long-term storage.
+ *
+ * The data is NOT stored in the LSA, but a key to encrypt the data
+ * will be stored.  There is only one active encryption key per domain,
+ * it is pointed at with G$BCKUPKEY_P in the LSA secrets store.
+ *
+ * The potentially multiple valid decryptiong keys (and the encryption
+ * key) are in turn stored in the LSA secrets store as
+ * G$BCKUPKEY_keyGuidString.
+ *
+ */
+
+static WERROR bkrp_server_wrap_encrypt_data(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+					    struct bkrp_BackupKey *r ,struct ldb_context *ldb_ctx)
+{
+	DATA_BLOB sid_blob, encrypted_blob, symkey_blob, server_wrapped_blob;
+	WERROR werr;
+	struct dom_sid *caller_sid;
+	uint8_t symkey[20]; /* SHA-1 hash len */
+	uint8_t mackey[20]; /* SHA-1 hash len */
+	unsigned int hash_len;
+	struct bkrp_rc4encryptedpayload rc4payload;
+	HMAC_CTX ctx;
+	struct bkrp_dc_serverwrap_key server_key;
+	enum ndr_err_code ndr_err;
+	struct bkrp_server_side_wrapped server_side_wrapped;
+	struct GUID guid;
+
+	if (r->in.data_in_len == 0 || r->in.data_in == NULL) {
+		return WERR_INVALID_PARAM;
+	}
+
+	werr = bkrp_do_retrieve_default_server_wrap_key(mem_ctx,
+							ldb_ctx, &server_key,
+							&guid);
+
+	if (!W_ERROR_IS_OK(werr)) {
+		if (W_ERROR_EQUAL(werr, WERR_FILE_NOT_FOUND)) {
+			/* Generate the server wrap key since one wasn't found */
+			werr =  generate_bkrp_server_wrap_key(mem_ctx,
+							      ldb_ctx);
+			if (!W_ERROR_IS_OK(werr)) {
+				return WERR_INVALID_PARAMETER;
+			}
+			werr = bkrp_do_retrieve_default_server_wrap_key(mem_ctx,
+									ldb_ctx,
+									&server_key,
+									&guid);
+
+			if (W_ERROR_EQUAL(werr, WERR_FILE_NOT_FOUND)) {
+				/* Ok we really don't manage to get this secret ...*/
+				return WERR_FILE_NOT_FOUND;
+			}
+		} else {
+			/* In theory we should NEVER reach this point as it
+			   should only appear in a rodc server */
+			/* we do not have the real secret attribute */
+			return WERR_INVALID_PARAMETER;
+		}
+	}
+
+	caller_sid = &dce_call->conn->auth_state.session_info->security_token->sids[PRIMARY_USER_SID_INDEX];
+
+	dump_data_pw("server_key: \n", server_key.key, sizeof(server_key.key));
+
+	/*
+	 * This is the key derivation step, so that the HMAC and RC4
+	 * operations over the user-supplied data are not able to
+	 * disclose the master key.  By using random data, the symkey
+	 * and mackey values are unique for this operation, and
+	 * discovering these (by reversing the RC4 over the
+	 * attacker-controlled data) does not return something able to
+	 * be used to decyrpt the encrypted data of other users
+	 */
+	generate_random_buffer(server_side_wrapped.r2, sizeof(server_side_wrapped.r2));
+
+	dump_data_pw("r2: \n", server_side_wrapped.r2, sizeof(server_side_wrapped.r2));
+
+	generate_random_buffer(rc4payload.r3, sizeof(rc4payload.r3));
+
+	dump_data_pw("r3: \n", rc4payload.r3, sizeof(rc4payload.r3));
+
+
+	/*
+	 * This is *not* the leading 64 bytes, as indicated in MS-BKRP 3.1.4.1.1
+	 * BACKUPKEY_BACKUP_GUID, it really is the whole key
+	 */
+	HMAC(EVP_sha1(), server_key.key, sizeof(server_key.key),
+	     server_side_wrapped.r2, sizeof(server_side_wrapped.r2),
+	     symkey, &hash_len);
+
+	dump_data_pw("symkey: \n", symkey, hash_len);
+
+	/*
+	 * This is *not* the leading 64 bytes, as indicated in MS-BKRP 3.1.4.1.1
+	 * BACKUPKEY_BACKUP_GUID, it really is the whole key
+	 */
+	HMAC(EVP_sha1(), server_key.key, sizeof(server_key.key),
+	     rc4payload.r3, sizeof(rc4payload.r3),
+	     mackey, &hash_len);
+
+	dump_data_pw("mackey: \n", mackey, sizeof(mackey));
+
+	ndr_err = ndr_push_struct_blob(&sid_blob, mem_ctx, caller_sid,
+				       (ndr_push_flags_fn_t)ndr_push_dom_sid);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return WERR_INTERNAL_ERROR;
+	}
+
+	rc4payload.secret_data.data = r->in.data_in;
+	rc4payload.secret_data.length = r->in.data_in_len;
+
+	HMAC_CTX_init(&ctx);
+	HMAC_Init_ex(&ctx, mackey, 20, EVP_sha1(), NULL);
+	/* SID field */
+	HMAC_Update(&ctx, sid_blob.data, sid_blob.length);
+	/* Secret field */
+	HMAC_Update(&ctx, rc4payload.secret_data.data, rc4payload.secret_data.length);
+	HMAC_Final(&ctx, rc4payload.mac, &hash_len);
+	HMAC_CTX_cleanup(&ctx);
+
+	dump_data_pw("rc4payload.mac: \n", rc4payload.mac, sizeof(rc4payload.mac));
+
+	rc4payload.sid = *caller_sid;
+
+	ndr_err = ndr_push_struct_blob(&encrypted_blob, mem_ctx, &rc4payload,
+				       (ndr_push_flags_fn_t)ndr_push_bkrp_rc4encryptedpayload);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return WERR_INTERNAL_ERROR;
+	}
+
+	/* rc4 encrypt sid and secret using sym key */
+	symkey_blob = data_blob_const(symkey, sizeof(symkey));
+	arcfour_crypt_blob(encrypted_blob.data, encrypted_blob.length, &symkey_blob);
+
+	/* create server wrap structure */
+
+	server_side_wrapped.payload_length = rc4payload.secret_data.length;
+	server_side_wrapped.ciphertext_length = encrypted_blob.length;
+	server_side_wrapped.guid = guid;
+	server_side_wrapped.rc4encryptedpayload = encrypted_blob.data;
+
+	ndr_err = ndr_push_struct_blob(&server_wrapped_blob, mem_ctx, &server_side_wrapped,
+				       (ndr_push_flags_fn_t)ndr_push_bkrp_server_side_wrapped);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return WERR_INTERNAL_ERROR;
+	}
+
+	*(r->out.data_out) = server_wrapped_blob.data;
+	*(r->out.data_out_len) = server_wrapped_blob.length;
+
+	return WERR_OK;
 }
 
 static WERROR dcesrv_bkrp_BackupKey(struct dcesrv_call_state *dce_call,
@@ -1290,14 +1822,26 @@ static WERROR dcesrv_bkrp_BackupKey(struct dcesrv_call_state *dce_call,
 	if (!is_rodc) {
 		if(strncasecmp(GUID_string(mem_ctx, r->in.guidActionAgent),
 			BACKUPKEY_RESTORE_GUID, strlen(BACKUPKEY_RESTORE_GUID)) == 0) {
-			DEBUG(debuglevel, ("Client %s requested to decrypt a client side wrapped secret\n", addr));
-			error = bkrp_do_uncrypt_client_wrap_key(dce_call, mem_ctx, r, ldb_ctx);
+			DEBUG(debuglevel, ("Client %s requested to decrypt a wrapped secret\n", addr));
+			error = bkrp_generic_decrypt_data(dce_call, mem_ctx, r, ldb_ctx);
 		}
 
 		if (strncasecmp(GUID_string(mem_ctx, r->in.guidActionAgent),
 			BACKUPKEY_RETRIEVE_BACKUP_KEY_GUID, strlen(BACKUPKEY_RETRIEVE_BACKUP_KEY_GUID)) == 0) {
 			DEBUG(debuglevel, ("Client %s requested certificate for client wrapped secret\n", addr));
-			error = bkrp_do_retreive_client_wrap_key(dce_call, mem_ctx, r, ldb_ctx);
+			error = bkrp_retrieve_client_wrap_key(dce_call, mem_ctx, r, ldb_ctx);
+		}
+
+		if (strncasecmp(GUID_string(mem_ctx, r->in.guidActionAgent),
+			BACKUPKEY_RESTORE_GUID_WIN2K, strlen(BACKUPKEY_RESTORE_GUID_WIN2K)) == 0) {
+			DEBUG(debuglevel, ("Client %s requested to decrypt a server side wrapped secret\n", addr));
+			error = bkrp_server_wrap_decrypt_data(dce_call, mem_ctx, r, ldb_ctx);
+		}
+
+		if (strncasecmp(GUID_string(mem_ctx, r->in.guidActionAgent),
+			BACKUPKEY_BACKUP_GUID, strlen(BACKUPKEY_BACKUP_GUID)) == 0) {
+			DEBUG(debuglevel, ("Client %s requested a server wrapped secret\n", addr));
+			error = bkrp_server_wrap_encrypt_data(dce_call, mem_ctx, r, ldb_ctx);
 		}
 	}
 	/*else: I am a RODC so I don't handle backup key protocol */

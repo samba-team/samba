@@ -584,7 +584,7 @@ static NTSTATUS receive_smb_talloc(TALLOC_CTX *mem_ctx,
 static bool init_smb_request(struct smb_request *req,
 			     struct smbd_server_connection *sconn,
 			     struct smbXsrv_connection *xconn,
-			     const uint8 *inbuf,
+			     const uint8_t *inbuf,
 			     size_t unread_bytes, bool encrypted,
 			     uint32_t seqnum)
 {
@@ -1382,7 +1382,7 @@ static bool create_outbuf(TALLOC_CTX *mem_ctx, struct smb_request *req,
 	return true;
 }
 
-void reply_outbuf(struct smb_request *req, uint8 num_words, uint32 num_bytes)
+void reply_outbuf(struct smb_request *req, uint8_t num_words, uint32_t num_bytes)
 {
 	char *outbuf;
 	if (!create_outbuf(req, req, req->inbuf, &outbuf, num_words,
@@ -1443,7 +1443,7 @@ static void smb_dump(const char *name, int type, const char *data)
  find.
 ****************************************************************************/
 
-static connection_struct *switch_message(uint8 type, struct smb_request *req)
+static connection_struct *switch_message(uint8_t type, struct smb_request *req)
 {
 	int flags;
 	uint64_t session_tag;
@@ -1666,7 +1666,7 @@ static void construct_reply(struct smbXsrv_connection *xconn,
 		smb_panic("could not allocate smb_request");
 	}
 
-	if (!init_smb_request(req, sconn, xconn, (uint8 *)inbuf, unread_bytes,
+	if (!init_smb_request(req, sconn, xconn, (uint8_t *)inbuf, unread_bytes,
 			      encrypted, seqnum)) {
 		exit_server_cleanly("Invalid SMB request");
 	}
@@ -1969,12 +1969,12 @@ const char *smb_fn_name(int type)
  Helper functions for contruct_reply.
 ****************************************************************************/
 
-void add_to_common_flags2(uint32 v)
+void add_to_common_flags2(uint32_t v)
 {
 	common_flags2 |= v;
 }
 
-void remove_from_common_flags2(uint32 v)
+void remove_from_common_flags2(uint32_t v)
 {
 	common_flags2 &= ~v;
 }
@@ -2616,18 +2616,31 @@ static void smbd_release_ip_immediate(struct tevent_context *ctx,
 /****************************************************************************
 received when we should release a specific IP
 ****************************************************************************/
-static bool release_ip(const char *ip, void *priv)
+static int release_ip(uint32_t src_vnn, uint32_t dst_vnn,
+		      uint64_t dst_srvid,
+		      const uint8_t *msg, size_t msglen,
+		      void *private_data)
 {
 	struct smbd_release_ip_state *state =
-		talloc_get_type_abort(priv,
+		talloc_get_type_abort(private_data,
 		struct smbd_release_ip_state);
 	struct smbXsrv_connection *xconn = state->xconn;
+	const char *ip;
 	const char *addr = state->addr;
 	const char *p = addr;
 
+	if (msglen == 0) {
+		return 0;
+	}
+	if (msg[msglen-1] != '\0') {
+		return 0;
+	}
+
+	ip = (const char *)msg;
+
 	if (!NT_STATUS_IS_OK(xconn->transport.status)) {
 		/* avoid recursion */
-		return false;
+		return 0;
 	}
 
 	if (strncmp("::ffff:", addr, 7) == 0) {
@@ -2668,10 +2681,10 @@ static bool release_ip(const char *ip, void *priv)
 		 * Make sure we don't get any io on the connection.
 		 */
 		xconn->transport.status = NT_STATUS_ADDRESS_CLOSED;
-		return true;
+		return EADDRNOTAVAIL;
 	}
 
-	return false;
+	return 0;
 }
 
 static NTSTATUS smbd_register_ips(struct smbXsrv_connection *xconn,
@@ -2711,7 +2724,7 @@ static void msg_kill_client_ip(struct messaging_context *msg_ctx,
 	const char *ip = (char *) data->data;
 	char *client_ip;
 
-	DEBUG(10, ("Got kill request for client IP %s\n", ip));
+	DBG_DEBUG("Got kill request for client IP %s\n", ip);
 
 	client_ip = tsocket_address_inet_addr_string(sconn->remote_address,
 						     talloc_tos());
@@ -2720,8 +2733,8 @@ static void msg_kill_client_ip(struct messaging_context *msg_ctx,
 	}
 
 	if (strequal(ip, client_ip)) {
-		DEBUG(1, ("Got kill client message for %s - "
-			  "exiting immediately\n", ip));
+		DBG_WARNING("Got kill client message for %s - "
+			    "exiting immediately\n", ip);
 		exit_server_cleanly("Forced disconnect for client");
 	}
 
@@ -2846,7 +2859,7 @@ static struct tevent_req *smbd_echo_read_send(
 	state->ev = ev;
 	state->xconn = xconn;
 
-	subreq = wait_for_read_send(state, ev, xconn->transport.sock);
+	subreq = wait_for_read_send(state, ev, xconn->transport.sock, false);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -2921,7 +2934,7 @@ static void smbd_echo_read_waited(struct tevent_req *subreq)
 		}
 
 		subreq = wait_for_read_send(state, state->ev,
-					    xconn->transport.sock);
+					    xconn->transport.sock, false);
 		if (tevent_req_nomem(subreq, req)) {
 			return;
 		}
@@ -3306,9 +3319,7 @@ bool fork_echo_handler(struct smbXsrv_connection *xconn)
 		close(listener_pipe[0]);
 		set_blocking(listener_pipe[1], false);
 
-		status = reinit_after_fork(xconn->msg_ctx,
-					   xconn->ev_ctx,
-					   true);
+		status = smbd_reinit_after_fork(xconn->msg_ctx, xconn->ev_ctx, true);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("reinit_after_fork failed: %s\n",
 				  nt_errstr(status)));
@@ -3466,40 +3477,46 @@ NTSTATUS smbXsrv_connection_init_tables(struct smbXsrv_connection *conn,
 {
 	NTSTATUS status;
 
-	set_Protocol(protocol);
 	conn->protocol = protocol;
 
 	if (protocol >= PROTOCOL_SMB2_02) {
 		status = smb2srv_session_table_init(conn);
 		if (!NT_STATUS_IS_OK(status)) {
+			conn->protocol = PROTOCOL_NONE;
 			return status;
 		}
 
 		status = smb2srv_open_table_init(conn);
 		if (!NT_STATUS_IS_OK(status)) {
+			conn->protocol = PROTOCOL_NONE;
 			return status;
 		}
 	} else {
 		status = smb1srv_session_table_init(conn);
 		if (!NT_STATUS_IS_OK(status)) {
+			conn->protocol = PROTOCOL_NONE;
 			return status;
 		}
 
 		status = smb1srv_tcon_table_init(conn);
 		if (!NT_STATUS_IS_OK(status)) {
+			conn->protocol = PROTOCOL_NONE;
 			return status;
 		}
 
 		status = smb1srv_open_table_init(conn);
 		if (!NT_STATUS_IS_OK(status)) {
+			conn->protocol = PROTOCOL_NONE;
 			return status;
 		}
 	}
 
+	set_Protocol(protocol);
 	return NT_STATUS_OK;
 }
 
 struct smbd_tevent_trace_state {
+	struct tevent_context *ev;
 	TALLOC_CTX *frame;
 	SMBPROFILE_BASIC_ASYNC_STATE(profile_idle);
 };
@@ -3512,10 +3529,31 @@ static void smbd_tevent_trace_callback(enum tevent_trace_point point,
 
 	switch (point) {
 	case TEVENT_TRACE_BEFORE_WAIT:
+		if (!smbprofile_dump_pending()) {
+			/*
+			 * If there's no dump pending
+			 * we don't want to schedule a new 1 sec timer.
+			 *
+			 * Instead we want to sleep as long as nothing happens.
+			 */
+			smbprofile_dump_setup(NULL);
+		}
 		SMBPROFILE_BASIC_ASYNC_START(idle, profile_p, state->profile_idle);
 		break;
 	case TEVENT_TRACE_AFTER_WAIT:
 		SMBPROFILE_BASIC_ASYNC_END(state->profile_idle);
+		if (!smbprofile_dump_pending()) {
+			/*
+			 * We need to flush our state after sleeping
+			 * (hopefully a long time).
+			 */
+			smbprofile_dump();
+			/*
+			 * future profiling events should trigger timers
+			 * on our main event context.
+			 */
+			smbprofile_dump_setup(state->ev);
+		}
 		break;
 	case TEVENT_TRACE_BEFORE_LOOP_ONCE:
 		TALLOC_FREE(state->frame);
@@ -3766,6 +3804,7 @@ void smbd_process(struct tevent_context *ev_ctx,
 		  bool interactive)
 {
 	struct smbd_tevent_trace_state trace_state = {
+		.ev = ev_ctx,
 		.frame = talloc_stackframe(),
 	};
 	struct smbXsrv_client *client = NULL;
@@ -3977,6 +4016,8 @@ void smbd_process(struct tevent_context *ev_ctx,
 		DEBUG(0, ("Could not add housekeeping event\n"));
 		exit(1);
 	}
+
+	smbprofile_dump_setup(ev_ctx);
 
 	if (!init_dptrs(sconn)) {
 		exit_server("init_dptrs() failed");

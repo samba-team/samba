@@ -134,15 +134,15 @@ static int ibw_ctx_priv_destruct(struct ibw_ctx_priv *pctx)
 {
 	DEBUG(DEBUG_DEBUG, ("ibw_ctx_priv_destruct(%p)\n", pctx));
 
+	/*
+	 * tevent_fd must be removed before the fd is closed
+	 */
+	TALLOC_FREE(pctx->cm_channel_event);
+
 	/* destroy cm */
 	if (pctx->cm_channel) {
 		rdma_destroy_event_channel(pctx->cm_channel);
 		pctx->cm_channel = NULL;
-	}
-	if (pctx->cm_channel_event) {
-		/* TODO: do we have to do this here? */
-		talloc_free(pctx->cm_channel_event);
-		pctx->cm_channel_event = NULL;
 	}
 	if (pctx->cm_id) {
 		rdma_destroy_id(pctx->cm_id);
@@ -166,6 +166,11 @@ static int ibw_conn_priv_destruct(struct ibw_conn_priv *pconn)
 	/* pconn->wr_index is freed by talloc */
 	/* pconn->wr_index[i] are freed by talloc */
 
+	/*
+	 * tevent_fd must be removed before the fd is closed
+	 */
+	TALLOC_FREE(pconn->verbs_channel_event);
+
 	/* destroy verbs */
 	if (pconn->cm_id!=NULL && pconn->cm_id->qp!=NULL) {
 		rdma_destroy_qp(pconn->cm_id);
@@ -180,12 +185,6 @@ static int ibw_conn_priv_destruct(struct ibw_conn_priv *pconn)
 	if (pconn->verbs_channel!=NULL) {
 		ibv_destroy_comp_channel(pconn->verbs_channel);
 		pconn->verbs_channel = NULL;
-	}
-
-	/* must be freed here because its order is important */
-	if (pconn->verbs_channel_event) {
-		talloc_free(pconn->verbs_channel_event);
-		pconn->verbs_channel_event = NULL;
 	}
 
 	/* free memory regions */

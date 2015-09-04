@@ -106,7 +106,7 @@ interface dcerpc
 		uint16 max_xmit_frag;
 		uint16 max_recv_frag;
 		uint32 assoc_group_id;
-		[value(strlen(secondary_address)+1)] uint16 secondary_address_size;
+		[value(strlen_m_term_null(secondary_address))] uint16 secondary_address_size;
 		[charset(DOS)] uint8 secondary_address[secondary_address_size];
 		[flag(NDR_ALIGN4)]    DATA_BLOB _pad1;
 		uint8 num_results;
@@ -259,6 +259,7 @@ interface dcerpc
 	} dcerpc_auth;
 
 	const uint8 DCERPC_AUTH_TRAILER_LENGTH = 8;
+	const uint8 DCERPC_AUTH_PAD_ALIGNMENT = 16;
 
 	typedef [public] struct {
 		[value(0)]	      uint32    _pad;

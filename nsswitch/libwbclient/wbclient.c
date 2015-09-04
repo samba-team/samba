@@ -4,6 +4,7 @@
    Winbind client API
 
    Copyright (C) Gerald (Jerry) Carter 2007
+   Copyright (C) Matthew Newton 2015
 
 
    This library is free software; you can redistribute it and/or
@@ -27,12 +28,28 @@
 
 /* From wb_common.c */
 
-NSS_STATUS winbindd_request_response(int req_type,
+struct winbindd_context;
+
+NSS_STATUS winbindd_request_response(struct winbindd_context *wbctx,
+				     int req_type,
 				     struct winbindd_request *request,
 				     struct winbindd_response *response);
-NSS_STATUS winbindd_priv_request_response(int req_type,
+NSS_STATUS winbindd_priv_request_response(struct winbindd_context *wbctx,
+					  int req_type,
 					  struct winbindd_request *request,
 					  struct winbindd_response *response);
+struct winbindd_context *winbindd_ctx_create(void);
+void winbindd_ctx_free(struct winbindd_context *ctx);
+
+/* Global context used for non-Ctx functions */
+
+static struct wbcContext wbcGlobalCtx = {
+	.winbindd_ctx = NULL,
+	.pw_cache_size = 0,
+	.pw_cache_idx = 0,
+	.gr_cache_size = 0,
+	.gr_cache_idx = 0
+};
 
 /*
  result == NSS_STATUS_UNAVAIL: winbind not around
@@ -48,10 +65,11 @@ NSS_STATUS winbindd_priv_request_response(int req_type,
 */
 
 static wbcErr wbcRequestResponseInt(
+	struct winbindd_context *wbctx,
 	int cmd,
 	struct winbindd_request *request,
 	struct winbindd_response *response,
-	NSS_STATUS (*fn)(int req_type,
+	NSS_STATUS (*fn)(struct winbindd_context *wbctx, int req_type,
 			 struct winbindd_request *request,
 			 struct winbindd_response *response))
 {
@@ -60,7 +78,7 @@ static wbcErr wbcRequestResponseInt(
 
 	/* for some calls the request and/or response can be NULL */
 
-	nss_status = fn(cmd, request, response);
+	nss_status = fn(wbctx, cmd, request, response);
 
 	switch (nss_status) {
 	case NSS_STATUS_SUCCESS:
@@ -83,25 +101,38 @@ static wbcErr wbcRequestResponseInt(
 /**
  * @brief Wrapper around Winbind's send/receive API call
  *
+ * @param ctx       Context
  * @param cmd       Winbind command operation to perform
  * @param request   Send structure
  * @param response  Receive structure
  *
  * @return #wbcErr
  */
-wbcErr wbcRequestResponse(int cmd,
+wbcErr wbcRequestResponse(struct wbcContext *ctx, int cmd,
 			  struct winbindd_request *request,
 			  struct winbindd_response *response)
 {
-	return wbcRequestResponseInt(cmd, request, response,
+	struct winbindd_context *wbctx = NULL;
+
+	if (ctx) {
+		wbctx = ctx->winbindd_ctx;
+	}
+
+	return wbcRequestResponseInt(wbctx, cmd, request, response,
 				     winbindd_request_response);
 }
 
-wbcErr wbcRequestResponsePriv(int cmd,
+wbcErr wbcRequestResponsePriv(struct wbcContext *ctx, int cmd,
 			      struct winbindd_request *request,
 			      struct winbindd_response *response)
 {
-	return wbcRequestResponseInt(cmd, request, response,
+	struct winbindd_context *wbctx = NULL;
+
+	if (ctx) {
+		wbctx = ctx->winbindd_ctx;
+	}
+
+	return wbcRequestResponseInt(wbctx, cmd, request, response,
 				     winbindd_priv_request_response);
 }
 
@@ -256,4 +287,47 @@ wbcErr wbcLibraryDetails(struct wbcLibraryDetails **_details)
 
 	*_details = info;
 	return WBC_ERR_SUCCESS;
+}
+
+/* Context handling functions */
+
+static void wbcContextDestructor(void *ptr)
+{
+	struct wbcContext *ctx = (struct wbcContext *)ptr;
+
+	winbindd_ctx_free(ctx->winbindd_ctx);
+}
+
+struct wbcContext *wbcCtxCreate(void)
+{
+	struct wbcContext *ctx;
+	struct winbindd_context *wbctx;
+
+	ctx = (struct wbcContext *)wbcAllocateMemory(
+		1, sizeof(struct wbcContext), wbcContextDestructor);
+
+	if (!ctx) {
+		return NULL;
+	}
+
+	wbctx = winbindd_ctx_create();
+
+	if (!wbctx) {
+		wbcFreeMemory(ctx);
+		return NULL;
+	}
+
+	ctx->winbindd_ctx = wbctx;
+
+	return ctx;
+}
+
+void wbcCtxFree(struct wbcContext *ctx)
+{
+	wbcFreeMemory(ctx);
+}
+
+struct wbcContext *wbcGetGlobalCtx(void)
+{
+	return &wbcGlobalCtx;
 }

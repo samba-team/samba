@@ -74,27 +74,27 @@ if __name__ == '__main__':
     if opts.oldname is None or opts.newname is None:
         raise Exception("Option oldname or newname is missing")
     res = ldbs.sam.search(expression="(&(name=%s)(serverReferenceBL=*))" % opts.oldname)
-    if res is None or len(res) != 1:
-        raise Exception("Wrong number of result returned, are you sure of the old name %s" %
-                opts.oldname)
+    if len(res) != 1:
+        raise Exception("Wrong number of result returned (%d), are you sure of the old name %s" %
+                (len(res), opts.oldname))
 
     # Ok got it then check that the new name is not used as well
     res2 = ldbs.sam.search(expression="(&(name=%s)(objectclass=computer))" % opts.newname)
     if len(res2) != 0:
         raise Exception("Seems that %s is a name that already exists, pick another one" %
-                opts.newname)
+                        opts.newname)
 
     names = find_provision_key_parameters(ldbs.sam, ldbs.secrets, ldbs.idmap,
                                             paths, smbconf, lp)
 
     # First rename the entry
     # provision put the name in upper case so let's do it too !
-    newdn = str(res[0].dn).replace("CN=%s" % opts.oldname, "CN=%s" % opts.newname.upper())
-    dnobj = ldb.Dn(ldbs.sam, newdn)
-    ldbs.sam.rename(res[0].dn, dnobj)
+    newdn = ldb.Dn(ldbs.sam, str(res[0].dn))
+    newdn.set_component(0, "cn", opts.newname.upper())
+    ldbs.sam.rename(res[0].dn, newdn)
 
     # Then change password and samaccountname and dnshostname
-    msg = ldb.Message(dnobj)
+    msg = ldb.Message(newdn)
     machinepass = samba.generate_random_password(128, 255)
     mputf16 = machinepass.encode('utf-16-le')
 
@@ -114,8 +114,8 @@ if __name__ == '__main__':
     ldbs.sam.modify(msg)
 
     # Do a self join one more time to resync the secrets file
-    res = ldbs.sam.search(expression=("distinguishedName=%s" % newdn),
-            attrs=["msDs-keyVersionNumber", "serverReferenceBL"])
+    res = ldbs.sam.search(base=newdn, scope=ldb.SCOPE_BASE,
+                          attrs=["msDs-keyVersionNumber", "serverReferenceBL"])
     assert(len(res) == 1)
     kvno = int(str(res[0]["msDs-keyVersionNumber"]))
     serverbldn = ldb.Dn(ldbs.sam, str(res[0]["serverReferenceBL"]))
@@ -135,12 +135,12 @@ if __name__ == '__main__':
                 key_version_number=kvno,
                 secure_channel_type=secChanType)
 
-    # Update RID set reference as there is no back link for the moment.
+    # Update RID set reference so we don't have to runtime fixup until the next dbcheck as there is no back link.
 
-    res = ldbs.sam.search(expression="(objectClass=rIDSet)", base=newdn, attrs=[])
+    res = ldbs.sam.search(expression="(objectClass=rIDSet)", base=newdn, scope=ldb.SCOPE_ONELEVEL, attrs=[])
     assert(len(res) == 1)
     newridset = str(res[0].dn)
-    msg = ldb.Message(dnobj)
+    msg = ldb.Message(newdn)
 
     msg["rIDSetReferences"] = ldb.MessageElement(newridset,
                                             ldb.FLAG_MOD_REPLACE,
@@ -148,26 +148,17 @@ if __name__ == '__main__':
     ldbs.sam.modify(msg)
 
     # Update the server's sites configuration
-    if False:
-        # Desactivated for the moment we have a couple of issues with site 
-        # renaming first one is that it's currently forbidden
-        # second one is that a lot of links are not backlinked
-        # and so won't be updated when the DN change (ie. fmsowner ...)
-        serverbl = str(serverbldn)
-        dnparts = serverbl.split(",")
-        dnparts[0] = "CN=%s" % opts.newname.upper()
-        newserverref = ",".join(dnparts)
+    newserverrefdn = ldb.Dn(ldbs.sam, str(serverbldn))
+    newserverrefdn.set_component(0, "cn", opts.newname.upper())
 
-        newserverrefdn = ldb.Dn(ldbs.sam, newserverref)
+    ldbs.sam.rename(serverbldn, newserverrefdn)
 
-        ldbs.sam.rename(serverbldn, newserverrefdn)
-
-        msg = ldb.Message(newserverrefdn)
-        msg["dNSHostName"] = ldb.MessageElement("%s.%s" % (opts.newname,
-                                                names.dnsdomain),
-                                                ldb.FLAG_MOD_REPLACE,
-                                                "dNSHostName")
-        ldbs.sam.modify(msg)
+    msg = ldb.Message(newserverrefdn)
+    msg["dNSHostName"] = ldb.MessageElement("%s.%s" % (opts.newname,
+                                                       names.dnsdomain),
+                                            ldb.FLAG_MOD_REPLACE,
+                                            "dNSHostName")
+    ldbs.sam.modify(msg)
 
     try:
         ldbs.sam.transaction_prepare_commit()
@@ -175,7 +166,7 @@ if __name__ == '__main__':
     except Exception:
         ldbs.sam.rollback()
         ldbs.secrets.rollback()
-        sys.exit(1)
+        raise
 
     try:
         ldbs.sam.transaction_commit()
@@ -183,6 +174,7 @@ if __name__ == '__main__':
     except Exception:
         ldbs.sam.rollback()
         ldbs.secrets.rollback()
+        raise
 
     # All good so far
     #print lp.get("private dir")

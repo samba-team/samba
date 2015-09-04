@@ -160,9 +160,15 @@
 /* Version 32 - Add "lease" to CREATE_FILE operation */
 /* Version 32 - Add "lease" to struct files_struct */
 /* Version 32 - Add SMB_VFS_READDIR_ATTR() */
-/* Version 32 - Add in and our create context blobs to create_file */
+/* Version 32 - Add in and out create context blobs to create_file */
+/* Version 32 - Remove unnecessary SMB_VFS_DISK_FREE() small_query parameter */
+/* Bump to version 33 - Samba 4.3 will ship with that. */
+/* Version 33 - change fallocate mode flags param from enum->uint32_t */
+/* Version 33 - Add snapshot create/delete calls */
+/* Version 33 - Add OS X SMB2 AAPL copyfile extension flag to fsp */
+/* Version 33 - Remove notify_watch_fn */
 
-#define SMB_VFS_INTERFACE_VERSION 32
+#define SMB_VFS_INTERFACE_VERSION 33
 
 /*
     All intercepted VFS operations must be declared as static functions inside module source
@@ -194,7 +200,7 @@ struct fd_handle {
 	int fd;
 	uint64_t position_information;
 	off_t pos;
-	uint32 private_options;	/* NT Create options, but we only look at
+	uint32_t private_options;	/* NT Create options, but we only look at
 				 * NTCREATEX_OPTIONS_PRIVATE_DENY_DOS and
 				 * NTCREATEX_OPTIONS_PRIVATE_DENY_FCB and
 				 * NTCREATEX_OPTIONS_PRIVATE_DELETE_ON_CLOSE
@@ -221,12 +227,12 @@ typedef struct files_struct {
 	unsigned int num_smb_operations;
 	struct file_id file_id;
 	uint64_t initial_allocation_size; /* Faked up initial allocation on disk. */
-	uint16 file_pid;
+	uint16_t file_pid;
 	uint64_t vuid; /* SMB2 compat */
 	struct write_cache *wcp;
 	struct timeval open_time;
-	uint32 access_mask;		/* NTCreateX access bits (FILE_READ_DATA etc.) */
-	uint32 share_access;		/* NTCreateX share constants (FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE). */
+	uint32_t access_mask;		/* NTCreateX access bits (FILE_READ_DATA etc.) */
+	uint32_t share_access;		/* NTCreateX share constants (FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE). */
 
 	bool update_write_time_triggered;
 	struct tevent_timer *update_write_time_event;
@@ -253,6 +259,7 @@ typedef struct files_struct {
 	bool is_sparse;
 	bool backup_intent; /* Handle was successfully opened with backup intent
 				and opener has privilege to do so. */
+	bool aapl_copyfile_supported;
 	struct smb_filename *fsp_name;
 	uint32_t name_hash;		/* Jenkins hash of full pathname. */
 	uint64_t mid;			/* Mid of the operation that created us. */
@@ -389,17 +396,17 @@ struct privilege_paths;
 
 struct smb_request {
 	uint8_t cmd;
-	uint16 flags2;
-	uint16 smbpid;
+	uint16_t flags2;
+	uint16_t smbpid;
 	uint64_t mid; /* For compatibility with SMB2. */
 	uint32_t seqnum;
 	uint64_t vuid; /* For compatibility with SMB2. */
 	uint32_t tid;
-	uint8  wct;
+	uint8_t  wct;
 	const uint16_t *vwv;
 	uint16_t buflen;
 	const uint8_t *buf;
-	const uint8 *inbuf;
+	const uint8_t *inbuf;
 
 	/*
 	 * Async handling in the main smb processing loop is directed by
@@ -410,7 +417,7 @@ struct smb_request {
 	 * If async handling is wanted, the reply_xxx routine must make sure
 	 * that it talloc_move()s the smb_req somewhere else.
 	 */
-	uint8 *outbuf;
+	uint8_t *outbuf;
 
 	size_t unread_bytes;
 	bool encrypted;
@@ -485,9 +492,9 @@ enum vfs_translate_direction {
 	vfs_translate_to_windows
 };
 
-enum vfs_fallocate_mode {
-	VFS_FALLOCATE_EXTEND_SIZE = 0,
-	VFS_FALLOCATE_KEEP_SIZE = 1
+enum vfs_fallocate_flags {
+	VFS_FALLOCATE_FL_KEEP_SIZE		= 0x0001,
+	VFS_FALLOCATE_FL_PUNCH_HOLE		= 0x0002,
 };
 
 /*
@@ -503,7 +510,7 @@ struct vfs_fn_pointers {
 
 	int (*connect_fn)(struct vfs_handle_struct *handle, const char *service, const char *user);
 	void (*disconnect_fn)(struct vfs_handle_struct *handle);
-	uint64_t (*disk_free_fn)(struct vfs_handle_struct *handle, const char *path, bool small_query, uint64_t *bsize,
+	uint64_t (*disk_free_fn)(struct vfs_handle_struct *handle, const char *path, uint64_t *bsize,
 			      uint64_t *dfree, uint64_t *dsize);
 	int (*get_quota_fn)(struct vfs_handle_struct *handle, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *qt);
 	int (*set_quota_fn)(struct vfs_handle_struct *handle, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *qt);
@@ -520,8 +527,8 @@ struct vfs_fn_pointers {
 
 	/* Directory operations */
 
-	DIR *(*opendir_fn)(struct vfs_handle_struct *handle, const char *fname, const char *mask, uint32 attributes);
-	DIR *(*fdopendir_fn)(struct vfs_handle_struct *handle, files_struct *fsp, const char *mask, uint32 attributes);
+	DIR *(*opendir_fn)(struct vfs_handle_struct *handle, const char *fname, const char *mask, uint32_t attributes);
+	DIR *(*fdopendir_fn)(struct vfs_handle_struct *handle, files_struct *fsp, const char *mask, uint32_t attributes);
 	struct dirent *(*readdir_fn)(struct vfs_handle_struct *handle,
 					 DIR *dirp,
 					 SMB_STRUCT_STAT *sbuf);
@@ -607,12 +614,12 @@ struct vfs_fn_pointers {
 	int (*ftruncate_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, off_t offset);
 	int (*fallocate_fn)(struct vfs_handle_struct *handle,
 			    struct files_struct *fsp,
-			    enum vfs_fallocate_mode mode,
+			    uint32_t mode,
 			    off_t offset,
 			    off_t len);
 	bool (*lock_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, int op, off_t offset, off_t count, int type);
 	int (*kernel_flock_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp,
-			       uint32 share_mode, uint32_t access_mask);
+			       uint32_t share_mode, uint32_t access_mask);
 	int (*linux_setlease_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, int leasetype);
 	bool (*getlock_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, off_t *poffset, off_t *pcount, int *ptype, pid_t *ppid);
 	int (*symlink_fn)(struct vfs_handle_struct *handle, const char *oldpath, const char *newpath);
@@ -620,16 +627,6 @@ struct vfs_fn_pointers {
 	int (*link_fn)(struct vfs_handle_struct *handle, const char *oldpath, const char *newpath);
 	int (*mknod_fn)(struct vfs_handle_struct *handle, const char *path, mode_t mode, SMB_DEV_T dev);
 	char *(*realpath_fn)(struct vfs_handle_struct *handle, const char *path);
-	NTSTATUS (*notify_watch_fn)(struct vfs_handle_struct *handle,
-				    struct sys_notify_context *ctx,
-				    const char *path,
-				    uint32_t *filter,
-				    uint32_t *subdir_filter,
-				    void (*callback)(struct sys_notify_context *ctx,
-						     void *private_data,
-						     struct notify_event *ev),
-				    void *private_data, 
-				    void *handle_p);
 	int (*chflags_fn)(struct vfs_handle_struct *handle, const char *path, unsigned int flags);
 	struct file_id (*file_id_create_fn)(struct vfs_handle_struct *handle,
 					    const SMB_STRUCT_STAT *sbuf);
@@ -653,6 +650,21 @@ struct vfs_fn_pointers {
 				       TALLOC_CTX *mem_ctx,
 				       struct files_struct *fsp,
 				       uint16_t compression_fmt);
+	NTSTATUS (*snap_check_path_fn)(struct vfs_handle_struct *handle,
+				       TALLOC_CTX *mem_ctx,
+				       const char *service_path,
+				       char **base_volume);
+	NTSTATUS (*snap_create_fn)(struct vfs_handle_struct *handle,
+				   TALLOC_CTX *mem_ctx,
+				   const char *base_volume,
+				   time_t *tstamp,
+				   bool rw,
+				   char **base_path,
+				   char **snap_path);
+	NTSTATUS (*snap_delete_fn)(struct vfs_handle_struct *handle,
+				   TALLOC_CTX *mem_ctx,
+				   char *base_path,
+				   char *snap_path);
 
 	NTSTATUS (*streaminfo_fn)(struct vfs_handle_struct *handle,
 				  struct files_struct *fsp,
@@ -713,17 +725,17 @@ struct vfs_fn_pointers {
 
 	NTSTATUS (*fget_nt_acl_fn)(struct vfs_handle_struct *handle,
 				   struct files_struct *fsp,
-				   uint32 security_info,
+				   uint32_t security_info,
 				   TALLOC_CTX *mem_ctx,
 				   struct security_descriptor **ppdesc);
 	NTSTATUS (*get_nt_acl_fn)(struct vfs_handle_struct *handle,
 				  const char *name,
-				  uint32 security_info,
+				  uint32_t security_info,
 				   TALLOC_CTX *mem_ctx,
 				  struct security_descriptor **ppdesc);
 	NTSTATUS (*fset_nt_acl_fn)(struct vfs_handle_struct *handle,
 				   struct files_struct *fsp,
-				   uint32 security_info_sent,
+				   uint32_t security_info_sent,
 				   const struct security_descriptor *psd);
 
 	NTSTATUS (*audit_file_fn)(struct vfs_handle_struct *handle,
@@ -819,8 +831,8 @@ typedef struct vfs_handle_struct {
 
 typedef struct vfs_statvfs_struct {
 	/* For undefined recommended transfer size return -1 in that field */
-	uint32 OptimalTransferSize;  /* bsize on some os, iosize on other os */
-	uint32 BlockSize;
+	uint32_t OptimalTransferSize;  /* bsize on some os, iosize on other os */
+	uint32_t BlockSize;
 
 	/*
 	 The next three fields are in terms of the block size.
@@ -903,9 +915,8 @@ int smb_vfs_call_connect(struct vfs_handle_struct *handle,
 			 const char *service, const char *user);
 void smb_vfs_call_disconnect(struct vfs_handle_struct *handle);
 uint64_t smb_vfs_call_disk_free(struct vfs_handle_struct *handle,
-				const char *path, bool small_query,
-				uint64_t *bsize, uint64_t *dfree,
-				uint64_t *dsize);
+				const char *path, uint64_t *bsize,
+				uint64_t *dfree, uint64_t *dsize);
 int smb_vfs_call_get_quota(struct vfs_handle_struct *handle,
 			   enum SMB_QUOTA_TYPE qtype, unid_t id,
 			   SMB_DISK_QUOTA *qt);
@@ -927,11 +938,11 @@ NTSTATUS smb_vfs_call_get_dfs_referrals(struct vfs_handle_struct *handle,
 					struct dfs_GetDFSReferral *r);
 DIR *smb_vfs_call_opendir(struct vfs_handle_struct *handle,
 				     const char *fname, const char *mask,
-				     uint32 attributes);
+				     uint32_t attributes);
 DIR *smb_vfs_call_fdopendir(struct vfs_handle_struct *handle,
 					struct files_struct *fsp,
 					const char *mask,
-					uint32 attributes);
+					uint32_t attributes);
 struct dirent *smb_vfs_call_readdir(struct vfs_handle_struct *handle,
 					DIR *dirp,
 					SMB_STRUCT_STAT *sbuf);
@@ -1049,15 +1060,15 @@ int smb_vfs_call_ntimes(struct vfs_handle_struct *handle,
 int smb_vfs_call_ftruncate(struct vfs_handle_struct *handle,
 			   struct files_struct *fsp, off_t offset);
 int smb_vfs_call_fallocate(struct vfs_handle_struct *handle,
-			struct files_struct *fsp,
-			enum vfs_fallocate_mode mode,
-			off_t offset,
-			off_t len);
+			   struct files_struct *fsp,
+			   uint32_t mode,
+			   off_t offset,
+			   off_t len);
 bool smb_vfs_call_lock(struct vfs_handle_struct *handle,
 		       struct files_struct *fsp, int op, off_t offset,
 		       off_t count, int type);
 int smb_vfs_call_kernel_flock(struct vfs_handle_struct *handle,
-			      struct files_struct *fsp, uint32 share_mode,
+			      struct files_struct *fsp, uint32_t share_mode,
 			      uint32_t access_mask);
 int smb_vfs_call_linux_setlease(struct vfs_handle_struct *handle,
 				struct files_struct *fsp, int leasetype);
@@ -1073,15 +1084,6 @@ int smb_vfs_call_link(struct vfs_handle_struct *handle, const char *oldpath,
 int smb_vfs_call_mknod(struct vfs_handle_struct *handle, const char *path,
 		       mode_t mode, SMB_DEV_T dev);
 char *smb_vfs_call_realpath(struct vfs_handle_struct *handle, const char *path);
-NTSTATUS smb_vfs_call_notify_watch(struct vfs_handle_struct *handle,
-				   struct sys_notify_context *ctx,
-				   const char *name,
-				   uint32_t *filter,
-				   uint32_t *subdir_filter,
-				   void (*callback)(struct sys_notify_context *ctx,
-						    void *private_data,
-						    struct notify_event *ev),
-				   void *private_data, void *handle_p);
 int smb_vfs_call_chflags(struct vfs_handle_struct *handle, const char *path,
 			 unsigned int flags);
 struct file_id smb_vfs_call_file_id_create(struct vfs_handle_struct *handle,
@@ -1149,19 +1151,34 @@ NTSTATUS smb_vfs_call_set_compression(struct vfs_handle_struct *handle,
 				      TALLOC_CTX *mem_ctx,
 				      struct files_struct *fsp,
 				      uint16_t compression_fmt);
+NTSTATUS smb_vfs_call_snap_check_path(vfs_handle_struct *handle,
+				      TALLOC_CTX *mem_ctx,
+				      const char *service_path,
+				      char **base_volume);
+NTSTATUS smb_vfs_call_snap_create(struct vfs_handle_struct *handle,
+				  TALLOC_CTX *mem_ctx,
+				  const char *base_volume,
+				  time_t *tstamp,
+				  bool rw,
+				  char **base_path,
+				  char **snap_path);
+NTSTATUS smb_vfs_call_snap_delete(struct vfs_handle_struct *handle,
+				  TALLOC_CTX *mem_ctx,
+				  char *base_path,
+				  char *snap_path);
 NTSTATUS smb_vfs_call_fget_nt_acl(struct vfs_handle_struct *handle,
 				  struct files_struct *fsp,
-				  uint32 security_info,
+				  uint32_t security_info,
 				  TALLOC_CTX *mem_ctx,
 				  struct security_descriptor **ppdesc);
 NTSTATUS smb_vfs_call_get_nt_acl(struct vfs_handle_struct *handle,
 				 const char *name,
-				 uint32 security_info,
+				 uint32_t security_info,
 				 TALLOC_CTX *mem_ctx,
 				 struct security_descriptor **ppdesc);
 NTSTATUS smb_vfs_call_fset_nt_acl(struct vfs_handle_struct *handle,
 				  struct files_struct *fsp,
-				  uint32 security_info_sent,
+				  uint32_t security_info_sent,
 				  const struct security_descriptor *psd);
 NTSTATUS smb_vfs_call_audit_file(struct vfs_handle_struct *handle,
 				 struct smb_filename *file,

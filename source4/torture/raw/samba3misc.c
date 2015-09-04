@@ -428,8 +428,8 @@ static NTSTATUS raw_smbcli_ntcreate(struct smbcli_tree *tree, const char *fname,
 
 bool torture_samba3_badpath(struct torture_context *torture)
 {
-	struct smbcli_state *cli_nt;
-	struct smbcli_state *cli_dos;
+	struct smbcli_state *cli_nt = NULL;
+	struct smbcli_state *cli_dos = NULL;
 	const char *fname = "test.txt";
 	const char *fname1 = "test1.txt";
 	const char *dirname = "testdir";
@@ -981,7 +981,6 @@ bool torture_samba3_rootdirfid(struct torture_context *tctx, struct smbcli_state
 
 bool torture_samba3_oplock_logoff(struct torture_context *tctx, struct smbcli_state *cli)
 {
-	uint16_t fnum1;
 	union smb_open io;
 	const char *fname = "testfile";
 	bool ret = false;
@@ -1007,7 +1006,6 @@ bool torture_samba3_oplock_logoff(struct torture_context *tctx, struct smbcli_st
 	torture_assert_ntstatus_equal_goto(tctx, smb_raw_open(cli->tree, tctx, &io),
 					   NT_STATUS_OK,
 					   ret, done, "first smb_open on the file failed");
-	fnum1 = io.ntcreatex.out.file.fnum;
 
 	/*
 	 * Create a conflicting open, causing the one-second delay

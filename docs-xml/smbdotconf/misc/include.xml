@@ -1,9 +1,9 @@
 <samba:parameter name="include"
-	         context="G"
-		 type="string"
-		 hide="1"
+                 context="S"
+                 type="string"
                  generated_function="0"
-		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+                 handler="handle_include"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>
 	This allows you to include one config file inside another.  The file is included literally, as though typed 

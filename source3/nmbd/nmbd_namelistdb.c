@@ -24,7 +24,7 @@
 #include "system/filesys.h"
 #include "nmbd/nmbd.h"
 
-uint16 samba_nb_type = 0; /* samba's NetBIOS name type */
+uint16_t samba_nb_type = 0; /* samba's NetBIOS name type */
 
 
 /**************************************************************************
@@ -191,7 +191,7 @@ void update_name_ttl( struct name_record *namerec, int ttl )
 bool add_name_to_subnet( struct subnet_record *subrec,
 			const char *name,
 			int type,
-			uint16 nb_flags,
+			uint16_t nb_flags,
 			int ttl,
 			enum name_source source,
 			int num_ips,
@@ -286,7 +286,7 @@ ttl=%d nb_flags=%2x to subnet %s\n",
 
 void standard_success_register(struct subnet_record *subrec, 
                              struct userdata_struct *userdata,
-                             struct nmb_name *nmbname, uint16 nb_flags, int ttl,
+                             struct nmb_name *nmbname, uint16_t nb_flags, int ttl,
                              struct in_addr registered_ip)
 {
 	struct name_record *namerec;

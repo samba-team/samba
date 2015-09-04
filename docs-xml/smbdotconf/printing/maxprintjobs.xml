@@ -1,8 +1,6 @@
 <samba:parameter name="max print jobs"
                  context="S"
-		 print="1"
-		 type="integer"
-                 generated_function="0"
+                 type="integer"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>This parameter limits the maximum number of 

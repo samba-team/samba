@@ -89,7 +89,7 @@ static bool parse_user_quota_record(const uint8_t *rdata,
 	/* the hard quotas 8 bytes (uint64_t)*/
 	qt.hardlim = BVAL(rdata,32);
 
-	if (!sid_parse((const char *)rdata+40,sid_len,&qt.sid)) {
+	if (!sid_parse(rdata+40,sid_len,&qt.sid)) {
 		return false;
 	}
 
@@ -129,7 +129,7 @@ NTSTATUS cli_get_user_quota(struct cli_state *cli, int quota_fnum,
 	data_len = sid_len+8;
 	SIVAL(data, 0, 0x00000000);
 	SIVAL(data, 4, sid_len);
-	sid_linearize((char *)data+8, sid_len, &pqt->sid);
+	sid_linearize(data+8, sid_len, &pqt->sid);
 
 	status = cli_trans(talloc_tos(), cli, SMBnttrans,
 			   NULL, -1, /* name, fid */
@@ -183,7 +183,7 @@ NTSTATUS cli_set_user_quota(struct cli_state *cli, int quota_fnum,
 	SBIG_UINT(data,16,pqt->usedspace);
 	SBIG_UINT(data,24,pqt->softlim);
 	SBIG_UINT(data,32,pqt->hardlim);
-	sid_linearize((char *)data+40, sid_len, &pqt->sid);
+	sid_linearize(data+40, sid_len, &pqt->sid);
 
 	status = cli_trans(talloc_tos(), cli, SMBnttrans,
 			   NULL, -1, /* name, fid */

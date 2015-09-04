@@ -7,7 +7,7 @@ if not conf.env.NCURSES_CONFIG:
     conf.find_program('ncurses6-config', var='NCURSES_CONFIG')
 
 if conf.env.NCURSES_CONFIG:
-    conf.check_cfg(path=conf.env.NCURSES_CONFIG, args="--cflags --libs",
+    conf.CHECK_CFG(path=conf.env.NCURSES_CONFIG, args="--cflags --libs",
                package="", uselib_store="NCURSES")
 
 conf.CHECK_HEADERS('ncurses.h menu.h panel.h form.h', lib='ncurses')

@@ -48,21 +48,22 @@ NSS_STATUS _nss_wins_gethostbyname2_r(const char *name, int af, struct hostent *
 static void nss_wins_init(void)
 {
 	initialised = 1;
-	load_case_tables_library();
 	lp_set_cmdline("log level", "0");
 
 	TimeInit();
 	setup_logging("nss_wins",False);
-	lp_load(get_dyn_CONFIGFILE(),True,False,False,True);
+	lp_load_global(get_dyn_CONFIGFILE());
 	load_interfaces();
 }
 
 static struct in_addr *lookup_byname_backend(const char *name, int *count)
 {
-	TALLOC_CTX *frame = talloc_stackframe();
+	TALLOC_CTX *frame;
 	struct sockaddr_storage *address = NULL;
 	struct in_addr *ret = NULL;
 	NTSTATUS status;
+	const char *p;
+	size_t nbt_len;
 	int j;
 
 	if (!initialised) {
@@ -71,6 +72,16 @@ static struct in_addr *lookup_byname_backend(const char *name, int *count)
 
 	*count = 0;
 
+	nbt_len = strlen(name);
+	if (nbt_len > MAX_NETBIOSNAME_LEN - 1) {
+		return NULL;
+	}
+	p = strchr(name, '.');
+	if (p != NULL) {
+		return NULL;
+	}
+
+	frame = talloc_stackframe();
 	/* always try with wins first */
 	status = resolve_wins(name, 0x00, talloc_tos(),
 			      &address, count);

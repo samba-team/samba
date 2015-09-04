@@ -43,12 +43,21 @@
 #include <string.h>
 #include "tini.h"
 
+static bool c_isspace(char c)
+{
+	unsigned char uc = c;
+	if (c != uc) {
+		return false;
+	}
+	return isspace(uc);
+}
+
 static int next_content(FILE *f)
 {
 	int c;
 
 	for (c = fgetc(f); c != EOF; c = fgetc(f)) {
-		if (!isspace(c)) {
+		if (!c_isspace(c)) {
 			break;
 		}
 		if (c == '\n') {
@@ -145,7 +154,7 @@ next_line:
 			}
 
 			if ((pos > 1) && (buf[pos-2] == '\\') &&
-			    isspace(buf[pos-1])) {
+			    c_isspace(buf[pos-1])) {
 				/*
 				 * Line ends in "\ ". Mind that we zap
 				 * multiple spaces into one. Continuation.
@@ -160,7 +169,7 @@ next_line:
 			break;
 		}
 
-		if ((pos > 0) && isspace(buf[pos-1]) && isspace(c)) {
+		if ((pos > 0) && c_isspace(buf[pos-1]) && c_isspace(c)) {
 			/*
 			 * Zap multiple spaces to one
 			 */
@@ -203,14 +212,14 @@ static char *trim_one_space(char *buf)
 {
 	size_t len;
 
-	if (isspace(buf[0])) {
+	if (c_isspace(buf[0])) {
 		buf += 1;
 	}
 	len = strlen(buf);
 	if (len == 0) {
 		return buf;
 	}
-	if (isspace(buf[len-1])) {
+	if (c_isspace(buf[len-1])) {
 		buf[len-1] = '\0';
 	}
 

@@ -251,7 +251,9 @@
 	LOGON_INFO->info3 = *sam3;
 
 	ret = krb5_unparse_name_flags(context, client_principal,
-				      KRB5_PRINCIPAL_UNPARSE_NO_REALM, &name);
+				      KRB5_PRINCIPAL_UNPARSE_NO_REALM |
+				      KRB5_PRINCIPAL_UNPARSE_DISPLAY,
+				      &name);
 	if (ret) {
 		return ret;
 	}

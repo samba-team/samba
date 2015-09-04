@@ -1,7 +1,6 @@
 <samba:parameter name="require strong key"
                  context="G"
                  type="boolean"
-                 advanced="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This option controls whether winbindd requires support

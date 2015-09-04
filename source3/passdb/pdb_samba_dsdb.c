@@ -730,8 +730,8 @@ static NTSTATUS pdb_samba_dsdb_getsampwsid(struct pdb_methods *m,
 
 static NTSTATUS pdb_samba_dsdb_create_user(struct pdb_methods *m,
 				    TALLOC_CTX *mem_ctx,
-				    const char *name, uint32 acct_flags,
-				    uint32 *rid)
+				    const char *name, uint32_t acct_flags,
+				    uint32_t *rid)
 {
 	struct pdb_samba_dsdb_state *state = talloc_get_type_abort(
 		m->private_data, struct pdb_samba_dsdb_state);
@@ -1064,7 +1064,7 @@ static NTSTATUS pdb_samba_dsdb_getgrnam(struct pdb_methods *m, GROUP_MAP *map,
 
 static NTSTATUS pdb_samba_dsdb_create_dom_group(struct pdb_methods *m,
 					 TALLOC_CTX *mem_ctx, const char *name,
-					 uint32 *rid)
+					 uint32_t *rid)
 {
 	struct pdb_samba_dsdb_state *state = talloc_get_type_abort(
 		m->private_data, struct pdb_samba_dsdb_state);
@@ -1086,7 +1086,7 @@ static NTSTATUS pdb_samba_dsdb_create_dom_group(struct pdb_methods *m,
 }
 
 static NTSTATUS pdb_samba_dsdb_delete_dom_group(struct pdb_methods *m,
-					 TALLOC_CTX *mem_ctx, uint32 rid)
+					 TALLOC_CTX *mem_ctx, uint32_t rid)
 {
 	const char *attrs[] = { NULL };
 	struct pdb_samba_dsdb_state *state = talloc_get_type_abort(
@@ -1461,7 +1461,7 @@ static NTSTATUS pdb_samba_dsdb_mod_groupmem_by_sid(struct pdb_methods *m,
 
 static NTSTATUS pdb_samba_dsdb_mod_groupmem(struct pdb_methods *m,
 				     TALLOC_CTX *mem_ctx,
-				     uint32 grouprid, uint32 memberrid,
+				     uint32_t grouprid, uint32_t memberrid,
 				     int mod_op)
 {
 	struct pdb_samba_dsdb_state *state = talloc_get_type_abort(
@@ -1490,7 +1490,7 @@ static NTSTATUS pdb_samba_dsdb_mod_groupmem(struct pdb_methods *m,
 
 static NTSTATUS pdb_samba_dsdb_add_groupmem(struct pdb_methods *m,
 				     TALLOC_CTX *mem_ctx,
-				     uint32 group_rid, uint32 member_rid)
+				     uint32_t group_rid, uint32_t member_rid)
 {
 	return pdb_samba_dsdb_mod_groupmem(m, mem_ctx, group_rid, member_rid,
 				    LDB_FLAG_MOD_ADD);
@@ -1498,14 +1498,14 @@ static NTSTATUS pdb_samba_dsdb_add_groupmem(struct pdb_methods *m,
 
 static NTSTATUS pdb_samba_dsdb_del_groupmem(struct pdb_methods *m,
 				     TALLOC_CTX *mem_ctx,
-				     uint32 group_rid, uint32 member_rid)
+				     uint32_t group_rid, uint32_t member_rid)
 {
 	return pdb_samba_dsdb_mod_groupmem(m, mem_ctx, group_rid, member_rid,
 				       LDB_FLAG_MOD_DELETE);
 }
 
 static NTSTATUS pdb_samba_dsdb_create_alias(struct pdb_methods *m,
-				     const char *name, uint32 *rid)
+				     const char *name, uint32_t *rid)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct pdb_samba_dsdb_state *state = talloc_get_type_abort(
@@ -1793,7 +1793,7 @@ static NTSTATUS pdb_samba_dsdb_enum_alias_memberships(struct pdb_methods *m,
 static NTSTATUS pdb_samba_dsdb_lookup_rids(struct pdb_methods *m,
 				    const struct dom_sid *domain_sid,
 				    int num_rids,
-				    uint32 *rids,
+				    uint32_t *rids,
 				    const char **names,
 				    enum lsa_SidType *lsa_attrs)
 {
@@ -1819,7 +1819,7 @@ static NTSTATUS pdb_samba_dsdb_lookup_names(struct pdb_methods *m,
 				     const struct dom_sid *domain_sid,
 				     int num_names,
 				     const char **pp_names,
-				     uint32 *rids,
+				     uint32_t *rids,
 				     enum lsa_SidType *attrs)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
@@ -1995,7 +1995,7 @@ static bool pdb_samba_dsdb_search_filter(struct pdb_methods *m,
 
 static bool pdb_samba_dsdb_search_users(struct pdb_methods *m,
 				 struct pdb_search *search,
-				 uint32 acct_flags)
+				 uint32_t acct_flags)
 {
 	struct pdb_samba_dsdb_search_state *sstate;
 	bool ret;
@@ -2117,7 +2117,7 @@ static uint32_t pdb_samba_dsdb_capabilities(struct pdb_methods *m)
 	return PDB_CAP_STORE_RIDS | PDB_CAP_ADS;
 }
 
-static bool pdb_samba_dsdb_new_rid(struct pdb_methods *m, uint32 *rid)
+static bool pdb_samba_dsdb_new_rid(struct pdb_methods *m, uint32_t *rid)
 {
 	return false;
 }
@@ -2155,16 +2155,18 @@ static bool pdb_samba_dsdb_get_trusteddom_pw(struct pdb_methods *m,
 	enum ndr_err_code ndr_err;
 	NTSTATUS status;
 	const char *netbios_domain = NULL;
+	const struct dom_sid *domain_sid = NULL;
 
-	status = sam_get_results_trust(state->ldb, tmp_ctx, domain,
-				       NULL, attrs, &msg);
+	status = dsdb_trust_search_tdo(state->ldb, domain, NULL,
+				       attrs, tmp_ctx, &msg);
 	if (!NT_STATUS_IS_OK(status)) {
 		/*
 		 * This can be called to work out of a domain is
 		 * trusted, rather than just to get the password
 		 */
-		DEBUG(2, ("Failed to get trusted domain password for %s.  "
-			  "It may not be a trusted domain.\n", domain));
+		DEBUG(2, ("Failed to get trusted domain password for %s - %s.  "
+			  "It may not be a trusted domain.\n", domain,
+			  nt_errstr(status)));
 		TALLOC_FREE(tmp_ctx);
 		return false;
 	}
@@ -2172,6 +2174,14 @@ static bool pdb_samba_dsdb_get_trusteddom_pw(struct pdb_methods *m,
 	netbios_domain = ldb_msg_find_attr_as_string(msg, "flatName", NULL);
 	if (netbios_domain == NULL) {
 		DEBUG(2, ("Trusted domain %s has to flatName defined.\n",
+			  domain));
+		TALLOC_FREE(tmp_ctx);
+		return false;
+	}
+
+	domain_sid = samdb_result_dom_sid(tmp_ctx, msg, "securityIdentifier");
+	if (domain_sid == NULL) {
+		DEBUG(2, ("Trusted domain %s has no securityIdentifier defined.\n",
 			  domain));
 		TALLOC_FREE(tmp_ctx);
 		return false;
@@ -2256,6 +2266,10 @@ static bool pdb_samba_dsdb_get_trusteddom_pw(struct pdb_methods *m,
 		*pass_last_set_time = nt_time_to_unix(auth_array->array[i].LastUpdateTime);
 	}
 
+	if (sid != NULL) {
+		sid_copy(sid, domain_sid);
+	}
+
 	TALLOC_FREE(tmp_ctx);
 	return true;
 }
@@ -2286,9 +2300,11 @@ static NTSTATUS pdb_samba_dsdb_get_trusteddom_creds(struct pdb_methods *m,
 	int trust_type;
 	int i;
 	DATA_BLOB password_utf16 = {};
-	DATA_BLOB password_nt = {};
+	struct samr_Password *password_nt = NULL;
+	uint32_t password_version = 0;
+	DATA_BLOB old_password_utf16 = {};
+	struct samr_Password *old_password_nt = NULL;
 	struct trustAuthInOutBlob password_blob;
-	struct AuthenticationInformationArray *auth_array = NULL;
 	enum ndr_err_code ndr_err;
 	NTSTATUS status;
 	time_t last_set_time = 0;
@@ -2302,17 +2318,18 @@ static NTSTATUS pdb_samba_dsdb_get_trusteddom_creds(struct pdb_methods *m,
 	char *principal_name = NULL;
 	const char *dns_domain = NULL;
 
-	status = sam_get_results_trust(state->ldb, tmp_ctx, domain,
-				       NULL, attrs, &msg);
+	status = dsdb_trust_search_tdo(state->ldb, domain, NULL,
+				       attrs, tmp_ctx, &msg);
 	if (!NT_STATUS_IS_OK(status)) {
 		/*
 		 * This can be called to work out of a domain is
 		 * trusted, rather than just to get the password
 		 */
-		DEBUG(2, ("Failed to get trusted domain password for %s.  "
-			  "It may not be a trusted domain.\n", domain));
+		DEBUG(2, ("Failed to get trusted domain password for %s - %s "
+			  "It may not be a trusted domain.\n", domain,
+			  nt_errstr(status)));
 		TALLOC_FREE(tmp_ctx);
-		return status;
+		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
 
 	netbios_domain = ldb_msg_find_attr_as_string(msg, "flatName", NULL);
@@ -2361,27 +2378,65 @@ static NTSTATUS pdb_samba_dsdb_get_trusteddom_creds(struct pdb_methods *m,
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
 
-	auth_array = &password_blob.current;
+	for (i=0; i < password_blob.current.count; i++) {
+		struct AuthenticationInformation *a =
+			&password_blob.current.array[i];
 
-	for (i=0; i < auth_array->count; i++) {
-		if (auth_array->array[i].AuthType == TRUST_AUTH_TYPE_CLEAR) {
-			last_set_time = nt_time_to_unix(auth_array->array[i].LastUpdateTime);
-
-			password_utf16 = data_blob_const(auth_array->array[i].AuthInfo.clear.password,
-							 auth_array->array[i].AuthInfo.clear.size);
-			password_nt = data_blob_null;
+		switch (a->AuthType) {
+		case TRUST_AUTH_TYPE_NONE:
 			break;
-		}
 
-		if (auth_array->array[i].AuthType == TRUST_AUTH_TYPE_NT4OWF) {
-			last_set_time = nt_time_to_unix(auth_array->array[i].LastUpdateTime);
+		case TRUST_AUTH_TYPE_VERSION:
+			password_version = a->AuthInfo.version.version;
+			break;
 
-			password_nt = data_blob_const(auth_array->array[i].AuthInfo.clear.password,
-						      auth_array->array[i].AuthInfo.clear.size);
+		case TRUST_AUTH_TYPE_CLEAR:
+			last_set_time = nt_time_to_unix(a->LastUpdateTime);
+
+			password_utf16 = data_blob_const(a->AuthInfo.clear.password,
+							 a->AuthInfo.clear.size);
+			password_nt = NULL;
+			break;
+
+		case TRUST_AUTH_TYPE_NT4OWF:
+			if (password_utf16.length != 0) {
+				break;
+			}
+
+			last_set_time = nt_time_to_unix(a->LastUpdateTime);
+
+			password_nt = &a->AuthInfo.nt4owf.password;
+			break;
 		}
 	}
 
-	if (password_utf16.length == 0 && password_nt.length == 0) {
+	for (i=0; i < password_blob.previous.count; i++) {
+		struct AuthenticationInformation *a = &password_blob.previous.array[i];
+
+		switch (a->AuthType) {
+		case TRUST_AUTH_TYPE_NONE:
+			break;
+
+		case TRUST_AUTH_TYPE_VERSION:
+			break;
+
+		case TRUST_AUTH_TYPE_CLEAR:
+			old_password_utf16 = data_blob_const(a->AuthInfo.clear.password,
+							 a->AuthInfo.clear.size);
+			old_password_nt = NULL;
+			break;
+
+		case TRUST_AUTH_TYPE_NT4OWF:
+			if (old_password_utf16.length != 0) {
+				break;
+			}
+
+			old_password_nt = &a->AuthInfo.nt4owf.password;
+			break;
+		}
+	}
+
+	if (password_utf16.length == 0 && password_nt == NULL) {
 		DEBUG(0, ("Trusted domain %s does not have a "
 			  "clear-text nor nt password stored\n",
 			  domain));
@@ -2454,14 +2509,26 @@ static NTSTATUS pdb_samba_dsdb_get_trusteddom_creds(struct pdb_methods *m,
 		}
 	}
 
-	if (password_nt.length == 16) {
-		struct samr_Password nt_hash;
+	if (old_password_nt != NULL) {
+		ok = cli_credentials_set_old_nt_hash(creds, old_password_nt);
+		if (!ok) {
+			TALLOC_FREE(tmp_ctx);
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
 
-		memcpy(nt_hash.hash, password_nt.data, 16);
+	if (old_password_utf16.length > 0) {
+		ok = cli_credentials_set_old_utf16_password(creds,
+							    &old_password_utf16);
+		if (!ok) {
+			TALLOC_FREE(tmp_ctx);
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
 
-		ok = cli_credentials_set_nt_hash(creds, &nt_hash,
+	if (password_nt != NULL) {
+		ok = cli_credentials_set_nt_hash(creds, password_nt,
 						 CRED_SPECIFIED);
-		ZERO_STRUCT(nt_hash);
 		if (!ok) {
 			TALLOC_FREE(tmp_ctx);
 			return NT_STATUS_NO_MEMORY;
@@ -2479,6 +2546,7 @@ static NTSTATUS pdb_samba_dsdb_get_trusteddom_creds(struct pdb_methods *m,
 	}
 
 	cli_credentials_set_password_last_changed_time(creds, last_set_time);
+	cli_credentials_set_kvno(creds, password_version);
 
 	if (password_utf16.length > 0 && dns_domain != NULL) {
 		/*
@@ -2503,7 +2571,285 @@ static bool pdb_samba_dsdb_set_trusteddom_pw(struct pdb_methods *m,
 				      const char* domain, const char* pwd,
 				      const struct dom_sid *sid)
 {
-	return false;
+	struct pdb_samba_dsdb_state *state = talloc_get_type_abort(
+		m->private_data, struct pdb_samba_dsdb_state);
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+	const char * const attrs[] = {
+		"trustAuthOutgoing",
+		"trustDirection",
+		"trustType",
+		NULL
+	};
+	struct ldb_message *msg = NULL;
+	int trust_direction_flags;
+	int trust_type;
+	int i;
+	const struct ldb_val *old_val = NULL;
+	struct trustAuthInOutBlob old_blob = {};
+	uint32_t old_version = 0;
+	uint32_t new_version = 0;
+	DATA_BLOB new_utf16 = {};
+	struct trustAuthInOutBlob new_blob = {};
+	struct ldb_val new_val = {};
+	struct timeval tv = timeval_current();
+	NTTIME now = timeval_to_nttime(&tv);
+	enum ndr_err_code ndr_err;
+	NTSTATUS status;
+	bool ok;
+	int ret;
+
+	ret = ldb_transaction_start(state->ldb);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(2, ("Failed to start transaction.\n"));
+		TALLOC_FREE(tmp_ctx);
+		return false;
+	}
+
+	ok = samdb_is_pdc(state->ldb);
+	if (!ok) {
+		DEBUG(2, ("Password changes for domain %s are only allowed on a PDC.\n",
+			  domain));
+		TALLOC_FREE(tmp_ctx);
+		ldb_transaction_cancel(state->ldb);
+		return false;
+	}
+
+	status = dsdb_trust_search_tdo(state->ldb, domain, NULL,
+				       attrs, tmp_ctx, &msg);
+	if (!NT_STATUS_IS_OK(status)) {
+		/*
+		 * This can be called to work out of a domain is
+		 * trusted, rather than just to get the password
+		 */
+		DEBUG(2, ("Failed to get trusted domain password for %s - %s.  "
+			  "It may not be a trusted domain.\n", domain,
+			  nt_errstr(status)));
+		TALLOC_FREE(tmp_ctx);
+		ldb_transaction_cancel(state->ldb);
+		return false;
+	}
+
+	trust_direction_flags = ldb_msg_find_attr_as_int(msg, "trustDirection", 0);
+	if (!(trust_direction_flags & LSA_TRUST_DIRECTION_OUTBOUND)) {
+		DEBUG(2, ("Trusted domain %s is is not an outbound trust, can't set a password.\n",
+			  domain));
+		TALLOC_FREE(tmp_ctx);
+		ldb_transaction_cancel(state->ldb);
+		return false;
+	}
+
+	trust_type = ldb_msg_find_attr_as_int(msg, "trustType", 0);
+	switch (trust_type) {
+	case LSA_TRUST_TYPE_DOWNLEVEL:
+	case LSA_TRUST_TYPE_UPLEVEL:
+		break;
+	default:
+		DEBUG(0, ("Trusted domain %s is of type 0x%X - "
+			  "password changes are not supported\n",
+			  domain, (unsigned)trust_type));
+		TALLOC_FREE(tmp_ctx);
+		ldb_transaction_cancel(state->ldb);
+		return false;
+	}
+
+	old_val = ldb_msg_find_ldb_val(msg, "trustAuthOutgoing");
+	if (old_val != NULL) {
+		ndr_err = ndr_pull_struct_blob(old_val, tmp_ctx, &old_blob,
+				(ndr_pull_flags_fn_t)ndr_pull_trustAuthInOutBlob);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			DEBUG(0, ("Failed to get trusted domain password for %s, "
+				  "attribute trustAuthOutgoing coult not be parsed %s.\n",
+				  domain,
+				  ndr_map_error2string(ndr_err)));
+			TALLOC_FREE(tmp_ctx);
+			ldb_transaction_cancel(state->ldb);
+			return false;
+		}
+	}
+
+	for (i=0; i < old_blob.current.count; i++) {
+		struct AuthenticationInformation *a =
+			&old_blob.current.array[i];
+
+		switch (a->AuthType) {
+		case TRUST_AUTH_TYPE_NONE:
+			break;
+
+		case TRUST_AUTH_TYPE_VERSION:
+			old_version = a->AuthInfo.version.version;
+			break;
+
+		case TRUST_AUTH_TYPE_CLEAR:
+			break;
+
+		case TRUST_AUTH_TYPE_NT4OWF:
+			break;
+		}
+	}
+
+	new_version = old_version + 1;
+	ok = convert_string_talloc(tmp_ctx,
+				   CH_UNIX, CH_UTF16,
+				   pwd, strlen(pwd),
+			           (void *)&new_utf16.data,
+			           &new_utf16.length);
+	if (!ok) {
+		DEBUG(0, ("Failed to generate new_utf16 password for  domain %s\n",
+			  domain));
+		TALLOC_FREE(tmp_ctx);
+		ldb_transaction_cancel(state->ldb);
+		return false;
+	}
+
+	if (new_utf16.length < 28) {
+		DEBUG(0, ("new_utf16[%zu] version[%u] for domain %s to short.\n",
+			  new_utf16.length,
+			  (unsigned)new_version,
+			  domain));
+		TALLOC_FREE(tmp_ctx);
+		ldb_transaction_cancel(state->ldb);
+		return false;
+	}
+	if (new_utf16.length > 498) {
+		DEBUG(0, ("new_utf16[%zu] version[%u] for domain %s to long.\n",
+			  new_utf16.length,
+			  (unsigned)new_version,
+			  domain));
+		TALLOC_FREE(tmp_ctx);
+		ldb_transaction_cancel(state->ldb);
+		return false;
+	}
+
+	new_blob.count = MAX(old_blob.current.count, 2);
+	new_blob.current.array = talloc_zero_array(tmp_ctx,
+					struct AuthenticationInformation,
+					new_blob.count);
+	if (new_blob.current.array == NULL) {
+		DEBUG(0, ("talloc_zero_array(%u) failed\n",
+			  (unsigned)new_blob.count));
+		TALLOC_FREE(tmp_ctx);
+		ldb_transaction_cancel(state->ldb);
+		return false;
+	}
+	new_blob.previous.array = talloc_zero_array(tmp_ctx,
+					struct AuthenticationInformation,
+					new_blob.count);
+	if (new_blob.current.array == NULL) {
+		DEBUG(0, ("talloc_zero_array(%u) failed\n",
+			  (unsigned)new_blob.count));
+		TALLOC_FREE(tmp_ctx);
+		ldb_transaction_cancel(state->ldb);
+		return false;
+	}
+
+	for (i = 0; i < old_blob.current.count; i++) {
+		struct AuthenticationInformation *o =
+			&old_blob.current.array[i];
+		struct AuthenticationInformation *p =
+			&new_blob.previous.array[i];
+
+		*p = *o;
+		new_blob.previous.count++;
+	}
+	for (; i < new_blob.count; i++) {
+		struct AuthenticationInformation *pi =
+			&new_blob.previous.array[i];
+
+		if (i == 0) {
+			/*
+			 * new_blob.previous is still empty so
+			 * we'll do new_blob.previous = new_blob.current
+			 * below.
+			 */
+			break;
+		}
+
+		pi->LastUpdateTime = now;
+		pi->AuthType = TRUST_AUTH_TYPE_NONE;
+		new_blob.previous.count++;
+	}
+
+	for (i = 0; i < new_blob.count; i++) {
+		struct AuthenticationInformation *ci =
+			&new_blob.current.array[i];
+
+		ci->LastUpdateTime = now;
+		switch (i) {
+		case 0:
+			ci->AuthType = TRUST_AUTH_TYPE_CLEAR;
+			ci->AuthInfo.clear.size = new_utf16.length;
+			ci->AuthInfo.clear.password = new_utf16.data;
+			break;
+		case 1:
+			ci->AuthType = TRUST_AUTH_TYPE_VERSION;
+			ci->AuthInfo.version.version = new_version;
+			break;
+		default:
+			ci->AuthType = TRUST_AUTH_TYPE_NONE;
+			break;
+		}
+
+		new_blob.current.count++;
+	}
+
+	if (new_blob.previous.count == 0) {
+		TALLOC_FREE(new_blob.previous.array);
+		new_blob.previous = new_blob.current;
+	}
+
+	ndr_err = ndr_push_struct_blob(&new_val, tmp_ctx, &new_blob,
+			(ndr_push_flags_fn_t)ndr_push_trustAuthInOutBlob);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DEBUG(0, ("Failed to generate trustAuthOutgoing for "
+			  "trusted domain password for %s: %s.\n",
+			  domain, ndr_map_error2string(ndr_err)));
+		TALLOC_FREE(tmp_ctx);
+		ldb_transaction_cancel(state->ldb);
+		return false;
+	}
+
+	msg->num_elements = 0;
+	ret = ldb_msg_add_empty(msg, "trustAuthOutgoing",
+				LDB_FLAG_MOD_REPLACE, NULL);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(0, ("ldb_msg_add_empty() failed\n"));
+		TALLOC_FREE(tmp_ctx);
+		ldb_transaction_cancel(state->ldb);
+		return false;
+	}
+	ret = ldb_msg_add_value(msg, "trustAuthOutgoing",
+				&new_val, NULL);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(0, ("ldb_msg_add_value() failed\n"));
+		TALLOC_FREE(tmp_ctx);
+		ldb_transaction_cancel(state->ldb);
+		return false;
+	}
+
+	ret = ldb_modify(state->ldb, msg);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(0, ("Failed to replace trustAuthOutgoing for "
+			  "trusted domain password for %s: %s - %s\n",
+			  domain, ldb_strerror(ret), ldb_errstring(state->ldb)));
+		TALLOC_FREE(tmp_ctx);
+		ldb_transaction_cancel(state->ldb);
+		return false;
+	}
+
+	ret = ldb_transaction_commit(state->ldb);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(0, ("Failed to commit trustAuthOutgoing for "
+			  "trusted domain password for %s: %s - %s\n",
+			  domain, ldb_strerror(ret), ldb_errstring(state->ldb)));
+		TALLOC_FREE(tmp_ctx);
+		return false;
+	}
+
+	DEBUG(1, ("Added new_version[%u] to trustAuthOutgoing for "
+		  "trusted domain password for %s.\n",
+		  (unsigned)new_version, domain));
+	TALLOC_FREE(tmp_ctx);
+	return true;
 }
 
 static bool pdb_samba_dsdb_del_trusteddom_pw(struct pdb_methods *m,
@@ -2514,7 +2860,7 @@ static bool pdb_samba_dsdb_del_trusteddom_pw(struct pdb_methods *m,
 
 static NTSTATUS pdb_samba_dsdb_enum_trusteddoms(struct pdb_methods *m,
 					 TALLOC_CTX *mem_ctx,
-					 uint32 *num_domains,
+					 uint32_t *num_domains,
 					 struct trustdom_info ***domains)
 {
 	*num_domains = 0;

@@ -178,7 +178,7 @@ bool directory_has_default_acl(connection_struct *conn, const char *fname)
  Check if setting delete on close is allowed on this fsp.
 ****************************************************************************/
 
-NTSTATUS can_set_delete_on_close(files_struct *fsp, uint32 dosmode)
+NTSTATUS can_set_delete_on_close(files_struct *fsp, uint32_t dosmode)
 {
 	/*
 	 * Only allow delete on close for writable files.

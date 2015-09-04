@@ -1,6 +1,6 @@
 <samba:parameter name="invalid users"
                  context="S"
-				 type="list"
+                 type="cmdlist"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>This is a list of users that should not be allowed 

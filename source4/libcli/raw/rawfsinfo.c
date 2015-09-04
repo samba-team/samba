@@ -226,6 +226,23 @@ NTSTATUS smb_raw_fsinfo_passthru_parse(DATA_BLOB blob, TALLOC_CTX *mem_ctx,
 			fsinfo->objectid_information.out.unknown[i] = BVAL(blob.data, 16 + i*8);
 		}
 		break;
+
+	case RAW_QFS_SECTOR_SIZE_INFORMATION:
+		QFS_CHECK_SIZE(28);
+		fsinfo->sector_size_info.out.logical_bytes_per_sector
+							= IVAL(blob.data,  0);
+		fsinfo->sector_size_info.out.phys_bytes_per_sector_atomic
+							= IVAL(blob.data,  4);
+		fsinfo->sector_size_info.out.phys_bytes_per_sector_perf
+							= IVAL(blob.data,  8);
+		fsinfo->sector_size_info.out.fs_effective_phys_bytes_per_sector_atomic
+							= IVAL(blob.data, 12);
+		fsinfo->sector_size_info.out.flags	= IVAL(blob.data, 16);
+		fsinfo->sector_size_info.out.byte_off_sector_align
+							= IVAL(blob.data, 20);
+		fsinfo->sector_size_info.out.byte_off_partition_align
+							= IVAL(blob.data, 24);
+		break;
 	}
 		
 	default:
@@ -319,6 +336,10 @@ NTSTATUS smb_raw_fsinfo_recv(struct smbcli_request *req,
 	case RAW_QFS_OBJECTID_INFORMATION:
 		return smb_raw_fsinfo_passthru_parse(blob, mem_ctx, 
 						     RAW_QFS_OBJECTID_INFORMATION, fsinfo);
+
+	case RAW_QFS_SECTOR_SIZE_INFORMATION:
+		return smb_raw_fsinfo_passthru_parse(blob, mem_ctx,
+				RAW_QFS_SECTOR_SIZE_INFORMATION, fsinfo);
 	}
 
 failed:

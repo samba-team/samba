@@ -762,7 +762,7 @@ err:
 static DIR *mh_opendir(vfs_handle_struct *handle,
 		const char *fname,
 		const char *mask,
-		uint32 attr)
+		uint32_t attr)
 {
 	struct mh_dirinfo_struct *dirInfo;
 
@@ -802,7 +802,7 @@ err:
 static DIR *mh_fdopendir(vfs_handle_struct *handle,
 		files_struct *fsp,
 		const char *mask,
-		uint32 attr)
+		uint32_t attr)
 {
 	struct mh_dirinfo_struct *dirInfo = NULL;
 	DIR *dirstream;
@@ -2017,7 +2017,7 @@ out:
  */
 static NTSTATUS mh_get_nt_acl(vfs_handle_struct *handle,
 			      const char *name,
-			      uint32 security_info,
+			      uint32_t security_info,
 			      TALLOC_CTX *mem_ctx,
 			      struct security_descriptor **ppdesc)
 {

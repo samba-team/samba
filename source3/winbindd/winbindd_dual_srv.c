@@ -27,9 +27,12 @@
 #include "ntdomain.h"
 #include "librpc/gen_ndr/srv_winbind.h"
 #include "../librpc/gen_ndr/ndr_netlogon_c.h"
+#include "../librpc/gen_ndr/ndr_lsa_c.h"
 #include "idmap.h"
 #include "../libcli/security/security.h"
 #include "../libcli/auth/netlogon_creds_cli.h"
+#include "passdb.h"
+#include "../source4/dsdb/samdb/samdb.h"
 
 void _wbint_Ping(struct pipes_struct *p, struct wbint_Ping *r)
 {
@@ -220,14 +223,12 @@ nomem:
 
 NTSTATUS _wbint_Uid2Sid(struct pipes_struct *p, struct wbint_Uid2Sid *r)
 {
-	return idmap_uid_to_sid(r->in.dom_name ? r->in.dom_name : "",
-				r->out.sid, r->in.uid);
+	return idmap_uid_to_sid(r->out.sid, r->in.uid);
 }
 
 NTSTATUS _wbint_Gid2Sid(struct pipes_struct *p, struct wbint_Gid2Sid *r)
 {
-	return idmap_gid_to_sid(r->in.dom_name ? r->in.dom_name : "",
-				r->out.sid, r->in.gid);
+	return idmap_gid_to_sid(r->out.sid, r->in.gid);
 }
 
 NTSTATUS _wbint_AllocateUid(struct pipes_struct *p, struct wbint_AllocateUid *r)
@@ -380,43 +381,106 @@ NTSTATUS _wbint_QueryGroupList(struct pipes_struct *p,
 			       struct wbint_QueryGroupList *r)
 {
 	struct winbindd_domain *domain = wb_child_domain();
-	uint32_t i, num_groups;
-	struct wb_acct_info *groups;
+	uint32_t i;
+	uint32_t num_local_groups = 0;
+	struct wb_acct_info *local_groups = NULL;
+	uint32_t num_dom_groups = 0;
+	struct wb_acct_info *dom_groups = NULL;
+	uint32_t ti = 0;
+	uint64_t num_total = 0;
 	struct wbint_Principal *result;
 	NTSTATUS status;
+	bool include_local_groups = false;
 
 	if (domain == NULL) {
 		return NT_STATUS_REQUEST_NOT_ACCEPTED;
 	}
 
+	switch (lp_server_role()) {
+	case ROLE_ACTIVE_DIRECTORY_DC:
+		if (domain->internal) {
+			/*
+			 * we want to include local groups
+			 * for BUILTIN and WORKGROUP
+			 */
+			include_local_groups = true;
+		}
+		break;
+	default:
+		/*
+		 * We might include local groups in more
+		 * setups later, but that requires more work
+		 * elsewhere.
+		 */
+		break;
+	}
+
+	if (include_local_groups) {
+		status = domain->methods->enum_local_groups(domain, talloc_tos(),
+							    &num_local_groups,
+							    &local_groups);
+		reset_cm_connection_on_error(domain, status);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+	}
+
 	status = domain->methods->enum_dom_groups(domain, talloc_tos(),
-						  &num_groups, &groups);
+						  &num_dom_groups,
+						  &dom_groups);
 	reset_cm_connection_on_error(domain, status);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
+	num_total = num_local_groups + num_dom_groups;
+	if (num_total > UINT32_MAX) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
 	result = talloc_array(r->out.groups, struct wbint_Principal,
-			      num_groups);
+			      num_total);
 	if (result == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	for (i=0; i<num_groups; i++) {
-		sid_compose(&result[i].sid, &domain->sid, groups[i].rid);
-		result[i].type = SID_NAME_DOM_GRP;
-		result[i].name = talloc_strdup(result, groups[i].acct_name);
-		if (result[i].name == NULL) {
+	for (i = 0; i < num_local_groups; i++) {
+		struct wb_acct_info *lg = &local_groups[i];
+		struct wbint_Principal *rg = &result[ti++];
+
+		sid_compose(&rg->sid, &domain->sid, lg->rid);
+		rg->type = SID_NAME_ALIAS;
+		rg->name = talloc_strdup(result, lg->acct_name);
+		if (rg->name == NULL) {
 			TALLOC_FREE(result);
-			TALLOC_FREE(groups);
+			TALLOC_FREE(dom_groups);
+			TALLOC_FREE(local_groups);
 			return NT_STATUS_NO_MEMORY;
 		}
 	}
+	num_local_groups = 0;
+	TALLOC_FREE(local_groups);
 
-	r->out.groups->num_principals = num_groups;
+	for (i = 0; i < num_dom_groups; i++) {
+		struct wb_acct_info *dg = &dom_groups[i];
+		struct wbint_Principal *rg = &result[ti++];
+
+		sid_compose(&rg->sid, &domain->sid, dg->rid);
+		rg->type = SID_NAME_DOM_GRP;
+		rg->name = talloc_strdup(result, dg->acct_name);
+		if (rg->name == NULL) {
+			TALLOC_FREE(result);
+			TALLOC_FREE(dom_groups);
+			TALLOC_FREE(local_groups);
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+	num_dom_groups = 0;
+	TALLOC_FREE(dom_groups);
+
+	r->out.groups->num_principals = ti;
 	r->out.groups->principals = result;
 
-	TALLOC_FREE(groups);
 	return NT_STATUS_OK;
 }
 
@@ -677,6 +741,14 @@ NTSTATUS _wbint_PingDc(struct pipes_struct *p, struct wbint_PingDc *r)
 
 reconnect:
 	status = cm_connect_netlogon(domain, &netlogon_pipe);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_SESSION_EXPIRED)) {
+		/*
+		 * Retry to open new connection with new kerberos ticket.
+		 */
+		invalidate_cm_connection(domain);
+		status = cm_connect_netlogon(domain, &netlogon_pipe);
+	}
+
 	reset_cm_connection_on_error(domain, status);
         if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("could not open handle to NETLOGON pipe: %s\n",
@@ -703,7 +775,7 @@ reconnect:
 					  logon_server, NETLOGON_CONTROL_QUERY,
 					  2, &info, &werr);
 
-	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_DEVICE_ERROR) && !retry) {
+	if (!dcerpc_binding_handle_is_connected(b) && !retry) {
 		DEBUG(10, ("Session might have expired. "
 			   "Reconnect and retry once.\n"));
 		invalidate_cm_connection(domain);
@@ -798,4 +870,809 @@ NTSTATUS _winbind_SamLogon(struct pipes_struct *p,
 				       r->in.logon.network->challenge,
 				       lm_response, nt_response, &r->out.validation.sam3);
 	return status;
+}
+
+static WERROR _winbind_LogonControl_REDISCOVER(struct pipes_struct *p,
+			     struct winbindd_domain *domain,
+			     struct winbind_LogonControl *r)
+{
+	NTSTATUS status;
+	struct rpc_pipe_client *netlogon_pipe = NULL;
+	struct netr_NETLOGON_INFO_2 *info2 = NULL;
+	WERROR check_result = WERR_INTERNAL_ERROR;
+
+	info2 = talloc_zero(p->mem_ctx, struct netr_NETLOGON_INFO_2);
+	if (info2 == NULL) {
+		return WERR_NOMEM;
+	}
+
+	if (domain->internal) {
+		check_result = WERR_OK;
+		goto check_return;
+	}
+
+	/*
+	 * For now we just force a reconnect
+	 *
+	 * TODO: take care of the optional '\dcname'
+	 */
+	invalidate_cm_connection(domain);
+	domain->conn.netlogon_force_reauth = true;
+	status = cm_connect_netlogon(domain, &netlogon_pipe);
+	reset_cm_connection_on_error(domain, status);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND)) {
+		status = NT_STATUS_NO_LOGON_SERVERS;
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(2, ("%s: domain[%s/%s] cm_connect_netlogon() returned %s\n",
+			  __func__, domain->name, domain->alt_name,
+			  nt_errstr(status)));
+		/*
+		 * Here we return a top level error!
+		 * This is different than TC_QUERY or TC_VERIFY.
+		 */
+		return ntstatus_to_werror(status);
+	}
+	check_result = WERR_OK;
+
+check_return:
+	info2->pdc_connection_status = WERR_OK;
+	if (domain->dcname != NULL) {
+		info2->flags |= NETLOGON_HAS_IP;
+		info2->flags |= NETLOGON_HAS_TIMESERV;
+		info2->trusted_dc_name = talloc_asprintf(info2, "\\\\%s",
+							 domain->dcname);
+		if (info2->trusted_dc_name == NULL) {
+			return WERR_NOMEM;
+		}
+	} else {
+		info2->trusted_dc_name = talloc_strdup(info2, "");
+		if (info2->trusted_dc_name == NULL) {
+			return WERR_NOMEM;
+		}
+	}
+	info2->tc_connection_status = check_result;
+
+	if (!W_ERROR_IS_OK(info2->pdc_connection_status)) {
+		DEBUG(2, ("%s: domain[%s/%s] dcname[%s] "
+			  "pdc_connection[%s] tc_connection[%s]\n",
+			  __func__, domain->name, domain->alt_name,
+			  domain->dcname,
+			  win_errstr(info2->pdc_connection_status),
+			  win_errstr(info2->tc_connection_status)));
+	}
+
+	r->out.query->info2 = info2;
+
+	DEBUG(5, ("%s: succeeded.\n", __func__));
+	return WERR_OK;
+}
+
+static WERROR _winbind_LogonControl_TC_QUERY(struct pipes_struct *p,
+			     struct winbindd_domain *domain,
+			     struct winbind_LogonControl *r)
+{
+	NTSTATUS status;
+	struct rpc_pipe_client *netlogon_pipe = NULL;
+	struct netr_NETLOGON_INFO_2 *info2 = NULL;
+	WERROR check_result = WERR_INTERNAL_ERROR;
+
+	info2 = talloc_zero(p->mem_ctx, struct netr_NETLOGON_INFO_2);
+	if (info2 == NULL) {
+		return WERR_NOMEM;
+	}
+
+	if (domain->internal) {
+		check_result = WERR_OK;
+		goto check_return;
+	}
+
+	status = cm_connect_netlogon(domain, &netlogon_pipe);
+	reset_cm_connection_on_error(domain, status);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND)) {
+		status = NT_STATUS_NO_LOGON_SERVERS;
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(3, ("could not open handle to NETLOGON pipe: %s\n",
+			  nt_errstr(status)));
+		check_result = ntstatus_to_werror(status);
+		goto check_return;
+	}
+	check_result = WERR_OK;
+
+check_return:
+	info2->pdc_connection_status = WERR_OK;
+	if (domain->dcname != NULL) {
+		info2->flags |= NETLOGON_HAS_IP;
+		info2->flags |= NETLOGON_HAS_TIMESERV;
+		info2->trusted_dc_name = talloc_asprintf(info2, "\\\\%s",
+							 domain->dcname);
+		if (info2->trusted_dc_name == NULL) {
+			return WERR_NOMEM;
+		}
+	} else {
+		info2->trusted_dc_name = talloc_strdup(info2, "");
+		if (info2->trusted_dc_name == NULL) {
+			return WERR_NOMEM;
+		}
+	}
+	info2->tc_connection_status = check_result;
+
+	if (!W_ERROR_IS_OK(info2->pdc_connection_status)) {
+		DEBUG(2, ("%s: domain[%s/%s] dcname[%s] "
+			  "pdc_connection[%s] tc_connection[%s]\n",
+			  __func__, domain->name, domain->alt_name,
+			  domain->dcname,
+			  win_errstr(info2->pdc_connection_status),
+			  win_errstr(info2->tc_connection_status)));
+	}
+
+	r->out.query->info2 = info2;
+
+	DEBUG(5, ("%s: succeeded.\n", __func__));
+	return WERR_OK;
+}
+
+static WERROR _winbind_LogonControl_TC_VERIFY(struct pipes_struct *p,
+			     struct winbindd_domain *domain,
+			     struct winbind_LogonControl *r)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	NTSTATUS status;
+	NTSTATUS result;
+	struct lsa_String trusted_domain_name = {};
+	struct lsa_StringLarge trusted_domain_name_l = {};
+	struct rpc_pipe_client *local_lsa_pipe = NULL;
+	struct policy_handle local_lsa_policy = {};
+	struct dcerpc_binding_handle *local_lsa = NULL;
+	struct rpc_pipe_client *netlogon_pipe = NULL;
+	struct cli_credentials *creds = NULL;
+	struct samr_Password *cur_nt_hash = NULL;
+	uint32_t trust_attributes = 0;
+	struct samr_Password new_owf_password = {};
+	int cmp_new = -1;
+	struct samr_Password old_owf_password = {};
+	int cmp_old = -1;
+	const struct lsa_TrustDomainInfoInfoEx *local_tdo = NULL;
+	bool fetch_fti = false;
+	struct lsa_ForestTrustInformation *new_fti = NULL;
+	struct netr_TrustInfo *trust_info = NULL;
+	struct netr_NETLOGON_INFO_2 *info2 = NULL;
+	struct dcerpc_binding_handle *b = NULL;
+	WERROR check_result = WERR_INTERNAL_ERROR;
+	WERROR verify_result = WERR_INTERNAL_ERROR;
+	bool retry = false;
+
+	trusted_domain_name.string = domain->name;
+	trusted_domain_name_l.string = domain->name;
+
+	info2 = talloc_zero(p->mem_ctx, struct netr_NETLOGON_INFO_2);
+	if (info2 == NULL) {
+		TALLOC_FREE(frame);
+		return WERR_NOMEM;
+	}
+
+	if (domain->internal) {
+		check_result = WERR_OK;
+		goto check_return;
+	}
+
+	status = pdb_get_trust_credentials(domain->name,
+					   domain->alt_name,
+					   frame,
+					   &creds);
+	if (NT_STATUS_IS_OK(status)) {
+		cur_nt_hash = cli_credentials_get_nt_hash(creds, frame);
+		TALLOC_FREE(creds);
+	}
+
+	if (!domain->primary) {
+		union lsa_TrustedDomainInfo *tdi = NULL;
+
+		status = open_internal_lsa_conn(frame, &local_lsa_pipe,
+						&local_lsa_policy);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0,("%s:%s: open_internal_lsa_conn() failed - %s\n",
+				 __location__, __func__, nt_errstr(status)));
+			TALLOC_FREE(frame);
+			return WERR_INTERNAL_ERROR;
+		}
+		local_lsa = local_lsa_pipe->binding_handle;
+
+		status = dcerpc_lsa_QueryTrustedDomainInfoByName(local_lsa, frame,
+							&local_lsa_policy,
+							&trusted_domain_name,
+							LSA_TRUSTED_DOMAIN_INFO_INFO_EX,
+							&tdi, &result);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0,("%s:%s: local_lsa.QueryTrustedDomainInfoByName(%s) failed - %s\n",
+				 __location__, __func__, domain->name, nt_errstr(status)));
+			TALLOC_FREE(frame);
+			return WERR_INTERNAL_ERROR;
+		}
+		if (NT_STATUS_EQUAL(result, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+			DEBUG(1,("%s:%s: domain[%s] not found via LSA, might be removed already.\n",
+				 __location__, __func__, domain->name));
+			TALLOC_FREE(frame);
+			return WERR_NO_SUCH_DOMAIN;
+		}
+		if (!NT_STATUS_IS_OK(result)) {
+			DEBUG(0,("%s:%s: local_lsa.QueryTrustedDomainInfoByName(%s) returned %s\n",
+				 __location__, __func__, domain->name, nt_errstr(result)));
+			TALLOC_FREE(frame);
+			return WERR_INTERNAL_ERROR;
+		}
+		if (tdi == NULL) {
+			DEBUG(0,("%s:%s: local_lsa.QueryTrustedDomainInfoByName() "
+				 "returned no trusted domain information\n",
+				 __location__, __func__));
+			TALLOC_FREE(frame);
+			return WERR_INTERNAL_ERROR;
+		}
+
+		local_tdo = &tdi->info_ex;
+		trust_attributes = local_tdo->trust_attributes;
+	}
+
+	if (trust_attributes & LSA_TRUST_ATTRIBUTE_FOREST_TRANSITIVE) {
+		struct lsa_ForestTrustInformation *old_fti = NULL;
+
+		status = dcerpc_lsa_lsaRQueryForestTrustInformation(local_lsa, frame,
+							&local_lsa_policy,
+							&trusted_domain_name,
+							LSA_FOREST_TRUST_DOMAIN_INFO,
+							&old_fti, &result);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0,("%s:%s: local_lsa.lsaRQueryForestTrustInformation(%s) failed %s\n",
+				 __location__, __func__, domain->name, nt_errstr(status)));
+			TALLOC_FREE(frame);
+			return WERR_INTERNAL_ERROR;
+		}
+		if (NT_STATUS_EQUAL(result, NT_STATUS_NOT_FOUND)) {
+			DEBUG(2,("%s: no forest trust information available for domain[%s] yet.\n",
+				  __func__, domain->name));
+			old_fti = NULL;
+			fetch_fti = true;
+			result = NT_STATUS_OK;
+		}
+		if (!NT_STATUS_IS_OK(result)) {
+			DEBUG(0,("%s:%s: local_lsa.lsaRQueryForestTrustInformation(%s) returned %s\n",
+				 __location__, __func__, domain->name, nt_errstr(result)));
+			TALLOC_FREE(frame);
+			return WERR_INTERNAL_ERROR;
+		}
+
+		TALLOC_FREE(old_fti);
+	}
+
+reconnect:
+	status = cm_connect_netlogon(domain, &netlogon_pipe);
+	reset_cm_connection_on_error(domain, status);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND)) {
+		status = NT_STATUS_NO_LOGON_SERVERS;
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(3, ("could not open handle to NETLOGON pipe: %s\n",
+			  nt_errstr(status)));
+		check_result = ntstatus_to_werror(status);
+		goto check_return;
+	}
+	check_result = WERR_OK;
+	b = netlogon_pipe->binding_handle;
+
+	if (cur_nt_hash == NULL) {
+		verify_result = WERR_NO_TRUST_LSA_SECRET;
+		goto verify_return;
+	}
+
+	if (fetch_fti) {
+		status = netlogon_creds_cli_GetForestTrustInformation(domain->conn.netlogon_creds,
+								      b, frame,
+								      &new_fti);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_RPC_PROCNUM_OUT_OF_RANGE)) {
+			status = NT_STATUS_NOT_SUPPORTED;
+		}
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)) {
+			new_fti = NULL;
+			status = NT_STATUS_OK;
+		}
+		if (!NT_STATUS_IS_OK(status)) {
+			if (!retry && dcerpc_binding_handle_is_connected(b)) {
+				invalidate_cm_connection(domain);
+				retry = true;
+				goto reconnect;
+			}
+			DEBUG(2, ("netlogon_creds_cli_GetForestTrustInformation(%s)"
+				  "failed: %s\n",
+				  domain->name, nt_errstr(status)));
+			check_result = ntstatus_to_werror(status);
+			goto check_return;
+		}
+	}
+
+	if (new_fti != NULL) {
+		struct lsa_ForestTrustInformation old_fti = {};
+		struct lsa_ForestTrustInformation *merged_fti = NULL;
+		struct lsa_ForestTrustCollisionInfo *collision_info = NULL;
+
+		status = dsdb_trust_merge_forest_info(frame, local_tdo,
+						      &old_fti, new_fti,
+						      &merged_fti);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0,("%s:%s: dsdb_trust_merge_forest_info(%s) failed %s\n",
+				 __location__, __func__,
+				 domain->name, nt_errstr(status)));
+			TALLOC_FREE(frame);
+			return ntstatus_to_werror(status);
+		}
+
+		status = dcerpc_lsa_lsaRSetForestTrustInformation(local_lsa, frame,
+						&local_lsa_policy,
+						&trusted_domain_name_l,
+						LSA_FOREST_TRUST_DOMAIN_INFO,
+						merged_fti,
+						0, /* check_only=0 => store it! */
+						&collision_info,
+						&result);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0,("%s:%s: local_lsa.lsaRSetForestTrustInformation(%s) failed %s\n",
+				 __location__, __func__, domain->name, nt_errstr(status)));
+			TALLOC_FREE(frame);
+			return WERR_INTERNAL_ERROR;
+		}
+		if (!NT_STATUS_IS_OK(result)) {
+			DEBUG(0,("%s:%s: local_lsa.lsaRSetForestTrustInformation(%s) returned %s\n",
+				 __location__, __func__, domain->name, nt_errstr(result)));
+			TALLOC_FREE(frame);
+			return ntstatus_to_werror(result);
+		}
+	}
+
+	status = netlogon_creds_cli_ServerGetTrustInfo(domain->conn.netlogon_creds,
+						       b, frame,
+						       &new_owf_password,
+						       &old_owf_password,
+						       &trust_info);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_RPC_PROCNUM_OUT_OF_RANGE)) {
+		status = NT_STATUS_NOT_SUPPORTED;
+	}
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)) {
+		DEBUG(5, ("netlogon_creds_cli_ServerGetTrustInfo failed: %s\n",
+			nt_errstr(status)));
+		verify_result = WERR_OK;
+		goto verify_return;
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		if (!retry && dcerpc_binding_handle_is_connected(b)) {
+			invalidate_cm_connection(domain);
+			retry = true;
+			goto reconnect;
+		}
+		DEBUG(2, ("netlogon_creds_cli_ServerGetTrustInfo failed: %s\n",
+			nt_errstr(status)));
+
+		if (!dcerpc_binding_handle_is_connected(b)) {
+			check_result = ntstatus_to_werror(status);
+			goto check_return;
+		} else {
+			verify_result = ntstatus_to_werror(status);
+			goto verify_return;
+		}
+	}
+
+	if (trust_info != NULL && trust_info->count >= 1) {
+		uint32_t diff = trust_info->data[0] ^ trust_attributes;
+
+		if (diff & LSA_TRUST_ATTRIBUTE_FOREST_TRANSITIVE) {
+			verify_result = WERR_DOMAIN_TRUST_INCONSISTENT;
+			goto verify_return;
+		}
+	}
+
+	cmp_new = memcmp(new_owf_password.hash,
+			 cur_nt_hash->hash,
+			 sizeof(cur_nt_hash->hash));
+	cmp_old = memcmp(old_owf_password.hash,
+			 cur_nt_hash->hash,
+			 sizeof(cur_nt_hash->hash));
+	if (cmp_new != 0 && cmp_old != 0) {
+		DEBUG(1,("%s:Error: credentials for domain[%s/%s] doesn't match "
+			 "any password known to dcname[%s]\n",
+			 __func__, domain->name, domain->alt_name,
+			 domain->dcname));
+		verify_result = WERR_WRONG_PASSWORD;
+		goto verify_return;
+	}
+
+	if (cmp_new != 0) {
+		DEBUG(2,("%s:Warning: credentials for domain[%s/%s] only match "
+			 "against the old password known to dcname[%s]\n",
+			 __func__, domain->name, domain->alt_name,
+			 domain->dcname));
+	}
+
+	verify_result = WERR_OK;
+	goto verify_return;
+
+check_return:
+	verify_result = check_result;
+verify_return:
+	info2->flags |= NETLOGON_VERIFY_STATUS_RETURNED;
+	info2->pdc_connection_status = verify_result;
+	if (domain->dcname != NULL) {
+		info2->flags |= NETLOGON_HAS_IP;
+		info2->flags |= NETLOGON_HAS_TIMESERV;
+		info2->trusted_dc_name = talloc_asprintf(info2, "\\\\%s",
+							 domain->dcname);
+		if (info2->trusted_dc_name == NULL) {
+			TALLOC_FREE(frame);
+			return WERR_NOMEM;
+		}
+	} else {
+		info2->trusted_dc_name = talloc_strdup(info2, "");
+		if (info2->trusted_dc_name == NULL) {
+			TALLOC_FREE(frame);
+			return WERR_NOMEM;
+		}
+	}
+	info2->tc_connection_status = check_result;
+
+	if (!W_ERROR_IS_OK(info2->pdc_connection_status)) {
+		DEBUG(2, ("%s: domain[%s/%s] dcname[%s] "
+			  "pdc_connection[%s] tc_connection[%s]\n",
+			  __func__, domain->name, domain->alt_name,
+			  domain->dcname,
+			  win_errstr(info2->pdc_connection_status),
+			  win_errstr(info2->tc_connection_status)));
+	}
+
+	r->out.query->info2 = info2;
+
+	DEBUG(5, ("%s: succeeded.\n", __func__));
+	TALLOC_FREE(frame);
+	return WERR_OK;
+}
+
+static WERROR _winbind_LogonControl_CHANGE_PASSWORD(struct pipes_struct *p,
+			     struct winbindd_domain *domain,
+			     struct winbind_LogonControl *r)
+{
+	struct messaging_context *msg_ctx = winbind_messaging_context();
+	NTSTATUS status;
+	struct rpc_pipe_client *netlogon_pipe;
+	struct cli_credentials *creds = NULL;
+	struct samr_Password *cur_nt_hash = NULL;
+	struct netr_NETLOGON_INFO_1 *info1 = NULL;
+	struct dcerpc_binding_handle *b;
+	WERROR change_result = WERR_OK;
+	bool retry = false;
+
+	info1 = talloc_zero(p->mem_ctx, struct netr_NETLOGON_INFO_1);
+	if (info1 == NULL) {
+		return WERR_NOMEM;
+	}
+
+	if (domain->internal) {
+		return WERR_NOT_SUPPORTED;
+	}
+
+	status = pdb_get_trust_credentials(domain->name,
+					   domain->alt_name,
+					   p->mem_ctx,
+					   &creds);
+	if (NT_STATUS_IS_OK(status)) {
+		cur_nt_hash = cli_credentials_get_nt_hash(creds, p->mem_ctx);
+		TALLOC_FREE(creds);
+	}
+
+reconnect:
+	status = cm_connect_netlogon(domain, &netlogon_pipe);
+	reset_cm_connection_on_error(domain, status);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND)) {
+		status = NT_STATUS_NO_LOGON_SERVERS;
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(2, ("%s: domain[%s/%s] cm_connect_netlogon() returned %s\n",
+			  __func__, domain->name, domain->alt_name,
+			  nt_errstr(status)));
+		/*
+		 * Here we return a top level error!
+		 * This is different than TC_QUERY or TC_VERIFY.
+		 */
+		return ntstatus_to_werror(status);
+	}
+	b = netlogon_pipe->binding_handle;
+
+	if (cur_nt_hash == NULL) {
+		change_result = WERR_NO_TRUST_LSA_SECRET;
+		goto change_return;
+	}
+	TALLOC_FREE(cur_nt_hash);
+
+	status = trust_pw_change(domain->conn.netlogon_creds,
+				 msg_ctx, b, domain->name,
+				 true); /* force */
+	if (!NT_STATUS_IS_OK(status)) {
+		if (!retry && dcerpc_binding_handle_is_connected(b)) {
+			invalidate_cm_connection(domain);
+			retry = true;
+			goto reconnect;
+		}
+
+		DEBUG(1, ("trust_pw_change(%s): %s\n",
+			  domain->name, nt_errstr(status)));
+
+		change_result = ntstatus_to_werror(status);
+		goto change_return;
+	}
+
+	change_result = WERR_OK;
+
+change_return:
+	info1->pdc_connection_status = change_result;
+
+	if (!W_ERROR_IS_OK(info1->pdc_connection_status)) {
+		DEBUG(2, ("%s: domain[%s/%s] dcname[%s] "
+			  "pdc_connection[%s]\n",
+			  __func__, domain->name, domain->alt_name,
+			  domain->dcname,
+			  win_errstr(info1->pdc_connection_status)));
+	}
+
+	r->out.query->info1 = info1;
+
+	DEBUG(5, ("%s: succeeded.\n", __func__));
+	return WERR_OK;
+}
+
+WERROR _winbind_LogonControl(struct pipes_struct *p,
+			     struct winbind_LogonControl *r)
+{
+	struct winbindd_domain *domain;
+
+	domain = wb_child_domain();
+	if (domain == NULL) {
+		return WERR_NO_SUCH_DOMAIN;
+	}
+
+	switch (r->in.function_code) {
+	case NETLOGON_CONTROL_REDISCOVER:
+		if (r->in.level != 2) {
+			return WERR_INVALID_PARAMETER;
+		}
+		return _winbind_LogonControl_REDISCOVER(p, domain, r);
+	case NETLOGON_CONTROL_TC_QUERY:
+		if (r->in.level != 2) {
+			return WERR_INVALID_PARAMETER;
+		}
+		return _winbind_LogonControl_TC_QUERY(p, domain, r);
+	case NETLOGON_CONTROL_TC_VERIFY:
+		if (r->in.level != 2) {
+			return WERR_INVALID_PARAMETER;
+		}
+		return _winbind_LogonControl_TC_VERIFY(p, domain, r);
+	case NETLOGON_CONTROL_CHANGE_PASSWORD:
+		if (r->in.level != 1) {
+			return WERR_INVALID_PARAMETER;
+		}
+		return _winbind_LogonControl_CHANGE_PASSWORD(p, domain, r);
+	default:
+		break;
+	}
+
+	DEBUG(4, ("%s: function_code[0x%x] not supported\n",
+		  __func__, r->in.function_code));
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR _winbind_GetForestTrustInformation(struct pipes_struct *p,
+			     struct winbind_GetForestTrustInformation *r)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	NTSTATUS status, result;
+	struct winbindd_domain *domain;
+	struct rpc_pipe_client *netlogon_pipe;
+	struct dcerpc_binding_handle *b;
+	bool retry = false;
+	struct lsa_String trusted_domain_name = {};
+	struct lsa_StringLarge trusted_domain_name_l = {};
+	union lsa_TrustedDomainInfo *tdi = NULL;
+	const struct lsa_TrustDomainInfoInfoEx *tdo = NULL;
+	struct lsa_ForestTrustInformation _old_fti = {};
+	struct lsa_ForestTrustInformation *old_fti = NULL;
+	struct lsa_ForestTrustInformation *new_fti = NULL;
+	struct lsa_ForestTrustInformation *merged_fti = NULL;
+	struct lsa_ForestTrustCollisionInfo *collision_info = NULL;
+	bool update_fti = false;
+	struct rpc_pipe_client *local_lsa_pipe;
+	struct policy_handle local_lsa_policy;
+	struct dcerpc_binding_handle *local_lsa = NULL;
+
+	domain = wb_child_domain();
+	if (domain == NULL) {
+		TALLOC_FREE(frame);
+		return WERR_NO_SUCH_DOMAIN;
+	}
+
+	/*
+	 * checking for domain->internal and domain->primary
+	 * makes sure we only do some work when running as DC.
+	 */
+
+	if (domain->internal) {
+		TALLOC_FREE(frame);
+		return WERR_NO_SUCH_DOMAIN;
+	}
+
+	if (domain->primary) {
+		TALLOC_FREE(frame);
+		return WERR_NO_SUCH_DOMAIN;
+	}
+
+	trusted_domain_name.string = domain->name;
+	trusted_domain_name_l.string = domain->name;
+
+	status = open_internal_lsa_conn(frame, &local_lsa_pipe,
+					&local_lsa_policy);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("%s:%s: open_internal_lsa_conn() failed - %s\n",
+			 __location__, __func__, nt_errstr(status)));
+		TALLOC_FREE(frame);
+		return WERR_INTERNAL_ERROR;
+	}
+	local_lsa = local_lsa_pipe->binding_handle;
+
+	status = dcerpc_lsa_QueryTrustedDomainInfoByName(local_lsa, frame,
+						&local_lsa_policy,
+						&trusted_domain_name,
+						LSA_TRUSTED_DOMAIN_INFO_INFO_EX,
+						&tdi, &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("%s:%s: local_lsa.QueryTrustedDomainInfoByName(%s) failed - %s\n",
+			 __location__, __func__, domain->name, nt_errstr(status)));
+		TALLOC_FREE(frame);
+		return WERR_INTERNAL_ERROR;
+	}
+	if (NT_STATUS_EQUAL(result, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+		DEBUG(1,("%s:%s: domain[%s] not found via LSA, might be removed already.\n",
+			 __location__, __func__, domain->name));
+		TALLOC_FREE(frame);
+		return WERR_NO_SUCH_DOMAIN;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(0,("%s:%s: local_lsa.QueryTrustedDomainInfoByName(%s) returned %s\n",
+			 __location__, __func__, domain->name, nt_errstr(result)));
+		TALLOC_FREE(frame);
+		return WERR_INTERNAL_ERROR;
+	}
+	if (tdi == NULL) {
+		DEBUG(0,("%s:%s: local_lsa.QueryTrustedDomainInfoByName() "
+			 "returned no trusted domain information\n",
+			 __location__, __func__));
+		TALLOC_FREE(frame);
+		return WERR_INTERNAL_ERROR;
+	}
+
+	tdo = &tdi->info_ex;
+
+	if (!(tdo->trust_attributes & LSA_TRUST_ATTRIBUTE_FOREST_TRANSITIVE)) {
+		DEBUG(2,("%s: tdo[%s/%s] is no forest trust attributes[0x%08X]\n",
+			 __func__, tdo->netbios_name.string,
+			 tdo->domain_name.string,
+			 (unsigned)tdo->trust_attributes));
+		TALLOC_FREE(frame);
+		return WERR_NO_SUCH_DOMAIN;
+	}
+
+	if (r->in.flags & ~DS_GFTI_UPDATE_TDO) {
+		TALLOC_FREE(frame);
+		return WERR_INVALID_FLAGS;
+	}
+
+reconnect:
+	status = cm_connect_netlogon(domain, &netlogon_pipe);
+	reset_cm_connection_on_error(domain, status);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND)) {
+		status = NT_STATUS_NO_LOGON_SERVERS;
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(3, ("could not open handle to NETLOGON pipe: %s\n",
+			  nt_errstr(status)));
+		TALLOC_FREE(frame);
+		return ntstatus_to_werror(status);
+	}
+	b = netlogon_pipe->binding_handle;
+
+	status = netlogon_creds_cli_GetForestTrustInformation(domain->conn.netlogon_creds,
+							      b, p->mem_ctx,
+							      &new_fti);
+	if (!NT_STATUS_IS_OK(status)) {
+		if (!retry && dcerpc_binding_handle_is_connected(b)) {
+			invalidate_cm_connection(domain);
+			retry = true;
+			goto reconnect;
+		}
+		DEBUG(2, ("netlogon_creds_cli_GetForestTrustInformation(%s) failed: %s\n",
+			  domain->name, nt_errstr(status)));
+		TALLOC_FREE(frame);
+		return ntstatus_to_werror(status);
+	}
+
+	*r->out.forest_trust_info = new_fti;
+
+	if (r->in.flags & DS_GFTI_UPDATE_TDO) {
+		update_fti = true;
+	}
+
+	status = dcerpc_lsa_lsaRQueryForestTrustInformation(local_lsa, frame,
+						&local_lsa_policy,
+						&trusted_domain_name,
+						LSA_FOREST_TRUST_DOMAIN_INFO,
+						&old_fti, &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("%s:%s: local_lsa.lsaRQueryForestTrustInformation(%s) failed %s\n",
+			 __location__, __func__, domain->name, nt_errstr(status)));
+		TALLOC_FREE(frame);
+		return WERR_INTERNAL_ERROR;
+	}
+	if (NT_STATUS_EQUAL(result, NT_STATUS_NOT_FOUND)) {
+		DEBUG(2,("%s: no forest trust information available for domain[%s] yet.\n",
+			  __func__, domain->name));
+		update_fti = true;
+		old_fti = &_old_fti;
+		result = NT_STATUS_OK;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(0,("%s:%s: local_lsa.lsaRQueryForestTrustInformation(%s) returned %s\n",
+			 __location__, __func__, domain->name, nt_errstr(result)));
+		TALLOC_FREE(frame);
+		return WERR_INTERNAL_ERROR;
+	}
+
+	if (old_fti == NULL) {
+		DEBUG(0,("%s:%s: local_lsa.lsaRQueryForestTrustInformation() "
+			 "returned success without returning forest trust information\n",
+			 __location__, __func__));
+		TALLOC_FREE(frame);
+		return WERR_INTERNAL_ERROR;
+	}
+
+	if (!update_fti) {
+		goto done;
+	}
+
+	status = dsdb_trust_merge_forest_info(frame, tdo, old_fti, new_fti,
+					      &merged_fti);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("%s:%s: dsdb_trust_merge_forest_info(%s) failed %s\n",
+			 __location__, __func__, domain->name, nt_errstr(status)));
+		TALLOC_FREE(frame);
+		return ntstatus_to_werror(status);
+	}
+
+	status = dcerpc_lsa_lsaRSetForestTrustInformation(local_lsa, frame,
+						&local_lsa_policy,
+						&trusted_domain_name_l,
+						LSA_FOREST_TRUST_DOMAIN_INFO,
+						merged_fti,
+						0, /* check_only=0 => store it! */
+						&collision_info,
+						&result);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("%s:%s: local_lsa.lsaRSetForestTrustInformation(%s) failed %s\n",
+			 __location__, __func__, domain->name, nt_errstr(status)));
+		TALLOC_FREE(frame);
+		return WERR_INTERNAL_ERROR;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(0,("%s:%s: local_lsa.lsaRSetForestTrustInformation(%s) returned %s\n",
+			 __location__, __func__, domain->name, nt_errstr(result)));
+		TALLOC_FREE(frame);
+		return ntstatus_to_werror(result);
+	}
+
+done:
+	DEBUG(5, ("_winbind_GetForestTrustInformation succeeded\n"));
+	TALLOC_FREE(frame);
+	return WERR_OK;
 }

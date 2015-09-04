@@ -1,0 +1,56 @@
+<samba:parameter name="spotlight"
+		 context="S"
+		 type="boolean"
+		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>
+	  This parameter controls whether Samba allows Spotlight
+	  queries on a share. For controlling indexing of filesystems
+	  you also have to use Tracker's own configuration system.
+	</para>
+
+	<para>
+	  Spotlight has several prerequisites:
+	</para>
+
+	<itemizedlist>
+	  <listitem><para>
+	    Samba must be configured and built with Spotlight support.
+	  </para></listitem>
+
+	  <listitem><para>
+	    The <emphasis>mdssvc</emphasis> RPC service must be
+	    enabled, see below.
+	  </para></listitem>
+
+	  <listitem><para> Tracker intergration must be setup and the
+	  share must be indexed by Tracker.</para></listitem>
+	</itemizedlist>
+
+	<para>For a detailed set of instructions please see <ulink
+	url="https://wiki.samba.org/index.php/Spotlight">https://wiki.samba.org/index.php/Spotlight</ulink>.
+	</para>
+
+	<para>
+	  The Spotlight RPC service can either be enabled as embedded
+	  RPC service:
+	</para>
+
+<programlisting>
+<smbconfsection name="[Global]"/>
+<smbconfoption name="rpc_server:mdsvc">embedded</smbconfoption>
+</programlisting>
+
+	<para>
+	  Or it can be run in a seperate RPC service daemon:
+	</para>
+
+<programlisting>
+<smbconfsection name="[Global]"/>
+<smbconfoption name="rpc_server:mdssd">fork</smbconfoption>
+<smbconfoption name="rpc_server:mdsvc">external</smbconfoption>
+</programlisting>
+
+</description>
+<value type="default">no</value>
+</samba:parameter>

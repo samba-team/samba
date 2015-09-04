@@ -282,6 +282,14 @@ Byte offset   Type     name                description
 #define TYPE_MOUNTED			0x20
 #define TYPE_VIRTUAL			0x40
 
+/* SMB_FS_SECTOR_SIZE_INFORMATION values */
+#define SSINFO_FLAGS_ALIGNED_DEVICE			0x00000001
+#define SSINFO_FLAGS_PARTITION_ALIGNED_ON_DEVICE	0x00000002
+#define SSINFO_FLAGS_NO_SEEK_PENALTY			0x00000004
+#define SSINFO_FLAGS_TRIM_ENABLED			0x00000008
+
+#define SSINFO_OFFSET_UNKNOWN				0xffffffff
+
 /* NT passthrough levels... */
 
 #define SMB_FILE_DIRECTORY_INFORMATION			1001
@@ -333,6 +341,7 @@ Byte offset   Type     name                description
 #define SMB_FS_QUOTA_INFORMATION			1006
 #define SMB_FS_FULL_SIZE_INFORMATION			1007
 #define SMB_FS_OBJECTID_INFORMATION			1008
+#define SMB_FS_SECTOR_SIZE_INFORMATION			1011
 
 /* SMB_FS_DEVICE_INFORMATION device types. */
 #define FILE_DEVICE_CD_ROM		0x2

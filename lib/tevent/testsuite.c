@@ -121,6 +121,7 @@ static bool test_event_context(struct torture_context *test,
 #endif
 	int finished=0;
 	struct timeval t;
+	int ret;
 
 	ev_ctx = tevent_context_init_byname(test, backend);
 	if (ev_ctx == NULL) {
@@ -135,7 +136,8 @@ static bool test_event_context(struct torture_context *test,
 	fde_count = 0;
 
 	/* create a pipe */
-	pipe(fd);
+	ret = pipe(fd);
+	torture_assert_int_equal(test, ret, 0, "pipe failed");
 
 	fde_read = tevent_add_fd(ev_ctx, ev_ctx, fd[0], TEVENT_FD_READ,
 			    fde_handler_read, fd);
@@ -175,10 +177,10 @@ static bool test_event_context(struct torture_context *test,
 		}
 	}
 
-	talloc_free(fde_read);
-	talloc_free(fde_write);
 	talloc_free(fde_read_1);
 	talloc_free(fde_write_1);
+	talloc_free(fde_read);
+	talloc_free(fde_write);
 
 	while (alarm_count < fde_count+1) {
 		if (tevent_loop_once(ev_ctx) == -1) {

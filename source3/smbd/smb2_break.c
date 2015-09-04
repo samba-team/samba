@@ -450,10 +450,10 @@ void send_break_message_smb2(files_struct *fsp,
 	 */
 	xconn = fsp->conn->sconn->client->connections;
 
-	status = smb2srv_session_lookup(xconn,
-					fsp->vuid,
-					now,
-					&session);
+	status = smb2srv_session_lookup_conn(xconn,
+					     fsp->vuid,
+					     now,
+					     &session);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_USER_SESSION_DELETED) ||
 	    (session == NULL))
 	{

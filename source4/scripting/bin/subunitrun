@@ -3,7 +3,7 @@
 # Simple subunit testrunner for python
 
 # NOTE: This is deprecated - Using the standard subunit runner is
-# preferred - e.g. "python -m subunit.run YOURMODULE".
+# preferred - e.g. "python -m samba.subunit.run YOURMODULE".
 #
 # This wrapper will be removed once all tests can be run
 # without it. At the moment there are various tests which still

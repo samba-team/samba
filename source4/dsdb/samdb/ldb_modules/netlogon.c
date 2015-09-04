@@ -58,7 +58,7 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 {
 	const char *dom_attrs[] = {"objectGUID", NULL};
 	const char *none_attrs[] = {NULL};
-	struct ldb_result *dom_res = NULL, *user_res = NULL;
+	struct ldb_result *dom_res = NULL;
 	int ret;
 	const char **services = lpcfg_server_services(lp_ctx);
 	uint32_t server_type;
@@ -74,6 +74,7 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 	struct ldb_dn *domain_dn = NULL;
 	struct interface *ifaces;
 	bool user_known = false, am_rodc = false;
+	uint32_t uac = 0;
 	NTSTATUS status;
 
 	/* the domain parameter could have an optional trailing "." */
@@ -191,12 +192,48 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 	/* Enquire about any valid username with just a CLDAP packet -
 	 * if kerberos didn't also do this, the security folks would
 	 * scream... */
-	if (user[0]) {							\
+	if (user[0]) {
 		/* Only allow some bits to be enquired:  [MS-ATDS] 7.3.3.2 */
 		if (acct_control == (uint32_t)-1) {
 			acct_control = 0;
 		}
-		acct_control = acct_control & (ACB_TEMPDUP | ACB_NORMAL | ACB_DOMTRUST | ACB_WSTRUST | ACB_SVRTRUST);
+		/*
+		 * ACB_AUTOLOCK/UF_LOCKOUT seems to be a special
+		 * hack for SEC_CHAN_DNS_DOMAIN.
+		 *
+		 * It's used together with user = "example.com."
+		 */
+		if (acct_control != ACB_AUTOLOCK) {
+			acct_control &= (ACB_TEMPDUP | ACB_NORMAL | ACB_DOMTRUST | ACB_WSTRUST | ACB_SVRTRUST);
+		}
+		uac = ds_acb2uf(acct_control);
+	}
+
+	if (uac == UF_LOCKOUT) {
+		struct ldb_message *tdo_msg = NULL;
+
+		/*
+		 * ACB_AUTOLOCK/UF_LOCKOUT seems to be a special
+		 * hack for SEC_CHAN_DNS_DOMAIN.
+		 *
+		 * It's used together with user = "example.com."
+		 */
+		status = dsdb_trust_search_tdo_by_type(sam_ctx,
+						       SEC_CHAN_DNS_DOMAIN,
+						       user, none_attrs,
+						       mem_ctx, &tdo_msg);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+			user_known = false;
+		} else if (NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(tdo_msg);
+			user_known = true;
+		} else {
+			DEBUG(2,("Unable to find reference to TDO '%s' - %s\n",
+				 user, nt_errstr(status)));
+			return status;
+		}
+	} else if (user[0]) {
+		struct ldb_result *user_res = NULL;
 
 		/* We must exclude disabled accounts, but otherwise do the bitwise match the client asked for */
 		ret = ldb_search(sam_ctx, mem_ctx, &user_res,
@@ -206,7 +243,7 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 					 "(!(userAccountControl:" LDB_OID_COMPARATOR_AND ":=%u))"
 					 "(userAccountControl:" LDB_OID_COMPARATOR_OR ":=%u))", 
 					 ldb_binary_encode_string(mem_ctx, user),
-					 UF_ACCOUNTDISABLE, ds_acb2uf(acct_control));
+					 UF_ACCOUNTDISABLE, uac);
 		if (ret != LDB_SUCCESS) {
 			DEBUG(2,("Unable to find reference to user '%s' with ACB 0x%8x under %s: %s\n",
 				 user, acct_control, ldb_dn_get_linearized(dom_res->msgs[0]->dn),
@@ -217,7 +254,7 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 		} else {
 			user_known = false;
 		}
-
+		TALLOC_FREE(user_res);
 	} else {
 		user_known = true;
 	}

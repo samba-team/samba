@@ -234,8 +234,12 @@ static WERROR dns_process_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 	if (tevent_req_is_werror(req, &ret)) {
 		return ret;
 	}
-	if (state->dns_err != DNS_RCODE_OK) {
+	if ((state->dns_err != DNS_RCODE_OK) &&
+	    (state->dns_err != DNS_RCODE_NXDOMAIN)) {
 		goto drop;
+	}
+	if (state->dns_err != DNS_RCODE_OK) {
+		state->out_packet.operation |= state->dns_err;
 	}
 	state->out_packet.operation |= state->state.flags;
 

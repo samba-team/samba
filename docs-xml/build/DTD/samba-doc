@@ -42,11 +42,10 @@
 	name CDATA #REQUIRED
 	type CDATA #REQUIRED
 	context CDATA #REQUIRED
-	advanced CDATA #IMPLIED
-	developer CDATA #IMPLIED
-	wizard CDATA #IMPLIED
-	basic CDATA #IMPLIED
-	print CDATA #IMPLIED
+	synonym CDATA #IMPLIED
+	handler CDATA #IMPLIED
+	deprecated CDATA #IMPLIED
+	enumlist CDATA #IMPLIED
 >
 <!ELEMENT description ANY>
 <!ELEMENT synonym (#PCDATA)>

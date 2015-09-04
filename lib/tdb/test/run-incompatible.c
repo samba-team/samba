@@ -28,15 +28,17 @@ static void log_fn(struct tdb_context *tdb, enum tdb_debug_level level, const ch
 static unsigned int hdr_rwlocks(const char *fname)
 {
 	struct tdb_header hdr;
+	ssize_t nread;
 
 	int fd = open(fname, O_RDONLY);
 	if (fd == -1)
 		return -1;
 
-	if (read(fd, &hdr, sizeof(hdr)) != sizeof(hdr))
-		return -1;
-
+	nread = read(fd, &hdr, sizeof(hdr));
 	close(fd);
+	if (nread != sizeof(hdr)) {
+		return -1;
+	}
 	return hdr.rwlocks;
 }
 

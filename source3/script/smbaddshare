@@ -1,0 +1,32 @@
+#!/bin/sh
+#
+# smbaddshare
+#
+# Copyright (C) 2015 Christof Schmitt
+#
+# Example script that can be used with the 'add share command' config
+# option. This is mainly intended for use in the Samba selftest suite,
+# please review and adapt it before using elsewhere.
+#
+
+CONF="$1"
+SHARENAME="$2"
+SHAREPATH="$3"
+COMMENT="$4"
+MAX_CONN="$5"
+
+NETCONF="$BINDIR/net --configfile=$CONF conf"
+
+$NETCONF addshare "$SHARENAME" "$SHAREPATH" writeable=no guest_ok=no "$COMMENT"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+	echo Failure during addshare: rc=$RC
+	exit $RC
+fi
+
+$NETCONF setparm "$SHARENAME" 'max connections' "$MAX_CONN"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+	echo Failure during setparm for max connections: rc=$RC
+	exit $RC
+fi

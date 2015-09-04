@@ -82,7 +82,7 @@ struct afs_keyfile {
 
 /* The following definitions come from passdb/secrets.c  */
 
-bool secrets_init_path(const char *private_dir, bool use_ntdb);
+bool secrets_init_path(const char *private_dir);
 bool secrets_init(void);
 struct db_context *secrets_db_ctx(void);
 void secrets_shutdown(void);
@@ -97,7 +97,6 @@ bool secrets_store_domain_sid(const char *domain, const struct dom_sid  *sid);
 bool secrets_fetch_domain_sid(const char *domain, struct dom_sid  *sid);
 bool secrets_store_domain_guid(const char *domain, struct GUID *guid);
 bool secrets_fetch_domain_guid(const char *domain, struct GUID *guid);
-void *secrets_get_trust_account_lock(TALLOC_CTX *mem_ctx, const char *domain);
 enum netr_SchannelType get_default_sec_channel(void);
 bool secrets_fetch_trust_account_password_legacy(const char *domain,
 						 uint8_t ret_pwd[16],
@@ -114,6 +113,7 @@ bool secrets_delete_machine_password_ex(const char *domain);
 bool secrets_delete_domain_sid(const char *domain);
 bool secrets_store_machine_password(const char *pass, const char *domain, enum netr_SchannelType sec_channel);
 char *secrets_fetch_prev_machine_password(const char *domain);
+time_t secrets_fetch_pass_last_set_time(const char *domain);
 char *secrets_fetch_machine_password(const char *domain,
 				     time_t *pass_last_set_time,
 				     enum netr_SchannelType *channel);

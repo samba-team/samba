@@ -30,8 +30,6 @@ struct smbd_dmapi_context;
 extern struct smbd_dmapi_context *dmapi_ctx;
 #endif
 
-extern bool dfree_broken;
-
 /* how many write cache buffers have been allocated */
 extern unsigned int allocated_write_caches;
 
@@ -189,9 +187,9 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 NTSTATUS smbd_dirptr_lanman2_entry(TALLOC_CTX *ctx,
 			       connection_struct *conn,
 			       struct dptr_struct *dirptr,
-			       uint16 flags2,
+			       uint16_t flags2,
 			       const char *path_mask,
-			       uint32 dirtype,
+			       uint32_t dirtype,
 			       int info_level,
 			       int requires_resume_key,
 			       bool dont_descend,
@@ -292,7 +290,7 @@ NTSTATUS smb2_write_complete_nosync(struct tevent_req *req, ssize_t nwritten,
 NTSTATUS smbd_smb2_request_process_lock(struct smbd_smb2_request *req);
 NTSTATUS smbd_smb2_request_process_ioctl(struct smbd_smb2_request *req);
 NTSTATUS smbd_smb2_request_process_keepalive(struct smbd_smb2_request *req);
-NTSTATUS smbd_smb2_request_process_find(struct smbd_smb2_request *req);
+NTSTATUS smbd_smb2_request_process_query_directory(struct smbd_smb2_request *req);
 NTSTATUS smbd_smb2_request_process_notify(struct smbd_smb2_request *req);
 NTSTATUS smbd_smb2_request_process_getinfo(struct smbd_smb2_request *req);
 NTSTATUS smbd_smb2_request_process_setinfo(struct smbd_smb2_request *req);
@@ -343,6 +341,10 @@ bool push_deferred_open_message_smb2(struct smbd_smb2_request *smb2req,
 				struct deferred_open_record *open_rec);
 
 struct smbXsrv_client;
+
+struct smbXsrv_preauth {
+	uint8_t sha512_value[64];
+};
 
 struct smbXsrv_connection {
 	struct smbXsrv_connection *prev, *next;
@@ -516,6 +518,8 @@ struct smbXsrv_connection {
 			uint16_t cipher;
 		} server;
 
+		struct smbXsrv_preauth preauth;
+
 		struct smbd_smb2_request *requests;
 	} smb2;
 };
@@ -537,6 +541,21 @@ struct smbXsrv_channel_global0;
 NTSTATUS smbXsrv_session_find_channel(const struct smbXsrv_session *session,
 				      const struct smbXsrv_connection *conn,
 				      struct smbXsrv_channel_global0 **_c);
+NTSTATUS smbXsrv_session_find_auth(const struct smbXsrv_session *session,
+				   const struct smbXsrv_connection *conn,
+				   NTTIME now,
+				   struct smbXsrv_session_auth0 **_a);
+NTSTATUS smbXsrv_session_create_auth(struct smbXsrv_session *session,
+				     struct smbXsrv_connection *conn,
+				     NTTIME now,
+				     uint8_t in_flags,
+				     uint8_t in_security_mode,
+				     struct smbXsrv_session_auth0 **_a);
+struct tevent_req *smb2srv_session_shutdown_send(TALLOC_CTX *mem_ctx,
+					struct tevent_context *ev,
+					struct smbXsrv_session *session,
+					struct smbd_smb2_request *current_req);
+NTSTATUS smb2srv_session_shutdown_recv(struct tevent_req *req);
 NTSTATUS smbXsrv_session_logoff(struct smbXsrv_session *session);
 NTSTATUS smbXsrv_session_logoff_all(struct smbXsrv_connection *conn);
 NTSTATUS smb1srv_session_table_init(struct smbXsrv_connection *conn);
@@ -544,9 +563,12 @@ NTSTATUS smb1srv_session_lookup(struct smbXsrv_connection *conn,
 				uint16_t vuid, NTTIME now,
 				struct smbXsrv_session **session);
 NTSTATUS smb2srv_session_table_init(struct smbXsrv_connection *conn);
-NTSTATUS smb2srv_session_lookup(struct smbXsrv_connection *conn,
-				uint64_t session_id, NTTIME now,
-				struct smbXsrv_session **session);
+NTSTATUS smb2srv_session_lookup_conn(struct smbXsrv_connection *conn,
+				     uint64_t session_id, NTTIME now,
+				     struct smbXsrv_session **session);
+NTSTATUS smb2srv_session_lookup_client(struct smbXsrv_client *client,
+				       uint64_t session_id, NTTIME now,
+				       struct smbXsrv_session **session);
 struct smbXsrv_session_global0;
 NTSTATUS smbXsrv_session_global_traverse(
 			int (*fn)(struct smbXsrv_session_global0 *, void *),
@@ -643,6 +665,9 @@ struct smbd_smb2_request {
 
 	int current_idx;
 	bool do_signing;
+	/* Was the request encrypted? */
+	bool was_encrypted;
+	/* Should we encrypt? */
 	bool do_encryption;
 	struct tevent_timer *async_te;
 	bool compound_related;
@@ -657,6 +682,7 @@ struct smbd_smb2_request {
 	 * request/response of a compound chain
 	 */
 	DATA_BLOB last_key;
+	struct smbXsrv_preauth *preauth;
 
 	struct timeval request_time;
 

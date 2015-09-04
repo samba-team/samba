@@ -24,8 +24,10 @@
 #include "../lib/addns/dnsquery.h"
 #include "../libcli/netlogon/netlogon.h"
 #include "lib/async_req/async_sock.h"
+#include "lib/tsocket/tsocket.h"
 #include "libsmb/nmblib.h"
 #include "../libcli/nbt/libnbt.h"
+#include "libads/kerberos_proto.h"
 
 /* nmbd.c sets this to True. */
 bool global_in_nmbd = False;
@@ -240,9 +242,9 @@ static struct in_addr my_socket_addr_v4(void)
 
 static int generate_trn_id(void)
 {
-	uint16 id;
+	uint16_t id;
 
-	generate_random_buffer((uint8 *)&id, sizeof(id));
+	generate_random_buffer((uint8_t *)&id, sizeof(id));
 
 	return id % (unsigned)0x7FFF;
 }
@@ -294,11 +296,10 @@ struct sock_packet_read_state {
 	struct nb_packet_reader *reader;
 	struct tevent_req *reader_req;
 
-	int sock;
+	struct tdgram_context *sock;
 	struct tevent_req *socket_req;
-	uint8_t buf[1024];
-	struct sockaddr_storage addr;
-	socklen_t addr_len;
+	uint8_t *buf;
+	struct tsocket_address *addr;
 
 	bool (*validator)(struct packet_struct *p,
 			  void *private_data);
@@ -314,7 +315,7 @@ static void sock_packet_read_got_socket(struct tevent_req *subreq);
 static struct tevent_req *sock_packet_read_send(
 	TALLOC_CTX *mem_ctx,
 	struct tevent_context *ev,
-	int sock, /* dgram socket */
+	struct tdgram_context *sock,
 	struct nb_packet_reader *reader,
 	enum packet_type type,
 	int trn_id,
@@ -347,10 +348,7 @@ static struct tevent_req *sock_packet_read_send(
 			state->reader_req, sock_packet_read_got_packet, req);
 	}
 
-	state->addr_len = sizeof(state->addr);
-	state->socket_req = recvfrom_send(state, ev, sock,
-					  state->buf, sizeof(state->buf), 0,
-					  &state->addr, &state->addr_len);
+	state->socket_req = tdgram_recvfrom_send(state, ev, state->sock);
 	if (tevent_req_nomem(state->socket_req, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -422,11 +420,17 @@ static void sock_packet_read_got_socket(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct sock_packet_read_state *state = tevent_req_data(
 		req, struct sock_packet_read_state);
-	struct sockaddr_in *in_addr;
+	union {
+		struct sockaddr sa;
+		struct sockaddr_in sin;
+	} addr;
+	ssize_t ret;
 	ssize_t received;
 	int err;
+	bool ok;
 
-	received = recvfrom_recv(subreq, &err);
+	received = tdgram_recvfrom_recv(subreq, &err, state,
+					&state->buf, &state->addr);
 
 	TALLOC_FREE(state->socket_req);
 
@@ -443,13 +447,20 @@ static void sock_packet_read_got_socket(struct tevent_req *subreq)
 		tevent_req_nterror(req, map_nt_error_from_unix(err));
 		return;
 	}
-	if (state->addr.ss_family != AF_INET) {
+	ok = tsocket_address_is_inet(state->addr, "ipv4");
+	if (!ok) {
 		goto retry;
 	}
-	in_addr = (struct sockaddr_in *)(void *)&state->addr;
+	ret = tsocket_address_bsd_sockaddr(state->addr,
+					   &addr.sa,
+					   sizeof(addr.sin));
+	if (ret == -1) {
+		tevent_req_nterror(req, map_nt_error_from_unix(errno));
+		return;
+	}
 
 	state->packet = parse_packet((char *)state->buf, received, state->type,
-				     in_addr->sin_addr, in_addr->sin_port);
+				     addr.sin.sin_addr, addr.sin.sin_port);
 	if (state->packet == NULL) {
 		DEBUG(10, ("parse_packet failed\n"));
 		goto retry;
@@ -475,9 +486,10 @@ retry:
 		free_packet(state->packet);
 		state->packet = NULL;
 	}
-	state->socket_req = recvfrom_send(state, state->ev, state->sock,
-					  state->buf, sizeof(state->buf), 0,
-					  &state->addr, &state->addr_len);
+	TALLOC_FREE(state->buf);
+	TALLOC_FREE(state->addr);
+
+	state->socket_req = tdgram_recvfrom_send(state, state->ev, state->sock);
 	if (tevent_req_nomem(state->socket_req, req)) {
 		return;
 	}
@@ -502,10 +514,11 @@ static NTSTATUS sock_packet_read_recv(struct tevent_req *req,
 
 struct nb_trans_state {
 	struct tevent_context *ev;
-	int sock;
+	struct tdgram_context *sock;
 	struct nb_packet_reader *reader;
 
-	const struct sockaddr_storage *dst_addr;
+	struct tsocket_address *src_addr;
+	struct tsocket_address *dst_addr;
 	uint8_t *buf;
 	size_t buflen;
 	enum packet_type type;
@@ -527,8 +540,8 @@ static void nb_trans_send_next(struct tevent_req *subreq);
 static struct tevent_req *nb_trans_send(
 	TALLOC_CTX *mem_ctx,
 	struct tevent_context *ev,
-	const struct sockaddr_storage *my_addr,
-	const struct sockaddr_storage *dst_addr,
+	const struct sockaddr_storage *_my_addr,
+	const struct sockaddr_storage *_dst_addr,
 	bool bcast,
 	uint8_t *buf, size_t buflen,
 	enum packet_type type, int trn_id,
@@ -536,8 +549,15 @@ static struct tevent_req *nb_trans_send(
 			  void *private_data),
 	void *private_data)
 {
+	const struct sockaddr *my_addr =
+		discard_const_p(const struct sockaddr, _my_addr);
+	size_t my_addr_len = sizeof(*_my_addr);
+	const struct sockaddr *dst_addr =
+		discard_const_p(const struct sockaddr, _dst_addr);
+	size_t dst_addr_len = sizeof(*_dst_addr);
 	struct tevent_req *req, *subreq;
 	struct nb_trans_state *state;
+	int ret;
 
 	req = tevent_req_create(mem_ctx, &state, struct nb_trans_state);
 	if (req == NULL) {
@@ -545,7 +565,6 @@ static struct tevent_req *nb_trans_send(
 	}
 	talloc_set_destructor(state, nb_trans_state_destructor);
 	state->ev = ev;
-	state->dst_addr = dst_addr;
 	state->buf = buf;
 	state->buflen = buflen;
 	state->type = type;
@@ -553,15 +572,27 @@ static struct tevent_req *nb_trans_send(
 	state->validator = validator;
 	state->private_data = private_data;
 
-	state->sock = open_socket_in(SOCK_DGRAM, 0, 3, my_addr, True);
-	if (state->sock == -1) {
+	ret = tsocket_address_bsd_from_sockaddr(state,
+						my_addr, my_addr_len,
+						&state->src_addr);
+	if (ret == -1) {
 		tevent_req_nterror(req, map_nt_error_from_unix(errno));
-		DEBUG(10, ("open_socket_in failed: %s\n", strerror(errno)));
 		return tevent_req_post(req, ev);
 	}
 
-	if (bcast) {
-		set_socket_options(state->sock,"SO_BROADCAST");
+	ret = tsocket_address_bsd_from_sockaddr(state,
+						dst_addr, dst_addr_len,
+						&state->dst_addr);
+	if (ret == -1) {
+		tevent_req_nterror(req, map_nt_error_from_unix(errno));
+		return tevent_req_post(req, ev);
+	}
+
+	ret = tdgram_inet_udp_broadcast_socket(state->src_addr, state,
+					       &state->sock);
+	if (ret == -1) {
+		tevent_req_nterror(req, map_nt_error_from_unix(errno));
+		return tevent_req_post(req, ev);
 	}
 
 	subreq = nb_packet_reader_send(state, ev, type, state->trn_id, NULL);
@@ -574,10 +605,6 @@ static struct tevent_req *nb_trans_send(
 
 static int nb_trans_state_destructor(struct nb_trans_state *s)
 {
-	if (s->sock != -1) {
-		close(s->sock);
-		s->sock = -1;
-	}
 	if (s->packet != NULL) {
 		free_packet(s->packet);
 		s->packet = NULL;
@@ -610,8 +637,10 @@ static void nb_trans_got_reader(struct tevent_req *subreq)
 	}
 	tevent_req_set_callback(subreq, nb_trans_done, req);
 
-	subreq = sendto_send(state, state->ev, state->sock,
-			     state->buf, state->buflen, 0, state->dst_addr);
+	subreq = tdgram_sendto_send(state, state->ev,
+				    state->sock,
+				    state->buf, state->buflen,
+				    state->dst_addr);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
@@ -627,7 +656,7 @@ static void nb_trans_sent(struct tevent_req *subreq)
 	ssize_t sent;
 	int err;
 
-	sent = sendto_recv(subreq, &err);
+	sent = tdgram_sendto_recv(subreq, &err);
 	TALLOC_FREE(subreq);
 	if (sent == -1) {
 		DEBUG(10, ("sendto failed: %s\n", strerror(err)));
@@ -656,8 +685,10 @@ static void nb_trans_send_next(struct tevent_req *subreq)
 		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
 		return;
 	}
-	subreq = sendto_send(state, state->ev, state->sock,
-			     state->buf, state->buflen, 0, state->dst_addr);
+	subreq = tdgram_sendto_send(state, state->ev,
+				    state->sock,
+				    state->buf, state->buflen,
+				    state->dst_addr);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
@@ -1055,7 +1086,7 @@ static int addr_compare(const struct sockaddr_storage *ss1,
  compare 2 ldap IPs by nearness to our interfaces - used in qsort
 *******************************************************************/
 
-int ip_service_compare(struct ip_service *ss1, struct ip_service *ss2)
+static int ip_service_compare(struct ip_service *ss1, struct ip_service *ss2)
 {
 	int result;
 
@@ -2447,6 +2478,13 @@ static NTSTATUS resolve_ads(const char *name,
 		return status;
 	}
 
+	if (numdcs == 0) {
+		*return_iplist = NULL;
+		*return_count = 0;
+		talloc_destroy(ctx);
+		return NT_STATUS_OK;
+	}
+
 	for (i=0;i<numdcs;i++) {
 		if (!dcs[i].ss_s) {
 			numaddrs += 1;
@@ -2544,6 +2582,38 @@ static NTSTATUS resolve_ads(const char *name,
 	return NT_STATUS_OK;
 }
 
+static const char **filter_out_nbt_lookup(TALLOC_CTX *mem_ctx,
+					  const char **resolve_order)
+{
+	size_t i, len, result_idx;
+	const char **result;
+
+	len = 0;
+	while (resolve_order[len] != NULL) {
+		len += 1;
+	}
+
+	result = talloc_array(mem_ctx, const char *, len+1);
+	if (result == NULL) {
+		return NULL;
+	}
+
+	result_idx = 0;
+
+	for (i=0; i<len; i++) {
+		const char *tok = resolve_order[i];
+
+		if (strequal(tok, "lmhosts") || strequal(tok, "wins") ||
+		    strequal(tok, "bcast")) {
+			continue;
+		}
+		result[result_idx++] = tok;
+	}
+	result[result_idx] = NULL;
+
+	return result;
+}
+
 /*******************************************************************
  Internal interface to resolve a name into an IP address.
  Use this function if the string is either an IP address, DNS
@@ -2625,9 +2695,22 @@ NTSTATUS internal_resolve_name(const char *name,
 		resolve_order = host_order;
 	}
 
+	frame = talloc_stackframe();
+
+	if ((strlen(name) > MAX_NETBIOSNAME_LEN - 1) ||
+	    (strchr(name, '.') != NULL)) {
+		/*
+		 * Don't do NBT lookup, the name would not fit anyway
+		 */
+		resolve_order = filter_out_nbt_lookup(frame, resolve_order);
+		if (resolve_order == NULL) {
+			TALLOC_FREE(frame);
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
 	/* iterate through the name resolution backends */
 
-	frame = talloc_stackframe();
 	for (i=0; resolve_order[i]; i++) {
 		tok = resolve_order[i];
 
@@ -2656,13 +2739,13 @@ NTSTATUS internal_resolve_name(const char *name,
 			if (NT_STATUS_IS_OK(status)) {
 				goto done;
 			}
-		} else if(strequal( tok, "lmhosts")) {
+		} else if (strequal(tok, "lmhosts")) {
 			status = resolve_lmhosts(name, name_type,
 						 return_iplist, return_count);
 			if (NT_STATUS_IS_OK(status)) {
 				goto done;
 			}
-		} else if(strequal( tok, "wins")) {
+		} else if (strequal(tok, "wins")) {
 			/* don't resolve 1D via WINS */
 			struct sockaddr_storage *ss_list;
 			if (name_type != 0x1D) {
@@ -2679,7 +2762,7 @@ NTSTATUS internal_resolve_name(const char *name,
 					goto done;
 				}
 			}
-		} else if(strequal( tok, "bcast")) {
+		} else if (strequal(tok, "bcast")) {
 			struct sockaddr_storage *ss_list;
 			status = name_resolve_bcast(
 				name, name_type, talloc_tos(),
@@ -3001,6 +3084,7 @@ static NTSTATUS get_dc_list(const char *domain,
 	int auto_count = 0;
 	NTSTATUS status;
 	TALLOC_CTX *ctx = talloc_init("get_dc_list");
+	int auto_name_type = 0x1C;
 
 	*ip_list = NULL;
 	*count = 0;
@@ -3041,10 +3125,7 @@ static NTSTATUS get_dc_list(const char *domain,
 		   are already sorted by priority and weight */
 		*ordered = true;
 		resolve_order = kdc_order;
-	}
-	if (!resolve_order) {
-		status = NT_STATUS_NO_MEMORY;
-		goto out;
+		auto_name_type = KDC_NAME_TYPE;
 	}
 
 	/* fetch the server we have affinity for.  Add the
@@ -3067,15 +3148,6 @@ static NTSTATUS get_dc_list(const char *domain,
 		goto out;
 	}
 
-	/* if we are starting from scratch, just lookup DOMAIN<0x1c> */
-
-	if (!*pserver ) {
-		DEBUG(10,("get_dc_list: no preferred domain controllers.\n"));
-		status = internal_resolve_name(domain, 0x1C, sitename, ip_list,
-					     count, resolve_order);
-		goto out;
-	}
-
 	DEBUG(3,("get_dc_list: preferred server list: \"%s\"\n", pserver ));
 
 	/*
@@ -3088,7 +3160,8 @@ static NTSTATUS get_dc_list(const char *domain,
 	p = pserver;
 	while (next_token_talloc(ctx, &p, &name, LIST_SEP)) {
 		if (!done_auto_lookup && strequal(name, "*")) {
-			status = internal_resolve_name(domain, 0x1C, sitename,
+			status = internal_resolve_name(domain, auto_name_type,
+						       sitename,
 						       &auto_ip_list,
 						       &auto_count,
 						       resolve_order);
@@ -3112,7 +3185,8 @@ static NTSTATUS get_dc_list(const char *domain,
 			status = NT_STATUS_NO_LOGON_SERVERS;
 			goto out;
 		}
-		status = internal_resolve_name(domain, 0x1C, sitename, ip_list,
+		status = internal_resolve_name(domain, auto_name_type,
+					       sitename, ip_list,
 					     count, resolve_order);
 		goto out;
 	}
@@ -3164,13 +3238,19 @@ static NTSTATUS get_dc_list(const char *domain,
 		/* added support for address:port syntax for ads
 		 * (not that I think anyone will ever run the LDAP
 		 * server in an AD domain on something other than
-		 * port 389 */
+		 * port 389
+		 * However, the port should not be used for kerberos
+		 */
 
-		port = (lp_security() == SEC_ADS) ? LDAP_PORT : PORT_NONE;
+		port = (lookup_type == DC_ADS_ONLY) ? LDAP_PORT :
+			((lookup_type == DC_KDC_ONLY) ? DEFAULT_KRB5_PORT :
+			 PORT_NONE);
 		if ((port_str=strchr(name, ':')) != NULL) {
 			*port_str = '\0';
-			port_str++;
-			port = atoi(port_str);
+			if (lookup_type != DC_KDC_ONLY) {
+				port_str++;
+				port = atoi(port_str);
+			}
 		}
 
 		/* explicit lookup; resolve_name() will

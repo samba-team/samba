@@ -52,6 +52,30 @@ get_all_interfaces ()
     all_interfaces=$(echo $all_interfaces $ctdb_ifaces | tr ' ' '\n' | sort -u)
 }
 
+get_real_iface ()
+{
+    # Output of "ip link show <iface>"
+    _iface_info="$1"
+
+    # Extract the full interface description to see if it is a VLAN
+    _t=$(echo "$_iface_info" |
+		awk 'NR == 1 { iface = $2; sub(":$", "", iface) ; \
+			       print iface }')
+    case "$_t" in
+	*@*)
+	    # VLAN: use the underlying interface, after the '@'
+	    echo "${_t##*@}"
+	    ;;
+	*)
+	    # Not a regular VLAN.  For backward compatibility, assume
+	    # there is some other sort of VLAN that doesn't have the
+	    # '@' in the output and only use what is before a '.'.  If
+	    # there is no '.' then this will be the whole interface
+	    # name.
+	    echo "${_t%%.*}"
+    esac
+}
+
 monitor_interfaces()
 {
 	get_all_interfaces
@@ -65,7 +89,7 @@ monitor_interfaces()
 	# problem with an interface then set fail=true and continue.
 	for iface in $all_interfaces ; do
 
-	    ip link show $iface 2>/dev/null >/dev/null || {
+	    _iface_info=$(ip link show $iface 2>&1) || {
 		echo "ERROR: Interface $iface does not exist but it is used by public addresses."
 		mark_down $iface
 		continue
@@ -74,7 +98,7 @@ monitor_interfaces()
 	    # These interfaces are sometimes bond devices
 	    # When we use VLANs for bond interfaces, there will only
 	    # be an entry in /proc for the underlying real interface
-	    realiface=`echo $iface |sed -e 's/\..*$//'`
+	    realiface=$(get_real_iface "$_iface_info")
 	    bi=$(get_proc "net/bonding/$realiface" 2>/dev/null) && {
 		echo "$bi" | grep -q 'Currently Active Slave: None' && {
 			echo "ERROR: No active slaves for bond device $realiface"
@@ -180,6 +204,10 @@ case "$1" in
 	_promote="sys/net/ipv4/conf/all/promote_secondaries"
 	get_proc "$_promote" >/dev/null 2>&1 || \
 	    die "Public IPs only supported if promote_secondaries is available"
+
+	# make sure we drop any ips that might still be held if
+	# previous instance of ctdb got killed with -9 or similar
+	drop_all_public_ips
 	;;
 
      #############################

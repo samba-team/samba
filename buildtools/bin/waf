@@ -63,7 +63,7 @@ def test(dir):
 	except OSError: pass
 
 def find_lib():
-	return os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+	return os.path.abspath(os.path.join(os.path.dirname(__file__), '../../third_party/waf'))
 
 wafdir = find_lib()
 w = join(wafdir, 'wafadmin')

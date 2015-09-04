@@ -29,7 +29,7 @@ from selftest.target import (
     UnsupportedEnvironment,
     )
 
-from selftest.tests import TestCase
+from samba.tests import TestCase
 
 
 class DummyEnvironment(Environment):

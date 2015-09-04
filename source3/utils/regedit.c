@@ -161,7 +161,7 @@ static void add_reg_key(struct regedit *regedit, struct tree_node *node,
 	if (name) {
 		WERROR rv;
 		struct registry_key *new_key;
-		struct tree_node *new_node;
+		struct tree_node *new_node = NULL;
 		struct tree_node *list;
 		struct tree_node *parent;
 

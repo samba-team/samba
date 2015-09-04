@@ -130,15 +130,7 @@ def cmd_testonly(opt):
                     and not issubclass(type(val), types.MethodType):
                 os.environ['TESTENV_%s' % o.upper()] = str(getattr(Options.options, o, ''))
 
-
-    binary_mapping = ('nmblookup3:nmblookup,' +
-                      'nmblookup4:nmblookup4,' +
-                      'smbclient3:smbclient,' +
-                      'smbclient4:smbclient4,' +
-                      'smbtorture4:smbtorture,' +
-                      'ntlm_auth3:ntlm_auth')
-
-    env.OPTIONS = '--binary-mapping=%s' % binary_mapping
+    env.OPTIONS = ''
     if not Options.options.SLOWTEST:
         env.OPTIONS += ' --exclude=${srcdir}/selftest/slow'
     if Options.options.QUICKTEST:
@@ -232,7 +224,7 @@ def cmd_testonly(opt):
         cmd = '(${CORE_COMMAND} && touch ${SELFTEST_PREFIX}/st_done) | ${FILTER_OPTIONS}'
         if (os.environ.get('RUN_FROM_BUILD_FARM') is None and
             not Options.options.FILTERED_SUBUNIT):
-            subunit_cache = os.path.join(Options.options.SELFTEST_PREFIX, "subunit")
+            subunit_cache = os.path.join(env.SELFTEST_PREFIX, "subunit")
             cmd += ' | tee %s | ${FORMAT_TEST_OUTPUT}' % subunit_cache
         else:
             cmd += ' | ${FILTER_OPTIONS}'

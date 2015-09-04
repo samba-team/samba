@@ -20,6 +20,8 @@
 /* Useful for functions that don't get struct ctdb_context passed */
 static struct ctdb_context *ctdb_global;
 
+static struct ctdb_node_capabilities *global_caps = NULL;
+
 /* Read a nodemap from stdin.  Each line looks like:
  *  <PNN> <FLAGS> [RECMASTER] [CURRENT] [CAPABILITIES]
  * EOF or a blank line terminates input.
@@ -48,7 +50,7 @@ static void ctdb_test_stubs_read_nodemap(struct ctdb_context *ctdb)
 	       (line[0] != '\n')) {
 		uint32_t pnn, flags, capabilities;
 		char *tok, *t;
-		const char *ip;
+		char *ip;
 		ctdb_sock_addr saddr;
 
 		/* Get rid of pesky newline */
@@ -83,6 +85,11 @@ static void ctdb_test_stubs_read_nodemap(struct ctdb_context *ctdb)
 			continue;
 		}
 		flags = (uint32_t)strtoul(tok, NULL, 0);
+		/* Handle deleted nodes */
+		if (flags & NODE_FLAGS_DELETED) {
+			talloc_free(ip);
+			ip = talloc_strdup(ctdb, "0.0.0.0");
+		}
 		capabilities = CTDB_CAP_RECMASTER|CTDB_CAP_LMASTER|CTDB_CAP_NATGW;
 
 		tok = strtok(NULL, " \t");
@@ -123,11 +130,24 @@ static void ctdb_test_stubs_read_nodemap(struct ctdb_context *ctdb)
 		ctdb->nodes[ctdb->num_nodes]->ctdb = ctdb;
 		ctdb->nodes[ctdb->num_nodes]->name = "fakectdb";
 		ctdb->nodes[ctdb->num_nodes]->pnn = pnn;
-		ctdb->nodes[ctdb->num_nodes]->address.address = ip;
-		ctdb->nodes[ctdb->num_nodes]->address.port = 0;
+		parse_ip(ip, NULL, 0, &ctdb->nodes[ctdb->num_nodes]->address);
 		ctdb->nodes[ctdb->num_nodes]->flags = flags;
-		ctdb->nodes[ctdb->num_nodes]->capabilities = capabilities;
+
+		global_caps = talloc_realloc(ctdb, global_caps,
+					     struct ctdb_node_capabilities,
+					     ctdb->num_nodes+1);
+		global_caps[ctdb->num_nodes].capabilities = capabilities;
+		global_caps[ctdb->num_nodes].retrieved = true;
+
 		ctdb->num_nodes++;
+	}
+}
+
+static void assert_nodes_set(struct ctdb_context *ctdb)
+{
+	if (ctdb->nodes == NULL) {
+		printf("ctdb->nodes not initialised - missing a NODEMAP section?");
+		exit(1);
 	}
 }
 
@@ -135,6 +155,8 @@ static void ctdb_test_stubs_read_nodemap(struct ctdb_context *ctdb)
 static void ctdb_test_stubs_print_nodemap(struct ctdb_context *ctdb)
 {
 	int i;
+
+	assert_nodes_set(ctdb);
 
 	for (i = 0; i < ctdb->num_nodes; i++) {
 		printf("%ld\t0x%lx%s%s\n",
@@ -220,10 +242,20 @@ static void ctdb_test_stubs_read_ifaces(struct ctdb_context *ctdb)
 	}
 }
 
+static void assert_ifaces_set(struct ctdb_context *ctdb)
+{
+	if (ctdb->ifaces == NULL) {
+		printf("ctdb->ifaces not initialised - missing an IFACES section?");
+		exit(1);
+	}
+}
+
 #ifdef CTDB_TEST_OVERRIDE_MAIN
 static void ctdb_test_stubs_print_ifaces(struct ctdb_context *ctdb)
 {
 	struct ctdb_iface *iface;
+
+	assert_ifaces_set(ctdb);
 
 	printf(":Name:LinkStatus:References:\n");
 	for (iface = ctdb->ifaces; iface != NULL; iface = iface->next) {
@@ -294,10 +326,20 @@ static void ctdb_test_stubs_read_vnnmap(struct ctdb_context *ctdb)
 	}
 }
 
+static void assert_vnn_map_set(struct ctdb_context *ctdb)
+{
+	if (ctdb->vnn_map == NULL) {
+		printf("ctdb->vnn_map not initialised - missing a VNNMAP section?");
+		exit(1);
+	}
+}
+
 #ifdef CTDB_TEST_OVERRIDE_MAIN
 static void ctdb_test_stubs_print_vnnmap(struct ctdb_context *ctdb)
 {
 	int i;
+
+	assert_vnn_map_set(ctdb);
 
 	printf("%d\n", ctdb->vnn_map->generation);
 	for (i = 0; i < ctdb->vnn_map->size; i++) {
@@ -335,6 +377,9 @@ static void ctdb_test_stubs_fake_setup(struct ctdb_context *ctdb)
 static bool current_node_is_connected (struct ctdb_context *ctdb)
 {
 	int i;
+
+	assert_nodes_set(ctdb);
+
 	for (i = 0; i < ctdb->num_nodes; i++) {
 		if (ctdb->nodes[i]->pnn == ctdb->pnn) {
 			if (ctdb->nodes[i]->flags &
@@ -355,6 +400,15 @@ static bool current_node_is_connected (struct ctdb_context *ctdb)
 struct ctdb_context *ctdb_cmdline_client_stub(struct tevent_context *ev,
 					      struct timeval req_timeout)
 {
+	const char *t = getenv("CTDB_DEBUGLEVEL");
+	if (t != NULL) {
+		DEBUGLEVEL= atoi(t);
+	} else {
+		DEBUGLEVEL = 0;
+	}
+
+	ctdb_global->ev = ev;
+
 	return ctdb_global;
 }
 
@@ -362,6 +416,8 @@ struct tevent_context *tevent_context_init_stub(TALLOC_CTX *mem_ctx)
 {
 	struct ctdb_context *ctdb;
 
+	/* This needs to be initialised prior to the client setup, for
+	   the xpnn stub */
 	ctdb = talloc_zero(NULL, struct ctdb_context);
 
 	ctdb_set_socketname(ctdb, "fake");
@@ -373,70 +429,42 @@ struct tevent_context *tevent_context_init_stub(TALLOC_CTX *mem_ctx)
 	return tevent_context_init_byname(mem_ctx, NULL);
 }
 
-/* Copied from ctdb_recover.c */
-int
-ctdb_control_getnodemap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indata, TDB_DATA *outdata)
-{
-	uint32_t i, num_nodes;
-	struct ctdb_node_map *node_map;
-
-	CHECK_CONTROL_DATA_SIZE(0);
-
-	num_nodes = ctdb->num_nodes;
-
-	outdata->dsize = offsetof(struct ctdb_node_map, nodes) + num_nodes*sizeof(struct ctdb_node_and_flags);
-	outdata->dptr  = (unsigned char *)talloc_zero_size(outdata, outdata->dsize);
-	if (!outdata->dptr) {
-		DEBUG(DEBUG_ALERT, (__location__ " Failed to allocate nodemap array\n"));
-		exit(1);
-	}
-
-	node_map = (struct ctdb_node_map *)outdata->dptr;
-	node_map->num = num_nodes;
-	for (i=0; i<num_nodes; i++) {
-		if (parse_ip(ctdb->nodes[i]->address.address,
-			     NULL, /* TODO: pass in the correct interface here*/
-			     0,
-			     &node_map->nodes[i].addr) == 0)
-		{
-			DEBUG(DEBUG_ERR, (__location__ " Failed to parse %s into a sockaddr\n", ctdb->nodes[i]->address.address));
-		}
-
-		node_map->nodes[i].pnn   = ctdb->nodes[i]->pnn;
-		node_map->nodes[i].flags = ctdb->nodes[i]->flags;
-	}
-
-	return 0;
-}
-
 int
 ctdb_ctrl_getnodemap_stub(struct ctdb_context *ctdb,
 			  struct timeval timeout, uint32_t destnode,
 			  TALLOC_CTX *mem_ctx,
 			  struct ctdb_node_map **nodemap)
 {
-	int ret;
-
-	TDB_DATA indata;
-	TDB_DATA *outdata;
+	assert_nodes_set(ctdb);
 
 	if (!current_node_is_connected(ctdb)) {
 		return -1;
 	}
 
-	indata.dsize = 0;
-	indata.dptr = NULL;
+	*nodemap = ctdb_node_list_to_map(ctdb->nodes, ctdb->num_nodes,
+					 mem_ctx);
 
-	outdata = talloc_zero(ctdb, TDB_DATA);
+	return 0;
+}
 
-	ret = ctdb_control_getnodemap(ctdb, CTDB_CONTROL_GET_NODEMAP,
-				      indata, outdata);
+int
+ctdb_ctrl_getnodesfile_stub(struct ctdb_context *ctdb,
+			    struct timeval timeout, uint32_t destnode,
+			    TALLOC_CTX *mem_ctx, struct ctdb_node_map **nodemap)
+{
+	char *v, *f;
 
-	if (ret == 0) {
-		*nodemap = (struct ctdb_node_map *) outdata->dptr;
+	/* If there's an environment variable for a node-specific file
+	 * then use it.  Otherwise use the global file. */
+	v = talloc_asprintf(mem_ctx, "CTDB_NODES_%u", destnode);
+	f = getenv(v);
+	if (f == NULL) {
+		f = getenv("CTDB_NODES");
 	}
 
-	return ret;
+	*nodemap = ctdb_read_nodes_file(mem_ctx, f);
+
+	return *nodemap == NULL ? -1 : 0;
 }
 
 int
@@ -444,6 +472,8 @@ ctdb_ctrl_getvnnmap_stub(struct ctdb_context *ctdb,
 			 struct timeval timeout, uint32_t destnode,
 			 TALLOC_CTX *mem_ctx, struct ctdb_vnn_map **vnnmap)
 {
+	assert_vnn_map_set(ctdb);
+
 	*vnnmap = talloc(ctdb, struct ctdb_vnn_map);
 	if (*vnnmap == NULL) {
 		DEBUG(DEBUG_ERR, (__location__ "OOM\n"));
@@ -464,6 +494,21 @@ ctdb_ctrl_getrecmode_stub(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx,
 			  uint32_t *recmode)
 {
 	*recmode = ctdb->recovery_mode;
+
+	return 0;
+}
+
+int ctdb_ctrl_setrecmode_stub(struct ctdb_context *ctdb, struct timeval timeout,
+			      uint32_t destnode, uint32_t recmode)
+{
+	ctdb->recovery_mode = recmode;
+
+	if (ctdb->recovery_mode == CTDB_RECOVERY_ACTIVE) {
+		/* Recovery is complete! That was quick.... */
+		ctdb->recovery_mode = CTDB_RECOVERY_NORMAL;
+		assert_vnn_map_set(ctdb);
+		ctdb->vnn_map->generation++;
+	}
 
 	return 0;
 }
@@ -502,6 +547,8 @@ int32_t ctdb_control_get_ifaces(struct ctdb_context *ctdb,
 	struct ctdb_control_get_ifaces *ifaces;
 	struct ctdb_iface *cur;
 
+	assert_ifaces_set(ctdb);
+
 	/* count how many public ip structures we have */
 	num = 0;
 	for (cur=ctdb->ifaces;cur;cur=cur->next) {
@@ -515,7 +562,12 @@ int32_t ctdb_control_get_ifaces(struct ctdb_context *ctdb,
 
 	i = 0;
 	for (cur=ctdb->ifaces;cur;cur=cur->next) {
-		strcpy(ifaces->ifaces[i].name, cur->name);
+		size_t nlen = strlcpy(ifaces->ifaces[i].name, cur->name,
+				      sizeof(ifaces->ifaces[i].name));
+		if (nlen >= sizeof(ifaces->ifaces[i].name)) {
+			/* Ignore invalid name */
+			continue;
+		}
 		ifaces->ifaces[i].link_state = cur->link_up;
 		ifaces->ifaces[i].references = cur->references;
 		i++;
@@ -554,6 +606,121 @@ ctdb_ctrl_get_ifaces_stub(struct ctdb_context *ctdb,
 	return ret;
 }
 
+/* In reality handlers can be registered for many srvids.  However,
+ * the ctdb tool only registers one at a time so keep this simple. */
+static struct {
+	uint64_t srvid;
+	ctdb_msg_fn_t message_handler;
+	void *message_private;
+} ctdb_message_list_fake = {
+	.srvid = 0,
+	.message_handler = NULL,
+	.message_private = NULL,
+};
+
+int ctdb_client_set_message_handler_stub(struct ctdb_context *ctdb,
+					 uint64_t srvid,
+					 ctdb_msg_fn_t handler,
+					 void *private_data)
+{
+	ctdb_message_list_fake.srvid = srvid;
+	ctdb_message_list_fake.message_handler = handler;
+	ctdb_message_list_fake.message_private = private_data;
+
+	return 0;
+}
+
+int ctdb_client_remove_message_handler_stub(struct ctdb_context *ctdb,
+					    uint64_t srvid,
+					    void *private_data)
+{
+	ctdb_message_list_fake.srvid = 0;
+	ctdb_message_list_fake.message_handler = NULL;
+	ctdb_message_list_fake.message_private = NULL;
+
+	return 0;
+}
+
+static void ctdb_fake_handler_pnn_reply(struct ctdb_context *ctdb,
+					uint32_t pnn)
+{
+	TDB_DATA reply_data;
+
+	reply_data.dsize = sizeof(pnn);
+	reply_data.dptr = (uint8_t *)&pnn;
+	ctdb_message_list_fake.message_handler(
+		ctdb,
+		ctdb_message_list_fake.srvid,
+		reply_data,
+		ctdb_message_list_fake.message_private);
+}
+
+int ctdb_client_send_message_stub(struct ctdb_context *ctdb,
+				  uint32_t pnn,
+				  uint64_t srvid, TDB_DATA data)
+{
+	struct srvid_reply_handler_data *d;
+	int i;
+
+	if (ctdb_message_list_fake.message_handler == NULL) {
+		DEBUG(DEBUG_ERR,
+		      (__location__
+		       " no message handler registered for srvid %llu\n",
+		       (unsigned long long)srvid));
+		return -1;
+	}
+
+	switch (srvid) {
+	case CTDB_SRVID_TAKEOVER_RUN:
+		/* Fake a single reply from recovery master */
+		DEBUG(DEBUG_NOTICE,
+		      ("Fake takeover run on recovery master %u\n",
+		       ctdb->recovery_master));
+		ctdb_fake_handler_pnn_reply(ctdb, ctdb->recovery_master);
+		break;
+
+	case CTDB_SRVID_DISABLE_RECOVERIES:
+	case CTDB_SRVID_DISABLE_TAKEOVER_RUNS:
+		/* Assume srvid_broadcast() is in use and reply on
+		 * behalf of relevant nodes */
+		if (pnn != CTDB_BROADCAST_CONNECTED) {
+			DEBUG(DEBUG_ERR,
+			      (__location__
+			       " srvid %llu must use pnn CTDB_BROADCAST_CONNECTED\n",
+			       (unsigned long long)srvid));
+			return -1;
+		}
+
+		d = (struct srvid_reply_handler_data *)ctdb_message_list_fake.message_private;
+		if (d == NULL) {
+			DEBUG(DEBUG_ERR,
+			      (__location__ " No private data registered\n"));
+			return -1;
+		}
+		if (d->nodes == NULL) {
+			DEBUG(DEBUG_ERR,
+			      (__location__
+			       " No nodes to reply to in private data\n"));
+			return -1;
+		}
+
+		for (i = 0; i < talloc_array_length(d->nodes); i++) {
+			if (d->nodes[i] != -1) {
+				ctdb_fake_handler_pnn_reply(ctdb, d->nodes[i]);
+			}
+		}
+		break;
+
+	default:
+		DEBUG(DEBUG_ERR,
+		      (__location__ " srvid %llu not implemented\n",
+		       (unsigned long long)srvid));
+		return -1;
+	}
+
+	return 0;
+}
+
 int ctdb_client_check_message_handlers_stub(struct ctdb_context *ctdb,
 					    uint64_t *ids, uint32_t num,
 					    uint8_t *result)
@@ -566,6 +733,9 @@ int ctdb_ctrl_getcapabilities_stub(struct ctdb_context *ctdb,
 				   struct timeval timeout, uint32_t destnode,
 				   uint32_t *capabilities)
 {
+	uint32_t *capp;
+
+	assert_nodes_set(ctdb);
 
 	if (ctdb->nodes[destnode]->flags & NODE_FLAGS_FAKE_TIMEOUT) {
 		/* Placeholder for line#, instead of __location__ */
@@ -588,7 +758,19 @@ int ctdb_ctrl_getcapabilities_stub(struct ctdb_context *ctdb,
 		return -1;
 	}
 
-	*capabilities = ctdb->nodes[destnode]->capabilities;
+	capp = ctdb_get_node_capabilities(global_caps, destnode);
+	if (capp == NULL) {
+		DEBUG(DEBUG_ERR, ("__LOCATION__ invalid PNN\n"));
+		return -1;
+	}
+	*capabilities = *capp;
+	return 0;
+}
+
+int ctdb_ctrl_reload_nodes_file_stub(struct ctdb_context *ctdb,
+				     struct timeval timeout, uint32_t destnode)
+{
+	DEBUG(DEBUG_NOTICE, ("ctdb_ctrl_reload_nodes_file: node %u\n", destnode));
 	return 0;
 }
 
@@ -599,19 +781,87 @@ bool ctdb_sys_have_ip_stub(ctdb_sock_addr *addr)
 	int i;
 	struct ctdb_context *ctdb = ctdb_global;
 
-	for (i = 0; i < ctdb->num_nodes; i++) {
-		ctdb_sock_addr node_addr;
+	assert_nodes_set(ctdb);
 
+	for (i = 0; i < ctdb->num_nodes; i++) {
 		if (ctdb->pnn == ctdb->nodes[i]->pnn) {
-			if (!parse_ip(ctdb->nodes[i]->address.address, NULL, 0,
-				      &node_addr)) {
-				continue;
-			}
-			if (ctdb_same_ip(addr, &node_addr)) {
+			if (ctdb_same_ip(addr, &ctdb->nodes[i]->address)) {
 				return true;
 			}
 		}
 	}
 
 	return false;
+}
+
+int
+ctdb_client_async_control_stub(struct ctdb_context *ctdb,
+			       enum ctdb_controls opcode,
+			       uint32_t *nodes,
+			       uint64_t srvid,
+			       struct timeval timeout,
+			       bool dont_log_errors,
+			       TDB_DATA data,
+			       client_async_callback client_callback,
+			       client_async_callback fail_callback,
+			       void *callback_data)
+{
+	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
+	int i, ret;
+
+	ret = 0;
+	for (i = 0; i < talloc_array_length(nodes); i++) {
+		uint32_t pnn = nodes[i];
+		TDB_DATA outdata;
+		int res;
+
+		/* Not so async... but good enough for testing! */
+		switch (opcode) {
+		case CTDB_CONTROL_RELOAD_NODES_FILE:
+			res = ctdb_ctrl_reload_nodes_file_stub(ctdb, timeout, pnn);
+			break;
+		case CTDB_CONTROL_RELOAD_PUBLIC_IPS:
+			DEBUG(DEBUG_NOTICE, ("Fake reload public IPs on node %u\n", pnn));
+			res = 0;
+			break;
+		case CTDB_CONTROL_GET_NODES_FILE: {
+			struct ctdb_node_map *nodemap;
+			res = ctdb_ctrl_getnodesfile_stub(ctdb, timeout, pnn,
+							  tmp_ctx, &nodemap);
+			if (res == 0) {
+				outdata.dsize = talloc_get_size(nodemap);
+				outdata.dptr = (uint8_t *) nodemap;
+			}
+		}
+			break;
+		default:
+			DEBUG(DEBUG_ERR, (__location__ " Control not implemented %u\n",
+					  opcode));
+			talloc_free(tmp_ctx);
+			return -1;
+		}
+
+		if (res == 0) {
+			if (client_callback != NULL) {
+				client_callback(ctdb, pnn, res, outdata, callback_data);
+			}
+		} else {
+			ret = -1;
+			if (fail_callback != NULL) {
+				fail_callback(ctdb, pnn, res, outdata, callback_data);
+			}
+		}
+	}
+
+	talloc_free(tmp_ctx);
+	return ret;
+}
+
+struct ctdb_node_capabilities *
+ctdb_get_capabilities_stub(struct ctdb_context *ctdb,
+			   TALLOC_CTX *mem_ctx,
+			   struct timeval timeout,
+			   struct ctdb_node_map *nodemap)
+{
+	return global_caps;
 }

@@ -2839,3 +2839,555 @@ NTSTATUS netlogon_creds_cli_DsrUpdateReadOnlyServerDnsRecords(
 	TALLOC_FREE(frame);
 	return status;
 }
+
+struct netlogon_creds_cli_ServerGetTrustInfo_state {
+	struct tevent_context *ev;
+	struct netlogon_creds_cli_context *context;
+	struct dcerpc_binding_handle *binding_handle;
+
+	char *srv_name_slash;
+	enum dcerpc_AuthType auth_type;
+	enum dcerpc_AuthLevel auth_level;
+
+	struct samr_Password new_owf_password;
+	struct samr_Password old_owf_password;
+	struct netr_TrustInfo *trust_info;
+
+	struct netlogon_creds_CredentialState *creds;
+	struct netlogon_creds_CredentialState tmp_creds;
+	struct netr_Authenticator req_auth;
+	struct netr_Authenticator rep_auth;
+};
+
+static void netlogon_creds_cli_ServerGetTrustInfo_cleanup(struct tevent_req *req,
+						     NTSTATUS status);
+static void netlogon_creds_cli_ServerGetTrustInfo_locked(struct tevent_req *subreq);
+
+struct tevent_req *netlogon_creds_cli_ServerGetTrustInfo_send(TALLOC_CTX *mem_ctx,
+					struct tevent_context *ev,
+					struct netlogon_creds_cli_context *context,
+					struct dcerpc_binding_handle *b)
+{
+	struct tevent_req *req;
+	struct netlogon_creds_cli_ServerGetTrustInfo_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct netlogon_creds_cli_ServerGetTrustInfo_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	state->ev = ev;
+	state->context = context;
+	state->binding_handle = b;
+
+	state->srv_name_slash = talloc_asprintf(state, "\\\\%s",
+						context->server.computer);
+	if (tevent_req_nomem(state->srv_name_slash, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	dcerpc_binding_handle_auth_info(state->binding_handle,
+					&state->auth_type,
+					&state->auth_level);
+
+	subreq = netlogon_creds_cli_lock_send(state, state->ev,
+					      state->context);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	tevent_req_set_callback(subreq,
+				netlogon_creds_cli_ServerGetTrustInfo_locked,
+				req);
+
+	return req;
+}
+
+static void netlogon_creds_cli_ServerGetTrustInfo_cleanup(struct tevent_req *req,
+							 NTSTATUS status)
+{
+	struct netlogon_creds_cli_ServerGetTrustInfo_state *state =
+		tevent_req_data(req,
+		struct netlogon_creds_cli_ServerGetTrustInfo_state);
+
+	if (state->creds == NULL) {
+		return;
+	}
+
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_ACCESS_DENIED) &&
+	    !NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT) &&
+	    !NT_STATUS_EQUAL(status, NT_STATUS_DOWNGRADE_DETECTED) &&
+	    !NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED) &&
+	    !NT_STATUS_EQUAL(status, NT_STATUS_RPC_SEC_PKG_ERROR)) {
+		TALLOC_FREE(state->creds);
+		return;
+	}
+
+	netlogon_creds_cli_delete(state->context, &state->creds);
+}
+
+static void netlogon_creds_cli_ServerGetTrustInfo_done(struct tevent_req *subreq);
+
+static void netlogon_creds_cli_ServerGetTrustInfo_locked(struct tevent_req *subreq)
+{
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq,
+		struct tevent_req);
+	struct netlogon_creds_cli_ServerGetTrustInfo_state *state =
+		tevent_req_data(req,
+		struct netlogon_creds_cli_ServerGetTrustInfo_state);
+	NTSTATUS status;
+
+	status = netlogon_creds_cli_lock_recv(subreq, state,
+					      &state->creds);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	if (state->auth_type == DCERPC_AUTH_TYPE_SCHANNEL) {
+		switch (state->auth_level) {
+		case DCERPC_AUTH_LEVEL_PRIVACY:
+			break;
+		default:
+			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER_MIX);
+			return;
+		}
+	} else {
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER_MIX);
+		return;
+	}
+
+	/*
+	 * we defer all callbacks in order to cleanup
+	 * the database record.
+	 */
+	tevent_req_defer_callback(req, state->ev);
+
+	state->tmp_creds = *state->creds;
+	netlogon_creds_client_authenticator(&state->tmp_creds,
+					    &state->req_auth);
+	ZERO_STRUCT(state->rep_auth);
+
+	subreq = dcerpc_netr_ServerGetTrustInfo_send(state, state->ev,
+						     state->binding_handle,
+						     state->srv_name_slash,
+						     state->tmp_creds.account_name,
+						     state->tmp_creds.secure_channel_type,
+						     state->tmp_creds.computer_name,
+						     &state->req_auth,
+						     &state->rep_auth,
+						     &state->new_owf_password,
+						     &state->old_owf_password,
+						     &state->trust_info);
+	if (tevent_req_nomem(subreq, req)) {
+		status = NT_STATUS_NO_MEMORY;
+		netlogon_creds_cli_ServerGetTrustInfo_cleanup(req, status);
+		return;
+	}
+
+	tevent_req_set_callback(subreq,
+				netlogon_creds_cli_ServerGetTrustInfo_done,
+				req);
+}
+
+static void netlogon_creds_cli_ServerGetTrustInfo_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq,
+		struct tevent_req);
+	struct netlogon_creds_cli_ServerGetTrustInfo_state *state =
+		tevent_req_data(req,
+		struct netlogon_creds_cli_ServerGetTrustInfo_state);
+	NTSTATUS status;
+	NTSTATUS result;
+	const struct samr_Password zero = {};
+	int cmp;
+	bool ok;
+
+	/*
+	 * We use state->dns_names as the memory context, as this is
+	 * the only in/out variable and it has been overwritten by the
+	 * out parameter from the server.
+	 *
+	 * We need to preserve the return value until the caller can use it.
+	 */
+	status = dcerpc_netr_ServerGetTrustInfo_recv(subreq, state, &result);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		netlogon_creds_cli_ServerGetTrustInfo_cleanup(req, status);
+		return;
+	}
+
+	ok = netlogon_creds_client_check(&state->tmp_creds,
+					 &state->rep_auth.cred);
+	if (!ok) {
+		status = NT_STATUS_ACCESS_DENIED;
+		tevent_req_nterror(req, status);
+		netlogon_creds_cli_ServerGetTrustInfo_cleanup(req, status);
+		return;
+	}
+
+	if (tevent_req_nterror(req, result)) {
+		netlogon_creds_cli_ServerGetTrustInfo_cleanup(req, result);
+		return;
+	}
+
+	cmp = memcmp(state->new_owf_password.hash,
+		     zero.hash, sizeof(zero.hash));
+	if (cmp != 0) {
+		netlogon_creds_des_decrypt(&state->tmp_creds,
+					   &state->new_owf_password);
+	}
+	cmp = memcmp(state->old_owf_password.hash,
+		     zero.hash, sizeof(zero.hash));
+	if (cmp != 0) {
+		netlogon_creds_des_decrypt(&state->tmp_creds,
+					   &state->old_owf_password);
+	}
+
+	*state->creds = state->tmp_creds;
+	status = netlogon_creds_cli_store(state->context,
+					  &state->creds);
+	if (tevent_req_nterror(req, status)) {
+		netlogon_creds_cli_ServerGetTrustInfo_cleanup(req, status);
+		return;
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS netlogon_creds_cli_ServerGetTrustInfo_recv(struct tevent_req *req,
+					TALLOC_CTX *mem_ctx,
+					struct samr_Password *new_owf_password,
+					struct samr_Password *old_owf_password,
+					struct netr_TrustInfo **trust_info)
+{
+	struct netlogon_creds_cli_ServerGetTrustInfo_state *state =
+		tevent_req_data(req,
+		struct netlogon_creds_cli_ServerGetTrustInfo_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		netlogon_creds_cli_ServerGetTrustInfo_cleanup(req, status);
+		tevent_req_received(req);
+		return status;
+	}
+
+	if (new_owf_password != NULL) {
+		*new_owf_password = state->new_owf_password;
+	}
+	if (old_owf_password != NULL) {
+		*old_owf_password = state->old_owf_password;
+	}
+	if (trust_info != NULL) {
+		*trust_info = talloc_move(mem_ctx, &state->trust_info);
+	}
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
+NTSTATUS netlogon_creds_cli_ServerGetTrustInfo(
+				struct netlogon_creds_cli_context *context,
+				struct dcerpc_binding_handle *b,
+				TALLOC_CTX *mem_ctx,
+				struct samr_Password *new_owf_password,
+				struct samr_Password *old_owf_password,
+				struct netr_TrustInfo **trust_info)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct tevent_context *ev;
+	struct tevent_req *req;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+
+	ev = samba_tevent_context_init(frame);
+	if (ev == NULL) {
+		goto fail;
+	}
+	req = netlogon_creds_cli_ServerGetTrustInfo_send(frame, ev, context, b);
+	if (req == NULL) {
+		goto fail;
+	}
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
+		goto fail;
+	}
+	status = netlogon_creds_cli_ServerGetTrustInfo_recv(req,
+							    mem_ctx,
+							    new_owf_password,
+							    old_owf_password,
+							    trust_info);
+ fail:
+	TALLOC_FREE(frame);
+	return status;
+}
+
+struct netlogon_creds_cli_GetForestTrustInformation_state {
+	struct tevent_context *ev;
+	struct netlogon_creds_cli_context *context;
+	struct dcerpc_binding_handle *binding_handle;
+
+	char *srv_name_slash;
+	enum dcerpc_AuthType auth_type;
+	enum dcerpc_AuthLevel auth_level;
+
+	uint32_t flags;
+	struct lsa_ForestTrustInformation *forest_trust_info;
+
+	struct netlogon_creds_CredentialState *creds;
+	struct netlogon_creds_CredentialState tmp_creds;
+	struct netr_Authenticator req_auth;
+	struct netr_Authenticator rep_auth;
+};
+
+static void netlogon_creds_cli_GetForestTrustInformation_cleanup(struct tevent_req *req,
+						     NTSTATUS status);
+static void netlogon_creds_cli_GetForestTrustInformation_locked(struct tevent_req *subreq);
+
+struct tevent_req *netlogon_creds_cli_GetForestTrustInformation_send(TALLOC_CTX *mem_ctx,
+					struct tevent_context *ev,
+					struct netlogon_creds_cli_context *context,
+					struct dcerpc_binding_handle *b)
+{
+	struct tevent_req *req;
+	struct netlogon_creds_cli_GetForestTrustInformation_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct netlogon_creds_cli_GetForestTrustInformation_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	state->ev = ev;
+	state->context = context;
+	state->binding_handle = b;
+
+	state->srv_name_slash = talloc_asprintf(state, "\\\\%s",
+						context->server.computer);
+	if (tevent_req_nomem(state->srv_name_slash, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	state->flags = 0;
+
+	dcerpc_binding_handle_auth_info(state->binding_handle,
+					&state->auth_type,
+					&state->auth_level);
+
+	subreq = netlogon_creds_cli_lock_send(state, state->ev,
+					      state->context);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	tevent_req_set_callback(subreq,
+				netlogon_creds_cli_GetForestTrustInformation_locked,
+				req);
+
+	return req;
+}
+
+static void netlogon_creds_cli_GetForestTrustInformation_cleanup(struct tevent_req *req,
+							 NTSTATUS status)
+{
+	struct netlogon_creds_cli_GetForestTrustInformation_state *state =
+		tevent_req_data(req,
+		struct netlogon_creds_cli_GetForestTrustInformation_state);
+
+	if (state->creds == NULL) {
+		return;
+	}
+
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_ACCESS_DENIED) &&
+	    !NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT) &&
+	    !NT_STATUS_EQUAL(status, NT_STATUS_DOWNGRADE_DETECTED) &&
+	    !NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED) &&
+	    !NT_STATUS_EQUAL(status, NT_STATUS_RPC_SEC_PKG_ERROR)) {
+		TALLOC_FREE(state->creds);
+		return;
+	}
+
+	netlogon_creds_cli_delete(state->context, &state->creds);
+}
+
+static void netlogon_creds_cli_GetForestTrustInformation_done(struct tevent_req *subreq);
+
+static void netlogon_creds_cli_GetForestTrustInformation_locked(struct tevent_req *subreq)
+{
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq,
+		struct tevent_req);
+	struct netlogon_creds_cli_GetForestTrustInformation_state *state =
+		tevent_req_data(req,
+		struct netlogon_creds_cli_GetForestTrustInformation_state);
+	NTSTATUS status;
+
+	status = netlogon_creds_cli_lock_recv(subreq, state,
+					      &state->creds);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	if (state->auth_type == DCERPC_AUTH_TYPE_SCHANNEL) {
+		switch (state->auth_level) {
+		case DCERPC_AUTH_LEVEL_INTEGRITY:
+		case DCERPC_AUTH_LEVEL_PRIVACY:
+			break;
+		default:
+			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER_MIX);
+			return;
+		}
+	} else {
+		uint32_t tmp = state->creds->negotiate_flags;
+
+		if (tmp & NETLOGON_NEG_AUTHENTICATED_RPC) {
+			/*
+			 * if DCERPC_AUTH_TYPE_SCHANNEL is supported
+			 * it should be used, which means
+			 * we had a chance to verify no downgrade
+			 * happened.
+			 *
+			 * This relies on netlogon_creds_cli_check*
+			 * being called before, as first request after
+			 * the DCERPC bind.
+			 */
+			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER_MIX);
+			return;
+		}
+	}
+
+	/*
+	 * we defer all callbacks in order to cleanup
+	 * the database record.
+	 */
+	tevent_req_defer_callback(req, state->ev);
+
+	state->tmp_creds = *state->creds;
+	netlogon_creds_client_authenticator(&state->tmp_creds,
+					    &state->req_auth);
+	ZERO_STRUCT(state->rep_auth);
+
+	subreq = dcerpc_netr_GetForestTrustInformation_send(state, state->ev,
+						state->binding_handle,
+						state->srv_name_slash,
+						state->tmp_creds.computer_name,
+						&state->req_auth,
+						&state->rep_auth,
+						state->flags,
+						&state->forest_trust_info);
+	if (tevent_req_nomem(subreq, req)) {
+		status = NT_STATUS_NO_MEMORY;
+		netlogon_creds_cli_GetForestTrustInformation_cleanup(req, status);
+		return;
+	}
+
+	tevent_req_set_callback(subreq,
+				netlogon_creds_cli_GetForestTrustInformation_done,
+				req);
+}
+
+static void netlogon_creds_cli_GetForestTrustInformation_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq,
+		struct tevent_req);
+	struct netlogon_creds_cli_GetForestTrustInformation_state *state =
+		tevent_req_data(req,
+		struct netlogon_creds_cli_GetForestTrustInformation_state);
+	NTSTATUS status;
+	NTSTATUS result;
+	bool ok;
+
+	/*
+	 * We use state->dns_names as the memory context, as this is
+	 * the only in/out variable and it has been overwritten by the
+	 * out parameter from the server.
+	 *
+	 * We need to preserve the return value until the caller can use it.
+	 */
+	status = dcerpc_netr_GetForestTrustInformation_recv(subreq, state, &result);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		netlogon_creds_cli_GetForestTrustInformation_cleanup(req, status);
+		return;
+	}
+
+	ok = netlogon_creds_client_check(&state->tmp_creds,
+					 &state->rep_auth.cred);
+	if (!ok) {
+		status = NT_STATUS_ACCESS_DENIED;
+		tevent_req_nterror(req, status);
+		netlogon_creds_cli_GetForestTrustInformation_cleanup(req, status);
+		return;
+	}
+
+	if (tevent_req_nterror(req, result)) {
+		netlogon_creds_cli_GetForestTrustInformation_cleanup(req, result);
+		return;
+	}
+
+	*state->creds = state->tmp_creds;
+	status = netlogon_creds_cli_store(state->context,
+					  &state->creds);
+	if (tevent_req_nterror(req, status)) {
+		netlogon_creds_cli_GetForestTrustInformation_cleanup(req, status);
+		return;
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS netlogon_creds_cli_GetForestTrustInformation_recv(struct tevent_req *req,
+			TALLOC_CTX *mem_ctx,
+			struct lsa_ForestTrustInformation **forest_trust_info)
+{
+	struct netlogon_creds_cli_GetForestTrustInformation_state *state =
+		tevent_req_data(req,
+		struct netlogon_creds_cli_GetForestTrustInformation_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		netlogon_creds_cli_GetForestTrustInformation_cleanup(req, status);
+		tevent_req_received(req);
+		return status;
+	}
+
+	*forest_trust_info = talloc_move(mem_ctx, &state->forest_trust_info);
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
+NTSTATUS netlogon_creds_cli_GetForestTrustInformation(
+			struct netlogon_creds_cli_context *context,
+			struct dcerpc_binding_handle *b,
+			TALLOC_CTX *mem_ctx,
+			struct lsa_ForestTrustInformation **forest_trust_info)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct tevent_context *ev;
+	struct tevent_req *req;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+
+	ev = samba_tevent_context_init(frame);
+	if (ev == NULL) {
+		goto fail;
+	}
+	req = netlogon_creds_cli_GetForestTrustInformation_send(frame, ev, context, b);
+	if (req == NULL) {
+		goto fail;
+	}
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
+		goto fail;
+	}
+	status = netlogon_creds_cli_GetForestTrustInformation_recv(req,
+							mem_ctx,
+							forest_trust_info);
+ fail:
+	TALLOC_FREE(frame);
+	return status;
+}

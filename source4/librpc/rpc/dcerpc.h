@@ -238,6 +238,13 @@ struct composite_context* dcerpc_secondary_auth_connection_send(struct dcerpc_pi
 NTSTATUS dcerpc_secondary_auth_connection_recv(struct composite_context *c, 
 					       TALLOC_CTX *mem_ctx,
 					       struct dcerpc_pipe **p);
+NTSTATUS dcerpc_secondary_auth_connection(struct dcerpc_pipe *p,
+					const struct dcerpc_binding *binding,
+					const struct ndr_interface_table *table,
+					struct cli_credentials *credentials,
+					struct loadparm_context *lp_ctx,
+					TALLOC_CTX *mem_ctx,
+					struct dcerpc_pipe **p2);
 
 struct composite_context* dcerpc_secondary_connection_send(struct dcerpc_pipe *p,
 							   const struct dcerpc_binding *b);

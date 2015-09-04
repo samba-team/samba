@@ -12,11 +12,11 @@ use POSIX;
 use Cwd qw(abs_path);
 
 sub new($$$$$) {
-	my ($classname, $bindir, $binary_mapping,$ldap, $srcdir, $server_maxtime) = @_;
+	my ($classname, $bindir, $ldap, $srcdir, $server_maxtime) = @_;
 
 	my $self = {
-	    samba3 => new Samba3($bindir,$binary_mapping, $srcdir, $server_maxtime),
-	    samba4 => new Samba4($bindir,$binary_mapping, $ldap, $srcdir, $server_maxtime),
+	    samba3 => new Samba3($bindir, $srcdir, $server_maxtime),
+	    samba4 => new Samba4($bindir, $ldap, $srcdir, $server_maxtime),
 	};
 	bless $self;
 	return $self;
@@ -55,10 +55,6 @@ sub setup_env($$$)
 sub bindir_path($$) {
 	my ($object, $path) = @_;
 
-	if (defined($object->{binary_mapping}->{$path})) {
-	    $path = $object->{binary_mapping}->{$path};
-	}
-
 	my $valpath = "$object->{bindir}/$path";
 
 	return $valpath if (-f $valpath);
@@ -77,7 +73,7 @@ sub nss_wrapper_winbind_so_path($) {
 
 sub mk_krb5_conf($$)
 {
-	my ($ctx, $other_realms_stanza) = @_;
+	my ($ctx) = @_;
 
 	unless (open(KRB5CONF, ">$ctx->{krb5_conf}")) {
 	        warn("can't open $ctx->{krb5_conf}$?");
@@ -94,14 +90,13 @@ sub mk_krb5_conf($$)
 [libdefaults]
  default_realm = $ctx->{realm}
  dns_lookup_realm = false
- dns_lookup_kdc = false
+ dns_lookup_kdc = true
  ticket_lifetime = 24h
  forwardable = yes
  allow_weak_crypto = yes
 
 [realms]
  $our_realms_stanza
- $other_realms_stanza
 ";
 
 
@@ -124,7 +119,8 @@ sub mk_krb5_conf($$)
 sub mk_realms_stanza($$$$)
 {
 	my ($realm, $dnsname, $domain, $kdc_ipv4) = @_;
-
+	my $lc_domain = lc($domain);
+	
 	my $realms_stanza = "
  $realm = {
   kdc = $kdc_ipv4:88
@@ -141,6 +137,11 @@ sub mk_realms_stanza($$$$)
   admin_server = $kdc_ipv4:88
   default_domain = $dnsname
  }
+ $lc_domain = {
+  kdc = $kdc_ipv4:88
+  admin_server = $kdc_ipv4:88
+  default_domain = $dnsname
+ }
 
 ";
         return $realms_stanza;
@@ -152,12 +153,13 @@ sub get_interface($)
     $netbiosname = lc($netbiosname);
 
     my %interfaces = ();
-    $interfaces{"locals3dc2"} = 3;
-    $interfaces{"localmember3"} = 4;
+    $interfaces{"localnt4dc2"} = 3;
+    $interfaces{"localnt4member3"} = 4;
     $interfaces{"localshare4"} = 5;
 
     $interfaces{"localktest6"} = 7;
     $interfaces{"maptoguest"} = 8;
+    $interfaces{"localnt4dc9"} = 9;
 
     # 11-16 used by selftest.pl for client interfaces
 
@@ -170,11 +172,12 @@ sub get_interface($)
     $interfaces{"dc7"} = 27;
     $interfaces{"rodc"} = 28;
     $interfaces{"localadmember"} = 29;
-    $interfaces{"plugindc"} = 30;
+    $interfaces{"addc"} = 30;
     $interfaces{"localsubdc"} = 31;
     $interfaces{"chgdcpass"} = 32;
     $interfaces{"promotedvdc"} = 33;
     $interfaces{"rfc2307member"} = 34;
+    $interfaces{"fileserver"} = 35;
 
     # update lib/socket_wrapper/socket_wrapper.c
     #  #define MAX_WRAPPED_INTERFACES 32

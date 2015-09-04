@@ -23,7 +23,7 @@
 #define __TDB_VALIDATE_H__
 
 #include "lib/replace/replace.h"
-#include "tdb_compat.h"
+#include <tdb.h>
 
 /**
  * Flag field for keeping track of the status of a validation.

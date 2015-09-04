@@ -121,7 +121,7 @@ static char *stream_dir(vfs_handle_struct *handle,
 	char *tmp;
 	char *id_hex;
 	struct file_id id;
-	uint8 id_buf[16];
+	uint8_t id_buf[16];
 	bool check_valid;
 	const char *rootdir;
 

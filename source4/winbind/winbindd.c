@@ -82,7 +82,7 @@ static void winbindd_task_init(struct task_server *task)
 
 	tevent_req_set_callback(subreq, winbindd_done, task);
 
-	DEBUG(5,("Started file server child winbindd\n"));
+	DEBUG(5,("Started winbindd as a child daemon\n"));
 }
 
 /* called at winbindd startup - register ourselves as a server service */
@@ -90,5 +90,9 @@ NTSTATUS server_service_winbindd_init(void);
 
 NTSTATUS server_service_winbindd_init(void)
 {
-	return register_server_service("winbindd", winbindd_task_init);
+	NTSTATUS status = register_server_service("winbindd", winbindd_task_init);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	return register_server_service("winbind", winbindd_task_init);
 }

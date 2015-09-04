@@ -1120,15 +1120,14 @@ need_referral(krb5_context context, krb5_kdc_configuration *config,
 
     if (server->name.name_string.len == 1)
 	name = server->name.name_string.val[0];
-    else if (server->name.name_string.len == 3 &&
-	     strcasecmp("E3514235-4B06-11D1-AB04-00C04FC2DCD2", server->name.name_string.val[0]) == 0) {
+    else if (server->name.name_string.len == 3) {
 	/*
 	  This is used to give referrals for the
 	  E3514235-4B06-11D1-AB04-00C04FC2DCD2/NTDSGUID/DNSDOMAIN
 	  SPN form, which is used for inter-domain communication in AD
 	 */
 	name = server->name.name_string.val[2];
-	kdc_log(context, config, 0, "Giving 3 part DRSUAPI referral for %s", name);
+	kdc_log(context, config, 0, "Giving 3 part referral for %s", name);
 	*realms = malloc(sizeof(char *)*2);
 	if (*realms == NULL) {
 	    krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
@@ -1617,6 +1616,32 @@ server_lookup:
     if(ret == HDB_ERR_NOT_FOUND_HERE) {
 	kdc_log(context, config, 5, "target %s does not have secrets at this KDC, need to proxy", sp);
 	goto out;
+    } else if (ret == HDB_ERR_WRONG_REALM) {
+	if (ref_realm)
+	    free(ref_realm);
+	ref_realm = strdup(server->entry.principal->realm);
+	if (ref_realm == NULL) {
+	    ret = ENOMEM;
+	    goto out;
+	}
+
+	kdc_log(context, config, 5,
+		"Returning a referral to realm %s for "
+		"server %s.",
+		ref_realm, spn);
+	krb5_free_principal(context, sp);
+	sp = NULL;
+	free(spn);
+	spn = NULL;
+	ret = krb5_make_principal(context, &sp, r, KRB5_TGS_NAME,
+				  ref_realm, NULL);
+	if (ret)
+	    goto out;
+	ret = krb5_unparse_name(context, sp, &spn);
+	if (ret)
+	    goto out;
+
+	goto server_lookup;
     } else if(ret){
 	const char *new_rlm, *msg;
 	Realm req_rlm;

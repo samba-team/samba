@@ -647,17 +647,17 @@ static int setup_kerberos_keys(struct setup_password_fields_io *io)
 	struct ldb_context *ldb;
 	krb5_error_code krb5_ret;
 	krb5_principal salt_principal;
-	krb5_salt salt;
+	krb5_data salt;
 	krb5_keyblock key;
 	krb5_data cleartext_data;
 
 	ldb = ldb_module_get_ctx(io->ac->module);
-	cleartext_data.data = io->n.cleartext_utf8->data;
+	cleartext_data.data = (char *)io->n.cleartext_utf8->data;
 	cleartext_data.length = io->n.cleartext_utf8->length;
 
 	/* Many, many thanks to lukeh@padl.com for this
 	 * algorithm, described in his Nov 10 2004 mail to
-	 * samba-technical@samba.org */
+	 * samba-technical@lists.samba.org */
 
 	/*
 	 * Determine a salting principal
@@ -721,7 +721,7 @@ static int setup_kerberos_keys(struct setup_password_fields_io *io)
 	/*
 	 * create salt from salt_principal
 	 */
-	krb5_ret = krb5_get_pw_salt(io->smb_krb5_context->krb5_context,
+	krb5_ret = smb_krb5_get_pw_salt(io->smb_krb5_context->krb5_context,
 				    salt_principal, &salt);
 	krb5_free_principal(io->smb_krb5_context->krb5_context, salt_principal);
 	if (krb5_ret) {
@@ -734,24 +734,26 @@ static int setup_kerberos_keys(struct setup_password_fields_io *io)
 	}
 	/* create a talloc copy */
 	io->g.salt = talloc_strndup(io->ac,
-				    (char *)salt.saltvalue.data,
-				    salt.saltvalue.length);
-	krb5_free_salt(io->smb_krb5_context->krb5_context, salt);
+				    (char *)salt.data,
+				    salt.length);
+	kerberos_free_data_contents(io->smb_krb5_context->krb5_context, &salt);
 	if (!io->g.salt) {
 		return ldb_oom(ldb);
 	}
-	salt.saltvalue.data	= discard_const(io->g.salt);
-	salt.saltvalue.length	= strlen(io->g.salt);
+	/* now use the talloced copy of the salt */
+	salt.data	= discard_const(io->g.salt);
+	salt.length	= strlen(io->g.salt);
 
 	/*
 	 * create ENCTYPE_AES256_CTS_HMAC_SHA1_96 key out of
 	 * the salt and the cleartext password
 	 */
-	krb5_ret = krb5_string_to_key_data_salt(io->smb_krb5_context->krb5_context,
-						ENCTYPE_AES256_CTS_HMAC_SHA1_96,
-						cleartext_data,
-						salt,
-						&key);
+	krb5_ret = smb_krb5_create_key_from_string(io->smb_krb5_context->krb5_context,
+						   NULL,
+						   &salt,
+						   &cleartext_data,
+						   ENCTYPE_AES256_CTS_HMAC_SHA1_96,
+						   &key);
 	if (krb5_ret) {
 		ldb_asprintf_errstring(ldb,
 				       "setup_kerberos_keys: "
@@ -772,11 +774,12 @@ static int setup_kerberos_keys(struct setup_password_fields_io *io)
 	 * create ENCTYPE_AES128_CTS_HMAC_SHA1_96 key out of
 	 * the salt and the cleartext password
 	 */
-	krb5_ret = krb5_string_to_key_data_salt(io->smb_krb5_context->krb5_context,
-						ENCTYPE_AES128_CTS_HMAC_SHA1_96,
-						cleartext_data,
-						salt,
-						&key);
+	krb5_ret = smb_krb5_create_key_from_string(io->smb_krb5_context->krb5_context,
+						   NULL,
+						   &salt,
+						   &cleartext_data,
+						   ENCTYPE_AES128_CTS_HMAC_SHA1_96,
+						   &key);
 	if (krb5_ret) {
 		ldb_asprintf_errstring(ldb,
 				       "setup_kerberos_keys: "
@@ -797,11 +800,12 @@ static int setup_kerberos_keys(struct setup_password_fields_io *io)
 	 * create ENCTYPE_DES_CBC_MD5 key out of
 	 * the salt and the cleartext password
 	 */
-	krb5_ret = krb5_string_to_key_data_salt(io->smb_krb5_context->krb5_context,
-						ENCTYPE_DES_CBC_MD5,
-						cleartext_data,
-						salt,
-						&key);
+	krb5_ret = smb_krb5_create_key_from_string(io->smb_krb5_context->krb5_context,
+						   NULL,
+						   &salt,
+						   &cleartext_data,
+						   ENCTYPE_DES_CBC_MD5,
+						   &key);
 	if (krb5_ret) {
 		ldb_asprintf_errstring(ldb,
 				       "setup_kerberos_keys: "
@@ -822,11 +826,12 @@ static int setup_kerberos_keys(struct setup_password_fields_io *io)
 	 * create ENCTYPE_DES_CBC_CRC key out of
 	 * the salt and the cleartext password
 	 */
-	krb5_ret = krb5_string_to_key_data_salt(io->smb_krb5_context->krb5_context,
-						ENCTYPE_DES_CBC_CRC,
-						cleartext_data,
-						salt,
-						&key);
+	krb5_ret = smb_krb5_create_key_from_string(io->smb_krb5_context->krb5_context,
+						   NULL,
+						   &salt,
+						   &cleartext_data,
+						   ENCTYPE_DES_CBC_CRC,
+						   &key);
 	if (krb5_ret) {
 		ldb_asprintf_errstring(ldb,
 				       "setup_kerberos_keys: "
@@ -2114,7 +2119,7 @@ static int check_password_restrictions(struct setup_password_fields_io *io)
 
 		/* checks the LM hash password history */
 		for (i = 0; i < io->o.lm_history_len; i++) {
-			ret = memcmp(io->n.nt_hash, io->o.lm_history[i].hash, 16);
+			ret = memcmp(io->n.lm_hash, io->o.lm_history[i].hash, 16);
 			if (ret == 0) {
 				ret = LDB_ERR_CONSTRAINT_VIOLATION;
 				ldb_asprintf_errstring(ldb,
@@ -2222,9 +2227,8 @@ static int setup_io(struct ph_context *ac,
 { 
 	const struct ldb_val *quoted_utf16, *old_quoted_utf16, *lm_hash, *old_lm_hash;
 	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
-	struct loadparm_context *lp_ctx =
-		lp_ctx = talloc_get_type(ldb_get_opaque(ldb, "loadparm"),
-					 struct loadparm_context);
+	struct loadparm_context *lp_ctx = talloc_get_type(
+		ldb_get_opaque(ldb, "loadparm"), struct loadparm_context);
 	int ret;
 
 	ZERO_STRUCTP(io);
@@ -2254,6 +2258,22 @@ static int setup_io(struct ph_context *ac,
 				       ldb_dn_get_linearized(searched_msg->dn));
 
 		return LDB_ERR_CONSTRAINT_VIOLATION;
+	}
+
+	if (io->u.userAccountControl & UF_INTERDOMAIN_TRUST_ACCOUNT) {
+		struct ldb_control *permit_trust = ldb_request_get_control(ac->req,
+				DSDB_CONTROL_PERMIT_INTERDOMAIN_TRUST_UAC_OID);
+
+		if (permit_trust == NULL) {
+			ret = LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS;
+			ldb_asprintf_errstring(ldb,
+				"%08X: %s - setup_io: changing the interdomain trust password "
+				"on %s not allowed via LDAP. Use LSA or NETLOGON",
+				W_ERROR_V(WERR_ACCESS_DENIED),
+				ldb_strerror(ret),
+				ldb_dn_get_linearized(searched_msg->dn));
+			return ret;
+		}
 	}
 
 	/* Only non-trust accounts have restrictions (possibly this test is the

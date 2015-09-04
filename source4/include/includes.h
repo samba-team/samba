@@ -57,6 +57,8 @@
 #endif
 #include "../lib/util/xfile.h"
 #include "../lib/util/attr.h"
+
+/* debug.h need to be included before samba_util.h for the macro SMB_ASSERT */
 #include "../lib/util/debug.h"
 #include "../lib/util/samba_util.h"
 

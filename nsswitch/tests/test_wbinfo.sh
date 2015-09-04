@@ -174,14 +174,57 @@ testit "wbinfo -D against $TARGET" $wbinfo -D $DOMAIN || failed=`expr $failed + 
 
 testit "wbinfo -i against $TARGET" $wbinfo -i "$DOMAIN/$USERNAME" || failed=`expr $failed + 1`
 
-testit "wbinfo --uid-info against $TARGET" $wbinfo --uid-info $admin_uid || failed=`expr $failed + 1`
-
 echo "test: wbinfo --group-info against $TARGET"
-gid=`$wbinfo --group-info "$DOMAIN/Domain admins" | cut -d: -f3`
+gid=`$wbinfo --group-info "$DOMAIN/Domain users" | cut -d: -f3`
 if test x$? = x0; then
 	echo "success: wbinfo --group-info against $TARGET"
 else
 	echo "failure: wbinfo --group-info against $TARGET"
+	failed=`expr $failed + 1`
+fi
+
+test_name="wbinfo -i against $TARGET"
+subunit_start_test "$test_name"
+passwd_line=`$wbinfo -i "$DOMAIN/$USERNAME"`
+if test x$? = x0; then
+	subunit_pass_test "$test_name"
+else
+	subunit_fail_test "$test_name"
+	failed=`expr $failed + 1`
+fi
+
+test_name="confirm output of wbinfo -i against $TARGET"
+subunit_start_test "$test_name"
+
+# The full name (GECOS) is based on name (the RDN, in this case CN)
+# and displayName in winbindd_ads, and is based only on displayName in
+# winbindd_msrpc and winbindd_rpc.  Allow both versions.
+expected_line="$DOMAIN/administrator:*:$admin_uid:$gid:Administrator:/home/$DOMAIN/administrator:/bin/false"
+expected2_line="$DOMAIN/administrator:*:$admin_uid:$gid::/home/$DOMAIN/administrator:/bin/false"
+
+if test x$passwd_line = x"$expected_line" -o x$passwd_line = x"$expected2_line"; then
+	subunit_pass_test "$test_name"
+else
+	echo "expected '$expected_line' or '$expected2_line' got '$passwd_line'" | subunit_fail_test "$test_name"
+	failed=`expr $failed + 1`
+fi
+
+test_name="wbinfo --uid-info against $TARGET"
+subunit_start_test "$test_name"
+passwd_line=`$wbinfo --uid-info=$admin_uid`
+if test x$? = x0; then
+	subunit_pass_test "$test_name"
+else
+	subunit_fail_test "$test_name"
+	failed=`expr $failed + 1`
+fi
+
+test_name="confirm output of wbinfo --uid-info against $TARGET"
+subunit_start_test "$test_name"
+if test x$passwd_line = x"$expected_line" -o x$passwd_line = x"$expected2_line"; then
+	subunit_pass_test "$test_name"
+else
+	echo "expected '$expected_line' or '$expected2_line' got '$passwd_line'" | subunit_fail_test "$test_name"
 	failed=`expr $failed + 1`
 fi
 

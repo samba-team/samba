@@ -45,7 +45,7 @@ static ber_slen_t ads_saslwrap_prepare_inbuf(ADS_STRUCT *ads)
 	ads->ldap.in.left	= 0;
 	ads->ldap.in.size	= 4 + ads->ldap.in.min_wrapped;
 	ads->ldap.in.buf	= talloc_array(ads->ldap.mem_ctx,
-					       uint8, ads->ldap.in.size);
+					       uint8_t, ads->ldap.in.size);
 	if (!ads->ldap.in.buf) {
 		return -1;
 	}
@@ -62,7 +62,7 @@ static ber_slen_t ads_saslwrap_grow_inbuf(ADS_STRUCT *ads)
 	ads->ldap.in.size	= 4 + ads->ldap.in.needed;
 	ads->ldap.in.buf	= talloc_realloc(ads->ldap.mem_ctx,
 						 ads->ldap.in.buf,
-						 uint8, ads->ldap.in.size);
+						 uint8_t, ads->ldap.in.size);
 	if (!ads->ldap.in.buf) {
 		return -1;
 	}
@@ -171,13 +171,13 @@ eagain:
 	return -1;
 }
 
-static ber_slen_t ads_saslwrap_prepare_outbuf(ADS_STRUCT *ads, uint32 len)
+static ber_slen_t ads_saslwrap_prepare_outbuf(ADS_STRUCT *ads, uint32_t len)
 {
 	ads->ldap.out.ofs	= 0;
 	ads->ldap.out.left	= 0;
 	ads->ldap.out.size	= 4 + ads->ldap.out.sig_size + len;
 	ads->ldap.out.buf	= talloc_array(ads->ldap.mem_ctx,
-					       uint8, ads->ldap.out.size);
+					       uint8_t, ads->ldap.out.size);
 	if (!ads->ldap.out.buf) {
 		return -1;
 	}
@@ -214,7 +214,7 @@ static ber_slen_t ads_saslwrap_write(Sockbuf_IO_Desc *sbiod, void *buf, ber_len_
 		ret = ads_saslwrap_prepare_outbuf(ads, rlen);
 		if (ret < 0) return ret;
 		
-		status = ads->ldap.wrap_ops->wrap(ads, (uint8 *)buf, rlen);
+		status = ads->ldap.wrap_ops->wrap(ads, (uint8_t *)buf, rlen);
 		if (!ADS_ERR_OK(status)) {
 			errno = EACCES;
 			return -1;

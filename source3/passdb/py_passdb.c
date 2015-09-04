@@ -51,9 +51,9 @@ static PyTypeObject *dom_sid_Type = NULL;
 static PyTypeObject *security_Type = NULL;
 static PyTypeObject *guid_Type = NULL;
 
-staticforward PyTypeObject PySamu;
-staticforward PyTypeObject PyGroupmap;
-staticforward PyTypeObject PyPDB;
+static PyTypeObject PySamu;
+static PyTypeObject PyGroupmap;
+static PyTypeObject PyPDB;
 
 static PyObject *py_pdb_error;
 
@@ -3647,7 +3647,7 @@ static PyObject *py_set_secrets_dir(PyObject *self, PyObject *args)
 	}
 
 	/* Initialize secrets database */
-	if (!secrets_init_path(private_dir, lp_use_ntdb())) {
+	if (!secrets_init_path(private_dir)) {
 		PyErr_Format(py_pdb_error, "Cannot open secrets file database in '%s'",
 				private_dir);
 		talloc_free(frame);

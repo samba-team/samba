@@ -1,7 +1,7 @@
 <samba:parameter name="delete readonly"
-		 context="S"
-		 type="boolean"
-		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+                 context="S"
+                 type="boolean"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This parameter allows readonly files to be deleted.  
 	This is not normal DOS semantics, but is allowed by UNIX.</para>

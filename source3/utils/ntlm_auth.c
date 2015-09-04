@@ -269,7 +269,7 @@ static char winbind_separator(void)
 
 	/* Send off request */
 
-	if (winbindd_request_response(WINBINDD_INFO, NULL, &response) !=
+	if (winbindd_request_response(NULL, WINBINDD_INFO, NULL, &response) !=
 	    NSS_STATUS_SUCCESS) {
 		d_printf("could not obtain winbind separator!\n");
 		return *lp_winbind_separator();
@@ -299,7 +299,7 @@ const char *get_winbind_domain(void)
 
 	/* Send off request */
 
-	if (winbindd_request_response(WINBINDD_DOMAIN_NAME, NULL, &response) !=
+	if (winbindd_request_response(NULL, WINBINDD_DOMAIN_NAME, NULL, &response) !=
 	    NSS_STATUS_SUCCESS) {
 		DEBUG(1, ("could not obtain winbind domain name!\n"));
 		return lp_workgroup();
@@ -325,7 +325,7 @@ const char *get_winbind_netbios_name(void)
 
 	/* Send off request */
 
-	if (winbindd_request_response(WINBINDD_NETBIOS_NAME, NULL, &response) !=
+	if (winbindd_request_response(NULL, WINBINDD_NETBIOS_NAME, NULL, &response) !=
 	    NSS_STATUS_SUCCESS) {
 		DEBUG(1, ("could not obtain winbind netbios name!\n"));
 		return lp_netbios_name();
@@ -393,7 +393,7 @@ static bool get_require_membership_sid(void) {
 		return False;
 	}
 
-	if (winbindd_request_response(WINBINDD_LOOKUPNAME, &request, &response) !=
+	if (winbindd_request_response(NULL, WINBINDD_LOOKUPNAME, &request, &response) !=
 	    NSS_STATUS_SUCCESS) {
 		DEBUG(0, ("Winbindd lookupname failed to resolve %s into a SID!\n", 
 			  require_membership_of));
@@ -463,7 +463,7 @@ static bool check_plaintext_auth(const char *user, const char *pass,
 			sizeof(request.data.auth.require_membership_of_sid));
 	}
 
-	result = winbindd_request_response(WINBINDD_PAM_AUTH, &request, &response);
+	result = winbindd_request_response(NULL, WINBINDD_PAM_AUTH, &request, &response);
 
 	/* Display response */
 
@@ -498,10 +498,10 @@ NTSTATUS contact_winbind_auth_crap(const char *username,
 				   const DATA_BLOB *challenge,
 				   const DATA_BLOB *lm_response,
 				   const DATA_BLOB *nt_response,
-				   uint32 flags,
-				   uint32 extra_logon_parameters,
-				   uint8 lm_key[8],
-				   uint8 user_session_key[16],
+				   uint32_t flags,
+				   uint32_t extra_logon_parameters,
+				   uint8_t lm_key[8],
+				   uint8_t user_session_key[16],
 				   char **error_string,
 				   char **unix_name)
 {
@@ -558,7 +558,7 @@ NTSTATUS contact_winbind_auth_crap(const char *username,
                 request.data.auth_crap.nt_resp_len = nt_response->length;
 	}
 
-	result = winbindd_request_response(WINBINDD_PAM_AUTH_CRAP, &request, &response);
+	result = winbindd_request_response(NULL, WINBINDD_PAM_AUTH_CRAP, &request, &response);
 	SAFE_FREE(request.extra_data.data);
 
 	/* Display response */
@@ -653,7 +653,7 @@ static NTSTATUS contact_winbind_change_pswd_auth_crap(const char *username,
 		request.data.chng_pswd_auth_crap.old_lm_hash_enc_len = old_lm_hash_enc.length;
 	}
 
-	result = winbindd_request_response(WINBINDD_PAM_CHNG_PSWD_AUTH_CRAP, &request, &response);
+	result = winbindd_request_response(NULL, WINBINDD_PAM_CHNG_PSWD_AUTH_CRAP, &request, &response);
 
 	/* Display response */
 
@@ -879,8 +879,8 @@ static NTSTATUS winbind_pw_check(struct auth4_context *auth4_context,
 	static const char zeros[16] = { 0, };
 	NTSTATUS nt_status;
 	char *error_string = NULL;
-	uint8 lm_key[8]; 
-	uint8 user_sess_key[16]; 
+	uint8_t lm_key[8]; 
+	uint8_t user_sess_key[16]; 
 	char *unix_name = NULL;
 
 	nt_status = contact_winbind_auth_crap(user_info->client.account_name, user_info->client.domain_name, 
@@ -1027,9 +1027,9 @@ static struct auth4_context *make_auth4_context_ntlm_auth(TALLOC_CTX *mem_ctx, b
 	return auth4_context;
 }
 
-static NTSTATUS ntlm_auth_start_ntlmssp_server(TALLOC_CTX *mem_ctx,
-					       struct loadparm_context *lp_ctx,
-					       struct gensec_security **gensec_security_out)
+static NTSTATUS ntlm_auth_prepare_gensec_server(TALLOC_CTX *mem_ctx,
+						struct loadparm_context *lp_ctx,
+						struct gensec_security **gensec_security_out)
 {
 	struct gensec_security *gensec_security;
 	NTSTATUS nt_status;
@@ -1135,12 +1135,6 @@ static NTSTATUS ntlm_auth_start_ntlmssp_server(TALLOC_CTX *mem_ctx,
 	talloc_unlink(tmp_ctx, gensec_settings);
 	talloc_unlink(tmp_ctx, auth4_context);
 
-	nt_status = gensec_start_mech_by_oid(gensec_security, GENSEC_OID_NTLMSSP);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		TALLOC_FREE(tmp_ctx);
-		return nt_status;
-	}
-	
 	*gensec_security_out = talloc_steal(mem_ctx, gensec_security);
 	TALLOC_FREE(tmp_ctx);
 	return NT_STATUS_OK;
@@ -1194,7 +1188,7 @@ static NTSTATUS do_ccache_ntlm_auth(DATA_BLOB initial_msg, DATA_BLOB challenge_m
 			challenge_msg.data, challenge_msg.length);
 	}
 
-	result = winbindd_request_response(WINBINDD_CCACHE_NTLMAUTH, &wb_request, &wb_response);
+	result = winbindd_request_response(NULL, WINBINDD_CCACHE_NTLMAUTH, &wb_request, &wb_response);
 	SAFE_FREE(wb_request.extra_data.data);
 
 	if (result != NSS_STATUS_SUCCESS) {
@@ -1541,8 +1535,8 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 		case GSS_SPNEGO_SERVER:
 		case SQUID_2_5_NTLMSSP:
 		{
-			nt_status = ntlm_auth_start_ntlmssp_server(state, lp_ctx,
-								   &state->gensec_state);
+			nt_status = ntlm_auth_prepare_gensec_server(state, lp_ctx,
+								    &state->gensec_state);
 			if (!NT_STATUS_IS_OK(nt_status)) {
 				x_fprintf(x_stdout, "BH GENSEC mech failed to start: %s\n", nt_errstr(nt_status));
 				talloc_free(mem_ctx);
@@ -2175,7 +2169,7 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 			char *error_string = NULL;
 			uchar lm_key[8];
 			uchar user_session_key[16];
-			uint32 flags = 0;
+			uint32_t flags = 0;
 
 			if (full_username && !username) {
 				fstring fstr_user;
@@ -2645,13 +2639,13 @@ static void squid_stream(enum stdio_helper_mode stdio_mode,
 static bool check_auth_crap(void)
 {
 	NTSTATUS nt_status;
-	uint32 flags = 0;
+	uint32_t flags = 0;
 	char lm_key[8];
 	char user_session_key[16];
 	char *hex_lm_key;
 	char *hex_user_session_key;
 	char *error_string;
-	static uint8 zeros[16];
+	static uint8_t zeros[16];
 
 	x_setbuf(x_stdout, NULL);
 
@@ -2770,7 +2764,7 @@ enum {
 	};
 
 	/* Samba client initialisation */
-	load_case_tables();
+	smb_init_locale();
 
 	setup_logging("ntlm_auth", DEBUG_STDERR);
 

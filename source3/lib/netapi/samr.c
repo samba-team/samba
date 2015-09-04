@@ -45,7 +45,7 @@ WERROR libnetapi_samr_open_domain(struct libnetapi_ctx *mem_ctx,
 	struct samr_SamArray *sam = NULL;
 	const char *domain_name = NULL;
 	struct lsa_String lsa_domain_name;
-	bool domain_found = true;
+	bool domain_found = false;
 	int i;
 	struct dcerpc_binding_handle *b = pipe_cli->binding_handle;
 

@@ -1,0 +1,8 @@
+syntax: glob
+build
+dist
+*.pyc
+iso8601.egg-info
+pyiso8601-venv
+.tox
+_build

@@ -27,6 +27,10 @@
 #include "system/time.h"
 #include <talloc.h>
 
+#ifdef HAVE_PTHREAD
+#include <pthread.h>
+#endif
+
 #include "talloc_testsuite.h"
 
 static struct timeval timeval_current(void)
@@ -981,6 +985,84 @@ static bool test_free_parent_deny_child(void)
 	return true;
 }
 
+struct new_parent {
+	void *new_parent;
+	char val[20];
+};
+
+static int reparenting_destructor(struct new_parent *np)
+{
+	talloc_set_destructor(np, NULL);
+	(void)talloc_move(np->new_parent, &np);
+	return -1;
+}
+
+static bool test_free_parent_reparent_child(void)
+{
+	void *top = talloc_new(NULL);
+	char *level1;
+	char *alternate_level1;
+	char *level2;
+	struct new_parent *level3;
+
+	printf("test: free_parent_reparent_child\n# "
+		"TALLOC FREE PARENT REPARENT CHILD\n");
+
+	level1 = talloc_strdup(top, "level1");
+	alternate_level1 = talloc_strdup(top, "alternate_level1");
+	level2 = talloc_strdup(level1, "level2");
+	level3 = talloc(level2, struct new_parent);
+	level3->new_parent = alternate_level1;
+	memset(level3->val, 'x', sizeof(level3->val));
+
+	talloc_set_destructor(level3, reparenting_destructor);
+	talloc_free(level1);
+
+	CHECK_PARENT("free_parent_reparent_child",
+		level3, alternate_level1);
+
+	talloc_free(top);
+
+	printf("success: free_parent_reparent_child\n");
+	return true;
+}
+
+static bool test_free_parent_reparent_child_in_pool(void)
+{
+	void *top = talloc_new(NULL);
+	char *level1;
+	char *alternate_level1;
+	char *level2;
+	void *pool;
+	struct new_parent *level3;
+
+	printf("test: free_parent_reparent_child_in_pool\n# "
+		"TALLOC FREE PARENT REPARENT CHILD IN POOL\n");
+
+	pool = talloc_pool(top, 1024);
+	level1 = talloc_strdup(pool, "level1");
+	alternate_level1 = talloc_strdup(top, "alternate_level1");
+	level2 = talloc_strdup(level1, "level2");
+	level3 = talloc(level2, struct new_parent);
+	level3->new_parent = alternate_level1;
+	memset(level3->val, 'x', sizeof(level3->val));
+
+	talloc_set_destructor(level3, reparenting_destructor);
+	talloc_free(level1);
+	talloc_set_destructor(level3, NULL);
+
+	CHECK_PARENT("free_parent_reparent_child_in_pool",
+		level3, alternate_level1);
+
+	/* Even freeing alternate_level1 should leave pool alone. */
+	talloc_free(alternate_level1);
+	talloc_free(top);
+
+	printf("success: free_parent_reparent_child_in_pool\n");
+	return true;
+}
+
+
 static bool test_talloc_ptrtype(void)
 {
 	void *top = talloc_new(NULL);
@@ -1623,6 +1705,153 @@ static bool test_memlimit(void)
 	return true;
 }
 
+#ifdef HAVE_PTHREAD
+
+#define NUM_THREADS 100
+
+/* Sync variables. */
+static pthread_mutex_t mtx = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t condvar = PTHREAD_COND_INITIALIZER;
+static void *intermediate_ptr;
+
+/* Subthread. */
+static void *thread_fn(void *arg)
+{
+	int ret;
+	const char *ctx_name = (const char *)arg;
+	void *sub_ctx = NULL;
+	/*
+	 * Do stuff that creates a new talloc hierarchy in
+	 * this thread.
+	 */
+	void *top_ctx = talloc_named_const(NULL, 0, "top");
+	if (top_ctx == NULL) {
+		return NULL;
+	}
+	sub_ctx = talloc_named_const(top_ctx, 100, ctx_name);
+	if (sub_ctx == NULL) {
+		return NULL;
+	}
+
+	/*
+	 * Now transfer a pointer from our hierarchy
+	 * onto the intermediate ptr.
+	 */
+	ret = pthread_mutex_lock(&mtx);
+	if (ret != 0) {
+		talloc_free(top_ctx);
+		return NULL;
+	}
+	/* Wait for intermediate_ptr to be free. */
+	while (intermediate_ptr != NULL) {
+		ret = pthread_cond_wait(&condvar, &mtx);
+		if (ret != 0) {
+			talloc_free(top_ctx);
+			pthread_mutex_unlock(&mtx);
+			return NULL;
+		}
+	}
+
+	/* and move our memory onto it from our toplevel hierarchy. */
+	intermediate_ptr = talloc_move(NULL, &sub_ctx);
+
+	/* Tell the main thread it's ready for pickup. */
+	pthread_cond_broadcast(&condvar);
+	pthread_mutex_unlock(&mtx);
+
+	talloc_free(top_ctx);
+	return NULL;
+}
+
+/* Main thread. */
+static bool test_pthread_talloc_passing(void)
+{
+	int i;
+	int ret;
+	char str_array[NUM_THREADS][20];
+	pthread_t thread_id;
+	void *mem_ctx;
+
+	/*
+	 * Important ! Null tracking breaks threaded talloc.
+	 * It *must* be turned off.
+	 */
+	talloc_disable_null_tracking();
+
+	printf("test: pthread_talloc_passing\n# PTHREAD TALLOC PASSING\n");
+
+	/* Main thread toplevel context. */
+	mem_ctx = talloc_named_const(NULL, 0, "toplevel");
+	if (mem_ctx == NULL) {
+		printf("failed to create toplevel context\n");
+		return false;
+	}
+
+	/*
+	 * Spin off NUM_THREADS threads.
+	 * They will use their own toplevel contexts.
+	 */
+	for (i = 0; i < NUM_THREADS; i++) {
+		(void)snprintf(str_array[i],
+				20,
+				"thread:%d",
+				i);
+		if (str_array[i] == NULL) {
+			printf("snprintf %d failed\n", i);
+			return false;
+		}
+		ret = pthread_create(&thread_id,
+				NULL,
+				thread_fn,
+				str_array[i]);
+		if (ret != 0) {
+			printf("failed to create thread %d (%d)\n", i, ret);
+			return false;
+		}
+	}
+
+	printf("Created %d threads\n", NUM_THREADS);
+
+	/* Now wait for NUM_THREADS transfers of the talloc'ed memory. */
+	for (i = 0; i < NUM_THREADS; i++) {
+		ret = pthread_mutex_lock(&mtx);
+		if (ret != 0) {
+			printf("pthread_mutex_lock %d failed (%d)\n", i, ret);
+			talloc_free(mem_ctx);
+			return false;
+		}
+
+		/* Wait for intermediate_ptr to have our data. */
+		while (intermediate_ptr == NULL) {
+			ret = pthread_cond_wait(&condvar, &mtx);
+			if (ret != 0) {
+				printf("pthread_cond_wait %d failed (%d)\n", i,
+					ret);
+				talloc_free(mem_ctx);
+				pthread_mutex_unlock(&mtx);
+				return false;
+			}
+		}
+
+		/* and move it onto our toplevel hierarchy. */
+		(void)talloc_move(mem_ctx, &intermediate_ptr);
+
+		/* Tell the sub-threads we're ready for another. */
+		pthread_cond_broadcast(&condvar);
+		pthread_mutex_unlock(&mtx);
+	}
+
+	CHECK_SIZE("pthread_talloc_passing", mem_ctx, NUM_THREADS * 100);
+#if 1
+	/* Dump the hierarchy. */
+	talloc_report(mem_ctx, stdout);
+#endif
+	talloc_free(mem_ctx);
+	printf("success: pthread_talloc_passing\n");
+	return true;
+}
+#endif
+
 static void test_reset(void)
 {
 	talloc_set_log_fn(test_log_stdout);
@@ -1674,6 +1903,10 @@ bool torture_local_talloc(struct torture_context *tctx)
 	test_reset();
 	ret &= test_free_parent_deny_child(); 
 	test_reset();
+	ret &= test_free_parent_reparent_child();
+	test_reset();
+	ret &= test_free_parent_reparent_child_in_pool();
+	test_reset();
 	ret &= test_talloc_ptrtype();
 	test_reset();
 	ret &= test_talloc_free_in_destructor();
@@ -1689,6 +1922,10 @@ bool torture_local_talloc(struct torture_context *tctx)
 	ret &= test_free_children();
 	test_reset();
 	ret &= test_memlimit();
+#ifdef HAVE_PTHREAD
+	test_reset();
+	ret &= test_pthread_talloc_passing();
+#endif
 
 
 	if (ret) {

@@ -78,19 +78,42 @@ testparm_foreground_update ()
 {
     _timeout="$1"
 
-    if ! _out=$(timeout $_timeout testparm -v -s 2>/dev/null) ; then
-	if [ -f "$smbconf_cache" ] ; then
-	    echo "WARNING: smb.conf cache update failed - using old cache file"
-	    return 1
-	else
-	    die "ERROR: smb.conf cache create failed"
-	fi
-    fi
+    # No need to remove these temporary files, since there are only 2
+    # of them.
+    _out="${smbconf_cache}.out"
+    _err="${smbconf_cache}.err"
 
+    timeout $_timeout testparm -v -s >"$_out" 2>"$_err"
+    case $? in
+	0) : ;;
+	124)
+	    if [ -f "$smbconf_cache" ] ; then
+		echo "WARNING: smb.conf cache update timed out - using old cache file"
+		return 1
+	    else
+		echo "ERROR: smb.conf cache create failed - testparm command timed out"
+		exit 1
+	    fi
+	    ;;
+	*)
+	    if [ -f "$smbconf_cache" ] ; then
+		echo "WARNING: smb.conf cache update failed - using old cache file"
+		cat "$_err"
+		return 1
+	    else
+		echo "ERROR: smb.conf cache create failed - testparm failed with:"
+		cat "$_err"
+		exit 1
+	    fi
+    esac
+
+    # Only using $$ here to avoid a collision.  This is written into
+    # CTDB's own state directory so there is no real need for a secure
+    # temporary file.
     _tmpfile="${smbconf_cache}.$$"
     # Patterns to exclude...
-    pat='^[[:space:]]+(registry[[:space:]]+shares|include|copy|winbind[[:space:]]+separator)[[:space:]]+='    
-    echo "$_out" | grep -Ev "$pat" >"$_tmpfile"
+    _pat='^[[:space:]]+(registry[[:space:]]+shares|include|copy|winbind[[:space:]]+separator)[[:space:]]+='
+    grep -Ev "$_pat" <"$_out" >"$_tmpfile"
     mv "$_tmpfile" "$smbconf_cache" # atomic
 
     return 0

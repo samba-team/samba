@@ -72,11 +72,11 @@ static DATA_BLOB nfs4acl_acl2blob(TALLOC_CTX *mem_ctx, struct nfs4acl *acl)
 
 static NTSTATUS nfs4_get_nfs4_acl_common(TALLOC_CTX *mem_ctx,
 					 DATA_BLOB *blob,
-					 SMB4ACL_T **ppacl)
+					 struct SMB4ACL_T **ppacl)
 {
 	int i;
 	struct nfs4acl *nfs4acl = NULL;
-	SMB4ACL_T *pacl = NULL;
+	struct SMB4ACL_T *pacl = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
 	nfs4acl = nfs4acl_blob2acl(blob, frame);
 
@@ -88,10 +88,10 @@ static NTSTATUS nfs4_get_nfs4_acl_common(TALLOC_CTX *mem_ctx,
 	for(i=0; i<nfs4acl->a_count; i++) {
 		SMB_ACE4PROP_T aceprop;
 
-		aceprop.aceType  = (uint32) nfs4acl->ace[i].e_type;
-		aceprop.aceFlags = (uint32) nfs4acl->ace[i].e_flags;
-		aceprop.aceMask  = (uint32) nfs4acl->ace[i].e_mask;
-		aceprop.who.id   = (uint32) nfs4acl->ace[i].e_id;
+		aceprop.aceType  = (uint32_t) nfs4acl->ace[i].e_type;
+		aceprop.aceFlags = (uint32_t) nfs4acl->ace[i].e_flags;
+		aceprop.aceMask  = (uint32_t) nfs4acl->ace[i].e_mask;
+		aceprop.who.id   = (uint32_t) nfs4acl->ace[i].e_id;
 		if (!strcmp(nfs4acl->ace[i].e_who,
 			    NFS4ACL_XATTR_OWNER_WHO)) {
 			aceprop.flags = SMB_ACE4_ID_SPECIAL;
@@ -120,7 +120,7 @@ static NTSTATUS nfs4_get_nfs4_acl_common(TALLOC_CTX *mem_ctx,
 
 /* Fetch the NFSv4 ACL from the xattr, and convert into Samba's internal NFSv4 format */
 static NTSTATUS nfs4_fget_nfs4_acl(vfs_handle_struct *handle, TALLOC_CTX *mem_ctx,
-				   files_struct *fsp, SMB4ACL_T **ppacl)
+				   files_struct *fsp, struct SMB4ACL_T **ppacl)
 {
 	NTSTATUS status;
 	DATA_BLOB blob = data_blob_null;
@@ -149,7 +149,7 @@ static NTSTATUS nfs4_fget_nfs4_acl(vfs_handle_struct *handle, TALLOC_CTX *mem_ct
 
 /* Fetch the NFSv4 ACL from the xattr, and convert into Samba's internal NFSv4 format */
 static NTSTATUS nfs4_get_nfs4_acl(vfs_handle_struct *handle, TALLOC_CTX *mem_ctx,
-				  const char *path, SMB4ACL_T **ppacl)
+				  const char *path, struct SMB4ACL_T **ppacl)
 {
 	NTSTATUS status;
 	DATA_BLOB blob = data_blob_null;
@@ -177,12 +177,12 @@ static NTSTATUS nfs4_get_nfs4_acl(vfs_handle_struct *handle, TALLOC_CTX *mem_ctx
 }
 
 static bool nfs4acl_smb4acl2nfs4acl(TALLOC_CTX *mem_ctx,
-				    SMB4ACL_T *smbacl,
+				    struct SMB4ACL_T *smbacl,
 				    struct nfs4acl **pnfs4acl,
 				    bool denymissingspecial)
 {
 	struct nfs4acl *nfs4acl;
-	SMB4ACE_T *smbace;
+	struct SMB4ACE_T *smbace;
 	bool have_special_id = false;
 	int i;
 
@@ -252,7 +252,7 @@ static bool nfs4acl_smb4acl2nfs4acl(TALLOC_CTX *mem_ctx,
 
 static bool nfs4acl_xattr_set_smb4acl(vfs_handle_struct *handle,
 				      const char *path,
-				      SMB4ACL_T *smbacl)
+				      struct SMB4ACL_T *smbacl)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct nfs4acl *nfs4acl;
@@ -290,7 +290,7 @@ static bool nfs4acl_xattr_set_smb4acl(vfs_handle_struct *handle,
 /* call-back function processing the NT acl -> NFS4 acl using NFSv4 conv. */
 static bool nfs4acl_xattr_fset_smb4acl(vfs_handle_struct *handle,
 				       files_struct *fsp,
-				       SMB4ACL_T *smbacl)
+				       struct SMB4ACL_T *smbacl)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct nfs4acl *nfs4acl;
@@ -333,22 +333,26 @@ static bool nfs4acl_xattr_fset_smb4acl(vfs_handle_struct *handle,
  * using the NFSv4 format conversion
  */
 static NTSTATUS nfs4_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
-			   uint32 security_info_sent,
+			   uint32_t security_info_sent,
 			   const struct security_descriptor *psd)
 {
 	return smb_set_nt_acl_nfs4(handle, fsp, security_info_sent, psd,
 			nfs4acl_xattr_fset_smb4acl);
 }
 
-static SMB4ACL_T *nfs4acls_defaultacl(TALLOC_CTX *mem_ctx)
+static struct SMB4ACL_T *nfs4acls_defaultacl(TALLOC_CTX *mem_ctx)
 {
-	SMB4ACL_T *pacl = NULL;
-	SMB4ACE_T *pace;
-	SMB_ACE4PROP_T ace = { SMB_ACE4_ID_SPECIAL,
-		SMB_ACE4_WHO_EVERYONE,
-		SMB_ACE4_ACCESS_ALLOWED_ACE_TYPE,
-		0,
-		SMB_ACE4_ALL_MASKS };
+	struct SMB4ACL_T *pacl = NULL;
+	struct SMB4ACE_T *pace;
+	SMB_ACE4PROP_T ace = {
+		.flags = SMB_ACE4_ID_SPECIAL,
+		.who = {
+			.id = SMB_ACE4_WHO_EVERYONE,
+		},
+		.aceType = SMB_ACE4_ACCESS_ALLOWED_ACE_TYPE,
+		.aceFlags = 0,
+		.aceMask = SMB_ACE4_ALL_MASKS,
+	};
 
 	DEBUG(10, ("Building default full access acl\n"));
 
@@ -397,14 +401,14 @@ static SMB4ACL_T *nfs4acls_defaultacl(TALLOC_CTX *mem_ctx)
  *
  * Todo: Really use mem_ctx after fixing interface of nfs4_acls
  */
-static SMB4ACL_T *nfs4acls_inheritacl(vfs_handle_struct *handle,
+static struct SMB4ACL_T *nfs4acls_inheritacl(vfs_handle_struct *handle,
 	const char *path,
 	TALLOC_CTX *mem_ctx)
 {
 	char *parent_dir = NULL;
-	SMB4ACL_T *pparentacl = NULL;
-	SMB4ACL_T *pchildacl = NULL;
-	SMB4ACE_T *pace;
+	struct SMB4ACL_T *pparentacl = NULL;
+	struct SMB4ACL_T *pchildacl = NULL;
+	struct SMB4ACE_T *pace;
 	SMB_ACE4PROP_T ace;
 	bool isdir;
 	struct smb_filename *smb_fname = NULL;
@@ -465,10 +469,10 @@ static SMB4ACL_T *nfs4acls_inheritacl(vfs_handle_struct *handle,
 
 	for (pace = smb_first_ace4(pparentacl); pace != NULL;
 	     pace = smb_next_ace4(pace)) {
-		SMB4ACE_T *pchildace;
+		struct SMB4ACE_T *pchildace;
 		ace = *smb_get_ace4(pace);
-		if (isdir && !(ace.aceFlags & SMB_ACE4_DIRECTORY_INHERIT_ACE)
-		    || !isdir && !(ace.aceFlags & SMB_ACE4_FILE_INHERIT_ACE)) {
+		if ((isdir && !(ace.aceFlags & SMB_ACE4_DIRECTORY_INHERIT_ACE)) ||
+		    (!isdir && !(ace.aceFlags & SMB_ACE4_FILE_INHERIT_ACE))) {
 			DEBUG(10, ("non inheriting ace type: %d, iflags: %x, "
 				   "flags: %x, mask: %x, who: %d\n",
 				   ace.aceType, ace.flags, ace.aceFlags,
@@ -480,9 +484,7 @@ static SMB4ACL_T *nfs4acls_inheritacl(vfs_handle_struct *handle,
 			   ace.aceType, ace.flags, ace.aceFlags,
 			   ace.aceMask, ace.who.id));
 		ace.aceFlags |= SMB_ACE4_INHERITED_ACE;
-		if ((isdir && (ace.aceFlags & SMB_ACE4_DIRECTORY_INHERIT_ACE)
-		     || !isdir && (ace.aceFlags & SMB_ACE4_FILE_INHERIT_ACE))
-		    && ace.aceFlags & SMB_ACE4_INHERIT_ONLY_ACE) {
+		if (ace.aceFlags & SMB_ACE4_INHERIT_ONLY_ACE) {
 			ace.aceFlags &= ~SMB_ACE4_INHERIT_ONLY_ACE;
 		}
 		if (ace.aceFlags & SMB_ACE4_NO_PROPAGATE_INHERIT_ACE) {
@@ -515,11 +517,11 @@ static SMB4ACL_T *nfs4acls_inheritacl(vfs_handle_struct *handle,
 
 static NTSTATUS nfs4acl_xattr_fget_nt_acl(struct vfs_handle_struct *handle,
 				   struct files_struct *fsp,
-				   uint32 security_info,
+				   uint32_t security_info,
 				   TALLOC_CTX *mem_ctx,
 				   struct security_descriptor **ppdesc)
 {
-	SMB4ACL_T *pacl;
+	struct SMB4ACL_T *pacl;
 	NTSTATUS status;
 	TALLOC_CTX *frame = talloc_stackframe();
 
@@ -539,11 +541,11 @@ static NTSTATUS nfs4acl_xattr_fget_nt_acl(struct vfs_handle_struct *handle,
 }
 
 static NTSTATUS nfs4acl_xattr_get_nt_acl(struct vfs_handle_struct *handle,
-				  const char *name, uint32 security_info,
+				  const char *name, uint32_t security_info,
 				  TALLOC_CTX *mem_ctx,
 				  struct security_descriptor **ppdesc)
 {
-	SMB4ACL_T *pacl;
+	struct SMB4ACL_T *pacl;
 	NTSTATUS status;
 	TALLOC_CTX *frame = talloc_stackframe();
 
@@ -565,7 +567,7 @@ static NTSTATUS nfs4acl_xattr_get_nt_acl(struct vfs_handle_struct *handle,
 
 static NTSTATUS nfs4acl_xattr_fset_nt_acl(vfs_handle_struct *handle,
 			 files_struct *fsp,
-			 uint32 security_info_sent,
+			 uint32_t security_info_sent,
 			 const struct security_descriptor *psd)
 {
 	return nfs4_set_nt_acl(handle, fsp, security_info_sent, psd);

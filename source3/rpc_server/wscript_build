@@ -50,6 +50,15 @@ bld.SAMBA3_SUBSYSTEM('RPC_EPMAPPER',
                     ../../librpc/gen_ndr/srv_epmapper.c''',
                     deps='samba-util')
 
+bld.SAMBA3_SUBSYSTEM('RPC_FSS_STATE',
+                    source='''fss/srv_fss_state.c''',
+                    deps='samba-util NDR_FSRVP_STATE')
+
+bld.SAMBA3_SUBSYSTEM('RPC_FSS_AGENT',
+                    source='''fss/srv_fss_agent.c
+                    ../../librpc/gen_ndr/srv_fsrvp.c''',
+                    deps='samba-util RPC_FSS_STATE')
+
 bld.SAMBA3_SUBSYSTEM('RPC_EVENTLOG',
                     source='''eventlog/srv_eventlog_nt.c
                     eventlog/srv_eventlog_reg.c
@@ -96,7 +105,6 @@ bld.SAMBA3_SUBSYSTEM('RPC_SPOOLSS',
                     source='''spoolss/srv_spoolss_nt.c
                     ../../librpc/gen_ndr/srv_spoolss.c
                     spoolss/srv_spoolss_util.c''',
-                    allow_warnings=True,
                     deps='PRINTING PRINTBACKEND LIBCLI_WINREG_INTERNAL')
 
 bld.SAMBA3_SUBSYSTEM('RPC_SRVSVC',
@@ -119,6 +127,18 @@ bld.SAMBA3_SUBSYSTEM('RPC_WKSSVC',
                     source='''wkssvc/srv_wkssvc_nt.c
                     ../../librpc/gen_ndr/srv_wkssvc.c''',
                     deps='LIBNET')
+
+bld.SAMBA3_SUBSYSTEM('RPC_MDSSVC',
+                    source='''mdssvc/mdssvc.c
+                    mdssvc/dalloc.c
+                    mdssvc/marshalling.c
+                    mdssvc/sparql_mapping.c
+                    mdssvc/sparql_parser.c
+                    mdssvc/sparql_lexer.c
+                    mdssvc/srv_mdssvc_nt.c
+                    ../../librpc/gen_ndr/srv_mdssvc.c''',
+                    deps='samba-util ' + bld.env['libtracker'],
+                    enabled=bld.env.with_spotlight)
 
 # RPC_SERVICE
 bld.SAMBA3_SUBSYSTEM('RPC_SERVER_REGISTER',
@@ -146,6 +166,8 @@ bld.SAMBA3_SUBSYSTEM('RPC_SERVICE',
                     RPC_RPCECHO
                     RPC_SERVER
                     RPC_EPMAPPER
+		    RPC_FSS_AGENT
+                    RPC_MDSSVC
                     ''')
 
 # RPC_DAEMONS
@@ -160,3 +182,12 @@ bld.SAMBA3_SUBSYSTEM('EPMD',
 bld.SAMBA3_SUBSYSTEM('LSASD',
                     source='lsasd.c',
                     deps='RPC_SOCK_HELPER samba-util')
+
+bld.SAMBA3_SUBSYSTEM('FSSD',
+                    source='fssd.c',
+                    deps='samba-util')
+
+bld.SAMBA3_SUBSYSTEM('MDSSD',
+                    source='mdssd.c',
+                    deps='RPC_SOCK_HELPER samba-util',
+                    enabled=bld.env.with_spotlight)

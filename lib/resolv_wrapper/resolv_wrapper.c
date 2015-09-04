@@ -65,6 +65,10 @@
 #define RWRAP_DEFAULT_FAKE_TTL 600
 #endif  /* RWRAP_DEFAULT_FAKE_TTL */
 
+#ifndef HAVE_NS_NAME_COMPRESS
+#define ns_name_compress dn_comp
+#endif
+
 enum rwrap_dbglvl_e {
 	RWRAP_LOG_ERROR = 0,
 	RWRAP_LOG_WARN,
@@ -729,7 +733,7 @@ static int rwrap_get_record(const char *hostfile, unsigned recursion,
 		}
 	}
 
-	if (rc == ENOENT && recursion == 0) {
+	if (rc == ENOENT && recursion == 0 && key != NULL) {
 		RWRAP_LOG(RWRAP_LOG_TRACE, "Record for [%s] not found\n", query);
 		memcpy(rr->key, key, strlen(key) + 1);
 	}

@@ -1,5 +1,5 @@
 <samba:parameter name="fake oplocks"
-				 type="boolean"
+                 type="boolean"
                  context="S"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>

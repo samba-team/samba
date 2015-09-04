@@ -105,9 +105,12 @@ size_t strlen_m_ext_handle(struct smb_iconv_handle *ic,
 size_t strlen_m_ext(const char *s, charset_t src_charset, charset_t dst_charset);
 size_t strlen_m_ext_term(const char *s, charset_t src_charset,
 			 charset_t dst_charset);
+size_t strlen_m_ext_term_null(const char *s,
+			      charset_t src_charset,
+			      charset_t dst_charset);
+size_t strlen_m(const char *s);
 size_t strlen_m_term(const char *s);
 size_t strlen_m_term_null(const char *s);
-size_t strlen_m(const char *s);
 char *alpha_strcpy(char *dest, const char *src, const char *other_safe_chars, size_t maxlength);
 void string_replace_m(char *s, char oldc, char newc);
 bool strcsequal(const char *s1,const char *s2);
@@ -222,8 +225,7 @@ size_t smb_iconv(smb_iconv_t cd,
 smb_iconv_t smb_iconv_open_ex(TALLOC_CTX *mem_ctx, const char *tocode, 
 			      const char *fromcode, bool use_builtin_handlers);
 
-void load_case_tables(void);
-void load_case_tables_library(void);
+void smb_init_locale(void);
 
 /* The following definitions come from util_unistr_w.c  */
 

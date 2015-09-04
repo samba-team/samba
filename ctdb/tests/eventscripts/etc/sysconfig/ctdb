@@ -1,2 +1,6 @@
 CTDB_RECOVERY_LOCK="/some/place/on/shared/storage"
 CTDB_DEBUGLEVEL=ERR
+
+if [ -n "$FAKE_CTDB_EXTRA_CONFIG" -a -r "$FAKE_CTDB_EXTRA_CONFIG" ] ; then
+   . "$FAKE_CTDB_EXTRA_CONFIG"
+fi

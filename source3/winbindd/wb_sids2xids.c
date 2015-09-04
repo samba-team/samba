@@ -36,9 +36,6 @@ struct wb_sids2xids_state {
 	struct dom_sid *non_cached;
 	uint32_t num_non_cached;
 
-	struct lsa_RefDomainList *domains;
-	struct lsa_TransNameArray *names;
-
 	/*
 	 * Domain array to use for the idmap call. The output from
 	 * lookupsids cannot be used directly since for migrated
@@ -158,12 +155,13 @@ static void wb_sids2xids_lookupsids_done(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct wb_sids2xids_state *state = tevent_req_data(
 		req, struct wb_sids2xids_state);
+	struct lsa_RefDomainList *domains = NULL;
+	struct lsa_TransNameArray *names = NULL;
 	struct winbindd_child *child;
 	NTSTATUS status;
 	int i;
 
-	status = wb_lookupsids_recv(subreq, state, &state->domains,
-				    &state->names);
+	status = wb_lookupsids_recv(subreq, state, &domains, &names);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		return;
@@ -184,13 +182,13 @@ static void wb_sids2xids_lookupsids_done(struct tevent_req *subreq)
 	for (i=0; i<state->num_non_cached; i++) {
 		struct dom_sid dom_sid;
 		struct lsa_DomainInfo *info;
-		struct lsa_TranslatedName *n = &state->names->names[i];
+		struct lsa_TranslatedName *n = &names->names[i];
 		struct wbint_TransID *t = &state->ids.ids[i];
 
 		sid_copy(&dom_sid, &state->non_cached[i]);
 		sid_split_rid(&dom_sid, &t->rid);
 
-		info = &state->domains->domains[n->sid_index];
+		info = &domains->domains[n->sid_index];
 		t->type = lsa_SidType_to_id_type(n->sid_type);
 		t->domain_index = init_lsa_ref_domain_list(state,
 							   state->idmap_doms,
@@ -199,6 +197,9 @@ static void wb_sids2xids_lookupsids_done(struct tevent_req *subreq)
 		t->xid.id = UINT32_MAX;
 		t->xid.type = t->type;
 	}
+
+	TALLOC_FREE(names);
+	TALLOC_FREE(domains);
 
 	child = idmap_child();
 
@@ -252,7 +253,7 @@ static void wb_sids2xids_done(struct tevent_req *subreq)
 }
 
 NTSTATUS wb_sids2xids_recv(struct tevent_req *req,
-			   struct unixid *xids)
+			   struct unixid xids[], uint32_t num_xids)
 {
 	struct wb_sids2xids_state *state = tevent_req_data(
 		req, struct wb_sids2xids_state);
@@ -262,6 +263,12 @@ NTSTATUS wb_sids2xids_recv(struct tevent_req *req,
 	if (tevent_req_is_nterror(req, &status)) {
 		DEBUG(5, ("wb_sids_to_xids failed: %s\n", nt_errstr(status)));
 		return status;
+	}
+
+	if (num_xids != state->num_sids) {
+		DEBUG(1, ("%s: Have %u xids, caller wants %u\n", __func__,
+			  (unsigned)state->num_sids, num_xids));
+		return NT_STATUS_INTERNAL_ERROR;
 	}
 
 	num_non_cached = 0;

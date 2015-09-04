@@ -99,7 +99,7 @@ static struct db_record *acl_tdb_lock(TALLOC_CTX *mem_ctx,
 					struct db_context *db,
 					const struct file_id *id)
 {
-	uint8 id_buf[16];
+	uint8_t id_buf[16];
 
 	/* For backwards compatibility only store the dev/inode. */
 	push_file_id_16((char *)id_buf, id);
@@ -146,7 +146,7 @@ static NTSTATUS get_acl_blob(TALLOC_CTX *ctx,
 			const char *name,
 			DATA_BLOB *pblob)
 {
-	uint8 id_buf[16];
+	uint8_t id_buf[16];
 	TDB_DATA data;
 	struct file_id id;
 	struct db_context *db = acl_db;
@@ -159,7 +159,7 @@ static NTSTATUS get_acl_blob(TALLOC_CTX *ctx,
 		status = vfs_stat_fsp(fsp);
 		sbuf = fsp->fsp_name->st;
 	} else {
-		int ret = vfs_stat_smb_fname(handle->conn, name, &sbuf);
+		int ret = vfs_stat_smb_basename(handle->conn, name, &sbuf);
 		if (ret == -1) {
 			status = map_nt_error_from_unix(errno);
 		}
@@ -202,7 +202,7 @@ static NTSTATUS store_acl_blob_fsp(vfs_handle_struct *handle,
 				files_struct *fsp,
 				DATA_BLOB *pblob)
 {
-	uint8 id_buf[16];
+	uint8_t id_buf[16];
 	struct file_id id;
 	TDB_DATA data;
 	struct db_context *db = acl_db;
@@ -282,12 +282,7 @@ static int rmdir_acl_tdb(vfs_handle_struct *handle, const char *path)
 	struct db_context *db = acl_db;
 	int ret = -1;
 
-	if (lp_posix_pathnames()) {
-		ret = vfs_lstat_smb_fname(handle->conn, path, &sbuf);
-	} else {
-		ret = vfs_stat_smb_fname(handle->conn, path, &sbuf);
-	}
-
+	ret = vfs_stat_smb_basename(handle->conn, path, &sbuf);
 	if (ret == -1) {
 		return -1;
 	}
@@ -347,12 +342,7 @@ static int sys_acl_set_file_tdb(vfs_handle_struct *handle,
 	struct db_context *db = acl_db;
 	int ret = -1;
 
-	if (lp_posix_pathnames()) {
-		ret = vfs_lstat_smb_fname(handle->conn, path, &sbuf);
-	} else {
-		ret = vfs_stat_smb_fname(handle->conn, path, &sbuf);
-	}
-
+	ret = vfs_stat_smb_basename(handle->conn, path, &sbuf);
 	if (ret == -1) {
 		return -1;
 	}
@@ -413,6 +403,7 @@ static struct vfs_fn_pointers vfs_acl_tdb_fns = {
 	.sys_acl_set_fd_fn = sys_acl_set_fd_tdb
 };
 
+static_decl_vfs;
 NTSTATUS vfs_acl_tdb_init(void)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "acl_tdb",

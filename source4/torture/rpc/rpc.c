@@ -507,6 +507,7 @@ NTSTATUS torture_rpc_init(void)
 	torture_suite_add_simple_test(suite, "schannel", torture_rpc_schannel);
 	torture_suite_add_simple_test(suite, "schannel2", torture_rpc_schannel2);
 	torture_suite_add_simple_test(suite, "bench-schannel1", torture_rpc_schannel_bench1);
+	torture_suite_add_simple_test(suite, "schannel_anon_setpw", torture_rpc_schannel_anon_setpw);
 	torture_suite_add_suite(suite, torture_rpc_srvsvc(suite));
 	torture_suite_add_suite(suite, torture_rpc_svcctl(suite));
 	torture_suite_add_suite(suite, torture_rpc_samr_accessmask(suite));
@@ -539,10 +540,10 @@ NTSTATUS torture_rpc_init(void)
 	torture_suite_add_simple_test(suite, "asyncbind", torture_async_bind);
 	torture_suite_add_suite(suite, torture_rpc_ntsvcs(suite));
 	torture_suite_add_suite(suite, torture_rpc_bind(suite));
-#ifdef AD_DC_BUILD_IS_ENABLED /* Add Heimdal-specific KDC test */
 	torture_suite_add_suite(suite, torture_rpc_backupkey(suite));
-#endif
 	torture_suite_add_suite(suite, torture_rpc_fsrvp(suite));
+	torture_suite_add_suite(suite, torture_rpc_clusapi(suite));
+	torture_suite_add_suite(suite, torture_rpc_witness(suite));
 
 	suite->description = talloc_strdup(suite, "DCE/RPC protocol and interface tests");
 

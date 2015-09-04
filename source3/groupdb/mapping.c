@@ -26,7 +26,7 @@
 #include "groupdb/mapping.h"
 #include "../libcli/security/security.h"
 #include "lib/winbind_util.h"
-#include "tdb_compat.h"
+#include <tdb.h>
 #include "groupdb/mapping_tdb.h"
 
 static const struct mapping_backend *backend;
@@ -152,7 +152,7 @@ bool get_domain_group_from_sid(struct dom_sid sid, GROUP_MAP *map)
 	/* special case check for rid 513 */
 
 	if ( !ret ) {
-		uint32 rid;
+		uint32_t rid;
 
 		sid_peek_rid( &sid, &rid );
 
@@ -498,11 +498,11 @@ NTSTATUS pdb_default_enum_group_mapping(struct pdb_methods *methods,
 }
 
 NTSTATUS pdb_default_create_alias(struct pdb_methods *methods,
-				  const char *name, uint32 *rid)
+				  const char *name, uint32_t *rid)
 {
 	struct dom_sid sid;
 	enum lsa_SidType type;
-	uint32 new_rid;
+	uint32_t new_rid;
 	gid_t gid;
 	bool exists;
 	GROUP_MAP *map;
@@ -698,7 +698,7 @@ NTSTATUS pdb_default_alias_memberships(struct pdb_methods *methods,
 				       const struct dom_sid *domain_sid,
 				       const struct dom_sid *members,
 				       size_t num_members,
-				       uint32 **pp_alias_rids,
+				       uint32_t **pp_alias_rids,
 				       size_t *p_num_alias_rids)
 {
 	struct dom_sid *alias_sids;
@@ -726,7 +726,7 @@ NTSTATUS pdb_default_alias_memberships(struct pdb_methods *methods,
 		return NT_STATUS_OK;
 	}
 
-	*pp_alias_rids = talloc_array(mem_ctx, uint32, num_alias_sids);
+	*pp_alias_rids = talloc_array(mem_ctx, uint32_t, num_alias_sids);
 	if (*pp_alias_rids == NULL)
 		return NT_STATUS_NO_MEMORY;
 
@@ -798,7 +798,7 @@ NTSTATUS pdb_nop_enum_group_mapping(struct pdb_methods *methods,
 *
 * @return Normal NTSTATUS return
 */
-NTSTATUS pdb_create_builtin_alias(uint32 rid, gid_t gid)
+NTSTATUS pdb_create_builtin_alias(uint32_t rid, gid_t gid)
 {
 	struct dom_sid sid;
 	enum lsa_SidType type;

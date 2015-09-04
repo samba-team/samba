@@ -21,7 +21,6 @@
 
 #include "replace.h"
 #include "lib/util/dlinklist.h"
-#include "ccan/str/str.h"
 #include "lib/util/debug.h"
 #include "tdb_wrap.h"
 
@@ -91,19 +90,15 @@ static struct tdb_wrap_private *tdb_wrap_private_open(TALLOC_CTX *mem_ctx,
 						      mode_t mode)
 {
 	struct tdb_wrap_private *result;
-	struct tdb_logging_context lctx;
+	struct tdb_logging_context lctx = { .log_fn = tdb_wrap_log };
 
-	result = talloc(mem_ctx, struct tdb_wrap_private);
+	result = talloc_pooled_object(mem_ctx, struct tdb_wrap_private,
+				      1, strlen(name)+1);
 	if (result == NULL) {
 		return NULL;
 	}
+	/* Doesn't fail, see talloc_pooled_object */
 	result->name = talloc_strdup(result, name);
-	if (result->name == NULL) {
-		goto fail;
-	}
-
-	lctx.log_fn = tdb_wrap_log;
-	lctx.log_private = NULL;
 
 	result->tdb = tdb_open_ex(name, hash_size, tdb_flags,
 				  open_flags, mode, &lctx, NULL);
@@ -130,10 +125,8 @@ struct tdb_wrap *tdb_wrap_open(TALLOC_CTX *mem_ctx,
 	struct tdb_wrap *result;
 	struct tdb_wrap_private *w;
 
-	/* If they specify a .ntdb extension, but the code hasn't been
-	 * converted, we want to complain. */
-	if (name && strends(name, ".ntdb")) {
-		DEBUG(2, ("tdb(%s): This code does not yet understand ntdb.  Please report.\n", name));
+	if (name == NULL) {
+		errno = EINVAL;
 		return NULL;
 	}
 

@@ -101,9 +101,11 @@ static int ridalloc_poke_rid_manager(struct ldb_module *module)
 
 	/* Only error out if an error happened, not on STATUS_MORE_ENTRIES, ie a delayed message */
 	if (NT_STATUS_IS_ERR(status)) {
+		struct server_id_buf idbuf;
 		ldb_asprintf_errstring(ldb_module_get_ctx(module),
 				"Failed to send MSG_DREPL_ALLOCATE_RID to dreplsrv at %s: %s",
-				server_id_str(tmp_ctx, servers), nt_errstr(status));
+				server_id_str_buf(*servers, &idbuf),
+				nt_errstr(status));
 		talloc_free(tmp_ctx);
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}

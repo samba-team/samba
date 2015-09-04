@@ -117,7 +117,7 @@ int main(int argc, const char *argv[])
 		return -1;
 	}
 
-	lp_load(get_dyn_CONFIGFILE(), true, false, false, true);
+	lp_load_global(get_dyn_CONFIGFILE());
 
 	ev = tevent_context_init(frame);
 	if (ev == NULL) {

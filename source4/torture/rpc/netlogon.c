@@ -754,6 +754,7 @@ static bool test_GetPassword(struct torture_context *tctx,
 
 	status = dcerpc_netr_ServerPasswordGet_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "ServerPasswordGet");
+	torture_assert_ntstatus_ok(tctx, r.out.result, "ServerPasswordGet");
 
 	return true;
 }
@@ -781,8 +782,8 @@ static bool test_GetTrustPasswords(struct torture_context *tctx,
 	r.in.computer_name = TEST_MACHINE_NAME;
 	r.in.credential = &credential;
 	r.out.return_authenticator = &return_authenticator;
-	r.out.password = &password;
-	r.out.password2 = &password2;
+	r.out.new_owf_password = &password;
+	r.out.old_owf_password = &password2;
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_netr_ServerTrustPasswordsGet_r(b, tctx, &r),
 		"ServerTrustPasswordsGet failed");
@@ -2114,7 +2115,7 @@ static bool test_LogonControl(struct torture_context *tctx,
 				    (secure_channel_type == SEC_CHAN_WKSTA)) {
 					torture_assert_werr_equal(tctx, r.out.result, WERR_ACCESS_DENIED,
 						"LogonControl returned unexpected error code");
-				} else {
+				} else if (!W_ERROR_EQUAL(r.out.result, WERR_NOT_SUPPORTED)) {
 					torture_assert_werr_ok(tctx, r.out.result,
 						"LogonControl returned unexpected result");
 				}
@@ -2208,10 +2209,18 @@ static bool test_LogonControl2(struct torture_context *tctx,
 	struct netr_LogonControl2 r;
 	union netr_CONTROL_DATA_INFORMATION data;
 	union netr_CONTROL_QUERY_INFORMATION query;
+	enum netr_SchannelType secure_channel_type = SEC_CHAN_NULL;
 	int i;
 	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	data.domain = lpcfg_workgroup(tctx->lp_ctx);
+
+	if (machine_credentials) {
+		secure_channel_type = cli_credentials_get_secure_channel_type(machine_credentials);
+	}
+
+	torture_comment(tctx, "Testing LogonControl2 with secure channel type: %d\n",
+		secure_channel_type);
 
 	r.in.logon_server = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 
@@ -2283,8 +2292,14 @@ static bool test_LogonControl2(struct torture_context *tctx,
 
 	status = dcerpc_netr_LogonControl2_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "LogonControl2");
-	torture_assert_werr_equal(tctx, r.out.result, WERR_UNKNOWN_LEVEL, "LogonControl2");
-
+	switch (secure_channel_type) {
+	case SEC_CHAN_NULL:
+		torture_assert_werr_equal(tctx, r.out.result, WERR_NOT_SUPPORTED, "LogonControl2");
+		break;
+	default:
+		torture_assert_werr_equal(tctx, r.out.result, WERR_ACCESS_DENIED, "LogonControl2");
+		break;
+	}
 	data.debug_level = ~0;
 
 	r.in.function_code = NETLOGON_CONTROL_SET_DBFLAG;
@@ -2384,10 +2399,18 @@ static bool test_LogonControl2Ex(struct torture_context *tctx,
 	struct netr_LogonControl2Ex r;
 	union netr_CONTROL_DATA_INFORMATION data;
 	union netr_CONTROL_QUERY_INFORMATION query;
+	enum netr_SchannelType secure_channel_type = SEC_CHAN_NULL;
 	int i;
 	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	data.domain = lpcfg_workgroup(tctx->lp_ctx);
+
+	if (machine_credentials) {
+		secure_channel_type = cli_credentials_get_secure_channel_type(machine_credentials);
+	}
+
+	torture_comment(tctx, "Testing LogonControl2Ex with secure channel type: %d\n",
+		secure_channel_type);
 
 	r.in.logon_server = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 
@@ -2398,11 +2421,11 @@ static bool test_LogonControl2Ex(struct torture_context *tctx,
 	for (i=1;i<4;i++) {
 		r.in.level = i;
 
-		torture_comment(tctx, "Testing LogonControl2Ex level %d function %d\n",
-		       i, r.in.function_code);
+		torture_comment(tctx, "Testing LogonControl2Ex function code %s (%d) level %d\n",
+			function_code_str(tctx, r.in.function_code), r.in.function_code, r.in.level);
 
 		status = dcerpc_netr_LogonControl2Ex_r(b, tctx, &r);
-		torture_assert_ntstatus_ok(tctx, status, "LogonControl");
+		torture_assert_ntstatus_ok(tctx, status, "LogonControl2Ex");
 	}
 
 	data.domain = lpcfg_workgroup(tctx->lp_ctx);
@@ -2413,11 +2436,11 @@ static bool test_LogonControl2Ex(struct torture_context *tctx,
 	for (i=1;i<4;i++) {
 		r.in.level = i;
 
-		torture_comment(tctx, "Testing LogonControl2Ex level %d function %d\n",
-		       i, r.in.function_code);
+		torture_comment(tctx, "Testing LogonControl2Ex function code %s (%d) level %d\n",
+			function_code_str(tctx, r.in.function_code), r.in.function_code, r.in.level);
 
 		status = dcerpc_netr_LogonControl2Ex_r(b, tctx, &r);
-		torture_assert_ntstatus_ok(tctx, status, "LogonControl");
+		torture_assert_ntstatus_ok(tctx, status, "LogonControl2Ex");
 	}
 
 	data.domain = lpcfg_workgroup(tctx->lp_ctx);
@@ -2428,11 +2451,11 @@ static bool test_LogonControl2Ex(struct torture_context *tctx,
 	for (i=1;i<4;i++) {
 		r.in.level = i;
 
-		torture_comment(tctx, "Testing LogonControl2Ex level %d function %d\n",
-		       i, r.in.function_code);
+		torture_comment(tctx, "Testing LogonControl2Ex function code %s (%d) level %d\n",
+			function_code_str(tctx, r.in.function_code), r.in.function_code, r.in.level);
 
 		status = dcerpc_netr_LogonControl2Ex_r(b, tctx, &r);
-		torture_assert_ntstatus_ok(tctx, status, "LogonControl");
+		torture_assert_ntstatus_ok(tctx, status, "LogonControl2Ex");
 	}
 
 	data.debug_level = ~0;
@@ -2443,12 +2466,42 @@ static bool test_LogonControl2Ex(struct torture_context *tctx,
 	for (i=1;i<4;i++) {
 		r.in.level = i;
 
-		torture_comment(tctx, "Testing LogonControl2Ex level %d function %d\n",
-		       i, r.in.function_code);
+		torture_comment(tctx, "Testing LogonControl2Ex function code %s (%d) level %d\n",
+			function_code_str(tctx, r.in.function_code), r.in.function_code, r.in.level);
 
 		status = dcerpc_netr_LogonControl2Ex_r(b, tctx, &r);
-		torture_assert_ntstatus_ok(tctx, status, "LogonControl");
+		torture_assert_ntstatus_ok(tctx, status, "LogonControl2Ex");
 	}
+
+	ZERO_STRUCT(data);
+	r.in.function_code = 52;
+	r.in.data = &data;
+
+	torture_comment(tctx, "Testing LogonControl2Ex function code %s (%d) level %d\n",
+			function_code_str(tctx, r.in.function_code), r.in.function_code, r.in.level);
+
+	status = dcerpc_netr_LogonControl2Ex_r(b, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "LogonControl2Ex");
+	switch (secure_channel_type) {
+	case SEC_CHAN_NULL:
+		torture_assert_werr_equal(tctx, r.out.result, WERR_NOT_SUPPORTED, "LogonControl2Ex");
+		break;
+	default:
+		torture_assert_werr_equal(tctx, r.out.result, WERR_ACCESS_DENIED, "LogonControl2Ex");
+		break;
+	}
+	data.debug_level = ~0;
+
+	r.in.function_code = NETLOGON_CONTROL_SET_DBFLAG;
+	r.in.data = &data;
+
+	r.in.level = 52;
+	torture_comment(tctx, "Testing LogonControl2Ex function code %s (%d) level %d\n",
+			function_code_str(tctx, r.in.function_code), r.in.function_code, r.in.level);
+
+	status = dcerpc_netr_LogonControl2Ex_r(b, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "LogonControl2Ex");
+	torture_assert_werr_equal(tctx, r.out.result, WERR_UNKNOWN_LEVEL, "LogonControl2Ex");
 
 	return true;
 }
@@ -3890,6 +3943,8 @@ static bool test_ManyGetDCName(struct torture_context *tctx,
 			       struct dcerpc_pipe *p)
 {
 	NTSTATUS status;
+	struct cli_credentials *anon_creds;
+	const struct dcerpc_binding *binding2;
 	struct dcerpc_pipe *p2;
 	struct lsa_ObjectAttribute attr;
 	struct lsa_QosInfo qos;
@@ -3912,11 +3967,14 @@ static bool test_ManyGetDCName(struct torture_context *tctx,
 
 	torture_comment(tctx, "Torturing GetDCName\n");
 
-	status = dcerpc_secondary_connection(p, &p2, p->binding);
-	torture_assert_ntstatus_ok(tctx, status, "Failed to create secondary connection");
+	anon_creds = cli_credentials_init_anon(tctx);
+	torture_assert(tctx, anon_creds != NULL, "cli_credentials_init_anon failed");
 
-	status = dcerpc_bind_auth_none(p2, &ndr_table_lsarpc);
-	torture_assert_ntstatus_ok(tctx, status, "Failed to create bind on secondary connection");
+	binding2 = p->binding;
+	status = dcerpc_secondary_auth_connection(p, binding2, &ndr_table_lsarpc,
+						  anon_creds, tctx->lp_ctx,
+						  tctx, &p2);
+	torture_assert_ntstatus_ok(tctx, status, "Failed to create secondary connection");
 	b2 = p2->binding_handle;
 
 	qos.len = 0;
@@ -4073,19 +4131,19 @@ struct torture_suite *torture_rpc_netlogon_admin(TALLOC_CTX *mem_ctx)
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "netlogon.admin");
 	struct torture_rpc_tcase *tcase;
 
-	tcase = torture_suite_add_machine_bdc_rpc_iface_tcase(suite, "netlogon",
+	tcase = torture_suite_add_machine_bdc_rpc_iface_tcase(suite, "bdc",
 						  &ndr_table_netlogon, TEST_MACHINE_NAME);
 	torture_rpc_tcase_add_test_creds(tcase, "LogonControl", test_LogonControl);
 	torture_rpc_tcase_add_test_creds(tcase, "LogonControl2", test_LogonControl2);
 	torture_rpc_tcase_add_test_creds(tcase, "LogonControl2Ex", test_LogonControl2Ex);
 
-	tcase = torture_suite_add_machine_workstation_rpc_iface_tcase(suite, "netlogon",
+	tcase = torture_suite_add_machine_workstation_rpc_iface_tcase(suite, "wkst",
 						  &ndr_table_netlogon, TEST_MACHINE_NAME);
 	torture_rpc_tcase_add_test_creds(tcase, "LogonControl", test_LogonControl);
 	torture_rpc_tcase_add_test_creds(tcase, "LogonControl2", test_LogonControl2);
 	torture_rpc_tcase_add_test_creds(tcase, "LogonControl2Ex", test_LogonControl2Ex);
 
-	tcase = torture_suite_add_rpc_iface_tcase(suite, "netlogon",
+	tcase = torture_suite_add_rpc_iface_tcase(suite, "admin",
 						  &ndr_table_netlogon);
 	torture_rpc_tcase_add_test_creds(tcase, "LogonControl", test_LogonControl);
 	torture_rpc_tcase_add_test_creds(tcase, "LogonControl2", test_LogonControl2);

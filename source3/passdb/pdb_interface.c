@@ -54,7 +54,7 @@ static void lazy_initialize_passdb(void)
 	initialized = True;
 }
 
-static bool lookup_global_sam_rid(TALLOC_CTX *mem_ctx, uint32 rid,
+static bool lookup_global_sam_rid(TALLOC_CTX *mem_ctx, uint32_t rid,
 				  const char **name,
 				  enum lsa_SidType *psid_name_use,
 				  uid_t *uid, gid_t *gid);
@@ -1505,8 +1505,8 @@ static bool pdb_default_sid_to_id(struct pdb_methods *methods,
 	if (sid_peek_check_rid(get_global_sam_sid(), sid, &rid)) {
 		const char *name;
 		enum lsa_SidType type;
-		uid_t uid;
-		gid_t gid;
+		uid_t uid = (uid_t)-1;
+		gid_t gid = (gid_t)-1;
 		/* Here we might have users as well as groups and aliases */
 		ret = lookup_global_sam_rid(mem_ctx, rid, &name, &type, &uid, &gid);
 		if (ret) {
@@ -2298,9 +2298,17 @@ static NTSTATUS pdb_default_get_trusted_domain(struct pdb_methods *methods,
 	taiob.current.count = 1;
 	taiob.current.array = &aia;
 	unix_to_nt_time(&aia.LastUpdateTime, last_set_time);
+
 	aia.AuthType = TRUST_AUTH_TYPE_CLEAR;
-	aia.AuthInfo.clear.password = (uint8_t *) pwd;
 	aia.AuthInfo.clear.size = strlen(pwd);
+	aia.AuthInfo.clear.password = (uint8_t *)talloc_memdup(tdom, pwd,
+							       aia.AuthInfo.clear.size);
+	SAFE_FREE(pwd);
+	if (aia.AuthInfo.clear.password == NULL) {
+		talloc_free(tdom);
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	taiob.previous.count = 0;
 	taiob.previous.array = NULL;
 

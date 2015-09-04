@@ -3002,7 +3002,6 @@ static bool test_smb2_oplock_batch26(struct torture_context *tctx,
         smb2_util_close(tree1, h2);
         smb2_util_close(tree1, h3);
         smb2_util_close(tree1, h);
-done:
         smb2_deltree(tree1, BASEDIR);
         return ret;
 

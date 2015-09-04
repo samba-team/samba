@@ -275,6 +275,11 @@ static struct tevent_req *smbd_smb2_write_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 	state->smb2req = smb2req;
+	if (smb2req->xconn->protocol >= PROTOCOL_SMB3_02) {
+		if (in_flags & SMB2_WRITEFLAG_WRITE_UNBUFFERED) {
+			state->write_through = true;
+		}
+	}
 	if (in_flags & SMB2_WRITEFLAG_WRITE_THROUGH) {
 		state->write_through = true;
 	}

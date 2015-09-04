@@ -453,7 +453,7 @@ static void api_no_reply(connection_struct *conn, struct smb_request *req)
 
 static void api_fd_reply(connection_struct *conn, uint64_t vuid,
 			 struct smb_request *req,
-			 uint16 *setup, uint8_t *data, char *params,
+			 uint16_t *setup, uint8_t *data, char *params,
 			 int suwcnt, int tdscnt, int tpscnt,
 			 int mdrcnt, int mprcnt)
 {
@@ -534,7 +534,7 @@ static void api_fd_reply(connection_struct *conn, uint64_t vuid,
 
 static void named_pipe(connection_struct *conn, uint64_t vuid,
 		       struct smb_request *req,
-		       const char *name, uint16 *setup,
+		       const char *name, uint16_t *setup,
 		       char *data, char *params,
 		       int suwcnt, int tdscnt,int tpscnt,
 		       int msrcnt, int mdrcnt, int mprcnt)
@@ -796,10 +796,10 @@ void reply_trans(struct smb_request *req)
 		}
 
 		if((state->setup = talloc_array(
-			    state, uint16, state->setup_count)) == NULL) {
+			    state, uint16_t, state->setup_count)) == NULL) {
 			DEBUG(0,("reply_trans: setup malloc fail for %u "
 				 "bytes !\n", (unsigned int)
-				 (state->setup_count * sizeof(uint16))));
+				 (state->setup_count * sizeof(uint16_t))));
 			SAFE_FREE(state->data);
 			SAFE_FREE(state->param);
 			TALLOC_FREE(state);

@@ -39,7 +39,8 @@ struct messaging_dgm_context {
 	struct poll_funcs *msg_callbacks;
 	void *tevent_handle;
 	struct unix_msg_ctx *dgm_ctx;
-	struct sun_path_buf cache_dir;
+	struct sun_path_buf socket_dir;
+	struct sun_path_buf lockfile_dir;
 	int lockfile_fd;
 
 	void (*recv_cb)(const uint8_t *msg,
@@ -59,49 +60,23 @@ static void messaging_dgm_recv(struct unix_msg_ctx *ctx,
 			       int *fds, size_t num_fds,
 			       void *private_data);
 
-static int messaging_dgm_lockfile_name(struct sun_path_buf *buf,
-				       const char *cache_dir,
-				       pid_t pid)
-{
-	int ret;
-
-	ret = snprintf(buf->buf, sizeof(buf->buf), "%s/lck/%u", cache_dir,
-		       (unsigned)pid);
-	if (ret >= sizeof(buf->buf)) {
-		return ENAMETOOLONG;
-	}
-	return 0;
-}
-
 static int messaging_dgm_context_destructor(struct messaging_dgm_context *c);
 
-static int messaging_dgm_lockfile_create(const char *cache_dir,
-					 uid_t dir_owner, pid_t pid,
-					 int *plockfile_fd, uint64_t unique)
+static int messaging_dgm_lockfile_create(struct messaging_dgm_context *ctx,
+					 pid_t pid, int *plockfile_fd,
+					 uint64_t unique)
 {
 	fstring buf;
-	struct sun_path_buf dir;
-	struct sun_path_buf lockfile_name;
 	int lockfile_fd;
+	struct sun_path_buf lockfile_name;
 	struct flock lck;
 	int unique_len, ret;
 	ssize_t written;
-	bool ok;
 
-	ret = messaging_dgm_lockfile_name(&lockfile_name, cache_dir, pid);
-	if (ret != 0) {
-		return ret;
-	}
-
-	/* shorter than lockfile_name, can't overflow */
-	snprintf(dir.buf, sizeof(dir.buf), "%s/lck", cache_dir);
-
-	ok = directory_create_or_exist_strict(dir.buf, dir_owner, 0755);
-	if (!ok) {
-		ret = errno;
-		DEBUG(1, ("%s: Could not create lock directory: %s\n",
-			  __func__, strerror(ret)));
-		return ret;
+	ret = snprintf(lockfile_name.buf, sizeof(lockfile_name.buf),
+		       "%s/%u", ctx->lockfile_dir.buf, (int)pid);
+	if (ret >= sizeof(lockfile_name.buf)) {
+		return ENAMETOOLONG;
 	}
 
 	/* no O_EXCL, existence check is via the fcntl lock */
@@ -155,30 +130,10 @@ fail_close:
 	return ret;
 }
 
-static int messaging_dgm_lockfile_remove(const char *cache_dir, pid_t pid)
-{
-	struct sun_path_buf lockfile_name;
-	int ret;
-
-	ret = messaging_dgm_lockfile_name(&lockfile_name, cache_dir, pid);
-	if (ret != 0) {
-		return ret;
-	}
-
-	ret = unlink(lockfile_name.buf);
-	if (ret == -1) {
-		ret = errno;
-		DEBUG(10, ("%s: unlink(%s) failed: %s\n", __func__,
-			   lockfile_name.buf, strerror(ret)));
-	}
-
-	return ret;
-}
-
 int messaging_dgm_init(struct tevent_context *ev,
-		       struct server_id pid,
-		       const char *cache_dir,
-		       uid_t dir_owner,
+		       uint64_t unique,
+		       const char *socket_dir,
+		       const char *lockfile_dir,
 		       void (*recv_cb)(const uint8_t *msg,
 				       size_t msg_len,
 				       int *fds,
@@ -188,11 +143,8 @@ int messaging_dgm_init(struct tevent_context *ev,
 {
 	struct messaging_dgm_context *ctx;
 	int ret;
-	bool ok;
-	struct sun_path_buf socket_dir;
 	struct sockaddr_un socket_address;
-	size_t sockname_len;
-	uint64_t cookie;
+	size_t len;
 	static bool have_dgm_context = false;
 
 	if (have_dgm_context) {
@@ -203,31 +155,35 @@ int messaging_dgm_init(struct tevent_context *ev,
 	if (ctx == NULL) {
 		goto fail_nomem;
 	}
-	ctx->pid = pid.pid;
+	ctx->pid = getpid();
 	ctx->recv_cb = recv_cb;
 	ctx->recv_cb_private_data = recv_cb_private_data;
 
-	ret = snprintf(socket_dir.buf, sizeof(socket_dir.buf),
-		       "%s/msg", cache_dir);
-	if (ret >= sizeof(socket_dir.buf)) {
+	len = strlcpy(ctx->lockfile_dir.buf, lockfile_dir,
+		      sizeof(ctx->lockfile_dir.buf));
+	if (len >= sizeof(ctx->lockfile_dir.buf)) {
 		TALLOC_FREE(ctx);
 		return ENAMETOOLONG;
 	}
 
-	/* shorter than socket_dir, can't overflow */
-	strlcpy(ctx->cache_dir.buf, cache_dir, sizeof(ctx->cache_dir.buf));
+	len = strlcpy(ctx->socket_dir.buf, socket_dir,
+		      sizeof(ctx->socket_dir.buf));
+	if (len >= sizeof(ctx->socket_dir.buf)) {
+		TALLOC_FREE(ctx);
+		return ENAMETOOLONG;
+	}
 
 	socket_address = (struct sockaddr_un) { .sun_family = AF_UNIX };
-	sockname_len = snprintf(socket_address.sun_path,
-				sizeof(socket_address.sun_path),
-				"%s/%u", socket_dir.buf, (unsigned)pid.pid);
-	if (sockname_len >= sizeof(socket_address.sun_path)) {
+	len = snprintf(socket_address.sun_path,
+		       sizeof(socket_address.sun_path),
+		       "%s/%u", socket_dir, (unsigned)ctx->pid);
+	if (len >= sizeof(socket_address.sun_path)) {
 		TALLOC_FREE(ctx);
 		return ENAMETOOLONG;
 	}
 
-	ret = messaging_dgm_lockfile_create(cache_dir, dir_owner, pid.pid,
-					    &ctx->lockfile_fd, pid.unique_id);
+	ret = messaging_dgm_lockfile_create(ctx, ctx->pid, &ctx->lockfile_fd,
+					    unique);
 	if (ret != 0) {
 		DEBUG(1, ("%s: messaging_dgm_create_lockfile failed: %s\n",
 			  __func__, strerror(ret)));
@@ -246,18 +202,9 @@ int messaging_dgm_init(struct tevent_context *ev,
 		goto fail_nomem;
 	}
 
-	ok = directory_create_or_exist_strict(socket_dir.buf, dir_owner, 0700);
-	if (!ok) {
-		DEBUG(1, ("Could not create socket directory\n"));
-		TALLOC_FREE(ctx);
-		return EACCES;
-	}
-
 	unlink(socket_address.sun_path);
 
-	generate_random_buffer((uint8_t *)&cookie, sizeof(cookie));
-
-	ret = unix_msg_init(&socket_address, ctx->msg_callbacks, 1024, cookie,
+	ret = unix_msg_init(&socket_address, ctx->msg_callbacks, 1024,
 			    messaging_dgm_recv, ctx, &ctx->dgm_ctx);
 	if (ret != 0) {
 		DEBUG(1, ("unix_msg_init failed: %s\n", strerror(ret)));
@@ -285,7 +232,19 @@ static int messaging_dgm_context_destructor(struct messaging_dgm_context *c)
 	unix_msg_free(c->dgm_ctx);
 
 	if (getpid() == c->pid) {
-		(void)messaging_dgm_lockfile_remove(c->cache_dir.buf, c->pid);
+		struct sun_path_buf name;
+		int ret;
+
+		ret = snprintf(name.buf, sizeof(name.buf), "%s/%u",
+			       c->lockfile_dir.buf, (unsigned)c->pid);
+		if (ret >= sizeof(name.buf)) {
+			/*
+			 * We've checked the length when creating, so this
+			 * should never happen
+			 */
+			abort();
+		}
+		unlink(name.buf);
 	}
 	close(c->lockfile_fd);
 
@@ -317,7 +276,7 @@ int messaging_dgm_send(pid_t pid,
 	dst = (struct sockaddr_un) { .sun_family = AF_UNIX };
 
 	dst_pathlen = snprintf(dst.sun_path, sizeof(dst.sun_path),
-			       "%s/msg/%u", ctx->cache_dir.buf, (unsigned)pid);
+			       "%s/%u", ctx->socket_dir.buf, (unsigned)pid);
 	if (dst_pathlen >= sizeof(dst.sun_path)) {
 		return ENAMETOOLONG;
 	}
@@ -345,22 +304,24 @@ int messaging_dgm_cleanup(pid_t pid)
 {
 	struct messaging_dgm_context *ctx = global_dgm_context;
 	struct sun_path_buf lockfile_name, socket_name;
-	int fd, ret;
+	int fd, len, ret;
 	struct flock lck = {};
 
 	if (ctx == NULL) {
 		return ENOTCONN;
 	}
 
-	ret = messaging_dgm_lockfile_name(&lockfile_name, ctx->cache_dir.buf,
-					  pid);
-	if (ret != 0) {
-		return ret;
+	len = snprintf(socket_name.buf, sizeof(socket_name.buf), "%s/%u",
+		       ctx->socket_dir.buf, (unsigned)pid);
+	if (len >= sizeof(socket_name.buf)) {
+		return ENAMETOOLONG;
 	}
 
-	/* same length as lockfile_name, can't overflow */
-	snprintf(socket_name.buf, sizeof(socket_name.buf), "%s/msg/%u",
-		 ctx->cache_dir.buf, (unsigned)pid);
+	len = snprintf(lockfile_name.buf, sizeof(lockfile_name.buf), "%s/%u",
+		       ctx->lockfile_dir.buf, (unsigned)pid);
+	if (len >= sizeof(lockfile_name.buf)) {
+		return ENAMETOOLONG;
+	}
 
 	fd = open(lockfile_name.buf, O_NONBLOCK|O_WRONLY, 0);
 	if (fd == -1) {
@@ -380,11 +341,15 @@ int messaging_dgm_cleanup(pid_t pid)
 	ret = fcntl(fd, F_SETLK, &lck);
 	if (ret != 0) {
 		ret = errno;
-		DEBUG(10, ("%s: Could not get lock: %s\n", __func__,
-			   strerror(ret)));
+		if ((ret != EACCES) && (ret != EAGAIN)) {
+			DEBUG(10, ("%s: Could not get lock: %s\n", __func__,
+				   strerror(ret)));
+		}
 		close(fd);
 		return ret;
 	}
+
+	DEBUG(10, ("%s: Cleaning up : %s\n", __func__, strerror(ret)));
 
 	(void)unlink(socket_name.buf);
 	(void)unlink(lockfile_name.buf);
@@ -395,7 +360,6 @@ int messaging_dgm_cleanup(pid_t pid)
 int messaging_dgm_wipe(void)
 {
 	struct messaging_dgm_context *ctx = global_dgm_context;
-	struct sun_path_buf msgdir_name;
 	DIR *msgdir;
 	struct dirent *dp;
 	pid_t our_pid = getpid();
@@ -411,16 +375,9 @@ int messaging_dgm_wipe(void)
 	 * and fcntl(SETLK).
 	 */
 
-	ret = snprintf(msgdir_name.buf, sizeof(msgdir_name.buf),
-		       "%s/msg", ctx->cache_dir.buf);
-	if (ret >= sizeof(msgdir_name.buf)) {
-		return ENAMETOOLONG;
-	}
-
-	msgdir = opendir(msgdir_name.buf);
+	msgdir = opendir(ctx->socket_dir.buf);
 	if (msgdir == NULL) {
-		ret = errno;
-		return ret;
+		return errno;
 	}
 
 	while ((dp = readdir(msgdir)) != NULL) {

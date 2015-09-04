@@ -17,7 +17,7 @@
 #
 # to run this test, use one of these:
 #
-#    python -m testtools.run samba.tests.dcerpc.rpc_talloc
+#    python -m unittest samba.tests.dcerpc.rpc_talloc
 #
 # or if you have trial installed (from twisted), use
 #

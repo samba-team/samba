@@ -229,7 +229,18 @@ def CHECK_DECLS(conf, vars, reverse=False, headers=None, always=False):
                               headers=headers,
                               msg='Checking for declaration of %s' % v,
                               always=always):
-            ret = False
+            if not CHECK_CODE(conf,
+                      '''
+                      return (int)%s;
+                      ''' % (v),
+                      execute=False,
+                      link=False,
+                      msg='Checking for declaration of %s (as enum)' % v,
+                      local_include=False,
+                      headers=headers,
+                      define=define,
+                      always=always):
+                ret = False
     return ret
 
 
@@ -646,6 +657,10 @@ def SAMBA_CONFIG_H(conf, path=None):
     if not IN_LAUNCH_DIR(conf):
         return
 
+    if conf.CHECK_CFLAGS(['-fstack-protector']) and conf.CHECK_LDFLAGS(['-fstack-protector']):
+        conf.ADD_CFLAGS('-fstack-protector')
+        conf.ADD_LDFLAGS('-fstack-protector')
+
     if Options.options.debug:
         conf.ADD_CFLAGS('-g', testflags=True)
 
@@ -673,6 +688,8 @@ def SAMBA_CONFIG_H(conf, path=None):
                         testflags=True)
         conf.ADD_CFLAGS('-Werror=return-type -Wreturn-type',
                         testflags=True)
+        conf.ADD_CFLAGS('-Werror=uninitialized -Wuninitialized',
+                        testflags=True)
 
         conf.ADD_CFLAGS('-Wformat=2 -Wno-format-y2k', testflags=True)
         # This check is because for ldb_search(), a NULL format string
@@ -698,6 +715,24 @@ int main(void) {
 
     if Options.options.pedantic:
         conf.ADD_CFLAGS('-W', testflags=True)
+
+    if Options.options.address_sanitizer:
+        conf.ADD_CFLAGS('-fno-omit-frame-pointer -O1 -fsanitize=address', testflags=True)
+        conf.ADD_LDFLAGS('-fsanitize=address', testflags=True)
+        conf.env['ADDRESS_SANITIZER'] = True
+
+
+    # Let people pass an additional ADDITIONAL_{CFLAGS,LDFLAGS}
+    # environment variables which are only used the for final build.
+    #
+    # The CFLAGS and LDFLAGS environment variables are also
+    # used for the configure checks which might impact their results.
+    conf.add_os_flags('ADDITIONAL_CFLAGS')
+    if conf.env.ADDITIONAL_CFLAGS and conf.CHECK_CFLAGS(conf.env['ADDITIONAL_CFLAGS']):
+        conf.env['EXTRA_CFLAGS'].extend(conf.env['ADDITIONAL_CFLAGS'])
+    conf.add_os_flags('ADDITIONAL_LDFLAGS')
+    if conf.env.ADDITIONAL_LDFLAGS and conf.CHECK_LDFLAGS(conf.env['ADDITIONAL_LDFLAGS']):
+        conf.env['EXTRA_LDFLAGS'].extend(conf.env['ADDITIONAL_LDFLAGS'])
 
     if path is None:
         conf.write_config_header('config.h', top=True)
@@ -777,7 +812,7 @@ def CURRENT_CFLAGS(bld, target, cflags, allow_warnings=False, hide_symbols=False
         list = bld.env['PICKY_CFLAGS'];
         ret.extend(list)
     if hide_symbols and bld.env.HAVE_VISIBILITY_ATTR:
-        ret.append('-fvisibility=hidden')
+        ret.append(bld.env.VISIBILITY_CFLAGS)
     return ret
 
 
@@ -822,3 +857,7 @@ def SAMBA_CHECK_UNDEFINED_SYMBOL_FLAGS(conf):
     if not sys.platform.startswith("openbsd") and conf.env.undefined_ignore_ldflags == []:
         if conf.CHECK_LDFLAGS(['-undefined', 'dynamic_lookup']):
             conf.env.undefined_ignore_ldflags = ['-undefined', 'dynamic_lookup']
+
+@conf
+def CHECK_CFG(self, *k, **kw):
+    return self.check_cfg(*k, **kw)

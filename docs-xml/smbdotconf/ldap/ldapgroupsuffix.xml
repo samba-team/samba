@@ -1,8 +1,7 @@
 <samba:parameter name="ldap group suffix"
                  context="G"
-				 type="string"
-		 advanced="1" developer="1"
-                 generated_function="0"
+                 type="string"
+                 function="_ldap_group_suffix"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This parameter specifies the suffix that is 

@@ -65,23 +65,6 @@ char *server_id_str_buf(struct server_id id, struct server_id_buf *dst)
 	return dst->buf;
 }
 
-char *server_id_str(TALLOC_CTX *mem_ctx, const struct server_id *id)
-{
-	struct server_id_buf tmp;
-	char *result;
-
-	result = talloc_strdup(mem_ctx, server_id_str_buf(*id, &tmp));
-	if (result == NULL) {
-		return NULL;
-	}
-
-	/*
-	 * beautify the talloc_report output
-	 */
-	talloc_set_name_const(result, result);
-	return result;
-}
-
 struct server_id server_id_from_string(uint32_t local_vnn,
 				       const char *pid_string)
 {
@@ -93,7 +76,7 @@ struct server_id server_id_from_string(uint32_t local_vnn,
 
 	/*
 	 * We accept various forms with 1, 2 or 3 component forms
-	 * because the server_id_str() can print different forms, and
+	 * because the server_id_str_buf() can print different forms, and
 	 * we want backwards compatibility for scripts that may call
 	 * smbclient.
 	 */
@@ -149,4 +132,20 @@ bool server_id_is_disconnected(const struct server_id *id)
 	server_id_set_disconnected(&dis);
 
 	return server_id_equal(id, &dis);
+}
+
+void server_id_put(uint8_t buf[24], const struct server_id id)
+{
+	SBVAL(buf, 0,  id.pid);
+	SIVAL(buf, 8,  id.task_id);
+	SIVAL(buf, 12, id.vnn);
+	SBVAL(buf, 16, id.unique_id);
+}
+
+void server_id_get(struct server_id *id, const uint8_t buf[24])
+{
+	id->pid       = BVAL(buf, 0);
+	id->task_id   = IVAL(buf, 8);
+	id->vnn       = IVAL(buf, 12);
+	id->unique_id = BVAL(buf, 16);
 }

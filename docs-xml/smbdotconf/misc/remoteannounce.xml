@@ -1,8 +1,7 @@
 <samba:parameter name="remote announce"
-	         context="G"
-		 advanced="1" developer="1"
-		 type="string"
-		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+                 context="G"
+                 type="string"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>
 	This option allows you to setup <citerefentry><refentrytitle>nmbd</refentrytitle>

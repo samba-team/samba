@@ -37,7 +37,7 @@ static struct {
 	const char *events;
 } ctdb_cmdline = {
 	.torture = 0,
-	.debuglevel = "ERR",
+	.debuglevel = "NOTICE",
 };
 
 enum {OPT_EVENTSYSTEM=1};
@@ -97,7 +97,7 @@ struct ctdb_context *ctdb_cmdline_init(struct event_context *ev)
 
 	/* Set the debug level */
 	if (!parse_debug(ctdb_cmdline.debuglevel, &DEBUGLEVEL)) {
-		DEBUGLEVEL = DEBUG_ERR;
+		DEBUGLEVEL = DEBUG_NOTICE;
 	}
 
 	/* set up the tree to store server ids */
@@ -146,7 +146,7 @@ struct ctdb_context *ctdb_cmdline_client(struct tevent_context *ev,
 
 	/* Set the debug level */
 	if (!parse_debug(ctdb_cmdline.debuglevel, &DEBUGLEVEL)) {
-		DEBUGLEVEL = DEBUG_ERR;
+		DEBUGLEVEL = DEBUG_NOTICE;
 	}
 
 	ret = ctdb_socket_connect(ctdb);

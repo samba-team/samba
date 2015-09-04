@@ -87,6 +87,14 @@ interface copychunk
 		uint32 flags;
 		hyper length_written;
 	} fsctl_offload_write_output;
+
+	typedef [public] struct {
+		/* The FileHandle field is the volatile part of the fileid */
+		hyper fid_volatile;
+		hyper source_off;
+		hyper target_off;
+		hyper byte_count;
+	} fsctl_dup_extents_to_file;
 }
 
 interface compression
@@ -164,9 +172,13 @@ interface sparse
 	 * computed by dividing the size of the returned output buffer (from
 	 * either SMB or SMB2, the lower-layer protocol that carries the FSCTL)
 	 * by the size of the FILE_ALLOCATED_RANGE_BUFFER element.
+	 *
+	 * This logic can't (currently) be represented in pidl, so just use a
+	 * blob. Perhaps in future we'll support:
+	 *	[flag(NDR_REMAINING)] file_alloced_range_buf array[];
 	 */
 	typedef [public] struct {
-		file_alloced_range_buf *array;
+		[flag(NDR_REMAINING)] DATA_BLOB far_buf_array;
 	} fsctl_query_alloced_ranges_rsp;
 
 	/* 2.3.65 FSCTL_SET_ZERO_DATA Request */
@@ -187,4 +199,25 @@ interface resiliency
 		uint32 timeout;
 		uint32 reserved;
 	} network_resiliency_request;
+}
+
+interface trim
+{
+	/* MS-FSCC 2.3.73.1 FILE_LEVEL_TRIM_RANGE */
+	typedef [public] struct {
+		hyper off;
+		hyper len;
+	} file_level_trim_range;
+
+	/* MS-FSCC 2.3.73 FSCTL_FILE_LEVEL_TRIM Request */
+	typedef [public] struct {
+		uint32 key;
+		uint32 num_ranges;
+		file_level_trim_range ranges[num_ranges];
+	} fsctl_file_level_trim_req;
+
+	/* MS-FSCC 2.3.74 FSCTL_FILE_LEVEL_TRIM Reply */
+	typedef [public] struct {
+		uint32 num_ranges_processed;
+	} fsctl_file_level_trim_rsp;
 }

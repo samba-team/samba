@@ -506,7 +506,7 @@ static bool read4_child(int ready_fd)
 
 	printf("child: telling parent we're ready to receive messages\n");
 
-	/* Tell the parent we are ready to receive mesages. */
+	/* Tell the parent we are ready to receive messages. */
 	bytes = write(ready_fd, &c, 1);
 	if (bytes != 1) {
 		perror("child: failed to write to ready_fd");

@@ -789,10 +789,10 @@ static void aio_pread_smb2_done(struct tevent_req *req)
 		   (nread == -1) ? strerror(err) : "no error"));
 
 	if (fsp == NULL) {
-		DEBUG( 3, ("aio_pread_smb2_done: file closed whilst "
-			   "aio outstanding (mid[%llu]).\n",
-			   (unsigned long long)aio_ex->smbreq->mid));
+		DEBUG(3, ("%s: request cancelled (mid[%ju])\n",
+			  __func__, (uintmax_t)aio_ex->smbreq->mid));
 		TALLOC_FREE(aio_ex);
+		tevent_req_nterror(subreq, NT_STATUS_INTERNAL_ERROR);
 		return;
 	}
 
@@ -962,10 +962,10 @@ static void aio_pwrite_smb2_done(struct tevent_req *req)
 		   (nwritten == -1) ? strerror(err) : "no error"));
 
 	if (fsp == NULL) {
-		DEBUG( 3, ("aio_pwrite_smb2_done: file closed whilst "
-			   "aio outstanding (mid[%llu]).\n",
-			   (unsigned long long)aio_ex->smbreq->mid));
+		DEBUG(3, ("%s: request cancelled (mid[%ju])\n",
+			  __func__, (uintmax_t)aio_ex->smbreq->mid));
 		TALLOC_FREE(aio_ex);
+		tevent_req_nterror(subreq, NT_STATUS_INTERNAL_ERROR);
 		return;
 	}
 

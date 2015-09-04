@@ -7,12 +7,8 @@ def subst_at_vars(task):
     '''substiture @VAR@ style variables in a file'''
 
     env = task.env
-    src = task.inputs[0].srcpath(env)
-    tgt = task.outputs[0].bldpath(env)
+    s = task.inputs[0].read()
 
-    f = open(src, 'r')
-    s = f.read()
-    f.close()
     # split on the vars
     a = re.split('(@\w+@)', s)
     out = []
@@ -27,9 +23,7 @@ def subst_at_vars(task):
             v = SUBST_VARS_RECURSIVE(task.env[vname], task.env)
         out.append(v)
     contents = ''.join(out)
-    f = open(tgt, 'w')
-    s = f.write(contents)
-    f.close()
+    task.outputs[0].write(contents)
     return 0
 
 def CONFIGURE_FILE(bld, in_file, **kwargs):

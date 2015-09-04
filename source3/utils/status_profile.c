@@ -42,18 +42,22 @@ static void profile_separator(const char * title)
   ******************************************************************/
 bool status_profile_dump(bool verbose)
 {
+	struct profile_stats stats = {};
+
 	if (!profile_setup(NULL, True)) {
 		fprintf(stderr,"Failed to initialise profile memory\n");
 		return False;
 	}
 
+	smbprofile_collect(&stats);
+
 #define __PRINT_FIELD_LINE(name, _stats, field) do { \
 	d_printf("%-59s%20ju\n", \
 		 name "_" #field ":", \
-		 (uintmax_t)profile_p->_stats.field); \
+		 (uintmax_t)stats.values._stats.field); \
 } while(0);
 #define SMBPROFILE_STATS_START
-#define SMBPROFILE_STATS_SECTION_START(name) profile_separator(#name);
+#define SMBPROFILE_STATS_SECTION_START(name, display) profile_separator(#display);
 #define SMBPROFILE_STATS_COUNT(name) do { \
 	__PRINT_FIELD_LINE(#name, name##_stats,  count); \
 } while(0);
@@ -243,12 +247,12 @@ static uint64_t print_count_samples(
 	}
 
 #define SMBPROFILE_STATS_START
-#define SMBPROFILE_STATS_SECTION_START(name)
+#define SMBPROFILE_STATS_SECTION_START(name, display)
 #define SMBPROFILE_STATS_COUNT(name) do { \
 	count += print_count_count_samples(buf, sizeof(buf), \
 					   #name, \
-					   &current->name##_stats, \
-					   &last->name##_stats, \
+					   &current->values.name##_stats, \
+					   &last->values.name##_stats, \
 					   delta_usec); \
 } while(0);
 #define SMBPROFILE_STATS_TIME(name) do { \
@@ -256,22 +260,22 @@ static uint64_t print_count_samples(
 #define SMBPROFILE_STATS_BASIC(name) do { \
 	count += print_basic_count_samples(buf, sizeof(buf), \
 					   #name, \
-					   &current->name##_stats, \
-					   &last->name##_stats, \
+					   &current->values.name##_stats, \
+					   &last->values.name##_stats, \
 					   delta_usec); \
 } while(0);
 #define SMBPROFILE_STATS_BYTES(name) do { \
 	count += print_bytes_count_samples(buf, sizeof(buf), \
 					   #name, \
-					   &current->name##_stats, \
-					   &last->name##_stats, \
+					   &current->values.name##_stats, \
+					   &last->values.name##_stats, \
 					   delta_usec); \
 } while(0);
 #define SMBPROFILE_STATS_IOBYTES(name) do { \
 	count += print_iobytes_count_samples(buf, sizeof(buf), \
 					     #name, \
-					     &current->name##_stats, \
-					     &last->name##_stats, \
+					     &current->values.name##_stats, \
+					     &last->values.name##_stats, \
 					     delta_usec); \
 } while(0);
 #define SMBPROFILE_STATS_SECTION_END
@@ -318,13 +322,13 @@ bool status_profile_rates(bool verbose)
 		return False;
 	}
 
-	memcpy(&sample_data[last], profile_p, sizeof(*profile_p));
+	smbprofile_collect(&sample_data[last]);
 	for (;;) {
 		sample_time[current] = profile_timestamp();
 		next_usec = sample_time[current] + sample_interval_usec;
 
 		/* Take a sample. */
-		memcpy(&sample_data[current], profile_p, sizeof(*profile_p));
+		smbprofile_collect(&sample_data[current]);
 
 		/* Rate convert some values and print results. */
 		delta_usec = sample_time[current] - sample_time[last];

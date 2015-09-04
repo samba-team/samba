@@ -2,7 +2,7 @@
 
 import os
 
-VERSION="1.1.0"
+VERSION="1.1.2"
 
 def configure(conf):
     if conf.CHECK_BUNDLED_SYSTEM('resolv_wrapper', minversion=VERSION, set_target=False):
@@ -73,6 +73,10 @@ def configure(conf):
         conf.CHECK_FUNCS_IN('res_nquery __res_nquery', 'resolv', checklibc=True)
         conf.CHECK_FUNCS_IN('res_search __res_search', 'resolv', checklibc=True)
         conf.CHECK_FUNCS_IN('res_nsearch __res_nsearch', 'resolv', checklibc=True)
+
+        conf.CHECK_DECLS('ns_name_compress', headers='sys/types.h arpa/nameser.h')
+        if (conf.CONFIG_SET("HAVE_DECL_NS_NAME_COMPRESS")):
+            conf.DEFINE("HAVE_NS_NAME_COMPRESS", 1)
 
         # Create full path to resolv_wrapper
         srcdir = os.path.realpath(conf.srcdir)

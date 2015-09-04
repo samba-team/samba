@@ -19,8 +19,8 @@
 
 #include "replace.h"
 #include <talloc.h>
-#include "../lib/util/samba_util.h"
 #include "../lib/util/debug.h"
+#include "../lib/util/samba_util.h"
 #include "../lib/util/dlinklist.h"
 #include "../lib/util/rbtree.h"
 #include "memcache.h"
@@ -53,6 +53,7 @@ static bool memcache_is_talloc(enum memcache_number n)
 	case GETPWNAM_CACHE:
 	case PDB_GETPWSID_CACHE:
 	case SINGLETON_CACHE_TALLOC:
+	case SHARE_MODE_LOCK_CACHE:
 		result = true;
 		break;
 	default:

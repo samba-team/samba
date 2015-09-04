@@ -9,10 +9,10 @@ interface server_id
 	 * Ctdbd sets this, we retrieve our vnn from it.
 	 */
 
-	const int NONCLUSTER_VNN = 0xFFFFFFFF;
+	const uint32 NONCLUSTER_VNN = 0xFFFFFFFF;
 
 	/** Don't verify this unique id */
-	const int SERVERID_UNIQUE_ID_NOT_TO_VERIFY = 0xFFFFFFFFFFFFFFFFULL;
+	const hyper SERVERID_UNIQUE_ID_NOT_TO_VERIFY = 0xFFFFFFFFFFFFFFFFULL;
 
 	/* used to look like the following, note that unique_id was not
 	 * marshalled at all...

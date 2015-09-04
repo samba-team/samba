@@ -5,12 +5,8 @@ from samba_utils import *
 
 def subst_at_vars(task):
     '''substiture @VAR@ style variables in a file'''
-    src = task.inputs[0].srcpath(task.env)
-    tgt = task.outputs[0].bldpath(task.env)
 
-    f = open(src, 'r')
-    s = f.read()
-    f.close()
+    s = task.inputs[0].read()
     # split on the vars
     a = re.split('(@\w+@)', s)
     out = []
@@ -37,9 +33,7 @@ def subst_at_vars(task):
                     break
         out.append(v)
     contents = ''.join(out)
-    f = open(tgt, 'w')
-    s = f.write(contents)
-    f.close()
+    task.outputs[0].write(contents)
     return 0
 
 

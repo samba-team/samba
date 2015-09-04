@@ -28,7 +28,7 @@
 
 /* Display server query info */
 
-static char *get_server_type_str(uint32 type)
+static char *get_server_type_str(uint32_t type)
 {
 	static fstring typestr;
 	int i;
@@ -133,7 +133,7 @@ static char *get_server_type_str(uint32 type)
 	return typestr;
 }
 
-static void display_server(const char *sname, uint32 type, const char *comment)
+static void display_server(const char *sname, uint32_t type, const char *comment)
 {
 	printf("\t%-15.15s%-20s %s\n", sname, get_server_type_str(type), 
 	       comment);
@@ -171,7 +171,7 @@ static WERROR cmd_srvsvc_srv_query_info(struct rpc_pipe_client *cli,
                                           TALLOC_CTX *mem_ctx,
                                           int argc, const char **argv)
 {
-	uint32 info_level = 101;
+	uint32_t info_level = 101;
 	union srvsvc_NetSrvInfo info;
 	WERROR result;
 	NTSTATUS status;
@@ -253,12 +253,20 @@ static void display_share_info_502(struct srvsvc_NetShareInfo502 *r)
 
 }
 
+static void display_share_info_1005(struct srvsvc_NetShareInfo1005 *r)
+{
+	printf("flags: 0x%x\n", r->dfs_flags);
+	printf("csc caching: %u\n",
+	       (r->dfs_flags & SHARE_1005_CSC_POLICY_MASK) >>
+	       SHARE_1005_CSC_POLICY_SHIFT);
+}
+
 static WERROR cmd_srvsvc_net_share_enum_int(struct rpc_pipe_client *cli,
 					    TALLOC_CTX *mem_ctx,
 					    int argc, const char **argv,
 					    uint32_t opcode)
 {
-	uint32 info_level = 2;
+	uint32_t info_level = 2;
 	struct srvsvc_NetShareInfoCtr info_ctr;
 	struct srvsvc_NetShareCtr0 ctr0;
 	struct srvsvc_NetShareCtr1 ctr1;
@@ -276,7 +284,7 @@ static WERROR cmd_srvsvc_net_share_enum_int(struct rpc_pipe_client *cli,
 	uint32_t count = 0;
 	uint32_t resume_handle = 0;
 	uint32_t *resume_handle_p = NULL;
-	uint32 preferred_len = 0xffffffff, i;
+	uint32_t preferred_len = 0xffffffff, i;
 	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	if (argc > 3) {
@@ -420,14 +428,15 @@ static WERROR cmd_srvsvc_net_share_get_info(struct rpc_pipe_client *cli,
 					    TALLOC_CTX *mem_ctx,
 					    int argc, const char **argv)
 {
-	uint32 info_level = 502;
+	uint32_t info_level = 502;
 	union srvsvc_NetShareInfo info;
 	WERROR result;
 	NTSTATUS status;
 	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	if (argc < 2 || argc > 3) {
-		printf("Usage: %s [sharename] [infolevel]\n", argv[0]);
+		printf("Usage: %s sharename [infolevel 1|2|502|1005]\n",
+		       argv[0]);
 		return WERR_OK;
 	}
 
@@ -461,6 +470,9 @@ static WERROR cmd_srvsvc_net_share_get_info(struct rpc_pipe_client *cli,
 	case 502:
 		display_share_info_502(info.info502);
 		break;
+	case 1005:
+		display_share_info_1005(info.info1005);
+		break;
 	default:
 		printf("unsupported info level %d\n", info_level);
 		break;
@@ -474,7 +486,7 @@ static WERROR cmd_srvsvc_net_share_set_info(struct rpc_pipe_client *cli,
 					    TALLOC_CTX *mem_ctx,
 					    int argc, const char **argv)
 {
-	uint32 info_level = 502;
+	uint32_t info_level = 502;
 	union srvsvc_NetShareInfo info_get;
 	WERROR result;
 	NTSTATUS status;
@@ -542,6 +554,61 @@ static WERROR cmd_srvsvc_net_share_set_info(struct rpc_pipe_client *cli,
 	return result;
 }
 
+static WERROR cmd_srvsvc_net_share_set_dfs_flags(struct rpc_pipe_client *cli,
+					    TALLOC_CTX *mem_ctx,
+					    int argc, const char **argv)
+{
+	struct srvsvc_NetShareInfo1005 info1005 = { 0 };
+	union srvsvc_NetShareInfo info = { .info1005 = &info1005 };
+	WERROR result;
+	NTSTATUS status;
+	uint32_t parm_err = 0;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
+
+	if (argc > 3) {
+		printf("Usage: %s [sharename] [dfsflags]\n", argv[0]);
+		return WERR_OK;
+	}
+
+	if (argc > 2) {
+		info.info1005->dfs_flags = strtol(argv[2], NULL, 0);
+	}
+
+	/* set share info */
+	status = dcerpc_srvsvc_NetShareSetInfo(b, mem_ctx,
+					       cli->desthost,
+					       argv[1],
+					       1005,
+					       &info,
+					       &parm_err,
+					       &result);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return ntstatus_to_werror(status);
+	}
+	if (!W_ERROR_IS_OK(result)) {
+		return result;
+	}
+
+	/* re-retrieve share info and display */
+	status = dcerpc_srvsvc_NetShareGetInfo(b, mem_ctx,
+					       cli->desthost,
+					       argv[1],
+					       1005,
+					       &info,
+					       &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ntstatus_to_werror(status);
+	}
+	if (!W_ERROR_IS_OK(result)) {
+		return result;
+	}
+
+	display_share_info_1005(info.info1005);
+
+	return result;
+}
+
 static WERROR cmd_srvsvc_net_remote_tod(struct rpc_pipe_client *cli, 
                                           TALLOC_CTX *mem_ctx,
                                           int argc, const char **argv)
@@ -576,12 +643,12 @@ static WERROR cmd_srvsvc_net_file_enum(struct rpc_pipe_client *cli,
 					 TALLOC_CTX *mem_ctx,
 					 int argc, const char **argv)
 {
-	uint32 info_level = 3;
+	uint32_t info_level = 3;
 	struct srvsvc_NetFileInfoCtr info_ctr;
 	struct srvsvc_NetFileCtr3 ctr3;
 	WERROR result;
 	NTSTATUS status;
-	uint32 preferred_len = 0xffff;
+	uint32_t preferred_len = 0xffff;
 	uint32_t total_entries = 0;
 	uint32_t resume_handle = 0;
 	struct dcerpc_binding_handle *b = cli->binding_handle;
@@ -941,6 +1008,78 @@ static WERROR cmd_srvsvc_net_conn_enum(struct rpc_pipe_client *cli,
 	return result;
 }
 
+static WERROR cmd_srvsvc_net_share_add(struct rpc_pipe_client *cli,
+				       TALLOC_CTX *mem_ctx,
+				       int argc, const char **argv)
+{
+	struct srvsvc_NetShareInfo502 info502 = { 0 };
+	union srvsvc_NetShareInfo info = { .info502 = &info502 };
+	WERROR result;
+	NTSTATUS status;
+	uint32_t max_users = -1, parm_error;
+	struct sec_desc_buf sd_buf = { 0 };
+	const char *path, *share_name, *comment = NULL;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
+
+	if (argc < 3 || argc > 5) {
+		printf("Usage: %s path share_name [max_users] [comment]\n",
+		       argv[0]);
+		return WERR_OK;
+	}
+
+	path = argv[1];
+	share_name = argv[2];
+
+	if (argc >= 4) {
+		max_users = atoi(argv[3]);
+	}
+
+	if (argc >= 5) {
+		comment = argv[4];
+	}
+
+	info.info502->name = share_name;
+	info.info502->type = STYPE_DISKTREE;
+	info.info502->comment = comment;
+	info.info502->max_users = max_users;
+	info.info502->path = path;
+	info.info502->sd_buf = sd_buf;
+
+	status = dcerpc_srvsvc_NetShareAdd(b, mem_ctx, cli->desthost,
+					   502, &info, &parm_error, &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		result = ntstatus_to_werror(status);
+	}
+
+	return result;
+}
+
+static WERROR cmd_srvsvc_net_share_del(struct rpc_pipe_client *cli,
+				       TALLOC_CTX *mem_ctx,
+				       int argc, const char **argv)
+{
+	const char *share_name;
+	WERROR result;
+	NTSTATUS status;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
+
+	if (argc < 2) {
+		printf("Usage: %s share_name\n", argv[0]);
+		return WERR_OK;
+	}
+
+	share_name = argv[1];
+
+	status = dcerpc_srvsvc_NetShareDel(b, mem_ctx, cli->desthost,
+					   share_name, 0, &result);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		result = ntstatus_to_werror(status);
+	}
+
+	return result;
+}
+
 
 /* List of commands exported by this module */
 
@@ -953,6 +1092,7 @@ struct cmd_set srvsvc_commands[] = {
 	{ "netshareenumall",RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_share_enum_all, &ndr_table_srvsvc, NULL, "Enumerate all shares", "" },
 	{ "netsharegetinfo",RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_share_get_info, &ndr_table_srvsvc, NULL, "Get Share Info", "" },
 	{ "netsharesetinfo",RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_share_set_info, &ndr_table_srvsvc, NULL, "Set Share Info", "" },
+	{ "netsharesetdfsflags",RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_share_set_dfs_flags, &ndr_table_srvsvc, NULL, "Set DFS flags", "" },
 	{ "netfileenum", RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_file_enum,  &ndr_table_srvsvc, NULL, "Enumerate open files", "" },
 	{ "netremotetod",RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_remote_tod, &ndr_table_srvsvc, NULL, "Fetch remote time of day", "" },
 	{ "netnamevalidate", RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_name_validate, &ndr_table_srvsvc, NULL, "Validate sharename", "" },
@@ -961,6 +1101,8 @@ struct cmd_set srvsvc_commands[] = {
 	{ "netsessenum", RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_sess_enum, &ndr_table_srvsvc, NULL, "Enumerate Sessions", "" },
 	{ "netdiskenum", RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_disk_enum, &ndr_table_srvsvc, NULL, "Enumerate Disks", "" },
 	{ "netconnenum", RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_conn_enum, &ndr_table_srvsvc, NULL, "Enumerate Connections", "" },
+	{ "netshareadd", RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_share_add, &ndr_table_srvsvc, NULL, "Add share", "" },
+	{ "netsharedel", RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_share_del, &ndr_table_srvsvc, NULL, "Delete share", "" },
 
 	{ NULL }
 };

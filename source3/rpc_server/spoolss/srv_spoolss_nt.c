@@ -86,21 +86,21 @@ struct printer_handle {
 	struct printer_handle *prev, *next;
 	bool document_started;
 	bool page_started;
-	uint32 jobid; /* jobid in printing backend */
+	uint32_t jobid; /* jobid in printing backend */
 	int printer_type;
 	const char *servername;
 	fstring sharename;
-	uint32 type;
-	uint32 access_granted;
+	uint32_t type;
+	uint32_t access_granted;
 	struct {
-		uint32 flags;
-		uint32 options;
+		uint32_t flags;
+		uint32_t options;
 		fstring localmachine;
-		uint32 printerlocal;
+		uint32_t printerlocal;
 		struct spoolss_NotifyOption *option;
 		struct policy_handle cli_hnd;
 		struct notify_back_channel *cli_chan;
-		uint32 change;
+		uint32_t change;
 		/* are we in a FindNextPrinterChangeNotify() call? */
 		bool fnpcn;
 		struct messaging_context *msg_ctx;
@@ -622,18 +622,18 @@ static WERROR set_printer_hnd_name(TALLOC_CTX *mem_ctx,
 		found = true;
 	}
 
+	cache_key = talloc_asprintf(talloc_tos(), "PRINTERNAME/%s", aprinter);
+	if (cache_key == NULL) {
+		return WERR_NOMEM;
+	}
+
 	/*
 	 * With hundreds of printers, the "for" loop iterating all
 	 * shares can be quite expensive, as it is done on every
 	 * OpenPrinter. The loop maps "aprinter" to "sname", the
 	 * result of which we cache in gencache.
 	 */
-
-	cache_key = talloc_asprintf(talloc_tos(), "PRINTERNAME/%s",
-				    aprinter);
-	if ((cache_key != NULL) &&
-	    gencache_get(cache_key, talloc_tos(), &tmp, NULL)) {
-
+	if (gencache_get(cache_key, talloc_tos(), &tmp, NULL)) {
 		found = (strcmp(tmp, printer_not_found) != 0);
 		if (!found) {
 			DEBUG(4, ("Printer %s not found\n", aprinter));
@@ -702,20 +702,16 @@ static WERROR set_printer_hnd_name(TALLOC_CTX *mem_ctx,
 		TALLOC_FREE(info2);
 	}
 
-	if ( !found ) {
-		if (cache_key != NULL) {
-			gencache_set(cache_key, printer_not_found,
-				     time(NULL)+300);
-			TALLOC_FREE(cache_key);
-		}
+	if (!found) {
+		gencache_set(cache_key, printer_not_found,
+			     time_mono(NULL) + 300);
+		TALLOC_FREE(cache_key);
 		DEBUGADD(4,("Printer not found\n"));
 		return WERR_INVALID_PRINTER_NAME;
 	}
 
-	if (cache_key != NULL) {
-		gencache_set(cache_key, sname, time(NULL)+300);
-		TALLOC_FREE(cache_key);
-	}
+	gencache_set(cache_key, sname, time_mono(NULL) + 300);
+	TALLOC_FREE(cache_key);
 
 	DEBUGADD(4,("set_printer_hnd_name: Printer found: %s -> %s\n", aprinter, sname));
 
@@ -4234,12 +4230,32 @@ static WERROR construct_printer_info7(TALLOC_CTX *mem_ctx,
 	if (is_printer_published(tmp_ctx, session_info, msg_ctx,
 				 servername, printer, NULL)) {
 		struct GUID guid;
+		struct GUID_txt_buf guid_txt;
 		werr = nt_printer_guid_get(tmp_ctx, session_info, msg_ctx,
 					   printer, &guid);
 		if (!W_ERROR_IS_OK(werr)) {
-			goto out_tmp_free;
+			/*
+			 * If we do not have a GUID entry in the registry, then
+			 * try to retrieve it from AD and store it now.
+			 */
+			werr = nt_printer_guid_retrieve(tmp_ctx, printer,
+							&guid);
+			if (!W_ERROR_IS_OK(werr)) {
+				DEBUG(1, ("Failed to retrieve GUID for "
+					  "printer [%s] from AD - "
+					  "Is the the printer still "
+					  "published ?\n", printer));
+				goto out_tmp_free;
+			}
+
+			werr = nt_printer_guid_store(msg_ctx, printer, guid);
+			if (!W_ERROR_IS_OK(werr)) {
+				DEBUG(3, ("failed to store printer %s guid\n",
+					  printer));
+			}
 		}
-		r->guid = talloc_strdup_upper(mem_ctx, GUID_string2(mem_ctx, &guid));
+		r->guid = talloc_strdup_upper(mem_ctx,
+					     GUID_buf_string(&guid, &guid_txt));
 		r->action = DSPRINT_PUBLISH;
 	} else {
 		r->guid = talloc_strdup(mem_ctx, "");
@@ -6459,6 +6475,9 @@ static WERROR update_dsspooler(TALLOC_CTX *mem_ctx,
 						 snum, printer->sharename ?
 						 printer->sharename : "");
 		}
+
+		/* name change, purge any cache entries for the old */
+		prune_printername_cache();
 	}
 
 	if (printer->printername != NULL &&
@@ -6495,6 +6514,9 @@ static WERROR update_dsspooler(TALLOC_CTX *mem_ctx,
 			notify_printer_printername(server_event_context(),
 						   msg_ctx, snum, p ? p : "");
 		}
+
+		/* name change, purge any cache entries for the old */
+		prune_printername_cache();
 	}
 
 	if (printer->portname != NULL &&
@@ -6993,6 +7015,89 @@ WERROR _spoolss_SetPrinter(struct pipes_struct *p,
 		case 3:
 			return update_printer_sec(r->in.handle, p,
 						  r->in.secdesc_ctr);
+		case 4: {
+			struct spoolss_PrinterInfo2 *old_printer;
+			struct spoolss_SetPrinterInfo2 *set_old_printer;
+			struct spoolss_SetPrinterInfoCtr *info_ctr;
+			struct dcerpc_binding_handle *b;
+			int snum;
+			TALLOC_CTX *tmp_ctx;
+
+			tmp_ctx = talloc_new(p->mem_ctx);
+			if (tmp_ctx == NULL) {
+				return WERR_NOMEM;
+			}
+
+			if (!get_printer_snum(p, r->in.handle, &snum, NULL)) {
+				TALLOC_FREE(tmp_ctx);
+				return WERR_BADFID;
+			}
+
+			result = winreg_printer_binding_handle(tmp_ctx,
+							       get_session_info_system(),
+							       p->msg_ctx,
+							       &b);
+			if (!W_ERROR_IS_OK(result)) {
+				TALLOC_FREE(tmp_ctx);
+				return result;
+			}
+
+			result = winreg_get_printer(tmp_ctx, b,
+						    lp_const_servicename(snum),
+						    &old_printer);
+			if (!W_ERROR_IS_OK(result)) {
+				TALLOC_FREE(tmp_ctx);
+				return WERR_BADFID;
+			}
+
+			old_printer->servername = talloc_strdup(tmp_ctx, r->in.info_ctr->info.info4->servername);
+			if (old_printer->servername == NULL) {
+				TALLOC_FREE(tmp_ctx);
+				return WERR_NOMEM;
+			}
+
+			old_printer->printername = talloc_strdup(tmp_ctx, r->in.info_ctr->info.info4->printername);
+			if (old_printer->printername == NULL) {
+				TALLOC_FREE(tmp_ctx);
+				return WERR_NOMEM;
+			}
+
+			old_printer->attributes = r->in.info_ctr->info.info4->attributes;
+
+			set_old_printer = talloc_zero(tmp_ctx, struct spoolss_SetPrinterInfo2);
+			if (set_old_printer == NULL) {
+				TALLOC_FREE(tmp_ctx);
+				return WERR_NOMEM;
+			}
+
+			spoolss_printerinfo2_to_setprinterinfo2(old_printer, set_old_printer);
+
+			info_ctr = talloc_zero(tmp_ctx, struct spoolss_SetPrinterInfoCtr);
+			if (info_ctr == NULL) {
+				TALLOC_FREE(tmp_ctx);
+				return WERR_NOMEM;
+			}
+
+			info_ctr->level = 2;
+			info_ctr->info.info2 = set_old_printer;
+
+			result = update_printer(p, r->in.handle,
+						info_ctr,
+						r->in.devmode_ctr->devmode);
+
+			if (!W_ERROR_IS_OK(result)) {
+				TALLOC_FREE(tmp_ctx);
+				return result;
+			}
+
+			if (r->in.secdesc_ctr->sd) {
+				result = update_printer_sec(r->in.handle, p,
+							    r->in.secdesc_ctr);
+			}
+
+			TALLOC_FREE(tmp_ctx);
+			return result;
+		}
 		case 7:
 			return publish_or_unpublish_printer(p, r->in.handle,
 							    r->in.info_ctr->info.info7);
@@ -7528,7 +7633,7 @@ WERROR _spoolss_SetJob(struct pipes_struct *p,
 		errcode = print_job_resume(session_info, p->msg_ctx,
 					   snum, r->in.job_id);
 		break;
-	case 0:
+	case SPOOLSS_JOB_CONTROL_NOOP:
 		errcode = WERR_OK;
 		break;
 	default:

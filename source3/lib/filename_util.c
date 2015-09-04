@@ -192,21 +192,27 @@ struct smb_filename *cp_smb_filename(TALLOC_CTX *mem_ctx,
 	ZERO_STRUCTP(out);
 
 	/*
-	 * The following allocations cannot fails as we
+	 * The following allocations cannot fail as we
 	 * pre-allocated space for them in the out pooled
 	 * object.
 	 */
 	if (in->base_name != NULL) {
 		out->base_name = talloc_memdup(
 				out, in->base_name, base_len);
+		talloc_set_name_const(out->base_name,
+				      out->base_name);
 	}
 	if (in->stream_name != NULL) {
 		out->stream_name = talloc_memdup(
 				out, in->stream_name, stream_len);
+		talloc_set_name_const(out->stream_name,
+				      out->stream_name);
 	}
 	if (in->original_lcomp != NULL) {
 		out->original_lcomp = talloc_memdup(
 				out, in->original_lcomp, lcomp_len);
+		talloc_set_name_const(out->original_lcomp,
+				      out->original_lcomp);
 	}
 	out->st = in->st;
 	return out;

@@ -7,7 +7,7 @@
 	<manvolnum>1</manvolnum>
 	<refmiscinfo class="source">Samba</refmiscinfo>
 	<refmiscinfo class="manual">User Commands</refmiscinfo>
-	<refmiscinfo class="version">4.2</refmiscinfo>
+	<refmiscinfo class="version">4.3</refmiscinfo>
 </refmeta>
 
 
@@ -178,13 +178,21 @@
 
 	<variablelist>
 		<varlistentry><term>srvinfo</term><listitem><para>Server query info</para></listitem></varlistentry>
-		
 		<varlistentry><term>netshareenum</term><listitem><para>Enumerate shares</para></listitem></varlistentry>
-
+		<varlistentry><term>netshareenumall</term><listitem><para>Enumerate all shares</para></listitem></varlistentry>
+		<varlistentry><term>netsharegetinfo</term><listitem><para>Get Share Info</para></listitem></varlistentry>
+		<varlistentry><term>netsharesetinfo</term><listitem><para>Set Share Info</para></listitem></varlistentry>
+		<varlistentry><term>netsharesetdfsflags</term><listitem><para>Set DFS flags</para></listitem></varlistentry>
 		<varlistentry><term>netfileenum</term><listitem><para>Enumerate open files</para></listitem></varlistentry>
-		
 		<varlistentry><term>netremotetod</term><listitem><para>Fetch remote time of day</para></listitem></varlistentry>
-		
+		<varlistentry><term>netnamevalidate</term><listitem><para>Validate sharename</para></listitem></varlistentry>
+		<varlistentry><term>netfilegetsec</term><listitem><para>Get File security</para></listitem></varlistentry>
+		<varlistentry><term>netsessdel</term><listitem><para>Delete Session</para></listitem></varlistentry>
+		<varlistentry><term>netsessenum</term><listitem><para>Enumerate Sessions</para></listitem></varlistentry>
+		<varlistentry><term>netdiskenum</term><listitem><para>Enumerate Disks</para></listitem></varlistentry>
+		<varlistentry><term>netconnenum</term><listitem><para>Enumerate Connections</para></listitem></varlistentry>
+		<varlistentry><term>netshareadd</term><listitem><para>Add share</para></listitem></varlistentry>
+		<varlistentry><term>netsharedel</term><listitem><para>Delete share</para></listitem></varlistentry>
 	</variablelist>
 
 	</refsect2>

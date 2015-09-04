@@ -7,7 +7,7 @@
 	<manvolnum>8</manvolnum>
 	<refmiscinfo class="source">Samba</refmiscinfo>
 	<refmiscinfo class="manual">System Administration tools</refmiscinfo>
-	<refmiscinfo class="version">4.2</refmiscinfo>
+	<refmiscinfo class="version">4.3</refmiscinfo>
 </refmeta>
 
 
@@ -39,6 +39,12 @@
 	</para>
 
 	<para>
+		Snapshots can also be created and remove remotely, using the
+		File Server Remote VSS Protocol (FSRVP). Snapshot creation and
+		deletion requests are forwarded to snapper via DBus.
+	</para>
+
+	<para>
 		This module is stackable.
 	</para>
 </refsect1>
@@ -56,6 +62,18 @@
 		<smbconfsection name="[share]"/>
 		<smbconfoption name="vfs objects">snapper</smbconfoption>
 	</programlisting>
+
+	<para>
+		For remote snapshot creation and deletion, Samba's FSRVP
+		server must be configured in the [global] section:
+	</para>
+
+	<programlisting>
+		<smbconfsection name="[global]"/>
+		<smbconfoption name="rpc_daemon:fssd">fork</smbconfoption>
+		<smbconfoption name="registry shares">yes</smbconfoption>
+		<smbconfoption name="include">registry</smbconfoption>
+	</programlisting>
 </refsect1>
 
 <refsect1>
@@ -70,13 +88,26 @@
 		options. Snapper can grant these users and groups .snapshots
 		traversal access automatically via the SYNC_ACL option.
 	</para>
+	<para>
+		Remote snapshot creation and deletion is only permitted by Samba
+		for Active Directory administrators, backup operators, or users
+		explicitly granted SeBackupPrivilege. Snapper must also permit
+		creation and deletion for the appropriate user, via snapper's
+		ALLOW_USERS or ALLOW_GROUPS options.
+	</para>
+	<para>
+		The DiskShadow.exe FSRVP client initially authenticates as the
+		Active Directory computer account. This account must therefore
+		be granted the same permissions as the user account issuing the
+		snapshot creation and deletion requests.
+	</para>
 </refsect1>
 
 <refsect1>
 	<title>VERSION</title>
 
 	<para>
-		This man page is correct for version 4.2.0 of the Samba suite.
+		This man page is correct for version 4.3.0 of the Samba suite.
 	</para>
 </refsect1>
 

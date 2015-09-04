@@ -35,14 +35,17 @@
 			NT_STATUS_NOT_SUPPORTED) ||			\
 		    NT_STATUS_EQUAL(__status,				\
 			NT_STATUS_NOT_IMPLEMENTED)) {			\
+			__supp = false;					\
+		} else {						\
+			__supp = true;					\
+		}							\
+		if (__supp) {						\
+			torture_assert_ntstatus_ok_goto(__tctx,		\
+			    __status, ret, done, #__level" failed");	\
+		} else {						\
 			torture_warning(__tctx, "(%s) Info "		\
 			    "level "#__level" is %s",			\
 			    __location__, nt_errstr(__status));		\
-			__supp = false;					\
-		} else {						\
-			torture_assert_ntstatus_ok_goto(__tctx,		\
-			    __status, ret, done, #__level" failed");	\
-			__supp = true;					\
 		}							\
 	} while (0)
 

@@ -24,6 +24,7 @@ from base64 import b64decode
 from samba import dsdb
 from samba import common
 from samba.dcerpc import misc
+from samba.dcerpc import drsuapi
 from samba.ndr import ndr_unpack, ndr_pack
 from samba.dcerpc import drsblobs
 from samba.common import dsdb_Dn
@@ -63,6 +64,7 @@ class dbcheck(object):
         self.move_to_lost_and_found = False
         self.fix_instancetype = False
         self.fix_replmetadata_zero_invocationid = False
+        self.fix_replmetadata_unsorted_attid = False
         self.fix_deleted_deleted_objects = False
         self.fix_dn = False
         self.fix_base64_userparameters = False
@@ -79,6 +81,8 @@ class dbcheck(object):
         self.class_schemaIDGUID = {}
         self.wellknown_sds = get_wellknown_sds(self.samdb)
         self.fix_all_missing_objectclass = False
+
+        self.dn_set = set()
 
         self.name_map = {}
         try:
@@ -125,12 +129,12 @@ class dbcheck(object):
 
     def check_database(self, DN=None, scope=ldb.SCOPE_SUBTREE, controls=[], attrs=['*']):
         '''perform a database check, returning the number of errors found'''
-
         res = self.samdb.search(base=DN, scope=scope, attrs=['dn'], controls=controls)
         self.report('Checking %u objects' % len(res))
         error_count = 0
 
         for object in res:
+            self.dn_set.add(str(object.dn))
             error_count += self.check_object(object.dn, attrs=attrs)
 
         if DN is None:
@@ -698,18 +702,21 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         return 0
 
     def process_metadata(self, val):
-        '''Read metadata properties and list attributes in it'''
+        '''Read metadata properties and list attributes in it.
+           raises KeyError if the attid is unknown.'''
 
-        list_att = []
+        set_att = set()
+        list_attid = []
 
         repl = ndr_unpack(drsblobs.replPropertyMetaDataBlob, str(val))
         obj = repl.ctr
 
         for o in repl.ctr.array:
             att = self.samdb_schema.get_lDAPDisplayName_by_attid(o.attid)
-            list_att.append(att.lower())
+            set_att.add(att.lower())
+            list_attid.append(o.attid)
 
-        return list_att
+        return (set_att, list_attid)
 
 
     def fix_metadata(self, dn, attr):
@@ -989,9 +996,50 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             nmsg = ldb.Message()
             nmsg.dn = dn
             nmsg[attr] = ldb.MessageElement(replBlob, ldb.FLAG_MOD_REPLACE, attr)
-            if self.do_modify(nmsg, ["local_oid:1.3.6.1.4.1.7165.4.3.14:0"],
+            if self.do_modify(nmsg, ["local_oid:%s:0" % dsdb.DSDB_CONTROL_DBCHECK_MODIFY_RO_REPLICA,
+                                     "local_oid:1.3.6.1.4.1.7165.4.3.14:0"],
                               "Failed to fix attribute %s" % attr):
                 self.report("Fixed attribute '%s' of '%s'\n" % (attr, dn))
+
+
+    def err_replmetadata_unknown_attid(self, dn, attr, repl_meta_data):
+        repl = ndr_unpack(drsblobs.replPropertyMetaDataBlob,
+                          str(repl_meta_data))
+        ctr = repl.ctr
+        for o in ctr.array:
+            # Search for an invalid attid
+            try:
+                att = self.samdb_schema.get_lDAPDisplayName_by_attid(o.attid)
+            except KeyError:
+                self.report('ERROR: attributeID 0X%0X is not known in our schema, not fixing %s on %s\n' % (o.attid, attr, dn))
+                return
+
+
+    def err_replmetadata_unsorted_attid(self, dn, attr, repl_meta_data):
+        repl = ndr_unpack(drsblobs.replPropertyMetaDataBlob,
+                          str(repl_meta_data))
+        ctr = repl.ctr
+        found = False
+
+        self.report('ERROR: unsorted attributeID values in %s on %s\n' % (attr, dn))
+        if not self.confirm_all('Fix %s on %s by sorting the attribute list?'
+                                % (attr, dn), 'fix_replmetadata_unsorted_attid'):
+            self.report('Not fixing %s on %s\n' % (attr, dn))
+            return
+
+        # Sort the array, except for the last element
+        ctr.array[:-1] = sorted(ctr.array[:-1], key=lambda o: o.attid)
+
+        replBlob = ndr_pack(repl)
+
+        nmsg = ldb.Message()
+        nmsg.dn = dn
+        nmsg[attr] = ldb.MessageElement(replBlob, ldb.FLAG_MOD_REPLACE, attr)
+        if self.do_modify(nmsg, ["local_oid:%s:0" % dsdb.DSDB_CONTROL_DBCHECK_MODIFY_RO_REPLICA,
+                                 "local_oid:1.3.6.1.4.1.7165.4.3.14:0",
+                                 "local_oid:1.3.6.1.4.1.7165.4.3.25:0"],
+                          "Failed to fix attribute %s" % attr):
+            self.report("Fixed attribute '%s' of '%s'\n" % (attr, dn))
 
 
     def is_deleted_deleted_objects(self, obj):
@@ -1125,8 +1173,8 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             return 1
         obj = res[0]
         error_count = 0
-        list_attrs_from_md = []
-        list_attrs_seen = []
+        set_attrs_from_md = set()
+        set_attrs_seen = set()
         got_repl_property_meta_data = False
         got_objectclass = False
 
@@ -1181,7 +1229,31 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                     # We don't continue, as we may also have other fixes for this attribute
                     # based on what other attributes we see.
 
-                list_attrs_from_md = self.process_metadata(obj[attrname])
+                try:
+                    (set_attrs_from_md, list_attid_from_md) = self.process_metadata(obj[attrname])
+                except KeyError:
+                    error_count += 1
+                    self.err_replmetadata_unknown_attid(dn, attrname, obj[attrname])
+                    continue
+
+                if sorted(list_attid_from_md[:-1]) != list_attid_from_md[:-1]:
+                    error_count += 1
+                    self.err_replmetadata_unsorted_attid(dn, attrname, obj[attrname])
+                else:
+                    # Here we check that the first attid is 0
+                    # (objectClass) and that the last on is the RDN
+                    # from the DN.
+                    rdn_attid = self.samdb_schema.get_attid_from_lDAPDisplayName(dn.get_rdn_name())
+                    if list_attid_from_md[-1] != rdn_attid:
+                        error_count += 1
+                        self.report("ERROR: Not fixing incorrect final attributeID in '%s' on '%s', it should match the RDN %s" %
+                                    (attrname, str(dn), dn.get_rdn_name()))
+
+                    if list_attid_from_md[0] != 0:
+                        error_count += 1
+                        self.report("ERROR: Not fixing incorrect inital attributeID in '%s' on '%s', it should be objectClass" %
+                                    (attrname, str(dn)))
+
                 got_repl_property_meta_data = True
                 continue
 
@@ -1274,7 +1346,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             if (not flag & dsdb.DS_FLAG_ATTR_NOT_REPLICATED
                 and not flag & dsdb.DS_FLAG_ATTR_IS_CONSTRUCTED
                 and not self.samdb_schema.get_linkId_from_lDAPDisplayName(attrname)):
-                list_attrs_seen.append(str(attrname).lower())
+                set_attrs_seen.add(str(attrname).lower())
 
             if syntax_oid in [ dsdb.DSDB_SYNTAX_BINARY_DN, dsdb.DSDB_SYNTAX_OR_NAME,
                                dsdb.DSDB_SYNTAX_STRING_DN, ldb.SYNTAX_DN ]:
@@ -1345,17 +1417,17 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
 
                     else:
                         self.report("Not fixing isDeleted originating_change_time on '%s'" % str(dn))
-            for att in list_attrs_seen:
-                if not att in list_attrs_from_md:
-                    if show_dn:
-                        self.report("On object %s" % dn)
-                        show_dn = False
-                    error_count += 1
-                    self.report("ERROR: Attribute %s not present in replication metadata" % att)
-                    if not self.confirm_all("Fix missing replPropertyMetaData element '%s'" % att, 'fix_all_metadata'):
-                        self.report("Not fixing missing replPropertyMetaData element '%s'" % att)
-                        continue
-                    self.fix_metadata(dn, att)
+
+            for att in set_attrs_seen.difference(set_attrs_from_md):
+                if show_dn:
+                    self.report("On object %s" % dn)
+                    show_dn = False
+                error_count += 1
+                self.report("ERROR: Attribute %s not present in replication metadata" % att)
+                if not self.confirm_all("Fix missing replPropertyMetaData element '%s'" % att, 'fix_all_metadata'):
+                    self.report("Not fixing missing replPropertyMetaData element '%s'" % att)
+                    continue
+                self.fix_metadata(dn, att)
 
         if self.is_fsmo_role(dn):
             if "fSMORoleOwner" not in obj and ("*" in attrs or "fsmoroleowner" in map(str.lower, attrs)):
@@ -1363,7 +1435,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                 error_count += 1
 
         try:
-            if dn != self.samdb.get_root_basedn():
+            if dn != self.samdb.get_root_basedn() and str(dn.parent()) not in self.dn_set:
                 res = self.samdb.search(base=dn.parent(), scope=ldb.SCOPE_BASE,
                                         controls=["show_recycled:1", "show_deleted:1"])
         except ldb.LdbError, (enum, estr):

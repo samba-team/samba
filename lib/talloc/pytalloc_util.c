@@ -97,6 +97,8 @@ _PUBLIC_ PyObject *pytalloc_reference_ex(PyTypeObject *py_type, TALLOC_CTX *mem_
 	return (PyObject *)ret;
 }
 
+#if PY_MAJOR_VERSION < 3
+
 static void py_cobject_talloc_free(void *ptr)
 {
 	talloc_free(ptr);
@@ -109,6 +111,8 @@ _PUBLIC_ PyObject *pytalloc_CObject_FromTallocPtr(void *ptr)
 	}
 	return PyCObject_FromVoidPtr(ptr, py_cobject_talloc_free);
 }
+
+#endif
 
 _PUBLIC_ int pytalloc_Check(PyObject *obj)
 {

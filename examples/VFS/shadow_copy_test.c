@@ -56,8 +56,8 @@ static int test_get_shadow_copy_data(vfs_handle_struct *handle,
 				    struct shadow_copy_data *shadow_copy_data,
 				    bool labels)
 {
-	uint32 num = 3;
-	uint32 i;
+	uint32_t num = 3;
+	uint32_t i;
 	
 	shadow_copy_data->num_volumes = num;
 	
@@ -83,6 +83,7 @@ static struct vfs_fn_pointers vfs_test_shadow_copy_fns = {
 	.get_shadow_copy_data_fn = test_get_shadow_copy_data
 };
 
+static_decl_vfs;
 NTSTATUS vfs_shadow_copy_test_init(void)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION,

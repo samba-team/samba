@@ -485,10 +485,12 @@ static void dcerpc_bh_ndr_pull_failed(struct dcerpc_binding_handle *h,
 
 	for (i=0;i<num_examples;i++) {
 		char *name=NULL;
-		asprintf(&name, "%s/rpclog/%s-out.%d",
-			 hs->p->conn->packet_log_dir,
-			 call->name, i);
-		if (name == NULL) {
+		int ret;
+
+		ret = asprintf(&name, "%s/rpclog/%s-out.%d",
+			       hs->p->conn->packet_log_dir,
+			       call->name, i);
+		if (ret == -1) {
 			return;
 		}
 		if (!file_exist(name)) {
@@ -832,13 +834,16 @@ static NTSTATUS ncacn_push_request_sign(struct dcecli_connection *c,
 	size_t hdr_size = DCERPC_REQUEST_LENGTH;
 
 	/* non-signed packets are simpler */
-	if (sig_size == 0) {
+	if (c->security_state.auth_info == NULL) {
 		return ncacn_push_auth(blob, mem_ctx, pkt, NULL);
 	}
 
 	switch (c->security_state.auth_info->auth_level) {
 	case DCERPC_AUTH_LEVEL_PRIVACY:
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
+		if (sig_size == 0) {
+			return NT_STATUS_INTERNAL_ERROR;
+		}
 		break;
 
 	case DCERPC_AUTH_LEVEL_CONNECT:
@@ -881,7 +886,7 @@ static NTSTATUS ncacn_push_request_sign(struct dcecli_connection *c,
 	   whole packet, whereas w2k8 wants it relative to the start
 	   of the stub */
 	c->security_state.auth_info->auth_pad_length =
-		(16 - (pkt->u.request.stub_and_verifier.length & 15)) & 15;
+		DCERPC_AUTH_PAD_LENGTH(pkt->u.request.stub_and_verifier.length);
 	ndr_err = ndr_push_zero(ndr, c->security_state.auth_info->auth_pad_length);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return ndr_map_error2ntstatus(ndr_err);
@@ -1681,14 +1686,19 @@ static void dcerpc_ship_next_request(struct dcecli_connection *c)
 	chunk_size -= DCERPC_REQUEST_LENGTH;
 	if (c->security_state.auth_info &&
 	    c->security_state.generic_state) {
+		size_t max_payload = chunk_size;
+
+		max_payload -= DCERPC_AUTH_TRAILER_LENGTH;
+		max_payload -= (max_payload % DCERPC_AUTH_PAD_ALIGNMENT);
+
 		sig_size = gensec_sig_size(c->security_state.generic_state,
-					   p->conn->srv_max_recv_frag);
+					   max_payload);
 		if (sig_size) {
 			chunk_size -= DCERPC_AUTH_TRAILER_LENGTH;
 			chunk_size -= sig_size;
 		}
 	}
-	chunk_size -= (chunk_size % 16);
+	chunk_size -= (chunk_size % DCERPC_AUTH_PAD_ALIGNMENT);
 
 	pkt.ptype = DCERPC_PKT_REQUEST;
 	pkt.call_id = req->call_id;

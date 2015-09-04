@@ -1,8 +1,8 @@
 <samba:parameter name="server max protocol"
-		 context="G"
-		 type="enum"
-		 developer="1"
-		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+                 context="G"
+                 type="enum"
+                 enumlist="enum_protocol"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>The value of the parameter (a string) is the highest 
     protocol level that will be supported by the server.</para>
@@ -50,8 +50,17 @@
 		<listitem>
 		    <para><constant>SMB3_00</constant>: Windows 8 SMB3 version. (mostly the same as SMB2_24)</para>
 		</listitem>
+		<listitem>
+		    <para><constant>SMB3_02</constant>: Windows 8.1 SMB3 version.</para>
+		</listitem>
+		<listitem>
+		    <para><constant>SMB3_10</constant>: early Windows 10 technical preview SMB3 version.</para>
+		</listitem>
+		<listitem>
+		    <para><constant>SMB3_11</constant>: Windows 10 technical preview SMB3 version (maybe final).</para>
+		</listitem>
 	    </itemizedlist>
-	    <para>By default SMB3 selects the SMB3_00 variant.</para>
+	    <para>By default SMB3 selects the SMB3_11 variant.</para>
 	</listitem>
     </itemizedlist>
 

@@ -48,7 +48,7 @@
  * split given path into hive and remaining path and open the hive key
  */
 static WERROR open_hive(TALLOC_CTX *ctx, const char *path,
-			uint32 desired_access,
+			uint32_t desired_access,
 			struct registry_key **hive,
 			char **subkeyname)
 {
@@ -91,7 +91,7 @@ done:
 }
 
 static WERROR open_key(TALLOC_CTX *ctx, const char *path,
-		       uint32 desired_access,
+		       uint32_t desired_access,
 		       struct registry_key **key)
 {
 	WERROR werr;
@@ -274,7 +274,7 @@ static int net_registry_createkey(struct net_context *c, int argc,
 {
 	WERROR werr;
 	enum winreg_CreateAction action;
-	char *subkeyname;
+	char *subkeyname = NULL;
 	struct registry_key *hivekey = NULL;
 	struct registry_key *subkey = NULL;
 	TALLOC_CTX *ctx = talloc_stackframe();
@@ -333,7 +333,7 @@ static int net_registry_deletekey_internal(struct net_context *c, int argc,
 					   bool recursive)
 {
 	WERROR werr;
-	char *subkeyname;
+	char *subkeyname = NULL;
 	struct registry_key *hivekey = NULL;
 	TALLOC_CTX *ctx = talloc_stackframe();
 	int ret = -1;

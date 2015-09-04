@@ -1,6 +1,6 @@
 <samba:parameter name="oplock break wait time"
                  context="G"
-				 type="integer"
+                 type="integer"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
  <description>
 	<para>

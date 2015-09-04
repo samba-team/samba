@@ -66,14 +66,14 @@ def parseErrorDescriptions( input_file, isWinError ):
             err = Errors[-1]
             if err.err_define == None:
                 err.err_define = "HRES_" + content[0]
-        else:
-            if len(content) > 0:
-                desc =  escapeString(line.strip())
-                if len(desc):
-                    if err.err_string == "":
-                        err.err_string = desc
-                    else:
-                        err.err_string = err.err_string + " " + desc
+	    else:
+                if len(content) > 0:
+                    desc =  escapeString(line.strip())
+                    if len(desc):
+                        if err.err_string == "":
+                            err.err_string = desc
+                        else:
+                            err.err_string = err.err_string + " " + desc
         count = count + 1
     fileContents.close()
     print "parsed %d lines generated %d error definitions"%(count,len(Errors))
@@ -130,6 +130,7 @@ def generateHeaderFile(out_file):
         line = "#define {0:49} HRES_ERROR({1})\n".format(err.err_define ,err.err_code)
         out_file.write(line)
     out_file.write("\nconst char *hresult_errstr_const(HRESULT err_code);\n")
+    out_file.write("\nconst char *hresult_errstr(HRESULT err_code);\n")
     out_file.write("\n#define FACILITY_WIN32 0x0007\n")
     out_file.write("#define WIN32_FROM_HRESULT(x) (HRES_ERROR_V(x) == 0 ? HRES_ERROR_V(x) : ~((FACILITY_WIN32 << 16) | 0x80000000) & HRES_ERROR_V(x))\n")
     out_file.write("#define HRESULT_IS_LIKELY_WERR(x) ((HRES_ERROR_V(x) & 0xFFFF0000) == 0x80070000)\n")
@@ -148,14 +149,17 @@ def generateSourceFile(out_file):
     out_file.write("static const struct {\n")
     out_file.write("	HRESULT error_code;\n")
     out_file.write("	const char *error_str;\n")
+    out_file.write("	const char *error_message;\n")
     out_file.write("} hresult_errs[] = {\n")
 
     for err in Errors:
         out_file.write("	{\n")
         if err.isWinError:
             out_file.write("		HRESULT_FROM_WIN32(%s),\n"%err.err_define)
+            out_file.write("		\"HRESULT_FROM_WIN32(%s)\",\n"%err.err_define)
         else:
             out_file.write("		%s,\n"%err.err_define)
+            out_file.write("		\"%s\",\n"%err.err_define)
         out_file.write("		\"%s\"\n"%err.err_string)
         out_file.write("	},\n")
     out_file.write("};\n")
@@ -166,7 +170,7 @@ def generateSourceFile(out_file):
     out_file.write("	int i;\n")
     out_file.write("	for (i = 0; i < ARRAY_SIZE(hresult_errs); ++i) {\n")
     out_file.write("		if (HRES_IS_EQUAL(err_code, hresult_errs[i].error_code)) {\n")
-    out_file.write("			result = hresult_errs[i].error_str;\n")
+    out_file.write("			result = hresult_errs[i].error_message;\n")
     out_file.write("			break;\n")
     out_file.write("		}\n")
     out_file.write("	}\n")
@@ -176,6 +180,20 @@ def generateSourceFile(out_file):
     out_file.write("		result = get_friendly_werror_msg(wErr);\n")
     out_file.write("	}\n")
     out_file.write("	return result;\n")
+    out_file.write("};\n")
+    out_file.write("\n")
+    out_file.write("const char *hresult_errstr(HRESULT err_code)\n")
+    out_file.write("{\n");
+    out_file.write("	static char msg[20];\n")
+    out_file.write("	int i;\n")
+    out_file.write("\n")
+    out_file.write("	for (i = 0; i < ARRAY_SIZE(hresult_errs); i++) {\n")
+    out_file.write("		if (HRES_IS_EQUAL(err_code, hresult_errs[i].error_code)) {\n")
+    out_file.write("			return hresult_errs[i].error_str;\n")
+    out_file.write("		}\n")
+    out_file.write("	}\n")
+    out_file.write("	snprintf(msg, sizeof(msg), \"HRES code 0x%08x\", HRES_ERROR_V(err_code));\n")
+    out_file.write("	return msg;\n")
     out_file.write("};\n")
 
 # Very simple script to generate files hresult.c & hresult.h

@@ -872,6 +872,15 @@ typedef ssize_t (*smbc_write_fn)(SMBCCTX *c,
 smbc_write_fn smbc_getFunctionWrite(SMBCCTX *c);
 void smbc_setFunctionWrite(SMBCCTX *c, smbc_write_fn fn);
 
+typedef off_t (*smbc_splice_fn)(SMBCCTX *c,
+                                SMBCFILE *srcfile,
+                                SMBCFILE *dstfile,
+                                off_t count,
+                                int (*splice_cb)(off_t n, void *priv),
+                                void *priv);
+smbc_splice_fn smbc_getFunctionSplice(SMBCCTX *c);
+void smbc_setFunctionSplice(SMBCCTX *c, smbc_splice_fn fn);
+
 typedef int (*smbc_unlink_fn)(SMBCCTX *c,
                               const char *fname);
 smbc_unlink_fn smbc_getFunctionUnlink(SMBCCTX *c);
@@ -984,6 +993,30 @@ typedef int (*smbc_fstatdir_fn)(SMBCCTX *c,
 smbc_fstatdir_fn smbc_getFunctionFstatdir(SMBCCTX *c);
 void smbc_setFunctionFstatdir(SMBCCTX *c, smbc_fstatdir_fn fn);
 
+#define SMBC_NOTIFY_ACTION_ADDED		1
+#define SMBC_NOTIFY_ACTION_REMOVED		2
+#define SMBC_NOTIFY_ACTION_MODIFIED		3
+#define SMBC_NOTIFY_ACTION_OLD_NAME		4
+#define SMBC_NOTIFY_ACTION_NEW_NAME		5
+#define SMBC_NOTIFY_ACTION_ADDED_STREAM	6
+#define SMBC_NOTIFY_ACTION_REMOVED_STREAM	7
+#define SMBC_NOTIFY_ACTION_MODIFIED_STREAM	8
+
+struct smbc_notify_callback_action {
+	uint32_t action;
+	const char *filename;
+};
+
+typedef int (*smbc_notify_callback_fn)(
+	const struct smbc_notify_callback_action *actions,
+	size_t num_actions, void *private_data);
+
+typedef int (*smbc_notify_fn)(SMBCCTX *c, SMBCFILE *dir, smbc_bool recursive,
+			      uint32_t completion_filter,
+			      unsigned callback_timeout_ms,
+			      smbc_notify_callback_fn cb, void *private_data);
+smbc_notify_fn smbc_getFunctionNotify(SMBCCTX *c);
+void smbc_setFunctionNotify(SMBCCTX *c, smbc_notify_fn fn);
 
 
 /*****************************************************************
@@ -1611,6 +1644,47 @@ int smbc_mkdir(const char *durl, mode_t mode);
  */
 int smbc_rmdir(const char *durl);
 
+/**@ingroup directory
+ * Request directory notifications
+ *
+ * @param dh                    Valid directory as returned by smbc_opendir()
+ *
+ * @param recursive     	Are changes in subdirectories wanted?
+ *
+ * @param completion_filter	Bitwise-or of the SMBC_NOTIFY_CHANGE_*
+ *                              events that are interesting
+ *
+ * @param callback_timeout_ms   If set to non-zero, interval in milliseconds
+ *                              that "cb" will be called with 0 actions.
+ *                              This gives "cb" the chance to cancel the
+ *                              smbc_notify call.
+ *
+ * @param cb                    Callback functions taking events. If "cb"
+ *                              returns nonzero, smbc_notify will return.
+ *
+ * @param private_data          Pointer given to "cb"
+ *
+ * @return                      0 on success, -1 on error with errno set
+ *
+ * @see                         smbc_opendir(), smbc_closedir()
+ */
+
+#define SMBC_NOTIFY_CHANGE_FILE_NAME		0x001
+#define SMBC_NOTIFY_CHANGE_DIR_NAME		0x002
+#define SMBC_NOTIFY_CHANGE_ATTRIBUTES		0x004
+#define SMBC_NOTIFY_CHANGE_SIZE		0x008
+#define SMBC_NOTIFY_CHANGE_LAST_WRITE		0x010
+#define SMBC_NOTIFY_CHANGE_LAST_ACCESS		0x020
+#define SMBC_NOTIFY_CHANGE_CREATION		0x040
+#define SMBC_NOTIFY_CHANGE_EA			0x080
+#define SMBC_NOTIFY_CHANGE_SECURITY		0x100
+#define SMBC_NOTIFY_CHANGE_STREAM_NAME		0x200
+#define SMBC_NOTIFY_CHANGE_STREAM_SIZE		0x400
+#define SMBC_NOTIFY_CHANGE_STREAM_WRITE	0x800
+
+int smbc_notify(int dh, smbc_bool recursive, uint32_t completion_filter,
+		unsigned callback_timeout_ms,
+		smbc_notify_callback_fn cb, void *private_data);
 
 /**@ingroup attribute
  * Get information about a file or directory.

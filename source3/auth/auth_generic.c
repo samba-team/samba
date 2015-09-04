@@ -116,7 +116,7 @@ static NTSTATUS auth3_generate_session_info_pac(struct auth4_context *auth_ctx,
 	sub_set_smb_name(username);
 
 	/* reload services so that the new %U is taken into account */
-	lp_load(get_dyn_CONFIGFILE(), false, false, true, true);
+	lp_load_with_shares(get_dyn_CONFIGFILE());
 
 	status = make_session_info_krb5(mem_ctx,
 					ntuser, ntdomain, username, pw,

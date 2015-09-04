@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 APPNAME = 'tevent'
-VERSION = '0.9.22'
+VERSION = '0.9.25'
 
 blddir = 'bin'
 
@@ -13,9 +13,9 @@ while not os.path.exists(srcdir+'/buildtools') and len(srcdir.split('/')) < 5:
     srcdir = srcdir + '/..'
 sys.path.insert(0, srcdir + '/buildtools/wafsamba')
 
-import wafsamba, samba_dist, Options, Logs
+import wafsamba, samba_dist, samba_utils, Options, Logs
 
-samba_dist.DIST_DIRS('lib/tevent:. lib/replace:lib/replace lib/talloc:lib/talloc buildtools:buildtools')
+samba_dist.DIST_DIRS('lib/tevent:. lib/replace:lib/replace lib/talloc:lib/talloc buildtools:buildtools third_party/waf:third_party/waf')
 
 def set_options(opt):
     opt.BUILTIN_DEFAULT('replace')
@@ -89,6 +89,9 @@ def build(bld):
     if bld.CONFIG_SET('HAVE_EPOLL'):
         SRC += ' tevent_epoll.c'
 
+    if bld.CONFIG_SET('HAVE_SOLARIS_PORTS'):
+        SRC += ' tevent_port.c'
+
     if bld.env.standalone_tevent:
         bld.env.PKGCONFIGDIR = '${LIBDIR}/pkgconfig'
         private_library = False
@@ -110,22 +113,28 @@ def build(bld):
                           private_library=private_library)
 
     if not bld.CONFIG_SET('USING_SYSTEM_PYTEVENT') and not bld.env.disable_python:
-        bld.SAMBA_PYTHON('pytevent',
-                         'pytevent.c',
-                         deps='tevent',
-                         realname='_tevent.so',
-                         cflags='-DPACKAGE_VERSION=\"%s\"' % VERSION)
+        for env in bld.gen_python_environments(['PKGCONFIGDIR']):
+            bld.SAMBA_PYTHON('_tevent',
+                            'pytevent.c',
+                            deps='tevent',
+                            realname='_tevent.so',
+                            cflags='-DPACKAGE_VERSION=\"%s\"' % VERSION)
+
+
+            bld.INSTALL_WILDCARD('${PYTHONARCHDIR}', 'tevent.py', flat=False)
+
         # install out various python scripts for use by make test
         bld.SAMBA_SCRIPT('tevent_python',
                          pattern='tevent.py',
                          installdir='python')
 
-        bld.INSTALL_WILDCARD('${PYTHONARCHDIR}', 'tevent.py', flat=False)
-
 
 def test(ctx):
     '''test tevent'''
     print("The tevent testsuite is part of smbtorture in samba4")
+
+    pyret = samba_utils.RUN_PYTHON_TESTS(['bindings.py'])
+    sys.exit(pyret)
 
 
 def dist():

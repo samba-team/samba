@@ -2971,6 +2971,8 @@ typedef uint32_t HRESULT;
 
 const char *hresult_errstr_const(HRESULT err_code);
 
+const char *hresult_errstr(HRESULT err_code);
+
 #define FACILITY_WIN32 0x0007
 #define WIN32_FROM_HRESULT(x) (HRES_ERROR_V(x) == 0 ? HRES_ERROR_V(x) : ~((FACILITY_WIN32 << 16) | 0x80000000) & HRES_ERROR_V(x))
 #define HRESULT_IS_LIKELY_WERR(x) ((HRES_ERROR_V(x) & 0xFFFF0000) == 0x80070000)

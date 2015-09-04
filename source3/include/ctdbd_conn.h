@@ -20,7 +20,7 @@
 #ifndef _CTDBD_CONN_H
 #define _CTDBD_CONN_H
 
-#include "tdb_compat.h"
+#include <tdb.h>
 
 struct ctdbd_connection;
 struct messaging_context;
@@ -38,12 +38,9 @@ struct messaging_context *ctdb_conn_msg_ctx(struct ctdbd_connection *conn);
 
 int ctdbd_conn_get_fd(struct ctdbd_connection *conn);
 
-NTSTATUS ctdbd_messaging_send(struct ctdbd_connection *conn,
-			      uint32_t dst_vnn, uint64_t dst_srvid,
-			      struct messaging_rec *msg);
-NTSTATUS ctdbd_messaging_send_blob(struct ctdbd_connection *conn,
-				   uint32_t dst_vnn, uint64_t dst_srvid,
-				   const uint8_t *buf, size_t buflen);
+NTSTATUS ctdbd_messaging_send_iov(struct ctdbd_connection *conn,
+				  uint32_t dst_vnn, uint64_t dst_srvid,
+				  const struct iovec *iov, int iovlen);
 
 bool ctdbd_process_exists(struct ctdbd_connection *conn, uint32_t vnn,
 			  pid_t pid);
@@ -78,11 +75,11 @@ NTSTATUS ctdbd_traverse(uint32_t db_id,
 NTSTATUS ctdbd_register_ips(struct ctdbd_connection *conn,
 			    const struct sockaddr_storage *server,
 			    const struct sockaddr_storage *client,
-			    bool (*release_ip_handler)(const char *ip_addr,
-						       void *private_data),
+			    int (*cb)(uint32_t src_vnn, uint32_t dst_vnn,
+				      uint64_t dst_srvid,
+				      const uint8_t *msg, size_t msglen,
+				      void *private_data),
 			    void *private_data);
-
-NTSTATUS ctdbd_register_reconfigure(struct ctdbd_connection *conn);
 
 NTSTATUS ctdbd_control_local(struct ctdbd_connection *conn, uint32_t opcode,
 			     uint64_t srvid, uint32_t flags, TDB_DATA data,
@@ -90,7 +87,15 @@ NTSTATUS ctdbd_control_local(struct ctdbd_connection *conn, uint32_t opcode,
 			     int *cstatus);
 NTSTATUS ctdb_watch_us(struct ctdbd_connection *conn);
 NTSTATUS ctdb_unwatch(struct ctdbd_connection *conn);
-NTSTATUS register_with_ctdbd(struct ctdbd_connection *conn, uint64_t srvid);
+
+struct ctdb_req_message;
+
+NTSTATUS register_with_ctdbd(struct ctdbd_connection *conn, uint64_t srvid,
+			     int (*cb)(uint32_t src_vnn, uint32_t dst_vnn,
+				       uint64_t dst_srvid,
+				       const uint8_t *msg, size_t msglen,
+				       void *private_data),
+			     void *private_data);
 NTSTATUS ctdbd_probe(void);
 
 #endif /* _CTDBD_CONN_H */

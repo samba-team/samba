@@ -418,16 +418,34 @@ struct open_socket_out_state {
 	socklen_t salen;
 	uint16_t port;
 	int wait_usec;
+	struct tevent_req *connect_subreq;
 };
 
 static void open_socket_out_connected(struct tevent_req *subreq);
 
-static int open_socket_out_state_destructor(struct open_socket_out_state *s)
+static void open_socket_out_cleanup(struct tevent_req *req,
+				    enum tevent_req_state req_state)
 {
-	if (s->fd != -1) {
-		close(s->fd);
+	struct open_socket_out_state *state =
+		tevent_req_data(req, struct open_socket_out_state);
+
+	/*
+	 * Make sure that the async_connect_send subreq has a chance to reset
+	 * fcntl before the socket goes away.
+	 */
+	TALLOC_FREE(state->connect_subreq);
+
+	if (req_state == TEVENT_REQ_DONE) {
+		/*
+		 * we keep the socket open for the caller to use
+		 */
+		return;
 	}
-	return 0;
+
+	if (state->fd != -1) {
+		close(state->fd);
+		state->fd = -1;
+	}
 }
 
 /****************************************************************************
@@ -441,7 +459,7 @@ struct tevent_req *open_socket_out_send(TALLOC_CTX *mem_ctx,
 					int timeout)
 {
 	char addr[INET6_ADDRSTRLEN];
-	struct tevent_req *result, *subreq;
+	struct tevent_req *result;
 	struct open_socket_out_state *state;
 	NTSTATUS status;
 
@@ -461,7 +479,8 @@ struct tevent_req *open_socket_out_send(TALLOC_CTX *mem_ctx,
 		status = map_nt_error_from_unix(errno);
 		goto post_status;
 	}
-	talloc_set_destructor(state, open_socket_out_state_destructor);
+
+	tevent_req_set_cleanup_fn(result, open_socket_out_cleanup);
 
 	if (!tevent_req_set_endtime(
 		    result, ev, timeval_current_ofs_msec(timeout))) {
@@ -495,16 +514,17 @@ struct tevent_req *open_socket_out_send(TALLOC_CTX *mem_ctx,
 	print_sockaddr(addr, sizeof(addr), &state->ss);
 	DEBUG(3,("Connecting to %s at port %u\n", addr,	(unsigned int)port));
 
-	subreq = async_connect_send(state, state->ev, state->fd,
-				    (struct sockaddr *)&state->ss,
-				    state->salen, NULL, NULL, NULL);
-	if ((subreq == NULL)
+	state->connect_subreq = async_connect_send(
+		state, state->ev, state->fd, (struct sockaddr *)&state->ss,
+		state->salen, NULL, NULL, NULL);
+	if ((state->connect_subreq == NULL)
 	    || !tevent_req_set_endtime(
-		    subreq, state->ev,
+		    state->connect_subreq, state->ev,
 		    timeval_current_ofs(0, state->wait_usec))) {
 		goto fail;
 	}
-	tevent_req_set_callback(subreq, open_socket_out_connected, result);
+	tevent_req_set_callback(state->connect_subreq,
+				open_socket_out_connected, result);
 	return result;
 
  post_status:
@@ -526,6 +546,7 @@ static void open_socket_out_connected(struct tevent_req *subreq)
 
 	ret = async_connect_recv(subreq, &sys_errno);
 	TALLOC_FREE(subreq);
+	state->connect_subreq = NULL;
 	if (ret == 0) {
 		tevent_req_done(req);
 		return;
@@ -559,6 +580,7 @@ static void open_socket_out_connected(struct tevent_req *subreq)
 			tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
 			return;
 		}
+		state->connect_subreq = subreq;
 		tevent_req_set_callback(subreq, open_socket_out_connected, req);
 		return;
 	}
@@ -581,10 +603,12 @@ NTSTATUS open_socket_out_recv(struct tevent_req *req, int *pfd)
 	NTSTATUS status;
 
 	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
 		return status;
 	}
 	*pfd = state->fd;
 	state->fd = -1;
+	tevent_req_received(req);
 	return NT_STATUS_OK;
 }
 
@@ -1363,7 +1387,7 @@ struct tevent_req *getaddrinfo_send(TALLOC_CTX *mem_ctx,
 static void getaddrinfo_do(void *private_data)
 {
 	struct getaddrinfo_state *state =
-		(struct getaddrinfo_state *)private_data;
+		talloc_get_type_abort(private_data, struct getaddrinfo_state);
 
 	state->ret = getaddrinfo(state->node, state->service, state->hints,
 				 &state->res);

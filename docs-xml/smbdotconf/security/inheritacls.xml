@@ -1,6 +1,6 @@
 <samba:parameter name="inherit acls"
                  context="S"
-				 type="boolean"
+                 type="boolean"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>This parameter can be used to ensure that if default acls

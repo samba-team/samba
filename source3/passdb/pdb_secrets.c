@@ -40,7 +40,7 @@
  **/
 
 struct list_trusted_domains_state {
-	uint32 num_domains;
+	uint32_t num_domains;
 	struct trustdom_info **domains;
 };
 
@@ -105,7 +105,7 @@ static int list_trusted_domain(struct db_record *rec, void *private_data)
 	return 0;
 }
 
-NTSTATUS secrets_trusted_domains(TALLOC_CTX *mem_ctx, uint32 *num_domains,
+NTSTATUS secrets_trusted_domains(TALLOC_CTX *mem_ctx, uint32_t *num_domains,
 				 struct trustdom_info ***domains)
 {
 	struct list_trusted_domains_state state;

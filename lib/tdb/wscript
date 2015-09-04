@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 APPNAME = 'tdb'
-VERSION = '1.3.4'
+VERSION = '1.3.7'
 
 blddir = 'bin'
 
@@ -15,7 +15,7 @@ sys.path.insert(0, srcdir + '/buildtools/wafsamba')
 
 import wafsamba, samba_dist, Options, Logs
 
-samba_dist.DIST_DIRS('lib/tdb:. lib/replace:lib/replace buildtools:buildtools')
+samba_dist.DIST_DIRS('lib/tdb:. lib/replace:lib/replace buildtools:buildtools third_party/waf:third_party/waf')
 
 tdb1_unit_tests = [
     'run-3G-file',
@@ -41,6 +41,7 @@ tdb1_unit_tests = [
     'run-wronghash-fail',
     'run-zero-append',
     'run-marklock-deadlock',
+    'run-allrecord-traverse-deadlock',
     'run-mutex-openflags2',
     'run-mutex-trylock',
     'run-mutex-allrecord-bench',
@@ -95,8 +96,7 @@ def configure(conf):
 
     if not conf.env.disable_python:
         # also disable if we don't have the python libs installed
-        conf.find_program('python', var='PYTHON')
-        conf.check_tool('python')
+        conf.SAMBA_CHECK_PYTHON(mandatory=False)
         conf.check_python_version((2,4,2))
         conf.SAMBA_CHECK_PYTHON_HEADERS(mandatory=False)
         if not conf.env.HAVE_PYTHON_H:
@@ -165,25 +165,35 @@ def build(bld):
                          'tools/tdbtool.c',
                          'tdb', manpages='man/tdbtool.8')
 
-        # FIXME: This hardcoded list is stupid, stupid, stupid.
-        bld.SAMBA_SUBSYSTEM('tdb-test-helpers',
-                            'test/external-agent.c test/lock-tracking.c test/logging.c',
-                            tdb_deps,
-                            includes='include')
+        if bld.env.standalone_tdb:
+            # FIXME: This hardcoded list is stupid, stupid, stupid.
+            bld.SAMBA_SUBSYSTEM('tdb-test-helpers',
+                                'test/external-agent.c test/lock-tracking.c test/logging.c',
+                                tdb_deps,
+                                includes='include')
 
-        for t in tdb1_unit_tests:
-            b = "tdb1-" + t
-            s = "test/" + t + ".c"
-            bld.SAMBA_BINARY(b, s, 'replace tdb-test-helpers',
-                             includes='include', install=False)
+            for t in tdb1_unit_tests:
+                b = "tdb1-" + t
+                s = "test/" + t + ".c"
+                bld.SAMBA_BINARY(b, s, 'replace tdb-test-helpers',
+                                 includes='include', install=False)
 
     if not bld.CONFIG_SET('USING_SYSTEM_PYTDB'):
-        bld.SAMBA_PYTHON('pytdb',
-                         'pytdb.c',
-                         deps='tdb',
-                         enabled=not bld.env.disable_python,
-                         realname='tdb.so',
-                         cflags='-DPACKAGE_VERSION=\"%s\"' % VERSION)
+        for env in bld.gen_python_environments(['PKGCONFIGDIR']):
+            bld.SAMBA_PYTHON('pytdb',
+                             'pytdb.c',
+                             deps='tdb',
+                             enabled=not bld.env.disable_python,
+                             realname='tdb.so',
+                             cflags='-DPACKAGE_VERSION=\"%s\"' % VERSION)
+
+        if not bld.env.disable_python:
+            for env in bld.gen_python_environments(['PKGCONFIGDIR']):
+                bld.SAMBA_SCRIPT('_tdb_text.py',
+                                 pattern='_tdb_text.py',
+                                 installdir='python')
+
+                bld.INSTALL_FILES('${PYTHONARCHDIR}', '_tdb_text.py')
 
 def testonly(ctx):
     '''run tdb testsuite'''
@@ -223,7 +233,10 @@ def testonly(ctx):
         print("testsuite returned %d" % ret)
         if ret != 0:
             ecode = ret
-    sys.exit(ecode)
+
+    pyret = samba_utils.RUN_PYTHON_TESTS(['python/tests/simple.py'])
+    print("python testsuite returned %d" % pyret)
+    sys.exit(ecode or pyret)
 
 # WAF doesn't build the unit tests for this, maybe because they don't link with tdb?
 # This forces it

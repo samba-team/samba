@@ -34,7 +34,7 @@ samba_dist.DIST_DIRS('''ctdb:. lib/replace:lib/replace lib/talloc:lib/talloc
                         third_party/popt:third_party/popt
                         lib/util:lib/util lib/tdb_wrap:lib/tdb_wrap
                         lib/ccan:lib/ccan libcli/util:libcli/util
-                        buildtools:buildtools''')
+                        buildtools:buildtools third_party/waf:third_party/waf''')
 
 
 def set_options(opt):
@@ -60,7 +60,7 @@ def set_options(opt):
                    action="store", dest='ctdb_logdir', default=None)
     opt.add_option('--with-socketpath',
                    help=("path to CTDB daemon socket"),
-                   action="store_true", dest='ctdb_sockpath', default=False)
+                   action="store", dest='ctdb_sockpath', default=None)
 
 
 def configure(conf):
@@ -212,11 +212,6 @@ def configure(conf):
             conf.ADD_EXTRA_INCLUDES('#ctdb')
         conf.ADD_EXTRA_INCLUDES('#lib #lib/replace')
 
-        conf.SET_TARGET_TYPE('systemd-daemon', 'EMPTY')
-
-        del(conf.env.defines['PYTHONDIR'])
-        del(conf.env.defines['PYTHONARCHDIR'])
-
         conf.DEFINE('HAVE_CONFIG_H', 1, add_to_cflags=True)
         conf.DEFINE('SAMBA_UTIL_CORE_ONLY', 1, add_to_cflags=True)
         conf.SAMBA_CONFIG_H()
@@ -227,24 +222,28 @@ def build(bld):
         # enable building of public headers in the build tree
         bld.env.build_public_headers = 'include/public'
 
-    if bld.env.standalone_ctdb:
-        ctdb_mkversion = '../packaging/mkversion.sh'
-    else:
-        ctdb_mkversion = '../ctdb/packaging/mkversion.sh'
-    t = bld.SAMBA_GENERATOR('ctdb-version-header',
-                            target='include/ctdb_version.h',
-                            rule='%s ${TGT} %s' % (ctdb_mkversion, VERSION),
-                            dep_vars=['VERSION'])
-    t.env.VERSION = VERSION
+    version_h = samba_utils.os_path_relpath(os.path.join(Options.launch_dir,
+                                                         "version.h"),
+                                            bld.curdir)
 
     if bld.env.standalone_ctdb:
-        version_h = samba_utils.os_path_relpath(os.path.join(Options.launch_dir,
-                                                             "version.h"),
-                                                bld.curdir)
-        t.bld.SAMBA_GENERATOR('ctdb-samba-version-header',
-                              target=version_h,
-                              rule='printf "#include \\"ctdb_version.h\\" \\n#define SAMBA_VERSION_STRING CTDB_VERSION_STRING\\n" > ${TGT}',
-                              dep_vars=['VERSION'])
+        ctdb_mkversion = '../packaging/mkversion.sh'
+        t = bld.SAMBA_GENERATOR('ctdb-version-header',
+                                target='include/ctdb_version.h',
+                                rule='%s ${TGT} %s' % (ctdb_mkversion, VERSION),
+                                dep_vars=['VERSION'])
+        t.env.VERSION = VERSION
+
+        t = bld.SAMBA_GENERATOR('ctdb-samba-version-header',
+                                target=version_h,
+                                rule='printf "#include \\"ctdb_version.h\\" \\n#define SAMBA_VERSION_STRING CTDB_VERSION_STRING\\n" > ${TGT}',
+                                dep_vars=['VERSION'])
+        t.env.VERSION = VERSION
+    else:
+        t = bld.SAMBA_GENERATOR('ctdb-samba-version-header',
+                                target='include/ctdb_version.h',
+                                rule='printf "#include \\"%s\\" \\n#define CTDB_VERSION_STRING SAMBA_VERSION_STRING\\n" > ${TGT}' % version_h,
+                                dep_vars=['VERSION'])
         t.env.VERSION = VERSION
 
     bld.RECURSE('lib/replace')
@@ -349,7 +348,7 @@ def build(bld):
                                           include/ctdb_private.h
                                           include/ctdb_protocol.h
                                           include/ctdb_typesafe_cb.h''',
-                        deps='replace popt talloc tevent tdb')
+                        deps='replace popt talloc tevent tdb talloc_report')
 
     bld.SAMBA_BINARY('ctdbd',
                      source='',
@@ -421,7 +420,7 @@ def build(bld):
                          source='utils/pmda/pmda_ctdb.c',
                          includes='include include/internal',
                          deps='''ctdb-client ctdb-common ctdb-system
-                                 pcp_pmda pcp''',
+                                 ctdb-common-util pcp_pmda pcp''',
                          install_path='${CTDB_PMDADIR}')
         bld.INSTALL_FILES('${CTDB_PMDADIR}', 'utils/pmda/Install',
                           destname='Install')
@@ -465,7 +464,7 @@ def build(bld):
 
     etc_subdirs = [
         'events.d',
-        'nfs-rpc-checks.d'
+        'nfs-checks.d'
     ]
 
     if bld.env.standalone_ctdb:
@@ -487,6 +486,7 @@ def build(bld):
         'debug-hung-script.sh',
         'debug_locks.sh',
         'gcore_trace.sh',
+        'nfs-linux-kernel-callout',
         'notify.sh',
         'statd-callout'
     ]
@@ -547,7 +547,7 @@ def build(bld):
     bld.SAMBA_BINARY('ctdb_takeover_tests',
                      source='tests/src/ctdb_takeover_tests.c',
                      deps='''replace popt tdb tevent talloc ctdb-system
-                             samba-util tdb-wrap''' +
+                             samba-util tdb-wrap talloc_report''' +
                           ib_deps,
                      includes='include include/internal',
                      install_path='${CTDB_TEST_LIBDIR}')
@@ -628,7 +628,9 @@ def build(bld):
     test_eventscript_links = [
         'events.d',
         'functions',
-        'nfs-rpc-checks.d'
+        'nfs-checks.d',
+        'nfs-linux-kernel-callout',
+        'statd-callout'
     ]
 
     test_link_dir = os.path.join(bld.env.CTDB_TEST_DATADIR,
@@ -653,7 +655,8 @@ def test(ctx):
 
 
 def autotest(ctx):
-    cmd = 'LD_PRELOAD=bin/shared/libsocket-wrapper.so tests/run_tests.sh -e -S -C'
+    ld = 'LD_PRELOAD=%s/bin/shared/libsocket-wrapper.so' % os.getcwd()
+    cmd = '%s tests/run_tests.sh -e -S -C' % ld
     ret = samba_utils.RUN_COMMAND(cmd)
     if ret != 0:
         print('autotest exited with exit status %d' % ret)
@@ -711,7 +714,8 @@ def dist():
 
 
 def rpmonly(ctx):
-    cmd = 'rpmbuild -ta --clean --rmsource ctdb-%s.tar.gz' % VERSION
+    opts = os.getenv('RPM_OPTIONS') or ''
+    cmd = 'rpmbuild -ta --clean --rmsource %s ctdb-%s.tar.gz' % (opts, VERSION)
     ret = samba_utils.RUN_COMMAND(cmd)
     if ret != 0:
         print('rpmbuild exited with exit status %d' % ret)

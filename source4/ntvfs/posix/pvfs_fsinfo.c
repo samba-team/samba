@@ -201,6 +201,21 @@ NTSTATUS pvfs_fsinfo(struct ntvfs_module_context *ntvfs,
 		fs->objectid_information.out.guid = *pvfs->base_fs_uuid;
 		return NT_STATUS_OK;
 
+	case RAW_QFS_SECTOR_SIZE_INFORMATION:
+		fs->sector_size_info.out.logical_bytes_per_sector = block_size;
+		fs->sector_size_info.out.phys_bytes_per_sector_atomic
+								= block_size;
+		fs->sector_size_info.out.phys_bytes_per_sector_perf
+								= block_size;
+		fs->sector_size_info.out.fs_effective_phys_bytes_per_sector_atomic
+								= block_size;
+		fs->sector_size_info.out.flags
+					= QFS_SSINFO_FLAGS_ALIGNED_DEVICE
+				| QFS_SSINFO_FLAGS_PARTITION_ALIGNED_ON_DEVICE;
+		fs->sector_size_info.out.byte_off_sector_align = 0;
+		fs->sector_size_info.out.byte_off_partition_align = 0;
+		return NT_STATUS_OK;
+
 	default:
 		break;
 	}

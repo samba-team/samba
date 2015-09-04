@@ -2,7 +2,7 @@
 
 bld.SAMBA3_SUBSYSTEM('UNIX_MSG',
                      source='unix_msg.c',
-		     deps='replace PTHREADPOOL iov_buf')
+		     deps='replace PTHREADPOOL iov_buf msghdr')
 
 bld.SAMBA3_BINARY('unix_msg_test',
                   source='tests.c',

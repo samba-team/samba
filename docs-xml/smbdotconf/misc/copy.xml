@@ -1,7 +1,8 @@
 <samba:parameter name="copy"
                  type="string"
-                 context="S" hide="1"
+                 context="S"
                  generated_function="0"
+                 handler="handle_copy"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This parameter allows you to &quot;clone&quot; service 

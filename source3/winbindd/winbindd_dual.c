@@ -119,6 +119,7 @@ static NTSTATUS child_write_response(int sock, struct winbindd_response *wrsp)
 
 struct wb_child_request_state {
 	struct tevent_context *ev;
+	struct tevent_req *subreq;
 	struct winbindd_child *child;
 	struct winbindd_request *request;
 	struct winbindd_response *response;
@@ -129,6 +130,9 @@ static bool fork_domain_child(struct winbindd_child *child);
 static void wb_child_request_trigger(struct tevent_req *req,
 					    void *private_data);
 static void wb_child_request_done(struct tevent_req *subreq);
+
+static void wb_child_request_cleanup(struct tevent_req *req,
+				     enum tevent_req_state req_state);
 
 struct tevent_req *wb_child_request_send(TALLOC_CTX *mem_ctx,
 					 struct tevent_context *ev,
@@ -153,6 +157,9 @@ struct tevent_req *wb_child_request_send(TALLOC_CTX *mem_ctx,
 		tevent_req_oom(req);
 		return tevent_req_post(req, ev);
 	}
+
+	tevent_req_set_cleanup_fn(req, wb_child_request_cleanup);
+
 	return req;
 }
 
@@ -173,6 +180,8 @@ static void wb_child_request_trigger(struct tevent_req *req,
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
+
+	state->subreq = subreq;
 	tevent_req_set_callback(subreq, wb_child_request_done, req);
 	tevent_req_set_endtime(req, state->ev, timeval_current_ofs(300, 0));
 }
@@ -186,15 +195,11 @@ static void wb_child_request_done(struct tevent_req *subreq)
 	int ret, err;
 
 	ret = wb_simple_trans_recv(subreq, state, &state->response, &err);
-	TALLOC_FREE(subreq);
+	/* Freeing the subrequest is deferred until the cleanup function,
+	 * which has to know whether a subrequest exists, and consequently
+	 * decide whether to shut down the pipe to the child process.
+	 */
 	if (ret == -1) {
-		/*
-		 * The basic parent/child communication broke, close
-		 * our socket
-		 */
-		close(state->child->sock);
-		state->child->sock = -1;
-		DLIST_REMOVE(winbindd_children, state->child);
 		tevent_req_error(req, err);
 		return;
 	}
@@ -212,6 +217,35 @@ int wb_child_request_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 	}
 	*presponse = talloc_move(mem_ctx, &state->response);
 	return 0;
+}
+
+static void wb_child_request_cleanup(struct tevent_req *req,
+				     enum tevent_req_state req_state)
+{
+	struct wb_child_request_state *state =
+	    tevent_req_data(req, struct wb_child_request_state);
+
+	if (state->subreq == NULL) {
+		/* nothing to cleanup */
+		return;
+	}
+
+	TALLOC_FREE(state->subreq);
+
+	if (req_state == TEVENT_REQ_DONE) {
+		/* transmitted request and got response */
+		return;
+	}
+
+	/*
+	 * Failed to transmit and receive response, or request
+	 * cancelled while being serviced.
+	 * The basic parent/child communication broke, close
+	 * our socket
+	 */
+	close(state->child->sock);
+	state->child->sock = -1;
+	DLIST_REMOVE(winbindd_children, state->child);
 }
 
 static bool winbindd_child_busy(struct winbindd_child *child)
@@ -786,7 +820,7 @@ void winbind_msg_onlinestatus(struct messaging_context *msg_ctx,
 	}
 
 	messaging_send_buf(msg_ctx, *sender, MSG_WINBIND_ONLINESTATUS, 
-			   (const uint8 *)message, strlen(message) + 1);
+			   (const uint8_t *)message, strlen(message) + 1);
 
 	talloc_destroy(mem_ctx);
 }

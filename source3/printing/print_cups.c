@@ -148,7 +148,7 @@ static http_t *cups_connect(TALLOC_CTX *frame)
         alarm(0);
 
 	if (http == NULL) {
-		DEBUG(0,("Unable to connect to CUPS server %s:%d - %s\n",
+		DEBUG(3,("Unable to connect to CUPS server %s:%d - %s\n",
 			 server, port, strerror(errno)));
 	}
 
@@ -498,7 +498,7 @@ struct cups_async_cb_args {
 
 static void cups_async_callback(struct tevent_context *event_ctx,
 				struct tevent_fd *event,
-				uint16 flags,
+				uint16_t flags,
 				void *p)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
@@ -526,7 +526,7 @@ static void cups_async_callback(struct tevent_context *event_ctx,
 	}
 
 	if (!NT_STATUS_IS_OK(pcap_data.status)) {
-		DEBUG(0,("failed to retrieve printer list: %s\n",
+		DEBUG(3,("failed to retrieve printer list: %s\n",
 			 nt_errstr(pcap_data.status)));
 		goto err_out;
 	}
@@ -1157,7 +1157,7 @@ static int cups_queue_get(const char *sharename,
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_LANGUAGE,
                      "attributes-natural-language", NULL, language->language);
 
-        ippAddStrings(request, IPP_TAG_OPERATION, IPP_TAG_NAME,
+        ippAddStrings(request, IPP_TAG_OPERATION, IPP_TAG_KEYWORD,
 	              "requested-attributes",
 		      (sizeof(jattrs) / sizeof(jattrs[0])),
 		      NULL, jattrs);

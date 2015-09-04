@@ -54,7 +54,7 @@ WERROR reg_openkey_wrap(TALLOC_CTX *ctx, struct samba3_registry_key *parent,
 }
 
 WERROR reg_enumvalue_wrap(TALLOC_CTX *ctx, struct samba3_registry_key *key,
-			  uint32 idx, char **name, uint32_t *type,
+			  uint32_t idx, char **name, uint32_t *type,
 			  DATA_BLOB *data)
 {
 	struct registry_value *val = NULL;
@@ -87,7 +87,7 @@ WERROR reg_queryvalue_wrap(TALLOC_CTX *ctx, struct samba3_registry_key *key,
 }
 
 WERROR reg_enumkey_wrap(TALLOC_CTX *ctx, struct samba3_registry_key *key,
-			uint32 idx, char **name, NTTIME *last_write_time)
+			uint32_t idx, char **name, NTTIME *last_write_time)
 {
 	return reg_enumkey(ctx, key->key, idx, name, last_write_time);
 }

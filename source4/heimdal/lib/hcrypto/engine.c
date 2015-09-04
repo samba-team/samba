@@ -88,7 +88,7 @@ ENGINE_finish(ENGINE *engine)
     if(engine->destroy)
 	(*engine->destroy)(engine);
 
-    memset(engine, 0, sizeof(engine));
+    memset(engine, 0, sizeof(*engine));
     engine->references = -1;
 
 

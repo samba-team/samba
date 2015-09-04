@@ -1,7 +1,6 @@
 <samba:parameter name="cups connection timeout"
                  context="G"
 		 type="integer"
-		 print="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>

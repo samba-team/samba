@@ -38,7 +38,7 @@ static enum tree_level level = LEV_SHARE;
 struct smb_name_list {
         struct smb_name_list *prev, *next;
         char *name, *comment;
-        uint32 server_type;
+        uint32_t server_type;
 };
 
 static struct smb_name_list *workgroups, *servers, *shares;
@@ -49,7 +49,7 @@ static void free_name_list(struct smb_name_list *list)
                 DLIST_REMOVE(list, list);
 }
 
-static void add_name(const char *machine_name, uint32 server_type,
+static void add_name(const char *machine_name, uint32_t server_type,
                      const char *comment, void *state)
 {
         struct smb_name_list **name_list = (struct smb_name_list **)state;
@@ -157,7 +157,7 @@ static bool get_servers(char *workgroup, struct user_auth_info *user_info)
 }
 
 static bool get_rpc_shares(struct cli_state *cli,
-			   void (*fn)(const char *, uint32, const char *, void *),
+			   void (*fn)(const char *, uint32_t, const char *, void *),
 			   void *state)
 {
 	NTSTATUS status;
@@ -302,7 +302,7 @@ int main(int argc, char *argv[])
 	poptContext pc;
 
 	/* Initialise samba stuff */
-	load_case_tables();
+	smb_init_locale();
 
 	setlinebuf(stdout);
 

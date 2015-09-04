@@ -44,7 +44,7 @@
 ^samba3.smb2.durable-open-disconnect    # Not a test, but a way to create a disconnected durable
 ^samba3.smb2.scan                       # No tests
 ^samba3.smb2.oplock.levelii501		# No test yet
-^samba3.rpc.samr.passwords.lockout\(plugin_s4_dc\) # No point running this version, it just waits 12 times longer the samba4 version of this test, covering the same code
+^samba3.rpc.samr.passwords.lockout\(ad_dc\) # No point running this version, it just waits 12 times longer the samba4 version of this test, covering the same code
 ^samba4.base.iometer
 ^samba4.base.casetable
 ^samba4.base.nttrans
@@ -53,7 +53,7 @@
 ^samba4.smb2.hold-oplock 		# Not a test, but a way to block other clients for a test
 ^samba4.raw.ping.pong		# Needs second server to test
 ^samba4.rpc.samr.accessmask
-^samba4.rpc.samr.passwords.*ncacn_np\(dc\) # currently fails, possibly config issue
+^samba4.rpc.samr.passwords.*ncacn_np\(ad_dc_ntvfs\) # currently fails, possibly config issue
 ^samba4.rpc.samr.passwords.*s4member       # currently fails, possibly config issue
 ^samba4.raw.scan.eamax
 ^samba4.smb2.notify
@@ -84,7 +84,8 @@
 ^samba4.rpc.frsapi							# Not provided by Samba 4
 ^samba4.rpc.ntsvcs							# Not provided by Samba 4
 ^samba4.rpc.dfs								# Not provided by Samba 4
-^samba4.rpc.fsrvp							# fsrvp server support not yet provided
+^samba4.rpc.witness							# Not provided by Samba 4
+^samba4.rpc.clusapi							# clusapi server support not yet provided
 ^samba4.*.base.samba3.*						# Samba3-specific test
 ^samba4.*.raw.samba3.*						# Samba3-specific test
 ^samba4.rpc..*samba3.*						# Samba3-specific test
@@ -102,6 +103,7 @@ bench # don't run benchmarks in our selftest
 ^samba4.*.base.delaywrite # This is randomly failing, depending on timing and filesystem features
 ^samba4.*.base.winattr
 ^samba4.*.base.birthtime
+^samba4.*base.defer_open
 ^samba4.smb2.acls # new test which doesn't pass yet
 # ktutil might not be installed or from mit...
 # we should build a samba4ktutil and use that instead

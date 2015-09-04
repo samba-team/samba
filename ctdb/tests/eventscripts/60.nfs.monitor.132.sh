@@ -2,14 +2,13 @@
 
 . "${TEST_SCRIPTS_DIR}/unit.sh"
 
-define_test "rquotad down, 5 iterations, back up after 1"
+define_test "rquotad down, 7 iterations, back up after 2"
 
-# rquotad fails once but then comes back of its own accord after 1
+# rquotad fails once but then comes back after restart after 2nd
 # failure.
 
 setup_nfs
 rpc_services_down "rquotad"
 
-iterate_test 5 'ok_null' \
-    1 'rpc_set_service_failure_response "rquotad"' \
-    2 'rpc_services_up "rquotad"'
+nfs_iterate_test 7 "rquotad" \
+    3 'rpc_services_up "rquotad"'

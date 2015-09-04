@@ -6,8 +6,42 @@ not_implemented ()
     exit 2
 }
 
+error ()
+{
+    cat >&2 <<EOF
+Load smb config files from ${CTDB_ETCDIR}/samba/smb.conf
+rlimit_max: increasing rlimit_max (2048) to minimum Windows limit (16384)
+EOF
+
+    for i in $FAKE_SHARES ; do
+	bi=$(basename "$i")
+	echo "Processing section \"[${bi}]\""
+    done >&2
+
+    cat >&2 <<EOF
+Loaded services file OK.
+WARNING: 'workgroup' and 'netbios name' must differ.
+
+EOF
+
+    exit 1
+}
+
+timeout ()
+{
+    echo "$0: INTERNAL ERROR - timeout stub should avoid this" >&2
+}
+
+if [ -n "$FAKE_TESTPARM_FAIL" ] ; then
+    error
+fi
+
+if [ -n "$FAKE_TIMEOUT" ] ; then
+    timeout
+fi
+
 # Ensure that testparm always uses our canned configuration instead of
-# the global one, unless some other file is specified. 
+# the global one, unless some other file is specified.
 
 file=""
 parameter=""

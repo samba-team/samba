@@ -233,22 +233,6 @@ static int test_ctdb_get_peer_pid(void)
 	return 0;
 }
 
-static int test_ctdb_get_process_name(void)
-{
-	char *process_name = NULL;
-	globals.testcount++;
-	process_name = ctdb_get_process_name(globals.helper_pid);
-	if ((process_name == NULL) || !strcmp(process_name, "unknown")) {
-		DEBUG(DEBUG_CRIT,("Test failed: Invalid process name of %d: %s\n", globals.helper_pid, process_name));
-		free(process_name);
-		return -1;
-	}
-	DEBUG(DEBUG_INFO,("Test OK: Name of PID=%d: %s\n", globals.helper_pid, process_name));
-	globals.successcount++;
-	free(process_name);
-	return 0;
-}
-
 /*
   main program
 */
@@ -301,8 +285,6 @@ int main(int argc, const char *argv[])
 	/* FIXME: Test ctdb_sys_{open,close}_capture_socket, ctdb_sys_read_tcp_packet */
 	test_ctdb_sys_check_iface_exists();
 	test_ctdb_get_peer_pid();
-	test_ctdb_get_process_name();
-	/* FIXME: Test ctdb_get_lock_info, ctdb_get_blocker_pid*/
 
 	socket_server_close();
 

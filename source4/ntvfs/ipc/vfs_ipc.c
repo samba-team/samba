@@ -737,11 +737,13 @@ static NTSTATUS ipc_close(struct ntvfs_module_context *ntvfs,
 				    struct ipc_private);
 	struct pipe_state *p;
 
-	if (io->generic.level != RAW_CLOSE_CLOSE) {
+	if (io->generic.level != RAW_CLOSE_GENERIC) {
 		return ntvfs_map_close(ntvfs, req, io);
 	}
 
-	p = pipe_state_find(ipriv, io->close.in.file.ntvfs);
+	ZERO_STRUCT(io->generic.out);
+
+	p = pipe_state_find(ipriv, io->generic.in.file.ntvfs);
 	if (!p) {
 		return NT_STATUS_INVALID_HANDLE;
 	}

@@ -1,4 +1,16 @@
-This directory includes sample CTDB cluster configurations.
+This directory includes...
 
-  o cluster.conf - Basic cluster setup
-  o natgw.conf   - Basic cluster setup with NAT gateway feature
+Sample CTDB cluster configurations
+
+  o cluster.conf  - Basic cluster setup
+  o natgw.conf    - Basic cluster setup with NAT gateway feature
+  o external.conf - Basic cluster setup with externally managed public IP addresses
+
+
+Sample 60.nfs configuration for NFS ganesha - callout script and
+.check file
+
+  o nfs-ganesha-callout
+  o 20.nfs_ganesha.check
+
+See the comment at the top of nfs-ganesha-callout for instructions.

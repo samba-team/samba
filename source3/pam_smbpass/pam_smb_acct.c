@@ -58,7 +58,6 @@ int pam_sm_acct_mgmt( pam_handle_t *pamh, int flags,
 	TALLOC_CTX *frame = talloc_stackframe();
 
 	/* Samba initialization. */
-	load_case_tables_library();
 
 	ctrl = set_ctrl(pamh, flags, argc, argv );
 

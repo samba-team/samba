@@ -1,7 +1,6 @@
 <samba:parameter name="winbind sealed pipes"
                  context="G"
                  type="boolean"
-                 advanced="1" developer="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This option controls whether any requests from winbindd to domain controllers

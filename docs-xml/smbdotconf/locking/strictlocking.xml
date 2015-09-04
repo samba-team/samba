@@ -1,6 +1,7 @@
 <samba:parameter name="strict locking"
                  context="S"
-				 type="enum"
+                 type="enum"
+                 enumlist="enum_bool_auto"
                  parm="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>

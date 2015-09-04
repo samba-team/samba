@@ -127,7 +127,7 @@ static NTSTATUS cmd_conf(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
 		return NT_STATUS_OK;
 	}
 
-	if (!lp_load(argv[1], False, True, False, True)) {
+	if (!lp_load_with_shares(argv[1])) {
 		printf("Error loading \"%s\"\n", argv[1]);
 		return NT_STATUS_OK;
 	}
@@ -487,7 +487,7 @@ int main(int argc, const char *argv[])
 		.exit_server_cleanly = vfstest_exit_server_cleanly,
 	};
 
-	load_case_tables();
+	smb_init_locale();
 
 	setlinebuf(stdout);
 

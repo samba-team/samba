@@ -35,7 +35,7 @@
 #include "gen_ndr/ndr_dnsp.h"
 #include "gen_ndr/server_id.h"
 #include "messaging/messaging.h"
-#include "lib/cmdline/popt_common.h"
+#include <popt.h>
 #include "lib/util/dlinklist.h"
 #include "dlz_minimal.h"
 #include "dns_server/dnsserver_common.h"
@@ -1304,7 +1304,7 @@ _PUBLIC_ isc_boolean_t dlz_ssumatch(const char *signer, const char *name, const 
 	cli_credentials_set_krb5_context(server_credentials, state->smb_krb5_ctx);
 	cli_credentials_set_conf(server_credentials, state->lp);
 
-	keytab_name = talloc_asprintf(tmp_ctx, "file:%s/dns.keytab",
+	keytab_name = talloc_asprintf(tmp_ctx, "FILE:%s/dns.keytab",
 					lpcfg_private_dir(state->lp));
 	ret = cli_credentials_set_keytab_name(server_credentials, state->lp, keytab_name,
 						CRED_SPECIFIED);

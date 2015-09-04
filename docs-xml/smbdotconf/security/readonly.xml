@@ -1,9 +1,7 @@
 <samba:parameter name="read only"
                  context="S"
-				 type="boolean"
-                 basic="1" advanced="1"
+                 type="boolean"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
-<synonym>write ok</synonym>
 <description>
     <para>An inverted synonym is <smbconfoption name="writeable"/>.</para>
 

@@ -133,7 +133,7 @@ typedef struct copy_clistate {
 	struct cli_state *cli_share_src;
 	struct cli_state *cli_share_dst;
 	char *cwd;
-	uint16 attribute;
+	uint16_t attribute;
 	struct net_context *c;
 }copy_clistate;
 

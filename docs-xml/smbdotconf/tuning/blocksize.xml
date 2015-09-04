@@ -1,5 +1,5 @@
 <samba:parameter name="block size"
-				type="integer"
+                 type="bytes"
                  context="S"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>

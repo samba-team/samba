@@ -1,7 +1,6 @@
 <samba:parameter name="afs token lifetime"
                  context="G"
                  type="integer"
-                 advanced="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This parameter controls the lifetime of tokens that the AFS

@@ -1,7 +1,6 @@
 <samba:parameter name="rpc_server:SERVER"
                  context="G"
-		 type="string"
-		 advanced="1" print="1"
+                 type="string"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>
@@ -33,6 +32,7 @@
 		<listitem><para>ntsvcs       - Plug and Play Services</para></listitem>
 		<listitem><para>eventlog     - Event Logger</para></listitem>
 		<listitem><para>initshutdown - Init Shutdown Service</para></listitem>
+		<listitem><para>mdssvc       - Spotlight</para></listitem>
 	</itemizedlist>
 
 	<para>
@@ -56,8 +56,8 @@
 	</para>
 
 	<para>
-		Currently in Samba3 we support three daemons, spoolssd, epmd and
-		lsasd. These daemons can be enabled using the
+		Currently in Samba3 we support four daemons, spoolssd, epmd,
+		lsasd and mdssd. These daemons can be enabled using the
 		<emphasis>rpc_daemon</emphasis> option. For spoolssd you have
 		to enable the daemon and proxy the named pipe with:
 	</para>
@@ -72,6 +72,9 @@
 
 			rpc_server:spoolss = external
 			rpc_server:epmapper = disabled
+
+			rpc_daemon:mdssd = fork
+			rpc_server:mdssvc = external
 		</programlisting>
 	</para>
 

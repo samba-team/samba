@@ -1,6 +1,6 @@
 <samba:parameter name="allocation roundup size"
                  context="S"
-		 type="integer"
+                 type="bytes"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>This parameter allows an administrator to tune the 

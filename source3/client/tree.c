@@ -30,7 +30,7 @@ static GtkWidget *clist;
 
 struct tree_data {
 
-  guint32 type;    /* Type of tree item, an SMBC_TYPE */
+  guint32_t type;    /* Type of tree item, an SMBC_TYPE */
   char name[256];  /* May need to change this later   */
 
 };
@@ -128,7 +128,7 @@ char *get_path(TALLOC_CTX *ctx, GtkWidget *item)
 
 }
 
-struct tree_data *make_tree_data(guint32 type, const char *name)
+struct tree_data *make_tree_data(guint32_t type, const char *name)
 {
   struct tree_data *p = SMB_MALLOC_P(struct tree_data);
 

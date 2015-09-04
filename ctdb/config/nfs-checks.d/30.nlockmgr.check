@@ -1,0 +1,6 @@
+# nlockmgr
+version="4"
+restart_every=2
+unhealthy_after=6
+service_stop_cmd="$CTDB_NFS_CALLOUT stop nlockmgr"
+service_start_cmd="$CTDB_NFS_CALLOUT start nlockmgr"

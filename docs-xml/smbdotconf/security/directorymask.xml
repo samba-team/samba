@@ -1,6 +1,6 @@
 <samba:parameter name="directory mask"
-	context="S"
-	type="integer"
+                 context="S"
+                 type="octal"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <synonym>directory mode</synonym>
 <description>

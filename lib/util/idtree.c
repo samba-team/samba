@@ -32,8 +32,8 @@
  * @file
  */
 
-#include <talloc.h>
 #include "replace.h"
+#include <talloc.h>
 #include "debug.h"
 #include "idtree.h"
 

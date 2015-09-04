@@ -132,7 +132,7 @@ static const struct generic_mapping ali_generic_mapping = {
 
 static NTSTATUS make_samr_object_sd( TALLOC_CTX *ctx, struct security_descriptor **psd, size_t *sd_size,
                                      const struct generic_mapping *map,
-				     struct dom_sid *sid, uint32 sid_access )
+				     struct dom_sid *sid, uint32_t sid_access )
 {
 	struct dom_sid domadmin_sid;
 	struct security_ace ace[5];		/* at most 5 entries */
@@ -346,7 +346,7 @@ static void samr_clear_sam_passwd(struct samu *sam_pass)
 	pdb_set_nt_passwd(sam_pass, NULL, PDB_DEFAULT);
 }
 
-static uint32 count_sam_users(struct disp_info *info, uint32 acct_flags)
+static uint32_t count_sam_users(struct disp_info *info, uint32_t acct_flags)
 {
 	struct samr_displayentry *entry;
 
@@ -370,7 +370,7 @@ static uint32 count_sam_users(struct disp_info *info, uint32 acct_flags)
 	return info->users->num_entries;
 }
 
-static uint32 count_sam_groups(struct disp_info *info)
+static uint32_t count_sam_groups(struct disp_info *info)
 {
 	struct samr_displayentry *entry;
 
@@ -394,7 +394,7 @@ static uint32 count_sam_groups(struct disp_info *info)
 	return info->groups->num_entries;
 }
 
-static uint32 count_sam_aliases(struct disp_info *info)
+static uint32_t count_sam_aliases(struct disp_info *info)
 {
 	struct samr_displayentry *entry;
 
@@ -437,8 +437,8 @@ NTSTATUS _samr_OpenDomain(struct pipes_struct *p,
 {
 	struct samr_domain_info *dinfo;
 	struct security_descriptor *psd = NULL;
-	uint32    acc_granted;
-	uint32    des_access = r->in.access_mask;
+	uint32_t    acc_granted;
+	uint32_t    des_access = r->in.access_mask;
 	NTSTATUS  status;
 	size_t    sd_size;
 	uint32_t extra_access = SAMR_DOMAIN_ACCESS_CREATE_USER;
@@ -571,7 +571,7 @@ NTSTATUS _samr_SetSecurity(struct pipes_struct *p,
 			   struct samr_SetSecurity *r)
 {
 	struct samr_user_info *uinfo;
-	uint32 i;
+	uint32_t i;
 	struct security_acl *dacl;
 	bool ret;
 	struct samu *sampass=NULL;
@@ -825,10 +825,10 @@ NTSTATUS _samr_EnumDomainUsers(struct pipes_struct *p,
 	NTSTATUS status;
 	struct samr_domain_info *dinfo;
 	int num_account;
-	uint32 enum_context = *r->in.resume_handle;
+	uint32_t enum_context = *r->in.resume_handle;
 	enum remote_arch_types ra_type = get_remote_arch();
 	int max_sam_entries = (ra_type == RA_WIN95) ? MAX_SAM_ENTRIES_W95 : MAX_SAM_ENTRIES_W2K;
-	uint32 max_entries = max_sam_entries;
+	uint32_t max_entries = max_sam_entries;
 	struct samr_displayentry *entries = NULL;
 	struct samr_SamArray *samr_array = NULL;
 	struct samr_SamEntry *samr_entries = NULL;
@@ -964,7 +964,7 @@ NTSTATUS _samr_EnumDomainGroups(struct pipes_struct *p,
 	NTSTATUS status;
 	struct samr_domain_info *dinfo;
 	struct samr_displayentry *groups;
-	uint32 num_groups;
+	uint32_t num_groups;
 	struct samr_SamArray *samr_array = NULL;
 	struct samr_SamEntry *samr_entries = NULL;
 
@@ -1041,7 +1041,7 @@ NTSTATUS _samr_EnumDomainAliases(struct pipes_struct *p,
 	NTSTATUS status;
 	struct samr_domain_info *dinfo;
 	struct samr_displayentry *aliases;
-	uint32 num_aliases = 0;
+	uint32_t num_aliases = 0;
 	struct samr_SamArray *samr_array = NULL;
 	struct samr_SamEntry *samr_entries = NULL;
 
@@ -1110,7 +1110,7 @@ static NTSTATUS init_samr_dispinfo_1(TALLOC_CTX *ctx,
 				     uint32_t start_idx,
 				     struct samr_displayentry *entries)
 {
-	uint32 i;
+	uint32_t i;
 
 	DEBUG(10, ("init_samr_dispinfo_1: num_entries: %d\n", num_entries));
 
@@ -1307,15 +1307,15 @@ NTSTATUS _samr_QueryDisplayInfo(struct pipes_struct *p,
 {
 	NTSTATUS status;
 	struct samr_domain_info *dinfo;
-	uint32 struct_size=0x20; /* W2K always reply that, client doesn't care */
+	uint32_t struct_size=0x20; /* W2K always reply that, client doesn't care */
 
-	uint32 max_entries = r->in.max_entries;
+	uint32_t max_entries = r->in.max_entries;
 
 	union samr_DispInfo *disp_info = r->out.info;
 
-	uint32 temp_size=0;
+	uint32_t temp_size=0;
 	NTSTATUS disp_ret = NT_STATUS_UNSUCCESSFUL;
-	uint32 num_account = 0;
+	uint32_t num_account = 0;
 	enum remote_arch_types ra_type = get_remote_arch();
 	int max_sam_entries = (ra_type == RA_WIN95) ? MAX_SAM_ENTRIES_W95 : MAX_SAM_ENTRIES_W2K;
 	struct samr_displayentry *entries = NULL;
@@ -1633,7 +1633,7 @@ NTSTATUS _samr_LookupNames(struct pipes_struct *p,
 {
 	struct samr_domain_info *dinfo;
 	NTSTATUS status;
-	uint32 *rid;
+	uint32_t *rid;
 	enum lsa_SidType *type;
 	int i;
 	int num_rids = r->in.num_names;
@@ -1654,7 +1654,7 @@ NTSTATUS _samr_LookupNames(struct pipes_struct *p,
 		DEBUG(5,("_samr_LookupNames: truncating entries to %d\n", num_rids));
 	}
 
-	rid = talloc_array(p->mem_ctx, uint32, num_rids);
+	rid = talloc_array(p->mem_ctx, uint32_t, num_rids);
 	NT_STATUS_HAVE_NO_MEMORY(rid);
 
 	type = talloc_array(p->mem_ctx, enum lsa_SidType, num_rids);
@@ -1917,7 +1917,7 @@ NTSTATUS _samr_ChangePasswordUser3(struct pipes_struct *p,
 	    NT_STATUS_EQUAL(status, NT_STATUS_ACCOUNT_RESTRICTION)) {
 
 		time_t u_expire, u_min_age;
-		uint32 account_policy_temp;
+		uint32_t account_policy_temp;
 
 		dominfo = talloc_zero(p->mem_ctx, struct samr_DomInfo1);
 		if (!dominfo) {
@@ -1976,7 +1976,7 @@ NTSTATUS _samr_ChangePasswordUser3(struct pipes_struct *p,
 makes a SAMR_R_LOOKUP_RIDS structure.
 ********************************************************************/
 
-static bool make_samr_lookup_rids(TALLOC_CTX *ctx, uint32 num_names,
+static bool make_samr_lookup_rids(TALLOC_CTX *ctx, uint32_t num_names,
 				  const char **names,
 				  struct lsa_String **lsa_name_array_p)
 {
@@ -2013,7 +2013,7 @@ NTSTATUS _samr_LookupRids(struct pipes_struct *p,
 	NTSTATUS status;
 	const char **names;
 	enum lsa_SidType *attrs = NULL;
-	uint32 *wire_attrs = NULL;
+	uint32_t *wire_attrs = NULL;
 	int num_rids = (int)r->in.num_rids;
 	int i;
 	struct lsa_Strings names_array;
@@ -2038,7 +2038,7 @@ NTSTATUS _samr_LookupRids(struct pipes_struct *p,
 	if (num_rids) {
 		names = talloc_zero_array(p->mem_ctx, const char *, num_rids);
 		attrs = talloc_zero_array(p->mem_ctx, enum lsa_SidType, num_rids);
-		wire_attrs = talloc_zero_array(p->mem_ctx, uint32, num_rids);
+		wire_attrs = talloc_zero_array(p->mem_ctx, uint32_t, num_rids);
 
 		if ((names == NULL) || (attrs == NULL) || (wire_attrs==NULL))
 			return NT_STATUS_NO_MEMORY;
@@ -2062,9 +2062,9 @@ NTSTATUS _samr_LookupRids(struct pipes_struct *p,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	/* Convert from enum lsa_SidType to uint32 for wire format. */
+	/* Convert from enum lsa_SidType to uint32_t for wire format. */
 	for (i = 0; i < num_rids; i++) {
-		wire_attrs[i] = (uint32)attrs[i];
+		wire_attrs[i] = (uint32_t)attrs[i];
 	}
 
 	names_array.count = num_rids;
@@ -2093,8 +2093,8 @@ NTSTATUS _samr_OpenUser(struct pipes_struct *p,
 	struct samr_domain_info *dinfo;
 	struct samr_user_info *uinfo;
 	struct security_descriptor *psd = NULL;
-	uint32    acc_granted;
-	uint32    des_access = r->in.access_mask;
+	uint32_t    acc_granted;
+	uint32_t    des_access = r->in.access_mask;
 	uint32_t extra_access = 0;
 	size_t    sd_size;
 	bool ret;
@@ -2835,7 +2835,7 @@ NTSTATUS _samr_QueryUserInfo(struct pipes_struct *p,
 	union samr_UserInfo *user_info = NULL;
 	struct samr_user_info *uinfo;
 	struct dom_sid domain_sid;
-	uint32 rid;
+	uint32_t rid;
 	bool ret = false;
 	struct samu *pwd = NULL;
 	uint32_t acc_required, acc_granted;
@@ -3054,7 +3054,7 @@ NTSTATUS _samr_GetGroupsForUser(struct pipes_struct *p,
 	struct dom_sid *sids;
 	struct samr_RidWithAttribute dom_gid;
 	struct samr_RidWithAttribute *gids = NULL;
-	uint32 primary_group_rid;
+	uint32_t primary_group_rid;
 	uint32_t num_groups = 0;
 	gid_t *unix_gids;
 	uint32_t i, num_gids;
@@ -3642,11 +3642,11 @@ NTSTATUS _samr_CreateUser2(struct pipes_struct *p,
 	struct samr_domain_info *dinfo;
 	struct samr_user_info *uinfo;
 	NTSTATUS nt_status;
-	uint32 acc_granted;
+	uint32_t acc_granted;
 	struct security_descriptor *psd;
 	size_t    sd_size;
 	/* check this, when giving away 'add computer to domain' privs */
-	uint32    des_access = GENERIC_RIGHTS_USER_ALL_ACCESS;
+	uint32_t    des_access = GENERIC_RIGHTS_USER_ALL_ACCESS;
 	bool can_add_account = False;
 
 	/* Which privilege is needed to override the ACL? */
@@ -3797,7 +3797,7 @@ NTSTATUS _samr_Connect(struct pipes_struct *p,
 {
 	uint32_t acc_granted;
 	struct policy_handle hnd;
-	uint32    des_access = r->in.access_mask;
+	uint32_t    des_access = r->in.access_mask;
 	NTSTATUS status;
 
 	/* Access check */
@@ -3842,8 +3842,8 @@ NTSTATUS _samr_Connect2(struct pipes_struct *p,
 {
 	struct policy_handle hnd;
 	struct security_descriptor *psd = NULL;
-	uint32    acc_granted;
-	uint32    des_access = r->in.access_mask;
+	uint32_t    acc_granted;
+	uint32_t    des_access = r->in.access_mask;
 	NTSTATUS  nt_status;
 	size_t    sd_size;
 	const char *fn = "_samr_Connect2";
@@ -4062,12 +4062,12 @@ NTSTATUS _samr_OpenAlias(struct pipes_struct *p,
 			 struct samr_OpenAlias *r)
 {
 	struct dom_sid sid;
-	uint32 alias_rid = r->in.rid;
+	uint32_t alias_rid = r->in.rid;
 	struct samr_alias_info *ainfo;
 	struct samr_domain_info *dinfo;
 	struct security_descriptor *psd = NULL;
-	uint32    acc_granted;
-	uint32    des_access = r->in.access_mask;
+	uint32_t    acc_granted;
+	uint32_t    des_access = r->in.access_mask;
 	size_t    sd_size;
 	NTSTATUS  status;
 
@@ -4679,11 +4679,11 @@ static NTSTATUS set_user_info_23(TALLOC_CTX *mem_ctx,
  set_user_info_pw
  ********************************************************************/
 
-static bool set_user_info_pw(uint8 *pass, const char *rhost, struct samu *pwd)
+static bool set_user_info_pw(uint8_t *pass, const char *rhost, struct samu *pwd)
 {
 	size_t len = 0;
 	char *plaintext_buf = NULL;
-	uint32 acct_ctrl;
+	uint32_t acct_ctrl;
 
 	DEBUG(5, ("Attempting administrator password change for user %s\n",
 		  pdb_get_username(pwd)));
@@ -5215,7 +5215,7 @@ NTSTATUS _samr_GetAliasMembership(struct pipes_struct *p,
 				  struct samr_GetAliasMembership *r)
 {
 	size_t num_alias_rids;
-	uint32 *alias_rids;
+	uint32_t *alias_rids;
 	struct samr_domain_info *dinfo;
 	size_t i;
 
@@ -5342,8 +5342,8 @@ NTSTATUS _samr_QueryGroupMember(struct pipes_struct *p,
 	struct samr_group_info *ginfo;
 	size_t i, num_members;
 
-	uint32 *rid=NULL;
-	uint32 *attr=NULL;
+	uint32_t *rid=NULL;
+	uint32_t *attr=NULL;
 
 	NTSTATUS status;
 	struct samr_RidAttrArray *rids = NULL;
@@ -5379,7 +5379,7 @@ NTSTATUS _samr_QueryGroupMember(struct pipes_struct *p,
 		return status;
 
 	if (num_members) {
-		attr=talloc_zero_array(p->mem_ctx, uint32, num_members);
+		attr=talloc_zero_array(p->mem_ctx, uint32_t, num_members);
 		if (attr == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -5480,7 +5480,7 @@ NTSTATUS _samr_AddGroupMember(struct pipes_struct *p,
 {
 	struct samr_group_info *ginfo;
 	NTSTATUS status;
-	uint32 group_rid;
+	uint32_t group_rid;
 
 	ginfo = policy_handle_find(p, r->in.group_handle,
 				   SAMR_GROUP_ACCESS_ADD_MEMBER, NULL,
@@ -5519,7 +5519,7 @@ NTSTATUS _samr_DeleteGroupMember(struct pipes_struct *p,
 {
 	struct samr_group_info *ginfo;
 	NTSTATUS status;
-	uint32 group_rid;
+	uint32_t group_rid;
 
 	/*
 	 * delete the group member named r->in.rid
@@ -5630,7 +5630,7 @@ NTSTATUS _samr_DeleteDomainGroup(struct pipes_struct *p,
 {
 	struct samr_group_info *ginfo;
 	NTSTATUS status;
-	uint32 group_rid;
+	uint32_t group_rid;
 
 	DEBUG(5, ("samr_DeleteDomainGroup: %d\n", __LINE__));
 
@@ -5907,7 +5907,7 @@ NTSTATUS _samr_QueryGroupInfo(struct pipes_struct *p,
 
 	switch (r->in.level) {
 		case 1: {
-			uint32 *members;
+			uint32_t *members;
 			size_t num_members;
 
 			become_root();
@@ -5937,7 +5937,7 @@ NTSTATUS _samr_QueryGroupInfo(struct pipes_struct *p,
 			break;
 		case 5: {
 			/*
-			uint32 *members;
+			uint32_t *members;
 			size_t num_members;
 			*/
 
@@ -6196,8 +6196,8 @@ NTSTATUS _samr_OpenGroup(struct pipes_struct *p,
 	struct samr_domain_info *dinfo;
 	struct samr_group_info *ginfo;
 	struct security_descriptor         *psd = NULL;
-	uint32            acc_granted;
-	uint32            des_access = r->in.access_mask;
+	uint32_t            acc_granted;
+	uint32_t            des_access = r->in.access_mask;
 	size_t            sd_size;
 	NTSTATUS          status;
 	bool ret;
@@ -6304,7 +6304,7 @@ NTSTATUS _samr_RemoveMemberFromForeignDomain(struct pipes_struct *p,
 			 "global_sam_sid() = %s\n",
 			 sid_string_dbg(&dinfo->sid),
 			 sid_string_dbg(get_global_sam_sid())));
-		DEBUGADD(1,("please report to samba-technical@samba.org!\n"));
+		DEBUGADD(1,("please report to samba-technical@lists.samba.org!\n"));
 		return NT_STATUS_OK;
 	}
 

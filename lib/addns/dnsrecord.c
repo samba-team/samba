@@ -22,6 +22,7 @@
 */
 
 #include "dns.h"
+#include "lib/util/genrand.h"
 
 DNS_ERROR dns_create_query( TALLOC_CTX *mem_ctx, const char *name,
 			    uint16_t q_type, uint16_t q_class,
@@ -39,7 +40,7 @@ DNS_ERROR dns_create_query( TALLOC_CTX *mem_ctx, const char *name,
 		return ERROR_DNS_NO_MEMORY;
 	}
 
-	req->id = random();
+	generate_random_buffer((uint8_t *)&req->id, sizeof(req->id));
 
 	req->num_questions = 1;
 	q = req->questions[0];

@@ -33,11 +33,11 @@ typedef struct _prs_struct {
 	 * always little-endian.
 	 */
 	bool bigendian_data;
-	uint8 align; /* data alignment */
+	uint8_t align; /* data alignment */
 	bool is_dynamic; /* Do we own this memory or not ? */
-	uint32 data_offset; /* Current working offset into data. */
-	uint32 buffer_size; /* Current allocated size of the buffer. */
-	uint32 grow_size; /* size requested via prs_grow() calls */
+	uint32_t data_offset; /* Current working offset into data. */
+	uint32_t buffer_size; /* Current allocated size of the buffer. */
+	uint32_t grow_size; /* size requested via prs_grow() calls */
 	/* The buffer itself. If "is_dynamic" is true this
 	 * MUST BE TALLOC'ed off mem_ctx. */
 	char *data_p;
@@ -57,24 +57,24 @@ typedef struct _prs_struct {
 #define RPC_PARSE_ALIGN 4
 
 void prs_debug(prs_struct *ps, int depth, const char *desc, const char *fn_name);
-bool prs_init(prs_struct *ps, uint32 size, TALLOC_CTX *ctx, bool io);
+bool prs_init(prs_struct *ps, uint32_t size, TALLOC_CTX *ctx, bool io);
 void prs_mem_free(prs_struct *ps);
 char *prs_alloc_mem_(prs_struct *ps, size_t size, unsigned int count);
 char *prs_alloc_mem(prs_struct *ps, size_t size, unsigned int count);
 TALLOC_CTX *prs_get_mem_context(prs_struct *ps);
-bool prs_grow(prs_struct *ps, uint32 extra_space);
+bool prs_grow(prs_struct *ps, uint32_t extra_space);
 char *prs_data_p(prs_struct *ps);
-uint32 prs_data_size(prs_struct *ps);
-uint32 prs_offset(prs_struct *ps);
-bool prs_set_offset(prs_struct *ps, uint32 offset);
-bool prs_copy_data_in(prs_struct *dst, const char *src, uint32 len);
+uint32_t prs_data_size(prs_struct *ps);
+uint32_t prs_offset(prs_struct *ps);
+bool prs_set_offset(prs_struct *ps, uint32_t offset);
+bool prs_copy_data_in(prs_struct *dst, const char *src, uint32_t len);
 bool prs_align(prs_struct *ps);
 bool prs_align_uint64(prs_struct *ps);
-char *prs_mem_get(prs_struct *ps, uint32 extra_size);
+char *prs_mem_get(prs_struct *ps, uint32_t extra_size);
 void prs_switch_type(prs_struct *ps, bool io);
-bool prs_uint16(const char *name, prs_struct *ps, int depth, uint16 *data16);
-bool prs_uint32(const char *name, prs_struct *ps, int depth, uint32 *data32);
-bool prs_uint64(const char *name, prs_struct *ps, int depth, uint64 *data64);
-bool prs_uint8s(bool charmode, const char *name, prs_struct *ps, int depth, uint8 *data8s, int len);
+bool prs_uint16(const char *name, prs_struct *ps, int depth, uint16_t *data16);
+bool prs_uint32(const char *name, prs_struct *ps, int depth, uint32_t *data32);
+bool prs_uint64(const char *name, prs_struct *ps, int depth, uint64_t *data64);
+bool prs_uint8s(bool charmode, const char *name, prs_struct *ps, int depth, uint8_t *data8s, int len);
 
 #endif

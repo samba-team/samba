@@ -1,20 +1,20 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Samba system utilities for ACL support.
    Copyright (C) Jeremy Allison 2000.
    Copyright (C) Volker Lendecke 2006
    Copyright (C) Michael Adam 2006,2008
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -104,14 +104,14 @@ void *sys_acl_get_qualifier(SMB_ACL_ENTRY_T entry_d)
 {
 	if (entry_d->a_type == SMB_ACL_USER) {
 		return &entry_d->info.user.uid;
-		}
+	}
 
 	if (entry_d->a_type == SMB_ACL_GROUP) {
 		return &entry_d->info.group.gid;
 	}
 
 	errno = EINVAL;
-		return NULL;
+	return NULL;
 }
 
 int sys_acl_clear_perms(SMB_ACL_PERMSET_T permset_d)
@@ -127,15 +127,15 @@ int sys_acl_add_perm(SMB_ACL_PERMSET_T permset_d, SMB_ACL_PERM_T perm)
 	    && perm != SMB_ACL_EXECUTE) {
 		errno = EINVAL;
 		return -1;
-		}
- 
+	}
+
 	if (permset_d == NULL) {
 		errno = EINVAL;
 		return -1;
 	}
 
 	*permset_d |= perm;
- 
+
 	return 0;
 }
 
@@ -183,7 +183,7 @@ char *sys_acl_to_text(const struct smb_acl_t *acl_d, ssize_t *len_p)
 					 ap->a_type);
 				tag = tagbuf;
 				break;
- 
+
 			case SMB_ACL_USER:
 				id = uidtoname(ap->info.user.uid);
 				/* FALL TROUGH */
@@ -255,7 +255,7 @@ SMB_ACL_T sys_acl_init(TALLOC_CTX *mem_ctx)
 		errno = ENOMEM;
 		return NULL;
 	}
- 
+
 	a->count = 0;
 	a->next = -1;
 
@@ -319,7 +319,7 @@ int sys_acl_set_qualifier(SMB_ACL_ENTRY_T entry_d, void *qual_p)
 	if (entry_d->a_type == SMB_ACL_USER) {
 		entry_d->info.user.uid = *((uid_t *)qual_p);
 		return 0;
-		}
+	}
 	if (entry_d->a_type == SMB_ACL_GROUP) {
 		entry_d->info.group.gid = *((gid_t *)qual_p);
 		return 0;
@@ -337,7 +337,7 @@ int sys_acl_set_permset(SMB_ACL_ENTRY_T entry_d, SMB_ACL_PERMSET_T permset_d)
 	}
 
 	entry_d->a_perm = *permset_d;
- 
+
 	return 0;
 }
 
@@ -358,26 +358,26 @@ int sys_acl_valid(SMB_ACL_T acl_d)
  * sys_acl_delete_def_file are to be redirected to the default
  * statically-bound acl vfs module, but they are replacable.
  */
- 
+
 #if defined(HAVE_POSIX_ACLS)
- 
-SMB_ACL_T sys_acl_get_file(vfs_handle_struct *handle, 
+
+SMB_ACL_T sys_acl_get_file(vfs_handle_struct *handle,
 			   const char *path_p, SMB_ACL_TYPE_T type, TALLOC_CTX *mem_ctx)
 {
 	return posixacl_sys_acl_get_file(handle, path_p, type, mem_ctx);
 }
- 
+
 SMB_ACL_T sys_acl_get_fd(vfs_handle_struct *handle, files_struct *fsp, TALLOC_CTX *mem_ctx)
 {
 	return posixacl_sys_acl_get_fd(handle, fsp, mem_ctx);
 }
- 
+
 int sys_acl_set_file(vfs_handle_struct *handle,
 		     const char *name, SMB_ACL_TYPE_T type, SMB_ACL_T acl_d)
 {
 	return posixacl_sys_acl_set_file(handle, name, type, acl_d);
 }
- 
+
 int sys_acl_set_fd(vfs_handle_struct *handle, files_struct *fsp,
 		   SMB_ACL_T acl_d)
 {
@@ -424,7 +424,7 @@ int sys_acl_delete_def_file(vfs_handle_struct *handle,
 }
 
 #elif defined(HAVE_TRU64_ACLS)
- 
+
 SMB_ACL_T sys_acl_get_file(vfs_handle_struct *handle,
 			   const char *path_p, SMB_ACL_TYPE_T type,
 			   TALLOC_CTX *mem_ctx)

@@ -153,7 +153,7 @@ bool setup_kaddr( krb5_address *pkaddr, struct sockaddr_storage *paddr)
 * @return krb5_error_code
 */
 int smb_krb5_create_key_from_string(krb5_context context,
-				    krb5_principal *host_princ,
+				    krb5_const_principal host_princ,
 				    krb5_data *salt,
 				    krb5_data *password,
 				    krb5_enctype enctype,
@@ -170,7 +170,7 @@ int smb_krb5_create_key_from_string(krb5_context context,
 	krb5_data _salt;
 
 	if (salt == NULL) {
-		ret = krb5_principal2salt(context, *host_princ, &_salt);
+		ret = krb5_principal2salt(context, host_princ, &_salt);
 		if (ret) {
 			DEBUG(1,("krb5_principal2salt failed (%s)\n", error_message(ret)));
 			return ret;
@@ -188,7 +188,7 @@ int smb_krb5_create_key_from_string(krb5_context context,
 	krb5_salt _salt;
 
 	if (salt == NULL) {
-		ret = krb5_get_pw_salt(context, *host_princ, &_salt);
+		ret = krb5_get_pw_salt(context, host_princ, &_salt);
 		if (ret) {
 			DEBUG(1,("krb5_get_pw_salt failed (%s)\n", error_message(ret)));
 			return ret;
@@ -223,7 +223,7 @@ int smb_krb5_create_key_from_string(krb5_context context,
 */
 
 int smb_krb5_get_pw_salt(krb5_context context,
-			 krb5_principal host_princ,
+			 krb5_const_principal host_princ,
 			 krb5_data *psalt)
 #if defined(HAVE_KRB5_GET_PW_SALT)
 /* Heimdal */
@@ -925,7 +925,7 @@ done:
  *
  */
 
-/* caller has to free returned string with free() */
+/* caller has to free returned string with talloc_free() */
 char *smb_krb5_principal_get_comp_string(TALLOC_CTX *mem_ctx,
 					 krb5_context context,
 					 krb5_const_principal principal,
@@ -1717,6 +1717,14 @@ krb5_error_code kerberos_kinit_password_cc(krb5_context ctx, krb5_ccache cc,
 		return code;
 	}
 
+#ifndef SAMBA4_USES_HEIMDAL /* MIT */
+	/*
+	 * We need to store the principal as returned from the KDC to the
+	 * credentials cache. If we don't do that the KRB5 library is not
+	 * able to find the tickets it is looking for
+	 */
+	principal = my_creds.client;
+#endif
 	code = krb5_cc_initialize(ctx, cc, principal);
 	if (code) {
 		goto done;
@@ -2599,6 +2607,27 @@ int smb_krb5_principal_get_type(krb5_context context,
 	return krb5_princ_type(context, principal);
 #else
 #error	UNKNOWN_PRINC_GET_TYPE_FUNCTION
+#endif
+}
+
+/**
+* @brief Set the type of a krb5_principal
+*
+* @param context	The krb5_context
+* @param principal	The const krb5_principal
+* @param type		The principal type
+*
+*/
+void smb_krb5_principal_set_type(krb5_context context,
+				 krb5_principal principal,
+				 int type)
+{
+#ifdef HAVE_KRB5_PRINCIPAL_SET_TYPE /* Heimdal */
+	krb5_principal_set_type(context, principal, type);
+#elif defined(krb5_princ_type) /* MIT */
+	krb5_princ_type(context, principal) = type;
+#else
+#error	UNKNOWN_PRINC_SET_TYPE_FUNCTION
 #endif
 }
 

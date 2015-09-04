@@ -178,7 +178,7 @@ bool set_conn_connectpath(connection_struct *conn, const char *connectpath)
  Load parameters specific to a connection/service.
 ****************************************************************************/
 
-bool set_current_service(connection_struct *conn, uint16 flags, bool do_chdir)
+bool set_current_service(connection_struct *conn, uint16_t flags, bool do_chdir)
 {
 	int snum;
 
@@ -669,7 +669,9 @@ static NTSTATUS make_connection_snum(struct smbXsrv_connection *xconn,
 
 	if (SMB_VFS_CONNECT(conn, lp_servicename(talloc_tos(), snum),
 			    conn->session_info->unix_info->unix_name) < 0) {
-		DEBUG(0,("make_connection: VFS make connection failed!\n"));
+		DBG_WARNING("SMB_VFS_CONNECT for service '%s' at '%s' failed: %s\n",
+			    lp_servicename(talloc_tos(), snum), conn->connectpath,
+			    strerror(errno));
 		status = NT_STATUS_UNSUCCESSFUL;
 		goto err_root_exit;
 	}
@@ -678,10 +680,14 @@ static NTSTATUS make_connection_snum(struct smbXsrv_connection *xconn,
 	on_err_call_dis_hook = true;
 
 	if ((!conn->printer) && (!conn->ipc) &&
-	    lp_change_notify(conn->params)) {
+	    lp_change_notify()) {
 		if (sconn->notify_ctx == NULL) {
 			sconn->notify_ctx = notify_init(
 				sconn, sconn->msg_ctx, sconn->ev_ctx);
+			status = messaging_register(
+				sconn->msg_ctx, sconn,
+				MSG_SMB_NOTIFY_CANCEL_DELETED,
+				smbd_notify_cancel_deleted);
 		}
 		if (sconn->sys_notify_ctx == NULL) {
 			sconn->sys_notify_ctx = sys_notify_context_create(
@@ -1133,11 +1139,11 @@ void close_cnum(connection_struct *conn, uint64_t vuid)
 							talloc_tos()),
 				 lp_servicename(talloc_tos(), SNUM(conn))));
 
-	/* Call VFS disconnect hook */    
-	SMB_VFS_DISCONNECT(conn);
-
 	/* make sure we leave the directory available for unmount */
 	vfs_ChDir(conn, "/");
+
+	/* Call VFS disconnect hook */
+	SMB_VFS_DISCONNECT(conn);
 
 	/* execute any "postexec = " line */
 	if (*lp_postexec(talloc_tos(), SNUM(conn)) &&

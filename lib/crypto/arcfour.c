@@ -81,11 +81,12 @@ _PUBLIC_ void arcfour_crypt_blob(uint8_t *data, int len, const DATA_BLOB *key)
 */
 _PUBLIC_ void arcfour_crypt(uint8_t *data, const uint8_t keystr[16], int len)
 {
-	DATA_BLOB key = data_blob(keystr, 16);
-	
-	arcfour_crypt_blob(data, len, &key);
+	uint8_t keycopy[16];
+	DATA_BLOB key = { .data = keycopy, .length = sizeof(keycopy) };
 
-	data_blob_free(&key);
+	memcpy(keycopy, keystr, sizeof(keycopy));
+
+	arcfour_crypt_blob(data, len, &key);
 }
 
 

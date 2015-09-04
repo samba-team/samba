@@ -92,7 +92,7 @@ static int ctdb_tcp_connect_node(struct ctdb_node *node)
 
 	/* startup connection to the other server - will happen on
 	   next event loop */
-	if (!ctdb_same_address(&ctdb->address, &node->address)) {
+	if (!ctdb_same_address(ctdb->address, &node->address)) {
 		tnode->connect_te = event_add_timed(ctdb->ev, tnode, 
 						    timeval_zero(), 
 						    ctdb_tcp_node_connect, node);

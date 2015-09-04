@@ -76,6 +76,60 @@
 </refsect1>
 
   <refsect1>
+    <title>Recovery Lock</title>
+
+    <para>
+      CTDB uses a <emphasis>recovery lock</emphasis> to avoid a
+      <emphasis>split brain</emphasis>, where a cluster becomes
+      partitioned and each partition attempts to operate
+      independently.  Issues that can result from a split brain
+      include file data corruption, because file locking metadata may
+      not be tracked correctly.
+    </para>
+
+    <para>
+      CTDB uses a <emphasis>cluster leader and follower</emphasis>
+      model of cluster management.  All nodes in a cluster elect one
+      node to be the leader.  The leader node coordinates privileged
+      operations such as database recovery and IP address failover.
+      CTDB refers to the leader node as the <emphasis>recovery
+      master</emphasis>.  This node takes and holds the recovery lock
+      to assert its privileged role in the cluster.
+    </para>
+
+    <para>
+      The recovery lock is implemented using a file residing in shared
+      storage (usually) on a cluster filesystem.  To support a
+      recovery lock the cluster filesystem must support lock
+      coherence.  See
+      <citerefentry><refentrytitle>ping_pong</refentrytitle>
+      <manvolnum>1</manvolnum></citerefentry> for more details.
+    </para>
+
+    <para>
+      If a cluster becomes partitioned (for example, due to a
+      communication failure) and a different recovery master is
+      elected by the nodes in each partition, then only one of these
+      recovery masters will be able to take the recovery lock.  The
+      recovery master in the "losing" partition will not be able to
+      take the recovery lock and will be excluded from the cluster.
+      The nodes in the "losing" partition will elect each node in turn
+      as their recovery master so eventually all the nodes in that
+      partition will be excluded.
+    </para>
+
+    <para>
+      CTDB does sanity checks to ensure that the recovery lock is held
+      as expected.
+    </para>
+
+    <para>
+      CTDB can run without a recovery lock but this is not recommended
+      as there will be no protection from split brains.
+    </para>
+  </refsect1>
+
+  <refsect1>
     <title>Private vs Public addresses</title>
 
     <para>

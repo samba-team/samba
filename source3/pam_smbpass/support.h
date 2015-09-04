@@ -2,7 +2,7 @@
 extern void _log_err(pam_handle_t *, int, const char *, ...);
 
 /* set the control flags for the UNIX module. */
-extern int set_ctrl(pam_handle_t *, int, int, const char **);
+extern unsigned int set_ctrl(pam_handle_t *, int, int, const char **);
 
 /* generic function for freeing pam data segments */
 extern void _cleanup(pam_handle_t *, void *, int);

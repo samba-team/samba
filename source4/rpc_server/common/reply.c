@@ -187,14 +187,19 @@ _PUBLIC_ NTSTATUS dcesrv_reply(struct dcesrv_call_state *call)
 	chunk_size -= DCERPC_REQUEST_LENGTH;
 	if (call->conn->auth_state.auth_info &&
 	    call->conn->auth_state.gensec_security) {
+		size_t max_payload = chunk_size;
+
+		max_payload -= DCERPC_AUTH_TRAILER_LENGTH;
+		max_payload -= (max_payload % DCERPC_AUTH_PAD_ALIGNMENT);
+
 		sig_size = gensec_sig_size(call->conn->auth_state.gensec_security,
-					   call->conn->cli_max_recv_frag);
+					   max_payload);
 		if (sig_size) {
 			chunk_size -= DCERPC_AUTH_TRAILER_LENGTH;
 			chunk_size -= sig_size;
 		}
 	}
-	chunk_size -= (chunk_size % 16);
+	chunk_size -= (chunk_size % DCERPC_AUTH_PAD_ALIGNMENT);
 
 	do {
 		uint32_t length;

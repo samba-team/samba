@@ -206,7 +206,7 @@
       <varlistentry><term>-d --debug=<parameter>DEBUGLEVEL</parameter></term>
       <listitem>
 	<para>
-	  Change the debug level for the command. Default is ERR (0).
+	  Change the debug level for the command. Default is NOTICE (2).
 	</para>
       </listitem>
       </varlistentry>
@@ -682,7 +682,6 @@ RecdFailCount           = 10
 LogLatencyMs            = 0
 RecLockLatencyMs        = 1000
 RecoveryDropAllIPs      = 120
-VerifyRecoveryLock      = 1
 VacuumInterval          = 10
 VacuumMaxRunTime        = 30
 RepackLimit             = 10000
@@ -883,30 +882,51 @@ DB Statistics: locking.tdb
     <refsect2>
       <title>getreclock</title>
       <para>
-	This command is used to show the filename of the reclock file that is used.
+	Show the name of the recovery lock file, if any.
       </para>
 
       <para>
 	Example output:
       </para>
       <screen>
-	Reclock file:/gpfs/.ctdb/shared
+	Reclock file:/clusterfs/.ctdb/recovery.lock
       </screen>
 
     </refsect2>
 
     <refsect2>
-      <title>setreclock [filename]</title>
+      <title>
+	setreclock <optional><parameter>FILE</parameter></optional>
+      </title>
+
       <para>
-	This command is used to modify, or clear, the file that is used as the reclock file at runtime. When this command is used, the reclock file checks are disabled. To re-enable the checks the administrator needs to activate the "VerifyRecoveryLock" tunable using "ctdb setvar".
+	FILE specifies the name of the recovery lock file.  If the
+	recovery lock file is changed at run-time then this will cause
+	a recovery, which in turn causes the recovery lock to be
+	retaken.
       </para>
 
       <para>
-	If run with no parameter this will remove the reclock file completely. If run with a parameter the parameter specifies the new filename to use for the recovery lock.
+	If no FILE is specified then a recovery lock file will no
+	longer be used.
       </para>
 
       <para>
-	This command only affects the runtime settings of a ctdb node and will be lost when ctdb is restarted. For persistent changes to the reclock file setting you must edit /etc/sysconfig/ctdb.
+	This command only affects the run-time setting of a single
+	CTDB node.  This setting <emphasis>must</emphasis> be changed
+	on all nodes simultaneously by specifying <option>-n
+	all</option> (or similar).  For information about configuring
+	the recovery lock file please see the
+	<citetitle>CTDB_RECOVERY_LOCK</citetitle> entry in
+	<citerefentry><refentrytitle>ctdbd.conf</refentrytitle>
+	<manvolnum>5</manvolnum></citerefentry> and the
+	<citetitle>--reclock</citetitle> entry in
+	<citerefentry><refentrytitle>ctdbd</refentrytitle>
+	<manvolnum>1</manvolnum></citerefentry>.  For information
+	about the recovery lock please see the <citetitle>RECOVERY
+	LOCK</citetitle> section in
+	<citerefentry><refentrytitle>ctdb</refentrytitle>
+	<manvolnum>7</manvolnum></citerefentry>.
       </para>
     </refsect2>
 

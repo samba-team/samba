@@ -906,6 +906,69 @@ static int ldif_write_replUpToDateVector(struct ldb_context *ldb, void *mem_ctx,
 			      true);
 }
 
+static int ldif_write_dn_binary_NDR(struct ldb_context *ldb, void *mem_ctx,
+				    const struct ldb_val *in, struct ldb_val *out,
+				    size_t struct_size,
+				    ndr_pull_flags_fn_t pull_fn,
+				    ndr_print_fn_t print_fn,
+				    bool mask_errors)
+{
+	uint8_t *p = NULL;
+	enum ndr_err_code err;
+	struct dsdb_dn *dsdb_dn = NULL;
+	char *dn_str = NULL;
+	char *str = NULL;
+
+	if (!(ldb_get_flags(ldb) & LDB_FLG_SHOW_BINARY)) {
+		return ldb_handler_copy(ldb, mem_ctx, in, out);
+	}
+
+	dsdb_dn = dsdb_dn_parse(mem_ctx, ldb, in, DSDB_SYNTAX_BINARY_DN);
+	if (dsdb_dn == NULL) {
+		return ldb_handler_copy(ldb, mem_ctx, in, out);
+	}
+
+	p = talloc_size(dsdb_dn, struct_size);
+	if (p == NULL) {
+		TALLOC_FREE(dsdb_dn);
+		return ldb_handler_copy(ldb, mem_ctx, in, out);
+	}
+
+	err = ndr_pull_struct_blob(&dsdb_dn->extra_part, p, p, pull_fn);
+	if (err != NDR_ERR_SUCCESS) {
+		/* fail in not in mask_error mode */
+		if (!mask_errors) {
+			return -1;
+		}
+		TALLOC_FREE(dsdb_dn);
+		return ldb_handler_copy(ldb, mem_ctx, in, out);
+	}
+
+	dn_str = ldb_dn_get_extended_linearized(dsdb_dn, dsdb_dn->dn, 1);
+	if (dn_str == NULL) {
+		TALLOC_FREE(dsdb_dn);
+		return ldb_handler_copy(ldb, mem_ctx, in, out);
+	}
+
+	str = ndr_print_struct_string(mem_ctx, print_fn, dn_str, p);
+	TALLOC_FREE(dsdb_dn);
+	if (str == NULL) {
+		return ldb_handler_copy(ldb, mem_ctx, in, out);
+	}
+
+	*out = data_blob_string_const(str);
+	return 0;
+}
+
+static int ldif_write_msDS_RevealedUsers(struct ldb_context *ldb, void *mem_ctx,
+					 const struct ldb_val *in, struct ldb_val *out)
+{
+	return ldif_write_dn_binary_NDR(ldb, mem_ctx, in, out,
+			      sizeof(struct replPropertyMetaData1),
+			      (ndr_pull_flags_fn_t)ndr_pull_replPropertyMetaData1,
+			      (ndr_print_fn_t)ndr_print_replPropertyMetaData1,
+			      true);
+}
 
 /*
   convert a NDR formatted blob to a ldif formatted dnsRecord
@@ -1337,6 +1400,13 @@ static const struct ldb_schema_syntax samba_syntaxes[] = {
 		.comparison_fn	  = ldb_comparison_binary,
 		.operator_fn      = samba_syntax_operator_fn
 	},{
+		.name		  = LDB_SYNTAX_SAMBA_REVEALEDUSERS,
+		.ldif_read_fn	  = ldb_handler_copy,
+		.ldif_write_fn	  = ldif_write_msDS_RevealedUsers,
+		.canonicalise_fn  = dsdb_dn_binary_canonicalise,
+		.comparison_fn	  = dsdb_dn_binary_comparison,
+		.operator_fn      = samba_syntax_operator_fn
+	},{
 		.name		  = LDB_SYNTAX_SAMBA_TRUSTAUTHINOUTBLOB,
 		.ldif_read_fn	  = ldb_handler_copy,
 		.ldif_write_fn	  = ldif_write_trustAuthInOutBlob,
@@ -1477,6 +1547,7 @@ static const struct {
 	{ "repsTo",                     LDB_SYNTAX_SAMBA_REPSFROMTO },
 	{ "replPropertyMetaData",       LDB_SYNTAX_SAMBA_REPLPROPERTYMETADATA },
 	{ "replUpToDateVector",         LDB_SYNTAX_SAMBA_REPLUPTODATEVECTOR },
+	{ "msDS-RevealedUsers",         LDB_SYNTAX_SAMBA_REVEALEDUSERS },
 	{ "trustAuthIncoming",          LDB_SYNTAX_SAMBA_TRUSTAUTHINOUTBLOB },
 	{ "trustAuthOutgoing",          LDB_SYNTAX_SAMBA_TRUSTAUTHINOUTBLOB },
 	{ "msDS-TrustForestTrustInfo",  LDB_SYNTAX_SAMBA_FORESTTRUSTINFO },
@@ -1624,12 +1695,6 @@ int ldb_register_samba_handlers(struct ldb_context *ldb)
 			return ret;
 		}
 
-	}
-
-	ret = ldb_register_samba_matching_rules(ldb);
-	if (ret != LDB_SUCCESS) {
-		talloc_free(ldb);
-		return LDB_SUCCESS;
 	}
 
 	ret = ldb_set_opaque(ldb, "SAMBA_HANDLERS_REGISTERED", (void*)1);

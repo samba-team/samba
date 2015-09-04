@@ -332,7 +332,7 @@ int rpc_vampire_keytab(struct net_context *c, int argc, const char **argv);
 
 /* The following definitions come from utils/net_rpc_service.c  */
 
-const char *svc_status_string( uint32 state );
+const char *svc_status_string( uint32_t state );
 int net_rpc_service(struct net_context *c, int argc, const char **argv);
 
 /* The following definitions come from utils/net_rpc_sh_acct.c  */
@@ -461,4 +461,5 @@ int net_rpc_trust(struct net_context *c, int argc, const char **argv);
 /* The following definitions come from utils/net_rpc_conf.c */
 int net_rpc_conf(struct net_context *c, int argc, const char **argv);
 
+int net_notify(struct net_context *c, int argc, const char **argv);
 #endif /*  _NET_PROTO_H_  */

@@ -1,0 +1,15 @@
+<samba:parameter name="fss: prune stale"
+                 context="G"
+                 type="boolean"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>
+	When enabled, Samba's File Server Remove VSS Protocol (FSRVP) server
+	checks all FSRVP initiated snapshots on startup, and removes any
+	corresponding state (including share definitions) for nonexistent
+	snapshot paths.
+	</para>
+</description>
+<value type="default">no</value>
+<value type="example">yes</value>
+</samba:parameter>

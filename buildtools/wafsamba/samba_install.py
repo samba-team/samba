@@ -59,90 +59,97 @@ def install_library(self):
 
     bld = self.bld
 
-    install_ldflags = install_rpath(self)
-    build_ldflags   = build_rpath(bld)
+    default_env = bld.all_envs['default']
+    try:
+        if self.env['IS_EXTRA_PYTHON']:
+            bld.all_envs['default'] = bld.all_envs['extrapython']
 
-    if not Options.is_install or not getattr(self, 'samba_install', True):
-        # just need to set the build rpath if we are not installing
-        self.env.RPATH = build_ldflags
-        return
+        install_ldflags = install_rpath(self)
+        build_ldflags   = build_rpath(bld)
 
-    # setup the install path, expanding variables
-    install_path = getattr(self, 'samba_inst_path', None)
-    if install_path is None:
-        if getattr(self, 'private_library', False):
-            install_path = '${PRIVATELIBDIR}'
+        if not Options.is_install or not getattr(self, 'samba_install', True):
+            # just need to set the build rpath if we are not installing
+            self.env.RPATH = build_ldflags
+            return
+
+        # setup the install path, expanding variables
+        install_path = getattr(self, 'samba_inst_path', None)
+        if install_path is None:
+            if getattr(self, 'private_library', False):
+                install_path = '${PRIVATELIBDIR}'
+            else:
+                install_path = '${LIBDIR}'
+        install_path = bld.EXPAND_VARIABLES(install_path)
+
+        target_name = self.target
+
+        if install_ldflags != build_ldflags:
+            # we will be creating a new target name, and using that for the
+            # install link. That stops us from overwriting the existing build
+            # target, which has different ldflags
+            self.done_install_library = True
+            t = self.clone(self.env)
+            t.posted = False
+            t.target += '.inst'
+            self.env.RPATH = build_ldflags
         else:
-            install_path = '${LIBDIR}'
-    install_path = bld.EXPAND_VARIABLES(install_path)
+            t = self
 
-    target_name = self.target
+        t.env.RPATH = install_ldflags
 
-    if install_ldflags != build_ldflags:
-        # we will be creating a new target name, and using that for the
-        # install link. That stops us from overwriting the existing build
-        # target, which has different ldflags
-        self.done_install_library = True
-        t = self.clone('default')
-        t.posted = False
-        t.target += '.inst'
-        self.env.RPATH = build_ldflags
-    else:
-        t = self
+        dev_link     = None
 
-    t.env.RPATH = install_ldflags
+        # in the following the names are:
+        # - inst_name is the name with .inst. in it, in the build
+        #   directory
+        # - install_name is the name in the install directory
+        # - install_link is a symlink in the install directory, to install_name
 
-    dev_link     = None
-
-    # in the following the names are:
-    # - inst_name is the name with .inst. in it, in the build
-    #   directory
-    # - install_name is the name in the install directory
-    # - install_link is a symlink in the install directory, to install_name
-
-    if getattr(self, 'samba_realname', None):
-        install_name = self.samba_realname
-        install_link = None
-        if getattr(self, 'soname', ''):
-            install_link = self.soname
-        if getattr(self, 'samba_type', None) == 'PYTHON':
-            inst_name    = bld.make_libname(t.target, nolibprefix=True, python=True)
-        else:
+        if getattr(self, 'samba_realname', None):
+            install_name = self.samba_realname
+            install_link = None
+            if getattr(self, 'soname', ''):
+                install_link = self.soname
+            if getattr(self, 'samba_type', None) == 'PYTHON':
+                inst_name    = bld.make_libname(t.target, nolibprefix=True, python=True)
+            else:
+                inst_name    = bld.make_libname(t.target)
+        elif self.vnum:
+            vnum_base    = self.vnum.split('.')[0]
+            install_name = bld.make_libname(target_name, version=self.vnum)
+            install_link = bld.make_libname(target_name, version=vnum_base)
             inst_name    = bld.make_libname(t.target)
-    elif self.vnum:
-        vnum_base    = self.vnum.split('.')[0]
-        install_name = bld.make_libname(target_name, version=self.vnum)
-        install_link = bld.make_libname(target_name, version=vnum_base)
-        inst_name    = bld.make_libname(t.target)
-        if not self.private_library:
-            # only generate the dev link for non-bundled libs
-            dev_link     = bld.make_libname(target_name)
-    elif getattr(self, 'soname', ''):
-        install_name = bld.make_libname(target_name)
-        install_link = self.soname
-        inst_name    = bld.make_libname(t.target)
-    else:
-        install_name = bld.make_libname(target_name)
-        install_link = None
-        inst_name    = bld.make_libname(t.target)
-
-    if t.env.SONAME_ST:
-        # ensure we get the right names in the library
-        if install_link:
-            t.env.append_value('LINKFLAGS', t.env.SONAME_ST % install_link)
+            if not self.private_library:
+                # only generate the dev link for non-bundled libs
+                dev_link     = bld.make_libname(target_name)
+        elif getattr(self, 'soname', ''):
+            install_name = bld.make_libname(target_name)
+            install_link = self.soname
+            inst_name    = bld.make_libname(t.target)
         else:
-            t.env.append_value('LINKFLAGS', t.env.SONAME_ST % install_name)
-        t.env.SONAME_ST = ''
+            install_name = bld.make_libname(target_name)
+            install_link = None
+            inst_name    = bld.make_libname(t.target)
 
-    # tell waf to install the library
-    bld.install_as(os.path.join(install_path, install_name),
-                   os.path.join(self.path.abspath(bld.env), inst_name),
-                   chmod=MODE_755)
-    if install_link and install_link != install_name:
-        # and the symlink if needed
-        bld.symlink_as(os.path.join(install_path, install_link), os.path.basename(install_name))
-    if dev_link:
-        bld.symlink_as(os.path.join(install_path, dev_link), os.path.basename(install_name))
+        if t.env.SONAME_ST:
+            # ensure we get the right names in the library
+            if install_link:
+                t.env.append_value('LINKFLAGS', t.env.SONAME_ST % install_link)
+            else:
+                t.env.append_value('LINKFLAGS', t.env.SONAME_ST % install_name)
+            t.env.SONAME_ST = ''
+
+        # tell waf to install the library
+        bld.install_as(os.path.join(install_path, install_name),
+                       os.path.join(self.path.abspath(bld.env), inst_name),
+                       chmod=MODE_755)
+        if install_link and install_link != install_name:
+            # and the symlink if needed
+            bld.symlink_as(os.path.join(install_path, install_link), os.path.basename(install_name))
+        if dev_link:
+            bld.symlink_as(os.path.join(install_path, dev_link), os.path.basename(install_name))
+    finally:
+        bld.all_envs['default'] = default_env
 
 
 @feature('cshlib')

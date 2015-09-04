@@ -1,19 +1,19 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    test suite for mgmt rpc operations
 
    Copyright (C) Andrew Tridgell 2003
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -29,7 +29,7 @@
 /*
   ask the server what interface IDs are available on this endpoint
 */
-bool test_inq_if_ids(struct torture_context *tctx, 
+bool test_inq_if_ids(struct torture_context *tctx,
 		     struct dcerpc_binding_handle *b,
 		     TALLOC_CTX *mem_ctx,
 		     bool (*per_id_test)(struct torture_context *,
@@ -38,27 +38,23 @@ bool test_inq_if_ids(struct torture_context *tctx,
 					 struct ndr_syntax_id *id),
 		     const void *priv)
 {
-	NTSTATUS status;
 	struct mgmt_inq_if_ids r;
 	struct rpc_if_id_vector_t *vector;
 	int i;
 
 	vector = talloc(mem_ctx, struct rpc_if_id_vector_t);
 	r.out.if_id_vector = &vector;
-	
-	status = dcerpc_mgmt_inq_if_ids_r(b, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("inq_if_ids failed - %s\n", nt_errstr(status));
-		return false;
-	}
 
-	if (!W_ERROR_IS_OK(r.out.result)) {
-		printf("inq_if_ids gave error code %s\n", win_errstr(r.out.result));
-		return false;
-	}
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_mgmt_inq_if_ids_r(b, mem_ctx, &r),
+		"inq_if_ids failed");
+
+	torture_assert_werr_ok(tctx,
+		r.out.result,
+		"inq_if_ids gave unexpected error code");
 
 	if (!vector) {
-		printf("inq_if_ids gave NULL if_id_vector\n");
+		torture_comment(tctx, "inq_if_ids gave NULL if_id_vector\n");
 		return false;
 	}
 
@@ -66,7 +62,7 @@ bool test_inq_if_ids(struct torture_context *tctx,
 		struct ndr_syntax_id *id = vector->if_id[i].id;
 		if (!id) continue;
 
-		printf("\tuuid %s  version 0x%08x  '%s'\n",
+		torture_comment(tctx, "\tuuid %s  version 0x%08x  '%s'\n",
 		       GUID_string(mem_ctx, &id->uuid),
 		       id->if_version,
 		       ndr_interface_name(&id->uuid, id->if_version));
@@ -79,10 +75,10 @@ bool test_inq_if_ids(struct torture_context *tctx,
 	return true;
 }
 
-static bool test_inq_stats(struct dcerpc_binding_handle *b,
+static bool test_inq_stats(struct torture_context *tctx,
+			   struct dcerpc_binding_handle *b,
 			   TALLOC_CTX *mem_ctx)
 {
-	NTSTATUS status;
 	struct mgmt_inq_stats r;
 	struct mgmt_statistics statistics;
 
@@ -90,18 +86,16 @@ static bool test_inq_stats(struct dcerpc_binding_handle *b,
 	r.in.unknown = 0;
 	r.out.statistics = &statistics;
 
-	status = dcerpc_mgmt_inq_stats_r(b, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("inq_stats failed - %s\n", nt_errstr(status));
-		return false;
-	}
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_mgmt_inq_stats_r(b, mem_ctx, &r),
+		"inq_stats failed");
 
 	if (statistics.count != MGMT_STATS_ARRAY_MAX_SIZE) {
-		printf("Unexpected array size %d\n", statistics.count);
+		torture_comment(tctx, "Unexpected array size %d\n", statistics.count);
 		return false;
 	}
 
-	printf("\tcalls_in %6d  calls_out %6d\n\tpkts_in  %6d  pkts_out  %6d\n",
+	torture_comment(tctx, "\tcalls_in %6d  calls_out %6d\n\tpkts_in  %6d  pkts_out  %6d\n",
 	       statistics.statistics[MGMT_STATS_CALLS_IN],
 	       statistics.statistics[MGMT_STATS_CALLS_OUT],
 	       statistics.statistics[MGMT_STATS_PKTS_IN],
@@ -110,7 +104,48 @@ static bool test_inq_stats(struct dcerpc_binding_handle *b,
 	return true;
 }
 
-static bool test_inq_princ_name(struct dcerpc_binding_handle *b,
+static bool test_inq_princ_name_size(struct torture_context *tctx,
+				     struct dcerpc_binding_handle *b,
+				     uint32_t authn_proto,
+				     const char *expected_princ_name)
+{
+	struct mgmt_inq_princ_name r;
+	uint32_t len, i;
+
+	len = strlen(expected_princ_name);
+
+	r.in.authn_proto = authn_proto;
+
+	/*
+	 * 0 gives NT_STATUS_RPC_BAD_STUB_DATA
+	 */
+
+	for (i=1; i <= len; i++) {
+		r.in.princ_name_size = i;
+
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_mgmt_inq_princ_name_r(b, tctx, &r),
+			"mgmt_inq_princ_name failed");
+		torture_assert_werr_equal(tctx,
+			r.out.result,
+			WERR_INSUFFICIENT_BUFFER,
+			"mgmt_inq_princ_name failed");
+	}
+
+	r.in.princ_name_size = len + 1;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_mgmt_inq_princ_name_r(b, tctx, &r),
+		"mgmt_inq_princ_name failed");
+	torture_assert_werr_ok(tctx,
+		r.out.result,
+		"mgmt_inq_princ_name failed");
+
+	return true;
+}
+
+static bool test_inq_princ_name(struct torture_context *tctx,
+				struct dcerpc_binding_handle *b,
 				TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
@@ -130,60 +165,73 @@ static bool test_inq_princ_name(struct dcerpc_binding_handle *b,
 			const char *name = gensec_get_name_by_authtype(NULL, i);
 			ret = true;
 			if (name) {
-				printf("\tprinciple name for proto %u (%s) is '%s'\n", 
+				torture_comment(tctx, "\tprinciple name for proto %u (%s) is '%s'\n",
 				       i, name, r.out.princ_name);
 			} else {
-				printf("\tprinciple name for proto %u is '%s'\n", 
+				torture_comment(tctx, "\tprinciple name for proto %u is '%s'\n",
 				       i, r.out.princ_name);
+			}
+
+			switch (i) {
+			case DCERPC_AUTH_TYPE_KRB5:
+			case DCERPC_AUTH_TYPE_NTLMSSP:
+			case DCERPC_AUTH_TYPE_SPNEGO:
+				torture_assert(tctx,
+					test_inq_princ_name_size(tctx, b, i, r.out.princ_name),
+					"failed");
+				break;
+			case DCERPC_AUTH_TYPE_SCHANNEL:
+				/*
+				 * for some reason schannel behaves differently
+				 *
+				 */
+			default:
+				break;
 			}
 		}
 	}
 
 	if (!ret) {
-		printf("\tno principle names?\n");
+		torture_comment(tctx, "\tno principle names?\n");
 	}
 
 	return true;
 }
 
-static bool test_is_server_listening(struct dcerpc_binding_handle *b,
+static bool test_is_server_listening(struct torture_context *tctx,
+				     struct dcerpc_binding_handle *b,
 				     TALLOC_CTX *mem_ctx)
 {
-	NTSTATUS status;
 	struct mgmt_is_server_listening r;
 	r.out.status = talloc(mem_ctx, uint32_t);
 
-	status = dcerpc_mgmt_is_server_listening_r(b, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("is_server_listening failed - %s\n", nt_errstr(status));
-		return false;
-	}
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_mgmt_is_server_listening_r(b, mem_ctx, &r),
+		"is_server_listening failed");
 
 	if (*r.out.status != 0 || r.out.result == 0) {
-		printf("\tserver is NOT listening\n");
+		torture_comment(tctx, "\tserver is NOT listening\n");
 	} else {
-		printf("\tserver is listening\n");
+		torture_comment(tctx, "\tserver is listening\n");
 	}
 
 	return true;
 }
 
-static bool test_stop_server_listening(struct dcerpc_binding_handle *b,
+static bool test_stop_server_listening(struct torture_context *tctx,
+				       struct dcerpc_binding_handle *b,
 				       TALLOC_CTX *mem_ctx)
 {
-	NTSTATUS status;
 	struct mgmt_stop_server_listening r;
 
-	status = dcerpc_mgmt_stop_server_listening_r(b, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("stop_server_listening failed - %s\n", nt_errstr(status));
-		return false;
-	}
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_mgmt_stop_server_listening_r(b, mem_ctx, &r),
+		"stop_server_listening failed");
 
 	if (!W_ERROR_IS_OK(r.out.result)) {
-		printf("\tserver refused to stop listening - %s\n", win_errstr(r.out.result));
+		torture_comment(tctx, "\tserver refused to stop listening - %s\n", win_errstr(r.out.result));
 	} else {
-		printf("\tserver allowed a stop_server_listening request\n");
+		torture_comment(tctx, "\tserver allowed a stop_server_listening request\n");
 		return false;
 	}
 
@@ -191,7 +239,7 @@ static bool test_stop_server_listening(struct dcerpc_binding_handle *b,
 }
 
 
-bool torture_rpc_mgmt(struct torture_context *torture)
+bool torture_rpc_mgmt(struct torture_context *tctx)
 {
         NTSTATUS status;
         struct dcerpc_pipe *p;
@@ -202,17 +250,17 @@ bool torture_rpc_mgmt(struct torture_context *torture)
 
 	mem_ctx = talloc_init("torture_rpc_mgmt");
 
-	status = torture_rpc_binding(torture, &b);
+	status = torture_rpc_binding(tctx, &b);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);
 		return false;
 	}
 
-	for (l=ndr_table_list();l;l=l->next) {		
+	for (l=ndr_table_list();l;l=l->next) {
 		struct dcerpc_binding_handle *bh;
 
 		loop_ctx = talloc_named(mem_ctx, 0, "torture_rpc_mgmt loop context");
-		
+
 		/* some interfaces are not mappable */
 		if (l->table->num_calls == 0 ||
 		    strcmp(l->table->name, "mgmt") == 0) {
@@ -220,50 +268,51 @@ bool torture_rpc_mgmt(struct torture_context *torture)
 			continue;
 		}
 
-		printf("\nTesting pipe '%s'\n", l->table->name);
+		torture_comment(tctx, "\nTesting pipe '%s'\n", l->table->name);
 
 		status = dcerpc_epm_map_binding(loop_ctx, b, l->table,
-						torture->ev, torture->lp_ctx);
+						tctx->ev, tctx->lp_ctx);
 		if (!NT_STATUS_IS_OK(status)) {
-			printf("Failed to map port for uuid %s\n", 
+			torture_comment(tctx, "Failed to map port for uuid %s\n",
 				   GUID_string(loop_ctx, &l->table->syntax_id.uuid));
 			talloc_free(loop_ctx);
 			continue;
 		}
 
-		lpcfg_set_cmdline(torture->lp_ctx, "torture:binding", dcerpc_binding_string(loop_ctx, b));
+		lpcfg_set_cmdline(tctx->lp_ctx, "torture:binding", dcerpc_binding_string(loop_ctx, b));
 
-		status = torture_rpc_connection(torture, &p, &ndr_table_mgmt);
+		status = torture_rpc_connection(tctx, &p, &ndr_table_mgmt);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
-			printf("Interface not available - skipping\n");
+			torture_comment(tctx, "Interface not available - skipping\n");
 			talloc_free(loop_ctx);
+			continue;
+		}
+
+		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(loop_ctx);
+			torture_comment(tctx, "Interface not available (%s) - skipping\n", nt_errstr(status));
+			ret = false;
 			continue;
 		}
 		bh = p->binding_handle;
 
-		if (!NT_STATUS_IS_OK(status)) {
-			talloc_free(loop_ctx);
-			ret = false;
-			continue;
-		}
-
-		if (!test_is_server_listening(bh, loop_ctx)) {
+		if (!test_is_server_listening(tctx, bh, loop_ctx)) {
 			ret = false;
 		}
 
-		if (!test_stop_server_listening(bh, loop_ctx)) {
+		if (!test_stop_server_listening(tctx, bh, loop_ctx)) {
 			ret = false;
 		}
 
-		if (!test_inq_stats(bh, loop_ctx)) {
+		if (!test_inq_stats(tctx, bh, loop_ctx)) {
 			ret = false;
 		}
 
-		if (!test_inq_princ_name(bh, loop_ctx)) {
+		if (!test_inq_princ_name(tctx, bh, loop_ctx)) {
 			ret = false;
 		}
 
-		if (!test_inq_if_ids(torture, bh, loop_ctx, NULL, NULL)) {
+		if (!test_inq_if_ids(tctx, bh, loop_ctx, NULL, NULL)) {
 			ret = false;
 		}
 

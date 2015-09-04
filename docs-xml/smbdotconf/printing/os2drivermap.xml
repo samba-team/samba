@@ -1,7 +1,6 @@
 <samba:parameter name="os2 driver map"
                  context="G"
-		 advanced="1" developer="1"
-		 type="string"
+                 type="string"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>The parameter is used to define the absolute

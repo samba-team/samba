@@ -177,65 +177,6 @@ typedef sig_atomic_t volatile SIG_ATOMIC_T;
 #endif
 
 /*
-   Samba needs type definitions for int16, int32, uint16 and uint32.
-
-   Normally these are signed and unsigned 16 and 32 bit integers, but
-   they actually only need to be at least 16 and 32 bits
-   respectively. Thus if your word size is 8 bytes just defining them
-   as signed and unsigned int will work.
-*/
-
-#ifndef uint8
-#define uint8 uint8_t
-#endif
-
-#if !defined(int16) && !defined(HAVE_INT16_FROM_RPC_RPC_H)
-#  define int16 int16_t
-   /* needed to work around compile issue on HP-UX 11.x */
-#  define _INT16	1
-#endif
-
-/*
- * Note we duplicate the size tests in the unsigned 
- * case as int16 may be a typedef from rpc/rpc.h
- */
-
-
-#if !defined(uint16) && !defined(HAVE_UINT16_FROM_RPC_RPC_H)
-#  define uint16 uint16_t
-#endif
-
-#if !defined(int32) && !defined(HAVE_INT32_FROM_RPC_RPC_H)
-#  define int32 int32_t
-#  ifndef _INT32
-     /* needed to work around compile issue on HP-UX 11.x */
-#    define _INT32	1
-#  endif
-#endif
-
-/*
- * Note we duplicate the size tests in the unsigned 
- * case as int32 may be a typedef from rpc/rpc.h
- */
-
-#if !defined(uint32) && !defined(HAVE_UINT32_FROM_RPC_RPC_H)
-#  define uint32 uint32_t
-#endif
-
-/*
- * check for 8 byte long long
- */
-
-#if !defined(uint64)
-#  define uint64 uint64_t
-#endif
-
-#if !defined(int64)
-#  define int64 int64_t
-#endif
-
-
-/*
  * Types for devices, inodes and offsets.
  */
 
@@ -356,6 +297,9 @@ enum timestamp_set_resolution {
 typedef char fstring[FSTRING_LEN];
 #endif
 
+/* debug.h need to be included before samba_util.h for the macro SMB_ASSERT */
+#include "../lib/util/debug.h"
+
 /* Lists, trees, caching, database... */
 #include "../lib/util/samba_util.h"
 #include "../lib/util/util_net.h"
@@ -371,7 +315,6 @@ typedef char fstring[FSTRING_LEN];
 
 #include "../lib/util/data_blob.h"
 #include "../lib/util/time.h"
-#include "../lib/util/debug.h"
 #include "../lib/util/debug_s3.h"
 
 #include "../libcli/util/ntstatus.h"

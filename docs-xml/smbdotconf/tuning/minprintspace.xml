@@ -1,7 +1,6 @@
 <samba:parameter name="min print space"
                  context="S"
 				 type="integer"
-                 print="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>This sets the minimum amount of free disk 

@@ -222,7 +222,7 @@ struct dns_update_request {
 struct dns_connection {
 	int32_t hType;
 	int s;
-	struct sockaddr RecvAddr;
+	struct sockaddr_storage RecvAddr;
 };
 
 struct dns_buffer {

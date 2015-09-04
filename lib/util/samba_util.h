@@ -87,28 +87,8 @@ _PUBLIC_ int sys_getnameinfo(const struct sockaddr *psa,
 			     int flags);
 
 /* The following definitions come from lib/util/genrand.c  */
-/**
- Copy any user given reseed data.
-**/
-_PUBLIC_ void set_rand_reseed_callback(void (*fn)(void *, int *), void *);
 
-/**
- * Tell the random number generator it needs to reseed.
- */
-_PUBLIC_ void set_need_random_reseed(void);
-
-/**
- Interface to the (hopefully) good crypto random number generator.
- Will use our internal PRNG if more than 40 bytes of random generation
- has been requested, otherwise tries to read from /dev/random
-**/
-_PUBLIC_ void generate_random_buffer(uint8_t *out, int len);
-
-/**
- Interface to the (hopefully) good crypto random number generator.
- Will always use /dev/urandom if available.
-**/
-_PUBLIC_ void generate_secret_buffer(uint8_t *out, int len);
+#include "lib/util/genrand.h"
 
 /**
   generate a single random uint32_t
@@ -205,12 +185,7 @@ _PUBLIC_ _PURE_ DATA_BLOB strhex_to_data_blob(TALLOC_CTX *mem_ctx, const char *s
 _PUBLIC_ void hex_encode_buf(char *dst, const uint8_t *src, size_t srclen);
 
 /**
- * Routine to print a buffer as HEX digits, into an allocated string.
- */
-_PUBLIC_ void hex_encode(const unsigned char *buff_in, size_t len, char **out_hex_buffer);
-
-/**
- * talloc version of hex_encode()
+ * talloc version of hex_encode_buf()
  */
 _PUBLIC_ char *hex_encode_talloc(TALLOC_CTX *mem_ctx, const unsigned char *buff_in, size_t len);
 
@@ -509,11 +484,6 @@ load a file into memory
 _PUBLIC_ char *file_load(const char *fname, size_t *size, size_t maxsize, TALLOC_CTX *mem_ctx);
 
 /**
-mmap (if possible) or read a file
-**/
-_PUBLIC_ void *map_file(const char *fname, size_t size);
-
-/**
 load a file into memory and return an array of pointers to lines in the file
 must be freed with talloc_free(). 
 **/
@@ -801,8 +771,6 @@ bool pm_process( const char *fileName,
                  bool (*pfunc)(const char *, const char *, void *),
 				 void *userdata);
 
-bool unmap_file(void *start, size_t size);
-
 void print_asc(int level, const uint8_t *buf,int len);
 void print_asc_cb(const uint8_t *buf, int len,
 		  void (*cb)(const char *buf, void *private_data),
@@ -883,7 +851,6 @@ char *server_id_str_buf(struct server_id id, struct server_id_buf *dst);
 bool server_id_same_process(const struct server_id *p1,
 			    const struct server_id *p2);
 bool server_id_equal(const struct server_id *p1, const struct server_id *p2);
-char *server_id_str(TALLOC_CTX *mem_ctx, const struct server_id *id);
 struct server_id server_id_from_string(uint32_t local_vnn,
 				       const char *pid_string);
 
@@ -898,6 +865,9 @@ void server_id_set_disconnected(struct server_id *id);
  * a disconnected client
  */
 bool server_id_is_disconnected(const struct server_id *id);
+
+void server_id_put(uint8_t buf[24], const struct server_id id);
+void server_id_get(struct server_id *id, const uint8_t buf[24]);
 
 /*
  * Samba code should use samba_tevent_context_init() instead of

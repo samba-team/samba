@@ -45,7 +45,7 @@
 
 static bool smb_io_time(const char *desc, NTTIME *nttime, prs_struct *ps, int depth)
 {
-	uint32 low, high;
+	uint32_t low, high;
 	if (nttime == NULL)
 		return False;
 
@@ -75,11 +75,11 @@ static bool smb_io_time(const char *desc, NTTIME *nttime, prs_struct *ps, int de
 /*******************************************************************
 *******************************************************************/
 
-static int write_block( REGF_FILE *file, prs_struct *ps, uint32 offset )
+static int write_block( REGF_FILE *file, prs_struct *ps, uint32_t offset )
 {
 	int bytes_written, returned;
 	char *buffer = prs_data_p( ps );
-	uint32 buffer_size = prs_data_size( ps );
+	uint32_t buffer_size = prs_data_size( ps );
 	SMB_STRUCT_STAT sbuf;
 
 	if ( file->fd == -1 )
@@ -113,7 +113,7 @@ static int write_block( REGF_FILE *file, prs_struct *ps, uint32 offset )
 /*******************************************************************
 *******************************************************************/
 
-static int read_block( REGF_FILE *file, prs_struct *ps, uint32 file_offset, uint32 block_size )
+static int read_block( REGF_FILE *file, prs_struct *ps, uint32_t file_offset, uint32_t block_size )
 {
 	int bytes_read, returned;
 	char *buffer;
@@ -199,9 +199,9 @@ static bool write_hbin_block( REGF_FILE *file, REGF_HBIN *hbin )
 	/* write free space record if any is available */
 
 	if ( hbin->free_off != REGF_OFFSET_NONE ) {
-		uint32 header = 0xffffffff;
+		uint32_t header = 0xffffffff;
 
-		if ( !prs_set_offset( &hbin->ps, hbin->free_off-sizeof(uint32) ) )
+		if ( !prs_set_offset( &hbin->ps, hbin->free_off-sizeof(uint32_t) ) )
 			return False;
 		if ( !prs_uint32( "free_size", &hbin->ps, 0, &hbin->free_size ) )
 			return False;
@@ -224,7 +224,7 @@ static bool hbin_block_close( REGF_FILE *file, REGF_HBIN *hbin )
 	/* remove the block from the open list and flush it to disk */
 
 	for ( p=file->block_list; p && p!=hbin; p=p->next )
-		;;
+		;
 
 	if ( p == hbin ) {
 		DLIST_REMOVE( file->block_list, hbin );
@@ -246,7 +246,7 @@ static bool prs_regf_block( const char *desc, prs_struct *ps, int depth, REGF_FI
 	prs_debug(ps, depth, desc, "prs_regf_block");
 	depth++;
 	
-	if ( !prs_uint8s( True, "header", ps, depth, (uint8*)file->header, sizeof( file->header )) )
+	if ( !prs_uint8s( True, "header", ps, depth, (uint8_t *)file->header, sizeof( file->header )) )
 		return False;
 	
 	/* yes, these values are always identical so store them only once */
@@ -303,12 +303,12 @@ static bool prs_regf_block( const char *desc, prs_struct *ps, int depth, REGF_FI
 
 static bool prs_hbin_block( const char *desc, prs_struct *ps, int depth, REGF_HBIN *hbin )
 {
-	uint32 block_size2;
+	uint32_t block_size2;
 
 	prs_debug(ps, depth, desc, "prs_regf_block");
 	depth++;
 	
-	if ( !prs_uint8s( True, "header", ps, depth, (uint8*)hbin->header, sizeof( hbin->header )) )
+	if ( !prs_uint8s( True, "header", ps, depth, (uint8_t*)hbin->header, sizeof( hbin->header )) )
 		return False;
 
 	if ( !prs_uint32( "first_hbin_off", ps, depth, &hbin->first_hbin_off ))
@@ -338,10 +338,10 @@ static bool prs_hbin_block( const char *desc, prs_struct *ps, int depth, REGF_HB
 
 static bool prs_nk_rec( const char *desc, prs_struct *ps, int depth, REGF_NK_REC *nk )
 {
-	uint16 class_length, name_length;
-	uint32 start;
-	uint32 data_size, start_off, end_off;
-	uint32 unknown_off = REGF_OFFSET_NONE;
+	uint16_t class_length, name_length;
+	uint32_t start;
+	uint32_t data_size, start_off, end_off;
+	uint32_t unknown_off = REGF_OFFSET_NONE;
 
 	nk->hbin_off = prs_offset( ps );
 	start = nk->hbin_off;
@@ -351,13 +351,13 @@ static bool prs_nk_rec( const char *desc, prs_struct *ps, int depth, REGF_NK_REC
 	
 	/* back up and get the data_size */
 	
-	if ( !prs_set_offset( ps, prs_offset(ps)-sizeof(uint32)) )
+	if ( !prs_set_offset( ps, prs_offset(ps)-sizeof(uint32_t)) )
 		return False;
 	start_off = prs_offset( ps );
 	if ( !prs_uint32( "rec_size", ps, depth, &nk->rec_size ))
 		return False;
 	
-	if ( !prs_uint8s( True, "header", ps, depth, (uint8*)nk->header, sizeof( nk->header )) )
+	if ( !prs_uint8s( True, "header", ps, depth, (uint8_t *)nk->header, sizeof( nk->header )) )
 		return False;
 		
 	if ( !prs_uint16( "key_type", ps, depth, &nk->key_type ))
@@ -418,7 +418,7 @@ static bool prs_nk_rec( const char *desc, prs_struct *ps, int depth, REGF_NK_REC
 				return False;
 		}
 
-		if ( !prs_uint8s( True, "name", ps, depth, (uint8*)nk->keyname, name_length) )
+		if ( !prs_uint8s( True, "name", ps, depth, (uint8_t *)nk->keyname, name_length) )
 			return False;
 
 		if ( UNMARSHALLING(ps) ) 
@@ -442,10 +442,10 @@ static bool prs_nk_rec( const char *desc, prs_struct *ps, int depth, REGF_NK_REC
 /*******************************************************************
 *******************************************************************/
 
-static uint32 regf_block_checksum( prs_struct *ps )
+static uint32_t regf_block_checksum( prs_struct *ps )
 {
 	char *buffer = prs_data_p( ps );
-	uint32 checksum, x;
+	uint32_t checksum, x;
 	int i;
 
 	/* XOR of all bytes 0x0000 - 0x01FB */
@@ -466,7 +466,7 @@ static uint32 regf_block_checksum( prs_struct *ps )
 static bool read_regf_block( REGF_FILE *file )
 {
 	prs_struct ps;
-	uint32 checksum;
+	uint32_t checksum;
 	
 	/* grab the first block from the file */
 		
@@ -496,7 +496,7 @@ static bool read_regf_block( REGF_FILE *file )
 static REGF_HBIN* read_hbin_block( REGF_FILE *file, off_t offset )
 {
 	REGF_HBIN *hbin;
-	uint32 record_size, curr_off, block_size, header;
+	uint32_t record_size, curr_off, block_size, header;
 	
 	if ( !(hbin = talloc_zero(file->mem_ctx, REGF_HBIN)) ) 
 		return NULL;
@@ -521,7 +521,7 @@ static REGF_HBIN* read_hbin_block( REGF_FILE *file, off_t offset )
 
 	/* remember that the record_size is in the 4 bytes preceeding the record itself */
 
-	if ( !prs_set_offset( &hbin->ps, file->data_offset+HBIN_HDR_SIZE-sizeof(uint32) ) )
+	if ( !prs_set_offset( &hbin->ps, file->data_offset+HBIN_HDR_SIZE-sizeof(uint32_t) ) )
 		return NULL;
 
 	record_size = 0;
@@ -567,7 +567,7 @@ static REGF_HBIN* read_hbin_block( REGF_FILE *file, off_t offset )
 		/* account for the fact that the curr_off is 4 bytes behind the actual 
 		   record header */
 
-		hbin->free_off = curr_off + sizeof(uint32);
+		hbin->free_off = curr_off + sizeof(uint32_t);
 		hbin->free_size = record_size;
 	}
 
@@ -584,7 +584,7 @@ static REGF_HBIN* read_hbin_block( REGF_FILE *file, off_t offset )
  block for it
 *******************************************************************/
 
-static bool hbin_contains_offset( REGF_HBIN *hbin, uint32 offset )
+static bool hbin_contains_offset( REGF_HBIN *hbin, uint32_t offset )
 {
 	if ( !hbin )
 		return False;
@@ -600,10 +600,10 @@ static bool hbin_contains_offset( REGF_HBIN *hbin, uint32 offset )
  block for it
 *******************************************************************/
 
-static REGF_HBIN* lookup_hbin_block( REGF_FILE *file, uint32 offset )
+static REGF_HBIN* lookup_hbin_block( REGF_FILE *file, uint32_t offset )
 {
 	REGF_HBIN *hbin = NULL;
-	uint32 block_off;
+	uint32_t block_off;
 
 	/* start with the open list */
 
@@ -659,7 +659,7 @@ static bool hbin_prs_lf_records( const char *desc, REGF_HBIN *hbin, int depth, R
 {
 	int i;
 	REGF_LF_REC *lf = &nk->subkeys;
-	uint32 data_size, start_off, end_off;
+	uint32_t data_size, start_off, end_off;
 
 	prs_debug(&hbin->ps, depth, desc, "prs_lf_records");
 	depth++;
@@ -676,13 +676,13 @@ static bool hbin_prs_lf_records( const char *desc, REGF_HBIN *hbin, int depth, R
 
 	/* backup and get the data_size */
 	
-	if ( !prs_set_offset( &hbin->ps, prs_offset(&hbin->ps)-sizeof(uint32)) )
+	if ( !prs_set_offset( &hbin->ps, prs_offset(&hbin->ps)-sizeof(uint32_t)) )
 		return False;
 	start_off = prs_offset( &hbin->ps );
 	if ( !prs_uint32( "rec_size", &hbin->ps, depth, &lf->rec_size ))
 		return False;
 
-	if ( !prs_uint8s( True, "header", &hbin->ps, depth, (uint8*)lf->header, sizeof( lf->header )) )
+	if ( !prs_uint8s( True, "header", &hbin->ps, depth, (uint8_t *)lf->header, sizeof( lf->header )) )
 		return False;
 		
 	if ( !prs_uint16( "num_keys", &hbin->ps, depth, &lf->num_keys))
@@ -722,8 +722,8 @@ static bool hbin_prs_lf_records( const char *desc, REGF_HBIN *hbin, int depth, R
 static bool hbin_prs_sk_rec( const char *desc, REGF_HBIN *hbin, int depth, REGF_SK_REC *sk )
 {
 	prs_struct *ps = &hbin->ps;
-	uint16 tag = 0xFFFF;
-	uint32 data_size, start_off, end_off;
+	uint16_t tag = 0xFFFF;
+	uint32_t data_size, start_off, end_off;
 
 
 	prs_debug(ps, depth, desc, "hbin_prs_sk_rec");
@@ -734,13 +734,13 @@ static bool hbin_prs_sk_rec( const char *desc, REGF_HBIN *hbin, int depth, REGF_
 
 	/* backup and get the data_size */
 	
-	if ( !prs_set_offset( &hbin->ps, prs_offset(&hbin->ps)-sizeof(uint32)) )
+	if ( !prs_set_offset( &hbin->ps, prs_offset(&hbin->ps)-sizeof(uint32_t)) )
 		return False;
 	start_off = prs_offset( &hbin->ps );
 	if ( !prs_uint32( "rec_size", &hbin->ps, depth, &sk->rec_size ))
 		return False;
 
-	if ( !prs_uint8s( True, "header", ps, depth, (uint8*)sk->header, sizeof( sk->header )) )
+	if ( !prs_uint8s( True, "header", ps, depth, (uint8_t *)sk->header, sizeof( sk->header )) )
 		return False;
 	if ( !prs_uint16( "tag", ps, depth, &tag))
 		return False;
@@ -800,23 +800,23 @@ static bool hbin_prs_sk_rec( const char *desc, REGF_HBIN *hbin, int depth, REGF_
 
 static bool hbin_prs_vk_rec( const char *desc, REGF_HBIN *hbin, int depth, REGF_VK_REC *vk, REGF_FILE *file )
 {
-	uint32 offset;
-	uint16 name_length;
+	uint32_t offset;
+	uint16_t name_length;
 	prs_struct *ps = &hbin->ps;
-	uint32 data_size, start_off, end_off;
+	uint32_t data_size, start_off, end_off;
 
 	prs_debug(ps, depth, desc, "prs_vk_rec");
 	depth++;
 
 	/* backup and get the data_size */
 	
-	if ( !prs_set_offset( &hbin->ps, prs_offset(&hbin->ps)-sizeof(uint32)) )
+	if ( !prs_set_offset( &hbin->ps, prs_offset(&hbin->ps)-sizeof(uint32_t)) )
 		return False;
 	start_off = prs_offset( &hbin->ps );
 	if ( !prs_uint32( "rec_size", &hbin->ps, depth, &vk->rec_size ))
 		return False;
 
-	if ( !prs_uint8s( True, "header", ps, depth, (uint8*)vk->header, sizeof( vk->header )) )
+	if ( !prs_uint8s( True, "header", ps, depth, (uint8_t *)vk->header, sizeof( vk->header )) )
 		return False;
 
 	if ( MARSHALLING(&hbin->ps) )
@@ -845,7 +845,7 @@ static bool hbin_prs_vk_rec( const char *desc, REGF_HBIN *hbin, int depth, REGF_
 			if ( !(vk->valuename = PRS_ALLOC_MEM( ps, char, name_length+1 )))
 				return False;
 		}
-		if ( !prs_uint8s( True, "name", ps, depth, (uint8*)vk->valuename, name_length ) )
+		if ( !prs_uint8s( True, "name", ps, depth, (uint8_t *)vk->valuename, name_length ) )
 			return False;
 	}
 
@@ -863,10 +863,10 @@ static bool hbin_prs_vk_rec( const char *desc, REGF_HBIN *hbin, int depth, REGF_
 
 		if ( !(vk->data_size & VK_DATA_IN_OFFSET) ) {
 			REGF_HBIN *hblock = hbin;
-			uint32 data_rec_size;
+			uint32_t data_rec_size;
 
 			if ( UNMARSHALLING(&hbin->ps) ) {
-				if ( !(vk->data = PRS_ALLOC_MEM( ps, uint8, vk->data_size) ) )
+				if ( !(vk->data = PRS_ALLOC_MEM( ps, uint8_t, vk->data_size) ) )
 					return False;
 			}
 
@@ -875,11 +875,11 @@ static bool hbin_prs_vk_rec( const char *desc, REGF_HBIN *hbin, int depth, REGF_
 				if ( !(hblock = lookup_hbin_block( file, vk->data_off )) )
 					return False;
 			}
-			if ( !(prs_set_offset( &hblock->ps, (vk->data_off+HBIN_HDR_SIZE-hblock->first_hbin_off)-sizeof(uint32) )) )
+			if ( !(prs_set_offset( &hblock->ps, (vk->data_off+HBIN_HDR_SIZE-hblock->first_hbin_off)-sizeof(uint32_t) )) )
 				return False;
 
 			if ( MARSHALLING(&hblock->ps) ) {
-				data_rec_size = ( (vk->data_size+sizeof(uint32)) & 0xfffffff8 ) + 8;
+				data_rec_size = ( (vk->data_size+sizeof(uint32_t)) & 0xfffffff8 ) + 8;
 				data_rec_size = ( data_rec_size - 1 ) ^ 0xFFFFFFFF;
 			}
 			if ( !prs_uint32( "data_rec_size", &hblock->ps, depth, &data_rec_size ))
@@ -891,7 +891,7 @@ static bool hbin_prs_vk_rec( const char *desc, REGF_HBIN *hbin, int depth, REGF_
 				hblock->dirty = True;
 		}
 		else {
-			if ( !(vk->data = PRS_ALLOC_MEM( ps, uint8, 4 ) ) )
+			if ( !(vk->data = PRS_ALLOC_MEM( ps, uint8_t, 4 ) ) )
 				return False;
 			SIVAL( vk->data, 0, vk->data_off );
 		}
@@ -918,7 +918,7 @@ static bool hbin_prs_vk_rec( const char *desc, REGF_HBIN *hbin, int depth, REGF_
 static bool hbin_prs_vk_records( const char *desc, REGF_HBIN *hbin, int depth, REGF_NK_REC *nk, REGF_FILE *file )
 {
 	int i;
-	uint32 record_size;
+	uint32_t record_size;
 
 	prs_debug(&hbin->ps, depth, desc, "prs_vk_records");
 	depth++;
@@ -935,11 +935,11 @@ static bool hbin_prs_vk_records( const char *desc, REGF_HBIN *hbin, int depth, R
 	
 	/* convert the offset to something relative to this HBIN block */
 	
-	if ( !prs_set_offset( &hbin->ps, nk->values_off+HBIN_HDR_SIZE-hbin->first_hbin_off-sizeof(uint32)) )
+	if ( !prs_set_offset( &hbin->ps, nk->values_off+HBIN_HDR_SIZE-hbin->first_hbin_off-sizeof(uint32_t)) )
 		return False;
 
 	if ( MARSHALLING( &hbin->ps) ) { 
-		record_size = ( ( nk->num_values * sizeof(uint32) ) & 0xfffffff8 ) + 8;
+		record_size = ( ( nk->num_values * sizeof(uint32_t) ) & 0xfffffff8 ) + 8;
 		record_size = (record_size - 1) ^ 0xFFFFFFFF;
 	}
 
@@ -953,7 +953,7 @@ static bool hbin_prs_vk_records( const char *desc, REGF_HBIN *hbin, int depth, R
 
 	for ( i=0; i<nk->num_values; i++ ) {
 		REGF_HBIN *sub_hbin = hbin;
-		uint32 new_offset;
+		uint32_t new_offset;
 	
 		if ( !hbin_contains_offset( hbin, nk->values[i].rec_off ) ) {
 			sub_hbin = lookup_hbin_block( file, nk->values[i].rec_off );
@@ -982,7 +982,7 @@ static bool hbin_prs_vk_records( const char *desc, REGF_HBIN *hbin, int depth, R
 /*******************************************************************
 *******************************************************************/
 
-static REGF_SK_REC* find_sk_record_by_offset( REGF_FILE *file, uint32 offset )
+static REGF_SK_REC* find_sk_record_by_offset( REGF_FILE *file, uint32_t offset )
 {
 	REGF_SK_REC *p_sk;
 	
@@ -1095,9 +1095,9 @@ static bool hbin_prs_key( REGF_FILE *file, REGF_HBIN *hbin, REGF_NK_REC *nk )
 
 static bool next_record( REGF_HBIN *hbin, const char *hdr, bool *eob )
 {
-	uint8 header[REC_HDR_SIZE];
-	uint32 record_size;
-	uint32 curr_off, block_size;
+	uint8_t header[REC_HDR_SIZE];
+	uint32_t record_size;
+	uint32_t curr_off, block_size;
 	bool found = False;
 	prs_struct *ps = &hbin->ps;
 	
@@ -1108,11 +1108,11 @@ static bool next_record( REGF_HBIN *hbin, const char *hdr, bool *eob )
 	/* assume that the current offset is at the record header 
 	   and we need to backup to read the record size */
 
-	curr_off -= sizeof(uint32);
+	curr_off -= sizeof(uint32_t);
 
 	block_size = prs_data_size( ps );
 	record_size = 0;
-	memset( header, 0x0, sizeof(uint8)*REC_HDR_SIZE );
+	memset( header, 0x0, sizeof(uint8_t)*REC_HDR_SIZE );
 	while ( !found ) {
 
 		curr_off = curr_off+record_size;
@@ -1134,7 +1134,7 @@ static bool next_record( REGF_HBIN *hbin, const char *hdr, bool *eob )
 
 		if ( memcmp( header, hdr, REC_HDR_SIZE ) == 0 ) {
 			found = True;
-			curr_off += sizeof(uint32);
+			curr_off += sizeof(uint32_t);
 		}
 	} 
 
@@ -1374,7 +1374,7 @@ REGF_NK_REC* regfio_rootkey( REGF_FILE *file )
 {
 	REGF_NK_REC *nk;
 	REGF_HBIN   *hbin;
-	uint32      offset = REGF_BLOCKSIZE;
+	uint32_t      offset = REGF_BLOCKSIZE;
 	bool        found = False;
 	bool        eob;
 	
@@ -1429,7 +1429,7 @@ REGF_NK_REC* regfio_rootkey( REGF_FILE *file )
 {
 	REGF_NK_REC *subkey;
 	REGF_HBIN   *hbin;
-	uint32      nk_offset;
+	uint32_t      nk_offset;
 
 	/* see if there is anything left to report */
 	
@@ -1462,7 +1462,7 @@ REGF_NK_REC* regfio_rootkey( REGF_FILE *file )
 /*******************************************************************
 *******************************************************************/
 
-static REGF_HBIN* regf_hbin_allocate( REGF_FILE *file, uint32 block_size )
+static REGF_HBIN* regf_hbin_allocate( REGF_FILE *file, uint32_t block_size )
 {
 	REGF_HBIN *hbin;
 	SMB_STRUCT_STAT sbuf;
@@ -1481,7 +1481,7 @@ static REGF_HBIN* regf_hbin_allocate( REGF_FILE *file, uint32 block_size )
 	hbin->file_off       = sbuf.st_ex_size;
 
 	hbin->free_off       = HBIN_HEADER_REC_SIZE;
-	hbin->free_size      = block_size - hbin->free_off + sizeof(uint32);
+	hbin->free_size      = block_size - hbin->free_off + sizeof(uint32_t);
 
 	hbin->block_size     = block_size;
 	hbin->first_hbin_off = hbin->file_off - REGF_BLOCKSIZE;
@@ -1503,7 +1503,7 @@ static REGF_HBIN* regf_hbin_allocate( REGF_FILE *file, uint32 block_size )
 /*******************************************************************
 *******************************************************************/
 
-static void update_free_space( REGF_HBIN *hbin, uint32 size_used )
+static void update_free_space( REGF_HBIN *hbin, uint32_t size_used )
 {
 	hbin->free_off  += size_used;
 	hbin->free_size -= size_used;
@@ -1518,10 +1518,10 @@ static void update_free_space( REGF_HBIN *hbin, uint32 size_used )
 /*******************************************************************
 *******************************************************************/
 
-static REGF_HBIN* find_free_space( REGF_FILE *file, uint32 size )
+static REGF_HBIN* find_free_space( REGF_FILE *file, uint32_t size )
 {
 	REGF_HBIN *hbin, *p_hbin;
-	uint32 block_off;
+	uint32_t block_off;
 	bool cached;
 
 	/* check open block list */
@@ -1577,7 +1577,7 @@ static REGF_HBIN* find_free_space( REGF_FILE *file, uint32 size )
 	/* no free space; allocate a new one */
 
 	if ( !hbin ) {
-		uint32 alloc_size;
+		uint32_t alloc_size;
 
 		/* allocate in multiples of REGF_ALLOC_BLOCK; make sure (size + hbin_header) fits */
 
@@ -1593,7 +1593,7 @@ static REGF_HBIN* find_free_space( REGF_FILE *file, uint32 size )
 done:
 	/* set the offset to be ready to write */
 
-	if ( !prs_set_offset( &hbin->ps, hbin->free_off-sizeof(uint32) ) )
+	if ( !prs_set_offset( &hbin->ps, hbin->free_off-sizeof(uint32_t) ) )
 		return NULL;
 
 	/* write the record size as a placeholder for now, it should be
@@ -1611,15 +1611,15 @@ done:
 /*******************************************************************
 *******************************************************************/
 
-static uint32 sk_record_data_size( struct security_descriptor * sd )
+static uint32_t sk_record_data_size( struct security_descriptor * sd )
 {
-	uint32 size, size_mod8;
+	uint32_t size, size_mod8;
 
 	size_mod8 = 0;
 
 	/* the record size is sizeof(hdr) + name + static members + data_size_field */
 
-	size = sizeof(uint32)*5 + ndr_size_security_descriptor(sd, 0) + sizeof(uint32);
+	size = sizeof(uint32_t)*5 + ndr_size_security_descriptor(sd, 0) + sizeof(uint32_t);
 
 	/* multiple of 8 */
 	size_mod8 = size & 0xfffffff8;
@@ -1632,15 +1632,15 @@ static uint32 sk_record_data_size( struct security_descriptor * sd )
 /*******************************************************************
 *******************************************************************/
 
-static uint32 vk_record_data_size( REGF_VK_REC *vk )
+static uint32_t vk_record_data_size( REGF_VK_REC *vk )
 {
-	uint32 size, size_mod8;
+	uint32_t size, size_mod8;
 
 	size_mod8 = 0;
 
 	/* the record size is sizeof(hdr) + name + static members + data_size_field */
 
-	size = REC_HDR_SIZE + (sizeof(uint16)*3) + (sizeof(uint32)*3) + sizeof(uint32);
+	size = REC_HDR_SIZE + (sizeof(uint16_t)*3) + (sizeof(uint32_t)*3) + sizeof(uint32_t);
 
 	if ( vk->valuename )
 		size += strlen(vk->valuename);
@@ -1656,15 +1656,15 @@ static uint32 vk_record_data_size( REGF_VK_REC *vk )
 /*******************************************************************
 *******************************************************************/
 
-static uint32 lf_record_data_size( uint32 num_keys )
+static uint32_t lf_record_data_size( uint32_t num_keys )
 {
-	uint32 size, size_mod8;
+	uint32_t size, size_mod8;
 
 	size_mod8 = 0;
 
-	/* the record size is sizeof(hdr) + num_keys + sizeof of hash_array + data_size_uint32 */
+	/* the record size is sizeof(hdr) + num_keys + sizeof of hash_array + data_size_uint32_t */
 
-	size = REC_HDR_SIZE + sizeof(uint16) + (sizeof(REGF_HASH_REC) * num_keys) + sizeof(uint32);
+	size = REC_HDR_SIZE + sizeof(uint16_t) + (sizeof(REGF_HASH_REC) * num_keys) + sizeof(uint32_t);
 
 	/* multiple of 8 */
 	size_mod8 = size & 0xfffffff8;
@@ -1677,15 +1677,15 @@ static uint32 lf_record_data_size( uint32 num_keys )
 /*******************************************************************
 *******************************************************************/
 
-static uint32 nk_record_data_size( REGF_NK_REC *nk )
+static uint32_t nk_record_data_size( REGF_NK_REC *nk )
 {
-	uint32 size, size_mod8;
+	uint32_t size, size_mod8;
 
 	size_mod8 = 0;
 
-	/* the record size is static + length_of_keyname + length_of_classname + data_size_uint32 */
+	/* the record size is static + length_of_keyname + length_of_classname + data_size_uint32_t */
 
-	size = 0x4c + strlen(nk->keyname) + sizeof(uint32);
+	size = 0x4c + strlen(nk->keyname) + sizeof(uint32_t);
 
 	if ( nk->classname )
 		size += strlen( nk->classname );
@@ -1719,10 +1719,10 @@ static bool create_vk_record(REGF_FILE *file, REGF_VK_REC *vk,
 	vk->data_size = regval_size( value );
 	vk->type      = regval_type( value );
 
-	if ( vk->data_size > sizeof(uint32) ) {
-		uint32 data_size = ( (vk->data_size+sizeof(uint32)) & 0xfffffff8 ) + 8;
+	if ( vk->data_size > sizeof(uint32_t) ) {
+		uint32_t data_size = ( (vk->data_size+sizeof(uint32_t)) & 0xfffffff8 ) + 8;
 
-		vk->data = (uint8 *)talloc_memdup( file->mem_ctx,
+		vk->data = (uint8_t *)talloc_memdup( file->mem_ctx,
 						   regval_data_p(value),
 						   vk->data_size );
 		if (vk->data == NULL) {
@@ -1765,7 +1765,7 @@ static int hashrec_cmp( REGF_HASH_REC *h1, REGF_HASH_REC *h2 )
 {
 	REGF_NK_REC *nk;
 	REGF_HBIN *vlist_hbin = NULL;
-	uint32 size;
+	uint32_t size;
 
 	if ( !(nk = talloc_zero( file->mem_ctx, REGF_NK_REC )) )
 		return NULL;
@@ -1806,7 +1806,7 @@ static int hashrec_cmp( REGF_HASH_REC *h1, REGF_HASH_REC *h2 )
 		REGF_HASH_REC *hash = &parent->subkeys.hashes[parent->subkey_index];
 
 		hash->nk_off = prs_offset( &nk->hbin->ps ) + nk->hbin->first_hbin_off - HBIN_HDR_SIZE;
-		memcpy(hash->keycheck, name, MIN(strlen(name),sizeof(uint32)));
+		memcpy(hash->keycheck, name, MIN(strlen(name),sizeof(uint32_t)));
 		hash->fullname = talloc_strdup( file->mem_ctx, name );
 		parent->subkey_index++;
 
@@ -1821,7 +1821,7 @@ static int hashrec_cmp( REGF_HASH_REC *h1, REGF_HASH_REC *h2 )
 
 	nk->sk_off = REGF_OFFSET_NONE;
 	if ( sec_desc ) {
-		uint32 sk_size = sk_record_data_size( sec_desc );
+		uint32_t sk_size = sk_record_data_size( sec_desc );
 		REGF_HBIN *sk_hbin;
 
 		/* search for it in the existing list of sd's */
@@ -1850,7 +1850,7 @@ static int hashrec_cmp( REGF_HASH_REC *h1, REGF_HASH_REC *h2 )
 			
 			/* size value must be self-inclusive */
 			nk->sec_desc->size      = ndr_size_security_descriptor(sec_desc, 0)
-				+ sizeof(uint32);
+				+ sizeof(uint32_t);
 
 			DLIST_ADD_END( file->sec_desc_list, nk->sec_desc, REGF_SK_REC *);
 
@@ -1885,8 +1885,8 @@ static int hashrec_cmp( REGF_HASH_REC *h1, REGF_HASH_REC *h2 )
 
 	nk->subkeys_off = REGF_OFFSET_NONE;
 	if ( (nk->num_subkeys = regsubkey_ctr_numkeys( subkeys )) != 0 ) {
-		uint32 lf_size = lf_record_data_size( nk->num_subkeys );
-		uint32 namelen;
+		uint32_t lf_size = lf_record_data_size( nk->num_subkeys );
+		uint32_t namelen;
 		int i;
 		
 		if (!(nk->subkeys.hbin = find_free_space( file, lf_size ))) {
@@ -1919,7 +1919,7 @@ static int hashrec_cmp( REGF_HASH_REC *h1, REGF_HASH_REC *h2 )
 
 	nk->values_off = REGF_OFFSET_NONE;
 	if ( (nk->num_values = regval_ctr_numvals( values )) != 0 ) {
-		uint32 vlist_size = ( ( nk->num_values * sizeof(uint32) ) & 0xfffffff8 ) + 8;
+		uint32_t vlist_size = ( ( nk->num_values * sizeof(uint32_t) ) & 0xfffffff8 ) + 8;
 		int i;
 		
 		if (!(vlist_hbin = find_free_space( file, vlist_size ))) {
@@ -1937,7 +1937,7 @@ static int hashrec_cmp( REGF_HASH_REC *h1, REGF_HASH_REC *h2 )
 		/* create the vk records */
 
 		for ( i=0; i<nk->num_values; i++ ) {
-			uint32 vk_size, namelen, datalen;
+			uint32_t vk_size, namelen, datalen;
 			struct regval_blob *r;
 
 			r = regval_ctr_specific_value( values, i );

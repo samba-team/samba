@@ -202,7 +202,7 @@
 	<term>CTDB_DEBUGLEVEL=<parameter>DEBUGLEVEL</parameter></term>
 	<listitem>
 	  <para>
-	    Default is ERR (0).  Corresponds to <option>-d</option> or
+	    Default is NOTICE (2).  Corresponds to <option>-d</option> or
 	    <option>--debug</option>.
 	  </para>
 	</listitem>
@@ -344,6 +344,29 @@
       </varlistentry>
 
       <varlistentry>
+	<term>CTDB_NODE_ADDRESS=<parameter>FILENAME</parameter></term>
+	<listitem>
+	  <para>
+	    IPADDR is the private IP address that ctdbd will bind to.
+	    Corresponds to <option>--listen</option>.
+	  </para>
+	  <para>
+	    By default ctdbd will select the first address from the
+	    nodes list that in can bind to.  See also
+	    <citetitle>CTDB_NODES</citetitle>.
+	  </para>
+	  <para>
+	    This option is only required when automatic address
+	    detection can not be used.  This can be the case when
+	    running multiple ctdbd daemons/nodes on the same physical
+	    host (usually for testing), using InfiniBand for the
+	    private network or on Linux when sysctl
+	    net.ipv4.ip_nonlocal_bind=1.
+	  </para>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
 	<term>CTDB_PUBLIC_ADDRESSES=<parameter>FILENAME</parameter></term>
 	<listitem>
 	  <para>
@@ -372,6 +395,12 @@
 	    <filename>/some/place/on/shared/storage</filename>, which
 	    should be change to a useful value.  Corresponds to
 	    <option>--reclock</option>.
+	  </para>
+	  <para>
+	    For information about the recovery lock please see the
+	    <citetitle>RECOVERY LOCK</citetitle> section in
+	    <citerefentry><refentrytitle>ctdb</refentrytitle>
+	    <manvolnum>7</manvolnum></citerefentry>.
 	  </para>
 	</listitem>
       </varlistentry>
@@ -944,18 +973,17 @@ CTDB_PER_IP_ROUTING_TABLE_ID_HIGH=9000
       <title>NFS</title>
 
       <para>
-	This includes parameters for the kernel NFS server and the
-	user-space
-	<ulink url="https://github.com/nfs-ganesha/nfs-ganesha/wiki">NFS-Ganesha</ulink>
-	server.
+	This includes parameters for the kernel NFS server.
+	Alternative NFS subsystems (such as <ulink
+	url="https://github.com/nfs-ganesha/nfs-ganesha/wiki">NFS-Ganesha</ulink>)
+	can be integrated using <varname>CTDB_NFS_CALLOUT</varname>.
       </para>
 
       <refsect3>
-	<title>Eventscripts</title>
+	<title>Eventscript</title>
 
 	<simplelist>
 	  <member><filename>60.nfs</filename></member>
-	  <member><filename>60.ganesha</filename></member>
 	</simplelist>
       </refsect3>
 
@@ -975,21 +1003,6 @@ CTDB_PER_IP_ROUTING_TABLE_ID_HIGH=9000
 	</varlistentry>
 
 	<varlistentry>
-	  <term>CTDB_GANESHA_REC_SUBDIR<parameter>SUBDIR</parameter></term>
-	  <listitem>
-	    <para>
-	      SUBDIR is the name of a top-level subdirectory in the
-	      first cluster filesystem.  This subdirectory is used to
-	      allow communication between NFS-Ganesha and the
-	      <filename>60.ganesha</filename> script.
-	    </para>
-	    <para>
-	      Default is ".ganesha".
-	    </para>
-	  </listitem>
-	</varlistentry>
-
-	<varlistentry>
 	  <term>CTDB_MANAGES_NFS=yes|no</term>
 	  <listitem>
 	    <para>
@@ -1002,70 +1015,16 @@ CTDB_PER_IP_ROUTING_TABLE_ID_HIGH=9000
 	</varlistentry>
 
 	<varlistentry>
-	  <term>CTDB_MONITOR_NFS_THREAD_COUNT=yes|no</term>
+	  <term>CTDB_NFS_CALLOUT=<parameter>COMMAND</parameter></term>
 	  <listitem>
 	    <para>
-	      Whether to monitor the NFS kernel server thread count.
+	      COMMAND specifies the path to a callout to handle
+	      interactions with the configured NFS system, including
+	      startup, shutdown, monitoring.
 	    </para>
 	    <para>
-	      This works around a limitation in some NFS initscripts
-	      where some threads can be stuck in host filesystem calls
-	      (perhaps due to slow storage), a restart occurs, some
-	      threads don't exit, the start only adds the missing
-	      number of threads, the stuck threads exit, and the
-	      result is a lower than expected thread count.  Note that
-	      if you must also set <varname>RPCNFSDCOUNT</varname>
-	      (RedHat/Debian) or <varname>USE_KERNEL_NFSD_NUMBER</varname>
-	      (SUSE) in your NFS configuration so the monitoring code
-	      knows how many threads there should be - if neither of
-	      these are set then this option will be ignored.
-	    </para>
-	    <para>
-	      Default is no.
-	    </para>
-	  </listitem>
-	</varlistentry>
-
-	<varlistentry>
-	  <term>CTDB_NFS_DUMP_STUCK_THREADS=<parameter>NUM</parameter></term>
-	  <listitem>
-	    <para>
-	      NUM is the number of NFS kernel server threads to dump
-	      stack traces for if some are still alive after stopping
-	      NFS during a restart.
-	    </para>
-	    <para>
-	      Default is 5.  Set this to 0 to disable this feature.
-	    </para>
-	  </listitem>
-	</varlistentry>
-
-	<varlistentry>
-	  <term>CTDB_NFS_SERVER_MODE=kernel|ganesha</term>
-	  <listitem>
-	    <para>
-	      Selects which NFS server to be managed.
-	    </para>
-	    <para>
-	      This replaces the deprecated variable
-	      <varname>NFS_SERVER_MODE</varname>.
-	    </para>
-	    <para>
-	      Default is "kernel".
-	    </para>
-	  </listitem>
-	</varlistentry>
-
-	<varlistentry>
-	  <term>CTDB_NFS_SKIP_KNFSD_ALIVE_CHECK=yes|no</term>
-	  <listitem>
-	    <para>
-	      During monitoring, should CTDB skip the
-	      <command>rpcinfo</command> check that is used to see if
-	      the NFS kernel server is functional.
-	    </para>
-	    <para>
-	      Default is no.
+	      Default is the included
+	      <command>nfs-linux-kernel-callout</command>.
 	    </para>
 	  </listitem>
 	</varlistentry>
@@ -1090,7 +1049,7 @@ CTDB_PER_IP_ROUTING_TABLE_ID_HIGH=9000
 	    <para>
 	      IPADDR or HOSTNAME indicates the address that
 	      <command>rpcinfo</command> should connect to when doing
-	      <command>rpcinfo</command> check on RPC service during
+	      <command>rpcinfo</command> check on IPv4 RPC service during
 	      monitoring.  Optimally this would be "localhost".
 	      However, this can add some performance overheads.
 	    </para>
@@ -1101,16 +1060,18 @@ CTDB_PER_IP_ROUTING_TABLE_ID_HIGH=9000
 	</varlistentry>
 
 	<varlistentry>
-	  <term>CTDB_SKIP_GANESHA_NFSD_CHECK=yes|no</term>
+	  <term>CTDB_RPCINFO_LOCALHOST6=<parameter>IPADDR</parameter>|<parameter>HOSTNAME</parameter></term>
 	  <listitem>
 	    <para>
-	      As part of monitoring, should CTDB skip the check for
-	      the existence of each directory exported via
-	      NFS-Ganesha.  This may be desirable if there is a large
-	      number of exports.
+	      IPADDR or HOSTNAME indicates the address that
+	      <command>rpcinfo</command> should connect to when doing
+	      <command>rpcinfo</command> check on IPv6 RPC service
+	      during monitoring.  Optimally this would be "localhost6"
+	      (or similar).  However, this can add some performance
+	      overheads.
 	    </para>
 	    <para>
-	      Default is no.
+	      Default is "::1".
 	    </para>
 	  </listitem>
 	</varlistentry>
@@ -1318,91 +1279,91 @@ CTDB_PER_IP_ROUTING_TABLE_ID_HIGH=9000
 
       <para>
 	CTDB can experience seemingly random (performance and other)
-	issues if system resources become too contrained.  Options in
-	this section can be enabled to allow certain system resources to
-	be checked.
+	issues if system resources become too constrained.  Options in
+	this section can be enabled to allow certain system resources
+	to be checked.  They allows warnings to be logged and nodes to
+	be marked unhealthy when system resource usage reaches the
+	configured thresholds.
+      </para>
+
+      <para>
+	Some checks are enabled by default.  It is recommended that
+	these checks remain enabled or are augmented by extra checks.
+	There is no supported way of completely disabling the checks.
       </para>
 
       <refsect3>
 	<title>Eventscripts</title>
 
 	<simplelist>
-	  <member><filename>00.ctdb</filename></member>
-	  <member><filename>40.fs_use</filename></member>
+	  <member><filename>05.system</filename></member>
 	</simplelist>
 
 	<para>
-	  Filesystem usage monitoring is in
-	  <filename>40.fs_use</filename>.  This eventscript is not
-	  enabled by default.  Use <command>ctdb
-	  enablescript</command> to enable it.
+	  Filesystem and memory usage monitoring is in
+	  <filename>05.system</filename>.
 	</para>
       </refsect3>
 
       <variablelist>
 
 	<varlistentry>
-	  <term>CTDB_CHECK_FS_USE=<parameter>FS-LIMIT-LIST</parameter></term>
+	  <term>CTDB_MONITOR_FILESYSTEM_USAGE=<parameter>FS-LIMIT-LIST</parameter></term>
 	  <listitem>
 	    <para>
 	      FS-LIMIT-LIST is a space-separated list of
-	      <parameter>FILESYSTEM</parameter>:<parameter>LIMIT</parameter>
-	      pairs indicating that a node should be flagged unhealthy
-	      if the space used on FILESYSTEM reaches LIMIT%.
+	      <parameter>FILESYSTEM</parameter>:<parameter>WARN_LIMIT</parameter><optional>:<parameter>UNHEALTHY_LIMIT</parameter></optional>
+	      triples indicating that warnings should be logged if the
+	      space used on FILESYSTEM reaches WARN_LIMIT%.  If usage
+	      reaches UNHEALTHY_LIMIT then the node should be flagged
+	      unhealthy.  Either WARN_LIMIT or UNHEALTHY_LIMIT may be
+	      left blank, meaning that check will be omitted.
 	    </para>
 
 	    <para>
-	      No default.
-	    </para>
-
-	    <para>
-	      Note that this feature uses the
-	      <filename>40.fs_use</filename> eventscript, which is not
-	      enabled by default.  Use <command>ctdb
-	      enablescript</command> to enable it.
+	      Default is to warn for each filesystem containing a
+	      database directory (<envar>CTDB_DBDIR</envar>,
+	      <envar>CTDB_DBDIR_PERSISTENT</envar>,
+	      <envar>CTDB_DBDIR_STATE</envar>) with a threshold of
+	      90%.
 	    </para>
 	  </listitem>
 	</varlistentry>
 
 	<varlistentry>
-	  <term>CTDB_CHECK_SWAP_IS_NOT_USED=yes|no</term>
+	  <term>CTDB_MONITOR_MEMORY_USAGE=<parameter>MEM-LIMITS</parameter></term>
 	  <listitem>
 	    <para>
-	      Should a warning be logged if swap space is in use.
+	      MEM-LIMITS takes the form
+	      <parameter>WARN_LIMIT</parameter><optional>:<parameter>UNHEALTHY_LIMIT</parameter></optional>
+	      indicating that warnings should be logged if memory
+	      usage reaches WARN_LIMIT%.  If usage reaches
+	      UNHEALTHY_LIMIT then the node should be flagged
+	      unhealthy.  Either WARN_LIMIT or UNHEALTHY_LIMIT may be
+	      left blank, meaning that check will be omitted.
 	    </para>
 	    <para>
-	      Default is no.
+	      Default is 80, so warnings will be logged when memory
+	      usage reaches 80%.
 	    </para>
 	  </listitem>
 	</varlistentry>
 
 	<varlistentry>
-	  <term>CTDB_MONITOR_FREE_MEMORY=<parameter>NUM</parameter></term>
+	  <term>CTDB_MONITOR_SWAP_USAGE=<parameter>SWAP-LIMITS</parameter></term>
 	  <listitem>
 	    <para>
-	      NUM is a lower limit on available system memory, expressed
-	      in megabytes.  If this is set and the amount of available
-	      memory falls below this limit then some debug information
-	      will be logged, the node will be disabled and then CTDB
-	      will be shut down.
+	      SWAP-LIMITS takes the form
+	      <parameter>WARN_LIMIT</parameter><optional>:<parameter>UNHEALTHY_LIMIT</parameter></optional>
+	       indicating that warnings should be logged if
+	      swap usage reaches WARN_LIMIT%.  If usage reaches
+	      UNHEALTHY_LIMIT then the node should be flagged
+	      unhealthy.  Either WARN_LIMIT or UNHEALTHY_LIMIT may be
+	      left blank, meaning that check will be omitted.
 	    </para>
 	    <para>
-	      No default.
-	    </para>
-	  </listitem>
-	</varlistentry>
-
-	<varlistentry>
-	  <term>CTDB_MONITOR_FREE_MEMORY_WARN=<parameter>NUM</parameter></term>
-	  <listitem>
-	    <para>
-	      NUM is a lower limit on available system memory, expressed
-	      in megabytes.  If this is set and the amount of available
-	      memory falls below this limit then a warning will be
-	      logged.
-	    </para>
-	    <para>
-	      No default.
+	      Default is 25, so warnings will be logged when swap
+	      usage reaches 25%.
 	    </para>
 	  </listitem>
 	</varlistentry>
@@ -1597,6 +1558,18 @@ CTDB_SET_MonitorInterval=20
 	  </para>
 	  <para>
 	    Default is 10.
+	  </para>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term>CTDB_MAX_OPEN_FILES=<parameter>NUM</parameter></term>
+	<listitem>
+	  <para>
+	    NUM is the maximum number of open files.
+	  </para>
+	  <para>
+	    There is no default.
 	  </para>
 	</listitem>
       </varlistentry>

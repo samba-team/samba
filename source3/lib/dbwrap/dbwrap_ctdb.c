@@ -27,24 +27,6 @@
 #include "dbwrap/dbwrap_rbt.h"
 #include "lib/param/param.h"
 
-/*
- * It is not possible to include ctdb.h and tdb_compat.h (included via
- * some other include above) without warnings. This fixes those
- * warnings.
- */
-
-#ifdef typesafe_cb
-#undef typesafe_cb
-#endif
-
-#ifdef typesafe_cb_preargs
-#undef typesafe_cb_preargs
-#endif
-
-#ifdef typesafe_cb_postargs
-#undef typesafe_cb_postargs
-#endif
-
 #include "ctdb.h"
 #include "ctdb_private.h"
 #include "ctdbd_conn.h"
@@ -498,7 +480,7 @@ static struct db_record *db_ctdb_fetch_locked_transaction(struct db_ctdb_ctx *ct
 		return result;
 	}
 
-	ctdb_data = tdb_fetch_compat(ctx->wtdb->tdb, key);
+	ctdb_data = tdb_fetch(ctx->wtdb->tdb, key);
 	if (ctdb_data.dptr == NULL) {
 		/* create the record */
 		result->value = tdb_null;
@@ -584,7 +566,7 @@ static NTSTATUS db_ctdb_transaction_store(struct db_ctdb_transaction_handle *h,
 	if (!pull_newest_from_marshall_buffer(h->m_write, key, &header,
 					      NULL, NULL)) {
 
-		rec = tdb_fetch_compat(h->ctx->wtdb->tdb, key);
+		rec = tdb_fetch(h->ctx->wtdb->tdb, key);
 
 		if (rec.dptr != NULL) {
 			memcpy(&header, rec.dptr,
@@ -1094,7 +1076,7 @@ again:
 	result->delete_rec = db_ctdb_delete;
 	talloc_set_destructor(result, db_ctdb_record_destr);
 
-	ctdb_data = tdb_fetch_compat(ctx->wtdb->tdb, key);
+	ctdb_data = tdb_fetch(ctx->wtdb->tdb, key);
 
 	/*
 	 * See if we have a valid record and we are the dmaster. If so, we can

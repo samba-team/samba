@@ -1,6 +1,7 @@
 <samba:parameter name="only user"
-					type="boolean"
+                 type="boolean"
                  context="S"
+                 deprecated="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>To restrict a service to a particular set of users you

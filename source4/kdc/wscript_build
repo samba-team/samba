@@ -7,19 +7,30 @@ else:
     kdc_include = getattr(bld.env, "CPPPATH_KDC")
 
 bld.SAMBA_MODULE('service_kdc',
-	source='kdc.c kpasswdd.c proxy.c',
-	subsystem='service',
-	init_function='server_service_kdc_init',
-	deps='kdc HDB_SAMBA4 WDC_SAMBA4 samba-hostconfig LIBTSOCKET LIBSAMBA_TSOCKET com_err samba_server_gensec PAC_GLUE',
-	internal_module=False,
-	)
-
+                 source='kdc.c kpasswdd.c proxy.c',
+                 subsystem='service',
+                 init_function='server_service_kdc_init',
+                 deps='''
+                      kdc
+                      HDB_SAMBA4
+                      WDC_SAMBA4
+                      samba-hostconfig
+                      LIBTSOCKET
+                      LIBSAMBA_TSOCKET
+                      com_err
+                      samba_server_gensec
+                      PAC_GLUE
+                      KDC-GLUE
+                      KPASSWD_GLUE
+                 ''',
+                 internal_module=False)
 
 bld.SAMBA_LIBRARY('HDB_SAMBA4',
                   source='hdb-samba4.c hdb-samba4-plugin.c',
-                  deps='ldb auth4_sam auth_sam_reply samba-credentials hdb db-glue samba-hostconfig com_err',
+                  deps='ldb auth4_sam auth_sam_reply samba-credentials hdb db-glue samba-hostconfig com_err sdb_hdb',
                   includes=kdc_include,
-                  private_library=True
+                  private_library=True,
+                  enabled=bld.CONFIG_SET('SAMBA4_USES_HEIMDAL')
                   )
 
 # A plugin for Heimdal's kadmin for users who need to operate that tool
@@ -33,17 +44,38 @@ bld.SAMBA_LIBRARY('HDB_SAMBA4_PLUGIN',
                   enabled = (bld.CONFIG_SET("USING_SYSTEM_KRB5") and bld.CONFIG_SET("USING_SYSTEM_HDB"))
                   )
 
+bld.SAMBA_SUBSYSTEM('KDC-GLUE',
+	source='kdc-glue.c',
+        includes=kdc_include,
+	deps='hdb PAC_GLUE',
+	enabled=bld.CONFIG_SET('SAMBA4_USES_HEIMDAL')
+	)
+
 bld.SAMBA_SUBSYSTEM('WDC_SAMBA4',
 	source='wdc-samba4.c',
         includes=kdc_include,
-	deps='ldb auth4_sam auth_sam_reply samba-credentials hdb PAC_GLUE samba-hostconfig com_err'
+	deps='ldb auth4_sam auth_sam_reply samba-credentials hdb PAC_GLUE samba-hostconfig com_err KDC-GLUE',
+	enabled=bld.CONFIG_SET('SAMBA4_USES_HEIMDAL')
 	)
 
+bld.SAMBA_SUBSYSTEM('sdb',
+	source='sdb.c',
+	includes=kdc_include,
+	deps='talloc krb5',
+	)
+
+bld.SAMBA_SUBSYSTEM('sdb_hdb',
+	source='sdb_to_hdb.c',
+	includes=kdc_include,
+	deps='talloc sdb hdb',
+	autoproto='sdb_hdb.h',
+	enabled=bld.CONFIG_SET('SAMBA4_USES_HEIMDAL')
+	)
 
 bld.SAMBA_SUBSYSTEM('PAC_GLUE',
 	source='pac-glue.c',
         includes=kdc_include,
-	deps='ldb auth4_sam auth_sam_reply samba-credentials hdb samba-hostconfig com_err'
+	deps='ldb auth4_sam auth_sam_reply samba-credentials samba-hostconfig com_err'
 	)
 
 bld.SAMBA_LIBRARY('pac',
@@ -55,21 +87,27 @@ bld.SAMBA_LIBRARY('pac',
 
 bld.SAMBA_LIBRARY('db-glue',
 	source='db-glue.c',
-	deps='ldb auth4_sam auth_sam_reply samba-credentials hdb samba-hostconfig com_err',
+	deps='ldb auth4_sam auth_sam_reply samba-credentials sdb samba-hostconfig com_err',
 	private_library=True,
         includes=kdc_include,
 	)
 
+bld.SAMBA_SUBSYSTEM('KPASSWD_GLUE',
+        source='kpasswd_glue.c',
+        includes=kdc_include,
+        deps='ldb com_err')
+
 bld.SAMBA_SUBSYSTEM('MIT_SAMBA',
-	source='mit_samba.c',
-	deps='ldb auth4_sam auth_sam_reply samba-credentials hdb db-glue PAC_GLUE samba-hostconfig com_err'
-	)
-
-
-bld.SAMBA_LIBRARY('mit-samba',
-	source='',
-	deps='MIT_SAMBA',
-	external_library=True,
-	realname='mit_samba.so'
-	)
-
+                    source='mit_samba.c',
+                    deps='''
+                         ldb
+                         auth4_sam
+                         auth_sam_reply
+                         samba-credentials
+                         hdb
+                         db-glue
+                         PAC_GLUE
+                         samba-hostconfig
+                         com_err
+                         ''',
+                    enabled=not bld.CONFIG_SET('SAMBA4_USES_HEIMDAL'))

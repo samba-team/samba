@@ -75,7 +75,7 @@ static bool reconnect_need_retry(NTSTATUS status)
 /* List all users */
 static NTSTATUS query_user_list(struct winbindd_domain *domain,
 				TALLOC_CTX *mem_ctx,
-				uint32 *num_entries, 
+				uint32_t *num_entries,
 				struct wbint_userinfo **info)
 {
 	NTSTATUS result;
@@ -92,7 +92,7 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 /* list all domain groups */
 static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 				TALLOC_CTX *mem_ctx,
-				uint32 *num_entries, 
+				uint32_t *num_entries,
 				struct wb_acct_info **info)
 {
 	NTSTATUS result;
@@ -110,7 +110,7 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 
 static NTSTATUS enum_local_groups(struct winbindd_domain *domain,
 				  TALLOC_CTX *mem_ctx,
-				  uint32 *num_entries, 
+				  uint32_t *num_entries,
 				  struct wb_acct_info **info)
 {
 	NTSTATUS result;
@@ -172,7 +172,7 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 static NTSTATUS rids_to_names(struct winbindd_domain *domain,
 			      TALLOC_CTX *mem_ctx,
 			      const struct dom_sid *sid,
-			      uint32 *rids,
+			      uint32_t *rids,
 			      size_t num_rids,
 			      char **domain_name,
 			      char ***names,
@@ -215,7 +215,7 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 				  TALLOC_CTX *mem_ctx,
 				  const struct dom_sid *user_sid,
-				  uint32 *num_groups, struct dom_sid **user_gids)
+				  uint32_t *num_groups, struct dom_sid **user_gids)
 {
 	NTSTATUS result;
 
@@ -233,8 +233,8 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 
 static NTSTATUS lookup_useraliases(struct winbindd_domain *domain,
 				   TALLOC_CTX *mem_ctx,
-				   uint32 num_sids, const struct dom_sid *sids,
-				   uint32 *num_aliases, uint32 **alias_rids)
+				   uint32_t num_sids, const struct dom_sid *sids,
+				   uint32_t *num_aliases, uint32_t **alias_rids)
 {
 	NTSTATUS result;
 
@@ -257,9 +257,9 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 				TALLOC_CTX *mem_ctx,
 				const struct dom_sid *group_sid,
 				enum lsa_SidType type,
-				uint32 *num_names,
+				uint32_t *num_names,
 				struct dom_sid **sid_mem, char ***names,
-				uint32 **name_types)
+				uint32_t **name_types)
 {
 	NTSTATUS result;
 
@@ -279,7 +279,7 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 }
 
 /* find the sequence number for a domain */
-static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
+static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32_t *seq)
 {
 	NTSTATUS result;
 

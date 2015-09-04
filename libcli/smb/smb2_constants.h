@@ -63,29 +63,33 @@
 #define SMB2_HDR_FLAG_ASYNC     0x02
 #define SMB2_HDR_FLAG_CHAINED   0x04
 #define SMB2_HDR_FLAG_SIGNED    0x08
+#define SMB2_HDR_FLAG_PRIORITY_MASK 0x70
 #define SMB2_HDR_FLAG_DFS       0x10000000
 #define SMB2_HDR_FLAG_REPLAY_OPERATION 0x20000000
 
+#define SMB2_PRIORITY_MASK_TO_VALUE(__m) (((__m) & SMB2_HDR_FLAG_PRIORITY_MASK) >> 4)
+#define SMB2_PRIORITY_VALUE_TO_MASK(__v) (((__v) << 4) & SMB2_HDR_FLAG_PRIORITY_MASK)
+
 /* SMB2 opcodes */
-#define SMB2_OP_NEGPROT   0x00
-#define SMB2_OP_SESSSETUP 0x01
-#define SMB2_OP_LOGOFF    0x02
-#define SMB2_OP_TCON      0x03
-#define SMB2_OP_TDIS      0x04
-#define SMB2_OP_CREATE    0x05
-#define SMB2_OP_CLOSE     0x06
-#define SMB2_OP_FLUSH     0x07
-#define SMB2_OP_READ      0x08
-#define SMB2_OP_WRITE     0x09
-#define SMB2_OP_LOCK      0x0a
-#define SMB2_OP_IOCTL     0x0b
-#define SMB2_OP_CANCEL    0x0c
-#define SMB2_OP_KEEPALIVE 0x0d
-#define SMB2_OP_FIND      0x0e
-#define SMB2_OP_NOTIFY    0x0f
-#define SMB2_OP_GETINFO   0x10
-#define SMB2_OP_SETINFO   0x11
-#define SMB2_OP_BREAK     0x12
+#define SMB2_OP_NEGPROT		0x00
+#define SMB2_OP_SESSSETUP	0x01
+#define SMB2_OP_LOGOFF		0x02
+#define SMB2_OP_TCON		0x03
+#define SMB2_OP_TDIS		0x04
+#define SMB2_OP_CREATE		0x05
+#define SMB2_OP_CLOSE		0x06
+#define SMB2_OP_FLUSH		0x07
+#define SMB2_OP_READ		0x08
+#define SMB2_OP_WRITE		0x09
+#define SMB2_OP_LOCK		0x0a
+#define SMB2_OP_IOCTL		0x0b
+#define SMB2_OP_CANCEL		0x0c
+#define SMB2_OP_KEEPALIVE	0x0d
+#define SMB2_OP_QUERY_DIRECTORY	0x0e
+#define SMB2_OP_NOTIFY		0x0f
+#define SMB2_OP_GETINFO		0x10
+#define SMB2_OP_SETINFO		0x11
+#define SMB2_OP_BREAK		0x12
 
 #define SMB2_MAGIC 0x424D53FE /* 0xFE 'S' 'M' 'B' */
 
@@ -98,6 +102,7 @@
 #define SMB3_DIALECT_REVISION_300       0x0300
 #define SMB3_DIALECT_REVISION_302       0x0302
 #define SMB3_DIALECT_REVISION_310       0x0310
+#define SMB3_DIALECT_REVISION_311       0x0311
 #define SMB2_DIALECT_REVISION_2FF       0x02FF
 
 /* SMB2 negotiate security_mode */
@@ -133,6 +138,11 @@
 /* Values for the SMB2_ENCRYPTION_CAPABILITIES Context (>= 0x310) */
 #define SMB2_ENCRYPTION_AES128_CCM         0x0001 /* only in dialect >= 0x224 */
 #define SMB2_ENCRYPTION_AES128_GCM         0x0002 /* only in dialect >= 0x310 */
+#define SMB2_NONCE_HIGH_MAX(nonce_len_bytes) ((uint64_t)(\
+	((nonce_len_bytes) >= 16) ? UINT64_MAX : \
+	((nonce_len_bytes) <= 8) ? 0 : \
+	(((uint64_t)1 << (((nonce_len_bytes) - 8)*8)) - 1) \
+	))
 
 /* SMB2 session (request) flags */
 #define SMB2_SESSION_FLAG_BINDING       0x01
@@ -224,6 +234,7 @@
 #define SMB2_CREATE_TAG_DH2C "DH2C"
 #define SMB2_CREATE_TAG_AAPL "AAPL"
 #define SMB2_CREATE_TAG_APP_INSTANCE_ID "\x45\xBC\xA6\x6A\xEF\xA7\xF7\x4A\x90\x08\xFA\x46\x2E\x14\x4D\x74"
+#define SVHDX_OPEN_DEVICE_CONTEXT "\x9C\xCB\xCF\x9E\x04\xC1\xE6\x43\x98\x0E\x15\x8D\xA1\xF6\xEC\x83"
 
 /* SMB2 notify flags */
 #define SMB2_WATCH_TREE 0x0001
@@ -256,7 +267,10 @@
 
 #define SMB2_CLOSE_FLAGS_FULL_INFORMATION (0x01)
 
+#define SMB2_READFLAG_READ_UNBUFFERED	0x01
+
 #define SMB2_WRITEFLAG_WRITE_THROUGH	0x00000001
+#define SMB2_WRITEFLAG_WRITE_UNBUFFERED	0x00000002
 
 /* 2.2.31 SMB2 IOCTL Request */
 #define SMB2_IOCTL_FLAG_IS_FSCTL		0x00000001

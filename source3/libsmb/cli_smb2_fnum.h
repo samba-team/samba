@@ -176,4 +176,11 @@ struct tevent_req *cli_smb2_writeall_send(TALLOC_CTX *mem_ctx,
 			size_t size);
 NTSTATUS cli_smb2_writeall_recv(struct tevent_req *req,
 			size_t *pwritten);
+struct tevent_req *cli_smb2_splice_send(TALLOC_CTX *mem_ctx,
+			struct tevent_context *ev,
+			struct cli_state *cli,
+			uint16_t src_fnum, uint16_t dst_fnum,
+			off_t size, off_t src_offset, off_t dst_offset,
+			int (*splice_cb)(off_t n, void *priv), void *priv);
+NTSTATUS cli_smb2_splice_recv(struct tevent_req *req, off_t *written);
 #endif /* __SMB2CLI_FNUM_H__ */

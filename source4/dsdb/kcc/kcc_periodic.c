@@ -606,7 +606,7 @@ static void kccsrv_periodic_run(struct kccsrv_service *service)
 	mem_ctx = talloc_new(service);
 
         if (service->samba_kcc_code)
-		status = kccsrv_samba_kcc(service, mem_ctx);
+		status = kccsrv_samba_kcc(service);
 	else {
 		status = kccsrv_simple_update(service, mem_ctx);
 		if (!NT_STATUS_IS_OK(status))
@@ -651,8 +651,7 @@ static void samba_kcc_done(struct tevent_req *subreq)
 /* Invocation of the samba_kcc python script for replication
  * topology generation.
  */
-NTSTATUS kccsrv_samba_kcc(struct kccsrv_service *service,
-			TALLOC_CTX *ctxp)
+NTSTATUS kccsrv_samba_kcc(struct kccsrv_service *service)
 {
 	NTSTATUS status = NT_STATUS_OK;
 	const char * const *samba_kcc_command =

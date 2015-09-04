@@ -1,8 +1,7 @@
 <samba:parameter name="ldap idmap suffix"
                  context="G"
-		 advanced="1" developer="1"
-		 type="string"
-                 generated_function="0"
+                 type="string"
+                 function="_ldap_idmap_suffix"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>

@@ -604,10 +604,11 @@ static void smbXsrv_tcon_global_verify_record(struct db_record *db_rec,
 
 	exists = serverid_exists(&global->server_id);
 	if (!exists) {
+		struct server_id_buf idbuf;
 		DEBUG(2,("smbXsrv_tcon_global_verify_record: "
 			 "key '%s' server_id %s does not exist.\n",
 			 hex_encode_talloc(frame, key.dptr, key.dsize),
-			 server_id_str(frame, &global->server_id)));
+			 server_id_str_buf(global->server_id, &idbuf)));
 		if (DEBUGLVL(2)) {
 			NDR_PRINT_DEBUG(smbXsrv_tcon_globalB, &global_blob);
 		}

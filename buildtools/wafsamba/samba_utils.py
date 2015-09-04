@@ -39,8 +39,8 @@ def GET_TARGET_TYPE(ctx, target):
 # this is used as a decorator to make functions only
 # run once. Based on the idea from
 # http://stackoverflow.com/questions/815110/is-there-a-decorator-to-simply-cache-function-return-values
-runonce_ret = {}
 def runonce(function):
+    runonce_ret = {}
     def runonce_wrapper(*args):
         if args in runonce_ret:
             return runonce_ret[args]
@@ -66,7 +66,7 @@ def ADD_LD_LIBRARY_PATH(path):
 def needs_private_lib(bld, target):
     '''return True if a target links to a private library'''
     for lib in getattr(target, "final_libs", []):
-        t = bld.name_to_obj(lib, bld.env)
+        t = bld.get_tgen_by_name(lib)
         if t and getattr(t, 'private_library', False):
             return True
     return False
@@ -173,7 +173,7 @@ def process_depends_on(self):
     if getattr(self , 'depends_on', None):
         lst = self.to_list(self.depends_on)
         for x in lst:
-            y = self.bld.name_to_obj(x, self.env)
+            y = self.bld.get_tgen_by_name(x)
             self.bld.ASSERT(y is not None, "Failed to find dependency %s of %s" % (x, self.name))
             y.post()
             if getattr(y, 'more_includes', None):
@@ -214,7 +214,8 @@ def TO_LIST(str, delimiter=None):
     if str is None:
         return []
     if isinstance(str, list):
-        return str
+        # we need to return a new independent list...
+        return list(str)
     if len(str) == 0:
         return []
     lst = str.split(delimiter)
@@ -383,6 +384,22 @@ def RUN_COMMAND(cmd,
         return - os.WTERMSIG(status)
     Logs.error("Unknown exit reason %d for command: %s" (status, cmd))
     return -1
+
+
+def RUN_PYTHON_TESTS(testfiles, pythonpath=None):
+    env = LOAD_ENVIRONMENT()
+    if pythonpath is None:
+        pythonpath = os.path.join(Utils.g_module.blddir, 'python')
+    result = 0
+    for interp in env.python_interpreters:
+        for testfile in testfiles:
+            cmd = "PYTHONPATH=%s %s %s" % (pythonpath, interp, testfile)
+            print('Running Python test with %s: %s' % (interp, testfile))
+            ret = RUN_COMMAND(cmd)
+            if ret:
+                print('Python test failed: %s' % cmd)
+                result = ret
+    return result
 
 
 # make sure we have md5. some systems don't have it
@@ -576,7 +593,7 @@ def map_shlib_extension(ctx, name, python=False):
         return name
     (root1, ext1) = os.path.splitext(name)
     if python:
-        (root2, ext2) = os.path.splitext(ctx.env.pyext_PATTERN)
+        return ctx.env.pyext_PATTERN % root1
     else:
         (root2, ext2) = os.path.splitext(ctx.env.shlib_PATTERN)
     return root1+ext2
@@ -627,7 +644,7 @@ def get_tgt_list(bld):
         type = targets[tgt]
         if not type in ['SUBSYSTEM', 'MODULE', 'BINARY', 'LIBRARY', 'ASN1', 'PYTHON']:
             continue
-        t = bld.name_to_obj(tgt, bld.env)
+        t = bld.get_tgen_by_name(tgt)
         if t is None:
             Logs.error("Target %s of type %s has no task generator" % (tgt, type))
             sys.exit(1)

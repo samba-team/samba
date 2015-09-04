@@ -776,6 +776,7 @@ static void process_oplock_break_message(struct messaging_context *msg_ctx,
 	uint16_t break_from;
 	uint16_t break_to;
 	bool break_needed = true;
+	struct server_id_buf tmp;
 
 	if (data->data == NULL) {
 		DEBUG(0, ("Got NULL buffer\n"));
@@ -792,7 +793,7 @@ static void process_oplock_break_message(struct messaging_context *msg_ctx,
 	break_to = msg.op_type;
 
 	DEBUG(10, ("Got oplock break to %u message from pid %s: %s/%llu\n",
-		   (unsigned)break_to, server_id_str(talloc_tos(), &src),
+		   (unsigned)break_to, server_id_str_buf(src, &tmp),
 		   file_id_string_tos(&msg.id),
 		   (unsigned long long)msg.share_file_id));
 
@@ -970,6 +971,7 @@ static void process_kernel_oplock_break(struct messaging_context *msg_ctx,
 	struct smbd_server_connection *sconn =
 		talloc_get_type_abort(private_data,
 		struct smbd_server_connection);
+	struct server_id_buf tmp;
 
 	if (data->data == NULL) {
 		DEBUG(0, ("Got NULL buffer\n"));
@@ -986,7 +988,7 @@ static void process_kernel_oplock_break(struct messaging_context *msg_ctx,
 	file_id = (unsigned long)IVAL(data->data, 24);
 
 	DEBUG(10, ("Got kernel oplock break message from pid %s: %s/%u\n",
-		   server_id_str(talloc_tos(), &src), file_id_string_tos(&id),
+		   server_id_str_buf(src, &tmp), file_id_string_tos(&id),
 		   (unsigned int)file_id));
 
 	fsp = initial_break_processing(sconn, id, file_id);
@@ -1109,7 +1111,7 @@ static void send_break_to_none(struct messaging_context *msg_ctx,
 	SSVAL(msg, OP_BREAK_MSG_OP_TYPE_OFFSET, NO_OPLOCK);
 
 	messaging_send_buf(msg_ctx, e->pid, MSG_SMB_BREAK_REQUEST,
-			   (uint8 *)msg, sizeof(msg));
+			   (uint8_t *)msg, sizeof(msg));
 }
 
 static void do_break_to_none(struct tevent_context *ctx,
@@ -1209,7 +1211,7 @@ static void do_break_to_none(struct tevent_context *ctx,
 		/* Paranoia .... */
 		if (EXCLUSIVE_OPLOCK_TYPE(e->op_type)) {
 			DEBUG(0,("%s: PANIC. "
-				 "share mode entry %d is an exlusive "
+				 "share mode entry %d is an exclusive "
 				 "oplock !\n", __func__, i ));
 			TALLOC_FREE(lck);
 			abort();
@@ -1259,7 +1261,7 @@ void smbd_contend_level2_oplocks_end(files_struct *fsp,
 
 void share_mode_entry_to_message(char *msg, const struct share_mode_entry *e)
 {
-	SIVAL(msg,OP_BREAK_MSG_PID_OFFSET,(uint32)e->pid.pid);
+	SIVAL(msg,OP_BREAK_MSG_PID_OFFSET,(uint32_t)e->pid.pid);
 	SBVAL(msg,OP_BREAK_MSG_MID_OFFSET,e->op_mid);
 	SSVAL(msg,OP_BREAK_MSG_OP_TYPE_OFFSET,e->op_type);
 	SIVAL(msg,OP_BREAK_MSG_ACCESS_MASK_OFFSET,e->access_mask);
@@ -1291,8 +1293,8 @@ void message_to_share_mode_entry(struct share_mode_entry *e, const char *msg)
 	e->time.tv_usec = (int)IVAL(msg,OP_BREAK_MSG_TIME_USEC_OFFSET);
 	pull_file_id_24(msg+OP_BREAK_MSG_DEV_OFFSET, &e->id);
 	e->share_file_id = (unsigned long)IVAL(msg,OP_BREAK_MSG_FILE_ID_OFFSET);
-	e->uid = (uint32)IVAL(msg,OP_BREAK_MSG_UID_OFFSET);
-	e->flags = (uint16)SVAL(msg,OP_BREAK_MSG_FLAGS_OFFSET);
+	e->uid = (uint32_t)IVAL(msg,OP_BREAK_MSG_UID_OFFSET);
+	e->flags = (uint16_t)SVAL(msg,OP_BREAK_MSG_FLAGS_OFFSET);
 	e->name_hash = IVAL(msg,OP_BREAK_MSG_NAME_HASH_OFFSET);
 	e->pid.vnn = IVAL(msg,OP_BREAK_MSG_VNN_OFFSET);
 }

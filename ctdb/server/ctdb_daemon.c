@@ -1024,12 +1024,12 @@ static void initialise_node_flags (struct ctdb_context *ctdb)
 
 	/* do we start out in DISABLED mode? */
 	if (ctdb->start_as_disabled != 0) {
-		DEBUG(DEBUG_INFO, ("This node is configured to start in DISABLED state\n"));
+		DEBUG(DEBUG_NOTICE, ("This node is configured to start in DISABLED state\n"));
 		ctdb->nodes[ctdb->pnn]->flags |= NODE_FLAGS_DISABLED;
 	}
 	/* do we start out in STOPPED mode? */
 	if (ctdb->start_as_stopped != 0) {
-		DEBUG(DEBUG_INFO, ("This node is configured to start in STOPPED state\n"));
+		DEBUG(DEBUG_NOTICE, ("This node is configured to start in STOPPED state\n"));
 		ctdb->nodes[ctdb->pnn]->flags |= NODE_FLAGS_STOPPED;
 	}
 }
@@ -1139,6 +1139,54 @@ static void ctdb_create_pidfile(pid_t pid)
 	}
 }
 
+static void ctdb_initialise_vnn_map(struct ctdb_context *ctdb)
+{
+	int i, j, count;
+
+	/* initialize the vnn mapping table, skipping any deleted nodes */
+	ctdb->vnn_map = talloc(ctdb, struct ctdb_vnn_map);
+	CTDB_NO_MEMORY_FATAL(ctdb, ctdb->vnn_map);
+
+	count = 0;
+	for (i = 0; i < ctdb->num_nodes; i++) {
+		if ((ctdb->nodes[i]->flags & NODE_FLAGS_DELETED) == 0) {
+			count++;
+		}
+	}
+
+	ctdb->vnn_map->generation = INVALID_GENERATION;
+	ctdb->vnn_map->size = count;
+	ctdb->vnn_map->map = talloc_array(ctdb->vnn_map, uint32_t, ctdb->vnn_map->size);
+	CTDB_NO_MEMORY_FATAL(ctdb, ctdb->vnn_map->map);
+
+	for(i=0, j=0; i < ctdb->vnn_map->size; i++) {
+		if (ctdb->nodes[i]->flags & NODE_FLAGS_DELETED) {
+			continue;
+		}
+		ctdb->vnn_map->map[j] = i;
+		j++;
+	}
+}
+
+static void ctdb_set_my_pnn(struct ctdb_context *ctdb)
+{
+	int nodeid;
+
+	if (ctdb->address == NULL) {
+		ctdb_fatal(ctdb,
+			   "Can not determine PNN - node address is not set\n");
+	}
+
+	nodeid = ctdb_ip_to_nodeid(ctdb, ctdb->address);
+	if (nodeid == -1) {
+		ctdb_fatal(ctdb,
+			   "Can not determine PNN - node address not found in node list\n");
+	}
+
+	ctdb->pnn = ctdb->nodes[nodeid]->pnn;
+	DEBUG(DEBUG_NOTICE, ("PNN is %u\n", ctdb->pnn));
+}
+
 /*
   start the protocol going as a daemon
 */
@@ -1146,7 +1194,6 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 {
 	int res, ret = -1;
 	struct fd_event *fde;
-	const char *domain_socket_name;
 
 	/* create a unix domain stream socket to listen to */
 	res = ux_socket_bind(ctdb);
@@ -1172,6 +1219,7 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 		}
 	}
 	ignore_signal(SIGPIPE);
+	ignore_signal(SIGUSR1);
 
 	ctdb->ctdbd_pid = getpid();
 	DEBUG(DEBUG_ERR, ("Starting CTDBD (Version %s) as PID: %u\n",
@@ -1190,13 +1238,6 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 			exit(1);
 		}
 		DEBUG(DEBUG_NOTICE, ("Set real-time scheduler priority\n"));
-	}
-
-	/* ensure the socket is deleted on exit of the daemon */
-	domain_socket_name = talloc_strdup(talloc_autofree_context(), ctdb->daemon.name);
-	if (domain_socket_name == NULL) {
-		DEBUG(DEBUG_ALERT,(__location__ " talloc_strdup failed.\n"));
-		exit(12);
 	}
 
 	ctdb->ev = event_context_init(NULL);
@@ -1247,10 +1288,13 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 		ctdb_fatal(ctdb, "transport is unavailable. can not initialize.");
 	}
 
-	/* initialise the transport  */
+	/* Initialise the transport.  This sets the node address if it
+	 * was not set via the command-line. */
 	if (ctdb->methods->initialise(ctdb) != 0) {
 		ctdb_fatal(ctdb, "transport failed to initialise");
 	}
+
+	ctdb_set_my_pnn(ctdb);
 
 	initialise_node_flags(ctdb);
 
@@ -1260,11 +1304,9 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 			DEBUG(DEBUG_ALERT,("Unable to setup public address list\n"));
 			exit(1);
 		}
-		if (ctdb->do_checkpublicip) {
-			ctdb_start_monitoring_interfaces(ctdb);
-		}
 	}
 
+	ctdb_initialise_vnn_map(ctdb);
 
 	/* attach to existing databases */
 	if (ctdb_attach_databases(ctdb) != 0) {
@@ -1284,11 +1326,6 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 		ctdb_fatal(ctdb, "Failed to add daemon socket to event loop");
 	}
 	tevent_fd_set_auto_close(fde);
-
-	/* release any IPs we hold from previous runs of the daemon */
-	if (ctdb->tunable.disable_ip_failover == 0) {
-		ctdb_release_all_ips(ctdb);
-	}
 
 	/* Start the transport */
 	if (ctdb->methods->start(ctdb) != 0) {
@@ -1728,6 +1765,24 @@ int32_t ctdb_control_process_exists(struct ctdb_context *ctdb, pid_t pid)
 	}
 
 	return kill(pid, 0);
+}
+
+int ctdb_control_getnodesfile(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indata, TDB_DATA *outdata)
+{
+	struct ctdb_node_map *node_map = NULL;
+
+	CHECK_CONTROL_DATA_SIZE(0);
+
+	node_map = ctdb_read_nodes_file(ctdb, ctdb->nodes_file);
+	if (node_map == NULL) {
+		DEBUG(DEBUG_ERR, ("Failed to read nodes file\n"));
+		return -1;
+	}
+
+	outdata->dptr  = (unsigned char *)node_map;
+	outdata->dsize = talloc_get_size(outdata->dptr);
+
+	return 0;
 }
 
 void ctdb_shutdown_sequence(struct ctdb_context *ctdb, int exit_code)

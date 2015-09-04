@@ -33,7 +33,6 @@ enum rpc_service_mode_e {
  * @brief Get the mode in which service pipes are configured.
  *
  * @param name		Name of the service
- * @param def_mode	The default mode for the service
  *
  * @return The actual configured mode.
  */
@@ -44,6 +43,8 @@ enum rpc_service_mode_e rpc_service_mode(const char *name);
 #define rpc_lsarpc_mode() rpc_service_mode("lsarpc")
 #define rpc_samr_mode() rpc_service_mode("samr")
 #define rpc_netlogon_mode() rpc_service_mode("netlogon")
+#define rpc_fssagentrpc_mode() rpc_service_mode("fssagentrpc")
+#define rpc_mdssvc_mode() rpc_service_mode("mdssvc")
 
 
 
@@ -57,7 +58,6 @@ enum rpc_daemon_type_e {
  * @brief Get the mode in which a server is started.
  *
  * @param name		Name of the rpc server
- * @param def_type	The default type for the server
  *
  * @return The actual configured type.
  */
@@ -66,5 +66,7 @@ enum rpc_daemon_type_e rpc_daemon_type(const char *name);
 #define rpc_epmapper_daemon() rpc_daemon_type("epmd")
 #define rpc_spoolss_daemon() rpc_daemon_type("spoolssd")
 #define rpc_lsasd_daemon() rpc_daemon_type("lsasd")
+#define rpc_fss_daemon() rpc_daemon_type("fssd")
+#define rpc_mdssd_daemon() rpc_daemon_type("mdssd")
 
 #endif /* _RPC_CONFIG_H */

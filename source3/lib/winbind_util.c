@@ -217,7 +217,7 @@ wbcErr wb_is_trusted_domain(const char *domain)
 
 bool winbind_lookup_rids(TALLOC_CTX *mem_ctx,
 			 const struct dom_sid *domain_sid,
-			 int num_rids, uint32 *rids,
+			 int num_rids, uint32_t *rids,
 			 const char **domain_name,
 			 const char ***names, enum lsa_SidType **types)
 {
@@ -449,7 +449,7 @@ wbcErr wb_is_trusted_domain(const char *domain)
 
 bool winbind_lookup_rids(TALLOC_CTX *mem_ctx,
 			 const struct dom_sid *domain_sid,
-			 int num_rids, uint32 *rids,
+			 int num_rids, uint32_t *rids,
 			 const char **domain_name,
 			 const char ***names, enum lsa_SidType **types)
 {

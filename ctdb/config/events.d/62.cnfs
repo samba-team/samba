@@ -52,8 +52,8 @@ case "$1" in
         ctdb eventscript monitor
 
         # Wait until we no longer serve any ip addresses at all
-        PNN=`ctdb pnn | cut -d: -f2`
-        while `ctdb -X ip | cut -d'|' -f3 | egrep "^$PNN$" >/dev/null`; do
+	ctdb_get_pnn
+	while ctdb -X ip | grep -q "^|.*|${pnn}|\$" ; do
                 sleep 1
         done
         ;;

@@ -48,7 +48,7 @@ static void pong_message(struct messaging_context *msg_ctx,
 	int ret;
 	TALLOC_CTX *frame = talloc_stackframe();
 
-	load_case_tables();
+	smb_init_locale();
 
 	setup_logging(argv[0], DEBUG_STDOUT);
 
@@ -94,7 +94,7 @@ static void pong_message(struct messaging_context *msg_ctx,
 		messaging_send(msg_ctx, messaging_server_id(msg_ctx), MSG_PING,
 			       &data_blob_null);
 		messaging_send_buf(msg_ctx, messaging_server_id(msg_ctx),
-				   MSG_PING,(uint8 *)buf, 11);
+				   MSG_PING,(uint8_t *)buf, 11);
 	}
 
 	/*
@@ -132,7 +132,7 @@ static void pong_message(struct messaging_context *msg_ctx,
 			if(NT_STATUS_IS_OK(messaging_send_buf(
 						   msg_ctx, pid_to_procid(pid),
 						   MSG_PING,
-						   (uint8 *)buf, 11)))
+						   (uint8_t *)buf, 11)))
 			   ping_count++;
 			if(NT_STATUS_IS_OK(messaging_send(
 						   msg_ctx, pid_to_procid(pid),

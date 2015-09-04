@@ -40,7 +40,7 @@ static struct db_context *db;
 struct ap_table {
 	enum pdb_policy_type type;
 	const char *string;
-	uint32 default_val;
+	uint32_t default_val;
 	const char *description;
 	const char *ldap_attr;
 };
@@ -58,7 +58,7 @@ static const struct ap_table account_policy_names[] = {
 		"Force Users to logon for password change (default: 0 => off, 2 => on)",
 		"sambaLogonToChgPwd" },
 
-	{PDB_POLICY_MAX_PASSWORD_AGE, "maximum password age", (uint32) -1,
+	{PDB_POLICY_MAX_PASSWORD_AGE, "maximum password age", (uint32_t) -1,
 		"Maximum password age, in seconds (default: -1 => never expire passwords)",
 		"sambaMaxPwdAge" },
 
@@ -78,7 +78,7 @@ static const struct ap_table account_policy_names[] = {
 		"Lockout users after bad logon attempts (default: 0 => off)",
 		"sambaLockoutThreshold" },
 
-	{PDB_POLICY_TIME_TO_LOGOUT, "disconnect time", (uint32) -1,
+	{PDB_POLICY_TIME_TO_LOGOUT, "disconnect time", (uint32_t) -1,
 		"Disconnect Users outside logon hours (default: -1 => off, 0 => on)",
 		"sambaForceLogoff" },
 
@@ -193,7 +193,7 @@ bool account_policy_get_default(enum pdb_policy_type type, uint32_t *val)
 static bool account_policy_set_default_on_empty(enum pdb_policy_type type)
 {
 
-	uint32 value;
+	uint32_t value;
 
 	if (!account_policy_get(type, &value) &&
 	    !account_policy_get_default(type, &value)) {
@@ -277,7 +277,7 @@ bool init_account_policy(void)
 		status = dbwrap_store_uint32_bystring(db, vstring,
 						      DATABASE_VERSION);
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0, ("dbwrap_store_uint32 failed: %s\n",
+			DEBUG(0, ("dbwrap_store_uint32_t failed: %s\n",
 				  nt_errstr(status)));
 			goto cancel;
 		}
@@ -332,7 +332,7 @@ Get an account policy (from tdb)
 bool account_policy_get(enum pdb_policy_type type, uint32_t *value)
 {
 	const char *name;
-	uint32 regval;
+	uint32_t regval;
 	NTSTATUS status;
 
 	if (!init_account_policy()) {
@@ -351,7 +351,7 @@ bool account_policy_get(enum pdb_policy_type type, uint32_t *value)
 
 	status = dbwrap_fetch_uint32_bystring(db, name, &regval);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("account_policy_get: tdb_fetch_uint32 failed for type %d (%s), returning 0\n", type, name));
+		DEBUG(2, ("account_policy_get: tdb_fetch_uint32_t failed for type %d (%s), returning 0\n", type, name));
 		return False;
 	}
 
@@ -385,7 +385,7 @@ bool account_policy_set(enum pdb_policy_type type, uint32_t value)
 
 	status = dbwrap_trans_store_uint32_bystring(db, name, value);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("store_uint32 failed for type %d (%s) on value "
+		DEBUG(1, ("store_uint32_t failed for type %d (%s) on value "
 			  "%u: %s\n", type, name, value, nt_errstr(status)));
 		return False;
 	}
@@ -455,7 +455,7 @@ bool cache_account_policy_get(enum pdb_policy_type type, uint32_t *value)
 	}
 
 	if (gencache_get(cache_key, talloc_tos(), &cache_value, NULL)) {
-		uint32 tmp = strtoul(cache_value, NULL, 10);
+		uint32_t tmp = strtoul(cache_value, NULL, 10);
 		*value = tmp;
 		ret = True;
 	}

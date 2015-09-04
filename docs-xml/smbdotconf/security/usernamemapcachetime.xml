@@ -1,7 +1,6 @@
 <samba:parameter name="username map cache time"
                  context="G"
-                 advanced="1" developer="0"
-				 type="integer"
+                 type="integer"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>

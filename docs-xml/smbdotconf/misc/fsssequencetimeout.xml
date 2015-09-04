@@ -1,0 +1,15 @@
+<samba:parameter name="fss: sequence timeout"
+                 context="G"
+                 type="integer"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>
+	The File Server Remove VSS Protocol (FSRVP) server includes a message
+	sequence timer to ensure cleanup on unexpected client disconnect. This
+	parameter overrides the default timeout between FSRVP operations.
+	FSRVP timeouts can be completely disabled via a value of 0.
+	</para>
+</description>
+<value type="default">180 or 1800, depending on operation</value>
+<value type="example">0</value>
+</samba:parameter>

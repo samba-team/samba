@@ -32,21 +32,6 @@
 
 static_decl_idmap;
 
-static void idmap_init(void)
-{
-	static bool initialized;
-
-	if (initialized) {
-		return;
-	}
-
-	DEBUG(10, ("idmap_init(): calling static_init_idmap\n"));
-
-	static_init_idmap;
-
-	initialized = true;
-}
-
 /**
  * Pointer to the backend methods. Modules register themselves here via
  * smb_register_idmap.
@@ -78,6 +63,105 @@ static struct idmap_domain *passdb_idmap_domain;
  */
 static struct idmap_domain **idmap_domains = NULL;
 static int num_domains = 0;
+
+static struct idmap_domain *idmap_init_named_domain(TALLOC_CTX *mem_ctx,
+						    const char *domname);
+static struct idmap_domain *idmap_init_domain(TALLOC_CTX *mem_ctx,
+					      const char *domainname,
+					      const char *modulename,
+					      bool check_range);
+static bool idmap_found_domain_backend(
+	const char *string, regmatch_t matches[], void *private_data);
+
+static bool idmap_init(void)
+{
+	static bool initialized;
+	int ret;
+
+	if (initialized) {
+		return true;
+	}
+
+	DEBUG(10, ("idmap_init(): calling static_init_idmap\n"));
+
+	static_init_idmap;
+
+	initialized = true;
+
+	if (!pdb_is_responsible_for_everything_else()) {
+		default_idmap_domain = idmap_init_named_domain(NULL, "*");
+		if (default_idmap_domain == NULL) {
+			return false;
+		}
+	}
+
+	passdb_idmap_domain = idmap_init_domain(
+		NULL, get_global_sam_name(), "passdb", false);
+	if (passdb_idmap_domain == NULL) {
+		TALLOC_FREE(default_idmap_domain);
+		return false;
+	}
+
+	idmap_domains = talloc_array(NULL, struct idmap_domain *, 0);
+	if (idmap_domains == NULL) {
+		TALLOC_FREE(passdb_idmap_domain);
+		TALLOC_FREE(default_idmap_domain);
+		return false;
+	}
+
+	ret = lp_wi_scan_global_parametrics(
+		"idmapconfig\\(.*\\):backend", 2,
+		idmap_found_domain_backend, NULL);
+	if (ret != 0) {
+		DBG_WARNING("wi_scan_global_parametrics returned %d\n", ret);
+		return false;
+	}
+
+	return true;
+}
+
+static bool idmap_found_domain_backend(
+	const char *string, regmatch_t matches[], void *private_data)
+{
+	if (matches[1].rm_so == -1) {
+		DBG_WARNING("Found match, but no name??\n");
+		return false;
+	}
+
+	{
+		struct idmap_domain *dom, **tmp;
+		regoff_t len = matches[1].rm_eo - matches[1].rm_so;
+		char domname[len+1];
+
+		memcpy(domname, string + matches[1].rm_so, len);
+		domname[len] = '\0';
+
+		DBG_DEBUG("Found idmap domain \"%s\"\n", domname);
+
+		if (strcmp(domname, "*") == 0) {
+			return false;
+		}
+
+		dom = idmap_init_named_domain(idmap_domains, domname);
+		if (dom == NULL) {
+			DBG_NOTICE("Could not init idmap domain %s\n",
+				   domname);
+		}
+
+		tmp = talloc_realloc(idmap_domains, idmap_domains,
+				     struct idmap_domain *, num_domains + 1);
+		if (tmp == NULL) {
+			DBG_WARNING("talloc_realloc failed\n");
+			TALLOC_FREE(dom);
+			return false;
+		}
+		idmap_domains = tmp;
+		idmap_domains[num_domains] = dom;
+		num_domains += 1;
+	}
+
+	return false;
+}
 
 static struct idmap_methods *get_methods(const char *name)
 {
@@ -172,6 +256,8 @@ static struct idmap_domain *idmap_init_domain(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	char *config_option = NULL;
 	const char *range;
+	unsigned low_id = 0;
+	unsigned high_id = 0;
 
 	result = talloc_zero(mem_ctx, struct idmap_domain);
 	if (result == NULL) {
@@ -230,22 +316,23 @@ static struct idmap_domain *idmap_init_domain(TALLOC_CTX *mem_ctx,
 				  result->name));
 			goto fail;
 		}
-	} else if (sscanf(range, "%u - %u", &result->low_id,
-			  &result->high_id) != 2)
+	} else if (sscanf(range, "%u - %u", &low_id, &high_id) != 2)
 	{
 		DEBUG(1, ("invalid range '%s' specified for domain "
 			  "'%s'\n", range, result->name));
 		if (check_range) {
 			goto fail;
 		}
-	} else if (result->low_id > result->high_id) {
-		DEBUG(1, ("Error: invalid idmap range detected: %lu - %lu\n",
-			  (unsigned long)result->low_id,
-			  (unsigned long)result->high_id));
+	} else if (low_id > high_id) {
+		DEBUG(1, ("Error: invalid idmap range detected: %u - %u\n",
+			  low_id, high_id));
 		if (check_range) {
 			goto fail;
 		}
 	}
+
+	result->low_id = low_id;
+	result->high_id = high_id;
 
 	status = result->methods->init(result);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -277,8 +364,12 @@ static struct idmap_domain *idmap_init_named_domain(TALLOC_CTX *mem_ctx,
 	struct idmap_domain *result = NULL;
 	char *config_option;
 	const char *backend;
+	bool ok;
 
-	idmap_init();
+	ok = idmap_init();
+	if (!ok) {
+		return NULL;
+	}
 
 	config_option = talloc_asprintf(talloc_tos(), "idmap config %s",
 					domname);
@@ -309,57 +400,6 @@ fail:
 }
 
 /**
- * Initialize the default domain structure
- * @param[in] mem_ctx		memory context for the result
- * @result The default domain structure
- *
- * This routine takes the module name from the "idmap backend" parameter,
- * passing a possible parameter like ldap:ldap://ldap-url/ to the module.
- */
-
-static struct idmap_domain *idmap_init_default_domain(TALLOC_CTX *mem_ctx)
-{
-	return idmap_init_named_domain(mem_ctx, "*");
-}
-
-/**
- * Initialize the passdb domain structure
- * @param[in] mem_ctx		memory context for the result
- * @result The default domain structure
- *
- * No config, passdb has its own configuration.
- */
-
-static struct idmap_domain *idmap_passdb_domain(TALLOC_CTX *mem_ctx)
-{
-	idmap_init();
-
-	if (!pdb_is_responsible_for_everything_else()) {
-		/*
-		 * Always init the default domain, we can't go without one
-		 */
-		if (default_idmap_domain == NULL) {
-			default_idmap_domain = idmap_init_default_domain(NULL);
-		}
-		if (default_idmap_domain == NULL) {
-			return NULL;
-		}
-	}
-
-	if (passdb_idmap_domain != NULL) {
-		return passdb_idmap_domain;
-	}
-
-	passdb_idmap_domain = idmap_init_domain(mem_ctx, get_global_sam_name(),
-						"passdb", false);
-	if (passdb_idmap_domain == NULL) {
-		DEBUG(1, ("Could not init passdb idmap domain\n"));
-	}
-
-	return passdb_idmap_domain;
-}
-
-/**
  * Find a domain struct according to a domain name
  * @param[in] domname		Domain name to get the config for
  * @result The default domain structure that fits
@@ -376,21 +416,14 @@ static struct idmap_domain *idmap_passdb_domain(TALLOC_CTX *mem_ctx)
 
 static struct idmap_domain *idmap_find_domain(const char *domname)
 {
-	struct idmap_domain *result;
+	bool ok;
 	int i;
 
 	DEBUG(10, ("idmap_find_domain called for domain '%s'\n",
 		   domname?domname:"NULL"));
 
-	idmap_init();
-
-	/*
-	 * Always init the default domain, we can't go without one
-	 */
-	if (default_idmap_domain == NULL) {
-		default_idmap_domain = idmap_init_default_domain(NULL);
-	}
-	if (default_idmap_domain == NULL) {
+	ok = idmap_init();
+	if (!ok) {
 		return NULL;
 	}
 
@@ -404,38 +437,21 @@ static struct idmap_domain *idmap_find_domain(const char *domname)
 		}
 	}
 
-	if (idmap_domains == NULL) {
-		/*
-		 * talloc context for all idmap domains
-		 */
-		idmap_domains = talloc_array(NULL, struct idmap_domain *, 1);
-	}
-
-	if (idmap_domains == NULL) {
-		DEBUG(0, ("talloc failed\n"));
-		return NULL;
-	}
-
-	result = idmap_init_named_domain(idmap_domains, domname);
-	if (result == NULL) {
-		/*
-		 * Could not init that domain -- try the default one
-		 */
-		return default_idmap_domain;
-	}
-
-	ADD_TO_ARRAY(idmap_domains, struct idmap_domain *, result,
-		     &idmap_domains, &num_domains);
-	return result;
+	return default_idmap_domain;
 }
 
 struct idmap_domain *idmap_find_domain_with_sid(const char *domname,
 						const struct dom_sid *sid)
 {
-	idmap_init();
+	bool ok;
+
+	ok = idmap_init();
+	if (!ok) {
+		return NULL;
+	}
 
 	if (sid_check_is_for_passdb(sid)) {
-		return idmap_passdb_domain(NULL);
+		return passdb_idmap_domain;
 	}
 
 	return idmap_find_domain(domname);
@@ -486,14 +502,20 @@ NTSTATUS idmap_allocate_gid(struct unixid *id)
 	return idmap_allocate_unixid(id);
 }
 
-NTSTATUS idmap_backends_unixid_to_sid(const char *domname, struct id_map *id)
+NTSTATUS idmap_backends_unixid_to_sid(struct id_map *id)
 {
 	struct idmap_domain *dom;
 	struct id_map *maps[2];
+	bool ok;
+	int i;
 
-	 DEBUG(10, ("idmap_backend_unixid_to_sid: domain = '%s', xid = %d "
-		    "(type %d)\n",
-		    domname?domname:"NULL", id->xid.id, id->xid.type));
+	ok = idmap_init();
+	if (!ok) {
+		return NT_STATUS_NONE_MAPPED;
+	}
+
+	DEBUG(10, ("idmap_backend_unixid_to_sid: xid = %d (type %d)\n",
+		   id->xid.id, id->xid.type));
 
 	maps[0] = id;
 	maps[1] = NULL;
@@ -502,14 +524,23 @@ NTSTATUS idmap_backends_unixid_to_sid(const char *domname, struct id_map *id)
 	 * Always give passdb a chance first
 	 */
 
-	dom = idmap_passdb_domain(NULL);
+	dom = passdb_idmap_domain;
 	if ((dom != NULL)
 	    && NT_STATUS_IS_OK(dom->methods->unixids_to_sids(dom, maps))
 	    && id->status == ID_MAPPED) {
 		return NT_STATUS_OK;
 	}
 
-	dom = idmap_find_domain(domname);
+	dom = default_idmap_domain;
+
+	for (i=0; i<num_domains; i++) {
+		if ((id->xid.id >= idmap_domains[i]->low_id) &&
+		    (id->xid.id <= idmap_domains[i]->high_id)) {
+			dom = idmap_domains[i];
+			break;
+		}
+	}
+
 	if (dom == NULL) {
 		return NT_STATUS_NONE_MAPPED;
 	}

@@ -1,7 +1,7 @@
 <samba:parameter name="syslog only"
                  context="G"
-				 type="boolean"
-                 developer="1" advanced="1"
+                 type="boolean"
+                 deprecated="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>
@@ -9,6 +9,11 @@
     syslog only, and not to the debug log files. There still will be some
 	logging to log.[sn]mbd even if <emphasis>syslog only</emphasis> is enabled.
     </para>
+
+
+    <para>The <smbconfoption name="logging"/> parameter should be used
+      instead. When <smbconfoption name="logging"/> is set, it
+      overrides the <smbconfoption name="syslog only"/> parameter.</para>
 </description>
 <value type="default">no</value>
 </samba:parameter>

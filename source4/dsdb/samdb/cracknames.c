@@ -323,8 +323,16 @@ static WERROR DsCrackNameUPN(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 		return WERR_OK;
 	}
 
+	/*
+	 * The important thing here is that a samAccountName may have
+	 * a space in it, and this must not be kerberos escaped to
+	 * match this filter, so we specify
+	 * KRB5_PRINCIPAL_UNPARSE_DISPLAY
+	 */
 	ret = krb5_unparse_name_flags(smb_krb5_context->krb5_context, principal, 
-				      KRB5_PRINCIPAL_UNPARSE_NO_REALM, &unparsed_name_short);
+				      KRB5_PRINCIPAL_UNPARSE_NO_REALM |
+				      KRB5_PRINCIPAL_UNPARSE_DISPLAY,
+				      &unparsed_name_short);
 	krb5_free_principal(smb_krb5_context->krb5_context, principal);
 
 	if (ret) {
@@ -680,8 +688,18 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 
 		domain_filter = NULL;
 
-		/* By getting the unparsed name here, we ensure the escaping is correct (and trust the client less) */
-		ret = krb5_unparse_name(smb_krb5_context->krb5_context, principal, &unparsed_name);
+		/*
+		 * By getting the unparsed name here, we ensure the
+		 * escaping is removed correctly (and trust the client
+		 * less).  The important thing here is that a
+		 * userPrincipalName may have a space in it, and this
+		 * must not be kerberos escaped to match this filter,
+		 * so we specify KRB5_PRINCIPAL_UNPARSE_DISPLAY
+		 */
+		ret = krb5_unparse_name_flags(smb_krb5_context->krb5_context,
+					      principal,
+					      KRB5_PRINCIPAL_UNPARSE_DISPLAY,
+					      &unparsed_name);
 		if (ret) {
 			krb5_free_principal(smb_krb5_context->krb5_context, principal);
 			return WERR_NOMEM;

@@ -8,14 +8,11 @@ from wafsamba import samba_version_file
 def write_version_header(task):
     '''print version.h contents'''
     src = task.inputs[0].srcpath(task.env)
-    tgt = task.outputs[0].bldpath(task.env)
 
     version = samba_version_file(src, task.env.srcdir, env=task.env, is_install=task.env.is_install)
     string = str(version)
 
-    f = open(tgt, 'w')
-    s = f.write(string)
-    f.close()
+    task.outputs[0].write(string)
     return 0
 
 
@@ -140,9 +137,9 @@ def write_build_options_footer(fp):
     fp.write("       output(screen, \"   sizeof(int):          %lu\\n\",(unsigned long)sizeof(int));\n")
     fp.write("       output(screen, \"   sizeof(long):         %lu\\n\",(unsigned long)sizeof(long));\n")
     fp.write("       output(screen, \"   sizeof(long long):    %lu\\n\",(unsigned long)sizeof(long long));\n")
-    fp.write("       output(screen, \"   sizeof(uint8):        %lu\\n\",(unsigned long)sizeof(uint8));\n")
-    fp.write("       output(screen, \"   sizeof(uint16):       %lu\\n\",(unsigned long)sizeof(uint16));\n")
-    fp.write("       output(screen, \"   sizeof(uint32):       %lu\\n\",(unsigned long)sizeof(uint32));\n")
+    fp.write("       output(screen, \"   sizeof(uint8_t):      %lu\\n\",(unsigned long)sizeof(uint8_t));\n")
+    fp.write("       output(screen, \"   sizeof(uint16_t):     %lu\\n\",(unsigned long)sizeof(uint16_t));\n")
+    fp.write("       output(screen, \"   sizeof(uint32_t):     %lu\\n\",(unsigned long)sizeof(uint32_t));\n")
     fp.write("       output(screen, \"   sizeof(short):        %lu\\n\",(unsigned long)sizeof(short));\n")
     fp.write("       output(screen, \"   sizeof(void*):        %lu\\n\",(unsigned long)sizeof(void*));\n")
     fp.write("       output(screen, \"   sizeof(size_t):       %lu\\n\",(unsigned long)sizeof(size_t));\n")

@@ -79,7 +79,13 @@ static void gotalarm_sig(int signum)
 		/* End setup timeout. */
 	}
 
-	uri = talloc_asprintf(talloc_tos(), "ldap://%s:%u", server, port);
+	if ( strchr_m(server, ':') ) {
+		/* IPv6 URI */
+		uri = talloc_asprintf(talloc_tos(), "ldap://[%s]:%u", server, port);
+	} else {
+		/* IPv4 URI */
+		uri = talloc_asprintf(talloc_tos(), "ldap://%s:%u", server, port);
+	}
 	if (uri == NULL) {
 		return NULL;
 	}
@@ -307,22 +313,125 @@ static bool ads_try_connect(ADS_STRUCT *ads, bool gc,
 }
 
 /**********************************************************************
+ send a cldap ping to list of servers, one at a time, until one of
+ them answers it's an ldap server. Record success in the ADS_STRUCT.
+ Take note of and update negative connection cache.
+**********************************************************************/
+
+static NTSTATUS cldap_ping_list(ADS_STRUCT *ads,const char *domain,
+				struct ip_service *ip_list, int count)
+{
+	int i;
+	bool ok;
+
+	for (i = 0; i < count; i++) {
+		char server[INET6_ADDRSTRLEN];
+
+		print_sockaddr(server, sizeof(server), &ip_list[i].ss);
+
+		if (!NT_STATUS_IS_OK(
+			check_negative_conn_cache(domain, server)))
+			continue;
+
+		ok = ads_try_connect(ads, false, &ip_list[i].ss);
+		if (ok) {
+			return NT_STATUS_OK;
+		}
+
+		/* keep track of failures */
+		add_failed_connection_entry(domain, server,
+					    NT_STATUS_UNSUCCESSFUL);
+	}
+
+	return NT_STATUS_NO_LOGON_SERVERS;
+}
+
+/***************************************************************************
+ resolve a name and perform an "ldap ping" using NetBIOS and related methods
+****************************************************************************/
+
+static NTSTATUS resolve_and_ping_netbios(ADS_STRUCT *ads,
+					 const char *domain, const char *realm)
+{
+	int count, i;
+	struct ip_service *ip_list;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+
+	DEBUG(6, ("resolve_and_ping_netbios: (cldap) looking for domain '%s'\n",
+		  domain));
+
+	status = get_sorted_dc_list(domain, NULL, &ip_list, &count,
+				    false);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	/* remove servers which are known to be dead based on
+	   the corresponding DNS method */
+	if (*realm) {
+		for (i = 0; i < count; ++i) {
+			char server[INET6_ADDRSTRLEN];
+
+			print_sockaddr(server, sizeof(server), &ip_list[i].ss);
+
+			if(!NT_STATUS_IS_OK(
+				check_negative_conn_cache(realm, server))) {
+				/* Ensure we add the workgroup name for this
+				   IP address as negative too. */
+				add_failed_connection_entry(
+				    domain, server,
+				    NT_STATUS_UNSUCCESSFUL);
+			}
+		}
+	}
+
+	status = cldap_ping_list(ads, domain, ip_list, count);
+
+	SAFE_FREE(ip_list);
+
+	return status;
+}
+
+
+/**********************************************************************
+ resolve a name and perform an "ldap ping" using DNS
+**********************************************************************/
+
+static NTSTATUS resolve_and_ping_dns(ADS_STRUCT *ads, const char *sitename,
+				     const char *realm)
+{
+	int count;
+	struct ip_service *ip_list;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+
+	DEBUG(6, ("resolve_and_ping_dns: (cldap) looking for realm '%s'\n",
+		  realm));
+
+	status = get_sorted_dc_list(realm, sitename, &ip_list, &count,
+				    true);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = cldap_ping_list(ads, realm, ip_list, count);
+
+	SAFE_FREE(ip_list);
+
+	return status;
+}
+
+/**********************************************************************
  Try to find an AD dc using our internal name resolution routines
- Try the realm first and then then workgroup name if netbios is not 
+ Try the realm first and then then workgroup name if netbios is not
  disabled
 **********************************************************************/
 
 static NTSTATUS ads_find_dc(ADS_STRUCT *ads)
 {
-	const char *c_domain;
+	const char *c_domain = "";
 	const char *c_realm;
-	int count, i=0;
-	struct ip_service *ip_list;
-	const char *realm;
-	const char *domain;
-	bool got_realm = False;
 	bool use_own_domain = False;
-	char *sitename;
+	char *sitename = NULL;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	bool ok = false;
 
@@ -331,7 +440,10 @@ static NTSTATUS ads_find_dc(ADS_STRUCT *ads)
 	/* realm */
 	c_realm = ads->server.realm;
 
-	if ( !c_realm || !*c_realm ) {
+	if (c_realm == NULL)
+		c_realm = "";
+
+	if (!*c_realm) {
 		/* special case where no realm and no workgroup means our own */
 		if ( !ads->server.workgroup || !*ads->server.workgroup ) {
 			use_own_domain = True;
@@ -339,34 +451,26 @@ static NTSTATUS ads_find_dc(ADS_STRUCT *ads)
 		}
 	}
 
-	if (c_realm && *c_realm)
-		got_realm = True;
+	if (!lp_disable_netbios()) {
+		if (use_own_domain) {
+			c_domain = lp_workgroup();
+		} else {
+			c_domain = ads->server.workgroup;
+			if (!*c_realm && (!c_domain || !*c_domain)) {
+				c_domain = lp_workgroup();
+			}
+		}
 
-	/* we need to try once with the realm name and fallback to the
-	   netbios domain name if we fail (if netbios has not been disabled */
-
-	if ( !got_realm	&& !lp_disable_netbios() ) {
-		c_realm = ads->server.workgroup;
-		if (!c_realm || !*c_realm) {
-			if ( use_own_domain )
-				c_realm = lp_workgroup();
+		if (!c_domain) {
+			c_domain = "";
 		}
 	}
 
-	if ( !c_realm || !*c_realm ) {
-		DEBUG(1, ("ads_find_dc: no realm or workgroup!  Don't know "
+	if (!*c_realm && !*c_domain) {
+		DEBUG(0, ("ads_find_dc: no realm or workgroup!  Don't know "
 			  "what to do\n"));
 		return NT_STATUS_INVALID_PARAMETER; /* rather need MISSING_PARAMETER ... */
 	}
-
-	if ( use_own_domain ) {
-		c_domain = lp_workgroup();
-	} else {
-		c_domain = ads->server.workgroup;
-	}
-
-	realm = c_realm;
-	domain = c_domain;
 
 	/*
 	 * In case of LDAP we use get_dc_name() as that
@@ -376,10 +480,11 @@ static NTSTATUS ads_find_dc(ADS_STRUCT *ads)
 		fstring srv_name;
 		struct sockaddr_storage ip_out;
 
-		DEBUG(6,("ads_find_dc: (ldap) looking for %s '%s'\n",
-			(got_realm ? "realm" : "domain"), realm));
+		DEBUG(6, ("ads_find_dc: (ldap) looking for realm '%s'"
+			  " and falling back to domain '%s'\n",
+			  c_realm, c_domain));
 
-		ok = get_dc_name(domain, realm, srv_name, &ip_out);
+		ok = get_dc_name(c_domain, c_realm, srv_name, &ip_out);
 		if (ok) {
 			/*
 			 * we call ads_try_connect() to fill in the
@@ -394,80 +499,58 @@ static NTSTATUS ads_find_dc(ADS_STRUCT *ads)
 		return NT_STATUS_NO_LOGON_SERVERS;
 	}
 
-	sitename = sitename_fetch(talloc_tos(), realm);
+	if (*c_realm) {
+		sitename = sitename_fetch(talloc_tos(), c_realm);
+		status = resolve_and_ping_dns(ads, sitename, c_realm);
 
- again:
-
-	DEBUG(6,("ads_find_dc: (cldap) looking for %s '%s'\n",
-		(got_realm ? "realm" : "domain"), realm));
-
-	status = get_sorted_dc_list(realm, sitename, &ip_list, &count, got_realm);
-	if (!NT_STATUS_IS_OK(status)) {
-		/* fall back to netbios if we can */
-		if ( got_realm && !lp_disable_netbios() ) {
-			got_realm = False;
-			goto again;
-		}
-
-		TALLOC_FREE(sitename);
-		return status;
-	}
-
-	/* if we fail this loop, then giveup since all the IP addresses returned were dead */
-	for ( i=0; i<count; i++ ) {
-		char server[INET6_ADDRSTRLEN];
-
-		print_sockaddr(server, sizeof(server), &ip_list[i].ss);
-
-		if ( !NT_STATUS_IS_OK(check_negative_conn_cache(realm, server)) )
-			continue;
-
-		if (!got_realm) {
-			/* realm in this case is a workgroup name. We need
-			   to ignore any IP addresses in the negative connection
-			   cache that match ip addresses returned in the ad realm
-			   case. It sucks that I have to reproduce the logic above... */
-			c_realm = ads->server.realm;
-			if ( !c_realm || !*c_realm ) {
-				if ( !ads->server.workgroup || !*ads->server.workgroup ) {
-					c_realm = lp_realm();
-				}
-			}
-			if (c_realm && *c_realm &&
-					!NT_STATUS_IS_OK(check_negative_conn_cache(c_realm, server))) {
-				/* Ensure we add the workgroup name for this
-				   IP address as negative too. */
-				add_failed_connection_entry( realm, server, NT_STATUS_UNSUCCESSFUL );
-				continue;
-			}
-		}
-
-		ok = ads_try_connect(ads, false, &ip_list[i].ss);
-		if (ok) {
-			SAFE_FREE(ip_list);
+		if (NT_STATUS_IS_OK(status)) {
 			TALLOC_FREE(sitename);
-			return NT_STATUS_OK;
+			return status;
 		}
 
-		/* keep track of failures */
-		add_failed_connection_entry( realm, server, NT_STATUS_UNSUCCESSFUL );
-	}
+		/* In case we failed to contact one of our closest DC on our
+		 * site we
+		 * need to try to find another DC, retry with a site-less SRV
+		 * DNS query
+		 * - Guenther */
 
-	SAFE_FREE(ip_list);
+		if (sitename) {
+			DEBUG(3, ("ads_find_dc: failed to find a valid DC on "
+				  "our site (%s), Trying to find another DC "
+				  "for realm '%s' (domain '%s')\n",
+				  sitename, c_realm, c_domain));
+			namecache_delete(c_realm, 0x1C);
+			status =
+			    resolve_and_ping_dns(ads, NULL, c_realm);
 
-	/* In case we failed to contact one of our closest DC on our site we
-	 * need to try to find another DC, retry with a site-less SRV DNS query
-	 * - Guenther */
+			if (NT_STATUS_IS_OK(status)) {
+				TALLOC_FREE(sitename);
+				return status;
+			}
+		}
 
-	if (sitename) {
-		DEBUG(1,("ads_find_dc: failed to find a valid DC on our site (%s), "
-				"trying to find another DC\n", sitename));
 		TALLOC_FREE(sitename);
-		namecache_delete(realm, 0x1C);
-		goto again;
 	}
 
-	return NT_STATUS_NO_LOGON_SERVERS;
+	/* try netbios as fallback - if permitted,
+	   or if configuration specifically requests it */
+	if (*c_domain) {
+		if (*c_realm) {
+			DEBUG(3, ("ads_find_dc: falling back to netbios "
+				  "name resolution for domain '%s' (realm '%s')\n",
+				  c_domain, c_realm));
+		}
+
+		status = resolve_and_ping_netbios(ads, c_domain, c_realm);
+		if (NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+	}
+
+	DEBUG(1, ("ads_find_dc: "
+		  "name resolution for realm '%s' (domain '%s') failed: %s\n",
+		  c_realm, c_domain, nt_errstr(status)));
+	return status;
 }
 
 /*********************************************************************
@@ -1168,7 +1251,7 @@ static ADS_STATUS ads_do_paged_search(ADS_STRUCT *ads, const char *bind_path,
 
  ADS_STATUS ads_do_search_all_sd_flags(ADS_STRUCT *ads, const char *bind_path,
 				       int scope, const char *expr,
-				       const char **attrs, uint32 sd_flags, 
+				       const char **attrs, uint32_t sd_flags, 
 				       LDAPMessage **res)
 {
 	ads_control args;
@@ -1779,10 +1862,10 @@ ADS_STATUS ads_add_strlist(TALLOC_CTX *ctx, ADS_MODLIST *mods,
  * @return the kvno for the account, or -1 in case of a failure.
  **/
 
-uint32 ads_get_kvno(ADS_STRUCT *ads, const char *account_name)
+uint32_t ads_get_kvno(ADS_STRUCT *ads, const char *account_name)
 {
 	LDAPMessage *res = NULL;
-	uint32 kvno = (uint32)-1;      /* -1 indicates a failure */
+	uint32_t kvno = (uint32_t)-1;      /* -1 indicates a failure */
 	char *filter;
 	const char *attrs[] = {"msDS-KeyVersionNumber", NULL};
 	char *dn_string = NULL;
@@ -2118,7 +2201,7 @@ ADS_STATUS ads_create_machine_acct(ADS_STRUCT *ads, const char *machine_name,
 	const char *objectClass[] = {"top", "person", "organizationalPerson",
 				     "user", "computer", NULL};
 	LDAPMessage *res = NULL;
-	uint32 acct_control = ( UF_WORKSTATION_TRUST_ACCOUNT |\
+	uint32_t acct_control = ( UF_WORKSTATION_TRUST_ACCOUNT |\
 	                        UF_DONT_EXPIRE_PASSWD |\
 			        UF_ACCOUNTDISABLE );
 
@@ -2278,7 +2361,8 @@ static void dump_sid(ADS_STRUCT *ads, const char *field, struct berval **values)
 	for (i=0; values[i]; i++) {
 		struct dom_sid sid;
 		fstring tmp;
-		if (!sid_parse(values[i]->bv_val, values[i]->bv_len, &sid)) {
+		if (!sid_parse((const uint8_t *)values[i]->bv_val,
+			       values[i]->bv_len, &sid)) {
 			return;
 		}
 		printf("%s: %s\n", field, sid_to_fstring(tmp, &sid));
@@ -2294,7 +2378,7 @@ static void dump_sd(ADS_STRUCT *ads, const char *filed, struct berval **values)
 	struct security_descriptor *psd;
 	NTSTATUS status;
 
-	status = unmarshall_sec_desc(talloc_tos(), (uint8 *)values[0]->bv_val,
+	status = unmarshall_sec_desc(talloc_tos(), (uint8_t *)values[0]->bv_val,
 				     values[0]->bv_len, &psd);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("unmarshall_sec_desc failed: %s\n",
@@ -2710,7 +2794,7 @@ int ads_count_replies(ADS_STRUCT *ads, void *res)
 }
 
 /**
- * pull a single uint32 from a ADS result
+ * pull a single uint32_t from a ADS result
  * @param ads connection to ads server
  * @param msg Results of search
  * @param field Attribute to retrieve
@@ -2718,7 +2802,7 @@ int ads_count_replies(ADS_STRUCT *ads, void *res)
  * @return boolean inidicating success
 */
  bool ads_pull_uint32(ADS_STRUCT *ads, LDAPMessage *msg, const char *field,
-		      uint32 *v)
+		      uint32_t *v)
 {
 	char **values;
 
@@ -2808,7 +2892,8 @@ int ads_count_replies(ADS_STRUCT *ads, void *res)
 
 	count = 0;
 	for (i=0; values[i]; i++) {
-		ret = sid_parse(values[i]->bv_val, values[i]->bv_len, &(*sids)[count]);
+		ret = sid_parse((const uint8_t *)values[i]->bv_val,
+				values[i]->bv_len, &(*sids)[count]);
 		if (ret) {
 			DEBUG(10, ("pulling SID: %s\n",
 				   sid_string_dbg(&(*sids)[count])));
@@ -2843,7 +2928,7 @@ int ads_count_replies(ADS_STRUCT *ads, void *res)
 	if (values[0]) {
 		NTSTATUS status;
 		status = unmarshall_sec_desc(mem_ctx,
-					     (uint8 *)values[0]->bv_val,
+					     (uint8_t *)values[0]->bv_val,
 					     values[0]->bv_len, sd);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("unmarshall_sec_desc failed: %s\n",
@@ -2893,7 +2978,7 @@ int ads_count_replies(ADS_STRUCT *ads, void *res)
  * @param usn Pointer to retrieved update serial number
  * @return status of search
  **/
-ADS_STATUS ads_USN(ADS_STRUCT *ads, uint32 *usn)
+ADS_STATUS ads_USN(ADS_STRUCT *ads, uint32_t *usn)
 {
 	const char *attrs[] = {"highestCommittedUSN", NULL};
 	ADS_STATUS status;
@@ -3005,7 +3090,7 @@ done:
 /********************************************************************
 ********************************************************************/
 
-ADS_STATUS ads_domain_func_level(ADS_STRUCT *ads, uint32 *val)
+ADS_STATUS ads_domain_func_level(ADS_STRUCT *ads, uint32_t *val)
 {
 	const char *attrs[] = {"domainFunctionality", NULL};
 	ADS_STATUS status;
@@ -3373,7 +3458,7 @@ ADS_STATUS ads_get_sid_from_extended_dn(TALLOC_CTX *mem_ctx,
 			return ADS_ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 		}
 
-		if (!sid_parse(buf, buf_len, sid)) {
+		if (!sid_parse((const uint8_t *)buf, buf_len, sid)) {
 			DEBUG(10,("failed to parse sid\n"));
 			return ADS_ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 		}
@@ -3496,7 +3581,7 @@ out:
  * @return status of join
  **/
 ADS_STATUS ads_join_realm(ADS_STRUCT *ads, const char *machine_name,
-			uint32 account_type, const char *org_unit)
+			uint32_t account_type, const char *org_unit)
 {
 	ADS_STATUS status;
 	LDAPMessage *res = NULL;
@@ -3692,7 +3777,7 @@ ADS_STATUS ads_leave_realm(ADS_STRUCT *ads, const char *hostname)
 	struct dom_sid *tmp_sids;
 	struct dom_sid tmp_user_sid;
 	struct dom_sid tmp_primary_group_sid;
-	uint32 pgid;
+	uint32_t pgid;
 	const char *attrs[] = {
 		"objectSid",
 		"tokenGroups",
@@ -3774,14 +3859,14 @@ ADS_STATUS ads_leave_realm(ADS_STRUCT *ads, const char *hostname)
  * @param ads connection to ads server
  * @param mem_ctx TALLOC_CTX for allocating sid array
  * @param samaccountname to search
- * @param uac_ret uint32 pointer userAccountControl attribute value
+ * @param uac_ret uint32_t pointer userAccountControl attribute value
  * @param dn_ret pointer to dn
  * @return status of token query
  **/
 ADS_STATUS ads_find_samaccount(ADS_STRUCT *ads,
 			       TALLOC_CTX *mem_ctx,
 			       const char *samaccountname,
-			       uint32 *uac_ret,
+			       uint32_t *uac_ret,
 			       const char **dn_ret)
 {
 	ADS_STATUS status;
@@ -3789,7 +3874,7 @@ ADS_STATUS ads_find_samaccount(ADS_STRUCT *ads,
 	const char *filter;
 	LDAPMessage *res = NULL;
 	char *dn = NULL;
-	uint32 uac = 0;
+	uint32_t uac = 0;
 
 	filter = talloc_asprintf(mem_ctx, "(&(objectclass=user)(sAMAccountName=%s))",
 		samaccountname);

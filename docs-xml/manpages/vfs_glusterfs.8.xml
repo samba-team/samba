@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE refentry PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
+<refentry id="vfs_glusterfs.8">
+
+<refmeta>
+	<refentrytitle>vfs_glusterfs</refentrytitle>
+	<manvolnum>8</manvolnum>
+	<refmiscinfo class="source">Samba</refmiscinfo>
+	<refmiscinfo class="manual">System Administration tools</refmiscinfo>
+	<refmiscinfo class="version">4.3</refmiscinfo>
+</refmeta>
+
+
+<refnamediv>
+	<refname>vfs_glusterfs</refname>
+	<refpurpose>
+		Utilize features provided by GlusterFS
+	</refpurpose>
+</refnamediv>
+
+<refsynopsisdiv>
+	<cmdsynopsis>
+		<command>vfs objects = glusterfs</command>
+	</cmdsynopsis>
+</refsynopsisdiv>
+
+<refsect1>
+	<title>DESCRIPTION</title>
+
+	<para>This VFS module is part of the
+	<citerefentry><refentrytitle>samba</refentrytitle>
+	<manvolnum>8</manvolnum></citerefentry> suite.</para>
+
+	<para>
+		GlusterFS
+		(<ulink url="http://www.gluster.org/">http://www.gluster.org</ulink>)
+		is an Open Source clustered file system capable of scaling to
+		several peta-bytes.  With its FUSE based native client,
+		GlusterFS is available as a POSIX compliant file system and can
+		hence be shared by Samba without additional steps.
+	</para>
+
+	<para>
+		The <command>vfs_glusterfs</command> VFS module provides an
+		alternative, and superior way to access a Gluster filesystem
+		from Samba for sharing. It does not require a Gluster FUSE mount
+		but directly accesses the GlusterFS daemon through its library
+		<command>libgfapi</command>, thereby omitting the expensive
+		kernel-userspace context switches and taking advantage of some
+		of the more advanced features of GlusterFS.
+	</para>
+
+	<para>
+		This module can be combined with other modules, but it
+		should be the last module in the <command>vfs objects</command>
+		list. Modules added to this list to the right of the glusterfs
+		entry may not have any effect at all.
+	</para>
+</refsect1>
+
+<refsect1>
+	<title>CONFIGURATION</title>
+
+	<para>
+		A basic configuration looks like this.
+	</para>
+
+	<programlisting>
+		<smbconfsection name="[share]"/>
+		<smbconfoption name="vfs objects">glusterfs</smbconfoption>
+		<smbconfoption name="path">/relative/base/path</smbconfoption>
+		<smbconfoption name="glusterfs:volume">gv0</smbconfoption>
+		<smbconfoption name="kernel share modes">no</smbconfoption>
+	</programlisting>
+
+	<para>
+		Note that since <command>vfs_glusterfs</command> does not
+		require a Gluster mount, the share <command>path</command> is
+		treated differently than for other shares: It is interpreted as
+		the base path of the share relative to the gluster volume used.
+		Because this is usually not at the same time a system path, in a
+		ctdb cluster setup where ctdb manages Samba, you need to set
+		<command>CTDB_SAMBA_SKIP_SHARE_CHECK=yes</command> in ctdb's
+		configuration file. Otherwise ctdb will not get healthy.
+	</para>
+
+	<para>
+		Note that currently kernel share modes have to be disabled
+		in a share running with the glusterfs vfs module for file
+		serving to work properly.
+	</para>
+</refsect1>
+
+<refsect1>
+	<title>OPTIONS</title>
+
+	<variablelist>
+
+		<varlistentry>
+		<term>glusterfs:logfile = path</term>
+		<listitem>
+		<para>
+			Defines whether and where to store a vfs_glusterfs specific
+			logfile. Client variable substitution is supported (i.e.
+			%M, %m, %I), hence per client log file can be specified.
+		</para>
+		<para>
+			Example: glusterfs:logfile =
+			/var/log/samba/glusterfs-vol2.%M.log
+		</para>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>glusterfs:loglevel = 0-9</term>
+		<listitem>
+		<para>
+			Defines the level of logging, with higher numbers corresponding to more verbosity.
+			0 - No logs; 9 - Trace log level; 7 being the info log level is preferred.
+		</para>
+		<para>
+			If this option is not defined with an explicit loglevel,
+			the glusterfs default is used (currently loglevel 7).
+		</para>
+		</listitem>
+		</varlistentry>
+
+
+		<varlistentry>
+		<term>glusterfs:volfile_server = servername</term>
+		<listitem>
+		<para>
+			Defines which volfile server to use, defaults to
+			localhost.
+		</para>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>glusterfs:volume = volumename</term>
+		<listitem>
+		<para>
+			Defines the glusterfs volumename to use for this share.
+		</para>
+		</listitem>
+
+		</varlistentry>
+	</variablelist>
+
+</refsect1>
+
+<refsect1>
+	<title>VERSION</title>
+
+	<para>
+		This man page is correct for version 4.2.0 of the Samba suite.
+	</para>
+</refsect1>
+
+<refsect1>
+	<title>AUTHOR</title>
+
+	<para>The original Samba software and related utilities
+	were created by Andrew Tridgell. Samba is now developed
+	by the Samba Team as an Open Source project similar
+	to the way the Linux kernel is developed.</para>
+
+</refsect1>
+
+</refentry>

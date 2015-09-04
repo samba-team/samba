@@ -57,13 +57,11 @@ interface winbind
 	);
 
     NTSTATUS wbint_Uid2Sid(
-	[in,unique,string,charset(UTF8)] char *dom_name,
 	[in] hyper uid,
 	[out] dom_sid *sid
 	);
 
     NTSTATUS wbint_Gid2Sid(
-	[in,unique,string,charset(UTF8)] char *dom_name,
 	[in] hyper gid,
 	[out] dom_sid *sid
 	);
@@ -192,4 +190,26 @@ interface winbind
 	[in,out,ref] NL_DNS_NAME_INFO_ARRAY *dns_names
 	);
 
+	/*
+	 * do a netr_LogonControl2Ex() against the right DC
+	 */
+	typedef [v1_enum] enum netr_LogonControlCode netr_LogonControlCode;
+	typedef [switch_type(netr_LogonControlCode)] union netr_CONTROL_DATA_INFORMATION netr_CONTROL_DATA_INFORMATION;
+	typedef [switch_type(uint32)] union netr_CONTROL_QUERY_INFORMATION netr_CONTROL_QUERY_INFORMATION;
+
+	WERROR winbind_LogonControl(
+		[in]   netr_LogonControlCode function_code,
+		[in]   uint32 level,
+		[in,ref][switch_is(function_code)] netr_CONTROL_DATA_INFORMATION  *data,
+		[out,ref][switch_is(level)] netr_CONTROL_QUERY_INFORMATION *query
+		);
+
+	/*
+	 * do a netr_GetForestTrustInformation() against the right DC
+	 */
+	WERROR winbind_GetForestTrustInformation(
+		[in,unique] [string,charset(UTF16)] uint16 *trusted_domain_name,
+		[in] uint32 flags,
+		[out,ref] lsa_ForestTrustInformation **forest_trust_info
+		);
 }

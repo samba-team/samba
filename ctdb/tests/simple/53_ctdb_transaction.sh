@@ -33,11 +33,15 @@ cluster_is_healthy
 try_command_on_node 0 "$CTDB listnodes"
 num_nodes=$(echo "$out" | wc -l)
 
-if test "x${CTDB_TEST_TIMELIMIT}" == "x" ; then
-	CTDB_TEST_TIMELIMIT=30
+if [ -z "$CTDB_TEST_TIMELIMIT" ] ; then
+    CTDB_TEST_TIMELIMIT=30
 fi
 
-t="$CTDB_TEST_WRAPPER $VALGRIND ctdb_transaction --timelimit=${CTDB_TEST_TIMELIMIT}"
+# Add a timeout command to ensure this test completes if
+# ctdb_transaction gets stuck
+timeout_cmd="timeout $((CTDB_TEST_TIMELIMIT * 2))"
+
+t="$CTDB_TEST_WRAPPER $VALGRIND $timeout_cmd ctdb_transaction --timelimit=${CTDB_TEST_TIMELIMIT}"
 
 echo "Running ctdb_transaction on all $num_nodes nodes."
 try_command_on_node -v -p all "$t & $t"

@@ -27,6 +27,9 @@
 #include "../libcli/auth/pam_errors.h"
 #include "passdb/machine_sid.h"
 #include "passdb.h"
+#include "source4/lib/messaging/messaging.h"
+#include "librpc/gen_ndr/ndr_lsa.h"
+#include "auth/credentials/credentials.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
@@ -34,7 +37,7 @@
 extern struct winbindd_methods cache_methods;
 
 /**
- * @file winbindd_util.cq
+ * @file winbindd_util.c
  *
  * Winbind daemon for NT domain authentication nss module.
  **/
@@ -73,6 +76,28 @@ static void free_domain_list(void)
 	}
 }
 
+/**
+ * Iterator for winbindd's domain list.
+ * To be used (e.g.) in tevent based loops.
+ */
+struct winbindd_domain *wb_next_domain(struct winbindd_domain *domain)
+{
+	if (domain == NULL) {
+		domain = domain_list();
+	} else {
+		domain = domain->next;
+	}
+
+	if ((domain != NULL) &&
+	    (lp_server_role() != ROLE_ACTIVE_DIRECTORY_DC) &&
+	    sid_check_is_our_sam(&domain->sid))
+	{
+		domain = domain->next;
+	}
+
+	return domain;
+}
+
 static bool is_internal_domain(const struct dom_sid *sid)
 {
 	if (sid == NULL)
@@ -100,8 +125,6 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 {
 	struct winbindd_domain *domain;
 	const char *alternative_name = NULL;
-	char *idmap_config_option;
-	const char *param;
 	const char **ignored_domains, **dom;
 	int role = lp_server_role();
 
@@ -213,41 +236,19 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 		domain->primary = true;
 	}
 
+	if (domain->primary) {
+		if (role == ROLE_ACTIVE_DIRECTORY_DC) {
+			domain->active_directory = true;
+		}
+		if (lp_security() == SEC_ADS) {
+			domain->active_directory = true;
+		}
+	}
+
 	/* Link to domain list */
 	DLIST_ADD_END(_domain_list, domain, struct winbindd_domain *);
 
 	wcache_tdc_add_domain( domain );
-
-	idmap_config_option = talloc_asprintf(talloc_tos(), "idmap config %s",
-					      domain->name);
-	if (idmap_config_option == NULL) {
-		DEBUG(0, ("talloc failed, not looking for idmap config\n"));
-		goto done;
-	}
-
-	param = lp_parm_const_string(-1, idmap_config_option, "range", NULL);
-
-	DEBUG(10, ("%s : range = %s\n", idmap_config_option,
-		   param ? param : "not defined"));
-
-	if (param != NULL) {
-		unsigned low_id, high_id;
-		if (sscanf(param, "%u - %u", &low_id, &high_id) != 2) {
-			DEBUG(1, ("invalid range syntax in %s: %s\n",
-				  idmap_config_option, param));
-			goto done;
-		}
-		if (low_id > high_id) {
-			DEBUG(1, ("invalid range in %s: %s\n",
-				  idmap_config_option, param));
-			goto done;
-		}
-		domain->have_idmap_config = true;
-		domain->id_range_low = low_id;
-		domain->id_range_high = high_id;
-	}
-
-done:
 
 	setup_domain_child(domain);
 
@@ -487,9 +488,9 @@ static void rescan_forest_trusts( void )
 		return;
 
 	for ( i=0; i<num_trusts; i++ ) {
-		uint32 flags   = dom_list[i].trust_flags;
-		uint32 type    = dom_list[i].trust_type;
-		uint32 attribs = dom_list[i].trust_attribs;
+		uint32_t flags   = dom_list[i].trust_flags;
+		uint32_t type    = dom_list[i].trust_type;
+		uint32_t attribs = dom_list[i].trust_attribs;
 
 		d = find_domain_from_name_noinit( dom_list[i].domain_name );
 
@@ -603,10 +604,119 @@ enum winbindd_result winbindd_dual_init_connection(struct winbindd_domain *domai
 	return WINBINDD_OK;
 }
 
+static void wb_imsg_new_trusted_domain(struct imessaging_context *msg,
+				       void *private_data,
+				       uint32_t msg_type,
+				       struct server_id server_id,
+				       DATA_BLOB *data)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct lsa_TrustDomainInfoInfoEx info;
+	enum ndr_err_code ndr_err;
+	struct winbindd_domain *d = NULL;
+
+	DEBUG(5, ("wb_imsg_new_trusted_domain\n"));
+
+	if (data == NULL) {
+		TALLOC_FREE(frame);
+		return;
+	}
+
+	ndr_err = ndr_pull_struct_blob_all(data, frame, &info,
+			(ndr_pull_flags_fn_t)ndr_pull_lsa_TrustDomainInfoInfoEx);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		TALLOC_FREE(frame);
+		return;
+	}
+
+	d = find_domain_from_name_noinit(info.netbios_name.string);
+	if (d != NULL) {
+		TALLOC_FREE(frame);
+		return;
+	}
+
+	d = add_trusted_domain(info.netbios_name.string,
+			       info.domain_name.string,
+			       &cache_methods,
+			       info.sid);
+	if (d == NULL) {
+		TALLOC_FREE(frame);
+		return;
+	}
+
+	if (d->internal) {
+		TALLOC_FREE(frame);
+		return;
+	}
+
+	if (d->primary) {
+		TALLOC_FREE(frame);
+		return;
+	}
+
+	if (info.trust_direction & LSA_TRUST_DIRECTION_INBOUND) {
+		d->domain_flags |= NETR_TRUST_FLAG_INBOUND;
+	}
+	if (info.trust_direction & LSA_TRUST_DIRECTION_OUTBOUND) {
+		d->domain_flags |= NETR_TRUST_FLAG_OUTBOUND;
+	}
+	if (info.trust_attributes & LSA_TRUST_ATTRIBUTE_WITHIN_FOREST) {
+		d->domain_flags |= NETR_TRUST_FLAG_IN_FOREST;
+	}
+	d->domain_type = info.trust_type;
+	d->domain_trust_attribs = info.trust_attributes;
+
+	TALLOC_FREE(frame);
+}
+
+/*
+ * We did not get the secret when we queried secrets.tdb, so read it
+ * from secrets.tdb and re-sync the databases
+ */
+static bool migrate_secrets_tdb_to_ldb(struct winbindd_domain *domain)
+{
+	bool ok;
+	struct cli_credentials *creds;
+	NTSTATUS can_migrate = pdb_get_trust_credentials(domain->name,
+							 NULL, domain, &creds);
+	if (!NT_STATUS_IS_OK(can_migrate)) {
+		DEBUG(0, ("Failed to fetch our own, local AD domain join "
+			"password for winbindd's internal use, both from "
+			"secrets.tdb and secrets.ldb: %s\n",
+			nt_errstr(can_migrate)));
+		return false;
+	}
+
+	/*
+	 * NOTE: It is very unlikely we end up here if there is an
+	 * oldpass, because a new password is created at
+	 * classicupgrade, so this is not a concern.
+	 */
+	ok = secrets_store_machine_pw_sync(cli_credentials_get_password(creds),
+		   NULL /* oldpass */,
+		   cli_credentials_get_domain(creds),
+		   cli_credentials_get_realm(creds),
+		   cli_credentials_get_salt_principal(creds),
+		   0, /* Supported enc types, unused */
+		   &domain->sid,
+		   cli_credentials_get_password_last_changed_time(creds),
+		   cli_credentials_get_secure_channel_type(creds),
+		   false /* do_delete: Do not delete */);
+	TALLOC_FREE(creds);
+	if (ok == false) {
+		DEBUG(0, ("Failed to write our our own, "
+			  "local AD domain join password for "
+			  "winbindd's internal use into secrets.tdb\n"));
+		return false;
+	}
+	return true;
+}
+
 /* Look up global info for the winbind daemon */
 bool init_domain_list(void)
 {
 	int role = lp_server_role();
+	NTSTATUS status;
 
 	/* Free existing list */
 	free_domain_list();
@@ -623,12 +733,23 @@ bool init_domain_list(void)
 		enum netr_SchannelType sec_chan_type;
 		const char *account_name;
 		struct samr_Password current_nt_hash;
+		struct pdb_domain_info *pdb_domain_info;
 		bool ok;
 
-		domain = add_trusted_domain(get_global_sam_name(), lp_dnsdomain(),
-					    &cache_methods, get_global_sam_sid());
+		pdb_domain_info = pdb_get_domain_info(talloc_tos());
+		if (pdb_domain_info == NULL) {
+			DEBUG(0, ("Failed to fetch our own, local AD "
+				"domain info from sam.ldb\n"));
+			return false;
+		}
+		domain = add_trusted_domain(pdb_domain_info->name,
+					pdb_domain_info->dns_domain,
+					&cache_methods,
+					&pdb_domain_info->sid);
+		TALLOC_FREE(pdb_domain_info);
 		if (domain == NULL) {
-			DEBUG(0, ("Failed to add our own, local AD domain to winbindd's internal list\n"));
+			DEBUG(0, ("Failed to add our own, local AD "
+				"domain to winbindd's internal list\n"));
 			return false;
 		}
 
@@ -640,8 +761,32 @@ bool init_domain_list(void)
 				       &account_name,
 				       &sec_chan_type);
 		if (!ok) {
-			DEBUG(0, ("Failed to fetch our own, local AD domain join password for winbindd's internal use\n"));
-			return false;
+			/*
+			 * If get_trust_pw_hash() fails, then try and
+			 * fetch the password from the more recent of
+			 * secrets.{ldb,tdb} using the
+			 * pdb_get_trust_credentials()
+			 */
+			ok = migrate_secrets_tdb_to_ldb(domain);
+
+			if (ok == false) {
+				DEBUG(0, ("Failed to migrate our own, "
+					  "local AD domain join password for "
+					  "winbindd's internal use into "
+					  "secrets.tdb\n"));
+				return false;
+			}
+			ok = get_trust_pw_hash(domain->name,
+					       current_nt_hash.hash,
+					       &account_name,
+					       &sec_chan_type);
+			if (ok == false) {
+				DEBUG(0, ("Failed to find our our own, just "
+					  "written local AD domain join "
+					  "password for winbindd's internal "
+					  "use in secrets.tdb\n"));
+				return false;
+			}
 		}
 		if (sec_chan_type == SEC_CHAN_RODC) {
 			domain->rodc = true;
@@ -673,6 +818,15 @@ bool init_domain_list(void)
 			   early here. */
 			set_domain_online_request(domain);
 		}
+	}
+
+	status = imessaging_register(winbind_imessaging_context(), NULL,
+				     MSG_WINBIND_NEW_TRUSTED_DOMAIN,
+				     wb_imsg_new_trusted_domain);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("imessaging_register(MSG_WINBIND_NEW_TRUSTED_DOMAIN) - %s\n",
+			  nt_errstr(status)));
+		return false;
 	}
 
 	return True;
@@ -947,11 +1101,17 @@ bool canonicalize_username(fstring username_inout, fstring domain, fstring user)
     Also, if omit DOMAIN if 'winbind trusted domains only = true', as the
     username is then unqualified in unix
 
+    On an AD DC we always fill DOMAIN\\USERNAME.
+
     We always canonicalize as UPPERCASE DOMAIN, lowercase username.
 */
 void fill_domain_username(fstring name, const char *domain, const char *user, bool can_assume)
 {
 	fstring tmp_user;
+
+	if (lp_server_role() == ROLE_ACTIVE_DIRECTORY_DC) {
+		can_assume = false;
+	}
 
 	fstrcpy(tmp_user, user);
 	(void)strlower_m(tmp_user);
@@ -975,6 +1135,10 @@ char *fill_domain_username_talloc(TALLOC_CTX *mem_ctx,
 				  bool can_assume)
 {
 	char *tmp_user, *name;
+
+	if (lp_server_role() == ROLE_ACTIVE_DIRECTORY_DC) {
+		can_assume = false;
+	}
 
 	tmp_user = talloc_strdup(mem_ctx, user);
 	if (!strlower_m(tmp_user)) {
@@ -1009,10 +1173,26 @@ struct winbindd_cli_state *winbindd_client_list(void)
 	return _client_list;
 }
 
+/* Return list-tail of all connected clients */
+
+struct winbindd_cli_state *winbindd_client_list_tail(void)
+{
+	return DLIST_TAIL(_client_list);
+}
+
+/* Return previous (read:newer) client in list */
+
+struct winbindd_cli_state *
+winbindd_client_list_prev(struct winbindd_cli_state *cli)
+{
+	return DLIST_PREV(cli);
+}
+
 /* Add a connection to the list */
 
 void winbindd_add_client(struct winbindd_cli_state *cli)
 {
+	cli->last_access = time(NULL);
 	DLIST_ADD(_client_list, cli);
 	_num_clients++;
 }
@@ -1023,6 +1203,14 @@ void winbindd_remove_client(struct winbindd_cli_state *cli)
 {
 	DLIST_REMOVE(_client_list, cli);
 	_num_clients--;
+}
+
+/* Move a client to head or list */
+
+void winbindd_promote_client(struct winbindd_cli_state *cli)
+{
+	cli->last_access = time(NULL);
+	DLIST_PROMOTE(_client_list, cli);
 }
 
 /* Return number of open clients */

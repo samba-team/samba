@@ -1,0 +1,1007 @@
+dn: CN=0721cd13-379b-448c-be7e-a880b1f4a1f8,CN=Partitions,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: crossRef
+cn: 0721cd13-379b-448c-be7e-a880b1f4a1f8
+nCName: DC=DomainDnsZones,DC=ad,DC=samba,DC=example,DC=com
+objectGUID: f28780cd-c87a-4a71-9f4c-15d66464bab8
+dnsRoot: DomainDnsZones.ad.samba.example.com
+systemFlags: 5
+whenChanged: 20150227014849.0Z
+msDS-NC-Replica-Locations: CN=NTDS Settings,CN=WIN03,CN=Servers,CN=Site-2,CN=S
+ ites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+msDS-NC-Replica-Locations: CN=NTDS Settings,CN=WIN05,CN=Servers,CN=Site-2,CN=S
+ ites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+msDS-NC-Replica-Locations: CN=NTDS Settings,CN=WIN01,CN=Servers,CN=Default-Fir
+ st-Site-Name,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+msDS-NC-Replica-Locations: CN=NTDS Settings,CN=WIN07,CN=Servers,CN=Site-4,CN=S
+ ites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+msDS-NC-Replica-Locations: CN=NTDS Settings,CN=WIN02,CN=Servers,CN=Site-2,CN=S
+ ites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+msDS-NC-Replica-Locations: CN=NTDS Settings,CN=WIN10,CN=Servers,CN=Site-5,CN=S
+ ites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+msDS-NC-Replica-Locations: CN=NTDS Settings,CN=WIN04,CN=Servers,CN=Site-2,CN=S
+ ites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+msDS-NC-Replica-Locations: CN=NTDS Settings,CN=WIN09,CN=Servers,CN=Site-5,CN=S
+ ites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+msDS-NC-RO-Replica-Locations: CN=NTDS Settings,CN=WIN06,CN=Servers,CN=Site-3,C
+ N=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+msDS-NC-RO-Replica-Locations: CN=NTDS Settings,CN=WIN08,CN=Servers,CN=Site-4,C
+ N=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+
+dn: CN=5a4c072f-9bf6-4273-9dd5-07df9de05aa1,CN=Partitions,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: crossRef
+cn: 5a4c072f-9bf6-4273-9dd5-07df9de05aa1
+nCName: DC=ForestDnsZones,DC=ad,DC=samba,DC=example,DC=com
+objectGUID: 54522754-52c1-4a1e-9c4a-0d860208e1ba
+dnsRoot: ForestDnsZones.ad.samba.example.com
+systemFlags: 5
+whenChanged: 20150227014848.0Z
+msDS-NC-Replica-Locations: CN=NTDS Settings,CN=WIN03,CN=Servers,CN=Site-2,CN=S
+ ites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+msDS-NC-Replica-Locations: CN=NTDS Settings,CN=WIN05,CN=Servers,CN=Site-2,CN=S
+ ites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+msDS-NC-Replica-Locations: CN=NTDS Settings,CN=WIN01,CN=Servers,CN=Default-Fir
+ st-Site-Name,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+msDS-NC-Replica-Locations: CN=NTDS Settings,CN=WIN07,CN=Servers,CN=Site-4,CN=S
+ ites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+msDS-NC-Replica-Locations: CN=NTDS Settings,CN=WIN02,CN=Servers,CN=Site-2,CN=S
+ ites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+msDS-NC-Replica-Locations: CN=NTDS Settings,CN=WIN10,CN=Servers,CN=Site-5,CN=S
+ ites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+msDS-NC-Replica-Locations: CN=NTDS Settings,CN=WIN04,CN=Servers,CN=Site-2,CN=S
+ ites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+msDS-NC-Replica-Locations: CN=NTDS Settings,CN=WIN09,CN=Servers,CN=Site-5,CN=S
+ ites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+msDS-NC-RO-Replica-Locations: CN=NTDS Settings,CN=WIN06,CN=Servers,CN=Site-3,C
+ N=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+msDS-NC-RO-Replica-Locations: CN=NTDS Settings,CN=WIN08,CN=Servers,CN=Site-4,C
+ N=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+
+dn: CN=Enterprise Configuration,CN=Partitions,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: crossRef
+cn: Enterprise Configuration
+whenChanged: 20150225003743.0Z
+nCName: CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+objectGUID: 0ecde3df-913d-45ef-8015-9e0eef5e5324
+dnsRoot: ad.samba.example.com
+systemFlags: 1
+
+dn: CN=Enterprise Schema,CN=Partitions,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: crossRef
+cn: Enterprise Schema
+whenChanged: 20150225003743.0Z
+nCName: CN=Schema,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+objectGUID: 8df7faaa-38d7-42f7-870a-ce5213f0dad8
+dnsRoot: ad.samba.example.com
+systemFlags: 1
+
+dn: CN=AD,CN=Partitions,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: crossRef
+cn: AD
+whenChanged: 20150225004240.0Z
+nCName: DC=ad,DC=samba,DC=example,DC=com
+objectGUID: d46eea81-ecee-4cc9-840b-c3adfd876384
+dnsRoot: ad.samba.example.com
+systemFlags: 3
+
+dn: CN=Partitions,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: crossRefContainer
+cn: Partitions
+whenChanged: 20150225003743.0Z
+objectGUID: 86bc315a-b76e-47e4-898b-6c4cfb105eaa
+fSMORoleOwner: CN=NTDS Settings,CN=WIN01,CN=Servers,CN=Default-First-Site-Name
+ ,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+systemFlags: -2147483648
+msDS-Behavior-Version: 6
+
+dn: CN=Default-First-Site-Name,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: site
+cn: Default-First-Site-Name
+whenChanged: 20150225003743.0Z
+objectGUID: bb75980f-4852-4a4a-8570-214b9c1e81f1
+systemFlags: 1107296256
+
+dn: CN=Site-2,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: site
+cn: Site-2
+whenChanged: 20150225005911.0Z
+objectGUID: a1a88825-668c-402c-abf2-cfa50f784f41
+systemFlags: 1107296256
+
+dn: CN=Site-3,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: site
+cn: Site-3
+whenChanged: 20150225010149.0Z
+objectGUID: d5bf918b-1e32-408a-a067-0bcbfddcb6af
+systemFlags: 1107296256
+
+dn: CN=Site-4,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: site
+cn: Site-4
+whenChanged: 20150225010201.0Z
+objectGUID: 47bca56f-c35e-48c5-859e-20d7de722b82
+systemFlags: 1107296256
+
+dn: CN=Site-5,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: site
+cn: Site-5
+whenChanged: 20150225010211.0Z
+objectGUID: 2693d8a1-6d18-49e0-98da-c6f9a34d8ad6
+systemFlags: 1107296256
+
+dn: CN=NTDS Site Settings,CN=Default-First-Site-Name,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: applicationSiteSettings
+objectClass: nTDSSiteSettings
+cn: NTDS Site Settings
+whenChanged: 20150225004240.0Z
+objectGUID: 94503cd5-0304-4e82-b675-0153e9352a37
+schedule:: vAAAAAAAAAABAAAAAAAAABQAAAABAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE
+ BAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEB
+ AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBA
+ QEBAQEBAQEBAQEBAQEBAQEBAQEBAQE=
+interSiteTopologyGenerator: CN=NTDS Settings,CN=WIN01,CN=Servers,CN=Default-Fi
+ rst-Site-Name,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+
+dn: CN=NTDS Site Settings,CN=Site-2,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: applicationSiteSettings
+objectClass: nTDSSiteSettings
+cn: NTDS Site Settings
+whenChanged: 20150226022238.0Z
+objectGUID: 07c948fa-1aa1-469d-8c4b-3962b300f32e
+interSiteTopologyGenerator: CN=NTDS Settings,CN=WIN02,CN=Servers,CN=Site-2,CN=
+ Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+
+dn: CN=NTDS Site Settings,CN=Site-3,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: applicationSiteSettings
+objectClass: nTDSSiteSettings
+cn: NTDS Site Settings
+whenChanged: 20150225010149.0Z
+objectGUID: 064e2b70-7eeb-494b-a283-3939a94497f1
+
+dn: CN=NTDS Site Settings,CN=Site-4,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: applicationSiteSettings
+objectClass: nTDSSiteSettings
+cn: NTDS Site Settings
+whenChanged: 20150225013440.0Z
+objectGUID: 970c629a-82bd-4f79-b102-0e1c506cd857
+interSiteTopologyGenerator: CN=NTDS Settings,CN=WIN07,CN=Servers,CN=Site-4,CN=
+ Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+
+dn: CN=NTDS Site Settings,CN=Site-5,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: applicationSiteSettings
+objectClass: nTDSSiteSettings
+cn: NTDS Site Settings
+whenChanged: 20150226031141.0Z
+objectGUID: c0ad0426-ea12-46cb-8f02-a9b41d767fd9
+interSiteTopologyGenerator: CN=NTDS Settings,CN=WIN10,CN=Servers,CN=Site-5,CN=
+ Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+
+dn: CN=NTDS Settings,CN=WIN01,CN=Servers,CN=Default-First-Site-Name,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: applicationSettings
+objectClass: nTDSDSA
+cn: NTDS Settings
+hasMasterNCs: DC=ad,DC=samba,DC=example,DC=com
+hasMasterNCs: CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+hasMasterNCs: CN=Schema,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+invocationId: 848a5621-89dd-4c93-8458-de73c03a4fab
+objectGUID: ee26ae37-b7b9-46ef-9a0b-3977b89dfeb6
+options: 1
+msDS-Behavior-Version: 6
+msDS-HasDomainNCs: DC=ad,DC=samba,DC=example,DC=com
+whenChanged: 20150227014848.0Z
+msDS-HasInstantiatedNCs: B:8:0000000D:DC=DomainDnsZones,DC=ad,DC=samba,DC=exam
+ ple,DC=com
+msDS-HasInstantiatedNCs: B:8:0000000D:DC=ForestDnsZones,DC=ad,DC=samba,DC=exam
+ ple,DC=com
+msDS-HasInstantiatedNCs: B:8:0000000D:CN=Configuration,DC=ad,DC=samba,DC=examp
+ le,DC=com
+msDS-HasInstantiatedNCs: B:8:0000000D:CN=Schema,CN=Configuration,DC=ad,DC=samb
+ a,DC=example,DC=com
+msDS-HasInstantiatedNCs: B:8:00000005:DC=ad,DC=samba,DC=example,DC=com
+msDS-hasMasterNCs: DC=ad,DC=samba,DC=example,DC=com
+msDS-hasMasterNCs: CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+msDS-hasMasterNCs: CN=Schema,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+msDS-hasMasterNCs: DC=DomainDnsZones,DC=ad,DC=samba,DC=example,DC=com
+msDS-hasMasterNCs: DC=ForestDnsZones,DC=ad,DC=samba,DC=example,DC=com
+msDS-isRODC: FALSE
+
+dn: CN=NTDS Settings,CN=WIN02,CN=Servers,CN=Site-2,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: applicationSettings
+objectClass: nTDSDSA
+cn: NTDS Settings
+invocationId: 8f943647-f07d-4c64-96ee-6744475da24e
+objectGUID: 11a7fb87-5912-4ce6-92af-ef92f8f82f04
+options: 1
+msDS-Behavior-Version: 6
+whenChanged: 20150227014848.0Z
+hasMasterNCs: CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+hasMasterNCs: CN=Schema,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+hasMasterNCs: DC=ad,DC=samba,DC=example,DC=com
+msDS-HasInstantiatedNCs: B:8:0000000D:CN=Configuration,DC=ad,DC=samba,DC=examp
+ le,DC=com
+msDS-HasInstantiatedNCs: B:8:0000000D:CN=Schema,CN=Configuration,DC=ad,DC=samb
+ a,DC=example,DC=com
+msDS-HasInstantiatedNCs: B:8:00000005:DC=ad,DC=samba,DC=example,DC=com
+msDS-HasDomainNCs: DC=ad,DC=samba,DC=example,DC=com
+msDS-hasMasterNCs: DC=DomainDnsZones,DC=ad,DC=samba,DC=example,DC=com
+msDS-hasMasterNCs: DC=ForestDnsZones,DC=ad,DC=samba,DC=example,DC=com
+msDS-hasMasterNCs: CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+msDS-hasMasterNCs: CN=Schema,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+msDS-hasMasterNCs: DC=ad,DC=samba,DC=example,DC=com
+msDS-isRODC: FALSE
+
+dn: CN=NTDS Settings,CN=WIN03,CN=Servers,CN=Site-2,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: applicationSettings
+objectClass: nTDSDSA
+cn: NTDS Settings
+invocationId: 64157d1c-7660-4ba4-ae5c-0dfad40c80e2
+objectGUID: f2aa9716-c8ab-4f37-b37d-c20be7533fa0
+options: 1
+msDS-Behavior-Version: 6
+whenChanged: 20150227014848.0Z
+hasMasterNCs: CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+hasMasterNCs: CN=Schema,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+hasMasterNCs: DC=ad,DC=samba,DC=example,DC=com
+msDS-HasInstantiatedNCs: B:8:0000000D:CN=Configuration,DC=ad,DC=samba,DC=examp
+ le,DC=com
+msDS-HasInstantiatedNCs: B:8:0000000D:CN=Schema,CN=Configuration,DC=ad,DC=samb
+ a,DC=example,DC=com
+msDS-HasInstantiatedNCs: B:8:00000005:DC=ad,DC=samba,DC=example,DC=com
+msDS-HasDomainNCs: DC=ad,DC=samba,DC=example,DC=com
+msDS-hasMasterNCs: DC=DomainDnsZones,DC=ad,DC=samba,DC=example,DC=com
+msDS-hasMasterNCs: DC=ForestDnsZones,DC=ad,DC=samba,DC=example,DC=com
+msDS-hasMasterNCs: CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+msDS-hasMasterNCs: CN=Schema,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+msDS-hasMasterNCs: DC=ad,DC=samba,DC=example,DC=com
+msDS-isRODC: FALSE
+
+dn: CN=NTDS Settings,CN=WIN04,CN=Servers,CN=Site-2,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: applicationSettings
+objectClass: nTDSDSA
+cn: NTDS Settings
+invocationId: ebe1fcb5-50ff-4de5-a4a5-16310b171bf9
+objectGUID: e8e1ef96-793b-41d9-b60c-14b48fb2da87
+options: 1
+msDS-Behavior-Version: 6
+whenChanged: 20150227014848.0Z
+hasMasterNCs: CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+hasMasterNCs: CN=Schema,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+hasMasterNCs: DC=ad,DC=samba,DC=example,DC=com
+msDS-HasInstantiatedNCs: B:8:0000000D:CN=Configuration,DC=ad,DC=samba,DC=examp
+ le,DC=com
+msDS-HasInstantiatedNCs: B:8:0000000D:CN=Schema,CN=Configuration,DC=ad,DC=samb
+ a,DC=example,DC=com
+msDS-HasInstantiatedNCs: B:8:00000005:DC=ad,DC=samba,DC=example,DC=com
+msDS-HasDomainNCs: DC=ad,DC=samba,DC=example,DC=com
+msDS-hasMasterNCs: DC=DomainDnsZones,DC=ad,DC=samba,DC=example,DC=com
+msDS-hasMasterNCs: DC=ForestDnsZones,DC=ad,DC=samba,DC=example,DC=com
+msDS-hasMasterNCs: CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+msDS-hasMasterNCs: CN=Schema,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+msDS-hasMasterNCs: DC=ad,DC=samba,DC=example,DC=com
+msDS-isRODC: FALSE
+
+dn: CN=NTDS Settings,CN=WIN05,CN=Servers,CN=Site-2,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: applicationSettings
+objectClass: nTDSDSA
+cn: NTDS Settings
+invocationId: 06882a4a-7e41-48ee-90c3-2ec10b724305
+objectGUID: 60430017-2cce-414b-8f37-08a924ae99b7
+options: 1
+msDS-Behavior-Version: 6
+whenChanged: 20150227014848.0Z
+hasMasterNCs: CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+hasMasterNCs: CN=Schema,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+hasMasterNCs: DC=ad,DC=samba,DC=example,DC=com
+msDS-HasInstantiatedNCs: B:8:0000000D:CN=Configuration,DC=ad,DC=samba,DC=examp
+ le,DC=com
+msDS-HasInstantiatedNCs: B:8:0000000D:CN=Schema,CN=Configuration,DC=ad,DC=samb
+ a,DC=example,DC=com
+msDS-HasInstantiatedNCs: B:8:00000005:DC=ad,DC=samba,DC=example,DC=com
+msDS-HasDomainNCs: DC=ad,DC=samba,DC=example,DC=com
+msDS-hasMasterNCs: DC=DomainDnsZones,DC=ad,DC=samba,DC=example,DC=com
+msDS-hasMasterNCs: DC=ForestDnsZones,DC=ad,DC=samba,DC=example,DC=com
+msDS-hasMasterNCs: CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+msDS-hasMasterNCs: CN=Schema,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+msDS-hasMasterNCs: DC=ad,DC=samba,DC=example,DC=com
+msDS-isRODC: FALSE
+
+dn: CN=NTDS Settings,CN=WIN06,CN=Servers,CN=Site-3,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: applicationSettings
+objectClass: nTDSDSA
+cn: NTDS Settings
+objectGUID: 2b0d1d67-6829-4951-bc71-42b4d14607c4
+options: 37
+msDS-Behavior-Version: 6
+msDS-HasDomainNCs: DC=ad,DC=samba,DC=example,DC=com
+whenChanged: 20150227014848.0Z
+msDS-hasFullReplicaNCs: CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+msDS-hasFullReplicaNCs: CN=Schema,CN=Configuration,DC=ad,DC=samba,DC=example,D
+ C=com
+msDS-hasFullReplicaNCs: DC=ad,DC=samba,DC=example,DC=com
+msDS-isRODC: TRUE
+
+dn: CN=NTDS Settings,CN=WIN07,CN=Servers,CN=Site-4,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: applicationSettings
+objectClass: nTDSDSA
+cn: NTDS Settings
+invocationId: 6f24f6cb-d7f6-4536-9872-df71d98d5cf3
+objectGUID: 3f700c7f-03c4-4ee0-a8b6-dd561cc1b6be
+options: 1
+msDS-Behavior-Version: 6
+whenChanged: 20150227014848.0Z
+hasMasterNCs: CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+hasMasterNCs: CN=Schema,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+hasMasterNCs: DC=ad,DC=samba,DC=example,DC=com
+msDS-HasInstantiatedNCs: B:8:0000000D:CN=Configuration,DC=ad,DC=samba,DC=examp
+ le,DC=com
+msDS-HasInstantiatedNCs: B:8:0000000D:CN=Schema,CN=Configuration,DC=ad,DC=samb
+ a,DC=example,DC=com
+msDS-HasInstantiatedNCs: B:8:00000005:DC=ad,DC=samba,DC=example,DC=com
+msDS-HasDomainNCs: DC=ad,DC=samba,DC=example,DC=com
+msDS-hasMasterNCs: DC=DomainDnsZones,DC=ad,DC=samba,DC=example,DC=com
+msDS-hasMasterNCs: DC=ForestDnsZones,DC=ad,DC=samba,DC=example,DC=com
+msDS-hasMasterNCs: CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+msDS-hasMasterNCs: CN=Schema,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+msDS-hasMasterNCs: DC=ad,DC=samba,DC=example,DC=com
+msDS-isRODC: FALSE
+
+dn: CN=NTDS Settings,CN=WIN08,CN=Servers,CN=Site-4,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: applicationSettings
+objectClass: nTDSDSA
+cn: NTDS Settings
+objectGUID: 30b4cb8e-324a-41fc-9f73-47ad8dd07ded
+options: 37
+msDS-Behavior-Version: 6
+msDS-HasDomainNCs: DC=ad,DC=samba,DC=example,DC=com
+whenChanged: 20150227014848.0Z
+msDS-hasFullReplicaNCs: CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+msDS-hasFullReplicaNCs: CN=Schema,CN=Configuration,DC=ad,DC=samba,DC=example,D
+ C=com
+msDS-hasFullReplicaNCs: DC=ad,DC=samba,DC=example,DC=com
+msDS-isRODC: TRUE
+
+dn: CN=NTDS Settings,CN=WIN09,CN=Servers,CN=Site-5,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: applicationSettings
+objectClass: nTDSDSA
+cn: NTDS Settings
+invocationId: 4e70ab48-36ad-423e-8673-5d603b4d5a81
+objectGUID: 93b204cb-5f34-4c66-aac0-a58094d9d0dc
+options: 1
+msDS-Behavior-Version: 6
+whenChanged: 20150227014849.0Z
+hasMasterNCs: CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+hasMasterNCs: CN=Schema,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+hasMasterNCs: DC=ad,DC=samba,DC=example,DC=com
+msDS-HasInstantiatedNCs: B:8:0000000D:CN=Configuration,DC=ad,DC=samba,DC=examp
+ le,DC=com
+msDS-HasInstantiatedNCs: B:8:0000000D:CN=Schema,CN=Configuration,DC=ad,DC=samb
+ a,DC=example,DC=com
+msDS-HasInstantiatedNCs: B:8:00000005:DC=ad,DC=samba,DC=example,DC=com
+msDS-HasDomainNCs: DC=ad,DC=samba,DC=example,DC=com
+msDS-hasMasterNCs: DC=DomainDnsZones,DC=ad,DC=samba,DC=example,DC=com
+msDS-hasMasterNCs: DC=ForestDnsZones,DC=ad,DC=samba,DC=example,DC=com
+msDS-hasMasterNCs: CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+msDS-hasMasterNCs: CN=Schema,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+msDS-hasMasterNCs: DC=ad,DC=samba,DC=example,DC=com
+msDS-isRODC: FALSE
+
+dn: CN=NTDS Settings,CN=WIN10,CN=Servers,CN=Site-5,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: applicationSettings
+objectClass: nTDSDSA
+cn: NTDS Settings
+invocationId: 9d4780c0-8168-4ca3-acfc-051ac07bf7de
+objectGUID: 9559f18d-ba0f-4609-8cf1-ce055c83eeba
+options: 1
+msDS-Behavior-Version: 6
+whenChanged: 20150227014848.0Z
+hasMasterNCs: CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+hasMasterNCs: CN=Schema,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+hasMasterNCs: DC=ad,DC=samba,DC=example,DC=com
+msDS-HasInstantiatedNCs: B:8:0000000D:CN=Configuration,DC=ad,DC=samba,DC=examp
+ le,DC=com
+msDS-HasInstantiatedNCs: B:8:0000000D:CN=Schema,CN=Configuration,DC=ad,DC=samb
+ a,DC=example,DC=com
+msDS-HasInstantiatedNCs: B:8:00000005:DC=ad,DC=samba,DC=example,DC=com
+msDS-HasDomainNCs: DC=ad,DC=samba,DC=example,DC=com
+msDS-hasMasterNCs: DC=DomainDnsZones,DC=ad,DC=samba,DC=example,DC=com
+msDS-hasMasterNCs: DC=ForestDnsZones,DC=ad,DC=samba,DC=example,DC=com
+msDS-hasMasterNCs: CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+msDS-hasMasterNCs: CN=Schema,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+msDS-hasMasterNCs: DC=ad,DC=samba,DC=example,DC=com
+msDS-isRODC: FALSE
+
+dn: CN=029c02fd-610f-48e7-a8a5-767c727136f5,CN=NTDS Settings,CN=WIN01,CN=Servers,CN=Default-First-Site-Name,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: leaf
+objectClass: nTDSConnection
+cn: 029c02fd-610f-48e7-a8a5-767c727136f5
+whenCreated: 20150225014642.0Z
+whenChanged: 20150225030222.0Z
+objectGUID: 00c1c711-7197-437a-8eab-152f9170bdfd
+enabledConnection: TRUE
+fromServer: CN=NTDS Settings,CN=WIN10,CN=Servers,CN=Site-5,CN=Sites,CN=Configu
+ ration,DC=ad,DC=samba,DC=example,DC=com
+schedule:: vAAAAAAAAAABAAAAAAAAABQAAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAA
+ IAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAI
+ AAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIA
+ AAIAAAIAAAIAAAIAAAIAAAIAAAIAAA=
+options: 5
+systemFlags: 1610612736
+transportType: CN=IP,CN=Inter-Site Transports,CN=Sites,CN=Configuration,DC=ad,
+ DC=samba,DC=example,DC=com
+
+dn: CN=14553ef1-daa5-4b7c-9446-2c466d388093,CN=NTDS Settings,CN=WIN01,CN=Servers,CN=Default-First-Site-Name,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: leaf
+objectClass: nTDSConnection
+cn: 14553ef1-daa5-4b7c-9446-2c466d388093
+whenCreated: 20150225011641.0Z
+whenChanged: 20150225012532.0Z
+objectGUID: 43b23704-1c19-494b-8492-47b62b5e4f33
+enabledConnection: TRUE
+fromServer: CN=NTDS Settings,CN=WIN04,CN=Servers,CN=Site-2,CN=Sites,CN=Configu
+ ration,DC=ad,DC=samba,DC=example,DC=com
+schedule:: vAAAAAAAAAABAAAAAAAAABQAAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAA
+ IAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAI
+ AAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIA
+ AAIAAAIAAAIAAAIAAAIAAAIAAAIAAA=
+options: 5
+systemFlags: 1610612736
+transportType: CN=IP,CN=Inter-Site Transports,CN=Sites,CN=Configuration,DC=ad,
+ DC=samba,DC=example,DC=com
+
+dn: CN=814a67b9-9a4a-4381-8e27-9d6dc46b30a6,CN=NTDS Settings,CN=WIN01,CN=Servers,CN=Default-First-Site-Name,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: leaf
+objectClass: nTDSConnection
+cn: 814a67b9-9a4a-4381-8e27-9d6dc46b30a6
+whenCreated: 20150225013533.0Z
+whenChanged: 20150225030151.0Z
+objectGUID: 1c545f42-e46c-47e9-b18b-a57b8e82fa62
+enabledConnection: TRUE
+fromServer: CN=NTDS Settings,CN=WIN07,CN=Servers,CN=Site-4,CN=Sites,CN=Configu
+ ration,DC=ad,DC=samba,DC=example,DC=com
+schedule:: vAAAAAAAAAABAAAAAAAAABQAAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAA
+ IAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAI
+ AAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIA
+ AAIAAAIAAAIAAAIAAAIAAAIAAAIAAA=
+options: 5
+systemFlags: 1610612736
+transportType: CN=IP,CN=Inter-Site Transports,CN=Sites,CN=Configuration,DC=ad,
+ DC=samba,DC=example,DC=com
+
+dn: CN=6a314079-ee20-4389-a7a3-9d5b6c6e6fb4,CN=NTDS Settings,CN=WIN05,CN=Servers,CN=Site-2,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: leaf
+objectClass: nTDSConnection
+cn: 6a314079-ee20-4389-a7a3-9d5b6c6e6fb4
+whenCreated: 20150225013109.0Z
+whenChanged: 20150226235237.0Z
+objectGUID: 5a9e8c0d-45d8-4851-89f4-408ae9ae1781
+enabledConnection: TRUE
+fromServer: CN=NTDS Settings,CN=WIN03,CN=Servers,CN=Site-2,CN=Sites,CN=Configu
+ ration,DC=ad,DC=samba,DC=example,DC=com
+schedule:: vAAAAAAAAAABAAAAAAAAABQAAAABAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE
+ BAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEB
+ AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBA
+ QEBAQEBAQEBAQEBAQEBAQEBAQEBAQE=
+options: 1
+systemFlags: 1610612736
+
+dn: CN=718ff03c-3180-431d-baf8-9034a8c851e3,CN=NTDS Settings,CN=WIN03,CN=Servers,CN=Site-2,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: leaf
+objectClass: nTDSConnection
+cn: 718ff03c-3180-431d-baf8-9034a8c851e3
+whenCreated: 20150225012004.0Z
+whenChanged: 20150225012004.0Z
+objectGUID: 208216cf-cd83-45ce-8650-d2b3633b6a5f
+enabledConnection: TRUE
+fromServer: CN=NTDS Settings,CN=WIN01,CN=Servers,CN=Default-First-Site-Name,CN
+ =Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+schedule:: vAAAAAAAAAABAAAAAAAAABQAAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAA
+ IAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAI
+ AAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIA
+ AAIAAAIAAAIAAAIAAAIAAAIAAAIAAA=
+options: 5
+systemFlags: 1610612736
+transportType: CN=IP,CN=Inter-Site Transports,CN=Sites,CN=Configuration,DC=ad,
+ DC=samba,DC=example,DC=com
+
+dn: CN=728529ef-6d78-4c47-abb3-7bf27e392de3,CN=NTDS Settings,CN=WIN04,CN=Servers,CN=Site-2,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: leaf
+objectClass: nTDSConnection
+cn: 728529ef-6d78-4c47-abb3-7bf27e392de3
+whenCreated: 20150225012044.0Z
+whenChanged: 20150226235152.0Z
+objectGUID: 0c5add48-4ac2-4293-a242-91a780e4a0e5
+enabledConnection: TRUE
+fromServer: CN=NTDS Settings,CN=WIN03,CN=Servers,CN=Site-2,CN=Sites,CN=Configu
+ ration,DC=ad,DC=samba,DC=example,DC=com
+schedule:: vAAAAAAAAAABAAAAAAAAABQAAAABAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE
+ BAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEB
+ AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBA
+ QEBAQEBAQEBAQEBAQEBAQEBAQEBAQE=
+options: 1
+systemFlags: 1610612736
+
+dn: CN=d162dcf1-ab5b-411a-a7ab-cd75fc63a861,CN=NTDS Settings,CN=WIN03,CN=Servers,CN=Site-2,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: leaf
+objectClass: nTDSConnection
+cn: d162dcf1-ab5b-411a-a7ab-cd75fc63a861
+whenCreated: 20150225013111.0Z
+whenChanged: 20150226235130.0Z
+objectGUID: c07ea697-a9b3-4d4b-9a07-e2e88cd7d7b5
+enabledConnection: TRUE
+fromServer: CN=NTDS Settings,CN=WIN05,CN=Servers,CN=Site-2,CN=Sites,CN=Configu
+ ration,DC=ad,DC=samba,DC=example,DC=com
+schedule:: vAAAAAAAAAABAAAAAAAAABQAAAABAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE
+ BAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEB
+ AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBA
+ QEBAQEBAQEBAQEBAQEBAQEBAQEBAQE=
+options: 1
+systemFlags: 1610612736
+
+dn: CN=d683bbda-1450-492e-a891-b304210d70d9,CN=NTDS Settings,CN=WIN03,CN=Servers,CN=Site-2,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: leaf
+objectClass: nTDSConnection
+cn: d683bbda-1450-492e-a891-b304210d70d9
+whenCreated: 20150225012004.0Z
+whenChanged: 20150226235130.0Z
+objectGUID: 53f8e6f0-a117-4b84-b90a-ef8cf49e73f8
+enabledConnection: TRUE
+fromServer: CN=NTDS Settings,CN=WIN04,CN=Servers,CN=Site-2,CN=Sites,CN=Configu
+ ration,DC=ad,DC=samba,DC=example,DC=com
+schedule:: vAAAAAAAAAABAAAAAAAAABQAAAABAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE
+ BAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEB
+ AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBA
+ QEBAQEBAQEBAQEBAQEBAQEBAQEBAQE=
+options: 1
+systemFlags: 1610612736
+
+dn: CN=d8432391-be94-4b3f-8f91-f21fe7bd7687,CN=NTDS Settings,CN=WIN04,CN=Servers,CN=Site-2,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: leaf
+objectClass: nTDSConnection
+cn: d8432391-be94-4b3f-8f91-f21fe7bd7687
+whenCreated: 20150225013053.0Z
+whenChanged: 20150226235152.0Z
+objectGUID: 0300d00e-4d43-49d8-82ee-076c01981a93
+enabledConnection: TRUE
+fromServer: CN=NTDS Settings,CN=WIN02,CN=Servers,CN=Site-2,CN=Sites,CN=Configu
+ ration,DC=ad,DC=samba,DC=example,DC=com
+schedule:: vAAAAAAAAAABAAAAAAAAABQAAAABAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE
+ BAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEB
+ AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBA
+ QEBAQEBAQEBAQEBAQEBAQEBAQEBAQE=
+options: 1
+systemFlags: 1610612736
+
+dn: CN=dd82832b-8124-4953-97e1-f0a050b6e1d3,CN=NTDS Settings,CN=WIN02,CN=Servers,CN=Site-2,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: leaf
+objectClass: nTDSConnection
+cn: dd82832b-8124-4953-97e1-f0a050b6e1d3
+whenCreated: 20150225013135.0Z
+whenChanged: 20150226230445.0Z
+objectGUID: a7e86beb-cd44-4222-9662-1997e455c3e6
+enabledConnection: TRUE
+fromServer: CN=NTDS Settings,CN=WIN04,CN=Servers,CN=Site-2,CN=Sites,CN=Configu
+ ration,DC=ad,DC=samba,DC=example,DC=com
+schedule:: vAAAAAAAAAABAAAAAAAAABQAAAABAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE
+ BAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEB
+ AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBA
+ QEBAQEBAQEBAQEBAQEBAQEBAQEBAQE=
+options: 1
+systemFlags: 1610612736
+
+dn: CN=ec96c9b2-a339-40c3-9f1c-44da64dd0582,CN=NTDS Settings,CN=WIN05,CN=Servers,CN=Site-2,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: leaf
+objectClass: nTDSConnection
+cn: ec96c9b2-a339-40c3-9f1c-44da64dd0582
+whenCreated: 20150225013110.0Z
+whenChanged: 20150226235237.0Z
+objectGUID: be0eef75-5f23-4c6a-ad2a-8ac2dfc251b4
+enabledConnection: TRUE
+fromServer: CN=NTDS Settings,CN=WIN02,CN=Servers,CN=Site-2,CN=Sites,CN=Configu
+ ration,DC=ad,DC=samba,DC=example,DC=com
+schedule:: vAAAAAAAAAABAAAAAAAAABQAAAABAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE
+ BAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEB
+ AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBA
+ QEBAQEBAQEBAQEBAQEBAQEBAQEBAQE=
+options: 1
+systemFlags: 1610612736
+
+dn: CN=ee1f18fc-b345-42a5-b30d-5806235fee35,CN=NTDS Settings,CN=WIN02,CN=Servers,CN=Site-2,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: leaf
+objectClass: nTDSConnection
+cn: ee1f18fc-b345-42a5-b30d-5806235fee35
+whenCreated: 20150225013136.0Z
+whenChanged: 20150226230445.0Z
+objectGUID: 4bb4d00d-ad2e-4072-91a4-5278aa83c32b
+enabledConnection: TRUE
+fromServer: CN=NTDS Settings,CN=WIN05,CN=Servers,CN=Site-2,CN=Sites,CN=Configu
+ ration,DC=ad,DC=samba,DC=example,DC=com
+schedule:: vAAAAAAAAAABAAAAAAAAABQAAAABAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE
+ BAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEB
+ AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBA
+ QEBAQEBAQEBAQEBAQEBAQEBAQEBAQE=
+options: 1
+systemFlags: 1610612736
+
+dn: CN=RODC Connection (SYSVOL),CN=NTDS Settings,CN=WIN06,CN=Servers,CN=Site-3,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: leaf
+objectClass: nTDSConnection
+cn: RODC Connection (SYSVOL)
+whenCreated: 20150225013053.0Z
+whenChanged: 20150225014102.0Z
+objectGUID: 9dcf42d4-6669-4d95-a844-d4511f2cdacd
+enabledConnection: TRUE
+fromServer: CN=NTDS Settings,CN=WIN01,CN=Servers,CN=Default-First-Site-Name,CN
+ =Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+schedule:: vAAAAAAAAAABAAAAAAAAABQAAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAA
+ IAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAI
+ AAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIA
+ AAIAAAIAAAIAAAIAAAIAAAIAAAIAAA=
+options: 65
+systemFlags: 1073741824
+
+dn: CN=5322da03-a995-408f-b628-206d4fda8e7b,CN=NTDS Settings,CN=WIN07,CN=Servers,CN=Site-4,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: leaf
+objectClass: nTDSConnection
+cn: 5322da03-a995-408f-b628-206d4fda8e7b
+whenCreated: 20150225013440.0Z
+whenChanged: 20150225013440.0Z
+objectGUID: 686458fd-85f8-4fd2-8206-8be7d0dd7295
+enabledConnection: TRUE
+fromServer: CN=NTDS Settings,CN=WIN01,CN=Servers,CN=Default-First-Site-Name,CN
+ =Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+schedule:: vAAAAAAAAAABAAAAAAAAABQAAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAA
+ IAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAI
+ AAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIA
+ AAIAAAIAAAIAAAIAAAIAAAIAAAIAAA=
+options: 5
+systemFlags: 1610612736
+transportType: CN=IP,CN=Inter-Site Transports,CN=Sites,CN=Configuration,DC=ad,
+ DC=samba,DC=example,DC=com
+
+dn: CN=RODC Connection (SYSVOL),CN=NTDS Settings,CN=WIN08,CN=Servers,CN=Site-4,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: leaf
+objectClass: nTDSConnection
+cn: RODC Connection (SYSVOL)
+whenCreated: 20150225013730.0Z
+whenChanged: 20150227002418.0Z
+objectGUID: e6419381-e8ff-4d2e-9971-1bb365ac344c
+enabledConnection: TRUE
+fromServer: CN=NTDS Settings,CN=WIN01,CN=Servers,CN=Default-First-Site-Name,CN
+ =Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+schedule:: vAAAAAAAAAABAAAAAAAAABQAAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAA
+ IAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAI
+ AAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIA
+ AAIAAAIAAAIAAAIAAAIAAAIAAAIAAA=
+options: 65
+systemFlags: 1073741824
+
+dn: CN=2d05cdd6-b3de-47d1-815c-bd05dc4c8082,CN=NTDS Settings,CN=WIN10,CN=Servers,CN=Site-5,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: leaf
+objectClass: nTDSConnection
+cn: 2d05cdd6-b3de-47d1-815c-bd05dc4c8082
+whenCreated: 20150225014631.0Z
+whenChanged: 20150225014631.0Z
+objectGUID: ad2d32f3-9bfe-41ef-85d6-d72044384292
+enabledConnection: TRUE
+fromServer: CN=NTDS Settings,CN=WIN01,CN=Servers,CN=Default-First-Site-Name,CN
+ =Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+schedule:: vAAAAAAAAAABAAAAAAAAABQAAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAA
+ IAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAI
+ AAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIA
+ AAIAAAIAAAIAAAIAAAIAAAIAAAIAAA=
+options: 5
+systemFlags: 1610612736
+transportType: CN=IP,CN=Inter-Site Transports,CN=Sites,CN=Configuration,DC=ad,
+ DC=samba,DC=example,DC=com
+
+dn: CN=3061ea26-1e19-4025-82de-f64a8dee4414,CN=NTDS Settings,CN=WIN09,CN=Servers,CN=Site-5,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: leaf
+objectClass: nTDSConnection
+cn: 3061ea26-1e19-4025-82de-f64a8dee4414
+whenCreated: 20150225030359.0Z
+whenChanged: 20150226235320.0Z
+objectGUID: 8cda9d61-bf28-4196-85d4-d8d13924647b
+enabledConnection: TRUE
+fromServer: CN=NTDS Settings,CN=WIN10,CN=Servers,CN=Site-5,CN=Sites,CN=Configu
+ ration,DC=ad,DC=samba,DC=example,DC=com
+schedule:: vAAAAAAAAAABAAAAAAAAABQAAAABAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE
+ BAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEB
+ AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBA
+ QEBAQEBAQEBAQEBAQEBAQEBAQEBAQE=
+options: 1
+systemFlags: 1610612736
+
+dn: CN=c86b6e9b-9cca-459c-8bcd-cb6c490e8eb1,CN=NTDS Settings,CN=WIN10,CN=Servers,CN=Site-5,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: leaf
+objectClass: nTDSConnection
+cn: c86b6e9b-9cca-459c-8bcd-cb6c490e8eb1
+whenCreated: 20150227000340.0Z
+whenChanged: 20150227000341.0Z
+objectGUID: b0417651-7fe2-44f8-96b9-9722e60642e6
+enabledConnection: TRUE
+fromServer: CN=NTDS Settings,CN=WIN09,CN=Servers,CN=Site-5,CN=Sites,CN=Configu
+ ration,DC=ad,DC=samba,DC=example,DC=com
+schedule:: vAAAAAAAAAABAAAAAAAAABQAAAABAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE
+ BAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEB
+ AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBA
+ QEBAQEBAQEBAQEBAQEBAQEBAQEBAQE=
+options: 1
+systemFlags: 1610612736
+
+dn: CN=SMTP,CN=Inter-Site Transports,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: interSiteTransport
+cn: SMTP
+whenChanged: 20150225003743.0Z
+name: SMTP
+objectGUID: 73611701-f84b-4f47-b73e-1e598191d803
+options: 1
+transportAddressAttribute: mailAddress
+
+dn: CN=IP,CN=Inter-Site Transports,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: interSiteTransport
+cn: IP
+whenChanged: 20150225003743.0Z
+name: IP
+objectGUID: 39c52f30-6f3a-4a78-a813-1413f9c01a86
+transportAddressAttribute: dNSHostName
+
+dn: <GUID=44e29801-abfe-4f0a-9b89-d3a5745efcdb>;CN=DEFAULTIPSITELINK,CN=IP,CN=Inter-Site Transports,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: siteLink
+cn: DEFAULTIPSITELINK
+cost: 100
+objectGUID: 44e29801-abfe-4f0a-9b89-d3a5745efcdb
+systemFlags: 1073741824
+replInterval: 180
+whenChanged: 20150227014848.0Z
+siteList: <GUID=0f9875bb52484a4a8570214b9c1e81f1>;CN=Default-First-Site-Name,C
+ N=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+siteList: <GUID=2588a8a18c662c40abf2cfa50f784f41>;CN=Site-2,CN=Sites,CN=Config
+ uration,DC=ad,DC=samba,DC=example,DC=com
+siteList: <GUID=6fa5bc475ec3c548859e20d7de722b82>;CN=Site-4,CN=Sites,CN=Config
+ uration,DC=ad,DC=samba,DC=example,DC=com
+siteList: <GUID=8b91bfd5321e8a40a0670bcbfddcb6af>;CN=Site-3,CN=Sites,CN=Config
+ uration,DC=ad,DC=samba,DC=example,DC=com
+siteList: <GUID=a1d89326186de04998dac6f9a34d8ad6>;CN=Site-5,CN=Sites,CN=Config
+ uration,DC=ad,DC=samba,DC=example,DC=com
+
+dn: CN=Servers,CN=Default-First-Site-Name,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: serversContainer
+cn: Servers
+whenChanged: 20150225003743.0Z
+objectGUID: 3a91ae84-8ae4-4a53-958c-23540f69ba45
+systemFlags: 33554432
+
+dn: CN=Servers,CN=Site-2,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: serversContainer
+cn: Servers
+whenChanged: 20150225005911.0Z
+objectGUID: c1017197-23f9-4e29-b42a-4205eae0a059
+systemFlags: 33554432
+
+dn: CN=Servers,CN=Site-3,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: serversContainer
+cn: Servers
+whenChanged: 20150225010149.0Z
+objectGUID: c16fcdbf-d44f-4d3c-b2e2-eedeceaa3f54
+systemFlags: 33554432
+
+dn: CN=Servers,CN=Site-4,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: serversContainer
+cn: Servers
+whenChanged: 20150225010201.0Z
+objectGUID: 7be49db2-5d88-4af5-8b12-50059edd9419
+systemFlags: 33554432
+
+dn: CN=Servers,CN=Site-5,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: serversContainer
+cn: Servers
+whenChanged: 20150225010211.0Z
+objectGUID: 47683eac-7f2e-4add-8589-dfa628c6e55e
+systemFlags: 33554432
+
+dn: CN=WIN01,CN=Servers,CN=Default-First-Site-Name,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: server
+cn: WIN01
+objectGUID: a8ce98ac-226d-4994-977e-e97386655d97
+systemFlags: 1375731712
+dNSHostName: win01.ad.samba.example.com
+whenChanged: 20150227014848.0Z
+
+dn: CN=WIN02,CN=Servers,CN=Site-2,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: server
+cn: WIN02
+objectGUID: c549c41b-5936-4cd6-a144-a9036215588a
+systemFlags: 1375731712
+dNSHostName: win02.ad.samba.example.com
+whenChanged: 20150227014848.0Z
+
+dn: CN=WIN03,CN=Servers,CN=Site-2,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: server
+cn: WIN03
+objectGUID: 939ca019-2e4e-4430-809c-9b8da640e8fc
+systemFlags: 1375731712
+dNSHostName: win03.ad.samba.example.com
+whenChanged: 20150227014848.0Z
+
+dn: CN=WIN04,CN=Servers,CN=Site-2,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: server
+cn: WIN04
+objectGUID: 134cafa9-8058-49ed-bf55-abbf0e207d7c
+systemFlags: 1375731712
+dNSHostName: win04.ad.samba.example.com
+whenChanged: 20150227014848.0Z
+
+dn: CN=WIN05,CN=Servers,CN=Site-2,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: server
+cn: WIN05
+objectGUID: 5e96a611-18b0-492a-8fb3-20fee8585990
+systemFlags: 1375731712
+dNSHostName: win05.ad.samba.example.com
+whenChanged: 20150227014848.0Z
+
+dn: CN=WIN06,CN=Servers,CN=Site-3,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: server
+cn: WIN06
+objectGUID: 76a6d120-851a-4473-b411-a2daee099a74
+systemFlags: 1375731712
+dNSHostName: WIN06.ad.samba.example.com
+whenChanged: 20150227014848.0Z
+
+dn: CN=WIN07,CN=Servers,CN=Site-4,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: server
+cn: WIN07
+objectGUID: 9cc8a7d9-d9c8-45c8-bf1b-1cc3b0b8cb00
+systemFlags: 1375731712
+dNSHostName: win07.ad.samba.example.com
+whenChanged: 20150227014849.0Z
+
+dn: CN=WIN08,CN=Servers,CN=Site-4,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: server
+cn: WIN08
+objectGUID: a5706cae-98a9-4b30-a9eb-6ba3601200cc
+systemFlags: 1375731712
+dNSHostName: WIN08.ad.samba.example.com
+whenChanged: 20150227014848.0Z
+
+dn: CN=WIN09,CN=Servers,CN=Site-5,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: server
+cn: WIN09
+objectGUID: 08fbe297-70e3-40d4-aab5-f5cfce191d2e
+systemFlags: 1375731712
+dNSHostName: win09.ad.samba.example.com
+whenChanged: 20150227014848.0Z
+
+dn: CN=WIN10,CN=Servers,CN=Site-5,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: server
+cn: WIN10
+objectGUID: bd4375f0-fa5b-49fa-9c66-8935e6bd2115
+systemFlags: 1375731712
+dNSHostName: win10.ad.samba.example.com
+whenChanged: 20150227014849.0Z
+
+dn: DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: domain
+objectClass: domainDNS
+whenChanged: 20150226224411.0Z
+objectGUID: 1b8882e6-f089-4fc2-9dd8-d5927d542011
+objectSid: S-1-5-21-2151428016-2346574099-1441878984
+fSMORoleOwner: CN=NTDS Settings,CN=WIN01,CN=Servers,CN=Default-First-Site-Name
+ ,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+msDS-Behavior-Version: 6
+repsFrom:: AQAAAAAAAAAVAQAAAAAAAPRdAAsDAAAA9F0ACwMAAAAAAAAA0AAAAEUAAABwAAAAERE
+ RERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERER
+ ERERERERERERERERERERERERERERERERAAAAAF9TAAAAAAAAAAAAAAAAAABfUwAAAAAAADeuJu65t
+ +9Gmgs5d7id/rYhVoqE3YmTTIRY3nPAOk+rAAAAAAAAAAAAAAAAAAAAAEEAAABlZTI2YWUzNy1iN2
+ I5LTQ2ZWYtOWEwYi0zOTc3Yjg5ZGZlYjYuX21zZGNzLmFkLnNhbWJhLmV4YW1wbGUuY29tAA==
+
+dn: CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: configuration
+cn: Configuration
+whenChanged: 20150225024002.0Z
+objectGUID: 8621c4c4-fa9f-4327-ac44-d88b7a538b07
+repsFrom:: AQAAAAAAAAAVAQAAAAAAAOtdAAsDAAAA610ACwMAAAAAAAAA0AAAAEUAAABwAAAAERE
+ RERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERER
+ ERERERERERERERERERERERERERERERERAAAAAKNTAAAAAAAAAAAAAAAAAACjUwAAAAAAADeuJu65t
+ +9Gmgs5d7id/rYhVoqE3YmTTIRY3nPAOk+rAAAAAAAAAAAAAAAAAAAAAEEAAABlZTI2YWUzNy1iN2
+ I5LTQ2ZWYtOWEwYi0zOTc3Yjg5ZGZlYjYuX21zZGNzLmFkLnNhbWJhLmV4YW1wbGUuY29tAA==
+
+dn: CN=Schema,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: dMD
+cn: Schema
+whenChanged: 20150225024002.0Z
+objectGUID: c4b1d5d4-4c51-47bd-954f-5609022d7bbb
+fSMORoleOwner: CN=NTDS Settings,CN=WIN01,CN=Servers,CN=Default-First-Site-Name
+ ,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+repsFrom:: AQAAAAAAAAAVAQAAAAAAANhdAAsDAAAA2F0ACwMAAAAAAAAA0AAAAEUAAABwAAAAERE
+ RERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERER
+ ERERERERERERERERERERERERERERERERAAAAAFAXAAAAAAAAAAAAAAAAAABQFwAAAAAAADeuJu65t
+ +9Gmgs5d7id/rYhVoqE3YmTTIRY3nPAOk+rAAAAAAAAAAAAAAAAAAAAAEEAAABlZTI2YWUzNy1iN2
+ I5LTQ2ZWYtOWEwYi0zOTc3Yjg5ZGZlYjYuX21zZGNzLmFkLnNhbWJhLmV4YW1wbGUuY29tAA==
+
+dn: DC=DomainDnsZones,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: domain
+objectClass: domainDNS
+whenChanged: 20150225024002.0Z
+objectGUID: 8d57cf63-d8d3-439b-9fa4-ebd0e1f1971a
+
+dn: DC=ForestDnsZones,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: domain
+objectClass: domainDNS
+whenChanged: 20150225024002.0Z
+objectGUID: ffedd3bb-278f-4e6e-b015-5bf062c8c96d
+
+dn: @ROOTDSE
+configurationNamingContext: CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+defaultNamingContext: DC=ad,DC=samba,DC=example,DC=com
+rootDomainNamingContext: DC=ad,DC=samba,DC=example,DC=com
+schemaNamingContext: CN=Schema,CN=Configuration,DC=ad,DC=samba,DC=example,DC=c
+ om
+dsServiceName: CN=NTDS Settings,CN=WIN01,CN=Servers,CN=Default-First-Site-Name
+ ,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
+

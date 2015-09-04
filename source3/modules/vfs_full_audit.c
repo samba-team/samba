@@ -97,6 +97,9 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_GET_SHADOW_COPY_DATA,
 	SMB_VFS_OP_STATVFS,
 	SMB_VFS_OP_FS_CAPABILITIES,
+	SMB_VFS_OP_SNAP_CHECK_PATH,
+	SMB_VFS_OP_SNAP_CREATE,
+	SMB_VFS_OP_SNAP_DELETE,
 
 	/* Directory operations */
 
@@ -155,7 +158,6 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_LINK,
 	SMB_VFS_OP_MKNOD,
 	SMB_VFS_OP_REALPATH,
-	SMB_VFS_OP_NOTIFY_WATCH,
 	SMB_VFS_OP_CHFLAGS,
 	SMB_VFS_OP_FILE_ID_CREATE,
 	SMB_VFS_OP_STREAMINFO,
@@ -228,6 +230,9 @@ static struct {
 	{ SMB_VFS_OP_GET_SHADOW_COPY_DATA,	"get_shadow_copy_data" },
 	{ SMB_VFS_OP_STATVFS,	"statvfs" },
 	{ SMB_VFS_OP_FS_CAPABILITIES,	"fs_capabilities" },
+	{ SMB_VFS_OP_SNAP_CHECK_PATH, "snap_check_path" },
+	{ SMB_VFS_OP_SNAP_CREATE, "snap_create" },
+	{ SMB_VFS_OP_SNAP_DELETE, "snap_delete" },
 	{ SMB_VFS_OP_OPENDIR,	"opendir" },
 	{ SMB_VFS_OP_FDOPENDIR,	"fdopendir" },
 	{ SMB_VFS_OP_READDIR,	"readdir" },
@@ -280,7 +285,6 @@ static struct {
 	{ SMB_VFS_OP_LINK,	"link" },
 	{ SMB_VFS_OP_MKNOD,	"mknod" },
 	{ SMB_VFS_OP_REALPATH,	"realpath" },
-	{ SMB_VFS_OP_NOTIFY_WATCH, "notify_watch" },
 	{ SMB_VFS_OP_CHFLAGS,	"chflags" },
 	{ SMB_VFS_OP_FILE_ID_CREATE,	"file_id_create" },
 	{ SMB_VFS_OP_STREAMINFO,	"streaminfo" },
@@ -647,14 +651,12 @@ static void smb_full_audit_disconnect(vfs_handle_struct *handle)
 }
 
 static uint64_t smb_full_audit_disk_free(vfs_handle_struct *handle,
-				    const char *path,
-				    bool small_query, uint64_t *bsize, 
+				    const char *path, uint64_t *bsize,
 				    uint64_t *dfree, uint64_t *dsize)
 {
 	uint64_t result;
 
-	result = SMB_VFS_NEXT_DISK_FREE(handle, path, small_query, bsize,
-					dfree, dsize);
+	result = SMB_VFS_NEXT_DISK_FREE(handle, path, bsize, dfree, dsize);
 
 	/* Don't have a reasonable notion of failure here */
 
@@ -676,7 +678,6 @@ static int smb_full_audit_get_quota(struct vfs_handle_struct *handle,
 	return result;
 }
 
-	
 static int smb_full_audit_set_quota(struct vfs_handle_struct *handle,
 			   enum SMB_QUOTA_TYPE qtype, unid_t id,
 			   SMB_DISK_QUOTA *qt)
@@ -728,8 +729,54 @@ static uint32_t smb_full_audit_fs_capabilities(struct vfs_handle_struct *handle,
 	return result;
 }
 
+static NTSTATUS smb_full_audit_snap_check_path(struct vfs_handle_struct *handle,
+					       TALLOC_CTX *mem_ctx,
+					       const char *service_path,
+					       char **base_volume)
+{
+	NTSTATUS status;
+
+	status = SMB_VFS_NEXT_SNAP_CHECK_PATH(handle, mem_ctx, service_path,
+					      base_volume);
+	do_log(SMB_VFS_OP_SNAP_CHECK_PATH, NT_STATUS_IS_OK(status),
+	       handle, "");
+
+	return status;
+}
+
+static NTSTATUS smb_full_audit_snap_create(struct vfs_handle_struct *handle,
+					   TALLOC_CTX *mem_ctx,
+					   const char *base_volume,
+					   time_t *tstamp,
+					   bool rw,
+					   char **base_path,
+					   char **snap_path)
+{
+	NTSTATUS status;
+
+	status = SMB_VFS_NEXT_SNAP_CREATE(handle, mem_ctx, base_volume, tstamp,
+					  rw, base_path, snap_path);
+	do_log(SMB_VFS_OP_SNAP_CREATE, NT_STATUS_IS_OK(status), handle, "");
+
+	return status;
+}
+
+static NTSTATUS smb_full_audit_snap_delete(struct vfs_handle_struct *handle,
+					   TALLOC_CTX *mem_ctx,
+					   char *base_path,
+					   char *snap_path)
+{
+	NTSTATUS status;
+
+	status = SMB_VFS_NEXT_SNAP_DELETE(handle, mem_ctx, base_path,
+					  snap_path);
+	do_log(SMB_VFS_OP_SNAP_DELETE, NT_STATUS_IS_OK(status), handle, "");
+
+	return status;
+}
+
 static DIR *smb_full_audit_opendir(vfs_handle_struct *handle,
-			  const char *fname, const char *mask, uint32 attr)
+			  const char *fname, const char *mask, uint32_t attr)
 {
 	DIR *result;
 
@@ -741,7 +788,7 @@ static DIR *smb_full_audit_opendir(vfs_handle_struct *handle,
 }
 
 static DIR *smb_full_audit_fdopendir(vfs_handle_struct *handle,
-			  files_struct *fsp, const char *mask, uint32 attr)
+			  files_struct *fsp, const char *mask, uint32_t attr)
 {
 	DIR *result;
 
@@ -1454,7 +1501,7 @@ static int smb_full_audit_ftruncate(vfs_handle_struct *handle, files_struct *fsp
 }
 
 static int smb_full_audit_fallocate(vfs_handle_struct *handle, files_struct *fsp,
-			   enum vfs_fallocate_mode mode,
+			   uint32_t mode,
 			   off_t offset,
 			   off_t len)
 {
@@ -1482,7 +1529,7 @@ static bool smb_full_audit_lock(vfs_handle_struct *handle, files_struct *fsp,
 
 static int smb_full_audit_kernel_flock(struct vfs_handle_struct *handle,
 				       struct files_struct *fsp,
-				       uint32 share_mode, uint32 access_mask)
+				       uint32_t share_mode, uint32_t access_mask)
 {
 	int result;
 
@@ -1577,27 +1624,6 @@ static char *smb_full_audit_realpath(vfs_handle_struct *handle,
 	result = SMB_VFS_NEXT_REALPATH(handle, path);
 
 	do_log(SMB_VFS_OP_REALPATH, (result != NULL), handle, "%s", path);
-
-	return result;
-}
-
-static NTSTATUS smb_full_audit_notify_watch(struct vfs_handle_struct *handle,
-			struct sys_notify_context *ctx,
-			const char *path,
-			uint32_t *filter,
-			uint32_t *subdir_filter,
-			void (*callback)(struct sys_notify_context *ctx,
-					void *private_data,
-					struct notify_event *ev),
-			void *private_data, void *handle_p)
-{
-	NTSTATUS result;
-
-	result = SMB_VFS_NEXT_NOTIFY_WATCH(handle, ctx, path,
-					   filter, subdir_filter, callback,
-					   private_data, handle_p);
-
-	do_log(SMB_VFS_OP_NOTIFY_WATCH, NT_STATUS_IS_OK(result), handle, "");
 
 	return result;
 }
@@ -1855,7 +1881,7 @@ static NTSTATUS smb_full_audit_readdir_attr(struct vfs_handle_struct *handle,
 }
 
 static NTSTATUS smb_full_audit_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
-					   uint32 security_info,
+					   uint32_t security_info,
 					   TALLOC_CTX *mem_ctx,
 					   struct security_descriptor **ppdesc)
 {
@@ -1872,7 +1898,7 @@ static NTSTATUS smb_full_audit_fget_nt_acl(vfs_handle_struct *handle, files_stru
 
 static NTSTATUS smb_full_audit_get_nt_acl(vfs_handle_struct *handle,
 					  const char *name,
-					  uint32 security_info,
+					  uint32_t security_info,
 					  TALLOC_CTX *mem_ctx,
 					  struct security_descriptor **ppdesc)
 {
@@ -1888,7 +1914,7 @@ static NTSTATUS smb_full_audit_get_nt_acl(vfs_handle_struct *handle,
 }
 
 static NTSTATUS smb_full_audit_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
-			      uint32 security_info_sent,
+			      uint32_t security_info_sent,
 			      const struct security_descriptor *psd)
 {
 	struct vfs_full_audit_private_data *pd;
@@ -2201,6 +2227,9 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.get_shadow_copy_data_fn = smb_full_audit_get_shadow_copy_data,
 	.statvfs_fn = smb_full_audit_statvfs,
 	.fs_capabilities_fn = smb_full_audit_fs_capabilities,
+	.snap_check_path_fn =  smb_full_audit_snap_check_path,
+	.snap_create_fn = smb_full_audit_snap_create,
+	.snap_delete_fn = smb_full_audit_snap_delete,
 	.opendir_fn = smb_full_audit_opendir,
 	.fdopendir_fn = smb_full_audit_fdopendir,
 	.readdir_fn = smb_full_audit_readdir,
@@ -2253,7 +2282,6 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.link_fn = smb_full_audit_link,
 	.mknod_fn = smb_full_audit_mknod,
 	.realpath_fn = smb_full_audit_realpath,
-	.notify_watch_fn = smb_full_audit_notify_watch,
 	.chflags_fn = smb_full_audit_chflags,
 	.file_id_create_fn = smb_full_audit_file_id_create,
 	.streaminfo_fn = smb_full_audit_streaminfo,
@@ -2295,6 +2323,7 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.set_offline_fn = smb_full_audit_set_offline,
 };
 
+static_decl_vfs;
 NTSTATUS vfs_full_audit_init(void)
 {
 	NTSTATUS ret = smb_register_vfs(SMB_VFS_INTERFACE_VERSION,

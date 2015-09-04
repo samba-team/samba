@@ -41,7 +41,6 @@ struct lsa_policy_state {
 	struct dcesrv_handle *handle;
 	struct ldb_context *sam_ldb;
 	struct ldb_context *pdb;
-	uint32_t access_mask;
 	struct ldb_dn *domain_dn;
 	struct ldb_dn *forest_dn;
 	struct ldb_dn *builtin_dn;
@@ -56,6 +55,8 @@ struct lsa_policy_state {
 	struct dom_sid *creator_owner_domain_sid;
 	struct dom_sid *world_domain_sid;
 	int mixed_domain;
+	struct security_descriptor *sd;
+	uint32_t access_mask;
 };
 
 enum lsa_handle {

@@ -21,14 +21,14 @@
 #include <Python.h>
 #include "includes.h"
 #include "system/filesys.h"
-#include "tdb_compat.h"
+#include <tdb.h>
 #include "lib/tdb_wrap/tdb_wrap.h"
 #include "librpc/ndr/libndr.h"
 #include "ntvfs/posix/posix_eadb.h"
 #include "libcli/util/pyerrors.h"
 #include "param/pyparam.h"
 
-void initxattr_tdb(void);
+void initposix_eadb(void);
 
 static PyObject *py_is_xattr_supported(PyObject *self)
 {

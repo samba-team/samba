@@ -8,10 +8,6 @@ def build_test_headers(task):
     f.write('/* generated header test */\n')
     hlist = task.env.public_headers_list[:]
     hlist.sort()
-    # We need to include tdb.h before ntdb.h.  It's the rules!
-    if 'tdb.h' in hlist and 'ntdb.h' in hlist:
-        hlist.remove('ntdb.h')
-        hlist.append('ntdb.h')
 
     for h in hlist:
         f.write('#include "%s"\n' % os.path.normpath(h))

@@ -21,7 +21,7 @@ enum acl_mode
 int main(int argc, const char *argv[])
 {
     int opt;
-    int flags;
+    int flags = 0;
     int debug = 0;
     int numeric = 0;
     int stat_and_retry = 0;

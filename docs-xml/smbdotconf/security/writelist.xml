@@ -1,6 +1,6 @@
 <samba:parameter name="write list"
                  context="S"
-				 type="list"
+                 type="cmdlist"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>

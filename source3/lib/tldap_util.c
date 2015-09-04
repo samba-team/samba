@@ -93,7 +93,7 @@ bool tldap_pull_binsid(struct tldap_message *msg, const char *attribute,
 	if (!tldap_get_single_valueblob(msg, attribute, &val)) {
 		return false;
 	}
-	return sid_parse((char *)val.data, val.length, sid);
+	return sid_parse(val.data, val.length, sid);
 }
 
 bool tldap_pull_guid(struct tldap_message *msg, const char *attribute,

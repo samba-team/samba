@@ -24,7 +24,7 @@
    This file defines the low-level printing system interfaces used by the
    SAMBA printing subsystem.
 */
-#include "tdb_compat.h"
+#include <tdb.h>
 #include "lib/param/loadparm.h"
 
 /* Extra fields above "LPQ_PRINTING" are used to map extra NT status codes. */
@@ -193,31 +193,31 @@ uint16_t print_spool_rap_jobid(struct print_file_data *print_file);
 
 /* The following definitions come from printing/printing.c  */
 
-uint32 sysjob_to_jobid_pdb(struct tdb_print_db *pdb, int sysjob);
-uint32 sysjob_to_jobid(int unix_jobid);
+uint32_t sysjob_to_jobid_pdb(struct tdb_print_db *pdb, int sysjob);
+uint32_t sysjob_to_jobid(int unix_jobid);
 int jobid_to_sysjob_pdb(struct tdb_print_db *pdb, uint32_t jobid);
 bool print_notify_register_pid(int snum);
 bool print_notify_deregister_pid(int snum);
-bool print_job_exists(const char* sharename, uint32 jobid);
+bool print_job_exists(const char* sharename, uint32_t jobid);
 struct spoolss_DeviceMode *print_job_devmode(TALLOC_CTX *mem_ctx,
 					     const char *sharename,
-					     uint32 jobid);
+					     uint32_t jobid);
 bool print_job_set_name(struct tevent_context *ev,
 			struct messaging_context *msg_ctx,
-			const char *sharename, uint32 jobid, const char *name);
+			const char *sharename, uint32_t jobid, const char *name);
 bool print_job_get_name(TALLOC_CTX *mem_ctx, const char *sharename, uint32_t jobid, char **name);
 WERROR print_job_delete(const struct auth_session_info *server_info,
 			struct messaging_context *msg_ctx,
 			int snum, uint32_t jobid);
 WERROR print_job_pause(const struct auth_session_info *server_info,
 		     struct messaging_context *msg_ctx,
-		     int snum, uint32 jobid);
+		     int snum, uint32_t jobid);
 WERROR print_job_resume(const struct auth_session_info *server_info,
 		      struct messaging_context *msg_ctx,
-		      int snum, uint32 jobid);
+		      int snum, uint32_t jobid);
 ssize_t print_job_write(struct tevent_context *ev,
 			struct messaging_context *msg_ctx,
-			int snum, uint32 jobid, const char *buf, size_t size);
+			int snum, uint32_t jobid, const char *buf, size_t size);
 int print_queue_length(struct messaging_context *msg_ctx, int snum,
 		       print_status_struct *pstatus);
 WERROR print_job_start(const struct auth_session_info *server_info,
@@ -226,9 +226,9 @@ WERROR print_job_start(const struct auth_session_info *server_info,
 		       int snum, const char *docname, const char *filename,
 		       struct spoolss_DeviceMode *devmode, uint32_t *_jobid);
 void print_job_endpage(struct messaging_context *msg_ctx,
-		       int snum, uint32 jobid);
+		       int snum, uint32_t jobid);
 NTSTATUS print_job_end(struct messaging_context *msg_ctx, int snum,
-		       uint32 jobid, enum file_close_type close_type);
+		       uint32_t jobid, enum file_close_type close_type);
 int print_queue_status(struct messaging_context *msg_ctx, int snum,
 		       print_queue_struct **ppqueue,
 		       print_status_struct *status);
@@ -238,9 +238,9 @@ WERROR print_queue_resume(const struct auth_session_info *server_info,
 			  struct messaging_context *msg_ctx, int snum);
 WERROR print_queue_purge(const struct auth_session_info *server_info,
 			 struct messaging_context *msg_ctx, int snum);
-uint16 pjobid_to_rap(const char* sharename, uint32 jobid);
-bool rap_to_pjobid(uint16 rap_jobid, fstring sharename, uint32 *pjobid);
-void rap_jobid_delete(const char* sharename, uint32 jobid);
+uint16_t pjobid_to_rap(const char* sharename, uint32_t jobid);
+bool rap_to_pjobid(uint16_t rap_jobid, fstring sharename, uint32_t *pjobid);
+void rap_jobid_delete(const char* sharename, uint32_t jobid);
 bool print_backend_init(struct messaging_context *msg_ctx);
 void printing_end(void);
 

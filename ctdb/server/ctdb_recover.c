@@ -118,84 +118,32 @@ ctdb_control_getdbmap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indat
 	return 0;
 }
 
-int 
+int
 ctdb_control_getnodemap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indata, TDB_DATA *outdata)
 {
-	uint32_t i, num_nodes;
-	struct ctdb_node_map *node_map;
-
 	CHECK_CONTROL_DATA_SIZE(0);
 
-	num_nodes = ctdb->num_nodes;
-
-	outdata->dsize = offsetof(struct ctdb_node_map, nodes) + num_nodes*sizeof(struct ctdb_node_and_flags);
-	outdata->dptr  = (unsigned char *)talloc_zero_size(outdata, outdata->dsize);
-	if (!outdata->dptr) {
-		DEBUG(DEBUG_ALERT, (__location__ " Failed to allocate nodemap array\n"));
-		exit(1);
+	outdata->dptr  = (unsigned char *)ctdb_node_list_to_map(ctdb->nodes,
+								ctdb->num_nodes,
+								outdata);
+	if (outdata->dptr == NULL) {
+		return -1;
 	}
 
-	node_map = (struct ctdb_node_map *)outdata->dptr;
-	node_map->num = num_nodes;
-	for (i=0; i<num_nodes; i++) {
-		if (parse_ip(ctdb->nodes[i]->address.address,
-			     NULL, /* TODO: pass in the correct interface here*/
-			     0,
-			     &node_map->nodes[i].addr) == 0)
-		{
-			DEBUG(DEBUG_ERR, (__location__ " Failed to parse %s into a sockaddr\n", ctdb->nodes[i]->address.address));
-		}
-
-		node_map->nodes[i].pnn   = ctdb->nodes[i]->pnn;
-		node_map->nodes[i].flags = ctdb->nodes[i]->flags;
-	}
+	outdata->dsize = talloc_get_size(outdata->dptr);
 
 	return 0;
 }
 
 /*
-   get an old style ipv4-only nodemap
+  reload the nodes file
 */
-int 
-ctdb_control_getnodemapv4(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indata, TDB_DATA *outdata)
-{
-	uint32_t i, num_nodes;
-	struct ctdb_node_mapv4 *node_map;
-
-	CHECK_CONTROL_DATA_SIZE(0);
-
-	num_nodes = ctdb->num_nodes;
-
-	outdata->dsize = offsetof(struct ctdb_node_mapv4, nodes) + num_nodes*sizeof(struct ctdb_node_and_flagsv4);
-	outdata->dptr  = (unsigned char *)talloc_zero_size(outdata, outdata->dsize);
-	if (!outdata->dptr) {
-		DEBUG(DEBUG_ALERT, (__location__ " Failed to allocate nodemap array\n"));
-		exit(1);
-	}
-
-	node_map = (struct ctdb_node_mapv4 *)outdata->dptr;
-	node_map->num = num_nodes;
-	for (i=0; i<num_nodes; i++) {
-		if (parse_ipv4(ctdb->nodes[i]->address.address, 0, &node_map->nodes[i].sin) == 0) {
-			DEBUG(DEBUG_ERR, (__location__ " Failed to parse %s into a sockaddr\n", ctdb->nodes[i]->address.address));
-			return -1;
-		}
-
-		node_map->nodes[i].pnn   = ctdb->nodes[i]->pnn;
-		node_map->nodes[i].flags = ctdb->nodes[i]->flags;
-	}
-
-	return 0;
-}
-
-static void
-ctdb_reload_nodes_event(struct event_context *ev, struct timed_event *te, 
-			       struct timeval t, void *private_data)
+int
+ctdb_control_reload_nodes_file(struct ctdb_context *ctdb, uint32_t opcode)
 {
 	int i, num_nodes;
-	struct ctdb_context *ctdb = talloc_get_type(private_data, struct ctdb_context);
 	TALLOC_CTX *tmp_ctx;
-	struct ctdb_node **nodes;	
+	struct ctdb_node **nodes;
 
 	tmp_ctx = talloc_new(ctdb);
 
@@ -236,17 +184,6 @@ ctdb_reload_nodes_event(struct event_context *ev, struct timed_event *te,
 	ctdb_daemon_send_message(ctdb, ctdb->pnn, CTDB_SRVID_RELOAD_NODES, tdb_null);
 
 	talloc_free(tmp_ctx);
-	return;
-}
-
-/*
-  reload the nodes file after a short delay (so that we can send the response
-  back first
-*/
-int 
-ctdb_control_reload_nodes_file(struct ctdb_context *ctdb, uint32_t opcode)
-{
-	event_add_timed(ctdb->ev, ctdb, timeval_current_ofs(1,0), ctdb_reload_nodes_event, ctdb);
 
 	return 0;
 }
@@ -528,16 +465,17 @@ static void set_recmode_handler(struct event_context *ev, struct fd_event *fde,
 	state->te = NULL;
 
 
-	/* read the childs status when trying to lock the reclock file.
-	   child wrote 0 if everything is fine and 1 if it did manage
-	   to lock the file, which would be a problem since that means
-	   we got a request to exit from recovery but we could still lock
-	   the file   which at this time SHOULD be locked by the recovery
-	   daemon on the recmaster
-	*/		
+	/* If, as expected, the child was unable to take the recovery
+	 * lock then it will have written 0 into the pipe, so
+	 * continue.  However, any other value (e.g. 1) indicates that
+	 * it was able to take the recovery lock when it should have
+	 * been held by the recovery daemon on the recovery master.
+	*/
 	ret = sys_read(state->fd[0], &c, 1);
 	if (ret != 1 || c != 0) {
-		ctdb_request_control_reply(state->ctdb, state->c, NULL, -1, "managed to lock reclock file from inside daemon");
+		ctdb_request_control_reply(
+			state->ctdb, state->c, NULL, -1,
+			"Took recovery lock from daemon during recovery - probably a cluster filesystem lock coherence problem");
 		talloc_free(state);
 		return;
 	}
@@ -640,8 +578,8 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 		ctdb_process_deferred_attach(ctdb);
 	}
 
-	if (ctdb->tunable.verify_recovery_lock == 0) {
-		/* dont need to verify the reclock file */
+	if (ctdb->recovery_lock_file == NULL) {
+		/* Not using recovery lock file */
 		ctdb->recovery_mode = recmode;
 		return 0;
 	}
@@ -672,11 +610,13 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 
 		ctdb_set_process_name("ctdb_recmode");
 		debug_extra = talloc_asprintf(NULL, "set_recmode:");
-		/* we should not be able to get the lock on the reclock file, 
-		  as it should  be held by the recovery master 
-		*/
-		if (ctdb_recovery_lock(ctdb, false)) {
-			DEBUG(DEBUG_CRIT,("ERROR: recovery lock file %s not locked when recovering!\n", ctdb->recovery_lock_file));
+		/* Daemon should not be able to get the recover lock,
+		 * as it should be held by the recovery master */
+		if (ctdb_recovery_lock(ctdb)) {
+			DEBUG(DEBUG_ERR,
+			      ("ERROR: Daemon able to take recovery lock on \"%s\" during recovery\n",
+			       ctdb->recovery_lock_file));
+			ctdb_recovery_unlock(ctdb);
 			cc = 1;
 		}
 
@@ -721,26 +661,25 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 }
 
 
+bool ctdb_recovery_have_lock(struct ctdb_context *ctdb)
+{
+	return ctdb->recovery_lock_fd != -1;
+}
+
 /*
   try and get the recovery lock in shared storage - should only work
   on the recovery master recovery daemon. Anywhere else is a bug
  */
-bool ctdb_recovery_lock(struct ctdb_context *ctdb, bool keep)
+bool ctdb_recovery_lock(struct ctdb_context *ctdb)
 {
 	struct flock lock;
 
-	if (keep) {
-		DEBUG(DEBUG_ERR, ("Take the recovery lock\n"));
-	}
-	if (ctdb->recovery_lock_fd != -1) {
-		close(ctdb->recovery_lock_fd);
-		ctdb->recovery_lock_fd = -1;
-	}
-
-	ctdb->recovery_lock_fd = open(ctdb->recovery_lock_file, O_RDWR|O_CREAT, 0600);
+	ctdb->recovery_lock_fd = open(ctdb->recovery_lock_file,
+				      O_RDWR|O_CREAT, 0600);
 	if (ctdb->recovery_lock_fd == -1) {
-		DEBUG(DEBUG_ERR,("ctdb_recovery_lock: Unable to open %s - (%s)\n", 
-			 ctdb->recovery_lock_file, strerror(errno)));
+		DEBUG(DEBUG_ERR,
+		      ("ctdb_recovery_lock: Unable to open %s - (%s)\n",
+		       ctdb->recovery_lock_file, strerror(errno)));
 		return false;
 	}
 
@@ -753,26 +692,32 @@ bool ctdb_recovery_lock(struct ctdb_context *ctdb, bool keep)
 	lock.l_pid = 0;
 
 	if (fcntl(ctdb->recovery_lock_fd, F_SETLK, &lock) != 0) {
+		int saved_errno = errno;
 		close(ctdb->recovery_lock_fd);
 		ctdb->recovery_lock_fd = -1;
-		if (keep) {
-			DEBUG(DEBUG_CRIT,("ctdb_recovery_lock: Failed to get recovery lock on '%s'\n", ctdb->recovery_lock_file));
+		/* Fail silently on these errors, since they indicate
+		 * lock contention, but log an error for any other
+		 * failure. */
+		if (saved_errno != EACCES &&
+		    saved_errno != EAGAIN) {
+			DEBUG(DEBUG_ERR,("ctdb_recovery_lock: Failed to get "
+					 "recovery lock on '%s' - (%s)\n",
+					 ctdb->recovery_lock_file,
+					 strerror(saved_errno)));
 		}
 		return false;
 	}
 
-	if (!keep) {
+	return true;
+}
+
+void ctdb_recovery_unlock(struct ctdb_context *ctdb)
+{
+	if (ctdb->recovery_lock_fd != -1) {
+		DEBUG(DEBUG_NOTICE, ("Releasing recovery lock\n"));
 		close(ctdb->recovery_lock_fd);
 		ctdb->recovery_lock_fd = -1;
 	}
-
-	if (keep) {
-		DEBUG(DEBUG_NOTICE, ("Recovery lock taken successfully\n"));
-	}
-
-	DEBUG(DEBUG_NOTICE,("ctdb_recovery_lock: Got recovery lock on '%s'\n", ctdb->recovery_lock_file));
-
-	return true;
 }
 
 /*

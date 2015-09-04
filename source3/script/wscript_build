@@ -5,3 +5,8 @@ from samba_utils import MODE_755
 bld.INSTALL_FILES('${BINDIR}',
 	          'smbtar',
                   chmod=MODE_755, flat=True)
+
+# Callout scripts for use in selftest environment
+bld.SAMBA_SCRIPT('smbaddshare', pattern='smbaddshare', installdir='.')
+bld.SAMBA_SCRIPT('smbchangeshare', pattern='smbchangeshare', installdir='.')
+bld.SAMBA_SCRIPT('smbdeleteshare', pattern='smbdeleteshare', installdir='.')

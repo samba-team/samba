@@ -69,7 +69,7 @@ static void perfcount_test_add_counters(struct perfcount_test_context *ctxt)
 
 		found = false;
 
-		if (ptc->op > MAX_OP)
+		if (ptc->op >= MAX_OP)
 			continue;
 
 		for (head = g_list[ptc->op]; head != NULL; head = head->next) {
@@ -132,13 +132,13 @@ static const char *smb_subop_name(int op, int subop)
 {
 	/* trans */
 	if (op == 0x25) {
-		if (subop > sizeof(trans_subop_table) /
+		if (subop >= sizeof(trans_subop_table) /
 		    sizeof(trans_subop_table[0])) {
 			return "unknown";
 		}
 		return trans_subop_table[subop];
 	} else if (op == 0x32) {
-		if (subop > sizeof(trans2_subop_table) /
+		if (subop >= sizeof(trans2_subop_table) /
 		    sizeof(trans2_subop_table[0])) {
 			return "unknown";
 		}
@@ -171,6 +171,10 @@ static void perfcount_test_dump_counters(void)
 
 	count_mod = lp_parm_int(0, PARM_PC_TEST_TYPE, PARM_DUMPON_COUNT,
 	    PARM_DUMPON_COUNT_DEFAULT);
+
+	if (count_mod == 0) {
+		return;
+	}
 
 	if ((count++ % count_mod) != 0)
 		return;
@@ -381,6 +385,7 @@ static struct smb_perfcount_handlers perfcount_test_handlers = {
 	perfcount_test_end
 };
 
+static_decl_perfcount;
 NTSTATUS perfcount_test_init(void)
 {
 	return smb_register_perfcounter(SMB_PERFCOUNTER_INTERFACE_VERSION,

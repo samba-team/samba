@@ -503,7 +503,7 @@ KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_ret_int16(krb5_storage *sp,
 	       int16_t *value)
 {
-    int32_t v;
+    int32_t v = 0;
     int ret;
     ret = krb5_ret_int(sp, &v, 2);
     if(ret)

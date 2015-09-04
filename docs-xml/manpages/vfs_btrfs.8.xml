@@ -7,7 +7,7 @@
 	<manvolnum>8</manvolnum>
 	<refmiscinfo class="source">Samba</refmiscinfo>
 	<refmiscinfo class="manual">System Administration tools</refmiscinfo>
-	<refmiscinfo class="version">4.2</refmiscinfo>
+	<refmiscinfo class="version">4.3</refmiscinfo>
 </refmeta>
 
 
@@ -51,8 +51,35 @@
 	</para>
 
 	<para>
+		Btrfs snapshots can be manipulated by Samba's FSRVP server.
+		Snapshot manipulation using this module is currently considered
+		experimental, and is therefore disabled by default. The
+		<command>vfs_snapper</command> module is instead recommended for
+		this purpose.
+	</para>
+
+	<para>
 		This module is stackable.
 	</para>
+</refsect1>
+
+<refsect1>
+	<title>OPTIONS</title>
+
+	<variablelist>
+		<varlistentry>
+		<term>btrfs: manipulate snapshots = [yes|no]</term>
+		<listitem>
+		<para>
+		When set to <emphasis>yes</emphasis>, experimental support for
+		the creation and deletion of snapshots via corresponding Btrfs
+		IOCTLs will be enabled. The default is <emphasis>no</emphasis>,
+		which means that such requests are passed through to any
+		underlying VFS module.
+		</para>
+		</listitem>
+		</varlistentry>
+	</variablelist>
 </refsect1>
 
 <refsect1>
@@ -60,12 +87,33 @@
 
 	<para>
 		<command>vfs_btrfs</command> requires that the underlying share
-		path is a Btrfs filesystem.
+		path is a Btrfs subvolume.
 	</para>
-
 	<programlisting>
 		<smbconfsection name="[share]"/>
 		<smbconfoption name="vfs objects">btrfs</smbconfoption>
+		<smbconfoption name="btrfs: manipulate snapshots">no</smbconfoption>
+	</programlisting>
+	<para>
+		To use the experimental snapshot manipulation functionality
+		provided by this module, it must be explicity enabled, and
+		Samba's FSRVP server must be running.
+	</para>
+	<para>
+		The <command>vfs_shadow_copy</command> module can be used to
+		expose snapshots created by <command>vfs_btrfs</command> to
+		Windows Explorer as file / directory "previous versions".
+	</para>
+
+	<programlisting>
+		<smbconfsection name="[global]"/>
+		<smbconfoption name="rpc_daemon:fssd">fork</smbconfoption>
+		<smbconfoption name="registry shares">yes</smbconfoption>
+		<smbconfoption name="include">registry</smbconfoption>
+
+		<smbconfsection name="[share]"/>
+		<smbconfoption name="vfs objects">btrfs shadow_copy</smbconfoption>
+		<smbconfoption name="btrfs: manipulate snapshots">yes</smbconfoption>
 	</programlisting>
 </refsect1>
 
@@ -73,7 +121,7 @@
 	<title>VERSION</title>
 
 	<para>
-		This man page is correct for version 4.1.0 of the Samba suite.
+		This man page is correct for version 4.3.0 of the Samba suite.
 	</para>
 </refsect1>
 

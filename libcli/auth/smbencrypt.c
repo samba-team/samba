@@ -766,12 +766,12 @@ WERROR decode_wkssvc_join_password_buffer(TALLOC_CTX *mem_ctx,
 	*pwd = NULL;
 
 	if (!pwd_buf) {
-		return WERR_BAD_PASSWORD;
+		return WERR_INVALID_PASSWORD;
 	}
 
 	if (session_key->length != 16) {
 		DEBUG(10,("invalid session key\n"));
-		return WERR_BAD_PASSWORD;
+		return WERR_INVALID_PASSWORD;
 	}
 
 	confounded_session_key = data_blob_talloc(mem_ctx, NULL, 16);
@@ -788,7 +788,7 @@ WERROR decode_wkssvc_join_password_buffer(TALLOC_CTX *mem_ctx,
 
 	if (!decode_pw_buffer(mem_ctx, buffer, pwd, &pwd_len, CH_UTF16)) {
 		data_blob_free(&confounded_session_key);
-		return WERR_BAD_PASSWORD;
+		return WERR_INVALID_PASSWORD;
 	}
 
 	data_blob_free(&confounded_session_key);

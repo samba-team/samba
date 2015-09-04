@@ -3,7 +3,7 @@
 import Options, Logs
 
 # Remember to also update wbclient.h
-VERSION="0.11"
+VERSION="0.12"
 
 # It may be useful at some point to allow Samba to build against a
 # system libwbclient, such as the one provided by Likewise.  To to

@@ -221,59 +221,6 @@ static NTSTATUS gensec_spnego_unwrap(struct gensec_security *gensec_security,
 			     mem_ctx, in, out);
 }
 
-static NTSTATUS gensec_spnego_wrap_packets(struct gensec_security *gensec_security, 
-					   TALLOC_CTX *mem_ctx, 
-					   const DATA_BLOB *in, 
-					   DATA_BLOB *out,
-					   size_t *len_processed) 
-{
-	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
-
-	if (spnego_state->state_position != SPNEGO_DONE 
-	    && spnego_state->state_position != SPNEGO_FALLBACK) {
-		DEBUG(1, ("gensec_spnego_wrap: wrong state for wrap\n"));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	return gensec_wrap_packets(spnego_state->sub_sec_security, 
-				   mem_ctx, in, out,
-				   len_processed);
-}
-
-static NTSTATUS gensec_spnego_packet_full_request(struct gensec_security *gensec_security, 
-					     	DATA_BLOB blob, size_t *size)
-{
-	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
-
-	if (spnego_state->state_position != SPNEGO_DONE 
-	    && spnego_state->state_position != SPNEGO_FALLBACK) {
-		DEBUG(1, ("gensec_spnego_unwrap: wrong state for unwrap\n"));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	return gensec_packet_full_request(spnego_state->sub_sec_security, 
-					  blob, size);
-}
-
-static NTSTATUS gensec_spnego_unwrap_packets(struct gensec_security *gensec_security, 
-					     TALLOC_CTX *mem_ctx, 
-					     const DATA_BLOB *in, 
-					     DATA_BLOB *out,
-					     size_t *len_processed) 
-{
-	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
-
-	if (spnego_state->state_position != SPNEGO_DONE 
-	    && spnego_state->state_position != SPNEGO_FALLBACK) {
-		DEBUG(1, ("gensec_spnego_unwrap: wrong state for unwrap\n"));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	return gensec_unwrap_packets(spnego_state->sub_sec_security, 
-				     mem_ctx, in, out,
-				     len_processed);
-}
-
 static size_t gensec_spnego_sig_size(struct gensec_security *gensec_security, size_t data_size) 
 {
 	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
@@ -1237,6 +1184,7 @@ static NTSTATUS gensec_spnego_update_out(struct gensec_security *gensec_security
 {
 	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
 	DATA_BLOB out = data_blob_null;
+	bool ok;
 
 	*_out = data_blob_null;
 
@@ -1275,7 +1223,11 @@ static NTSTATUS gensec_spnego_update_out(struct gensec_security *gensec_security
 	/*
 	 * truncate the buffer
 	 */
-	data_blob_realloc(spnego_state, &out, spnego_state->out_max_length);
+	ok = data_blob_realloc(spnego_state, &out,
+			       spnego_state->out_max_length);
+	if (!ok) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	talloc_steal(out_mem_ctx, out.data);
 	*_out = out;
@@ -1384,11 +1336,8 @@ static const struct gensec_security_ops gensec_spnego_security_ops = {
 	.max_input_size	  = gensec_spnego_max_input_size,
 	.check_packet	  = gensec_spnego_check_packet,
 	.unseal_packet	  = gensec_spnego_unseal_packet,
-	.packet_full_request = gensec_spnego_packet_full_request,
 	.wrap             = gensec_spnego_wrap,
 	.unwrap           = gensec_spnego_unwrap,
-	.wrap_packets     = gensec_spnego_wrap_packets,
-	.unwrap_packets   = gensec_spnego_unwrap_packets,
 	.session_key	  = gensec_spnego_session_key,
 	.session_info     = gensec_spnego_session_info,
 	.want_feature     = gensec_spnego_want_feature,

@@ -39,6 +39,8 @@ struct PAC_DATA_CTR {
 	struct PAC_DATA *pac_data;
 };
 
+#define DEFAULT_KRB5_PORT 88
+
 #include "libads/ads_status.h"
 
 /* The following definitions come from libads/kerberos.c  */

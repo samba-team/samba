@@ -7,8 +7,6 @@ if Options.options.disable_fault_handling:
 # backtrace could be in libexecinfo or in libc
 conf.CHECK_FUNCS_IN('backtrace backtrace_symbols', 'execinfo', checklibc=True, headers='execinfo.h')
 
-conf.CHECK_FUNCS('sigprocmask sigblock sigaction')
-
 conf.CHECK_STRUCTURE_MEMBER('struct statvfs', 'f_frsize', define='HAVE_FRSIZE', headers='sys/statvfs.h')
 
 # all the different ways of doing statfs
@@ -20,7 +18,7 @@ statfs_types = [
 
     ( 'STAT_STATFS3_OSF1',
       '3-argument statfs function (DEC OSF/1)',
-      'struct statfs fsd; fsd.f_fsize = 0; exit(statfs(".", &fsd, sizeof(struct statfs)))'
+      'struct statfs fsd; fsd.f_fsize = 0; exit(statfs(".", &fsd, sizeof(struct statfs)))',
       'sys/param.h sys/mount.h' ),
 
     ( 'STAT_STATFS2_BSIZE',
@@ -35,7 +33,7 @@ statfs_types = [
 
     ( 'STAT_STATFS2_FSIZE',
       'two-argument statfs with statfs.fsize',
-      'struct statfs fsd; fsd.f_fsize = 0; exit(statfs(".", &fsd))'
+      'struct statfs fsd; fsd.f_fsize = 0; exit(statfs(".", &fsd))',
       'sys/param.h sys/mount.h' ),
 
     ( 'STAT_STATFS2_FS_DATA',
@@ -99,3 +97,44 @@ conf.CHECK_CODE('struct statvfs buf; buf.f_flags = 0',
                 headers='sys/statvfs.h',
                 local_include=False,
                 execute=False)
+
+#
+# systemd removed the libsystemd-daemon and libsystemd-journal libraries. In newer
+# versions it is only libsystemd. As waf pkg-config handling does not provide
+# targets which could be used as a dependency based on the package name we need
+# to look for them on our own. This enabled one of the library targets based on
+# which version we detect.
+#
+conf.SET_TARGET_TYPE('systemd-daemon', 'EMPTY')
+conf.SET_TARGET_TYPE('systemd-journal', 'EMPTY')
+conf.SET_TARGET_TYPE('systemd', 'EMPTY')
+
+if Options.options.enable_systemd != False:
+    conf.check_cfg(package='libsystemd-daemon', args='--cflags --libs',
+                   msg='Checking for libsystemd-daemon')
+    if not conf.CHECK_LIB('systemd-daemon', shlib=True):
+        conf.CHECK_LIB('systemd', shlib=True)
+
+if Options.options.enable_systemd != False:
+    conf.check_cfg(package='libsystemd-journal', args='--cflags --libs',
+                   msg='Checking for libsystemd-journal')
+    if not conf.CHECK_LIB('systemd-journal', shlib=True):
+        conf.CHECK_LIB('systemd', shlib=True)
+
+if Options.options.enable_lttng != False:
+    conf.check_cfg(package='lttng-ust', args='--cflags --libs',
+                   msg='Checking for lttng-ust', uselib_store="LTTNG-UST")
+    conf.CHECK_HEADERS('lttng/tracef.h', lib='lttng-st')
+    conf.CHECK_LIB('lttng-ust', shlib=True)
+
+if (conf.CONFIG_SET('HAVE_LTTNG_TRACEF_H') and
+    conf.CONFIG_SET('HAVE_LTTNG_UST')):
+    conf.DEFINE('HAVE_LTTNG_TRACEF', '1')
+    conf.env['HAVE_LTTNG_TRACEF'] = True
+else:
+    conf.SET_TARGET_TYPE('lttng-ust', 'EMPTY')
+    conf.undefine('HAVE_LTTNG_TRACEF')
+
+conf.env['CPPPATH_GPFS'] = Options.options.gpfs_headers_dir
+if conf.CHECK_HEADERS('gpfs.h', False, False, "gpfs"):
+    conf.DEFINE('HAVE_GPFS', '1')

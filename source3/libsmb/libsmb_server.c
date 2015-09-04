@@ -45,10 +45,26 @@ int
 SMBC_check_server(SMBCCTX * context,
                   SMBCSRV * server)
 {
+	time_t now;
+
 	if (!cli_state_is_connected(server->cli)) {
 		return 1;
 	}
 
+	now = time_mono(NULL);
+
+	if (server->last_echo_time == (time_t)0 ||
+			now > server->last_echo_time +
+				(server->cli->timeout/1000)) {
+		unsigned char data[16] = {0};
+		NTSTATUS status = cli_echo(server->cli,
+					1,
+					data_blob_const(data, sizeof(data)));
+		if (!NT_STATUS_IS_OK(status)) {
+			return 1;
+		}
+		server->last_echo_time = now;
+	}
 	return 0;
 }
 
@@ -251,7 +267,7 @@ SMBC_server_internal(TALLOC_CTX *ctx,
 	struct cli_state *c = NULL;
 	const char *server_n = server;
         int is_ipc = (share != NULL && strcmp(share, "IPC$") == 0);
-	uint32 fs_attrs = 0;
+	uint32_t fs_attrs = 0;
         const char *username_used;
  	NTSTATUS status;
 	char *newserver, *newshare;

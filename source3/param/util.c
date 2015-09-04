@@ -23,7 +23,7 @@
  utility function to parse an integer parameter from
  "parameter = value"
 **********************************************************/
-uint32 get_int_param( const char* param )
+uint32_t get_int_param( const char* param )
 {
 	char *p;
 

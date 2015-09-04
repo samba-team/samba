@@ -47,8 +47,8 @@ struct registry_ops {
 	WERROR	(*create_subkey)(const char *key, const char *subkey);
 	WERROR	(*delete_subkey)(const char *key, const char *subkey, bool lazy);
 	bool 	(*store_values)( const char *key, struct regval_ctr *val );
-	bool	(*reg_access_check)( const char *keyname, uint32 requested,
-				     uint32 *granted,
+	bool	(*reg_access_check)( const char *keyname, uint32_t requested,
+				     uint32_t *granted,
 				     const struct security_token *token );
 	WERROR (*get_secdesc)(TALLOC_CTX *mem_ctx, const char *key,
 			      struct security_descriptor **psecdesc);
@@ -61,9 +61,9 @@ struct registry_ops {
 /* structure to store the registry handles */
 
 struct registry_key_handle {
-	uint32		type;
+	uint32_t	type;
 	char		*name; 		/* full name of registry key */
-	uint32 		access_granted;
+	uint32_t 	access_granted;
 	struct registry_ops	*ops;
 };
 

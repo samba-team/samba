@@ -671,10 +671,10 @@ static NTSTATUS check_oem_password(const char *user,
 {
 	uchar null_pw[16];
 	uchar null_ntpw[16];
-	uint8 *password_encrypted;
-	const uint8 *encryption_key;
-	const uint8 *lanman_pw, *nt_pw;
-	uint32 acct_ctrl;
+	uint8_t *password_encrypted;
+	const uint8_t *encryption_key;
+	const uint8_t *lanman_pw, *nt_pw;
+	uint32_t acct_ctrl;
 	size_t new_pw_len;
 	uchar new_nt_hash[16];
 	uchar new_lm_hash[16];
@@ -896,9 +896,9 @@ static bool password_in_history(uint8_t nt_pw[NT_HASH_LEN],
 static bool check_passwd_history(struct samu *sampass, const char *plaintext)
 {
 	uchar new_nt_p16[NT_HASH_LEN];
-	const uint8 *nt_pw;
-	const uint8 *pwhistory;
-	uint32 pwHisLen, curr_pwHisLen;
+	const uint8_t *nt_pw;
+	const uint8_t *pwhistory;
+	uint32_t pwHisLen, curr_pwHisLen;
 
 	pdb_get_account_policy(PDB_POLICY_PASSWORD_HISTORY, &pwHisLen);
 	if (pwHisLen == 0) {
@@ -986,8 +986,8 @@ static NTSTATUS change_oem_password(struct samu *hnd, const char *rhost,
 				    bool as_root,
 				    enum samPwdChangeReason *samr_reject_reason)
 {
-	uint32 min_len;
-	uint32 refuse;
+	uint32_t min_len;
+	uint32_t refuse;
 	TALLOC_CTX *tosctx = talloc_tos();
 	struct passwd *pass = NULL;
 	const char *username = pdb_get_username(hnd);

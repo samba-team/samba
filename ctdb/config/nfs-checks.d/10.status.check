@@ -1,0 +1,7 @@
+# status
+version="1"
+restart_every=2
+unhealthy_after=6
+service_stop_cmd="killall -q -9 rpc.statd"
+service_start_cmd="rpc.statd ${STATD_HA_CALLOUT:+-H} $STATD_HA_CALLOUT ${STATD_HOSTNAME:+-n} $STATD_HOSTNAME ${STATD_PORT:+-p} $STATD_PORT ${STATD_OUTGOING_PORT:+-o} $STATD_OUTGOING_PORT"
+service_debug_cmd="program_stack_traces rpc.statd 5"

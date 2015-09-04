@@ -1,0 +1,7 @@
+# nfs
+version="3"
+restart_every=10
+unhealthy_after=2
+service_stop_cmd="$CTDB_NFS_CALLOUT stop nfs"
+service_start_cmd="$CTDB_NFS_CALLOUT start nfs"
+service_debug_cmd="program_stack_traces nfsd 5"

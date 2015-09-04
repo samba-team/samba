@@ -135,7 +135,7 @@ static struct service_control_op* find_service_by_name( const char *name )
 ********************************************************************/
 
 static NTSTATUS svcctl_access_check( struct security_descriptor *sec_desc, struct security_token *token,
-                                     uint32 access_desired, uint32 *access_granted )
+                                     uint32_t access_desired, uint32_t *access_granted )
 {
 	if ( geteuid() == sec_initial_uid() ) {
 		DEBUG(5,("svcctl_access_check: using root's token\n"));
@@ -273,7 +273,7 @@ WERROR _svcctl_OpenSCManagerW(struct pipes_struct *p,
 			      struct svcctl_OpenSCManagerW *r)
 {
 	struct security_descriptor *sec_desc;
-	uint32 access_granted = 0;
+	uint32_t access_granted = 0;
 	NTSTATUS status;
 
 	/* perform access checks */
@@ -298,7 +298,7 @@ WERROR _svcctl_OpenServiceW(struct pipes_struct *p,
 			    struct svcctl_OpenServiceW *r)
 {
 	struct security_descriptor *sec_desc;
-	uint32 access_granted = 0;
+	uint32_t access_granted = 0;
 	NTSTATUS status;
 	const char *service = NULL;
 
@@ -507,7 +507,7 @@ WERROR _svcctl_EnumServicesStatusW(struct pipes_struct *p,
 	}
 
 	*r->out.needed			= (buffer_size > r->in.offered) ? buffer_size : r->in.offered;
-	*r->out.services_returned	= (uint32)num_services;
+	*r->out.services_returned	= (uint32_t)num_services;
 	if (r->out.resume_handle) {
 		*r->out.resume_handle	= 0;
 	}
@@ -614,7 +614,7 @@ WERROR _svcctl_QueryServiceStatusEx(struct pipes_struct *p,
 				    struct svcctl_QueryServiceStatusEx *r)
 {
 	SERVICE_INFO *info = find_service_info_by_hnd( p, r->in.handle );
-	uint32 buffer_size;
+	uint32_t buffer_size;
 
 	/* perform access checks */
 
@@ -733,7 +733,7 @@ WERROR _svcctl_QueryServiceConfigW(struct pipes_struct *p,
 				   struct svcctl_QueryServiceConfigW *r)
 {
 	SERVICE_INFO *info = find_service_info_by_hnd( p, r->in.handle );
-	uint32 buffer_size;
+	uint32_t buffer_size;
 	WERROR wresult;
 
 	/* perform access checks */
@@ -951,7 +951,7 @@ WERROR _svcctl_SetServiceObjectSecurity(struct pipes_struct *p,
 {
 	SERVICE_INFO *info = find_service_info_by_hnd( p, r->in.handle );
 	struct security_descriptor *sec_desc = NULL;
-	uint32 required_access;
+	uint32_t required_access;
 	NTSTATUS status;
 
 	if ( !info || !(info->type & (SVC_HANDLE_IS_SERVICE|SVC_HANDLE_IS_SCM))  )

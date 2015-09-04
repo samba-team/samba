@@ -71,7 +71,7 @@ bool test_session_reconnect1(struct torture_context *tctx, struct smb2_tree *tre
 	struct smb2_create io1, io2;
 	uint64_t previous_session_id;
 	bool ret = true;
-	struct smb2_tree *tree2;
+	struct smb2_tree *tree2 = NULL;
 	union smb_fileinfo qfinfo;
 
 	/* Add some random component to the file name. */
@@ -94,14 +94,10 @@ bool test_session_reconnect1(struct torture_context *tctx, struct smb2_tree *tre
 	/* disconnect, reconnect and then do durable reopen */
 	previous_session_id = smb2cli_session_current_id(tree->session->smbXcli);
 
-	if (!torture_smb2_connection_ext(tctx, previous_session_id,
-					 &tree->session->transport->options,
-					 &tree2))
-	{
-		torture_warning(tctx, "session reconnect failed\n");
-		ret = false;
-		goto done;
-	}
+	torture_assert_goto(tctx, torture_smb2_connection_ext(tctx, previous_session_id,
+			    &tree->session->transport->options, &tree2),
+			    ret, done,
+			    "session reconnect failed\n");
 
 	/* try to access the file via the old handle */
 
@@ -131,7 +127,10 @@ done:
 		smb2_util_close(tree2, *h2);
 	}
 
-	smb2_util_unlink(tree2, fname);
+	if (tree2 != NULL) {
+		smb2_util_unlink(tree2, fname);
+	}
+	smb2_util_unlink(tree, fname);
 
 	talloc_free(tree);
 	talloc_free(tree2);
@@ -154,7 +153,7 @@ bool test_session_reconnect2(struct torture_context *tctx, struct smb2_tree *tre
 	struct smb2_create io1;
 	uint64_t previous_session_id;
 	bool ret = true;
-	struct smb2_session *session2;
+	struct smb2_session *session2 = NULL;
 	union smb_fileinfo qfinfo;
 
 	/* Add some random component to the file name. */

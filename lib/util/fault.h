@@ -24,11 +24,13 @@
 #include <sys/types.h>
 
 #include "attr.h"
-#include "debug.h"
+
+/* Please include header file debug.h if you want to use macro SMB_ASSERT */
 
 /**
  * assert macros
  */
+#ifdef _SAMBA_DEBUG_H
 #define SMB_ASSERT(b) \
 do { \
 	if (!(b)) { \
@@ -37,6 +39,7 @@ do { \
 		smb_panic("assert failed: " #b); \
 	} \
 } while(0)
+#endif /* _SAMBA_DEBUG_H */
 
 extern const char *panic_action;
 

@@ -35,16 +35,9 @@ import signal
 signal.signal(signal.SIGINT, signal.SIG_DFL)
 
 import optparse
-import samba
 import sys
-import samba.tests
-samba.ensure_external_module("subunit", "subunit/python")
-import subunit.run
 
-try:
-   from subunit.run import TestProgram as BaseTestProgram
-except ImportError:
-   from unittest import TestProgram as BaseTestProgram
+from samba.subunit.run import TestProgram as BaseTestProgram
 
 
 class SubunitOptions(optparse.OptionGroup):
@@ -69,5 +62,4 @@ class TestProgram(BaseTestProgram):
         if getattr(opts, 'load_list', None):
             args.insert(0, "--load-list=%s" % opts.load_list)
         argv = [sys.argv[0]] + args
-        super(TestProgram, self).__init__(module=module, argv=argv,
-            testRunner=subunit.run.SubunitTestRunner())
+        super(TestProgram, self).__init__(module=module, argv=argv)

@@ -4,6 +4,7 @@
 import os, shutil, re
 import Build, Configure, Utils
 from Configure import conf
+import config_c
 from samba_utils import *
 
 
@@ -215,9 +216,7 @@ def CHECK_NEED_LC(conf, msg):
 
     os.makedirs(subdir)
 
-    dest = open(os.path.join(subdir, 'liblc1.c'), 'w')
-    dest.write('#include <stdio.h>\nint lib_func(void) { FILE *f = fopen("foo", "r");}\n')
-    dest.close()
+    Utils.writef(os.path.join(subdir, 'liblc1.c'), '#include <stdio.h>\nint lib_func(void) { FILE *f = fopen("foo", "r");}\n')
 
     bld = Build.BuildContext()
     bld.log = conf.log
@@ -290,13 +289,8 @@ def CHECK_LIBRARY_SUPPORT(conf, rpath=False, version_script=False, msg=None):
 
     os.makedirs(subdir)
 
-    dest = open(os.path.join(subdir, 'lib1.c'), 'w')
-    dest.write('int lib_func(void) { return 42; }\n')
-    dest.close()
-
-    dest = open(os.path.join(dir, 'main.c'), 'w')
-    dest.write('int main(void) {return !(lib_func() == 42);}\n')
-    dest.close()
+    Utils.writef(os.path.join(subdir, 'lib1.c'), 'int lib_func(void) { return 42; }\n')
+    Utils.writef(os.path.join(dir, 'main.c'), 'int main(void) {return !(lib_func() == 42);}\n')
 
     bld = Build.BuildContext()
     bld.log = conf.log
@@ -310,9 +304,7 @@ def CHECK_LIBRARY_SUPPORT(conf, rpath=False, version_script=False, msg=None):
     ldflags = []
     if version_script:
         ldflags.append("-Wl,--version-script=%s/vscript" % bld.path.abspath())
-        dest = open(os.path.join(dir,'vscript'), 'w')
-        dest.write('TEST_1.0A2 { global: *; };\n')
-        dest.close()
+        Utils.writef(os.path.join(dir,'vscript'), 'TEST_1.0A2 { global: *; };\n')
 
     bld(features='cc cshlib',
         source='libdir/lib1.c',
@@ -382,15 +374,13 @@ def CHECK_PERL_MANPAGE(conf, msg=None, section=None):
     if not os.path.exists(bdir):
         os.makedirs(bdir)
 
-    dest = open(os.path.join(bdir, 'Makefile.PL'), 'w')
-    dest.write("""
+    Utils.writef(os.path.join(bdir, 'Makefile.PL'), """
 use ExtUtils::MakeMaker;
 WriteMakefile(
     'NAME'    => 'WafTest',
     'EXE_FILES' => [ 'WafTest' ]
 );
 """)
-    dest.close()
     back = os.path.abspath('.')
     os.chdir(bdir)
     proc = Utils.pproc.Popen(['perl', 'Makefile.PL'],
@@ -405,9 +395,7 @@ WriteMakefile(
         return
 
     if section:
-        f = open(os.path.join(bdir,'Makefile'), 'r')
-        man = f.read()
-        f.close()
+        man = Utils.readf(os.path.join(bdir,'Makefile'))
         m = re.search('MAN%sEXT\s+=\s+(\w+)' % section, man)
         if not m:
             conf.check_message_2('not found', color='YELLOW')
@@ -506,3 +494,83 @@ def CHECK_XSLTPROC_MANPAGES(conf):
     if not conf.CONFIG_SET('XSLTPROC_MANPAGES'):
         print "A local copy of the docbook.xsl wasn't found on your system" \
               " consider installing package like docbook-xsl"
+
+#
+# Determine the standard libpath for the used compiler,
+# so we can later use that to filter out these standard
+# library paths when some tools like cups-config or
+# python-config report standard lib paths with their
+# ldflags (-L...)
+#
+@conf
+def CHECK_STANDARD_LIBPATH(conf):
+    # at least gcc and clang support this:
+    try:
+        cmd = conf.env.CC + ['-print-search-dirs']
+        out = Utils.cmd_output(cmd).split('\n')
+    except ValueError:
+        # option not supported by compiler - use a standard list of directories
+        dirlist = [ '/usr/lib', '/usr/lib64' ]
+    except:
+        raise Utils.WafError('Unexpected error running "%s"' % (cmd))
+    else:
+        dirlist = []
+        for line in out:
+            line = line.strip()
+            if line.startswith("libraries: ="):
+                dirliststr = line[len("libraries: ="):]
+                dirlist = [ os.path.normpath(x) for x in dirliststr.split(':') ]
+                break
+
+    conf.env.STANDARD_LIBPATH = dirlist
+
+
+waf_config_c_parse_flags = config_c.parse_flags;
+def samba_config_c_parse_flags(line1, uselib, env):
+    #
+    # We do a special treatment of the rpath components
+    # in the linkflags line, because currently the upstream
+    # parse_flags function is incomplete with respect to
+    # treatment of the rpath. The remainder of the linkflags
+    # line is later passed to the original funcion.
+    #
+    lst1 = shlex.split(line1)
+    lst2 = []
+    while lst1:
+        x = lst1.pop(0)
+
+        #
+        # NOTE on special treatment of -Wl,-R and -Wl,-rpath:
+        #
+        # It is important to not put a library provided RPATH
+        # into the LINKFLAGS but in the RPATH instead, since
+        # the provided LINKFLAGS get prepended to our own internal
+        # RPATH later, and hence can potentially lead to linking
+        # in too old versions of our internal libs.
+        #
+        # We do this filtering here on our own because of some
+        # bugs in the real parse_flags() function.
+        #
+        if x == '-Wl,-rpath' or x == '-Wl,-R':
+            x = lst1.pop(0)
+            if x.startswith('-Wl,'):
+                rpath = x[4:]
+            else:
+                rpath = x
+        elif x.startswith('-Wl,-R,'):
+            rpath = x[7:]
+        elif x.startswith('-Wl,-R'):
+            rpath = x[6:]
+        elif x.startswith('-Wl,-rpath,'):
+            rpath = x[11:]
+        else:
+            lst2.append(x)
+            continue
+
+        env.append_value('RPATH_' + uselib, rpath)
+
+    line2 = ' '.join(lst2)
+    waf_config_c_parse_flags(line2, uselib, env)
+
+    return
+config_c.parse_flags = samba_config_c_parse_flags

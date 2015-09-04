@@ -41,14 +41,21 @@
 
 #include "support.h"
 
+static void ret_data_cleanup(pam_handle_t *pamh, void *data, int error_status)
+{
+	free(data);
+}
+
 #define AUTH_RETURN						\
 do {								\
 	/* Restore application signal handler */		\
 	CatchSignal(SIGPIPE, oldsig_handler);			\
 	if(ret_data) {						\
 		*ret_data = retval;				\
-		pam_set_data( pamh, "smb_setcred_return"	\
-		              , (void *) ret_data, NULL );	\
+		pam_set_data(pamh,				\
+			"smb_setcred_return",			\
+			(void *)ret_data,			\
+			ret_data_cleanup);			\
 	}							\
 	TALLOC_FREE(frame);					\
 	return retval;						\
@@ -82,7 +89,6 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 	char *p = NULL;
 
 	/* Samba initialization. */
-	load_case_tables_library();
 
 	ctrl = set_ctrl(pamh, flags, argc, argv);
 
@@ -205,9 +211,6 @@ static int _smb_add_user(pam_handle_t *pamh, unsigned int ctrl,
 	if (retval != PAM_SUCCESS) {
 		_log_err(pamh, LOG_ALERT
 			, "pam_get_item returned error to pam_sm_authenticate" );
-		TALLOC_FREE(frame);
-		return PAM_AUTHTOK_RECOVER_ERR;
-	} else if (pass == NULL) {
 		TALLOC_FREE(frame);
 		return PAM_AUTHTOK_RECOVER_ERR;
 	}

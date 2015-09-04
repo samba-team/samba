@@ -45,7 +45,7 @@ void add_domain_names(time_t t);
 /* The following definitions come from nmbd/nmbd_become_lmb.c  */
 
 void insert_permanent_name_into_unicast( struct subnet_record *subrec,
-                                                struct nmb_name *nmbname, uint16 nb_type );
+                                                struct nmb_name *nmbname, uint16_t nb_type );
 void unbecome_local_master_browser(struct subnet_record *subrec, struct work_record *work,
                                    bool force_new_election);
 void become_local_master_browser(struct subnet_record *subrec, struct work_record *work);
@@ -137,14 +137,14 @@ void update_name_ttl( struct name_record *namerec, int ttl );
 bool add_name_to_subnet( struct subnet_record *subrec,
 			const char *name,
 			int type,
-			uint16 nb_flags,
+			uint16_t nb_flags,
 			int ttl,
 			enum name_source source,
 			int num_ips,
 			struct in_addr *iplist);
 void standard_success_register(struct subnet_record *subrec,
                              struct userdata_struct *userdata,
-                             struct nmb_name *nmbname, uint16 nb_flags, int ttl,
+                             struct nmb_name *nmbname, uint16_t nb_flags, int ttl,
                              struct in_addr registered_ip);
 void standard_fail_register( struct subnet_record   *subrec,
                              struct nmb_name        *nmbname );
@@ -176,7 +176,7 @@ bool query_name_from_wins_server(struct in_addr ip_to,
 /* The following definitions come from nmbd/nmbd_nameregister.c  */
 
 void register_name(struct subnet_record *subrec,
-                   const char *name, int type, uint16 nb_flags,
+                   const char *name, int type, uint16_t nb_flags,
                    register_name_success_function success_fn,
                    register_name_fail_function fail_fn,
                    struct userdata_struct *userdata);
@@ -199,8 +199,8 @@ bool node_status(struct subnet_record *subrec, struct nmb_name *nmbname,
 
 bool nmbd_init_packet_server(void);
 
-uint16 get_nb_flags(char *buf);
-void set_nb_flags(char *buf, uint16 nb_flags);
+uint16_t get_nb_flags(char *buf);
+void set_nb_flags(char *buf, uint16_t nb_flags);
 struct response_record *queue_register_name( struct subnet_record *subrec,
                           response_function resp_fn,
                           timeout_response_function timeout_fn,
@@ -208,11 +208,11 @@ struct response_record *queue_register_name( struct subnet_record *subrec,
                           register_name_fail_function fail_fn,
                           struct userdata_struct *userdata,
                           struct nmb_name *nmbname,
-                          uint16 nb_flags);
+                          uint16_t nb_flags);
 void queue_wins_refresh(struct nmb_name *nmbname,
 			response_function resp_fn,
 			timeout_response_function timeout_fn,
-			uint16 nb_flags,
+			uint16_t nb_flags,
 			struct in_addr refresh_ip,
 			const char *tag);
 struct response_record *queue_register_multihomed_name( struct subnet_record *subrec,
@@ -222,7 +222,7 @@ struct response_record *queue_register_multihomed_name( struct subnet_record *su
 							register_name_fail_function fail_fn,
 							struct userdata_struct *userdata,
 							struct nmb_name *nmbname,
-							uint16 nb_flags,
+							uint16_t nb_flags,
 							struct in_addr register_ip,
 							struct in_addr wins_ip);
 struct response_record *queue_release_name( struct subnet_record *subrec,
@@ -232,7 +232,7 @@ struct response_record *queue_release_name( struct subnet_record *subrec,
 					    release_name_fail_function fail_fn,
 					    struct userdata_struct *userdata,
 					    struct nmb_name *nmbname,
-					    uint16 nb_flags,
+					    uint16_t nb_flags,
 					    struct in_addr release_ip,
 					    struct in_addr dest_ip);
 struct response_record *queue_query_name( struct subnet_record *subrec,
@@ -289,7 +289,7 @@ struct response_record *make_response_record( struct subnet_record *subrec,
 					      fail_function fail_fn,
 					      struct userdata_struct *userdata);
 struct response_record *find_response_record(struct subnet_record **ppsubrec,
-				uint16 id);
+				uint16_t id);
 bool is_refresh_already_queued(struct subnet_record *subrec, struct name_record *namerec);
 
 /* The following definitions come from nmbd/nmbd_sendannounce.c  */
@@ -314,7 +314,7 @@ struct server_record *create_server_on_workgroup(struct work_record *work,
                                                  int ttl, const char *comment);
 void update_server_ttl(struct server_record *servrec, int ttl);
 void expire_servers(struct work_record *work, time_t t);
-void write_browse_list_entry(XFILE *fp, const char *name, uint32 rec_type,
+void write_browse_list_entry(XFILE *fp, const char *name, uint32_t rec_type,
 		const char *local_master_browser_name, const char *description);
 void write_browse_list(time_t t, bool force_write);
 

@@ -17,11 +17,15 @@
 ^samba3.rpc.spoolss.printer.*addprinter.print_test # fails on some hosts due to timing issues ?
 ^samba3.rpc.spoolss.printer.addprinter.print_job_enum # fails on some hosts due to bug 10930
 ^samba3.rpc.spoolss.printer.addprinterex.print_job_enum # fails on some hosts due to bug 10930
-^samba3.rpc.lsa.privileges.lsa.Privileges\(s3dc\) # fails sometimes on sn-devel
+^samba3.rpc.lsa.privileges.lsa.Privileges\(nt4_dc\) # fails sometimes on sn-devel
 ^samba4.blackbox.gentest # is flakey due to timing
-^samba3.smb2.acls.INHERITANCE\(plugin_s4_dc\)  # Seems to flap - succeeds on sn-devel, fails on Fedora 16
-^samba3.smb2.acls.DYNAMIC\(plugin_s4_dc\)  # Seems to flap - succeeds on sn-devel, fails on Fedora 16
-^samba3.raw.acls.dynamic\(plugin_s4_dc\) # Seems to flap - succeeds on sn-devel, fails on Fedora 16
-^samba3.raw.acls.inheritance\(plugin_s4_dc\) # Seems to flap - succeeds on sn-devel, fails on Fedora 16
-^samba3.raw.samba3checkfsp.samba3checkfsp\(plugin_s4_dc\) # Seems to flap - succeeds on sn-devel, fails on Fedora 16
-^samba3.raw.samba3closeerr.samba3closeerr\(plugin_s4_dc\) # Seems to flap - succeeds on sn-devel, fails on Fedora 16
+^samba3.smb2.acls.INHERITANCE\(ad_dc\)  # Seems to flap - succeeds on sn-devel, fails on Fedora 16
+^samba3.smb2.acls.DYNAMIC\(ad_dc\)  # Seems to flap - succeeds on sn-devel, fails on Fedora 16
+^samba3.raw.acls.dynamic\(ad_dc\) # Seems to flap - succeeds on sn-devel, fails on Fedora 16
+^samba3.raw.acls.inheritance\(ad_dc\) # Seems to flap - succeeds on sn-devel, fails on Fedora 16
+^samba3.raw.samba3checkfsp.samba3checkfsp\(ad_dc\) # Seems to flap - succeeds on sn-devel, fails on Fedora 16
+^samba3.raw.samba3closeerr.samba3closeerr\(ad_dc\) # Seems to flap - succeeds on sn-devel, fails on Fedora 16
+^samba4.tombstone_reanimation.python # flakey on sn-devel
+^samba4.drs.delete_object.python # flakey on sn-devel
+^samba4.blackbox.samba_tool_demote # flakey on sn-devel
+^samba4.blackbox.dbcheck # flakey on sn-devel

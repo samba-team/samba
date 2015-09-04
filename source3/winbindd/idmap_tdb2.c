@@ -59,7 +59,7 @@ struct idmap_tdb2_context {
 static NTSTATUS idmap_tdb2_init_hwm(struct idmap_domain *dom)
 {
 	NTSTATUS status;
-	uint32 low_id;
+	uint32_t low_id;
 	struct idmap_tdb_common_context *ctx;
 
 	ctx = talloc_get_type(dom->private_data,
@@ -609,6 +609,7 @@ static struct idmap_methods db_methods = {
 	.allocate_id     = idmap_tdb_common_get_new_id
 };
 
+static_decl_idmap;
 NTSTATUS idmap_tdb2_init(void)
 {
 	return smb_register_idmap(SMB_IDMAP_INTERFACE_VERSION, "tdb2", &db_methods);

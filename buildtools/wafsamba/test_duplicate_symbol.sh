@@ -1,7 +1,7 @@
 #!/bin/sh
 # Run the waf duplicate symbol check, wrapped in subunit.
 
-. lib/subunit/shell/share/subunit.sh
+. testprogs/blackbox/subunit.sh
 
 subunit_start_test duplicate_symbols
 

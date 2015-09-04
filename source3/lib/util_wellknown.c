@@ -24,7 +24,7 @@
 #include "../libcli/security/security.h"
 
 struct rid_name_map {
-	uint32 rid;
+	uint32_t rid;
 	const char *name;
 };
 
@@ -114,7 +114,7 @@ bool lookup_wellknown_sid(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
 {
 	int i;
 	struct dom_sid dom_sid;
-	uint32 rid;
+	uint32_t rid;
 	const struct rid_name_map *users = NULL;
 
 	sid_copy(&dom_sid, sid);

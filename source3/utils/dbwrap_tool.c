@@ -353,9 +353,8 @@ static int dbwrap_tool_listwatchers_cb(const uint8_t *db_id, size_t db_id_len,
 	dump_data_file(key.dptr, key.dsize, false, stdout);
 
 	for (i=0; i<num_watchers; i++) {
-		char *str = server_id_str(talloc_tos(), &watchers[i]);
-		printf("%s\n", str);
-		TALLOC_FREE(str);
+		struct server_id_buf idbuf;
+		printf("%s\n", server_id_str_buf(watchers[i], &idbuf));
 	}
 	printf("\n");
 	return 0;
@@ -435,7 +434,7 @@ int main(int argc, const char **argv)
 	int extra_argc = 0;
 	poptContext pc;
 
-	load_case_tables();
+	smb_init_locale();
 	lp_set_cmdline("log level", "0");
 	setup_logging(argv[0], DEBUG_STDERR);
 

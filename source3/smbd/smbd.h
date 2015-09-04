@@ -40,20 +40,20 @@ struct trans_state {
 	uint64_t vuid; /* SMB2 compat */
 	uint64_t mid;
 
-	uint32 max_param_return;
-	uint32 max_data_return;
-	uint32 max_setup_return;
+	uint32_t max_param_return;
+	uint32_t max_data_return;
+	uint32_t max_setup_return;
 
-	uint8 cmd;		/* SMBtrans or SMBtrans2 */
+	uint8_t cmd;		/* SMBtrans or SMBtrans2 */
 
 	char *name;		/* for trans requests */
-	uint16 call;		/* for trans2 and nttrans requests */
+	uint16_t call;		/* for trans2 and nttrans requests */
 
 	bool close_on_completion;
 	bool one_way;
 
 	unsigned int setup_count;
-	uint16 *setup;
+	uint16_t *setup;
 
 	size_t received_data;
 	size_t received_param;

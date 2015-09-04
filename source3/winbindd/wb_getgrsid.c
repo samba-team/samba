@@ -116,9 +116,9 @@ static void wb_getgrsid_sid2gid_done(struct tevent_req *subreq)
 	struct wb_getgrsid_state *state = tevent_req_data(
 		req, struct wb_getgrsid_state);
 	NTSTATUS status;
-	struct unixid xid;
+	struct unixid xids[1];
 
-	status = wb_sids2xids_recv(subreq, &xid);
+	status = wb_sids2xids_recv(subreq, xids, ARRAY_SIZE(xids));
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		return;
@@ -130,12 +130,12 @@ static void wb_getgrsid_sid2gid_done(struct tevent_req *subreq)
 	 * by lookupsids). Here we need to filter for the type of object
 	 * actually requested, in this case uid.
 	 */
-	if (!(xid.type == ID_TYPE_GID || xid.type == ID_TYPE_BOTH)) {
+	if (!(xids[0].type == ID_TYPE_GID || xids[0].type == ID_TYPE_BOTH)) {
 		tevent_req_nterror(req, NT_STATUS_NONE_MAPPED);
 		return;
 	}
 
-	state->gid = (gid_t)xid.id;
+	state->gid = (gid_t)xids[0].id;
 
 	if (state->type == SID_NAME_USER || state->type == SID_NAME_COMPUTER) {
 		/*
@@ -145,7 +145,7 @@ static void wb_getgrsid_sid2gid_done(struct tevent_req *subreq)
 		 */
 		const char *name;
 
-		if (xid.type != ID_TYPE_BOTH) {
+		if (xids[0].type != ID_TYPE_BOTH) {
 			tevent_req_nterror(req, NT_STATUS_NO_SUCH_GROUP);
 			return;
 		}

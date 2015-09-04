@@ -57,7 +57,11 @@ int init_lsa_ref_domain_list(TALLOC_CTX *mem_ctx,
 
 	ZERO_STRUCT(ref->domains[num]);
 
-	ref->domains[num].name.string = dom_name;
+	ref->domains[num].name.string = talloc_strdup(mem_ctx, dom_name);
+	if (!ref->domains[num].name.string) {
+		return -1;
+	}
+
 	ref->domains[num].sid = dom_sid_dup(mem_ctx, dom_sid);
 	if (!ref->domains[num].sid) {
 		return -1;

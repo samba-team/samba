@@ -265,8 +265,11 @@ def drs_local_replicate(self, SOURCE_DC, NC):
     repl = drs_utils.drs_Replicate("ncacn_ip_tcp:%s[seal]" % self.server, self.lp,
                                    self.creds, self.local_samdb, dest_dsa_invocation_id)
 
+    # Work out if we are an RODC, so that a forced local replicate
+    # with the admin pw does not sync passwords
+    rodc = self.local_samdb.am_rodc()
     try:
-        repl.replicate(NC, source_dsa_invocation_id, destination_dsa_guid)
+        repl.replicate(NC, source_dsa_invocation_id, destination_dsa_guid, rodc=rodc)
     except Exception, e:
         raise CommandError("Error replicating DN %s" % NC, e)
     self.samdb.transaction_commit()

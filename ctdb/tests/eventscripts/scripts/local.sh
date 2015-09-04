@@ -9,6 +9,10 @@ EVENTSCRIPTS_PATH=""
 
 if [ -d "${TEST_SUBDIR}/stubs" ] ; then
     EVENTSCRIPTS_PATH="${TEST_SUBDIR}/stubs"
+    case "$EVENTSCRIPTS_PATH" in
+	/*) : ;;
+	*) EVENTSCRIPTS_PATH="${PWD}/${EVENTSCRIPTS_PATH}" ;;
+    esac
 fi
 
 export EVENTSCRIPTS_PATH
@@ -75,17 +79,6 @@ else
     debug () { : ; }
 fi
 
-eventscripts_tests_cleanup_hooks=""
-
-# This loses quoting!
-eventscripts_test_add_cleanup ()
-{
-    eventscripts_tests_cleanup_hooks="${eventscripts_tests_cleanup_hooks}${eventscripts_tests_cleanup_hooks:+ ; }$*"
-}
-
-trap 'eval $eventscripts_tests_cleanup_hooks' 0
-
-
 ######################################################################
 
 # General setup fakery
@@ -119,7 +112,10 @@ setup_generic ()
 
 
     export CTDB_DBDIR="${EVENTSCRIPTS_TESTS_VAR_DIR}/db"
-    mkdir -p "${CTDB_DBDIR}/persistent"
+    export CTDB_DBDIR_PERSISTENT="${CTDB_DBDIR}/persistent"
+    export CTDB_DBDIR_STATE="${CTDB_DBDIR}/state"
+    mkdir -p "$CTDB_DBDIR_PERSISTENT"
+    mkdir -p "$CTDB_DBDIR_STATE"
 
     export FAKE_TDBTOOL_SUPPORTS_CHECK="yes"
     export FAKE_TDB_IS_OK
@@ -260,16 +256,43 @@ eventscript_call ()
     )
 }
 
-# Set output for ctdb command.  Option 1st argument is return code.
-ctdb_set_output ()
+# For now this creates the same public addresses each time.  However,
+# it could be made more flexible.
+setup_public_addresses ()
 {
-    _out="$EVENTSCRIPTS_TESTS_VAR_DIR/ctdb.out"
-    cat >"$_out"
+    if [ -f "$CTDB_PUBLIC_ADDRESSES" -a \
+	    "${CTDB_PUBLIC_ADDRESSES%/*}" = "$EVENTSCRIPTS_TESTS_VAR_DIR" ] ; then
+	rm "$CTDB_PUBLIC_ADDRESSES"
+    fi
 
-    _rc="$EVENTSCRIPTS_TESTS_VAR_DIR/ctdb.rc"
-    echo "${1:-0}" >"$_rc"
+    export CTDB_PUBLIC_ADDRESSES=$(mktemp \
+				       --tmpdir="$EVENTSCRIPTS_TESTS_VAR_DIR" \
+				       "public-addresses-XXXXXXXX")
 
-    eventscripts_test_add_cleanup "rm -f $_out $_rc"
+    echo "Setting up CTDB_PUBLIC_ADDRESSES=${CTDB_PUBLIC_ADDRESSES}"
+    cat >"$CTDB_PUBLIC_ADDRESSES" <<EOF
+10.0.0.1/24 dev123
+10.0.0.2/24 dev123
+10.0.0.3/24 dev123
+10.0.0.4/24 dev123
+10.0.0.5/24 dev123
+10.0.0.6/24 dev123
+10.0.1.1/24 dev456
+10.0.1.2/24 dev456
+10.0.1.3/24 dev456
+EOF
+}
+
+# Need to cope with ctdb_get_pnn().  If a test changes PNN then it
+# needs to be using a different state directory, otherwise the wrong
+# PNN can already be cached in the state directory.
+ctdb_set_pnn ()
+{
+    export FAKE_CTDB_PNN="$1"
+    echo "Setting up PNN ${FAKE_CTDB_PNN}"
+
+    export CTDB_VARDIR="$EVENTSCRIPTS_TESTS_VAR_DIR/ctdb/${FAKE_CTDB_PNN}"
+    mkdir -p "$CTDB_VARDIR"
 }
 
 setup_ctdb ()
@@ -279,22 +302,14 @@ setup_ctdb ()
     export FAKE_CTDB_NUMNODES="${1:-3}"
     echo "Setting up CTDB with ${FAKE_CTDB_NUMNODES} fake nodes"
 
-    export FAKE_CTDB_PNN="${2:-0}"
-    echo "Setting up CTDB with PNN ${FAKE_CTDB_PNN}"
+    ctdb_set_pnn "${2:-0}"
 
-    export CTDB_PUBLIC_ADDRESSES="${CTDB_BASE}/public_addresses"
-    if [ -n "$3" ] ; then
-	echo "Setting up CTDB_PUBLIC_ADDRESSES: $3"
-	CTDB_PUBLIC_ADDRESSES=$(mktemp)
-	for _i in $3 ; do
-	    _ip="${_i%@*}"
-	    _ifaces="${_i#*@}"
-	    echo "${_ip} ${_ifaces}" >>"$CTDB_PUBLIC_ADDRESSES"
-	done
-	eventscripts_test_add_cleanup "rm -f $CTDB_PUBLIC_ADDRESSES"
-    fi
+    setup_public_addresses
 
     export FAKE_CTDB_STATE="$EVENTSCRIPTS_TESTS_VAR_DIR/fake-ctdb"
+
+    export FAKE_CTDB_EXTRA_CONFIG="$EVENTSCRIPTS_TESTS_VAR_DIR/fake-config.sh"
+    rm -f "$FAKE_CTDB_EXTRA_CONFIG"
 
     export FAKE_CTDB_IFACES_DOWN="$FAKE_CTDB_STATE/ifaces-down"
     mkdir -p "$FAKE_CTDB_IFACES_DOWN"
@@ -305,29 +320,45 @@ setup_ctdb ()
     rm -f "$FAKE_CTDB_SCRIPTSTATUS"/*
 
     export CTDB_PARTIALLY_ONLINE_INTERFACES
+
+    export FAKE_CTDB_TUNABLES_OK="MonitorInterval TDBMutexEnabled DatabaseHashSize"
+    export FAKE_CTDB_TUNABLES_OBSOLETE="EventScriptUnhealthyOnTimeout"
+}
+
+setup_config ()
+{
+    cat >"$FAKE_CTDB_EXTRA_CONFIG"
+}
+
+validate_percentage ()
+{
+    case "$1" in
+	[0-9]|[0-9][0-9]|100) return 0 ;;
+	*) echo "WARNING: ${1} is an invalid percentage${2:+\" in }${2}${2:+\"}"
+	   return 1
+    esac
 }
 
 setup_memcheck ()
 {
+    _mem_usage="${1:-10}" # Default is 10%
+    _swap_usage="${2:-0}" # Default is  0%
+
     setup_ctdb
 
-    _swap_total="5857276"
+    _swap_total=5857276
+    _swap_free=$(( (100 - $_swap_usage) * $_swap_total / 100 ))
 
-    if [ "$1" = "bad" ] ; then
-	_swap_free="   4352"
-	_mem_cached=" 112"
-	_mem_free=" 468"
-    else
-	_swap_free="$_swap_total"
-	_mem_cached="1112"
-	_mem_free="1468"
-    fi
+    _mem_total=3940712
+    _mem_free=225268
+    _mem_buffers=146120
+    _mem_cached=$(( $_mem_total * (100 - $_mem_usage) / 100 - $_mem_free - $_mem_buffers ))
 
     export FAKE_PROC_MEMINFO="\
-MemTotal:        3940712 kB
-MemFree:          225268 kB
-Buffers:          146120 kB
-Cached:          1139348 kB
+MemTotal:        ${_mem_total} kB
+MemFree:          ${_mem_free} kB
+Buffers:          ${_mem_buffers} kB
+Cached:          ${_mem_cached} kB
 SwapCached:        56016 kB
 Active:          2422104 kB
 Inactive:        1019928 kB
@@ -341,15 +372,18 @@ SwapTotal:       ${_swap_total} kB
 SwapFree:        ${_swap_free} kB
 ..."
 
-    export FAKE_FREE_M="\
-             total       used       free     shared    buffers     cached
-Mem:          3848       3634        213          0        142       ${_mem_cached}
--/+ buffers/cache:       2379       ${_mem_free}
-Swap:         5719        246       5473"
+    export CTDB_MONITOR_MEMORY_USAGE
+    export CTDB_MONITOR_SWAP_USAGE
+}
 
-    export CTDB_MONITOR_FREE_MEMORY
-    export CTDB_MONITOR_FREE_MEMORY_WARN
-    export CTDB_CHECK_SWAP_IS_NOT_USED
+setup_fscheck ()
+{
+    export FAKE_FS_USE="${1:-10}"  # Default is 10% usage
+
+    # Causes some variables to be exported
+    setup_ctdb
+
+    export CTDB_MONITOR_FILESYSTEM_USAGE
 }
 
 ctdb_get_interfaces ()
@@ -450,7 +484,7 @@ create_policy_routing_config ()
     fi |
     while read _dev _ip _bits ; do
 	_net=$(ipv4_host_addr_to_net "$_ip" "$_bits")
-	_gw="${_net%.*}.1" # a dumb, calculated default
+	_gw="${_net%.*}.254" # a dumb, calculated default
 
 	echo "$_ip $_net"
 
@@ -479,7 +513,7 @@ check_routes ()
     fi | {
 	while read _dev _ip _bits ; do
 	    _net=$(ipv4_host_addr_to_net "$_ip" "$_bits")
-	    _gw="${_net%.*}.1" # a dumb, calculated default
+	    _gw="${_net%.*}.254" # a dumb, calculated default
 
 	    _policy_rules="${_policy_rules}
 ${CTDB_PER_IP_ROUTING_RULE_PREF}:	from $_ip lookup ctdb.$_ip "
@@ -501,7 +535,66 @@ default via $_gw dev $_dev "
 EOF
 
 	simple_test_command dump_routes
-    }
+    } || test_fail
+}
+
+######################################################################
+
+ctdb_catdb_format_pairs ()
+{
+    _count=0
+
+    while read _k _v ; do
+	_kn=$(echo -n "$_k" | wc -c)
+	_vn=$(echo -n "$_v" | wc -c)
+	cat <<EOF
+key(${_kn}) = "${_k}"
+dmaster: 0
+rsn: 1
+data(${_vn}) = "${_v}"
+
+EOF
+	_count=$(($_count + 1))
+    done
+
+    echo "Dumped ${_count} records"
+}
+
+check_ctdb_tdb_statd_state ()
+{
+    ctdb_get_my_public_addresses |
+    while read _x _sip _x ; do
+	for _cip ; do
+	    echo "statd-state@${_sip}@${_cip}" "$FAKE_DATE_OUTPUT"
+	done
+    done |
+    ctdb_catdb_format_pairs | {
+	ok
+	simple_test_command ctdb catdb ctdb.tdb
+    } || test_fail
+}
+
+check_statd_callout_smnotify ()
+{
+    _state_even=$(( $(date '+%s') / 2 * 2))
+    _state_odd=$(($_state_even + 1))
+
+    nfs_load_config
+
+    ctdb_get_my_public_addresses |
+    while read _x _sip _x ; do
+	for _cip ; do
+	    cat <<EOF
+--client=${_cip} --ip=${_sip} --server=${_sip} --stateval=${_state_even}
+--client=${_cip} --ip=${_sip} --server=${NFS_HOSTNAME} --stateval=${_state_even}
+--client=${_cip} --ip=${_sip} --server=${_sip} --stateval=${_state_odd}
+--client=${_cip} --ip=${_sip} --server=${NFS_HOSTNAME} --stateval=${_state_odd}
+EOF
+	done
+    done | {
+	ok
+	simple_test_event "notify"
+    } || test_fail
 }
 
 ######################################################################
@@ -584,6 +677,7 @@ ok_natgw_master_static_routes ()
 	_t="${_t}${_t:+${_nl}}"
 	_t="${_t}${_net} via ${_gw} dev ethXXX  metric 10 "
     done
+    _t=$(echo "$_t" | sort)
     ok "$_t"
 }
 
@@ -603,6 +697,7 @@ ok_natgw_slave_static_routes ()
 	_t="${_t}${_t:+${_nl}}"
 	_t="${_t}${_net} via ${FAKE_CTDB_NATGW_MASTER} dev ethXXX  metric 10 "
     done
+    _t=$(echo "$_t" | sort)
     ok "$_t"
 }
 
@@ -654,10 +749,6 @@ setup_samba ()
 	export FAKE_TCP_LISTEN=""
 	export FAKE_WBINFO_FAIL="yes"
     fi
-
-    # This is ugly but if this file isn't removed before each test
-    # then configuration changes between tests don't stick.
-    rm -f "$CTDB_VARDIR/state/samba/smb.conf.cache"
 }
 
 setup_winbind ()
@@ -712,8 +803,7 @@ setup_nfs ()
 
     export CTDB_NFS_SKIP_SHARE_CHECK="no"
 
-    export CTDB_MONITOR_NFS_THREAD_COUNT RPCNFSDCOUNT FAKE_NFSD_THREAD_PIDS
-    export CTDB_NFS_DUMP_STUCK_THREADS FAKE_RPC_THREAD_PIDS
+    export RPCNFSDCOUNT
 
     # Reset the failcounts for nfs services.
     eventscript_call eval rm -f '$ctdb_fail_dir/nfs_*'
@@ -722,34 +812,43 @@ setup_nfs ()
 	debug "Setting up NFS environment: all RPC services up, NFS managed by CTDB"
 
 	eventscript_call ctdb_service_managed
-	service "nfs" force-started  # might not be enough
+	service "nfs" force-started
+	service "nfslock" force-started
 
 	export CTDB_MANAGED_SERVICES="foo nfs bar"
 
-	rpc_services_up "nfs" "mountd" "rquotad" "nlockmgr" "status"
+	rpc_services_up \
+	    "portmapper" "nfs" "mountd" "rquotad" "nlockmgr" "status"
+
+	nfs_setup_fake_threads "nfsd"
+	nfs_setup_fake_threads "rpc.foobar"  # Just set the variable to empty
     else
 	debug "Setting up NFS environment: all RPC services down, NFS not managed by CTDB"
 
 	eventscript_call ctdb_service_unmanaged
-	service "nfs" force-stopped  # might not be enough
-	eventscript_call startstop_nfs stop
+	service "nfs" force-stopped
+	service "nfslock" force-stopped
 
 	export CTDB_MANAGED_SERVICES="foo bar"
 	unset CTDB_MANAGES_NFS
     fi
+
+    # This is really nasty.  However, when we test NFS we don't
+    # actually test statd-callout. If we leave it there then left
+    # over, backgrounded instances of statd-callout will do horrible
+    # things with the "ctdb ip" stub and cause the actual
+    # statd-callout tests that follow to fail.
+    rm "${CTDB_BASE}/statd-callout"
 }
 
 setup_nfs_ganesha ()
 {
     setup_nfs "$@"
-    export CTDB_NFS_SERVER_MODE="ganesha"
+    export CTDB_NFS_CALLOUT="${CTDB_BASE}/nfs-ganesha-callout"
     if [ "$1" != "down" ] ; then
 	export CTDB_MANAGES_NFS="yes"
     fi
 
-    # We do not support testing the Ganesha-nfsd-specific part of the
-    # eventscript.
-    export CTDB_SKIP_GANESHA_NFSD_CHECK="yes"
     export CTDB_NFS_SKIP_SHARE_CHECK="yes"
 }
 
@@ -766,16 +865,81 @@ rpc_services_up ()
     for _i ; do
 	debug "Marking RPC service \"${_i}\" as available"
 	case "$_i" in
-	    nfs)      _t="2:3" ;;
-	    mountd)   _t="1:3" ;;
-	    rquotad)  _t="1:2" ;;
-	    nlockmgr) _t="3:4" ;;
-	    status)   _t="1:1" ;;
+	    portmapper) _t="2:4" ;;
+	    nfs)        _t="2:3" ;;
+	    mountd)     _t="1:3" ;;
+	    rquotad)    _t="1:2" ;;
+	    nlockmgr)   _t="3:4" ;;
+	    status)     _t="1:1" ;;
 	    *) die "Internal error - unsupported RPC service \"${_i}\"" ;;
 	esac
 
 	FAKE_RPCINFO_SERVICES="${FAKE_RPCINFO_SERVICES}${FAKE_RPCINFO_SERVICES:+ }${_i}:${_t}"
     done
+}
+
+
+nfs_load_config ()
+{
+    _etc="$CTDB_ETCDIR" # shortcut for readability
+    for _c in "$_etc/sysconfig/nfs" "$_etc/default/nfs" "$_etc/ctdb/sysconfig/nfs" ; do
+	if [ -r "$_c" ] ; then
+	    . "$_c"
+	    break
+	fi
+    done
+}
+
+nfs_setup_fake_threads ()
+{
+    _prog="$1" ; shift
+
+    case "$_prog" in
+	nfsd)
+	    export PROCFS_PATH=$(mktemp -d --tmpdir="$EVENTSCRIPTS_TESTS_VAR_DIR")
+	    _threads="${PROCFS_PATH}/fs/nfsd/threads"
+	    mkdir -p $(dirname "$_threads")
+	    echo $# >"$_threads"
+	    export FAKE_NFSD_THREAD_PIDS="$*"
+	    ;;
+	*)
+	    export FAKE_RPC_THREAD_PIDS="$*"
+	    ;;
+    esac
+}
+
+program_stack_traces ()
+{
+    _prog="$1"
+    _max="${2:-1}"
+
+    _count=1
+    for _pid in ${FAKE_NFSD_THREAD_PIDS:-$FAKE_RPC_THREAD_PIDS} ; do
+	[ $_count -le $_max ] || break
+
+	cat <<EOF
+Stack trace for ${_prog}[${_pid}]:
+[<ffffffff87654321>] fake_stack_trace_for_pid_${_pid}/stack+0x0/0xff
+EOF
+	_count=$(($_count + 1))
+    done
+}
+
+guess_output ()
+{
+    case "$1" in
+	$CTDB_NFS_CALLOUT\ start\ nlockmgr)
+	    echo "&Starting nfslock: OK"
+	    ;;
+	$CTDB_NFS_CALLOUT\ start\ nfs)
+	    cat <<EOF
+&Starting nfslock: OK
+&Starting nfs: OK
+EOF
+	    ;;
+	*)
+	    : # Nothing
+    esac
 }
 
 # Set the required result for a particular RPC program having failed
@@ -788,115 +952,88 @@ rpc_services_up ()
 # function being incomplete.
 rpc_set_service_failure_response ()
 {
-    _progname="$1"
-    # The number of failures defaults to the iteration number.  This
-    # will be true when we fail from the 1st iteration... but we need
-    # the flexibility to set the number of failures.
-    _numfails="${2:-${iteration}}"
+    _rpc_service="$1"
+    _numfails="${2:-1}" # default 1
 
-    _etc="$CTDB_ETCDIR" # shortcut for readability
-    for _c in "$_etc/sysconfig/nfs" "$_etc/default/nfs" "$_etc/ctdb/sysconfig/nfs" ; do
-	if [ -r "$_c" ] ; then
-	    . "$_c"
-	    break
-	fi
-    done
+    # Default
+    ok_null
+    if [ $_numfails -eq 0 ] ; then
+	return
+    fi
+
+    nfs_load_config
 
     # A handy newline.  :-)
     _nl="
 "
 
-    # Default
-    ok_null
+    _dir="${CTDB_NFS_CHECKS_DIR:-${CTDB_BASE}/nfs-checks.d}"
 
-    _file=$(ls "${CTDB_BASE}/nfs-rpc-checks.d/"[0-9][0-9]."${_progname}.check")
+    _file=$(ls "$_dir"/[0-9][0-9]."${_rpc_service}.check")
     [ -r "$_file" ] || die "RPC check file \"$_file\" does not exist or is not unique"
 
-    while read _op _li _actions ; do
-	# Skip comments
-	case "$_op" in
-	    \#*) continue ;;
-	esac
+    _out=$(mktemp --tmpdir="$EVENTSCRIPTS_TESTS_VAR_DIR")
+    _rc_file=$(mktemp --tmpdir="$EVENTSCRIPTS_TESTS_VAR_DIR")
 
-	_hit=false
-	if [ "$_op" != "%" ] ; then
-	    if [ $_numfails $_op $_li ] ; then
-		_hit=true
-	    fi
+    (
+	# Subshell to restrict scope variables...
+
+	# Defaults
+	family="tcp"
+	version=""
+	unhealthy_after=1
+	restart_every=0
+	service_stop_cmd=""
+	service_start_cmd=""
+	service_check_cmd=""
+	service_debug_cmd=""
+
+	# Don't bother syntax checking, eventscript does that...
+	. "$_file"
+
+	# Just use the first version, or use default.  This is dumb but
+	# handles all the cases that we care about now...
+	if [ -n "$version" ] ; then
+	    _ver="${version%% *}"
 	else
-	    if [ $(($_numfails $_op $_li)) -eq 0 ] ; then
-		_hit=true
-	    fi
+	    case "$_rpc_service" in
+		portmapper) _ver="" ;;
+		*) 	    _ver=1  ;;
+	    esac
 	fi
-	if $_hit ; then
-	    _out=""
-	    _rc=0
-	    for _action in $_actions ; do
-		case "$_action" in
-		    verbose)
-			_ver=1
-			_pn="$_progname"
-			case "$_progname" in
-			    nfsd) _ver=3 ; _pn="nfs" ;;
-			    lockd) _ver=4 ; _pn="nlockmgr" ;;
-			    statd) _pn="status" ;;
-			esac
-			_out="\
-ERROR: $_pn failed RPC check:
+	_rpc_check_out="\
+$_rpc_service failed RPC check:
 rpcinfo: RPC: Program not registered
-program $_pn version $_ver is not available"
-			;;
-		    restart*)
-			_p="rpc.${_progname}"
-			case "$_action" in
-			    *:b) _bg="&" ;;
-			    *)   _bg=""  ;;
-			esac
-			case "$_progname" in
-			    nfsd)
-				_t="\
-Trying to restart NFS service"
+program $_rpc_service${_ver:+ version }${_ver} is not available"
 
-				if [ -n "$CTDB_NFS_DUMP_STUCK_THREADS" ] ; then
-				    for _pid in $FAKE_NFSD_THREAD_PIDS ; do
-					_t="\
-$_t
-${_bg}Stack trace for nfsd[${_pid}]:
-${_bg}[<ffffffff87654321>] fake_stack_trace_for_pid_${_pid}/stack+0x0/0xff"
-				    done
-				fi
-
-				_t="\
-${_t}
-${_bg}Starting nfslock: OK
-${_bg}Starting nfs: OK"
-				;;
-			    lockd)
-				_t="\
-Trying to restart lock manager service
-${_bg}Starting nfslock: OK"
-				;;
-			    *)
-				_t="Trying to restart $_progname [${_p}]"
-				if [ -n "$CTDB_NFS_DUMP_STUCK_THREADS" ] ; then
-				    for _pid in $FAKE_RPC_THREAD_PIDS ; do
-					_t="\
-$_t
-Stack trace for ${_p}[${_pid}]:
-[<ffffffff87654321>] fake_stack_trace_for_pid_${_pid}/stack+0x0/0xff"
-				    done
-				fi
-			esac
-			_out="${_out}${_out:+${_nl}}${_t}"
-			;;
-		    unhealthy)
-			_rc=1
-		esac
-	    done
-	    required_result $_rc "$_out"
-	    return
+	if [ $unhealthy_after -gt 0 -a $_numfails -ge $unhealthy_after ] ; then
+	    _unhealthy=true
+	    echo 1 >"$_rc_file"
+	    echo "ERROR: ${_rpc_check_out}" >>"$_out"
+	else
+	    _unhealthy=false
+	    echo 0 >"$_rc_file"
 	fi
-    done <"$_file"
+
+	if [ $restart_every -gt 0 -a $(($_numfails % $restart_every)) -eq 0 ] ; then
+	    if ! $_unhealthy ; then
+		echo "WARNING: ${_rpc_check_out}" >>"$_out"
+	    fi
+
+	    echo "Trying to restart service \"${_rpc_service}\"..." >>"$_out"
+
+	    if [ -n "$service_debug_cmd" ] ; then
+		$service_debug_cmd 2>&1 >>"$_out"
+	    fi
+
+	    guess_output "$service_start_cmd" >>"$_out"
+	fi
+    )
+
+    read _rc <"$_rc_file"
+    required_result $_rc <"$_out"
+
+    rm -f "$_out" "$_rc_file"
 }
 
 ######################################################################
@@ -978,30 +1115,33 @@ define_test ()
     # Remaining format should be NN.service.event.NNN or NN.service.NNN:
     _num="${_f##*.}"
     _f="${_f%.*}"
+
     case "$_f" in
-	*.*.*)
+	[0-9][0-9].*.*)
 	    script="${_f%.*}"
 	    event="${_f##*.}"
+	    script_dir="${CTDB_BASE}/events.d"
 	    ;;
-	*.*)
+	[0-9][0-9].*)
 	    script="$_f"
 	    unset event
+	    script_dir="${CTDB_BASE}/events.d"
+	    ;;
+	*.*)
+	    script="${_f%.*}"
+	    event="${_f##*.}"
+	    script_dir="${CTDB_BASE}"
 	    ;;
 	*)
-	    die "Internal error - unknown testcase filename format"
+	    script="${_f%.*}"
+	    unset event
+	    script_dir="${CTDB_BASE}"
     esac
 
-    printf "%-17s %-10s %-4s - %s\n\n" "$script" "$event" "$_num" "$desc"
-}
+    [ -r "${script_dir}/${script}" ] || \
+	die "Internal error - unable to find script \"${script_dir}/${script}\""
 
-_extra_header ()
-{
-    cat <<EOF
-CTDB_BASE="$CTDB_BASE"
-CTDB_ETCDIR="$CTDB_ETCDIR"
-ctdb client is "$(which ctdb)"
-ip command is "$(which ip)"
-EOF
+    printf "%-17s %-10s %-4s - %s\n\n" "$script" "$event" "$_num" "$desc"
 }
 
 # Run an eventscript once.  The test passes if the return code and
@@ -1013,18 +1153,29 @@ simple_test ()
 {
     [ -n "$event" ] || die 'simple_test: $event not set'
 
-    _extra_header=$(_extra_header)
+    args="$@"
 
-    echo "Running eventscript \"$script $event${1:+ }$*\""
-    _shell=""
-    if $TEST_COMMAND_TRACE ; then
-	_shell="sh -x"
-    else
-	_shell="sh"
-    fi
-    _out=$($_shell "${CTDB_BASE}/events.d/$script" "$event" "$@" 2>&1)
+    test_header ()
+    {
+	echo "Running script \"$script $event${args:+ }$args\""
+    }
 
-    result_check "$_extra_header"
+    extra_header ()
+    {
+	cat <<EOF
+
+##################################################
+CTDB_BASE="$CTDB_BASE"
+CTDB_ETCDIR="$CTDB_ETCDIR"
+ctdb client is "$(which ctdb)"
+ip command is "$(which ip)"
+EOF
+    }
+
+    script_test "${script_dir}/${script}" "$event" "$@"
+
+    reset_test_header
+    reset_extra_header
 }
 
 simple_test_event ()
@@ -1040,88 +1191,82 @@ simple_test_event ()
 
 simple_test_command ()
 {
-    # If something has previously failed then don't continue.
-    : ${_passed:=true}
-    $_passed || return 1
-
-    echo "=================================================="
-    echo "Running command \"$*\""
-    _out=$("$@" 2>&1)
-
-    result_check
+    unit_test "$@"
 }
 
-# Run an eventscript iteratively.
+# Run an NFS eventscript iteratively.
+#
 # - 1st argument is the number of iterations.
-# - 2nd argument is something to eval to do setup for every iteration.
-#   The easiest thing to do here is to define a function and pass it
-#   here.
+#
+# - 2nd argument is the NFS/RPC service being tested
+#
+#   rpcinfo (or $service_check_cmd) is used on each iteration to test
+#   the availability of the service
+#
+#   If this is not set or null then no RPC service is checked and the
+#   required output is not reset on each iteration.  This is useful in
+#   baseline tests to confirm that the eventscript and test
+#   infrastructure is working correctly.
+#
 # - Subsequent arguments come in pairs: an iteration number and
-#   something to eval for that iteration.  Each time an iteration
+#   something to eval before that iteration.  Each time an iteration
 #   number is matched the associated argument is given to eval after
 #   the default setup is done.  The iteration numbers need to be given
 #   in ascending order.
 #
-# Some optional args can be given *before* these, surrounded by extra
-# "--" args.  These args are passed to the eventscript.  Quoting is
-# lost.
+#   These arguments can allow a service to be started or stopped
+#   before a particular iteration.
 #
-# One use of the 2nd and further arguments is to call
-# required_result() to change what is expected of a particular
-# iteration.
-iterate_test ()
+nfs_iterate_test ()
 {
-    [ -n "$event" ] || die 'simple_test: $event not set'
-
-    args=""
-    if [ "$1" = "--" ] ; then
-	shift
-	while [ "$1" != "--" ] ; do
-	    args="${args}${args:+ }$1"
-	    shift
-	done
+    _repeats="$1"
+    _rpc_service="$2"
+    if [ -n "$2" ] ; then
+	shift 2
+    else
 	shift
     fi
 
-    _repeats="$1"
-    _setup_default="$2"
-    shift 2
-
     echo "Running $_repeats iterations of \"$script $event\" $args"
 
-    _result=true
-
-    for iteration in $(seq 1 $_repeats) ; do
-	# This is inefficient because the iteration-specific setup
-	# might completely replace the default one.  However, running
-	# the default is good because it allows you to revert to a
-	# particular result without needing to specify it explicitly.
-	eval $_setup_default
-	if [ $iteration = "$1" ] ; then
-	    eval $2
+    _iterate_failcount=0
+    for _iteration in $(seq 1 $_repeats) ; do
+	# This is not a numerical comparison because $1 will often not
+	# be set.
+	if [ "$_iteration" = "$1" ] ; then
+	    debug "##################################################"
+	    eval "$2"
+	    debug "##################################################"
 	    shift 2
 	fi
+	if [ -n "$_rpc_service" ] ; then
+	    _ok=false
+	    if [ -n "$service_check_cmd" ] ; then
+		if eval "$service_check_cmd" ; then
+		    _ok=true
+		fi
+	    else
+		if rpcinfo -T tcp localhost "$_rpc_service" >/dev/null 2>&1 ; then
+		    _ok=true
+		fi
+	    fi
 
-	_shell=""
-	if $TEST_COMMAND_TRACE ; then
-	    _shell="sh -x"
-	else
-	    _shell="sh"
+	    if $_ok ; then
+		_iterate_failcount=0
+	    else
+		_iterate_failcount=$(($_iterate_failcount + 1))
+	    fi
+	    rpc_set_service_failure_response "$_rpc_service" $_iterate_failcount
 	fi
-	_out=$($_shell "${CTDB_BASE}/events.d/$script" "$event" $args 2>&1)
-	_rc=$?
-
-	_fout=$(echo "$_out" | result_filter)
-
-	if [ "$_fout" = "$required_output" -a $_rc = $required_rc ] ; then
-	    _passed=true
-	else
-	    _passed=false
-	    _result=false
+	_out=$(simple_test 2>&1)
+	_ret=$?
+	if "$TEST_VERBOSE" || [ $_ret -ne 0 ] ; then
+	    echo "##################################################"
+	    echo "Iteration ${_iteration}:"
+	    echo "$_out"
 	fi
-
-	result_print "$_passed" "$_out" "$_rc" "Iteration $iteration"
+	if [ $_ret -ne 0 ] ; then
+	    exit $_ret
+	fi
     done
-
-    result_footer "$_result" "$(_extra_header)"
 }

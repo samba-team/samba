@@ -478,29 +478,35 @@ int sys_posix_fallocate(int fd, off_t offset, off_t len)
 #include <linux/falloc.h>
 #endif
 
-int sys_fallocate(int fd, enum vfs_fallocate_mode mode, off_t offset, off_t len)
+int sys_fallocate(int fd, uint32_t mode, off_t offset, off_t len)
 {
-#if defined(HAVE_LINUX_FALLOCATE64) || defined(HAVE_LINUX_FALLOCATE)
-	int lmode;
-	switch (mode) {
-	case VFS_FALLOCATE_EXTEND_SIZE:
-		lmode = 0;
-		break;
-	case VFS_FALLOCATE_KEEP_SIZE:
-		lmode = FALLOC_FL_KEEP_SIZE;
-		break;
-	default:
+#if defined(HAVE_LINUX_FALLOCATE)
+	int lmode = 0;
+
+	if (mode & VFS_FALLOCATE_FL_KEEP_SIZE) {
+		lmode |= FALLOC_FL_KEEP_SIZE;
+		mode &= ~VFS_FALLOCATE_FL_KEEP_SIZE;
+	}
+
+#if defined(HAVE_FALLOC_FL_PUNCH_HOLE)
+	if (mode & VFS_FALLOCATE_FL_PUNCH_HOLE) {
+		lmode |= FALLOC_FL_PUNCH_HOLE;
+		mode &= ~VFS_FALLOCATE_FL_PUNCH_HOLE;
+	}
+#endif	/* HAVE_FALLOC_FL_PUNCH_HOLE */
+
+	if (mode != 0) {
+		DEBUG(2, ("unmapped fallocate flags: %lx\n",
+		      (unsigned long)mode));
 		errno = EINVAL;
 		return -1;
 	}
-#if defined(HAVE_LINUX_FALLOCATE)
 	return fallocate(fd, lmode, offset, len);
-#endif
-#else
+#else	/* HAVE_LINUX_FALLOCATE */
 	/* TODO - plumb in fallocate from other filesysetms like VXFS etc. JRA. */
 	errno = ENOSYS;
 	return -1;
-#endif
+#endif	/* HAVE_LINUX_FALLOCATE */
 }
 
 #if HAVE_KERNEL_SHARE_MODES
@@ -516,7 +522,7 @@ int sys_fallocate(int fd, enum vfs_fallocate_mode mode, off_t offset, off_t len)
  A flock() wrapper that will perform the kernel flock.
 ********************************************************************/
 
-void kernel_flock(int fd, uint32 share_mode, uint32 access_mask)
+void kernel_flock(int fd, uint32_t share_mode, uint32_t access_mask)
 {
 #if HAVE_KERNEL_SHARE_MODES
 	int kernel_mode = 0;
@@ -1208,12 +1214,12 @@ int sys_pclose(int fd)
  Return the major devicenumber for UNIX extensions.
 ****************************************************************************/
 
-uint32 unix_dev_major(SMB_DEV_T dev)
+uint32_t unix_dev_major(SMB_DEV_T dev)
 {
 #if defined(HAVE_DEVICE_MAJOR_FN)
-        return (uint32)major(dev);
+        return (uint32_t)major(dev);
 #else
-        return (uint32)(dev >> 8);
+        return (uint32_t)(dev >> 8);
 #endif
 }
 
@@ -1221,12 +1227,12 @@ uint32 unix_dev_major(SMB_DEV_T dev)
  Return the minor devicenumber for UNIX extensions.
 ****************************************************************************/
 
-uint32 unix_dev_minor(SMB_DEV_T dev)
+uint32_t unix_dev_minor(SMB_DEV_T dev)
 {
 #if defined(HAVE_DEVICE_MINOR_FN)
-        return (uint32)minor(dev);
+        return (uint32_t)minor(dev);
 #else
-        return (uint32)(dev & 0xff);
+        return (uint32_t)(dev & 0xff);
 #endif
 }
 

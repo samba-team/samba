@@ -435,6 +435,7 @@ HEIMDAL_KRB5_2.0 {
 		krb5_make_principal;
 		krb5_max_sockaddr_size;
 		krb5_mk_error;
+		krb5_mk_error_ext;
 		krb5_mk_priv;
 		krb5_mk_rep;
 		krb5_mk_req;

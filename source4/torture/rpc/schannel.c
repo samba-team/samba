@@ -59,7 +59,7 @@ bool test_netlogon_ex_ops(struct dcerpc_pipe *p, struct torture_context *tctx,
 	struct netr_UserSessionKey key;
 	struct netr_LMSessionKey LMSessKey;
 	uint32_t validation_levels[] = { 2, 3 };
-	struct netr_SamBaseInfo *base;
+	struct netr_SamBaseInfo *base = NULL;
 	const char *crypto_alg = "";
 	bool can_do_validation_6 = true;
 
@@ -399,17 +399,13 @@ static bool test_schannel(struct torture_context *tctx,
 	status = dcerpc_epm_map_binding(tctx, b, &ndr_table_netlogon, tctx->ev, tctx->lp_ctx);
 	torture_assert_ntstatus_ok(tctx, status, "epm map");
 
-	status = dcerpc_secondary_connection(p, &p_netlogon,
-					     b);
-	torture_assert_ntstatus_ok(tctx, status, "secondary connection");
+	status = dcerpc_binding_set_flags(b, dcerpc_flags, DCERPC_AUTH_OPTIONS);
+	torture_assert_ntstatus_ok(tctx, status, "set flags");
 
-	status = dcerpc_bind_auth(p_netlogon, &ndr_table_netlogon,
-				  credentials, lpcfg_gensec_settings(tctx, tctx->lp_ctx),
-				  DCERPC_AUTH_TYPE_SCHANNEL,
-				  dcerpc_auth_level(p->conn),
-				  NULL);
-
-	torture_assert_ntstatus_ok(tctx, status, "bind auth");
+	status = dcerpc_secondary_auth_connection(p, b, &ndr_table_netlogon,
+						  credentials, tctx->lp_ctx,
+						  tctx, &p_netlogon);
+	torture_assert_ntstatus_ok(tctx, status, "Failed to create secondary connection");
 
 	creds = cli_credentials_get_netlogon_creds(credentials);
 	torture_assert(tctx, (creds != NULL), "schannel creds");
@@ -491,18 +487,13 @@ static bool test_schannel(struct torture_context *tctx,
 	status = dcerpc_epm_map_binding(tctx, b, &ndr_table_netlogon, tctx->ev, tctx->lp_ctx);
 	torture_assert_ntstatus_ok(tctx, status, "epm");
 
-	status = dcerpc_secondary_connection(p_samr2, &p_netlogon2,
-					     b);
-	torture_assert_ntstatus_ok(tctx, status, "secondary connection");
+	status = dcerpc_binding_set_flags(b, dcerpc_flags, DCERPC_AUTH_OPTIONS);
+	torture_assert_ntstatus_ok(tctx, status, "set flags");
 
-	/* and now setup an SCHANNEL bind on netlogon */
-	status = dcerpc_bind_auth(p_netlogon2, &ndr_table_netlogon,
-				  credentials, lpcfg_gensec_settings(tctx, tctx->lp_ctx),
-				  DCERPC_AUTH_TYPE_SCHANNEL,
-				  dcerpc_auth_level(p_samr2->conn),
-				  NULL);
-
-	torture_assert_ntstatus_ok(tctx, status, "auth failed");
+	status = dcerpc_secondary_auth_connection(p_samr2, b, &ndr_table_netlogon,
+						  credentials, tctx->lp_ctx,
+						  tctx, &p_netlogon2);
+	torture_assert_ntstatus_ok(tctx, status, "Failed to create secondary connection");
 
 	/* checks the capabilities */
 	torture_assert(tctx, test_netlogon_capabilities(p_netlogon2, tctx, credentials, creds),
@@ -543,6 +534,85 @@ static bool test_schannel(struct torture_context *tctx,
 	return true;
 }
 
+/*
+ * Purpose of this test is to demonstrate that a netlogon server carefully deals
+ * with anonymous attempts to set passwords, in particular when the server
+ * enforces the use of schannel. This test makes most sense to be run in an
+ * environment where the netlogon server enforces use of schannel.
+ */
+
+static bool test_schannel_anonymous_setPassword(struct torture_context *tctx,
+						uint32_t dcerpc_flags,
+						bool use2)
+{
+	NTSTATUS status, result;
+	const char *binding = torture_setting_string(tctx, "binding", NULL);
+	struct dcerpc_binding *b;
+	struct dcerpc_pipe *p = NULL;
+	struct cli_credentials *credentials;
+	bool ok = true;
+
+	credentials = cli_credentials_init(NULL);
+	torture_assert(tctx, credentials != NULL, "Bad credentials");
+	cli_credentials_set_anonymous(credentials);
+
+	status = dcerpc_parse_binding(tctx, binding, &b);
+	torture_assert_ntstatus_ok(tctx, status, "Bad binding string");
+
+	status = dcerpc_binding_set_flags(b, dcerpc_flags, DCERPC_AUTH_OPTIONS);
+	torture_assert_ntstatus_ok(tctx, status, "set flags");
+
+	status = dcerpc_pipe_connect_b(tctx,
+				       &p,
+				       b,
+				       &ndr_table_netlogon,
+				       credentials,
+				       tctx->ev,
+				       tctx->lp_ctx);
+	torture_assert_ntstatus_ok(tctx, status, "Failed to connect without schannel");
+
+	if (use2) {
+		struct netr_ServerPasswordSet2 r = {};
+		struct netr_Authenticator credential = {};
+		struct netr_Authenticator return_authenticator = {};
+		struct netr_CryptPassword new_password = {};
+
+		r.in.server_name = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
+		r.in.account_name = talloc_asprintf(tctx, "%s$", TEST_MACHINE_NAME);
+		r.in.secure_channel_type = 0;
+		r.in.computer_name = TEST_MACHINE_NAME;
+		r.in.credential = &credential;
+		r.in.new_password = &new_password;
+		r.out.return_authenticator = &return_authenticator;
+
+		status = dcerpc_netr_ServerPasswordSet2_r(p->binding_handle, tctx, &r);
+		result = r.out.result;
+	} else {
+		struct netr_ServerPasswordSet r = {};
+		struct netr_Authenticator credential = {};
+		struct netr_Authenticator return_authenticator = {};
+		struct samr_Password new_password = {};
+
+		r.in.server_name = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
+		r.in.account_name = talloc_asprintf(tctx, "%s$", TEST_MACHINE_NAME);
+		r.in.secure_channel_type = 0;
+		r.in.computer_name = TEST_MACHINE_NAME;
+		r.in.credential = &credential;
+		r.in.new_password = &new_password;
+		r.out.return_authenticator = &return_authenticator;
+
+		status = dcerpc_netr_ServerPasswordSet_r(p->binding_handle, tctx, &r);
+		result = r.out.result;
+	}
+
+	torture_assert_ntstatus_ok(tctx, status, "ServerPasswordSet failed");
+
+	if (NT_STATUS_IS_OK(result)) {
+		torture_fail(tctx, "unexpectedly received NT_STATUS_OK");
+	}
+
+	return ok;
+}
 
 
 /*
@@ -581,6 +651,35 @@ bool torture_rpc_schannel(struct torture_context *torture)
 			       tests[i].acct_flags, tests[i].dcerpc_flags);
 			ret = false;
 		}
+	}
+
+	return ret;
+}
+
+bool torture_rpc_schannel_anon_setpw(struct torture_context *torture)
+{
+	bool ret = true;
+	bool ok;
+	uint32_t dcerpc_flags = DCERPC_SCHANNEL | DCERPC_SIGN | DCERPC_SCHANNEL_AUTO;
+
+	ok = test_schannel_anonymous_setPassword(torture,
+						 dcerpc_flags,
+						 true);
+	if (!ok) {
+		torture_comment(torture,
+				"Failed with dcerpc_flags=0x%x\n",
+				dcerpc_flags);
+		ret = false;
+	}
+
+	ok = test_schannel_anonymous_setPassword(torture,
+						 dcerpc_flags,
+						 false);
+	if (!ok) {
+		torture_comment(torture,
+				"Failed with dcerpc_flags=0x%x\n",
+				dcerpc_flags);
+		ret = false;
 	}
 
 	return ret;
@@ -681,6 +780,7 @@ struct torture_schannel_bench {
 	bool stopped;
 };
 
+#if 0
 static void torture_schannel_bench_connected(struct composite_context *c)
 {
 	struct torture_schannel_bench_conn *conn =
@@ -694,6 +794,7 @@ static void torture_schannel_bench_connected(struct composite_context *c)
 		s->nconns++;
 	}
 }
+#endif
 
 static void torture_schannel_bench_recv(struct tevent_req *subreq);
 

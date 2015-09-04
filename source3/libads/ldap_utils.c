@@ -36,7 +36,7 @@ static ADS_STATUS ads_ranged_search_internal(ADS_STRUCT *ads,
 					     const char *range_attr,
 					     char ***strings,
 					     size_t *num_strings,
-					     uint32 *first_usn,
+					     uint32_t *first_usn,
 					     int *num_retries,
 					     bool *more_values);
 
@@ -169,7 +169,7 @@ static ADS_STATUS ads_do_search_retry_args(ADS_STRUCT *ads, const char *bind_pat
 }
 
  ADS_STATUS ads_search_retry_dn_sd_flags(ADS_STRUCT *ads, LDAPMessage **res, 
-					 uint32 sd_flags,
+					 uint32_t sd_flags,
 					 const char *dn, 
 					 const char **attrs)
 {
@@ -214,20 +214,20 @@ static ADS_STATUS ads_do_search_retry_args(ADS_STRUCT *ads, const char *bind_pat
 	char *dn, *sid_string;
 	ADS_STATUS status;
 
-	sid_string = sid_binstring_hex(sid);
+	sid_string = sid_binstring_hex_talloc(talloc_tos(), sid);
 	if (sid_string == NULL) {
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
 
 	if (!asprintf(&dn, "<SID=%s>", sid_string)) {
-		SAFE_FREE(sid_string);
+		TALLOC_FREE(sid_string);
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
 
 	status = ads_do_search_retry(ads, dn, LDAP_SCOPE_BASE,
 				   "(objectclass=*)", attrs, res);
 	SAFE_FREE(dn);
-	SAFE_FREE(sid_string);
+	TALLOC_FREE(sid_string);
 	return status;
 }
 
@@ -242,7 +242,7 @@ ADS_STATUS ads_ranged_search(ADS_STRUCT *ads,
 			     size_t *num_strings)
 {
 	ADS_STATUS status;
-	uint32 first_usn;
+	uint32_t first_usn;
 	int num_retries = 0;
 	const char **attrs;
 	bool more_values = False;
@@ -296,14 +296,14 @@ static ADS_STATUS ads_ranged_search_internal(ADS_STRUCT *ads,
 				      const char *range_attr,
 				      char ***strings,
 				      size_t *num_strings,
-				      uint32 *first_usn,
+				      uint32_t *first_usn,
 				      int *num_retries,
 				      bool *more_values)
 {
 	LDAPMessage *res = NULL;
 	ADS_STATUS status;
 	int count;
-	uint32 current_usn;
+	uint32_t current_usn;
 
 	DEBUG(10, ("Searching for attrs[0] = %s, attrs[1] = %s\n", attrs[0], attrs[1]));
 

@@ -107,8 +107,8 @@ static NTSTATUS testsam_init(struct pdb_methods **pdb_method, const char *locati
 	return NT_STATUS_OK;
 }
 
-NTSTATUS pdb_testsam_init(void);
-NTSTATUS pdb_testsam_init(void)
+static_decl_pdb;
+NTSTATUS pdb_test_init(void)
 {
 	return smb_register_passdb(PASSDB_INTERFACE_VERSION, "testsam",
 				   testsam_init);

@@ -32,8 +32,6 @@
 
 #ifdef HAVE_KRB5
 
-#define DEFAULT_KRB5_PORT 88
-
 #define LIBADS_CCACHE_NAME "MEMORY:libads"
 
 /*
@@ -491,7 +489,7 @@ int create_kerberos_key_from_string(krb5_context context,
 	}
 	salt_princ = kerberos_fetch_salt_princ_for_host_princ(context, host_princ, enctype);
 	ret = smb_krb5_create_key_from_string(context,
-					      salt_princ ? &salt_princ : &host_princ,
+					      salt_princ ? salt_princ : host_princ,
 					      NULL,
 					      password,
 					      enctype,
@@ -663,7 +661,7 @@ static char *get_kdc_ip_string(char *mem_ctx,
 	char *result = NULL;
 	struct netlogon_samlogon_response **responses = NULL;
 	NTSTATUS status;
-	char *kdc_str = talloc_asprintf(mem_ctx, "%s\tkdc = %s\n", "",
+	char *kdc_str = talloc_asprintf(mem_ctx, "%s\t\tkdc = %s\n", "",
 					print_canonical_sockaddr_with_port(mem_ctx, pss));
 
 	if (kdc_str == NULL) {
@@ -678,34 +676,51 @@ static char *get_kdc_ip_string(char *mem_ctx,
 
 	if (sitename) {
 		get_kdc_list(realm, sitename, &ip_srv_site, &count_site);
+		DEBUG(10, ("got %d addresses from site %s search\n", count_site,
+			   sitename));
 	}
 
 	/* Get all KDC's. */
 
 	get_kdc_list(realm, NULL, &ip_srv_nonsite, &count_nonsite);
+	DEBUG(10, ("got %d addresses from site-less search\n", count_nonsite));
 
 	dc_addrs = talloc_array(talloc_tos(), struct sockaddr_storage,
-				1 + count_site + count_nonsite);
+				count_site + count_nonsite);
 	if (dc_addrs == NULL) {
-		goto fail;
+		goto out;
 	}
 
-	dc_addrs[0] = *pss;
-	num_dcs = 1;
+	num_dcs = 0;
 
-	for (i=0; i<count_site; i++) {
-		add_sockaddr_unique(dc_addrs, &num_dcs, &ip_srv_site[i].ss);
+	for (i = 0; i < count_site; i++) {
+		if (!sockaddr_equal(
+			(const struct sockaddr *)pss,
+			(const struct sockaddr *)&ip_srv_site[i].ss)) {
+			add_sockaddr_unique(dc_addrs, &num_dcs,
+					    &ip_srv_site[i].ss);
+		}
 	}
 
-	for (i=0; i<count_nonsite; i++) {
-		add_sockaddr_unique(dc_addrs, &num_dcs, &ip_srv_nonsite[i].ss);
+	for (i = 0; i < count_nonsite; i++) {
+		if (!sockaddr_equal(
+			(const struct sockaddr *)pss,
+			(const struct sockaddr *)&ip_srv_nonsite[i].ss)) {
+			add_sockaddr_unique(dc_addrs, &num_dcs,
+					    &ip_srv_nonsite[i].ss);
+		}
 	}
 
 	dc_addrs2 = talloc_zero_array(talloc_tos(),
 				      struct tsocket_address *,
 				      num_dcs);
+
+	DEBUG(10, ("%d additional KDCs to test\n", num_dcs));
+	if (num_dcs == 0) {
+		goto out;
+	}
 	if (dc_addrs2 == NULL) {
-		goto fail;
+		goto out;
 	}
 
 	for (i=0; i<num_dcs; i++) {
@@ -721,7 +736,7 @@ static char *get_kdc_ip_string(char *mem_ctx,
 			status = map_nt_error_from_unix(errno);
 			DEBUG(2,("Failed to create tsocket_address for %s - %s\n",
 				 addr, nt_errstr(status)));
-			goto fail;
+			goto out;
 		}
 	}
 
@@ -738,12 +753,7 @@ static char *get_kdc_ip_string(char *mem_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10,("get_kdc_ip_string: cldap_multi_netlogon failed: "
 			  "%s\n", nt_errstr(status)));
-		goto fail;
-	}
-
-	kdc_str = talloc_strdup(mem_ctx, "");
-	if (kdc_str == NULL) {
-		goto fail;
+		goto out;
 	}
 
 	for (i=0; i<num_dcs; i++) {
@@ -754,21 +764,20 @@ static char *get_kdc_ip_string(char *mem_ctx,
 		}
 
 		/* Append to the string - inefficient but not done often. */
-		new_kdc_str = talloc_asprintf(mem_ctx, "%s\tkdc = %s\n",
+		new_kdc_str = talloc_asprintf(mem_ctx, "%s\t\tkdc = %s\n",
 					      kdc_str,
 					      print_canonical_sockaddr_with_port(mem_ctx, &dc_addrs[i]));
 		if (new_kdc_str == NULL) {
-			goto fail;
+			goto out;
 		}
 		TALLOC_FREE(kdc_str);
 		kdc_str = new_kdc_str;
 	}
 
-	DEBUG(10,("get_kdc_ip_string: Returning %s\n",
-		kdc_str ));
+out:
+	DEBUG(10, ("get_kdc_ip_string: Returning %s\n", kdc_str));
 
 	result = kdc_str;
-fail:
 	SAFE_FREE(ip_srv_site);
 	SAFE_FREE(ip_srv_nonsite);
 	TALLOC_FREE(frame);
@@ -870,9 +879,10 @@ bool create_local_private_krb5_conf_for_domain(const char *realm,
 					"[libdefaults]\n\tdefault_realm = %s\n"
 					"\tdefault_tgs_enctypes = %s RC4-HMAC DES-CBC-CRC DES-CBC-MD5\n"
 					"\tdefault_tkt_enctypes = %s RC4-HMAC DES-CBC-CRC DES-CBC-MD5\n"
-					"\tpreferred_enctypes = %s RC4-HMAC DES-CBC-CRC DES-CBC-MD5\n\n"
+					"\tpreferred_enctypes = %s RC4-HMAC DES-CBC-CRC DES-CBC-MD5\n"
+					"\tdns_lookup_realm = false\n\n"
 					"[realms]\n\t%s = {\n"
-					"\t%s\t}\n",
+					"%s\t}\n",
 					realm_upper, aes_enctypes, aes_enctypes, aes_enctypes,
 					realm_upper, kdc_ip_string);
 

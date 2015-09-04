@@ -1,7 +1,6 @@
 <samba:parameter name="default service"
                  context="G"
-                 advanced="1" developer="1"
-				 type="string"
+                 type="string"
                  function="defaultservice"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <synonym>default</synonym>

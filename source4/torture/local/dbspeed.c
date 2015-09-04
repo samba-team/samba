@@ -21,7 +21,7 @@
 
 #include "includes.h"
 #include "system/filesys.h"
-#include "tdb_compat.h"
+#include <tdb.h>
 #include <ldb.h>
 #include <ldb_errors.h>
 #include "ldb_wrap.h"
@@ -99,7 +99,7 @@ static bool test_tdb_speed(struct torture_context *torture, const void *_data)
 		i = random() % torture_entries;
 		key.dptr = (uint8_t *)talloc_asprintf(tmp_ctx, "S-1-5-21-53173311-3623041448-2049097239-%u", i);
 		key.dsize = strlen((char *)key.dptr)+1;
-		data = tdb_fetch_compat(tdbw->tdb, key);
+		data = tdb_fetch(tdbw->tdb, key);
 		talloc_free(key.dptr);
 		if (data.dptr == NULL) {
 			torture_result(torture, TORTURE_FAIL, "Failed to find SID %d!", i);
@@ -108,7 +108,7 @@ static bool test_tdb_speed(struct torture_context *torture, const void *_data)
 		free(data.dptr);
 		key.dptr = (uint8_t *)talloc_asprintf(tmp_ctx, "UID %u", i);
 		key.dsize = strlen((char *)key.dptr)+1;
-		data = tdb_fetch_compat(tdbw->tdb, key);
+		data = tdb_fetch(tdbw->tdb, key);
 		talloc_free(key.dptr);
 		if (data.dptr == NULL) {
 			torture_result(torture, TORTURE_FAIL, "Failed to find UID %d!", i);

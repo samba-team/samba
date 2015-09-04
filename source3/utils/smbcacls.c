@@ -31,14 +31,11 @@
 #include "libsmb/clirap.h"
 #include "passdb/machine_sid.h"
 #include "../librpc/gen_ndr/ndr_lsa_c.h"
+#include "util_sd.h"
 
 static int test_args;
 
 #define CREATE_ACCESS_READ READ_CONTROL_ACCESS
-
-/* numeric is set when the user wants numeric SIDs and ACEs rather
-   than going via LSA calls to resolve them */
-static int numeric;
 
 static int sddl;
 static int query_sec_info = -1;
@@ -50,139 +47,11 @@ enum acl_mode {SMB_ACL_SET, SMB_ACL_DELETE, SMB_ACL_MODIFY, SMB_ACL_ADD };
 enum chown_mode {REQUEST_NONE, REQUEST_CHOWN, REQUEST_CHGRP, REQUEST_INHERIT};
 enum exit_values {EXIT_OK, EXIT_FAILED, EXIT_PARSE_ERROR};
 
-struct perm_value {
-	const char *perm;
-	uint32 mask;
-};
-
-/* These values discovered by inspection */
-
-static const struct perm_value special_values[] = {
-	{ "R", 0x00120089 },
-	{ "W", 0x00120116 },
-	{ "X", 0x001200a0 },
-	{ "D", 0x00010000 },
-	{ "P", 0x00040000 },
-	{ "O", 0x00080000 },
-	{ NULL, 0 },
-};
-
-static const struct perm_value standard_values[] = {
-	{ "READ",   0x001200a9 },
-	{ "CHANGE", 0x001301bf },
-	{ "FULL",   0x001f01ff },
-	{ NULL, 0 },
-};
-
-/* Open cli connection and policy handle */
-
-static NTSTATUS cli_lsa_lookup_sid(struct cli_state *cli,
-				   const struct dom_sid *sid,
-				   TALLOC_CTX *mem_ctx,
-				   enum lsa_SidType *type,
-				   char **domain, char **name)
-{
-	uint16 orig_cnum = cli_state_get_tid(cli);
-	struct rpc_pipe_client *p = NULL;
-	struct policy_handle handle;
-	NTSTATUS status;
-	TALLOC_CTX *frame = talloc_stackframe();
-	enum lsa_SidType *types;
-	char **domains;
-	char **names;
-
-	status = cli_tree_connect(cli, "IPC$", "?????", "", 0);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto tcon_fail;
-	}
-
-	status = cli_rpc_pipe_open_noauth(cli, &ndr_table_lsarpc,
-					  &p);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto fail;
-	}
-
-	status = rpccli_lsa_open_policy(p, talloc_tos(), True,
-					GENERIC_EXECUTE_ACCESS, &handle);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto fail;
-	}
-
-	status = rpccli_lsa_lookup_sids(p, talloc_tos(), &handle, 1, sid,
-					&domains, &names, &types);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto fail;
-	}
-
-	*type = types[0];
-	*domain = talloc_move(mem_ctx, &domains[0]);
-	*name = talloc_move(mem_ctx, &names[0]);
-
-	status = NT_STATUS_OK;
- fail:
-	TALLOC_FREE(p);
-	cli_tdis(cli);
- tcon_fail:
-	cli_state_set_tid(cli, orig_cnum);
-	TALLOC_FREE(frame);
-	return status;
-}
-
-static NTSTATUS cli_lsa_lookup_name(struct cli_state *cli,
-				    const char *name,
-				    enum lsa_SidType *type,
-				    struct dom_sid *sid)
-{
-	uint16 orig_cnum = cli_state_get_tid(cli);
-	struct rpc_pipe_client *p;
-	struct policy_handle handle;
-	NTSTATUS status;
-	TALLOC_CTX *frame = talloc_stackframe();
-	struct dom_sid *sids;
-	enum lsa_SidType *types;
-
-	status = cli_tree_connect(cli, "IPC$", "?????", "", 0);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto tcon_fail;
-	}
-
-	status = cli_rpc_pipe_open_noauth(cli, &ndr_table_lsarpc,
-					  &p);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto fail;
-	}
-
-	status = rpccli_lsa_open_policy(p, talloc_tos(), True,
-					GENERIC_EXECUTE_ACCESS, &handle);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto fail;
-	}
-
-	status = rpccli_lsa_lookup_names(p, talloc_tos(), &handle, 1, &name,
-					 NULL, 1, &sids, &types);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto fail;
-	}
-
-	*type = types[0];
-	*sid = sids[0];
-
-	status = NT_STATUS_OK;
- fail:
-	TALLOC_FREE(p);
-	cli_tdis(cli);
- tcon_fail:
-	cli_state_set_tid(cli, orig_cnum);
-	TALLOC_FREE(frame);
-	return status;
-}
-
-
 static NTSTATUS cli_lsa_lookup_domain_sid(struct cli_state *cli,
 					  struct dom_sid *sid)
 {
 	union lsa_PolicyInformation *info = NULL;
-	uint16 orig_cnum = cli_state_get_tid(cli);
+	uint16_t orig_cnum = cli_state_get_tid(cli);
 	struct rpc_pipe_client *rpc_pipe = NULL;
 	struct policy_handle handle;
 	NTSTATUS status, result;
@@ -251,376 +120,6 @@ static struct dom_sid *get_domain_sid(struct cli_state *cli)
 
 	DEBUG(2,("Domain SID: %s\n", sid_string_dbg(sid)));
 	return sid;
-}
-
-
-/* convert a SID to a string, either numeric or username/group */
-static void SidToString(struct cli_state *cli, fstring str, const struct dom_sid *sid)
-{
-	char *domain = NULL;
-	char *name = NULL;
-	enum lsa_SidType type;
-	NTSTATUS status;
-
-	sid_to_fstring(str, sid);
-
-	if (numeric) {
-		return;
-	}
-
-	status = cli_lsa_lookup_sid(cli, sid, talloc_tos(), &type,
-				    &domain, &name);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		return;
-	}
-
-	if (*domain) {
-		slprintf(str, sizeof(fstring) - 1, "%s%s%s",
-			domain, lp_winbind_separator(), name);
-	} else {
-		fstrcpy(str, name);
-	}
-}
-
-/* convert a string to a SID, either numeric or username/group */
-static bool StringToSid(struct cli_state *cli, struct dom_sid *sid, const char *str)
-{
-	enum lsa_SidType type;
-
-	if (string_to_sid(sid, str)) {
-		return true;
-	}
-
-	return NT_STATUS_IS_OK(cli_lsa_lookup_name(cli, str, &type, sid));
-}
-
-static void print_ace_flags(FILE *f, uint8_t flags)
-{
-	char *str = talloc_strdup(NULL, "");
-
-	if (!str) {
-		goto out;
-	}
-
-	if (flags & SEC_ACE_FLAG_OBJECT_INHERIT) {
-		str = talloc_asprintf(str, "%s%s",
-				str, "OI|");
-		if (!str) {
-			goto out;
-		}
-	}
-	if (flags & SEC_ACE_FLAG_CONTAINER_INHERIT) {
-		str = talloc_asprintf(str, "%s%s",
-				str, "CI|");
-		if (!str) {
-			goto out;
-		}
-	}
-	if (flags & SEC_ACE_FLAG_NO_PROPAGATE_INHERIT) {
-		str = talloc_asprintf(str, "%s%s",
-				str, "NP|");
-		if (!str) {
-			goto out;
-		}
-	}
-	if (flags & SEC_ACE_FLAG_INHERIT_ONLY) {
-		str = talloc_asprintf(str, "%s%s",
-				str, "IO|");
-		if (!str) {
-			goto out;
-		}
-	}
-	if (flags & SEC_ACE_FLAG_INHERITED_ACE) {
-		str = talloc_asprintf(str, "%s%s",
-				str, "I|");
-		if (!str) {
-			goto out;
-		}
-	}
-	/* Ignore define SEC_ACE_FLAG_SUCCESSFUL_ACCESS ( 0x40 )
-	   and SEC_ACE_FLAG_FAILED_ACCESS ( 0x80 ) as they're
-	   audit ace flags. */
-
-	if (str[strlen(str)-1] == '|') {
-		str[strlen(str)-1] = '\0';
-		fprintf(f, "/%s/", str);
-	} else {
-		fprintf(f, "/0x%x/", flags);
-	}
-	TALLOC_FREE(str);
-	return;
-
-  out:
-	fprintf(f, "/0x%x/", flags);
-}
-
-/* print an ACE on a FILE, using either numeric or ascii representation */
-static void print_ace(struct cli_state *cli, FILE *f, struct security_ace *ace)
-{
-	const struct perm_value *v;
-	fstring sidstr;
-	int do_print = 0;
-	uint32 got_mask;
-
-	SidToString(cli, sidstr, &ace->trustee);
-
-	fprintf(f, "%s:", sidstr);
-
-	if (numeric) {
-		fprintf(f, "%d/0x%x/0x%08x",
-			ace->type, ace->flags, ace->access_mask);
-		return;
-	}
-
-	/* Ace type */
-
-	if (ace->type == SEC_ACE_TYPE_ACCESS_ALLOWED) {
-		fprintf(f, "ALLOWED");
-	} else if (ace->type == SEC_ACE_TYPE_ACCESS_DENIED) {
-		fprintf(f, "DENIED");
-	} else {
-		fprintf(f, "%d", ace->type);
-	}
-
-	print_ace_flags(f, ace->flags);
-
-	/* Standard permissions */
-
-	for (v = standard_values; v->perm; v++) {
-		if (ace->access_mask == v->mask) {
-			fprintf(f, "%s", v->perm);
-			return;
-		}
-	}
-
-	/* Special permissions.  Print out a hex value if we have
-	   leftover bits in the mask. */
-
-	got_mask = ace->access_mask;
-
- again:
-	for (v = special_values; v->perm; v++) {
-		if ((ace->access_mask & v->mask) == v->mask) {
-			if (do_print) {
-				fprintf(f, "%s", v->perm);
-			}
-			got_mask &= ~v->mask;
-		}
-	}
-
-	if (!do_print) {
-		if (got_mask != 0) {
-			fprintf(f, "0x%08x", ace->access_mask);
-		} else {
-			do_print = 1;
-			goto again;
-		}
-	}
-}
-
-static bool parse_ace_flags(const char *str, unsigned int *pflags)
-{
-	const char *p = str;
-	*pflags = 0;
-
-	while (*p) {
-		if (strnequal(p, "OI", 2)) {
-			*pflags |= SEC_ACE_FLAG_OBJECT_INHERIT;
-			p += 2;
-		} else if (strnequal(p, "CI", 2)) {
-			*pflags |= SEC_ACE_FLAG_CONTAINER_INHERIT;
-			p += 2;
-		} else if (strnequal(p, "NP", 2)) {
-			*pflags |= SEC_ACE_FLAG_NO_PROPAGATE_INHERIT;
-			p += 2;
-		} else if (strnequal(p, "IO", 2)) {
-			*pflags |= SEC_ACE_FLAG_INHERIT_ONLY;
-			p += 2;
-		} else if (*p == 'I') {
-			*pflags |= SEC_ACE_FLAG_INHERITED_ACE;
-			p += 1;
-		} else if (*p) {
-			return false;
-		}
-
-		switch (*p) {
-		case '|':
-			p++;
-		case '\0':
-			continue;
-		default:
-			return false;
-		}
-	}
-	return true;
-}
-
-/* parse an ACE in the same format as print_ace() */
-static bool parse_ace(struct cli_state *cli, struct security_ace *ace,
-		      const char *orig_str)
-{
-	char *p;
-	const char *cp;
-	char *tok;
-	unsigned int atype = 0;
-	unsigned int aflags = 0;
-	unsigned int amask = 0;
-	struct dom_sid sid;
-	uint32_t mask;
-	const struct perm_value *v;
-	char *str = SMB_STRDUP(orig_str);
-	TALLOC_CTX *frame = talloc_stackframe();
-
-	if (!str) {
-		TALLOC_FREE(frame);
-		return False;
-	}
-
-	ZERO_STRUCTP(ace);
-	p = strchr_m(str,':');
-	if (!p) {
-		printf("ACE '%s': missing ':'.\n", orig_str);
-		SAFE_FREE(str);
-		TALLOC_FREE(frame);
-		return False;
-	}
-	*p = '\0';
-	p++;
-	/* Try to parse numeric form */
-
-	if (sscanf(p, "%u/%u/%u", &atype, &aflags, &amask) == 3 &&
-	    StringToSid(cli, &sid, str)) {
-		goto done;
-	}
-
-	/* Try to parse text form */
-
-	if (!StringToSid(cli, &sid, str)) {
-		printf("ACE '%s': failed to convert '%s' to SID\n",
-			orig_str, str);
-		SAFE_FREE(str);
-		TALLOC_FREE(frame);
-		return False;
-	}
-
-	cp = p;
-	if (!next_token_talloc(frame, &cp, &tok, "/")) {
-		printf("ACE '%s': failed to find '/' character.\n",
-			orig_str);
-		SAFE_FREE(str);
-		TALLOC_FREE(frame);
-		return False;
-	}
-
-	if (strncmp(tok, "ALLOWED", strlen("ALLOWED")) == 0) {
-		atype = SEC_ACE_TYPE_ACCESS_ALLOWED;
-	} else if (strncmp(tok, "DENIED", strlen("DENIED")) == 0) {
-		atype = SEC_ACE_TYPE_ACCESS_DENIED;
-	} else {
-		printf("ACE '%s': missing 'ALLOWED' or 'DENIED' entry at '%s'\n",
-			orig_str, tok);
-		SAFE_FREE(str);
-		TALLOC_FREE(frame);
-		return False;
-	}
-
-	/* Only numeric form accepted for flags at present */
-
-	if (!next_token_talloc(frame, &cp, &tok, "/")) {
-		printf("ACE '%s': bad flags entry at '%s'\n",
-			orig_str, tok);
-		SAFE_FREE(str);
-		TALLOC_FREE(frame);
-		return False;
-	}
-
-	if (tok[0] < '0' || tok[0] > '9') {
-		if (!parse_ace_flags(tok, &aflags)) {
-			printf("ACE '%s': bad named flags entry at '%s'\n",
-				orig_str, tok);
-			SAFE_FREE(str);
-			TALLOC_FREE(frame);
-			return False;
-		}
-	} else if (strnequal(tok, "0x", 2)) {
-		if (!sscanf(tok, "%x", &aflags)) {
-			printf("ACE '%s': bad hex flags entry at '%s'\n",
-				orig_str, tok);
-			SAFE_FREE(str);
-			TALLOC_FREE(frame);
-			return False;
-		}
-	} else {
-		if (!sscanf(tok, "%u", &aflags)) {
-			printf("ACE '%s': bad integer flags entry at '%s'\n",
-				orig_str, tok);
-			SAFE_FREE(str);
-			TALLOC_FREE(frame);
-			return False;
-		}
-	}
-
-	if (!next_token_talloc(frame, &cp, &tok, "/")) {
-		printf("ACE '%s': missing / at '%s'\n",
-			orig_str, tok);
-		SAFE_FREE(str);
-		TALLOC_FREE(frame);
-		return False;
-	}
-
-	if (strncmp(tok, "0x", 2) == 0) {
-		if (sscanf(tok, "%u", &amask) != 1) {
-			printf("ACE '%s': bad hex number at '%s'\n",
-				orig_str, tok);
-			SAFE_FREE(str);
-			TALLOC_FREE(frame);
-			return False;
-		}
-		goto done;
-	}
-
-	for (v = standard_values; v->perm; v++) {
-		if (strcmp(tok, v->perm) == 0) {
-			amask = v->mask;
-			goto done;
-		}
-	}
-
-	p = tok;
-
-	while(*p) {
-		bool found = False;
-
-		for (v = special_values; v->perm; v++) {
-			if (v->perm[0] == *p) {
-				amask |= v->mask;
-				found = True;
-			}
-		}
-
-		if (!found) {
-			printf("ACE '%s': bad permission value at '%s'\n",
-				orig_str, p);
-			SAFE_FREE(str);
-			TALLOC_FREE(frame);
-		 	return False;
-		}
-		p++;
-	}
-
-	if (*p) {
-		TALLOC_FREE(frame);
-		SAFE_FREE(str);
-		return False;
-	}
-
- done:
-	mask = amask;
-	init_sec_ace(ace, &sid, atype, mask, aflags);
-	TALLOC_FREE(frame);
-	SAFE_FREE(str);
-	return True;
 }
 
 /* add an ACE to a list of ACEs in a struct security_acl */
@@ -716,93 +215,13 @@ static struct security_descriptor *sec_desc_parse(TALLOC_CTX *ctx, struct cli_st
 	return ret;
 }
 
-static const struct {
-	uint16_t mask;
-	const char *str;
-	const char *desc;
-} sec_desc_ctrl_bits[] = {
-	{SEC_DESC_OWNER_DEFAULTED,       "OD", "Owner Defaulted"},
-	{SEC_DESC_GROUP_DEFAULTED,       "GD", "Group Defaulted"},
-	{SEC_DESC_DACL_PRESENT,          "DP", "DACL Present"},
-	{SEC_DESC_DACL_DEFAULTED,        "DD", "DACL Defaulted"},
-	{SEC_DESC_SACL_PRESENT,          "SP", "SACL Present"},
-	{SEC_DESC_SACL_DEFAULTED,        "SD", "SACL Defaulted"},
-	{SEC_DESC_DACL_TRUSTED,          "DT", "DACL Trusted"},
-	{SEC_DESC_SERVER_SECURITY,       "SS", "Server Security"},
-	{SEC_DESC_DACL_AUTO_INHERIT_REQ, "DR", "DACL Inheritance Required"},
-	{SEC_DESC_SACL_AUTO_INHERIT_REQ, "SR", "SACL Inheritance Required"},
-	{SEC_DESC_DACL_AUTO_INHERITED,   "DI", "DACL Auto Inherited"},
-	{SEC_DESC_SACL_AUTO_INHERITED,   "SI", "SACL Auto Inherited"},
-	{SEC_DESC_DACL_PROTECTED,        "PD", "DACL Protected"},
-	{SEC_DESC_SACL_PROTECTED,        "PS", "SACL Protected"},
-	{SEC_DESC_RM_CONTROL_VALID,      "RM", "RM Control Valid"},
-	{SEC_DESC_SELF_RELATIVE ,        "SR", "Self Relative"},
-};
-
-static void print_acl_ctrl(FILE *file, uint16_t ctrl)
-{
-	int i;
-	const char* separator = "";
-
-	fprintf(file, "CONTROL:");
-	if (numeric) {
-		fprintf(file, "0x%x\n", ctrl);
-		return;
-	}
-
-	for (i = ARRAY_SIZE(sec_desc_ctrl_bits) - 1; i >= 0; i--) {
-		if (ctrl & sec_desc_ctrl_bits[i].mask) {
-			fprintf(file, "%s%s", separator, sec_desc_ctrl_bits[i].str);
-			separator = "|";
-		}
-	}
-	fputc('\n', file);
-}
-
-/* print a ascii version of a security descriptor on a FILE handle */
-static void sec_desc_print(struct cli_state *cli, FILE *f, struct security_descriptor *sd)
-{
-	fstring sidstr;
-	uint32 i;
-
-	fprintf(f, "REVISION:%d\n", sd->revision);
-	print_acl_ctrl(f, sd->type);
-
-	/* Print owner and group sid */
-
-	if (sd->owner_sid) {
-		SidToString(cli, sidstr, sd->owner_sid);
-	} else {
-		fstrcpy(sidstr, "");
-	}
-
-	fprintf(f, "OWNER:%s\n", sidstr);
-
-	if (sd->group_sid) {
-		SidToString(cli, sidstr, sd->group_sid);
-	} else {
-		fstrcpy(sidstr, "");
-	}
-
-	fprintf(f, "GROUP:%s\n", sidstr);
-
-	/* Print aces */
-	for (i = 0; sd->dacl && i < sd->dacl->num_aces; i++) {
-		struct security_ace *ace = &sd->dacl->aces[i];
-		fprintf(f, "ACL:");
-		print_ace(cli, f, ace);
-		fprintf(f, "\n");
-	}
-
-}
-
 /*****************************************************
 get fileinfo for filename
 *******************************************************/
-static uint16 get_fileinfo(struct cli_state *cli, const char *filename)
+static uint16_t get_fileinfo(struct cli_state *cli, const char *filename)
 {
 	uint16_t fnum = (uint16_t)-1;
-	uint16 mode = 0;
+	uint16_t mode = 0;
 	NTSTATUS status;
 
 	/* The desired access below is the only one I could find that works
@@ -942,7 +361,7 @@ static bool set_secdesc(struct cli_state *cli, const char *filename,
 /*****************************************************
 dump the acls for a file
 *******************************************************/
-static int cacl_dump(struct cli_state *cli, const char *filename)
+static int cacl_dump(struct cli_state *cli, const char *filename, bool numeric)
 {
 	struct security_descriptor *sd;
 
@@ -963,7 +382,7 @@ static int cacl_dump(struct cli_state *cli, const char *filename)
 		printf("%s\n", str);
 		TALLOC_FREE(str);
 	} else {
-		sec_desc_print(cli, stdout, sd);
+		sec_desc_print(cli, stdout, sd, numeric);
 	}
 
 	return EXIT_OK;
@@ -1046,7 +465,7 @@ static int ace_compare(struct security_ace *ace1, struct security_ace *ace2)
 
 static void sort_acl(struct security_acl *the_acl)
 {
-	uint32 i;
+	uint32_t i;
 	if (!the_acl) return;
 
 	TYPESAFE_QSORT(the_acl->aces, the_acl->num_aces, ace_compare);
@@ -1070,10 +489,10 @@ set the ACLs on a file given an ascii description
 *******************************************************/
 
 static int cacl_set(struct cli_state *cli, const char *filename,
-		    char *the_acl, enum acl_mode mode)
+		    char *the_acl, enum acl_mode mode, bool numeric)
 {
 	struct security_descriptor *sd, *old;
-	uint32 i, j;
+	uint32_t i, j;
 	size_t sd_size;
 	int result = EXIT_OK;
 
@@ -1101,7 +520,7 @@ static int cacl_set(struct cli_state *cli, const char *filename,
 			for (j=0;old->dacl && j<old->dacl->num_aces;j++) {
 				if (security_ace_equal(&sd->dacl->aces[i],
 						       &old->dacl->aces[j])) {
-					uint32 k;
+					uint32_t k;
 					for (k=j; k<old->dacl->num_aces-1;k++) {
 						old->dacl->aces[k] = old->dacl->aces[k+1];
 					}
@@ -1113,7 +532,8 @@ static int cacl_set(struct cli_state *cli, const char *filename,
 
 			if (!found) {
 				printf("ACL for ACE:");
-				print_ace(cli, stdout, &sd->dacl->aces[i]);
+				print_ace(cli, stdout, &sd->dacl->aces[i],
+					  numeric);
 				printf(" not found\n");
 			}
 		}
@@ -1135,7 +555,8 @@ static int cacl_set(struct cli_state *cli, const char *filename,
 				fstring str;
 
 				SidToString(cli, str,
-					    &sd->dacl->aces[i].trustee);
+					    &sd->dacl->aces[i].trustee,
+					    numeric);
 				printf("ACL for SID %s not found\n", str);
 			}
 		}
@@ -1191,7 +612,7 @@ static int inherit(struct cli_state *cli, const char *filename,
                    const char *type)
 {
 	struct security_descriptor *old,*sd;
-	uint32 oldattr;
+	uint32_t oldattr;
 	size_t sd_size;
 	int result = EXIT_OK;
 
@@ -1368,6 +789,10 @@ int main(int argc, char *argv[])
 	char *path;
 	char *filename = NULL;
 	poptContext pc;
+	/* numeric is set when the user wants numeric SIDs and ACEs rather
+	   than going via LSA calls to resolve them */
+	int numeric;
+
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
 		{ "delete", 'D', POPT_ARG_STRING, NULL, 'D', "Delete an acl", "ACL" },
@@ -1400,7 +825,7 @@ int main(int argc, char *argv[])
 	char *server;
 	struct user_auth_info *auth_info;
 
-	load_case_tables();
+	smb_init_locale();
 
 	/* set default debug level to 1 regardless of what smb.conf sets */
 	setup_logging( "smbcacls", DEBUG_STDERR);
@@ -1530,9 +955,9 @@ int main(int argc, char *argv[])
 	} else if (change_mode != REQUEST_NONE) {
 		result = owner_set(cli, change_mode, filename, owner_username);
 	} else if (the_acl) {
-		result = cacl_set(cli, filename, the_acl, mode);
+		result = cacl_set(cli, filename, the_acl, mode, numeric);
 	} else {
-		result = cacl_dump(cli, filename);
+		result = cacl_dump(cli, filename, numeric);
 	}
 
 	TALLOC_FREE(frame);

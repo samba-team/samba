@@ -689,9 +689,9 @@ static NTSTATUS fetch_domain_info(TALLOC_CTX *mem_ctx,
 			nt_errstr(status));
 	}
 
-	u_max_age = uint64s_nt_time_to_unix_abs((uint64 *)&r->max_password_age);
-	u_min_age = uint64s_nt_time_to_unix_abs((uint64 *)&r->min_password_age);
-	u_logout = uint64s_nt_time_to_unix_abs((uint64 *)&r->force_logoff_time);
+	u_max_age = uint64s_nt_time_to_unix_abs((uint64_t *)&r->max_password_age);
+	u_min_age = uint64s_nt_time_to_unix_abs((uint64_t *)&r->min_password_age);
+	u_logout = uint64s_nt_time_to_unix_abs((uint64_t *)&r->force_logoff_time);
 
 	domname = r->domain_name.string;
 	if (!domname) {
@@ -714,15 +714,15 @@ static NTSTATUS fetch_domain_info(TALLOC_CTX *mem_ctx,
 		return nt_status;
 
 	if (!pdb_set_account_policy(PDB_POLICY_MAX_PASSWORD_AGE,
-				    (uint32)u_max_age))
+				    (uint32_t)u_max_age))
 		return nt_status;
 
 	if (!pdb_set_account_policy(PDB_POLICY_MIN_PASSWORD_AGE,
-				    (uint32)u_min_age))
+				    (uint32_t)u_min_age))
 		return nt_status;
 
 	if (!pdb_set_account_policy(PDB_POLICY_TIME_TO_LOGOUT,
-				    (uint32)u_logout))
+				    (uint32_t)u_logout))
 		return nt_status;
 
 	if (lockstr) {

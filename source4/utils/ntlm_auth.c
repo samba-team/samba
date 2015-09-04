@@ -796,8 +796,6 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 				SAFE_FREE(error_string);
 			} else {
 				static char zeros[16];
-				char *hex_lm_key;
-				char *hex_user_session_key;
 
 				mux_printf(mux_id, "Authenticated: Yes\n");
 
@@ -805,22 +803,22 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 				    && lm_key.length 
 				    && (memcmp(zeros, lm_key.data, 
 								lm_key.length) != 0)) {
-					hex_encode(lm_key.data,
-						   lm_key.length,
-						   &hex_lm_key);
+					char hex_lm_key[lm_key.length*2+1];
+					hex_encode_buf(hex_lm_key, lm_key.data,
+						       lm_key.length);
 					mux_printf(mux_id, "LANMAN-Session-Key: %s\n", hex_lm_key);
-					SAFE_FREE(hex_lm_key);
 				}
 
 				if (ntlm_server_1_user_session_key 
 				    && user_session_key.length 
 				    && (memcmp(zeros, user_session_key.data, 
 					       user_session_key.length) != 0)) {
-					hex_encode(user_session_key.data, 
-						   user_session_key.length, 
-						   &hex_user_session_key);
+					char hex_user_session_key[
+						user_session_key.length*2+1];
+					hex_encode_buf(hex_user_session_key,
+						       user_session_key.data,
+						       user_session_key.length);
 					mux_printf(mux_id, "User-Session-Key: %s\n", hex_user_session_key);
-					SAFE_FREE(hex_user_session_key);
 				}
 			}
 		}

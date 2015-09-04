@@ -26,6 +26,8 @@
 #include "system/network.h"
 #include "tsocket.h"
 #include "tsocket_internal.h"
+#include "lib/util/iov_buf.h"
+#include "lib/util/blocking.h"
 
 static int tsocket_bsd_error_from_errno(int ret,
 					int sys_errno,
@@ -83,7 +85,8 @@ static int tsocket_bsd_common_prepare_fd(int fd, bool high_fd)
 	int fds[3];
 	int num_fds = 0;
 
-	int result, flags;
+	int result;
+	bool ok;
 
 	if (fd == -1) {
 		return -1;
@@ -108,40 +111,16 @@ static int tsocket_bsd_common_prepare_fd(int fd, bool high_fd)
 		}
 	}
 
-	/* fd should be nonblocking. */
-
-#ifdef O_NONBLOCK
-#define FLAG_TO_SET O_NONBLOCK
-#else
-#ifdef SYSV
-#define FLAG_TO_SET O_NDELAY
-#else /* BSD */
-#define FLAG_TO_SET FNDELAY
-#endif
-#endif
-
-	if ((flags = fcntl(fd, F_GETFL)) == -1) {
+	result = set_blocking(fd, false);
+	if (result == -1) {
 		goto fail;
 	}
 
-	flags |= FLAG_TO_SET;
-	if (fcntl(fd, F_SETFL, flags) == -1) {
+	ok = smb_set_close_on_exec(fd);
+	if (!ok) {
 		goto fail;
 	}
 
-#undef FLAG_TO_SET
-
-	/* fd should be closed on exec() */
-#ifdef FD_CLOEXEC
-	result = flags = fcntl(fd, F_GETFD, 0);
-	if (flags >= 0) {
-		flags |= FD_CLOEXEC;
-		result = fcntl(fd, F_SETFD, flags);
-	}
-	if (result < 0) {
-		goto fail;
-	}
-#endif
 	return fd;
 
  fail:
@@ -876,7 +855,7 @@ static struct tevent_req *tdgram_bsd_recvfrom_send(TALLOC_CTX *mem_ctx,
 		 * recvfrom if the caller asked for it.
 		 *
 		 * This is needed because in most cases
-		 * we preferr to flush send buffers before
+		 * we prefer to flush send buffers before
 		 * receiving incoming requests.
 		 */
 		tdgram_bsd_recvfrom_handler(req);
@@ -1117,7 +1096,7 @@ static void tdgram_bsd_sendto_handler(void *private_data)
 				 sizeof(bufsize));
 		if (ret == 0) {
 			/*
-			 * We do the rety here, rather then via the
+			 * We do the retry here, rather then via the
 			 * handler, as we only want to retry once for
 			 * this condition, so if there is a mismatch
 			 * between what setsockopt() accepts and what can
@@ -1409,6 +1388,30 @@ static int tdgram_bsd_dgram_socket(const struct tsocket_address *local,
 	return 0;
 }
 
+int _tdgram_bsd_existing_socket(TALLOC_CTX *mem_ctx,
+				int fd,
+				struct tdgram_context **_dgram,
+				const char *location)
+{
+	struct tdgram_context *dgram;
+	struct tdgram_bsd *bsds;
+
+	dgram = tdgram_context_create(mem_ctx,
+				      &tdgram_bsd_ops,
+				      &bsds,
+				      struct tdgram_bsd,
+				      location);
+	if (!dgram) {
+		return -1;
+	}
+	ZERO_STRUCTP(bsds);
+	bsds->fd = fd;
+	talloc_set_destructor(bsds, tdgram_bsd_destructor);
+
+	*_dgram = dgram;
+	return 0;
+}
+
 int _tdgram_inet_udp_socket(const struct tsocket_address *local,
 			    const struct tsocket_address *remote,
 			    TALLOC_CTX *mem_ctx,
@@ -1433,6 +1436,36 @@ int _tdgram_inet_udp_socket(const struct tsocket_address *local,
 	}
 
 	ret = tdgram_bsd_dgram_socket(local, remote, false,
+				      mem_ctx, dgram, location);
+
+	return ret;
+}
+
+int _tdgram_inet_udp_broadcast_socket(const struct tsocket_address *local,
+				      TALLOC_CTX *mem_ctx,
+				      struct tdgram_context **dgram,
+				      const char *location)
+{
+	struct tsocket_address_bsd *lbsda =
+		talloc_get_type_abort(local->private_data,
+		struct tsocket_address_bsd);
+	int ret;
+
+	switch (lbsda->u.sa.sa_family) {
+	case AF_INET:
+		break;
+#ifdef HAVE_IPV6
+	case AF_INET6:
+		/* only ipv4 */
+		errno = EINVAL;
+		return -1;
+#endif
+	default:
+		errno = EINVAL;
+		return -1;
+	}
+
+	ret = tdgram_bsd_dgram_socket(local, NULL, true,
 				      mem_ctx, dgram, location);
 
 	return ret;
@@ -1713,7 +1746,7 @@ static struct tevent_req *tstream_bsd_readv_send(TALLOC_CTX *mem_ctx,
 		 * readv if the caller asked for it.
 		 *
 		 * This is needed because in most cases
-		 * we preferr to flush send buffers before
+		 * we prefer to flush send buffers before
 		 * receiving incoming requests.
 		 */
 		tstream_bsd_readv_handler(req);
@@ -1747,7 +1780,8 @@ static void tstream_bsd_readv_handler(void *private_data)
 	struct tstream_bsd *bsds = tstream_context_data(stream, struct tstream_bsd);
 	int ret;
 	int err;
-	bool retry;
+	int _count;
+	bool ok, retry;
 
 	ret = readv(bsds->fd, state->vector, state->count);
 	if (ret == 0) {
@@ -1766,31 +1800,13 @@ static void tstream_bsd_readv_handler(void *private_data)
 
 	state->ret += ret;
 
-	while (ret > 0) {
-		if (ret < state->vector[0].iov_len) {
-			uint8_t *base;
-			base = (uint8_t *)state->vector[0].iov_base;
-			base += ret;
-			state->vector[0].iov_base = (void *)base;
-			state->vector[0].iov_len -= ret;
-			break;
-		}
-		ret -= state->vector[0].iov_len;
-		state->vector += 1;
-		state->count -= 1;
-	}
+	_count = state->count; /* tstream has size_t count, readv has int */
+	ok = iov_advance(&state->vector, &_count, ret);
+	state->count = _count;
 
-	/*
-	 * there're maybe some empty vectors at the end
-	 * which we need to skip, otherwise we would get
-	 * ret == 0 from the readv() call and return EPIPE
-	 */
-	while (state->count > 0) {
-		if (state->vector[0].iov_len > 0) {
-			break;
-		}
-		state->vector += 1;
-		state->count -= 1;
+	if (!ok) {
+		tevent_req_error(req, EINVAL);
+		return;
 	}
 
 	if (state->count > 0) {
@@ -1907,7 +1923,8 @@ static void tstream_bsd_writev_handler(void *private_data)
 	struct tstream_bsd *bsds = tstream_context_data(stream, struct tstream_bsd);
 	ssize_t ret;
 	int err;
-	bool retry;
+	int _count;
+	bool ok, retry;
 
 	ret = writev(bsds->fd, state->vector, state->count);
 	if (ret == 0) {
@@ -1926,31 +1943,13 @@ static void tstream_bsd_writev_handler(void *private_data)
 
 	state->ret += ret;
 
-	while (ret > 0) {
-		if (ret < state->vector[0].iov_len) {
-			uint8_t *base;
-			base = (uint8_t *)state->vector[0].iov_base;
-			base += ret;
-			state->vector[0].iov_base = (void *)base;
-			state->vector[0].iov_len -= ret;
-			break;
-		}
-		ret -= state->vector[0].iov_len;
-		state->vector += 1;
-		state->count -= 1;
-	}
+	_count = state->count; /* tstream has size_t count, writev has int */
+	ok = iov_advance(&state->vector, &_count, ret);
+	state->count = _count;
 
-	/*
-	 * there're maybe some empty vectors at the end
-	 * which we need to skip, otherwise we would get
-	 * ret == 0 from the writev() call and return EPIPE
-	 */
-	while (state->count > 0) {
-		if (state->vector[0].iov_len > 0) {
-			break;
-		}
-		state->vector += 1;
-		state->count -= 1;
+	if (!ok) {
+		tevent_req_error(req, EINVAL);
+		return;
 	}
 
 	if (state->count > 0) {

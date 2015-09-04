@@ -62,7 +62,7 @@ static int convert_fn(struct db_record *rec, void *private_data)
 	char *p;
 	NTSTATUS status;
 	struct dom_sid sid;
-	uint32 rid;
+	uint32_t rid;
 	fstring keystr;
 	fstring dom_name;
 	TDB_DATA key;
@@ -145,7 +145,7 @@ static int convert_fn(struct db_record *rec, void *private_data)
 
 static bool idmap_tdb_upgrade(struct idmap_domain *dom, struct db_context *db)
 {
-	int32 vers;
+	int32_t vers;
 	struct convert_fn_state s;
 	NTSTATUS status;
 
@@ -161,7 +161,7 @@ static bool idmap_tdb_upgrade(struct idmap_domain *dom, struct db_context *db)
 		 * big endian machine and will need byte-reversing.
 		 */
 
-		int32 wm;
+		int32_t wm;
 
 		status = dbwrap_fetch_int32_bystring(db, HWM_USER, &wm);
 		if (!NT_STATUS_IS_OK(status)) {

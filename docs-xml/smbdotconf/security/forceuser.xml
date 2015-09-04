@@ -1,5 +1,5 @@
 <samba:parameter name="force user"
-				 type="string"
+                 type="string"
                  context="S"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>

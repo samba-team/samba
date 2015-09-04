@@ -142,6 +142,15 @@ static int linux_statvfs(const char *path, vfs_statvfs_struct *statbuf)
 #endif
 		if (statvfs_buf.f_flag & ST_RDONLY)
 			statbuf->FsCapabilities |= FILE_READ_ONLY_VOLUME;
+
+#if defined(HAVE_FALLOC_FL_PUNCH_HOLE) && defined(HAVE_LSEEK_HOLE_DATA)
+		/*
+		 * Only flag sparse file support if ZERO_DATA can be used to
+		 * deallocate blocks, and SEEK_HOLE / SEEK_DATA can be used
+		 * to provide QUERY_ALLOCATED_RANGES information.
+		 */
+		statbuf->FsCapabilities |= FILE_SUPPORTS_SPARSE_FILES;
+#endif
 	}
 	return result;
 }

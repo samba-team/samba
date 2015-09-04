@@ -1,10 +1,6 @@
 SRC = '''dbwrap.c dbwrap_util.c dbwrap_rbt.c dbwrap_cache.c dbwrap_tdb.c
          dbwrap_local_open.c'''
-DEPS= '''samba-util util_tdb errors tdb tdb-wrap'''
-
-if not bld.env.disable_ntdb:
-   SRC += " dbwrap_ntdb.c"
-   DEPS += " util_ntdb"
+DEPS= '''samba-util util_tdb errors tdb tdb-wrap samba-hostconfig'''
 
 bld.SAMBA_LIBRARY('dbwrap',
                   source=SRC,

@@ -706,6 +706,9 @@ static const char *blob2string_talloc(TALLOC_CTX *mem_ctx,
 				      DATA_BLOB blob)
 {
 	char *result = talloc_array(mem_ctx, char, blob.length+1);
+	if (result == NULL) {
+		return NULL;
+	}
 	memcpy(result, blob.data, blob.length);
 	result[blob.length] = '\0';
 	return result;
@@ -720,7 +723,7 @@ bool asn1_read_OctetString_talloc(TALLOC_CTX *mem_ctx,
 		return false;
 	*result = blob2string_talloc(mem_ctx, string);
 	data_blob_free(&string);
-	return true;
+	return *result ? true : false;
 }
 
 static bool ldap_decode_response(TALLOC_CTX *mem_ctx,
@@ -868,6 +871,9 @@ static struct ldb_parse_tree *ldap_decode_filter_tree(TALLOC_CTX *mem_ctx,
 
 		ret->operation = LDB_OP_SUBSTRING;
 		ret->u.substring.attr = talloc_strndup(ret, (char *)attr.data, attr.length);
+		if (ret->u.substring.attr == NULL) {
+			goto failed;
+		}
 		ret->u.substring.chunks = NULL;
 		ret->u.substring.start_with_wildcard = 1;
 		ret->u.substring.end_with_wildcard = 1;
@@ -1073,6 +1079,9 @@ static struct ldb_parse_tree *ldap_decode_filter_tree(TALLOC_CTX *mem_ctx,
 				ret->u.extended.attr = talloc_steal(ret, attr);
 			} else {
 				ret->u.extended.attr = talloc_strdup(ret, "*");
+				if (ret->u.extended.attr == NULL) {
+					goto failed;
+				}
 			}
 			ret->u.extended.rule_id      = talloc_steal(ret, oid);
 			ret->u.extended.value.data   = (uint8_t *)talloc_steal(ret, value);

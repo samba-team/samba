@@ -316,6 +316,12 @@ class PosixAclMappingTests(TestCaseInTempDir):
         self.assertEquals(facl.as_sddl(domsid),acl)
         posix_acl = smbd.get_sys_acl(self.tempf, smb_acl.SMB_ACL_TYPE_ACCESS)
 
+        nwrap_module_so_path = os.getenv('NSS_WRAPPER_MODULE_SO_PATH')
+        nwrap_module_fn_prefix = os.getenv('NSS_WRAPPER_MODULE_FN_PREFIX')
+
+        nwrap_winbind_active = (nwrap_module_so_path != "" and
+                nwrap_module_fn_prefix == "winbind")
+
         LA_sid = security.dom_sid(str(domsid)+"-"+str(security.DOMAIN_RID_ADMINISTRATOR))
         BA_sid = security.dom_sid(security.SID_BUILTIN_ADMINISTRATORS)
         SO_sid = security.dom_sid(security.SID_BUILTIN_SERVER_OPERATORS)
@@ -324,7 +330,7 @@ class PosixAclMappingTests(TestCaseInTempDir):
 
         s4_passdb = passdb.PDB(self.lp.get("passdb backend"))
 
-        # These assertions correct for current plugin_s4_dc selftest
+        # These assertions correct for current ad_dc selftest
         # configuration.  When other environments have a broad range of
         # groups mapped via passdb, we can relax some of these checks
         (LA_uid,LA_type) = s4_passdb.sid_to_id(LA_sid)
@@ -345,14 +351,20 @@ class PosixAclMappingTests(TestCaseInTempDir):
         self.assertEquals(posix_acl.acl[0].info.gid, BA_gid)
 
         self.assertEquals(posix_acl.acl[1].a_type, smb_acl.SMB_ACL_USER)
-        self.assertEquals(posix_acl.acl[1].a_perm, 6)
+        if nwrap_winbind_active:
+            self.assertEquals(posix_acl.acl[1].a_perm, 7)
+        else:
+            self.assertEquals(posix_acl.acl[1].a_perm, 6)
         self.assertEquals(posix_acl.acl[1].info.uid, LA_uid)
 
         self.assertEquals(posix_acl.acl[2].a_type, smb_acl.SMB_ACL_OTHER)
         self.assertEquals(posix_acl.acl[2].a_perm, 0)
 
         self.assertEquals(posix_acl.acl[3].a_type, smb_acl.SMB_ACL_USER_OBJ)
-        self.assertEquals(posix_acl.acl[3].a_perm, 6)
+        if nwrap_winbind_active:
+            self.assertEquals(posix_acl.acl[3].a_perm, 7)
+        else:
+            self.assertEquals(posix_acl.acl[3].a_perm, 6)
 
         self.assertEquals(posix_acl.acl[4].a_type, smb_acl.SMB_ACL_USER)
         self.assertEquals(posix_acl.acl[4].a_perm, 7)
@@ -458,7 +470,7 @@ class PosixAclMappingTests(TestCaseInTempDir):
 
         s4_passdb = passdb.PDB(self.lp.get("passdb backend"))
 
-        # These assertions correct for current plugin_s4_dc selftest
+        # These assertions correct for current ad_dc selftest
         # configuration.  When other environments have a broad range of
         # groups mapped via passdb, we can relax some of these checks
         (LA_uid,LA_type) = s4_passdb.sid_to_id(LA_sid)
@@ -552,7 +564,7 @@ class PosixAclMappingTests(TestCaseInTempDir):
 
         s4_passdb = passdb.PDB(self.lp.get("passdb backend"))
 
-        # These assertions correct for current plugin_s4_dc selftest
+        # These assertions correct for current ad_dc selftest
         # configuration.  When other environments have a broad range of
         # groups mapped via passdb, we can relax some of these checks
         (LA_uid,LA_type) = s4_passdb.sid_to_id(LA_sid)
@@ -650,6 +662,12 @@ class PosixAclMappingTests(TestCaseInTempDir):
         self.assertEquals(facl.as_sddl(domsid),acl)
         posix_acl = smbd.get_sys_acl(self.tempf, smb_acl.SMB_ACL_TYPE_ACCESS)
 
+        nwrap_module_so_path = os.getenv('NSS_WRAPPER_MODULE_SO_PATH')
+        nwrap_module_fn_prefix = os.getenv('NSS_WRAPPER_MODULE_FN_PREFIX')
+
+        nwrap_winbind_active = (nwrap_module_so_path != "" and
+                nwrap_module_fn_prefix == "winbind")
+
         LA_sid = security.dom_sid(str(domsid)+"-"+str(security.DOMAIN_RID_ADMINISTRATOR))
         BA_sid = security.dom_sid(security.SID_BUILTIN_ADMINISTRATORS)
         SO_sid = security.dom_sid(security.SID_BUILTIN_SERVER_OPERATORS)
@@ -659,7 +677,7 @@ class PosixAclMappingTests(TestCaseInTempDir):
 
         s4_passdb = passdb.PDB(self.lp.get("passdb backend"))
 
-        # These assertions correct for current plugin_s4_dc selftest
+        # These assertions correct for current ad_dc selftest
         # configuration.  When other environments have a broad range of
         # groups mapped via passdb, we can relax some of these checks
         (LA_uid,LA_type) = s4_passdb.sid_to_id(LA_sid)
@@ -682,14 +700,20 @@ class PosixAclMappingTests(TestCaseInTempDir):
         self.assertEquals(posix_acl.acl[0].info.gid, BA_gid)
 
         self.assertEquals(posix_acl.acl[1].a_type, smb_acl.SMB_ACL_USER)
-        self.assertEquals(posix_acl.acl[1].a_perm, 6)
+        if nwrap_winbind_active:
+            self.assertEquals(posix_acl.acl[1].a_perm, 7)
+        else:
+            self.assertEquals(posix_acl.acl[1].a_perm, 6)
         self.assertEquals(posix_acl.acl[1].info.uid, LA_uid)
 
         self.assertEquals(posix_acl.acl[2].a_type, smb_acl.SMB_ACL_OTHER)
         self.assertEquals(posix_acl.acl[2].a_perm, 0)
 
         self.assertEquals(posix_acl.acl[3].a_type, smb_acl.SMB_ACL_USER_OBJ)
-        self.assertEquals(posix_acl.acl[3].a_perm, 6)
+        if nwrap_winbind_active:
+            self.assertEquals(posix_acl.acl[3].a_perm, 7)
+        else:
+            self.assertEquals(posix_acl.acl[3].a_perm, 6)
 
         self.assertEquals(posix_acl.acl[4].a_type, smb_acl.SMB_ACL_USER)
         self.assertEquals(posix_acl.acl[4].a_perm, 7)

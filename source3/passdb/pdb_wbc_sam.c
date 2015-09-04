@@ -91,7 +91,7 @@ static bool pdb_wbc_sam_id_to_sid(struct pdb_methods *methods, struct unixid *id
 static NTSTATUS pdb_wbc_sam_enum_group_members(struct pdb_methods *methods,
 					       TALLOC_CTX *mem_ctx,
 					       const struct dom_sid *group,
-					       uint32 **pp_member_rids,
+					       uint32_t **pp_member_rids,
 					       size_t *p_num_members)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
@@ -134,7 +134,7 @@ static NTSTATUS pdb_wbc_sam_enum_group_memberships(struct pdb_methods *methods,
 static NTSTATUS pdb_wbc_sam_lookup_rids(struct pdb_methods *methods,
 					const struct dom_sid *domain_sid,
 					int num_rids,
-					uint32 *rids,
+					uint32_t *rids,
 					const char **names,
 					enum lsa_SidType *attrs)
 {
@@ -227,7 +227,7 @@ static bool pdb_wbc_sam_del_trusteddom_pw(struct pdb_methods *methods,
 
 static NTSTATUS pdb_wbc_sam_enum_trusteddoms(struct pdb_methods *methods,
 					     TALLOC_CTX *mem_ctx,
-					     uint32 *num_domains,
+					     uint32_t *num_domains,
 					     struct trustdom_info ***domains)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
@@ -395,7 +395,7 @@ static NTSTATUS pdb_wbc_sam_alias_memberships(struct pdb_methods *methods,
 				       const struct dom_sid *domain_sid,
 				       const struct dom_sid *members,
 				       size_t num_members,
-				       uint32 **pp_alias_rids,
+				       uint32_t **pp_alias_rids,
 				       size_t *p_num_alias_rids)
 {
 	if (!winbind_get_sid_aliases(mem_ctx, domain_sid,

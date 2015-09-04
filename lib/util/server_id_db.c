@@ -74,6 +74,11 @@ void server_id_db_reinit(struct server_id_db *db, struct server_id pid)
 	TALLOC_FREE(db->names);
 }
 
+struct server_id server_id_db_pid(struct server_id_db *db)
+{
+	return db->pid;
+}
+
 static int server_id_db_destructor(struct server_id_db *db)
 {
 	char *name = NULL;
@@ -118,22 +123,18 @@ int server_id_db_add(struct server_id_db *db, const char *name)
 	return 0;
 }
 
-int server_id_db_remove(struct server_id_db *db, const char *name)
+int server_id_db_prune_name(struct server_id_db *db, const char *name,
+			    struct server_id server)
 {
 	struct tdb_context *tdb = db->tdb->tdb;
 	struct server_id_buf buf;
 	TDB_DATA key;
 	uint8_t *data;
-	char *ids, *n, *id;
+	char *ids, *id;
 	int ret;
 
-	n = strv_find(db->names, name);
-	if (n == NULL) {
-		return ENOENT;
-	}
-
 	key = string_term_tdb_data(name);
-	server_id_str_buf(db->pid, &buf);
+	server_id_str_buf(server, &buf);
 
 	ret = tdb_chainlock(tdb, key);
 	if (ret == -1) {
@@ -162,9 +163,22 @@ int server_id_db_remove(struct server_id_db *db, const char *name)
 
 	tdb_chainunlock(tdb, key);
 
-	if (ret == -1) {
-		enum TDB_ERROR err = tdb_error(tdb);
-		return map_unix_error_from_tdb(err);
+	return 0;
+}
+
+int server_id_db_remove(struct server_id_db *db, const char *name)
+{
+	char *n;
+	int ret;
+
+	n = strv_find(db->names, name);
+	if (n == NULL) {
+		return ENOENT;
+	}
+
+	ret = server_id_db_prune_name(db, name, db->pid);
+	if (ret != 0) {
+		return ret;
 	}
 
 	strv_delete(&db->names, n);

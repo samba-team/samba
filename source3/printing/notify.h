@@ -29,35 +29,35 @@ void print_notify_send_messages(struct messaging_context *msg_ctx,
 				unsigned int timeout);
 void notify_printer_status_byname(struct tevent_context *ev,
 				  struct messaging_context *msg_ctx,
-				  const char *sharename, uint32 status);
+				  const char *sharename, uint32_t status);
 void notify_printer_status(struct tevent_context *ev,
 			   struct messaging_context *msg_ctx,
-			   int snum, uint32 status);
+			   int snum, uint32_t status);
 void notify_job_status_byname(struct tevent_context *ev,
 			      struct messaging_context *msg_ctx,
-			      const char *sharename, uint32 jobid,
-			      uint32 status,
-			      uint32 flags);
+			      const char *sharename, uint32_t jobid,
+			      uint32_t status,
+			      uint32_t flags);
 void notify_job_status(struct tevent_context *ev,
 		       struct messaging_context *msg_ctx,
-		       const char *sharename, uint32 jobid, uint32 status);
+		       const char *sharename, uint32_t jobid, uint32_t status);
 void notify_job_total_bytes(struct tevent_context *ev,
 			    struct messaging_context *msg_ctx,
-			    const char *sharename, uint32 jobid,
-			    uint32 size);
+			    const char *sharename, uint32_t jobid,
+			    uint32_t size);
 void notify_job_total_pages(struct tevent_context *ev,
 			    struct messaging_context *msg_ctx,
-			    const char *sharename, uint32 jobid,
-			    uint32 pages);
+			    const char *sharename, uint32_t jobid,
+			    uint32_t pages);
 void notify_job_username(struct tevent_context *ev,
 			 struct messaging_context *msg_ctx,
-			 const char *sharename, uint32 jobid, char *name);
+			 const char *sharename, uint32_t jobid, char *name);
 void notify_job_name(struct tevent_context *ev,
 		     struct messaging_context *msg_ctx,
-		     const char *sharename, uint32 jobid, char *name);
+		     const char *sharename, uint32_t jobid, char *name);
 void notify_job_submitted(struct tevent_context *ev,
 			  struct messaging_context *msg_ctx,
-			  const char *sharename, uint32 jobid,
+			  const char *sharename, uint32_t jobid,
 			  time_t submitted);
 void notify_printer_driver(struct tevent_context *ev,
 			   struct messaging_context *msg_ctx,
@@ -79,7 +79,7 @@ void notify_printer_location(struct tevent_context *ev,
 			     int snum, const char *location);
 void notify_printer_byname(struct tevent_context *ev,
 			   struct messaging_context *msg_ctx,
-			   const char *printername, uint32 change,
+			   const char *printername, uint32_t change,
 			   const char *value);
 void notify_printer_sepfile(struct tevent_context *ev,
 			    struct messaging_context *msg_ctx,

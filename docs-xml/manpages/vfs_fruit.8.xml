@@ -7,7 +7,7 @@
 	<manvolnum>8</manvolnum>
 	<refmiscinfo class="source">Samba</refmiscinfo>
 	<refmiscinfo class="manual">System Administration tools</refmiscinfo>
-	<refmiscinfo class="version">4.2</refmiscinfo>
+	<refmiscinfo class="version">4.3</refmiscinfo>
 </refmeta>
 
 
@@ -185,6 +185,44 @@
 		<listitem><para>readdir_attr:aapl_max_access = true | false</para></listitem>
 	      </itemizedlist>
 
+	    </listitem>
+	  </varlistentry>
+
+	  <varlistentry>
+	    <term>fruit:nfs_aces = yes | no</term>
+	    <listitem>
+	      <para>Whether support for querying and modifying the
+	      UNIX mode of directory entries via NFS ACEs is enabled,
+	      default <emphasis>yes</emphasis>.</para>
+	    </listitem>
+	  </varlistentry>
+
+	  <varlistentry>
+	    <term>fruit:veto_appledouble = yes | no</term>
+	    <listitem>
+	      <para>Whether ._ AppleDouble files are vetoed which
+	      prevents the client from seing and accessing internal
+	      AppleDouble files created by vfs_fruit itself for the
+	      purpose of storing a Mac resource fork.</para>
+	      <para>Vetoing ._ files may break some applications, eg
+	      extracting Mac ZIP archives from Mac clients failes,
+	      because they contain ._ files. Setting this option to
+	      false will fix this, but the abstraction leak of
+	      exposing the internally created ._ files may have other
+	      unknown side effects.</para>
+	      <para>The default is <emphasis>yes</emphasis>.</para>
+	    </listitem>
+	  </varlistentry>
+
+	  <varlistentry>
+	    <term>fruit:copyfile = yes | no</term>
+	    <listitem>
+	      <para>Whether to enable OS X specific copychunk ioctl
+	      that requests a copy of a whole file along with all
+	      attached metadata.</para>
+	      <para>WARNING: the copyfile request is blocking the
+	      client while the server does the copy.</para>.
+	      <para>The default is <emphasis>no</emphasis>.</para>
 	    </listitem>
 	  </varlistentry>
 

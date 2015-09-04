@@ -72,6 +72,7 @@ interface open_files
 	} delete_token;
 
 	typedef [public] struct {
+		hyper sequence_number;
 		[string,charset(UTF8)] char *servicepath;
 		[string,charset(UTF8)] char *base_name;
 		[string,charset(UTF8)] char *stream_name;
@@ -86,6 +87,7 @@ interface open_files
 		[skip] boolean8 fresh;
 		[skip] boolean8 modified;
 		[ignore] db_record *record;
+		[ignore] file_id id; /* In memory key used to lookup cache. */
 	} share_mode_data;
 
 	/* these are 0x30 (48) characters */

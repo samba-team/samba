@@ -35,7 +35,7 @@ setup_ctdb_natgw <<EOF
 192.168.1.24
 EOF
 
-ok_null
+ok "NAT gateway configuration has changed"
 simple_test_event "ipreallocated"
 
 ok_natgw_slave_static_routes
@@ -53,7 +53,7 @@ setup_ctdb_natgw <<EOF
 192.168.1.24
 EOF
 
-ok_null
+ok "NAT gateway configuration has changed"
 simple_test_event "ipreallocated"
 
 ok_natgw_master_static_routes

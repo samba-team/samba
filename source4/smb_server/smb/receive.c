@@ -471,7 +471,7 @@ static void switch_message(int type, struct smbsrv_request *req)
 	int flags;
 	struct smbsrv_connection *smb_conn = req->smb_conn;
 	NTSTATUS status;
-	char *task_id;
+	struct server_id_buf idbuf;
 
 	type &= 0xff;
 
@@ -495,10 +495,10 @@ static void switch_message(int type, struct smbsrv_request *req)
 		req->session = smbsrv_session_find(req->smb_conn, SVAL(req->in.hdr,HDR_UID), req->request_time);
 	}
 
-	task_id = server_id_str(NULL, &req->smb_conn->connection->server_id);
-	DEBUG(5,("switch message %s (task_id %s)\n",
-		 smb_fn_name(type), task_id));
-	talloc_free(task_id);
+	DEBUG(5, ("switch message %s (task_id %s)\n",
+		  smb_fn_name(type),
+		  server_id_str_buf(req->smb_conn->connection->server_id,
+				    &idbuf)));
 
 	/* this must be called before we do any reply */
 	if (flags & SIGNING_NO_REPLY) {

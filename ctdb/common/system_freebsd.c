@@ -370,40 +370,8 @@ int ctdb_get_peer_pid(const int fd, pid_t *peer_pid)
 	return 1;
 }
 
-char *ctdb_get_process_name(pid_t pid)
-{
-	char path[32];
-	char buf[PATH_MAX];
-	char *ptr;
-	int n;
-
-	snprintf(path, sizeof(path), "/proc/%d/exe", pid);
-	n = readlink(path, buf, sizeof(buf));
-	if (n < 0) {
-		return NULL;
-	}
-
-	/* Remove any extra fields */
-	buf[n] = '\0';
-	ptr = strtok(buf, " ");
-	return strdup(ptr);
-	return NULL;
-}
-
 int ctdb_set_process_name(const char *name)
 {
 	/* FIXME FreeBSD: set_process_name not implemented */
 	return -ENOSYS;
-}
-
-bool ctdb_get_lock_info(pid_t req_pid, struct ctdb_lock_info *lock_info)
-{
-	/* FIXME FreeBSD: get_lock_info not implemented */
-	return false;
-}
-
-bool ctdb_get_blocker_pid(struct ctdb_lock_info *reqlock, pid_t *blocker_pid)
-{
-	/* FIXME FreeBSD: get_blocker_pid not implemented */
-	return false;
 }

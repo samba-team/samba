@@ -1,7 +1,6 @@
 <samba:parameter name="rpc_daemon:DAEMON"
                  context="G"
-		 type="string"
-		 advanced="1" print="1"
+                 type="string"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>
@@ -56,13 +55,15 @@
 	</para>
 
 	<para>
-	Samba includes separate daemons for spoolss and the lsarpc/lsass,
-	netlogon and samr pipes. Currently three daemons are available and they
-	are called:
+	Samba includes separate daemons for spoolss, lsarpc/lsass,
+	netlogon, samr, FSRVP and mdssvc(Spotlight). Currently five
+	daemons are available and they are called:
 	<programlisting>
 		epmd
 		lsasd
 		spoolssd
+		fssd
+		mdssd
 	</programlisting>
 	Example:
 	<programlisting>

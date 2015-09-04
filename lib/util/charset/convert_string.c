@@ -434,8 +434,10 @@ bool convert_string_talloc_handle(TALLOC_CTX *ctx, struct smb_iconv_handle *ic,
 				reason="Illegal multibyte sequence";
 				DEBUG(3,("convert_string_talloc: Conversion error: %s(%s)\n",reason,inbuf));
 				break;
+			default:
+				DEBUG(0,("Conversion error: %s(%s)\n",reason,inbuf));
+				break;
 		}
-		DEBUG(0,("Conversion error: %s(%s)\n",reason,inbuf));
 		/* smb_panic(reason); */
 		TALLOC_FREE(ob);
 		return false;

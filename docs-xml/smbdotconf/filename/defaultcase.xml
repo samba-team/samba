@@ -1,6 +1,8 @@
 <samba:parameter name="default case"
-	context="S"
-	type="enum" xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+                 context="S"
+                 type="enum"
+                 enumlist="enum_case"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>See the section on <smbconfoption name="name mangling"/>.
 	Also note the <smbconfoption name="short preserve case"/> parameter.</para>

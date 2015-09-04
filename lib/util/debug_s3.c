@@ -34,15 +34,14 @@ bool reopen_logs(void)
 
 		ZERO_STRUCT(settings);
 		settings.max_log_size = lp_max_log_size();
-		settings.syslog = lp_syslog();
-		settings.syslog_only = lp_syslog_only();
 		settings.timestamp_logs = lp_timestamp_logs();
 		settings.debug_prefix_timestamp = lp_debug_prefix_timestamp();
 		settings.debug_hires_timestamp = lp_debug_hires_timestamp();
 		settings.debug_pid = lp_debug_pid();
 		settings.debug_uid = lp_debug_uid();
 		settings.debug_class = lp_debug_class();
-		debug_set_settings(&settings);
+		debug_set_settings(&settings, lp_logging(talloc_tos()),
+				   lp_syslog(), lp_syslog_only());
 	}
 	return reopen_logs_internal();
 }
@@ -85,16 +84,17 @@ static void debuglevel_message(struct messaging_context *msg_ctx,
 			       DATA_BLOB *data)
 {
 	char *message = debug_list_class_names_and_levels();
+	struct server_id_buf tmp;
 
 	if (!message) {
 		DEBUG(0,("debuglevel_message - debug_list_class_names_and_levels returned NULL\n"));
 		return;
 	}
 
-	DEBUG(1,("INFO: Received REQ_DEBUGLEVEL message from PID %s\n",
-		 procid_str_static(&src)));
+	DEBUG(1, ("INFO: Received REQ_DEBUGLEVEL message from PID %s\n",
+		  server_id_str_buf(src, &tmp)));
 	messaging_send_buf(msg_ctx, src, MSG_DEBUGLEVEL,
-			   (uint8 *)message, strlen(message) + 1);
+			   (uint8_t *)message, strlen(message) + 1);
 
 	TALLOC_FREE(message);
 }

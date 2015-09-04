@@ -225,7 +225,6 @@ NTSTATUS dcerpc_pull_dcerpc_auth(TALLOC_CTX *mem_ctx,
 * @param header_len	The length of the packet header
 * @param data_left	The data left in the send buffer
 * @param max_xmit_frag	The max fragment size.
-* @param pad_alignment	The NDR padding size.
 * @param data_to_send	[out] The max data we will send in the pdu
 * @param frag_len	[out] The total length of the fragment
 * @param auth_len	[out] The length of the auth trailer
@@ -235,7 +234,7 @@ NTSTATUS dcerpc_pull_dcerpc_auth(TALLOC_CTX *mem_ctx,
 */
 NTSTATUS dcerpc_guess_sizes(struct pipe_auth_data *auth,
 			    size_t header_len, size_t data_left,
-			    size_t max_xmit_frag, size_t pad_alignment,
+			    size_t max_xmit_frag,
 			    size_t *data_to_send, size_t *frag_len,
 			    size_t *auth_len, size_t *pad_len)
 {
@@ -277,26 +276,23 @@ NTSTATUS dcerpc_guess_sizes(struct pipe_auth_data *auth,
 	case DCERPC_AUTH_TYPE_KRB5:
 	case DCERPC_AUTH_TYPE_SCHANNEL:
 		gensec_security = auth->auth_ctx;
-		*auth_len = gensec_sig_size(gensec_security, max_len);
+		mod_len = (max_len % DCERPC_AUTH_PAD_ALIGNMENT);
+		*auth_len = gensec_sig_size(gensec_security, max_len - mod_len);
+		if (*auth_len == 0) {
+			return NT_STATUS_INTERNAL_ERROR;
+		}
 		break;
 	default:
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	max_len -= *auth_len;
+	mod_len = (max_len % DCERPC_AUTH_PAD_ALIGNMENT);
+	max_len -= mod_len;
 
 	*data_to_send = MIN(max_len, data_left);
 
-	mod_len = (header_len + *data_to_send) % pad_alignment;
-	if (mod_len) {
-		*pad_len = pad_alignment - mod_len;
-	} else {
-		*pad_len = 0;
-	}
-
-	if (*data_to_send + *pad_len > max_len) {
-		*data_to_send -= pad_alignment;
-	}
+	*pad_len = DCERPC_AUTH_PAD_LENGTH(*data_to_send);
 
 	*frag_len = header_len + *data_to_send + *pad_len
 			+ DCERPC_AUTH_TRAILER_LENGTH + *auth_len;
@@ -422,7 +418,7 @@ NTSTATUS dcerpc_add_auth_footer(struct pipe_auth_data *auth,
 				size_t pad_len, DATA_BLOB *rpc_out)
 {
 	struct gensec_security *gensec_security;
-	char pad[CLIENT_NDR_PADDING_SIZE] = { 0, };
+	const char pad[DCERPC_AUTH_PAD_ALIGNMENT] = { 0, };
 	DATA_BLOB auth_info;
 	DATA_BLOB auth_blob;
 	NTSTATUS status;
@@ -432,6 +428,8 @@ NTSTATUS dcerpc_add_auth_footer(struct pipe_auth_data *auth,
 	}
 
 	if (pad_len) {
+		SMB_ASSERT(pad_len <= ARRAY_SIZE(pad));
+
 		/* Copy the sign/seal padding data. */
 		if (!data_blob_append(NULL, rpc_out, pad, pad_len)) {
 			return NT_STATUS_NO_MEMORY;

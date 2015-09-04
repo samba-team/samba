@@ -1,7 +1,6 @@
 <samba:parameter name="username map"
                  context="G"
-                 advanced="1" developer="1"
-				 type="string"
+                 type="string"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>

@@ -235,8 +235,8 @@ _PUBLIC_ WERROR reg_dotreg_diff_load(int fd,
 	DATA_BLOB data;
 	bool result;
 	char *type_str = NULL;
-	char *data_str;
-	char *value;
+	char *data_str = NULL;
+	char *value = NULL;
 	bool continue_next_line = 0;
 
 	line = afdgets(fd, mem_ctx, 0);

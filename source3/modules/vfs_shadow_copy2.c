@@ -32,7 +32,6 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "include/ntioctl.h"
-#include <ccan/hash/hash.h>
 #include "util_tdb.h"
 
 struct shadow_copy2_config {
@@ -647,9 +646,11 @@ static void convert_sbuf(vfs_handle_struct *handle, const char *fname,
 		   number collision, but I can't see a better approach
 		   without significant VFS changes
 		*/
+		TDB_DATA key = { .dptr = discard_const_p(uint8_t, fname),
+				 .dsize = strlen(fname) };
 		uint32_t shash;
 
-		shash = hash(fname, strlen(fname), 0) & 0xFF000000;
+		shash = tdb_jenkins_hash(&key) & 0xFF000000;
 		if (shash == 0) {
 			shash = 1;
 		}
@@ -660,7 +661,7 @@ static void convert_sbuf(vfs_handle_struct *handle, const char *fname,
 static DIR *shadow_copy2_opendir(vfs_handle_struct *handle,
 					    const char *fname,
 					    const char *mask,
-					    uint32 attr)
+					    uint32_t attr)
 {
 	time_t timestamp;
 	char *stripped;
@@ -1404,7 +1405,7 @@ static int shadow_copy2_get_shadow_copy_data(
 
 static NTSTATUS shadow_copy2_fget_nt_acl(vfs_handle_struct *handle,
 					struct files_struct *fsp,
-					uint32 security_info,
+					uint32_t security_info,
 					 TALLOC_CTX *mem_ctx,
 					struct security_descriptor **ppdesc)
 {
@@ -1436,7 +1437,7 @@ static NTSTATUS shadow_copy2_fget_nt_acl(vfs_handle_struct *handle,
 
 static NTSTATUS shadow_copy2_get_nt_acl(vfs_handle_struct *handle,
 					const char *fname,
-					uint32 security_info,
+					uint32_t security_info,
 					TALLOC_CTX *mem_ctx,
 					struct security_descriptor **ppdesc)
 {
@@ -1732,9 +1733,8 @@ static int shadow_copy2_get_real_filename(struct vfs_handle_struct *handle,
 }
 
 static uint64_t shadow_copy2_disk_free(vfs_handle_struct *handle,
-				       const char *path, bool small_query,
-				       uint64_t *bsize, uint64_t *dfree,
-				       uint64_t *dsize)
+				       const char *path, uint64_t *bsize,
+				       uint64_t *dfree, uint64_t *dsize)
 {
 	time_t timestamp;
 	char *stripped;
@@ -1747,7 +1747,7 @@ static uint64_t shadow_copy2_disk_free(vfs_handle_struct *handle,
 		return -1;
 	}
 	if (timestamp == 0) {
-		return SMB_VFS_NEXT_DISK_FREE(handle, path, small_query,
+		return SMB_VFS_NEXT_DISK_FREE(handle, path,
 					      bsize, dfree, dsize);
 	}
 
@@ -1757,8 +1757,7 @@ static uint64_t shadow_copy2_disk_free(vfs_handle_struct *handle,
 		return -1;
 	}
 
-	ret = SMB_VFS_NEXT_DISK_FREE(handle, conv, small_query, bsize, dfree,
-				     dsize);
+	ret = SMB_VFS_NEXT_DISK_FREE(handle, conv, bsize, dfree, dsize);
 
 	saved_errno = errno;
 	TALLOC_FREE(conv);
@@ -1876,8 +1875,9 @@ static int shadow_copy2_connect(struct vfs_handle_struct *handle,
 		config->mount_point = shadow_copy2_find_mount_point(config,
 								    handle);
 		if (config->mount_point == NULL) {
-			DEBUG(0, (__location__ ": shadow_copy2_find_mount_point"
-				  " failed: %s\n", strerror(errno)));
+			DBG_WARNING("shadow_copy2_find_mount_point "
+				    "of the share root '%s' failed: %s\n",
+				    handle->conn->connectpath, strerror(errno));
 			return -1;
 		}
 	}

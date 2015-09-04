@@ -1,0 +1,39 @@
+<samba:parameter name="logging"
+                 type="string"
+                 context="G"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+
+  <para>This parameter configures logging backends. Multiple
+    backends can be specified at the same time, with different log
+    levels for each backend. The parameter is a list of backends,
+    where each backend is specified as backend[:option][@loglevel].</para>
+
+  <para>The 'option' parameter can be used to pass backend-specific
+    options.</para>
+
+  <para>The log level for a backend is optional, if it is not set for
+    a backend, all messages are sent to this backend. The parameter
+    <smbconfoption name="log level"/> determines overall log levels,
+    while the log levels specified here define what is sent to the
+    individual backends.</para>
+
+  <para>When <smbconfoption name="logging"/> is set, it overrides the
+    <smbconfoption  name="syslog"/>  and  <smbconfoption  name="syslog
+    only"/> parameters.</para>
+
+  <para>Some backends are only available when Samba has been compiled
+  with the additional libraries. The overall list of logging backends:</para>
+
+  <itemizedlist>
+    <listitem><para><parameter moreinfo="none">syslog</parameter></para></listitem>
+    <listitem><para><parameter moreinfo="none">file</parameter></para></listitem>
+    <listitem><para><parameter moreinfo="none">systemd</parameter></para></listitem>
+    <listitem><para><parameter moreinfo="none">lttng</parameter></para></listitem>
+    <listitem><para><parameter moreinfo="none">gpfs</parameter></para></listitem>
+  </itemizedlist>
+
+</description>
+<value type="default"></value>
+<value type="example">syslog@1 file</value>
+</samba:parameter>

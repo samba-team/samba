@@ -53,6 +53,7 @@ manpages='''
          manpages/vfs_cacheprime.8
          manpages/vfs_cap.8
          manpages/vfs_catia.8
+         manpages/vfs_ceph.8
          manpages/vfs_commit.8
          manpages/vfs_crossrename.8
          manpages/vfs_default_quota.8
@@ -62,19 +63,19 @@ manpages='''
          manpages/vfs_fileid.8
          manpages/vfs_fruit.8
          manpages/vfs_full_audit.8
+         manpages/vfs_glusterfs.8
          manpages/vfs_gpfs.8
          manpages/vfs_linux_xfs_sgid.8
          manpages/vfs_media_harmony.8
          manpages/vfs_netatalk.8
-         manpages/vfs_notify_fam.8
          manpages/vfs_prealloc.8
          manpages/vfs_preopen.8
          manpages/vfs_readahead.8
          manpages/vfs_readonly.8
          manpages/vfs_recycle.8
-         manpages/vfs_scannedonly.8
          manpages/vfs_shadow_copy.8
          manpages/vfs_shadow_copy2.8
+	 manpages/vfs_shell_snap.8
          manpages/vfs_smb_traffic_analyzer.8
 	 manpages/vfs_snapper.8
          manpages/vfs_streams_depot.8
@@ -82,6 +83,7 @@ manpages='''
          manpages/vfs_syncops.8
          manpages/vfs_time_audit.8
          manpages/vfs_tsmsm.8
+         manpages/vfs_unityed_media.8
          manpages/vfs_worm.8
          manpages/vfs_xattr_tdb.8
          manpages/vfstest.1
@@ -109,9 +111,7 @@ def smbdotconf_generate_parameter_list(task):
     t += "]>\n"
     t += "<section>\n"
     for article in articles:
-        f = open(article.abspath(task.env), 'r')
-        t += f.read()
-        f.close()
+        t += article.read()
 
     t += "</section>\n"
     save_file(parameter_all, t , create_dir=True)

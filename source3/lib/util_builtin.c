@@ -21,7 +21,7 @@
 #include "../libcli/security/security.h"
 
 struct rid_name_map {
-	uint32 rid;
+	uint32_t rid;
 	const char *name;
 };
 
@@ -65,7 +65,7 @@ static const struct rid_name_map builtin_aliases[] = {
 /*******************************************************************
  Look up a rid in the BUILTIN domain
  ********************************************************************/
-bool lookup_builtin_rid(TALLOC_CTX *mem_ctx, uint32 rid, const char **name)
+bool lookup_builtin_rid(TALLOC_CTX *mem_ctx, uint32_t rid, const char **name)
 {
 	const struct rid_name_map *aliases = builtin_aliases;
 
@@ -83,7 +83,7 @@ bool lookup_builtin_rid(TALLOC_CTX *mem_ctx, uint32 rid, const char **name)
 /*******************************************************************
  Look up a name in the BUILTIN domain
  ********************************************************************/
-bool lookup_builtin_name(const char *name, uint32 *rid)
+bool lookup_builtin_name(const char *name, uint32_t *rid)
 {
 	const struct rid_name_map *aliases = builtin_aliases;
 

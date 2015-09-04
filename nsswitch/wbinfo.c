@@ -688,7 +688,7 @@ static bool wbinfo_getdcname(const char *domain_name)
 
 	/* Send request */
 
-	if (winbindd_request_response(WINBINDD_GETDCNAME, &request,
+	if (winbindd_request_response(NULL, WINBINDD_GETDCNAME, &request,
 				      &response) != NSS_STATUS_SUCCESS) {
 		d_fprintf(stderr, "Could not get dc name for %s\n",domain_name);
 		return false;
@@ -752,8 +752,8 @@ static bool wbinfo_check_secret(const char *domain)
 		WBC_ERROR_IS_OK(wbc_status) ? "succeeded" : "failed");
 
 	if (wbc_status == WBC_ERR_AUTH_ERROR) {
-		d_fprintf(stderr, "error code was %s (0x%x)\n",
-			  error->nt_string, error->nt_status);
+		d_fprintf(stderr, "wbcCheckTrustCredentials(%s): error code was %s (0x%x)\n",
+			  domain_name, error->nt_string, error->nt_status);
 		wbcFreeMemory(error);
 	}
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
@@ -811,8 +811,8 @@ static bool wbinfo_change_secret(const char *domain)
 		WBC_ERROR_IS_OK(wbc_status) ? "succeeded" : "failed");
 
 	if (wbc_status == WBC_ERR_AUTH_ERROR) {
-		d_fprintf(stderr, "error code was %s (0x%x)\n",
-			  error->nt_string, error->nt_status);
+		d_fprintf(stderr, "wbcChangeTrustCredentials(%s): error code was %s (0x%x)\n",
+			  domain_name, error->nt_string, error->nt_status);
 		wbcFreeMemory(error);
 	}
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
@@ -849,8 +849,8 @@ static bool wbinfo_ping_dc(const char *domain)
 
 	wbcFreeMemory(dcname);
 	if (wbc_status == WBC_ERR_AUTH_ERROR) {
-		d_fprintf(stderr, "error code was %s (0x%x)\n",
-			  error->nt_string, error->nt_status);
+		d_fprintf(stderr, "wbcPingDc2(%s): error code was %s (0x%x)\n",
+			  domain_name, error->nt_string, error->nt_status);
 		wbcFreeMemory(error);
 		return false;
 	}
@@ -1584,8 +1584,9 @@ static bool wbinfo_auth_krb5(char *username, const char *cctype, uint32_t flags)
 
 	if (error) {
 		d_fprintf(stderr,
-			 "error code was %s (0x%x)\nerror message was: %s\n",
-			 error->nt_string,
+			 "wbcLogonUser(%s): error code was %s (0x%x)\n"
+			 "error message was: %s\n",
+			 params.username, error->nt_string,
 			 error->nt_status,
 			 error->display_string);
 	}
@@ -1756,7 +1757,11 @@ static bool wbinfo_auth_crap(char *username, bool use_ntlmv2, bool use_lanman)
 
 	if (wbc_status == WBC_ERR_AUTH_ERROR) {
 		d_fprintf(stderr,
-			 "error code was %s (0x%x)\nerror message was: %s\n",
+			 "wbcAuthenticateUserEx(%s%c%s): error code was %s (0x%x)\n"
+			 "error message was: %s\n",
+			 name_domain,
+			 winbind_separator(),
+			 name_user,
 			 err->nt_string,
 			 err->nt_status,
 			 err->display_string);
@@ -1773,10 +1778,11 @@ static bool wbinfo_auth_crap(char *username, bool use_ntlmv2, bool use_lanman)
 
 /* Authenticate a user with a plaintext password */
 
-static bool wbinfo_pam_logon(char *username)
+static bool wbinfo_pam_logon(char *username, bool verbose)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
 	struct wbcLogonUserParams params;
+	struct wbcLogonUserInfo *info = NULL;
 	struct wbcAuthErrorInfo *error = NULL;
 	char *s = NULL;
 	char *p = NULL;
@@ -1821,7 +1827,45 @@ static bool wbinfo_pam_logon(char *username)
 		return false;
 	}
 
-	wbc_status = wbcLogonUser(&params, NULL, &error, NULL);
+	wbc_status = wbcLogonUser(&params, &info, &error, NULL);
+
+	if (verbose && (info != NULL)) {
+		struct wbcAuthUserInfo *i = info->info;
+
+		if (i->account_name != NULL) {
+			d_printf("account_name: %s\n", i->account_name);
+		}
+		if (i->user_principal != NULL) {
+			d_printf("user_principal: %s\n", i->user_principal);
+		}
+		if (i->full_name != NULL) {
+			d_printf("full_name: %s\n", i->full_name);
+		}
+		if (i->domain_name != NULL) {
+			d_printf("domain_name: %s\n", i->domain_name);
+		}
+		if (i->dns_domain_name != NULL) {
+			d_printf("dns_domain_name: %s\n", i->dns_domain_name);
+		}
+		if (i->logon_server != NULL) {
+			d_printf("logon_server: %s\n", i->logon_server);
+		}
+		if (i->logon_script != NULL) {
+			d_printf("logon_script: %s\n", i->logon_script);
+		}
+		if (i->profile_path != NULL) {
+			d_printf("profile_path: %s\n", i->profile_path);
+		}
+		if (i->home_directory != NULL) {
+			d_printf("home_directory: %s\n", i->home_directory);
+		}
+		if (i->home_drive != NULL) {
+			d_printf("home_drive: %s\n", i->home_drive);
+		}
+
+		wbcFreeMemory(info);
+		info = NULL;
+	}
 
 	wbcFreeMemory(params.blobs);
 
@@ -1830,7 +1874,9 @@ static bool wbinfo_pam_logon(char *username)
 
 	if (!WBC_ERROR_IS_OK(wbc_status) && (error != NULL)) {
 		d_fprintf(stderr,
-			  "error code was %s (0x%x)\nerror message was: %s\n",
+			  "wbcLogonUser(%s): error code was %s (0x%x)\n"
+			  "error message was: %s\n",
+			  params.username,
 			  error->nt_string,
 			  (int)error->nt_status,
 			  error->display_string);
@@ -1908,7 +1954,7 @@ static bool wbinfo_klog(char *username)
 
 	request.flags |= WBFLAG_PAM_AFS_TOKEN;
 
-	result = winbindd_request_response(WINBINDD_PAM_AUTH, &request,
+	result = winbindd_request_response(NULL, WINBINDD_PAM_AUTH, &request,
 					   &response);
 
 	/* Display response */
@@ -2224,7 +2270,7 @@ int main(int argc, const char **argv, char **envp)
 	};
 
 	/* Samba client initialisation */
-	load_case_tables();
+	smb_init_locale();
 
 
 	/* Parse options */
@@ -2559,7 +2605,7 @@ int main(int argc, const char **argv, char **envp)
 				break;
 			}
 		case OPT_PAM_LOGON:
-			if (!wbinfo_pam_logon(string_arg)) {
+			if (!wbinfo_pam_logon(string_arg, verbose)) {
 				d_fprintf(stderr, "pam_logon failed for %s\n",
 					  string_arg);
 				goto done;

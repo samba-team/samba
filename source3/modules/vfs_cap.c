@@ -30,8 +30,7 @@ static char *capencode(TALLOC_CTX *ctx, const char *from);
 static char *capdecode(TALLOC_CTX *ctx, const char *from);
 
 static uint64_t cap_disk_free(vfs_handle_struct *handle, const char *path,
-	bool small_query, uint64_t *bsize,
-	uint64_t *dfree, uint64_t *dsize)
+			      uint64_t *bsize, uint64_t *dfree, uint64_t *dsize)
 {
 	char *cappath = capencode(talloc_tos(), path);
 
@@ -39,11 +38,10 @@ static uint64_t cap_disk_free(vfs_handle_struct *handle, const char *path,
 		errno = ENOMEM;
 		return (uint64_t)-1;
 	}
-	return SMB_VFS_NEXT_DISK_FREE(handle, cappath, small_query, bsize,
-					dfree, dsize);
+	return SMB_VFS_NEXT_DISK_FREE(handle, cappath, bsize, dfree, dsize);
 }
 
-static DIR *cap_opendir(vfs_handle_struct *handle, const char *fname, const char *mask, uint32 attr)
+static DIR *cap_opendir(vfs_handle_struct *handle, const char *fname, const char *mask, uint32_t attr)
 {
 	char *capname = capencode(talloc_tos(), fname);
 

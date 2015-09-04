@@ -25,7 +25,6 @@
 #include "../libcli/smb/smb_common.h"
 #include "../libcli/security/security.h"
 #include "../lib/util/tevent_ntstatus.h"
-#include "../lib/ccan/build_assert/build_assert.h"
 #include "include/ntioctl.h"
 #include "../librpc/ndr/libndr.h"
 #include "librpc/gen_ndr/ndr_ioctl.h"
@@ -92,6 +91,7 @@ struct fsctl_srv_copychunk_state {
 		COPYCHUNK_OUT_LIMITS,
 		COPYCHUNK_OUT_RSP,
 	} out_data;
+	bool aapl_copyfile;
 };
 static void fsctl_srv_copychunk_vfs_done(struct tevent_req *subreq);
 
@@ -226,14 +226,47 @@ static struct tevent_req *fsctl_srv_copychunk_send(TALLOC_CTX *mem_ctx,
 	}
 
 	state->status = copychunk_check_limits(&cc_copy);
-	if (tevent_req_nterror(req, state->status)) {
+	if (!NT_STATUS_IS_OK(state->status)) {
 		DEBUG(3, ("copy chunk req exceeds limits\n"));
 		state->out_data = COPYCHUNK_OUT_LIMITS;
+		tevent_req_nterror(req, state->status);
 		return tevent_req_post(req, ev);
 	}
 
 	/* any errors from here onwards should carry copychunk response data */
 	state->out_data = COPYCHUNK_OUT_RSP;
+
+	if (cc_copy.chunk_count == 0) {
+		struct tevent_req *vfs_subreq;
+		/*
+		 * Process as OS X copyfile request. This is currently
+		 * the only copychunk request with a chunk count of 0
+		 * we will process.
+		 */
+		if (!state->src_fsp->aapl_copyfile_supported) {
+			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+			return tevent_req_post(req, ev);
+		}
+		if (!state->dst_fsp->aapl_copyfile_supported) {
+			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+			return tevent_req_post(req, ev);
+		}
+		state->aapl_copyfile = true;
+		vfs_subreq = SMB_VFS_COPY_CHUNK_SEND(dst_fsp->conn,
+						     state, ev,
+						     state->src_fsp,
+						     0,
+						     state->dst_fsp,
+						     0,
+						     0);
+		if (tevent_req_nomem(vfs_subreq, req)) {
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_set_callback(vfs_subreq,
+					fsctl_srv_copychunk_vfs_done, req);
+		state->dispatch_count++;
+		return req;
+	}
 
 	for (i = 0; i < cc_copy.chunk_count; i++) {
 		struct tevent_req *vfs_subreq;
@@ -327,7 +360,11 @@ static NTSTATUS fsctl_srv_copychunk_recv(struct tevent_req *req,
 		*pack_rsp = true;
 		break;
 	case COPYCHUNK_OUT_RSP:
-		cc_rsp->chunks_written = state->recv_count - state->bad_recv_count;
+		if (state->aapl_copyfile == true) {
+			cc_rsp->chunks_written = 0;
+		} else {
+			cc_rsp->chunks_written = state->recv_count - state->bad_recv_count;
+		}
 		cc_rsp->chunk_bytes_written = 0;
 		cc_rsp->total_bytes_written = state->total_written;
 		*pack_rsp = true;

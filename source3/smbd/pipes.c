@@ -399,7 +399,7 @@ void reply_pipe_read_and_X(struct smb_request *req)
            is deliberate, instead we always return the next lump of
            data on the pipe */
 #if 0
-	uint32 smb_offs = IVAL(req->vwv+3, 0);
+	uint32_t smb_offs = IVAL(req->vwv+3, 0);
 #endif
 
 	if (!fsp_is_np(fsp)) {

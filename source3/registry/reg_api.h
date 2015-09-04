@@ -24,16 +24,16 @@
 #define _REG_API_H
 
 WERROR reg_openhive(TALLOC_CTX *mem_ctx, const char *hive,
-		    uint32 desired_access,
+		    uint32_t desired_access,
 		    const struct security_token *token,
 		    struct registry_key **pkey);
 WERROR reg_openkey(TALLOC_CTX *mem_ctx, struct registry_key *parent,
-		   const char *name, uint32 desired_access,
+		   const char *name, uint32_t desired_access,
 		   struct registry_key **pkey);
 WERROR reg_enumkey(TALLOC_CTX *mem_ctx, struct registry_key *key,
-		   uint32 idx, char **name, NTTIME *last_write_time);
+		   uint32_t idx, char **name, NTTIME *last_write_time);
 WERROR reg_enumvalue(TALLOC_CTX *mem_ctx, struct registry_key *key,
-		     uint32 idx, char **pname, struct registry_value **pval);
+		     uint32_t idx, char **pname, struct registry_value **pval);
 WERROR reg_queryvalue(TALLOC_CTX *mem_ctx, struct registry_key *key,
 		      const char *name, struct registry_value **pval);
 WERROR reg_querymultiplevalues(TALLOC_CTX *mem_ctx,
@@ -48,7 +48,7 @@ WERROR reg_queryinfokey(struct registry_key *key, uint32_t *num_subkeys,
 			uint32_t *max_valbufsize, uint32_t *secdescsize,
 			NTTIME *last_changed_time);
 WERROR reg_createkey(TALLOC_CTX *ctx, struct registry_key *parent,
-		     const char *subkeypath, uint32 desired_access,
+		     const char *subkeypath, uint32_t desired_access,
 		     struct registry_key **pkey,
 		     enum winreg_CreateAction *paction);
 WERROR reg_deletekey(struct registry_key *parent, const char *path);

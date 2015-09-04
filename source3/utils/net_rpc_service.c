@@ -23,7 +23,7 @@
 #include "../librpc/gen_ndr/ndr_svcctl_c.h"
 
 struct svc_state_msg {
-	uint32 flag;
+	uint32_t flag;
 	const char *message;
 };
 
@@ -41,7 +41,7 @@ static struct svc_state_msg state_msg_table[] = {
 
 /********************************************************************
 ********************************************************************/
-const char *svc_status_string( uint32 state )
+const char *svc_status_string( uint32_t state )
 {
 	fstring msg;
 	int i;
@@ -134,7 +134,7 @@ static WERROR query_service_state(struct rpc_pipe_client *pipe_hnd,
 				TALLOC_CTX *mem_ctx,
 				struct policy_handle *hSCM,
 				const char *service,
-				uint32 *state )
+				uint32_t *state )
 {
 	struct policy_handle hService;
 	struct SERVICE_STATUS service_status;
@@ -181,11 +181,11 @@ static WERROR watch_service_state(struct rpc_pipe_client *pipe_hnd,
 				TALLOC_CTX *mem_ctx,
 				struct policy_handle *hSCM,
 				const char *service,
-				uint32 watch_state,
-				uint32 *final_state )
+				uint32_t watch_state,
+				uint32_t *final_state )
 {
-	uint32 i;
-	uint32 state = 0;
+	uint32_t i;
+	uint32_t state = 0;
 	WERROR result = WERR_GENERAL_FAILURE;
 
 
@@ -216,14 +216,14 @@ static WERROR control_service(struct rpc_pipe_client *pipe_hnd,
 				TALLOC_CTX *mem_ctx,
 				struct policy_handle *hSCM,
 				const char *service,
-				uint32 control,
-				uint32 watch_state )
+				uint32_t control,
+				uint32_t watch_state )
 {
 	struct policy_handle hService;
 	WERROR result = WERR_GENERAL_FAILURE;
 	NTSTATUS status;
 	struct SERVICE_STATUS service_status;
-	uint32 state = 0;
+	uint32_t state = 0;
 	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 
 	/* Open the Service */
@@ -684,7 +684,7 @@ static NTSTATUS rpc_service_start_internal(struct net_context *c,
 	struct policy_handle hSCM, hService;
 	WERROR result = WERR_GENERAL_FAILURE;
 	NTSTATUS status;
-	uint32 state = 0;
+	uint32_t state = 0;
 	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 
 	if (argc != 1 ) {

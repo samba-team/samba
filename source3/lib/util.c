@@ -28,7 +28,6 @@
 #include "ctdbd_conn.h"
 #include "../lib/util/util_pw.h"
 #include "messages.h"
-#include <ccan/hash/hash.h>
 #include "libcli/security/security.h"
 #include "serverid.h"
 #include "lib/sys_rw.h"
@@ -199,7 +198,7 @@ void show_msg(const char *buf)
 	if (DEBUGLEVEL < 50)
 		bcc = MIN(bcc, 512);
 
-	dump_data(10, (const uint8 *)smb_buf_const(buf), bcc);
+	dump_data(10, (const uint8_t *)smb_buf_const(buf), bcc);
 }
 
 /*******************************************************************
@@ -219,12 +218,12 @@ int set_message_bcc(char *buf,int num_bytes)
  Return the bytes added
 ********************************************************************/
 
-ssize_t message_push_blob(uint8 **outbuf, DATA_BLOB blob)
+ssize_t message_push_blob(uint8_t **outbuf, DATA_BLOB blob)
 {
 	size_t newlen = smb_len(*outbuf) + 4 + blob.length;
-	uint8 *tmp;
+	uint8_t *tmp;
 
-	if (!(tmp = talloc_realloc(NULL, *outbuf, uint8, newlen))) {
+	if (!(tmp = talloc_realloc(NULL, *outbuf, uint8_t, newlen))) {
 		DEBUG(0, ("talloc failed\n"));
 		return -1;
 	}
@@ -491,7 +490,7 @@ NTSTATUS reinit_after_fork(struct messaging_context *msg_ctx,
 ****************************************************************************/
 
 void add_to_large_array(TALLOC_CTX *mem_ctx, size_t element_size,
-			void *element, void *_array, uint32 *num_elements,
+			void *element, void *_array, uint32_t *num_elements,
 			ssize_t *array_size)
 {
 	void **array = (void **)_array;
@@ -1197,7 +1196,9 @@ bool is_myname(const char *s)
 	bool ret = False;
 
 	for (n=0; my_netbios_names(n); n++) {
-		if (strequal(my_netbios_names(n), s)) {
+		const char *nbt_name = my_netbios_names(n);
+
+		if (strncasecmp_m(nbt_name, s, MAX_NETBIOSNAME_LEN-1) == 0) {
 			ret=True;
 			break;
 		}
@@ -1319,9 +1320,14 @@ const char *tab_depth(int level, int depth)
 
 int str_checksum(const char *s)
 {
+	TDB_DATA key;
 	if (s == NULL)
 		return 0;
-	return hash(s, strlen(s), 0);
+
+	key = (TDB_DATA) { .dptr = discard_const_p(uint8_t, s),
+			   .dsize = strlen(s) };
+
+	return tdb_jenkins_hash(&key);
 }
 
 /*****************************************************************
@@ -1830,48 +1836,60 @@ bool unix_wild_match(const char *pattern, const char *string)
 }
 
 /**********************************************************************
- Converts a name to a fully qualified domain name.
- Returns true if lookup succeeded, false if not (then fqdn is set to name)
- Note we deliberately use gethostbyname here, not getaddrinfo as we want
- to examine the h_aliases and I don't know how to do that with getaddrinfo.
-***********************************************************************/
+  Converts a name to a fully qualified domain name.
+  Returns true if lookup succeeded, false if not (then fqdn is set to name)
+  Uses getaddrinfo() with AI_CANONNAME flag to obtain the official
+  canonical name of the host. getaddrinfo() may use a variety of sources
+  including /etc/hosts to obtain the domainname. It expects aliases in
+  /etc/hosts to NOT be the FQDN. The FQDN should come first.
+************************************************************************/
 
 bool name_to_fqdn(fstring fqdn, const char *name)
 {
 	char *full = NULL;
-	struct hostent *hp = gethostbyname(name);
+	struct addrinfo hints;
+	struct addrinfo *result;
+	int s;
 
-	if (!hp || !hp->h_name || !*hp->h_name) {
+	/* Configure hints to obtain canonical name */
+
+	memset(&hints, 0, sizeof(struct addrinfo));
+	hints.ai_family = AF_UNSPEC;    /* Allow IPv4 or IPv6 */
+	hints.ai_socktype = SOCK_DGRAM; /* Datagram socket */
+	hints.ai_flags = AI_CANONNAME;  /* Get host's FQDN */
+	hints.ai_protocol = 0;          /* Any protocol */
+
+	s = getaddrinfo(name, NULL, &hints, &result);
+	if (s != 0) {
+		DEBUG(1, ("getaddrinfo: %s\n", gai_strerror(s)));
 		DEBUG(10,("name_to_fqdn: lookup for %s failed.\n", name));
 		fstrcpy(fqdn, name);
 		return false;
 	}
+	full = result->ai_canonname;
 
-	/* Find out if the fqdn is returned as an alias
+	/* Find out if the FQDN is returned as an alias
 	 * to cope with /etc/hosts files where the first
-	 * name is not the fqdn but the short name */
-	if (hp->h_aliases && (! strchr_m(hp->h_name, '.'))) {
-		int i;
-		for (i = 0; hp->h_aliases[i]; i++) {
-			if (strchr_m(hp->h_aliases[i], '.')) {
-				full = hp->h_aliases[i];
-				break;
-			}
-		}
+	 * name is not the FQDN but the short name.
+	 * getaddrinfo provides no easy way of handling aliases
+	 * in /etc/hosts. Users should make sure the FQDN
+	 * comes first in /etc/hosts. */
+	if (full && (! strchr_m(full, '.'))) {
+		DEBUG(1, ("WARNING: your /etc/hosts file may be broken!\n"));
+		DEBUGADD(1, ("    Full qualified domain names (FQDNs) should not be specified\n"));
+		DEBUGADD(1, ("    as an alias in /etc/hosts. FQDN should be the first name\n"));
+		DEBUGADD(1, ("    prior to any aliases.\n"));
 	}
 	if (full && (strcasecmp_m(full, "localhost.localdomain") == 0)) {
 		DEBUG(1, ("WARNING: your /etc/hosts file may be broken!\n"));
 		DEBUGADD(1, ("    Specifying the machine hostname for address 127.0.0.1 may lead\n"));
 		DEBUGADD(1, ("    to Kerberos authentication problems as localhost.localdomain\n"));
 		DEBUGADD(1, ("    may end up being used instead of the real machine FQDN.\n"));
-		full = hp->h_name;
-	}
-	if (!full) {
-		full = hp->h_name;
 	}
 
 	DEBUG(10,("name_to_fqdn: lookup for %s -> %s.\n", name, full));
 	fstrcpy(fqdn, full);
+	freeaddrinfo(result);           /* No longer needed */
 	return true;
 }
 
@@ -1901,7 +1919,7 @@ void *talloc_append_blob(TALLOC_CTX *mem_ctx, void *buf, DATA_BLOB blob)
 	return result;
 }
 
-uint32 map_share_mode_to_deny_mode(uint32 share_access, uint32 private_options)
+uint32_t map_share_mode_to_deny_mode(uint32_t share_access, uint32_t private_options)
 {
 	switch (share_access & ~FILE_SHARE_DELETE) {
 		case FILE_SHARE_NONE:
@@ -1919,7 +1937,7 @@ uint32 map_share_mode_to_deny_mode(uint32 share_access, uint32 private_options)
 		return DENY_FCB;
 	}
 
-	return (uint32)-1;
+	return (uint32_t)-1;
 }
 
 pid_t procid_to_pid(const struct server_id *proc)
@@ -1927,15 +1945,15 @@ pid_t procid_to_pid(const struct server_id *proc)
 	return proc->pid;
 }
 
-static uint32 my_vnn = NONCLUSTER_VNN;
+static uint32_t my_vnn = NONCLUSTER_VNN;
 
-void set_my_vnn(uint32 vnn)
+void set_my_vnn(uint32_t vnn)
 {
 	DEBUG(10, ("vnn pid %d = %u\n", (int)getpid(), (unsigned int)vnn));
 	my_vnn = vnn;
 }
 
-uint32 get_my_vnn(void)
+uint32_t get_my_vnn(void)
 {
 	return my_vnn;
 }
@@ -1976,11 +1994,6 @@ bool procid_is_me(const struct server_id *pid)
 struct server_id interpret_pid(const char *pid_string)
 {
 	return server_id_from_string(get_my_vnn(), pid_string);
-}
-
-char *procid_str_static(const struct server_id *pid)
-{
-	return server_id_str(talloc_tos(), pid);
 }
 
 bool procid_valid(const struct server_id *pid)
@@ -2195,16 +2208,16 @@ bool is_executable(const char *fname)
 
 bool map_open_params_to_ntcreate(const char *smb_base_fname,
 				 int deny_mode, int open_func,
-				 uint32 *paccess_mask,
-				 uint32 *pshare_mode,
-				 uint32 *pcreate_disposition,
-				 uint32 *pcreate_options,
+				 uint32_t *paccess_mask,
+				 uint32_t *pshare_mode,
+				 uint32_t *pcreate_disposition,
+				 uint32_t *pcreate_options,
 				 uint32_t *pprivate_flags)
 {
-	uint32 access_mask;
-	uint32 share_mode;
-	uint32 create_disposition;
-	uint32 create_options = FILE_NON_DIRECTORY_FILE;
+	uint32_t access_mask;
+	uint32_t share_mode;
+	uint32_t create_disposition;
+	uint32_t create_options = FILE_NON_DIRECTORY_FILE;
 	uint32_t private_flags = 0;
 
 	DEBUG(10,("map_open_params_to_ntcreate: fname = %s, deny_mode = 0x%x, "

@@ -28,5 +28,7 @@
 
 bool tevent_req_is_unix_error(struct tevent_req *req, int *perrno);
 int tevent_req_simple_recv_unix(struct tevent_req *req);
+bool tevent_req_poll_unix(struct tevent_req *req, struct tevent_context *ev,
+			  int *err);
 
 #endif

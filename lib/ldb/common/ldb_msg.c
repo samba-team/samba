@@ -1090,28 +1090,54 @@ time_t ldb_string_to_time(const char *s)
 */
 int ldb_val_to_time(const struct ldb_val *v, time_t *t)
 {
-	struct tm tm;
+	char val[15] = {};
+	struct tm tm = {};
 
-	if (v == NULL || !v->data || (v->length != 17 && v->length != 13)) {
+	if (v == NULL) {
 		return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
 	}
 
-	memset(&tm, 0, sizeof(tm));
+	if (v->data == NULL) {
+		return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
+	}
+
+	if (v->length < 16 && v->length != 13) {
+		return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
+	}
+
+	if (v->data[v->length - 1] != 'Z') {
+		return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
+	}
 
 	if (v->length == 13) {
-		if (sscanf((char *)v->data, "%02u%02u%02u%02u%02u%02uZ",
+		memcpy(val, v->data, 12);
+
+		if (sscanf(val, "%02u%02u%02u%02u%02u%02u",
 			&tm.tm_year, &tm.tm_mon, &tm.tm_mday,
 			&tm.tm_hour, &tm.tm_min, &tm.tm_sec) != 6) {
 			return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
+		}
+		if (tm.tm_year < 50) {
+			tm.tm_year += 100;
 		}
 	} else {
-		if (sscanf((char *)v->data, "%04u%02u%02u%02u%02u%02u.0Z",
+
+		/*
+		 * anything between '.' and 'Z' is silently ignored.
+		 */
+		if (v->data[14] != '.') {
+			return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
+		}
+
+		memcpy(val, v->data, 14);
+
+		if (sscanf(val, "%04u%02u%02u%02u%02u%02u",
 			&tm.tm_year, &tm.tm_mon, &tm.tm_mday,
 			&tm.tm_hour, &tm.tm_min, &tm.tm_sec) != 6) {
 			return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
 		}
+		tm.tm_year -= 1900;
 	}
-	tm.tm_year -= 1900;
 	tm.tm_mon -= 1;
 
 	*t = timegm(&tm);

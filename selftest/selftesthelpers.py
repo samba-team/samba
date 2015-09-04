@@ -34,21 +34,8 @@ def source3dir():
 def bindir():
     return os.path.normpath(os.getenv("BINDIR", "./bin"))
 
-binary_mapping = {}
-
 def binpath(name):
-    if name in binary_mapping:
-        name = binary_mapping[name]
     return os.path.join(bindir(), name)
-
-binary_mapping_string = os.getenv("BINARY_MAPPING", None)
-if binary_mapping_string is not None:
-    for binmapping_entry in binary_mapping_string.split(','):
-        try:
-            (from_path, to_path) = binmapping_entry.split(':', 1)
-        except ValueError:
-            continue
-        binary_mapping[from_path] = to_path
 
 # Split perl variable to allow $PERL to be set to e.g. "perl -W"
 perl = os.getenv("PERL", "perl").split()
@@ -58,34 +45,9 @@ if subprocess.call(perl + ["-e", "eval require Test::More;"]) == 0:
 else:
     has_perl_test_more = False
 
-try:
-    from subunit.run import TestProgram
-except ImportError:
-    has_system_subunit_run = False
-else:
-    has_system_subunit_run = True
-
 python = os.getenv("PYTHON", "python")
 
-# Set a default value, overridden if we find a working one on the system
-tap2subunit = "PYTHONPATH=%s/lib/subunit/python:%s/lib/testtools:%s/lib/extras:%s/lib/mimeparse %s %s/lib/subunit/filters/tap2subunit" % (srcdir(), srcdir(), srcdir(), srcdir(), python, srcdir())
-subunit2to1 = "PYTHONPATH=%s/lib/subunit/python:%s/lib/testtools:%s/lib/extras:%s/lib/mimeparse %s %s/lib/subunit/filters/subunit-2to1" % (srcdir(), srcdir(), srcdir(), srcdir(), python, srcdir())
-
-sub = subprocess.Popen("tap2subunit", stdin=subprocess.PIPE,
-    stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-sub.communicate("")
-
-if sub.returncode == 0:
-    cmd = "echo -ne \"1..1\nok 1 # skip doesn't seem to work yet\n\" | tap2subunit | grep skip"
-    sub = subprocess.Popen(cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE,
-        stderr=subprocess.PIPE, shell=True)
-    if sub.returncode == 0:
-        tap2subunit = "tap2subunit"
-
-def to_subunit1(subunit_version):
-    if subunit_version == 1:
-        return ""
-    return " | " + subunit2to1
+tap2subunit = python + " " + os.path.join(srcdir(), "selftest", "tap2subunit")
 
 
 def valgrindify(cmdline):
@@ -96,7 +58,7 @@ def valgrindify(cmdline):
     return valgrind + " " + cmdline
 
 
-def plantestsuite(name, env, cmdline, subunit_version=1):
+def plantestsuite(name, env, cmdline):
     """Plan a test suite.
 
     :param name: Testsuite name
@@ -110,7 +72,7 @@ def plantestsuite(name, env, cmdline, subunit_version=1):
         cmdline = " ".join(cmdline)
     if "$LISTOPT" in cmdline:
         raise AssertionError("test %s supports --list, but not --load-list" % name)
-    print cmdline + " 2>&1 " + to_subunit1(subunit_version) + " | " + add_prefix(name, env)
+    print cmdline + " 2>&1 " + " | " + add_prefix(name, env)
 
 
 def add_prefix(prefix, env, support_list=False):
@@ -121,7 +83,7 @@ def add_prefix(prefix, env, support_list=False):
     return "%s/selftest/filter-subunit %s--fail-on-empty --prefix=\"%s.\" --suffix=\"(%s)\"" % (srcdir(), listopt, prefix, env)
 
 
-def plantestsuite_loadlist(name, env, cmdline, subunit_version=1):
+def plantestsuite_loadlist(name, env, cmdline):
     print "-- TEST-LOADLIST --"
     if env == "none":
         fullname = name
@@ -137,7 +99,7 @@ def plantestsuite_loadlist(name, env, cmdline, subunit_version=1):
     if not "$LOADLIST" in cmdline:
         raise AssertionError("loadlist test %s does not support --load-list" % name)
     print ("%s | %s" % (cmdline.replace("$LOADLIST", ""), add_prefix(name, env, support_list))).replace("$LISTOPT", "--list")
-    print cmdline.replace("$LISTOPT", "") + " 2>&1 " + to_subunit1(subunit_version) + " | " + add_prefix(name, env, False)
+    print cmdline.replace("$LISTOPT", "") + " 2>&1 " + " | " + add_prefix(name, env, False)
 
 
 def skiptestsuite(name, reason):
@@ -166,13 +128,7 @@ def planpythontestsuite(env, module, name=None, extra_path=[]):
     if name is None:
         name = module
     pypath = list(extra_path)
-    if not has_system_subunit_run:
-        pypath.extend([
-            "%s/lib/subunit/python" % srcdir(),
-            "%s/lib/testtools" % srcdir(),
-            "%s/lib/extras" % srcdir(),
-            "%s/lib/mimeparse" % srcdir()])
-    args = [python, "-m", "subunit.run", "$LISTOPT", "$LOADLIST", module]
+    args = [python, "-m", "samba.subunit.run", "$LISTOPT", "$LOADLIST", module]
     if pypath:
         args.insert(0, "PYTHONPATH=%s" % ":".join(["$PYTHONPATH"] + pypath))
     plantestsuite_loadlist(name, env, args)
@@ -192,11 +148,12 @@ samba3srcdir = source3dir()
 bbdir = os.path.join(srcdir(), "testprogs/blackbox")
 configuration = "--configfile=$SMB_CONF_PATH"
 
-smbtorture4 = binpath("smbtorture4")
+smbtorture4 = binpath("smbtorture")
 smbtorture4_testsuite_list = subprocess.Popen([smbtorture4, "--list-suites"], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate("")[0].splitlines()
 
 smbtorture4_options = [
     configuration,
+    "--option=\'fss:sequence timeout=1\'",
     "--maximum-runtime=$SELFTEST_MAXTIME",
     "--basedir=$SELFTEST_TMPDIR",
     "--format=subunit"
@@ -217,9 +174,9 @@ def smbtorture4_testsuites(prefix):
     return filter(lambda x: x.startswith(prefix), smbtorture4_testsuite_list)
 
 
-smbclient3 = binpath('smbclient3')
+smbclient3 = binpath('smbclient')
 smbtorture3 = binpath('smbtorture3')
-ntlm_auth3 = binpath('ntlm_auth3')
+ntlm_auth3 = binpath('ntlm_auth')
 net = binpath('net')
 scriptdir = os.path.join(srcdir(), "script/tests")
 

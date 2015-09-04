@@ -5,12 +5,10 @@ prog="rpcinfo"
 usage ()
 {
     cat >&2 <<EOF
-Usage: $prog -u host program [version]
+Usage: $prog -T tcp host program [version]
 
 A fake rpcinfo stub that succeeds for items in FAKE_RPCINFO_SERVICES,
 depending on command-line options.
-
-Note that "-u host" is ignored.
 
 EOF
     exit 1
@@ -18,10 +16,7 @@ EOF
 
 parse_options ()
 {
-    # $POSIXLY_CORRECT means that the command passed to onnode can
-    # take options and getopt won't reorder things to make them
-    # options to this script.
-    _temp=$(POSIXLY_CORRECT=1 getopt -n "$prog" -o "u:h" -l unix -l help -- "$@")
+    _temp=$(getopt -n "$prog" -o "T:h" -- "$@")
 
     [ $? != 0 ] && usage
 
@@ -29,11 +24,16 @@ parse_options ()
 
     while true ; do
 	case "$1" in
-	    -u) shift 2 ;;  # ignore
+	    -T) netid="$2"; shift 2 ;;
 	    --) shift ; break ;;
-	    -h|--help|*) usage ;; # * shouldn't happen, so this is reasonable.
+	    -h|*) usage ;; # * shouldn't happen, so this is reasonable.
 	esac
     done
+
+    [ "$netid" = "tcp" ] || usage
+
+    host="$1" ; shift
+    [ "$host" = "localhost" -o "$host" = "127.0.0.1" ] || usage
 
     [ 1 -le $# -a $# -le 2 ] || usage
 
@@ -49,7 +49,7 @@ for i in ${FAKE_RPCINFO_SERVICES} ; do
     IFS="${IFS}:"
     set -- $i
     # $1 = program, $2 = low version, $3 = high version
-    
+
     if [ "$1" = "$p" ] ; then
 	if [ -n "$v" ] ; then
 	    if [ "$2" -le "$v" -a "$v" -le "$3" ] ; then

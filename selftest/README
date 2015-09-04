@@ -1,22 +1,22 @@
 # vim: ft=rst
 
 This directory contains test scripts that are useful for running a
-bunch of tests all at once. 
+bunch of tests all at once.
 
-There are two parts to this: 
+There are two parts to this:
 
  * The test runner (selftest/selftest.pl)
  * The test formatter
 
-selftest.pl simply outputs subunit, which can then be formatted or analyzed 
-by tools that understand the subunit protocol. One of these tools is 
+selftest.pl simply outputs subunit, which can then be formatted or analyzed
+by tools that understand the subunit protocol. One of these tools is
 format-subunit, which is used by default as part of "make test".
 
 Available testsuites
 ====================
-The available testsuites are obtained from a script, usually 
+The available testsuites are obtained from a script, usually
 source{3,4}/selftest/tests.py. This script should for each testsuite output
-the name of the test, the command to run and the environment that should be 
+the name of the test, the command to run and the environment that should be
 provided. Use the included "plantest" function to generate the required output.
 
 Testsuite behaviour
@@ -24,28 +24,23 @@ Testsuite behaviour
 
 Exit code
 ------------
-The testsuites should exit with a non-zero exit code if at least one 
+The testsuites should exit with a non-zero exit code if at least one
 test failed. Skipped tests should not influence the exit code.
 
 Output format
 -------------
-Testsuites can simply use the exit code to indicate whether all of their 
-tests have succeeded or one or more have failed. It is also possible to 
-provide more granular information using the Subunit protocol. 
+Testsuites can simply use the exit code to indicate whether all of their
+tests have succeeded or one or more have failed. It is also possible to
+provide more granular information using the Subunit protocol.
 
-This protocol works by writing simple messages to standard output. Any 
-messages that can not be interpreted by this protocol are considered comments 
+This protocol works by writing simple messages to standard output. Any
+messages that can not be interpreted by this protocol are considered comments
 for the last announced test.
 
-For a full description of the subunit protocol, see ../lib/subunit/README.
+For a full description of the subunit protocol, see the README file in the subunit
+repository at http://github.com/testing-cabal/subunit.
 
 The following commands are Samba extensions to Subunit:
-
-testsuite-count
-~~~~~~~~~~~~~~~
-testsuite-count: number
-
-Announce the number of tests that is going to be run.
 
 start-testsuite
 ~~~~~~~~~~~~~~~
@@ -73,8 +68,8 @@ Indicate that a testsuite has failed.
 
 Environments
 ============
-Tests often need to run against a server with particular things set up, 
-a "environment". This environment is provided by the test "target": Samba 3, 
+Tests often need to run against a server with particular things set up,
+a "environment". This environment is provided by the test "target": Samba 3,
 Samba 4 or Windows.
 
 The environments are currently available include
@@ -87,7 +82,7 @@ The environments are currently available include
      * PASSWORD: Administrator password
      * DOMAIN: Domain name
      * REALM: Realm name
-     * SERVER: DC host name 
+     * SERVER: DC host name
      * SERVER_IP: DC IPv4 address
      * SERVER_IPV6: DC IPv6 address
      * NETBIOSNAME: DC NetBIOS name

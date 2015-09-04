@@ -332,7 +332,7 @@ static int print_sam_info (struct samu *sam_pwent, bool verbosity, bool smbpwdst
 		       lm_passwd,
 		       nt_passwd,
 		       pdb_encode_acct_ctrl(pdb_get_acct_ctrl(sam_pwent),NEW_PW_FORMAT_SPACE_PADDED_LEN),
-		       (uint32)convert_time_t_to_uint32_t(pdb_get_pass_last_set_time(sam_pwent)));
+		       (uint32_t)convert_time_t_to_uint32_t(pdb_get_pass_last_set_time(sam_pwent)));
 	} else {
 		uid = nametouid(pdb_get_username(sam_pwent));
 		printf ("%s:%lu:%s\n", pdb_get_username(sam_pwent), (unsigned long)uid,
@@ -992,7 +992,7 @@ int main(int argc, const char **argv)
 	static int add_user = False;
 	static int delete_user = False;
 	static int modify_user = False;
-	uint32	setparms, checkparms;
+	uint32_t   setparms, checkparms;
 	int opt;
 	static char *full_name = NULL;
 	static char *acct_desc = NULL;
@@ -1064,7 +1064,7 @@ int main(int argc, const char **argv)
 
 	bin = bout = NULL;
 
-	load_case_tables();
+	smb_init_locale();
 
 	setup_logging("pdbedit", DEBUG_STDOUT);
 

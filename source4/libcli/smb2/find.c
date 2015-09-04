@@ -33,7 +33,7 @@ struct smb2_request *smb2_find_send(struct smb2_tree *tree, struct smb2_find *io
 	struct smb2_request *req;
 	NTSTATUS status;
 
-	req = smb2_request_init_tree(tree, SMB2_OP_FIND, 0x20, true, 0);
+	req = smb2_request_init_tree(tree, SMB2_OP_QUERY_DIRECTORY, 0x20, true, 0);
 	if (req == NULL) return NULL;
 
 	SCVAL(req->out.body, 0x02, io->in.level);

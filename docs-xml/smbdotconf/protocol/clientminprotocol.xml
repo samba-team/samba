@@ -1,8 +1,8 @@
 <samba:parameter name="client min protocol"
-		 context="G"
-		 type="enum"
-		 developer="1"
-		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+                 context="G"
+                 type="enum"
+                 enumlist="enum_protocol"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This setting controls the minimum protocol version that the
 	client will attempt to use.</para>

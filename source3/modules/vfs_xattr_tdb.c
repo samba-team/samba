@@ -37,7 +37,7 @@ static int xattr_tdb_get_file_id(struct vfs_handle_struct *handle,
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct smb_filename *smb_fname;
 
-	smb_fname = synthetic_smb_fname_split(frame, path, NULL);
+	smb_fname = synthetic_smb_fname(frame, path, NULL, NULL);
 	if (smb_fname == NULL) {
 		TALLOC_FREE(frame);
 		errno = ENOMEM;
@@ -414,7 +414,7 @@ static int xattr_tdb_rmdir(vfs_handle_struct *handle, const char *path)
 					TALLOC_FREE(frame); return -1;
 				});
 
-	if (vfs_stat_smb_fname(handle->conn, path, &sbuf) == -1) {
+	if (vfs_stat_smb_basename(handle->conn, path, &sbuf) == -1) {
 		TALLOC_FREE(frame);
 		return -1;
 	}

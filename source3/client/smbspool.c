@@ -151,7 +151,14 @@ main(int argc,			/* I - Number of command-line arguments */
 		perror("ERROR: Unable to open print file");
 		goto done;
 	} else {
-		copies = atoi(argv[4]);
+		char *p = argv[4];
+		char *endp;
+
+		copies = strtol(p, &endp, 10);
+		if (p == endp) {
+			perror("ERROR: Unable to determine number of copies");
+			goto done;
+		}
 	}
 
 	/*
@@ -245,7 +252,7 @@ main(int argc,			/* I - Number of command-line arguments */
 
 	setup_logging("smbspool", DEBUG_STDOUT);
 
-	load_case_tables();
+	smb_init_locale();
 
 	if (!lp_load_client(get_dyn_CONFIGFILE())) {
 		fprintf(stderr, "ERROR: Can't load %s - run testparm to debug it\n", get_dyn_CONFIGFILE());

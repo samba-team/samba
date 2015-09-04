@@ -1,9 +1,13 @@
 #!/usr/bin/env python
 
-bld.SAMBA_SUBSYSTEM('time-basic',
-                    source='time_basic.c',
-                    deps='replace',
-                    local_include=False)
+# Please add any new SAMBA_SUBSYSTEM/SAMBA_LIBRARY to the bottom of the file
+# unless they are also required to build standalone ctdb.
+
+bld.SAMBA_LIBRARY('time-basic',
+                  source='time_basic.c',
+                  deps='replace',
+                  private_library=True,
+                  local_include=False)
 
 bld.SAMBA_SUBSYSTEM('tini',
                     source='tini.c',
@@ -25,16 +29,37 @@ bld.SAMBA_SUBSYSTEM('close-low-fd',
                     deps='replace',
                     local_include=False)
 
+samba_debug_add_deps = ''
+samba_debug_add_inc  = ''
+
+if bld.CONFIG_SET('HAVE_GPFS'):
+    bld.SAMBA_SUBSYSTEM('gpfswrap',
+                        source='gpfswrap.c',
+                        deps='replace',
+                        local_include=False,
+                        includes=bld.CONFIG_GET('CPPPATH_GPFS'))
+    samba_debug_add_deps += ' gpfswrap'
+    samba_debug_add_inc  += bld.CONFIG_GET('CPPPATH_GPFS')
+
 bld.SAMBA_LIBRARY('samba-debug',
                   source='debug.c',
-                  deps='replace time-basic close-low-fd talloc',
+                  deps='replace time-basic close-low-fd talloc socket-blocking' + samba_debug_add_deps,
+                  public_deps='systemd systemd-journal lttng-ust',
                   local_include=False,
+                  includes=samba_debug_add_inc,
                   private_library=True)
 
 bld.SAMBA_LIBRARY('socket-blocking',
                   source='blocking.c',
                   local_include=False,
                   private_library=True)
+
+bld.SAMBA_LIBRARY('talloc_report',
+                  source='talloc_report.c',
+                  local_include=False,
+                  public_deps='talloc',
+                  private_library=True
+                  )
 
 bld.SAMBA_SUBSYSTEM('samba-util-core',
                     source='''xfile.c data_blob.c util_file.c time.c
@@ -48,19 +73,25 @@ if not bld.env.SAMBA_UTIL_CORE_ONLY:
 
     bld.env.public_headers_skip.append('charset_compat.h')
 
+    bld.SAMBA_LIBRARY('genrand',
+                      source='genrand.c',
+                      deps='time-basic socket-blocking LIBCRYPTO',
+                      local_include=False,
+                      private_library=True)
+
     bld.SAMBA_LIBRARY('samba-util',
                   source='''talloc_stack.c smb_threads.c
                     rbtree.c rfc1738.c become_daemon.c system.c select.c getpass.c
-                    genrand.c fsusage.c
+                    genrand_util.c fsusage.c
                     params.c util_id.c util_net.c
                     util_strlist.c util_paths.c idtree_random.c base64.c
                     util_str.c util_str_common.c ms_fnmatch.c
-                    server_id.c dprintf.c parmlist.c bitmap.c pidfile.c
+                    server_id.c dprintf.c bitmap.c pidfile.c
                     tevent_debug.c util_process.c memcache.c''',
-                  deps='samba-util-core DYNCONFIG close-low-fd tini tiniparser',
+                  deps='samba-util-core DYNCONFIG close-low-fd tini tiniparser genrand',
 
-                  public_deps='talloc tevent execinfo pthread LIBCRYPTO charset util_setid systemd-daemon',
-                  public_headers='debug.h attr.h byteorder.h data_blob.h memory.h safe_string.h time.h talloc_stack.h xfile.h dlinklist.h samba_util.h string_wrappers.h idtree.h idtree_random.h blocking.h signal.h substitute.h fault.h',
+                  public_deps='talloc tevent execinfo pthread LIBCRYPTO charset util_setid systemd systemd-daemon',
+                  public_headers='debug.h attr.h byteorder.h data_blob.h memory.h safe_string.h time.h talloc_stack.h xfile.h dlinklist.h samba_util.h string_wrappers.h idtree.h idtree_random.h blocking.h signal.h substitute.h fault.h genrand.h',
                   header_path= [ ('dlinklist.h samba_util.h', '.'), ('*', 'util') ],
                   local_include=False,
                   vnum='0.0.1',
@@ -94,14 +125,6 @@ if not bld.env.SAMBA_UTIL_CORE_ONLY:
                       public_deps='tdb talloc',
                       private_library=True
                       )
-
-    if not bld.env.disable_ntdb:
-        bld.SAMBA_LIBRARY('util_ntdb',
-                          source='util_ntdb.c',
-                          local_include=False,
-                          public_deps='ntdb talloc samba-util samba-hostconfig',
-                          private_library=True
-                          )
 
     bld.SAMBA_LIBRARY('tevent-util',
                       source='tevent_unix.c tevent_ntstatus.c tevent_werror.c',
@@ -142,5 +165,10 @@ if not bld.env.SAMBA_UTIL_CORE_ONLY:
     bld.SAMBA_LIBRARY('server_id_db',
                       source='server_id_db.c',
                       deps='talloc tdb strv util_tdb tdb-wrap samba-util',
+                      local_include=False,
+                      private_library=True)
+
+    bld.SAMBA_LIBRARY('iov_buf',
+                      source='iov_buf.c',
                       local_include=False,
                       private_library=True)

@@ -165,11 +165,7 @@ NTSTATUS dbwrap_unmarshall(struct db_context *db, const uint8_t *buf,
 
 
 /**
- * This opens an ntdb or tdb file: you can hand it a .ntdb or .tdb extension
- * and it will decide (based on parameter settings, or else what exists) which
- * to use.
- *
- * For backwards compatibility, it takes tdb-style open flags, not ntdb!
+ * This opens a tdb file
  */
 struct db_context *dbwrap_local_open(TALLOC_CTX *mem_ctx,
 				     struct loadparm_context *lp_ctx,

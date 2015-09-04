@@ -619,7 +619,7 @@ int main(int argc, const char **argv)
 	};
 	poptContext pc;
 
-	load_case_tables();
+	smb_init_locale();
 
 	/* only read rcfile if it exists */
 	if (asprintf(&rcfile, "%s/.smbgetrc", getenv("HOME")) == -1) {

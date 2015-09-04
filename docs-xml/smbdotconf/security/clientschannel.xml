@@ -1,8 +1,8 @@
 <samba:parameter name="client schannel"
                  context="G"
-                 basic="1"
-				 type="enum"
-		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+                 type="enum"
+                 enumlist="enum_bool_auto"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 
     <para>

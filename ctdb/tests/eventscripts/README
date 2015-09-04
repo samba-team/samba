@@ -11,11 +11,10 @@ Test case filenames look like:
   <eventscript>.<event>.NNN.sh
 
 The test helper functions will run <eventscript> with specified
-options.  If using the simple_test() or iterate_test() helper
-functions then the 1st <event> argument is automatically passed.  When
-simple_test_event() is used the event name must be explicitly passed
-as the 1st argument - this is more flexible and supports multiple
-events per test.
+options.  If using the simple_test() helper function then the 1st
+<event> argument is automatically passed.  When simple_test_event() is
+used the event name must be explicitly passed as the 1st argument -
+this is more flexible and supports multiple events per test.
 
 Examples:
 

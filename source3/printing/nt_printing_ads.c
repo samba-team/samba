@@ -35,32 +35,32 @@
 /*****************************************************************
  ****************************************************************/
 
-static void store_printer_guid(struct messaging_context *msg_ctx,
-			       const char *printer, struct GUID guid)
+WERROR nt_printer_guid_store(struct messaging_context *msg_ctx,
+			     const char *printer, struct GUID guid)
 {
 	TALLOC_CTX *tmp_ctx;
-	struct auth_session_info *session_info = NULL;
+	const struct auth_session_info *session_info;
 	const char *guid_str;
 	DATA_BLOB blob;
-	NTSTATUS status;
 	WERROR result;
 
 	tmp_ctx = talloc_new(NULL);
 	if (!tmp_ctx) {
-		DEBUG(0, ("store_printer_guid: Out of memory?!\n"));
-		return;
+		DEBUG(0, ("Out of memory?!\n"));
+		return WERR_NOMEM;
 	}
 
-	status = make_session_info_system(tmp_ctx, &session_info);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("store_printer_guid: "
-			  "Could not create system session_info\n"));
+	session_info = get_session_info_system();
+	if (session_info == NULL) {
+		DEBUG(0, ("Could not get system session_info\n"));
+		result = WERR_NOMEM;
 		goto done;
 	}
 
 	guid_str = GUID_string(tmp_ctx, &guid);
 	if (!guid_str) {
-		DEBUG(0, ("store_printer_guid: Out of memory?!\n"));
+		DEBUG(0, ("Out of memory?!\n"));
+		result = WERR_NOMEM;
 		goto done;
 	}
 
@@ -68,9 +68,9 @@ static void store_printer_guid(struct messaging_context *msg_ctx,
 	   Vista to whine */
 
 	if (!push_reg_sz(tmp_ctx, &blob, guid_str)) {
-		DEBUG(0, ("store_printer_guid: "
-			  "Could not marshall string %s for objectGUID\n",
+		DEBUG(0, ("Could not marshall string %s for objectGUID\n",
 			  guid_str));
+		result = WERR_NOMEM;
 		goto done;
 	}
 
@@ -79,12 +79,189 @@ static void store_printer_guid(struct messaging_context *msg_ctx,
 					   SPOOL_DSSPOOLER_KEY, "objectGUID",
 					   REG_SZ, blob.data, blob.length);
 	if (!W_ERROR_IS_OK(result)) {
-		DEBUG(0, ("store_printer_guid: "
-			  "Failed to store GUID for printer %s\n", printer));
+		DEBUG(0, ("Failed to store GUID for printer %s\n", printer));
+		goto done;
 	}
 
+	result = WERR_OK;
 done:
 	talloc_free(tmp_ctx);
+
+	return result;
+}
+
+static WERROR nt_printer_dn_lookup(TALLOC_CTX *mem_ctx,
+				   ADS_STRUCT *ads,
+				   const char *printer,
+				   char **pprinter_dn)
+{
+	char *printer_dn = NULL;
+	char *srv_dn = NULL;
+	char *srv_cn_0 = NULL;
+	char *srv_cn_escaped = NULL;
+	char *sharename_escaped = NULL;
+	char *srv_dn_utf8 = NULL;
+	char **srv_cn_utf8 = NULL;
+	size_t converted_size;
+	ADS_STATUS ads_status;
+	LDAPMessage *res;
+	WERROR result;
+	bool ok;
+
+	ads_status = ads_find_machine_acct(ads, &res, lp_netbios_name());
+	if (!ADS_ERR_OK(ads_status)) {
+		DEBUG(2, ("Failed to find machine account for %s\n",
+			  lp_netbios_name()));
+		result = WERR_NOT_FOUND;
+		goto err_out;
+	}
+
+	/*
+	 * We use ldap_get_dn here as we need the answer in utf8 to call
+	 * ldap_explode_dn(). JRA.
+	 */
+	srv_dn_utf8 = ldap_get_dn((LDAP *)ads->ldap.ld, (LDAPMessage *)res);
+	ads_msgfree(ads, res);
+	if (srv_dn_utf8 == NULL) {
+		result = WERR_SERVER_UNAVAILABLE;
+		goto err_out;
+	}
+
+	srv_cn_utf8 = ldap_explode_dn(srv_dn_utf8, 1);
+	if (srv_cn_utf8 == NULL) {
+		ldap_memfree(srv_dn_utf8);
+		result = WERR_SERVER_UNAVAILABLE;
+		goto err_out;
+	}
+
+	/* Now convert to CH_UNIX. */
+	ok = pull_utf8_talloc(mem_ctx, &srv_dn, srv_dn_utf8, &converted_size);
+	ldap_memfree(srv_dn_utf8);
+	if (!ok) {
+		ldap_memfree(srv_cn_utf8);
+		result = WERR_SERVER_UNAVAILABLE;
+		goto err_out;
+	}
+
+	ok = pull_utf8_talloc(mem_ctx, &srv_cn_0, srv_cn_utf8[0], &converted_size);
+	ldap_memfree(srv_cn_utf8);
+	if (!ok) {
+		result = WERR_SERVER_UNAVAILABLE;
+		goto err_out;
+	}
+
+	srv_cn_escaped = escape_rdn_val_string_alloc(srv_cn_0);
+	if (srv_cn_escaped == NULL) {
+		result = WERR_SERVER_UNAVAILABLE;
+		goto err_out;
+	}
+
+	sharename_escaped = escape_rdn_val_string_alloc(printer);
+	if (sharename_escaped == NULL) {
+		result = WERR_SERVER_UNAVAILABLE;
+		goto err_out;
+	}
+
+	printer_dn = talloc_asprintf(mem_ctx,
+				     "cn=%s-%s,%s",
+				     srv_cn_escaped,
+				     sharename_escaped,
+				     srv_dn);
+	if (printer_dn == NULL) {
+		result = WERR_NOMEM;
+		goto err_out;
+	}
+
+	*pprinter_dn = printer_dn;
+
+	result = WERR_OK;
+err_out:
+	SAFE_FREE(sharename_escaped);
+	SAFE_FREE(srv_cn_escaped);
+	TALLOC_FREE(srv_cn_0);
+	TALLOC_FREE(srv_dn);
+	return result;
+}
+
+static WERROR nt_printer_guid_retrieve_internal(ADS_STRUCT *ads,
+						const char *printer_dn,
+						struct GUID *pguid)
+{
+	ADS_STATUS ads_status;
+	LDAPMessage *res;
+	const char *attrs[] = {"objectGUID", NULL};
+	struct GUID guid;
+	bool ok;
+
+	ads_status = ads_search_dn(ads, &res, printer_dn, attrs);
+	if (!ADS_ERR_OK(ads_status)) {
+		DEBUG(2, ("Failed to retrieve GUID from DC - %s\n",
+			  ads_errstr(ads_status)));
+		return WERR_BADFILE;
+	}
+
+	ZERO_STRUCT(guid);
+	ok = ads_pull_guid(ads, res, &guid);
+	ads_msgfree(ads, res);
+	if (!ok) {
+		return WERR_NOMEM;
+	}
+
+	*pguid = guid;
+
+	return WERR_OK;
+}
+
+WERROR nt_printer_guid_retrieve(TALLOC_CTX *mem_ctx, const char *printer,
+				struct GUID *pguid)
+{
+	ADS_STRUCT *ads = NULL;
+	char *old_krb5ccname = NULL;
+	char *printer_dn;
+	WERROR result;
+	ADS_STATUS ads_status;
+	TALLOC_CTX *tmp_ctx;
+
+	tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		return WERR_NOMEM;
+	}
+
+	ads = ads_init(lp_realm(), lp_workgroup(), NULL);
+	if (ads == NULL) {
+		result = WERR_SERVER_UNAVAILABLE;
+		goto out;
+	}
+
+	old_krb5ccname = getenv(KRB5_ENV_CCNAME);
+	setenv(KRB5_ENV_CCNAME, "MEMORY:prtpub_cache", 1);
+	SAFE_FREE(ads->auth.password);
+	ads->auth.password = secrets_fetch_machine_password(lp_workgroup(),
+							    NULL, NULL);
+
+	ads_status = ads_connect(ads);
+	if (!ADS_ERR_OK(ads_status)) {
+		DEBUG(3, ("ads_connect failed: %s\n", ads_errstr(ads_status)));
+		result = WERR_ACCESS_DENIED;
+		goto out;
+	}
+
+	result = nt_printer_dn_lookup(tmp_ctx, ads, printer, &printer_dn);
+	if (!W_ERROR_IS_OK(result)) {
+		goto out;
+	}
+
+	result = nt_printer_guid_retrieve_internal(ads, printer_dn, pguid);
+out:
+	TALLOC_FREE(tmp_ctx);
+	ads_destroy(&ads);
+	ads_kdestroy("MEMORY:prtpub_cache");
+	unsetenv(KRB5_ENV_CCNAME);
+	if (old_krb5ccname != NULL) {
+		setenv(KRB5_ENV_CCNAME, old_krb5ccname, 0);
+	}
+
+	return result;
 }
 
 WERROR nt_printer_guid_get(TALLOC_CTX *mem_ctx,
@@ -246,16 +423,12 @@ static WERROR nt_printer_publish_ads(struct messaging_context *msg_ctx,
 				     struct spoolss_PrinterInfo2 *pinfo2)
 {
 	ADS_STATUS ads_rc;
-	LDAPMessage *res;
-	char *prt_dn = NULL, *srv_dn, *srv_cn_0, *srv_cn_escaped, *sharename_escaped;
-	char *srv_dn_utf8, **srv_cn_utf8;
 	TALLOC_CTX *ctx;
 	ADS_MODLIST mods;
-	const char *attrs[] = {"objectGUID", NULL};
 	struct GUID guid;
 	WERROR win_rc = WERR_OK;
-	size_t converted_size;
 	const char *printer = pinfo2->sharename;
+	char *printer_dn = NULL;
 
 	/* build the ads mods */
 	ctx = talloc_init("nt_printer_publish_ads");
@@ -265,64 +438,12 @@ static WERROR nt_printer_publish_ads(struct messaging_context *msg_ctx,
 
 	DEBUG(5, ("publishing printer %s\n", printer));
 
-	/* figure out where to publish */
-	ads_rc = ads_find_machine_acct(ads, &res, lp_netbios_name());
-	if (!ADS_ERR_OK(ads_rc)) {
-		DEBUG(0, ("failed to find machine account for %s\n",
-			  lp_netbios_name()));
+	win_rc = nt_printer_dn_lookup(ctx, ads, printer, &printer_dn);
+	if (!W_ERROR_IS_OK(win_rc)) {
+		DEBUG(2, ("Failed to create printer dn\n"));
 		TALLOC_FREE(ctx);
-		return WERR_NOT_FOUND;
+		return win_rc;
 	}
-
-	/* We use ldap_get_dn here as we need the answer
-	 * in utf8 to call ldap_explode_dn(). JRA. */
-
-	srv_dn_utf8 = ldap_get_dn((LDAP *)ads->ldap.ld, (LDAPMessage *)res);
-	ads_msgfree(ads, res);
-	if (!srv_dn_utf8) {
-		TALLOC_FREE(ctx);
-		return WERR_SERVER_UNAVAILABLE;
-	}
-	srv_cn_utf8 = ldap_explode_dn(srv_dn_utf8, 1);
-	if (!srv_cn_utf8) {
-		TALLOC_FREE(ctx);
-		ldap_memfree(srv_dn_utf8);
-		return WERR_SERVER_UNAVAILABLE;
-	}
-	/* Now convert to CH_UNIX. */
-	if (!pull_utf8_talloc(ctx, &srv_dn, srv_dn_utf8, &converted_size)) {
-		TALLOC_FREE(ctx);
-		ldap_memfree(srv_dn_utf8);
-		ldap_memfree(srv_cn_utf8);
-		return WERR_SERVER_UNAVAILABLE;
-	}
-	if (!pull_utf8_talloc(ctx, &srv_cn_0, srv_cn_utf8[0], &converted_size)) {
-		TALLOC_FREE(ctx);
-		ldap_memfree(srv_dn_utf8);
-		ldap_memfree(srv_cn_utf8);
-		TALLOC_FREE(srv_dn);
-		return WERR_SERVER_UNAVAILABLE;
-	}
-
-	ldap_memfree(srv_dn_utf8);
-	ldap_memfree(srv_cn_utf8);
-
-	srv_cn_escaped = escape_rdn_val_string_alloc(srv_cn_0);
-	if (!srv_cn_escaped) {
-		TALLOC_FREE(ctx);
-		return WERR_SERVER_UNAVAILABLE;
-	}
-	sharename_escaped = escape_rdn_val_string_alloc(printer);
-	if (!sharename_escaped) {
-		SAFE_FREE(srv_cn_escaped);
-		TALLOC_FREE(ctx);
-		return WERR_SERVER_UNAVAILABLE;
-	}
-
-	prt_dn = talloc_asprintf(ctx, "cn=%s-%s,%s", srv_cn_escaped, sharename_escaped, srv_dn);
-
-	SAFE_FREE(srv_cn_escaped);
-	SAFE_FREE(sharename_escaped);
 
 	mods = ads_init_mods(ctx);
 
@@ -338,30 +459,35 @@ static WERROR nt_printer_publish_ads(struct messaging_context *msg_ctx,
 	}
 
 	/* publish it */
-	ads_rc = ads_mod_printer_entry(ads, prt_dn, ctx, &mods);
+	ads_rc = ads_mod_printer_entry(ads, printer_dn, ctx, &mods);
 	if (ads_rc.err.rc == LDAP_NO_SUCH_OBJECT) {
 		int i;
 		for (i=0; mods[i] != 0; i++)
 			;
 		mods[i] = (LDAPMod *)-1;
-		ads_rc = ads_add_printer_entry(ads, prt_dn, ctx, &mods);
+		ads_rc = ads_add_printer_entry(ads, printer_dn, ctx, &mods);
 	}
 
 	if (!ADS_ERR_OK(ads_rc)) {
 		DEBUG(3, ("error publishing %s: %s\n",
 			  printer, ads_errstr(ads_rc)));
+		/* XXX failed to publish, so no guid to retrieve */
 	}
 
-	/* retreive the guid and store it locally */
-	if (ADS_ERR_OK(ads_search_dn(ads, &res, prt_dn, attrs))) {
-		bool guid_ok;
-		ZERO_STRUCT(guid);
-		guid_ok = ads_pull_guid(ads, res, &guid);
-		ads_msgfree(ads, res);
-		if (guid_ok) {
-			store_printer_guid(msg_ctx, printer, guid);
-		}
+	win_rc = nt_printer_guid_retrieve_internal(ads, printer_dn, &guid);
+	if (!W_ERROR_IS_OK(win_rc)) {
+		TALLOC_FREE(ctx);
+		return win_rc;
 	}
+
+	win_rc = nt_printer_guid_store(msg_ctx, printer, guid);
+	if (!W_ERROR_IS_OK(win_rc)) {
+		DEBUG(3, ("failed to store printer %s guid\n",
+			  printer));
+		/* not catastrophic, retrieve on next use */
+		win_rc = WERR_OK;
+	}
+
 	TALLOC_FREE(ctx);
 
 	return win_rc;
@@ -600,6 +726,18 @@ bool is_printer_published(TALLOC_CTX *mem_ctx,
 	return true;
 }
 #else
+WERROR nt_printer_guid_store(struct messaging_context *msg_ctx,
+			   const char *printer, struct GUID guid)
+{
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR nt_printer_guid_retrieve(TALLOC_CTX *mem_ctx, const char *printer,
+				struct GUID *pguid)
+{
+	return WERR_NOT_SUPPORTED;
+}
+
 WERROR nt_printer_guid_get(TALLOC_CTX *mem_ctx,
 			   const struct auth_session_info *session_info,
 			   struct messaging_context *msg_ctx,

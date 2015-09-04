@@ -770,7 +770,7 @@ static void display_reg_value(const char *name, enum winreg_Type type, DATA_BLOB
 
 	switch(type) {
 	case REG_DWORD:
-		if (blob.length == sizeof(uint32)) {
+		if (blob.length == sizeof(uint32_t)) {
 			printf("%s: REG_DWORD: 0x%08x\n", name, IVAL(blob.data,0));
 		} else {
 			printf("%s: REG_DWORD: <invalid>\n", name);
@@ -863,13 +863,17 @@ static void display_printer_data(const char *v,
 		}
 		TALLOC_FREE(hex);
 		putchar('\n');
+		putchar('\n');
 
 		if (strequal(v, "OsVersion")) {
 			struct spoolss_OSVersion os;
 			ndr_err = ndr_pull_struct_blob(&blob, talloc_tos(), &os,
 				(ndr_pull_flags_fn_t)ndr_pull_spoolss_OSVersion);
 			if (NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-				printf("%s: OsVersion:\n", v);
+				// add output here;
+				printf("OsMajor: %u\n", os.major);
+				printf("OsMinor: %u\n", os.minor);
+				printf("OsBuild: %u\n", os.build);
 				NDR_PRINT_DEBUG(spoolss_OSVersion, &os);
 			}
 		}
@@ -878,7 +882,11 @@ static void display_printer_data(const char *v,
 			ndr_err = ndr_pull_struct_blob(&blob, talloc_tos(), &os,
 				(ndr_pull_flags_fn_t)ndr_pull_spoolss_OSVersionEx);
 			if (NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-				printf("%s: OsVersionEx:\n", v);
+				printf("OsMajor: %u\n", os.major);
+				printf("OsMinor: %u\n", os.minor);
+				printf("OsBuild: %u\n", os.build);
+				printf("ServicePackMajor: %u\n", os.service_pack_major);
+				printf("ServicePackMinor: %u\n", os.service_pack_minor);
 				NDR_PRINT_DEBUG(spoolss_OSVersionEx, &os);
 			}
 		}

@@ -1,7 +1,7 @@
 <samba:parameter name="follow symlinks"
-	         context="S"
-			 type="boolean"
-		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+                 context="S"
+                 type="boolean"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>
 	This parameter allows the Samba administrator to stop <citerefentry><refentrytitle>smbd</refentrytitle>

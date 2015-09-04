@@ -42,7 +42,7 @@
  Add the standard 'Samba' signature to the end of the session setup.
 ****************************************************************************/
 
-static int push_signature(uint8 **outbuf)
+static int push_signature(uint8_t **outbuf)
 {
 	char *lanman;
 	int result, tmp;
@@ -119,7 +119,7 @@ static NTSTATUS check_guest_password(const struct tsocket_address *remote_addres
 
 static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 {
-	const uint8 *p;
+	const uint8_t *p;
 	DATA_BLOB in_blob;
 	DATA_BLOB out_blob = data_blob_null;
 	size_t bufrem;
@@ -127,7 +127,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 	const char *native_os;
 	const char *native_lanman;
 	const char *primary_domain;
-	uint16 data_blob_len = SVAL(req->vwv+7, 0);
+	uint16_t data_blob_len = SVAL(req->vwv+7, 0);
 	enum remote_arch_types ra_type = get_remote_arch();
 	uint64_t vuid = req->vuid;
 	NTSTATUS status = NT_STATUS_OK;
@@ -138,6 +138,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 	struct smbXsrv_session *session = NULL;
 	uint16_t smb_bufsize = SVAL(req->vwv+2, 0);
 	uint32_t client_caps = IVAL(req->vwv+10, 0);
+	struct smbXsrv_session_auth0 *auth;
 
 	DEBUG(3,("Doing spnego session setup\n"));
 
@@ -216,7 +217,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 		if (NT_STATUS_IS_OK(status)) {
 			session->status = NT_STATUS_MORE_PROCESSING_REQUIRED;
 			status = NT_STATUS_MORE_PROCESSING_REQUIRED;
-			TALLOC_FREE(session->gensec);
+			TALLOC_FREE(session->pending_auth);
 		}
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 			reply_nterror(req, nt_status_squash(status));
@@ -234,19 +235,31 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 		}
 	}
 
-	if (!session->gensec) {
+	status = smbXsrv_session_find_auth(session, xconn, now, &auth);
+	if (!NT_STATUS_IS_OK(status)) {
+		status = smbXsrv_session_create_auth(session, xconn, now,
+						     0, /* flags */
+						     0, /* security */
+						     &auth);
+		if (!NT_STATUS_IS_OK(status)) {
+			reply_nterror(req, nt_status_squash(status));
+			return;
+		}
+	}
+
+	if (auth->gensec == NULL) {
 		status = auth_generic_prepare(session, xconn->remote_address,
-					      &session->gensec);
+					      &auth->gensec);
 		if (!NT_STATUS_IS_OK(status)) {
 			TALLOC_FREE(session);
 			reply_nterror(req, nt_status_squash(status));
 			return;
 		}
 
-		gensec_want_feature(session->gensec, GENSEC_FEATURE_SESSION_KEY);
-		gensec_want_feature(session->gensec, GENSEC_FEATURE_UNIX_TOKEN);
+		gensec_want_feature(auth->gensec, GENSEC_FEATURE_SESSION_KEY);
+		gensec_want_feature(auth->gensec, GENSEC_FEATURE_UNIX_TOKEN);
 
-		status = gensec_start_mech_by_oid(session->gensec,
+		status = gensec_start_mech_by_oid(auth->gensec,
 						  GENSEC_OID_SPNEGO);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("Failed to start SPNEGO handler!\n"));
@@ -257,7 +270,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 	}
 
 	become_root();
-	status = gensec_update(session->gensec,
+	status = gensec_update(auth->gensec,
 			       talloc_tos(),
 			       in_blob, &out_blob);
 	unbecome_root();
@@ -271,7 +284,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 	if (NT_STATUS_IS_OK(status) && session->global->auth_session_info == NULL) {
 		struct auth_session_info *session_info = NULL;
 
-		status = gensec_session_info(session->gensec,
+		status = gensec_session_info(auth->gensec,
 					     session,
 					     &session_info);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -357,7 +370,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 		session->global->auth_time = now;
 		if (client_caps & CAP_DYNAMIC_REAUTH) {
 			session->global->expiration_time =
-				gensec_expire_time(session->gensec);
+				gensec_expire_time(auth->gensec);
 		} else {
 			session->global->expiration_time =
 				GENSEC_EXPIRE_TIME_INFINITY;
@@ -397,7 +410,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 	} else if (NT_STATUS_IS_OK(status)) {
 		struct auth_session_info *session_info = NULL;
 
-		status = gensec_session_info(session->gensec,
+		status = gensec_session_info(auth->gensec,
 					     session,
 					     &session_info);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -445,7 +458,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 		session->global->auth_time = now;
 		if (client_caps & CAP_DYNAMIC_REAUTH) {
 			session->global->expiration_time =
-				gensec_expire_time(session->gensec);
+				gensec_expire_time(auth->gensec);
 		} else {
 			session->global->expiration_time =
 				GENSEC_EXPIRE_TIME_INFINITY;
@@ -511,9 +524,10 @@ static int shutdown_other_smbds(struct smbXsrv_session_global0 *session,
 	struct server_id self_pid = messaging_server_id(state->msg_ctx);
 	struct server_id pid = session->channels[0].server_id;
 	const char *addr = session->channels[0].remote_address;
+	struct server_id_buf tmp;
 
 	DEBUG(10, ("shutdown_other_smbds: %s, %s\n",
-		   server_id_str(talloc_tos(), &pid), addr));
+		   server_id_str_buf(pid, &tmp), addr));
 
 	if (!process_exists(pid)) {
 		DEBUG(10, ("process does not exist\n"));
@@ -589,7 +603,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 	const char *primary_domain;
 	struct auth_usersupplied_info *user_info = NULL;
 	struct auth_session_info *session_info = NULL;
-	uint16 smb_flag2 = req->flags2;
+	uint16_t smb_flag2 = req->flags2;
 	uint16_t action = 0;
 	NTTIME now = timeval_to_nttime(&req->request_time);
 	struct smbXsrv_session *session = NULL;
@@ -651,7 +665,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 	smb_bufsize = SVAL(req->vwv+2, 0);
 
 	if (get_Protocol() < PROTOCOL_NT1) {
-		uint16 passlen1 = SVAL(req->vwv+7, 0);
+		uint16_t passlen1 = SVAL(req->vwv+7, 0);
 
 		/* Never do NT status codes with protocols before NT1 as we
 		 * don't get client caps. */
@@ -679,12 +693,12 @@ void reply_sesssetup_and_X(struct smb_request *req)
 		domain = "";
 
 	} else {
-		uint16 passlen1 = SVAL(req->vwv+7, 0);
-		uint16 passlen2 = SVAL(req->vwv+8, 0);
+		uint16_t passlen1 = SVAL(req->vwv+7, 0);
+		uint16_t passlen2 = SVAL(req->vwv+8, 0);
 		enum remote_arch_types ra_type = get_remote_arch();
 		const uint8_t *p = req->buf;
 		const uint8_t *save_p = req->buf;
-		uint16 byte_count;
+		uint16_t byte_count;
 
 		if (!xconn->smb1.sessions.done_sesssetup) {
 			global_client_caps = IVAL(req->vwv+11, 0);

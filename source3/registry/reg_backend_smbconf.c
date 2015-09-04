@@ -57,8 +57,8 @@ static bool smbconf_store_values(const char *key, struct regval_ctr *val)
 	return regdb_ops.store_values(key, val);
 }
 
-static bool smbconf_reg_access_check(const char *keyname, uint32 requested,
-				     uint32 *granted,
+static bool smbconf_reg_access_check(const char *keyname, uint32_t requested,
+				     uint32_t *granted,
 				     const struct security_token *token)
 {
 	if (!security_token_has_privilege(token, SEC_PRIV_DISK_OPERATOR)) {

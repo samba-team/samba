@@ -29,30 +29,169 @@
 #include "param/param.h"
 #include "ldb_wrap.h"
 
+struct standard_child_state {
+	const char *name;
+	pid_t pid;
+	int to_parent_fd;
+	int from_child_fd;
+	struct tevent_fd *from_child_fde;
+};
+
 NTSTATUS process_model_standard_init(void);
 
 /* we hold a pipe open in the parent, and the any child
    processes wait for EOF on that pipe. This ensures that
    children die when the parent dies */
-static int child_pipe[2];
+static int child_pipe[2] = { -1, -1 };
 
 /*
   called when the process model is selected
 */
 static void standard_model_init(void)
 {
-	pipe(child_pipe);
-	signal(SIGCHLD, SIG_IGN);
+	int rc;
+
+	rc = pipe(child_pipe);
+	if (rc < 0) {
+		smb_panic("Failed to initialze pipe!");
+	}
 }
 
 /*
-  handle EOF on the child pipe
+  handle EOF on the parent-to-all-children pipe in the child
 */
 static void standard_pipe_handler(struct tevent_context *event_ctx, struct tevent_fd *fde, 
 				  uint16_t flags, void *private_data)
 {
 	DEBUG(10,("Child %d exiting\n", (int)getpid()));
 	exit(0);
+}
+
+/*
+  handle EOF on the child pipe in the parent, so we know when a
+  process terminates without using SIGCHLD or waiting on all possible pids.
+
+  We need to ensure we do not ignore SIGCHLD because we need it to
+  work to get a valid error code from samba_runcmd_*().
+ */
+static void standard_child_pipe_handler(struct tevent_context *ev,
+					struct tevent_fd *fde,
+					uint16_t flags,
+					void *private_data)
+{
+	struct standard_child_state *state
+		= talloc_get_type_abort(private_data, struct standard_child_state);
+	int status = 0;
+	pid_t pid;
+
+	/* the child has closed the pipe, assume its dead */
+	errno = 0;
+	pid = waitpid(state->pid, &status, 0);
+
+	if (pid != state->pid) {
+		if (errno == ECHILD) {
+			/*
+			 * this happens when the
+			 * parent has set SIGCHLD to
+			 * SIG_IGN. In that case we
+			 * can only get error
+			 * information for the child
+			 * via its logging. We should
+			 * stop using SIG_IGN on
+			 * SIGCHLD in the standard
+			 * process model.
+			 */
+			DEBUG(0, ("Error in waitpid() unexpectedly got ECHILD "
+				  "for child %d (%s) - %s, someone has set SIGCHLD "
+				  "to SIG_IGN!\n",
+				  (int)state->pid, state->name,
+				  strerror(errno)));
+			TALLOC_FREE(state);
+			return;
+		}
+		DEBUG(0, ("Error in waitpid() for child %d (%s) - %s \n",
+			  (int)state->pid, state->name, strerror(errno)));
+		if (errno == 0) {
+			errno = ECHILD;
+		}
+		TALLOC_FREE(state);
+		return;
+	}
+	if (WIFEXITED(status)) {
+		status = WEXITSTATUS(status);
+		DEBUG(2, ("Child %d (%s) exited with status %d\n",
+			  (int)state->pid, state->name, status));
+	} else if (WIFSIGNALED(status)) {
+		status = WTERMSIG(status);
+		DEBUG(0, ("Child %d (%s) terminated with signal %d\n",
+			  (int)state->pid, state->name, status));
+	}
+	TALLOC_FREE(state);
+	return;
+}
+
+static struct standard_child_state *setup_standard_child_pipe(struct tevent_context *ev,
+							      const char *name)
+{
+	struct standard_child_state *state;
+	int parent_child_pipe[2];
+	int ret;
+
+	/*
+	 * Prepare a pipe to allow us to know when the child exits,
+	 * because it will trigger a read event on this private
+	 * pipe.
+	 *
+	 * We do all this before the accept and fork(), so we can
+	 * clean up if it fails.
+	 */
+	state = talloc_zero(ev, struct standard_child_state);
+	if (state == NULL) {
+		return NULL;
+	}
+
+	if (name == NULL) {
+		name = "";
+	}
+
+	state->name = talloc_strdup(state, name);
+	if (state->name == NULL) {
+		TALLOC_FREE(state);
+		return NULL;
+	}
+
+	ret = pipe(parent_child_pipe);
+	if (ret == -1) {
+		DEBUG(0, ("Failed to create parent-child pipe to handle "
+			  "SIGCHLD to track new process for socket\n"));
+		TALLOC_FREE(state);
+		return NULL;
+	}
+
+	smb_set_close_on_exec(parent_child_pipe[0]);
+	smb_set_close_on_exec(parent_child_pipe[1]);
+
+	state->from_child_fd = parent_child_pipe[0];
+	state->to_parent_fd = parent_child_pipe[1];
+
+	/*
+	 * The basic purpose of calling this handler is to ensure we
+	 * call waitpid() and so avoid zombies (now that we no longer
+	 * user SIGIGN on for SIGCHLD), but it also allows us to clean
+	 * up other resources in the future.
+	 */
+	state->from_child_fde = tevent_add_fd(ev, state,
+					      state->from_child_fd,
+					      TEVENT_FD_READ,
+					      standard_child_pipe_handler,
+					      state);
+	if (state->from_child_fde == NULL) {
+		TALLOC_FREE(state);
+		return NULL;
+	}
+	tevent_fd_set_auto_close(state->from_child_fde);
+
+	return state;
 }
 
 /*
@@ -70,6 +209,12 @@ static void standard_accept_connection(struct tevent_context *ev,
 	struct socket_context *sock2;
 	pid_t pid;
 	struct socket_address *c, *s;
+	struct standard_child_state *state;
+
+	state = setup_standard_child_pipe(ev, NULL);
+	if (state == NULL) {
+		return;
+	}
 
 	/* accept an incoming connection. */
 	status = socket_accept(sock, &sock2);
@@ -79,17 +224,32 @@ static void standard_accept_connection(struct tevent_context *ev,
 		/* this looks strange, but is correct. We need to throttle things until
 		   the system clears enough resources to handle this new socket */
 		sleep(1);
+		close(state->to_parent_fd);
+		state->to_parent_fd = -1;
+		TALLOC_FREE(state);
 		return;
 	}
 
 	pid = fork();
 
 	if (pid != 0) {
+		close(state->to_parent_fd);
+		state->to_parent_fd = -1;
+
+		if (pid > 0) {
+			state->pid = pid;
+		} else {
+			TALLOC_FREE(state);
+		}
+
 		/* parent or error code ... */
 		talloc_free(sock2);
 		/* go back to the event loop */
 		return;
 	}
+
+	/* this leaves state->to_parent_fd open */
+	TALLOC_FREE(state);
 
 	pid = getpid();
 
@@ -112,7 +272,10 @@ static void standard_accept_connection(struct tevent_context *ev,
 
 	tevent_add_fd(ev, ev, child_pipe[0], TEVENT_FD_READ,
 		      standard_pipe_handler, NULL);
-	close(child_pipe[1]);
+	if (child_pipe[1] != -1) {
+		close(child_pipe[1]);
+		child_pipe[1] = -1;
+	}
 
 	/* Ensure that the forked children do not expose identical random streams */
 	set_need_random_reseed();
@@ -149,13 +312,31 @@ static void standard_new_task(struct tevent_context *ev,
 			      void *private_data)
 {
 	pid_t pid;
+	struct standard_child_state *state;
+
+	state = setup_standard_child_pipe(ev, service_name);
+	if (state == NULL) {
+		return;
+	}
 
 	pid = fork();
 
 	if (pid != 0) {
+		close(state->to_parent_fd);
+		state->to_parent_fd = -1;
+
+		if (pid > 0) {
+			state->pid = pid;
+		} else {
+			TALLOC_FREE(state);
+		}
+
 		/* parent or error code ... go back to the event loop */
 		return;
 	}
+
+	/* this leaves state->to_parent_fd open */
+	TALLOC_FREE(state);
 
 	pid = getpid();
 
@@ -170,7 +351,10 @@ static void standard_new_task(struct tevent_context *ev,
 
 	tevent_add_fd(ev, ev, child_pipe[0], TEVENT_FD_READ,
 		      standard_pipe_handler, NULL);
-	close(child_pipe[1]);
+	if (child_pipe[1] != -1) {
+		close(child_pipe[1]);
+		child_pipe[1] = -1;
+	}
 
 	/* Ensure that the forked children do not expose identical random streams */
 	set_need_random_reseed();

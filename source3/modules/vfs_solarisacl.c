@@ -167,12 +167,12 @@ int solarisacl_sys_acl_set_file(vfs_handle_struct *handle,
 	 * that has not been specified in "type" from the file first 
 	 * and concatenate it with the acl provided.
 	 */
-	if (vfs_stat_smb_fname(handle->conn, name, &s) != 0) {
+	if (vfs_stat_smb_basename(handle->conn, name, &s) != 0) {
 		DEBUG(10, ("Error in stat call: %s\n", strerror(errno)));
 		goto done;
 	}
 	if (S_ISDIR(s.st_ex_mode)) {
-		SOLARIS_ACL_T other_acl; 
+		SOLARIS_ACL_T other_acl = NULL;
 		int other_count;
 		SMB_ACL_TYPE_T other_type;
 

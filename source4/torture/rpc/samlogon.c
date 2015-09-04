@@ -1519,8 +1519,9 @@ bool test_InteractiveLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	torture_comment(tctx, "Testing netr_LogonSamLogonWithFlags '%s' (Interactive Logon)\n", comment);
 
+	status = dcerpc_netr_LogonSamLogonWithFlags_r(b, fn_ctx, &r);
 	torture_assert_ntstatus_ok_goto(tctx,
-		dcerpc_netr_LogonSamLogonWithFlags_r(b, fn_ctx, &r),
+		status,
 		ret, failed,
 		talloc_asprintf(tctx, "%s: netr_LogonSamLogonWithFlags - %s\n",
 			 __location__, nt_errstr(status)));
@@ -1649,9 +1650,8 @@ bool torture_rpc_samlogon(struct torture_context *torture)
 	bool ret = true;
 	struct test_join *join_ctx = NULL;
 	struct test_join *user_ctx = NULL, *user_ctx_wrong_wks = NULL, *user_ctx_wrong_time = NULL;
-	char *user_password, *user_password_wrong_wks, *user_password_wrong_time;
-	const char *old_user_password;
-	char *test_machine_account;
+	const char *old_user_password, *user_password_wrong_wks, *user_password_wrong_time;
+	char *user_password;
 	const char *userdomain;
 	struct samr_SetUserInfo s;
 	union samr_UserInfo u;
@@ -1672,7 +1672,6 @@ bool torture_rpc_samlogon(struct torture_context *torture)
 	torture_assert(torture, handle_minPwdAge(torture, mem_ctx, true),
 		       "handle_minPwdAge error!");
 
-	test_machine_account = talloc_asprintf(mem_ctx, "%s$", TEST_MACHINE_NAME);
 	/* We only need to join as a workstation here, and in future,
 	 * if we wish to test against trusted domains, we must be a
 	 * workstation here */
@@ -1686,12 +1685,14 @@ bool torture_rpc_samlogon(struct torture_context *torture)
 					   TEST_USER_NAME,
 					   userdomain,
 					   ACB_NORMAL,
-					   (const char **)&user_password);
+					   &old_user_password);
 	torture_assert(torture, user_ctx, "Failed to create a test user\n");
 
-	old_user_password = user_password;
+	user_password = talloc_strdup(torture, old_user_password);
+	torture_assert(torture, user_password != NULL, "Failed to copy old_user_password\n");
 
 	tmp_p = torture_join_samr_pipe(user_ctx);
+	torture_assert(torture, tmp_p, "torture_join_samr_pipe failed\n");
 	test_ChangePasswordUser3(tmp_p, torture,
 				 TEST_USER_NAME, 16 /* > 14 */, &user_password,
 				 NULL, 0, false);
@@ -1700,7 +1701,7 @@ bool torture_rpc_samlogon(struct torture_context *torture)
 						     TEST_USER_NAME_WRONG_WKS,
 					   userdomain,
 					   ACB_NORMAL,
-					   (const char **)&user_password_wrong_wks);
+					   &user_password_wrong_wks);
 	torture_assert(torture, user_ctx_wrong_wks,
 		"Failed to create a test user (wrong workstation test)\n");
 
@@ -1723,7 +1724,7 @@ bool torture_rpc_samlogon(struct torture_context *torture)
 		= torture_create_testuser(torture, TEST_USER_NAME_WRONG_TIME,
 					   userdomain,
 					   ACB_NORMAL,
-					   (const char **)&user_password_wrong_time);
+					   &user_password_wrong_time);
 	torture_assert(torture, user_ctx_wrong_time,
 		"Failed to create a test user (wrong workstation test)\n");
 

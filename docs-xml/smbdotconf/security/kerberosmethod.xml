@@ -1,5 +1,7 @@
-<samba:parameter name="kerberos method" context="G" type="enum"
-		 advanced="1" developer="1"
+<samba:parameter name="kerberos method"
+                 context="G"
+                 type="enum"
+                 enumlist="enum_kerberos_method"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>
@@ -8,7 +10,7 @@
 
 	<para>Valid options are:</para>
 	<itemizedlist>
-	  <listitem><para>secrets only - use only the secrets.(n)tdb for
+	  <listitem><para>secrets only - use only the secrets.tdb for
 	  ticket verification (default)</para></listitem>
 
 	  <listitem><para>system keytab - use only the system keytab
@@ -17,7 +19,7 @@
 	  <listitem><para>dedicated keytab - use a dedicated keytab
 	  for ticket verification</para></listitem>
 
-	  <listitem><para>secrets and keytab - use the secrets.(n)tdb
+	  <listitem><para>secrets and keytab - use the secrets.tdb
 	  first, then the system keytab</para></listitem>
 	</itemizedlist>
 

@@ -321,7 +321,17 @@ bld.SAMBA_SUBSYSTEM('NDR_FSRVP',
 	)
 
 bld.SAMBA_SUBSYSTEM('NDR_WITNESS',
-    source='gen_ndr/ndr_witness.c',
+    source='gen_ndr/ndr_witness.c ndr/ndr_witness.c',
+    public_deps='ndr'
+    )
+
+bld.SAMBA_SUBSYSTEM('NDR_CLUSAPI',
+    source='gen_ndr/ndr_clusapi.c',
+    public_deps='ndr'
+    )
+
+bld.SAMBA_SUBSYSTEM('NDR_MDSSVC',
+    source='gen_ndr/ndr_mdssvc.c',
     public_deps='ndr'
     )
 
@@ -406,6 +416,11 @@ bld.SAMBA_SUBSYSTEM('NDR_PREG',
 bld.SAMBA_SUBSYSTEM('NDR_FILE_ID',
     source='gen_ndr/ndr_file_id.c',
     public_deps='ndr'
+    )
+
+bld.SAMBA_SUBSYSTEM('NDR_MESSAGING',
+    source='gen_ndr/ndr_messaging.c',
+    public_deps='ndr NDR_SERVER_ID'
     )
 
 bld.SAMBA_SUBSYSTEM('RPC_NDR_XATTR',
@@ -650,12 +665,22 @@ bld.SAMBA_SUBSYSTEM('RPC_NDR_WITNESS',
     public_deps='dcerpc-binding NDR_WITNESS'
     )
 
+bld.SAMBA_SUBSYSTEM('RPC_NDR_CLUSAPI',
+    source='gen_ndr/ndr_clusapi_c.c',
+    public_deps='dcerpc-binding NDR_CLUSAPI'
+    )
+
+bld.SAMBA_SUBSYSTEM('RPC_NDR_MDSSVC',
+    source='gen_ndr/ndr_mdssvc_c.c',
+    public_deps='dcerpc-binding NDR_MDSSVC'
+    )
+
 # a grouping library for NDR subsystems that may be used by more than one target
 bld.SAMBA_LIBRARY('ndr-samba',
     source=[],
     deps='''NDR_DRSBLOBS NDR_DRSUAPI NDR_IDMAP NDR_NTLMSSP NDR_SCHANNEL NDR_MGMT
     NDR_DNSP NDR_EPMAPPER NDR_XATTR NDR_UNIXINFO NDR_NAMED_PIPE_AUTH NDR_DCOM
-    NDR_NTPRINTING NDR_FSRVP NDR_WITNESS NDR_OPEN_FILES NDR_SMBXSRV''',
+    NDR_NTPRINTING NDR_FSRVP NDR_WITNESS NDR_MDSSVC NDR_OPEN_FILES NDR_SMBXSRV''',
     private_library=True,
     grouping_library=True
     )
@@ -678,7 +703,7 @@ bld.SAMBA_LIBRARY('ndr',
     public_deps='errors talloc samba-util',
     public_headers='gen_ndr/misc.h gen_ndr/ndr_misc.h ndr/libndr.h:ndr.h',
     header_path= [('*gen_ndr*', 'gen_ndr')],
-    vnum='0.0.4',
+    vnum='0.0.5',
     abi_directory='ABI',
     abi_match='ndr_* GUID_*',
     )
@@ -704,3 +729,8 @@ bld.SAMBA3_SUBSYSTEM('SRV_NDR_WINBIND',
 	source='gen_ndr/srv_winbind.c',
 	public_deps='NDR_WINBIND'
 	)
+
+bld.SAMBA_SUBSYSTEM('NDR_FSRVP_STATE',
+    source='gen_ndr/ndr_fsrvp_state.c',
+    public_deps='ndr'
+    )

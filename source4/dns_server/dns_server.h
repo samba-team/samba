@@ -93,6 +93,8 @@ bool dns_records_match(struct dnsp_DnssrvRpcRecord *rec1,
 		       struct dnsp_DnssrvRpcRecord *rec2);
 bool dns_authorative_for_zone(struct dns_server *dns,
 			      const char *name);
+const char *dns_get_authoritative_zone(struct dns_server *dns,
+				       const char *name);
 WERROR dns_lookup_records(struct dns_server *dns,
 			  TALLOC_CTX *mem_ctx,
 			  struct ldb_dn *dn,

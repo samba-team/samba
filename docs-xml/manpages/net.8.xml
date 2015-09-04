@@ -7,7 +7,7 @@
 	<manvolnum>8</manvolnum>
 	<refmiscinfo class="source">Samba</refmiscinfo>
 	<refmiscinfo class="manual">System Administration tools</refmiscinfo>
-	<refmiscinfo class="version">4.2</refmiscinfo>
+	<refmiscinfo class="version">4.3</refmiscinfo>
 </refmeta>
 
 
@@ -1258,7 +1258,7 @@ against an NT4 Domain Controller.
 <refsect2>
 <title>RPC GETSID</title>
 
-<para>Fetch domain SID and store it in the local <filename>secrets.tdb</filename> (or <filename>secrets.ntdb</filename>). </para>
+<para>Fetch domain SID and store it in the local <filename>secrets.tdb</filename>. </para>
 
 </refsect2>
 

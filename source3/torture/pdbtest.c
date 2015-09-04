@@ -40,9 +40,9 @@
 static bool samu_correct(struct samu *s1, struct samu *s2)
 {
 	bool ret = True;
-	uint32 s1_len, s2_len;
+	uint32_t s1_len, s2_len;
 	const char *s1_buf, *s2_buf;
-	const uint8 *d1_buf, *d2_buf;
+	const uint8_t *d1_buf, *d2_buf;
 	const struct dom_sid *s1_sid, *s2_sid;
 
 	/* Check Unix username */
@@ -443,8 +443,8 @@ int main(int argc, const char **argv)
 	struct timeval tv;
 	bool error = False;
 	struct passwd *pwd;
-	uint8 *buf;
-	uint32 expire, min_age, history;
+	uint8_t *buf;
+	uint32_t expire, min_age, history;
 	struct pdb_methods *pdb;
 	poptContext pc;
 	static const char *backend = NULL;
@@ -459,7 +459,7 @@ int main(int argc, const char **argv)
 
 	ctx = talloc_stackframe();
 
-	load_case_tables();
+	smb_init_locale();
 
 	pc = poptGetContext("pdbtest", argc, argv, long_options, 0);
 
@@ -504,24 +504,24 @@ int main(int argc, const char **argv)
 
 	pdb_get_account_policy(PDB_POLICY_PASSWORD_HISTORY, &history);
 	if (history * PW_HISTORY_ENTRY_LEN < NT_HASH_LEN) {
-		buf = (uint8 *)TALLOC(ctx, NT_HASH_LEN);
+		buf = (uint8_t *)TALLOC(ctx, NT_HASH_LEN);
 	} else {
-		buf = (uint8 *)TALLOC(ctx, history * PW_HISTORY_ENTRY_LEN);
+		buf = (uint8_t *)TALLOC(ctx, history * PW_HISTORY_ENTRY_LEN);
 	}
 
 	/* Generate some random hashes */
 	GetTimeOfDay(&tv);
 	srand(tv.tv_usec);
 	for (i = 0; i < NT_HASH_LEN; i++) {
-		buf[i] = (uint8) rand();
+		buf[i] = (uint8_t) rand();
 	}
 	pdb_set_nt_passwd(out, buf, PDB_SET);
 	for (i = 0; i < LM_HASH_LEN; i++) {
-		buf[i] = (uint8) rand();
+		buf[i] = (uint8_t) rand();
 	}
 	pdb_set_lanman_passwd(out, buf, PDB_SET);
 	for (i = 0; i < history * PW_HISTORY_ENTRY_LEN; i++) {
-		buf[i] = (uint8) rand();
+		buf[i] = (uint8_t) rand();
 	}
 	pdb_set_pw_history(out, buf, history, PDB_SET);
 
@@ -529,7 +529,7 @@ int main(int argc, const char **argv)
 	pdb_get_account_policy(PDB_POLICY_MIN_PASSWORD_AGE, &min_age);
 	pdb_set_pass_last_set_time(out, time(NULL), PDB_SET);
 
-	if (min_age == (uint32)-1) {
+	if (min_age == (uint32_t)-1) {
 		pdb_set_pass_can_change_time(out, 0, PDB_SET);
 	} else {
 		pdb_set_pass_can_change_time(out, time(NULL)+min_age, PDB_SET);

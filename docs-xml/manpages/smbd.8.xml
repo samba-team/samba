@@ -7,7 +7,7 @@
 	<manvolnum>8</manvolnum>
 	<refmiscinfo class="source">Samba</refmiscinfo>
 	<refmiscinfo class="manual">System Administration tools</refmiscinfo>
-	<refmiscinfo class="version">4.2</refmiscinfo>
+	<refmiscinfo class="version">4.3</refmiscinfo>
 </refmeta>
 
 
@@ -120,12 +120,12 @@
 		server to run "interactively", not as a daemon, even if the
 		server is executed on the command line of a shell. Setting this
 		parameter negates the implicit daemon mode when run from the
-		command line. <command>smbd</command> also logs to standard
-		output, as if the <command>-S</command> parameter had been
-		given.
+		command line. <command>smbd</command> will only accept one
+		connection and terminate. It will also log to standard output,
+		as if the <command>-S</command> parameter had been given.
 		</para></listitem>
 		</varlistentry>
-		
+
 		&stdarg.server.debug;
 		&popt.common.samba;
 		&popt.autohelp;

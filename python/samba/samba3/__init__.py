@@ -25,7 +25,6 @@ REGISTRY_DB_VERSION = 1
 import os
 import struct
 import tdb
-import ntdb
 
 import passdb
 import param as s3param
@@ -50,16 +49,13 @@ def fetch_int32(db, key):
 
 
 class DbDatabase(object):
-    """Simple Samba 3 TDB/NTDB database reader."""
+    """Simple Samba 3 TDB database reader."""
     def __init__(self, file):
         """Open a file.
 
         :param file: Path of the file to open, appending .tdb or .ntdb.
         """
-        if os.path.exists(file + ".ntdb"):
-            self.db = ntdb.Ntdb(file + ".ntdb", flags=os.O_RDONLY)
-        else:
-            self.db = tdb.Tdb(file + ".tdb", flags=os.O_RDONLY)
+        self.db = tdb.Tdb(file + ".tdb", flags=os.O_RDONLY)
         self._check_version()
 
     def _check_version(self):

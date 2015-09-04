@@ -81,6 +81,7 @@ struct _SMBCSRV {
 	bool no_pathinfo3;
         bool no_nt_session;
         struct policy_handle pol;
+	time_t last_echo_time;
 
 	SMBCSRV *next, *prev;
 };
@@ -99,6 +100,11 @@ struct smbc_dir_list {
  */
 struct _SMBCFILE {
 	int cli_fd;
+	/*
+	 * cache of cli_state we opened cli_fd on.
+	 * Due to DFS can be a subsidiary connection to srv->cli
+	 */
+	struct cli_state *targetcli;
 	char *fname;
 	off_t offset;
 	struct _SMBCSRV *srv;
@@ -237,13 +243,13 @@ struct SMBC_internal_data {
         }               printing;
 #endif
 
-#if 0 /* None available yet */
         /* SMB high-level functions */
         struct
         {
+                smbc_splice_fn                  splice_fn;
+		smbc_notify_fn			notify_fn;
         }               smb;
 
-#endif
 	uint16_t	port;
 };	
 
@@ -339,6 +345,12 @@ SMBC_rename_ctx(SMBCCTX *ocontext,
                 SMBCCTX *ncontext,
                 const char *nname);
 
+int
+SMBC_notify_ctx(SMBCCTX *c, SMBCFILE *dir, smbc_bool recursive,
+		uint32_t completion_filter, unsigned callback_timeout_ms,
+		smbc_notify_callback_fn cb, void *private_data);
+
+
 
 /* Functions in libsmb_file.c */
 SMBCFILE *
@@ -364,6 +376,14 @@ SMBC_write_ctx(SMBCCTX *context,
                const void *buf,
                size_t count);
 
+off_t
+SMBC_splice_ctx(SMBCCTX *context,
+                SMBCFILE *srcfile,
+                SMBCFILE *dstfile,
+                off_t count,
+                int (*splice_cb)(off_t n, void *priv),
+                void *priv);
+
 int
 SMBC_close_ctx(SMBCCTX *context,
                SMBCFILE *file);
@@ -372,7 +392,7 @@ bool
 SMBC_getatr(SMBCCTX * context,
             SMBCSRV *srv,
             const char *path,
-            uint16 *mode,
+            uint16_t *mode,
             off_t *size,
             struct timespec *create_time_ts,
             struct timespec *access_time_ts,
@@ -386,7 +406,7 @@ SMBC_setatr(SMBCCTX * context, SMBCSRV *srv, char *path,
             time_t access_time,
             time_t write_time,
             time_t change_time,
-            uint16 mode);
+            uint16_t mode);
 
 off_t
 SMBC_lseek_ctx(SMBCCTX *context,

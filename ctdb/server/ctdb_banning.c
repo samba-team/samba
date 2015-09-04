@@ -80,6 +80,7 @@ void ctdb_local_node_got_banned(struct ctdb_context *ctdb)
 int32_t ctdb_control_set_ban_state(struct ctdb_context *ctdb, TDB_DATA indata)
 {
 	struct ctdb_ban_time *bantime = (struct ctdb_ban_time *)indata.dptr;
+	bool already_banned;
 
 	DEBUG(DEBUG_INFO,("SET BAN STATE\n"));
 
@@ -107,9 +108,11 @@ int32_t ctdb_control_set_ban_state(struct ctdb_context *ctdb, TDB_DATA indata)
 		return 0;
 	}
 
+	already_banned = false;
 	if (ctdb->banning_ctx != NULL) {
 		talloc_free(ctdb->banning_ctx);
 		ctdb->banning_ctx = NULL;
+		already_banned = true;
 	}
 
 	if (bantime->time == 0) {
@@ -136,7 +139,9 @@ int32_t ctdb_control_set_ban_state(struct ctdb_context *ctdb, TDB_DATA indata)
 
 	event_add_timed(ctdb->ev, ctdb->banning_ctx, timeval_current_ofs(bantime->time,0), ctdb_ban_node_event, ctdb);
 
-	ctdb_local_node_got_banned(ctdb);
+	if (!already_banned) {
+		ctdb_local_node_got_banned(ctdb);
+	}
 	return 0;
 }
 

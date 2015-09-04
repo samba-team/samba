@@ -1,6 +1,6 @@
 <samba:parameter name="aio write size"
                  context="S"
-		 type="integer"
+                 type="bytes"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
   <para>If Samba has been built with asynchronous I/O support and this

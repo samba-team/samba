@@ -205,52 +205,49 @@ bool getgroups_unix_user(TALLOC_CTX *mem_ctx, const char *user,
 			 gid_t primary_gid,
 			 gid_t **ret_groups, uint32_t *p_ngroups)
 {
+	int max_grp = MIN(128, groups_max());
+	gid_t stack_groups[max_grp];
 	uint32_t ngrp;
-	int max_grp;
-	gid_t *temp_groups;
+	gid_t *temp_groups = stack_groups;
+	gid_t *to_free = NULL;
 	gid_t *groups;
 	int i;
 
-	max_grp = MIN(128, groups_max());
-	temp_groups = SMB_MALLOC_ARRAY(gid_t, max_grp);
-	if (! temp_groups) {
-		return False;
-	}
-
 	if (sys_getgrouplist(user, primary_gid, temp_groups, &max_grp) == -1) {
-		temp_groups = SMB_REALLOC_ARRAY(temp_groups, gid_t, max_grp);
-		if (!temp_groups) {
+		to_free = talloc_array(mem_ctx, gid_t, max_grp);
+		if (!to_free) {
 			return False;
 		}
-		
+		temp_groups = to_free;
+
 		if (sys_getgrouplist(user, primary_gid,
 				     temp_groups, &max_grp) == -1) {
 			DEBUG(0, ("get_user_groups: failed to get the unix "
 				  "group list\n"));
-			SAFE_FREE(temp_groups);
+			TALLOC_FREE(to_free);
 			return False;
 		}
 	}
-	
+
 	ngrp = 0;
 	groups = NULL;
 
 	/* Add in primary group first */
 	if (!add_gid_to_array_unique(mem_ctx, primary_gid, &groups, &ngrp)) {
-		SAFE_FREE(temp_groups);
+		TALLOC_FREE(to_free);
 		return False;
 	}
 
 	for (i=0; i<max_grp; i++) {
 		if (!add_gid_to_array_unique(mem_ctx, temp_groups[i],
 					&groups, &ngrp)) {
-			SAFE_FREE(temp_groups);
+			TALLOC_FREE(to_free);
 			return False;
 		}
 	}
 
 	*p_ngroups = ngrp;
 	*ret_groups = groups;
-	SAFE_FREE(temp_groups);
+	TALLOC_FREE(to_free);
 	return True;
 }

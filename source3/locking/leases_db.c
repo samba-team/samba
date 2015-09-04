@@ -35,16 +35,23 @@ static struct db_context *leases_db;
 
 bool leases_db_init(bool read_only)
 {
+	char *db_path;
+
 	if (leases_db) {
 		return true;
 	}
 
-	leases_db = db_open(NULL, lock_path("leases.tdb"), 0,
+	db_path = lock_path("leases.tdb");
+	if (db_path == NULL) {
+		return false;
+	}
+
+	leases_db = db_open(NULL, db_path, 0,
 			    TDB_DEFAULT|TDB_VOLATILE|TDB_CLEAR_IF_FIRST|
 			    TDB_INCOMPATIBLE_HASH,
 			    read_only ? O_RDONLY : O_RDWR|O_CREAT, 0644,
 			    DBWRAP_LOCK_ORDER_2, DBWRAP_FLAG_NONE);
-
+	TALLOC_FREE(db_path);
 	if (leases_db == NULL) {
 		DEBUG(1, ("ERROR: Failed to initialise leases database\n"));
 		return false;
@@ -243,7 +250,7 @@ NTSTATUS leases_db_del(const struct GUID *client_guid,
 		goto out;
 	}
 
-	value = talloc(talloc_tos(), struct leases_db_value);
+	value = talloc(rec, struct leases_db_value);
 	if (value == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto out;
@@ -283,7 +290,7 @@ NTSTATUS leases_db_del(const struct GUID *client_guid,
 	} else {
 		DEBUG(10, ("%s: updating record\n", __func__));
 		ndr_err = ndr_push_struct_blob(
-			&blob, talloc_tos(), value,
+			&blob, rec, value,
 			(ndr_push_flags_fn_t)ndr_push_leases_db_value);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			DEBUG(10, ("%s: ndr_push_struct_blob_failed: %s\n",
@@ -308,7 +315,6 @@ NTSTATUS leases_db_del(const struct GUID *client_guid,
 
   out:
 
-	TALLOC_FREE(value);
 	TALLOC_FREE(rec);
 	return status;
 }

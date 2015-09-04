@@ -115,11 +115,6 @@ static int ctdb_ltdb_store_server(struct ctdb_db_context *ctdb_db,
 		 * fails. So storing the empty record makes sure that we do not
 		 * need to change the client code.
 		 */
-		if ((header->flags & CTDB_REC_FLAG_VACUUM_MIGRATED) &&
-		    (ctdb_db->ctdb->pnn == header->dmaster)) {
-			keep = true;
-			schedule_for_deletion = true;
-		}
 		if (!(header->flags & CTDB_REC_FLAG_VACUUM_MIGRATED)) {
 			keep = true;
 		} else if (ctdb_db->ctdb->pnn != header->dmaster) {
@@ -622,7 +617,7 @@ int ctdb_recheck_persistent_health(struct ctdb_context *ctdb)
 				   ctdb_db->unhealthy_reason));
 	}
 	DEBUG((fail!=0)?DEBUG_ALERT:DEBUG_NOTICE,
-	      ("ctdb_recheck_presistent_health: OK[%d] FAIL[%d]\n",
+	      ("ctdb_recheck_persistent_health: OK[%d] FAIL[%d]\n",
 	       ok, fail));
 
 	if (fail != 0) {
@@ -1605,6 +1600,20 @@ int ctdb_set_db_sticky(struct ctdb_context *ctdb, struct ctdb_db_context *ctdb_d
 	return 0;
 }
 
+void ctdb_db_statistics_reset(struct ctdb_db_context *ctdb_db)
+{
+	struct ctdb_db_statistics *s = &ctdb_db->statistics;
+	int i;
+
+	for (i=0; i<MAX_HOT_KEYS; i++) {
+		if (s->hot_keys[i].key.dsize > 0) {
+			talloc_free(s->hot_keys[i].key.dptr);
+		}
+	}
+
+	ZERO_STRUCT(ctdb_db->statistics);
+}
+
 int32_t ctdb_control_get_db_statistics(struct ctdb_context *ctdb,
 				uint32_t db_id,
 				TDB_DATA *outdata)
@@ -1632,7 +1641,8 @@ int32_t ctdb_control_get_db_statistics(struct ctdb_context *ctdb,
 		return -1;
 	}
 
-	*stats = ctdb_db->statistics;
+	memcpy(stats, &ctdb_db->statistics,
+	       offsetof(struct ctdb_db_statistics, hot_keys_wire));
 
 	stats->num_hot_keys = MAX_HOT_KEYS;
 

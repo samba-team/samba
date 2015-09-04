@@ -141,25 +141,116 @@ static WERROR kccsrv_load_partitions(struct kccsrv_service *s)
 	return WERR_OK;
 }
 
+
+struct kcc_manual_runcmd_state {
+	struct irpc_message *msg;
+	struct drsuapi_DsExecuteKCC *r;
+	struct kccsrv_service *service;
+};
+
+
+/*
+ * Called when samba_kcc script has finished
+ */
+static void manual_samba_kcc_done(struct tevent_req *subreq)
+{
+	struct kcc_manual_runcmd_state *st =
+		tevent_req_callback_data(subreq,
+		struct kcc_manual_runcmd_state);
+        int rc;
+        int sys_errno;
+	NTSTATUS status;
+
+        st->service->periodic.subreq = NULL;
+
+	rc = samba_runcmd_recv(subreq, &sys_errno);
+	TALLOC_FREE(subreq);
+
+	if (rc != 0) {
+		status = map_nt_error_from_unix_common(sys_errno);
+	} else {
+		status = NT_STATUS_OK;
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,(__location__ ": Failed manual run of samba_kcc - %s\n",
+			nt_errstr(status)));
+	} else {
+		DEBUG(3,("Completed manual run of samba_kcc OK\n"));
+	}
+
+	if (!(st->r->in.req->ctr1.flags & DRSUAPI_DS_EXECUTE_KCC_ASYNCHRONOUS_OPERATION)) {
+		irpc_send_reply(st->msg, status);
+	}
+}
+
 static NTSTATUS kccsrv_execute_kcc(struct irpc_message *msg, struct drsuapi_DsExecuteKCC *r)
 {
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS status = NT_STATUS_OK;
 	struct kccsrv_service *service = talloc_get_type(msg->private_data, struct kccsrv_service);
 
-	mem_ctx = talloc_new(service);
+	const char * const *samba_kcc_command;
+	struct kcc_manual_runcmd_state *st;
 
-	if (service->samba_kcc_code)
-		status = kccsrv_samba_kcc(service, mem_ctx);
-	else {
+	if (!service->samba_kcc_code) {
+		mem_ctx = talloc_new(service);
+
 		status = kccsrv_simple_update(service, mem_ctx);
-		if (!NT_STATUS_IS_OK(status))
+		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,("kccsrv_execute_kcc failed - %s\n",
 				nt_errstr(status)));
+		}
+		talloc_free(mem_ctx);
+
+		return NT_STATUS_OK;
 	}
 
-	talloc_free(mem_ctx);
-	return NT_STATUS_OK;
+	/* Invocation of the samba_kcc python script for replication
+	 * topology generation.
+	 */
+
+	samba_kcc_command =
+		lpcfg_samba_kcc_command(service->task->lp_ctx);
+
+	st = talloc(msg, struct kcc_manual_runcmd_state);
+	if (st == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	st->msg = msg;
+	st->r = r;
+	st->service = service;
+
+	/* don't run at the same time as an existing child */
+	if (service->periodic.subreq) {
+		status = NT_STATUS_DS_BUSY;
+		return status;
+	}
+
+	DEBUG(2, ("Calling samba_kcc script\n"));
+	service->periodic.subreq = samba_runcmd_send(service,
+						     service->task->event_ctx,
+						     timeval_current_ofs(40, 0),
+						     2, 0, samba_kcc_command, NULL);
+
+	if (service->periodic.subreq == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		DEBUG(0,(__location__ ": failed - %s\n", nt_errstr(status)));
+		return status;
+	} else {
+		tevent_req_set_callback(service->periodic.subreq,
+					manual_samba_kcc_done, st);
+	}
+
+	if (r->in.req->ctr1.flags & DRSUAPI_DS_EXECUTE_KCC_ASYNCHRONOUS_OPERATION) {
+		/* This actually means reply right away, let it run in the background */
+	} else {
+		/* mark the request as replied async, the caller wants to know when this is finished */
+		msg->defer_reply = true;
+	}
+	return status;
+
 }
 
 static NTSTATUS kccsrv_replica_get_info(struct irpc_message *msg, struct drsuapi_DsReplicaGetInfo *r)

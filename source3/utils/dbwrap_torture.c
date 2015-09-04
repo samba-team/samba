@@ -261,7 +261,7 @@ int main(int argc, const char *argv[])
 		setlinebuf(stdout);
 	}
 
-	load_case_tables();
+	smb_init_locale();
 
 	setup_logging(argv[0], DEBUG_STDERR);
 	lp_set_cmdline("log level", "0");

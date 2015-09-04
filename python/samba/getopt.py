@@ -125,41 +125,72 @@ def parse_kerberos_arg(arg, opt_str):
 class CredentialsOptions(optparse.OptionGroup):
     """Command line options for specifying credentials."""
 
-    def __init__(self, parser):
-        self.no_pass = True
+    def __init__(self, parser, special_name=None):
+        self.special_name = special_name
+        if special_name is not None:
+            self.section = "Credentials Options (%s)" % special_name
+        else:
+            self.section = "Credentials Options"
+
+        self.ask_for_password = True
         self.ipaddress = None
-        optparse.OptionGroup.__init__(self, parser, "Credentials Options")
-        self.add_option("--simple-bind-dn", metavar="DN", action="callback",
+        self.machine_pass = False
+        optparse.OptionGroup.__init__(self, parser, self.section)
+        self._add_option("--simple-bind-dn", metavar="DN", action="callback",
                         callback=self._set_simple_bind_dn, type=str,
                         help="DN to use for a simple bind")
-        self.add_option("--password", metavar="PASSWORD", action="callback",
+        self._add_option("--password", metavar="PASSWORD", action="callback",
                         help="Password", type=str, callback=self._set_password)
-        self.add_option("-U", "--username", metavar="USERNAME",
+        self._add_option("-U", "--username", metavar="USERNAME",
                         action="callback", type=str,
                         help="Username", callback=self._parse_username)
-        self.add_option("-W", "--workgroup", metavar="WORKGROUP",
+        self._add_option("-W", "--workgroup", metavar="WORKGROUP",
                         action="callback", type=str,
                         help="Workgroup", callback=self._parse_workgroup)
-        self.add_option("-N", "--no-pass", action="store_true",
-                        help="Don't ask for a password")
-        self.add_option("-k", "--kerberos", metavar="KERBEROS",
+        self._add_option("-N", "--no-pass", action="callback",
+                        help="Don't ask for a password",
+                        callback=self._set_no_password)
+        self._add_option("-k", "--kerberos", metavar="KERBEROS",
                         action="callback", type=str,
                         help="Use Kerberos", callback=self._set_kerberos)
-        self.add_option("", "--ipaddress", metavar="IPADDRESS",
+        self._add_option("", "--ipaddress", metavar="IPADDRESS",
                         action="callback", type=str,
                         help="IP address of server",
                         callback=self._set_ipaddress)
+        self._add_option("-P", "--machine-pass",
+                        action="callback",
+                        help="Use stored machine account password",
+                        callback=self._set_machine_pass)
         self.creds = Credentials()
+
+    def _add_option(self, *args1, **kwargs):
+        if self.special_name is None:
+            return self.add_option(*args1, **kwargs)
+
+        args2 = ()
+        for a in args1:
+            if not a.startswith("--"):
+                continue
+            args2 += (a.replace("--", "--%s-" % self.special_name),)
+        self.add_option(*args2, **kwargs)
 
     def _parse_username(self, option, opt_str, arg, parser):
         self.creds.parse_string(arg)
+        self.machine_pass = False
 
     def _parse_workgroup(self, option, opt_str, arg, parser):
         self.creds.set_domain(arg)
 
     def _set_password(self, option, opt_str, arg, parser):
         self.creds.set_password(arg)
-        self.no_pass = False
+        self.ask_for_password = False
+        self.machine_pass = False
+
+    def _set_no_password(self, option, opt_str, arg, parser):
+        self.ask_for_password = False
+
+    def _set_machine_pass(self, option, opt_str, arg, parser):
+        self.machine_pass = True
 
     def _set_ipaddress(self, option, opt_str, arg, parser):
         self.ipaddress = arg
@@ -177,7 +208,9 @@ class CredentialsOptions(optparse.OptionGroup):
         :return: Credentials object
         """
         self.creds.guess(lp)
-        if self.no_pass:
+        if self.machine_pass:
+            self.creds.set_machine_account(lp)
+        elif self.ask_for_password:
             self.creds.set_cmdline_callbacks()
 
         # possibly fallback to using the machine account, if we have

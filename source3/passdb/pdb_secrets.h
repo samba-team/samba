@@ -24,7 +24,7 @@
 
 /* The following definitions come from passdb/pdb_secrets.c  */
 
-NTSTATUS secrets_trusted_domains(TALLOC_CTX *mem_ctx, uint32 *num_domains,
+NTSTATUS secrets_trusted_domains(TALLOC_CTX *mem_ctx, uint32_t *num_domains,
 				 struct trustdom_info ***domains);
 
 #endif /* _PASSDB_PDB_SECRETS_H_ */

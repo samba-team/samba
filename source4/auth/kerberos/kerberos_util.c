@@ -134,6 +134,92 @@ static krb5_error_code impersonate_principal_from_credentials(
 			smb_krb5_context, princ, error_string);
 }
 
+krb5_error_code smb_krb5_create_principals_array(TALLOC_CTX *mem_ctx,
+						 krb5_context context,
+						 const char *account_name,
+						 const char *realm,
+						 uint32_t num_spns,
+						 const char *spns[],
+						 uint32_t *pnum_principals,
+						 krb5_principal **pprincipals,
+						 const char **error_string)
+{
+	krb5_error_code code;
+	TALLOC_CTX *tmp_ctx;
+	uint32_t num_principals = 0;
+	krb5_principal *principals;
+	uint32_t i;
+
+	tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		*error_string = "Cannot allocate tmp_ctx";
+		return ENOMEM;
+	}
+
+	if (realm == NULL) {
+		*error_string = "Cannot create principal without a realm";
+		code = EINVAL;
+		goto done;
+	}
+
+	if (account_name == NULL && (num_spns == 0 || spns == NULL)) {
+		*error_string = "Cannot create principal without an account or SPN";
+		code = EINVAL;
+		goto done;
+	}
+
+	if (account_name != NULL && account_name[0] != '\0') {
+		num_principals++;
+	}
+	num_principals += num_spns;
+
+	principals = talloc_zero_array(tmp_ctx,
+				       krb5_principal,
+				       num_principals);
+	if (principals == NULL) {
+		*error_string = "Cannot allocate principals";
+		code = ENOMEM;
+		goto done;
+	}
+
+	for (i = 0; i < num_spns; i++) {
+		code = krb5_parse_name(context, spns[i], &(principals[i]));
+		if (code != 0) {
+			*error_string = smb_get_krb5_error_message(context,
+								   code,
+								   mem_ctx);
+			goto done;
+		}
+	}
+
+	if (account_name != NULL && account_name[0] != '\0') {
+		code = smb_krb5_make_principal(context,
+					       &(principals[i]),
+					       realm,
+					       account_name,
+					       NULL);
+		if (code != 0) {
+			*error_string = smb_get_krb5_error_message(context,
+								   code,
+								   mem_ctx);
+			goto done;
+		}
+	}
+
+	if (pnum_principals != NULL) {
+		*pnum_principals = num_principals;
+
+		if (pprincipals != NULL) {
+			*pprincipals = talloc_steal(mem_ctx, principals);
+		}
+	}
+
+	code = 0;
+done:
+	talloc_free(tmp_ctx);
+	return code;
+}
+
 /**
  * Return a freshly allocated ccache (destroyed by destructor on child
  * of parent_ctx), for a given set of client credentials 
@@ -223,6 +309,8 @@ static krb5_error_code impersonate_principal_from_credentials(
 	 */
 	krb5_get_init_creds_opt_set_win2k(smb_krb5_context->krb5_context,
 					  krb_options, true);
+#else /* MIT */
+	krb5_get_init_creds_opt_set_canonicalize(krb_options, true);
 #endif
 
 	tries = 2;
@@ -340,7 +428,12 @@ static krb5_error_code impersonate_principal_from_credentials(
 									     ret, mem_ctx));
 		talloc_free(mem_ctx);
 		return ret;
-	} 
+	}
+
+	DEBUG(10,("kinit for %s succeeded\n",
+		cli_credentials_get_principal(credentials, mem_ctx)));
+
+
 	talloc_free(mem_ctx);
 	return 0;
 }
@@ -384,4 +477,168 @@ krb5_error_code smb_krb5_get_keytab_container(TALLOC_CTX *mem_ctx,
 	talloc_set_destructor(*ktc, free_keytab_container);
 
 	return 0;
+}
+
+/*
+ * Walk the keytab, looking for entries of this principal name,
+ * with KVNO other than current kvno -1.
+ *
+ * These entries are now stale,
+ * we only keep the current and previous entries around.
+ *
+ * Inspired by the code in Samba3 for 'use kerberos keytab'.
+ */
+krb5_error_code smb_krb5_remove_obsolete_keytab_entries(TALLOC_CTX *mem_ctx,
+							krb5_context context,
+							krb5_keytab keytab,
+							uint32_t num_principals,
+							krb5_principal *principals,
+							krb5_kvno kvno,
+							bool *found_previous,
+							const char **error_string)
+{
+	TALLOC_CTX *tmp_ctx;
+	krb5_error_code code;
+	krb5_kt_cursor cursor;
+
+	tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		*error_string = "Cannot allocate tmp_ctx";
+		return ENOMEM;
+	}
+
+	*found_previous = true;
+
+	code = krb5_kt_start_seq_get(context, keytab, &cursor);
+	switch (code) {
+	case 0:
+		break;
+#ifdef HEIM_ERR_OPNOTSUPP
+	case HEIM_ERR_OPNOTSUPP:
+#endif
+	case ENOENT:
+	case KRB5_KT_END:
+		/* no point enumerating if there isn't anything here */
+		code = 0;
+		goto done;
+	default:
+		*error_string = talloc_asprintf(mem_ctx,
+						"failed to open keytab for read of old entries: %s\n",
+						smb_get_krb5_error_message(context, code, mem_ctx));
+		goto done;
+	}
+
+	do {
+		krb5_kvno old_kvno = kvno - 1;
+		krb5_keytab_entry entry;
+		bool matched = false;
+		uint32_t i;
+
+		code = krb5_kt_next_entry(context, keytab, &entry, &cursor);
+		if (code) {
+			break;
+		}
+
+		for (i = 0; i < num_principals; i++) {
+			krb5_boolean ok;
+
+			ok = smb_krb5_kt_compare(context,
+						&entry,
+						principals[i],
+						0,
+						0);
+			if (ok) {
+				matched = true;
+				break;
+			}
+		}
+
+		if (!matched) {
+			/*
+			 * Free the entry, it wasn't the one we were looking
+			 * for anyway
+			 */
+			krb5_kt_free_entry(context, &entry);
+			/* Make sure we do not double free */
+			ZERO_STRUCT(entry);
+			continue;
+		}
+
+		/*
+		 * Delete it, if it is not kvno - 1.
+		 *
+		 * Some keytab files store the kvno only in 8bits. Limit the
+		 * compare to 8bits, so that we don't miss old keys and delete
+		 * them.
+		 */
+		if ((entry.vno & 0xff) != (old_kvno & 0xff)) {
+			krb5_error_code rc;
+
+			/* Release the enumeration.  We are going to
+			 * have to start this from the top again,
+			 * because deletes during enumeration may not
+			 * always be consistent.
+			 *
+			 * Also, the enumeration locks a FILE: keytab
+			 */
+			krb5_kt_end_seq_get(context, keytab, &cursor);
+
+			code = krb5_kt_remove_entry(context, keytab, &entry);
+			krb5_kt_free_entry(context, &entry);
+
+			/* Make sure we do not double free */
+			ZERO_STRUCT(entry);
+
+			/* Deleted: Restart from the top */
+			rc = krb5_kt_start_seq_get(context, keytab, &cursor);
+			if (rc != 0) {
+				krb5_kt_free_entry(context, &entry);
+
+				/* Make sure we do not double free */
+				ZERO_STRUCT(entry);
+
+				DEBUG(1, ("failed to restart enumeration of keytab: %s\n",
+					  smb_get_krb5_error_message(context,
+								     code,
+								     tmp_ctx)));
+
+				talloc_free(tmp_ctx);
+				return rc;
+			}
+
+			if (code != 0) {
+				break;
+			}
+
+		} else {
+			*found_previous = true;
+		}
+
+		/* Free the entry, we don't need it any more */
+		krb5_kt_free_entry(context, &entry);
+		/* Make sure we do not double free */
+		ZERO_STRUCT(entry);
+	} while (code != 0);
+
+	krb5_kt_end_seq_get(context, keytab, &cursor);
+
+	switch (code) {
+	case 0:
+		break;
+	case ENOENT:
+	case KRB5_KT_END:
+		code = 0;
+		break;
+	default:
+		*error_string = talloc_asprintf(mem_ctx,
+						"failed in deleting old entries for principal: %s\n",
+						smb_get_krb5_error_message(context,
+									   code,
+									   mem_ctx));
+	}
+
+	code = 0;
+done:
+	talloc_free(tmp_ctx);
+	return code;
 }

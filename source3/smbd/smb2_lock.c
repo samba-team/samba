@@ -475,7 +475,7 @@ static bool recalc_smb2_brl_timeout(struct smbd_server_connection *sconn)
 
 	TALLOC_FREE(sconn->smb2.locks.brl_timeout);
 
-	if (sconn != NULL && sconn->client != NULL) {
+	if (sconn->client != NULL) {
 		xconn = sconn->client->connections;
 	}
 

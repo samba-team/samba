@@ -84,6 +84,13 @@ char *strv_next(char *strv, const char *entry)
 	size_t len, entry_len;
 	char *result;
 
+	if (entry == NULL) {
+		if (strv_valid_entry(strv, strv, &len, &entry_len)) {
+			return strv;
+		}
+		return NULL;
+	}
+
 	if (!strv_valid_entry(strv, entry, &len, &entry_len)) {
 		return NULL;
 	}

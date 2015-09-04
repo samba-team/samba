@@ -219,7 +219,7 @@ int main( int argc, const char *argv[] )
 	};
 	poptContext pc;
 
-	load_case_tables();
+	smb_init_locale();
 
 	/* setup logging options */
 

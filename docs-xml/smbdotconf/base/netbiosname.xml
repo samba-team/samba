@@ -1,7 +1,6 @@
 <samba:parameter name="netbios name"
                  context="G"
-                 type="string"
-                 basic="1" advanced="1" wizard="1" developer="1"
+                 type="ustring"
                  constant="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
@@ -10,6 +9,8 @@
 		of the host's DNS name. If a machine is a browse server or logon server this name (or the first component of
 		the hosts DNS name) will be the name that these services are advertised under.
 		</para>
+
+		<para>Note that the maximum length for a NetBIOS name is 15 charactars.</para>
 
 		<para>
 		There is a bug in Samba that breaks operation of browsing and access to shares if the netbios name

@@ -24,6 +24,7 @@
 #include "../include/ctdb_private.h"
 #include "lib/util/dlinklist.h"
 #include "lib/tdb_wrap/tdb_wrap.h"
+#include "lib/util/talloc_report.h"
 
 
 struct ctdb_control_state {
@@ -40,34 +41,23 @@ struct ctdb_control_state {
  */
 int32_t ctdb_dump_memory(struct ctdb_context *ctdb, TDB_DATA *outdata)
 {
-	/* dump to a file, then send the file as a blob */
-	FILE *f;
-	long fsize;
-	f = tmpfile();
-	if (f == NULL) {
-		DEBUG(DEBUG_ERR,(__location__ " Unable to open tmpfile - %s\n", strerror(errno)));
+	char *report;
+	size_t reportlen;
+
+	report = talloc_report_str(outdata, NULL);
+	if (report == NULL) {
+		DEBUG(DEBUG_ERR,
+		      (__location__ " talloc_report_str failed\n"));
 		return -1;
 	}
-	talloc_report_full(NULL, f);
-	fsize = ftell(f);
-	if (fsize == -1) {
-		DEBUG(DEBUG_ERR, (__location__ " Unable to get file size - %s\n",
-				  strerror(errno)));
-		fclose(f);
-		return -1;
+	reportlen = talloc_get_size(report);
+
+	if (reportlen > 0) {
+		reportlen -= 1;	/* strip trailing zero */
 	}
-	rewind(f);
-	outdata->dptr = talloc_size(outdata, fsize);
-	if (outdata->dptr == NULL) {
-		fclose(f);
-		CTDB_NO_MEMORY(ctdb, outdata->dptr);
-	}
-	outdata->dsize = fread(outdata->dptr, 1, fsize, f);
-	fclose(f);
-	if (outdata->dsize != fsize) {
-		DEBUG(DEBUG_ERR,(__location__ " Unable to read tmpfile\n"));
-		return -1;
-	}
+
+	outdata->dptr = (uint8_t *)report;
+	outdata->dsize = reportlen;
 	return 0;
 }
 
@@ -151,8 +141,15 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 	}
 
 	case CTDB_CONTROL_STATISTICS_RESET: {
+		struct ctdb_db_context *ctdb_db;
+
 		CHECK_CONTROL_DATA_SIZE(0);
 		ZERO_STRUCT(ctdb->statistics);
+		for (ctdb_db = ctdb->db_list;
+		     ctdb_db != NULL;
+		     ctdb_db = ctdb_db->next) {
+			ctdb_db_statistics_reset(ctdb_db);
+		}
 		ctdb->statistics.statistics_start_time = timeval_current();
 		return 0;
 	}
@@ -164,10 +161,13 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return ctdb_control_getdbmap(ctdb, opcode, indata, outdata);
 
 	case CTDB_CONTROL_GET_NODEMAPv4:
-		return ctdb_control_getnodemapv4(ctdb, opcode, indata, outdata);
+		return control_not_implemented("GET_NODEMAPv4", "GET_NODEMAP");
 
 	case CTDB_CONTROL_GET_NODEMAP:
 		return ctdb_control_getnodemap(ctdb, opcode, indata, outdata);
+
+	case CTDB_CONTROL_GET_NODES_FILE:
+		return ctdb_control_getnodesfile(ctdb, opcode, indata, outdata);
 
 	case CTDB_CONTROL_RELOAD_NODES_FILE:
 		CHECK_CONTROL_DATA_SIZE(0);
@@ -267,12 +267,8 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 	case CTDB_CONTROL_DB_ATTACH_PERSISTENT:
 	  return ctdb_control_db_attach(ctdb, indata, outdata, srvid, true, client_id, c, async_reply);
 
-	case CTDB_CONTROL_SET_CALL: {
-		struct ctdb_control_set_call *sc = 
-			(struct ctdb_control_set_call *)indata.dptr;
-		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_control_set_call));
-		return ctdb_daemon_set_call(ctdb, sc->db_id, sc->fn, sc->id);
-	}
+	case CTDB_CONTROL_SET_CALL:
+		return control_not_implemented("SET_CALL", NULL);
 
 	case CTDB_CONTROL_TRAVERSE_START:
 		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_traverse_start));
@@ -348,16 +344,14 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return 0;
 
 	case CTDB_CONTROL_TAKEOVER_IPv4:
-		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_public_ipv4));
-		return ctdb_control_takeover_ipv4(ctdb, c, indata, async_reply);
+		return control_not_implemented("TAKEOVER_IPv4", "TAKEOVER_IP");
 
 	case CTDB_CONTROL_TAKEOVER_IP:
 		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_public_ip));
 		return ctdb_control_takeover_ip(ctdb, c, indata, async_reply);
 
 	case CTDB_CONTROL_RELEASE_IPv4:
-		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_public_ipv4));
-		return ctdb_control_release_ipv4(ctdb, c, indata, async_reply);
+		return control_not_implemented("RELEASE_IPv4", "RELEASE_IP");
 
 	case CTDB_CONTROL_RELEASE_IP:
 		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_public_ip));
@@ -368,14 +362,15 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return ctdb_control_ipreallocated(ctdb, c, async_reply);
 
 	case CTDB_CONTROL_GET_PUBLIC_IPSv4:
-		CHECK_CONTROL_DATA_SIZE(0);
-		return ctdb_control_get_public_ipsv4(ctdb, c, outdata);
+		return control_not_implemented("GET_PUBLIC_IPSv4",
+					       "GET_PUBLIC_IPS");
 
 	case CTDB_CONTROL_GET_PUBLIC_IPS:
 		CHECK_CONTROL_DATA_SIZE(0);
 		return ctdb_control_get_public_ips(ctdb, c, outdata);
 
-	case CTDB_CONTROL_TCP_CLIENT: 
+	case CTDB_CONTROL_TCP_CLIENT:
+		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_control_tcp_addr));
 		return ctdb_control_tcp_client(ctdb, client_id, indata);
 
 	case CTDB_CONTROL_STARTUP: 
@@ -519,17 +514,36 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 			outdata->dsize = strlen(ctdb->recovery_lock_file) + 1;
 		}
 		return 0;
-	case CTDB_CONTROL_SET_RECLOCK_FILE:
-		ctdb->tunable.verify_recovery_lock = 0;
-		if (ctdb->recovery_lock_file != NULL) {
-			talloc_free(ctdb->recovery_lock_file);
-			ctdb->recovery_lock_file = NULL;
+	case CTDB_CONTROL_SET_RECLOCK_FILE: {
+		char *t;
+
+		if (indata.dsize == 0) {
+			TALLOC_FREE(ctdb->recovery_lock_file);
+			return 0;
 		}
-		if (indata.dsize > 0) {
-			ctdb->recovery_lock_file = talloc_strdup(ctdb, discard_const(indata.dptr));
-			ctdb->tunable.verify_recovery_lock = 1;
+
+		/* Return silent success if unchanged.  Recovery
+		 * master updates all nodes on each recovery - we
+		 * don't need the extra memory allocation or log
+		 * message each time. */
+		if (ctdb->recovery_lock_file != NULL &&
+		    strcmp(discard_const(indata.dptr),
+			   ctdb->recovery_lock_file) == 0) {
+			return 0;
 		}
+
+		t = talloc_strdup(ctdb, discard_const(indata.dptr));
+		if (t == NULL) {
+			DEBUG(DEBUG_ERR, ("Out of memory in SET_RECLOCK_FILE\n"));
+			return -1;
+		}
+
+		talloc_free(ctdb->recovery_lock_file);
+		ctdb->recovery_lock_file = t;
+		DEBUG(DEBUG_NOTICE, ("Updated recovery lock file to %s\n", t));
+
 		return 0;
+	}
 
 	case CTDB_CONTROL_STOP_NODE:
 		CHECK_CONTROL_DATA_SIZE(0);

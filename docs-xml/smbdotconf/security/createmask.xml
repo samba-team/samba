@@ -1,6 +1,6 @@
 <samba:parameter name="create mask"
                  context="S"
-				 type="integer"
+                 type="octal"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 
 <synonym>create mode</synonym>

@@ -386,7 +386,7 @@ WERROR NetShareEnum_r(struct libnetapi_ctx *ctx,
 	}
 
 	for (i=0; i < info_ctr.ctr.ctr1->count; i++) {
-		union srvsvc_NetShareInfo _i;
+		union srvsvc_NetShareInfo _i = {0};
 		switch (r->in.level) {
 			case 0:
 				_i.info0 = &info_ctr.ctr.ctr0->array[i];

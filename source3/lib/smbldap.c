@@ -237,7 +237,7 @@
 					&blob)) {
 		return false;
 	}
-	ret = sid_parse((char *)blob.data, blob.length, sid);
+	ret = sid_parse(blob.data, blob.length, sid);
 	TALLOC_FREE(blob.data);
 	return ret;
 }

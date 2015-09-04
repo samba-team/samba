@@ -334,7 +334,7 @@ static void generic_blocking_lock_error(struct blocking_lock_record *blr, NTSTAT
 static void undo_locks_obtained(struct blocking_lock_record *blr)
 {
 	files_struct *fsp = blr->fsp;
-	uint16 num_ulocks = SVAL(blr->req->vwv+6, 0);
+	uint16_t num_ulocks = SVAL(blr->req->vwv+6, 0);
 	uint64_t count = (uint64_t)0, offset = (uint64_t) 0;
 	uint64_t smblctx;
 	unsigned char locktype = CVAL(blr->req->vwv+3, 0);
@@ -451,8 +451,8 @@ static bool process_lockingX(struct blocking_lock_record *blr)
 {
 	unsigned char locktype = CVAL(blr->req->vwv+3, 0);
 	files_struct *fsp = blr->fsp;
-	uint16 num_ulocks = SVAL(blr->req->vwv+6, 0);
-	uint16 num_locks = SVAL(blr->req->vwv+7, 0);
+	uint16_t num_ulocks = SVAL(blr->req->vwv+6, 0);
+	uint16_t num_locks = SVAL(blr->req->vwv+7, 0);
 	bool large_file_format = (locktype & LOCKING_ANDX_LARGE_FILES);
 	uint8_t *data;
 	NTSTATUS status = NT_STATUS_OK;
@@ -980,7 +980,7 @@ struct blocking_lock_record *blocking_lock_cancel_smb1(files_struct *fsp,
 
 	messaging_send_buf(sconn->msg_ctx, messaging_server_id(sconn->msg_ctx),
 			   MSG_SMB_BLOCKING_LOCK_CANCEL,
-			   (uint8 *)&msg, sizeof(msg));
+			   (uint8_t *)&msg, sizeof(msg));
 
 	return blr;
 }

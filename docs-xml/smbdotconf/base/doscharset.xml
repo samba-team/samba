@@ -1,9 +1,9 @@
 <samba:parameter name="dos charset"
-				 type="string"
+                 type="string"
                  context="G"
-                 advanced="1" developer="1"
                  constant="1"
-				 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+                 handler="handle_dos_charset"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
         <para>DOS SMB clients assume the server has 
 	the same charset as they do. This option specifies which 

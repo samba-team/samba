@@ -46,8 +46,6 @@ SMBC_module_init(void * punused)
     char *home = NULL;
     TALLOC_CTX *frame = talloc_stackframe();
 
-    load_case_tables_library();
-
     setup_logging("libsmbclient", DEBUG_STDOUT);
 
     /* Here we would open the smb.conf file if needed ... */
@@ -196,6 +194,7 @@ smbc_new_context(void)
         smbc_setFunctionOpen(context, SMBC_open_ctx);
         smbc_setFunctionCreat(context, SMBC_creat_ctx);
         smbc_setFunctionRead(context, SMBC_read_ctx);
+        smbc_setFunctionSplice(context, SMBC_splice_ctx);
         smbc_setFunctionWrite(context, SMBC_write_ctx);
         smbc_setFunctionClose(context, SMBC_close_ctx);
         smbc_setFunctionUnlink(context, SMBC_unlink_ctx);
@@ -215,6 +214,7 @@ smbc_new_context(void)
         smbc_setFunctionTelldir(context, SMBC_telldir_ctx);
         smbc_setFunctionLseekdir(context, SMBC_lseekdir_ctx);
         smbc_setFunctionFstatdir(context, SMBC_fstatdir_ctx);
+        smbc_setFunctionNotify(context, SMBC_notify_ctx);
         smbc_setFunctionChmod(context, SMBC_chmod_ctx);
         smbc_setFunctionUtimes(context, SMBC_utimes_ctx);
         smbc_setFunctionSetxattr(context, SMBC_setxattr_ctx);

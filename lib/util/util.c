@@ -22,8 +22,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <talloc.h>
 #include "replace.h"
+#include <talloc.h>
 #include "system/network.h"
 #include "system/filesys.h"
 #include "system/locale.h"
@@ -530,7 +530,7 @@ void dump_data_cb(const uint8_t *buf, int len,
 	if (i%16) {
 		int n;
 		n = 16 - (i%16);
-		cb(" ", private_data);
+		cb("  ", private_data);
 		if (n>8) {
 			cb(" ", private_data);
 		}
@@ -932,19 +932,7 @@ _PUBLIC_ void hex_encode_buf(char *dst, const uint8_t *src, size_t srclen)
 }
 
 /**
- * Routine to print a buffer as HEX digits, into an allocated string.
- */
-_PUBLIC_ void hex_encode(const unsigned char *buff_in, size_t len, char **out_hex_buffer)
-{
-	char *hex_buffer;
-
-	*out_hex_buffer = malloc_array_p(char, (len*2)+1);
-	hex_buffer = *out_hex_buffer;
-	hex_encode_buf(hex_buffer, buff_in, len);
-}
-
-/**
- * talloc version of hex_encode()
+ * talloc version of hex_encode_buf()
  */
 _PUBLIC_ char *hex_encode_talloc(TALLOC_CTX *mem_ctx, const unsigned char *buff_in, size_t len)
 {

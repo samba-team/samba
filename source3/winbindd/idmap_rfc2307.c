@@ -151,7 +151,7 @@ static NTSTATUS idmap_rfc2307_ldap_search(struct idmap_rfc2307_context *ctx,
 }
 
 static bool idmap_rfc2307_get_uint32(LDAP *ldap, LDAPMessage *entry,
-				     const char *field, uint32 *value)
+				     const char *field, uint32_t *value)
 {
 	bool b;
 	char str[20];
@@ -374,7 +374,7 @@ again:
 			break;
 		case ID_TYPE_GID:
 			fltr_grp = talloc_asprintf_append_buffer(fltr_grp,
-					"(gidNumber=%d))", ids[idx]->xid.id);
+					"(gidNumber=%d)", ids[idx]->xid.id);
 			cnt_grp++;
 			break;
 		default:
@@ -861,6 +861,7 @@ static struct idmap_methods rfc2307_methods = {
 	.sids_to_unixids = idmap_rfc2307_sids_to_unixids,
 };
 
+static_decl_idmap;
 NTSTATUS idmap_rfc2307_init(void)
 {
 	return smb_register_idmap(SMB_IDMAP_INTERFACE_VERSION, "rfc2307",

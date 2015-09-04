@@ -28,18 +28,6 @@
 #include <tevent.h>
 #include "system/network.h"
 
-struct tevent_req *sendto_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-			       int fd, const void *buf, size_t len, int flags,
-			       const struct sockaddr_storage *addr);
-ssize_t sendto_recv(struct tevent_req *req, int *perrno);
-
-struct tevent_req *recvfrom_send(TALLOC_CTX *mem_ctx,
-				 struct tevent_context *ev,
-				 int fd, void *buf, size_t len, int flags,
-				 struct sockaddr_storage *addr,
-				 socklen_t *addr_len);
-ssize_t recvfrom_recv(struct tevent_req *req, int *perrno);
-
 struct tevent_req *async_connect_send(
 	TALLOC_CTX *mem_ctx, struct tevent_context *ev, int fd,
 	const struct sockaddr *address, socklen_t address_len,
@@ -65,8 +53,8 @@ ssize_t read_packet_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 			 uint8_t **pbuf, int *perrno);
 
 struct tevent_req *wait_for_read_send(TALLOC_CTX *mem_ctx,
-				      struct tevent_context *ev,
-				      int fd);
+				      struct tevent_context *ev, int fd,
+				      bool check_errors);
 bool wait_for_read_recv(struct tevent_req *req, int *perr);
 
 #endif

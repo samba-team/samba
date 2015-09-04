@@ -1,14 +1,28 @@
 #!/usr/bin/env python
 
-import os
+import Options
+import os, sys
 
-VERSION="1.0.1"
+VERSION="1.1.1"
 
 def configure(conf):
     if conf.CHECK_BUNDLED_SYSTEM('uid_wrapper', minversion=VERSION, set_target=False):
         conf.DEFINE('USING_SYSTEM_UID_WRAPPER', 1)
         libuid_wrapper_so_path = 'libuid_wrapper.so'
     else:
+        # check HAVE_GCC_ATOMIC_BUILTINS
+        conf.CHECK_CODE('''
+            #include <stdbool.h>
+            int main(void) {
+                bool x;
+                bool *p_x = &x;
+                __atomic_load(p_x, &x, __ATOMIC_RELAXED);
+                return 0;
+            ''',
+            'HAVE_GCC_ATOMIC_BUILTINS',
+            addmain=False,
+            msg='Checking for atomic builtins')
+
         # check HAVE_GCC_THREAD_LOCAL_STORAGE
         conf.CHECK_CODE('''
             __thread int tls;
@@ -20,6 +34,23 @@ def configure(conf):
             'HAVE_GCC_THREAD_LOCAL_STORAGE',
             addmain=False,
             msg='Checking for thread local storage')
+
+        # check HAVE_CONSTRUCTOR_ATTRIBUTE
+        conf.CHECK_CODE('''
+            void test_constructor_attribute(void) __attribute__ ((constructor));
+
+            void test_constructor_attribute(void)
+            {
+                return;
+            }
+
+            int main(void) {
+                return 0;
+            }
+            ''',
+            'HAVE_CONSTRUCTOR_ATTRIBUTE',
+            addmain=False,
+            msg='Checking for library constructor support')
 
         # check HAVE_DESTRUCTOR_ATTRIBUTE
         conf.CHECK_CODE('''
@@ -37,6 +68,25 @@ def configure(conf):
             'HAVE_DESTRUCTOR_ATTRIBUTE',
             addmain=False,
             msg='Checking for library destructor support')
+
+        if Options.options.address_sanitizer:
+            # check HAVE_ADDRESS_SANITIZER_ATTRIBUTE
+            conf.CHECK_CODE('''
+                void test_address_sanitizer_attribute(void) __attribute__((no_sanitize_address));
+
+                void test_address_sanitizer_attribute(void)
+                {
+                    return;
+                }
+
+                int main(void) {
+                    return 0;
+                }
+                ''',
+                'HAVE_ADDRESS_SANITIZER_ATTRIBUTE',
+                addmain=False,
+                cflags='-Wall -Wextra -Werror',
+                msg='Checking for address sanitizer attribute')
 
         # check HAVE_FUNCTION_ATTRIBUTE_FORMAT
         conf.CHECK_CODE('''
@@ -56,6 +106,44 @@ def configure(conf):
 	conf.CHECK_C_PROTOTYPE('syscall',
 			'int syscall(int number, ...)',
 			define='HAVE_SYSCALL_INT', headers='unistd.h sys/syscall.h')
+
+        if (sys.platform.rfind('linux') > -1):
+            conf.CHECK_CODE('''
+#if defined(HAVE_UNISTD_H)
+#include <unistd.h>
+#endif
+#include <stdlib.h>
+#include <stdio.h>
+#include <sys/types.h>
+#include <errno.h>
+
+#ifdef HAVE_SYS_PRIV_H
+#include <sys/priv.h>
+#endif
+#ifdef HAVE_SYS_ID_H
+#include <sys/id.h>
+#endif
+
+#if defined(HAVE_SYSCALL_H)
+#include <syscall.h>
+#endif
+
+#if defined(HAVE_SYS_SYSCALL_H)
+#include <sys/syscall.h>
+#endif
+
+syscall(SYS_setresuid32, -1, -1, -1);
+syscall(SYS_setresgid32, -1, -1, -1);
+syscall(SYS_setreuid32, -1, -1);
+syscall(SYS_setregid32, -1, -1);
+syscall(SYS_setuid32, -1);
+syscall(SYS_setgid32, -1);
+syscall(SYS_setgroups32, 0, NULL);
+''',
+                'HAVE_LINUX_32BIT_SYSCALLS',
+                msg="Checking whether Linux has 32-bit credential calls");
+
+        conf.CHECK_FUNCS('getresuid getresgid')
 
         # Create full path to uid_wrapper
         srcdir = os.path.realpath(conf.srcdir)

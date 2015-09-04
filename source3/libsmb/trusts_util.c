@@ -55,18 +55,24 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct trust_pw_change_state *state;
-	struct samr_Password current_nt_hash;
+	struct cli_credentials *creds = NULL;
+	const struct samr_Password *current_nt_hash = NULL;
 	const struct samr_Password *previous_nt_hash = NULL;
 	enum netr_SchannelType sec_channel_type = SEC_CHAN_NULL;
-	const char *account_name;
-	char *new_trust_passwd;
-	char *pwd;
-	struct dom_sid sid;
 	time_t pass_last_set_time;
+	uint32_t old_version = 0;
+	struct pdb_trusted_domain *td = NULL;
 	struct timeval g_timeout = { 0, };
 	int timeout = 0;
 	struct timeval tv = { 0, };
+	size_t new_len = DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH;
+	uint8_t new_password_buffer[256 * 2] = { 0, };
+	char *new_trust_passwd = NULL;
+	size_t len = 0;
+	uint32_t new_version = 0;
+	uint32_t *new_trust_version = NULL;
 	NTSTATUS status;
+	bool ok;
 
 	state = talloc_zero(frame, struct trust_pw_change_state);
 	if (state == NULL) {
@@ -101,31 +107,53 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 
 	talloc_set_destructor(state, trust_pw_change_state_destructor);
 
-	if (!get_trust_pw_hash(domain, current_nt_hash.hash,
-			       &account_name,
-			       &sec_channel_type)) {
-		DEBUG(0, ("could not fetch domain secrets for domain %s!\n", domain));
+	status = pdb_get_trust_credentials(domain, NULL, frame, &creds);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("could not fetch domain creds for domain %s - %s!\n",
+			  domain, nt_errstr(status)));
 		TALLOC_FREE(frame);
 		return NT_STATUS_TRUSTED_RELATIONSHIP_FAILURE;
 	}
 
+	current_nt_hash = cli_credentials_get_nt_hash(creds, frame);
+	if (current_nt_hash == NULL) {
+		DEBUG(0, ("cli_credentials_get_nt_hash failed for domain %s!\n",
+			  domain));
+		TALLOC_FREE(frame);
+		return NT_STATUS_TRUSTED_RELATIONSHIP_FAILURE;
+	}
+
+	old_version = cli_credentials_get_kvno(creds);
+	pass_last_set_time = cli_credentials_get_password_last_changed_time(creds);
+	sec_channel_type = cli_credentials_get_secure_channel_type(creds);
+
+	new_version = old_version + 1;
+
 	switch (sec_channel_type) {
 	case SEC_CHAN_WKSTA:
 	case SEC_CHAN_BDC:
-		pwd = secrets_fetch_machine_password(domain,
-						     &pass_last_set_time,
-						     NULL);
-		if (pwd == NULL) {
-			TALLOC_FREE(frame);
-			return NT_STATUS_TRUSTED_RELATIONSHIP_FAILURE;
-		}
-		free(pwd);
 		break;
+	case SEC_CHAN_DNS_DOMAIN:
+		/*
+		 * new_len * 2 = 498 bytes is the largest possible length
+		 * NL_PASSWORD_VERSION consumes the rest of the possible 512 bytes
+		 * and a confounder with at least 2 bytes is required.
+		 *
+		 * Windows uses new_len = 120 => 240 bytes.
+		 */
+		new_len = 120;
+
+		/* fall through */
 	case SEC_CHAN_DOMAIN:
-		if (!pdb_get_trusteddom_pw(domain, &pwd, &sid, &pass_last_set_time)) {
+		status = pdb_get_trusted_domain(frame, domain, &td);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("pdb_get_trusted_domain() failed for domain %s - %s!\n",
+				  domain, nt_errstr(status)));
 			TALLOC_FREE(frame);
-			return NT_STATUS_TRUSTED_RELATIONSHIP_FAILURE;
+			return status;
 		}
+
+		new_trust_version = &new_version;
 		break;
 	default:
 		TALLOC_FREE(frame);
@@ -153,33 +181,45 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 		return NT_STATUS_OK;
 	}
 
-	/* Create a random machine account password */
-	new_trust_passwd = generate_random_password(frame,
-				DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH,
-				DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH);
-	if (new_trust_passwd == NULL) {
-		DEBUG(0, ("generate_random_password failed\n"));
+	/*
+	 * Create a random machine account password
+	 * We create a random buffer and convert that to utf8.
+	 * This is similar to what windows is doing.
+	 */
+	generate_secret_buffer(new_password_buffer, new_len * 2);
+	ok = convert_string_talloc(frame,
+				   CH_UTF16MUNGED, CH_UTF8,
+				   new_password_buffer, new_len * 2,
+				   (void *)&new_trust_passwd, &len);
+	ZERO_STRUCT(new_password_buffer);
+	if (!ok) {
+		DEBUG(0, ("convert_string_talloc failed\n"));
 		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	/*
+	 * We could use cli_credentials_get_old_nt_hash(creds, frame) to
+	 * set previous_nt_hash.
+	 *
+	 * But we want to check if the dc has our current password and only do
+	 * a change if that's the case. So we keep previous_nt_hash = NULL.
+	 *
+	 * TODO:
+	 * If the previous password is the only password in common with the dc,
+	 * we better skip the password change, or use something like
+	 * ServerTrustPasswordsGet() or netr_ServerGetTrustInfo() to fix our
+	 * local secrets before doing the change.
+	 */
 	status = netlogon_creds_cli_auth(context, b,
-					 current_nt_hash,
+					 *current_nt_hash,
 					 previous_nt_hash);
 	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("netlogon_creds_cli_auth for domain %s - %s!\n",
+			  domain, nt_errstr(status)));
 		TALLOC_FREE(frame);
 		return status;
 	}
-
-	status = netlogon_creds_cli_ServerPasswordSet(context, b,
-						      new_trust_passwd, NULL);
-	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(frame);
-		return status;
-	}
-
-	DEBUG(3,("%s : trust_pw_change_and_store_it: Changed password.\n",
-		 current_timestring(talloc_tos(), False)));
 
 	/*
 	 * Return the result of trying to write the new password
@@ -190,18 +230,26 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 
 	case SEC_CHAN_WKSTA:
 	case SEC_CHAN_BDC:
-		if (!secrets_store_machine_password(new_trust_passwd, domain, sec_channel_type)) {
+		ok = secrets_store_machine_password(new_trust_passwd, domain, sec_channel_type);
+		if (!ok) {
+			DEBUG(0, ("secrets_store_machine_password failed for domain %s!\n",
+				  domain));
 			TALLOC_FREE(frame);
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 		break;
 
+	case SEC_CHAN_DNS_DOMAIN:
 	case SEC_CHAN_DOMAIN:
 		/*
 		 * we need to get the sid first for the
 		 * pdb_set_trusteddom_pw call
 		 */
-		if (!pdb_set_trusteddom_pw(domain, new_trust_passwd, &sid)) {
+		ok = pdb_set_trusteddom_pw(domain, new_trust_passwd,
+					   &td->security_identifier);
+		if (!ok) {
+			DEBUG(0, ("pdb_set_trusteddom_pw() failed for domain %s!\n",
+				  domain));
 			TALLOC_FREE(frame);
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
@@ -211,6 +259,23 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 		smb_panic("Unsupported secure channel type");
 		break;
 	}
+
+	DEBUG(1,("%s : %s(%s): Changed password locally\n",
+		 current_timestring(talloc_tos(), false), __func__, domain));
+
+	status = netlogon_creds_cli_ServerPasswordSet(context, b,
+						      new_trust_passwd,
+						      new_trust_version);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("%s : %s(%s) remote password change set failed - %s\n",
+			 current_timestring(talloc_tos(), false), __func__,
+			 domain, nt_errstr(status)));
+		TALLOC_FREE(frame);
+		return status;
+	}
+
+	DEBUG(1,("%s : %s(%s): Changed password remotely.\n",
+		 current_timestring(talloc_tos(), false), __func__, domain));
 
 	TALLOC_FREE(frame);
 	return NT_STATUS_OK;

@@ -26,12 +26,14 @@ krb5_error_code samba_make_krb5_pac(krb5_context context,
 				    DATA_BLOB *deleg_blob,
 				    krb5_pac *pac);
 
-bool samba_princ_needs_pac(struct hdb_entry_ex *princ);
+bool samba_princ_needs_pac(struct samba_kdc_entry *skdc_entry);
 
-int samba_krbtgt_is_in_db(struct hdb_entry_ex *princ, bool *is_in_db, bool *is_untrusted);
+int samba_krbtgt_is_in_db(struct samba_kdc_entry *skdc_entry,
+			  bool *is_in_db,
+			  bool *is_untrusted);
 
 NTSTATUS samba_kdc_get_pac_blob(TALLOC_CTX *mem_ctx,
-				struct hdb_entry_ex *client,
+				struct samba_kdc_entry *skdc_entry,
 				DATA_BLOB **_pac_blob);
 
 NTSTATUS samba_kdc_update_pac_blob(TALLOC_CTX *mem_ctx,
@@ -47,15 +49,9 @@ NTSTATUS samba_kdc_update_delegation_info_blob(TALLOC_CTX *mem_ctx,
 				const krb5_principal proxy_principal,
 				DATA_BLOB *pac_blob);
 
-void samba_kdc_build_edata_reply(NTSTATUS nt_status, DATA_BLOB *e_data);
-
 krb5_error_code samba_kdc_map_policy_err(NTSTATUS nt_status);
 
 NTSTATUS samba_kdc_check_client_access(struct samba_kdc_entry *kdc_entry,
 				       const char *client_name,
 				       const char *workstation,
 				       bool password_change);
-int kdc_check_pac(krb5_context krb5_context,
-		  DATA_BLOB server_sig,
-		  struct PAC_SIGNATURE_DATA *kdc_sig,
-		  hdb_entry_ex *ent);

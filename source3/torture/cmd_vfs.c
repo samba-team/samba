@@ -93,7 +93,7 @@ static NTSTATUS cmd_show_data(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int ar
 		printf("show_data: error=-1 (not enough data in buffer)\n");
 		return NT_STATUS_UNSUCCESSFUL;
 	}
-	dump_data(0, (uint8 *)(vfs->data) + offset, len);
+	dump_data(0, (uint8_t *)(vfs->data) + offset, len);
 	return NT_STATUS_OK;
 }
 
@@ -117,7 +117,7 @@ static NTSTATUS cmd_disk_free(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int ar
 		return NT_STATUS_OK;
 	}
 
-	diskfree = SMB_VFS_DISK_FREE(vfs->conn, argv[1], False, &bsize, &dfree, &dsize);
+	diskfree = SMB_VFS_DISK_FREE(vfs->conn, argv[1], &bsize, &dfree, &dsize);
 	printf("disk_free: %lu, bsize = %lu, dfree = %lu, dsize = %lu\n",
 			(unsigned long)diskfree,
 			(unsigned long)bsize,
