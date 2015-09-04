@@ -47,10 +47,10 @@ int main(int argc, char * argv[])
         return 1;
     }
     
-    printf("Before\n mtime:%lu/%s ctime:%lu/%s atime:%lu/%s\n",
-           st.st_mtime, ctime_r(&st.st_mtime, m_time),
-           st.st_ctime, ctime_r(&st.st_ctime, c_time),
-           st.st_atime, ctime_r(&st.st_atime, a_time)); 
+    printf("Before\n mtime:%lld/%s ctime:%lld/%s atime:%lld/%s\n",
+           (long long)st.st_mtime, ctime_r(&st.st_mtime, m_time),
+           (long long)st.st_ctime, ctime_r(&st.st_ctime, c_time),
+           (long long)st.st_atime, ctime_r(&st.st_atime, a_time));
     
     utimbuf.actime = t;         /* unchangable (wont change) */
     utimbuf.modtime = t;        /* this one should succeed */
@@ -66,10 +66,10 @@ int main(int argc, char * argv[])
         return 1;
     }
     
-    printf("After\n mtime:%lu/%s ctime:%lu/%s atime:%lu/%s\n",
-           st.st_mtime, ctime_r(&st.st_mtime, m_time),
-           st.st_ctime, ctime_r(&st.st_ctime, c_time),
-           st.st_atime, ctime_r(&st.st_atime, a_time)); 
+    printf("After\n mtime:%lld/%s ctime:%lld/%s atime:%lld/%s\n",
+           (long long)st.st_mtime, ctime_r(&st.st_mtime, m_time),
+           (long long)st.st_ctime, ctime_r(&st.st_ctime, c_time),
+           (long long)st.st_atime, ctime_r(&st.st_atime, a_time));
     
     return 0; 
 }

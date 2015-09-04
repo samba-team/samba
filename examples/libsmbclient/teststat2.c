@@ -47,10 +47,10 @@ static int gettime(const char * pUrl,
                 return 1;
         }
         
-        printf("SAMBA\n mtime:%lu/%s ctime:%lu/%s atime:%lu/%s\n",
-               st.st_mtime, ctime_r(&st.st_mtime, m_time),
-               st.st_ctime, ctime_r(&st.st_ctime, c_time),
-               st.st_atime, ctime_r(&st.st_atime, a_time)); 
+        printf("SAMBA\n mtime:%lld/%s ctime:%lld/%s atime:%lld/%s\n",
+               (long long)st.st_mtime, ctime_r(&st.st_mtime, m_time),
+               (long long)st.st_ctime, ctime_r(&st.st_ctime, c_time),
+               (long long)st.st_atime, ctime_r(&st.st_atime, a_time));
         
         
         /* check the stat on this file */
@@ -60,10 +60,10 @@ static int gettime(const char * pUrl,
                 return 1;
         }
         
-        printf("LOCAL\n mtime:%lu/%s ctime:%lu/%s atime:%lu/%s\n",
-               st.st_mtime, ctime_r(&st.st_mtime, m_time),
-               st.st_ctime, ctime_r(&st.st_ctime, c_time),
-               st.st_atime, ctime_r(&st.st_atime, a_time));
+        printf("LOCAL\n mtime:%lld/%s ctime:%lld/%s atime:%lld/%s\n",
+               (long long)st.st_mtime, ctime_r(&st.st_mtime, m_time),
+               (long long)st.st_ctime, ctime_r(&st.st_ctime, c_time),
+               (long long)st.st_atime, ctime_r(&st.st_atime, a_time));
         
         
         return 0;
