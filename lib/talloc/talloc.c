@@ -300,6 +300,11 @@ _PUBLIC_ int talloc_version_minor(void)
 	return TALLOC_VERSION_MINOR;
 }
 
+_PUBLIC_ int talloc_test_get_magic(void)
+{
+	return talloc_magic;
+}
+
 static void (*talloc_log_fn)(const char *message);
 
 _PUBLIC_ void talloc_set_log_fn(void (*log_fn)(const char *message))
