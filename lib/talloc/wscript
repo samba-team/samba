@@ -100,6 +100,10 @@ def build(bld):
                          testsuite_deps,
                          install=False)
 
+        bld.SAMBA_BINARY('talloc_test_magic_differs_helper',
+                         'test_magic_differs_helper.c',
+                         'talloc', install=False)
+
     else:
         private_library = True
 
@@ -154,9 +158,14 @@ def test(ctx):
     cmd = os.path.join(Utils.g_module.blddir, 'talloc_testsuite')
     ret = samba_utils.RUN_COMMAND(cmd)
     print("testsuite returned %d" % ret)
+    magic_cmd = os.path.join(srcdir, 'lib', 'talloc',
+                             'test_magic_differs.sh')
+
+    magic_ret = samba_utils.RUN_COMMAND(magic_cmd)
+    print("magic differs test returned %d" % magic_ret)
     pyret = samba_utils.RUN_PYTHON_TESTS(['test_pytalloc.py'])
     print("python testsuite returned %d" % pyret)
-    sys.exit(ret or pyret)
+    sys.exit(ret or magic_ret or pyret)
 
 def dist():
     '''makes a tarball for distribution'''
