@@ -1,4 +1,116 @@
                    =============================
+                   Release Notes for Samba 4.2.4
+                         September 8, 2015
+                   =============================
+
+
+This is the latest stable release of Samba 4.2.
+
+
+Changes since 4.2.3:
+--------------------
+
+o   Michael Adam <obnox@samba.org>
+    * BUG 11372: smbd: Fix SMB3 functionality of "smb encrypt".
+
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 11359: lib: replace: Add strsep function (missing on Solaris).
+
+
+o   Ralph Boehme <slow@samba.org>
+    * BUG 11278: Fix stream names with colon with "fruit:encoding = native".
+    * BUG 11317: vfs:fruit: Implement copyfile style copy_chunk.
+    * BUG 11426: s3-net: Use talloc array in share allowedusers.
+    * BUG 11467: vfs_fruit: Handling of empty resource fork.
+
+
+o   Alexander Bokovoy <ab@samba.org>
+    * BUG 11265: auth/credentials: If credentials have principal set, they are
+      not anonymous anymore.
+
+
+o   Günther Deschner <gd@samba.org>
+    * BUG 11373: s3-smbd: Reset protocol in smbXsrv_connection_init_tables
+      failure paths.
+
+
+o   Amitay Isaacs <amitay@gmail.com>
+    * BUG 11398: ctdb-daemon: Return correct sequence number for
+      CONTROL_GET_DB_SEQNUM.
+    * BUG 11431: ctdb-daemon: Improve error handling for running event scripts.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 11316: lib: Fix rundown of open_socket_out().
+    * BUG 11488: Avoid quoting problems in user's DNs.
+
+
+o   Justin Maggard <jmaggard@netgear.com>
+    * BUG 11320: s3-passdb: Respect LOOKUP_NAME_GROUP flag in sid lookup.
+
+
+o   Roel van Meer <roel@1afa.com>
+    * BUG 11427: s3-util: Compare the maximum allowed length of a NetBIOS name.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 11316: s3:lib: Fix some corner cases of open_socket_out_cleanup().
+    * BUG 11454: Backport dcesrv_netr_DsRGetDCNameEx2 fixes.
+
+
+o   Anubhav Rakshit <anubhav.rakshit@gmail.com>
+    * BUG 11361: s3:libsmb: Fix a bug in conversion of ea list to ea array.
+
+
+o   Arvid Requate <requate@univention.de>
+    * BUG 11291: s4:rpc_server/netlogon: Fix for NetApp.
+
+
+o   Andreas Schneider <asn@samba.org>
+    * BUG 9862: s3-auth: Fix "map to guest = Bad uid".
+    * BUG 11403: s3-smbd: Leave sys_disk_free() if dfree command is used.
+    * BUG 11404: s3-auth: Fix a possible null pointer dereference.
+
+
+o   Martin Schwenke <martin@meltin.net>
+    * BUG 11399: ctdb-scripts: Support monitoring of interestingly named VLANs
+      on bonds.
+    * BUG 11432: ctdb-daemon: Check if updates are in flight when releasing all
+      IPs.
+    * BUG 11435: ctdb-build: Fix building of PCP PMDA module.
+
+
+o   Wei Zhong <wweyeww@gmail.com>
+    * BUG 10823: s3: winbindd: Fix TALLOC_FREE of uninitialized groups variable.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.2 product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+======================================================================
+
+                   =============================
                    Release Notes for Samba 4.2.3
                            July 14, 2015
                    =============================
@@ -149,10 +261,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
 
-======================================================================
 
                    =============================
                    Release Notes for Samba 4.2.2
