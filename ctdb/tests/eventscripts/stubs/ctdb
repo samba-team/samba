@@ -59,6 +59,55 @@ setup_tickles ()
     touch "$tickles_file"
 }
 
+ctdb_gettickles ()
+{
+    _ip="$1"
+    _port="$2"
+
+    setup_tickles
+
+    echo "|source ip|port|destination ip|port|"
+    while read _src _dst ; do
+	if [ -z "$_ip" -o "$_ip" = "${_dst%:*}" ] ; then
+	    if [ -z "$_port" -o "$_port" = "${_dst##*:}" ] ; then
+		echo "|${_src%:*}|${_src##*:}|${_dst%:*}|${_dst##*:}|"
+	    fi
+	fi
+    done <"$tickles_file"
+}
+
+ctdb_addtickle ()
+{
+    _src="$1"
+    _dst="$2"
+
+    setup_tickles
+
+    if [ -n "$_dst" ] ; then
+	echo "${_src} ${_dst}" >>"$tickles_file"
+    else
+	cat >>"$tickles_file"
+    fi
+}
+
+ctdb_deltickle ()
+{
+    _src="$1"
+    _dst="$2"
+
+    setup_tickles
+
+    if [ -n "$_dst" ] ; then
+	_t=$(grep -F -v "${_src} $${_dst}" "$tickles_file")
+    else
+	_t=$(cat "$tickles_file")
+	while read _src _dst ; do
+	    _t=$(echo "$_t" | grep -F -v "${_src} ${_dst}")
+	done
+    fi
+    echo "$_t" >"$tickles_file"
+}
+
 parse_nodespec ()
 {
     if [ "$nodespec" = "all" ] ; then
@@ -358,22 +407,9 @@ EOF
 ######################################################################
 
 case "$1" in
-    gettickles)
-	setup_tickles
-	echo "|source ip|port|destination ip|port|"
-	while read src dst ; do
-	    echo "|${src}|${dst}|"
-	done <"$tickles_file"
-	;;
-    addtickle)
-	setup_tickles
-	echo "$2 $3" >>"$tickles_file"
-	;;
-    deltickle)
-	setup_tickles
-	_t=$(grep -F -v "$2 $3" "$tickles_file")
-	echo "$_t" >"$tickles_file"
-	;;
+    gettickles) shift ; ctdb_gettickles "$@" ;;
+    addtickle) shift ; ctdb_addtickle "$@" ;;
+    deltickle) shift ; ctdb_deltickle "$@" ;;
     pstore)  ctdb_pstore  "$@" ;;
     pdelete) ctdb_pdelete "$@" ;;
     pfetch)  ctdb_pfetch  "$@" ;;
