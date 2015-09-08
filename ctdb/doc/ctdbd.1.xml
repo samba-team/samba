@@ -455,17 +455,6 @@
       </varlistentry>
 
       <varlistentry>
-	<term>--syslog</term>
-	<listitem>
-	  <para>
-	    Send log messages to syslog instead of the CTDB logfile.
-	    This option overrides --logfile.  The default is to log to
-	    a file.
-	  </para>
-	</listitem>
-      </varlistentry>
-
-      <varlistentry>
 	<term>--transport=tcp|infiniband</term>
 	<listitem>
 	  <para>
