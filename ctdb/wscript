@@ -213,7 +213,7 @@ def configure(conf):
     # Allow unified compilation and separate compilation of utilities
     # to find includes
     if not conf.env.standalone_ctdb:
-        conf.ADD_EXTRA_INCLUDES('#ctdb/include')
+        conf.ADD_EXTRA_INCLUDES('#include/public #ctdb/include')
     else:
         if srcdir == '.':
             # Building from tarball
