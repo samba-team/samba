@@ -520,21 +520,12 @@ tickle_tcp_connections ()
 {
     _ip="$1"
 
-    get_tcp_connections_for_ip "$_ip" |
-    {
-	_failed=false
+    # Get connections, both directions
+    _conns=$(get_tcp_connections_for_ip "$_ip" | \
+		    awk '{ print $1, $2 ; print $2, $1 }')
 
-	while read dest src; do
-	    echo "Tickle TCP connection $src $dest"
-	    $CTDB tickle "$src" "$dest" >/dev/null 2>&1 || _failed=true
-	    echo "Tickle TCP connection $dest $src"
-	    $CTDB tickle "$dest" "$src" >/dev/null 2>&1 || _failed=true
-	done
-
-	if $_failed ; then
-	    echo "Failed to send tickle control"
-	fi
-    }
+    echo "$_conns" | awk '{ print "Tickle TCP connection", $1, $2 }'
+    echo "$_conns" | ctdb tickle
 }
 
 get_tcp_connections_for_ip ()
