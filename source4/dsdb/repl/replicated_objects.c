@@ -902,7 +902,7 @@ WERROR dsdb_replicated_objects_commit(struct ldb_context *ldb,
 
 		ret = ldb_build_mod_req(&req, ldb, objects,
 				msg,
-				LDB_SCOPE_BASE,
+				NULL,
 				NULL,
 				ldb_op_default_callback,
 				NULL);
