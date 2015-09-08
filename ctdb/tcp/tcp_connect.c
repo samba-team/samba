@@ -338,6 +338,8 @@ static int ctdb_tcp_listen_automatic(struct ctdb_context *ctdb)
 			DEBUG(DEBUG_ERR,(__location__ " Failed to bind() to socket. %s(%d)\n",
 					strerror(errno), errno));
 		}
+
+		close(ctcp->listen_fd);
 	}
 
 	if (i == ctdb->num_nodes) {
