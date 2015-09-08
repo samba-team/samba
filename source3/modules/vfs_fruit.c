@@ -3318,7 +3318,7 @@ static NTSTATUS fruit_create_file(vfs_handle_struct *handle,
 
 	status = check_aapl(handle, req, in_context_blobs, out_context_blobs);
 	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+		goto fail;
 	}
 
 	SMB_VFS_HANDLE_GET_DATA(handle, config, struct fruit_config_data,
