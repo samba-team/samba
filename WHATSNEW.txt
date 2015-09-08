@@ -1,18 +1,17 @@
-Release Announcements
-=====================
+                   =============================
+                   Release Notes for Samba 4.3.0
+                           September 8, 2015
+                   =============================
 
-This is the fifth release candidate of Samba 4.3.  This is *not*
-intended for production environments and is designed for testing
-purposes only.  Please report any defects via the Samba bug reporting
-system at https://bugzilla.samba.org/.
 
-Samba 4.3 will be the next version of the Samba suite.
+This is the first stable release of Samba 4.3.
 
 
 UPGRADING
 =========
 
-Nothing special.
+Read the "New FileChangeNotify subsystem" and "smb.conf changes" sections
+(below).
 
 
 NEW FEATURES
@@ -299,6 +298,26 @@ Currently none.
 
 CHANGES SINCE 4.2.0rc4
 ======================
+
+o   Andrew Bartlett <abartlet@samba.org>
+    * Bug 10973: No objectClass found in replPropertyMetaData on ordinary
+      objects (non-deleted)
+    * Bug 11429: Python bindings don't check integer types
+    * Bug 11430: Python bindings don't check array sizes
+
+o   Ralph Boehme <slow@samba.org>
+    * Bug 11467: Handling of 0 byte resource fork stream
+
+o   Volker Lendecke <vl@samba.org>
+    * Bug 11488: AD samr GetGroupsForUser fails for users with "()" in
+      their name
+
+o   Stefan Metzmacher <metze@samba.org>
+    * Bug 11429: Python bindings don't check integer types
+
+o   Matthieu Patou <mat@matws.net>
+    * Bug 10973: No objectClass found in replPropertyMetaData on ordinary
+      objects (non-deleted)
 
 
 CHANGES SINCE 4.2.0rc3
