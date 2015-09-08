@@ -462,7 +462,7 @@ static int construct_msds_isrodc_with_dn(struct ldb_module *module,
 	ldb = ldb_module_get_ctx(module);
 	if (!ldb) {
 		DEBUG(4, (__location__ ": Failed to get ldb \n"));
-		return ldb_operr(ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	dn = ldb_dn_new(msg, ldb, (const char *)object_category->values[0].data);
