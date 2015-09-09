@@ -1101,8 +1101,22 @@ bool handle_include(struct loadparm_context *lp_ctx, struct loadparm_service *se
 
 	lpcfg_string_set(lp_ctx, ptr, fname);
 
-	if (file_exist(fname))
+	if (file_exist(fname)) {
 		return pm_process(fname, do_section, lpcfg_do_parameter, lp_ctx);
+	} else {
+		char *substitution_variable_substring;
+		substitution_variable_substring = strchr(fname, '%');
+
+		if (substitution_variable_substring) {
+			char next_char = substitution_variable_substring[1];
+			if ((next_char >= 'a' && next_char <= 'z')
+			    || (next_char >= 'A' && next_char <= 'Z')) {
+				DEBUG(2, ("Tried to load %s but variable in "
+					  "filename, ignoring file.\n", fname));
+				return true;
+			}
+		}
+	}
 
 	DEBUG(2, ("Can't find include file %s\n", fname));
 
