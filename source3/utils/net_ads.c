@@ -1320,24 +1320,27 @@ static int net_ads_join_usage(struct net_context *c, int argc, const char **argv
 {
 	d_printf(_("net ads join [--no-dns-updates] [options]\n"
 	           "Valid options:\n"));
-	d_printf(_("   createupn[=UPN]    Set the userPrincipalName attribute during the join.\n"
-		   "                      The deault UPN is in the form host/netbiosname@REALM.\n"));
-	d_printf(_("   createcomputer=OU  Precreate the computer account in a specific OU.\n"
-		   "                      The OU string read from top to bottom without RDNs and delimited by a '/'.\n"
-		   "                      E.g. \"createcomputer=Computers/Servers/Unix\"\n"
-		   "                      NB: A backslash '\\' is used as escape at multiple levels and may\n"
-		   "                          need to be doubled or even quadrupled.  It is not used as a separator.\n"));
-	d_printf(_("   machinepass=PASS   Set the machine password to a specific value during the join.\n"
-		   "                      The deault password is random.\n"));
-	d_printf(_("   osName=string      Set the operatingSystem attribute during the join.\n"));
-	d_printf(_("   osVer=string       Set the operatingSystemVersion attribute during the join.\n"
-		   "                      NB: osName and osVer must be specified together for either to take effect.\n"
-		   "                          Also, the operatingSystemService attribute is also set when along with\n"
-		   "                          the two other attributes.\n"));
-
-	d_printf(_("   osServicePack=string Set the operatingSystemServicePack "
-		   "attribute during the join. Note: if not specified then by "
-		   "default the samba version string is used instead.\n"));
+	d_printf(_("   createupn[=UPN]       Set the userPrincipalName attribute during the join.\n"
+		   "                         The default UPN is in the form host/netbiosname@REALM.\n"));
+	d_printf(_("   createcomputer=OU     Precreate the computer account in a specific OU.\n"
+		   "                         The OU string read from top to bottom without RDNs\n"
+		   "                         and delimited by a '/'.\n"
+		   "                         E.g. \"createcomputer=Computers/Servers/Unix\"\n"
+		   "                         NB: A backslash '\\' is used as escape at multiple\n"
+		   "                             levels and may need to be doubled or even\n"
+		   "                             quadrupled. It is not used as a separator.\n"));
+	d_printf(_("   machinepass=PASS      Set the machine password to a specific value during\n"
+		   "                         the join. The default password is random.\n"));
+	d_printf(_("   osName=string         Set the operatingSystem attribute during the join.\n"));
+	d_printf(_("   osVer=string          Set the operatingSystemVersion attribute during join.\n"
+		   "                         NB: osName and osVer must be specified together for\n"
+		   "                             either to take effect. The operatingSystemService\n"
+		   "                             attribute is then also set along with the two\n"
+		   "                             other attributes.\n"));
+	d_printf(_("   osServicePack=string  Set the operatingSystemServicePack attribute\n"
+		   "                         during the join.\n"
+		   "                         NB: If not specified then by default the samba\n"
+		   "                             version string is used instead.\n"));
 	return -1;
 }
 
