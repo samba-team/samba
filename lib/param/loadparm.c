@@ -1090,6 +1090,8 @@ bool handle_include(struct loadparm_context *lp_ctx, struct loadparm_service *se
 			   const char *pszParmValue, char **ptr)
 {
 	char *fname;
+	char *substitution_variable_substring;
+	char next_char;
 
 	if (lp_ctx->s3_fns) {
 		return lp_ctx->s3_fns->lp_include(lp_ctx, service, pszParmValue, ptr);
@@ -1103,6 +1105,20 @@ bool handle_include(struct loadparm_context *lp_ctx, struct loadparm_service *se
 
 	if (file_exist(fname))
 		return pm_process(fname, do_section, lpcfg_do_parameter, lp_ctx);
+
+	/* If the file doesn't exist, we check that it isn't due to variable
+	   substitution */
+	substitution_variable_substring = strchr(fname, '%');
+
+	if (substitution_variable_substring != NULL) {
+		next_char = substitution_variable_substring[1];
+		if ((next_char >= 'a' && next_char <= 'z')
+		    || (next_char >= 'A' && next_char <= 'Z')) {
+			DEBUG(2, ("Tried to load %s but variable substitution in "
+				 "filename, ignoring file.\n", fname));
+			return true;
+		}
+	}
 
 	DEBUG(2, ("Can't find include file %s\n", fname));
 
