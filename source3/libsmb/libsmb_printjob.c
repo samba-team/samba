@@ -125,7 +125,7 @@ SMBC_print_file_ctx(SMBCCTX *c_file,
 	}
 
 	fid1 = f_open1(c_file, fname, O_RDONLY, 0666);
-	if (fid1 < 0) {
+	if (fid1 == NULL) {
 		DEBUG(3, ("Error, fname=%s, errno=%i\n", fname, errno));
 		TALLOC_FREE(frame);
 		return -1;  /* smbc_open sets errno */
