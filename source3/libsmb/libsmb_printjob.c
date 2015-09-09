@@ -140,7 +140,7 @@ SMBC_print_file_ctx(SMBCCTX *c_file,
 	}
 
 	fid2 = f_open_pj2(c_print, printq);
-	if (fid2 < 0) {
+	if (fid2 == NULL) {
                 saverr = errno;  /* Save errno */
                 smbc_getFunctionClose(c_file)(c_file, fid1);
                 errno = saverr;
