@@ -1318,7 +1318,7 @@ static NTSTATUS net_update_dns(struct net_context *c, TALLOC_CTX *mem_ctx, ADS_S
 
 static int net_ads_join_usage(struct net_context *c, int argc, const char **argv)
 {
-	d_printf(_("net ads join [options]\n"
+	d_printf(_("net ads join [--no-dns-updates] [options]\n"
 	           "Valid options:\n"));
 	d_printf(_("   createupn[=UPN]    Set the userPrincipalName attribute during the join.\n"
 		   "                      The deault UPN is in the form host/netbiosname@REALM.\n"));
@@ -1594,11 +1594,14 @@ int net_ads_join(struct net_context *c, int argc, const char **argv)
 	}
 
 	/*
-	 * We try doing the dns update (if it was compiled in).
+	 * We try doing the dns update (if it was compiled in
+	 * and if it was not disabled on the command line).
 	 * If the dns update fails, we still consider the join
 	 * operation as succeeded if we came this far.
 	 */
-	_net_ads_join_dns_updates(c, ctx, r);
+	if (!c->opt_no_dns_updates) {
+		_net_ads_join_dns_updates(c, ctx, r);
+	}
 
 	TALLOC_FREE(r);
 	TALLOC_FREE( ctx );

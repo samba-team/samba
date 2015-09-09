@@ -839,6 +839,8 @@ static struct functable net_func[] = {
 		{"wipe", 0, POPT_ARG_NONE, &c->opt_wipe},
 		/* Options for 'net registry import' */
 		{"precheck", 0, POPT_ARG_STRING, &c->opt_precheck},
+		/* Options for 'net ads join' */
+		{"no-dns-updates", 0, POPT_ARG_NONE, &c->opt_no_dns_updates},
 		POPT_COMMON_SAMBA
 		{ 0, 0, 0, 0}
 	};
