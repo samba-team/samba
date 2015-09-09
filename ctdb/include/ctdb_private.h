@@ -936,7 +936,7 @@ struct ctdb_control_list_tunable {
 };
 
 
-struct ctdb_control_wipe_database {
+struct ctdb_control_transdb {
 	uint32_t db_id;
 	uint32_t transaction_id;
 };

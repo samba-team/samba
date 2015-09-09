@@ -714,7 +714,7 @@ fail:
  */
 int32_t ctdb_control_wipe_database(struct ctdb_context *ctdb, TDB_DATA indata)
 {
-	struct ctdb_control_wipe_database w = *(struct ctdb_control_wipe_database *)indata.dptr;
+	struct ctdb_control_transdb w = *(struct ctdb_control_transdb *)indata.dptr;
 	struct ctdb_db_context *ctdb_db;
 
 	ctdb_db = find_ctdb_db(ctdb, w.db_id);

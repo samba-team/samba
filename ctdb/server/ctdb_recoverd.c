@@ -1490,7 +1490,7 @@ static int recover_database(struct ctdb_recoverd *rec,
 	int ret;
 	struct ctdb_context *ctdb = rec->ctdb;
 	TDB_DATA data;
-	struct ctdb_control_wipe_database w;
+	struct ctdb_control_transdb w;
 	uint32_t *nodes;
 
 	recdb = create_recdb(ctdb, mem_ctx);

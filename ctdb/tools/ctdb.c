@@ -5581,7 +5581,7 @@ static int control_restoredb(struct ctdb_context *ctdb, int argc, const char **a
 	struct ctdb_node_map *nodemap=NULL;
 	struct ctdb_vnn_map *vnnmap=NULL;
 	int i, fh;
-	struct ctdb_control_wipe_database w;
+	struct ctdb_control_transdb w;
 	uint32_t *nodes;
 	uint32_t generation;
 	struct tm *tm;
@@ -5861,7 +5861,7 @@ static int control_wipedb(struct ctdb_context *ctdb, int argc,
 	struct ctdb_node_map *nodemap = NULL;
 	struct ctdb_vnn_map *vnnmap = NULL;
 	int i;
-	struct ctdb_control_wipe_database w;
+	struct ctdb_control_transdb w;
 	uint32_t *nodes;
 	uint32_t generation;
 	uint8_t flags;

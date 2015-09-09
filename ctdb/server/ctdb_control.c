@@ -442,7 +442,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return ctdb_control_transaction_commit(ctdb, *(uint32_t *)indata.dptr);
 
 	case CTDB_CONTROL_WIPE_DATABASE:
-		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_control_wipe_database));
+		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_control_transdb));
 		return ctdb_control_wipe_database(ctdb, indata);
 
 	case CTDB_CONTROL_UPTIME:
