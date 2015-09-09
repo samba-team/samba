@@ -334,7 +334,7 @@
       </varlistentry>
 
       <varlistentry>
-	<term>CTDB_NODE_ADDRESS=<parameter>FILENAME</parameter></term>
+	<term>CTDB_NODE_ADDRESS=<parameter>IPADDR</parameter></term>
 	<listitem>
 	  <para>
 	    IPADDR is the private IP address that ctdbd will bind to.
