@@ -371,6 +371,13 @@
 		</para></listitem>
 		</varlistentry>
 
+		<varlistentry>
+		<term>--no-dns-updates</term>
+		<listitem><para>Do not perform DNS updates as part of
+		"net ads join".
+		</para></listitem>
+		</varlistentry>
+
 		&stdarg.encrypt;
 		&popt.common.samba.client;
 
@@ -439,8 +446,9 @@ The remote server must be specified with the -S option.
 </refsect2>
 
 <refsect2>
-<title>[RPC|ADS] JOIN [TYPE] [-U username[%password]] [createupn=UPN]
-[createcomputer=OU] [machinepass=PASS] [osName=string osVer=string] [options]</title>
+<title>[RPC|ADS] JOIN [TYPE] [--no-dns-updates] [-U username[%password]]
+[createupn=UPN] [createcomputer=OU] [machinepass=PASS]
+[osName=string osVer=string] [options]</title>
 
 <para>
 Join a domain.  If the account already exists on the server, and 
