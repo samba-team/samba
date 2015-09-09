@@ -502,7 +502,9 @@ removeea setea
                        addmain=False,
                        msg='Checking for working strptime')
 
-    conf.CHECK_CODE('gettimeofday(NULL, NULL)', 'HAVE_GETTIMEOFDAY_TZ', execute=False)
+    conf.CHECK_C_PROTOTYPE('gettimeofday',
+                           'int gettimeofday(struct timeval *tv, struct timezone *tz)',
+                           define='HAVE_GETTIMEOFDAY_TZ', headers='sys/time.h')
 
     conf.CHECK_CODE('#include "test/snprintf.c"',
                     define="HAVE_C99_VSNPRINTF",
