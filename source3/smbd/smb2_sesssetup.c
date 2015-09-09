@@ -493,6 +493,7 @@ static NTSTATUS smbd_smb2_reauth_generic_return(struct smbXsrv_session *session,
 	NTSTATUS status;
 	struct smbXsrv_session *x = session;
 	struct smbXsrv_session_auth0 *auth = *_auth;
+	struct smbXsrv_connection *xconn = smb2req->xconn;
 	size_t i;
 
 	*_auth = NULL;
@@ -540,7 +541,7 @@ static NTSTATUS smbd_smb2_reauth_generic_return(struct smbXsrv_session *session,
 		return NT_STATUS_LOGON_FAILURE;
 	}
 
-	conn_clear_vuid_caches(smb2req->sconn, session->compat->vuid);
+	conn_clear_vuid_caches(xconn->client->sconn, session->compat->vuid);
 
 	if (security_session_user_level(session_info, NULL) >= SECURITY_USER) {
 		smb2req->do_signing = true;
