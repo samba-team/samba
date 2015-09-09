@@ -2970,3 +2970,149 @@ int ctdb_ctrl_get_nodes_file(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 
 	return 0;
 }
+
+int ctdb_ctrl_db_freeze(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+			struct ctdb_client_context *client,
+			int destnode, struct timeval timeout, uint32_t db_id)
+{
+	struct ctdb_req_control request;
+	struct ctdb_reply_control *reply;
+	int ret;
+
+	ctdb_req_control_db_freeze(&request, db_id);
+	ret = ctdb_client_control(mem_ctx, ev, client, destnode, timeout,
+				  &request, &reply);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,
+		      ("Control DB_FREEZE failed to node %u, ret=%d\n",
+		       destnode, ret));
+		return ret;
+	}
+
+	ret = ctdb_reply_control_db_freeze(reply);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,
+		      ("Control DB_FREEZE failed, ret=%d\n", ret));
+		return ret;
+	}
+
+	return 0;
+}
+
+int ctdb_ctrl_db_thaw(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+		      struct ctdb_client_context *client,
+		      int destnode, struct timeval timeout, uint32_t db_id)
+{
+	struct ctdb_req_control request;
+	struct ctdb_reply_control *reply;
+	int ret;
+
+	ctdb_req_control_db_thaw(&request, db_id);
+	ret = ctdb_client_control(mem_ctx, ev, client, destnode, timeout,
+				  &request, &reply);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,
+		      ("Control DB_THAW failed to node %u, ret=%d\n",
+		       destnode, ret));
+		return ret;
+	}
+
+	ret = ctdb_reply_control_db_thaw(reply);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,
+		      ("Control DB_THAW failed, ret=%d\n", ret));
+		return ret;
+	}
+
+	return 0;
+}
+
+int ctdb_ctrl_db_transaction_start(TALLOC_CTX *mem_ctx,
+				   struct tevent_context *ev,
+				   struct ctdb_client_context *client,
+				   int destnode, struct timeval timeout,
+				   struct ctdb_transdb *transdb)
+{
+	struct ctdb_req_control request;
+	struct ctdb_reply_control *reply;
+	int ret;
+
+	ctdb_req_control_db_transaction_start(&request, transdb);
+	ret = ctdb_client_control(mem_ctx, ev, client, destnode, timeout,
+				  &request, &reply);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,
+		      ("Control DB_TRANSACTION_START failed to node %u, ret=%d\n",
+		       destnode, ret));
+		return ret;
+	}
+
+	ret = ctdb_reply_control_db_transaction_start(reply);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,
+		      ("Control DB_TRANSACTION_START failed, ret=%d\n", ret));
+		return ret;
+	}
+
+	return 0;
+}
+
+int ctdb_ctrl_db_transaction_commit(TALLOC_CTX *mem_ctx,
+				    struct tevent_context *ev,
+				    struct ctdb_client_context *client,
+				    int destnode, struct timeval timeout,
+				    struct ctdb_transdb *transdb)
+{
+	struct ctdb_req_control request;
+	struct ctdb_reply_control *reply;
+	int ret;
+
+	ctdb_req_control_db_transaction_commit(&request, transdb);
+	ret = ctdb_client_control(mem_ctx, ev, client, destnode, timeout,
+				  &request, &reply);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,
+		      ("Control DB_TRANSACTION_COMMIT failed to node %u, ret=%d\n",
+		       destnode, ret));
+		return ret;
+	}
+
+	ret = ctdb_reply_control_db_transaction_commit(reply);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,
+		      ("Control DB_TRANSACTION_COMMIT failed, ret=%d\n", ret));
+		return ret;
+	}
+
+	return 0;
+}
+
+int ctdb_ctrl_db_transaction_cancel(TALLOC_CTX *mem_ctx,
+				    struct tevent_context *ev,
+				    struct ctdb_client_context *client,
+				    int destnode, struct timeval timeout,
+				    uint32_t db_id)
+{
+	struct ctdb_req_control request;
+	struct ctdb_reply_control *reply;
+	int ret;
+
+	ctdb_req_control_db_transaction_cancel(&request, db_id);
+	ret = ctdb_client_control(mem_ctx, ev, client, destnode, timeout,
+				  &request, &reply);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,
+		      ("Control DB_TRANSACTION_CANCEL failed to node %u, ret=%d\n",
+		       destnode, ret));
+		return ret;
+	}
+
+	ret = ctdb_reply_control_db_transaction_cancel(reply);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,
+		      ("Control DB_TRANSACTION_CANCEL failed, ret=%d\n", ret));
+		return ret;
+	}
+
+	return 0;
+}

@@ -674,6 +674,32 @@ int ctdb_ctrl_get_nodes_file(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 			     int destnode, struct timeval timeout,
 			     struct ctdb_node_map **nodemap);
 
+int ctdb_ctrl_db_freeze(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+			struct ctdb_client_context *client,
+			int destnode, struct timeval timeout, uint32_t db_id);
+
+int ctdb_ctrl_db_thaw(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+		      struct ctdb_client_context *client,
+		      int destnode, struct timeval timeout, uint32_t db_id);
+
+int ctdb_ctrl_db_transaction_start(TALLOC_CTX *mem_ctx,
+				   struct tevent_context *ev,
+				   struct ctdb_client_context *client,
+				   int destnode, struct timeval timeout,
+				   struct ctdb_transdb *transdb);
+
+int ctdb_ctrl_db_transaction_commit(TALLOC_CTX *mem_ctx,
+				    struct tevent_context *ev,
+				    struct ctdb_client_context *client,
+				    int destnode, struct timeval timeout,
+				    struct ctdb_transdb *transdb);
+
+int ctdb_ctrl_db_transaction_cancel(TALLOC_CTX *mem_ctx,
+				    struct tevent_context *ev,
+				    struct ctdb_client_context *client,
+				    int destnode, struct timeval timeout,
+				    uint32_t db_id);
+
 /* from client/client_db.c */
 
 struct tevent_req *ctdb_attach_send(TALLOC_CTX *mem_ctx,
