@@ -615,6 +615,183 @@ int32_t ctdb_control_thaw(struct ctdb_context *ctdb, uint32_t priority,
 	return 0;
 }
 
+/**
+ * Database transaction wrappers
+ *
+ * These functions are wrappers around transaction start/cancel/commit handlers.
+ */
+
+struct db_start_transaction_state {
+	uint32_t transaction_id;
+	bool transaction_started;
+};
+
+static int db_start_transaction(struct ctdb_db_context *ctdb_db,
+				void *private_data)
+{
+	struct db_start_transaction_state *state =
+		(struct db_start_transaction_state *)private_data;
+	int ret;
+	bool transaction_started;
+
+	if (ctdb_db->freeze_mode != CTDB_FREEZE_FROZEN) {
+		DEBUG(DEBUG_ERR,
+		      ("Database %s not frozen, cannot start transaction\n",
+		       ctdb_db->db_name));
+		return -1;
+	}
+
+	transaction_started = state->transaction_started &
+			      ctdb_db->freeze_transaction_started;
+
+	ret = db_transaction_start_handler(ctdb_db,
+					   &transaction_started);
+	if (ret != 0) {
+		return -1;
+	}
+
+	ctdb_db->freeze_transaction_started = true;
+	ctdb_db->freeze_transaction_id = state->transaction_id;
+
+	return 0;
+}
+
+static int db_cancel_transaction(struct ctdb_db_context *ctdb_db,
+				 void *private_data)
+{
+	int ret;
+
+	ret = db_transaction_cancel_handler(ctdb_db, private_data);
+	if (ret != 0) {
+		return ret;
+	}
+
+	ctdb_db->freeze_transaction_started = false;
+
+	return 0;
+}
+
+struct db_commit_transaction_state {
+	uint32_t transaction_id;
+	int healthy_nodes;
+};
+
+static int db_commit_transaction(struct ctdb_db_context *ctdb_db,
+				 void *private_data)
+{
+	struct db_commit_transaction_state *state =
+		(struct db_commit_transaction_state *)private_data;
+	int ret;
+
+	if (ctdb_db->freeze_mode != CTDB_FREEZE_FROZEN) {
+		DEBUG(DEBUG_ERR,
+		      ("Database %s not frozen, cannot commit transaction\n",
+		       ctdb_db->db_name));
+		return -1;
+	}
+
+	if (!ctdb_db->freeze_transaction_started) {
+		DEBUG(DEBUG_ERR, ("Transaction not started on %s\n",
+				  ctdb_db->db_name));
+		return -1;
+	}
+
+	if (ctdb_db->freeze_transaction_id != state->transaction_id) {
+		DEBUG(DEBUG_ERR,
+		      ("Incorrect transaction commit id 0x%08x for %s\n",
+		       state->transaction_id, ctdb_db->db_name));
+		return -1;
+	}
+
+	ret = db_transaction_commit_handler(ctdb_db, &state->healthy_nodes);
+	if (ret != 0) {
+		return -1;
+	}
+
+	ctdb_db->freeze_transaction_started = false;
+	ctdb_db->freeze_transaction_id = 0;
+	return 0;
+}
+
+/**
+ * Start a transaction on a database - used for db recovery
+ */
+int32_t ctdb_control_db_transaction_start(struct ctdb_context *ctdb,
+					  TDB_DATA indata)
+{
+	struct ctdb_control_transdb *w =
+		(struct ctdb_control_transdb *)indata.dptr;
+	struct ctdb_db_context *ctdb_db;
+	struct db_start_transaction_state state;
+
+	ctdb_db = find_ctdb_db(ctdb, w->db_id);
+	if (ctdb_db == NULL) {
+		DEBUG(DEBUG_ERR,
+		      ("Transaction start for unknown dbid 0x%08x\n",
+		       w->db_id));
+		return -1;
+	}
+
+	state.transaction_id = w->transaction_id;
+	state.transaction_started = true;
+
+	return db_start_transaction(ctdb_db, &state);
+}
+
+/**
+ * Cancel a transaction on a database - used for db recovery
+ */
+int32_t ctdb_control_db_transaction_cancel(struct ctdb_context *ctdb,
+					   TDB_DATA indata)
+{
+	uint32_t db_id = *(uint32_t *)indata.dptr;
+	struct ctdb_db_context *ctdb_db;
+
+	ctdb_db = find_ctdb_db(ctdb, db_id);
+	if (ctdb_db == NULL) {
+		DEBUG(DEBUG_ERR,
+		      ("Transaction cancel for unknown dbid 0x%08x\n", db_id));
+		return -1;
+	}
+
+	DEBUG(DEBUG_ERR, ("Recovery db transaction cancelled for %s\n",
+			  ctdb_db->db_name));
+
+	return db_cancel_transaction(ctdb_db, NULL);
+}
+
+/**
+ * Commit a transaction on a database - used for db recovery
+ */
+int32_t ctdb_control_db_transaction_commit(struct ctdb_context *ctdb,
+					   TDB_DATA indata)
+{
+	struct ctdb_control_transdb *w =
+		(struct ctdb_control_transdb *)indata.dptr;
+	struct ctdb_db_context *ctdb_db;
+	struct db_commit_transaction_state state;
+	int healthy_nodes, i;
+
+	ctdb_db = find_ctdb_db(ctdb, w->db_id);
+	if (ctdb_db == NULL) {
+		DEBUG(DEBUG_ERR,
+		      ("Transaction commit for unknown dbid 0x%08x\n",
+		       w->db_id));
+		return -1;
+	}
+
+	healthy_nodes = 0;
+	for (i=0; i < ctdb->num_nodes; i++) {
+		if (ctdb->nodes[i]->flags == 0) {
+			healthy_nodes += 1;
+		}
+	}
+
+	state.transaction_id = w->transaction_id;
+	state.healthy_nodes = healthy_nodes;
+
+	return db_commit_transaction(ctdb_db, &state);
+}
 
 /*
   start a transaction on all databases - used for recovery

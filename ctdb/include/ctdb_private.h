@@ -1275,6 +1275,13 @@ int32_t ctdb_control_trans3_commit(struct ctdb_context *ctdb,
 
 void ctdb_persistent_finish_trans3_commits(struct ctdb_context *ctdb);
 
+int32_t ctdb_control_db_transaction_start(struct ctdb_context *ctdb,
+					  TDB_DATA indata);
+int32_t ctdb_control_db_transaction_commit(struct ctdb_context *ctdb,
+					   TDB_DATA indata);
+int32_t ctdb_control_db_transaction_cancel(struct ctdb_context *ctdb,
+					   TDB_DATA indata);
+
 int32_t ctdb_control_transaction_start(struct ctdb_context *ctdb, uint32_t id);
 int32_t ctdb_control_transaction_commit(struct ctdb_context *ctdb, uint32_t id);
 int32_t ctdb_control_transaction_cancel(struct ctdb_context *ctdb);
