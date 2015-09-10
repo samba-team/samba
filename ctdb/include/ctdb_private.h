@@ -1485,6 +1485,9 @@ int ctdb_db_iterator(struct ctdb_context *ctdb, ctdb_db_handler_t handler,
 int ctdb_lockall_mark_prio(struct ctdb_context *ctdb, uint32_t priority);
 int ctdb_lockall_unmark_prio(struct ctdb_context *ctdb, uint32_t priority);
 
+int ctdb_lockdb_mark(struct ctdb_db_context *ctdb_db);
+int ctdb_lockdb_unmark(struct ctdb_db_context *ctdb_db);
+
 struct lock_request *ctdb_lock_record(TALLOC_CTX *mem_ctx,
 				      struct ctdb_db_context *ctdb_db,
 				      TDB_DATA key,

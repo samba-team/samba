@@ -191,6 +191,17 @@ static int db_lock_mark_handler(struct ctdb_db_context *ctdb_db,
 	return 0;
 }
 
+int ctdb_lockdb_mark(struct ctdb_db_context *ctdb_db)
+{
+	if (!ctdb_db_frozen(ctdb_db)) {
+		DEBUG(DEBUG_ERR,
+		      ("Attempt to mark database locked when not frozen\n"));
+		return -1;
+	}
+
+	return db_lock_mark_handler(ctdb_db, NULL);
+}
+
 int ctdb_lockall_mark_prio(struct ctdb_context *ctdb, uint32_t priority)
 {
 	/*
@@ -248,6 +259,17 @@ static int db_lock_unmark_handler(struct ctdb_db_context *ctdb_db,
 	}
 
 	return 0;
+}
+
+int ctdb_lockdb_unmark(struct ctdb_db_context *ctdb_db)
+{
+	if (!ctdb_db_frozen(ctdb_db)) {
+		DEBUG(DEBUG_ERR,
+		      ("Attempt to unmark database locked when not frozen\n"));
+		return -1;
+	}
+
+	return db_lock_unmark_handler(ctdb_db, NULL);
 }
 
 int ctdb_lockall_unmark_prio(struct ctdb_context *ctdb, uint32_t priority)
@@ -359,7 +381,7 @@ static void process_callbacks(struct lock_context *lock_ctx, bool locked)
 			break;
 
 		case LOCK_DB:
-			tdb_lockall_mark(lock_ctx->ctdb_db->ltdb->tdb);
+			ctdb_lockdb_mark(lock_ctx->ctdb_db);
 			break;
 
 		case LOCK_ALLDB_PRIO:
@@ -396,7 +418,7 @@ static void process_callbacks(struct lock_context *lock_ctx, bool locked)
 			break;
 
 		case LOCK_DB:
-			tdb_lockall_unmark(lock_ctx->ctdb_db->ltdb->tdb);
+			ctdb_lockdb_unmark(lock_ctx->ctdb_db);
 			break;
 
 		case LOCK_ALLDB_PRIO:
