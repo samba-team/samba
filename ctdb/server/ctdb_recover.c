@@ -532,6 +532,7 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 	int i, ret;
 	struct ctdb_set_recmode_state *state;
 	pid_t parent = getpid();
+	struct ctdb_db_context *ctdb_db;
 
 	/* if we enter recovery but stay in recovery for too long
 	   we will eventually drop all our ip addresses
@@ -557,6 +558,16 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 	}
 
 	/* some special handling when ending recovery mode */
+
+	for (ctdb_db = ctdb->db_list; ctdb_db != NULL; ctdb_db = ctdb_db->next) {
+		if (ctdb_db->generation != ctdb->vnn_map->generation) {
+			DEBUG(DEBUG_ERR,
+			      ("Inconsistent DB generation %u for %s\n",
+			       ctdb_db->generation, ctdb_db->db_name));
+			DEBUG(DEBUG_ERR, ("Recovery mode set to ACTIVE\n"));
+			return -1;
+		}
+	}
 
 	/* force the databases to thaw */
 	for (i=1; i<=NUM_DB_PRIORITIES; i++) {
