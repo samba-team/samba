@@ -259,6 +259,9 @@ _nss_winbind_getgrnam_solwrap(nss_backend_t* be, void* args)
 	if(ret == NSS_STATUS_SUCCESS)
 		NSS_ARGS(args)->returnval = (void*) result;
 
+	if (NSS_ARGS(args)->erange == ERANGE && ret == NSS_STATUS_TRYAGAIN)
+		return NSS_STATUS_UNAVAIL;
+
 	return ret;
 }
 
@@ -277,6 +280,9 @@ _nss_winbind_getgrgid_solwrap(nss_backend_t* be, void* args)
 
 	if(ret == NSS_STATUS_SUCCESS)
 		NSS_ARGS(args)->returnval = (void*) result;
+
+	if (NSS_ARGS(args)->erange == ERANGE && ret == NSS_STATUS_TRYAGAIN)
+		return NSS_STATUS_UNAVAIL;
 
 	return ret;
 }

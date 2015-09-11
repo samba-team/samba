@@ -958,11 +958,11 @@ NTSTATUS cli_resolve_path(TALLOC_CTX *ctx,
 
 	status = cli_dfs_get_referral(ctx, cli_ipc, dfs_path, &refs,
 				      &num_refs, &consumed);
-	if (!NT_STATUS_IS_OK(status) || !num_refs) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	if (!refs[0].dfspath) {
+	if (!num_refs || !refs[0].dfspath) {
 		return NT_STATUS_NOT_FOUND;
 	}
 

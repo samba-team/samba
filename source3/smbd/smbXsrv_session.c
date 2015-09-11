@@ -1163,7 +1163,7 @@ NTSTATUS smbXsrv_session_create(struct smbXsrv_connection *conn,
 	void *ptr = NULL;
 	TDB_DATA val;
 	struct smbXsrv_session_global0 *global = NULL;
-	struct smbXsrv_channel_global0 *channels = NULL;
+	struct smbXsrv_channel_global0 *channel = NULL;
 	NTSTATUS status;
 
 	if (table->local.num_sessions >= table->local.max_sessions) {
@@ -1238,36 +1238,11 @@ NTSTATUS smbXsrv_session_create(struct smbXsrv_connection *conn,
 	global->creation_time = now;
 	global->expiration_time = GENSEC_EXPIRE_TIME_INFINITY;
 
-	global->num_channels = 1;
-	channels = talloc_zero_array(global,
-				     struct smbXsrv_channel_global0,
-				     global->num_channels);
-	if (channels == NULL) {
+	status = smbXsrv_session_add_channel(session, conn, &channel);
+	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(session);
-		return NT_STATUS_NO_MEMORY;
+		return status;
 	}
-	global->channels = channels;
-
-	channels[0].server_id = messaging_server_id(conn->msg_ctx);
-	channels[0].local_address = tsocket_address_string(conn->local_address,
-							   channels);
-	if (channels[0].local_address == NULL) {
-		TALLOC_FREE(session);
-		return NT_STATUS_NO_MEMORY;
-	}
-	channels[0].remote_address = tsocket_address_string(conn->remote_address,
-							    channels);
-	if (channels[0].remote_address == NULL) {
-		TALLOC_FREE(session);
-		return NT_STATUS_NO_MEMORY;
-	}
-	channels[0].remote_name = talloc_strdup(channels, conn->remote_hostname);
-	if (channels[0].remote_name == NULL) {
-		TALLOC_FREE(session);
-		return NT_STATUS_NO_MEMORY;
-	}
-	channels[0].signing_key = data_blob_null;
-	channels[0].connection = conn;
 
 	ptr = session;
 	val = make_tdb_data((uint8_t const *)&ptr, sizeof(ptr));
@@ -1304,6 +1279,56 @@ NTSTATUS smbXsrv_session_create(struct smbXsrv_connection *conn,
 	}
 
 	*_session = session;
+	return NT_STATUS_OK;
+}
+
+NTSTATUS smbXsrv_session_add_channel(struct smbXsrv_session *session,
+				     struct smbXsrv_connection *conn,
+				     struct smbXsrv_channel_global0 **_c)
+{
+	struct smbXsrv_session_global0 *global = session->global;
+	struct smbXsrv_channel_global0 *c = NULL;
+
+	if (global->num_channels > 31) {
+		/*
+		 * Windows 2012 and 2012R2 allow up to 32 channels
+		 */
+		return NT_STATUS_INSUFFICIENT_RESOURCES;
+	}
+
+	c = talloc_realloc(global,
+			   global->channels,
+			   struct smbXsrv_channel_global0,
+			   global->num_channels + 1);
+	if (c == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	global->channels = c;
+
+	c = &global->channels[global->num_channels];
+	ZERO_STRUCTP(c);
+
+	c->server_id = messaging_server_id(conn->msg_ctx);
+	c->local_address = tsocket_address_string(conn->local_address,
+						  global->channels);
+	if (c->local_address == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	c->remote_address = tsocket_address_string(conn->remote_address,
+						   global->channels);
+	if (c->remote_address == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	c->remote_name = talloc_strdup(global->channels,
+				       conn->remote_hostname);
+	if (c->remote_name == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	c->connection = conn;
+
+	global->num_channels += 1;
+
+	*_c = c;
 	return NT_STATUS_OK;
 }
 
