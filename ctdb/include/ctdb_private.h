@@ -590,6 +590,7 @@ struct ctdb_db_context {
 	struct ctdb_db_freeze_handle *freeze_handle;
 	bool freeze_transaction_started;
 	uint32_t freeze_transaction_id;
+	uint32_t generation;
 };
 
 

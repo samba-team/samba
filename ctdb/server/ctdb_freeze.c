@@ -100,7 +100,6 @@ static int db_transaction_commit_handler(struct ctdb_db_context *ctdb_db,
 	return ret;
 }
 
-
 /* a list of control requests waiting for db freeze */
 struct ctdb_db_freeze_waiter {
 	struct ctdb_db_freeze_waiter *next, *prev;
@@ -266,7 +265,8 @@ int32_t ctdb_control_db_thaw(struct ctdb_context *ctdb, uint32_t db_id)
 		return -1;
 	}
 
-	DEBUG(DEBUG_ERR, ("Thaw db: %s\n", ctdb_db->db_name));
+	DEBUG(DEBUG_ERR, ("Thaw db: %s generation %u\n", ctdb_db->db_name,
+			  ctdb_db->generation));
 
 	TALLOC_FREE(ctdb_db->freeze_handle);
 	ctdb_call_resend_db(ctdb_db);
@@ -764,6 +764,7 @@ static int db_commit_transaction(struct ctdb_db_context *ctdb_db,
 
 	ctdb_db->freeze_transaction_started = false;
 	ctdb_db->freeze_transaction_id = 0;
+	ctdb_db->generation = state->transaction_id;
 	return 0;
 }
 

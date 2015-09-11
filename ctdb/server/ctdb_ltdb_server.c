@@ -1009,6 +1009,7 @@ again:
 		return -1;
 	}
 
+	ctdb_db->generation = ctdb->vnn_map->generation;
 
 	DEBUG(DEBUG_NOTICE,("Attached to database '%s' with flags 0x%x\n",
 			    ctdb_db->db_path, tdb_flags));

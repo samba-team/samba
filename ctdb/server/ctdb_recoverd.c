@@ -1960,6 +1960,12 @@ static int do_recovery(struct ctdb_recoverd *rec,
 		goto fail;
 	}
 
+	/* Database generations are updated when the transaction is commited to
+	 * the databases.  So make sure to use the final generation as the
+	 * transaction id
+	 */
+	generation = new_generation();
+
 	data.dptr = (void *)&generation;
 	data.dsize = sizeof(uint32_t);
 
@@ -2019,7 +2025,6 @@ static int do_recovery(struct ctdb_recoverd *rec,
 
 	/* build a new vnn map with all the currently active and
 	   unbanned nodes */
-	generation = new_generation();
 	vnnmap = talloc(mem_ctx, struct ctdb_vnn_map);
 	CTDB_NO_MEMORY(ctdb, vnnmap);
 	vnnmap->generation = generation;
