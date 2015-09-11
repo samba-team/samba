@@ -2204,14 +2204,65 @@ static void nwrap_files_endpwent(struct nwrap_backend *b)
 
 /* misc functions */
 static int nwrap_files_initgroups(struct nwrap_backend *b,
-				  const char *user, gid_t group)
+				  const char *user,
+				  gid_t group)
 {
-	(void) b; /* unused */
-	(void) user; /* unused */
-	(void) group; /* used */
+	struct group *grp;
+	gid_t *groups;
+	int size = 1;
+	int rc;
 
-	/* TODO: maybe we should also fake this... */
-	return EPERM;
+	groups = (gid_t *)malloc(size * sizeof(gid_t));
+	if (groups == NULL) {
+		NWRAP_LOG(NWRAP_LOG_ERROR, "Out of memory");
+		errno = ENOMEM;
+		return -1;
+	}
+	groups[0] = group;
+
+	nwrap_files_setgrent(b);
+	while ((grp = nwrap_files_getgrent(b)) != NULL) {
+		int i = 0;
+
+		NWRAP_LOG(NWRAP_LOG_DEBUG,
+			  "Inspecting %s for group membership",
+			  grp->gr_name);
+
+		for (i=0; grp->gr_mem && grp->gr_mem[i] != NULL; i++) {
+			if (group != grp->gr_gid &&
+			    (strcmp(user, grp->gr_mem[i]) == 0)) {
+				NWRAP_LOG(NWRAP_LOG_DEBUG,
+					  "%s is member of %s",
+					  user,
+					  grp->gr_name);
+
+				groups = (gid_t *)realloc(groups,
+							  (size + 1) * sizeof(gid_t));
+				if (groups == NULL) {
+					NWRAP_LOG(NWRAP_LOG_ERROR,
+						  "Out of memory");
+					errno = ENOMEM;
+					return -1;
+				}
+
+				groups[size] = grp->gr_gid;
+				size++;
+			}
+		}
+	}
+
+	nwrap_files_endgrent(b);
+
+	NWRAP_LOG(NWRAP_LOG_DEBUG,
+		  "%s is member of %d groups",
+		  user, size);
+
+	/* This really only works if uid_wrapper is loaded */
+	rc = setgroups(size, groups);
+
+	free(groups);
+
+	return rc;
 }
 
 /* group functions */
