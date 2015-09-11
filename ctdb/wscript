@@ -467,6 +467,13 @@ def build(bld):
         bld.MANPAGES('''onnode.1 ctdbd_wrapper.1 ctdbd.conf.5
                         ctdb.7 ctdb-statistics.7 ctdb-tunables.7''',
                       True)
+    else:
+        for m in manpages:
+            bld.SAMBA_GENERATOR(m,
+                                source=os.path.join("doc", m),
+                                target=m,
+                                rule='sed %s ${SRC} > ${TGT}' % (sed_cmdline))
+            bld.INSTALL_FILES('${MANDIR}/man%s' % m[-1], m)
 
     bld.SAMBA_GENERATOR('ctdb-onnode',
                         source='tools/onnode',
