@@ -110,19 +110,19 @@ conf.SET_TARGET_TYPE('systemd-journal', 'EMPTY')
 conf.SET_TARGET_TYPE('systemd', 'EMPTY')
 
 if Options.options.enable_systemd != False:
-    conf.check_cfg(package='libsystemd-daemon', args='--cflags --libs',
+    conf.CHECK_CFG(package='libsystemd-daemon', args='--cflags --libs',
                    msg='Checking for libsystemd-daemon')
     if not conf.CHECK_LIB('systemd-daemon', shlib=True):
         conf.CHECK_LIB('systemd', shlib=True)
 
 if Options.options.enable_systemd != False:
-    conf.check_cfg(package='libsystemd-journal', args='--cflags --libs',
+    conf.CHECK_CFG(package='libsystemd-journal', args='--cflags --libs',
                    msg='Checking for libsystemd-journal')
     if not conf.CHECK_LIB('systemd-journal', shlib=True):
         conf.CHECK_LIB('systemd', shlib=True)
 
 if Options.options.enable_lttng != False:
-    conf.check_cfg(package='lttng-ust', args='--cflags --libs',
+    conf.CHECK_CFG(package='lttng-ust', args='--cflags --libs',
                    msg='Checking for lttng-ust', uselib_store="LTTNG-UST")
     conf.CHECK_HEADERS('lttng/tracef.h', lib='lttng-st')
     conf.CHECK_LIB('lttng-ust', shlib=True)
