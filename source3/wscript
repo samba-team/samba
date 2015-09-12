@@ -1582,7 +1582,7 @@ main() {
         versions = ['1.0', '0.16', '0.14']
         for version in versions:
             testlib = 'tracker-sparql-' + version
-            if conf.check_cfg(package=testlib,
+            if conf.CHECK_CFG(package=testlib,
                               args='--cflags --libs',
                               mandatory=False):
                 conf.SET_TARGET_TYPE(testlib, 'SYSLIB')
