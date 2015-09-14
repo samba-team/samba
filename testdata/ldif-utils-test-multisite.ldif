@@ -857,6 +857,8 @@ cn: WIN01
 objectGUID: a8ce98ac-226d-4994-977e-e97386655d97
 systemFlags: 1375731712
 dNSHostName: win01.ad.samba.example.com
+serverReference: CN=WIN01,OU=Domain Controllers,DC=ad,DC=samba,DC=example,DC=c
+ om
 whenChanged: 20150227014848.0Z
 
 dn: CN=WIN02,CN=Servers,CN=Site-2,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
@@ -866,6 +868,8 @@ cn: WIN02
 objectGUID: c549c41b-5936-4cd6-a144-a9036215588a
 systemFlags: 1375731712
 dNSHostName: win02.ad.samba.example.com
+serverReference: CN=WIN02,OU=Domain Controllers,DC=ad,DC=samba,DC=example,DC=c
+ om
 whenChanged: 20150227014848.0Z
 
 dn: CN=WIN03,CN=Servers,CN=Site-2,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
@@ -875,6 +879,8 @@ cn: WIN03
 objectGUID: 939ca019-2e4e-4430-809c-9b8da640e8fc
 systemFlags: 1375731712
 dNSHostName: win03.ad.samba.example.com
+serverReference: CN=WIN03,OU=Domain Controllers,DC=ad,DC=samba,DC=example,DC=c
+ om
 whenChanged: 20150227014848.0Z
 
 dn: CN=WIN04,CN=Servers,CN=Site-2,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
@@ -884,6 +890,8 @@ cn: WIN04
 objectGUID: 134cafa9-8058-49ed-bf55-abbf0e207d7c
 systemFlags: 1375731712
 dNSHostName: win04.ad.samba.example.com
+serverReference: CN=WIN04,OU=Domain Controllers,DC=ad,DC=samba,DC=example,DC=c
+ om
 whenChanged: 20150227014848.0Z
 
 dn: CN=WIN05,CN=Servers,CN=Site-2,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
@@ -893,6 +901,8 @@ cn: WIN05
 objectGUID: 5e96a611-18b0-492a-8fb3-20fee8585990
 systemFlags: 1375731712
 dNSHostName: win05.ad.samba.example.com
+serverReference: CN=WIN05,OU=Domain Controllers,DC=ad,DC=samba,DC=example,DC=c
+ om
 whenChanged: 20150227014848.0Z
 
 dn: CN=WIN06,CN=Servers,CN=Site-3,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
@@ -902,6 +912,8 @@ cn: WIN06
 objectGUID: 76a6d120-851a-4473-b411-a2daee099a74
 systemFlags: 1375731712
 dNSHostName: WIN06.ad.samba.example.com
+serverReference: CN=WIN06,OU=Domain Controllers,DC=ad,DC=samba,DC=example,DC=c
+ om
 whenChanged: 20150227014848.0Z
 
 dn: CN=WIN07,CN=Servers,CN=Site-4,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
@@ -911,6 +923,8 @@ cn: WIN07
 objectGUID: 9cc8a7d9-d9c8-45c8-bf1b-1cc3b0b8cb00
 systemFlags: 1375731712
 dNSHostName: win07.ad.samba.example.com
+serverReference: CN=WIN07,OU=Domain Controllers,DC=ad,DC=samba,DC=example,DC=c
+ om
 whenChanged: 20150227014849.0Z
 
 dn: CN=WIN08,CN=Servers,CN=Site-4,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
@@ -920,6 +934,8 @@ cn: WIN08
 objectGUID: a5706cae-98a9-4b30-a9eb-6ba3601200cc
 systemFlags: 1375731712
 dNSHostName: WIN08.ad.samba.example.com
+serverReference: CN=WIN08,OU=Domain Controllers,DC=ad,DC=samba,DC=example,DC=c
+ om
 whenChanged: 20150227014848.0Z
 
 dn: CN=WIN09,CN=Servers,CN=Site-5,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
@@ -929,6 +945,8 @@ cn: WIN09
 objectGUID: 08fbe297-70e3-40d4-aab5-f5cfce191d2e
 systemFlags: 1375731712
 dNSHostName: win09.ad.samba.example.com
+serverReference: CN=WIN09,OU=Domain Controllers,DC=ad,DC=samba,DC=example,DC=c
+ om
 whenChanged: 20150227014848.0Z
 
 dn: CN=WIN10,CN=Servers,CN=Site-5,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com
@@ -938,6 +956,814 @@ cn: WIN10
 objectGUID: bd4375f0-fa5b-49fa-9c66-8935e6bd2115
 systemFlags: 1375731712
 dNSHostName: win10.ad.samba.example.com
+serverReference: CN=WIN10,OU=Domain Controllers,DC=ad,DC=samba,DC=example,DC=c
+ om
+whenChanged: 20150227014849.0Z
+
+dn: CN=SYSVOL Subscription,CN=Domain System Volume,CN=DFSR-LocalSettings,CN=WIN01,OU=Domain Controllers,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: msDFSR-Subscription
+cn: SYSVOL Subscription
+whenChanged: 20150225004811.0Z
+objectGUID: de7b7a4d-95bb-40e9-96e9-df49c7a73521
+
+dn: CN=WIN01,OU=Domain Controllers,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: user
+objectClass: computer
+cn: WIN01
+whenChanged: 20150225004810.0Z
+objectGUID: 89fb136b-eccc-42cb-a5a1-5e596738a9c7
+sAMAccountName: WIN01$
+dNSHostName: win01.ad.samba.example.com
+rIDSetReferences: CN=RID Set,CN=WIN01,OU=Domain Controllers,DC=ad,DC=samba,DC=
+ example,DC=com
+servicePrincipalName: ldap/win01.ad.samba.example.com/ad.samba.example.com
+servicePrincipalName: ldap/win01.ad.samba.example.com
+servicePrincipalName: ldap/WIN01
+servicePrincipalName: ldap/win01.ad.samba.example.com/AD
+servicePrincipalName: ldap/ee26ae37-b7b9-46ef-9a0b-3977b89dfeb6._msdcs.ad.samb
+ a.example.com
+servicePrincipalName: ldap/WIN01/AD
+servicePrincipalName: E3514235-4B06-11D1-AB04-00C04FC2DCD2/ee26ae37-b7b9-46ef-
+ 9a0b-3977b89dfeb6/ad.samba.example.com
+servicePrincipalName: HOST/win01.ad.samba.example.com/ad.samba.example.com
+servicePrincipalName: HOST/win01.ad.samba.example.com
+servicePrincipalName: HOST/WIN01
+servicePrincipalName: HOST/win01.ad.samba.example.com/AD
+servicePrincipalName: HOST/WIN01/AD
+servicePrincipalName: RPC/ee26ae37-b7b9-46ef-9a0b-3977b89dfeb6._msdcs.ad.samba
+ .example.com
+servicePrincipalName: RestrictedKrbHost/WIN01
+servicePrincipalName: RestrictedKrbHost/win01.ad.samba.example.com
+servicePrincipalName: GC/win01.ad.samba.example.com/ad.samba.example.com
+servicePrincipalName: DNS/win01.ad.samba.example.com
+servicePrincipalName: TERMSRV/win01.ad.samba.example.com
+servicePrincipalName: TERMSRV/WIN01
+servicePrincipalName: ldap/win01.ad.samba.example.com/DomainDnsZones.ad.samba.
+ example.com
+servicePrincipalName: ldap/win01.ad.samba.example.com/ForestDnsZones.ad.samba.
+ example.com
+servicePrincipalName: Dfsr-12F9A27C-BF97-4787-9364-D31B6C55EB04/win01.ad.samba
+ .example.com
+
+dn: CN=DFSR-LocalSettings,CN=WIN01,OU=Domain Controllers,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: msDFSR-LocalSettings
+cn: DFSR-LocalSettings
+whenChanged: 20150225004811.0Z
+objectGUID: 4d1b4151-49ca-4e0a-b54b-5372759865e1
+
+dn: CN=RID Set,CN=WIN01,OU=Domain Controllers,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: rIDSet
+cn: RID Set
+whenChanged: 20150227001454.0Z
+objectGUID: d6290f2e-ec71-440f-a3d9-5cfcc2a84975
+
+dn: CN=Domain System Volume,CN=DFSR-LocalSettings,CN=WIN01,OU=Domain Controllers,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: msDFSR-Subscriber
+cn: Domain System Volume
+objectGUID: a0847899-913e-43d0-ac20-92011b6a62e1
+whenChanged: 20150227014849.0Z
+
+dn: CN=Windows Virtual Machine,CN=WIN01,OU=Domain Controllers,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: leaf
+objectClass: connectionPoint
+objectClass: serviceConnectionPoint
+cn: Windows Virtual Machine
+whenChanged: 20150226002555.0Z
+objectGUID: 59ebdef8-2177-4889-80bc-ba484d910171
+
+dn: CN=SYSVOL Subscription,CN=Domain System Volume,CN=DFSR-LocalSettings,CN=WIN02,OU=Domain Controllers,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: msDFSR-Subscription
+cn: SYSVOL Subscription
+whenChanged: 20150225013212.0Z
+objectGUID: 997abd6a-50dc-4539-ad97-f873268e8e8f
+
+dn: CN=DFSR-LocalSettings,CN=WIN02,OU=Domain Controllers,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: msDFSR-LocalSettings
+cn: DFSR-LocalSettings
+whenChanged: 20150225013716.0Z
+objectGUID: 73470aaa-5f15-40d7-add6-0699eb5e4774
+
+dn: CN=WIN02,OU=Domain Controllers,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: user
+objectClass: computer
+cn: WIN02
+whenChanged: 20150226021838.0Z
+objectGUID: 487f5009-f4ec-4110-bf40-232b3f0cc64b
+sAMAccountName: WIN02$
+dNSHostName: win02.ad.samba.example.com
+rIDSetReferences: CN=RID Set,CN=WIN02,OU=Domain Controllers,DC=ad,DC=samba,DC=
+ example,DC=com
+servicePrincipalName: HOST/win02.ad.samba.example.com
+servicePrincipalName: RestrictedKrbHost/win02.ad.samba.example.com
+servicePrincipalName: HOST/WIN02
+servicePrincipalName: RestrictedKrbHost/WIN02
+servicePrincipalName: E3514235-4B06-11D1-AB04-00C04FC2DCD2/11a7fb87-5912-4ce6-
+ 92af-ef92f8f82f04/ad.samba.example.com
+servicePrincipalName: TERMSRV/WIN02
+servicePrincipalName: TERMSRV/win02.ad.samba.example.com
+servicePrincipalName: ldap/win02.ad.samba.example.com/AD
+servicePrincipalName: ldap/WIN02
+servicePrincipalName: ldap/win02.ad.samba.example.com
+servicePrincipalName: ldap/win02.ad.samba.example.com/DomainDnsZones.ad.samba.
+ example.com
+servicePrincipalName: ldap/win02.ad.samba.example.com/ForestDnsZones.ad.samba.
+ example.com
+servicePrincipalName: ldap/win02.ad.samba.example.com/ad.samba.example.com
+servicePrincipalName: ldap/WIN02/AD
+servicePrincipalName: HOST/win02.ad.samba.example.com/AD
+servicePrincipalName: RPC/11a7fb87-5912-4ce6-92af-ef92f8f82f04._msdcs.ad.samba
+ .example.com
+servicePrincipalName: GC/win02.ad.samba.example.com/ad.samba.example.com
+servicePrincipalName: HOST/win02.ad.samba.example.com/ad.samba.example.com
+servicePrincipalName: HOST/WIN02/AD
+servicePrincipalName: ldap/11a7fb87-5912-4ce6-92af-ef92f8f82f04._msdcs.ad.samb
+ a.example.com
+servicePrincipalName: DNS/win02.ad.samba.example.com
+servicePrincipalName: Dfsr-12F9A27C-BF97-4787-9364-D31B6C55EB04/win02.ad.samba
+ .example.com
+
+dn: CN=Domain System Volume,CN=DFSR-LocalSettings,CN=WIN02,OU=Domain Controllers,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: msDFSR-Subscriber
+cn: Domain System Volume
+objectGUID: c9a6947e-625e-4cc7-ad24-c8ef28453385
+whenChanged: 20150227014849.0Z
+
+dn: CN=Windows Virtual Machine,CN=WIN02,OU=Domain Controllers,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: leaf
+objectClass: connectionPoint
+objectClass: serviceConnectionPoint
+cn: Windows Virtual Machine
+whenChanged: 20150225013151.0Z
+objectGUID: 7392f4a2-ea4a-4c43-bc0f-0423943f5f58
+
+dn: CN=RID Set,CN=WIN02,OU=Domain Controllers,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: rIDSet
+cn: RID Set
+whenChanged: 20150226224544.0Z
+objectGUID: b3d516b1-c639-4791-a9a5-3f5c4309ecb7
+
+dn: CN=Windows Virtual Machine,CN=WIN03,OU=Domain Controllers,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: leaf
+objectClass: connectionPoint
+objectClass: serviceConnectionPoint
+cn: Windows Virtual Machine
+whenChanged: 20150225011556.0Z
+objectGUID: ef0c80ab-bd6e-4bc7-b8a4-19b5b9bc985c
+
+dn: CN=DFSR-LocalSettings,CN=WIN03,OU=Domain Controllers,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: msDFSR-LocalSettings
+cn: DFSR-LocalSettings
+whenChanged: 20150225012134.0Z
+objectGUID: c03fded8-5f7a-44b5-bf33-83f4256639aa
+
+dn: CN=RID Set,CN=WIN03,OU=Domain Controllers,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: rIDSet
+cn: RID Set
+whenChanged: 20150226224730.0Z
+objectGUID: 3d606baf-1c77-48ce-b2b5-2832d49b981f
+
+dn: CN=Domain System Volume,CN=DFSR-LocalSettings,CN=WIN03,OU=Domain Controllers,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: msDFSR-Subscriber
+cn: Domain System Volume
+objectGUID: b1ec7bce-7e5f-434d-a746-72b642b1fe43
+whenChanged: 20150227014849.0Z
+
+dn: CN=SYSVOL Subscription,CN=Domain System Volume,CN=DFSR-LocalSettings,CN=WIN03,OU=Domain Controllers,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: msDFSR-Subscription
+cn: SYSVOL Subscription
+whenChanged: 20150225011630.0Z
+objectGUID: e6c2eee1-0ad1-4e92-808f-5ffebbe401d5
+
+dn: CN=WIN03,OU=Domain Controllers,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: user
+objectClass: computer
+cn: WIN03
+whenChanged: 20150226021929.0Z
+objectGUID: 180b0983-1802-443a-8380-3c94387b186a
+sAMAccountName: WIN03$
+dNSHostName: win03.ad.samba.example.com
+rIDSetReferences: CN=RID Set,CN=WIN03,OU=Domain Controllers,DC=ad,DC=samba,DC=
+ example,DC=com
+servicePrincipalName: HOST/win03.ad.samba.example.com
+servicePrincipalName: RestrictedKrbHost/win03.ad.samba.example.com
+servicePrincipalName: HOST/WIN03
+servicePrincipalName: RestrictedKrbHost/WIN03
+servicePrincipalName: E3514235-4B06-11D1-AB04-00C04FC2DCD2/f2aa9716-c8ab-4f37-
+ b37d-c20be7533fa0/ad.samba.example.com
+servicePrincipalName: WSMAN/win03.ad.samba.example.com
+servicePrincipalName: WSMAN/win03
+servicePrincipalName: TERMSRV/win03.ad.samba.example.com
+servicePrincipalName: TERMSRV/WIN03
+servicePrincipalName: ldap/win03.ad.samba.example.com
+servicePrincipalName: ldap/win03.ad.samba.example.com/ForestDnsZones.ad.samba.
+ example.com
+servicePrincipalName: ldap/win03.ad.samba.example.com/DomainDnsZones.ad.samba.
+ example.com
+servicePrincipalName: ldap/win03.ad.samba.example.com/ad.samba.example.com
+servicePrincipalName: ldap/f2aa9716-c8ab-4f37-b37d-c20be7533fa0._msdcs.ad.samb
+ a.example.com
+servicePrincipalName: HOST/WIN03/AD
+servicePrincipalName: ldap/win03.ad.samba.example.com/AD
+servicePrincipalName: ldap/WIN03
+servicePrincipalName: ldap/WIN03/AD
+servicePrincipalName: HOST/win03.ad.samba.example.com/AD
+servicePrincipalName: RPC/f2aa9716-c8ab-4f37-b37d-c20be7533fa0._msdcs.ad.samba
+ .example.com
+servicePrincipalName: GC/win03.ad.samba.example.com/ad.samba.example.com
+servicePrincipalName: HOST/win03.ad.samba.example.com/ad.samba.example.com
+servicePrincipalName: DNS/win03.ad.samba.example.com
+servicePrincipalName: Dfsr-12F9A27C-BF97-4787-9364-D31B6C55EB04/win03.ad.samba
+ .example.com
+
+dn: CN=Domain System Volume,CN=DFSR-LocalSettings,CN=WIN04,OU=Domain Controllers,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: msDFSR-Subscriber
+cn: Domain System Volume
+objectGUID: c5439e0e-5fa0-437a-89eb-ee32268c22b0
+whenChanged: 20150227014849.0Z
+
+dn: CN=WIN04,OU=Domain Controllers,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: user
+objectClass: computer
+cn: WIN04
+whenChanged: 20150226022020.0Z
+objectGUID: 04cf2a74-92bb-4bff-842d-5c93298f8ee2
+sAMAccountName: WIN04$
+dNSHostName: win04.ad.samba.example.com
+rIDSetReferences: CN=RID Set,CN=WIN04,OU=Domain Controllers,DC=ad,DC=samba,DC=
+ example,DC=com
+servicePrincipalName: HOST/win04.ad.samba.example.com
+servicePrincipalName: RestrictedKrbHost/win04.ad.samba.example.com
+servicePrincipalName: HOST/WIN04
+servicePrincipalName: RestrictedKrbHost/WIN04
+servicePrincipalName: E3514235-4B06-11D1-AB04-00C04FC2DCD2/e8e1ef96-793b-41d9-
+ b60c-14b48fb2da87/ad.samba.example.com
+servicePrincipalName: WSMAN/win04.ad.samba.example.com
+servicePrincipalName: WSMAN/win04
+servicePrincipalName: TERMSRV/win04.ad.samba.example.com
+servicePrincipalName: TERMSRV/WIN04
+servicePrincipalName: Dfsr-12F9A27C-BF97-4787-9364-D31B6C55EB04/win04.ad.samba
+ .example.com
+servicePrincipalName: HOST/win04.ad.samba.example.com/AD
+servicePrincipalName: RPC/e8e1ef96-793b-41d9-b60c-14b48fb2da87._msdcs.ad.samba
+ .example.com
+servicePrincipalName: GC/win04.ad.samba.example.com/ad.samba.example.com
+servicePrincipalName: HOST/win04.ad.samba.example.com/ad.samba.example.com
+servicePrincipalName: HOST/WIN04/AD
+servicePrincipalName: ldap/e8e1ef96-793b-41d9-b60c-14b48fb2da87._msdcs.ad.samb
+ a.example.com
+servicePrincipalName: ldap/WIN04/AD
+servicePrincipalName: ldap/WIN04
+servicePrincipalName: ldap/win04.ad.samba.example.com/AD
+servicePrincipalName: ldap/win04.ad.samba.example.com
+servicePrincipalName: ldap/win04.ad.samba.example.com/ad.samba.example.com
+servicePrincipalName: ldap/win04.ad.samba.example.com/DomainDnsZones.ad.samba.
+ example.com
+servicePrincipalName: ldap/win04.ad.samba.example.com/ForestDnsZones.ad.samba.
+ example.com
+servicePrincipalName: DNS/win04.ad.samba.example.com
+
+dn: CN=RID Set,CN=WIN04,OU=Domain Controllers,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: rIDSet
+cn: RID Set
+whenChanged: 20150226224751.0Z
+objectGUID: c6eb79b6-9241-4841-8fba-0d6deb172b09
+
+dn: CN=SYSVOL Subscription,CN=Domain System Volume,CN=DFSR-LocalSettings,CN=WIN04,OU=Domain Controllers,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: msDFSR-Subscription
+cn: SYSVOL Subscription
+whenChanged: 20150225011636.0Z
+objectGUID: 10957524-cec1-48e0-b7c9-34d1d40bf91b
+
+dn: CN=Windows Virtual Machine,CN=WIN04,OU=Domain Controllers,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: leaf
+objectClass: connectionPoint
+objectClass: serviceConnectionPoint
+cn: Windows Virtual Machine
+whenChanged: 20150225011621.0Z
+objectGUID: 8e23f017-fb18-4b15-991a-410fe840f629
+
+dn: CN=DFSR-LocalSettings,CN=WIN04,OU=Domain Controllers,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: msDFSR-LocalSettings
+cn: DFSR-LocalSettings
+whenChanged: 20150225012141.0Z
+objectGUID: 1a76539f-43ad-4c07-b960-480b508a51ce
+
+dn: CN=WIN05,OU=Domain Controllers,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: user
+objectClass: computer
+cn: WIN05
+whenChanged: 20150226022508.0Z
+objectGUID: a3f81d7d-7fdc-4814-ab85-b17cfee875fc
+sAMAccountName: WIN05$
+dNSHostName: win05.ad.samba.example.com
+rIDSetReferences: CN=RID Set,CN=WIN05,OU=Domain Controllers,DC=ad,DC=samba,DC=
+ example,DC=com
+servicePrincipalName: HOST/win05.ad.samba.example.com
+servicePrincipalName: RestrictedKrbHost/win05.ad.samba.example.com
+servicePrincipalName: HOST/WIN05
+servicePrincipalName: RestrictedKrbHost/WIN05
+servicePrincipalName: E3514235-4B06-11D1-AB04-00C04FC2DCD2/60430017-2cce-414b-
+ 8f37-08a924ae99b7/ad.samba.example.com
+servicePrincipalName: TERMSRV/win05.ad.samba.example.com
+servicePrincipalName: TERMSRV/WIN05
+servicePrincipalName: Dfsr-12F9A27C-BF97-4787-9364-D31B6C55EB04/win05.ad.samba
+ .example.com
+servicePrincipalName: WSMAN/win05
+servicePrincipalName: WSMAN/win05.ad.samba.example.com
+servicePrincipalName: ldap/win05.ad.samba.example.com/DomainDnsZones.ad.samba.
+ example.com
+servicePrincipalName: ldap/win05.ad.samba.example.com/ForestDnsZones.ad.samba.
+ example.com
+servicePrincipalName: ldap/win05.ad.samba.example.com/ad.samba.example.com
+servicePrincipalName: ldap/WIN05/AD
+servicePrincipalName: ldap/60430017-2cce-414b-8f37-08a924ae99b7._msdcs.ad.samb
+ a.example.com
+servicePrincipalName: HOST/win05.ad.samba.example.com/ad.samba.example.com
+servicePrincipalName: HOST/WIN05/AD
+servicePrincipalName: ldap/win05.ad.samba.example.com
+servicePrincipalName: ldap/WIN05
+servicePrincipalName: ldap/win05.ad.samba.example.com/AD
+servicePrincipalName: HOST/win05.ad.samba.example.com/AD
+servicePrincipalName: RPC/60430017-2cce-414b-8f37-08a924ae99b7._msdcs.ad.samba
+ .example.com
+servicePrincipalName: GC/win05.ad.samba.example.com/ad.samba.example.com
+servicePrincipalName: DNS/win05.ad.samba.example.com
+
+dn: CN=Windows Virtual Machine,CN=WIN05,OU=Domain Controllers,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: leaf
+objectClass: connectionPoint
+objectClass: serviceConnectionPoint
+cn: Windows Virtual Machine
+whenChanged: 20150225012700.0Z
+objectGUID: 092022cd-afc3-457a-b596-c16c03d573d1
+
+dn: CN=SYSVOL Subscription,CN=Domain System Volume,CN=DFSR-LocalSettings,CN=WIN05,OU=Domain Controllers,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: msDFSR-Subscription
+cn: SYSVOL Subscription
+whenChanged: 20150225012724.0Z
+objectGUID: f9099cf3-1af3-4b5f-9cba-b5c78189bc4a
+
+dn: CN=RID Set,CN=WIN05,OU=Domain Controllers,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: rIDSet
+cn: RID Set
+whenChanged: 20150226224836.0Z
+objectGUID: 9d3e43b2-84cc-45a4-8948-8791592a25ba
+
+dn: CN=DFSR-LocalSettings,CN=WIN05,OU=Domain Controllers,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: msDFSR-LocalSettings
+cn: DFSR-LocalSettings
+whenChanged: 20150225013228.0Z
+objectGUID: 19b58264-9ff3-4cd9-9f9f-70797d3aa6d6
+
+dn: CN=Domain System Volume,CN=DFSR-LocalSettings,CN=WIN05,OU=Domain Controllers,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: msDFSR-Subscriber
+cn: Domain System Volume
+objectGUID: 7a5ef091-2906-47b3-a190-ca98122b704d
+whenChanged: 20150227014849.0Z
+
+dn: CN=Windows Virtual Machine,CN=WIN06,OU=Domain Controllers,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: leaf
+objectClass: connectionPoint
+objectClass: serviceConnectionPoint
+cn: Windows Virtual Machine
+whenChanged: 20150225013648.0Z
+objectGUID: 7ec56e27-1658-4cac-af21-fc4c06e41951
+
+dn: CN=WIN06,OU=Domain Controllers,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: user
+objectClass: computer
+cn: WIN06
+objectGUID: 6e12d598-4d94-4f40-a04b-106b12c94114
+sAMAccountName: WIN06$
+dNSHostName: WIN06.ad.samba.example.com
+servicePrincipalName: HOST/WIN06
+servicePrincipalName: HOST/WIN06.ad.samba.example.com
+servicePrincipalName: RestrictedKrbHost/win06.ad.samba.example.com
+servicePrincipalName: RestrictedKrbHost/WIN06
+servicePrincipalName: Dfsr-12F9A27C-BF97-4787-9364-D31B6C55EB04/win06.ad.samba
+ .example.com
+servicePrincipalName: TERMSRV/WIN06
+servicePrincipalName: TERMSRV/win06.ad.samba.example.com
+servicePrincipalName: HOST/WIN06/AD
+servicePrincipalName: ldap/win06.ad.samba.example.com/ad.samba.example.com
+servicePrincipalName: ldap/win06.ad.samba.example.com/ForestDnsZones.ad.samba.
+ example.com
+servicePrincipalName: ldap/win06.ad.samba.example.com/DomainDnsZones.ad.samba.
+ example.com
+servicePrincipalName: ldap/win06.ad.samba.example.com
+servicePrincipalName: ldap/WIN06
+servicePrincipalName: ldap/win06.ad.samba.example.com/AD
+servicePrincipalName: ldap/2b0d1d67-6829-4951-bc71-42b4d14607c4._msdcs.ad.samb
+ a.example.com
+servicePrincipalName: ldap/WIN06/AD
+servicePrincipalName: HOST/win06.ad.samba.example.com/ad.samba.example.com
+servicePrincipalName: RPC/2b0d1d67-6829-4951-bc71-42b4d14607c4._msdcs.ad.samba
+ .example.com
+servicePrincipalName: GC/win06.ad.samba.example.com/ad.samba.example.com
+servicePrincipalName: HOST/win06.ad.samba.example.com/AD
+msDS-KrbTgtLink: CN=krbtgt_35360,CN=Users,DC=ad,DC=samba,DC=example,DC=com
+whenChanged: 20150227014849.0Z
+
+dn: CN=DFSR-LocalSettings,CN=WIN06,OU=Domain Controllers,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: msDFSR-LocalSettings
+cn: DFSR-LocalSettings
+whenChanged: 20150225013711.0Z
+objectGUID: 1aa3bdd7-0854-4eda-8ecd-924739a1198e
+
+dn: CN=Domain System Volume,CN=DFSR-LocalSettings,CN=WIN06,OU=Domain Controllers,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: msDFSR-Subscriber
+cn: Domain System Volume
+objectGUID: 98328098-76e8-4427-baa0-b28eafd4a6ec
+whenChanged: 20150227014849.0Z
+
+dn: CN=SYSVOL Subscription,CN=Domain System Volume,CN=DFSR-LocalSettings,CN=WIN06,OU=Domain Controllers,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: msDFSR-Subscription
+cn: SYSVOL Subscription
+whenChanged: 20150225013709.0Z
+objectGUID: 546da7b6-0bbf-4aed-a3ae-732f63eea5d8
+
+dn: CN=krbtgt_35360,CN=Users,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: user
+cn: krbtgt_35360
+whenChanged: 20150225013053.0Z
+objectGUID: c60403a2-46f6-475e-88ff-424b6fa46e24
+sAMAccountName: krbtgt_35360
+
+dn: CN=RID Set,CN=WIN07,OU=Domain Controllers,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: rIDSet
+cn: RID Set
+whenChanged: 20150226224857.0Z
+objectGUID: 25bf0a90-ce7d-4f3b-a5aa-24ec30253a8e
+
+dn: CN=WIN07,OU=Domain Controllers,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: user
+objectClass: computer
+cn: WIN07
+objectGUID: 2f43ad87-8daf-4137-a68e-db21d9ee7e74
+sAMAccountName: WIN07$
+dNSHostName: win07.ad.samba.example.com
+rIDSetReferences: CN=RID Set,CN=WIN07,OU=Domain Controllers,DC=ad,DC=samba,DC=
+ example,DC=com
+servicePrincipalName: HOST/win07.ad.samba.example.com
+servicePrincipalName: RestrictedKrbHost/win07.ad.samba.example.com
+servicePrincipalName: HOST/WIN07
+servicePrincipalName: RestrictedKrbHost/WIN07
+servicePrincipalName: TERMSRV/WIN07
+servicePrincipalName: TERMSRV/win07.ad.samba.example.com
+servicePrincipalName: Dfsr-12F9A27C-BF97-4787-9364-D31B6C55EB04/win07.ad.samba
+ .example.com
+servicePrincipalName: E3514235-4B06-11D1-AB04-00C04FC2DCD2/3f700c7f-03c4-4ee0-
+ a8b6-dd561cc1b6be/ad.samba.example.com
+servicePrincipalName: HOST/win07.ad.samba.example.com/AD
+servicePrincipalName: RPC/3f700c7f-03c4-4ee0-a8b6-dd561cc1b6be._msdcs.ad.samba
+ .example.com
+servicePrincipalName: GC/win07.ad.samba.example.com/ad.samba.example.com
+servicePrincipalName: HOST/win07.ad.samba.example.com/ad.samba.example.com
+servicePrincipalName: ldap/win07.ad.samba.example.com/AD
+servicePrincipalName: ldap/3f700c7f-03c4-4ee0-a8b6-dd561cc1b6be._msdcs.ad.samb
+ a.example.com
+servicePrincipalName: HOST/WIN07/AD
+servicePrincipalName: ldap/WIN07/AD
+servicePrincipalName: ldap/win07.ad.samba.example.com/ad.samba.example.com
+servicePrincipalName: ldap/win07.ad.samba.example.com/ForestDnsZones.ad.samba.
+ example.com
+servicePrincipalName: ldap/win07.ad.samba.example.com/DomainDnsZones.ad.samba.
+ example.com
+servicePrincipalName: ldap/win07.ad.samba.example.com
+servicePrincipalName: ldap/WIN07
+servicePrincipalName: DNS/win07.ad.samba.example.com
+whenChanged: 20150227014849.0Z
+
+dn: CN=DFSR-LocalSettings,CN=WIN07,OU=Domain Controllers,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: msDFSR-LocalSettings
+cn: DFSR-LocalSettings
+whenChanged: 20150225013610.0Z
+objectGUID: 0e2fef27-2fec-48e7-869b-bdfa458888ec
+
+dn: CN=Domain System Volume,CN=DFSR-LocalSettings,CN=WIN07,OU=Domain Controllers,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: msDFSR-Subscriber
+cn: Domain System Volume
+objectGUID: 86ef821c-afb2-4b60-839a-6a6ceda9559a
+whenChanged: 20150227014849.0Z
+
+dn: CN=Windows Virtual Machine,CN=WIN07,OU=Domain Controllers,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: leaf
+objectClass: connectionPoint
+objectClass: serviceConnectionPoint
+cn: Windows Virtual Machine
+whenChanged: 20150225013033.0Z
+objectGUID: 3c9b41cf-d1da-416a-8f19-bed987f08336
+
+dn: CN=SYSVOL Subscription,CN=Domain System Volume,CN=DFSR-LocalSettings,CN=WIN07,OU=Domain Controllers,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: msDFSR-Subscription
+cn: SYSVOL Subscription
+whenChanged: 20150225013052.0Z
+objectGUID: c82d8eff-6e1f-4df0-93af-90be489fd41f
+
+dn: CN=SYSVOL Subscription,CN=Domain System Volume,CN=DFSR-LocalSettings,CN=WIN08,OU=Domain Controllers,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: msDFSR-Subscription
+cn: SYSVOL Subscription
+whenChanged: 20150225014214.0Z
+objectGUID: 27c4c328-4d6f-434d-8043-f98c7d9098c2
+
+dn: CN=DFSR-LocalSettings,CN=WIN08,OU=Domain Controllers,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: msDFSR-LocalSettings
+cn: DFSR-LocalSettings
+whenChanged: 20150225014215.0Z
+objectGUID: 5474dd4b-9c18-49c1-8443-4cac1d1fc312
+
+dn: CN=Windows Virtual Machine,CN=WIN08,OU=Domain Controllers,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: leaf
+objectClass: connectionPoint
+objectClass: serviceConnectionPoint
+cn: Windows Virtual Machine
+whenChanged: 20150225014212.0Z
+objectGUID: ee738795-9b7a-4cab-9444-9719481bc633
+
+dn: CN=Domain System Volume,CN=DFSR-LocalSettings,CN=WIN08,OU=Domain Controllers,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: msDFSR-Subscriber
+cn: Domain System Volume
+objectGUID: 521469b8-3258-4e5a-b64e-b584d13c72d5
+whenChanged: 20150227014849.0Z
+
+dn: CN=WIN08,OU=Domain Controllers,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: user
+objectClass: computer
+cn: WIN08
+objectGUID: 02501176-18a0-4bff-b935-9e56ac9e1897
+sAMAccountName: WIN08$
+dNSHostName: WIN08.ad.samba.example.com
+servicePrincipalName: HOST/WIN08
+servicePrincipalName: HOST/WIN08.ad.samba.example.com
+servicePrincipalName: RestrictedKrbHost/win08.ad.samba.example.com
+servicePrincipalName: RestrictedKrbHost/WIN08
+servicePrincipalName: TERMSRV/win08.ad.samba.example.com
+servicePrincipalName: TERMSRV/WIN08
+servicePrincipalName: Dfsr-12F9A27C-BF97-4787-9364-D31B6C55EB04/win08.ad.samba
+ .example.com
+servicePrincipalName: ldap/win08.ad.samba.example.com/ad.samba.example.com
+servicePrincipalName: ldap/win08.ad.samba.example.com/ForestDnsZones.ad.samba.
+ example.com
+servicePrincipalName: ldap/win08.ad.samba.example.com/DomainDnsZones.ad.samba.
+ example.com
+servicePrincipalName: ldap/win08.ad.samba.example.com
+servicePrincipalName: ldap/WIN08
+servicePrincipalName: ldap/win08.ad.samba.example.com/AD
+servicePrincipalName: ldap/30b4cb8e-324a-41fc-9f73-47ad8dd07ded._msdcs.ad.samb
+ a.example.com
+servicePrincipalName: ldap/WIN08/AD
+servicePrincipalName: HOST/win08.ad.samba.example.com/ad.samba.example.com
+servicePrincipalName: RPC/30b4cb8e-324a-41fc-9f73-47ad8dd07ded._msdcs.ad.samba
+ .example.com
+servicePrincipalName: GC/win08.ad.samba.example.com/ad.samba.example.com
+servicePrincipalName: HOST/win08.ad.samba.example.com/AD
+servicePrincipalName: HOST/WIN08/AD
+servicePrincipalName: WSMAN/win08.ad.samba.example.com
+servicePrincipalName: WSMAN/win08
+msDS-KrbTgtLink: CN=krbtgt_59152,CN=Users,DC=ad,DC=samba,DC=example,DC=com
+whenChanged: 20150227014849.0Z
+
+dn: CN=krbtgt_59152,CN=Users,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: user
+cn: krbtgt_59152
+whenChanged: 20150225013729.0Z
+objectGUID: 67029794-8288-48b6-bb2c-04390b46b981
+sAMAccountName: krbtgt_59152
+
+dn: CN=DFSR-LocalSettings,CN=WIN09,OU=Domain Controllers,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: msDFSR-LocalSettings
+cn: DFSR-LocalSettings
+whenChanged: 20150225014619.0Z
+objectGUID: b65f0321-e47a-4d77-b73e-e2fa154f6006
+
+dn: CN=Domain System Volume,CN=DFSR-LocalSettings,CN=WIN09,OU=Domain Controllers,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: msDFSR-Subscriber
+cn: Domain System Volume
+objectGUID: 5a20dba5-44ac-4e4f-ab71-e6122736d4b4
+whenChanged: 20150227014849.0Z
+
+dn: CN=SYSVOL Subscription,CN=Domain System Volume,CN=DFSR-LocalSettings,CN=WIN09,OU=Domain Controllers,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: msDFSR-Subscription
+cn: SYSVOL Subscription
+whenChanged: 20150225014100.0Z
+objectGUID: 723bd88a-e183-41cb-882b-653b59183b99
+
+dn: CN=WIN09,OU=Domain Controllers,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: user
+objectClass: computer
+cn: WIN09
+whenChanged: 20150226022536.0Z
+objectGUID: 4061b71b-3cf5-4732-a2d3-d5fd2cd9d9ff
+sAMAccountName: WIN09$
+dNSHostName: win09.ad.samba.example.com
+rIDSetReferences: CN=RID Set,CN=WIN09,OU=Domain Controllers,DC=ad,DC=samba,DC=
+ example,DC=com
+servicePrincipalName: HOST/win09.ad.samba.example.com
+servicePrincipalName: RestrictedKrbHost/win09.ad.samba.example.com
+servicePrincipalName: HOST/WIN09
+servicePrincipalName: RestrictedKrbHost/WIN09
+servicePrincipalName: TERMSRV/WIN09
+servicePrincipalName: TERMSRV/win09.ad.samba.example.com
+servicePrincipalName: Dfsr-12F9A27C-BF97-4787-9364-D31B6C55EB04/win09.ad.samba
+ .example.com
+servicePrincipalName: E3514235-4B06-11D1-AB04-00C04FC2DCD2/93b204cb-5f34-4c66-
+ aac0-a58094d9d0dc/ad.samba.example.com
+servicePrincipalName: ldap/win09.ad.samba.example.com/AD
+servicePrincipalName: ldap/WIN09
+servicePrincipalName: ldap/win09.ad.samba.example.com
+servicePrincipalName: ldap/win09.ad.samba.example.com/DomainDnsZones.ad.samba.
+ example.com
+servicePrincipalName: ldap/93b204cb-5f34-4c66-aac0-a58094d9d0dc._msdcs.ad.samb
+ a.example.com
+servicePrincipalName: ldap/WIN09/AD
+servicePrincipalName: ldap/win09.ad.samba.example.com/ad.samba.example.com
+servicePrincipalName: ldap/win09.ad.samba.example.com/ForestDnsZones.ad.samba.
+ example.com
+servicePrincipalName: DNS/win09.ad.samba.example.com
+servicePrincipalName: HOST/win09.ad.samba.example.com/AD
+servicePrincipalName: RPC/93b204cb-5f34-4c66-aac0-a58094d9d0dc._msdcs.ad.samba
+ .example.com
+servicePrincipalName: GC/win09.ad.samba.example.com/ad.samba.example.com
+servicePrincipalName: HOST/win09.ad.samba.example.com/ad.samba.example.com
+servicePrincipalName: HOST/WIN09/AD
+
+dn: CN=Windows Virtual Machine\0ACNF:23077751-5158-45b3-a973-1ac08af7d5b7,CN=WIN09,OU=Domain Controllers,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: leaf
+objectClass: connectionPoint
+objectClass: serviceConnectionPoint
+cn:: V2luZG93cyBWaXJ0dWFsIE1hY2hpbmUKQ05GOjIzMDc3NzUxLTUxNTgtNDViMy1hOTczLTFhY
+ zA4YWY3ZDViNw==
+whenChanged: 20150227000342.0Z
+objectGUID: 23077751-5158-45b3-a973-1ac08af7d5b7
+
+dn: CN=RID Set,CN=WIN09,OU=Domain Controllers,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: rIDSet
+cn: RID Set
+whenChanged: 20150226224919.0Z
+objectGUID: 54e5a96f-3f79-49b8-a15f-f7f79e9ef073
+
+dn: CN=Windows Virtual Machine,CN=WIN09,OU=Domain Controllers,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: leaf
+objectClass: connectionPoint
+objectClass: serviceConnectionPoint
+cn: Windows Virtual Machine
+whenChanged: 20150226022537.0Z
+objectGUID: 3e449d58-1205-402c-ad10-50a221b5b6e3
+
+dn: CN=Windows Virtual Machine,CN=WIN10,OU=Domain Controllers,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: leaf
+objectClass: connectionPoint
+objectClass: serviceConnectionPoint
+cn: Windows Virtual Machine
+whenChanged: 20150225014221.0Z
+objectGUID: 3e615c58-abbd-461b-a59b-2812c209893c
+
+dn: CN=SYSVOL Subscription,CN=Domain System Volume,CN=DFSR-LocalSettings,CN=WIN10,OU=Domain Controllers,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: msDFSR-Subscription
+cn: SYSVOL Subscription
+whenChanged: 20150225014220.0Z
+objectGUID: b52d27df-9ea7-4324-9b75-4daaa3200bd4
+
+dn: CN=RID Set,CN=WIN10,OU=Domain Controllers,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: rIDSet
+cn: RID Set
+whenChanged: 20150226224941.0Z
+objectGUID: 03960931-a83e-4eed-beb3-b8f8c05d353a
+
+dn: CN=WIN10,OU=Domain Controllers,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: user
+objectClass: computer
+cn: WIN10
+whenChanged: 20150226022732.0Z
+objectGUID: 07b23f85-7524-4f35-9168-a9a965fcfff9
+sAMAccountName: WIN10$
+dNSHostName: win10.ad.samba.example.com
+rIDSetReferences: CN=RID Set,CN=WIN10,OU=Domain Controllers,DC=ad,DC=samba,DC=
+ example,DC=com
+servicePrincipalName: HOST/win10.ad.samba.example.com
+servicePrincipalName: RestrictedKrbHost/win10.ad.samba.example.com
+servicePrincipalName: HOST/WIN10
+servicePrincipalName: RestrictedKrbHost/WIN10
+servicePrincipalName: E3514235-4B06-11D1-AB04-00C04FC2DCD2/9559f18d-ba0f-4609-
+ 8cf1-ce055c83eeba/ad.samba.example.com
+servicePrincipalName: TERMSRV/win10.ad.samba.example.com
+servicePrincipalName: TERMSRV/WIN10
+servicePrincipalName: Dfsr-12F9A27C-BF97-4787-9364-D31B6C55EB04/win10.ad.samba
+ .example.com
+servicePrincipalName: HOST/win10.ad.samba.example.com/AD
+servicePrincipalName: RPC/9559f18d-ba0f-4609-8cf1-ce055c83eeba._msdcs.ad.samba
+ .example.com
+servicePrincipalName: GC/win10.ad.samba.example.com/ad.samba.example.com
+servicePrincipalName: HOST/win10.ad.samba.example.com/ad.samba.example.com
+servicePrincipalName: ldap/WIN10/AD
+servicePrincipalName: HOST/WIN10/AD
+servicePrincipalName: ldap/win10.ad.samba.example.com/ad.samba.example.com
+servicePrincipalName: ldap/win10.ad.samba.example.com/DomainDnsZones.ad.samba.
+ example.com
+servicePrincipalName: ldap/win10.ad.samba.example.com/ForestDnsZones.ad.samba.
+ example.com
+servicePrincipalName: ldap/win10.ad.samba.example.com
+servicePrincipalName: ldap/WIN10
+servicePrincipalName: ldap/win10.ad.samba.example.com/AD
+servicePrincipalName: ldap/9559f18d-ba0f-4609-8cf1-ce055c83eeba._msdcs.ad.samb
+ a.example.com
+servicePrincipalName: DNS/win10.ad.samba.example.com
+
+dn: CN=DFSR-LocalSettings,CN=WIN10,OU=Domain Controllers,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: msDFSR-LocalSettings
+cn: DFSR-LocalSettings
+whenChanged: 20150225014724.0Z
+objectGUID: db182d07-b912-41f2-98a6-94dd727d24ec
+
+dn: CN=Domain System Volume,CN=DFSR-LocalSettings,CN=WIN10,OU=Domain Controllers,DC=ad,DC=samba,DC=example,DC=com
+objectClass: top
+objectClass: msDFSR-Subscriber
+cn: Domain System Volume
+objectGUID: ada143ee-b749-44ea-9d56-6b8b325abe1b
 whenChanged: 20150227014849.0Z
 
 dn: DC=ad,DC=samba,DC=example,DC=com
