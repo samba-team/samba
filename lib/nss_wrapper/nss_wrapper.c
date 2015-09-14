@@ -3552,7 +3552,6 @@ static int nwrap_getgrouplist(const char *user, gid_t group,
 	struct group *grp;
 	gid_t *groups_tmp;
 	int count = 1;
-	const char *name_of_group = "";
 
 	NWRAP_LOG(NWRAP_LOG_DEBUG, "getgrouplist called for %s", user);
 
@@ -3565,11 +3564,6 @@ static int nwrap_getgrouplist(const char *user, gid_t group,
 
 	memcpy(groups_tmp, &group, sizeof(gid_t));
 
-	grp = nwrap_getgrgid(group);
-	if (grp) {
-		name_of_group = grp->gr_name;
-	}
-
 	nwrap_setgrent();
 	while ((grp = nwrap_getgrent()) != NULL) {
 		int i = 0;
@@ -3580,8 +3574,8 @@ static int nwrap_getgrouplist(const char *user, gid_t group,
 
 		for (i=0; grp->gr_mem && grp->gr_mem[i] != NULL; i++) {
 
-			if ((strcmp(user, grp->gr_mem[i]) == 0) &&
-			    (strcmp(name_of_group, grp->gr_name) != 0)) {
+			if (group != grp->gr_gid &&
+			    (strcmp(user, grp->gr_mem[i]) == 0)) {
 
 				NWRAP_LOG(NWRAP_LOG_DEBUG,
 					  "%s is member of %s",
