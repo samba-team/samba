@@ -364,6 +364,7 @@ def samdb_to_ldif_file(samdb, dburl, lp, creds, ldif_file):
                  "dNSHostName",
                  "samAccountName",
                  "servicePrincipalName",
+                 "msDS-KrbTgtLink",
                  "rIDSetReferences"]
         for server in res:
             if "serverReference" in server:
@@ -373,6 +374,22 @@ def samdb_to_ldif_file(samdb, dburl, lp, creds, ldif_file):
 
                 # Write server account output
                 write_search_result(samdb, f, res2)
+
+                res2 = samdb.search(base=basedn, scope=ldb.SCOPE_BASE,
+                                    attrs=attrs)
+
+                #
+                # Look for an RODC KDC attached to this server
+                #
+                if "msDS-KrbTgtLink" in res2[0]:
+                    basedn = res2[0]["msDS-KrbTgtLink"][0]
+
+                    res3 = samdb.search(base=basedn, scope=ldb.SCOPE_SUBTREE,
+                                        attrs=attrs)
+
+                    # Write kdc account output
+                    write_search_result(samdb, f, res3)
+
 
         # Query Naming Context replicas
         attrs = ["objectClass",
