@@ -342,7 +342,8 @@ def samdb_to_ldif_file(samdb, dburl, lp, creds, ldif_file):
                  "whenChanged",
                  "systemFlags",
                  "dNSHostName",
-                 "mailAddress"]
+                 "mailAddress",
+                 "serverReference"]
 
         sstr = "CN=Sites,%s" % samdb.get_config_basedn()
         res = samdb.search(sstr, scope=ldb.SCOPE_SUBTREE,
@@ -351,6 +352,27 @@ def samdb_to_ldif_file(samdb, dburl, lp, creds, ldif_file):
 
         # Write server output
         write_search_result(samdb, f, res)
+
+        # Query server account objects
+        # This is not needed for the KCC, but allows other tests and
+        # examinations of a real, complex network
+        attrs = ["objectClass",
+                 "objectGUID",
+                 "cn",
+                 "whenChanged",
+                 "systemFlags",
+                 "dNSHostName",
+                 "samAccountName",
+                 "servicePrincipalName",
+                 "rIDSetReferences"]
+        for server in res:
+            if "serverReference" in server:
+                basedn = server["serverReference"][0]
+                res2 = samdb.search(base=basedn, scope=ldb.SCOPE_SUBTREE,
+                                    attrs=attrs)
+
+                # Write server account output
+                write_search_result(samdb, f, res2)
 
         # Query Naming Context replicas
         attrs = ["objectClass",
