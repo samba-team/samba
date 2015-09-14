@@ -5,7 +5,7 @@
 # Copyright Jelmer Vernooij 2007-2012
 # Copyright Giampaolo Lauria 2011
 # Copyright Matthieu Patou <mat@matws.net> 2011
-# Copyright Andrew Bartlett 2008
+# Copyright Andrew Bartlett 2008-2015
 # Copyright Stefan Metzmacher 2012
 #
 # This program is free software; you can redistribute it and/or modify
@@ -44,6 +44,7 @@ from samba.dcerpc import lsa
 from samba.dcerpc import netlogon
 from samba.dcerpc import security
 from samba.dcerpc import nbt
+from samba.dcerpc import misc
 from samba.dcerpc.samr import DOMAIN_PASSWORD_COMPLEX, DOMAIN_PASSWORD_STORE_CLEARTEXT
 from samba.netcmd import (
     Command,
@@ -58,7 +59,7 @@ from samba.upgrade import upgrade_from_samba3
 from samba.drs_utils import (
                             sendDsReplicaSync, drsuapi_connect, drsException,
                             sendRemoveDsServer)
-
+from samba import remove_dc
 
 from samba.dsdb import (
     DS_DOMAIN_FUNCTION_2000,
@@ -666,8 +667,10 @@ class cmd_domain_demote(Command):
     synopsis = "%prog [options]"
 
     takes_options = [
-        Option("--server", help="DC to force replication before demote", type=str),
-        Option("--targetdir", help="where provision is stored", type=str),
+        Option("--server", help="writable DC to write demotion changes on", type=str),
+        Option("-H", "--URL", help="LDB URL for database or target server", type=str,
+               metavar="URL", dest="H"),
+        Option("--remove-other-dead-server", help="Dead DC to remove ALL references to (rather than this DC)", type=str),
         ]
 
     takes_optiongroups = {
@@ -677,13 +680,24 @@ class cmd_domain_demote(Command):
         }
 
     def run(self, sambaopts=None, credopts=None,
-            versionopts=None, server=None, targetdir=None):
+            versionopts=None, server=None,
+            remove_other_dead_server=None, H=None):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
         net = Net(creds, lp, server=credopts.ipaddress)
 
+        if remove_other_dead_server is not None:
+            if server is not None:
+                samdb = SamDB(url="ldap://%s" % server,
+                              session_info=system_session(),
+                              credentials=creds, lp=lp)
+            else:
+                samdb = SamDB(url=H, session_info=system_session(), credentials=creds, lp=lp)
+            remove_dc.remove_dc(samdb, remove_other_dead_server)
+            return
+
         netbios_name = lp.get("netbios name")
-        samdb = SamDB(session_info=system_session(), credentials=creds, lp=lp)
+        samdb = SamDB(url=H, session_info=system_session(), credentials=creds, lp=lp)
         if not server:
             res = samdb.search(expression='(&(objectClass=computer)(serverReferenceBL=*))', attrs=["dnsHostName", "name"])
             if (len(res) == 0):
