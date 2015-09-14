@@ -70,8 +70,12 @@ def ldif_to_samdb(dburl, lp, ldif_file, forced_local_dsa=None):
 changetype: modify
 replace: dsServiceName
 dsServiceName: CN=NTDS Settings,%s
--
             """ % forced_local_dsa)
+
+        tmpdb.add_ldif("""dn: @MODULES
+@LIST: rootdse,extended_dn_in,extended_dn_out_ldb
+-
+""")
 
     except Exception, estr:
         tmpdb.transaction_cancel()
@@ -82,9 +86,7 @@ dsServiceName: CN=NTDS Settings,%s
     # We have an abbreviated list of options here because we have built
     # an abbreviated database.  We use the rootdse and extended-dn
     # modules only during this re-open
-    samdb = SamDB(url=dburl, session_info=system_session(), lp=lp,
-                  options=["modules:rootdse,extended_dn_in,"
-                           "extended_dn_out_ldb"])
+    samdb = SamDB(url=dburl, session_info=system_session(), lp=lp)
     return samdb
 
 
