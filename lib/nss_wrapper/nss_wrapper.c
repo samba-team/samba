@@ -3561,8 +3561,7 @@ static int nwrap_getgrouplist(const char *user, gid_t group,
 		errno = ENOMEM;
 		return -1;
 	}
-
-	memcpy(groups_tmp, &group, sizeof(gid_t));
+	groups_tmp[0] = group;
 
 	nwrap_setgrent();
 	while ((grp = nwrap_getgrent()) != NULL) {
@@ -3589,8 +3588,8 @@ static int nwrap_getgrouplist(const char *user, gid_t group,
 					errno = ENOMEM;
 					return -1;
 				}
+				groups_tmp[count] = grp->gr_gid;
 
-				memcpy(&groups_tmp[count], &grp->gr_gid, sizeof(gid_t));
 				count++;
 			}
 		}
