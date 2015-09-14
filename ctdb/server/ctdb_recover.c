@@ -50,13 +50,13 @@ ctdb_control_getvnnmap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA inda
 	return 0;
 }
 
-int 
+int
 ctdb_control_setvnnmap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indata, TDB_DATA *outdata)
 {
 	struct ctdb_vnn_map_wire *map = (struct ctdb_vnn_map_wire *)indata.dptr;
 
-	if (!ctdb_db_all_frozen(ctdb)) {
-		DEBUG(DEBUG_ERR,("Attempt to set vnnmap when not frozen\n"));
+	if (ctdb->recovery_mode != CTDB_RECOVERY_ACTIVE) {
+		DEBUG(DEBUG_ERR, ("Attempt to set vnnmap when not in recovery\n"));
 		return -1;
 	}
 
