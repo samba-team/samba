@@ -242,7 +242,7 @@ int32_t ctdb_control_pull_db(struct ctdb_context *ctdb, TDB_DATA indata, TDB_DAT
 	struct ctdb_marshall_buffer *reply;
 
 	pull = (struct ctdb_control_pulldb *)indata.dptr;
-	
+
 	ctdb_db = find_ctdb_db(ctdb, pull->db_id);
 	if (!ctdb_db) {
 		DEBUG(DEBUG_ERR,(__location__ " Unknown db 0x%08x\n", pull->db_id));
@@ -250,7 +250,8 @@ int32_t ctdb_control_pull_db(struct ctdb_context *ctdb, TDB_DATA indata, TDB_DAT
 	}
 
 	if (!ctdb_db_frozen(ctdb_db)) {
-		DEBUG(DEBUG_DEBUG,("rejecting ctdb_control_pull_db when not frozen\n"));
+		DEBUG(DEBUG_ERR,
+		      ("rejecting ctdb_control_pull_db when not frozen\n"));
 		return -1;
 	}
 
@@ -272,19 +273,19 @@ int32_t ctdb_control_pull_db(struct ctdb_context *ctdb, TDB_DATA indata, TDB_DAT
 				     ctdb_db->db_name, ctdb_db->unhealthy_reason));
 	}
 
-	if (ctdb_lockall_mark_prio(ctdb, ctdb_db->priority) != 0) {
-		DEBUG(DEBUG_ERR,(__location__ " Failed to get lock on entired db - failing\n"));
+	if (ctdb_lockdb_mark(ctdb_db) != 0) {
+		DEBUG(DEBUG_ERR,(__location__ " Failed to get lock on entire db - failing\n"));
 		return -1;
 	}
 
 	if (tdb_traverse_read(ctdb_db->ltdb->tdb, traverse_pulldb, &params) == -1) {
 		DEBUG(DEBUG_ERR,(__location__ " Failed to get traverse db '%s'\n", ctdb_db->db_name));
-		ctdb_lockall_unmark_prio(ctdb, ctdb_db->priority);
+		ctdb_lockdb_unmark(ctdb_db);
 		talloc_free(params.pulldata);
 		return -1;
 	}
 
-	ctdb_lockall_unmark_prio(ctdb, ctdb_db->priority);
+	ctdb_lockdb_unmark(ctdb_db);
 
 	outdata->dptr = (uint8_t *)params.pulldata;
 	outdata->dsize = params.len;
@@ -322,12 +323,13 @@ int32_t ctdb_control_push_db(struct ctdb_context *ctdb, TDB_DATA indata)
 	}
 
 	if (!ctdb_db_frozen(ctdb_db)) {
-		DEBUG(DEBUG_DEBUG,("rejecting ctdb_control_push_db when not frozen\n"));
+		DEBUG(DEBUG_ERR,
+		      ("rejecting ctdb_control_push_db when not frozen\n"));
 		return -1;
 	}
 
-	if (ctdb_lockall_mark_prio(ctdb, ctdb_db->priority) != 0) {
-		DEBUG(DEBUG_ERR,(__location__ " Failed to get lock on entired db - failing\n"));
+	if (ctdb_lockdb_mark(ctdb_db) != 0) {
+		DEBUG(DEBUG_ERR,(__location__ " Failed to get lock on entire db - failing\n"));
 		return -1;
 	}
 
@@ -385,11 +387,11 @@ int32_t ctdb_control_push_db(struct ctdb_context *ctdb, TDB_DATA indata)
 		}
 	}
 
-	ctdb_lockall_unmark_prio(ctdb, ctdb_db->priority);
+	ctdb_lockdb_unmark(ctdb_db);
 	return 0;
 
 failed:
-	ctdb_lockall_unmark_prio(ctdb, ctdb_db->priority);
+	ctdb_lockdb_unmark(ctdb_db);
 	return -1;
 }
 
