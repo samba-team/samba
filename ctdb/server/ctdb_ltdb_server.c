@@ -241,6 +241,7 @@ store:
 
 struct lock_fetch_state {
 	struct ctdb_context *ctdb;
+	struct ctdb_db_context *ctdb_db;
 	void (*recv_pkt)(void *, struct ctdb_req_header *);
 	void *recv_context;
 	struct ctdb_req_header *hdr;
@@ -255,7 +256,7 @@ static void lock_fetch_callback(void *p, bool locked)
 {
 	struct lock_fetch_state *state = talloc_get_type(p, struct lock_fetch_state);
 	if (!state->ignore_generation &&
-	    state->generation != state->ctdb->vnn_map->generation) {
+	    state->generation != state->ctdb_db->generation) {
 		DEBUG(DEBUG_NOTICE,("Discarding previous generation lockwait packet\n"));
 		talloc_free(state->hdr);
 		return;
@@ -321,10 +322,11 @@ int ctdb_ltdb_lock_requeue(struct ctdb_db_context *ctdb_db,
 
 	state = talloc(hdr, struct lock_fetch_state);
 	state->ctdb = ctdb_db->ctdb;
+	state->ctdb_db = ctdb_db;
 	state->hdr = hdr;
 	state->recv_pkt = recv_pkt;
 	state->recv_context = recv_context;
-	state->generation = ctdb_db->ctdb->vnn_map->generation;
+	state->generation = ctdb_db->generation;
 	state->ignore_generation = ignore_generation;
 
 	/* now the contended path */
