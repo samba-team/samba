@@ -249,7 +249,7 @@ int32_t ctdb_control_pull_db(struct ctdb_context *ctdb, TDB_DATA indata, TDB_DAT
 		return -1;
 	}
 
-	if (!ctdb_db_prio_frozen(ctdb, ctdb_db->priority)) {
+	if (!ctdb_db_frozen(ctdb_db)) {
 		DEBUG(DEBUG_DEBUG,("rejecting ctdb_control_pull_db when not frozen\n"));
 		return -1;
 	}
@@ -321,7 +321,7 @@ int32_t ctdb_control_push_db(struct ctdb_context *ctdb, TDB_DATA indata)
 		return -1;
 	}
 
-	if (!ctdb_db_prio_frozen(ctdb, ctdb_db->priority)) {
+	if (!ctdb_db_frozen(ctdb_db)) {
 		DEBUG(DEBUG_DEBUG,("rejecting ctdb_control_push_db when not frozen\n"));
 		return -1;
 	}
