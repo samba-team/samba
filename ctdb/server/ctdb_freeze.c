@@ -798,6 +798,7 @@ int32_t ctdb_control_db_transaction_commit(struct ctdb_context *ctdb,
  */
 int32_t ctdb_control_transaction_start(struct ctdb_context *ctdb, uint32_t id)
 {
+	struct db_start_transaction_state state;
 	int ret;
 
 	if (!ctdb_db_all_frozen(ctdb)) {
@@ -806,8 +807,10 @@ int32_t ctdb_control_transaction_start(struct ctdb_context *ctdb, uint32_t id)
 		return -1;
 	}
 
-	ret = ctdb_db_iterator(ctdb, db_transaction_start_handler,
-			       &ctdb->freeze_transaction_started);
+	state.transaction_id = id;
+	state.transaction_started = ctdb->freeze_transaction_started;
+
+	ret = ctdb_db_iterator(ctdb, db_start_transaction, &state);
 	if (ret != 0) {
 		return -1;
 	}
@@ -825,7 +828,8 @@ int32_t ctdb_control_transaction_cancel(struct ctdb_context *ctdb)
 {
 	DEBUG(DEBUG_ERR,(__location__ " recovery transaction cancelled called\n"));
 
-	ctdb_db_iterator(ctdb, db_transaction_cancel_handler, NULL);
+	ctdb_db_iterator(ctdb, db_cancel_transaction, NULL);
+
 	ctdb->freeze_transaction_started = false;
 
 	return 0;
@@ -836,6 +840,7 @@ int32_t ctdb_control_transaction_cancel(struct ctdb_context *ctdb)
  */
 int32_t ctdb_control_transaction_commit(struct ctdb_context *ctdb, uint32_t id)
 {
+	struct db_commit_transaction_state state;
 	int i;
 	int healthy_nodes = 0;
 	int ret;
@@ -866,8 +871,10 @@ int32_t ctdb_control_transaction_commit(struct ctdb_context *ctdb, uint32_t id)
 	}
 	DEBUG(DEBUG_INFO,(__location__ " healthy_nodes[%d]\n", healthy_nodes));
 
-	ret = ctdb_db_iterator(ctdb, db_transaction_commit_handler,
-			       &healthy_nodes);
+	state.transaction_id = id;
+	state.healthy_nodes = healthy_nodes;
+
+	ret = ctdb_db_iterator(ctdb, db_commit_transaction, &state);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, ("Cancel all transactions\n"));
 		goto fail;
@@ -880,7 +887,7 @@ int32_t ctdb_control_transaction_commit(struct ctdb_context *ctdb, uint32_t id)
 
 fail:
 	/* cancel any pending transactions */
-	ctdb_db_iterator(ctdb, db_transaction_cancel_handler, NULL);
+	ctdb_db_iterator(ctdb, db_cancel_transaction, NULL);
 	ctdb->freeze_transaction_started = false;
 
 	return -1;
