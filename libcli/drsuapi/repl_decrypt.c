@@ -28,6 +28,7 @@
 #include "../lib/crypto/crypto.h"
 #include "../libcli/drsuapi/drsuapi.h"
 #include "libcli/auth/libcli_auth.h"
+#include "dsdb/samdb/samdb.h"
 
 WERROR drsuapi_decrypt_attribute_value(TALLOC_CTX *mem_ctx,
 				       const DATA_BLOB *gensec_skey,
@@ -134,6 +135,7 @@ WERROR drsuapi_decrypt_attribute_value(TALLOC_CTX *mem_ctx,
 WERROR drsuapi_decrypt_attribute(TALLOC_CTX *mem_ctx, 
 				 const DATA_BLOB *gensec_skey,
 				 uint32_t rid,
+				 uint32_t dsdb_repl_flags,
 				 struct drsuapi_DsReplicaAttribute *attr)
 {
 	WERROR status;
@@ -162,6 +164,10 @@ WERROR drsuapi_decrypt_attribute(TALLOC_CTX *mem_ctx,
 		break;
 	default:
 		return WERR_OK;
+	}
+
+	if (dsdb_repl_flags & DSDB_REPL_FLAG_EXPECT_NO_SECRETS) {
+		return WERR_TOO_MANY_SECRETS;
 	}
 
 	if (attr->value_ctr.num_values > 1) {
