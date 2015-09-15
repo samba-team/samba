@@ -307,7 +307,7 @@ static int ctdb_freeze_handle_destructor(struct ctdb_freeze_handle *h)
 {
 	struct ctdb_context *ctdb = h->ctdb;
 
-	DEBUG(DEBUG_ERR,("Release freeze handler for prio %u\n", h->priority));
+	DEBUG(DEBUG_ERR,("Release freeze handle for prio %u\n", h->priority));
 
 	/* cancel any pending transactions */
 	if (ctdb->freeze_transaction_started) {
