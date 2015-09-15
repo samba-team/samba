@@ -95,12 +95,63 @@ static void test_connect(void **state)
 	assert_int_equal(ret, 0);
 }
 
+static int ldbtest_setup(void **state)
+{
+	struct ldbtest_ctx *test_ctx;
+	int ret;
+
+	ldbtest_noconn_setup((void **) &test_ctx);
+
+	ret = ldb_connect(test_ctx->ldb, test_ctx->dbpath, 0, NULL);
+	assert_int_equal(ret, 0);
+
+	*state = test_ctx;
+	return 0;
+}
+
+static int ldbtest_teardown(void **state)
+{
+	struct ldbtest_ctx *test_ctx = talloc_get_type_abort(*state,
+							struct ldbtest_ctx);
+	ldbtest_noconn_teardown((void **) &test_ctx);
+	return 0;
+}
+
+static void test_ldb_add(void **state)
+{
+	int ret;
+	struct ldb_message *msg;
+	struct ldbtest_ctx *test_ctx = talloc_get_type_abort(*state,
+							struct ldbtest_ctx);
+	TALLOC_CTX *tmp_ctx;
+
+	tmp_ctx = talloc_new(test_ctx);
+	assert_non_null(tmp_ctx);
+
+	msg = ldb_msg_new(tmp_ctx);
+	assert_non_null(msg);
+
+	msg->dn = ldb_dn_new_fmt(msg, test_ctx->ldb, "dc=test");
+	assert_non_null(msg->dn);
+
+	ret = ldb_msg_add_string(msg, "cn", "test_cn_val");
+	assert_int_equal(ret, 0);
+
+	ret = ldb_add(test_ctx->ldb, msg);
+	assert_int_equal(ret, 0);
+
+	talloc_free(tmp_ctx);
+}
+
 int main(int argc, const char **argv)
 {
 	const struct CMUnitTest tests[] = {
 		cmocka_unit_test_setup_teardown(test_connect,
 						ldbtest_noconn_setup,
 						ldbtest_noconn_teardown),
+		cmocka_unit_test_setup_teardown(test_ldb_add,
+						ldbtest_setup,
+						ldbtest_teardown),
 	};
 
 	return cmocka_run_group_tests(tests, NULL, NULL);
