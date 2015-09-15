@@ -907,17 +907,17 @@ int32_t ctdb_control_wipe_database(struct ctdb_context *ctdb, TDB_DATA indata)
 		return -1;
 	}
 
-	if (ctdb->freeze_mode[ctdb_db->priority] != CTDB_FREEZE_FROZEN) {
+	if (ctdb_db->freeze_mode != CTDB_FREEZE_FROZEN) {
 		DEBUG(DEBUG_ERR,(__location__ " Failed transaction_start while not frozen\n"));
 		return -1;
 	}
 
-	if (!ctdb->freeze_transaction_started) {
+	if (!ctdb_db->freeze_transaction_started) {
 		DEBUG(DEBUG_ERR,(__location__ " transaction not started\n"));
 		return -1;
 	}
 
-	if (w.transaction_id != ctdb->freeze_transaction_id) {
+	if (w.transaction_id != ctdb_db->freeze_transaction_id) {
 		DEBUG(DEBUG_ERR,(__location__ " incorrect transaction id 0x%x in commit\n", w.transaction_id));
 		return -1;
 	}
