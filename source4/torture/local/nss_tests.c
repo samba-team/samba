@@ -349,7 +349,11 @@ static bool test_enum_r_passwd(struct torture_context *tctx,
 	while (1) {
 		torture_comment(tctx, "Testing getpwent_r\n");
 
+#ifdef SOLARIS_GETPWENT_R
+		ret = getpwent_r(&pwd, buffer, sizeof(buffer));
+#else /* SOLARIS_GETPWENT_R */
 		ret = getpwent_r(&pwd, buffer, sizeof(buffer), &pwdp);
+#endif /* SOLARIS_GETPWENT_R */
 		if (ret != 0) {
 			if (ret != ENOENT) {
 				torture_comment(tctx, "got %d return code\n", ret);
@@ -543,7 +547,11 @@ static bool test_enum_r_group(struct torture_context *tctx,
 	while (1) {
 		torture_comment(tctx, "Testing getgrent_r\n");
 
+#ifdef SOLARIS_GETGRENT_R
+		ret = getgrent_r(&grp, buffer, sizeof(buffer));
+#else /* SOLARIS_GETGRENT_R */
 		ret = getgrent_r(&grp, buffer, sizeof(buffer), &grpp);
+#endif /* SOLARIS_GETGRENT_R */
 		if (ret != 0) {
 			if (ret != ENOENT) {
 				torture_comment(tctx, "got %d return code\n", ret);
