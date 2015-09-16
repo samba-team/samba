@@ -322,6 +322,10 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx,
 	}
 
 	priv_path = private_path("sock");
+	if (priv_path == NULL) {
+		TALLOC_FREE(ctx);
+		return NULL;
+	}
 
 	ok = directory_create_or_exist_strict(priv_path, sec_initial_uid(),
 					      0700);
