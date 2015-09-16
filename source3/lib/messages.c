@@ -306,7 +306,7 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx,
 
 	sec_init();
 
-	lck_path = lock_path("msg");
+	lck_path = lock_path("msg.lock");
 	if (lck_path == NULL) {
 		TALLOC_FREE(ctx);
 		return NULL;
@@ -321,7 +321,7 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	priv_path = private_path("sock");
+	priv_path = private_path("msg.sock");
 	if (priv_path == NULL) {
 		TALLOC_FREE(ctx);
 		return NULL;
@@ -399,7 +399,7 @@ NTSTATUS messaging_reinit(struct messaging_context *msg_ctx)
 
 	msg_ctx->msg_dgm_ref = messaging_dgm_ref(
 		msg_ctx, msg_ctx->event_ctx, msg_ctx->id.unique_id,
-		private_path("sock"), lock_path("msg"),
+		private_path("msg.sock"), lock_path("msg.lock"),
 		messaging_recv_cb, msg_ctx, &ret);
 
 	if (msg_ctx->msg_dgm_ref == NULL) {
