@@ -445,7 +445,48 @@ static void ctdb_start_freeze(struct ctdb_context *ctdb, uint32_t priority)
 	}
 
 	if (ctdb->freeze_mode[priority] == CTDB_FREEZE_FROZEN) {
-		/* we're already frozen */
+		int count = 0;
+
+		/*
+		 * Check if all the databases are frozen
+		 *
+		 * It's possible that the databases can get attached after
+		 * initial freeze. This typically happens during startup as
+		 * CTDB will only attach persistent databases and go in to
+		 * startup freeze.  The recovery master during recovery will
+		 * attach all the missing databases.
+		 */
+
+		h = ctdb->freeze_handles[priority];
+		if (h == NULL) {
+			ctdb->freeze_mode[priority] = CTDB_FREEZE_NONE;
+			return;
+		}
+
+		ret = ctdb_db_prio_iterator(ctdb, priority, db_count, &count);
+		if (ret != 0) {
+			TALLOC_FREE(ctdb->freeze_handles[priority]);
+			ctdb->freeze_mode[priority] = CTDB_FREEZE_NONE;
+			return;
+		}
+
+		if (count != h->num_total) {
+			DEBUG(DEBUG_ERR, ("Freeze priority %u: incremental\n",
+					  priority));
+
+			h->num_total = count;
+			h->num_locked = 0;
+			h->num_failed = 0;
+
+			ctdb->freeze_mode[priority] = CTDB_FREEZE_PENDING;
+
+			ret = ctdb_db_prio_iterator(ctdb, priority,
+						    db_freeze, h);
+			if (ret != 0) {
+				TALLOC_FREE(ctdb->freeze_handles[priority]);
+				ctdb->freeze_mode[priority] = CTDB_FREEZE_NONE;
+			}
+		}
 		return;
 	}
 
@@ -465,6 +506,7 @@ static void ctdb_start_freeze(struct ctdb_context *ctdb, uint32_t priority)
 	h->ctdb = ctdb;
 	h->priority = priority;
 	talloc_set_destructor(h, ctdb_freeze_handle_destructor);
+	ctdb->freeze_handles[priority] = h;
 
 	ret = ctdb_db_prio_iterator(ctdb, priority, db_count, &h->num_total);
 	if (ret != 0) {
@@ -480,7 +522,6 @@ static void ctdb_start_freeze(struct ctdb_context *ctdb, uint32_t priority)
 		return;
 	}
 
-	ctdb->freeze_handles[priority] = h;
 	if (h->num_total == 0) {
 		ctdb->freeze_mode[priority] = CTDB_FREEZE_FROZEN;
 	}
@@ -515,13 +556,13 @@ int32_t ctdb_control_freeze(struct ctdb_context *ctdb, struct ctdb_req_control *
 		return -1;
 	}
 
+	ctdb_start_freeze(ctdb, priority);
+
 	if (ctdb->freeze_mode[priority] == CTDB_FREEZE_FROZEN) {
 		DEBUG(DEBUG_ERR, ("Freeze priority %u: frozen\n", priority));
 		/* we're already frozen */
 		return 0;
 	}
-
-	ctdb_start_freeze(ctdb, priority);
 
 	if (ctdb->freeze_handles[priority] == NULL) {
 		DEBUG(DEBUG_ERR,("No freeze lock handle when adding a waiter\n"));
