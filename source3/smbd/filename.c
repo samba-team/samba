@@ -370,6 +370,29 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 			 */
 			*stream = '\0';
 			stream = tmp;
+
+			if (smb_fname->base_name[0] == '\0') {
+				/*
+				 * orig_name was just a stream name.
+				 * This is a stream on the root of
+				 * the share. Replace base_name with
+				 * a "."
+				 */
+				smb_fname->base_name =
+					talloc_strdup(smb_fname, ".");
+				if (smb_fname->base_name == NULL) {
+					status = NT_STATUS_NO_MEMORY;
+					goto err;
+				}
+				if (SMB_VFS_STAT(conn, smb_fname) != 0) {
+					status = map_nt_error_from_unix(errno);
+					goto err;
+				}
+				DEBUG(5, ("conversion finished %s -> %s\n",
+					orig_path,
+					smb_fname->base_name));
+				goto done;
+			}
 		}
 	}
 
