@@ -971,6 +971,38 @@ EOF
     fi
 }
 
+# Test creating a stream on the root of the share directory filname - :foobar
+test_toplevel_stream()
+{
+    tmpfile=$PREFIX/smbclient_interactive_prompt_commands
+    cat > $tmpfile <<EOF
+put ${PREFIX}/smbclient_interactive_prompt_commands :foobar
+allinfo \\
+setmode \\ -a
+quit
+EOF
+    cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT "$@" -U$USERNAME%$PASSWORD //$SERVER/tmp -I $SERVER_IP -mSMB3 $ADDARGS < $tmpfile 2>&1'
+    eval echo "$cmd"
+    out=`eval $cmd`
+    ret=$?
+    rm -f $tmpfile
+
+    if [ $ret != 0 ] ; then
+	echo "$out"
+	echo "failed creating toplevel stream :foobar with error $ret"
+	false
+	return
+    fi
+
+    echo "$out" | grep '^stream:.*:foobar'
+    ret=$?
+    if [ $ret != 0 ] ; then
+	echo "$out"
+	echo "failed creating toplevel stream :foobar"
+	false
+    fi
+}
+
 
 LOGDIR_PREFIX=test_smbclient_s3
 
@@ -1057,6 +1089,10 @@ testit "list a share with a mangled name + acl_xattr object" \
 
 testit "server-side file copy" \
     test_scopy || \
+    failed=`expr $failed + 1`
+
+testit "creating a :stream at root of share" \
+    test_toplevel_stream || \
     failed=`expr $failed + 1`
 
 testit "rm -rf $LOGDIR" \
