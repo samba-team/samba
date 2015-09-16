@@ -32,7 +32,6 @@
 
 static NTSTATUS build_stream_path(TALLOC_CTX *mem_ctx,
 				  connection_struct *conn,
-				  const char *orig_path,
 				  struct smb_filename *smb_fname);
 
 /****************************************************************************
@@ -981,7 +980,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 		smb_fname->stream_name = stream;
 
 		/* Check path now that the base_name has been converted. */
-		status = build_stream_path(ctx, conn, orig_path, smb_fname);
+		status = build_stream_path(ctx, conn, smb_fname);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto fail;
 		}
@@ -1233,7 +1232,6 @@ int get_real_filename(connection_struct *conn, const char *path,
 
 static NTSTATUS build_stream_path(TALLOC_CTX *mem_ctx,
 				  connection_struct *conn,
-				  const char *orig_path,
 				  struct smb_filename *smb_fname)
 {
 	NTSTATUS status;
