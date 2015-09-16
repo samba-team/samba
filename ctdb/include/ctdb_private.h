@@ -1207,8 +1207,6 @@ int ctdb_ctrl_get_all_tunables(struct ctdb_context *ctdb,
 			       uint32_t destnode,
 			       struct ctdb_tunable *tunables);
 
-void ctdb_start_freeze(struct ctdb_context *ctdb, uint32_t priority);
-
 bool parse_ip_mask(const char *s, const char *iface, ctdb_sock_addr *addr, unsigned *mask);
 bool parse_ip_port(const char *s, ctdb_sock_addr *addr);
 bool parse_ip(const char *s, const char *iface, unsigned port, ctdb_sock_addr *addr);

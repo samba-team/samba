@@ -434,7 +434,7 @@ static int db_freeze(struct ctdb_db_context *ctdb_db, void *private_data)
 /*
   start the freeze process for a certain priority
  */
-void ctdb_start_freeze(struct ctdb_context *ctdb, uint32_t priority)
+static void ctdb_start_freeze(struct ctdb_context *ctdb, uint32_t priority)
 {
 	struct ctdb_freeze_handle *h;
 	int ret;
