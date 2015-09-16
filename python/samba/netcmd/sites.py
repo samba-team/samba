@@ -23,7 +23,8 @@ from samba.auth import system_session
 from samba.netcmd import (
     Command,
     CommandError,
-    SuperCommand
+    SuperCommand,
+    Option,
     )
 
 
@@ -40,14 +41,16 @@ class cmd_sites_create(Command):
         "credopts": options.CredentialsOptions,
     }
 
-    def run(self, sitename, sambaopts=None, credopts=None, versionopts=None):
+    takes_options = [
+        Option("-H", "--URL", help="LDB URL for database or target server",
+               type=str, metavar="URL", dest="H"),
+    ]
+
+    def run(self, sitename, H=None, sambaopts=None, credopts=None,
+            versionopts=None):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp, fallback_machine=True)
-        url =  lp.private_path("sam.ldb")
-
-        if not os.path.exists(url):
-            raise CommandError("secret database not found at %s " % url)
-        samdb = SamDB(url=url, session_info=system_session(),
+        samdb = SamDB(url=H, session_info=system_session(),
                       credentials=creds, lp=lp)
 
         samdb.transaction_start()
@@ -75,15 +78,17 @@ class cmd_sites_delete(Command):
         "credopts": options.CredentialsOptions,
     }
 
-    def run(self, sitename, sambaopts=None, credopts=None, versionopts=None):
+    takes_options = [
+        Option("-H", "--URL", help="LDB URL for database or target server",
+               type=str, metavar="URL", dest="H"),
+    ]
+
+    def run(self, sitename, H=None, sambaopts=None, credopts=None,
+            versionopts=None):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp, fallback_machine=True)
-        url =  lp.private_path("sam.ldb")
-
-        if not os.path.exists(url):
-            raise CommandError("secret database not found at %s " % url)
-        samdb = SamDB(url=url, session_info=system_session(),
-            credentials=creds, lp=lp)
+        samdb = SamDB(url=H, session_info=system_session(),
+                      credentials=creds, lp=lp)
 
         samdb.transaction_start()
         try:
