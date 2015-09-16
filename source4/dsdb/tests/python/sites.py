@@ -81,8 +81,8 @@ class SitesBaseTests(samba.tests.TestCase):
 #tests on sites
 class SimpleSitesTests(SitesBaseTests):
 
-    def test_create(self):
-        """test creation of 1 site"""
+    def test_create_and_delete(self):
+        """test creation and deletion of 1 site"""
 
         self.ldb_admin.transaction_start()
         ok = sites.create_site(self.ldb_admin, self.ldb_admin.get_config_basedn(),
@@ -92,9 +92,6 @@ class SimpleSitesTests(SitesBaseTests):
         self.assertRaises(sites.SiteAlreadyExistsException,
                             sites.create_site, self.ldb_admin, self.ldb_admin.get_config_basedn(),
                             "testsamba")
-
-    def test_delete(self):
-        """test removal of 1 site"""
 
         self.ldb_admin.transaction_start()
         ok = sites.delete_site(self.ldb_admin, self.ldb_admin.get_config_basedn(),
