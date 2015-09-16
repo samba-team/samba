@@ -50,10 +50,7 @@ ctdb_ban_node_event(struct event_context *ev, struct timed_event *te,
 
 void ctdb_local_node_got_banned(struct ctdb_context *ctdb)
 {
-	uint32_t i;
-
-	/* make sure we are frozen */
-	DEBUG(DEBUG_NOTICE,("This node has been banned - forcing freeze and recovery\n"));
+	DEBUG(DEBUG_NOTICE,("This node has been banned - forcing recovery\n"));
 
 	/* Reset the generation id to 1 to make us ignore any
 	   REQ/REPLY CALL/DMASTER someone sends to us.
@@ -62,10 +59,9 @@ void ctdb_local_node_got_banned(struct ctdb_context *ctdb)
 	*/
 	ctdb->vnn_map->generation = INVALID_GENERATION;
 
+	/* make sure we get frozen */
 	ctdb->recovery_mode = CTDB_RECOVERY_ACTIVE;
-	for (i=1; i<=NUM_DB_PRIORITIES; i++) {
-		ctdb_start_freeze(ctdb, i);
-	}
+
 	ctdb_release_all_ips(ctdb);
 }
 
