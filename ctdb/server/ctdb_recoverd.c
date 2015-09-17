@@ -1920,13 +1920,6 @@ static int db_recovery_serial(struct ctdb_recoverd *rec, TALLOC_CTX *mem_ctx,
 
 	DEBUG(DEBUG_NOTICE, (__location__ " Recovery - committed databases\n"));
 
-	/* update the capabilities for all nodes */
-	ret = update_capabilities(rec, nodemap);
-	if (ret!=0) {
-		DEBUG(DEBUG_ERR, (__location__ " Unable to update node capabilities.\n"));
-		return -1;
-	}
-
 	/* build a new vnn map with all the currently active and
 	   unbanned nodes */
 	vnnmap = talloc(mem_ctx, struct ctdb_vnn_map);
@@ -2097,6 +2090,13 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	   as the local recovery master.
 	*/
 	sync_recovery_lock_file_across_cluster(rec);
+
+	/* update the capabilities for all nodes */
+	ret = update_capabilities(rec, nodemap);
+	if (ret!=0) {
+		DEBUG(DEBUG_ERR, (__location__ " Unable to update node capabilities.\n"));
+		return -1;
+	}
 
 	ret = db_recovery_serial(rec, mem_ctx, pnn, nodemap, vnnmap, dbmap);
 	if (ret != 0) {
