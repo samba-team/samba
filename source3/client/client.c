@@ -4656,6 +4656,124 @@ static int cmd_show_connect( void )
 	return 0;
 }
 
+/**
+ * set_remote_attr - set DOS attributes of a remote file
+ * @filename: path to the file name
+ * @new_attr: attribute bit mask to use
+ * @mode: one of ATTR_SET or ATTR_UNSET
+ *
+ * Update the file attributes with the one provided.
+ */
+int set_remote_attr(const char *filename, uint16_t new_attr, int mode)
+{
+	extern struct cli_state *cli;
+	uint16_t old_attr;
+	NTSTATUS status;
+
+	status = cli_getatr(cli, filename, &old_attr, NULL, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("cli_getatr failed: %s\n", nt_errstr(status));
+		return 1;
+	}
+
+	if (mode == ATTR_SET) {
+		new_attr |= old_attr;
+	} else {
+		new_attr = old_attr & ~new_attr;
+	}
+
+	status = cli_setatr(cli, filename, new_attr, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("cli_setatr failed: %s\n", nt_errstr(status));
+		return 1;
+	}
+
+	return 0;
+}
+
+/**
+ * cmd_setmode - interactive command to set DOS attributes
+ *
+ * Read a filename and mode from the client command line and update
+ * the file DOS attributes.
+ */
+int cmd_setmode(void)
+{
+	const extern char *cmd_ptr;
+	char *buf;
+	char *fname = NULL;
+	uint16_t attr[2] = {0};
+	int mode = ATTR_SET;
+	int err = 0;
+	bool ok;
+	TALLOC_CTX *ctx = talloc_new(NULL);
+	if (ctx == NULL) {
+		return 1;
+	}
+
+	ok = next_token_talloc(ctx, &cmd_ptr, &buf, NULL);
+	if (!ok) {
+		d_printf("setmode <filename> <[+|-]rsha>\n");
+		err = 1;
+		goto out;
+	}
+
+	fname = talloc_asprintf(ctx,
+				"%s%s",
+				client_get_cur_dir(),
+				buf);
+	if (fname == NULL) {
+		err = 1;
+		goto out;
+	}
+
+	while (next_token_talloc(ctx, &cmd_ptr, &buf, NULL)) {
+		const char *s = buf;
+
+		while (*s) {
+			switch (*s++) {
+			case '+':
+				mode = ATTR_SET;
+				break;
+			case '-':
+				mode = ATTR_UNSET;
+				break;
+			case 'r':
+				attr[mode] |= FILE_ATTRIBUTE_READONLY;
+				break;
+			case 'h':
+				attr[mode] |= FILE_ATTRIBUTE_HIDDEN;
+				break;
+			case 's':
+				attr[mode] |= FILE_ATTRIBUTE_SYSTEM;
+				break;
+			case 'a':
+				attr[mode] |= FILE_ATTRIBUTE_ARCHIVE;
+				break;
+			default:
+				d_printf("setmode <filename> <perm=[+|-]rsha>\n");
+				err = 1;
+				goto out;
+			}
+		}
+	}
+
+	if (attr[ATTR_SET] == 0 && attr[ATTR_UNSET] == 0) {
+		d_printf("setmode <filename> <[+|-]rsha>\n");
+		err = 1;
+		goto out;
+	}
+
+	DEBUG(2, ("perm set %d %d\n", attr[ATTR_SET], attr[ATTR_UNSET]));
+
+	/* ignore return value: server might not store DOS attributes */
+	set_remote_attr(fname, attr[ATTR_SET], ATTR_SET);
+	set_remote_attr(fname, attr[ATTR_UNSET], ATTR_UNSET);
+out:
+	talloc_free(ctx);
+	return err;
+}
+
 /****************************************************************************
  iosize command
 ***************************************************************************/
