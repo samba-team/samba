@@ -94,6 +94,7 @@ def create_site(samdb, configDn, siteName):
 
     return True
 
+
 def delete_site(samdb, configDn, siteName):
     """
     Delete a site

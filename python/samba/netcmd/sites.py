@@ -16,7 +16,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import os
 from samba import sites
 from samba.samdb import SamDB
 import samba.getopt as options
@@ -53,13 +52,15 @@ class cmd_sites_create(Command):
 
         samdb.transaction_start()
         try:
-            ok = sites.create_site(samdb, samdb.get_config_basedn(), sitename)
+            sites.create_site(samdb, samdb.get_config_basedn(), sitename)
             samdb.transaction_commit()
         except sites.SiteAlreadyExistsException, e:
             samdb.transaction_cancel()
-            raise CommandError("Error while creating site %s, error: %s" % (sitename, str(e)))
+            raise CommandError("Error while creating site %s, error: %s" %
+                               (sitename, str(e)))
 
         self.outf.write("Site %s created !\n" % sitename)
+
 
 class cmd_sites_delete(Command):
     """Delete an existing site."""
@@ -86,7 +87,7 @@ class cmd_sites_delete(Command):
 
         samdb.transaction_start()
         try:
-            ok = sites.delete_site(samdb, samdb.get_config_basedn(), sitename)
+            sites.delete_site(samdb, samdb.get_config_basedn(), sitename)
             samdb.transaction_commit()
         except sites.SiteException, e:
             samdb.transaction_cancel()
