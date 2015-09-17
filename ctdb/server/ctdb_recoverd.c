@@ -1824,27 +1824,6 @@ static int db_recovery_serial(struct ctdb_recoverd *rec, TALLOC_CTX *mem_ctx,
 		return -1;
 	}
 
-	/*
-	  update all nodes to have the same flags that we have
-	 */
-	for (i=0;i<nodemap->num;i++) {
-		if (nodemap->nodes[i].flags & NODE_FLAGS_DISCONNECTED) {
-			continue;
-		}
-
-		ret = update_flags_on_all_nodes(ctdb, nodemap, i, nodemap->nodes[i].flags);
-		if (ret != 0) {
-			if (nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE) {
-				DEBUG(DEBUG_WARNING, (__location__ "Unable to update flags on inactive node %d\n", i));
-			} else {
-				DEBUG(DEBUG_ERR, (__location__ " Unable to update flags on all nodes for node %d\n", i));
-				return -1;
-			}
-		}
-	}
-
-	DEBUG(DEBUG_NOTICE, (__location__ " Recovery - updated flags\n"));
-
 	/* pick a new generation number */
 	generation = new_generation();
 
@@ -2097,6 +2076,27 @@ static int do_recovery(struct ctdb_recoverd *rec,
 		DEBUG(DEBUG_ERR, (__location__ " Unable to update node capabilities.\n"));
 		return -1;
 	}
+
+	/*
+	  update all nodes to have the same flags that we have
+	 */
+	for (i=0;i<nodemap->num;i++) {
+		if (nodemap->nodes[i].flags & NODE_FLAGS_DISCONNECTED) {
+			continue;
+		}
+
+		ret = update_flags_on_all_nodes(ctdb, nodemap, i, nodemap->nodes[i].flags);
+		if (ret != 0) {
+			if (nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE) {
+				DEBUG(DEBUG_WARNING, (__location__ "Unable to update flags on inactive node %d\n", i));
+			} else {
+				DEBUG(DEBUG_ERR, (__location__ " Unable to update flags on all nodes for node %d\n", i));
+				return -1;
+			}
+		}
+	}
+
+	DEBUG(DEBUG_NOTICE, (__location__ " Recovery - updated flags\n"));
 
 	ret = db_recovery_serial(rec, mem_ctx, pnn, nodemap, vnnmap, dbmap);
 	if (ret != 0) {
