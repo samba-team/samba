@@ -1799,6 +1799,126 @@ done:
 	return ok;
 }
 
+struct recovery_helper_state {
+	int fd[2];
+	pid_t pid;
+	int result;
+	bool done;
+};
+
+static void ctdb_recovery_handler(struct tevent_context *ev,
+				  struct tevent_fd *fde,
+				  uint16_t flags, void *private_data)
+{
+	struct recovery_helper_state *state = talloc_get_type_abort(
+		private_data, struct recovery_helper_state);
+	int ret;
+
+	ret = sys_read(state->fd[0], &state->result, sizeof(state->result));
+	if (ret != sizeof(state->result)) {
+		state->result = EPIPE;
+	}
+
+	state->done = true;
+}
+
+
+static int db_recovery_parallel(struct ctdb_recoverd *rec, TALLOC_CTX *mem_ctx)
+{
+	static char prog[PATH_MAX+1] = "";
+	const char **args;
+	struct recovery_helper_state *state;
+	struct tevent_fd *fde;
+	int nargs, ret;
+
+	if (!ctdb_set_helper("recovery_helper", prog, sizeof(prog),
+			     "CTDB_RECOVERY_HELPER", CTDB_HELPER_BINDIR,
+			     "ctdb_recovery_helper")) {
+		ctdb_die(rec->ctdb, "Unable to set recovery helper\n");
+	}
+
+	state = talloc_zero(mem_ctx, struct recovery_helper_state);
+	if (state == NULL) {
+		DEBUG(DEBUG_ERR, (__location__ " memory error\n"));
+		return -1;
+	}
+
+	state->pid = -1;
+
+	ret = pipe(state->fd);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,
+		      ("Failed to create pipe for recovery helper\n"));
+		goto fail;
+	}
+
+	set_close_on_exec(state->fd[0]);
+
+	nargs = 4;
+	args = talloc_array(state, const char *, nargs);
+	if (args == NULL) {
+		DEBUG(DEBUG_ERR, (__location__ " memory error\n"));
+		goto fail;
+	}
+
+	args[0] = talloc_asprintf(args, "%d", state->fd[1]);
+	args[1] = rec->ctdb->daemon.name;
+	args[2] = talloc_asprintf(args, "%u", new_generation());
+	args[3] = NULL;
+
+	if (args[0] == NULL || args[2] == NULL) {
+		DEBUG(DEBUG_ERR, (__location__ " memory error\n"));
+		goto fail;
+	}
+
+	if (!ctdb_vfork_with_logging(state, rec->ctdb, "recovery", prog, nargs,
+				     args, NULL, NULL, &state->pid)) {
+		DEBUG(DEBUG_ERR,
+		      ("Failed to create child for recovery helper\n"));
+		goto fail;
+	}
+
+	close(state->fd[1]);
+	state->fd[1] = -1;
+
+	state->done = false;
+
+	fde = tevent_add_fd(rec->ctdb->ev, rec->ctdb, state->fd[0],
+			    TEVENT_FD_READ, ctdb_recovery_handler, state);
+	if (fde == NULL) {
+		goto fail;
+	}
+	tevent_fd_set_auto_close(fde);
+
+	while (!state->done) {
+		tevent_loop_once(rec->ctdb->ev);
+	}
+
+	close(state->fd[0]);
+	state->fd[0] = -1;
+
+	if (state->result != 0) {
+		goto fail;
+	}
+
+	ctdb_kill(rec->ctdb, state->pid, SIGKILL);
+	talloc_free(state);
+	return 0;
+
+fail:
+	if (state->fd[0] != -1) {
+		close(state->fd[0]);
+	}
+	if (state->fd[1] != -1) {
+		close(state->fd[1]);
+	}
+	if (state->pid != -1) {
+		ctdb_kill(rec->ctdb, state->pid, SIGKILL);
+	}
+	talloc_free(state);
+	return -1;
+}
+
 static int db_recovery_serial(struct ctdb_recoverd *rec, TALLOC_CTX *mem_ctx,
 			      uint32_t pnn, struct ctdb_node_map *nodemap,
 			      struct ctdb_vnn_map *vnnmap,
@@ -1976,6 +2096,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	struct timeval start_time;
 	uint32_t culprit = (uint32_t)-1;
 	bool self_ban;
+	bool par_recovery;
 
 	DEBUG(DEBUG_NOTICE, (__location__ " Starting do_recovery\n"));
 
@@ -2098,7 +2219,27 @@ static int do_recovery(struct ctdb_recoverd *rec,
 
 	DEBUG(DEBUG_NOTICE, (__location__ " Recovery - updated flags\n"));
 
-	ret = db_recovery_serial(rec, mem_ctx, pnn, nodemap, vnnmap, dbmap);
+	/* Check if all participating nodes have parallel recovery capability */
+	par_recovery = true;
+	for (i=0; i<nodemap->num; i++) {
+		if (nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE) {
+			continue;
+		}
+
+		if (!(rec->caps[i].capabilities &
+		      CTDB_CAP_PARALLEL_RECOVERY)) {
+			par_recovery = false;
+			break;
+		}
+	}
+
+	if (par_recovery) {
+		ret = db_recovery_parallel(rec, mem_ctx);
+	} else {
+		ret = db_recovery_serial(rec, mem_ctx, pnn, nodemap, vnnmap,
+					 dbmap);
+	}
+
 	if (ret != 0) {
 		goto fail;
 	}
