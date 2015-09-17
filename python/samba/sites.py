@@ -114,7 +114,7 @@ def delete_site(samdb, configDn, siteName):
     ret = samdb.search(base=dnsites, scope=ldb.SCOPE_ONELEVEL,
                     expression='(dn=%s)' % str(dnsite))
     if len(ret) != 1:
-        raise SiteNotFoundException('Site %s do not exists' % siteName)
+        raise SiteNotFoundException('Site %s does not exist' % siteName)
 
     ret = samdb.search(base=dnserver, scope=ldb.SCOPE_ONELEVEL,
                     expression='(objectclass=server)')
