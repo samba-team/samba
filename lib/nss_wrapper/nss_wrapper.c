@@ -465,7 +465,6 @@ struct nwrap_libc {
 };
 
 struct nwrap_main {
-	const char *nwrap_switch;
 	int num_backends;
 	struct nwrap_backend *backends;
 	struct nwrap_libc *libc;
