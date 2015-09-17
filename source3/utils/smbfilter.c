@@ -23,6 +23,7 @@
 #include "../lib/util/select.h"
 #include "libsmb/nmblib.h"
 #include "lib/sys_rw_data.h"
+#include "lib/socket/socket_common.h"
 
 #define SECURITY_MASK 0
 #define SECURITY_SET  0
@@ -182,7 +183,7 @@ static void filter_child(int c, struct sockaddr_storage *dest_ss)
 	char packet[128*1024];
 
 	/* we have a connection from a new client, now connect to the server */
-	status = open_socket_out(dest_ss, TCP_SMB_PORT, LONG_CONNECT_TIMEOUT, &s);
+	status = open_socket_out(dest_ss, TCP_SMB_PORT, LONG_CONNECT_TIMEOUT_MS, &s);
 	if (!NT_STATUS_IS_OK(status)) {
 		char addr[INET6_ADDRSTRLEN];
 		if (dest_ss) {

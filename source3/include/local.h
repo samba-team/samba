@@ -5,6 +5,8 @@
 #ifndef _LOCAL_H
 #define _LOCAL_H
 
+#include "lib/socket/socket_common.h"
+
 /* Yves Gaige <yvesg@hptnodur.grenoble.hp.com> requested this set this 	     */
 /* to a maximum of 8 if old smb clients break because of long printer names. */
 #define MAXPRINTERLEN 15
@@ -122,10 +124,6 @@
 /* shall we support browse requests via a FIFO to nmbd? */
 #define ENABLE_FIFO 1
 
-/* how long (in miliseconds) to wait for a socket connect to happen */
-#define LONG_CONNECT_TIMEOUT 30000
-#define SHORT_CONNECT_TIMEOUT 5000
-
 /* the default netbios keepalive timeout */
 #define DEFAULT_KEEPALIVE 300
 
@@ -193,7 +191,7 @@
 #define INVALID_SHARENAME_CHARS "%<>*?|/\\+=;:\","
 
 /* Seconds between connection attempts to a remote server. */
-#define FAILED_CONNECTION_CACHE_TIMEOUT (LONG_CONNECT_TIMEOUT * 2 / 1000)
+#define FAILED_CONNECTION_CACHE_TIMEOUT (LONG_CONNECT_TIMEOUT_MS * 2 / 1000)
 
 /* Default hash size for the winbindd cache. */
 #define WINBINDD_CACHE_TDB_DEFAULT_HASH_SIZE 5000
