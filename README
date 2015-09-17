@@ -100,7 +100,19 @@ Related packages include:
 CONTRIBUTIONS
 =============
 
-If you want to contribute to the development of the software then
+1. To contribute via GitHub
+  - fork the official Samba team repository on GitHub (https://github.com/samba-team/samba)
+  - become familiar with the coding standards as described in README.Coding
+  - make sure you read the Samba copyright policy (https://www.samba.org/samba/devel/copyright-policy.html)
+  - create a feature branch
+  - make changes
+  - when committing, be sure to add signed-off-by tags (https://wiki.samba.org/index.php/CodeReview#commit_message_tags)
+  - send a pull request for your branch through GitHub
+  - this will trigger an automated email to the samba-technical mailing list with your patch
+  - discussion happens on the samba-technical mailing list as described below
+  - more information on using Git for Samba development can be found on the Samba Wiki (https://wiki.samba.org/index.php/Using_Git_for_Samba_Development)
+
+2. If you want to contribute to the development of the software then
 please join the mailing list. The Samba team accepts patches
 (preferably in "diff -u" format, see http://samba.org/samba/devel/ 
 for more details) and are always glad to receive feedback or 
