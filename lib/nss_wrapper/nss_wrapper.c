@@ -2569,6 +2569,31 @@ static void nwrap_files_endspent(void)
 	nwrap_sp_global.idx = 0;
 }
 
+static struct spwd *nwrap_files_getspnam(const char *name)
+{
+	int i;
+
+	NWRAP_LOG(NWRAP_LOG_DEBUG, "Lookup user %s in files", name);
+
+	nwrap_files_cache_reload(nwrap_sp_global.cache);
+
+	for (i=0; i<nwrap_sp_global.num; i++) {
+		if (strcmp(nwrap_sp_global.list[i].sp_namp, name) == 0) {
+			NWRAP_LOG(NWRAP_LOG_DEBUG, "user[%s] found", name);
+			return &nwrap_sp_global.list[i];
+		}
+		NWRAP_LOG(NWRAP_LOG_DEBUG,
+			  "user[%s] does not match [%s]",
+			  name,
+			  nwrap_sp_global.list[i].sp_namp);
+	}
+
+	NWRAP_LOG(NWRAP_LOG_DEBUG, "user[%s] not found\n", name);
+
+	errno = ENOENT;
+	return NULL;
+}
+
 /* misc functions */
 static int nwrap_files_initgroups(struct nwrap_backend *b,
 				  const char *user,
@@ -4086,6 +4111,20 @@ void endspent(void)
 	}
 
 	nwrap_endspent();
+}
+
+static struct spwd *nwrap_getspnam(const char *name)
+{
+	return nwrap_files_getspnam(name);
+}
+
+struct spwd *getspnam(const char *name)
+{
+	if (!nss_wrapper_shadow_enabled()) {
+		return NULL;
+	}
+
+	return nwrap_getspnam(name);
 }
 
 /**********************************************************
