@@ -61,6 +61,7 @@
 
 #include <pwd.h>
 #include <grp.h>
+#include <shadow.h>
 
 #include <netdb.h>
 #include <arpa/inet.h>
@@ -483,6 +484,7 @@ struct nwrap_cache {
 	void (*unload)(struct nwrap_cache *);
 };
 
+/* passwd */
 struct nwrap_pw {
 	struct nwrap_cache *cache;
 
@@ -497,6 +499,22 @@ struct nwrap_pw nwrap_pw_global;
 static bool nwrap_pw_parse_line(struct nwrap_cache *nwrap, char *line);
 static void nwrap_pw_unload(struct nwrap_cache *nwrap);
 
+/* shadow */
+struct nwrap_sp {
+	struct nwrap_cache *cache;
+
+	struct spwd *list;
+	int num;
+	int idx;
+};
+
+struct nwrap_cache __nwrap_cache_sp;
+struct nwrap_sp nwrap_sp_global;
+
+static bool nwrap_sp_parse_line(struct nwrap_cache *nwrap, char *line);
+static void nwrap_sp_unload(struct nwrap_cache *nwrap);
+
+/* group */
 struct nwrap_gr {
 	struct nwrap_cache *cache;
 
@@ -508,6 +526,7 @@ struct nwrap_gr {
 struct nwrap_cache __nwrap_cache_gr;
 struct nwrap_gr nwrap_gr_global;
 
+/* hosts */
 static bool nwrap_he_parse_line(struct nwrap_cache *nwrap, char *line);
 static void nwrap_he_unload(struct nwrap_cache *nwrap);
 
@@ -1249,6 +1268,7 @@ static void nwrap_init(void)
 
 	nwrap_backend_init(nwrap_main_global);
 
+	/* passwd */
 	nwrap_pw_global.cache = &__nwrap_cache_pw;
 
 	nwrap_pw_global.cache->path = getenv("NSS_WRAPPER_PASSWD");
@@ -1257,6 +1277,16 @@ static void nwrap_init(void)
 	nwrap_pw_global.cache->parse_line = nwrap_pw_parse_line;
 	nwrap_pw_global.cache->unload = nwrap_pw_unload;
 
+	/* shadow */
+	nwrap_sp_global.cache = &__nwrap_cache_sp;
+
+	nwrap_sp_global.cache->path = getenv("NSS_WRAPPER_SHADOW");
+	nwrap_sp_global.cache->fd = -1;
+	nwrap_sp_global.cache->private_data = &nwrap_sp_global;
+	nwrap_sp_global.cache->parse_line = nwrap_sp_parse_line;
+	nwrap_sp_global.cache->unload = nwrap_sp_unload;
+
+	/* group */
 	nwrap_gr_global.cache = &__nwrap_cache_gr;
 
 	nwrap_gr_global.cache->path = getenv("NSS_WRAPPER_GROUP");
@@ -1265,6 +1295,7 @@ static void nwrap_init(void)
 	nwrap_gr_global.cache->parse_line = nwrap_gr_parse_line;
 	nwrap_gr_global.cache->unload = nwrap_gr_unload;
 
+	/* hosts */
 	nwrap_he_global.cache = &__nwrap_cache_he;
 
 	nwrap_he_global.cache->path = getenv("NSS_WRAPPER_HOSTS");
@@ -1675,6 +1706,297 @@ static int nwrap_pw_copy_r(const struct passwd *src, struct passwd *dst,
 	}
 
 	return 0;
+}
+
+static bool nwrap_sp_parse_line(struct nwrap_cache *nwrap, char *line)
+{
+	struct nwrap_sp *nwrap_sp;
+	struct spwd *sp;
+	size_t list_size;
+	char *c;
+	char *e;
+	char *p;
+
+	nwrap_sp = (struct nwrap_sp *)nwrap->private_data;
+
+	list_size = sizeof(*nwrap_sp->list) * (nwrap_sp->num+1);
+	sp = (struct spwd *)realloc(nwrap_sp->list, list_size);
+	if (sp == NULL) {
+		NWRAP_LOG(NWRAP_LOG_ERROR,
+			  "realloc(%u) failed",
+			  (unsigned)list_size);
+		return false;
+	}
+	nwrap_sp->list = sp;
+
+	sp = &nwrap_sp->list[nwrap_sp->num];
+
+	c = line;
+
+	/* name */
+	p = strchr(c, ':');
+	if (p == NULL) {
+		NWRAP_LOG(NWRAP_LOG_ERROR,
+			  "name -- Invalid line[%s]: '%s'",
+			  line,
+			  c);
+		return false;
+	}
+	*p = '\0';
+	p++;
+	sp->sp_namp = c;
+	c = p;
+
+	NWRAP_LOG(NWRAP_LOG_TRACE, "name[%s]\n", sp->sp_namp);
+
+	/* pwd */
+	p = strchr(c, ':');
+	if (p == NULL) {
+		NWRAP_LOG(NWRAP_LOG_ERROR,
+			  "pwd -- Invalid line[%s]: '%s'",
+			  line,
+			  c);
+		return false;
+	}
+	*p = '\0';
+	p++;
+	sp->sp_pwdp = c;
+	c = p;
+
+	/* lstchg (long) */
+	if (c[0] == ':') {
+		sp->sp_lstchg = -1;
+		p++;
+	} else {
+		p = strchr(c, ':');
+		if (p == NULL) {
+			NWRAP_LOG(NWRAP_LOG_ERROR,
+				  "lstchg -- Invalid line[%s]: '%s'",
+				  line,
+				  c);
+			return false;
+		}
+		*p = '\0';
+		p++;
+		sp->sp_lstchg = strtol(c, &e, 10);
+		if (c == e) {
+			NWRAP_LOG(NWRAP_LOG_ERROR,
+				  "lstchg -- Invalid line[%s]: '%s' - %s",
+				  line, c, strerror(errno));
+			return false;
+		}
+		if (e == NULL) {
+			NWRAP_LOG(NWRAP_LOG_ERROR,
+				  "lstchg -- Invalid line[%s]: '%s' - %s",
+				  line, c, strerror(errno));
+			return false;
+		}
+		if (e[0] != '\0') {
+			NWRAP_LOG(NWRAP_LOG_ERROR,
+				  "lstchg -- Invalid line[%s]: '%s' - %s",
+				  line, c, strerror(errno));
+			return false;
+		}
+	}
+	c = p;
+
+	/* min (long) */
+	if (c[0] == ':') {
+		sp->sp_min = -1;
+		p++;
+	} else {
+		p = strchr(c, ':');
+		if (p == NULL) {
+			NWRAP_LOG(NWRAP_LOG_ERROR,
+				  "min -- Invalid line[%s]: '%s'",
+				  line,
+				  c);
+			return false;
+		}
+		*p = '\0';
+		p++;
+		sp->sp_min = strtol(c, &e, 10);
+		if (c == e) {
+			NWRAP_LOG(NWRAP_LOG_ERROR,
+				  "min -- Invalid line[%s]: '%s' - %s",
+				  line, c, strerror(errno));
+			return false;
+		}
+		if (e == NULL) {
+			NWRAP_LOG(NWRAP_LOG_ERROR,
+				  "min -- Invalid line[%s]: '%s' - %s",
+				  line, c, strerror(errno));
+			return false;
+		}
+		if (e[0] != '\0') {
+			NWRAP_LOG(NWRAP_LOG_ERROR,
+				  "min -- Invalid line[%s]: '%s' - %s",
+				  line, c, strerror(errno));
+			return false;
+		}
+	}
+	c = p;
+
+	/* max (long) */
+	if (c[0] == ':') {
+		sp->sp_max = -1;
+		p++;
+	} else {
+		p = strchr(c, ':');
+		if (p == NULL) {
+			NWRAP_LOG(NWRAP_LOG_ERROR,
+				  "max -- Invalid line[%s]: '%s'",
+				  line,
+				  c);
+			return false;
+		}
+		*p = '\0';
+		p++;
+		sp->sp_max = strtol(c, &e, 10);
+		if (c == e) {
+			NWRAP_LOG(NWRAP_LOG_ERROR,
+				  "max -- Invalid line[%s]: '%s' - %s",
+				  line, c, strerror(errno));
+			return false;
+		}
+		if (e == NULL) {
+			NWRAP_LOG(NWRAP_LOG_ERROR,
+				  "max -- Invalid line[%s]: '%s' - %s",
+				  line, c, strerror(errno));
+			return false;
+		}
+		if (e[0] != '\0') {
+			NWRAP_LOG(NWRAP_LOG_ERROR,
+				  "max -- Invalid line[%s]: '%s' - %s",
+				  line, c, strerror(errno));
+			return false;
+		}
+	}
+	c = p;
+
+	/* warn (long) */
+	if (c[0] == ':') {
+		sp->sp_warn = -1;
+		p++;
+	} else {
+		p = strchr(c, ':');
+		if (p == NULL) {
+			NWRAP_LOG(NWRAP_LOG_ERROR,
+				  "warn -- Invalid line[%s]: '%s'",
+				  line,
+				  c);
+			return false;
+		}
+		*p = '\0';
+		p++;
+		sp->sp_warn = strtol(c, &e, 10);
+		if (c == e) {
+			NWRAP_LOG(NWRAP_LOG_ERROR,
+				  "warn -- Invalid line[%s]: '%s' - %s",
+				  line, c, strerror(errno));
+			return false;
+		}
+		if (e == NULL) {
+			NWRAP_LOG(NWRAP_LOG_ERROR,
+				  "warn -- Invalid line[%s]: '%s' - %s",
+				  line, c, strerror(errno));
+			return false;
+		}
+		if (e[0] != '\0') {
+			NWRAP_LOG(NWRAP_LOG_ERROR,
+				  "warn -- Invalid line[%s]: '%s' - %s",
+				  line, c, strerror(errno));
+			return false;
+		}
+	}
+	c = p;
+
+	/* inact (long) */
+	if (c[0] == ':') {
+		sp->sp_inact = -1;
+		p++;
+	} else {
+		p = strchr(c, ':');
+		if (p == NULL) {
+			NWRAP_LOG(NWRAP_LOG_ERROR,
+				  "inact -- Invalid line[%s]: '%s'",
+				  line,
+				  c);
+			return false;
+		}
+		*p = '\0';
+		p++;
+		sp->sp_inact = strtol(c, &e, 10);
+		if (c == e) {
+			NWRAP_LOG(NWRAP_LOG_ERROR,
+				  "inact -- Invalid line[%s]: '%s' - %s",
+				  line, c, strerror(errno));
+			return false;
+		}
+		if (e == NULL) {
+			NWRAP_LOG(NWRAP_LOG_ERROR,
+				  "inact -- Invalid line[%s]: '%s' - %s",
+				  line, c, strerror(errno));
+			return false;
+		}
+		if (e[0] != '\0') {
+			NWRAP_LOG(NWRAP_LOG_ERROR,
+				  "inact -- Invalid line[%s]: '%s' - %s",
+				  line, c, strerror(errno));
+			return false;
+		}
+	}
+	c = p;
+
+	/* expire (long) */
+	if (c[0] == ':') {
+		sp->sp_expire = -1;
+		p++;
+	} else {
+		p = strchr(c, ':');
+		if (p == NULL) {
+			NWRAP_LOG(NWRAP_LOG_ERROR,
+				  "expire -- Invalid line[%s]: '%s'",
+				  line,
+				  c);
+			return false;
+		}
+		*p = '\0';
+		p++;
+		sp->sp_expire = strtol(c, &e, 10);
+		if (c == e) {
+			NWRAP_LOG(NWRAP_LOG_ERROR,
+				  "expire -- Invalid line[%s]: '%s' - %s",
+				  line, c, strerror(errno));
+			return false;
+		}
+		if (e == NULL) {
+			NWRAP_LOG(NWRAP_LOG_ERROR,
+				  "expire -- Invalid line[%s]: '%s' - %s",
+				  line, c, strerror(errno));
+			return false;
+		}
+		if (e[0] != '\0') {
+			NWRAP_LOG(NWRAP_LOG_ERROR,
+				  "expire -- Invalid line[%s]: '%s' - %s",
+				  line, c, strerror(errno));
+			return false;
+		}
+	}
+	c = p;
+
+	nwrap_sp->num++;
+	return true;
+}
+
+static void nwrap_sp_unload(struct nwrap_cache *nwrap)
+{
+	struct nwrap_sp *nwrap_sp;
+	nwrap_sp = (struct nwrap_sp *)nwrap->private_data;
+
+	SAFE_FREE(nwrap_sp->list);
+	nwrap_sp->num = 0;
+	nwrap_sp->idx = 0;
 }
 
 /*
