@@ -341,6 +341,7 @@ struct nwrap_ops {
 /* Public prototypes */
 
 bool nss_wrapper_enabled(void);
+bool nss_wrapper_shadow_enabled(void);
 bool nss_wrapper_hosts_enabled(void);
 
 /* prototypes for files backend */
@@ -1315,6 +1316,18 @@ bool nss_wrapper_enabled(void)
 	}
 	if (nwrap_gr_global.cache->path == NULL ||
 	    nwrap_gr_global.cache->path[0] == '\0') {
+		return false;
+	}
+
+	return true;
+}
+
+bool nss_wrapper_shadow_enabled(void)
+{
+	nwrap_init();
+
+	if (nwrap_sp_global.cache->path == NULL ||
+	    nwrap_sp_global.cache->path[0] == '\0') {
 		return false;
 	}
 
