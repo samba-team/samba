@@ -32,7 +32,7 @@ from samba.samdb import SamDB
 import samba.tests
 from samba.dcerpc import security
 
-parser = optparse.OptionParser("dirsync.py [options] <host>")
+parser = optparse.OptionParser(__file__ + " [options] <host>")
 sambaopts = options.SambaOptions(parser)
 parser.add_option_group(sambaopts)
 parser.add_option_group(options.VersionOptions(parser))
@@ -69,10 +69,11 @@ class SitesBaseTests(samba.tests.TestCase):
 
     def setUp(self):
         super(SitesBaseTests, self).setUp()
-        self.ldb_admin = ldb
-        self.base_dn = ldb.domain_dn()
-        self.domain_sid = security.dom_sid(ldb.get_domain_sid())
-        self.configuration_dn = self.ldb_admin.get_config_basedn().get_linearized()
+        self.ldb = SamDB(ldapshost, credentials=creds,
+                         session_info=system_session(lp), lp=lp)
+        self.base_dn = self.ldb.domain_dn()
+        self.domain_sid = security.dom_sid(self.ldb.get_domain_sid())
+        self.configuration_dn = self.ldb.get_config_basedn().get_linearized()
 
     def get_user_dn(self, name):
         return "CN=%s,CN=Users,%s" % (name, self.base_dn)
@@ -84,34 +85,34 @@ class SimpleSitesTests(SitesBaseTests):
     def test_create_and_delete(self):
         """test creation and deletion of 1 site"""
 
-        self.ldb_admin.transaction_start()
-        ok = sites.create_site(self.ldb_admin, self.ldb_admin.get_config_basedn(),
-                            "testsamba")
-        self.ldb_admin.transaction_commit()
+        self.ldb.transaction_start()
+        sites.create_site(self.ldb, self.ldb.get_config_basedn(),
+                          "testsamba")
+        self.ldb.transaction_commit()
 
         self.assertRaises(sites.SiteAlreadyExistsException,
-                            sites.create_site, self.ldb_admin, self.ldb_admin.get_config_basedn(),
-                            "testsamba")
+                          sites.create_site, self.ldb,
+                          self.ldb.get_config_basedn(),
+                          "testsamba")
 
-        self.ldb_admin.transaction_start()
-        ok = sites.delete_site(self.ldb_admin, self.ldb_admin.get_config_basedn(),
-                            "testsamba")
-
-        self.ldb_admin.transaction_commit()
+        self.ldb.transaction_start()
+        sites.delete_site(self.ldb, self.ldb.get_config_basedn(),
+                          "testsamba")
+        self.ldb.transaction_commit()
 
         self.assertRaises(sites.SiteNotFoundException,
-                            sites.delete_site, self.ldb_admin, self.ldb_admin.get_config_basedn(),
-                            "testsamba")
-
+                          sites.delete_site, self.ldb,
+                          self.ldb.get_config_basedn(),
+                          "testsamba")
 
     def test_delete_not_empty(self):
         """test removal of 1 site with servers"""
 
         self.assertRaises(sites.SiteServerNotEmptyException,
-                            sites.delete_site, self.ldb_admin, self.ldb_admin.get_config_basedn(),
-                            "Default-First-Site-Name")
+                          sites.delete_site, self.ldb,
+                          self.ldb.get_config_basedn(),
+                          "Default-First-Site-Name")
 
 
-ldb = SamDB(ldapshost, credentials=creds, session_info=system_session(lp), lp=lp)
 
 TestProgram(module=__name__, opts=subunitopts)
