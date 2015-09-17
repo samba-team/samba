@@ -589,6 +589,8 @@ struct ctdb_node_map {
 /* This capability is set if NATGW is enabled */
 #define CTDB_CAP_NATGW			0x00000008
 
+#define CTDB_CAP_DEFAULT		(0)
+
 
 struct ctdb_public_ip {
 	uint32_t pnn;

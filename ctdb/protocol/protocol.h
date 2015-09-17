@@ -698,6 +698,8 @@ struct ctdb_public_ip_list {
 /* This capability is set if NATGW is enabled */
 #define CTDB_CAP_NATGW			0x00000008
 
+#define CTDB_CAP_DEFAULT		(0)
+
 struct ctdb_node_and_flags {
 	uint32_t pnn;
 	uint32_t flags;

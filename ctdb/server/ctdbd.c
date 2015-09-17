@@ -218,7 +218,7 @@ int main(int argc, const char *argv[])
 	}
 
 	/* set ctdbd capabilities */
-	ctdb->capabilities = 0;
+	ctdb->capabilities = CTDB_CAP_DEFAULT;
 	if (options.no_lmaster == 0) {
 		ctdb->capabilities |= CTDB_CAP_LMASTER;
 	}
