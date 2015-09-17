@@ -590,20 +590,33 @@ int32_t ctdb_control_freeze(struct ctdb_context *ctdb, struct ctdb_req_control *
 }
 
 
+static int db_freeze_block(struct ctdb_db_context *ctdb_db, void *private_data)
+{
+	struct tevent_context *ev = (struct tevent_context *)private_data;
+
+	ctdb_start_db_freeze(ctdb_db);
+
+	while (ctdb_db->freeze_mode == CTDB_FREEZE_PENDING) {
+		tevent_loop_once(ev);
+	}
+
+	if (ctdb_db->freeze_mode != CTDB_FREEZE_FROZEN) {
+		return -1;
+	}
+
+	return 0;
+}
+
 /*
   block until we are frozen, used during daemon startup
  */
 bool ctdb_blocking_freeze(struct ctdb_context *ctdb)
 {
-	int i;
+	int ret;
 
-	for (i=1; i<=NUM_DB_PRIORITIES; i++) {
-		ctdb_start_freeze(ctdb, i);
-
-		/* block until frozen */
-		while (ctdb->freeze_mode[i] == CTDB_FREEZE_PENDING) {
-			event_loop_once(ctdb->ev);
-		}
+	ret = ctdb_db_iterator(ctdb, db_freeze_block, ctdb->ev);
+	if (ret != 0) {
+		return false;
 	}
 
 	return true;
