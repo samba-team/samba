@@ -2536,6 +2536,39 @@ static void nwrap_files_endpwent(struct nwrap_backend *b)
 	nwrap_pw_global.idx = 0;
 }
 
+/* shadow */
+static void nwrap_files_setspent(void)
+{
+	nwrap_sp_global.idx = 0;
+}
+
+static struct spwd *nwrap_files_getspent(void)
+{
+	struct spwd *sp;
+
+	if (nwrap_sp_global.idx == 0) {
+		nwrap_files_cache_reload(nwrap_sp_global.cache);
+	}
+
+	if (nwrap_sp_global.idx >= nwrap_sp_global.num) {
+		errno = ENOENT;
+		return NULL;
+	}
+
+	sp = &nwrap_sp_global.list[nwrap_sp_global.idx++];
+
+	NWRAP_LOG(NWRAP_LOG_DEBUG,
+		  "return user[%s]",
+		  sp->sp_namp);
+
+	return sp;
+}
+
+static void nwrap_files_endspent(void)
+{
+	nwrap_sp_global.idx = 0;
+}
+
 /* misc functions */
 static int nwrap_files_initgroups(struct nwrap_backend *b,
 				  const char *user,
@@ -4008,6 +4041,52 @@ int getgrouplist(const char *user, gid_t group, gid_t *groups, int *ngroups)
 	return nwrap_getgrouplist(user, group, groups, ngroups);
 }
 #endif
+
+/**********************************************************
+ * SHADOW
+ **********************************************************/
+
+static void nwrap_setspent(void)
+{
+	nwrap_files_setspent();
+}
+
+void setspent(void)
+{
+	if (!nss_wrapper_shadow_enabled()) {
+		return;
+	}
+
+	nwrap_setspent();
+}
+
+static struct spwd *nwrap_getspent(void)
+{
+	return nwrap_files_getspent();
+}
+
+struct spwd *getspent(void)
+{
+	if (!nss_wrapper_shadow_enabled()) {
+		return NULL;
+	}
+
+	return nwrap_getspent();
+}
+
+static void nwrap_endspent(void)
+{
+	nwrap_files_endspent();
+}
+
+void endspent(void)
+{
+	if (!nss_wrapper_shadow_enabled()) {
+		return;
+	}
+
+	nwrap_endspent();
+}
 
 /**********************************************************
  * NETDB
