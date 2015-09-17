@@ -28,35 +28,20 @@ class SiteException(Exception):
         self.value = value
 
     def __str__(self):
-        return "SiteException: " + self.value
+        return "%s: %s" % (self.__class__.__name__, self.value)
 
 
 class SiteNotFoundException(SiteException):
     """Raised when the site is not found and it's expected to exists."""
 
-    def __init__(self, value):
-        self.value = value
-
-    def __str__(self):
-        return "SiteNotFoundException: " + self.value
 
 class SiteAlreadyExistsException(SiteException):
     """Raised when the site is not found and it's expected not to exists."""
 
-    def __init__(self, value):
-        self.value = value
-
-    def __str__(self):
-        return "SiteAlreadyExists: " + self.value
 
 class SiteServerNotEmptyException(SiteException):
     """Raised when the site still has servers attached."""
 
-    def __init__(self, value):
-        self.value = value
-
-    def __str__(self):
-        return "SiteServerNotEmpty: " + self.value
 
 def create_site(samdb, configDn, siteName):
     """
