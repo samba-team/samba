@@ -1799,20 +1799,208 @@ done:
 	return ok;
 }
 
+static int db_recovery_serial(struct ctdb_recoverd *rec, TALLOC_CTX *mem_ctx,
+			      uint32_t pnn, struct ctdb_node_map *nodemap,
+			      struct ctdb_vnn_map *vnnmap,
+			      struct ctdb_dbid_map *dbmap)
+{
+	struct ctdb_context *ctdb = rec->ctdb;
+	uint32_t generation;
+	TDB_DATA data;
+	uint32_t *nodes;
+	int ret, i, j;
+
+	/* set recovery mode to active on all nodes */
+	ret = set_recovery_mode(ctdb, rec, nodemap, CTDB_RECOVERY_ACTIVE);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, (__location__ " Unable to set recovery mode to active on cluster\n"));
+		return -1;
+	}
+
+	/* execute the "startrecovery" event script on all nodes */
+	ret = run_startrecovery_eventscript(rec, nodemap);
+	if (ret!=0) {
+		DEBUG(DEBUG_ERR, (__location__ " Unable to run the 'startrecovery' event on cluster\n"));
+		return -1;
+	}
+
+	/*
+	  update all nodes to have the same flags that we have
+	 */
+	for (i=0;i<nodemap->num;i++) {
+		if (nodemap->nodes[i].flags & NODE_FLAGS_DISCONNECTED) {
+			continue;
+		}
+
+		ret = update_flags_on_all_nodes(ctdb, nodemap, i, nodemap->nodes[i].flags);
+		if (ret != 0) {
+			if (nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE) {
+				DEBUG(DEBUG_WARNING, (__location__ "Unable to update flags on inactive node %d\n", i));
+			} else {
+				DEBUG(DEBUG_ERR, (__location__ " Unable to update flags on all nodes for node %d\n", i));
+				return -1;
+			}
+		}
+	}
+
+	DEBUG(DEBUG_NOTICE, (__location__ " Recovery - updated flags\n"));
+
+	/* pick a new generation number */
+	generation = new_generation();
+
+	/* change the vnnmap on this node to use the new generation 
+	   number but not on any other nodes.
+	   this guarantees that if we abort the recovery prematurely
+	   for some reason (a node stops responding?)
+	   that we can just return immediately and we will reenter
+	   recovery shortly again.
+	   I.e. we deliberately leave the cluster with an inconsistent
+	   generation id to allow us to abort recovery at any stage and
+	   just restart it from scratch.
+	 */
+	vnnmap->generation = generation;
+	ret = ctdb_ctrl_setvnnmap(ctdb, CONTROL_TIMEOUT(), pnn, mem_ctx, vnnmap);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, (__location__ " Unable to set vnnmap for node %u\n", pnn));
+		return -1;
+	}
+
+	/* Database generations are updated when the transaction is commited to
+	 * the databases.  So make sure to use the final generation as the
+	 * transaction id
+	 */
+	generation = new_generation();
+
+	data.dptr = (void *)&generation;
+	data.dsize = sizeof(uint32_t);
+
+	nodes = list_of_active_nodes(ctdb, nodemap, mem_ctx, true);
+	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_TRANSACTION_START,
+					nodes, 0,
+					CONTROL_TIMEOUT(), false, data,
+					NULL,
+					transaction_start_fail_callback,
+					rec) != 0) {
+		DEBUG(DEBUG_ERR, (__location__ " Unable to start transactions. Recovery failed.\n"));
+		if (ctdb_client_async_control(ctdb, CTDB_CONTROL_TRANSACTION_CANCEL,
+					nodes, 0,
+					CONTROL_TIMEOUT(), false, tdb_null,
+					NULL,
+					NULL,
+					NULL) != 0) {
+			DEBUG(DEBUG_ERR,("Failed to cancel recovery transaction\n"));
+		}
+		return -1;
+	}
+
+	DEBUG(DEBUG_NOTICE,(__location__ " started transactions on all nodes\n"));
+
+	for (i=0;i<dbmap->num;i++) {
+		ret = recover_database(rec, mem_ctx,
+				       dbmap->dbs[i].dbid,
+				       dbmap->dbs[i].flags & CTDB_DB_FLAGS_PERSISTENT,
+				       pnn, nodemap, generation);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR, (__location__ " Failed to recover database 0x%x\n", dbmap->dbs[i].dbid));
+			return -1;
+		}
+	}
+
+	DEBUG(DEBUG_NOTICE, (__location__ " Recovery - starting database commits\n"));
+
+	/* commit all the changes */
+	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_TRANSACTION_COMMIT,
+					nodes, 0,
+					CONTROL_TIMEOUT(), false, data,
+					NULL, NULL,
+					NULL) != 0) {
+		DEBUG(DEBUG_ERR, (__location__ " Unable to commit recovery changes. Recovery failed.\n"));
+		return -1;
+	}
+
+	DEBUG(DEBUG_NOTICE, (__location__ " Recovery - committed databases\n"));
+
+	/* update the capabilities for all nodes */
+	ret = update_capabilities(rec, nodemap);
+	if (ret!=0) {
+		DEBUG(DEBUG_ERR, (__location__ " Unable to update node capabilities.\n"));
+		return -1;
+	}
+
+	/* build a new vnn map with all the currently active and
+	   unbanned nodes */
+	vnnmap = talloc(mem_ctx, struct ctdb_vnn_map);
+	CTDB_NO_MEMORY(ctdb, vnnmap);
+	vnnmap->generation = generation;
+	vnnmap->size = 0;
+	vnnmap->map = talloc_zero_array(vnnmap, uint32_t, vnnmap->size);
+	CTDB_NO_MEMORY(ctdb, vnnmap->map);
+	for (i=j=0;i<nodemap->num;i++) {
+		if (nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE) {
+			continue;
+		}
+		if (!ctdb_node_has_capabilities(rec->caps,
+						ctdb->nodes[i]->pnn,
+						CTDB_CAP_LMASTER)) {
+			/* this node can not be an lmaster */
+			DEBUG(DEBUG_DEBUG, ("Node %d cant be a LMASTER, skipping it\n", i));
+			continue;
+		}
+
+		vnnmap->size++;
+		vnnmap->map = talloc_realloc(vnnmap, vnnmap->map, uint32_t, vnnmap->size);
+		CTDB_NO_MEMORY(ctdb, vnnmap->map);
+		vnnmap->map[j++] = nodemap->nodes[i].pnn;
+
+	}
+	if (vnnmap->size == 0) {
+		DEBUG(DEBUG_NOTICE, ("No suitable lmasters found. Adding local node (recmaster) anyway.\n"));
+		vnnmap->size++;
+		vnnmap->map = talloc_realloc(vnnmap, vnnmap->map, uint32_t, vnnmap->size);
+		CTDB_NO_MEMORY(ctdb, vnnmap->map);
+		vnnmap->map[0] = pnn;
+	}
+
+	/* update to the new vnnmap on all nodes */
+	ret = update_vnnmap_on_all_nodes(ctdb, nodemap, pnn, vnnmap, mem_ctx);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, (__location__ " Unable to update vnnmap on all nodes\n"));
+		return -1;
+	}
+
+	DEBUG(DEBUG_NOTICE, (__location__ " Recovery - updated vnnmap\n"));
+
+	/* update recmaster to point to us for all nodes */
+	ret = set_recovery_master(ctdb, nodemap, pnn);
+	if (ret!=0) {
+		DEBUG(DEBUG_ERR, (__location__ " Unable to set recovery master\n"));
+		return -1;
+	}
+
+	DEBUG(DEBUG_NOTICE, (__location__ " Recovery - updated recmaster\n"));
+
+	/* disable recovery mode */
+	ret = set_recovery_mode(ctdb, rec, nodemap, CTDB_RECOVERY_NORMAL);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, (__location__ " Unable to set recovery mode to normal on cluster\n"));
+		return -1;
+	}
+
+	DEBUG(DEBUG_NOTICE, (__location__ " Recovery - disabled recovery mode\n"));
+
+	return 0;
+}
 
 /*
   we are the recmaster, and recovery is needed - start a recovery run
  */
-static int do_recovery(struct ctdb_recoverd *rec, 
+static int do_recovery(struct ctdb_recoverd *rec,
 		       TALLOC_CTX *mem_ctx, uint32_t pnn,
 		       struct ctdb_node_map *nodemap, struct ctdb_vnn_map *vnnmap)
 {
 	struct ctdb_context *ctdb = rec->ctdb;
-	int i, j, ret;
-	uint32_t generation;
+	int i, ret;
 	struct ctdb_dbid_map *dbmap;
-	TDB_DATA data;
-	uint32_t *nodes;
 	struct timeval start_time;
 	uint32_t culprit = (uint32_t)-1;
 	bool self_ban;
@@ -1910,184 +2098,10 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	*/
 	sync_recovery_lock_file_across_cluster(rec);
 
-	/* set recovery mode to active on all nodes */
-	ret = set_recovery_mode(ctdb, rec, nodemap, CTDB_RECOVERY_ACTIVE);
+	ret = db_recovery_serial(rec, mem_ctx, pnn, nodemap, vnnmap, dbmap);
 	if (ret != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " Unable to set recovery mode to active on cluster\n"));
 		goto fail;
 	}
-
-	/* execute the "startrecovery" event script on all nodes */
-	ret = run_startrecovery_eventscript(rec, nodemap);
-	if (ret!=0) {
-		DEBUG(DEBUG_ERR, (__location__ " Unable to run the 'startrecovery' event on cluster\n"));
-		goto fail;
-	}
-
-	/*
-	  update all nodes to have the same flags that we have
-	 */
-	for (i=0;i<nodemap->num;i++) {
-		if (nodemap->nodes[i].flags & NODE_FLAGS_DISCONNECTED) {
-			continue;
-		}
-
-		ret = update_flags_on_all_nodes(ctdb, nodemap, i, nodemap->nodes[i].flags);
-		if (ret != 0) {
-			if (nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE) {
-				DEBUG(DEBUG_WARNING, (__location__ "Unable to update flags on inactive node %d\n", i));
-			} else {
-				DEBUG(DEBUG_ERR, (__location__ " Unable to update flags on all nodes for node %d\n", i));
-				goto fail;
-			}
-		}
-	}
-
-	DEBUG(DEBUG_NOTICE, (__location__ " Recovery - updated flags\n"));
-
-	/* pick a new generation number */
-	generation = new_generation();
-
-	/* change the vnnmap on this node to use the new generation 
-	   number but not on any other nodes.
-	   this guarantees that if we abort the recovery prematurely
-	   for some reason (a node stops responding?)
-	   that we can just return immediately and we will reenter
-	   recovery shortly again.
-	   I.e. we deliberately leave the cluster with an inconsistent
-	   generation id to allow us to abort recovery at any stage and
-	   just restart it from scratch.
-	 */
-	vnnmap->generation = generation;
-	ret = ctdb_ctrl_setvnnmap(ctdb, CONTROL_TIMEOUT(), pnn, mem_ctx, vnnmap);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " Unable to set vnnmap for node %u\n", pnn));
-		goto fail;
-	}
-
-	/* Database generations are updated when the transaction is commited to
-	 * the databases.  So make sure to use the final generation as the
-	 * transaction id
-	 */
-	generation = new_generation();
-
-	data.dptr = (void *)&generation;
-	data.dsize = sizeof(uint32_t);
-
-	nodes = list_of_active_nodes(ctdb, nodemap, mem_ctx, true);
-	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_TRANSACTION_START,
-					nodes, 0,
-					CONTROL_TIMEOUT(), false, data,
-					NULL,
-					transaction_start_fail_callback,
-					rec) != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " Unable to start transactions. Recovery failed.\n"));
-		if (ctdb_client_async_control(ctdb, CTDB_CONTROL_TRANSACTION_CANCEL,
-					nodes, 0,
-					CONTROL_TIMEOUT(), false, tdb_null,
-					NULL,
-					NULL,
-					NULL) != 0) {
-			DEBUG(DEBUG_ERR,("Failed to cancel recovery transaction\n"));
-		}
-		goto fail;
-	}
-
-	DEBUG(DEBUG_NOTICE,(__location__ " started transactions on all nodes\n"));
-
-	for (i=0;i<dbmap->num;i++) {
-		ret = recover_database(rec, mem_ctx,
-				       dbmap->dbs[i].dbid,
-				       dbmap->dbs[i].flags & CTDB_DB_FLAGS_PERSISTENT,
-				       pnn, nodemap, generation);
-		if (ret != 0) {
-			DEBUG(DEBUG_ERR, (__location__ " Failed to recover database 0x%x\n", dbmap->dbs[i].dbid));
-			goto fail;
-		}
-	}
-
-	DEBUG(DEBUG_NOTICE, (__location__ " Recovery - starting database commits\n"));
-
-	/* commit all the changes */
-	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_TRANSACTION_COMMIT,
-					nodes, 0,
-					CONTROL_TIMEOUT(), false, data,
-					NULL, NULL,
-					NULL) != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " Unable to commit recovery changes. Recovery failed.\n"));
-		goto fail;
-	}
-
-	DEBUG(DEBUG_NOTICE, (__location__ " Recovery - committed databases\n"));
-	
-
-	/* update the capabilities for all nodes */
-	ret = update_capabilities(rec, nodemap);
-	if (ret!=0) {
-		DEBUG(DEBUG_ERR, (__location__ " Unable to update node capabilities.\n"));
-		goto fail;
-	}
-
-	/* build a new vnn map with all the currently active and
-	   unbanned nodes */
-	vnnmap = talloc(mem_ctx, struct ctdb_vnn_map);
-	CTDB_NO_MEMORY(ctdb, vnnmap);
-	vnnmap->generation = generation;
-	vnnmap->size = 0;
-	vnnmap->map = talloc_zero_array(vnnmap, uint32_t, vnnmap->size);
-	CTDB_NO_MEMORY(ctdb, vnnmap->map);
-	for (i=j=0;i<nodemap->num;i++) {
-		if (nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE) {
-			continue;
-		}
-		if (!ctdb_node_has_capabilities(rec->caps,
-						ctdb->nodes[i]->pnn,
-						CTDB_CAP_LMASTER)) {
-			/* this node can not be an lmaster */
-			DEBUG(DEBUG_DEBUG, ("Node %d cant be a LMASTER, skipping it\n", i));
-			continue;
-		}
-
-		vnnmap->size++;
-		vnnmap->map = talloc_realloc(vnnmap, vnnmap->map, uint32_t, vnnmap->size);
-		CTDB_NO_MEMORY(ctdb, vnnmap->map);
-		vnnmap->map[j++] = nodemap->nodes[i].pnn;
-
-	}
-	if (vnnmap->size == 0) {
-		DEBUG(DEBUG_NOTICE, ("No suitable lmasters found. Adding local node (recmaster) anyway.\n"));
-		vnnmap->size++;
-		vnnmap->map = talloc_realloc(vnnmap, vnnmap->map, uint32_t, vnnmap->size);
-		CTDB_NO_MEMORY(ctdb, vnnmap->map);
-		vnnmap->map[0] = pnn;
-	}	
-
-	/* update to the new vnnmap on all nodes */
-	ret = update_vnnmap_on_all_nodes(ctdb, nodemap, pnn, vnnmap, mem_ctx);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " Unable to update vnnmap on all nodes\n"));
-		goto fail;
-	}
-
-	DEBUG(DEBUG_NOTICE, (__location__ " Recovery - updated vnnmap\n"));
-
-	/* update recmaster to point to us for all nodes */
-	ret = set_recovery_master(ctdb, nodemap, pnn);
-	if (ret!=0) {
-		DEBUG(DEBUG_ERR, (__location__ " Unable to set recovery master\n"));
-		goto fail;
-	}
-
-	DEBUG(DEBUG_NOTICE, (__location__ " Recovery - updated recmaster\n"));
-
-	/* disable recovery mode */
-	ret = set_recovery_mode(ctdb, rec, nodemap, CTDB_RECOVERY_NORMAL);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " Unable to set recovery mode to normal on cluster\n"));
-		goto fail;
-	}
-
-	DEBUG(DEBUG_NOTICE, (__location__ " Recovery - disabled recovery mode\n"));
 
 	/* Fetch known/available public IPs from each active node */
 	ret = ctdb_reload_remote_public_ips(ctdb, rec, nodemap, &culprit);
