@@ -2014,22 +2014,28 @@ void lpcfg_dump_globals(struct loadparm_context *lp_ctx, FILE *f,
 
 	fprintf(f, "# Global parameters\n[global]\n");
 
-	for (i = 0; parm_table[i].label; i++)
-		if (parm_table[i].p_class == P_GLOBAL &&
-		    (i == 0 || (parm_table[i].offset != parm_table[i - 1].offset))) {
-			if (!show_defaults) {
-				if (lp_ctx->flags && (lp_ctx->flags[i] & FLAG_DEFAULT)) {
-					continue;
-				}
+	for (i = 0; parm_table[i].label; i++) {
+		if (parm_table[i].p_class != P_GLOBAL) {
+			continue;
+		}
 
-				if (is_default(lp_ctx->globals, i)) {
-					continue;
-				}
+		if (parm_table[i].flags & FLAG_SYNONYM) {
+			continue;
+		}
+
+		if (!show_defaults) {
+			if (lp_ctx->flags && (lp_ctx->flags[i] & FLAG_DEFAULT)) {
+				continue;
 			}
 
-			fprintf(f, "\t%s = ", parm_table[i].label);
-			lpcfg_print_parameter(&parm_table[i], lpcfg_parm_ptr(lp_ctx, NULL, &parm_table[i]), f);
-			fprintf(f, "\n");
+			if (is_default(lp_ctx->globals, i)) {
+				continue;
+			}
+		}
+
+		fprintf(f, "\t%s = ", parm_table[i].label);
+		lpcfg_print_parameter(&parm_table[i], lpcfg_parm_ptr(lp_ctx, NULL, &parm_table[i]), f);
+		fprintf(f, "\n");
 	}
 	if (lp_ctx->globals->param_opt != NULL) {
 		for (data = lp_ctx->globals->param_opt; data;
@@ -2057,34 +2063,45 @@ void lpcfg_dump_a_service(struct loadparm_service * pService, struct loadparm_se
 		fprintf(f, "\n[%s]\n", pService->szService);
 
 	for (i = 0; parm_table[i].label; i++) {
-		if (parm_table[i].p_class == P_LOCAL &&
-		    (*parm_table[i].label != '-') &&
-		    (i == 0 || (parm_table[i].offset != parm_table[i - 1].offset)))
-		{
-			if (pService == sDefault) {
-				if (!show_defaults) {
-					if (flags && (flags[i] & FLAG_DEFAULT)) {
-						continue;
-					}
-
-					if (is_default(sDefault, i)) {
-						continue;
-					}
-				}
-			} else {
-				if (lpcfg_equal_parameter(parm_table[i].type,
-							  ((char *)pService) +
-							  parm_table[i].offset,
-							  ((char *)sDefault) +
-							  parm_table[i].offset))
-					continue;
-			}
-
-			fprintf(f, "\t%s = ", parm_table[i].label);
-			lpcfg_print_parameter(&parm_table[i],
-					((char *)pService) + parm_table[i].offset, f);
-			fprintf(f, "\n");
+		if (parm_table[i].p_class != P_LOCAL) {
+			continue;
 		}
+
+		if (parm_table[i].flags & FLAG_SYNONYM) {
+			continue;
+		}
+
+		if (*parm_table[i].label == '-') {
+			continue;
+		}
+
+		if (pService == sDefault) {
+			if (!show_defaults) {
+				if (flags && (flags[i] & FLAG_DEFAULT)) {
+					continue;
+				}
+
+				if (is_default(sDefault, i)) {
+					continue;
+				}
+			}
+		} else {
+			bool equal;
+
+			equal = lpcfg_equal_parameter(parm_table[i].type,
+						      ((char *)pService) +
+						      parm_table[i].offset,
+						      ((char *)sDefault) +
+						      parm_table[i].offset);
+			if (equal) {
+				continue;
+			}
+		}
+
+		fprintf(f, "\t%s = ", parm_table[i].label);
+		lpcfg_print_parameter(&parm_table[i],
+				((char *)pService) + parm_table[i].offset, f);
+		fprintf(f, "\n");
 	}
 	if (pService->param_opt != NULL) {
 		for (data = pService->param_opt; data; data = data->next) {
