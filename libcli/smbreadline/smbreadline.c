@@ -137,6 +137,12 @@ char *smb_readline(const char *prompt, void (*callback)(void),
 		works in all of them to date, but we get compiler
 		warnings in some.  */
 		rl_attempted_completion_function = RL_COMPLETION_CAST completion_fn;
+
+		/*
+		 * We only want sensible characters as the word-break chars
+		 * for the most part. This allows us to tab through a path.
+		 */
+		rl_basic_word_break_characters = " \t\n";
 	}
 
 #if HAVE_DECL_RL_EVENT_HOOK
