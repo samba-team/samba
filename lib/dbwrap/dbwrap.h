@@ -83,7 +83,6 @@ int dbwrap_wipe(struct db_context *db);
 int dbwrap_check(struct db_context *db);
 int dbwrap_get_seqnum(struct db_context *db);
 /* Returns 0 if unknown. */
-int dbwrap_hash_size(struct db_context *db);
 int dbwrap_transaction_start(struct db_context *db);
 NTSTATUS dbwrap_transaction_start_nonblock(struct db_context *db);
 int dbwrap_transaction_commit(struct db_context *db);
