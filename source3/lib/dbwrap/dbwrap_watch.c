@@ -45,28 +45,29 @@ static struct db_context *dbwrap_record_watchers_db(void)
 	return watchers_db;
 }
 
-static TDB_DATA dbwrap_record_watchers_key(TALLOC_CTX *mem_ctx,
-					   struct db_context *db,
-					   struct db_record *rec)
+static size_t dbwrap_record_watchers_key(struct db_context *db,
+					 struct db_record *rec,
+					 uint8_t *wkey, size_t wkey_len)
 {
 	size_t db_id_len = dbwrap_db_id(db, NULL, 0);
 	uint8_t db_id[db_id_len];
-	TDB_DATA key, wkey;
+	size_t needed;
+	TDB_DATA key;
 
 	dbwrap_db_id(db, db_id, db_id_len);
 
 	key = dbwrap_record_get_key(rec);
 
-	wkey.dsize = sizeof(uint32_t) + db_id_len + key.dsize;
-	wkey.dptr = talloc_array(mem_ctx, uint8_t, wkey.dsize);
-	if (wkey.dptr == NULL) {
-		return make_tdb_data(NULL, 0);
-	}
-	SIVAL(wkey.dptr, 0, db_id_len);
-	memcpy(wkey.dptr + sizeof(uint32_t), db_id, db_id_len);
-	memcpy(wkey.dptr + sizeof(uint32_t) + db_id_len, key.dptr, key.dsize);
+	needed = sizeof(uint32_t) + db_id_len + key.dsize;
 
-	return wkey;
+	if (wkey_len >= needed) {
+		SIVAL(wkey, 0, db_id_len);
+		memcpy(wkey + sizeof(uint32_t), db_id, db_id_len);
+		memcpy(wkey + sizeof(uint32_t) + db_id_len,
+		       key.dptr, key.dsize);
+	}
+
+	return needed;
 }
 
 static bool dbwrap_record_watchers_key_parse(
@@ -199,23 +200,21 @@ static NTSTATUS dbwrap_record_get_watchers(struct db_context *db,
 					   size_t *p_num_ids)
 {
 	struct db_context *w_db;
-	TDB_DATA key = { 0, };
+	size_t wkey_len = dbwrap_record_watchers_key(db, rec, NULL, 0);
+	uint8_t wkey_buf[wkey_len];
+	TDB_DATA wkey = { .dptr = wkey_buf, .dsize = wkey_len };
 	TDB_DATA value = { 0, };
 	struct server_id *ids;
 	NTSTATUS status;
 
-	key = dbwrap_record_watchers_key(talloc_tos(), db, rec);
-	if (key.dptr == NULL) {
-		status = NT_STATUS_NO_MEMORY;
-		goto fail;
-	}
+	dbwrap_record_watchers_key(db, rec, wkey_buf, wkey_len);
+
 	w_db = dbwrap_record_watchers_db();
 	if (w_db == NULL) {
 		status = NT_STATUS_INTERNAL_ERROR;
 		goto fail;
 	}
-	status = dbwrap_fetch(w_db, mem_ctx, key, &value);
-	TALLOC_FREE(key.dptr);
+	status = dbwrap_fetch(w_db, mem_ctx, wkey, &value);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
 	}
@@ -228,7 +227,6 @@ static NTSTATUS dbwrap_record_get_watchers(struct db_context *db,
 	*p_num_ids = value.dsize / sizeof(struct server_id);
 	return NT_STATUS_OK;
 fail:
-	TALLOC_FREE(key.dptr);
 	TALLOC_FREE(value.dptr);
 	return status;
 }
@@ -273,10 +271,15 @@ struct tevent_req *dbwrap_record_watch_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	state->w_key = dbwrap_record_watchers_key(state, state->db, rec);
+	state->w_key.dsize = dbwrap_record_watchers_key(
+		state->db, rec, NULL, 0);
+
+	state->w_key.dptr = talloc_array(state, uint8_t, state->w_key.dsize);
 	if (tevent_req_nomem(state->w_key.dptr, req)) {
 		return tevent_req_post(req, ev);
 	}
+	dbwrap_record_watchers_key(
+		state->db, rec, state->w_key.dptr, state->w_key.dsize);
 
 	subreq = messaging_filtered_read_send(
 		state, ev, state->msg, dbwrap_record_watch_filter, state);
@@ -331,9 +334,15 @@ static void dbwrap_watch_record_stored(struct db_context *db,
 		private_data, struct messaging_context);
 	struct server_id *ids = NULL;
 	size_t num_ids = 0;
-	TDB_DATA w_key = { 0, };
+
+	size_t wkey_len = dbwrap_record_watchers_key(db, rec, NULL, 0);
+	uint8_t wkey_buf[wkey_len];
+	TDB_DATA wkey = { .dptr = wkey_buf, .dsize = wkey_len };
+
 	NTSTATUS status;
 	uint32_t i;
+
+	dbwrap_record_watchers_key(db, rec, wkey_buf, wkey_len);
 
 	status = dbwrap_record_get_watchers(db, rec, talloc_tos(),
 					    &ids, &num_ids);
@@ -345,15 +354,10 @@ static void dbwrap_watch_record_stored(struct db_context *db,
 			  nt_errstr(status)));
 		goto done;
 	}
-	w_key = dbwrap_record_watchers_key(talloc_tos(), db, rec);
-	if (w_key.dptr == NULL) {
-		DEBUG(1, ("dbwrap_record_watchers_key failed\n"));
-		goto done;
-	}
 
 	for (i=0; i<num_ids; i++) {
 		status = messaging_send_buf(msg, ids[i], MSG_DBWRAP_MODIFIED,
-					    w_key.dptr, w_key.dsize);
+					    wkey.dptr, wkey.dsize);
 		if (!NT_STATUS_IS_OK(status)) {
 			struct server_id_buf tmp;
 			DEBUG(1, ("messaging_send to %s failed: %s\n",
@@ -362,7 +366,6 @@ static void dbwrap_watch_record_stored(struct db_context *db,
 		}
 	}
 done:
-	TALLOC_FREE(w_key.dptr);
 	TALLOC_FREE(ids);
 	return;
 }
