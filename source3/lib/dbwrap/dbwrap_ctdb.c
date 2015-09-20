@@ -1517,14 +1517,16 @@ static int db_ctdb_get_seqnum(struct db_context *db)
 	return tdb_get_seqnum(ctx->wtdb->tdb);
 }
 
-static void db_ctdb_id(struct db_context *db, const uint8_t **id,
-		       size_t *idlen)
+static size_t db_ctdb_id(struct db_context *db, uint8_t *id, size_t idlen)
 {
 	struct db_ctdb_ctx *ctx = talloc_get_type_abort(
 		db->private_data, struct db_ctdb_ctx);
 
-	*id = (uint8_t *)&ctx->db_id;
-	*idlen = sizeof(ctx->db_id);
+	if (idlen >= sizeof(ctx->db_id)) {
+		memcpy(id, &ctx->db_id, sizeof(ctx->db_id));
+	}
+
+	return sizeof(ctx->db_id);
 }
 
 struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,

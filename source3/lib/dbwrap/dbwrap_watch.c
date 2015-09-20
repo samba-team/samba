@@ -50,11 +50,12 @@ static TDB_DATA dbwrap_record_watchers_key(TALLOC_CTX *mem_ctx,
 					   struct db_record *rec,
 					   TDB_DATA *rec_key)
 {
-	const uint8_t *db_id;
-	size_t db_id_len;
+	size_t db_id_len = dbwrap_db_id(db, NULL, 0);
+	uint8_t db_id[db_id_len];
 	TDB_DATA key, wkey;
 
-	dbwrap_db_id(db, &db_id, &db_id_len);
+	dbwrap_db_id(db, db_id, db_id_len);
+
 	key = dbwrap_record_get_key(rec);
 
 	wkey.dsize = sizeof(uint32_t) + db_id_len + key.dsize;

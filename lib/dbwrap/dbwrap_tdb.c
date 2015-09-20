@@ -388,12 +388,16 @@ static int db_tdb_transaction_cancel(struct db_context *db)
 	return 0;
 }
 
-static void db_tdb_id(struct db_context *db, const uint8_t **id, size_t *idlen)
+static size_t db_tdb_id(struct db_context *db, uint8_t *id, size_t idlen)
 {
 	struct db_tdb_ctx *db_ctx =
 		talloc_get_type_abort(db->private_data, struct db_tdb_ctx);
-	*id = (uint8_t *)&db_ctx->id;
-	*idlen = sizeof(db_ctx->id);
+
+	if (idlen >= sizeof(db_ctx->id)) {
+		memcpy(id, &db_ctx->id, sizeof(db_ctx->id));
+	}
+
+	return sizeof(db_ctx->id);
 }
 
 struct db_context *db_open_tdb(TALLOC_CTX *mem_ctx,
