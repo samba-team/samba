@@ -392,7 +392,9 @@ static void interpret_interface(char *token)
 		}
 
 		for (i=0;i<total_probed;i++) {
-			if (sockaddr_equal((struct sockaddr *)&ss, (struct sockaddr *)&probed_ifaces[i].ip)) {
+			if (sockaddr_equal((struct sockaddr *)&ss,
+				(struct sockaddr *)&probed_ifaces[i].ip))
+			{
 				add_interface(&probed_ifaces[i]);
 				return;
 			}
