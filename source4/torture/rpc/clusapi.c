@@ -946,9 +946,13 @@ bool test_OnlineResource_int(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx,
 		dcerpc_clusapi_OnlineResource_r(b, tctx, &r),
 		"OnlineResource failed");
-	torture_assert_werr_ok(tctx,
-		r.out.result,
-		"OnlineResource failed");
+	if (!W_ERROR_IS_OK(r.out.result) &&
+	    !W_ERROR_EQUAL(r.out.result, WERR_IO_PENDING)) {
+		torture_result(tctx, TORTURE_FAIL,
+			       "OnlineResource failed with %s",
+			        win_errstr(r.out.result));
+		return false;
+	}
 
 	return true;
 }
@@ -986,9 +990,13 @@ bool test_OfflineResource_int(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx,
 		dcerpc_clusapi_OfflineResource_r(b, tctx, &r),
 		"OfflineResource failed");
-	torture_assert_werr_ok(tctx,
-		r.out.result,
-		"OfflineResource failed");
+	if (!W_ERROR_IS_OK(r.out.result) &&
+	    !W_ERROR_EQUAL(r.out.result, WERR_IO_PENDING)) {
+		torture_result(tctx, TORTURE_FAIL,
+			       "OfflineResource failed with %s",
+			       win_errstr(r.out.result));
+		return false;
+	}
 
 	return true;
 }
