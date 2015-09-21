@@ -1375,7 +1375,8 @@ static void ctdb_call_resend(struct ctdb_call_state *state)
 	state->c->hdr.destnode = ctdb->pnn;
 
 	ctdb_queue_packet(ctdb, &state->c->hdr);
-	DEBUG(DEBUG_NOTICE,("resent ctdb_call\n"));
+	DEBUG(DEBUG_NOTICE,("resent ctdb_call for db %s reqid %u generation %u\n",
+			    state->ctdb_db->db_name, state->reqid, state->generation));
 }
 
 /*
