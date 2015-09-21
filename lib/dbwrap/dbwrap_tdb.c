@@ -136,7 +136,7 @@ static struct db_record *db_tdb_fetch_locked_internal(
 
 	talloc_set_destructor(state.result, db_tdb_record_destr);
 
-	state.result->private_data = talloc_reference(state.result, ctx);
+	state.result->private_data = ctx;
 	state.result->store = db_tdb_store;
 	state.result->delete_rec = db_tdb_delete;
 
