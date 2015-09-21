@@ -397,7 +397,6 @@ static void db_tdb_id(struct db_context *db, const uint8_t **id, size_t *idlen)
 }
 
 struct db_context *db_open_tdb(TALLOC_CTX *mem_ctx,
-			       struct loadparm_context *lp_ctx,
 			       const char *name,
 			       int hash_size, int tdb_flags,
 			       int open_flags, mode_t mode,
@@ -421,12 +420,7 @@ struct db_context *db_open_tdb(TALLOC_CTX *mem_ctx,
 	}
 	result->lock_order = lock_order;
 
-	if (hash_size == 0) {
-		hash_size = lpcfg_tdb_hash_size(lp_ctx, name);
-	}
-
-	db_tdb->wtdb = tdb_wrap_open(db_tdb, name, hash_size,
-				     lpcfg_tdb_flags(lp_ctx, tdb_flags),
+	db_tdb->wtdb = tdb_wrap_open(db_tdb, name, hash_size, tdb_flags,
 				     open_flags, mode);
 	if (db_tdb->wtdb == NULL) {
 		DEBUG(3, ("Could not open tdb: %s\n", strerror(errno)));
