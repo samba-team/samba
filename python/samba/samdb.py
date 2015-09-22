@@ -27,7 +27,7 @@ import ldb
 import time
 import base64
 import os
-from samba import dsdb
+from samba import dsdb, dsdb_dns
 from samba.ndr import ndr_unpack, ndr_pack
 from samba.dcerpc import drsblobs, misc
 from samba.common import normalise_int32
@@ -921,3 +921,11 @@ accountExpires: %u
         '''get the server DN from the rootDSE'''
         res = self.search(base="", scope=ldb.SCOPE_BASE, attrs=["serverName"])
         return res[0]["serverName"][0]
+
+    def dns_lookup(self, dns_name):
+        '''Do a DNS lookup in the database, returns the NDR database structures'''
+        return dsdb_dns.lookup(self, dns_name)
+
+    def dns_replace(self, dns_name, new_records):
+        '''Do a DNS modification on the database, sets the NDR database structures'''
+        return dsdb_dns.replace(self, dns_name, new_records)

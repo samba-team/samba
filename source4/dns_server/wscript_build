@@ -53,3 +53,9 @@ bld.SAMBA_LIBRARY('dlz_bind9_for_torture',
                   private_library=True,
                   deps='samba-hostconfig samdb-common gensec popt dnsserver_common',
                   enabled=bld.AD_DC_BUILD_IS_ENABLED())
+
+
+bld.SAMBA_PYTHON('python_dsdb_dns',
+	         source='pydns.c',
+	         deps='samdb pyldb-util pyrpc_util dnsserver_common',
+	         realname='samba/dsdb_dns.so')
