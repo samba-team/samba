@@ -926,6 +926,10 @@ accountExpires: %u
         '''Do a DNS lookup in the database, returns the NDR database structures'''
         return dsdbdns.lookup(self, dns_name)
 
+    def dns_extract(self, el):
+        '''Return the NDR database structures from a dnsRecord element'''
+        return dsdbdns.extract(el)
+
     def dns_replace(self, dns_name, new_records):
         '''Do a DNS modification on the database, sets the NDR database structures'''
         return dsdbdns.replace(self, dns_name, new_records)
