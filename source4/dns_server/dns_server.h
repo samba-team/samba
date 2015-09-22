@@ -24,15 +24,9 @@
 
 #include "librpc/gen_ndr/dns.h"
 #include "librpc/gen_ndr/ndr_dnsp.h"
+#include "dnsserver_common.h"
 
 struct tsocket_address;
-
-struct dns_server_zone {
-	struct dns_server_zone *prev, *next;
-	const char *name;
-	struct ldb_dn *dn;
-};
-
 struct dns_server_tkey {
 	const char *name;
 	enum dns_tkey_mode mode;
@@ -87,7 +81,6 @@ WERROR dns_server_process_update(struct dns_server *dns,
 				 struct dns_res_rec **updates,    uint16_t *update_count,
 				 struct dns_res_rec **additional, uint16_t *arcount);
 
-bool dns_name_match(const char *zone, const char *name, size_t *host_part_len);
 bool dns_name_equal(const char *name1, const char *name2);
 bool dns_records_match(struct dnsp_DnssrvRpcRecord *rec1,
 		       struct dnsp_DnssrvRpcRecord *rec2);

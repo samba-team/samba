@@ -26,6 +26,14 @@ uint8_t werr_to_dns_err(WERROR werr);
 #define DNS_ERR(err_str) WERR_DNS_ERROR_RCODE_##err_str
 
 struct ldb_message_element;
+struct ldb_context;
+struct dnsp_DnssrvRpcRecord;
+
+struct dns_server_zone {
+	struct dns_server_zone *prev, *next;
+	const char *name;
+	struct ldb_dn *dn;
+};
 
 WERROR dns_common_extract(const struct ldb_message_element *el,
 			  TALLOC_CTX *mem_ctx,
@@ -46,5 +54,13 @@ WERROR dns_common_replace(struct ldb_context *samdb,
 			  uint32_t serial,
 			  struct dnsp_DnssrvRpcRecord *records,
 			  uint16_t rec_count);
-
+bool dns_name_match(const char *zone, const char *name, size_t *host_part_len);
+WERROR dns_common_name2dn(struct ldb_context *samdb,
+			  struct dns_server_zone *zones,
+			  TALLOC_CTX *mem_ctx,
+			  const char *name,
+			  struct ldb_dn **_dn);
+NTSTATUS dns_common_zones(struct ldb_context *samdb,
+			  TALLOC_CTX *mem_ctx,
+			  struct dns_server_zone **zones_ret);
 #endif /* __DNSSERVER_COMMON_H__ */
