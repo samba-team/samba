@@ -447,7 +447,6 @@ static bool run_tcon_test(struct torture_context *tctx, struct smbcli_state *cli
 	if (NT_STATUS_IS_ERR(smbcli_tconX(cli, share, "?????", password))) {
 		torture_result(tctx, TORTURE_FAIL, "%s refused 2nd tree connect (%s)\n", host,
 		           smbcli_errstr(cli->tree));
-		talloc_free(cli);
 		return false;
 	}
 
