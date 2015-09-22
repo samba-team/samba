@@ -1286,8 +1286,8 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                 continue
 
             if str(attrname).lower() == 'objectclass':
-                normalised = self.samdb.dsdb_normalise_attributes(self.samdb_schema, attrname, list(obj[attrname]))
-                if list(normalised) != list(obj[attrname]):
+                normalised = self.samdb.dsdb_normalise_attributes(self.samdb_schema, attrname, obj[attrname])
+                if normalised != obj[attrname]:
                     self.err_normalise_mismatch_replace(dn, attrname, list(obj[attrname]))
                     error_count += 1
                 continue
