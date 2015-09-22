@@ -610,7 +610,7 @@ for env in [
                            )
 
 # Demote the vampire DC, it must be the last test each DC, before the dbcheck
-for env in ['vampire_dc', 'promoted_dc']:
+for env in ['vampire_dc', 'promoted_dc', 'rodc']:
     plantestsuite("samba4.blackbox.samba_tool_demote(%s)" % env, env, [os.path.join(samba4srcdir, "utils/tests/test_demote.sh"), '$SERVER', '$SERVER_IP', '$USERNAME', '$PASSWORD', '$DOMAIN', '$DC_SERVER', '$PREFIX/%s' % env, smbclient4])
 
 # TODO: Verifying the databases really should be a part of the
