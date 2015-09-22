@@ -187,7 +187,7 @@ class KCCMultisiteLdifTests(samba.tests.TestCaseInTempDir):
         tmpdb = os.path.join(self.tempdir, 'verify-tmpdb')
         my_kcc.import_ldif(tmpdb, self.lp, self.creds, MULTISITE_LDIF)
 
-        my_kcc.run("ldap://%s" % tmpdb,
+        my_kcc.run(None,
                    self.lp, self.creds,
                    attempt_live_connections=False)
         self.remove_files(tmpdb)
@@ -199,7 +199,7 @@ class KCCMultisiteLdifTests(samba.tests.TestCaseInTempDir):
         tmpdb = os.path.join(self.tempdir, 'dotfile-tmpdb')
         files = [tmpdb]
         my_kcc.import_ldif(tmpdb, self.lp, self.creds, MULTISITE_LDIF)
-        my_kcc.run("ldap://%s" % tmpdb,
+        my_kcc.run(None,
                    self.lp, self.creds,
                    attempt_live_connections=False)
 
