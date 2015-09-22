@@ -484,6 +484,79 @@ done:
 	return ret;
 }
 
+static bool test_zero_byte_stream(struct torture_context *tctx,
+				  struct smb2_tree *tree)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	NTSTATUS status;
+	union smb_open io;
+	const char *fname = DNAME "\\stream.txt";
+	const char *sname;
+	bool ret = true;
+	struct smb2_handle h, bh;
+	const char *streams[] = { "::$DATA", ":foo:$DATA" };
+
+	sname = talloc_asprintf(mem_ctx, "%s:%s", fname, "foo");
+
+	smb2_util_unlink(tree, fname);
+	smb2_deltree(tree, DNAME);
+
+	status = torture_smb2_testdir(tree, DNAME, &h);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "testdir");
+	smb2_util_close(tree, h);
+
+	torture_comment(tctx, "(%s) Check 0 byte named stream\n",
+	    __location__);
+
+	/* Create basefile */
+	ZERO_STRUCT(io);
+	io.smb2.in.create_disposition = NTCREATEX_DISP_CREATE;
+	io.smb2.in.fname = fname;
+	io.smb2.in.desired_access = SEC_FILE_READ_ATTRIBUTE |
+		SEC_FILE_WRITE_ATTRIBUTE |
+		SEC_FILE_READ_DATA |
+		SEC_FILE_WRITE_DATA;
+	status = smb2_create(tree, mem_ctx, &(io.smb2));
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "create");
+	smb2_util_close(tree, io.smb2.out.file.handle);
+
+	/* Create named stream and close it */
+	ZERO_STRUCT(io);
+	io.smb2.in.create_disposition = NTCREATEX_DISP_CREATE;
+	io.smb2.in.fname = sname;
+	io.smb2.in.desired_access = SEC_FILE_READ_ATTRIBUTE |
+		SEC_FILE_WRITE_ATTRIBUTE |
+		SEC_FILE_READ_DATA |
+		SEC_FILE_WRITE_DATA;
+	status = smb2_create(tree, mem_ctx, &(io.smb2));
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "create");
+	smb2_util_close(tree, io.smb2.out.file.handle);
+
+	/*
+	 * Check stream list, the 0 byte stream MUST be returned by
+	 * the server.
+	 */
+	ZERO_STRUCT(io);
+	io.smb2.in.fname = fname;
+	io.smb2.in.create_disposition = NTCREATEX_DISP_OPEN;
+	io.smb2.in.desired_access = SEC_FILE_READ_ATTRIBUTE |
+		SEC_FILE_WRITE_ATTRIBUTE |
+		SEC_FILE_READ_DATA |
+		SEC_FILE_WRITE_DATA;
+	status = smb2_create(tree, mem_ctx, &(io.smb2));
+	bh = io.smb2.out.file.handle;
+
+	ret = check_stream_list(tree,tctx, fname, 2, streams, bh);
+	torture_assert_goto(tctx, ret == true, ret, done, "smb2_create");
+	smb2_util_close(tree, bh);
+
+done:
+	smb2_deltree(tree, DNAME);
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+
 /*
   test stream sharemodes
 */
@@ -1754,6 +1827,7 @@ struct torture_suite *torture_smb2_streams_init(void)
 	torture_suite_add_1smb2_test(suite, "create-disposition", test_stream_create_disposition);
 	torture_suite_add_1smb2_test(suite, "attributes", test_stream_attributes);
 	torture_suite_add_1smb2_test(suite, "delete", test_stream_delete);
+	torture_suite_add_1smb2_test(suite, "zero-byte", test_zero_byte_stream);
 
 	suite->description = talloc_strdup(suite, "SMB2-STREAM tests");
 
