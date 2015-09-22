@@ -35,6 +35,7 @@ from samba.dcerpc import misc
 from samba.param import LoadParm
 from samba.credentials import Credentials
 from samba.samdb import SamDB
+from samba import remove_dc
 
 unix_now = int(time.time())
 
@@ -190,6 +191,26 @@ class KCCMultisiteLdifTests(samba.tests.TestCaseInTempDir):
         my_kcc.run("ldap://%s" % tmpdb,
                    self.lp, self.creds,
                    attempt_live_connections=False)
+        self.remove_files(tmpdb)
+
+    def test_verify_with_dc_removal(self):
+        """Check that the KCC generates graphs that pass its own verify
+        option even as we remove DCs
+        """
+        my_kcc = self._get_kcc('test-verify', verify=True)
+        tmpdb = os.path.join(self.tempdir, 'verify-tmpdb')
+        forced_dsa = "CN=WIN10,CN=Servers,CN=Site-5,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com"
+        my_kcc.import_ldif(tmpdb, self.lp, self.creds, MULTISITE_LDIF,
+                           forced_local_dsa=forced_dsa)
+
+        for dsa, site in MULTISITE_LDIF_DSAS:
+            if dsa == forced_dsa:
+                continue
+            rdn = ldb.Dn(my_kcc.samdb, dsa).get_rdn_value()
+            remove_dc.remove_dc(my_kcc.samdb, rdn)
+            my_kcc.run("ldap://%s" % tmpdb,
+                       self.lp, self.creds,
+                       attempt_live_connections=False)
         self.remove_files(tmpdb)
 
     def test_dotfiles(self):
