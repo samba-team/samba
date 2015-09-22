@@ -141,6 +141,40 @@ static PyObject *py_dsdb_dns_lookup(PyObject *self, PyObject *args)
 	return py_dnsp_DnssrvRpcRecord_get_list(records, num_records);
 }
 
+static PyObject *py_dsdb_dns_extract(PyObject *self, PyObject *args)
+{
+	PyObject *py_dns_el;
+	TALLOC_CTX *frame;
+	WERROR werr;
+	struct ldb_message_element *dns_el;
+	struct dnsp_DnssrvRpcRecord *records;
+	uint16_t num_records;
+
+	if (!PyArg_ParseTuple(args, "O", &py_dns_el)) {
+		return NULL;
+	}
+
+	if (!py_check_dcerpc_type(py_dns_el, "ldb", "MessageElement")) {
+		PyErr_SetString(py_ldb_get_exception(),
+				"ldb MessageElement object required");
+		return NULL;
+	}
+	dns_el = pyldb_MessageElement_AsMessageElement(py_dns_el);
+
+	frame = talloc_stackframe();
+
+	werr = dns_common_extract(dns_el,
+				  frame,
+				  &records,
+				  &num_records);
+	if (!W_ERROR_IS_OK(werr)) {
+		PyErr_SetWERROR(werr);
+		return NULL;
+	}
+
+	return py_dnsp_DnssrvRpcRecord_get_list(records, num_records);
+}
+
 static PyObject *py_dsdb_dns_replace(PyObject *self, PyObject *args)
 {
 	struct ldb_context *samdb;
@@ -209,6 +243,8 @@ static PyMethodDef py_dsdb_dns_methods[] = {
 		METH_VARARGS, "Get the DNS database entries for a DNS name"},
 	{ "replace", (PyCFunction)py_dsdb_dns_replace,
 		METH_VARARGS, "Replace the DNS database entries for a DNS name"},
+	{ "extract", (PyCFunction)py_dsdb_dns_extract,
+		METH_VARARGS, "Return the DNS database entry as a python structure from an Ldb.MessageElement of type dnsRecord"},
 	{ NULL }
 };
 
