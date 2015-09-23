@@ -28,6 +28,7 @@
 #include "lib/tdb_wrap/tdb_wrap.h"
 #include "lib/util/debug.h"
 #include "lib/util/samba_util.h"
+#include "lib/util/util_process.h"
 
 #include "ctdb_private.h"
 #include "ctdb_client.h"
@@ -265,7 +266,7 @@ static struct childwrite_handle *ctdb_childwrite(
 		char c = 0;
 
 		close(result->fd[0]);
-		ctdb_set_process_name("ctdb_write_persistent");
+		prctl_set_comment("ctdb_write_persistent");
 		debug_extra = talloc_asprintf(NULL, "childwrite-%s:", ctdb_db->db_name);
 		ret = ctdb_persistent_store(state);
 		if (ret != 0) {

@@ -30,6 +30,7 @@
 #include "lib/util/dlinklist.h"
 #include "lib/util/debug.h"
 #include "lib/util/samba_util.h"
+#include "lib/util/util_process.h"
 
 #include "ctdb_private.h"
 #include "ctdb_client.h"
@@ -217,7 +218,7 @@ static struct ctdb_traverse_local_handle *ctdb_traverse_local(struct ctdb_db_con
 
 		close(h->fd[0]);
 
-		ctdb_set_process_name("ctdb_traverse");
+		prctl_set_comment("ctdb_traverse");
 		if (switch_from_server_to_client(ctdb, "traverse_local-%s:",
 						 ctdb_db->db_name) != 0) {
 			DEBUG(DEBUG_CRIT, ("Failed to switch traverse child into client mode\n"));

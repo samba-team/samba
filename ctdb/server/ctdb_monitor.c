@@ -28,6 +28,7 @@
 
 #include "lib/util/debug.h"
 #include "lib/util/samba_util.h"
+#include "lib/util/util_process.h"
 
 #include "ctdb_private.h"
 
@@ -104,7 +105,7 @@ void ctdb_run_notification_script(struct ctdb_context *ctdb, const char *event)
 	if (child == 0) {
 		int ret;
 
-		ctdb_set_process_name("ctdb_notification");
+		prctl_set_comment("ctdb_notification");
 		debug_extra = talloc_asprintf(NULL, "notification-%s:", event);
 		ret = ctdb_run_notification_script_child(ctdb, event);
 		if (ret != 0) {

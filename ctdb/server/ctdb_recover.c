@@ -31,6 +31,7 @@
 #include "lib/util/dlinklist.h"
 #include "lib/util/debug.h"
 #include "lib/util/samba_util.h"
+#include "lib/util/util_process.h"
 
 #include "ctdb_private.h"
 #include "ctdb_client.h"
@@ -633,7 +634,7 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 		char cc = 0;
 		close(state->fd[0]);
 
-		ctdb_set_process_name("ctdb_recmode");
+		prctl_set_comment("ctdb_recmode");
 		debug_extra = talloc_asprintf(NULL, "set_recmode:");
 		/* Daemon should not be able to get the recover lock,
 		 * as it should be held by the recovery master */

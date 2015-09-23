@@ -30,6 +30,7 @@
 #include "lib/util/dlinklist.h"
 #include "lib/util/debug.h"
 #include "lib/util/samba_util.h"
+#include "lib/util/util_process.h"
 
 #include "ctdb_private.h"
 #include "ctdb_client.h"
@@ -4518,7 +4519,7 @@ int32_t ctdb_control_reload_public_ips(struct ctdb_context *ctdb, struct ctdb_re
 		close(h->fd[0]);
 		debug_extra = talloc_asprintf(NULL, "reloadips:");
 
-		ctdb_set_process_name("ctdb_reloadips");
+		prctl_set_comment("ctdb_reloadips");
 		if (switch_from_server_to_client(ctdb, "reloadips-child") != 0) {
 			DEBUG(DEBUG_CRIT,("ERROR: Failed to switch reloadips child into client mode\n"));
 			res = -1;
