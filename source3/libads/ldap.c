@@ -2076,6 +2076,13 @@ ADS_STATUS ads_get_service_principal_names(TALLOC_CTX *mem_ctx,
 				      res,
 				      "servicePrincipalName",
 				      num_spns);
+	if (*spn_array == NULL) {
+		DEBUG(1, ("Host account for %s does not have service principal "
+			  "names.\n",
+			  machine_name));
+		status = ADS_ERROR(LDAP_NO_SUCH_OBJECT);
+		goto done;
+	}
 
 done:
 	ads_msgfree(ads, res);
