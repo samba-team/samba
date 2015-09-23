@@ -272,8 +272,10 @@ def add_group_from_mapping_entry(samdb, groupmap, logger):
                 return
 
         m = ldb.Message()
-        m.dn = ldb.Dn(samdb, "CN=%s,CN=Users,%s" % (groupmap.nt_name, samdb.get_default_basedn()))
-        m['cn'] = ldb.MessageElement(groupmap.nt_name, ldb.FLAG_MOD_ADD, 'cn')
+        # We avoid using the format string to avoid needing to escape the CN values
+        m.dn = ldb.Dn(samdb, "CN=X,CN=Users")
+        m.dn.set_component(0, "CN", groupmap.nt_name)
+        m.dn.add_base(samdb.get_default_basedn())
         m['objectClass'] = ldb.MessageElement('group', ldb.FLAG_MOD_ADD, 'objectClass')
         m['objectSid'] = ldb.MessageElement(ndr_pack(groupmap.sid), ldb.FLAG_MOD_ADD,
             'objectSid')
