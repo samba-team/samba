@@ -482,8 +482,15 @@ static int dmaster_defer_setup(struct ctdb_db_context *ctdb_db,
 	/* Already exists */
 	ddq = trbt_lookuparray32(ctdb_db->defer_dmaster, k[0], k);
 	if (ddq != NULL) {
-		talloc_free(k);
-		return 0;
+		if (ddq->generation == ctdb_db->generation) {
+			talloc_free(k);
+			return 0;
+		}
+
+		/* Recovery ocurred - get rid of old queue. All the deferred
+		 * requests will be resent anyway from ctdb_call_resend_db.
+		 */
+		talloc_free(ddq);
 	}
 
 	ddq = talloc(hdr, struct dmaster_defer_queue);
