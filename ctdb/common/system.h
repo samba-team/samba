@@ -39,7 +39,6 @@ int ctdb_sys_read_tcp_packet(int s, void *private_data,
 			uint32_t *ack_seq, uint32_t *seq);
 bool ctdb_sys_check_iface_exists(const char *iface);
 int ctdb_get_peer_pid(const int fd, pid_t *peer_pid);
-int ctdb_set_process_name(const char *name);
 
 /* From system_util.c */
 

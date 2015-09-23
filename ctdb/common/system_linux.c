@@ -603,15 +603,3 @@ int ctdb_get_peer_pid(const int fd, pid_t *peer_pid)
 	}
 	return ret;
 }
-
-/*
- * Set process name
- */
-int ctdb_set_process_name(const char *name)
-{
-	char procname[16];
-
-	strncpy(procname, name, 15);
-	procname[15] = '\0';
-	return prctl(PR_SET_NAME, (unsigned long)procname, 0, 0, 0);
-}

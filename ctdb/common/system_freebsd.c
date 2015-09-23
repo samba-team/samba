@@ -375,9 +375,3 @@ int ctdb_get_peer_pid(const int fd, pid_t *peer_pid)
 	/* FIXME FreeBSD: get_peer_pid not implemented */
 	return 1;
 }
-
-int ctdb_set_process_name(const char *name)
-{
-	/* FIXME FreeBSD: set_process_name not implemented */
-	return -ENOSYS;
-}

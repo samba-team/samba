@@ -379,9 +379,3 @@ int ctdb_get_peer_pid(const int fd, pid_t *peer_pid)
 	}
 	return ret;
 }
-
-int ctdb_set_process_name(const char *name)
-{
-	/* FIXME AIX: set_process_name not implemented */
-	return -ENOSYS;
-}
