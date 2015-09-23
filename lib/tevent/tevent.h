@@ -697,6 +697,22 @@ void tevent_get_trace_callback(struct tevent_context *ev,
  * the tevent_req structure can be talloc_free'ed. After it has
  * finished, it should talloc_free'ed by the API user.
  *
+ * tevent_req variable naming conventions:
+ *
+ * The name of the variable pointing to the tevent_req structure
+ * returned by a _send() function SHOULD be named differently between
+ * implementation and caller.
+ *
+ * From the point of view of the implementation (of the _send() and
+ * _recv() functions) the variable returned by tevent_req_create() is
+ * always called @em req.
+ *
+ * While the caller of the _send() function should use @em subreq to
+ * hold the result.
+ *
+ * @see tevent_req_create()
+ * @see tevent_req_fn()
+ *
  * @{
  */
 
@@ -748,9 +764,9 @@ struct tevent_req;
 /**
  * @brief A tevent request callback function.
  *
- * @param[in]  req      The tevent async request which executed this callback.
+ * @param[in]  subreq      The tevent async request which executed this callback.
  */
-typedef void (*tevent_req_fn)(struct tevent_req *req);
+typedef void (*tevent_req_fn)(struct tevent_req *subreq);
 
 /**
  * @brief Set an async request callback.
@@ -798,8 +814,6 @@ void *_tevent_req_callback_data(struct tevent_req *req);
  * @brief Get the private data for a callback from a tevent request structure.
  *
  * @param[in]  req      The structure to get the callback data from.
- *
- * @param[in]  req      The structure to get the data from.
  *
  * @return              The private data or NULL if not set.
  */
