@@ -24,8 +24,6 @@
 #include "messages.h"
 #include "ntdomain.h"
 
-#include "lib/util/util_process.h"
-
 #include "lib/id_cache.h"
 
 #include "../lib/tsocket/tsocket.h"
@@ -249,13 +247,11 @@ static bool lsasd_child_init(struct tevent_context *ev_ctx,
 	bool ok;
 
 	status = reinit_after_fork(msg_ctx, ev_ctx,
-				   true);
+				   true, "lsasd-child");
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("reinit_after_fork() failed\n"));
 		smb_panic("reinit_after_fork() failed");
 	}
-
-	prctl_set_comment("lsasd-child");
 
 	lsasd_child_id = child_id;
 	lsasd_reopen_logs(child_id);
@@ -861,13 +857,11 @@ void start_lsasd(struct tevent_context *ev_ctx,
 		return;
 	}
 
-	status = smbd_reinit_after_fork(msg_ctx, ev_ctx, true);
+	status = smbd_reinit_after_fork(msg_ctx, ev_ctx, true, "lsasd-master");
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("reinit_after_fork() failed\n"));
 		smb_panic("reinit_after_fork() failed");
 	}
-
-	prctl_set_comment("lsasd-master");
 
 	/* save the parent process id so the children can use it later */
 	parent_id = messaging_server_id(msg_ctx);

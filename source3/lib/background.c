@@ -176,7 +176,7 @@ static void background_job_waited(struct tevent_req *subreq)
 
 		close(fds[0]);
 
-		status = reinit_after_fork(state->msg, state->ev, true);
+		status = reinit_after_fork(state->msg, state->ev, true, NULL);
 		if (NT_STATUS_IS_OK(status)) {
 			res = state->fn(state->private_data);
 		} else {

@@ -275,8 +275,8 @@ void smbd_exit_server_cleanly(const char *const explanation)
  */
 NTSTATUS smbd_reinit_after_fork(struct messaging_context *msg_ctx,
 				struct tevent_context *ev_ctx,
-				bool parent_longlived)
+				bool parent_longlived, const char *comment)
 {
 	am_parent = NULL;
-	return reinit_after_fork(msg_ctx, ev_ctx, parent_longlived);
+	return reinit_after_fork(msg_ctx, ev_ctx, parent_longlived, comment);
 }

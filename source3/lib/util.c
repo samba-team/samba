@@ -32,6 +32,7 @@
 #include "serverid.h"
 #include "lib/sys_rw.h"
 #include "lib/sys_rw_data.h"
+#include "lib/util/util_process.h"
 
 #ifdef HAVE_SYS_PRCTL_H
 #include <sys/prctl.h>
@@ -430,7 +431,8 @@ static void reinit_after_fork_pipe_handler(struct tevent_context *ev,
 
 NTSTATUS reinit_after_fork(struct messaging_context *msg_ctx,
 			   struct tevent_context *ev_ctx,
-			   bool parent_longlived)
+			   bool parent_longlived,
+			   const char *comment)
 {
 	NTSTATUS status = NT_STATUS_OK;
 
@@ -481,6 +483,11 @@ NTSTATUS reinit_after_fork(struct messaging_context *msg_ctx,
 				 nt_errstr(status)));
 		}
 	}
+
+	if (comment) {
+		prctl_set_comment(comment);
+	}
+
  done:
 	return status;
 }
