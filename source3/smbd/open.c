@@ -3488,6 +3488,25 @@ static NTSTATUS open_directory(connection_struct *conn,
 							nt_errstr(status)));
 						return status;
 					}
+
+					/*
+					 * If mkdir_internal() returned
+					 * NT_STATUS_OBJECT_NAME_COLLISION
+					 * we still must lstat the path.
+					 */
+
+					if (SMB_VFS_LSTAT(conn, smb_dname)
+							== -1) {
+						DEBUG(2, ("Could not stat "
+							"directory '%s' just "
+							"opened: %s\n",
+							smb_fname_str_dbg(
+								smb_dname),
+							strerror(errno)));
+						return map_nt_error_from_unix(
+								errno);
+					}
+
 					info = FILE_WAS_OPENED;
 				}
 			}
