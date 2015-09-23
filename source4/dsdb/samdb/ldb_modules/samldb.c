@@ -42,6 +42,7 @@
 #include "ldb_wrap.h"
 #include "param/param.h"
 #include "libds/common/flag_mapping.h"
+#include "system/network.h"
 
 struct samldb_ctx;
 enum samldb_add_type {
@@ -2644,6 +2645,253 @@ static int samldb_fsmo_role_owner_check(struct samldb_ctx *ac)
 	return LDB_SUCCESS;
 }
 
+/*
+ * Return zero if the number of zero bits in the address (looking from low to
+ * high) is equal to or greater than the length minus the mask. Otherwise it
+ * returns -1.
+ */
+static int check_cidr_zero_bits(uint8_t *address, unsigned int len,
+				unsigned int mask)
+{
+	/* <address> is an integer in big-endian form, <len> bits long. All
+	   bits between <mask> and <len> must be zero. */
+	int i;
+	unsigned int byte_len;
+	unsigned int byte_mask;
+	unsigned int bit_mask;
+	if (len == 32) {
+		DBG_INFO("Looking at address %02x%02x%02x%02x, mask %u\n",
+			 address[0], address[1], address[2], address[3],
+			  mask);
+	} else if (len == 128){
+		DBG_INFO("Looking at address "
+			 "%02x%02x-%02x%02x-%02x%02x-%02x%02x-"
+			 "%02x%02x-%02x%02x-%02x%02x-%02x%02x, mask %u\n",
+			 address[0], address[1], address[2], address[3],
+			 address[4], address[5], address[6], address[7],
+			 address[8], address[9], address[10], address[11],
+			 address[12], address[13], address[14], address[15],
+			 mask);
+	}
+
+	if (mask > len){
+		DBG_INFO("mask %u is too big (> %u)\n", mask, len);
+		return -1;
+	}
+	if (mask == len){
+		/* single address subnet.
+		 * In IPv4 all 255s is invalid by the bitmask != address rule
+		 * in MS-ADTS. IPv6 does not suffer.
+		 */
+		if (len == 32){
+			if (address[0] == 255 &&
+			    address[1] == 255 &&
+			    address[2] == 255 &&
+			    address[3] == 255){
+				return -1;
+			}
+		}
+		return 0;
+	}
+
+	byte_len = len / 8;
+	byte_mask = mask / 8;
+
+	for (i = byte_len - 1; i > byte_mask; i--){
+		DBG_DEBUG("checking byte %d %02x\n", i, address[i]);
+		if (address[i] != 0){
+			return -1;
+		}
+	}
+	bit_mask = (1 << (8 - (mask & 7))) - 1;
+	DBG_DEBUG("checking bitmask %02x & %02x overlap %02x\n", bit_mask, address[byte_mask],
+		  bit_mask & address[byte_mask]);
+	if (address[byte_mask] & bit_mask){
+		return -1;
+	}
+
+	/* According to MS-ADTS, the mask can't exactly equal the bitmask for
+	 * IPv4 (but this is fine for v6). That is 255.255.80.0/17 is bad,
+	 * because the bitmask implied by "/17" is 255.255.80.0.
+	 *
+	 * The bit_mask used in the previous check is the complement of what
+	 * we want here.
+	 */
+	if (len == 32 && address[byte_mask] == (uint8_t)~bit_mask){
+		bool ok = false;
+		for (i = 0; i < byte_mask; i++){
+			if (address[i] != 255){
+				ok = true;
+				break;
+			}
+		}
+		if (ok == false){
+			return -1;
+		}
+	}
+	return 0;
+}
+
+
+
+static int check_address_roundtrip(const char *address, int family,
+				   const uint8_t *address_bytes,
+				   char *buffer, int buffer_len)
+{
+	/*
+	 * Check that the address is in the canonical RFC5952 format for IPv6,
+	 * and lacks extra leading zeros for each dotted decimal for IPv4.
+	 * Handily this is what inet_ntop() gives you.
+	 */
+	const char *address_redux = inet_ntop(family, address_bytes,
+					      buffer, buffer_len);
+	if (address_redux == NULL){
+		DBG_INFO("Address round trip %s failed unexpectedly"
+			 " with errno %d\n", address, errno);
+		return -1;
+	}
+	if (strcasecmp(address, address_redux) != 0){
+		DBG_INFO("Address %s round trips to %s; fail!\n",
+			 address, address_redux);
+		return -1;
+	}
+	return 0;
+}
+
+
+
+/*
+ * MS-ADTS v20150630 6.1.1.2.2.2.1 Subnet Object, refers to RFC1166 and
+ * RFC2373. It specifies something seemingly indistinguishable from an RFC4632
+ * CIDR address range without saying so explicitly. Here we follow the CIDR
+ * spec.
+ *
+ * Return 0 on success, -1 on error.
+ */
+static int verify_cidr(const char *cidr)
+{
+	char *address = NULL, *slash = NULL, *endptr = NULL;
+	bool has_colon, has_dot;
+	int res, ret;
+	unsigned long mask;
+	uint8_t *address_bytes = NULL;
+	char *address_redux = NULL;
+	unsigned int address_len;
+	TALLOC_CTX *frame = NULL;
+
+	DBG_DEBUG("CIDR is %s\n", cidr);
+	frame = talloc_stackframe();
+	address = talloc_strdup(frame, cidr);
+	if (address == NULL){
+		goto error;
+	}
+
+	/* there must be a '/' */
+	slash = strchr(address, '/');
+	if (slash == NULL){
+		goto error;
+	}
+	/* terminate the address for strchr, inet_pton */
+	*slash = '\0';
+
+	mask = strtoul(slash + 1, &endptr, 10);
+	if (mask == 0){
+		DBG_INFO("Windows does not like the zero mask, "
+			 "so nor do we: %s\n", cidr);
+		goto error;
+	}
+
+	if (*endptr != '\0' || endptr == slash + 1){
+		DBG_INFO("CIDR mask is not a proper integer: %s\n", cidr);
+		goto error;
+	}
+
+	address_bytes = talloc_size(frame, sizeof(struct in6_addr));
+	if (address_bytes == NULL){
+		goto error;
+	}
+
+	address_redux = talloc_size(frame, INET6_ADDRSTRLEN);
+	if (address_redux == NULL){
+		goto error;
+	}
+
+	DBG_INFO("found address %s, mask %lu\n", address, mask);
+	has_colon = (strchr(address, ':') == NULL) ? false : true;
+	has_dot = (strchr(address, '.') == NULL) ? false : true;
+	if (has_dot && has_colon){
+		/* This seems to be an IPv4 address embedded in IPv6, which is
+		   icky. We don't support it. */
+		DBG_INFO("Refusing to consider cidr '%s' with dots and colons\n",
+			  cidr);
+		goto error;
+	} else if (has_colon){	/* looks like IPv6 */
+		res = inet_pton(AF_INET6, address, address_bytes);
+		if (res != 1) {
+			DBG_INFO("Address in %s fails to parse as IPv6\n", cidr);
+			goto error;
+		}
+		address_len = 128;
+		if (check_address_roundtrip(address, AF_INET6, address_bytes,
+					    address_redux, INET6_ADDRSTRLEN)){
+			goto error;
+		}
+	} else if (has_dot) {
+		/* looks like IPv4 */
+		if (strcmp(address, "0.0.0.0") == 0){
+			DBG_INFO("Windows does not like the zero IPv4 address, "
+				 "so nor do we.\n");
+			goto error;
+		}
+		res = inet_pton(AF_INET, address, address_bytes);
+		if (res != 1) {
+			DBG_INFO("Address in %s fails to parse as IPv4\n", cidr);
+			goto error;
+		}
+		address_len = 32;
+
+		if (check_address_roundtrip(address, AF_INET, address_bytes,
+					    address_redux, INET_ADDRSTRLEN)){
+			goto error;
+		}
+	} else {
+		/* This doesn't look like an IP address at all. */
+		goto error;
+	}
+
+	ret = check_cidr_zero_bits(address_bytes, address_len, mask);
+	talloc_free(frame);
+	return ret;
+  error:
+	talloc_free(frame);
+	return -1;
+}
+
+
+static int samldb_verify_subnet(struct samldb_ctx *ac)
+{
+	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
+	const char *cidr = NULL;
+	const struct ldb_val *rdn_value = NULL;
+
+	rdn_value = ldb_dn_get_rdn_val(ac->msg->dn);
+	cidr = ldb_dn_escape_value(ac, *rdn_value);
+	DBG_INFO("looking at cidr '%s'\n", cidr);
+	if (cidr == NULL) {
+		ldb_set_errstring(ldb,
+				  "samldb: adding an empty subnet cidr seems wrong");
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+
+	if (verify_cidr(cidr)){
+		ldb_set_errstring(ldb,
+				  "samldb: subnet value is invalid");
+		return LDB_ERR_INVALID_DN_SYNTAX;
+	}
+
+	return LDB_SUCCESS;
+}
+
 
 /* add */
 static int samldb_add(struct ldb_module *module, struct ldb_request *req)
@@ -2750,6 +2998,17 @@ static int samldb_add(struct ldb_module *module, struct ldb_request *req)
 
 		ac->type = SAMLDB_TYPE_ATTRIBUTE;
 		return samldb_fill_object(ac);
+	}
+
+	if (samdb_find_attribute(ldb, ac->msg,
+				 "objectclass", "subnet") != NULL) {
+		ret = samldb_verify_subnet(ac);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(ac);
+			return ret;
+		}
+		/* We are just checking the value is valid, and there are no
+		   values to fill in. */
 	}
 
 	talloc_free(ac);
@@ -3097,6 +3356,15 @@ static int check_rename_constraints(struct ldb_message *msg,
 				       "subtree_rename: Cannot move/rename %s. It's an LSA-specific object!",
 				       ldb_dn_get_linearized(olddn));
 		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+
+	/* subnet objects */
+	if (samdb_find_attribute(ldb, msg, "objectclass", "subnet") != NULL) {
+		ret = samldb_verify_subnet(ac);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(ac);
+			return ret;
+		}
 	}
 
 	/* systemFlags */

@@ -110,3 +110,27 @@ class SitesSubnetCmdTestCase(BaseSitesCmdTestCase):
             self.assertIsNotNone(ret)
             self.assertEqual(len(ret), 1)
             self.samdb.delete(dnsubnet, ["tree_delete:0"])
+
+    def test_site_subnet_create_should_fail(self):
+        cidrs = (("10.9.8.0/33", self.sitename),    # mask too big
+                 ("50.60.0.0/8", self.sitename2),   # insufficient zeros
+                 ("50.261.0.0/16", self.sitename2), # bad octet
+                 ("7.0.0.0.0/0", self.sitename),    # insufficient zeros
+                 ("aaaa:bbbb:cccc:dddd:eeee:ffff:2222:1100/119",
+                  self.sitename),                   # insufficient zeros
+             )
+
+        for cidr, sitename in cidrs:
+            result, out, err = self.runsubcmd("sites", "subnet", "create",
+                                              cidr, sitename,
+                                              "-H", self.dburl,
+                                              self.creds_string)
+            self.assertCmdFail(result)
+
+            ret = self.samdb.search(base=self.config_dn,
+                                    scope=ldb.SCOPE_SUBTREE,
+                                    expression=('(&(objectclass=subnet)(cn=%s))'
+                                                % cidr))
+
+            self.assertIsNotNone(ret)
+            self.assertEqual(len(ret), 0)
