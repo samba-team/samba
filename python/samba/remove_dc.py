@@ -17,8 +17,18 @@
 #
 
 import ldb
+from ldb import LdbError
 from samba.ndr import ndr_unpack
 from samba.dcerpc import misc
+
+class demoteException(Exception):
+    """Base element for demote errors"""
+
+    def __init__(self, value):
+        self.value = value
+
+    def __str__(self):
+        return "demoteException: " + self.value
 
 
 def remove_sysvol_references(samdb, rdn):
@@ -50,18 +60,15 @@ def remove_dns_references(samdb, dnsHostName):
         raise demoteException("lookup of %s failed: %s" % (dnsHostName, estr))
     samdb.dns_replace(dnsHostName, [])
 
-def offline_remove_dc(samdb, ntds_dn,
-                      remove_computer_obj=False,
-                      remove_server_obj=False,
-                      remove_connection_obj=False,
-                      seize_stale_fsmo=False,
-                      remove_sysvol_obj=False,
-                      remove_dns_names=False):
+def offline_remove_server(samdb, server_dn,
+                          remove_computer_obj=False,
+                          remove_server_obj=False,
+                          remove_sysvol_obj=False,
+                          remove_dns_names=False):
     res = samdb.search("",
                        scope=ldb.SCOPE_BASE, attrs=["dsServiceName"])
     assert len(res) == 1
     my_serviceName = res[0]["dsServiceName"][0]
-    server_dn = ntds_dn.parent()
 
     # Confirm this is really a server object
     msgs = samdb.search(base=server_dn,
@@ -81,38 +88,6 @@ def offline_remove_dc(samdb, ntds_dn,
         dnsHostName = msgs[0]["dnsHostName"][0]
     except KeyError:
         dnsHostName = None
-
-    ntds_dn = msg.dn
-    ntds_dn.add_child(ldb.Dn(samdb, "CN=NTDS Settings"))
-    msgs = samdb.search(base=ntds_dn, expression="objectClass=ntdsDSA",
-                        attrs=["objectGUID"])
-    msg = msgs[0]
-    ntds_guid = ndr_unpack(misc.GUID, msg["objectGUID"][0])
-
-    if remove_connection_obj:
-        # Find any nTDSConnection objects with that DC as the fromServer.
-        # We use the GUID to avoid issues with any () chars in a server
-        # name.
-        stale_connections = samdb.search(base=samdb.get_config_basedn(),
-                                         expression="(&(objectclass=nTDSConnection)(fromServer=<GUID=%s>))" % ntds_guid)
-        for conn in stale_connections:
-            samdb.delete(conn.dn)
-
-    if seize_stale_fsmo:
-        stale_fsmo_roles = samdb.search(base="", scope=ldb.SCOPE_SUBTREE,
-                                        expression="(fsmoRoleOwner=<GUID=%s>))" % ntds_guid,
-                                        controls=["search_options:0:2"])
-        # Find any FSMO roles they have, give them to this server
-
-        for role in stale_fsmo_roles:
-            val = str(my_serviceName)
-            m = ldb.Message()
-            m.dn = role.dn
-            m['value'] = ldb.MessageElement(val, ldb.FLAG_MOD_REPLACE, 'fsmoRoleOwner')
-            samdb.modify(mod)
-
-    # Remove the NTDS setting tree
-    samdb.delete(ntds_dn, ["tree_delete:0"])
 
     if remove_server_obj:
         # Remove the server DN
@@ -142,6 +117,72 @@ def offline_remove_dc(samdb, ntds_dn,
     if remove_sysvol_obj:
         remove_sysvol_references(samdb, "CN=%s" % dc_name)
 
+def offline_remove_ntds_dc(samdb, ntds_dn,
+                           remove_computer_obj=False,
+                           remove_server_obj=False,
+                           remove_connection_obj=False,
+                           seize_stale_fsmo=False,
+                           remove_sysvol_obj=False,
+                           remove_dns_names=False):
+    res = samdb.search("",
+                       scope=ldb.SCOPE_BASE, attrs=["dsServiceName"])
+    assert len(res) == 1
+    my_serviceName = res[0]["dsServiceName"][0]
+    server_dn = ntds_dn.parent()
+
+    try:
+        msgs = samdb.search(base=ntds_dn, expression="objectClass=ntdsDSA",
+                        attrs=["objectGUID"], scope=ldb.SCOPE_BASE)
+    except LdbError as (enum, estr):
+        if enum == ldb.ERR_NO_SUCH_OBJECT:
+              raise demoteException("Given DN %s doesn't exist" % ntds_dn)
+        else:
+            raise
+    if (len(msgs) == 0):
+        raise demoteException("%s is not an ntdsda in %s"
+                              % (ntds_dn, samdb.domain_dns_name()))
+
+    msg = msgs[0]
+    if (msg.dn.get_rdn_name() != "CN" or
+        msg.dn.get_rdn_value() != "NTDS Settings"):
+        raise demoteException("Given DN (%s) wasn't the NTDS Settings DN" % ntds_dn)
+
+    ntds_guid = ndr_unpack(misc.GUID, msg["objectGUID"][0])
+
+    if remove_connection_obj:
+        # Find any nTDSConnection objects with that DC as the fromServer.
+        # We use the GUID to avoid issues with any () chars in a server
+        # name.
+        stale_connections = samdb.search(base=samdb.get_config_basedn(),
+                                         expression="(&(objectclass=nTDSConnection)(fromServer=<GUID=%s>))" % ntds_guid)
+        for conn in stale_connections:
+            samdb.delete(conn.dn)
+
+    if seize_stale_fsmo:
+        stale_fsmo_roles = samdb.search(base="", scope=ldb.SCOPE_SUBTREE,
+                                        expression="(fsmoRoleOwner=<GUID=%s>))" % ntds_guid,
+                                        controls=["search_options:0:2"])
+        # Find any FSMO roles they have, give them to this server
+
+        for role in stale_fsmo_roles:
+            val = str(my_serviceName)
+            m = ldb.Message()
+            m.dn = role.dn
+            m['value'] = ldb.MessageElement(val, ldb.FLAG_MOD_REPLACE, 'fsmoRoleOwner')
+            samdb.modify(m)
+
+    # Remove the NTDS setting tree
+    try:
+        samdb.delete(ntds_dn, ["tree_delete:0"])
+    except LdbError as (enum, estr):
+        raise demoteException("Failed to remove the DCs NTDS DSA object: %s" % estr)
+
+    offline_remove_server(samdb, server_dn,
+                          remove_computer_obj=remove_computer_obj,
+                          remove_server_obj=remove_server_obj,
+                          remove_sysvol_obj=remove_sysvol_obj,
+                          remove_dns_names=remove_dns_names)
+
 
 def remove_dc(samdb, dc_name):
 
@@ -152,23 +193,39 @@ def remove_dc(samdb, dc_name):
     msgs = samdb.search(base=samdb.get_config_basedn(),
                         attrs=["serverReference"],
                         expression="(&(objectClass=server)(cn=%s))"
-                        % ldb.binary_encode(dc_name))
+                    % ldb.binary_encode(dc_name))
+    if (len(msgs) == 0):
+        raise demoteException("%s is not an AD DC in %s"
+                              % (dc_name, samdb.domain_dns_name()))
     server_dn = msgs[0].dn
 
     ntds_dn = ldb.Dn(samdb, "CN=NTDS Settings")
     ntds_dn.add_base(msgs[0].dn)
 
     # Confirm this is really an ntdsDSA object
-    msgs = samdb.search(base=ntds_dn, attrs=[], scope=ldb.SCOPE_BASE,
-                        expression="(objectClass=ntdsdsa)")
+    try:
+        msgs = samdb.search(base=ntds_dn, attrs=[], scope=ldb.SCOPE_BASE,
+                            expression="(objectClass=ntdsdsa)")
+    except LdbError as (enum, estr):
+        if enum == ldb.ERR_NO_SUCH_OBJECT:
+            offline_remove_server(samdb, msgs[0].dn,
+                                  remove_computer_obj=True,
+                                  remove_server_obj=True,
+                                  remove_sysvol_obj=True,
+                                  remove_dns_names=True)
 
-    offline_remove_dc(samdb, msgs[0].dn,
-                      remove_computer_obj=True,
-                      remove_server_obj=True,
-                      remove_connection_obj=True,
-                      seize_stale_fsmo=True,
-                      remove_sysvol_obj=True,
-                      remove_dns_names=True)
+            samdb.transaction_commit()
+            return
+        else:
+            pass
+
+    offline_remove_ntds_dc(samdb, msgs[0].dn,
+                           remove_computer_obj=True,
+                           remove_server_obj=True,
+                           remove_connection_obj=True,
+                           seize_stale_fsmo=True,
+                           remove_sysvol_obj=True,
+                           remove_dns_names=True)
 
     samdb.transaction_commit()
 
@@ -178,6 +235,6 @@ def offline_remove_dc_RemoveDsServer(samdb, ntds_dn):
 
     samdb.start_transaction()
 
-    offline_remove_dc(samdb, ntds_dn)
+    offline_remove_ntds_dc(samdb, ntds_dn)
 
     samdb.commit_transaction()
