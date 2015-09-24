@@ -694,7 +694,10 @@ class cmd_domain_demote(Command):
                               credentials=creds, lp=lp)
             else:
                 samdb = SamDB(url=H, session_info=system_session(), credentials=creds, lp=lp)
-            remove_dc.remove_dc(samdb, remove_other_dead_server)
+            try:
+                remove_dc.remove_dc(samdb, remove_other_dead_server)
+            except remove_dc.DemoteException as err:
+                raise CommandError("Demote failed: %s" % err)
             return
 
         netbios_name = lp.get("netbios name")
