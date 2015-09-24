@@ -710,6 +710,10 @@ static NTSTATUS multiple_smb2_search(struct smb2_tree *tree,
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 
+		if (count == 0 || result == NULL || result->count == 0) {
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+
 		/*
 		 * After the first iteration is complete set the CONTINUE
 		 * FLAGS appropriately
@@ -717,6 +721,30 @@ static NTSTATUS multiple_smb2_search(struct smb2_tree *tree,
 		switch (cont_type) {
 			case CONT_INDEX:
 				f.in.continue_flags = SMB2_CONTINUE_FLAG_INDEX;
+				switch (data_level) {
+					case RAW_SEARCH_DATA_BOTH_DIRECTORY_INFO:
+						f.in.file_index =
+							result->list[result->count-1].both_directory_info.file_index;
+						break;
+					case RAW_SEARCH_DATA_DIRECTORY_INFO:
+						f.in.file_index =
+							result->list[result->count-1].directory_info.file_index;
+						break;
+					case RAW_SEARCH_DATA_FULL_DIRECTORY_INFO:
+						f.in.file_index =
+							result->list[result->count-1].full_directory_info.file_index;
+						break;
+					case RAW_SEARCH_DATA_ID_FULL_DIRECTORY_INFO:
+						f.in.file_index =
+							result->list[result->count-1].id_full_directory_info.file_index;
+						break;
+					case RAW_SEARCH_DATA_ID_BOTH_DIRECTORY_INFO:
+						f.in.file_index =
+							result->list[result->count-1].id_both_directory_info.file_index;
+						break;
+					default:
+						return NT_STATUS_INVALID_PARAMETER;
+				}
 				break;
 			case CONT_SINGLE:
 				f.in.continue_flags = SMB2_CONTINUE_FLAG_SINGLE;
