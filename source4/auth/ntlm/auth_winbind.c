@@ -193,9 +193,9 @@ static NTSTATUS winbind_check_password_wbclient(struct auth_method_context *ctx,
 	params.domain_name      = user_info->client.domain_name;
 	params.workstation_name = user_info->workstation_name;
 
-	d_fprintf(stderr, "looking up %s@%s logging in from %s\n",
+	DEBUG(5,("looking up %s@%s logging in from %s\n",
 		  params.account_name, params.domain_name,
-		  params.workstation_name);
+		  params.workstation_name));
 
 	memcpy(params.password.response.challenge,
 	       ctx->auth_ctx->challenge.data.data,
@@ -213,15 +213,20 @@ static NTSTATUS winbind_check_password_wbclient(struct auth_method_context *ctx,
 
 	wbc_status = wbcAuthenticateUserEx(&params, &info, &err);
 	if (wbc_status == WBC_ERR_AUTH_ERROR) {
-		DEBUG(1, ("error was %s (0x%08x)\nerror message was '%s'\n",
-		      err->nt_string, err->nt_status, err->display_string));
-
+		if (err) {
+			DEBUG(1, ("error was %s (0x%08x)\nerror message was '%s'\n",
+			      err->nt_string, err->nt_status, err->display_string));
+		}
 		nt_status = NT_STATUS(err->nt_status);
 		wbcFreeMemory(err);
 		NT_STATUS_NOT_OK_RETURN(nt_status);
 	} else if (!WBC_ERROR_IS_OK(wbc_status)) {
 		DEBUG(1, ("wbcAuthenticateUserEx: failed with %u - %s\n",
 			wbc_status, wbcErrorString(wbc_status)));
+		if (err) {
+			DEBUG(1, ("error was %s (0x%08x)\nerror message was '%s'\n",
+			      err->nt_string, err->nt_status, err->display_string));
+		}
 		return NT_STATUS_LOGON_FAILURE;
 	}
 	info3 = wbcAuthUserInfo_to_netr_SamInfo3(mem_ctx, info);
