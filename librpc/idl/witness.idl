@@ -100,8 +100,8 @@ interface witness
 
 	typedef [flag(NDR_NOALIGN|NDR_LITTLE_ENDIAN),gensize] struct {
 		witness_IPaddrInfo_flags flags;
-		ipv4address ipv4;
-		ipv6address ipv6;
+		[flag(NDR_BIG_ENDIAN)] ipv4address ipv4;
+		[flag(NDR_BIG_ENDIAN)] ipv6address ipv6;
 	} witness_IPaddrInfo;
 
 	typedef [flag(NDR_NOALIGN|NDR_LITTLE_ENDIAN)] struct {
