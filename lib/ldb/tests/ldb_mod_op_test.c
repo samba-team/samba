@@ -314,6 +314,83 @@ static void test_ldb_del_noexist(void **state)
 	assert_int_equal(ret, LDB_ERR_NO_SUCH_OBJECT);
 }
 
+static void add_keyval(struct ldbtest_ctx *test_ctx,
+		       const char *key,
+		       const char *val)
+{
+	int ret;
+	struct ldb_message *msg;
+
+	msg = ldb_msg_new(test_ctx);
+	assert_non_null(msg);
+
+	msg->dn = ldb_dn_new_fmt(msg, test_ctx->ldb, "%s=%s", key, val);
+	assert_non_null(msg->dn);
+
+	ret = ldb_msg_add_string(msg, key, val);
+	assert_int_equal(ret, 0);
+
+	ret = ldb_add(test_ctx->ldb, msg);
+	assert_int_equal(ret, 0);
+
+	talloc_free(msg);
+}
+
+static struct ldb_result *get_keyval(struct ldbtest_ctx *test_ctx,
+				     const char *key,
+				     const char *val)
+{
+	int ret;
+	struct ldb_result *result;
+	struct ldb_dn *basedn;
+
+	basedn = ldb_dn_new_fmt(test_ctx, test_ctx->ldb, "%s=%s", key, val);
+	assert_non_null(basedn);
+
+	ret = ldb_search(test_ctx->ldb, test_ctx, &result, basedn,
+			LDB_SCOPE_BASE, NULL, NULL);
+	assert_int_equal(ret, 0);
+
+	return result;
+}
+
+static void test_transactions(void **state)
+{
+	int ret;
+	struct ldbtest_ctx *test_ctx = talloc_get_type_abort(*state,
+			struct ldbtest_ctx);
+	struct ldb_result *res;
+
+	/* start lev-0 transaction */
+	ret = ldb_transaction_start(test_ctx->ldb);
+	assert_int_equal(ret, 0);
+
+	add_keyval(test_ctx, "vegetable", "carrot");
+
+	/* commit lev-0 transaction */
+	ret = ldb_transaction_commit(test_ctx->ldb);
+	assert_int_equal(ret, 0);
+
+	/* start another lev-1 nested transaction */
+	ret = ldb_transaction_start(test_ctx->ldb);
+	assert_int_equal(ret, 0);
+
+	add_keyval(test_ctx, "fruit", "apple");
+
+	/* abort lev-1 nested transaction */
+	ret = ldb_transaction_cancel(test_ctx->ldb);
+	assert_int_equal(ret, 0);
+
+	res = get_keyval(test_ctx, "vegetable", "carrot");
+	assert_non_null(res);
+	assert_int_equal(res->count, 1);
+
+	res = get_keyval(test_ctx, "fruit", "apple");
+	assert_non_null(res);
+	assert_int_equal(res->count, 0);
+}
+
+
 int main(int argc, const char **argv)
 {
 	const struct CMUnitTest tests[] = {
@@ -330,6 +407,9 @@ int main(int argc, const char **argv)
 						ldbtest_setup,
 						ldbtest_teardown),
 		cmocka_unit_test_setup_teardown(test_ldb_del_noexist,
+						ldbtest_setup,
+						ldbtest_teardown),
+		cmocka_unit_test_setup_teardown(test_transactions,
 						ldbtest_setup,
 						ldbtest_teardown),
 	};
