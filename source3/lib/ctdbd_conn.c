@@ -646,23 +646,10 @@ static NTSTATUS ctdbd_control(struct ctdbd_connection *conn,
 	struct ctdb_req_control req;
 	struct ctdb_req_header *hdr;
 	struct ctdb_reply_control *reply = NULL;
-	struct ctdbd_connection *new_conn = NULL;
 	struct iovec iov[2];
 	ssize_t nwritten;
 	NTSTATUS status;
 	int ret;
-
-	if (conn == NULL) {
-		status = ctdbd_init_connection(NULL, &new_conn);
-
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(10, ("Could not init temp connection: %s\n",
-				   nt_errstr(status)));
-			goto fail;
-		}
-
-		conn = new_conn;
-	}
 
 	ZERO_STRUCT(req);
 	req.hdr.length = offsetof(struct ctdb_req_control, data) + data.dsize;
@@ -691,7 +678,6 @@ static NTSTATUS ctdbd_control(struct ctdbd_connection *conn,
 	}
 
 	if (flags & CTDB_CTRL_FLAG_NOREPLY) {
-		TALLOC_FREE(new_conn);
 		if (cstatus) {
 			*cstatus = 0;
 		}
@@ -726,7 +712,6 @@ static NTSTATUS ctdbd_control(struct ctdbd_connection *conn,
 	status = NT_STATUS_OK;
 
  fail:
-	TALLOC_FREE(new_conn);
 	TALLOC_FREE(reply);
 	return status;
 }
