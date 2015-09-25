@@ -50,6 +50,7 @@ struct ctdbd_connection {
 	struct ctdbd_srvid_cb *callbacks;
 	int fd;
 	struct tevent_fd *fde;
+	int timeout;
 };
 
 static uint32_t ctdbd_next_reqid(struct ctdbd_connection *conn)
@@ -303,18 +304,13 @@ static int ctdbd_connect(const char *sockname, int *pfd)
 	return 0;
 }
 
-static int ctdb_read_packet(int fd, TALLOC_CTX *mem_ctx,
+static int ctdb_read_packet(int fd, int timeout, TALLOC_CTX *mem_ctx,
 			    struct ctdb_req_header **result)
 {
-	int timeout = lp_ctdb_timeout();
 	struct ctdb_req_header *req;
 	int ret, revents;
 	uint32_t msglen;
 	ssize_t nread;
-
-	if (timeout == 0) {
-		timeout = -1;
-	}
 
 	if (timeout != -1) {
 		ret = poll_one_fd(fd, POLLIN, timeout, &revents);
@@ -375,7 +371,7 @@ static int ctdb_read_req(struct ctdbd_connection *conn, uint32_t reqid,
 
  next_pkt:
 
-	ret = ctdb_read_packet(conn->fd, mem_ctx, &hdr);
+	ret = ctdb_read_packet(conn->fd, conn->timeout, mem_ctx, &hdr);
 	if (ret != 0) {
 		DEBUG(0, ("ctdb_read_packet failed: %s\n", strerror(ret)));
 		cluster_fatal("ctdbd died\n");
@@ -438,6 +434,12 @@ static NTSTATUS ctdbd_init_connection(TALLOC_CTX *mem_ctx,
 	if (!(conn = talloc_zero(mem_ctx, struct ctdbd_connection))) {
 		DEBUG(0, ("talloc failed\n"));
 		return NT_STATUS_NO_MEMORY;
+	}
+
+	conn->timeout = lp_ctdb_timeout();
+
+	if (conn->timeout == 0) {
+		conn->timeout = -1;
 	}
 
 	ret = ctdbd_connect(sockname, &conn->fd);
@@ -554,7 +556,7 @@ static void ctdbd_socket_handler(struct tevent_context *event_ctx,
 	struct ctdb_req_header *hdr = NULL;
 	int ret;
 
-	ret = ctdb_read_packet(conn->fd, talloc_tos(), &hdr);
+	ret = ctdb_read_packet(conn->fd, conn->timeout, talloc_tos(), &hdr);
 	if (ret != 0) {
 		DEBUG(0, ("ctdb_read_packet failed: %s\n", strerror(ret)));
 		cluster_fatal("ctdbd died\n");
@@ -1125,7 +1127,7 @@ NTSTATUS ctdbd_traverse(uint32_t db_id,
 		struct ctdb_rec_data *d;
 		int ret;
 
-		ret = ctdb_read_packet(conn->fd, conn, &hdr);
+		ret = ctdb_read_packet(conn->fd, conn->timeout, conn, &hdr);
 		if (ret != 0) {
 			DEBUG(0, ("ctdb_read_packet failed: %s\n",
 				  strerror(ret)));
