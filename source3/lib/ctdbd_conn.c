@@ -43,6 +43,7 @@ struct ctdbd_srvid_cb {
 };
 
 struct ctdbd_connection {
+	const char *sockname;	/* Needed in ctdbd_traverse */
 	struct messaging_context *msg_ctx;
 	uint32_t reqid;
 	uint32_t our_vnn;
@@ -426,7 +427,6 @@ static int ctdbd_connection_destructor(struct ctdbd_connection *c)
 static NTSTATUS ctdbd_init_connection(TALLOC_CTX *mem_ctx,
 				      struct ctdbd_connection **pconn)
 {
-	const char *sockname = lp_ctdbd_socket();
 	struct ctdbd_connection *conn;
 	int ret;
 	NTSTATUS status;
@@ -436,13 +436,20 @@ static NTSTATUS ctdbd_init_connection(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	conn->sockname = talloc_strdup(conn, lp_ctdbd_socket());
+	if (conn->sockname == NULL) {
+		DBG_ERR("%s: talloc failed\n", __func__);
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
 	conn->timeout = lp_ctdb_timeout();
 
 	if (conn->timeout == 0) {
 		conn->timeout = -1;
 	}
 
-	ret = ctdbd_connect(sockname, &conn->fd);
+	ret = ctdbd_connect(conn->sockname, &conn->fd);
 	if (ret != 0) {
 		status = map_nt_error_from_unix(ret);
 		DEBUG(1, ("ctdbd_connect failed: %s\n", strerror(ret)));
