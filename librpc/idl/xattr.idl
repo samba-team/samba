@@ -20,6 +20,7 @@ import "security.idl";
 interface xattr
 {
 	const char *XATTR_DOSATTRIB_NAME = "user.DosAttrib";
+	const char *XATTR_DOSATTRIB_NAME_S3 = "user.DOSATTRIB";
 	const int XATTR_DOSATTRIB_ESTIMATED_SIZE = 64;
 
 	/* we store basic dos attributes in a DosAttrib xattr. By

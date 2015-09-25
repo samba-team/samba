@@ -19,7 +19,7 @@
 from samba.credentials import DONT_USE_KERBEROS
 import samba.getopt as options
 from samba.dcerpc import security, idmap
-from samba.ntacls import setntacl, getntacl
+from samba.ntacls import setntacl, getntacl,getdosinfo
 from samba import Ldb
 from samba.ndr import ndr_unpack, ndr_print
 from samba.samdb import SamDB
@@ -94,6 +94,27 @@ class cmd_ntacl_set(Command):
         if use_ntvfs:
             logger.warning("Please note that POSIX permissions have NOT been changed, only the stored NT ACL")
 
+
+class cmd_dosinfo_get(Command):
+    """Get DOS info of a file from xattr."""
+    synopsis = "%prog <file> [options]"
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "credopts": options.CredentialsOptions,
+        "versionopts": options.VersionOptions,
+        }
+
+    takes_args = ["file"]
+
+    def run(self, file, credopts=None, sambaopts=None, versionopts=None):
+        lp = sambaopts.get_loadparm()
+        s3conf = s3param.get_context()
+        s3conf.load(lp.configfile)
+
+        dosinfo = getdosinfo(lp, file)
+        if dosinfo:
+            self.outf.write(ndr_print(dosinfo))
 
 class cmd_ntacl_get(Command):
     """Get ACLs of a file."""
@@ -257,4 +278,5 @@ class cmd_ntacl(SuperCommand):
     subcommands["get"] = cmd_ntacl_get()
     subcommands["sysvolreset"] = cmd_ntacl_sysvolreset()
     subcommands["sysvolcheck"] = cmd_ntacl_sysvolcheck()
+    subcommands["getdosinfo"] = cmd_dosinfo_get()
 
