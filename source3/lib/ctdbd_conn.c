@@ -265,9 +265,8 @@ const char *lp_ctdbd_socket(void)
  * Get us a ctdb connection
  */
 
-static int ctdbd_connect(int *pfd)
+static int ctdbd_connect(const char *sockname, int *pfd)
 {
-	const char *sockname = lp_ctdbd_socket();
 	struct sockaddr_un addr = { 0, };
 	int fd;
 	socklen_t salen;
@@ -431,6 +430,7 @@ static int ctdbd_connection_destructor(struct ctdbd_connection *c)
 static NTSTATUS ctdbd_init_connection(TALLOC_CTX *mem_ctx,
 				      struct ctdbd_connection **pconn)
 {
+	const char *sockname = lp_ctdbd_socket();
 	struct ctdbd_connection *conn;
 	int ret;
 	NTSTATUS status;
@@ -440,7 +440,7 @@ static NTSTATUS ctdbd_init_connection(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	ret = ctdbd_connect(&conn->fd);
+	ret = ctdbd_connect(sockname, &conn->fd);
 	if (ret != 0) {
 		status = map_nt_error_from_unix(ret);
 		DEBUG(1, ("ctdbd_connect failed: %s\n", strerror(ret)));
