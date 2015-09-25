@@ -483,13 +483,13 @@ static NTSTATUS ctdbd_init_connection(TALLOC_CTX *mem_ctx,
  */
 
 NTSTATUS ctdbd_messaging_connection(TALLOC_CTX *mem_ctx,
+				    const char *sockname, int timeout,
 				    struct ctdbd_connection **pconn)
 {
         struct ctdbd_connection *conn;
 	NTSTATUS status;
 
-	status = ctdbd_init_connection(mem_ctx, lp_ctdbd_socket(),
-				       lp_ctdb_timeout(), &conn);
+	status = ctdbd_init_connection(mem_ctx, sockname, timeout, &conn);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -1310,7 +1310,8 @@ NTSTATUS ctdbd_probe(void)
 	struct ctdbd_connection *conn = NULL;
 	NTSTATUS status;
 
-	status = ctdbd_messaging_connection(talloc_tos(), &conn);
+	status = ctdbd_messaging_connection(talloc_tos(), lp_ctdbd_socket(),
+					    lp_ctdb_timeout(), &conn);
 
 	/*
 	 * We only care if we can connect.

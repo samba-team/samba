@@ -183,7 +183,8 @@ NTSTATUS messaging_ctdbd_init(struct messaging_context *msg_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = ctdbd_messaging_connection(ctx, &ctx->conn);
+	status = ctdbd_messaging_connection(ctx, lp_ctdbd_socket(),
+					    lp_ctdb_timeout(), &ctx->conn);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("ctdbd_messaging_connection failed: %s\n",
