@@ -2468,22 +2468,16 @@ NTSTATUS _netr_GetForestTrustInformation(struct pipes_struct *p,
 	NTSTATUS status;
 	struct netlogon_creds_CredentialState *creds;
 	struct lsa_ForestTrustInformation *info, **info_ptr;
-	struct loadparm_context *lp_ctx;
 
 	/* TODO: check server name */
 
-	lp_ctx = loadparm_init_s3(p->mem_ctx, loadparm_s3_helpers());
-	if (lp_ctx == NULL) {
-		DEBUG(0, ("loadparm_init_s3 failed\n"));
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-
-	status = schannel_check_creds_state(p->mem_ctx, lp_ctx,
-					    r->in.computer_name,
-					    r->in.credential,
-					    r->out.return_authenticator,
-					    &creds);
-	talloc_unlink(p->mem_ctx, lp_ctx);
+	become_root();
+	status = netr_creds_server_step_check(p, p->mem_ctx,
+					      r->in.computer_name,
+					      r->in.credential,
+					      r->out.return_authenticator,
+					      &creds);
+	unbecome_root();
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -2570,22 +2564,16 @@ NTSTATUS _netr_ServerGetTrustInfo(struct pipes_struct *p,
 	bool trusted;
 	struct netr_TrustInfo *trust_info;
 	struct pdb_trusted_domain *td;
-	struct loadparm_context *lp_ctx;
-
-	lp_ctx = loadparm_init_s3(p->mem_ctx, loadparm_s3_helpers());
-	if (lp_ctx == NULL) {
-		DEBUG(0, ("loadparm_init_s3 failed\n"));
-		return NT_STATUS_INTERNAL_ERROR;
-	}
 
 	/* TODO: check server name */
 
-	status = schannel_check_creds_state(p->mem_ctx, lp_ctx,
-					    r->in.computer_name,
-					    r->in.credential,
-					    r->out.return_authenticator,
-					    &creds);
-	talloc_unlink(p->mem_ctx, lp_ctx);
+	become_root();
+	status = netr_creds_server_step_check(p, p->mem_ctx,
+					      r->in.computer_name,
+					      r->in.credential,
+					      r->out.return_authenticator,
+					      &creds);
+	unbecome_root();
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
