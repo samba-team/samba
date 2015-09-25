@@ -63,7 +63,7 @@ NTSTATUS ctdbd_parse(struct ctdbd_connection *conn, uint32_t db_id,
 				    void *private_data),
 		     void *private_data);
 
-NTSTATUS ctdbd_traverse(uint32_t db_id,
+NTSTATUS ctdbd_traverse(struct ctdbd_connection *master, uint32_t db_id,
 			void (*fn)(TDB_DATA key, TDB_DATA data,
 				   void *private_data),
 			void *private_data);

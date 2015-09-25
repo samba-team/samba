@@ -1414,7 +1414,8 @@ static int db_ctdb_traverse(struct db_context *db,
 		return ret;
 	}
 
-	status = ctdbd_traverse(ctx->db_id, traverse_callback, &state);
+	status = ctdbd_traverse(messaging_ctdbd_connection(), ctx->db_id,
+				traverse_callback, &state);
 	if (!NT_STATUS_IS_OK(status)) {
 		return -1;
 	}
@@ -1503,7 +1504,8 @@ static int db_ctdb_traverse_read(struct db_context *db,
 		return tdb_traverse_read(ctx->wtdb->tdb, traverse_persistent_callback_read, &state);
 	}
 
-	status = ctdbd_traverse(ctx->db_id, traverse_read_callback, &state);
+	status = ctdbd_traverse(messaging_ctdbd_connection(), ctx->db_id,
+				traverse_read_callback, &state);
 	if (!NT_STATUS_IS_OK(status)) {
 		return -1;
 	}

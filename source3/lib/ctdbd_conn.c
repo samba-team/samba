@@ -425,6 +425,7 @@ static int ctdbd_connection_destructor(struct ctdbd_connection *c)
  */
 
 static NTSTATUS ctdbd_init_connection(TALLOC_CTX *mem_ctx,
+				      const char *sockname, int timeout,
 				      struct ctdbd_connection **pconn)
 {
 	struct ctdbd_connection *conn;
@@ -436,14 +437,14 @@ static NTSTATUS ctdbd_init_connection(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	conn->sockname = talloc_strdup(conn, lp_ctdbd_socket());
+	conn->sockname = talloc_strdup(conn, sockname);
 	if (conn->sockname == NULL) {
 		DBG_ERR("%s: talloc failed\n", __func__);
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
 	}
 
-	conn->timeout = lp_ctdb_timeout();
+	conn->timeout = timeout;
 
 	if (conn->timeout == 0) {
 		conn->timeout = -1;
@@ -499,7 +500,8 @@ NTSTATUS ctdbd_messaging_connection(TALLOC_CTX *mem_ctx,
         struct ctdbd_connection *conn;
 	NTSTATUS status;
 
-	status = ctdbd_init_connection(mem_ctx, &conn);
+	status = ctdbd_init_connection(mem_ctx, lp_ctdbd_socket(),
+				       lp_ctdb_timeout(), &conn);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -1066,7 +1068,7 @@ NTSTATUS ctdbd_parse(struct ctdbd_connection *conn, uint32_t db_id,
   everything in-line.
 */
 
-NTSTATUS ctdbd_traverse(uint32_t db_id,
+NTSTATUS ctdbd_traverse(struct ctdbd_connection *master, uint32_t db_id,
 			void (*fn)(TDB_DATA key, TDB_DATA data,
 				   void *private_data),
 			void *private_data)
@@ -1079,7 +1081,8 @@ NTSTATUS ctdbd_traverse(uint32_t db_id,
 	int cstatus;
 
 	become_root();
-	status = ctdbd_init_connection(NULL, &conn);
+	status = ctdbd_init_connection(NULL, master->sockname, master->timeout,
+				       &conn);
 	unbecome_root();
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("ctdbd_init_connection failed: %s\n",
