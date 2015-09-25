@@ -1013,7 +1013,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 	return NT_STATUS_OK;
  fail:
 	DEBUG(10, ("dirpath = [%s] start = [%s]\n", dirpath, start));
-	if (*dirpath != '\0') {
+	if (dirpath && *dirpath != '\0') {
 		smb_fname->base_name = talloc_asprintf(smb_fname, "%s/%s",
 						       dirpath, start);
 	} else {
