@@ -24,7 +24,7 @@
 #include "lib/dbwrap/dbwrap_ctdb.h"
 #include "torture/proto.h"
 
-NTSTATUS ctdbd_probe(void)
+NTSTATUS ctdbd_probe(const char *sockname, int timeout)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }

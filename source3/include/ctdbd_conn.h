@@ -92,6 +92,6 @@ NTSTATUS register_with_ctdbd(struct ctdbd_connection *conn, uint64_t srvid,
 				       const uint8_t *msg, size_t msglen,
 				       void *private_data),
 			     void *private_data);
-NTSTATUS ctdbd_probe(void);
+NTSTATUS ctdbd_probe(const char *sockname, int timeout);
 
 #endif /* _CTDBD_CONN_H */

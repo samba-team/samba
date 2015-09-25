@@ -28,7 +28,7 @@ bool cluster_probe_ok(void)
 	if (lp_clustering()) {
 		NTSTATUS status;
 
-		status = ctdbd_probe();
+		status = ctdbd_probe(lp_ctdbd_socket(), lp_ctdb_timeout());
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("clustering=yes but ctdbd connect failed: "
 				  "%s\n", nt_errstr(status)));

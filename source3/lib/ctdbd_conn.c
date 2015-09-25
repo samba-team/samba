@@ -1301,7 +1301,7 @@ NTSTATUS ctdb_unwatch(struct ctdbd_connection *conn)
 	return status;
 }
 
-NTSTATUS ctdbd_probe(void)
+NTSTATUS ctdbd_probe(const char *sockname, int timeout)
 {
 	/*
 	 * Do a very early check if ctdbd is around to avoid an abort and core
@@ -1310,8 +1310,8 @@ NTSTATUS ctdbd_probe(void)
 	struct ctdbd_connection *conn = NULL;
 	NTSTATUS status;
 
-	status = ctdbd_messaging_connection(talloc_tos(), lp_ctdbd_socket(),
-					    lp_ctdb_timeout(), &conn);
+	status = ctdbd_messaging_connection(talloc_tos(), sockname, timeout,
+					    &conn);
 
 	/*
 	 * We only care if we can connect.
