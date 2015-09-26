@@ -58,6 +58,54 @@ ssize_t msghdr_prep_fds(struct msghdr *msg, uint8_t *buf, size_t bufsize,
 	return cmsg_space;
 }
 
+size_t msghdr_prep_recv_fds(struct msghdr *msg, uint8_t *buf, size_t bufsize,
+			    size_t num_fds)
+{
+	size_t ret = CMSG_SPACE(sizeof(int) * num_fds);
+
+	if (bufsize < ret) {
+		return ret;
+	}
+	if (msg != NULL) {
+		if (num_fds != 0) {
+			msg->msg_control = buf;
+			msg->msg_controllen = ret;
+		} else {
+			msg->msg_control = NULL;
+			msg->msg_controllen = 0;
+		}
+	}
+	return ret;
+}
+
+size_t msghdr_extract_fds(struct msghdr *msg, int *fds, size_t fds_size)
+{
+	struct cmsghdr *cmsg;
+	size_t num_fds;
+
+	for(cmsg = CMSG_FIRSTHDR(msg);
+	    cmsg != NULL;
+	    cmsg = CMSG_NXTHDR(msg, cmsg))
+	{
+		if ((cmsg->cmsg_type == SCM_RIGHTS) &&
+		    (cmsg->cmsg_level == SOL_SOCKET)) {
+			break;
+		}
+	}
+
+	if (cmsg == NULL) {
+		return 0;
+	}
+
+	num_fds = (cmsg->cmsg_len - CMSG_LEN(0)) / sizeof(int);
+
+	if ((num_fds != 0) && (fds != NULL) && (fds_size >= num_fds)) {
+		memcpy(fds, CMSG_DATA(cmsg), num_fds * sizeof(int));
+	}
+
+	return num_fds;
+}
+
 struct msghdr_buf {
 	struct msghdr msg;
 	struct sockaddr_storage addr;
@@ -129,52 +177,4 @@ ssize_t msghdr_copy(struct msghdr_buf *msg, size_t msgsize,
 struct msghdr *msghdr_buf_msghdr(struct msghdr_buf *msg)
 {
 	return &msg->msg;
-}
-
-size_t msghdr_prep_recv_fds(struct msghdr *msg, uint8_t *buf, size_t bufsize,
-			    size_t num_fds)
-{
-	size_t ret = CMSG_SPACE(sizeof(int) * num_fds);
-
-	if (bufsize < ret) {
-		return ret;
-	}
-	if (msg != NULL) {
-		if (num_fds != 0) {
-			msg->msg_control = buf;
-			msg->msg_controllen = ret;
-		} else {
-			msg->msg_control = NULL;
-			msg->msg_controllen = 0;
-		}
-	}
-	return ret;
-}
-
-size_t msghdr_extract_fds(struct msghdr *msg, int *fds, size_t fds_size)
-{
-	struct cmsghdr *cmsg;
-	size_t num_fds;
-
-	for(cmsg = CMSG_FIRSTHDR(msg);
-	    cmsg != NULL;
-	    cmsg = CMSG_NXTHDR(msg, cmsg))
-	{
-		if ((cmsg->cmsg_type == SCM_RIGHTS) &&
-		    (cmsg->cmsg_level == SOL_SOCKET)) {
-			break;
-		}
-	}
-
-	if (cmsg == NULL) {
-		return 0;
-	}
-
-	num_fds = (cmsg->cmsg_len - CMSG_LEN(0)) / sizeof(int);
-
-	if ((num_fds != 0) && (fds != NULL) && (fds_size >= num_fds)) {
-		memcpy(fds, CMSG_DATA(cmsg), num_fds * sizeof(int));
-	}
-
-	return num_fds;
 }
