@@ -1941,7 +1941,6 @@ static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq)
 	}
 
 	state->cli->max_xmit_frag = pkt->u.bind_ack.max_xmit_frag;
-	state->cli->max_recv_frag = pkt->u.bind_ack.max_recv_frag;
 
 	switch(pauth->auth_type) {
 
@@ -2655,7 +2654,6 @@ static NTSTATUS rpc_pipe_open_tcp_port(TALLOC_CTX *mem_ctx, const char *host,
 	}
 
 	result->max_xmit_frag = RPC_MAX_PDU_FRAG_LEN;
-	result->max_recv_frag = RPC_MAX_PDU_FRAG_LEN;
 
 	if (ss_addr == NULL) {
 		if (!resolve_name(host, &addr, NBT_NAME_SERVER, false)) {
@@ -2903,7 +2901,6 @@ NTSTATUS rpc_pipe_open_ncalrpc(TALLOC_CTX *mem_ctx, const char *socket_path,
 	}
 
 	result->max_xmit_frag = RPC_MAX_PDU_FRAG_LEN;
-	result->max_recv_frag = RPC_MAX_PDU_FRAG_LEN;
 
 	fd = socket(AF_UNIX, SOCK_STREAM, 0);
 	if (fd == -1) {
@@ -2995,7 +2992,6 @@ static NTSTATUS rpc_pipe_open_np(struct cli_state *cli,
 		result, "\\\\%s", result->desthost);
 
 	result->max_xmit_frag = RPC_MAX_PDU_FRAG_LEN;
-	result->max_recv_frag = RPC_MAX_PDU_FRAG_LEN;
 
 	if ((result->desthost == NULL) || (result->srv_name_slash == NULL)) {
 		TALLOC_FREE(result);

@@ -629,7 +629,6 @@ NTSTATUS rpc_pipe_open_internal(TALLOC_CTX *mem_ctx,
 	}
 
 	result->max_xmit_frag = -1;
-	result->max_recv_frag = -1;
 
 	status = rpcint_binding_handle_ex(result,
 					  abstract_syntax,
@@ -954,7 +953,6 @@ static NTSTATUS rpc_pipe_open_external(TALLOC_CTX *mem_ctx,
 	}
 
 	result->max_xmit_frag = RPC_MAX_PDU_FRAG_LEN;
-	result->max_recv_frag = RPC_MAX_PDU_FRAG_LEN;
 
 	status = rpc_transport_tstream_init(result,
 					    &proxy_state->npipe,
