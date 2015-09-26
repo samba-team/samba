@@ -572,11 +572,11 @@ static int unix_dgram_send(struct unix_dgram_ctx *ctx,
 		return EINVAL;
 	}
 
-#ifndef HAVE_STRUCT_MSGHDR_MSG_CONTROL
+#if !defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL) && !defined(HAVE_STRUCT_MSGHDR_MSG_ACCRIGHTS)
 	if (num_fds > 0) {
 		return ENOSYS;
 	}
-#endif /* ! HAVE_STRUCT_MSGHDR_MSG_CONTROL */
+#endif
 
 	for (i = 0; i < num_fds; i++) {
 		/*
