@@ -200,11 +200,12 @@ bool smbd_is_smb2_header(const uint8_t *inbuf, size_t size)
 	return true;
 }
 
-static NTSTATUS smbd_initialize_smb2(struct smbXsrv_connection *xconn)
+static NTSTATUS smbd_initialize_smb2(struct smbXsrv_connection *xconn,
+				     uint64_t expected_seq_low)
 {
 	TALLOC_FREE(xconn->transport.fde);
 
-	xconn->smb2.credits.seq_low = 0;
+	xconn->smb2.credits.seq_low = expected_seq_low;
 	xconn->smb2.credits.seq_range = 1;
 	xconn->smb2.credits.granted = 1;
 	xconn->smb2.credits.max = lp_smb2_max_credits();
@@ -3159,7 +3160,7 @@ void smbd_smb2_first_negprot(struct smbXsrv_connection *xconn,
 	DEBUG(10,("smbd_smb2_first_negprot: packet length %u\n",
 		 (unsigned int)size));
 
-	status = smbd_initialize_smb2(xconn);
+	status = smbd_initialize_smb2(xconn, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		smbd_server_connection_terminate(xconn, nt_errstr(status));
 		return;
