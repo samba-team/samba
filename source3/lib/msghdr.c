@@ -21,6 +21,8 @@
 #include "lib/util/iov_buf.h"
 #include <sys/socket.h>
 
+#if defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL)
+
 ssize_t msghdr_prep_fds(struct msghdr *msg, uint8_t *buf, size_t bufsize,
 			const int *fds, size_t num_fds)
 {
@@ -105,6 +107,84 @@ size_t msghdr_extract_fds(struct msghdr *msg, int *fds, size_t fds_size)
 
 	return num_fds;
 }
+
+#elif defined(HAVE_STRUCT_MSGHDR_MSG_ACCRIGHTS)
+
+ssize_t msghdr_prep_fds(struct msghdr *msg, uint8_t *buf, size_t bufsize,
+			const int *fds, size_t num_fds)
+{
+	size_t needed;
+
+	if (num_fds > INT8_MAX) {
+		return -1;
+	}
+
+	needed = sizeof(int) * num_fds;
+
+	if ((msg == NULL) || (needed > bufsize)) {
+		return needed;
+	}
+
+	memcpy(buf, fds, needed);
+
+	msg->msg_accrights = (caddr_t) buf;
+	msg->msg_accrightslen = needed;
+
+	return needed;
+}
+
+size_t msghdr_prep_recv_fds(struct msghdr *msg, uint8_t *buf, size_t bufsize,
+			    size_t num_fds)
+{
+	size_t ret = num_fds * sizeof(int);
+
+	if (bufsize < ret) {
+		return ret;
+	}
+
+	if (msg != NULL) {
+		if (num_fds != 0) {
+			msg->msg_accrights = (caddr_t) buf;
+			msg->msg_accrightslen = ret;
+		} else {
+			msg->msg_accrights = NULL;
+			msg->msg_accrightslen = 0;
+		}
+	}
+	return ret;
+}
+
+size_t msghdr_extract_fds(struct msghdr *msg, int *fds, size_t fds_size)
+{
+	size_t num_fds = msg->msg_accrightslen / sizeof(int);
+
+	if ((fds != 0) && (num_fds <= fds_size)) {
+		memcpy(fds, msg->msg_accrights, msg->msg_accrightslen);
+	}
+
+	return num_fds;
+}
+
+#else
+
+ssize_t msghdr_prep_fds(struct msghdr *msg, uint8_t *buf, size_t bufsize,
+			const int *fds, size_t num_fds)
+{
+	return -1;
+}
+
+size_t msghdr_prep_recv_fds(struct msghdr *msg, uint8_t *buf, size_t bufsize,
+			    size_t num_fds)
+{
+	return 0;
+}
+
+size_t msghdr_extract_fds(struct msghdr *msg, int *fds, size_t fds_size)
+{
+	return 0;
+}
+
+#endif
 
 struct msghdr_buf {
 	struct msghdr msg;
