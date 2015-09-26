@@ -798,12 +798,6 @@ int unix_msg_send(struct unix_msg_ctx *ctx, const struct sockaddr_un *dst,
 		return EINVAL;
 	}
 
-#ifndef HAVE_STRUCT_MSGHDR_MSG_CONTROL
-	if (num_fds > 0) {
-		return ENOSYS;
-	}
-#endif /* ! HAVE_STRUCT_MSGHDR_MSG_CONTROL */
-
 	if (num_fds > INT8_MAX) {
 		return EINVAL;
 	}
