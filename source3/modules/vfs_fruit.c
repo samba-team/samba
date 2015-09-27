@@ -567,7 +567,7 @@ static bool ad_pack(struct adouble *ad)
 	}
 	RSSVAL(ad->ad_data, ADEDOFF_NENTRIES, nent);
 
-	return 0;
+	return true;
 }
 
 /**
@@ -949,8 +949,9 @@ static ssize_t ad_header_read_rsrc(struct adouble *ad, const char *path)
 			/*
 			 * Can't use ad_write() because we might not have a fsp
 			 */
-			rc = ad_pack(ad);
-			if (rc != 0) {
+			ok = ad_pack(ad);
+			if (!ok) {
+				rc = -1;
 				goto exit;
 			}
 			/* FIXME: direct sys_pwrite(), don't have an fsp */
@@ -1211,10 +1212,11 @@ static int ad_write(struct adouble *ad, const char *path)
 {
 	int rc = 0;
 	ssize_t len;
+	bool ok;
 
-	rc = ad_pack(ad);
-	if (rc != 0) {
-		goto exit;
+	ok = ad_pack(ad);
+	if (!ok) {
+		return -1;
 	}
 
 	switch (ad->ad_type) {
