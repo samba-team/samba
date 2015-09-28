@@ -3,7 +3,7 @@ import "winreg.idl", "misc.idl";
 #include "idl_types.h"
 
 [
-	uuid(b97db8b2-4c63-11cf-bff6-08002be23f2f),
+	uuid("b97db8b2-4c63-11cf-bff6-08002be23f2f"),
 	version(3.0),
 	pointer_default(unique),
 	endpoint("ncacn_ip_tcp:"),
