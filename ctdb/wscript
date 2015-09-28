@@ -26,7 +26,7 @@ else:
 version = samba_version.samba_version_file('%s/VERSION' % vdir, vdir, env)
 VERSION = version.STRING.replace('-', '.')
 
-Options.default_prefix = '/usr/local'
+default_prefix = Options.default_prefix = '/usr/local'
 
 samba_dist.DIST_DIRS('''ctdb:. lib/replace:lib/replace lib/talloc:lib/talloc
                         lib/tevent:lib/tevent lib/tdb:lib/tdb

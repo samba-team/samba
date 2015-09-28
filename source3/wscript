@@ -11,7 +11,7 @@ import build.charset
 import samba_utils, samba_version
 import samba3
 
-Options.default_prefix = '/usr/local/samba'
+default_prefix = Options.default_prefix = '/usr/local/samba'
 
 def set_options(opt):
 
