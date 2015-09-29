@@ -17,7 +17,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "includes.h"
+#include "replace.h"
+#include "system/network.h"
+#include "system/filesys.h"
+#include <dirent.h>
 #include "lib/util/data_blob.h"
 #include "lib/util/debug.h"
 #include "lib/unix_msg/unix_msg.h"
@@ -66,7 +69,7 @@ static int messaging_dgm_lockfile_create(struct messaging_dgm_context *ctx,
 					 pid_t pid, int *plockfile_fd,
 					 uint64_t unique)
 {
-	fstring buf;
+	char buf[64];
 	int lockfile_fd;
 	struct sun_path_buf lockfile_name;
 	struct flock lck;
