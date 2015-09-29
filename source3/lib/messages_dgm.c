@@ -84,7 +84,7 @@ static int messaging_dgm_lockfile_create(struct messaging_dgm_context *ctx,
 
 	/* no O_EXCL, existence check is via the fcntl lock */
 
-	lockfile_fd = open(lockfile_name.buf, O_NONBLOCK|O_CREAT|O_WRONLY,
+	lockfile_fd = open(lockfile_name.buf, O_NONBLOCK|O_CREAT|O_RDWR,
 			   0644);
 	if (lockfile_fd == -1) {
 		ret = errno;
@@ -301,6 +301,66 @@ static void messaging_dgm_recv(struct unix_msg_ctx *ctx,
 
 	dgm_ctx->recv_cb(msg, msg_len, fds, num_fds,
 			 dgm_ctx->recv_cb_private_data);
+}
+
+static int messaging_dgm_read_unique(int fd, uint64_t *punique)
+{
+	char buf[25];
+	ssize_t rw_ret;
+	unsigned long long unique;
+	char *endptr;
+
+	rw_ret = pread(fd, buf, sizeof(buf)-1, 0);
+	if (rw_ret == -1) {
+		return errno;
+	}
+	buf[rw_ret] = '\0';
+
+	unique = strtoull(buf, &endptr, 10);
+	if ((unique == 0) && (errno == EINVAL)) {
+		return EINVAL;
+	}
+	if ((unique == ULLONG_MAX) && (errno == ERANGE)) {
+		return ERANGE;
+	}
+	if (endptr[0] != '\n') {
+		return EINVAL;
+	}
+	*punique = unique;
+	return 0;
+}
+
+int messaging_dgm_get_unique(pid_t pid, uint64_t *unique)
+{
+	struct messaging_dgm_context *ctx = global_dgm_context;
+	struct sun_path_buf lockfile_name;
+	int ret, fd;
+
+	if (ctx == NULL) {
+		return EBADF;
+	}
+
+	if (pid == getpid()) {
+		/*
+		 * Protect against losing our own lock
+		 */
+		return messaging_dgm_read_unique(ctx->lockfile_fd, unique);
+	}
+
+	ret = snprintf(lockfile_name.buf, sizeof(lockfile_name.buf),
+		       "%s/%u", ctx->lockfile_dir.buf, (int)pid);
+	if (ret >= sizeof(lockfile_name.buf)) {
+		return ENAMETOOLONG;
+	}
+
+	fd = open(lockfile_name.buf, O_NONBLOCK|O_RDONLY, 0);
+	if (fd == -1) {
+		return errno;
+	}
+
+	ret = messaging_dgm_read_unique(fd, unique);
+	close(fd);
+	return ret;
 }
 
 int messaging_dgm_cleanup(pid_t pid)
