@@ -82,6 +82,11 @@ bool ctdb_processes_exist(struct ctdbd_connection *conn,
 	return false;
 }
 
+bool ctdbd_process_exists(struct ctdbd_connection *conn, uint32_t vnn, pid_t pid)
+{
+	return false;
+}
+
 struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 				const char *name,
 				int hash_size, int tdb_flags,

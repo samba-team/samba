@@ -27,6 +27,7 @@
 #include "lib/param/param.h"
 #include "ctdbd_conn.h"
 #include "messages.h"
+#include "lib/messages_dgm.h"
 
 struct serverid_key {
 	pid_t pid;
@@ -191,17 +192,40 @@ static void server_exists_parse(TDB_DATA key, TDB_DATA data, void *priv)
 				sizeof(state->id->unique_id)) == 0);
 }
 
-bool serverid_exists(const struct server_id *id)
+static bool serverid_exists_local(const struct server_id *id)
 {
-	bool result = false;
-	bool ok = false;
+	bool exists = process_exists_by_pid(id->pid);
+	uint64_t unique;
+	int ret;
 
-	ok = serverids_exist(id, 1, &result);
-	if (!ok) {
+	if (!exists) {
 		return false;
 	}
 
-	return result;
+	if (id->unique_id == SERVERID_UNIQUE_ID_NOT_TO_VERIFY) {
+		return true;
+	}
+
+	ret = messaging_dgm_get_unique(id->pid, &unique);
+	if (ret != 0) {
+		return false;
+	}
+
+	return (unique == id->unique_id);
+}
+
+bool serverid_exists(const struct server_id *id)
+{
+	if (procid_is_local(id)) {
+		return serverid_exists_local(id);
+	}
+
+	if (lp_clustering()) {
+		return ctdbd_process_exists(messaging_ctdbd_connection(),
+					    id->vnn, id->pid);
+	}
+
+	return false;
 }
 
 bool serverids_exist(const struct server_id *ids, int num_ids, bool *results)
