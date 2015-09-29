@@ -104,8 +104,23 @@ struct server_id server_id_from_string(uint32_t local_vnn,
 	 */
 
 	result = templ;
+	ret = sscanf(pid_string, "%"SCNu32":%"SCNu64".%"SCNu32"/%"SCNu64,
+		     &result.vnn, &result.pid, &result.task_id,
+		     &result.unique_id);
+	if (ret == 4) {
+		return result;
+	}
+
+	result = templ;
 	ret = sscanf(pid_string, "%"SCNu32":%"SCNu64".%"SCNu32,
 		     &result.vnn, &result.pid, &result.task_id);
+	if (ret == 3) {
+		return result;
+	}
+
+	result = templ;
+	ret = sscanf(pid_string, "%"SCNu32":%"SCNu64"/%"SCNu64,
+		     &result.vnn, &result.pid, &result.unique_id);
 	if (ret == 3) {
 		return result;
 	}
@@ -118,8 +133,24 @@ struct server_id server_id_from_string(uint32_t local_vnn,
 	}
 
 	result = templ;
+	ret = sscanf(pid_string, "%"SCNu64".%"SCNu32"/%"SCNu64,
+		     &result.pid, &result.task_id, &result.unique_id);
+	if (ret == 3) {
+		result.vnn = local_vnn;
+		return result;
+	}
+
+	result = templ;
 	ret = sscanf(pid_string, "%"SCNu64".%"SCNu32,
 		     &result.pid, &result.task_id);
+	if (ret == 2) {
+		result.vnn = local_vnn;
+		return result;
+	}
+
+	result = templ;
+	ret = sscanf(pid_string, "%"SCNu64"/%"SCNu64,
+		     &result.pid, &result.unique_id);
 	if (ret == 2) {
 		result.vnn = local_vnn;
 		return result;
