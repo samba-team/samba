@@ -641,6 +641,30 @@ done:
 	return ret;
 }
 
+static int net_serverid_exists(struct net_context *c, int argc,
+			       const char **argv)
+{
+	struct server_id pid;
+	bool ok;
+
+	if ((argc != 1) || (c->display_usage)) {
+		d_printf("Usage:\n"
+			 "net serverid exists <serverid>\n");
+		return -1;
+	}
+
+	pid = server_id_from_string(get_my_vnn(), argv[0]);
+	ok = serverid_exists(&pid);
+
+	if (ok) {
+		d_printf("%s exists\n", argv[0]);
+	} else {
+		d_printf("%s does not exist\n", argv[0]);
+	}
+
+	return 0;
+}
+
 int net_serverid(struct net_context *c, int argc, const char **argv)
 {
 	struct functable func[] = {
@@ -667,6 +691,13 @@ int net_serverid(struct net_context *c, int argc, const char **argv)
 			N_("Clean dead entries from temporary databases"),
 			N_("net serverid wipedbs\n"
 			   "    Clean dead entries from temporary databases")
+		},
+		{
+			"exists",
+			net_serverid_exists,
+			NET_TRANSPORT_LOCAL,
+			N_("Show existence of a serverid"),
+			N_("net serverid exists <id>")
 		},
 		{NULL, NULL, 0, NULL, NULL}
 	};
