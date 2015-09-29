@@ -401,6 +401,19 @@ static int wipedbs_traverse_set_exists(struct db_record *rec,
 	return 0;
 }
 
+static bool serverids_exist(const struct server_id *ids, int num_ids,
+			    bool *results)
+{
+	int i;
+
+	for (i=0; i<num_ids; i++) {
+		results[i] = serverid_exists(&ids[i]);
+	}
+
+	return true;
+}
+
+
 static NTSTATUS wipedbs_check_server_exists(struct wipedbs_state *state)
 {
 	NTSTATUS status;
