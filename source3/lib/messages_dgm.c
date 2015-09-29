@@ -77,7 +77,7 @@ static int messaging_dgm_lockfile_create(struct messaging_dgm_context *ctx,
 	ssize_t written;
 
 	ret = snprintf(lockfile_name.buf, sizeof(lockfile_name.buf),
-		       "%s/%u", ctx->lockfile_dir.buf, (int)pid);
+		       "%s/%u", ctx->lockfile_dir.buf, (unsigned)pid);
 	if (ret >= sizeof(lockfile_name.buf)) {
 		return ENAMETOOLONG;
 	}
