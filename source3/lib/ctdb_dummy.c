@@ -63,18 +63,6 @@ const char *lp_ctdbd_socket(void)
 	return "";
 }
 
-bool ctdb_serverids_exist_supported(struct ctdbd_connection *conn)
-{
-	return false;
-}
-
-bool ctdb_serverids_exist(struct ctdbd_connection *conn,
-			  const struct server_id *pids, unsigned num_pids,
-			  bool *results)
-{
-	return false;
-}
-
 bool ctdb_processes_exist(struct ctdbd_connection *conn,
 			  const struct server_id *pids, int num_pids,
 			  bool *results)

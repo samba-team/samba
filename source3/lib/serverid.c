@@ -121,9 +121,7 @@ bool serverid_register(const struct server_id id, uint32_t msg_flags)
 		goto done;
 	}
 
-	if (lp_clustering() &&
-	    ctdb_serverids_exist_supported(messaging_ctdbd_connection()))
-	{
+	if (lp_clustering()) {
 		register_with_ctdbd(messaging_ctdbd_connection(), id.unique_id,
 				    NULL, NULL);
 	}
