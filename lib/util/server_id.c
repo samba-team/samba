@@ -90,11 +90,11 @@ size_t server_id_str_buf_unique(struct server_id id, char *buf, size_t buflen)
 struct server_id server_id_from_string(uint32_t local_vnn,
 				       const char *pid_string)
 {
+	struct server_id templ = {
+		.vnn = NONCLUSTER_VNN, .pid = UINT64_MAX
+	};
 	struct server_id result;
-	unsigned long long pid;
-	unsigned int vnn, task_id = 0;
-
-	ZERO_STRUCT(result);
+	int ret;
 
 	/*
 	 * We accept various forms with 1, 2 or 3 component forms
@@ -102,27 +102,42 @@ struct server_id server_id_from_string(uint32_t local_vnn,
 	 * we want backwards compatibility for scripts that may call
 	 * smbclient.
 	 */
-	if (sscanf(pid_string, "%u:%llu.%u", &vnn, &pid, &task_id) == 3) {
-		result.vnn = vnn;
-		result.pid = pid;
-		result.task_id = task_id;
-	} else if (sscanf(pid_string, "%u:%llu", &vnn, &pid) == 2) {
-		result.vnn = vnn;
-		result.pid = pid;
-	} else if (sscanf(pid_string, "%llu.%u", &pid, &task_id) == 2) {
-		result.vnn = local_vnn;
-		result.pid = pid;
-		result.task_id = task_id;
-	} else if (sscanf(pid_string, "%llu", &pid) == 1) {
-		result.vnn = local_vnn;
-		result.pid = pid;
-	} else if (strcmp(pid_string, "disconnected") ==0) {
-		server_id_set_disconnected(&result);
-	} else {
-		result.vnn = NONCLUSTER_VNN;
-		result.pid = UINT64_MAX;
+
+	result = templ;
+	ret = sscanf(pid_string, "%"SCNu32":%"SCNu64".%"SCNu32,
+		     &result.vnn, &result.pid, &result.task_id);
+	if (ret == 3) {
+		return result;
 	}
-	return result;
+
+	result = templ;
+	ret = sscanf(pid_string, "%"SCNu32":%"SCNu64,
+		     &result.vnn, &result.pid);
+	if (ret == 2) {
+		return result;
+	}
+
+	result = templ;
+	ret = sscanf(pid_string, "%"SCNu64".%"SCNu32,
+		     &result.pid, &result.task_id);
+	if (ret == 2) {
+		result.vnn = local_vnn;
+		return result;
+	}
+
+	result = templ;
+	ret = sscanf(pid_string, "%"SCNu64, &result.pid);
+	if (ret == 1) {
+		result.vnn = local_vnn;
+		return result;
+	}
+
+	if (strcmp(pid_string, "disconnected") == 0) {
+		server_id_set_disconnected(&result);
+		return result;
+	}
+
+	return templ;
 }
 
 /**
