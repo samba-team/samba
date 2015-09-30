@@ -4754,6 +4754,9 @@ uint8_t smb2cli_session_security_mode(struct smbXcli_session *session)
 	if (conn->mandatory_signing) {
 		security_mode |= SMB2_NEGOTIATE_SIGNING_REQUIRED;
 	}
+	if (session->smb2->should_sign) {
+		security_mode |= SMB2_NEGOTIATE_SIGNING_REQUIRED;
+	}
 
 	return security_mode;
 }
@@ -5031,6 +5034,14 @@ NTSTATUS smb2cli_session_set_channel_key(struct smbXcli_session *session,
 
 NTSTATUS smb2cli_session_encryption_on(struct smbXcli_session *session)
 {
+	if (!session->smb2->should_sign) {
+		/*
+		 * We need required signing on the session
+		 * in order to prevent man in the middle attacks.
+		 */
+		return NT_STATUS_INVALID_PARAMETER_MIX;
+	}
+
 	if (session->smb2->should_encrypt) {
 		return NT_STATUS_OK;
 	}
