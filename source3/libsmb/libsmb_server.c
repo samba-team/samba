@@ -273,6 +273,7 @@ SMBC_server_internal(TALLOC_CTX *ctx,
 	char *newserver, *newshare;
 	int flags = 0;
 	struct smbXcli_tcon *tcon = NULL;
+	int signing_state = SMB_SIGNING_DEFAULT;
 
 	ZERO_STRUCT(c);
 	*in_cache = false;
@@ -439,6 +440,10 @@ SMBC_server_internal(TALLOC_CTX *ctx,
 		flags |= CLI_FULL_CONNECTION_USE_NT_HASH;
 	}
 
+	if (context->internal->smb_encryption_level != SMBC_ENCRYPTLEVEL_NONE) {
+		signing_state = SMB_SIGNING_REQUIRED;
+	}
+
 	if (port == 0) {
 	        if (share == NULL || *share == '\0' || is_ipc) {
 			/*
@@ -446,7 +451,7 @@ SMBC_server_internal(TALLOC_CTX *ctx,
 			 */
 			status = cli_connect_nb(server_n, NULL, NBT_SMB_PORT, 0x20,
 					smbc_getNetbiosName(context),
-					SMB_SIGNING_DEFAULT, flags, &c);
+					signing_state, flags, &c);
 		}
 	}
 
@@ -456,7 +461,7 @@ SMBC_server_internal(TALLOC_CTX *ctx,
 		 */
 		status = cli_connect_nb(server_n, NULL, port, 0x20,
 					smbc_getNetbiosName(context),
-					SMB_SIGNING_DEFAULT, flags, &c);
+					signing_state, flags, &c);
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -737,6 +742,7 @@ SMBC_attr_server(TALLOC_CTX *ctx,
         ipc_srv = SMBC_find_server(ctx, context, server, "*IPC$",
                                    pp_workgroup, pp_username, pp_password);
         if (!ipc_srv) {
+		int signing_state = SMB_SIGNING_DEFAULT;
 
                 /* We didn't find a cached connection.  Get the password */
 		if (!*pp_password || (*pp_password)[0] == '\0') {
@@ -758,6 +764,9 @@ SMBC_attr_server(TALLOC_CTX *ctx,
                 if (smbc_getOptionUseCCache(context)) {
                         flags |= CLI_FULL_CONNECTION_USE_CCACHE;
                 }
+		if (context->internal->smb_encryption_level != SMBC_ENCRYPTLEVEL_NONE) {
+			signing_state = SMB_SIGNING_REQUIRED;
+		}
 
                 nt_status = cli_full_connection(&ipc_cli,
 						lp_netbios_name(), server,
@@ -766,7 +775,7 @@ SMBC_attr_server(TALLOC_CTX *ctx,
 						*pp_workgroup,
 						*pp_password,
 						flags,
-						SMB_SIGNING_DEFAULT);
+						signing_state);
                 if (! NT_STATUS_IS_OK(nt_status)) {
                         DEBUG(1,("cli_full_connection failed! (%s)\n",
                                  nt_errstr(nt_status)));
