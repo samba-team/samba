@@ -334,7 +334,6 @@ def build(bld):
     bld.SAMBA_SUBSYSTEM('ctdb-client',
                         source=bld.SUBDIR('client', 'ctdb_client.c'),
                         includes='include include/internal',
-                        public_headers='include/ctdb_client.h',
                         deps='''replace popt talloc tevent tdb
                                 samba-util tdb-wrap''')
 
@@ -358,11 +357,6 @@ def build(bld):
                                              ctdb_update_record.c
                                              ctdb_lock.c'''),
                         includes='include include/internal',
-                        public_headers='''include/ctdb_version.h
-                                          include/ctdb.h
-                                          include/ctdb_private.h
-                                          include/ctdb_protocol.h
-                                          include/ctdb_typesafe_cb.h''',
                         deps='replace popt talloc tevent tdb talloc_report')
 
     bld.SAMBA_BINARY('ctdbd',
