@@ -388,6 +388,12 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 					status = map_nt_error_from_unix(errno);
 					goto err;
 				}
+				/* dirpath must exist. */
+				dirpath = talloc_strdup(ctx,"");
+				if (dirpath == NULL) {
+					status = NT_STATUS_NO_MEMORY;
+					goto err;
+				}
 				DEBUG(5, ("conversion finished %s -> %s\n",
 					orig_path,
 					smb_fname->base_name));
