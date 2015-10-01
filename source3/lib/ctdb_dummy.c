@@ -58,11 +58,6 @@ NTSTATUS ctdbd_register_ips(struct ctdbd_connection *conn,
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-const char *lp_ctdbd_socket(void)
-{
-	return "";
-}
-
 bool ctdb_processes_exist(struct ctdbd_connection *conn,
 			  const struct server_id *pids, int num_pids,
 			  bool *results)

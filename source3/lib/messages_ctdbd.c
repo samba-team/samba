@@ -23,6 +23,7 @@
 #include "lib/util/iov_buf.h"
 #include "lib/messages_util.h"
 #include "ctdbd_conn.h"
+#include "lib/cluster_support.h"
 
 
 struct messaging_ctdbd_context {

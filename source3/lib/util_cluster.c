@@ -21,6 +21,7 @@
 #include "includes.h"
 #include "ctdbd_conn.h"
 #include "util_cluster.h"
+#include "lib/cluster_support.h"
 
 bool cluster_probe_ok(void)
 {

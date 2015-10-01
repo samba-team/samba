@@ -35,6 +35,7 @@
 #include "dbwrap/dbwrap_ctdb.h"
 #include "g_lock.h"
 #include "messages.h"
+#include "lib/cluster_support.h"
 
 struct db_ctdb_transaction_handle {
 	struct db_ctdb_ctx *ctx;

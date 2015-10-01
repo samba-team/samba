@@ -18,3 +18,4 @@
 
 bool cluster_support_available(void);
 const char *cluster_support_features(void);
+const char *lp_ctdbd_socket(void);
