@@ -263,7 +263,7 @@ static NTSTATUS smb_pam_start(pam_handle_t **pamh, const char *account_name, con
 
 		pam_error = pam_end(*pamh, 0);
 		if (pam_error != PAM_SUCCESS) {
-			/* no vaild pamh here, can we reliably call pam_strerror ? */
+			/* no valid pamh here, can we reliably call pam_strerror ? */
 			DEBUG(4,("smb_pam_start: clean up failed, pam_end gave error %d.\n",
 				 pam_error));
 			return pam_to_nt_status(pam_error);
@@ -283,7 +283,7 @@ static NTSTATUS smb_pam_start(pam_handle_t **pamh, const char *account_name, con
 
 		pam_error = pam_end(*pamh, 0);
 		if (pam_error != PAM_SUCCESS) {
-			/* no vaild pamh here, can we reliably call pam_strerror ? */
+			/* no valid pamh here, can we reliably call pam_strerror ? */
 			DEBUG(4,("smb_pam_start: clean up failed, pam_end gave error %d.\n",
 				 pam_error));
 			return pam_to_nt_status(pam_error);
@@ -303,7 +303,7 @@ static NTSTATUS smb_pam_end(pam_handle_t *pamh)
 	if (pamh != NULL) {
 		pam_error = pam_end(pamh, 0);
 		if (pam_error != PAM_SUCCESS) {
-			/* no vaild pamh here, can we reliably call pam_strerror ? */
+			/* no valid pamh here, can we reliably call pam_strerror ? */
 			DEBUG(4,("smb_pam_end: clean up failed, pam_end gave error %d.\n",
 				 pam_error));
 			return pam_to_nt_status(pam_error);
