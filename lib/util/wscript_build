@@ -84,7 +84,7 @@ if not bld.env.SAMBA_UTIL_CORE_ONLY:
 
     bld.SAMBA_LIBRARY('genrand',
                       source='genrand.c',
-                      deps='time-basic socket-blocking LIBCRYPTO',
+                      deps='replace socket-blocking sys_rw',
                       local_include=False,
                       private_library=True)
 

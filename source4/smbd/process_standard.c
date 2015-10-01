@@ -277,9 +277,6 @@ static void standard_accept_connection(struct tevent_context *ev,
 		child_pipe[1] = -1;
 	}
 
-	/* Ensure that the forked children do not expose identical random streams */
-	set_need_random_reseed();
-
 	/* setup the process title */
 	c = socket_get_peer_addr(sock2, ev);
 	s = socket_get_my_addr(sock2, ev);
@@ -355,9 +352,6 @@ static void standard_new_task(struct tevent_context *ev,
 		close(child_pipe[1]);
 		child_pipe[1] = -1;
 	}
-
-	/* Ensure that the forked children do not expose identical random streams */
-	set_need_random_reseed();
 
 	setproctitle("task %s server_id[%d]", service_name, (int)pid);
 

@@ -441,12 +441,6 @@ NTSTATUS reinit_after_fork(struct messaging_context *msg_ctx,
 		reinit_after_fork_pipe[1] = -1;
 	}
 
-	/* Reset the state of the random
-	 * number generation system, so
-	 * children do not get the same random
-	 * numbers as each other */
-	set_need_random_reseed();
-
 	/* tdb needs special fork handling */
 	if (tdb_reopen_all(parent_longlived ? 1 : 0) != 0) {
 		DEBUG(0,("tdb_reopen_all failed.\n"));
