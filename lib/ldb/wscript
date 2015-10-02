@@ -18,6 +18,7 @@ import wafsamba, samba_dist, Utils
 samba_dist.DIST_DIRS('''lib/ldb:. lib/replace:lib/replace lib/talloc:lib/talloc
                         lib/tdb:lib/tdb lib/tdb:lib/tdb lib/tevent:lib/tevent
                         third_party/popt:third_party/popt
+                        third_party/cmocka:third_party/cmocka
                         buildtools:buildtools third_party/waf:third_party/waf''')
 
 
@@ -35,11 +36,17 @@ def configure(conf):
 
     if conf.CHECK_FOR_THIRD_PARTY():
         conf.RECURSE('third_party/popt')
+        conf.RECURSE('third_party/cmocka')
     else:
         if not conf.CHECK_POPT():
             raise Utils.WafError('popt development packages have not been found.\nIf third_party is installed, check that it is in the proper place.')
         else:
             conf.define('USING_SYSTEM_POPT', 1)
+
+        if not conf.CHECK_CMOCKA():
+            raise Utils.WafError('cmocka development package have not been found.\nIf third_party is installed, check that it is in the proper place.')
+        else:
+            conf.define('USING_SYSTEM_CMOCKA', 1)
 
     conf.RECURSE('lib/replace')
     conf.find_program('python', var='PYTHON')
@@ -107,6 +114,7 @@ def build(bld):
 
     if bld.CHECK_FOR_THIRD_PARTY():
         bld.RECURSE('third_party/popt')
+        bld.RECURSE('third_party/cmocka')
 
     bld.RECURSE('lib/replace')
     bld.RECURSE('lib/tdb')
@@ -307,14 +315,23 @@ def build(bld):
                           deps='ldb dl popt',
                           private_library=True)
 
+    bld.SAMBA_BINARY('ldb_tdb_mod_op_test',
+                     source='tests/ldb_mod_op_test.c',
+                     cflags='-DTEST_BE=\"tdb\"',
+                     deps='cmocka ldb',
+                     install=False)
 
 def test(ctx):
     '''run ldb testsuite'''
     import Utils, samba_utils, shutil
+    env = samba_utils.LOAD_ENVIRONMENT()
+    ctx.env = env
+
     test_prefix = "%s/st" % (Utils.g_module.blddir)
     shutil.rmtree(test_prefix, ignore_errors=True)
     os.makedirs(test_prefix)
     os.environ['TEST_DATA_PREFIX'] = test_prefix
+    os.environ['LD_LIBRARY_PATH'] = Utils.g_module.blddir + '/bin/default/lib/ldb'
     cmd = 'tests/test-tdb.sh %s' % Utils.g_module.blddir
     ret = samba_utils.RUN_COMMAND(cmd)
     print("testsuite returned %d" % ret)
@@ -326,7 +343,13 @@ def test(ctx):
         ['tests/python/api.py'],
         extra_env={'SELFTEST_PREFIX': test_prefix})
     print("Python testsuite returned %d" % pyret)
-    sys.exit(ret or pyret)
+
+    os.environ['LDB_MODULES_PATH'] = Utils.g_module.blddir + '/modules/ldb'
+    os.environ['LD_LIBRARY_PATH'] = Utils.g_module.blddir + '/bin/default/lib/ldb'
+    cmd = Utils.g_module.blddir + '/ldb_tdb_mod_op_test'
+    cmocka_ret = samba_utils.RUN_COMMAND(cmd)
+
+    sys.exit(ret or pyret or cmocka_ret)
 
 def dist():
     '''makes a tarball for distribution'''
