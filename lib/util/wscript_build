@@ -88,6 +88,12 @@ if not bld.env.SAMBA_UTIL_CORE_ONLY:
                       local_include=False,
                       private_library=True)
 
+    bld.SAMBA_BINARY('genrandperf',
+                     source='tests/genrandperf.c',
+                     deps='genrand replace',
+                     local_include=False,
+                     install=False)
+
     bld.SAMBA_LIBRARY('samba-util',
                   source='''talloc_stack.c smb_threads.c
                     rbtree.c rfc1738.c become_daemon.c system.c select.c getpass.c
