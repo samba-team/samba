@@ -47,6 +47,16 @@ kerb_prompter(krb5_context ctx, void *data,
 	       krb5_prompt prompts[])
 {
 	if (num_prompts == 0) return 0;
+#if HAVE_KRB5_PROMPT_TYPE
+
+	/*
+	 * only heimdal has a prompt type and we need to deal with it here to
+	 * avoid loops.
+	 *
+	 * removing the prompter completely is not an option as at least these
+	 * versions would crash: heimdal-1.0.2 and heimdal-1.1. Later heimdal
+	 * version have looping detection and return with a proper error code.
+	 */
 
 	if ((num_prompts == 2) &&
 	    (prompts[0].type == KRB5_PROMPT_TYPE_NEW_PASSWORD) &&
@@ -63,7 +73,7 @@ kerb_prompter(krb5_context ctx, void *data,
 		 */
 		return KRB5KDC_ERR_KEY_EXPIRED;
 	}
-
+#endif /* HAVE_KRB5_PROMPT_TYPE */
 	memset(prompts[0].reply->data, '\0', prompts[0].reply->length);
 	if (prompts[0].reply->length > 0) {
 		if (data) {

@@ -168,6 +168,7 @@ conf.define('HAVE_KRB5_PRINCIPAL_SET_REALM', 1)
 conf.define('HAVE_KRB5_PRINCIPAL_SET_TYPE', 1)
 conf.define('HAVE_KRB5_PRINCIPAL_GET_TYPE', 1)
 conf.define('HAVE_KRB5_WARNX', 1)
+conf.define('HAVE_KRB5_PROMPT_TYPE', 1)
 
 heimdal_includedirs = []
 heimdal_libdirs = []
