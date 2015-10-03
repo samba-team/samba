@@ -868,8 +868,8 @@ char *ctdbd_dbpath(struct ctdbd_connection *conn,
 /*
  * attach to a ctdb database
  */
-NTSTATUS ctdbd_db_attach(struct ctdbd_connection *conn,
-			 const char *name, uint32_t *db_id, int tdb_flags)
+int ctdbd_db_attach(struct ctdbd_connection *conn,
+		    const char *name, uint32_t *db_id, int tdb_flags)
 {
 	int ret;
 	TDB_DATA data;
@@ -886,19 +886,19 @@ NTSTATUS ctdbd_db_attach(struct ctdbd_connection *conn,
 	if (ret != 0) {
 		DEBUG(0, (__location__ " ctdb_control for db_attach "
 			  "failed: %s\n", strerror(ret)));
-		return map_nt_error_from_unix(ret);
+		return ret;
 	}
 
 	if (cstatus != 0 || data.dsize != sizeof(uint32_t)) {
 		DEBUG(0,(__location__ " ctdb_control for db_attach failed\n"));
-		return NT_STATUS_INTERNAL_ERROR;
+		return EIO;
 	}
 
 	*db_id = *(uint32_t *)data.dptr;
 	talloc_free(data.dptr);
 
 	if (!(tdb_flags & TDB_SEQNUM)) {
-		return NT_STATUS_OK;
+		return 0;
 	}
 
 	data.dptr = (uint8_t *)db_id;
@@ -910,11 +910,10 @@ NTSTATUS ctdbd_db_attach(struct ctdbd_connection *conn,
 	if ((ret != 0) || cstatus != 0) {
 		DEBUG(0, (__location__ " ctdb_control for enable seqnum "
 			  "failed: %s\n", strerror(ret)));
-		return (ret == 0) ? NT_STATUS_INTERNAL_ERROR :
-			map_nt_error_from_unix(ret);
+		return (ret == 0) ? EIO : ret;
 	}
 
-	return NT_STATUS_OK;
+	return 0;
 }
 
 /*

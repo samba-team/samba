@@ -51,8 +51,8 @@ bool ctdb_processes_exist(struct ctdbd_connection *conn,
 char *ctdbd_dbpath(struct ctdbd_connection *conn,
 		   TALLOC_CTX *mem_ctx, uint32_t db_id);
 
-NTSTATUS ctdbd_db_attach(struct ctdbd_connection *conn, const char *name,
-			 uint32_t *db_id, int tdb_flags);
+int ctdbd_db_attach(struct ctdbd_connection *conn, const char *name,
+		    uint32_t *db_id, int tdb_flags);
 
 NTSTATUS ctdbd_migrate(struct ctdbd_connection *conn, uint32_t db_id,
 		       TDB_DATA key);

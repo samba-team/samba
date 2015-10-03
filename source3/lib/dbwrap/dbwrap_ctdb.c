@@ -1547,6 +1547,7 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 	struct ctdb_db_priority prio;
 	NTSTATUS status;
 	int cstatus;
+	int ret;
 
 	if (!lp_clustering()) {
 		DEBUG(10, ("Clustering disabled -- no ctdb\n"));
@@ -1582,8 +1583,10 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	if (!NT_STATUS_IS_OK(ctdbd_db_attach(conn, name, &db_ctdb->db_id, tdb_flags))) {
-		DEBUG(0, ("ctdbd_db_attach failed for %s\n", name));
+	ret = ctdbd_db_attach(conn, name, &db_ctdb->db_id, tdb_flags);
+	if (ret != 0) {
+		DEBUG(0, ("ctdbd_db_attach failed for %s: %s\n", name,
+			  strerror(ret)));
 		TALLOC_FREE(result);
 		return NULL;
 	}
