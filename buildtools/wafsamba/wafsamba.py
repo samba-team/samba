@@ -243,7 +243,7 @@ def SAMBA_LIBRARY(bld, libname, source,
     if bld.env['ENABLE_RELRO'] is True:
         ldflags.extend(TO_LIST('-Wl,-z,relro,-z,now'))
 
-    features = 'cc cshlib symlink_lib install_lib'
+    features = 'c cshlib symlink_lib install_lib'
     if pyext:
         features += ' pyext'
     if pyembed:
@@ -354,7 +354,7 @@ def SAMBA_BINARY(bld, binname, source,
     if not SET_TARGET_TYPE(bld, binname, 'BINARY'):
         return
 
-    features = 'cc cprogram symlink_bin install_bin'
+    features = 'c cprogram symlink_bin install_bin'
     if pyembed:
         features += ' pyembed'
 
@@ -578,7 +578,7 @@ def SAMBA_SUBSYSTEM(bld, modname, source,
 
     bld.SET_BUILD_GROUP(group)
 
-    features = 'cc'
+    features = 'c'
     if pyext:
         features += ' pyext'
     if pyembed:

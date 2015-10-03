@@ -197,7 +197,7 @@ int foo(int v) {
     return v * 2;
 }
 '''
-    return conf.check(features='cc cshlib',vnum="1",fragment=snip,msg=msg)
+    return conf.check(features='c cshlib',vnum="1",fragment=snip,msg=msg)
 
 @conf
 def CHECK_NEED_LC(conf, msg):
@@ -227,7 +227,7 @@ def CHECK_NEED_LC(conf, msg):
 
     bld.rescan(bld.srcnode)
 
-    bld(features='cc cshlib',
+    bld(features='c cshlib',
         source='liblctest/liblc1.c',
         ldflags=conf.env['EXTRA_LDFLAGS'],
         target='liblc',
@@ -262,7 +262,7 @@ int foo(int v) {
     ldb_module = PyImport_ImportModule("ldb");
     return v * 2;
 }'''
-    return conf.check(features='cc cshlib',uselib='PYEMBED',fragment=snip,msg=msg)
+    return conf.check(features='c cshlib',uselib='PYEMBED',fragment=snip,msg=msg)
 
 # this one is quite complex, and should probably be broken up
 # into several parts. I'd quite like to create a set of CHECK_COMPOUND()
@@ -306,13 +306,13 @@ def CHECK_LIBRARY_SUPPORT(conf, rpath=False, version_script=False, msg=None):
         ldflags.append("-Wl,--version-script=%s/vscript" % bld.path.abspath())
         Utils.writef(os.path.join(dir,'vscript'), 'TEST_1.0A2 { global: *; };\n')
 
-    bld(features='cc cshlib',
+    bld(features='c cshlib',
         source='libdir/lib1.c',
         target='libdir/lib1',
         ldflags=ldflags,
         name='lib1')
 
-    o = bld(features='cc cprogram',
+    o = bld(features='c cprogram',
             source='main.c',
             target='prog1',
             uselib_local='lib1')

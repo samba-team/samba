@@ -69,7 +69,7 @@ def HEIMDAL_ASN1(name, source,
 
     t = bld(rule=asn1_rule,
             ext_out = '.x',
-            before = 'cc',
+            before = 'c',
             update_outputs = True,
             shell = True,
             source = source,
@@ -123,7 +123,7 @@ def HEIMDAL_ASN1(name, source,
     includes = to_list(includes)
     includes.append(os.path.dirname(out_files[0]))
 
-    t = bld(features       = 'cc',
+    t = bld(features       = 'c',
             source         = cfile,
             target         = name,
             samba_cflags   = CURRENT_CFLAGS(bld, name, ''),
@@ -241,7 +241,7 @@ def HEIMDAL_LIBRARY(libname, source, deps, vnum, version_script, includes=''):
         bundled_name = libname
     version = "%s_%s" % (Utils.g_module.APPNAME, Utils.g_module.VERSION)
 
-    features = 'cc cshlib symlink_lib install_lib'
+    features = 'c cshlib symlink_lib install_lib'
 
     bld.set_group('main')
     t = bld(
@@ -277,7 +277,7 @@ def HEIMDAL_SUBSYSTEM(modname, source,
     bld.set_group(group)
 
     return bld(
-        features       = 'cc',
+        features       = 'c',
         source         = source,
         target         = modname,
         samba_cflags   = CURRENT_CFLAGS(bld, modname, cflags, allow_warnings=True),
@@ -306,7 +306,7 @@ def HEIMDAL_BINARY(binname, source,
     if not SET_TARGET_TYPE(bld, binname, 'BINARY'):
         return
 
-    features = 'cc cprogram symlink_bin install_bin'
+    features = 'c cprogram symlink_bin install_bin'
 
     obj_target = binname + '.objlist'
 

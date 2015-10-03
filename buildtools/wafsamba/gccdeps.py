@@ -14,7 +14,7 @@ lock = threading.Lock()
 
 preprocessor_flag = '-MD'
 
-@feature('cc')
+@feature('c', 'cc')
 @before('apply_core')
 def add_mmd_cc(self):
     if self.env.get_flat('CCFLAGS').find(preprocessor_flag) < 0:
