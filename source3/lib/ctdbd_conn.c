@@ -203,18 +203,17 @@ static NTSTATUS get_cluster_vnn(struct ctdbd_connection *conn, uint32_t *vnn)
 static bool ctdbd_working(struct ctdbd_connection *conn, uint32_t vnn)
 {
 	int32_t cstatus=-1;
-	NTSTATUS status;
 	TDB_DATA outdata;
 	struct ctdb_node_map *m;
 	uint32_t failure_flags;
 	bool ok = false;
-	int i;
+	int i, ret;
 
-	status = ctdbd_control(conn, CTDB_CURRENT_NODE,
-			       CTDB_CONTROL_GET_NODEMAP, 0, 0,
-			       tdb_null, talloc_tos(), &outdata, &cstatus);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("ctdbd_control failed: %s\n", nt_errstr(status)));
+	ret = ctdbd_control_unix(conn, CTDB_CURRENT_NODE,
+				 CTDB_CONTROL_GET_NODEMAP, 0, 0,
+				 tdb_null, talloc_tos(), &outdata, &cstatus);
+	if (ret != 0) {
+		DEBUG(1, ("ctdbd_control failed: %s\n", strerror(ret)));
 		return false;
 	}
 	if ((cstatus != 0) || (outdata.dptr == NULL)) {
