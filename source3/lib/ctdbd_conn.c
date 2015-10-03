@@ -485,32 +485,30 @@ static int ctdbd_init_connection(TALLOC_CTX *mem_ctx,
  * Get us a ctdbd connection and register us as a process
  */
 
-NTSTATUS ctdbd_messaging_connection(TALLOC_CTX *mem_ctx,
-				    const char *sockname, int timeout,
-				    struct ctdbd_connection **pconn)
+int ctdbd_messaging_connection(TALLOC_CTX *mem_ctx,
+			       const char *sockname, int timeout,
+			       struct ctdbd_connection **pconn)
 {
         struct ctdbd_connection *conn;
-	NTSTATUS status;
 	int ret;
 
 	ret = ctdbd_init_connection(mem_ctx, sockname, timeout, &conn);
 
 	if (ret != 0) {
-		return map_nt_error_from_unix(ret);
+		return ret;
 	}
 
 	ret = register_with_ctdbd(conn, MSG_SRVID_SAMBA, NULL, NULL);
 	if (ret != 0) {
-		status = map_nt_error_from_unix(ret);
 		goto fail;
 	}
 
 	*pconn = conn;
-	return NT_STATUS_OK;
+	return 0;
 
  fail:
 	TALLOC_FREE(conn);
-	return status;
+	return ret;
 }
 
 struct messaging_context *ctdb_conn_msg_ctx(struct ctdbd_connection *conn)
@@ -1322,15 +1320,15 @@ NTSTATUS ctdbd_probe(const char *sockname, int timeout)
 	 * later
 	 */
 	struct ctdbd_connection *conn = NULL;
-	NTSTATUS status;
+	int ret;
 
-	status = ctdbd_messaging_connection(talloc_tos(), sockname, timeout,
-					    &conn);
+	ret = ctdbd_messaging_connection(talloc_tos(), sockname, timeout,
+					 &conn);
 
 	/*
 	 * We only care if we can connect.
 	 */
 	TALLOC_FREE(conn);
 
-	return status;
+	return map_nt_error_from_unix(ret);
 }

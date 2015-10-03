@@ -170,7 +170,6 @@ NTSTATUS messaging_ctdbd_init(struct messaging_context *msg_ctx,
 {
 	struct messaging_backend *result;
 	struct messaging_ctdbd_context *ctx;
-	NTSTATUS status;
 	int ret;
 
 	if (!(result = talloc(mem_ctx, struct messaging_backend))) {
@@ -184,14 +183,14 @@ NTSTATUS messaging_ctdbd_init(struct messaging_context *msg_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = ctdbd_messaging_connection(ctx, lp_ctdbd_socket(),
-					    lp_ctdb_timeout(), &ctx->conn);
+	ret = ctdbd_messaging_connection(ctx, lp_ctdbd_socket(),
+					 lp_ctdb_timeout(), &ctx->conn);
 
-	if (!NT_STATUS_IS_OK(status)) {
+	if (ret != 0) {
 		DEBUG(10, ("ctdbd_messaging_connection failed: %s\n",
-			   nt_errstr(status)));
+			   strerror(ret)));
 		TALLOC_FREE(result);
-		return status;
+		return map_nt_error_from_unix(ret);
 	}
 
 	ret = ctdbd_register_msg_ctx(ctx->conn, msg_ctx);
