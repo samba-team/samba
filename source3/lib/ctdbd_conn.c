@@ -337,9 +337,11 @@ static int ctdb_read_packet(int fd, int timeout, TALLOC_CTX *mem_ctx,
 	nread = read_data(fd, ((char *)req) + sizeof(msglen),
 			  msglen - sizeof(msglen));
 	if (nread == -1) {
+		TALLOC_FREE(req);
 		return errno;
 	}
 	if (nread == 0) {
+		TALLOC_FREE(req);
 		return EIO;
 	}
 
