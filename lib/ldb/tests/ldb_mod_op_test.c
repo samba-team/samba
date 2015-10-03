@@ -390,6 +390,402 @@ static void test_transactions(void **state)
 	assert_int_equal(res->count, 0);
 }
 
+struct ldb_mod_test_ctx {
+	struct ldbtest_ctx *ldb_test_ctx;
+	const char *entry_dn;
+};
+
+struct keyval {
+	const char *key;
+	const char *val;
+};
+
+static struct ldb_message *build_mod_msg(TALLOC_CTX *mem_ctx,
+					 struct ldbtest_ctx *test_ctx,
+					 const char *dn,
+					 int modify_flags,
+					 struct keyval *kvs)
+{
+	struct ldb_message *msg;
+	int ret;
+	int i;
+
+	msg = ldb_msg_new(mem_ctx);
+	assert_non_null(msg);
+
+	msg->dn = ldb_dn_new_fmt(msg, test_ctx->ldb, "%s", dn);
+	assert_non_null(msg->dn);
+
+	for (i = 0; kvs[i].key != NULL; i++) {
+		if (modify_flags) {
+			ret = ldb_msg_add_empty(msg, kvs[i].key,
+						modify_flags, NULL);
+			assert_int_equal(ret, 0);
+		}
+
+		if (kvs[i].val) {
+			ret = ldb_msg_add_string(msg, kvs[i].key, kvs[i].val);
+			assert_int_equal(ret, LDB_SUCCESS);
+		}
+	}
+
+	return msg;
+}
+
+static void mod_test_add_data(struct ldb_mod_test_ctx *mod_test_ctx,
+			      struct keyval *kvs)
+{
+	TALLOC_CTX *tmp_ctx;
+	struct ldb_message *msg;
+	struct ldb_result *result = NULL;
+	struct ldbtest_ctx *ldb_test_ctx;
+	int ret;
+
+	ldb_test_ctx = mod_test_ctx->ldb_test_ctx;
+
+	tmp_ctx = talloc_new(mod_test_ctx);
+	assert_non_null(tmp_ctx);
+
+	msg = build_mod_msg(tmp_ctx, ldb_test_ctx,
+			    mod_test_ctx->entry_dn, 0, kvs);
+	assert_non_null(msg);
+
+	ret = ldb_add(ldb_test_ctx->ldb, msg);
+	assert_int_equal(ret, LDB_SUCCESS);
+
+	ret = ldb_search(ldb_test_ctx->ldb, tmp_ctx, &result, msg->dn,
+			 LDB_SCOPE_BASE, NULL, NULL);
+	assert_int_equal(ret, LDB_SUCCESS);
+	assert_non_null(result);
+	assert_int_equal(result->count, 1);
+	assert_string_equal(ldb_dn_get_linearized(result->msgs[0]->dn),
+			    ldb_dn_get_linearized(msg->dn));
+
+	talloc_free(tmp_ctx);
+}
+
+static void mod_test_remove_data(struct ldb_mod_test_ctx *mod_test_ctx)
+{
+	TALLOC_CTX *tmp_ctx;
+	struct ldb_dn *basedn;
+	struct ldb_result *result = NULL;
+	int ret;
+	struct ldbtest_ctx *ldb_test_ctx;
+
+	ldb_test_ctx = mod_test_ctx->ldb_test_ctx;
+
+	tmp_ctx = talloc_new(mod_test_ctx);
+	assert_non_null(tmp_ctx);
+
+	basedn = ldb_dn_new_fmt(tmp_ctx, ldb_test_ctx->ldb,
+				"%s", mod_test_ctx->entry_dn);
+	assert_non_null(basedn);
+
+	ret = ldb_delete(ldb_test_ctx->ldb, basedn);
+	assert_true(ret == LDB_SUCCESS || ret == LDB_ERR_NO_SUCH_OBJECT);
+
+	ret = ldb_search(ldb_test_ctx->ldb, tmp_ctx, &result, basedn,
+			LDB_SCOPE_BASE, NULL, NULL);
+	assert_int_equal(ret, LDB_SUCCESS);
+	assert_non_null(result);
+	assert_int_equal(result->count, 0);
+
+	talloc_free(tmp_ctx);
+}
+
+static struct ldb_result *run_mod_test(struct ldb_mod_test_ctx *mod_test_ctx,
+				       int modify_flags,
+				       struct keyval *kvs)
+{
+	TALLOC_CTX *tmp_ctx;
+	struct ldb_result *res;
+	struct ldb_message *mod_msg;
+	struct ldb_dn *basedn;
+	struct ldbtest_ctx *ldb_test_ctx;
+	int ret;
+
+	ldb_test_ctx = mod_test_ctx->ldb_test_ctx;
+
+	tmp_ctx = talloc_new(mod_test_ctx);
+	assert_non_null(tmp_ctx);
+
+	mod_msg = build_mod_msg(tmp_ctx, ldb_test_ctx, mod_test_ctx->entry_dn,
+				modify_flags, kvs);
+	assert_non_null(mod_msg);
+
+	ret = ldb_modify(ldb_test_ctx->ldb, mod_msg);
+	assert_int_equal(ret, LDB_SUCCESS);
+
+	basedn = ldb_dn_new_fmt(tmp_ctx, ldb_test_ctx->ldb,
+			"%s", mod_test_ctx->entry_dn);
+	assert_non_null(basedn);
+
+	ret = ldb_search(ldb_test_ctx->ldb, mod_test_ctx, &res, basedn,
+			 LDB_SCOPE_BASE, NULL, NULL);
+	assert_int_equal(ret, LDB_SUCCESS);
+	assert_non_null(res);
+	assert_int_equal(res->count, 1);
+	assert_string_equal(ldb_dn_get_linearized(res->msgs[0]->dn),
+			    ldb_dn_get_linearized(mod_msg->dn));
+
+	talloc_free(tmp_ctx);
+	return res;
+}
+
+static int ldb_modify_test_setup(void **state)
+{
+	struct ldbtest_ctx *ldb_test_ctx;
+	struct ldb_mod_test_ctx *mod_test_ctx;
+	struct keyval kvs[] = {
+		{ "cn", "test_mod_cn" },
+		{ NULL, NULL },
+	};
+
+	ldbtest_setup((void **) &ldb_test_ctx);
+
+	mod_test_ctx = talloc(ldb_test_ctx, struct ldb_mod_test_ctx);
+	assert_non_null(mod_test_ctx);
+
+	mod_test_ctx->entry_dn = "dc=mod_test_entry";
+	mod_test_ctx->ldb_test_ctx = ldb_test_ctx;
+
+	mod_test_remove_data(mod_test_ctx);
+	mod_test_add_data(mod_test_ctx, kvs);
+	*state = mod_test_ctx;
+	return 0;
+}
+
+static int ldb_modify_test_teardown(void **state)
+{
+	struct ldb_mod_test_ctx *mod_test_ctx = \
+				talloc_get_type_abort(*state,
+						      struct ldb_mod_test_ctx);
+	struct ldbtest_ctx *ldb_test_ctx;
+
+	ldb_test_ctx = mod_test_ctx->ldb_test_ctx;
+
+	mod_test_remove_data(mod_test_ctx);
+	talloc_free(mod_test_ctx);
+
+	ldbtest_teardown((void **) &ldb_test_ctx);
+	return 0;
+}
+
+static void test_ldb_modify_add_key(void **state)
+{
+	struct ldb_mod_test_ctx *mod_test_ctx = \
+				talloc_get_type_abort(*state,
+						      struct ldb_mod_test_ctx);
+	struct keyval mod_kvs[] = {
+		{ "name", "test_mod_name" },
+		{ NULL, NULL },
+	};
+	struct ldb_result *res;
+	struct ldb_message_element *el;
+
+	res = run_mod_test(mod_test_ctx, LDB_FLAG_MOD_ADD, mod_kvs);
+	assert_non_null(res);
+
+	/* Check cn is intact and name was added */
+	assert_int_equal(res->count, 1);
+	el = ldb_msg_find_element(res->msgs[0], "cn");
+	assert_non_null(el);
+	assert_int_equal(el->num_values, 1);
+	assert_string_equal(el->values[0].data, "test_mod_cn");
+
+	el = ldb_msg_find_element(res->msgs[0], "name");
+	assert_non_null(el);
+	assert_int_equal(el->num_values, 1);
+	assert_string_equal(el->values[0].data, "test_mod_name");
+}
+
+static void test_ldb_modify_extend_key(void **state)
+{
+	struct ldb_mod_test_ctx *mod_test_ctx = \
+			talloc_get_type_abort(*state,
+					      struct ldb_mod_test_ctx);
+	struct keyval mod_kvs[] = {
+		{ "cn", "test_mod_cn2" },
+		{ NULL, NULL },
+	};
+	struct ldb_result *res;
+	struct ldb_message_element *el;
+
+	res = run_mod_test(mod_test_ctx, LDB_FLAG_MOD_ADD, mod_kvs);
+	assert_non_null(res);
+
+	/* Check cn was extended with another value */
+	assert_int_equal(res->count, 1);
+	el = ldb_msg_find_element(res->msgs[0], "cn");
+	assert_non_null(el);
+	assert_int_equal(el->num_values, 2);
+	assert_string_equal(el->values[0].data, "test_mod_cn");
+	assert_string_equal(el->values[1].data, "test_mod_cn2");
+}
+
+static void test_ldb_modify_add_key_noval(void **state)
+{
+	struct ldb_mod_test_ctx *mod_test_ctx = \
+			talloc_get_type_abort(*state,
+					      struct ldb_mod_test_ctx);
+	struct ldb_message *mod_msg;
+	struct ldbtest_ctx *ldb_test_ctx;
+	struct ldb_message_element *el;
+	int ret;
+
+	ldb_test_ctx = mod_test_ctx->ldb_test_ctx;
+
+	mod_msg = ldb_msg_new(mod_test_ctx);
+	assert_non_null(mod_msg);
+
+	mod_msg->dn = ldb_dn_new_fmt(mod_msg, ldb_test_ctx->ldb,
+			"%s", mod_test_ctx->entry_dn);
+	assert_non_null(mod_msg->dn);
+
+	el = talloc_zero(mod_msg, struct ldb_message_element);
+	el->flags = LDB_FLAG_MOD_ADD;
+	assert_non_null(el);
+	el->name = talloc_strdup(el, "cn");
+	assert_non_null(el->name);
+
+	mod_msg->elements = el;
+	mod_msg->num_elements = 1;
+
+	ret = ldb_modify(ldb_test_ctx->ldb, mod_msg);
+	assert_int_equal(ret, LDB_ERR_CONSTRAINT_VIOLATION);
+}
+
+static void test_ldb_modify_replace_key(void **state)
+{
+	struct ldb_mod_test_ctx *mod_test_ctx = \
+			talloc_get_type_abort(*state,
+					      struct ldb_mod_test_ctx);
+	const char *new_cn = "new_cn";
+	struct keyval mod_kvs[] = {
+		{ "cn", new_cn },
+		{ NULL, NULL },
+	};
+	struct ldb_result *res;
+	struct ldb_message_element *el;
+
+	res = run_mod_test(mod_test_ctx, LDB_FLAG_MOD_REPLACE, mod_kvs);
+	assert_non_null(res);
+
+	/* Check cn was replaced */
+	assert_int_equal(res->count, 1);
+	el = ldb_msg_find_element(res->msgs[0], "cn");
+	assert_non_null(el);
+	assert_int_equal(el->num_values, 1);
+	assert_string_equal(el->values[0].data, new_cn);
+}
+
+static void test_ldb_modify_replace_noexist_key(void **state)
+{
+	struct ldb_mod_test_ctx *mod_test_ctx = \
+			talloc_get_type_abort(*state,
+					      struct ldb_mod_test_ctx);
+	struct keyval mod_kvs[] = {
+		{ "name", "name_val" },
+		{ NULL, NULL },
+	};
+	struct ldb_result *res;
+	struct ldb_message_element *el;
+
+	res = run_mod_test(mod_test_ctx, LDB_FLAG_MOD_REPLACE, mod_kvs);
+	assert_non_null(res);
+
+	/* Check cn is intact and name was added */
+	assert_int_equal(res->count, 1);
+	el = ldb_msg_find_element(res->msgs[0], "cn");
+	assert_non_null(el);
+	assert_int_equal(el->num_values, 1);
+	assert_string_equal(el->values[0].data, "test_mod_cn");
+
+	el = ldb_msg_find_element(res->msgs[0], mod_kvs[0].key);
+	assert_non_null(el);
+	assert_int_equal(el->num_values, 1);
+	assert_string_equal(el->values[0].data, mod_kvs[0].val);
+}
+
+static void test_ldb_modify_replace_zero_vals(void **state)
+{
+	struct ldb_mod_test_ctx *mod_test_ctx = \
+			talloc_get_type_abort(*state,
+					      struct ldb_mod_test_ctx);
+	struct ldb_message_element *el;
+	struct ldb_result *res;
+	struct keyval kvs[] = {
+		{ "cn", NULL },
+		{ NULL, NULL },
+	};
+
+	/* cn must be gone */
+	res = run_mod_test(mod_test_ctx, LDB_FLAG_MOD_REPLACE, kvs);
+	assert_non_null(res);
+	el = ldb_msg_find_element(res->msgs[0], "cn");
+	assert_null(el);
+}
+
+static void test_ldb_modify_replace_noexist_key_zero_vals(void **state)
+{
+	struct ldb_mod_test_ctx *mod_test_ctx = \
+			talloc_get_type_abort(*state,
+					      struct ldb_mod_test_ctx);
+	struct ldb_message_element *el;
+	struct ldb_result *res;
+	struct keyval kvs[] = {
+		{ "noexist_key", NULL },
+		{ NULL, NULL },
+	};
+
+	/* cn must be gone */
+	res = run_mod_test(mod_test_ctx, LDB_FLAG_MOD_REPLACE, kvs);
+	assert_non_null(res);
+
+	/* cn should be intact */
+	el = ldb_msg_find_element(res->msgs[0], "cn");
+	assert_non_null(el);
+}
+
+static void test_ldb_modify_del_key(void **state)
+{
+	struct ldb_mod_test_ctx *mod_test_ctx = \
+			talloc_get_type_abort(*state,
+					      struct ldb_mod_test_ctx);
+	struct ldb_message_element *el;
+	struct ldb_result *res;
+	struct keyval kvs[] = {
+		{ "cn", NULL },
+		{ NULL, NULL },
+	};
+
+	/* cn must be gone */
+	res = run_mod_test(mod_test_ctx, LDB_FLAG_MOD_DELETE, kvs);
+	assert_non_null(res);
+
+	el = ldb_msg_find_element(res->msgs[0], "cn");
+	assert_null(el);
+}
+
+static void test_ldb_modify_del_keyval(void **state)
+{
+	struct ldb_mod_test_ctx *mod_test_ctx = \
+			talloc_get_type_abort(*state,
+					      struct ldb_mod_test_ctx);
+	struct ldb_message_element *el;
+	struct ldb_result *res;
+	struct keyval kvs[] = {
+		{ "cn", "test_mod_cn" },
+		{ NULL, NULL },
+	};
+
+	/* cn must be gone */
+	res = run_mod_test(mod_test_ctx, LDB_FLAG_MOD_DELETE, kvs);
+	assert_non_null(res);
+
+	el = ldb_msg_find_element(res->msgs[0], "cn");
+	assert_null(el);
+}
 
 int main(int argc, const char **argv)
 {
@@ -412,6 +808,33 @@ int main(int argc, const char **argv)
 		cmocka_unit_test_setup_teardown(test_transactions,
 						ldbtest_setup,
 						ldbtest_teardown),
+		cmocka_unit_test_setup_teardown(test_ldb_modify_add_key,
+						ldb_modify_test_setup,
+						ldb_modify_test_teardown),
+		cmocka_unit_test_setup_teardown(test_ldb_modify_extend_key,
+						ldb_modify_test_setup,
+						ldb_modify_test_teardown),
+		cmocka_unit_test_setup_teardown(test_ldb_modify_add_key_noval,
+						ldb_modify_test_setup,
+						ldb_modify_test_teardown),
+		cmocka_unit_test_setup_teardown(test_ldb_modify_replace_key,
+						ldb_modify_test_setup,
+						ldb_modify_test_teardown),
+		cmocka_unit_test_setup_teardown(test_ldb_modify_replace_noexist_key,
+						ldb_modify_test_setup,
+						ldb_modify_test_teardown),
+		cmocka_unit_test_setup_teardown(test_ldb_modify_replace_zero_vals,
+						ldb_modify_test_setup,
+						ldb_modify_test_teardown),
+		cmocka_unit_test_setup_teardown(test_ldb_modify_replace_noexist_key_zero_vals,
+						ldb_modify_test_setup,
+						ldb_modify_test_teardown),
+		cmocka_unit_test_setup_teardown(test_ldb_modify_del_key,
+						ldb_modify_test_setup,
+						ldb_modify_test_teardown),
+		cmocka_unit_test_setup_teardown(test_ldb_modify_del_keyval,
+						ldb_modify_test_setup,
+						ldb_modify_test_teardown),
 	};
 
 	return cmocka_run_group_tests(tests, NULL, NULL);
