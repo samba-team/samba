@@ -2693,6 +2693,7 @@ static NTSTATUS smbd_register_ips(struct smbXsrv_connection *xconn,
 {
 	struct smbd_release_ip_state *state;
 	struct ctdbd_connection *cconn;
+	int ret;
 
 	cconn = messaging_ctdbd_connection();
 	if (cconn == NULL) {
@@ -2712,7 +2713,11 @@ static NTSTATUS smbd_register_ips(struct smbXsrv_connection *xconn,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	return ctdbd_register_ips(cconn, srv, clnt, release_ip, state);
+	ret = ctdbd_register_ips(cconn, srv, clnt, release_ip, state);
+	if (ret != 0) {
+		return map_nt_error_from_unix(ret);
+	}
+	return NT_STATUS_OK;
 }
 
 static void msg_kill_client_ip(struct messaging_context *msg_ctx,

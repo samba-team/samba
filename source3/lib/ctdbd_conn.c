@@ -1180,14 +1180,14 @@ static void smbd_ctdb_canonicalize_ip(const struct sockaddr_storage *in,
  * Register us as a server for a particular tcp connection
  */
 
-NTSTATUS ctdbd_register_ips(struct ctdbd_connection *conn,
-			    const struct sockaddr_storage *_server,
-			    const struct sockaddr_storage *_client,
-			    int (*cb)(uint32_t src_vnn, uint32_t dst_vnn,
-				      uint64_t dst_srvid,
-				      const uint8_t *msg, size_t msglen,
-				      void *private_data),
-			    void *private_data)
+int ctdbd_register_ips(struct ctdbd_connection *conn,
+		       const struct sockaddr_storage *_server,
+		       const struct sockaddr_storage *_client,
+		       int (*cb)(uint32_t src_vnn, uint32_t dst_vnn,
+				 uint64_t dst_srvid,
+				 const uint8_t *msg, size_t msglen,
+				 void *private_data),
+		       void *private_data)
 {
 	struct ctdb_control_tcp_addr p;
 	TDB_DATA data = { .dptr = (uint8_t *)&p, .dsize = sizeof(p) };
@@ -1212,7 +1212,7 @@ NTSTATUS ctdbd_register_ips(struct ctdbd_connection *conn,
 		memcpy(&p.src.ip6, &client, sizeof(p.src.ip6));
 		break;
 	default:
-		return NT_STATUS_INTERNAL_ERROR;
+		return EIO;
 	}
 
 	/*
@@ -1222,7 +1222,7 @@ NTSTATUS ctdbd_register_ips(struct ctdbd_connection *conn,
 	ret = register_with_ctdbd(conn, CTDB_SRVID_RELEASE_IP,
 				  cb, private_data);
 	if (ret != 0) {
-		return map_nt_error_from_unix(ret);
+		return ret;
 	}
 
 	/*
@@ -1235,9 +1235,9 @@ NTSTATUS ctdbd_register_ips(struct ctdbd_connection *conn,
 			    CTDB_CTRL_FLAG_NOREPLY, data, NULL, NULL,
 			    NULL);
 	if (ret != 0) {
-		return map_nt_error_from_unix(ret);
+		return ret;
 	}
-	return NT_STATUS_OK;
+	return 0;
 }
 
 /*

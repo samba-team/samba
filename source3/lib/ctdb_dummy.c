@@ -46,16 +46,16 @@ int register_with_ctdbd(struct ctdbd_connection *conn, uint64_t srvid,
 	return ENOSYS;
 }
 
-NTSTATUS ctdbd_register_ips(struct ctdbd_connection *conn,
-			    const struct sockaddr_storage *_server,
-			    const struct sockaddr_storage *_client,
-			    int (*cb)(uint32_t src_vnn, uint32_t dst_vnn,
-				      uint64_t dst_srvid,
-				      const uint8_t *msg, size_t msglen,
-				      void *private_data),
-			    void *private_data)
+int ctdbd_register_ips(struct ctdbd_connection *conn,
+		       const struct sockaddr_storage *_server,
+		       const struct sockaddr_storage *_client,
+		       int (*cb)(uint32_t src_vnn, uint32_t dst_vnn,
+				 uint64_t dst_srvid,
+				 const uint8_t *msg, size_t msglen,
+				 void *private_data),
+		       void *private_data)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	return ENOSYS;
 }
 
 bool ctdb_processes_exist(struct ctdbd_connection *conn,

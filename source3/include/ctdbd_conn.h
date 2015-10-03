@@ -67,14 +67,14 @@ int ctdbd_traverse(struct ctdbd_connection *master, uint32_t db_id,
 			      void *private_data),
 		   void *private_data);
 
-NTSTATUS ctdbd_register_ips(struct ctdbd_connection *conn,
-			    const struct sockaddr_storage *server,
-			    const struct sockaddr_storage *client,
-			    int (*cb)(uint32_t src_vnn, uint32_t dst_vnn,
-				      uint64_t dst_srvid,
-				      const uint8_t *msg, size_t msglen,
-				      void *private_data),
-			    void *private_data);
+int ctdbd_register_ips(struct ctdbd_connection *conn,
+		       const struct sockaddr_storage *server,
+		       const struct sockaddr_storage *client,
+		       int (*cb)(uint32_t src_vnn, uint32_t dst_vnn,
+				 uint64_t dst_srvid,
+				 const uint8_t *msg, size_t msglen,
+				 void *private_data),
+		       void *private_data);
 
 NTSTATUS ctdbd_control_local(struct ctdbd_connection *conn, uint32_t opcode,
 			     uint64_t srvid, uint32_t flags, TDB_DATA data,
