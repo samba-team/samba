@@ -112,7 +112,7 @@ static int messaging_ctdb_recv(
 	struct messaging_context *msg_ctx = talloc_get_type_abort(
 		private_data, struct messaging_context);
 	struct server_id me = messaging_server_id(msg_ctx);
-	NTSTATUS status;
+	int ret;
 	struct iovec iov;
 	struct server_id src, dst;
 	enum messaging_type msg_type;
@@ -148,12 +148,12 @@ static int messaging_ctdb_recv(
 	 * Go through the event loop
 	 */
 
-	status = messaging_send_iov_from(msg_ctx, src, dst, msg_type,
-					 &iov, 1, NULL, 0);
+	ret = messaging_send_iov_from(msg_ctx, src, dst, msg_type,
+				      &iov, 1, NULL, 0);
 
-	if (!NT_STATUS_IS_OK(status)) {
+	if (ret != 0) {
 		DEBUG(10, ("%s: messaging_send_iov_from failed: %s\n",
-			   __func__, nt_errstr(status)));
+			   __func__, strerror(ret)));
 	}
 
 	return 0;

@@ -518,37 +518,34 @@ NTSTATUS messaging_send_buf(struct messaging_context *msg_ctx,
 	return messaging_send(msg_ctx, server, msg_type, &blob);
 }
 
-NTSTATUS messaging_send_iov_from(struct messaging_context *msg_ctx,
-				 struct server_id src, struct server_id dst,
-				 uint32_t msg_type,
-				 const struct iovec *iov, int iovlen,
-				 const int *fds, size_t num_fds)
+int messaging_send_iov_from(struct messaging_context *msg_ctx,
+			    struct server_id src, struct server_id dst,
+			    uint32_t msg_type,
+			    const struct iovec *iov, int iovlen,
+			    const int *fds, size_t num_fds)
 {
 	int ret;
 	uint8_t hdr[MESSAGE_HDR_LENGTH];
 	struct iovec iov2[iovlen+1];
 
 	if (server_id_is_disconnected(&dst)) {
-		return NT_STATUS_INVALID_PARAMETER_MIX;
+		return EINVAL;
 	}
 
 	if (num_fds > INT8_MAX) {
-		return NT_STATUS_INVALID_PARAMETER_MIX;
+		return EINVAL;
 	}
 
 	if (!procid_is_local(&dst)) {
 		if (num_fds > 0) {
-			return NT_STATUS_NOT_SUPPORTED;
+			return ENOSYS;
 		}
 
 		ret = msg_ctx->remote->send_fn(src, dst,
 					       msg_type, iov, iovlen,
 					       NULL, 0,
 					       msg_ctx->remote);
-		if (ret != 0) {
-			return map_nt_error_from_unix(ret);
-		}
-		return NT_STATUS_OK;
+		return ret;
 	}
 
 	message_hdr_put(hdr, msg_type, src, dst);
@@ -559,10 +556,7 @@ NTSTATUS messaging_send_iov_from(struct messaging_context *msg_ctx,
 	ret = messaging_dgm_send(dst.pid, iov2, iovlen+1, fds, num_fds);
 	unbecome_root();
 
-	if (ret != 0) {
-		return map_nt_error_from_unix(ret);
-	}
-	return NT_STATUS_OK;
+	return ret;
 }
 
 NTSTATUS messaging_send_iov(struct messaging_context *msg_ctx,
@@ -570,8 +564,14 @@ NTSTATUS messaging_send_iov(struct messaging_context *msg_ctx,
 			    const struct iovec *iov, int iovlen,
 			    const int *fds, size_t num_fds)
 {
-	return messaging_send_iov_from(msg_ctx, msg_ctx->id, dst, msg_type,
-				       iov, iovlen, fds, num_fds);
+	int ret;
+
+	ret = messaging_send_iov_from(msg_ctx, msg_ctx->id, dst, msg_type,
+				      iov, iovlen, fds, num_fds);
+	if (ret != 0) {
+		return map_nt_error_from_unix(ret);
+	}
+	return NT_STATUS_OK;
 }
 
 static struct messaging_rec *messaging_rec_dup(TALLOC_CTX *mem_ctx,
