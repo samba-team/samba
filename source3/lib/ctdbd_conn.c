@@ -68,6 +68,12 @@ static NTSTATUS ctdbd_control(struct ctdbd_connection *conn,
 			      uint64_t srvid, uint32_t flags, TDB_DATA data,
 			      TALLOC_CTX *mem_ctx, TDB_DATA *outdata,
 			      int *cstatus);
+static int ctdbd_control_unix(struct ctdbd_connection *conn,
+			      uint32_t vnn, uint32_t opcode,
+			      uint64_t srvid, uint32_t flags,
+			      TDB_DATA data,
+			      TALLOC_CTX *mem_ctx, TDB_DATA *outdata,
+			      int *cstatus);
 
 /*
  * exit on fatal communications errors with the ctdbd daemon
@@ -639,7 +645,7 @@ NTSTATUS ctdbd_messaging_send_iov(struct ctdbd_connection *conn,
 /*
  * send/recv a generic ctdb control message
  */
-static NTSTATUS ctdbd_control(struct ctdbd_connection *conn,
+static int ctdbd_control_unix(struct ctdbd_connection *conn,
 			      uint32_t vnn, uint32_t opcode,
 			      uint64_t srvid, uint32_t flags,
 			      TDB_DATA data,
@@ -651,7 +657,6 @@ static NTSTATUS ctdbd_control(struct ctdbd_connection *conn,
 	struct ctdb_reply_control *reply = NULL;
 	struct iovec iov[2];
 	ssize_t nwritten;
-	NTSTATUS status;
 	int ret;
 
 	ZERO_STRUCT(req);
@@ -684,20 +689,19 @@ static NTSTATUS ctdbd_control(struct ctdbd_connection *conn,
 		if (cstatus) {
 			*cstatus = 0;
 		}
-		return NT_STATUS_OK;
+		return 0;
 	}
 
 	ret = ctdb_read_req(conn, req.hdr.reqid, NULL, &hdr);
 	if (ret != 0) {
 		DEBUG(10, ("ctdb_read_req failed: %s\n", strerror(ret)));
-		status = map_nt_error_from_unix(ret);
-		goto fail;
+		return ret;
 	}
 
 	if (hdr->operation != CTDB_REPLY_CONTROL) {
 		DEBUG(0, ("received invalid reply\n"));
-		status = NT_STATUS_INVALID_NETWORK_RESPONSE;
-		goto fail;
+		TALLOC_FREE(hdr);
+		return EIO;
 	}
 	reply = (struct ctdb_reply_control *)hdr;
 
@@ -705,7 +709,7 @@ static NTSTATUS ctdbd_control(struct ctdbd_connection *conn,
 		if (!(outdata->dptr = (uint8_t *)talloc_memdup(
 			      mem_ctx, reply->data, reply->datalen))) {
 			TALLOC_FREE(reply);
-			return NT_STATUS_NO_MEMORY;
+			return ENOMEM;
 		}
 		outdata->dsize = reply->datalen;
 	}
@@ -713,11 +717,25 @@ static NTSTATUS ctdbd_control(struct ctdbd_connection *conn,
 		(*cstatus) = reply->status;
 	}
 
-	status = NT_STATUS_OK;
-
- fail:
 	TALLOC_FREE(reply);
-	return status;
+	return ret;
+}
+
+static NTSTATUS ctdbd_control(struct ctdbd_connection *conn,
+			      uint32_t vnn, uint32_t opcode,
+			      uint64_t srvid, uint32_t flags,
+			      TDB_DATA data,
+			      TALLOC_CTX *mem_ctx, TDB_DATA *outdata,
+			      int *cstatus)
+{
+	int ret;
+
+	ret = ctdbd_control_unix(conn, vnn, opcode, srvid, flags, data,
+				 mem_ctx, outdata, cstatus);
+	if (ret != 0) {
+		return map_nt_error_from_unix(ret);
+	}
+	return NT_STATUS_OK;
 }
 
 /*
