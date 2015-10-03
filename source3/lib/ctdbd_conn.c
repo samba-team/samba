@@ -113,16 +113,15 @@ NTSTATUS register_with_ctdbd(struct ctdbd_connection *conn, uint64_t srvid,
 			     void *private_data)
 {
 
-	NTSTATUS status;
-	int cstatus;
+	int ret, cstatus;
 	size_t num_callbacks;
 	struct ctdbd_srvid_cb *tmp;
 
-	status = ctdbd_control(conn, CTDB_CURRENT_NODE,
-			       CTDB_CONTROL_REGISTER_SRVID, srvid, 0,
-			       tdb_null, NULL, NULL, &cstatus);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	ret = ctdbd_control_unix(conn, CTDB_CURRENT_NODE,
+				 CTDB_CONTROL_REGISTER_SRVID, srvid, 0,
+				 tdb_null, NULL, NULL, &cstatus);
+	if (ret != 0) {
+		return map_nt_error_from_unix(ret);
 	}
 
 	num_callbacks = talloc_array_length(conn->callbacks);
