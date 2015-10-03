@@ -56,11 +56,11 @@ int ctdbd_db_attach(struct ctdbd_connection *conn, const char *name,
 
 int ctdbd_migrate(struct ctdbd_connection *conn, uint32_t db_id, TDB_DATA key);
 
-NTSTATUS ctdbd_parse(struct ctdbd_connection *conn, uint32_t db_id,
-		     TDB_DATA key, bool local_copy,
-		     void (*parser)(TDB_DATA key, TDB_DATA data,
-				    void *private_data),
-		     void *private_data);
+int ctdbd_parse(struct ctdbd_connection *conn, uint32_t db_id,
+		TDB_DATA key, bool local_copy,
+		void (*parser)(TDB_DATA key, TDB_DATA data,
+			       void *private_data),
+		void *private_data);
 
 NTSTATUS ctdbd_traverse(struct ctdbd_connection *master, uint32_t db_id,
 			void (*fn)(TDB_DATA key, TDB_DATA data,

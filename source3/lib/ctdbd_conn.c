@@ -973,18 +973,17 @@ int ctdbd_migrate(struct ctdbd_connection *conn, uint32_t db_id, TDB_DATA key)
 /*
  * Fetch a record and parse it
  */
-NTSTATUS ctdbd_parse(struct ctdbd_connection *conn, uint32_t db_id,
-		     TDB_DATA key, bool local_copy,
-		     void (*parser)(TDB_DATA key, TDB_DATA data,
-				    void *private_data),
-		     void *private_data)
+int ctdbd_parse(struct ctdbd_connection *conn, uint32_t db_id,
+		TDB_DATA key, bool local_copy,
+		void (*parser)(TDB_DATA key, TDB_DATA data,
+			       void *private_data),
+		void *private_data)
 {
 	struct ctdb_req_call req;
 	struct ctdb_req_header *hdr = NULL;
 	struct ctdb_reply_call *reply;
 	struct iovec iov[2];
 	ssize_t nwritten;
-	NTSTATUS status;
 	uint32_t flags;
 	int ret;
 
@@ -1022,7 +1021,7 @@ NTSTATUS ctdbd_parse(struct ctdbd_connection *conn, uint32_t db_id,
 
 	if ((hdr == NULL) || (hdr->operation != CTDB_REPLY_CALL)) {
 		DEBUG(0, ("received invalid reply\n"));
-		status = NT_STATUS_INTERNAL_ERROR;
+		ret = EIO;
 		goto fail;
 	}
 	reply = (struct ctdb_reply_call *)hdr;
@@ -1031,17 +1030,17 @@ NTSTATUS ctdbd_parse(struct ctdbd_connection *conn, uint32_t db_id,
 		/*
 		 * Treat an empty record as non-existing
 		 */
-		status = NT_STATUS_NOT_FOUND;
+		ret = ENOENT;
 		goto fail;
 	}
 
 	parser(key, make_tdb_data(&reply->data[0], reply->datalen),
 	       private_data);
 
-	status = NT_STATUS_OK;
+	ret = 0;
  fail:
 	TALLOC_FREE(hdr);
-	return status;
+	return ret;
 }
 
 /*

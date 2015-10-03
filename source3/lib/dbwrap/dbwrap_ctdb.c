@@ -1009,7 +1009,6 @@ static struct db_record *fetch_locked_internal(struct db_ctdb_ctx *ctx,
 {
 	struct db_record *result;
 	struct db_ctdb_rec *crec;
-	NTSTATUS status;
 	TDB_DATA ctdb_data;
 	int migrate_attempts;
 	struct timeval migrate_start;
@@ -1256,6 +1255,7 @@ static NTSTATUS db_ctdb_parse_record(struct db_context *db, TDB_DATA key,
 		db->private_data, struct db_ctdb_ctx);
 	struct db_ctdb_parse_record_state state;
 	NTSTATUS status;
+	int ret;
 
 	state.parser = parser;
 	state.private_data = private_data;
@@ -1293,8 +1293,12 @@ static NTSTATUS db_ctdb_parse_record(struct db_context *db, TDB_DATA key,
 		return NT_STATUS_OK;
 	}
 
-	return ctdbd_parse(messaging_ctdbd_connection(), ctx->db_id, key,
-			   state.ask_for_readonly_copy, parser, private_data);
+	ret = ctdbd_parse(messaging_ctdbd_connection(), ctx->db_id, key,
+			  state.ask_for_readonly_copy, parser, private_data);
+	if (ret != 0) {
+		return map_nt_error_from_unix(ret);
+	}
+	return NT_STATUS_OK;
 }
 
 struct traverse_state {
