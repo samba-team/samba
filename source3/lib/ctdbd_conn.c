@@ -869,7 +869,7 @@ fail:
 char *ctdbd_dbpath(struct ctdbd_connection *conn,
 		   TALLOC_CTX *mem_ctx, uint32_t db_id)
 {
-	NTSTATUS status;
+	int ret;
 	TDB_DATA data;
 	TDB_DATA rdata = {0};
 	int32_t cstatus = 0;
@@ -877,11 +877,12 @@ char *ctdbd_dbpath(struct ctdbd_connection *conn,
 	data.dptr = (uint8_t*)&db_id;
 	data.dsize = sizeof(db_id);
 
-	status = ctdbd_control(conn, CTDB_CURRENT_NODE,
-			       CTDB_CONTROL_GETDBPATH, 0, 0, data,
-			       mem_ctx, &rdata, &cstatus);
-	if (!NT_STATUS_IS_OK(status) || cstatus != 0) {
-		DEBUG(0,(__location__ " ctdb_control for getdbpath failed\n"));
+	ret = ctdbd_control_unix(conn, CTDB_CURRENT_NODE,
+				 CTDB_CONTROL_GETDBPATH, 0, 0, data,
+				 mem_ctx, &rdata, &cstatus);
+	if ((ret != 0) || cstatus != 0) {
+		DEBUG(0, (__location__ " ctdb_control for getdbpath failed: %s\n",
+			  strerror(ret)));
 		return NULL;
 	}
 
