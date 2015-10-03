@@ -1243,26 +1243,20 @@ int ctdbd_register_ips(struct ctdbd_connection *conn,
 /*
   call a control on the local node
  */
-NTSTATUS ctdbd_control_local(struct ctdbd_connection *conn, uint32_t opcode,
-			     uint64_t srvid, uint32_t flags, TDB_DATA data,
-			     TALLOC_CTX *mem_ctx, TDB_DATA *outdata,
-			     int *cstatus)
+int ctdbd_control_local(struct ctdbd_connection *conn, uint32_t opcode,
+			uint64_t srvid, uint32_t flags, TDB_DATA data,
+			TALLOC_CTX *mem_ctx, TDB_DATA *outdata,
+			int *cstatus)
 {
-	int ret;
-
-	ret = ctdbd_control(conn, CTDB_CURRENT_NODE, opcode, srvid, flags, data,
-			    mem_ctx, outdata, cstatus);
-	if (ret != 0) {
-		return map_nt_error_from_unix(ret);
-	}
-	return NT_STATUS_OK;
+	return ctdbd_control(conn, CTDB_CURRENT_NODE, opcode, srvid, flags, data,
+			     mem_ctx, outdata, cstatus);
 }
 
 NTSTATUS ctdb_watch_us(struct ctdbd_connection *conn)
 {
 	struct ctdb_client_notify_register reg_data;
 	size_t struct_len;
-	NTSTATUS status;
+	int ret;
 	int cstatus;
 
 	reg_data.srvid = CTDB_SRVID_SAMBA_NOTIFY;
@@ -1272,34 +1266,36 @@ NTSTATUS ctdb_watch_us(struct ctdbd_connection *conn)
 	struct_len = offsetof(struct ctdb_client_notify_register,
 			      notify_data) + reg_data.len;
 
-	status = ctdbd_control_local(
+	ret = ctdbd_control_local(
 		conn, CTDB_CONTROL_REGISTER_NOTIFY, conn->rand_srvid, 0,
 		make_tdb_data((uint8_t *)&reg_data, struct_len),
 		NULL, NULL, &cstatus);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (ret != 0) {
 		DEBUG(1, ("ctdbd_control_local failed: %s\n",
-			  nt_errstr(status)));
+			  strerror(ret)));
+		return map_nt_error_from_unix(ret);
 	}
-	return status;
+	return NT_STATUS_OK;
 }
 
 NTSTATUS ctdb_unwatch(struct ctdbd_connection *conn)
 {
 	struct ctdb_client_notify_deregister dereg_data;
-	NTSTATUS status;
+	int ret;
 	int cstatus;
 
 	dereg_data.srvid = CTDB_SRVID_SAMBA_NOTIFY;
 
-	status = ctdbd_control_local(
+	ret = ctdbd_control_local(
 		conn, CTDB_CONTROL_DEREGISTER_NOTIFY, conn->rand_srvid, 0,
 		make_tdb_data((uint8_t *)&dereg_data, sizeof(dereg_data)),
 		NULL, NULL, &cstatus);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (ret != 0) {
 		DEBUG(1, ("ctdbd_control_local failed: %s\n",
-			  nt_errstr(status)));
+			  strerror(ret)));
+		return map_nt_error_from_unix(ret);
 	}
-	return status;
+	return NT_STATUS_OK;
 }
 
 NTSTATUS ctdbd_probe(const char *sockname, int timeout)
