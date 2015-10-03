@@ -301,7 +301,7 @@ static int ctdb_read_packet(int fd, int timeout, TALLOC_CTX *mem_ctx,
 	ssize_t nread;
 
 	if (timeout != -1) {
-		ret = poll_one_fd(fd, POLLIN, timeout, &revents);
+		ret = poll_intr_one_fd(fd, POLLIN, timeout, &revents);
 		if (ret == -1) {
 			return errno;
 		}
