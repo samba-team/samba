@@ -188,7 +188,8 @@ NTSTATUS messaging_ctdbd_init(struct messaging_context *msg_ctx,
 		return map_nt_error_from_unix(ret);
 	}
 
-	ret = ctdbd_register_msg_ctx(ctx->conn, msg_ctx);
+	ret = ctdbd_register_msg_ctx(ctx->conn, msg_ctx,
+				     messaging_tevent_context(msg_ctx));
 
 	if (ret != 0) {
 		DEBUG(10, ("ctdbd_register_msg_ctx failed: %s\n",

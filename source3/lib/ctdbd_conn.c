@@ -577,17 +577,15 @@ static void ctdbd_socket_handler(struct tevent_context *event_ctx,
  */
 
 int ctdbd_register_msg_ctx(struct ctdbd_connection *conn,
-			   struct messaging_context *msg_ctx)
+			   struct messaging_context *msg_ctx,
+			   struct tevent_context *ev)
 {
 	SMB_ASSERT(conn->msg_ctx == NULL);
 	SMB_ASSERT(conn->fde == NULL);
 
-	if (!(conn->fde = tevent_add_fd(messaging_tevent_context(msg_ctx),
-				       conn,
-				       conn->fd,
-				       TEVENT_FD_READ,
-				       ctdbd_socket_handler,
-				       conn))) {
+	conn->fde = tevent_add_fd(ev, conn, conn->fd, TEVENT_FD_READ,
+				  ctdbd_socket_handler, conn);
+	if (conn->fde == NULL) {
 		DEBUG(0, ("event_add_fd failed\n"));
 		return ENOMEM;
 	}
