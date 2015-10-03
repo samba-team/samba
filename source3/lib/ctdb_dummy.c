@@ -81,11 +81,11 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 	return NULL;
 }
 
-NTSTATUS messaging_ctdbd_init(struct messaging_context *msg_ctx,
-			      TALLOC_CTX *mem_ctx,
+int messaging_ctdbd_init(struct messaging_context *msg_ctx,
+			 TALLOC_CTX *mem_ctx,
 			      struct messaging_backend **presult)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	return ENOSYS;
 }
 
 struct ctdbd_connection *messaging_ctdbd_connection(void)

@@ -159,9 +159,9 @@ static int messaging_ctdb_recv(
 	return 0;
 }
 
-NTSTATUS messaging_ctdbd_init(struct messaging_context *msg_ctx,
-			      TALLOC_CTX *mem_ctx,
-			      struct messaging_backend **presult)
+int messaging_ctdbd_init(struct messaging_context *msg_ctx,
+			 TALLOC_CTX *mem_ctx,
+			 struct messaging_backend **presult)
 {
 	struct messaging_backend *result;
 	struct messaging_ctdbd_context *ctx;
@@ -169,13 +169,13 @@ NTSTATUS messaging_ctdbd_init(struct messaging_context *msg_ctx,
 
 	if (!(result = talloc(mem_ctx, struct messaging_backend))) {
 		DEBUG(0, ("talloc failed\n"));
-		return NT_STATUS_NO_MEMORY;
+		return ENOMEM;
 	}
 
 	if (!(ctx = talloc(result, struct messaging_ctdbd_context))) {
 		DEBUG(0, ("talloc failed\n"));
 		TALLOC_FREE(result);
-		return NT_STATUS_NO_MEMORY;
+		return ENOMEM;
 	}
 
 	ret = ctdbd_messaging_connection(ctx, lp_ctdbd_socket(),
@@ -185,7 +185,7 @@ NTSTATUS messaging_ctdbd_init(struct messaging_context *msg_ctx,
 		DEBUG(10, ("ctdbd_messaging_connection failed: %s\n",
 			   strerror(ret)));
 		TALLOC_FREE(result);
-		return map_nt_error_from_unix(ret);
+		return ret;
 	}
 
 	ret = ctdbd_register_msg_ctx(ctx->conn, msg_ctx,
@@ -195,7 +195,7 @@ NTSTATUS messaging_ctdbd_init(struct messaging_context *msg_ctx,
 		DEBUG(10, ("ctdbd_register_msg_ctx failed: %s\n",
 			   strerror(ret)));
 		TALLOC_FREE(result);
-		return map_nt_error_from_unix(ret);
+		return ret;
 	}
 
 	ret = register_with_ctdbd(ctx->conn, getpid(),
@@ -204,7 +204,7 @@ NTSTATUS messaging_ctdbd_init(struct messaging_context *msg_ctx,
 		DEBUG(10, ("register_with_ctdbd failed: %s\n",
 			   strerror(ret)));
 		TALLOC_FREE(result);
-		return map_nt_error_from_unix(ret);
+		return ret;
 	}
 
 	global_ctdb_connection_pid = getpid();
@@ -217,5 +217,5 @@ NTSTATUS messaging_ctdbd_init(struct messaging_context *msg_ctx,
 	result->private_data = (void *)ctx;
 
 	*presult = result;
-	return NT_STATUS_OK;
+	return 0;
 }

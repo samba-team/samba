@@ -291,7 +291,6 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx,
 					 struct tevent_context *ev)
 {
 	struct messaging_context *ctx;
-	NTSTATUS status;
 	int ret;
 	const char *lck_path;
 	const char *priv_path;
@@ -349,11 +348,11 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx,
 	talloc_set_destructor(ctx, messaging_context_destructor);
 
 	if (lp_clustering()) {
-		status = messaging_ctdbd_init(ctx, ctx, &ctx->remote);
+		ret = messaging_ctdbd_init(ctx, ctx, &ctx->remote);
 
-		if (!NT_STATUS_IS_OK(status)) {
+		if (ret != 0) {
 			DEBUG(2, ("messaging_ctdbd_init failed: %s\n",
-				  nt_errstr(status)));
+				  strerror(ret)));
 			TALLOC_FREE(ctx);
 			return NULL;
 		}
@@ -390,7 +389,6 @@ struct server_id messaging_server_id(const struct messaging_context *msg_ctx)
  */
 NTSTATUS messaging_reinit(struct messaging_context *msg_ctx)
 {
-	NTSTATUS status;
 	int ret;
 
 	TALLOC_FREE(msg_ctx->msg_dgm_ref);
@@ -410,13 +408,13 @@ NTSTATUS messaging_reinit(struct messaging_context *msg_ctx)
 	TALLOC_FREE(msg_ctx->remote);
 
 	if (lp_clustering()) {
-		status = messaging_ctdbd_init(msg_ctx, msg_ctx,
-					      &msg_ctx->remote);
+		ret = messaging_ctdbd_init(msg_ctx, msg_ctx,
+					   &msg_ctx->remote);
 
-		if (!NT_STATUS_IS_OK(status)) {
+		if (ret != 0) {
 			DEBUG(1, ("messaging_ctdbd_init failed: %s\n",
-				  nt_errstr(status)));
-			return status;
+				  strerror(ret)));
+			return map_nt_error_from_unix(ret);
 		}
 	}
 
