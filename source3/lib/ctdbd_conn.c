@@ -63,12 +63,12 @@ static uint32_t ctdbd_next_reqid(struct ctdbd_connection *conn)
 	return conn->reqid;
 }
 
-static int ctdbd_control_unix(struct ctdbd_connection *conn,
-			      uint32_t vnn, uint32_t opcode,
-			      uint64_t srvid, uint32_t flags,
-			      TDB_DATA data,
-			      TALLOC_CTX *mem_ctx, TDB_DATA *outdata,
-			      int *cstatus);
+static int ctdbd_control(struct ctdbd_connection *conn,
+			 uint32_t vnn, uint32_t opcode,
+			 uint64_t srvid, uint32_t flags,
+			 TDB_DATA data,
+			 TALLOC_CTX *mem_ctx, TDB_DATA *outdata,
+			 int *cstatus);
 
 /*
  * exit on fatal communications errors with the ctdbd daemon
@@ -112,9 +112,9 @@ NTSTATUS register_with_ctdbd(struct ctdbd_connection *conn, uint64_t srvid,
 	size_t num_callbacks;
 	struct ctdbd_srvid_cb *tmp;
 
-	ret = ctdbd_control_unix(conn, CTDB_CURRENT_NODE,
-				 CTDB_CONTROL_REGISTER_SRVID, srvid, 0,
-				 tdb_null, NULL, NULL, &cstatus);
+	ret = ctdbd_control(conn, CTDB_CURRENT_NODE,
+			    CTDB_CONTROL_REGISTER_SRVID, srvid, 0,
+			    tdb_null, NULL, NULL, &cstatus);
 	if (ret != 0) {
 		return map_nt_error_from_unix(ret);
 	}
@@ -181,9 +181,9 @@ static NTSTATUS get_cluster_vnn(struct ctdbd_connection *conn, uint32_t *vnn)
 {
 	int32_t cstatus=-1;
 	int ret;
-	ret = ctdbd_control_unix(conn,
-				 CTDB_CURRENT_NODE, CTDB_CONTROL_GET_PNN, 0, 0,
-				 tdb_null, NULL, NULL, &cstatus);
+	ret = ctdbd_control(conn,
+			    CTDB_CURRENT_NODE, CTDB_CONTROL_GET_PNN, 0, 0,
+			    tdb_null, NULL, NULL, &cstatus);
 	if (ret != 0) {
 		DEBUG(1, ("ctdbd_control failed: %s\n", strerror(ret)));
 		return map_nt_error_from_unix(ret);
@@ -204,9 +204,9 @@ static bool ctdbd_working(struct ctdbd_connection *conn, uint32_t vnn)
 	bool ok = false;
 	int i, ret;
 
-	ret = ctdbd_control_unix(conn, CTDB_CURRENT_NODE,
-				 CTDB_CONTROL_GET_NODEMAP, 0, 0,
-				 tdb_null, talloc_tos(), &outdata, &cstatus);
+	ret = ctdbd_control(conn, CTDB_CURRENT_NODE,
+			    CTDB_CONTROL_GET_NODEMAP, 0, 0,
+			    tdb_null, talloc_tos(), &outdata, &cstatus);
 	if (ret != 0) {
 		DEBUG(1, ("ctdbd_control failed: %s\n", strerror(ret)));
 		return false;
@@ -638,12 +638,12 @@ NTSTATUS ctdbd_messaging_send_iov(struct ctdbd_connection *conn,
 /*
  * send/recv a generic ctdb control message
  */
-static int ctdbd_control_unix(struct ctdbd_connection *conn,
-			      uint32_t vnn, uint32_t opcode,
-			      uint64_t srvid, uint32_t flags,
-			      TDB_DATA data,
-			      TALLOC_CTX *mem_ctx, TDB_DATA *outdata,
-			      int *cstatus)
+static int ctdbd_control(struct ctdbd_connection *conn,
+			 uint32_t vnn, uint32_t opcode,
+			 uint64_t srvid, uint32_t flags,
+			 TDB_DATA data,
+			 TALLOC_CTX *mem_ctx, TDB_DATA *outdata,
+			 int *cstatus)
 {
 	struct ctdb_req_control req;
 	struct ctdb_req_header *hdr;
@@ -855,9 +855,9 @@ char *ctdbd_dbpath(struct ctdbd_connection *conn,
 	data.dptr = (uint8_t*)&db_id;
 	data.dsize = sizeof(db_id);
 
-	ret = ctdbd_control_unix(conn, CTDB_CURRENT_NODE,
-				 CTDB_CONTROL_GETDBPATH, 0, 0, data,
-				 mem_ctx, &rdata, &cstatus);
+	ret = ctdbd_control(conn, CTDB_CURRENT_NODE,
+			    CTDB_CONTROL_GETDBPATH, 0, 0, data,
+			    mem_ctx, &rdata, &cstatus);
 	if ((ret != 0) || cstatus != 0) {
 		DEBUG(0, (__location__ " ctdb_control for getdbpath failed: %s\n",
 			  strerror(ret)));
@@ -880,11 +880,11 @@ NTSTATUS ctdbd_db_attach(struct ctdbd_connection *conn,
 
 	data = string_term_tdb_data(name);
 
-	ret = ctdbd_control_unix(conn, CTDB_CURRENT_NODE,
-				 persistent
-				 ? CTDB_CONTROL_DB_ATTACH_PERSISTENT
-				 : CTDB_CONTROL_DB_ATTACH,
-				 tdb_flags, 0, data, NULL, &data, &cstatus);
+	ret = ctdbd_control(conn, CTDB_CURRENT_NODE,
+			    persistent
+			    ? CTDB_CONTROL_DB_ATTACH_PERSISTENT
+			    : CTDB_CONTROL_DB_ATTACH,
+			    tdb_flags, 0, data, NULL, &data, &cstatus);
 	if (ret != 0) {
 		DEBUG(0, (__location__ " ctdb_control for db_attach "
 			  "failed: %s\n", strerror(ret)));
@@ -906,9 +906,9 @@ NTSTATUS ctdbd_db_attach(struct ctdbd_connection *conn,
 	data.dptr = (uint8_t *)db_id;
 	data.dsize = sizeof(*db_id);
 
-	ret = ctdbd_control_unix(conn, CTDB_CURRENT_NODE,
-				 CTDB_CONTROL_ENABLE_SEQNUM, 0, 0, data,
-				 NULL, NULL, &cstatus);
+	ret = ctdbd_control(conn, CTDB_CURRENT_NODE,
+			    CTDB_CONTROL_ENABLE_SEQNUM, 0, 0, data,
+			    NULL, NULL, &cstatus);
 	if ((ret != 0) || cstatus != 0) {
 		DEBUG(0, (__location__ " ctdb_control for enable seqnum "
 			  "failed: %s\n", strerror(ret)));
@@ -1087,9 +1087,9 @@ NTSTATUS ctdbd_traverse(struct ctdbd_connection *master, uint32_t db_id,
 	data.dptr = (uint8_t *)&t;
 	data.dsize = sizeof(t);
 
-	ret = ctdbd_control_unix(conn, CTDB_CURRENT_NODE,
-				 CTDB_CONTROL_TRAVERSE_START, conn->rand_srvid,
-				 0, data, NULL, NULL, &cstatus);
+	ret = ctdbd_control(conn, CTDB_CURRENT_NODE,
+			    CTDB_CONTROL_TRAVERSE_START, conn->rand_srvid,
+			    0, data, NULL, NULL, &cstatus);
 
 	if ((ret != 0) || (cstatus != 0)) {
 		status = map_nt_error_from_unix(ret);
@@ -1244,10 +1244,10 @@ NTSTATUS ctdbd_register_ips(struct ctdbd_connection *conn,
 	 * can send an extra ack to trigger a reset for our client, so it
 	 * immediately reconnects
 	 */
-	ret = ctdbd_control_unix(conn, CTDB_CURRENT_NODE,
-				 CTDB_CONTROL_TCP_CLIENT, 0,
-				 CTDB_CTRL_FLAG_NOREPLY, data, NULL, NULL,
-				 NULL);
+	ret = ctdbd_control(conn, CTDB_CURRENT_NODE,
+			    CTDB_CONTROL_TCP_CLIENT, 0,
+			    CTDB_CTRL_FLAG_NOREPLY, data, NULL, NULL,
+			    NULL);
 	if (ret != 0) {
 		return map_nt_error_from_unix(ret);
 	}
@@ -1264,8 +1264,8 @@ NTSTATUS ctdbd_control_local(struct ctdbd_connection *conn, uint32_t opcode,
 {
 	int ret;
 
-	ret = ctdbd_control_unix(conn, CTDB_CURRENT_NODE, opcode, srvid, flags, data,
-				 mem_ctx, outdata, cstatus);
+	ret = ctdbd_control(conn, CTDB_CURRENT_NODE, opcode, srvid, flags, data,
+			    mem_ctx, outdata, cstatus);
 	if (ret != 0) {
 		return map_nt_error_from_unix(ret);
 	}
