@@ -1252,7 +1252,7 @@ int ctdbd_control_local(struct ctdbd_connection *conn, uint32_t opcode,
 			     mem_ctx, outdata, cstatus);
 }
 
-NTSTATUS ctdb_watch_us(struct ctdbd_connection *conn)
+int ctdb_watch_us(struct ctdbd_connection *conn)
 {
 	struct ctdb_client_notify_register reg_data;
 	size_t struct_len;
@@ -1273,9 +1273,8 @@ NTSTATUS ctdb_watch_us(struct ctdbd_connection *conn)
 	if (ret != 0) {
 		DEBUG(1, ("ctdbd_control_local failed: %s\n",
 			  strerror(ret)));
-		return map_nt_error_from_unix(ret);
 	}
-	return NT_STATUS_OK;
+	return ret;
 }
 
 NTSTATUS ctdb_unwatch(struct ctdbd_connection *conn)

@@ -80,7 +80,7 @@ int ctdbd_control_local(struct ctdbd_connection *conn, uint32_t opcode,
 			uint64_t srvid, uint32_t flags, TDB_DATA data,
 			TALLOC_CTX *mem_ctx, TDB_DATA *outdata,
 			int *cstatus);
-NTSTATUS ctdb_watch_us(struct ctdbd_connection *conn);
+int ctdb_watch_us(struct ctdbd_connection *conn);
 NTSTATUS ctdb_unwatch(struct ctdbd_connection *conn);
 
 struct ctdb_req_message;
