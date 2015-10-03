@@ -24,9 +24,9 @@
 #include "lib/dbwrap/dbwrap_ctdb.h"
 #include "torture/proto.h"
 
-NTSTATUS ctdbd_probe(const char *sockname, int timeout)
+int ctdbd_probe(const char *sockname, int timeout)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	return ENOSYS;
 }
 
 int ctdbd_messaging_send_iov(struct ctdbd_connection *conn,

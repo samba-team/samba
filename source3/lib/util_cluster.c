@@ -26,12 +26,12 @@
 bool cluster_probe_ok(void)
 {
 	if (lp_clustering()) {
-		NTSTATUS status;
+		int ret;
 
-		status = ctdbd_probe(lp_ctdbd_socket(), lp_ctdb_timeout());
-		if (!NT_STATUS_IS_OK(status)) {
+		ret = ctdbd_probe(lp_ctdbd_socket(), lp_ctdb_timeout());
+		if (ret != 0) {
 			DEBUG(0, ("clustering=yes but ctdbd connect failed: "
-				  "%s\n", nt_errstr(status)));
+				  "%s\n", strerror(ret)));
 			return false;
 		}
 	}

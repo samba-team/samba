@@ -1296,7 +1296,7 @@ int ctdb_unwatch(struct ctdbd_connection *conn)
 	return ret;
 }
 
-NTSTATUS ctdbd_probe(const char *sockname, int timeout)
+int ctdbd_probe(const char *sockname, int timeout)
 {
 	/*
 	 * Do a very early check if ctdbd is around to avoid an abort and core
@@ -1313,5 +1313,5 @@ NTSTATUS ctdbd_probe(const char *sockname, int timeout)
 	 */
 	TALLOC_FREE(conn);
 
-	return map_nt_error_from_unix(ret);
+	return ret;
 }
