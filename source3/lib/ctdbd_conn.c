@@ -1277,7 +1277,7 @@ int ctdb_watch_us(struct ctdbd_connection *conn)
 	return ret;
 }
 
-NTSTATUS ctdb_unwatch(struct ctdbd_connection *conn)
+int ctdb_unwatch(struct ctdbd_connection *conn)
 {
 	struct ctdb_client_notify_deregister dereg_data;
 	int ret;
@@ -1292,9 +1292,8 @@ NTSTATUS ctdb_unwatch(struct ctdbd_connection *conn)
 	if (ret != 0) {
 		DEBUG(1, ("ctdbd_control_local failed: %s\n",
 			  strerror(ret)));
-		return map_nt_error_from_unix(ret);
 	}
-	return NT_STATUS_OK;
+	return ret;
 }
 
 NTSTATUS ctdbd_probe(const char *sockname, int timeout)
