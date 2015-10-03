@@ -63,11 +63,6 @@ static uint32_t ctdbd_next_reqid(struct ctdbd_connection *conn)
 	return conn->reqid;
 }
 
-static NTSTATUS ctdbd_control(struct ctdbd_connection *conn,
-			      uint32_t vnn, uint32_t opcode,
-			      uint64_t srvid, uint32_t flags, TDB_DATA data,
-			      TALLOC_CTX *mem_ctx, TDB_DATA *outdata,
-			      int *cstatus);
 static int ctdbd_control_unix(struct ctdbd_connection *conn,
 			      uint32_t vnn, uint32_t opcode,
 			      uint64_t srvid, uint32_t flags,
@@ -719,23 +714,6 @@ static int ctdbd_control_unix(struct ctdbd_connection *conn,
 	return ret;
 }
 
-static NTSTATUS ctdbd_control(struct ctdbd_connection *conn,
-			      uint32_t vnn, uint32_t opcode,
-			      uint64_t srvid, uint32_t flags,
-			      TDB_DATA data,
-			      TALLOC_CTX *mem_ctx, TDB_DATA *outdata,
-			      int *cstatus)
-{
-	int ret;
-
-	ret = ctdbd_control_unix(conn, vnn, opcode, srvid, flags, data,
-				 mem_ctx, outdata, cstatus);
-	if (ret != 0) {
-		return map_nt_error_from_unix(ret);
-	}
-	return NT_STATUS_OK;
-}
-
 /*
  * see if a remote process exists
  */
@@ -1284,7 +1262,14 @@ NTSTATUS ctdbd_control_local(struct ctdbd_connection *conn, uint32_t opcode,
 			     TALLOC_CTX *mem_ctx, TDB_DATA *outdata,
 			     int *cstatus)
 {
-	return ctdbd_control(conn, CTDB_CURRENT_NODE, opcode, srvid, flags, data, mem_ctx, outdata, cstatus);
+	int ret;
+
+	ret = ctdbd_control_unix(conn, CTDB_CURRENT_NODE, opcode, srvid, flags, data,
+				 mem_ctx, outdata, cstatus);
+	if (ret != 0) {
+		return map_nt_error_from_unix(ret);
+	}
+	return NT_STATUS_OK;
 }
 
 NTSTATUS ctdb_watch_us(struct ctdbd_connection *conn)
