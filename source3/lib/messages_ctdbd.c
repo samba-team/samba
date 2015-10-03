@@ -82,7 +82,6 @@ static int messaging_ctdb_send(struct server_id src,
 		backend->private_data, struct messaging_ctdbd_context);
 	uint8_t hdr[MESSAGE_HDR_LENGTH];
 	struct iovec iov2[iovlen+1];
-	NTSTATUS status;
 
 	if (num_fds > 0) {
 		return ENOSYS;
@@ -92,12 +91,8 @@ static int messaging_ctdb_send(struct server_id src,
 	iov2[0] = (struct iovec){ .iov_base = hdr, .iov_len = sizeof(hdr) };
 	memcpy(&iov2[1], iov, iovlen * sizeof(*iov));
 
-	status = ctdbd_messaging_send_iov(ctx->conn, pid.vnn, pid.pid,
-					  iov2, iovlen+1);
-	if (NT_STATUS_IS_OK(status)) {
-		return 0;
-	}
-	return map_errno_from_nt_status(status);
+	return ctdbd_messaging_send_iov(ctx->conn, pid.vnn, pid.pid,
+					iov2, iovlen+1);
 }
 
 static int messaging_ctdbd_destructor(struct messaging_ctdbd_context *ctx)

@@ -942,11 +942,11 @@ static void notifyd_broadcast_reclog(struct ctdbd_connection *ctdbd_conn,
 				     struct server_id src,
 				     struct messaging_reclog *log)
 {
-	NTSTATUS status;
 	enum ndr_err_code ndr_err;
 	uint8_t msghdr[MESSAGE_HDR_LENGTH];
 	DATA_BLOB blob;
 	struct iovec iov[2];
+	int ret;
 
 	if (log == NULL) {
 		return;
@@ -971,13 +971,13 @@ static void notifyd_broadcast_reclog(struct ctdbd_connection *ctdbd_conn,
 	iov[1] = (struct iovec) { .iov_base = blob.data,
 				  .iov_len = blob.length };
 
-	status = ctdbd_messaging_send_iov(
+	ret = ctdbd_messaging_send_iov(
 		ctdbd_conn, CTDB_BROADCAST_VNNMAP,
 		CTDB_SRVID_SAMBA_NOTIFY_PROXY, iov, ARRAY_SIZE(iov));
 	TALLOC_FREE(blob.data);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (ret != 0) {
 		DEBUG(1, ("%s: ctdbd_messaging_send failed: %s\n",
-			  __func__, nt_errstr(status)));
+			  __func__, strerror(ret)));
 		goto done;
 	}
 

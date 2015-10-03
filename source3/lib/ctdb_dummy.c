@@ -29,11 +29,11 @@ NTSTATUS ctdbd_probe(const char *sockname, int timeout)
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-NTSTATUS ctdbd_messaging_send_iov(struct ctdbd_connection *conn,
-				  uint32_t dst_vnn, uint64_t dst_srvid,
-				  const struct iovec *iov, int iovlen)
+int ctdbd_messaging_send_iov(struct ctdbd_connection *conn,
+			     uint32_t dst_vnn, uint64_t dst_srvid,
+			     const struct iovec *iov, int iovlen)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	return ENOSYS;
 }
 
 int register_with_ctdbd(struct ctdbd_connection *conn, uint64_t srvid,

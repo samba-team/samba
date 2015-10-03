@@ -597,9 +597,9 @@ int ctdbd_register_msg_ctx(struct ctdbd_connection *conn,
 	return 0;
 }
 
-NTSTATUS ctdbd_messaging_send_iov(struct ctdbd_connection *conn,
-				  uint32_t dst_vnn, uint64_t dst_srvid,
-				  const struct iovec *iov, int iovlen)
+int ctdbd_messaging_send_iov(struct ctdbd_connection *conn,
+			     uint32_t dst_vnn, uint64_t dst_srvid,
+			     const struct iovec *iov, int iovlen)
 {
 	struct ctdb_req_message r;
 	struct iovec iov2[iovlen+1];
@@ -630,7 +630,7 @@ NTSTATUS ctdbd_messaging_send_iov(struct ctdbd_connection *conn,
 		cluster_fatal("cluster dispatch daemon msg write error\n");
 	}
 
-	return NT_STATUS_OK;
+	return 0;
 }
 
 /*
