@@ -185,16 +185,16 @@ static int ctdbd_msg_call_back(struct ctdbd_connection *conn,
 static NTSTATUS get_cluster_vnn(struct ctdbd_connection *conn, uint32_t *vnn)
 {
 	int32_t cstatus=-1;
-	NTSTATUS status;
-	status = ctdbd_control(conn,
-			       CTDB_CURRENT_NODE, CTDB_CONTROL_GET_PNN, 0, 0,
-			       tdb_null, NULL, NULL, &cstatus);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("ctdbd_control failed: %s\n", nt_errstr(status)));
-		return status;
+	int ret;
+	ret = ctdbd_control_unix(conn,
+				 CTDB_CURRENT_NODE, CTDB_CONTROL_GET_PNN, 0, 0,
+				 tdb_null, NULL, NULL, &cstatus);
+	if (ret != 0) {
+		DEBUG(1, ("ctdbd_control failed: %s\n", strerror(ret)));
+		return map_nt_error_from_unix(ret);
 	}
 	*vnn = (uint32_t)cstatus;
-	return status;
+	return NT_STATUS_OK;
 }
 
 /*
