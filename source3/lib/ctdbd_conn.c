@@ -1087,7 +1087,7 @@ NTSTATUS ctdbd_traverse(struct ctdbd_connection *master, uint32_t db_id,
 {
 	struct ctdbd_connection *conn;
 	NTSTATUS status;
-
+	int ret;
 	TDB_DATA key, data;
 	struct ctdb_traverse_start t;
 	int cstatus;
@@ -1109,13 +1109,14 @@ NTSTATUS ctdbd_traverse(struct ctdbd_connection *master, uint32_t db_id,
 	data.dptr = (uint8_t *)&t;
 	data.dsize = sizeof(t);
 
-	status = ctdbd_control(conn, CTDB_CURRENT_NODE,
-			       CTDB_CONTROL_TRAVERSE_START, conn->rand_srvid, 0,
-			       data, NULL, NULL, &cstatus);
+	ret = ctdbd_control_unix(conn, CTDB_CURRENT_NODE,
+				 CTDB_CONTROL_TRAVERSE_START, conn->rand_srvid,
+				 0, data, NULL, NULL, &cstatus);
 
-	if (!NT_STATUS_IS_OK(status) || (cstatus != 0)) {
+	if ((ret != 0) || (cstatus != 0)) {
+		status = map_nt_error_from_unix(ret);
 
-		DEBUG(0,("ctdbd_control failed: %s, %d\n", nt_errstr(status),
+		DEBUG(0,("ctdbd_control failed: %s, %d\n", strerror(ret),
 			 cstatus));
 
 		if (NT_STATUS_IS_OK(status)) {
@@ -1132,7 +1133,6 @@ NTSTATUS ctdbd_traverse(struct ctdbd_connection *master, uint32_t db_id,
 		struct ctdb_req_header *hdr = NULL;
 		struct ctdb_req_message *m;
 		struct ctdb_rec_data *d;
-		int ret;
 
 		ret = ctdb_read_packet(conn->fd, conn->timeout, conn, &hdr);
 		if (ret != 0) {
