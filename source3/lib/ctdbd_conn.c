@@ -582,8 +582,8 @@ static void ctdbd_socket_handler(struct tevent_context *event_ctx,
  * Prepare a ctdbd connection to receive messages
  */
 
-NTSTATUS ctdbd_register_msg_ctx(struct ctdbd_connection *conn,
-				struct messaging_context *msg_ctx)
+int ctdbd_register_msg_ctx(struct ctdbd_connection *conn,
+			   struct messaging_context *msg_ctx)
 {
 	SMB_ASSERT(conn->msg_ctx == NULL);
 	SMB_ASSERT(conn->fde == NULL);
@@ -595,12 +595,12 @@ NTSTATUS ctdbd_register_msg_ctx(struct ctdbd_connection *conn,
 				       ctdbd_socket_handler,
 				       conn))) {
 		DEBUG(0, ("event_add_fd failed\n"));
-		return NT_STATUS_NO_MEMORY;
+		return ENOMEM;
 	}
 
 	conn->msg_ctx = msg_ctx;
 
-	return NT_STATUS_OK;
+	return 0;
 }
 
 NTSTATUS ctdbd_messaging_send_iov(struct ctdbd_connection *conn,

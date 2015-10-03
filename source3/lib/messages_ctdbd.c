@@ -194,13 +194,13 @@ NTSTATUS messaging_ctdbd_init(struct messaging_context *msg_ctx,
 		return status;
 	}
 
-	status = ctdbd_register_msg_ctx(ctx->conn, msg_ctx);
+	ret = ctdbd_register_msg_ctx(ctx->conn, msg_ctx);
 
-	if (!NT_STATUS_IS_OK(status)) {
+	if (ret != 0) {
 		DEBUG(10, ("ctdbd_register_msg_ctx failed: %s\n",
-			   nt_errstr(status)));
+			   strerror(ret)));
 		TALLOC_FREE(result);
-		return status;
+		return map_nt_error_from_unix(ret);
 	}
 
 	ret = register_with_ctdbd(ctx->conn, getpid(),
