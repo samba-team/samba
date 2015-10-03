@@ -1227,6 +1227,7 @@ NTSTATUS ctdbd_register_ips(struct ctdbd_connection *conn,
 	struct ctdb_control_tcp_addr p;
 	TDB_DATA data = { .dptr = (uint8_t *)&p, .dsize = sizeof(p) };
 	NTSTATUS status;
+	int ret;
 	struct sockaddr_storage client;
 	struct sockaddr_storage server;
 
@@ -1265,9 +1266,14 @@ NTSTATUS ctdbd_register_ips(struct ctdbd_connection *conn,
 	 * can send an extra ack to trigger a reset for our client, so it
 	 * immediately reconnects
 	 */
-	return ctdbd_control(conn, CTDB_CURRENT_NODE,
-			     CTDB_CONTROL_TCP_CLIENT, 0,
-			     CTDB_CTRL_FLAG_NOREPLY, data, NULL, NULL, NULL);
+	ret = ctdbd_control_unix(conn, CTDB_CURRENT_NODE,
+				 CTDB_CONTROL_TCP_CLIENT, 0,
+				 CTDB_CTRL_FLAG_NOREPLY, data, NULL, NULL,
+				 NULL);
+	if (ret != 0) {
+		return map_nt_error_from_unix(ret);
+	}
+	return NT_STATUS_OK;
 }
 
 /*
