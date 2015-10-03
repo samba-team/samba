@@ -919,14 +919,12 @@ int ctdbd_db_attach(struct ctdbd_connection *conn,
 /*
  * force the migration of a record to this node
  */
-NTSTATUS ctdbd_migrate(struct ctdbd_connection *conn, uint32_t db_id,
-		       TDB_DATA key)
+int ctdbd_migrate(struct ctdbd_connection *conn, uint32_t db_id, TDB_DATA key)
 {
 	struct ctdb_req_call req;
 	struct ctdb_req_header *hdr;
 	struct iovec iov[2];
 	ssize_t nwritten;
-	NTSTATUS status;
 	int ret;
 
 	ZERO_STRUCT(req);
@@ -958,21 +956,18 @@ NTSTATUS ctdbd_migrate(struct ctdbd_connection *conn, uint32_t db_id,
 	ret = ctdb_read_req(conn, req.hdr.reqid, NULL, &hdr);
 	if (ret != 0) {
 		DEBUG(10, ("ctdb_read_req failed: %s\n", strerror(ret)));
-		status = map_nt_error_from_unix(ret);
 		goto fail;
 	}
 
 	if (hdr->operation != CTDB_REPLY_CALL) {
 		DEBUG(0, ("received invalid reply\n"));
-		status = NT_STATUS_INTERNAL_ERROR;
 		goto fail;
 	}
 
-	status = NT_STATUS_OK;
  fail:
 
 	TALLOC_FREE(hdr);
-	return status;
+	return ret;
 }
 
 /*

@@ -1019,6 +1019,7 @@ static struct db_record *fetch_locked_internal(struct db_ctdb_ctx *ctx,
 	double ctdb_time = 0;
 	int duration_msecs;
 	int lockret;
+	int ret;
 
 	if (!(result = talloc(mem_ctx, struct db_record))) {
 		DEBUG(0, ("talloc failed\n"));
@@ -1105,13 +1106,13 @@ again:
 			   ((struct ctdb_ltdb_header *)ctdb_data.dptr)->flags : 0));
 
 		GetTimeOfDay(&ctdb_start_time);
-		status = ctdbd_migrate(messaging_ctdbd_connection(), ctx->db_id,
-				       key);
+		ret = ctdbd_migrate(messaging_ctdbd_connection(), ctx->db_id,
+				    key);
 		ctdb_time += timeval_elapsed(&ctdb_start_time);
 
-		if (!NT_STATUS_IS_OK(status)) {
+		if (ret != 0) {
 			DEBUG(5, ("ctdb_migrate failed: %s\n",
-				  nt_errstr(status)));
+				  strerror(ret)));
 			TALLOC_FREE(result);
 			return NULL;
 		}

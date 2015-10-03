@@ -54,8 +54,7 @@ char *ctdbd_dbpath(struct ctdbd_connection *conn,
 int ctdbd_db_attach(struct ctdbd_connection *conn, const char *name,
 		    uint32_t *db_id, int tdb_flags);
 
-NTSTATUS ctdbd_migrate(struct ctdbd_connection *conn, uint32_t db_id,
-		       TDB_DATA key);
+int ctdbd_migrate(struct ctdbd_connection *conn, uint32_t db_id, TDB_DATA key);
 
 NTSTATUS ctdbd_parse(struct ctdbd_connection *conn, uint32_t db_id,
 		     TDB_DATA key, bool local_copy,
