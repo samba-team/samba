@@ -1362,7 +1362,7 @@ static int db_ctdb_traverse(struct db_context *db,
 				      void *private_data),
 			    void *private_data)
 {
-	NTSTATUS status;
+	int ret;
         struct db_ctdb_ctx *ctx = talloc_get_type_abort(db->private_data,
                                                         struct db_ctdb_ctx);
 	struct traverse_state state;
@@ -1374,7 +1374,6 @@ static int db_ctdb_traverse(struct db_context *db,
 
 	if (db->persistent) {
 		struct tdb_context *ltdb = ctx->wtdb->tdb;
-		int ret;
 
 		/* for persistent databases we don't need to do a ctdb traverse,
 		   we can do a faster local traverse */
@@ -1392,6 +1391,7 @@ static int db_ctdb_traverse(struct db_context *db,
 			struct ctdb_rec_data *rec=NULL;
 			int i;
 			int count = 0;
+			NTSTATUS status;
 
 			if (newkeys == NULL) {
 				return -1;
@@ -1420,9 +1420,9 @@ static int db_ctdb_traverse(struct db_context *db,
 		return ret;
 	}
 
-	status = ctdbd_traverse(messaging_ctdbd_connection(), ctx->db_id,
-				traverse_callback, &state);
-	if (!NT_STATUS_IS_OK(status)) {
+	ret = ctdbd_traverse(messaging_ctdbd_connection(), ctx->db_id,
+			     traverse_callback, &state);
+	if (ret != 0) {
 		return -1;
 	}
 	return state.count;
@@ -1494,7 +1494,7 @@ static int db_ctdb_traverse_read(struct db_context *db,
 					   void *private_data),
 				 void *private_data)
 {
-	NTSTATUS status;
+	int ret;
         struct db_ctdb_ctx *ctx = talloc_get_type_abort(db->private_data,
                                                         struct db_ctdb_ctx);
 	struct traverse_state state;
@@ -1510,9 +1510,9 @@ static int db_ctdb_traverse_read(struct db_context *db,
 		return tdb_traverse_read(ctx->wtdb->tdb, traverse_persistent_callback_read, &state);
 	}
 
-	status = ctdbd_traverse(messaging_ctdbd_connection(), ctx->db_id,
-				traverse_read_callback, &state);
-	if (!NT_STATUS_IS_OK(status)) {
+	ret = ctdbd_traverse(messaging_ctdbd_connection(), ctx->db_id,
+			     traverse_read_callback, &state);
+	if (ret != 0) {
 		return -1;
 	}
 	return state.count;
@@ -1658,7 +1658,7 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 
 	/* honor permissions if user has specified O_CREAT */
 	if (open_flags & O_CREAT) {
-		int fd, ret;
+		int fd;
 		fd = tdb_fd(db_ctdb->wtdb->tdb);
 		ret = fchmod(fd, mode);
 		if (ret == -1) {

@@ -1015,7 +1015,6 @@ int ctdbd_parse(struct ctdbd_connection *conn, uint32_t db_id,
 	ret = ctdb_read_req(conn, req.hdr.reqid, NULL, &hdr);
 	if (ret != 0) {
 		DEBUG(10, ("ctdb_read_req failed: %s\n", strerror(ret)));
-		status = map_nt_error_from_unix(ret);
 		goto fail;
 	}
 
@@ -1049,13 +1048,12 @@ int ctdbd_parse(struct ctdbd_connection *conn, uint32_t db_id,
   everything in-line.
 */
 
-NTSTATUS ctdbd_traverse(struct ctdbd_connection *master, uint32_t db_id,
+int ctdbd_traverse(struct ctdbd_connection *master, uint32_t db_id,
 			void (*fn)(TDB_DATA key, TDB_DATA data,
 				   void *private_data),
 			void *private_data)
 {
 	struct ctdbd_connection *conn;
-	NTSTATUS status;
 	int ret;
 	TDB_DATA key, data;
 	struct ctdb_traverse_start t;
@@ -1068,7 +1066,7 @@ NTSTATUS ctdbd_traverse(struct ctdbd_connection *master, uint32_t db_id,
 	if (ret != 0) {
 		DEBUG(0, ("ctdbd_init_connection failed: %s\n",
 			  strerror(ret)));
-		return map_nt_error_from_unix(ret);
+		return ret;
 	}
 
 	t.db_id = db_id;
@@ -1083,19 +1081,17 @@ NTSTATUS ctdbd_traverse(struct ctdbd_connection *master, uint32_t db_id,
 			    0, data, NULL, NULL, &cstatus);
 
 	if ((ret != 0) || (cstatus != 0)) {
-		status = map_nt_error_from_unix(ret);
-
 		DEBUG(0,("ctdbd_control failed: %s, %d\n", strerror(ret),
 			 cstatus));
 
-		if (NT_STATUS_IS_OK(status)) {
+		if (ret == 0) {
 			/*
 			 * We need a mapping here
 			 */
-			status = NT_STATUS_UNSUCCESSFUL;
+			ret = EIO;
 		}
 		TALLOC_FREE(conn);
-		return status;
+		return ret;
 	}
 
 	while (True) {
@@ -1114,7 +1110,7 @@ NTSTATUS ctdbd_traverse(struct ctdbd_connection *master, uint32_t db_id,
 			DEBUG(0, ("Got operation %u, expected a message\n",
 				  (unsigned)hdr->operation));
 			TALLOC_FREE(conn);
-			return NT_STATUS_UNEXPECTED_IO_ERROR;
+			return EIO;
 		}
 
 		m = (struct ctdb_req_message *)hdr;
@@ -1123,7 +1119,7 @@ NTSTATUS ctdbd_traverse(struct ctdbd_connection *master, uint32_t db_id,
 			DEBUG(0, ("Got invalid traverse data of length %d\n",
 				  (int)m->datalen));
 			TALLOC_FREE(conn);
-			return NT_STATUS_UNEXPECTED_IO_ERROR;
+			return EIO;
 		}
 
 		key.dsize = d->keylen;
@@ -1134,14 +1130,14 @@ NTSTATUS ctdbd_traverse(struct ctdbd_connection *master, uint32_t db_id,
 		if (key.dsize == 0 && data.dsize == 0) {
 			/* end of traverse */
 			TALLOC_FREE(conn);
-			return NT_STATUS_OK;
+			return 0;
 		}
 
 		if (data.dsize < sizeof(struct ctdb_ltdb_header)) {
 			DEBUG(0, ("Got invalid ltdb header length %d\n",
 				  (int)data.dsize));
 			TALLOC_FREE(conn);
-			return NT_STATUS_UNEXPECTED_IO_ERROR;
+			return EIO;
 		}
 		data.dsize -= sizeof(struct ctdb_ltdb_header);
 		data.dptr += sizeof(struct ctdb_ltdb_header);
@@ -1150,7 +1146,7 @@ NTSTATUS ctdbd_traverse(struct ctdbd_connection *master, uint32_t db_id,
 			fn(key, data, private_data);
 		}
 	}
-	return NT_STATUS_OK;
+	return 0;
 }
 
 /*
