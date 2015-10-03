@@ -207,7 +207,7 @@ static bool ctdbd_working(struct ctdbd_connection *conn, uint32_t vnn)
 	TDB_DATA outdata;
 	struct ctdb_node_map *m;
 	uint32_t failure_flags;
-	bool ret = false;
+	bool ok = false;
 	int i;
 
 	status = ctdbd_control(conn, CTDB_CURRENT_NODE,
@@ -245,10 +245,10 @@ static bool ctdbd_working(struct ctdbd_connection *conn, uint32_t vnn)
 		goto fail;
 	}
 
-	ret = true;
+	ok = true;
 fail:
 	TALLOC_FREE(outdata.dptr);
-	return ret;
+	return ok;
 }
 
 uint32_t ctdbd_vnn(const struct ctdbd_connection *conn)
