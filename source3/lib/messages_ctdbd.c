@@ -171,6 +171,7 @@ NTSTATUS messaging_ctdbd_init(struct messaging_context *msg_ctx,
 	struct messaging_backend *result;
 	struct messaging_ctdbd_context *ctx;
 	NTSTATUS status;
+	int ret;
 
 	if (!(result = talloc(mem_ctx, struct messaging_backend))) {
 		DEBUG(0, ("talloc failed\n"));
@@ -202,8 +203,14 @@ NTSTATUS messaging_ctdbd_init(struct messaging_context *msg_ctx,
 		return status;
 	}
 
-	status = register_with_ctdbd(ctx->conn, getpid(),
-				     messaging_ctdb_recv, msg_ctx);
+	ret = register_with_ctdbd(ctx->conn, getpid(),
+				  messaging_ctdb_recv, msg_ctx);
+	if (ret != 0) {
+		DEBUG(10, ("register_with_ctdbd failed: %s\n",
+			   strerror(ret)));
+		TALLOC_FREE(result);
+		return map_nt_error_from_unix(ret);
+	}
 
 	global_ctdb_connection_pid = getpid();
 	global_ctdbd_connection = ctx->conn;

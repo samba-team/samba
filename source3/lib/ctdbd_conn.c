@@ -100,12 +100,12 @@ static void ctdb_packet_dump(struct ctdb_req_header *hdr)
 /*
  * Register a srvid with ctdbd
  */
-NTSTATUS register_with_ctdbd(struct ctdbd_connection *conn, uint64_t srvid,
-			     int (*cb)(uint32_t src_vnn, uint32_t dst_vnn,
-				       uint64_t dst_srvid,
-				       const uint8_t *msg, size_t msglen,
-				       void *private_data),
-			     void *private_data)
+int register_with_ctdbd(struct ctdbd_connection *conn, uint64_t srvid,
+			int (*cb)(uint32_t src_vnn, uint32_t dst_vnn,
+				  uint64_t dst_srvid,
+				  const uint8_t *msg, size_t msglen,
+				  void *private_data),
+			void *private_data)
 {
 
 	int ret, cstatus;
@@ -116,7 +116,7 @@ NTSTATUS register_with_ctdbd(struct ctdbd_connection *conn, uint64_t srvid,
 			    CTDB_CONTROL_REGISTER_SRVID, srvid, 0,
 			    tdb_null, NULL, NULL, &cstatus);
 	if (ret != 0) {
-		return map_nt_error_from_unix(ret);
+		return ret;
 	}
 
 	num_callbacks = talloc_array_length(conn->callbacks);
@@ -124,7 +124,7 @@ NTSTATUS register_with_ctdbd(struct ctdbd_connection *conn, uint64_t srvid,
 	tmp = talloc_realloc(conn, conn->callbacks, struct ctdbd_srvid_cb,
 			     num_callbacks + 1);
 	if (tmp == NULL) {
-		return NT_STATUS_NO_MEMORY;
+		return ENOMEM;
 	}
 	conn->callbacks = tmp;
 
@@ -132,7 +132,7 @@ NTSTATUS register_with_ctdbd(struct ctdbd_connection *conn, uint64_t srvid,
 		.srvid = srvid, .cb = cb, .private_data = private_data
 	};
 
-	return NT_STATUS_OK;
+	return 0;
 }
 
 static int ctdbd_msg_call_back(struct ctdbd_connection *conn,
@@ -467,11 +467,12 @@ static NTSTATUS ctdbd_init_connection(TALLOC_CTX *mem_ctx,
 	generate_random_buffer((unsigned char *)&conn->rand_srvid,
 			       sizeof(conn->rand_srvid));
 
-	status = register_with_ctdbd(conn, conn->rand_srvid, NULL, NULL);
+	ret = register_with_ctdbd(conn, conn->rand_srvid, NULL, NULL);
 
-	if (!NT_STATUS_IS_OK(status)) {
+	if (ret != 0) {
 		DEBUG(5, ("Could not register random srvid: %s\n",
-			  nt_errstr(status)));
+			  strerror(ret)));
+		status = map_nt_error_from_unix(ret);
 		goto fail;
 	}
 
@@ -493,6 +494,7 @@ NTSTATUS ctdbd_messaging_connection(TALLOC_CTX *mem_ctx,
 {
         struct ctdbd_connection *conn;
 	NTSTATUS status;
+	int ret;
 
 	status = ctdbd_init_connection(mem_ctx, sockname, timeout, &conn);
 
@@ -500,8 +502,9 @@ NTSTATUS ctdbd_messaging_connection(TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
-	status = register_with_ctdbd(conn, MSG_SRVID_SAMBA, NULL, NULL);
-	if (!NT_STATUS_IS_OK(status)) {
+	ret = register_with_ctdbd(conn, MSG_SRVID_SAMBA, NULL, NULL);
+	if (ret != 0) {
+		status = map_nt_error_from_unix(ret);
 		goto fail;
 	}
 
@@ -1204,7 +1207,6 @@ NTSTATUS ctdbd_register_ips(struct ctdbd_connection *conn,
 {
 	struct ctdb_control_tcp_addr p;
 	TDB_DATA data = { .dptr = (uint8_t *)&p, .dsize = sizeof(p) };
-	NTSTATUS status;
 	int ret;
 	struct sockaddr_storage client;
 	struct sockaddr_storage server;
@@ -1233,10 +1235,10 @@ NTSTATUS ctdbd_register_ips(struct ctdbd_connection *conn,
 	 * We want to be told about IP releases
 	 */
 
-	status = register_with_ctdbd(conn, CTDB_SRVID_RELEASE_IP,
-				     cb, private_data);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	ret = register_with_ctdbd(conn, CTDB_SRVID_RELEASE_IP,
+				  cb, private_data);
+	if (ret != 0) {
+		return map_nt_error_from_unix(ret);
 	}
 
 	/*

@@ -181,7 +181,6 @@ struct tevent_req *notifyd_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	struct tevent_req *req, *subreq;
 	struct notifyd_state *state;
 	struct server_id_db *names_db;
-	NTSTATUS status;
 	int ret;
 
 	req = tevent_req_create(mem_ctx, &state, struct notifyd_state);
@@ -275,10 +274,10 @@ struct tevent_req *notifyd_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	tevent_req_set_callback(subreq, notifyd_clean_peers_finished,
 				req);
 
-	status = register_with_ctdbd(ctdbd_conn, CTDB_SRVID_SAMBA_NOTIFY_PROXY,
-				     notifyd_snoop_broadcast, state);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_error(req, map_errno_from_nt_status(status));
+	ret = register_with_ctdbd(ctdbd_conn, CTDB_SRVID_SAMBA_NOTIFY_PROXY,
+				  notifyd_snoop_broadcast, state);
+	if (ret != 0) {
+		tevent_req_error(req, ret);
 		return tevent_req_post(req, ev);
 	}
 
