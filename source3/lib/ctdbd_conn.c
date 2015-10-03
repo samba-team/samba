@@ -895,22 +895,22 @@ char *ctdbd_dbpath(struct ctdbd_connection *conn,
 NTSTATUS ctdbd_db_attach(struct ctdbd_connection *conn,
 			 const char *name, uint32_t *db_id, int tdb_flags)
 {
-	NTSTATUS status;
+	int ret;
 	TDB_DATA data;
 	int32_t cstatus;
 	bool persistent = (tdb_flags & TDB_CLEAR_IF_FIRST) == 0;
 
 	data = string_term_tdb_data(name);
 
-	status = ctdbd_control(conn, CTDB_CURRENT_NODE,
-			       persistent
-			       ? CTDB_CONTROL_DB_ATTACH_PERSISTENT
-			       : CTDB_CONTROL_DB_ATTACH,
-			       tdb_flags, 0, data, NULL, &data, &cstatus);
-	if (!NT_STATUS_IS_OK(status)) {
+	ret = ctdbd_control_unix(conn, CTDB_CURRENT_NODE,
+				 persistent
+				 ? CTDB_CONTROL_DB_ATTACH_PERSISTENT
+				 : CTDB_CONTROL_DB_ATTACH,
+				 tdb_flags, 0, data, NULL, &data, &cstatus);
+	if (ret != 0) {
 		DEBUG(0, (__location__ " ctdb_control for db_attach "
-			  "failed: %s\n", nt_errstr(status)));
-		return status;
+			  "failed: %s\n", strerror(ret)));
+		return map_nt_error_from_unix(ret);
 	}
 
 	if (cstatus != 0 || data.dsize != sizeof(uint32_t)) {
@@ -928,14 +928,14 @@ NTSTATUS ctdbd_db_attach(struct ctdbd_connection *conn,
 	data.dptr = (uint8_t *)db_id;
 	data.dsize = sizeof(*db_id);
 
-	status = ctdbd_control(conn, CTDB_CURRENT_NODE,
-			       CTDB_CONTROL_ENABLE_SEQNUM, 0, 0, data,
-			       NULL, NULL, &cstatus);
-	if (!NT_STATUS_IS_OK(status) || cstatus != 0) {
-		DEBUG(0,(__location__ " ctdb_control for enable seqnum "
-			 "failed\n"));
-		return NT_STATUS_IS_OK(status) ? NT_STATUS_INTERNAL_ERROR :
-			status;
+	ret = ctdbd_control_unix(conn, CTDB_CURRENT_NODE,
+				 CTDB_CONTROL_ENABLE_SEQNUM, 0, 0, data,
+				 NULL, NULL, &cstatus);
+	if ((ret != 0) || cstatus != 0) {
+		DEBUG(0, (__location__ " ctdb_control for enable seqnum "
+			  "failed: %s\n", strerror(ret)));
+		return (ret == 0) ? NT_STATUS_INTERNAL_ERROR :
+			map_nt_error_from_unix(ret);
 	}
 
 	return NT_STATUS_OK;
