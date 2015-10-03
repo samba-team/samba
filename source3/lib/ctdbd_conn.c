@@ -417,23 +417,22 @@ static int ctdbd_connection_destructor(struct ctdbd_connection *c)
  * Get us a ctdbd connection
  */
 
-static NTSTATUS ctdbd_init_connection(TALLOC_CTX *mem_ctx,
-				      const char *sockname, int timeout,
-				      struct ctdbd_connection **pconn)
+static int ctdbd_init_connection(TALLOC_CTX *mem_ctx,
+				 const char *sockname, int timeout,
+				 struct ctdbd_connection **pconn)
 {
 	struct ctdbd_connection *conn;
 	int ret;
-	NTSTATUS status;
 
 	if (!(conn = talloc_zero(mem_ctx, struct ctdbd_connection))) {
 		DEBUG(0, ("talloc failed\n"));
-		return NT_STATUS_NO_MEMORY;
+		return ENOMEM;
 	}
 
 	conn->sockname = talloc_strdup(conn, sockname);
 	if (conn->sockname == NULL) {
 		DBG_ERR("%s: talloc failed\n", __func__);
-		status = NT_STATUS_NO_MEMORY;
+		ret = ENOMEM;
 		goto fail;
 	}
 
@@ -445,7 +444,6 @@ static NTSTATUS ctdbd_init_connection(TALLOC_CTX *mem_ctx,
 
 	ret = ctdbd_connect(conn->sockname, &conn->fd);
 	if (ret != 0) {
-		status = map_nt_error_from_unix(ret);
 		DEBUG(1, ("ctdbd_connect failed: %s\n", strerror(ret)));
 		goto fail;
 	}
@@ -455,13 +453,12 @@ static NTSTATUS ctdbd_init_connection(TALLOC_CTX *mem_ctx,
 
 	if (ret != 0) {
 		DEBUG(10, ("get_cluster_vnn failed: %s\n", strerror(ret)));
-		status = map_nt_error_from_unix(ret);
 		goto fail;
 	}
 
 	if (!ctdbd_working(conn, conn->our_vnn)) {
 		DEBUG(2, ("Node is not working, can not connect\n"));
-		status = NT_STATUS_INTERNAL_DB_ERROR;
+		ret = EIO;
 		goto fail;
 	}
 
@@ -473,16 +470,15 @@ static NTSTATUS ctdbd_init_connection(TALLOC_CTX *mem_ctx,
 	if (ret != 0) {
 		DEBUG(5, ("Could not register random srvid: %s\n",
 			  strerror(ret)));
-		status = map_nt_error_from_unix(ret);
 		goto fail;
 	}
 
 	*pconn = conn;
-	return NT_STATUS_OK;
+	return 0;
 
  fail:
 	TALLOC_FREE(conn);
-	return status;
+	return ret;
 }
 
 /*
@@ -497,10 +493,10 @@ NTSTATUS ctdbd_messaging_connection(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	int ret;
 
-	status = ctdbd_init_connection(mem_ctx, sockname, timeout, &conn);
+	ret = ctdbd_init_connection(mem_ctx, sockname, timeout, &conn);
 
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	if (ret != 0) {
+		return map_nt_error_from_unix(ret);
 	}
 
 	ret = register_with_ctdbd(conn, MSG_SRVID_SAMBA, NULL, NULL);
@@ -1075,13 +1071,13 @@ NTSTATUS ctdbd_traverse(struct ctdbd_connection *master, uint32_t db_id,
 	int cstatus;
 
 	become_root();
-	status = ctdbd_init_connection(NULL, master->sockname, master->timeout,
-				       &conn);
+	ret = ctdbd_init_connection(NULL, master->sockname, master->timeout,
+				    &conn);
 	unbecome_root();
-	if (!NT_STATUS_IS_OK(status)) {
+	if (ret != 0) {
 		DEBUG(0, ("ctdbd_init_connection failed: %s\n",
-			  nt_errstr(status)));
-		return status;
+			  strerror(ret)));
+		return map_nt_error_from_unix(ret);
 	}
 
 	t.db_id = db_id;
