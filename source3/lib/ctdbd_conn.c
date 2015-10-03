@@ -177,7 +177,7 @@ static int ctdbd_msg_call_back(struct ctdbd_connection *conn,
 /*
  * get our vnn from the cluster
  */
-static NTSTATUS get_cluster_vnn(struct ctdbd_connection *conn, uint32_t *vnn)
+static int get_cluster_vnn(struct ctdbd_connection *conn, uint32_t *vnn)
 {
 	int32_t cstatus=-1;
 	int ret;
@@ -186,10 +186,10 @@ static NTSTATUS get_cluster_vnn(struct ctdbd_connection *conn, uint32_t *vnn)
 			    tdb_null, NULL, NULL, &cstatus);
 	if (ret != 0) {
 		DEBUG(1, ("ctdbd_control failed: %s\n", strerror(ret)));
-		return map_nt_error_from_unix(ret);
+		return ret;
 	}
 	*vnn = (uint32_t)cstatus;
-	return NT_STATUS_OK;
+	return ret;
 }
 
 /*
@@ -451,10 +451,11 @@ static NTSTATUS ctdbd_init_connection(TALLOC_CTX *mem_ctx,
 	}
 	talloc_set_destructor(conn, ctdbd_connection_destructor);
 
-	status = get_cluster_vnn(conn, &conn->our_vnn);
+	ret = get_cluster_vnn(conn, &conn->our_vnn);
 
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("get_cluster_vnn failed: %s\n", nt_errstr(status)));
+	if (ret != 0) {
+		DEBUG(10, ("get_cluster_vnn failed: %s\n", strerror(ret)));
+		status = map_nt_error_from_unix(ret);
 		goto fail;
 	}
 
