@@ -698,6 +698,7 @@ static bool test_group_r_cross(struct torture_context *tctx)
 	return true;
 }
 
+#ifdef HAVE_GETGROUPLIST
 static bool test_getgrouplist(struct torture_context *tctx,
 			      const char *user,
 			      gid_t gid,
@@ -732,6 +733,7 @@ static bool test_getgrouplist(struct torture_context *tctx,
 
 	return true;
 }
+#endif /* HAVE_GETGROUPLIST */
 
 static bool test_user_in_group(struct torture_context *tctx,
 			       const struct passwd *pwd,
@@ -759,12 +761,14 @@ static bool test_membership_user(struct torture_context *tctx,
 	int g, i;
 	bool primary_group_had_user_member = false;
 
+#ifdef HAVE_GETGROUPLIST
 	torture_assert(tctx, test_getgrouplist(tctx,
 					       pwd->pw_name,
 					       pwd->pw_gid,
 					       &user_groups,
 					       &num_user_groups),
 					       "failed to test getgrouplist");
+#endif /* HAVE_GETGROUPLIST */
 
 	for (g=0; g < num_user_groups; g++) {
 		torture_assert(tctx, test_getgrgid(tctx, user_groups[g], NULL),
