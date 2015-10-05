@@ -421,7 +421,11 @@ static int ctdb_read_req(struct ctdbd_connection *conn, uint32_t reqid,
 
 static int ctdbd_connection_destructor(struct ctdbd_connection *c)
 {
-	close(c->fd);
+	TALLOC_FREE(c->fde);
+	if (c->fd != -1) {
+		close(c->fd);
+		c->fd = -1;
+	}
 	return 0;
 }
 /*
