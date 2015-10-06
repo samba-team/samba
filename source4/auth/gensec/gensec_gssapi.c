@@ -87,7 +87,9 @@ static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
 {
 	struct gensec_gssapi_state *gensec_gssapi_state;
 	krb5_error_code ret;
+#ifdef SAMBA4_USES_HEIMDAL
 	const char *realm;
+#endif
 
 	gensec_gssapi_state = talloc_zero(gensec_security, struct gensec_gssapi_state);
 	if (!gensec_gssapi_state) {
@@ -417,8 +419,8 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 		{
 #ifdef SAMBA4_USES_HEIMDAL
 			struct gsskrb5_send_to_kdc send_to_kdc;
-#endif
 			krb5_error_code ret;
+#endif
 
 			nt_status = gensec_gssapi_client_creds(gensec_security, ev);
 			if (!NT_STATUS_IS_OK(nt_status)) {
