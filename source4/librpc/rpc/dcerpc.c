@@ -1180,6 +1180,11 @@ struct tevent_req *dcerpc_bind_send(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	struct rpc_request *subreq;
 	uint32_t flags;
+	struct ndr_syntax_id bind_time_features;
+
+	bind_time_features = dcerpc_construct_bind_time_features(
+			DCERPC_BIND_TIME_SECURITY_CONTEXT_MULTIPLEXING |
+			DCERPC_BIND_TIME_KEEP_CONNECTION_ON_ORPHAN);
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct dcerpc_bind_state);
@@ -1213,8 +1218,9 @@ struct tevent_req *dcerpc_bind_send(TALLOC_CTX *mem_ctx,
 	pkt.u.bind.max_xmit_frag = p->conn->srv_max_xmit_frag;
 	pkt.u.bind.max_recv_frag = p->conn->srv_max_recv_frag;
 	pkt.u.bind.assoc_group_id = dcerpc_binding_get_assoc_group_id(p->binding);
-	pkt.u.bind.num_contexts = 1;
-	pkt.u.bind.ctx_list = talloc_array(mem_ctx, struct dcerpc_ctx_list, 1);
+	pkt.u.bind.num_contexts = 2;
+	pkt.u.bind.ctx_list = talloc_zero_array(state, struct dcerpc_ctx_list,
+						pkt.u.bind.num_contexts);
 	if (tevent_req_nomem(pkt.u.bind.ctx_list, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -1222,6 +1228,10 @@ struct tevent_req *dcerpc_bind_send(TALLOC_CTX *mem_ctx,
 	pkt.u.bind.ctx_list[0].num_transfer_syntaxes = 1;
 	pkt.u.bind.ctx_list[0].abstract_syntax = p->syntax;
 	pkt.u.bind.ctx_list[0].transfer_syntaxes = &p->transfer_syntax;
+	pkt.u.bind.ctx_list[1].context_id = p->context_id + 1;
+	pkt.u.bind.ctx_list[1].num_transfer_syntaxes = 1;
+	pkt.u.bind.ctx_list[1].abstract_syntax = p->syntax;
+	pkt.u.bind.ctx_list[1].transfer_syntaxes = &bind_time_features;
 	pkt.u.bind.auth_info = data_blob(NULL, 0);
 
 	/* construct the NDR form of the packet */
@@ -1346,7 +1356,7 @@ static void dcerpc_bind_recv_handler(struct rpc_request *subreq,
 		return;
 	}
 
-	if (pkt->u.bind_ack.num_results != 1) {
+	if (pkt->u.bind_ack.num_results < 1) {
 		state->p->last_fault_code = DCERPC_NCA_S_PROTO_ERROR;
 		tevent_req_nterror(req, NT_STATUS_NET_WRITE_FAULT);
 		return;
@@ -1359,6 +1369,18 @@ static void dcerpc_bind_recv_handler(struct rpc_request *subreq,
 			 nt_errstr(status)));
 		tevent_req_nterror(req, status);
 		return;
+	}
+
+	if (pkt->u.bind_ack.num_results >= 2) {
+		if (pkt->u.bind_ack.ctx_list[1].result == DCERPC_BIND_ACK_RESULT_NEGOTIATE_ACK) {
+			conn->bind_time_features = pkt->u.bind_ack.ctx_list[1].reason.negotiate;
+		} else {
+			status = dcerpc_map_ack_reason(&pkt->u.bind_ack.ctx_list[1]);
+			DEBUG(10,("dcerpc: bind_time_feature failed - reason %d - %s\n",
+				 pkt->u.bind_ack.ctx_list[1].reason.value,
+				 nt_errstr(status)));
+			status = NT_STATUS_OK;
+		}
 	}
 
 	/*
@@ -2258,7 +2280,8 @@ struct tevent_req *dcerpc_alter_context_send(TALLOC_CTX *mem_ctx,
 	pkt.u.alter.max_recv_frag = p->conn->srv_max_recv_frag;
 	pkt.u.alter.assoc_group_id = dcerpc_binding_get_assoc_group_id(p->binding);
 	pkt.u.alter.num_contexts = 1;
-	pkt.u.alter.ctx_list = talloc_array(state, struct dcerpc_ctx_list, 1);
+	pkt.u.alter.ctx_list = talloc_zero_array(state, struct dcerpc_ctx_list,
+						 pkt.u.alter.num_contexts);
 	if (tevent_req_nomem(pkt.u.alter.ctx_list, req)) {
 		return tevent_req_post(req, ev);
 	}
