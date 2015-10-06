@@ -271,6 +271,11 @@ struct dcesrv_connection {
 
 	/* The maximum total payload of reassembled request pdus */
 	size_t max_total_request_size;
+
+	/*
+	 * Our preferred transfer syntax.
+	 */
+	const struct ndr_syntax_id *preferred_transfer;
 };
 
 

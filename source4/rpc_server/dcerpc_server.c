@@ -44,11 +44,9 @@
 
 extern const struct dcesrv_interface dcesrv_mgmt_interface;
 
-static NTSTATUS dcesrv_check_or_create_context(struct dcesrv_call_state *call,
+static NTSTATUS dcesrv_negotiate_contexts(struct dcesrv_call_state *call,
 				const struct dcerpc_bind *b,
-				const struct dcerpc_ctx_list *ctx,
-				struct dcerpc_ack_ctx *ack,
-				const struct ndr_syntax_id *supported_transfer);
+				struct dcerpc_ack_ctx *ack_ctx_list);
 
 /*
   find an association group given a assoc_group_id
@@ -415,6 +413,11 @@ _PUBLIC_ NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
 	p->max_xmit_frag = 5840;
 	p->max_total_request_size = DCERPC_NCACN_REQUEST_DEFAULT_MAX_SIZE;
 
+	/*
+	 * For now we only support NDR32.
+	 */
+	p->preferred_transfer = &ndr_transfer_syntax_ndr;
+
 	*_p = p;
 	return NT_STATUS_OK;
 }
@@ -679,8 +682,8 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	uint16_t max_rep = 0;
 	const char *ep_prefix = "";
 	const char *endpoint = NULL;
-	const struct dcerpc_ctx_list *ctx = NULL;
-	struct dcerpc_ack_ctx *ack = NULL;
+	struct dcerpc_ack_ctx *ack_ctx_list = NULL;
+	size_t i;
 
 	status = dcerpc_verify_ncacn_packet_header(&call->pkt,
 			DCERPC_PKT_BIND,
@@ -730,26 +733,37 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 		return dcesrv_bind_nak(call, 0);
 	}
 
-	if (call->pkt.u.bind.num_contexts < 1 ||
-	    call->pkt.u.bind.ctx_list[0].num_transfer_syntaxes < 1) {
+	if (call->pkt.u.bind.num_contexts < 1) {
 		return dcesrv_bind_nak(call, 0);
 	}
 
-	ctx = &call->pkt.u.bind.ctx_list[0];
-
-	ack = talloc_zero(call, struct dcerpc_ack_ctx);
-	if (ack == NULL) {
-		return NT_STATUS_NO_MEMORY;
+	ack_ctx_list = talloc_zero_array(call, struct dcerpc_ack_ctx,
+					 call->pkt.u.bind.num_contexts);
+	if (ack_ctx_list == NULL) {
+		return dcesrv_bind_nak(call, 0);
 	}
-	/*
-	 * Set some sane defaults, required by dcesrv_check_or_create_context()
-	 */
-	ack->result = DCERPC_BIND_ACK_RESULT_PROVIDER_REJECTION;
-	ack->reason.value = DCERPC_BIND_ACK_REASON_ABSTRACT_SYNTAX_NOT_SUPPORTED;
 
-	status = dcesrv_check_or_create_context(call, &call->pkt.u.bind,
-						ctx, ack,
-						&ndr_transfer_syntax_ndr);
+	/*
+	 * Set some sane defaults (required by dcesrv_negotiate_contexts()/
+	 * dcesrv_check_or_create_context()) and do some protocol validation
+	 * and set sane defaults.
+	 */
+	for (i = 0; i < call->pkt.u.bind.num_contexts; i++) {
+		const struct dcerpc_ctx_list *c = &call->pkt.u.bind.ctx_list[i];
+		struct dcerpc_ack_ctx *a = &ack_ctx_list[i];
+
+		if (c->num_transfer_syntaxes == 0) {
+			return dcesrv_bind_nak(call, 0);
+		}
+
+		a->result = DCERPC_BIND_ACK_RESULT_PROVIDER_REJECTION;
+		a->reason.value = DCERPC_BIND_ACK_REASON_ABSTRACT_SYNTAX_NOT_SUPPORTED;
+	}
+
+	/*
+	 * Try to negotiate one new presentation context.
+	 */
+	status = dcesrv_negotiate_contexts(call, &call->pkt.u.bind, ack_ctx_list);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_RPC_PROTOCOL_ERROR)) {
 		return dcesrv_bind_nak(call, 0);
 	}
@@ -823,8 +837,8 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 		TALLOC_FREE(call->context);
 		return NT_STATUS_NO_MEMORY;
 	}
-	pkt.u.bind_ack.num_results = 1;
-	pkt.u.bind_ack.ctx_list = ack;
+	pkt.u.bind_ack.num_results = call->pkt.u.bind.num_contexts;
+	pkt.u.bind_ack.ctx_list = ack_ctx_list;
 	pkt.u.bind_ack.auth_info = data_blob_null;
 
 	status = dcesrv_auth_bind_ack(call, &pkt);
@@ -912,6 +926,7 @@ static NTSTATUS dcesrv_check_or_create_context(struct dcesrv_call_state *call,
 				const struct dcerpc_bind *b,
 				const struct dcerpc_ctx_list *ctx,
 				struct dcerpc_ack_ctx *ack,
+				bool validate_only,
 				const struct ndr_syntax_id *supported_transfer)
 {
 	uint32_t if_version;
@@ -968,6 +983,13 @@ static NTSTATUS dcesrv_check_or_create_context(struct dcesrv_call_state *call,
 
 	ack->result = DCERPC_BIND_ACK_RESULT_PROVIDER_REJECTION;
 	ack->reason.value = DCERPC_BIND_ACK_REASON_TRANSFER_SYNTAXES_NOT_SUPPORTED;
+
+	if (validate_only) {
+		/*
+		 * We report this only via ack->result
+		 */
+		return NT_STATUS_OK;
+	}
 
 	for (i = 0; i < ctx->num_transfer_syntaxes; i++) {
 		/*
@@ -1051,6 +1073,77 @@ static NTSTATUS dcesrv_check_or_create_context(struct dcesrv_call_state *call,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS dcesrv_negotiate_contexts(struct dcesrv_call_state *call,
+				const struct dcerpc_bind *b,
+				struct dcerpc_ack_ctx *ack_ctx_list)
+{
+	NTSTATUS status;
+	size_t i;
+	bool validate_only = false;
+	bool preferred_ndr32;
+
+	/*
+	 * Try to negotiate one new presentation context,
+	 * using our preferred transfer syntax.
+	 */
+	for (i = 0; i < b->num_contexts; i++) {
+		const struct dcerpc_ctx_list *c = &b->ctx_list[i];
+		struct dcerpc_ack_ctx *a = &ack_ctx_list[i];
+
+		status = dcesrv_check_or_create_context(call, b, c, a,
+						validate_only,
+						call->conn->preferred_transfer);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		if (a->result == DCERPC_BIND_ACK_RESULT_ACCEPTANCE) {
+			/*
+			 * We managed to negotiate one context.
+			 *
+			 * => we're done.
+			 */
+			validate_only = true;
+		}
+	}
+
+	preferred_ndr32 = ndr_syntax_id_equal(&ndr_transfer_syntax_ndr,
+					call->conn->preferred_transfer);
+	if (preferred_ndr32) {
+		/*
+		 * We're done.
+		 */
+		return NT_STATUS_OK;
+	}
+
+	/*
+	 * Try to negotiate one new presentation context,
+	 * using NDR 32 as fallback.
+	 */
+	for (i = 0; i < b->num_contexts; i++) {
+		const struct dcerpc_ctx_list *c = &b->ctx_list[i];
+		struct dcerpc_ack_ctx *a = &ack_ctx_list[i];
+
+		status = dcesrv_check_or_create_context(call, b, c, a,
+						validate_only,
+						&ndr_transfer_syntax_ndr);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		if (a->result == DCERPC_BIND_ACK_RESULT_ACCEPTANCE) {
+			/*
+			 * We managed to negotiate one context.
+			 *
+			 * => we're done.
+			 */
+			validate_only = true;
+		}
+	}
+
+	return NT_STATUS_OK;
+}
+
 /*
   handle a alter context request
 */
@@ -1061,8 +1154,8 @@ static NTSTATUS dcesrv_alter(struct dcesrv_call_state *call)
 	struct ncacn_packet pkt;
 	uint32_t extra_flags = 0;
 	struct data_blob_list_item *rep = NULL;
-	const struct dcerpc_ctx_list *ctx = NULL;
-	struct dcerpc_ack_ctx *ack = NULL;
+	struct dcerpc_ack_ctx *ack_ctx_list = NULL;
+	size_t i;
 
 	if (!call->conn->allow_alter) {
 		return dcesrv_fault_disconnect(call, DCERPC_NCA_S_PROTO_ERROR);
@@ -1094,24 +1187,35 @@ static NTSTATUS dcesrv_alter(struct dcesrv_call_state *call)
 	if (call->pkt.u.alter.num_contexts < 1) {
 		return dcesrv_fault_disconnect(call, DCERPC_NCA_S_PROTO_ERROR);
 	}
-	ctx = &call->pkt.u.alter.ctx_list[0];
-	if (ctx->num_transfer_syntaxes < 1) {
-		return dcesrv_fault_disconnect(call, DCERPC_NCA_S_PROTO_ERROR);
-	}
 
-	ack = talloc_zero(call, struct dcerpc_ack_ctx);
-	if (ack == NULL) {
+	ack_ctx_list = talloc_zero_array(call, struct dcerpc_ack_ctx,
+					 call->pkt.u.alter.num_contexts);
+	if (ack_ctx_list == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	/*
-	 * Set some sane defaults, required by dcesrv_check_or_create_context()
-	 */
-	ack->result = DCERPC_BIND_ACK_RESULT_PROVIDER_REJECTION;
-	ack->reason.value = DCERPC_BIND_ACK_REASON_ABSTRACT_SYNTAX_NOT_SUPPORTED;
 
-	status = dcesrv_check_or_create_context(call, &call->pkt.u.alter,
-						ctx, ack,
-						&ndr_transfer_syntax_ndr);
+	/*
+	 * Set some sane defaults (required by dcesrv_negotiate_contexts()/
+	 * dcesrv_check_or_create_context()) and do some protocol validation
+	 * and set sane defaults.
+	 */
+	for (i = 0; i < call->pkt.u.alter.num_contexts; i++) {
+		const struct dcerpc_ctx_list *c = &call->pkt.u.alter.ctx_list[i];
+		struct dcerpc_ack_ctx *a = &ack_ctx_list[i];
+
+		if (c->num_transfer_syntaxes == 0) {
+			return dcesrv_fault_disconnect(call,
+					DCERPC_NCA_S_PROTO_ERROR);
+		}
+
+		a->result = DCERPC_BIND_ACK_RESULT_PROVIDER_REJECTION;
+		a->reason.value = DCERPC_BIND_ACK_REASON_ABSTRACT_SYNTAX_NOT_SUPPORTED;
+	}
+
+	/*
+	 * Try to negotiate one new presentation context.
+	 */
+	status = dcesrv_negotiate_contexts(call, &call->pkt.u.alter, ack_ctx_list);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_RPC_PROTOCOL_ERROR)) {
 		return dcesrv_fault_disconnect(call, DCERPC_NCA_S_PROTO_ERROR);
 	}
@@ -1149,8 +1253,8 @@ static NTSTATUS dcesrv_alter(struct dcesrv_call_state *call)
 	pkt.u.alter_resp.max_recv_frag = call->conn->max_recv_frag;
 	pkt.u.alter_resp.assoc_group_id = call->conn->assoc_group->id;
 	pkt.u.alter_resp.secondary_address = "";
-	pkt.u.alter_resp.num_results = 1;
-	pkt.u.alter_resp.ctx_list = ack;
+	pkt.u.alter_resp.num_results = call->pkt.u.alter.num_contexts;
+	pkt.u.alter_resp.ctx_list = ack_ctx_list;
 	pkt.u.alter_resp.auth_info = data_blob_null;
 
 	status = dcesrv_auth_alter_ack(call, &pkt);
