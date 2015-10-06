@@ -503,6 +503,7 @@ static bool nwrap_pw_parse_line(struct nwrap_cache *nwrap, char *line);
 static void nwrap_pw_unload(struct nwrap_cache *nwrap);
 
 /* shadow */
+#if defined(HAVE_SHADOW_H) && defined(HAVE_GETSPNAM)
 struct nwrap_sp {
 	struct nwrap_cache *cache;
 
@@ -516,6 +517,7 @@ struct nwrap_sp nwrap_sp_global;
 
 static bool nwrap_sp_parse_line(struct nwrap_cache *nwrap, char *line);
 static void nwrap_sp_unload(struct nwrap_cache *nwrap);
+#endif /* defined(HAVE_SHADOW_H) && defined(HAVE_GETSPNAM) */
 
 /* group */
 struct nwrap_gr {
@@ -1281,6 +1283,7 @@ static void nwrap_init(void)
 	nwrap_pw_global.cache->unload = nwrap_pw_unload;
 
 	/* shadow */
+#if defined(HAVE_SHADOW_H) && defined(HAVE_GETSPNAM)
 	nwrap_sp_global.cache = &__nwrap_cache_sp;
 
 	nwrap_sp_global.cache->path = getenv("NSS_WRAPPER_SHADOW");
@@ -1288,6 +1291,7 @@ static void nwrap_init(void)
 	nwrap_sp_global.cache->private_data = &nwrap_sp_global;
 	nwrap_sp_global.cache->parse_line = nwrap_sp_parse_line;
 	nwrap_sp_global.cache->unload = nwrap_sp_unload;
+#endif /* defined(HAVE_SHADOW_H) && defined(HAVE_GETSPNAM) */
 
 	/* group */
 	nwrap_gr_global.cache = &__nwrap_cache_gr;
@@ -1324,6 +1328,7 @@ bool nss_wrapper_enabled(void)
 	return true;
 }
 
+#if defined(HAVE_SHADOW_H) && defined(HAVE_GETSPNAM)
 bool nss_wrapper_shadow_enabled(void)
 {
 	nwrap_init();
@@ -1335,6 +1340,7 @@ bool nss_wrapper_shadow_enabled(void)
 
 	return true;
 }
+#endif /* defined(HAVE_SHADOW_H) && defined(HAVE_GETSPNAM) */
 
 bool nss_wrapper_hosts_enabled(void)
 {
@@ -1723,6 +1729,7 @@ static int nwrap_pw_copy_r(const struct passwd *src, struct passwd *dst,
 	return 0;
 }
 
+#if defined(HAVE_SHADOW_H) && defined(HAVE_GETSPNAM)
 static bool nwrap_sp_parse_line(struct nwrap_cache *nwrap, char *line)
 {
 	struct nwrap_sp *nwrap_sp;
@@ -2013,6 +2020,7 @@ static void nwrap_sp_unload(struct nwrap_cache *nwrap)
 	nwrap_sp->num = 0;
 	nwrap_sp->idx = 0;
 }
+#endif /* defined(HAVE_SHADOW_H) && defined(HAVE_GETSPNAM) */
 
 /*
  * the caller has to call nwrap_unload() on failure
@@ -2539,6 +2547,10 @@ static void nwrap_files_endpwent(struct nwrap_backend *b)
 }
 
 /* shadow */
+
+#if defined(HAVE_SHADOW_H) && defined(HAVE_GETSPNAM)
+
+#ifdef HAVE_SETSPENT
 static void nwrap_files_setspent(void)
 {
 	nwrap_sp_global.idx = 0;
@@ -2570,6 +2582,7 @@ static void nwrap_files_endspent(void)
 {
 	nwrap_sp_global.idx = 0;
 }
+#endif /* HAVE_SETSPENT */
 
 static struct spwd *nwrap_files_getspnam(const char *name)
 {
@@ -2595,6 +2608,7 @@ static struct spwd *nwrap_files_getspnam(const char *name)
 	errno = ENOENT;
 	return NULL;
 }
+#endif /* defined(HAVE_SHADOW_H) && defined(HAVE_GETSPNAM) */
 
 /* misc functions */
 static int nwrap_files_initgroups(struct nwrap_backend *b,
@@ -4073,6 +4087,9 @@ int getgrouplist(const char *user, gid_t group, gid_t *groups, int *ngroups)
  * SHADOW
  **********************************************************/
 
+#if defined(HAVE_SHADOW_H) && defined(HAVE_GETSPNAM)
+
+#ifdef HAVE_SETSPENT
 static void nwrap_setspent(void)
 {
 	nwrap_files_setspent();
@@ -4114,6 +4131,7 @@ void endspent(void)
 
 	nwrap_endspent();
 }
+#endif /* HAVE_SETSPENT */
 
 static struct spwd *nwrap_getspnam(const char *name)
 {
@@ -4128,6 +4146,8 @@ struct spwd *getspnam(const char *name)
 
 	return nwrap_getspnam(name);
 }
+
+#endif /* defined(HAVE_SHADOW_H) && defined(HAVE_GETSPNAM) */
 
 /**********************************************************
  * NETDB
