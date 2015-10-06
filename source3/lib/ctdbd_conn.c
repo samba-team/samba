@@ -694,6 +694,7 @@ static NTSTATUS ctdbd_control(struct ctdbd_connection *conn,
 
 	if (hdr->operation != CTDB_REPLY_CONTROL) {
 		DEBUG(0, ("received invalid reply\n"));
+		status = NT_STATUS_INVALID_NETWORK_RESPONSE;
 		goto fail;
 	}
 	reply = (struct ctdb_reply_control *)hdr;
