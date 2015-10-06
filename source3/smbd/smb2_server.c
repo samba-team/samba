@@ -2976,7 +2976,7 @@ NTSTATUS smbd_smb2_send_oplock_break(struct smbXsrv_connection *xconn,
 	SBVAL(body, 0x08, op->global->open_persistent_id);
 	SBVAL(body, 0x10, op->global->open_volatile_id);
 
-	return smbd_smb2_send_break(xconn, session, tcon, body, sizeof(body));
+	return smbd_smb2_send_break(xconn, NULL, NULL, body, sizeof(body));
 }
 
 NTSTATUS smbd_smb2_send_lease_break(struct smbXsrv_connection *xconn,
