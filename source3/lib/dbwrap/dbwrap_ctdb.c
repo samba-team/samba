@@ -1597,11 +1597,6 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 	tdb_flags &= TDB_SEQNUM|TDB_VOLATILE|
 		TDB_MUTEX_LOCKING|TDB_CLEAR_IF_FIRST;
 
-	/* honor permissions if user has specified O_CREAT */
-	if (open_flags & O_CREAT) {
-		chmod(db_path, mode);
-	}
-
 	prio.db_id = db_ctdb->db_id;
 	prio.priority = lock_order;
 
@@ -1652,6 +1647,19 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 	talloc_free(db_path);
+
+	/* honor permissions if user has specified O_CREAT */
+	if (open_flags & O_CREAT) {
+		int fd, ret;
+		fd = tdb_fd(db_ctdb->wtdb->tdb);
+		ret = fchmod(fd, mode);
+		if (ret == -1) {
+			DBG_WARNING("%s: fchmod failed: %s\n", __func__,
+				    strerror(errno));
+			TALLOC_FREE(result);
+			return NULL;
+		}
+	}
 
 	if (result->persistent) {
 		db_ctdb->lock_ctx = g_lock_ctx_init(db_ctdb,
