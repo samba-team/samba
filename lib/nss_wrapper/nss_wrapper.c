@@ -61,7 +61,9 @@
 
 #include <pwd.h>
 #include <grp.h>
+#ifdef HAVE_SHADOW_H
 #include <shadow.h>
+#endif /* HAVE_SHADOW_H */
 
 #include <netdb.h>
 #include <arpa/inet.h>
