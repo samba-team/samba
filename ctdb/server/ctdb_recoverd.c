@@ -2400,11 +2400,6 @@ static bool ctdb_election_win(struct ctdb_recoverd *rec, struct election_message
 		return true;
 	}
 
-	/* try to use the most connected node */
-	if (cmp == 0) {
-		cmp = (int)myem.num_connected - (int)em->num_connected;
-	}
-
 	/* then the longest running node */
 	if (cmp == 0) {
 		cmp = timeval_compare(&em->priority_time, &myem.priority_time);
