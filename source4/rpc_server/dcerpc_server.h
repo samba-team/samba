@@ -276,6 +276,9 @@ struct dcesrv_connection {
 	 * Our preferred transfer syntax.
 	 */
 	const struct ndr_syntax_id *preferred_transfer;
+
+	/* the negotiated bind time features */
+	uint16_t bind_time_features;
 };
 
 

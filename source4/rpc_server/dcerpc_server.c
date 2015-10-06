@@ -683,6 +683,7 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	const char *ep_prefix = "";
 	const char *endpoint = NULL;
 	struct dcerpc_ack_ctx *ack_ctx_list = NULL;
+	struct dcerpc_ack_ctx *ack_features = NULL;
 	size_t i;
 
 	status = dcerpc_verify_ncacn_packet_header(&call->pkt,
@@ -751,6 +752,8 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	for (i = 0; i < call->pkt.u.bind.num_contexts; i++) {
 		const struct dcerpc_ctx_list *c = &call->pkt.u.bind.ctx_list[i];
 		struct dcerpc_ack_ctx *a = &ack_ctx_list[i];
+		bool is_feature = false;
+		uint64_t features = 0;
 
 		if (c->num_transfer_syntaxes == 0) {
 			return dcesrv_bind_nak(call, 0);
@@ -758,6 +761,35 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 
 		a->result = DCERPC_BIND_ACK_RESULT_PROVIDER_REJECTION;
 		a->reason.value = DCERPC_BIND_ACK_REASON_ABSTRACT_SYNTAX_NOT_SUPPORTED;
+
+		/*
+		 * It's only treated as bind time feature request, if the first
+		 * transfer_syntax matches, all others are ignored.
+		 */
+		is_feature = dcerpc_extract_bind_time_features(c->transfer_syntaxes[0],
+							       &features);
+		if (!is_feature) {
+			continue;
+		}
+
+		if (ack_features != NULL) {
+			/*
+			 * Only one bind time feature context is allowed.
+			 */
+			return dcesrv_bind_nak(call, 0);
+		}
+		ack_features = a;
+
+		a->result = DCERPC_BIND_ACK_RESULT_NEGOTIATE_ACK;
+		a->reason.negotiate = 0;
+		if (features & DCERPC_BIND_TIME_SECURITY_CONTEXT_MULTIPLEXING) {
+			/* not supported yet */
+		}
+		if (features & DCERPC_BIND_TIME_KEEP_CONNECTION_ON_ORPHAN) {
+			/* not supported yet */
+		}
+
+		call->conn->bind_time_features = a->reason.negotiate;
 	}
 
 	/*
@@ -956,6 +988,7 @@ static NTSTATUS dcesrv_check_or_create_context(struct dcesrv_call_state *call,
 
 	switch (ack->result) {
 	case DCERPC_BIND_ACK_RESULT_ACCEPTANCE:
+	case DCERPC_BIND_ACK_RESULT_NEGOTIATE_ACK:
 		/*
 		 * We is already completed.
 		 */
