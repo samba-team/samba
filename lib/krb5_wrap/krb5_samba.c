@@ -2143,7 +2143,7 @@ krb5_error_code smb_krb5_make_principal(krb5_context context,
 	va_list ap;
 
 	if (_realm) {
-		realm = _realm;
+		realm = discard_const_p(char, _realm);
 		free_realm = false;
 	} else {
 		code = krb5_get_default_realm(context, &realm);
@@ -2324,7 +2324,8 @@ char *smb_krb5_principal_get_realm(krb5_context context,
 	return strdup(discard_const_p(char, krb5_principal_get_realm(context, principal)));
 #elif defined(krb5_princ_realm) /* MIT */
 	krb5_data *realm;
-	realm = krb5_princ_realm(context, principal);
+	realm = discard_const_p(krb5_data,
+				krb5_princ_realm(context, principal));
 	return strndup(realm->data, realm->length);
 #else
 #error UNKNOWN_GET_PRINC_REALM_FUNCTIONS
