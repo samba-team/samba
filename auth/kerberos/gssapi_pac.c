@@ -113,7 +113,11 @@ NTSTATUS gssapi_obtain_pac_blob(TALLOC_CTX *mem_ctx,
 
 	if (gss_maj != 0) {
 		DEBUG(0, ("obtaining PAC via GSSAPI gss_get_name_attribute failed: %s\n",
-			  gssapi_error_string(mem_ctx, gss_maj, gss_min, gss_mech_krb5)));
+			  gssapi_error_string(mem_ctx,
+					      gss_maj,
+					      gss_min,
+					      discard_const_p(struct gss_OID_desc_struct,
+							      gss_mech_krb5))));
 		return NT_STATUS_ACCESS_DENIED;
 	} else if (authenticated && complete) {
 		/* The PAC blob is returned directly */
@@ -199,7 +203,11 @@ NTSTATUS gssapi_get_session_key(TALLOC_CTX *mem_ctx,
 				&gse_sesskey_inq_oid, &set);
 	if (gss_maj) {
 		DEBUG(0, ("gss_inquire_sec_context_by_oid failed [%s]\n",
-			  gssapi_error_string(mem_ctx, gss_maj, gss_min, gss_mech_krb5)));
+			  gssapi_error_string(mem_ctx,
+					      gss_maj,
+					      gss_min,
+					      discard_const_p(struct gss_OID_desc_struct,
+							      gss_mech_krb5))));
 		return NT_STATUS_NO_USER_SESSION_KEY;
 	}
 
