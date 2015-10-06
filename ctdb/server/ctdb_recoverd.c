@@ -463,7 +463,10 @@ static void transaction_start_fail_callback(struct ctdb_context *ctdb, uint32_t 
 /*
   change recovery mode on all nodes
  */
-static int set_recovery_mode(struct ctdb_context *ctdb, struct ctdb_recoverd *rec, struct ctdb_node_map *nodemap, uint32_t rec_mode)
+static int set_recovery_mode(struct ctdb_context *ctdb,
+			     struct ctdb_recoverd *rec,
+			     struct ctdb_node_map *nodemap,
+			     uint32_t rec_mode, bool freeze)
 {
 	TDB_DATA data;
 	uint32_t *nodes;
@@ -489,7 +492,7 @@ static int set_recovery_mode(struct ctdb_context *ctdb, struct ctdb_recoverd *re
 	}
 
 	/* freeze all nodes */
-	if (rec_mode == CTDB_RECOVERY_ACTIVE) {
+	if (freeze && rec_mode == CTDB_RECOVERY_ACTIVE) {
 		int i;
 
 		for (i=1; i<=NUM_DB_PRIORITIES; i++) {
@@ -1931,7 +1934,7 @@ static int db_recovery_serial(struct ctdb_recoverd *rec, TALLOC_CTX *mem_ctx,
 	int ret, i, j;
 
 	/* set recovery mode to active on all nodes */
-	ret = set_recovery_mode(ctdb, rec, nodemap, CTDB_RECOVERY_ACTIVE);
+	ret = set_recovery_mode(ctdb, rec, nodemap, CTDB_RECOVERY_ACTIVE, true);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to set recovery mode to active on cluster\n"));
 		return -1;
@@ -2072,7 +2075,7 @@ static int db_recovery_serial(struct ctdb_recoverd *rec, TALLOC_CTX *mem_ctx,
 	DEBUG(DEBUG_NOTICE, (__location__ " Recovery - updated recmaster\n"));
 
 	/* disable recovery mode */
-	ret = set_recovery_mode(ctdb, rec, nodemap, CTDB_RECOVERY_NORMAL);
+	ret = set_recovery_mode(ctdb, rec, nodemap, CTDB_RECOVERY_NORMAL, false);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to set recovery mode to normal on cluster\n"));
 		return -1;
@@ -2876,7 +2879,7 @@ static void force_election(struct ctdb_recoverd *rec, uint32_t pnn,
 	DEBUG(DEBUG_INFO,(__location__ " Force an election\n"));
 
 	/* set all nodes to recovery mode to stop all internode traffic */
-	ret = set_recovery_mode(ctdb, rec, nodemap, CTDB_RECOVERY_ACTIVE);
+	ret = set_recovery_mode(ctdb, rec, nodemap, CTDB_RECOVERY_ACTIVE, false);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to set recovery mode to active on cluster\n"));
 		return;
