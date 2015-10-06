@@ -235,7 +235,9 @@ done:
 {
 	krb5_error_code ret;
 	const char *password;
+#ifdef SAMBA4_USES_HEIMDAL
 	const char *self_service;
+#endif
 	const char *target_service;
 	time_t kdc_time = 0;
 	krb5_principal princ;
@@ -267,7 +269,9 @@ done:
 		return ret;
 	}
 
+#ifdef SAMBA4_USES_HEIMDAL
 	self_service = cli_credentials_get_self_service(credentials);
+#endif
 	target_service = cli_credentials_get_target_service(credentials);
 
 	password = cli_credentials_get_password(credentials);
