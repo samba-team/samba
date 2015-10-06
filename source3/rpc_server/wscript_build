@@ -128,17 +128,21 @@ bld.SAMBA3_SUBSYSTEM('RPC_WKSSVC',
                     ../../librpc/gen_ndr/srv_wkssvc.c''',
                     deps='LIBNET')
 
-bld.SAMBA3_SUBSYSTEM('RPC_MDSSVC',
-                    source='''mdssvc/mdssvc.c
-                    mdssvc/dalloc.c
-                    mdssvc/marshalling.c
-                    mdssvc/sparql_mapping.c
-                    mdssvc/sparql_parser.c
-                    mdssvc/sparql_lexer.c
-                    mdssvc/srv_mdssvc_nt.c
-                    ../../librpc/gen_ndr/srv_mdssvc.c''',
-                    deps='samba-util ' + bld.env['libtracker'],
-                    enabled=bld.env.with_spotlight)
+bld.SAMBA3_MODULE('rpc_mdssvc_module',
+                  subsystem='rpc',
+                  allow_undefined_symbols=True,
+                  source='''mdssvc/mdssvc.c
+                  mdssvc/dalloc.c
+                  mdssvc/marshalling.c
+                  mdssvc/sparql_mapping.c
+                  mdssvc/sparql_parser.c
+                  mdssvc/sparql_lexer.c
+                  mdssvc/srv_mdssvc_nt.c
+                  ../../librpc/gen_ndr/srv_mdssvc.c''',
+                  init_function='',
+                  deps='samba-util ' + bld.env['libtracker'],
+                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('rpc_mdssvc_module'),
+                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('rpc_mdssvc_module'))
 
 # RPC_SERVICE
 bld.SAMBA3_SUBSYSTEM('RPC_SERVER_REGISTER',
@@ -168,7 +172,6 @@ bld.SAMBA3_SUBSYSTEM('RPC_SERVICE',
                     RPC_SERVER
                     RPC_EPMAPPER
 		    RPC_FSS_AGENT
-                    RPC_MDSSVC
                     ''')
 
 # RPC_DAEMONS
@@ -189,6 +192,6 @@ bld.SAMBA3_SUBSYSTEM('FSSD',
                     deps='samba-util')
 
 bld.SAMBA3_SUBSYSTEM('MDSSD',
-                    source='mdssd.c',
+                    source='mdssd.c rpc_modules.c',
                     deps='RPC_SOCK_HELPER samba-util',
                     enabled=bld.env.with_spotlight)

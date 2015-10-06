@@ -1562,6 +1562,7 @@ main() {
         if not conf.env.with_spotlight:
             conf.fatal("Spotlight support requested but tracker-sparql library missing")
         Logs.info("building with Spotlight support")
+        default_static_modules.extend(TO_LIST('rpc_mdssvc_module'))
 
     forced_static_modules.extend(TO_LIST('auth_domain auth_builtin auth_sam auth_winbind'))
     default_static_modules.extend(TO_LIST('''pdb_smbpasswd pdb_tdbsam pdb_wbc_sam

@@ -19,6 +19,9 @@
 
 #include "includes.h"
 #include "ntdomain.h"
+#include "rpc_server/rpc_service_setup.h"
+#include "rpc_server/rpc_config.h"
+#include "rpc_server/rpc_modules.h"
 #include "rpc_server/mdssvc/srv_mdssvc_nt.h"
 #include "../librpc/gen_ndr/srv_mdssvc.h"
 #include "libcli/security/security_token.h"
@@ -27,6 +30,69 @@
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
+
+static bool mdssvc_init_cb(void *ptr)
+{
+	struct messaging_context *msg_ctx =
+		talloc_get_type_abort(ptr, struct messaging_context);
+	bool ok;
+
+	ok = init_service_mdssvc(msg_ctx);
+	if (!ok) {
+		return false;
+	}
+
+	return true;
+}
+
+static bool mdssvc_shutdown_cb(void *ptr)
+{
+	shutdown_service_mdssvc();
+
+	return true;
+}
+
+static bool rpc_setup_mdssvc(struct tevent_context *ev_ctx,
+			     struct messaging_context *msg_ctx)
+{
+	const struct ndr_interface_table *t = &ndr_table_mdssvc;
+	const char *pipe_name = "mdssvc";
+	struct rpc_srv_callbacks mdssvc_cb;
+	NTSTATUS status;
+	enum rpc_service_mode_e service_mode = rpc_service_mode(t->name);
+	enum rpc_daemon_type_e mdssvc_type = rpc_mdssd_daemon();
+
+	mdssvc_cb.init         = mdssvc_init_cb;
+	mdssvc_cb.shutdown     = mdssvc_shutdown_cb;
+	mdssvc_cb.private_data = msg_ctx;
+
+	status = rpc_mdssvc_init(&mdssvc_cb);
+	if (!NT_STATUS_IS_OK(status)) {
+		return false;
+	}
+
+	if (service_mode != RPC_SERVICE_MODE_EMBEDDED
+	    || mdssvc_type != RPC_DAEMON_EMBEDDED) {
+		return true;
+	}
+
+	return rpc_setup_embedded(ev_ctx, msg_ctx, t, pipe_name);
+}
+
+static struct rpc_module_fns rpc_module_mdssvc_fns = {
+	.setup = rpc_setup_mdssvc,
+	.init = rpc_mdssvc_init,
+	.shutdown = rpc_mdssvc_shutdown,
+};
+
+static_decl_rpc;
+NTSTATUS rpc_mdssvc_module_init(void)
+{
+	DBG_DEBUG("Registering mdsvc RPC service\n");
+
+	return register_rpc_module(&rpc_module_mdssvc_fns, "mdssvc");
+}
+
 
 bool init_service_mdssvc(struct messaging_context *msg_ctx)
 {

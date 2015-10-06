@@ -34,6 +34,7 @@
 #include "rpc_server/rpc_server.h"
 #include "rpc_server/rpc_ep_register.h"
 #include "rpc_server/rpc_sock_helper.h"
+#include "rpc_server/rpc_modules.h"
 
 #include "librpc/gen_ndr/srv_mdssvc.h"
 #include "rpc_server/mdssvc/srv_mdssvc_nt.h"
@@ -91,7 +92,7 @@ static void mdssd_sig_term_handler(struct tevent_context *ev,
 				   void *siginfo,
 				   void *private_data)
 {
-	rpc_mdssvc_shutdown();
+	shutdown_rpc_module("mdssvc");
 
 	DEBUG(0, ("termination signal\n"));
 	exit(0);
@@ -228,10 +229,9 @@ static bool mdssd_child_init(struct tevent_context *ev_ctx,
 	messaging_register(msg_ctx, ev_ctx,
 			   MSG_PREFORK_PARENT_EVENT, parent_ping);
 
-	status = rpc_mdssvc_init(NULL);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Failed to intialize RPC: %s\n",
-			  nt_errstr(status)));
+	ok = init_rpc_module("mdssvc", NULL);
+	if (!ok) {
+		DBG_ERR("Failed to de-intialize RPC\n");
 		return false;
 	}
 
@@ -608,27 +608,6 @@ done:
 	return ok;
 }
 
-static bool mdssvc_init_cb(void *ptr)
-{
-	struct messaging_context *msg_ctx =
-		talloc_get_type_abort(ptr, struct messaging_context);
-	bool ok;
-
-	ok = init_service_mdssvc(msg_ctx);
-	if (!ok) {
-		return false;
-	}
-
-	return true;
-}
-
-static bool mdssvc_shutdown_cb(void *ptr)
-{
-	shutdown_service_mdssvc();
-
-	return true;
-}
-
 void start_mdssd(struct tevent_context *ev_ctx,
 		 struct messaging_context *msg_ctx)
 {
@@ -638,7 +617,6 @@ void start_mdssd(struct tevent_context *ev_ctx,
 	pid_t pid;
 	int rc;
 	bool ok;
-	struct rpc_srv_callbacks mdssvc_cb;
 
 	DEBUG(1, ("Forking Metadata Service Daemon\n"));
 
@@ -720,12 +698,8 @@ void start_mdssd(struct tevent_context *ev_ctx,
 	messaging_register(msg_ctx, ev_ctx,
 			   MSG_PREFORK_CHILD_EVENT, child_ping);
 
-	mdssvc_cb.init         = mdssvc_init_cb;
-	mdssvc_cb.shutdown     = mdssvc_shutdown_cb;
-	mdssvc_cb.private_data = msg_ctx;
-
-	status = rpc_mdssvc_init(&mdssvc_cb);
-	if (!NT_STATUS_IS_OK(status)) {
+	ok = setup_rpc_module(ev_ctx, msg_ctx, "mdssvc");
+	if (!ok) {
 		exit(1);
 	}
 
