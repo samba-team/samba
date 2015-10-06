@@ -786,7 +786,8 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 			/* not supported yet */
 		}
 		if (features & DCERPC_BIND_TIME_KEEP_CONNECTION_ON_ORPHAN) {
-			/* not supported yet */
+			a->reason.negotiate |=
+				DCERPC_BIND_TIME_KEEP_CONNECTION_ON_ORPHAN;
 		}
 
 		call->conn->bind_time_features = a->reason.negotiate;
