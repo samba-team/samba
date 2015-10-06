@@ -2103,6 +2103,24 @@ static int do_recovery(struct ctdb_recoverd *rec,
 
 	DEBUG(DEBUG_NOTICE, (__location__ " Starting do_recovery\n"));
 
+	/* Check if the current node is still the recmaster.  It's possible that
+	 * re-election has changed the recmaster, but we have not yet updated
+	 * that information.
+	 */
+	ret = ctdb_ctrl_getrecmaster(ctdb, mem_ctx, CONTROL_TIMEOUT(),
+				     pnn, &ctdb->recovery_master);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, (__location__ " Unable to get recmaster\n"));
+		return -1;
+	}
+
+	if (pnn != ctdb->recovery_master) {
+		DEBUG(DEBUG_NOTICE,
+		      ("Recovery master changed to %u, aborting recovery\n",
+		       ctdb->recovery_master));
+		return -1;
+	}
+
 	/* if recovery fails, force it again */
 	rec->need_recovery = true;
 
