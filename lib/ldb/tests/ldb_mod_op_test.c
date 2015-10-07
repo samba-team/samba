@@ -23,6 +23,7 @@
 #include <talloc.h>
 #include <ldb.h>
 #include <string.h>
+#include <ctype.h>
 
 #define DEFAULT_BE  "tdb"
 
@@ -295,40 +296,52 @@ static void assert_dn_doesnt_exist(struct ldbtest_ctx *test_ctx,
 	assert_int_equal(count, 0);
 }
 
-static void test_ldb_del(void **state)
+static void add_dn_with_cn(struct ldbtest_ctx *test_ctx,
+			   struct ldb_dn *dn,
+			   const char *cn_value)
 {
 	int ret;
-	struct ldb_message *msg;
-	struct ldbtest_ctx *test_ctx = talloc_get_type_abort(*state,
-							struct ldbtest_ctx);
 	TALLOC_CTX *tmp_ctx;
-	const char *basedn = "dc=ldb_del_test";
+	struct ldb_message *msg;
 
 	tmp_ctx = talloc_new(test_ctx);
 	assert_non_null(tmp_ctx);
 
-	assert_dn_doesnt_exist(test_ctx, basedn);
+	assert_dn_doesnt_exist(test_ctx,
+			       ldb_dn_get_linearized(dn));
 
 	msg = ldb_msg_new(tmp_ctx);
 	assert_non_null(msg);
+	msg->dn = dn;
 
-	msg->dn = ldb_dn_new_fmt(tmp_ctx, test_ctx->ldb, "%s", basedn);
-	assert_non_null(msg->dn);
-
-	ret = ldb_msg_add_string(msg, "cn", "test_del_cn_val");
+	ret = ldb_msg_add_string(msg, "cn", cn_value);
 	assert_int_equal(ret, LDB_SUCCESS);
 
 	ret = ldb_add(test_ctx->ldb, msg);
 	assert_int_equal(ret, LDB_SUCCESS);
 
-	assert_dn_exists(test_ctx, basedn);
+	assert_dn_exists(test_ctx,
+			 ldb_dn_get_linearized(dn));
+	talloc_free(tmp_ctx);
+}
 
-	ret = ldb_delete(test_ctx->ldb, msg->dn);
+static void test_ldb_del(void **state)
+{
+	int ret;
+	struct ldbtest_ctx *test_ctx = talloc_get_type_abort(*state,
+							struct ldbtest_ctx);
+	const char *basedn = "dc=ldb_del_test";
+	struct ldb_dn *dn;
+
+	dn = ldb_dn_new_fmt(test_ctx, test_ctx->ldb, "%s", basedn);
+	assert_non_null(dn);
+
+	add_dn_with_cn(test_ctx, dn, "test_del_cn_val");
+
+	ret = ldb_delete(test_ctx->ldb, dn);
 	assert_int_equal(ret, LDB_SUCCESS);
 
 	assert_dn_doesnt_exist(test_ctx, basedn);
-
-	talloc_free(tmp_ctx);
 }
 
 static void test_ldb_del_noexist(void **state)
@@ -499,9 +512,9 @@ static void ldb_test_remove_data(TALLOC_CTX *mem_ctx,
 				 const char *strdn)
 {
 	TALLOC_CTX *tmp_ctx;
-	struct ldb_result *result = NULL;
 	struct ldb_dn *basedn;
 	int ret;
+	size_t count;
 
 	tmp_ctx = talloc_new(mem_ctx);
 	assert_non_null(tmp_ctx);
@@ -513,11 +526,8 @@ static void ldb_test_remove_data(TALLOC_CTX *mem_ctx,
 	ret = ldb_delete(ldb_test_ctx->ldb, basedn);
 	assert_true(ret == LDB_SUCCESS || ret == LDB_ERR_NO_SUCH_OBJECT);
 
-	ret = ldb_search(ldb_test_ctx->ldb, tmp_ctx, &result, basedn,
-			LDB_SCOPE_BASE, NULL, NULL);
-	assert_int_equal(ret, LDB_SUCCESS);
-	assert_non_null(result);
-	assert_int_equal(result->count, 0);
+	count = base_search_count(ldb_test_ctx, ldb_dn_get_linearized(basedn));
+	assert_int_equal(count, 0);
 
 	talloc_free(tmp_ctx);
 }
@@ -972,25 +982,11 @@ static void test_search_match_none(void **state)
 {
 	struct search_test_ctx *search_test_ctx = talloc_get_type_abort(*state,
 			struct search_test_ctx);
-	int ret;
-	struct ldb_dn *basedn;
-	struct ldb_result *result = NULL;
+	size_t count;
 
-	basedn = ldb_dn_new_fmt(search_test_ctx,
-			        search_test_ctx->ldb_test_ctx->ldb,
-				"%s",
-				search_test_ctx->base_dn);
-	assert_non_null(basedn);
-
-	ret = ldb_search(search_test_ctx->ldb_test_ctx->ldb,
-			 search_test_ctx,
-			 &result,
-			 basedn,
-			 LDB_SCOPE_SUBTREE, NULL,
-			 "dc=no_such_entry");
-	assert_int_equal(ret, 0);
-	assert_non_null(result);
-	assert_int_equal(result->count, 0);
+	count = base_search_count(search_test_ctx->ldb_test_ctx,
+				  "dc=no_such_entry");
+	assert_int_equal(count, 0);
 }
 
 static void test_search_match_one(void **state)
@@ -1227,6 +1223,69 @@ static int ldb_case_test_teardown(void **state)
 	return 0;
 }
 
+struct rename_test_ctx {
+	struct ldbtest_ctx *ldb_test_ctx;
+
+	struct ldb_dn *basedn;
+	const char *str_basedn;
+
+	const char *teardown_dn;
+};
+
+static int ldb_rename_test_setup(void **state)
+{
+	struct ldbtest_ctx *ldb_test_ctx;
+	struct rename_test_ctx *rename_test_ctx;
+	const char *strdn = "dc=rename_test_entry_from";
+
+	ldbtest_setup((void **) &ldb_test_ctx);
+
+	rename_test_ctx = talloc(ldb_test_ctx, struct rename_test_ctx);
+	assert_non_null(rename_test_ctx);
+	rename_test_ctx->ldb_test_ctx = ldb_test_ctx;
+	assert_non_null(rename_test_ctx->ldb_test_ctx);
+
+	rename_test_ctx->basedn = ldb_dn_new_fmt(rename_test_ctx,
+				rename_test_ctx->ldb_test_ctx->ldb,
+				"%s", strdn);
+	assert_non_null(rename_test_ctx->basedn);
+
+	rename_test_ctx->str_basedn = strdn;
+	rename_test_ctx->teardown_dn = strdn;
+
+	add_dn_with_cn(ldb_test_ctx,
+		       rename_test_ctx->basedn,
+		       "test_rename_cn_val");
+
+	*state = rename_test_ctx;
+	return 0;
+}
+
+static int ldb_rename_test_teardown(void **state)
+{
+	int ret;
+	struct rename_test_ctx *rename_test_ctx = talloc_get_type_abort(*state,
+			struct rename_test_ctx);
+	struct ldbtest_ctx *ldb_test_ctx;
+	struct ldb_dn *del_dn;
+
+	ldb_test_ctx = rename_test_ctx->ldb_test_ctx;
+
+	del_dn = ldb_dn_new_fmt(rename_test_ctx,
+				rename_test_ctx->ldb_test_ctx->ldb,
+				"%s", rename_test_ctx->teardown_dn);
+	assert_non_null(del_dn);
+
+	ret = ldb_delete(ldb_test_ctx->ldb, del_dn);
+	assert_int_equal(ret, LDB_SUCCESS);
+
+	assert_dn_doesnt_exist(ldb_test_ctx,
+			       rename_test_ctx->teardown_dn);
+
+	ldbtest_teardown((void **) &ldb_test_ctx);
+	return 0;
+}
+
 static void test_ldb_attrs_case_insensitive(void **state)
 {
 	int cnt;
@@ -1248,6 +1307,150 @@ static void test_ldb_attrs_case_insensitive(void **state)
 	/* uid does not match lower case */
 	cnt = sub_search_count(ldb_test_ctx, "", "uid=casesensitivevalue");
 	assert_int_equal(cnt, 0);
+}
+
+static void test_ldb_rename(void **state)
+{
+	struct rename_test_ctx *rename_test_ctx =
+		talloc_get_type_abort(*state, struct rename_test_ctx);
+	int ret;
+	const char *str_new_dn = "dc=rename_test_entry_to";
+	struct ldb_dn *new_dn;
+
+	new_dn = ldb_dn_new_fmt(rename_test_ctx,
+				rename_test_ctx->ldb_test_ctx->ldb,
+				"%s", str_new_dn);
+	assert_non_null(new_dn);
+
+	ret = ldb_rename(rename_test_ctx->ldb_test_ctx->ldb,
+			 rename_test_ctx->basedn,
+			 new_dn);
+	assert_int_equal(ret, LDB_SUCCESS);
+
+	assert_dn_exists(rename_test_ctx->ldb_test_ctx, str_new_dn);
+	assert_dn_doesnt_exist(rename_test_ctx->ldb_test_ctx,
+			       rename_test_ctx->str_basedn);
+	rename_test_ctx->teardown_dn = str_new_dn;
+
+	/* FIXME - test the values which didn't change */
+}
+
+static void test_ldb_rename_from_doesnt_exist(void **state)
+{
+	struct rename_test_ctx *rename_test_ctx = talloc_get_type_abort(
+							*state,
+							struct rename_test_ctx);
+	int ret;
+	const char *str_new_dn = "dc=rename_test_entry_to";
+	const char *str_bad_old_dn = "dc=rename_test_no_such_entry";
+	struct ldb_dn *new_dn;
+	struct ldb_dn *bad_old_dn;
+
+	new_dn = ldb_dn_new_fmt(rename_test_ctx,
+				rename_test_ctx->ldb_test_ctx->ldb,
+				"%s", str_new_dn);
+	assert_non_null(new_dn);
+
+	bad_old_dn = ldb_dn_new_fmt(rename_test_ctx,
+				    rename_test_ctx->ldb_test_ctx->ldb,
+				    "%s", str_bad_old_dn);
+	assert_non_null(bad_old_dn);
+
+	assert_dn_doesnt_exist(rename_test_ctx->ldb_test_ctx,
+			       str_bad_old_dn);
+
+	ret = ldb_rename(rename_test_ctx->ldb_test_ctx->ldb,
+			 bad_old_dn, new_dn);
+	assert_int_equal(ret, LDB_ERR_NO_SUCH_OBJECT);
+
+	assert_dn_doesnt_exist(rename_test_ctx->ldb_test_ctx,
+			       str_new_dn);
+}
+
+static void test_ldb_rename_to_exists(void **state)
+{
+	struct rename_test_ctx *rename_test_ctx = talloc_get_type_abort(
+							*state,
+							struct rename_test_ctx);
+	int ret;
+	const char *str_new_dn = "dc=rename_test_already_exists";
+	struct ldb_dn *new_dn;
+
+	new_dn = ldb_dn_new_fmt(rename_test_ctx,
+				rename_test_ctx->ldb_test_ctx->ldb,
+				"%s", str_new_dn);
+	assert_non_null(new_dn);
+
+	add_dn_with_cn(rename_test_ctx->ldb_test_ctx,
+		       new_dn,
+		       "test_rename_cn_val");
+
+	ret = ldb_rename(rename_test_ctx->ldb_test_ctx->ldb,
+			 rename_test_ctx->basedn,
+			 new_dn);
+	assert_int_equal(ret, LDB_ERR_ENTRY_ALREADY_EXISTS);
+
+	/* Old object must still exist */
+	assert_dn_exists(rename_test_ctx->ldb_test_ctx,
+			 rename_test_ctx->str_basedn);
+
+	ret = ldb_delete(rename_test_ctx->ldb_test_ctx->ldb,
+			 new_dn);
+	assert_int_equal(ret, LDB_SUCCESS);
+
+	assert_dn_exists(rename_test_ctx->ldb_test_ctx,
+			       rename_test_ctx->teardown_dn);
+}
+
+static void test_ldb_rename_self(void **state)
+{
+	struct rename_test_ctx *rename_test_ctx = talloc_get_type_abort(
+							*state,
+							struct rename_test_ctx);
+	int ret;
+
+	/* Oddly enough, this is a success in ldb.. */
+	ret = ldb_rename(rename_test_ctx->ldb_test_ctx->ldb,
+			 rename_test_ctx->basedn,
+			 rename_test_ctx->basedn);
+	assert_int_equal(ret, LDB_SUCCESS);
+
+	/* Old object must still exist */
+	assert_dn_exists(rename_test_ctx->ldb_test_ctx,
+			 rename_test_ctx->str_basedn);
+}
+
+static void test_ldb_rename_dn_case_change(void **state)
+{
+	struct rename_test_ctx *rename_test_ctx = talloc_get_type_abort(
+							*state,
+							struct rename_test_ctx);
+	int ret;
+	char *str_new_dn;
+	struct ldb_dn *new_dn;
+	unsigned i;
+
+	str_new_dn = talloc_strdup(rename_test_ctx, rename_test_ctx->str_basedn);
+	assert_non_null(str_new_dn);
+	for (i = 0; str_new_dn[i]; i++) {
+		str_new_dn[i] = toupper(str_new_dn[i]);
+	}
+
+	new_dn = ldb_dn_new_fmt(rename_test_ctx,
+				rename_test_ctx->ldb_test_ctx->ldb,
+				"%s", str_new_dn);
+	assert_non_null(new_dn);
+
+	ret = ldb_rename(rename_test_ctx->ldb_test_ctx->ldb,
+			 rename_test_ctx->basedn,
+			 new_dn);
+	assert_int_equal(ret, LDB_SUCCESS);
+
+	/* DNs are case insensitive, so both searches will match */
+	assert_dn_exists(rename_test_ctx->ldb_test_ctx, str_new_dn);
+	assert_dn_exists(rename_test_ctx->ldb_test_ctx,
+			 rename_test_ctx->str_basedn);
+	/* FIXME - test the values didn't change */
 }
 
 int main(int argc, const char **argv)
@@ -1316,6 +1519,21 @@ int main(int argc, const char **argv)
 		cmocka_unit_test_setup_teardown(test_ldb_attrs_case_insensitive,
 						ldb_case_test_setup,
 						ldb_case_test_teardown),
+		cmocka_unit_test_setup_teardown(test_ldb_rename,
+						ldb_rename_test_setup,
+						ldb_rename_test_teardown),
+		cmocka_unit_test_setup_teardown(test_ldb_rename_from_doesnt_exist,
+						ldb_rename_test_setup,
+						ldb_rename_test_teardown),
+		cmocka_unit_test_setup_teardown(test_ldb_rename_to_exists,
+						ldb_rename_test_setup,
+						ldb_rename_test_teardown),
+		cmocka_unit_test_setup_teardown(test_ldb_rename_self,
+						ldb_rename_test_setup,
+						ldb_rename_test_teardown),
+		cmocka_unit_test_setup_teardown(test_ldb_rename_dn_case_change,
+						ldb_rename_test_setup,
+						ldb_rename_test_teardown),
 	};
 
 	return cmocka_run_group_tests(tests, NULL, NULL);
