@@ -42,6 +42,7 @@ void mitkdc_task_init(struct task_server *task)
 {
 	struct tevent_req *subreq;
 	const char * const *kdc_cmd;
+	const char *kdc_config;
 	NTSTATUS status;
 
 	task_server_set_title(task, "task[mitkdc_parent]");
@@ -62,6 +63,12 @@ void mitkdc_task_init(struct task_server *task)
 	case ROLE_ACTIVE_DIRECTORY_DC:
 		/* Yes, we want to start the KDC */
 		break;
+	}
+
+	kdc_config = lpcfg_mit_kdc_config(task->lp_ctx, task);
+	if (kdc_config != NULL && kdc_config[0] != '\0') {
+		/* Do not overwrite the variable if already set! */
+		setenv("KRB5_KDC_PROFILE", kdc_config, 0);
 	}
 
 	/* start it as a child process */
