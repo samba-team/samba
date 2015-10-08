@@ -622,32 +622,32 @@ static inline bool nwrap_vector_init(struct nwrap_vector *const vector)
 	return true;
 }
 
-static bool nwrap_vector_add_item(struct nwrap_vector *cont, void *const item)
+static bool nwrap_vector_add_item(struct nwrap_vector *vector, void *const item)
 {
-	assert (cont != NULL);
+	assert (vector != NULL);
 
-	if (cont->items == NULL) {
-		nwrap_vector_init(cont);
+	if (vector->items == NULL) {
+		nwrap_vector_init(vector);
 	}
 
-	if (cont->count == cont->capacity) {
+	if (vector->count == vector->capacity) {
 		/* Items array _MUST_ be NULL terminated because it's passed
 		 * as result to caller which expect NULL terminated array from libc.
 		 */
-		void **items = realloc(cont->items, sizeof(void *) * ((cont->capacity * 2) + 1));
+		void **items = realloc(vector->items, sizeof(void *) * ((vector->capacity * 2) + 1));
 		if (items == NULL) {
 			return false;
 		}
-		cont->items = items;
+		vector->items = items;
 
 		/* Don't count ending NULL to capacity */
-		cont->capacity *= 2;
+		vector->capacity *= 2;
 	}
 
-	cont->items[cont->count] = item;
+	vector->items[vector->count] = item;
 
-	cont->count += 1;
-	cont->items[cont->count] = NULL;
+	vector->count += 1;
+	vector->items[vector->count] = NULL;
 
 	return true;
 }
