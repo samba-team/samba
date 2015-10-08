@@ -705,7 +705,7 @@ static bool smbd_open_one_socket(struct smbd_parent_context *parent,
 			       ifss,
 			       true);
 	if (s->fd == -1) {
-		DEBUG(0,("smbd_open_once_socket: open_socket_in: "
+		DEBUG(0,("smbd_open_one_socket: open_socket_in: "
 			"%s\n", strerror(errno)));
 		TALLOC_FREE(s);
 		/*
@@ -723,7 +723,7 @@ static bool smbd_open_one_socket(struct smbd_parent_context *parent,
 	set_blocking(s->fd, False);
 
 	if (listen(s->fd, SMBD_LISTEN_BACKLOG) == -1) {
-		DEBUG(0,("open_sockets_smbd: listen: "
+		DEBUG(0,("smbd_open_one_socket: listen: "
 			"%s\n", strerror(errno)));
 			close(s->fd);
 		TALLOC_FREE(s);
@@ -736,7 +736,7 @@ static bool smbd_open_one_socket(struct smbd_parent_context *parent,
 			       smbd_accept_connection,
 			       s);
 	if (!s->fde) {
-		DEBUG(0,("open_sockets_smbd: "
+		DEBUG(0,("smbd_open_one_socket: "
 			 "tevent_add_fd: %s\n",
 			 strerror(errno)));
 		close(s->fd);
