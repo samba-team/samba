@@ -2854,6 +2854,7 @@ static void nwrap_he_unload(struct nwrap_cache *nwrap)
 
 	nwrap_vector_foreach (ed, nwrap_he->entdata, i)
 	{
+		SAFE_FREE(ed->nwrap_addrdata.items);
 		SAFE_FREE(ed->ht.h_aliases);
 		SAFE_FREE(ed);
 	}
