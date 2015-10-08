@@ -1705,6 +1705,7 @@ static bool nwrap_parse_file(struct nwrap_cache *nwrap)
 	do {
 		n = getline(&line, &len, nwrap->fp);
 		if (n < 0) {
+			SAFE_FREE(line);
 			if (feof(nwrap->fp)) {
 				break;
 			}
