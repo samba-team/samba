@@ -928,12 +928,13 @@ static void *_nwrap_load_lib_function(enum nwrap_lib lib, const char *fn_name)
 static void nwrap_lines_unload(struct nwrap_cache *const nwrap)
 {
 	size_t p;
-	for (p = 0; p < nwrap->lines.count; p++) {
+	void *item;
+	nwrap_vector_foreach(item, nwrap->lines, p) {
 		/* Maybe some vectors were merged ... */
-		SAFE_FREE(nwrap->lines.items[p]);
+		SAFE_FREE(item);
 	}
 	SAFE_FREE(nwrap->lines.items);
-	nwrap->lines.count = 0;
+	ZERO_STRUCTP(&nwrap->lines);
 }
 
 /*
