@@ -604,6 +604,8 @@ struct nwrap_vector {
 	     item != NULL; \
 	     (item) = (vect).items[++iter])
 
+#define nwrap_vector_is_initialized(vector) ((vector)->items != NULL)
+
 static inline bool nwrap_vector_init(struct nwrap_vector *const vector)
 {
 	if (vector == NULL) {
@@ -3323,10 +3325,16 @@ static int nwrap_files_gethostbyname(const char *name, int af,
 	SAFE_FREE(h_name_lower);
 
 	/* Always cleanup vector and results */
-	if (!nwrap_vector_init(addr_list)) {
-		NWRAP_LOG(NWRAP_LOG_DEBUG,
-			  "Unable to initialize memory for addr_list vector");
-		goto no_ent;
+	if (!nwrap_vector_is_initialized(addr_list)) {
+		if (!nwrap_vector_init(addr_list)) {
+			NWRAP_LOG(NWRAP_LOG_DEBUG,
+				  "Unable to initialize memory for addr_list vector");
+			goto no_ent;
+		}
+	} else {
+		/* When vector is initialized data are valid no more.
+		 * Quick way how to free vector is: */
+		addr_list->count = 0;
 	}
 
 	/* Iterate through results */
