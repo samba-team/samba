@@ -219,11 +219,11 @@ int main(int argc, const char *argv[])
 
 	/* set ctdbd capabilities */
 	ctdb->capabilities = CTDB_CAP_DEFAULT;
-	if (options.no_lmaster == 0) {
-		ctdb->capabilities |= CTDB_CAP_LMASTER;
+	if (options.no_lmaster != 0) {
+		ctdb->capabilities &= ~CTDB_CAP_LMASTER;
 	}
-	if (options.no_recmaster == 0) {
-		ctdb->capabilities |= CTDB_CAP_RECMASTER;
+	if (options.no_recmaster != 0) {
+		ctdb->capabilities &= ~CTDB_CAP_RECMASTER;
 	}
 	if (options.lvs != 0) {
 		ctdb->capabilities |= CTDB_CAP_LVS;

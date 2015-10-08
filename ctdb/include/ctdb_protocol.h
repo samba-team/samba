@@ -594,8 +594,11 @@ struct ctdb_node_map {
  */
 #define CTDB_CAP_PARALLEL_RECOVERY	0x00010000
 
-#define CTDB_CAP_DEFAULT		(CTDB_CAP_PARALLEL_RECOVERY)
+#define CTDB_CAP_FEATURES		(CTDB_CAP_PARALLEL_RECOVERY)
 
+#define CTDB_CAP_DEFAULT		(CTDB_CAP_RECMASTER | \
+					 CTDB_CAP_LMASTER   | \
+					 CTDB_CAP_FEATURES)
 
 struct ctdb_public_ip {
 	uint32_t pnn;
