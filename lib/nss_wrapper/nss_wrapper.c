@@ -5154,8 +5154,8 @@ static int nwrap_getaddrinfo(const char *node,
 				ai_tmp->ai_canonname =
 					strdup(ai_head->ai_canonname);
 			}
-			ai_tmp->ai_addr = malloc(sizeof(struct sockaddr));
-			memcpy(ai_tmp->ai_addr, ai_head, sizeof(struct sockaddr));
+			/* ai_head should point inside hints. */
+			ai_tmp->ai_addr = ai_head->ai_addr;
 
 			if (ai_head->ai_flags == 0) {
 				ai_tmp->ai_flags = hints->ai_flags;
