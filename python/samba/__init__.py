@@ -398,3 +398,4 @@ unix2nttime = _glue.unix2nttime
 generate_random_password = _glue.generate_random_password
 strcasecmp_m = _glue.strcasecmp_m
 strstr_m = _glue.strstr_m
+is_ntvfs_fileserver_built = _glue.is_ntvfs_fileserver_built

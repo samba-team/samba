@@ -32,11 +32,13 @@ bld.RECURSE('winbind')
 bld.RECURSE('libnetapi')
 bld.RECURSE('libsmbclient')
 
-heimdal_specific = dict(source='', deps='')
+ntvfs_specific = dict(source='', deps='')
 
-if bld.CONFIG_SET('AD_DC_BUILD_IS_ENABLED'):
-	heimdal_specific['source'] += ' rpc/spoolss_notify.c'
-	heimdal_specific['deps'] += ' SMB_SERVER dcerpc_server ntvfs'
+# Yes, the spoolss_notify test uses the NTVFS file server to run the SMB server expected
+# to handle the RPC callback!
+if bld.CONFIG_SET('WITH_NTVFS_FILESERVER'):
+	ntvfs_specific['source'] += ' rpc/spoolss_notify.c'
+	ntvfs_specific['deps'] += ' SMB_SERVER dcerpc_server ntvfs'
 
 bld.SAMBA_SUBSYSTEM('TORTURE_NDR',
 	source='ndr/ndr.c ndr/winreg.c ndr/atsvc.c ndr/lsa.c ndr/epmap.c ndr/dfs.c ndr/netlogon.c ndr/drsuapi.c ndr/spoolss.c ndr/ntprinting.c ndr/samr.c ndr/dfsblob.c ndr/drsblobs.c ndr/nbt.c ndr/ntlmssp.c ndr/string.c ndr/backupkey.c ndr/witness.c',
@@ -100,7 +102,7 @@ bld.SAMBA_MODULE('torture_rpc',
                         rpc/clusapi.c
                         rpc/witness.c
                         rpc/backupkey.c
-                        ''' + heimdal_specific['source'],
+                        ''' + ntvfs_specific['source'],
                  autoproto='rpc/proto.h',
                  subsystem='smbtorture',
                  init_function='torture_rpc_init',
@@ -146,7 +148,7 @@ bld.SAMBA_MODULE('torture_rpc',
                       RPC_NDR_CLUSAPI
                       RPC_NDR_WITNESS
                       RPC_NDR_BACKUPKEY
-                      ''' + heimdal_specific['deps'],
+                      ''' + ntvfs_specific['deps'],
                  internal_module=True)
 
 bld.RECURSE('drs')

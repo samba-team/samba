@@ -489,7 +489,7 @@ NTSTATUS torture_rpc_init(void)
 	torture_suite_add_suite(suite, torture_rpc_object_uuid(suite));
 	torture_suite_add_suite(suite, torture_rpc_winreg(suite));
 	torture_suite_add_suite(suite, torture_rpc_spoolss(suite));
-#ifdef AD_DC_BUILD_IS_ENABLED
+#ifdef WITH_NTVFS_FILESERVER
 	torture_suite_add_suite(suite, torture_rpc_spoolss_notify(suite));
 #endif
 	torture_suite_add_suite(suite, torture_rpc_spoolss_win(suite));

@@ -121,6 +121,15 @@ static PyObject *py_get_debug_level(PyObject *self)
 	return PyInt_FromLong(DEBUGLEVEL);
 }
 
+static PyObject *py_is_ntvfs_fileserver_built(PyObject *self)
+{
+#ifdef WITH_NTVFS_FILESERVER
+	Py_RETURN_TRUE;
+#else
+	Py_RETURN_FALSE;
+#endif
+}
+
 /*
   return the list of interface IPs we have configured
   takes an loadparm context, returns a list of IPs in string form
@@ -267,6 +276,8 @@ static PyMethodDef py_misc_methods[] = {
 		"(for testing) compare two strings using Samba's strcasecmp_m()"},
 	{ "strstr_m", (PyCFunction)py_strstr_m, METH_VARARGS,
 		"(for testing) find one string in another with Samba's strstr_m()"},
+	{ "is_ntvfs_fileserver_built", (PyCFunction)py_is_ntvfs_fileserver_built, METH_NOARGS,
+		"is the NTVFS file server built in this installation?" },
 	{ NULL }
 };
 
