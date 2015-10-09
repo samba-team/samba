@@ -118,7 +118,7 @@ import samba.registry
 from samba.schema import Schema
 from samba.samdb import SamDB
 from samba.dbchecker import dbcheck
-
+from samba.provision.kerberos import make_kdcconf
 
 DEFAULT_POLICY_GUID = "31B2F340-016D-11D2-945F-00C04FB984F9"
 DEFAULT_DC_POLICY_GUID = "6AC1786C-016F-11D2-945F-00C04FB984F9"
@@ -668,10 +668,9 @@ def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None,
 
     return names
 
-
 def make_smbconf(smbconf, hostname, domain, realm, targetdir,
                  serverrole=None, eadb=False, use_ntvfs=False, lp=None,
-                 global_param=None):
+                 global_param=None, kdcconfdir=None):
     """Create a new smb.conf file based on a couple of basic settings.
     """
     assert smbconf is not None
@@ -731,6 +730,11 @@ def make_smbconf(smbconf, hostname, domain, realm, targetdir,
             else:
                 statedir = lp.get("state directory")
             lp.set("xattr_tdb:file", os.path.abspath(os.path.join(statedir, "xattr.tdb")))
+
+    make_kdcconf(realm, domain, kdcconfdir, os.path.dirname(lp.get("log file")))
+    if kdcconfdir is not None:
+        kdcconf = "%s/kdc.conf" % kdcconfdir
+        lp.set("mit kdc config", kdcconf)
 
     shares = {}
     if serverrole == "active directory domain controller":
@@ -1925,7 +1929,7 @@ def provision_fake_ypserver(logger, samdb, domaindn, netbiosname, nisdomain,
         samdb.transaction_commit()
 
 
-def provision(logger, session_info, smbconf=None,
+def provision(logger, session_info, smbconf=None, kdcconfdir=None,
         targetdir=None, samdb_fill=FILL_FULL, realm=None, rootdn=None,
         domaindn=None, schemadn=None, configdn=None, serverdn=None,
         domain=None, hostname=None, hostip=None, hostip6=None, domainsid=None,
@@ -2009,11 +2013,13 @@ def provision(logger, session_info, smbconf=None,
             make_smbconf(smbconf, hostname, domain, realm,
                          targetdir, serverrole=serverrole,
                          eadb=useeadb, use_ntvfs=use_ntvfs,
-                         lp=lp, global_param=global_param)
+                         lp=lp, global_param=global_param,
+                         kdcconfdir=kdcconfdir)
     else:
         make_smbconf(smbconf, hostname, domain, realm, targetdir,
                      serverrole=serverrole,
-                     eadb=useeadb, use_ntvfs=use_ntvfs, lp=lp, global_param=global_param)
+                     eadb=useeadb, use_ntvfs=use_ntvfs, lp=lp, global_param=global_param,
+                     kdcconfdir=kdcconfdir)
 
     if lp is None:
         lp = samba.param.LoadParm()

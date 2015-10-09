@@ -391,6 +391,7 @@ generate_random_machine_password = _glue.generate_random_machine_password
 strcasecmp_m = _glue.strcasecmp_m
 strstr_m = _glue.strstr_m
 is_ntvfs_fileserver_built = _glue.is_ntvfs_fileserver_built
+is_heimdal_built = _glue.is_heimdal_built
 
 NTSTATUSError = _glue.NTSTATUSError
 HRESULTError = _glue.HRESULTError
