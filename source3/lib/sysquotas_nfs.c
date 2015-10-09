@@ -211,19 +211,12 @@ int sys_get_nfs_quota(const char *path, const char *bdev,
 
 	/*
 	 * gqr.status returns
-	 *   0 if the rpc call fails,
 	 *   1 if quotas exist,
 	 *   2 if there is no quota set, and
 	 *   3 if no permission to get the quota.
 	 */
 
 	switch (gq_rslt.GQR_STATUS) {
-	case 0:
-		DEBUG(3, ("sys_get_nfs_quotas: Remote Quotas Failed! "
-			  "Error '%i'\n", gq_rslt.GQR_STATUS));
-		ret = -1;
-		goto out;
-
 	case 1:
 		DEBUG(10, ("sys_get_nfs_quotas: Good quota data\n"));
 		dp->bsize = (uint64_t)gq_rslt.GQR_RQUOTA.rq_bsize;
