@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE refentry
+	PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+	"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<refentry id="ctdb_diagnostics.1">
+
+  <refmeta>
+    <refentrytitle>ctdb_diagnostics</refentrytitle>
+    <manvolnum>1</manvolnum>
+    <refmiscinfo class="source">ctdb</refmiscinfo>
+    <refmiscinfo class="manual">CTDB - clustered TDB database</refmiscinfo>
+  </refmeta>
+
+  <refnamediv>
+    <refname>ctdb_diagnostics</refname>
+    <refpurpose>test CTDB/Samba installation</refpurpose>
+  </refnamediv>
+
+  <refsynopsisdiv>
+    <cmdsynopsis>
+      <command>ctdb_diagnostics</command>
+      <arg>OPTIONS</arg>
+	  <arg choice="plain">...</arg>
+    </cmdsynopsis>
+  </refsynopsisdiv>
+
+  <refsect1>
+    <title>DESCRIPTION</title>
+    <para>
+      A script to test the basic setup of a CTDB/Samba install
+    </para>
+  </refsect1>
+
+  <refsect1>
+    <title>OPTIONS</title>
+
+    <variablelist>
+
+      <varlistentry>
+	    <term>-n &lt;nodes&gt;</term>
+	    <listitem>
+	    <para>
+	      Comma separated list of nodes to operate on
+	    </para>
+	    </listitem>
+      </varlistentry>
+
+      <varlistentry>
+	    <term>-c</term>
+        <listitem>
+        <para>
+	      Ignore comment lines (starting with '#') in file comparisons
+	    </para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+	    <term>-w</term>
+	    <listitem>
+          <para>
+	      Ignore whitespace in file comparisons
+	      </para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+	    <term>--no-ads</term>
+	    <listitem>
+          <para>
+	      Do not use commands that assume an Active Directory Server
+	      </para>
+        </listitem>
+      </varlistentry>
+
+    </variablelist>
+
+  </refsect1>
+
+  <refsect1>
+    <title>SEE ALSO</title>
+    <para>
+      <citerefentry><refentrytitle>ctdb</refentrytitle>
+      <manvolnum>1</manvolnum></citerefentry>,
+      <ulink url="https://ctdb.samba.org/"/>
+    </para>
+  </refsect1>
+
+  <refentryinfo>
+    <author>
+      <contrib>
+	  This documentation was written by Martijn van Brummelen
+      </contrib>
+    </author>
+
+    <copyright>
+      <year>2015</year>
+      <holder>Martijn van Brummelen</holder>
+    </copyright>
+
+    <legalnotice>
+      <para>
+	  This program is free software; you can redistribute it and/or
+	  modify it under the terms of the GNU General Public License as
+	  published by the Free Software Foundation; either version 3 of
+	  the License, or (at your option) any later version.
+      </para>
+      <para>
+	  This program is distributed in the hope that it will be
+	  useful, but WITHOUT ANY WARRANTY; without even the implied
+	  warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+	  PURPOSE.  See the GNU General Public License for more details.
+      </para>
+      <para>
+	  You should have received a copy of the GNU General Public
+	  License along with this program; if not, see
+	  <ulink url="http://www.gnu.org/licenses"/>.
+      </para>
+    </legalnotice>
+
+  </refentryinfo>
+
+</refentry>

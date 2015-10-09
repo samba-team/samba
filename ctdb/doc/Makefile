@@ -1,4 +1,5 @@
 DOCS = ctdb.1 ctdb.1.html \
+	ctdb_diagnostics.1 ctdb_diagnostics.1.html \
 	ctdbd.1 ctdbd.1.html \
 	ctdbd_wrapper.1 ctdbd_wrapper.1.html \
 	onnode.1 onnode.1.html \
