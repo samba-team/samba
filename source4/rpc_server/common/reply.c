@@ -103,7 +103,6 @@ NTSTATUS dcesrv_fault_with_flags(struct dcesrv_call_state *call,
 {
 	struct ncacn_packet pkt;
 	struct data_blob_list_item *rep;
-	static const uint8_t zeros[4] = { 0, };
 	NTSTATUS status;
 
 	/* setup a fault */
@@ -128,8 +127,10 @@ NTSTATUS dcesrv_fault_with_flags(struct dcesrv_call_state *call,
 		pkt.u.fault.context_id = 0;
 	}
 	pkt.u.fault.cancel_count = 0;
+	pkt.u.fault.flags = 0;
 	pkt.u.fault.status = fault_code;
-	pkt.u.fault._pad = data_blob_const(zeros, sizeof(zeros));
+	pkt.u.fault.reserved = 0;
+	pkt.u.fault.error_and_verifier = data_blob_null;
 
 	rep = talloc_zero(call, struct data_blob_list_item);
 	if (!rep) {

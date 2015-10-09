@@ -221,9 +221,13 @@ interface dcerpc
 		uint32 alloc_hint;
 		uint16 context_id;
 		uint8 cancel_count;
+		uint8 flags;
 		dcerpc_nca_status status;
-		[flag(NDR_REMAINING)] DATA_BLOB _pad;
+		[value(0)] uint32 reserved;
+		[flag(NDR_REMAINING)] DATA_BLOB error_and_verifier;
 	} dcerpc_fault;
+
+	const uint8 DCERPC_FAULT_LENGTH = 32;
 
 	/* the auth types we know about */
 	typedef [enum8bit] enum {

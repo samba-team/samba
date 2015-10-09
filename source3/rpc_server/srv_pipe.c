@@ -309,7 +309,6 @@ bool setup_fault_pdu(struct pipes_struct *p, NTSTATUS fault_status)
 	ZERO_STRUCT(u);
 
 	u.fault.status		= NT_STATUS_V(fault_status);
-	u.fault._pad		= data_blob_talloc_zero(p->mem_ctx, 4);
 
 	/*
 	 * Marshall directly into the outgoing PDU space. We

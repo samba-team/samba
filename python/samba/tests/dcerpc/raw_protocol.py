@@ -515,9 +515,10 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertNotEquals(rep.u.alloc_hint, 0)
         self.assertEquals(rep.u.context_id, 0)
         self.assertEquals(rep.u.cancel_count, 0)
+        self.assertEquals(rep.u.flags, 0)
         self.assertEquals(rep.u.status, dcerpc.DCERPC_NCA_S_PROTO_ERROR)
-        self.assertEquals(len(rep.u._pad), 4)
-        self.assertEquals(rep.u._pad, '\0' * 4)
+        self.assertEquals(rep.u.reserved, 0)
+        self.assertEquals(len(rep.u.error_and_verifier), 0)
 
         # wait for a disconnect
         rep = self.recv_pdu()
@@ -670,9 +671,10 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertNotEquals(rep.u.alloc_hint, 0)
         self.assertEquals(rep.u.context_id, req.u.context_id)
         self.assertEquals(rep.u.cancel_count, 0)
+        self.assertEquals(rep.u.flags, 0)
         self.assertEquals(rep.u.status, dcerpc.DCERPC_FAULT_ACCESS_DENIED)
-        self.assertEquals(len(rep.u._pad), 4)
-        self.assertEquals(rep.u._pad, '\0' * 4)
+        self.assertEquals(rep.u.reserved, 0)
+        self.assertEquals(len(rep.u.error_and_verifier), 0)
 
         # wait for a disconnect
         rep = self.recv_pdu()
@@ -801,9 +803,10 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertNotEquals(rep.u.alloc_hint, 0)
         self.assertEquals(rep.u.context_id, 0)
         self.assertEquals(rep.u.cancel_count, 0)
+        self.assertEquals(rep.u.flags, 0)
         self.assertEquals(rep.u.status, dcerpc.DCERPC_NCA_S_PROTO_ERROR)
-        self.assertEquals(len(rep.u._pad), 4)
-        self.assertEquals(rep.u._pad, '\0' * 4)
+        self.assertEquals(rep.u.reserved, 0)
+        self.assertEquals(len(rep.u.error_and_verifier), 0)
 
         # wait for a disconnect
         rep = self.recv_pdu()
@@ -1030,9 +1033,10 @@ class TestDCERPC_BIND(RawDCERPCTest):
                 self.assertNotEquals(rep.u.alloc_hint, 0)
                 self.assertEquals(rep.u.context_id, req.u.context_id)
                 self.assertEquals(rep.u.cancel_count, 0)
+                self.assertEquals(rep.u.flags, 0)
                 self.assertEquals(rep.u.status, fault_first)
-                self.assertEquals(len(rep.u._pad), 4)
-                self.assertEquals(rep.u._pad, '\0' * 4)
+                self.assertEquals(rep.u.reserved, 0)
+                self.assertEquals(len(rep.u.error_and_verifier), 0)
 
                 # wait for a disconnect
                 rep = self.recv_pdu()
@@ -1049,9 +1053,10 @@ class TestDCERPC_BIND(RawDCERPCTest):
                 self.assertNotEquals(rep.u.alloc_hint, 0)
                 self.assertEquals(rep.u.context_id, req.u.context_id)
                 self.assertEquals(rep.u.cancel_count, 0)
+                self.assertEquals(rep.u.flags, 0)
                 self.assertEquals(rep.u.status, fault_last)
-                self.assertEquals(len(rep.u._pad), 4)
-                self.assertEquals(rep.u._pad, '\0' * 4)
+                self.assertEquals(rep.u.reserved, 0)
+                self.assertEquals(len(rep.u.error_and_verifier), 0)
 
                 # wait for a disconnect
                 rep = self.recv_pdu()
@@ -1070,9 +1075,10 @@ class TestDCERPC_BIND(RawDCERPCTest):
             self.assertNotEquals(rep.u.alloc_hint, 0)
             self.assertEquals(rep.u.context_id, req.u.context_id)
             self.assertEquals(rep.u.cancel_count, 0)
+            self.assertEquals(rep.u.flags, 0)
             self.assertEquals(rep.u.status, fault_last)
-            self.assertEquals(len(rep.u._pad), 4)
-            self.assertEquals(rep.u._pad, '\0' * 4)
+            self.assertEquals(rep.u.reserved, 0)
+            self.assertEquals(len(rep.u.error_and_verifier), 0)
 
             # wait for a disconnect
             rep = self.recv_pdu()
@@ -1131,9 +1137,10 @@ class TestDCERPC_BIND(RawDCERPCTest):
             self.assertNotEquals(rep.u.alloc_hint, 0)
             self.assertEquals(rep.u.context_id, req.u.context_id)
             self.assertEquals(rep.u.cancel_count, 0)
+            self.assertEquals(rep.u.flags, 0)
             self.assertEquals(rep.u.status, dcerpc.DCERPC_NCA_S_PROTO_ERROR)
-            self.assertEquals(len(rep.u._pad), 4)
-            self.assertEquals(rep.u._pad, '\0' * 4)
+            self.assertEquals(rep.u.reserved, 0)
+            self.assertEquals(len(rep.u.error_and_verifier), 0)
 
             # wait for a disconnect
             rep = self.recv_pdu()
@@ -1160,9 +1167,10 @@ class TestDCERPC_BIND(RawDCERPCTest):
             self.assertNotEquals(rep.u.alloc_hint, 0)
             self.assertEquals(rep.u.context_id, req.u.context_id)
             self.assertEquals(rep.u.cancel_count, 0)
+            self.assertEquals(rep.u.flags, 0)
             self.assertEquals(rep.u.status, dcerpc.DCERPC_NCA_S_PROTO_ERROR)
-            self.assertEquals(len(rep.u._pad), 4)
-            self.assertEquals(rep.u._pad, '\0' * 4)
+            self.assertEquals(rep.u.reserved, 0)
+            self.assertEquals(len(rep.u.error_and_verifier), 0)
 
             # wait for a disconnect
             rep = self.recv_pdu()
@@ -1226,9 +1234,10 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertNotEquals(rep.u.alloc_hint, 0)
         self.assertEquals(rep.u.context_id, req.u.context_id)
         self.assertEquals(rep.u.cancel_count, 0)
+        self.assertEquals(rep.u.flags, 0)
         self.assertEquals(rep.u.status, dcerpc.DCERPC_FAULT_NO_CALL_ACTIVE)
-        self.assertEquals(len(rep.u._pad), 4)
-        self.assertEquals(rep.u._pad, '\0' * 4)
+        self.assertEquals(rep.u.reserved, 0)
+        self.assertEquals(len(rep.u.error_and_verifier), 0)
 
         # wait for a disconnect
         rep = self.recv_pdu()
@@ -1343,9 +1352,10 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertNotEquals(rep.u.alloc_hint, 0)
         self.assertEquals(rep.u.context_id, req.u.context_id)
         self.assertEquals(rep.u.cancel_count, 0)
+        self.assertEquals(rep.u.flags, 0)
         self.assertEquals(rep.u.status, dcerpc.DCERPC_NCA_S_PROTO_ERROR)
-        self.assertEquals(len(rep.u._pad), 4)
-        self.assertEquals(rep.u._pad, '\0' * 4)
+        self.assertEquals(rep.u.reserved, 0)
+        self.assertEquals(len(rep.u.error_and_verifier), 0)
 
     def test_spnego_connect_request(self):
         ndr32 = base.transfer_syntax_ndr()
@@ -1488,9 +1498,10 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertNotEquals(rep.u.alloc_hint, 0)
         self.assertEquals(rep.u.context_id, req.u.context_id)
         self.assertEquals(rep.u.cancel_count, 0)
+        self.assertEquals(rep.u.flags, 0)
         self.assertEquals(rep.u.status, dcerpc.DCERPC_FAULT_ACCESS_DENIED)
-        self.assertEquals(len(rep.u._pad), 4)
-        self.assertEquals(rep.u._pad, '\0' * 4)
+        self.assertEquals(rep.u.reserved, 0)
+        self.assertEquals(len(rep.u.error_and_verifier), 0)
 
         # wait for a disconnect
         rep = self.recv_pdu()
@@ -1604,9 +1615,10 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertNotEquals(rep.u.alloc_hint, 0)
         self.assertEquals(rep.u.context_id, req.u.context_id)
         self.assertEquals(rep.u.cancel_count, 0)
+        self.assertEquals(rep.u.flags, 0)
         self.assertEquals(rep.u.status, dcerpc.DCERPC_FAULT_ACCESS_DENIED)
-        self.assertEquals(len(rep.u._pad), 4)
-        self.assertEquals(rep.u._pad, '\0' * 4)
+        self.assertEquals(rep.u.reserved, 0)
+        self.assertEquals(len(rep.u.error_and_verifier), 0)
 
         # wait for a disconnect
         rep = self.recv_pdu()
@@ -1690,9 +1702,10 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertNotEquals(rep.u.alloc_hint, 0)
         self.assertEquals(rep.u.context_id, 0)
         self.assertEquals(rep.u.cancel_count, 0)
+        self.assertEquals(rep.u.flags, 0)
         self.assertEquals(rep.u.status, dcerpc.DCERPC_NCA_S_PROTO_ERROR)
-        self.assertEquals(len(rep.u._pad), 4)
-        self.assertEquals(rep.u._pad, '\0' * 4)
+        self.assertEquals(rep.u.reserved, 0)
+        self.assertEquals(len(rep.u.error_and_verifier), 0)
 
         # wait for a disconnect
         rep = self.recv_pdu()
@@ -1777,9 +1790,10 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertNotEquals(rep.u.alloc_hint, 0)
         self.assertEquals(rep.u.context_id, req.u.context_id)
         self.assertEquals(rep.u.cancel_count, 0)
+        self.assertEquals(rep.u.flags, 0)
         self.assertEquals(rep.u.status, dcerpc.DCERPC_FAULT_ACCESS_DENIED)
-        self.assertEquals(len(rep.u._pad), 4)
-        self.assertEquals(rep.u._pad, '\0' * 4)
+        self.assertEquals(rep.u.reserved, 0)
+        self.assertEquals(len(rep.u.error_and_verifier), 0)
 
         # wait for a disconnect
         rep = self.recv_pdu()
@@ -1938,9 +1952,10 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertNotEquals(rep.u.alloc_hint, 0)
         self.assertEquals(rep.u.context_id, 0)
         self.assertEquals(rep.u.cancel_count, 0)
+        self.assertEquals(rep.u.flags, 0)
         self.assertEquals(rep.u.status, dcerpc.DCERPC_FAULT_ACCESS_DENIED)
-        self.assertEquals(len(rep.u._pad), 4)
-        self.assertEquals(rep.u._pad, '\0' * 4)
+        self.assertEquals(rep.u.reserved, 0)
+        self.assertEquals(len(rep.u.error_and_verifier), 0)
 
         # wait for a disconnect
         rep = self.recv_pdu()
@@ -2098,9 +2113,10 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertNotEquals(rep.u.alloc_hint, 0)
         self.assertEquals(rep.u.context_id, 0)
         self.assertEquals(rep.u.cancel_count, 0)
+        self.assertEquals(rep.u.flags, 0)
         self.assertEquals(rep.u.status, dcerpc.DCERPC_NCA_S_PROTO_ERROR)
-        self.assertEquals(len(rep.u._pad), 4)
-        self.assertEquals(rep.u._pad, '\0' * 4)
+        self.assertEquals(rep.u.reserved, 0)
+        self.assertEquals(len(rep.u.error_and_verifier), 0)
 
         # wait for a disconnect
         rep = self.recv_pdu()
@@ -2177,9 +2193,10 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertNotEquals(rep.u.alloc_hint, 0)
         self.assertEquals(rep.u.context_id, 0)
         self.assertEquals(rep.u.cancel_count, 0)
+        self.assertEquals(rep.u.flags, 0)
         self.assertEquals(rep.u.status, dcerpc.DCERPC_FAULT_ACCESS_DENIED)
-        self.assertEquals(len(rep.u._pad), 4)
-        self.assertEquals(rep.u._pad, '\0' * 4)
+        self.assertEquals(rep.u.reserved, 0)
+        self.assertEquals(len(rep.u.error_and_verifier), 0)
 
         # wait for a disconnect
         rep = self.recv_pdu()
@@ -2262,9 +2279,10 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertNotEquals(rep.u.alloc_hint, 0)
         self.assertEquals(rep.u.context_id, 0)
         self.assertEquals(rep.u.cancel_count, 0)
+        self.assertEquals(rep.u.flags, 0)
         self.assertEquals(rep.u.status, dcerpc.DCERPC_NCA_S_PROTO_ERROR)
-        self.assertEquals(len(rep.u._pad), 4)
-        self.assertEquals(rep.u._pad, '\0' * 4)
+        self.assertEquals(rep.u.reserved, 0)
+        self.assertEquals(len(rep.u.error_and_verifier), 0)
 
         # wait for a disconnect
         rep = self.recv_pdu()
@@ -2350,9 +2368,10 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertNotEquals(rep.u.alloc_hint, 0)
         self.assertEquals(rep.u.context_id, 0)
         self.assertEquals(rep.u.cancel_count, 0)
+        self.assertEquals(rep.u.flags, 0)
         self.assertEquals(rep.u.status, dcerpc.DCERPC_NCA_S_PROTO_ERROR)
-        self.assertEquals(len(rep.u._pad), 4)
-        self.assertEquals(rep.u._pad, '\0' * 4)
+        self.assertEquals(rep.u.reserved, 0)
+        self.assertEquals(len(rep.u.error_and_verifier), 0)
 
         # wait for a disconnect
         rep = self.recv_pdu()
@@ -2431,9 +2450,10 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertNotEquals(rep.u.alloc_hint, 0)
         self.assertEquals(rep.u.context_id, 0)
         self.assertEquals(rep.u.cancel_count, 0)
+        self.assertEquals(rep.u.flags, 0)
         self.assertEquals(rep.u.status, dcerpc.DCERPC_FAULT_SEC_PKG_ERROR)
-        self.assertEquals(len(rep.u._pad), 4)
-        self.assertEquals(rep.u._pad, '\0' * 4)
+        self.assertEquals(rep.u.reserved, 0)
+        self.assertEquals(len(rep.u.error_and_verifier), 0)
 
         # wait for a disconnect
         rep = self.recv_pdu()
@@ -2519,9 +2539,10 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertNotEquals(rep.u.alloc_hint, 0)
         self.assertEquals(rep.u.context_id, 0)
         self.assertEquals(rep.u.cancel_count, 0)
+        self.assertEquals(rep.u.flags, 0)
         self.assertEquals(rep.u.status, dcerpc.DCERPC_NCA_S_PROTO_ERROR)
-        self.assertEquals(len(rep.u._pad), 4)
-        self.assertEquals(rep.u._pad, '\0' * 4)
+        self.assertEquals(rep.u.reserved, 0)
+        self.assertEquals(len(rep.u.error_and_verifier), 0)
 
         # wait for a disconnect
         rep = self.recv_pdu()
@@ -2607,9 +2628,10 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertNotEquals(rep.u.alloc_hint, 0)
         self.assertEquals(rep.u.context_id, 0)
         self.assertEquals(rep.u.cancel_count, 0)
+        self.assertEquals(rep.u.flags, 0)
         self.assertEquals(rep.u.status, dcerpc.DCERPC_FAULT_ACCESS_DENIED)
-        self.assertEquals(len(rep.u._pad), 4)
-        self.assertEquals(rep.u._pad, '\0' * 4)
+        self.assertEquals(rep.u.reserved, 0)
+        self.assertEquals(len(rep.u.error_and_verifier), 0)
 
         # wait for a disconnect
         rep = self.recv_pdu()
@@ -2939,9 +2961,10 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertNotEquals(rep.u.alloc_hint, 0)
         self.assertEquals(rep.u.context_id, 0)
         self.assertEquals(rep.u.cancel_count, 0)
+        self.assertEquals(rep.u.flags, 0)
         self.assertEquals(rep.u.status, dcerpc.DCERPC_NCA_S_PROTO_ERROR)
-        self.assertEquals(len(rep.u._pad), 4)
-        self.assertEquals(rep.u._pad, '\0' * 4)
+        self.assertEquals(rep.u.reserved, 0)
+        self.assertEquals(len(rep.u.error_and_verifier), 0)
 
         # wait for a disconnect
         rep = self.recv_pdu()
@@ -3155,9 +3178,10 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertNotEquals(rep.u.alloc_hint, 0)
         self.assertEquals(rep.u.context_id, 0)
         self.assertEquals(rep.u.cancel_count, 0)
+        self.assertEquals(rep.u.flags, 0)
         self.assertEquals(rep.u.status, dcerpc.DCERPC_NCA_S_FAULT_REMOTE_NO_MEMORY)
-        self.assertEquals(len(rep.u._pad), 4)
-        self.assertEquals(rep.u._pad, '\0' * 4)
+        self.assertEquals(rep.u.reserved, 0)
+        self.assertEquals(len(rep.u.error_and_verifier), 0)
 
         # wait for a disconnect
         rep = self.recv_pdu()
