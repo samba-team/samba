@@ -224,7 +224,7 @@ class cmd_domain_provision(Command):
          Option("--ol-mmr-urls", type="string", metavar="LDAPSERVER",
                 help="List of LDAP-URLS [ ldap://<FQHN>:<PORT>/  (where <PORT> has to be different than 389!) ] separated with comma (\",\") for use with OpenLDAP-MMR (Multi-Master-Replication), e.g.: \"ldap://s4dc1:9000,ldap://s4dc2:9000\""),
          Option("--use-xattrs", type="choice", choices=["yes", "no", "auto"], help="Define if we should use the native fs capabilities or a tdb file for storing attributes likes ntacl, auto tries to make an inteligent guess based on the user rights and system capabilities", default="auto"),
-         Option("--use-ntvfs", action="store_true", help="Use NTVFS for the fileserver (default = no)"),
+
          Option("--use-rfc2307", action="store_true", help="Use AD to store posix attributes (default = no)"),
         ]
 
@@ -239,8 +239,15 @@ class cmd_domain_provision(Command):
         Option("--ldap-backend-nosync", help="Configure LDAP backend not to call fsync() (for performance in test environments)", action="store_true"),
         ]
 
+    ntvfs_options = [
+         Option("--use-ntvfs", action="store_true", help="Use NTVFS for the fileserver (default = no)"),
+    ]
+
     if os.getenv('TEST_LDAP', "no") == "yes":
         takes_options.extend(openldap_options)
+
+    if samba.is_ntvfs_fileserver_built():
+         takes_options.extend(ntvfs_options)
 
     takes_args = []
 
@@ -490,8 +497,6 @@ class cmd_domain_dcpromo(Command):
                action="store_true"),
         Option("--machinepass", type=str, metavar="PASSWORD",
                help="choose machine password (otherwise random)"),
-        Option("--use-ntvfs", help="Use NTVFS for the fileserver (default = no)",
-               action="store_true"),
         Option("--dns-backend", type="choice", metavar="NAMESERVER-BACKEND",
                choices=["SAMBA_INTERNAL", "BIND9_DLZ", "NONE"],
                help="The DNS server backend. SAMBA_INTERNAL is the builtin name server (default), "
@@ -501,6 +506,14 @@ class cmd_domain_dcpromo(Command):
         Option("--quiet", help="Be quiet", action="store_true"),
         Option("--verbose", help="Be verbose", action="store_true")
         ]
+
+    ntvfs_options = [
+         Option("--use-ntvfs", action="store_true", help="Use NTVFS for the fileserver (default = no)"),
+    ]
+
+    if samba.is_ntvfs_fileserver_built():
+         takes_options.extend(ntvfs_options)
+
 
     takes_args = ["domain", "role?"]
 
@@ -569,8 +582,6 @@ class cmd_domain_join(Command):
                help="choose machine password (otherwise random)"),
         Option("--adminpass", type="string", metavar="PASSWORD",
                help="choose adminstrator password when joining as a subdomain (otherwise random)"),
-        Option("--use-ntvfs", help="Use NTVFS for the fileserver (default = no)",
-               action="store_true"),
         Option("--dns-backend", type="choice", metavar="NAMESERVER-BACKEND",
                choices=["SAMBA_INTERNAL", "BIND9_DLZ", "NONE"],
                help="The DNS server backend. SAMBA_INTERNAL is the builtin name server (default), "
@@ -580,6 +591,13 @@ class cmd_domain_join(Command):
         Option("--quiet", help="Be quiet", action="store_true"),
         Option("--verbose", help="Be verbose", action="store_true")
        ]
+
+    ntvfs_options = [
+        Option("--use-ntvfs", help="Use NTVFS for the fileserver (default = no)",
+               action="store_true")
+    ]
+    if samba.is_ntvfs_fileserver_built():
+        takes_options.extend(ntvfs_options)
 
     takes_args = ["domain", "role?"]
 
@@ -1358,8 +1376,6 @@ class cmd_domain_classicupgrade(Command):
         Option("--verbose", help="Be verbose", action="store_true"),
         Option("--use-xattrs", type="choice", choices=["yes","no","auto"], metavar="[yes|no|auto]",
                    help="Define if we should use the native fs capabilities or a tdb file for storing attributes likes ntacl, auto tries to make an inteligent guess based on the user rights and system capabilities", default="auto"),
-        Option("--use-ntvfs", help="Use NTVFS for the fileserver (default = no)",
-               action="store_true"),
         Option("--dns-backend", type="choice", metavar="NAMESERVER-BACKEND",
                choices=["SAMBA_INTERNAL", "BIND9_FLATFILE", "BIND9_DLZ", "NONE"],
                help="The DNS server backend. SAMBA_INTERNAL is the builtin name server (default), "
@@ -1368,6 +1384,13 @@ class cmd_domain_classicupgrade(Command):
                    "NONE skips the DNS setup entirely (this DC will not be a DNS server)",
                default="SAMBA_INTERNAL")
     ]
+
+    ntvfs_options = [
+        Option("--use-ntvfs", help="Use NTVFS for the fileserver (default = no)",
+               action="store_true")
+    ]
+    if samba.is_ntvfs_fileserver_built():
+        takes_options.extend(ntvfs_options)
 
     takes_args = ["smbconf"]
 

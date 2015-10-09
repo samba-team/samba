@@ -5,6 +5,6 @@ bld.SAMBA_SUBSYSTEM('SMB_PROTOCOL',
 	autoproto='smb_proto.h',
 	deps='dfs_server_ad',
 	public_deps='ntvfs LIBPACKET samba-credentials samba_server_gensec',
-	enabled=bld.AD_DC_BUILD_IS_ENABLED()
+	enabled=bld.CONFIG_SET('WITH_NTVFS_FILESERVER')
 	)
 

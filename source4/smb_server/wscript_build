@@ -7,14 +7,14 @@ bld.SAMBA_MODULE('service_smb',
 	init_function='server_service_smb_init',
 	deps='SMB_SERVER netif shares samba-hostconfig',
 	internal_module=False,
-	enabled=bld.AD_DC_BUILD_IS_ENABLED()
+	enabled=bld.CONFIG_SET('WITH_NTVFS_FILESERVER')
 	)
 
 bld.SAMBA_SUBSYSTEM('SMB_SERVER',
 	source='handle.c tcon.c session.c blob.c management.c smb_server.c',
 	autoproto='smb_server_proto.h',
 	public_deps='share LIBPACKET SMB_PROTOCOL SMB2_PROTOCOL',
-	enabled=bld.AD_DC_BUILD_IS_ENABLED()
+	enabled=bld.CONFIG_SET('WITH_NTVFS_FILESERVER')
 	)
 
 bld.RECURSE('smb')
