@@ -1831,6 +1831,7 @@ static bool wbinfo_pam_logon(char *username, bool verbose)
 
 	if (verbose && (info != NULL)) {
 		struct wbcAuthUserInfo *i = info->info;
+		uint32_t j;
 
 		if (i->account_name != NULL) {
 			d_printf("account_name: %s\n", i->account_name);
@@ -1862,6 +1863,15 @@ static bool wbinfo_pam_logon(char *username, bool verbose)
 		if (i->home_drive != NULL) {
 			d_printf("home_drive: %s\n", i->home_drive);
 		}
+
+		d_printf("sids:");
+
+		for (j=0; j<i->num_sids; j++) {
+			char buf[WBC_SID_STRING_BUFLEN];
+			wbcSidToStringBuf(&i->sids[j].sid, buf, sizeof(buf));
+			d_printf(" %s", buf);
+		}
+		d_printf("\n");
 
 		wbcFreeMemory(info);
 		info = NULL;
