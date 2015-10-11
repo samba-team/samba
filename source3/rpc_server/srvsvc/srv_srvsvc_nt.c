@@ -80,7 +80,9 @@ struct share_conn_stat {
 ********************************************************************/
 
 static int enum_file_fn(const struct share_mode_entry *e,
-			const char *sharepath, const char *fname,
+			const char *sharepath,
+			const char *fname,
+			const char *sname,
 			void *private_data)
 {
 	struct file_enum_count *fenum =
@@ -129,8 +131,9 @@ static int enum_file_fn(const struct share_mode_entry *e,
 	if ( strcmp( fname, "." ) == 0 ) {
 		fullpath = talloc_asprintf(fenum->ctx, "C:%s", sharepath );
 	} else {
-		fullpath = talloc_asprintf(fenum->ctx, "C:%s/%s",
-				sharepath, fname );
+		fullpath = talloc_asprintf(fenum->ctx, "C:%s/%s%s",
+					   sharepath, fname,
+					   sname ? sname : "");
 	}
 	if (!fullpath) {
 		return 0;
@@ -829,7 +832,9 @@ static WERROR init_srv_sess_info_0(struct pipes_struct *p,
  **********************************************************************/
 
 static int count_sess_files_fn(const struct share_mode_entry *e,
-			       const char *sharepath, const char *fname,
+			       const char *sharepath,
+			       const char *fname,
+			       const char *sname,
 			       void *data)
 {
 	struct sess_file_info *info = data;
@@ -954,7 +959,9 @@ static WERROR init_srv_sess_info_1(struct pipes_struct *p,
  ********************************************************************/
 
 static int share_file_fn(const struct share_mode_entry *e,
-			 const char *sharepath, const char *fname,
+			 const char *sharepath,
+			 const char *fname,
+			 const char *sname,
 			 void *data)
 {
 	struct share_file_stat *sfs = data;
@@ -2692,7 +2699,9 @@ struct enum_file_close_state {
 };
 
 static int enum_file_close_fn(const struct share_mode_entry *e,
-			      const char *sharepath, const char *fname,
+			      const char *sharepath,
+			      const char *fname,
+			      const char *sname,
 			      void *private_data)
 {
 	char msg[MSG_SMB_SHARE_MODE_ENTRY_SIZE];
