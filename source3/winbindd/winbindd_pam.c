@@ -1428,8 +1428,9 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 		   rpc changetrustpw' */
 
 		if ( NT_STATUS_EQUAL(result, NT_STATUS_ACCESS_DENIED) ) {
-			DEBUG(3,("winbind_samlogon_retry_loop: sam_logon returned "
-				 "ACCESS_DENIED.  Maybe the trust account "
+			DEBUG(1,("winbind_samlogon_retry_loop: sam_logon returned "
+				 "ACCESS_DENIED.  Maybe the DC has Restrict "
+				 "NTLM set or the trust account "
 				"password was changed and we didn't know it. "
 				 "Killing connections to domain %s\n",
 				domainname));
