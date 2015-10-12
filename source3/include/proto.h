@@ -439,7 +439,6 @@ uint32_t get_my_vnn(void);
 void set_my_unique_id(uint64_t unique_id);
 struct server_id pid_to_procid(pid_t pid);
 #define serverid_equal(p1, p2) server_id_equal(p1,p2)
-bool procid_is_me(const struct server_id *pid);
 struct server_id interpret_pid(const char *pid_string);
 bool procid_valid(const struct server_id *pid);
 bool procid_is_local(const struct server_id *pid);

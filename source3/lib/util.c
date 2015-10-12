@@ -1982,17 +1982,6 @@ struct server_id pid_to_procid(pid_t pid)
 		.pid = pid, .unique_id = unique, .vnn = my_vnn };
 }
 
-bool procid_is_me(const struct server_id *pid)
-{
-	if (pid->pid != getpid())
-		return False;
-	if (pid->task_id != 0)
-		return False;
-	if (pid->vnn != my_vnn)
-		return False;
-	return True;
-}
-
 struct server_id interpret_pid(const char *pid_string)
 {
 	return server_id_from_string(get_my_vnn(), pid_string);
