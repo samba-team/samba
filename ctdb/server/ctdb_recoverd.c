@@ -1276,7 +1276,7 @@ static int update_local_flags(struct ctdb_recoverd *rec, struct ctdb_node_map *n
 }
 
 
-/* Create a new random generation ip. 
+/* Create a new random generation id.
    The generation id can not be the INVALID_GENERATION id
 */
 static uint32_t new_generation(void)
