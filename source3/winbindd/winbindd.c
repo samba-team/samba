@@ -99,11 +99,19 @@ struct messaging_context *winbind_messaging_context(void)
 struct imessaging_context *winbind_imessaging_context(void)
 {
 	static struct imessaging_context *msg = NULL;
+	struct messaging_context *msg_ctx;
+	struct server_id myself;
 	struct loadparm_context *lp_ctx;
 
 	if (msg != NULL) {
 		return msg;
 	}
+
+	msg_ctx = server_messaging_context();
+	if (msg_ctx == NULL) {
+		smb_panic("server_messaging_context failed\n");
+	}
+	myself = messaging_server_id(msg_ctx);
 
 	lp_ctx = loadparm_init_s3(NULL, loadparm_s3_helpers());
 	if (lp_ctx == NULL) {
@@ -114,7 +122,8 @@ struct imessaging_context *winbind_imessaging_context(void)
 	 * Note we MUST use the NULL context here, not the autofree context,
 	 * to avoid side effects in forked children exiting.
 	 */
-	msg = imessaging_init(NULL, lp_ctx, procid_self(), winbind_event_context(), false);
+	msg = imessaging_init(NULL, lp_ctx, myself, winbind_event_context(),
+			      false);
 	talloc_unlink(NULL, lp_ctx);
 
 	if (msg == NULL) {
