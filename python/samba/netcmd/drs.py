@@ -528,7 +528,7 @@ class cmd_drs_clone_dc_database(Command):
 
     takes_options = [
         Option("--server", help="DC to join", type=str),
-        Option("--targetdir", help="where to store provision", type=str),
+        Option("--targetdir", help="where to store provision (required)", type=str),
         Option("--quiet", help="Be quiet", action="store_true"),
         Option("--include-secrets", help="Also replicate secret values", action="store_true"),
         Option("--verbose", help="Be verbose", action="store_true")
@@ -549,6 +549,10 @@ class cmd_drs_clone_dc_database(Command):
             logger.setLevel(logging.WARNING)
         else:
             logger.setLevel(logging.INFO)
+
+        if targetdir is None:
+            raise CommandError("--targetdir option must be specified")
+
 
         join_clone(logger=logger, server=server, creds=creds, lp=lp, domain=domain,
                    targetdir=targetdir, include_secrets=include_secrets)
