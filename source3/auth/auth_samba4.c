@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "source3/include/auth.h"
+#include "source3/include/messages.h"
 #include "source4/auth/auth.h"
 #include "auth/auth_sam_reply.h"
 #include "param/param.h"
@@ -48,6 +49,7 @@ static int free_task_id(struct server_id *server_id)
  * (ie, use talloc_free()) */
 static struct server_id *new_server_id_task(TALLOC_CTX *mem_ctx)
 {
+	struct messaging_context *msg_ctx;
 	struct server_id *server_id;
 	int task_id;
 	if (!task_id_tree) {
@@ -57,12 +59,17 @@ static struct server_id *new_server_id_task(TALLOC_CTX *mem_ctx)
 		}
 	}
 
+	msg_ctx = server_messaging_context();
+	if (msg_ctx == NULL) {
+		return NULL;
+	}
+
 	server_id = talloc(mem_ctx, struct server_id);
 
 	if (!server_id) {
 		return NULL;
 	}
-	*server_id = procid_self();
+	*server_id = messaging_server_id(msg_ctx);
 
 	/* 0 is the default server_id, so we need to start with 1 */
 	task_id = idr_get_new_above(task_id_tree, server_id, 1, INT32_MAX);
