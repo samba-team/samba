@@ -1895,9 +1895,12 @@ static bool test_magic_protection(void)
 
 		/* Then the attack takes effect when the memory's freed. */
 		talloc_free(pool);
-	} else {
-		while (wait(&exit_status) != pid);
+
+		/* Never reached. Make compilers happy */
+		return true;
 	}
+
+	while (wait(&exit_status) != pid);
 
 	if (!WIFEXITED(exit_status)) {
 		printf("Child exited through unexpected abnormal means\n");
