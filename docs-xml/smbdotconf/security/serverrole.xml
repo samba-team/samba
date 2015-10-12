@@ -61,7 +61,7 @@
     only one PDC per NetBIOS scope (typcially a broadcast network or
     clients served by a single WINS server).</para>
 
-    <para><anchor id="BDC"/><emphasis>SERVER ROLE = NETBIOS BACKUP DOMAIN CONTROLLER</emphasis></para>
+    <para><anchor id="BDC"/><emphasis>SERVER ROLE = CLASSIC BACKUP DOMAIN CONTROLLER</emphasis></para>
 
     <para>This mode of operation runs a classic Samba backup domain
     controller, providing domain logon services to Windows and Samba
@@ -85,5 +85,5 @@
 <related>encrypt passwords</related>
 
 <value type="default">AUTO</value>
-<value type="example">DOMAIN CONTROLLER</value>
+<value type="example">ACTIVE DIRECTORY DOMAIN CONTROLLER</value>
 </samba:parameter>
