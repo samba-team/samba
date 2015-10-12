@@ -687,12 +687,16 @@ static int share_mode_traverse_fn(struct db_record *rec, void *_state)
 		DEBUG(1, ("ndr_pull_share_mode_lock failed\n"));
 		return 0;
 	}
+
+	for (i=0; i<d->num_share_modes; i++) {
+		struct share_mode_entry *entry = &d->share_modes[i];
+		entry->stale = false; /* [skip] in idl */
+		entry->lease = &d->leases[entry->lease_idx];
+	}
+
 	if (DEBUGLEVEL > 10) {
 		DEBUG(11, ("parse_share_modes:\n"));
 		NDR_PRINT_DEBUG(share_mode_data, d);
-	}
-	for (i=0; i<d->num_share_modes; i++) {
-		d->share_modes[i].stale = false; /* [skip] in idl */
 	}
 
 	ret = state->fn(fid, d, state->private_data);
