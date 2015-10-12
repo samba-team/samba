@@ -300,7 +300,11 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	ctx->id = procid_self();
+	ctx->id = (struct server_id) {
+		.pid = getpid(), .vnn = NONCLUSTER_VNN
+	};
+	ctx->id.unique_id = serverid_get_random_unique_id();
+
 	ctx->event_ctx = ev;
 
 	sec_init();
@@ -393,7 +397,10 @@ NTSTATUS messaging_reinit(struct messaging_context *msg_ctx)
 
 	TALLOC_FREE(msg_ctx->msg_dgm_ref);
 
-	msg_ctx->id = procid_self();
+	msg_ctx->id = (struct server_id) {
+		.pid = getpid(), .vnn = msg_ctx->id.vnn
+	};
+	msg_ctx->id.unique_id = serverid_get_random_unique_id();
 
 	msg_ctx->msg_dgm_ref = messaging_dgm_ref(
 		msg_ctx, msg_ctx->event_ctx, msg_ctx->id.unique_id,
