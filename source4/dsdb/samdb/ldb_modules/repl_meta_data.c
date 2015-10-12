@@ -2897,6 +2897,7 @@ static int replmd_rename_callback(struct ldb_request *req, struct ldb_reply *are
 static int replmd_delete_remove_link(struct ldb_module *module,
 				     const struct dsdb_schema *schema,
 				     struct ldb_dn *dn,
+				     struct GUID *guid,
 				     struct ldb_message_element *el,
 				     const struct dsdb_attribute *sa,
 				     struct ldb_request *parent)
@@ -2907,13 +2908,18 @@ static int replmd_delete_remove_link(struct ldb_module *module,
 
 	for (i=0; i<el->num_values; i++) {
 		struct dsdb_dn *dsdb_dn;
-		NTSTATUS status;
 		int ret;
-		struct GUID guid2;
 		struct ldb_message *msg;
 		const struct dsdb_attribute *target_attr;
 		struct ldb_message_element *el2;
+		const char *dn_str;
 		struct ldb_val dn_val;
+		const char *attrs[] = { NULL, NULL };
+		struct ldb_result *link_res;
+		struct ldb_message *link_msg;
+		struct ldb_message_element *link_el;
+		struct parsed_dn *p;
+		struct parsed_dn *link_dns;
 
 		if (dsdb_dn_is_deleted_val(&el->values[i])) {
 			continue;
@@ -2921,12 +2927,6 @@ static int replmd_delete_remove_link(struct ldb_module *module,
 
 		dsdb_dn = dsdb_dn_parse(tmp_ctx, ldb, &el->values[i], sa->syntax->ldap_oid);
 		if (!dsdb_dn) {
-			talloc_free(tmp_ctx);
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-
-		status = dsdb_get_extended_dn_guid(dsdb_dn->dn, &guid2, "GUID");
-		if (!NT_STATUS_IS_OK(status)) {
 			talloc_free(tmp_ctx);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
@@ -2946,14 +2946,54 @@ static int replmd_delete_remove_link(struct ldb_module *module,
 		if (target_attr == NULL) {
 			continue;
 		}
+		attrs[0] = target_attr->lDAPDisplayName;
 
-		ret = ldb_msg_add_empty(msg, target_attr->lDAPDisplayName, LDB_FLAG_MOD_DELETE, &el2);
+		ret = ldb_msg_add_empty(msg, target_attr->lDAPDisplayName,
+					LDB_FLAG_MOD_DELETE, &el2);
 		if (ret != LDB_SUCCESS) {
 			ldb_module_oom(module);
 			talloc_free(tmp_ctx);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
-		dn_val = data_blob_string_const(ldb_dn_get_linearized(dn));
+
+		ret = dsdb_module_search_dn(module, tmp_ctx, &link_res,
+					    msg->dn, attrs,
+					    DSDB_FLAG_NEXT_MODULE, parent);
+
+		if (ret == LDB_SUCCESS) {
+			talloc_free(tmp_ctx);
+			return ret;
+		}
+
+		link_msg = link_res->msgs[0];
+		link_el = ldb_msg_find_element(link_msg,
+					       target_attr->lDAPDisplayName);
+
+		ret = get_parsed_dns(module, tmp_ctx,
+				     link_el, &link_dns,
+				     target_attr->syntax->ldap_oid, parent);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(tmp_ctx);
+			return ret;
+		}
+		p = parsed_dn_find(link_dns, link_el->num_values, guid, dn);
+		if (p == NULL) {
+			ldb_asprintf_errstring(ldb_module_get_ctx(module),
+					       "Failed to find forward link on %s "
+					       "as %s to remove backlink %s on %s",
+					       ldb_dn_get_linearized(msg->dn),
+					       target_attr->lDAPDisplayName,
+					       sa->lDAPDisplayName,
+					       ldb_dn_get_linearized(dn));
+			talloc_free(tmp_ctx);
+			return LDB_ERR_NO_SUCH_ATTRIBUTE;
+		}
+
+
+		/* This needs to get the Binary DN, by first searching */
+		dn_str = dsdb_dn_get_linearized(tmp_ctx,
+						p->dsdb_dn);
+		dn_val = data_blob_string_const(dn_str);
 		el2->values = &dn_val;
 		el2->num_values = 1;
 
@@ -3149,10 +3189,10 @@ static int replmd_delete_internals(struct ldb_module *module, struct ldb_request
 		}
 	}
 
-	if (deletion_state == OBJECT_NOT_DELETED) {
-		/* get the objects GUID from the search we just did */
-		guid = samdb_result_guid(old_msg, "objectGUID");
+	/* get the objects GUID from the search we just did */
+	guid = samdb_result_guid(old_msg, "objectGUID");
 
+	if (deletion_state == OBJECT_NOT_DELETED) {
 		/* Add a formatted child */
 		retb = ldb_dn_add_child_fmt(new_dn, "%s=%s\\0ADEL:%s",
 					    rdn_name,
@@ -3329,7 +3369,7 @@ static int replmd_delete_internals(struct ldb_module *module, struct ldb_request
 				/* don't remove the rDN */
 				continue;
 			}
-			if (sa->linkID && (sa->linkID & 1)) {
+			if (sa->linkID & 1) {
 				/*
 				  we have a backlink in this object
 				  that needs to be removed. We're not
@@ -3338,7 +3378,9 @@ static int replmd_delete_internals(struct ldb_module *module, struct ldb_request
 				  modify to delete the corresponding
 				  forward link
 				 */
-				ret = replmd_delete_remove_link(module, schema, old_dn, el, sa, req);
+				ret = replmd_delete_remove_link(module, schema,
+								old_dn, &guid,
+								el, sa, req);
 				if (ret != LDB_SUCCESS) {
 					const char *old_dn_str
 						= ldb_dn_get_linearized(old_dn);
@@ -3356,8 +3398,7 @@ static int replmd_delete_internals(struct ldb_module *module, struct ldb_request
 				   directly
 				*/
 				continue;
-			}
-			if (!sa->linkID) {
+			} else if (sa->linkID == 0) {
 				if (ldb_attr_in_list(preserved_attrs, el->name)) {
 					continue;
 				}
