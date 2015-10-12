@@ -24,7 +24,7 @@
 #include "includes.h"
 #include "../librpc/gen_ndr/notify.h"
 #include "smbd/smbd.h"
-#include "lib/sys_rw_data.h"
+#include "lib/util/sys_rw_data.h"
 
 #include <sys/inotify.h>
 

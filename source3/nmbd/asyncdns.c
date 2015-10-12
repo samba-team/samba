@@ -19,7 +19,7 @@
 
 #include "includes.h"
 #include "nmbd/nmbd.h"
-#include "lib/sys_rw_data.h"
+#include "lib/util/sys_rw_data.h"
 
 /***************************************************************************
   Add a DNS result to the name cache.

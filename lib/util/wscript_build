@@ -181,3 +181,9 @@ if not bld.env.SAMBA_UTIL_CORE_ONLY:
                       source='iov_buf.c',
                       local_include=False,
                       private_library=True)
+
+    bld.SAMBA3_LIBRARY('sys_rw',
+                       source='sys_rw.c sys_rw_data.c',
+                       deps='replace iov_buf',
+                       local_include=False,
+                       private_library=True)

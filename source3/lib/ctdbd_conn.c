@@ -23,7 +23,7 @@
 #include "serverid.h"
 #include "ctdbd_conn.h"
 #include "system/select.h"
-#include "lib/sys_rw_data.h"
+#include "lib/util/sys_rw_data.h"
 #include "lib/util/iov_buf.h"
 
 #include "messages.h"

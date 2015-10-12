@@ -30,8 +30,8 @@
 #include "messages.h"
 #include "libcli/security/security.h"
 #include "serverid.h"
-#include "lib/sys_rw.h"
-#include "lib/sys_rw_data.h"
+#include "lib/util/sys_rw.h"
+#include "lib/util/sys_rw_data.h"
 #include "lib/util/util_process.h"
 
 #ifdef HAVE_SYS_PRCTL_H

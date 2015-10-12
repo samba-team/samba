@@ -43,7 +43,7 @@
 #include "lib/util/tevent_unix.h"
 #include "lib/tevent/tevent_internal.h"
 #include "smbd/globals.h"
-#include "lib/sys_rw.h"
+#include "lib/util/sys_rw.h"
 
 #define DEFAULT_VOLFILE_SERVER "localhost"
 

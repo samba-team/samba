@@ -22,7 +22,7 @@
 
 #include "replace.h"
 #include "system/filesys.h"
-#include "lib/sys_rw.h"
+#include "lib/util/sys_rw.h"
 
 /*******************************************************************
 A read wrapper that will deal with EINTR/EWOULDBLOCK
