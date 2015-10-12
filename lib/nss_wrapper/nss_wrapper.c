@@ -3406,7 +3406,21 @@ static int nwrap_gethostbyname_r(const char *name,
 		return -1;
 	}
 
-	memset(buf, '\0', buflen);
+	if (buflen < (addr_list->count * sizeof(void *))) {
+		SAFE_FREE(addr_list->items);
+		SAFE_FREE(addr_list);
+		return ERANGE;
+	}
+
+	/* Copy all to user provided buffer and change
+	 * pointers in returned structure.
+	 * +1 is for ending NULL pointer. */
+	memcpy(buf, addr_list->items, (addr_list->count + 1) * sizeof(void *));
+
+	free(addr_list->items);
+	free(addr_list);
+
+	ret->h_addr_list = (char **)buf;
 	*result = ret;
 	return 0;
 }
