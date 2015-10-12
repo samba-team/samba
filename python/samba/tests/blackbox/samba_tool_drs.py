@@ -167,3 +167,16 @@ class SambaToolDrsTests(samba.tests.BlackboxTestCase):
         shutil.rmtree(os.path.join(self.tempdir, "msg.lock"))
         os.remove(os.path.join(self.tempdir, "names.tdb"))
         shutil.rmtree(os.path.join(self.tempdir, "state"))
+
+    def test_samba_tool_drs_clone_dc_secrets_without_targetdir(self):
+        """Tests 'samba-tool drs clone-dc-database' command without --targetdir."""
+        server_rootdse = self._get_rootDSE(self.dc1)
+        server_ldap_service_name = str(server_rootdse["ldapServiceName"][0])
+        server_realm = server_ldap_service_name.split(":")[0]
+        creds = self.get_credentials()
+        def attempt_clone():
+            out = self.check_output("samba-tool drs clone-dc-database %s --server=%s %s"
+                                    % (server_realm,
+                                       self.dc1,
+                                       self.cmdline_creds))
+        self.assertRaises(samba.tests.BlackboxProcessError, attempt_clone)
