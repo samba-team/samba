@@ -342,7 +342,7 @@ struct imessaging_context *imessaging_init(TALLOC_CTX *mem_ctx,
 	}
 
 	msg->msg_dgm_ref = messaging_dgm_ref(
-		msg, ev, server_id.unique_id, msg->sock_dir, msg->lock_dir,
+		msg, ev, &server_id.unique_id, msg->sock_dir, msg->lock_dir,
 		imessaging_dgm_recv, msg, &ret);
 
 	if (msg->msg_dgm_ref == NULL) {

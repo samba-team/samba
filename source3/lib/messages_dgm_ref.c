@@ -40,7 +40,7 @@ static void msg_dgm_ref_recv(const uint8_t *msg, size_t msg_len,
 			     int *fds, size_t num_fds, void *private_data);
 
 void *messaging_dgm_ref(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-			uint64_t unique,
+			uint64_t *unique,
 			const char *socket_dir,
 			const char *lockfile_dir,
 			void (*recv_cb)(const uint8_t *msg, size_t msg_len,
@@ -82,6 +82,14 @@ void *messaging_dgm_ref(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 		}
 		dgm_pid = getpid();
 	} else {
+		int ret;
+		ret = messaging_dgm_get_unique(getpid(), unique);
+		if (ret != 0) {
+			TALLOC_FREE(result);
+			*err = ret;
+			return NULL;
+		}
+
 		result->tevent_handle = messaging_dgm_register_tevent_context(
 			result, ev);
 		if (result->tevent_handle == NULL) {

@@ -25,7 +25,7 @@
 #include "replace.h"
 
 void *messaging_dgm_ref(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-			uint64_t unique,
+			uint64_t *unique,
 			const char *socket_dir,
 			const char *lockfile_dir,
 			void (*recv_cb)(const uint8_t *msg, size_t msg_len,
