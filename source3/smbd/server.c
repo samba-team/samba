@@ -575,7 +575,6 @@ static void smbd_accept_connection(struct tevent_context *ev,
 	socklen_t in_addrlen = sizeof(addr);
 	int fd;
 	pid_t pid = 0;
-	uint64_t unique_id;
 
 	fd = accept(s->fd, (struct sockaddr *)(void *)&addr,&in_addrlen);
 	if (fd == -1 && errno == EINTR)
@@ -599,12 +598,6 @@ static void smbd_accept_connection(struct tevent_context *ev,
 		return;
 	}
 
-	/*
-	 * Generate a unique id in the parent process so that we use
-	 * the global random state in the parent.
-	 */
-	unique_id = serverid_get_random_unique_id();
-
 	pid = fork();
 	if (pid == 0) {
 		NTSTATUS status = NT_STATUS_OK;
@@ -615,8 +608,6 @@ static void smbd_accept_connection(struct tevent_context *ev,
 		 */
 		talloc_free(s->parent);
 		s = NULL;
-
-		set_my_unique_id(unique_id);
 
 		/* Stop zombies, the parent explicitly handles
 		 * them, counting worker smbds. */
@@ -1362,8 +1353,6 @@ extern void build_options(bool screen);
 		DEBUG(3, ("Becoming a daemon.\n"));
 		become_daemon(Fork, no_process_group, log_stdout);
 	}
-
-        set_my_unique_id(serverid_get_random_unique_id());
 
 #if HAVE_SETPGID
 	/*

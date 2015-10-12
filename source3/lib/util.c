@@ -1960,13 +1960,6 @@ uint32_t get_my_vnn(void)
 	return my_vnn;
 }
 
-static uint64_t my_unique_id = 0;
-
-void set_my_unique_id(uint64_t unique_id)
-{
-	my_unique_id = unique_id;
-}
-
 struct server_id pid_to_procid(pid_t pid)
 {
 	uint64_t unique = 0;

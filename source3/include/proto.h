@@ -436,7 +436,6 @@ uint32_t map_share_mode_to_deny_mode(uint32_t share_access, uint32_t private_opt
 pid_t procid_to_pid(const struct server_id *proc);
 void set_my_vnn(uint32_t vnn);
 uint32_t get_my_vnn(void);
-void set_my_unique_id(uint64_t unique_id);
 struct server_id pid_to_procid(pid_t pid);
 #define serverid_equal(p1, p2) server_id_equal(p1,p2)
 struct server_id interpret_pid(const char *pid_string);

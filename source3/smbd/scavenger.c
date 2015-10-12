@@ -196,7 +196,6 @@ static bool smbd_scavenger_start(struct smbd_scavenger_state *state)
 	struct tevent_fd *fde = NULL;
 	int fds[2];
 	int ret;
-	uint64_t unique_id;
 	bool ok;
 
 	SMB_ASSERT(server_id_equal(&state->parent_id, &self));
@@ -234,8 +233,6 @@ static bool smbd_scavenger_start(struct smbd_scavenger_state *state)
 	smb_set_close_on_exec(fds[0]);
 	smb_set_close_on_exec(fds[1]);
 
-	unique_id = serverid_get_random_unique_id();
-
 	ret = fork();
 	if (ret == -1) {
 		int err = errno;
@@ -251,8 +248,6 @@ static bool smbd_scavenger_start(struct smbd_scavenger_state *state)
 		NTSTATUS status;
 
 		close(fds[0]);
-
-		set_my_unique_id(unique_id);
 
 		status = smbd_reinit_after_fork(state->msg, state->ev,
 						true, "smbd-scavenger");
