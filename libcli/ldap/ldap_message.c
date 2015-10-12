@@ -762,7 +762,7 @@ static struct ldb_val **ldap_decode_substring(TALLOC_CTX *mem_ctx, struct ldb_va
 	}
 	chunks[chunk_num]->length = strlen(value);
 
-	chunks[chunk_num + 1] = '\0';
+	chunks[chunk_num + 1] = NULL;
 
 	return chunks;
 }
