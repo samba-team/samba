@@ -25,7 +25,7 @@
 #include "../common/rb_tree.h"
 #include <ctype.h>
 
-#include "internal/cmdline.h"
+#include "common/cmdline.h"
 
 /* Handle common command line options for ctdb test progs
  */

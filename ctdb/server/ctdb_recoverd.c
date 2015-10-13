@@ -23,7 +23,7 @@
 #include "system/network.h"
 #include "system/wait.h"
 #include "popt.h"
-#include "cmdline.h"
+#include "common/cmdline.h"
 #include "../include/ctdb_client.h"
 #include "../include/ctdb_private.h"
 #include "lib/tdb_wrap/tdb_wrap.h"

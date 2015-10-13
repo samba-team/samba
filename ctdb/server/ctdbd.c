@@ -23,7 +23,7 @@
 #include "system/time.h"
 #include "system/wait.h"
 #include "system/network.h"
-#include "cmdline.h"
+#include "common/cmdline.h"
 #include "../include/ctdb_private.h"
 #include "common/reqid.h"
 #include "common/system.h"
