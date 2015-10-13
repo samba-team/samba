@@ -715,9 +715,15 @@ static struct ndr_pull *ndr_pull_init_flags(struct dcecli_connection *c,
 /* 
    parse the authentication information on a dcerpc response packet
 */
-static NTSTATUS ncacn_pull_request_auth(struct dcecli_connection *c, TALLOC_CTX *mem_ctx, 
-					DATA_BLOB *raw_packet,
-					struct ncacn_packet *pkt)
+static NTSTATUS ncacn_pull_pkt_auth(struct dcecli_connection *c,
+				    TALLOC_CTX *mem_ctx,
+				    enum dcerpc_pkt_type ptype,
+				    uint8_t required_flags,
+				    uint8_t optional_flags,
+				    uint8_t payload_offset,
+				    DATA_BLOB *payload_and_verifier,
+				    DATA_BLOB *raw_packet,
+				    const struct ncacn_packet *pkt)
 {
 	const struct dcerpc_auth tmp_auth = {
 		.auth_type = c->security_state.auth_type,
@@ -729,12 +735,11 @@ static NTSTATUS ncacn_pull_request_auth(struct dcecli_connection *c, TALLOC_CTX 
 	status = dcerpc_ncacn_pull_pkt_auth(&tmp_auth,
 					    c->security_state.generic_state,
 					    mem_ctx,
-					    DCERPC_PKT_RESPONSE,
-					    0, /* required_flags */
-					    DCERPC_PFC_FLAG_FIRST |
-					    DCERPC_PFC_FLAG_LAST,
-					    DCERPC_REQUEST_LENGTH,
-					    &pkt->u.response.stub_and_verifier,
+					    ptype,
+					    required_flags,
+					    optional_flags,
+					    payload_offset,
+					    payload_and_verifier,
 					    raw_packet,
 					    pkt);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_RPC_PROTOCOL_ERROR)) {
@@ -1432,8 +1437,19 @@ static void dcerpc_request_recv_data(struct dcecli_connection *c,
 	  to run the auth routines so that we don't get the sign/seal
 	  info out of step with the server
 	*/
-	if (pkt->ptype == DCERPC_PKT_RESPONSE) {
-		status = ncacn_pull_request_auth(c, raw_packet->data, raw_packet, pkt);
+	switch (pkt->ptype) {
+	case DCERPC_PKT_RESPONSE:
+		status = ncacn_pull_pkt_auth(c, raw_packet->data,
+				   DCERPC_PKT_RESPONSE,
+				   0, /* required_flags */
+				   DCERPC_PFC_FLAG_FIRST |
+				   DCERPC_PFC_FLAG_LAST,
+				   DCERPC_REQUEST_LENGTH,
+				   &pkt->u.response.stub_and_verifier,
+				   raw_packet, pkt);
+		break;
+	default:
+		break;
 	}
 
 	/* find the matching request */
