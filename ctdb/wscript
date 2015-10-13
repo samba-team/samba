@@ -298,7 +298,7 @@ def build(bld):
                                               '''ibwrapper.c ibw_ctdb.c
                                                  ibw_ctdb_init.c'''),
                             includes='include include/internal',
-                            deps='replace')
+                            deps='replace talloc tevent')
         ib_deps = ' ctdb-ib rdmacm ibverbs'
 
     if sys.platform.startswith('linux'):
@@ -685,7 +685,8 @@ def build(bld):
         bld.SAMBA_BINARY('ibwrapper_test',
                          source='ib/ibwrapper_test.c',
                          includes='include include/internal',
-                         deps='replace talloc ctdb-client ctdb-common ' +
+                         deps='''replace talloc ctdb-client ctdb-common
+                                 ctdb-common-util''' +
                               ib_deps,
                          install_path='${CTDB_TEST_LIBDIR}')
 

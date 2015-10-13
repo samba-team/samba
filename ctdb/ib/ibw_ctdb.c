@@ -49,17 +49,8 @@ int ctdb_ibw_node_connect(struct ctdb_node *node)
 
 	assert(cn!=NULL);
 	assert(cn->conn!=NULL);
-	struct sockaddr_in sock_out;
 
-	memset(&sock_out, 0, sizeof(struct sockaddr_in));
-	sock_out.sin_port = htons(node->address.port);
-	sock_out.sin_family = PF_INET;
-	if (ctdb_ibw_get_address(node->ctdb, node->address.address, &sock_out.sin_addr)) {
-		DEBUG(DEBUG_ERR, ("ctdb_ibw_node_connect failed\n"));
-		return -1;
-	}
-
-	rc = ibw_connect(cn->conn, &sock_out, node);
+	rc = ibw_connect(cn->conn, &node->address.ip, node);
 	if (rc) {
 		DEBUG(DEBUG_ERR, ("ctdb_ibw_node_connect/ibw_connect failed - retrying...\n"));
 		/* try again once a second */
