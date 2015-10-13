@@ -719,106 +719,32 @@ static NTSTATUS ncacn_pull_request_auth(struct dcecli_connection *c, TALLOC_CTX 
 					DATA_BLOB *raw_packet,
 					struct ncacn_packet *pkt)
 {
+	const struct dcerpc_auth tmp_auth = {
+		.auth_type = c->security_state.auth_type,
+		.auth_level = c->security_state.auth_level,
+		.auth_context_id = c->security_state.auth_context_id,
+	};
 	NTSTATUS status;
-	struct dcerpc_auth auth;
-	uint32_t auth_length;
 
-	status = dcerpc_verify_ncacn_packet_header(pkt, DCERPC_PKT_RESPONSE,
-					pkt->u.response.stub_and_verifier.length,
-					0, /* required_flags */
-					DCERPC_PFC_FLAG_FIRST |
-					DCERPC_PFC_FLAG_LAST);
+	status = dcerpc_ncacn_pull_pkt_auth(&tmp_auth,
+					    c->security_state.generic_state,
+					    mem_ctx,
+					    DCERPC_PKT_RESPONSE,
+					    0, /* required_flags */
+					    DCERPC_PFC_FLAG_FIRST |
+					    DCERPC_PFC_FLAG_LAST,
+					    DCERPC_REQUEST_LENGTH,
+					    &pkt->u.response.stub_and_verifier,
+					    raw_packet,
+					    pkt);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_RPC_PROTOCOL_ERROR)) {
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	switch (c->security_state.auth_level) {
-	case DCERPC_AUTH_LEVEL_PRIVACY:
-	case DCERPC_AUTH_LEVEL_INTEGRITY:
-		break;
-
-	case DCERPC_AUTH_LEVEL_CONNECT:
-		if (pkt->auth_length != 0) {
-			break;
-		}
-		return NT_STATUS_OK;
-	case DCERPC_AUTH_LEVEL_NONE:
-		if (pkt->auth_length != 0) {
-			return NT_STATUS_INVALID_NETWORK_RESPONSE;
-		}
-		return NT_STATUS_OK;
-
-	default:
-		return NT_STATUS_INVALID_LEVEL;
-	}
-
-	if (pkt->auth_length == 0) {
-		return NT_STATUS_INVALID_NETWORK_RESPONSE;
-	}
-
-	if (c->security_state.generic_state == NULL) {
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-
-	status = dcerpc_pull_auth_trailer(pkt, mem_ctx,
-					  &pkt->u.response.stub_and_verifier,
-					  &auth, &auth_length, false);
-	NT_STATUS_NOT_OK_RETURN(status);
-
-	pkt->u.response.stub_and_verifier.length -= auth_length;
-
-	if (auth.auth_type != c->security_state.auth_type) {
-		return NT_STATUS_RPC_PROTOCOL_ERROR;
-	}
-
-	if (auth.auth_level != c->security_state.auth_level) {
-		return NT_STATUS_RPC_PROTOCOL_ERROR;
-	}
-
-	if (auth.auth_context_id != c->security_state.auth_context_id) {
-		return NT_STATUS_RPC_PROTOCOL_ERROR;
-	}
-
-	/* check signature or unseal the packet */
-	switch (c->security_state.auth_level) {
-	case DCERPC_AUTH_LEVEL_PRIVACY:
-		status = gensec_unseal_packet(c->security_state.generic_state, 
-					      raw_packet->data + DCERPC_REQUEST_LENGTH,
-					      pkt->u.response.stub_and_verifier.length, 
-					      raw_packet->data,
-					      raw_packet->length - auth.credentials.length,
-					      &auth.credentials);
-		memcpy(pkt->u.response.stub_and_verifier.data,
-		       raw_packet->data + DCERPC_REQUEST_LENGTH,
-		       pkt->u.response.stub_and_verifier.length);
-		break;
-		
-	case DCERPC_AUTH_LEVEL_INTEGRITY:
-		status = gensec_check_packet(c->security_state.generic_state, 
-					     pkt->u.response.stub_and_verifier.data, 
-					     pkt->u.response.stub_and_verifier.length, 
-					     raw_packet->data,
-					     raw_packet->length - auth.credentials.length,
-					     &auth.credentials);
-		break;
-
-	case DCERPC_AUTH_LEVEL_CONNECT:
-		/* for now we ignore possible signatures here */
-		status = NT_STATUS_OK;
-		break;
-
-	default:
-		status = NT_STATUS_INVALID_LEVEL;
-		break;
-	}
-	
-	/* remove the indicated amount of padding */
-	if (pkt->u.response.stub_and_verifier.length < auth.auth_pad_length) {
-		return NT_STATUS_INFO_LENGTH_MISMATCH;
-	}
-	pkt->u.response.stub_and_verifier.length -= auth.auth_pad_length;
-
-	return status;
+	return NT_STATUS_OK;
 }
 
 
