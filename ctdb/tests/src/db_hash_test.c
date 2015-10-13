@@ -27,9 +27,8 @@ static void do_test(enum db_hash_type type)
 {
 	struct db_hash_context *dh;
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
-	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
-	uint8_t *key = (uint8_t *)talloc_strdup(tmp_ctx, "This is a long key");
-	uint8_t *value = (uint8_t *)talloc_strdup(tmp_ctx, "This is a long value");
+	uint8_t key[] = "This is a long key";
+	uint8_t value[] = "This is a long value";
 	int ret;
 
 	ret = db_hash_init(mem_ctx, "foobar", 1024, type, &dh);
