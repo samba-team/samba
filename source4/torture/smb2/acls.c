@@ -20,13 +20,17 @@
 */
 
 #include "includes.h"
+#include "lib/cmdline/popt_common.h"
 #include "libcli/smb2/smb2.h"
 #include "libcli/smb2/smb2_calls.h"
+#include "libcli/smb/smbXcli_base.h"
 #include "torture/torture.h"
+#include "libcli/resolve/resolve.h"
 #include "torture/util.h"
 #include "torture/smb2/proto.h"
 #include "libcli/security/security.h"
 #include "librpc/gen_ndr/ndr_security.h"
+#include "lib/param/param.h"
 
 #define CHECK_STATUS(status, correct) do { \
 	if (!NT_STATUS_EQUAL(status, correct)) { \
@@ -1855,6 +1859,231 @@ done:
 }
 #endif
 
+/**
+ * SMB2 connect with explicit share
+ **/
+static bool torture_smb2_con_share(struct torture_context *tctx,
+                           const char *share,
+                           struct smb2_tree **tree)
+{
+        struct smbcli_options options;
+        NTSTATUS status;
+        const char *host = torture_setting_string(tctx, "host", NULL);
+        struct cli_credentials *credentials = cmdline_credentials;
+
+        lpcfg_smbcli_options(tctx->lp_ctx, &options);
+
+        status = smb2_connect_ext(tctx,
+                                  host,
+                                  lpcfg_smb_ports(tctx->lp_ctx),
+                                  share,
+                                  lpcfg_resolve_context(tctx->lp_ctx),
+                                  credentials,
+                                  0,
+                                  tree,
+                                  tctx->ev,
+                                  &options,
+                                  lpcfg_socket_options(tctx->lp_ctx),
+                                  lpcfg_gensec_settings(tctx, tctx->lp_ctx)
+                                  );
+        if (!NT_STATUS_IS_OK(status)) {
+                printf("Failed to connect to SMB2 share \\\\%s\\%s - %s\n",
+                       host, share, nt_errstr(status));
+                return false;
+        }
+        return true;
+}
+
+static bool test_access_based(struct torture_context *tctx,
+				struct smb2_tree *tree)
+{
+	struct smb2_tree *tree1 = NULL;
+	NTSTATUS status;
+	struct smb2_create io;
+	const char *fname = BASEDIR "\\testfile";
+	bool ret = true;
+	struct smb2_handle fhandle, dhandle;
+	union smb_fileinfo q;
+	union smb_setfileinfo set;
+	struct security_descriptor *sd, *sd_orig=NULL;
+	const char *owner_sid;
+	uint32_t flags = 0;
+	/*
+	 * Can't test without SEC_STD_READ_CONTROL as we
+	 * own the file and implicitly have SEC_STD_READ_CONTROL.
+	*/
+	uint32_t access_masks[] = {
+		/* Full READ access. */
+		SEC_STD_READ_CONTROL|FILE_READ_DATA|
+		FILE_READ_ATTRIBUTES|FILE_READ_EA,
+
+		/* Missing FILE_READ_EA. */
+		SEC_STD_READ_CONTROL|FILE_READ_DATA|
+		FILE_READ_ATTRIBUTES,
+
+		/* Missing FILE_READ_ATTRIBUTES. */
+		SEC_STD_READ_CONTROL|FILE_READ_DATA|
+		FILE_READ_EA,
+
+		/* Missing FILE_READ_DATA. */
+		SEC_STD_READ_CONTROL|
+		FILE_READ_ATTRIBUTES|FILE_READ_EA,
+	};
+	unsigned int i;
+	unsigned int count;
+	struct smb2_find f;
+	union smb_search_data *d;
+
+	ZERO_STRUCT(fhandle);
+	ZERO_STRUCT(dhandle);
+
+	if (!torture_smb2_con_share(tctx, "hideunread", &tree1)) {
+		torture_result(tctx, TORTURE_FAIL, "(%s) Unable to connect "
+			"to share 'hideunread'\n",
+                       __location__);
+		ret = false;
+		goto done;
+	}
+
+	flags = smb2cli_tcon_flags(tree1->smbXcli);
+
+	smb2_util_unlink(tree1, fname);
+	smb2_deltree(tree1, BASEDIR);
+
+	torture_comment(tctx, "TESTING ACCESS BASED ENUMERATION\n");
+
+	if ((flags & SMB2_SHAREFLAG_ACCESS_BASED_DIRECTORY_ENUM)==0) {
+		torture_result(tctx, TORTURE_FAIL, "(%s) No access enumeration "
+			"on share 'hideunread'\n",
+                       __location__);
+		ret = false;
+		goto done;
+	}
+
+	if (!smb2_util_setup_dir(tctx, tree1, BASEDIR)) {
+		torture_result(tctx, TORTURE_FAIL, "(%s) Unable to setup %s\n",
+                       __location__, BASEDIR);
+		ret = false;
+		goto done;
+	}
+
+	/* Get a handle to the BASEDIR directory. */
+	status = torture_smb2_testdir(tree1, BASEDIR, &dhandle);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	smb2_util_close(tree1, dhandle);
+	ZERO_STRUCT(dhandle);
+
+	ZERO_STRUCT(io);
+	io.level = RAW_OPEN_SMB2;
+	io.in.create_flags = 0;
+	io.in.desired_access = SEC_RIGHTS_FILE_ALL;
+	io.in.create_options = 0;
+	io.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	io.in.share_access = 0;
+	io.in.alloc_size = 0;
+	io.in.create_disposition = NTCREATEX_DISP_CREATE;
+	io.in.impersonation_level = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.in.security_flags = 0;
+	io.in.fname = fname;
+
+	status = smb2_create(tree1, tctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fhandle = io.out.file.handle;
+
+	torture_comment(tctx, "get the original sd\n");
+	q.query_secdesc.level = RAW_FILEINFO_SEC_DESC;
+	q.query_secdesc.in.file.handle = fhandle;
+	q.query_secdesc.in.secinfo_flags = SECINFO_DACL | SECINFO_OWNER;
+	status = smb2_getinfo_file(tree1, tctx, &q);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	sd_orig = q.query_secdesc.out.sd;
+
+	owner_sid = dom_sid_string(tctx, sd_orig->owner_sid);
+
+	torture_comment(tctx, "owner_sid is %s\n", owner_sid);
+
+	/* Setup for the search. */
+	ZERO_STRUCT(f);
+	f.in.pattern            = "*";
+	f.in.continue_flags     = SMB2_CONTINUE_FLAG_REOPEN;
+	f.in.max_response_size  = 0x1000;
+	f.in.level              = SMB2_FIND_DIRECTORY_INFO;
+
+	for (i = 0; i < ARRAY_SIZE(access_masks); i++) {
+
+		sd = security_descriptor_dacl_create(tctx,
+					0, NULL, NULL,
+					owner_sid,
+					SEC_ACE_TYPE_ACCESS_ALLOWED,
+					access_masks[i]|SEC_STD_SYNCHRONIZE,
+					0,
+					NULL);
+
+		set.set_secdesc.level = RAW_SFILEINFO_SEC_DESC;
+		set.set_secdesc.in.file.handle = fhandle;
+		set.set_secdesc.in.secinfo_flags = SECINFO_DACL;
+		set.set_secdesc.in.sd = sd;
+		status = smb2_setinfo_file(tree1, &set);
+		CHECK_STATUS(status, NT_STATUS_OK);
+
+		/* Now see if we can see the file in a directory listing. */
+
+		/* Re-open dhandle. */
+		status = torture_smb2_testdir(tree1, BASEDIR, &dhandle);
+		CHECK_STATUS(status, NT_STATUS_OK);
+		f.in.file.handle = dhandle;
+
+		count = 0;
+		d = NULL;
+		status = smb2_find_level(tree1, tree1, &f, &count, &d);
+		TALLOC_FREE(d);
+
+		CHECK_STATUS(status, NT_STATUS_OK);
+
+		smb2_util_close(tree1, dhandle);
+		ZERO_STRUCT(dhandle);
+
+		if (i == 0) {
+			/* We should see the first sd. */
+			if (count != 3) {
+				torture_result(tctx, TORTURE_FAIL,
+					"(%s) Normal SD - Unable "
+					"to see file %s\n",
+					__location__,
+					BASEDIR);
+				ret = false;
+				goto done;
+			}
+		} else {
+			/* But no others. */
+			if (count != 2) {
+				torture_result(tctx, TORTURE_FAIL,
+					"(%s) SD 0x%x - can "
+					"see file %s\n",
+					__location__,
+					access_masks[i],
+					BASEDIR);
+				ret = false;
+				goto done;
+			}
+		}
+	}
+
+done:
+
+	if (tree1) {
+		smb2_util_close(tree1, fhandle);
+		smb2_util_close(tree1, dhandle);
+		smb2_util_unlink(tree1, fname);
+		smb2_deltree(tree1, BASEDIR);
+		smb2_tdis(tree1);
+		smb2_logoff(tree1->session);
+	}
+	smb2_tdis(tree);
+	smb2_logoff(tree->session);
+	return ret;
+}
+
 /*
    basic testing of SMB2 ACLs
 */
@@ -1872,6 +2101,7 @@ struct torture_suite *torture_smb2_acls_init(void)
 	/* XXX This test does not work against XP or Vista. */
 	torture_suite_add_1smb2_test(suite, "GETSET", test_sd_get_set);
 #endif
+	torture_suite_add_1smb2_test(suite, "ACCESSBASED", test_access_based);
 
 	suite->description = talloc_strdup(suite, "SMB2-ACLS tests");
 
