@@ -127,8 +127,11 @@ def offline_remove_ntds_dc(samdb, ntds_dn,
     res = samdb.search("",
                        scope=ldb.SCOPE_BASE, attrs=["dsServiceName"])
     assert len(res) == 1
-    my_serviceName = res[0]["dsServiceName"][0]
+    my_serviceName = ldb.Dn(samdb, res[0]["dsServiceName"][0])
     server_dn = ntds_dn.parent()
+
+    if my_serviceName == ntds_dn:
+        raise demoteException("Refusing to demote our own DSA: %s " % my_serviceName)
 
     try:
         msgs = samdb.search(base=ntds_dn, expression="objectClass=ntdsDSA",
@@ -186,7 +189,8 @@ def offline_remove_ntds_dc(samdb, ntds_dn,
 
 def remove_dc(samdb, dc_name):
 
-    # TODO: Check if this is the last server
+    # TODO: Check if this is the last server (covered a mostly by
+    # refusing to remove our own name)
 
     samdb.transaction_start()
 
