@@ -5077,33 +5077,42 @@ static int nwrap_getaddrinfo(const char *node,
 	}
 
 	if (service != NULL && service[0] != '\0') {
-		if (isdigit((int)service[0])) {
-			port = (unsigned short)atoi(service);
+		const char *proto = NULL;
+		struct servent *s;
+		char *end_ptr;
+		long sl;
+
+		errno = 0;
+		sl = strtol(service, &end_ptr, 10);
+
+		if (*end_ptr == '\0' || end_ptr != service) {
+			port = sl;
+			goto valid_port;
+		} else if (hints->ai_flags & AI_NUMERICSERV) {
+			return EAI_SERVICE;
+		}
+
+		if (hints->ai_protocol != 0) {
+			struct protoent *pent;
+
+			pent = getprotobynumber(hints->ai_protocol);
+			if (pent != NULL) {
+				proto = pent->p_name;
+			}
+		}
+
+		s = getservbyname(service, proto);
+		if (s != NULL) {
+			port = ntohs(s->s_port);
 		} else {
-			const char *proto = NULL;
-			struct servent *s;
-
-			if (hints->ai_protocol != 0) {
-				struct protoent *pent;
-
-				pent = getprotobynumber(hints->ai_protocol);
-				if (pent != NULL) {
-					proto = pent->p_name;
-				}
+			if (p != NULL) {
+				freeaddrinfo(p);
 			}
-
-			s = getservbyname(service, proto);
-			if (s != NULL) {
-				port = ntohs(s->s_port);
-			} else {
-				if (p != NULL) {
-					freeaddrinfo(p);
-				}
-				return EAI_SERVICE;
-			}
+			return EAI_SERVICE;
 		}
 	}
 
+valid_port:
 	rc = 0;
 	if (hints->ai_family == AF_UNSPEC || hints->ai_family == AF_INET) {
 		rc = inet_pton(AF_INET, node, &addr.in.v4);
