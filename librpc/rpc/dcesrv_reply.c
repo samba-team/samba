@@ -130,8 +130,6 @@ NTSTATUS dcesrv_fault_with_flags(struct dcesrv_call_state *call,
 		return status;
 	}
 
-	dcerpc_set_frag_length(&rep->blob, rep->blob.length);
-
 	DLIST_ADD_END(call->replies, rep);
 	dcesrv_call_set_list(call, DCESRV_LIST_CALL_LIST);
 
