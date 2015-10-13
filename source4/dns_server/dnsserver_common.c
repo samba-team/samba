@@ -138,7 +138,7 @@ WERROR dns_common_lookup(struct ldb_context *samdb,
 	if (ret != LDB_SUCCESS) {
 		/* TODO: we need to check if there's a glue record we need to
 		 * create a referral to */
-		return DNS_ERR(NAME_ERROR);
+		return DNS_ERR(SERVER_FAILURE);
 	}
 
 	if (tombstoned != NULL) {
