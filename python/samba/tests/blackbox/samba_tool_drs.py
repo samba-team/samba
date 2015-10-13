@@ -161,6 +161,11 @@ class SambaToolDrsTests(samba.tests.BlackboxTestCase):
         # The clone should pretend to be the source server
         self.assertEqual(ds_name, server_ds_name)
         self.assertEqual(ldap_service_name, server_ldap_service_name)
+
+        # While we have this cloned, try demoting the other server on the clone
+        out = self.check_output("samba-tool domain demote --remove-other-dead-server=%s -H %s/private/sam.ldb"
+                                % (self.dc2,
+                                   self.tempdir))
         shutil.rmtree(os.path.join(self.tempdir, "private"))
         shutil.rmtree(os.path.join(self.tempdir, "etc"))
         shutil.rmtree(os.path.join(self.tempdir, "msg.lock"))
