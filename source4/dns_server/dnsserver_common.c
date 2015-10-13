@@ -149,15 +149,15 @@ WERROR dns_common_lookup(struct ldb_context *samdb,
 	el = ldb_msg_find_element(msg, "dnsRecord");
 	if (el == NULL) {
 		TALLOC_FREE(msg);
+		/*
+		 * records produced by older Samba releases
+		 * keep dnsNode objects without dnsRecord and
+		 * without setting dNSTombstoned=TRUE.
+		 *
+		 * We just pretend they're tombstones.
+		 */
 		if (tombstoned != NULL) {
 			struct dnsp_DnssrvRpcRecord *recs;
-			/*
-			 * records produced by older Samba releases
-			 * keep dnsNode objects without dnsRecord and
-			 * without setting dNSTombstoned=TRUE.
-			 *
-			 * We just pretend they're tombstones.
-			 */
 			recs = talloc_array(mem_ctx,
 					    struct dnsp_DnssrvRpcRecord,
 					    1);
@@ -179,8 +179,14 @@ WERROR dns_common_lookup(struct ldb_context *samdb,
 			*records = recs;
 			*num_records = 1;
 			return WERR_OK;
+		} else {
+			/*
+			 * Because we are not looking for a tombstone
+			 * in this codepath, we just pretend it does
+			 * not exist at all.
+			 */
+			return WERR_DNS_ERROR_NAME_DOES_NOT_EXIST;
 		}
-		return DNS_ERR(NAME_ERROR);
 	}
 
 	werr = dns_common_extract(el, mem_ctx, records, num_records);
