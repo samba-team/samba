@@ -31,22 +31,21 @@
 #include "libcli/resolve/resolve.h"
 #include "lib/param/param.h"
 
-#define CHECK_VAL(v, correct) do { \
-	if ((v) != (correct)) { \
-		torture_result(tctx, TORTURE_FAIL, "(%s): wrong value for %s got 0x%x - should be 0x%x\n", \
-				__location__, #v, (int)v, (int)correct); \
-		ret = false; \
-	}} while (0)
-
-#define CHECK_CREATED(__io, __created, __attribute)			\
-	do {								\
-		CHECK_VAL((__io)->out.create_action, NTCREATEX_ACTION_ ## __created); \
-		CHECK_VAL((__io)->out.alloc_size, 0);			\
-		CHECK_VAL((__io)->out.size, 0);				\
-		CHECK_VAL((__io)->out.file_attr, (__attribute));	\
-		CHECK_VAL((__io)->out.reserved2, 0);			\
+#define CHECK_CREATED(tctx, __io, __created, __attribute)			\
+	do {									\
+		torture_assert_int_equal(tctx, (__io)->out.create_action,	\
+						NTCREATEX_ACTION_ ## __created,	\
+						"out.create_action incorrect");	\
+		torture_assert_int_equal(tctx, (__io)->out.alloc_size, 0,	\
+						"out.alloc_size incorrect");	\
+		torture_assert_int_equal(tctx, (__io)->out.size, 0,		\
+						"out.size incorrect");		\
+		torture_assert_int_equal(tctx, (__io)->out.file_attr,		\
+						(__attribute),			\
+						"out.file_attr incorrect");	\
+		torture_assert_int_equal(tctx, (__io)->out.reserved2, 0,	\
+				"out.reserverd2 incorrect");			\
 	} while(0)
-
 
 /**
  * basic test for doing a session reconnect
@@ -81,8 +80,10 @@ bool test_session_reconnect1(struct torture_context *tctx, struct smb2_tree *tre
 					"smb2_create failed");
 	_h1 = io1.out.file.handle;
 	h1 = &_h1;
-	CHECK_CREATED(&io1, CREATED, FILE_ATTRIBUTE_ARCHIVE);
-	CHECK_VAL(io1.out.oplock_level, smb2_util_oplock_level("b"));
+	CHECK_CREATED(tctx, &io1, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	torture_assert_int_equal(tctx, io1.out.oplock_level,
+					smb2_util_oplock_level("b"),
+					"oplock_level incorrect");
 
 	/* disconnect, reconnect and then do durable reopen */
 	previous_session_id = smb2cli_session_current_id(tree->session->smbXcli);
@@ -112,8 +113,10 @@ bool test_session_reconnect1(struct torture_context *tctx, struct smb2_tree *tre
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
 					"smb2_create failed");
 
-	CHECK_CREATED(&io2, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
-	CHECK_VAL(io2.out.oplock_level, smb2_util_oplock_level("b"));
+	CHECK_CREATED(tctx, &io2, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
+	torture_assert_int_equal(tctx, io1.out.oplock_level,
+					smb2_util_oplock_level("b"),
+					"oplock_level incorrect");
 	_h2 = io2.out.file.handle;
 	h2 = &_h2;
 
@@ -170,8 +173,10 @@ bool test_session_reconnect2(struct torture_context *tctx, struct smb2_tree *tre
 					"smb2_create failed");
 	_h1 = io1.out.file.handle;
 	h1 = &_h1;
-	CHECK_CREATED(&io1, CREATED, FILE_ATTRIBUTE_ARCHIVE);
-	CHECK_VAL(io1.out.oplock_level, smb2_util_oplock_level("b"));
+	CHECK_CREATED(tctx, &io1, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	torture_assert_int_equal(tctx, io1.out.oplock_level,
+					smb2_util_oplock_level("b"),
+					"oplock_level incorrect");
 
 	/* disconnect, reconnect and then do durable reopen */
 	previous_session_id = smb2cli_session_current_id(tree->session->smbXcli);
@@ -231,8 +236,10 @@ bool test_session_reauth1(struct torture_context *tctx, struct smb2_tree *tree)
 					"smb2_create failed");
 	_h1 = io1.out.file.handle;
 	h1 = &_h1;
-	CHECK_CREATED(&io1, CREATED, FILE_ATTRIBUTE_ARCHIVE);
-	CHECK_VAL(io1.out.oplock_level, smb2_util_oplock_level("b"));
+	CHECK_CREATED(tctx, &io1, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	torture_assert_int_equal(tctx, io1.out.oplock_level,
+					smb2_util_oplock_level("b"),
+					"oplock_level incorrect");
 
 	status = smb2_session_setup_spnego(tree->session,
 					   cmdline_credentials,
@@ -305,8 +312,10 @@ bool test_session_reauth2(struct torture_context *tctx, struct smb2_tree *tree)
 					"smb2_create failed");
 	_h1 = io1.out.file.handle;
 	h1 = &_h1;
-	CHECK_CREATED(&io1, CREATED, FILE_ATTRIBUTE_ARCHIVE);
-	CHECK_VAL(io1.out.oplock_level, smb2_util_oplock_level("b"));
+	CHECK_CREATED(tctx, &io1, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	torture_assert_int_equal(tctx, io1.out.oplock_level,
+					smb2_util_oplock_level("b"),
+					"oplock_level incorrect");
 
 	/* re-authenticate as anonymous */
 
@@ -394,8 +403,10 @@ bool test_session_reauth3(struct torture_context *tctx, struct smb2_tree *tree)
 					"smb2_create failed");
 	_h1 = io1.out.file.handle;
 	h1 = &_h1;
-	CHECK_CREATED(&io1, CREATED, FILE_ATTRIBUTE_ARCHIVE);
-	CHECK_VAL(io1.out.oplock_level, smb2_util_oplock_level("b"));
+	CHECK_CREATED(tctx, &io1, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	torture_assert_int_equal(tctx, io1.out.oplock_level,
+					smb2_util_oplock_level("b"),
+					"oplock_level incorrect");
 
 	/* get the security descriptor */
 
@@ -505,8 +516,10 @@ bool test_session_reauth4(struct torture_context *tctx, struct smb2_tree *tree)
 					"smb2_create failed");
 	_h1 = io1.out.file.handle;
 	h1 = &_h1;
-	CHECK_CREATED(&io1, CREATED, FILE_ATTRIBUTE_ARCHIVE);
-	CHECK_VAL(io1.out.oplock_level, smb2_util_oplock_level("b"));
+	CHECK_CREATED(tctx, &io1, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	torture_assert_int_equal(tctx, io1.out.oplock_level,
+					smb2_util_oplock_level("b"),
+					"oplock_level incorrect");
 
 	/* get the security descriptor */
 
@@ -630,7 +643,7 @@ bool test_session_reauth5(struct torture_context *tctx, struct smb2_tree *tree)
 	snprintf(fname, sizeof(fname), "%s\\file.dat", dname);
 
 	ok = smb2_util_setup_dir(tctx, tree, dname);
-	CHECK_VAL(ok, true);
+	torture_assert(tctx, ok, "smb2_util_setup_dir not ok");
 
 	status = torture_smb2_testdir(tree, dname, &_dh1);
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
@@ -646,8 +659,10 @@ bool test_session_reauth5(struct torture_context *tctx, struct smb2_tree *tree)
 					"smb2_create failed");
 	_h1 = io1.out.file.handle;
 	h1 = &_h1;
-	CHECK_CREATED(&io1, CREATED, FILE_ATTRIBUTE_ARCHIVE);
-	CHECK_VAL(io1.out.oplock_level, smb2_util_oplock_level("b"));
+	CHECK_CREATED(tctx, &io1, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	torture_assert_int_equal(tctx, io1.out.oplock_level,
+					smb2_util_oplock_level("b"),
+					"oplock_level incorrect");
 
 	/* get the security descriptor */
 
@@ -884,8 +899,10 @@ bool test_session_reauth5(struct torture_context *tctx, struct smb2_tree *tree)
 					"smb2_create failed");
 	_h1 = io1.out.file.handle;
 	h1 = &_h1;
-	CHECK_CREATED(&io1, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
-	CHECK_VAL(io1.out.oplock_level, smb2_util_oplock_level("b"));
+	CHECK_CREATED(tctx, &io1, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
+	torture_assert_int_equal(tctx, io1.out.oplock_level,
+					smb2_util_oplock_level("b"),
+					"oplock_level incorrect");
 
 	/* try to access the file via the old handle */
 
@@ -961,8 +978,10 @@ bool test_session_reauth6(struct torture_context *tctx, struct smb2_tree *tree)
 					"smb2_create failed");
 	_h1 = io1.out.file.handle;
 	h1 = &_h1;
-	CHECK_CREATED(&io1, CREATED, FILE_ATTRIBUTE_ARCHIVE);
-	CHECK_VAL(io1.out.oplock_level, smb2_util_oplock_level("b"));
+	CHECK_CREATED(tctx, &io1, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	torture_assert_int_equal(tctx, io1.out.oplock_level,
+					smb2_util_oplock_level("b"),
+					"oplock_level incorrect");
 
 	/*
 	 * reauthentication with invalid credentials:
@@ -979,7 +998,7 @@ bool test_session_reauth6(struct torture_context *tctx, struct smb2_tree *tree)
 
 	ok = cli_credentials_set_password(broken_creds, corrupted_password,
 					  CRED_SPECIFIED);
-	CHECK_VAL(ok, true);
+	torture_assert(tctx, ok, "cli_credentials_set_password not ok");
 
 	status = smb2_session_setup_spnego(tree->session,
 					   broken_creds,
@@ -1085,8 +1104,10 @@ static bool test_session_expire1(struct torture_context *tctx)
 					"smb2_create failed");
 	_h1 = io1.out.file.handle;
 	h1 = &_h1;
-	CHECK_CREATED(&io1, CREATED, FILE_ATTRIBUTE_ARCHIVE);
-	CHECK_VAL(io1.out.oplock_level, smb2_util_oplock_level("b"));
+	CHECK_CREATED(tctx, &io1, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	torture_assert_int_equal(tctx, io1.out.oplock_level,
+					smb2_util_oplock_level("b"),
+					"oplock_level incorrect");
 
 	/* get the security descriptor */
 
@@ -1186,8 +1207,10 @@ bool test_session_bind1(struct torture_context *tctx, struct smb2_tree *tree1)
 					"smb2_create failed");
 	_h1 = io1.out.file.handle;
 	h1 = &_h1;
-	CHECK_CREATED(&io1, CREATED, FILE_ATTRIBUTE_ARCHIVE);
-	CHECK_VAL(io1.out.oplock_level, smb2_util_oplock_level("b"));
+	CHECK_CREATED(tctx, &io1, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	torture_assert_int_equal(tctx, io1.out.oplock_level,
+					smb2_util_oplock_level("b"),
+					"oplock_level incorrect");
 
 	status = smb2_connect(tctx,
 			      host,
