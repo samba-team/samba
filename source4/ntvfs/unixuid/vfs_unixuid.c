@@ -76,12 +76,15 @@ static NTSTATUS set_unix_security(struct security_unix_token *sec)
 	samba_seteuid(0);
 
 	if (samba_setgroups(sec->ngroups, sec->groups) != 0) {
+		DBG_ERR("*** samba_setgroups failed\n");
 		return NT_STATUS_ACCESS_DENIED;
 	}
 	if (samba_setegid(sec->gid) != 0) {
+		DBG_ERR("*** samba_setegid(%u) failed\n", sec->gid);
 		return NT_STATUS_ACCESS_DENIED;
 	}
 	if (samba_seteuid(sec->uid) != 0) {
+		DBG_ERR("*** samba_seteuid(%u) failed\n", sec->uid);
 		return NT_STATUS_ACCESS_DENIED;
 	}
 	return NT_STATUS_OK;
