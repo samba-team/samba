@@ -132,6 +132,7 @@ sub check_or_start($$$)
 		}
 
 		$ENV{UID_WRAPPER} = "1";
+		$ENV{UID_WRAPPER_ROOT} = "1";
 
 		$ENV{MAKE_TEST_BINARY} = Samba::bindir_path($self, "samba");
 		my @preargs = ();
