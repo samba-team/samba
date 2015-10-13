@@ -1343,6 +1343,15 @@ bool get_dir_entry(TALLOC_CTX *ctx,
 static bool user_can_read_file(connection_struct *conn,
 			       struct smb_filename *smb_fname)
 {
+	NTSTATUS status;
+	uint32_t rejected_share_access = 0;
+	uint32_t rejected_mask = 0;
+	struct security_descriptor *sd = NULL;
+	uint32_t access_mask = FILE_READ_DATA|
+				FILE_READ_EA|
+				FILE_READ_ATTRIBUTES|
+				SEC_STD_READ_CONTROL;
+
 	/*
 	 * Never hide files from the root user.
 	 * We use (uid_t)0 here not sec_initial_uid()
@@ -1353,10 +1362,59 @@ static bool user_can_read_file(connection_struct *conn,
 		return True;
 	}
 
-	return NT_STATUS_IS_OK(smbd_check_access_rights(conn,
-				smb_fname,
+	/*
+	 * We can't directly use smbd_check_access_rights()
+	 * here, as this implicitly grants FILE_READ_ATTRIBUTES
+	 * which the Windows access-based-enumeration code
+	 * explicitly checks for on the file security descriptor.
+	 * See bug:
+	 *
+	 * https://bugzilla.samba.org/show_bug.cgi?id=10252
+	 *
+	 * and the smb2.acl2.ACCESSBASED test for details.
+	 */
+
+	rejected_share_access = access_mask & ~(conn->share_access);
+	if (rejected_share_access) {
+		DEBUG(10, ("rejected share access 0x%x "
+			"on %s (0x%x)\n",
+			(unsigned int)access_mask,
+			smb_fname_str_dbg(smb_fname),
+			(unsigned int)rejected_share_access ));
+		return false;
+        }
+
+	status = SMB_VFS_GET_NT_ACL(conn,
+			smb_fname->base_name,
+			(SECINFO_OWNER |
+			 SECINFO_GROUP |
+			 SECINFO_DACL),
+			talloc_tos(),
+			&sd);
+
+	if (!NT_STATUS_IS_OK(status)) {
+                DEBUG(10, ("Could not get acl "
+			"on %s: %s\n",
+			smb_fname_str_dbg(smb_fname),
+			nt_errstr(status)));
+		return false;
+        }
+
+	status = se_file_access_check(sd,
+				get_current_nttok(conn),
 				false,
-				FILE_READ_DATA));
+				access_mask,
+				&rejected_mask);
+
+        TALLOC_FREE(sd);
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+		DEBUG(10,("rejected bits 0x%x read access for %s\n",
+			(unsigned int)rejected_mask,
+			smb_fname_str_dbg(smb_fname) ));
+		return false;
+        }
+	return true;
 }
 
 /*******************************************************************
