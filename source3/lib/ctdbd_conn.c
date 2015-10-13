@@ -30,7 +30,6 @@
 
 /* paths to these include files come from --with-ctdb= in configure */
 
-#include "ctdb.h"
 #include "ctdb_private.h"
 
 struct ctdbd_srvid_cb {
