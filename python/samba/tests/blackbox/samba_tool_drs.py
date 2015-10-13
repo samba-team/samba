@@ -20,6 +20,7 @@
 import samba.tests
 import shutil
 import os
+import ldb
 
 class SambaToolDrsTests(samba.tests.BlackboxTestCase):
     """Blackbox test case for samba-tool drs."""
@@ -149,6 +150,7 @@ class SambaToolDrsTests(samba.tests.BlackboxTestCase):
                                    self.tempdir))
         ldb_rootdse = self._get_rootDSE("tdb://" + os.path.join(self.tempdir, "private", "sam.ldb"), ldap_only=False)
         nc_name = ldb_rootdse["defaultNamingContext"]
+        config_nc_name = ldb_rootdse["configurationNamingContext"]
         ds_name = ldb_rootdse["dsServiceName"]
         ldap_service_name = str(server_rootdse["ldapServiceName"][0])
 
@@ -162,6 +164,9 @@ class SambaToolDrsTests(samba.tests.BlackboxTestCase):
         self.assertEqual(ds_name, server_ds_name)
         self.assertEqual(ldap_service_name, server_ldap_service_name)
 
+        server_dn = samdb.searchone("serverReferenceBL", "cn=%s,ou=domain controllers,%s" % (self.dc2, server_nc_name))
+        ntds_guid = samdb.searchone("objectGUID", "cn=ntds settings,%s" % server_dn)
+
         def demote_self():
             # While we have this cloned, try demoting the other server on the clone
             out = self.check_output("samba-tool domain demote --remove-other-dead-server=%s -H %s/private/sam.ldb"
@@ -173,6 +178,20 @@ class SambaToolDrsTests(samba.tests.BlackboxTestCase):
         out = self.check_output("samba-tool domain demote --remove-other-dead-server=%s -H %s/private/sam.ldb"
                                 % (self.dc2,
                                    self.tempdir))
+
+        # Check some of the objects that should have been removed
+        def check_machine_obj():
+            samdb.searchone("CN", "cn=%s,ou=domain controllers,%s" % (self.dc2, server_nc_name))
+        self.assertRaises(ldb.LdbError, check_machine_obj)
+
+        def check_server_obj():
+            samdb.searchone("CN", server_dn)
+        self.assertRaises(ldb.LdbError, check_server_obj)
+
+        def check_ntds_guid():
+            samdb.searchone("CN", "<GUID=%s>" % ntds_guid)
+        self.assertRaises(ldb.LdbError, check_ntds_guid)
+
         shutil.rmtree(os.path.join(self.tempdir, "private"))
         shutil.rmtree(os.path.join(self.tempdir, "etc"))
         shutil.rmtree(os.path.join(self.tempdir, "msg.lock"))
