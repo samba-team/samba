@@ -642,7 +642,7 @@ struct tevent_req *messaging_filtered_read_send(
 
 	state->tevent_handle = messaging_dgm_register_tevent_context(
 		state, ev);
-	if (tevent_req_nomem(state, req)) {
+	if (tevent_req_nomem(state->tevent_handle, req)) {
 		return tevent_req_post(req, ev);
 	}
 
