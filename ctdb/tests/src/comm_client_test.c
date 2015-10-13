@@ -157,10 +157,13 @@ static int socket_init(char *sockpath)
 {
 	struct sockaddr_un addr;
 	int fd, ret;
+	size_t len;
 
 	memset(&addr, 0, sizeof(addr));
 	addr.sun_family = AF_UNIX;
-	strcpy(addr.sun_path, sockpath);
+
+	len = strlcpy(addr.sun_path, sockpath, sizeof(addr.sun_path));
+	assert(len < sizeof(addr.sun_path));
 
 	fd = socket(AF_UNIX, SOCK_STREAM, 0);
 	assert(fd != -1);
