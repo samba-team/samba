@@ -852,7 +852,7 @@ static NTSTATUS db_ctdb_store(struct db_record *rec, TDB_DATA data, int flag)
 
 static NTSTATUS db_ctdb_send_schedule_for_deletion(struct db_record *rec)
 {
-	NTSTATUS status;
+	NTSTATUS status = NT_STATUS_OK;
 	int ret;
 	struct ctdb_control_schedule_for_deletion *dd;
 	TDB_DATA indata;
@@ -888,6 +888,8 @@ static NTSTATUS db_ctdb_send_schedule_for_deletion(struct db_record *rec)
 			  "SCHEDULE_FOR_DELETION: %s, cstatus = %d\n",
 			  strerror(ret), cstatus));
 		if (ret != 0) {
+			status = map_nt_error_from_unix(ret);
+		} else {
 			status = NT_STATUS_UNSUCCESSFUL;
 		}
 	}
