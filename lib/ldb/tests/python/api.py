@@ -411,6 +411,17 @@ class DnTests(TestCase):
         self.assertTrue(x.add_base(base))
         self.assertEquals("dc=foo23,bar=bloe,bla=bloe", x.__str__())
 
+    def test_add_child_str(self):
+        x = ldb.Dn(self.ldb, "dc=foo22,bar=bloe")
+        self.assertTrue(x.add_child("bla=bloe"))
+        self.assertEquals("bla=bloe,dc=foo22,bar=bloe", x.__str__())
+
+    def test_add_base_str(self):
+        x = ldb.Dn(self.ldb, "dc=foo23,bar=bloe")
+        base = "bla=bloe"
+        self.assertTrue(x.add_base(base))
+        self.assertEquals("dc=foo23,bar=bloe,bla=bloe", x.__str__())
+
     def test_add(self):
         x = ldb.Dn(self.ldb, "dc=foo24")
         y = ldb.Dn(self.ldb, "bar=bla")
@@ -456,6 +467,24 @@ class DnTests(TestCase):
         self.assertTrue(dn4.is_child_of(dn3))
         self.assertFalse(dn3.is_child_of(dn2))
         self.assertFalse(dn1.is_child_of(dn4))
+
+    def test_ldb_is_child_of_str(self):
+        """Testing ldb_dn_compare_dn"""
+        dn1_str = "dc=base"
+        dn2_str = "cn=foo,dc=base"
+        dn3_str = "cn=bar,dc=base"
+        dn4_str = "cn=baz,cn=bar,dc=base"
+
+        dn1 = ldb.Dn(self.ldb, dn1_str)
+        dn2 = ldb.Dn(self.ldb, dn2_str)
+        dn3 = ldb.Dn(self.ldb, dn3_str)
+        dn4 = ldb.Dn(self.ldb, dn4_str)
+
+        self.assertTrue(dn2.is_child_of(dn1_str))
+        self.assertTrue(dn4.is_child_of(dn1_str))
+        self.assertTrue(dn4.is_child_of(dn3_str))
+        self.assertFalse(dn3.is_child_of(dn2_str))
+        self.assertFalse(dn1.is_child_of(dn4_str))
 
 class LdbMsgTests(TestCase):
 

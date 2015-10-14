@@ -2155,3 +2155,8 @@ bool ldb_dn_minimise(struct ldb_dn *dn)
 
 	return true;
 }
+
+struct ldb_context *ldb_dn_get_ldb_context(struct ldb_dn *dn)
+{
+	return dn->ldb;
+}
