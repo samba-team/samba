@@ -19,8 +19,8 @@
 import ldb
 from ldb import LdbError
 from samba.ndr import ndr_unpack
-from samba.dcerpc import misc
-
+from samba.dcerpc import misc, dnsp
+from samba.dcerpc.dnsp import DNS_TYPE_NS, DNS_TYPE_A, DNS_TYPE_AAAA, DNS_TYPE_CNAME, DNS_TYPE_SRV, DNS_TYPE_PTR
 class demoteException(Exception):
     """Base element for demote errors"""
 
@@ -82,13 +82,88 @@ def remove_dns_references(samdb, dnsHostName):
     if len(zones) == 0:
         return
 
+    dnsHostNameUpper = dnsHostName.upper()
+
     try:
-        rec = samdb.dns_lookup(dnsHostName)
+        primary_recs = samdb.dns_lookup(dnsHostName)
     except RuntimeError as (enum, estr):
         if enum == 0x000025F2: #WERR_DNS_ERROR_NAME_DOES_NOT_EXIST
               return
         raise demoteException("lookup of %s failed: %s" % (dnsHostName, estr))
     samdb.dns_replace(dnsHostName, [])
+
+    res = samdb.search("",
+                       scope=ldb.SCOPE_BASE, attrs=["namingContexts"])
+    assert len(res) == 1
+    ncs = res[0]["namingContexts"]
+
+    # Work out the set of names we will likely have an A record on by
+    # default.  This is by default all the partitions of type
+    # domainDNS.  By finding the canocial name of all the partitions,
+    # we find the likely candidates.  We only remove the record if it
+    # maches the IP that was used by the dnsHostName.  This avoids us
+    # needing to look a the dns_update_list file from in the demote
+    # script.
+
+    a_names_to_remove_from = set([ ldb.Dn(samdb, dn).canonical_str().split('/', 1)[0] for dn in ncs])
+    def a_rec_to_remove(dnsRecord):
+        if dnsRecord.wType == DNS_TYPE_A or dnsRecord.wType == DNS_TYPE_AAAA:
+            for rec in primary_recs:
+                if rec.wType == dnsRecord.wType and rec.data == dnsRecord.data:
+                    return True
+        return False
+
+    for a_name in a_names_to_remove_from:
+        try:
+            logger.debug("checking for DNS records to remove on %s" % a_name)
+            a_recs = samdb.dns_lookup(a_name)
+        except RuntimeError as (enum, estr):
+            if enum == 0x000025F2: #WERR_DNS_ERROR_NAME_DOES_NOT_EXIST
+                return
+            raise demoteException("lookup of %s failed: %s" % (a_name, estr))
+
+        orig_num_recs = len(a_recs)
+        a_recs = [ r for r in a_recs if not a_rec_to_remove(r) ]
+
+        if len(a_recs) != orig_num_recs:
+            print "updating %s keeping %d values, removing %s values" % \
+                (record.dn, len(a_recs), orig_num_recs - len(a_recs))
+            samdb.dns_replace(a_name, a_recs)
+
+    # Find all the CNAME, NS, PTR and SRV records that point at the
+    # name we are removing
+
+    def to_remove(value):
+        dnsRecord = ndr_unpack(dnsp.DnssrvRpcRecord, value)
+        if dnsRecord.wType == DNS_TYPE_NS or dnsRecord.wType == DNS_TYPE_CNAME \
+           or dnsRecord.wType == DNS_TYPE_PTR:
+            if dnsRecord.data.upper() == dnsHostNameUpper:
+                return True
+        elif dnsRecord.wType == DNS_TYPE_SRV:
+            if dnsRecord.data.nameTarget.upper() == dnsHostNameUpper:
+                return True
+        return False
+
+    for zone in zones:
+        print "checking %s" % zone.dn
+        records = samdb.search(base=zone.dn, scope=ldb.SCOPE_SUBTREE,
+                               expression="(&(objectClass=dnsNode)(!(dNSTombstoned=TRUE)))",
+                               attrs=["dnsRecord"])
+        for record in records:
+            try:
+                values = record["dnsRecord"]
+            except KeyError:
+                next
+            orig_num_values = len(values)
+
+            # Remove references to dnsHostName in A, AAAA, NS, CNAME and SRV
+            values = [ ndr_unpack(dnsp.DnssrvRpcRecord, v) for v in values if not to_remove(v) ]
+            if len(values) != orig_num_values:
+                print "updating %s keeping %d values, removing %s values" % (record.dn, len(values), orig_num_values - len(values))
+
+                # This requires the values to be unpacked, so this
+                # has been done in the list comprehension above
+                samdb.dns_replace_by_dn(record.dn, values)
 
 def offline_remove_server(samdb, server_dn,
                           remove_computer_obj=False,
