@@ -51,7 +51,7 @@ static int net_serverid_wipe_fn(struct db_record *rec,
 {
 	NTSTATUS status;
 
-	if (id->vnn != get_my_vnn()) {
+	if (!procid_is_local(id)) {
 		return 0;
 	}
 	status = dbwrap_record_delete(rec);
