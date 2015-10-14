@@ -276,7 +276,7 @@ def build(bld):
         bld.RECURSE('lib/socket_wrapper')
 
     if bld.env.standalone_ctdb:
-        # In a combined build is implemented, CTDB will wanted to
+        # If a combined build is implemented, CTDB will want to
         # build against samba-util rather than samba-util-core.
         # Similarly, other Samba subsystems expect samba-util.  So,
         # for a standalone build, just define a fake samba-util
