@@ -2,7 +2,7 @@
 
 # This script parses /proc/locks and finds the processes that are holding
 # locks on CTDB databases.  For all those processes the script dumps a
-# stack trace using gstack.
+# stack trace.
 #
 # This script can be used only if Samba is configured to use fcntl locks
 # rather than mutex locks.
@@ -56,8 +56,23 @@ loadconfig ctdb
 	# For each process waiting, log stack trace
 	for pid in $pids ; do
 	    echo "----- Stack trace for PID=$pid -----"
-	    gstack $pid
-	    # gcore -o /var/log/core-deadlock-ctdb $pid
+	    read x x state x </proc/$pid/stat
+	    if [ "$state" = "D" ] ; then
+		# Don't run gstack on a process in D state since
+		# gstack will hang until the process exits D state.
+		# Although it is possible for a process to transition
+		# to D state after this check, it is unlikely because
+		# if a process is stuck in D state then it is probably
+		# the reason why this script was called.  Note that a
+		# kernel stack almost certainly won't help diagnose a
+		# deadlock... but it will probably give us someone to
+		# blame!
+		echo "----- Process in D state, printing kernel stack only"
+		cat /proc/$pid/stack
+	    else
+		gstack $pid
+		# gcore -o /var/log/core-deadlock-ctdb $pid
+	    fi
 	done
     fi
 
