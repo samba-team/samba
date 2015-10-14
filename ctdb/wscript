@@ -497,7 +497,8 @@ def build(bld):
         bld.SAMBA_BINARY('pmdactdb',
                          source='utils/pmda/pmda_ctdb.c',
                          includes='include',
-                         deps='ctdb-client ctdb-common pcp_pmda pcp',
+                         deps='''ctdb-client2 ctdb-protocol ctdb-util
+                                 samba-util pcp_pmda pcp''',
                          install_path='${CTDB_PMDADIR}')
         bld.INSTALL_FILES('${CTDB_PMDADIR}', 'utils/pmda/Install',
                           destname='Install')

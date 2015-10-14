@@ -24,15 +24,12 @@
 
 #include <talloc.h>
 #include <tevent.h>
+#include <tdb.h>
 
 #include "lib/util/time.h"
 #include "lib/util/blocking.h"
 
-#include "ctdb_private.h"
-#include "ctdb_client.h"
-
-#include "common/system.h"
-#include "common/common.h"
+#include "client/client.h"
 
 #include <pcp/pmapi.h>
 #include <pcp/impl.h>
@@ -172,19 +169,14 @@ static pmdaMetric metrictab[] = {
 };
 
 static struct tevent_context *ev;
-static struct ctdb_context *ctdb;
+static struct ctdb_client_context *client;
 static struct ctdb_statistics *stats;
 
 static void
-pmda_ctdb_q_read_cb(uint8_t *data, size_t cnt, void *args)
+pmda_ctdb_disconnected(void *args)
 {
-	if (cnt == 0) {
-		fprintf(stderr, "ctdbd unreachable\n");
-		/* cleanup on request timeout */
-		return;
-	}
-
-	ctdb_client_read_cb(data, cnt, args);
+	fprintf(stderr, "ctdbd unreachable\n");
+	TALLOC_FREE(client);
 }
 
 
@@ -193,7 +185,6 @@ pmda_ctdb_daemon_connect(void)
 {
 	const char *socket_name;
 	int ret;
-	struct sockaddr_un addr;
 
 	ev = tevent_context_init(NULL);
 	if (ev == NULL) {
@@ -201,86 +192,34 @@ pmda_ctdb_daemon_connect(void)
 		return -1;
 	}
 
-	ctdb = ctdb_init(ev);
-	if (ctdb == NULL) {
-		fprintf(stderr, "Failed to init ctdb\n");
-		goto err_ev;
-	}
-
 	socket_name = getenv("CTDB_SOCKET");
 	if (socket_name == NULL) {
 		socket_name = CTDB_SOCKET;
 	}
 
-	ret = ctdb_set_socketname(ctdb, socket_name);
-	if (ret == -1) {
-		fprintf(stderr, "ctdb_set_socketname failed - %s\n",
-				ctdb_errstr(ctdb));
-		goto err_ctdb;
-	}
-
-	/*
-	 * ctdb_socket_connect() sets a default queue callback handler that
-	 * calls exit() if ctdbd is unavailable on recv, use our own wrapper to
-	 * work around this
-	 */
-
-	memset(&addr, 0, sizeof(addr));
-	addr.sun_family = AF_UNIX;
-	strncpy(addr.sun_path, ctdb->daemon.name, sizeof(addr.sun_path));
-
-	ctdb->daemon.sd = socket(AF_UNIX, SOCK_STREAM, 0);
-	if (ctdb->daemon.sd == -1) {
-		fprintf(stderr, "Failed to open client socket\n");
-		goto err_ctdb;
-	}
-
-	set_blocking(ctdb->daemon.sd, false);
-	set_close_on_exec(ctdb->daemon.sd);
-
-	if (connect(ctdb->daemon.sd, (struct sockaddr *)&addr, sizeof(addr)) == -1) {
+	ret = ctdb_client_init(ev, ev, socket_name, &client);
+	if (ret != 0) {
 		fprintf(stderr, "Failed to connect to ctdb daemon via %s\n",
-			ctdb->daemon.name);
-		goto err_sd;
+			socket_name);
+		goto err_ev;
 	}
 
-	ctdb->daemon.queue = ctdb_queue_setup(ctdb, ctdb, ctdb->daemon.sd,
-					      CTDB_DS_ALIGNMENT,
-					      pmda_ctdb_q_read_cb, ctdb,
-					      "to-ctdbd");
-	if (ctdb->daemon.queue == NULL) {
-		fprintf(stderr, "Failed to setup queue\n");
-		goto err_sd;
-	}
-
-	ctdb->pnn = ctdb_ctrl_getpnn(ctdb, timeval_current_ofs(3, 0),
-				     CTDB_CURRENT_NODE);
-	if (ctdb->pnn == (uint32_t)-1) {
-		fprintf(stderr, "Failed to get ctdb pnn\n");
-		goto err_sd;
-	}
+	ctdb_client_set_disconnect_callback(client, pmda_ctdb_disconnected,
+					    NULL);
 
 	return 0;
-err_sd:
-	close(ctdb->daemon.sd);
-err_ctdb:
-	talloc_free(ctdb);
+
 err_ev:
 	talloc_free(ev);
-	ctdb = NULL;
+	client = NULL;
 	return -1;
 }
 
 static void
 pmda_ctdb_daemon_disconnect(void)
 {
-	if (ctdb->daemon.sd != -1) {
-		close(ctdb->daemon.sd);
-	}
-
-	talloc_free(ctdb);
+	TALLOC_FREE(client);
 	talloc_free(ev);
-	ctdb = NULL;
 }
 
 static int
@@ -502,11 +441,9 @@ static int
 pmda_ctdb_fetch(int numpmid, pmID pmidlist[], pmResult **resp, pmdaExt *pmda)
 {
 	int ret;
-	TDB_DATA data;
-	int32_t res;
 	struct timeval ctdb_timeout;
 
-	if (ctdb == NULL) {
+	if (client == NULL) {
 		fprintf(stderr, "attempting reconnect to ctdbd\n");
 		ret = pmda_ctdb_daemon_connect();
 		if (ret < 0) {
@@ -515,30 +452,17 @@ pmda_ctdb_fetch(int numpmid, pmID pmidlist[], pmResult **resp, pmdaExt *pmda)
 		}
 	}
 
-	ctdb_timeout = timeval_current_ofs(1, 0);
-	ret = ctdb_control(ctdb, ctdb->pnn, 0,
-			   CTDB_CONTROL_STATISTICS, 0, tdb_null,
-			   ctdb, &data, &res, &ctdb_timeout, NULL);
-
-	if (ret != 0 || res != 0) {
+	ret = ctdb_ctrl_statistics(client, ev, client, CTDB_CURRENT_NODE,
+				   ctdb_timeout, &stats);
+	if (ret != 0) {
 		fprintf(stderr, "ctdb control for statistics failed, reconnecting\n");
 		pmda_ctdb_daemon_disconnect();
 		ret = PM_ERR_VALUE;
 		goto err_out;
 	}
 
-	stats = (struct ctdb_statistics *)data.dptr;
-
-	if (data.dsize != sizeof(struct ctdb_statistics)) {
-		fprintf(stderr, "incorrect statistics size %zu - not %zu\n",
-			data.dsize, sizeof(struct ctdb_statistics));
-		ret = PM_ERR_VALUE;
-		goto err_stats;
-	}
-
 	ret = pmdaFetch(numpmid, pmidlist, resp, pmda);
 
-err_stats:
 	talloc_free(stats);
 err_out:
 	return ret;
