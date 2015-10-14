@@ -211,4 +211,12 @@ int ldb_unpack_data(struct ldb_context *ldb,
 		    const struct ldb_val *data,
 		    struct ldb_message *message);
 
+/*
+ * Get the LDB context in use on an LDB DN.
+ *
+ * This is helpful to the python LDB code, which may use as part of
+ * adding base and child components to an existing DN.
+ */
+struct ldb_context *ldb_dn_get_ldb_context(struct ldb_dn *dn);
+
 #endif
