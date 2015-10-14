@@ -931,5 +931,16 @@ accountExpires: %u
         return dsdb_dns.extract(el)
 
     def dns_replace(self, dns_name, new_records):
-        '''Do a DNS modification on the database, sets the NDR database structures'''
+        '''Do a DNS modification on the database, sets the NDR database
+        structures on a DNS name
+        '''
         return dsdb_dns.replace(self, dns_name, new_records)
+
+    def dns_replace_by_dn(self, dn, new_records):
+        '''Do a DNS modification on the database, sets the NDR database
+        structures on a LDB DN
+
+        This routine is important because if the last record on the DN
+        is removed, this routine will put a tombstone in the record.
+        '''
+        return dsdb_dns.replace_by_dn(self, dn, new_records)
