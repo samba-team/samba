@@ -30,10 +30,16 @@ struct ctdb_client_context;
 struct ctdb_db_context;
 struct ctdb_record_handle;
 
+typedef void (*ctdb_client_callback_func_t)(void *private_data);
+
 /* from client/client_connect.c */
 
 int ctdb_client_init(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 		     const char *sockpath, struct ctdb_client_context **ret);
+
+void ctdb_client_set_disconnect_callback(struct ctdb_client_context *client,
+					 ctdb_client_callback_func_t func,
+					 void *private_data);
 
 uint32_t ctdb_client_pnn(struct ctdb_client_context *client);
 

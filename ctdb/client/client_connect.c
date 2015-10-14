@@ -206,10 +206,25 @@ static void client_dead_handler(void *private_data)
 {
 	struct ctdb_client_context *client = talloc_get_type_abort(
 		private_data, struct ctdb_client_context);
+	ctdb_client_callback_func_t callback = client->callback;
+	void *callback_data = client->private_data;
+
+	talloc_free(client);
+	if (callback != NULL) {
+		callback(callback_data);
+		return;
+	}
 
 	DEBUG(DEBUG_NOTICE, ("connection to daemon closed, exiting\n"));
-	talloc_free(client);
 	exit(1);
+}
+
+void ctdb_client_set_disconnect_callback(struct ctdb_client_context *client,
+					 ctdb_client_callback_func_t callback,
+					 void *private_data)
+{
+	client->callback = callback;
+	client->private_data = private_data;
 }
 
 uint32_t ctdb_client_pnn(struct ctdb_client_context *client)

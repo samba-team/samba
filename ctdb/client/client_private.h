@@ -21,6 +21,7 @@
 #define __CTDB_CLIENT_PRIVATE_H__
 
 #include "protocol/protocol.h"
+#include "client/client.h"
 
 struct ctdb_db_context {
 	struct ctdb_db_context *prev, *next;
@@ -35,6 +36,8 @@ struct ctdb_client_context {
 	struct reqid_context *idr;
 	struct srvid_context *srv;
 	struct comm_context *comm;
+	ctdb_client_callback_func_t callback;
+	void *private_data;
 	int fd;
 	uint32_t pnn;
 	struct ctdb_db_context *db;
