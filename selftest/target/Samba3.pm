@@ -608,7 +608,7 @@ sub setup_fileserver($$)
 	dfree command = $srcdir_abs/testprogs/blackbox/dfree.sh
 [valid-users-access]
 	path = $valid_users_sharedir
-	valid users = +SAMBA-TEST/userdup
+	valid users = +userdup
 	";
 
 	my $vars = $self->provision($path,
