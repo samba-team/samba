@@ -43,6 +43,8 @@ static int ctdb_client_connect(struct ctdb_client_context *client,
 			       struct tevent_context *ev,
 			       const char *sockpath);
 
+static int ctdb_client_context_destructor(struct ctdb_client_context *client);
+
 int ctdb_client_init(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 		     const char *sockpath, struct ctdb_client_context **out)
 {
@@ -78,7 +80,18 @@ int ctdb_client_init(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 		return ret;
 	}
 
+	talloc_set_destructor(client, ctdb_client_context_destructor);
+
 	*out = client;
+	return 0;
+}
+
+static int ctdb_client_context_destructor(struct ctdb_client_context *client)
+{
+	if (client->fd != -1) {
+		close(client->fd);
+		client->fd = -1;
+	}
 	return 0;
 }
 
