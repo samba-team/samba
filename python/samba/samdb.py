@@ -931,5 +931,9 @@ accountExpires: %u
         return dsdbdns.extract(el)
 
     def dns_replace(self, dns_name, new_records):
-        '''Do a DNS modification on the database, sets the NDR database structures'''
+        '''Do a DNS modification on the database, sets the NDR database structures on a DNS name'''
         return dsdbdns.replace(self, dns_name, new_records)
+
+    def dns_replace_by_dn(self, dn, new_records):
+        '''Do a DNS modification on the database, sets the NDR database structures on a LDB DN'''
+        return dsdbdns.replace_by_dn(self, dn, new_records)

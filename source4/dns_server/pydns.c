@@ -37,6 +37,13 @@
 	} \
 	ldb = pyldb_Ldb_AsLdbContext(py_ldb);
 
+#define PyErr_LDB_DN_OR_RAISE(py_ldb_dn, dn) \
+	if (!py_check_dcerpc_type(py_ldb_dn, "ldb", "Dn")) { \
+		PyErr_SetString(py_ldb_get_exception(), "ldb Dn object required"); \
+		return NULL; \
+	} \
+	dn = pyldb_Dn_AsDn(py_ldb_dn);
+
 static PyObject *py_ldb_get_exception(void)
 {
 	PyObject *mod = PyImport_ImportModule("ldb");
@@ -237,12 +244,63 @@ static PyObject *py_dsdb_dns_replace(PyObject *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
+static PyObject *py_dsdb_dns_replace_by_dn(PyObject *self, PyObject *args)
+{
+	struct ldb_context *samdb;
+	PyObject *py_ldb, *py_dn, *py_dns_records;
+	TALLOC_CTX *frame;
+	WERROR werr;
+	int ret;
+	struct ldb_dn *dn;
+	struct dnsp_DnssrvRpcRecord *records;
+	uint16_t num_records;
+
+	/*
+	 * TODO: This is a shocking abuse, but matches what the
+	 * internal DNS server does, it should be pushed into
+	 * dns_common_replace()
+	 */
+	static const int serial = 110;
+
+	if (!PyArg_ParseTuple(args, "OOO", &py_ldb, &py_dn, &py_dns_records)) {
+		return NULL;
+	}
+	PyErr_LDB_OR_RAISE(py_ldb, samdb);
+
+	PyErr_LDB_DN_OR_RAISE(py_dn, dn);
+
+	frame = talloc_stackframe();
+
+	ret = py_dnsp_DnssrvRpcRecord_get_array(py_dns_records,
+						frame,
+						&records, &num_records);
+	if (ret != 0) {
+		return NULL;
+	}
+
+	werr = dns_common_replace(samdb,
+				  frame,
+				  dn,
+				  false, /* Not adding a record */
+				  serial,
+				  records,
+				  num_records);
+	if (!W_ERROR_IS_OK(werr)) {
+		PyErr_SetWERROR(werr);
+		return NULL;
+	}
+
+	Py_RETURN_NONE;
+}
+
 static PyMethodDef py_dsdb_dns_methods[] = {
 
 	{ "lookup", (PyCFunction)py_dsdb_dns_lookup,
 		METH_VARARGS, "Get the DNS database entries for a DNS name"},
 	{ "replace", (PyCFunction)py_dsdb_dns_replace,
 		METH_VARARGS, "Replace the DNS database entries for a DNS name"},
+	{ "replace_by_dn", (PyCFunction)py_dsdb_dns_replace_by_dn,
+		METH_VARARGS, "Replace the DNS database entries for a LDB DN"},
 	{ "extract", (PyCFunction)py_dsdb_dns_extract,
 		METH_VARARGS, "Return the DNS database entry as a python structure from an Ldb.MessageElement of type dnsRecord"},
 	{ NULL }
