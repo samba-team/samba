@@ -808,6 +808,110 @@ done:
 	return ret;
 }
 
+/**
+ * Test Durablity V2 Persistent Create Replay on a Single Channel
+ */
+static bool test_replay5(struct torture_context *tctx, struct smb2_tree *tree)
+{
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	struct smb2_handle _h;
+	struct smb2_handle *h = NULL;
+	struct smb2_create io;
+	struct GUID create_guid = GUID_random();
+	bool ret = true;
+	uint32_t share_capabilities;
+	bool share_is_ca;
+	const char *fname = BASEDIR "\\replay5.dat";
+	struct smb2_transport *transport = tree->session->transport;
+	struct smbcli_options options = tree->session->transport->options;
+
+	if (smbXcli_conn_protocol(transport->conn) < PROTOCOL_SMB3_00) {
+		torture_skip(tctx, "SMB 3.X Dialect family required for "
+				"Replay tests\n");
+	}
+
+	share_capabilities = smb2cli_tcon_capabilities(tree->smbXcli);
+	share_is_ca = share_capabilities & SMB2_SHARE_CAP_CONTINUOUS_AVAILABILITY;
+	if (!share_is_ca) {
+		torture_skip(tctx, "Persistent File Handles not supported");
+	}
+
+	ZERO_STRUCT(break_info);
+	break_info.tctx = tctx;
+	transport->oplock.handler = torture_oplock_ack_handler;
+	transport->oplock.private_data = tree;
+
+	torture_comment(tctx, "Replay of Persistent DurableHandleReqV2 on Single "
+			"Channel\n");
+	status = torture_smb2_testdir(tree, BASEDIR, &_h);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	smb2_util_close(tree, _h);
+	smb2_util_unlink(tree, fname);
+	CHECK_VAL(break_info.count, 0);
+
+	smb2_oplock_create_share(&io, fname,
+			smb2_util_share_access("RWD"),
+			smb2_util_oplock_level("b"));
+	io.in.durable_open = false;
+	io.in.durable_open_v2 = true;
+	io.in.persistent_open = true;
+	io.in.create_guid = create_guid;
+	io.in.timeout = UINT32_MAX;
+
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	_h = io.out.file.handle;
+	h = &_h;
+	CHECK_CREATED(&io, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io.out.oplock_level, smb2_util_oplock_level("b"));
+	CHECK_VAL(io.out.durable_open, false);
+	CHECK_VAL(io.out.durable_open_v2, true);
+	CHECK_VAL(io.out.persistent_open, true);
+	CHECK_VAL(io.out.timeout, io.in.timeout);
+	CHECK_VAL(break_info.count, 0);
+
+	/* disconnect, leaving the durable open */
+	TALLOC_FREE(tree);
+
+	if (!torture_smb2_connection_ext(tctx, 0, &options, &tree)) {
+		torture_warning(tctx, "couldn't reconnect, bailing\n");
+		ret = false;
+		goto done;
+	}
+
+	/* a re-open of a persistent handle causes an error */
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_DUPLICATE_OBJECTID);
+
+	/* SMB2_FLAGS_REPLAY_OPERATION must be set to open the Persistent Handle */
+	smb2cli_session_start_replay(tree->session->smbXcli);
+	smb2cli_session_increment_channel_sequence(tree->session->smbXcli);
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_CREATED(&io, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io.out.durable_open, false);
+	CHECK_VAL(io.out.persistent_open, true);
+	CHECK_VAL(io.out.oplock_level, smb2_util_oplock_level("b"));
+	_h = io.out.file.handle;
+	h = &_h;
+
+	smb2_util_close(tree, *h);
+	h = NULL;
+done:
+	if (h != NULL) {
+		smb2_util_close(tree, *h);
+	}
+
+	smb2_util_unlink(tree, fname);
+	smb2_deltree(tree, BASEDIR);
+
+	talloc_free(tree);
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+
 struct torture_suite *torture_smb2_replay_init(void)
 {
 	struct torture_suite *suite =
@@ -817,6 +921,7 @@ struct torture_suite *torture_smb2_replay_init(void)
 	torture_suite_add_1smb2_test(suite, "replay2", test_replay2);
 	torture_suite_add_1smb2_test(suite, "replay3", test_replay3);
 	torture_suite_add_1smb2_test(suite, "replay4", test_replay4);
+	torture_suite_add_1smb2_test(suite, "replay5", test_replay5);
 
 	suite->description = talloc_strdup(suite, "SMB2 REPLAY tests");
 
