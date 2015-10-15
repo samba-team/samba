@@ -41,7 +41,7 @@
 #include "util_tdb.h"
 #include "../libcli/smb/read_smb.h"
 #include "../libcli/smb/smbXcli_base.h"
-#include "lib/sys_rw_data.h"
+#include "lib/util/sys_rw_data.h"
 
 extern char *optarg;
 extern int optind;

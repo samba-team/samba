@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 APPNAME = 'talloc'
-VERSION = '2.1.3'
+VERSION = '2.1.4'
 
 
 blddir = 'bin'
@@ -66,6 +66,9 @@ def configure(conf):
             Logs.warn('Disabling pytalloc-util as python devel libs not found')
             conf.env.disable_python = True
 
+    conf.CHECK_HEADERS('sys/auxv.h')
+    conf.CHECK_FUNCS('getauxval')
+
     conf.SAMBA_CONFIG_H()
 
     conf.SAMBA_CHECK_UNDEFINED_SYMBOL_FLAGS()
@@ -96,6 +99,10 @@ def build(bld):
                          'testsuite_main.c testsuite.c',
                          testsuite_deps,
                          install=False)
+
+        bld.SAMBA_BINARY('talloc_test_magic_differs_helper',
+                         'test_magic_differs_helper.c',
+                         'talloc', install=False)
 
     else:
         private_library = True
@@ -151,9 +158,14 @@ def test(ctx):
     cmd = os.path.join(Utils.g_module.blddir, 'talloc_testsuite')
     ret = samba_utils.RUN_COMMAND(cmd)
     print("testsuite returned %d" % ret)
+    magic_cmd = os.path.join(srcdir, 'lib', 'talloc',
+                             'test_magic_differs.sh')
+
+    magic_ret = samba_utils.RUN_COMMAND(magic_cmd)
+    print("magic differs test returned %d" % magic_ret)
     pyret = samba_utils.RUN_PYTHON_TESTS(['test_pytalloc.py'])
     print("python testsuite returned %d" % pyret)
-    sys.exit(ret or pyret)
+    sys.exit(ret or magic_ret or pyret)
 
 def dist():
     '''makes a tarball for distribution'''

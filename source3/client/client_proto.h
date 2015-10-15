@@ -26,6 +26,11 @@
 struct cli_state;
 struct file_info;
 
+enum {
+        ATTR_UNSET,
+        ATTR_SET,
+};
+
 /* The following definitions come from client/client.c  */
 
 const char *client_get_cur_dir(void);
@@ -36,6 +41,7 @@ NTSTATUS do_list(const char *mask,
 				   const char *dir),
 			bool rec,
 			bool dirs);
+int set_remote_attr(const char *filename, uint16_t new_attr, int mode);
 int cmd_iosize(void);
 
 /* The following definitions come from client/dnsbrowse.c  */

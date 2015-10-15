@@ -415,6 +415,11 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_GET_RUNSTATE		 = 138,
 		    CTDB_CONTROL_DB_DETACH		 = 139,
 		    CTDB_CONTROL_GET_NODES_FILE		 = 140,
+		    CTDB_CONTROL_DB_FREEZE		 = 141,
+		    CTDB_CONTROL_DB_THAW		 = 142,
+		    CTDB_CONTROL_DB_TRANSACTION_START	 = 143,
+		    CTDB_CONTROL_DB_TRANSACTION_COMMIT	 = 144,
+		    CTDB_CONTROL_DB_TRANSACTION_CANCEL	 = 145,
 };
 
 /*
@@ -478,17 +483,6 @@ struct ctdb_reply_dmaster {
 struct ctdb_req_message {
 	struct ctdb_req_header hdr;
 	uint64_t srvid;
-	uint32_t datalen;
-	uint8_t data[1];
-};
-
-struct ctdb_req_getdbpath {
-	struct ctdb_req_header hdr;
-	uint32_t db_id;
-};
-
-struct ctdb_reply_getdbpath {
-	struct ctdb_req_header hdr;
 	uint32_t datalen;
 	uint8_t data[1];
 };
@@ -594,6 +588,13 @@ struct ctdb_node_map {
 #define CTDB_CAP_LVS			0x00000004
 /* This capability is set if NATGW is enabled */
 #define CTDB_CAP_NATGW			0x00000008
+
+/*
+ * Node features
+ */
+#define CTDB_CAP_PARALLEL_RECOVERY	0x00010000
+
+#define CTDB_CAP_DEFAULT		(CTDB_CAP_PARALLEL_RECOVERY)
 
 
 struct ctdb_public_ip {

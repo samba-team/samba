@@ -35,13 +35,14 @@ bool fast_start;
 #include "common/ctdb_io.c"
 #include "common/ctdb_util.c"
 #include "common/ctdb_ltdb.c"
-#include "common/ctdb_message.c"
+#include "common/db_hash.c"
+#include "common/srvid.c"
 #include "common/cmdline.c"
 #include "common/rb_tree.c"
-#include "common/system_common.c"
 #include "common/ctdb_logging.c"
 #include "common/ctdb_fork.c"
 #include "common/system_util.c"
+#include "common/reqid.c"
 
 /* CTDB_SERVER_OBJ */
 #include "server/ctdb_daemon.c"

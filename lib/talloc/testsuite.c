@@ -31,6 +31,9 @@
 #include <pthread.h>
 #endif
 
+#include <unistd.h>
+#include <sys/wait.h>
+
 #include "talloc_testsuite.h"
 
 static struct timeval timeval_current(void)
@@ -1852,6 +1855,70 @@ static bool test_pthread_talloc_passing(void)
 }
 #endif
 
+static void test_magic_protection_abort(const char *reason)
+{
+	/* exit with errcode 42 to communicate successful test to the parent process */
+	if (strcmp(reason, "Bad talloc magic value - unknown value") == 0) {
+		_exit(42);
+	} else {
+		printf("talloc aborted for an unexpected reason\n");
+	}
+}
+
+static bool test_magic_protection(void)
+{
+	void *pool = talloc_pool(NULL, 1024);
+	int *p1, *p2;
+	pid_t pid;
+	int exit_status;
+
+	printf("test: magic_protection\n");
+	p1 = talloc(pool, int);
+	p2 = talloc(pool, int);
+
+	/* To avoid complaints from the compiler assign values to the p1 & p2. */
+	*p1 = 6;
+	*p2 = 9;
+
+	pid = fork();
+	if (pid == 0) {
+		talloc_set_abort_fn(test_magic_protection_abort);
+
+		/*
+		 * Simulate a security attack
+		 * by triggering a buffer overflow in memset to overwrite the
+		 * constructor in the next pool chunk.
+		 *
+		 * Real attacks would attempt to set a real destructor.
+		 */
+		memset(p1, '\0', 32);
+
+		/* Then the attack takes effect when the memory's freed. */
+		talloc_free(pool);
+
+		/* Never reached. Make compilers happy */
+		return true;
+	}
+
+	while (wait(&exit_status) != pid);
+
+	if (!WIFEXITED(exit_status)) {
+		printf("Child exited through unexpected abnormal means\n");
+		return false;
+	}
+	if (WEXITSTATUS(exit_status) != 42) {
+		printf("Child exited with wrong exit status\n");
+		return false;
+	}
+	if (WIFSIGNALED(exit_status)) {
+		printf("Child recieved unexpected signal\n");
+		return false;
+	}
+
+	printf("success: magic_protection\n");
+	return true;
+}
+
 static void test_reset(void)
 {
 	talloc_set_log_fn(test_log_stdout);
@@ -1934,6 +2001,8 @@ bool torture_local_talloc(struct torture_context *tctx)
 	}
 	test_reset();
 	ret &= test_autofree();
+	test_reset();
+	ret &= test_magic_protection();
 
 	test_reset();
 	talloc_disable_null_tracking();

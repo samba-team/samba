@@ -66,7 +66,7 @@ def parseErrorDescriptions( input_file, isWinError ):
             err = Errors[-1]
             if err.err_define == None:
                 err.err_define = "HRES_" + content[0]
-	    else:
+            else:
                 if len(content) > 0:
                     desc =  escapeString(line.strip())
                     if len(desc):

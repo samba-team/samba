@@ -95,6 +95,7 @@ CFLAGS="$RPM_OPT_FLAGS $EXTRA -D_GNU_SOURCE" ./buildtools/bin/waf configure \
 	--enable-pmda \
 %endif
 	--prefix=%{_prefix} \
+	--includedir=%{_includedir}/ctdb \
 	--libdir=%{_libdir} \
 	--sysconfdir=%{_sysconfdir} \
 	--mandir=%{_mandir} \
@@ -180,7 +181,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_sysconfdir}/ctdb/events.d/49.winbind
 %{_sysconfdir}/ctdb/events.d/50.samba
 %{_sysconfdir}/ctdb/events.d/60.nfs
-%{_sysconfdir}/ctdb/events.d/62.cnfs
 %{_sysconfdir}/ctdb/events.d/70.iscsi
 %{_sysconfdir}/ctdb/events.d/91.lvs
 %{_sysconfdir}/ctdb/events.d/99.timeout
@@ -197,6 +197,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/ctdb
 %{_bindir}/ctdb_lock_helper
 %{_bindir}/ctdb_event_helper
+%{_bindir}/ctdb_recovery_helper
 %{_bindir}/smnotify
 %{_bindir}/ping_pong
 %{_bindir}/ltdbtool
@@ -204,6 +205,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/onnode
 %dir %{_libdir}
 %{_libdir}/ctdb/lib*
+%{_libdir}/libtevent-unix-util.so.0*
 %{_mandir}/man1/ctdb.1.gz
 %{_mandir}/man1/ctdbd.1.gz
 %{_mandir}/man1/ctdbd_wrapper.1.gz
@@ -226,12 +228,8 @@ development libraries for ctdb
 
 %files devel
 %defattr(-,root,root)
-%{_includedir}/ctdb.h
-%{_includedir}/ctdb_client.h
-%{_includedir}/ctdb_protocol.h
-%{_includedir}/ctdb_private.h
-%{_includedir}/ctdb_typesafe_cb.h
-%{_includedir}/ctdb_version.h
+%{_includedir}/ctdb/util/*.h
+%{_libdir}/libtevent-unix-util.so
 
 %package tests
 Summary: CTDB test suite

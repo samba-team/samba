@@ -33,59 +33,6 @@
 #include "dsdb/samdb/samdb.h"
 
 /**
- * Use a TDB to store an incrementing random seed.
- *
- * Initialised to the current pid, the very first time Samba starts,
- * and incremented by one each time it is needed.  
- * 
- * @note Not called by systems with a working /dev/urandom.
- */
-static void get_rand_seed(struct tdb_wrap *secretsdb, int *new_seed) 
-{
-	*new_seed = getpid();
-	if (secretsdb != NULL) {
-		tdb_change_int32_atomic(secretsdb->tdb, "INFO/random_seed", new_seed, 1);
-	}
-}
-
-/**
- * open up the randseed database and set the random number generator callback
- */
-bool randseed_init(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
-{
-	char *fname;
-	uint8_t dummy;
-	struct tdb_wrap *tdb;
-
-	fname = lpcfg_private_path(mem_ctx, lp_ctx, "randseed.tdb");
-
-	tdb = tdb_wrap_open(mem_ctx, fname,
-			    lpcfg_tdb_hash_size(lp_ctx, fname),
-			    lpcfg_tdb_flags(lp_ctx, TDB_DEFAULT),
-			    O_RDWR|O_CREAT, 0600);
-
-	if (!tdb) {
-		DEBUG(0,("Failed to open %s\n", fname));
-		talloc_free(fname);
-		return false;
-	}
-	talloc_free(fname);
-
-	/**
-	 * Set a reseed function for the crypto random generator 
-	 * 
-	 * This avoids a problem where systems without /dev/urandom
-	 * could send the same challenge to multiple clients
-	 */
-	set_rand_reseed_callback((void (*) (void *, int *))get_rand_seed, tdb);
-
-	/* Ensure that the reseed is done now, while we are root, etc */
-	generate_random_buffer(&dummy, sizeof(dummy));
-
-	return true;
-}
-
-/**
   connect to the secrets ldb
 */
 struct ldb_context *secrets_db_connect(TALLOC_CTX *mem_ctx,

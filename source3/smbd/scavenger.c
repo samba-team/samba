@@ -26,7 +26,7 @@
 #include "smbd/scavenger.h"
 #include "locking/proto.h"
 #include "lib/util/util_process.h"
-#include "lib/sys_rw.h"
+#include "lib/util/sys_rw.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_SCAVENGER
@@ -254,15 +254,14 @@ static bool smbd_scavenger_start(struct smbd_scavenger_state *state)
 
 		set_my_unique_id(unique_id);
 
-		status = smbd_reinit_after_fork(state->msg, state->ev, true);
+		status = smbd_reinit_after_fork(state->msg, state->ev,
+						true, "smbd-scavenger");
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(2, ("reinit_after_fork failed: %s\n",
 				  nt_errstr(status)));
 			exit_server("reinit_after_fork failed");
 			return false;
 		}
-
-		prctl_set_comment("smbd-scavenger");
 
 		state->am_scavenger = true;
 		*state->scavenger_id = messaging_server_id(state->msg);

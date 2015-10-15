@@ -58,9 +58,9 @@ struct db_context {
 	int (*exists)(struct db_context *db,TDB_DATA key);
 	int (*wipe)(struct db_context *db);
 	int (*check)(struct db_context *db);
-	void (*id)(struct db_context *db, const uint8_t **id, size_t *idlen);
+	size_t (*id)(struct db_context *db, uint8_t *id, size_t idlen);
+
 	const char *name;
-	int hash_size;
 	void *private_data;
 	enum dbwrap_lock_order lock_order;
 	bool persistent;

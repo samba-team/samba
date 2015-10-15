@@ -27,6 +27,7 @@
 #include "lib/param/param.h"
 #include "ctdbd_conn.h"
 #include "messages.h"
+#include "lib/messages_dgm.h"
 
 struct serverid_key {
 	pid_t pid;
@@ -120,9 +121,7 @@ bool serverid_register(const struct server_id id, uint32_t msg_flags)
 		goto done;
 	}
 
-	if (lp_clustering() &&
-	    ctdb_serverids_exist_supported(messaging_ctdbd_connection()))
-	{
+	if (lp_clustering()) {
 		register_with_ctdbd(messaging_ctdbd_connection(), id.unique_id,
 				    NULL, NULL);
 	}
@@ -168,228 +167,40 @@ done:
 	return ret;
 }
 
-struct serverid_exists_state {
-	const struct server_id *id;
-	bool exists;
-};
-
-static void server_exists_parse(TDB_DATA key, TDB_DATA data, void *priv)
+static bool serverid_exists_local(const struct server_id *id)
 {
-	struct serverid_exists_state *state =
-		(struct serverid_exists_state *)priv;
+	bool exists = process_exists_by_pid(id->pid);
+	uint64_t unique;
+	int ret;
 
-	if (data.dsize != sizeof(struct serverid_data)) {
-		state->exists = false;
-		return;
+	if (!exists) {
+		return false;
 	}
 
-	/*
-	 * Use memcmp, not direct compare. data.dptr might not be
-	 * aligned.
-	 */
-	state->exists = (memcmp(&state->id->unique_id, data.dptr,
-				sizeof(state->id->unique_id)) == 0);
+	if (id->unique_id == SERVERID_UNIQUE_ID_NOT_TO_VERIFY) {
+		return true;
+	}
+
+	ret = messaging_dgm_get_unique(id->pid, &unique);
+	if (ret != 0) {
+		return false;
+	}
+
+	return (unique == id->unique_id);
 }
 
 bool serverid_exists(const struct server_id *id)
 {
-	bool result = false;
-	bool ok = false;
-
-	ok = serverids_exist(id, 1, &result);
-	if (!ok) {
-		return false;
+	if (procid_is_local(id)) {
+		return serverid_exists_local(id);
 	}
 
-	return result;
-}
-
-bool serverids_exist(const struct server_id *ids, int num_ids, bool *results)
-{
-	int *todo_idx = NULL;
-	struct server_id *todo_ids = NULL;
-	bool *todo_results = NULL;
-	int todo_num = 0;
-	int *remote_idx = NULL;
-	int remote_num = 0;
-	int *verify_idx = NULL;
-	int verify_num = 0;
-	int t, idx;
-	bool result = false;
-	struct db_context *db;
-
-	db = serverid_db();
-	if (db == NULL) {
-		return false;
+	if (lp_clustering()) {
+		return ctdbd_process_exists(messaging_ctdbd_connection(),
+					    id->vnn, id->pid);
 	}
 
-	todo_idx = talloc_array(talloc_tos(), int, num_ids);
-	if (todo_idx == NULL) {
-		goto fail;
-	}
-	todo_ids = talloc_array(talloc_tos(), struct server_id, num_ids);
-	if (todo_ids == NULL) {
-		goto fail;
-	}
-	todo_results = talloc_array(talloc_tos(), bool, num_ids);
-	if (todo_results == NULL) {
-		goto fail;
-	}
-
-	remote_idx = talloc_array(talloc_tos(), int, num_ids);
-	if (remote_idx == NULL) {
-		goto fail;
-	}
-	verify_idx = talloc_array(talloc_tos(), int, num_ids);
-	if (verify_idx == NULL) {
-		goto fail;
-	}
-
-	for (idx=0; idx<num_ids; idx++) {
-		results[idx] = false;
-
-		if (server_id_is_disconnected(&ids[idx])) {
-			continue;
-		}
-
-		if (procid_is_me(&ids[idx])) {
-			results[idx] = true;
-			continue;
-		}
-
-		if (procid_is_local(&ids[idx])) {
-			bool exists = process_exists_by_pid(ids[idx].pid);
-
-			if (!exists) {
-				continue;
-			}
-
-			if (ids[idx].unique_id == SERVERID_UNIQUE_ID_NOT_TO_VERIFY) {
-				results[idx] = true;
-				continue;
-			}
-
-			verify_idx[verify_num] = idx;
-			verify_num += 1;
-			continue;
-		}
-
-		if (!lp_clustering()) {
-			continue;
-		}
-
-		remote_idx[remote_num] = idx;
-		remote_num += 1;
-	}
-
-	if (remote_num != 0 &&
-	    ctdb_serverids_exist_supported(messaging_ctdbd_connection()))
-	{
-		int old_remote_num = remote_num;
-
-		remote_num = 0;
-		todo_num = 0;
-
-		for (t=0; t<old_remote_num; t++) {
-			idx = remote_idx[t];
-
-			if (ids[idx].unique_id == SERVERID_UNIQUE_ID_NOT_TO_VERIFY) {
-				remote_idx[remote_num] = idx;
-				remote_num += 1;
-				continue;
-			}
-
-			todo_idx[todo_num] = idx;
-			todo_ids[todo_num] = ids[idx];
-			todo_results[todo_num] = false;
-			todo_num += 1;
-		}
-
-		/*
-		 * Note: this only uses CTDB_CONTROL_CHECK_SRVIDS
-		 * to verify that the server_id still exists,
-		 * which means only the server_id.unique_id and
-		 * server_id.vnn are verified, while server_id.pid
-		 * is not verified at all.
-		 *
-		 * TODO: do we want to verify server_id.pid somehow?
-		 */
-		if (!ctdb_serverids_exist(messaging_ctdbd_connection(),
-					  todo_ids, todo_num, todo_results))
-		{
-			goto fail;
-		}
-
-		for (t=0; t<todo_num; t++) {
-			idx = todo_idx[t];
-
-			results[idx] = todo_results[t];
-		}
-	}
-
-	if (remote_num != 0) {
-		todo_num = 0;
-
-		for (t=0; t<remote_num; t++) {
-			idx = remote_idx[t];
-			todo_idx[todo_num] = idx;
-			todo_ids[todo_num] = ids[idx];
-			todo_results[todo_num] = false;
-			todo_num += 1;
-		}
-
-		if (!ctdb_processes_exist(messaging_ctdbd_connection(),
-					  todo_ids, todo_num,
-					  todo_results)) {
-			goto fail;
-		}
-
-		for (t=0; t<todo_num; t++) {
-			idx = todo_idx[t];
-
-			if (!todo_results[t]) {
-				continue;
-			}
-
-			if (ids[idx].unique_id == SERVERID_UNIQUE_ID_NOT_TO_VERIFY) {
-				results[idx] = true;
-				continue;
-			}
-
-			verify_idx[verify_num] = idx;
-			verify_num += 1;
-		}
-	}
-
-	for (t=0; t<verify_num; t++) {
-		struct serverid_exists_state state;
-		struct serverid_key key;
-		TDB_DATA tdbkey;
-		NTSTATUS status;
-
-		idx = verify_idx[t];
-
-		serverid_fill_key(&ids[idx], &key);
-		tdbkey = make_tdb_data((uint8_t *)&key, sizeof(key));
-
-		state.id = &ids[idx];
-		state.exists = false;
-		status = dbwrap_parse_record(db, tdbkey, server_exists_parse, &state);
-		if (!NT_STATUS_IS_OK(status)) {
-			results[idx] = false;
-			continue;
-		}
-		results[idx] = state.exists;
-	}
-
-	result = true;
-fail:
-	TALLOC_FREE(verify_idx);
-	TALLOC_FREE(remote_idx);
-	TALLOC_FREE(todo_results);
-	TALLOC_FREE(todo_ids);
-	TALLOC_FREE(todo_idx);
-	return result;
+	return false;
 }
 
 static bool serverid_rec_parse(const struct db_record *rec,

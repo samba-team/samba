@@ -43,7 +43,12 @@ static double end_timer(void)
 static int timelimit = 10;
 static int num_records = 10;
 static int num_nodes;
-static int msg_count;
+
+struct bench_data {
+	struct ctdb_context *ctdb;
+	struct tevent_context *ev;
+	int msg_count;
+};
 
 #define TESTKEY "testkey"
 
@@ -52,8 +57,9 @@ static int msg_count;
   store a expanded record
   send a message to next node to tell it to do the same
 */
-static void bench_fetch_1node(struct ctdb_context *ctdb)
+static void bench_fetch_1node(struct bench_data *bdata)
 {
+	struct ctdb_context *ctdb = bdata->ctdb;
 	TDB_DATA key, data, nulldata;
 	struct ctdb_db_context *ctdb_db;
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
@@ -80,9 +86,10 @@ static void bench_fetch_1node(struct ctdb_context *ctdb)
 	if (data.dsize == 0) {
 		data.dptr = (uint8_t *)talloc_asprintf(tmp_ctx, "Test data\n");
 	}
-	data.dptr = (uint8_t *)talloc_asprintf_append((char *)data.dptr, 
+	data.dptr = (uint8_t *)talloc_asprintf_append((char *)data.dptr,
 						      "msg_count=%d on node %d\n",
-						      msg_count, ctdb_get_pnn(ctdb));
+						      bdata->msg_count,
+						      ctdb_get_pnn(ctdb));
 	if (data.dptr == NULL) {
 		printf("Failed to create record\n");
 		talloc_free(tmp_ctx);
@@ -109,11 +116,13 @@ static void bench_fetch_1node(struct ctdb_context *ctdb)
 /*
   handler for messages in bench_ring()
 */
-static void message_handler(struct ctdb_context *ctdb, uint64_t srvid, 
-			    TDB_DATA data, void *private_data)
+static void message_handler(uint64_t srvid, TDB_DATA data, void *private_data)
 {
-	msg_count++;
-	bench_fetch_1node(ctdb);
+	struct bench_data *bdata = talloc_get_type_abort(
+		private_data, struct bench_data);
+
+	bdata->msg_count++;
+	bench_fetch_1node(bdata);
 }
 
 
@@ -134,36 +143,38 @@ static void timeout_handler(struct event_context *ev, struct timed_event *timer,
   send a message to next node to tell it to do the same
 
 */
-static void bench_fetch(struct ctdb_context *ctdb, struct event_context *ev)
+static void bench_fetch(struct bench_data *bdata)
 {
+	struct ctdb_context *ctdb = bdata->ctdb;
 	int pnn=ctdb_get_pnn(ctdb);
 
 	if (pnn == num_nodes - 1) {
-		bench_fetch_1node(ctdb);
+		bench_fetch_1node(bdata);
 	}
-	
+
 	start_timer();
-	event_add_timed(ev, ctdb, timeval_current_ofs(timelimit,0), timeout_handler, NULL);
+	event_add_timed(bdata->ev, bdata, timeval_current_ofs(timelimit,0),
+			timeout_handler, NULL);
 
 	while (end_timer() < timelimit) {
-		if (pnn == 0 && msg_count % 100 == 0 && end_timer() > 0) {
-			printf("Fetch: %.2f msgs/sec\r", msg_count/end_timer());
+		if (pnn == 0 && bdata->msg_count % 100 == 0 && end_timer() > 0) {
+			printf("Fetch: %.2f msgs/sec\r", bdata->msg_count/end_timer());
 			fflush(stdout);
 		}
-		if (event_loop_once(ev) != 0) {
+		if (event_loop_once(bdata->ev) != 0) {
 			printf("Event loop failed!\n");
 			break;
 		}
 	}
 
-	printf("Fetch: %.2f msgs/sec\n", msg_count/end_timer());
+	printf("Fetch: %.2f msgs/sec\n", bdata->msg_count/end_timer());
 }
 
 /*
   handler for reconfigure message
 */
-static void reconfigure_handler(struct ctdb_context *ctdb, uint64_t srvid, 
-				TDB_DATA data, void *private_data)
+static void reconfigure_handler(uint64_t srvid, TDB_DATA data,
+				void *private_data)
 {
 	int *ready = (int *)private_data;
 	*ready = 1;
@@ -193,6 +204,7 @@ int main(int argc, const char *argv[])
 	TDB_DATA key, data;
 	struct ctdb_record_handle *h;
 	int cluster_ready=0;
+	struct bench_data *bdata;
 
 	pc = poptGetContext(argv[0], argc, argv, popt_options, POPT_CONTEXT_KEEP_FIRST);
 
@@ -229,8 +241,8 @@ int main(int argc, const char *argv[])
 		exit(1);
 	}
 
-	ctdb_client_set_message_handler(ctdb, CTDB_SRVID_RECONFIGURE, reconfigure_handler, 
-				 &cluster_ready);
+	ctdb_client_set_message_handler(ctdb, CTDB_SRVID_RECONFIGURE,
+					reconfigure_handler, &cluster_ready);
 
 	/* attach to a specific database */
 	ctdb_db = ctdb_attach(ctdb, timeval_current_ofs(2, 0), "test.tdb",
@@ -240,7 +252,16 @@ int main(int argc, const char *argv[])
 		exit(1);
 	}
 
-	ctdb_client_set_message_handler(ctdb, 0, message_handler, &msg_count);
+	bdata = talloc_zero(ctdb, struct bench_data);
+	if (bdata == NULL) {
+		printf("memory allocation error\n");
+		exit(1);
+	}
+
+	bdata->ctdb = ctdb;
+	bdata->ev = ev;
+
+	ctdb_client_set_message_handler(ctdb, 0, message_handler, bdata);
 
 	printf("Waiting for cluster\n");
 	while (1) {
@@ -257,7 +278,7 @@ int main(int argc, const char *argv[])
 	 */
 	printf("Sleeping for %d seconds\n", num_nodes);
 	sleep(num_nodes);
-	bench_fetch(ctdb, ev);
+	bench_fetch(bdata);
 
 	key.dptr = discard_const(TESTKEY);
 	key.dsize = strlen(TESTKEY);

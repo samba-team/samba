@@ -2354,7 +2354,6 @@ static int disposition_to_open_flags(uint32_t create_disposition)
 }
 
 static int calculate_open_access_flags(uint32_t access_mask,
-				       int oplock_request,
 				       uint32_t private_flags)
 {
 	bool need_write, need_read;
@@ -2641,8 +2640,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	 * mean the same thing under DOS and Unix.
 	 */
 
-	flags = calculate_open_access_flags(access_mask, oplock_request,
-					    private_flags);
+	flags = calculate_open_access_flags(access_mask, private_flags);
 
 	/*
 	 * Currently we only look at FILE_WRITE_THROUGH for create options.
@@ -3488,6 +3486,25 @@ static NTSTATUS open_directory(connection_struct *conn,
 							nt_errstr(status)));
 						return status;
 					}
+
+					/*
+					 * If mkdir_internal() returned
+					 * NT_STATUS_OBJECT_NAME_COLLISION
+					 * we still must lstat the path.
+					 */
+
+					if (SMB_VFS_LSTAT(conn, smb_dname)
+							== -1) {
+						DEBUG(2, ("Could not stat "
+							"directory '%s' just "
+							"opened: %s\n",
+							smb_fname_str_dbg(
+								smb_dname),
+							strerror(errno)));
+						return map_nt_error_from_unix(
+								errno);
+					}
+
 					info = FILE_WAS_OPENED;
 				}
 			}

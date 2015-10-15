@@ -20,8 +20,6 @@
 #include "serverid.h"
 #include "smbd/smbd.h"
 
-#include "lib/util/util_process.h"
-
 #include "messages.h"
 #include "include/printing.h"
 #include "printing/nt_printing_migrate_internal.h"
@@ -268,14 +266,11 @@ static bool spoolss_child_init(struct tevent_context *ev_ctx,
 	struct messaging_context *msg_ctx = server_messaging_context();
 	bool ok;
 
-	status = reinit_after_fork(msg_ctx, ev_ctx,
-				   true);
+	status = reinit_after_fork(msg_ctx, ev_ctx, true, "spoolssd-child");
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("reinit_after_fork() failed\n"));
 		smb_panic("reinit_after_fork() failed");
 	}
-
-	prctl_set_comment("spoolssd-child");
 
 	spoolss_child_id = child_id;
 	spoolss_reopen_logs(child_id);
@@ -645,13 +640,12 @@ pid_t start_spoolssd(struct tevent_context *ev_ctx,
 		return pid;
 	}
 
-	status = smbd_reinit_after_fork(msg_ctx, ev_ctx, true);
+	status = smbd_reinit_after_fork(msg_ctx, ev_ctx, true,
+					"spoolssd-master");
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("reinit_after_fork() failed\n"));
 		smb_panic("reinit_after_fork() failed");
 	}
-
-	prctl_set_comment("spoolssd-master");
 
 	/* save the parent process id so the children can use it later */
 	parent_id = messaging_server_id(msg_ctx);

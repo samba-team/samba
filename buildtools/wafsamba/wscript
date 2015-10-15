@@ -241,7 +241,7 @@ def configure(conf):
         cc.run = Task.compile_fun_noshell('cc', '${CC} ${CCFLAGS} ${CPPFLAGS} ${_CCINCFLAGS} ${_CCDEFFLAGS} ${CC_SRC_F}${SRC} ${CC_TGT_F}${TGT[0].abspath(env)}')[0]
         try:
             try:
-                conf.check(features='cc testd', fragment='int main() {return 0;}\n', ccflags=['-MD'], mandatory=True, msg='Check for -MD')
+                conf.check(features='c testd', fragment='int main() {return 0;}\n', ccflags=['-MD'], mandatory=True, msg='Check for -MD')
             except:
                 pass
             else:
@@ -360,6 +360,40 @@ def configure(conf):
                            __attribute__((visibility("default"))) void vis_foo2(void) {}''',
                         cflags=conf.env.VISIBILITY_CFLAGS,
                         define='HAVE_VISIBILITY_ATTR', addmain=False)
+
+    # check HAVE_CONSTRUCTOR_ATTRIBUTE
+    conf.CHECK_CODE('''
+            void test_constructor_attribute(void) __attribute__ ((constructor));
+
+            void test_constructor_attribute(void)
+            {
+                return;
+            }
+
+            int main(void) {
+                return 0;
+            }
+            ''',
+            'HAVE_CONSTRUCTOR_ATTRIBUTE',
+            addmain=False,
+            msg='Checking for library constructor support')
+
+        # check HAVE_DESTRUCTOR_ATTRIBUTE
+    conf.CHECK_CODE('''
+            void test_destructor_attribute(void) __attribute__ ((destructor));
+
+            void test_destructor_attribute(void)
+            {
+                return;
+            }
+
+            int main(void) {
+                return 0;
+            }
+            ''',
+            'HAVE_DESTRUCTOR_ATTRIBUTE',
+            addmain=False,
+            msg='Checking for library destructor support')
 
     if sys.platform.startswith('aix'):
         conf.DEFINE('_ALL_SOURCE', 1, add_to_cflags=True)

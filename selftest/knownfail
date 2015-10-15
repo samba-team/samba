@@ -143,9 +143,11 @@
 ^samba4.raw.acls.*.create_file
 ^samba4.smb2.create.*.acldir
 ^samba4.smb2.create.*.impersonation
+^samba4.smb2.create.*.mkdir-dup # bug 11486
 ^samba4.smb2.acls.*.generic
 ^samba4.smb2.acls.*.inheritflags
 ^samba4.smb2.acls.*.owner
+^samba4.smb2.acls.*.ACCESSBASED
 ^samba4.ldap.dirsync.python.ad_dc_ntvfs..__main__.ExtendedDirsyncTests.test_dirsync_deleted_items
 #^samba4.ldap.dirsync.python.ad_dc_ntvfs..__main__.ExtendedDirsyncTests.*
 ^samba4.libsmbclient.opendir.opendir # This requires netbios browsing

@@ -2,16 +2,22 @@
 
 # utility functions for ctdb event scripts
 
-[ -z "$CTDB_VARDIR" ] && {
-    if [ -d "/var/lib/ctdb" ] ; then
-	export CTDB_VARDIR="/var/lib/ctdb"
-    else
-	export CTDB_VARDIR="/var/ctdb"
-    fi
-}
-[ -z "$CTDB_ETCDIR" ] && {
-    export CTDB_ETCDIR="/etc"
-}
+if [ -z "$CTDB_BASE" ] ; then
+    echo 'CTDB_BASE unset in CTDB functions file'
+    exit 1
+fi
+
+CTDB_VARDIR="/usr/local/var/lib/ctdb"
+
+# Only (and always) override these variables in test code
+
+if [ -z "$CTDB_SCRIPT_VARDIR" ] ; then
+    CTDB_SCRIPT_VARDIR="/usr/local/var/lib/ctdb/state"
+fi
+
+if [ -z "$CTDB_SYS_ETCDIR" ] ; then
+    CTDB_SYS_ETCDIR="/etc"
+fi
 
 #######################################
 # pull in a system config file, if any
@@ -33,10 +39,10 @@ _loadconfig() {
 	return
     fi
 
-    if [ -f $CTDB_ETCDIR/sysconfig/$1 ]; then
-	. $CTDB_ETCDIR/sysconfig/$1
-    elif [ -f $CTDB_ETCDIR/default/$1 ]; then
-	. $CTDB_ETCDIR/default/$1
+    if [ -f $CTDB_SYS_ETCDIR/sysconfig/$1 ]; then
+	. $CTDB_SYS_ETCDIR/sysconfig/$1
+    elif [ -f $CTDB_SYS_ETCDIR/default/$1 ]; then
+	. $CTDB_SYS_ETCDIR/default/$1
     elif [ -f $CTDB_BASE/sysconfig/$1 ]; then
 	. $CTDB_BASE/sysconfig/$1
     fi
@@ -95,7 +101,7 @@ script_log ()
 	    if [ -n "$CTDB_LOGGING" ] ; then
 		_file="${CTDB_LOGGING#file:}"
 	    else
-		_file="/var/log/log.ctdb"
+		_file="/usr/local/var/log/log.ctdb"
 	    fi
 	    {
 		if [ -n "$*" ] ; then
@@ -177,10 +183,10 @@ _service ()
       $_nice /sbin/service "$_service_name" "$_op"
   elif [ -x /usr/sbin/service ]; then
       $_nice /usr/sbin/service "$_service_name" "$_op"
-  elif [ -x $CTDB_ETCDIR/init.d/$_service_name ]; then
-      $_nice $CTDB_ETCDIR/init.d/$_service_name "$_op"
-  elif [ -x $CTDB_ETCDIR/rc.d/init.d/$_service_name ]; then
-      $_nice $CTDB_ETCDIR/rc.d/init.d/$_service_name "$_op"
+  elif [ -x $CTDB_SYS_ETCDIR/init.d/$_service_name ]; then
+      $_nice $CTDB_SYS_ETCDIR/init.d/$_service_name "$_op"
+  elif [ -x $CTDB_SYS_ETCDIR/rc.d/init.d/$_service_name ]; then
+      $_nice $CTDB_SYS_ETCDIR/rc.d/init.d/$_service_name "$_op"
   fi
 }
 
@@ -204,7 +210,7 @@ nice_service()
 # This sets $pnn - this avoid an unnecessary subprocess.
 ctdb_get_pnn ()
 {
-    _pnn_file="$CTDB_VARDIR/state/my-pnn"
+    _pnn_file="${CTDB_SCRIPT_VARDIR}/my-pnn"
     if [ ! -f "$_pnn_file" ] ; then
 	ctdb pnn | sed -e 's@.*:@@' >"$_pnn_file"
     fi
@@ -307,7 +313,8 @@ ctdb_check_directories()
 _ctdb_check_tcp_common ()
 {
     assert_service_name
-    _ctdb_service_started_file="$ctdb_fail_dir/$service_name.started"
+    _d="${CTDB_SCRIPT_VARDIR}/failcount"
+    _ctdb_service_started_file="${_d}/${service_name}.started"
 }
 
 ctdb_check_tcp_init ()
@@ -610,7 +617,7 @@ flush_route_cache ()
 # Simple counters
 _ctdb_counter_common () {
     _service_name="${1:-${service_name:-${script_name}}}"
-    _counter_file="$ctdb_fail_dir/$_service_name"
+    _counter_file="${CTDB_SCRIPT_VARDIR}/failcount/${_service_name}"
     mkdir -p "${_counter_file%/*}" # dirname
 }
 ctdb_counter_init () {
@@ -659,12 +666,9 @@ ctdb_check_counter () {
 
 ########################################################
 
-ctdb_status_dir="$CTDB_VARDIR/state/service_status"
-ctdb_fail_dir="$CTDB_VARDIR/state/failcount"
-
 ctdb_setup_service_state_dir ()
 {
-    service_state_dir="$CTDB_VARDIR/state/service_state/${1:-${service_name}}"
+    service_state_dir="${CTDB_SCRIPT_VARDIR}/service_state/${1:-${service_name}}"
     mkdir -p "$service_state_dir" || {
 	echo "Error creating state dir \"$service_state_dir\""
 	exit 1
@@ -674,17 +678,15 @@ ctdb_setup_service_state_dir ()
 ########################################################
 # Managed status history, for auto-start/stop
 
-ctdb_managed_dir="$CTDB_VARDIR/state/managed_history"
-
 _ctdb_managed_common ()
 {
-    _ctdb_managed_file="$ctdb_managed_dir/$service_name"
+    _ctdb_managed_file="${CTDB_SCRIPT_VARDIR}/managed_history/${service_name}"
 }
 
 ctdb_service_managed ()
 {
     _ctdb_managed_common
-    mkdir -p "$ctdb_managed_dir"
+    mkdir -p "${_ctdb_managed_file%/*}" # dirname
     touch "$_ctdb_managed_file"
 }
 
@@ -700,49 +702,12 @@ is_ctdb_previously_managed_service ()
     [ -f "$_ctdb_managed_file" ]
 }
 
-########################################################
-# Check and set status
-
-log_status_cat ()
-{
-    echo "node is \"$1\", \"${script_name}\" reports problem: $(cat $2)"
-}
-
-ctdb_checkstatus ()
-{
-    if [ -r "$ctdb_status_dir/$script_name/unhealthy" ] ; then
-	log_status_cat "unhealthy" "$ctdb_status_dir/$script_name/unhealthy"
-	return 1
-    elif [ -r "$ctdb_status_dir/$script_name/banned" ] ; then
-	log_status_cat "banned" "$ctdb_status_dir/$script_name/banned"
-	return 2
-    else
-	return 0
-    fi
-}
-
-ctdb_setstatus ()
-{
-    d="$ctdb_status_dir/$script_name"
-    case "$1" in
-	unhealthy|banned)
-	    mkdir -p "$d"
-	    cat "$2" >"$d/$1"
-	    ;;
-	*)
-	    for i in "banned" "unhealthy" ; do
-		rm -f "$d/$i"
-	    done
-	    ;;
-    esac
-}
-
 ##################################################################
 # Reconfigure a service on demand
 
 _ctdb_service_reconfigure_common ()
 {
-    _d="$ctdb_status_dir/${service_name}"
+    _d="${CTDB_SCRIPT_VARDIR}/service_status/${service_name}"
     mkdir -p "$_d"
     _ctdb_service_reconfigure_flag="$_d/reconfigure"
 }
@@ -1031,17 +996,7 @@ service_stop ()
 
 ctdb_standard_event_handler ()
 {
-    case "$1" in
-	status)
-	    ctdb_checkstatus
-	    exit
-	    ;;
-	setstatus)
-            shift
-	    ctdb_setstatus "$@"
-	    exit
-	    ;;
-    esac
+    :
 }
 
 iptables_wrapper ()
@@ -1054,7 +1009,7 @@ iptables_wrapper ()
     fi
 
     # iptables doesn't like being re-entered, so flock-wrap it.
-    flock -w 30 "${CTDB_VARDIR}/iptables-ctdb.flock" "$_iptables_cmd" "$@"
+    flock -w 30 "${CTDB_SCRIPT_VARDIR}/iptables.flock" "$_iptables_cmd" "$@"
 }
 
 # AIX (and perhaps others?) doesn't have mktemp
@@ -1091,7 +1046,7 @@ update_tickles ()
 {
 	_port="$1"
 
-	tickledir="$CTDB_VARDIR/state/tickles"
+	tickledir="${CTDB_SCRIPT_VARDIR}/tickles"
 	mkdir -p "$tickledir"
 
 	ctdb_get_pnn

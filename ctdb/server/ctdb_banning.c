@@ -31,17 +31,9 @@ ctdb_ban_node_event(struct event_context *ev, struct timed_event *te,
 			       struct timeval t, void *private_data)
 {
 	struct ctdb_context *ctdb = talloc_get_type(private_data, struct ctdb_context);
-	bool freeze_failed = false;
-	int i;
 
 	/* Make sure we were able to freeze databases during banning */
-	for (i=1; i<=NUM_DB_PRIORITIES; i++) {
-		if (ctdb->freeze_mode[i] != CTDB_FREEZE_FROZEN) {
-			freeze_failed = true;
-			break;
-		}
-	}
-	if (freeze_failed) {
+	if (!ctdb_db_all_frozen(ctdb)) {
 		DEBUG(DEBUG_ERR, ("Banning timedout, but still unable to freeze databases\n"));
 		ctdb_ban_self(ctdb);
 		return;
@@ -58,10 +50,9 @@ ctdb_ban_node_event(struct event_context *ev, struct timed_event *te,
 
 void ctdb_local_node_got_banned(struct ctdb_context *ctdb)
 {
-	uint32_t i;
+	struct ctdb_db_context *ctdb_db;
 
-	/* make sure we are frozen */
-	DEBUG(DEBUG_NOTICE,("This node has been banned - forcing freeze and recovery\n"));
+	DEBUG(DEBUG_NOTICE,("This node has been banned - forcing recovery\n"));
 
 	/* Reset the generation id to 1 to make us ignore any
 	   REQ/REPLY CALL/DMASTER someone sends to us.
@@ -69,11 +60,13 @@ void ctdb_local_node_got_banned(struct ctdb_context *ctdb)
 	   anymore.
 	*/
 	ctdb->vnn_map->generation = INVALID_GENERATION;
-
-	ctdb->recovery_mode = CTDB_RECOVERY_ACTIVE;
-	for (i=1; i<=NUM_DB_PRIORITIES; i++) {
-		ctdb_start_freeze(ctdb, i);
+	for (ctdb_db = ctdb->db_list; ctdb_db != NULL; ctdb_db = ctdb_db->next) {
+		ctdb_db->generation = INVALID_GENERATION;
 	}
+
+	/* make sure we get frozen */
+	ctdb->recovery_mode = CTDB_RECOVERY_ACTIVE;
+
 	ctdb_release_all_ips(ctdb);
 }
 

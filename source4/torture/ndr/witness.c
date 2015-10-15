@@ -268,6 +268,42 @@ static bool witness_AsyncNotify_check_OUT(struct torture_context *tctx,
 	return true;
 }
 
+static const uint8_t witness_AsyncNotify_data_move_OUT[] = {
+	0x00, 0x00, 0x02, 0x00, 0x02, 0x00, 0x00, 0x00, 0x24, 0x00, 0x00, 0x00,
+	0x01, 0x00, 0x00, 0x00, 0x04, 0x00, 0x02, 0x00, 0x24, 0x00, 0x00, 0x00,
+	0x24, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00,
+	0x01, 0x00, 0x00, 0x00, 0xc0, 0xa8, 0x03, 0x2d, 0x00, 0x00, 0x00, 0x00,
+	0x38, 0xe8, 0xeb, 0x26, 0x8e, 0x00, 0x00, 0x00, 0x00, 0x9e, 0x60, 0x26,
+	0x00, 0x00, 0x00, 0x00
+};
+
+static bool witness_AsyncNotify_check_move_OUT(struct torture_context *tctx,
+					       struct witness_AsyncNotify *r)
+{
+	struct witness_notifyResponse *n;
+	struct witness_IPaddrInfoList *i;
+
+	torture_assert(tctx, r->out.response, "r->out.response");
+
+	n = *(r->out.response);
+
+	torture_assert_int_equal(tctx, n->type, WITNESS_NOTIFY_CLIENT_MOVE, "type");
+	torture_assert_int_equal(tctx, n->length, 36, "length");
+	torture_assert_int_equal(tctx, n->num, 1, "num");
+
+	i = &n->messages[0].client_move;
+
+	torture_assert_int_equal(tctx, i->length, 36, "i->length");
+	torture_assert_int_equal(tctx, i->reserved, 0, "i->reserved");
+	torture_assert_int_equal(tctx, i->num, 1, "i->num");
+
+	torture_assert_int_equal(tctx, i->addr[0].flags, WITNESS_IPADDR_V4, "i->addr[0].flags");
+	torture_assert_str_equal(tctx, i->addr[0].ipv4, "192.168.3.45", "i->addr[0].ipv4");
+	torture_assert_str_equal(tctx, i->addr[0].ipv6, "0000:0000:38e8:eb26:8e00:0000:009e:6026", "i->addr[0].ipv6");
+
+	return true;
+}
+
 struct torture_suite *ndr_witness_suite(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = torture_suite_create(ctx, "witness");
@@ -320,5 +356,13 @@ struct torture_suite *ndr_witness_suite(TALLOC_CTX *ctx)
 					    NDR_OUT,
 					    0,
 					    witness_AsyncNotify_check_OUT);
+
+	torture_suite_add_ndr_pullpush_fn_test_flags(suite,
+					    witness_AsyncNotify,
+					    witness_AsyncNotify_data_move_OUT,
+					    NDR_OUT,
+					    0,
+					    witness_AsyncNotify_check_move_OUT);
+
 	return suite;
 }

@@ -389,7 +389,7 @@ static bool smbd_notifyd_init(struct messaging_context *msg, bool interactive)
 		return true;
 	}
 
-	status = reinit_after_fork(msg, ev, true);
+	status = reinit_after_fork(msg, ev, true, "smbd-notifyd");
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("%s: reinit_after_fork failed: %s\n",
 			  __func__, nt_errstr(status)));
@@ -588,7 +588,7 @@ static void smbd_accept_connection(struct tevent_context *ev,
 	}
 
 	if (s->parent->interactive) {
-		reinit_after_fork(msg_ctx, ev, true);
+		reinit_after_fork(msg_ctx, ev, true, NULL);
 		smbd_process(ev, msg_ctx, fd, true);
 		exit_server_cleanly("end of interactive mode");
 		return;
@@ -622,7 +622,7 @@ static void smbd_accept_connection(struct tevent_context *ev,
 		 * them, counting worker smbds. */
 		CatchChild();
 
-		status = smbd_reinit_after_fork(msg_ctx, ev, true);
+		status = smbd_reinit_after_fork(msg_ctx, ev, true, NULL);
 		if (!NT_STATUS_IS_OK(status)) {
 			if (NT_STATUS_EQUAL(status,
 					    NT_STATUS_TOO_MANY_OPENED_FILES)) {
@@ -705,7 +705,7 @@ static bool smbd_open_one_socket(struct smbd_parent_context *parent,
 			       ifss,
 			       true);
 	if (s->fd == -1) {
-		DEBUG(0,("smbd_open_once_socket: open_socket_in: "
+		DEBUG(0,("smbd_open_one_socket: open_socket_in: "
 			"%s\n", strerror(errno)));
 		TALLOC_FREE(s);
 		/*
@@ -723,7 +723,7 @@ static bool smbd_open_one_socket(struct smbd_parent_context *parent,
 	set_blocking(s->fd, False);
 
 	if (listen(s->fd, SMBD_LISTEN_BACKLOG) == -1) {
-		DEBUG(0,("open_sockets_smbd: listen: "
+		DEBUG(0,("smbd_open_one_socket: listen: "
 			"%s\n", strerror(errno)));
 			close(s->fd);
 		TALLOC_FREE(s);
@@ -736,7 +736,7 @@ static bool smbd_open_one_socket(struct smbd_parent_context *parent,
 			       smbd_accept_connection,
 			       s);
 	if (!s->fde) {
-		DEBUG(0,("open_sockets_smbd: "
+		DEBUG(0,("smbd_open_one_socket: "
 			 "tevent_add_fd: %s\n",
 			 strerror(errno)));
 		close(s->fd);
@@ -1383,9 +1383,7 @@ extern void build_options(bool screen);
 	if (is_daemon)
 		pidfile_create(lp_pid_directory(), "smbd");
 
-	status = reinit_after_fork(msg_ctx,
-				   ev_ctx,
-				   false);
+	status = reinit_after_fork(msg_ctx, ev_ctx, false, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		exit_daemon("reinit_after_fork() failed", map_errno_from_nt_status(status));
 	}

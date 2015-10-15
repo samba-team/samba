@@ -1754,7 +1754,7 @@ int main(int argc, const char **argv)
 
 	status = reinit_after_fork(winbind_messaging_context(),
 				   winbind_event_context(),
-				   false);
+				   false, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		exit_daemon("Winbindd reinit_after_fork() failed", map_errno_from_nt_status(status));
 	}

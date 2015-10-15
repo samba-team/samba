@@ -230,7 +230,16 @@ static int commit_open(
         /* EOF commit modes require us to know the initial file size. */
         if (c && (c->on_eof != EOF_NONE)) {
                 SMB_STRUCT_STAT st;
-                if (SMB_VFS_FSTAT(fsp, &st) == -1) {
+		/*
+		 * Setting the fd of the FSP is a hack
+		 * but also practiced elsewhere -
+		 * needed for calling the VFS.
+		 */
+		fsp->fh->fd = fd;
+		if (SMB_VFS_FSTAT(fsp, &st) == -1) {
+			int saved_errno = errno;
+			SMB_VFS_CLOSE(fsp);
+			errno = saved_errno;
                         return -1;
                 }
 		c->eof = st.st_ex_size;

@@ -33,6 +33,10 @@
 #include "replace.h"
 #include "talloc.h"
 
+#ifdef HAVE_SYS_AUXV_H
+#include <sys/auxv.h>
+#endif
+
 #ifdef TALLOC_BUILD_VERSION_MAJOR
 #if (TALLOC_VERSION_MAJOR != TALLOC_BUILD_VERSION_MAJOR)
 #error "TALLOC_VERSION_MAJOR != TALLOC_BUILD_VERSION_MAJOR"
@@ -60,19 +64,25 @@
 
 
 #define MAX_TALLOC_SIZE 0x10000000
-#define TALLOC_MAGIC_BASE 0xe814ec70
-#define TALLOC_MAGIC ( \
-	TALLOC_MAGIC_BASE + \
-	(TALLOC_VERSION_MAJOR << 12) + \
-	(TALLOC_VERSION_MINOR << 4) \
-)
 
 #define TALLOC_FLAG_FREE 0x01
 #define TALLOC_FLAG_LOOP 0x02
 #define TALLOC_FLAG_POOL 0x04		/* This is a talloc pool */
 #define TALLOC_FLAG_POOLMEM 0x08	/* This is allocated in a pool */
 
+/*
+ * Bits above this are random, used to make it harder to fake talloc
+ * headers during an attack.  Try not to change this without good reason.
+ */
+#define TALLOC_FLAG_MASK 0x0F
+
 #define TALLOC_MAGIC_REFERENCE ((const char *)1)
+
+#define TALLOC_MAGIC_BASE 0xe814ec70
+static unsigned int talloc_magic = (
+	TALLOC_MAGIC_BASE +
+	(TALLOC_VERSION_MAJOR << 12) +
+	(TALLOC_VERSION_MINOR << 4));
 
 /* by default we abort when given a bad pointer (such as when talloc_free() is called
    on a pointer that came from malloc() */
@@ -249,13 +259,13 @@ typedef int (*talloc_destructor_t)(void *);
 struct talloc_pool_hdr;
 
 struct talloc_chunk {
+	unsigned flags;
 	struct talloc_chunk *next, *prev;
 	struct talloc_chunk *parent, *child;
 	struct talloc_reference_handle *refs;
 	talloc_destructor_t destructor;
 	const char *name;
 	size_t size;
-	unsigned flags;
 
 	/*
 	 * limit semantics:
@@ -290,12 +300,61 @@ _PUBLIC_ int talloc_version_minor(void)
 	return TALLOC_VERSION_MINOR;
 }
 
+_PUBLIC_ int talloc_test_get_magic(void)
+{
+	return talloc_magic;
+}
+
 static void (*talloc_log_fn)(const char *message);
 
 _PUBLIC_ void talloc_set_log_fn(void (*log_fn)(const char *message))
 {
 	talloc_log_fn = log_fn;
 }
+
+#ifdef HAVE_CONSTRUCTOR_ATTRIBUTE
+void talloc_lib_init(void) __attribute__((constructor));
+void talloc_lib_init(void)
+{
+	uint32_t random_value;
+#if defined(HAVE_GETAUXVAL) && defined(AT_RANDOM)
+	uint8_t *p;
+	/*
+	 * Use the kernel-provided random values used for
+	 * ASLR.  This won't change per-exec, which is ideal for us
+	 */
+	p = (uint8_t *) getauxval(AT_RANDOM);
+	if (p) {
+		/*
+		 * We get 16 bytes from getauxval.  By calling rand(),
+		 * a totally insecure PRNG, but one that will
+		 * deterministically have a different value when called
+		 * twice, we ensure that if two talloc-like libraries
+		 * are somehow loaded in the same address space, that
+		 * because we choose different bytes, we will keep the
+		 * protection against collision of multiple talloc
+		 * libs.
+		 *
+		 * This protection is important because the effects of
+		 * passing a talloc pointer from one to the other may
+		 * be very hard to determine.
+		 */
+		int offset = rand() % (16 - sizeof(random_value));
+		memcpy(&random_value, p + offset, sizeof(random_value));
+	} else
+#endif
+	{
+		/*
+		 * Otherwise, hope the location we are loaded in
+		 * memory is randomised by someone else
+		 */
+		random_value = ((uintptr_t)talloc_lib_init & 0xFFFFFFFF);
+	}
+	talloc_magic = random_value & ~TALLOC_FLAG_MASK;
+}
+#else
+#warning "No __attribute__((constructor)) support found on this platform, additional talloc security measures not available"
+#endif
 
 static void talloc_log(const char *fmt, ...) PRINTF_ATTRIBUTE(1,2);
 static void talloc_log(const char *fmt, ...)
@@ -345,12 +404,6 @@ static void talloc_abort(const char *reason)
 
 static void talloc_abort_magic(unsigned magic)
 {
-	unsigned striped = magic - TALLOC_MAGIC_BASE;
-	unsigned major = (striped & 0xFFFFF000) >> 12;
-	unsigned minor = (striped & 0x00000FF0) >> 4;
-	talloc_log("Bad talloc magic[0x%08X/%u/%u] expected[0x%08X/%u/%u]\n",
-		   magic, major, minor,
-		   TALLOC_MAGIC, TALLOC_VERSION_MAJOR, TALLOC_VERSION_MINOR);
 	talloc_abort("Bad talloc magic value - wrong talloc version used/mixed");
 }
 
@@ -369,9 +422,9 @@ static inline struct talloc_chunk *talloc_chunk_from_ptr(const void *ptr)
 {
 	const char *pp = (const char *)ptr;
 	struct talloc_chunk *tc = discard_const_p(struct talloc_chunk, pp - TC_HDR_SIZE);
-	if (unlikely((tc->flags & (TALLOC_FLAG_FREE | ~0xF)) != TALLOC_MAGIC)) {
-		if ((tc->flags & (~0xFFF)) == TALLOC_MAGIC_BASE) {
-			talloc_abort_magic(tc->flags & (~0xF));
+	if (unlikely((tc->flags & (TALLOC_FLAG_FREE | ~TALLOC_FLAG_MASK)) != talloc_magic)) {
+		if ((tc->flags & (~0xF)) == talloc_magic) {
+			talloc_abort_magic(tc->flags & (~TALLOC_FLAG_MASK));
 			return NULL;
 		}
 
@@ -561,7 +614,7 @@ static inline struct talloc_chunk *talloc_alloc_pool(struct talloc_chunk *parent
 
 	pool_hdr->end = (void *)((char *)pool_hdr->end + chunk_size);
 
-	result->flags = TALLOC_MAGIC | TALLOC_FLAG_POOLMEM;
+	result->flags = talloc_magic | TALLOC_FLAG_POOLMEM;
 	result->pool = pool_hdr;
 
 	pool_hdr->object_count++;
@@ -617,7 +670,7 @@ static inline void *__talloc_with_prefix(const void *context, size_t size,
 			return NULL;
 		}
 		tc = (struct talloc_chunk *)(ptr + prefix_len);
-		tc->flags = TALLOC_MAGIC;
+		tc->flags = talloc_magic;
 		tc->pool  = NULL;
 
 		talloc_memlimit_grow(limit, total_len);

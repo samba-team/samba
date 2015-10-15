@@ -21,6 +21,8 @@
 #include "lib/util/iov_buf.h"
 #include <sys/socket.h>
 
+#if defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL)
+
 ssize_t msghdr_prep_fds(struct msghdr *msg, uint8_t *buf, size_t bufsize,
 			const int *fds, size_t num_fds)
 {
@@ -57,6 +59,132 @@ ssize_t msghdr_prep_fds(struct msghdr *msg, uint8_t *buf, size_t bufsize,
 
 	return cmsg_space;
 }
+
+size_t msghdr_prep_recv_fds(struct msghdr *msg, uint8_t *buf, size_t bufsize,
+			    size_t num_fds)
+{
+	size_t ret = CMSG_SPACE(sizeof(int) * num_fds);
+
+	if (bufsize < ret) {
+		return ret;
+	}
+	if (msg != NULL) {
+		if (num_fds != 0) {
+			msg->msg_control = buf;
+			msg->msg_controllen = ret;
+		} else {
+			msg->msg_control = NULL;
+			msg->msg_controllen = 0;
+		}
+	}
+	return ret;
+}
+
+size_t msghdr_extract_fds(struct msghdr *msg, int *fds, size_t fds_size)
+{
+	struct cmsghdr *cmsg;
+	size_t num_fds;
+
+	for(cmsg = CMSG_FIRSTHDR(msg);
+	    cmsg != NULL;
+	    cmsg = CMSG_NXTHDR(msg, cmsg))
+	{
+		if ((cmsg->cmsg_type == SCM_RIGHTS) &&
+		    (cmsg->cmsg_level == SOL_SOCKET)) {
+			break;
+		}
+	}
+
+	if (cmsg == NULL) {
+		return 0;
+	}
+
+	num_fds = (cmsg->cmsg_len - CMSG_LEN(0)) / sizeof(int);
+
+	if ((num_fds != 0) && (fds != NULL) && (fds_size >= num_fds)) {
+		memcpy(fds, CMSG_DATA(cmsg), num_fds * sizeof(int));
+	}
+
+	return num_fds;
+}
+
+#elif defined(HAVE_STRUCT_MSGHDR_MSG_ACCRIGHTS)
+
+ssize_t msghdr_prep_fds(struct msghdr *msg, uint8_t *buf, size_t bufsize,
+			const int *fds, size_t num_fds)
+{
+	size_t needed;
+
+	if (num_fds > INT8_MAX) {
+		return -1;
+	}
+
+	needed = sizeof(int) * num_fds;
+
+	if ((msg == NULL) || (needed > bufsize)) {
+		return needed;
+	}
+
+	memcpy(buf, fds, needed);
+
+	msg->msg_accrights = (caddr_t) buf;
+	msg->msg_accrightslen = needed;
+
+	return needed;
+}
+
+size_t msghdr_prep_recv_fds(struct msghdr *msg, uint8_t *buf, size_t bufsize,
+			    size_t num_fds)
+{
+	size_t ret = num_fds * sizeof(int);
+
+	if (bufsize < ret) {
+		return ret;
+	}
+
+	if (msg != NULL) {
+		if (num_fds != 0) {
+			msg->msg_accrights = (caddr_t) buf;
+			msg->msg_accrightslen = ret;
+		} else {
+			msg->msg_accrights = NULL;
+			msg->msg_accrightslen = 0;
+		}
+	}
+	return ret;
+}
+
+size_t msghdr_extract_fds(struct msghdr *msg, int *fds, size_t fds_size)
+{
+	size_t num_fds = msg->msg_accrightslen / sizeof(int);
+
+	if ((fds != 0) && (num_fds <= fds_size)) {
+		memcpy(fds, msg->msg_accrights, msg->msg_accrightslen);
+	}
+
+	return num_fds;
+}
+
+#else
+
+ssize_t msghdr_prep_fds(struct msghdr *msg, uint8_t *buf, size_t bufsize,
+			const int *fds, size_t num_fds)
+{
+	return -1;
+}
+
+size_t msghdr_prep_recv_fds(struct msghdr *msg, uint8_t *buf, size_t bufsize,
+			    size_t num_fds)
+{
+	return 0;
+}
+
+size_t msghdr_extract_fds(struct msghdr *msg, int *fds, size_t fds_size)
+{
+	return 0;
+}
+
+#endif
 
 struct msghdr_buf {
 	struct msghdr msg;
@@ -129,52 +257,4 @@ ssize_t msghdr_copy(struct msghdr_buf *msg, size_t msgsize,
 struct msghdr *msghdr_buf_msghdr(struct msghdr_buf *msg)
 {
 	return &msg->msg;
-}
-
-size_t msghdr_prep_recv_fds(struct msghdr *msg, uint8_t *buf, size_t bufsize,
-			    size_t num_fds)
-{
-	size_t ret = CMSG_SPACE(sizeof(int) * num_fds);
-
-	if (bufsize < ret) {
-		return ret;
-	}
-	if (msg != NULL) {
-		if (num_fds != 0) {
-			msg->msg_control = buf;
-			msg->msg_controllen = ret;
-		} else {
-			msg->msg_control = NULL;
-			msg->msg_controllen = 0;
-		}
-	}
-	return ret;
-}
-
-size_t msghdr_extract_fds(struct msghdr *msg, int *fds, size_t fds_size)
-{
-	struct cmsghdr *cmsg;
-	size_t num_fds;
-
-	for(cmsg = CMSG_FIRSTHDR(msg);
-	    cmsg != NULL;
-	    cmsg = CMSG_NXTHDR(msg, cmsg))
-	{
-		if ((cmsg->cmsg_type == SCM_RIGHTS) &&
-		    (cmsg->cmsg_level == SOL_SOCKET)) {
-			break;
-		}
-	}
-
-	if (cmsg == NULL) {
-		return 0;
-	}
-
-	num_fds = (cmsg->cmsg_len - CMSG_LEN(0)) / sizeof(int);
-
-	if ((num_fds != 0) && (fds != NULL) && (fds_size >= num_fds)) {
-		memcpy(fds, CMSG_DATA(cmsg), num_fds * sizeof(int));
-	}
-
-	return num_fds;
 }

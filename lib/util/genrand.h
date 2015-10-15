@@ -20,17 +20,6 @@
 */
 
 /**
- Copy any user given reseed data.
-**/
-
-void set_rand_reseed_callback(void (*fn)(void *, int *), void *userdata);
-
-/**
- * Tell the random number generator it needs to reseed.
- */
-void set_need_random_reseed(void);
-
-/**
  Interface to the (hopefully) good crypto random number generator.
  Will use our internal PRNG if more than 40 bytes of random generation
  has been requested, otherwise tries to read from /dev/random

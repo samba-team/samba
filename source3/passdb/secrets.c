@@ -37,28 +37,10 @@
 
 static struct db_context *db_ctx;
 
-/**
- * Use a TDB to store an incrementing random seed.
- *
- * Initialised to the current pid, the very first time Samba starts,
- * and incremented by one each time it is needed.
- *
- * @note Not called by systems with a working /dev/urandom.
- */
-static void get_rand_seed(void *userdata, int *new_seed)
-{
-	*new_seed = getpid();
-	if (db_ctx) {
-		dbwrap_trans_change_int32_atomic_bystring(
-			db_ctx, "INFO/random_seed", new_seed, 1);
-	}
-}
-
 /* open up the secrets database with specified private_dir path */
 bool secrets_init_path(const char *private_dir)
 {
 	char *fname = NULL;
-	unsigned char dummy;
 	TALLOC_CTX *frame;
 
 	if (db_ctx != NULL) {
@@ -85,17 +67,6 @@ bool secrets_init_path(const char *private_dir)
 		TALLOC_FREE(frame);
 		return False;
 	}
-
-	/**
-	 * Set a reseed function for the crypto random generator
-	 *
-	 * This avoids a problem where systems without /dev/urandom
-	 * could send the same challenge to multiple clients
-	 */
-	set_rand_reseed_callback(get_rand_seed, NULL);
-
-	/* Ensure that the reseed is done now, while we are root, etc */
-	generate_random_buffer(&dummy, sizeof(dummy));
 
 	TALLOC_FREE(frame);
 	return True;

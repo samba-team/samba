@@ -247,11 +247,6 @@ bld.SAMBA3_SUBSYSTEM('KRBCLIENT',
                      source='libads/kerberos.c libads/ads_status.c',
                      public_deps='krb5samba k5crypto gssapi LIBTSOCKET CLDAP LIBNMB')
 
-bld.SAMBA3_LIBRARY('sys_rw',
-                   source='lib/sys_rw.c lib/sys_rw_data.c',
-                   deps='replace iov_buf',
-                   private_library=True)
-
 bld.SAMBA3_SUBSYSTEM('samba3util',
                    source='''lib/system.c
                    lib/sendfile.c
@@ -1527,7 +1522,6 @@ bld.RECURSE('librpc')
 bld.RECURSE('librpc/idl')
 bld.RECURSE('libsmb')
 bld.RECURSE('modules')
-bld.RECURSE('pam_smbpass')
 bld.RECURSE('param')
 bld.RECURSE('passdb')
 bld.RECURSE('rpc_server')

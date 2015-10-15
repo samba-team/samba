@@ -1403,7 +1403,7 @@ struct torture_suite *torture_smb2_rename_init(void)
 	torture_suite_add_1smb2_test(suite, "simple",
 		torture_smb2_rename_simple);
 
-	torture_suite_add_1smb2_test(suite, "simple_nodelete)",
+	torture_suite_add_1smb2_test(suite, "simple_nodelete",
 		torture_smb2_rename_simple2);
 
 	torture_suite_add_1smb2_test(suite, "no_sharing",

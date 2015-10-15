@@ -2189,9 +2189,7 @@ struct srvid_reply_handler_data {
 	const char *srvid_str;
 };
 
-static void srvid_broadcast_reply_handler(struct ctdb_context *ctdb,
-					 uint64_t srvid,
-					 TDB_DATA data,
+static void srvid_broadcast_reply_handler(uint64_t srvid, TDB_DATA data,
 					 void *private_data)
 {
 	struct srvid_reply_handler_data *d =
@@ -3772,6 +3770,7 @@ static int control_catdb(struct ctdb_context *ctdb, int argc, const char **argv)
 	}
 
 	ZERO_STRUCT(c);
+	c.ctdb = ctdb;
 	c.f = stdout;
 	c.printemptyrecords = (bool)options.printemptyrecords;
 	c.printdatasize = (bool)options.printdatasize;
@@ -3807,6 +3806,7 @@ static int cattdb_traverse(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data,
 	d->count++;
 
 	ZERO_STRUCT(c);
+	c.ctdb = d->ctdb;
 	c.f = stdout;
 	c.printemptyrecords = (bool)options.printemptyrecords;
 	c.printdatasize = (bool)options.printdatasize;
@@ -3814,7 +3814,7 @@ static int cattdb_traverse(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data,
 	c.printhash = (bool)options.printhash;
 	c.printrecordflags = true;
 
-	return ctdb_dumpdb_record(d->ctdb, key, data, &c);
+	return ctdb_dumpdb_record(key, data, &c);
 }
 
 /*
@@ -5581,7 +5581,7 @@ static int control_restoredb(struct ctdb_context *ctdb, int argc, const char **a
 	struct ctdb_node_map *nodemap=NULL;
 	struct ctdb_vnn_map *vnnmap=NULL;
 	int i, fh;
-	struct ctdb_control_wipe_database w;
+	struct ctdb_control_transdb w;
 	uint32_t *nodes;
 	uint32_t generation;
 	struct tm *tm;
@@ -5824,6 +5824,7 @@ static int control_dumpdbbackup(struct ctdb_context *ctdb, int argc, const char 
 		dbhdr.name, m->db_id, tbuf);
 
 	ZERO_STRUCT(c);
+	c.ctdb = ctdb;
 	c.f = stdout;
 	c.printemptyrecords = (bool)options.printemptyrecords;
 	c.printdatasize = (bool)options.printdatasize;
@@ -5839,7 +5840,7 @@ static int control_dumpdbbackup(struct ctdb_context *ctdb, int argc, const char 
 		rec = ctdb_marshall_loop_next(m, rec, &reqid,
 					      NULL, &key, &data);
 
-		ctdb_dumpdb_record(ctdb, key, data, &c);
+		ctdb_dumpdb_record(key, data, &c);
 	}
 
 	printf("Dumped %d records\n", i);
@@ -5861,7 +5862,7 @@ static int control_wipedb(struct ctdb_context *ctdb, int argc,
 	struct ctdb_node_map *nodemap = NULL;
 	struct ctdb_vnn_map *vnnmap = NULL;
 	int i;
-	struct ctdb_control_wipe_database w;
+	struct ctdb_control_transdb w;
 	uint32_t *nodes;
 	uint32_t generation;
 	uint8_t flags;
@@ -6033,8 +6034,7 @@ static int control_dumpmemory(struct ctdb_context *ctdb, int argc, const char **
 /*
   handler for memory dumps
 */
-static void mem_dump_handler(struct ctdb_context *ctdb, uint64_t srvid, 
-			     TDB_DATA data, void *private_data)
+static void mem_dump_handler(uint64_t srvid, TDB_DATA data, void *private_data)
 {
 	sys_write(1, data.dptr, data.dsize);
 	exit(0);
@@ -6105,8 +6105,8 @@ static int control_msgsend(struct ctdb_context *ctdb, int argc, const char **arg
 /*
   handler for msglisten
 */
-static void msglisten_handler(struct ctdb_context *ctdb, uint64_t srvid, 
-			     TDB_DATA data, void *private_data)
+static void msglisten_handler(uint64_t srvid, TDB_DATA data,
+			      void *private_data)
 {
 	int i;
 

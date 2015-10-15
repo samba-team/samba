@@ -117,6 +117,7 @@ static bool Ucrit_addPid( struct server_id pid )
 static int print_share_mode(const struct share_mode_entry *e,
 			    const char *sharepath,
 			    const char *fname,
+			    const char *sname,
 			    void *dummy)
 {
 	static int count;
@@ -190,7 +191,10 @@ static int print_share_mode(const struct share_mode_entry *e,
 			d_printf("NONE            ");
 		}
 
-		d_printf(" %s   %s   %s",sharepath, fname, time_to_asc((time_t)e->time.tv_sec));
+		d_printf(" %s   %s%s   %s",
+			 sharepath, fname,
+			 sname ? sname : "",
+			 time_to_asc((time_t)e->time.tv_sec));
 	}
 
 	return 0;

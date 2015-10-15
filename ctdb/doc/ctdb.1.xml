@@ -217,7 +217,7 @@
 	  Specify that FILENAME is the name of the Unix domain
 	  socket to use when connecting to the local CTDB
 	  daemon. The default is
-	  <filename>/tmp/ctdb.socket</filename>.
+	  <filename>/usr/local/var/run/ctdb/ctdbd.socket</filename>.
 	</para>
       </listitem>
       </varlistentry>
@@ -1088,54 +1088,94 @@ DB Statistics: locking.tdb
     <refsect2>
       <title>reloadnodes</title>
       <para>
-	This command is used when adding new nodes, or removing existing nodes from an existing cluster.
+	This command is used when adding new nodes, or removing
+	existing nodes from an existing cluster.
       </para>
       <para>
-	Procedure to add a node:
+	Procedure to add nodes:
       </para>
+      <orderedlist>
+	<listitem>
+	  <para>
+	     To expand an existing cluster, first ensure with
+	     <command>ctdb status</command> that all nodes are up and
+	     running and that they are all healthy.  Do not try to
+	     expand a cluster unless it is completely healthy!
+	  </para>
+	</listitem>
+	<listitem>
+	  <para>
+	    On all nodes, edit <filename>/usr/local/etc/ctdb/nodes</filename>
+	    and <emphasis>add the new nodes at the end of this
+	    file</emphasis>.
+	  </para>
+	</listitem>
+	<listitem>
+	  <para>
+	    Verify that all the nodes have identical
+	    <filename>/usr/local/etc/ctdb/nodes</filename> files after adding
+	    the new nodes.
+	  </para>
+	</listitem>
+	<listitem>
+	  <para>
+	    Run <command>ctdb reloadnodes</command> to force all nodes
+	    to reload the nodes file.
+	  </para>
+	</listitem>
+	<listitem>
+	  <para>
+	    Use <command>ctdb status</command> on all nodes and verify
+	    that they now show the additional nodes.
+	  </para>
+	</listitem>
+	<listitem>
+	  <para>
+	    Install and configure the new node and bring it online.
+	  </para>
+	</listitem>
+      </orderedlist>
       <para>
-	1, To expand an existing cluster, first ensure with 'ctdb status' that
-	all nodes are up and running and that they are all healthy.
-	Do not try to expand a cluster unless it is completely healthy!
+	Procedure to remove nodes:
       </para>
-      <para>
-	2, On all nodes, edit /etc/ctdb/nodes and add the new node as the last
-	entry to the file. The new node MUST be added to the end of this file!
-      </para>
-      <para>
-	3, Verify that all the nodes have identical /etc/ctdb/nodes files after you edited them and added the new node!
-      </para>
-      <para>
-	4, Run 'ctdb reloadnodes' to force all nodes to reload the nodesfile.
-      </para>
-      <para>
-	5, Use 'ctdb status' on all nodes and verify that they now show the additional node.
-      </para>
-      <para>
-	6, Install and configure the new node and bring it online.
-      </para>
-      <para>
-	Procedure to remove a node:
-      </para>
-      <para>
-	1, To remove a node from an existing cluster, first ensure with 'ctdb status' that
-	all nodes, except the node to be deleted, are up and running and that they are all healthy.
-	Do not try to remove a node from a cluster unless the cluster is completely healthy!
-      </para>
-      <para>
-	2, Shutdown and poweroff the node to be removed.
-      </para>
-      <para>
-	3, On all other nodes, edit the /etc/ctdb/nodes file and comment out the node to be removed. Do not delete the line for that node, just comment it out by adding a '#' at the beginning of the line.
-      </para>
-      <para>
-	4, Run 'ctdb reloadnodes' to force all nodes to reload the nodesfile.
-      </para>
-      <para>
-	5, Use 'ctdb status' on all nodes and verify that the deleted node no longer shows up in the list..
-      </para>
-      <para>
-      </para>
+      <orderedlist>
+	<listitem>
+	  <para>
+	    To remove nodes from an existing cluster, first ensure
+	    with <command>ctdb status</command> that all nodes, except
+	    the node to be deleted, are up and running and that they
+	    are all healthy.  Do not try to remove nodes from a
+	    cluster unless the cluster is completely healthy!
+	  </para>
+	</listitem>
+	<listitem>
+	  <para>
+	    Shutdown and power off the node to be removed.
+	  </para>
+	</listitem>
+	<listitem>
+	  <para>
+	    On all other nodes, edit the
+	    <filename>/usr/local/etc/ctdb/nodes</filename> file and
+	    <emphasis>comment out</emphasis> the nodes to be removed.
+	    <emphasis>Do not delete the lines for the deleted
+	    nodes</emphasis>, just comment them out by adding a '#' at
+	    the beginning of the lines.
+	  </para>
+	</listitem>
+	<listitem>
+	  <para>
+	    Run <command>ctdb reloadnodes</command> to force all nodes
+	    to reload the nodes file.
+	  </para>
+	</listitem>
+	<listitem>
+	  <para>
+	    Use <command>ctdb status</command> on all nodes and verify
+	    that the deleted nodes are no longer listed.
+	  </para>
+	</listitem>
+      </orderedlist>
 
     </refsect2>
 
@@ -1177,24 +1217,24 @@ DB Statistics: locking.tdb
 	<screen>
 # ctdb getdbmap
 Number of databases:10
-dbid:0x435d3410 name:notify.tdb path:/var/ctdb/notify.tdb.0 
-dbid:0x42fe72c5 name:locking.tdb path:/var/ctdb/locking.tdb.0
-dbid:0x1421fb78 name:brlock.tdb path:/var/ctdb/brlock.tdb.0 
-dbid:0x17055d90 name:connections.tdb path:/var/ctdb/connections.tdb.0 
-dbid:0xc0bdde6a name:sessionid.tdb path:/var/ctdb/sessionid.tdb.0 
-dbid:0x122224da name:test.tdb path:/var/ctdb/test.tdb.0 
-dbid:0x2672a57f name:idmap2.tdb path:/var/ctdb/persistent/idmap2.tdb.0 PERSISTENT
-dbid:0xb775fff6 name:secrets.tdb path:/var/ctdb/persistent/secrets.tdb.0 PERSISTENT
-dbid:0xe98e08b6 name:group_mapping.tdb path:/var/ctdb/persistent/group_mapping.tdb.0 PERSISTENT
-dbid:0x7bbbd26c name:passdb.tdb path:/var/ctdb/persistent/passdb.tdb.0 PERSISTENT
+dbid:0x435d3410 name:notify.tdb path:/usr/local/var/lib/ctdb/notify.tdb.0
+dbid:0x42fe72c5 name:locking.tdb path:/usr/local/var/lib/ctdb/locking.tdb.0
+dbid:0x1421fb78 name:brlock.tdb path:/usr/local/var/lib/ctdb/brlock.tdb.0
+dbid:0x17055d90 name:connections.tdb path:/usr/local/var/lib/ctdb/connections.tdb.0
+dbid:0xc0bdde6a name:sessionid.tdb path:/usr/local/var/lib/ctdb/sessionid.tdb.0
+dbid:0x122224da name:test.tdb path:/usr/local/var/lib/ctdb/test.tdb.0
+dbid:0x2672a57f name:idmap2.tdb path:/usr/local/var/lib/ctdb/persistent/idmap2.tdb.0 PERSISTENT
+dbid:0xb775fff6 name:secrets.tdb path:/usr/local/var/lib/ctdb/persistent/secrets.tdb.0 PERSISTENT
+dbid:0xe98e08b6 name:group_mapping.tdb path:/usr/local/var/lib/ctdb/persistent/group_mapping.tdb.0 PERSISTENT
+dbid:0x7bbbd26c name:passdb.tdb path:/usr/local/var/lib/ctdb/persistent/passdb.tdb.0 PERSISTENT
 
 # ctdb getdbmap  # example for unhealthy database
 Number of databases:1
-dbid:0xb775fff6 name:secrets.tdb path:/var/ctdb/persistent/secrets.tdb.0 PERSISTENT UNHEALTHY
+dbid:0xb775fff6 name:secrets.tdb path:/usr/local/var/lib/ctdb/persistent/secrets.tdb.0 PERSISTENT UNHEALTHY
 
 # ctdb -X getdbmap
 |ID|Name|Path|Persistent|Unhealthy|
-|0x7bbbd26c|passdb.tdb|/var/ctdb/persistent/passdb.tdb.0|1|0|
+|0x7bbbd26c|passdb.tdb|/usr/local/var/lib/ctdb/persistent/passdb.tdb.0|1|0|
 	</screen>
       </refsect3>
     </refsect2>
@@ -1494,16 +1534,16 @@ RUNNING
 # ctdb getdbstatus test.tdb.0
 dbid: 0x122224da
 name: test.tdb
-path: /var/ctdb/test.tdb.0
+path: /usr/local/var/lib/ctdb/test.tdb.0
 PERSISTENT: no
 HEALTH: OK
 
 # ctdb getdbstatus registry.tdb  # with a corrupted TDB
 dbid: 0xf2a58948
 name: registry.tdb
-path: /var/ctdb/persistent/registry.tdb.0
+path: /usr/local/var/lib/ctdb/persistent/registry.tdb.0
 PERSISTENT: yes
-HEALTH: NO-HEALTHY-NODES - ERROR - Backup of corrupted TDB in '/var/ctdb/persistent/registry.tdb.0.corrupted.20091208091949.0Z'
+HEALTH: NO-HEALTHY-NODES - ERROR - Backup of corrupted TDB in '/usr/local/var/lib/ctdb/persistent/registry.tdb.0.corrupted.20091208091949.0Z'
 	</screen>
       </refsect3>
     </refsect2>

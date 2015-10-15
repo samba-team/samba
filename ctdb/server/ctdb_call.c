@@ -27,6 +27,7 @@
 #include "system/filesys.h"
 #include "../include/ctdb_private.h"
 #include "../common/rb_tree.h"
+#include "common/reqid.h"
 
 struct ctdb_sticky_record {
 	struct ctdb_context *ctdb;
@@ -190,6 +191,7 @@ static void ctdb_send_dmaster_reply(struct ctdb_db_context *ctdb_db,
 
 	r->hdr.destnode  = new_dmaster;
 	r->hdr.reqid     = reqid;
+	r->hdr.generation = ctdb_db->generation;
 	r->rsn           = header->rsn;
 	r->keylen        = key.dsize;
 	r->datalen       = data.dsize;
@@ -242,6 +244,7 @@ static void ctdb_call_send_dmaster(struct ctdb_db_context *ctdb_db,
 	CTDB_NO_MEMORY_FATAL(ctdb, r);
 	r->hdr.destnode  = lmaster;
 	r->hdr.reqid     = c->hdr.reqid;
+	r->hdr.generation = ctdb_db->generation;
 	r->db_id         = c->db_id;
 	r->rsn           = header->rsn;
 	r->dmaster       = c->hdr.srcnode;
@@ -332,7 +335,7 @@ static void ctdb_become_dmaster(struct ctdb_db_context *ctdb_db,
 	header.dmaster = ctdb->pnn;
 	header.flags = record_flags;
 
-	state = ctdb_reqid_find(ctdb, hdr->reqid, struct ctdb_call_state);
+	state = reqid_find(ctdb->idr, hdr->reqid, struct ctdb_call_state);
 
 	if (state) {
 		if (state->call->flags & CTDB_CALL_FLAG_VACUUM_MIGRATION) {
@@ -416,7 +419,7 @@ struct dmaster_defer_call {
 };
 
 struct dmaster_defer_queue {
-	struct ctdb_context *ctdb;
+	struct ctdb_db_context *ctdb_db;
 	uint32_t generation;
 	struct dmaster_defer_call *deferred_calls;
 };
@@ -436,7 +439,7 @@ static void dmaster_defer_reprocess(struct tevent_context *ev,
 static int dmaster_defer_queue_destructor(struct dmaster_defer_queue *ddq)
 {
 	/* Ignore requests, if database recovery happens in-between. */
-	if (ddq->generation != ddq->ctdb->vnn_map->generation) {
+	if (ddq->generation != ddq->ctdb_db->generation) {
 		return 0;
 	}
 
@@ -480,8 +483,15 @@ static int dmaster_defer_setup(struct ctdb_db_context *ctdb_db,
 	/* Already exists */
 	ddq = trbt_lookuparray32(ctdb_db->defer_dmaster, k[0], k);
 	if (ddq != NULL) {
-		talloc_free(k);
-		return 0;
+		if (ddq->generation == ctdb_db->generation) {
+			talloc_free(k);
+			return 0;
+		}
+
+		/* Recovery ocurred - get rid of old queue. All the deferred
+		 * requests will be resent anyway from ctdb_call_resend_db.
+		 */
+		talloc_free(ddq);
 	}
 
 	ddq = talloc(hdr, struct dmaster_defer_queue);
@@ -490,7 +500,7 @@ static int dmaster_defer_setup(struct ctdb_db_context *ctdb_db,
 		talloc_free(k);
 		return -1;
 	}
-	ddq->ctdb = ctdb_db->ctdb;
+	ddq->ctdb_db = ctdb_db;
 	ddq->generation = hdr->generation;
 	ddq->deferred_calls = NULL;
 
@@ -560,6 +570,23 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 	size_t len;
 	int ret;
 
+	ctdb_db = find_ctdb_db(ctdb, c->db_id);
+	if (!ctdb_db) {
+		ctdb_send_error(ctdb, hdr, -1,
+				"Unknown database in request. db_id==0x%08x",
+				c->db_id);
+		return;
+	}
+
+	if (hdr->generation != ctdb_db->generation) {
+		DEBUG(DEBUG_DEBUG,
+		      ("ctdb operation %u request %u from node %u to %u had an"
+		       " invalid generation:%u while our generation is:%u\n",
+		       hdr->operation, hdr->reqid, hdr->srcnode, hdr->destnode,
+		       hdr->generation, ctdb_db->generation));
+		return;
+	}
+
 	key.dptr = c->data;
 	key.dsize = c->keylen;
 	data.dptr = c->data + c->keylen;
@@ -569,14 +596,6 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 	if (len <= c->hdr.length) {
 		memcpy(&record_flags, &c->data[c->keylen + c->datalen],
 		       sizeof(record_flags));
-	}
-
-	ctdb_db = find_ctdb_db(ctdb, c->db_id);
-	if (!ctdb_db) {
-		ctdb_send_error(ctdb, hdr, -1,
-				"Unknown database in request. db_id==0x%08x",
-				c->db_id);
-		return;
 	}
 
 	dmaster_defer_setup(ctdb_db, hdr, key);
@@ -607,7 +626,7 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 	if (header.dmaster != hdr->srcnode) {
 		DEBUG(DEBUG_ALERT,("pnn %u dmaster request for new-dmaster %u from non-master %u real-dmaster=%u key %08x dbid 0x%08x gen=%u curgen=%u c->rsn=%llu header.rsn=%llu reqid=%u keyval=0x%08x\n",
 			 ctdb->pnn, c->dmaster, hdr->srcnode, header.dmaster, ctdb_hash(&key),
-			 ctdb_db->db_id, hdr->generation, ctdb->vnn_map->generation,
+			 ctdb_db->db_id, hdr->generation, ctdb_db->generation,
 			 (unsigned long long)c->rsn, (unsigned long long)header.rsn, c->hdr.reqid,
 			 (key.dsize >= 4)?(*(uint32_t *)key.dptr):0));
 		if (header.rsn != 0 || header.dmaster != ctdb->pnn) {
@@ -622,7 +641,7 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 	if (header.rsn > c->rsn) {
 		DEBUG(DEBUG_ALERT,("pnn %u dmaster request with older RSN new-dmaster %u from %u real-dmaster=%u key %08x dbid 0x%08x gen=%u curgen=%u c->rsn=%llu header.rsn=%llu reqid=%u\n",
 			 ctdb->pnn, c->dmaster, hdr->srcnode, header.dmaster, ctdb_hash(&key),
-			 ctdb_db->db_id, hdr->generation, ctdb->vnn_map->generation,
+			 ctdb_db->db_id, hdr->generation, ctdb_db->generation,
 			 (unsigned long long)c->rsn, (unsigned long long)header.rsn, c->hdr.reqid));
 	}
 
@@ -862,12 +881,20 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 		return;
 	}
 
-
 	ctdb_db = find_ctdb_db(ctdb, c->db_id);
 	if (!ctdb_db) {
 		ctdb_send_error(ctdb, hdr, -1,
 				"Unknown database in request. db_id==0x%08x",
 				c->db_id);
+		return;
+	}
+
+	if (hdr->generation != ctdb_db->generation) {
+		DEBUG(DEBUG_DEBUG,
+		      ("ctdb operation %u request %u from node %u to %u had an"
+		       " invalid generation:%u while our generation is:%u\n",
+		       hdr->operation, hdr->reqid, hdr->srcnode, hdr->destnode,
+		       hdr->generation, ctdb_db->generation));
 		return;
 	}
 
@@ -1024,6 +1051,7 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 		CTDB_NO_MEMORY_FATAL(ctdb, r);
 		r->hdr.destnode  = c->hdr.srcnode;
 		r->hdr.reqid     = c->hdr.reqid;
+		r->hdr.generation = ctdb_db->generation;
 		r->status        = 0;
 		r->datalen       = data.dsize + sizeof(struct ctdb_ltdb_header);
 		header.rsn      -= 2;
@@ -1108,6 +1136,7 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	CTDB_NO_MEMORY_FATAL(ctdb, r);
 	r->hdr.destnode  = hdr->srcnode;
 	r->hdr.reqid     = hdr->reqid;
+	r->hdr.generation = ctdb_db->generation;
 	r->status        = call->status;
 	r->datalen       = call->reply_data.dsize;
 	if (call->reply_data.dsize) {
@@ -1131,7 +1160,7 @@ void ctdb_reply_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	struct ctdb_reply_call *c = (struct ctdb_reply_call *)hdr;
 	struct ctdb_call_state *state;
 
-	state = ctdb_reqid_find(ctdb, hdr->reqid, struct ctdb_call_state);
+	state = reqid_find(ctdb->idr, hdr->reqid, struct ctdb_call_state);
 	if (state == NULL) {
 		DEBUG(DEBUG_ERR, (__location__ " reqid %u not found\n", hdr->reqid));
 		return;
@@ -1140,6 +1169,15 @@ void ctdb_reply_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	if (hdr->reqid != state->reqid) {
 		/* we found a record  but it was the wrong one */
 		DEBUG(DEBUG_ERR, ("Dropped orphaned call reply with reqid:%u\n",hdr->reqid));
+		return;
+	}
+
+	if (hdr->generation != state->generation) {
+		DEBUG(DEBUG_DEBUG,
+		      ("ctdb operation %u request %u from node %u to %u had an"
+		       " invalid generation:%u while our generation is:%u\n",
+		       hdr->operation, hdr->reqid, hdr->srcnode, hdr->destnode,
+		       hdr->generation, state->generation));
 		return;
 	}
 
@@ -1237,7 +1275,16 @@ void ctdb_reply_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 		DEBUG(DEBUG_ERR,("Unknown db_id 0x%x in ctdb_reply_dmaster\n", c->db_id));
 		return;
 	}
-	
+
+	if (hdr->generation != ctdb_db->generation) {
+		DEBUG(DEBUG_DEBUG,
+		      ("ctdb operation %u request %u from node %u to %u had an"
+		       " invalid generation:%u while our generation is:%u\n",
+		       hdr->operation, hdr->reqid, hdr->srcnode, hdr->destnode,
+		       hdr->generation, ctdb_db->generation));
+		return;
+	}
+
 	key.dptr = c->data;
 	key.dsize = c->keylen;
 	data.dptr = &c->data[key.dsize];
@@ -1273,7 +1320,7 @@ void ctdb_reply_error(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	struct ctdb_reply_error *c = (struct ctdb_reply_error *)hdr;
 	struct ctdb_call_state *state;
 
-	state = ctdb_reqid_find(ctdb, hdr->reqid, struct ctdb_call_state);
+	state = reqid_find(ctdb->idr, hdr->reqid, struct ctdb_call_state);
 	if (state == NULL) {
 		DEBUG(DEBUG_ERR,("pnn %u Invalid reqid %u in ctdb_reply_error\n",
 			 ctdb->pnn, hdr->reqid));
@@ -1301,8 +1348,8 @@ void ctdb_reply_error(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 */
 static int ctdb_call_destructor(struct ctdb_call_state *state)
 {
-	DLIST_REMOVE(state->ctdb_db->ctdb->pending_calls, state);
-	ctdb_reqid_remove(state->ctdb_db->ctdb, state->reqid);
+	DLIST_REMOVE(state->ctdb_db->pending_calls, state);
+	reqid_remove(state->ctdb_db->ctdb->idr, state->reqid);
 	return 0;
 }
 
@@ -1314,11 +1361,11 @@ static void ctdb_call_resend(struct ctdb_call_state *state)
 {
 	struct ctdb_context *ctdb = state->ctdb_db->ctdb;
 
-	state->generation = ctdb->vnn_map->generation;
+	state->generation = state->ctdb_db->generation;
 
 	/* use a new reqid, in case the old reply does eventually come in */
-	ctdb_reqid_remove(ctdb, state->reqid);
-	state->reqid = ctdb_reqid_new(ctdb, state);
+	reqid_remove(ctdb->idr, state->reqid);
+	state->reqid = reqid_new(ctdb->idr, state);
 	state->c->hdr.reqid = state->reqid;
 
 	/* update the generation count for this request, so its valid with the new vnn_map */
@@ -1328,18 +1375,29 @@ static void ctdb_call_resend(struct ctdb_call_state *state)
 	state->c->hdr.destnode = ctdb->pnn;
 
 	ctdb_queue_packet(ctdb, &state->c->hdr);
-	DEBUG(DEBUG_NOTICE,("resent ctdb_call\n"));
+	DEBUG(DEBUG_NOTICE,("resent ctdb_call for db %s reqid %u generation %u\n",
+			    state->ctdb_db->db_name, state->reqid, state->generation));
 }
 
 /*
   resend all pending calls on recovery
  */
-void ctdb_call_resend_all(struct ctdb_context *ctdb)
+void ctdb_call_resend_db(struct ctdb_db_context *ctdb_db)
 {
 	struct ctdb_call_state *state, *next;
-	for (state=ctdb->pending_calls;state;state=next) {
+
+	for (state = ctdb_db->pending_calls; state; state = next) {
 		next = state->next;
 		ctdb_call_resend(state);
+	}
+}
+
+void ctdb_call_resend_all(struct ctdb_context *ctdb)
+{
+	struct ctdb_db_context *ctdb_db;
+
+	for (ctdb_db = ctdb->db_list; ctdb_db; ctdb_db = ctdb_db->next) {
+		ctdb_call_resend_db(ctdb_db);
 	}
 }
 
@@ -1417,7 +1475,7 @@ struct ctdb_call_state *ctdb_daemon_call_send_remote(struct ctdb_db_context *ctd
 	state->call = talloc(state, struct ctdb_call);
 	CTDB_NO_MEMORY_NULL(ctdb, state->call);
 
-	state->reqid = ctdb_reqid_new(ctdb, state);
+	state->reqid = reqid_new(ctdb->idr, state);
 	state->ctdb_db = ctdb_db;
 	talloc_set_destructor(state, ctdb_call_destructor);
 
@@ -1429,6 +1487,7 @@ struct ctdb_call_state *ctdb_daemon_call_send_remote(struct ctdb_db_context *ctd
 
 	/* this limits us to 16k outstanding messages - not unreasonable */
 	state->c->hdr.reqid     = state->reqid;
+	state->c->hdr.generation = ctdb_db->generation;
 	state->c->flags         = call->flags;
 	state->c->db_id         = ctdb_db->db_id;
 	state->c->callid        = call->call_id;
@@ -1443,9 +1502,9 @@ struct ctdb_call_state *ctdb_daemon_call_send_remote(struct ctdb_db_context *ctd
 	state->call->key.dptr       = &state->c->data[0];
 
 	state->state  = CTDB_CALL_WAIT;
-	state->generation = ctdb->vnn_map->generation;
+	state->generation = ctdb_db->generation;
 
-	DLIST_ADD(ctdb->pending_calls, state);
+	DLIST_ADD(ctdb_db->pending_calls, state);
 
 	ctdb_queue_packet(ctdb, &state->c->hdr);
 

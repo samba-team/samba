@@ -54,3 +54,19 @@ const char *cluster_support_features(void)
 
 	return v;
 }
+
+const char *lp_ctdbd_socket(void)
+{
+	const char *ret;
+
+	ret = lp__ctdbd_socket();
+	if (ret != NULL && strlen(ret) > 0) {
+		return ret;
+	}
+
+#ifdef CTDB_SOCKET
+	return CTDB_SOCKET;
+#else
+	return "";
+#endif
+}

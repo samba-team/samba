@@ -368,14 +368,10 @@ static void ctdb_check_health(struct event_context *ev, struct timed_event *te,
 	    ctdb->monitor->monitoring_mode == CTDB_MONITORING_DISABLED) {
 		skip_monitoring = true;
 	} else {
-		int i;
-		for (i=1; i<=NUM_DB_PRIORITIES; i++) {
-			if (ctdb->freeze_handles[i] != NULL) {
-				DEBUG(DEBUG_ERR,
-				      ("Skip monitoring since databases are frozen\n"));
-				skip_monitoring = true;
-				break;
-			}
+		if (ctdb_db_all_frozen(ctdb)) {
+			DEBUG(DEBUG_ERR,
+			      ("Skip monitoring since databases are frozen\n"));
+			skip_monitoring = true;
 		}
 	}
 

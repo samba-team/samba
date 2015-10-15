@@ -506,6 +506,11 @@ removeea setea
                            'int gettimeofday(struct timeval *tv, struct timezone *tz)',
                            define='HAVE_GETTIMEOFDAY_TZ', headers='sys/time.h')
 
+    conf.CHECK_C_PROTOTYPE('gettimeofday',
+                           'int gettimeofday(struct timeval *tv, void *tz)',
+                           define='HAVE_GETTIMEOFDAY_TZ_VOID',
+                           headers='sys/time.h')
+
     conf.CHECK_CODE('#include "test/snprintf.c"',
                     define="HAVE_C99_VSNPRINTF",
                     execute=True,

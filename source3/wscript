@@ -11,7 +11,7 @@ import build.charset
 import samba_utils, samba_version
 import samba3
 
-Options.default_prefix = '/usr/local/samba'
+default_prefix = Options.default_prefix = '/usr/local/samba'
 
 def set_options(opt):
 
@@ -1492,12 +1492,6 @@ main() {
         conf.env['CTDB_INCLUDE'] = conf.srcdir + '/ctdb/include'
         conf.env.with_ctdb = True
 
-    conf.CHECK_CODE('__attribute__((destructor)) static void cleanup(void) { }',
-                    'HAVE_FUNCTION_ATTRIBUTE_DESTRUCTOR',
-                    addmain=False,
-                    link=False,
-                    msg='Checking whether we can compile with __attribute__((destructor))')
-
     conf.CHECK_CODE('void seekdir(DIR *d, long loc) { return; }',
                     'SEEKDIR_RETURNS_VOID',
                     headers='sys/types.h dirent.h',
@@ -1582,7 +1576,7 @@ main() {
         versions = ['1.0', '0.16', '0.14']
         for version in versions:
             testlib = 'tracker-sparql-' + version
-            if conf.check_cfg(package=testlib,
+            if conf.CHECK_CFG(package=testlib,
                               args='--cflags --libs',
                               mandatory=False):
                 conf.SET_TARGET_TYPE(testlib, 'SYSLIB')

@@ -46,6 +46,7 @@ static PyObject *py_wrap_setxattr(PyObject *self, PyObject *args)
 	int blobsize;
 	int ret;
 	TALLOC_CTX *mem_ctx;
+	struct loadparm_context *lp_ctx;
 	struct db_context *eadb = NULL;
 	struct file_id id;
 	struct stat sbuf;
@@ -56,8 +57,11 @@ static PyObject *py_wrap_setxattr(PyObject *self, PyObject *args)
 
 	blob.length = blobsize;
 	mem_ctx = talloc_new(NULL);
-	eadb = db_open_tdb(mem_ctx, py_default_loadparm_context(mem_ctx), tdbname, 50000,
-			   TDB_DEFAULT, O_RDWR|O_CREAT, 0600, DBWRAP_LOCK_ORDER_2,
+
+	lp_ctx = py_default_loadparm_context(mem_ctx);
+	eadb = db_open_tdb(mem_ctx, tdbname, 50000,
+			   lpcfg_tdb_flags(lp_ctx, TDB_DEFAULT),
+			   O_RDWR|O_CREAT, 0600, DBWRAP_LOCK_ORDER_2,
 			   DBWRAP_FLAG_NONE);
 
 	if (eadb == NULL) {
@@ -91,6 +95,7 @@ static PyObject *py_wrap_getxattr(PyObject *self, PyObject *args)
 {
 	char *filename, *attribute, *tdbname;
 	TALLOC_CTX *mem_ctx;
+	struct loadparm_context *lp_ctx;
 	DATA_BLOB blob;
 	PyObject *ret_obj;
 	int ret;
@@ -104,8 +109,10 @@ static PyObject *py_wrap_getxattr(PyObject *self, PyObject *args)
 
 	mem_ctx = talloc_new(NULL);
 
-	eadb = db_open_tdb(mem_ctx, py_default_loadparm_context(mem_ctx), tdbname, 50000,
-			   TDB_DEFAULT, O_RDWR|O_CREAT, 0600, DBWRAP_LOCK_ORDER_2,
+	lp_ctx = py_default_loadparm_context(mem_ctx);
+	eadb = db_open_tdb(mem_ctx, tdbname, 50000,
+			   lpcfg_tdb_flags(lp_ctx, TDB_DEFAULT),
+			   O_RDWR|O_CREAT, 0600, DBWRAP_LOCK_ORDER_2,
 			   DBWRAP_FLAG_NONE);
 
 	if (eadb == NULL) {

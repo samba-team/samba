@@ -47,6 +47,8 @@ extern "C" {
 
 int talloc_version_major(void);
 int talloc_version_minor(void);
+/* This is mostly useful only for testing */
+int talloc_test_get_magic(void);
 
 /**
  * @brief Define a talloc parent type

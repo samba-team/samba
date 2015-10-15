@@ -181,7 +181,6 @@ struct tevent_req *notifyd_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	struct tevent_req *req, *subreq;
 	struct notifyd_state *state;
 	struct server_id_db *names_db;
-	NTSTATUS status;
 	int ret;
 
 	req = tevent_req_create(mem_ctx, &state, struct notifyd_state);
@@ -275,10 +274,10 @@ struct tevent_req *notifyd_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	tevent_req_set_callback(subreq, notifyd_clean_peers_finished,
 				req);
 
-	status = register_with_ctdbd(ctdbd_conn, CTDB_SRVID_SAMBA_NOTIFY_PROXY,
-				     notifyd_snoop_broadcast, state);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_error(req, map_errno_from_nt_status(status));
+	ret = register_with_ctdbd(ctdbd_conn, CTDB_SRVID_SAMBA_NOTIFY_PROXY,
+				  notifyd_snoop_broadcast, state);
+	if (ret != 0) {
+		tevent_req_error(req, ret);
 		return tevent_req_post(req, ev);
 	}
 
@@ -792,7 +791,7 @@ static void notifyd_send_delete(struct messaging_context *msg_ctx,
 	};
 	uint8_t nul = 0;
 	struct iovec iov[3];
-	NTSTATUS status;
+	int ret;
 
 	/*
 	 * Send a rec_change to ourselves to delete a dead entry
@@ -804,13 +803,13 @@ static void notifyd_send_delete(struct messaging_context *msg_ctx,
 	iov[1] = (struct iovec) { .iov_base = key.dptr, .iov_len = key.dsize };
 	iov[2] = (struct iovec) { .iov_base = &nul, .iov_len = sizeof(nul) };
 
-	status = messaging_send_iov_from(
+	ret = messaging_send_iov_from(
 		msg_ctx, instance->client, messaging_server_id(msg_ctx),
 		MSG_SMB_NOTIFY_REC_CHANGE, iov, ARRAY_SIZE(iov), NULL, 0);
 
-	if (!NT_STATUS_IS_OK(status)) {
+	if (ret != 0) {
 		DEBUG(10, ("%s: messaging_send_iov_from returned %s\n",
-			   __func__, nt_errstr(status)));
+			   __func__, strerror(ret)));
 	}
 }
 
@@ -943,11 +942,11 @@ static void notifyd_broadcast_reclog(struct ctdbd_connection *ctdbd_conn,
 				     struct server_id src,
 				     struct messaging_reclog *log)
 {
-	NTSTATUS status;
 	enum ndr_err_code ndr_err;
 	uint8_t msghdr[MESSAGE_HDR_LENGTH];
 	DATA_BLOB blob;
 	struct iovec iov[2];
+	int ret;
 
 	if (log == NULL) {
 		return;
@@ -972,13 +971,13 @@ static void notifyd_broadcast_reclog(struct ctdbd_connection *ctdbd_conn,
 	iov[1] = (struct iovec) { .iov_base = blob.data,
 				  .iov_len = blob.length };
 
-	status = ctdbd_messaging_send_iov(
+	ret = ctdbd_messaging_send_iov(
 		ctdbd_conn, CTDB_BROADCAST_VNNMAP,
 		CTDB_SRVID_SAMBA_NOTIFY_PROXY, iov, ARRAY_SIZE(iov));
 	TALLOC_FREE(blob.data);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (ret != 0) {
 		DEBUG(1, ("%s: ctdbd_messaging_send failed: %s\n",
-			  __func__, nt_errstr(status)));
+			  __func__, strerror(ret)));
 		goto done;
 	}
 

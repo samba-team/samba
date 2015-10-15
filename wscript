@@ -15,7 +15,7 @@ samba_dist.DIST_DIRS('.')
 samba_dist.DIST_BLACKLIST('.gitignore .bzrignore source4/selftest/provisions')
 
 # install in /usr/local/samba by default
-Options.default_prefix = '/usr/local/samba'
+default_prefix = Options.default_prefix = '/usr/local/samba'
 
 # This callback optionally takes a list of paths as arguments:
 # --with-system_mitkrb5 /path/to/krb5 /another/path

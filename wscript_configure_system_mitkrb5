@@ -137,6 +137,8 @@ conf.CHECK_STRUCTURE_MEMBER('krb5_address', 'addrtype', headers='krb5.h',
                             define='HAVE_ADDRTYPE_IN_KRB5_ADDRESS')
 conf.CHECK_STRUCTURE_MEMBER('krb5_ap_req', 'ticket', headers='krb5.h',
                             define='HAVE_TICKET_POINTER_IN_KRB5_AP_REQ')
+conf.CHECK_STRUCTURE_MEMBER('krb5_prompt', 'type', headers='krb5.h',
+                            define='HAVE_KRB5_PROMPT_TYPE')
 
 conf.CHECK_TYPE('krb5_encrypt_block', headers='krb5.h')
 

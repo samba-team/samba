@@ -34,8 +34,13 @@ struct db_context *dbwrap_local_open(TALLOC_CTX *mem_ctx,
 {
 	struct db_context *db = NULL;
 
-	db = db_open_tdb(mem_ctx, lp_ctx, name, hash_size,
-			 tdb_flags, open_flags, mode,
+	if (hash_size == 0) {
+		hash_size = lpcfg_tdb_hash_size(lp_ctx, name);
+	}
+
+	db = db_open_tdb(mem_ctx, name, hash_size,
+			 lpcfg_tdb_flags(lp_ctx, tdb_flags),
+			 open_flags, mode,
 			 lock_order, dbwrap_flags);
 
 	return db;

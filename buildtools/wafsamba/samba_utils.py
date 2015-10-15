@@ -164,7 +164,7 @@ def ADD_COMMAND(opt, name, function):
 Options.Handler.ADD_COMMAND = ADD_COMMAND
 
 
-@feature('cc', 'cshlib', 'cprogram')
+@feature('c', 'cc', 'cshlib', 'cprogram')
 @before('apply_core','exec_rule')
 def process_depends_on(self):
     '''The new depends_on attribute for build rules

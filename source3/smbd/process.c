@@ -39,7 +39,7 @@
 #include "../libcli/security/dom_sid.h"
 #include "../libcli/security/security_token.h"
 #include "lib/id_cache.h"
-#include "lib/sys_rw_data.h"
+#include "lib/util/sys_rw_data.h"
 #include "serverid.h"
 #include "system/threads.h"
 
@@ -1893,7 +1893,7 @@ static void process_smb(struct smbXsrv_connection *xconn,
 		if (smbd_is_smb2_header(inbuf, nread)) {
 			const uint8_t *inpdu = inbuf + NBT_HDR_SIZE;
 			size_t pdulen = nread - NBT_HDR_SIZE;
-			smbd_smb2_first_negprot(xconn, inpdu, pdulen);
+			smbd_smb2_process_negprot(xconn, 0, inpdu, pdulen);
 			return;
 		} else if (nread >= smb_size && valid_smb_header(inbuf)
 				&& CVAL(inbuf, smb_com) != 0x72) {
@@ -2693,6 +2693,7 @@ static NTSTATUS smbd_register_ips(struct smbXsrv_connection *xconn,
 {
 	struct smbd_release_ip_state *state;
 	struct ctdbd_connection *cconn;
+	int ret;
 
 	cconn = messaging_ctdbd_connection();
 	if (cconn == NULL) {
@@ -2712,7 +2713,11 @@ static NTSTATUS smbd_register_ips(struct smbXsrv_connection *xconn,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	return ctdbd_register_ips(cconn, srv, clnt, release_ip, state);
+	ret = ctdbd_register_ips(cconn, srv, clnt, release_ip, state);
+	if (ret != 0) {
+		return map_nt_error_from_unix(ret);
+	}
+	return NT_STATUS_OK;
 }
 
 static void msg_kill_client_ip(struct messaging_context *msg_ctx,
@@ -3319,7 +3324,8 @@ bool fork_echo_handler(struct smbXsrv_connection *xconn)
 		close(listener_pipe[0]);
 		set_blocking(listener_pipe[1], false);
 
-		status = smbd_reinit_after_fork(xconn->msg_ctx, xconn->ev_ctx, true);
+		status = smbd_reinit_after_fork(xconn->msg_ctx, xconn->ev_ctx,
+						true, "smbd-echo");
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("reinit_after_fork failed: %s\n",
 				  nt_errstr(status)));

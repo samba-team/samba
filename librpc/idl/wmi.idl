@@ -35,7 +35,7 @@ interface IWbemClassObject : IUnknown
 };
 
 [
-    uuid(9A653086-174F-11d2-B5F9-00104B703EFD)
+    uuid("9A653086-174F-11d2-B5F9-00104B703EFD")
 ]
 coclass WbemClassObject
 {
@@ -486,7 +486,7 @@ coclass WbemClassObject
 
 [
 	object, 
-	uuid(027947e1-d731-11ce-a357-000000000001),
+	uuid("027947e1-d731-11ce-a357-000000000001"),
 	pointer_default(unique)
 ] interface IEnumWbemClassObject : IUnknown
 {
@@ -669,7 +669,7 @@ coclass WbemClassObject
 [
 	object,
 	/*	restricted, */
-	uuid(44aca675-e8fc-11d0-a07c-00c04fb68820)
+	uuid("44aca675-e8fc-11d0-a07c-00c04fb68820")
 ] interface IWbemCallResult : IUnknown
 {
 	WERROR GetResultObject(
@@ -697,7 +697,7 @@ coclass WbemClassObject
 [
 	object,
 	restricted,
-	uuid(7c857801-7381-11cf-884d-00aa004b2e24)
+	uuid("7c857801-7381-11cf-884d-00aa004b2e24")
 ]
 interface IWbemObjectSink : IUnknown
 {

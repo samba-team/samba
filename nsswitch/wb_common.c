@@ -88,7 +88,7 @@ static void winbind_close_sock(struct winbindd_context *ctx)
 
 /* Destructor for global context to ensure fd is closed */
 
-#if HAVE_FUNCTION_ATTRIBUTE_DESTRUCTOR
+#if HAVE_DESTRUCTOR_ATTRIBUTE
 __attribute__((destructor))
 #endif
 static void winbind_destructor(void)

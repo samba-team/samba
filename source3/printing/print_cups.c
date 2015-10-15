@@ -26,7 +26,7 @@
 #include "printing.h"
 #include "printing/pcap.h"
 #include "librpc/gen_ndr/ndr_printcap.h"
-#include "lib/sys_rw.h"
+#include "lib/util/sys_rw.h"
 
 #ifdef HAVE_CUPS
 #include <cups/cups.h>
@@ -475,7 +475,7 @@ static bool cups_pcap_load_async(struct tevent_context *ev,
 
 	close_all_print_db();
 
-	status = reinit_after_fork(msg_ctx, ev, true);
+	status = reinit_after_fork(msg_ctx, ev, true, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("cups_pcap_load_async: reinit_after_fork() failed\n"));
 		smb_panic("cups_pcap_load_async: reinit_after_fork() failed");

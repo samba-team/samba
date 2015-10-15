@@ -412,7 +412,7 @@ def build(bld):
     version_header = 'version.h'
     bld.SAMBA_SUBSYSTEM('DYNCONFIG',
                         'dynconfig.c',
-                        deps='replace talloc',
+                        deps='replace',
                         public_headers=os_path_relpath(os.path.join(Options.launch_dir, version_header), bld.curdir),
                         header_path='samba',
                         cflags=cflags)

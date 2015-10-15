@@ -829,7 +829,7 @@ int rep_clock_gettime(clockid_t clk_id, struct timespec *tp)
 	struct timeval tval;
 	switch (clk_id) {
 		case 0: /* CLOCK_REALTIME :*/
-#ifdef HAVE_GETTIMEOFDAY_TZ
+#if defined(HAVE_GETTIMEOFDAY_TZ) || defined(HAVE_GETTIMEOFDAY_TZ_VOID)
 			gettimeofday(&tval,NULL);
 #else
 			gettimeofday(&tval);

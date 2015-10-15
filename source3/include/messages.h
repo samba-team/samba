@@ -74,9 +74,9 @@ struct messaging_backend {
 	void *private_data;
 };
 
-NTSTATUS messaging_ctdbd_init(struct messaging_context *msg_ctx,
-			      TALLOC_CTX *mem_ctx,
-			      struct messaging_backend **presult);
+int messaging_ctdbd_init(struct messaging_context *msg_ctx,
+			 TALLOC_CTX *mem_ctx,
+			 struct messaging_backend **presult);
 struct ctdbd_connection *messaging_ctdbd_connection(void);
 
 bool message_send_all(struct messaging_context *msg_ctx,
@@ -123,11 +123,11 @@ NTSTATUS messaging_send(struct messaging_context *msg_ctx,
 NTSTATUS messaging_send_buf(struct messaging_context *msg_ctx,
 			    struct server_id server, uint32_t msg_type,
 			    const uint8_t *buf, size_t len);
-NTSTATUS messaging_send_iov_from(struct messaging_context *msg_ctx,
-				 struct server_id src, struct server_id dst,
-				 uint32_t msg_type,
-				 const struct iovec *iov, int iovlen,
-				 const int *fds, size_t num_fds);
+int messaging_send_iov_from(struct messaging_context *msg_ctx,
+			    struct server_id src, struct server_id dst,
+			    uint32_t msg_type,
+			    const struct iovec *iov, int iovlen,
+			    const int *fds, size_t num_fds);
 NTSTATUS messaging_send_iov(struct messaging_context *msg_ctx,
 			    struct server_id server, uint32_t msg_type,
 			    const struct iovec *iov, int iovlen,

@@ -35,6 +35,9 @@ quicktest:
 randomized-test:
 	$(WAF) test --random-order $(TEST_OPTIONS)
 
+testlist:
+	$(WAF) test --list $(TEST_OPTIONS)
+
 dist:
 	touch .tmplock
 	WAFLOCK=.tmplock $(WAF) dist

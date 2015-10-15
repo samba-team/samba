@@ -406,6 +406,11 @@ static WERROR cmd_witness_AsyncNotify(struct rpc_pipe_client *cli,
 		goto done;
 	}
 
+	if (response == NULL) {
+		d_printf("Got an empty response\n");
+		goto done;
+	}
+
 	switch(response->type) {
 	case WITNESS_NOTIFY_RESOURCE_CHANGE:
 		d_printf("Resource change");

@@ -24,6 +24,7 @@
 #include "tdb.h"
 #include "../include/ctdb_private.h"
 #include "lib/util/dlinklist.h"
+#include "common/reqid.h"
 
 typedef void (*ctdb_traverse_fn_t)(void *private_data, TDB_DATA key, TDB_DATA data);
 
@@ -286,7 +287,7 @@ struct ctdb_traverse_all_handle {
  */
 static int ctdb_traverse_all_destructor(struct ctdb_traverse_all_handle *state)
 {
-	ctdb_reqid_remove(state->ctdb, state->reqid);
+	reqid_remove(state->ctdb->idr, state->reqid);
 	return 0;
 }
 
@@ -360,7 +361,7 @@ static struct ctdb_traverse_all_handle *ctdb_daemon_traverse_all(struct ctdb_db_
 
 	state->ctdb         = ctdb;
 	state->ctdb_db      = ctdb_db;
-	state->reqid        = ctdb_reqid_new(ctdb_db->ctdb, state);
+	state->reqid        = reqid_new(ctdb_db->ctdb->idr, state);
 	state->callback     = callback;
 	state->private_data = start_state;
 	state->null_count   = 0;
@@ -574,7 +575,7 @@ int32_t ctdb_control_traverse_data(struct ctdb_context *ctdb, TDB_DATA data, TDB
 		return -1;
 	}
 
-	state = ctdb_reqid_find(ctdb, d->reqid, struct ctdb_traverse_all_handle);
+	state = reqid_find(ctdb->idr, d->reqid, struct ctdb_traverse_all_handle);
 	if (state == NULL || d->reqid != state->reqid) {
 		/* traverse might have been terminated already */
 		return -1;
@@ -674,7 +675,7 @@ static void traverse_start_callback(void *p, TDB_DATA key, TDB_DATA data)
 	cdata.dptr = (uint8_t *)d;
 	cdata.dsize = d->length;
 
-	ctdb_dispatch_message(state->ctdb, state->srvid, cdata);
+	srvid_dispatch(state->ctdb->srv, state->srvid, 0, cdata);
 	if (key.dsize == 0 && data.dsize == 0) {
 		DEBUG(DEBUG_NOTICE, ("Ending traverse on DB %s (id %d), records %d\n",
 				     state->h->ctdb_db->db_name, state->h->reqid,
@@ -707,7 +708,7 @@ int32_t ctdb_control_traverse_start_ext(struct ctdb_context *ctdb,
 	struct ctdb_traverse_start_ext *d = (struct ctdb_traverse_start_ext *)data.dptr;
 	struct traverse_start_state *state;
 	struct ctdb_db_context *ctdb_db;
-	struct ctdb_client *client = ctdb_reqid_find(ctdb, client_id, struct ctdb_client);
+	struct ctdb_client *client = reqid_find(ctdb->idr, client_id, struct ctdb_client);
 
 	if (client == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " No client found\n"));

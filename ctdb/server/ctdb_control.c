@@ -25,6 +25,7 @@
 #include "lib/util/dlinklist.h"
 #include "lib/tdb_wrap/tdb_wrap.h"
 #include "lib/util/talloc_report.h"
+#include "common/reqid.h"
 
 
 struct ctdb_control_state {
@@ -110,16 +111,10 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 	}
 
 	case CTDB_CONTROL_STATISTICS: {
-		int i;
 		CHECK_CONTROL_DATA_SIZE(0);
 		ctdb->statistics.memory_used = talloc_total_size(NULL);
 		ctdb->statistics.num_clients = ctdb->num_clients;
-		ctdb->statistics.frozen = 0;
-		for (i=1; i<= NUM_DB_PRIORITIES; i++) {
-			if (ctdb->freeze_mode[i] == CTDB_FREEZE_FROZEN) {
-				ctdb->statistics.frozen = 1;
-			}
-		}
+		ctdb->statistics.frozen = (ctdb_db_all_frozen(ctdb) ? 1 : 0);
 		ctdb->statistics.recovering = (ctdb->recovery_mode == CTDB_RECOVERY_ACTIVE);
 		ctdb->statistics.statistics_current_time = timeval_current();
 
@@ -448,7 +443,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return ctdb_control_transaction_commit(ctdb, *(uint32_t *)indata.dptr);
 
 	case CTDB_CONTROL_WIPE_DATABASE:
-		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_control_wipe_database));
+		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_control_transdb));
 		return ctdb_control_wipe_database(ctdb, indata);
 
 	case CTDB_CONTROL_UPTIME:
@@ -689,6 +684,27 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 	case CTDB_CONTROL_DB_DETACH:
 		return ctdb_control_db_detach(ctdb, indata, client_id);
 
+	case CTDB_CONTROL_DB_FREEZE:
+		CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));
+		return ctdb_control_db_freeze(ctdb, c, *(uint32_t *)indata.dptr,
+					      async_reply);
+
+	case CTDB_CONTROL_DB_THAW:
+		CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));
+		return ctdb_control_db_thaw(ctdb, *(uint32_t *)indata.dptr);
+
+	case CTDB_CONTROL_DB_TRANSACTION_START:
+		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_control_transdb));
+		return ctdb_control_db_transaction_start(ctdb, indata);
+
+	case CTDB_CONTROL_DB_TRANSACTION_COMMIT:
+		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_control_transdb));
+		return ctdb_control_db_transaction_commit(ctdb, indata);
+
+	case CTDB_CONTROL_DB_TRANSACTION_CANCEL:
+		CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));
+		return ctdb_control_db_transaction_cancel(ctdb, indata);
+
 	default:
 		DEBUG(DEBUG_CRIT,(__location__ " Unknown CTDB control opcode %u\n", opcode));
 		return -1;
@@ -770,7 +786,7 @@ void ctdb_reply_control(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	struct ctdb_control_state *state;
 	const char *errormsg = NULL;
 
-	state = ctdb_reqid_find(ctdb, hdr->reqid, struct ctdb_control_state);
+	state = reqid_find(ctdb->idr, hdr->reqid, struct ctdb_control_state);
 	if (state == NULL) {
 		DEBUG(DEBUG_ERR,("pnn %u Invalid reqid %u in ctdb_reply_control\n",
 			 ctdb->pnn, hdr->reqid));
@@ -799,7 +815,7 @@ void ctdb_reply_control(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 
 static int ctdb_control_destructor(struct ctdb_control_state *state)
 {
-	ctdb_reqid_remove(state->ctdb, state->reqid);
+	reqid_remove(state->ctdb->idr, state->reqid);
 	return 0;
 }
 
@@ -866,7 +882,7 @@ int ctdb_daemon_send_control(struct ctdb_context *ctdb, uint32_t destnode,
 	state = talloc(private_data?private_data:ctdb, struct ctdb_control_state);
 	CTDB_NO_MEMORY(ctdb, state);
 
-	state->reqid = ctdb_reqid_new(ctdb, state);
+	state->reqid = reqid_new(ctdb->idr, state);
 	state->callback = callback;
 	state->private_data = private_data;
 	state->ctdb = ctdb;

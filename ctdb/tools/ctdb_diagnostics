@@ -72,14 +72,14 @@ PATH="$PATH:/sbin:/usr/sbin:/usr/lpp/mmfs/bin"
 # list of config files that must exist and that we check are the same 
 # on the nodes
 if [ -d /etc/sysconfig ] ; then
-    CONFIG_FILES_MUST="/etc/krb5.conf /etc/hosts /etc/ctdb/nodes /etc/sysconfig/ctdb /etc/resolv.conf /etc/nsswitch.conf /etc/sysctl.conf /etc/samba/smb.conf /etc/fstab /etc/multipath.conf /etc/pam.d/system-auth /etc/sysconfig/nfs /etc/exports /etc/vsftpd/vsftpd.conf"
+    CONFIG_FILES_MUST="/etc/krb5.conf /etc/hosts /usr/local/etc/ctdb/nodes /etc/sysconfig/ctdb /etc/resolv.conf /etc/nsswitch.conf /etc/sysctl.conf /etc/samba/smb.conf /etc/fstab /etc/multipath.conf /etc/pam.d/system-auth /etc/sysconfig/nfs /etc/exports /etc/vsftpd/vsftpd.conf"
 else
-    CONFIG_FILES_MUST="/etc/krb5.conf /etc/hosts /etc/ctdb/nodes /etc/default/ctdb /etc/resolv.conf /etc/nsswitch.conf /etc/sysctl.conf /etc/samba/smb.conf /etc/fstab /etc/multipath.conf /etc/pam.d/system-auth /etc/default/nfs /etc/exports /etc/vsftpd/vsftpd.conf"
+    CONFIG_FILES_MUST="/etc/krb5.conf /etc/hosts /usr/local/etc/ctdb/nodes /etc/default/ctdb /etc/resolv.conf /etc/nsswitch.conf /etc/sysctl.conf /etc/samba/smb.conf /etc/fstab /etc/multipath.conf /etc/pam.d/system-auth /etc/default/nfs /etc/exports /etc/vsftpd/vsftpd.conf"
 fi
 
 # list of config files that may exist and should be checked that they
 # are the same on the nodes
-CONFIG_FILES_MAY="/etc/ctdb/public_addresses /etc/ctdb/static-routes"
+CONFIG_FILES_MAY="/usr/local/etc/ctdb/public_addresses /usr/local/etc/ctdb/static-routes"
 
 2>&1
 
@@ -181,7 +181,7 @@ cat <<EOF
 For reference, here is the nodes file on the current node...
 EOF
 
-show_file /etc/ctdb/nodes
+show_file /usr/local/etc/ctdb/nodes
 
 cat <<EOF
 --------------------------------------------------------------------
@@ -236,15 +236,14 @@ show_all "ctdb getdbmap"
 show_all "ctdb -X getdbmap | awk -F'|' 'NR > 1 {print \$3}' | sort | xargs -n 1 ctdb dbstatistics"
 
 echo "Showing log.ctdb"
-show_all "test -f /var/log/log.ctdb && tail -100 /var/log/log.ctdb"
+show_all "test -f /usr/local/var/log/log.ctdb && tail -100 /usr/local/var/log/log.ctdb"
 
 echo "Showing log.ctdb"
-show_all "test -f /var/log/log.ctdb && tail -100 /var/log/log.ctdb"
+show_all "test -f /usr/local/var/log/log.ctdb && tail -100 /usr/local/var/log/log.ctdb"
 
 show_all "tail -200 /var/log/messages"
-show_all "tail -200 /etc/ctdb/state/vacuum.log"
-show_all "ls -lRs /var/ctdb"
-show_all "ls -lRs /etc/ctdb"
+show_all "ls -lRs /usr/local/var/lib/ctdb"
+show_all "ls -lRs /usr/local/etc/ctdb"
 
 
 cat <<EOF

@@ -69,15 +69,30 @@ bld.SAMBA_SUBSYSTEM('samba-util-core',
                             tevent execinfo pthread''',
                     local_include=False)
 
+bld.SAMBA_LIBRARY('tevent-unix-util',
+                  source='tevent_unix.c',
+                  local_include=False,
+                  deps='tevent',
+                  public_headers='tevent_unix.h',
+                  header_path=[ ('*', 'util') ],
+                  pc_files=[],
+                  vnum='0.0.1')
+
 if not bld.env.SAMBA_UTIL_CORE_ONLY:
 
     bld.env.public_headers_skip.append('charset_compat.h')
 
     bld.SAMBA_LIBRARY('genrand',
                       source='genrand.c',
-                      deps='time-basic socket-blocking LIBCRYPTO',
+                      deps='replace socket-blocking sys_rw',
                       local_include=False,
                       private_library=True)
+
+    bld.SAMBA_BINARY('genrandperf',
+                     source='tests/genrandperf.c',
+                     deps='genrand replace',
+                     local_include=False,
+                     install=False)
 
     bld.SAMBA_LIBRARY('samba-util',
                   source='''talloc_stack.c smb_threads.c
@@ -127,10 +142,10 @@ if not bld.env.SAMBA_UTIL_CORE_ONLY:
                       )
 
     bld.SAMBA_LIBRARY('tevent-util',
-                      source='tevent_unix.c tevent_ntstatus.c tevent_werror.c',
+                      source='tevent_ntstatus.c tevent_werror.c',
                       local_include=False,
-                      public_deps='tevent errors',
-                      public_headers='tevent_ntstatus.h tevent_unix.h tevent_werror.h',
+                      public_deps='tevent errors tevent-unix-util',
+                      public_headers='tevent_ntstatus.h tevent_werror.h',
                       header_path=[ ('*', 'util') ],
                       pc_files=[],
                       vnum='0.0.1'
@@ -172,3 +187,9 @@ if not bld.env.SAMBA_UTIL_CORE_ONLY:
                       source='iov_buf.c',
                       local_include=False,
                       private_library=True)
+
+    bld.SAMBA3_LIBRARY('sys_rw',
+                       source='sys_rw.c sys_rw_data.c',
+                       deps='replace iov_buf',
+                       local_include=False,
+                       private_library=True)

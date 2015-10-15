@@ -62,7 +62,6 @@ loadconfig ctdb
     fi
 
     echo "===== End of debug locks PID=$$ ====="
-
-) 9>"${CTDB_VARDIR}/debug_locks.lock" | script_log "ctdbd-lock"
+)9>"${CTDB_SCRIPT_VARDIR}/debug_locks.lock" | script_log "ctdbd-lock"
 
 exit 0

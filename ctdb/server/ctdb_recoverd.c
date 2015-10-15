@@ -463,7 +463,10 @@ static void transaction_start_fail_callback(struct ctdb_context *ctdb, uint32_t 
 /*
   change recovery mode on all nodes
  */
-static int set_recovery_mode(struct ctdb_context *ctdb, struct ctdb_recoverd *rec, struct ctdb_node_map *nodemap, uint32_t rec_mode)
+static int set_recovery_mode(struct ctdb_context *ctdb,
+			     struct ctdb_recoverd *rec,
+			     struct ctdb_node_map *nodemap,
+			     uint32_t rec_mode, bool freeze)
 {
 	TDB_DATA data;
 	uint32_t *nodes;
@@ -489,7 +492,7 @@ static int set_recovery_mode(struct ctdb_context *ctdb, struct ctdb_recoverd *re
 	}
 
 	/* freeze all nodes */
-	if (rec_mode == CTDB_RECOVERY_ACTIVE) {
+	if (freeze && rec_mode == CTDB_RECOVERY_ACTIVE) {
 		int i;
 
 		for (i=1; i<=NUM_DB_PRIORITIES; i++) {
@@ -1063,10 +1066,12 @@ static bool vacuum_fetch_process_one(struct ctdb_db_context *ctdb_db,
 /*
   handler for vacuum fetch
 */
-static void vacuum_fetch_handler(struct ctdb_context *ctdb, uint64_t srvid, 
-				 TDB_DATA data, void *private_data)
+static void vacuum_fetch_handler(uint64_t srvid, TDB_DATA data,
+				 void *private_data)
 {
-	struct ctdb_recoverd *rec = talloc_get_type(private_data, struct ctdb_recoverd);
+	struct ctdb_recoverd *rec = talloc_get_type(
+		private_data, struct ctdb_recoverd);
+	struct ctdb_context *ctdb = rec->ctdb;
 	struct ctdb_marshall_buffer *recs;
 	int ret, i;
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
@@ -1134,9 +1139,12 @@ done:
 /*
  * handler for database detach
  */
-static void detach_database_handler(struct ctdb_context *ctdb, uint64_t srvid,
-				    TDB_DATA data, void *private_data)
+static void detach_database_handler(uint64_t srvid, TDB_DATA data,
+				    void *private_data)
 {
+	struct ctdb_recoverd *rec = talloc_get_type(
+		private_data, struct ctdb_recoverd);
+	struct ctdb_context *ctdb = rec->ctdb;
 	uint32_t db_id;
 	struct ctdb_db_context *ctdb_db;
 
@@ -1268,7 +1276,7 @@ static int update_local_flags(struct ctdb_recoverd *rec, struct ctdb_node_map *n
 }
 
 
-/* Create a new random generation ip. 
+/* Create a new random generation id.
    The generation id can not be the INVALID_GENERATION id
 */
 static uint32_t new_generation(void)
@@ -1490,7 +1498,7 @@ static int recover_database(struct ctdb_recoverd *rec,
 	int ret;
 	struct ctdb_context *ctdb = rec->ctdb;
 	TDB_DATA data;
-	struct ctdb_control_wipe_database w;
+	struct ctdb_control_transdb w;
 	uint32_t *nodes;
 
 	recdb = create_recdb(ctdb, mem_ctx);
@@ -1794,25 +1802,324 @@ done:
 	return ok;
 }
 
+struct recovery_helper_state {
+	int fd[2];
+	pid_t pid;
+	int result;
+	bool done;
+};
+
+static void ctdb_recovery_handler(struct tevent_context *ev,
+				  struct tevent_fd *fde,
+				  uint16_t flags, void *private_data)
+{
+	struct recovery_helper_state *state = talloc_get_type_abort(
+		private_data, struct recovery_helper_state);
+	int ret;
+
+	ret = sys_read(state->fd[0], &state->result, sizeof(state->result));
+	if (ret != sizeof(state->result)) {
+		state->result = EPIPE;
+	}
+
+	state->done = true;
+}
+
+
+static int db_recovery_parallel(struct ctdb_recoverd *rec, TALLOC_CTX *mem_ctx)
+{
+	static char prog[PATH_MAX+1] = "";
+	const char **args;
+	struct recovery_helper_state *state;
+	struct tevent_fd *fde;
+	int nargs, ret;
+
+	if (!ctdb_set_helper("recovery_helper", prog, sizeof(prog),
+			     "CTDB_RECOVERY_HELPER", CTDB_HELPER_BINDIR,
+			     "ctdb_recovery_helper")) {
+		ctdb_die(rec->ctdb, "Unable to set recovery helper\n");
+	}
+
+	state = talloc_zero(mem_ctx, struct recovery_helper_state);
+	if (state == NULL) {
+		DEBUG(DEBUG_ERR, (__location__ " memory error\n"));
+		return -1;
+	}
+
+	state->pid = -1;
+
+	ret = pipe(state->fd);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,
+		      ("Failed to create pipe for recovery helper\n"));
+		goto fail;
+	}
+
+	set_close_on_exec(state->fd[0]);
+
+	nargs = 4;
+	args = talloc_array(state, const char *, nargs);
+	if (args == NULL) {
+		DEBUG(DEBUG_ERR, (__location__ " memory error\n"));
+		goto fail;
+	}
+
+	args[0] = talloc_asprintf(args, "%d", state->fd[1]);
+	args[1] = rec->ctdb->daemon.name;
+	args[2] = talloc_asprintf(args, "%u", new_generation());
+	args[3] = NULL;
+
+	if (args[0] == NULL || args[2] == NULL) {
+		DEBUG(DEBUG_ERR, (__location__ " memory error\n"));
+		goto fail;
+	}
+
+	if (!ctdb_vfork_with_logging(state, rec->ctdb, "recovery", prog, nargs,
+				     args, NULL, NULL, &state->pid)) {
+		DEBUG(DEBUG_ERR,
+		      ("Failed to create child for recovery helper\n"));
+		goto fail;
+	}
+
+	close(state->fd[1]);
+	state->fd[1] = -1;
+
+	state->done = false;
+
+	fde = tevent_add_fd(rec->ctdb->ev, rec->ctdb, state->fd[0],
+			    TEVENT_FD_READ, ctdb_recovery_handler, state);
+	if (fde == NULL) {
+		goto fail;
+	}
+	tevent_fd_set_auto_close(fde);
+
+	while (!state->done) {
+		tevent_loop_once(rec->ctdb->ev);
+	}
+
+	close(state->fd[0]);
+	state->fd[0] = -1;
+
+	if (state->result != 0) {
+		goto fail;
+	}
+
+	ctdb_kill(rec->ctdb, state->pid, SIGKILL);
+	talloc_free(state);
+	return 0;
+
+fail:
+	if (state->fd[0] != -1) {
+		close(state->fd[0]);
+	}
+	if (state->fd[1] != -1) {
+		close(state->fd[1]);
+	}
+	if (state->pid != -1) {
+		ctdb_kill(rec->ctdb, state->pid, SIGKILL);
+	}
+	talloc_free(state);
+	return -1;
+}
+
+static int db_recovery_serial(struct ctdb_recoverd *rec, TALLOC_CTX *mem_ctx,
+			      uint32_t pnn, struct ctdb_node_map *nodemap,
+			      struct ctdb_vnn_map *vnnmap,
+			      struct ctdb_dbid_map *dbmap)
+{
+	struct ctdb_context *ctdb = rec->ctdb;
+	uint32_t generation;
+	TDB_DATA data;
+	uint32_t *nodes;
+	int ret, i, j;
+
+	/* set recovery mode to active on all nodes */
+	ret = set_recovery_mode(ctdb, rec, nodemap, CTDB_RECOVERY_ACTIVE, true);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, (__location__ " Unable to set recovery mode to active on cluster\n"));
+		return -1;
+	}
+
+	/* execute the "startrecovery" event script on all nodes */
+	ret = run_startrecovery_eventscript(rec, nodemap);
+	if (ret!=0) {
+		DEBUG(DEBUG_ERR, (__location__ " Unable to run the 'startrecovery' event on cluster\n"));
+		return -1;
+	}
+
+	/* pick a new generation number */
+	generation = new_generation();
+
+	/* change the vnnmap on this node to use the new generation 
+	   number but not on any other nodes.
+	   this guarantees that if we abort the recovery prematurely
+	   for some reason (a node stops responding?)
+	   that we can just return immediately and we will reenter
+	   recovery shortly again.
+	   I.e. we deliberately leave the cluster with an inconsistent
+	   generation id to allow us to abort recovery at any stage and
+	   just restart it from scratch.
+	 */
+	vnnmap->generation = generation;
+	ret = ctdb_ctrl_setvnnmap(ctdb, CONTROL_TIMEOUT(), pnn, mem_ctx, vnnmap);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, (__location__ " Unable to set vnnmap for node %u\n", pnn));
+		return -1;
+	}
+
+	/* Database generations are updated when the transaction is commited to
+	 * the databases.  So make sure to use the final generation as the
+	 * transaction id
+	 */
+	generation = new_generation();
+
+	data.dptr = (void *)&generation;
+	data.dsize = sizeof(uint32_t);
+
+	nodes = list_of_active_nodes(ctdb, nodemap, mem_ctx, true);
+	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_TRANSACTION_START,
+					nodes, 0,
+					CONTROL_TIMEOUT(), false, data,
+					NULL,
+					transaction_start_fail_callback,
+					rec) != 0) {
+		DEBUG(DEBUG_ERR, (__location__ " Unable to start transactions. Recovery failed.\n"));
+		if (ctdb_client_async_control(ctdb, CTDB_CONTROL_TRANSACTION_CANCEL,
+					nodes, 0,
+					CONTROL_TIMEOUT(), false, tdb_null,
+					NULL,
+					NULL,
+					NULL) != 0) {
+			DEBUG(DEBUG_ERR,("Failed to cancel recovery transaction\n"));
+		}
+		return -1;
+	}
+
+	DEBUG(DEBUG_NOTICE,(__location__ " started transactions on all nodes\n"));
+
+	for (i=0;i<dbmap->num;i++) {
+		ret = recover_database(rec, mem_ctx,
+				       dbmap->dbs[i].dbid,
+				       dbmap->dbs[i].flags & CTDB_DB_FLAGS_PERSISTENT,
+				       pnn, nodemap, generation);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR, (__location__ " Failed to recover database 0x%x\n", dbmap->dbs[i].dbid));
+			return -1;
+		}
+	}
+
+	DEBUG(DEBUG_NOTICE, (__location__ " Recovery - starting database commits\n"));
+
+	/* commit all the changes */
+	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_TRANSACTION_COMMIT,
+					nodes, 0,
+					CONTROL_TIMEOUT(), false, data,
+					NULL, NULL,
+					NULL) != 0) {
+		DEBUG(DEBUG_ERR, (__location__ " Unable to commit recovery changes. Recovery failed.\n"));
+		return -1;
+	}
+
+	DEBUG(DEBUG_NOTICE, (__location__ " Recovery - committed databases\n"));
+
+	/* build a new vnn map with all the currently active and
+	   unbanned nodes */
+	vnnmap = talloc(mem_ctx, struct ctdb_vnn_map);
+	CTDB_NO_MEMORY(ctdb, vnnmap);
+	vnnmap->generation = generation;
+	vnnmap->size = 0;
+	vnnmap->map = talloc_zero_array(vnnmap, uint32_t, vnnmap->size);
+	CTDB_NO_MEMORY(ctdb, vnnmap->map);
+	for (i=j=0;i<nodemap->num;i++) {
+		if (nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE) {
+			continue;
+		}
+		if (!ctdb_node_has_capabilities(rec->caps,
+						ctdb->nodes[i]->pnn,
+						CTDB_CAP_LMASTER)) {
+			/* this node can not be an lmaster */
+			DEBUG(DEBUG_DEBUG, ("Node %d cant be a LMASTER, skipping it\n", i));
+			continue;
+		}
+
+		vnnmap->size++;
+		vnnmap->map = talloc_realloc(vnnmap, vnnmap->map, uint32_t, vnnmap->size);
+		CTDB_NO_MEMORY(ctdb, vnnmap->map);
+		vnnmap->map[j++] = nodemap->nodes[i].pnn;
+
+	}
+	if (vnnmap->size == 0) {
+		DEBUG(DEBUG_NOTICE, ("No suitable lmasters found. Adding local node (recmaster) anyway.\n"));
+		vnnmap->size++;
+		vnnmap->map = talloc_realloc(vnnmap, vnnmap->map, uint32_t, vnnmap->size);
+		CTDB_NO_MEMORY(ctdb, vnnmap->map);
+		vnnmap->map[0] = pnn;
+	}
+
+	/* update to the new vnnmap on all nodes */
+	ret = update_vnnmap_on_all_nodes(ctdb, nodemap, pnn, vnnmap, mem_ctx);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, (__location__ " Unable to update vnnmap on all nodes\n"));
+		return -1;
+	}
+
+	DEBUG(DEBUG_NOTICE, (__location__ " Recovery - updated vnnmap\n"));
+
+	/* update recmaster to point to us for all nodes */
+	ret = set_recovery_master(ctdb, nodemap, pnn);
+	if (ret!=0) {
+		DEBUG(DEBUG_ERR, (__location__ " Unable to set recovery master\n"));
+		return -1;
+	}
+
+	DEBUG(DEBUG_NOTICE, (__location__ " Recovery - updated recmaster\n"));
+
+	/* disable recovery mode */
+	ret = set_recovery_mode(ctdb, rec, nodemap, CTDB_RECOVERY_NORMAL, false);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, (__location__ " Unable to set recovery mode to normal on cluster\n"));
+		return -1;
+	}
+
+	DEBUG(DEBUG_NOTICE, (__location__ " Recovery - disabled recovery mode\n"));
+
+	return 0;
+}
 
 /*
   we are the recmaster, and recovery is needed - start a recovery run
  */
-static int do_recovery(struct ctdb_recoverd *rec, 
+static int do_recovery(struct ctdb_recoverd *rec,
 		       TALLOC_CTX *mem_ctx, uint32_t pnn,
 		       struct ctdb_node_map *nodemap, struct ctdb_vnn_map *vnnmap)
 {
 	struct ctdb_context *ctdb = rec->ctdb;
-	int i, j, ret;
-	uint32_t generation;
+	int i, ret;
 	struct ctdb_dbid_map *dbmap;
-	TDB_DATA data;
-	uint32_t *nodes;
 	struct timeval start_time;
 	uint32_t culprit = (uint32_t)-1;
 	bool self_ban;
+	bool par_recovery;
 
 	DEBUG(DEBUG_NOTICE, (__location__ " Starting do_recovery\n"));
+
+	/* Check if the current node is still the recmaster.  It's possible that
+	 * re-election has changed the recmaster, but we have not yet updated
+	 * that information.
+	 */
+	ret = ctdb_ctrl_getrecmaster(ctdb, mem_ctx, CONTROL_TIMEOUT(),
+				     pnn, &ctdb->recovery_master);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, (__location__ " Unable to get recmaster\n"));
+		return -1;
+	}
+
+	if (pnn != ctdb->recovery_master) {
+		DEBUG(DEBUG_NOTICE,
+		      ("Recovery master changed to %u, aborting recovery\n",
+		       ctdb->recovery_master));
+		return -1;
+	}
 
 	/* if recovery fails, force it again */
 	rec->need_recovery = true;
@@ -1905,18 +2212,11 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	*/
 	sync_recovery_lock_file_across_cluster(rec);
 
-	/* set recovery mode to active on all nodes */
-	ret = set_recovery_mode(ctdb, rec, nodemap, CTDB_RECOVERY_ACTIVE);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " Unable to set recovery mode to active on cluster\n"));
-		goto fail;
-	}
-
-	/* execute the "startrecovery" event script on all nodes */
-	ret = run_startrecovery_eventscript(rec, nodemap);
+	/* update the capabilities for all nodes */
+	ret = update_capabilities(rec, nodemap);
 	if (ret!=0) {
-		DEBUG(DEBUG_ERR, (__location__ " Unable to run the 'startrecovery' event on cluster\n"));
-		goto fail;
+		DEBUG(DEBUG_ERR, (__location__ " Unable to update node capabilities.\n"));
+		return -1;
 	}
 
 	/*
@@ -1933,151 +2233,37 @@ static int do_recovery(struct ctdb_recoverd *rec,
 				DEBUG(DEBUG_WARNING, (__location__ "Unable to update flags on inactive node %d\n", i));
 			} else {
 				DEBUG(DEBUG_ERR, (__location__ " Unable to update flags on all nodes for node %d\n", i));
-				goto fail;
+				return -1;
 			}
 		}
 	}
 
 	DEBUG(DEBUG_NOTICE, (__location__ " Recovery - updated flags\n"));
 
-	/* pick a new generation number */
-	generation = new_generation();
-
-	/* change the vnnmap on this node to use the new generation 
-	   number but not on any other nodes.
-	   this guarantees that if we abort the recovery prematurely
-	   for some reason (a node stops responding?)
-	   that we can just return immediately and we will reenter
-	   recovery shortly again.
-	   I.e. we deliberately leave the cluster with an inconsistent
-	   generation id to allow us to abort recovery at any stage and
-	   just restart it from scratch.
-	 */
-	vnnmap->generation = generation;
-	ret = ctdb_ctrl_setvnnmap(ctdb, CONTROL_TIMEOUT(), pnn, mem_ctx, vnnmap);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " Unable to set vnnmap for node %u\n", pnn));
-		goto fail;
-	}
-
-	data.dptr = (void *)&generation;
-	data.dsize = sizeof(uint32_t);
-
-	nodes = list_of_active_nodes(ctdb, nodemap, mem_ctx, true);
-	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_TRANSACTION_START,
-					nodes, 0,
-					CONTROL_TIMEOUT(), false, data,
-					NULL,
-					transaction_start_fail_callback,
-					rec) != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " Unable to start transactions. Recovery failed.\n"));
-		if (ctdb_client_async_control(ctdb, CTDB_CONTROL_TRANSACTION_CANCEL,
-					nodes, 0,
-					CONTROL_TIMEOUT(), false, tdb_null,
-					NULL,
-					NULL,
-					NULL) != 0) {
-			DEBUG(DEBUG_ERR,("Failed to cancel recovery transaction\n"));
-		}
-		goto fail;
-	}
-
-	DEBUG(DEBUG_NOTICE,(__location__ " started transactions on all nodes\n"));
-
-	for (i=0;i<dbmap->num;i++) {
-		ret = recover_database(rec, mem_ctx,
-				       dbmap->dbs[i].dbid,
-				       dbmap->dbs[i].flags & CTDB_DB_FLAGS_PERSISTENT,
-				       pnn, nodemap, generation);
-		if (ret != 0) {
-			DEBUG(DEBUG_ERR, (__location__ " Failed to recover database 0x%x\n", dbmap->dbs[i].dbid));
-			goto fail;
-		}
-	}
-
-	DEBUG(DEBUG_NOTICE, (__location__ " Recovery - starting database commits\n"));
-
-	/* commit all the changes */
-	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_TRANSACTION_COMMIT,
-					nodes, 0,
-					CONTROL_TIMEOUT(), false, data,
-					NULL, NULL,
-					NULL) != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " Unable to commit recovery changes. Recovery failed.\n"));
-		goto fail;
-	}
-
-	DEBUG(DEBUG_NOTICE, (__location__ " Recovery - committed databases\n"));
-	
-
-	/* update the capabilities for all nodes */
-	ret = update_capabilities(rec, nodemap);
-	if (ret!=0) {
-		DEBUG(DEBUG_ERR, (__location__ " Unable to update node capabilities.\n"));
-		goto fail;
-	}
-
-	/* build a new vnn map with all the currently active and
-	   unbanned nodes */
-	generation = new_generation();
-	vnnmap = talloc(mem_ctx, struct ctdb_vnn_map);
-	CTDB_NO_MEMORY(ctdb, vnnmap);
-	vnnmap->generation = generation;
-	vnnmap->size = 0;
-	vnnmap->map = talloc_zero_array(vnnmap, uint32_t, vnnmap->size);
-	CTDB_NO_MEMORY(ctdb, vnnmap->map);
-	for (i=j=0;i<nodemap->num;i++) {
+	/* Check if all participating nodes have parallel recovery capability */
+	par_recovery = true;
+	for (i=0; i<nodemap->num; i++) {
 		if (nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE) {
 			continue;
 		}
-		if (!ctdb_node_has_capabilities(rec->caps,
-						ctdb->nodes[i]->pnn,
-						CTDB_CAP_LMASTER)) {
-			/* this node can not be an lmaster */
-			DEBUG(DEBUG_DEBUG, ("Node %d cant be a LMASTER, skipping it\n", i));
-			continue;
+
+		if (!(rec->caps[i].capabilities &
+		      CTDB_CAP_PARALLEL_RECOVERY)) {
+			par_recovery = false;
+			break;
 		}
-
-		vnnmap->size++;
-		vnnmap->map = talloc_realloc(vnnmap, vnnmap->map, uint32_t, vnnmap->size);
-		CTDB_NO_MEMORY(ctdb, vnnmap->map);
-		vnnmap->map[j++] = nodemap->nodes[i].pnn;
-
 	}
-	if (vnnmap->size == 0) {
-		DEBUG(DEBUG_NOTICE, ("No suitable lmasters found. Adding local node (recmaster) anyway.\n"));
-		vnnmap->size++;
-		vnnmap->map = talloc_realloc(vnnmap, vnnmap->map, uint32_t, vnnmap->size);
-		CTDB_NO_MEMORY(ctdb, vnnmap->map);
-		vnnmap->map[0] = pnn;
-	}	
 
-	/* update to the new vnnmap on all nodes */
-	ret = update_vnnmap_on_all_nodes(ctdb, nodemap, pnn, vnnmap, mem_ctx);
+	if (par_recovery) {
+		ret = db_recovery_parallel(rec, mem_ctx);
+	} else {
+		ret = db_recovery_serial(rec, mem_ctx, pnn, nodemap, vnnmap,
+					 dbmap);
+	}
+
 	if (ret != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " Unable to update vnnmap on all nodes\n"));
 		goto fail;
 	}
-
-	DEBUG(DEBUG_NOTICE, (__location__ " Recovery - updated vnnmap\n"));
-
-	/* update recmaster to point to us for all nodes */
-	ret = set_recovery_master(ctdb, nodemap, pnn);
-	if (ret!=0) {
-		DEBUG(DEBUG_ERR, (__location__ " Unable to set recovery master\n"));
-		goto fail;
-	}
-
-	DEBUG(DEBUG_NOTICE, (__location__ " Recovery - updated recmaster\n"));
-
-	/* disable recovery mode */
-	ret = set_recovery_mode(ctdb, rec, nodemap, CTDB_RECOVERY_NORMAL);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " Unable to set recovery mode to normal on cluster\n"));
-		goto fail;
-	}
-
-	DEBUG(DEBUG_NOTICE, (__location__ " Recovery - disabled recovery mode\n"));
 
 	/* Fetch known/available public IPs from each active node */
 	ret = ctdb_reload_remote_public_ips(ctdb, rec, nodemap, &culprit);
@@ -2232,11 +2418,6 @@ static bool ctdb_election_win(struct ctdb_recoverd *rec, struct election_message
 		return true;
 	}
 
-	/* try to use the most connected node */
-	if (cmp == 0) {
-		cmp = (int)myem.num_connected - (int)em->num_connected;
-	}
-
 	/* then the longest running node */
 	if (cmp == 0) {
 		cmp = timeval_compare(&em->priority_time, &myem.priority_time);
@@ -2334,9 +2515,11 @@ static void election_send_request(struct event_context *ev, struct timed_event *
 /*
   handler for memory dumps
 */
-static void mem_dump_handler(struct ctdb_context *ctdb, uint64_t srvid, 
-			     TDB_DATA data, void *private_data)
+static void mem_dump_handler(uint64_t srvid, TDB_DATA data, void *private_data)
 {
+	struct ctdb_recoverd *rec = talloc_get_type(
+		private_data, struct ctdb_recoverd);
+	struct ctdb_context *ctdb = rec->ctdb;
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 	TDB_DATA *dump;
 	int ret;
@@ -2377,10 +2560,11 @@ DEBUG(DEBUG_ERR, ("recovery master memory dump\n"));
 /*
   handler for reload_nodes
 */
-static void reload_nodes_handler(struct ctdb_context *ctdb, uint64_t srvid, 
-			     TDB_DATA data, void *private_data)
+static void reload_nodes_handler(uint64_t srvid, TDB_DATA data,
+				 void *private_data)
 {
-	struct ctdb_recoverd *rec = talloc_get_type(private_data, struct ctdb_recoverd);
+	struct ctdb_recoverd *rec = talloc_get_type(
+		private_data, struct ctdb_recoverd);
 
 	DEBUG(DEBUG_ERR, (__location__ " Reload nodes file from recovery daemon\n"));
 
@@ -2405,16 +2589,17 @@ static void ctdb_rebalance_timeout(struct event_context *ev,
 	do_takeover_run(rec, rec->nodemap, false);
 }
 
-	
-static void recd_node_rebalance_handler(struct ctdb_context *ctdb,
-					uint64_t srvid,
-					TDB_DATA data, void *private_data)
+
+static void recd_node_rebalance_handler(uint64_t srvid, TDB_DATA data,
+					void *private_data)
 {
+	struct ctdb_recoverd *rec = talloc_get_type(
+		private_data, struct ctdb_recoverd);
+	struct ctdb_context *ctdb = rec->ctdb;
 	uint32_t pnn;
 	uint32_t *t;
 	int len;
 	uint32_t deferred_rebalance;
-	struct ctdb_recoverd *rec = talloc_get_type(private_data, struct ctdb_recoverd);
 
 	if (rec->recmaster != ctdb_get_pnn(ctdb)) {
 		return;
@@ -2470,10 +2655,11 @@ static void recd_node_rebalance_handler(struct ctdb_context *ctdb,
 
 
 
-static void recd_update_ip_handler(struct ctdb_context *ctdb, uint64_t srvid, 
-			     TDB_DATA data, void *private_data)
+static void recd_update_ip_handler(uint64_t srvid, TDB_DATA data,
+				   void *private_data)
 {
-	struct ctdb_recoverd *rec = talloc_get_type(private_data, struct ctdb_recoverd);
+	struct ctdb_recoverd *rec = talloc_get_type(
+		private_data, struct ctdb_recoverd);
 	struct ctdb_public_ip *ip;
 
 	if (rec->recmaster != rec->ctdb->pnn) {
@@ -2528,22 +2714,21 @@ done:
 	srvid_request_reply(ctdb, (struct srvid_request *)r, result);
 }
 
-static void disable_takeover_runs_handler(struct ctdb_context *ctdb,
-					  uint64_t srvid, TDB_DATA data,
+static void disable_takeover_runs_handler(uint64_t srvid, TDB_DATA data,
 					  void *private_data)
 {
-	struct ctdb_recoverd *rec = talloc_get_type(private_data,
-						    struct ctdb_recoverd);
+	struct ctdb_recoverd *rec = talloc_get_type(
+		private_data, struct ctdb_recoverd);
 
-	srvid_disable_and_reply(ctdb, data, rec->takeover_run);
+	srvid_disable_and_reply(rec->ctdb, data, rec->takeover_run);
 }
 
 /* Backward compatibility for this SRVID */
-static void disable_ip_check_handler(struct ctdb_context *ctdb, uint64_t srvid,
-				     TDB_DATA data, void *private_data)
+static void disable_ip_check_handler(uint64_t srvid, TDB_DATA data,
+				     void *private_data)
 {
-	struct ctdb_recoverd *rec = talloc_get_type(private_data,
-						    struct ctdb_recoverd);
+	struct ctdb_recoverd *rec = talloc_get_type(
+		private_data, struct ctdb_recoverd);
 	uint32_t timeout;
 
 	if (data.dsize != sizeof(uint32_t)) {
@@ -2559,17 +2744,16 @@ static void disable_ip_check_handler(struct ctdb_context *ctdb, uint64_t srvid,
 
 	timeout = *((uint32_t *)data.dptr);
 
-	ctdb_op_disable(rec->takeover_run, ctdb->ev, timeout);
+	ctdb_op_disable(rec->takeover_run, rec->ctdb->ev, timeout);
 }
 
-static void disable_recoveries_handler(struct ctdb_context *ctdb,
-				       uint64_t srvid, TDB_DATA data,
+static void disable_recoveries_handler(uint64_t srvid, TDB_DATA data,
 				       void *private_data)
 {
-	struct ctdb_recoverd *rec = talloc_get_type(private_data,
-						    struct ctdb_recoverd);
+	struct ctdb_recoverd *rec = talloc_get_type(
+		private_data, struct ctdb_recoverd);
 
-	srvid_disable_and_reply(ctdb, data, rec->recovery);
+	srvid_disable_and_reply(rec->ctdb, data, rec->recovery);
 }
 
 /*
@@ -2577,12 +2761,12 @@ static void disable_recoveries_handler(struct ctdb_context *ctdb,
   handle this later in the monitor_cluster loop so we do not recurse
   with other requests to takeover_run()
 */
-static void ip_reallocate_handler(struct ctdb_context *ctdb, uint64_t srvid,
-				  TDB_DATA data, void *private_data)
+static void ip_reallocate_handler(uint64_t srvid, TDB_DATA data,
+				  void *private_data)
 {
 	struct srvid_request *request;
-	struct ctdb_recoverd *rec = talloc_get_type(private_data,
-						    struct ctdb_recoverd);
+	struct ctdb_recoverd *rec = talloc_get_type(
+		private_data, struct ctdb_recoverd);
 
 	if (data.dsize != sizeof(struct srvid_request)) {
 		DEBUG(DEBUG_ERR, (__location__ " Wrong size of return address.\n"));
@@ -2591,7 +2775,7 @@ static void ip_reallocate_handler(struct ctdb_context *ctdb, uint64_t srvid,
 
 	request = (struct srvid_request *)data.dptr;
 
-	srvid_request_add(ctdb, &rec->reallocate_requests, request);
+	srvid_request_add(rec->ctdb, &rec->reallocate_requests, request);
 }
 
 static void process_ipreallocate_requests(struct ctdb_context *ctdb,
@@ -2639,10 +2823,11 @@ static void process_ipreallocate_requests(struct ctdb_context *ctdb,
 /*
   handler for recovery master elections
 */
-static void election_handler(struct ctdb_context *ctdb, uint64_t srvid, 
-			     TDB_DATA data, void *private_data)
+static void election_handler(uint64_t srvid, TDB_DATA data, void *private_data)
 {
-	struct ctdb_recoverd *rec = talloc_get_type(private_data, struct ctdb_recoverd);
+	struct ctdb_recoverd *rec = talloc_get_type(
+		private_data, struct ctdb_recoverd);
+	struct ctdb_context *ctdb = rec->ctdb;
 	int ret;
 	struct election_message *em = (struct election_message *)data.dptr;
 
@@ -2707,7 +2892,7 @@ static void force_election(struct ctdb_recoverd *rec, uint32_t pnn,
 	DEBUG(DEBUG_INFO,(__location__ " Force an election\n"));
 
 	/* set all nodes to recovery mode to stop all internode traffic */
-	ret = set_recovery_mode(ctdb, rec, nodemap, CTDB_RECOVERY_ACTIVE);
+	ret = set_recovery_mode(ctdb, rec, nodemap, CTDB_RECOVERY_ACTIVE, false);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to set recovery mode to active on cluster\n"));
 		return;
@@ -2735,15 +2920,16 @@ static void force_election(struct ctdb_recoverd *rec, uint32_t pnn,
 /*
   handler for when a node changes its flags
 */
-static void monitor_handler(struct ctdb_context *ctdb, uint64_t srvid, 
-			    TDB_DATA data, void *private_data)
+static void monitor_handler(uint64_t srvid, TDB_DATA data, void *private_data)
 {
+	struct ctdb_recoverd *rec = talloc_get_type(
+		private_data, struct ctdb_recoverd);
+	struct ctdb_context *ctdb = rec->ctdb;
 	int ret;
 	struct ctdb_node_flag_change *c = (struct ctdb_node_flag_change *)data.dptr;
 	struct ctdb_node_map *nodemap=NULL;
 	TALLOC_CTX *tmp_ctx;
 	int i;
-	struct ctdb_recoverd *rec = talloc_get_type(private_data, struct ctdb_recoverd);
 	int disabled_flag_changed;
 
 	if (data.dsize != sizeof(*c)) {
@@ -2809,9 +2995,12 @@ static void monitor_handler(struct ctdb_context *ctdb, uint64_t srvid,
 /*
   handler for when we need to push out flag changes ot all other nodes
 */
-static void push_flags_handler(struct ctdb_context *ctdb, uint64_t srvid, 
-			    TDB_DATA data, void *private_data)
+static void push_flags_handler(uint64_t srvid, TDB_DATA data,
+			       void *private_data)
 {
+	struct ctdb_recoverd *rec = talloc_get_type(
+		private_data, struct ctdb_recoverd);
+	struct ctdb_context *ctdb = rec->ctdb;
 	int ret;
 	struct ctdb_node_flag_change *c = (struct ctdb_node_flag_change *)data.dptr;
 	struct ctdb_node_map *nodemap=NULL;

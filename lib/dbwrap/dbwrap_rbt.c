@@ -497,10 +497,12 @@ static int db_rbt_trans_dummy(struct db_context *db)
 	return 0;
 }
 
-static void db_rbt_id(struct db_context *db, const uint8_t **id, size_t *idlen)
+static size_t db_rbt_id(struct db_context *db, uint8_t *id, size_t idlen)
 {
-	*id = (uint8_t *)db;
-	*idlen = sizeof(struct db_context *);
+	if (idlen >= sizeof(struct db_context *)) {
+		memcpy(id, &db, sizeof(struct db_context *));
+	}
+	return sizeof(struct db_context *);
 }
 
 struct db_context *db_open_rbt(TALLOC_CTX *mem_ctx)

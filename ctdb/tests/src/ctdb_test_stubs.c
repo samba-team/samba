@@ -610,7 +610,7 @@ ctdb_ctrl_get_ifaces_stub(struct ctdb_context *ctdb,
  * the ctdb tool only registers one at a time so keep this simple. */
 static struct {
 	uint64_t srvid;
-	ctdb_msg_fn_t message_handler;
+	srvid_handler_fn message_handler;
 	void *message_private;
 } ctdb_message_list_fake = {
 	.srvid = 0,
@@ -620,7 +620,7 @@ static struct {
 
 int ctdb_client_set_message_handler_stub(struct ctdb_context *ctdb,
 					 uint64_t srvid,
-					 ctdb_msg_fn_t handler,
+					 srvid_handler_fn handler,
 					 void *private_data)
 {
 	ctdb_message_list_fake.srvid = srvid;
@@ -649,7 +649,6 @@ static void ctdb_fake_handler_pnn_reply(struct ctdb_context *ctdb,
 	reply_data.dsize = sizeof(pnn);
 	reply_data.dptr = (uint8_t *)&pnn;
 	ctdb_message_list_fake.message_handler(
-		ctdb,
 		ctdb_message_list_fake.srvid,
 		reply_data,
 		ctdb_message_list_fake.message_private);

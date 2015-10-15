@@ -950,11 +950,11 @@ static struct functable net_func[] = {
 	}
 
 	if (!c->opt_workgroup) {
-		c->opt_workgroup = smb_xstrdup(lp_workgroup());
+		c->opt_workgroup = talloc_strdup(c, lp_workgroup());
 	}
 
 	if (!c->opt_target_workgroup) {
-		c->opt_target_workgroup = smb_xstrdup(lp_workgroup());
+		c->opt_target_workgroup = talloc_strdup(c, lp_workgroup());
 	}
 
 	if (!init_names())

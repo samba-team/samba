@@ -136,7 +136,7 @@ static struct db_record *db_tdb_fetch_locked_internal(
 
 	talloc_set_destructor(state.result, db_tdb_record_destr);
 
-	state.result->private_data = talloc_reference(state.result, ctx);
+	state.result->private_data = ctx;
 	state.result->store = db_tdb_store;
 	state.result->delete_rec = db_tdb_delete;
 
@@ -388,16 +388,19 @@ static int db_tdb_transaction_cancel(struct db_context *db)
 	return 0;
 }
 
-static void db_tdb_id(struct db_context *db, const uint8_t **id, size_t *idlen)
+static size_t db_tdb_id(struct db_context *db, uint8_t *id, size_t idlen)
 {
 	struct db_tdb_ctx *db_ctx =
 		talloc_get_type_abort(db->private_data, struct db_tdb_ctx);
-	*id = (uint8_t *)&db_ctx->id;
-	*idlen = sizeof(db_ctx->id);
+
+	if (idlen >= sizeof(db_ctx->id)) {
+		memcpy(id, &db_ctx->id, sizeof(db_ctx->id));
+	}
+
+	return sizeof(db_ctx->id);
 }
 
 struct db_context *db_open_tdb(TALLOC_CTX *mem_ctx,
-			       struct loadparm_context *lp_ctx,
 			       const char *name,
 			       int hash_size, int tdb_flags,
 			       int open_flags, mode_t mode,
@@ -421,12 +424,7 @@ struct db_context *db_open_tdb(TALLOC_CTX *mem_ctx,
 	}
 	result->lock_order = lock_order;
 
-	if (hash_size == 0) {
-		hash_size = lpcfg_tdb_hash_size(lp_ctx, name);
-	}
-
-	db_tdb->wtdb = tdb_wrap_open(db_tdb, name, hash_size,
-				     lpcfg_tdb_flags(lp_ctx, tdb_flags),
+	db_tdb->wtdb = tdb_wrap_open(db_tdb, name, hash_size, tdb_flags,
 				     open_flags, mode);
 	if (db_tdb->wtdb == NULL) {
 		DEBUG(3, ("Could not open tdb: %s\n", strerror(errno)));
@@ -458,7 +456,6 @@ struct db_context *db_open_tdb(TALLOC_CTX *mem_ctx,
 	result->id = db_tdb_id;
 	result->check = db_tdb_check;
 	result->name = tdb_name(db_tdb->wtdb->tdb);
-	result->hash_size = hash_size;
 	return result;
 
  fail:

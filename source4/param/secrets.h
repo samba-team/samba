@@ -28,14 +28,6 @@
 #define SECRETS_PRINCIPAL_SEARCH "(&(|(realm=%s)(flatname=%s))(servicePrincipalName=%s))"
 #define SECRETS_LDAP_FILTER "(&(objectclass=ldapSecret)(cn=SAMDB Credentials))"
 
-/**
- * Use a TDB to store an incrementing random seed.
- *
- * Initialised to the current pid, the very first time Samba starts,
- * and incremented by one each time it is needed.  
- * 
- * @note Not called by systems with a working /dev/urandom.
- */
 struct loadparm_context;
 struct tevent_context;
 struct ldb_message;

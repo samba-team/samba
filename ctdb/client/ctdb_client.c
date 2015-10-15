@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include "../include/ctdb_private.h"
 #include "lib/util/dlinklist.h"
+#include "common/reqid.h"
 
 /*
   allocate a packet for use in client<->daemon communication
@@ -153,7 +154,7 @@ static void ctdb_client_reply_call(struct ctdb_context *ctdb, struct ctdb_req_he
 	struct ctdb_reply_call *c = (struct ctdb_reply_call *)hdr;
 	struct ctdb_client_call_state *state;
 
-	state = ctdb_reqid_find(ctdb, hdr->reqid, struct ctdb_client_call_state);
+	state = reqid_find(ctdb->idr, hdr->reqid, struct ctdb_client_call_state);
 	if (state == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " reqid %u not found\n", hdr->reqid));
 		return;
@@ -176,6 +177,22 @@ static void ctdb_client_reply_call(struct ctdb_context *ctdb, struct ctdb_req_he
 	if (state->async.fn) {
 		state->async.fn(state);
 	}
+}
+
+void ctdb_request_message(struct ctdb_context *ctdb,
+			  struct ctdb_req_header *hdr)
+{
+	struct ctdb_req_message *c = (struct ctdb_req_message *)hdr;
+	TDB_DATA data;
+
+	data.dsize = c->datalen;
+	data.dptr = talloc_memdup(c, &c->data[0], c->datalen);
+	if (data.dptr == NULL) {
+		DEBUG(DEBUG_ERR, (__location__ " Memory allocation failure\n"));
+		return;
+	}
+
+	srvid_dispatch(ctdb->srv, c->srvid, CTDB_SRVID_ALL, data);
 }
 
 static void ctdb_client_reply_control(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
@@ -328,7 +345,7 @@ int ctdb_call_recv(struct ctdb_client_call_state *state, struct ctdb_call *call)
 */
 static int ctdb_client_call_destructor(struct ctdb_client_call_state *state)	
 {
-	ctdb_reqid_remove(state->ctdb_db->ctdb, state->reqid);
+	reqid_remove(state->ctdb_db->ctdb->idr, state->reqid);
 	return 0;
 }
 
@@ -428,7 +445,7 @@ struct ctdb_client_call_state *ctdb_call_send(struct ctdb_db_context *ctdb_db,
 		return NULL;
 	}
 
-	state->reqid     = ctdb_reqid_new(ctdb, state);
+	state->reqid     = reqid_new(ctdb->idr, state);
 	state->ctdb_db = ctdb_db;
 	talloc_set_destructor(state, ctdb_client_call_destructor);
 
@@ -471,41 +488,48 @@ int ctdb_call(struct ctdb_db_context *ctdb_db, struct ctdb_call *call)
   tell the daemon what messaging srvid we will use, and register the message
   handler function in the client
 */
-int ctdb_client_set_message_handler(struct ctdb_context *ctdb, uint64_t srvid, 
-			     ctdb_msg_fn_t handler,
-			     void *private_data)
+int ctdb_client_set_message_handler(struct ctdb_context *ctdb, uint64_t srvid,
+				    srvid_handler_fn handler,
+				    void *private_data)
 {
 	int res;
 	int32_t status;
 
-	res = ctdb_control(ctdb, CTDB_CURRENT_NODE, srvid, CTDB_CONTROL_REGISTER_SRVID, 0, 
+	res = ctdb_control(ctdb, CTDB_CURRENT_NODE, srvid,
+			   CTDB_CONTROL_REGISTER_SRVID, 0,
 			   tdb_null, NULL, NULL, &status, NULL, NULL);
 	if (res != 0 || status != 0) {
-		DEBUG(DEBUG_ERR,("Failed to register srvid %llu\n", (unsigned long long)srvid));
+		DEBUG(DEBUG_ERR,
+		      ("Failed to register srvid %llu\n",
+		       (unsigned long long)srvid));
 		return -1;
 	}
 
 	/* also need to register the handler with our own ctdb structure */
-	return ctdb_register_message_handler(ctdb, ctdb, srvid, handler, private_data);
+	return srvid_register(ctdb->srv, ctdb, srvid, handler, private_data);
 }
 
 /*
   tell the daemon we no longer want a srvid
 */
-int ctdb_client_remove_message_handler(struct ctdb_context *ctdb, uint64_t srvid, void *private_data)
+int ctdb_client_remove_message_handler(struct ctdb_context *ctdb,
+				       uint64_t srvid, void *private_data)
 {
 	int res;
 	int32_t status;
 
-	res = ctdb_control(ctdb, CTDB_CURRENT_NODE, srvid, CTDB_CONTROL_DEREGISTER_SRVID, 0, 
+	res = ctdb_control(ctdb, CTDB_CURRENT_NODE, srvid,
+			   CTDB_CONTROL_DEREGISTER_SRVID, 0,
 			   tdb_null, NULL, NULL, &status, NULL, NULL);
 	if (res != 0 || status != 0) {
-		DEBUG(DEBUG_ERR,("Failed to deregister srvid %llu\n", (unsigned long long)srvid));
+		DEBUG(DEBUG_ERR,
+		      ("Failed to deregister srvid %llu\n",
+		       (unsigned long long)srvid));
 		return -1;
 	}
 
 	/* also need to register the handler with our own ctdb structure */
-	ctdb_deregister_message_handler(ctdb, srvid, private_data);
+	srvid_deregister(ctdb->srv, srvid, private_data);
 	return 0;
 }
 
@@ -955,7 +979,7 @@ static void ctdb_client_reply_control(struct ctdb_context *ctdb,
 	struct ctdb_reply_control *c = (struct ctdb_reply_control *)hdr;
 	struct ctdb_client_control_state *state;
 
-	state = ctdb_reqid_find(ctdb, hdr->reqid, struct ctdb_client_control_state);
+	state = reqid_find(ctdb->idr, hdr->reqid, struct ctdb_client_control_state);
 	if (state == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " reqid %u not found\n", hdr->reqid));
 		return;
@@ -997,7 +1021,7 @@ static void ctdb_client_reply_control(struct ctdb_context *ctdb,
 */
 static int ctdb_client_control_destructor(struct ctdb_client_control_state *state)
 {
-	ctdb_reqid_remove(state->ctdb, state->reqid);
+	reqid_remove(state->ctdb->idr, state->reqid);
 	return 0;
 }
 
@@ -1048,7 +1072,7 @@ struct ctdb_client_control_state *ctdb_control_send(struct ctdb_context *ctdb,
 	CTDB_NO_MEMORY_NULL(ctdb, state);
 
 	state->ctdb       = ctdb;
-	state->reqid      = ctdb_reqid_new(ctdb, state);
+	state->reqid      = reqid_new(ctdb->idr, state);
 	state->state      = CTDB_CONTROL_WAIT;
 	state->errormsg   = NULL;
 
@@ -2182,15 +2206,15 @@ struct traverse_state {
 /*
   called on each key during a ctdb_traverse
  */
-static void traverse_handler(struct ctdb_context *ctdb, uint64_t srvid, TDB_DATA data, void *p)
+static void traverse_handler(uint64_t srvid, TDB_DATA data, void *p)
 {
 	struct traverse_state *state = (struct traverse_state *)p;
 	struct ctdb_rec_data *d = (struct ctdb_rec_data *)data.dptr;
 	TDB_DATA key;
 
-	if (data.dsize < sizeof(uint32_t) ||
-	    d->length != data.dsize) {
-		DEBUG(DEBUG_ERR,("Bad data size %u in traverse_handler\n", (unsigned)data.dsize));
+	if (data.dsize < sizeof(uint32_t) || d->length != data.dsize) {
+		DEBUG(DEBUG_ERR, ("Bad data size %u in traverse_handler\n",
+				  (unsigned)data.dsize));
 		state->done = true;
 		return;
 	}
@@ -2213,7 +2237,7 @@ static void traverse_handler(struct ctdb_context *ctdb, uint64_t srvid, TDB_DATA
 		return;
 	}
 
-	if (state->fn(ctdb, key, data, state->private_data) != 0) {
+	if (state->fn(key, data, state->private_data) != 0) {
 		state->done = true;
 	}
 
@@ -2296,7 +2320,7 @@ int ctdb_traverse(struct ctdb_db_context *ctdb_db, ctdb_traverse_func fn, void *
 /*
   called on each key during a catdb
  */
-int ctdb_dumpdb_record(struct ctdb_context *ctdb, TDB_DATA key, TDB_DATA data, void *p)
+int ctdb_dumpdb_record(TDB_DATA key, TDB_DATA data, void *p)
 {
 	int i;
 	struct ctdb_dump_db_context *c = (struct ctdb_dump_db_context *)p;
@@ -2316,8 +2340,8 @@ int ctdb_dumpdb_record(struct ctdb_context *ctdb, TDB_DATA key, TDB_DATA data, v
 	fprintf(f, "dmaster: %u\n", h->dmaster);
 	fprintf(f, "rsn: %llu\n", (unsigned long long)h->rsn);
 
-	if (c->printlmaster && ctdb->vnn_map != NULL) {
-		fprintf(f, "lmaster: %u\n", ctdb_lmaster(ctdb, &key));
+	if (c->printlmaster && c->ctdb->vnn_map != NULL) {
+		fprintf(f, "lmaster: %u\n", ctdb_lmaster(c->ctdb, &key));
 	}
 
 	if (c->printhash) {
@@ -3290,10 +3314,20 @@ struct ctdb_context *ctdb_init(struct event_context *ev)
 		return NULL;
 	}
 	ctdb->ev  = ev;
-	ctdb->idr = idr_init(ctdb);
 	/* Wrap early to exercise code. */
-	ctdb->lastid = INT_MAX-200;
-	CTDB_NO_MEMORY_NULL(ctdb, ctdb->idr);
+	ret = reqid_init(ctdb, INT_MAX-200, &ctdb->idr);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("reqid_init failed (%s)\n", strerror(ret)));
+		talloc_free(ctdb);
+		return NULL;
+	}
+
+	ret = srvid_init(ctdb, &ctdb->srv);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("srvid_init failed (%s)\n", strerror(ret)));
+		talloc_free(ctdb);
+		return NULL;
+	}
 
 	ret = ctdb_set_socketname(ctdb, CTDB_SOCKET);
 	if (ret != 0) {
@@ -4071,7 +4105,7 @@ struct ctdb_transaction_handle {
 static int ctdb_transaction_destructor(struct ctdb_transaction_handle *h)
 {
 	g_lock_unlock(h, h->g_lock_db, h->lock_name, h->reqid);
-	ctdb_reqid_remove(h->ctdb_db->ctdb, h->reqid);
+	reqid_remove(h->ctdb_db->ctdb->idr, h->reqid);
 	return 0;
 }
 
@@ -4119,7 +4153,7 @@ struct ctdb_transaction_handle *ctdb_transaction_start(struct ctdb_db_context *c
 		return NULL;
 	}
 
-	h->reqid = ctdb_reqid_new(h->ctdb_db->ctdb, h);
+	h->reqid = reqid_new(h->ctdb_db->ctdb->idr, h);
 
 	if (!g_lock_lock(h, h->g_lock_db, h->lock_name, h->reqid)) {
 		DEBUG(DEBUG_ERR, (__location__ " Error locking g_lock.tdb\n"));

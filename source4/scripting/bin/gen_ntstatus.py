@@ -62,6 +62,8 @@ def transformErrorName( error_name ):
 def parseErrorDescriptions( file_contents, isWinError ):
     count = 0
     for line in file_contents:
+        if line == None or line == '\t' or line == "" or line == '\n':
+            continue
         content = line.strip().split(None,1)
         # start new error definition ?
         if line.startswith("0x"):
@@ -78,17 +80,17 @@ def parseErrorDescriptions( file_contents, isWinError ):
                 print "Error parsing file as line %d"%count
                 sys.exit()
             err = Errors[-1]
-            if err.err_define == None:    
+            if err.err_define == None:
                 err.err_define = transformErrorName(content[0])
-        else:
-            if len(content) > 0:
-                desc =  escapeString(line.strip())
-                if len(desc):
-                    if err.err_string == "":
-                        err.err_string = desc
-                    else:
-                        err.err_string = err.err_string + " " + desc
-        count = count + 1
+            else:
+                if len(content) > 0:
+                    desc =  escapeString(line.strip())
+                    if len(desc):
+                        if err.err_string == "":
+                            err.err_string = desc
+                        else:
+                            err.err_string = err.err_string + " " + desc
+            count = count + 1
     print "parsed %d lines generated %d error definitions"%(count,len(Errors))
 
 def parseErrCodeString(error_code_string):
@@ -147,21 +149,21 @@ def generateSourceFile(out_file):
     out_file.write(" * [MS-ERREF] http://msdn.microsoft.com/en-us/library/cc704588.aspx\n")
     out_file.write(" */\n")
     for err in ErrorsToCreatDescFor:
-	out_file.write("	{ N_(\"%s\"), %s },\n"%(err.err_string, err.err_define))
+        out_file.write("	{ N_(\"%s\"), %s },\n"%(err.err_string, err.err_define))
     out_file.write("\n\n")
     out_file.write("/*\n")
     out_file.write(" * New descriptions for new errors generated from\n")
     out_file.write(" * [MS-ERREF] http://msdn.microsoft.com/en-us/library/cc704588.aspx\n")
     out_file.write(" */\n")
     for err in ErrorsToUse:
-	out_file.write("	{ N_(\"%s\"), %s },\n"%(err.err_string, err.err_define))
+        out_file.write("	{ N_(\"%s\"), %s },\n"%(err.err_string, err.err_define))
     out_file.write("\n\n");
     out_file.write("/*\n")
     out_file.write(" * New descriptions for new errors generated from\n")
     out_file.write(" * [MS-ERREF] http://msdn.microsoft.com/en-us/library/cc704588.aspx\n")
     out_file.write(" */\n")
     for err in ErrorsToUse:
-	out_file.write("	{ \"%s\", %s },\n"%(err.err_define, err.err_define))
+        out_file.write("	{ \"%s\", %s },\n"%(err.err_define, err.err_define))
 
 def def_in_list(define, err_def_with_desc):
     for item in err_def_with_desc:
@@ -231,9 +233,11 @@ def main ():
     file_contents = open(input_file3,"r")
     has_already_desc = file_contents.readlines()
     processErrorDescription(has_already_desc)
+    print "writing new headerfile: %s"%headerfile_name
     out_file = open(headerfile_name,"w")
     generateHeaderFile(out_file)
     out_file.close()
+    print "writing new headerfile: %s"%sourcefile_name
     out_file = open(sourcefile_name,"w")
     generateSourceFile(out_file)
     out_file.close()

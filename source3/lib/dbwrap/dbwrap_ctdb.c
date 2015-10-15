@@ -35,6 +35,7 @@
 #include "dbwrap/dbwrap_ctdb.h"
 #include "g_lock.h"
 #include "messages.h"
+#include "lib/cluster_support.h"
 
 struct db_ctdb_transaction_handle {
 	struct db_ctdb_ctx *ctx;
@@ -760,12 +761,12 @@ static int db_ctdb_transaction_commit(struct db_context *db)
 
 again:
 	/* tell ctdbd to commit to the other nodes */
-	rets = ctdbd_control_local(messaging_ctdbd_connection(),
-				   CTDB_CONTROL_TRANS3_COMMIT,
-				   h->ctx->db_id, 0,
-				   db_ctdb_marshall_finish(h->m_write),
-				   NULL, NULL, &status);
-	if (!NT_STATUS_IS_OK(rets) || status != 0) {
+	ret = ctdbd_control_local(messaging_ctdbd_connection(),
+				  CTDB_CONTROL_TRANS3_COMMIT,
+				  h->ctx->db_id, 0,
+				  db_ctdb_marshall_finish(h->m_write),
+				  NULL, NULL, &status);
+	if ((ret != 0) || status != 0) {
 		/*
 		 * The TRANS3_COMMIT control should only possibly fail when a
 		 * recovery has been running concurrently. In any case, the db
@@ -851,7 +852,8 @@ static NTSTATUS db_ctdb_store(struct db_record *rec, TDB_DATA data, int flag)
 
 static NTSTATUS db_ctdb_send_schedule_for_deletion(struct db_record *rec)
 {
-	NTSTATUS status;
+	NTSTATUS status = NT_STATUS_OK;
+	int ret;
 	struct ctdb_control_schedule_for_deletion *dd;
 	TDB_DATA indata;
 	int cstatus;
@@ -871,21 +873,23 @@ static NTSTATUS db_ctdb_send_schedule_for_deletion(struct db_record *rec)
 	dd->keylen = rec->key.dsize;
 	memcpy(dd->key, rec->key.dptr, rec->key.dsize);
 
-	status = ctdbd_control_local(messaging_ctdbd_connection(),
-				     CTDB_CONTROL_SCHEDULE_FOR_DELETION,
-				     crec->ctdb_ctx->db_id,
-				     CTDB_CTRL_FLAG_NOREPLY, /* flags */
-				     indata,
-				     NULL, /* outdata */
-				     NULL, /* errmsg */
-				     &cstatus);
+	ret = ctdbd_control_local(messaging_ctdbd_connection(),
+				  CTDB_CONTROL_SCHEDULE_FOR_DELETION,
+				  crec->ctdb_ctx->db_id,
+				  CTDB_CTRL_FLAG_NOREPLY, /* flags */
+				  indata,
+				  NULL, /* outdata */
+				  NULL, /* errmsg */
+				  &cstatus);
 	talloc_free(indata.dptr);
 
-	if (!NT_STATUS_IS_OK(status) || cstatus != 0) {
+	if ((ret != 0) || cstatus != 0) {
 		DEBUG(1, (__location__ " Error sending local control "
 			  "SCHEDULE_FOR_DELETION: %s, cstatus = %d\n",
-			  nt_errstr(status), cstatus));
-		if (NT_STATUS_IS_OK(status)) {
+			  strerror(ret), cstatus));
+		if (ret != 0) {
+			status = map_nt_error_from_unix(ret);
+		} else {
 			status = NT_STATUS_UNSUCCESSFUL;
 		}
 	}
@@ -1008,7 +1012,6 @@ static struct db_record *fetch_locked_internal(struct db_ctdb_ctx *ctx,
 {
 	struct db_record *result;
 	struct db_ctdb_rec *crec;
-	NTSTATUS status;
 	TDB_DATA ctdb_data;
 	int migrate_attempts;
 	struct timeval migrate_start;
@@ -1018,6 +1021,7 @@ static struct db_record *fetch_locked_internal(struct db_ctdb_ctx *ctx,
 	double ctdb_time = 0;
 	int duration_msecs;
 	int lockret;
+	int ret;
 
 	if (!(result = talloc(mem_ctx, struct db_record))) {
 		DEBUG(0, ("talloc failed\n"));
@@ -1104,13 +1108,13 @@ again:
 			   ((struct ctdb_ltdb_header *)ctdb_data.dptr)->flags : 0));
 
 		GetTimeOfDay(&ctdb_start_time);
-		status = ctdbd_migrate(messaging_ctdbd_connection(), ctx->db_id,
-				       key);
+		ret = ctdbd_migrate(messaging_ctdbd_connection(), ctx->db_id,
+				    key);
 		ctdb_time += timeval_elapsed(&ctdb_start_time);
 
-		if (!NT_STATUS_IS_OK(status)) {
+		if (ret != 0) {
 			DEBUG(5, ("ctdb_migrate failed: %s\n",
-				  nt_errstr(status)));
+				  strerror(ret)));
 			TALLOC_FREE(result);
 			return NULL;
 		}
@@ -1254,6 +1258,7 @@ static NTSTATUS db_ctdb_parse_record(struct db_context *db, TDB_DATA key,
 		db->private_data, struct db_ctdb_ctx);
 	struct db_ctdb_parse_record_state state;
 	NTSTATUS status;
+	int ret;
 
 	state.parser = parser;
 	state.private_data = private_data;
@@ -1291,8 +1296,12 @@ static NTSTATUS db_ctdb_parse_record(struct db_context *db, TDB_DATA key,
 		return NT_STATUS_OK;
 	}
 
-	return ctdbd_parse(messaging_ctdbd_connection(), ctx->db_id, key,
-			   state.ask_for_readonly_copy, parser, private_data);
+	ret = ctdbd_parse(messaging_ctdbd_connection(), ctx->db_id, key,
+			  state.ask_for_readonly_copy, parser, private_data);
+	if (ret != 0) {
+		return map_nt_error_from_unix(ret);
+	}
+	return NT_STATUS_OK;
 }
 
 struct traverse_state {
@@ -1356,7 +1365,7 @@ static int db_ctdb_traverse(struct db_context *db,
 				      void *private_data),
 			    void *private_data)
 {
-	NTSTATUS status;
+	int ret;
         struct db_ctdb_ctx *ctx = talloc_get_type_abort(db->private_data,
                                                         struct db_ctdb_ctx);
 	struct traverse_state state;
@@ -1368,7 +1377,6 @@ static int db_ctdb_traverse(struct db_context *db,
 
 	if (db->persistent) {
 		struct tdb_context *ltdb = ctx->wtdb->tdb;
-		int ret;
 
 		/* for persistent databases we don't need to do a ctdb traverse,
 		   we can do a faster local traverse */
@@ -1386,6 +1394,7 @@ static int db_ctdb_traverse(struct db_context *db,
 			struct ctdb_rec_data *rec=NULL;
 			int i;
 			int count = 0;
+			NTSTATUS status;
 
 			if (newkeys == NULL) {
 				return -1;
@@ -1414,8 +1423,9 @@ static int db_ctdb_traverse(struct db_context *db,
 		return ret;
 	}
 
-	status = ctdbd_traverse(ctx->db_id, traverse_callback, &state);
-	if (!NT_STATUS_IS_OK(status)) {
+	ret = ctdbd_traverse(messaging_ctdbd_connection(), ctx->db_id,
+			     traverse_callback, &state);
+	if (ret != 0) {
 		return -1;
 	}
 	return state.count;
@@ -1487,7 +1497,7 @@ static int db_ctdb_traverse_read(struct db_context *db,
 					   void *private_data),
 				 void *private_data)
 {
-	NTSTATUS status;
+	int ret;
         struct db_ctdb_ctx *ctx = talloc_get_type_abort(db->private_data,
                                                         struct db_ctdb_ctx);
 	struct traverse_state state;
@@ -1503,8 +1513,9 @@ static int db_ctdb_traverse_read(struct db_context *db,
 		return tdb_traverse_read(ctx->wtdb->tdb, traverse_persistent_callback_read, &state);
 	}
 
-	status = ctdbd_traverse(ctx->db_id, traverse_read_callback, &state);
-	if (!NT_STATUS_IS_OK(status)) {
+	ret = ctdbd_traverse(messaging_ctdbd_connection(), ctx->db_id,
+			     traverse_read_callback, &state);
+	if (ret != 0) {
 		return -1;
 	}
 	return state.count;
@@ -1517,14 +1528,16 @@ static int db_ctdb_get_seqnum(struct db_context *db)
 	return tdb_get_seqnum(ctx->wtdb->tdb);
 }
 
-static void db_ctdb_id(struct db_context *db, const uint8_t **id,
-		       size_t *idlen)
+static size_t db_ctdb_id(struct db_context *db, uint8_t *id, size_t idlen)
 {
 	struct db_ctdb_ctx *ctx = talloc_get_type_abort(
 		db->private_data, struct db_ctdb_ctx);
 
-	*id = (uint8_t *)&ctx->db_id;
-	*idlen = sizeof(ctx->db_id);
+	if (idlen >= sizeof(ctx->db_id)) {
+		memcpy(id, &ctx->db_id, sizeof(ctx->db_id));
+	}
+
+	return sizeof(ctx->db_id);
 }
 
 struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
@@ -1540,8 +1553,8 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 	struct ctdbd_connection *conn;
 	struct loadparm_context *lp_ctx;
 	struct ctdb_db_priority prio;
-	NTSTATUS status;
 	int cstatus;
+	int ret;
 
 	if (!lp_clustering()) {
 		DEBUG(10, ("Clustering disabled -- no ctdb\n"));
@@ -1577,8 +1590,10 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	if (!NT_STATUS_IS_OK(ctdbd_db_attach(conn, name, &db_ctdb->db_id, tdb_flags))) {
-		DEBUG(0, ("ctdbd_db_attach failed for %s\n", name));
+	ret = ctdbd_db_attach(conn, name, &db_ctdb->db_id, tdb_flags);
+	if (ret != 0) {
+		DEBUG(0, ("ctdbd_db_attach failed for %s: %s\n", name,
+			  strerror(ret)));
 		TALLOC_FREE(result);
 		return NULL;
 	}
@@ -1592,22 +1607,17 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 	tdb_flags &= TDB_SEQNUM|TDB_VOLATILE|
 		TDB_MUTEX_LOCKING|TDB_CLEAR_IF_FIRST;
 
-	/* honor permissions if user has specified O_CREAT */
-	if (open_flags & O_CREAT) {
-		chmod(db_path, mode);
-	}
-
 	prio.db_id = db_ctdb->db_id;
 	prio.priority = lock_order;
 
-	status = ctdbd_control_local(
+	ret = ctdbd_control_local(
 		conn, CTDB_CONTROL_SET_DB_PRIORITY, 0, 0,
 		make_tdb_data((uint8_t *)&prio, sizeof(prio)),
 		NULL, NULL, &cstatus);
 
-	if (!NT_STATUS_IS_OK(status) || (cstatus != 0)) {
+	if ((ret != 0) || (cstatus != 0)) {
 		DEBUG(1, ("CTDB_CONTROL_SET_DB_PRIORITY failed: %s, %d\n",
-			  nt_errstr(status), cstatus));
+			  strerror(ret), cstatus));
 		TALLOC_FREE(result);
 		return NULL;
 	}
@@ -1620,12 +1630,12 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 		indata = make_tdb_data((uint8_t *)&db_ctdb->db_id,
 				       sizeof(db_ctdb->db_id));
 
-		status = ctdbd_control_local(
+		ret = ctdbd_control_local(
 			conn, CTDB_CONTROL_SET_DB_READONLY, 0, 0, indata,
 			NULL, NULL, &cstatus);
-		if (!NT_STATUS_IS_OK(status) || (cstatus != 0)) {
+		if ((ret != 0) || (cstatus != 0)) {
 			DEBUG(1, ("CTDB_CONTROL_SET_DB_READONLY failed: "
-				  "%s, %d\n", nt_errstr(status), cstatus));
+				  "%s, %d\n", strerror(ret), cstatus));
 			TALLOC_FREE(result);
 			return NULL;
 		}
@@ -1647,6 +1657,19 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 	talloc_free(db_path);
+
+	/* honor permissions if user has specified O_CREAT */
+	if (open_flags & O_CREAT) {
+		int fd;
+		fd = tdb_fd(db_ctdb->wtdb->tdb);
+		ret = fchmod(fd, mode);
+		if (ret == -1) {
+			DBG_WARNING("%s: fchmod failed: %s\n", __func__,
+				    strerror(errno));
+			TALLOC_FREE(result);
+			return NULL;
+		}
+	}
 
 	if (result->persistent) {
 		db_ctdb->lock_ctx = g_lock_ctx_init(db_ctdb,

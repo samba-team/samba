@@ -23,7 +23,7 @@
     <para>
       This file contains CTDB configuration variables that are affect
       the operation of CTDB.  The default location of this file is
-      <filename>/etc/ctdb/ctdbd.conf</filename>.
+      <filename>/usr/local/etc/ctdb/ctdbd.conf</filename>.
     </para>
 
     <para>
@@ -44,7 +44,7 @@
       <filename>/etc/default/ctdb</filename> (Debian).  However, these
       files should be reserved for variables used by the initscript.
       A historical alternative is
-      <filename>/etc/ctdb/sysconfig/ctdb</filename> - this is
+      <filename>/usr/local/etc/ctdb/sysconfig/ctdb</filename> - this is
       deprecated.
     </para>
 
@@ -76,7 +76,7 @@
 	  </para>
 
 	  <para>
-	    Default is <filename>/var/run/ctdb/ctdbd.pid</filename>.
+	    Default is <filename>/usr/local/var/run/ctdb/ctdbd.pid</filename>.
 	    Corresponds to <option>--pidfile</option>.
 	  </para>
 	</listitem>
@@ -105,22 +105,6 @@
 	  </para>
 	</listitem>
       </varlistentry>
-
-      <varlistentry>
-	<term>CTDB_VARDIR=<parameter>DIRECTORY</parameter></term>
-	<listitem>
-	  <para>
-	    DIRECTORY containing CTDB files that are modified at
-	    runtime.
-	  </para>
-	  <para>
-	    Defaults to <filename>/var/ctdb</filename>, unless
-	    <filename>/var/lib/ctdb</filename> already exists in which
-	    case it is used.
-	  </para>
-	</listitem>
-      </varlistentry>
-
 
     </variablelist>
   </refsect1>
@@ -172,8 +156,10 @@
 	<term>CTDB_DBDIR=<parameter>DIRECTORY</parameter></term>
 	<listitem>
 	  <para>
-	    Defaults to <varname>CTDB_VARDIR</varname>.  Corresponds to
-	    <option>--dbdir</option>.
+	    Defaults to <filename>/usr/local/var/lib/ctdb</filename>.
+	  </para>
+	  <para>
+	    Corresponds to <option>--dbdir</option>.
 	  </para>
 	</listitem>
       </varlistentry>
@@ -182,7 +168,9 @@
 	<term>CTDB_DBDIR_PERSISTENT=<parameter>DIRECTORY</parameter></term>
 	<listitem>
 	  <para>
-	    Defaults to <varname>CTDB_VARDIR</varname>/persistent.
+	    Defaults to <filename>/usr/local/var/lib/ctdb/persistent</filename>.
+	  </para>
+	  <para>
 	    Corresponds to <option>--dbdir-persistent</option>.
 	  </para>
 	</listitem>
@@ -192,7 +180,9 @@
 	<term>CTDB_DBDIR_STATE=<parameter>DIRECTORY</parameter></term>
 	<listitem>
 	  <para>
-	    Defaults to <varname>CTDB_VARDIR</varname>/state.
+	    Defaults to <filename>/usr/local/var/lib/ctdb/state</filename>.
+	  </para>
+	  <para>
 	    Corresponds to <option>--dbdir-state</option>.
 	  </para>
 	</listitem>
@@ -213,7 +203,7 @@
 	<listitem>
 	  <para>
 	    Default is <varname>CTDB_BASE</varname>/events.d, so usually
-	    <filename>/etc/ctdb/events.d</filename>.  Corresponds to
+	    <filename>/usr/local/etc/ctdb/events.d</filename>.  Corresponds to
 	    <option>--event-script-dir</option>.
 	  </para>
 	</listitem>
@@ -224,9 +214,9 @@
 	<listitem>
 	  <para>
 	    STRING specifies where ctdbd will write its log. The
-	    default is file:<filename>/var/log/log.ctdb</filename> or
-	    similar - the prefix may differ depending on how CTDB was
-	    built.  Corresponds to <option>--logging</option>.
+	    default is
+	    file:<filename>/usr/local/var/log/log.ctdb</filename>.
+	    Corresponds to <option>--logging</option>.
 	  </para>
 	  <para>
 	    Valid values are:
@@ -237,7 +227,7 @@
 	      <listitem>
 		<para>
 		  FILENAME where ctdbd will write its log. This is usually
-		  <filename>/var/log/log.ctdb</filename>.
+		  <filename>/usr/local/var/log/log.ctdb</filename>.
 		</para>
 	      </listitem>
 	    </varlistentry>
@@ -316,7 +306,7 @@
 	<listitem>
 	  <para>
 	    Default is <varname>CTDB_BASE</varname>/nodes, so usually
-	    <filename>/etc/ctdb/nodes</filename>.  Corresponds to
+	    <filename>/usr/local/etc/ctdb/nodes</filename>.  Corresponds to
 	    <option>--nlist</option>.
 	  </para>
 	</listitem>
@@ -327,7 +317,7 @@
 	<listitem>
 	  <para>
 	    No default, usually
-	    <filename>/etc/ctdb/notify.sh</filename>.  Corresponds to
+	    <filename>/usr/local/etc/ctdb/notify.sh</filename>.  Corresponds to
 	    <option>--notification-script</option>.
 	  </para>
 	</listitem>
@@ -344,7 +334,7 @@
       </varlistentry>
 
       <varlistentry>
-	<term>CTDB_NODE_ADDRESS=<parameter>FILENAME</parameter></term>
+	<term>CTDB_NODE_ADDRESS=<parameter>IPADDR</parameter></term>
 	<listitem>
 	  <para>
 	    IPADDR is the private IP address that ctdbd will bind to.
@@ -371,7 +361,7 @@
 	<listitem>
 	  <para>
 	    No default, usually
-	    <filename>/etc/ctdb/public_addresses</filename>.
+	    <filename>/usr/local/etc/ctdb/public_addresses</filename>.
 	    Corresponds to <option>--public-addresses</option>.
 	  </para>
 	</listitem>
@@ -419,7 +409,7 @@
 	<term>CTDB_SOCKET=<parameter>FILENAME</parameter></term>
 	<listitem>
 	  <para>
-	    Defaults to <filename>/tmp/ctdb.socket</filename>.
+	    Defaults to <filename>/usr/local/var/run/ctdb/ctdbd.socket</filename>.
 	    Corresponds to <option>--socket</option>.
 	  </para>
 	  <para>
@@ -565,7 +555,7 @@
 	    </para>
 	    <para>
 	      No default, usually
-	      <filename>/etc/ctdb/natgw_nodes</filename> when enabled.
+	      <filename>/usr/local/etc/ctdb/natgw_nodes</filename> when enabled.
 	    </para>
 	  </listitem>
 	</varlistentry>
@@ -671,7 +661,7 @@
       <refsect3>
 	<title>Example</title>
 	<screen>
-CTDB_NATGW_NODES=/etc/ctdb/natgw_nodes
+CTDB_NATGW_NODES=/usr/local/etc/ctdb/natgw_nodes
 CTDB_NATGW_PRIVATE_NETWORK=192.168.1.0/24
 CTDB_NATGW_DEFAULT_GATEWAY=10.0.0.1
 CTDB_NATGW_PUBLIC_IP=10.0.0.227/24
@@ -684,7 +674,7 @@ CTDB_NATGW_PUBLIC_IFACE=eth0
 	  always reachable would look like this:
 	</para>
 	<screen>
-CTDB_NATGW_NODES=/etc/ctdb/natgw_nodes
+CTDB_NATGW_NODES=/usr/local/etc/ctdb/natgw_nodes
 CTDB_NATGW_PRIVATE_NETWORK=192.168.1.0/24
 CTDB_NATGW_PUBLIC_IP=10.0.0.227/24
 CTDB_NATGW_PUBLIC_IFACE=eth0
@@ -746,7 +736,7 @@ CTDB_NATGW_STATIC_ROUTES=10.0.0.0/24
 
 	    <para>
 	      No default, usually
-	      <filename>/etc/ctdb/policy_routing</filename> when enabled.
+	      <filename>/usr/local/etc/ctdb/policy_routing</filename> when enabled.
 	    </para>
 	  </listitem>
 	</varlistentry>
@@ -812,7 +802,7 @@ CTDB_NATGW_STATIC_ROUTES=10.0.0.0/24
       <refsect3>
 	<title>Example</title>
 	<screen>
-CTDB_PER_IP_ROUTING_CONF=/etc/ctdb/policy_routing
+CTDB_PER_IP_ROUTING_CONF=/usr/local/etc/ctdb/policy_routing
 CTDB_PER_IP_ROUTING_RULE_PREF=100
 CTDB_PER_IP_ROUTING_TABLE_ID_LOW=1000
 CTDB_PER_IP_ROUTING_TABLE_ID_HIGH=9000
@@ -1508,7 +1498,7 @@ CTDB_SET_MonitorInterval=20
       </varlistentry>
 
       <varlistentry>
-	<term>CTDB_ETCDIR=<parameter>DIRECTORY</parameter></term>
+	<term>CTDB_SYS_ETCDIR=<parameter>DIRECTORY</parameter></term>
 	<listitem>
 	  <para>
 	    DIRECTORY containing system configuration files.  This is
@@ -1638,7 +1628,7 @@ CTDB_SET_MonitorInterval=20
 	    <manvolnum>1</manvolnum></citerefentry> to be run under
 	    <citerefentry><refentrytitle>valgrind</refentrytitle>
 	    <manvolnum>1</manvolnum></citerefentry> with logs going to
-	    <filename>/var/log/ctdb_valgrind</filename>.  If neither
+	    <filename>/usr/local/var/log/ctdb_valgrind</filename>.  If neither
 	    "yes" nor "no" then the value is assumed to be a COMMAND
 	    (e.g. a <command>valgrind</command> variation, a
 	    <citerefentry><refentrytitle>gdb</refentrytitle>
@@ -1653,6 +1643,19 @@ CTDB_SET_MonitorInterval=20
 	</listitem>
       </varlistentry>
 
+      <varlistentry>
+	<term>CTDB_VARDIR=<parameter>DIRECTORY</parameter></term>
+	<listitem>
+	  <para>
+	    DIRECTORY containing CTDB files that are modified at
+	    runtime.
+	  </para>
+	  <para>
+	    Defaults to <filename>/usr/local/var/lib/ctdb</filename>.
+	  </para>
+	</listitem>
+      </varlistentry>
+
     </variablelist>
 
   </refsect1>
@@ -1662,10 +1665,10 @@ CTDB_SET_MonitorInterval=20
     <title>FILES</title>
 
     <simplelist>
-      <member><filename>/etc/ctdb/ctdbd.conf</filename></member>
+      <member><filename>/usr/local/etc/ctdb/ctdbd.conf</filename></member>
       <member><filename>/etc/sysconfig/ctdb</filename></member>
       <member><filename>/etc/default/ctdb</filename></member>
-      <member><filename>/etc/ctdb/sysconfig/ctdb</filename></member>
+      <member><filename>/usr/local/etc/ctdb/sysconfig/ctdb</filename></member>
     </simplelist>
   </refsect1>
 

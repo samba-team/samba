@@ -349,7 +349,11 @@ static bool test_enum_r_passwd(struct torture_context *tctx,
 	while (1) {
 		torture_comment(tctx, "Testing getpwent_r\n");
 
+#ifdef SOLARIS_GETPWENT_R
+		ret = getpwent_r(&pwd, buffer, sizeof(buffer));
+#else /* SOLARIS_GETPWENT_R */
 		ret = getpwent_r(&pwd, buffer, sizeof(buffer), &pwdp);
+#endif /* SOLARIS_GETPWENT_R */
 		if (ret != 0) {
 			if (ret != ENOENT) {
 				torture_comment(tctx, "got %d return code\n", ret);
@@ -543,7 +547,11 @@ static bool test_enum_r_group(struct torture_context *tctx,
 	while (1) {
 		torture_comment(tctx, "Testing getgrent_r\n");
 
+#ifdef SOLARIS_GETGRENT_R
+		ret = getgrent_r(&grp, buffer, sizeof(buffer));
+#else /* SOLARIS_GETGRENT_R */
 		ret = getgrent_r(&grp, buffer, sizeof(buffer), &grpp);
+#endif /* SOLARIS_GETGRENT_R */
 		if (ret != 0) {
 			if (ret != ENOENT) {
 				torture_comment(tctx, "got %d return code\n", ret);
@@ -690,6 +698,7 @@ static bool test_group_r_cross(struct torture_context *tctx)
 	return true;
 }
 
+#ifdef HAVE_GETGROUPLIST
 static bool test_getgrouplist(struct torture_context *tctx,
 			      const char *user,
 			      gid_t gid,
@@ -724,6 +733,7 @@ static bool test_getgrouplist(struct torture_context *tctx,
 
 	return true;
 }
+#endif /* HAVE_GETGROUPLIST */
 
 static bool test_user_in_group(struct torture_context *tctx,
 			       const struct passwd *pwd,
@@ -751,12 +761,14 @@ static bool test_membership_user(struct torture_context *tctx,
 	int g, i;
 	bool primary_group_had_user_member = false;
 
+#ifdef HAVE_GETGROUPLIST
 	torture_assert(tctx, test_getgrouplist(tctx,
 					       pwd->pw_name,
 					       pwd->pw_gid,
 					       &user_groups,
 					       &num_user_groups),
 					       "failed to test getgrouplist");
+#endif /* HAVE_GETGROUPLIST */
 
 	for (g=0; g < num_user_groups; g++) {
 		torture_assert(tctx, test_getgrgid(tctx, user_groups[g], NULL),

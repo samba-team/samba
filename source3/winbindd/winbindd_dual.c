@@ -38,8 +38,8 @@
 #include "messages.h"
 #include "../lib/util/tevent_unix.h"
 #include "lib/param/loadparm.h"
-#include "lib/sys_rw.h"
-#include "lib/sys_rw_data.h"
+#include "lib/util/sys_rw.h"
+#include "lib/util/sys_rw_data.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
@@ -1254,7 +1254,7 @@ NTSTATUS winbindd_reinit_after_fork(const struct winbindd_child *myself,
 	status = reinit_after_fork(
 		winbind_messaging_context(),
 		winbind_event_context(),
-		true);
+		true, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("reinit_after_fork() failed\n"));
 		return status;

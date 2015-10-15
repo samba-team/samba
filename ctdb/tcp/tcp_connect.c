@@ -340,6 +340,7 @@ static int ctdb_tcp_listen_automatic(struct ctdb_context *ctdb)
 		}
 
 		close(ctcp->listen_fd);
+		ctcp->listen_fd = -1;
 	}
 
 	if (i == ctdb->num_nodes) {

@@ -24,8 +24,6 @@
 #include "messages.h"
 #include "ntdomain.h"
 
-#include "lib/util/util_process.h"
-
 #include "lib/id_cache.h"
 
 #include "../lib/tsocket/tsocket.h"
@@ -206,13 +204,11 @@ static bool mdssd_child_init(struct tevent_context *ev_ctx,
 	bool ok;
 
 	status = reinit_after_fork(msg_ctx, ev_ctx,
-				   true);
+				   true, "mdssd-child");
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("reinit_after_fork() failed\n"));
 		smb_panic("reinit_after_fork() failed");
 	}
-
-	prctl_set_comment("mdssd-child");
 
 	mdssd_child_id = child_id;
 	reopen_logs();
@@ -671,15 +667,12 @@ void start_mdssd(struct tevent_context *ev_ctx,
 		return;
 	}
 
-	status = reinit_after_fork(msg_ctx,
-				   ev_ctx,
-				   true);
+	status = reinit_after_fork(msg_ctx, ev_ctx, true, "mdssd-master");
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("reinit_after_fork() failed\n"));
 		smb_panic("reinit_after_fork() failed");
 	}
 
-	prctl_set_comment("mdssd-master");
 	reopen_logs();
 
 	/* save the parent process id so the children can use it later */

@@ -17,7 +17,7 @@
 
 #include "includes.h"
 #include "smbd/smbd.h"
-#include "lib/sys_rw.h"
+#include "lib/util/sys_rw.h"
 
 /* Cache priming module.
  *

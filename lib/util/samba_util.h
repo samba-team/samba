@@ -847,6 +847,7 @@ struct server_id;
 
 struct server_id_buf { char buf[48]; }; /* probably a bit too large ... */
 char *server_id_str_buf(struct server_id id, struct server_id_buf *dst);
+size_t server_id_str_buf_unique(struct server_id id, char *buf, size_t buflen);
 
 bool server_id_same_process(const struct server_id *p1,
 			    const struct server_id *p2);

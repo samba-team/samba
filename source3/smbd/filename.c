@@ -32,7 +32,6 @@
 
 static NTSTATUS build_stream_path(TALLOC_CTX *mem_ctx,
 				  connection_struct *conn,
-				  const char *orig_path,
 				  struct smb_filename *smb_fname);
 
 /****************************************************************************
@@ -371,6 +370,35 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 			 */
 			*stream = '\0';
 			stream = tmp;
+
+			if (smb_fname->base_name[0] == '\0') {
+				/*
+				 * orig_name was just a stream name.
+				 * This is a stream on the root of
+				 * the share. Replace base_name with
+				 * a "."
+				 */
+				smb_fname->base_name =
+					talloc_strdup(smb_fname, ".");
+				if (smb_fname->base_name == NULL) {
+					status = NT_STATUS_NO_MEMORY;
+					goto err;
+				}
+				if (SMB_VFS_STAT(conn, smb_fname) != 0) {
+					status = map_nt_error_from_unix(errno);
+					goto err;
+				}
+				/* dirpath must exist. */
+				dirpath = talloc_strdup(ctx,"");
+				if (dirpath == NULL) {
+					status = NT_STATUS_NO_MEMORY;
+					goto err;
+				}
+				DEBUG(5, ("conversion finished %s -> %s\n",
+					orig_path,
+					smb_fname->base_name));
+				goto done;
+			}
 		}
 	}
 
@@ -981,7 +1009,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 		smb_fname->stream_name = stream;
 
 		/* Check path now that the base_name has been converted. */
-		status = build_stream_path(ctx, conn, orig_path, smb_fname);
+		status = build_stream_path(ctx, conn, smb_fname);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto fail;
 		}
@@ -991,7 +1019,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 	return NT_STATUS_OK;
  fail:
 	DEBUG(10, ("dirpath = [%s] start = [%s]\n", dirpath, start));
-	if (*dirpath != '\0') {
+	if (dirpath && *dirpath != '\0') {
 		smb_fname->base_name = talloc_asprintf(smb_fname, "%s/%s",
 						       dirpath, start);
 	} else {
@@ -1233,7 +1261,6 @@ int get_real_filename(connection_struct *conn, const char *path,
 
 static NTSTATUS build_stream_path(TALLOC_CTX *mem_ctx,
 				  connection_struct *conn,
-				  const char *orig_path,
 				  struct smb_filename *smb_fname)
 {
 	NTSTATUS status;
