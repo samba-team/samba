@@ -154,15 +154,22 @@ bool lookup_wellknown_sid(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
 ***************************************************************************/
 
 bool lookup_wellknown_name(TALLOC_CTX *mem_ctx, const char *name,
-			   struct dom_sid *sid, const char **domain)
+			   struct dom_sid *sid, const char **pdomain)
 {
 	int i, j;
+	const char *domain = *pdomain;
 
-	DEBUG(10,("map_name_to_wellknown_sid: looking up %s\n", name));
+	DEBUG(10,("map_name_to_wellknown_sid: looking up %s\\%s\n", domain, name));
 
 	for (i=0; special_domains[i].sid != NULL; i++) {
 		const struct rid_name_map *users =
 			special_domains[i].known_users;
+
+		if (domain[0] != '\0') {
+			if (!strequal(domain, special_domains[i].name)) {
+				continue;
+			}
+		}
 
 		if (users == NULL)
 			continue;
@@ -171,7 +178,7 @@ bool lookup_wellknown_name(TALLOC_CTX *mem_ctx, const char *name,
 			if ( strequal(users[j].name, name) ) {
 				sid_compose(sid, special_domains[i].sid,
 					    users[j].rid);
-				*domain = talloc_strdup(
+				*pdomain = talloc_strdup(
 					mem_ctx, special_domains[i].name);
 				return True;
 			}
