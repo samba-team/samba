@@ -26,6 +26,7 @@
 #include "lib/conn_tdb.h"
 #include "smbd/globals.h"
 #include "util_tdb.h"
+#include "librpc/gen_ndr/ndr_open_files.h"
 
 static int net_serverid_list_fn(const struct server_id *id,
 				uint32_t msg_flags, void *priv)
@@ -303,9 +304,22 @@ static int wipedbs_traverse_open(struct smbXsrv_open_global0 *open,
 
 		if (state->verbose) {
 			TALLOC_CTX *mem_ctx = talloc_new(talloc_tos());
-			d_printf("open[global: %u] disconnected at "
+			enum ndr_err_code ndr_err;
+			struct vfs_default_durable_cookie cookie;
+
+			ndr_err = ndr_pull_struct_blob(
+				&open->backend_cookie, mem_ctx, &cookie,
+				(ndr_pull_flags_fn_t)ndr_pull_vfs_default_durable_cookie);
+			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+				d_printf("ndr_pull_struct_blob failed\n");
+				ret = -1;
+				goto done;
+			}
+
+			d_printf("open[%s/%s id: 0x%" PRIx32 "] disconnected at "
 				 "[%s] %us ago with timeout of %us "
 				 "-%s reached\n",
+				 cookie.servicepath, cookie.base_name,
 				 open->open_global_id,
 				 nt_time_string(mem_ctx, open->disconnect_time),
 				 (unsigned)(tdiff/1000000),
