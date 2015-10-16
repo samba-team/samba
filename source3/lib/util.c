@@ -28,6 +28,7 @@
 #include "ctdbd_conn.h"
 #include "../lib/util/util_pw.h"
 #include "messages.h"
+#include "messages_dgm.h"
 #include "libcli/security/security.h"
 #include "serverid.h"
 #include "lib/util/sys_rw.h"
@@ -1968,12 +1969,17 @@ void set_my_unique_id(uint64_t unique_id)
 
 struct server_id pid_to_procid(pid_t pid)
 {
-	struct server_id result;
-	result.pid = pid;
-	result.task_id = 0;
-	result.unique_id = my_unique_id;
-	result.vnn = my_vnn;
-	return result;
+	uint64_t unique = 0;
+	int ret;
+
+	ret = messaging_dgm_get_unique(pid, &unique);
+	if (ret != 0) {
+		DBG_WARNING("%s: messaging_dgm_get_unique failed: %s\n",
+			    __func__, strerror(ret));
+	}
+
+	return (struct server_id) {
+		.pid = pid, .unique_id = unique, .vnn = my_vnn };
 }
 
 struct server_id procid_self(void)
