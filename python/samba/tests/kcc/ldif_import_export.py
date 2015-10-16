@@ -25,7 +25,7 @@ import time
 import shutil
 import sys
 import subprocess
-
+import logging
 import samba.tests
 from samba.kcc import ldif_import_export, KCC
 from samba import ldb
@@ -207,7 +207,8 @@ class KCCMultisiteLdifTests(samba.tests.TestCaseInTempDir):
             if dsa == forced_dsa:
                 continue
             rdn = ldb.Dn(my_kcc.samdb, dsa).get_rdn_value()
-            remove_dc.remove_dc(my_kcc.samdb, rdn)
+            logger = logging.getLogger('kcc.ldif_import_export')
+            remove_dc.remove_dc(my_kcc.samdb, logger, rdn)
             my_kcc.run(None,
                        self.lp, self.creds,
                        attempt_live_connections=False)

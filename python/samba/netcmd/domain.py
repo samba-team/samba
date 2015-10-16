@@ -653,6 +653,8 @@ class cmd_domain_demote(Command):
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,
                metavar="URL", dest="H"),
         Option("--remove-other-dead-server", help="Dead DC to remove ALL references to (rather than this DC)", type=str),
+        Option("--quiet", help="Be quiet", action="store_true"),
+        Option("--verbose", help="Be verbose", action="store_true"),
         ]
 
     takes_optiongroups = {
@@ -663,10 +665,19 @@ class cmd_domain_demote(Command):
 
     def run(self, sambaopts=None, credopts=None,
             versionopts=None, server=None,
-            remove_other_dead_server=None, H=None):
+            remove_other_dead_server=None, H=None,
+            verbose=False, quiet=False):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
         net = Net(creds, lp, server=credopts.ipaddress)
+
+        logger = self.get_logger()
+        if verbose:
+            logger.setLevel(logging.DEBUG)
+        elif quiet:
+            logger.setLevel(logging.WARNING)
+        else:
+            logger.setLevel(logging.INFO)
 
         if remove_other_dead_server is not None:
             if server is not None:
@@ -676,7 +687,7 @@ class cmd_domain_demote(Command):
             else:
                 samdb = SamDB(url=H, session_info=system_session(), credentials=creds, lp=lp)
             try:
-                remove_dc.remove_dc(samdb, remove_other_dead_server)
+                remove_dc.remove_dc(samdb, logger, remove_other_dead_server)
             except remove_dc.demoteException as err:
                 raise CommandError("Demote failed: %s" % err)
             return
