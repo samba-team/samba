@@ -169,7 +169,8 @@ def offline_remove_server(samdb, server_dn,
                           remove_computer_obj=False,
                           remove_server_obj=False,
                           remove_sysvol_obj=False,
-                          remove_dns_names=False):
+                          remove_dns_names=False,
+                          remove_dns_account=False):
     res = samdb.search("",
                        scope=ldb.SCOPE_BASE, attrs=["dsServiceName"])
     assert len(res) == 1
@@ -202,7 +203,8 @@ def offline_remove_server(samdb, server_dn,
         computer_msgs = samdb.search(base=computer_dn,
                                      expression="objectclass=computer",
                                      attrs=["msDS-KrbTgtLink",
-                                            "rIDSetReferences"],
+                                            "rIDSetReferences",
+                                            "cn"],
                                      scope=ldb.SCOPE_BASE)
         if "rIDSetReferences" in computer_msgs[0]:
             samdb.delete(computer_msgs[0]["rIDSetReferences"][0])
@@ -216,6 +218,14 @@ def offline_remove_server(samdb, server_dn,
         if "dnsHostName" in msgs[0]:
             dnsHostName = msgs[0]["dnsHostName"][0]
 
+    if remove_dns_account:
+        res = samdb.search(expression="(&(objectclass=user)(cn=dns-%s)(servicePrincipalName=DNS/%s))" %
+                           (ldb.binary_encode(dc_name), dnsHostName),
+                           attrs=[], scope=ldb.SCOPE_SUBTREE,
+                           base=samdb.get_default_basedn())
+        if len(res) == 1:
+            samdb.delete(res[0].dn)
+
     if dnsHostName is not None and remove_dns_names:
         remove_dns_references(samdb, dnsHostName)
 
@@ -228,7 +238,8 @@ def offline_remove_ntds_dc(samdb, ntds_dn,
                            remove_connection_obj=False,
                            seize_stale_fsmo=False,
                            remove_sysvol_obj=False,
-                           remove_dns_names=False):
+                           remove_dns_names=False,
+                           remove_dns_account=False):
     res = samdb.search("",
                        scope=ldb.SCOPE_BASE, attrs=["dsServiceName"])
     assert len(res) == 1
@@ -289,7 +300,8 @@ def offline_remove_ntds_dc(samdb, ntds_dn,
                           remove_computer_obj=remove_computer_obj,
                           remove_server_obj=remove_server_obj,
                           remove_sysvol_obj=remove_sysvol_obj,
-                          remove_dns_names=remove_dns_names)
+                          remove_dns_names=remove_dns_names,
+                          remove_dns_account=remove_dns_account)
 
 
 def remove_dc(samdb, dc_name):
@@ -321,7 +333,8 @@ def remove_dc(samdb, dc_name):
                                   remove_computer_obj=True,
                                   remove_server_obj=True,
                                   remove_sysvol_obj=True,
-                                  remove_dns_names=True)
+                                  remove_dns_names=True,
+                                  remove_dns_account=True)
 
             samdb.transaction_commit()
             return
@@ -334,7 +347,8 @@ def remove_dc(samdb, dc_name):
                            remove_connection_obj=True,
                            seize_stale_fsmo=True,
                            remove_sysvol_obj=True,
-                           remove_dns_names=True)
+                           remove_dns_names=True,
+                           remove_dns_account=True)
 
     samdb.transaction_commit()
 
