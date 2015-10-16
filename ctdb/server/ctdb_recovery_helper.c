@@ -1213,9 +1213,9 @@ static bool db_recovery_recv(struct tevent_req *req, int *count)
  * - Get dbmap
  * - Set RECOVERY_ACTIVE
  * - Send START_RECOVERY
+ * - Update vnnmap on all nodes
  * - Run database recovery
  * - Send END_RECOVERY
- * - Update vnnmap on all nodes
  * - Set RECOVERY_NORMAL
  */
 
@@ -1240,8 +1240,8 @@ static void recovery_tunables_done(struct tevent_req *subreq);
 static void recovery_dbmap_done(struct tevent_req *subreq);
 static void recovery_active_done(struct tevent_req *subreq);
 static void recovery_start_recovery_done(struct tevent_req *subreq);
-static void recovery_db_recovery_done(struct tevent_req *subreq);
 static void recovery_vnnmap_update_done(struct tevent_req *subreq);
+static void recovery_db_recovery_done(struct tevent_req *subreq);
 static void recovery_normal_done(struct tevent_req *subreq);
 static void recovery_end_recovery_done(struct tevent_req *subreq);
 
@@ -1600,6 +1600,7 @@ static void recovery_start_recovery_done(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct recovery_state *state = tevent_req_data(
 		req, struct recovery_state);
+	struct ctdb_req_control request;
 	int *err_list;
 	int ret;
 	bool status;
@@ -1626,6 +1627,49 @@ static void recovery_start_recovery_done(struct tevent_req *subreq)
 	}
 
 	LOG("start_recovery event finished\n");
+
+	ctdb_req_control_setvnnmap(&request, state->vnnmap);
+	subreq = ctdb_client_control_multi_send(state, state->ev,
+						state->client,
+						state->pnn_list, state->count,
+						TIMEOUT(), &request);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, recovery_vnnmap_update_done, req);
+}
+
+static void recovery_vnnmap_update_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct recovery_state *state = tevent_req_data(
+		req, struct recovery_state);
+	int *err_list;
+	int ret;
+	bool status;
+
+	status = ctdb_client_control_multi_recv(subreq, &ret, NULL, &err_list,
+						NULL);
+	TALLOC_FREE(subreq);
+	if (! status) {
+		int ret2;
+		uint32_t pnn;
+
+		ret2 = ctdb_client_control_multi_error(state->pnn_list,
+						       state->count,
+						       err_list, &pnn);
+		if (ret2 != 0) {
+			LOG("failed to update VNNMAP on node %u, ret=%d\n",
+			    pnn, ret2);
+		} else {
+			LOG("failed to update VNNMAP, ret=%d\n", ret);
+		}
+		tevent_req_error(req, ret);
+		return;
+	}
+
+	LOG("updated VNNMAP\n");
 
 	subreq = db_recovery_send(state, state->ev, state->client,
 				  state->dbmap, state->tun_list,
@@ -1656,50 +1700,6 @@ static void recovery_db_recovery_done(struct tevent_req *subreq)
 		tevent_req_error(req, EIO);
 		return;
 	}
-
-	ctdb_req_control_setvnnmap(&request, state->vnnmap);
-	subreq = ctdb_client_control_multi_send(state, state->ev,
-						state->client,
-						state->pnn_list, state->count,
-						TIMEOUT(), &request);
-	if (tevent_req_nomem(subreq, req)) {
-		return;
-	}
-	tevent_req_set_callback(subreq, recovery_vnnmap_update_done, req);
-}
-
-static void recovery_vnnmap_update_done(struct tevent_req *subreq)
-{
-	struct tevent_req *req = tevent_req_callback_data(
-		subreq, struct tevent_req);
-	struct recovery_state *state = tevent_req_data(
-		req, struct recovery_state);
-	struct ctdb_req_control request;
-	int *err_list;
-	int ret;
-	bool status;
-
-	status = ctdb_client_control_multi_recv(subreq, &ret, NULL, &err_list,
-						NULL);
-	TALLOC_FREE(subreq);
-	if (! status) {
-		int ret2;
-		uint32_t pnn;
-
-		ret2 = ctdb_client_control_multi_error(state->pnn_list,
-						       state->count,
-						       err_list, &pnn);
-		if (ret2 != 0) {
-			LOG("failed to update VNNMAP on node %u, ret=%d\n",
-			    pnn, ret2);
-		} else {
-			LOG("failed to update VNNMAP, ret=%d\n", ret);
-		}
-		tevent_req_error(req, ret);
-		return;
-	}
-
-	LOG("updated VNNMAP\n");
 
 	ctdb_req_control_set_recmode(&request, CTDB_RECOVERY_NORMAL);
 	subreq = ctdb_client_control_multi_send(state, state->ev,
