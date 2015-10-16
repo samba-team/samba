@@ -25,7 +25,7 @@ import time
 import shutil
 import sys
 import subprocess
-
+import logging
 import samba.tests
 from samba.kcc import ldif_import_export, KCC
 from samba import ldb

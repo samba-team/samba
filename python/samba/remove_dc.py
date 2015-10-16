@@ -33,7 +33,7 @@ class DemoteException(Exception):
         return "DemoteException: " + self.value
 
 
-def remove_sysvol_references(samdb, dc_name):
+def remove_sysvol_references(samdb, logger, dc_name):
     # DNs under the Configuration DN:
     realm = samdb.domain_dns_name()
     for s in ("CN=Enterprise,CN=Microsoft System Volumes,CN=System",
@@ -50,6 +50,7 @@ def remove_sysvol_references(samdb, dc_name):
                                       % (dn))
         dn.set_component(0, "CN", dc_name)
         try:
+            logger.info("Removing Sysvol reference: %s" % dn)
             samdb.delete(dn)
         except ldb.LdbError as (enum, estr):
             if enum == ldb.ERR_NO_SUCH_OBJECT:
@@ -70,7 +71,9 @@ def remove_sysvol_references(samdb, dc_name):
             raise DemoteException("Failed constructing DN %s by adding child %s"\
                                   % (dn, rdn))
         dn.set_component(0, "CN", dc_name)
+
         try:
+            logger.info("Removing Sysvol reference: %s" % dn)
             samdb.delete(dn)
         except ldb.LdbError as (enum, estr):
             if enum == ldb.ERR_NO_SUCH_OBJECT:
@@ -79,7 +82,7 @@ def remove_sysvol_references(samdb, dc_name):
                 raise
 
 
-def remove_dns_references(samdb, dnsHostName):
+def remove_dns_references(samdb, logger, dnsHostName):
 
     # Check we are using in-database DNS
     zones = samdb.search(base="", scope=ldb.SCOPE_SUBTREE,
@@ -145,8 +148,8 @@ def remove_dns_references(samdb, dnsHostName):
         a_recs = [ r for r in a_recs if not a_rec_to_remove(r) ]
 
         if len(a_recs) != orig_num_recs:
-            print "updating %s keeping %d values, removing %s values" % \
-                (a_name, len(a_recs), orig_num_recs - len(a_recs))
+            logger.info("updating %s keeping %d values, removing %s values" % \
+                (a_name, len(a_recs), orig_num_recs - len(a_recs)))
             samdb.dns_replace(a_name, a_recs)
 
     # Find all the CNAME, NS, PTR and SRV records that point at the
@@ -165,7 +168,7 @@ def remove_dns_references(samdb, dnsHostName):
         return False
 
     for zone in zones:
-        print "checking %s" % zone.dn
+        logger.debug("checking %s" % zone.dn)
         records = samdb.search(base=zone.dn, scope=ldb.SCOPE_SUBTREE,
                                expression="(&(objectClass=dnsNode)"
                                "(!(dNSTombstoned=TRUE)))",
@@ -182,14 +185,16 @@ def remove_dns_references(samdb, dnsHostName):
                        for v in values if not to_remove(v) ]
 
             if len(values) != orig_num_values:
-                print "updating %s keeping %d values, removing %s values" \
-                    % (record.dn, len(values), orig_num_values - len(values))
+                logger.info("updating %s keeping %d values, removing %s values" \
+                            % (record.dn, len(values),
+                               orig_num_values - len(values)))
 
                 # This requires the values to be unpacked, so this
                 # has been done in the list comprehension above
                 samdb.dns_replace_by_dn(record.dn, values)
 
-def offline_remove_server(samdb, server_dn,
+def offline_remove_server(samdb, logger,
+                          server_dn,
                           remove_computer_obj=False,
                           remove_server_obj=False,
                           remove_sysvol_obj=False,
@@ -231,12 +236,17 @@ def offline_remove_server(samdb, server_dn,
                                             "cn"],
                                      scope=ldb.SCOPE_BASE)
         if "rIDSetReferences" in computer_msgs[0]:
-            samdb.delete(computer_msgs[0]["rIDSetReferences"][0])
+            rid_set_dn = str(computer_msgs[0]["rIDSetReferences"][0])
+            logger.info("Removing RID Set: %s" % rid_set_dn)
+            samdb.delete(rid_set_dn)
         if "msDS-KrbTgtLink" in computer_msgs[0]:
-            samdb.delete(computer_msgs[0]["msDS-KrbTgtLink"][0])
+            krbtgt_link_dn = str(computer_msgs[0]["msDS-KrbTgtLink"][0])
+            logger.info("Removing RODC KDC account: %s" % krbtgt_link_dn)
+            samdb.delete(krbtgt_link_dn)
 
         if remove_computer_obj:
             # Delete the computer tree
+            logger.info("Removing computer account: %s (and any child objects)" % computer_dn)
             samdb.delete(computer_dn, ["tree_delete:0"])
 
         if "dnsHostName" in msgs[0]:
@@ -248,15 +258,18 @@ def offline_remove_server(samdb, server_dn,
                            attrs=[], scope=ldb.SCOPE_SUBTREE,
                            base=samdb.get_default_basedn())
         if len(res) == 1:
+            logger.info("Removing Samba-specific DNS service account: %s" % res[0].dn)
             samdb.delete(res[0].dn)
 
     if dnsHostName is not None and remove_dns_names:
-        remove_dns_references(samdb, dnsHostName)
+        remove_dns_references(samdb, logger, dnsHostName)
 
     if remove_sysvol_obj:
-        remove_sysvol_references(samdb, dc_name)
+        remove_sysvol_references(samdb, logger, dc_name)
 
-def offline_remove_ntds_dc(samdb, ntds_dn,
+def offline_remove_ntds_dc(samdb,
+                           logger,
+                           ntds_dn,
                            remove_computer_obj=False,
                            remove_server_obj=False,
                            remove_connection_obj=False,
@@ -301,6 +314,7 @@ def offline_remove_ntds_dc(samdb, ntds_dn,
                                          expression="(&(objectclass=nTDSConnection)"
                                          "(fromServer=<GUID=%s>))" % ntds_guid)
         for conn in stale_connections:
+            logger.info("Removing nTDSConnection: %s" % conn.dn)
             samdb.delete(conn.dn)
 
     if seize_stale_fsmo:
@@ -316,16 +330,19 @@ def offline_remove_ntds_dc(samdb, ntds_dn,
             m.dn = role.dn
             m['value'] = ldb.MessageElement(val, ldb.FLAG_MOD_REPLACE,
                                             'fsmoRoleOwner')
+            logger.warning("Seizing FSMO role on: %s (now owned by %s)"
+                           % (role.dn, my_serviceName))
             samdb.modify(m)
 
     # Remove the NTDS setting tree
     try:
+        logger.info("Removing nTDSDSA: %s (and any children)" % ntds_dn)
         samdb.delete(ntds_dn, ["tree_delete:0"])
     except LdbError as (enum, estr):
         raise DemoteException("Failed to remove the DCs NTDS DSA object: %s"
                               % estr)
 
-    offline_remove_server(samdb, server_dn,
+    offline_remove_server(samdb, logger, server_dn,
                           remove_computer_obj=remove_computer_obj,
                           remove_server_obj=remove_server_obj,
                           remove_sysvol_obj=remove_sysvol_obj,
@@ -333,7 +350,7 @@ def offline_remove_ntds_dc(samdb, ntds_dn,
                           remove_dns_account=remove_dns_account)
 
 
-def remove_dc(samdb, dc_name):
+def remove_dc(samdb, logger, dc_name):
 
     # TODO: Check if this is the last server (covered mostly by
     # refusing to remove our own name)
@@ -358,7 +375,8 @@ def remove_dc(samdb, dc_name):
                             expression="(objectClass=ntdsdsa)")
     except LdbError as (enum, estr):
         if enum == ldb.ERR_NO_SUCH_OBJECT:
-            offline_remove_server(samdb, msgs[0].dn,
+            offline_remove_server(samdb, logger,
+                                  msgs[0].dn,
                                   remove_computer_obj=True,
                                   remove_server_obj=True,
                                   remove_sysvol_obj=True,
@@ -370,7 +388,8 @@ def remove_dc(samdb, dc_name):
         else:
             pass
 
-    offline_remove_ntds_dc(samdb, msgs[0].dn,
+    offline_remove_ntds_dc(samdb, logger,
+                           msgs[0].dn,
                            remove_computer_obj=True,
                            remove_server_obj=True,
                            remove_connection_obj=True,
@@ -387,6 +406,6 @@ def offline_remove_dc_RemoveDsServer(samdb, ntds_dn):
 
     samdb.start_transaction()
 
-    offline_remove_ntds_dc(samdb, ntds_dn)
+    offline_remove_ntds_dc(samdb, ntds_dn, None)
 
     samdb.commit_transaction()
