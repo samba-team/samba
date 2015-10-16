@@ -168,6 +168,14 @@ class SambaToolDrsTests(samba.tests.BlackboxTestCase):
         server_dn = samdb.searchone("serverReferenceBL", "cn=%s,ou=domain controllers,%s" % (self.dc2, server_nc_name))
         ntds_guid = samdb.searchone("objectGUID", "cn=ntds settings,%s" % server_dn)
 
+        res = samdb.search(base=str(server_nc_name),
+                           expression="(&(objectclass=user)(cn=dns-%s))" % (self.dc2),
+                           attrs=[], scope=ldb.SCOPE_SUBTREE)
+        if len(res) == 1:
+            dns_obj = res[0]
+        else:
+            dns_obj = None
+
         def demote_self():
             # While we have this cloned, try demoting the other server on the clone
             out = self.check_output("samba-tool domain demote --remove-other-dead-server=%s -H %s/private/sam.ldb"
@@ -192,6 +200,13 @@ class SambaToolDrsTests(samba.tests.BlackboxTestCase):
         def check_ntds_guid():
             samdb.searchone("CN", "<GUID=%s>" % ntds_guid)
         self.assertRaises(ldb.LdbError, check_ntds_guid)
+
+        if dns_obj is not None:
+            # Check some of the objects that should have been removed
+            def check_dns_account_obj():
+                samdb.search(base=dns_obj.dn, scope=ldb.SCOPE_BASE,
+                             attrs=[])
+            self.assertRaises(ldb.LdbError, check_dns_account_obj)
 
         shutil.rmtree(os.path.join(self.tempdir, "private"))
         shutil.rmtree(os.path.join(self.tempdir, "etc"))
