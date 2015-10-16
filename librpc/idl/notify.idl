@@ -93,6 +93,8 @@ interface notify
 		uint32 NextEntryOffset;
 		FILE_NOTIFY_ACTION Action;
 		[value(strlen_m(FileName1)*2)] uint32 FileNameLength;
-		[charset(UTF16),flag(STR_NOTERM)] uint16 FileName1[FileNameLength];
+		[charset(UTF16),flag(STR_NOTERM)]
+			uint16 FileName1[strlen_m(FileName1)];
+		DATA_BLOB _pad;
 	} FILE_NOTIFY_INFORMATION;
 }

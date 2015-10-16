@@ -138,6 +138,7 @@ static bool notify_marshall_changes(int num_changes,
 		struct notify_change_event *c;
 		struct FILE_NOTIFY_INFORMATION m;
 		DATA_BLOB blob;
+		uint16_t pad = 0;
 
 		/* Coalesce any identical records. */
 		while (i+1 < num_changes &&
@@ -151,11 +152,22 @@ static bool notify_marshall_changes(int num_changes,
 		m.FileName1 = c->name;
 		m.FileNameLength = strlen_m(c->name)*2;
 		m.Action = c->action;
-		m.NextEntryOffset = (i == num_changes-1) ? 0 : ndr_size_FILE_NOTIFY_INFORMATION(&m, 0);
+
+		m._pad = data_blob_null;
 
 		/*
 		 * Offset to next entry, only if there is one
 		 */
+
+		if (i == (num_changes-1)) {
+			m.NextEntryOffset = 0;
+		} else {
+			if ((m.FileNameLength % 4) == 2) {
+				m._pad = data_blob_const(&pad, 2);
+			}
+			m.NextEntryOffset =
+				ndr_size_FILE_NOTIFY_INFORMATION(&m, 0);
+		}
 
 		ndr_err = ndr_push_struct_blob(&blob, talloc_tos(), &m,
 			(ndr_push_flags_fn_t)ndr_push_FILE_NOTIFY_INFORMATION);
