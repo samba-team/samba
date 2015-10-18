@@ -127,24 +127,17 @@ struct tevent_req *async_connect_send(
 		return tevent_req_post(req, ev);
 	}
 
-	/**
-	 * A number of error messages show that something good is progressing
-	 * and that we have to wait for readability.
-	 *
-	 * If none of them are present, bail out.
+	/*
+	 * The only errno indicating that the connect is still in
+	 * flight is EINPROGRESS, everything else is an error
 	 */
 
-	if (!(errno == EINPROGRESS || errno == EALREADY ||
-#ifdef EISCONN
-	      errno == EISCONN ||
-#endif
-	      errno == EAGAIN || errno == EINTR)) {
+	if (errno != EINPROGRESS) {
 		tevent_req_error(req, errno);
 		return tevent_req_post(req, ev);
 	}
 
-	state->fde = tevent_add_fd(ev, state, fd,
-				   TEVENT_FD_READ | TEVENT_FD_WRITE,
+	state->fde = tevent_add_fd(ev, state, fd, TEVENT_FD_WRITE,
 				   async_connect_connected, req);
 	if (state->fde == NULL) {
 		tevent_req_error(req, ENOMEM);
@@ -189,27 +182,32 @@ static void async_connect_connected(struct tevent_context *ev,
 	struct async_connect_state *state =
 		tevent_req_data(req, struct async_connect_state);
 	int ret;
+	int socket_error = 0;
+	socklen_t slen = sizeof(socket_error);
 
-	if (state->before_connect != NULL) {
-		state->before_connect(state->private_data);
-	}
+	ret = getsockopt(state->fd, SOL_SOCKET, SO_ERROR,
+			 &socket_error, &slen);
 
-	ret = connect(state->fd, (struct sockaddr *)(void *)&state->address,
-		      state->address_len);
-
-	if (state->after_connect != NULL) {
-		state->after_connect(state->private_data);
-	}
-
-	if (ret == 0) {
-		tevent_req_done(req);
+	if (ret != 0) {
+		/*
+		 * According to Stevens this is the Solaris behaviour
+		 * in case the connection encountered an error:
+		 * getsockopt() fails, error is in errno
+		 */
+		tevent_req_error(req, errno);
 		return;
 	}
-	if (errno == EINPROGRESS) {
-		/* Try again later, leave the fde around */
+
+	if (socket_error != 0) {
+		/*
+		 * Berkeley derived implementations (including) Linux
+		 * return the pending error via socket_error.
+		 */
+		tevent_req_error(req, socket_error);
 		return;
 	}
-	tevent_req_error(req, errno);
+
+	tevent_req_done(req);
 	return;
 }
 
