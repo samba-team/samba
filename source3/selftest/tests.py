@@ -241,6 +241,9 @@ plantestsuite(
     "samba3.pthreadpool", "s3dc",
     [os.path.join(samba3srcdir, "script/tests/test_pthreadpool.sh")])
 
+plantestsuite("samba3.async_req", "nt4_dc",
+              [os.path.join(samba3srcdir, "script/tests/test_async_req.sh")])
+
 #smbtorture4 tests
 
 base = ["base.attr", "base.charset", "base.chkpath", "base.defer_open", "base.delaywrite", "base.delete",
