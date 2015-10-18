@@ -7,3 +7,7 @@ bld.SAMBA_SUBSYSTEM('LIBASYNC_REQ',
 	deps='tevent-util socket-blocking'
 	)
 
+bld.SAMBA_BINARY('async_connect_send_test',
+                 source='async_connect_send_test.c',
+                 deps='LIBASYNC_REQ'
+)
