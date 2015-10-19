@@ -25,7 +25,7 @@ select_test_node_and_ips
 get_test_ip_mask_and_iface
 
 echo "Deleting IP $test_ip from all nodes"
-try_command_on_node $test_node $CTDB delip -n all $test_ip
+delete_ip_from_all_nodes $test_ip
 wait_until_ips_are_on_node '!' $test_node $test_ip
 
 # Debugging...

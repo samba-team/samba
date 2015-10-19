@@ -229,6 +229,34 @@ get_test_ip_mask_and_iface ()
     echo "$test_ip/$mask is on $iface"
 }
 
+ctdb_get_all_pnns ()
+{
+    try_command_on_node -q all "$CTDB pnn | sed -e 's@PNN:@@'"
+    all_pnns="$out"
+}
+
+# The subtlety is that "ctdb delip" will fail if the IP address isn't
+# configured on a node...
+delete_ip_from_all_nodes ()
+{
+    _ip="$1"
+
+    ctdb_get_all_pnns
+
+    _nodes=""
+
+    for _pnn in $all_pnns ; do
+	all_ips_on_node $_pnn
+	while read _i _n ; do
+	    if [ "$_ip" = "$_i" ] ; then
+		_nodes="${_nodes}${_nodes:+,}${_pnn}"
+	    fi
+	done <<<"$out" # bashism
+    done
+
+    try_command_on_node -pq "$_nodes" "$CTDB delip $_ip"
+}
+
 #######################################
 
 # Wait until either timeout expires or command succeeds.  The command
