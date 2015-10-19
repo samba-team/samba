@@ -253,7 +253,7 @@ static struct poll_timeout *tevent_timeout_new(
 }
 
 static void tevent_timeout_update(struct poll_timeout *t,
-				  const struct timespec *ts)
+				  const struct timeval *tv)
 {
 	return;
 }

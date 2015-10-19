@@ -92,7 +92,7 @@ struct poll_funcs {
 	 *
 	 * @param[in] funcs The callback array
 	 * @param[in] tv The time when the timeout should trigger
-	 * @param[in] callback Function to call at time "ts"
+	 * @param[in] callback Function to call at time "tv"
 	 * @param[in] private_data Pointer to give back to callback
 	 *
 	 * @return A new poll_timeout struct
@@ -107,11 +107,11 @@ struct poll_funcs {
 	 * @brief Change the timeout of a watch
 	 *
 	 * @param[in] t The timeout watch to change
-	 * @param[in] ts The new trigger time
+	 * @param[in] tv The new trigger time
 	 */
 
 	void (*timeout_update)(struct poll_timeout *t,
-			       const struct timespec *ts);
+			       const struct timeval *tv);
 
 	/**
 	 * @brief Free a poll_timeout
