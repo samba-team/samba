@@ -22,7 +22,7 @@ export CTDB_NODES="${TEST_VAR_DIR}/nodes.txt"
 daemons_stop ()
 {
     echo "Attempting to politely shutdown daemons..."
-    onnode 1 $CTDB shutdown -n all || true
+    onnode -q all $CTDB shutdown || true
 
     echo "Sleeping for a while..."
     sleep_for 1

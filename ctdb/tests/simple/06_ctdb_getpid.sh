@@ -15,8 +15,6 @@ Steps:
 2. Run 'ctdb getpid -n <number>' on the nodes to check the PID of the
    ctdbd process.
 3. Verify that the output is valid.
-4. Verify that with the '-n all' option the command shows the PIDs on
-   all the nodes
 
 Expected results:
 
@@ -32,8 +30,6 @@ set -e
 
 cluster_is_healthy
 
-# This is an attempt at being independent of the number of nodes
-# reported by "ctdb getpid -n all".
 try_command_on_node 0 "$CTDB listnodes | wc -l"
 num_nodes="$out"
 echo "There are $num_nodes nodes..."
@@ -42,9 +38,6 @@ echo "There are $num_nodes nodes..."
 
 try_command_on_node -v 0 "onnode -q all $CTDB getpid"
 pids_onnode="$out"
-
-try_command_on_node -v 0 "$CTDB getpid -n all"
-pids_getpid_all="$out"
 
 cmd=""
 n=0
@@ -55,8 +48,7 @@ done
 try_command_on_node -v 0 "( $cmd )"
 pids_getpid_n="$out"
 
-if [ "$pids_onnode" = "$pids_getpid_all" -a \
-    "$pids_getpid_all" = "$pids_getpid_n" ] ; then
+if [ "$pids_onnode" = "$pids_getpid_n" ] ; then
     echo "They're the same... cool!"
 else
     echo "Error: they differ."

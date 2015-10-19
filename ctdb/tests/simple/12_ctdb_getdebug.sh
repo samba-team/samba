@@ -13,8 +13,6 @@ Steps:
 
 1. Verify that the status on all of the ctdb nodes is 'OK'.
 2. Get the current debug level on a node, using 'ctdb getdebug -n <node>'.
-3. Verify that pipe-separated output is generated with the -X option.
-4. Verify that the '-n all' option shows the debug level on all nodes.
 
 Expected results:
 
@@ -41,9 +39,6 @@ sanity_check_output \
     '^Node [[:digit:]]+ is at debug level [[:alpha:]]+ \([[:digit:]]+\)$' \
     "$out"
 
-try_command_on_node -v 1 "$CTDB getdebug -n all"
-getdebug_all="$out"
-
 cmd=""
 n=0
 while [ $n -lt $num_nodes ] ; do
@@ -53,8 +48,7 @@ done
 try_command_on_node -v 1 "$cmd"
 getdebug_n="$out"
 
-if [ "$getdebug_onnode" = "$getdebug_all" -a \
-    "$getdebug_all" = "$getdebug_n" ] ; then
+if [ "$getdebug_onnode" = "$getdebug_n" ] ; then
     echo "They're the same... cool!"
 else
     echo "Error: they differ."
@@ -69,7 +63,7 @@ while read line ; do
     seps="${seps}${seps:+${nl}}|Name|Level|${nl}${t}"
 done <<<"$getdebug_onnode"
 
-cmd="$CTDB -X getdebug -n all"
+cmd="onnode -q all $CTDB -X getdebug"
 echo "Checking that \"$cmd\" produces expected output..."
 
 try_command_on_node 1 "$cmd"

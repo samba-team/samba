@@ -43,7 +43,7 @@ wait_until_generation_has_changed ()
 }
 
 echo "Check that recovery lock is set the same on all nodes..."
-try_command_on_node -v any $CTDB -n all getreclock
+try_command_on_node -v -q all $CTDB getreclock
 n=$(echo "$out" | sort -u | wc -l)
 if [ "$n" = 1 ] ; then
     echo "GOOD: All nodes have the same recovery lock setting"
@@ -68,8 +68,8 @@ echo "Remember original recovery lock file: \"${orig_reclock}\""
 
 echo
 echo "Unset and test the recovery lock on all nodes..."
-try_command_on_node any $CTDB -n all setreclock
-try_command_on_node -v any $CTDB -n all getreclock
+try_command_on_node -q all $CTDB setreclock
+try_command_on_node -v -q all $CTDB getreclock
 t=$(sort -u <<<"$out")
 if [ "$t" = "No reclock file used." ] ; then
     echo "GOOD: Recovery lock unset on all nodes"
@@ -85,14 +85,14 @@ echo "Current generation is ${generation}"
 alt="${orig_reclock}.test"
 echo
 echo "Set alternative recovery lock (${alt}) and test on all nodes..."
-try_command_on_node any $CTDB -n all setreclock "$alt"
-try_command_on_node -v any $CTDB -n all getreclock
+try_command_on_node -q all $CTDB setreclock "$alt"
+try_command_on_node -v -q all $CTDB getreclock
 t=$(echo "$out" | sed -e 's@^Reclock file:@@' | sort -u)
 if [ "$t" = "$alt" ] ; then
     echo "GOOD: Recovery lock set on all nodes"
 else
     echo "BAD: Recovery lock not set on all nodes"
-    try_command_on_node -v any rm -v "$alt" || true
+    try_command_on_node -vf all rm -v "$alt" || true
     exit 1
 fi
 
@@ -102,9 +102,9 @@ echo "Current generation is ${generation}"
 
 echo
 echo "Restore and test the recovery lock on all nodes..."
-try_command_on_node any $CTDB -n all setreclock "$orig_reclock"
-try_command_on_node -v any rm -v "$alt"
-try_command_on_node -v any $CTDB -n all getreclock
+try_command_on_node -q all $CTDB setreclock "$orig_reclock"
+try_command_on_node -v all rm -vf "$alt"
+try_command_on_node -v -q all $CTDB getreclock
 t=$(echo "$out" | sed -e 's@^Reclock file:@@' | sort -u)
 if [ "$t" = "$orig_reclock" ] ; then
     echo "GOOD: Recovery lock restored on all nodes"
