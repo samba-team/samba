@@ -2895,6 +2895,9 @@ NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
 			status = NT_STATUS_OBJECT_NAME_INVALID;
 			goto out;
 		}
+		if (dirtype == 0) {
+			dirtype = FILE_ATTRIBUTE_NORMAL;
+		}
 
 		if (strequal(fname_mask,"????????.???")) {
 			TALLOC_FREE(fname_mask);
