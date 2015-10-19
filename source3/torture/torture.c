@@ -4410,6 +4410,72 @@ static bool run_deletetest(int dummy)
 	return correct;
 }
 
+
+/*
+  Test wildcard delete.
+ */
+static bool run_wild_deletetest(int dummy)
+{
+	struct cli_state *cli = NULL;
+	const char *dname = "\\WTEST";
+	const char *fname = "\\WTEST\\A";
+	const char *wunlink_name = "\\WTEST\\*";
+	uint16_t fnum1 = (uint16_t)-1;
+	bool correct = false;
+	NTSTATUS status;
+
+	printf("starting wildcard delete test\n");
+
+	if (!torture_open_connection(&cli, 0)) {
+		return false;
+	}
+
+	smbXcli_conn_set_sockopt(cli->conn, sockops);
+
+	cli_unlink(cli, fname, 0);
+	cli_rmdir(cli, dname);
+	status = cli_mkdir(cli, dname);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("mkdir of %s failed %s!\n", dname, nt_errstr(status));
+		goto fail;
+	}
+	status = cli_openx(cli, fname, O_CREAT|O_RDONLY, DENY_NONE, &fnum1);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("open of %s failed %s!\n", fname, nt_errstr(status));
+		goto fail;
+	}
+	status = cli_close(cli, fnum1);
+	fnum1 = -1;
+
+	/*
+	 * Note the unlink attribute-type of zero. This should
+	 * map into FILE_ATTRIBUTE_NORMAL at the server even
+	 * on a wildcard delete.
+	 */
+
+	status = cli_unlink(cli, wunlink_name, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("unlink of %s failed %s!\n",
+			wunlink_name, nt_errstr(status));
+		goto fail;
+	}
+
+	printf("finished wildcard delete test\n");
+
+	correct = true;
+
+  fail:
+
+	if (fnum1 != (uint16_t)-1) cli_close(cli, fnum1);
+	cli_unlink(cli, fname, 0);
+	cli_rmdir(cli, dname);
+
+	if (cli && !torture_close_connection(cli)) {
+		correct = false;
+	}
+	return correct;
+}
+
 static bool run_deletetest_ln(int dummy)
 {
 	struct cli_state *cli;
@@ -9549,6 +9615,7 @@ static struct {
 	{"XCOPY", run_xcopy, 0},
 	{"RENAME", run_rename, 0},
 	{"DELETE", run_deletetest, 0},
+	{"WILDDELETE", run_wild_deletetest, 0},
 	{"DELETE-LN", run_deletetest_ln, 0},
 	{"PROPERTIES", run_properties, 0},
 	{"MANGLE", torture_mangle, 0},
