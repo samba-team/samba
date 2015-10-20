@@ -1,4 +1,87 @@
                    =============================
+                   Release Notes for Samba 4.3.1
+                         October 20, 2015
+                   =============================
+
+
+This is the latest stable release of Samba 4.3.
+
+
+Changes since 4.3.0:
+--------------------
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 10252: s3: smbd: Fix our access-based enumeration on "hide unreadable"
+      to match Windows.
+    * BUG 10634: smbd: Fix file name buflen and padding in notify repsonse.
+    * BUG 11486: s3: smbd: Fix mkdir race condition.
+    * BUG 11522: s3: smbd: Fix opening/creating :stream files on the root share
+      directory.
+    * BUG 11535: s3: smbd: Fix NULL pointer bug introduced by previous 'raw'
+    * stream fix (bug #11522).
+    * BUG 11555: s3: lsa: lookup_name() logic for unqualified (no DOMAIN\
+      component) names is incorrect.
+
+o   Ralph Boehme <slow@samba.org>
+    * BUG 11535: s3: smbd: Fix a crash in unix_convert().
+    * BUG 11543: vfs_fruit: Return value of ad_pack in vfs_fruit.c.
+    * BUG 11549: s3:locking: Initialize lease pointer in
+      share_mode_traverse_fn().
+    * BUG 11550: s3:smbstatus: Add stream name to share_entry_forall().
+    * BUG 11555: s3:lib: Validate domain name in lookup_wellknown_name().
+
+o   Günther Deschner <gd@samba.org>
+    * BUG 11038: kerberos: Make sure we only use prompter type when available.
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 11038: winbind: Fix 100% loop.
+    * BUG 11053: source3/lib/msghdr.c: Fix compiling error on Solaris.
+
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 11316: s3:ctdbd_conn: make sure we destroy tevent_fd before closing
+      the socket.
+    * BUG 11515: s4:lib/messaging: Use 'msg.lock' and 'msg.sock' for messaging
+      related subdirs.
+    * BUG 11526: lib/param: Fix hiding of FLAG_SYNONYM values.
+
+o   Björn Jacke <bj@sernet.de>
+    * BUG 10365: nss_winbind: Fix hang on Solaris on big groups.
+    * BUG 11355: build: Use as-needed linker flag also on OpenBSD.
+
+o   Har Gagan Sahai <SHarGagan@novell.com>
+    * BUG 11509: s3: dfs: Fix a crash when the dfs targets are disabled.
+
+o   Andreas Schneider <asn@samba.org>
+    * BUG 11502: pam_winbind: Fix a segfault if initialization fails.
+
+o   Uri Simchoni <uri@samba.org>
+    * BUG 11528: net: Fix a crash with 'net ads keytab create'.
+    * BUG 11547: vfs_commit: set the fd on open before calling SMB_VFS_FSTAT.
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the "Samba 4.1 and newer" product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Older release notes to follow:
+------------------------------
+
+                   =============================
                    Release Notes for Samba 4.3.0
                            September 8, 2015
                    =============================
@@ -387,7 +470,7 @@ o   Björn Baumbach <bb@sernet.de>
 o   Justin Maggard <jmaggard@netgear.com>
     * BUG 11320: "force group" with local group not working
 
-o   Martin Schwenke <martin@meltin.net
+o   Martin Schwenke <martin@meltin.net>
     * BUG 11424: Build broken with --disable-python
 
 
