@@ -29,7 +29,7 @@
 
 struct poll_watch {
 	struct poll_funcs_state *state;
-	unsigned slot; 		/* index into state->watches[] */
+	size_t slot; 		/* index into state->watches[] */
 	int fd;
 	int events;
 	void (*callback)(struct poll_watch *w, int fd, short events,
@@ -42,7 +42,6 @@ struct poll_funcs_state {
 	 * "watches" is the array of all watches that we have handed out via
 	 * funcs->watch_new(). The "watches" array can contain NULL pointers.
 	 */
-	unsigned num_watches;
 	struct poll_watch **watches;
 
 	/*
@@ -102,12 +101,14 @@ static short tevent_to_poll_events(uint16_t flags)
  * Find or create a free slot in state->watches[]
  */
 static bool poll_funcs_watch_find_slot(struct poll_funcs_state *state,
-				       unsigned *slot)
+				       size_t *slot)
 {
 	struct poll_watch **watches;
-	unsigned i;
+	size_t i, num_watches;
 
-	for (i=0; i<state->num_watches; i++) {
+	num_watches = talloc_array_length(state->watches);
+
+	for (i=0; i<num_watches; i++) {
 		if (state->watches[i] == NULL) {
 			*slot = i;
 			return true;
@@ -115,11 +116,11 @@ static bool poll_funcs_watch_find_slot(struct poll_funcs_state *state,
 	}
 
 	watches = talloc_realloc(state, state->watches, struct poll_watch *,
-				 state->num_watches + 1);
+				 num_watches + 1);
 	if (watches == NULL) {
 		return false;
 	}
-	watches[state->num_watches] = NULL;
+	watches[num_watches] = NULL;
 	state->watches = watches;
 
 	for (i=0; i<state->num_contexts; i++) {
@@ -129,17 +130,19 @@ static bool poll_funcs_watch_find_slot(struct poll_funcs_state *state,
 			continue;
 		}
 		fdes = talloc_realloc(c, c->fdes, struct tevent_fd *,
-				      state->num_watches + 1);
+				      num_watches + 1);
 		if (fdes == NULL) {
+			state->watches = talloc_realloc(
+				state, state->watches, struct poll_watch *,
+				num_watches);
 			return false;
 		}
 		c->fdes = fdes;
 
-		fdes[state->num_watches] = NULL;
+		fdes[num_watches] = NULL;
 	}
 
-	*slot = state->num_watches;
-	state->num_watches += 1;
+	*slot = num_watches;
 
 	return true;
 }
@@ -158,7 +161,8 @@ static struct poll_watch *tevent_watch_new(
 	struct poll_funcs_state *state = talloc_get_type_abort(
 		funcs->private_data, struct poll_funcs_state);
 	struct poll_watch *w;
-	unsigned i, slot;
+	unsigned i;
+	size_t slot;
 
 	if (!poll_funcs_watch_find_slot(state, &slot)) {
 		return NULL;
@@ -200,7 +204,7 @@ fail:
 static int poll_watch_destructor(struct poll_watch *w)
 {
 	struct poll_funcs_state *state = w->state;
-	unsigned slot = w->slot;
+	size_t slot = w->slot;
 	unsigned i;
 
 	TALLOC_FREE(state->watches[slot]);
@@ -219,7 +223,7 @@ static int poll_watch_destructor(struct poll_watch *w)
 static void tevent_watch_update(struct poll_watch *w, short events)
 {
 	struct poll_funcs_state *state = w->state;
-	unsigned slot = w->slot;
+	size_t slot = w->slot;
 	unsigned i;
 
 	w->events = poll_events_to_tevent(events);
@@ -294,12 +298,13 @@ struct poll_funcs *poll_funcs_init_tevent(TALLOC_CTX *mem_ctx)
 
 static int poll_funcs_state_destructor(struct poll_funcs_state *state)
 {
-	unsigned i;
+	size_t num_watches = talloc_array_length(state->watches);
+	size_t i;
 	/*
 	 * Make sure the watches are cleared before the contexts. The watches
 	 * have destructors attached to them that clean up the fde's
 	 */
-	for (i=0; i<state->num_watches; i++) {
+	for (i=0; i<num_watches; i++) {
 		TALLOC_FREE(state->watches[i]);
 	}
 	return 0;
@@ -347,7 +352,8 @@ static struct poll_funcs_tevent_context *poll_funcs_tevent_context_new(
 	struct tevent_context *ev, unsigned slot)
 {
 	struct poll_funcs_tevent_context *ctx;
-	unsigned i;
+	size_t num_watches = talloc_array_length(state->watches);
+	size_t i;
 
 	ctx = talloc(mem_ctx, struct poll_funcs_tevent_context);
 	if (ctx == NULL) {
@@ -359,12 +365,12 @@ static struct poll_funcs_tevent_context *poll_funcs_tevent_context_new(
 	ctx->ev = ev;
 	ctx->slot = slot;
 
-	ctx->fdes = talloc_array(ctx, struct tevent_fd *, state->num_watches);
+	ctx->fdes = talloc_array(ctx, struct tevent_fd *, num_watches);
 	if (ctx->fdes == NULL) {
 		goto fail;
 	}
 
-	for (i=0; i<state->num_watches; i++) {
+	for (i=0; i<num_watches; i++) {
 		struct poll_watch *w = state->watches[i];
 
 		if (w == NULL) {
