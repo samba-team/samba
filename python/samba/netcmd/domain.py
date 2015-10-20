@@ -652,7 +652,7 @@ class cmd_domain_demote(Command):
         Option("--server", help="writable DC to write demotion changes on", type=str),
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,
                metavar="URL", dest="H"),
-        Option("--remove-other-dead-server", help="Dead DC to remove ALL references to (rather than this DC)", type=str),
+        Option("--remove-other-dead-server", help="Dead DC (name or NTDS GUID) to remove ALL references to (rather than this DC)", type=str),
         Option("--quiet", help="Be quiet", action="store_true"),
         Option("--verbose", help="Be verbose", action="store_true"),
         ]
