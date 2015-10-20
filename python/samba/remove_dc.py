@@ -16,6 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import uuid
 import ldb
 from ldb import LdbError
 from samba.ndr import ndr_unpack
@@ -357,46 +358,69 @@ def remove_dc(samdb, logger, dc_name):
 
     samdb.transaction_start()
 
-    msgs = samdb.search(base=samdb.get_config_basedn(),
-                        attrs=["serverReference"],
-                        expression="(&(objectClass=server)(cn=%s))"
-                    % ldb.binary_encode(dc_name))
-    if (len(msgs) == 0):
-        raise DemoteException("%s is not an AD DC in %s"
-                              % (dc_name, samdb.domain_dns_name()))
-    server_dn = msgs[0].dn
+    server_dn = None
 
-    ntds_dn = ldb.Dn(samdb, "CN=NTDS Settings")
-    ntds_dn.add_base(msgs[0].dn)
+    # Allow the name to be a the nTDS-DSA GUID
+    try:
+        ntds_guid = uuid.UUID(hex=dc_name)
+        ntds_dn = "<GUID=%s>" % ntds_guid
+    except ValueError:
+        try:
+            server_msgs = samdb.search(base=samdb.get_config_basedn(),
+                                       attrs=[],
+                                       expression="(&(objectClass=server)"
+                                       "(cn=%s))"
+                                    % ldb.binary_encode(dc_name))
+        except LdbError as (enum, estr):
+            raise DemoteException("Failure checking if %s is an server "
+                                  "object in %s: "
+                                  % (dc_name, samdb.domain_dns_name()), estr)
+
+        if (len(server_msgs) == 0):
+            raise DemoteException("%s is not an AD DC in %s"
+                                  % (dc_name, samdb.domain_dns_name()))
+        server_dn = server_msgs[0].dn
+
+        ntds_dn = ldb.Dn(samdb, "CN=NTDS Settings")
+        ntds_dn.add_base(server_dn)
+        pass
 
     # Confirm this is really an ntdsDSA object
     try:
-        msgs = samdb.search(base=ntds_dn, attrs=[], scope=ldb.SCOPE_BASE,
-                            expression="(objectClass=ntdsdsa)")
+        ntds_msgs = samdb.search(base=ntds_dn, attrs=[], scope=ldb.SCOPE_BASE,
+                                 expression="(objectClass=ntdsdsa)")
     except LdbError as (enum, estr):
         if enum == ldb.ERR_NO_SUCH_OBJECT:
-            offline_remove_server(samdb, logger,
-                                  msgs[0].dn,
-                                  remove_computer_obj=True,
-                                  remove_server_obj=True,
-                                  remove_sysvol_obj=True,
-                                  remove_dns_names=True,
-                                  remove_dns_account=True)
-
-            samdb.transaction_commit()
-            return
-        else:
+            ntds_msgs = []
             pass
+        else:
+            raise DemoteException("Failure checking if %s is an NTDS DSA in %s: "
+                                  % (ntds_dn, samdb.domain_dns_name()), estr)
 
-    offline_remove_ntds_dc(samdb, logger,
-                           msgs[0].dn,
-                           remove_computer_obj=True,
-                           remove_server_obj=True,
-                           remove_connection_obj=True,
-                           seize_stale_fsmo=True,
-                           remove_sysvol_obj=True,
-                           remove_dns_names=True,
-                           remove_dns_account=True)
+    # If the NTDS Settings child DN wasn't found or wasnt an ntdsDSA
+    # object, just remove the server object located above
+    if (len(ntds_msgs) == 0):
+        if server_dn is None:
+            raise DemoteException("%s is not an AD DC in %s"
+                                  % (dc_name, samdb.domain_dns_name()))
+
+        offline_remove_server(samdb, logger,
+                              server_dn,
+                              remove_computer_obj=True,
+                              remove_server_obj=True,
+                              remove_sysvol_obj=True,
+                              remove_dns_names=True,
+                              remove_dns_account=True)
+    else:
+        offline_remove_ntds_dc(samdb, logger,
+                               ntds_msgs[0].dn,
+                               remove_computer_obj=True,
+                               remove_server_obj=True,
+                               remove_connection_obj=True,
+                               seize_stale_fsmo=True,
+                               remove_sysvol_obj=True,
+                               remove_dns_names=True,
+                               remove_dns_account=True)
 
     samdb.transaction_commit()
 
