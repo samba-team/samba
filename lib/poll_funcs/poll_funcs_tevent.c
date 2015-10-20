@@ -48,7 +48,6 @@ struct poll_funcs_state {
 	 * "contexts is the array of tevent_contexts that serve
 	 * "watches". "contexts" can contain NULL pointers.
 	 */
-	unsigned num_contexts;
 	struct poll_funcs_tevent_context **contexts;
 };
 
@@ -104,7 +103,7 @@ static bool poll_funcs_watch_find_slot(struct poll_funcs_state *state,
 				       size_t *slot)
 {
 	struct poll_watch **watches;
-	size_t i, num_watches;
+	size_t i, num_watches, num_contexts;
 
 	num_watches = talloc_array_length(state->watches);
 
@@ -123,7 +122,9 @@ static bool poll_funcs_watch_find_slot(struct poll_funcs_state *state,
 	watches[num_watches] = NULL;
 	state->watches = watches;
 
-	for (i=0; i<state->num_contexts; i++) {
+	num_contexts = talloc_array_length(state->contexts);
+
+	for (i=0; i<num_contexts; i++) {
 		struct tevent_fd **fdes;
 		struct poll_funcs_tevent_context *c = state->contexts[i];
 		if (c == NULL) {
@@ -161,8 +162,7 @@ static struct poll_watch *tevent_watch_new(
 	struct poll_funcs_state *state = talloc_get_type_abort(
 		funcs->private_data, struct poll_funcs_state);
 	struct poll_watch *w;
-	unsigned i;
-	size_t slot;
+	size_t i, slot, num_contexts;
 
 	if (!poll_funcs_watch_find_slot(state, &slot)) {
 		return NULL;
@@ -183,7 +183,9 @@ static struct poll_watch *tevent_watch_new(
 
 	talloc_set_destructor(w, poll_watch_destructor);
 
-	for (i=0; i<state->num_contexts; i++) {
+	num_contexts = talloc_array_length(state->contexts);
+
+	for (i=0; i<num_contexts; i++) {
 		struct poll_funcs_tevent_context *c = state->contexts[i];
 		if (c == NULL) {
 			continue;
@@ -204,12 +206,13 @@ fail:
 static int poll_watch_destructor(struct poll_watch *w)
 {
 	struct poll_funcs_state *state = w->state;
+	size_t num_contexts = talloc_array_length(state->contexts);
 	size_t slot = w->slot;
-	unsigned i;
+	size_t i;
 
 	TALLOC_FREE(state->watches[slot]);
 
-	for (i=0; i<state->num_contexts; i++) {
+	for (i=0; i<num_contexts; i++) {
 		struct poll_funcs_tevent_context *c = state->contexts[i];
 		if (c == NULL) {
 			continue;
@@ -223,12 +226,13 @@ static int poll_watch_destructor(struct poll_watch *w)
 static void tevent_watch_update(struct poll_watch *w, short events)
 {
 	struct poll_funcs_state *state = w->state;
+	size_t num_contexts = talloc_array_length(state->contexts);
 	size_t slot = w->slot;
-	unsigned i;
+	size_t i;
 
 	w->events = poll_events_to_tevent(events);
 
-	for (i=0; i<state->num_contexts; i++) {
+	for (i=0; i<num_contexts; i++) {
 		struct poll_funcs_tevent_context *c = state->contexts[i];
 		if (c == NULL) {
 			continue;
@@ -315,12 +319,13 @@ static int poll_funcs_state_destructor(struct poll_funcs_state *state)
  */
 static bool poll_funcs_context_slot_find(struct poll_funcs_state *state,
 					 struct tevent_context *ev,
-					 unsigned *slot)
+					 size_t *slot)
 {
 	struct poll_funcs_tevent_context **contexts;
-	unsigned i;
+	size_t num_contexts = talloc_array_length(state->contexts);
+	size_t i;
 
-	for (i=0; i<state->num_contexts; i++) {
+	for (i=0; i<num_contexts; i++) {
 		struct poll_funcs_tevent_context *ctx = state->contexts[i];
 
 		if ((ctx == NULL) || (ctx->ev == ev)) {
@@ -331,15 +336,14 @@ static bool poll_funcs_context_slot_find(struct poll_funcs_state *state,
 
 	contexts = talloc_realloc(state, state->contexts,
 				  struct poll_funcs_tevent_context *,
-				  state->num_contexts + 1);
+				  num_contexts + 1);
 	if (contexts == NULL) {
 		return false;
 	}
 	state->contexts = contexts;
-	state->contexts[state->num_contexts] = NULL;
+	state->contexts[num_contexts] = NULL;
 
-	*slot = state->num_contexts;
-	state->num_contexts += 1;
+	*slot = num_contexts;
 
 	return true;
 }
@@ -423,7 +427,7 @@ void *poll_funcs_tevent_register(TALLOC_CTX *mem_ctx, struct poll_funcs *f,
 	struct poll_funcs_state *state = talloc_get_type_abort(
 		f->private_data, struct poll_funcs_state);
 	struct poll_funcs_tevent_handle *handle;
-	unsigned slot;
+	size_t slot;
 
 	handle = talloc(mem_ctx, struct poll_funcs_tevent_handle);
 	if (handle == NULL) {
