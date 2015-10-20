@@ -37,12 +37,25 @@ struct poll_watch {
 	void *private_data;
 };
 
+struct poll_timeout {
+	struct poll_funcs_state *state;
+	size_t slot;		/* index into state->timeouts[] */
+	struct timeval tv;
+	void (*callback)(struct poll_timeout *t, void *private_data);
+	void *private_data;
+};
+
 struct poll_funcs_state {
 	/*
 	 * "watches" is the array of all watches that we have handed out via
 	 * funcs->watch_new(). The "watches" array can contain NULL pointers.
 	 */
 	struct poll_watch **watches;
+
+	/*
+	 * Like "watches" for timeouts;
+	 */
+	struct poll_timeout **timeouts;
 
 	/*
 	 * "contexts is the array of tevent_contexts that serve
@@ -57,6 +70,7 @@ struct poll_funcs_tevent_context {
 	unsigned slot;		/* index into state->contexts[] */
 	struct tevent_context *ev;
 	struct tevent_fd **fdes; /* same indexes as state->watches[] */
+	struct tevent_timer **timers;  /* same indexes as state->timeouts[] */
 };
 
 /*
@@ -251,24 +265,181 @@ static void tevent_watch_free(struct poll_watch *w)
 	TALLOC_FREE(w);
 }
 
+static bool poll_funcs_timeout_find_slot(struct poll_funcs_state *state,
+					 size_t *slot)
+{
+	struct poll_timeout **timeouts;
+	size_t i, num_timeouts, num_contexts;
+
+	num_timeouts = talloc_array_length(state->timeouts);
+
+	for (i=0; i<num_timeouts; i++) {
+		if (state->timeouts[i] == NULL) {
+			*slot = i;
+			return true;
+		}
+	}
+
+	timeouts = talloc_realloc(state, state->timeouts,
+				  struct poll_timeout *,
+				  num_timeouts + 1);
+	if (timeouts == NULL) {
+		return false;
+	}
+	timeouts[num_timeouts] = NULL;
+	state->timeouts = timeouts;
+
+	num_contexts = talloc_array_length(state->contexts);
+
+	for (i=0; i<num_contexts; i++) {
+		struct tevent_timer **timers;
+		struct poll_funcs_tevent_context *c = state->contexts[i];
+		if (c == NULL) {
+			continue;
+		}
+		timers = talloc_realloc(c, c->timers, struct tevent_timer *,
+					num_timeouts + 1);
+		if (timers == NULL) {
+			state->timeouts = talloc_realloc(
+				state, state->timeouts, struct poll_timeout *,
+				num_timeouts);
+			return false;
+		}
+		c->timers = timers;
+
+		timers[num_timeouts] = NULL;
+	}
+
+	*slot = num_timeouts;
+
+	return true;
+}
+
+static void poll_funcs_timer_handler(struct tevent_context *ev,
+				     struct tevent_timer *te,
+				     struct timeval current_time,
+				     void *private_data);
+static int poll_timeout_destructor(struct poll_timeout *t);
+
 static struct poll_timeout *tevent_timeout_new(
 	const struct poll_funcs *funcs, const struct timeval tv,
 	void (*callback)(struct poll_timeout *t, void *private_data),
 	void *private_data)
 {
-	/* not implemented yet */
+	struct poll_funcs_state *state = talloc_get_type_abort(
+		funcs->private_data, struct poll_funcs_state);
+	struct poll_timeout *t;
+	size_t i, slot, num_contexts;
+
+	if (!poll_funcs_timeout_find_slot(state, &slot)) {
+		return NULL;
+	}
+
+	t = talloc(state->timeouts, struct poll_timeout);
+	if (t == NULL) {
+		return NULL;
+	}
+	t->state = state;
+	t->slot = slot;
+	t->tv = tv;
+	t->callback = callback;
+	t->private_data = private_data;
+
+	talloc_set_destructor(t, poll_timeout_destructor);
+
+	num_contexts = talloc_array_length(state->contexts);
+
+	for (i=0; i<num_contexts; i++) {
+		struct poll_funcs_tevent_context *c = state->contexts[i];
+		if (c == NULL) {
+			continue;
+		}
+		c->timers[slot] = tevent_add_timer(
+			c->ev, c->timers, tv, poll_funcs_timer_handler, t);
+		if (c->timers[slot] == NULL) {
+			goto fail;
+		}
+	}
+	return t;
+
+fail:
+	TALLOC_FREE(t);
 	return NULL;
+}
+
+static int poll_timeout_destructor(struct poll_timeout *t)
+{
+	struct poll_funcs_state *state = t->state;
+	size_t num_contexts = talloc_array_length(state->contexts);
+	size_t slot = t->slot;
+	size_t i;
+
+	TALLOC_FREE(state->timeouts[slot]);
+
+	for (i=0; i<num_contexts; i++) {
+		struct poll_funcs_tevent_context *c = state->contexts[i];
+		if (c == NULL) {
+			continue;
+		}
+		TALLOC_FREE(c->timers[slot]);
+	}
+
+	return 0;
+}
+
+static void poll_funcs_timer_handler(struct tevent_context *ev,
+				     struct tevent_timer *te,
+				     struct timeval current_time,
+				     void *private_data)
+{
+	struct poll_timeout *t = talloc_get_type_abort(
+		private_data, struct poll_timeout);
+	struct poll_funcs_state *state = t->state;
+	size_t slot = t->slot;
+	size_t i, num_contexts;
+
+	num_contexts = talloc_array_length(state->contexts);
+
+	for (i=0; i<num_contexts; i++) {
+		struct poll_funcs_tevent_context *c = state->contexts[i];
+		if (c == NULL) {
+			continue;
+		}
+		TALLOC_FREE(c->timers[slot]);
+	}
+
+	t->callback(t, t->private_data);
 }
 
 static void tevent_timeout_update(struct poll_timeout *t,
 				  const struct timeval tv)
 {
-	return;
+	struct poll_funcs_state *state = t->state;
+	size_t num_contexts = talloc_array_length(state->contexts);
+	size_t slot = t->slot;
+	size_t i;
+
+	for (i=0; i<num_contexts; i++) {
+		struct poll_funcs_tevent_context *c = state->contexts[i];
+		if (c == NULL) {
+			continue;
+		}
+		TALLOC_FREE(c->timers[slot]);
+
+		c->timers[slot] = tevent_add_timer(
+			c->ev, c->timers, tv, poll_funcs_timer_handler, t);
+		if (c->timers[slot] == NULL) {
+			/*
+			 * We just free'ed the space, why did this fail??
+			 */
+			abort();
+		}
+	}
 }
 
 static void tevent_timeout_free(struct poll_timeout *t)
 {
-	return;
+	TALLOC_FREE(t);
 }
 
 static int poll_funcs_state_destructor(struct poll_funcs_state *state);
@@ -357,6 +528,7 @@ static struct poll_funcs_tevent_context *poll_funcs_tevent_context_new(
 {
 	struct poll_funcs_tevent_context *ctx;
 	size_t num_watches = talloc_array_length(state->watches);
+	size_t num_timeouts = talloc_array_length(state->timeouts);
 	size_t i;
 
 	ctx = talloc(mem_ctx, struct poll_funcs_tevent_context);
@@ -387,6 +559,26 @@ static struct poll_funcs_tevent_context *poll_funcs_tevent_context_new(
 			goto fail;
 		}
 	}
+
+	ctx->timers = talloc_array(ctx, struct tevent_timer *, num_timeouts);
+	if (ctx->timers == NULL) {
+		goto fail;
+	}
+
+	for (i=0; i<num_timeouts; i++) {
+		struct poll_timeout *t = state->timeouts[i];
+
+		if (t == NULL) {
+			ctx->timers[i] = NULL;
+			continue;
+		}
+		ctx->timers[i] = tevent_add_timer(ctx->ev, ctx->timers, t->tv,
+						  poll_funcs_timer_handler, t);
+		if (ctx->timers[i] == 0) {
+			goto fail;
+		}
+	}
+
 	talloc_set_destructor(ctx, poll_funcs_tevent_context_destructor);
 	return ctx;
 fail:
