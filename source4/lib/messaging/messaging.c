@@ -312,6 +312,7 @@ struct imessaging_context *imessaging_init(TALLOC_CTX *mem_ctx,
 	bool ok;
 	int ret;
 	const char *lock_dir = NULL;
+	int tdb_flags = TDB_INCOMPATIBLE_HASH | TDB_CLEAR_IF_FIRST;
 
 	if (ev == NULL) {
 		return NULL;
@@ -368,10 +369,9 @@ struct imessaging_context *imessaging_init(TALLOC_CTX *mem_ctx,
 
 	msg->start_time    = timeval_current();
 
-	msg->names = server_id_db_init(
-		msg, server_id, lock_dir, 0,
-		TDB_INCOMPATIBLE_HASH|TDB_CLEAR_IF_FIRST|
-		lpcfg_tdb_flags(lp_ctx, 0));
+	tdb_flags |= lpcfg_tdb_flags(lp_ctx, 0);
+
+	msg->names = server_id_db_init(msg, server_id, lock_dir, 0, tdb_flags);
 	if (msg->names == NULL) {
 		goto fail;
 	}
