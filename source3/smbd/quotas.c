@@ -171,17 +171,12 @@ static bool nfs_quotas(char *nfspath, uid_t euser_id, uint64_t *bsize, uint64_t 
 	}
 
 	/*
-	 * gqr.status returns 0 if the rpc call fails, 1 if quotas exist, 2 if there is
-	 * no quota set, and 3 if no permission to get the quota.  If 0 or 3 return
-	 * something sensible.
+	 * gqr.status returns 1 if quotas exist, 2 if there is
+	 * no quota set, and 3 if no permission to get the quota.
+	 * If 3, return something sensible.
 	 */
 
 	switch (gqr.status) {
-	case 0:
-		DEBUG(9,("nfs_quotas: Remote Quotas Failed!  Error \"%i\" \n", gqr.status));
-		ret = False;
-		goto out;
-
 	case 1:
 		DEBUG(9,("nfs_quotas: Good quota data\n"));
 		D.dqb_bsoftlimit = gqr.getquota_rslt_u.gqr_rquota.rq_bsoftlimit;
@@ -197,8 +192,10 @@ static bool nfs_quotas(char *nfspath, uid_t euser_id, uint64_t *bsize, uint64_t 
 		break;
 
 	default:
-		DEBUG(9,("nfs_quotas: Remote Quotas Questionable!  Error \"%i\" \n", gqr.status ));
-		break;
+		DEBUG(9, ("nfs_quotas: Unknown Remote Quota Status \"%i\"\n",
+				gqr.status));
+		ret = false;
+		goto out;
 	}
 
 	DEBUG(10,("nfs_quotas: Let`s look at D a bit closer... status \"%i\" bsize \"%i\" active? \"%i\" bhard \"%i\" bsoft \"%i\" curb \"%i\" \n",
