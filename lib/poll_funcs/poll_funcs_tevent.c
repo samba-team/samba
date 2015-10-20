@@ -244,7 +244,7 @@ static void tevent_watch_free(struct poll_watch *w)
 }
 
 static struct poll_timeout *tevent_timeout_new(
-	const struct poll_funcs *funcs, const struct timeval *tv,
+	const struct poll_funcs *funcs, const struct timeval tv,
 	void (*callback)(struct poll_timeout *t, void *private_data),
 	void *private_data)
 {
@@ -253,7 +253,7 @@ static struct poll_timeout *tevent_timeout_new(
 }
 
 static void tevent_timeout_update(struct poll_timeout *t,
-				  const struct timeval *tv)
+				  const struct timeval tv)
 {
 	return;
 }

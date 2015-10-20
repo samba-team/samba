@@ -99,7 +99,7 @@ struct poll_funcs {
 	 */
 
 	struct poll_timeout *(*timeout_new)(
-		const struct poll_funcs *funcs, const struct timeval *tv,
+		const struct poll_funcs *funcs, const struct timeval tv,
 		void (*callback)(struct poll_timeout *t, void *private_data),
 		void *private_data);
 
@@ -111,7 +111,7 @@ struct poll_funcs {
 	 */
 
 	void (*timeout_update)(struct poll_timeout *t,
-			       const struct timeval *tv);
+			       const struct timeval tv);
 
 	/**
 	 * @brief Free a poll_timeout
