@@ -395,17 +395,6 @@ Recovery master:0
 	    If PNN-LIST is provided then status is given for
 	    the indicated node(s).
 	  </para>
-
-	  <para>
-	    By default, <command>ctdb nodestatus</command> gathers
-	    status from the local node.  However, if invoked with "-n
-	    all" (or similar) then status is gathered from the given
-	    node(s).  In particular <command>ctdb nodestatus
-	    all</command> and <command>ctdb nodestatus -n
-	    all</command> will produce different output.  It is
-	    possible to provide 2 different nodespecs (with and
-	    without "-n") but the output is usually confusing!
-	  </para>
 	</listitem>
       </itemizedlist>
 
@@ -510,11 +499,8 @@ pnn:3 192.168.2.203       OK
       <refsect3>
 	<title>Example</title>
 	<screen>
-# ctdb ping -n all
+# ctdb ping
 response from 0 time=0.000054 sec  (3 clients)
-response from 1 time=0.000144 sec  (2 clients)
-response from 2 time=0.000105 sec  (2 clients)
-response from 3 time=0.000114 sec  (2 clients)
 	</screen>
       </refsect3>
     </refsect2>
@@ -548,7 +534,7 @@ name:eth2 link:up references:1
     <refsect2>
       <title>ip</title>
       <para>
-	This command will display the list of public addresses that are provided by the cluster and which physical node is currently serving this ip. By default this command will ONLY show those public addresses that are known to the node itself. To see the full list of all public ips across the cluster you must use "ctdb ip -n all".
+	This command will display the list of public addresses that are provided by the cluster and which physical node is currently serving this ip. By default this command will ONLY show those public addresses that are known to the node itself. To see the full list of all public ips across the cluster you must use "ctdb ip all".
       </para>
       <refsect3>
 	<title>Example</title>
@@ -914,8 +900,7 @@ DB Statistics: locking.tdb
       <para>
 	This command only affects the run-time setting of a single
 	CTDB node.  This setting <emphasis>must</emphasis> be changed
-	on all nodes simultaneously by specifying <option>-n
-	all</option> (or similar).  For information about configuring
+	on all nodes simultaneously.  For information about configuring
 	the recovery lock file please see the
 	<citetitle>CTDB_RECOVERY_LOCK</citetitle> entry in
 	<citerefentry><refentrytitle>ctdbd.conf</refentrytitle>
