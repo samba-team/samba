@@ -19,7 +19,7 @@ cluster_is_healthy
 ctdb_restart_when_done
 
 echo "Getting public IPs information..."
-try_command_on_node -v any "$CTDB ip -v -n all -X | tail -n +2"
+try_command_on_node -v any "$CTDB ip -v all -X | tail -n +2"
 ip_info="$out"
 
 # Select the first node and find out its interfaces

@@ -169,7 +169,7 @@ all_ips_on_node()
 _select_test_node_and_ips ()
 {
     try_command_on_node any \
-	"$CTDB ip -X -n all | awk -F'|' 'NR > 1 { print \$2, \$3 }'"
+	"$CTDB ip -X all | awk -F'|' 'NR > 1 { print \$2, \$3 }'"
 
     test_node=""  # this matches no PNN
     test_node_ips=""

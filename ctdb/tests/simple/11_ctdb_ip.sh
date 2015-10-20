@@ -32,7 +32,7 @@ set -e
 cluster_is_healthy
 
 echo "Getting list of public IPs..."
-try_command_on_node -v 1 "$CTDB ip -n all | tail -n +2"
+try_command_on_node -v 1 "$CTDB ip all | tail -n +2"
 ips=$(echo "$out" | sed \
 	-e 's@ node\[@ @' \
 	-e 's@\].*$@@')
@@ -55,7 +55,7 @@ fi
 
 [ "$testfailures" != 1 ] && echo "Looks good!"
 
-cmd="$CTDB -X ip -n all | tail -n +2"
+cmd="$CTDB -X ip all | tail -n +2"
 echo "Checking that \"$cmd\" produces expected output..."
 
 try_command_on_node 1 "$cmd"
