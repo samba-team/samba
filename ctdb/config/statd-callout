@@ -159,7 +159,7 @@ case "$1" in
 	# Construct a sed expression to take catdb output and produce pairs of:
 	#   server-IP client-IP
 	# but only for the server-IPs that are hosted on this node.
-	ctdb_all_ips=$(ctdb ip -n all | tail -n +2)
+	ctdb_all_ips=$(ctdb ip all | tail -n +2)
 	sed_expr=$(echo "$ctdb_all_ips" |
 	    awk -v pnn=$pnn 'pnn == $2 { \
                 ip = $1; gsub(/\./, "\\.", ip); \
