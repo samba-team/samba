@@ -178,12 +178,7 @@ static bool test_unlink(struct torture_context *tctx, struct smbcli_state *cli)
 	io.unlink.in.pattern = BASEDIR "\\*.tx?";
 	io.unlink.in.attrib = 0;
 	status = smb_raw_unlink(cli->tree, &io);
-	if (torture_setting_bool(tctx, "samba3", false)) {
-		CHECK_STATUS(status, NT_STATUS_NO_SUCH_FILE);
-	}
-	else {
-		CHECK_STATUS(status, NT_STATUS_OK);
-	}
+	CHECK_STATUS(status, NT_STATUS_OK);
 
 	status = smb_raw_unlink(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_NO_SUCH_FILE);
