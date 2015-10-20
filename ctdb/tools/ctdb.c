@@ -2951,6 +2951,10 @@ static int control_ip(struct ctdb_context *ctdb, int argc, const char **argv)
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 	struct ctdb_all_public_ips *ips;
 
+	if (argc == 1 && strcmp(argv[0], "all") == 0) {
+		options.pnn = CTDB_BROADCAST_ALL;
+	}
+
 	if (options.pnn == CTDB_BROADCAST_ALL) {
 		/* read the list of public ips from all nodes */
 		ret = control_get_all_public_ips(ctdb, tmp_ctx, &ips);
