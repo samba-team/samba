@@ -3575,45 +3575,54 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 		return;
 	}
 
-	/* verify that the recmaster node is still active */
-	for (j=0; j<nodemap->num; j++) {
-		if (nodemap->nodes[j].pnn==rec->recmaster) {
-			break;
-		}
-	}
-
-	if (j == nodemap->num) {
-		DEBUG(DEBUG_ERR, ("Recmaster node %u not in list. Force reelection\n", rec->recmaster));
+	/* Verify that the master node has not been deleted.  This
+	 * should not happen because a node should always be shutdown
+	 * before being deleted, causing a new master to be elected
+	 * before now.  However, if something strange has happened
+	 * then checking here will ensure we don't index beyond the
+	 * end of the nodemap array. */
+	if (rec->recmaster >= nodemap->num) {
+		DEBUG(DEBUG_ERR,
+		      ("Recmaster node %u has been deleted. Force election\n",
+		       rec->recmaster));
 		force_election(rec, pnn, nodemap);
 		return;
 	}
 
-	/* if recovery master is disconnected we must elect a new recmaster */
-	if (nodemap->nodes[j].flags & NODE_FLAGS_DISCONNECTED) {
-		DEBUG(DEBUG_NOTICE, ("Recmaster node %u is disconnected. Force reelection\n", nodemap->nodes[j].pnn));
+	/* if recovery master is disconnected/deleted we must elect a new recmaster */
+	if (nodemap->nodes[rec->recmaster].flags &
+	    (NODE_FLAGS_DISCONNECTED|NODE_FLAGS_DELETED)) {
+		DEBUG(DEBUG_NOTICE,
+		      ("Recmaster node %u is disconnected/deleted. Force election\n",
+		       rec->recmaster));
 		force_election(rec, pnn, nodemap);
 		return;
 	}
 
 	/* get nodemap from the recovery master to check if it is inactive */
-	ret = ctdb_ctrl_getnodemap(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].pnn, 
+	ret = ctdb_ctrl_getnodemap(ctdb, CONTROL_TIMEOUT(), rec->recmaster,
 				   mem_ctx, &recmaster_nodemap);
 	if (ret != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " Unable to get nodemap from recovery master %u\n", 
-			  nodemap->nodes[j].pnn));
+		DEBUG(DEBUG_ERR,
+		      (__location__
+		       " Unable to get nodemap from recovery master %u\n",
+			  rec->recmaster));
 		return;
 	}
 
 
-	if ((recmaster_nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) &&
+	if ((recmaster_nodemap->nodes[rec->recmaster].flags & NODE_FLAGS_INACTIVE) &&
 	    (rec->node_flags & NODE_FLAGS_INACTIVE) == 0) {
-		DEBUG(DEBUG_NOTICE, ("Recmaster node %u no longer available. Force reelection\n", nodemap->nodes[j].pnn));
+		DEBUG(DEBUG_NOTICE,
+		      ("Recmaster node %u is inactive. Force election\n",
+		       rec->recmaster));
 		/*
 		 * update our nodemap to carry the recmaster's notion of
 		 * its own flags, so that we don't keep freezing the
 		 * inactive recmaster node...
 		 */
-		nodemap->nodes[j].flags = recmaster_nodemap->nodes[j].flags;
+		nodemap->nodes[rec->recmaster].flags =
+			recmaster_nodemap->nodes[rec->recmaster].flags;
 		force_election(rec, pnn, nodemap);
 		return;
 	}
