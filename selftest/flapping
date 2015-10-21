@@ -29,3 +29,4 @@
 ^samba4.drs.delete_object.python # flakey on sn-devel
 ^samba4.blackbox.samba_tool_demote # flakey on sn-devel
 ^samba4.blackbox.dbcheck # flakey on sn-devel
+^samba4.smb2.create.mkdir-dup\(ad_dc_ntvfs\) # This test involves a race, not always protected against in the NTVFS file server
