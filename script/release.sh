@@ -127,6 +127,31 @@ verify_samba_rc() {
 	return 0
 }
 
+load_samba_stable_versions() {
+	check_args "${FUNCNAME}" "$#" "0" || return 1
+
+	test -n "${version-}" && {
+		return 0
+	}
+
+	local SAMBA_VERSION_MAJOR=$(grep '^SAMBA_VERSION_MAJOR=' VERSION | cut -d '=' -f2 | xargs)
+	local SAMBA_VERSION_MINOR=$(grep '^SAMBA_VERSION_MINOR=' VERSION | cut -d '=' -f2 | xargs)
+	local SAMBA_VERSION_RELEASE=$(grep '^SAMBA_VERSION_RELEASE=' VERSION | cut -d '=' -f2 | xargs)
+
+	version="${SAMBA_VERSION_MAJOR}.${SAMBA_VERSION_MINOR}.${SAMBA_VERSION_RELEASE}"
+	tagname="${productbase}-${version}"
+
+	test ${SAMBA_VERSION_RELEASE} -gt 0 || {
+		return 0
+	}
+
+	oldversion="${SAMBA_VERSION_MAJOR}.${SAMBA_VERSION_MINOR}.$(expr ${SAMBA_VERSION_RELEASE} - 1)"
+	oldtagname="${productbase}-${oldversion}"
+	patchfile="${productbase}-${oldversion}-${version}.diffs"
+
+	return 0
+}
+
 verify_samba_stable() {
 	check_args "${FUNCNAME}" "$#" "0" || return 1
 
@@ -159,16 +184,31 @@ verify_samba_stable() {
 		}
 	done
 
-	local SAMBA_VERSION_MAJOR=$(grep '^SAMBA_VERSION_MAJOR=' VERSION | cut -d '=' -f2 | xargs)
-	local SAMBA_VERSION_MINOR=$(grep '^SAMBA_VERSION_MINOR=' VERSION | cut -d '=' -f2 | xargs)
-	local SAMBA_VERSION_RELEASE=$(grep '^SAMBA_VERSION_RELEASE=' VERSION | cut -d '=' -f2 | xargs)
+	load_samba_stable_versions
 
-	test ${SAMBA_VERSION_RELEASE} -gt 0 || {
-		return 0
+	test x"${product}" = x"samba-stable" && {
+		test -f "announce.${tagname}.quotation.txt" || {
+			echo ""
+			echo "announce.${tagname}.quotation.txt missing!"
+			echo ""
+			echo "Please create it and retry"
+			echo ""
+			echo "The content should look like this:"
+			echo "cat announce.${tagname}.quotation.txt"
+			echo '======================================================'
+			echo '                "Some text'
+			echo '                 from someone."'
+			echo ''
+			echo '                 The author'
+			echo '======================================================'
+			echo ""
+			return 1
+		}
 	}
 
-	local old_release=$(expr ${SAMBA_VERSION_RELEASE} - 1)
-	oldtagname="${productbase}-${SAMBA_VERSION_MAJOR}.${SAMBA_VERSION_MINOR}.${old_release}"
+	test -n "${oldtagname}" || {
+		return 0
+	}
 
 	local verify_out="${TMPDIR}/verify-${oldtagname}.out"
 
@@ -230,6 +270,19 @@ create_release() {
 
 	echo "Releasing product ${product}"
 
+	test -n "${tagname}" && {
+		git tag -l "${tagname}" | grep -q "${tagname}" && {
+			echo "tagname[${tagname}] already exist"
+			return 1
+		}
+
+		local _tgzname="${tagname}.tar.gz"
+		test -e "${_tgzname}" && {
+			echo "_tgzname[${_tgzname}] already exist"
+			return 1
+		}
+	}
+
 	echo "Building release tarball"
 	local tgzname=$(make dist 2>&1 | grep ^Created | cut -d' ' -f2)
 	test -f "${tgzname}" || {
@@ -244,6 +297,15 @@ create_release() {
 		return 1
 	}
 
+	local _tagname=$(basename ${tgzname} .tar.gz)
+	test -n "${tagname}" && {
+		test x"${_tagname}" = x"${tagname}" || {
+			echo "Invalid tgzname[${tgzname}]"
+			return 1
+		}
+	}
+	tagname="${_tagname}"
+
 	local tarname=$(basename ${tgzname} .gz)
 	echo "Tarball: ${tarname}"
 	gunzip -f ${tgzname} || {
@@ -257,7 +319,6 @@ create_release() {
 	CLEANUP_FILES="${CLEANUP_FILES} ${tarname}"
 
 	# tagname is global
-	tagname=$(basename ${tarname} .tar)
 	echo "Tagging as ${tagname}"
 	git tag -u ${GPG_KEYID} -s "${tagname}" -m "${productbase}: tag release ${tagname}" || {
 		return 1
@@ -288,18 +349,15 @@ patch_release() {
 	check_args "${FUNCNAME}" "$#" "0" || return 1
 	require_tagname "${FUNCNAME}"
 
-	test -n "${oldtagname}" || {
+	test -n "${patchfile}" || {
 		return 0
 	}
 
-	local oldversion=$(echo "${oldtagname}" | sed -e "s!^${productbase}-!!")
-	local version=$(echo "${tagname}" | sed -e "s!^${productbase}-!!")
-
 	local oldpwd=$(pwd)
-
-	local patchfile="patch-${oldversion}-${version}.diffs"
 	echo "Generating ${patchfile}"
 	(
+		set -e
+		set -u
 		pushd "${TMPDIR}"
 		tar xfz "${oldpwd}/${oldtagname}.tar.gz"
 		tar xfz "${oldpwd}/${tagname}.tar.gz"
@@ -348,10 +406,22 @@ check_nopatch() {
 	check_args "${FUNCNAME}" "$#" "0" || return 1
 	require_tagname "${FUNCNAME}"
 
-	git tag -v "${tagname}" || {
-		echo "failed to verify tag[${tagname}]"
+	local verify_out="${TMPDIR}/verify-${oldtagname}.out"
+
+	echo "Verifying tagname: ${tagname}"
+
+	git tag -v "${tagname}" >${verify_out} 2>&1 || {
+		echo "failed to verify old tag[${oldtagname}]"
 		return 1
 	}
+	grep -q "${GPG_KEYID}" "${verify_out}" || {
+		echo "tagname[${tagname}] was not generated with GPG_KEYID[${GPG_KEYID}]!"
+		echo ""
+		cat "${verify_out}"
+		return 1
+	}
+
+	echo "Verifying ${tagname}.tar.gz and ${tagname}.tar.asc"
 
 	test -f "${tagname}.tar.gz" || {
 		echo "${tagname}.tar.gz does not exist"
@@ -360,6 +430,17 @@ check_nopatch() {
 
 	test -f "${tagname}.tar.asc" || {
 		echo "${tagname}.tar.asc does not exist"
+		return 1
+	}
+
+	zcat "${tagname}.tar.gz" | gpg --verify "${tagname}.tar.asc" - 2>${verify_out} || {
+		echo "Failed to verify ${tagname}.tar.asc"
+		return 1
+	}
+	grep -q "${GPG_KEYID}" "${verify_out}" || {
+		echo "${tagname}.tar.asc was not generated with GPG_KEYID[${GPG_KEYID}]!"
+		echo ""
+		cat "${verify_out}"
 		return 1
 	}
 
@@ -368,14 +449,28 @@ check_nopatch() {
 	return 0
 }
 
-check_withpatch() {
+check_samba_stable() {
 	check_args "${FUNCNAME}" "$#" "0" || return 1
 	require_tagname "${FUNCNAME}"
 
-	git tag -v "${tagname}" || {
-		echo "failed to verify tag[${tagname}]"
+	load_samba_stable_versions
+
+	local verify_out="${TMPDIR}/verify-${oldtagname}.out"
+
+	echo "Verifying tagname: ${tagname}"
+
+	git tag -v "${tagname}" >${verify_out} 2>&1 || {
+		echo "failed to verify old tag[${oldtagname}]"
 		return 1
 	}
+	grep -q "${GPG_KEYID}" "${verify_out}" || {
+		echo "tagname[${tagname}] was not generated with GPG_KEYID[${GPG_KEYID}]!"
+		echo ""
+		cat "${verify_out}"
+		return 1
+	}
+
+	echo "Verifying ${tagname}.tar.gz and ${tagname}.tar.asc"
 
 	test -f "${tagname}.tar.gz" || {
 		echo "${tagname}.tar.gz does not exist"
@@ -387,11 +482,23 @@ check_withpatch() {
 		return 1
 	}
 
-	ls -la ${tagname}.*
+	zcat "${tagname}.tar.gz" | gpg --verify "${tagname}.tar.asc" - 2>${verify_out} || {
+		echo "Failed to verify ${tagname}.tar.asc"
+		return 1
+	}
+	grep -q "${GPG_KEYID}" "${verify_out}" || {
+		echo "${tagname}.tar.asc was not generated with GPG_KEYID[${GPG_KEYID}]!"
+		echo ""
+		cat "${verify_out}"
+		return 1
+	}
 
 	test -n "${patchfile}" || {
+		ls -lart ${tagname}.*
 		return 0
 	}
+
+	echo "Verifying ${patchfile}.gz and ${patchfile}.asc"
 
 	test -f "${patchfile}.gz" || {
 		echo "${patchfile}.gz does not exist"
@@ -403,6 +510,18 @@ check_withpatch() {
 		return 1
 	}
 
+	zcat "${patchfile}.gz" | gpg --verify "${patchfile}.asc" - 2>${verify_out} || {
+		echo "Failed to verify ${patchfile}.asc"
+		return 1
+	}
+	grep -q "${GPG_KEYID}" "${verify_out}" || {
+		echo "${patchfile}.asc was not generated with GPG_KEYID[${GPG_KEYID}]!"
+		echo ""
+		cat "${verify_out}"
+		return 1
+	}
+
+	ls -lart ${tagname}.* ${patchfile}.*
 	return 0
 }
 
@@ -430,12 +549,12 @@ push_release() {
 	return 0
 }
 
-upload_release() {
+upload_nopatch() {
 	check_args "${FUNCNAME}" "$#" "0" || return 1
 	require_tagname "${FUNCNAME}"
 
 	echo "Upload ${tagname}.* to '${upload_url}'"
-	rsync -Pav ${tagname}.* "${upload_url}/" || {
+	rsync -Pav --delay-updates ${tagname}.* "${upload_url}/" || {
 		return 1
 	}
 	rsync ${upload_url}/${tagname}.*
@@ -443,7 +562,49 @@ upload_release() {
 	return 0
 }
 
-announce_samba_rc() {
+upload_samba_stable() {
+	check_args "${FUNCNAME}" "$#" "0" || return 1
+	require_tagname "${FUNCNAME}"
+
+	load_samba_stable_versions
+
+	local release_url="${upload_url}samba/stable/"
+	local patch_url="${upload_url}samba/patches/"
+
+	echo "Upload ${tagname}.tar.* to '${release_url}'"
+	ls -lart ${tagname}.tar.*
+	rsync -Pav --delay-updates ${tagname}.tar.* "${release_url}/" || {
+		return 1
+	}
+	rsync ${release_url}/${tagname}.tar.*
+
+	test -n "${patchfile}" || {
+		return 0
+	}
+
+	echo "Upload ${patchfile}.* to '${patch_url}'"
+	ls -lart ${patchfile}.*
+	rsync -Pav --delay-updates ${patchfile}.* "${patch_url}/" || {
+		return 1
+	}
+	rsync ${patch_url}/${patchfile}.*
+
+	return 0
+}
+
+upload_release() {
+	check_args "${FUNCNAME}" "$#" "0" || return 1
+
+	test -n "${upload_fn}" || {
+		echo "upload_fn variable empty"
+		return 1
+	}
+
+	echo "Running ${upload_fn}"
+	${upload_fn}
+}
+
+announcement_samba_rc() {
 	check_args "${FUNCNAME}" "$#" "0" || return 1
 	require_tagname "${FUNCNAME}"
 
@@ -453,8 +614,6 @@ announce_samba_rc() {
 	}
 
 	local t=""
-	local utcdate=$(date --utc +"%d %B %Y")
-	local utctime=$(date --utc +"%Y%m%d-%H%M%S")
 	local version=$(echo "${tagname}" | sed -e 's!^samba-!!')
 	local href="#${version}"
 	local series=$(echo "${version}" | cut -d '.' -f1-2)
@@ -478,16 +637,17 @@ announce_samba_rc() {
 		;;
 	esac
 
+	CLEANUP_FILES="${CLEANUP_FILES} announce.${tagname}.to.txt"
 	{
 		echo "samba-announce@lists.samba.org, samba@lists.samba.org, samba-technical@lists.samba.org"
 	} > announce.${tagname}.to.txt
-	CLEANUP_FILES="${CLEANUP_FILES} announce.${tagname}.to.txt"
 
+	CLEANUP_FILES="${CLEANUP_FILES} announce.${tagname}.subject.txt"
 	{
 		echo "[Announce] Samba ${version} Available for Download"
 	} > announce.${tagname}.subject.txt
-	CLEANUP_FILES="${CLEANUP_FILES} announce.${tagname}.subject.txt"
 
+	CLEANUP_FILES="${CLEANUP_FILES} announce.${tagname}.mail.txt"
 	{
 		cat ${tagname}.WHATSNEW.txt
 		echo ""
@@ -511,27 +671,27 @@ announce_samba_rc() {
 		echo "                        --Enjoy"
 		echo "                        The Samba Team"
 	} > announce.${tagname}.mail.txt
-	CLEANUP_FILES="${CLEANUP_FILES} announce.${tagname}.mail.txt"
 
+	CLEANUP_FILES="${CLEANUP_FILES} announce.${tagname}.mutt-arguments.txt"
 	{
 		echo -n "-i announce.${tagname}.mail.txt "
 		echo -n "-s \"$(cat announce.${tagname}.subject.txt | xargs)\" "
 		echo -n "$(cat announce.${tagname}.to.txt | xargs)"
 	} > announce.${tagname}.mutt-arguments.txt
-	CLEANUP_FILES="${CLEANUP_FILES} announce.${tagname}.mutt-arguments.txt"
 
-	local headlinefile="${utctime}.${version}.headline.html"
+	local headlinefile="posted_news/@UTCTIME@.${version}.headline.html"
+	CLEANUP_FILES="${CLEANUP_FILES} announce.${tagname}.headline.html"
 	{
-		echo "<!-- BEGIN: posted_news/${headlinefile} -->"
-		echo "<li> ${utcdate} <a href=\"${href}\">Samba ${version} Available for Download</a></li>"
-		echo "<!-- END: posted_news/${headlinefile} -->"
-	} > ${headlinefile}
-	CLEANUP_FILES="${CLEANUP_FILES} ${headlinefile}"
+		echo "<!-- BEGIN: ${headlinefile} -->"
+		echo "<li> @UTCDATE@ <a href=\"${href}\">Samba ${version} Available for Download</a></li>"
+		echo "<!-- END: ${headlinefile} -->"
+	} > announce.${tagname}.headline.html
 
-	local bodyfile="${utctime}.${version}.body.html"
+	local bodyfile="posted_news/@UTCTIME@.${version}.body.html"
+	CLEANUP_FILES="${CLEANUP_FILES} announce.${tagname}.body.html"
 	{
-		echo "<!-- BEGIN: posted_news/${bodyfile} -->"
-		echo "<h5><a name=\"${version}\">${utcdate}</a></h5>"
+		echo "<!-- BEGIN: ${bodyfile} -->"
+		echo "<h5><a name=\"${version}\">@UTCDATE@</a></h5>"
 		echo "<p class="headline">Samba ${version} Available for Download</p>"
 		echo "<p>"
 		echo "This is the ${rcname} release candidate of the upcoming Samba ${series} release series."
@@ -541,33 +701,23 @@ announce_samba_rc() {
 		echo "The source code can be <a href=\"${download_url}${tagname}.tar.gz\">downloaded now</a>."
 		echo "See <a href=\"${download_url}${tagname}.WHATSNEW.txt\">the release notes for more info</a>."
 		echo "</p>"
-		echo "<!-- END: posted_news/${bodyfile} -->"
-		echo ""
-	} > ${bodyfile}
-	CLEANUP_FILES="${CLEANUP_FILES} ${bodyfile}"
+		echo "<!-- END: ${bodyfile} -->"
+	} > announce.${tagname}.body.html
 
+	CLEANUP_FILES="${CLEANUP_FILES} announce.${tagname}.todo.txt"
 	{
-		ls -lart announce.${tagname}.* ${headlinefile} ${bodyfile}
+		ls -lart announce.${tagname}.*
 		echo ""
 		echo "NOTICE:"
 		echo "You need to do the following manual steps in order"
 		echo "to finish the announcement of ${tagname}!"
 		echo ""
-		echo "Copy the following files into the posted_news/"
-		echo "subdirectory of the samba-web.git repository and commit them:"
-		echo "  ${headlinefile}"
-		echo "  ${bodyfile}"
-		echo ""
-		echo "  cp -a ${utctime}.${version}.*.html /path/to/samba-web/posted_news/"
-		echo "  pushd /path/to/samba-web"
-		echo "  git add posted_news/${utctime}.${version}.*.html"
-		echo "  git commit --signoff --message \"NEWS[${version}]: Samba ${version} Available for Download\""
-		echo "  git show -p --stat HEAD"
-		echo "  git push ..."
-		echo "  popd"
+		echo "Change to a samba-web checkout and run"
+		echo "  ./announce_samba_release.sh ${version} $(pwd)/announce.${tagname}.patch.txt"
 		echo ""
 		echo "Once the resulting commit is pushed a cron job will update "
-		echo "the content exported by the webserver every 5mins."
+		echo "the content exported by the webserver every 5-10 mins."
+		echo "Check https://www.samba.org"
 		echo ""
 		echo "If the web content is updated, you need to send the announce mail (gpg signed)."
 		echo "- announce.${tagname}.to.txt contains the mail's recipients for the To: header."
@@ -580,31 +730,35 @@ announce_samba_rc() {
 		echo "See: announce.${tagname}.todo.txt"
 		echo ""
 	} > announce.${tagname}.todo.txt
-	CLEANUP_FILES="${CLEANUP_FILES} announce.${tagname}.todo.txt"
 
-	cat announce.${tagname}.todo.txt
-
+	ls -lart announce.${tagname}.*
 	return 0
 }
 
-announce_samba_stable() {
+announcement_samba_stable() {
 	check_args "${FUNCNAME}" "$#" "0" || return 1
 	require_tagname "${FUNCNAME}"
+
+	load_samba_stable_versions
 
 	test -f "${tagname}.tar.gz" || {
 		echo "${tagname}.tar.gz does not exist"
 		return 1
 	}
 
+	test -f "announce.${tagname}.quotation.txt" || {
+		echo "announce.${tagname}.quotation.txt missing!"
+		return 1
+	}
+
+	local release_url="${download_url}samba/stable/"
+	local patch_url="${download_url}samba/patches/"
+
 	echo "extract WHATSNEW.txt"
 	tar xf ${tagname}.tar.gz --to-stdout ${tagname}/WHATSNEW.txt > ${TMPDIR}/WHATSNEW.txt
 
-	# TODO: up to '^Release notes for older releases follow:'
-	cp -a ${TMPDIR}/WHATSNEW.txt ${TMPDIR}/WHATSNEW.top
-
 	local t=""
-	local utcdate=$(date --utc +"%d %B %Y")
-	local utctime=$(date --utc +"%Y%m%d-%H%M%S")
+	local oldversion=$(echo "${oldtagname}" | sed -e 's!^samba-!!')
 	local version=$(echo "${tagname}" | sed -e 's!^samba-!!')
 	local href="#${version}"
 	local series=$(echo "${version}" | cut -d '.' -f1-2)
@@ -619,18 +773,32 @@ announce_samba_stable() {
 		;;
 	esac
 
+	CLEANUP_FILES="${CLEANUP_FILES} announce.${tagname}.to.txt"
 	{
 		echo "samba-announce@lists.samba.org, samba@lists.samba.org, samba-technical@lists.samba.org"
 	} > announce.${tagname}.to.txt
-	CLEANUP_FILES="${CLEANUP_FILES} announce.${tagname}.to.txt"
 
+	CLEANUP_FILES="${CLEANUP_FILES} announce.${tagname}.subject.txt"
 	{
 		echo "[Announce] Samba ${version} Available for Download"
 	} > announce.${tagname}.subject.txt
-	CLEANUP_FILES="${CLEANUP_FILES} announce.${tagname}.subject.txt"
 
+	CLEANUP_FILES="${CLEANUP_FILES} announce.${tagname}.mail.txt"
 	{
-		cat ${TMPDIR}/WHATSNEW.top
+		local top=$(cat ${TMPDIR}/WHATSNEW.txt | grep -n '^Release notes for older releases follow:' | head -1 | cut -d ':' -f1)
+		test -n "${top}" || {
+			top=$(cat ${TMPDIR}/WHATSNEW.txt | wc -l)
+		}
+		local skip=$(cat ${TMPDIR}/WHATSNEW.txt | grep -n '^[^ ]' | head -1 | cut -d ':' -f1)
+		local bottom=$(expr ${top} - \( ${skip} - 1 \))
+
+		cat "announce.${tagname}.quotation.txt"
+		echo ""
+		echo ""
+		echo "Release Announcements"
+		echo "---------------------"
+		echo ""
+		head -${top} ${TMPDIR}/WHATSNEW.txt | tail -${bottom}
 		echo ""
 		echo "================"
 		echo "Download Details"
@@ -640,7 +808,7 @@ announce_samba_stable() {
 		echo "using GnuPG (ID 6568B7EA).  The source code can be downloaded"
 		echo "from:"
 		echo ""
-		echo "        ${download_url}"
+		echo "        ${release_url}"
 		echo ""
 		echo "The release notes are available online at:"
 		echo ""
@@ -652,17 +820,18 @@ announce_samba_stable() {
 		echo "                        --Enjoy"
 		echo "                        The Samba Team"
 	} > announce.${tagname}.mail.txt
-	CLEANUP_FILES="${CLEANUP_FILES} announce.${tagname}.mail.txt"
 
+	CLEANUP_FILES="${CLEANUP_FILES} announce.${tagname}.mutt-arguments.txt"
 	{
 		echo -n "-i announce.${tagname}.mail.txt "
 		echo -n "-s \"$(cat announce.${tagname}.subject.txt | xargs)\" "
 		echo -n "$(cat announce.${tagname}.to.txt | xargs)"
 	} > announce.${tagname}.mutt-arguments.txt
-	CLEANUP_FILES="${CLEANUP_FILES} announce.${tagname}.mutt-arguments.txt"
 
+	local htmlfile="history/${tagname}.html"
+	CLEANUP_FILES="${CLEANUP_FILES} announce.${tagname}.html"
 	{
-		local tmp=$(cat ${TMPDIR}/WHATSNEW.top | grep -n '^Reporting bugs & Development Discussion' | head -1 | cut -d ':' -f1)
+		local tmp=$(cat ${TMPDIR}/WHATSNEW.txt | grep -n '^Reporting bugs & Development Discussion' | head -1 | cut -d ':' -f1)
 		local lines=$(expr ${tmp} - 2)
 
 		echo '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"'
@@ -677,13 +846,20 @@ announce_samba_stable() {
 		echo "<H2>Samba ${version} Available for Download</H2>"
 
 		echo "<p>"
-		echo "<a href=\"${download_url}${tagname}.tar.gz\">Samba ${version} (gzipped)</a><br>"
-		echo "<a href=\"${download_url}${tagname}.tar.asc\">Signature</a>"
+		echo "<a href=\"${release_url}${tagname}.tar.gz\">Samba ${version} (gzipped)</a><br>"
+		echo "<a href=\"${release_url}${tagname}.tar.asc\">Signature</a>"
 		echo "</p>"
+
+		test -n "${patchfile}" && {
+			echo "<p>"
+			echo "<a href=\"${patch_url}${patchfile}.gz\">Patch (gzipped) against Samba ${oldversion}</a><br>"
+			echo "<a href=\"${patch_url}${patchfile}.asc\">Signature</a>"
+			echo "</p>"
+		}
 
 		echo "<p>"
 		echo "<pre>"
-		head -${lines} ${TMPDIR}/WHATSNEW.top | sed \
+		head -${lines} ${TMPDIR}/WHATSNEW.txt | sed \
 			-e 's!&!\&amp;!g' | sed \
 			-e 's!<!\&lt;!g' \
 			-e 's!>!\&gt;!g' \
@@ -703,61 +879,90 @@ announce_samba_stable() {
 		echo "</body>"
 		echo "</html>"
 	} > announce.${tagname}.html
-	CLEANUP_FILES="${CLEANUP_FILES} announce.${tagname}.html"
 
-	local headlinefile="${utctime}.${version}.headline.html"
+	local headlinefile="posted_news/@UTCTIME@.${version}.headline.html"
+	CLEANUP_FILES="${CLEANUP_FILES} announce.${tagname}.headline.html"
 	{
-		echo "<!-- BEGIN: posted_news/${headlinefile} -->"
-		echo "<li> ${utcdate} <a href=\"${href}\">Samba ${version} Available for Download</a></li>"
-		echo "<!-- END: posted_news/${headlinefile} -->"
-	} > ${headlinefile}
-	CLEANUP_FILES="${CLEANUP_FILES} ${headlinefile}"
+		echo "<!-- BEGIN: ${headlinefile} -->"
+		echo "<li> @UTCDATE@ <a href=\"${href}\">Samba ${version} Available for Download</a></li>"
+		echo "<!-- END: ${headlinefile} -->"
+	} > announce.${tagname}.headline.html
 
-	local bodyfile="${utctime}.${version}.body.html"
+	local bodyfile="posted_news/@UTCTIME@.${version}.body.html"
+	CLEANUP_FILES="${CLEANUP_FILES} announce.${tagname}.body.html"
 	{
-		echo "<!-- BEGIN: posted_news/${bodyfile} -->"
-		echo "<h5><a name=\"${version}\">${utcdate}</a></h5>"
+		echo "<!-- BEGIN: ${bodyfile} -->"
+		echo "<h5><a name=\"${version}\">@UTCDATE@</a></h5>"
 		echo "<p class="headline">Samba ${version} Available for Download</p>"
 		echo "<p>"
 		echo "This is the ${releasename} stable release of the Samba ${series} release series."
 		echo "</p>"
 		echo "<p>"
 		echo "The uncompressed tarball has been signed using GnuPG (ID ${GPG_KEYID})."
-		echo "The source code can be <a href=\"${download_url}${tagname}.tar.gz\">downloaded now</a>."
-		#test -n "${patchfile}" && {
-		#	echo "A <a href=\"...\"> patch against Samba ${oldversion}</a> is also available."
-		#}
+		echo "The source code can be <a href=\"${release_url}${tagname}.tar.gz\">downloaded now</a>."
+		test -n "${patchfile}" && {
+			echo "A <a href=\"${patch_url}${patchfile}.gz\">patch against Samba ${oldversion}</a> is also available."
+		}
 		echo "See <a href=\"${history_url}${tagname}.html\">the release notes for more info</a>."
 		echo "</p>"
-		echo "<!-- END: posted_news/${bodyfile} -->"
-		echo ""
-	} > ${bodyfile}
-	CLEANUP_FILES="${CLEANUP_FILES} ${bodyfile}"
+		echo "<!-- END: ${bodyfile} -->"
+	} > announce.${tagname}.body.html
 
+	local webrepo="${TMPDIR}/webrepo"
+
+	mkdir "${webrepo}" || {
+		return 1
+	}
+	git -C "${webrepo}" init || {
+		return 1
+	}
+
+	mkdir -p "$(dirname ${webrepo}/${htmlfile})" || {
+		return 1
+	}
+	cp -a "announce.${tagname}.html" "${webrepo}/${htmlfile}" || {
+		return 1
+	}
+
+	mkdir -p "$(dirname ${webrepo}/${headlinefile})" || {
+		return 1
+	}
+	cp -a "announce.${tagname}.headline.html" "${webrepo}/${headlinefile}" || {
+		return 1
+	}
+
+	mkdir -p "$(dirname ${webrepo}/${bodyfile})" || {
+		return 1
+	}
+	cp -a "announce.${tagname}.body.html" "${webrepo}/${bodyfile}" || {
+		return 1
+	}
+
+	git -C "${webrepo}" add "${htmlfile}" "${headlinefile}" "${bodyfile}" || {
+		return 1
+	}
+	git -C "${webrepo}" commit --signoff --message "NEWS[${version}]: Samba ${version} Available for Download" || {
+		return 1
+	}
+	CLEANUP_FILES="${CLEANUP_FILES} announce.${tagname}.patch.txt"
+	git -C "${webrepo}" format-patch --stdout -1 HEAD > announce.${tagname}.patch.txt || {
+		return 1
+	}
+
+	CLEANUP_FILES="${CLEANUP_FILES} announce.${tagname}.todo.txt"
 	{
-		ls -lart announce.${tagname}.* ${headlinefile} ${bodyfile}
+		ls -lart announce.${tagname}.*
 		echo ""
 		echo "NOTICE:"
 		echo "You need to do the following manual steps in order"
 		echo "to finish the announcement of ${tagname}!"
 		echo ""
-		echo "Copy the following files into the posted_news/"
-		echo "subdirectory of the samba-web.git repository and commit them:"
-		echo "  ${headlinefile}"
-		echo "  ${bodyfile}"
-		echo ""
-		echo "  cp -a ${utctime}.${version}.*.html /path/to/samba-web/posted_news/"
-		echo "  cp -a announce.${tagname}.html /path/to/samba-web/history/${tagname}.html"
-		echo "  pushd /path/to/samba-web"
-		echo "  git add posted_news/${utctime}.${version}.*.html"
-		echo "  git add history/${tagname}.html"
-		echo "  git commit --signoff --message \"NEWS[${version}]: Samba ${version} Available for Download\""
-		echo "  git show -p --stat HEAD"
-		echo "  git push ..."
-		echo "  popd"
+		echo "Change to a samba-web checkout and run"
+		echo "  ./announce_samba_release.sh ${version} $(pwd)/announce.${tagname}.patch.txt"
 		echo ""
 		echo "Once the resulting commit is pushed a cron job will update "
-		echo "the content exported by the webserver every 5mins."
+		echo "the content exported by the webserver every 5-10 mins."
+		echo "Check https://www.samba.org"
 		echo ""
 		echo "If the web content is updated, you need to send the announce mail (gpg signed)."
 		echo "- announce.${tagname}.to.txt contains the mail's recipients for the To: header."
@@ -770,23 +975,34 @@ announce_samba_stable() {
 		echo "See: announce.${tagname}.todo.txt"
 		echo ""
 	} > announce.${tagname}.todo.txt
-	CLEANUP_FILES="${CLEANUP_FILES} announce.${tagname}.todo.txt"
 
-	cat announce.${tagname}.todo.txt
-
+	ls -lart announce.${tagname}.*
 	return 0
+}
+
+announcement_release() {
+	check_args "${FUNCNAME}" "$#" "0" || return 1
+
+	test -n "${announcement_fn}" || {
+		echo "announcement_fn variable empty"
+		return 1
+	}
+
+	echo "Running ${announcement_fn}"
+	${announcement_fn}
 }
 
 announce_release() {
 	check_args "${FUNCNAME}" "$#" "0" || return 1
+	require_tagname "${FUNCNAME}"
 
-	test -n "${announce_fn}" || {
-		echo "announce_fn variable empty"
+	test -f "announce.${tagname}.todo.txt" || {
+		echo "announce.${tagname}.todo.txt does not exist"
 		return 1
 	}
 
-	echo "Running ${announce_fn}"
-	${announce_fn}
+	cat announce.${tagname}.todo.txt
+	return 0
 }
 
 case "${product}" in
@@ -806,6 +1022,7 @@ talloc | tdb | tevent | ldb)
 	download_url="${CONF_DOWNLOAD_URL}/${product}/"
 
 	check_fn="check_nopatch"
+	upload_fn="upload_nopatch"
 	fullcmds="create check push upload"
 	;;
 samba-rc)
@@ -825,8 +1042,9 @@ samba-rc)
 
 	verify_fn="verify_samba_rc"
 	check_fn="check_nopatch"
-	announce_fn="announce_samba_rc"
-	fullcmds="verify create check whatsnew push upload announce"
+	upload_fn="upload_nopatch"
+	announcement_fn="announcement_samba_rc"
+	fullcmds="verify create check whatsnew announcement push upload announce"
 	;;
 samba-stable)
 	test -z "${GPG_USER-}" && {
@@ -840,14 +1058,15 @@ samba-stable)
 	productbase="samba"
 	srcdir="."
 	repo_url="${CONF_REPO_URL}"
-	upload_url="${CONF_UPLOAD_URL}/samba/stable/"
-	download_url="${CONF_DOWNLOAD_URL}/samba/stable/"
+	upload_url="${CONF_UPLOAD_URL}/"
+	download_url="${CONF_DOWNLOAD_URL}/"
 	history_url="${CONF_HISTORY_URL}/samba/history/"
 
 	verify_fn="verify_samba_stable"
-	check_fn="check_withpatch"
-	announce_fn="announce_samba_stable"
-	fullcmds="verify create patch check push upload announce"
+	check_fn="check_samba_stable"
+	upload_fn="upload_samba_stable"
+	announcement_fn="announcement_samba_stable"
+	fullcmds="verify create patch check announcement push upload announce"
 	;;
 TODO-samba-security)
 	test -z "${GPG_USER-}" && {
@@ -861,13 +1080,15 @@ TODO-samba-security)
 	productbase="samba"
 	srcdir="."
 	repo_url="${CONF_REPO_URL}"
-	upload_url="${CONF_UPLOAD_URL}/samba/stable/"
-	download_url="${CONF_DOWNLOAD_URL}/samba/stable/"
+	upload_url="${CONF_UPLOAD_URL}/"
+	download_url="${CONF_DOWNLOAD_URL}/"
+	history_url="${CONF_HISTORY_URL}/samba/history/"
 
 	verify_fn="verify_samba_stable"
-	check_fn="check_withpatch"
-	announce_fn="announce_samba_security"
-	fullcmds="verify create patch check"
+	check_fn="check_samba_stable"
+	upload_fn="upload_samba_stable"
+	announcement_fn="announcement_samba_security"
+	fullcmds="verify create patch check announcement"
 	next_cmd="push"
 	;;
 *)
@@ -946,6 +1167,9 @@ create)
 		cmds="${cmds} patch"
 	}
 	cmds="${cmds} check"
+	cmd_allowed "announcement" ${fullcmds} && {
+		cmds="${cmds} announcement"
+	}
 	next_cmd="push"
 	;;
 push)
@@ -958,9 +1182,6 @@ upload)
 	check_args "${globalcmd}" "$#" "1" || exit 1
 	tagname="$1"
 	cmds="check upload"
-	cmd_allowed "symlinks" ${fullcmds} && {
-		cmds="${cmds} symlinks"
-	}
 	cmd_allowed "announce" ${fullcmds} && {
 		next_cmd="announce"
 	}
