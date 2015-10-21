@@ -294,6 +294,7 @@ static NTSTATUS authsam_password_check_and_record(struct auth4_context *auth_con
 		struct samr_Password *nt_history_pwd = NULL;
 		struct samr_Password *lm_history_pwd = NULL;
 		NTTIME pwdLastSet;
+		struct timeval tv_now;
 		NTTIME now;
 		int allowed_period_mins;
 		NTTIME allowed_period;
@@ -414,7 +415,8 @@ static NTSTATUS authsam_password_check_and_record(struct auth4_context *auth_con
 		 */
 		allowed_period = allowed_period_mins * 60 * 1000*1000*10;
 		pwdLastSet = samdb_result_nttime(msg, "pwdLastSet", 0);
-		unix_to_nt_time(&now, time(NULL));
+		tv_now = timeval_current();
+		now = timeval_to_nttime(&tv_now);
 
 		if (now < pwdLastSet) {
 			/*
