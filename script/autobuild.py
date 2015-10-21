@@ -680,6 +680,24 @@ blist.tarlogs("logs.tar.gz")
 if options.email is not None:
     email_failure(status, failed_task, failed_stage, failed_tag, errstr,
                   elapsed_time, log_base=options.log_base)
+else:
+    elapsed_minutes = elapsed_time / 60.0
+    print '''
+
+####################################################################
+
+AUTOBUILD FAILURE
+
+Your autobuild on %s failed after %.1f minutes
+when trying to test %s with the following error:
+
+   %s
+
+the autobuild has been abandoned. Please fix the error and resubmit.
+
+####################################################################
+
+''' % (platform.node(), elapsed_minutes, failed_task, errstr)
 
 cleanup()
 print(errstr)
