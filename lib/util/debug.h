@@ -204,6 +204,14 @@ extern int  *DEBUGLEVEL_CLASS;
 #define DEBUGSEP(level)\
 	DEBUG((level),("===============================================================\n"))
 
+/* Prefix messages with the function name */
+#define DBG_PREFIX(level, body ) \
+	(void)( ((level) <= MAX_DEBUG_LEVEL) &&			\
+		unlikely(DEBUGLEVEL_CLASS[ DBGC_CLASS ] >= (level))	\
+		&& (dbghdrclass(level, DBGC_CLASS, __location__, __func__ )) \
+		&& (dbgtext("%s: ", __func__))				\
+		&& (dbgtext body) )
+
 /*
  * Debug levels matching RFC 3164
  */
@@ -213,11 +221,11 @@ extern int  *DEBUGLEVEL_CLASS;
 #define DBGLVL_INFO	 5	/* informational message */
 #define DBGLVL_DEBUG	10	/* debug-level message */
 
-#define DBG_ERR(...)		DEBUG(DBGLVL_ERR,	(__VA_ARGS__))
-#define DBG_WARNING(...)	DEBUG(DBGLVL_WARNING,	(__VA_ARGS__))
-#define DBG_NOTICE(...)	DEBUG(DBGLVL_NOTICE,	(__VA_ARGS__))
-#define DBG_INFO(...)		DEBUG(DBGLVL_INFO,	(__VA_ARGS__))
-#define DBG_DEBUG(...)		DEBUG(DBGLVL_DEBUG,	(__VA_ARGS__))
+#define DBG_ERR(...)		DBG_PREFIX(DBGLVL_ERR,		(__VA_ARGS__))
+#define DBG_WARNING(...)	DBG_PREFIX(DBGLVL_WARNING,	(__VA_ARGS__))
+#define DBG_NOTICE(...)	DBG_PREFIX(DBGLVL_NOTICE,	(__VA_ARGS__))
+#define DBG_INFO(...)		DBG_PREFIX(DBGLVL_INFO,	(__VA_ARGS__))
+#define DBG_DEBUG(...)		DBG_PREFIX(DBGLVL_DEBUG,	(__VA_ARGS__))
 
 /* The following definitions come from lib/debug.c  */
 
