@@ -2114,8 +2114,6 @@ static struct tevent_req *tstream_bsd_connect_send(TALLOC_CTX *mem_ctx,
 		talloc_get_type_abort(remote->private_data,
 		struct tsocket_address_bsd);
 	int ret;
-	int err;
-	bool retry;
 	bool do_bind = false;
 	bool do_reuseaddr = false;
 	bool do_ipv6only = false;
@@ -2256,12 +2254,11 @@ static struct tevent_req *tstream_bsd_connect_send(TALLOC_CTX *mem_ctx,
 	}
 
 	ret = connect(state->fd, &rbsda->u.sa, rbsda->sa_socklen);
-	err = tsocket_bsd_error_from_errno(ret, errno, &retry);
-	if (retry) {
-		/* retry later */
-		goto async;
-	}
-	if (tevent_req_error(req, err)) {
+	if (ret == -1) {
+		if (errno == EINPROGRESS) {
+			goto async;
+		}
+		tevent_req_error(req, errno);
 		goto post;
 	}
 
