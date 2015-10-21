@@ -738,7 +738,7 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 			len = spnego_read_data(gensec_security, in, &spnego);
 			if (len == -1) {
 				return gensec_spnego_server_try_fallback(gensec_security, spnego_state,
-									 out_mem_ctx, ev, in, out);
+									 ev, out_mem_ctx, in, out);
 			}
 			/* client sent NegTargetInit, we send NegTokenTarg */
 
