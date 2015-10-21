@@ -163,9 +163,6 @@ start()
 
     # About to start new $ctdbd.  The main daemon is not running but
     # there may still be other processes around, so do some cleanup.
-    # Note that starting ctdbd below will destroy the Unix domain
-    # socket, so any processes that aren't yet completely useless soon
-    # will be, so this can really do no harm.
     kill_ctdbd "$_session"
 
     build_ctdb_options
