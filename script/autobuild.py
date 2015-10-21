@@ -26,6 +26,7 @@ builddirs = {
     "samba-xc" : ".",
     "samba-ctdb" : ".",
     "samba-libs"  : ".",
+    "samba-static"  : ".",
     "ldb"     : "lib/ldb",
     "tdb"     : "lib/tdb",
     "talloc"  : "lib/talloc",
@@ -37,7 +38,7 @@ builddirs = {
     "retry"   : "."
     }
 
-defaulttasks = [ "ctdb", "samba", "samba-xc", "samba-ctdb", "samba-libs", "ldb", "tdb", "talloc", "replace", "tevent", "pidl" ]
+defaulttasks = [ "ctdb", "samba", "samba-xc", "samba-ctdb", "samba-libs", "samba-static", "ldb", "tdb", "talloc", "replace", "tevent", "pidl" ]
 
 samba_configure_params = " --picky-developer ${PREFIX} --with-profiling-data"
 
@@ -120,21 +121,22 @@ tasks = {
                       # retry with all modules shared
                       ("allshared-distclean", "make distclean", "text/plain"),
                       ("allshared-configure", samba_libs_configure_samba + " --with-shared-modules=ALL", "text/plain"),
-                      ("allshared-make", "make", "text/plain"),
+                      ("allshared-make", "make", "text/plain")],
 
-                      # retry with all modules static
-                      ("allstatic-distclean", "make distclean", "text/plain"),
-                      ("allstatic-configure", samba_libs_configure_samba + " --with-static-modules=ALL", "text/plain"),
+    "samba-static" : [
+                      ("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
+                      # build with all modules static
+                      ("allstatic-configure", "./configure.developer " + samba_configure_params + " --with-static-modules=ALL", "text/plain"),
                       ("allstatic-make", "make", "text/plain"),
 
                       # retry without any required modules
                       ("none-distclean", "make distclean", "text/plain"),
-                      ("none-configure", samba_libs_configure_samba + " --with-static-modules=!FORCED,!DEFAULT --with-shared-modules=!FORCED,!DEFAULT", "text/plain"),
+                      ("none-configure", "./configure.developer " + samba_configure_params + " --with-static-modules=!FORCED,!DEFAULT --with-shared-modules=!FORCED,!DEFAULT", "text/plain"),
                       ("none-make", "make", "text/plain"),
 
                       # retry with nonshared smbd and smbtorture
                       ("nonshared-distclean", "make distclean", "text/plain"),
-                      ("nonshared-configure", samba_libs_configure_base + " --bundled-libraries=talloc,tdb,pytdb,ldb,pyldb,tevent,pytevent --with-static-modules=ALL --nonshared-binary=smbtorture,smbd/smbd", "text/plain"),
+                      ("nonshared-configure", "./configure.developer " + samba_configure_params + " --bundled-libraries=talloc,tdb,pytdb,ldb,pyldb,tevent,pytevent --with-static-modules=ALL --nonshared-binary=smbtorture,smbd/smbd", "text/plain"),
                       ("nonshared-make", "make", "text/plain")],
 
     "ldb" : [
