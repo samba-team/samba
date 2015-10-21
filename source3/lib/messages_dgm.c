@@ -88,6 +88,26 @@ static int messaging_dgm_lockfile_create(struct messaging_dgm_context *ctx,
 
 	lockfile_fd = open(lockfile_name.buf, O_NONBLOCK|O_CREAT|O_RDWR,
 			   0644);
+
+        if ((lockfile_fd == -1) &&
+	    ((errno == ENXIO) /* Linux */ ||
+	     (errno == ENODEV) /* Linux kernel bug */ ||
+	     (errno == EOPNOTSUPP) /* FreeBSD */)) {
+		/*
+                 * Huh -- a socket? This might be a stale socket from
+                 * an upgrade of Samba. Just unlink and retry, nobody
+                 * else is supposed to be here at this time.
+                 *
+                 * Yes, this is racy, but I don't see a way to deal
+                 * with this properly.
+                 */
+		unlink(lockfile_name.buf);
+
+		lockfile_fd = open(lockfile_name.buf,
+				   O_NONBLOCK|O_CREAT|O_WRONLY,
+				   0644);
+	}
+
 	if (lockfile_fd == -1) {
 		ret = errno;
 		DEBUG(1, ("%s: open failed: %s\n", __func__, strerror(errno)));
