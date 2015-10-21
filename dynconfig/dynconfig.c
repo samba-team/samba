@@ -18,8 +18,6 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
-
 /**
  * @file dynconfig.c
  *
@@ -40,10 +38,9 @@
  * table?  There's kind of a chicken-and-egg situation there...
  **/
 
+#include "replace.h"
 #include "dynconfig.h"
-#ifdef strdup
-#undef strdup
-#endif
+#include "lib/util/memory.h"
 
 #define DEFINE_DYN_CONFIG_PARAM(name) \
 const char *dyn_##name = name; \
