@@ -417,15 +417,21 @@ The only exception is the test code that depends repeated use of calls
 like CHECK_STATUS, CHECK_VAL and others.
 
 
-Function names in DEBUG statements
-----------------------------------
+DEBUG statements
+----------------
 
-Many DEBUG statements contain the name of the function they appear in. This is
-not a good idea, as this is prone to bitrot. Function names change, code
-moves, but the DEBUG statements are not adapted. Use %s and __func__ for this:
+Use these following macros instead of DEBUG:
 
-Bad Example:
-	DEBUG(0, ("strstr_m: src malloc fail\n"));
+DBG_ERR	log level 0		error conditions
+DBG_WARNING	log level 1		warning conditions
+DBG_NOTICE	log level 3		normal, but significant, condition
+DBG_INFO	log level 5		informational message
+DBG_DEBUG	log level 10		debug-level message
 
-Good Example:
-	DEBUG(0, ("%s: src malloc fail\n", __func__));
+Example usage:
+
+DBG_ERR("Memory allocation failed\n");
+DBG_DEBUG("Received %d bytes\n", count);
+
+The messages from these macros are automatically prefixed with the
+function name.
