@@ -295,8 +295,7 @@ static void dbwrap_watch_record_stored_fn(TDB_DATA key, TDB_DATA data,
 	size_t i, num_ids;
 
 	if ((data.dsize % sizeof(struct server_id)) != 0) {
-		DBG_WARNING("%s: Invalid data size: %zu\n", __func__,
-			    data.dsize);
+		DBG_WARNING("Invalid data size: %zu\n", data.dsize);
 		return;
 	}
 	num_ids = data.dsize / sizeof(struct server_id);
@@ -312,8 +311,8 @@ static void dbwrap_watch_record_stored_fn(TDB_DATA key, TDB_DATA data,
 					    key.dptr, key.dsize);
 		if (!NT_STATUS_IS_OK(status)) {
 			struct server_id_buf tmp;
-			DBG_WARNING("%s: messaging_send to %s failed: %s\n",
-				    __func__, server_id_str_buf(dst, &tmp),
+			DBG_WARNING("messaging_send to %s failed: %s\n",
+				    server_id_str_buf(dst, &tmp),
 				    nt_errstr(status));
 		}
 	}
@@ -346,8 +345,8 @@ static void dbwrap_watch_record_stored(struct db_context *db,
 		return;
 	}
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_WARNING("%s: dbwrap_parse_record failed: %s\n",
-			    __func__, nt_errstr(status));
+		DBG_WARNING("dbwrap_parse_record failed: %s\n",
+			    nt_errstr(status));
 	}
 }
 

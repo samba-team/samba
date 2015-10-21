@@ -1967,8 +1967,8 @@ struct server_id pid_to_procid(pid_t pid)
 
 	ret = messaging_dgm_get_unique(pid, &unique);
 	if (ret != 0) {
-		DBG_WARNING("%s: messaging_dgm_get_unique failed: %s\n",
-			    __func__, strerror(ret));
+		DBG_WARNING("messaging_dgm_get_unique failed: %s\n",
+			    strerror(ret));
 	}
 
 	return (struct server_id) {

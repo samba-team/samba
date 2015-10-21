@@ -1664,7 +1664,7 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 		fd = tdb_fd(db_ctdb->wtdb->tdb);
 		ret = fchmod(fd, mode);
 		if (ret == -1) {
-			DBG_WARNING("%s: fchmod failed: %s\n", __func__,
+			DBG_WARNING("fchmod failed: %s\n",
 				    strerror(errno));
 			TALLOC_FREE(result);
 			return NULL;

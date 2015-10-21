@@ -431,7 +431,7 @@ static int ctdbd_init_connection(TALLOC_CTX *mem_ctx,
 
 	conn->sockname = talloc_strdup(conn, sockname);
 	if (conn->sockname == NULL) {
-		DBG_ERR("%s: talloc failed\n", __func__);
+		DBG_ERR("talloc failed\n");
 		ret = ENOMEM;
 		goto fail;
 	}
