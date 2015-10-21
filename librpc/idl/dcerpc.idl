@@ -114,7 +114,7 @@ interface dcerpc
 		[flag(NDR_REMAINING)] DATA_BLOB auth_info;
 	} dcerpc_bind_ack;
 
-	typedef [enum16bit] enum {
+	typedef [public,enum16bit] enum {
 		DCERPC_BIND_NAK_REASON_NOT_SPECIFIED                  = 0,
 		DCERPC_BIND_NAK_REASON_TEMPORARY_CONGESTION           = 1,
 		DCERPC_BIND_NAK_REASON_LOCAL_LIMIT_EXCEEDED           = 2,
@@ -128,12 +128,12 @@ interface dcerpc
 	const int DCERPC_BIND_REASON_INVALID_AUTH_TYPE =
 		DCERPC_BIND_NAK_REASON_INVALID_AUTH_TYPE;
 
-	typedef struct {
+	typedef [public] struct {
 		uint8 rpc_vers;         /* RPC version */
 		uint8 rpc_vers_minor;   /* Minor version */
 	} dcerpc_bind_nak_version;
 
-	typedef struct {
+	typedef [public,nopull] struct {
 		dcerpc_bind_nak_reason reject_reason;
 		uint8 num_versions;
 		dcerpc_bind_nak_version versions[num_versions];
