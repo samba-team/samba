@@ -18,7 +18,9 @@
 """Blackbox tests for samba-tool drs."""
 
 import samba.tests
-
+import shutil
+import os
+import ldb
 
 class SambaToolDrsTests(samba.tests.BlackboxTestCase):
     """Blackbox test case for samba-tool drs."""
@@ -33,10 +35,10 @@ class SambaToolDrsTests(samba.tests.BlackboxTestCase):
         self.cmdline_creds = "-U%s/%s%%%s" % (creds.get_domain(),
                                               creds.get_username(), creds.get_password())
 
-    def _get_rootDSE(self, dc):
+    def _get_rootDSE(self, dc, ldap_only=True):
         samdb = samba.tests.connect_samdb(dc, lp=self.get_loadparm(),
                                           credentials=self.get_credentials(),
-                                          ldap_only=True)
+                                          ldap_only=ldap_only)
         return samdb.search(base="", scope=samba.tests.ldb.SCOPE_BASE)[0]
 
     def test_samba_tool_bind(self):
@@ -100,3 +102,162 @@ class SambaToolDrsTests(samba.tests.BlackboxTestCase):
                                                                           self.cmdline_creds))
         self.assertTrue("Replicate from" in out)
         self.assertTrue("was successful" in out)
+
+    def test_samba_tool_drs_clone_dc(self):
+        """Tests 'samba-tool drs clone-dc-database' command."""
+        server_rootdse = self._get_rootDSE(self.dc1)
+        server_nc_name = server_rootdse["defaultNamingContext"]
+        server_ds_name = server_rootdse["dsServiceName"]
+        server_ldap_service_name = str(server_rootdse["ldapServiceName"][0])
+        server_realm = server_ldap_service_name.split(":")[0]
+        creds = self.get_credentials()
+        out = self.check_output("samba-tool drs clone-dc-database %s --server=%s %s --targetdir=%s"
+                                % (server_realm,
+                                   self.dc1,
+                                   self.cmdline_creds,
+                                   self.tempdir))
+        ldb_rootdse = self._get_rootDSE("tdb://" + os.path.join(self.tempdir, "private", "sam.ldb"), ldap_only=False)
+        nc_name = ldb_rootdse["defaultNamingContext"]
+        ds_name = ldb_rootdse["dsServiceName"]
+        ldap_service_name = str(server_rootdse["ldapServiceName"][0])
+        self.assertEqual(nc_name, server_nc_name)
+        # The clone should pretend to be the source server
+        self.assertEqual(ds_name, server_ds_name)
+        self.assertEqual(ldap_service_name, server_ldap_service_name)
+
+        samdb = samba.tests.connect_samdb("tdb://" + os.path.join(self.tempdir, "private", "sam.ldb"),
+                                          ldap_only=False, lp=self.get_loadparm())
+        def get_krbtgt_pw():
+            krbtgt_pw = samdb.searchone("unicodePwd", "cn=krbtgt,CN=users,%s" % nc_name)
+        self.assertRaises(KeyError, get_krbtgt_pw)
+
+        server_dn = samdb.searchone("serverReferenceBL", "cn=%s,ou=domain controllers,%s" % (self.dc2, server_nc_name))
+        ntds_guid = samdb.searchone("objectGUID", "cn=ntds settings,%s" % server_dn)
+
+        res = samdb.search(base=str(server_nc_name),
+                           expression="(&(objectclass=user)(cn=dns-%s))" % (self.dc2),
+                           attrs=[], scope=ldb.SCOPE_SUBTREE)
+        if len(res) == 1:
+            dns_obj = res[0]
+        else:
+            dns_obj = None
+
+        # While we have this cloned, try demoting the other server on the clone, by GUID
+        out = self.check_output("samba-tool domain demote --remove-other-dead-server=%s -H %s/private/sam.ldb"
+                                % (ntds_guid,
+                                   self.tempdir))
+
+        # Check some of the objects that should have been removed
+        def check_machine_obj():
+            samdb.searchone("CN", "cn=%s,ou=domain controllers,%s" % (self.dc2, server_nc_name))
+        self.assertRaises(ldb.LdbError, check_machine_obj)
+
+        def check_server_obj():
+            samdb.searchone("CN", server_dn)
+        self.assertRaises(ldb.LdbError, check_server_obj)
+
+        def check_ntds_guid():
+            samdb.searchone("CN", "<GUID=%s>" % ntds_guid)
+        self.assertRaises(ldb.LdbError, check_ntds_guid)
+
+        if dns_obj is not None:
+            # Check some of the objects that should have been removed
+            def check_dns_account_obj():
+                samdb.search(base=dns_obj.dn, scope=ldb.SCOPE_BASE,
+                             attrs=[])
+            self.assertRaises(ldb.LdbError, check_dns_account_obj)
+
+        shutil.rmtree(os.path.join(self.tempdir, "private"))
+        shutil.rmtree(os.path.join(self.tempdir, "etc"))
+        shutil.rmtree(os.path.join(self.tempdir, "msg.lock"))
+        shutil.rmtree(os.path.join(self.tempdir, "state"))
+
+    def test_samba_tool_drs_clone_dc_secrets(self):
+        """Tests 'samba-tool drs clone-dc-database --include-secrets' command ."""
+        server_rootdse = self._get_rootDSE(self.dc1)
+        server_nc_name = server_rootdse["defaultNamingContext"]
+        server_ds_name = server_rootdse["dsServiceName"]
+        server_ldap_service_name = str(server_rootdse["ldapServiceName"][0])
+        server_realm = server_ldap_service_name.split(":")[0]
+        creds = self.get_credentials()
+        out = self.check_output("samba-tool drs clone-dc-database %s --server=%s %s --targetdir=%s --include-secrets"
+                                % (server_realm,
+                                   self.dc1,
+                                   self.cmdline_creds,
+                                   self.tempdir))
+        ldb_rootdse = self._get_rootDSE("tdb://" + os.path.join(self.tempdir, "private", "sam.ldb"), ldap_only=False)
+        nc_name = ldb_rootdse["defaultNamingContext"]
+        config_nc_name = ldb_rootdse["configurationNamingContext"]
+        ds_name = ldb_rootdse["dsServiceName"]
+        ldap_service_name = str(server_rootdse["ldapServiceName"][0])
+
+        samdb = samba.tests.connect_samdb("tdb://" + os.path.join(self.tempdir, "private", "sam.ldb"),
+                                          ldap_only=False, lp=self.get_loadparm())
+        krbtgt_pw = samdb.searchone("unicodePwd", "cn=krbtgt,CN=users,%s" % nc_name)
+        self.assertIsNotNone(krbtgt_pw)
+
+        self.assertEqual(nc_name, server_nc_name)
+        # The clone should pretend to be the source server
+        self.assertEqual(ds_name, server_ds_name)
+        self.assertEqual(ldap_service_name, server_ldap_service_name)
+
+        server_dn = samdb.searchone("serverReferenceBL", "cn=%s,ou=domain controllers,%s" % (self.dc2, server_nc_name))
+        ntds_guid = samdb.searchone("objectGUID", "cn=ntds settings,%s" % server_dn)
+
+        res = samdb.search(base=str(server_nc_name),
+                           expression="(&(objectclass=user)(cn=dns-%s))" % (self.dc2),
+                           attrs=[], scope=ldb.SCOPE_SUBTREE)
+        if len(res) == 1:
+            dns_obj = res[0]
+        else:
+            dns_obj = None
+
+        def demote_self():
+            # While we have this cloned, try demoting the other server on the clone
+            out = self.check_output("samba-tool domain demote --remove-other-dead-server=%s -H %s/private/sam.ldb"
+                                % (self.dc1,
+                                   self.tempdir))
+        self.assertRaises(samba.tests.BlackboxProcessError, demote_self)
+
+        # While we have this cloned, try demoting the other server on the clone
+        out = self.check_output("samba-tool domain demote --remove-other-dead-server=%s -H %s/private/sam.ldb"
+                                % (self.dc2,
+                                   self.tempdir))
+
+        # Check some of the objects that should have been removed
+        def check_machine_obj():
+            samdb.searchone("CN", "cn=%s,ou=domain controllers,%s" % (self.dc2, server_nc_name))
+        self.assertRaises(ldb.LdbError, check_machine_obj)
+
+        def check_server_obj():
+            samdb.searchone("CN", server_dn)
+        self.assertRaises(ldb.LdbError, check_server_obj)
+
+        def check_ntds_guid():
+            samdb.searchone("CN", "<GUID=%s>" % ntds_guid)
+        self.assertRaises(ldb.LdbError, check_ntds_guid)
+
+        if dns_obj is not None:
+            # Check some of the objects that should have been removed
+            def check_dns_account_obj():
+                samdb.search(base=dns_obj.dn, scope=ldb.SCOPE_BASE,
+                             attrs=[])
+            self.assertRaises(ldb.LdbError, check_dns_account_obj)
+
+        shutil.rmtree(os.path.join(self.tempdir, "private"))
+        shutil.rmtree(os.path.join(self.tempdir, "etc"))
+        shutil.rmtree(os.path.join(self.tempdir, "msg.lock"))
+        shutil.rmtree(os.path.join(self.tempdir, "state"))
+
+    def test_samba_tool_drs_clone_dc_secrets_without_targetdir(self):
+        """Tests 'samba-tool drs clone-dc-database' command without --targetdir."""
+        server_rootdse = self._get_rootDSE(self.dc1)
+        server_ldap_service_name = str(server_rootdse["ldapServiceName"][0])
+        server_realm = server_ldap_service_name.split(":")[0]
+        creds = self.get_credentials()
+        def attempt_clone():
+            out = self.check_output("samba-tool drs clone-dc-database %s --server=%s %s"
+                                    % (server_realm,
+                                       self.dc1,
+                                       self.cmdline_creds))
+        self.assertRaises(samba.tests.BlackboxProcessError, attempt_clone)

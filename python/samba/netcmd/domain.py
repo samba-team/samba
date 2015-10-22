@@ -5,7 +5,7 @@
 # Copyright Jelmer Vernooij 2007-2012
 # Copyright Giampaolo Lauria 2011
 # Copyright Matthieu Patou <mat@matws.net> 2011
-# Copyright Andrew Bartlett 2008
+# Copyright Andrew Bartlett 2008-2015
 # Copyright Stefan Metzmacher 2012
 #
 # This program is free software; you can redistribute it and/or modify
@@ -44,6 +44,7 @@ from samba.dcerpc import lsa
 from samba.dcerpc import netlogon
 from samba.dcerpc import security
 from samba.dcerpc import nbt
+from samba.dcerpc import misc
 from samba.dcerpc.samr import DOMAIN_PASSWORD_COMPLEX, DOMAIN_PASSWORD_STORE_CLEARTEXT
 from samba.netcmd import (
     Command,
@@ -58,7 +59,7 @@ from samba.upgrade import upgrade_from_samba3
 from samba.drs_utils import (
                             sendDsReplicaSync, drsuapi_connect, drsException,
                             sendRemoveDsServer)
-
+from samba import remove_dc
 
 from samba.dsdb import (
     DS_DOMAIN_FUNCTION_2000,
@@ -648,8 +649,12 @@ class cmd_domain_demote(Command):
     synopsis = "%prog [options]"
 
     takes_options = [
-        Option("--server", help="DC to force replication before demote", type=str),
-        Option("--targetdir", help="where provision is stored", type=str),
+        Option("--server", help="writable DC to write demotion changes on", type=str),
+        Option("-H", "--URL", help="LDB URL for database or target server", type=str,
+               metavar="URL", dest="H"),
+        Option("--remove-other-dead-server", help="Dead DC (name or NTDS GUID) to remove ALL references to (rather than this DC)", type=str),
+        Option("--quiet", help="Be quiet", action="store_true"),
+        Option("--verbose", help="Be verbose", action="store_true"),
         ]
 
     takes_optiongroups = {
@@ -659,13 +664,36 @@ class cmd_domain_demote(Command):
         }
 
     def run(self, sambaopts=None, credopts=None,
-            versionopts=None, server=None, targetdir=None):
+            versionopts=None, server=None,
+            remove_other_dead_server=None, H=None,
+            verbose=False, quiet=False):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
         net = Net(creds, lp, server=credopts.ipaddress)
 
+        logger = self.get_logger()
+        if verbose:
+            logger.setLevel(logging.DEBUG)
+        elif quiet:
+            logger.setLevel(logging.WARNING)
+        else:
+            logger.setLevel(logging.INFO)
+
+        if remove_other_dead_server is not None:
+            if server is not None:
+                samdb = SamDB(url="ldap://%s" % server,
+                              session_info=system_session(),
+                              credentials=creds, lp=lp)
+            else:
+                samdb = SamDB(url=H, session_info=system_session(), credentials=creds, lp=lp)
+            try:
+                remove_dc.remove_dc(samdb, logger, remove_other_dead_server)
+            except remove_dc.demoteException as err:
+                raise CommandError("Demote failed: %s" % err)
+            return
+
         netbios_name = lp.get("netbios name")
-        samdb = SamDB(session_info=system_session(), credentials=creds, lp=lp)
+        samdb = SamDB(url=H, session_info=system_session(), credentials=creds, lp=lp)
         if not server:
             res = samdb.search(expression='(&(objectClass=computer)(serverReferenceBL=*))', attrs=["dnsHostName", "name"])
             if (len(res) == 0):
@@ -702,37 +730,48 @@ class cmd_domain_demote(Command):
 
         self.errf.write("Deactivating inbound replication\n")
 
-        nmsg = ldb.Message()
-        nmsg.dn = msg[0].dn
-
-        dsa_options |= DS_NTDSDSA_OPT_DISABLE_INBOUND_REPL
-        nmsg["options"] = ldb.MessageElement(str(dsa_options), ldb.FLAG_MOD_REPLACE, "options")
-        samdb.modify(nmsg)
-
         if not (dsa_options & DS_NTDSDSA_OPT_DISABLE_OUTBOUND_REPL) and not samdb.am_rodc():
+            nmsg = ldb.Message()
+            nmsg.dn = msg[0].dn
+
+            dsa_options |= DS_NTDSDSA_OPT_DISABLE_INBOUND_REPL
+            nmsg["options"] = ldb.MessageElement(str(dsa_options), ldb.FLAG_MOD_REPLACE, "options")
+            samdb.modify(nmsg)
+
 
             self.errf.write("Asking partner server %s to synchronize from us\n"
                             % server)
             for part in (samdb.get_schema_basedn(),
                             samdb.get_config_basedn(),
                             samdb.get_root_basedn()):
+                nc = drsuapi.DsReplicaObjectIdentifier()
+                nc.dn = str(part)
+
+                req1 = drsuapi.DsReplicaSyncRequest1()
+                req1.naming_context = nc;
+                req1.options = drsuapi.DRSUAPI_DRS_WRIT_REP
+                req1.source_dsa_guid = misc.GUID(ntds_guid)
+
                 try:
-                    sendDsReplicaSync(drsuapiBind, drsuapi_handle, ntds_guid, str(part), drsuapi.DRSUAPI_DRS_WRIT_REP)
-                except drsException, e:
-                    self.errf.write(
-                        "Error while demoting, "
+                    drsuapiBind.DsReplicaSync(drsuapi_handle, 1, req1)
+                except RuntimeError as (werr, string):
+                    if werr == 8452: #WERR_DS_DRA_NO_REPLICA
+                        pass
+                    else:
+                        self.errf.write(
+                            "Error while demoting, "
                         "re-enabling inbound replication\n")
-                    dsa_options ^= DS_NTDSDSA_OPT_DISABLE_INBOUND_REPL
-                    nmsg["options"] = ldb.MessageElement(str(dsa_options), ldb.FLAG_MOD_REPLACE, "options")
-                    samdb.modify(nmsg)
-                    raise CommandError("Error while sending a DsReplicaSync for partion %s" % str(part), e)
+                        dsa_options ^= DS_NTDSDSA_OPT_DISABLE_INBOUND_REPL
+                        nmsg["options"] = ldb.MessageElement(str(dsa_options), ldb.FLAG_MOD_REPLACE, "options")
+                        samdb.modify(nmsg)
+                        raise CommandError("Error while sending a DsReplicaSync for partion %s" % str(part), e)
         try:
             remote_samdb = SamDB(url="ldap://%s" % server,
                                 session_info=system_session(),
                                 credentials=creds, lp=lp)
 
             self.errf.write("Changing userControl and container\n")
-            res = remote_samdb.search(base=str(remote_samdb.get_root_basedn()),
+            res = remote_samdb.search(base=str(remote_samdb.domain_dn()),
                                 expression="(&(objectClass=user)(sAMAccountName=%s$))" %
                                             netbios_name.upper(),
                                 attrs=["userAccountControl"])
@@ -758,7 +797,7 @@ class cmd_domain_demote(Command):
 
         olduac = uac
 
-        uac ^= (UF_SERVER_TRUST_ACCOUNT|UF_TRUSTED_FOR_DELEGATION)
+        uac &= ~(UF_SERVER_TRUST_ACCOUNT|UF_TRUSTED_FOR_DELEGATION)
         uac |= UF_WORKSTATION_TRUST_ACCOUNT
 
         msg = ldb.Message()
@@ -779,13 +818,12 @@ class cmd_domain_demote(Command):
             raise CommandError("Error while changing account control", e)
 
         parent = msg.dn.parent()
-        rdn = str(res[0].dn)
-        rdn = string.replace(rdn, ",%s" % str(parent), "")
+        rdn = "%s=%s" % (res[0].dn.get_rdn_name(), res[0].dn.get_rdn_value())
         # Let's move to the Computer container
         i = 0
-        newrdn = rdn
+        newrdn = str(rdn)
 
-        computer_dn = ldb.Dn(remote_samdb, "CN=Computers,%s" % str(remote_samdb.get_root_basedn()))
+        computer_dn = ldb.Dn(remote_samdb, "CN=Computers,%s" % str(remote_samdb.domain_dn()))
         res = remote_samdb.search(base=computer_dn, expression=rdn, scope=ldb.SCOPE_ONELEVEL)
 
         if (len(res) != 0):
@@ -843,33 +881,34 @@ class cmd_domain_demote(Command):
         domain = remote_samdb.get_root_basedn()
 
         try:
-            sendRemoveDsServer(drsuapiBind, drsuapi_handle, server_dsa_dn, domain)
-        except drsException, e:
-            self.errf.write(
-                "Error while demoting, re-enabling inbound replication\n")
-            dsa_options ^= DS_NTDSDSA_OPT_DISABLE_INBOUND_REPL
-            nmsg["options"] = ldb.MessageElement(str(dsa_options), ldb.FLAG_MOD_REPLACE, "options")
-            samdb.modify(nmsg)
+            req1 = drsuapi.DsRemoveDSServerRequest1()
+            req1.server_dn = str(server_dsa_dn)
+            req1.domain_dn = str(domain)
+            req1.commit = 1
+
+            drsuapiBind.DsRemoveDSServer(drsuapi_handle, 1, req1)
+        except RuntimeError as (werr, string):
+            if not (dsa_options & DS_NTDSDSA_OPT_DISABLE_OUTBOUND_REPL) and not samdb.am_rodc():
+                self.errf.write(
+                    "Error while demoting, re-enabling inbound replication\n")
+                dsa_options ^= DS_NTDSDSA_OPT_DISABLE_INBOUND_REPL
+                nmsg["options"] = ldb.MessageElement(str(dsa_options), ldb.FLAG_MOD_REPLACE, "options")
+                samdb.modify(nmsg)
 
             msg = ldb.Message()
             msg.dn = newdn
 
             msg["userAccountControl"] = ldb.MessageElement("%d" % uac,
-                                                    ldb.FLAG_MOD_REPLACE,
-                                                    "userAccountControl")
-            print str(dc_dn)
+                                                           ldb.FLAG_MOD_REPLACE,
+                                                           "userAccountControl")
             remote_samdb.modify(msg)
             remote_samdb.rename(newdn, dc_dn)
-            raise CommandError("Error while sending a removeDsServer", e)
+            if werr == 8452: #WERR_DS_DRA_NO_REPLICA
+                raise CommandError("The DC %s is not present on (already removed from) the remote server: " % server_dsa_dn, e)
+            else:
+                raise CommandError("Error while sending a removeDsServer of %s: " % server_dsa_dn, e)
 
-        for s in ("CN=Enterprise,CN=Microsoft System Volumes,CN=System,CN=Configuration",
-                  "CN=%s,CN=Microsoft System Volumes,CN=System,CN=Configuration" % lp.get("realm"),
-                  "CN=Domain System Volumes (SYSVOL share),CN=File Replication Service,CN=System"):
-            try:
-                remote_samdb.delete(ldb.Dn(remote_samdb,
-                                    "%s,%s,%s" % (str(rdn), s, str(remote_samdb.get_root_basedn()))))
-            except ldb.LdbError, l:
-                pass
+        remove_dc.remove_sysvol_references(remote_samdb, rdn)
 
         for s in ("CN=Enterprise,CN=NTFRS Subscriptions",
                   "CN=%s, CN=NTFRS Subscriptions" % lp.get("realm"),

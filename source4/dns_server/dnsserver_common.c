@@ -5,6 +5,7 @@
 
    Copyright (C) 2010 Kai Blin
    Copyright (C) 2014 Stefan Metzmacher
+   Copyright (C) 2015 Andrew Bartlett
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -30,6 +31,7 @@
 #include "dsdb/samdb/samdb.h"
 #include "dsdb/common/util.h"
 #include "dns_server/dnsserver_common.h"
+#include "lib/util/dlinklist.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_DNS
@@ -136,7 +138,7 @@ WERROR dns_common_lookup(struct ldb_context *samdb,
 	if (ret != LDB_SUCCESS) {
 		/* TODO: we need to check if there's a glue record we need to
 		 * create a referral to */
-		return DNS_ERR(NAME_ERROR);
+		return DNS_ERR(SERVER_FAILURE);
 	}
 
 	if (tombstoned != NULL) {
@@ -147,15 +149,15 @@ WERROR dns_common_lookup(struct ldb_context *samdb,
 	el = ldb_msg_find_element(msg, "dnsRecord");
 	if (el == NULL) {
 		TALLOC_FREE(msg);
+		/*
+		 * records produced by older Samba releases
+		 * keep dnsNode objects without dnsRecord and
+		 * without setting dNSTombstoned=TRUE.
+		 *
+		 * We just pretend they're tombstones.
+		 */
 		if (tombstoned != NULL) {
 			struct dnsp_DnssrvRpcRecord *recs;
-			/*
-			 * records produced by older Samba releases
-			 * keep dnsNode objects without dnsRecord and
-			 * without setting dNSTombstoned=TRUE.
-			 *
-			 * We just pretend they're tombstones.
-			 */
 			recs = talloc_array(mem_ctx,
 					    struct dnsp_DnssrvRpcRecord,
 					    1);
@@ -177,8 +179,14 @@ WERROR dns_common_lookup(struct ldb_context *samdb,
 			*records = recs;
 			*num_records = 1;
 			return WERR_OK;
+		} else {
+			/*
+			 * Because we are not looking for a tombstone
+			 * in this codepath, we just pretend it does
+			 * not exist at all.
+			 */
+			return WERR_DNS_ERROR_NAME_DOES_NOT_EXIST;
 		}
-		return DNS_ERR(NAME_ERROR);
 	}
 
 	werr = dns_common_extract(el, mem_ctx, records, num_records);
@@ -339,4 +347,172 @@ WERROR dns_common_replace(struct ldb_context *samdb,
 	}
 
 	return WERR_OK;
+}
+
+bool dns_name_match(const char *zone, const char *name, size_t *host_part_len)
+{
+	size_t zl = strlen(zone);
+	size_t nl = strlen(name);
+	ssize_t zi, ni;
+	static const size_t fixup = 'a' - 'A';
+
+	if (zl > nl) {
+		return false;
+	}
+
+	for (zi = zl, ni = nl; zi >= 0; zi--, ni--) {
+		char zc = zone[zi];
+		char nc = name[ni];
+
+		/* convert to lower case */
+		if (zc >= 'A' && zc <= 'Z') {
+			zc += fixup;
+		}
+		if (nc >= 'A' && nc <= 'Z') {
+			nc += fixup;
+		}
+
+		if (zc != nc) {
+			return false;
+		}
+	}
+
+	if (ni >= 0) {
+		if (name[ni] != '.') {
+			return false;
+		}
+
+		ni--;
+	}
+
+	*host_part_len = ni+1;
+
+	return true;
+}
+
+WERROR dns_common_name2dn(struct ldb_context *samdb,
+			  struct dns_server_zone *zones,
+			  TALLOC_CTX *mem_ctx,
+			  const char *name,
+			  struct ldb_dn **_dn)
+{
+	struct ldb_dn *base;
+	struct ldb_dn *dn;
+	const struct dns_server_zone *z;
+	size_t host_part_len = 0;
+
+	if (name == NULL) {
+		return DNS_ERR(FORMAT_ERROR);
+	}
+
+	/*TODO: Check if 'name' is a valid DNS name */
+
+	if (strcmp(name, "") == 0) {
+		base = ldb_get_default_basedn(samdb);
+		dn = ldb_dn_copy(mem_ctx, base);
+		ldb_dn_add_child_fmt(dn, "DC=@,DC=RootDNSServers,CN=MicrosoftDNS,CN=System");
+		*_dn = dn;
+		return WERR_OK;
+	}
+
+	for (z = zones; z != NULL; z = z->next) {
+		bool match;
+
+		match = dns_name_match(z->name, name, &host_part_len);
+		if (match) {
+			break;
+		}
+	}
+
+	if (z == NULL) {
+		return DNS_ERR(NAME_ERROR);
+	}
+
+	if (host_part_len == 0) {
+		dn = ldb_dn_copy(mem_ctx, z->dn);
+		ldb_dn_add_child_fmt(dn, "DC=@");
+		*_dn = dn;
+		return WERR_OK;
+	}
+
+	dn = ldb_dn_copy(mem_ctx, z->dn);
+	ldb_dn_add_child_fmt(dn, "DC=%*.*s", (int)host_part_len, (int)host_part_len, name);
+	*_dn = dn;
+	return WERR_OK;
+}
+
+static int dns_common_sort_zones(struct ldb_message **m1, struct ldb_message **m2)
+{
+	const char *n1, *n2;
+	size_t l1, l2;
+
+	n1 = ldb_msg_find_attr_as_string(*m1, "name", NULL);
+	n2 = ldb_msg_find_attr_as_string(*m2, "name", NULL);
+
+	l1 = strlen(n1);
+	l2 = strlen(n2);
+
+	/* If the string lengths are not equal just sort by length */
+	if (l1 != l2) {
+		/* If m1 is the larger zone name, return it first */
+		return l2 - l1;
+	}
+
+	/*TODO: We need to compare DNs here, we want the DomainDNSZones first */
+	return 0;
+}
+
+NTSTATUS dns_common_zones(struct ldb_context *samdb,
+			  TALLOC_CTX *mem_ctx,
+			  struct dns_server_zone **zones_ret)
+{
+	int ret;
+	static const char * const attrs[] = { "name", NULL};
+	struct ldb_result *res;
+	int i;
+	struct dns_server_zone *new_list = NULL;
+	TALLOC_CTX *frame = talloc_stackframe();
+
+	// TODO: this search does not work against windows
+	ret = dsdb_search(samdb, frame, &res, NULL, LDB_SCOPE_SUBTREE,
+			  attrs, DSDB_SEARCH_SEARCH_ALL_PARTITIONS, "(objectClass=dnsZone)");
+	if (ret != LDB_SUCCESS) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	TYPESAFE_QSORT(res->msgs, res->count, dns_common_sort_zones);
+
+	for (i=0; i < res->count; i++) {
+		struct dns_server_zone *z;
+
+		z = talloc_zero(mem_ctx, struct dns_server_zone);
+		if (z == NULL) {
+			TALLOC_FREE(frame);
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		z->name = ldb_msg_find_attr_as_string(res->msgs[i], "name", NULL);
+		talloc_steal(z, z->name);
+		z->dn = talloc_move(z, &res->msgs[i]->dn);
+		/*
+		 * Ignore the RootDNSServers zone and zones that we don't support yet
+		 * RootDNSServers should never be returned (Windows DNS server don't)
+		 * ..TrustAnchors should never be returned as is, (Windows returns
+		 * TrustAnchors) and for the moment we don't support DNSSEC so we'd better
+		 * not return this zone.
+		 */
+		if ((strcmp(z->name, "RootDNSServers") == 0) ||
+		    (strcmp(z->name, "..TrustAnchors") == 0))
+		{
+			DEBUG(10, ("Ignoring zone %s\n", z->name));
+			talloc_free(z);
+			continue;
+		}
+		DLIST_ADD_END(new_list, z, NULL);
+	}
+
+	*zones_ret = new_list;
+	TALLOC_FREE(frame);
+	return NT_STATUS_OK;
 }

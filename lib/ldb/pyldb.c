@@ -497,8 +497,6 @@ static PyObject *py_ldb_dn_get_parent(PyLdbDnObject *self)
 	return (PyObject *)py_ret;
 }
 
-#define dn_ldb_ctx(dn) ((struct ldb_context *)dn)
-
 static PyObject *py_ldb_dn_add_child(PyLdbDnObject *self, PyObject *args)
 {
 	PyObject *py_other;
@@ -508,7 +506,7 @@ static PyObject *py_ldb_dn_add_child(PyLdbDnObject *self, PyObject *args)
 
 	dn = pyldb_Dn_AsDn((PyObject *)self);
 
-	if (!pyldb_Object_AsDn(NULL, py_other, dn_ldb_ctx(dn), &other))
+	if (!pyldb_Object_AsDn(NULL, py_other, ldb_dn_get_ldb_context(dn), &other))
 		return NULL;
 
 	return PyBool_FromLong(ldb_dn_add_child(dn, other));
@@ -523,7 +521,7 @@ static PyObject *py_ldb_dn_add_base(PyLdbDnObject *self, PyObject *args)
 
 	dn = pyldb_Dn_AsDn((PyObject *)self);
 
-	if (!pyldb_Object_AsDn(NULL, py_other, dn_ldb_ctx(dn), &other))
+	if (!pyldb_Object_AsDn(NULL, py_other, ldb_dn_get_ldb_context(dn), &other))
 		return NULL;
 
 	return PyBool_FromLong(ldb_dn_add_base(dn, other));
@@ -550,7 +548,7 @@ static PyObject *py_ldb_dn_is_child_of(PyLdbDnObject *self, PyObject *args)
 
 	dn = pyldb_Dn_AsDn((PyObject *)self);
 
-	if (!pyldb_Object_AsDn(NULL, py_base, dn_ldb_ctx(dn), &base))
+	if (!pyldb_Object_AsDn(NULL, py_base, ldb_dn_get_ldb_context(dn), &base))
 		return NULL;
 
 	return PyBool_FromLong(ldb_dn_compare_base(base, dn) == 0);

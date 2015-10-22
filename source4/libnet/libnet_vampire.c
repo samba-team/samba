@@ -553,6 +553,7 @@ NTSTATUS libnet_vampire_cb_store_chunk(void *private_data,
 	const struct drsuapi_DsReplicaCursor2CtrEx *uptodateness_vector;
 	struct dsdb_extended_replicated_objects *objs;
 	uint32_t req_replica_flags;
+	uint32_t dsdb_repl_flags = 0;
 	struct repsFromTo1 *s_dsa;
 	char *tmp_dns_name;
 	uint32_t i;
@@ -679,6 +680,14 @@ NTSTATUS libnet_vampire_cb_store_chunk(void *private_data,
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
+	if (req_replica_flags & DRSUAPI_DRS_FULL_SYNC_IN_PROGRESS) {
+		dsdb_repl_flags |= DSDB_REPL_FLAG_PRIORITISE_INCOMING;
+	}
+
+	if (req_replica_flags & DRSUAPI_DRS_SPECIAL_SECRET_PROCESSING) {
+		dsdb_repl_flags |= DSDB_REPL_FLAG_EXPECT_NO_SECRETS;
+	}
+
 	status = dsdb_replicated_objects_convert(s->ldb,
 						 schema,
 						 c->partition->nc.dn,
@@ -690,7 +699,7 @@ NTSTATUS libnet_vampire_cb_store_chunk(void *private_data,
 						 s_dsa,
 						 uptodateness_vector,
 						 c->gensec_skey,
-						 0,
+						 dsdb_repl_flags,
 						 s, &objs);
 	if (!W_ERROR_IS_OK(status)) {
 		DEBUG(0,("Failed to convert objects: %s\n", win_errstr(status)));
@@ -748,285 +757,3 @@ NTSTATUS libnet_vampire_cb_store_chunk(void *private_data,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS update_dnshostname_for_server(TALLOC_CTX *mem_ctx,
-					      struct ldb_context *ldb,
-					      const char *server_dn_str,
-					      const char *netbios_name,
-					      const char *realm)
-{
-	int ret;
-	struct ldb_message *msg;
-	struct ldb_message_element *el;
-	struct ldb_dn *server_dn;
-	const char *dNSHostName = strlower_talloc(mem_ctx,
-						  talloc_asprintf(mem_ctx,
-								  "%s.%s",
-								  netbios_name,
-								  realm));
-	msg = ldb_msg_new(mem_ctx);
-	if (msg == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	server_dn = ldb_dn_new(mem_ctx, ldb, server_dn_str);
-	if (!server_dn) {
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-
-	msg->dn = server_dn;
-	ret = ldb_msg_add_empty(msg, "dNSHostName", LDB_FLAG_MOD_ADD, &el);
-	if (ret != LDB_SUCCESS) {
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-
-	ret = ldb_msg_add_steal_string(msg,
-				       "dNSHostName",
-				       talloc_asprintf(el->values, "%s", dNSHostName));
-	if (ret != LDB_SUCCESS) {
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-
-	ret = dsdb_modify(ldb, msg, DSDB_MODIFY_PERMISSIVE);
-	if (ret != LDB_SUCCESS) {
-		DEBUG(0,(__location__ ": Failed to add dnsHostName to the Server object: %s\n",
-			 ldb_errstring(ldb)));
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-
-	return NT_STATUS_OK;
-}
-
-
-NTSTATUS libnet_Vampire(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, 
-			struct libnet_Vampire *r)
-{
-	struct libnet_JoinDomain *join;
-	struct libnet_Replicate rep;
-	NTSTATUS status;
-
-	const char *account_name;
-	const char *netbios_name;
-	
-	r->out.error_string = NULL;
-
-	join = talloc_zero(mem_ctx, struct libnet_JoinDomain);
-	if (!join) {
-		return NT_STATUS_NO_MEMORY;
-	}
-		
-	if (r->in.netbios_name != NULL) {
-		netbios_name = r->in.netbios_name;
-	} else {
-		netbios_name = talloc_reference(join, lpcfg_netbios_name(ctx->lp_ctx));
-		if (!netbios_name) {
-			talloc_free(join);
-			r->out.error_string = NULL;
-			return NT_STATUS_NO_MEMORY;
-		}
-	}
-
-	account_name = talloc_asprintf(join, "%s$", netbios_name);
-	if (!account_name) {
-		talloc_free(join);
-		r->out.error_string = NULL;
-		return NT_STATUS_NO_MEMORY;
-	}
-	
-	/* Re-use the domain we are joining as the domain for the user
-	 * to be authenticated with, unless they specified
-	 * otherwise */
-	cli_credentials_set_domain(ctx->cred, r->in.domain_name, CRED_GUESS_ENV);
-
-	join->in.domain_name	= r->in.domain_name;
-	join->in.account_name	= account_name;
-	join->in.netbios_name	= netbios_name;
-	join->in.level		= LIBNET_JOINDOMAIN_AUTOMATIC;
-	join->in.acct_type	= ACB_WSTRUST;
-	join->in.recreate_account = false;
-	status = libnet_JoinDomain(ctx, join, join);
-	if (!NT_STATUS_IS_OK(status)) {
-		r->out.error_string = talloc_steal(mem_ctx, join->out.error_string);
-		talloc_free(join);
-		return status;
-	}
-
-	rep.in.domain_name   = join->out.domain_name;
-	rep.in.netbios_name  = netbios_name;
-	rep.in.targetdir     = r->in.targetdir;
-	rep.in.domain_sid    = join->out.domain_sid;
-	rep.in.realm         = join->out.realm;
-	rep.in.server        = dcerpc_binding_get_string_option(join->out.samr_binding,
-								"host");
-	rep.in.join_password = join->out.join_password;
-	rep.in.kvno          = join->out.kvno;
-
-	status = libnet_Replicate(ctx, mem_ctx, &rep);
-
-	r->out.domain_sid   = join->out.domain_sid;
-	r->out.domain_name  = join->out.domain_name;
-	r->out.error_string = rep.out.error_string;
-
-	return status;
-}
-
-
-
-NTSTATUS libnet_Replicate(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
-			  struct libnet_Replicate *r)
-{
-	struct provision_store_self_join_settings *set_secrets;
-	struct libnet_BecomeDC b;
-	struct libnet_vampire_cb_state *s;
-	struct ldb_message *msg;
-	const char *error_string;
-	int ldb_ret;
-	uint32_t i;
-	NTSTATUS status;
-	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
-	const char *account_name;
-	const char *netbios_name;
-
-	r->out.error_string = NULL;
-
-	netbios_name = r->in.netbios_name;
-	account_name = talloc_asprintf(tmp_ctx, "%s$", netbios_name);
-	if (!account_name) {
-		talloc_free(tmp_ctx);
-		r->out.error_string = NULL;
-		return NT_STATUS_NO_MEMORY;
-	}
-	
-	/* Re-use the domain we are joining as the domain for the user
-	 * to be authenticated with, unless they specified
-	 * otherwise */
-	cli_credentials_set_domain(ctx->cred, r->in.domain_name, CRED_GUESS_ENV);
-
-	s = libnet_vampire_cb_state_init(mem_ctx, ctx->lp_ctx, ctx->event_ctx,
-					 netbios_name, r->in.domain_name, r->in.realm,
-					 r->in.targetdir);
-	if (!s) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	talloc_steal(s, tmp_ctx);
-
-	ZERO_STRUCT(b);
-
-	/* Be more robust:
-	 * We now know the domain and realm for sure - if they didn't
-	 * put one on the command line, use this for the rest of the
-	 * join */
-	cli_credentials_set_realm(ctx->cred, r->in.realm, CRED_GUESS_ENV);
-	cli_credentials_set_domain(ctx->cred, r->in.domain_name, CRED_GUESS_ENV);
-
-	/* Now set these values into the smb.conf - we probably had
-	 * empty or useless defaults here from whatever smb.conf we
-	 * started with */
-	lpcfg_set_cmdline(s->lp_ctx, "realm", r->in.realm);
-	lpcfg_set_cmdline(s->lp_ctx, "workgroup", r->in.domain_name);
-
-	b.in.domain_dns_name		= r->in.realm;
-	b.in.domain_netbios_name	= r->in.domain_name;
-	b.in.domain_sid			= r->in.domain_sid;
-	b.in.source_dsa_address		= r->in.server;
-	b.in.dest_dsa_netbios_name	= netbios_name;
-
-	b.in.callbacks.private_data	= s;
-	b.in.callbacks.check_options	= libnet_vampire_cb_check_options;
-	b.in.callbacks.prepare_db       = libnet_vampire_cb_prepare_db;
-	b.in.callbacks.schema_chunk	= libnet_vampire_cb_schema_chunk;
-	b.in.callbacks.config_chunk	= libnet_vampire_cb_store_chunk;
-	b.in.callbacks.domain_chunk	= libnet_vampire_cb_store_chunk;
-
-	b.in.rodc_join = lpcfg_parm_bool(s->lp_ctx, NULL, "repl", "RODC", false);
-
-	status = libnet_BecomeDC(ctx, s, &b);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("libnet_BecomeDC() failed - %s\n", nt_errstr(status));
-		talloc_free(s);
-		return status;
-	}
-
-	msg = ldb_msg_new(s);
-	if (!msg) {
-		printf("ldb_msg_new() failed\n");
-		talloc_free(s);
-		return NT_STATUS_NO_MEMORY;
-	}
-	msg->dn = ldb_dn_new(msg, s->ldb, "@ROOTDSE");
-	if (!msg->dn) {
-		printf("ldb_msg_new(@ROOTDSE) failed\n");
-		talloc_free(s);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	ldb_ret = ldb_msg_add_string(msg, "isSynchronized", "TRUE");
-	if (ldb_ret != LDB_SUCCESS) {
-		printf("ldb_msg_add_string(msg, isSynchronized, TRUE) failed: %d\n", ldb_ret);
-		talloc_free(s);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	for (i=0; i < msg->num_elements; i++) {
-		msg->elements[i].flags = LDB_FLAG_MOD_REPLACE;
-	}
-
-	printf("mark ROOTDSE with isSynchronized=TRUE\n");
-	ldb_ret = ldb_modify(s->ldb, msg);
-	if (ldb_ret != LDB_SUCCESS) {
-		printf("ldb_modify() failed: %d : %s\n", ldb_ret, ldb_errstring(s->ldb));
-		talloc_free(s);
-		return NT_STATUS_INTERNAL_DB_ERROR;
-	}
-	/* during dcpromo the 2nd computer adds dNSHostName attribute to his Server object
-	 * the attribute appears on the original DC after replication
-	 */
-	status = update_dnshostname_for_server(s, s->ldb, s->server_dn_str, s->netbios_name, s->realm);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("Failed to update dNSHostName on Server object - %s\n", nt_errstr(status));
-		talloc_free(s);
-		return status;
-	}
-	/* prepare the transaction - this prepares to commit all the changes in
-	   the ldb from the whole vampire.  Note that this 
-	   triggers the writing of the linked attribute backlinks.
-	*/
-	if (ldb_transaction_prepare_commit(s->ldb) != LDB_SUCCESS) {
-		printf("Failed to prepare_commit vampire transaction: %s\n", ldb_errstring(s->ldb));
-		return NT_STATUS_INTERNAL_DB_ERROR;
-	}
-
-	set_secrets = talloc(s, struct provision_store_self_join_settings);
-	if (!set_secrets) {
-		r->out.error_string = NULL;
-		talloc_free(s);
-		return NT_STATUS_NO_MEMORY;
-	}
-	
-	ZERO_STRUCTP(set_secrets);
-	set_secrets->domain_name = r->in.domain_name;
-	set_secrets->realm = r->in.realm;
-	set_secrets->netbios_name = netbios_name;
-	set_secrets->secure_channel_type = SEC_CHAN_BDC;
-	set_secrets->machine_password = r->in.join_password;
-	set_secrets->key_version_number = r->in.kvno;
-	set_secrets->domain_sid = r->in.domain_sid;
-	
-	status = provision_store_self_join(ctx, s->lp_ctx, ctx->event_ctx, set_secrets, &error_string);
-	if (!NT_STATUS_IS_OK(status)) {
-		r->out.error_string = talloc_steal(mem_ctx, error_string);
-		talloc_free(s);
-		return status;
-	}
-
-	/* commit the transaction now we know the secrets were written
-	 * out properly
-	*/
-	if (ldb_transaction_commit(s->ldb) != LDB_SUCCESS) {
-		printf("Failed to commit vampire transaction\n");
-		return NT_STATUS_INTERNAL_DB_ERROR;
-	}
-
-	talloc_free(s);
-
-	return NT_STATUS_OK;
-}
