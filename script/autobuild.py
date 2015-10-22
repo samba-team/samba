@@ -112,10 +112,11 @@ tasks = {
                       ("ldb-make", "cd lib/ldb && make", "text/plain"),
                       ("ldb-install", "cd lib/ldb && make install", "text/plain"),
 
-                      ("configure", samba_libs_configure_samba, "text/plain"),
-                      ("make", "make", "text/plain"),
-                      ("install", "make install", "text/plain"),
-                      ("dist", "make dist", "text/plain"),
+                      ("nondevel-configure", "./configure ${PREFIX}", "text/plain"),
+                      ("nondevel-make", "make -j", "text/plain"),
+                      ("nondevel-check", "./bin/smbd -b | grep WITH_NTVFS_FILESERVER && exit 1; exit 0", "text/plain"),
+                      ("nondevel-install", "make install", "text/plain"),
+                      ("nondevel-dist", "make dist", "text/plain"),
 
                       # retry with all modules shared
                       ("allshared-distclean", "make distclean", "text/plain"),
