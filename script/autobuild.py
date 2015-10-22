@@ -122,23 +122,23 @@ tasks = {
                       # retry with all modules shared
                       ("allshared-distclean", "make distclean", "text/plain"),
                       ("allshared-configure", samba_libs_configure_samba + " --with-shared-modules=ALL", "text/plain"),
-                      ("allshared-make", "make", "text/plain")],
+                      ("allshared-make", "make -j", "text/plain")],
 
     "samba-static" : [
                       ("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
                       # build with all modules static
                       ("allstatic-configure", "./configure.developer " + samba_configure_params + " --with-static-modules=ALL", "text/plain"),
-                      ("allstatic-make", "make", "text/plain"),
+                      ("allstatic-make", "make -j", "text/plain"),
 
                       # retry without any required modules
                       ("none-distclean", "make distclean", "text/plain"),
                       ("none-configure", "./configure.developer " + samba_configure_params + " --with-static-modules=!FORCED,!DEFAULT --with-shared-modules=!FORCED,!DEFAULT", "text/plain"),
-                      ("none-make", "make", "text/plain"),
+                      ("none-make", "make -j", "text/plain"),
 
                       # retry with nonshared smbd and smbtorture
                       ("nonshared-distclean", "make distclean", "text/plain"),
                       ("nonshared-configure", "./configure.developer " + samba_configure_params + " --bundled-libraries=talloc,tdb,pytdb,ldb,pyldb,tevent,pytevent --with-static-modules=ALL --nonshared-binary=smbtorture,smbd/smbd", "text/plain"),
-                      ("nonshared-make", "make", "text/plain")],
+                      ("nonshared-make", "make -j", "text/plain")],
 
     "ldb" : [
               ("random-sleep", "../../script/random-sleep.sh 60 600", "text/plain"),
