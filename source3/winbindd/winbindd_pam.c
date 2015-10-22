@@ -1753,6 +1753,16 @@ enum winbindd_result winbindd_dual_pam_auth(struct winbindd_domain *domain,
 		}
 
 		if (state->request->flags & WBFLAG_PAM_FALLBACK_AFTER_KRB5) {
+			if (domain->primary == false) {
+				/*
+				 * return error to parent and indicate we
+				 * need to do further processing
+				 */
+				state->response->data.auth.reject_reason
+					= NT_STATUS_V(result);
+				result = NT_STATUS_MORE_PROCESSING_REQUIRED;
+				goto done;
+			}
 			DEBUG(3,("falling back to samlogon\n"));
 			goto sam_logon;
 		} else {
@@ -1763,13 +1773,25 @@ enum winbindd_result winbindd_dual_pam_auth(struct winbindd_domain *domain,
 sam_logon:
 	/* Check for Samlogon authentication */
 	if (domain->online) {
+		if (state->request->flags & WBFLAG_INTERNAL_PREV_KRB5_ERROR) {
+			uint32_t err;
+			if (state->request->extra_len != sizeof(err)) {
+				DEBUG(3,("winbindd_dual_pam_auth_samlogon unexpected length for extra_data %d\n", state->request->extra_len));
+				result = NT_STATUS_INVALID_PARAMETER;
+				goto done;
+			}
+			memcpy(&err, state->request->extra_data.data,
+			       state->request->extra_len);
+			krb5_result = NT_STATUS(err);
+			DEBUG(10,("winbindd_dual_pam_auth_samlogon received previous error from parent: %s\n",
+			  nt_errstr(krb5_result)));
+		}
 		result = winbindd_dual_pam_auth_samlogon(
 			state->mem_ctx, domain,
 			state->request->data.auth.user,
 			state->request->data.auth.pass,
 			state->request->flags,
 			&info3);
-
 		if (NT_STATUS_IS_OK(result)) {
 			DEBUG(10,("winbindd_dual_pam_auth_samlogon succeeded\n"));
 			/* add the Krb5 err if we have one */

@@ -53,6 +53,14 @@ struct tevent_req *winbindd_pam_auth_send(TALLOC_CTX *mem_ctx,
 	DEBUG(3, ("[%5lu]: pam auth %s\n", (unsigned long)cli->pid,
 		  request->data.auth.user));
 
+	/*
+	 * Prevent data associated with handling of internal flag
+	 * WBFLAG_INTERNAL_PREV_KRB5_ERROR from being used, the flag
+	 * and/or data could be erronously set (or uninitialised) by client.
+	 */
+	request->flags &= ~WBFLAG_INTERNAL_PREV_KRB5_ERROR;
+	request->extra_len = 0;
+	request->extra_data.data = NULL;
 	if (!check_request_flags(request->flags)) {
 		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER_MIX);
 		return tevent_req_post(req, ev);
@@ -97,12 +105,62 @@ static void winbindd_pam_auth_done(struct tevent_req *subreq)
 	struct winbindd_pam_auth_state *state = tevent_req_data(
 		req, struct winbindd_pam_auth_state);
 	int res, err;
+	NTSTATUS status;
 
 	res = wb_domain_request_recv(subreq, state, &state->response, &err);
 	TALLOC_FREE(subreq);
 	if (res == -1) {
 		tevent_req_nterror(req, map_nt_error_from_unix(err));
 		return;
+	}
+	status = NT_STATUS(state->response->data.auth.nt_status);
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+
+		struct winbindd_domain *domain = NULL;
+		struct winbindd_request *request = state->request;
+		fstring name_domain, name_user;
+		uint32_t flags = request->flags;
+
+		if (!parse_domain_user(request->data.auth.user,
+				       name_domain, name_user)) {
+			tevent_req_nterror(req, NT_STATUS_NO_SUCH_USER);
+			tevent_req_post(req, winbind_event_context());
+			return;
+		}
+
+		flags &= ~WBFLAG_PAM_CONTACT_TRUSTDOM;
+		domain = find_auth_domain(flags, name_domain);
+		if (domain) {
+			uint32_t krb5err =
+				state->response->data.auth.reject_reason;
+			/* don't attempt kerberos again, samlogon instead */
+			state->request->flags &= ~WBFLAG_PAM_KRB5;
+			/*
+			 * transfer krb5 error to the child winbindd handling
+			 * the samlogon fallback.
+			 */
+			if (krb5err) {
+				state->request->flags |= WBFLAG_INTERNAL_PREV_KRB5_ERROR;
+				state->request->extra_data.data =
+					talloc_zero_array(state, char,
+							  sizeof(krb5err));
+				state->request->extra_len = sizeof(krb5err);
+				memcpy(state->request->extra_data.data,
+				       &krb5err, sizeof(krb5err));
+			}
+			subreq = wb_domain_request_send(state,
+							winbind_event_context(),
+							domain,
+							state->request);
+			if (!subreq) {
+				tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
+				return;
+			}
+			tevent_req_set_callback(subreq,
+						winbindd_pam_auth_done, req);
+			return;
+		}
 	}
 	tevent_req_done(req);
 }

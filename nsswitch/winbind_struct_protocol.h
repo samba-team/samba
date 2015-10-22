@@ -224,6 +224,13 @@ typedef struct winbindd_gr {
 /* Flag to tell winbind the NTLMv2 blob is too big for the struct and is in the
  * extra_data field */
 #define WBFLAG_BIG_NTLMV2_BLOB		0x00010000
+/*
+ * Flag to tell winbind a previous error is stored in the
+ * extra_data field. This is used to pass any KRB5 error (which occured in
+ * trusted domain winbindd child) to the primary domain winbindd child
+ * which is processing the samlogon.
+ */
+#define WBFLAG_INTERNAL_PREV_KRB5_ERROR	0x00020000
 
 #define WINBINDD_MAX_EXTRA_DATA (128*1024)
 
