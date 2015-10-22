@@ -227,7 +227,7 @@ struct if_dqinfo {
 	#endif
 #endif
 
-long quotactl __P((int, const char *, qid_t, caddr_t));
+long quotactl(int, const char *, qid_t, caddr_t);
 
 #endif /* _QUOTA_LINUX */
 
