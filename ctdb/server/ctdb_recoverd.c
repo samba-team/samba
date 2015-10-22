@@ -528,36 +528,6 @@ static int set_recovery_mode(struct ctdb_context *ctdb,
 	return 0;
 }
 
-/*
-  change recovery master on all node
- */
-static int set_recovery_master(struct ctdb_context *ctdb, struct ctdb_node_map_old *nodemap, uint32_t pnn)
-{
-	TDB_DATA data;
-	TALLOC_CTX *tmp_ctx;
-	uint32_t *nodes;
-
-	tmp_ctx = talloc_new(ctdb);
-	CTDB_NO_MEMORY(ctdb, tmp_ctx);
-
-	data.dsize = sizeof(uint32_t);
-	data.dptr = (unsigned char *)&pnn;
-
-	nodes = list_of_active_nodes(ctdb, nodemap, tmp_ctx, true);
-	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_SET_RECMASTER,
-					nodes, 0,
-					CONTROL_TIMEOUT(), false, data,
-					NULL, NULL,
-					NULL) != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " Unable to set recmaster. Recovery failed.\n"));
-		talloc_free(tmp_ctx);
-		return -1;
-	}
-
-	talloc_free(tmp_ctx);
-	return 0;
-}
-
 /* update all remote nodes to use the same db priority that we have
    this can fail if the remove node has not yet been upgraded to 
    support this function, so we always return success and never fail
@@ -1999,15 +1969,6 @@ static int db_recovery_serial(struct ctdb_recoverd *rec, TALLOC_CTX *mem_ctx,
 	}
 
 	DEBUG(DEBUG_NOTICE, (__location__ " Recovery - updated vnnmap\n"));
-
-	/* update recmaster to point to us for all nodes */
-	ret = set_recovery_master(ctdb, nodemap, pnn);
-	if (ret!=0) {
-		DEBUG(DEBUG_ERR, (__location__ " Unable to set recovery master\n"));
-		return -1;
-	}
-
-	DEBUG(DEBUG_NOTICE, (__location__ " Recovery - updated recmaster\n"));
 
 	/* disable recovery mode */
 	ret = set_recovery_mode(ctdb, rec, nodemap, CTDB_RECOVERY_NORMAL, false);
