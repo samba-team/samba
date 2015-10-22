@@ -233,6 +233,16 @@ userAccountControl: %d
         time.sleep(0.01)
         return res
 
+    def assertLoginFailure(self, url, creds, lp, errno=ERR_INVALID_CREDENTIALS):
+        try:
+            ldb = SamDB(url=url, credentials=creds, lp=lp)
+            self.fail("Login unexpectedly succeeded")
+        except LdbError, (num, msg):
+            if errno is not None:
+                self.assertEquals(num, errno, ("Login failed in the wrong way"
+                                               "(got err %d, expected %d)" %
+                                               (num, errno)))
+
     def setUp(self):
         super(PasswordTests, self).setUp()
 
@@ -1230,11 +1240,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
         # The wrong password
         creds_lockout.set_password("thatsAcomplPASS1x")
 
-        try:
-            ldb_lockout = SamDB(url=host_url, credentials=creds_lockout, lp=lp)
-
-        except LdbError, (num, msg):
-            self.assertEquals(num, ERR_INVALID_CREDENTIALS)
+        self.assertLoginFailure(host_url, creds_lockout, lp)
 
         res = self._check_account("cn=testuser,cn=users," + self.base_dn,
                                   badPwdCount=1,
@@ -1259,11 +1265,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
         # The wrong password
         creds_lockout.set_password("thatsAcomplPASS1x")
 
-        try:
-            ldb_lockout = SamDB(url=host_url, credentials=creds_lockout, lp=lp)
-
-        except LdbError, (num, msg):
-            self.assertEquals(num, ERR_INVALID_CREDENTIALS)
+        self.assertLoginFailure(host_url, creds_lockout, lp)
 
         res = self._check_account("cn=testuser,cn=users," + self.base_dn,
                                   badPwdCount=1,
