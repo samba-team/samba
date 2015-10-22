@@ -1379,8 +1379,11 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 			return result;
 		}
 		netr_attempts = 0;
-
-		if (interactive && username != NULL && password != NULL) {
+		if (domain->conn.netlogon_creds == NULL) {
+			DEBUG(3, ("No security credentials available for "
+				  "domain [%s]\n", domainname));
+			result = NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+		} else if (interactive && username != NULL && password != NULL) {
 			result = rpccli_netlogon_password_logon(domain->conn.netlogon_creds,
 								netlogon_pipe->binding_handle,
 								mem_ctx,
