@@ -541,6 +541,7 @@ long long int rep_strtoll(const char *str, char **endptr, int base)
 #undef strtoll
 long long int rep_strtoll(const char *str, char **endptr, int base)
 {
+	int saved_errno = errno;
 	long long int nb = strtoll(str, endptr, base);
 	/* With glibc EINVAL is only returned if base is not ok */
 	if (errno == EINVAL) {
@@ -549,7 +550,7 @@ long long int rep_strtoll(const char *str, char **endptr, int base)
 			 * able to make the convertion.
 			 * Let's reset errno.
 			 */
-			errno = 0;
+			errno = saved_errno;
 		}
 	}
 	return nb;
@@ -576,6 +577,7 @@ unsigned long long int rep_strtoull(const char *str, char **endptr, int base)
 #undef strtoull
 unsigned long long int rep_strtoull(const char *str, char **endptr, int base)
 {
+	int saved_errno = errno;
 	unsigned long long int nb = strtoull(str, endptr, base);
 	/* With glibc EINVAL is only returned if base is not ok */
 	if (errno == EINVAL) {
@@ -584,7 +586,7 @@ unsigned long long int rep_strtoull(const char *str, char **endptr, int base)
 			 * able to make the convertion.
 			 * Let's reset errno.
 			 */
-			errno = 0;
+			errno = saved_errno;
 		}
 	}
 	return nb;
