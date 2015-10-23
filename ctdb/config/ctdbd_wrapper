@@ -25,6 +25,7 @@ loadconfig "ctdb"
 [ -n "$CTDB_SOCKET" ] && export CTDB_SOCKET
 
 ctdbd="${CTDBD:-/usr/local/sbin/ctdbd}"
+ctdb_rundir="/usr/local/var/run/ctdb"
 
 ############################################################
 
@@ -78,6 +79,63 @@ ctdbd_is_running ()
 }
 
 ############################################################
+
+# Mount given database directories on tmpfs
+dbdir_tmpfs_start ()
+{
+    for _var ; do
+	# $_var is the name of the configuration varable, so get the
+	# value
+	eval _val="\$${_var}"
+
+	case "$_val" in
+	    tmpfs|tmpfs:*)
+		_opts_defaults="mode=700"
+		# Get any extra options specified after colon
+		if [ "$_val" = "tmpfs" ] ; then
+		    _opts=""
+		else
+		    _opts="${_val#tmpfs:}"
+		fi
+		# It is OK to repeat options - last value wins
+		_opts_all="${_opts_defaults}${_opts:+,}${_opts}"
+
+		# Last component of mountpoint is variable name
+		_mnt="${ctdb_rundir}/${_var}"
+		mkdir -p "$_mnt" || exit $?
+
+		# If already mounted then remount, otherwise mount
+		if findmnt -t tmpfs "$_mnt" >/dev/null ; then
+		    mount -t tmpfs -o "remount,$_opts_all" none "$_mnt" || \
+			exit $?
+		else
+		    mount -t tmpfs -o "$_opts_all" none "$_mnt" || exit $?
+		fi
+
+		# Replace specified value with mountpoint, to be
+		# passed to ctdbd
+		eval "${_var}=${_mnt}"
+		;;
+	esac
+    done
+}
+
+# Unmount database tmpfs directories on exit
+dbdir_tmpfs_stop ()
+{
+    for _var ; do
+	eval _val="\$${_var}"
+
+	case "$_val" in
+	    tmpfs|tmpfs:*)
+		_mnt="${ctdb_rundir}/${_var}"
+		if [ -d "$_mnt" ] && findmnt -t tmpfs "$_mnt" >/dev/null ; then
+		    umount "$_mnt"
+		fi
+		;;
+	esac
+    done
+}
 
 build_ctdb_options ()
 {
@@ -164,6 +222,8 @@ start()
     # About to start new $ctdbd.  The main daemon is not running but
     # there may still be other processes around, so do some cleanup.
     kill_ctdbd "$_session"
+
+    dbdir_tmpfs_start CTDB_DBDIR
 
     build_ctdb_options
 
@@ -273,6 +333,8 @@ stop()
 	    return 1
 	fi
     fi
+
+    dbdir_tmpfs_stop CTDB_DBDIR
 
     return 0
 }
