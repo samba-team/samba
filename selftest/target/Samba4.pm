@@ -646,6 +646,7 @@ sub provision_raw_prepare($$$$$$$$$$$)
 	$ctx->{smb_conf_extra_options} = "";
 
 	my @provision_options = ();
+	push (@provision_options, "KRB5_CONFIG=\"$ctx->{krb5_config}\"");
 	push (@provision_options, "NSS_WRAPPER_PASSWD=\"$ctx->{nsswrap_passwd}\"");
 	push (@provision_options, "NSS_WRAPPER_GROUP=\"$ctx->{nsswrap_group}\"");
 	push (@provision_options, "NSS_WRAPPER_HOSTS=\"$ctx->{nsswrap_hosts}\"");
@@ -896,14 +897,18 @@ sub provision_raw_step2($$$)
 	}
 
 	my $testallowed_account = "testallowed";
-	my $samba_tool_cmd = Samba::bindir_path($self, "samba-tool") 
+	my $samba_tool_cmd = "";
+	$samba_tool_cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
+	$samba_tool_cmd .= Samba::bindir_path($self, "samba-tool")
 	    . " user add --configfile=$ctx->{smb_conf} $testallowed_account $ctx->{password}";
 	unless (system($samba_tool_cmd) == 0) {
 		warn("Unable to add testallowed user: \n$samba_tool_cmd\n");
 		return undef;
 	}
 
-	my $ldbmodify = Samba::bindir_path($self, "ldbmodify");
+	my $ldbmodify = "";
+	$ldbmodify .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
+	$ldbmodify .= Samba::bindir_path($self, "ldbmodify");
 	my $base_dn = "DC=".join(",DC=", split(/\./, $ctx->{realm}));
 
 	if ($ctx->{server_role} ne "domain controller") {
@@ -932,7 +937,9 @@ servicePrincipalName: host/testallowed
 ";
 	close(LDIF);
 
-	$samba_tool_cmd = Samba::bindir_path($self, "samba-tool") 
+	$samba_tool_cmd = "";
+	$samba_tool_cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
+	$samba_tool_cmd .= Samba::bindir_path($self, "samba-tool")
 	    . " user add --configfile=$ctx->{smb_conf} testdenied $ctx->{password}";
 	unless (system($samba_tool_cmd) == 0) {
 		warn("Unable to add testdenied user: \n$samba_tool_cmd\n");
@@ -949,7 +956,9 @@ userPrincipalName: testdenied_upn\@$ctx->{realm}.upn
 ";
 	close(LDIF);
 
-	$samba_tool_cmd = Samba::bindir_path($self, "samba-tool") 
+	$samba_tool_cmd = "";
+	$samba_tool_cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
+	$samba_tool_cmd .= Samba::bindir_path($self, "samba-tool")
 	    . " group addmembers --configfile=$ctx->{smb_conf} 'Allowed RODC Password Replication Group' '$testallowed_account'";
 	unless (system($samba_tool_cmd) == 0) {
 		warn("Unable to add '$testallowed_account' user to 'Allowed RODC Password Replication Group': \n$samba_tool_cmd\n");
