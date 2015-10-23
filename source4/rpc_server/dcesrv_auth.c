@@ -527,146 +527,21 @@ bool dcesrv_auth_pkt_pull(struct dcesrv_call_state *call,
 */
 bool dcesrv_auth_response(struct dcesrv_call_state *call,
 			  DATA_BLOB *blob, size_t sig_size,
-			  struct ncacn_packet *pkt)
+			  const struct ncacn_packet *pkt)
 {
 	struct dcesrv_connection *dce_conn = call->conn;
-	NTSTATUS status;
-	enum ndr_err_code ndr_err;
-	struct ndr_push *ndr;
-	uint32_t payload_length;
-	DATA_BLOB creds2;
-
-	switch (dce_conn->auth_state.auth_level) {
-	case DCERPC_AUTH_LEVEL_PRIVACY:
-	case DCERPC_AUTH_LEVEL_INTEGRITY:
-	case DCERPC_AUTH_LEVEL_PACKET:
-		if (sig_size == 0) {
-			return false;
-		}
-
-		break;
-
-	case DCERPC_AUTH_LEVEL_CONNECT:
-		/*
-		 * TODO: let the gensec mech decide if it wants to generate a
-		 *       signature that might be needed for schannel...
-		 */
-		status = ncacn_push_auth(blob, call, pkt, NULL);
-		return NT_STATUS_IS_OK(status);
-
-	case DCERPC_AUTH_LEVEL_NONE:
-		status = ncacn_push_auth(blob, call, pkt, NULL);
-		return NT_STATUS_IS_OK(status);
-
-	default:
-		return false;
-	}
-
-	if (!dce_conn->auth_state.gensec_security) {
-		return false;
-	}
-
-	ndr = ndr_push_init_ctx(call);
-	if (!ndr) {
-		return false;
-	}
-
-	if (!(pkt->drep[0] & DCERPC_DREP_LE)) {
-		ndr->flags |= LIBNDR_FLAG_BIGENDIAN;
-	}
-
-	ndr_err = ndr_push_ncacn_packet(ndr, NDR_SCALARS|NDR_BUFFERS, pkt);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		return false;
-	}
-
-	call->_out_auth_info = (struct dcerpc_auth) {
+	const struct dcerpc_auth tmp_auth = {
 		.auth_type = dce_conn->auth_state.auth_type,
 		.auth_level = dce_conn->auth_state.auth_level,
 		.auth_context_id = dce_conn->auth_state.auth_context_id,
 	};
-	call->out_auth_info = &call->_out_auth_info;
+	NTSTATUS status;
 
-	/* pad to 16 byte multiple in the payload portion of the
-	   packet. This matches what w2k3 does. Note that we can't use
-	   ndr_push_align() as that is relative to the start of the
-	   whole packet, whereas w2k8 wants it relative to the start
-	   of the stub */
-	call->out_auth_info->auth_pad_length =
-		DCERPC_AUTH_PAD_LENGTH(pkt->u.response.stub_and_verifier.length);
-	ndr_err = ndr_push_zero(ndr, call->out_auth_info->auth_pad_length);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		return false;
-	}
-
-	payload_length = pkt->u.response.stub_and_verifier.length +
-		call->out_auth_info->auth_pad_length;
-
-	/* add the auth verifier */
-	ndr_err = ndr_push_dcerpc_auth(ndr, NDR_SCALARS|NDR_BUFFERS,
-				       call->out_auth_info);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		return false;
-	}
-
-	/* extract the whole packet as a blob */
-	*blob = ndr_push_blob(ndr);
-
-	/*
-	 * Setup the frag and auth length in the packet buffer.
-	 * This is needed if the GENSEC mech does AEAD signing
-	 * of the packet headers. The signature itself will be
-	 * appended later.
-	 */
-	dcerpc_set_frag_length(blob, blob->length + sig_size);
-	dcerpc_set_auth_length(blob, sig_size);
-
-	/* sign or seal the packet */
-	switch (dce_conn->auth_state.auth_level) {
-	case DCERPC_AUTH_LEVEL_PRIVACY:
-		status = gensec_seal_packet(dce_conn->auth_state.gensec_security, 
-					    call,
-					    ndr->data + DCERPC_REQUEST_LENGTH, 
-					    payload_length,
-					    blob->data,
-					    blob->length,
-					    &creds2);
-		break;
-
-	case DCERPC_AUTH_LEVEL_INTEGRITY:
-	case DCERPC_AUTH_LEVEL_PACKET:
-		status = gensec_sign_packet(dce_conn->auth_state.gensec_security, 
-					    call,
-					    ndr->data + DCERPC_REQUEST_LENGTH, 
-					    payload_length,
-					    blob->data,
-					    blob->length,
-					    &creds2);
-		break;
-
-	default:
-		status = NT_STATUS_INVALID_LEVEL;
-		break;
-	}
-
-	if (!NT_STATUS_IS_OK(status)) {
-		return false;
-	}	
-
-	if (creds2.length != sig_size) {
-		DEBUG(3,("dcesrv_auth_response: creds2.length[%u] != sig_size[%u] pad[%u] stub[%u]\n",
-			 (unsigned)creds2.length, (uint32_t)sig_size,
-			 (unsigned)call->out_auth_info->auth_pad_length,
-			 (unsigned)pkt->u.response.stub_and_verifier.length));
-		dcerpc_set_frag_length(blob, blob->length + creds2.length);
-		dcerpc_set_auth_length(blob, creds2.length);
-	}
-
-	if (!data_blob_append(call, blob, creds2.data, creds2.length)) {
-		status = NT_STATUS_NO_MEMORY;
-		return false;
-	}
-	data_blob_free(&creds2);
-
-	return true;
+	status = dcerpc_ncacn_push_pkt_auth(&tmp_auth,
+					    dce_conn->auth_state.gensec_security,
+					    call, blob, sig_size,
+					    DCERPC_RESPONSE_LENGTH,
+					    &pkt->u.response.stub_and_verifier,
+					    pkt);
+	return NT_STATUS_IS_OK(status);
 }
