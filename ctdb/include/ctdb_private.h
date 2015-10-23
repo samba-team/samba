@@ -792,22 +792,6 @@ struct ctdb_client_call_state {
 	} async;
 };
 
-
-int32_t ctdb_control_traverse_start_ext(struct ctdb_context *ctdb,
-					TDB_DATA indata,
-					TDB_DATA *outdata,
-					uint32_t srcnode,
-					uint32_t client_id);
-int32_t ctdb_control_traverse_start(struct ctdb_context *ctdb, TDB_DATA indata, 
-				    TDB_DATA *outdata, uint32_t srcnode, uint32_t client_id);
-int32_t ctdb_control_traverse_all(struct ctdb_context *ctdb, TDB_DATA data, TDB_DATA *outdata);
-int32_t ctdb_control_traverse_all_ext(struct ctdb_context *ctdb, TDB_DATA data, TDB_DATA *outdata);
-int32_t ctdb_control_traverse_data(struct ctdb_context *ctdb, TDB_DATA data, TDB_DATA *outdata);
-int32_t ctdb_control_traverse_kill(struct ctdb_context *ctdb, TDB_DATA indata, 
-				    TDB_DATA *outdata, uint32_t srcnode);
-
-uint32_t ctdb_get_num_active_nodes(struct ctdb_context *ctdb);
-
 int32_t ctdb_run_eventscripts(struct ctdb_context *ctdb, struct ctdb_req_control *c, TDB_DATA data, bool *async_reply);
 
 int ctdb_ctrl_takeover_ip(struct ctdb_context *ctdb, struct timeval timeout, 
@@ -1492,5 +1476,23 @@ void clear_ip_assignment_tree(struct ctdb_context *ctdb);
 int32_t ctdb_control_reload_public_ips(struct ctdb_context *ctdb,
 				       struct ctdb_req_control *c,
 				       bool *async_reply);
+
+/* from ctdb_traverse.c */
+
+int32_t ctdb_control_traverse_all_ext(struct ctdb_context *ctdb,
+				      TDB_DATA data, TDB_DATA *outdata);
+int32_t ctdb_control_traverse_all(struct ctdb_context *ctdb,
+				  TDB_DATA data, TDB_DATA *outdata);
+int32_t ctdb_control_traverse_data(struct ctdb_context *ctdb,
+				   TDB_DATA data, TDB_DATA *outdata);
+int32_t ctdb_control_traverse_kill(struct ctdb_context *ctdb, TDB_DATA indata,
+				    TDB_DATA *outdata, uint32_t srcnode);
+
+int32_t ctdb_control_traverse_start_ext(struct ctdb_context *ctdb,
+					TDB_DATA indata, TDB_DATA *outdata,
+					uint32_t srcnode, uint32_t client_id);
+int32_t ctdb_control_traverse_start(struct ctdb_context *ctdb,
+				    TDB_DATA indata, TDB_DATA *outdata,
+				    uint32_t srcnode, uint32_t client_id);
 
 #endif
