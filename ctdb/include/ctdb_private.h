@@ -896,10 +896,6 @@ int ctdb_ctrl_get_tcp_tickles(struct ctdb_context *ctdb,
 		      ctdb_sock_addr *addr,
 		      struct ctdb_control_tcp_tickle_list **list);
 
-
-int32_t ctdb_control_uptime(struct ctdb_context *ctdb, 
-		      TDB_DATA *outdata);
-
 int32_t ctdb_control_persistent_store(struct ctdb_context *ctdb, 
 				      struct ctdb_req_control *c, 
 				      TDB_DATA recdata, bool *async_reply);
@@ -1500,5 +1496,9 @@ int32_t ctdb_control_list_tunables(struct ctdb_context *ctdb,
 int32_t ctdb_control_update_record(struct ctdb_context *ctdb,
 				   struct ctdb_req_control *c,
 				   TDB_DATA recdata, bool *async_reply);
+
+/* from ctdb_uptime.c */
+
+int32_t ctdb_control_uptime(struct ctdb_context *ctdb, TDB_DATA *outdata);
 
 #endif
