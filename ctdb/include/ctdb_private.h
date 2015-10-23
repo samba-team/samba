@@ -411,8 +411,6 @@ enum ctdb_runstate {
 	CTDB_RUNSTATE_SHUTDOWN,
 };
 
-void ctdb_shutdown_sequence(struct ctdb_context *ctdb, int exit_code);
-
 #define CTDB_MONITORING_ACTIVE		0
 #define CTDB_MONITORING_DISABLED	1
 
@@ -695,8 +693,6 @@ int ctdb_ltdb_lock_fetch_requeue(struct ctdb_db_context *ctdb_db,
 				 void *recv_context, bool ignore_generation);
 void ctdb_input_pkt(struct ctdb_context *ctdb, struct ctdb_req_header *);
 
-int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork);
-
 /*
   allocate a packet for use in client<->daemon communication
  */
@@ -708,23 +704,8 @@ struct ctdb_req_header *_ctdbd_allocate_pkt(struct ctdb_context *ctdb,
 #define ctdbd_allocate_pkt(ctdb, mem_ctx, operation, length, type) \
 	(type *)_ctdbd_allocate_pkt(ctdb, mem_ctx, operation, length, sizeof(type), #type)
 
-struct ctdb_req_header *_ctdb_transport_allocate(struct ctdb_context *ctdb,
-						 TALLOC_CTX *mem_ctx, 
-						 enum ctdb_operation operation, 
-						 size_t length, size_t slength,
-						 const char *type);
-#define ctdb_transport_allocate(ctdb, mem_ctx, operation, length, type) \
-	(type *)_ctdb_transport_allocate(ctdb, mem_ctx, operation, length, sizeof(type), #type)
-
 int ctdb_client_send_message(struct ctdb_context *ctdb, uint32_t vnn,
 			     uint64_t srvid, TDB_DATA data);
-
-/*
-  send a ctdb message
-*/
-int ctdb_daemon_send_message(struct ctdb_context *ctdb, uint32_t pnn,
-			     uint64_t srvid, TDB_DATA data);
-
 
 int ctdb_call_local(struct ctdb_db_context *ctdb_db, struct ctdb_call *call,
 		    struct ctdb_ltdb_header *header, TALLOC_CTX *mem_ctx,
@@ -742,9 +723,6 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 			       bool *async_reply);
 int32_t ctdb_control_db_detach(struct ctdb_context *ctdb, TDB_DATA indata,
 			       uint32_t client_id);
-
-int ctdb_daemon_set_call(struct ctdb_context *ctdb, uint32_t db_id,
-			 ctdb_fn_t fn, int id);
 
 int ctdb_control(struct ctdb_context *ctdb, uint32_t destnode, uint64_t srvid, 
 		 uint32_t opcode, uint32_t flags, TDB_DATA data, 
@@ -786,7 +764,6 @@ int ctdb_control_getvnnmap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA 
 int ctdb_control_setvnnmap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indata, TDB_DATA *outdata);
 int ctdb_control_getdbmap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indata, TDB_DATA *outdata);
 int ctdb_control_getnodemap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indata, TDB_DATA *outdata);
-int ctdb_control_getnodesfile(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indata, TDB_DATA *outdata);
 
 
 /* structure used for pulldb control */
@@ -862,11 +839,6 @@ int32_t ctdb_control_traverse_data(struct ctdb_context *ctdb, TDB_DATA data, TDB
 int32_t ctdb_control_traverse_kill(struct ctdb_context *ctdb, TDB_DATA indata, 
 				    TDB_DATA *outdata, uint32_t srcnode);
 
-int daemon_register_message_handler(struct ctdb_context *ctdb, uint32_t client_id, uint64_t srvid);
-int daemon_deregister_message_handler(struct ctdb_context *ctdb, uint32_t client_id, uint64_t srvid);
-int daemon_check_srvids(struct ctdb_context *ctdb, TDB_DATA indata,
-			TDB_DATA *outdata);
-
 int32_t ctdb_ltdb_enable_seqnum(struct ctdb_context *ctdb, uint32_t db_id);
 int32_t ctdb_ltdb_update_seqnum(struct ctdb_context *ctdb, uint32_t db_id, uint32_t srcnode);
 
@@ -905,7 +877,6 @@ void ctdb_stop_keepalive(struct ctdb_context *ctdb);
 int32_t ctdb_run_eventscripts(struct ctdb_context *ctdb, struct ctdb_req_control *c, TDB_DATA data, bool *async_reply);
 
 
-void ctdb_daemon_cancel_controls(struct ctdb_context *ctdb, struct ctdb_node *node);
 void ctdb_node_dead(struct ctdb_node *node);
 void ctdb_node_connected(struct ctdb_node *node);
 bool ctdb_blocking_freeze(struct ctdb_context *ctdb);
@@ -1183,10 +1154,6 @@ int ctdb_vacuum_init(struct ctdb_db_context *ctdb_db);
 int32_t ctdb_control_enable_script(struct ctdb_context *ctdb, TDB_DATA indata);
 int32_t ctdb_control_disable_script(struct ctdb_context *ctdb, TDB_DATA indata);
 
-int32_t ctdb_control_register_notify(struct ctdb_context *ctdb, uint32_t client_id, TDB_DATA indata);
-
-int32_t ctdb_control_deregister_notify(struct ctdb_context *ctdb, uint32_t client_id, TDB_DATA indata);
-
 struct ctdb_log_state *ctdb_vfork_with_logging(TALLOC_CTX *mem_ctx,
 					       struct ctdb_context *ctdb,
 					       const char *log_prefix,
@@ -1196,9 +1163,6 @@ struct ctdb_log_state *ctdb_vfork_with_logging(TALLOC_CTX *mem_ctx,
 					       void (*logfn)(const char *, uint16_t, void *),
 					       void *logfn_private, pid_t *pid);
 
-
-int32_t ctdb_control_process_exists(struct ctdb_context *ctdb, pid_t pid);
-struct ctdb_client *ctdb_find_client_by_pid(struct ctdb_context *ctdb, pid_t pid);
 
 int32_t ctdb_control_get_db_seqnum(struct ctdb_context *ctdb,
 				   TDB_DATA indata,
@@ -1352,6 +1316,51 @@ int ctdb_daemon_send_control(struct ctdb_context *ctdb, uint32_t destnode,
 			     TDB_DATA data,
 			     ctdb_control_callback_fn_t callback,
 			     void *private_data);
+
+/* from server/ctdb_daemon.c */
+
+int daemon_register_message_handler(struct ctdb_context *ctdb,
+				    uint32_t client_id, uint64_t srvid);
+int daemon_deregister_message_handler(struct ctdb_context *ctdb,
+				      uint32_t client_id, uint64_t srvid);
+int daemon_check_srvids(struct ctdb_context *ctdb, TDB_DATA indata,
+			TDB_DATA *outdata);
+
+int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork);
+
+struct ctdb_req_header *_ctdb_transport_allocate(struct ctdb_context *ctdb,
+						 TALLOC_CTX *mem_ctx,
+						 enum ctdb_operation operation,
+						 size_t length, size_t slength,
+						 const char *type);
+
+#define ctdb_transport_allocate(ctdb, mem_ctx, operation, length, type) \
+	(type *)_ctdb_transport_allocate(ctdb, mem_ctx, operation, length, \
+					 sizeof(type), #type)
+
+void ctdb_daemon_cancel_controls(struct ctdb_context *ctdb,
+				 struct ctdb_node *node);
+
+int ctdb_daemon_set_call(struct ctdb_context *ctdb, uint32_t db_id,
+			 ctdb_fn_t fn, int id);
+
+int ctdb_daemon_send_message(struct ctdb_context *ctdb, uint32_t pnn,
+			     uint64_t srvid, TDB_DATA data);
+
+int32_t ctdb_control_register_notify(struct ctdb_context *ctdb,
+				     uint32_t client_id, TDB_DATA indata);
+int32_t ctdb_control_deregister_notify(struct ctdb_context *ctdb,
+				       uint32_t client_id, TDB_DATA indata);
+
+struct ctdb_client *ctdb_find_client_by_pid(struct ctdb_context *ctdb,
+					    pid_t pid);
+
+int32_t ctdb_control_process_exists(struct ctdb_context *ctdb, pid_t pid);
+
+int ctdb_control_getnodesfile(struct ctdb_context *ctdb, uint32_t opcode,
+			      TDB_DATA indata, TDB_DATA *outdata);
+
+void ctdb_shutdown_sequence(struct ctdb_context *ctdb, int exit_code);
 
 /* from server/ctdb_lock.c */
 struct lock_request;
