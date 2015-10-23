@@ -167,7 +167,6 @@ ctdb_get_capabilities(struct ctdb_context *ctdb,
 		      struct ctdb_node_map *nodemap);
 
 #undef TIMELIMIT
-#include "tools/ctdb_vacuum.c"
 
 /* CTDB_COMMON_OBJ */
 #include "common/ctdb_io.c"

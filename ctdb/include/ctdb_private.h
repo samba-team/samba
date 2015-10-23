@@ -1264,9 +1264,6 @@ int32_t ctdb_control_db_get_health(struct ctdb_context *ctdb,
 				   TDB_DATA indata,
 				   TDB_DATA *outdata);
 
-
-int ctdb_repack(struct ctdb_context *ctdb, int argc, const char **argv);
-
 int32_t ctdb_monitoring_mode(struct ctdb_context *ctdb);
 bool ctdb_stopped_monitoring(struct ctdb_context *ctdb);
 int ctdb_set_child_logging(struct ctdb_context *ctdb);
