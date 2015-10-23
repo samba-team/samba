@@ -2330,9 +2330,10 @@ static int send_election_request(struct ctdb_recoverd *rec, uint32_t pnn)
 	/* first we assume we will win the election and set 
 	   recoverymaster to be ourself on the current node
 	 */
-	ret = ctdb_ctrl_setrecmaster(ctdb, CONTROL_TIMEOUT(), pnn, pnn);
+	ret = ctdb_ctrl_setrecmaster(ctdb, CONTROL_TIMEOUT(),
+				     CTDB_CURRENT_NODE, pnn);
 	if (ret != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " failed to send recmaster election request\n"));
+		DEBUG(DEBUG_ERR, (__location__ " failed to set recmaster\n"));
 		return -1;
 	}
 	rec->recmaster = pnn;
@@ -2739,9 +2740,10 @@ static void election_handler(uint64_t srvid, TDB_DATA data, void *private_data)
 	clear_ip_assignment_tree(ctdb);
 
 	/* ok, let that guy become recmaster then */
-	ret = ctdb_ctrl_setrecmaster(ctdb, CONTROL_TIMEOUT(), ctdb_get_pnn(ctdb), em->pnn);
+	ret = ctdb_ctrl_setrecmaster(ctdb, CONTROL_TIMEOUT(),
+				     CTDB_CURRENT_NODE, em->pnn);
 	if (ret != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " failed to send recmaster election request"));
+		DEBUG(DEBUG_ERR, (__location__ " failed to set recmaster"));
 		return;
 	}
 	rec->recmaster = em->pnn;
