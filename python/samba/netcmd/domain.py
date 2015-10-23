@@ -826,7 +826,9 @@ class cmd_domain_demote(Command):
             raise CommandError("Error while changing account control", e)
 
         parent = msg.dn.parent()
-        rdn = "%s=%s" % (res[0].dn.get_rdn_name(), res[0].dn.get_rdn_value())
+        dc_name = res[0].dn.get_rdn_value()
+        rdn = "CN=%s" % dc_name
+
         # Let's move to the Computer container
         i = 0
         newrdn = str(rdn)
@@ -916,7 +918,7 @@ class cmd_domain_demote(Command):
             else:
                 raise CommandError("Error while sending a removeDsServer of %s: " % server_dsa_dn, e)
 
-        remove_dc.remove_sysvol_references(remote_samdb, rdn)
+        remove_dc.remove_sysvol_references(remote_samdb, dc_name)
 
         # These are objects under the computer account that should be deleted
         for s in ("CN=Enterprise,CN=NTFRS Subscriptions",

@@ -31,23 +31,51 @@ class DemoteException(Exception):
         return "DemoteException: " + self.value
 
 
-def remove_sysvol_references(samdb, rdn):
+def remove_sysvol_references(samdb, dc_name):
+    # DNs under the Configuration DN:
     realm = samdb.domain_dns_name()
     for s in ("CN=Enterprise,CN=Microsoft System Volumes,CN=System",
               "CN=%s,CN=Microsoft System Volumes,CN=System" % realm):
-        try:
-            samdb.delete(ldb.Dn(samdb,
-                                "%s,%s,%s" % (str(rdn), s, str(samdb.get_config_basedn()))))
-        except ldb.LdbError, l:
-            pass
+        dn = ldb.Dn(samdb, s)
 
-    for s in ("CN=Topology,CN=Domain System Volume,CN=DFSR-GlobalSettings,CN=System",
-              "CN=Domain System Volumes (SYSVOL share),CN=File Replication Service,CN=System"):
+        # This is verbose, but it is the safe, escape-proof way
+        # to add a base and add an arbitrary RDN.
+        if dn.add_base(samdb.get_config_basedn()) == False:
+            raise DemoteException("Failed constructing DN %s by adding base %s" \
+                                  % (dn, samdb.get_config_basedn()))
+        if dn.add_child("CN=X") == False:
+            raise DemoteException("Failed constructing DN %s by adding child CN=X"\
+                                      % (dn))
+        dn.set_component(0, "CN", dc_name)
         try:
-            samdb.delete(ldb.Dn(samdb,
-                                "%s,%s,%s" % (str(rdn), s, str(samdb.get_default_basedn()))))
-        except ldb.LdbError, l:
-            pass
+            samdb.delete(dn)
+        except ldb.LdbError as (enum, estr):
+            if enum == ldb.ERR_NO_SUCH_OBJECT:
+                pass
+            else:
+                raise
+
+    # DNs under the Domain DN:
+    for s in ("CN=Domain System Volumes (SYSVOL share),CN=File Replication Service,CN=System",
+              "CN=Topology,CN=Domain System Volume,CN=DFSR-GlobalSettings,CN=System"):
+        # This is verbose, but it is the safe, escape-proof way
+        # to add a base and add an arbitrary RDN.
+        dn = ldb.Dn(samdb, s)
+        if dn.add_base(samdb.get_default_basedn()) == False:
+            raise DemoteException("Failed constructing DN %s by adding base" % \
+                                  (dn, samdb.get_default_basedn()))
+        if dn.add_child("CN=X") == False:
+            raise DemoteException("Failed constructing DN %s by adding child %s"\
+                                  % (dn, rdn))
+        dn.set_component(0, "CN", dc_name)
+        try:
+            samdb.delete(dn)
+        except ldb.LdbError as (enum, estr):
+            if enum == ldb.ERR_NO_SUCH_OBJECT:
+                pass
+            else:
+                raise
+
 
 def remove_dns_references(samdb, dnsHostName):
 
@@ -84,7 +112,7 @@ def offline_remove_server(samdb, server_dn,
                         scope=ldb.SCOPE_BASE,
                         expression="(objectClass=server)")
     msg = msgs[0]
-    dc_name = msgs[0]["cn"]
+    dc_name = str(msgs[0]["cn"][0])
 
     try:
         computer_dn = ldb.Dn(samdb, msgs[0]["serverReference"][0])
@@ -122,7 +150,7 @@ def offline_remove_server(samdb, server_dn,
         remove_dns_references(samdb, dnsHostName)
 
     if remove_sysvol_obj:
-        remove_sysvol_references(samdb, "CN=%s" % dc_name)
+        remove_sysvol_references(samdb, dc_name)
 
 def offline_remove_ntds_dc(samdb, ntds_dn,
                            remove_computer_obj=False,
