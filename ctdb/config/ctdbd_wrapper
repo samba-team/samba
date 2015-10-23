@@ -249,23 +249,29 @@ stop()
     # Wait for remaining CTDB processes to exit...
     _timeout=${CTDB_SHUTDOWN_TIMEOUT:-30}
     _count=0
+    _terminated=false
     while [ $_count -lt $_timeout ] ; do
-	pkill -0 -s "$_session" 2>/dev/null || return 0
+	if ! pkill -0 -s "$_session" 2>/dev/null ; then
+	    _terminated=true
+	    break
+	fi
 
 	_count=$(($_count + 1))
 	sleep 1
     done
 
-    echo "Timed out waiting for CTDB to shutdown.  Killing CTDB processes."
-    kill_ctdbd "$_session"
-    drop_all_public_ips >/dev/null 2>&1
+    if ! $_terminated ; then
+	echo "Timed out waiting for CTDB to shutdown.  Killing CTDB processes."
+	kill_ctdbd "$_session"
+	drop_all_public_ips >/dev/null 2>&1
 
-    sleep 1
+	sleep 1
 
-    if pkill -0 -s "$_session" ; then
-	# If SIGKILL didn't work then things are bad...
-	echo "Failed to kill all CTDB processes.  Giving up."
-	return 1
+	if pkill -0 -s "$_session" ; then
+	    # If SIGKILL didn't work then things are bad...
+	    echo "Failed to kill all CTDB processes.  Giving up."
+	    return 1
+	fi
     fi
 
     return 0
