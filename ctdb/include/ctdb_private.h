@@ -682,15 +682,6 @@ int32_t ctdb_control_cancel_persistent_update(struct ctdb_context *ctdb,
 			TDB_DATA recdata);
 void ctdb_queue_packet(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
 void ctdb_queue_packet_opcode(struct ctdb_context *ctdb, struct ctdb_req_header *hdr, unsigned opcode);
-int ctdb_ltdb_lock_requeue(struct ctdb_db_context *ctdb_db, 
-			   TDB_DATA key, struct ctdb_req_header *hdr,
-			   void (*recv_pkt)(void *, struct ctdb_req_header *),
-			   void *recv_context, bool ignore_generation);
-int ctdb_ltdb_lock_fetch_requeue(struct ctdb_db_context *ctdb_db, 
-				 TDB_DATA key, struct ctdb_ltdb_header *header, 
-				 struct ctdb_req_header *hdr, TDB_DATA *data,
-				 void (*recv_pkt)(void *, struct ctdb_req_header *),
-				 void *recv_context, bool ignore_generation);
 void ctdb_input_pkt(struct ctdb_context *ctdb, struct ctdb_req_header *);
 
 /*
@@ -715,14 +706,6 @@ int ctdb_call_local(struct ctdb_db_context *ctdb_db, struct ctdb_call *call,
 
 int ctdb_socket_connect(struct ctdb_context *ctdb);
 void ctdb_client_read_cb(uint8_t *data, size_t cnt, void *args);
-
-int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata, 
-			       TDB_DATA *outdata, uint64_t tdb_flags,
-			       bool persistent, uint32_t client_id,
-			       struct ctdb_req_control *c,
-			       bool *async_reply);
-int32_t ctdb_control_db_detach(struct ctdb_context *ctdb, TDB_DATA indata,
-			       uint32_t client_id);
 
 int ctdb_control(struct ctdb_context *ctdb, uint32_t destnode, uint64_t srvid, 
 		 uint32_t opcode, uint32_t flags, TDB_DATA data, 
@@ -838,9 +821,6 @@ int32_t ctdb_control_traverse_all_ext(struct ctdb_context *ctdb, TDB_DATA data, 
 int32_t ctdb_control_traverse_data(struct ctdb_context *ctdb, TDB_DATA data, TDB_DATA *outdata);
 int32_t ctdb_control_traverse_kill(struct ctdb_context *ctdb, TDB_DATA indata, 
 				    TDB_DATA *outdata, uint32_t srcnode);
-
-int32_t ctdb_ltdb_enable_seqnum(struct ctdb_context *ctdb, uint32_t db_id);
-int32_t ctdb_ltdb_update_seqnum(struct ctdb_context *ctdb, uint32_t db_id, uint32_t srcnode);
 
 int32_t ctdb_control_pull_db(struct ctdb_context *ctdb, TDB_DATA indata, TDB_DATA *outdata);
 int32_t ctdb_control_push_db(struct ctdb_context *ctdb, TDB_DATA indata);
@@ -1054,8 +1034,6 @@ int32_t ctdb_control_get_server_id_list(struct ctdb_context *ctdb,
 int32_t ctdb_control_uptime(struct ctdb_context *ctdb, 
 		      TDB_DATA *outdata);
 
-int ctdb_attach_databases(struct ctdb_context *ctdb);
-
 int32_t ctdb_control_persistent_store(struct ctdb_context *ctdb, 
 				      struct ctdb_req_control *c, 
 				      TDB_DATA recdata, bool *async_reply);
@@ -1068,11 +1046,6 @@ int32_t ctdb_control_trans3_commit(struct ctdb_context *ctdb,
 				   TDB_DATA recdata, bool *async_reply);
 
 void ctdb_persistent_finish_trans3_commits(struct ctdb_context *ctdb);
-
-int32_t ctdb_control_db_set_healthy(struct ctdb_context *ctdb, TDB_DATA indata);
-int32_t ctdb_control_db_get_health(struct ctdb_context *ctdb,
-				   TDB_DATA indata,
-				   TDB_DATA *outdata);
 
 int32_t ctdb_monitoring_mode(struct ctdb_context *ctdb);
 bool ctdb_stopped_monitoring(struct ctdb_context *ctdb);
@@ -1131,14 +1104,6 @@ int32_t ctdb_control_get_db_seqnum(struct ctdb_context *ctdb,
 				   TDB_DATA indata,
 				   TDB_DATA *outdata);
 
-int ctdb_load_persistent_health(struct ctdb_context *ctdb,
-				struct ctdb_db_context *ctdb_db);
-int ctdb_update_persistent_health(struct ctdb_context *ctdb,
-				  struct ctdb_db_context *ctdb_db,
-				  const char *reason,/* NULL means healthy */
-				  int num_healthy_nodes);
-int ctdb_recheck_persistent_health(struct ctdb_context *ctdb);
-
 void ctdb_run_notification_script(struct ctdb_context *ctdb, const char *event);
 
 int verify_remote_ip_allocation(struct ctdb_context *ctdb,
@@ -1155,8 +1120,6 @@ int32_t ctdb_control_get_stat_history(struct ctdb_context *ctdb,
 				      TDB_DATA *outdata);
 
 int ctdb_deferred_drop_all_ips(struct ctdb_context *ctdb);
-
-int ctdb_process_deferred_attach(struct ctdb_context *ctdb);
 
 /**
  * structure to pass to a schedule_for_deletion_control
@@ -1184,16 +1147,6 @@ struct ctdb_ltdb_header *ctdb_header_from_record_handle(struct ctdb_record_handl
 
 typedef void (*deferred_requeue_fn)(void *call_context, struct ctdb_req_header *hdr);
 
-int ctdb_set_db_readonly(struct ctdb_context *ctdb, struct ctdb_db_context *ctdb_db);
-
-void ctdb_db_statistics_reset(struct ctdb_db_context *ctdb_db);
-
-int32_t ctdb_control_get_db_statistics(struct ctdb_context *ctdb,
-				uint32_t db_id,
-				TDB_DATA *outdata);
-
-int ctdb_set_db_sticky(struct ctdb_context *ctdb, struct ctdb_db_context *ctdb_db);
-
 /*
   description for a message to reload all ips via recovery master/daemon
  */
@@ -1214,8 +1167,6 @@ int ctdb_ibw_init(struct ctdb_context *ctdb);
 void ctdb_local_node_got_banned(struct ctdb_context *ctdb);
 int32_t ctdb_control_set_ban_state(struct ctdb_context *ctdb, TDB_DATA indata);
 int32_t ctdb_control_get_ban_state(struct ctdb_context *ctdb, TDB_DATA *outdata);
-int32_t ctdb_control_set_db_priority(struct ctdb_context *ctdb, TDB_DATA indata,
-				     uint32_t client_id);
 void ctdb_ban_self(struct ctdb_context *ctdb);
 
 /* from ctdb_call.c */
@@ -1433,5 +1384,61 @@ void ctdb_log_init_file(void);
 /* from ctdb_logging_syslog.c */
 
 void ctdb_log_init_syslog(void);
+
+/* from ctdb_ltdb_server.c */
+
+int ctdb_ltdb_lock_requeue(struct ctdb_db_context *ctdb_db,
+			   TDB_DATA key, struct ctdb_req_header *hdr,
+			   void (*recv_pkt)(void *, struct ctdb_req_header *),
+			   void *recv_context, bool ignore_generation);
+
+int ctdb_ltdb_lock_fetch_requeue(struct ctdb_db_context *ctdb_db,
+				 TDB_DATA key, struct ctdb_ltdb_header *header,
+				 struct ctdb_req_header *hdr, TDB_DATA *data,
+				 void (*recv_pkt)(void *, struct ctdb_req_header *),
+				 void *recv_context, bool ignore_generation);
+
+int ctdb_load_persistent_health(struct ctdb_context *ctdb,
+				struct ctdb_db_context *ctdb_db);
+int ctdb_update_persistent_health(struct ctdb_context *ctdb,
+				  struct ctdb_db_context *ctdb_db,
+				  const char *reason,/* NULL means healthy */
+				  int num_healthy_nodes);
+int ctdb_recheck_persistent_health(struct ctdb_context *ctdb);
+
+int32_t ctdb_control_db_set_healthy(struct ctdb_context *ctdb,
+				    TDB_DATA indata);
+int32_t ctdb_control_db_get_health(struct ctdb_context *ctdb,
+				   TDB_DATA indata, TDB_DATA *outdata);
+
+int ctdb_set_db_readonly(struct ctdb_context *ctdb,
+			 struct ctdb_db_context *ctdb_db);
+
+int ctdb_process_deferred_attach(struct ctdb_context *ctdb);
+
+int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
+			       TDB_DATA *outdata, uint64_t tdb_flags,
+			       bool persistent, uint32_t client_id,
+			       struct ctdb_req_control *c,
+			       bool *async_reply);
+int32_t ctdb_control_db_detach(struct ctdb_context *ctdb, TDB_DATA indata,
+			       uint32_t client_id);
+
+int ctdb_attach_databases(struct ctdb_context *ctdb);
+
+int32_t ctdb_ltdb_update_seqnum(struct ctdb_context *ctdb, uint32_t db_id,
+				uint32_t srcnode);
+int32_t ctdb_ltdb_enable_seqnum(struct ctdb_context *ctdb, uint32_t db_id);
+
+int32_t ctdb_control_set_db_priority(struct ctdb_context *ctdb, TDB_DATA indata,
+				     uint32_t client_id);
+
+int ctdb_set_db_sticky(struct ctdb_context *ctdb,
+		       struct ctdb_db_context *ctdb_db);
+
+void ctdb_db_statistics_reset(struct ctdb_db_context *ctdb_db);
+
+int32_t ctdb_control_get_db_statistics(struct ctdb_context *ctdb,
+				       uint32_t db_id, TDB_DATA *outdata);
 
 #endif
