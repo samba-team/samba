@@ -62,28 +62,12 @@ struct tevent_context;
 struct ctdb_context *ctdb_init(struct tevent_context *ev);
 
 /*
-  choose the transport
-*/
-int ctdb_set_transport(struct ctdb_context *ctdb, const char *transport);
-
-/*
   set some flags
 */
 void ctdb_set_flags(struct ctdb_context *ctdb, unsigned flags);
 
-/*
-  tell ctdb what address to listen on, in transport specific format
-*/
-int ctdb_set_address(struct ctdb_context *ctdb, const char *address);
-
 int ctdb_set_socketname(struct ctdb_context *ctdb, const char *socketname);
 const char *ctdb_get_socketname(struct ctdb_context *ctdb);
-
-/*
-  Check that a specific ip address exists in the node list and returns
-  the id for the node or -1
-*/
-int ctdb_ip_to_nodeid(struct ctdb_context *ctdb, const ctdb_sock_addr *nodeip);
 
 /*
   attach to a ctdb database

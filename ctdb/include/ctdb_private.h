@@ -674,10 +674,6 @@ struct ctdb_fetch_handle {
 
 void ctdb_request_message(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
 
-void ctdb_queue_packet(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
-void ctdb_queue_packet_opcode(struct ctdb_context *ctdb, struct ctdb_req_header *hdr, unsigned opcode);
-void ctdb_input_pkt(struct ctdb_context *ctdb, struct ctdb_req_header *);
-
 /*
   allocate a packet for use in client<->daemon communication
  */
@@ -816,9 +812,6 @@ void ctdb_start_tcp_tickle_update(struct ctdb_context *ctdb);
 int32_t ctdb_run_eventscripts(struct ctdb_context *ctdb, struct ctdb_req_control *c, TDB_DATA data, bool *async_reply);
 
 
-void ctdb_node_dead(struct ctdb_node *node);
-void ctdb_node_connected(struct ctdb_node *node);
-
 int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb, 
 				 struct ctdb_req_control *c,
 				 TDB_DATA indata, 
@@ -933,8 +926,6 @@ int ctdb_event_script_callback(struct ctdb_context *ctdb,
 			       const char *fmt, ...) PRINTF_ATTRIBUTE(6,7);
 void ctdb_release_all_ips(struct ctdb_context *ctdb);
 
-int ctdb_set_recovery_lock_file(struct ctdb_context *ctdb, const char *file);
-
 int32_t ctdb_control_get_tunable(struct ctdb_context *ctdb, TDB_DATA indata, 
 				 TDB_DATA *outdata);
 int32_t ctdb_control_set_tunable(struct ctdb_context *ctdb, TDB_DATA indata);
@@ -1020,8 +1011,6 @@ int ctdb_client_async_control(struct ctdb_context *ctdb,
 			      	client_async_callback client_callback,
 			        client_async_callback fail_callback,
 				void *callback_data);
-
-void ctdb_load_nodes_file(struct ctdb_context *ctdb);
 
 extern int script_log_level;
 extern bool fast_start;
@@ -1461,5 +1450,28 @@ int32_t ctdb_control_continue_node(struct ctdb_context *ctdb);
 
 int ctdb_start_recoverd(struct ctdb_context *ctdb);
 void ctdb_stop_recoverd(struct ctdb_context *ctdb);
+
+/* from ctdb_server.c */
+
+int ctdb_set_transport(struct ctdb_context *ctdb, const char *transport);
+
+int ctdb_ip_to_nodeid(struct ctdb_context *ctdb, const ctdb_sock_addr *nodeip);
+
+int ctdb_set_recovery_lock_file(struct ctdb_context *ctdb, const char *file);
+
+void ctdb_load_nodes_file(struct ctdb_context *ctdb);
+
+int ctdb_set_address(struct ctdb_context *ctdb, const char *address);
+
+uint32_t ctdb_get_num_active_nodes(struct ctdb_context *ctdb);
+
+void ctdb_input_pkt(struct ctdb_context *ctdb, struct ctdb_req_header *);
+
+void ctdb_node_dead(struct ctdb_node *node);
+void ctdb_node_connected(struct ctdb_node *node);
+
+void ctdb_queue_packet(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
+void ctdb_queue_packet_opcode(struct ctdb_context *ctdb,
+			      struct ctdb_req_header *hdr, unsigned opcode);
 
 #endif
