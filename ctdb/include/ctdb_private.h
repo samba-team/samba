@@ -1026,12 +1026,6 @@ int update_ip_assignment_tree(struct ctdb_context *ctdb,
 				struct ctdb_public_ip *ip);
 void clear_ip_assignment_tree(struct ctdb_context *ctdb);
 
-int ctdb_statistics_init(struct ctdb_context *ctdb);
-
-int32_t ctdb_control_get_stat_history(struct ctdb_context *ctdb,
-				      struct ctdb_req_control *c,
-				      TDB_DATA *outdata);
-
 /**
  * structure to pass to a schedule_for_deletion_control
  */
@@ -1475,5 +1469,13 @@ int32_t ctdb_control_unregister_server_id(struct ctdb_context *ctdb,
 					  TDB_DATA indata);
 int32_t ctdb_control_get_server_id_list(struct ctdb_context *ctdb,
 					TDB_DATA *outdata);
+
+/* from ctdb_statistics.c */
+
+int ctdb_statistics_init(struct ctdb_context *ctdb);
+
+int32_t ctdb_control_get_stat_history(struct ctdb_context *ctdb,
+				      struct ctdb_req_control *c,
+				      TDB_DATA *outdata);
 
 #endif
