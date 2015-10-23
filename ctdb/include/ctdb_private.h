@@ -674,12 +674,7 @@ struct ctdb_fetch_handle {
 
 /* internal prototypes */
 
-void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
-void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
 void ctdb_request_message(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
-void ctdb_reply_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
-void ctdb_reply_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
-void ctdb_reply_error(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
 
 int32_t ctdb_control_start_persistent_update(struct ctdb_context *ctdb, 
 			struct ctdb_req_control *c,
@@ -699,12 +694,6 @@ int ctdb_ltdb_lock_fetch_requeue(struct ctdb_db_context *ctdb_db,
 				 void (*recv_pkt)(void *, struct ctdb_req_header *),
 				 void *recv_context, bool ignore_generation);
 void ctdb_input_pkt(struct ctdb_context *ctdb, struct ctdb_req_header *);
-
-struct ctdb_call_state *ctdb_call_local_send(struct ctdb_db_context *ctdb_db, 
-					     struct ctdb_call *call,
-					     struct ctdb_ltdb_header *header,
-					     TDB_DATA *data);
-
 
 int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork);
 
@@ -736,12 +725,6 @@ int ctdb_client_send_message(struct ctdb_context *ctdb, uint32_t vnn,
 int ctdb_daemon_send_message(struct ctdb_context *ctdb, uint32_t pnn,
 			     uint64_t srvid, TDB_DATA data);
 
-
-int ctdb_daemon_call_recv(struct ctdb_call_state *state, struct ctdb_call *call);
-
-struct ctdb_call_state *ctdb_daemon_call_send_remote(struct ctdb_db_context *ctdb_db, 
-						     struct ctdb_call *call, 
-						     struct ctdb_ltdb_header *header);
 
 int ctdb_call_local(struct ctdb_db_context *ctdb_db, struct ctdb_call *call,
 		    struct ctdb_ltdb_header *header, TALLOC_CTX *mem_ctx,
@@ -928,15 +911,12 @@ void ctdb_enable_monitoring(struct ctdb_context *ctdb);
 void ctdb_stop_monitoring(struct ctdb_context *ctdb);
 void ctdb_wait_for_first_recovery(struct ctdb_context *ctdb);
 void ctdb_start_tcp_tickle_update(struct ctdb_context *ctdb);
-void ctdb_send_keepalive(struct ctdb_context *ctdb, uint32_t destnode);
 void ctdb_start_keepalive(struct ctdb_context *ctdb);
 void ctdb_stop_keepalive(struct ctdb_context *ctdb);
 int32_t ctdb_run_eventscripts(struct ctdb_context *ctdb, struct ctdb_req_control *c, TDB_DATA data, bool *async_reply);
 
 
 void ctdb_daemon_cancel_controls(struct ctdb_context *ctdb, struct ctdb_node *node);
-void ctdb_call_resend_db(struct ctdb_db_context *ctdb);
-void ctdb_call_resend_all(struct ctdb_context *ctdb);
 void ctdb_node_dead(struct ctdb_node *node);
 void ctdb_node_connected(struct ctdb_node *node);
 bool ctdb_blocking_freeze(struct ctdb_context *ctdb);
@@ -1289,11 +1269,7 @@ void ctdb_local_remove_from_delete_queue(struct ctdb_db_context *ctdb_db,
 
 struct ctdb_ltdb_header *ctdb_header_from_record_handle(struct ctdb_record_handle *h);
 
-int ctdb_start_revoke_ro_record(struct ctdb_context *ctdb, struct ctdb_db_context *ctdb_db, TDB_DATA key, struct ctdb_ltdb_header *header, TDB_DATA data);
-
 typedef void (*deferred_requeue_fn)(void *call_context, struct ctdb_req_header *hdr);
-
-int ctdb_add_revoke_deferred_call(struct ctdb_context *ctdb, struct ctdb_db_context *ctdb_db, TDB_DATA key, struct ctdb_req_header *hdr, deferred_requeue_fn fn, void *call_context);
 
 int ctdb_set_db_readonly(struct ctdb_context *ctdb, struct ctdb_db_context *ctdb_db);
 
@@ -1328,6 +1304,45 @@ int32_t ctdb_control_get_ban_state(struct ctdb_context *ctdb, TDB_DATA *outdata)
 int32_t ctdb_control_set_db_priority(struct ctdb_context *ctdb, TDB_DATA indata,
 				     uint32_t client_id);
 void ctdb_ban_self(struct ctdb_context *ctdb);
+
+/* from ctdb_call.c */
+
+struct ctdb_db_context *find_ctdb_db(struct ctdb_context *ctdb, uint32_t id);
+
+void ctdb_request_dmaster(struct ctdb_context *ctdb,
+			  struct ctdb_req_header *hdr);
+void ctdb_reply_dmaster(struct ctdb_context *ctdb,
+			struct ctdb_req_header *hdr);
+void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
+void ctdb_reply_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
+void ctdb_reply_error(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
+
+void ctdb_call_resend_db(struct ctdb_db_context *ctdb);
+void ctdb_call_resend_all(struct ctdb_context *ctdb);
+
+struct ctdb_call_state *ctdb_call_local_send(struct ctdb_db_context *ctdb_db,
+					     struct ctdb_call *call,
+					     struct ctdb_ltdb_header *header,
+					     TDB_DATA *data);
+
+struct ctdb_call_state *ctdb_daemon_call_send_remote(
+					struct ctdb_db_context *ctdb_db,
+					struct ctdb_call *call,
+					struct ctdb_ltdb_header *header);
+int ctdb_daemon_call_recv(struct ctdb_call_state *state,
+			  struct ctdb_call *call);
+
+void ctdb_send_keepalive(struct ctdb_context *ctdb, uint32_t destnode);
+
+int ctdb_start_revoke_ro_record(struct ctdb_context *ctdb,
+				struct ctdb_db_context *ctdb_db,
+				TDB_DATA key, struct ctdb_ltdb_header *header,
+				TDB_DATA data);
+
+int ctdb_add_revoke_deferred_call(struct ctdb_context *ctdb,
+				  struct ctdb_db_context *ctdb_db,
+				  TDB_DATA key, struct ctdb_req_header *hdr,
+				  deferred_requeue_fn fn, void *call_context);
 
 /* from server/ctdb_lock.c */
 struct lock_request;

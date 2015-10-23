@@ -151,8 +151,6 @@ int ctdb_record_store(struct ctdb_record_handle *h, TDB_DATA data);
 int ctdb_fetch(struct ctdb_db_context *ctdb_db, TALLOC_CTX *mem_ctx,
 	       TDB_DATA key, TDB_DATA *data);
 
-struct ctdb_db_context *find_ctdb_db(struct ctdb_context *ctdb, uint32_t id);
-
 
 struct ctdb_statistics;
 int ctdb_ctrl_statistics(struct ctdb_context *ctdb, uint32_t destnode, struct ctdb_statistics *status);
