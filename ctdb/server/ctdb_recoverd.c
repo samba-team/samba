@@ -3405,12 +3405,8 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 	}
 
 
-	/* get number of nodes */
-	if (rec->nodemap) {
-		talloc_free(rec->nodemap);
-		rec->nodemap = NULL;
-		nodemap=NULL;
-	}
+	/* get nodemap */
+	TALLOC_FREE(rec->nodemap);
 	ret = ctdb_ctrl_getnodemap(ctdb, CONTROL_TIMEOUT(), pnn, rec, &rec->nodemap);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to get nodemap from node %u\n", pnn));
