@@ -1215,13 +1215,6 @@ int ctdb_vacuum_init(struct ctdb_db_context *ctdb_db);
 int32_t ctdb_control_enable_script(struct ctdb_context *ctdb, TDB_DATA indata);
 int32_t ctdb_control_disable_script(struct ctdb_context *ctdb, TDB_DATA indata);
 
-void ctdb_local_node_got_banned(struct ctdb_context *ctdb);
-int32_t ctdb_control_set_ban_state(struct ctdb_context *ctdb, TDB_DATA indata);
-int32_t ctdb_control_get_ban_state(struct ctdb_context *ctdb, TDB_DATA *outdata);
-int32_t ctdb_control_set_db_priority(struct ctdb_context *ctdb, TDB_DATA indata,
-				     uint32_t client_id);
-void ctdb_ban_self(struct ctdb_context *ctdb);
-
 int32_t ctdb_control_register_notify(struct ctdb_context *ctdb, uint32_t client_id, TDB_DATA indata);
 
 int32_t ctdb_control_deregister_notify(struct ctdb_context *ctdb, uint32_t client_id, TDB_DATA indata);
@@ -1326,6 +1319,15 @@ int32_t ctdb_control_reload_public_ips(struct ctdb_context *ctdb, struct ctdb_re
 
 int ctdb_tcp_init(struct ctdb_context *ctdb);
 int ctdb_ibw_init(struct ctdb_context *ctdb);
+
+/* from ctdb_banning.c */
+
+void ctdb_local_node_got_banned(struct ctdb_context *ctdb);
+int32_t ctdb_control_set_ban_state(struct ctdb_context *ctdb, TDB_DATA indata);
+int32_t ctdb_control_get_ban_state(struct ctdb_context *ctdb, TDB_DATA *outdata);
+int32_t ctdb_control_set_db_priority(struct ctdb_context *ctdb, TDB_DATA indata,
+				     uint32_t client_id);
+void ctdb_ban_self(struct ctdb_context *ctdb);
 
 /* from server/ctdb_lock.c */
 struct lock_request;
