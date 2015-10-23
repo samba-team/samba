@@ -810,9 +810,6 @@ int32_t ctdb_control_traverse_data(struct ctdb_context *ctdb, TDB_DATA data, TDB
 int32_t ctdb_control_traverse_kill(struct ctdb_context *ctdb, TDB_DATA indata, 
 				    TDB_DATA *outdata, uint32_t srcnode);
 
-int ctdb_start_recoverd(struct ctdb_context *ctdb);
-void ctdb_stop_recoverd(struct ctdb_context *ctdb);
-
 uint32_t ctdb_get_num_active_nodes(struct ctdb_context *ctdb);
 
 void ctdb_start_tcp_tickle_update(struct ctdb_context *ctdb);
@@ -1459,5 +1456,10 @@ int32_t ctdb_control_set_recmaster(struct ctdb_context *ctdb,
 
 int32_t ctdb_control_stop_node(struct ctdb_context *ctdb);
 int32_t ctdb_control_continue_node(struct ctdb_context *ctdb);
+
+/* from ctdb_recoverd.c */
+
+int ctdb_start_recoverd(struct ctdb_context *ctdb);
+void ctdb_stop_recoverd(struct ctdb_context *ctdb);
 
 #endif
