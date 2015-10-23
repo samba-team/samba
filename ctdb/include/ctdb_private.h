@@ -971,15 +971,6 @@ int ctdb_ctrl_get_tcp_tickles(struct ctdb_context *ctdb,
 		      struct ctdb_control_tcp_tickle_list **list);
 
 
-int32_t ctdb_control_register_server_id(struct ctdb_context *ctdb, 
-		      uint32_t client_id,
-		      TDB_DATA indata);
-int32_t ctdb_control_check_server_id(struct ctdb_context *ctdb, 
-		      TDB_DATA indata);
-int32_t ctdb_control_unregister_server_id(struct ctdb_context *ctdb, 
-		      TDB_DATA indata);
-int32_t ctdb_control_get_server_id_list(struct ctdb_context *ctdb, 
-		      TDB_DATA *outdata);
 int32_t ctdb_control_uptime(struct ctdb_context *ctdb, 
 		      TDB_DATA *outdata);
 
@@ -1473,5 +1464,16 @@ void ctdb_node_connected(struct ctdb_node *node);
 void ctdb_queue_packet(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
 void ctdb_queue_packet_opcode(struct ctdb_context *ctdb,
 			      struct ctdb_req_header *hdr, unsigned opcode);
+
+/* from ctdb_serverids.c */
+
+int32_t ctdb_control_register_server_id(struct ctdb_context *ctdb,
+					uint32_t client_id, TDB_DATA indata);
+int32_t ctdb_control_check_server_id(struct ctdb_context *ctdb,
+				     TDB_DATA indata);
+int32_t ctdb_control_unregister_server_id(struct ctdb_context *ctdb,
+					  TDB_DATA indata);
+int32_t ctdb_control_get_server_id_list(struct ctdb_context *ctdb,
+					TDB_DATA *outdata);
 
 #endif
