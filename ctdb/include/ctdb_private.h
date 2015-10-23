@@ -850,18 +850,6 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 				 TDB_DATA indata, bool *async_reply,
 				 const char **errormsg);
 
-int32_t ctdb_control_db_freeze(struct ctdb_context *ctdb,
-			       struct ctdb_req_control *c,
-			       uint32_t db_id, bool *async_reply);
-int32_t ctdb_control_db_thaw(struct ctdb_context *ctdb, uint32_t db_id);
-
-int32_t ctdb_control_freeze(struct ctdb_context *ctdb, struct ctdb_req_control *c, bool *async_reply);
-int32_t ctdb_control_thaw(struct ctdb_context *ctdb, uint32_t priority,
-			  bool check_recmode);
-bool ctdb_db_frozen(struct ctdb_db_context *ctdb_db);
-bool ctdb_db_prio_frozen(struct ctdb_context *ctdb, uint32_t priority);
-bool ctdb_db_all_frozen(struct ctdb_context *ctdb);
-
 int ctdb_start_recoverd(struct ctdb_context *ctdb);
 void ctdb_stop_recoverd(struct ctdb_context *ctdb);
 
@@ -879,7 +867,6 @@ int32_t ctdb_run_eventscripts(struct ctdb_context *ctdb, struct ctdb_req_control
 
 void ctdb_node_dead(struct ctdb_node *node);
 void ctdb_node_connected(struct ctdb_node *node);
-bool ctdb_blocking_freeze(struct ctdb_context *ctdb);
 
 int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb, 
 				 struct ctdb_req_control *c,
@@ -1084,17 +1071,6 @@ int32_t ctdb_control_trans3_commit(struct ctdb_context *ctdb,
 
 void ctdb_persistent_finish_trans3_commits(struct ctdb_context *ctdb);
 
-int32_t ctdb_control_db_transaction_start(struct ctdb_context *ctdb,
-					  TDB_DATA indata);
-int32_t ctdb_control_db_transaction_commit(struct ctdb_context *ctdb,
-					   TDB_DATA indata);
-int32_t ctdb_control_db_transaction_cancel(struct ctdb_context *ctdb,
-					   TDB_DATA indata);
-
-int32_t ctdb_control_transaction_start(struct ctdb_context *ctdb, uint32_t id);
-int32_t ctdb_control_transaction_commit(struct ctdb_context *ctdb, uint32_t id);
-int32_t ctdb_control_transaction_cancel(struct ctdb_context *ctdb);
-int32_t ctdb_control_wipe_database(struct ctdb_context *ctdb, TDB_DATA indata);
 int32_t ctdb_control_db_set_healthy(struct ctdb_context *ctdb, TDB_DATA indata);
 int32_t ctdb_control_db_get_health(struct ctdb_context *ctdb,
 				   TDB_DATA indata,
@@ -1361,6 +1337,37 @@ int ctdb_control_getnodesfile(struct ctdb_context *ctdb, uint32_t opcode,
 			      TDB_DATA indata, TDB_DATA *outdata);
 
 void ctdb_shutdown_sequence(struct ctdb_context *ctdb, int exit_code);
+
+/* from server/ctdb_freeze.c */
+
+int32_t ctdb_control_db_freeze(struct ctdb_context *ctdb,
+			       struct ctdb_req_control *c,
+			       uint32_t db_id, bool *async_reply);
+int32_t ctdb_control_db_thaw(struct ctdb_context *ctdb, uint32_t db_id);
+
+int32_t ctdb_control_freeze(struct ctdb_context *ctdb,
+			    struct ctdb_req_control *c, bool *async_reply);
+int32_t ctdb_control_thaw(struct ctdb_context *ctdb, uint32_t priority,
+			  bool check_recmode);
+
+bool ctdb_blocking_freeze(struct ctdb_context *ctdb);
+
+int32_t ctdb_control_db_transaction_start(struct ctdb_context *ctdb,
+					  TDB_DATA indata);
+int32_t ctdb_control_db_transaction_cancel(struct ctdb_context *ctdb,
+					   TDB_DATA indata);
+int32_t ctdb_control_db_transaction_commit(struct ctdb_context *ctdb,
+					   TDB_DATA indata);
+
+int32_t ctdb_control_transaction_start(struct ctdb_context *ctdb, uint32_t id);
+int32_t ctdb_control_transaction_cancel(struct ctdb_context *ctdb);
+int32_t ctdb_control_transaction_commit(struct ctdb_context *ctdb, uint32_t id);
+
+int32_t ctdb_control_wipe_database(struct ctdb_context *ctdb, TDB_DATA indata);
+
+bool ctdb_db_frozen(struct ctdb_db_context *ctdb_db);
+bool ctdb_db_prio_frozen(struct ctdb_context *ctdb, uint32_t priority);
+bool ctdb_db_all_frozen(struct ctdb_context *ctdb);
 
 /* from server/ctdb_lock.c */
 struct lock_request;
