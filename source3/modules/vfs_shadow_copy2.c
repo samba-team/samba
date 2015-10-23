@@ -30,6 +30,7 @@
  */
 
 #include "includes.h"
+#include "smbd/smbd.h"
 #include "system/filesys.h"
 #include "include/ntioctl.h"
 #include "util_tdb.h"
@@ -1180,6 +1181,42 @@ static char *have_snapdir(struct vfs_handle_struct *handle,
 	return NULL;
 }
 
+static bool check_access_snapdir(struct vfs_handle_struct *handle,
+				const char *path)
+{
+	struct smb_filename smb_fname;
+	int ret;
+	NTSTATUS status;
+
+	ZERO_STRUCT(smb_fname);
+	smb_fname.base_name = talloc_asprintf(talloc_tos(),
+						"%s",
+						path);
+	if (smb_fname.base_name == NULL) {
+		return false;
+	}
+
+	ret = SMB_VFS_NEXT_STAT(handle, &smb_fname);
+	if (ret != 0 || !S_ISDIR(smb_fname.st.st_ex_mode)) {
+		TALLOC_FREE(smb_fname.base_name);
+		return false;
+	}
+
+	status = smbd_check_access_rights(handle->conn,
+					&smb_fname,
+					false,
+					SEC_DIR_LIST);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("user does not have list permission "
+			"on snapdir %s\n",
+			smb_fname.base_name));
+		TALLOC_FREE(smb_fname.base_name);
+		return false;
+	}
+	TALLOC_FREE(smb_fname.base_name);
+	return true;
+}
+
 /**
  * Find the snapshot directory (if any) for the given
  * filename (which is relative to the share).
@@ -1329,12 +1366,20 @@ static int shadow_copy2_get_shadow_copy_data(
 	const char *snapdir;
 	struct dirent *d;
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+	bool ret;
 
 	snapdir = shadow_copy2_find_snapdir(tmp_ctx, handle, fsp->fsp_name);
 	if (snapdir == NULL) {
 		DEBUG(0,("shadow:snapdir not found for %s in get_shadow_copy_data\n",
 			 handle->conn->connectpath));
 		errno = EINVAL;
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+	ret = check_access_snapdir(handle, snapdir);
+	if (!ret) {
+		DEBUG(0,("access denied on listing snapdir %s\n", snapdir));
+		errno = EACCES;
 		talloc_free(tmp_ctx);
 		return -1;
 	}
