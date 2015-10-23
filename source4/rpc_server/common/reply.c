@@ -225,6 +225,7 @@ _PUBLIC_ NTSTATUS dcesrv_reply(struct dcesrv_call_state *call)
 		uint32_t length;
 		struct data_blob_list_item *rep;
 		struct ncacn_packet pkt;
+		bool ok;
 
 		rep = talloc_zero(call, struct data_blob_list_item);
 		NT_STATUS_HAVE_NO_MEMORY(rep);
@@ -250,7 +251,11 @@ _PUBLIC_ NTSTATUS dcesrv_reply(struct dcesrv_call_state *call)
 		pkt.u.response.stub_and_verifier.data = stub.data;
 		pkt.u.response.stub_and_verifier.length = length;
 
-		if (!dcesrv_auth_response(call, &rep->blob, sig_size, &pkt)) {
+		ok = dcesrv_auth_pkt_push(call, &rep->blob, sig_size,
+					  DCERPC_RESPONSE_LENGTH,
+					  &pkt.u.response.stub_and_verifier,
+					  &pkt);
+		if (!ok) {
 			return dcesrv_fault(call, DCERPC_FAULT_OTHER);
 		}
 

@@ -521,12 +521,13 @@ bool dcesrv_auth_pkt_pull(struct dcesrv_call_state *call,
 	return true;
 }
 
-
 /* 
    push a signed or sealed dcerpc request packet into a blob
 */
-bool dcesrv_auth_response(struct dcesrv_call_state *call,
+bool dcesrv_auth_pkt_push(struct dcesrv_call_state *call,
 			  DATA_BLOB *blob, size_t sig_size,
+			  uint8_t payload_offset,
+			  const DATA_BLOB *payload,
 			  const struct ncacn_packet *pkt)
 {
 	struct dcesrv_connection *dce_conn = call->conn;
@@ -540,8 +541,8 @@ bool dcesrv_auth_response(struct dcesrv_call_state *call,
 	status = dcerpc_ncacn_push_pkt_auth(&tmp_auth,
 					    dce_conn->auth_state.gensec_security,
 					    call, blob, sig_size,
-					    DCERPC_RESPONSE_LENGTH,
-					    &pkt->u.response.stub_and_verifier,
+					    payload_offset,
+					    payload,
 					    pkt);
 	return NT_STATUS_IS_OK(status);
 }
