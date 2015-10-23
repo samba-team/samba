@@ -932,9 +932,6 @@ int32_t ctdb_control_get_event_script_status(struct ctdb_context *ctdb,
 
 int ctdb_ctrl_report_recd_lock_latency(struct ctdb_context *ctdb, struct timeval timeout, double latency);
 
-void ctdb_stop_vacuuming(struct ctdb_context *ctdb);
-int ctdb_vacuum_init(struct ctdb_db_context *ctdb_db);
-
 int32_t ctdb_control_enable_script(struct ctdb_context *ctdb, TDB_DATA indata);
 int32_t ctdb_control_disable_script(struct ctdb_context *ctdb, TDB_DATA indata);
 
@@ -947,18 +944,6 @@ struct ctdb_control_schedule_for_deletion {
 	uint32_t keylen;
 	uint8_t key[1]; /* key[] */
 };
-
-int32_t ctdb_control_schedule_for_deletion(struct ctdb_context *ctdb,
-					   TDB_DATA indata);
-
-
-int32_t ctdb_local_schedule_for_deletion(struct ctdb_db_context *ctdb_db,
-					 const struct ctdb_ltdb_header *hdr,
-					 TDB_DATA key);
-
-void ctdb_local_remove_from_delete_queue(struct ctdb_db_context *ctdb_db,
-					 const struct ctdb_ltdb_header *hdr,
-					 const TDB_DATA key);
 
 struct ctdb_ltdb_header *ctdb_header_from_record_handle(struct ctdb_record_handle *h);
 
@@ -1500,5 +1485,20 @@ int32_t ctdb_control_update_record(struct ctdb_context *ctdb,
 /* from ctdb_uptime.c */
 
 int32_t ctdb_control_uptime(struct ctdb_context *ctdb, TDB_DATA *outdata);
+
+/* from ctdb_vacuum.c */
+
+void ctdb_stop_vacuuming(struct ctdb_context *ctdb);
+int ctdb_vacuum_init(struct ctdb_db_context *ctdb_db);
+
+int32_t ctdb_control_schedule_for_deletion(struct ctdb_context *ctdb,
+					   TDB_DATA indata);
+int32_t ctdb_local_schedule_for_deletion(struct ctdb_db_context *ctdb_db,
+					 const struct ctdb_ltdb_header *hdr,
+					 TDB_DATA key);
+
+void ctdb_local_remove_from_delete_queue(struct ctdb_db_context *ctdb_db,
+					 const struct ctdb_ltdb_header *hdr,
+					 const TDB_DATA key);
 
 #endif
