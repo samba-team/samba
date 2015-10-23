@@ -2382,7 +2382,7 @@ static int send_election_request(struct ctdb_recoverd *rec, uint32_t pnn)
 		DEBUG(DEBUG_ERR, (__location__ " failed to send recmaster election request\n"));
 		return -1;
 	}
-
+	rec->recmaster = pnn;
 
 	/* send an election message to all active nodes */
 	DEBUG(DEBUG_INFO,(__location__ " Send election request to all active nodes\n"));
@@ -2791,6 +2791,7 @@ static void election_handler(uint64_t srvid, TDB_DATA data, void *private_data)
 		DEBUG(DEBUG_ERR, (__location__ " failed to send recmaster election request"));
 		return;
 	}
+	rec->recmaster = em->pnn;
 
 	return;
 }
