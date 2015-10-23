@@ -737,12 +737,6 @@ ctdb_control_send(struct ctdb_context *ctdb,
  } \
  } while (0)
 
-int ctdb_control_getvnnmap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indata, TDB_DATA *outdata);
-int ctdb_control_setvnnmap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indata, TDB_DATA *outdata);
-int ctdb_control_getdbmap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indata, TDB_DATA *outdata);
-int ctdb_control_getnodemap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indata, TDB_DATA *outdata);
-
-
 /* structure used for pulldb control */
 struct ctdb_control_pulldb {
 	uint32_t db_id;
@@ -816,14 +810,6 @@ int32_t ctdb_control_traverse_data(struct ctdb_context *ctdb, TDB_DATA data, TDB
 int32_t ctdb_control_traverse_kill(struct ctdb_context *ctdb, TDB_DATA indata, 
 				    TDB_DATA *outdata, uint32_t srcnode);
 
-int32_t ctdb_control_pull_db(struct ctdb_context *ctdb, TDB_DATA indata, TDB_DATA *outdata);
-int32_t ctdb_control_push_db(struct ctdb_context *ctdb, TDB_DATA indata);
-
-int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb, 
-				 struct ctdb_req_control *c,
-				 TDB_DATA indata, bool *async_reply,
-				 const char **errormsg);
-
 int ctdb_start_recoverd(struct ctdb_context *ctdb);
 void ctdb_stop_recoverd(struct ctdb_context *ctdb);
 
@@ -845,12 +831,6 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb,
 				 TDB_DATA indata, 
 				 bool *async_reply);
 int32_t ctdb_control_ipreallocated(struct ctdb_context *ctdb, 
-				 struct ctdb_req_control *c,
-				 bool *async_reply);
-int32_t ctdb_control_start_recovery(struct ctdb_context *ctdb, 
-				 struct ctdb_req_control *c,
-				 bool *async_reply);
-int32_t ctdb_control_end_recovery(struct ctdb_context *ctdb, 
 				 struct ctdb_req_control *c,
 				 bool *async_reply);
 
@@ -956,18 +936,12 @@ int ctdb_event_script_callback(struct ctdb_context *ctdb,
 			       const char *fmt, ...) PRINTF_ATTRIBUTE(6,7);
 void ctdb_release_all_ips(struct ctdb_context *ctdb);
 
-bool ctdb_recovery_have_lock(struct ctdb_context *ctdb);
-bool ctdb_recovery_lock(struct ctdb_context *ctdb);
-void ctdb_recovery_unlock(struct ctdb_context *ctdb);
-
 int ctdb_set_recovery_lock_file(struct ctdb_context *ctdb, const char *file);
 
 int32_t ctdb_control_get_tunable(struct ctdb_context *ctdb, TDB_DATA indata, 
 				 TDB_DATA *outdata);
 int32_t ctdb_control_set_tunable(struct ctdb_context *ctdb, TDB_DATA indata);
 int32_t ctdb_control_list_tunables(struct ctdb_context *ctdb, TDB_DATA *outdata);
-int32_t ctdb_control_try_delete_records(struct ctdb_context *ctdb, TDB_DATA indata, TDB_DATA *outdata);
-int32_t ctdb_control_receive_records(struct ctdb_context *ctdb, TDB_DATA indata, TDB_DATA *outdata);
 int32_t ctdb_control_add_public_address(struct ctdb_context *ctdb, TDB_DATA indata);
 int32_t ctdb_control_del_public_address(struct ctdb_context *ctdb,
 					struct ctdb_req_control *c,
@@ -1052,13 +1026,6 @@ int ctdb_client_async_control(struct ctdb_context *ctdb,
 
 void ctdb_load_nodes_file(struct ctdb_context *ctdb);
 
-int ctdb_control_reload_nodes_file(struct ctdb_context *ctdb, uint32_t opcode);
-
-int32_t ctdb_control_get_capabilities(struct ctdb_context *ctdb, TDB_DATA *outdata);
-
-int32_t ctdb_control_recd_ping(struct ctdb_context *ctdb);
-int32_t ctdb_control_set_recmaster(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indata);
-
 extern int script_log_level;
 extern bool fast_start;
 extern const char *ctdbd_pidfile;
@@ -1068,9 +1035,6 @@ int32_t ctdb_control_get_event_script_status(struct ctdb_context *ctdb,
 					     TDB_DATA *outdata);
 
 int ctdb_ctrl_report_recd_lock_latency(struct ctdb_context *ctdb, struct timeval timeout, double latency);
-
-int32_t ctdb_control_stop_node(struct ctdb_context *ctdb);
-int32_t ctdb_control_continue_node(struct ctdb_context *ctdb);
 
 void ctdb_stop_vacuuming(struct ctdb_context *ctdb);
 int ctdb_vacuum_init(struct ctdb_db_context *ctdb_db);
@@ -1090,8 +1054,6 @@ int ctdb_statistics_init(struct ctdb_context *ctdb);
 int32_t ctdb_control_get_stat_history(struct ctdb_context *ctdb,
 				      struct ctdb_req_control *c,
 				      TDB_DATA *outdata);
-
-int ctdb_deferred_drop_all_ips(struct ctdb_context *ctdb);
 
 /**
  * structure to pass to a schedule_for_deletion_control
@@ -1446,5 +1408,56 @@ int32_t ctdb_control_cancel_persistent_update(struct ctdb_context *ctdb,
 
 int32_t ctdb_control_get_db_seqnum(struct ctdb_context *ctdb,
 				   TDB_DATA indata, TDB_DATA *outdata);
+
+/* from ctdb_recover.c */
+
+int ctdb_control_getvnnmap(struct ctdb_context *ctdb, uint32_t opcode,
+			   TDB_DATA indata, TDB_DATA *outdata);
+int ctdb_control_setvnnmap(struct ctdb_context *ctdb, uint32_t opcode,
+			   TDB_DATA indata, TDB_DATA *outdata);
+
+int ctdb_control_getdbmap(struct ctdb_context *ctdb, uint32_t opcode,
+			  TDB_DATA indata, TDB_DATA *outdata);
+int ctdb_control_getnodemap(struct ctdb_context *ctdb, uint32_t opcode,
+			    TDB_DATA indata, TDB_DATA *outdata);
+
+int ctdb_control_reload_nodes_file(struct ctdb_context *ctdb, uint32_t opcode);
+
+int32_t ctdb_control_pull_db(struct ctdb_context *ctdb, TDB_DATA indata,
+			     TDB_DATA *outdata);
+int32_t ctdb_control_push_db(struct ctdb_context *ctdb, TDB_DATA indata);
+
+int ctdb_deferred_drop_all_ips(struct ctdb_context *ctdb);
+
+int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
+				 struct ctdb_req_control *c,
+				 TDB_DATA indata, bool *async_reply,
+				 const char **errormsg);
+
+bool ctdb_recovery_have_lock(struct ctdb_context *ctdb);
+bool ctdb_recovery_lock(struct ctdb_context *ctdb);
+void ctdb_recovery_unlock(struct ctdb_context *ctdb);
+
+int32_t ctdb_control_end_recovery(struct ctdb_context *ctdb,
+				 struct ctdb_req_control *c,
+				 bool *async_reply);
+int32_t ctdb_control_start_recovery(struct ctdb_context *ctdb,
+				 struct ctdb_req_control *c,
+				 bool *async_reply);
+
+int32_t ctdb_control_try_delete_records(struct ctdb_context *ctdb,
+					TDB_DATA indata, TDB_DATA *outdata);
+int32_t ctdb_control_receive_records(struct ctdb_context *ctdb,
+				     TDB_DATA indata, TDB_DATA *outdata);
+
+int32_t ctdb_control_get_capabilities(struct ctdb_context *ctdb,
+				      TDB_DATA *outdata);
+
+int32_t ctdb_control_recd_ping(struct ctdb_context *ctdb);
+int32_t ctdb_control_set_recmaster(struct ctdb_context *ctdb,
+				   uint32_t opcode, TDB_DATA indata);
+
+int32_t ctdb_control_stop_node(struct ctdb_context *ctdb);
+int32_t ctdb_control_continue_node(struct ctdb_context *ctdb);
 
 #endif
