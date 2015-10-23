@@ -1442,6 +1442,74 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertIsNone(rep)
         self.assertNotConnected()
 
+    def test_no_auth_bind_time_keep_on_orphan_simple(self):
+        features = dcerpc.DCERPC_BIND_TIME_KEEP_CONNECTION_ON_ORPHAN
+        btf = base.bind_time_features_syntax(features)
+
+        zero_syntax = misc.ndr_syntax_id()
+
+        tsf1_list = [btf]
+        ctx1 = dcerpc.ctx_list()
+        ctx1.context_id = 1
+        ctx1.num_transfer_syntaxes = len(tsf1_list)
+        ctx1.abstract_syntax = zero_syntax
+        ctx1.transfer_syntaxes = tsf1_list
+
+        req = self.generate_bind(call_id=0, ctx_list=[ctx1])
+        self.send_pdu(req)
+        rep = self.recv_pdu()
+        self.verify_pdu(rep, dcerpc.DCERPC_PKT_BIND_ACK, req.call_id,
+                        auth_length=0)
+        self.assertEquals(rep.u.max_xmit_frag, req.u.max_xmit_frag)
+        self.assertEquals(rep.u.max_recv_frag, req.u.max_recv_frag)
+        self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
+        self.assertEquals(rep.u.secondary_address_size, 4)
+        self.assertEquals(rep.u.secondary_address, "%d" % self.tcp_port)
+        self.assertEquals(len(rep.u._pad1), 2)
+        self.assertEquals(rep.u._pad1, '\0' * 2)
+        self.assertEquals(rep.u.num_results, 1)
+        self.assertEquals(rep.u.ctx_list[0].result,
+                dcerpc.DCERPC_BIND_ACK_RESULT_NEGOTIATE_ACK)
+        self.assertEquals(rep.u.ctx_list[0].reason, features)
+        self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, zero_syntax)
+        self.assertEquals(rep.u.auth_info, '\0' * 0)
+
+    def test_no_auth_bind_time_keep_on_orphan_ignore_additional(self):
+        features1 = dcerpc.DCERPC_BIND_TIME_KEEP_CONNECTION_ON_ORPHAN
+        btf1 = base.bind_time_features_syntax(features1)
+
+        features2 = dcerpc.DCERPC_BIND_TIME_SECURITY_CONTEXT_MULTIPLEXING
+        btf2 = base.bind_time_features_syntax(features2)
+
+        zero_syntax = misc.ndr_syntax_id()
+        ndr64 = base.transfer_syntax_ndr64()
+
+        tsf1_list = [btf1,btf2,zero_syntax]
+        ctx1 = dcerpc.ctx_list()
+        ctx1.context_id = 1
+        ctx1.num_transfer_syntaxes = len(tsf1_list)
+        ctx1.abstract_syntax = ndr64
+        ctx1.transfer_syntaxes = tsf1_list
+
+        req = self.generate_bind(call_id=0, ctx_list=[ctx1])
+        self.send_pdu(req)
+        rep = self.recv_pdu()
+        self.verify_pdu(rep, dcerpc.DCERPC_PKT_BIND_ACK, req.call_id,
+                        auth_length=0)
+        self.assertEquals(rep.u.max_xmit_frag, req.u.max_xmit_frag)
+        self.assertEquals(rep.u.max_recv_frag, req.u.max_recv_frag)
+        self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
+        self.assertEquals(rep.u.secondary_address_size, 4)
+        self.assertEquals(rep.u.secondary_address, "%d" % self.tcp_port)
+        self.assertEquals(len(rep.u._pad1), 2)
+        self.assertEquals(rep.u._pad1, '\0' * 2)
+        self.assertEquals(rep.u.num_results, 1)
+        self.assertEquals(rep.u.ctx_list[0].result,
+                dcerpc.DCERPC_BIND_ACK_RESULT_NEGOTIATE_ACK)
+        self.assertEquals(rep.u.ctx_list[0].reason, features1)
+        self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, zero_syntax)
+        self.assertEquals(rep.u.auth_info, '\0' * 0)
+
     def _test_auth_type_level_bind_nak(self, auth_type, auth_level, creds=None,
                                    reason=dcerpc.DCERPC_BIND_NAK_REASON_INVALID_AUTH_TYPE):
         ndr32 = base.transfer_syntax_ndr()
