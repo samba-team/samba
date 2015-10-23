@@ -835,10 +835,6 @@ void ctdb_stop_recoverd(struct ctdb_context *ctdb);
 
 uint32_t ctdb_get_num_active_nodes(struct ctdb_context *ctdb);
 
-void ctdb_disable_monitoring(struct ctdb_context *ctdb);
-void ctdb_enable_monitoring(struct ctdb_context *ctdb);
-void ctdb_stop_monitoring(struct ctdb_context *ctdb);
-void ctdb_wait_for_first_recovery(struct ctdb_context *ctdb);
 void ctdb_start_tcp_tickle_update(struct ctdb_context *ctdb);
 int32_t ctdb_run_eventscripts(struct ctdb_context *ctdb, struct ctdb_req_control *c, TDB_DATA data, bool *async_reply);
 
@@ -940,7 +936,6 @@ int ctdb_set_public_addresses(struct ctdb_context *ctdb, bool check_addresses);
 int ctdb_set_single_public_ip(struct ctdb_context *ctdb,
 			      const char *iface,
 			      const char *ip);
-int ctdb_set_notification_script(struct ctdb_context *ctdb, const char *script);
 int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap,
 		      uint32_t *force_rebalance_nodes,
 		      client_async_callback fail_callback, void *callback_data);
@@ -985,8 +980,6 @@ int32_t ctdb_control_del_public_address(struct ctdb_context *ctdb,
 					TDB_DATA recdata, bool *async_reply);
 
 void ctdb_tunables_set_defaults(struct ctdb_context *ctdb);
-
-int32_t ctdb_control_modflags(struct ctdb_context *ctdb, TDB_DATA indata);
 
 int ctdb_ctrl_get_all_tunables(struct ctdb_context *ctdb, 
 			       struct timeval timeout, 
@@ -1047,9 +1040,6 @@ int32_t ctdb_control_trans3_commit(struct ctdb_context *ctdb,
 
 void ctdb_persistent_finish_trans3_commits(struct ctdb_context *ctdb);
 
-int32_t ctdb_monitoring_mode(struct ctdb_context *ctdb);
-bool ctdb_stopped_monitoring(struct ctdb_context *ctdb);
-
 struct client_async_data {
 	enum ctdb_controls opcode;
 	bool dont_log_errors;
@@ -1103,8 +1093,6 @@ int32_t ctdb_control_disable_script(struct ctdb_context *ctdb, TDB_DATA indata);
 int32_t ctdb_control_get_db_seqnum(struct ctdb_context *ctdb,
 				   TDB_DATA indata,
 				   TDB_DATA *outdata);
-
-void ctdb_run_notification_script(struct ctdb_context *ctdb, const char *event);
 
 int verify_remote_ip_allocation(struct ctdb_context *ctdb,
 				struct ctdb_all_public_ips *ips,
@@ -1440,5 +1428,21 @@ void ctdb_db_statistics_reset(struct ctdb_db_context *ctdb_db);
 
 int32_t ctdb_control_get_db_statistics(struct ctdb_context *ctdb,
 				       uint32_t db_id, TDB_DATA *outdata);
+
+/* from ctdb_monitor.c */
+
+int ctdb_set_notification_script(struct ctdb_context *ctdb, const char *script);
+void ctdb_run_notification_script(struct ctdb_context *ctdb, const char *event);
+
+void ctdb_disable_monitoring(struct ctdb_context *ctdb);
+void ctdb_enable_monitoring(struct ctdb_context *ctdb);
+void ctdb_stop_monitoring(struct ctdb_context *ctdb);
+
+void ctdb_wait_for_first_recovery(struct ctdb_context *ctdb);
+
+int32_t ctdb_control_modflags(struct ctdb_context *ctdb, TDB_DATA indata);
+
+int32_t ctdb_monitoring_mode(struct ctdb_context *ctdb);
+bool ctdb_stopped_monitoring(struct ctdb_context *ctdb);
 
 #endif
