@@ -31,6 +31,7 @@
 #include "../common/rb_tree.h"
 #include "lib/tdb_wrap/tdb_wrap.h"
 #include "lib/util/dlinklist.h"
+#include "common/system.h"
 
 #define ERR_TIMEOUT	20	/* timed out trying to reach node */
 #define ERR_NONODE	21	/* node does not exist */

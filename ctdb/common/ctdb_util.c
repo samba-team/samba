@@ -24,6 +24,7 @@
 #include "system/wait.h"
 #include "../include/ctdb_private.h"
 #include "common/reqid.h"
+#include "common/system.h"
 
 /*
   return error string for last error

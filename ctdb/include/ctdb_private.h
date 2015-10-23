@@ -1010,8 +1010,6 @@ void ctdb_call_resend_all(struct ctdb_context *ctdb);
 void ctdb_node_dead(struct ctdb_node *node);
 void ctdb_node_connected(struct ctdb_node *node);
 bool ctdb_blocking_freeze(struct ctdb_context *ctdb);
-bool set_scheduler(void);
-void reset_scheduler(void);
 
 struct tevent_signal *ctdb_init_sigchld(struct ctdb_context *ctdb);
 void ctdb_track_child(struct ctdb_context *ctdb, pid_t pid);
@@ -1099,17 +1097,6 @@ int ctdb_ctrl_set_iface_link(struct ctdb_context *ctdb,
 			     TALLOC_CTX *mem_ctx,
 			     const struct ctdb_control_iface_info *info);
 
-/* from takeover/system.c */
-uint32_t uint16_checksum(uint16_t *data, size_t n);
-int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface);
-bool ctdb_sys_have_ip(ctdb_sock_addr *addr);
-char *ctdb_sys_find_ifname(ctdb_sock_addr *addr);
-bool ctdb_sys_check_iface_exists(const char *iface);
-int ctdb_get_peer_pid(const int fd, pid_t *peer_pid);
-int ctdb_sys_send_tcp(const ctdb_sock_addr *dest, 
-		      const ctdb_sock_addr *src,
-		      uint32_t seq, uint32_t ack, int rst);
-
 /* Details of a byte range lock */
 struct ctdb_lock_info {
 	ino_t inode;
@@ -1117,8 +1104,6 @@ struct ctdb_lock_info {
 	bool waiting;
 	bool read_only;
 };
-
-int ctdb_set_process_name(const char *name);
 
 typedef void (*client_async_callback)(struct ctdb_context *ctdb, uint32_t node_pnn, int32_t res, TDB_DATA outdata, void *callback_data);
 
@@ -1153,9 +1138,6 @@ int ctdb_event_script_callback(struct ctdb_context *ctdb,
 			       const char *fmt, ...) PRINTF_ATTRIBUTE(6,7);
 void ctdb_release_all_ips(struct ctdb_context *ctdb);
 
-void set_nonblocking(int fd);
-void set_close_on_exec(int fd);
-
 bool ctdb_recovery_have_lock(struct ctdb_context *ctdb);
 bool ctdb_recovery_lock(struct ctdb_context *ctdb);
 void ctdb_recovery_unlock(struct ctdb_context *ctdb);
@@ -1181,16 +1163,6 @@ int ctdb_ctrl_get_all_tunables(struct ctdb_context *ctdb,
 			       struct timeval timeout, 
 			       uint32_t destnode,
 			       struct ctdb_tunable *tunables);
-
-bool parse_ip_mask(const char *s, const char *iface, ctdb_sock_addr *addr, unsigned *mask);
-bool parse_ip_port(const char *s, ctdb_sock_addr *addr);
-bool parse_ip(const char *s, const char *iface, unsigned port, ctdb_sock_addr *addr);
-bool parse_ipv4(const char *s, unsigned port, struct sockaddr_in *sin);
- 
-
-int ctdb_sys_open_capture_socket(const char *iface, void **private_data);
-int ctdb_sys_close_capture_socket(void *private_data);
-int ctdb_sys_read_tcp_packet(int s, void *private_data, ctdb_sock_addr *src, ctdb_sock_addr *dst, uint32_t *ack_seq, uint32_t *seq);
 
 int ctdb_ctrl_killtcp(struct ctdb_context *ctdb, 
 		      struct timeval timeout, 
@@ -1267,7 +1239,6 @@ int32_t ctdb_control_db_get_health(struct ctdb_context *ctdb,
 int32_t ctdb_monitoring_mode(struct ctdb_context *ctdb);
 bool ctdb_stopped_monitoring(struct ctdb_context *ctdb);
 int ctdb_set_child_logging(struct ctdb_context *ctdb);
-void lockdown_memory(bool valgrinding);
 
 struct client_async_data {
 	enum ctdb_controls opcode;
@@ -1490,11 +1461,5 @@ struct lock_request *ctdb_lock_alldb(TALLOC_CTX *mem_ctx,
 				     bool auto_mark,
 				     void (*callback)(void *, bool),
 				     void *private_data);
-
-int mkdir_p(const char *dir, int mode);
-void mkdir_p_or_die(const char *dir, int mode);
-
-ssize_t sys_read(int fd, void *buf, size_t count);
-ssize_t sys_write(int fd, const void *buf, size_t count);
 
 #endif

@@ -30,6 +30,8 @@
 #include <netpacket/packet.h>
 #include <sys/prctl.h>
 
+#include "common/system.h"
+
 #ifndef ETHERTYPE_IP6
 #define ETHERTYPE_IP6 0x86dd
 #endif

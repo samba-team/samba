@@ -22,6 +22,7 @@
 #include "lib/tdb_wrap/tdb_wrap.h"
 #include "tdb.h"
 #include "ctdb_private.h"
+#include "common/system.h"
 
 struct ctdb_persistent_write_state {
 	struct ctdb_db_context *ctdb_db;

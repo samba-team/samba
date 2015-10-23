@@ -23,6 +23,7 @@
 #include "system/network.h"
 #include "system/filesys.h"
 #include "../include/ctdb_private.h"
+#include "common/system.h"
 #include "ctdb_tcp.h"
 
 /*

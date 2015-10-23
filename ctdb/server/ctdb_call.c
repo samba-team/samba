@@ -28,6 +28,7 @@
 #include "../include/ctdb_private.h"
 #include "../common/rb_tree.h"
 #include "common/reqid.h"
+#include "common/system.h"
 
 struct ctdb_sticky_record {
 	struct ctdb_context *ctdb;

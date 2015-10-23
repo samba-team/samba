@@ -29,6 +29,8 @@
 #include "../include/ctdb_client.h"
 #include <stdarg.h>
 
+#include "common/system.h"
+
 #define QUEUE_BUFFER_SIZE	(16*1024)
 
 /* structures for packet queueing - see common/ctdb_io.c */

@@ -29,6 +29,7 @@
 #include "lib/util/dlinklist.h"
 #include "../include/ctdb_private.h"
 #include "../common/rb_tree.h"
+#include "common/system.h"
 
 #define TIMELIMIT() timeval_current_ofs(10, 0)
 

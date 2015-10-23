@@ -33,6 +33,7 @@
 #include <net/if_arp.h>
 #include <pcap.h>
 
+#include "common/system.h"
 
 #ifndef ETHERTYPE_IP6
 #define ETHERTYPE_IP6 0x86dd

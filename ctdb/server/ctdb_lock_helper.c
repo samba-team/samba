@@ -21,6 +21,7 @@
 #include "tdb.h"
 #include "system/filesys.h"
 #include "ctdb_private.h"
+#include "common/system.h"
 
 static char *progname = NULL;
 

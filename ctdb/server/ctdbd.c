@@ -26,6 +26,7 @@
 #include "cmdline.h"
 #include "../include/ctdb_private.h"
 #include "common/reqid.h"
+#include "common/system.h"
 
 static struct {
 	const char *nlist;

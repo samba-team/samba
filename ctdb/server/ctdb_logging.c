@@ -25,6 +25,7 @@
 #include "system/filesys.h"
 #include "lib/util/debug.h"
 #include "lib/util/dlinklist.h"
+#include "common/system.h"
 
 struct ctdb_log_backend {
 	struct ctdb_log_backend *prev, *next;

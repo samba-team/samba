@@ -31,6 +31,7 @@
 #include <sys/kinfo.h>
 #include <pcap.h>
 
+#include "common/system.h"
 
 
 #if 0

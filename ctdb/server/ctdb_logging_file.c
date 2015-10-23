@@ -23,6 +23,7 @@
 #include "system/time.h"
 #include "system/filesys.h"
 #include "lib/util/time_basic.h"
+#include "common/system.h"
 
 #define CTDB_LOG_FILE_PREFIX "file"
 

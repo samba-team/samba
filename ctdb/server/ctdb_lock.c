@@ -25,6 +25,7 @@
 #include "lib/tdb_wrap/tdb_wrap.h"
 #include "system/filesys.h"
 #include "lib/util/dlinklist.h"
+#include "common/system.h"
 
 /*
  * Non-blocking Locking API

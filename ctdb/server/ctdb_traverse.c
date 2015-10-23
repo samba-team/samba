@@ -25,6 +25,7 @@
 #include "../include/ctdb_private.h"
 #include "lib/util/dlinklist.h"
 #include "common/reqid.h"
+#include "common/system.h"
 
 typedef void (*ctdb_traverse_fn_t)(void *private_data, TDB_DATA key, TDB_DATA data);
 

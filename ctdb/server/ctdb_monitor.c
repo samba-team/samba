@@ -22,6 +22,7 @@
 #include "system/filesys.h"
 #include "system/wait.h"
 #include "../include/ctdb_private.h"
+#include "common/system.h"
 
 struct ctdb_monitor_state {
 	uint32_t monitoring_mode;

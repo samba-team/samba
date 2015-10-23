@@ -29,6 +29,7 @@
 #include "../include/ctdb_private.h"
 #include "lib/util/dlinklist.h"
 #include "common/reqid.h"
+#include "common/system.h"
 
 /*
   allocate a packet for use in client<->daemon communication

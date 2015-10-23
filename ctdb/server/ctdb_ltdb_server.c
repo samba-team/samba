@@ -29,6 +29,7 @@
 #include "lib/util/dlinklist.h"
 #include <ctype.h>
 #include "common/reqid.h"
+#include "common/system.h"
 
 #define PERSISTENT_HEALTH_TDB "persistent_health.tdb"
 

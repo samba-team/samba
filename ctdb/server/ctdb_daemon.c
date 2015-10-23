@@ -30,6 +30,7 @@
 #include "../common/rb_tree.h"
 #include <sys/socket.h>
 #include "common/reqid.h"
+#include "common/system.h"
 
 struct ctdb_client_pid_list {
 	struct ctdb_client_pid_list *next, *prev;

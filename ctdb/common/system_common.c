@@ -23,6 +23,8 @@
 
 #include "ctdb_private.h"
 
+#include "common/system.h"
+
 /*
   uint16 checksum for n bytes
  */

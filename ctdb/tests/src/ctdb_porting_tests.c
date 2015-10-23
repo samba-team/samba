@@ -22,6 +22,7 @@
 #include "system/filesys.h"
 #include "popt.h"
 #include "cmdline.h"
+#include "common/system.h"
 
 static struct {
 	const char *socketname;

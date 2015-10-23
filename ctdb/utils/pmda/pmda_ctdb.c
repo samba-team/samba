@@ -26,6 +26,7 @@
 #include "ctdb_private.h"
 #include "ctdb_protocol.h"
 #include "domain.h"
+#include "common/system.h"
 
 /*
  * CTDB PMDA

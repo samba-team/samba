@@ -26,6 +26,7 @@
 #include "../include/ctdb_private.h"
 #include "../common/rb_tree.h"
 #include "lib/util/dlinklist.h"
+#include "common/system.h"
 
 static void ctdb_event_script_timeout(struct event_context *ev, struct timed_event *te, struct timeval t, void *p);
 

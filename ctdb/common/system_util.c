@@ -26,6 +26,8 @@
 
 #include "ctdb_private.h"
 
+#include "common/system.h"
+
 #if HAVE_SCHED_H
 #include <sched.h>
 #endif

@@ -26,7 +26,7 @@
 #include "../include/ctdb_private.h"
 #include "lib/util/dlinklist.h"
 #include "lib/tdb_wrap/tdb_wrap.h"
-
+#include "common/system.h"
 
 int 
 ctdb_control_getvnnmap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indata, TDB_DATA *outdata)
