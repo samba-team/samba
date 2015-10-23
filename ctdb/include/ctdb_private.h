@@ -863,13 +863,6 @@ int ctdb_event_script_callback(struct ctdb_context *ctdb,
 			       enum ctdb_eventscript_call call,
 			       const char *fmt, ...) PRINTF_ATTRIBUTE(6,7);
 
-int32_t ctdb_control_get_tunable(struct ctdb_context *ctdb, TDB_DATA indata, 
-				 TDB_DATA *outdata);
-int32_t ctdb_control_set_tunable(struct ctdb_context *ctdb, TDB_DATA indata);
-int32_t ctdb_control_list_tunables(struct ctdb_context *ctdb, TDB_DATA *outdata);
-
-void ctdb_tunables_set_defaults(struct ctdb_context *ctdb);
-
 int ctdb_ctrl_get_all_tunables(struct ctdb_context *ctdb, 
 			       struct timeval timeout, 
 			       uint32_t destnode,
@@ -1494,5 +1487,15 @@ int32_t ctdb_control_traverse_start_ext(struct ctdb_context *ctdb,
 int32_t ctdb_control_traverse_start(struct ctdb_context *ctdb,
 				    TDB_DATA indata, TDB_DATA *outdata,
 				    uint32_t srcnode, uint32_t client_id);
+
+/* from ctdb_tunables.c */
+
+void ctdb_tunables_set_defaults(struct ctdb_context *ctdb);
+
+int32_t ctdb_control_get_tunable(struct ctdb_context *ctdb, TDB_DATA indata,
+				 TDB_DATA *outdata);
+int32_t ctdb_control_set_tunable(struct ctdb_context *ctdb, TDB_DATA indata);
+int32_t ctdb_control_list_tunables(struct ctdb_context *ctdb,
+				   TDB_DATA *outdata);
 
 #endif
