@@ -42,7 +42,7 @@ if (Utils.unversioned_sys_platform() == 'linux' or (host_os.rfind('gnu') > -1)):
     bld.SAMBA3_LIBRARY('nss_wins',
                        keep_underscore=True,
                        source='wins.c',
-                       deps='''param libsmb LIBTSOCKET''',
+                       deps='''wbclient''',
                        public_headers=[],
                        public_headers_install=False,
                        pc_files=[],
@@ -58,7 +58,7 @@ elif (host_os.rfind('freebsd') > -1):
 
 	bld.SAMBA3_LIBRARY('nss_wins',
 			  source='wins.c wins_freebsd.c',
-			  deps='''param libsmb LIBTSOCKET''',
+			  deps='''wbclient''',
 			  realname='nss_wins.so.1',
 			  vnum='1')
 

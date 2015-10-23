@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "nsswitch/winbind_nss.h"
+#include "nsswitch/libwbclient/wbclient.h"
 
 #ifdef HAVE_NS_API_H
 
@@ -38,39 +39,17 @@ static pthread_mutex_t wins_nss_mutex = PTHREAD_MUTEX_INITIALIZER;
 #define INADDRSZ 4
 #endif
 
-static int initialised;
-
 NSS_STATUS _nss_wins_gethostbyname_r(const char *hostname, struct hostent *he,
 			  char *buffer, size_t buflen, int *h_errnop);
 NSS_STATUS _nss_wins_gethostbyname2_r(const char *name, int af, struct hostent *he,
 			   char *buffer, size_t buflen, int *h_errnop);
 
-static void nss_wins_init(void)
+static char *lookup_byname_backend(const char *name)
 {
-	initialised = 1;
-	lp_set_cmdline("log level", "0");
-
-	TimeInit();
-	setup_logging("nss_wins",False);
-	lp_load_global_no_reinit(get_dyn_CONFIGFILE());
-	load_interfaces();
-}
-
-static struct in_addr *lookup_byname_backend(const char *name, int *count)
-{
-	TALLOC_CTX *frame;
-	struct sockaddr_storage *address = NULL;
-	struct in_addr *ret = NULL;
-	NTSTATUS status;
 	const char *p;
+	char *ip;
 	size_t nbt_len;
-	int j;
-
-	if (!initialised) {
-		nss_wins_init();
-	}
-
-	*count = 0;
+	wbcErr result;
 
 	nbt_len = strlen(name);
 	if (nbt_len > MAX_NETBIOSNAME_LEN - 1) {
@@ -81,82 +60,42 @@ static struct in_addr *lookup_byname_backend(const char *name, int *count)
 		return NULL;
 	}
 
-	frame = talloc_stackframe();
-	/* always try with wins first */
-	status = resolve_wins(name, 0x00, talloc_tos(),
-			      &address, count);
-	if (NT_STATUS_IS_OK(status)) {
-		if ( (ret = SMB_MALLOC_P(struct in_addr)) == NULL ) {
-			TALLOC_FREE(frame);
-			return NULL;
-		}
-		if (address[0].ss_family != AF_INET) {
-			free(ret);
-			TALLOC_FREE(frame);
-			return NULL;
-		}
-		*ret = ((struct sockaddr_in *)(void *)address)
-			->sin_addr;
-		TALLOC_FREE(frame);
-		return ret;
+	result = wbcResolveWinsByName(name, &ip);
+	if (result != WBC_ERR_SUCCESS) {
+		return NULL;
 	}
 
-	/* uggh, we have to broadcast to each interface in turn */
-	for (j=iface_count() - 1;j >= 0;j--) {
-		const struct in_addr *bcast = iface_n_bcast_v4(j);
-		struct sockaddr_storage ss;
-		struct sockaddr_storage *pss;
-
-		if (!bcast) {
-			continue;
-		}
-		in_addr_to_sockaddr_storage(&ss, *bcast);
-		status = name_query(name, 0x00, True, True, &ss,
-				    talloc_tos(), &pss, count, NULL);
-		if (NT_STATUS_IS_OK(status) && (*count > 0)) {
-			if ((ret = SMB_MALLOC_P(struct in_addr)) == NULL) {
-				TALLOC_FREE(frame);
-				return NULL;
-			}
-			*ret = ((struct sockaddr_in *)pss)->sin_addr;
-			break;
-		}
-	}
-	TALLOC_FREE(frame);
-	return ret;
+	return ip;
 }
 
 #ifdef HAVE_NS_API_H
 
-static struct node_status *lookup_byaddr_backend(char *addr, int *count)
+static char *lookup_byaddr_backend(const char *ip)
 {
-	struct sockaddr_storage ss;
-	struct nmb_name nname;
-	struct node_status *result;
-	NTSTATUS status;
+	wbcErr result;
+	char *name = NULL;
 
-	if (!initialised) {
-		nss_wins_init();
-	}
-
-	make_nmb_name(&nname, "*", 0);
-	if (!interpret_string_addr(&ss, addr, AI_NUMERICHOST)) {
-		return NULL;
-	}
-	status = node_status_query(NULL, &nname, &ss, &result, count, NULL);
-	if (!NT_STATUS_IS_OK(status)) {
+	result = wbcResolveWinsByIP(ip, &name);
+	if (result != WBC_ERR_SUCCESS) {
 		return NULL;
 	}
 
-	return result;
+	return name;
 }
 
 /* IRIX version */
 
 int init(void)
 {
+	bool ok;
+
 	nsd_logprintf(NSD_LOG_MIN, "entering init (wins)\n");
-	nss_wins_init();
+
+	ok = nss_wins_init();
+	if (!ok) {
+		return NSD_ERROR;
+	}
+
 	return NSD_OK;
 }
 
@@ -165,8 +104,6 @@ int lookup(nsd_file_t *rq)
 	char *map;
 	char *key;
 	char *addr;
-	struct in_addr *ip_list;
-	struct node_status *status;
 	int i, count, len, size;
 	char response[1024];
 	bool found = False;
@@ -195,58 +132,51 @@ int lookup(nsd_file_t *rq)
 	 * ip_address[ ip_address]*\tname[ alias]*
 	 */
 	if (strcasecmp_m(map,"hosts.byaddr") == 0) {
-		if ( status = lookup_byaddr_backend(key, &count)) {
-		    size = strlen(key) + 1;
-		    if (size > len) {
-			talloc_free(status);
-			return NSD_ERROR;
-		    }
-		    len -= size;
-		    strncat(response,key,size);
-		    strncat(response,"\t",1);
-		    for (i = 0; i < count; i++) {
-			/* ignore group names */
-			if (status[i].flags & 0x80) continue;
-			if (status[i].type == 0x20) {
-				size = sizeof(status[i].name) + 1;
-				if (size > len) {
-				    talloc_free(status);
-				    return NSD_ERROR;
-				}
-				len -= size;
-				strncat(response, status[i].name, size);
-				strncat(response, " ", 1);
-				found = True;
+		char *name;
+
+		name = lookup_byaddr_backend(key);
+		if (name != NULL) {
+			size = strlen(key) + 1;
+			if (size > len) {
+				return NSD_ERROR;
 			}
-		    }
-		    response[strlen(response)-1] = '\n';
-		    talloc_free(status);
+			len -= size;
+			strncat(response,key,size);
+			strncat(response,"\t",1);
+
+			size = strlen(name) + 1;
+			if (size > len) {
+				return NSD_ERROR;
+			}
+			len -= size;
+			strncat(response, name, size);
+			strncat(response, " ", 1);
+			found = True;
 		}
+		response[strlen(response)-1] = '\n';
 	} else if (strcasecmp_m(map,"hosts.byname") == 0) {
-	    if (ip_list = lookup_byname_backend(key, &count)) {
-		for (i = count; i ; i--) {
-		    addr = inet_ntoa(ip_list[i-1]);
-		    size = strlen(addr) + 1;
-		    if (size > len) {
-			free(ip_list);
-			return NSD_ERROR;
-		    }
-		    len -= size;
-		    if (i != 0)
-			response[strlen(response)-1] = ' ';
-		    strncat(response,addr,size);
-		    strncat(response,"\t",1);
+		char *ip;
+
+		ip = lookup_byname_backend(key);
+		if (ip != NULL) {
+			size = strlen(ip) + 1;
+			if (size > len) {
+				wbcFreeMemory(ip);
+				return NSD_ERROR;
+			}
+			len -= size;
+			strncat(response,ip,size);
+			strncat(response,"\t",1);
+			size = strlen(key) + 1;
+			wbcFreeMemory(ip);
+			if (size > len) {
+				return NSD_ERROR;
+			}
+			strncat(response,key,size);
+			strncat(response,"\n",1);
+
+			found = True;
 		}
-		size = strlen(key) + 1;
-		if (size > len) {
-		    free(ip_list);
-		    return NSD_ERROR;
-		}
-		strncat(response,key,size);
-		strncat(response,"\n",1);
-		found = True;
-		free(ip_list);
-	    }
 	}
 
 	if (found) {
@@ -265,7 +195,7 @@ int lookup(nsd_file_t *rq)
    are the pointers passed in by the C library to the _nss_*_*
    functions. */
 
-static char *get_static(char **buffer, size_t *buflen, int len)
+static char *get_static(char **buffer, size_t *buflen, size_t len)
 {
 	char *result;
 
@@ -294,27 +224,32 @@ _nss_wins_gethostbyname_r(const char *hostname, struct hostent *he,
 			  char *buffer, size_t buflen, int *h_errnop)
 {
 	NSS_STATUS nss_status = NSS_STATUS_SUCCESS;
-	struct in_addr *ip_list;
-	int i, count;
+	char *ip;
+	struct in_addr in;
+	int i;
 	fstring name;
 	size_t namelen;
-	TALLOC_CTX *frame;
+	int rc;
 
 #if HAVE_PTHREAD
 	pthread_mutex_lock(&wins_nss_mutex);
 #endif
-
-	frame = talloc_stackframe();
 
 	memset(he, '\0', sizeof(*he));
 	fstrcpy(name, hostname);
 
 	/* Do lookup */
 
-	ip_list = lookup_byname_backend(name, &count);
-
-	if (!ip_list) {
+	ip = lookup_byname_backend(name);
+	if (ip == NULL) {
 		nss_status = NSS_STATUS_NOTFOUND;
+		goto out;
+	}
+
+	rc = inet_pton(AF_INET, ip, &in);
+	wbcFreeMemory(ip);
+	if (rc == 0) {
+		nss_status = NSS_STATUS_TRYAGAIN;
 		goto out;
 	}
 
@@ -323,7 +258,6 @@ _nss_wins_gethostbyname_r(const char *hostname, struct hostent *he,
 	namelen = strlen(name) + 1;
 
 	if ((he->h_name = get_static(&buffer, &buflen, namelen)) == NULL) {
-		free(ip_list);
 		nss_status = NSS_STATUS_TRYAGAIN;
 		goto out;
 	}
@@ -336,31 +270,25 @@ _nss_wins_gethostbyname_r(const char *hostname, struct hostent *he,
 		i = sizeof(char*) - i;
 
 	if (get_static(&buffer, &buflen, i) == NULL) {
-		free(ip_list);
 		nss_status = NSS_STATUS_TRYAGAIN;
 		goto out;
 	}
 
 	if ((he->h_addr_list = (char **)get_static(
-		     &buffer, &buflen, (count + 1) * sizeof(char *))) == NULL) {
-		free(ip_list);
+		     &buffer, &buflen, i * sizeof(char *))) == NULL) {
 		nss_status = NSS_STATUS_TRYAGAIN;
 		goto out;
 	}
 
-	for (i = 0; i < count; i++) {
-		if ((he->h_addr_list[i] = get_static(&buffer, &buflen,
-						     INADDRSZ)) == NULL) {
-			free(ip_list);
-			nss_status = NSS_STATUS_TRYAGAIN;
-			goto out;
-		}
-		memcpy(he->h_addr_list[i], &ip_list[i], INADDRSZ);
+	if ((he->h_addr_list[0] = get_static(&buffer, &buflen,
+					     INADDRSZ)) == NULL) {
+		nss_status = NSS_STATUS_TRYAGAIN;
+		goto out;
 	}
 
-	he->h_addr_list[count] = NULL;
+	memcpy(he->h_addr_list[i], &in, INADDRSZ);
 
-	free(ip_list);
+	he->h_addr_list[0] = NULL;
 
 	/* Set h_addr_type and h_length */
 
@@ -388,8 +316,6 @@ _nss_wins_gethostbyname_r(const char *hostname, struct hostent *he,
 	nss_status = NSS_STATUS_SUCCESS;
 
   out:
-
-	TALLOC_FREE(frame);
 
 #if HAVE_PTHREAD
 	pthread_mutex_unlock(&wins_nss_mutex);
