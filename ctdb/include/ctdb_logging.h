@@ -43,6 +43,4 @@ const char *get_debug_by_level(int32_t level);
 bool parse_debug(const char *str, int32_t *level);
 void print_debug_levels(FILE *stream);
 
-void ctdb_log_init_syslog(void);
-
 #endif /* _CTDB_LOGGING_H_ */

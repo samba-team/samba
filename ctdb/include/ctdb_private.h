@@ -1430,4 +1430,8 @@ int ctdb_init_tevent_logging(struct ctdb_context *ctdb);
 
 void ctdb_log_init_file(void);
 
+/* from ctdb_logging_syslog.c */
+
+void ctdb_log_init_syslog(void);
+
 #endif
