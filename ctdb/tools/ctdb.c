@@ -38,7 +38,7 @@
 #include "lib/util/time.h"
 
 #include "ctdb_logging.h"
-#include "../include/ctdb_version.h"
+#include "ctdb_version.h"
 #include "ctdb_private.h"
 #include "ctdb_client.h"
 

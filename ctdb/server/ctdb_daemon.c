@@ -34,7 +34,7 @@
 #include "lib/util/debug.h"
 #include "lib/util/samba_util.h"
 
-#include "../include/ctdb_version.h"
+#include "ctdb_version.h"
 #include "ctdb_private.h"
 #include "ctdb_client.h"
 #include "ctdb_logging.h"
