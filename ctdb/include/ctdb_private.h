@@ -1076,7 +1076,6 @@ int32_t ctdb_control_db_get_health(struct ctdb_context *ctdb,
 
 int32_t ctdb_monitoring_mode(struct ctdb_context *ctdb);
 bool ctdb_stopped_monitoring(struct ctdb_context *ctdb);
-int ctdb_set_child_logging(struct ctdb_context *ctdb);
 
 struct client_async_data {
 	enum ctdb_controls opcode;
@@ -1128,16 +1127,6 @@ int ctdb_vacuum_init(struct ctdb_db_context *ctdb_db);
 int32_t ctdb_control_enable_script(struct ctdb_context *ctdb, TDB_DATA indata);
 int32_t ctdb_control_disable_script(struct ctdb_context *ctdb, TDB_DATA indata);
 
-struct ctdb_log_state *ctdb_vfork_with_logging(TALLOC_CTX *mem_ctx,
-					       struct ctdb_context *ctdb,
-					       const char *log_prefix,
-					       const char *helper,
-					       int helper_argc,
-					       const char **helper_argv,
-					       void (*logfn)(const char *, uint16_t, void *),
-					       void *logfn_private, pid_t *pid);
-
-
 int32_t ctdb_control_get_db_seqnum(struct ctdb_context *ctdb,
 				   TDB_DATA indata,
 				   TDB_DATA *outdata);
@@ -1158,8 +1147,6 @@ int verify_remote_ip_allocation(struct ctdb_context *ctdb,
 int update_ip_assignment_tree(struct ctdb_context *ctdb,
 				struct ctdb_public_ip *ip);
 void clear_ip_assignment_tree(struct ctdb_context *ctdb);
-
-int ctdb_init_tevent_logging(struct ctdb_context *ctdb);
 
 int ctdb_statistics_init(struct ctdb_context *ctdb);
 
@@ -1415,5 +1402,28 @@ struct lock_request *ctdb_lock_alldb(TALLOC_CTX *mem_ctx,
 				     bool auto_mark,
 				     void (*callback)(void *, bool),
 				     void *private_data);
+
+/* from ctdb_logging.c */
+
+typedef int (*ctdb_log_setup_fn_t)(TALLOC_CTX *mem_ctx,
+				   const char *logging,
+				   const char *app_name);
+
+void ctdb_log_register_backend(const char *prefix, ctdb_log_setup_fn_t init);
+
+bool ctdb_logging_init(TALLOC_CTX *mem_ctx, const char *logging);
+
+struct ctdb_log_state *ctdb_vfork_with_logging(TALLOC_CTX *mem_ctx,
+					       struct ctdb_context *ctdb,
+					       const char *log_prefix,
+					       const char *helper,
+					       int helper_argc,
+					       const char **helper_argv,
+					       void (*logfn)(const char *,
+							     uint16_t, void *),
+					       void *logfn_private, pid_t *pid);
+
+int ctdb_set_child_logging(struct ctdb_context *ctdb);
+int ctdb_init_tevent_logging(struct ctdb_context *ctdb);
 
 #endif
