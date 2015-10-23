@@ -1586,14 +1586,8 @@ static int ctdb_reload_remote_public_ips(struct ctdb_context *ctdb,
 		struct ctdb_node *node = ctdb->nodes[j];
 
 		/* release any existing data */
-		if (node->known_public_ips) {
-			talloc_free(node->known_public_ips);
-			node->known_public_ips = NULL;
-		}
-		if (node->available_public_ips) {
-			talloc_free(node->available_public_ips);
-			node->available_public_ips = NULL;
-		}
+		TALLOC_FREE(node->known_public_ips);
+		TALLOC_FREE(node->available_public_ips);
 
 		if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
 			continue;
@@ -2527,8 +2521,7 @@ static void election_send_request(struct tevent_context *ev,
 		DEBUG(DEBUG_ERR,("Failed to send election request!\n"));
 	}
 
-	talloc_free(rec->send_election_te);
-	rec->send_election_te = NULL;
+	TALLOC_FREE(rec->send_election_te);
 }
 
 /*
