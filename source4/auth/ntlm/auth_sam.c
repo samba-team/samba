@@ -493,6 +493,7 @@ static NTSTATUS authsam_authenticate(struct auth4_context *auth_context,
 				     DATA_BLOB *user_sess_key, DATA_BLOB *lm_sess_key)
 {
 	NTSTATUS nt_status;
+	bool interactive = (user_info->password_state == AUTH_PASSWORD_HASH);
 	uint16_t acct_flags = samdb_result_acct_flags(msg, NULL);
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	if (!tmp_ctx) {
@@ -528,7 +529,9 @@ static NTSTATUS authsam_authenticate(struct auth4_context *auth_context,
 		return nt_status;
 	}
 
-	nt_status = authsam_zero_bad_pwd_count(auth_context->sam_ctx, msg);
+	nt_status = authsam_logon_success_accounting(auth_context->sam_ctx,
+						     msg, domain_dn,
+						     interactive);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		TALLOC_FREE(tmp_ctx);
 		return nt_status;

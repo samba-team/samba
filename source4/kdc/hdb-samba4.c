@@ -184,10 +184,13 @@ static krb5_error_code hdb_samba4_auth_status(krb5_context context, HDB *db,
 									struct samba_kdc_db_context);
 	struct samba_kdc_entry *p = talloc_get_type(entry->ctx, struct samba_kdc_entry);
 
+	struct ldb_dn *domain_dn = ldb_get_default_basedn(kdc_db_ctx->samdb);
+
 	if (hdb_auth_status == HDB_AUTH_WRONG_PASSWORD) {
-		authsam_update_bad_pwd_count(kdc_db_ctx->samdb, p->msg, ldb_get_default_basedn(kdc_db_ctx->samdb));
+		authsam_update_bad_pwd_count(kdc_db_ctx->samdb, p->msg, domain_dn);
 	} else if (hdb_auth_status == HDB_AUTH_SUCCESS) {
-		authsam_zero_bad_pwd_count(kdc_db_ctx->samdb, p->msg);
+		authsam_logon_success_accounting(kdc_db_ctx->samdb, p->msg,
+						 domain_dn, true);
 	}
 	return 0;
 }

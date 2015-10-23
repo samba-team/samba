@@ -51,10 +51,24 @@ if len(args) < 1:
 host = args[0]
 
 lp = sambaopts.get_loadparm()
-creds = credopts.get_credentials(lp)
+global_creds = credopts.get_credentials(lp)
 
 # Force an encrypted connection
-creds.set_gensec_features(creds.get_gensec_features() | gensec.FEATURE_SEAL)
+global_creds.set_gensec_features(global_creds.get_gensec_features() |
+                                 gensec.FEATURE_SEAL)
+
+def insta_creds(template=global_creds):
+    # get a copy of the global creds or a the passed in creds
+    c = Credentials()
+    c.set_username("testuser")
+    c.set_password("thatsAcomplPASS1")
+    c.set_domain(template.get_domain())
+    c.set_realm(template.get_realm())
+    c.set_workstation(template.get_workstation())
+    c.set_gensec_features(c.get_gensec_features()
+                          | gensec.FEATURE_SEAL)
+    c.set_kerberos_state(template.get_kerberos_state())
+    return c
 
 #
 # Tests start here
@@ -129,6 +143,12 @@ userAccountControl: %d
         if mode == "ignore":
             return
 
+        if mode == "absent":
+            self.assertFalse(name in res[0],
+                            msg="attr[%s] not missing on dn[%s]" %
+                            (name, res[0].dn))
+            return
+
         self.assertTrue(name in res[0],
                         msg="attr[%s] missing on dn[%s]" %
                         (name, res[0].dn))
@@ -136,39 +156,56 @@ userAccountControl: %d
                         msg="attr[%s]=%r on dn[%s]" %
                         (name, res[0][name], res[0].dn))
 
+
+        print  "%s = '%s'" % (name, res[0][name][0])
+
         if mode == "present":
             return
+
         if mode == "equal":
-            self.assertTrue(str(res[0][name][0]) == str(value),
-                            msg="attr[%s]=[%s] != [%s] on dn[%s]" %
-                            (name, str(res[0][name][0]), str(value), res[0].dn))
+            v = int(res[0][name][0])
+            value = int(value)
+            msg = ("attr[%s]=[%s] != [%s] on dn[%s]\n"
+                   "(diff %d; actual value is %s than expected)"  %
+                   (name, v, value, res[0].dn, v - value,
+                    ('less' if v < value else 'greater')))
+
+            self.assertTrue(v == value, msg)
             return
+
         if mode == "greater":
             v = int(res[0][name][0])
             self.assertTrue(v > int(value),
-                            msg="attr[%s]=[%s] <= [%s] on dn[%s]" %
-                            (name, v, int(value), res[0].dn))
+                            msg="attr[%s]=[%s] <= [%s] on dn[%s] (diff %d)" %
+                            (name, v, int(value), res[0].dn, v - int(value)))
             return
         if mode == "less":
             v = int(res[0][name][0])
             self.assertTrue(v < int(value),
-                            msg="attr[%s]=[%s] >= [%s] on dn[%s]" %
-                            (name, v, int(value), res[0].dn))
+                            msg="attr[%s]=[%s] >= [%s] on dn[%s] (diff %d)" %
+                            (name, v, int(value), res[0].dn, v - int(value)))
             return
         self.assertEqual(mode, not mode, "Invalid Mode[%s]" % mode)
 
     def _check_account(self, dn,
                        badPwdCount=None,
                        badPasswordTime=None,
+                       lastLogon=None,
+                       lastLogonTimestamp=None,
                        lockoutTime=None,
                        userAccountControl=None,
                        msDSUserAccountControlComputed=None,
-                       effective_bad_password_count=None):
-
+                       effective_bad_password_count=None,
+                       msg=None):
+        print '-=' * 36
+        if msg is not None:
+            print  "\033[01;32m %s \033[00m\n" % msg
         attrs = [
            "objectSid",
            "badPwdCount",
            "badPasswordTime",
+           "lastLogon",
+           "lastLogonTimestamp",
            "lockoutTime",
            "userAccountControl",
            "msDS-User-Account-Control-Computed"
@@ -182,6 +219,8 @@ userAccountControl: %d
         self.assertTrue(len(res) == 1)
         self._check_attribute(res, "badPwdCount", badPwdCount)
         self._check_attribute(res, "badPasswordTime", badPasswordTime)
+        self._check_attribute(res, "lastLogon", lastLogon)
+        self._check_attribute(res, "lastLogonTimestamp", lastLogonTimestamp)
         self._check_attribute(res, "lockoutTime", lockoutTime)
         self._check_attribute(res, "userAccountControl", userAccountControl)
         self._check_attribute(res, "msDS-User-Account-Control-Computed",
@@ -246,7 +285,8 @@ userAccountControl: %d
     def setUp(self):
         super(PasswordTests, self).setUp()
 
-        self.ldb = SamDB(url=host_url, session_info=system_session(lp), credentials=creds, lp=lp)
+        self.ldb = SamDB(url=host_url, session_info=system_session(lp),
+                         credentials=global_creds, lp=lp)
 
         # Gets back the basedn
         base_dn = self.ldb.domain_dn()
@@ -325,7 +365,7 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
         self.base_dn = self.ldb.domain_dn()
 
         self.domain_sid = security.dom_sid(self.ldb.get_domain_sid())
-        self.samr = samr.samr("ncacn_ip_tcp:%s[sign]" % host, lp, creds)
+        self.samr = samr.samr("ncacn_ip_tcp:%s[sign]" % host, lp, global_creds)
         self.samr_handle = self.samr.Connect2(None, security.SEC_FLAG_MAXIMUM_ALLOWED)
         self.samr_domain = self.samr.OpenDomain(self.samr_handle, security.SEC_FLAG_MAXIMUM_ALLOWED, self.domain_sid)
 
@@ -339,6 +379,8 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
         res = self._check_account("cn=testuser,cn=users," + self.base_dn,
                                   badPwdCount=0,
                                   badPasswordTime=0,
+                                  lastLogon=0,
+                                  lastLogonTimestamp=('absent', None),
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT |
                                     dsdb.UF_ACCOUNTDISABLE |
@@ -353,6 +395,8 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
         res = self._check_account("cn=testuser,cn=users," + self.base_dn,
                                   badPwdCount=0,
                                   badPasswordTime=0,
+                                  lastLogon=0,
+                                  lastLogonTimestamp=('absent', None),
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT |
                                     dsdb.UF_ACCOUNTDISABLE |
@@ -381,6 +425,8 @@ userPassword: thatsAcomplPASS2
         res = self._check_account("cn=testuser,cn=users," + self.base_dn,
                                   badPwdCount=1,
                                   badPasswordTime=("greater", 0),
+                                  lastLogon=0,
+                                  lastLogonTimestamp=('absent', None),
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT |
                                     dsdb.UF_ACCOUNTDISABLE |
@@ -404,6 +450,8 @@ userPassword: thatsAcomplPASS1
         res = self._check_account("cn=testuser,cn=users," + self.base_dn,
                                   badPwdCount=1,
                                   badPasswordTime=badPasswordTime,
+                                  lastLogon=0,
+                                  lastLogonTimestamp=('absent', None),
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT |
                                     dsdb.UF_ACCOUNTDISABLE |
@@ -416,6 +464,8 @@ userPassword: thatsAcomplPASS1
         res = self._check_account("cn=testuser,cn=users," + self.base_dn,
                                   badPwdCount=1,
                                   badPasswordTime=badPasswordTime,
+                                  lastLogon=0,
+                                  lastLogonTimestamp=('absent', None),
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
@@ -423,23 +473,21 @@ userPassword: thatsAcomplPASS1
         # Open a second LDB connection with the user credentials. Use the
         # command line credentials for informations like the domain, the realm
         # and the workstation.
-        creds2 = Credentials()
-        creds2.set_username("testuser")
-        creds2.set_password("thatsAcomplPASS1")
-        creds2.set_domain(creds.get_domain())
-        creds2.set_realm(creds.get_realm())
-        creds2.set_workstation(creds.get_workstation())
-        creds2.set_gensec_features(creds2.get_gensec_features()
-                                                          | gensec.FEATURE_SEAL)
+        creds2 = insta_creds()
 
         self.ldb2 = SamDB(url=host_url, credentials=creds2, lp=lp)
 
         res = self._check_account("cn=testuser,cn=users," + self.base_dn,
                                   badPwdCount=0,
                                   badPasswordTime=badPasswordTime,
+                                  lastLogon=('greater', 0),
+                                  lastLogonTimestamp=('greater', 0),
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
+
+        lastLogon = int(res[0]["lastLogon"][0])
+        self.assertGreater(lastLogon, badPasswordTime)
 
      # (Re)adds the test user "testuser3" with no password atm
         delete_force(self.ldb, "cn=testuser3,cn=users," + self.base_dn)
@@ -451,6 +499,8 @@ userPassword: thatsAcomplPASS1
         res = self._check_account("cn=testuser3,cn=users," + self.base_dn,
                                   badPwdCount=0,
                                   badPasswordTime=0,
+                                  lastLogon=0,
+                                  lastLogonTimestamp=('absent', None),
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT |
                                     dsdb.UF_ACCOUNTDISABLE |
@@ -479,6 +529,8 @@ userPassword: thatsAcomplPASS2
         res = self._check_account("cn=testuser3,cn=users," + self.base_dn,
                                   badPwdCount=1,
                                   badPasswordTime=("greater", 0),
+                                  lastLogon=0,
+                                  lastLogonTimestamp=('absent', None),
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT |
                                     dsdb.UF_ACCOUNTDISABLE |
@@ -502,6 +554,8 @@ userPassword: thatsAcomplPASS1
         res = self._check_account("cn=testuser3,cn=users," + self.base_dn,
                                   badPwdCount=1,
                                   badPasswordTime=badPasswordTime3,
+                                  lastLogon=0,
+                                  lastLogonTimestamp=('absent', None),
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT |
                                     dsdb.UF_ACCOUNTDISABLE |
@@ -514,6 +568,8 @@ userPassword: thatsAcomplPASS1
         res = self._check_account("cn=testuser3,cn=users," + self.base_dn,
                                   badPwdCount=1,
                                   badPasswordTime=badPasswordTime3,
+                                  lastLogon=0,
+                                  lastLogonTimestamp=('absent', None),
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
@@ -521,19 +577,16 @@ userPassword: thatsAcomplPASS1
         # Open a second LDB connection with the user credentials. Use the
         # command line credentials for informations like the domain, the realm
         # and the workstation.
-        creds3 = Credentials()
+        creds3 = insta_creds()
         creds3.set_username("testuser3")
         creds3.set_password("thatsAcomplPASS1")
-        creds3.set_domain(creds.get_domain())
-        creds3.set_realm(creds.get_realm())
-        creds3.set_workstation(creds.get_workstation())
-        creds3.set_gensec_features(creds3.get_gensec_features()
-                                                          | gensec.FEATURE_SEAL)
         self.ldb3 = SamDB(url=host_url, credentials=creds3, lp=lp)
 
         res = self._check_account("cn=testuser3,cn=users," + self.base_dn,
                                   badPwdCount=0,
                                   badPasswordTime=badPasswordTime3,
+                                  lastLogon=('greater', badPasswordTime3),
+                                  lastLogonTimestamp=('greater', badPasswordTime3),
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
@@ -546,10 +599,14 @@ userPassword: thatsAcomplPASS1
         res = self._check_account("cn=testuser,cn=users," + self.base_dn,
                                   badPwdCount=0,
                                   badPasswordTime=("greater", 0),
+                                  lastLogon=('greater', 0),
+                                  lastLogonTimestamp=('greater', 0),
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
         badPasswordTime = int(res[0]["badPasswordTime"][0])
+        lastLogon = int(res[0]["lastLogon"][0])
+        lastLogonTimestamp = int(res[0]["lastLogonTimestamp"][0])
 
         # Change password on a connection as another user
 
@@ -571,6 +628,8 @@ userPassword: thatsAcomplPASS2
         res = self._check_account("cn=testuser,cn=users," + self.base_dn,
                                   badPwdCount=1,
                                   badPasswordTime=("greater", badPasswordTime),
+                                  lastLogon=lastLogon,
+                                  lastLogonTimestamp=lastLogonTimestamp,
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
@@ -589,6 +648,8 @@ userPassword: thatsAcomplPASS2
         res = self._check_account("cn=testuser,cn=users," + self.base_dn,
                                   badPwdCount=1,
                                   badPasswordTime=badPasswordTime,
+                                  lastLogon=lastLogon,
+                                  lastLogonTimestamp=lastLogonTimestamp,
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
@@ -611,6 +672,8 @@ userPassword: thatsAcomplPASS2
         res = self._check_account("cn=testuser,cn=users," + self.base_dn,
                                   badPwdCount=2,
                                   badPasswordTime=("greater", badPasswordTime),
+                                  lastLogon=lastLogon,
+                                  lastLogonTimestamp=lastLogonTimestamp,
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
@@ -636,6 +699,8 @@ userPassword: thatsAcomplPASS2
         res = self._check_account("cn=testuser,cn=users," + self.base_dn,
                                   badPwdCount=3,
                                   badPasswordTime=("greater", badPasswordTime),
+                                  lastLogon=lastLogon,
+                                  lastLogonTimestamp=lastLogonTimestamp,
                                   lockoutTime=("greater", badPasswordTime),
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
@@ -661,6 +726,8 @@ userPassword: thatsAcomplPASS2
         res = self._check_account("cn=testuser,cn=users," + self.base_dn,
                                   badPwdCount=3,
                                   badPasswordTime=badPasswordTime,
+                                  lastLogon=lastLogon,
+                                  lastLogonTimestamp=lastLogonTimestamp,
                                   lockoutTime=lockoutTime,
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
@@ -685,6 +752,8 @@ userPassword: thatsAcomplPASS2
                                   badPwdCount=3,
                                   badPasswordTime=badPasswordTime,
                                   lockoutTime=lockoutTime,
+                                  lastLogon=lastLogon,
+                                  lastLogonTimestamp=lastLogonTimestamp,
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=dsdb.UF_LOCKOUT)
@@ -707,6 +776,8 @@ userPassword: thatsAcomplPASS2x
         res = self._check_account("cn=testuser,cn=users," + self.base_dn,
                                   badPwdCount=3,
                                   badPasswordTime=badPasswordTime,
+                                  lastLogon=lastLogon,
+                                  lastLogonTimestamp=lastLogonTimestamp,
                                   lockoutTime=lockoutTime,
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
@@ -723,6 +794,8 @@ userPassword: thatsAcomplPASS2
         res = self._check_account("cn=testuser,cn=users," + self.base_dn,
                                   badPwdCount=3,
                                   badPasswordTime=badPasswordTime,
+                                  lastLogon=lastLogon,
+                                  lastLogonTimestamp=lastLogonTimestamp,
                                   lockoutTime=lockoutTime,
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
@@ -746,6 +819,8 @@ userPassword: thatsAcomplPASS2x
         res = self._check_account("cn=testuser,cn=users," + self.base_dn,
                                   badPwdCount=3,
                                   badPasswordTime=badPasswordTime,
+                                  lastLogon=lastLogon,
+                                  lastLogonTimestamp=lastLogonTimestamp,
                                   lockoutTime=lockoutTime,
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
@@ -763,6 +838,8 @@ userPassword: thatsAcomplPASS2x
         res = self._check_account("cn=testuser,cn=users," + self.base_dn,
                                   badPwdCount=3,
                                   badPasswordTime=badPasswordTime,
+                                  lastLogon=lastLogon,
+                                  lastLogonTimestamp=lastLogonTimestamp,
                                   lockoutTime=lockoutTime,
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
@@ -788,16 +865,21 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2x\"".encode('utf-16-le'))
                                   badPwdCount=3,
                                   badPasswordTime=badPasswordTime,
                                   lockoutTime=lockoutTime,
+                                  lastLogon=lastLogon,
+                                  lastLogonTimestamp=lastLogonTimestamp,
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=dsdb.UF_LOCKOUT)
 
         self._reset_by_method(res, method)
 
+        # Here bad password counts are reset without logon success.
         res = self._check_account("cn=testuser,cn=users," + self.base_dn,
                                   badPwdCount=0,
                                   badPasswordTime=badPasswordTime,
                                   lockoutTime=0,
+                                  lastLogon=lastLogon,
+                                  lastLogonTimestamp=lastLogonTimestamp,
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
@@ -817,6 +899,8 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2x\"".encode('utf-16-le'))
                                   badPwdCount=0,
                                   badPasswordTime=badPasswordTime,
                                   lockoutTime=0,
+                                  lastLogon=lastLogon,
+                                  lastLogonTimestamp=lastLogonTimestamp,
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
@@ -840,6 +924,8 @@ userPassword: thatsAcomplPASS2XYZ
                                   badPwdCount=1,
                                   badPasswordTime=("greater", badPasswordTime),
                                   lockoutTime=0,
+                                  lastLogon=lastLogon,
+                                  lastLogonTimestamp=lastLogonTimestamp,
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
@@ -864,6 +950,8 @@ userPassword: thatsAcomplPASS2XYZ
                                   badPwdCount=2,
                                   badPasswordTime=("greater", badPasswordTime),
                                   lockoutTime=0,
+                                  lastLogon=lastLogon,
+                                  lastLogonTimestamp=lastLogonTimestamp,
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
@@ -874,6 +962,8 @@ userPassword: thatsAcomplPASS2XYZ
         res = self._check_account("cn=testuser,cn=users," + self.base_dn,
                                   badPwdCount=0,
                                   badPasswordTime=badPasswordTime,
+                                  lastLogon=lastLogon,
+                                  lastLogonTimestamp=lastLogonTimestamp,
                                   lockoutTime=0,
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
@@ -895,10 +985,13 @@ userPassword: thatsAcomplPASS2XYZ
         res = self._check_account("cn=testuser,cn=users," + self.base_dn,
                                   badPwdCount=0,
                                   badPasswordTime=("greater", 0),
+                                  lastLogon=("greater", 0),
+                                  lastLogonTimestamp=("greater", 0),
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
         badPasswordTime = int(res[0]["badPasswordTime"][0])
+        lastLogon = int(res[0]["lastLogon"][0])
 
         # Change password on a connection as another user
 
@@ -920,6 +1013,8 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
         res = self._check_account("cn=testuser,cn=users," + self.base_dn,
                                   badPwdCount=1,
                                   badPasswordTime=("greater", badPasswordTime),
+                                  lastLogon=lastLogon,
+                                  lastLogonTimestamp=lastLogon,
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
@@ -938,6 +1033,8 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
         res = self._check_account("cn=testuser,cn=users," + self.base_dn,
                                   badPwdCount=1,
                                   badPasswordTime=badPasswordTime,
+                                  lastLogon=lastLogon,
+                                  lastLogonTimestamp=lastLogon,
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
@@ -960,6 +1057,8 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
         res = self._check_account("cn=testuser,cn=users," + self.base_dn,
                                   badPwdCount=2,
                                   badPasswordTime=("greater", badPasswordTime),
+                                  lastLogon=lastLogon,
+                                  lastLogonTimestamp=lastLogon,
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
@@ -973,6 +1072,8 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
         res = self._check_account("cn=testuser,cn=users," + self.base_dn,
                                   badPwdCount=2,
                                   badPasswordTime=badPasswordTime,
+                                  lastLogon=lastLogon,
+                                  lastLogonTimestamp=lastLogon,
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
@@ -998,6 +1099,8 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
         res = self._check_account("cn=testuser,cn=users," + self.base_dn,
                                   badPwdCount=3,
                                   badPasswordTime=("greater", badPasswordTime),
+                                  lastLogon=lastLogon,
+                                  lastLogonTimestamp=lastLogon,
                                   lockoutTime=("greater", badPasswordTime),
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
@@ -1023,6 +1126,8 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
         res = self._check_account("cn=testuser,cn=users," + self.base_dn,
                                   badPwdCount=3,
                                   badPasswordTime=badPasswordTime,
+                                  lastLogon=lastLogon,
+                                  lastLogonTimestamp=lastLogon,
                                   lockoutTime=lockoutTime,
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
@@ -1046,6 +1151,8 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
         res = self._check_account("cn=testuser,cn=users," + self.base_dn,
                                   badPwdCount=3,
                                   badPasswordTime=badPasswordTime,
+                                  lastLogon=lastLogon,
+                                  lastLogonTimestamp=lastLogon,
                                   lockoutTime=lockoutTime,
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
@@ -1069,6 +1176,8 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2x\"".encode('utf-16-le'))
         res = self._check_account("cn=testuser,cn=users," + self.base_dn,
                                   badPwdCount=3,
                                   badPasswordTime=badPasswordTime,
+                                  lastLogon=lastLogon,
+                                  lastLogonTimestamp=lastLogon,
                                   lockoutTime=lockoutTime,
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
@@ -1080,6 +1189,8 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2x\"".encode('utf-16-le'))
         res = self._check_account("cn=testuser,cn=users," + self.base_dn,
                                   badPwdCount=0,
                                   badPasswordTime=badPasswordTime,
+                                  lastLogon=lastLogon,
+                                  lastLogonTimestamp=lastLogon,
                                   lockoutTime=0,
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
@@ -1098,6 +1209,8 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2x\"".encode('utf-16-le'))
         res = self._check_account("cn=testuser,cn=users," + self.base_dn,
                                   badPwdCount=0,
                                   badPasswordTime=badPasswordTime,
+                                  lastLogon=lastLogon,
+                                  lastLogonTimestamp=lastLogon,
                                   lockoutTime=0,
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
@@ -1121,6 +1234,8 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
         res = self._check_account("cn=testuser,cn=users," + self.base_dn,
                                   badPwdCount=1,
                                   badPasswordTime=("greater", badPasswordTime),
+                                  lastLogon=lastLogon,
+                                  lastLogonTimestamp=lastLogon,
                                   lockoutTime=0,
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
@@ -1145,6 +1260,8 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
         res = self._check_account("cn=testuser,cn=users," + self.base_dn,
                                   badPwdCount=2,
                                   badPasswordTime=("greater", badPasswordTime),
+                                  lastLogon=lastLogon,
+                                  lastLogonTimestamp=lastLogon,
                                   lockoutTime=0,
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
@@ -1158,6 +1275,8 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
         res = self._check_account("cn=testuser,cn=users," + self.base_dn,
                                   badPwdCount=2,
                                   badPasswordTime=badPasswordTime,
+                                  lastLogon=lastLogon,
+                                  lastLogonTimestamp=lastLogon,
                                   lockoutTime=0,
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
@@ -1181,6 +1300,8 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
         res = self._check_account("cn=testuser,cn=users," + self.base_dn,
                                   badPwdCount=3,
                                   badPasswordTime=("greater", badPasswordTime),
+                                  lastLogon=lastLogon,
+                                  lastLogonTimestamp=lastLogon,
                                   lockoutTime=("greater", badPasswordTime),
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
@@ -1193,6 +1314,8 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
         res = self._check_account("cn=testuser,cn=users," + self.base_dn,
                                   badPwdCount=3, effective_bad_password_count=0,
                                   badPasswordTime=badPasswordTime,
+                                  lastLogon=lastLogon,
+                                  lastLogonTimestamp=lastLogon,
                                   lockoutTime=lockoutTime,
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
@@ -1207,34 +1330,44 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
                                   badPwdCount=3, effective_bad_password_count=0,
                                   badPasswordTime=badPasswordTime,
                                   lockoutTime=lockoutTime,
+                                  lastLogon=lastLogon,
+                                  lastLogonTimestamp=lastLogon,
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
 
     def _test_login_lockout(self, use_kerberos):
         # This unlocks by waiting for account_lockout_duration
-        print "Performs a lockout attempt against LDAP using NTLM or Kerberos"
+        if use_kerberos == MUST_USE_KERBEROS:
+            lastlogon_relation = 'greater'
+            print "Performs a lockout attempt against LDAP using Kerberos"
+        else:
+            lastlogon_relation = 'equal'
+            print "Performs a lockout attempt against LDAP using NTLM"
 
         # Change password on a connection as another user
-
         res = self._check_account("cn=testuser,cn=users," + self.base_dn,
                                   badPwdCount=0,
                                   badPasswordTime=("greater", 0),
+                                  lastLogon=("greater", 0),
+                                  lastLogonTimestamp=("greater", 0),
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
         badPasswordTime = int(res[0]["badPasswordTime"][0])
+        lastLogon = int(res[0]["lastLogon"][0])
+        firstLogon = lastLogon
+        lastLogonTimestamp = int(res[0]["lastLogonTimestamp"][0])
+        print firstLogon
+        print lastLogonTimestamp
+
+
+        self.assertGreater(lastLogon, badPasswordTime)
 
         # Open a second LDB connection with the user credentials. Use the
         # command line credentials for informations like the domain, the realm
         # and the workstation.
-        creds_lockout = Credentials()
-        creds_lockout.set_username("testuser")
-        creds_lockout.set_domain(creds.get_domain())
-        creds_lockout.set_realm(creds.get_realm())
-        creds_lockout.set_workstation(creds.get_workstation())
-        creds_lockout.set_gensec_features(creds_lockout.get_gensec_features()
-                                          | gensec.FEATURE_SEAL)
+        creds_lockout = insta_creds()
         creds_lockout.set_kerberos_state(use_kerberos)
 
         # The wrong password
@@ -1245,9 +1378,12 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
         res = self._check_account("cn=testuser,cn=users," + self.base_dn,
                                   badPwdCount=1,
                                   badPasswordTime=("greater", badPasswordTime),
+                                  lastLogon=lastLogon,
+                                  lastLogonTimestamp=lastLogonTimestamp,
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
-                                  msDSUserAccountControlComputed=0)
+                                  msDSUserAccountControlComputed=0,
+                                  msg='lastlogontimestamp with wrong password')
         badPasswordTime = int(res[0]["badPasswordTime"][0])
 
         # Correct old password
@@ -1255,12 +1391,20 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
 
         ldb_lockout = SamDB(url=host_url, credentials=creds_lockout, lp=lp)
 
+        # lastLogonTimestamp should not change
+        # lastLogon increases if badPwdCount is non-zero (!)
         res = self._check_account("cn=testuser,cn=users," + self.base_dn,
                                   badPwdCount=0,
                                   badPasswordTime=badPasswordTime,
+                                  lastLogon=('greater', lastLogon),
+                                  lastLogonTimestamp=lastLogonTimestamp,
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
-                                  msDSUserAccountControlComputed=0)
+                                  msDSUserAccountControlComputed=0,
+                                  msg='LLTimestamp is updated to lastlogon')
+
+        lastLogon = int(res[0]["lastLogon"][0])
+        self.assertGreater(lastLogon, badPasswordTime)
 
         # The wrong password
         creds_lockout.set_password("thatsAcomplPASS1x")
@@ -1270,6 +1414,8 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
         res = self._check_account("cn=testuser,cn=users," + self.base_dn,
                                   badPwdCount=1,
                                   badPasswordTime=("greater", badPasswordTime),
+                                  lastLogon=lastLogon,
+                                  lastLogonTimestamp=lastLogonTimestamp,
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
@@ -1288,6 +1434,8 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
         res = self._check_account("cn=testuser,cn=users," + self.base_dn,
                                   badPwdCount=2,
                                   badPasswordTime=("greater", badPasswordTime),
+                                  lastLogon=lastLogon,
+                                  lastLogonTimestamp=lastLogonTimestamp,
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
@@ -1308,6 +1456,8 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
         res = self._check_account("cn=testuser,cn=users," + self.base_dn,
                                   badPwdCount=3,
                                   badPasswordTime=("greater", badPasswordTime),
+                                  lastLogon=lastLogon,
+                                  lastLogonTimestamp=lastLogonTimestamp,
                                   lockoutTime=("greater", badPasswordTime),
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
@@ -1326,6 +1476,8 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
         res = self._check_account("cn=testuser,cn=users," + self.base_dn,
                                   badPwdCount=3,
                                   badPasswordTime=badPasswordTime,
+                                  lastLogon=lastLogon,
+                                  lastLogonTimestamp=lastLogonTimestamp,
                                   lockoutTime=lockoutTime,
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
@@ -1342,12 +1494,14 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
         res = self._check_account("cn=testuser,cn=users," + self.base_dn,
                                   badPwdCount=3,
                                   badPasswordTime=badPasswordTime,
+                                  lastLogon=lastLogon,
+                                  lastLogonTimestamp=lastLogonTimestamp,
                                   lockoutTime=lockoutTime,
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=dsdb.UF_LOCKOUT)
 
-        # The correct password
+        # The correct password, but we are locked out
         creds_lockout.set_password("thatsAcomplPASS1")
         try:
             ldb_lockout = SamDB(url=host_url, credentials=creds_lockout, lp=lp)
@@ -1358,32 +1512,50 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
         res = self._check_account("cn=testuser,cn=users," + self.base_dn,
                                   badPwdCount=3,
                                   badPasswordTime=badPasswordTime,
+                                  lastLogon=lastLogon,
+                                  lastLogonTimestamp=lastLogonTimestamp,
                                   lockoutTime=lockoutTime,
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=dsdb.UF_LOCKOUT)
 
+        # wait for the lockout to end
         time.sleep(self.account_lockout_duration + 1)
+        print self.account_lockout_duration + 1
 
         res = self._check_account("cn=testuser,cn=users," + self.base_dn,
                                   badPwdCount=3, effective_bad_password_count=0,
                                   badPasswordTime=badPasswordTime,
                                   lockoutTime=lockoutTime,
+                                  lastLogon=lastLogon,
+                                  lastLogonTimestamp=lastLogonTimestamp,
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
 
+        lastLogon = int(res[0]["lastLogon"][0])
+
         # The correct password after letting the timeout expire
+
         creds_lockout.set_password("thatsAcomplPASS1")
-        ldb_lockout = SamDB(url=host_url, credentials=creds_lockout, lp=lp)
+
+        creds_lockout2 = insta_creds(creds_lockout)
+
+        ldb_lockout = SamDB(url=host_url, credentials=creds_lockout2, lp=lp)
+        time.sleep(3)
 
         res = self._check_account("cn=testuser,cn=users," + self.base_dn,
                                   badPwdCount=0,
                                   badPasswordTime=badPasswordTime,
+                                  lastLogon=(lastlogon_relation, lastLogon),
+                                  lastLogonTimestamp=lastLogonTimestamp,
                                   lockoutTime=0,
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
-                                  msDSUserAccountControlComputed=0)
+                                  msDSUserAccountControlComputed=0,
+                                  msg="lastLogon is way off")
+
+        lastLogon = int(res[0]["lastLogon"][0])
 
         # The wrong password
         creds_lockout.set_password("thatsAcomplPASS1x")
@@ -1397,6 +1569,8 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
                                   badPwdCount=1,
                                   badPasswordTime=("greater", badPasswordTime),
                                   lockoutTime=0,
+                                  lastLogon=lastLogon,
+                                  lastLogonTimestamp=lastLogonTimestamp,
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
@@ -1414,6 +1588,8 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
                                   badPwdCount=2,
                                   badPasswordTime=("greater", badPasswordTime),
                                   lockoutTime=0,
+                                  lastLogon=lastLogon,
+                                  lastLogonTimestamp=lastLogonTimestamp,
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
@@ -1425,6 +1601,8 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
                                   badPwdCount=2, effective_bad_password_count=0,
                                   badPasswordTime=badPasswordTime,
                                   lockoutTime=0,
+                                  lastLogon=lastLogon,
+                                  lastLogonTimestamp=lastLogonTimestamp,
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
@@ -1441,6 +1619,8 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
                                   badPwdCount=1,
                                   badPasswordTime=("greater", badPasswordTime),
                                   lockoutTime=0,
+                                  lastLogon=lastLogon,
+                                  lastLogonTimestamp=lastLogonTimestamp,
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
@@ -1454,6 +1634,8 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
                                   badPwdCount=0,
                                   badPasswordTime=badPasswordTime,
                                   lockoutTime=0,
+                                  lastLogon=("greater", lastLogon),
+                                  lastLogonTimestamp=lastLogonTimestamp,
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
@@ -1463,6 +1645,78 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
 
     def test_login_lockout_kerberos(self):
         self._test_login_lockout(MUST_USE_KERBEROS)
+
+    def _test_multiple_logon(self, use_kerberos):
+        # Test the happy case in which a user logs on correctly, then
+        # logs on correctly again, so that the bad password and
+        # lockout times are both zero the second time. The lastlogon
+        # time should increase.
+
+        # Open a second LDB connection with the user credentials. Use the
+        # command line credentials for informations like the domain, the realm
+        # and the workstation.
+        creds2 = insta_creds()
+        creds2.set_kerberos_state(use_kerberos)
+
+        if use_kerberos == MUST_USE_KERBEROS:
+            print "Testing multiple logon with Kerberos"
+            lastlogon_relation = 'greater'
+        else:
+            print "Testing multiple logon with NTLM"
+            lastlogon_relation = 'equal'
+
+        SamDB(url=host_url, credentials=insta_creds(creds2), lp=lp)
+
+        res = self._check_account("cn=testuser,cn=users," + self.base_dn,
+                                  badPwdCount=0,
+                                  badPasswordTime=("greater", 0),
+                                  lastLogon=("greater", 0),
+                                  lastLogonTimestamp=("greater", 0),
+                                  userAccountControl=
+                                    dsdb.UF_NORMAL_ACCOUNT,
+                                  msDSUserAccountControlComputed=0)
+        badPasswordTime = int(res[0]["badPasswordTime"][0])
+        lastLogon = int(res[0]["lastLogon"][0])
+        lastLogonTimestamp = int(res[0]["lastLogonTimestamp"][0])
+        firstLogon = lastLogon
+        print "last logon is %d" % lastLogon
+        self.assertGreater(lastLogon, badPasswordTime)
+
+        time.sleep(1)
+        SamDB(url=host_url, credentials=insta_creds(creds2), lp=lp)
+
+        res = self._check_account("cn=testuser,cn=users," + self.base_dn,
+                                  badPwdCount=0,
+                                  badPasswordTime=badPasswordTime,
+                                  lastLogon=(lastlogon_relation, lastLogon),
+                                  lastLogonTimestamp=lastLogonTimestamp,
+                                  userAccountControl=
+                                  dsdb.UF_NORMAL_ACCOUNT,
+                                  msDSUserAccountControlComputed=0,
+                                  msg=("second logon, firstlogon was %s" %
+                                       firstLogon))
+
+
+        lastLogon = int(res[0]["lastLogon"][0])
+
+        time.sleep(1)
+
+        SamDB(url=host_url, credentials=insta_creds(creds2), lp=lp)
+
+        res = self._check_account("cn=testuser,cn=users," + self.base_dn,
+                                  badPwdCount=0,
+                                  badPasswordTime=badPasswordTime,
+                                  lastLogon=(lastlogon_relation, lastLogon),
+                                  lastLogonTimestamp=lastLogonTimestamp,
+                                  userAccountControl=
+                                    dsdb.UF_NORMAL_ACCOUNT,
+                                  msDSUserAccountControlComputed=0)
+
+    def test_multiple_logon_ntlm(self):
+        self._test_multiple_logon(DONT_USE_KERBEROS)
+
+    def test_multiple_logon_kerberos(self):
+        self._test_multiple_logon(MUST_USE_KERBEROS)
 
     def tearDown(self):
         super(PasswordTests, self).tearDown()
