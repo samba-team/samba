@@ -860,8 +860,6 @@ void ctdb_enable_monitoring(struct ctdb_context *ctdb);
 void ctdb_stop_monitoring(struct ctdb_context *ctdb);
 void ctdb_wait_for_first_recovery(struct ctdb_context *ctdb);
 void ctdb_start_tcp_tickle_update(struct ctdb_context *ctdb);
-void ctdb_start_keepalive(struct ctdb_context *ctdb);
-void ctdb_stop_keepalive(struct ctdb_context *ctdb);
 int32_t ctdb_run_eventscripts(struct ctdb_context *ctdb, struct ctdb_req_control *c, TDB_DATA data, bool *async_reply);
 
 
@@ -1368,6 +1366,11 @@ int32_t ctdb_control_wipe_database(struct ctdb_context *ctdb, TDB_DATA indata);
 bool ctdb_db_frozen(struct ctdb_db_context *ctdb_db);
 bool ctdb_db_prio_frozen(struct ctdb_context *ctdb, uint32_t priority);
 bool ctdb_db_all_frozen(struct ctdb_context *ctdb);
+
+/* from server/ctdb_keepalive.c */
+
+void ctdb_start_keepalive(struct ctdb_context *ctdb);
+void ctdb_stop_keepalive(struct ctdb_context *ctdb);
 
 /* from server/ctdb_lock.c */
 struct lock_request;
