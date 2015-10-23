@@ -68,6 +68,10 @@ planpythontestsuite(
     extra_path=[os.path.join(samba4srcdir, "..", "buildtools"),
                 os.path.join(samba4srcdir, "..", "third_party", "waf", "wafadmin")])
 plantestsuite(
+    "samba4.blackbox.demote-saveddb", "none",
+    ["PYTHON=%s" % python, os.path.join(bbdir, "demote-saveddb.sh"),
+     '$PREFIX_ABS/demote', configuration])
+plantestsuite(
     "samba4.blackbox.dbcheck.alpha13", "none",
     ["PYTHON=%s" % python, os.path.join(bbdir, "dbcheck-oldrelease.sh"),
      '$PREFIX_ABS/provision', 'alpha13', configuration])
