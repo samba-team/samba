@@ -20,6 +20,7 @@
 
 import samba.getopt as options
 import ldb
+import logging
 
 from samba.auth import system_session
 from samba.netcmd import (
@@ -32,6 +33,7 @@ from samba.samdb import SamDB
 from samba import drs_utils, nttime2string, dsdb
 from samba.dcerpc import drsuapi, misc
 import common
+from samba.join import join_clone
 
 def drsuapi_connect(ctx):
     '''make a DRSUAPI connection to the server'''
@@ -513,6 +515,49 @@ class cmd_drs_options(Command):
             self.message("New DSA options: " + ", ".join(cur_opts))
 
 
+class cmd_drs_clone_dc_database(Command):
+    """Replicate an initial clone of domain, but DO NOT JOIN it."""
+
+    synopsis = "%prog <dnsdomain> [options]"
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions,
+        "credopts": options.CredentialsOptions,
+    }
+
+    takes_options = [
+        Option("--server", help="DC to join", type=str),
+        Option("--targetdir", help="where to store provision (required)", type=str),
+        Option("--quiet", help="Be quiet", action="store_true"),
+        Option("--include-secrets", help="Also replicate secret values", action="store_true"),
+        Option("--verbose", help="Be verbose", action="store_true")
+       ]
+
+    takes_args = ["domain"]
+
+    def run(self, domain, sambaopts=None, credopts=None,
+            versionopts=None, server=None, targetdir=None,
+            quiet=False, verbose=False, include_secrets=False):
+        lp = sambaopts.get_loadparm()
+        creds = credopts.get_credentials(lp)
+
+        logger = self.get_logger()
+        if verbose:
+            logger.setLevel(logging.DEBUG)
+        elif quiet:
+            logger.setLevel(logging.WARNING)
+        else:
+            logger.setLevel(logging.INFO)
+
+        if targetdir is None:
+            raise CommandError("--targetdir option must be specified")
+
+
+        join_clone(logger=logger, server=server, creds=creds, lp=lp, domain=domain,
+                   targetdir=targetdir, include_secrets=include_secrets)
+
+
 class cmd_drs(SuperCommand):
     """Directory Replication Services (DRS) management."""
 
@@ -522,3 +567,4 @@ class cmd_drs(SuperCommand):
     subcommands["replicate"] = cmd_drs_replicate()
     subcommands["showrepl"] = cmd_drs_showrepl()
     subcommands["options"] = cmd_drs_options()
+    subcommands["clone-dc-database"] = cmd_drs_clone_dc_database()
