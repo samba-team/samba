@@ -674,12 +674,6 @@ struct ctdb_fetch_handle {
 
 void ctdb_request_message(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
 
-int32_t ctdb_control_start_persistent_update(struct ctdb_context *ctdb, 
-			struct ctdb_req_control *c,
-			TDB_DATA recdata);
-int32_t ctdb_control_cancel_persistent_update(struct ctdb_context *ctdb, 
-			struct ctdb_req_control *c,
-			TDB_DATA recdata);
 void ctdb_queue_packet(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
 void ctdb_queue_packet_opcode(struct ctdb_context *ctdb, struct ctdb_req_header *hdr, unsigned opcode);
 void ctdb_input_pkt(struct ctdb_context *ctdb, struct ctdb_req_header *);
@@ -1034,12 +1028,6 @@ int32_t ctdb_control_update_record(struct ctdb_context *ctdb,
 				   struct ctdb_req_control *c, TDB_DATA recdata, 
 				   bool *async_reply);
 
-int32_t ctdb_control_trans3_commit(struct ctdb_context *ctdb,
-				   struct ctdb_req_control *c,
-				   TDB_DATA recdata, bool *async_reply);
-
-void ctdb_persistent_finish_trans3_commits(struct ctdb_context *ctdb);
-
 struct client_async_data {
 	enum ctdb_controls opcode;
 	bool dont_log_errors;
@@ -1089,10 +1077,6 @@ int ctdb_vacuum_init(struct ctdb_db_context *ctdb_db);
 
 int32_t ctdb_control_enable_script(struct ctdb_context *ctdb, TDB_DATA indata);
 int32_t ctdb_control_disable_script(struct ctdb_context *ctdb, TDB_DATA indata);
-
-int32_t ctdb_control_get_db_seqnum(struct ctdb_context *ctdb,
-				   TDB_DATA indata,
-				   TDB_DATA *outdata);
 
 int verify_remote_ip_allocation(struct ctdb_context *ctdb,
 				struct ctdb_all_public_ips *ips,
@@ -1444,5 +1428,23 @@ int32_t ctdb_control_modflags(struct ctdb_context *ctdb, TDB_DATA indata);
 
 int32_t ctdb_monitoring_mode(struct ctdb_context *ctdb);
 bool ctdb_stopped_monitoring(struct ctdb_context *ctdb);
+
+/* from ctdb_persistent.c */
+
+void ctdb_persistent_finish_trans3_commits(struct ctdb_context *ctdb);
+
+int32_t ctdb_control_trans3_commit(struct ctdb_context *ctdb,
+				   struct ctdb_req_control *c,
+				   TDB_DATA recdata, bool *async_reply);
+
+int32_t ctdb_control_start_persistent_update(struct ctdb_context *ctdb,
+					     struct ctdb_req_control *c,
+					     TDB_DATA recdata);
+int32_t ctdb_control_cancel_persistent_update(struct ctdb_context *ctdb,
+					      struct ctdb_req_control *c,
+					      TDB_DATA recdata);
+
+int32_t ctdb_control_get_db_seqnum(struct ctdb_context *ctdb,
+				   TDB_DATA indata, TDB_DATA *outdata);
 
 #endif
