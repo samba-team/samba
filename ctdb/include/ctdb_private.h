@@ -735,15 +735,6 @@ int ctdb_call_local(struct ctdb_db_context *ctdb_db, struct ctdb_call *call,
 int ctdb_socket_connect(struct ctdb_context *ctdb);
 void ctdb_client_read_cb(uint8_t *data, size_t cnt, void *args);
 
-void ctdb_request_control(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
-void ctdb_reply_control(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
-
-int ctdb_daemon_send_control(struct ctdb_context *ctdb, uint32_t destnode,
-			     uint64_t srvid, uint32_t opcode, uint32_t client_id, uint32_t flags,
-			     TDB_DATA data,
-			     ctdb_control_callback_fn_t callback,
-			     void *private_data);
-
 int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata, 
 			       TDB_DATA *outdata, uint64_t tdb_flags,
 			       bool persistent, uint32_t client_id,
@@ -886,8 +877,6 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 				 struct ctdb_req_control *c,
 				 TDB_DATA indata, bool *async_reply,
 				 const char **errormsg);
-void ctdb_request_control_reply(struct ctdb_context *ctdb, struct ctdb_req_control *c,
-				TDB_DATA *outdata, int32_t status, const char *errormsg);
 
 int32_t ctdb_control_db_freeze(struct ctdb_context *ctdb,
 			       struct ctdb_req_control *c,
@@ -1170,7 +1159,6 @@ void ctdb_load_nodes_file(struct ctdb_context *ctdb);
 
 int ctdb_control_reload_nodes_file(struct ctdb_context *ctdb, uint32_t opcode);
 
-int32_t ctdb_dump_memory(struct ctdb_context *ctdb, TDB_DATA *outdata);
 int32_t ctdb_control_get_capabilities(struct ctdb_context *ctdb, TDB_DATA *outdata);
 
 int32_t ctdb_control_recd_ping(struct ctdb_context *ctdb);
@@ -1343,6 +1331,27 @@ int ctdb_add_revoke_deferred_call(struct ctdb_context *ctdb,
 				  struct ctdb_db_context *ctdb_db,
 				  TDB_DATA key, struct ctdb_req_header *hdr,
 				  deferred_requeue_fn fn, void *call_context);
+
+/* from server/ctdb_control.c */
+
+int32_t ctdb_dump_memory(struct ctdb_context *ctdb, TDB_DATA *outdata);
+
+void ctdb_request_control_reply(struct ctdb_context *ctdb,
+				struct ctdb_req_control *c,
+				TDB_DATA *outdata, int32_t status,
+				const char *errormsg);
+
+void ctdb_request_control(struct ctdb_context *ctdb,
+			  struct ctdb_req_header *hdr);
+void ctdb_reply_control(struct ctdb_context *ctdb,
+			struct ctdb_req_header *hdr);
+
+int ctdb_daemon_send_control(struct ctdb_context *ctdb, uint32_t destnode,
+			     uint64_t srvid, uint32_t opcode,
+			     uint32_t client_id, uint32_t flags,
+			     TDB_DATA data,
+			     ctdb_control_callback_fn_t callback,
+			     void *private_data);
 
 /* from server/ctdb_lock.c */
 struct lock_request;
