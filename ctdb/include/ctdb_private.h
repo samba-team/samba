@@ -792,8 +792,6 @@ struct ctdb_client_call_state {
 	} async;
 };
 
-int32_t ctdb_run_eventscripts(struct ctdb_context *ctdb, struct ctdb_req_control *c, TDB_DATA data, bool *async_reply);
-
 int ctdb_ctrl_takeover_ip(struct ctdb_context *ctdb, struct timeval timeout, 
 			  uint32_t destnode, struct ctdb_public_ip *ip);
 int ctdb_ctrl_release_ip(struct ctdb_context *ctdb, struct timeval timeout, 
@@ -852,16 +850,6 @@ struct ctdb_lock_info {
 };
 
 typedef void (*client_async_callback)(struct ctdb_context *ctdb, uint32_t node_pnn, int32_t res, TDB_DATA outdata, void *callback_data);
-
-int ctdb_event_script(struct ctdb_context *ctdb, enum ctdb_eventscript_call call);
-int ctdb_event_script_args(struct ctdb_context *ctdb, enum ctdb_eventscript_call call,
-			   const char *fmt, ...) PRINTF_ATTRIBUTE(3,4);
-int ctdb_event_script_callback(struct ctdb_context *ctdb, 
-			       TALLOC_CTX *mem_ctx,
-			       void (*callback)(struct ctdb_context *, int, void *),
-			       void *private_data,
-			       enum ctdb_eventscript_call call,
-			       const char *fmt, ...) PRINTF_ATTRIBUTE(6,7);
 
 int ctdb_ctrl_get_all_tunables(struct ctdb_context *ctdb, 
 			       struct timeval timeout, 
@@ -926,14 +914,7 @@ extern int script_log_level;
 extern bool fast_start;
 extern const char *ctdbd_pidfile;
 
-int32_t ctdb_control_get_event_script_status(struct ctdb_context *ctdb,
-					     uint32_t call_type,
-					     TDB_DATA *outdata);
-
 int ctdb_ctrl_report_recd_lock_latency(struct ctdb_context *ctdb, struct timeval timeout, double latency);
-
-int32_t ctdb_control_enable_script(struct ctdb_context *ctdb, TDB_DATA indata);
-int32_t ctdb_control_disable_script(struct ctdb_context *ctdb, TDB_DATA indata);
 
 /**
  * structure to pass to a schedule_for_deletion_control
@@ -1500,5 +1481,33 @@ int32_t ctdb_local_schedule_for_deletion(struct ctdb_db_context *ctdb_db,
 void ctdb_local_remove_from_delete_queue(struct ctdb_db_context *ctdb_db,
 					 const struct ctdb_ltdb_header *hdr,
 					 const TDB_DATA key);
+
+/* from eventscript.c */
+
+int32_t ctdb_control_get_event_script_status(struct ctdb_context *ctdb,
+					     uint32_t call_type,
+					     TDB_DATA *outdata);
+
+int ctdb_event_script_callback(struct ctdb_context *ctdb,
+			       TALLOC_CTX *mem_ctx,
+			       void (*callback)(struct ctdb_context *,
+						int, void *),
+			       void *private_data,
+			       enum ctdb_eventscript_call call,
+			       const char *fmt, ...) PRINTF_ATTRIBUTE(6,7);
+
+int ctdb_event_script_args(struct ctdb_context *ctdb,
+			   enum ctdb_eventscript_call call,
+			   const char *fmt, ...) PRINTF_ATTRIBUTE(3,4);
+
+int ctdb_event_script(struct ctdb_context *ctdb,
+		      enum ctdb_eventscript_call call);
+
+int32_t ctdb_run_eventscripts(struct ctdb_context *ctdb,
+			      struct ctdb_req_control *c,
+			      TDB_DATA data, bool *async_reply);
+
+int32_t ctdb_control_enable_script(struct ctdb_context *ctdb, TDB_DATA indata);
+int32_t ctdb_control_disable_script(struct ctdb_context *ctdb, TDB_DATA indata);
 
 #endif
