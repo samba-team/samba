@@ -1999,20 +1999,12 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	DEBUG(DEBUG_NOTICE, (__location__ " Starting do_recovery\n"));
 
 	/* Check if the current node is still the recmaster.  It's possible that
-	 * re-election has changed the recmaster, but we have not yet updated
-	 * that information.
+	 * re-election has changed the recmaster.
 	 */
-	ret = ctdb_ctrl_getrecmaster(ctdb, mem_ctx, CONTROL_TIMEOUT(),
-				     pnn, &ctdb->recovery_master);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " Unable to get recmaster\n"));
-		return -1;
-	}
-
-	if (pnn != ctdb->recovery_master) {
+	if (pnn != rec->recmaster) {
 		DEBUG(DEBUG_NOTICE,
 		      ("Recovery master changed to %u, aborting recovery\n",
-		       ctdb->recovery_master));
+		       rec->recmaster));
 		return -1;
 	}
 
@@ -2845,16 +2837,11 @@ static void monitor_handler(uint64_t srvid, TDB_DATA data, void *private_data)
 
 	nodemap->nodes[i].flags = c->new_flags;
 
-	ret = ctdb_ctrl_getrecmaster(ctdb, tmp_ctx, CONTROL_TIMEOUT(), 
-				     CTDB_CURRENT_NODE, &ctdb->recovery_master);
+	ret = ctdb_ctrl_getrecmode(ctdb, tmp_ctx, CONTROL_TIMEOUT(),
+				   CTDB_CURRENT_NODE, &ctdb->recovery_mode);
 
-	if (ret == 0) {
-		ret = ctdb_ctrl_getrecmode(ctdb, tmp_ctx, CONTROL_TIMEOUT(), 
-					   CTDB_CURRENT_NODE, &ctdb->recovery_mode);
-	}
-	
 	if (ret == 0 &&
-	    ctdb->recovery_master == ctdb->pnn &&
+	    rec->recmaster == ctdb->pnn &&
 	    ctdb->recovery_mode == CTDB_RECOVERY_NORMAL) {
 		/* Only do the takeover run if the perm disabled or unhealthy
 		   flags changed since these will cause an ip failover but not
@@ -2884,19 +2871,11 @@ static void push_flags_handler(uint64_t srvid, TDB_DATA data,
 	struct ctdb_node_flag_change *c = (struct ctdb_node_flag_change *)data.dptr;
 	struct ctdb_node_map_old *nodemap=NULL;
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
-	uint32_t recmaster;
 	uint32_t *nodes;
 
-	/* find the recovery master */
-	ret = ctdb_ctrl_getrecmaster(ctdb, tmp_ctx, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, &recmaster);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " Unable to get recmaster from local node\n"));
-		talloc_free(tmp_ctx);
-		return;
-	}
-
 	/* read the node flags from the recmaster */
-	ret = ctdb_ctrl_getnodemap(ctdb, CONTROL_TIMEOUT(), recmaster, tmp_ctx, &nodemap);
+	ret = ctdb_ctrl_getnodemap(ctdb, CONTROL_TIMEOUT(), rec->recmaster,
+				   tmp_ctx, &nodemap);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to get nodemap from node %u\n", c->pnn));
 		talloc_free(tmp_ctx);
@@ -3479,13 +3458,6 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 		 * master, so don't do anything. This prevents stopped or banned
 		 * node from starting election and sending unnecessary controls.
 		 */
-		return;
-	}
-
-	/* check which node is the recovery master */
-	ret = ctdb_ctrl_getrecmaster(ctdb, mem_ctx, CONTROL_TIMEOUT(), pnn, &rec->recmaster);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " Unable to get recmaster from node %u\n", pnn));
 		return;
 	}
 
