@@ -1,0 +1,26 @@
+A q-0-1.samdom.example.com 10.9.0.11
+A samdom.example.com 10.9.0.11
+SRV _ldap._tcp.samdom.example.com q-0-1.samdom.example.com 389
+SRV _ldap._tcp.dc._msdcs.samdom.example.com q-0-1.samdom.example.com 389
+SRV _ldap._tcp.507870fb-1e38-4fc6-865a-fde1faec9d19.domains._msdcs.samdom.example.com q-0-1.samdom.example.com 389
+SRV _kerberos._tcp.samdom.example.com q-0-1.samdom.example.com 88
+SRV _kerberos._udp.samdom.example.com q-0-1.samdom.example.com 88
+SRV _kerberos._tcp.dc._msdcs.samdom.example.com q-0-1.samdom.example.com 88
+SRV _kpasswd._tcp.samdom.example.com q-0-1.samdom.example.com 464
+SRV _kpasswd._udp.samdom.example.com q-0-1.samdom.example.com 464
+CNAME 1f9b3519-df6a-46e5-a952-8db805dd8792._msdcs.samdom.example.com q-0-1.samdom.example.com
+SRV _ldap._tcp.Default-First-Site-Name._sites.samdom.example.com q-0-1.samdom.example.com 389
+SRV _ldap._tcp.Default-First-Site-Name._sites.dc._msdcs.samdom.example.com q-0-1.samdom.example.com 389
+SRV _kerberos._tcp.Default-First-Site-Name._sites.samdom.example.com q-0-1.samdom.example.com 88
+SRV _kerberos._tcp.Default-First-Site-Name._sites.dc._msdcs.samdom.example.com q-0-1.samdom.example.com 88
+A gc._msdcs.samdom.example.com 10.9.0.11
+SRV _gc._tcp.samdom.example.com q-0-1.samdom.example.com 3268
+SRV _ldap._tcp.gc._msdcs.samdom.example.com q-0-1.samdom.example.com 3268
+SRV _gc._tcp.Default-First-Site-Name._sites.samdom.example.com q-0-1.samdom.example.com 3268
+SRV _ldap._tcp.Default-First-Site-Name._sites.gc._msdcs.samdom.example.com q-0-1.samdom.example.com 3268
+A DomainDnsZones.samdom.example.com 10.9.0.11
+SRV _ldap._tcp.DomainDnsZones.samdom.example.com q-0-1.samdom.example.com 389
+SRV _ldap._tcp.Default-First-Site-Name._sites.DomainDnsZones.samdom.example.com q-0-1.samdom.example.com 389
+A ForestDnsZones.samdom.example.com 10.9.0.11
+SRV _ldap._tcp.ForestDnsZones.samdom.example.com q-0-1.samdom.example.com 389
+SRV _ldap._tcp.Default-First-Site-Name._sites.ForestDnsZones.samdom.example.com q-0-1.samdom.example.com 389

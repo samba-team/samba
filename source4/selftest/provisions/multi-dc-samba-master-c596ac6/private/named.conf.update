@@ -1,0 +1,9 @@
+/* this file is auto-generated - do not edit */
+update-policy {
+	grant SAMDOM.EXAMPLE.COM ms-self * A AAAA;
+	grant Administrator@SAMDOM.EXAMPLE.COM wildcard * A AAAA SRV CNAME;
+	grant Q-0-0$@samdom.example.com wildcard * A AAAA SRV CNAME;
+	grant Q-0-1$@samdom.example.com wildcard * A AAAA SRV CNAME;
+	grant Q-1-0$@samdom.example.com wildcard * A AAAA SRV CNAME;
+	grant Q-1-1$@samdom.example.com wildcard * A AAAA SRV CNAME;
+};
