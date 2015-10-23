@@ -3049,9 +3049,12 @@ static enum monitor_result verify_recmaster(struct ctdb_recoverd *rec, struct ct
 	rmdata->pnn    = pnn;
 	rmdata->status = MONITOR_OK;
 
-	/* loop over all active nodes and send an async getrecmaster call to 
+	/* loop over all active nodes and send an async getrecmaster call to
 	   them*/
 	for (j=0; j<nodemap->num; j++) {
+		if (nodemap->nodes[j].pnn == rec->recmaster) {
+			continue;
+		}
 		if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
 			continue;
 		}
