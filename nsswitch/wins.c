@@ -52,7 +52,7 @@ static void nss_wins_init(void)
 
 	TimeInit();
 	setup_logging("nss_wins",False);
-	lp_load_global(get_dyn_CONFIGFILE());
+	lp_load_global_no_reinit(get_dyn_CONFIGFILE());
 	load_interfaces();
 }
 
