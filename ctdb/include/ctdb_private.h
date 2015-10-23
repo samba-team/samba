@@ -808,30 +808,13 @@ int32_t ctdb_control_traverse_kill(struct ctdb_context *ctdb, TDB_DATA indata,
 
 uint32_t ctdb_get_num_active_nodes(struct ctdb_context *ctdb);
 
-void ctdb_start_tcp_tickle_update(struct ctdb_context *ctdb);
 int32_t ctdb_run_eventscripts(struct ctdb_context *ctdb, struct ctdb_req_control *c, TDB_DATA data, bool *async_reply);
-
-
-int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb, 
-				 struct ctdb_req_control *c,
-				 TDB_DATA indata, 
-				 bool *async_reply);
-int32_t ctdb_control_release_ip(struct ctdb_context *ctdb, 
-				 struct ctdb_req_control *c,
-				 TDB_DATA indata, 
-				 bool *async_reply);
-int32_t ctdb_control_ipreallocated(struct ctdb_context *ctdb, 
-				 struct ctdb_req_control *c,
-				 bool *async_reply);
 
 int ctdb_ctrl_takeover_ip(struct ctdb_context *ctdb, struct timeval timeout, 
 			  uint32_t destnode, struct ctdb_public_ip *ip);
 int ctdb_ctrl_release_ip(struct ctdb_context *ctdb, struct timeval timeout, 
 			 uint32_t destnode, struct ctdb_public_ip *ip);
 
-int32_t ctdb_control_get_public_ips(struct ctdb_context *ctdb,
-				    struct ctdb_req_control *c,
-				    TDB_DATA *outdata);
 int ctdb_ctrl_get_public_ips(struct ctdb_context *ctdb,
 			     struct timeval timeout,
 			     uint32_t destnode,
@@ -862,16 +845,6 @@ struct ctdb_control_get_ifaces {
 	struct ctdb_control_iface_info ifaces[1];
 };
 
-int32_t ctdb_control_get_public_ip_info(struct ctdb_context *ctdb,
-					struct ctdb_req_control *c,
-					TDB_DATA indata,
-					TDB_DATA *outdata);
-int32_t ctdb_control_get_ifaces(struct ctdb_context *ctdb,
-				struct ctdb_req_control *c,
-				TDB_DATA *outdata);
-int32_t ctdb_control_set_iface_link(struct ctdb_context *ctdb,
-				    struct ctdb_req_control *c,
-				    TDB_DATA indata);
 int ctdb_ctrl_get_public_ip_info(struct ctdb_context *ctdb,
 				 struct timeval timeout, uint32_t destnode,
 				 TALLOC_CTX *mem_ctx,
@@ -896,25 +869,6 @@ struct ctdb_lock_info {
 
 typedef void (*client_async_callback)(struct ctdb_context *ctdb, uint32_t node_pnn, int32_t res, TDB_DATA outdata, void *callback_data);
 
-int ctdb_set_public_addresses(struct ctdb_context *ctdb, bool check_addresses);
-int ctdb_set_single_public_ip(struct ctdb_context *ctdb,
-			      const char *iface,
-			      const char *ip);
-int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap,
-		      uint32_t *force_rebalance_nodes,
-		      client_async_callback fail_callback, void *callback_data);
-
-int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id, 
-				TDB_DATA indata);
-int32_t ctdb_control_tcp_add(struct ctdb_context *ctdb, TDB_DATA indata, bool tcp_update_needed);
-int32_t ctdb_control_tcp_remove(struct ctdb_context *ctdb, TDB_DATA indata);
-int32_t ctdb_control_startup(struct ctdb_context *ctdb, uint32_t vnn);
-int32_t ctdb_control_kill_tcp(struct ctdb_context *ctdb, TDB_DATA indata);
-int32_t ctdb_control_send_gratious_arp(struct ctdb_context *ctdb, TDB_DATA indata);
-int32_t ctdb_control_get_tcp_tickle_list(struct ctdb_context *ctdb, TDB_DATA indata, TDB_DATA *outdata);
-int32_t ctdb_control_set_tcp_tickle_list(struct ctdb_context *ctdb, TDB_DATA indata);
-
-void ctdb_takeover_client_destructor_hook(struct ctdb_client *client);
 int ctdb_event_script(struct ctdb_context *ctdb, enum ctdb_eventscript_call call);
 int ctdb_event_script_args(struct ctdb_context *ctdb, enum ctdb_eventscript_call call,
 			   const char *fmt, ...) PRINTF_ATTRIBUTE(3,4);
@@ -924,16 +878,11 @@ int ctdb_event_script_callback(struct ctdb_context *ctdb,
 			       void *private_data,
 			       enum ctdb_eventscript_call call,
 			       const char *fmt, ...) PRINTF_ATTRIBUTE(6,7);
-void ctdb_release_all_ips(struct ctdb_context *ctdb);
 
 int32_t ctdb_control_get_tunable(struct ctdb_context *ctdb, TDB_DATA indata, 
 				 TDB_DATA *outdata);
 int32_t ctdb_control_set_tunable(struct ctdb_context *ctdb, TDB_DATA indata);
 int32_t ctdb_control_list_tunables(struct ctdb_context *ctdb, TDB_DATA *outdata);
-int32_t ctdb_control_add_public_address(struct ctdb_context *ctdb, TDB_DATA indata);
-int32_t ctdb_control_del_public_address(struct ctdb_context *ctdb,
-					struct ctdb_req_control *c,
-					TDB_DATA recdata, bool *async_reply);
 
 void ctdb_tunables_set_defaults(struct ctdb_context *ctdb);
 
@@ -1019,13 +968,6 @@ int ctdb_vacuum_init(struct ctdb_db_context *ctdb_db);
 int32_t ctdb_control_enable_script(struct ctdb_context *ctdb, TDB_DATA indata);
 int32_t ctdb_control_disable_script(struct ctdb_context *ctdb, TDB_DATA indata);
 
-int verify_remote_ip_allocation(struct ctdb_context *ctdb,
-				struct ctdb_all_public_ips *ips,
-				uint32_t pnn);
-int update_ip_assignment_tree(struct ctdb_context *ctdb,
-				struct ctdb_public_ip *ip);
-void clear_ip_assignment_tree(struct ctdb_context *ctdb);
-
 /**
  * structure to pass to a schedule_for_deletion_control
  */
@@ -1059,8 +1001,6 @@ struct reloadips_all_reply {
 	uint32_t pnn;
 	uint64_t srvid;
 };
-
-int32_t ctdb_control_reload_public_ips(struct ctdb_context *ctdb, struct ctdb_req_control *c, bool *async_reply);
 
 /* from tcp/ and ib/ */
 
@@ -1477,5 +1417,80 @@ int ctdb_statistics_init(struct ctdb_context *ctdb);
 int32_t ctdb_control_get_stat_history(struct ctdb_context *ctdb,
 				      struct ctdb_req_control *c,
 				      TDB_DATA *outdata);
+
+/* from ctdb_takeover.c */
+
+int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb,
+				 struct ctdb_req_control *c,
+				 TDB_DATA indata,
+				 bool *async_reply);
+int32_t ctdb_control_release_ip(struct ctdb_context *ctdb,
+				 struct ctdb_req_control *c,
+				 TDB_DATA indata,
+				 bool *async_reply);
+int32_t ctdb_control_ipreallocated(struct ctdb_context *ctdb,
+				 struct ctdb_req_control *c,
+				 bool *async_reply);
+
+int ctdb_set_public_addresses(struct ctdb_context *ctdb, bool check_addresses);
+int ctdb_set_single_public_ip(struct ctdb_context *ctdb, const char *iface,
+			      const char *ip);
+
+int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap,
+		      uint32_t *force_rebalance_nodes,
+		      client_async_callback fail_callback, void *callback_data);
+
+int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id,
+				TDB_DATA indata);
+int32_t ctdb_control_tcp_add(struct ctdb_context *ctdb, TDB_DATA indata,
+			     bool tcp_update_needed);
+int32_t ctdb_control_tcp_remove(struct ctdb_context *ctdb, TDB_DATA indata);
+int32_t ctdb_control_startup(struct ctdb_context *ctdb, uint32_t vnn);
+
+void ctdb_takeover_client_destructor_hook(struct ctdb_client *client);
+
+void ctdb_release_all_ips(struct ctdb_context *ctdb);
+
+int32_t ctdb_control_get_public_ips(struct ctdb_context *ctdb,
+				    struct ctdb_req_control *c,
+				    TDB_DATA *outdata);
+int32_t ctdb_control_get_public_ip_info(struct ctdb_context *ctdb,
+					struct ctdb_req_control *c,
+					TDB_DATA indata, TDB_DATA *outdata);
+
+int32_t ctdb_control_get_ifaces(struct ctdb_context *ctdb,
+				struct ctdb_req_control *c,
+				TDB_DATA *outdata);
+int32_t ctdb_control_set_iface_link(struct ctdb_context *ctdb,
+				    struct ctdb_req_control *c,
+				    TDB_DATA indata);
+
+int32_t ctdb_control_kill_tcp(struct ctdb_context *ctdb, TDB_DATA indata);
+int32_t ctdb_control_set_tcp_tickle_list(struct ctdb_context *ctdb,
+					 TDB_DATA indata);
+int32_t ctdb_control_get_tcp_tickle_list(struct ctdb_context *ctdb,
+					 TDB_DATA indata, TDB_DATA *outdata);
+
+void ctdb_start_tcp_tickle_update(struct ctdb_context *ctdb);
+
+int32_t ctdb_control_send_gratious_arp(struct ctdb_context *ctdb,
+				       TDB_DATA indata);
+
+int32_t ctdb_control_add_public_address(struct ctdb_context *ctdb,
+					TDB_DATA indata);
+int32_t ctdb_control_del_public_address(struct ctdb_context *ctdb,
+					struct ctdb_req_control *c,
+					TDB_DATA recdata, bool *async_reply);
+
+int verify_remote_ip_allocation(struct ctdb_context *ctdb,
+				struct ctdb_all_public_ips *ips,
+				uint32_t pnn);
+int update_ip_assignment_tree(struct ctdb_context *ctdb,
+				struct ctdb_public_ip *ip);
+void clear_ip_assignment_tree(struct ctdb_context *ctdb);
+
+int32_t ctdb_control_reload_public_ips(struct ctdb_context *ctdb,
+				       struct ctdb_req_control *c,
+				       bool *async_reply);
 
 #endif
