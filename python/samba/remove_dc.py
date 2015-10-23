@@ -33,12 +33,19 @@ class DemoteException(Exception):
 
 def remove_sysvol_references(samdb, rdn):
     realm = samdb.domain_dns_name()
-    for s in ("CN=Enterprise,CN=Microsoft System Volumes,CN=System,CN=Configuration",
-              "CN=%s,CN=Microsoft System Volumes,CN=System,CN=Configuration" % realm,
+    for s in ("CN=Enterprise,CN=Microsoft System Volumes,CN=System",
+              "CN=%s,CN=Microsoft System Volumes,CN=System" % realm):
+        try:
+            samdb.delete(ldb.Dn(samdb,
+                                "%s,%s,%s" % (str(rdn), s, str(samdb.get_config_basedn()))))
+        except ldb.LdbError, l:
+            pass
+
+    for s in ("CN=Topology,CN=Domain System Volume,CN=DFSR-GlobalSettings,CN=System",
               "CN=Domain System Volumes (SYSVOL share),CN=File Replication Service,CN=System"):
         try:
             samdb.delete(ldb.Dn(samdb,
-                                "%s,%s,%s" % (str(rdn), s, str(samdb.get_root_basedn()))))
+                                "%s,%s,%s" % (str(rdn), s, str(samdb.get_default_basedn()))))
         except ldb.LdbError, l:
             pass
 
