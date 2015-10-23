@@ -903,9 +903,6 @@ int32_t ctdb_control_uptime(struct ctdb_context *ctdb,
 int32_t ctdb_control_persistent_store(struct ctdb_context *ctdb, 
 				      struct ctdb_req_control *c, 
 				      TDB_DATA recdata, bool *async_reply);
-int32_t ctdb_control_update_record(struct ctdb_context *ctdb, 
-				   struct ctdb_req_control *c, TDB_DATA recdata, 
-				   bool *async_reply);
 
 struct client_async_data {
 	enum ctdb_controls opcode;
@@ -1497,5 +1494,11 @@ int32_t ctdb_control_get_tunable(struct ctdb_context *ctdb, TDB_DATA indata,
 int32_t ctdb_control_set_tunable(struct ctdb_context *ctdb, TDB_DATA indata);
 int32_t ctdb_control_list_tunables(struct ctdb_context *ctdb,
 				   TDB_DATA *outdata);
+
+/* from ctdb_update_record.c */
+
+int32_t ctdb_control_update_record(struct ctdb_context *ctdb,
+				   struct ctdb_req_control *c,
+				   TDB_DATA recdata, bool *async_reply);
 
 #endif
