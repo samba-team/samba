@@ -36,6 +36,7 @@
 #include "ctdb_client.h"
 
 #include "common/system.h"
+#include "common/common.h"
 
 #define QUEUE_BUFFER_SIZE	(16*1024)
 

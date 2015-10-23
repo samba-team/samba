@@ -32,6 +32,8 @@
 #include "ctdb_client.h"
 #include "ctdb_logging.h"
 
+#include "common/common.h"
+
 /*
   choose the transport we will use
 */

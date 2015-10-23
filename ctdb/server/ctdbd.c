@@ -38,6 +38,7 @@
 #include "common/reqid.h"
 #include "common/system.h"
 #include "common/cmdline.h"
+#include "common/common.h"
 
 static struct {
 	const char *nlist;

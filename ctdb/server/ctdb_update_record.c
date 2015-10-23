@@ -34,6 +34,7 @@
 #include "ctdb_logging.h"
 
 #include "common/system.h"
+#include "common/common.h"
 
 struct ctdb_persistent_write_state {
 	struct ctdb_db_context *ctdb_db;

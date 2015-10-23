@@ -38,6 +38,7 @@
 #include "common/rb_tree.h"
 #include "common/reqid.h"
 #include "common/system.h"
+#include "common/common.h"
 
 
 #define TAKEOVER_TIMEOUT() timeval_current_ofs(ctdb->tunable.takeover_timeout,0)

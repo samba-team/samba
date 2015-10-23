@@ -32,6 +32,7 @@
 
 #include "common/rb_tree.h"
 #include "common/system.h"
+#include "common/common.h"
 
 void ctdb_set_child_info(TALLOC_CTX *mem_ctx, const char *child_name_fmt, ...)
 {

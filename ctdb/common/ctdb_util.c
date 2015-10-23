@@ -32,6 +32,7 @@
 
 #include "common/reqid.h"
 #include "common/system.h"
+#include "common/common.h"
 
 /*
   return error string for last error

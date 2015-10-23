@@ -37,6 +37,7 @@
 #include "ctdb_logging.h"
 
 #include "common/system.h"
+#include "common/common.h"
 
 int 
 ctdb_control_getvnnmap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indata, TDB_DATA *outdata)

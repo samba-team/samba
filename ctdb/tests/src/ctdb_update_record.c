@@ -32,6 +32,7 @@
 #include "ctdb_client.h"
 
 #include "common/cmdline.h"
+#include "common/common.h"
 
 static struct ctdb_db_context *ctdb_db;
 

@@ -28,6 +28,7 @@
 
 #include "common/rb_tree.h"
 #include "common/reqid.h"
+#include "common/common.h"
 
 
 #define SERVER_ID_KEY_SIZE 3

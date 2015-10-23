@@ -30,9 +30,11 @@
 
 #include "lib/util/time.h"
 
+#include "ctdb_private.h"
 #include "ctdb_client.h"
 
 #include "common/cmdline.h"
+#include "common/common.h"
 
 
 static struct timeval tp1,tp2;

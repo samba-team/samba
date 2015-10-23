@@ -32,6 +32,7 @@
 #include "ctdb_client.h"
 #include "ctdb_logging.h"
 
+#include "common/common.h"
 
 static void ctdb_ban_node_event(struct tevent_context *ev,
 				struct tevent_timer *te,

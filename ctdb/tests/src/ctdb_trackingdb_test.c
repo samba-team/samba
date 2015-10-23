@@ -34,9 +34,10 @@
 #include "lib/tdb_wrap/tdb_wrap.h"
 #include "lib/util/time.h"
 
-#include "common/cmdline.h"
-
 #include "ctdb_private.h"
+
+#include "common/cmdline.h"
+#include "common/common.h"
 
 #define MAXINDEX 64
 char indices[MAXINDEX];

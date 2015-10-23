@@ -32,7 +32,7 @@
 #include "ctdb_logging.h"
 
 #include "common/rb_tree.h"
-
+#include "common/common.h"
 
 /**
  * Cancel a transaction on database

@@ -34,6 +34,7 @@
 #include "ctdb_logging.h"
 
 #include "common/system.h"
+#include "common/common.h"
 
 /*
  * Non-blocking Locking API

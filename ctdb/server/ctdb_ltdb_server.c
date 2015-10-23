@@ -39,6 +39,7 @@
 #include "common/rb_tree.h"
 #include "common/reqid.h"
 #include "common/system.h"
+#include "common/common.h"
 
 #define PERSISTENT_HEALTH_TDB "persistent_health.tdb"
 

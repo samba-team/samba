@@ -41,6 +41,7 @@
 
 #include "common/reqid.h"
 #include "common/system.h"
+#include "common/common.h"
 
 /*
   allocate a packet for use in client<->daemon communication

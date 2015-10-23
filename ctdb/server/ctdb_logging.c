@@ -34,6 +34,7 @@
 #include "ctdb_logging.h"
 
 #include "common/system.h"
+#include "common/common.h"
 
 struct ctdb_log_backend {
 	struct ctdb_log_backend *prev, *next;

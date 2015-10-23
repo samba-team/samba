@@ -27,6 +27,8 @@
 #include "ctdb_private.h"
 #include "ctdb_logging.h"
 
+#include "common/common.h"
+
 static const struct {
 	const char *name;
 	uint32_t default_v;

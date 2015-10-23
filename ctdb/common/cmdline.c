@@ -32,6 +32,7 @@
 #include "ctdb_client.h"
 
 #include "common/rb_tree.h"
+#include "common/common.h"
 #include "common/cmdline.h"
 
 

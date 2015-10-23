@@ -29,9 +29,11 @@
 
 #include "lib/util/time.h"
 
+#include "ctdb_private.h"
 #include "ctdb_client.h"
 
 #include "common/cmdline.h"
+#include "common/common.h"
 
 static int timelimit = 10;
 static int lock_count = 0;

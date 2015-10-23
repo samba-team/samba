@@ -96,16 +96,6 @@ struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb,
 
 int ctdb_detach(struct ctdb_context *ctdb, uint32_t db_id);
 
-/*
-  find an attached ctdb_db handle given a name
- */
-struct ctdb_db_context *ctdb_db_handle(struct ctdb_context *ctdb, const char *name);
-
-/*
-  error string for last ctdb error
-*/
-const char *ctdb_errstr(struct ctdb_context *);
-
 /* a ctdb call function */
 typedef int (*ctdb_fn_t)(struct ctdb_call_info *);
 
@@ -163,9 +153,6 @@ int ctdb_fetch(struct ctdb_db_context *ctdb_db, TALLOC_CTX *mem_ctx,
 
 struct ctdb_db_context *find_ctdb_db(struct ctdb_context *ctdb, uint32_t id);
 
-
-struct ctdb_context *ctdb_cmdline_client(struct tevent_context *ev,
-					 struct timeval req_timeout);
 
 struct ctdb_statistics;
 int ctdb_ctrl_statistics(struct ctdb_context *ctdb, uint32_t destnode, struct ctdb_statistics *status);
@@ -496,15 +483,6 @@ int ctdb_ctrl_getcapabilities(struct ctdb_context *ctdb, struct timeval timeout,
 struct ctdb_client_control_state *ctdb_ctrl_getcapabilities_send(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struct timeval timeout, uint32_t destnode);
 
 int ctdb_ctrl_getcapabilities_recv(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struct ctdb_client_control_state *state, uint32_t *capabilities);
-
-struct ctdb_marshall_buffer *ctdb_marshall_add(TALLOC_CTX *mem_ctx,
-					       struct ctdb_marshall_buffer *m,
-					       uint64_t db_id,
-					       uint32_t reqid,
-					       TDB_DATA key,
-					       struct ctdb_ltdb_header *header,
-					       TDB_DATA data);
-TDB_DATA ctdb_marshall_finish(struct ctdb_marshall_buffer *m);
 
 struct ctdb_transaction_handle *ctdb_transaction_start(struct ctdb_db_context *ctdb_db,
 						       TALLOC_CTX *mem_ctx);

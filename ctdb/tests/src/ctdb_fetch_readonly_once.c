@@ -29,7 +29,11 @@
 
 #include "lib/util/time.h"
 
+#include "ctdb_private.h"
 #include "ctdb_client.h"
+
+#include "common/common.h"
+#include "common/cmdline.h"
 
 const char *TESTKEY = "testkey";
 

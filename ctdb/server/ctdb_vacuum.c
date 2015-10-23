@@ -38,6 +38,7 @@
 
 #include "common/rb_tree.h"
 #include "common/system.h"
+#include "common/common.h"
 
 #define TIMELIMIT() timeval_current_ofs(10, 0)
 

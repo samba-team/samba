@@ -33,6 +33,8 @@
 #include "ctdb_private.h"
 #include "ctdb_logging.h"
 
+#include "common/common.h"
+
 
 /*
   see if any nodes are dead

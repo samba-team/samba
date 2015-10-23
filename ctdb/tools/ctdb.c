@@ -45,6 +45,7 @@
 #include "common/cmdline.h"
 #include "common/rb_tree.h"
 #include "common/system.h"
+#include "common/common.h"
 
 #define ERR_TIMEOUT	20	/* timed out trying to reach node */
 #define ERR_NONODE	21	/* node does not exist */

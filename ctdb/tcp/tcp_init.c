@@ -30,6 +30,8 @@
 #include "ctdb_logging.h"
 #include "ctdb_private.h"
 
+#include "common/common.h"
+
 #include "ctdb_tcp.h"
 
 static int tnode_destructor(struct ctdb_tcp_node *tnode)

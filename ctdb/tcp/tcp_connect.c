@@ -32,6 +32,7 @@
 #include "ctdb_private.h"
 
 #include "common/system.h"
+#include "common/common.h"
 
 #include "ctdb_tcp.h"
 

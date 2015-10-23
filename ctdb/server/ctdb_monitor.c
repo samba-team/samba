@@ -33,6 +33,7 @@
 #include "ctdb_logging.h"
 
 #include "common/system.h"
+#include "common/common.h"
 
 struct ctdb_monitor_state {
 	uint32_t monitoring_mode;

@@ -35,6 +35,7 @@
 #include "ctdb_logging.h"
 
 #include "common/reqid.h"
+#include "common/common.h"
 
 struct ctdb_persistent_state {
 	struct ctdb_context *ctdb;

@@ -37,6 +37,7 @@
 
 #include "common/rb_tree.h"
 #include "common/system.h"
+#include "common/common.h"
 
 
 static void ctdb_event_script_timeout(struct tevent_context *ev,

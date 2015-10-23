@@ -39,6 +39,7 @@
 
 #include "common/system.h"
 #include "common/cmdline.h"
+#include "common/common.h"
 
 
 /* List of SRVID requests that need to be processed */

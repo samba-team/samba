@@ -37,6 +37,7 @@
 
 #include "common/reqid.h"
 #include "common/system.h"
+#include "common/common.h"
 
 typedef void (*ctdb_traverse_fn_t)(void *private_data, TDB_DATA key, TDB_DATA data);
 

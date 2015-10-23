@@ -29,9 +29,11 @@
 
 #include "lib/util/time.h"
 
-#include "common/cmdline.h"
-
+#include "ctdb_private.h"
 #include "ctdb_client.h"
+
+#include "common/cmdline.h"
+#include "common/common.h"
 
 static int num_records = 10;
 static int base_rec;

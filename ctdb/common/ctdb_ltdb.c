@@ -31,6 +31,8 @@
 #include "ctdb_logging.h"
 #include "ctdb_private.h"
 
+#include "common/common.h"
+
 /*
   find an attached ctdb_db handle given a name
  */

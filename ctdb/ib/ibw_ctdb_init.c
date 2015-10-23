@@ -33,6 +33,8 @@
 #include "ctdb_logging.h"
 #include "ctdb_private.h"
 
+#include "common/common.h"
+
 #include "ibwrapper.h"
 #include "ibw_ctdb.h"
 

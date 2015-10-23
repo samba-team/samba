@@ -33,6 +33,7 @@
 #include "ctdb_client.h"
 
 #include "common/cmdline.h"
+#include "common/common.h"
 
 
 static void update_once(struct ctdb_context *ctdb, struct tevent_context *ev,

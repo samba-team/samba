@@ -27,6 +27,8 @@
 #include "ctdb_logging.h"
 #include "ctdb_private.h"
 
+#include "common/common.h"
+
 #include "ctdb_tcp.h"
 
 

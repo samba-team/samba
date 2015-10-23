@@ -31,6 +31,8 @@
 #include "ctdb_client.h"
 #include "ctdb_logging.h"
 
+#include "common/common.h"
+
 /* 
    returns the ctdb uptime
 */

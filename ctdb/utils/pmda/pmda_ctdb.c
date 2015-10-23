@@ -32,6 +32,7 @@
 #include "ctdb_protocol.h"
 
 #include "common/system.h"
+#include "common/common.h"
 
 #include <pcp/pmapi.h>
 #include <pcp/impl.h>

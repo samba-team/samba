@@ -19,6 +19,7 @@
 
 #include "replace.h"
 #include "system/filesys.h"
+#include "system/network.h"
 #include "system/time.h"
 
 #include <popt.h>
@@ -27,8 +28,11 @@
 
 #include "lib/util/dlinklist.h"
 
-#include "common/cmdline.h"
+#include "ctdb_private.h"
+
 #include "common/rb_tree.h"
+#include "common/cmdline.h"
+#include "common/common.h"
 
 static struct timeval tp1,tp2;
 
