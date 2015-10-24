@@ -146,8 +146,9 @@ bld.SAMBA3_SUBSYSTEM('RPC_SERVER_REGISTER',
                     deps='samba-util')
 
 bld.SAMBA3_SUBSYSTEM('RPC_SERVICE',
-                    source='rpc_service_setup.c',
+                    source='rpc_service_setup.c rpc_modules.c',
                     deps='''
+                    rpc
                     RPC_SERVER
                     RPC_SERVER_REGISTER
                     RPC_SAMR

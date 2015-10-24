@@ -1725,7 +1725,7 @@ main() {
     static_list = {}
     shared_list = {}
 
-    prefixes = ['vfs', 'pdb', 'auth', 'nss_info', 'charset', 'idmap', 'gpext', 'perfcount']
+    prefixes = ['vfs', 'pdb', 'auth', 'nss_info', 'charset', 'idmap', 'gpext', 'perfcount', 'rpc']
     conf.env['MODULE_PREFIXES'] = prefixes
     for p in prefixes:
         for m in final_static_modules:

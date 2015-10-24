@@ -23,6 +23,7 @@
 #define _RPC_EP_SETUP_H
 
 struct ndr_interface_table;
+struct rpc_srv_callbacks;
 
 /**
  * @brief Register an endpoint at the endpoint mapper.
@@ -50,6 +51,11 @@ NTSTATUS rpc_ep_setup_register(struct tevent_context *ev_ctx,
 
 bool dcesrv_ep_setup(struct tevent_context *ev_ctx,
 		     struct messaging_context *msg_ctx);
+
+bool rpc_setup_embedded(struct tevent_context *ev_ctx,
+			struct messaging_context *msg_ctx,
+			const struct ndr_interface_table *t,
+			const char *pipe_name);
 
 #endif /* _RPC_EP_SETUP_H */
 

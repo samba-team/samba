@@ -53,13 +53,16 @@
 #include "rpc_server/rpc_ep_register.h"
 #include "rpc_server/rpc_server.h"
 #include "rpc_server/rpc_config.h"
+#include "rpc_server/rpc_modules.h"
 #include "rpc_server/epmapper/srv_epmapper.h"
 
+static_decl_rpc;
+
 /* Common routine for embedded RPC servers */
-static bool rpc_setup_embedded(struct tevent_context *ev_ctx,
-			       struct messaging_context *msg_ctx,
-			       const struct ndr_interface_table *t,
-			       const char *pipe_name)
+bool rpc_setup_embedded(struct tevent_context *ev_ctx,
+			struct messaging_context *msg_ctx,
+			const struct ndr_interface_table *t,
+			const char *pipe_name)
 {
 	struct dcerpc_binding_vector *v;
 	enum rpc_service_mode_e epm_mode = rpc_epmapper_mode();
@@ -500,6 +503,7 @@ bool dcesrv_ep_setup(struct tevent_context *ev_ctx,
 {
 	TALLOC_CTX *tmp_ctx;
 	bool ok;
+	init_module_fn *mod_init_fns = NULL;
 
 	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
@@ -584,6 +588,28 @@ bool dcesrv_ep_setup(struct tevent_context *ev_ctx,
 		goto done;
 	}
 #endif
+
+	/* Initialize static subsystems */
+	static_init_rpc;
+
+	/* Initialize shared modules */
+	mod_init_fns = load_samba_modules(tmp_ctx, "rpc");
+	if (mod_init_fns == NULL) {
+		DBG_ERR("Loading shared RPC modules failed\n");
+		goto done;
+	}
+
+	ok = run_init_functions(mod_init_fns);
+	if (!ok) {
+		DBG_ERR("Initializing shared RPC modules failed\n");
+		goto done;
+	}
+
+	ok = setup_rpc_modules(ev_ctx, msg_ctx);
+	if (!ok) {
+		DBG_ERR("Shared RPC modules setup failed\n");
+		goto done;
+	}
 
 done:
 	talloc_free(tmp_ctx);
