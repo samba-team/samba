@@ -172,6 +172,13 @@ sub setup_env($$$)
 	        return $self->{vars}->{$envname};
 	}
 
+	#
+	# Avoid hitting system krb5.conf -
+	# An env that needs Kerberos will reset this to the real
+	# value.
+	#
+	$ENV{KRB5_CONFIG} = "$path/no_krb5.conf";
+
 	if ($envname eq "nt4_dc") {
 		return $self->setup_nt4_dc("$path/nt4_dc");
 	} elsif ($envname eq "nt4_dc_schannel") {
@@ -1609,6 +1616,13 @@ domadmins:X:$gid_domadmins:
 	}
 	$ret{LOCAL_PATH} = "$shrdir";
         $ret{LOGDIR} = $logdir;
+
+	#
+	# Avoid hitting system krb5.conf -
+	# An env that needs Kerberos will reset this to the real
+	# value.
+	#
+	$ret{KRB5_CONFIG} = abs_path($prefix) . "/no_krb5.conf";
 
 	return \%ret;
 }
