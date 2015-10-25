@@ -78,9 +78,6 @@ def set_options(opt):
                    help='additional directory to search for libiconv',
                    action='store', dest='iconv_open', default='/usr/local',
                    match = ['Checking for library iconv', 'Checking for iconv_open', 'Checking for header iconv.h'])
-    opt.add_option('--with-gettext',
-                   help='additional directory to search for gettext',
-                   action='store', dest='gettext_location', default='None')
     opt.add_option('--without-gettext',
                    help=("Disable use of gettext"),
                    action="store_true", dest='disable_gettext', default=False)
