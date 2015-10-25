@@ -173,6 +173,13 @@ sub setup_env($$$)
 	        return $self->{vars}->{$envname};
 	}
 
+	#
+	# Avoid hitting system krb5.conf -
+	# An env that needs Kerberos will reset this to the real
+	# value.
+	#
+	$ENV{KRB5_CONFIG} = "$path/no_krb5.conf";
+
 	if ($envname eq "s3dc") {
 		return $self->setup_s3dc("$path/s3dc");
 	} elsif ($envname eq "simpleserver") {
@@ -1361,6 +1368,13 @@ domadmins:X:$gid_domadmins:
 	$ret{NSS_WRAPPER_MODULE_FN_PREFIX} = "winbind";
 	$ret{LOCAL_PATH} = "$shrdir";
         $ret{LOGDIR} = $logdir;
+
+	#
+	# Avoid hitting system krb5.conf -
+	# An env that needs Kerberos will reset this to the real
+	# value.
+	#
+	$ret{KRB5_CONFIG} = abs_path($prefix) . "/no_krb5.conf";
 
 	return \%ret;
 }
