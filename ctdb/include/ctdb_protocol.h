@@ -22,13 +22,6 @@
 
 #include <sys/socket.h>
 
-/* location of daemon socket, set at configure time */
-#ifdef SOCKPATH
-#define CTDB_SOCKET 	SOCKPATH
-#else
-#define CTDB_SOCKET 	"/var/run/ctdb/ctdbd.socket"
-#endif
-
 /* default ctdb port number */
 #define CTDB_PORT 4379
 
