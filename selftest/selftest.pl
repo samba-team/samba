@@ -831,9 +831,7 @@ sub setup_env($$)
 
 	$option = "client" if $option eq "";
 
-	if ($envname eq "none") {
-		$testenv_vars = {};
-	} elsif (defined(get_running_env($envname))) {
+	if (defined(get_running_env($envname))) {
 		$testenv_vars = get_running_env($envname);
 		if (not $testenv_vars->{target}->check_env($testenv_vars)) {
 			print $testenv_vars->{target}->getlog_env($testenv_vars);
@@ -901,7 +899,6 @@ sub getlog_env($)
 sub check_env($)
 {
 	my ($envname) = @_;
-	return 1 if ($envname eq "none");
 	my $env = get_running_env($envname);
 	return $env->{target}->check_env($env);
 }

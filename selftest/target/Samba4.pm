@@ -1999,8 +1999,11 @@ sub getlog_env($$)
 sub check_env($$)
 {
 	my ($self, $envvars) = @_;
+	my $samba_pid = $envvars->{SAMBA_PID};
 
-	my $childpid = Samba::cleanup_child($envvars->{SAMBA_PID}, "samba");
+	return 1 if $samba_pid == -1;
+
+	my $childpid = Samba::cleanup_child($samba_pid, "samba");
 
 	return ($childpid == 0);
 }
@@ -2077,6 +2080,8 @@ sub setup_env($$$)
 		}
 		return $target3->setup_admember_rfc2307("$path/ad_member_rfc2307",
 							$self->{vars}->{ad_dc_ntvfs}, 34);
+	} elsif ($envname eq "none") {
+		return $self->setup_none("$path/none");
 	} else {
 		return "UNKNOWN";
 	}
@@ -2477,6 +2482,16 @@ sub setup_ad_dc($$)
 
 	$self->{vars}->{ad_dc} = $env;
 	return $env;
+}
+
+sub setup_none($$)
+{
+	my ($self, $path) = @_;
+
+	my $ret = {
+		KRB5_CONFIG => abs_path($path) . "/no_krb5.conf",
+		SAMBA_PID => -1,
+	}
 }
 
 1;
