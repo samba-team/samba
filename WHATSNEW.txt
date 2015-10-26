@@ -17,7 +17,13 @@ Nothing special.
 NEW FEATURES
 ============
 
-TODO...
+WINS nsswitch module
+====================
+
+The WINS nsswitch module has been rewritten to address memory issues and to
+simplify the code. The module now uses libwbclient to do WINS queries. This
+means that winbind needs to be running in order to resolve WINS names using
+the nss_wins module. This does not affect smbd.
 
 ######################################################################
 Changes
