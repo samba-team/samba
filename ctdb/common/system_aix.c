@@ -19,11 +19,16 @@
 */
 
 
-#include "includes.h"
+#include "replace.h"
 #include "system/network.h"
 #include "system/filesys.h"
 #include "system/wait.h"
-#include "../include/ctdb_private.h"
+
+#include "lib/util/debug.h"
+
+#include "ctdb_logging.h"
+#include "ctdb_private.h"
+
 #include <netinet/if_ether.h>
 #include <netinet/ip6.h>
 #include <net/if_arp.h>

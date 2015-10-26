@@ -20,8 +20,14 @@
 #ifndef _CTDBD_TEST_C
 #define _CTDBD_TEST_C
 
-#include "includes.h"
-#include "tdb.h"
+#include "replace.h"
+#include "system/network.h"
+
+#include <talloc.h>
+/* Allow use of deprecated function tevent_loop_allow_nesting() */
+#define TEVENT_DEPRECATED
+#include <tevent.h>
+
 #include "ctdb_private.h"
 
 /*

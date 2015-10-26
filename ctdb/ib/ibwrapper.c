@@ -20,28 +20,24 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
-#include <errno.h>
-#include <sys/types.h>
-#include <netinet/in.h>
-#include <sys/socket.h>
-#include <netdb.h>
-#include <arpa/inet.h>
-#include <malloc.h>
-#include <assert.h>
-#include <unistd.h>
+#include "replace.h"
+#include "system/network.h"
 
-#include "includes.h"
-#include "ibwrapper.h"
+#include <assert.h>
+#include <talloc.h>
+#include <tevent.h>
+
+#include "lib/util/dlinklist.h"
+#include "lib/util/debug.h"
+
+#include "ctdb_logging.h"
 
 #include <infiniband/kern-abi.h>
 #include <rdma/rdma_cma_abi.h>
 #include <rdma/rdma_cma.h>
 
+#include "ibwrapper.h"
 #include "ibwrapper_internal.h"
-#include "lib/util/dlinklist.h"
 
 #define IBW_LASTERR_BUFSIZE 512
 static char ibw_lasterr[IBW_LASTERR_BUFSIZE];

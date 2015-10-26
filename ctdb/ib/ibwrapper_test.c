@@ -20,23 +20,19 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
-#include <errno.h>
-#include <sys/types.h>
-#include <netinet/in.h>
-#include <sys/socket.h>
-#include <netdb.h>
-#include <arpa/inet.h>
-#include <malloc.h>
-#include <assert.h>
-#include <unistd.h>
-#include <signal.h>
-#include <sys/time.h>
-#include <time.h>
+#include "replace.h"
+#include "system/network.h"
+#include "system/time.h"
 
-#include "includes.h"
+#include <assert.h>
+#include <talloc.h>
+#include <tevent.h>
+
+#include "lib/util/time.h"
+#include "lib/util/debug.h"
+
+#include "ctdb_logging.h"
+
 #include "ib/ibwrapper.h"
 
 struct ibwtest_ctx {

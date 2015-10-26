@@ -17,16 +17,27 @@
    along with this program; if not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
+#include "replace.h"
 #include "system/filesys.h"
-#include "popt.h"
 #include "system/time.h"
 #include "system/wait.h"
 #include "system/network.h"
-#include "common/cmdline.h"
-#include "../include/ctdb_private.h"
+
+#include <popt.h>
+#include <talloc.h>
+/* Allow use of deprecated function tevent_loop_allow_nesting() */
+#define TEVENT_DEPRECATED
+#include <tevent.h>
+
+#include "lib/util/debug.h"
+#include "lib/util/samba_util.h"
+
+#include "ctdb_private.h"
+#include "ctdb_logging.h"
+
 #include "common/reqid.h"
 #include "common/system.h"
+#include "common/cmdline.h"
 
 static struct {
 	const char *nlist;

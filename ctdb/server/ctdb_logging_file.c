@@ -17,12 +17,20 @@
    along with this program; if not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
-#include "../include/ctdb_client.h"
-#include "../include/ctdb_private.h"
+#include "replace.h"
 #include "system/time.h"
 #include "system/filesys.h"
+#include "system/network.h"
+
+#include <talloc.h>
+
+#include "lib/util/debug.h"
 #include "lib/util/time_basic.h"
+
+#include "ctdb_private.h"
+#include "ctdb_client.h"
+#include "ctdb_logging.h"
+
 #include "common/system.h"
 
 #define CTDB_LOG_FILE_PREFIX "file"

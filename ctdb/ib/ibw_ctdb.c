@@ -20,10 +20,19 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "includes.h"
-#include <system/network.h>
+#include "replace.h"
+#include "system/network.h"
+
 #include <assert.h>
+#include <talloc.h>
+#include <tevent.h>
+
+#include "lib/util/time.h"
+#include "lib/util/debug.h"
+
+#include "ctdb_logging.h"
 #include "ctdb_private.h"
+
 #include "ibwrapper.h"
 #include "ibw_ctdb.h"
 

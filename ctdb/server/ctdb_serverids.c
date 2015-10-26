@@ -16,9 +16,17 @@
    You should have received a copy of the GNU General Public License
    along with this program; if not, see <http://www.gnu.org/licenses/>.
 */
-#include "includes.h"
-#include "../include/ctdb_private.h"
-#include "../common/rb_tree.h"
+#include "replace.h"
+#include "system/network.h"
+
+#include <talloc.h>
+
+#include "lib/util/debug.h"
+
+#include "ctdb_private.h"
+#include "ctdb_logging.h"
+
+#include "common/rb_tree.h"
 #include "common/reqid.h"
 
 

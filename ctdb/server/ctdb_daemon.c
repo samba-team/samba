@@ -17,18 +17,29 @@
    along with this program; if not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
-#include "lib/tdb_wrap/tdb_wrap.h"
-#include "tdb.h"
-#include "lib/util/dlinklist.h"
+#include "replace.h"
 #include "system/network.h"
 #include "system/filesys.h"
 #include "system/wait.h"
+#include "system/time.h"
+
+#include <talloc.h>
+/* Allow use of deprecated function tevent_loop_allow_nesting() */
+#define TEVENT_DEPRECATED
+#include <tevent.h>
+#include <tdb.h>
+
+#include "lib/tdb_wrap/tdb_wrap.h"
+#include "lib/util/dlinklist.h"
+#include "lib/util/debug.h"
+#include "lib/util/samba_util.h"
+
 #include "../include/ctdb_version.h"
-#include "../include/ctdb_client.h"
-#include "../include/ctdb_private.h"
-#include "../common/rb_tree.h"
-#include <sys/socket.h>
+#include "ctdb_private.h"
+#include "ctdb_client.h"
+#include "ctdb_logging.h"
+
+#include "common/rb_tree.h"
 #include "common/reqid.h"
 #include "common/system.h"
 

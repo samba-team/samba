@@ -17,16 +17,27 @@
    along with this program; if not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
-#include <time.h>
+#include "replace.h"
 #include "system/filesys.h"
+#include "system/network.h"
 #include "system/wait.h"
 #include "system/dir.h"
 #include "system/locale.h"
-#include "../include/ctdb_private.h"
-#include "../common/rb_tree.h"
+#include "system/time.h"
+
+#include <talloc.h>
+#include <tevent.h>
+
 #include "lib/util/dlinklist.h"
+#include "lib/util/debug.h"
+#include "lib/util/samba_util.h"
+
+#include "ctdb_private.h"
+#include "ctdb_logging.h"
+
+#include "common/rb_tree.h"
 #include "common/system.h"
+
 
 static void ctdb_event_script_timeout(struct tevent_context *ev,
 				      struct tevent_timer *te,

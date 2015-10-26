@@ -17,9 +17,15 @@
    along with this program; if not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
+#include "replace.h"
 #include "system/filesys.h"
+#include "system/network.h"
+#include "system/wait.h"
+
+#include <talloc.h>
+
 #include "ctdb_private.h"
+
 #include "common/system.h"
 
 static char *progname = NULL;

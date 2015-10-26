@@ -18,11 +18,20 @@
    along with this program; if not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
+#include "replace.h"
 #include "system/filesys.h"
-#include "popt.h"
-#include "cmdline.h"
+#include "system/network.h"
+
+#include <popt.h>
+#include <talloc.h>
+#include <tevent.h>
+
+#include "lib/util/time.h"
+
 #include "ctdb_private.h"
+#include "ctdb_client.h"
+
+#include "common/cmdline.h"
 
 static struct ctdb_db_context *ctdb_db;
 

@@ -18,19 +18,32 @@
    along with this program; if not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
+#include "replace.h"
 #include "system/time.h"
 #include "system/filesys.h"
 #include "system/network.h"
 #include "system/locale.h"
-#include "popt.h"
-#include "common/cmdline.h"
-#include "../include/ctdb_version.h"
-#include "../include/ctdb_client.h"
-#include "../include/ctdb_private.h"
-#include "../common/rb_tree.h"
+
+#include <popt.h>
+#include <talloc.h>
+/* Allow use of deprecated function tevent_loop_allow_nesting() */
+#define TEVENT_DEPRECATED
+#include <tevent.h>
+#include <tdb.h>
+
 #include "lib/tdb_wrap/tdb_wrap.h"
 #include "lib/util/dlinklist.h"
+#include "lib/util/debug.h"
+#include "lib/util/substitute.h"
+#include "lib/util/time.h"
+
+#include "ctdb_logging.h"
+#include "../include/ctdb_version.h"
+#include "ctdb_private.h"
+#include "ctdb_client.h"
+
+#include "common/cmdline.h"
+#include "common/rb_tree.h"
 #include "common/system.h"
 
 #define ERR_TIMEOUT	20	/* timed out trying to reach node */

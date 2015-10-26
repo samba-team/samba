@@ -17,7 +17,13 @@
    along with this program; if not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
+#include "replace.h"
+
+#include <talloc.h>
+
+#include "lib/util/debug.h"
+#include "ctdb_logging.h"
+
 #include "rb_tree.h"
 
 #define NO_MEMORY_FATAL(p) do { if (!(p)) { \

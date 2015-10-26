@@ -18,10 +18,18 @@
    along with this program; if not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
+#include "replace.h"
 #include "system/filesys.h"
-#include "popt.h"
-#include <poll.h>
+#include "system/network.h"
+
+#include <popt.h>
+#include <talloc.h>
+#include <tevent.h>
+#include <tdb.h>
+
+#include "lib/util/time.h"
+
+#include "ctdb_client.h"
 
 const char *TESTKEY = "testkey";
 

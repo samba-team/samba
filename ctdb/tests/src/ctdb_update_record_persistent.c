@@ -18,12 +18,21 @@
    along with this program; if not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
-#include "lib/tdb_wrap/tdb_wrap.h"
+#include "replace.h"
 #include "system/filesys.h"
-#include "popt.h"
-#include "cmdline.h"
+#include "system/network.h"
+
+#include <popt.h>
+#include <talloc.h>
+#include <tevent.h>
+
+#include "lib/tdb_wrap/tdb_wrap.h"
+#include "lib/util/time.h"
+
 #include "ctdb_private.h"
+#include "ctdb_client.h"
+
+#include "common/cmdline.h"
 
 
 static void update_once(struct ctdb_context *ctdb, struct tevent_context *ev,

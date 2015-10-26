@@ -18,14 +18,23 @@
    along with this program; if not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
+#include "replace.h"
 #include "system/filesys.h"
-#include "popt.h"
-#include "cmdline.h"
-#include "ctdb_private.h"
+#include "system/network.h"
+#include "system/time.h"
 
-#include <sys/time.h>
-#include <time.h>
+#include <popt.h>
+#include <talloc.h>
+#include <tevent.h>
+
+#include "lib/util/debug.h"
+#include "lib/util/time.h"
+
+#include "common/cmdline.h"
+
+#include "ctdb_logging.h"
+#include "ctdb_private.h"
+#include "ctdb_client.h"
 
 static struct timeval tp1,tp2;
 

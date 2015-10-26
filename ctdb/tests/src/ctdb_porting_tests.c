@@ -17,12 +17,23 @@
    along with this program; if not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
-#include "include/ctdb_private.h"
+#include "replace.h"
 #include "system/filesys.h"
-#include "popt.h"
-#include "cmdline.h"
+#include "system/network.h"
+
+#include <popt.h>
+#include <talloc.h>
+#include <tevent.h>
+#include <tdb.h>
+
+#include "lib/util/debug.h"
+
+#include "ctdb_logging.h"
+#include "ctdb_client.h"
+
+#include "common/cmdline.h"
 #include "common/system.h"
+
 
 static struct {
 	const char *socketname;

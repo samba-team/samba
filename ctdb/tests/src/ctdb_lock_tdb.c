@@ -1,7 +1,7 @@
-#include <stdio.h>
-#include <fcntl.h>
+#include "replace.h"
+#include "system/filesys.h"
 
-#include "includes.h"
+#include <tdb.h>
 
 const char *tdb_file;
 TDB_CONTEXT *tdb;
