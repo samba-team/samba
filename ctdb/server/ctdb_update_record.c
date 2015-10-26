@@ -140,7 +140,8 @@ static void ctdb_persistent_write_callback(int status, void *private_data)
 /*
   called if our lockwait child times out
  */
-static void ctdb_persistent_lock_timeout(struct event_context *ev, struct timed_event *te,
+static void ctdb_persistent_lock_timeout(struct tevent_context *ev,
+					 struct tevent_timer *te,
 					 struct timeval t, void *private_data)
 {
 	struct ctdb_persistent_write_state *state = talloc_get_type(private_data,
@@ -152,7 +153,7 @@ static void ctdb_persistent_lock_timeout(struct event_context *ev, struct timed_
 struct childwrite_handle {
 	struct ctdb_context *ctdb;
 	struct ctdb_db_context *ctdb_db;
-	struct fd_event *fde;
+	struct tevent_fd *fde;
 	int fd[2];
 	pid_t child;
 	void *private_data;
@@ -170,8 +171,9 @@ static int childwrite_destructor(struct childwrite_handle *h)
 /* called when the child process has finished writing the record to the
    database
 */
-static void childwrite_handler(struct event_context *ev, struct fd_event *fde,
-			     uint16_t flags, void *private_data)
+static void childwrite_handler(struct tevent_context *ev,
+			       struct tevent_fd *fde,
+			       uint16_t flags, void *private_data)
 {
 	struct childwrite_handle *h = talloc_get_type(private_data,
 						     struct childwrite_handle);
@@ -275,9 +277,9 @@ static struct childwrite_handle *ctdb_childwrite(
 
 	DEBUG(DEBUG_DEBUG, (__location__ " Created PIPE FD:%d for ctdb_childwrite\n", result->fd[0]));
 
-	result->fde = event_add_fd(ctdb_db->ctdb->ev, result, result->fd[0],
-				   EVENT_FD_READ, childwrite_handler,
-				   (void *)result);
+	result->fde = tevent_add_fd(ctdb_db->ctdb->ev, result, result->fd[0],
+				    TEVENT_FD_READ, childwrite_handler,
+				    (void *)result);
 	if (result->fde == NULL) {
 		talloc_free(result);
 		CTDB_DECREMENT_STAT(ctdb_db->ctdb, pending_childwrite_calls);
@@ -348,8 +350,9 @@ int32_t ctdb_control_update_record(struct ctdb_context *ctdb,
 	talloc_steal(state, c);
 
 	/* but we won't wait forever */
-	event_add_timed(ctdb->ev, state, timeval_current_ofs(ctdb->tunable.control_timeout, 0),
-			ctdb_persistent_lock_timeout, state);
+	tevent_add_timer(ctdb->ev, state,
+			 timeval_current_ofs(ctdb->tunable.control_timeout, 0),
+			 ctdb_persistent_lock_timeout, state);
 
 	return 0;
 }

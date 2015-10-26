@@ -305,7 +305,8 @@ struct ctdb_client_ip {
 /*
   send a gratuitous arp
  */
-static void ctdb_control_send_arp(struct event_context *ev, struct timed_event *te, 
+static void ctdb_control_send_arp(struct tevent_context *ev,
+				  struct tevent_timer *te,
 				  struct timeval t, void *private_data)
 {
 	struct ctdb_takeover_arp *arp = talloc_get_type(private_data, 
@@ -348,9 +349,9 @@ static void ctdb_control_send_arp(struct event_context *ev, struct timed_event *
 		return;
 	}
 
-	event_add_timed(arp->ctdb->ev, arp->vnn->takeover_ctx, 
-			timeval_current_ofs(CTDB_ARP_INTERVAL, 100000), 
-			ctdb_control_send_arp, arp);
+	tevent_add_timer(arp->ctdb->ev, arp->vnn->takeover_ctx,
+			 timeval_current_ofs(CTDB_ARP_INTERVAL, 100000),
+			 ctdb_control_send_arp, arp);
 }
 
 static int32_t ctdb_announce_vnn_iface(struct ctdb_context *ctdb,
@@ -385,8 +386,8 @@ static int32_t ctdb_announce_vnn_iface(struct ctdb_context *ctdb,
 		vnn->tcp_update_needed = true;
 	}
 
-	event_add_timed(arp->ctdb->ev, vnn->takeover_ctx,
-			timeval_zero(), ctdb_control_send_arp, arp);
+	tevent_add_timer(arp->ctdb->ev, vnn->takeover_ctx,
+			 timeval_zero(), ctdb_control_send_arp, arp);
 
 	return 0;
 }
@@ -3396,7 +3397,7 @@ struct ctdb_kill_tcp {
 	struct ctdb_vnn *vnn;
 	struct ctdb_context *ctdb;
 	int capture_fd;
-	struct fd_event *fde;
+	struct tevent_fd *fde;
 	trbt_tree_t *connections;
 	void *private_data;
 };
@@ -3463,7 +3464,8 @@ static uint32_t *killtcp_key(ctdb_sock_addr *src, ctdb_sock_addr *dst)
 /*
   called when we get a read event on the raw socket
  */
-static void capture_tcp_handler(struct event_context *ev, struct fd_event *fde, 
+static void capture_tcp_handler(struct tevent_context *ev,
+				struct tevent_fd *fde,
 				uint16_t flags, void *private_data)
 {
 	struct ctdb_kill_tcp *killtcp = talloc_get_type(private_data, struct ctdb_kill_tcp);
@@ -3471,7 +3473,7 @@ static void capture_tcp_handler(struct event_context *ev, struct fd_event *fde,
 	ctdb_sock_addr src, dst;
 	uint32_t ack_seq, seq;
 
-	if (!(flags & EVENT_FD_READ)) {
+	if (!(flags & TEVENT_FD_READ)) {
 		return;
 	}
 
@@ -3535,7 +3537,8 @@ static int tickle_connection_traverse(void *param, void *data)
 /* 
    called every second until all sentenced connections have been reset
  */
-static void ctdb_tickle_sentenced_connections(struct event_context *ev, struct timed_event *te, 
+static void ctdb_tickle_sentenced_connections(struct tevent_context *ev,
+					      struct tevent_timer *te,
 					      struct timeval t, void *private_data)
 {
 	struct ctdb_kill_tcp *killtcp = talloc_get_type(private_data, struct ctdb_kill_tcp);
@@ -3558,8 +3561,9 @@ static void ctdb_tickle_sentenced_connections(struct event_context *ev, struct t
 
 	/* try tickling them again in a seconds time
 	 */
-	event_add_timed(killtcp->ctdb->ev, killtcp, timeval_current_ofs(1, 0), 
-			ctdb_tickle_sentenced_connections, killtcp);
+	tevent_add_timer(killtcp->ctdb->ev, killtcp,
+			 timeval_current_ofs(1, 0),
+			 ctdb_tickle_sentenced_connections, killtcp);
 }
 
 /*
@@ -3685,16 +3689,17 @@ static int ctdb_killtcp_add_connection(struct ctdb_context *ctdb,
 
 
 	if (killtcp->fde == NULL) {
-		killtcp->fde = event_add_fd(ctdb->ev, killtcp, killtcp->capture_fd, 
-					    EVENT_FD_READ,
-					    capture_tcp_handler, killtcp);
+		killtcp->fde = tevent_add_fd(ctdb->ev, killtcp,
+					     killtcp->capture_fd,
+					     TEVENT_FD_READ,
+					     capture_tcp_handler, killtcp);
 		tevent_fd_set_auto_close(killtcp->fde);
 
 		/* We also need to set up some events to tickle all these connections
 		   until they are all reset
 		*/
-		event_add_timed(ctdb->ev, killtcp, timeval_current_ofs(1, 0), 
-				ctdb_tickle_sentenced_connections, killtcp);
+		tevent_add_timer(ctdb->ev, killtcp, timeval_current_ofs(1, 0),
+				 ctdb_tickle_sentenced_connections, killtcp);
 	}
 
 	/* tickle him once now */
@@ -3876,9 +3881,9 @@ static int ctdb_send_set_tcp_tickles_for_ip(struct ctdb_context *ctdb,
 /*
   perform tickle updates if required
  */
-static void ctdb_update_tcp_tickles(struct event_context *ev, 
-				struct timed_event *te, 
-				struct timeval t, void *private_data)
+static void ctdb_update_tcp_tickles(struct tevent_context *ev,
+				    struct tevent_timer *te,
+				    struct timeval t, void *private_data)
 {
 	struct ctdb_context *ctdb = talloc_get_type(private_data, struct ctdb_context);
 	int ret;
@@ -3909,11 +3914,10 @@ static void ctdb_update_tcp_tickles(struct event_context *ev,
 		}
 	}
 
-	event_add_timed(ctdb->ev, ctdb->tickle_update_context,
-			     timeval_current_ofs(ctdb->tunable.tickle_update_interval, 0), 
-			     ctdb_update_tcp_tickles, ctdb);
-}		
-	
+	tevent_add_timer(ctdb->ev, ctdb->tickle_update_context,
+			 timeval_current_ofs(ctdb->tunable.tickle_update_interval, 0),
+			 ctdb_update_tcp_tickles, ctdb);
+}
 
 /*
   start periodic update of tcp tickles
@@ -3922,9 +3926,9 @@ void ctdb_start_tcp_tickle_update(struct ctdb_context *ctdb)
 {
 	ctdb->tickle_update_context = talloc_new(ctdb);
 
-	event_add_timed(ctdb->ev, ctdb->tickle_update_context,
-			     timeval_current_ofs(ctdb->tunable.tickle_update_interval, 0), 
-			     ctdb_update_tcp_tickles, ctdb);
+	tevent_add_timer(ctdb->ev, ctdb->tickle_update_context,
+			 timeval_current_ofs(ctdb->tunable.tickle_update_interval, 0),
+			 ctdb_update_tcp_tickles, ctdb);
 }
 
 
@@ -3940,8 +3944,9 @@ struct control_gratious_arp {
 /*
   send a control_gratuitous arp
  */
-static void send_gratious_arp(struct event_context *ev, struct timed_event *te, 
-				  struct timeval t, void *private_data)
+static void send_gratious_arp(struct tevent_context *ev,
+			      struct tevent_timer *te,
+			      struct timeval t, void *private_data)
 {
 	int ret;
 	struct control_gratious_arp *arp = talloc_get_type(private_data, 
@@ -3960,9 +3965,9 @@ static void send_gratious_arp(struct event_context *ev, struct timed_event *te,
 		return;
 	}
 
-	event_add_timed(arp->ctdb->ev, arp, 
-			timeval_current_ofs(CTDB_ARP_INTERVAL, 0), 
-			send_gratious_arp, arp);
+	tevent_add_timer(arp->ctdb->ev, arp,
+			 timeval_current_ofs(CTDB_ARP_INTERVAL, 0),
+			 send_gratious_arp, arp);
 }
 
 
@@ -4001,9 +4006,9 @@ int32_t ctdb_control_send_gratious_arp(struct ctdb_context *ctdb, TDB_DATA indat
 	arp->iface = talloc_strdup(arp, gratious_arp->iface);
 	CTDB_NO_MEMORY(ctdb, arp->iface);
 	arp->count = 0;
-	
-	event_add_timed(arp->ctdb->ev, arp, 
-			timeval_zero(), send_gratious_arp, arp);
+
+	tevent_add_timer(arp->ctdb->ev, arp,
+			 timeval_zero(), send_gratious_arp, arp);
 
 	return 0;
 }
@@ -4287,7 +4292,7 @@ struct ctdb_reloadips_handle {
 	int status;
 	int fd[2];
 	pid_t child;
-	struct fd_event *fde;
+	struct tevent_fd *fde;
 };
 
 static int ctdb_reloadips_destructor(struct ctdb_reloadips_handle *h)
@@ -4303,17 +4308,18 @@ static int ctdb_reloadips_destructor(struct ctdb_reloadips_handle *h)
 	return 0;
 }
 
-static void ctdb_reloadips_timeout_event(struct event_context *ev,
-				struct timed_event *te,
-				struct timeval t, void *private_data)
+static void ctdb_reloadips_timeout_event(struct tevent_context *ev,
+					 struct tevent_timer *te,
+					 struct timeval t, void *private_data)
 {
 	struct ctdb_reloadips_handle *h = talloc_get_type(private_data, struct ctdb_reloadips_handle);
 
 	talloc_free(h);
-}	
+}
 
-static void ctdb_reloadips_child_handler(struct event_context *ev, struct fd_event *fde, 
-			     uint16_t flags, void *private_data)
+static void ctdb_reloadips_child_handler(struct tevent_context *ev,
+					 struct tevent_fd *fde,
+					 uint16_t flags, void *private_data)
 {
 	struct ctdb_reloadips_handle *h = talloc_get_type(private_data, struct ctdb_reloadips_handle);
 
@@ -4573,14 +4579,12 @@ int32_t ctdb_control_reload_public_ips(struct ctdb_context *ctdb, struct ctdb_re
 	talloc_set_destructor(h, ctdb_reloadips_destructor);
 
 
-	h->fde = event_add_fd(ctdb->ev, h, h->fd[0],
-			EVENT_FD_READ, ctdb_reloadips_child_handler,
-			(void *)h);
+	h->fde = tevent_add_fd(ctdb->ev, h, h->fd[0], TEVENT_FD_READ,
+			       ctdb_reloadips_child_handler, (void *)h);
 	tevent_fd_set_auto_close(h->fde);
 
-	event_add_timed(ctdb->ev, h,
-			timeval_current_ofs(120, 0),
-			ctdb_reloadips_timeout_event, h);
+	tevent_add_timer(ctdb->ev, h, timeval_current_ofs(120, 0),
+			 ctdb_reloadips_timeout_event, h);
 
 	/* we reply later */
 	*async_reply = true;

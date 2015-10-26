@@ -49,7 +49,7 @@ static void ctdb_cmdline_callback(poptContext con,
 {
 	switch (opt->val) {
 	case OPT_EVENTSYSTEM:
-		event_set_default_backend(arg);
+		tevent_set_default_backend(arg);
 		break;
 	}
 }
@@ -68,7 +68,7 @@ struct poptOption popt_ctdb_cmdline[] = {
 /*
   startup daemon side of ctdb according to command line options
  */
-struct ctdb_context *ctdb_cmdline_init(struct event_context *ev)
+struct ctdb_context *ctdb_cmdline_init(struct tevent_context *ev)
 {
 	struct ctdb_context *ctdb;
 	int ret;

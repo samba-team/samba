@@ -159,7 +159,7 @@ static pmdaMetric metrictab[] = {
 		PMDA_PMUNITS(0,0,0,0,0,0) }, },
 };
 
-static struct event_context *ev;
+static struct tevent_context *ev;
 static struct ctdb_context *ctdb;
 static struct ctdb_statistics *stats;
 
@@ -183,7 +183,7 @@ pmda_ctdb_daemon_connect(void)
 	int ret;
 	struct sockaddr_un addr;
 
-	ev = event_context_init(NULL);
+	ev = tevent_context_init(NULL);
 	if (ev == NULL) {
 		fprintf(stderr, "Failed to init event ctx\n");
 		return -1;

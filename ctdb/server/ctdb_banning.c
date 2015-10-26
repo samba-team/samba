@@ -26,9 +26,9 @@
 #include "../include/ctdb_private.h"
 
 
-static void
-ctdb_ban_node_event(struct event_context *ev, struct timed_event *te, 
-			       struct timeval t, void *private_data)
+static void ctdb_ban_node_event(struct tevent_context *ev,
+				struct tevent_timer *te,
+				struct timeval t, void *private_data)
 {
 	struct ctdb_context *ctdb = talloc_get_type(private_data, struct ctdb_context);
 
@@ -130,7 +130,9 @@ int32_t ctdb_control_set_ban_state(struct ctdb_context *ctdb, TDB_DATA indata)
 	DEBUG(DEBUG_ERR,("Banning this node for %d seconds\n", bantime->time));
 	ctdb->nodes[bantime->pnn]->flags |= NODE_FLAGS_BANNED;
 
-	event_add_timed(ctdb->ev, ctdb->banning_ctx, timeval_current_ofs(bantime->time,0), ctdb_ban_node_event, ctdb);
+	tevent_add_timer(ctdb->ev, ctdb->banning_ctx,
+			 timeval_current_ofs(bantime->time,0),
+			 ctdb_ban_node_event, ctdb);
 
 	if (!already_banned) {
 		ctdb_local_node_got_banned(ctdb);

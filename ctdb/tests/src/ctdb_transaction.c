@@ -64,14 +64,14 @@ static void print_counters(void)
 	printf("\n");
 }
 
-static void each_second(struct event_context *ev, struct timed_event *te,
-					 struct timeval t, void *private_data)
+static void each_second(struct tevent_context *ev, struct tevent_timer *te,
+			struct timeval t, void *private_data)
 {
 	struct ctdb_context *ctdb = talloc_get_type(private_data, struct ctdb_context);
 
 	print_counters();
 
-	event_add_timed(ev, ctdb, timeval_current_ofs(1, 0), each_second, ctdb);
+	tevent_add_timer(ev, ctdb, timeval_current_ofs(1, 0), each_second, ctdb);
 }
 
 static void check_counters(struct ctdb_context *ctdb, TDB_DATA data)
@@ -114,7 +114,8 @@ static void do_sleep(unsigned int sec)
 	if (verbose) printf("\n");
 }
 
-static void test_store_records(struct ctdb_context *ctdb, struct event_context *ev)
+static void test_store_records(struct ctdb_context *ctdb,
+			       struct tevent_context *ev)
 {
 	TDB_DATA key;
 	struct ctdb_db_context *ctdb_db;
@@ -223,7 +224,7 @@ int main(int argc, const char *argv[])
 	const char **extra_argv;
 	int extra_argc = 0;
 	poptContext pc;
-	struct event_context *ev;
+	struct tevent_context *ev;
 
 	if (verbose) {
 		setbuf(stdout, (char *)NULL); /* don't buffer */
@@ -249,7 +250,7 @@ int main(int argc, const char *argv[])
 		while (extra_argv[extra_argc]) extra_argc++;
 	}
 
-	ev = event_context_init(NULL);
+	ev = tevent_context_init(NULL);
 
 	ctdb = ctdb_cmdline_client(ev, timeval_current_ofs(3, 0));
 	if (ctdb == NULL) {
@@ -276,14 +277,15 @@ int main(int argc, const char *argv[])
 		uint32_t recmode=1;
 		ctdb_ctrl_getrecmode(ctdb, ctdb, timeval_zero(), CTDB_CURRENT_NODE, &recmode);
 		if (recmode == 0) break;
-		event_loop_once(ev);
+		tevent_loop_once(ev);
 	}
 
 	pnn = ctdb_get_pnn(ctdb);
 	printf("Starting test on node %u. running for %u seconds. sleep delay: %u seconds.\n", pnn, timelimit, delay);
 
 	if (!verbose && (pnn == 0)) {
-		event_add_timed(ev, ctdb, timeval_current_ofs(1, 0), each_second, ctdb);
+		tevent_add_timer(ev, ctdb, timeval_current_ofs(1, 0),
+				 each_second, ctdb);
 	}
 
 	test_store_records(ctdb, ev);

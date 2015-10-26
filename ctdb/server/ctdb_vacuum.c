@@ -203,7 +203,8 @@ static int add_record_to_vacuum_fetch_list(struct vacuum_data *vdata,
 }
 
 
-static void ctdb_vacuum_event(struct event_context *ev, struct timed_event *te,
+static void ctdb_vacuum_event(struct tevent_context *ev,
+			      struct tevent_timer *te,
 			      struct timeval t, void *private_data);
 
 static int vacuum_record_parser(TDB_DATA key, TDB_DATA data, void *private_data)
@@ -1369,9 +1370,9 @@ static int vacuum_child_destructor(struct ctdb_vacuum_child_context *child_ctx)
 
 	DLIST_REMOVE(ctdb->vacuumers, child_ctx);
 
-	event_add_timed(ctdb->ev, child_ctx->vacuum_handle,
-			timeval_current_ofs(get_vacuum_interval(ctdb_db), 0), 
-			ctdb_vacuum_event, child_ctx->vacuum_handle);
+	tevent_add_timer(ctdb->ev, child_ctx->vacuum_handle,
+			 timeval_current_ofs(get_vacuum_interval(ctdb_db), 0),
+			 ctdb_vacuum_event, child_ctx->vacuum_handle);
 
 	return 0;
 }
@@ -1379,8 +1380,9 @@ static int vacuum_child_destructor(struct ctdb_vacuum_child_context *child_ctx)
 /*
  * this event is generated when a vacuum child process times out
  */
-static void vacuum_child_timeout(struct event_context *ev, struct timed_event *te,
-					 struct timeval t, void *private_data)
+static void vacuum_child_timeout(struct tevent_context *ev,
+				 struct tevent_timer *te,
+				 struct timeval t, void *private_data)
 {
 	struct ctdb_vacuum_child_context *child_ctx = talloc_get_type(private_data, struct ctdb_vacuum_child_context);
 
@@ -1395,8 +1397,9 @@ static void vacuum_child_timeout(struct event_context *ev, struct timed_event *t
 /*
  * this event is generated when a vacuum child process has completed
  */
-static void vacuum_child_handler(struct event_context *ev, struct fd_event *fde,
-			     uint16_t flags, void *private_data)
+static void vacuum_child_handler(struct tevent_context *ev,
+				 struct tevent_fd *fde,
+				 uint16_t flags, void *private_data)
 {
 	struct ctdb_vacuum_child_context *child_ctx = talloc_get_type(private_data, struct ctdb_vacuum_child_context);
 	char c = 0;
@@ -1419,9 +1422,9 @@ static void vacuum_child_handler(struct event_context *ev, struct fd_event *fde,
 /*
  * this event is called every time we need to start a new vacuum process
  */
-static void
-ctdb_vacuum_event(struct event_context *ev, struct timed_event *te,
-			       struct timeval t, void *private_data)
+static void ctdb_vacuum_event(struct tevent_context *ev,
+			      struct tevent_timer *te,
+			      struct timeval t, void *private_data)
 {
 	struct ctdb_vacuum_handle *vacuum_handle = talloc_get_type(private_data, struct ctdb_vacuum_handle);
 	struct ctdb_db_context *ctdb_db = vacuum_handle->ctdb_db;
@@ -1438,9 +1441,9 @@ ctdb_vacuum_event(struct event_context *ev, struct timed_event *te,
 				   : ctdb->freeze_mode[ctdb_db->priority] == CTDB_FREEZE_PENDING
 				   ? "freeze pending"
 				   : "frozen"));
-		event_add_timed(ctdb->ev, vacuum_handle,
-			timeval_current_ofs(get_vacuum_interval(ctdb_db), 0),
-			ctdb_vacuum_event, vacuum_handle);
+		tevent_add_timer(ctdb->ev, vacuum_handle,
+				 timeval_current_ofs(get_vacuum_interval(ctdb_db), 0),
+				 ctdb_vacuum_event, vacuum_handle);
 		return;
 	}
 
@@ -1449,9 +1452,9 @@ ctdb_vacuum_event(struct event_context *ev, struct timed_event *te,
 	 * new vacuuming event to stagger vacuuming events.
 	 */
 	if (ctdb->vacuumers != NULL) {
-		event_add_timed(ctdb->ev, vacuum_handle,
-				timeval_current_ofs(0, 500*1000),
-				ctdb_vacuum_event, vacuum_handle);
+		tevent_add_timer(ctdb->ev, vacuum_handle,
+				 timeval_current_ofs(0, 500*1000),
+				 ctdb_vacuum_event, vacuum_handle);
 		return;
 	}
 
@@ -1466,9 +1469,9 @@ ctdb_vacuum_event(struct event_context *ev, struct timed_event *te,
 	if (ret != 0) {
 		talloc_free(child_ctx);
 		DEBUG(DEBUG_ERR, ("Failed to create pipe for vacuum child process.\n"));
-		event_add_timed(ctdb->ev, vacuum_handle,
-			timeval_current_ofs(get_vacuum_interval(ctdb_db), 0),
-			ctdb_vacuum_event, vacuum_handle);
+		tevent_add_timer(ctdb->ev, vacuum_handle,
+				 timeval_current_ofs(get_vacuum_interval(ctdb_db), 0),
+				 ctdb_vacuum_event, vacuum_handle);
 		return;
 	}
 
@@ -1482,9 +1485,9 @@ ctdb_vacuum_event(struct event_context *ev, struct timed_event *te,
 		close(child_ctx->fd[1]);
 		talloc_free(child_ctx);
 		DEBUG(DEBUG_ERR, ("Failed to fork vacuum child process.\n"));
-		event_add_timed(ctdb->ev, vacuum_handle,
-			timeval_current_ofs(get_vacuum_interval(ctdb_db), 0),
-			ctdb_vacuum_event, vacuum_handle);
+		tevent_add_timer(ctdb->ev, vacuum_handle,
+				 timeval_current_ofs(get_vacuum_interval(ctdb_db), 0),
+				 ctdb_vacuum_event, vacuum_handle);
 		return;
 	}
 
@@ -1532,14 +1535,14 @@ ctdb_vacuum_event(struct event_context *ev, struct timed_event *te,
 				 "in parent context. Shutting down\n");
 	}
 
-	event_add_timed(ctdb->ev, child_ctx,
-		timeval_current_ofs(ctdb->tunable.vacuum_max_run_time, 0),
-		vacuum_child_timeout, child_ctx);
+	tevent_add_timer(ctdb->ev, child_ctx,
+			 timeval_current_ofs(ctdb->tunable.vacuum_max_run_time, 0),
+			 vacuum_child_timeout, child_ctx);
 
 	DEBUG(DEBUG_DEBUG, (__location__ " Created PIPE FD:%d to child vacuum process\n", child_ctx->fd[0]));
 
-	fde = event_add_fd(ctdb->ev, child_ctx, child_ctx->fd[0],
-			   EVENT_FD_READ, vacuum_child_handler, child_ctx);
+	fde = tevent_add_fd(ctdb->ev, child_ctx, child_ctx->fd[0],
+			    TEVENT_FD_READ, vacuum_child_handler, child_ctx);
 	tevent_fd_set_auto_close(fde);
 
 	vacuum_handle->child_ctx = child_ctx;
@@ -1574,9 +1577,9 @@ int ctdb_vacuum_init(struct ctdb_db_context *ctdb_db)
 	ctdb_db->vacuum_handle->ctdb_db         = ctdb_db;
 	ctdb_db->vacuum_handle->fast_path_count = 0;
 
-	event_add_timed(ctdb_db->ctdb->ev, ctdb_db->vacuum_handle, 
-			timeval_current_ofs(get_vacuum_interval(ctdb_db), 0), 
-			ctdb_vacuum_event, ctdb_db->vacuum_handle);
+	tevent_add_timer(ctdb_db->ctdb->ev, ctdb_db->vacuum_handle,
+			 timeval_current_ofs(get_vacuum_interval(ctdb_db), 0),
+			 ctdb_vacuum_event, ctdb_db->vacuum_handle);
 
 	return 0;
 }

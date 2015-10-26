@@ -33,7 +33,8 @@ static int count;
 /*
 	Just try locking/unlocking a single record once
 */
-static void fetch_lock_once(struct ctdb_context *ctdb, struct event_context *ev)
+static void fetch_lock_once(struct ctdb_context *ctdb,
+			    struct tevent_context *ev)
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 	TDB_DATA key, data;
@@ -84,7 +85,7 @@ int main(int argc, const char *argv[])
 	const char **extra_argv;
 	int extra_argc = 0;
 	poptContext pc;
-	struct event_context *ev;
+	struct tevent_context *ev;
 
 	pc = poptGetContext(argv[0], argc, argv, popt_options, POPT_CONTEXT_KEEP_FIRST);
 
@@ -104,7 +105,7 @@ int main(int argc, const char *argv[])
 		while (extra_argv[extra_argc]) extra_argc++;
 	}
 
-	ev = event_context_init(NULL);
+	ev = tevent_context_init(NULL);
 
 	ctdb = ctdb_cmdline_client(ev, timeval_current_ofs(5, 0));
 	if (ctdb == NULL) {
@@ -134,7 +135,7 @@ int main(int argc, const char *argv[])
 		uint32_t recmode=1;
 		ctdb_ctrl_getrecmode(ctdb, ctdb, timeval_zero(), CTDB_CURRENT_NODE, &recmode);
 		if (recmode == 0) break;
-		event_loop_once(ev);
+		tevent_loop_once(ev);
 	}
 
 	while (1) {

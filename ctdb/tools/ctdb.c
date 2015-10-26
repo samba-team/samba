@@ -2174,13 +2174,14 @@ control_get_all_public_ips(struct ctdb_context *ctdb, TALLOC_CTX *tmp_ctx, struc
 }
 
 
-static void ctdb_every_second(struct event_context *ev, struct timed_event *te, struct timeval t, void *p)
+static void ctdb_every_second(struct tevent_context *ev,
+			      struct tevent_timer *te,
+			      struct timeval t, void *p)
 {
 	struct ctdb_context *ctdb = talloc_get_type(p, struct ctdb_context);
 
-	event_add_timed(ctdb->ev, ctdb, 
-				timeval_current_ofs(1, 0),
-				ctdb_every_second, ctdb);
+	tevent_add_timer(ctdb->ev, ctdb, timeval_current_ofs(1, 0),
+			 ctdb_every_second, ctdb);
 }
 
 struct srvid_reply_handler_data {
@@ -2252,9 +2253,8 @@ static int srvid_broadcast(struct ctdb_context *ctdb,
 	ZERO_STRUCT(request);
 
 	/* Time ticks to enable timeouts to be processed */
-	event_add_timed(ctdb->ev, ctdb, 
-				timeval_current_ofs(1, 0),
-				ctdb_every_second, ctdb);
+	tevent_add_timer(ctdb->ev, ctdb, timeval_current_ofs(1, 0),
+			 ctdb_every_second, ctdb);
 
 	pnn = ctdb_get_pnn(ctdb);
 	reply_srvid = getpid();
@@ -2324,7 +2324,7 @@ again:
 	tv = timeval_current();
 	/* This loop terminates the reply is received */
 	while (timeval_elapsed(&tv) < 5.0 && !reply_data.done) {
-		event_loop_once(ctdb->ev);
+		tevent_loop_once(ctdb->ev);
 	}
 
 	if (!reply_data.done) {
@@ -6073,8 +6073,8 @@ static int control_rddumpmemory(struct ctdb_context *ctdb, int argc, const char 
 	}
 
 	/* this loop will terminate when we have received the reply */
-	while (1) {	
-		event_loop_once(ctdb->ev);
+	while (1) {
+		tevent_loop_once(ctdb->ev);
 	}
 
 	return 0;
@@ -6136,8 +6136,8 @@ static int control_msglisten(struct ctdb_context *ctdb, int argc, const char **a
 	ctdb_client_set_message_handler(ctdb, srvid, msglisten_handler, NULL);
 	printf("Listening for messages on srvid:%d\n", (int)srvid);
 
-	while (1) {	
-		event_loop_once(ctdb->ev);
+	while (1) {
+		tevent_loop_once(ctdb->ev);
 	}
 
 	return 0;
@@ -6631,7 +6631,7 @@ int main(int argc, const char *argv[])
 	int extra_argc = 0;
 	int ret=-1, i;
 	poptContext pc;
-	struct event_context *ev;
+	struct tevent_context *ev;
 	const char *control;
 
 	setlinebuf(stdout);
@@ -6699,7 +6699,7 @@ int main(int argc, const char *argv[])
 	/* Default value for CTDB_BASE - don't override */
 	setenv("CTDB_BASE", CTDB_ETCDIR, 0);
 
-	ev = event_context_init(NULL);
+	ev = tevent_context_init(NULL);
 	if (!ev) {
 		DEBUG(DEBUG_ERR, ("Failed to initialize event system\n"));
 		exit(1);

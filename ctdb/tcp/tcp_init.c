@@ -93,9 +93,10 @@ static int ctdb_tcp_connect_node(struct ctdb_node *node)
 	/* startup connection to the other server - will happen on
 	   next event loop */
 	if (!ctdb_same_address(ctdb->address, &node->address)) {
-		tnode->connect_te = event_add_timed(ctdb->ev, tnode, 
-						    timeval_zero(), 
-						    ctdb_tcp_node_connect, node);
+		tnode->connect_te = tevent_add_timer(ctdb->ev, tnode,
+						    timeval_zero(),
+						    ctdb_tcp_node_connect,
+						    node);
 	}
 
 	return 0;
@@ -114,8 +115,9 @@ static void ctdb_tcp_restart(struct ctdb_node *node)
 
 	ctdb_tcp_stop_connection(node);
 
-	tnode->connect_te = event_add_timed(node->ctdb->ev, tnode, timeval_zero(), 
-					    ctdb_tcp_node_connect, node);
+	tnode->connect_te = tevent_add_timer(node->ctdb->ev, tnode,
+					     timeval_zero(),
+					     ctdb_tcp_node_connect, node);
 }
 
 

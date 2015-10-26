@@ -57,7 +57,7 @@ static void print_exit_message(void)
 
 
 
-static void ctdb_time_tick(struct event_context *ev, struct timed_event *te, 
+static void ctdb_time_tick(struct tevent_context *ev, struct tevent_timer *te,
 				  struct timeval t, void *private_data)
 {
 	struct ctdb_context *ctdb = talloc_get_type(private_data, struct ctdb_context);
@@ -66,9 +66,9 @@ static void ctdb_time_tick(struct event_context *ev, struct timed_event *te,
 		return;
 	}
 
-	event_add_timed(ctdb->ev, ctdb, 
-			timeval_current_ofs(1, 0), 
-			ctdb_time_tick, ctdb);
+	tevent_add_timer(ctdb->ev, ctdb,
+			 timeval_current_ofs(1, 0),
+			 ctdb_time_tick, ctdb);
 }
 
 /* Used to trigger a dummy event once per second, to make
@@ -76,9 +76,9 @@ static void ctdb_time_tick(struct event_context *ev, struct timed_event *te,
  */
 static void ctdb_start_time_tickd(struct ctdb_context *ctdb)
 {
-	event_add_timed(ctdb->ev, ctdb, 
-			timeval_current_ofs(1, 0), 
-			ctdb_time_tick, ctdb);
+	tevent_add_timer(ctdb->ev, ctdb,
+			 timeval_current_ofs(1, 0),
+			 ctdb_time_tick, ctdb);
 }
 
 static void ctdb_start_periodic_events(struct ctdb_context *ctdb)
@@ -418,8 +418,9 @@ struct ctdb_deferred_requeue {
 };
 
 /* called from a timer event and starts reprocessing the deferred call.*/
-static void reprocess_deferred_call(struct event_context *ev, struct timed_event *te, 
-				       struct timeval t, void *private_data)
+static void reprocess_deferred_call(struct tevent_context *ev,
+				    struct tevent_timer *te,
+				    struct timeval t, void *private_data)
 {
 	struct ctdb_deferred_requeue *dfr = (struct ctdb_deferred_requeue *)private_data;
 	struct ctdb_client *client = dfr->client;
@@ -467,7 +468,8 @@ static int deferred_fetch_queue_destructor(struct ctdb_deferred_fetch_queue *dfq
 		dfr->dfc    = talloc_steal(dfr, dfc);
 		dfr->client = client;
 
-		event_add_timed(dfc->w->ctdb->ev, client, timeval_zero(), reprocess_deferred_call, dfr);
+		tevent_add_timer(dfc->w->ctdb->ev, client, timeval_zero(),
+				 reprocess_deferred_call, dfr);
 	}
 
 	return 0;
@@ -491,8 +493,8 @@ static void *insert_dfq_callback(void *parm, void *data)
    free the context and context for all deferred requests to cause them to be
    re-inserted into the event system.
 */
-static void dfq_timeout(struct event_context *ev, struct timed_event *te, 
-				  struct timeval t, void *private_data)
+static void dfq_timeout(struct tevent_context *ev, struct tevent_timer *te,
+			struct timeval t, void *private_data)
 {
 	talloc_free(private_data);
 }
@@ -527,7 +529,8 @@ static int setup_deferred_fetch_locks(struct ctdb_db_context *ctdb_db, struct ct
 
 	/* if the fetch havent completed in 30 seconds, just tear it all down
 	   and let it try again as the events are reissued */
-	event_add_timed(ctdb_db->ctdb->ev, dfq, timeval_current_ofs(30, 0), dfq_timeout, dfq);
+	tevent_add_timer(ctdb_db->ctdb->ev, dfq, timeval_current_ofs(30, 0),
+			 dfq_timeout, dfq);
 
 	talloc_free(k);
 	return 0;
@@ -903,8 +906,9 @@ static int ctdb_clientpid_destructor(struct ctdb_client_pid_list *client_pid)
 }
 
 
-static void ctdb_accept_client(struct event_context *ev, struct fd_event *fde, 
-			 uint16_t flags, void *private_data)
+static void ctdb_accept_client(struct tevent_context *ev,
+			       struct tevent_fd *fde, uint16_t flags,
+			       void *private_data)
 {
 	struct sockaddr_un addr;
 	socklen_t len;
@@ -1196,7 +1200,7 @@ static void ctdb_set_my_pnn(struct ctdb_context *ctdb)
 int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 {
 	int res, ret = -1;
-	struct fd_event *fde;
+	struct tevent_fd *fde;
 
 	/* create a unix domain stream socket to listen to */
 	res = ux_socket_bind(ctdb);
@@ -1243,7 +1247,7 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 		DEBUG(DEBUG_NOTICE, ("Set real-time scheduler priority\n"));
 	}
 
-	ctdb->ev = event_context_init(NULL);
+	ctdb->ev = tevent_context_init(NULL);
 	tevent_loop_allow_nesting(ctdb->ev);
 	tevent_set_trace_callback(ctdb->ev, ctdb_tevent_trace, ctdb);
 	ret = ctdb_init_tevent_logging(ctdb);
@@ -1327,9 +1331,8 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 	}
 
 	/* now start accepting clients, only can do this once frozen */
-	fde = event_add_fd(ctdb->ev, ctdb, ctdb->daemon.sd, 
-			   EVENT_FD_READ,
-			   ctdb_accept_client, ctdb);
+	fde = tevent_add_fd(ctdb->ev, ctdb, ctdb->daemon.sd, TEVENT_FD_READ,
+			    ctdb_accept_client, ctdb);
 	if (fde == NULL) {
 		ctdb_fatal(ctdb, "Failed to add daemon socket to event loop");
 	}
@@ -1361,7 +1364,7 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 	lockdown_memory(ctdb->valgrinding);
 
 	/* go into a wait loop to allow other nodes to complete */
-	event_loop_wait(ctdb->ev);
+	tevent_loop_wait(ctdb->ev);
 
 	DEBUG(DEBUG_CRIT,("event_loop_wait() returned. this should not happen\n"));
 	exit(1);
@@ -1563,8 +1566,8 @@ struct ctdb_local_message {
 	TDB_DATA data;
 };
 
-static void ctdb_local_message_trigger(struct event_context *ev,
-				       struct timed_event *te,
+static void ctdb_local_message_trigger(struct tevent_context *ev,
+				       struct tevent_timer *te,
 				       struct timeval t, void *private_data)
 {
 	struct ctdb_local_message *m = talloc_get_type(
@@ -1590,7 +1593,8 @@ static int ctdb_local_message(struct ctdb_context *ctdb, uint64_t srvid, TDB_DAT
 	}
 
 	/* this needs to be done as an event to prevent recursion */
-	event_add_timed(ctdb->ev, m, timeval_zero(), ctdb_local_message_trigger, m);
+	tevent_add_timer(ctdb->ev, m, timeval_zero(),
+			 ctdb_local_message_trigger, m);
 	return 0;
 }
 

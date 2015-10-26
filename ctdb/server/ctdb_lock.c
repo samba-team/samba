@@ -879,7 +879,7 @@ static void ctdb_lock_schedule(struct ctdb_context *ctdb)
 	lock_ctx->tfd = tevent_add_fd(ctdb->ev,
 				      lock_ctx,
 				      lock_ctx->fd[0],
-				      EVENT_FD_READ,
+				      TEVENT_FD_READ,
 				      ctdb_lock_handler,
 				      (void *)lock_ctx);
 	if (lock_ctx->tfd == NULL) {

@@ -129,7 +129,8 @@ static void message_handler(uint64_t srvid, TDB_DATA data, void *private_data)
 /*
  * timeout handler - noop
  */
-static void timeout_handler(struct event_context *ev, struct timed_event *timer,
+static void timeout_handler(struct tevent_context *ev,
+			    struct tevent_timer *timer,
 			    struct timeval curtime, void *private_data)
 {
 	return;
@@ -153,15 +154,15 @@ static void bench_fetch(struct bench_data *bdata)
 	}
 
 	start_timer();
-	event_add_timed(bdata->ev, bdata, timeval_current_ofs(timelimit,0),
-			timeout_handler, NULL);
+	tevent_add_timer(bdata->ev, bdata, timeval_current_ofs(timelimit,0),
+			 timeout_handler, NULL);
 
 	while (end_timer() < timelimit) {
 		if (pnn == 0 && bdata->msg_count % 100 == 0 && end_timer() > 0) {
 			printf("Fetch: %.2f msgs/sec\r", bdata->msg_count/end_timer());
 			fflush(stdout);
 		}
-		if (event_loop_once(bdata->ev) != 0) {
+		if (tevent_loop_once(bdata->ev) != 0) {
 			printf("Event loop failed!\n");
 			break;
 		}
@@ -200,7 +201,7 @@ int main(int argc, const char *argv[])
 	const char **extra_argv;
 	int extra_argc = 0;
 	poptContext pc;
-	struct event_context *ev;
+	struct tevent_context *ev;
 	TDB_DATA key, data;
 	struct ctdb_record_handle *h;
 	int cluster_ready=0;
@@ -231,7 +232,7 @@ int main(int argc, const char *argv[])
 		exit(1);
 	}
 
-	ev = event_context_init(NULL);
+	ev = tevent_context_init(NULL);
 	tevent_loop_allow_nesting(ev);
 
 	ctdb = ctdb_cmdline_client(ev, timeval_current_ofs(3, 0));
@@ -268,7 +269,7 @@ int main(int argc, const char *argv[])
 		uint32_t recmode=1;
 		ctdb_ctrl_getrecmode(ctdb, ctdb, timeval_zero(), CTDB_CURRENT_NODE, &recmode);
 		if (recmode == 0) break;
-		event_loop_once(ev);
+		tevent_loop_once(ev);
 	}
 
 	/* This test has a race condition. If CTDB receives the message from previous

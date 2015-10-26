@@ -335,7 +335,8 @@ struct queue_next {
 /*
   triggered when a deferred packet is due
  */
-static void queue_next_trigger(struct event_context *ev, struct timed_event *te, 
+static void queue_next_trigger(struct tevent_context *ev,
+			       struct tevent_timer *te,
 			       struct timeval t, void *private_data)
 {
 	struct queue_next *q = talloc_get_type(private_data, struct queue_next);
@@ -365,7 +366,7 @@ static void ctdb_defer_packet(struct ctdb_context *ctdb, struct ctdb_req_header 
 	/* use this to put packets directly into our recv function */
 	ctdb_input_pkt(q->ctdb, q->hdr);
 #else
-	event_add_timed(ctdb->ev, q, timeval_zero(), queue_next_trigger, q);
+	tevent_add_timer(ctdb->ev, q, timeval_zero(), queue_next_trigger, q);
 #endif
 }
 

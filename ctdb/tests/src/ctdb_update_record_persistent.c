@@ -26,7 +26,9 @@
 #include "ctdb_private.h"
 
 
-static void update_once(struct ctdb_context *ctdb, struct event_context *ev, struct ctdb_db_context *ctdb_db, char *record, char *value)
+static void update_once(struct ctdb_context *ctdb, struct tevent_context *ev,
+			struct ctdb_db_context *ctdb_db, char *record,
+			char *value)
 {
 	TDB_DATA key, data, olddata;
 	struct ctdb_ltdb_header header;
@@ -61,7 +63,7 @@ int main(int argc, const char *argv[])
 	char *record = NULL;
 	char *value = NULL;
 	struct ctdb_db_context *ctdb_db;
-	struct event_context *ev;
+	struct tevent_context *ev;
 
 	struct poptOption popt_options[] = {
 		POPT_AUTOHELP
@@ -95,7 +97,7 @@ int main(int argc, const char *argv[])
 		while (extra_argv[extra_argc]) extra_argc++;
 	}
 
-	ev = event_context_init(NULL);
+	ev = tevent_context_init(NULL);
 
 	ctdb = ctdb_cmdline_client(ev, timeval_current_ofs(5, 0));
 	if (ctdb == NULL) {
@@ -129,7 +131,7 @@ int main(int argc, const char *argv[])
 		uint32_t recmode=1;
 		ctdb_ctrl_getrecmode(ctdb, ctdb, timeval_zero(), CTDB_CURRENT_NODE, &recmode);
 		if (recmode == 0) break;
-		event_loop_once(ev);
+		tevent_loop_once(ev);
 	}
 
 	update_once(ctdb, ev, ctdb_db, record, value);

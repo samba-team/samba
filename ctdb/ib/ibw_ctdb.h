@@ -42,8 +42,9 @@ int ctdb_ibw_connstate_handler(struct ibw_ctx *ctx, struct ibw_conn *conn);
 int ctdb_ibw_receive_handler(struct ibw_conn *conn, void *buf, int n);
 
 int ctdb_ibw_node_connect(struct ctdb_node *node);
-void ctdb_ibw_node_connect_event(struct event_context *ev, struct timed_event *te, 
-	struct timeval t, void *private_data);
+void ctdb_ibw_node_connect_event(struct tevent_context *ev,
+				 struct tevent_timer *te,
+				 struct timeval t, void *private_data);
 
 int ctdb_flush_cn_queue(struct ctdb_ibw_node *cn);
 

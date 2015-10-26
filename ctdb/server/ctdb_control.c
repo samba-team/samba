@@ -822,8 +822,9 @@ static int ctdb_control_destructor(struct ctdb_control_state *state)
 /*
   handle a timeout of a control
  */
-static void ctdb_control_timeout(struct event_context *ev, struct timed_event *te, 
-		       struct timeval t, void *private_data)
+static void ctdb_control_timeout(struct tevent_context *ev,
+				 struct tevent_timer *te,
+				 struct timeval t, void *private_data)
 {
 	struct ctdb_control_state *state = talloc_get_type(private_data, struct ctdb_control_state);
 	TALLOC_CTX *tmp_ctx = talloc_new(ev);
@@ -915,9 +916,9 @@ int ctdb_daemon_send_control(struct ctdb_context *ctdb, uint32_t destnode,
 	}
 
 	if (ctdb->tunable.control_timeout) {
-		event_add_timed(ctdb->ev, state, 
-				timeval_current_ofs(ctdb->tunable.control_timeout, 0), 
-				ctdb_control_timeout, state);
+		tevent_add_timer(ctdb->ev, state,
+				 timeval_current_ofs(ctdb->tunable.control_timeout, 0),
+				 ctdb_control_timeout, state);
 	}
 
 	talloc_free(c);

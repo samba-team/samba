@@ -265,8 +265,9 @@ static void ctdb_call_send_dmaster(struct ctdb_db_context *ctdb_db,
 	talloc_free(r);
 }
 
-static void ctdb_sticky_pindown_timeout(struct event_context *ev, struct timed_event *te, 
-				       struct timeval t, void *private_data)
+static void ctdb_sticky_pindown_timeout(struct tevent_context *ev,
+					struct tevent_timer *te,
+					struct timeval t, void *private_data)
 {
 	struct ctdb_sticky_record *sr = talloc_get_type(private_data, 
 						       struct ctdb_sticky_record);
@@ -307,7 +308,10 @@ ctdb_set_sticky_pindown(struct ctdb_context *ctdb, struct ctdb_db_context *ctdb_
 			DEBUG(DEBUG_ERR,("Failed to allocate pindown context for sticky record\n"));
 			return -1;
 		}
-		event_add_timed(ctdb->ev, sr->pindown, timeval_current_ofs(ctdb->tunable.sticky_pindown / 1000, (ctdb->tunable.sticky_pindown * 1000) % 1000000), ctdb_sticky_pindown_timeout, sr);
+		tevent_add_timer(ctdb->ev, sr->pindown,
+				 timeval_current_ofs(ctdb->tunable.sticky_pindown / 1000,
+						     (ctdb->tunable.sticky_pindown * 1000) % 1000000),
+				 ctdb_sticky_pindown_timeout, sr);
 	}
 
 	return 0;
@@ -666,7 +670,8 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 	}
 }
 
-static void ctdb_sticky_record_timeout(struct event_context *ev, struct timed_event *te, 
+static void ctdb_sticky_record_timeout(struct tevent_context *ev,
+				       struct tevent_timer *te,
 				       struct timeval t, void *private_data)
 {
 	struct ctdb_sticky_record *sr = talloc_get_type(private_data, 
@@ -720,7 +725,9 @@ ctdb_make_record_sticky(struct ctdb_context *ctdb, struct ctdb_db_context *ctdb_
 
 	trbt_insertarray32_callback(ctdb_db->sticky_records, k[0], &k[0], ctdb_make_sticky_record_callback, sr);
 
-	event_add_timed(ctdb->ev, sr, timeval_current_ofs(ctdb->tunable.sticky_duration, 0), ctdb_sticky_record_timeout, sr);
+	tevent_add_timer(ctdb->ev, sr,
+			 timeval_current_ofs(ctdb->tunable.sticky_duration, 0),
+			 ctdb_sticky_record_timeout, sr);
 
 	talloc_free(tmp_ctx);
 	return 0;
@@ -736,8 +743,9 @@ struct pinned_down_deferred_call {
 	struct ctdb_req_header *hdr;
 };
 
-static void pinned_down_requeue(struct event_context *ev, struct timed_event *te, 
-		       struct timeval t, void *private_data)
+static void pinned_down_requeue(struct tevent_context *ev,
+				struct tevent_timer *te,
+				struct timeval t, void *private_data)
 {
 	struct pinned_down_requeue_handle *handle = talloc_get_type(private_data, struct pinned_down_requeue_handle);
 	struct ctdb_context *ctdb = handle->ctdb;
@@ -757,7 +765,8 @@ static int pinned_down_destructor(struct pinned_down_deferred_call *pinned_down)
 	handle->hdr  = pinned_down->hdr;
 	talloc_steal(handle, handle->hdr);
 
-	event_add_timed(ctdb->ev, handle, timeval_zero(), pinned_down_requeue, handle);
+	tevent_add_timer(ctdb->ev, handle, timeval_zero(),
+			 pinned_down_requeue, handle);
 
 	return 0;
 }
@@ -1405,8 +1414,9 @@ void ctdb_call_resend_all(struct ctdb_context *ctdb)
 /*
   this allows the caller to setup a async.fn 
 */
-static void call_local_trigger(struct event_context *ev, struct timed_event *te, 
-		       struct timeval t, void *private_data)
+static void call_local_trigger(struct tevent_context *ev,
+			       struct tevent_timer *te,
+			       struct timeval t, void *private_data)
 {
 	struct ctdb_call_state *state = talloc_get_type(private_data, struct ctdb_call_state);
 	if (state->async.fn) {
@@ -1446,7 +1456,8 @@ struct ctdb_call_state *ctdb_call_local_send(struct ctdb_db_context *ctdb_db,
 		DEBUG(DEBUG_DEBUG,("ctdb_call_local() failed, ignoring return code %d\n", ret));
 	}
 
-	event_add_timed(ctdb->ev, state, timeval_zero(), call_local_trigger, state);
+	tevent_add_timer(ctdb->ev, state, timeval_zero(),
+			 call_local_trigger, state);
 
 	return state;
 }
@@ -1521,7 +1532,7 @@ struct ctdb_call_state *ctdb_daemon_call_send_remote(struct ctdb_db_context *ctd
 int ctdb_daemon_call_recv(struct ctdb_call_state *state, struct ctdb_call *call)
 {
 	while (state->state < CTDB_CALL_DONE) {
-		event_loop_once(state->ctdb_db->ctdb->ev);
+		tevent_loop_once(state->ctdb_db->ctdb->ev);
 	}
 	if (state->state != CTDB_CALL_DONE) {
 		ctdb_set_error(state->ctdb_db->ctdb, "%s", state->errmsg);
@@ -1583,7 +1594,7 @@ struct revokechild_handle {
 	struct revokechild_handle *next, *prev;
 	struct ctdb_context *ctdb;
 	struct ctdb_db_context *ctdb_db;
-	struct fd_event *fde;
+	struct tevent_fd *fde;
 	int status;
 	int fd[2];
 	pid_t child;
@@ -1597,8 +1608,9 @@ struct revokechild_requeue_handle {
 	void *ctx;
 };
 
-static void deferred_call_requeue(struct event_context *ev, struct timed_event *te, 
-		       struct timeval t, void *private_data)
+static void deferred_call_requeue(struct tevent_context *ev,
+				  struct tevent_timer *te,
+				  struct timeval t, void *private_data)
 {
 	struct revokechild_requeue_handle *requeue_handle = talloc_get_type(private_data, struct revokechild_requeue_handle);
 
@@ -1619,7 +1631,9 @@ static int deferred_call_destructor(struct revokechild_deferred_call *deferred_c
 	talloc_steal(requeue_handle, requeue_handle->hdr);
 
 	/* when revoking, any READONLY requests have 1 second grace to let read/write finish first */
-	event_add_timed(ctdb->ev, requeue_handle, timeval_current_ofs(c->flags & CTDB_WANT_READONLY ? 1 : 0, 0), deferred_call_requeue, requeue_handle);
+	tevent_add_timer(ctdb->ev, requeue_handle,
+			 timeval_current_ofs(c->flags & CTDB_WANT_READONLY ? 1 : 0, 0),
+			 deferred_call_requeue, requeue_handle);
 
 	return 0;
 }
@@ -1643,8 +1657,9 @@ static int revokechild_destructor(struct revokechild_handle *rc)
 	return 0;
 }
 
-static void revokechild_handler(struct event_context *ev, struct fd_event *fde, 
-			     uint16_t flags, void *private_data)
+static void revokechild_handler(struct tevent_context *ev,
+				struct tevent_fd *fde,
+				uint16_t flags, void *private_data)
 {
 	struct revokechild_handle *rc = talloc_get_type(private_data, 
 						     struct revokechild_handle);
@@ -1720,8 +1735,9 @@ static void revoke_send_cb(struct ctdb_context *ctdb, uint32_t pnn, void *privat
 
 }
 
-static void ctdb_revoke_timeout_handler(struct event_context *ev, struct timed_event *te, 
-			      struct timeval yt, void *private_data)
+static void ctdb_revoke_timeout_handler(struct tevent_context *ev,
+					struct tevent_timer *te,
+					struct timeval yt, void *private_data)
 {
 	struct ctdb_revoke_state *state = private_data;
 
@@ -1743,10 +1759,12 @@ static int ctdb_revoke_all_delegations(struct ctdb_context *ctdb, struct ctdb_db
  
 	ctdb_trackingdb_traverse(ctdb, tdata, revoke_send_cb, state);
 
-	event_add_timed(ctdb->ev, state, timeval_current_ofs(ctdb->tunable.control_timeout, 0), ctdb_revoke_timeout_handler, state);
+	tevent_add_timer(ctdb->ev, state,
+			 timeval_current_ofs(ctdb->tunable.control_timeout, 0),
+			 ctdb_revoke_timeout_handler, state);
 
 	while (state->finished == 0) {
-		event_loop_once(ctdb->ev);
+		tevent_loop_once(ctdb->ev);
 	}
 
 	if (ctdb_ltdb_lock(ctdb_db, key) != 0) {
@@ -1884,9 +1902,8 @@ child_finished:
 	/* This is an active revokechild child process */
 	DLIST_ADD_END(ctdb_db->revokechild_active, rc, NULL);
 
-	rc->fde = event_add_fd(ctdb->ev, rc, rc->fd[0],
-				   EVENT_FD_READ, revokechild_handler,
-				   (void *)rc);
+	rc->fde = tevent_add_fd(ctdb->ev, rc, rc->fd[0], TEVENT_FD_READ,
+				revokechild_handler, (void *)rc);
 	if (rc->fde == NULL) {
 		DEBUG(DEBUG_ERR,("Failed to set up fd event for revokechild process\n"));
 		talloc_free(rc);

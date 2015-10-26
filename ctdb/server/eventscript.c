@@ -28,7 +28,9 @@
 #include "lib/util/dlinklist.h"
 #include "common/system.h"
 
-static void ctdb_event_script_timeout(struct event_context *ev, struct timed_event *te, struct timeval t, void *p);
+static void ctdb_event_script_timeout(struct tevent_context *ev,
+				      struct tevent_timer *te,
+				      struct timeval t, void *p);
 
 /* This is attached to the event script state. */
 struct event_script_callback {
@@ -269,7 +271,8 @@ failed:
 
 }
 
-static void ctdb_event_script_handler(struct event_context *ev, struct fd_event *fde,
+static void ctdb_event_script_handler(struct tevent_context *ev,
+				      struct tevent_fd *fde,
 				      uint16_t flags, void *p);
 
 static char helper_prog[PATH_MAX+1] = "";
@@ -325,8 +328,8 @@ static int fork_child_for_script(struct ctdb_context *ctdb,
 	set_close_on_exec(state->fd[0]);
 
 	/* Set ourselves up to be called when that's done. */
-	fde = event_add_fd(ctdb->ev, state, state->fd[0], EVENT_FD_READ,
-			   ctdb_event_script_handler, state);
+	fde = tevent_add_fd(ctdb->ev, state, state->fd[0], TEVENT_FD_READ,
+			    ctdb_event_script_handler, state);
 	tevent_fd_set_auto_close(fde);
 
 	return 0;
@@ -359,7 +362,8 @@ static int script_status(struct ctdb_scripts_wire *scripts)
 }
 
 /* called when child is finished */
-static void ctdb_event_script_handler(struct event_context *ev, struct fd_event *fde,
+static void ctdb_event_script_handler(struct tevent_context *ev,
+				      struct tevent_fd *fde,
 				      uint16_t flags, void *p)
 {
 	struct ctdb_event_script_state *state =
@@ -509,7 +513,7 @@ static void ctdb_run_debug_hung_script(struct ctdb_context *ctdb, struct debug_h
 		return;
 	}
 
-	tfd = tevent_add_fd(ctdb->ev, state, fd[0], EVENT_FD_READ,
+	tfd = tevent_add_fd(ctdb->ev, state, fd[0], TEVENT_FD_READ,
 			    debug_hung_script_done, state);
 	if (tfd == NULL) {
 		talloc_free(ttimer);
@@ -520,7 +524,8 @@ static void ctdb_run_debug_hung_script(struct ctdb_context *ctdb, struct debug_h
 }
 
 /* called when child times out */
-static void ctdb_event_script_timeout(struct event_context *ev, struct timed_event *te,
+static void ctdb_event_script_timeout(struct tevent_context *ev,
+				      struct tevent_timer *te,
 				      struct timeval t, void *p)
 {
 	struct ctdb_event_script_state *state = talloc_get_type(p, struct ctdb_event_script_state);
@@ -812,7 +817,10 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
  	}
 
 	if (!timeval_is_zero(&state->timeout)) {
-		event_add_timed(ctdb->ev, state, timeval_current_ofs(state->timeout.tv_sec, state->timeout.tv_usec), ctdb_event_script_timeout, state);
+		tevent_add_timer(ctdb->ev, state,
+				 timeval_current_ofs(state->timeout.tv_sec,
+						     state->timeout.tv_usec),
+				 ctdb_event_script_timeout, state);
 	} else {
 		DEBUG(DEBUG_ERR, (__location__ " eventscript %s %s called with no timeout\n",
 				  ctdb_eventscript_call_names[state->call],
@@ -882,7 +890,7 @@ int ctdb_event_script_args(struct ctdb_context *ctdb, enum ctdb_eventscript_call
 		return ret;
 	}
 
-	while (status.done == false && event_loop_once(ctdb->ev) == 0) /* noop */;
+	while (status.done == false && tevent_loop_once(ctdb->ev) == 0) /* noop */;
 
 	if (status.status == -ETIME) {
 		DEBUG(DEBUG_ERR, (__location__ " eventscript for '%s' timedout."

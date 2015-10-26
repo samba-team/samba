@@ -27,7 +27,8 @@
 /*
   see if any nodes are dead
  */
-static void ctdb_check_for_dead_nodes(struct event_context *ev, struct timed_event *te, 
+static void ctdb_check_for_dead_nodes(struct tevent_context *ev,
+				      struct tevent_timer *te,
 				      struct timeval t, void *private_data)
 {
 	struct ctdb_context *ctdb = talloc_get_type(private_data, struct ctdb_context);
@@ -77,23 +78,23 @@ static void ctdb_check_for_dead_nodes(struct event_context *ev, struct timed_eve
 
 		node->tx_cnt = 0;
 	}
-	
-	event_add_timed(ctdb->ev, ctdb->keepalive_ctx,
-			timeval_current_ofs(ctdb->tunable.keepalive_interval, 0), 
-			ctdb_check_for_dead_nodes, ctdb);
+
+	tevent_add_timer(ctdb->ev, ctdb->keepalive_ctx,
+			 timeval_current_ofs(ctdb->tunable.keepalive_interval, 0),
+			 ctdb_check_for_dead_nodes, ctdb);
 }
 
 
 void ctdb_start_keepalive(struct ctdb_context *ctdb)
 {
-	struct timed_event *te;
+	struct tevent_timer *te;
 
 	ctdb->keepalive_ctx = talloc_new(ctdb);
 	CTDB_NO_MEMORY_FATAL(ctdb, ctdb->keepalive_ctx);
 
-	te = event_add_timed(ctdb->ev, ctdb->keepalive_ctx,
-			     timeval_current_ofs(ctdb->tunable.keepalive_interval, 0), 
-			     ctdb_check_for_dead_nodes, ctdb);
+	te = tevent_add_timer(ctdb->ev, ctdb->keepalive_ctx,
+			      timeval_current_ofs(ctdb->tunable.keepalive_interval, 0),
+			      ctdb_check_for_dead_nodes, ctdb);
 	CTDB_NO_MEMORY_FATAL(ctdb, te);
 
 	DEBUG(DEBUG_NOTICE,("Keepalive monitoring has been started\n"));

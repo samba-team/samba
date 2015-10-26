@@ -170,8 +170,8 @@ static void ctdb_op_enable(struct ctdb_op_state *state)
 	TALLOC_FREE(state->timer);
 }
 
-static void ctdb_op_timeout_handler(struct event_context *ev,
-				    struct timed_event *te,
+static void ctdb_op_timeout_handler(struct tevent_context *ev,
+				    struct tevent_timer *te,
 				    struct timeval yt, void *p)
 {
 	struct ctdb_op_state *state =
@@ -232,8 +232,8 @@ struct ctdb_recoverd {
 	bool need_takeover_run;
 	bool need_recovery;
 	uint32_t node_flags;
-	struct timed_event *send_election_te;
-	struct timed_event *election_timeout;
+	struct tevent_timer *send_election_te;
+	struct tevent_timer *election_timeout;
 	struct srvid_requests *reallocate_requests;
 	struct ctdb_op_state *takeover_run;
 	struct ctdb_op_state *recovery;
@@ -245,7 +245,9 @@ struct ctdb_recoverd {
 #define CONTROL_TIMEOUT() timeval_current_ofs(ctdb->tunable.recover_timeout, 0)
 #define MONITOR_TIMEOUT() timeval_current_ofs(ctdb->tunable.recover_interval, 0)
 
-static void ctdb_restart_recd(struct event_context *ev, struct timed_event *te, struct timeval t, void *private_data);
+static void ctdb_restart_recd(struct tevent_context *ev,
+			      struct tevent_timer *te, struct timeval t,
+			      void *private_data);
 
 /*
   ban a node for a period of time
@@ -1170,7 +1172,8 @@ static void detach_database_handler(uint64_t srvid, TDB_DATA data,
 /*
   called when ctdb_wait_timeout should finish
  */
-static void ctdb_wait_handler(struct event_context *ev, struct timed_event *te, 
+static void ctdb_wait_handler(struct tevent_context *ev,
+			      struct tevent_timer *te,
 			      struct timeval yt, void *p)
 {
 	uint32_t *timed_out = (uint32_t *)p;
@@ -1184,16 +1187,18 @@ static void ctdb_wait_timeout(struct ctdb_context *ctdb, double secs)
 {
 	uint32_t timed_out = 0;
 	time_t usecs = (secs - (time_t)secs) * 1000000;
-	event_add_timed(ctdb->ev, ctdb, timeval_current_ofs(secs, usecs), ctdb_wait_handler, &timed_out);
+	tevent_add_timer(ctdb->ev, ctdb, timeval_current_ofs(secs, usecs),
+			 ctdb_wait_handler, &timed_out);
 	while (!timed_out) {
-		event_loop_once(ctdb->ev);
+		tevent_loop_once(ctdb->ev);
 	}
 }
 
 /*
   called when an election times out (ends)
  */
-static void ctdb_election_timeout(struct event_context *ev, struct timed_event *te, 
+static void ctdb_election_timeout(struct tevent_context *ev,
+				  struct tevent_timer *te,
 				  struct timeval t, void *p)
 {
 	struct ctdb_recoverd *rec = talloc_get_type(p, struct ctdb_recoverd);
@@ -1212,7 +1217,7 @@ static void ctdb_wait_election(struct ctdb_recoverd *rec)
 {
 	struct ctdb_context *ctdb = rec->ctdb;
 	while (rec->election_timeout) {
-		event_loop_once(ctdb->ev);
+		tevent_loop_once(ctdb->ev);
 	}
 }
 
@@ -2499,7 +2504,9 @@ static void unban_all_nodes(struct ctdb_context *ctdb)
 /*
   we think we are winning the election - send a broadcast election request
  */
-static void election_send_request(struct event_context *ev, struct timed_event *te, struct timeval t, void *p)
+static void election_send_request(struct tevent_context *ev,
+				  struct tevent_timer *te,
+				  struct timeval t, void *p)
 {
 	struct ctdb_recoverd *rec = talloc_get_type(p, struct ctdb_recoverd);
 	int ret;
@@ -2573,8 +2580,8 @@ static void reload_nodes_handler(uint64_t srvid, TDB_DATA data,
 }
 
 
-static void ctdb_rebalance_timeout(struct event_context *ev,
-				   struct timed_event *te,
+static void ctdb_rebalance_timeout(struct tevent_context *ev,
+				   struct tevent_timer *te,
 				   struct timeval t, void *p)
 {
 	struct ctdb_recoverd *rec = talloc_get_type(p, struct ctdb_recoverd);
@@ -2648,9 +2655,9 @@ static void recd_node_rebalance_handler(uint64_t srvid, TDB_DATA data,
 	 */
 	deferred_rebalance = ctdb->tunable.deferred_rebalance_on_node_add;
 	if (deferred_rebalance != 0) {
-		event_add_timed(ctdb->ev, rec->force_rebalance_nodes,
-				timeval_current_ofs(deferred_rebalance, 0),
-				ctdb_rebalance_timeout, rec);
+		tevent_add_timer(ctdb->ev, rec->force_rebalance_nodes,
+				 timeval_current_ofs(deferred_rebalance, 0),
+				 ctdb_rebalance_timeout, rec);
 	}
 }
 
@@ -2839,11 +2846,12 @@ static void election_handler(uint64_t srvid, TDB_DATA data, void *private_data)
 
 	/* we got an election packet - update the timeout for the election */
 	talloc_free(rec->election_timeout);
-	rec->election_timeout = event_add_timed(ctdb->ev, ctdb, 
-						fast_start ?
-						timeval_current_ofs(0, 500000) :
-						timeval_current_ofs(ctdb->tunable.election_timeout, 0), 
-						ctdb_election_timeout, rec);
+	rec->election_timeout = tevent_add_timer(
+			ctdb->ev, ctdb,
+			fast_start ?
+				timeval_current_ofs(0, 500000) :
+				timeval_current_ofs(ctdb->tunable.election_timeout, 0),
+			ctdb_election_timeout, rec);
 
 	/* someone called an election. check their election data
 	   and if we disagree and we would rather be the elected node, 
@@ -2851,9 +2859,10 @@ static void election_handler(uint64_t srvid, TDB_DATA data, void *private_data)
 	 */
 	if (ctdb_election_win(rec, em)) {
 		if (!rec->send_election_te) {
-			rec->send_election_te = event_add_timed(ctdb->ev, rec, 
-								timeval_current_ofs(0, 500000),
-								election_send_request, rec);
+			rec->send_election_te = tevent_add_timer(
+					ctdb->ev, rec,
+					timeval_current_ofs(0, 500000),
+					election_send_request, rec);
 		}
 		/*unban_all_nodes(ctdb);*/
 		return;
@@ -2900,11 +2909,12 @@ static void force_election(struct ctdb_recoverd *rec, uint32_t pnn,
 	}
 
 	talloc_free(rec->election_timeout);
-	rec->election_timeout = event_add_timed(ctdb->ev, ctdb, 
-						fast_start ?
-						timeval_current_ofs(0, 500000) :
-						timeval_current_ofs(ctdb->tunable.election_timeout, 0), 
-						ctdb_election_timeout, rec);
+	rec->election_timeout = tevent_add_timer(
+			ctdb->ev, ctdb,
+			fast_start ?
+				timeval_current_ofs(0, 500000) :
+				timeval_current_ofs(ctdb->tunable.election_timeout, 0),
+			ctdb_election_timeout, rec);
 
 	ret = send_election_request(rec, pnn);
 	if (ret!=0) {
@@ -3128,7 +3138,7 @@ static enum monitor_result verify_recmode(struct ctdb_context *ctdb, struct ctdb
 	   or until all nodes we expect a response from has replied
 	*/
 	while (rmdata->count > 0) {
-		event_loop_once(ctdb->ev);
+		tevent_loop_once(ctdb->ev);
 	}
 
 	status = rmdata->status;
@@ -3223,7 +3233,7 @@ static enum monitor_result verify_recmaster(struct ctdb_recoverd *rec, struct ct
 	   or until all nodes we expect a response from has replied
 	*/
 	while (rmdata->count > 0) {
-		event_loop_once(ctdb->ev);
+		tevent_loop_once(ctdb->ev);
 	}
 
 	status = rmdata->status;
@@ -4200,7 +4210,8 @@ static void monitor_cluster(struct ctdb_context *ctdb)
 /*
   event handler for when the main ctdbd dies
  */
-static void ctdb_recoverd_parent(struct event_context *ev, struct fd_event *fde, 
+static void ctdb_recoverd_parent(struct tevent_context *ev,
+				 struct tevent_fd *fde,
 				 uint16_t flags, void *private_data)
 {
 	DEBUG(DEBUG_ALERT,("recovery daemon parent died - exiting\n"));
@@ -4210,29 +4221,30 @@ static void ctdb_recoverd_parent(struct event_context *ev, struct fd_event *fde,
 /*
   called regularly to verify that the recovery daemon is still running
  */
-static void ctdb_check_recd(struct event_context *ev, struct timed_event *te, 
-			      struct timeval yt, void *p)
+static void ctdb_check_recd(struct tevent_context *ev,
+			    struct tevent_timer *te,
+			    struct timeval yt, void *p)
 {
 	struct ctdb_context *ctdb = talloc_get_type(p, struct ctdb_context);
 
 	if (ctdb_kill(ctdb, ctdb->recoverd_pid, 0) != 0) {
 		DEBUG(DEBUG_ERR,("Recovery daemon (pid:%d) is no longer running. Trying to restart recovery daemon.\n", (int)ctdb->recoverd_pid));
 
-		event_add_timed(ctdb->ev, ctdb, timeval_zero(), 
-				ctdb_restart_recd, ctdb);
+		tevent_add_timer(ctdb->ev, ctdb, timeval_zero(),
+				 ctdb_restart_recd, ctdb);
 
 		return;
 	}
 
-	event_add_timed(ctdb->ev, ctdb->recd_ctx,
-			timeval_current_ofs(30, 0),
-			ctdb_check_recd, ctdb);
+	tevent_add_timer(ctdb->ev, ctdb->recd_ctx,
+			 timeval_current_ofs(30, 0),
+			 ctdb_check_recd, ctdb);
 }
 
-static void recd_sig_child_handler(struct event_context *ev,
-	struct signal_event *se, int signum, int count,
-	void *dont_care, 
-	void *private_data)
+static void recd_sig_child_handler(struct tevent_context *ev,
+				   struct tevent_signal *se, int signum,
+				   int count, void *dont_care,
+				   void *private_data)
 {
 //	struct ctdb_context *ctdb = talloc_get_type(private_data, struct ctdb_context);
 	int status;
@@ -4258,7 +4270,7 @@ static void recd_sig_child_handler(struct event_context *ev,
 int ctdb_start_recoverd(struct ctdb_context *ctdb)
 {
 	int fd[2];
-	struct signal_event *se;
+	struct tevent_signal *se;
 	struct tevent_fd *fde;
 
 	if (pipe(fd) != 0) {
@@ -4276,9 +4288,9 @@ int ctdb_start_recoverd(struct ctdb_context *ctdb)
 		CTDB_NO_MEMORY(ctdb, ctdb->recd_ctx);
 
 		close(fd[0]);
-		event_add_timed(ctdb->ev, ctdb->recd_ctx,
-				timeval_current_ofs(30, 0),
-				ctdb_check_recd, ctdb);
+		tevent_add_timer(ctdb->ev, ctdb->recd_ctx,
+				 timeval_current_ofs(30, 0),
+				 ctdb_check_recd, ctdb);
 		return 0;
 	}
 
@@ -4294,15 +4306,13 @@ int ctdb_start_recoverd(struct ctdb_context *ctdb)
 
 	DEBUG(DEBUG_DEBUG, (__location__ " Created PIPE FD:%d to recovery daemon\n", fd[0]));
 
-	fde = event_add_fd(ctdb->ev, ctdb, fd[0], EVENT_FD_READ,
-		     ctdb_recoverd_parent, &fd[0]);
+	fde = tevent_add_fd(ctdb->ev, ctdb, fd[0], TEVENT_FD_READ,
+			    ctdb_recoverd_parent, &fd[0]);
 	tevent_fd_set_auto_close(fde);
 
 	/* set up a handler to pick up sigchld */
-	se = event_add_signal(ctdb->ev, ctdb,
-				     SIGCHLD, 0,
-				     recd_sig_child_handler,
-				     ctdb);
+	se = tevent_add_signal(ctdb->ev, ctdb, SIGCHLD, 0,
+			       recd_sig_child_handler, ctdb);
 	if (se == NULL) {
 		DEBUG(DEBUG_CRIT,("Failed to set up signal handler for SIGCHLD in recovery daemon\n"));
 		exit(1);
@@ -4330,8 +4340,9 @@ void ctdb_stop_recoverd(struct ctdb_context *ctdb)
 	TALLOC_FREE(ctdb->recd_ping_count);
 }
 
-static void ctdb_restart_recd(struct event_context *ev, struct timed_event *te, 
-		       struct timeval t, void *private_data)
+static void ctdb_restart_recd(struct tevent_context *ev,
+			      struct tevent_timer *te,
+			      struct timeval t, void *private_data)
 {
 	struct ctdb_context *ctdb = talloc_get_type(private_data, struct ctdb_context);
 

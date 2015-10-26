@@ -30,7 +30,8 @@ struct ctdb_monitor_state {
 	uint32_t next_interval;
 };
 
-static void ctdb_check_health(struct event_context *ev, struct timed_event *te, 
+static void ctdb_check_health(struct tevent_context *ev,
+			      struct tevent_timer *te,
 			      struct timeval t, void *private_data);
 
 /*
@@ -164,9 +165,9 @@ after_change_status:
 		ctdb->monitor->next_interval = ctdb->tunable.monitor_interval;
 	}
 
-	event_add_timed(ctdb->ev, ctdb->monitor->monitor_context, 
-				timeval_current_ofs(next_interval, 0), 
-				ctdb_check_health, ctdb);
+	tevent_add_timer(ctdb->ev, ctdb->monitor->monitor_context,
+			 timeval_current_ofs(next_interval, 0),
+			 ctdb_check_health, ctdb);
 
 	if (c.old_flags == node->flags) {
 		return;
@@ -200,7 +201,8 @@ after_change_status:
 }
 
 
-static void ctdb_run_startup(struct event_context *ev, struct timed_event *te,
+static void ctdb_run_startup(struct tevent_context *ev,
+			     struct tevent_timer *te,
 			     struct timeval t, void *private_data);
 /*
   called when the startup event script finishes
@@ -209,9 +211,9 @@ static void ctdb_startup_callback(struct ctdb_context *ctdb, int status, void *p
 {
 	if (status != 0) {
 		DEBUG(DEBUG_ERR,("startup event failed\n"));
-		event_add_timed(ctdb->ev, ctdb->monitor->monitor_context,
-				timeval_current_ofs(5, 0),
-				ctdb_run_startup, ctdb);
+		tevent_add_timer(ctdb->ev, ctdb->monitor->monitor_context,
+				 timeval_current_ofs(5, 0),
+				 ctdb_run_startup, ctdb);
 		return;
 	}
 
@@ -222,12 +224,13 @@ static void ctdb_startup_callback(struct ctdb_context *ctdb, int status, void *p
 
 	ctdb->monitor->monitoring_mode = CTDB_MONITORING_ACTIVE;
 
-	event_add_timed(ctdb->ev, ctdb->monitor->monitor_context,
-			timeval_current_ofs(ctdb->monitor->next_interval, 0),
-			ctdb_check_health, ctdb);
+	tevent_add_timer(ctdb->ev, ctdb->monitor->monitor_context,
+			 timeval_current_ofs(ctdb->monitor->next_interval, 0),
+			 ctdb_check_health, ctdb);
 }
 
-static void ctdb_run_startup(struct event_context *ev, struct timed_event *te,
+static void ctdb_run_startup(struct tevent_context *ev,
+			     struct tevent_timer *te,
 			     struct timeval t, void *private_data)
 {
 	struct ctdb_context *ctdb = talloc_get_type(private_data,
@@ -242,9 +245,9 @@ static void ctdb_run_startup(struct event_context *ev, struct timed_event *te,
 	if (ctdb->runstate < CTDB_RUNSTATE_STARTUP) {
 		DEBUG(DEBUG_NOTICE,
 		      ("Not yet in startup runstate. Wait one more second\n"));
-		event_add_timed(ctdb->ev, ctdb->monitor->monitor_context,
-				timeval_current_ofs(1, 0),
-				ctdb_run_startup, ctdb);
+		tevent_add_timer(ctdb->ev, ctdb->monitor->monitor_context,
+				 timeval_current_ofs(1, 0),
+				 ctdb_run_startup, ctdb);
 		return;
 	}
 
@@ -259,9 +262,9 @@ static void ctdb_run_startup(struct event_context *ev, struct timed_event *te,
 
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,("Unable to launch startup event script\n"));
-		event_add_timed(ctdb->ev, ctdb->monitor->monitor_context,
-				timeval_current_ofs(5, 0),
-				ctdb_run_startup, ctdb);
+		tevent_add_timer(ctdb->ev, ctdb->monitor->monitor_context,
+				 timeval_current_ofs(5, 0),
+				 ctdb_run_startup, ctdb);
 	}
 }
 
@@ -269,8 +272,9 @@ static void ctdb_run_startup(struct event_context *ev, struct timed_event *te,
   wait until we have finished initial recoveries before we start the
   monitoring events
  */
-static void ctdb_wait_until_recovered(struct event_context *ev, struct timed_event *te, 
-			      struct timeval t, void *private_data)
+static void ctdb_wait_until_recovered(struct tevent_context *ev,
+				      struct tevent_timer *te,
+				      struct timeval t, void *private_data)
 {
 	struct ctdb_context *ctdb = talloc_get_type(private_data, struct ctdb_context);
 	int ret;
@@ -288,9 +292,9 @@ static void ctdb_wait_until_recovered(struct event_context *ev, struct timed_eve
 	if (ctdb->vnn_map->generation == INVALID_GENERATION) {
 		ctdb->db_persistent_startup_generation = INVALID_GENERATION;
 
-		event_add_timed(ctdb->ev, ctdb->monitor->monitor_context,
-				     timeval_current_ofs(1, 0), 
-				     ctdb_wait_until_recovered, ctdb);
+		tevent_add_timer(ctdb->ev, ctdb->monitor->monitor_context,
+				 timeval_current_ofs(1, 0),
+				 ctdb_wait_until_recovered, ctdb);
 		return;
 	}
 
@@ -298,9 +302,9 @@ static void ctdb_wait_until_recovered(struct event_context *ev, struct timed_eve
 		ctdb->db_persistent_startup_generation = INVALID_GENERATION;
 
 		DEBUG(DEBUG_NOTICE,(__location__ " in recovery. Wait one more second\n"));
-		event_add_timed(ctdb->ev, ctdb->monitor->monitor_context,
-				     timeval_current_ofs(1, 0), 
-				     ctdb_wait_until_recovered, ctdb);
+		tevent_add_timer(ctdb->ev, ctdb->monitor->monitor_context,
+				 timeval_current_ofs(1, 0),
+				 ctdb_wait_until_recovered, ctdb);
 		return;
 	}
 
@@ -310,18 +314,18 @@ static void ctdb_wait_until_recovered(struct event_context *ev, struct timed_eve
 
 		DEBUG(DEBUG_NOTICE,(__location__ " wait for pending recoveries to end. Wait one more second.\n"));
 
-		event_add_timed(ctdb->ev, ctdb->monitor->monitor_context,
-				     timeval_current_ofs(1, 0), 
-				     ctdb_wait_until_recovered, ctdb);
+		tevent_add_timer(ctdb->ev, ctdb->monitor->monitor_context,
+				 timeval_current_ofs(1, 0),
+				 ctdb_wait_until_recovered, ctdb);
 		return;
 	}
 
 	if (ctdb->vnn_map->generation == ctdb->db_persistent_startup_generation) {
 		DEBUG(DEBUG_INFO,(__location__ " skip ctdb_recheck_persistent_health() "
 				  "until the next recovery\n"));
-		event_add_timed(ctdb->ev, ctdb->monitor->monitor_context,
-				     timeval_current_ofs(1, 0),
-				     ctdb_wait_until_recovered, ctdb);
+		tevent_add_timer(ctdb->ev, ctdb->monitor->monitor_context,
+				 timeval_current_ofs(1, 0),
+				 ctdb_wait_until_recovered, ctdb);
 		return;
 	}
 
@@ -335,10 +339,10 @@ static void ctdb_wait_until_recovered(struct event_context *ev, struct timed_eve
 			      "failed (%llu of %llu times) - retry later\n",
 			      (unsigned long long)ctdb->db_persistent_check_errors,
 			      (unsigned long long)ctdb->max_persistent_check_errors));
-			event_add_timed(ctdb->ev,
-					ctdb->monitor->monitor_context,
-					timeval_current_ofs(1, 0),
-					ctdb_wait_until_recovered, ctdb);
+			tevent_add_timer(ctdb->ev,
+					 ctdb->monitor->monitor_context,
+					 timeval_current_ofs(1, 0),
+					 ctdb_wait_until_recovered, ctdb);
 			return;
 		}
 		DEBUG(DEBUG_ALERT,(__location__
@@ -350,15 +354,16 @@ static void ctdb_wait_until_recovered(struct event_context *ev, struct timed_eve
 	}
 	ctdb->db_persistent_check_errors = 0;
 
-	event_add_timed(ctdb->ev, ctdb->monitor->monitor_context,
-			timeval_current(), ctdb_run_startup, ctdb);
+	tevent_add_timer(ctdb->ev, ctdb->monitor->monitor_context,
+			 timeval_current(), ctdb_run_startup, ctdb);
 }
 
 
 /*
   see if the event scripts think we are healthy
  */
-static void ctdb_check_health(struct event_context *ev, struct timed_event *te, 
+static void ctdb_check_health(struct tevent_context *ev,
+			      struct tevent_timer *te,
 			      struct timeval t, void *private_data)
 {
 	struct ctdb_context *ctdb = talloc_get_type(private_data, struct ctdb_context);
@@ -377,9 +382,9 @@ static void ctdb_check_health(struct event_context *ev, struct timed_event *te,
 	}
 
 	if (skip_monitoring) {
-		event_add_timed(ctdb->ev, ctdb->monitor->monitor_context,
-				timeval_current_ofs(ctdb->monitor->next_interval, 0),
-				ctdb_check_health, ctdb);
+		tevent_add_timer(ctdb->ev, ctdb->monitor->monitor_context,
+				 timeval_current_ofs(ctdb->monitor->next_interval, 0),
+				 ctdb_check_health, ctdb);
 		return;
 	}
 
@@ -390,9 +395,9 @@ static void ctdb_check_health(struct event_context *ev, struct timed_event *te,
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,("Unable to launch monitor event script\n"));
 		ctdb->monitor->next_interval = 5;
-		event_add_timed(ctdb->ev, ctdb->monitor->monitor_context,
-				timeval_current_ofs(5, 0),
-				ctdb_check_health, ctdb);
+		tevent_add_timer(ctdb->ev, ctdb->monitor->monitor_context,
+				 timeval_current_ofs(5, 0),
+				 ctdb_check_health, ctdb);
 	}
 }
 
@@ -442,9 +447,9 @@ void ctdb_wait_for_first_recovery(struct ctdb_context *ctdb)
 	ctdb->monitor->monitor_context = talloc_new(ctdb->monitor);
 	CTDB_NO_MEMORY_FATAL(ctdb, ctdb->monitor->monitor_context);
 
-	event_add_timed(ctdb->ev, ctdb->monitor->monitor_context,
-			timeval_current_ofs(1, 0),
-			ctdb_wait_until_recovered, ctdb);
+	tevent_add_timer(ctdb->ev, ctdb->monitor->monitor_context,
+			 timeval_current_ofs(1, 0),
+			 ctdb_wait_until_recovered, ctdb);
 }
 
 

@@ -45,14 +45,14 @@ struct ibw_wr {
 };
 
 struct ibw_ctx_priv {
-	struct event_context *ectx;
+	struct tevent_context *ectx;
 
 	struct ibw_opts opts;
 
 	struct rdma_cm_id	*cm_id; /* server cm id */
 
 	struct rdma_event_channel *cm_channel;
-	struct fd_event *cm_channel_event;
+	struct tevent_fd *cm_channel_event;
 
 	ibw_connstate_fn_t connstate_func; /* see ibw_init */
 	ibw_receive_fn_t receive_func; /* see ibw_init */
@@ -69,7 +69,7 @@ struct ibw_part {
 
 struct ibw_conn_priv {
 	struct ibv_comp_channel *verbs_channel;
-	struct fd_event *verbs_channel_event;
+	struct tevent_fd *verbs_channel_event;
 
 	struct rdma_cm_id *cm_id; /* client's cm id */
 	struct ibv_pd	*pd;

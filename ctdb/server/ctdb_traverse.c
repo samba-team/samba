@@ -260,7 +260,7 @@ static struct ctdb_traverse_local_handle *ctdb_traverse_local(struct ctdb_db_con
 
 	DLIST_ADD(ctdb_db->traverse, h);
 
-	h->fde = tevent_add_fd(ctdb_db->ctdb->ev, h, h->fd[0], EVENT_FD_READ,
+	h->fde = tevent_add_fd(ctdb_db->ctdb->ev, h, h->fd[0], TEVENT_FD_READ,
 			       ctdb_traverse_child_handler, h);
 	if (h->fde == NULL) {
 		close(h->fd[0]);
@@ -310,7 +310,8 @@ struct ctdb_traverse_all_ext {
 };
 
 /* called when a traverse times out */
-static void ctdb_traverse_all_timeout(struct event_context *ev, struct timed_event *te, 
+static void ctdb_traverse_all_timeout(struct tevent_context *ev,
+				      struct tevent_timer *te,
 				      struct timeval t, void *private_data)
 {
 	struct ctdb_traverse_all_handle *state = talloc_get_type(private_data, struct ctdb_traverse_all_handle);
@@ -438,9 +439,9 @@ static struct ctdb_traverse_all_handle *ctdb_daemon_traverse_all(struct ctdb_db_
 			    ctdb_db->db_name, state->reqid));
 
 	/* timeout the traverse */
-	event_add_timed(ctdb->ev, state, 
-			timeval_current_ofs(ctdb->tunable.traverse_timeout, 0), 
-			ctdb_traverse_all_timeout, state);
+	tevent_add_timer(ctdb->ev, state,
+			 timeval_current_ofs(ctdb->tunable.traverse_timeout, 0),
+			 ctdb_traverse_all_timeout, state);
 
 	return state;
 }

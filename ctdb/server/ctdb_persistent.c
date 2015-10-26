@@ -92,8 +92,9 @@ static void ctdb_persistent_callback(struct ctdb_context *ctdb,
 /*
   called if persistent store times out
  */
-static void ctdb_persistent_store_timeout(struct event_context *ev, struct timed_event *te, 
-					 struct timeval t, void *private_data)
+static void ctdb_persistent_store_timeout(struct tevent_context *ev,
+					  struct tevent_timer *te,
+					  struct timeval t, void *private_data)
 {
 	struct ctdb_persistent_state *state = talloc_get_type(private_data, struct ctdb_persistent_state);
 
@@ -257,9 +258,9 @@ int32_t ctdb_control_trans3_commit(struct ctdb_context *ctdb,
 	talloc_steal(state, c);
 
 	/* but we won't wait forever */
-	event_add_timed(ctdb->ev, state,
-			timeval_current_ofs(ctdb->tunable.control_timeout, 0),
-			ctdb_persistent_store_timeout, state);
+	tevent_add_timer(ctdb->ev, state,
+			 timeval_current_ofs(ctdb->tunable.control_timeout, 0),
+			 ctdb_persistent_store_timeout, state);
 
 	return 0;
 }

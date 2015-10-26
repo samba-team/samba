@@ -541,7 +541,7 @@ struct ctdb_db_context {
 	struct tdb_context *rottdb; /* ReadOnly tracking TDB */
 	struct ctdb_registered_call *calls; /* list of registered calls */
 	uint32_t seqnum;
-	struct timed_event *seqnum_update;
+	struct tevent_timer *seqnum_update;
 	struct ctdb_traverse_local_handle *traverse;
 	struct ctdb_vacuum_handle *vacuum_handle;
 	char *unhealthy_reason;

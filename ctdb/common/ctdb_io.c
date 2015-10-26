@@ -55,7 +55,7 @@ struct ctdb_queue {
 	struct ctdb_buffer buffer; /* input buffer */
 	struct ctdb_queue_pkt *out_queue, *out_queue_tail;
 	uint32_t out_queue_length;
-	struct fd_event *fde;
+	struct tevent_fd *fde;
 	int fd;
 	size_t alignment;
 	void *private_data;
@@ -217,7 +217,7 @@ failed:
 
 
 /* used when an event triggers a dead queue */
-static void queue_dead(struct event_context *ev, struct tevent_immediate *im,
+static void queue_dead(struct tevent_context *ev, struct tevent_immediate *im,
 		       void *private_data)
 {
 	struct ctdb_queue *queue = talloc_get_type(private_data, struct ctdb_queue);
@@ -266,18 +266,18 @@ static void queue_io_write(struct ctdb_queue *queue)
 		talloc_free(pkt);
 	}
 
-	EVENT_FD_NOT_WRITEABLE(queue->fde);
+	TEVENT_FD_NOT_WRITEABLE(queue->fde);
 }
 
 /*
   called when an incoming connection is readable or writeable
 */
-static void queue_io_handler(struct event_context *ev, struct fd_event *fde, 
+static void queue_io_handler(struct tevent_context *ev, struct tevent_fd *fde,
 			     uint16_t flags, void *private_data)
 {
 	struct ctdb_queue *queue = talloc_get_type(private_data, struct ctdb_queue);
 
-	if (flags & EVENT_FD_READ) {
+	if (flags & TEVENT_FD_READ) {
 		queue_io_read(queue);
 	} else {
 		queue_io_write(queue);
@@ -342,7 +342,7 @@ int ctdb_queue_send(struct ctdb_queue *queue, uint8_t *data, uint32_t length)
 	pkt->full_length = full_length;
 
 	if (queue->out_queue == NULL && queue->fd != -1) {
-		EVENT_FD_WRITEABLE(queue->fde);
+		TEVENT_FD_WRITEABLE(queue->fde);
 	}
 
 	DLIST_ADD_END(queue->out_queue, pkt, NULL);
@@ -385,15 +385,16 @@ int ctdb_queue_set_fd(struct ctdb_queue *queue, int fd)
 	queue->fde = NULL;
 
 	if (fd != -1) {
-		queue->fde = event_add_fd(queue->ctdb->ev, queue, fd, EVENT_FD_READ,
-					  queue_io_handler, queue);
+		queue->fde = tevent_add_fd(queue->ctdb->ev, queue, fd,
+					   TEVENT_FD_READ,
+					   queue_io_handler, queue);
 		if (queue->fde == NULL) {
 			return -1;
 		}
 		tevent_fd_set_auto_close(queue->fde);
 
 		if (queue->out_queue) {
-			EVENT_FD_WRITEABLE(queue->fde);		
+			TEVENT_FD_WRITEABLE(queue->fde);
 		}
 	}
 

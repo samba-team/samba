@@ -54,16 +54,18 @@ int ctdb_ibw_node_connect(struct ctdb_node *node)
 	if (rc) {
 		DEBUG(DEBUG_ERR, ("ctdb_ibw_node_connect/ibw_connect failed - retrying...\n"));
 		/* try again once a second */
-		event_add_timed(node->ctdb->ev, node, timeval_current_ofs(1, 0), 
-			ctdb_ibw_node_connect_event, node);
+		tevent_add_timer(node->ctdb->ev, node,
+				 timeval_current_ofs(1, 0),
+				 ctdb_ibw_node_connect_event, node);
 	}
 
 	/* continues at ibw_ctdb.c/IBWC_CONNECTED in good case */
 	return 0;
 }
 
-void ctdb_ibw_node_connect_event(struct event_context *ev, struct timed_event *te, 
-	struct timeval t, void *private_data)
+void ctdb_ibw_node_connect_event(struct tevent_context *ev,
+				 struct tevent_timer *te,
+				 struct timeval t, void *private_data)
 {
 	struct ctdb_node *node = talloc_get_type(private_data, struct ctdb_node);
 
@@ -129,8 +131,9 @@ int ctdb_ibw_connstate_handler(struct ibw_ctx *ctx, struct ibw_conn *conn)
 				DEBUG(DEBUG_DEBUG, ("IBWC_ERROR, reconnecting...\n"));
 				talloc_free(cn->conn); /* internal queue content is destroyed */
 				cn->conn = (void *)ibw_conn_new(ictx, node);
-				event_add_timed(node->ctdb->ev, node, timeval_current_ofs(1, 0),
-					ctdb_ibw_node_connect_event, node);
+				tevent_add_timer(node->ctdb->ev, node,
+						 timeval_current_ofs(1, 0),
+						 ctdb_ibw_node_connect_event, node);
 			}
 		} break;
 		default:

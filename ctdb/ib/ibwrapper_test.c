@@ -375,8 +375,9 @@ error:
 	return -1;
 }
 
-static void ibwtest_timeout_handler(struct event_context *ev, struct timed_event *te,
-	struct timeval t, void *private_data)
+static void ibwtest_timeout_handler(struct tevent_context *ev,
+				    struct tevent_timer *te,
+				    struct timeval t, void *private_data)
 {
 	struct ibwtest_ctx *tcx = talloc_get_type(private_data, struct ibwtest_ctx);
 	int	rc;
@@ -605,7 +606,7 @@ int main(int argc, char *argv[])
 		goto cleanup;
 	}
 
-	ev = event_context_init(NULL);
+	ev = tevent_context_init(NULL);
 	assert(ev);
 
 	tcx->ibwctx = ibw_init(tcx->attrs, tcx->nattrs,
@@ -626,11 +627,12 @@ int main(int argc, char *argv[])
 
 	while(!tcx->kill_me && !tcx->error) {
 		if (tcx->nsec) {
-			event_add_timed(ev, tcx, timeval_current_ofs(0, tcx->nsec),
-				ibwtest_timeout_handler, tcx);
+			tevent_add_timer(ev, tcx,
+					 timeval_current_ofs(0, tcx->nsec),
+					 ibwtest_timeout_handler, tcx);
 		}
 
-		event_loop_once(ev);
+		tevent_loop_once(ev);
 
 		if (tcx->sleep_usec)
 			usleep(tcx->sleep_usec);

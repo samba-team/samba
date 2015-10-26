@@ -61,15 +61,16 @@ void ctdb_tcp_tnode_cb(uint8_t *data, size_t cnt, void *private_data)
 	}
 
 	ctdb_tcp_stop_connection(node);
-	tnode->connect_te = event_add_timed(node->ctdb->ev, tnode,
-					    timeval_current_ofs(3, 0),
-					    ctdb_tcp_node_connect, node);
+	tnode->connect_te = tevent_add_timer(node->ctdb->ev, tnode,
+					     timeval_current_ofs(3, 0),
+					     ctdb_tcp_node_connect, node);
 }
 
 /*
   called when socket becomes writeable on connect
 */
-static void ctdb_node_connect_write(struct event_context *ev, struct fd_event *fde, 
+static void ctdb_node_connect_write(struct tevent_context *ev,
+				    struct tevent_fd *fde,
 				    uint16_t flags, void *private_data)
 {
 	struct ctdb_node *node = talloc_get_type(private_data,
@@ -87,7 +88,7 @@ static void ctdb_node_connect_write(struct event_context *ev, struct fd_event *f
 	if (getsockopt(tnode->fd, SOL_SOCKET, SO_ERROR, &error, &len) != 0 ||
 	    error != 0) {
 		ctdb_tcp_stop_connection(node);
-		tnode->connect_te = event_add_timed(ctdb->ev, tnode, 
+		tnode->connect_te = tevent_add_timer(ctdb->ev, tnode,
 						    timeval_current_ofs(1, 0),
 						    ctdb_tcp_node_connect, node);
 		return;
@@ -115,7 +116,7 @@ static void ctdb_node_connect_write(struct event_context *ev, struct fd_event *f
 /*
   called when we should try and establish a tcp connection to a node
 */
-void ctdb_tcp_node_connect(struct event_context *ev, struct timed_event *te, 
+void ctdb_tcp_node_connect(struct tevent_context *ev, struct tevent_timer *te,
 			   struct timeval t, void *private_data)
 {
 	struct ctdb_node *node = talloc_get_type(private_data,
@@ -183,22 +184,23 @@ void ctdb_tcp_node_connect(struct event_context *ev, struct timed_event *te,
 	if (connect(tnode->fd, (struct sockaddr *)&sock_out, sockout_size) != 0 &&
 	    errno != EINPROGRESS) {
 		ctdb_tcp_stop_connection(node);
-		tnode->connect_te = event_add_timed(ctdb->ev, tnode, 
-						    timeval_current_ofs(1, 0),
-						    ctdb_tcp_node_connect, node);
+		tnode->connect_te = tevent_add_timer(ctdb->ev, tnode,
+						     timeval_current_ofs(1, 0),
+						     ctdb_tcp_node_connect, node);
 		return;
 	}
 
 	/* non-blocking connect - wait for write event */
-	tnode->connect_fde = event_add_fd(node->ctdb->ev, tnode, tnode->fd, 
-					  EVENT_FD_WRITE|EVENT_FD_READ, 
-					  ctdb_node_connect_write, node);
+	tnode->connect_fde = tevent_add_fd(node->ctdb->ev, tnode, tnode->fd,
+					   TEVENT_FD_WRITE|TEVENT_FD_READ,
+					   ctdb_node_connect_write, node);
 
 	/* don't give it long to connect - retry in one second. This ensures
 	   that we find a node is up quickly (tcp normally backs off a syn reply
 	   delay by quite a lot) */
-	tnode->connect_te = event_add_timed(ctdb->ev, tnode, timeval_current_ofs(1, 0), 
-					    ctdb_tcp_node_connect, node);
+	tnode->connect_te = tevent_add_timer(ctdb->ev, tnode,
+					     timeval_current_ofs(1, 0),
+					     ctdb_tcp_node_connect, node);
 }
 
 /*
@@ -206,7 +208,7 @@ void ctdb_tcp_node_connect(struct event_context *ev, struct timed_event *te,
   currently makes no attempt to check if the connection is really from a ctdb
   node in our cluster
 */
-static void ctdb_listen_event(struct event_context *ev, struct fd_event *fde, 
+static void ctdb_listen_event(struct tevent_context *ev, struct tevent_fd *fde,
 			      uint16_t flags, void *private_data)
 {
 	struct ctdb_context *ctdb = talloc_get_type(private_data, struct ctdb_context);
@@ -371,8 +373,8 @@ static int ctdb_tcp_listen_automatic(struct ctdb_context *ctdb)
 		goto failed;
 	}
 
-	fde = event_add_fd(ctdb->ev, ctcp, ctcp->listen_fd, EVENT_FD_READ,
-			   ctdb_listen_event, ctdb);
+	fde = tevent_add_fd(ctdb->ev, ctcp, ctcp->listen_fd, TEVENT_FD_READ,
+			    ctdb_listen_event, ctdb);
 	tevent_fd_set_auto_close(fde);
 
 	close(lock_fd);
@@ -444,8 +446,8 @@ int ctdb_tcp_listen(struct ctdb_context *ctdb)
 		goto failed;
 	}
 
-	fde = event_add_fd(ctdb->ev, ctcp, ctcp->listen_fd, EVENT_FD_READ,
-		     ctdb_listen_event, ctdb);	
+	fde = tevent_add_fd(ctdb->ev, ctcp, ctcp->listen_fd, TEVENT_FD_READ,
+			    ctdb_listen_event, ctdb);
 	tevent_fd_set_auto_close(fde);
 
 	return 0;

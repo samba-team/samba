@@ -1037,7 +1037,9 @@ static int ctdb_deferred_attach_destructor(struct ctdb_deferred_attach_context *
 	return 0;
 }
 
-static void ctdb_deferred_attach_timeout(struct event_context *ev, struct timed_event *te, struct timeval t, void *private_data)
+static void ctdb_deferred_attach_timeout(struct tevent_context *ev,
+					 struct tevent_timer *te,
+					 struct timeval t, void *private_data)
 {
 	struct ctdb_deferred_attach_context *da_ctx = talloc_get_type(private_data, struct ctdb_deferred_attach_context);
 	struct ctdb_context *ctdb = da_ctx->ctdb;
@@ -1046,7 +1048,9 @@ static void ctdb_deferred_attach_timeout(struct event_context *ev, struct timed_
 	talloc_free(da_ctx);
 }
 
-static void ctdb_deferred_attach_callback(struct event_context *ev, struct timed_event *te, struct timeval t, void *private_data)
+static void ctdb_deferred_attach_callback(struct tevent_context *ev,
+					  struct tevent_timer *te,
+					  struct timeval t, void *private_data)
 {
 	struct ctdb_deferred_attach_context *da_ctx = talloc_get_type(private_data, struct ctdb_deferred_attach_context);
 	struct ctdb_context *ctdb = da_ctx->ctdb;
@@ -1065,7 +1069,9 @@ int ctdb_process_deferred_attach(struct ctdb_context *ctdb)
 	 */
 	while ((da_ctx = ctdb->deferred_attach) != NULL) {
 		DLIST_REMOVE(ctdb->deferred_attach, da_ctx);
-		event_add_timed(ctdb->ev, da_ctx, timeval_current_ofs(1,0), ctdb_deferred_attach_callback, da_ctx);
+		tevent_add_timer(ctdb->ev, da_ctx,
+				 timeval_current_ofs(1,0),
+				 ctdb_deferred_attach_callback, da_ctx);
 	}
 
 	return 0;
@@ -1125,7 +1131,9 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 			talloc_set_destructor(da_ctx, ctdb_deferred_attach_destructor);
 			DLIST_ADD(ctdb->deferred_attach, da_ctx);
 
-			event_add_timed(ctdb->ev, da_ctx, timeval_current_ofs(ctdb->tunable.deferred_attach_timeout, 0), ctdb_deferred_attach_timeout, da_ctx);
+			tevent_add_timer(ctdb->ev, da_ctx,
+					 timeval_current_ofs(ctdb->tunable.deferred_attach_timeout, 0),
+					 ctdb_deferred_attach_timeout, da_ctx);
 
 			DEBUG(DEBUG_ERR,("DB Attach to database %s deferred for client with pid:%d since node is in recovery mode.\n", db_name, client->pid));
 			*async_reply = true;
@@ -1503,7 +1511,8 @@ int32_t ctdb_ltdb_update_seqnum(struct ctdb_context *ctdb, uint32_t db_id, uint3
 /*
   timer to check for seqnum changes in a ltdb and propogate them
  */
-static void ctdb_ltdb_seqnum_check(struct event_context *ev, struct timed_event *te, 
+static void ctdb_ltdb_seqnum_check(struct tevent_context *ev,
+				   struct tevent_timer *te,
 				   struct timeval t, void *p)
 {
 	struct ctdb_db_context *ctdb_db = talloc_get_type(p, struct ctdb_db_context);
@@ -1522,9 +1531,10 @@ static void ctdb_ltdb_seqnum_check(struct event_context *ev, struct timed_event 
 
 	/* setup a new timer */
 	ctdb_db->seqnum_update =
-		event_add_timed(ctdb->ev, ctdb_db, 
-				timeval_current_ofs(ctdb->tunable.seqnum_interval/1000, (ctdb->tunable.seqnum_interval%1000)*1000),
-				ctdb_ltdb_seqnum_check, ctdb_db);
+		tevent_add_timer(ctdb->ev, ctdb_db,
+				 timeval_current_ofs(ctdb->tunable.seqnum_interval/1000,
+						     (ctdb->tunable.seqnum_interval%1000)*1000),
+				 ctdb_ltdb_seqnum_check, ctdb_db);
 }
 
 /*
@@ -1540,10 +1550,11 @@ int32_t ctdb_ltdb_enable_seqnum(struct ctdb_context *ctdb, uint32_t db_id)
 	}
 
 	if (ctdb_db->seqnum_update == NULL) {
-		ctdb_db->seqnum_update =
-			event_add_timed(ctdb->ev, ctdb_db, 
-					timeval_current_ofs(ctdb->tunable.seqnum_interval/1000, (ctdb->tunable.seqnum_interval%1000)*1000),
-					ctdb_ltdb_seqnum_check, ctdb_db);
+		ctdb_db->seqnum_update = tevent_add_timer(
+			ctdb->ev, ctdb_db,
+			timeval_current_ofs(ctdb->tunable.seqnum_interval/1000,
+					    (ctdb->tunable.seqnum_interval%1000)*1000),
+			ctdb_ltdb_seqnum_check, ctdb_db);
 	}
 
 	tdb_enable_seqnum(ctdb_db->ltdb->tdb);

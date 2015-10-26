@@ -400,8 +400,8 @@ struct ctdb_set_recmode_state {
 	struct ctdb_req_control *c;
 	uint32_t recmode;
 	int fd[2];
-	struct timed_event *te;
-	struct fd_event *fde;
+	struct tevent_timer *te;
+	struct tevent_fd *fde;
 	pid_t child;
 	struct timeval start_time;
 };
@@ -410,8 +410,9 @@ struct ctdb_set_recmode_state {
   called if our set_recmode child times out. this would happen if
   ctdb_recovery_lock() would block.
  */
-static void ctdb_set_recmode_timeout(struct event_context *ev, struct timed_event *te, 
-					 struct timeval t, void *private_data)
+static void ctdb_set_recmode_timeout(struct tevent_context *ev,
+				     struct tevent_timer *te,
+				     struct timeval t, void *private_data)
 {
 	struct ctdb_set_recmode_state *state = talloc_get_type(private_data, 
 					   struct ctdb_set_recmode_state);
@@ -449,8 +450,9 @@ static int set_recmode_destructor(struct ctdb_set_recmode_state *state)
 /* this is called when the client process has completed ctdb_recovery_lock()
    and has written data back to us through the pipe.
 */
-static void set_recmode_handler(struct event_context *ev, struct fd_event *fde, 
-			     uint16_t flags, void *private_data)
+static void set_recmode_handler(struct tevent_context *ev,
+				struct tevent_fd *fde,
+				uint16_t flags, void *private_data)
 {
 	struct ctdb_set_recmode_state *state= talloc_get_type(private_data, 
 					     struct ctdb_set_recmode_state);
@@ -492,8 +494,8 @@ static void set_recmode_handler(struct event_context *ev, struct fd_event *fde,
 }
 
 static void
-ctdb_drop_all_ips_event(struct event_context *ev, struct timed_event *te, 
-			       struct timeval t, void *private_data)
+ctdb_drop_all_ips_event(struct tevent_context *ev, struct tevent_timer *te,
+			struct timeval t, void *private_data)
 {
 	struct ctdb_context *ctdb = talloc_get_type(private_data, struct ctdb_context);
 
@@ -516,7 +518,9 @@ int ctdb_deferred_drop_all_ips(struct ctdb_context *ctdb)
 	ctdb->release_ips_ctx = talloc_new(ctdb);
 	CTDB_NO_MEMORY(ctdb, ctdb->release_ips_ctx);
 
-	event_add_timed(ctdb->ev, ctdb->release_ips_ctx, timeval_current_ofs(ctdb->tunable.recovery_drop_all_ips, 0), ctdb_drop_all_ips_event, ctdb);
+	tevent_add_timer(ctdb->ev, ctdb->release_ips_ctx,
+			 timeval_current_ofs(ctdb->tunable.recovery_drop_all_ips, 0),
+			 ctdb_drop_all_ips_event, ctdb);
 	return 0;
 }
 
@@ -647,13 +651,11 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 
 	DEBUG(DEBUG_DEBUG, (__location__ " Created PIPE FD:%d for setrecmode\n", state->fd[0]));
 
-	state->te = event_add_timed(ctdb->ev, state, timeval_current_ofs(5, 0),
-				    ctdb_set_recmode_timeout, state);
+	state->te = tevent_add_timer(ctdb->ev, state, timeval_current_ofs(5, 0),
+				     ctdb_set_recmode_timeout, state);
 
-	state->fde = event_add_fd(ctdb->ev, state, state->fd[0],
-				EVENT_FD_READ,
-				set_recmode_handler,
-				(void *)state);
+	state->fde = tevent_add_fd(ctdb->ev, state, state->fd[0], TEVENT_FD_READ,
+				   set_recmode_handler, (void *)state);
 
 	if (state->fde == NULL) {
 		talloc_free(state);
@@ -1272,7 +1274,9 @@ int32_t ctdb_control_get_capabilities(struct ctdb_context *ctdb, TDB_DATA *outda
    If we havent been pinged for a while we assume the recovery
    daemon is inoperable and we restart.
 */
-static void ctdb_recd_ping_timeout(struct event_context *ev, struct timed_event *te, struct timeval t, void *p)
+static void ctdb_recd_ping_timeout(struct tevent_context *ev,
+				   struct tevent_timer *te,
+				   struct timeval t, void *p)
 {
 	struct ctdb_context *ctdb = talloc_get_type(p, struct ctdb_context);
 	uint32_t *count = talloc_get_type(ctdb->recd_ping_count, uint32_t);
@@ -1281,9 +1285,9 @@ static void ctdb_recd_ping_timeout(struct event_context *ev, struct timed_event 
 
 	if (*count < ctdb->tunable.recd_ping_failcount) {
 		(*count)++;
-		event_add_timed(ctdb->ev, ctdb->recd_ping_count, 
-			timeval_current_ofs(ctdb->tunable.recd_ping_timeout, 0),
-			ctdb_recd_ping_timeout, ctdb);
+		tevent_add_timer(ctdb->ev, ctdb->recd_ping_count,
+				 timeval_current_ofs(ctdb->tunable.recd_ping_timeout, 0),
+				 ctdb_recd_ping_timeout, ctdb);
 		return;
 	}
 
@@ -1301,9 +1305,9 @@ int32_t ctdb_control_recd_ping(struct ctdb_context *ctdb)
 	CTDB_NO_MEMORY(ctdb, ctdb->recd_ping_count);
 
 	if (ctdb->tunable.recd_ping_timeout != 0) {
-		event_add_timed(ctdb->ev, ctdb->recd_ping_count, 
-			timeval_current_ofs(ctdb->tunable.recd_ping_timeout, 0),
-			ctdb_recd_ping_timeout, ctdb);
+		tevent_add_timer(ctdb->ev, ctdb->recd_ping_count,
+				 timeval_current_ofs(ctdb->tunable.recd_ping_timeout, 0),
+				 ctdb_recd_ping_timeout, ctdb);
 	}
 
 	return 0;

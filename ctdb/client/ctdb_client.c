@@ -315,7 +315,7 @@ int ctdb_call_recv(struct ctdb_client_call_state *state, struct ctdb_call *call)
 	}
 
 	while (state->state < CTDB_CALL_DONE) {
-		event_loop_once(state->ctdb_db->ctdb->ev);
+		tevent_loop_once(state->ctdb_db->ctdb->ev);
 	}
 	if (state->state != CTDB_CALL_DONE) {
 		DEBUG(DEBUG_ERR,(__location__ " ctdb_call_recv failed\n"));
@@ -947,8 +947,9 @@ int ctdb_fetch(struct ctdb_db_context *ctdb_db, TALLOC_CTX *mem_ctx,
    called when a control completes or timesout to invoke the callback
    function the user provided
 */
-static void invoke_control_callback(struct event_context *ev, struct timed_event *te, 
-	struct timeval t, void *private_data)
+static void invoke_control_callback(struct tevent_context *ev,
+				    struct tevent_timer *te,
+				    struct timeval t, void *private_data)
 {
 	struct ctdb_client_control_state *state;
 	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
@@ -1012,7 +1013,8 @@ static void ctdb_client_reply_control(struct ctdb_context *ctdb,
 	   and call the callback.
 	*/
 	if (state->async.fn) {
-		event_add_timed(ctdb->ev, state, timeval_zero(), invoke_control_callback, state);
+		tevent_add_timer(ctdb->ev, state, timeval_zero(),
+				 invoke_control_callback, state);
 	}
 }
 
@@ -1028,8 +1030,9 @@ static int ctdb_client_control_destructor(struct ctdb_client_control_state *stat
 
 
 /* time out handler for ctdb_control */
-static void control_timeout_func(struct event_context *ev, struct timed_event *te, 
-	struct timeval t, void *private_data)
+static void control_timeout_func(struct tevent_context *ev,
+				 struct tevent_timer *te,
+				 struct timeval t, void *private_data)
 {
 	struct ctdb_client_control_state *state = talloc_get_type(private_data, struct ctdb_client_control_state);
 
@@ -1043,7 +1046,8 @@ static void control_timeout_func(struct event_context *ev, struct timed_event *t
 	   and call the callback.
 	*/
 	if (state->async.fn) {
-		event_add_timed(state->ctdb->ev, state, timeval_zero(), invoke_control_callback, state);
+		tevent_add_timer(state->ctdb->ev, state, timeval_zero(),
+				 invoke_control_callback, state);
 	}
 }
 
@@ -1097,7 +1101,8 @@ struct ctdb_client_control_state *ctdb_control_send(struct ctdb_context *ctdb,
 
 	/* timeout */
 	if (timeout && !timeval_is_zero(timeout)) {
-		event_add_timed(ctdb->ev, state, *timeout, control_timeout_func, state);
+		tevent_add_timer(ctdb->ev, state, *timeout,
+				 control_timeout_func, state);
 	}
 
 	ret = ctdb_client_queue_pkt(ctdb, &(c->hdr));
@@ -1142,7 +1147,7 @@ int ctdb_control_recv(struct ctdb_context *ctdb,
 	   completes.
 	*/
 	while (state->state == CTDB_CONTROL_WAIT) {
-		event_loop_once(ctdb->ev);
+		tevent_loop_once(ctdb->ev);
 	}
 
 	if (state->state != CTDB_CONTROL_DONE) {
@@ -2293,7 +2298,7 @@ static int ctdb_traverse_ext(struct ctdb_db_context *ctdb_db,
 	}
 
 	while (!state.done) {
-		event_loop_once(ctdb_db->ctdb->ev);
+		tevent_loop_once(ctdb_db->ctdb->ev);
 	}
 
 	ret = ctdb_client_remove_message_handler(ctdb_db->ctdb, srvid, &state);
@@ -3304,7 +3309,7 @@ int ctdb_ctrl_get_server_id_list(struct ctdb_context *ctdb,
   NOTE: In current code the daemon does not fork. This is for testing purposes only
   and to simplify the code.
 */
-struct ctdb_context *ctdb_init(struct event_context *ev)
+struct ctdb_context *ctdb_init(struct tevent_context *ev)
 {
 	int ret;
 	struct ctdb_context *ctdb;
@@ -3507,7 +3512,7 @@ void ctdb_client_async_add(struct client_async_data *data, struct ctdb_client_co
 int ctdb_client_async_wait(struct ctdb_context *ctdb, struct client_async_data *data)
 {
 	while (data->count > 0) {
-		event_loop_once(ctdb->ev);
+		tevent_loop_once(ctdb->ev);
 	}
 	if (data->fail_count != 0) {
 		if (!data->dont_log_errors) {
@@ -4417,7 +4422,7 @@ int switch_from_server_to_client(struct ctdb_context *ctdb, const char *fmt, ...
 	va_end(ap);
 
 	/* get a new event context */
-	ctdb->ev = event_context_init(ctdb);
+	ctdb->ev = tevent_context_init(ctdb);
 	tevent_loop_allow_nesting(ctdb->ev);
 
 	/* Connect to main CTDB daemon */
