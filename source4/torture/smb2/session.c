@@ -809,7 +809,9 @@ bool test_session_reauth5(struct torture_context *tctx, struct smb2_tree *tree)
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
 					"smb2_getinfo_file failed");
 
-	smb2_util_close(tree, _dh1);
+	status = smb2_util_close(tree, _dh1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_util_close failed");
 	dh1 = NULL;
 
 	/* try to rename the file: still fails */
@@ -848,8 +850,9 @@ bool test_session_reauth5(struct torture_context *tctx, struct smb2_tree *tree)
 
 	/* closs the file, check it is gone and reopen under the new name */
 
-	smb2_util_close(tree, _h1);
-
+	status = smb2_util_close(tree, _h1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_util_close failed");
 	ZERO_STRUCT(io1);
 
 	smb2_generic_create_share(&io1,
@@ -1237,7 +1240,9 @@ bool test_session_bind1(struct torture_context *tctx, struct smb2_tree *tree1)
 					"smb2_getinfo_file failed");
 
 	tree1->session = session1_1;
-	smb2_util_close(tree1, *h1);
+	status = smb2_util_close(tree1, *h1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_util_close failed");
 	h1 = NULL;
 
 	/*
