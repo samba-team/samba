@@ -166,29 +166,29 @@
 
     <refsect2>
       <title>EventScriptTimeout</title>
-      <para>Default: 20</para>
+      <para>Default: 30</para>
       <para>
-	How long should ctdb let an event script run before aborting it and
-	marking the node unhealthy.
+	Maximum time in seconds to allow an event to run before timing
+	out.  This is the total time for all enabled scripts that are
+	run for an event, not just a single event script.
+      </para>
+
+      <para>
+	Note that timeouts are ignored for some events ("takeip",
+	"releaseip", "startrecovery", "recovered") and converted to
+	success.  The logic here is that the callers of these events
+	implement their own additional timeout.
       </para>
     </refsect2>
 
     <refsect2>
       <title>EventScriptTimeoutCount</title>
-      <para>Default: 1</para>
+      <para>Default: 20</para>
       <para>
-	How many events in a row needs to timeout before we flag the node UNHEALTHY.
-	This setting is useful if your scripts can not be written so that they
-	do not hang for benign reasons.
-      </para>
-    </refsect2>
-
-    <refsect2>
-      <title>EventScriptUnhealthyOnTimeout</title>
-      <para>Default: 0</para>
-      <para>
-	This setting can be be used to make ctdb never become UNHEALTHY if your
-	eventscripts keep hanging/timing out.
+	How many monitor events in a row need to timeout before a node
+	is flagged as UNHEALTHY.  This only applies to monitor events.
+	This setting is useful if scripts can not be written so that
+	they do not hang for benign reasons.
       </para>
     </refsect2>
 
