@@ -3390,14 +3390,6 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 
 	pnn = ctdb_get_pnn(ctdb);
 
-	/* get the vnnmap */
-	ret = ctdb_ctrl_getvnnmap(ctdb, CONTROL_TIMEOUT(), pnn, mem_ctx, &vnnmap);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " Unable to get vnnmap from node %u\n", pnn));
-		return;
-	}
-
-
 	/* get nodemap */
 	TALLOC_FREE(rec->nodemap);
 	ret = ctdb_ctrl_getnodemap(ctdb, CONTROL_TIMEOUT(), pnn, rec, &rec->nodemap);
@@ -3605,6 +3597,13 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 		return;
 	}
 
+
+	/* get the vnnmap */
+	ret = ctdb_ctrl_getvnnmap(ctdb, CONTROL_TIMEOUT(), pnn, mem_ctx, &vnnmap);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, (__location__ " Unable to get vnnmap from node %u\n", pnn));
+		return;
+	}
 
 	if (rec->need_recovery) {
 		/* a previous recovery didn't finish */
