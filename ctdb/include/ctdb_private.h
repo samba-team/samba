@@ -71,8 +71,6 @@ struct ctdb_client {
 	struct ctdb_client_notify_list *notify;
 };
 
-struct ctdb_iface;
-
 /* state associated with a public ip address */
 struct ctdb_vnn {
 	struct ctdb_vnn *prev, *next;
@@ -290,17 +288,6 @@ struct ctdb_daemon_data {
 	}
 
 
-
-/* a structure that contains the elements required for the write record
-   control
-*/
-struct ctdb_write_record {
-	uint32_t dbid;
-	uint32_t keylen;
-	uint32_t datalen;
-	unsigned char blob[1];
-};
-
 enum ctdb_freeze_mode {CTDB_FREEZE_NONE, CTDB_FREEZE_PENDING, CTDB_FREEZE_FROZEN};
 
 #define NUM_DB_PRIORITIES 3
@@ -480,22 +467,6 @@ struct ctdb_db_context {
           ctdb_fatal(ctdb, "Out of memory in " __location__ ); \
 	  }} while (0)
 
-/*
-  persistent store control - update this record on all other nodes
- */
-struct ctdb_control_persistent_store {
-	uint32_t db_id;
-	uint32_t len;
-	uint8_t  data[1];
-};
-
-/*
-  struct for admin setting a ban
- */
-struct ctdb_ban_info {
-	uint32_t pnn;
-	uint32_t ban_time;
-};
 
 enum call_state {CTDB_CALL_WAIT, CTDB_CALL_DONE, CTDB_CALL_ERROR};
 
@@ -517,18 +488,7 @@ struct ctdb_call_state {
 	} async;
 };
 
-
-/* used for fetch_lock */
-struct ctdb_fetch_handle {
-	struct ctdb_db_context *ctdb_db;
-	TDB_DATA key;
-	TDB_DATA *data;
-	struct ctdb_ltdb_header header;
-};
-
 /* internal prototypes */
-
-#define ctdb_reqid_find(ctdb, reqid, type)	(type *)_ctdb_reqid_find(ctdb, reqid, #type, __location__)
 
 #define CHECK_CONTROL_DATA_SIZE(size) do { \
  if (indata.dsize != size) { \
@@ -560,32 +520,12 @@ struct ctdb_client_call_state {
 	} async;
 };
 
-
-/* Details of a byte range lock */
-struct ctdb_lock_info {
-	ino_t inode;
-	off_t start, end;
-	bool waiting;
-	bool read_only;
-};
-
-int32_t ctdb_control_persistent_store(struct ctdb_context *ctdb, 
-				      struct ctdb_req_control *c, 
-				      TDB_DATA recdata, bool *async_reply);
-
 extern int script_log_level;
 extern bool fast_start;
 extern const char *ctdbd_pidfile;
 
 typedef void (*deferred_requeue_fn)(void *call_context, struct ctdb_req_header *hdr);
 
-/*
-  description for a message to reload all ips via recovery master/daemon
- */
-struct reloadips_all_reply {
-	uint32_t pnn;
-	uint64_t srvid;
-};
 
 /* from tcp/ and ib/ */
 

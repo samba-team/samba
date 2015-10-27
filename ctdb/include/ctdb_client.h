@@ -159,14 +159,6 @@ int ctdb_ctrl_getnodesfile(struct ctdb_context *ctdb,
 int ctdb_ctrl_reload_nodes_file(struct ctdb_context *ctdb,
 		    struct timeval timeout, uint32_t destnode);
 
-struct ctdb_key_list {
-	uint32_t dbid;
-	uint32_t num;
-	TDB_DATA *keys;
-	struct ctdb_ltdb_header *headers;
-	TDB_DATA *data;
-};
-
 int ctdb_ctrl_pulldb(
        struct ctdb_context *ctdb, uint32_t destnode, uint32_t dbid,
        uint32_t lmaster, TALLOC_CTX *mem_ctx,
