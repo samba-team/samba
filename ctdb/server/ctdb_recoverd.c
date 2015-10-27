@@ -3330,12 +3330,98 @@ static int update_recovery_lock_file(struct ctdb_context *ctdb)
 	return 0;
 }
 
+static enum monitor_result validate_recovery_master(struct ctdb_recoverd *rec,
+						    TALLOC_CTX *mem_ctx)
+{
+	struct ctdb_context *ctdb = rec->ctdb;
+	uint32_t pnn = ctdb_get_pnn(ctdb);
+	struct ctdb_node_map_old *nodemap = rec->nodemap;
+	struct ctdb_node_map_old *recmaster_nodemap = NULL;
+	int ret;
+
+	/* When recovery daemon is started, recmaster is set to
+	 * "unknown" so it knows to start an election.
+	 */
+	if (rec->recmaster == CTDB_UNKNOWN_PNN) {
+		DEBUG(DEBUG_NOTICE,
+		      ("Initial recovery master set - forcing election\n"));
+		return MONITOR_ELECTION_NEEDED;
+	}
+
+	/*
+	 * If the current recmaster does not have CTDB_CAP_RECMASTER,
+	 * but we have, then force an election and try to become the new
+	 * recmaster.
+	 */
+	if (!ctdb_node_has_capabilities(rec->caps,
+					rec->recmaster,
+					CTDB_CAP_RECMASTER) &&
+	    (rec->ctdb->capabilities & CTDB_CAP_RECMASTER) &&
+	    !(nodemap->nodes[pnn].flags & NODE_FLAGS_INACTIVE)) {
+		DEBUG(DEBUG_ERR,
+		      (" Current recmaster node %u does not have CAP_RECMASTER,"
+		       " but we (node %u) have - force an election\n",
+		       rec->recmaster, pnn));
+		return MONITOR_ELECTION_NEEDED;
+	}
+
+	/* Verify that the master node has not been deleted.  This
+	 * should not happen because a node should always be shutdown
+	 * before being deleted, causing a new master to be elected
+	 * before now.  However, if something strange has happened
+	 * then checking here will ensure we don't index beyond the
+	 * end of the nodemap array. */
+	if (rec->recmaster >= nodemap->num) {
+		DEBUG(DEBUG_ERR,
+		      ("Recmaster node %u has been deleted. Force election\n",
+		       rec->recmaster));
+		return MONITOR_ELECTION_NEEDED;
+	}
+
+	/* if recovery master is disconnected/deleted we must elect a new recmaster */
+	if (nodemap->nodes[rec->recmaster].flags &
+	    (NODE_FLAGS_DISCONNECTED|NODE_FLAGS_DELETED)) {
+		DEBUG(DEBUG_NOTICE,
+		      ("Recmaster node %u is disconnected/deleted. Force election\n",
+		       rec->recmaster));
+		return MONITOR_ELECTION_NEEDED;
+	}
+
+	/* get nodemap from the recovery master to check if it is inactive */
+	ret = ctdb_ctrl_getnodemap(ctdb, CONTROL_TIMEOUT(), rec->recmaster,
+				   mem_ctx, &recmaster_nodemap);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,
+		      (__location__
+		       " Unable to get nodemap from recovery master %u\n",
+			  rec->recmaster));
+		return MONITOR_FAILED;
+	}
+
+
+	if ((recmaster_nodemap->nodes[rec->recmaster].flags & NODE_FLAGS_INACTIVE) &&
+	    (rec->node_flags & NODE_FLAGS_INACTIVE) == 0) {
+		DEBUG(DEBUG_NOTICE,
+		      ("Recmaster node %u is inactive. Force election\n",
+		       rec->recmaster));
+		/*
+		 * update our nodemap to carry the recmaster's notion of
+		 * its own flags, so that we don't keep freezing the
+		 * inactive recmaster node...
+		 */
+		nodemap->nodes[rec->recmaster].flags =
+			recmaster_nodemap->nodes[rec->recmaster].flags;
+		return MONITOR_ELECTION_NEEDED;
+	}
+
+	return MONITOR_OK;
+}
+
 static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 		      TALLOC_CTX *mem_ctx)
 {
 	uint32_t pnn;
 	struct ctdb_node_map_old *nodemap=NULL;
-	struct ctdb_node_map_old *recmaster_nodemap=NULL;
 	struct ctdb_node_map_old **remote_nodemaps=NULL;
 	struct ctdb_vnn_map *vnnmap=NULL;
 	struct ctdb_vnn_map *remote_vnnmap=NULL;
@@ -3468,81 +3554,16 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 		return;
 	}
 
-	/* When recovery daemon is started, recmaster is set to
-	 * "unknown" so it knows to start an election.
-	 */
-	if (rec->recmaster == CTDB_UNKNOWN_PNN) {
-		DEBUG(DEBUG_NOTICE,(__location__ " Initial recovery master set - forcing election\n"));
+	switch (validate_recovery_master(rec, mem_ctx)) {
+	case MONITOR_RECOVERY_NEEDED:
+		/* can not happen */
+		return;
+	case MONITOR_ELECTION_NEEDED:
 		force_election(rec, pnn, nodemap);
 		return;
-	}
-
-	/*
-	 * If the current recmaster does not have CTDB_CAP_RECMASTER,
-	 * but we have, then force an election and try to become the new
-	 * recmaster.
-	 */
-	if (!ctdb_node_has_capabilities(rec->caps,
-					rec->recmaster,
-					CTDB_CAP_RECMASTER) &&
-	    (rec->ctdb->capabilities & CTDB_CAP_RECMASTER) &&
-	    !(nodemap->nodes[pnn].flags & NODE_FLAGS_INACTIVE)) {
-		DEBUG(DEBUG_ERR, (__location__ " Current recmaster node %u does not have CAP_RECMASTER,"
-				  " but we (node %u) have - force an election\n",
-				  rec->recmaster, pnn));
-		force_election(rec, pnn, nodemap);
-		return;
-	}
-
-	/* Verify that the master node has not been deleted.  This
-	 * should not happen because a node should always be shutdown
-	 * before being deleted, causing a new master to be elected
-	 * before now.  However, if something strange has happened
-	 * then checking here will ensure we don't index beyond the
-	 * end of the nodemap array. */
-	if (rec->recmaster >= nodemap->num) {
-		DEBUG(DEBUG_ERR,
-		      ("Recmaster node %u has been deleted. Force election\n",
-		       rec->recmaster));
-		force_election(rec, pnn, nodemap);
-		return;
-	}
-
-	/* if recovery master is disconnected/deleted we must elect a new recmaster */
-	if (nodemap->nodes[rec->recmaster].flags &
-	    (NODE_FLAGS_DISCONNECTED|NODE_FLAGS_DELETED)) {
-		DEBUG(DEBUG_NOTICE,
-		      ("Recmaster node %u is disconnected/deleted. Force election\n",
-		       rec->recmaster));
-		force_election(rec, pnn, nodemap);
-		return;
-	}
-
-	/* get nodemap from the recovery master to check if it is inactive */
-	ret = ctdb_ctrl_getnodemap(ctdb, CONTROL_TIMEOUT(), rec->recmaster,
-				   mem_ctx, &recmaster_nodemap);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR,
-		      (__location__
-		       " Unable to get nodemap from recovery master %u\n",
-			  rec->recmaster));
-		return;
-	}
-
-
-	if ((recmaster_nodemap->nodes[rec->recmaster].flags & NODE_FLAGS_INACTIVE) &&
-	    (rec->node_flags & NODE_FLAGS_INACTIVE) == 0) {
-		DEBUG(DEBUG_NOTICE,
-		      ("Recmaster node %u is inactive. Force election\n",
-		       rec->recmaster));
-		/*
-		 * update our nodemap to carry the recmaster's notion of
-		 * its own flags, so that we don't keep freezing the
-		 * inactive recmaster node...
-		 */
-		nodemap->nodes[rec->recmaster].flags =
-			recmaster_nodemap->nodes[rec->recmaster].flags;
-		force_election(rec, pnn, nodemap);
+	case MONITOR_OK:
+		break;
+	case MONITOR_FAILED:
 		return;
 	}
 
