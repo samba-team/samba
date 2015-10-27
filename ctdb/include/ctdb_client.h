@@ -44,16 +44,6 @@ struct ctdb_client_control_state {
 	} async;
 };
 
-struct ctdb_client_notify_register {
-	uint64_t srvid;
-	uint32_t len;
-	uint8_t notify_data[1];
-};
-
-struct ctdb_client_notify_deregister {
-	uint64_t srvid;
-};
-
 struct tevent_context;
 
 /*
@@ -151,18 +141,6 @@ int ctdb_ctrl_setvnnmap(struct ctdb_context *ctdb,
 		struct timeval timeout, uint32_t destnode,
 		TALLOC_CTX *mem_ctx, struct ctdb_vnn_map *vnnmap);
 
-/* table that contains a list of all dbids on a node
- */
-struct ctdb_dbid_map {
-	uint32_t num;
-	struct ctdb_dbid {
-		uint32_t dbid;
-#define CTDB_DB_FLAGS_PERSISTENT	0x01
-#define CTDB_DB_FLAGS_READONLY		0x02
-#define CTDB_DB_FLAGS_STICKY		0x04
-		uint8_t flags;
-	} dbs[1];
-};
 int ctdb_ctrl_getdbmap(struct ctdb_context *ctdb,
 	struct timeval timeout, uint32_t destnode,
 	TALLOC_CTX *mem_ctx, struct ctdb_dbid_map **dbmap);
@@ -232,9 +210,6 @@ int ctdb_ctrl_set_debuglevel(struct ctdb_context *ctdb, uint32_t destnode, int32
 int ctdb_ctrl_setdmaster(struct ctdb_context *ctdb,
 	struct timeval timeout, uint32_t destnode,
 	TALLOC_CTX *mem_ctx, uint32_t dbid, uint32_t dmaster);
-
-#define CTDB_RECOVERY_NORMAL		0
-#define CTDB_RECOVERY_ACTIVE		1
 
 /*
   get the recovery mode of a remote node
@@ -350,24 +325,6 @@ int ctdb_ctrl_modflags(struct ctdb_context *ctdb,
 		       uint32_t destnode,
 		       uint32_t set, uint32_t clear);
 
-enum ctdb_server_id_type {
-	SERVER_TYPE_SAMBA=1,
-	SERVER_TYPE_NFSD=2,
-	SERVER_TYPE_ISCSID=3
-};
-
-struct ctdb_server_id {
-	enum ctdb_server_id_type type;
-	uint32_t pnn;
-	uint32_t server_id;
-};
-
-struct ctdb_server_id_list {
-	uint32_t num;
-	struct ctdb_server_id server_ids[1];
-};
-
-
 int ctdb_ctrl_register_server_id(struct ctdb_context *ctdb,
 		struct timeval timeout,
 		struct ctdb_server_id *id);
@@ -381,18 +338,6 @@ int ctdb_ctrl_get_server_id_list(struct ctdb_context *ctdb,
 		TALLOC_CTX *mem_ctx,
 		struct timeval timeout, uint32_t destnode,
 		struct ctdb_server_id_list **svid_list);
-
-struct ctdb_uptime {
-	struct timeval current_time;
-	struct timeval ctdbd_start_time;
-	struct timeval last_recovery_started;
-	struct timeval last_recovery_finished;
-};
-
-struct ctdb_control_tcp_addr {
-	ctdb_sock_addr src;
-	ctdb_sock_addr dest;
-};
 
 int ctdb_socket_connect(struct ctdb_context *ctdb);
 
@@ -497,18 +442,8 @@ int ctdb_ctrl_setrecmasterrole(struct ctdb_context *ctdb, struct timeval timeout
 int ctdb_ctrl_enablescript(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, const char *script);
 int ctdb_ctrl_disablescript(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, const char *script);
 
-struct ctdb_ban_time {
-	uint32_t pnn;
-	uint32_t time;
-};
-
 int ctdb_ctrl_set_ban(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, struct ctdb_ban_time *bantime);
 int ctdb_ctrl_get_ban(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, TALLOC_CTX *mem_ctx, struct ctdb_ban_time **bantime);
-
-struct ctdb_db_priority {
-	uint32_t db_id;
-	uint32_t priority;
-};
 
 int ctdb_ctrl_set_db_priority(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, struct ctdb_db_priority *db_prio);
 int ctdb_ctrl_get_db_priority(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, uint32_t db_id, uint32_t *priority);

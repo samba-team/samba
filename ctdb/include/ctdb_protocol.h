@@ -772,4 +772,69 @@ struct ctdb_vnn_map_wire {
 	uint32_t map[1];
 };
 
+struct ctdb_client_notify_register {
+	uint64_t srvid;
+	uint32_t len;
+	uint8_t notify_data[1];
+};
+
+struct ctdb_client_notify_deregister {
+	uint64_t srvid;
+};
+
+/* table that contains a list of all dbids on a node
+ */
+struct ctdb_dbid_map {
+	uint32_t num;
+	struct ctdb_dbid {
+		uint32_t dbid;
+#define CTDB_DB_FLAGS_PERSISTENT	0x01
+#define CTDB_DB_FLAGS_READONLY		0x02
+#define CTDB_DB_FLAGS_STICKY		0x04
+		uint8_t flags;
+	} dbs[1];
+};
+
+#define CTDB_RECOVERY_NORMAL		0
+#define CTDB_RECOVERY_ACTIVE		1
+
+enum ctdb_server_id_type {
+	SERVER_TYPE_SAMBA=1,
+	SERVER_TYPE_NFSD=2,
+	SERVER_TYPE_ISCSID=3
+};
+
+struct ctdb_server_id {
+	enum ctdb_server_id_type type;
+	uint32_t pnn;
+	uint32_t server_id;
+};
+
+struct ctdb_server_id_list {
+	uint32_t num;
+	struct ctdb_server_id server_ids[1];
+};
+
+struct ctdb_uptime {
+	struct timeval current_time;
+	struct timeval ctdbd_start_time;
+	struct timeval last_recovery_started;
+	struct timeval last_recovery_finished;
+};
+
+struct ctdb_control_tcp_addr {
+	ctdb_sock_addr src;
+	ctdb_sock_addr dest;
+};
+
+struct ctdb_ban_time {
+	uint32_t pnn;
+	uint32_t time;
+};
+
+struct ctdb_db_priority {
+	uint32_t db_id;
+	uint32_t priority;
+};
+
 #endif
