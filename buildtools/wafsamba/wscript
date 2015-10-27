@@ -96,9 +96,13 @@ def set_options(opt):
     gr.add_option('--enable-developer',
                    help=("Turn on developer warnings and debugging"),
                    action="store_true", dest='developer', default=False)
+    def picky_developer_callback(option, opt_str, value, parser):
+        parser.values.developer = True
+        parser.values.picky_developer = True
     gr.add_option('--picky-developer',
                    help=("Treat all warnings as errors (enable -Werror)"),
-                   action="store_true", dest='picky_developer', default=False)
+                   action="callback", callback=picky_developer_callback,
+                   dest='picky_developer', default=False)
     gr.add_option('--fatal-errors',
                    help=("Stop compilation on first error (enable -Wfatal-errors)"),
                    action="store_true", dest='fatal_errors', default=False)
