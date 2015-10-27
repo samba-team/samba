@@ -3388,13 +3388,6 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 		return;
 	}
 
-	/* Make sure that if recovery lock verification becomes disabled when
-	   we close the file
-	*/
-        if (ctdb->recovery_lock_file == NULL) {
-		ctdb_recovery_unlock(ctdb);
-	}
-
 	pnn = ctdb_get_pnn(ctdb);
 
 	/* get the vnnmap */
