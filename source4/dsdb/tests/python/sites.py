@@ -27,10 +27,12 @@ from samba.tests.subunitrun import TestProgram, SubunitOptions
 
 import samba.getopt as options
 from samba import sites
+from samba import subnets
 from samba.auth import system_session
 from samba.samdb import SamDB
 import samba.tests
 from samba.dcerpc import security
+from ldb import SCOPE_SUBTREE
 
 parser = optparse.OptionParser(__file__ + " [options] <host>")
 sambaopts = options.SambaOptions(parser)
@@ -106,6 +108,80 @@ class SimpleSitesTests(SitesBaseTests):
                           self.ldb.get_config_basedn(),
                           "Default-First-Site-Name")
 
+
+# tests for subnets
+class SimpleSubnetTests(SitesBaseTests):
+
+    def setUp(self):
+        super(SimpleSubnetTests, self).setUp()
+        self.basedn = self.ldb.get_config_basedn()
+        self.sitename = "testsite"
+        self.sitename2 = "testsite2"
+        self.ldb.transaction_start()
+        sites.create_site(self.ldb, self.basedn, self.sitename)
+        sites.create_site(self.ldb, self.basedn, self.sitename2)
+        self.ldb.transaction_commit()
+
+    def tearDown(self):
+        self.ldb.transaction_start()
+        sites.delete_site(self.ldb, self.basedn, self.sitename)
+        sites.delete_site(self.ldb, self.basedn, self.sitename2)
+        self.ldb.transaction_commit()
+        super(SimpleSubnetTests, self).tearDown()
+
+    def test_create_delete(self):
+        """Create a subnet and delete it again."""
+        basedn = self.ldb.get_config_basedn()
+        cidr = "10.11.12.0/24"
+
+        subnets.create_subnet(self.ldb, basedn, cidr, self.sitename)
+
+        self.assertRaises(subnets.SubnetAlreadyExists,
+                          subnets.create_subnet, self.ldb, basedn, cidr,
+                          self.sitename)
+
+        subnets.delete_subnet(self.ldb, basedn, cidr)
+
+        ret = self.ldb.search(base=basedn, scope=SCOPE_SUBTREE,
+                              expression='(&(objectclass=subnet)(cn=%s))' % cidr)
+
+        self.assertEqual(len(ret), 0, 'Failed to delete subnet %s' % cidr)
+
+    def test_create_shift_delete(self):
+        """Create a subnet, shift it to another site, then delete it."""
+        basedn = self.ldb.get_config_basedn()
+        cidr = "10.11.12.0/24"
+
+        subnets.create_subnet(self.ldb, basedn, cidr, self.sitename)
+
+        subnets.set_subnet_site(self.ldb, basedn, cidr, self.sitename2)
+
+        ret = self.ldb.search(base=basedn, scope=SCOPE_SUBTREE,
+                              expression='(&(objectclass=subnet)(cn=%s))' % cidr)
+
+        sites = ret[0]['siteObject']
+        self.assertEqual(len(sites), 1)
+        self.assertEqual(sites[0],
+                         'CN=testsite2,CN=Sites,%s' % self.ldb.get_config_basedn())
+
+        self.assertRaises(subnets.SubnetAlreadyExists,
+                          subnets.create_subnet, self.ldb, basedn, cidr,
+                          self.sitename)
+
+        subnets.delete_subnet(self.ldb, basedn, cidr)
+
+        ret = self.ldb.search(base=basedn, scope=SCOPE_SUBTREE,
+                              expression='(&(objectclass=subnet)(cn=%s))' % cidr)
+
+        self.assertEqual(len(ret), 0, 'Failed to delete subnet %s' % cidr)
+
+    def test_delete_subnet_that_does_not_exist(self):
+        """Ensure we can't delete a site that isn't there."""
+        basedn = self.ldb.get_config_basedn()
+        cidr = "10.15.0.0/16"
+
+        self.assertRaises(subnets.SubnetNotFound,
+                          subnets.delete_subnet, self.ldb, basedn, cidr)
 
 
 TestProgram(module=__name__, opts=subunitopts)

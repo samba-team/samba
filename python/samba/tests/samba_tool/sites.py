@@ -55,3 +55,58 @@ class SitesCmdTestCase(BaseSitesCmdTestCase):
 
         # now delete it
         self.samdb.delete(dnsite, ["tree_delete:0"])
+
+
+class SitesSubnetCmdTestCase(BaseSitesCmdTestCase):
+    def setUp(self):
+        super(SitesSubnetCmdTestCase, self).setUp()
+        self.sitename = "testsite"
+        self.sitename2 = "testsite2"
+        self.samdb.transaction_start()
+        sites.create_site(self.samdb, self.config_dn, self.sitename)
+        sites.create_site(self.samdb, self.config_dn, self.sitename2)
+        self.samdb.transaction_commit()
+
+    def tearDown(self):
+        self.samdb.transaction_start()
+        sites.delete_site(self.samdb, self.config_dn, self.sitename)
+        sites.delete_site(self.samdb, self.config_dn, self.sitename2)
+        self.samdb.transaction_commit()
+        super(SitesSubnetCmdTestCase, self).tearDown()
+
+    def test_site_subnet_create(self):
+        cidrs = (("10.9.8.0/24", self.sitename),
+                 ("50.60.0.0/16", self.sitename2),
+                 ("50.61.0.0/16", self.sitename2), # second subnet on the site
+                 ("50.0.0.0/8", self.sitename), # overlapping subnet, other site
+                 ("50.62.1.2/32", self.sitename), # single IP
+                 ("aaaa:bbbb:cccc:dddd:eeee:ffff:2222:1100/120",
+                  self.sitename2),
+             )
+
+        for cidr, sitename in cidrs:
+            result, out, err = self.runsubcmd("sites", "subnet", "create",
+                                              cidr, sitename,
+                                              "-H", self.dburl,
+                                              self.creds_string)
+            self.assertCmdSuccess(result)
+
+            ret = self.samdb.search(base=self.config_dn,
+                                    scope=ldb.SCOPE_SUBTREE,
+                                    expression=('(&(objectclass=subnet)(cn=%s))'
+                                                % cidr))
+            self.assertIsNotNone(ret)
+            self.assertEqual(len(ret), 1)
+
+        dnsubnets = ldb.Dn(self.samdb,
+                           "CN=Subnets,CN=Sites,%s" % self.config_dn)
+
+        for cidr, sitename in cidrs:
+            dnsubnet = ldb.Dn(self.samdb, ("Cn=%s,CN=Subnets,CN=Sites,%s" %
+                                           (cidr, self.config_dn)))
+
+            ret = self.samdb.search(base=dnsubnets, scope=ldb.SCOPE_ONELEVEL,
+                                    expression='(dn=%s)' % dnsubnet)
+            self.assertIsNotNone(ret)
+            self.assertEqual(len(ret), 1)
+            self.samdb.delete(dnsubnet, ["tree_delete:0"])
