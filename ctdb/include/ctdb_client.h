@@ -471,4 +471,138 @@ ctdb_ctrl_set_db_sticky_send(struct ctdb_context *ctdb, uint32_t destnode, uint3
 int ctdb_ctrl_set_db_sticky_recv(struct ctdb_context *ctdb, struct ctdb_client_control_state *state);
 int ctdb_ctrl_set_db_sticky(struct ctdb_context *ctdb, uint32_t destnode, uint32_t dbid);
 
+/*
+  allocate a packet for use in client<->daemon communication
+ */
+struct ctdb_req_header *_ctdbd_allocate_pkt(struct ctdb_context *ctdb,
+					    TALLOC_CTX *mem_ctx,
+					    enum ctdb_operation operation,
+					    size_t length, size_t slength,
+					    const char *type);
+#define ctdbd_allocate_pkt(ctdb, mem_ctx, operation, length, type) \
+	(type *)_ctdbd_allocate_pkt(ctdb, mem_ctx, operation, length, sizeof(type), #type)
+
+int ctdb_client_send_message(struct ctdb_context *ctdb, uint32_t vnn,
+			     uint64_t srvid, TDB_DATA data);
+
+int ctdb_socket_connect(struct ctdb_context *ctdb);
+void ctdb_client_read_cb(uint8_t *data, size_t cnt, void *args);
+
+void ctdb_request_message(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
+
+int ctdb_call_local(struct ctdb_db_context *ctdb_db, struct ctdb_call *call,
+		    struct ctdb_ltdb_header *header, TALLOC_CTX *mem_ctx,
+		    TDB_DATA *data, bool updatetdb);
+
+int ctdb_control(struct ctdb_context *ctdb, uint32_t destnode, uint64_t srvid,
+		 uint32_t opcode, uint32_t flags, TDB_DATA data,
+		 TALLOC_CTX *mem_ctx, TDB_DATA *outdata, int32_t *status,
+		 struct timeval *timeout, char **errormsg);
+int ctdb_control_recv(struct ctdb_context *ctdb,
+		struct ctdb_client_control_state *state,
+		TALLOC_CTX *mem_ctx,
+		TDB_DATA *outdata, int32_t *status, char **errormsg);
+
+struct ctdb_client_control_state *
+ctdb_control_send(struct ctdb_context *ctdb,
+		uint32_t destnode, uint64_t srvid,
+		uint32_t opcode, uint32_t flags, TDB_DATA data,
+		TALLOC_CTX *mem_ctx,
+		struct timeval *timeout,
+		char **errormsg);
+
+int ctdb_ctrl_takeover_ip(struct ctdb_context *ctdb, struct timeval timeout,
+			  uint32_t destnode, struct ctdb_public_ip *ip);
+int ctdb_ctrl_release_ip(struct ctdb_context *ctdb, struct timeval timeout,
+			 uint32_t destnode, struct ctdb_public_ip *ip);
+
+int ctdb_ctrl_get_public_ips(struct ctdb_context *ctdb,
+			     struct timeval timeout,
+			     uint32_t destnode,
+			     TALLOC_CTX *mem_ctx,
+			     struct ctdb_all_public_ips **ips);
+
+int ctdb_ctrl_get_public_ips_flags(struct ctdb_context *ctdb,
+				   struct timeval timeout, uint32_t destnode,
+				   TALLOC_CTX *mem_ctx,
+				   uint32_t flags,
+				   struct ctdb_all_public_ips **ips);
+
+int ctdb_ctrl_get_public_ip_info(struct ctdb_context *ctdb,
+				 struct timeval timeout, uint32_t destnode,
+				 TALLOC_CTX *mem_ctx,
+				 const ctdb_sock_addr *addr,
+				 struct ctdb_control_public_ip_info **info);
+int ctdb_ctrl_get_ifaces(struct ctdb_context *ctdb,
+			 struct timeval timeout, uint32_t destnode,
+			 TALLOC_CTX *mem_ctx,
+			 struct ctdb_control_get_ifaces **ifaces);
+int ctdb_ctrl_set_iface_link(struct ctdb_context *ctdb,
+			     struct timeval timeout, uint32_t destnode,
+			     TALLOC_CTX *mem_ctx,
+			     const struct ctdb_control_iface_info *info);
+
+int ctdb_ctrl_get_all_tunables(struct ctdb_context *ctdb,
+			       struct timeval timeout,
+			       uint32_t destnode,
+			       struct ctdb_tunable *tunables);
+
+int ctdb_ctrl_killtcp(struct ctdb_context *ctdb,
+		      struct timeval timeout,
+		      uint32_t destnode,
+		      struct ctdb_tcp_connection *killtcp);
+
+int ctdb_ctrl_add_public_ip(struct ctdb_context *ctdb,
+		      struct timeval timeout,
+		      uint32_t destnode,
+		      struct ctdb_control_ip_iface *pub);
+
+int ctdb_ctrl_del_public_ip(struct ctdb_context *ctdb,
+		      struct timeval timeout,
+		      uint32_t destnode,
+		      struct ctdb_control_ip_iface *pub);
+
+int ctdb_ctrl_gratious_arp(struct ctdb_context *ctdb,
+		      struct timeval timeout,
+		      uint32_t destnode,
+		      ctdb_sock_addr *addr,
+		      const char *ifname);
+
+int ctdb_ctrl_get_tcp_tickles(struct ctdb_context *ctdb,
+		      struct timeval timeout,
+		      uint32_t destnode,
+		      TALLOC_CTX *mem_ctx,
+		      ctdb_sock_addr *addr,
+		      struct ctdb_control_tcp_tickle_list **list);
+
+typedef void (*client_async_callback)(struct ctdb_context *ctdb, uint32_t node_pnn, int32_t res, TDB_DATA outdata, void *callback_data);
+
+struct client_async_data {
+	enum ctdb_controls opcode;
+	bool dont_log_errors;
+	uint32_t count;
+	uint32_t fail_count;
+	client_async_callback callback;
+	client_async_callback fail_callback;
+	void *callback_data;
+};
+
+void ctdb_client_async_add(struct client_async_data *data, struct ctdb_client_control_state *state);
+int ctdb_client_async_wait(struct ctdb_context *ctdb, struct client_async_data *data);
+int ctdb_client_async_control(struct ctdb_context *ctdb,
+				enum ctdb_controls opcode,
+				uint32_t *nodes,
+				uint64_t srvid,
+				struct timeval timeout,
+				bool dont_log_errors,
+				TDB_DATA data,
+				client_async_callback client_callback,
+			        client_async_callback fail_callback,
+				void *callback_data);
+
+int ctdb_ctrl_report_recd_lock_latency(struct ctdb_context *ctdb, struct timeval timeout, double latency);
+
+struct ctdb_record_handle;
+struct ctdb_ltdb_header *ctdb_header_from_record_handle(struct ctdb_record_handle *h);
+
 #endif /* _CTDB_CLIENT_H */
