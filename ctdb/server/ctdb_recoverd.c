@@ -418,7 +418,7 @@ static int run_startrecovery_eventscript(struct ctdb_recoverd *rec, struct ctdb_
 }
 
 /*
-  update the node capabilities for all connected nodes
+  Retrieve capabilities from all connected nodes
  */
 static int update_capabilities(struct ctdb_recoverd *rec,
 			       struct ctdb_node_map_old *nodemap)
@@ -2099,7 +2099,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	*/
 	sync_recovery_lock_file_across_cluster(rec);
 
-	/* update the capabilities for all nodes */
+	/* Retrieve capabilities from all connected nodes */
 	ret = update_capabilities(rec, nodemap);
 	if (ret!=0) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to update node capabilities.\n"));
@@ -3461,19 +3461,19 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 		TALLOC_FREE(rec->force_rebalance_nodes);
 	}
 
+	/* Retrieve capabilities from all connected nodes */
+	ret = update_capabilities(rec, nodemap);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, (__location__ " Unable to update node capabilities.\n"));
+		return;
+	}
+
 	/* When recovery daemon is started, recmaster is set to
 	 * "unknown" so it knows to start an election.
 	 */
 	if (rec->recmaster == CTDB_UNKNOWN_PNN) {
 		DEBUG(DEBUG_NOTICE,(__location__ " Initial recovery master set - forcing election\n"));
 		force_election(rec, pnn, nodemap);
-		return;
-	}
-
-	/* update the capabilities for all nodes */
-	ret = update_capabilities(rec, nodemap);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " Unable to update node capabilities.\n"));
 		return;
 	}
 
