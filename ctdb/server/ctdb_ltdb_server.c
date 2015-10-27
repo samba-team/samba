@@ -718,7 +718,7 @@ int ctdb_set_db_readonly(struct ctdb_context *ctdb, struct ctdb_db_context *ctdb
 	ctdb_db->rottdb = tdb_open(ropath, 
 			      ctdb->tunable.database_hash_size, 
 			      TDB_NOLOCK|TDB_CLEAR_IF_FIRST|TDB_NOSYNC,
-			      O_CREAT|O_RDWR, 0);
+			      O_CREAT|O_RDWR, 0600);
 	if (ctdb_db->rottdb == NULL) {
 		DEBUG(DEBUG_CRIT,("Failed to open/create the tracking database '%s'\n", ropath));
 		talloc_free(ropath);
