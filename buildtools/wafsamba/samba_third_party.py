@@ -1,8 +1,8 @@
 # functions to support third party libraries
 
+import os
+import Utils, Build
 from Configure import conf
-import sys, Logs, os
-from samba_bundled import *
 
 @conf
 def CHECK_FOR_THIRD_PARTY(conf):

@@ -1,8 +1,9 @@
 # functions to support bundled libraries
 
+import sys
+import Build, Options, Logs
 from Configure import conf
-import sys, Logs
-from samba_utils import *
+from samba_utils import TO_LIST, runonce
 
 def PRIVATE_NAME(bld, name, private_extension, private_library):
     '''possibly rename a library to include a bundled extension'''

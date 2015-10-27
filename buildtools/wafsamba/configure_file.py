@@ -1,7 +1,8 @@
 # handle substitution of variables in .in files
 
+import re, os
 import Build, sys, Logs
-from samba_utils import *
+from samba_utils import SUBST_VARS_RECURSIVE
 
 def subst_at_vars(task):
     '''substiture @VAR@ style variables in a file'''

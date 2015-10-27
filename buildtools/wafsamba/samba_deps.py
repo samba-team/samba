@@ -1,9 +1,14 @@
 # Samba automatic dependency handling and project rules
 
-import Build, os, sys, re, Environment, Logs, time
-from samba_utils import *
-from samba_autoconf import *
+import os, sys, re, time
+
+import Build, Environment, Options, Logs, Utils
+from Logs import debug
+from Configure import conf
+
 from samba_bundled import BUILTIN_LIBRARY
+from samba_utils import LOCAL_CACHE, TO_LIST, get_tgt_list, unique_list, os_path_relpath
+from samba_autoconf import library_flags
 
 @conf
 def ADD_GLOBAL_DEPENDENCY(ctx, dep):

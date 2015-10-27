@@ -1,5 +1,4 @@
-import Build
-from samba_utils import *
+import Utils
 from Configure import conf
 
 done = {}
