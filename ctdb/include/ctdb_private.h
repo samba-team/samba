@@ -24,109 +24,11 @@
 #include <sys/socket.h>
 
 /*
- * Structures to support SRVID requests and replies
- */
-struct srvid_request {
-	uint32_t pnn;
-	uint64_t srvid;
-};
-
-struct srvid_request_data {
-	uint32_t pnn;
-	uint64_t srvid;
-	uint32_t data;
-};
-
-/*
-  a tcp connection description
-  also used by tcp_add and tcp_remove controls
- */
-struct ctdb_tcp_connection {
-	ctdb_sock_addr src_addr;
-	ctdb_sock_addr dst_addr;
-};
-
-/* the wire representation for a tcp tickle array */
-struct ctdb_tcp_wire_array {
-	uint32_t num;
-	struct ctdb_tcp_connection connections[1];
-};	
-
-/* the list of tcp tickles used by get/set tcp tickle list */
-struct ctdb_control_tcp_tickle_list {
-	ctdb_sock_addr addr;
-	struct ctdb_tcp_wire_array tickles;
-};
-
-/*
   array of tcp connections
  */
 struct ctdb_tcp_array {
 	uint32_t num;
 	struct ctdb_tcp_connection *connections;
-};	
-
-
-/* all tunable variables go in here */
-struct ctdb_tunable {
-	uint32_t max_redirect_count;
-	uint32_t seqnum_interval; /* unit is ms */
-	uint32_t control_timeout;
-	uint32_t traverse_timeout;
-	uint32_t keepalive_interval;
-	uint32_t keepalive_limit;
-	uint32_t recover_timeout;
-	uint32_t recover_interval;
-	uint32_t election_timeout;
-	uint32_t takeover_timeout;
-	uint32_t monitor_interval;
-	uint32_t tickle_update_interval;
-	uint32_t script_timeout;
-	uint32_t script_timeout_count; /* allow dodgy scripts to hang this many times in a row before we mark the node unhealthy */
-	uint32_t script_unhealthy_on_timeout; /* obsolete */
-	uint32_t recovery_grace_period;
-	uint32_t recovery_ban_period;
-	uint32_t database_hash_size;
-	uint32_t database_max_dead;
-	uint32_t rerecovery_timeout;
-	uint32_t enable_bans;
-	uint32_t deterministic_public_ips;
-	uint32_t reclock_ping_period;
-	uint32_t no_ip_failback;
-	uint32_t disable_ip_failover;
-	uint32_t verbose_memory_names;
-	uint32_t recd_ping_timeout;
-	uint32_t recd_ping_failcount;
-	uint32_t log_latency_ms;
-	uint32_t reclock_latency_ms;
-	uint32_t recovery_drop_all_ips;
-	uint32_t verify_recovery_lock;
-	uint32_t vacuum_interval;
-	uint32_t vacuum_max_run_time;
-	uint32_t repack_limit;
-	uint32_t vacuum_limit;
-	uint32_t max_queue_depth_drop_msg;
-	uint32_t allow_unhealthy_db_read;
-	uint32_t stat_history_interval;
-	uint32_t deferred_attach_timeout;
-	uint32_t vacuum_fast_path_count;
-	uint32_t lcp2_public_ip_assignment;
-	uint32_t allow_client_db_attach;
-	uint32_t recover_pdb_by_seqnum;
-	uint32_t deferred_rebalance_on_node_add;
-	uint32_t fetch_collapse;
-	uint32_t hopcount_make_sticky;
-	uint32_t sticky_duration;
-	uint32_t sticky_pindown;
-	uint32_t no_ip_takeover;
-	uint32_t db_record_count_warn;
-	uint32_t db_record_size_warn;
-	uint32_t db_size_warn;
-	uint32_t pulldb_preallocation_size;
-	uint32_t no_ip_host_on_all_disabled;
-	uint32_t samba3_hack;
-	uint32_t mutex_enabled;
-	uint32_t lock_processes_per_db;
 };
 
 /*
@@ -401,19 +303,6 @@ struct ctdb_write_record {
 
 enum ctdb_freeze_mode {CTDB_FREEZE_NONE, CTDB_FREEZE_PENDING, CTDB_FREEZE_FROZEN};
 
-enum ctdb_runstate {
-	CTDB_RUNSTATE_UNKNOWN,
-	CTDB_RUNSTATE_INIT,
-	CTDB_RUNSTATE_SETUP,
-	CTDB_RUNSTATE_FIRST_RECOVERY,
-	CTDB_RUNSTATE_STARTUP,
-	CTDB_RUNSTATE_RUNNING,
-	CTDB_RUNSTATE_SHUTDOWN,
-};
-
-#define CTDB_MONITORING_ACTIVE		0
-#define CTDB_MONITORING_DISABLED	1
-
 #define NUM_DB_PRIORITIES 3
 /* main state of the ctdb daemon */
 struct ctdb_context {
@@ -592,43 +481,12 @@ struct ctdb_db_context {
 	  }} while (0)
 
 /*
-  struct holding a ctdb_sock_addr and an interface name,
-  used to add/remove public addresses
- */
-struct ctdb_control_ip_iface {
-	ctdb_sock_addr addr;
-	uint32_t mask;
-	uint32_t len;
-	char iface[1];
-};
-
-/*
-  struct holding a ctdb_sock_addr and an interface name,
-  used for send_gratious_arp
- */
-struct ctdb_control_gratious_arp {
-	ctdb_sock_addr addr;
-	uint32_t mask;
-	uint32_t len;
-	char iface[1];
-};
-
-/*
   persistent store control - update this record on all other nodes
  */
 struct ctdb_control_persistent_store {
 	uint32_t db_id;
 	uint32_t len;
 	uint8_t  data[1];
-};
-
-/*
-  structure used for CTDB_SRVID_NODE_FLAGS_CHANGED
- */
-struct ctdb_node_flag_change {
-	uint32_t pnn;
-	uint32_t new_flags;
-	uint32_t old_flags;
 };
 
 /*
@@ -640,8 +498,6 @@ struct ctdb_ban_info {
 };
 
 enum call_state {CTDB_CALL_WAIT, CTDB_CALL_DONE, CTDB_CALL_ERROR};
-
-#define CTDB_LMASTER_ANY	0xffffffff
 
 /*
   state of a in-progress ctdb call
@@ -733,51 +589,6 @@ ctdb_control_send(struct ctdb_context *ctdb,
  } \
  } while (0)
 
-/* structure used for pulldb control */
-struct ctdb_control_pulldb {
-	uint32_t db_id;
-	uint32_t lmaster;
-};
-
-/* structure used for sending lists of records */
-struct ctdb_marshall_buffer {
-	uint32_t db_id;
-	uint32_t count;
-	uint8_t data[1];
-};
-
-/*
-  structure for setting a tunable
- */
-struct ctdb_control_set_tunable {
-	uint32_t value;
-	uint32_t length;
-	uint8_t  name[1];
-};
-
-/*
-  structure for getting a tunable
- */
-struct ctdb_control_get_tunable {
-	uint32_t length;
-	uint8_t  name[1];
-};
-
-/*
-  structure for listing tunables
- */
-struct ctdb_control_list_tunable {
-	uint32_t length;
-	/* returns a : separated list of tunable names */
-	uint8_t  data[1];
-};
-
-
-struct ctdb_control_transdb {
-	uint32_t db_id;
-	uint32_t transaction_id;
-};
-
 /*
   state of a in-progress ctdb call in client
 */
@@ -802,30 +613,11 @@ int ctdb_ctrl_get_public_ips(struct ctdb_context *ctdb,
 			     uint32_t destnode,
 			     TALLOC_CTX *mem_ctx,
 			     struct ctdb_all_public_ips **ips);
-#define CTDB_PUBLIC_IP_FLAGS_ONLY_AVAILABLE 0x00010000
 int ctdb_ctrl_get_public_ips_flags(struct ctdb_context *ctdb,
 				   struct timeval timeout, uint32_t destnode,
 				   TALLOC_CTX *mem_ctx,
 				   uint32_t flags,
 				   struct ctdb_all_public_ips **ips);
-
-struct ctdb_control_iface_info {
-	char name[CTDB_IFACE_SIZE+2];
-	uint16_t link_state;
-	uint32_t references;
-};
-
-struct ctdb_control_public_ip_info {
-	struct ctdb_public_ip ip;
-	uint32_t active_idx;
-	uint32_t num;
-	struct ctdb_control_iface_info ifaces[1];
-};
-
-struct ctdb_control_get_ifaces {
-	uint32_t num;
-	struct ctdb_control_iface_info ifaces[1];
-};
 
 int ctdb_ctrl_get_public_ip_info(struct ctdb_context *ctdb,
 				 struct timeval timeout, uint32_t destnode,
@@ -915,16 +707,6 @@ extern bool fast_start;
 extern const char *ctdbd_pidfile;
 
 int ctdb_ctrl_report_recd_lock_latency(struct ctdb_context *ctdb, struct timeval timeout, double latency);
-
-/**
- * structure to pass to a schedule_for_deletion_control
- */
-struct ctdb_control_schedule_for_deletion {
-	uint32_t db_id;
-	struct ctdb_ltdb_header hdr;
-	uint32_t keylen;
-	uint8_t key[1]; /* key[] */
-};
 
 struct ctdb_ltdb_header *ctdb_header_from_record_handle(struct ctdb_record_handle *h);
 
