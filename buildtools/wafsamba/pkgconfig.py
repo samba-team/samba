@@ -1,7 +1,8 @@
 # handle substitution of variables in pc files
 
-import Build, sys, Logs
-from samba_utils import *
+import os, re, sys
+import Build, Logs
+from samba_utils import SUBST_VARS_RECURSIVE, TO_LIST
 
 def subst_at_vars(task):
     '''substiture @VAR@ style variables in a file'''

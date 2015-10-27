@@ -1,11 +1,11 @@
 # a set of config tests that use the samba_autoconf functions
 # to test for commonly needed configuration options
 
-import os, shutil, re
-import Build, Configure, Utils
+import os, shutil, re, shlex
+import Build, Configure, Utils, Options, Logs
 from Configure import conf
 import config_c
-from samba_utils import *
+from samba_utils import TO_LIST, ADD_LD_LIBRARY_PATH
 
 
 def add_option(self, *k, **kw):

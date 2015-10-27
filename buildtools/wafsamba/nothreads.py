@@ -10,12 +10,11 @@
 
 "Execute the tasks"
 
-import sys, random, time, threading, traceback, os
+import sys, random, threading
 try: from Queue import Queue
 except ImportError: from queue import Queue
-import Build, Utils, Logs, Options
-from Logs import debug, error
-from Constants import *
+import Utils, Options
+from Constants import EXCEPTION, CRASHED, MAXJOBS, ASK_LATER, SKIPPED, SKIP_ME, SUCCESS
 
 GAP = 15
 

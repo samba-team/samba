@@ -1,10 +1,10 @@
 # a waf tool to add autoconf-like macros to the configure section
 
-import Build, os, sys, Options, preproc, Logs
-import string
+import os, sys
+import Build, Options, preproc, Logs
 from Configure import conf
-from samba_utils import *
-import samba_cross
+from TaskGen import feature
+from samba_utils import TO_LIST, GET_TARGET_TYPE, SET_TARGET_TYPE, runonce, unique_list, mkdir_p
 
 missing_headers = set()
 

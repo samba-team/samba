@@ -1,8 +1,8 @@
 # functions for handling cross-compilation
 
-import Utils, Logs, sys, os, Options, re
+import os, sys, re, shlex
+import Utils, Logs, Options
 from Configure import conf
-import shlex
 
 real_Popen = None
 

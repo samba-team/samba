@@ -2,9 +2,9 @@
 
 # this is a base set of waf rules that everything else pulls in first
 
-import sys, wafsamba, Configure, Logs
-import Options, os, preproc
-from samba_utils import *
+import os, sys
+import wafsamba, Configure, Logs, Options, Utils
+from samba_utils import os_path_relpath
 from optparse import SUPPRESS_HELP
 
 # this forces configure to be re-run if any of the configure

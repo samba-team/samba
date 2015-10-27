@@ -1,8 +1,9 @@
 # waf build tool for building IDL files with pidl
 
-from TaskGen import before
-import Build, os, sys, Logs
-from samba_utils import *
+import os
+import Build
+from TaskGen import feature, before
+from samba_utils import SET_TARGET_TYPE, TO_LIST, LOCAL_CACHE
 
 def SAMBA_PIDL(bld, pname, source,
                options='',
@@ -112,7 +113,6 @@ Build.BuildContext.SAMBA_PIDL_LIST = SAMBA_PIDL_LIST
 
 #################################################################
 # the rule for generating the NDR tables
-from TaskGen import feature, before
 @feature('collect')
 @before('exec_rule')
 def collect(self):
@@ -128,7 +128,6 @@ def collect(self):
 
 def SAMBA_PIDL_TABLES(bld, name, target):
     '''generate the pidl NDR tables file'''
-    headers = bld.env.PIDL_HEADERS
     bld.SET_BUILD_GROUP('main')
     t = bld(
             features = 'collect',

@@ -20,6 +20,7 @@ from samba_perl import *
 from samba_deps import *
 from samba_bundled import *
 from samba_third_party import *
+import samba_cross
 import samba_install
 import samba_conftests
 import samba_abi

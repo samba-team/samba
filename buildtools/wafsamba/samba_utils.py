@@ -1,11 +1,11 @@
 # a waf tool to add autoconf-like macros to the configure section
 # and for SAMBA_ macros for building libraries, binaries etc
 
-import Build, os, sys, Options, Utils, Task, re, fnmatch, Logs
+import os, sys, re, fnmatch, shlex
+import Build, Options, Utils, Task, Logs
 from TaskGen import feature, before
 from Configure import conf, ConfigurationContext
 from Logs import debug
-import shlex
 
 # TODO: make this a --option
 LIB_PATH="shared"
@@ -140,7 +140,6 @@ def exec_command(self, cmd, **kw):
     '''this overrides the 'waf -v' debug output to be in a nice
     unix like format instead of a python list.
     Thanks to ita on #waf for this'''
-    import Utils, Logs
     _cmd = cmd
     if isinstance(cmd, list):
         _cmd = ' '.join(cmd)

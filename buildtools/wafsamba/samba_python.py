@@ -1,9 +1,7 @@
 # waf build tool for building IDL files with pidl
 
-import Build
-from samba_utils import *
-from samba_autoconf import *
-
+import os
+import Build, Logs, Utils
 from Configure import conf
 
 @conf

@@ -1,9 +1,10 @@
 # a waf tool to extract symbols from object files or libraries
 # using nm, producing a set of exposed defined/undefined symbols
 
-import Utils, Build, subprocess, Logs, re
-from samba_wildcard import fake_build_environment
-from samba_utils import *
+import os, re, subprocess
+import Utils, Build, Options, Logs
+from Logs import debug
+from samba_utils import TO_LIST, LOCAL_CACHE, get_tgt_list, os_path_relpath
 
 # these are the data structures used in symbols.py:
 #
