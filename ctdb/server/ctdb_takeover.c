@@ -1228,8 +1228,8 @@ int ctdb_set_single_public_ip(struct ctdb_context *ctdb,
 	return 0;
 }
 
-struct ctdb_public_ip_list {
-	struct ctdb_public_ip_list *next;
+struct public_ip_list {
+	struct public_ip_list *next;
 	uint32_t pnn;
 	ctdb_sock_addr addr;
 };
@@ -1237,9 +1237,8 @@ struct ctdb_public_ip_list {
 /* Given a physical node, return the number of
    public addresses that is currently assigned to this node.
 */
-static int node_ip_coverage(struct ctdb_context *ctdb, 
-	int32_t pnn,
-	struct ctdb_public_ip_list *ips)
+static int node_ip_coverage(struct ctdb_context *ctdb, int32_t pnn,
+			    struct public_ip_list *ips)
 {
 	int num=0;
 
@@ -1255,9 +1254,9 @@ static int node_ip_coverage(struct ctdb_context *ctdb,
 /* Can the given node host the given IP: is the public IP known to the
  * node and is NOIPHOST unset?
 */
-static bool can_node_host_ip(struct ctdb_context *ctdb, int32_t pnn, 
+static bool can_node_host_ip(struct ctdb_context *ctdb, int32_t pnn,
 			     struct ctdb_ipflags ipflags,
-			     struct ctdb_public_ip_list *ip)
+			     struct public_ip_list *ip)
 {
 	struct ctdb_all_public_ips *public_ips;
 	int i;
@@ -1282,9 +1281,9 @@ static bool can_node_host_ip(struct ctdb_context *ctdb, int32_t pnn,
 	return false;
 }
 
-static bool can_node_takeover_ip(struct ctdb_context *ctdb, int32_t pnn, 
+static bool can_node_takeover_ip(struct ctdb_context *ctdb, int32_t pnn,
 				 struct ctdb_ipflags ipflags,
-				 struct ctdb_public_ip_list *ip)
+				 struct public_ip_list *ip)
 {
 	if (ipflags.noiptakeover) {
 		return false;
@@ -1297,10 +1296,10 @@ static bool can_node_takeover_ip(struct ctdb_context *ctdb, int32_t pnn,
    pick the node that currently are serving the least number of ips
    so that the ips get spread out evenly.
 */
-static int find_takeover_node(struct ctdb_context *ctdb, 
-		struct ctdb_ipflags *ipflags,
-		struct ctdb_public_ip_list *ip,
-		struct ctdb_public_ip_list *all_ips)
+static int find_takeover_node(struct ctdb_context *ctdb,
+			      struct ctdb_ipflags *ipflags,
+			      struct public_ip_list *ip,
+			      struct public_ip_list *all_ips)
 {
 	int pnn, min=0, num;
 	int i, numnodes;
@@ -1366,8 +1365,8 @@ static uint32_t *ip_key(ctdb_sock_addr *ip)
 
 static void *add_ip_callback(void *parm, void *data)
 {
-	struct ctdb_public_ip_list *this_ip = parm; 
-	struct ctdb_public_ip_list *prev_ip = data; 
+	struct public_ip_list *this_ip = parm;
+	struct public_ip_list *prev_ip = data;
 
 	if (prev_ip == NULL) {
 		return parm;
@@ -1381,19 +1380,19 @@ static void *add_ip_callback(void *parm, void *data)
 
 static int getips_count_callback(void *param, void *data)
 {
-	struct ctdb_public_ip_list **ip_list = (struct ctdb_public_ip_list **)param;
-	struct ctdb_public_ip_list *new_ip = (struct ctdb_public_ip_list *)data;
+	struct public_ip_list **ip_list = (struct public_ip_list **)param;
+	struct public_ip_list *new_ip = (struct public_ip_list *)data;
 
 	new_ip->next = *ip_list;
 	*ip_list     = new_ip;
 	return 0;
 }
 
-static struct ctdb_public_ip_list *
+static struct public_ip_list *
 create_merged_ip_list(struct ctdb_context *ctdb)
 {
 	int i, j;
-	struct ctdb_public_ip_list *ip_list;
+	struct public_ip_list *ip_list;
 	struct ctdb_all_public_ips *public_ips;
 
 	if (ctdb->ip_tree != NULL) {
@@ -1415,9 +1414,9 @@ create_merged_ip_list(struct ctdb_context *ctdb)
 		}		
 
 		for (j=0;j<public_ips->num;j++) {
-			struct ctdb_public_ip_list *tmp_ip; 
+			struct public_ip_list *tmp_ip;
 
-			tmp_ip = talloc_zero(ctdb->ip_tree, struct ctdb_public_ip_list);
+			tmp_ip = talloc_zero(ctdb->ip_tree, struct public_ip_list);
 			CTDB_NO_MEMORY_NULL(ctdb, tmp_ip);
 			/* Do not use information about IP addresses hosted
 			 * on other nodes, it may not be accurate */
@@ -1486,10 +1485,10 @@ static uint32_t ip_distance(ctdb_sock_addr *ip1, ctdb_sock_addr *ip2)
    used in the main part of the algorithm.
  */
 static uint32_t ip_distance_2_sum(ctdb_sock_addr *ip,
-				  struct ctdb_public_ip_list *ips,
+				  struct public_ip_list *ips,
 				  int pnn)
 {
-	struct ctdb_public_ip_list *t;
+	struct public_ip_list *t;
 	uint32_t d;
 
 	uint32_t sum = 0;
@@ -1522,9 +1521,9 @@ static uint32_t ip_distance_2_sum(ctdb_sock_addr *ip,
 /* Return the LCP2 imbalance metric for addresses currently assigned
    to the given node.
  */
-static uint32_t lcp2_imbalance(struct ctdb_public_ip_list * all_ips, int pnn)
+static uint32_t lcp2_imbalance(struct public_ip_list * all_ips, int pnn)
 {
-	struct ctdb_public_ip_list *t;
+	struct public_ip_list *t;
 
 	uint32_t imbalance = 0;
 
@@ -1546,9 +1545,9 @@ static uint32_t lcp2_imbalance(struct ctdb_public_ip_list * all_ips, int pnn)
  */
 static void basic_allocate_unassigned(struct ctdb_context *ctdb,
 				      struct ctdb_ipflags *ipflags,
-				      struct ctdb_public_ip_list *all_ips)
+				      struct public_ip_list *all_ips)
 {
-	struct ctdb_public_ip_list *tmp_ip;
+	struct public_ip_list *tmp_ip;
 
 	/* loop over all ip's and find a physical node to cover for 
 	   each unassigned ip.
@@ -1567,12 +1566,12 @@ static void basic_allocate_unassigned(struct ctdb_context *ctdb,
  */
 static void basic_failback(struct ctdb_context *ctdb,
 			   struct ctdb_ipflags *ipflags,
-			   struct ctdb_public_ip_list *all_ips,
+			   struct public_ip_list *all_ips,
 			   int num_ips)
 {
 	int i, numnodes;
 	int maxnode, maxnum, minnode, minnum, num, retries;
-	struct ctdb_public_ip_list *tmp_ip;
+	struct public_ip_list *tmp_ip;
 
 	numnodes = talloc_array_length(ipflags);
 	retries = 0;
@@ -1638,7 +1637,7 @@ try_again:
 		*/
 		if ( (maxnum > minnum+1)
 		     && (retries < (num_ips + 5)) ){
-			struct ctdb_public_ip_list *tmp;
+			struct public_ip_list *tmp;
 
 			/* Reassign one of maxnode's VNNs */
 			for (tmp=all_ips;tmp;tmp=tmp->next) {
@@ -1654,13 +1653,13 @@ try_again:
 
 static void lcp2_init(struct ctdb_context *tmp_ctx,
 		      struct ctdb_ipflags *ipflags,
-		      struct ctdb_public_ip_list *all_ips,
+		      struct public_ip_list *all_ips,
 		      uint32_t *force_rebalance_nodes,
 		      uint32_t **lcp2_imbalances,
 		      bool **rebalance_candidates)
 {
 	int i, numnodes;
-	struct ctdb_public_ip_list *tmp_ip;
+	struct public_ip_list *tmp_ip;
 
 	numnodes = talloc_array_length(ipflags);
 
@@ -1712,15 +1711,15 @@ static void lcp2_init(struct ctdb_context *tmp_ctx,
  */
 static void lcp2_allocate_unassigned(struct ctdb_context *ctdb,
 				     struct ctdb_ipflags *ipflags,
-				     struct ctdb_public_ip_list *all_ips,
+				     struct public_ip_list *all_ips,
 				     uint32_t *lcp2_imbalances)
 {
-	struct ctdb_public_ip_list *tmp_ip;
+	struct public_ip_list *tmp_ip;
 	int dstnode, numnodes;
 
 	int minnode;
 	uint32_t mindsum, dstdsum, dstimbl, minimbl;
-	struct ctdb_public_ip_list *minip;
+	struct public_ip_list *minip;
 
 	bool should_loop = true;
 	bool have_unassigned = true;
@@ -1810,7 +1809,7 @@ static void lcp2_allocate_unassigned(struct ctdb_context *ctdb,
  */
 static bool lcp2_failback_candidate(struct ctdb_context *ctdb,
 				    struct ctdb_ipflags *ipflags,
-				    struct ctdb_public_ip_list *all_ips,
+				    struct public_ip_list *all_ips,
 				    int srcnode,
 				    uint32_t *lcp2_imbalances,
 				    bool *rebalance_candidates)
@@ -1818,8 +1817,8 @@ static bool lcp2_failback_candidate(struct ctdb_context *ctdb,
 	int dstnode, mindstnode, numnodes;
 	uint32_t srcimbl, srcdsum, dstimbl, dstdsum;
 	uint32_t minsrcimbl, mindstimbl;
-	struct ctdb_public_ip_list *minip;
-	struct ctdb_public_ip_list *tmp_ip;
+	struct public_ip_list *minip;
+	struct public_ip_list *tmp_ip;
 
 	/* Find an IP and destination node that best reduces imbalance. */
 	srcimbl = 0;
@@ -1927,7 +1926,7 @@ static int lcp2_cmp_imbalance_pnn(const void * a, const void * b)
  */
 static void lcp2_failback(struct ctdb_context *ctdb,
 			  struct ctdb_ipflags *ipflags,
-			  struct ctdb_public_ip_list *all_ips,
+			  struct public_ip_list *all_ips,
 			  uint32_t *lcp2_imbalances,
 			  bool *rebalance_candidates)
 {
@@ -1981,9 +1980,9 @@ try_again:
 
 static void unassign_unsuitable_ips(struct ctdb_context *ctdb,
 				    struct ctdb_ipflags *ipflags,
-				    struct ctdb_public_ip_list *all_ips)
+				    struct public_ip_list *all_ips)
 {
-	struct ctdb_public_ip_list *tmp_ip;
+	struct public_ip_list *tmp_ip;
 
 	/* verify that the assigned nodes can serve that public ip
 	   and set it to -1 if not
@@ -2005,9 +2004,9 @@ static void unassign_unsuitable_ips(struct ctdb_context *ctdb,
 
 static void ip_alloc_deterministic_ips(struct ctdb_context *ctdb,
 				       struct ctdb_ipflags *ipflags,
-				       struct ctdb_public_ip_list *all_ips)
+				       struct public_ip_list *all_ips)
 {
-	struct ctdb_public_ip_list *tmp_ip;
+	struct public_ip_list *tmp_ip;
 	int i, numnodes;
 
 	numnodes = talloc_array_length(ipflags);
@@ -2039,10 +2038,10 @@ static void ip_alloc_deterministic_ips(struct ctdb_context *ctdb,
 
 static void ip_alloc_nondeterministic_ips(struct ctdb_context *ctdb,
 					  struct ctdb_ipflags *ipflags,
-					  struct ctdb_public_ip_list *all_ips)
+					  struct public_ip_list *all_ips)
 {
 	/* This should be pushed down into basic_failback. */
-	struct ctdb_public_ip_list *tmp_ip;
+	struct public_ip_list *tmp_ip;
 	int num_ips = 0;
 	for (tmp_ip=all_ips;tmp_ip;tmp_ip=tmp_ip->next) {
 		num_ips++;
@@ -2065,7 +2064,7 @@ static void ip_alloc_nondeterministic_ips(struct ctdb_context *ctdb,
 
 static void ip_alloc_lcp2(struct ctdb_context *ctdb,
 			  struct ctdb_ipflags *ipflags,
-			  struct ctdb_public_ip_list *all_ips,
+			  struct public_ip_list *all_ips,
 			  uint32_t *force_rebalance_nodes)
 {
 	uint32_t *lcp2_imbalances;
@@ -2128,7 +2127,7 @@ static bool all_nodes_are_disabled(struct ctdb_node_map_old *nodemap)
 /* The calculation part of the IP allocation algorithm. */
 static void ctdb_takeover_run_core(struct ctdb_context *ctdb,
 				   struct ctdb_ipflags *ipflags,
-				   struct ctdb_public_ip_list **all_ips_p,
+				   struct public_ip_list **all_ips_p,
 				   uint32_t *force_rebalance_nodes)
 {
 	/* since nodes only know about those public addresses that
@@ -2579,7 +2578,7 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map_old *nodem
 	int i, j, ret;
 	struct ctdb_public_ip ip;
 	uint32_t *nodes;
-	struct ctdb_public_ip_list *all_ips, *tmp_ip;
+	struct public_ip_list *all_ips, *tmp_ip;
 	TDB_DATA data;
 	struct timeval timeout;
 	struct client_async_data *async_data;
@@ -4229,7 +4228,7 @@ int verify_remote_ip_allocation(struct ctdb_context *ctdb,
 				struct ctdb_all_public_ips *ips,
 				uint32_t pnn)
 {
-	struct ctdb_public_ip_list *tmp_ip; 
+	struct public_ip_list *tmp_ip;
 	int i;
 
 	if (ctdb->ip_tree == NULL) {
@@ -4268,7 +4267,7 @@ int verify_remote_ip_allocation(struct ctdb_context *ctdb,
 
 int update_ip_assignment_tree(struct ctdb_context *ctdb, struct ctdb_public_ip *ip)
 {
-	struct ctdb_public_ip_list *tmp_ip;
+	struct public_ip_list *tmp_ip;
 
 	/* IP tree is never built if DisableIPFailover is set */
 	if (ctdb->tunable.disable_ip_failover != 0) {

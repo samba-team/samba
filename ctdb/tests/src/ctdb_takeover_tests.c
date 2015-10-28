@@ -26,16 +26,16 @@
 /* Format of each line is "IP pnn" - the separator has to be at least
  * 1 space (not a tab or whatever - a space!).
  */
-static struct ctdb_public_ip_list *
+static struct public_ip_list *
 read_ctdb_public_ip_list(TALLOC_CTX *ctx)
 {
 	char line[1024];
 	ctdb_sock_addr addr;
 	char *t;
 	int pnn;
-	struct ctdb_public_ip_list *last = NULL;
+	struct public_ip_list *last = NULL;
 
-	struct ctdb_public_ip_list *ret = NULL;
+	struct public_ip_list *ret = NULL;
 
 	while (fgets(line, sizeof(line), stdin) != NULL) {
 		
@@ -55,9 +55,9 @@ read_ctdb_public_ip_list(TALLOC_CTX *ctx)
 	       
 		if (parse_ip(line, NULL, 0, &addr)) {
 			if (last == NULL) {
-				last = talloc(ctx, struct ctdb_public_ip_list);
+				last = talloc(ctx, struct public_ip_list);
 			} else {
-				last->next = talloc(ctx, struct ctdb_public_ip_list);
+				last->next = talloc(ctx, struct public_ip_list);
 				last = last->next;
 			}
 			last->next = NULL;
@@ -74,7 +74,7 @@ read_ctdb_public_ip_list(TALLOC_CTX *ctx)
 	return ret;
 }
 
-static void print_ctdb_public_ip_list(struct ctdb_public_ip_list * ips)
+static void print_ctdb_public_ip_list(struct public_ip_list * ips)
 {
 	while (ips) {
 		printf("%s %d\n", ctdb_addr_to_str(&(ips->addr)), ips->pnn);
@@ -86,7 +86,7 @@ static void print_ctdb_public_ip_list(struct ctdb_public_ip_list * ips)
  * them back out. */
 static void ctdb_test_read_ctdb_public_ip_list(void)
 {
-	struct ctdb_public_ip_list *l;
+	struct public_ip_list *l;
 
 	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
 
@@ -102,17 +102,17 @@ static void ctdb_test_read_ctdb_public_ip_list(void)
 static bool
 read_ctdb_public_ip_info(TALLOC_CTX *ctx,
 			 int numnodes,
-			 struct ctdb_public_ip_list ** all_ips,
+			 struct public_ip_list ** all_ips,
 			 struct ctdb_all_public_ips *** avail)
 {
 	char line[1024];
 	ctdb_sock_addr addr;
 	char *t, *tok;
-	struct ctdb_public_ip_list * ta;
+	struct public_ip_list * ta;
 	int pnn, numips, curr, n, i;
 	struct ctdb_all_public_ips * a;
 
-	struct ctdb_public_ip_list *last = NULL;
+	struct public_ip_list *last = NULL;
 
 	*avail = talloc_array_size(ctx, sizeof(struct ctdb_all_public_ips *), CTDB_TEST_MAX_NODES);
 	memset(*avail, 0,
@@ -159,9 +159,9 @@ read_ctdb_public_ip_info(TALLOC_CTX *ctx,
 
 		/* Add address + pnn to all_ips */
 		if (last == NULL) {
-			last = talloc(ctx, struct ctdb_public_ip_list);
+			last = talloc(ctx, struct public_ip_list);
 		} else {
-			last->next = talloc(ctx, struct ctdb_public_ip_list);
+			last->next = talloc(ctx, struct public_ip_list);
 			last = last->next;
 		}
 		last->next = NULL;
@@ -233,7 +233,7 @@ static void print_ctdb_available_ips(int numnodes,
 static void ctdb_test_read_ctdb_public_ip_info(const char nodestates[])
 {
 	int numnodes;
-	struct ctdb_public_ip_list *l;
+	struct public_ip_list *l;
 	struct ctdb_all_public_ips **avail;
 	char *tok, *ns;
 
@@ -264,7 +264,7 @@ static void ctdb_test_read_ctdb_public_ip_info(const char nodestates[])
 /* Read 2 IPs from stdin, calculate the IP distance and print it. */
 static void ctdb_test_ip_distance(void)
 {
-	struct ctdb_public_ip_list *l;
+	struct public_ip_list *l;
 	uint32_t distance;
 
 	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
@@ -284,8 +284,8 @@ static void ctdb_test_ip_distance(void)
  * the given node. The given IP must one of the ones in the list.  */
 static void ctdb_test_ip_distance_2_sum(const char ip[], int pnn)
 {
-	struct ctdb_public_ip_list *l;
-	struct ctdb_public_ip_list *t;
+	struct public_ip_list *l;
+	struct public_ip_list *t;
 	ctdb_sock_addr addr;
 	uint32_t distance;
 
@@ -321,7 +321,7 @@ static void ctdb_test_ip_distance_2_sum(const char ip[], int pnn)
  * IP distances between the first and the rest, and print it. */
 static void ctdb_test_lcp2_imbalance(int pnn)
 {
-	struct ctdb_public_ip_list *l;
+	struct public_ip_list *l;
 	uint32_t imbalance;
 
 	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
@@ -408,7 +408,7 @@ static enum ctdb_runstate *get_runstate(TALLOC_CTX *tmp_ctx,
  */
 static void ctdb_test_init(const char nodestates[],
 			   struct ctdb_context **ctdb,
-			   struct ctdb_public_ip_list **all_ips,
+			   struct public_ip_list **all_ips,
 			   struct ctdb_ipflags **ipflags,
 			   bool read_ips_for_multiple_nodes)
 {
@@ -505,7 +505,7 @@ static void ctdb_test_init(const char nodestates[],
 static void ctdb_test_lcp2_allocate_unassigned(const char nodestates[])
 {
 	struct ctdb_context *ctdb;
-	struct ctdb_public_ip_list *all_ips;
+	struct public_ip_list *all_ips;
 	struct ctdb_ipflags *ipflags;
 
 	uint32_t *lcp2_imbalances;
@@ -528,7 +528,7 @@ static void ctdb_test_lcp2_allocate_unassigned(const char nodestates[])
 static void ctdb_test_lcp2_failback(const char nodestates[])
 {
 	struct ctdb_context *ctdb;
-	struct ctdb_public_ip_list *all_ips;
+	struct public_ip_list *all_ips;
 	struct ctdb_ipflags *ipflags;
 
 	uint32_t *lcp2_imbalances;
@@ -551,7 +551,7 @@ static void ctdb_test_lcp2_failback(const char nodestates[])
 static void ctdb_test_lcp2_failback_loop(const char nodestates[])
 {
 	struct ctdb_context *ctdb;
-	struct ctdb_public_ip_list *all_ips;
+	struct public_ip_list *all_ips;
 	struct ctdb_ipflags *ipflags;
 
 	uint32_t *lcp2_imbalances;
@@ -577,7 +577,7 @@ static void ctdb_test_ctdb_takeover_run_core(const char nodestates[],
 					     bool read_ips_for_multiple_nodes)
 {
 	struct ctdb_context *ctdb;
-	struct ctdb_public_ip_list *all_ips;
+	struct public_ip_list *all_ips;
 	struct ctdb_ipflags *ipflags;
 
 	ctdb_test_init(nodestates, &ctdb, &all_ips, &ipflags,
