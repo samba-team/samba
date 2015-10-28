@@ -2,7 +2,7 @@
 # and for SAMBA_ macros for building libraries, binaries etc
 
 import os, sys, re, fnmatch, shlex
-import Build, Options, Utils, Task, Logs
+import Build, Options, Utils, Task, Logs, Configure
 from TaskGen import feature, before
 from Configure import conf, ConfigurationContext
 from Logs import debug
@@ -656,11 +656,10 @@ def PROCESS_SEPARATE_RULE(self, rule):
         You should have file named wscript_<stage>_rule in the current directory
         where stage is either 'configure' or 'build'
     '''
-    ctxclass = self.__class__.__name__
     stage = ''
-    if ctxclass == 'ConfigurationContext':
+    if isinstance(self, Configure.ConfigurationContext):
         stage = 'configure'
-    elif ctxclass == 'BuildContext':
+    elif isinstance(self, Build.BuildContext):
         stage = 'build'
     file_path = os.path.join(self.curdir, WSCRIPT_FILE+'_'+stage+'_'+rule)
     txt = load_file(file_path)
