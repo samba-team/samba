@@ -1515,7 +1515,7 @@ static int recover_database(struct ctdb_recoverd *rec,
 	int ret;
 	struct ctdb_context *ctdb = rec->ctdb;
 	TDB_DATA data;
-	struct ctdb_control_transdb w;
+	struct ctdb_transdb w;
 	uint32_t *nodes;
 
 	recdb = create_recdb(ctdb, mem_ctx);
@@ -1534,7 +1534,7 @@ static int recover_database(struct ctdb_recoverd *rec,
 
 	/* wipe all the remote databases. This is safe as we are in a transaction */
 	w.db_id = dbid;
-	w.transaction_id = transaction_id;
+	w.tid = transaction_id;
 
 	data.dptr = (void *)&w;
 	data.dsize = sizeof(w);

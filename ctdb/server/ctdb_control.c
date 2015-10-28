@@ -453,7 +453,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return ctdb_control_transaction_commit(ctdb, *(uint32_t *)indata.dptr);
 
 	case CTDB_CONTROL_WIPE_DATABASE:
-		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_control_transdb));
+		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_transdb));
 		return ctdb_control_wipe_database(ctdb, indata);
 
 	case CTDB_CONTROL_UPTIME:
@@ -704,11 +704,11 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return ctdb_control_db_thaw(ctdb, *(uint32_t *)indata.dptr);
 
 	case CTDB_CONTROL_DB_TRANSACTION_START:
-		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_control_transdb));
+		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_transdb));
 		return ctdb_control_db_transaction_start(ctdb, indata);
 
 	case CTDB_CONTROL_DB_TRANSACTION_COMMIT:
-		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_control_transdb));
+		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_transdb));
 		return ctdb_control_db_transaction_commit(ctdb, indata);
 
 	case CTDB_CONTROL_DB_TRANSACTION_CANCEL:

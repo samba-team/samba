@@ -781,8 +781,8 @@ static int db_commit_transaction(struct ctdb_db_context *ctdb_db,
 int32_t ctdb_control_db_transaction_start(struct ctdb_context *ctdb,
 					  TDB_DATA indata)
 {
-	struct ctdb_control_transdb *w =
-		(struct ctdb_control_transdb *)indata.dptr;
+	struct ctdb_transdb *w =
+		(struct ctdb_transdb *)indata.dptr;
 	struct ctdb_db_context *ctdb_db;
 	struct db_start_transaction_state state;
 
@@ -794,7 +794,7 @@ int32_t ctdb_control_db_transaction_start(struct ctdb_context *ctdb,
 		return -1;
 	}
 
-	state.transaction_id = w->transaction_id;
+	state.transaction_id = w->tid;
 	state.transaction_started = true;
 
 	return db_start_transaction(ctdb_db, &state);
@@ -828,8 +828,8 @@ int32_t ctdb_control_db_transaction_cancel(struct ctdb_context *ctdb,
 int32_t ctdb_control_db_transaction_commit(struct ctdb_context *ctdb,
 					   TDB_DATA indata)
 {
-	struct ctdb_control_transdb *w =
-		(struct ctdb_control_transdb *)indata.dptr;
+	struct ctdb_transdb *w =
+		(struct ctdb_transdb *)indata.dptr;
 	struct ctdb_db_context *ctdb_db;
 	struct db_commit_transaction_state state;
 	int healthy_nodes, i;
@@ -849,7 +849,7 @@ int32_t ctdb_control_db_transaction_commit(struct ctdb_context *ctdb,
 		}
 	}
 
-	state.transaction_id = w->transaction_id;
+	state.transaction_id = w->tid;
 	state.healthy_nodes = healthy_nodes;
 
 	return db_commit_transaction(ctdb_db, &state);
@@ -960,7 +960,7 @@ fail:
  */
 int32_t ctdb_control_wipe_database(struct ctdb_context *ctdb, TDB_DATA indata)
 {
-	struct ctdb_control_transdb w = *(struct ctdb_control_transdb *)indata.dptr;
+	struct ctdb_transdb w = *(struct ctdb_transdb *)indata.dptr;
 	struct ctdb_db_context *ctdb_db;
 
 	ctdb_db = find_ctdb_db(ctdb, w.db_id);
@@ -979,8 +979,8 @@ int32_t ctdb_control_wipe_database(struct ctdb_context *ctdb, TDB_DATA indata)
 		return -1;
 	}
 
-	if (w.transaction_id != ctdb_db->freeze_transaction_id) {
-		DEBUG(DEBUG_ERR,(__location__ " incorrect transaction id 0x%x in commit\n", w.transaction_id));
+	if (w.tid != ctdb_db->freeze_transaction_id) {
+		DEBUG(DEBUG_ERR,(__location__ " incorrect transaction id 0x%x in commit\n", w.tid));
 		return -1;
 	}
 

@@ -981,9 +981,9 @@ struct ctdb_control_list_tunable {
 };
 
 
-struct ctdb_control_transdb {
+struct ctdb_transdb {
 	uint32_t db_id;
-	uint32_t transaction_id;
+	uint32_t tid;
 };
 
 #define CTDB_PUBLIC_IP_FLAGS_ONLY_AVAILABLE 0x00010000
