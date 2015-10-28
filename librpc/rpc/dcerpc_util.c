@@ -390,8 +390,7 @@ struct tevent_req *dcerpc_read_ncacn_packet_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	state->buffer = data_blob_const(NULL, 0);
-	state->pkt = talloc(state, struct ncacn_packet);
+	state->pkt = talloc_zero(state, struct ncacn_packet);
 	if (tevent_req_nomem(state->pkt, req)) {
 		goto post;
 	}
@@ -489,8 +488,6 @@ static void dcerpc_read_ncacn_packet_done(struct tevent_req *subreq)
 					struct dcerpc_read_ncacn_packet_state);
 	int ret;
 	int sys_errno;
-	struct ndr_pull *ndr;
-	enum ndr_err_code ndr_err;
 	NTSTATUS status;
 
 	ret = tstream_readv_pdu_recv(subreq, &sys_errno);
@@ -501,29 +498,10 @@ static void dcerpc_read_ncacn_packet_done(struct tevent_req *subreq)
 		return;
 	}
 
-	ndr = ndr_pull_init_blob(&state->buffer, state->pkt);
-	if (tevent_req_nomem(ndr, req)) {
-		return;
-	}
-
-	if (!(CVAL(ndr->data, DCERPC_DREP_OFFSET) & DCERPC_DREP_LE)) {
-		ndr->flags |= LIBNDR_FLAG_BIGENDIAN;
-	}
-
-	if (CVAL(ndr->data, DCERPC_PFC_OFFSET) & DCERPC_PFC_FLAG_OBJECT_UUID) {
-		ndr->flags |= LIBNDR_FLAG_OBJECT_PRESENT;
-	}
-
-	ndr_err = ndr_pull_ncacn_packet(ndr, NDR_SCALARS|NDR_BUFFERS, state->pkt);
-	TALLOC_FREE(ndr);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		status = ndr_map_error2ntstatus(ndr_err);
-		tevent_req_nterror(req, status);
-		return;
-	}
-
-	if (state->pkt->frag_length != state->buffer.length) {
-		tevent_req_nterror(req, NT_STATUS_RPC_PROTOCOL_ERROR);
+	status = dcerpc_pull_ncacn_packet(state->pkt,
+					  &state->buffer,
+					  state->pkt);
+	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 
