@@ -24,6 +24,7 @@
 #include <talloc.h>
 #include "libcli/util/ntstatus.h"
 #include "tdb.h"
+#include "lib/param/loadparm.h"
 
 struct db_record;
 struct db_context;
