@@ -250,8 +250,6 @@ interface dcerpc
 		DCERPC_AUTH_LEVEL_PRIVACY   = 6
 	} dcerpc_AuthLevel;
 
-	const uint8 DCERPC_AUTH_LEVEL_DEFAULT	= DCERPC_AUTH_LEVEL_CONNECT;
-
 	typedef [public] struct {
 		dcerpc_AuthType auth_type;
 		dcerpc_AuthLevel auth_level;
