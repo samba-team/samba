@@ -1665,8 +1665,29 @@ static NTSTATUS dcesrv_process_ncacn_packet(struct dcesrv_connection *dce_conn,
 						DCERPC_NCA_S_PROTO_ERROR);
 			}
 		}
+	}
 
-		if (!dcesrv_auth_request(call, &blob)) {
+	if (call->pkt.ptype == DCERPC_PKT_REQUEST) {
+		bool ok;
+		uint8_t payload_offset = DCERPC_REQUEST_LENGTH;
+
+		if (call->pkt.pfc_flags & DCERPC_PFC_FLAG_OBJECT_UUID) {
+			payload_offset += 16;
+		}
+
+		ok = dcesrv_auth_pkt_pull(call, &blob,
+					  0, /* required_flags */
+					  DCERPC_PFC_FLAG_FIRST |
+					  DCERPC_PFC_FLAG_LAST |
+					  DCERPC_PFC_FLAG_PENDING_CANCEL |
+					  0x08 | /* this is not defined, but should be ignored */
+					  DCERPC_PFC_FLAG_CONC_MPX |
+					  DCERPC_PFC_FLAG_DID_NOT_EXECUTE |
+					  DCERPC_PFC_FLAG_MAYBE |
+					  DCERPC_PFC_FLAG_OBJECT_UUID,
+					  payload_offset,
+					  &call->pkt.u.request.stub_and_verifier);
+		if (!ok) {
 			/*
 			 * We don't use dcesrv_fault_disconnect()
 			 * here, because we don't want to set

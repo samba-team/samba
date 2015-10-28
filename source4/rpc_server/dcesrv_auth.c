@@ -461,9 +461,14 @@ NTSTATUS dcesrv_auth_alter_ack(struct dcesrv_call_state *call, struct ncacn_pack
 }
 
 /*
-  check credentials on a request
+  check credentials on a packet
 */
-bool dcesrv_auth_request(struct dcesrv_call_state *call, DATA_BLOB *full_packet)
+bool dcesrv_auth_pkt_pull(struct dcesrv_call_state *call,
+			  DATA_BLOB *full_packet,
+			  uint8_t required_flags,
+			  uint8_t optional_flags,
+			  uint8_t payload_offset,
+			  DATA_BLOB *payload_and_verifier)
 {
 	struct ncacn_packet *pkt = &call->pkt;
 	struct dcesrv_connection *dce_conn = call->conn;
@@ -473,7 +478,6 @@ bool dcesrv_auth_request(struct dcesrv_call_state *call, DATA_BLOB *full_packet)
 		.auth_context_id = dce_conn->auth_state.auth_context_id,
 	};
 	NTSTATUS status;
-	uint8_t payload_offset = DCERPC_REQUEST_LENGTH;
 
 	if (!dce_conn->allow_request) {
 		call->fault_code = DCERPC_NCA_S_PROTO_ERROR;
@@ -484,25 +488,14 @@ bool dcesrv_auth_request(struct dcesrv_call_state *call, DATA_BLOB *full_packet)
 		return false;
 	}
 
-	if (pkt->pfc_flags & DCERPC_PFC_FLAG_OBJECT_UUID) {
-		payload_offset += 16;
-	}
-
 	status = dcerpc_ncacn_pull_pkt_auth(&tmp_auth,
 					    dce_conn->auth_state.gensec_security,
 					    call,
-					    DCERPC_PKT_REQUEST,
-					    0, /* required_flags */
-					    DCERPC_PFC_FLAG_FIRST |
-					    DCERPC_PFC_FLAG_LAST |
-					    DCERPC_PFC_FLAG_PENDING_CANCEL |
-					    0x08 | /* this is not defined, but should be ignored */
-					    DCERPC_PFC_FLAG_CONC_MPX |
-					    DCERPC_PFC_FLAG_DID_NOT_EXECUTE |
-					    DCERPC_PFC_FLAG_MAYBE |
-					    DCERPC_PFC_FLAG_OBJECT_UUID,
+					    pkt->ptype,
+					    required_flags,
+					    optional_flags,
 					    payload_offset,
-					    &pkt->u.request.stub_and_verifier,
+					    payload_and_verifier,
 					    full_packet,
 					    pkt);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_RPC_PROTOCOL_ERROR)) {
