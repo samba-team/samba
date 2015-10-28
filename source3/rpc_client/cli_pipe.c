@@ -960,6 +960,10 @@ static void rpc_api_pipe_got_pdu(struct tevent_req *subreq)
 		return;
 	}
 
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_DEBUG(ncacn_packet, state->pkt);
+	}
+
 	status = cli_pipe_validate_current_pdu(state,
 						state->cli, state->pkt,
 						&state->incoming_frag,
