@@ -88,14 +88,12 @@ NTSTATUS dcerpc_push_ncacn_packet(TALLOC_CTX *mem_ctx,
 *			elements
 * @param blob		The blob of data to decode
 * @param r		An empty ncacn_packet, must not be NULL
-* @param bigendian	Whether the packet is bignedian encoded
 *
 * @return a NTSTATUS error code
 */
 NTSTATUS dcerpc_pull_ncacn_packet(TALLOC_CTX *mem_ctx,
 				  const DATA_BLOB *blob,
-				  struct ncacn_packet *r,
-				  bool bigendian)
+				  struct ncacn_packet *r)
 {
 	enum ndr_err_code ndr_err;
 	struct ndr_pull *ndr;
@@ -104,11 +102,12 @@ NTSTATUS dcerpc_pull_ncacn_packet(TALLOC_CTX *mem_ctx,
 	if (!ndr) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	if (bigendian) {
+
+	if (!(CVAL(ndr->data, DCERPC_DREP_OFFSET) & DCERPC_DREP_LE)) {
 		ndr->flags |= LIBNDR_FLAG_BIGENDIAN;
 	}
 
-	if (CVAL(blob->data, DCERPC_PFC_OFFSET) & DCERPC_PFC_FLAG_OBJECT_UUID) {
+	if (CVAL(ndr->data, DCERPC_PFC_OFFSET) & DCERPC_PFC_FLAG_OBJECT_UUID) {
 		ndr->flags |= LIBNDR_FLAG_OBJECT_PRESENT;
 	}
 
