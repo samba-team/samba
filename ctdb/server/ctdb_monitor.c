@@ -39,6 +39,7 @@ struct ctdb_monitor_state {
 	uint32_t monitoring_mode;
 	TALLOC_CTX *monitor_context;
 	uint32_t next_interval;
+	uint32_t event_script_timeouts;
 };
 
 static void ctdb_check_health(struct tevent_context *ev,
@@ -144,16 +145,20 @@ static void ctdb_health_callback(struct ctdb_context *ctdb, int status, void *p)
 	}
 
 	if (status == -ETIME) {
-		ctdb->event_script_timeouts++;
+		ctdb->monitor->event_script_timeouts++;
 
-		if (ctdb->event_script_timeouts >= ctdb->tunable.script_timeout_count) {
-			DEBUG(DEBUG_ERR, ("Maximum timeout count %u reached for eventscript. Making node unhealthy\n", ctdb->tunable.script_timeout_count));
+		if (ctdb->monitor->event_script_timeouts >=
+		    ctdb->tunable.script_timeout_count) {
+			DEBUG(DEBUG_ERR,
+			      ("Maximum monitor timeout count %u reached."
+			       " Making node unhealthy\n",
+			       ctdb->tunable.script_timeout_count));
 		} else {
 			/* We pretend this is OK. */
 			goto after_change_status;
 		}
 	} else {
-		ctdb->event_script_timeouts = 0;
+		ctdb->monitor->event_script_timeouts = 0;
 	}
 
 	if (status != 0 && !(node->flags & NODE_FLAGS_UNHEALTHY)) {
