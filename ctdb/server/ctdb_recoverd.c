@@ -4025,8 +4025,6 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 	if (rec->need_takeover_run) {
 		uint32_t culprit = (uint32_t)-1;
 
-		rec->need_takeover_run = false;
-
 		/* update the list of public ips that a node can handle for
 		   all connected nodes
 		*/
@@ -4034,7 +4032,6 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 		if (ret != 0) {
 			DEBUG(DEBUG_ERR,("Failed to read public ips from remote node %d\n",
 					 culprit));
-			rec->need_takeover_run = true;
 			return;
 		}
 
