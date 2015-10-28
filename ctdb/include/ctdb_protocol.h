@@ -602,7 +602,7 @@ struct ctdb_public_ip_list_old {
 };
 
 
-struct latency_counter {
+struct ctdb_latency_counter {
 	int num;
 	double min;
 	double max;
@@ -670,15 +670,15 @@ struct ctdb_statistics {
 		uint32_t traverse;
 	} timeouts;
 	struct {
-		struct latency_counter ctdbd;
-		struct latency_counter recd;
+		struct ctdb_latency_counter ctdbd;
+		struct ctdb_latency_counter recd;
 	} reclock;
 	struct {
 		uint32_t num_calls;
 		uint32_t num_current;
 		uint32_t num_pending;
 		uint32_t num_failed;
-		struct latency_counter latency;
+		struct ctdb_latency_counter latency;
 		uint32_t buckets[MAX_COUNT_BUCKETS];
 	} locks;
 	uint32_t total_calls;
@@ -689,8 +689,8 @@ struct ctdb_statistics {
 	uint32_t __last_counter; /* hack for control_statistics_all */
 	uint32_t max_hop_count;
 	uint32_t hop_count_bucket[MAX_COUNT_BUCKETS];
-	struct latency_counter call_latency;
-	struct latency_counter childwrite_latency;
+	struct ctdb_latency_counter call_latency;
+	struct ctdb_latency_counter childwrite_latency;
 	uint32_t num_recoveries;
 	struct timeval statistics_start_time;
 	struct timeval statistics_current_time;
@@ -715,11 +715,11 @@ struct ctdb_db_statistics {
 		uint32_t num_current;
 		uint32_t num_pending;
 		uint32_t num_failed;
-		struct latency_counter latency;
+		struct ctdb_latency_counter latency;
 		uint32_t buckets[MAX_COUNT_BUCKETS];
 	} locks;
 	struct {
-		struct latency_counter latency;
+		struct ctdb_latency_counter latency;
 	} vacuum;
 	uint32_t db_ro_delegations;
 	uint32_t db_ro_revokes;
