@@ -275,7 +275,7 @@ _PUBLIC_ bool directory_create_or_exist_strict(const char *dname,
 		return false;
 	}
 	if (st.st_uid != uid && !uid_wrapper_enabled()) {
-		DEBUG(0, ("invalid ownership on directory "
+		DEBUG(3, ("invalid ownership on directory "
 			  "%s\n", dname));
 		return false;
 	}
