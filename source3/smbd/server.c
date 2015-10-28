@@ -1211,8 +1211,9 @@ extern void build_options(bool screen);
 		exit(1);
 	}
 
-	/* we want to re-seed early to prevent time delays causing
-           client problems at a later date. (tridge) */
+	/*
+	 * We want to die early if we can't open /dev/urandom
+	 */
 	generate_random_buffer(NULL, 0);
 
 	/* get initial effective uid and gid */
