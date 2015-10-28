@@ -547,10 +547,10 @@ static void ctdb_event_script_timeout(struct tevent_context *ev,
 	struct ctdb_script *current = get_current_script(state);
 	struct debug_hung_script_state *debug_state;
 
-	DEBUG(DEBUG_ERR,("Event script '%s %s %s' timed out after %.1fs, count: %u, pid: %d\n",
+	DEBUG(DEBUG_ERR,("Event script '%s %s %s' timed out after %.1fs, pid: %d\n",
 			 current->name, ctdb_eventscript_call_names[state->call], state->options,
 			 timeval_elapsed(&current->start),
-			 ctdb->event_script_timeouts, state->child));
+			 state->child));
 
 	/* ignore timeouts for these events */
 	switch (state->call) {
