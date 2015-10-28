@@ -4807,7 +4807,10 @@ int ctdb_ctrl_get_db_priority(struct ctdb_context *ctdb, struct timeval timeout,
 	return 0;
 }
 
-int ctdb_ctrl_getstathistory(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, TALLOC_CTX *mem_ctx, struct ctdb_statistics_wire **stats)
+int ctdb_ctrl_getstathistory(struct ctdb_context *ctdb,
+			     struct timeval timeout, uint32_t destnode,
+			     TALLOC_CTX *mem_ctx,
+			     struct ctdb_statistics_list_old **stats)
 {
 	int ret;
 	TDB_DATA outdata;
@@ -4821,9 +4824,11 @@ int ctdb_ctrl_getstathistory(struct ctdb_context *ctdb, struct timeval timeout, 
 		return -1;
 	}
 
-	*stats = (struct ctdb_statistics_wire *)talloc_memdup(mem_ctx, outdata.dptr, outdata.dsize);
+	*stats = (struct ctdb_statistics_list_old *)talloc_memdup(mem_ctx,
+								  outdata.dptr,
+								  outdata.dsize);
 	talloc_free(outdata.dptr);
-		    
+
 	return 0;
 }
 

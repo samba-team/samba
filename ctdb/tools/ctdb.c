@@ -700,7 +700,7 @@ static int control_statistics_reset(struct ctdb_context *ctdb, int argc, const c
 static int control_stats(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	int ret;
-	struct ctdb_statistics_wire *stats;
+	struct ctdb_statistics_list_old *stats;
 	int i, num_records = -1;
 
 	assert_single_node_only();

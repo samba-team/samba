@@ -71,9 +71,10 @@ int32_t ctdb_control_get_stat_history(struct ctdb_context *ctdb,
 				      TDB_DATA *outdata)
 {
 	int len;
-	struct ctdb_statistics_wire *s;
+	struct ctdb_statistics_list_old *s;
 
-	len = offsetof(struct ctdb_statistics_wire, stats) + MAX_STAT_HISTORY*sizeof(struct ctdb_statistics);
+	len = offsetof(struct ctdb_statistics_list_old, stats) +
+		MAX_STAT_HISTORY*sizeof(struct ctdb_statistics);
 
 	s = talloc_size(outdata, len);
 	if (s == NULL) {

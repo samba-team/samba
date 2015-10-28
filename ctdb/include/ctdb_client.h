@@ -616,7 +616,7 @@ int ctdb_ctrl_get_db_priority(struct ctdb_context *ctdb,
 int ctdb_ctrl_getstathistory(struct ctdb_context *ctdb,
 			     struct timeval timeout, uint32_t destnode,
 			     TALLOC_CTX *mem_ctx,
-			     struct ctdb_statistics_wire **stats);
+			     struct ctdb_statistics_list_old **stats);
 
 struct ctdb_ltdb_header *ctdb_header_from_record_handle(
 					struct ctdb_record_handle *h);

@@ -701,7 +701,7 @@ struct ctdb_statistics {
 /*
  * wire format for statistics history
  */
-struct ctdb_statistics_wire {
+struct ctdb_statistics_list_old {
 	uint32_t num;
 	struct ctdb_statistics stats[1];
 };
