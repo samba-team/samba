@@ -3180,7 +3180,7 @@ int ctdb_ctrl_get_tcp_tickles(struct ctdb_context *ctdb,
 			      struct timeval timeout, uint32_t destnode, 
 			      TALLOC_CTX *mem_ctx, 
 			      ctdb_sock_addr *addr,
-			      struct ctdb_control_tcp_tickle_list **list)
+			      struct ctdb_tickle_list_old **list)
 {
 	int ret;
 	TDB_DATA data, outdata;
@@ -3197,7 +3197,7 @@ int ctdb_ctrl_get_tcp_tickles(struct ctdb_context *ctdb,
 		return -1;
 	}
 
-	*list = (struct ctdb_control_tcp_tickle_list *)outdata.dptr;
+	*list = (struct ctdb_tickle_list_old *)outdata.dptr;
 
 	return status;
 }

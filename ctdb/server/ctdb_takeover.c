@@ -3744,25 +3744,22 @@ int32_t ctdb_control_kill_tcp(struct ctdb_context *ctdb, TDB_DATA indata)
  */
 int32_t ctdb_control_set_tcp_tickle_list(struct ctdb_context *ctdb, TDB_DATA indata)
 {
-	struct ctdb_control_tcp_tickle_list *list = (struct ctdb_control_tcp_tickle_list *)indata.dptr;
+	struct ctdb_tickle_list_old *list = (struct ctdb_tickle_list_old *)indata.dptr;
 	struct ctdb_tcp_array *tcparray;
 	struct ctdb_vnn *vnn;
 
 	/* We must at least have tickles.num or else we cant verify the size
 	   of the received data blob
 	 */
-	if (indata.dsize < offsetof(struct ctdb_control_tcp_tickle_list, 
-					tickles.connections)) {
-		DEBUG(DEBUG_ERR,("Bad indata in ctdb_control_set_tcp_tickle_list. Not enough data for the tickle.num field\n"));
+	if (indata.dsize < offsetof(struct ctdb_tickle_list_old, connections)) {
+		DEBUG(DEBUG_ERR,("Bad indata in ctdb_tickle_list. Not enough data for the tickle.num field\n"));
 		return -1;
 	}
 
 	/* verify that the size of data matches what we expect */
-	if (indata.dsize < offsetof(struct ctdb_control_tcp_tickle_list, 
-				tickles.connections)
-			 + sizeof(struct ctdb_connection)
-				 * list->tickles.num) {
-		DEBUG(DEBUG_ERR,("Bad indata in ctdb_control_set_tcp_tickle_list\n"));
+	if (indata.dsize < offsetof(struct ctdb_tickle_list_old, connections)
+			 + sizeof(struct ctdb_connection) * list->num) {
+		DEBUG(DEBUG_ERR,("Bad indata in ctdb_tickle_list\n"));
 		return -1;
 	}
 
@@ -3784,12 +3781,12 @@ int32_t ctdb_control_set_tcp_tickle_list(struct ctdb_context *ctdb, TDB_DATA ind
 	tcparray = talloc(vnn, struct ctdb_tcp_array);
 	CTDB_NO_MEMORY(ctdb, tcparray);
 
-	tcparray->num = list->tickles.num;
+	tcparray->num = list->num;
 
 	tcparray->connections = talloc_array(tcparray, struct ctdb_connection, tcparray->num);
 	CTDB_NO_MEMORY(ctdb, tcparray->connections);
 
-	memcpy(tcparray->connections, &list->tickles.connections[0],
+	memcpy(tcparray->connections, &list->connections[0],
 	       sizeof(struct ctdb_connection)*tcparray->num);
 
 	/* We now have a new fresh tickle list array for this vnn */
@@ -3805,7 +3802,7 @@ int32_t ctdb_control_set_tcp_tickle_list(struct ctdb_context *ctdb, TDB_DATA ind
 int32_t ctdb_control_get_tcp_tickle_list(struct ctdb_context *ctdb, TDB_DATA indata, TDB_DATA *outdata)
 {
 	ctdb_sock_addr *addr = (ctdb_sock_addr *)indata.dptr;
-	struct ctdb_control_tcp_tickle_list *list;
+	struct ctdb_tickle_list_old *list;
 	struct ctdb_tcp_array *tcparray;
 	int num;
 	struct ctdb_vnn *vnn;
@@ -3825,18 +3822,17 @@ int32_t ctdb_control_get_tcp_tickle_list(struct ctdb_context *ctdb, TDB_DATA ind
 		num = 0;
 	}
 
-	outdata->dsize = offsetof(struct ctdb_control_tcp_tickle_list, 
-				tickles.connections)
+	outdata->dsize = offsetof(struct ctdb_tickle_list_old, connections)
 			+ sizeof(struct ctdb_connection) * num;
 
 	outdata->dptr  = talloc_size(outdata, outdata->dsize);
 	CTDB_NO_MEMORY(ctdb, outdata->dptr);
-	list = (struct ctdb_control_tcp_tickle_list *)outdata->dptr;
+	list = (struct ctdb_tickle_list_old *)outdata->dptr;
 
 	list->addr = *addr;
-	list->tickles.num = num;
+	list->num = num;
 	if (num) {
-		memcpy(&list->tickles.connections[0], tcparray->connections, 
+		memcpy(&list->connections[0], tcparray->connections,
 			sizeof(struct ctdb_connection) * num);
 	}
 
@@ -3853,7 +3849,7 @@ static int ctdb_send_set_tcp_tickles_for_ip(struct ctdb_context *ctdb,
 {
 	int ret, num;
 	TDB_DATA data;
-	struct ctdb_control_tcp_tickle_list *list;
+	struct ctdb_tickle_list_old *list;
 
 	if (tcparray) {
 		num = tcparray->num;
@@ -3861,17 +3857,16 @@ static int ctdb_send_set_tcp_tickles_for_ip(struct ctdb_context *ctdb,
 		num = 0;
 	}
 
-	data.dsize = offsetof(struct ctdb_control_tcp_tickle_list, 
-				tickles.connections) +
+	data.dsize = offsetof(struct ctdb_tickle_list_old, connections) +
 			sizeof(struct ctdb_connection) * num;
 	data.dptr = talloc_size(ctdb, data.dsize);
 	CTDB_NO_MEMORY(ctdb, data.dptr);
 
-	list = (struct ctdb_control_tcp_tickle_list *)data.dptr;
+	list = (struct ctdb_tickle_list_old *)data.dptr;
 	list->addr = *addr;
-	list->tickles.num = num;
+	list->num = num;
 	if (tcparray) {
-		memcpy(&list->tickles.connections[0], tcparray->connections, sizeof(struct ctdb_connection) * num);
+		memcpy(&list->connections[0], tcparray->connections, sizeof(struct ctdb_connection) * num);
 	}
 
 	ret = ctdb_daemon_send_control(ctdb, CTDB_BROADCAST_ALL, 0,

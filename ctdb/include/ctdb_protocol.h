@@ -837,16 +837,11 @@ struct ctdb_disable_message {
 	uint32_t timeout;
 };
 
-/* the wire representation for a tcp tickle array */
-struct ctdb_tcp_wire_array {
+/* the list of tcp tickles used by get/set tcp tickle list */
+struct ctdb_tickle_list_old {
+	ctdb_sock_addr addr;
 	uint32_t num;
 	struct ctdb_connection connections[1];
-};
-
-/* the list of tcp tickles used by get/set tcp tickle list */
-struct ctdb_control_tcp_tickle_list {
-	ctdb_sock_addr addr;
-	struct ctdb_tcp_wire_array tickles;
 };
 
 /* all tunable variables go in here */

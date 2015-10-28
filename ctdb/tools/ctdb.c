@@ -1693,7 +1693,7 @@ static int control_del_tickle(struct ctdb_context *ctdb, int argc, const char **
  */
 static int control_get_tickles(struct ctdb_context *ctdb, int argc, const char **argv)
 {
-	struct ctdb_control_tcp_tickle_list *list;
+	struct ctdb_tickle_list_old *list;
 	ctdb_sock_addr addr;
 	int i, ret;
 	unsigned port = 0;
@@ -1721,22 +1721,22 @@ static int control_get_tickles(struct ctdb_context *ctdb, int argc, const char *
 
 	if (options.machinereadable){
 		printm(":source ip:port:destination ip:port:\n");
-		for (i=0;i<list->tickles.num;i++) {
-			if (port && port != ntohs(list->tickles.connections[i].dst.ip.sin_port)) {
+		for (i=0;i<list->num;i++) {
+			if (port && port != ntohs(list->connections[i].dst.ip.sin_port)) {
 				continue;
 			}
-			printm(":%s:%u", ctdb_addr_to_str(&list->tickles.connections[i].src), ntohs(list->tickles.connections[i].src.ip.sin_port));
-			printm(":%s:%u:\n", ctdb_addr_to_str(&list->tickles.connections[i].dst), ntohs(list->tickles.connections[i].dst.ip.sin_port));
+			printm(":%s:%u", ctdb_addr_to_str(&list->connections[i].src), ntohs(list->connections[i].src.ip.sin_port));
+			printm(":%s:%u:\n", ctdb_addr_to_str(&list->connections[i].dst), ntohs(list->connections[i].dst.ip.sin_port));
 		}
 	} else {
 		printf("Tickles for ip:%s\n", ctdb_addr_to_str(&list->addr));
-		printf("Num tickles:%u\n", list->tickles.num);
-		for (i=0;i<list->tickles.num;i++) {
-			if (port && port != ntohs(list->tickles.connections[i].dst.ip.sin_port)) {
+		printf("Num tickles:%u\n", list->num);
+		for (i=0;i<list->num;i++) {
+			if (port && port != ntohs(list->connections[i].dst.ip.sin_port)) {
 				continue;
 			}
-			printf("SRC: %s:%u   ", ctdb_addr_to_str(&list->tickles.connections[i].src), ntohs(list->tickles.connections[i].src.ip.sin_port));
-			printf("DST: %s:%u\n", ctdb_addr_to_str(&list->tickles.connections[i].dst), ntohs(list->tickles.connections[i].dst.ip.sin_port));
+			printf("SRC: %s:%u   ", ctdb_addr_to_str(&list->connections[i].src), ntohs(list->connections[i].src.ip.sin_port));
+			printf("DST: %s:%u\n", ctdb_addr_to_str(&list->connections[i].dst), ntohs(list->connections[i].dst.ip.sin_port));
 		}
 	}
 
