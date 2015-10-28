@@ -961,8 +961,6 @@ int ctdb_set_public_addresses(struct ctdb_context *ctdb, bool check_addresses);
 int ctdb_set_single_public_ip(struct ctdb_context *ctdb, const char *iface,
 			      const char *ip);
 
-int ctdb_reload_remote_public_ips(struct ctdb_context *ctdb,
-				  struct ctdb_node_map_old *nodemap);
 int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map_old *nodemap,
 		      uint32_t *force_rebalance_nodes,
 		      client_async_callback fail_callback, void *callback_data);

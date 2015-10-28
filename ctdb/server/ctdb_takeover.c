@@ -1392,8 +1392,8 @@ static int verify_remote_ip_allocation(struct ctdb_context *ctdb,
 				       struct ctdb_public_ip_list_old *ips,
 				       uint32_t pnn);
 
-int ctdb_reload_remote_public_ips(struct ctdb_context *ctdb,
-				  struct ctdb_node_map_old *nodemap)
+static int ctdb_reload_remote_public_ips(struct ctdb_context *ctdb,
+					 struct ctdb_node_map_old *nodemap)
 {
 	int j;
 	int ret;
@@ -2667,6 +2667,13 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map_old *nodem
 	ipflags = set_ipflags(ctdb, tmp_ctx, nodemap);
 	if (ipflags == NULL) {
 		DEBUG(DEBUG_ERR,("Failed to set IP flags - aborting takeover run\n"));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	/* Fetch known/available public IPs from each active node */
+	ret = ctdb_reload_remote_public_ips(ctdb, nodemap);
+	if (ret != 0) {
 		talloc_free(tmp_ctx);
 		return -1;
 	}

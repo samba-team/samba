@@ -2199,13 +2199,6 @@ static int do_recovery(struct ctdb_recoverd *rec,
 		goto fail;
 	}
 
-	/* Fetch known/available public IPs from each active node */
-	ret = ctdb_reload_remote_public_ips(ctdb, nodemap);
-	if (ret != 0) {
-		rec->need_takeover_run = true;
-		goto fail;
-	}
-
 	do_takeover_run(rec, nodemap, false);
 
 	/* execute the "recovered" event script on all nodes */
@@ -2728,19 +2721,10 @@ static void process_ipreallocate_requests(struct ctdb_context *ctdb,
 	current = rec->reallocate_requests;
 	rec->reallocate_requests = NULL;
 
-	/* update the list of public ips that a node can handle for
-	   all connected nodes
-	*/
-	ret = ctdb_reload_remote_public_ips(ctdb, rec->nodemap);
-	if (ret != 0) {
-		rec->need_takeover_run = true;
-	}
-	if (ret == 0) {
-		if (do_takeover_run(rec, rec->nodemap, false)) {
-			ret = ctdb_get_pnn(ctdb);
-		} else {
-			ret = -1;
-		}
+	if (do_takeover_run(rec, rec->nodemap, false)) {
+		ret = ctdb_get_pnn(ctdb);
+	} else {
+		ret = -1;
 	}
 
 	result.dsize = sizeof(int32_t);
@@ -3941,14 +3925,6 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 
 	/* we might need to change who has what IP assigned */
 	if (rec->need_takeover_run) {
-		/* update the list of public ips that a node can handle for
-		   all connected nodes
-		*/
-		ret = ctdb_reload_remote_public_ips(ctdb, nodemap);
-		if (ret != 0) {
-			return;
-		}
-
 		/* If takeover run fails, then the offending nodes are
 		 * assigned ban culprit counts. And we re-try takeover.
 		 * If takeover run fails repeatedly, the node would get
