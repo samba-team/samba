@@ -1565,7 +1565,6 @@ static int recover_database(struct ctdb_recoverd *rec,
 }
 
 static int ctdb_reload_remote_public_ips(struct ctdb_context *ctdb,
-					 struct ctdb_recoverd *rec,
 					 struct ctdb_node_map_old *nodemap)
 {
 	int j;
@@ -1603,13 +1602,10 @@ static int ctdb_reload_remote_public_ips(struct ctdb_context *ctdb,
 			return -1;
 		}
 
-		if (ctdb->do_checkpublicip &&
-		    !ctdb_op_is_disabled(rec->takeover_run) &&
-		    verify_remote_ip_allocation(ctdb,
-						 node->known_public_ips,
-						 node->pnn)) {
-			DEBUG(DEBUG_ERR,("Trigger IP reallocation\n"));
-			rec->need_takeover_run = true;
+		if (ctdb->do_checkpublicip) {
+			verify_remote_ip_allocation(ctdb,
+						    node->known_public_ips,
+						    node->pnn);
 		}
 
 		/* Retrieve the list of available public IPs from the node */
@@ -2266,7 +2262,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	}
 
 	/* Fetch known/available public IPs from each active node */
-	ret = ctdb_reload_remote_public_ips(ctdb, rec, nodemap);
+	ret = ctdb_reload_remote_public_ips(ctdb, nodemap);
 	if (ret != 0) {
 		rec->need_takeover_run = true;
 		goto fail;
@@ -2797,7 +2793,7 @@ static void process_ipreallocate_requests(struct ctdb_context *ctdb,
 	/* update the list of public ips that a node can handle for
 	   all connected nodes
 	*/
-	ret = ctdb_reload_remote_public_ips(ctdb, rec, rec->nodemap);
+	ret = ctdb_reload_remote_public_ips(ctdb, rec->nodemap);
 	if (ret != 0) {
 		rec->need_takeover_run = true;
 	}
@@ -4010,7 +4006,7 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 		/* update the list of public ips that a node can handle for
 		   all connected nodes
 		*/
-		ret = ctdb_reload_remote_public_ips(ctdb, rec, nodemap);
+		ret = ctdb_reload_remote_public_ips(ctdb, nodemap);
 		if (ret != 0) {
 			return;
 		}
