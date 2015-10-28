@@ -234,7 +234,7 @@ bool torture_holdcon(struct torture_context *tctx)
 /*
   open a file N times on the server and just hold them open
   used for testing performance when there are N file handles
-  alopenn
+  open
  */
 bool torture_holdopen(struct torture_context *tctx,
 		      struct smbcli_state *cli)
