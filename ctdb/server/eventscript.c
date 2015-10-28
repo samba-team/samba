@@ -67,7 +67,7 @@ struct ctdb_event_script_state {
 	struct ctdb_scripts_wire *scripts;
 };
 
-static struct ctdb_script_wire *get_current_script(struct ctdb_event_script_state *state)
+static struct ctdb_script *get_current_script(struct ctdb_event_script_state *state)
 {
 	return &state->scripts->scripts[state->current];
 }
@@ -79,7 +79,7 @@ static void log_event_script_output(const char *str, uint16_t len, void *p)
 {
 	struct ctdb_event_script_state *state
 		= talloc_get_type(p, struct ctdb_event_script_state);
-	struct ctdb_script_wire *current;
+	struct ctdb_script *current;
 	unsigned int slen, min;
 
 	/* We may have been aborted to run something else.  Discard */
@@ -197,7 +197,7 @@ static struct ctdb_scripts_wire *ctdb_get_script_list(struct ctdb_context *ctdb,
 	scripts->num_scripts = count;
 
 	for (i = 0; i < count; i++) {
-		struct ctdb_script_wire *s = &scripts->scripts[i];
+		struct ctdb_script *s = &scripts->scripts[i];
 
 		if (strlcpy(s->name, namelist[i]->d_name, sizeof(s->name)) >=
 		    sizeof(s->name)) {
@@ -227,7 +227,7 @@ done:
 static bool child_helper_args(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 			      enum ctdb_eventscript_call call,
 			      const char *options,
-			      struct ctdb_script_wire *current, int fd,
+			      struct ctdb_script *current, int fd,
 			      int *argc, const char ***argv)
 {
 	const char **tmp;
@@ -294,7 +294,7 @@ static int fork_child_for_script(struct ctdb_context *ctdb,
 {
 	int r;
 	struct tevent_fd *fde;
-	struct ctdb_script_wire *current = get_current_script(state);
+	struct ctdb_script *current = get_current_script(state);
 	int argc;
 	const char **argv;
 
@@ -380,7 +380,7 @@ static void ctdb_event_script_handler(struct tevent_context *ev,
 {
 	struct ctdb_event_script_state *state =
 		talloc_get_type(p, struct ctdb_event_script_state);
-	struct ctdb_script_wire *current = get_current_script(state);
+	struct ctdb_script *current = get_current_script(state);
 	struct ctdb_context *ctdb = state->ctdb;
 	int r, status;
 
@@ -542,7 +542,7 @@ static void ctdb_event_script_timeout(struct tevent_context *ev,
 {
 	struct ctdb_event_script_state *state = talloc_get_type(p, struct ctdb_event_script_state);
 	struct ctdb_context *ctdb = state->ctdb;
-	struct ctdb_script_wire *current = get_current_script(state);
+	struct ctdb_script *current = get_current_script(state);
 	struct debug_hung_script_state *debug_state;
 
 	DEBUG(DEBUG_ERR,("Event script '%s %s %s' timed out after %.1fs, count: %u, pid: %d\n",

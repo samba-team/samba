@@ -218,7 +218,7 @@ struct ctdb_call_info {
 
 #define MAX_SCRIPT_NAME 31
 #define MAX_SCRIPT_OUTPUT 511
-struct ctdb_script_wire {
+struct ctdb_script {
 	char name[MAX_SCRIPT_NAME+1];
 	struct timeval start;
 	struct timeval finished;
@@ -228,7 +228,7 @@ struct ctdb_script_wire {
 
 struct ctdb_scripts_wire {
 	uint32_t num_scripts;
-	struct ctdb_script_wire scripts[1];
+	struct ctdb_script scripts[1];
 };
 
 /* different calls to event scripts. */
