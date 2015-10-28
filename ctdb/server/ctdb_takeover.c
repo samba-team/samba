@@ -299,7 +299,7 @@ struct ctdb_takeover_arp {
  */
 struct ctdb_tcp_list {
 	struct ctdb_tcp_list *prev, *next;
-	struct ctdb_tcp_connection connection;
+	struct ctdb_connection connection;
 };
 
 /*
@@ -335,20 +335,20 @@ static void ctdb_control_send_arp(struct tevent_context *ev,
 	tcparray = arp->tcparray;
 	if (tcparray) {
 		for (i=0;i<tcparray->num;i++) {
-			struct ctdb_tcp_connection *tcon;
+			struct ctdb_connection *tcon;
 
 			tcon = &tcparray->connections[i];
 			DEBUG(DEBUG_INFO,("sending tcp tickle ack for %u->%s:%u\n",
-				(unsigned)ntohs(tcon->dst_addr.ip.sin_port), 
-				ctdb_addr_to_str(&tcon->src_addr),
-				(unsigned)ntohs(tcon->src_addr.ip.sin_port)));
+				(unsigned)ntohs(tcon->dst.ip.sin_port),
+				ctdb_addr_to_str(&tcon->src),
+				(unsigned)ntohs(tcon->src.ip.sin_port)));
 			ret = ctdb_sys_send_tcp(
-				&tcon->src_addr, 
-				&tcon->dst_addr,
+				&tcon->src,
+				&tcon->dst,
 				0, 0, 0);
 			if (ret != 0) {
 				DEBUG(DEBUG_CRIT,(__location__ " Failed to send tcp tickle ack for %s\n",
-					ctdb_addr_to_str(&tcon->src_addr)));
+					ctdb_addr_to_str(&tcon->src)));
 			}
 		}
 	}
@@ -2815,7 +2815,7 @@ int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id,
 	struct ctdb_client *client = reqid_find(ctdb->idr, client_id, struct ctdb_client);
 	struct ctdb_connection *tcp_sock = NULL;
 	struct ctdb_tcp_list *tcp;
-	struct ctdb_tcp_connection t;
+	struct ctdb_connection t;
 	int ret;
 	TDB_DATA data;
 	struct ctdb_client_ip *ip;
@@ -2876,13 +2876,13 @@ int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id,
 	tcp = talloc(client, struct ctdb_tcp_list);
 	CTDB_NO_MEMORY(ctdb, tcp);
 
-	tcp->connection.src_addr = tcp_sock->src;
-	tcp->connection.dst_addr = tcp_sock->dst;
+	tcp->connection.src = tcp_sock->src;
+	tcp->connection.dst = tcp_sock->dst;
 
 	DLIST_ADD(client->tcp_list, tcp);
 
-	t.src_addr = tcp_sock->src;
-	t.dst_addr = tcp_sock->dst;
+	t.src = tcp_sock->src;
+	t.dst = tcp_sock->dst;
 
 	data.dptr = (uint8_t *)&t;
 	data.dsize = sizeof(t);
@@ -2920,8 +2920,8 @@ int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id,
 /*
   find a tcp address on a list
  */
-static struct ctdb_tcp_connection *ctdb_tcp_find(struct ctdb_tcp_array *array, 
-					   struct ctdb_tcp_connection *tcp)
+static struct ctdb_connection *ctdb_tcp_find(struct ctdb_tcp_array *array,
+					   struct ctdb_connection *tcp)
 {
 	int i;
 
@@ -2930,8 +2930,8 @@ static struct ctdb_tcp_connection *ctdb_tcp_find(struct ctdb_tcp_array *array,
 	}
 
 	for (i=0;i<array->num;i++) {
-		if (ctdb_same_sockaddr(&array->connections[i].src_addr, &tcp->src_addr) &&
-		    ctdb_same_sockaddr(&array->connections[i].dst_addr, &tcp->dst_addr)) {
+		if (ctdb_same_sockaddr(&array->connections[i].src, &tcp->src) &&
+		    ctdb_same_sockaddr(&array->connections[i].dst, &tcp->dst)) {
 			return &array->connections[i];
 		}
 	}
@@ -2947,9 +2947,9 @@ static struct ctdb_tcp_connection *ctdb_tcp_find(struct ctdb_tcp_array *array,
  */
 int32_t ctdb_control_tcp_add(struct ctdb_context *ctdb, TDB_DATA indata, bool tcp_update_needed)
 {
-	struct ctdb_tcp_connection *p = (struct ctdb_tcp_connection *)indata.dptr;
+	struct ctdb_connection *p = (struct ctdb_connection *)indata.dptr;
 	struct ctdb_tcp_array *tcparray;
-	struct ctdb_tcp_connection tcp;
+	struct ctdb_connection tcp;
 	struct ctdb_vnn *vnn;
 
 	/* If we don't have public IPs, tickles are useless */
@@ -2957,10 +2957,10 @@ int32_t ctdb_control_tcp_add(struct ctdb_context *ctdb, TDB_DATA indata, bool tc
 		return 0;
 	}
 
-	vnn = find_public_ip_vnn(ctdb, &p->dst_addr);
+	vnn = find_public_ip_vnn(ctdb, &p->dst);
 	if (vnn == NULL) {
 		DEBUG(DEBUG_INFO,(__location__ " got TCP_ADD control for an address which is not a public address '%s'\n",
-			ctdb_addr_to_str(&p->dst_addr)));
+			ctdb_addr_to_str(&p->dst)));
 
 		return -1;
 	}
@@ -2975,11 +2975,11 @@ int32_t ctdb_control_tcp_add(struct ctdb_context *ctdb, TDB_DATA indata, bool tc
 		vnn->tcp_array = tcparray;
 
 		tcparray->num = 0;
-		tcparray->connections = talloc_size(tcparray, sizeof(struct ctdb_tcp_connection));
+		tcparray->connections = talloc_size(tcparray, sizeof(struct ctdb_connection));
 		CTDB_NO_MEMORY(ctdb, tcparray->connections);
 
-		tcparray->connections[tcparray->num].src_addr = p->src_addr;
-		tcparray->connections[tcparray->num].dst_addr = p->dst_addr;
+		tcparray->connections[tcparray->num].src = p->src;
+		tcparray->connections[tcparray->num].dst = p->dst;
 		tcparray->num++;
 
 		if (tcp_update_needed) {
@@ -2990,29 +2990,29 @@ int32_t ctdb_control_tcp_add(struct ctdb_context *ctdb, TDB_DATA indata, bool tc
 
 
 	/* Do we already have this tickle ?*/
-	tcp.src_addr = p->src_addr;
-	tcp.dst_addr = p->dst_addr;
+	tcp.src = p->src;
+	tcp.dst = p->dst;
 	if (ctdb_tcp_find(tcparray, &tcp) != NULL) {
 		DEBUG(DEBUG_DEBUG,("Already had tickle info for %s:%u for vnn:%u\n",
-			ctdb_addr_to_str(&tcp.dst_addr),
-			ntohs(tcp.dst_addr.ip.sin_port),
+			ctdb_addr_to_str(&tcp.dst),
+			ntohs(tcp.dst.ip.sin_port),
 			vnn->pnn));
 		return 0;
 	}
 
 	/* A new tickle, we must add it to the array */
 	tcparray->connections = talloc_realloc(tcparray, tcparray->connections,
-					struct ctdb_tcp_connection,
+					struct ctdb_connection,
 					tcparray->num+1);
 	CTDB_NO_MEMORY(ctdb, tcparray->connections);
 
-	tcparray->connections[tcparray->num].src_addr = p->src_addr;
-	tcparray->connections[tcparray->num].dst_addr = p->dst_addr;
+	tcparray->connections[tcparray->num].src = p->src;
+	tcparray->connections[tcparray->num].dst = p->dst;
 	tcparray->num++;
 
 	DEBUG(DEBUG_INFO,("Added tickle info for %s:%u from vnn %u\n",
-		ctdb_addr_to_str(&tcp.dst_addr),
-		ntohs(tcp.dst_addr.ip.sin_port),
+		ctdb_addr_to_str(&tcp.dst),
+		ntohs(tcp.dst.ip.sin_port),
 		vnn->pnn));
 
 	if (tcp_update_needed) {
@@ -3028,14 +3028,14 @@ int32_t ctdb_control_tcp_add(struct ctdb_context *ctdb, TDB_DATA indata, bool tc
   clients managing that should tickled with an ACK when IP takeover is
   done
  */
-static void ctdb_remove_tcp_connection(struct ctdb_context *ctdb, struct ctdb_tcp_connection *conn)
+static void ctdb_remove_connection(struct ctdb_context *ctdb, struct ctdb_connection *conn)
 {
-	struct ctdb_tcp_connection *tcpp;
-	struct ctdb_vnn *vnn = find_public_ip_vnn(ctdb, &conn->dst_addr);
+	struct ctdb_connection *tcpp;
+	struct ctdb_vnn *vnn = find_public_ip_vnn(ctdb, &conn->dst);
 
 	if (vnn == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " unable to find public address %s\n",
-			ctdb_addr_to_str(&conn->dst_addr)));
+			ctdb_addr_to_str(&conn->dst)));
 		return;
 	}
 
@@ -3044,8 +3044,8 @@ static void ctdb_remove_tcp_connection(struct ctdb_context *ctdb, struct ctdb_tc
 	 */
 	if (vnn->tcp_array == NULL) {
 		DEBUG(DEBUG_INFO,("Trying to remove tickle that doesnt exist (array is empty) %s:%u\n",
-			ctdb_addr_to_str(&conn->dst_addr),
-			ntohs(conn->dst_addr.ip.sin_port)));
+			ctdb_addr_to_str(&conn->dst),
+			ntohs(conn->dst.ip.sin_port)));
 		return;
 	}
 
@@ -3056,8 +3056,8 @@ static void ctdb_remove_tcp_connection(struct ctdb_context *ctdb, struct ctdb_tc
 	tcpp = ctdb_tcp_find(vnn->tcp_array, conn);
 	if (tcpp == NULL) {
 		DEBUG(DEBUG_INFO,("Trying to remove tickle that doesnt exist %s:%u\n",
-			ctdb_addr_to_str(&conn->dst_addr),
-			ntohs(conn->dst_addr.ip.sin_port)));
+			ctdb_addr_to_str(&conn->dst),
+			ntohs(conn->dst.ip.sin_port)));
 		return;
 	}
 
@@ -3081,8 +3081,8 @@ static void ctdb_remove_tcp_connection(struct ctdb_context *ctdb, struct ctdb_tc
 	vnn->tcp_update_needed = true;
 
 	DEBUG(DEBUG_INFO,("Removed tickle info for %s:%u\n",
-		ctdb_addr_to_str(&conn->src_addr),
-		ntohs(conn->src_addr.ip.sin_port)));
+		ctdb_addr_to_str(&conn->src),
+		ntohs(conn->src.ip.sin_port)));
 }
 
 
@@ -3092,14 +3092,14 @@ static void ctdb_remove_tcp_connection(struct ctdb_context *ctdb, struct ctdb_tc
  */
 int32_t ctdb_control_tcp_remove(struct ctdb_context *ctdb, TDB_DATA indata)
 {
-	struct ctdb_tcp_connection *conn = (struct ctdb_tcp_connection *)indata.dptr;
+	struct ctdb_connection *conn = (struct ctdb_connection *)indata.dptr;
 
 	/* If we don't have public IPs, tickles are useless */
 	if (ctdb->vnn == NULL) {
 		return 0;
 	}
 
-	ctdb_remove_tcp_connection(ctdb, conn);
+	ctdb_remove_connection(ctdb, conn);
 
 	return 0;
 }
@@ -3136,7 +3136,7 @@ void ctdb_takeover_client_destructor_hook(struct ctdb_client *client)
 	while (client->tcp_list) {
 		struct ctdb_tcp_list *tcp = client->tcp_list;
 		DLIST_REMOVE(client->tcp_list, tcp);
-		ctdb_remove_tcp_connection(client->ctdb, &tcp->connection);
+		ctdb_remove_connection(client->ctdb, &tcp->connection);
 	}
 }
 
@@ -3731,9 +3731,9 @@ failed:
  */
 int32_t ctdb_control_kill_tcp(struct ctdb_context *ctdb, TDB_DATA indata)
 {
-	struct ctdb_tcp_connection *killtcp = (struct ctdb_tcp_connection *)indata.dptr;
+	struct ctdb_connection *killtcp = (struct ctdb_connection *)indata.dptr;
 
-	return ctdb_killtcp_add_connection(ctdb, &killtcp->src_addr, &killtcp->dst_addr);
+	return ctdb_killtcp_add_connection(ctdb, &killtcp->src, &killtcp->dst);
 }
 
 /*
@@ -3760,7 +3760,7 @@ int32_t ctdb_control_set_tcp_tickle_list(struct ctdb_context *ctdb, TDB_DATA ind
 	/* verify that the size of data matches what we expect */
 	if (indata.dsize < offsetof(struct ctdb_control_tcp_tickle_list, 
 				tickles.connections)
-			 + sizeof(struct ctdb_tcp_connection)
+			 + sizeof(struct ctdb_connection)
 				 * list->tickles.num) {
 		DEBUG(DEBUG_ERR,("Bad indata in ctdb_control_set_tcp_tickle_list\n"));
 		return -1;
@@ -3786,11 +3786,11 @@ int32_t ctdb_control_set_tcp_tickle_list(struct ctdb_context *ctdb, TDB_DATA ind
 
 	tcparray->num = list->tickles.num;
 
-	tcparray->connections = talloc_array(tcparray, struct ctdb_tcp_connection, tcparray->num);
+	tcparray->connections = talloc_array(tcparray, struct ctdb_connection, tcparray->num);
 	CTDB_NO_MEMORY(ctdb, tcparray->connections);
 
 	memcpy(tcparray->connections, &list->tickles.connections[0],
-	       sizeof(struct ctdb_tcp_connection)*tcparray->num);
+	       sizeof(struct ctdb_connection)*tcparray->num);
 
 	/* We now have a new fresh tickle list array for this vnn */
 	vnn->tcp_array = tcparray;
@@ -3827,7 +3827,7 @@ int32_t ctdb_control_get_tcp_tickle_list(struct ctdb_context *ctdb, TDB_DATA ind
 
 	outdata->dsize = offsetof(struct ctdb_control_tcp_tickle_list, 
 				tickles.connections)
-			+ sizeof(struct ctdb_tcp_connection) * num;
+			+ sizeof(struct ctdb_connection) * num;
 
 	outdata->dptr  = talloc_size(outdata, outdata->dsize);
 	CTDB_NO_MEMORY(ctdb, outdata->dptr);
@@ -3837,7 +3837,7 @@ int32_t ctdb_control_get_tcp_tickle_list(struct ctdb_context *ctdb, TDB_DATA ind
 	list->tickles.num = num;
 	if (num) {
 		memcpy(&list->tickles.connections[0], tcparray->connections, 
-			sizeof(struct ctdb_tcp_connection) * num);
+			sizeof(struct ctdb_connection) * num);
 	}
 
 	return 0;
@@ -3863,7 +3863,7 @@ static int ctdb_send_set_tcp_tickles_for_ip(struct ctdb_context *ctdb,
 
 	data.dsize = offsetof(struct ctdb_control_tcp_tickle_list, 
 				tickles.connections) +
-			sizeof(struct ctdb_tcp_connection) * num;
+			sizeof(struct ctdb_connection) * num;
 	data.dptr = talloc_size(ctdb, data.dsize);
 	CTDB_NO_MEMORY(ctdb, data.dptr);
 
@@ -3871,7 +3871,7 @@ static int ctdb_send_set_tcp_tickles_for_ip(struct ctdb_context *ctdb,
 	list->addr = *addr;
 	list->tickles.num = num;
 	if (tcparray) {
-		memcpy(&list->tickles.connections[0], tcparray->connections, sizeof(struct ctdb_tcp_connection) * num);
+		memcpy(&list->tickles.connections[0], tcparray->connections, sizeof(struct ctdb_connection) * num);
 	}
 
 	ret = ctdb_daemon_send_control(ctdb, CTDB_BROADCAST_ALL, 0,

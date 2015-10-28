@@ -837,19 +837,10 @@ struct srvid_request_data {
 	uint32_t data;
 };
 
-/*
-  a tcp connection description
-  also used by tcp_add and tcp_remove controls
- */
-struct ctdb_tcp_connection {
-	ctdb_sock_addr src_addr;
-	ctdb_sock_addr dst_addr;
-};
-
 /* the wire representation for a tcp tickle array */
 struct ctdb_tcp_wire_array {
 	uint32_t num;
-	struct ctdb_tcp_connection connections[1];
+	struct ctdb_connection connections[1];
 };
 
 /* the list of tcp tickles used by get/set tcp tickle list */

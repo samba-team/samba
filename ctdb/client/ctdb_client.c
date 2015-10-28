@@ -3113,13 +3113,13 @@ int ctdb_ctrl_del_public_ip(struct ctdb_context *ctdb,
 int ctdb_ctrl_killtcp(struct ctdb_context *ctdb, 
 		      struct timeval timeout, 
 		      uint32_t destnode,
-		      struct ctdb_tcp_connection *killtcp)
+		      struct ctdb_connection *killtcp)
 {
 	TDB_DATA data;
 	int32_t res;
 	int ret;
 
-	data.dsize = sizeof(struct ctdb_tcp_connection);
+	data.dsize = sizeof(struct ctdb_connection);
 	data.dptr  = (unsigned char *)killtcp;
 
 	ret = ctdb_control(ctdb, destnode, 0, CTDB_CONTROL_KILL_TCP, 0, data, NULL,

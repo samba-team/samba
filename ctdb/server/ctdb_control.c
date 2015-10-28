@@ -383,15 +383,15 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return ctdb_control_startup(ctdb, srcnode);
 
 	case CTDB_CONTROL_TCP_ADD: 
-		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_tcp_connection));
+		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_connection));
 		return ctdb_control_tcp_add(ctdb, indata, false);
 
 	case CTDB_CONTROL_TCP_ADD_DELAYED_UPDATE: 
-		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_tcp_connection));
+		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_connection));
 		return ctdb_control_tcp_add(ctdb, indata, true);
 
 	case CTDB_CONTROL_TCP_REMOVE: 
-		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_tcp_connection));
+		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_connection));
 		return ctdb_control_tcp_remove(ctdb, indata);
 
 	case CTDB_CONTROL_SET_TUNABLE:
@@ -408,7 +408,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return ctdb_control_modflags(ctdb, indata);
 
 	case CTDB_CONTROL_KILL_TCP: 
-		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_tcp_connection));
+		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_connection));
 		return ctdb_control_kill_tcp(ctdb, indata);
 
 	case CTDB_CONTROL_GET_TCP_TICKLE_LIST:

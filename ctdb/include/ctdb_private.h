@@ -28,7 +28,7 @@
  */
 struct ctdb_tcp_array {
 	uint32_t num;
-	struct ctdb_tcp_connection *connections;
+	struct ctdb_connection *connections;
 };
 
 /*

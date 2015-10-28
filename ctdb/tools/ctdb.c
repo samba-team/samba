@@ -1615,7 +1615,7 @@ static int control_recmaster(struct ctdb_context *ctdb, int argc, const char **a
  */
 static int control_add_tickle(struct ctdb_context *ctdb, int argc, const char **argv)
 {
-	struct ctdb_tcp_connection t;
+	struct ctdb_connection t;
 	TDB_DATA data;
 	int ret;
 
@@ -1625,11 +1625,11 @@ static int control_add_tickle(struct ctdb_context *ctdb, int argc, const char **
 		usage();
 	}
 
-	if (parse_ip_port(argv[0], &t.src_addr) == 0) {
+	if (parse_ip_port(argv[0], &t.src) == 0) {
 		DEBUG(DEBUG_ERR,("Wrongly formed ip address '%s'\n", argv[0]));
 		return -1;
 	}
-	if (parse_ip_port(argv[1], &t.dst_addr) == 0) {
+	if (parse_ip_port(argv[1], &t.dst) == 0) {
 		DEBUG(DEBUG_ERR,("Wrongly formed ip address '%s'\n", argv[1]));
 		return -1;
 	}
@@ -1654,7 +1654,7 @@ static int control_add_tickle(struct ctdb_context *ctdb, int argc, const char **
  */
 static int control_del_tickle(struct ctdb_context *ctdb, int argc, const char **argv)
 {
-	struct ctdb_tcp_connection t;
+	struct ctdb_connection t;
 	TDB_DATA data;
 	int ret;
 
@@ -1664,11 +1664,11 @@ static int control_del_tickle(struct ctdb_context *ctdb, int argc, const char **
 		usage();
 	}
 
-	if (parse_ip_port(argv[0], &t.src_addr) == 0) {
+	if (parse_ip_port(argv[0], &t.src) == 0) {
 		DEBUG(DEBUG_ERR,("Wrongly formed ip address '%s'\n", argv[0]));
 		return -1;
 	}
-	if (parse_ip_port(argv[1], &t.dst_addr) == 0) {
+	if (parse_ip_port(argv[1], &t.dst) == 0) {
 		DEBUG(DEBUG_ERR,("Wrongly formed ip address '%s'\n", argv[1]));
 		return -1;
 	}
@@ -1722,21 +1722,21 @@ static int control_get_tickles(struct ctdb_context *ctdb, int argc, const char *
 	if (options.machinereadable){
 		printm(":source ip:port:destination ip:port:\n");
 		for (i=0;i<list->tickles.num;i++) {
-			if (port && port != ntohs(list->tickles.connections[i].dst_addr.ip.sin_port)) {
+			if (port && port != ntohs(list->tickles.connections[i].dst.ip.sin_port)) {
 				continue;
 			}
-			printm(":%s:%u", ctdb_addr_to_str(&list->tickles.connections[i].src_addr), ntohs(list->tickles.connections[i].src_addr.ip.sin_port));
-			printm(":%s:%u:\n", ctdb_addr_to_str(&list->tickles.connections[i].dst_addr), ntohs(list->tickles.connections[i].dst_addr.ip.sin_port));
+			printm(":%s:%u", ctdb_addr_to_str(&list->tickles.connections[i].src), ntohs(list->tickles.connections[i].src.ip.sin_port));
+			printm(":%s:%u:\n", ctdb_addr_to_str(&list->tickles.connections[i].dst), ntohs(list->tickles.connections[i].dst.ip.sin_port));
 		}
 	} else {
 		printf("Tickles for ip:%s\n", ctdb_addr_to_str(&list->addr));
 		printf("Num tickles:%u\n", list->tickles.num);
 		for (i=0;i<list->tickles.num;i++) {
-			if (port && port != ntohs(list->tickles.connections[i].dst_addr.ip.sin_port)) {
+			if (port && port != ntohs(list->tickles.connections[i].dst.ip.sin_port)) {
 				continue;
 			}
-			printf("SRC: %s:%u   ", ctdb_addr_to_str(&list->tickles.connections[i].src_addr), ntohs(list->tickles.connections[i].src_addr.ip.sin_port));
-			printf("DST: %s:%u\n", ctdb_addr_to_str(&list->tickles.connections[i].dst_addr), ntohs(list->tickles.connections[i].dst_addr.ip.sin_port));
+			printf("SRC: %s:%u   ", ctdb_addr_to_str(&list->tickles.connections[i].src), ntohs(list->tickles.connections[i].src.ip.sin_port));
+			printf("DST: %s:%u\n", ctdb_addr_to_str(&list->tickles.connections[i].dst), ntohs(list->tickles.connections[i].dst.ip.sin_port));
 		}
 	}
 
@@ -2619,7 +2619,7 @@ static int control_delip(struct ctdb_context *ctdb, int argc, const char **argv)
 static int kill_tcp_from_file(struct ctdb_context *ctdb,
 			      int argc, const char **argv)
 {
-	struct ctdb_tcp_connection *killtcp;
+	struct ctdb_connection *killtcp;
 	int max_entries, current, i;
 	struct timeval timeout;
 	char line[128], src[128], dst[128];
@@ -2656,19 +2656,19 @@ static int kill_tcp_from_file(struct ctdb_context *ctdb,
 		if (current >= max_entries) {
 			max_entries += 1024;
 			killtcp = talloc_realloc(ctdb, killtcp,
-						 struct ctdb_tcp_connection,
+						 struct ctdb_connection,
 						 max_entries);
 			CTDB_NO_MEMORY(ctdb, killtcp);
 		}
 
-		if (!parse_ip_port(src, &killtcp[current].src_addr)) {
+		if (!parse_ip_port(src, &killtcp[current].src)) {
 			DEBUG(DEBUG_ERR, ("Bad IP:port on line [%d]: '%s'\n",
 					  linenum, src));
 			talloc_free(killtcp);
 			return -1;
 		}
 
-		if (!parse_ip_port(dst, &killtcp[current].dst_addr)) {
+		if (!parse_ip_port(dst, &killtcp[current].dst)) {
 			DEBUG(DEBUG_ERR, ("Bad IP:port on line [%d]: '%s'\n",
 					  linenum, dst));
 			talloc_free(killtcp);
@@ -2686,7 +2686,7 @@ static int kill_tcp_from_file(struct ctdb_context *ctdb,
 
 	for (i = 0; i < current; i++) {
 
-		data.dsize = sizeof(struct ctdb_tcp_connection);
+		data.dsize = sizeof(struct ctdb_connection);
 		data.dptr  = (unsigned char *)&killtcp[i];
 
 		timeout = TIMELIMIT();
@@ -2722,7 +2722,7 @@ static int kill_tcp_from_file(struct ctdb_context *ctdb,
 static int kill_tcp(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	int ret;
-	struct ctdb_tcp_connection killtcp;
+	struct ctdb_connection killtcp;
 
 	assert_single_node_only();
 
@@ -2734,12 +2734,12 @@ static int kill_tcp(struct ctdb_context *ctdb, int argc, const char **argv)
 		usage();
 	}
 
-	if (!parse_ip_port(argv[0], &killtcp.src_addr)) {
+	if (!parse_ip_port(argv[0], &killtcp.src)) {
 		DEBUG(DEBUG_ERR, ("Bad IP:port '%s'\n", argv[0]));
 		return -1;
 	}
 
-	if (!parse_ip_port(argv[1], &killtcp.dst_addr)) {
+	if (!parse_ip_port(argv[1], &killtcp.dst)) {
 		DEBUG(DEBUG_ERR, ("Bad IP:port '%s'\n", argv[1]));
 		return -1;
 	}
