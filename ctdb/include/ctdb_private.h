@@ -1082,15 +1082,15 @@ int ctdb_event_script_callback(struct ctdb_context *ctdb,
 			       void (*callback)(struct ctdb_context *,
 						int, void *),
 			       void *private_data,
-			       enum ctdb_eventscript_call call,
+			       enum ctdb_event call,
 			       const char *fmt, ...) PRINTF_ATTRIBUTE(6,7);
 
 int ctdb_event_script_args(struct ctdb_context *ctdb,
-			   enum ctdb_eventscript_call call,
+			   enum ctdb_event call,
 			   const char *fmt, ...) PRINTF_ATTRIBUTE(3,4);
 
 int ctdb_event_script(struct ctdb_context *ctdb,
-		      enum ctdb_eventscript_call call);
+		      enum ctdb_event call);
 
 int32_t ctdb_run_eventscripts(struct ctdb_context *ctdb,
 			      struct ctdb_req_control *c,

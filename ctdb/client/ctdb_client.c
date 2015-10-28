@@ -4455,7 +4455,7 @@ int switch_from_server_to_client(struct ctdb_context *ctdb, const char *fmt, ...
 int ctdb_ctrl_getscriptstatus(struct ctdb_context *ctdb,
 			      struct timeval timeout, uint32_t destnode,
 			      TALLOC_CTX *mem_ctx,
-			      enum ctdb_eventscript_call type,
+			      enum ctdb_event type,
 			      struct ctdb_script_list_old **scripts)
 {
 	int ret;

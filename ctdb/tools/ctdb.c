@@ -1406,7 +1406,7 @@ done:
   display the status of the scripts for monitoring (or other events)
  */
 static int control_one_scriptstatus(struct ctdb_context *ctdb,
-				    enum ctdb_eventscript_call type)
+				    enum ctdb_event type)
 {
 	struct ctdb_script_list_old *script_status;
 	int ret, i;
@@ -1508,7 +1508,7 @@ static int control_scriptstatus(struct ctdb_context *ctdb,
 				int argc, const char **argv)
 {
 	int ret;
-	enum ctdb_eventscript_call type, min, max;
+	enum ctdb_event type, min, max;
 	const char *arg;
 
 	if (argc > 1) {

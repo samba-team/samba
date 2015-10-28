@@ -232,7 +232,7 @@ struct ctdb_script_list_old {
 };
 
 /* different calls to event scripts. */
-enum ctdb_eventscript_call {
+enum ctdb_event {
 	CTDB_EVENT_INIT,		/* CTDB starting up: no args */
 	CTDB_EVENT_SETUP,		/* CTDB starting up after transport is readdy: no args. */
 	CTDB_EVENT_STARTUP,		/* CTDB starting up after initial recovery: no args. */

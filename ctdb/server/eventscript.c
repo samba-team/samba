@@ -59,7 +59,7 @@ struct ctdb_event_script_state {
 	struct event_script_callback *callback;
 	pid_t child;
 	int fd[2];
-	enum ctdb_eventscript_call call;
+	enum ctdb_event call;
 	const char *options;
 	struct timeval timeout;
 
@@ -227,7 +227,7 @@ done:
 #define MAX_HELPER_ARGS		(10)
 
 static bool child_helper_args(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			      enum ctdb_eventscript_call call,
+			      enum ctdb_event call,
 			      const char *options,
 			      struct ctdb_script *current, int fd,
 			      int *argc, const char ***argv)
@@ -441,7 +441,7 @@ static void ctdb_event_script_handler(struct tevent_context *ev,
 struct debug_hung_script_state {
 	struct ctdb_context *ctdb;
 	pid_t child;
-	enum ctdb_eventscript_call call;
+	enum ctdb_event call;
 };
 
 static int debug_hung_script_state_destructor(struct debug_hung_script_state *state)
@@ -667,7 +667,7 @@ static unsigned int count_words(const char *options)
 	return words;
 }
 
-static bool check_options(enum ctdb_eventscript_call call, const char *options)
+static bool check_options(enum ctdb_event call, const char *options)
 {
 	switch (call) {
 	/* These all take no arguments. */
@@ -689,7 +689,7 @@ static bool check_options(enum ctdb_eventscript_call call, const char *options)
 		return count_words(options) == 4;
 
 	default:
-		DEBUG(DEBUG_ERR,(__location__ "Unknown ctdb_eventscript_call %u\n", call));
+		DEBUG(DEBUG_ERR,(__location__ "Unknown ctdb_event %u\n", call));
 		return false;
 	}
 }
@@ -708,7 +708,7 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 					const void *mem_ctx,
 					void (*callback)(struct ctdb_context *, int, void *),
 					void *private_data,
-					enum ctdb_eventscript_call call,
+					enum ctdb_event call,
 					const char *fmt, va_list ap)
 {
 	struct ctdb_event_script_state *state;
@@ -716,7 +716,7 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 	if (ctdb->recovery_mode != CTDB_RECOVERY_NORMAL) {
 		/* we guarantee that only some specifically allowed event scripts are run
 		   while in recovery */
-		const enum ctdb_eventscript_call allowed_calls[] = {
+		const enum ctdb_event allowed_calls[] = {
 			CTDB_EVENT_INIT,
 			CTDB_EVENT_SETUP,
 			CTDB_EVENT_START_RECOVERY,
@@ -853,7 +853,7 @@ int ctdb_event_script_callback(struct ctdb_context *ctdb,
 			       TALLOC_CTX *mem_ctx,
 			       void (*callback)(struct ctdb_context *, int, void *),
 			       void *private_data,
-			       enum ctdb_eventscript_call call,
+			       enum ctdb_event call,
 			       const char *fmt, ...)
 {
 	va_list ap;
@@ -886,7 +886,7 @@ static void event_script_callback(struct ctdb_context *ctdb, int status, void *p
   run the event script, waiting for it to complete. Used when the caller
   doesn't want to continue till the event script has finished.
  */
-int ctdb_event_script_args(struct ctdb_context *ctdb, enum ctdb_eventscript_call call,
+int ctdb_event_script_args(struct ctdb_context *ctdb, enum ctdb_event call,
 			   const char *fmt, ...)
 {
 	va_list ap;
@@ -921,7 +921,7 @@ int ctdb_event_script_args(struct ctdb_context *ctdb, enum ctdb_eventscript_call
 	return status.status;
 }
 
-int ctdb_event_script(struct ctdb_context *ctdb, enum ctdb_eventscript_call call)
+int ctdb_event_script(struct ctdb_context *ctdb, enum ctdb_event call)
 {
 	/* GCC complains about empty format string, so use %s and "". */
 	return ctdb_event_script_args(ctdb, call, "%s", "");
@@ -961,7 +961,7 @@ static void run_eventscripts_callback(struct ctdb_context *ctdb, int status,
 
 
 /* Returns rest of string, or NULL if no match. */
-static const char *get_call(const char *p, enum ctdb_eventscript_call *call)
+static const char *get_call(const char *p, enum ctdb_event *call)
 {
 	unsigned int len;
 
@@ -991,7 +991,7 @@ int32_t ctdb_run_eventscripts(struct ctdb_context *ctdb,
 	int ret;
 	struct eventscript_callback_state *state;
 	const char *options;
-	enum ctdb_eventscript_call call;
+	enum ctdb_event call;
 
 	/* Figure out what call they want. */
 	options = get_call((const char *)indata.dptr, &call);
