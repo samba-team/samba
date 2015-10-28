@@ -2260,7 +2260,7 @@ static int srvid_broadcast(struct ctdb_context *ctdb,
 	uint32_t pnn;
 	uint64_t reply_srvid;
 	struct ctdb_srvid_message request;
-	struct srvid_request_data request_data;
+	struct ctdb_disable_message request_data;
 	struct srvid_reply_handler_data reply_data;
 	struct timeval tv;
 
@@ -2282,7 +2282,7 @@ static int srvid_broadcast(struct ctdb_context *ctdb,
 	} else {
 		request_data.pnn = pnn;
 		request_data.srvid = reply_srvid;
-		request_data.data = *arg;
+		request_data.timeout = *arg;
 
 		data.dptr = (uint8_t *)&request_data;
 		data.dsize = sizeof(request_data);

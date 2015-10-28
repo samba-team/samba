@@ -1733,7 +1733,7 @@ static bool do_takeover_run(struct ctdb_recoverd *rec,
 			    bool banning_credits_on_fail)
 {
 	uint32_t *nodes = NULL;
-	struct srvid_request_data dtr;
+	struct ctdb_disable_message dtr;
 	TDB_DATA data;
 	int i;
 	uint32_t *rebalance_nodes = rec->force_rebalance_nodes;
@@ -1772,7 +1772,7 @@ static bool do_takeover_run(struct ctdb_recoverd *rec,
 	/* Disable for 60 seconds.  This can be a tunable later if
 	 * necessary.
 	 */
-	dtr.data = 60;
+	dtr.timeout = 60;
 	for (i = 0; i < talloc_array_length(nodes); i++) {
 		if (ctdb_client_send_message(rec->ctdb, nodes[i],
 					     CTDB_SRVID_DISABLE_TAKEOVER_RUNS,
@@ -1787,7 +1787,7 @@ static bool do_takeover_run(struct ctdb_recoverd *rec,
 				banning_credits_on_fail ? rec : NULL);
 
 	/* Reenable takeover runs and IP checks on other nodes */
-	dtr.data = 0;
+	dtr.timeout = 0;
 	for (i = 0; i < talloc_array_length(nodes); i++) {
 		if (ctdb_client_send_message(rec->ctdb, nodes[i],
 					     CTDB_SRVID_DISABLE_TAKEOVER_RUNS,
@@ -2700,13 +2700,13 @@ static void srvid_disable_and_reply(struct ctdb_context *ctdb,
 				    TDB_DATA data,
 				    struct ctdb_op_state *op_state)
 {
-	struct srvid_request_data *r;
+	struct ctdb_disable_message *r;
 	uint32_t timeout;
 	TDB_DATA result;
 	int32_t ret = 0;
 
 	/* Validate input data */
-	if (data.dsize != sizeof(struct srvid_request_data)) {
+	if (data.dsize != sizeof(struct ctdb_disable_message)) {
 		DEBUG(DEBUG_ERR,(__location__ " Wrong size for data :%lu "
 				 "expecting %lu\n", (long unsigned)data.dsize,
 				 (long unsigned)sizeof(struct ctdb_srvid_message)));
@@ -2717,8 +2717,8 @@ static void srvid_disable_and_reply(struct ctdb_context *ctdb,
 		return;
 	}
 
-	r = (struct srvid_request_data *)data.dptr;
-	timeout = r->data;
+	r = (struct ctdb_disable_message *)data.dptr;
+	timeout = r->timeout;
 
 	ret = ctdb_op_disable(op_state, ctdb->ev, timeout);
 	if (ret != 0) {

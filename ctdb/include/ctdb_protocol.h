@@ -831,10 +831,10 @@ struct ctdb_srvid_message {
 	uint64_t srvid;
 };
 
-struct srvid_request_data {
+struct ctdb_disable_message {
 	uint32_t pnn;
 	uint64_t srvid;
-	uint32_t data;
+	uint32_t timeout;
 };
 
 /* the wire representation for a tcp tickle array */
