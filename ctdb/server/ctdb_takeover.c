@@ -1242,8 +1242,7 @@ struct public_ip_list {
 /* Given a physical node, return the number of
    public addresses that is currently assigned to this node.
 */
-static int node_ip_coverage(struct ctdb_context *ctdb, int32_t pnn,
-			    struct public_ip_list *ips)
+static int node_ip_coverage(int32_t pnn, struct public_ip_list *ips)
 {
 	int num=0;
 
@@ -1318,7 +1317,7 @@ static int find_takeover_node(struct ctdb_context *ctdb,
 			continue;
 		}
 
-		num = node_ip_coverage(ctdb, i, all_ips);
+		num = node_ip_coverage(i, all_ips);
 		/* was this the first node we checked ? */
 		if (pnn == -1) {
 			pnn = i;
@@ -1673,7 +1672,7 @@ try_again:
 				continue;
 			}
 
-			num = node_ip_coverage(ctdb, i, all_ips);
+			num = node_ip_coverage(i, all_ips);
 			if (maxnode == -1) {
 				maxnode = i;
 				maxnum  = num;
