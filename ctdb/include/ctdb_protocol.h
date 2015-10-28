@@ -1001,7 +1001,7 @@ struct ctdb_public_ip_info_old {
 	struct ctdb_iface ifaces[1];
 };
 
-struct ctdb_control_get_ifaces {
+struct ctdb_iface_list_old {
 	uint32_t num;
 	struct ctdb_iface ifaces[1];
 };

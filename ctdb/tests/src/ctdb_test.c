@@ -114,7 +114,7 @@ int ctdb_ctrl_getnodesfile(struct ctdb_context *ctdb,
 int ctdb_ctrl_get_ifaces(struct ctdb_context *ctdb,
 			 struct timeval timeout, uint32_t destnode,
 			 TALLOC_CTX *mem_ctx,
-			 struct ctdb_control_get_ifaces **ifaces);
+			 struct ctdb_iface_list_old **ifaces);
 int ctdb_ctrl_getpnn(struct ctdb_context *ctdb, struct timeval timeout,
 		     uint32_t destnode);
 int ctdb_ctrl_getrecmode(struct ctdb_context *ctdb,

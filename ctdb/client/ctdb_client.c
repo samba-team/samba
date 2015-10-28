@@ -2877,12 +2877,12 @@ int ctdb_ctrl_get_public_ip_info(struct ctdb_context *ctdb,
 int ctdb_ctrl_get_ifaces(struct ctdb_context *ctdb,
 			 struct timeval timeout, uint32_t destnode,
 			 TALLOC_CTX *mem_ctx,
-			 struct ctdb_control_get_ifaces **_ifaces)
+			 struct ctdb_iface_list_old **_ifaces)
 {
 	int ret;
 	TDB_DATA outdata;
 	int32_t res;
-	struct ctdb_control_get_ifaces *ifaces;
+	struct ctdb_iface_list_old *ifaces;
 	uint32_t len;
 	uint32_t i;
 
@@ -2896,7 +2896,7 @@ int ctdb_ctrl_get_ifaces(struct ctdb_context *ctdb,
 		return -1;
 	}
 
-	len = offsetof(struct ctdb_control_get_ifaces, ifaces);
+	len = offsetof(struct ctdb_iface_list_old, ifaces);
 	if (len > outdata.dsize) {
 		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for get ifaces "
 				"returned invalid data with size %u > %u\n",
@@ -2906,7 +2906,7 @@ int ctdb_ctrl_get_ifaces(struct ctdb_context *ctdb,
 		return -1;
 	}
 
-	ifaces = (struct ctdb_control_get_ifaces *)outdata.dptr;
+	ifaces = (struct ctdb_iface_list_old *)outdata.dptr;
 	len += ifaces->num*sizeof(struct ctdb_iface);
 
 	if (len > outdata.dsize) {
@@ -2923,7 +2923,7 @@ int ctdb_ctrl_get_ifaces(struct ctdb_context *ctdb,
 		ifaces->ifaces[i].name[CTDB_IFACE_SIZE] = '\0';
 	}
 
-	*_ifaces = (struct ctdb_control_get_ifaces *)talloc_memdup(mem_ctx,
+	*_ifaces = (struct ctdb_iface_list_old *)talloc_memdup(mem_ctx,
 								  outdata.dptr,
 								  outdata.dsize);
 	talloc_free(outdata.dptr);

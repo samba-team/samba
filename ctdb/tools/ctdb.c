@@ -961,7 +961,7 @@ static bool is_partially_online(struct ctdb_context *ctdb, struct ctdb_node_and_
 	bool ret = false;
 
 	if (node->flags == 0) {
-		struct ctdb_control_get_ifaces *ifaces;
+		struct ctdb_iface_list_old *ifaces;
 
 		if (ctdb_ctrl_get_ifaces(ctdb, TIMELIMIT(), node->pnn,
 					 tmp_ctx, &ifaces) == 0) {
@@ -3138,7 +3138,7 @@ static int control_ifaces(struct ctdb_context *ctdb, int argc, const char **argv
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 	int i;
-	struct ctdb_control_get_ifaces *ifaces;
+	struct ctdb_iface_list_old *ifaces;
 	int ret;
 
 	/* read the public ip list from this node */

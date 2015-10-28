@@ -544,7 +544,7 @@ int32_t ctdb_control_get_ifaces(struct ctdb_context *ctdb,
 				TDB_DATA *outdata)
 {
 	int i, num, len;
-	struct ctdb_control_get_ifaces *ifaces;
+	struct ctdb_iface_list_old *ifaces;
 	struct ctdb_interface *cur;
 
 	assert_ifaces_set(ctdb);
@@ -555,7 +555,7 @@ int32_t ctdb_control_get_ifaces(struct ctdb_context *ctdb,
 		num++;
 	}
 
-	len = offsetof(struct ctdb_control_get_ifaces, ifaces) +
+	len = offsetof(struct ctdb_iface_list_old, ifaces) +
 		num*sizeof(struct ctdb_iface);
 	ifaces = talloc_zero_size(outdata, len);
 	CTDB_NO_MEMORY(ctdb, ifaces);
@@ -573,7 +573,7 @@ int32_t ctdb_control_get_ifaces(struct ctdb_context *ctdb,
 		i++;
 	}
 	ifaces->num = i;
-	len = offsetof(struct ctdb_control_get_ifaces, ifaces) +
+	len = offsetof(struct ctdb_iface_list_old, ifaces) +
 		i*sizeof(struct ctdb_iface);
 
 	outdata->dsize = len;
@@ -586,7 +586,7 @@ int
 ctdb_ctrl_get_ifaces_stub(struct ctdb_context *ctdb,
 			  struct timeval timeout, uint32_t destnode,
 			  TALLOC_CTX *mem_ctx,
-			  struct ctdb_control_get_ifaces **ifaces)
+			  struct ctdb_iface_list_old **ifaces)
 {
 	TDB_DATA *outdata;
 	int ret;
@@ -600,7 +600,7 @@ ctdb_ctrl_get_ifaces_stub(struct ctdb_context *ctdb,
 	ret = ctdb_control_get_ifaces(ctdb, NULL, outdata);
 
 	if (ret == 0) {
-		*ifaces = (struct ctdb_control_get_ifaces *)outdata->dptr;
+		*ifaces = (struct ctdb_iface_list_old *)outdata->dptr;
 	}
 
 	return ret;

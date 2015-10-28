@@ -248,7 +248,7 @@ struct ctdb_recoverd {
 	struct srvid_requests *reallocate_requests;
 	struct ctdb_op_state *takeover_run;
 	struct ctdb_op_state *recovery;
-	struct ctdb_control_get_ifaces *ifaces;
+	struct ctdb_iface_list_old *ifaces;
 	uint32_t *force_rebalance_nodes;
 	struct ctdb_node_capabilities *caps;
 };
@@ -3255,7 +3255,7 @@ static enum monitor_result verify_recmaster(struct ctdb_recoverd *rec, struct ct
 static bool interfaces_have_changed(struct ctdb_context *ctdb,
 				    struct ctdb_recoverd *rec)
 {
-	struct ctdb_control_get_ifaces *ifaces = NULL;
+	struct ctdb_iface_list_old *ifaces = NULL;
 	TALLOC_CTX *mem_ctx;
 	bool ret = false;
 
