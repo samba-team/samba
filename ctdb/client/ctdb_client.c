@@ -2693,16 +2693,16 @@ int ctdb_ctrl_set_tunable(struct ctdb_context *ctdb,
 			  uint32_t destnode,
 			  const char *name, uint32_t value)
 {
-	struct ctdb_control_set_tunable *t;
+	struct ctdb_tunable_old *t;
 	TDB_DATA data;
 	int32_t res;
 	int ret;
 
-	data.dsize = offsetof(struct ctdb_control_set_tunable, name) + strlen(name) + 1;
+	data.dsize = offsetof(struct ctdb_tunable_old, name) + strlen(name) + 1;
 	data.dptr  = talloc_size(ctdb, data.dsize);
 	CTDB_NO_MEMORY(ctdb, data.dptr);
 
-	t = (struct ctdb_control_set_tunable *)data.dptr;
+	t = (struct ctdb_tunable_old *)data.dptr;
 	t->length = strlen(name)+1;
 	memcpy(t->name, name, t->length);
 	t->value = value;

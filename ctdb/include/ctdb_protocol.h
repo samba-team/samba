@@ -957,7 +957,7 @@ struct ctdb_marshall_buffer {
 /*
   structure for setting a tunable
  */
-struct ctdb_control_set_tunable {
+struct ctdb_tunable_old {
 	uint32_t value;
 	uint32_t length;
 	uint8_t  name[1];

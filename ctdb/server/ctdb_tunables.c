@@ -154,13 +154,13 @@ int32_t ctdb_control_get_tunable(struct ctdb_context *ctdb, TDB_DATA indata,
  */
 int32_t ctdb_control_set_tunable(struct ctdb_context *ctdb, TDB_DATA indata)
 {
-	struct ctdb_control_set_tunable *t =
-		(struct ctdb_control_set_tunable *)indata.dptr;
+	struct ctdb_tunable_old *t =
+		(struct ctdb_tunable_old *)indata.dptr;
 	char *name;
 	int i;
 
 	if (indata.dsize < sizeof(*t) ||
-	    t->length > indata.dsize - offsetof(struct ctdb_control_set_tunable, name)) {
+	    t->length > indata.dsize - offsetof(struct ctdb_tunable_old, name)) {
 		DEBUG(DEBUG_ERR,("Bad indata in ctdb_control_set_tunable\n"));
 		return -1;
 	}
