@@ -698,42 +698,6 @@ static struct ndr_pull *ndr_pull_init_flags(struct dcecli_connection *c,
 }
 
 /* 
-   parse a data blob into a ncacn_packet structure. This handles both
-   input and output packets
-*/
-static NTSTATUS ncacn_pull(struct dcecli_connection *c, DATA_BLOB *blob, TALLOC_CTX *mem_ctx, 
-			    struct ncacn_packet *pkt)
-{
-	struct ndr_pull *ndr;
-	enum ndr_err_code ndr_err;
-
-	ndr = ndr_pull_init_blob(blob, mem_ctx);
-	if (!ndr) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	if (! (CVAL(blob->data, DCERPC_DREP_OFFSET) & DCERPC_DREP_LE)) {
-		ndr->flags |= LIBNDR_FLAG_BIGENDIAN;
-	}
-
-	if (CVAL(blob->data, DCERPC_PFC_OFFSET) & DCERPC_PFC_FLAG_OBJECT_UUID) {
-		ndr->flags |= LIBNDR_FLAG_OBJECT_PRESENT;
-	}
-
-	ndr_err = ndr_pull_ncacn_packet(ndr, NDR_SCALARS|NDR_BUFFERS, pkt);
-	TALLOC_FREE(ndr);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		return ndr_map_error2ntstatus(ndr_err);
-	}
-
-	if (pkt->frag_length != blob->length) {
-		return NT_STATUS_RPC_PROTOCOL_ERROR;
-	}
-
-	return NT_STATUS_OK;
-}
-
-/* 
    parse the authentication information on a dcerpc response packet
 */
 static NTSTATUS ncacn_pull_request_auth(struct dcecli_connection *c, TALLOC_CTX *mem_ctx, 
@@ -1147,7 +1111,7 @@ static void dcerpc_recv_data(struct dcecli_connection *conn, DATA_BLOB *blob, NT
 	}
 
 	/* parse the basic packet to work out what type of response this is */
-	status = ncacn_pull(conn, blob, blob->data, &pkt);
+	status = dcerpc_pull_ncacn_packet(blob->data, blob, &pkt);
 	if (!NT_STATUS_IS_OK(status)) {
 		data_blob_free(blob);
 		dcerpc_connection_dead(conn, status);
