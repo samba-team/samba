@@ -4038,41 +4038,12 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 			return;
 		}
 
-		/* execute the "startrecovery" event script on all nodes */
-		ret = run_startrecovery_eventscript(rec, nodemap);
-		if (ret!=0) {
-			DEBUG(DEBUG_ERR, (__location__ " Unable to run the 'startrecovery' event on cluster\n"));
-			ctdb_set_culprit(rec, ctdb->pnn);
-			do_recovery(rec, mem_ctx, pnn, nodemap, vnnmap);
-			return;
-		}
-
 		/* If takeover run fails, then the offending nodes are
 		 * assigned ban culprit counts. And we re-try takeover.
 		 * If takeover run fails repeatedly, the node would get
 		 * banned.
-		 *
-		 * If rec->need_takeover_run is not set to true at this
-		 * failure, monitoring is disabled cluster-wide (via
-		 * startrecovery eventscript) and will not get enabled.
 		 */
-		if (!do_takeover_run(rec, nodemap, true)) {
-			return;
-		}
-
-		/* execute the "recovered" event script on all nodes */
-		ret = run_recovered_eventscript(rec, nodemap, "monitor_cluster");
-#if 0
-// we cant check whether the event completed successfully
-// since this script WILL fail if the node is in recovery mode
-// and if that race happens, the code here would just cause a second
-// cascading recovery.
-		if (ret!=0) {
-			DEBUG(DEBUG_ERR, (__location__ " Unable to run the 'recovered' event on cluster. Update of public ips failed.\n"));
-			ctdb_set_culprit(rec, ctdb->pnn);
-			do_recovery(rec, mem_ctx, pnn, nodemap, vnnmap);
-		}
-#endif
+		do_takeover_run(rec, nodemap, true);
 	}
 }
 
