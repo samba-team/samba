@@ -82,51 +82,6 @@ NTSTATUS dcerpc_push_ncacn_packet(TALLOC_CTX *mem_ctx,
 }
 
 /**
-* @brief Decodes a ncacn_packet
-*
-* @param mem_ctx	The memory context on which to allocate the packet
-*			elements
-* @param blob		The blob of data to decode
-* @param r		An empty ncacn_packet, must not be NULL
-*
-* @return a NTSTATUS error code
-*/
-NTSTATUS dcerpc_pull_ncacn_packet(TALLOC_CTX *mem_ctx,
-				  const DATA_BLOB *blob,
-				  struct ncacn_packet *r)
-{
-	enum ndr_err_code ndr_err;
-	struct ndr_pull *ndr;
-
-	ndr = ndr_pull_init_blob(blob, mem_ctx);
-	if (!ndr) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	if (!(CVAL(ndr->data, DCERPC_DREP_OFFSET) & DCERPC_DREP_LE)) {
-		ndr->flags |= LIBNDR_FLAG_BIGENDIAN;
-	}
-
-	if (CVAL(ndr->data, DCERPC_PFC_OFFSET) & DCERPC_PFC_FLAG_OBJECT_UUID) {
-		ndr->flags |= LIBNDR_FLAG_OBJECT_PRESENT;
-	}
-
-	ndr_err = ndr_pull_ncacn_packet(ndr, NDR_SCALARS|NDR_BUFFERS, r);
-
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		talloc_free(ndr);
-		return ndr_map_error2ntstatus(ndr_err);
-	}
-	talloc_free(ndr);
-
-	if (r->frag_length != blob->length) {
-		return NT_STATUS_RPC_PROTOCOL_ERROR;
-	}
-
-	return NT_STATUS_OK;
-}
-
-/**
 * @brief NDR Encodes a dcerpc_auth structure
 *
 * @param mem_ctx	  The memory context the blob will be allocated on

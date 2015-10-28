@@ -168,6 +168,10 @@ const char *dcerpc_default_transport_endpoint(TALLOC_CTX *mem_ctx,
 					      enum dcerpc_transport_t transport,
 					      const struct ndr_interface_table *table);
 
+NTSTATUS dcerpc_pull_ncacn_packet(TALLOC_CTX *mem_ctx,
+				  const DATA_BLOB *blob,
+				  struct ncacn_packet *r);
+
 /**
 * @brief	Pull a dcerpc_auth structure, taking account of any auth
 *		padding in the blob. For request/response packets we pass
