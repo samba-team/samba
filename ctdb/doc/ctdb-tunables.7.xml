@@ -182,13 +182,13 @@
     </refsect2>
 
     <refsect2>
-      <title>EventScriptTimeoutCount</title>
+      <title>MonitorTimeoutCount</title>
       <para>Default: 20</para>
       <para>
 	How many monitor events in a row need to timeout before a node
-	is flagged as UNHEALTHY.  This only applies to monitor events.
-	This setting is useful if scripts can not be written so that
-	they do not hang for benign reasons.
+	is flagged as UNHEALTHY.  This setting is useful if scripts
+	can not be written so that they do not hang for benign
+	reasons.
       </para>
     </refsect2>
 

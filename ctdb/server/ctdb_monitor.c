@@ -148,11 +148,11 @@ static void ctdb_health_callback(struct ctdb_context *ctdb, int status, void *p)
 		ctdb->monitor->event_script_timeouts++;
 
 		if (ctdb->monitor->event_script_timeouts >=
-		    ctdb->tunable.script_timeout_count) {
+		    ctdb->tunable.monitor_timeout_count) {
 			DEBUG(DEBUG_ERR,
 			      ("Maximum monitor timeout count %u reached."
 			       " Making node unhealthy\n",
-			       ctdb->tunable.script_timeout_count));
+			       ctdb->tunable.monitor_timeout_count));
 		} else {
 			/* We pretend this is OK. */
 			goto after_change_status;

@@ -48,7 +48,7 @@ static const struct {
 	{ "MonitorInterval",     15,  offsetof(struct ctdb_tunable_list, monitor_interval), false },
 	{ "TickleUpdateInterval",20,  offsetof(struct ctdb_tunable_list, tickle_update_interval), false },
 	{ "EventScriptTimeout",  30,  offsetof(struct ctdb_tunable_list, script_timeout), false },
-	{ "EventScriptTimeoutCount", 20,  offsetof(struct ctdb_tunable_list, script_timeout_count), false },
+	{ "MonitorTimeoutCount", 20,  offsetof(struct ctdb_tunable_list, monitor_timeout_count), false },
 	{ "EventScriptUnhealthyOnTimeout", 0, offsetof(struct ctdb_tunable_list, script_unhealthy_on_timeout), true },
 	{ "RecoveryGracePeriod", 120,  offsetof(struct ctdb_tunable_list, recovery_grace_period), false },
 	{ "RecoveryBanPeriod",  300,  offsetof(struct ctdb_tunable_list, recovery_ban_period), false },
