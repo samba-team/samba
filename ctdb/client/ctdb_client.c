@@ -2810,13 +2810,13 @@ int ctdb_ctrl_get_public_ip_info(struct ctdb_context *ctdb,
 				 struct timeval timeout, uint32_t destnode,
 				 TALLOC_CTX *mem_ctx,
 				 const ctdb_sock_addr *addr,
-				 struct ctdb_control_public_ip_info **_info)
+				 struct ctdb_public_ip_info_old **_info)
 {
 	int ret;
 	TDB_DATA indata;
 	TDB_DATA outdata;
 	int32_t res;
-	struct ctdb_control_public_ip_info *info;
+	struct ctdb_public_ip_info_old *info;
 	uint32_t len;
 	uint32_t i;
 
@@ -2833,7 +2833,7 @@ int ctdb_ctrl_get_public_ip_info(struct ctdb_context *ctdb,
 		return -1;
 	}
 
-	len = offsetof(struct ctdb_control_public_ip_info, ifaces);
+	len = offsetof(struct ctdb_public_ip_info_old, ifaces);
 	if (len > outdata.dsize) {
 		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for get public ip info "
 				"returned invalid data with size %u > %u\n",
@@ -2843,7 +2843,7 @@ int ctdb_ctrl_get_public_ip_info(struct ctdb_context *ctdb,
 		return -1;
 	}
 
-	info = (struct ctdb_control_public_ip_info *)outdata.dptr;
+	info = (struct ctdb_public_ip_info_old *)outdata.dptr;
 	len += info->num*sizeof(struct ctdb_iface);
 
 	if (len > outdata.dsize) {
@@ -2860,7 +2860,7 @@ int ctdb_ctrl_get_public_ip_info(struct ctdb_context *ctdb,
 		info->ifaces[i].name[CTDB_IFACE_SIZE] = '\0';
 	}
 
-	*_info = (struct ctdb_control_public_ip_info *)talloc_memdup(mem_ctx,
+	*_info = (struct ctdb_public_ip_info_old *)talloc_memdup(mem_ctx,
 								outdata.dptr,
 								outdata.dsize);
 	talloc_free(outdata.dptr);

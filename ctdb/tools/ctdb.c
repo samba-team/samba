@@ -2998,7 +2998,7 @@ static int control_ip(struct ctdb_context *ctdb, int argc, const char **argv)
 	}
 
 	for (i=1;i<=ips->num;i++) {
-		struct ctdb_control_public_ip_info *info = NULL;
+		struct ctdb_public_ip_info_old *info = NULL;
 		int32_t pnn;
 		char *aciface = NULL;
 		char *avifaces = NULL;
@@ -3087,7 +3087,7 @@ static int control_ipinfo(struct ctdb_context *ctdb, int argc, const char **argv
 	int i, ret;
 	ctdb_sock_addr addr;
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
-	struct ctdb_control_public_ip_info *info;
+	struct ctdb_public_ip_info_old *info;
 
 	if (argc != 1) {
 		talloc_free(tmp_ctx);

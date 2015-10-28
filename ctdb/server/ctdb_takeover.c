@@ -3245,7 +3245,7 @@ int32_t ctdb_control_get_public_ip_info(struct ctdb_context *ctdb,
 {
 	int i, num, len;
 	ctdb_sock_addr *addr;
-	struct ctdb_control_public_ip_info *info;
+	struct ctdb_public_ip_info_old *info;
 	struct ctdb_vnn *vnn;
 
 	addr = (ctdb_sock_addr *)indata.dptr;
@@ -3272,7 +3272,7 @@ int32_t ctdb_control_get_public_ip_info(struct ctdb_context *ctdb,
 		num++;
 	}
 
-	len = offsetof(struct ctdb_control_public_ip_info, ifaces) +
+	len = offsetof(struct ctdb_public_ip_info_old, ifaces) +
 		num*sizeof(struct ctdb_iface);
 	info = talloc_zero_size(outdata, len);
 	CTDB_NO_MEMORY(ctdb, info);
@@ -3298,7 +3298,7 @@ int32_t ctdb_control_get_public_ip_info(struct ctdb_context *ctdb,
 		info->ifaces[i].references = cur->references;
 	}
 	info->num = i;
-	len = offsetof(struct ctdb_control_public_ip_info, ifaces) +
+	len = offsetof(struct ctdb_public_ip_info_old, ifaces) +
 		i*sizeof(struct ctdb_iface);
 
 	outdata->dsize = len;

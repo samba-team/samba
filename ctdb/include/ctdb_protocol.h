@@ -994,7 +994,7 @@ struct ctdb_iface {
 	uint32_t references;
 };
 
-struct ctdb_control_public_ip_info {
+struct ctdb_public_ip_info_old {
 	struct ctdb_public_ip ip;
 	uint32_t active_idx;
 	uint32_t num;

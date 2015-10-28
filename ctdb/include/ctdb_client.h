@@ -379,7 +379,7 @@ int ctdb_ctrl_get_public_ip_info(struct ctdb_context *ctdb,
 				 struct timeval timeout, uint32_t destnode,
 				 TALLOC_CTX *mem_ctx,
 				 const ctdb_sock_addr *addr,
-				 struct ctdb_control_public_ip_info **info);
+				 struct ctdb_public_ip_info_old **info);
 
 int ctdb_ctrl_get_ifaces(struct ctdb_context *ctdb,
 			 struct timeval timeout, uint32_t destnode,
