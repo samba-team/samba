@@ -152,6 +152,8 @@ static void ctdb_health_callback(struct ctdb_context *ctdb, int status, void *p)
 			/* We pretend this is OK. */
 			goto after_change_status;
 		}
+	} else {
+		ctdb->event_script_timeouts = 0;
 	}
 
 	if (status != 0 && !(node->flags & NODE_FLAGS_UNHEALTHY)) {

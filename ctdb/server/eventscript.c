@@ -420,7 +420,6 @@ static void ctdb_event_script_handler(struct tevent_context *ev,
 			       state->options, status));
 		}
 
-		ctdb->event_script_timeouts = 0;
 		talloc_free(state);
 		return;
 	}
