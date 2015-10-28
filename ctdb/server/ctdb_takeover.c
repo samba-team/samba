@@ -261,6 +261,11 @@ static bool ctdb_vnn_available(struct ctdb_context *ctdb,
 {
 	int i;
 
+	/* Nodes that are not RUNNING can not host IPs */
+	if (ctdb->runstate != CTDB_RUNSTATE_RUNNING) {
+		return false;
+	}
+
 	if (vnn->delete_pending) {
 		return false;
 	}
