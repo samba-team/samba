@@ -105,6 +105,8 @@ void process_host_announce(struct subnet_record *subrec, struct packet_struct *p
 	struct server_record *servrec;
 	unstring work_name;
 	unstring source_name;
+	ZERO_STRUCT(source_name);
+	ZERO_STRUCT(announce_name);
 
 	pull_ascii_fstring(comment, buf+31);
   
