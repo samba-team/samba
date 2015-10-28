@@ -2683,11 +2683,10 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map_old *nodem
 		return -1;
 	}
 
-	/* Short-circuit IP allocation if no nodes are in the RUNNING
-	 * runstate yet, since no nodes will be able to host IPs */
+	/* Short-circuit IP allocation if no node has available IPs */
 	can_host_ips = false;
-	for (i=0; i<nodemap->num; i++) {
-		if (ipflags[i].runstate == CTDB_RUNSTATE_RUNNING) {
+	for (i=0; i < ctdb->num_nodes; i++) {
+		if (ctdb->nodes[i]->available_public_ips != NULL) {
 			can_host_ips = true;
 		}
 	}
