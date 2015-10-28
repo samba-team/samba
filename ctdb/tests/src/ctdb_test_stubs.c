@@ -175,8 +175,8 @@ static void ctdb_test_stubs_print_nodemap(struct ctdb_context *ctdb)
  *   :eth1:1:4294967292
  */
 
-struct ctdb_iface {
-	struct ctdb_iface *prev, *next;
+struct ctdb_interface {
+	struct ctdb_interface *prev, *next;
 	const char *name;
 	bool link_up;
 	uint32_t references;
@@ -185,7 +185,7 @@ struct ctdb_iface {
 static void ctdb_test_stubs_read_ifaces(struct ctdb_context *ctdb)
 {
 	char line[1024];
-	struct ctdb_iface *iface;
+	struct ctdb_interface *iface;
 
 	while ((fgets(line, sizeof(line), stdin) != NULL) &&
 	       (line[0] != '\n')) {
@@ -227,7 +227,7 @@ static void ctdb_test_stubs_read_ifaces(struct ctdb_context *ctdb)
 		}
 		references = (uint32_t)strtoul(tok, NULL, 0);
 
-		iface = talloc_zero(ctdb, struct ctdb_iface);
+		iface = talloc_zero(ctdb, struct ctdb_interface);
 
 		if (iface == NULL) {
 			DEBUG(DEBUG_ERR, ("OOM allocating iface\n"));
@@ -253,7 +253,7 @@ static void assert_ifaces_set(struct ctdb_context *ctdb)
 #ifdef CTDB_TEST_OVERRIDE_MAIN
 static void ctdb_test_stubs_print_ifaces(struct ctdb_context *ctdb)
 {
-	struct ctdb_iface *iface;
+	struct ctdb_interface *iface;
 
 	assert_ifaces_set(ctdb);
 
@@ -545,7 +545,7 @@ int32_t ctdb_control_get_ifaces(struct ctdb_context *ctdb,
 {
 	int i, num, len;
 	struct ctdb_control_get_ifaces *ifaces;
-	struct ctdb_iface *cur;
+	struct ctdb_interface *cur;
 
 	assert_ifaces_set(ctdb);
 

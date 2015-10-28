@@ -53,8 +53,8 @@ struct ctdb_ipflags {
 	enum ctdb_runstate runstate;
 };
 
-struct ctdb_iface {
-	struct ctdb_iface *prev, *next;
+struct ctdb_interface {
+	struct ctdb_interface *prev, *next;
 	const char *name;
 	bool link_up;
 	uint32_t references;
@@ -71,7 +71,7 @@ static const char *ctdb_vnn_iface_string(const struct ctdb_vnn *vnn)
 
 static int ctdb_add_local_iface(struct ctdb_context *ctdb, const char *iface)
 {
-	struct ctdb_iface *i;
+	struct ctdb_interface *i;
 
 	/* Verify that we dont have an entry for this ip yet */
 	for (i=ctdb->ifaces;i;i=i->next) {
@@ -81,7 +81,7 @@ static int ctdb_add_local_iface(struct ctdb_context *ctdb, const char *iface)
 	}
 
 	/* create a new structure for this interface */
-	i = talloc_zero(ctdb, struct ctdb_iface);
+	i = talloc_zero(ctdb, struct ctdb_interface);
 	CTDB_NO_MEMORY_FATAL(ctdb, i);
 	i->name = talloc_strdup(i, iface);
 	CTDB_NO_MEMORY(ctdb, i->name);
@@ -122,7 +122,7 @@ static bool vnn_has_interface_with_name(struct ctdb_vnn *vnn,
 static void ctdb_remove_orphaned_ifaces(struct ctdb_context *ctdb,
 					struct ctdb_vnn *vnn)
 {
-	struct ctdb_iface *i, *next;
+	struct ctdb_interface *i, *next;
 
 	/* For each interface, check if there's an IP using it. */
 	for (i = ctdb->ifaces; i != NULL; i = next) {
@@ -160,10 +160,10 @@ static void ctdb_remove_orphaned_ifaces(struct ctdb_context *ctdb,
 }
 
 
-static struct ctdb_iface *ctdb_find_iface(struct ctdb_context *ctdb,
-					  const char *iface)
+static struct ctdb_interface *ctdb_find_iface(struct ctdb_context *ctdb,
+					      const char *iface)
 {
-	struct ctdb_iface *i;
+	struct ctdb_interface *i;
 
 	for (i=ctdb->ifaces;i;i=i->next) {
 		if (strcmp(i->name, iface) == 0) {
@@ -174,12 +174,12 @@ static struct ctdb_iface *ctdb_find_iface(struct ctdb_context *ctdb,
 	return NULL;
 }
 
-static struct ctdb_iface *ctdb_vnn_best_iface(struct ctdb_context *ctdb,
-					      struct ctdb_vnn *vnn)
+static struct ctdb_interface *ctdb_vnn_best_iface(struct ctdb_context *ctdb,
+						  struct ctdb_vnn *vnn)
 {
 	int i;
-	struct ctdb_iface *cur = NULL;
-	struct ctdb_iface *best = NULL;
+	struct ctdb_interface *cur = NULL;
+	struct ctdb_interface *best = NULL;
 
 	for (i=0; vnn->ifaces[i]; i++) {
 
@@ -209,7 +209,7 @@ static struct ctdb_iface *ctdb_vnn_best_iface(struct ctdb_context *ctdb,
 static int32_t ctdb_vnn_assign_iface(struct ctdb_context *ctdb,
 				     struct ctdb_vnn *vnn)
 {
-	struct ctdb_iface *best = NULL;
+	struct ctdb_interface *best = NULL;
 
 	if (vnn->iface) {
 		DEBUG(DEBUG_INFO, (__location__ " public address '%s' "
@@ -270,7 +270,7 @@ static bool ctdb_vnn_available(struct ctdb_context *ctdb,
 	}
 
 	for (i=0; vnn->ifaces[i]; i++) {
-		struct ctdb_iface *cur;
+		struct ctdb_interface *cur;
 
 		cur = ctdb_find_iface(ctdb, vnn->ifaces[i]);
 		if (cur == NULL) {
@@ -535,7 +535,7 @@ static int32_t ctdb_do_takeip(struct ctdb_context *ctdb,
 
 struct ctdb_do_updateip_state {
 	struct ctdb_req_control_old *c;
-	struct ctdb_iface *old;
+	struct ctdb_interface *old;
 	struct ctdb_vnn *vnn;
 };
 
@@ -603,7 +603,7 @@ static int32_t ctdb_do_updateip(struct ctdb_context *ctdb,
 {
 	int ret;
 	struct ctdb_do_updateip_state *state;
-	struct ctdb_iface *old = vnn->iface;
+	struct ctdb_interface *old = vnn->iface;
 	const char *new_name;
 
 	if (vnn->update_in_flight) {
@@ -704,7 +704,7 @@ int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb,
 	bool have_ip = false;
 	bool do_updateip = false;
 	bool do_takeip = false;
-	struct ctdb_iface *best_iface = NULL;
+	struct ctdb_interface *best_iface = NULL;
 
 	if (pip->pnn != ctdb->pnn) {
 		DEBUG(DEBUG_ERR,(__location__" takeoverip called for an ip '%s' "
@@ -1181,7 +1181,7 @@ int ctdb_set_single_public_ip(struct ctdb_context *ctdb,
 			      const char *ip)
 {
 	struct ctdb_vnn *svnn;
-	struct ctdb_iface *cur = NULL;
+	struct ctdb_interface *cur = NULL;
 	bool ok;
 	int ret;
 
@@ -3282,7 +3282,7 @@ int32_t ctdb_control_get_public_ip_info(struct ctdb_context *ctdb,
 	info->active_idx = 0xFFFFFFFF;
 
 	for (i=0; vnn->ifaces[i]; i++) {
-		struct ctdb_iface *cur;
+		struct ctdb_interface *cur;
 
 		cur = ctdb_find_iface(ctdb, vnn->ifaces[i]);
 		if (cur == NULL) {
@@ -3313,7 +3313,7 @@ int32_t ctdb_control_get_ifaces(struct ctdb_context *ctdb,
 {
 	int i, num, len;
 	struct ctdb_control_get_ifaces *ifaces;
-	struct ctdb_iface *cur;
+	struct ctdb_interface *cur;
 
 	/* count how many public ip structures we have */
 	num = 0;
@@ -3348,7 +3348,7 @@ int32_t ctdb_control_set_iface_link(struct ctdb_context *ctdb,
 				    TDB_DATA indata)
 {
 	struct ctdb_control_iface_info *info;
-	struct ctdb_iface *iface;
+	struct ctdb_interface *iface;
 	bool link_up = false;
 
 	info = (struct ctdb_control_iface_info *)indata.dptr;
