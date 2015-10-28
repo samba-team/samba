@@ -1251,7 +1251,7 @@ int ctdbd_control_local(struct ctdbd_connection *conn, uint32_t opcode,
 
 int ctdb_watch_us(struct ctdbd_connection *conn)
 {
-	struct ctdb_client_notify_register reg_data;
+	struct ctdb_notify_data_old reg_data;
 	size_t struct_len;
 	int ret;
 	int cstatus;
@@ -1260,7 +1260,7 @@ int ctdb_watch_us(struct ctdbd_connection *conn)
 	reg_data.len = 1;
 	reg_data.notify_data[0] = 0;
 
-	struct_len = offsetof(struct ctdb_client_notify_register,
+	struct_len = offsetof(struct ctdb_notify_data_old,
 			      notify_data) + reg_data.len;
 
 	ret = ctdbd_control_local(

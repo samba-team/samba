@@ -1671,19 +1671,19 @@ static int ctdb_client_notify_destructor(struct ctdb_client_notify_list *nl)
 
 int32_t ctdb_control_register_notify(struct ctdb_context *ctdb, uint32_t client_id, TDB_DATA indata)
 {
-	struct ctdb_client_notify_register *notify = (struct ctdb_client_notify_register *)indata.dptr;
+	struct ctdb_notify_data_old *notify = (struct ctdb_notify_data_old *)indata.dptr;
         struct ctdb_client *client = reqid_find(ctdb->idr, client_id, struct ctdb_client);
 	struct ctdb_client_notify_list *nl;
 
 	DEBUG(DEBUG_INFO,("Register srvid %llu for client %d\n", (unsigned long long)notify->srvid, client_id));
 
-	if (indata.dsize < offsetof(struct ctdb_client_notify_register, notify_data)) {
+	if (indata.dsize < offsetof(struct ctdb_notify_data_old, notify_data)) {
 		DEBUG(DEBUG_ERR,(__location__ " Too little data in control : %d\n", (int)indata.dsize));
 		return -1;
 	}
 
-	if (indata.dsize != (notify->len + offsetof(struct ctdb_client_notify_register, notify_data))) {
-		DEBUG(DEBUG_ERR,(__location__ " Wrong amount of data in control. Got %d, expected %d\n", (int)indata.dsize, (int)(notify->len + offsetof(struct ctdb_client_notify_register, notify_data))));
+	if (indata.dsize != (notify->len + offsetof(struct ctdb_notify_data_old, notify_data))) {
+		DEBUG(DEBUG_ERR,(__location__ " Wrong amount of data in control. Got %d, expected %d\n", (int)indata.dsize, (int)(notify->len + offsetof(struct ctdb_notify_data_old, notify_data))));
 		return -1;
 	}
 

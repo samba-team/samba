@@ -759,7 +759,7 @@ struct ctdb_vnn_map_wire {
 	uint32_t map[1];
 };
 
-struct ctdb_client_notify_register {
+struct ctdb_notify_data_old {
 	uint64_t srvid;
 	uint32_t len;
 	uint8_t notify_data[1];
