@@ -4709,7 +4709,8 @@ int ctdb_ctrl_disablescript(struct ctdb_context *ctdb, struct timeval timeout, u
 }
 
 
-int ctdb_ctrl_set_ban(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, struct ctdb_ban_time *bantime)
+int ctdb_ctrl_set_ban(struct ctdb_context *ctdb, struct timeval timeout,
+		      uint32_t destnode, struct ctdb_ban_state *bantime)
 {
 	int ret;
 	TDB_DATA data;
@@ -4730,7 +4731,9 @@ int ctdb_ctrl_set_ban(struct ctdb_context *ctdb, struct timeval timeout, uint32_
 }
 
 
-int ctdb_ctrl_get_ban(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, TALLOC_CTX *mem_ctx, struct ctdb_ban_time **bantime)
+int ctdb_ctrl_get_ban(struct ctdb_context *ctdb, struct timeval timeout,
+		      uint32_t destnode, TALLOC_CTX *mem_ctx,
+		      struct ctdb_ban_state **bantime)
 {
 	int ret;
 	TDB_DATA outdata;
@@ -4746,7 +4749,7 @@ int ctdb_ctrl_get_ban(struct ctdb_context *ctdb, struct timeval timeout, uint32_
 		return -1;
 	}
 
-	*bantime = (struct ctdb_ban_time *)talloc_steal(mem_ctx, outdata.dptr);
+	*bantime = (struct ctdb_ban_state *)talloc_steal(mem_ctx, outdata.dptr);
 	talloc_free(tmp_ctx);
 
 	return 0;

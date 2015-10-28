@@ -81,7 +81,7 @@ void ctdb_local_node_got_banned(struct ctdb_context *ctdb)
 
 int32_t ctdb_control_set_ban_state(struct ctdb_context *ctdb, TDB_DATA indata)
 {
-	struct ctdb_ban_time *bantime = (struct ctdb_ban_time *)indata.dptr;
+	struct ctdb_ban_state *bantime = (struct ctdb_ban_state *)indata.dptr;
 	bool already_banned;
 
 	DEBUG(DEBUG_INFO,("SET BAN STATE\n"));
@@ -128,12 +128,12 @@ int32_t ctdb_control_set_ban_state(struct ctdb_context *ctdb, TDB_DATA indata)
 		return 0;
 	}
 
-	ctdb->banning_ctx = talloc(ctdb, struct ctdb_ban_time);
+	ctdb->banning_ctx = talloc(ctdb, struct ctdb_ban_state);
 	if (ctdb->banning_ctx == NULL) {
 		DEBUG(DEBUG_CRIT,(__location__ " ERROR Failed to allocate new banning state\n"));
 		return -1;
 	}
-	*((struct ctdb_ban_time *)(ctdb->banning_ctx)) = *bantime;
+	*((struct ctdb_ban_state *)(ctdb->banning_ctx)) = *bantime;
 
 
 	DEBUG(DEBUG_ERR,("Banning this node for %d seconds\n", bantime->time));
@@ -151,20 +151,20 @@ int32_t ctdb_control_set_ban_state(struct ctdb_context *ctdb, TDB_DATA indata)
 
 int32_t ctdb_control_get_ban_state(struct ctdb_context *ctdb, TDB_DATA *outdata)
 {
-	struct ctdb_ban_time *bantime;
+	struct ctdb_ban_state *bantime;
 
-	bantime = talloc(outdata, struct ctdb_ban_time);
+	bantime = talloc(outdata, struct ctdb_ban_state);
 	CTDB_NO_MEMORY(ctdb, bantime);
 
 	if (ctdb->banning_ctx != NULL) {
-		*bantime = *(struct ctdb_ban_time *)(ctdb->banning_ctx);
+		*bantime = *(struct ctdb_ban_state *)(ctdb->banning_ctx);
 	} else {
 		bantime->pnn = ctdb->pnn;
 		bantime->time = 0;
 	}
 
 	outdata->dptr  = (uint8_t *)bantime;
-	outdata->dsize = sizeof(struct ctdb_ban_time);
+	outdata->dsize = sizeof(struct ctdb_ban_state);
 
 	return 0;
 }
@@ -173,7 +173,7 @@ int32_t ctdb_control_get_ban_state(struct ctdb_context *ctdb, TDB_DATA *outdata)
 void ctdb_ban_self(struct ctdb_context *ctdb)
 {
 	TDB_DATA data;
-	struct ctdb_ban_time bantime;
+	struct ctdb_ban_state bantime;
 
 	bantime.pnn  = ctdb->pnn;
 	bantime.time = ctdb->tunable.recovery_ban_period;

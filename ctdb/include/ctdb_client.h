@@ -601,10 +601,10 @@ int ctdb_ctrl_disablescript(struct ctdb_context *ctdb, struct timeval timeout,
 			    uint32_t destnode, const char *script);
 
 int ctdb_ctrl_set_ban(struct ctdb_context *ctdb, struct timeval timeout,
-		      uint32_t destnode, struct ctdb_ban_time *bantime);
+		      uint32_t destnode, struct ctdb_ban_state *bantime);
 int ctdb_ctrl_get_ban(struct ctdb_context *ctdb, struct timeval timeout,
 		      uint32_t destnode, TALLOC_CTX *mem_ctx,
-		      struct ctdb_ban_time **bantime);
+		      struct ctdb_ban_state **bantime);
 
 int ctdb_ctrl_set_db_priority(struct ctdb_context *ctdb,
 			      struct timeval timeout, uint32_t destnode,

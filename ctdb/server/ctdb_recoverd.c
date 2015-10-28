@@ -267,8 +267,8 @@ static void ctdb_ban_node(struct ctdb_recoverd *rec, uint32_t pnn, uint32_t ban_
 {
 	int ret;
 	struct ctdb_context *ctdb = rec->ctdb;
-	struct ctdb_ban_time bantime;
-       
+	struct ctdb_ban_state bantime;
+
 	if (!ctdb_validate_pnn(ctdb, pnn)) {
 		DEBUG(DEBUG_ERR,("Bad pnn %u in ctdb_ban_node\n", pnn));
 		return;

@@ -813,7 +813,7 @@ struct ctdb_connection {
 	ctdb_sock_addr dst;
 };
 
-struct ctdb_ban_time {
+struct ctdb_ban_state {
 	uint32_t pnn;
 	uint32_t time;
 };

@@ -3420,7 +3420,7 @@ static uint32_t get_generation(struct ctdb_context *ctdb)
 /* Ban a node */
 static bool update_state_banned(struct ctdb_context *ctdb, void *data)
 {
-	struct ctdb_ban_time *bantime = (struct ctdb_ban_time *)data;
+	struct ctdb_ban_state *bantime = (struct ctdb_ban_state *)data;
 	int ret;
 
 	ret = ctdb_ctrl_set_ban(ctdb, TIMELIMIT(), options.pnn, bantime);
@@ -3430,7 +3430,7 @@ static bool update_state_banned(struct ctdb_context *ctdb, void *data)
 
 static int control_ban(struct ctdb_context *ctdb, int argc, const char **argv)
 {
-	struct ctdb_ban_time bantime;
+	struct ctdb_ban_state bantime;
 
 	if (argc < 1) {
 		usage();
@@ -3455,7 +3455,7 @@ static int control_ban(struct ctdb_context *ctdb, int argc, const char **argv)
 /* Unban a node */
 static int control_unban(struct ctdb_context *ctdb, int argc, const char **argv)
 {
-	struct ctdb_ban_time bantime;
+	struct ctdb_ban_state bantime;
 
 	bantime.pnn  = options.pnn;
 	bantime.time = 0;
@@ -3474,7 +3474,7 @@ static int control_showban(struct ctdb_context *ctdb, int argc, const char **arg
 {
 	int ret;
 	struct ctdb_node_map_old *nodemap=NULL;
-	struct ctdb_ban_time *bantime;
+	struct ctdb_ban_state *bantime;
 
 	/* verify the node exists */
 	ret = ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE, ctdb, &nodemap);
