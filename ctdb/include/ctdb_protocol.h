@@ -790,7 +790,7 @@ enum ctdb_client_id_type {
 	SERVER_TYPE_ISCSID=3
 };
 
-struct ctdb_server_id {
+struct ctdb_client_id {
 	enum ctdb_client_id_type type;
 	uint32_t pnn;
 	uint32_t server_id;
@@ -798,7 +798,7 @@ struct ctdb_server_id {
 
 struct ctdb_server_id_list {
 	uint32_t num;
-	struct ctdb_server_id server_ids[1];
+	struct ctdb_client_id server_ids[1];
 };
 
 struct ctdb_uptime {

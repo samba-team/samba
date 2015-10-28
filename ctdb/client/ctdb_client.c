@@ -3205,15 +3205,15 @@ int ctdb_ctrl_get_tcp_tickles(struct ctdb_context *ctdb,
 /*
   register a server id
  */
-int ctdb_ctrl_register_server_id(struct ctdb_context *ctdb, 
-		      struct timeval timeout, 
-		      struct ctdb_server_id *id)
+int ctdb_ctrl_register_server_id(struct ctdb_context *ctdb,
+				 struct timeval timeout,
+				 struct ctdb_client_id *id)
 {
 	TDB_DATA data;
 	int32_t res;
 	int ret;
 
-	data.dsize = sizeof(struct ctdb_server_id);
+	data.dsize = sizeof(struct ctdb_client_id);
 	data.dptr  = (unsigned char *)id;
 
 	ret = ctdb_control(ctdb, CTDB_CURRENT_NODE, 0, 
@@ -3231,15 +3231,15 @@ int ctdb_ctrl_register_server_id(struct ctdb_context *ctdb,
 /*
   unregister a server id
  */
-int ctdb_ctrl_unregister_server_id(struct ctdb_context *ctdb, 
-		      struct timeval timeout, 
-		      struct ctdb_server_id *id)
+int ctdb_ctrl_unregister_server_id(struct ctdb_context *ctdb,
+				   struct timeval timeout,
+				   struct ctdb_client_id *id)
 {
 	TDB_DATA data;
 	int32_t res;
 	int ret;
 
-	data.dsize = sizeof(struct ctdb_server_id);
+	data.dsize = sizeof(struct ctdb_client_id);
 	data.dptr  = (unsigned char *)id;
 
 	ret = ctdb_control(ctdb, CTDB_CURRENT_NODE, 0, 
@@ -3260,17 +3260,15 @@ int ctdb_ctrl_unregister_server_id(struct ctdb_context *ctdb,
 
   if a server id does exist, return *status == 1, otherwise *status == 0
  */
-int ctdb_ctrl_check_server_id(struct ctdb_context *ctdb, 
-		      struct timeval timeout, 
-		      uint32_t destnode,
-		      struct ctdb_server_id *id,
-		      uint32_t *status)
+int ctdb_ctrl_check_server_id(struct ctdb_context *ctdb,
+			      struct timeval timeout, uint32_t destnode,
+			      struct ctdb_client_id *id, uint32_t *status)
 {
 	TDB_DATA data;
 	int32_t res;
 	int ret;
 
-	data.dsize = sizeof(struct ctdb_server_id);
+	data.dsize = sizeof(struct ctdb_client_id);
 	data.dptr  = (unsigned char *)id;
 
 	ret = ctdb_control(ctdb, destnode, 0, CTDB_CONTROL_CHECK_SERVER_ID, 
@@ -3874,7 +3872,7 @@ static bool ctdb_server_id_equal(struct server_id *id1, struct server_id *id2)
 
 static bool server_id_exists(struct ctdb_context *ctdb, struct server_id *id)
 {
-	struct ctdb_server_id sid;
+	struct ctdb_client_id sid;
 	int ret;
 	uint32_t result = 0;
 
@@ -4135,7 +4133,7 @@ struct ctdb_transaction_handle *ctdb_transaction_start(struct ctdb_db_context *c
 						       TALLOC_CTX *mem_ctx)
 {
 	struct ctdb_transaction_handle *h;
-	struct ctdb_server_id id;
+	struct ctdb_client_id id;
 
 	h = talloc_zero(mem_ctx, struct ctdb_transaction_handle);
 	if (h == NULL) {

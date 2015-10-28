@@ -2788,7 +2788,7 @@ static int control_gratious_arp(struct ctdb_context *ctdb, int argc, const char 
 static int regsrvid(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	int ret;
-	struct ctdb_server_id server_id;
+	struct ctdb_client_id server_id;
 
 	if (argc < 3) {
 		usage();
@@ -2814,7 +2814,7 @@ static int regsrvid(struct ctdb_context *ctdb, int argc, const char **argv)
 static int unregsrvid(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	int ret;
-	struct ctdb_server_id server_id;
+	struct ctdb_client_id server_id;
 
 	if (argc < 3) {
 		usage();
@@ -2839,7 +2839,7 @@ static int chksrvid(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	uint32_t status = 0;
 	int ret;
-	struct ctdb_server_id server_id;
+	struct ctdb_client_id server_id;
 
 	if (argc < 3) {
 		usage();
