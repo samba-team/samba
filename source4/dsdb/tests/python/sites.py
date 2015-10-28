@@ -52,11 +52,8 @@ if len(args) < 1:
 host = args[0]
 if not "://" in host:
     ldaphost = "ldap://%s" % host
-    ldapshost = "ldaps://%s" % host
 else:
     ldaphost = host
-    start = host.rindex("://")
-    host = host.lstrip(start+3)
 
 lp = sambaopts.get_loadparm()
 creds = credopts.get_credentials(lp)
@@ -69,7 +66,7 @@ class SitesBaseTests(samba.tests.TestCase):
 
     def setUp(self):
         super(SitesBaseTests, self).setUp()
-        self.ldb = SamDB(ldapshost, credentials=creds,
+        self.ldb = SamDB(ldaphost, credentials=creds,
                          session_info=system_session(lp), lp=lp)
         self.base_dn = self.ldb.domain_dn()
         self.domain_sid = security.dom_sid(self.ldb.get_domain_sid())
