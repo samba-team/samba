@@ -532,12 +532,10 @@ struct ctdb_ltdb_header {
 /*
   definitions for different socket structures
  */
-typedef struct sockaddr_in ctdb_addr_in;
-typedef struct sockaddr_in6 ctdb_addr_in6;
 typedef union {
 	struct sockaddr sa;
-	ctdb_addr_in	ip;
-	ctdb_addr_in6	ip6;
+	struct sockaddr_in ip;
+	struct sockaddr_in6 ip6;
 } ctdb_sock_addr;
 
 /*
