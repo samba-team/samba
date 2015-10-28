@@ -870,6 +870,7 @@ static struct pnn_node *read_pnn_node_file(TALLOC_CTX *mem_ctx,
 	}
 	for (i=0, pnn=0; i<nlines; i++) {
 		char *node;
+		size_t len;
 
 		node = lines[i];
 		/* strip leading spaces */
@@ -880,7 +881,19 @@ static struct pnn_node *read_pnn_node_file(TALLOC_CTX *mem_ctx,
 			pnn++;
 			continue;
 		}
-		if (strcmp(node, "") == 0) {
+
+		/* strip trailing spaces */
+
+		len = strlen(node);
+
+		while ((len > 1) &&
+		       ((node[len-1] == ' ') || (node[len-1] == '\t')))
+		{
+			node[len-1] = '\0';
+			len--;
+		}
+
+		if (len == 0) {
 			continue;
 		}
 		pnn_node = talloc(mem_ctx, struct pnn_node);

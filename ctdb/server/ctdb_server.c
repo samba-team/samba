@@ -183,6 +183,7 @@ static int ctdb_set_nlist(struct ctdb_context *ctdb, const char *nlist)
 	num_present = 0;
 	for (i=0; i < nlines; i++) {
 		char *node;
+		size_t len;
 
 		node = lines[i];
 		/* strip leading spaces */
@@ -196,7 +197,19 @@ static int ctdb_set_nlist(struct ctdb_context *ctdb, const char *nlist)
 			}
 			continue;
 		}
-		if (strcmp(node, "") == 0) {
+
+		/* strip trailing spaces */
+
+		len = strlen(node);
+
+		while ((len > 1) &&
+		       ((node[len-1] == ' ') || (node[len-1] == '\t')))
+		{
+			node[len-1] = '\0';
+			len--;
+		}
+
+		if (len == 0) {
 			continue;
 		}
 		if (ctdb_add_node(ctdb, node) != 0) {
