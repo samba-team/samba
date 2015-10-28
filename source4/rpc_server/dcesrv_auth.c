@@ -467,9 +467,13 @@ bool dcesrv_auth_request(struct dcesrv_call_state *call, DATA_BLOB *full_packet)
 {
 	struct ncacn_packet *pkt = &call->pkt;
 	struct dcesrv_connection *dce_conn = call->conn;
+	const struct dcerpc_auth tmp_auth = {
+		.auth_type = dce_conn->auth_state.auth_type,
+		.auth_level = dce_conn->auth_state.auth_level,
+		.auth_context_id = dce_conn->auth_state.auth_context_id,
+	};
 	NTSTATUS status;
-	uint32_t auth_length;
-	size_t hdr_size = DCERPC_REQUEST_LENGTH;
+	uint8_t payload_offset = DCERPC_REQUEST_LENGTH;
 
 	if (!dce_conn->allow_request) {
 		call->fault_code = DCERPC_NCA_S_PROTO_ERROR;
@@ -481,110 +485,43 @@ bool dcesrv_auth_request(struct dcesrv_call_state *call, DATA_BLOB *full_packet)
 	}
 
 	if (pkt->pfc_flags & DCERPC_PFC_FLAG_OBJECT_UUID) {
-		hdr_size += 16;
+		payload_offset += 16;
 	}
 
-	switch (dce_conn->auth_state.auth_level) {
-	case DCERPC_AUTH_LEVEL_PRIVACY:
-	case DCERPC_AUTH_LEVEL_INTEGRITY:
-	case DCERPC_AUTH_LEVEL_PACKET:
-		break;
-
-	case DCERPC_AUTH_LEVEL_CONNECT:
-		if (pkt->auth_length != 0) {
-			break;
-		}
-		return true;
-	case DCERPC_AUTH_LEVEL_NONE:
-		if (pkt->auth_length != 0) {
-			return false;
-		}
-		return true;
-
-	default:
+	status = dcerpc_ncacn_pull_pkt_auth(&tmp_auth,
+					    dce_conn->auth_state.gensec_security,
+					    call,
+					    DCERPC_PKT_REQUEST,
+					    0, /* required_flags */
+					    DCERPC_PFC_FLAG_FIRST |
+					    DCERPC_PFC_FLAG_LAST |
+					    DCERPC_PFC_FLAG_PENDING_CANCEL |
+					    0x08 | /* this is not defined, but should be ignored */
+					    DCERPC_PFC_FLAG_CONC_MPX |
+					    DCERPC_PFC_FLAG_DID_NOT_EXECUTE |
+					    DCERPC_PFC_FLAG_MAYBE |
+					    DCERPC_PFC_FLAG_OBJECT_UUID,
+					    payload_offset,
+					    &pkt->u.request.stub_and_verifier,
+					    full_packet,
+					    pkt);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_RPC_PROTOCOL_ERROR)) {
+		call->fault_code = DCERPC_NCA_S_PROTO_ERROR;
+		return false;
+	}
+	if (NT_STATUS_EQUAL(status, NT_STATUS_RPC_UNSUPPORTED_AUTHN_LEVEL)) {
 		call->fault_code = DCERPC_NCA_S_UNSUPPORTED_AUTHN_LEVEL;
 		return false;
 	}
-
-	if (!dce_conn->auth_state.gensec_security) {
-		return false;
-	}
-
-	status = dcerpc_pull_auth_trailer(pkt, call,
-					  &pkt->u.request.stub_and_verifier,
-					  &call->in_auth_info, &auth_length, false);
-	if (!NT_STATUS_IS_OK(status)) {
-		if (NT_STATUS_EQUAL(status, NT_STATUS_RPC_PROTOCOL_ERROR)) {
-			call->fault_code = DCERPC_NCA_S_PROTO_ERROR;
-		}
-		return false;
-	}
-
-	if (call->in_auth_info.auth_type != dce_conn->auth_state.auth_type) {
-		return false;
-	}
-
-	if (call->in_auth_info.auth_level != dce_conn->auth_state.auth_level) {
-		return false;
-	}
-
-	if (call->in_auth_info.auth_context_id != dce_conn->auth_state.auth_context_id) {
-		return false;
-	}
-
-	pkt->u.request.stub_and_verifier.length -= auth_length;
-
-	/*
-	 * check the indicated amount of padding, used below...
-	 */
-	if (pkt->u.request.stub_and_verifier.length < call->in_auth_info.auth_pad_length) {
-		return false;
-	}
-
-	/* check signature or unseal the packet */
-	switch (dce_conn->auth_state.auth_level) {
-	case DCERPC_AUTH_LEVEL_PRIVACY:
-		status = gensec_unseal_packet(dce_conn->auth_state.gensec_security,
-					      full_packet->data + hdr_size,
-					      pkt->u.request.stub_and_verifier.length, 
-					      full_packet->data,
-					      full_packet->length-
-					      call->in_auth_info.credentials.length,
-					      &call->in_auth_info.credentials);
-		memcpy(pkt->u.request.stub_and_verifier.data, 
-		       full_packet->data + hdr_size,
-		       pkt->u.request.stub_and_verifier.length);
-		break;
-
-	case DCERPC_AUTH_LEVEL_INTEGRITY:
-	case DCERPC_AUTH_LEVEL_PACKET:
-		status = gensec_check_packet(dce_conn->auth_state.gensec_security,
-					     pkt->u.request.stub_and_verifier.data, 
-					     pkt->u.request.stub_and_verifier.length,
-					     full_packet->data,
-					     full_packet->length-
-					     call->in_auth_info.credentials.length,
-					     &call->in_auth_info.credentials);
-		break;
-
-	case DCERPC_AUTH_LEVEL_CONNECT:
-		/* for now we ignore possible signatures here */
-		status = NT_STATUS_OK;
-		break;
-
-	default:
-		status = NT_STATUS_INVALID_LEVEL;
-		break;
-	}
-
-	/*
-	 * remove the indicated amount of padding
-	 * overflow is checked about!
-	 */
-	pkt->u.request.stub_and_verifier.length -= call->in_auth_info.auth_pad_length;
-
-	if (!NT_STATUS_IS_OK(status)) {
+	if (NT_STATUS_EQUAL(status, NT_STATUS_RPC_SEC_PKG_ERROR)) {
 		call->fault_code = DCERPC_FAULT_SEC_PKG_ERROR;
+		return false;
+	}
+	if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+		call->fault_code = DCERPC_FAULT_ACCESS_DENIED;
+		return false;
+	}
+	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}
 
