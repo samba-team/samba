@@ -596,7 +596,7 @@ struct ctdb_public_ip {
 	ctdb_sock_addr addr;
 };
 
-struct ctdb_all_public_ips {
+struct ctdb_public_ip_list_old {
 	uint32_t num;
 	struct ctdb_public_ip ips[1];
 };

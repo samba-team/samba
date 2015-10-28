@@ -130,8 +130,8 @@ struct ctdb_node {
 	   across the nodes.  it needs to know which public ip's can be handled
 	   by each node.
 	*/
-	struct ctdb_all_public_ips *known_public_ips;
-	struct ctdb_all_public_ips *available_public_ips;
+	struct ctdb_public_ip_list_old *known_public_ips;
+	struct ctdb_public_ip_list_old *available_public_ips;
 	/* used by the recovery dameon to track when a node should be banned */
 	struct ctdb_banning_state *ban_state; 
 };
@@ -1008,7 +1008,7 @@ int32_t ctdb_control_del_public_address(struct ctdb_context *ctdb,
 					TDB_DATA recdata, bool *async_reply);
 
 int verify_remote_ip_allocation(struct ctdb_context *ctdb,
-				struct ctdb_all_public_ips *ips,
+				struct ctdb_public_ip_list_old *ips,
 				uint32_t pnn);
 int update_ip_assignment_tree(struct ctdb_context *ctdb,
 				struct ctdb_public_ip *ip);

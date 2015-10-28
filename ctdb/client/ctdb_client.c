@@ -2774,7 +2774,7 @@ int ctdb_ctrl_get_public_ips_flags(struct ctdb_context *ctdb,
 				   struct timeval timeout, uint32_t destnode,
 				   TALLOC_CTX *mem_ctx,
 				   uint32_t flags,
-				   struct ctdb_all_public_ips **ips)
+				   struct ctdb_public_ip_list_old **ips)
 {
 	int ret;
 	TDB_DATA outdata;
@@ -2790,7 +2790,7 @@ int ctdb_ctrl_get_public_ips_flags(struct ctdb_context *ctdb,
 		return -1;
 	}
 
-	*ips = (struct ctdb_all_public_ips *)talloc_memdup(mem_ctx, outdata.dptr, outdata.dsize);
+	*ips = (struct ctdb_public_ip_list_old *)talloc_memdup(mem_ctx, outdata.dptr, outdata.dsize);
 	talloc_free(outdata.dptr);
 
 	return 0;
@@ -2799,7 +2799,7 @@ int ctdb_ctrl_get_public_ips_flags(struct ctdb_context *ctdb,
 int ctdb_ctrl_get_public_ips(struct ctdb_context *ctdb,
 			     struct timeval timeout, uint32_t destnode,
 			     TALLOC_CTX *mem_ctx,
-			     struct ctdb_all_public_ips **ips)
+			     struct ctdb_public_ip_list_old **ips)
 {
 	return ctdb_ctrl_get_public_ips_flags(ctdb, timeout,
 					      destnode, mem_ctx,

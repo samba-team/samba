@@ -1748,7 +1748,7 @@ static int control_get_tickles(struct ctdb_context *ctdb, int argc, const char *
 
 static int move_ip(struct ctdb_context *ctdb, ctdb_sock_addr *addr, uint32_t pnn)
 {
-	struct ctdb_all_public_ips *ips;
+	struct ctdb_public_ip_list_old *ips;
 	struct ctdb_public_ip ip;
 	int i, ret;
 	uint32_t *nodes;
@@ -1843,7 +1843,7 @@ static int
 find_other_host_for_public_ip(struct ctdb_context *ctdb, ctdb_sock_addr *addr)
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
-	struct ctdb_all_public_ips *ips;
+	struct ctdb_public_ip_list_old *ips;
 	struct ctdb_node_map_old *nodemap=NULL;
 	int i, j, ret;
 	int pnn;
@@ -2077,7 +2077,7 @@ static int control_rebalanceip(struct ctdb_context *ctdb, int argc, const char *
 static int getips_store_callback(void *param, void *data)
 {
 	struct ctdb_public_ip *node_ip = (struct ctdb_public_ip *)data;
-	struct ctdb_all_public_ips *ips = param;
+	struct ctdb_public_ip_list_old *ips = param;
 	int i;
 
 	i = ips->num++;
@@ -2127,9 +2127,9 @@ static void *add_ip_callback(void *parm, void *data)
 }
 
 static int
-control_get_all_public_ips(struct ctdb_context *ctdb, TALLOC_CTX *tmp_ctx, struct ctdb_all_public_ips **ips)
+control_get_all_public_ips(struct ctdb_context *ctdb, TALLOC_CTX *tmp_ctx, struct ctdb_public_ip_list_old **ips)
 {
-	struct ctdb_all_public_ips *tmp_ips;
+	struct ctdb_public_ip_list_old *tmp_ips;
 	struct ctdb_node_map_old *nodemap=NULL;
 	trbt_tree_t *ip_tree;
 	int i, j, len, ret;
@@ -2177,7 +2177,7 @@ control_get_all_public_ips(struct ctdb_context *ctdb, TALLOC_CTX *tmp_ctx, struc
 	count = 0;
 	trbt_traversearray32(ip_tree, IP_KEYLEN, getips_count_callback, &count);
 
-	len = offsetof(struct ctdb_all_public_ips, ips) + 
+	len = offsetof(struct ctdb_public_ip_list_old, ips) +
 		count*sizeof(struct ctdb_public_ip);
 	tmp_ips = talloc_zero_size(tmp_ctx, len);
 	trbt_traversearray32(ip_tree, IP_KEYLEN, getips_store_callback, tmp_ips);
@@ -2378,7 +2378,7 @@ static int control_addip(struct ctdb_context *ctdb, int argc, const char **argv)
 	ctdb_sock_addr addr;
 	struct ctdb_control_ip_iface *pub;
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
-	struct ctdb_all_public_ips *ips;
+	struct ctdb_public_ip_list_old *ips;
 
 
 	if (argc != 2) {
@@ -2482,7 +2482,7 @@ static int control_delip_all(struct ctdb_context *ctdb, int argc, const char **a
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 	struct ctdb_node_map_old *nodemap=NULL;
-	struct ctdb_all_public_ips *ips;
+	struct ctdb_public_ip_list_old *ips;
 	int ret, i, j;
 
 	ret = ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE, tmp_ctx, &nodemap);
@@ -2557,7 +2557,7 @@ static int control_delip(struct ctdb_context *ctdb, int argc, const char **argv)
 	ctdb_sock_addr addr;
 	struct ctdb_control_ip_iface pub;
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
-	struct ctdb_all_public_ips *ips;
+	struct ctdb_public_ip_list_old *ips;
 
 	if (argc != 1) {
 		talloc_free(tmp_ctx);
@@ -2964,7 +2964,7 @@ static int control_ip(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	int i, ret;
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
-	struct ctdb_all_public_ips *ips;
+	struct ctdb_public_ip_list_old *ips;
 
 	if (argc == 1 && strcmp(argv[0], "all") == 0) {
 		options.pnn = CTDB_BROADCAST_ALL;

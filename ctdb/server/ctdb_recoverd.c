@@ -3379,7 +3379,7 @@ static int verify_local_ip_allocation(struct ctdb_context *ctdb, struct ctdb_rec
 	   we also request a ip reallocation.
 	*/
 	if (ctdb->tunable.disable_ip_failover == 0) {
-		struct ctdb_all_public_ips *ips = NULL;
+		struct ctdb_public_ip_list_old *ips = NULL;
 
 		/* read the *available* IPs from the local node */
 		ret = ctdb_ctrl_get_public_ips_flags(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, mem_ctx, CTDB_PUBLIC_IP_FLAGS_ONLY_AVAILABLE, &ips);

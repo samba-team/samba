@@ -103,20 +103,21 @@ static bool
 read_ctdb_public_ip_info(TALLOC_CTX *ctx,
 			 int numnodes,
 			 struct public_ip_list ** all_ips,
-			 struct ctdb_all_public_ips *** avail)
+			 struct ctdb_public_ip_list_old *** avail)
 {
 	char line[1024];
 	ctdb_sock_addr addr;
 	char *t, *tok;
 	struct public_ip_list * ta;
 	int pnn, numips, curr, n, i;
-	struct ctdb_all_public_ips * a;
+	struct ctdb_public_ip_list_old * a;
 
 	struct public_ip_list *last = NULL;
 
-	*avail = talloc_array_size(ctx, sizeof(struct ctdb_all_public_ips *), CTDB_TEST_MAX_NODES);
+	*avail = talloc_array_size(ctx, sizeof(struct ctdb_public_ip_list_old *),
+				   CTDB_TEST_MAX_NODES);
 	memset(*avail, 0,
-	       sizeof(struct ctdb_all_public_ips *) * CTDB_TEST_MAX_NODES);
+	       sizeof(struct ctdb_public_ip_list_old *) * CTDB_TEST_MAX_NODES);
 
 	numips = 0;
 	*all_ips = NULL;
@@ -181,7 +182,7 @@ read_ctdb_public_ip_info(TALLOC_CTX *ctx,
 		while (t != NULL) {
 			n = (int) strtol(t, (char **) NULL, 10);
 			if ((*avail)[n] == NULL) {
-				(*avail)[n] = talloc_array(ctx, struct ctdb_all_public_ips, CTDB_TEST_MAX_IPS);
+				(*avail)[n] = talloc_array(ctx, struct ctdb_public_ip_list_old, CTDB_TEST_MAX_IPS);
 				(*avail)[n]->num = 0;
 			}
 			curr = (*avail)[n]->num;
@@ -195,7 +196,7 @@ read_ctdb_public_ip_info(TALLOC_CTX *ctx,
 	}
 
 	/* Build list of all allowed IPs */
-	a = talloc_array(ctx, struct ctdb_all_public_ips, CTDB_TEST_MAX_IPS);
+	a = talloc_array(ctx, struct ctdb_public_ip_list_old, CTDB_TEST_MAX_IPS);
 	a->num = numips;
 	for (ta = *all_ips, i=0; ta != NULL && i < numips ; ta = ta->next, i++) {
 		a->ips[i].pnn = ta->pnn;
@@ -213,7 +214,7 @@ read_ctdb_public_ip_info(TALLOC_CTX *ctx,
 }
 
 static void print_ctdb_available_ips(int numnodes,
-				     struct ctdb_all_public_ips **avail)
+				     struct ctdb_public_ip_list_old **avail)
 {
 	int n, i;
 
@@ -234,7 +235,7 @@ static void ctdb_test_read_ctdb_public_ip_info(const char nodestates[])
 {
 	int numnodes;
 	struct public_ip_list *l;
-	struct ctdb_all_public_ips **avail;
+	struct ctdb_public_ip_list_old **avail;
 	char *tok, *ns;
 
 	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
@@ -412,7 +413,7 @@ static void ctdb_test_init(const char nodestates[],
 			   struct ctdb_ipflags **ipflags,
 			   bool read_ips_for_multiple_nodes)
 {
-	struct ctdb_all_public_ips **avail;
+	struct ctdb_public_ip_list_old **avail;
 	int i, numnodes;
 	uint32_t nodeflags[CTDB_TEST_MAX_NODES];
 	char *tok, *ns, *t;

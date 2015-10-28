@@ -370,11 +370,11 @@ int ctdb_ctrl_list_tunables(struct ctdb_context *ctdb,
 int ctdb_ctrl_get_public_ips_flags(struct ctdb_context *ctdb,
 				   struct timeval timeout, uint32_t destnode,
 				   TALLOC_CTX *mem_ctx, uint32_t flags,
-				   struct ctdb_all_public_ips **ips);
+				   struct ctdb_public_ip_list_old **ips);
 int ctdb_ctrl_get_public_ips(struct ctdb_context *ctdb,
 			     struct timeval timeout, uint32_t destnode,
 			     TALLOC_CTX *mem_ctx,
-			     struct ctdb_all_public_ips **ips);
+			     struct ctdb_public_ip_list_old **ips);
 int ctdb_ctrl_get_public_ip_info(struct ctdb_context *ctdb,
 				 struct timeval timeout, uint32_t destnode,
 				 TALLOC_CTX *mem_ctx,

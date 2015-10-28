@@ -1258,7 +1258,7 @@ static bool can_node_host_ip(struct ctdb_context *ctdb, int32_t pnn,
 			     struct ctdb_ipflags ipflags,
 			     struct public_ip_list *ip)
 {
-	struct ctdb_all_public_ips *public_ips;
+	struct ctdb_public_ip_list_old *public_ips;
 	int i;
 
 	if (ipflags.noiphost) {
@@ -1393,7 +1393,7 @@ create_merged_ip_list(struct ctdb_context *ctdb)
 {
 	int i, j;
 	struct public_ip_list *ip_list;
-	struct ctdb_all_public_ips *public_ips;
+	struct ctdb_public_ip_list_old *public_ips;
 
 	if (ctdb->ip_tree != NULL) {
 		talloc_free(ctdb->ip_tree);
@@ -3199,7 +3199,7 @@ int32_t ctdb_control_get_public_ips(struct ctdb_context *ctdb,
 				    struct ctdb_req_control_old *c, TDB_DATA *outdata)
 {
 	int i, num, len;
-	struct ctdb_all_public_ips *ips;
+	struct ctdb_public_ip_list_old *ips;
 	struct ctdb_vnn *vnn;
 	bool only_available = false;
 
@@ -3213,7 +3213,7 @@ int32_t ctdb_control_get_public_ips(struct ctdb_context *ctdb,
 		num++;
 	}
 
-	len = offsetof(struct ctdb_all_public_ips, ips) + 
+	len = offsetof(struct ctdb_public_ip_list_old, ips) +
 		num*sizeof(struct ctdb_public_ip);
 	ips = talloc_zero_size(outdata, len);
 	CTDB_NO_MEMORY(ctdb, ips);
@@ -3228,7 +3228,7 @@ int32_t ctdb_control_get_public_ips(struct ctdb_context *ctdb,
 		i++;
 	}
 	ips->num = i;
-	len = offsetof(struct ctdb_all_public_ips, ips) +
+	len = offsetof(struct ctdb_public_ip_list_old, ips) +
 		i*sizeof(struct ctdb_public_ip);
 
 	outdata->dsize = len;
@@ -4225,7 +4225,7 @@ int32_t ctdb_control_ipreallocated(struct ctdb_context *ctdb,
    This is verified against ctdb->ip_tree
 */
 int verify_remote_ip_allocation(struct ctdb_context *ctdb,
-				struct ctdb_all_public_ips *ips,
+				struct ctdb_public_ip_list_old *ips,
 				uint32_t pnn)
 {
 	struct public_ip_list *tmp_ip;
@@ -4349,7 +4349,7 @@ static void ctdb_reloadips_child_handler(struct tevent_context *ev,
 static int ctdb_reloadips_child(struct ctdb_context *ctdb)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
-	struct ctdb_all_public_ips *ips;
+	struct ctdb_public_ip_list_old *ips;
 	struct ctdb_vnn *vnn;
 	struct client_async_data *async_data;
 	struct timeval timeout;
