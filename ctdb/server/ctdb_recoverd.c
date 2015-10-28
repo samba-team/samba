@@ -1566,8 +1566,7 @@ static int recover_database(struct ctdb_recoverd *rec,
 
 static int ctdb_reload_remote_public_ips(struct ctdb_context *ctdb,
 					 struct ctdb_recoverd *rec,
-					 struct ctdb_node_map_old *nodemap,
-					 uint32_t *culprit)
+					 struct ctdb_node_map_old *nodemap)
 {
 	int j;
 	int ret;
@@ -1575,9 +1574,6 @@ static int ctdb_reload_remote_public_ips(struct ctdb_context *ctdb,
 	if (ctdb->num_nodes != nodemap->num) {
 		DEBUG(DEBUG_ERR, (__location__ " ctdb->num_nodes (%d) != nodemap->num (%d) invalid param\n",
 				  ctdb->num_nodes, nodemap->num));
-		if (culprit) {
-			*culprit = ctdb->pnn;
-		}
 		return -1;
 	}
 
@@ -1604,9 +1600,6 @@ static int ctdb_reload_remote_public_ips(struct ctdb_context *ctdb,
 			DEBUG(DEBUG_ERR,
 			      ("Failed to read known public IPs from node: %u\n",
 			       node->pnn));
-			if (culprit) {
-				*culprit = node->pnn;
-			}
 			return -1;
 		}
 
@@ -1630,9 +1623,6 @@ static int ctdb_reload_remote_public_ips(struct ctdb_context *ctdb,
 			DEBUG(DEBUG_ERR,
 			      ("Failed to read available public IPs from node: %u\n",
 			       node->pnn));
-			if (culprit) {
-				*culprit = node->pnn;
-			}
 			return -1;
 		}
 	}
@@ -2108,7 +2098,6 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	int i, ret;
 	struct ctdb_dbid_map_old *dbmap;
 	struct timeval start_time;
-	uint32_t culprit = (uint32_t)-1;
 	bool self_ban;
 	bool par_recovery;
 
@@ -2277,10 +2266,8 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	}
 
 	/* Fetch known/available public IPs from each active node */
-	ret = ctdb_reload_remote_public_ips(ctdb, rec, nodemap, &culprit);
+	ret = ctdb_reload_remote_public_ips(ctdb, rec, nodemap);
 	if (ret != 0) {
-		DEBUG(DEBUG_ERR,("Failed to read public ips from remote node %d\n",
-				 culprit));
 		rec->need_takeover_run = true;
 		goto fail;
 	}
@@ -2795,7 +2782,6 @@ static void process_ipreallocate_requests(struct ctdb_context *ctdb,
 {
 	TDB_DATA result;
 	int32_t ret;
-	uint32_t culprit;
 	struct srvid_requests *current;
 
 	DEBUG(DEBUG_INFO, ("recovery master forced ip reallocation\n"));
@@ -2811,10 +2797,8 @@ static void process_ipreallocate_requests(struct ctdb_context *ctdb,
 	/* update the list of public ips that a node can handle for
 	   all connected nodes
 	*/
-	ret = ctdb_reload_remote_public_ips(ctdb, rec, rec->nodemap, &culprit);
+	ret = ctdb_reload_remote_public_ips(ctdb, rec, rec->nodemap);
 	if (ret != 0) {
-		DEBUG(DEBUG_ERR,("Failed to read public ips from remote node %d\n",
-				 culprit));
 		rec->need_takeover_run = true;
 	}
 	if (ret == 0) {
@@ -4023,15 +4007,11 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 
 	/* we might need to change who has what IP assigned */
 	if (rec->need_takeover_run) {
-		uint32_t culprit = (uint32_t)-1;
-
 		/* update the list of public ips that a node can handle for
 		   all connected nodes
 		*/
-		ret = ctdb_reload_remote_public_ips(ctdb, rec, nodemap, &culprit);
+		ret = ctdb_reload_remote_public_ips(ctdb, rec, nodemap);
 		if (ret != 0) {
-			DEBUG(DEBUG_ERR,("Failed to read public ips from remote node %d\n",
-					 culprit));
 			return;
 		}
 
