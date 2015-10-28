@@ -1720,11 +1720,11 @@ int32_t ctdb_control_register_notify(struct ctdb_context *ctdb, uint32_t client_
 
 int32_t ctdb_control_deregister_notify(struct ctdb_context *ctdb, uint32_t client_id, TDB_DATA indata)
 {
-	struct ctdb_client_notify_deregister *notify = (struct ctdb_client_notify_deregister *)indata.dptr;
+	uint64_t srvid = *(uint64_t *)indata.dptr;
         struct ctdb_client *client = reqid_find(ctdb->idr, client_id, struct ctdb_client);
 	struct ctdb_client_notify_list *nl;
 
-	DEBUG(DEBUG_INFO,("Deregister srvid %llu for client %d\n", (unsigned long long)notify->srvid, client_id));
+	DEBUG(DEBUG_INFO,("Deregister srvid %llu for client %d\n", (unsigned long long)srvid, client_id));
 
         if (client == NULL) {
                 DEBUG(DEBUG_ERR,(__location__ " Could not find client parent structure. You can not send this control to a remote node\n"));
@@ -1732,12 +1732,12 @@ int32_t ctdb_control_deregister_notify(struct ctdb_context *ctdb, uint32_t clien
         }
 
 	for(nl=client->notify; nl; nl=nl->next) {
-		if (nl->srvid == notify->srvid) {
+		if (nl->srvid == srvid) {
 			break;
 		}
 	}
 	if (nl == NULL) {
-                DEBUG(DEBUG_ERR,(__location__ " No notification for srvid:%llu found for this client\n", (unsigned long long)notify->srvid));
+                DEBUG(DEBUG_ERR,(__location__ " No notification for srvid:%llu found for this client\n", (unsigned long long)srvid));
                 return -1;
         }
 

@@ -634,7 +634,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return ctdb_control_register_notify(ctdb, client_id, indata);
 
 	case CTDB_CONTROL_DEREGISTER_NOTIFY:
-		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_client_notify_deregister));
+		CHECK_CONTROL_DATA_SIZE(sizeof(uint64_t));
 		return ctdb_control_deregister_notify(ctdb, client_id, indata);
 
 	case CTDB_CONTROL_GET_LOG:

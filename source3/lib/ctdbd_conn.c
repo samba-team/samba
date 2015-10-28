@@ -1276,15 +1276,13 @@ int ctdb_watch_us(struct ctdbd_connection *conn)
 
 int ctdb_unwatch(struct ctdbd_connection *conn)
 {
-	struct ctdb_client_notify_deregister dereg_data;
+	uint64_t srvid = CTDB_SRVID_SAMBA_NOTIFY;
 	int ret;
 	int cstatus;
 
-	dereg_data.srvid = CTDB_SRVID_SAMBA_NOTIFY;
-
 	ret = ctdbd_control_local(
 		conn, CTDB_CONTROL_DEREGISTER_NOTIFY, conn->rand_srvid, 0,
-		make_tdb_data((uint8_t *)&dereg_data, sizeof(dereg_data)),
+		make_tdb_data((uint8_t *)&srvid, sizeof(srvid)),
 		NULL, NULL, &cstatus);
 	if (ret != 0) {
 		DEBUG(1, ("ctdbd_control_local failed: %s\n",

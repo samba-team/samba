@@ -765,10 +765,6 @@ struct ctdb_notify_data_old {
 	uint8_t notify_data[1];
 };
 
-struct ctdb_client_notify_deregister {
-	uint64_t srvid;
-};
-
 /* table that contains a list of all dbids on a node
  */
 struct ctdb_dbid_map {
