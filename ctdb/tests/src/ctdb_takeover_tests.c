@@ -603,7 +603,9 @@ static void ctdb_test_ctdb_takeover_run_core(const char nodestates[],
 	ctdb_test_init(nodestates, &ctdb, &all_ips, &ipflags,
 		       read_ips_for_multiple_nodes);
 
-	ctdb_takeover_run_core(ctdb, ipflags, &all_ips, NULL);
+	all_ips = create_merged_ip_list(ctdb);
+
+	ctdb_takeover_run_core(ctdb, ipflags, all_ips, NULL);
 
 	print_ctdb_public_ip_list(all_ips);
 

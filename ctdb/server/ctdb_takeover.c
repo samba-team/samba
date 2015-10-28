@@ -2210,28 +2210,18 @@ static bool all_nodes_are_disabled(struct ctdb_node_map_old *nodemap)
 /* The calculation part of the IP allocation algorithm. */
 static void ctdb_takeover_run_core(struct ctdb_context *ctdb,
 				   struct ctdb_ipflags *ipflags,
-				   struct public_ip_list **all_ips_p,
+				   struct public_ip_list *all_ips,
 				   uint32_t *force_rebalance_nodes)
 {
-	/* since nodes only know about those public addresses that
-	   can be served by that particular node, no single node has
-	   a full list of all public addresses that exist in the cluster.
-	   Walk over all node structures and create a merged list of
-	   all public addresses that exist in the cluster.
-
-	   keep the tree of ips around as ctdb->ip_tree
-	*/
-	*all_ips_p = create_merged_ip_list(ctdb);
-
 	switch (ctdb->ipalloc_state->algorithm) {
 	case IPALLOC_LCP2:
-		ip_alloc_lcp2(ctdb, ipflags, *all_ips_p, force_rebalance_nodes);
+		ip_alloc_lcp2(ctdb, ipflags, all_ips, force_rebalance_nodes);
 		break;
 	case IPALLOC_DETERMINISTIC:
-		ip_alloc_deterministic_ips(ctdb, ipflags, *all_ips_p);
+		ip_alloc_deterministic_ips(ctdb, ipflags, all_ips);
 		break;
 	case IPALLOC_NONDETERMINISTIC:
-		ip_alloc_nondeterministic_ips(ctdb, ipflags, *all_ips_p);
+		ip_alloc_nondeterministic_ips(ctdb, ipflags, all_ips);
                break;
 	}
 
@@ -2648,8 +2638,18 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map_old *nodem
 		return 0;
 	}
 
+	/* since nodes only know about those public addresses that
+	   can be served by that particular node, no single node has
+	   a full list of all public addresses that exist in the cluster.
+	   Walk over all node structures and create a merged list of
+	   all public addresses that exist in the cluster.
+
+	   keep the tree of ips around as ctdb->ip_tree
+	*/
+	all_ips = create_merged_ip_list(ctdb);
+
 	/* Do the IP reassignment calculations */
-	ctdb_takeover_run_core(ctdb, ipflags, &all_ips, force_rebalance_nodes);
+	ctdb_takeover_run_core(ctdb, ipflags, all_ips, force_rebalance_nodes);
 
 	/* Now tell all nodes to release any public IPs should not
 	 * host.  This will be a NOOP on nodes that don't currently
