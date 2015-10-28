@@ -988,7 +988,7 @@ struct ctdb_transdb {
 
 #define CTDB_PUBLIC_IP_FLAGS_ONLY_AVAILABLE 0x00010000
 
-struct ctdb_control_iface_info {
+struct ctdb_iface {
 	char name[CTDB_IFACE_SIZE+2];
 	uint16_t link_state;
 	uint32_t references;
@@ -998,12 +998,12 @@ struct ctdb_control_public_ip_info {
 	struct ctdb_public_ip ip;
 	uint32_t active_idx;
 	uint32_t num;
-	struct ctdb_control_iface_info ifaces[1];
+	struct ctdb_iface ifaces[1];
 };
 
 struct ctdb_control_get_ifaces {
 	uint32_t num;
-	struct ctdb_control_iface_info ifaces[1];
+	struct ctdb_iface ifaces[1];
 };
 
 /**

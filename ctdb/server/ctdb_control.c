@@ -664,7 +664,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return ctdb_control_get_ifaces(ctdb, c, outdata);
 
 	case CTDB_CONTROL_SET_IFACE_LINK_STATE:
-		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_control_iface_info));
+		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_iface));
 		return ctdb_control_set_iface_link(ctdb, c, indata);
 
 	case CTDB_CONTROL_GET_STAT_HISTORY:

@@ -2844,7 +2844,7 @@ int ctdb_ctrl_get_public_ip_info(struct ctdb_context *ctdb,
 	}
 
 	info = (struct ctdb_control_public_ip_info *)outdata.dptr;
-	len += info->num*sizeof(struct ctdb_control_iface_info);
+	len += info->num*sizeof(struct ctdb_iface);
 
 	if (len > outdata.dsize) {
 		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for get public ip info "
@@ -2907,7 +2907,7 @@ int ctdb_ctrl_get_ifaces(struct ctdb_context *ctdb,
 	}
 
 	ifaces = (struct ctdb_control_get_ifaces *)outdata.dptr;
-	len += ifaces->num*sizeof(struct ctdb_control_iface_info);
+	len += ifaces->num*sizeof(struct ctdb_iface);
 
 	if (len > outdata.dsize) {
 		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for get ifaces "
@@ -2940,7 +2940,7 @@ int ctdb_ctrl_get_ifaces(struct ctdb_context *ctdb,
 int ctdb_ctrl_set_iface_link(struct ctdb_context *ctdb,
 			     struct timeval timeout, uint32_t destnode,
 			     TALLOC_CTX *mem_ctx,
-			     const struct ctdb_control_iface_info *info)
+			     const struct ctdb_iface *info)
 {
 	int ret;
 	TDB_DATA indata;

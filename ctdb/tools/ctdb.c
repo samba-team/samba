@@ -3182,7 +3182,7 @@ static int control_setifacelink(struct ctdb_context *ctdb, int argc, const char 
 {
 	int ret;
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
-	struct ctdb_control_iface_info info;
+	struct ctdb_iface info;
 
 	ZERO_STRUCT(info);
 

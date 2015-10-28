@@ -556,7 +556,7 @@ int32_t ctdb_control_get_ifaces(struct ctdb_context *ctdb,
 	}
 
 	len = offsetof(struct ctdb_control_get_ifaces, ifaces) +
-		num*sizeof(struct ctdb_control_iface_info);
+		num*sizeof(struct ctdb_iface);
 	ifaces = talloc_zero_size(outdata, len);
 	CTDB_NO_MEMORY(ctdb, ifaces);
 
@@ -574,7 +574,7 @@ int32_t ctdb_control_get_ifaces(struct ctdb_context *ctdb,
 	}
 	ifaces->num = i;
 	len = offsetof(struct ctdb_control_get_ifaces, ifaces) +
-		i*sizeof(struct ctdb_control_iface_info);
+		i*sizeof(struct ctdb_iface);
 
 	outdata->dsize = len;
 	outdata->dptr  = (uint8_t *)ifaces;

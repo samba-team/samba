@@ -388,7 +388,7 @@ int ctdb_ctrl_get_ifaces(struct ctdb_context *ctdb,
 int ctdb_ctrl_set_iface_link(struct ctdb_context *ctdb,
 			     struct timeval timeout, uint32_t destnode,
 			     TALLOC_CTX *mem_ctx,
-			     const struct ctdb_control_iface_info *info);
+			     const struct ctdb_iface *info);
 
 int ctdb_ctrl_modflags(struct ctdb_context *ctdb,
 		       struct timeval timeout,

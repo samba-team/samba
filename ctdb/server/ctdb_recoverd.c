@@ -3286,7 +3286,7 @@ static bool interfaces_have_changed(struct ctdb_context *ctdb,
 		/* See if interface names or link states have changed */
 		int i;
 		for (i = 0; i < rec->ifaces->num; i++) {
-			struct ctdb_control_iface_info * iface = &rec->ifaces->ifaces[i];
+			struct ctdb_iface * iface = &rec->ifaces->ifaces[i];
 			if (strcmp(iface->name, ifaces->ifaces[i].name) != 0) {
 				DEBUG(DEBUG_NOTICE,
 				      ("Interface in slot %d changed: %s => %s\n",
