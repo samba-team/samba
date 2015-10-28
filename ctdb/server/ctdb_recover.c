@@ -247,12 +247,12 @@ static int traverse_pulldb(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data,
  */
 int32_t ctdb_control_pull_db(struct ctdb_context *ctdb, TDB_DATA indata, TDB_DATA *outdata)
 {
-	struct ctdb_control_pulldb *pull;
+	struct ctdb_pulldb *pull;
 	struct ctdb_db_context *ctdb_db;
 	struct pulldb_data params;
 	struct ctdb_marshall_buffer *reply;
 
-	pull = (struct ctdb_control_pulldb *)indata.dptr;
+	pull = (struct ctdb_pulldb *)indata.dptr;
 
 	ctdb_db = find_ctdb_db(ctdb, pull->db_id);
 	if (!ctdb_db) {

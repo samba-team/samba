@@ -942,7 +942,7 @@ struct ctdb_node_flag_change {
 #define CTDB_LMASTER_ANY	0xffffffff
 
 /* structure used for pulldb control */
-struct ctdb_control_pulldb {
+struct ctdb_pulldb {
 	uint32_t db_id;
 	uint32_t lmaster;
 };

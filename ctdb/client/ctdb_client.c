@@ -1668,16 +1668,16 @@ struct ctdb_client_control_state *ctdb_ctrl_pulldb_send(
 	uint32_t lmaster, TALLOC_CTX *mem_ctx, struct timeval timeout)
 {
 	TDB_DATA indata;
-	struct ctdb_control_pulldb *pull;
+	struct ctdb_pulldb *pull;
 	struct ctdb_client_control_state *state;
 
-	pull = talloc(mem_ctx, struct ctdb_control_pulldb);
+	pull = talloc(mem_ctx, struct ctdb_pulldb);
 	CTDB_NO_MEMORY_NULL(ctdb, pull);
 
 	pull->db_id   = dbid;
 	pull->lmaster = lmaster;
 
-	indata.dsize = sizeof(struct ctdb_control_pulldb);
+	indata.dsize = sizeof(struct ctdb_pulldb);
 	indata.dptr  = (unsigned char *)pull;
 
 	state = ctdb_control_send(ctdb, destnode, 0, 

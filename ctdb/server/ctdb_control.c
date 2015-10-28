@@ -193,7 +193,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return ctdb_control_setvnnmap(ctdb, opcode, indata, outdata);
 
 	case CTDB_CONTROL_PULL_DB: 
-		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_control_pulldb));
+		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_pulldb));
 		return ctdb_control_pull_db(ctdb, indata, outdata);
 
 	case CTDB_CONTROL_SET_DMASTER: 
