@@ -3030,10 +3030,10 @@ int ctdb_ctrl_modflags(struct ctdb_context *ctdb, struct timeval timeout, uint32
 /*
   get all tunables
  */
-int ctdb_ctrl_get_all_tunables(struct ctdb_context *ctdb, 
-			       struct timeval timeout, 
+int ctdb_ctrl_get_all_tunables(struct ctdb_context *ctdb,
+			       struct timeval timeout,
 			       uint32_t destnode,
-			       struct ctdb_tunable *tunables)
+			       struct ctdb_tunable_list *tunables)
 {
 	TDB_DATA outdata;
 	int ret;
@@ -3049,10 +3049,10 @@ int ctdb_ctrl_get_all_tunables(struct ctdb_context *ctdb,
 	if (outdata.dsize != sizeof(*tunables)) {
 		DEBUG(DEBUG_ERR,(__location__ " bad data size %u in ctdb_ctrl_get_all_tunables should be %u\n",
 			 (unsigned)outdata.dsize, (unsigned)sizeof(*tunables)));
-		return -1;		
+		return -1;
 	}
 
-	*tunables = *(struct ctdb_tunable *)outdata.dptr;
+	*tunables = *(struct ctdb_tunable_list *)outdata.dptr;
 	talloc_free(outdata.dptr);
 	return 0;
 }

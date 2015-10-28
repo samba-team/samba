@@ -845,7 +845,7 @@ struct ctdb_tickle_list_old {
 };
 
 /* all tunable variables go in here */
-struct ctdb_tunable {
+struct ctdb_tunable_list {
 	uint32_t max_redirect_count;
 	uint32_t seqnum_interval; /* unit is ms */
 	uint32_t control_timeout;

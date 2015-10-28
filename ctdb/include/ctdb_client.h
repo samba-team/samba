@@ -397,7 +397,7 @@ int ctdb_ctrl_modflags(struct ctdb_context *ctdb,
 
 int ctdb_ctrl_get_all_tunables(struct ctdb_context *ctdb,
 			       struct timeval timeout, uint32_t destnode,
-			       struct ctdb_tunable *tunables);
+			       struct ctdb_tunable_list *tunables);
 
 int ctdb_ctrl_add_public_ip(struct ctdb_context *ctdb,
 			    struct timeval timeout, uint32_t destnode,

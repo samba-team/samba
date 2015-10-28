@@ -301,7 +301,7 @@ struct ctdb_context {
 	TALLOC_CTX *tickle_update_context;
 	TALLOC_CTX *keepalive_ctx;
 	TALLOC_CTX *check_public_ifaces_ctx;
-	struct ctdb_tunable tunable;
+	struct ctdb_tunable_list tunable;
 	enum ctdb_freeze_mode freeze_mode[NUM_DB_PRIORITIES+1];
 	struct ctdb_freeze_handle *freeze_handles[NUM_DB_PRIORITIES+1];
 	bool freeze_transaction_started;
