@@ -948,8 +948,7 @@ static void rpc_api_pipe_got_pdu(struct tevent_req *subreq)
 
 	status = dcerpc_pull_ncacn_packet(state->pkt,
 					  &state->incoming_frag,
-					  state->pkt,
-					  !state->endianess);
+					  state->pkt);
 	if (!NT_STATUS_IS_OK(status)) {
 		/*
 		 * TODO: do a real async disconnect ...
