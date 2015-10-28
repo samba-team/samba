@@ -2597,8 +2597,8 @@ static void ctdb_rebalance_timeout(struct tevent_context *ev,
 	}
 
 	DEBUG(DEBUG_NOTICE,
-	      ("Rebalance timeout occurred - do takeover run\n"));
-	do_takeover_run(rec, rec->nodemap, false);
+	      ("Rebalance timeout occurred - trigger takeover run\n"));
+	rec->need_takeover_run = true;
 }
 
 
