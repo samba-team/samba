@@ -568,7 +568,7 @@ int ctdb_ctrl_getscriptstatus(struct ctdb_context *ctdb,
 			      struct timeval timeout, uint32_t destnode,
 			      TALLOC_CTX *mem_ctx,
 			      enum ctdb_eventscript_call type,
-			      struct ctdb_scripts_wire **script_status);
+			      struct ctdb_script_list_old **script_status);
 
 int ctdb_ctrl_report_recd_lock_latency(struct ctdb_context *ctdb,
 				       struct timeval timeout, double latency);

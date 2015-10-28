@@ -365,7 +365,7 @@ struct ctdb_context {
 	int active_events;
 
 	struct ctdb_event_script_state *current_monitor;
-	struct ctdb_scripts_wire *last_status[CTDB_EVENT_MAX];
+	struct ctdb_script_list_old *last_status[CTDB_EVENT_MAX];
 
 	TALLOC_CTX *banning_ctx;
 

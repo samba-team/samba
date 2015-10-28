@@ -1408,7 +1408,7 @@ done:
 static int control_one_scriptstatus(struct ctdb_context *ctdb,
 				    enum ctdb_eventscript_call type)
 {
-	struct ctdb_scripts_wire *script_status;
+	struct ctdb_script_list_old *script_status;
 	int ret, i;
 
 	ret = ctdb_ctrl_getscriptstatus(ctdb, TIMELIMIT(), options.pnn, ctdb, type, &script_status);

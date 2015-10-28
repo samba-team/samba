@@ -226,7 +226,7 @@ struct ctdb_script {
 	char output[MAX_SCRIPT_OUTPUT+1];
 };
 
-struct ctdb_scripts_wire {
+struct ctdb_script_list_old {
 	uint32_t num_scripts;
 	struct ctdb_script scripts[1];
 };

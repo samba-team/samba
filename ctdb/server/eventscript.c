@@ -64,7 +64,7 @@ struct ctdb_event_script_state {
 	struct timeval timeout;
 
 	unsigned int current;
-	struct ctdb_scripts_wire *scripts;
+	struct ctdb_script_list_old *scripts;
 };
 
 static struct ctdb_script *get_current_script(struct ctdb_event_script_state *state)
@@ -170,10 +170,12 @@ static bool check_executable(const char *dir, const char *name)
 	return true;
 }
 
-static struct ctdb_scripts_wire *ctdb_get_script_list(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx)
+static struct ctdb_script_list_old *ctdb_get_script_list(
+						struct ctdb_context *ctdb,
+						TALLOC_CTX *mem_ctx)
 {
 	struct dirent **namelist;
-	struct ctdb_scripts_wire *scripts;
+	struct ctdb_script_list_old *scripts;
 	int i, count;
 
 	/* scan all directory entries and insert all valid scripts into the
@@ -350,7 +352,7 @@ static int fork_child_for_script(struct ctdb_context *ctdb,
 /*
  Summarize status of this run of scripts.
  */
-static int script_status(struct ctdb_scripts_wire *scripts)
+static int script_status(struct ctdb_script_list_old *scripts)
 {
 	unsigned int i;
 

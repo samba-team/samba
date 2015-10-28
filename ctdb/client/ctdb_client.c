@@ -4452,10 +4452,11 @@ int switch_from_server_to_client(struct ctdb_context *ctdb, const char *fmt, ...
 /*
   get the status of running the monitor eventscripts: NULL means never run.
  */
-int ctdb_ctrl_getscriptstatus(struct ctdb_context *ctdb, 
-		struct timeval timeout, uint32_t destnode, 
-		TALLOC_CTX *mem_ctx, enum ctdb_eventscript_call type,
-		struct ctdb_scripts_wire **scripts)
+int ctdb_ctrl_getscriptstatus(struct ctdb_context *ctdb,
+			      struct timeval timeout, uint32_t destnode,
+			      TALLOC_CTX *mem_ctx,
+			      enum ctdb_eventscript_call type,
+			      struct ctdb_script_list_old **scripts)
 {
 	int ret;
 	TDB_DATA outdata, indata;
@@ -4476,10 +4477,10 @@ int ctdb_ctrl_getscriptstatus(struct ctdb_context *ctdb,
 	if (outdata.dsize == 0) {
 		*scripts = NULL;
 	} else {
-		*scripts = (struct ctdb_scripts_wire *)talloc_memdup(mem_ctx, outdata.dptr, outdata.dsize);
+		*scripts = (struct ctdb_script_list_old *)talloc_memdup(mem_ctx, outdata.dptr, outdata.dsize);
 		talloc_free(outdata.dptr);
 	}
-		    
+
 	return 0;
 }
 
