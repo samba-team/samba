@@ -1628,7 +1628,7 @@ int ctdb_set_db_sticky(struct ctdb_context *ctdb, struct ctdb_db_context *ctdb_d
 
 void ctdb_db_statistics_reset(struct ctdb_db_context *ctdb_db)
 {
-	struct ctdb_db_statistics *s = &ctdb_db->statistics;
+	struct ctdb_db_statistics_old *s = &ctdb_db->statistics;
 	int i;
 
 	for (i=0; i<MAX_HOT_KEYS; i++) {
@@ -1645,7 +1645,7 @@ int32_t ctdb_control_get_db_statistics(struct ctdb_context *ctdb,
 				TDB_DATA *outdata)
 {
 	struct ctdb_db_context *ctdb_db;
-	struct ctdb_db_statistics *stats;
+	struct ctdb_db_statistics_old *stats;
 	int i;
 	int len;
 	char *ptr;
@@ -1656,7 +1656,7 @@ int32_t ctdb_control_get_db_statistics(struct ctdb_context *ctdb,
 		return -1;
 	}
 
-	len = offsetof(struct ctdb_db_statistics, hot_keys_wire);
+	len = offsetof(struct ctdb_db_statistics_old, hot_keys_wire);
 	for (i = 0; i < MAX_HOT_KEYS; i++) {
 		len += ctdb_db->statistics.hot_keys[i].key.dsize;
 	}
@@ -1668,7 +1668,7 @@ int32_t ctdb_control_get_db_statistics(struct ctdb_context *ctdb,
 	}
 
 	memcpy(stats, &ctdb_db->statistics,
-	       offsetof(struct ctdb_db_statistics, hot_keys_wire));
+	       offsetof(struct ctdb_db_statistics_old, hot_keys_wire));
 
 	stats->num_hot_keys = MAX_HOT_KEYS;
 

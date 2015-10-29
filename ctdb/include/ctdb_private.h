@@ -431,7 +431,7 @@ struct ctdb_db_context {
 	struct trbt_tree *deferred_fetch;
 	struct trbt_tree *defer_dmaster;
 
-	struct ctdb_db_statistics statistics;
+	struct ctdb_db_statistics_old statistics;
 
 	struct lock_context *lock_current;
 	struct lock_context *lock_pending;

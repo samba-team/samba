@@ -733,7 +733,7 @@ static int control_stats(struct ctdb_context *ctdb, int argc, const char **argv)
 static int control_dbstatistics(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
-	struct ctdb_db_statistics *dbstat;
+	struct ctdb_db_statistics_old *dbstat;
 	int i;
 	uint32_t db_id;
 	int num_hot_keys;

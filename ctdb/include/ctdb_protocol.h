@@ -709,7 +709,7 @@ struct ctdb_statistics_list_old {
 /*
  * db statistics
  */
-struct ctdb_db_statistics {
+struct ctdb_db_statistics_old {
 	struct {
 		uint32_t num_calls;
 		uint32_t num_current;
