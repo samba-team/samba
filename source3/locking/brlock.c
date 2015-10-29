@@ -1021,6 +1021,8 @@ NTSTATUS brl_lock(struct messaging_context *msg_ctx,
 	NTSTATUS ret;
 	struct lock_struct lock;
 
+	ZERO_STRUCT(lock);
+
 #if !ZERO_ZERO
 	if (start == 0 && size == 0) {
 		DEBUG(0,("client sent 0/0 lock - please report this\n"));
