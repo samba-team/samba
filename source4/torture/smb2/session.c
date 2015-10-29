@@ -678,7 +678,10 @@ bool test_session_reauth5(struct torture_context *tctx, struct smb2_tree *tree)
 
 	snprintf(fname2, sizeof(fname2), "%s\\file2.dat", dname);
 
-	smb2_util_unlink(tree, fname2);
+	status = smb2_util_unlink(tree, fname2);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_util_unlink failed");
+
 
 	ZERO_STRUCT(sfinfo);
 	sfinfo.rename_information.level = RAW_SFILEINFO_RENAME_INFORMATION;
