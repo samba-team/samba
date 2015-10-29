@@ -207,11 +207,11 @@ int ctdb_ctrl_getdbmap(struct ctdb_context *ctdb, struct timeval timeout,
 
 int ctdb_ctrl_getnodemap(struct ctdb_context *ctdb, struct timeval timeout,
 			 uint32_t destnode, TALLOC_CTX *mem_ctx,
-			 struct ctdb_node_map **nodemap);
+			 struct ctdb_node_map_old **nodemap);
 
 int ctdb_ctrl_getnodesfile(struct ctdb_context *ctdb, struct timeval timeout,
 			   uint32_t destnode, TALLOC_CTX *mem_ctx,
-			   struct ctdb_node_map **nodemap);
+			   struct ctdb_node_map_old **nodemap);
 
 int ctdb_ctrl_reload_nodes_file(struct ctdb_context *ctdb,
 				struct timeval timeout, uint32_t destnode);
@@ -498,13 +498,13 @@ uint32_t *list_of_vnnmap_nodes(struct ctdb_context *ctdb,
 			       TALLOC_CTX *mem_ctx, bool include_self);
 
 uint32_t *list_of_nodes(struct ctdb_context *ctdb,
-			struct ctdb_node_map *node_map,
+			struct ctdb_node_map_old *node_map,
 			TALLOC_CTX *mem_ctx, uint32_t mask, int exclude_pnn);
 uint32_t *list_of_active_nodes(struct ctdb_context *ctdb,
-			       struct ctdb_node_map *node_map,
+			       struct ctdb_node_map_old *node_map,
 			       TALLOC_CTX *mem_ctx, bool include_self);
 uint32_t *list_of_connected_nodes(struct ctdb_context *ctdb,
-				  struct ctdb_node_map *node_map,
+				  struct ctdb_node_map_old *node_map,
 				  TALLOC_CTX *mem_ctx, bool include_self);
 
 int ctdb_read_pnn_lock(int fd, int32_t pnn);
@@ -537,7 +537,7 @@ struct ctdb_node_capabilities *ctdb_get_capabilities(
 					struct ctdb_context *ctdb,
 					TALLOC_CTX *mem_ctx,
 					struct timeval timeout,
-					struct ctdb_node_map *nodemap);
+					struct ctdb_node_map_old *nodemap);
 
 /* Get capabilities for specified node, NULL if not found */
 uint32_t *ctdb_get_node_capabilities(struct ctdb_node_capabilities *caps,

@@ -433,7 +433,7 @@ int
 ctdb_ctrl_getnodemap_stub(struct ctdb_context *ctdb,
 			  struct timeval timeout, uint32_t destnode,
 			  TALLOC_CTX *mem_ctx,
-			  struct ctdb_node_map **nodemap)
+			  struct ctdb_node_map_old **nodemap)
 {
 	assert_nodes_set(ctdb);
 
@@ -450,7 +450,7 @@ ctdb_ctrl_getnodemap_stub(struct ctdb_context *ctdb,
 int
 ctdb_ctrl_getnodesfile_stub(struct ctdb_context *ctdb,
 			    struct timeval timeout, uint32_t destnode,
-			    TALLOC_CTX *mem_ctx, struct ctdb_node_map **nodemap)
+			    TALLOC_CTX *mem_ctx, struct ctdb_node_map_old **nodemap)
 {
 	char *v, *f;
 
@@ -824,7 +824,7 @@ ctdb_client_async_control_stub(struct ctdb_context *ctdb,
 			res = 0;
 			break;
 		case CTDB_CONTROL_GET_NODES_FILE: {
-			struct ctdb_node_map *nodemap;
+			struct ctdb_node_map_old *nodemap;
 			res = ctdb_ctrl_getnodesfile_stub(ctdb, timeout, pnn,
 							  tmp_ctx, &nodemap);
 			if (res == 0) {
@@ -860,7 +860,7 @@ struct ctdb_node_capabilities *
 ctdb_get_capabilities_stub(struct ctdb_context *ctdb,
 			   TALLOC_CTX *mem_ctx,
 			   struct timeval timeout,
-			   struct ctdb_node_map *nodemap)
+			   struct ctdb_node_map_old *nodemap)
 {
 	return global_caps;
 }

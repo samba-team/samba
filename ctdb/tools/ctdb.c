@@ -245,7 +245,7 @@ static bool parse_nodestring(struct ctdb_context *ctdb,
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	int n;
 	uint32_t i;
-	struct ctdb_node_map *nodemap;
+	struct ctdb_node_map_old *nodemap;
 	int ret;
 
 	*nodes = NULL;
@@ -886,7 +886,7 @@ static int control_pnn(struct ctdb_context *ctdb, int argc, const char **argv)
 }
 
 
-static struct ctdb_node_map *read_nodes_file(TALLOC_CTX *mem_ctx)
+static struct ctdb_node_map_old *read_nodes_file(TALLOC_CTX *mem_ctx)
 {
 	const char *nodes_list;
 
@@ -912,7 +912,7 @@ static struct ctdb_node_map *read_nodes_file(TALLOC_CTX *mem_ctx)
 static int find_node_xpnn(void)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
-	struct ctdb_node_map *node_map;
+	struct ctdb_node_map_old *node_map;
 	int i, pnn;
 
 	node_map = read_nodes_file(mem_ctx);
@@ -1021,7 +1021,7 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 	int i;
 	struct ctdb_vnn_map *vnnmap=NULL;
-	struct ctdb_node_map *nodemap=NULL;
+	struct ctdb_node_map_old *nodemap=NULL;
 	uint32_t recmode, recmaster, mypnn;
 	int num_deleted_nodes = 0;
 	int ret;
@@ -1106,7 +1106,7 @@ static int control_nodestatus(struct ctdb_context *ctdb, int argc, const char **
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 	int i, ret;
-	struct ctdb_node_map *nodemap=NULL;
+	struct ctdb_node_map_old *nodemap=NULL;
 	uint32_t * nodes;
 	uint32_t pnn_mode, mypnn;
 
@@ -1150,11 +1150,11 @@ static int control_nodestatus(struct ctdb_context *ctdb, int argc, const char **
 	return ret;
 }
 
-static struct ctdb_node_map *read_natgw_nodes_file(struct ctdb_context *ctdb,
+static struct ctdb_node_map_old *read_natgw_nodes_file(struct ctdb_context *ctdb,
 						   TALLOC_CTX *mem_ctx)
 {
 	const char *natgw_list;
-	struct ctdb_node_map *natgw_nodes = NULL;
+	struct ctdb_node_map_old *natgw_nodes = NULL;
 
 	natgw_list = getenv("CTDB_NATGW_NODES");
 	if (natgw_list == NULL) {
@@ -1176,20 +1176,20 @@ static struct ctdb_node_map *read_natgw_nodes_file(struct ctdb_context *ctdb,
 
 
 /* talloc off the existing nodemap... */
-static struct ctdb_node_map *talloc_nodemap(struct ctdb_node_map *nodemap)
+static struct ctdb_node_map_old *talloc_nodemap(struct ctdb_node_map_old *nodemap)
 {
 	return talloc_zero_size(nodemap,
-				offsetof(struct ctdb_node_map, nodes) +
+				offsetof(struct ctdb_node_map_old, nodes) +
 				nodemap->num * sizeof(struct ctdb_node_and_flags));
 }
 
-static struct ctdb_node_map *
+static struct ctdb_node_map_old *
 filter_nodemap_by_addrs(struct ctdb_context *ctdb,
-			struct ctdb_node_map *nodemap,
-			struct ctdb_node_map *natgw_nodes)
+			struct ctdb_node_map_old *nodemap,
+			struct ctdb_node_map_old *natgw_nodes)
 {
 	int i, j;
-	struct ctdb_node_map *ret;
+	struct ctdb_node_map_old *ret;
 
 	ret = talloc_nodemap(nodemap);
 	CTDB_NO_MEMORY_NULL(ctdb, ret);
@@ -1214,15 +1214,15 @@ filter_nodemap_by_addrs(struct ctdb_context *ctdb,
 	return ret;
 }
 
-static struct ctdb_node_map *
+static struct ctdb_node_map_old *
 filter_nodemap_by_capabilities(struct ctdb_context *ctdb,
-			       struct ctdb_node_map *nodemap,
+			       struct ctdb_node_map_old *nodemap,
 			       uint32_t required_capabilities,
 			       bool first_only)
 {
 	int i;
 	uint32_t capabilities;
-	struct ctdb_node_map *ret;
+	struct ctdb_node_map_old *ret;
 
 	ret = talloc_nodemap(nodemap);
 	CTDB_NO_MEMORY_NULL(ctdb, ret);
@@ -1260,13 +1260,13 @@ filter_nodemap_by_capabilities(struct ctdb_context *ctdb,
 	return ret;
 }
 
-static struct ctdb_node_map *
+static struct ctdb_node_map_old *
 filter_nodemap_by_flags(struct ctdb_context *ctdb,
-			struct ctdb_node_map *nodemap,
+			struct ctdb_node_map_old *nodemap,
 			uint32_t flags_mask)
 {
 	int i;
-	struct ctdb_node_map *ret;
+	struct ctdb_node_map_old *ret;
 
 	ret = talloc_nodemap(nodemap);
 	CTDB_NO_MEMORY_NULL(ctdb, ret);
@@ -1292,9 +1292,9 @@ static int control_natgwlist(struct ctdb_context *ctdb, int argc, const char **a
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 	int i, ret;
-	struct ctdb_node_map *natgw_nodes = NULL;
-	struct ctdb_node_map *orig_nodemap=NULL;
-	struct ctdb_node_map *nodemap;
+	struct ctdb_node_map_old *natgw_nodes = NULL;
+	struct ctdb_node_map_old *orig_nodemap=NULL;
+	struct ctdb_node_map_old *nodemap;
 	uint32_t mypnn, pnn;
 	const char *ip;
 
@@ -1342,7 +1342,7 @@ static int control_natgwlist(struct ctdb_context *ctdb, int argc, const char **a
 	for (i = 0; exclude_flags[i] != 0; i++) {
 		/* ... get a nodemap that excludes nodes with with
 		 * masked flags... */
-		struct ctdb_node_map *t =
+		struct ctdb_node_map_old *t =
 			filter_nodemap_by_flags(ctdb, nodemap,
 						exclude_flags[i]);
 		if (t == NULL) {
@@ -1353,7 +1353,7 @@ static int control_natgwlist(struct ctdb_context *ctdb, int argc, const char **a
 		if (t->num > 0) {
 			/* ... and find the first node with the NATGW
 			 * capability */
-			struct ctdb_node_map *n;
+			struct ctdb_node_map_old *n;
 			n = filter_nodemap_by_capabilities(ctdb, t,
 							   CTDB_CAP_NATGW,
 							   true);
@@ -1754,7 +1754,7 @@ static int move_ip(struct ctdb_context *ctdb, ctdb_sock_addr *addr, uint32_t pnn
 	uint32_t *nodes;
 	uint32_t disable_time;
 	TDB_DATA data;
-	struct ctdb_node_map *nodemap=NULL;
+	struct ctdb_node_map_old *nodemap=NULL;
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 
 	disable_time = 30;
@@ -1844,7 +1844,7 @@ find_other_host_for_public_ip(struct ctdb_context *ctdb, ctdb_sock_addr *addr)
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 	struct ctdb_all_public_ips *ips;
-	struct ctdb_node_map *nodemap=NULL;
+	struct ctdb_node_map_old *nodemap=NULL;
 	int i, j, ret;
 	int pnn;
 
@@ -2005,7 +2005,7 @@ static int rebalance_ip(struct ctdb_context *ctdb, ctdb_sock_addr *addr)
 	uint32_t *nodes;
 	uint32_t disable_time;
 	TDB_DATA data;
-	struct ctdb_node_map *nodemap=NULL;
+	struct ctdb_node_map_old *nodemap=NULL;
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 
 	disable_time = 30;
@@ -2130,7 +2130,7 @@ static int
 control_get_all_public_ips(struct ctdb_context *ctdb, TALLOC_CTX *tmp_ctx, struct ctdb_all_public_ips **ips)
 {
 	struct ctdb_all_public_ips *tmp_ips;
-	struct ctdb_node_map *nodemap=NULL;
+	struct ctdb_node_map_old *nodemap=NULL;
 	trbt_tree_t *ip_tree;
 	int i, j, len, ret;
 	uint32_t count;
@@ -2301,7 +2301,7 @@ again:
 	reply_data.done = false;
 
 	if (wait_for_all) {
-		struct ctdb_node_map *nodemap;
+		struct ctdb_node_map_old *nodemap;
 
 		ret = ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(),
 					   CTDB_CURRENT_NODE, ctdb, &nodemap);
@@ -2481,7 +2481,7 @@ static int control_delip(struct ctdb_context *ctdb, int argc, const char **argv)
 static int control_delip_all(struct ctdb_context *ctdb, int argc, const char **argv, ctdb_sock_addr *addr)
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
-	struct ctdb_node_map *nodemap=NULL;
+	struct ctdb_node_map_old *nodemap=NULL;
 	struct ctdb_all_public_ips *ips;
 	int ret, i, j;
 
@@ -3250,7 +3250,7 @@ static int update_flags_and_ipreallocate(struct ctdb_context *ctdb,
 					      const char *desc,
 					      bool set_flag)
 {
-	struct ctdb_node_map *nodemap = NULL;
+	struct ctdb_node_map_old *nodemap = NULL;
 	bool flag_is_set;
 	int ret;
 
@@ -3473,7 +3473,7 @@ static int control_unban(struct ctdb_context *ctdb, int argc, const char **argv)
 static int control_showban(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	int ret;
-	struct ctdb_node_map *nodemap=NULL;
+	struct ctdb_node_map_old *nodemap=NULL;
 	struct ctdb_ban_time *bantime;
 
 	/* verify the node exists */
@@ -3613,8 +3613,8 @@ static uint32_t lvs_exclude_flags[] = {
 static int control_lvs(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
-	struct ctdb_node_map *orig_nodemap=NULL;
-	struct ctdb_node_map *nodemap;
+	struct ctdb_node_map_old *orig_nodemap=NULL;
+	struct ctdb_node_map_old *nodemap;
 	int i, ret;
 
 	ret = ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), options.pnn,
@@ -3636,7 +3636,7 @@ static int control_lvs(struct ctdb_context *ctdb, int argc, const char **argv)
 	ret = 0;
 
 	for (i = 0; lvs_exclude_flags[i] != 0; i++) {
-		struct ctdb_node_map *t =
+		struct ctdb_node_map_old *t =
 			filter_nodemap_by_flags(ctdb, nodemap,
 						lvs_exclude_flags[i]);
 		if (t == NULL) {
@@ -3666,7 +3666,7 @@ done:
 static int control_lvsmaster(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
-	struct ctdb_node_map *nodemap=NULL;
+	struct ctdb_node_map_old *nodemap=NULL;
 	int i, ret;
 
 	ret = ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), options.pnn,
@@ -3678,7 +3678,7 @@ static int control_lvsmaster(struct ctdb_context *ctdb, int argc, const char **a
 	}
 
 	for (i = 0; lvs_exclude_flags[i] != 0; i++) {
-		struct ctdb_node_map *t =
+		struct ctdb_node_map_old *t =
 			filter_nodemap_by_flags(ctdb, nodemap,
 						lvs_exclude_flags[i]);
 		if (t == NULL) {
@@ -3687,7 +3687,7 @@ static int control_lvsmaster(struct ctdb_context *ctdb, int argc, const char **a
 			goto done;
 		}
 		if (t->num > 0) {
-			struct ctdb_node_map *n;
+			struct ctdb_node_map_old *n;
 			n = filter_nodemap_by_capabilities(ctdb,
 							   t,
 							   CTDB_CAP_LVS,
@@ -5130,7 +5130,7 @@ static int control_detach(struct ctdb_context *ctdb, int argc,
 	uint32_t db_id;
 	uint8_t flags;
 	int ret, i, status = 0;
-	struct ctdb_node_map *nodemap = NULL;
+	struct ctdb_node_map_old *nodemap = NULL;
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 	uint32_t recmode;
 
@@ -5597,7 +5597,7 @@ static int control_restoredb(struct ctdb_context *ctdb, int argc, const char **a
 	TDB_DATA data;
 	struct db_file_header dbhdr;
 	struct ctdb_db_context *ctdb_db;
-	struct ctdb_node_map *nodemap=NULL;
+	struct ctdb_node_map_old *nodemap=NULL;
 	struct ctdb_vnn_map *vnnmap=NULL;
 	int i, fh;
 	struct ctdb_control_transdb w;
@@ -5878,7 +5878,7 @@ static int control_wipedb(struct ctdb_context *ctdb, int argc,
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 	TDB_DATA data;
 	struct ctdb_db_context *ctdb_db;
-	struct ctdb_node_map *nodemap = NULL;
+	struct ctdb_node_map_old *nodemap = NULL;
 	struct ctdb_vnn_map *vnnmap = NULL;
 	int i;
 	struct ctdb_control_transdb w;
@@ -6164,7 +6164,7 @@ static int control_msglisten(struct ctdb_context *ctdb, int argc, const char **a
 static int control_listnodes(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
-	struct ctdb_node_map *node_map;
+	struct ctdb_node_map_old *node_map;
 	int i;
 
 	assert_single_node_only();
@@ -6200,10 +6200,10 @@ static void get_nodes_files_callback(struct ctdb_context *ctdb,
 				     uint32_t node_pnn, int32_t res,
 				     TDB_DATA outdata, void *callback_data)
 {
-	struct ctdb_node_map **maps =
-		talloc_get_type(callback_data, struct ctdb_node_map *);
+	struct ctdb_node_map_old **maps =
+		talloc_get_type(callback_data, struct ctdb_node_map_old *);
 
-	if (outdata.dsize < offsetof(struct ctdb_node_map, nodes) ||
+	if (outdata.dsize < offsetof(struct ctdb_node_map_old, nodes) ||
 	    outdata.dptr == NULL) {
 		DEBUG(DEBUG_ERR,
 		      (__location__ " Invalid return data: %u %p\n",
@@ -6228,17 +6228,17 @@ static void get_nodes_files_fail_callback(struct ctdb_context *ctdb,
 	      ("ERROR: Failed to get nodes file from node %u\n", node_pnn));
 }
 
-static struct ctdb_node_map **
+static struct ctdb_node_map_old **
 ctdb_get_nodes_files(struct ctdb_context *ctdb,
 		     TALLOC_CTX *mem_ctx,
 		     struct timeval timeout,
-		     struct ctdb_node_map *nodemap)
+		     struct ctdb_node_map_old *nodemap)
 {
 	uint32_t *nodes;
 	int ret;
-	struct ctdb_node_map **maps;
+	struct ctdb_node_map_old **maps;
 
-	maps = talloc_zero_array(mem_ctx, struct ctdb_node_map *, nodemap->num);
+	maps = talloc_zero_array(mem_ctx, struct ctdb_node_map_old *, nodemap->num);
 	CTDB_NO_MEMORY_NULL(ctdb, maps);
 
 	nodes = list_of_connected_nodes(ctdb, nodemap, mem_ctx, true);
@@ -6257,8 +6257,8 @@ ctdb_get_nodes_files(struct ctdb_context *ctdb,
 	return maps;
 }
 
-static bool node_files_are_identical(struct ctdb_node_map *nm1,
-				     struct ctdb_node_map *nm2)
+static bool node_files_are_identical(struct ctdb_node_map_old *nm1,
+				     struct ctdb_node_map_old *nm2)
 {
 	int i;
 
@@ -6278,10 +6278,10 @@ static bool node_files_are_identical(struct ctdb_node_map *nm1,
 static bool check_all_node_files_are_identical(struct ctdb_context *ctdb,
 					       TALLOC_CTX *mem_ctx,
 					       struct timeval timeout,
-					       struct ctdb_node_map *nodemap,
-					       struct ctdb_node_map *file_nodemap)
+					       struct ctdb_node_map_old *nodemap,
+					       struct ctdb_node_map_old *file_nodemap)
 {
-	static struct ctdb_node_map **maps;
+	static struct ctdb_node_map_old **maps;
 	int i;
 	bool ret = true;
 
@@ -6309,8 +6309,8 @@ static bool check_all_node_files_are_identical(struct ctdb_context *ctdb,
   reload the nodes file on the local node
  */
 static bool sanity_check_nodes_file_changes(TALLOC_CTX *mem_ctx,
-					    struct ctdb_node_map *nodemap,
-					    struct ctdb_node_map *file_nodemap)
+					    struct ctdb_node_map_old *nodemap,
+					    struct ctdb_node_map_old *file_nodemap)
 {
 	int i;
 	bool should_abort = false;
@@ -6403,9 +6403,9 @@ static void reload_nodes_fail_callback(struct ctdb_context *ctdb,
 static int control_reload_nodes_file(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	int i, ret;
-	struct ctdb_node_map *nodemap=NULL;
+	struct ctdb_node_map_old *nodemap=NULL;
 	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
-	struct ctdb_node_map *file_nodemap;
+	struct ctdb_node_map_old *file_nodemap;
 	uint32_t *conn;
 	uint32_t timeout;
 

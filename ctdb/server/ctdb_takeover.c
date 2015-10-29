@@ -2111,7 +2111,7 @@ finished:
 	talloc_free(tmp_ctx);
 }
 
-static bool all_nodes_are_disabled(struct ctdb_node_map *nodemap)
+static bool all_nodes_are_disabled(struct ctdb_node_map_old *nodemap)
 {
 	int i;
 
@@ -2224,7 +2224,7 @@ static void get_tunable_fail_callback(struct ctdb_context *ctdb, uint32_t pnn,
 
 static uint32_t *get_tunable_from_nodes(struct ctdb_context *ctdb,
 					TALLOC_CTX *tmp_ctx,
-					struct ctdb_node_map *nodemap,
+					struct ctdb_node_map_old *nodemap,
 					const char *tunable,
 					uint32_t default_value)
 {
@@ -2326,7 +2326,7 @@ static void get_runstate_fail_callback(struct ctdb_context *ctdb, uint32_t pnn,
 
 static enum ctdb_runstate * get_runstate_from_nodes(struct ctdb_context *ctdb,
 						    TALLOC_CTX *tmp_ctx,
-						    struct ctdb_node_map *nodemap,
+						    struct ctdb_node_map_old *nodemap,
 						    enum ctdb_runstate default_value)
 {
 	uint32_t *nodes;
@@ -2372,7 +2372,7 @@ static enum ctdb_runstate * get_runstate_from_nodes(struct ctdb_context *ctdb,
 static struct ctdb_ipflags *
 set_ipflags_internal(struct ctdb_context *ctdb,
 		     TALLOC_CTX *tmp_ctx,
-		     struct ctdb_node_map *nodemap,
+		     struct ctdb_node_map_old *nodemap,
 		     uint32_t *tval_noiptakeover,
 		     uint32_t *tval_noiphostonalldisabled,
 		     enum ctdb_runstate *runstate)
@@ -2428,7 +2428,7 @@ set_ipflags_internal(struct ctdb_context *ctdb,
 
 static struct ctdb_ipflags *set_ipflags(struct ctdb_context *ctdb,
 					TALLOC_CTX *tmp_ctx,
-					struct ctdb_node_map *nodemap)
+					struct ctdb_node_map_old *nodemap)
 {
 	uint32_t *tval_noiptakeover;
 	uint32_t *tval_noiphostonalldisabled;
@@ -2478,7 +2478,7 @@ struct iprealloc_callback_data {
 	int retry_count;
 	client_async_callback fail_callback;
 	void *fail_callback_data;
-	struct ctdb_node_map *nodemap;
+	struct ctdb_node_map_old *nodemap;
 };
 
 static void iprealloc_fail_callback(struct ctdb_context *ctdb, uint32_t pnn,
@@ -2539,7 +2539,7 @@ struct takeover_callback_data {
 	bool *node_failed;
 	client_async_callback fail_callback;
 	void *fail_callback_data;
-	struct ctdb_node_map *nodemap;
+	struct ctdb_node_map_old *nodemap;
 };
 
 static void takeover_run_fail_callback(struct ctdb_context *ctdb,
@@ -2572,7 +2572,7 @@ static void takeover_run_fail_callback(struct ctdb_context *ctdb,
 /*
   make any IP alias changes for public addresses that are necessary 
  */
-int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap,
+int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map_old *nodemap,
 		      uint32_t *force_rebalance_nodes,
 		      client_async_callback fail_callback, void *callback_data)
 {

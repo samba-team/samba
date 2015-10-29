@@ -1558,7 +1558,7 @@ int ctdb_ctrl_getdbmap(struct ctdb_context *ctdb, struct timeval timeout, uint32
  */
 int ctdb_ctrl_getnodemap(struct ctdb_context *ctdb, 
 		struct timeval timeout, uint32_t destnode, 
-		TALLOC_CTX *mem_ctx, struct ctdb_node_map **nodemap)
+		TALLOC_CTX *mem_ctx, struct ctdb_node_map_old **nodemap)
 {
 	int ret;
 	TDB_DATA outdata;
@@ -1572,7 +1572,7 @@ int ctdb_ctrl_getnodemap(struct ctdb_context *ctdb,
 		return -1;
 	}
 
-	*nodemap = (struct ctdb_node_map *)talloc_memdup(mem_ctx, outdata.dptr, outdata.dsize);
+	*nodemap = (struct ctdb_node_map_old *)talloc_memdup(mem_ctx, outdata.dptr, outdata.dsize);
 	talloc_free(outdata.dptr);
 	return 0;
 }
@@ -1582,7 +1582,7 @@ int ctdb_ctrl_getnodemap(struct ctdb_context *ctdb,
  */
 int ctdb_ctrl_getnodesfile(struct ctdb_context *ctdb,
 			   struct timeval timeout, uint32_t destnode,
-			   TALLOC_CTX *mem_ctx, struct ctdb_node_map **nodemap)
+			   TALLOC_CTX *mem_ctx, struct ctdb_node_map_old **nodemap)
 {
 	int ret;
 	TDB_DATA outdata;
@@ -1596,7 +1596,7 @@ int ctdb_ctrl_getnodesfile(struct ctdb_context *ctdb,
 		return -1;
 	}
 
-	*nodemap = (struct ctdb_node_map *)talloc_memdup(mem_ctx, outdata.dptr, outdata.dsize);
+	*nodemap = (struct ctdb_node_map_old *)talloc_memdup(mem_ctx, outdata.dptr, outdata.dsize);
 	talloc_free(outdata.dptr);
 
 	return 0;
@@ -2020,7 +2020,7 @@ uint32_t *ctdb_get_connected_nodes(struct ctdb_context *ctdb,
 				TALLOC_CTX *mem_ctx,
 				uint32_t *num_nodes)
 {
-	struct ctdb_node_map *map=NULL;
+	struct ctdb_node_map_old *map=NULL;
 	int ret, i;
 	uint32_t *nodes;
 
@@ -2970,7 +2970,7 @@ int ctdb_ctrl_modflags(struct ctdb_context *ctdb, struct timeval timeout, uint32
 {
 	int ret;
 	TDB_DATA data;
-	struct ctdb_node_map *nodemap=NULL;
+	struct ctdb_node_map_old *nodemap=NULL;
 	struct ctdb_node_flag_change c;
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 	uint32_t recmaster;
@@ -3622,7 +3622,7 @@ uint32_t *list_of_vnnmap_nodes(struct ctdb_context *ctdb,
  * If exclude_pnn is not -1 then exclude that pnn from the list.
  */
 uint32_t *list_of_nodes(struct ctdb_context *ctdb,
-			struct ctdb_node_map *node_map,
+			struct ctdb_node_map_old *node_map,
 			TALLOC_CTX *mem_ctx,
 			uint32_t mask,
 			int exclude_pnn)
@@ -3657,7 +3657,7 @@ uint32_t *list_of_nodes(struct ctdb_context *ctdb,
 }
 
 uint32_t *list_of_active_nodes(struct ctdb_context *ctdb,
-				struct ctdb_node_map *node_map,
+				struct ctdb_node_map_old *node_map,
 				TALLOC_CTX *mem_ctx,
 				bool include_self)
 {
@@ -3666,7 +3666,7 @@ uint32_t *list_of_active_nodes(struct ctdb_context *ctdb,
 }
 
 uint32_t *list_of_connected_nodes(struct ctdb_context *ctdb,
-				struct ctdb_node_map *node_map,
+				struct ctdb_node_map_old *node_map,
 				TALLOC_CTX *mem_ctx,
 				bool include_self)
 {
@@ -3777,7 +3777,7 @@ struct ctdb_node_capabilities *
 ctdb_get_capabilities(struct ctdb_context *ctdb,
 		      TALLOC_CTX *mem_ctx,
 		      struct timeval timeout,
-		      struct ctdb_node_map *nodemap)
+		      struct ctdb_node_map_old *nodemap)
 {
 	uint32_t *nodes;
 	uint32_t i, res;

@@ -553,7 +553,7 @@ struct ctdb_node_and_flags {
    The nodemap is the structure containing a list of all nodes
    known to the cluster and their associated flags.
 */
-struct ctdb_node_map {
+struct ctdb_node_map_old {
 	uint32_t num;
 	struct ctdb_node_and_flags nodes[1];
 };

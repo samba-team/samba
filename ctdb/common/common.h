@@ -138,12 +138,12 @@ char *ctdb_addr_to_str(ctdb_sock_addr *addr);
 
 unsigned ctdb_addr_to_port(ctdb_sock_addr *addr);
 
-struct ctdb_node_map *ctdb_read_nodes_file(TALLOC_CTX *mem_ctx,
-					   const char *nlist);
+struct ctdb_node_map_old *ctdb_read_nodes_file(TALLOC_CTX *mem_ctx,
+					       const char *nlist);
 
-struct ctdb_node_map *ctdb_node_list_to_map(struct ctdb_node **nodes,
-					    uint32_t num_nodes,
-					    TALLOC_CTX *mem_ctx);
+struct ctdb_node_map_old *ctdb_node_list_to_map(struct ctdb_node **nodes,
+						uint32_t num_nodes,
+						TALLOC_CTX *mem_ctx);
 
 const char *runstate_to_string(enum ctdb_runstate runstate);
 

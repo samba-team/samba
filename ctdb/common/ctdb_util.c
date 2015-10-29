@@ -453,7 +453,7 @@ unsigned ctdb_addr_to_port(ctdb_sock_addr *addr)
 /* Add a node to a node map with given address and flags */
 static bool node_map_add(TALLOC_CTX *mem_ctx,
 			 const char *nstr, uint32_t flags,
-			 struct ctdb_node_map **node_map)
+			 struct ctdb_node_map_old **node_map)
 {
 	ctdb_sock_addr addr;
 	uint32_t num;
@@ -466,7 +466,7 @@ static bool node_map_add(TALLOC_CTX *mem_ctx,
 	}
 
 	num = (*node_map)->num + 1;
-	s = offsetof(struct ctdb_node_map, nodes) +
+	s = offsetof(struct ctdb_node_map_old, nodes) +
 		num * sizeof(struct ctdb_node_and_flags);
 	*node_map = talloc_realloc_size(mem_ctx, *node_map, s);
 	if (*node_map == NULL) {
@@ -485,16 +485,16 @@ static bool node_map_add(TALLOC_CTX *mem_ctx,
 }
 
 /* Read a nodes file into a node map */
-struct ctdb_node_map *ctdb_read_nodes_file(TALLOC_CTX *mem_ctx,
+struct ctdb_node_map_old *ctdb_read_nodes_file(TALLOC_CTX *mem_ctx,
 					   const char *nlist)
 {
 	char **lines;
 	int nlines;
 	int i;
-	struct ctdb_node_map *ret;
+	struct ctdb_node_map_old *ret;
 
 	/* Allocate node map header */
-	ret = talloc_zero_size(mem_ctx, offsetof(struct ctdb_node_map, nodes));
+	ret = talloc_zero_size(mem_ctx, offsetof(struct ctdb_node_map_old, nodes));
 	if (ret == NULL) {
 		DEBUG(DEBUG_ERR, (__location__ " Out of memory\n"));
 		return false;
@@ -554,17 +554,17 @@ struct ctdb_node_map *ctdb_read_nodes_file(TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
-struct ctdb_node_map *
+struct ctdb_node_map_old *
 ctdb_node_list_to_map(struct ctdb_node **nodes, uint32_t num_nodes,
 		      TALLOC_CTX *mem_ctx)
 {
 	uint32_t i;
 	size_t size;
-	struct ctdb_node_map *node_map;
+	struct ctdb_node_map_old *node_map;
 
-	size = offsetof(struct ctdb_node_map, nodes) +
+	size = offsetof(struct ctdb_node_map_old, nodes) +
 		num_nodes * sizeof(struct ctdb_node_and_flags);
-	node_map  = (struct ctdb_node_map *)talloc_zero_size(mem_ctx, size);
+	node_map  = (struct ctdb_node_map_old *)talloc_zero_size(mem_ctx, size);
 	if (node_map == NULL) {
 		DEBUG(DEBUG_ERR,
 		      (__location__ " Failed to allocate nodemap array\n"));

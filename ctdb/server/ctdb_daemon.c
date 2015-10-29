@@ -1789,7 +1789,7 @@ int32_t ctdb_control_process_exists(struct ctdb_context *ctdb, pid_t pid)
 
 int ctdb_control_getnodesfile(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indata, TDB_DATA *outdata)
 {
-	struct ctdb_node_map *node_map = NULL;
+	struct ctdb_node_map_old *node_map = NULL;
 
 	CHECK_CONTROL_DATA_SIZE(0);
 

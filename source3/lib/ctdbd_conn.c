@@ -198,7 +198,7 @@ static bool ctdbd_working(struct ctdbd_connection *conn, uint32_t vnn)
 {
 	int32_t cstatus=-1;
 	TDB_DATA outdata;
-	struct ctdb_node_map *m;
+	struct ctdb_node_map_old *m;
 	uint32_t failure_flags;
 	bool ok = false;
 	int i, ret;
@@ -215,7 +215,7 @@ static bool ctdbd_working(struct ctdbd_connection *conn, uint32_t vnn)
 		return false;
 	}
 
-	m = (struct ctdb_node_map *)outdata.dptr;
+	m = (struct ctdb_node_map_old *)outdata.dptr;
 
 	for (i=0; i<m->num; i++) {
 		if (vnn == m->nodes[i].pnn) {

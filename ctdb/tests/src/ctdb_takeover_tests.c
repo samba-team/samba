@@ -416,7 +416,7 @@ static void ctdb_test_init(const char nodestates[],
 	int i, numnodes;
 	uint32_t nodeflags[CTDB_TEST_MAX_NODES];
 	char *tok, *ns, *t;
-	struct ctdb_node_map *nodemap;
+	struct ctdb_node_map_old *nodemap;
 	uint32_t *tval_noiptakeover;
 	uint32_t *tval_noiptakeoverondisabled;
 	enum ctdb_runstate *runstate;
@@ -469,7 +469,7 @@ static void ctdb_test_init(const char nodestates[],
 
 	runstate = get_runstate(*ctdb, numnodes);
 
-	nodemap =  talloc_array(*ctdb, struct ctdb_node_map, numnodes);
+	nodemap =  talloc_array(*ctdb, struct ctdb_node_map_old, numnodes);
 	nodemap->num = numnodes;
 
 	if (!read_ips_for_multiple_nodes) {

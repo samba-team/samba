@@ -106,11 +106,11 @@ struct tevent_context *tevent_context_init(TALLOC_CTX *mem_ctx);
 
 int ctdb_ctrl_getnodemap(struct ctdb_context *ctdb,
 		    struct timeval timeout, uint32_t destnode,
-		    TALLOC_CTX *mem_ctx, struct ctdb_node_map **nodemap);
+		    TALLOC_CTX *mem_ctx, struct ctdb_node_map_old **nodemap);
 int ctdb_ctrl_getnodesfile(struct ctdb_context *ctdb,
 			   struct timeval timeout, uint32_t destnode,
 			   TALLOC_CTX *mem_ctx,
-			   struct ctdb_node_map **nodemap);
+			   struct ctdb_node_map_old **nodemap);
 int ctdb_ctrl_get_ifaces(struct ctdb_context *ctdb,
 			 struct timeval timeout, uint32_t destnode,
 			 TALLOC_CTX *mem_ctx,
@@ -164,7 +164,7 @@ struct ctdb_node_capabilities *
 ctdb_get_capabilities(struct ctdb_context *ctdb,
 		      TALLOC_CTX *mem_ctx,
 		      struct timeval timeout,
-		      struct ctdb_node_map *nodemap);
+		      struct ctdb_node_map_old *nodemap);
 
 #undef TIMELIMIT
 

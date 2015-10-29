@@ -822,7 +822,7 @@ static void ctdb_process_delete_list(struct ctdb_db_context *ctdb_db,
 	struct ctdb_context *ctdb = ctdb_db->ctdb;
 	struct delete_records_list *recs;
 	TDB_DATA indata;
-	struct ctdb_node_map *nodemap;
+	struct ctdb_node_map_old *nodemap;
 	uint32_t *active_nodes;
 	int num_active_nodes;
 	TALLOC_CTX *tmp_ctx;

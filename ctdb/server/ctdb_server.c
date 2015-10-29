@@ -89,7 +89,7 @@ int ctdb_set_recovery_lock_file(struct ctdb_context *ctdb, const char *file)
 /* Load a nodes list file into a nodes array */
 static int convert_node_map_to_list(struct ctdb_context *ctdb,
 				    TALLOC_CTX *mem_ctx,
-				    struct ctdb_node_map *node_map,
+				    struct ctdb_node_map_old *node_map,
 				    struct ctdb_node ***nodes,
 				    uint32_t *num_nodes)
 {
@@ -129,7 +129,7 @@ static int convert_node_map_to_list(struct ctdb_context *ctdb,
 /* Load the nodes list from a file */
 void ctdb_load_nodes_file(struct ctdb_context *ctdb)
 {
-	struct ctdb_node_map *node_map;
+	struct ctdb_node_map_old *node_map;
 	int ret;
 
 	node_map = ctdb_read_nodes_file(ctdb, ctdb->nodes_file);

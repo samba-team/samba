@@ -238,7 +238,7 @@ struct ctdb_recoverd {
 	struct ctdb_context *ctdb;
 	uint32_t recmaster;
 	uint32_t last_culprit_node;
-	struct ctdb_node_map *nodemap;
+	struct ctdb_node_map_old *nodemap;
 	struct timeval priority_time;
 	bool need_takeover_run;
 	bool need_recovery;
@@ -352,7 +352,7 @@ static void recovered_fail_callback(struct ctdb_context *ctdb, uint32_t node_pnn
 /*
   run the "recovered" eventscript on all nodes
  */
-static int run_recovered_eventscript(struct ctdb_recoverd *rec, struct ctdb_node_map *nodemap, const char *caller)
+static int run_recovered_eventscript(struct ctdb_recoverd *rec, struct ctdb_node_map_old *nodemap, const char *caller)
 {
 	TALLOC_CTX *tmp_ctx;
 	uint32_t *nodes;
@@ -392,7 +392,7 @@ static void startrecovery_fail_callback(struct ctdb_context *ctdb, uint32_t node
 /*
   run the "startrecovery" eventscript on all nodes
  */
-static int run_startrecovery_eventscript(struct ctdb_recoverd *rec, struct ctdb_node_map *nodemap)
+static int run_startrecovery_eventscript(struct ctdb_recoverd *rec, struct ctdb_node_map_old *nodemap)
 {
 	TALLOC_CTX *tmp_ctx;
 	uint32_t *nodes;
@@ -421,7 +421,7 @@ static int run_startrecovery_eventscript(struct ctdb_recoverd *rec, struct ctdb_
   update the node capabilities for all connected nodes
  */
 static int update_capabilities(struct ctdb_recoverd *rec,
-			       struct ctdb_node_map *nodemap)
+			       struct ctdb_node_map_old *nodemap)
 {
 	uint32_t *capp;
 	TALLOC_CTX *tmp_ctx;
@@ -479,7 +479,7 @@ static void transaction_start_fail_callback(struct ctdb_context *ctdb, uint32_t 
  */
 static int set_recovery_mode(struct ctdb_context *ctdb,
 			     struct ctdb_recoverd *rec,
-			     struct ctdb_node_map *nodemap,
+			     struct ctdb_node_map_old *nodemap,
 			     uint32_t rec_mode, bool freeze)
 {
 	TDB_DATA data;
@@ -531,7 +531,7 @@ static int set_recovery_mode(struct ctdb_context *ctdb,
 /*
   change recovery master on all node
  */
-static int set_recovery_master(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap, uint32_t pnn)
+static int set_recovery_master(struct ctdb_context *ctdb, struct ctdb_node_map_old *nodemap, uint32_t pnn)
 {
 	TDB_DATA data;
 	TALLOC_CTX *tmp_ctx;
@@ -564,7 +564,7 @@ static int set_recovery_master(struct ctdb_context *ctdb, struct ctdb_node_map *
    a recovery if this call fails.
 */
 static int update_db_priority_on_remote_nodes(struct ctdb_context *ctdb,
-	struct ctdb_node_map *nodemap, 
+	struct ctdb_node_map_old *nodemap, 
 	uint32_t pnn, struct ctdb_dbid_map *dbmap, TALLOC_CTX *mem_ctx)
 {
 	int db;
@@ -597,7 +597,7 @@ static int update_db_priority_on_remote_nodes(struct ctdb_context *ctdb,
 /*
   ensure all other nodes have attached to any databases that we have
  */
-static int create_missing_remote_databases(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap, 
+static int create_missing_remote_databases(struct ctdb_context *ctdb, struct ctdb_node_map_old *nodemap, 
 					   uint32_t pnn, struct ctdb_dbid_map *dbmap, TALLOC_CTX *mem_ctx)
 {
 	int i, j, db, ret;
@@ -661,7 +661,7 @@ static int create_missing_remote_databases(struct ctdb_context *ctdb, struct ctd
 /*
   ensure we are attached to any databases that anyone else is attached to
  */
-static int create_missing_local_databases(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap, 
+static int create_missing_local_databases(struct ctdb_context *ctdb, struct ctdb_node_map_old *nodemap, 
 					  uint32_t pnn, struct ctdb_dbid_map **dbmap, TALLOC_CTX *mem_ctx)
 {
 	int i, j, db, ret;
@@ -858,7 +858,7 @@ static void pull_seqnum_fail_cb(struct ctdb_context *ctdb, uint32_t node_pnn, in
 
 static int pull_highest_seqnum_pdb(struct ctdb_context *ctdb,
 				struct ctdb_recoverd *rec, 
-				struct ctdb_node_map *nodemap, 
+				struct ctdb_node_map_old *nodemap, 
 				struct tdb_wrap *recdb, uint32_t dbid)
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
@@ -929,7 +929,7 @@ static int pull_highest_seqnum_pdb(struct ctdb_context *ctdb,
  */
 static int pull_remote_database(struct ctdb_context *ctdb,
 				struct ctdb_recoverd *rec, 
-				struct ctdb_node_map *nodemap, 
+				struct ctdb_node_map_old *nodemap, 
 				struct tdb_wrap *recdb, uint32_t dbid,
 				bool persistent)
 {
@@ -966,7 +966,7 @@ static int pull_remote_database(struct ctdb_context *ctdb,
 /*
   update flags on all active nodes
  */
-static int update_flags_on_all_nodes(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap, uint32_t pnn, uint32_t flags)
+static int update_flags_on_all_nodes(struct ctdb_context *ctdb, struct ctdb_node_map_old *nodemap, uint32_t pnn, uint32_t flags)
 {
 	int ret;
 
@@ -982,7 +982,7 @@ static int update_flags_on_all_nodes(struct ctdb_context *ctdb, struct ctdb_node
 /*
   ensure all nodes have the same vnnmap we do
  */
-static int update_vnnmap_on_all_nodes(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap, 
+static int update_vnnmap_on_all_nodes(struct ctdb_context *ctdb, struct ctdb_node_map_old *nodemap, 
 				      uint32_t pnn, struct ctdb_vnn_map *vnnmap, TALLOC_CTX *mem_ctx)
 {
 	int j, ret;
@@ -1236,7 +1236,7 @@ static void ctdb_wait_election(struct ctdb_recoverd *rec)
   Update our local flags from all remote connected nodes. 
   This is only run when we are or we belive we are the recovery master
  */
-static int update_local_flags(struct ctdb_recoverd *rec, struct ctdb_node_map *nodemap)
+static int update_local_flags(struct ctdb_recoverd *rec, struct ctdb_node_map_old *nodemap)
 {
 	int j;
 	struct ctdb_context *ctdb = rec->ctdb;
@@ -1246,7 +1246,7 @@ static int update_local_flags(struct ctdb_recoverd *rec, struct ctdb_node_map *n
 	   they are the same as for this node
 	 */
 	for (j=0; j<nodemap->num; j++) {
-		struct ctdb_node_map *remote_nodemap=NULL;
+		struct ctdb_node_map_old *remote_nodemap=NULL;
 		int ret;
 
 		if (nodemap->nodes[j].flags & NODE_FLAGS_DISCONNECTED) {
@@ -1436,7 +1436,7 @@ static int traverse_recdb(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, 
  */
 static int push_recdb_database(struct ctdb_context *ctdb, uint32_t dbid,
 			       bool persistent,
-			       struct tdb_wrap *recdb, struct ctdb_node_map *nodemap)
+			       struct tdb_wrap *recdb, struct ctdb_node_map_old *nodemap)
 {
 	struct recdb_data params;
 	struct ctdb_marshall_buffer *recdata;
@@ -1508,7 +1508,7 @@ static int recover_database(struct ctdb_recoverd *rec,
 			    uint32_t dbid,
 			    bool persistent,
 			    uint32_t pnn, 
-			    struct ctdb_node_map *nodemap,
+			    struct ctdb_node_map_old *nodemap,
 			    uint32_t transaction_id)
 {
 	struct tdb_wrap *recdb;
@@ -1566,7 +1566,7 @@ static int recover_database(struct ctdb_recoverd *rec,
 
 static int ctdb_reload_remote_public_ips(struct ctdb_context *ctdb,
 					 struct ctdb_recoverd *rec,
-					 struct ctdb_node_map *nodemap,
+					 struct ctdb_node_map_old *nodemap,
 					 uint32_t *culprit)
 {
 	int j;
@@ -1729,7 +1729,7 @@ static void ban_misbehaving_nodes(struct ctdb_recoverd *rec, bool *self_ban)
 }
 
 static bool do_takeover_run(struct ctdb_recoverd *rec,
-			    struct ctdb_node_map *nodemap,
+			    struct ctdb_node_map_old *nodemap,
 			    bool banning_credits_on_fail)
 {
 	uint32_t *nodes = NULL;
@@ -1940,7 +1940,7 @@ fail:
 }
 
 static int db_recovery_serial(struct ctdb_recoverd *rec, TALLOC_CTX *mem_ctx,
-			      uint32_t pnn, struct ctdb_node_map *nodemap,
+			      uint32_t pnn, struct ctdb_node_map_old *nodemap,
 			      struct ctdb_vnn_map *vnnmap,
 			      struct ctdb_dbid_map *dbmap)
 {
@@ -2108,7 +2108,7 @@ static int db_recovery_serial(struct ctdb_recoverd *rec, TALLOC_CTX *mem_ctx,
  */
 static int do_recovery(struct ctdb_recoverd *rec,
 		       TALLOC_CTX *mem_ctx, uint32_t pnn,
-		       struct ctdb_node_map *nodemap, struct ctdb_vnn_map *vnnmap)
+		       struct ctdb_node_map_old *nodemap, struct ctdb_vnn_map *vnnmap)
 {
 	struct ctdb_context *ctdb = rec->ctdb;
 	int i, ret;
@@ -2368,7 +2368,7 @@ struct election_message {
 static void ctdb_election_data(struct ctdb_recoverd *rec, struct election_message *em)
 {
 	int ret, i;
-	struct ctdb_node_map *nodemap;
+	struct ctdb_node_map_old *nodemap;
 	struct ctdb_context *ctdb = rec->ctdb;
 
 	ZERO_STRUCTP(em);
@@ -2487,7 +2487,7 @@ static int send_election_request(struct ctdb_recoverd *rec, uint32_t pnn)
 static void unban_all_nodes(struct ctdb_context *ctdb)
 {
 	int ret, i;
-	struct ctdb_node_map *nodemap;
+	struct ctdb_node_map_old *nodemap;
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 	
 	ret = ctdb_ctrl_getnodemap(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, tmp_ctx, &nodemap);
@@ -2905,7 +2905,7 @@ static void election_handler(uint64_t srvid, TDB_DATA data, void *private_data)
   force the start of the election process
  */
 static void force_election(struct ctdb_recoverd *rec, uint32_t pnn, 
-			   struct ctdb_node_map *nodemap)
+			   struct ctdb_node_map_old *nodemap)
 {
 	int ret;
 	struct ctdb_context *ctdb = rec->ctdb;
@@ -2949,7 +2949,7 @@ static void monitor_handler(uint64_t srvid, TDB_DATA data, void *private_data)
 	struct ctdb_context *ctdb = rec->ctdb;
 	int ret;
 	struct ctdb_node_flag_change *c = (struct ctdb_node_flag_change *)data.dptr;
-	struct ctdb_node_map *nodemap=NULL;
+	struct ctdb_node_map_old *nodemap=NULL;
 	TALLOC_CTX *tmp_ctx;
 	int i;
 	int disabled_flag_changed;
@@ -3025,7 +3025,7 @@ static void push_flags_handler(uint64_t srvid, TDB_DATA data,
 	struct ctdb_context *ctdb = rec->ctdb;
 	int ret;
 	struct ctdb_node_flag_change *c = (struct ctdb_node_flag_change *)data.dptr;
-	struct ctdb_node_map *nodemap=NULL;
+	struct ctdb_node_map_old *nodemap=NULL;
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 	uint32_t recmaster;
 	uint32_t *nodes;
@@ -3105,7 +3105,7 @@ static void verify_recmode_normal_callback(struct ctdb_client_control_state *sta
 
 
 /* verify that all nodes are in normal recovery mode */
-static enum monitor_result verify_recmode(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap)
+static enum monitor_result verify_recmode(struct ctdb_context *ctdb, struct ctdb_node_map_old *nodemap)
 {
 	struct verify_recmode_normal_data *rmdata;
 	TALLOC_CTX *mem_ctx = talloc_new(ctdb);
@@ -3197,7 +3197,7 @@ static void verify_recmaster_callback(struct ctdb_client_control_state *state)
 
 
 /* verify that all nodes agree that we are the recmaster */
-static enum monitor_result verify_recmaster(struct ctdb_recoverd *rec, struct ctdb_node_map *nodemap, uint32_t pnn)
+static enum monitor_result verify_recmaster(struct ctdb_recoverd *rec, struct ctdb_node_map_old *nodemap, uint32_t pnn)
 {
 	struct ctdb_context *ctdb = rec->ctdb;
 	struct verify_recmaster_data *rmdata;
@@ -3314,7 +3314,7 @@ static bool interfaces_have_changed(struct ctdb_context *ctdb,
 
 /* called to check that the local allocation of public ip addresses is ok.
 */
-static int verify_local_ip_allocation(struct ctdb_context *ctdb, struct ctdb_recoverd *rec, uint32_t pnn, struct ctdb_node_map *nodemap)
+static int verify_local_ip_allocation(struct ctdb_context *ctdb, struct ctdb_recoverd *rec, uint32_t pnn, struct ctdb_node_map_old *nodemap)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	struct ctdb_uptime *uptime1 = NULL;
@@ -3453,20 +3453,20 @@ static int verify_local_ip_allocation(struct ctdb_context *ctdb, struct ctdb_rec
 
 static void async_getnodemap_callback(struct ctdb_context *ctdb, uint32_t node_pnn, int32_t res, TDB_DATA outdata, void *callback_data)
 {
-	struct ctdb_node_map **remote_nodemaps = callback_data;
+	struct ctdb_node_map_old **remote_nodemaps = callback_data;
 
 	if (node_pnn >= ctdb->num_nodes) {
 		DEBUG(DEBUG_ERR,(__location__ " pnn from invalid node\n"));
 		return;
 	}
 
-	remote_nodemaps[node_pnn] = (struct ctdb_node_map *)talloc_steal(remote_nodemaps, outdata.dptr);
+	remote_nodemaps[node_pnn] = (struct ctdb_node_map_old *)talloc_steal(remote_nodemaps, outdata.dptr);
 
 }
 
 static int get_remote_nodemaps(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx,
-	struct ctdb_node_map *nodemap,
-	struct ctdb_node_map **remote_nodemaps)
+	struct ctdb_node_map_old *nodemap,
+	struct ctdb_node_map_old **remote_nodemaps)
 {
 	uint32_t *nodes;
 
@@ -3536,9 +3536,9 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 		      TALLOC_CTX *mem_ctx)
 {
 	uint32_t pnn;
-	struct ctdb_node_map *nodemap=NULL;
-	struct ctdb_node_map *recmaster_nodemap=NULL;
-	struct ctdb_node_map **remote_nodemaps=NULL;
+	struct ctdb_node_map_old *nodemap=NULL;
+	struct ctdb_node_map_old *recmaster_nodemap=NULL;
+	struct ctdb_node_map_old **remote_nodemaps=NULL;
 	struct ctdb_vnn_map *vnnmap=NULL;
 	struct ctdb_vnn_map *remote_vnnmap=NULL;
 	uint32_t num_lmasters;
@@ -3867,7 +3867,7 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 
 	/* get the nodemap for all active remote nodes
 	 */
-	remote_nodemaps = talloc_array(mem_ctx, struct ctdb_node_map *, nodemap->num);
+	remote_nodemaps = talloc_array(mem_ctx, struct ctdb_node_map_old *, nodemap->num);
 	if (remote_nodemaps == NULL) {
 		DEBUG(DEBUG_ERR, (__location__ " failed to allocate remote nodemap array\n"));
 		return;
