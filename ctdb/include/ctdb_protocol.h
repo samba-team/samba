@@ -826,7 +826,7 @@ struct ctdb_db_priority {
 /*
  * Structures to support SRVID requests and replies
  */
-struct srvid_request {
+struct ctdb_srvid_message {
 	uint32_t pnn;
 	uint64_t srvid;
 };

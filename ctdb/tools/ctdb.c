@@ -2259,7 +2259,7 @@ static int srvid_broadcast(struct ctdb_context *ctdb,
 	TDB_DATA data;
 	uint32_t pnn;
 	uint64_t reply_srvid;
-	struct srvid_request request;
+	struct ctdb_srvid_message request;
 	struct srvid_request_data request_data;
 	struct srvid_reply_handler_data reply_data;
 	struct timeval tv;
@@ -6066,7 +6066,7 @@ static int control_rddumpmemory(struct ctdb_context *ctdb, int argc, const char 
 {
 	int ret;
 	TDB_DATA data;
-	struct srvid_request rd;
+	struct ctdb_srvid_message rd;
 
 	rd.pnn = ctdb_get_pnn(ctdb);
 	rd.srvid = getpid();

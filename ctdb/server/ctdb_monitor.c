@@ -126,7 +126,7 @@ static void ctdb_health_callback(struct ctdb_context *ctdb, int status, void *p)
 	uint32_t next_interval;
 	int ret;
 	TDB_DATA rddata;
-	struct srvid_request rd;
+	struct ctdb_srvid_message rd;
 	const char *state_str = NULL;
 
 	c.pnn = ctdb->pnn;

@@ -45,7 +45,7 @@
 /* List of SRVID requests that need to be processed */
 struct srvid_list {
 	struct srvid_list *next, *prev;
-	struct srvid_request *request;
+	struct ctdb_srvid_message *request;
 };
 
 struct srvid_requests {
@@ -53,7 +53,7 @@ struct srvid_requests {
 };
 
 static void srvid_request_reply(struct ctdb_context *ctdb,
-				struct srvid_request *request,
+				struct ctdb_srvid_message *request,
 				TDB_DATA result)
 {
 	/* Someone that sent srvid==0 does not want a reply */
@@ -92,7 +92,7 @@ static void srvid_requests_reply(struct ctdb_context *ctdb,
 
 static void srvid_request_add(struct ctdb_context *ctdb,
 			      struct srvid_requests **requests,
-			      struct srvid_request *request)
+			      struct ctdb_srvid_message *request)
 {
 	struct srvid_list *t;
 	int32_t ret;
@@ -114,7 +114,7 @@ static void srvid_request_add(struct ctdb_context *ctdb,
 		goto nomem;
 	}
 
-	t->request = (struct srvid_request *)talloc_steal(t, request);
+	t->request = (struct ctdb_srvid_message *)talloc_steal(t, request);
 	DLIST_ADD((*requests)->requests, t);
 
 	return;
@@ -2542,14 +2542,14 @@ static void mem_dump_handler(uint64_t srvid, TDB_DATA data, void *private_data)
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 	TDB_DATA *dump;
 	int ret;
-	struct srvid_request *rd;
+	struct ctdb_srvid_message *rd;
 
-	if (data.dsize != sizeof(struct srvid_request)) {
+	if (data.dsize != sizeof(struct ctdb_srvid_message)) {
 		DEBUG(DEBUG_ERR, (__location__ " Wrong size of return address.\n"));
 		talloc_free(tmp_ctx);
 		return;
 	}
-	rd = (struct srvid_request *)data.dptr;
+	rd = (struct ctdb_srvid_message *)data.dptr;
 
 	dump = talloc_zero(tmp_ctx, TDB_DATA);
 	if (dump == NULL) {
@@ -2709,7 +2709,7 @@ static void srvid_disable_and_reply(struct ctdb_context *ctdb,
 	if (data.dsize != sizeof(struct srvid_request_data)) {
 		DEBUG(DEBUG_ERR,(__location__ " Wrong size for data :%lu "
 				 "expecting %lu\n", (long unsigned)data.dsize,
-				 (long unsigned)sizeof(struct srvid_request)));
+				 (long unsigned)sizeof(struct ctdb_srvid_message)));
 		return;
 	}
 	if (data.dptr == NULL) {
@@ -2730,7 +2730,7 @@ static void srvid_disable_and_reply(struct ctdb_context *ctdb,
 done:
 	result.dsize = sizeof(int32_t);
 	result.dptr  = (uint8_t *)&ret;
-	srvid_request_reply(ctdb, (struct srvid_request *)r, result);
+	srvid_request_reply(ctdb, (struct ctdb_srvid_message *)r, result);
 }
 
 static void disable_takeover_runs_handler(uint64_t srvid, TDB_DATA data,
@@ -2783,16 +2783,16 @@ static void disable_recoveries_handler(uint64_t srvid, TDB_DATA data,
 static void ip_reallocate_handler(uint64_t srvid, TDB_DATA data,
 				  void *private_data)
 {
-	struct srvid_request *request;
+	struct ctdb_srvid_message *request;
 	struct ctdb_recoverd *rec = talloc_get_type(
 		private_data, struct ctdb_recoverd);
 
-	if (data.dsize != sizeof(struct srvid_request)) {
+	if (data.dsize != sizeof(struct ctdb_srvid_message)) {
 		DEBUG(DEBUG_ERR, (__location__ " Wrong size of return address.\n"));
 		return;
 	}
 
-	request = (struct srvid_request *)data.dptr;
+	request = (struct ctdb_srvid_message *)data.dptr;
 
 	srvid_request_add(rec->ctdb, &rec->reallocate_requests, request);
 }
@@ -3431,7 +3431,7 @@ static int verify_local_ip_allocation(struct ctdb_context *ctdb, struct ctdb_rec
 	}
 
 	if (need_takeover_run) {
-		struct srvid_request rd;
+		struct ctdb_srvid_message rd;
 		TDB_DATA data;
 
 		DEBUG(DEBUG_CRIT,("Trigger takeoverrun\n"));
