@@ -318,7 +318,7 @@ static void daemon_call_from_client_callback(struct ctdb_call_state *state)
 {
 	struct daemon_call_state *dstate = talloc_get_type(state->async.private_data, 
 							   struct daemon_call_state);
-	struct ctdb_reply_call *r;
+	struct ctdb_reply_call_old *r;
 	int res;
 	uint32_t length;
 	struct ctdb_client *client = dstate->client;
@@ -336,7 +336,7 @@ static void daemon_call_from_client_callback(struct ctdb_call_state *state)
 		return;
 	}
 
-	length = offsetof(struct ctdb_reply_call, data) + dstate->call->reply_data.dsize;
+	length = offsetof(struct ctdb_reply_call_old, data) + dstate->call->reply_data.dsize;
 	/* If the client asked for readonly FETCH, we remapped this to 
 	   FETCH_WITH_HEADER when calling the daemon. So we must
 	   strip the extra header off the reply data before passing
@@ -348,7 +348,7 @@ static void daemon_call_from_client_callback(struct ctdb_call_state *state)
 	}
 
 	r = ctdbd_allocate_pkt(client->ctdb, dstate, CTDB_REPLY_CALL, 
-			       length, struct ctdb_reply_call);
+			       length, struct ctdb_reply_call_old);
 	if (r == NULL) {
 		DEBUG(DEBUG_ERR, (__location__ " Failed to allocate reply_call in ctdb daemon\n"));
 		CTDB_DECREMENT_STAT(client->ctdb, pending_calls);

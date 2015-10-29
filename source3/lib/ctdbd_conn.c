@@ -978,7 +978,7 @@ int ctdbd_parse(struct ctdbd_connection *conn, uint32_t db_id,
 {
 	struct ctdb_req_call_old req;
 	struct ctdb_req_header *hdr = NULL;
-	struct ctdb_reply_call *reply;
+	struct ctdb_reply_call_old *reply;
 	struct iovec iov[2];
 	ssize_t nwritten;
 	uint32_t flags;
@@ -1020,7 +1020,7 @@ int ctdbd_parse(struct ctdbd_connection *conn, uint32_t db_id,
 		ret = EIO;
 		goto fail;
 	}
-	reply = (struct ctdb_reply_call *)hdr;
+	reply = (struct ctdb_reply_call_old *)hdr;
 
 	if (reply->datalen == 0) {
 		/*

@@ -164,7 +164,7 @@ static int ctdb_client_queue_pkt(struct ctdb_context *ctdb, struct ctdb_req_head
 */
 static void ctdb_client_reply_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 {
-	struct ctdb_reply_call *c = (struct ctdb_reply_call *)hdr;
+	struct ctdb_reply_call_old *c = (struct ctdb_reply_call_old *)hdr;
 	struct ctdb_client_call_state *state;
 
 	state = reqid_find(ctdb->idr, hdr->reqid, struct ctdb_client_call_state);

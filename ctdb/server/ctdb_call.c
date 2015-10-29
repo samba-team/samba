@@ -889,7 +889,7 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 {
 	struct ctdb_req_call_old *c = (struct ctdb_req_call_old *)hdr;
 	TDB_DATA data;
-	struct ctdb_reply_call *r;
+	struct ctdb_reply_call_old *r;
 	int ret, len;
 	struct ctdb_ltdb_header header;
 	struct ctdb_call *call;
@@ -1065,9 +1065,9 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 			DEBUG(DEBUG_ERR,(__location__ " ctdb_ltdb_unlock() failed with error %d\n", ret));
 		}
 
-		len = offsetof(struct ctdb_reply_call, data) + data.dsize + sizeof(struct ctdb_ltdb_header);
+		len = offsetof(struct ctdb_reply_call_old, data) + data.dsize + sizeof(struct ctdb_ltdb_header);
 		r = ctdb_transport_allocate(ctdb, ctdb, CTDB_REPLY_CALL, len, 
-					    struct ctdb_reply_call);
+					    struct ctdb_reply_call_old);
 		CTDB_NO_MEMORY_FATAL(ctdb, r);
 		r->hdr.destnode  = c->hdr.srcnode;
 		r->hdr.reqid     = c->hdr.reqid;
@@ -1150,9 +1150,9 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 		DEBUG(DEBUG_ERR,(__location__ " ctdb_ltdb_unlock() failed with error %d\n", ret));
 	}
 
-	len = offsetof(struct ctdb_reply_call, data) + call->reply_data.dsize;
+	len = offsetof(struct ctdb_reply_call_old, data) + call->reply_data.dsize;
 	r = ctdb_transport_allocate(ctdb, ctdb, CTDB_REPLY_CALL, len, 
-				    struct ctdb_reply_call);
+				    struct ctdb_reply_call_old);
 	CTDB_NO_MEMORY_FATAL(ctdb, r);
 	r->hdr.destnode  = hdr->srcnode;
 	r->hdr.reqid     = hdr->reqid;
@@ -1177,7 +1177,7 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
  */
 void ctdb_reply_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 {
-	struct ctdb_reply_call *c = (struct ctdb_reply_call *)hdr;
+	struct ctdb_reply_call_old *c = (struct ctdb_reply_call_old *)hdr;
 	struct ctdb_call_state *state;
 
 	state = reqid_find(ctdb->idr, hdr->reqid, struct ctdb_call_state);
