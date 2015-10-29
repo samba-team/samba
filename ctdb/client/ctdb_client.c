@@ -3060,16 +3060,15 @@ int ctdb_ctrl_get_all_tunables(struct ctdb_context *ctdb,
 /*
   add a public address to a node
  */
-int ctdb_ctrl_add_public_ip(struct ctdb_context *ctdb, 
-		      struct timeval timeout, 
-		      uint32_t destnode,
-		      struct ctdb_control_ip_iface *pub)
+int ctdb_ctrl_add_public_ip(struct ctdb_context *ctdb,
+			    struct timeval timeout, uint32_t destnode,
+			    struct ctdb_addr_info_old *pub)
 {
 	TDB_DATA data;
 	int32_t res;
 	int ret;
 
-	data.dsize = offsetof(struct ctdb_control_ip_iface, iface) + pub->len;
+	data.dsize = offsetof(struct ctdb_addr_info_old, iface) + pub->len;
 	data.dptr  = (unsigned char *)pub;
 
 	ret = ctdb_control(ctdb, destnode, 0, CTDB_CONTROL_ADD_PUBLIC_IP, 0, data, NULL,
@@ -3085,16 +3084,15 @@ int ctdb_ctrl_add_public_ip(struct ctdb_context *ctdb,
 /*
   delete a public address from a node
  */
-int ctdb_ctrl_del_public_ip(struct ctdb_context *ctdb, 
-		      struct timeval timeout, 
-		      uint32_t destnode,
-		      struct ctdb_control_ip_iface *pub)
+int ctdb_ctrl_del_public_ip(struct ctdb_context *ctdb,
+			    struct timeval timeout, uint32_t destnode,
+			    struct ctdb_addr_info_old *pub)
 {
 	TDB_DATA data;
 	int32_t res;
 	int ret;
 
-	data.dsize = offsetof(struct ctdb_control_ip_iface, iface) + pub->len;
+	data.dsize = offsetof(struct ctdb_addr_info_old, iface) + pub->len;
 	data.dptr  = (unsigned char *)pub;
 
 	ret = ctdb_control(ctdb, destnode, 0, CTDB_CONTROL_DEL_PUBLIC_IP, 0, data, NULL,

@@ -923,7 +923,7 @@ enum ctdb_runstate {
   struct holding a ctdb_sock_addr and an interface name,
   used to add/remove public addresses
  */
-struct ctdb_control_ip_iface {
+struct ctdb_addr_info_old {
 	ctdb_sock_addr addr;
 	uint32_t mask;
 	uint32_t len;

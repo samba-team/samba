@@ -401,10 +401,10 @@ int ctdb_ctrl_get_all_tunables(struct ctdb_context *ctdb,
 
 int ctdb_ctrl_add_public_ip(struct ctdb_context *ctdb,
 			    struct timeval timeout, uint32_t destnode,
-			    struct ctdb_control_ip_iface *pub);
+			    struct ctdb_addr_info_old *pub);
 int ctdb_ctrl_del_public_ip(struct ctdb_context *ctdb,
 			    struct timeval timeout, uint32_t destnode,
-			    struct ctdb_control_ip_iface *pub);
+			    struct ctdb_addr_info_old *pub);
 
 int ctdb_ctrl_killtcp(struct ctdb_context *ctdb,
 		      struct timeval timeout, uint32_t destnode,

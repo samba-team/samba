@@ -4020,22 +4020,22 @@ int32_t ctdb_control_send_gratious_arp(struct ctdb_context *ctdb, TDB_DATA indat
 
 int32_t ctdb_control_add_public_address(struct ctdb_context *ctdb, TDB_DATA indata)
 {
-	struct ctdb_control_ip_iface *pub = (struct ctdb_control_ip_iface *)indata.dptr;
+	struct ctdb_addr_info_old *pub = (struct ctdb_addr_info_old *)indata.dptr;
 	int ret;
 
 	/* verify the size of indata */
-	if (indata.dsize < offsetof(struct ctdb_control_ip_iface, iface)) {
-		DEBUG(DEBUG_ERR,(__location__ " Too small indata to hold a ctdb_control_ip_iface structure\n"));
+	if (indata.dsize < offsetof(struct ctdb_addr_info_old, iface)) {
+		DEBUG(DEBUG_ERR,(__location__ " Too small indata to hold a ctdb_addr_info structure\n"));
 		return -1;
 	}
 	if (indata.dsize != 
-		( offsetof(struct ctdb_control_ip_iface, iface)
+		( offsetof(struct ctdb_addr_info_old, iface)
 		+ pub->len ) ){
 
 		DEBUG(DEBUG_ERR,(__location__ " Wrong size of indata. Was %u bytes "
 			"but should be %u bytes\n", 
 			 (unsigned)indata.dsize, 
-			 (unsigned)(offsetof(struct ctdb_control_ip_iface, iface)+pub->len)));
+			 (unsigned)(offsetof(struct ctdb_addr_info_old, iface)+pub->len)));
 		return -1;
 	}
 
@@ -4075,22 +4075,22 @@ int32_t ctdb_control_del_public_address(struct ctdb_context *ctdb,
 					struct ctdb_req_control_old *c,
 					TDB_DATA indata, bool *async_reply)
 {
-	struct ctdb_control_ip_iface *pub = (struct ctdb_control_ip_iface *)indata.dptr;
+	struct ctdb_addr_info_old *pub = (struct ctdb_addr_info_old *)indata.dptr;
 	struct ctdb_vnn *vnn;
 
 	/* verify the size of indata */
-	if (indata.dsize < offsetof(struct ctdb_control_ip_iface, iface)) {
-		DEBUG(DEBUG_ERR,(__location__ " Too small indata to hold a ctdb_control_ip_iface structure\n"));
+	if (indata.dsize < offsetof(struct ctdb_addr_info_old, iface)) {
+		DEBUG(DEBUG_ERR,(__location__ " Too small indata to hold a ctdb_addr_info structure\n"));
 		return -1;
 	}
 	if (indata.dsize != 
-		( offsetof(struct ctdb_control_ip_iface, iface)
+		( offsetof(struct ctdb_addr_info_old, iface)
 		+ pub->len ) ){
 
 		DEBUG(DEBUG_ERR,(__location__ " Wrong size of indata. Was %u bytes "
 			"but should be %u bytes\n", 
 			 (unsigned)indata.dsize, 
-			 (unsigned)(offsetof(struct ctdb_control_ip_iface, iface)+pub->len)));
+			 (unsigned)(offsetof(struct ctdb_addr_info_old, iface)+pub->len)));
 		return -1;
 	}
 
@@ -4389,14 +4389,13 @@ static int ctdb_reloadips_child(struct ctdb_context *ctdb)
 
 		if (vnn == NULL) {
 			/* Delete IP ips->ips[i] */
-			struct ctdb_control_ip_iface *pub;
+			struct ctdb_addr_info_old *pub;
 
 			DEBUG(DEBUG_NOTICE,
 			      ("IP %s no longer configured, deleting it\n",
 			       ctdb_addr_to_str(&ips->ips[i].addr)));
 
-			pub = talloc_zero(mem_ctx,
-					  struct ctdb_control_ip_iface);
+			pub = talloc_zero(mem_ctx, struct ctdb_addr_info_old);
 			CTDB_NO_MEMORY(ctdb, pub);
 
 			pub->addr  = ips->ips[i].addr;
@@ -4405,7 +4404,7 @@ static int ctdb_reloadips_child(struct ctdb_context *ctdb)
 
 			timeout = TAKEOVER_TIMEOUT();
 
-			data.dsize = offsetof(struct ctdb_control_ip_iface,
+			data.dsize = offsetof(struct ctdb_addr_info_old,
 					      iface) + pub->len;
 			data.dptr = (uint8_t *)pub;
 
@@ -4436,7 +4435,7 @@ static int ctdb_reloadips_child(struct ctdb_context *ctdb)
 		}
 		if (i == ips->num) {
 			/* Add IP ips->ips[i] */
-			struct ctdb_control_ip_iface *pub;
+			struct ctdb_addr_info_old *pub;
 			const char *ifaces = NULL;
 			uint32_t len;
 			int iface = 0;
@@ -4473,7 +4472,7 @@ static int ctdb_reloadips_child(struct ctdb_context *ctdb)
 
 			len   = strlen(ifaces) + 1;
 			pub = talloc_zero_size(mem_ctx,
-					       offsetof(struct ctdb_control_ip_iface, iface) + len);
+					       offsetof(struct ctdb_addr_info_old, iface) + len);
 			CTDB_NO_MEMORY(ctdb, pub);
 
 			pub->addr  = vnn->public_address;
@@ -4483,7 +4482,7 @@ static int ctdb_reloadips_child(struct ctdb_context *ctdb)
 
 			timeout = TAKEOVER_TIMEOUT();
 
-			data.dsize = offsetof(struct ctdb_control_ip_iface,
+			data.dsize = offsetof(struct ctdb_addr_info_old,
 					      iface) + pub->len;
 			data.dptr = (uint8_t *)pub;
 

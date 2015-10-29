@@ -2376,7 +2376,7 @@ static int control_addip(struct ctdb_context *ctdb, int argc, const char **argv)
 	int len, retries = 0;
 	unsigned mask;
 	ctdb_sock_addr addr;
-	struct ctdb_control_ip_iface *pub;
+	struct ctdb_addr_info_old *pub;
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 	struct ctdb_public_ip_list_old *ips;
 
@@ -2414,7 +2414,7 @@ static int control_addip(struct ctdb_context *ctdb, int argc, const char **argv)
 	*/
 	alarm(0);
 
-	len = offsetof(struct ctdb_control_ip_iface, iface) + strlen(argv[1]) + 1;
+	len = offsetof(struct ctdb_addr_info_old, iface) + strlen(argv[1]) + 1;
 	pub = talloc_size(tmp_ctx, len); 
 	CTDB_NO_MEMORY(ctdb, pub);
 
@@ -2555,7 +2555,7 @@ static int control_delip(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	int i, ret;
 	ctdb_sock_addr addr;
-	struct ctdb_control_ip_iface pub;
+	struct ctdb_addr_info_old pub;
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 	struct ctdb_public_ip_list_old *ips;
 
