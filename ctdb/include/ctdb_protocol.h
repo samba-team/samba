@@ -447,7 +447,7 @@ struct ctdb_reply_call_old {
 	uint8_t  data[1];
 };
 
-struct ctdb_reply_error {
+struct ctdb_reply_error_old {
 	struct ctdb_req_header hdr;
 	uint32_t status;
 	uint32_t msglen;

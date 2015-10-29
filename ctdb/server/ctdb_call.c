@@ -82,7 +82,7 @@ static void ctdb_send_error(struct ctdb_context *ctdb,
 			    const char *fmt, ...)
 {
 	va_list ap;
-	struct ctdb_reply_error *r;
+	struct ctdb_reply_error_old *r;
 	char *msg;
 	int msglen, len;
 
@@ -99,9 +99,9 @@ static void ctdb_send_error(struct ctdb_context *ctdb,
 	va_end(ap);
 
 	msglen = strlen(msg)+1;
-	len = offsetof(struct ctdb_reply_error, msg);
+	len = offsetof(struct ctdb_reply_error_old, msg);
 	r = ctdb_transport_allocate(ctdb, msg, CTDB_REPLY_ERROR, len + msglen, 
-				    struct ctdb_reply_error);
+				    struct ctdb_reply_error_old);
 	CTDB_NO_MEMORY_FATAL(ctdb, r);
 
 	r->hdr.destnode  = hdr->srcnode;
@@ -1337,7 +1337,7 @@ void ctdb_reply_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 */
 void ctdb_reply_error(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 {
-	struct ctdb_reply_error *c = (struct ctdb_reply_error *)hdr;
+	struct ctdb_reply_error_old *c = (struct ctdb_reply_error_old *)hdr;
 	struct ctdb_call_state *state;
 
 	state = reqid_find(ctdb->idr, hdr->reqid, struct ctdb_call_state);
