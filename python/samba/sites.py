@@ -18,7 +18,7 @@
 """Manipulating sites."""
 
 import ldb
-from ldb import FLAG_MOD_ADD
+from ldb import FLAG_MOD_ADD, LdbError
 
 
 class SiteException(Exception):
@@ -92,17 +92,27 @@ def delete_site(samdb, configDn, siteName):
     :raise SiteServerNotEmpty: if the site has still servers in it.
     """
 
-    dnsites = ldb.Dn(samdb, "CN=Sites,%s" % (str(configDn)))
-    dnsite = ldb.Dn(samdb, "Cn=%s,CN=Sites,%s" % (siteName, str(configDn)))
-    dnserver = ldb.Dn(samdb, "Cn=Servers,%s" % str(dnsite))
+    dnsite = ldb.Dn(samdb, "CN=Sites")
+    if dnsite.add_base(configDn) == False:
+        raise SiteException("dnsites.add_base() failed")
+    if dnsite.add_child("CN=X") == False:
+        raise SiteException("dnsites.add_child() failed")
+    dnsite.set_component(0, "CN", siteName)
 
-    ret = samdb.search(base=dnsites, scope=ldb.SCOPE_ONELEVEL,
-                    expression='(dn=%s)' % str(dnsite))
-    if len(ret) != 1:
-        raise SiteNotFoundException('Site %s does not exist' % siteName)
+    dnservers = ldb.Dn(samdb, "CN=Servers")
+    dnservers.add_base(dnsite)
 
-    ret = samdb.search(base=dnserver, scope=ldb.SCOPE_ONELEVEL,
-                    expression='(objectclass=server)')
+    try:
+        ret = samdb.search(base=dnsite, scope=ldb.SCOPE_BASE,
+                           expression="objectClass=site")
+        if len(ret) != 1:
+            raise SiteNotFoundException('Site %s does not exist' % siteName)
+    except LdbError as (enum, estr):
+        if enum == ldb.ERR_NO_SUCH_OBJECT:
+            raise SiteNotFoundException('Site %s does not exist' % siteName)
+
+    ret = samdb.search(base=dnservers, scope=ldb.SCOPE_ONELEVEL,
+                       expression='(objectclass=server)')
     if len(ret) != 0:
         raise SiteServerNotEmptyException('Site %s still has servers in it, move them before removal' % siteName)
 
