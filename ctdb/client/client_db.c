@@ -1090,7 +1090,7 @@ static void ctdb_g_lock_lock_retry(struct tevent_req *subreq);
 static bool ctdb_g_lock_conflicts(enum ctdb_g_lock_type l1,
 				  enum ctdb_g_lock_type l2)
 {
-	if ((l1 == G_LOCK_READ) && (l2 == G_LOCK_READ)) {
+	if ((l1 == CTDB_G_LOCK_READ) && (l2 == CTDB_G_LOCK_READ)) {
 		return false;
 	}
 	return true;
@@ -1119,7 +1119,7 @@ struct tevent_req *ctdb_g_lock_lock_send(TALLOC_CTX *mem_ctx,
 	state->key.dptr = discard_const(keyname);
 	state->key.dsize = strlen(keyname) + 1;
 	state->my_sid = *sid;
-	state->lock_type = (readonly ? G_LOCK_READ : G_LOCK_WRITE);
+	state->lock_type = (readonly ? CTDB_G_LOCK_READ : CTDB_G_LOCK_WRITE);
 
 	subreq = ctdb_fetch_lock_send(state, ev, client, db, state->key,
 				      false);

@@ -1001,8 +1001,8 @@ struct ctdb_server_id {
 };
 
 enum ctdb_g_lock_type {
-	G_LOCK_READ = 0,
-	G_LOCK_WRITE = 1,
+	CTDB_G_LOCK_READ = 0,
+	CTDB_G_LOCK_WRITE = 1,
 };
 
 struct ctdb_g_lock {
