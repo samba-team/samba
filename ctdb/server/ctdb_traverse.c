@@ -111,7 +111,7 @@ static int ctdb_traverse_local_fn(struct tdb_context *tdb, TDB_DATA key, TDB_DAT
 {
 	struct ctdb_traverse_local_handle *h = talloc_get_type(p,
 							       struct ctdb_traverse_local_handle);
-	struct ctdb_rec_data *d;
+	struct ctdb_rec_data_old *d;
 	struct ctdb_ltdb_header *hdr;
 	int res, status;
 	TDB_DATA outdata;
@@ -212,7 +212,7 @@ static struct ctdb_traverse_local_handle *ctdb_traverse_local(struct ctdb_db_con
 		int res, status;
 		pid_t parent = getpid();
 		struct ctdb_context *ctdb = ctdb_db->ctdb;
-		struct ctdb_rec_data *d;
+		struct ctdb_rec_data_old *d;
 		TDB_DATA outdata;
 
 		close(h->fd[0]);
@@ -578,7 +578,7 @@ int32_t ctdb_control_traverse_all(struct ctdb_context *ctdb, TDB_DATA data, TDB_
  */
 int32_t ctdb_control_traverse_data(struct ctdb_context *ctdb, TDB_DATA data, TDB_DATA *outdata)
 {
-	struct ctdb_rec_data *d = (struct ctdb_rec_data *)data.dptr;
+	struct ctdb_rec_data_old *d = (struct ctdb_rec_data_old *)data.dptr;
 	struct ctdb_traverse_all_handle *state;
 	TDB_DATA key;
 	ctdb_traverse_fn_t callback;
@@ -676,7 +676,7 @@ static int ctdb_traverse_start_destructor(struct traverse_start_state *state)
 static void traverse_start_callback(void *p, TDB_DATA key, TDB_DATA data)
 {
 	struct traverse_start_state *state;
-	struct ctdb_rec_data *d;
+	struct ctdb_rec_data_old *d;
 	TDB_DATA cdata;
 
 	state = talloc_get_type(p, struct traverse_start_state);

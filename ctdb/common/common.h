@@ -107,10 +107,11 @@ bool ctdb_same_address(ctdb_sock_addr *a1, ctdb_sock_addr *a2);
 
 uint32_t ctdb_hash(const TDB_DATA *key);
 
-struct ctdb_rec_data *ctdb_marshall_record(TALLOC_CTX *mem_ctx, uint32_t reqid,
-					   TDB_DATA key,
-					   struct ctdb_ltdb_header *header,
-					   TDB_DATA data);
+struct ctdb_rec_data_old *ctdb_marshall_record(TALLOC_CTX *mem_ctx,
+					       uint32_t reqid,
+					       TDB_DATA key,
+					       struct ctdb_ltdb_header *header,
+					       TDB_DATA data);
 
 struct ctdb_marshall_buffer *ctdb_marshall_add(TALLOC_CTX *mem_ctx,
 					       struct ctdb_marshall_buffer *m,
@@ -122,11 +123,12 @@ struct ctdb_marshall_buffer *ctdb_marshall_add(TALLOC_CTX *mem_ctx,
 
 TDB_DATA ctdb_marshall_finish(struct ctdb_marshall_buffer *m);
 
-struct ctdb_rec_data *ctdb_marshall_loop_next(struct ctdb_marshall_buffer *m,
-					      struct ctdb_rec_data *r,
-					      uint32_t *reqid,
-					      struct ctdb_ltdb_header *header,
-					      TDB_DATA *key, TDB_DATA *data);
+struct ctdb_rec_data_old *ctdb_marshall_loop_next(
+					struct ctdb_marshall_buffer *m,
+					struct ctdb_rec_data_old *r,
+					uint32_t *reqid,
+					struct ctdb_ltdb_header *header,
+					TDB_DATA *key, TDB_DATA *data);
 
 void ctdb_canonicalize_ip(const ctdb_sock_addr *ip, ctdb_sock_addr *cip);
 

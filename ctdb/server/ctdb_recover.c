@@ -211,7 +211,7 @@ struct pulldb_data {
 static int traverse_pulldb(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *p)
 {
 	struct pulldb_data *params = (struct pulldb_data *)p;
-	struct ctdb_rec_data *rec;
+	struct ctdb_rec_data_old *rec;
 	struct ctdb_context *ctdb = params->ctdb;
 	struct ctdb_db_context *ctdb_db = params->ctdb_db;
 
@@ -320,7 +320,7 @@ int32_t ctdb_control_push_db(struct ctdb_context *ctdb, TDB_DATA indata)
 	struct ctdb_marshall_buffer *reply = (struct ctdb_marshall_buffer *)indata.dptr;
 	struct ctdb_db_context *ctdb_db;
 	int i, ret;
-	struct ctdb_rec_data *rec;
+	struct ctdb_rec_data_old *rec;
 
 	if (indata.dsize < offsetof(struct ctdb_marshall_buffer, data)) {
 		DEBUG(DEBUG_ERR,(__location__ " invalid data in pulldb reply\n"));
@@ -344,7 +344,7 @@ int32_t ctdb_control_push_db(struct ctdb_context *ctdb, TDB_DATA indata)
 		return -1;
 	}
 
-	rec = (struct ctdb_rec_data *)&reply->data[0];
+	rec = (struct ctdb_rec_data_old *)&reply->data[0];
 
 	DEBUG(DEBUG_INFO,("starting push of %u records for dbid 0x%x\n",
 		 reply->count, reply->db_id));
@@ -377,7 +377,7 @@ int32_t ctdb_control_push_db(struct ctdb_context *ctdb, TDB_DATA indata)
 			goto failed;
 		}
 
-		rec = (struct ctdb_rec_data *)(rec->length + (uint8_t *)rec);
+		rec = (struct ctdb_rec_data_old *)(rec->length + (uint8_t *)rec);
 	}	    
 
 	DEBUG(DEBUG_DEBUG,("finished push of %u records for dbid 0x%x\n",
@@ -752,7 +752,7 @@ void ctdb_recovery_unlock(struct ctdb_context *ctdb)
   when the function returns)
   or !0 is the record still exists in the tdb after returning.
  */
-static int delete_tdb_record(struct ctdb_context *ctdb, struct ctdb_db_context *ctdb_db, struct ctdb_rec_data *rec)
+static int delete_tdb_record(struct ctdb_context *ctdb, struct ctdb_db_context *ctdb_db, struct ctdb_rec_data_old *rec)
 {
 	TDB_DATA key, data, data2;
 	struct ctdb_ltdb_header *hdr, *hdr2;
@@ -990,7 +990,7 @@ int32_t ctdb_control_try_delete_records(struct ctdb_context *ctdb, TDB_DATA inda
 	struct ctdb_marshall_buffer *reply = (struct ctdb_marshall_buffer *)indata.dptr;
 	struct ctdb_db_context *ctdb_db;
 	int i;
-	struct ctdb_rec_data *rec;
+	struct ctdb_rec_data_old *rec;
 	struct ctdb_marshall_buffer *records;
 
 	if (indata.dsize < offsetof(struct ctdb_marshall_buffer, data)) {
@@ -1020,7 +1020,7 @@ int32_t ctdb_control_try_delete_records(struct ctdb_context *ctdb, TDB_DATA inda
 	records->db_id = ctdb_db->db_id;
 
 
-	rec = (struct ctdb_rec_data *)&reply->data[0];
+	rec = (struct ctdb_rec_data_old *)&reply->data[0];
 	for (i=0;i<reply->count;i++) {
 		TDB_DATA key, data;
 
@@ -1057,7 +1057,7 @@ int32_t ctdb_control_try_delete_records(struct ctdb_context *ctdb, TDB_DATA inda
 			memcpy(old_size+(uint8_t *)records, rec, rec->length);
 		} 
 
-		rec = (struct ctdb_rec_data *)(rec->length + (uint8_t *)rec);
+		rec = (struct ctdb_rec_data_old *)(rec->length + (uint8_t *)rec);
 	}	    
 
 
@@ -1082,7 +1082,7 @@ int32_t ctdb_control_try_delete_records(struct ctdb_context *ctdb, TDB_DATA inda
  */
 static int store_tdb_record(struct ctdb_context *ctdb,
 			    struct ctdb_db_context *ctdb_db,
-			    struct ctdb_rec_data *rec)
+			    struct ctdb_rec_data_old *rec)
 {
 	TDB_DATA key, data, data2;
 	struct ctdb_ltdb_header *hdr, *hdr2;
@@ -1182,7 +1182,7 @@ int32_t ctdb_control_receive_records(struct ctdb_context *ctdb,
 	struct ctdb_marshall_buffer *reply = (struct ctdb_marshall_buffer *)indata.dptr;
 	struct ctdb_db_context *ctdb_db;
 	int i;
-	struct ctdb_rec_data *rec;
+	struct ctdb_rec_data_old *rec;
 	struct ctdb_marshall_buffer *records;
 
 	if (indata.dsize < offsetof(struct ctdb_marshall_buffer, data)) {
@@ -1211,7 +1211,7 @@ int32_t ctdb_control_receive_records(struct ctdb_context *ctdb,
 	}
 	records->db_id = ctdb_db->db_id;
 
-	rec = (struct ctdb_rec_data *)&reply->data[0];
+	rec = (struct ctdb_rec_data_old *)&reply->data[0];
 	for (i=0; i<reply->count; i++) {
 		TDB_DATA key, data;
 
@@ -1255,7 +1255,7 @@ int32_t ctdb_control_receive_records(struct ctdb_context *ctdb,
 			memcpy(old_size+(uint8_t *)records, rec, rec->length);
 		}
 
-		rec = (struct ctdb_rec_data *)(rec->length + (uint8_t *)rec);
+		rec = (struct ctdb_rec_data_old *)(rec->length + (uint8_t *)rec);
 	}
 
 	*outdata = ctdb_marshall_finish(records);

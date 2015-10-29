@@ -908,7 +908,7 @@ static void ctdb_process_delete_list(struct ctdb_db_context *ctdb_db,
 
 	for (i = 0; i < num_active_nodes; i++) {
 		struct ctdb_marshall_buffer *records;
-		struct ctdb_rec_data *rec;
+		struct ctdb_rec_data_old *rec;
 		int32_t res;
 		TDB_DATA outdata;
 
@@ -930,7 +930,7 @@ static void ctdb_process_delete_list(struct ctdb_db_context *ctdb_db,
 		 * the list to process further.
 		 */
 		records = (struct ctdb_marshall_buffer *)outdata.dptr;
-		rec = (struct ctdb_rec_data *)&records->data[0];
+		rec = (struct ctdb_rec_data_old *)&records->data[0];
 		while (records->count-- > 1) {
 			TDB_DATA reckey, recdata;
 			struct ctdb_ltdb_header *rechdr;
@@ -972,7 +972,7 @@ static void ctdb_process_delete_list(struct ctdb_db_context *ctdb_db,
 				vdata->count.delete_list.left--;
 			}
 
-			rec = (struct ctdb_rec_data *)(rec->length + (uint8_t *)rec);
+			rec = (struct ctdb_rec_data_old *)(rec->length + (uint8_t *)rec);
 		}
 	}
 
@@ -1015,7 +1015,7 @@ static void ctdb_process_delete_list(struct ctdb_db_context *ctdb_db,
 
 	for (i = 0; i < num_active_nodes; i++) {
 		struct ctdb_marshall_buffer *records;
-		struct ctdb_rec_data *rec;
+		struct ctdb_rec_data_old *rec;
 		int32_t res;
 		TDB_DATA outdata;
 
@@ -1037,7 +1037,7 @@ static void ctdb_process_delete_list(struct ctdb_db_context *ctdb_db,
 		 * the list to delete locally.
 		 */
 		records = (struct ctdb_marshall_buffer *)outdata.dptr;
-		rec = (struct ctdb_rec_data *)&records->data[0];
+		rec = (struct ctdb_rec_data_old *)&records->data[0];
 		while (records->count-- > 1) {
 			TDB_DATA reckey, recdata;
 			struct ctdb_ltdb_header *rechdr;
@@ -1079,7 +1079,7 @@ static void ctdb_process_delete_list(struct ctdb_db_context *ctdb_db,
 				vdata->count.delete_list.left--;
 			}
 
-			rec = (struct ctdb_rec_data *)(rec->length + (uint8_t *)rec);
+			rec = (struct ctdb_rec_data_old *)(rec->length + (uint8_t *)rec);
 		}
 	}
 

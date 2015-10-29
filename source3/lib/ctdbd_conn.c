@@ -1094,7 +1094,7 @@ int ctdbd_traverse(struct ctdbd_connection *master, uint32_t db_id,
 	while (True) {
 		struct ctdb_req_header *hdr = NULL;
 		struct ctdb_req_message_old *m;
-		struct ctdb_rec_data *d;
+		struct ctdb_rec_data_old *d;
 
 		ret = ctdb_read_packet(conn->fd, conn->timeout, conn, &hdr);
 		if (ret != 0) {
@@ -1111,7 +1111,7 @@ int ctdbd_traverse(struct ctdbd_connection *master, uint32_t db_id,
 		}
 
 		m = (struct ctdb_req_message_old *)hdr;
-		d = (struct ctdb_rec_data *)&m->data[0];
+		d = (struct ctdb_rec_data_old *)&m->data[0];
 		if (m->datalen < sizeof(uint32_t) || m->datalen != d->length) {
 			DEBUG(0, ("Got invalid traverse data of length %d\n",
 				  (int)m->datalen));

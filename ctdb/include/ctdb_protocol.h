@@ -612,7 +612,7 @@ struct ctdb_latency_counter {
 /*
   structure used to pass record data between the child and parent
  */
-struct ctdb_rec_data {
+struct ctdb_rec_data_old {
 	uint32_t length;
 	uint32_t reqid;
 	uint32_t keylen;

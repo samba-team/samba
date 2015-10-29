@@ -5416,7 +5416,7 @@ struct backup_data {
 static int backup_traverse(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *private)
 {
 	struct backup_data *bd = talloc_get_type(private, struct backup_data);
-	struct ctdb_rec_data *rec;
+	struct ctdb_rec_data_old *rec;
 
 	/* add the record */
 	rec = ctdb_marshall_record(bd->records, 0, key, NULL, data);
@@ -5799,7 +5799,7 @@ static int control_dumpdbbackup(struct ctdb_context *ctdb, int argc, const char 
 	int i, fh;
 	struct tm *tm;
 	char tbuf[100];
-	struct ctdb_rec_data *rec = NULL;
+	struct ctdb_rec_data_old *rec = NULL;
 	struct ctdb_marshall_buffer *m;
 	struct ctdb_dump_db_context c;
 

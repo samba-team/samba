@@ -152,17 +152,17 @@ static NTSTATUS db_ctdb_ltdb_store(struct db_ctdb_ctx *db,
 /*
   form a ctdb_rec_data record from a key/data pair
  */
-static struct ctdb_rec_data *db_ctdb_marshall_record(TALLOC_CTX *mem_ctx, uint32_t reqid,
+static struct ctdb_rec_data_old *db_ctdb_marshall_record(TALLOC_CTX *mem_ctx, uint32_t reqid,
 						  TDB_DATA key,
 						  struct ctdb_ltdb_header *header,
 						  TDB_DATA data)
 {
 	size_t length;
-	struct ctdb_rec_data *d;
+	struct ctdb_rec_data_old *d;
 
-	length = offsetof(struct ctdb_rec_data, data) + key.dsize +
+	length = offsetof(struct ctdb_rec_data_old, data) + key.dsize +
 		data.dsize + sizeof(*header);
-	d = (struct ctdb_rec_data *)talloc_size(mem_ctx, length);
+	d = (struct ctdb_rec_data_old *)talloc_size(mem_ctx, length);
 	if (d == NULL) {
 		return NULL;
 	}
@@ -187,7 +187,7 @@ static struct ctdb_marshall_buffer *db_ctdb_marshall_add(TALLOC_CTX *mem_ctx,
 					       struct ctdb_ltdb_header *header,
 					       TDB_DATA data)
 {
-	struct ctdb_rec_data *r;
+	struct ctdb_rec_data_old *r;
 	size_t m_size, r_size;
 	struct ctdb_marshall_buffer *m2 = NULL;
 
@@ -240,13 +240,13 @@ static TDB_DATA db_ctdb_marshall_finish(struct ctdb_marshall_buffer *m)
      - pass r==NULL to start
      - loop the number of times indicated by m->count
 */
-static struct ctdb_rec_data *db_ctdb_marshall_loop_next_key(
-	struct ctdb_marshall_buffer *m, struct ctdb_rec_data *r, TDB_DATA *key)
+static struct ctdb_rec_data_old *db_ctdb_marshall_loop_next_key(
+	struct ctdb_marshall_buffer *m, struct ctdb_rec_data_old *r, TDB_DATA *key)
 {
 	if (r == NULL) {
-		r = (struct ctdb_rec_data *)&m->data[0];
+		r = (struct ctdb_rec_data_old *)&m->data[0];
 	} else {
-		r = (struct ctdb_rec_data *)(r->length + (uint8_t *)r);
+		r = (struct ctdb_rec_data_old *)(r->length + (uint8_t *)r);
 	}
 
 	key->dptr   = &r->data[0];
@@ -255,7 +255,7 @@ static struct ctdb_rec_data *db_ctdb_marshall_loop_next_key(
 }
 
 static bool db_ctdb_marshall_buf_parse(
-	struct ctdb_rec_data *r, uint32_t *reqid,
+	struct ctdb_rec_data_old *r, uint32_t *reqid,
 	struct ctdb_ltdb_header **header, TDB_DATA *data)
 {
 	if (r->datalen < sizeof(struct ctdb_ltdb_header)) {
@@ -354,7 +354,7 @@ static bool parse_newest_in_marshall_buffer(
 		       TDB_DATA data, void *private_data),
 	void *private_data)
 {
-	struct ctdb_rec_data *rec = NULL;
+	struct ctdb_rec_data_old *rec = NULL;
 	struct ctdb_ltdb_header *h = NULL;
 	TDB_DATA data;
 	int i;
@@ -1390,7 +1390,7 @@ static int db_ctdb_traverse(struct db_context *db,
 			 */
 			struct db_context *newkeys = db_open_rbt(talloc_tos());
 			struct ctdb_marshall_buffer *mbuf = ctx->transaction->m_write;
-			struct ctdb_rec_data *rec=NULL;
+			struct ctdb_rec_data_old *rec=NULL;
 			int i;
 			int count = 0;
 			NTSTATUS status;

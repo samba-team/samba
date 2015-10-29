@@ -2227,7 +2227,7 @@ struct traverse_state {
 static void traverse_handler(uint64_t srvid, TDB_DATA data, void *p)
 {
 	struct traverse_state *state = (struct traverse_state *)p;
-	struct ctdb_rec_data *d = (struct ctdb_rec_data *)data.dptr;
+	struct ctdb_rec_data_old *d = (struct ctdb_rec_data_old *)data.dptr;
 	TDB_DATA key;
 
 	if (data.dsize < sizeof(uint32_t) || d->length != data.dsize) {
@@ -4842,7 +4842,7 @@ ctdb_ctrl_updaterecord_send(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, stru
 {
 	struct ctdb_client_control_state *handle;
 	struct ctdb_marshall_buffer *m;
-	struct ctdb_rec_data *rec;
+	struct ctdb_rec_data_old *rec;
 	TDB_DATA outdata;
 
 	m = talloc_zero(mem_ctx, struct ctdb_marshall_buffer);

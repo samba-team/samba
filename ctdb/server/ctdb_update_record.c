@@ -52,7 +52,7 @@ struct ctdb_persistent_write_state {
 static int ctdb_persistent_store(struct ctdb_persistent_write_state *state)
 {
 	int ret, i;
-	struct ctdb_rec_data *rec = NULL;
+	struct ctdb_rec_data_old *rec = NULL;
 	struct ctdb_marshall_buffer *m = state->m;
 
 	ret = tdb_transaction_start(state->ctdb_db->ltdb->tdb);

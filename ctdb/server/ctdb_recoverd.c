@@ -735,7 +735,7 @@ static int pull_one_remote_database(struct ctdb_context *ctdb, uint32_t srcnode,
 	int ret;
 	TDB_DATA outdata;
 	struct ctdb_marshall_buffer *reply;
-	struct ctdb_rec_data *recdata;
+	struct ctdb_rec_data_old *recdata;
 	int i;
 	TALLOC_CTX *tmp_ctx = talloc_new(recdb);
 
@@ -755,11 +755,11 @@ static int pull_one_remote_database(struct ctdb_context *ctdb, uint32_t srcnode,
 		return -1;
 	}
 
-	recdata = (struct ctdb_rec_data *)&reply->data[0];
+	recdata = (struct ctdb_rec_data_old *)&reply->data[0];
 
 	for (i=0;
 	     i<reply->count;
-	     recdata = (struct ctdb_rec_data *)(recdata->length + (uint8_t *)recdata), i++) {
+	     recdata = (struct ctdb_rec_data_old *)(recdata->length + (uint8_t *)recdata), i++) {
 		TDB_DATA key, data;
 		struct ctdb_ltdb_header *hdr;
 		TDB_DATA existing;
@@ -1021,7 +1021,7 @@ static void vacuum_fetch_callback(struct ctdb_client_call_state *state)
  */
 static bool vacuum_fetch_process_one(struct ctdb_db_context *ctdb_db,
 				     uint32_t pnn,
-				     struct ctdb_rec_data *r)
+				     struct ctdb_rec_data_old *r)
 {
 	struct ctdb_client_call_state *state;
 	TDB_DATA data;
@@ -1093,7 +1093,7 @@ static void vacuum_fetch_handler(uint64_t srvid, TDB_DATA data,
 	struct ctdb_dbid_map *dbmap=NULL;
 	bool persistent = false;
 	struct ctdb_db_context *ctdb_db;
-	struct ctdb_rec_data *r;
+	struct ctdb_rec_data_old *r;
 
 	recs = (struct ctdb_marshall_buffer *)data.dptr;
 
@@ -1132,7 +1132,7 @@ static void vacuum_fetch_handler(uint64_t srvid, TDB_DATA data,
 		goto done;
 	}
 
-	r = (struct ctdb_rec_data *)&recs->data[0];
+	r = (struct ctdb_rec_data_old *)&recs->data[0];
 	while (recs->count) {
 		bool ok;
 
@@ -1141,7 +1141,7 @@ static void vacuum_fetch_handler(uint64_t srvid, TDB_DATA data,
 			break;
 		}
 
-		r = (struct ctdb_rec_data *)(r->length + (uint8_t *)r);
+		r = (struct ctdb_rec_data_old *)(r->length + (uint8_t *)r);
 		recs->count--;
 	}
 
@@ -1363,7 +1363,7 @@ struct recdb_data {
 static int traverse_recdb(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *p)
 {
 	struct recdb_data *params = (struct recdb_data *)p;
-	struct ctdb_rec_data *recdata;
+	struct ctdb_rec_data_old *recdata;
 	struct ctdb_ltdb_header *hdr;
 
 	/*

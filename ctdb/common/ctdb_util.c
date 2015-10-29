@@ -214,11 +214,11 @@ static uint32_t ctdb_marshall_record_size(TDB_DATA key,
 					  struct ctdb_ltdb_header *header,
 					  TDB_DATA data)
 {
-	return offsetof(struct ctdb_rec_data, data) + key.dsize +
+	return offsetof(struct ctdb_rec_data_old, data) + key.dsize +
 	       data.dsize + (header ? sizeof(*header) : 0);
 }
 
-static void ctdb_marshall_record_copy(struct ctdb_rec_data *rec,
+static void ctdb_marshall_record_copy(struct ctdb_rec_data_old *rec,
 				      uint32_t reqid,
 				      TDB_DATA key,
 				      struct ctdb_ltdb_header *header,
@@ -249,17 +249,18 @@ static void ctdb_marshall_record_copy(struct ctdb_rec_data *rec,
   note that header may be NULL. If not NULL then it is included in the data portion
   of the record
  */
-struct ctdb_rec_data *ctdb_marshall_record(TALLOC_CTX *mem_ctx, uint32_t reqid,
-					   TDB_DATA key,
-					   struct ctdb_ltdb_header *header,
-					   TDB_DATA data)
+struct ctdb_rec_data_old *ctdb_marshall_record(TALLOC_CTX *mem_ctx,
+					       uint32_t reqid,
+					       TDB_DATA key,
+					       struct ctdb_ltdb_header *header,
+					       TDB_DATA data)
 {
 	size_t length;
-	struct ctdb_rec_data *d;
+	struct ctdb_rec_data_old *d;
 
 	length = ctdb_marshall_record_size(key, header, data);
 
-	d = (struct ctdb_rec_data *)talloc_size(mem_ctx, length);
+	d = (struct ctdb_rec_data_old *)talloc_size(mem_ctx, length);
 	if (d == NULL) {
 		return NULL;
 	}
@@ -278,7 +279,7 @@ struct ctdb_marshall_buffer *ctdb_marshall_add(TALLOC_CTX *mem_ctx,
 					       struct ctdb_ltdb_header *header,
 					       TDB_DATA data)
 {
-	struct ctdb_rec_data *r;
+	struct ctdb_rec_data_old *r;
 	struct ctdb_marshall_buffer *m2;
 	uint32_t length, offset;
 
@@ -300,7 +301,7 @@ struct ctdb_marshall_buffer *ctdb_marshall_add(TALLOC_CTX *mem_ctx,
 		m2->db_id = db_id;
 	}
 
-	r = (struct ctdb_rec_data *)((uint8_t *)m2 + offset);
+	r = (struct ctdb_rec_data_old *)((uint8_t *)m2 + offset);
 	ctdb_marshall_record_copy(r, reqid, key, header, data, length);
 	m2->count++;
 
@@ -322,15 +323,17 @@ TDB_DATA ctdb_marshall_finish(struct ctdb_marshall_buffer *m)
      - pass r==NULL to start
      - loop the number of times indicated by m->count
 */
-struct ctdb_rec_data *ctdb_marshall_loop_next(struct ctdb_marshall_buffer *m, struct ctdb_rec_data *r,
-					      uint32_t *reqid,
-					      struct ctdb_ltdb_header *header,
-					      TDB_DATA *key, TDB_DATA *data)
+struct ctdb_rec_data_old *ctdb_marshall_loop_next(
+				struct ctdb_marshall_buffer *m,
+				struct ctdb_rec_data_old *r,
+				uint32_t *reqid,
+				struct ctdb_ltdb_header *header,
+				TDB_DATA *key, TDB_DATA *data)
 {
 	if (r == NULL) {
-		r = (struct ctdb_rec_data *)&m->data[0];
+		r = (struct ctdb_rec_data_old *)&m->data[0];
 	} else {
-		r = (struct ctdb_rec_data *)(r->length + (uint8_t *)r);
+		r = (struct ctdb_rec_data_old *)(r->length + (uint8_t *)r);
 	}
 
 	if (reqid != NULL) {
