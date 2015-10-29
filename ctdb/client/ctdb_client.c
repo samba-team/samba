@@ -411,7 +411,7 @@ struct ctdb_client_call_state *ctdb_call_send(struct ctdb_db_context *ctdb_db,
 	TDB_DATA data;
 	int ret;
 	size_t len;
-	struct ctdb_req_call *c;
+	struct ctdb_req_call_old *c;
 
 	/* if the domain socket is not yet open, open it */
 	if (ctdb->daemon.sd==-1) {
@@ -451,8 +451,8 @@ struct ctdb_client_call_state *ctdb_call_send(struct ctdb_db_context *ctdb_db,
 		return NULL;
 	}
 
-	len = offsetof(struct ctdb_req_call, data) + call->key.dsize + call->call_data.dsize;
-	c = ctdbd_allocate_pkt(ctdb, state, CTDB_REQ_CALL, len, struct ctdb_req_call);
+	len = offsetof(struct ctdb_req_call_old, data) + call->key.dsize + call->call_data.dsize;
+	c = ctdbd_allocate_pkt(ctdb, state, CTDB_REQ_CALL, len, struct ctdb_req_call_old);
 	if (c == NULL) {
 		DEBUG(DEBUG_ERR, (__location__ " failed to allocate packet\n"));
 		return NULL;

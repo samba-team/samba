@@ -429,7 +429,7 @@ struct ctdb_req_header {
 	uint32_t reqid;
 };
 
-struct ctdb_req_call {
+struct ctdb_req_call_old {
 	struct ctdb_req_header hdr;
 	uint32_t flags;
 	uint32_t db_id;

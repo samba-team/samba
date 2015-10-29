@@ -132,7 +132,7 @@ static void ctdb_send_error(struct ctdb_context *ctdb,
 static void ctdb_call_send_redirect(struct ctdb_context *ctdb,
 				    struct ctdb_db_context *ctdb_db,
 				    TDB_DATA key,
-				    struct ctdb_req_call *c, 
+				    struct ctdb_req_call_old *c, 
 				    struct ctdb_ltdb_header *header)
 {
 	uint32_t lmaster = ctdb_lmaster(ctdb, &key);
@@ -224,7 +224,7 @@ static void ctdb_send_dmaster_reply(struct ctdb_db_context *ctdb_db,
   CTDB_REPLY_DMASTER to the new dmaster
 */
 static void ctdb_call_send_dmaster(struct ctdb_db_context *ctdb_db, 
-				   struct ctdb_req_call *c, 
+				   struct ctdb_req_call_old *c, 
 				   struct ctdb_ltdb_header *header,
 				   TDB_DATA *key, TDB_DATA *data)
 {
@@ -887,7 +887,7 @@ sort_keys:
 */
 void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 {
-	struct ctdb_req_call *c = (struct ctdb_req_call *)hdr;
+	struct ctdb_req_call_old *c = (struct ctdb_req_call_old *)hdr;
 	TDB_DATA data;
 	struct ctdb_reply_call *r;
 	int ret, len;
@@ -1501,9 +1501,9 @@ struct ctdb_call_state *ctdb_daemon_call_send_remote(struct ctdb_db_context *ctd
 	state->ctdb_db = ctdb_db;
 	talloc_set_destructor(state, ctdb_call_destructor);
 
-	len = offsetof(struct ctdb_req_call, data) + call->key.dsize + call->call_data.dsize;
+	len = offsetof(struct ctdb_req_call_old, data) + call->key.dsize + call->call_data.dsize;
 	state->c = ctdb_transport_allocate(ctdb, state, CTDB_REQ_CALL, len, 
-					   struct ctdb_req_call);
+					   struct ctdb_req_call_old);
 	CTDB_NO_MEMORY_NULL(ctdb, state->c);
 	state->c->hdr.destnode  = header->dmaster;
 
@@ -1632,7 +1632,7 @@ static int deferred_call_destructor(struct revokechild_deferred_call *deferred_c
 {
 	struct ctdb_context *ctdb = deferred_call->ctdb;
 	struct revokechild_requeue_handle *requeue_handle = talloc(ctdb, struct revokechild_requeue_handle);
-	struct ctdb_req_call *c = (struct ctdb_req_call *)deferred_call->hdr;
+	struct ctdb_req_call_old *c = (struct ctdb_req_call_old *)deferred_call->hdr;
 
 	requeue_handle->ctdb = ctdb;
 	requeue_handle->hdr  = deferred_call->hdr;

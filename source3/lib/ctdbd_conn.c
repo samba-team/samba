@@ -918,7 +918,7 @@ int ctdbd_db_attach(struct ctdbd_connection *conn,
  */
 int ctdbd_migrate(struct ctdbd_connection *conn, uint32_t db_id, TDB_DATA key)
 {
-	struct ctdb_req_call req;
+	struct ctdb_req_call_old req;
 	struct ctdb_req_header *hdr;
 	struct iovec iov[2];
 	ssize_t nwritten;
@@ -926,7 +926,7 @@ int ctdbd_migrate(struct ctdbd_connection *conn, uint32_t db_id, TDB_DATA key)
 
 	ZERO_STRUCT(req);
 
-	req.hdr.length = offsetof(struct ctdb_req_call, data) + key.dsize;
+	req.hdr.length = offsetof(struct ctdb_req_call_old, data) + key.dsize;
 	req.hdr.ctdb_magic   = CTDB_MAGIC;
 	req.hdr.ctdb_version = CTDB_PROTOCOL;
 	req.hdr.operation    = CTDB_REQ_CALL;
@@ -940,7 +940,7 @@ int ctdbd_migrate(struct ctdbd_connection *conn, uint32_t db_id, TDB_DATA key)
 	ctdb_packet_dump(&req.hdr);
 
 	iov[0].iov_base = &req;
-	iov[0].iov_len = offsetof(struct ctdb_req_call, data);
+	iov[0].iov_len = offsetof(struct ctdb_req_call_old, data);
 	iov[1].iov_base = key.dptr;
 	iov[1].iov_len = key.dsize;
 
@@ -976,7 +976,7 @@ int ctdbd_parse(struct ctdbd_connection *conn, uint32_t db_id,
 			       void *private_data),
 		void *private_data)
 {
-	struct ctdb_req_call req;
+	struct ctdb_req_call_old req;
 	struct ctdb_req_header *hdr = NULL;
 	struct ctdb_reply_call *reply;
 	struct iovec iov[2];
@@ -988,7 +988,7 @@ int ctdbd_parse(struct ctdbd_connection *conn, uint32_t db_id,
 
 	ZERO_STRUCT(req);
 
-	req.hdr.length = offsetof(struct ctdb_req_call, data) + key.dsize;
+	req.hdr.length = offsetof(struct ctdb_req_call_old, data) + key.dsize;
 	req.hdr.ctdb_magic   = CTDB_MAGIC;
 	req.hdr.ctdb_version = CTDB_PROTOCOL;
 	req.hdr.operation    = CTDB_REQ_CALL;
@@ -999,7 +999,7 @@ int ctdbd_parse(struct ctdbd_connection *conn, uint32_t db_id,
 	req.keylen           = key.dsize;
 
 	iov[0].iov_base = &req;
-	iov[0].iov_len = offsetof(struct ctdb_req_call, data);
+	iov[0].iov_len = offsetof(struct ctdb_req_call_old, data);
 	iov[1].iov_base = key.dptr;
 	iov[1].iov_len = key.dsize;
 

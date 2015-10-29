@@ -92,7 +92,7 @@ static void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t len
 	if (ctdb_validate_pnn(ctdb, hdr->srcnode)) {
 		/* as a special case, redirected calls don't increment the rx_cnt */
 		if (hdr->operation != CTDB_REQ_CALL ||
-		    ((struct ctdb_req_call *)hdr)->hopcount == 0) {
+		    ((struct ctdb_req_call_old *)hdr)->hopcount == 0) {
 			ctdb->nodes[hdr->srcnode]->rx_cnt++;
 		}
 	}

@@ -416,7 +416,7 @@ static void daemon_incoming_packet_wrap(void *p, struct ctdb_req_header *hdr)
 
 struct ctdb_deferred_fetch_call {
 	struct ctdb_deferred_fetch_call *next, *prev;
-	struct ctdb_req_call *c;
+	struct ctdb_req_call_old *c;
 	struct ctdb_daemon_packet_wrap *w;
 };
 
@@ -552,7 +552,7 @@ static int setup_deferred_fetch_locks(struct ctdb_db_context *ctdb_db, struct ct
    if it is, make this call deferred to be reprocessed later when
    the in-flight fetch completes.
 */
-static int requeue_duplicate_fetch(struct ctdb_db_context *ctdb_db, struct ctdb_client *client, TDB_DATA key, struct ctdb_req_call *c)
+static int requeue_duplicate_fetch(struct ctdb_db_context *ctdb_db, struct ctdb_client *client, TDB_DATA key, struct ctdb_req_call_old *c)
 {
 	uint32_t *k;
 	struct ctdb_deferred_fetch_queue *dfq;
@@ -601,7 +601,7 @@ static int requeue_duplicate_fetch(struct ctdb_db_context *ctdb_db, struct ctdb_
   from a local client over the unix domain socket
  */
 static void daemon_request_call_from_client(struct ctdb_client *client, 
-					    struct ctdb_req_call *c)
+					    struct ctdb_req_call_old *c)
 {
 	struct ctdb_call_state *state;
 	struct ctdb_db_context *ctdb_db;
@@ -840,7 +840,7 @@ static void daemon_incoming_packet(void *p, struct ctdb_req_header *hdr)
 	switch (hdr->operation) {
 	case CTDB_REQ_CALL:
 		CTDB_INCREMENT_STAT(ctdb, client.req_call);
-		daemon_request_call_from_client(client, (struct ctdb_req_call *)hdr);
+		daemon_request_call_from_client(client, (struct ctdb_req_call_old *)hdr);
 		break;
 
 	case CTDB_REQ_MESSAGE:
