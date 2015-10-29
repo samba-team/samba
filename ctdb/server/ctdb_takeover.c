@@ -1388,6 +1388,72 @@ static int getips_count_callback(void *param, void *data)
 	return 0;
 }
 
+static int verify_remote_ip_allocation(struct ctdb_context *ctdb,
+				       struct ctdb_public_ip_list_old *ips,
+				       uint32_t pnn);
+
+int ctdb_reload_remote_public_ips(struct ctdb_context *ctdb,
+				  struct ctdb_node_map_old *nodemap)
+{
+	int j;
+	int ret;
+
+	if (ctdb->num_nodes != nodemap->num) {
+		DEBUG(DEBUG_ERR, (__location__ " ctdb->num_nodes (%d) != nodemap->num (%d) invalid param\n",
+				  ctdb->num_nodes, nodemap->num));
+		return -1;
+	}
+
+	for (j=0; j<nodemap->num; j++) {
+		/* For readability */
+		struct ctdb_node *node = ctdb->nodes[j];
+
+		/* release any existing data */
+		TALLOC_FREE(node->known_public_ips);
+		TALLOC_FREE(node->available_public_ips);
+
+		if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
+			continue;
+		}
+
+		/* Retrieve the list of known public IPs from the node */
+		ret = ctdb_ctrl_get_public_ips_flags(ctdb,
+					TAKEOVER_TIMEOUT(),
+					node->pnn,
+					ctdb->nodes,
+					0,
+					&node->known_public_ips);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR,
+			      ("Failed to read known public IPs from node: %u\n",
+			       node->pnn));
+			return -1;
+		}
+
+		if (ctdb->do_checkpublicip) {
+			verify_remote_ip_allocation(ctdb,
+						    node->known_public_ips,
+						    node->pnn);
+		}
+
+		/* Retrieve the list of available public IPs from the node */
+		ret = ctdb_ctrl_get_public_ips_flags(ctdb,
+					TAKEOVER_TIMEOUT(),
+					node->pnn,
+					ctdb->nodes,
+					CTDB_PUBLIC_IP_FLAGS_ONLY_AVAILABLE,
+					&node->available_public_ips);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR,
+			      ("Failed to read available public IPs from node: %u\n",
+			       node->pnn));
+			return -1;
+		}
+	}
+
+	return 0;
+}
+
 static struct public_ip_list *
 create_merged_ip_list(struct ctdb_context *ctdb)
 {
@@ -4219,9 +4285,9 @@ int32_t ctdb_control_ipreallocated(struct ctdb_context *ctdb,
    node has the expected ip allocation.
    This is verified against ctdb->ip_tree
 */
-int verify_remote_ip_allocation(struct ctdb_context *ctdb,
-				struct ctdb_public_ip_list_old *ips,
-				uint32_t pnn)
+static int verify_remote_ip_allocation(struct ctdb_context *ctdb,
+				       struct ctdb_public_ip_list_old *ips,
+				       uint32_t pnn)
 {
 	struct public_ip_list *tmp_ip;
 	int i;

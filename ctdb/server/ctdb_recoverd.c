@@ -1564,68 +1564,6 @@ static int recover_database(struct ctdb_recoverd *rec,
 	return 0;
 }
 
-static int ctdb_reload_remote_public_ips(struct ctdb_context *ctdb,
-					 struct ctdb_node_map_old *nodemap)
-{
-	int j;
-	int ret;
-
-	if (ctdb->num_nodes != nodemap->num) {
-		DEBUG(DEBUG_ERR, (__location__ " ctdb->num_nodes (%d) != nodemap->num (%d) invalid param\n",
-				  ctdb->num_nodes, nodemap->num));
-		return -1;
-	}
-
-	for (j=0; j<nodemap->num; j++) {
-		/* For readability */
-		struct ctdb_node *node = ctdb->nodes[j];
-
-		/* release any existing data */
-		TALLOC_FREE(node->known_public_ips);
-		TALLOC_FREE(node->available_public_ips);
-
-		if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
-			continue;
-		}
-
-		/* Retrieve the list of known public IPs from the node */
-		ret = ctdb_ctrl_get_public_ips_flags(ctdb,
-					CONTROL_TIMEOUT(),
-					node->pnn,
-					ctdb->nodes,
-					0,
-					&node->known_public_ips);
-		if (ret != 0) {
-			DEBUG(DEBUG_ERR,
-			      ("Failed to read known public IPs from node: %u\n",
-			       node->pnn));
-			return -1;
-		}
-
-		if (ctdb->do_checkpublicip) {
-			verify_remote_ip_allocation(ctdb,
-						    node->known_public_ips,
-						    node->pnn);
-		}
-
-		/* Retrieve the list of available public IPs from the node */
-		ret = ctdb_ctrl_get_public_ips_flags(ctdb,
-					CONTROL_TIMEOUT(),
-					node->pnn,
-					ctdb->nodes,
-					CTDB_PUBLIC_IP_FLAGS_ONLY_AVAILABLE,
-					&node->available_public_ips);
-		if (ret != 0) {
-			DEBUG(DEBUG_ERR,
-			      ("Failed to read available public IPs from node: %u\n",
-			       node->pnn));
-			return -1;
-		}
-	}
-
-	return 0;
-}
-
 /* when we start a recovery, make sure all nodes use the same reclock file
    setting
 */

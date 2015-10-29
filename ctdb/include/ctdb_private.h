@@ -961,6 +961,8 @@ int ctdb_set_public_addresses(struct ctdb_context *ctdb, bool check_addresses);
 int ctdb_set_single_public_ip(struct ctdb_context *ctdb, const char *iface,
 			      const char *ip);
 
+int ctdb_reload_remote_public_ips(struct ctdb_context *ctdb,
+				  struct ctdb_node_map_old *nodemap);
 int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map_old *nodemap,
 		      uint32_t *force_rebalance_nodes,
 		      client_async_callback fail_callback, void *callback_data);
@@ -1007,9 +1009,6 @@ int32_t ctdb_control_del_public_address(struct ctdb_context *ctdb,
 					struct ctdb_req_control_old *c,
 					TDB_DATA recdata, bool *async_reply);
 
-int verify_remote_ip_allocation(struct ctdb_context *ctdb,
-				struct ctdb_public_ip_list_old *ips,
-				uint32_t pnn);
 int update_ip_assignment_tree(struct ctdb_context *ctdb,
 				struct ctdb_public_ip *ip);
 void clear_ip_assignment_tree(struct ctdb_context *ctdb);
