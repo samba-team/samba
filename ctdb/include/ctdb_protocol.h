@@ -501,7 +501,7 @@ struct ctdb_reply_control_old {
 	uint8_t data[1];
 };
 
-struct ctdb_req_keepalive {
+struct ctdb_req_keepalive_old {
 	struct ctdb_req_header hdr;
 };
 
