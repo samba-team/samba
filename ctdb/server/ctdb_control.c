@@ -441,7 +441,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 	case CTDB_CONTROL_UPDATE_RECORD:
 		return ctdb_control_update_record(ctdb, c, indata, async_reply);
 
-	case CTDB_CONTROL_SEND_GRATIOUS_ARP:
+	case CTDB_CONTROL_SEND_GRATUITOUS_ARP:
 		return ctdb_control_send_gratious_arp(ctdb, indata);
 
 	case CTDB_CONTROL_TRANSACTION_START:

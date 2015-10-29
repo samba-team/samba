@@ -304,23 +304,6 @@ static int ctdb_traverse_all_destructor(struct ctdb_traverse_all_handle *state)
 	return 0;
 }
 
-struct ctdb_traverse_all {
-	uint32_t db_id;
-	uint32_t reqid;
-	uint32_t pnn;
-	uint32_t client_reqid;
-	uint64_t srvid;
-};
-
-struct ctdb_traverse_all_ext {
-	uint32_t db_id;
-	uint32_t reqid;
-	uint32_t pnn;
-	uint32_t client_reqid;
-	uint64_t srvid;
-	bool withemptyrecords;
-};
-
 /* called when a traverse times out */
 static void ctdb_traverse_all_timeout(struct tevent_context *ev,
 				      struct tevent_timer *te,

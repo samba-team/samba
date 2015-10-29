@@ -2458,7 +2458,7 @@ static int send_election_request(struct ctdb_recoverd *rec, uint32_t pnn)
 	uint64_t srvid;
 	struct ctdb_context *ctdb = rec->ctdb;
 
-	srvid = CTDB_SRVID_RECOVERY;
+	srvid = CTDB_SRVID_ELECTION;
 
 	ctdb_election_data(rec, &emsg);
 
@@ -4152,7 +4152,7 @@ static void monitor_cluster(struct ctdb_context *ctdb)
 	ctdb_client_set_message_handler(ctdb, CTDB_SRVID_MEM_DUMP, mem_dump_handler, rec);
 
 	/* register a message port for recovery elections */
-	ctdb_client_set_message_handler(ctdb, CTDB_SRVID_RECOVERY, election_handler, rec);
+	ctdb_client_set_message_handler(ctdb, CTDB_SRVID_ELECTION, election_handler, rec);
 
 	/* when nodes are disabled/enabled */
 	ctdb_client_set_message_handler(ctdb, CTDB_SRVID_SET_NODE_FLAGS, monitor_handler, rec);

@@ -3157,7 +3157,7 @@ int ctdb_ctrl_gratious_arp(struct ctdb_context *ctdb,
 	data.dsize = offsetof(struct ctdb_addr_info_old, iface) + len;
 	data.dptr  = (unsigned char *)gratious_arp;
 
-	ret = ctdb_control(ctdb, destnode, 0, CTDB_CONTROL_SEND_GRATIOUS_ARP, 0, data, NULL,
+	ret = ctdb_control(ctdb, destnode, 0, CTDB_CONTROL_SEND_GRATUITOUS_ARP, 0, data, NULL,
 			   NULL, &res, &timeout, NULL);
 	if (ret != 0 || res != 0) {
 		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for gratious_arp failed\n"));
@@ -3822,13 +3822,6 @@ bool ctdb_node_has_capabilities(struct ctdb_node_capabilities *caps,
 }
 
 
-struct ctdb_server_id {
-	uint64_t pid;
-	uint32_t task_id;
-	uint32_t vnn;
-	uint64_t unique_id;
-};
-
 static struct ctdb_server_id server_id_fetch(struct ctdb_context *ctdb, uint32_t reqid)
 {
 	struct ctdb_server_id id;
@@ -3889,22 +3882,6 @@ static bool server_id_exists(struct ctdb_context *ctdb, struct ctdb_server_id *i
 
 	return false;
 }
-
-
-enum ctdb_g_lock_type {
-	CTDB_G_LOCK_READ = 0,
-	CTDB_G_LOCK_WRITE = 1,
-};
-
-struct ctdb_g_lock {
-	enum ctdb_g_lock_type type;
-	struct ctdb_server_id sid;
-};
-
-struct ctdb_g_lock_list {
-	unsigned int num;
-	struct ctdb_g_lock *lock;
-};
 
 static bool g_lock_parse(TALLOC_CTX *mem_ctx, TDB_DATA data,
 			 struct ctdb_g_lock_list **locks)
