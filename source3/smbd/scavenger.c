@@ -26,7 +26,7 @@
 #include "smbd/scavenger.h"
 #include "locking/proto.h"
 #include "lib/util/util_process.h"
-#include "lib/util/sys_rw.h"
+#include "lib/util/sys_rw_data.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_SCAVENGER
@@ -144,21 +144,17 @@ static int smbd_scavenger_server_id_destructor(struct server_id *id)
 
 static bool scavenger_say_hello(int fd, struct server_id self)
 {
-	const uint8_t *msg = (const uint8_t *)&self;
-	size_t remaining = sizeof(self);
-	size_t ofs = 0;
+	ssize_t ret;
 	struct server_id_buf tmp;
 
-	while (remaining > 0) {
-		ssize_t ret;
-
-		ret = sys_write(fd, msg + ofs, remaining);
-		if (ret == -1) {
-			DEBUG(2, ("Failed to write to pipe: %s\n",
-				  strerror(errno)));
-			return false;
-		}
-		remaining -= ret;
+	ret = write_data(fd, &self, sizeof(self));
+	if (ret == -1) {
+		DEBUG(2, ("Failed to write to pipe: %s\n", strerror(errno)));
+		return false;
+	}
+	if (ret < sizeof(self)) {
+		DBG_WARNING("Could not write serverid\n");
+		return false;
 	}
 
 	DEBUG(4, ("scavenger_say_hello: self[%s]\n",
@@ -168,21 +164,18 @@ static bool scavenger_say_hello(int fd, struct server_id self)
 
 static bool scavenger_wait_hello(int fd, struct server_id *child)
 {
-	uint8_t *msg = (uint8_t *)child;
-	size_t remaining = sizeof(*child);
-	size_t ofs = 0;
 	struct server_id_buf tmp;
+	ssize_t ret;
 
-	while (remaining > 0) {
-		ssize_t ret;
-
-		ret = sys_read(fd, msg + ofs, remaining);
-		if (ret == -1) {
-			DEBUG(2, ("Failed to read from pipe: %s\n",
-				  strerror(errno)));
-			return false;
-		}
-		remaining -= ret;
+	ret = read_data(fd, child, sizeof(struct server_id));
+	if (ret == -1) {
+		DEBUG(2, ("Failed to read from pipe: %s\n",
+			  strerror(errno)));
+		return false;
+	}
+	if (ret < sizeof(struct server_id)) {
+		DBG_WARNING("Could not read serverid\n");
+		return false;
 	}
 
 	DEBUG(4, ("scavenger_say_hello: child[%s]\n",
