@@ -82,20 +82,16 @@ class SimpleSitesTests(SitesBaseTests):
     def test_create_and_delete(self):
         """test creation and deletion of 1 site"""
 
-        self.ldb.transaction_start()
         sites.create_site(self.ldb, self.ldb.get_config_basedn(),
                           "testsamba")
-        self.ldb.transaction_commit()
 
         self.assertRaises(sites.SiteAlreadyExistsException,
                           sites.create_site, self.ldb,
                           self.ldb.get_config_basedn(),
                           "testsamba")
 
-        self.ldb.transaction_start()
         sites.delete_site(self.ldb, self.ldb.get_config_basedn(),
                           "testsamba")
-        self.ldb.transaction_commit()
 
         self.assertRaises(sites.SiteNotFoundException,
                           sites.delete_site, self.ldb,
