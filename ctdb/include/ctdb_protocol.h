@@ -473,7 +473,7 @@ struct ctdb_reply_dmaster_old {
 	uint8_t  data[1];
 };
 
-struct ctdb_req_message {
+struct ctdb_req_message_old {
 	struct ctdb_req_header hdr;
 	uint64_t srvid;
 	uint32_t datalen;

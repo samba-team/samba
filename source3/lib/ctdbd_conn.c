@@ -135,18 +135,18 @@ int register_with_ctdbd(struct ctdbd_connection *conn, uint64_t srvid,
 }
 
 static int ctdbd_msg_call_back(struct ctdbd_connection *conn,
-			       struct ctdb_req_message *msg)
+			       struct ctdb_req_message_old *msg)
 {
 	size_t msg_len;
 	size_t i, num_callbacks;
 
 	msg_len = msg->hdr.length;
-	if (msg_len < offsetof(struct ctdb_req_message, data)) {
+	if (msg_len < offsetof(struct ctdb_req_message_old, data)) {
 		DEBUG(10, ("%s: len %u too small\n", __func__,
 			   (unsigned)msg_len));
 		return 0;
 	}
-	msg_len -= offsetof(struct ctdb_req_message, data);
+	msg_len -= offsetof(struct ctdb_req_message_old, data);
 
 	if (msg_len < msg->datalen) {
 		DEBUG(10, ("%s: msg_len=%u < msg->datalen=%u\n", __func__,
@@ -370,7 +370,7 @@ static int ctdb_read_req(struct ctdbd_connection *conn, uint32_t reqid,
 	ctdb_packet_dump(hdr);
 
 	if (hdr->operation == CTDB_REQ_MESSAGE) {
-		struct ctdb_req_message *msg = (struct ctdb_req_message *)hdr;
+		struct ctdb_req_message_old *msg = (struct ctdb_req_message_old *)hdr;
 
 		if (conn->msg_ctx == NULL) {
 			DEBUG(1, ("Got a message without having a msg ctx, "
@@ -526,7 +526,7 @@ int ctdbd_conn_get_fd(struct ctdbd_connection *conn)
 static int ctdb_handle_message(struct ctdbd_connection *conn,
 			       struct ctdb_req_header *hdr)
 {
-	struct ctdb_req_message *msg;
+	struct ctdb_req_message_old *msg;
 
 	if (hdr->operation != CTDB_REQ_MESSAGE) {
 		DEBUG(0, ("Received async msg of type %u, discarding\n",
@@ -534,7 +534,7 @@ static int ctdb_handle_message(struct ctdbd_connection *conn,
 		return EINVAL;
 	}
 
-	msg = (struct ctdb_req_message *)hdr;
+	msg = (struct ctdb_req_message_old *)hdr;
 
 	ctdbd_msg_call_back(conn, msg);
 
@@ -598,12 +598,12 @@ int ctdbd_messaging_send_iov(struct ctdbd_connection *conn,
 			     uint32_t dst_vnn, uint64_t dst_srvid,
 			     const struct iovec *iov, int iovlen)
 {
-	struct ctdb_req_message r;
+	struct ctdb_req_message_old r;
 	struct iovec iov2[iovlen+1];
 	size_t buflen = iov_buflen(iov, iovlen);
 	ssize_t nwritten;
 
-	r.hdr.length = offsetof(struct ctdb_req_message, data) + buflen;
+	r.hdr.length = offsetof(struct ctdb_req_message_old, data) + buflen;
 	r.hdr.ctdb_magic = CTDB_MAGIC;
 	r.hdr.ctdb_version = CTDB_PROTOCOL;
 	r.hdr.generation = 1;
@@ -618,7 +618,7 @@ int ctdbd_messaging_send_iov(struct ctdbd_connection *conn,
 	ctdb_packet_dump(&r.hdr);
 
 	iov2[0].iov_base = &r;
-	iov2[0].iov_len = offsetof(struct ctdb_req_message, data);
+	iov2[0].iov_len = offsetof(struct ctdb_req_message_old, data);
 	memcpy(&iov2[1], iov, iovlen * sizeof(struct iovec));
 
 	nwritten = write_data_iov(conn->fd, iov2, iovlen+1);
@@ -1093,7 +1093,7 @@ int ctdbd_traverse(struct ctdbd_connection *master, uint32_t db_id,
 
 	while (True) {
 		struct ctdb_req_header *hdr = NULL;
-		struct ctdb_req_message *m;
+		struct ctdb_req_message_old *m;
 		struct ctdb_rec_data *d;
 
 		ret = ctdb_read_packet(conn->fd, conn->timeout, conn, &hdr);
@@ -1110,7 +1110,7 @@ int ctdbd_traverse(struct ctdbd_connection *master, uint32_t db_id,
 			return EIO;
 		}
 
-		m = (struct ctdb_req_message *)hdr;
+		m = (struct ctdb_req_message_old *)hdr;
 		d = (struct ctdb_rec_data *)&m->data[0];
 		if (m->datalen < sizeof(uint32_t) || m->datalen != d->length) {
 			DEBUG(0, ("Got invalid traverse data of length %d\n",

@@ -84,7 +84,7 @@ int ctdbd_control_local(struct ctdbd_connection *conn, uint32_t opcode,
 int ctdb_watch_us(struct ctdbd_connection *conn);
 int ctdb_unwatch(struct ctdbd_connection *conn);
 
-struct ctdb_req_message;
+struct ctdb_req_message_old;
 
 int register_with_ctdbd(struct ctdbd_connection *conn, uint64_t srvid,
 			int (*cb)(uint32_t src_vnn, uint32_t dst_vnn,

@@ -145,13 +145,13 @@ static void daemon_message_handler(uint64_t srvid, TDB_DATA data,
 				   void *private_data)
 {
 	struct ctdb_client *client = talloc_get_type(private_data, struct ctdb_client);
-	struct ctdb_req_message *r;
+	struct ctdb_req_message_old *r;
 	int len;
 
 	/* construct a message to send to the client containing the data */
-	len = offsetof(struct ctdb_req_message, data) + data.dsize;
+	len = offsetof(struct ctdb_req_message_old, data) + data.dsize;
 	r = ctdbd_allocate_pkt(client->ctdb, client->ctdb, CTDB_REQ_MESSAGE,
-			       len, struct ctdb_req_message);
+			       len, struct ctdb_req_message_old);
 	CTDB_NO_MEMORY_VOID(client->ctdb, r);
 
 	talloc_set_name_const(r, "req_message packet");
@@ -273,7 +273,7 @@ static int ctdb_client_destructor(struct ctdb_client *client)
   from a local client over the unix domain socket
  */
 static void daemon_request_message_from_client(struct ctdb_client *client, 
-					       struct ctdb_req_message *c)
+					       struct ctdb_req_message_old *c)
 {
 	TDB_DATA data;
 	int res;
@@ -845,7 +845,7 @@ static void daemon_incoming_packet(void *p, struct ctdb_req_header *hdr)
 
 	case CTDB_REQ_MESSAGE:
 		CTDB_INCREMENT_STAT(ctdb, client.req_message);
-		daemon_request_message_from_client(client, (struct ctdb_req_message *)hdr);
+		daemon_request_message_from_client(client, (struct ctdb_req_message_old *)hdr);
 		break;
 
 	case CTDB_REQ_CONTROL:
@@ -1616,7 +1616,7 @@ static int ctdb_local_message(struct ctdb_context *ctdb, uint64_t srvid, TDB_DAT
 int ctdb_daemon_send_message(struct ctdb_context *ctdb, uint32_t pnn,
 			     uint64_t srvid, TDB_DATA data)
 {
-	struct ctdb_req_message *r;
+	struct ctdb_req_message_old *r;
 	int len;
 
 	if (ctdb->methods == NULL) {
@@ -1629,9 +1629,9 @@ int ctdb_daemon_send_message(struct ctdb_context *ctdb, uint32_t pnn,
 		return ctdb_local_message(ctdb, srvid, data);
 	}
 
-	len = offsetof(struct ctdb_req_message, data) + data.dsize;
+	len = offsetof(struct ctdb_req_message_old, data) + data.dsize;
 	r = ctdb_transport_allocate(ctdb, ctdb, CTDB_REQ_MESSAGE, len,
-				    struct ctdb_req_message);
+				    struct ctdb_req_message_old);
 	CTDB_NO_MEMORY(ctdb, r);
 
 	r->hdr.destnode  = pnn;

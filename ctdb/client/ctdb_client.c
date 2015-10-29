@@ -195,7 +195,7 @@ static void ctdb_client_reply_call(struct ctdb_context *ctdb, struct ctdb_req_he
 void ctdb_request_message(struct ctdb_context *ctdb,
 			  struct ctdb_req_header *hdr)
 {
-	struct ctdb_req_message *c = (struct ctdb_req_message *)hdr;
+	struct ctdb_req_message_old *c = (struct ctdb_req_message_old *)hdr;
 	TDB_DATA data;
 
 	data.dsize = c->datalen;
@@ -589,12 +589,12 @@ int ctdb_client_check_message_handlers(struct ctdb_context *ctdb, uint64_t *ids,
 int ctdb_client_send_message(struct ctdb_context *ctdb, uint32_t pnn,
 		      uint64_t srvid, TDB_DATA data)
 {
-	struct ctdb_req_message *r;
+	struct ctdb_req_message_old *r;
 	int len, res;
 
-	len = offsetof(struct ctdb_req_message, data) + data.dsize;
+	len = offsetof(struct ctdb_req_message_old, data) + data.dsize;
 	r = ctdbd_allocate_pkt(ctdb, ctdb, CTDB_REQ_MESSAGE, 
-			       len, struct ctdb_req_message);
+			       len, struct ctdb_req_message_old);
 	CTDB_NO_MEMORY(ctdb, r);
 
 	r->hdr.destnode  = pnn;

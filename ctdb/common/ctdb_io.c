@@ -365,7 +365,7 @@ int ctdb_queue_send(struct ctdb_queue *queue, uint8_t *data, uint32_t length)
 			break;
 		}
 		case CTDB_REQ_MESSAGE: {
-			struct ctdb_req_message *m = (struct ctdb_req_message *)hdr;
+			struct ctdb_req_message_old *m = (struct ctdb_req_message_old *)hdr;
 			talloc_set_name(pkt, "ctdb_queue_pkt: %s message srvid=%llu datalen=%u",
 					queue->name, (unsigned long long)m->srvid, (unsigned)m->datalen);
 			break;
