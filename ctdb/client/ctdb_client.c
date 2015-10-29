@@ -3822,16 +3822,16 @@ bool ctdb_node_has_capabilities(struct ctdb_node_capabilities *caps,
 }
 
 
-struct server_id {
+struct ctdb_server_id {
 	uint64_t pid;
 	uint32_t task_id;
 	uint32_t vnn;
 	uint64_t unique_id;
 };
 
-static struct server_id server_id_fetch(struct ctdb_context *ctdb, uint32_t reqid)
+static struct ctdb_server_id server_id_fetch(struct ctdb_context *ctdb, uint32_t reqid)
 {
-	struct server_id id;
+	struct ctdb_server_id id;
 
 	id.pid = getpid();
 	id.task_id = reqid;
@@ -3845,7 +3845,7 @@ static struct server_id server_id_fetch(struct ctdb_context *ctdb, uint32_t reqi
 /* This is basically a copy from Samba's server_id.*.  However, a
  * dependency chain stops us from using Samba's version, so use a
  * renamed copy until a better solution is found. */
-static bool ctdb_server_id_equal(struct server_id *id1, struct server_id *id2)
+static bool ctdb_server_id_equal(struct ctdb_server_id *id1, struct ctdb_server_id *id2)
 {
 	if (id1->pid != id2->pid) {
 		return false;
@@ -3866,7 +3866,7 @@ static bool ctdb_server_id_equal(struct server_id *id1, struct server_id *id2)
 	return true;
 }
 
-static bool server_id_exists(struct ctdb_context *ctdb, struct server_id *id)
+static bool server_id_exists(struct ctdb_context *ctdb, struct ctdb_server_id *id)
 {
 	struct ctdb_client_id sid;
 	int ret;
@@ -3891,27 +3891,27 @@ static bool server_id_exists(struct ctdb_context *ctdb, struct server_id *id)
 }
 
 
-enum g_lock_type {
+enum ctdb_g_lock_type {
 	G_LOCK_READ = 0,
 	G_LOCK_WRITE = 1,
 };
 
-struct g_lock_rec {
-	enum g_lock_type type;
-	struct server_id id;
+struct ctdb_g_lock {
+	enum ctdb_g_lock_type type;
+	struct ctdb_server_id sid;
 };
 
-struct g_lock_recs {
+struct ctdb_g_lock_list {
 	unsigned int num;
-	struct g_lock_rec *lock;
+	struct ctdb_g_lock *lock;
 };
 
 static bool g_lock_parse(TALLOC_CTX *mem_ctx, TDB_DATA data,
-			 struct g_lock_recs **locks)
+			 struct ctdb_g_lock_list **locks)
 {
-	struct g_lock_recs *recs;
+	struct ctdb_g_lock_list *recs;
 
-	recs = talloc_zero(mem_ctx, struct g_lock_recs);
+	recs = talloc_zero(mem_ctx, struct ctdb_g_lock_list);
 	if (recs == NULL) {
 		return false;
 	}
@@ -3920,14 +3920,14 @@ static bool g_lock_parse(TALLOC_CTX *mem_ctx, TDB_DATA data,
 		goto done;
 	}
 
-	if (data.dsize % sizeof(struct g_lock_rec) != 0) {
+	if (data.dsize % sizeof(struct ctdb_g_lock) != 0) {
 		DEBUG(DEBUG_ERR, (__location__ "invalid data size %lu in g_lock record\n",
 				  (unsigned long)data.dsize));
 		talloc_free(recs);
 		return false;
 	}
 
-	recs->num = data.dsize / sizeof(struct g_lock_rec);
+	recs->num = data.dsize / sizeof(struct ctdb_g_lock);
 	recs->lock = talloc_memdup(mem_ctx, data.dptr, data.dsize);
 	if (recs->lock == NULL) {
 		talloc_free(recs);
@@ -3949,8 +3949,8 @@ static bool g_lock_lock(TALLOC_CTX *mem_ctx,
 {
 	TDB_DATA key, data;
 	struct ctdb_record_handle *h;
-	struct g_lock_recs *locks;
-	struct server_id id;
+	struct ctdb_g_lock_list *locks;
+	struct ctdb_server_id id;
 	struct timeval t_start;
 	int i;
 
@@ -3983,13 +3983,13 @@ again:
 
 	i = 0;
 	while (i < locks->num) {
-		if (ctdb_server_id_equal(&locks->lock[i].id, &id)) {
+		if (ctdb_server_id_equal(&locks->lock[i].sid, &id)) {
 			/* Internal error */
 			talloc_free(h);
 			return false;
 		}
 
-		if (!server_id_exists(ctdb_db->ctdb, &locks->lock[i].id)) {
+		if (!server_id_exists(ctdb_db->ctdb, &locks->lock[i].sid)) {
 			if (i < locks->num-1) {
 				locks->lock[i] = locks->lock[locks->num-1];
 			}
@@ -4007,19 +4007,19 @@ again:
 		goto again;
 	}
 
-	locks->lock = talloc_realloc(locks, locks->lock, struct g_lock_rec,
+	locks->lock = talloc_realloc(locks, locks->lock, struct ctdb_g_lock,
 				     locks->num+1);
 	if (locks->lock == NULL) {
 		talloc_free(h);
 		return false;
 	}
 
-	locks->lock[locks->num].type = G_LOCK_WRITE;
-	locks->lock[locks->num].id = id;
+	locks->lock[locks->num].type = CTDB_G_LOCK_WRITE;
+	locks->lock[locks->num].sid = id;
 	locks->num++;
 
 	data.dptr = (uint8_t *)locks->lock;
-	data.dsize = locks->num * sizeof(struct g_lock_rec);
+	data.dsize = locks->num * sizeof(struct ctdb_g_lock);
 
 	if (ctdb_record_store(h, data) != 0) {
 		DEBUG(DEBUG_ERR, ("g_lock: failed to write transaction lock for "
@@ -4047,8 +4047,8 @@ static bool g_lock_unlock(TALLOC_CTX *mem_ctx,
 {
 	TDB_DATA key, data;
 	struct ctdb_record_handle *h;
-	struct g_lock_recs *locks;
-	struct server_id id;
+	struct ctdb_g_lock_list *locks;
+	struct ctdb_server_id id;
 	int i;
 	bool found = false;
 
@@ -4071,7 +4071,7 @@ static bool g_lock_unlock(TALLOC_CTX *mem_ctx,
 	id = server_id_fetch(ctdb_db->ctdb, reqid);
 
 	for (i=0; i<locks->num; i++) {
-		if (ctdb_server_id_equal(&locks->lock[i].id, &id)) {
+		if (ctdb_server_id_equal(&locks->lock[i].sid, &id)) {
 			if (i < locks->num-1) {
 				locks->lock[i] = locks->lock[locks->num-1];
 			}
@@ -4088,7 +4088,7 @@ static bool g_lock_unlock(TALLOC_CTX *mem_ctx,
 	}
 
 	data.dptr = (uint8_t *)locks->lock;
-	data.dsize = locks->num * sizeof(struct g_lock_rec);
+	data.dsize = locks->num * sizeof(struct ctdb_g_lock);
 
 	if (ctdb_record_store(h, data) != 0) {
 		talloc_free(h);
