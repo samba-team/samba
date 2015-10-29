@@ -228,7 +228,7 @@ static void ctdb_call_send_dmaster(struct ctdb_db_context *ctdb_db,
 				   struct ctdb_ltdb_header *header,
 				   TDB_DATA *key, TDB_DATA *data)
 {
-	struct ctdb_req_dmaster *r;
+	struct ctdb_req_dmaster_old *r;
 	struct ctdb_context *ctdb = ctdb_db->ctdb;
 	int len;
 	uint32_t lmaster = ctdb_lmaster(ctdb, key);
@@ -248,10 +248,10 @@ static void ctdb_call_send_dmaster(struct ctdb_db_context *ctdb_db,
 		return;
 	}
 	
-	len = offsetof(struct ctdb_req_dmaster, data) + key->dsize + data->dsize
+	len = offsetof(struct ctdb_req_dmaster_old, data) + key->dsize + data->dsize
 			+ sizeof(uint32_t);
 	r = ctdb_transport_allocate(ctdb, ctdb, CTDB_REQ_DMASTER, len, 
-				    struct ctdb_req_dmaster);
+				    struct ctdb_req_dmaster_old);
 	CTDB_NO_MEMORY_FATAL(ctdb, r);
 	r->hdr.destnode  = lmaster;
 	r->hdr.reqid     = c->hdr.reqid;
@@ -577,7 +577,7 @@ static int dmaster_defer_add(struct ctdb_db_context *ctdb_db,
 */
 void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 {
-	struct ctdb_req_dmaster *c = (struct ctdb_req_dmaster *)hdr;
+	struct ctdb_req_dmaster_old *c = (struct ctdb_req_dmaster_old *)hdr;
 	TDB_DATA key, data, data2;
 	struct ctdb_ltdb_header header;
 	struct ctdb_db_context *ctdb_db;
@@ -606,7 +606,7 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 	key.dsize = c->keylen;
 	data.dptr = c->data + c->keylen;
 	data.dsize = c->datalen;
-	len = offsetof(struct ctdb_req_dmaster, data) + key.dsize + data.dsize
+	len = offsetof(struct ctdb_req_dmaster_old, data) + key.dsize + data.dsize
 			+ sizeof(uint32_t);
 	if (len <= c->hdr.length) {
 		memcpy(&record_flags, &c->data[c->keylen + c->datalen],
