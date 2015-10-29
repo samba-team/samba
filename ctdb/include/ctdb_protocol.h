@@ -464,7 +464,7 @@ struct ctdb_req_dmaster_old {
 	uint8_t  data[1];
 };
 
-struct ctdb_reply_dmaster {
+struct ctdb_reply_dmaster_old {
 	struct ctdb_req_header hdr;
 	uint32_t db_id;
 	uint64_t rsn;

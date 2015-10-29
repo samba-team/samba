@@ -169,7 +169,7 @@ static void ctdb_send_dmaster_reply(struct ctdb_db_context *ctdb_db,
 				    uint32_t reqid)
 {
 	struct ctdb_context *ctdb = ctdb_db->ctdb;
-	struct ctdb_reply_dmaster *r;
+	struct ctdb_reply_dmaster_old *r;
 	int ret, len;
 	TALLOC_CTX *tmp_ctx;
 
@@ -195,9 +195,9 @@ static void ctdb_send_dmaster_reply(struct ctdb_db_context *ctdb_db,
 	tmp_ctx = talloc_new(ctdb);
 
 	/* send the CTDB_REPLY_DMASTER */
-	len = offsetof(struct ctdb_reply_dmaster, data) + key.dsize + data.dsize + sizeof(uint32_t);
+	len = offsetof(struct ctdb_reply_dmaster_old, data) + key.dsize + data.dsize + sizeof(uint32_t);
 	r = ctdb_transport_allocate(ctdb, tmp_ctx, CTDB_REPLY_DMASTER, len,
-				    struct ctdb_reply_dmaster);
+				    struct ctdb_reply_dmaster_old);
 	CTDB_NO_MEMORY_FATAL(ctdb, r);
 
 	r->hdr.destnode  = new_dmaster;
@@ -1283,7 +1283,7 @@ finished_ro:
  */
 void ctdb_reply_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 {
-	struct ctdb_reply_dmaster *c = (struct ctdb_reply_dmaster *)hdr;
+	struct ctdb_reply_dmaster_old *c = (struct ctdb_reply_dmaster_old *)hdr;
 	struct ctdb_db_context *ctdb_db;
 	TDB_DATA key, data;
 	uint32_t record_flags = 0;
@@ -1309,7 +1309,7 @@ void ctdb_reply_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	key.dsize = c->keylen;
 	data.dptr = &c->data[key.dsize];
 	data.dsize = c->datalen;
-	len = offsetof(struct ctdb_reply_dmaster, data) + key.dsize + data.dsize
+	len = offsetof(struct ctdb_reply_dmaster_old, data) + key.dsize + data.dsize
 		+ sizeof(uint32_t);
 	if (len <= c->hdr.length) {
 		memcpy(&record_flags, &c->data[c->keylen + c->datalen],
