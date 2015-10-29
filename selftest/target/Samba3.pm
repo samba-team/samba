@@ -1094,6 +1094,15 @@ sub provision($$$$$$$$)
 	my $manglenames_shrdir="$shrdir/manglenames";
 	push(@dirs,$manglenames_shrdir);
 
+	my $shadow_tstdir="$shrdir/shadow";
+	push(@dirs,$shadow_tstdir);
+	my $shadow_mntdir="$shadow_tstdir/mount";
+	push(@dirs,$shadow_mntdir);
+	my $shadow_basedir="$shadow_mntdir/base";
+	push(@dirs,$shadow_basedir);
+	my $shadow_shrdir="$shadow_basedir/share";
+	push(@dirs,$shadow_shrdir);
+
 	# this gets autocreated by winbindd
 	my $wbsockdir="$prefix_abs/winbindd";
 	my $wbsockprivdir="$lockdir/winbindd_privileged";
@@ -1338,6 +1347,10 @@ sub provision($$$$$$$$)
 	# fruit:copyfile is a global option
 	fruit:copyfile = yes
 
+	#this does not mean that we use non-secure test env,
+	#it just means we ALLOW one to be configured.
+	allow insecure wide links = yes
+
 	# Begin extra options
 	$extra_options
 	# End extra options
@@ -1494,6 +1507,62 @@ sub provision($$$$$$$$)
 	shell_snap:delete command = $fake_snap_pl --delete
 	# a relative path here fails, the snapshot dir is no longer found
 	shadow:snapdir = $shrdir/.snapshots
+
+[shadow1]
+	path = $shadow_shrdir
+	comment = previous versions snapshots under mount point
+	vfs objects = shadow_copy2
+	shadow:mountpoint = $shadow_mntdir
+
+[shadow2]
+	path = $shadow_shrdir
+	comment = previous versions snapshots outside mount point
+	vfs objects = shadow_copy2
+	shadow:mountpoint = $shadow_mntdir
+	shadow:snapdir = $shadow_tstdir/.snapshots
+
+[shadow3]
+	path = $shadow_shrdir
+	comment = previous versions with subvolume snapshots, snapshots under base dir
+	vfs objects = shadow_copy2
+	shadow:mountpoint = $shadow_mntdir
+	shadow:basedir = $shadow_basedir
+	shadow:snapdir = $shadow_basedir/.snapshots
+
+[shadow4]
+	path = $shadow_shrdir
+	comment = previous versions with subvolume snapshots, snapshots outside mount point
+	vfs objects = shadow_copy2
+	shadow:mountpoint = $shadow_mntdir
+	shadow:basedir = $shadow_basedir
+	shadow:snapdir = $shadow_tstdir/.snapshots
+
+[shadow5]
+	path = $shadow_shrdir
+	comment = previous versions at volume root snapshots under mount point
+	vfs objects = shadow_copy2
+	shadow:mountpoint = $shadow_shrdir
+
+[shadow6]
+	path = $shadow_shrdir
+	comment = previous versions at volume root snapshots outside mount point
+	vfs objects = shadow_copy2
+	shadow:mountpoint = $shadow_shrdir
+	shadow:snapdir = $shadow_tstdir/.snapshots
+
+[shadow7]
+	path = $shadow_shrdir
+	comment = previous versions snapshots everywhere
+	vfs objects = shadow_copy2
+	shadow:mountpoint = $shadow_mntdir
+	shadow:snapdirseverywhere = yes
+
+[shadow_wl]
+	path = $shadow_shrdir
+	comment = previous versions with wide links allowed
+	vfs objects = shadow_copy2
+	shadow:mountpoint = $shadow_mntdir
+	wide links = yes
 	";
 	close(CONF);
 
