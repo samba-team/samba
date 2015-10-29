@@ -565,7 +565,7 @@ static int set_recovery_master(struct ctdb_context *ctdb, struct ctdb_node_map_o
 */
 static int update_db_priority_on_remote_nodes(struct ctdb_context *ctdb,
 	struct ctdb_node_map_old *nodemap, 
-	uint32_t pnn, struct ctdb_dbid_map *dbmap, TALLOC_CTX *mem_ctx)
+	uint32_t pnn, struct ctdb_dbid_map_old *dbmap, TALLOC_CTX *mem_ctx)
 {
 	int db;
 
@@ -574,14 +574,14 @@ static int update_db_priority_on_remote_nodes(struct ctdb_context *ctdb,
 		struct ctdb_db_priority db_prio;
 		int ret;
 
-		db_prio.db_id     = dbmap->dbs[db].dbid;
-		ret = ctdb_ctrl_get_db_priority(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, dbmap->dbs[db].dbid, &db_prio.priority);
+		db_prio.db_id     = dbmap->dbs[db].db_id;
+		ret = ctdb_ctrl_get_db_priority(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, dbmap->dbs[db].db_id, &db_prio.priority);
 		if (ret != 0) {
-			DEBUG(DEBUG_ERR,(__location__ " Failed to read database priority from local node for db 0x%08x\n", dbmap->dbs[db].dbid));
+			DEBUG(DEBUG_ERR,(__location__ " Failed to read database priority from local node for db 0x%08x\n", dbmap->dbs[db].db_id));
 			continue;
 		}
 
-		DEBUG(DEBUG_INFO,("Update DB priority for db 0x%08x to %u\n", dbmap->dbs[db].dbid, db_prio.priority)); 
+		DEBUG(DEBUG_INFO,("Update DB priority for db 0x%08x to %u\n", dbmap->dbs[db].db_id, db_prio.priority)); 
 
 		ret = ctdb_ctrl_set_db_priority(ctdb, CONTROL_TIMEOUT(),
 						CTDB_CURRENT_NODE, &db_prio);
@@ -598,10 +598,10 @@ static int update_db_priority_on_remote_nodes(struct ctdb_context *ctdb,
   ensure all other nodes have attached to any databases that we have
  */
 static int create_missing_remote_databases(struct ctdb_context *ctdb, struct ctdb_node_map_old *nodemap, 
-					   uint32_t pnn, struct ctdb_dbid_map *dbmap, TALLOC_CTX *mem_ctx)
+					   uint32_t pnn, struct ctdb_dbid_map_old *dbmap, TALLOC_CTX *mem_ctx)
 {
 	int i, j, db, ret;
-	struct ctdb_dbid_map *remote_dbmap;
+	struct ctdb_dbid_map_old *remote_dbmap;
 
 	/* verify that all other nodes have all our databases */
 	for (j=0; j<nodemap->num; j++) {
@@ -627,7 +627,7 @@ static int create_missing_remote_databases(struct ctdb_context *ctdb, struct ctd
 
 
 			for (i=0;i<remote_dbmap->num;i++) {
-				if (dbmap->dbs[db].dbid == remote_dbmap->dbs[i].dbid) {
+				if (dbmap->dbs[db].db_id == remote_dbmap->dbs[i].db_id) {
 					break;
 				}
 			}
@@ -637,7 +637,7 @@ static int create_missing_remote_databases(struct ctdb_context *ctdb, struct ctd
 			}
 			/* ok so we need to create this database */
 			ret = ctdb_ctrl_getdbname(ctdb, CONTROL_TIMEOUT(), pnn,
-						  dbmap->dbs[db].dbid, mem_ctx,
+						  dbmap->dbs[db].db_id, mem_ctx,
 						  &name);
 			if (ret != 0) {
 				DEBUG(DEBUG_ERR, (__location__ " Unable to get dbname from node %u\n", pnn));
@@ -662,10 +662,10 @@ static int create_missing_remote_databases(struct ctdb_context *ctdb, struct ctd
   ensure we are attached to any databases that anyone else is attached to
  */
 static int create_missing_local_databases(struct ctdb_context *ctdb, struct ctdb_node_map_old *nodemap, 
-					  uint32_t pnn, struct ctdb_dbid_map **dbmap, TALLOC_CTX *mem_ctx)
+					  uint32_t pnn, struct ctdb_dbid_map_old **dbmap, TALLOC_CTX *mem_ctx)
 {
 	int i, j, db, ret;
-	struct ctdb_dbid_map *remote_dbmap;
+	struct ctdb_dbid_map_old *remote_dbmap;
 
 	/* verify that we have all database any other node has */
 	for (j=0; j<nodemap->num; j++) {
@@ -690,7 +690,7 @@ static int create_missing_local_databases(struct ctdb_context *ctdb, struct ctdb
 			const char *name;
 
 			for (i=0;i<(*dbmap)->num;i++) {
-				if (remote_dbmap->dbs[db].dbid == (*dbmap)->dbs[i].dbid) {
+				if (remote_dbmap->dbs[db].db_id == (*dbmap)->dbs[i].db_id) {
 					break;
 				}
 			}
@@ -702,7 +702,7 @@ static int create_missing_local_databases(struct ctdb_context *ctdb, struct ctdb
 			   rebuild dbmap
 			 */
 			ctdb_ctrl_getdbname(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].pnn, 
-					    remote_dbmap->dbs[db].dbid, mem_ctx, &name);
+					    remote_dbmap->dbs[db].db_id, mem_ctx, &name);
 			if (ret != 0) {
 				DEBUG(DEBUG_ERR, (__location__ " Unable to get dbname from node %u\n", 
 					  nodemap->nodes[j].pnn));
@@ -1090,7 +1090,7 @@ static void vacuum_fetch_handler(uint64_t srvid, TDB_DATA data,
 	int ret, i;
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 	const char *name;
-	struct ctdb_dbid_map *dbmap=NULL;
+	struct ctdb_dbid_map_old *dbmap=NULL;
 	bool persistent = false;
 	struct ctdb_db_context *ctdb_db;
 	struct ctdb_rec_data_old *r;
@@ -1109,7 +1109,7 @@ static void vacuum_fetch_handler(uint64_t srvid, TDB_DATA data,
 	}
 
 	for (i=0;i<dbmap->num;i++) {
-		if (dbmap->dbs[i].dbid == recs->db_id) {
+		if (dbmap->dbs[i].db_id == recs->db_id) {
 			persistent = dbmap->dbs[i].flags & CTDB_DB_FLAGS_PERSISTENT;
 			break;
 		}
@@ -1942,7 +1942,7 @@ fail:
 static int db_recovery_serial(struct ctdb_recoverd *rec, TALLOC_CTX *mem_ctx,
 			      uint32_t pnn, struct ctdb_node_map_old *nodemap,
 			      struct ctdb_vnn_map *vnnmap,
-			      struct ctdb_dbid_map *dbmap)
+			      struct ctdb_dbid_map_old *dbmap)
 {
 	struct ctdb_context *ctdb = rec->ctdb;
 	uint32_t generation;
@@ -2016,11 +2016,11 @@ static int db_recovery_serial(struct ctdb_recoverd *rec, TALLOC_CTX *mem_ctx,
 
 	for (i=0;i<dbmap->num;i++) {
 		ret = recover_database(rec, mem_ctx,
-				       dbmap->dbs[i].dbid,
+				       dbmap->dbs[i].db_id,
 				       dbmap->dbs[i].flags & CTDB_DB_FLAGS_PERSISTENT,
 				       pnn, nodemap, generation);
 		if (ret != 0) {
-			DEBUG(DEBUG_ERR, (__location__ " Failed to recover database 0x%x\n", dbmap->dbs[i].dbid));
+			DEBUG(DEBUG_ERR, (__location__ " Failed to recover database 0x%x\n", dbmap->dbs[i].db_id));
 			return -1;
 		}
 	}
@@ -2112,7 +2112,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 {
 	struct ctdb_context *ctdb = rec->ctdb;
 	int i, ret;
-	struct ctdb_dbid_map *dbmap;
+	struct ctdb_dbid_map_old *dbmap;
 	struct timeval start_time;
 	uint32_t culprit = (uint32_t)-1;
 	bool self_ban;

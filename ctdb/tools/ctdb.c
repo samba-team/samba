@@ -364,7 +364,7 @@ static bool db_exists(struct ctdb_context *ctdb, const char *dbarg,
 		      uint32_t *dbid, const char **dbname, uint8_t *flags)
 {
 	int i, ret;
-	struct ctdb_dbid_map *dbmap=NULL;
+	struct ctdb_dbid_map_old *dbmap=NULL;
 	bool dbid_given = false, found = false;
 	uint32_t id;
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
@@ -383,19 +383,19 @@ static bool db_exists(struct ctdb_context *ctdb, const char *dbarg,
 
 	for(i=0; i<dbmap->num; i++) {
 		if (dbid_given) {
-			if (id == dbmap->dbs[i].dbid) {
+			if (id == dbmap->dbs[i].db_id) {
 				found = true;
 				break;
 			}
 		} else {
-			ret = ctdb_ctrl_getdbname(ctdb, TIMELIMIT(), options.pnn, dbmap->dbs[i].dbid, tmp_ctx, &name);
+			ret = ctdb_ctrl_getdbname(ctdb, TIMELIMIT(), options.pnn, dbmap->dbs[i].db_id, tmp_ctx, &name);
 			if (ret != 0) {
-				DEBUG(DEBUG_ERR, ("Unable to get dbname from dbid %u\n", dbmap->dbs[i].dbid));
+				DEBUG(DEBUG_ERR, ("Unable to get dbname from dbid %u\n", dbmap->dbs[i].db_id));
 				goto fail;
 			}
 
 			if (strcmp(name, dbarg) == 0) {
-				id = dbmap->dbs[i].dbid;
+				id = dbmap->dbs[i].db_id;
 				found = true;
 				break;
 			}
@@ -403,9 +403,9 @@ static bool db_exists(struct ctdb_context *ctdb, const char *dbarg,
 	}
 
 	if (found && dbid_given && dbname != NULL) {
-		ret = ctdb_ctrl_getdbname(ctdb, TIMELIMIT(), options.pnn, dbmap->dbs[i].dbid, tmp_ctx, &name);
+		ret = ctdb_ctrl_getdbname(ctdb, TIMELIMIT(), options.pnn, dbmap->dbs[i].db_id, tmp_ctx, &name);
 		if (ret != 0) {
-			DEBUG(DEBUG_ERR, ("Unable to get dbname from dbid %u\n", dbmap->dbs[i].dbid));
+			DEBUG(DEBUG_ERR, ("Unable to get dbname from dbid %u\n", dbmap->dbs[i].db_id));
 			found = false;
 			goto fail;
 		}
@@ -4610,7 +4610,7 @@ done:
 static int control_getdbmap(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	int i, ret;
-	struct ctdb_dbid_map *dbmap=NULL;
+	struct ctdb_dbid_map_old *dbmap=NULL;
 
 	ret = ctdb_ctrl_getdbmap(ctdb, TIMELIMIT(), options.pnn, ctdb, &dbmap);
 	if (ret != 0) {
@@ -4629,16 +4629,16 @@ static int control_getdbmap(struct ctdb_context *ctdb, int argc, const char **ar
 			bool sticky;
 
 			ctdb_ctrl_getdbpath(ctdb, TIMELIMIT(), options.pnn,
-					    dbmap->dbs[i].dbid, ctdb, &path);
+					    dbmap->dbs[i].db_id, ctdb, &path);
 			ctdb_ctrl_getdbname(ctdb, TIMELIMIT(), options.pnn,
-					    dbmap->dbs[i].dbid, ctdb, &name);
+					    dbmap->dbs[i].db_id, ctdb, &name);
 			ctdb_ctrl_getdbhealth(ctdb, TIMELIMIT(), options.pnn,
-					      dbmap->dbs[i].dbid, ctdb, &health);
+					      dbmap->dbs[i].db_id, ctdb, &health);
 			persistent = dbmap->dbs[i].flags & CTDB_DB_FLAGS_PERSISTENT;
 			readonly   = dbmap->dbs[i].flags & CTDB_DB_FLAGS_READONLY;
 			sticky     = dbmap->dbs[i].flags & CTDB_DB_FLAGS_STICKY;
 			printm(":0x%08X:%s:%s:%d:%d:%d:%d:\n",
-			       dbmap->dbs[i].dbid, name, path,
+			       dbmap->dbs[i].db_id, name, path,
 			       !!(persistent), !!(sticky),
 			       !!(health), !!(readonly));
 		}
@@ -4654,14 +4654,14 @@ static int control_getdbmap(struct ctdb_context *ctdb, int argc, const char **ar
 		bool readonly;
 		bool sticky;
 
-		ctdb_ctrl_getdbpath(ctdb, TIMELIMIT(), options.pnn, dbmap->dbs[i].dbid, ctdb, &path);
-		ctdb_ctrl_getdbname(ctdb, TIMELIMIT(), options.pnn, dbmap->dbs[i].dbid, ctdb, &name);
-		ctdb_ctrl_getdbhealth(ctdb, TIMELIMIT(), options.pnn, dbmap->dbs[i].dbid, ctdb, &health);
+		ctdb_ctrl_getdbpath(ctdb, TIMELIMIT(), options.pnn, dbmap->dbs[i].db_id, ctdb, &path);
+		ctdb_ctrl_getdbname(ctdb, TIMELIMIT(), options.pnn, dbmap->dbs[i].db_id, ctdb, &name);
+		ctdb_ctrl_getdbhealth(ctdb, TIMELIMIT(), options.pnn, dbmap->dbs[i].db_id, ctdb, &health);
 		persistent = dbmap->dbs[i].flags & CTDB_DB_FLAGS_PERSISTENT;
 		readonly   = dbmap->dbs[i].flags & CTDB_DB_FLAGS_READONLY;
 		sticky     = dbmap->dbs[i].flags & CTDB_DB_FLAGS_STICKY;
 		printf("dbid:0x%08x name:%s path:%s%s%s%s%s\n",
-		       dbmap->dbs[i].dbid, name, path,
+		       dbmap->dbs[i].db_id, name, path,
 		       persistent?" PERSISTENT":"",
 		       sticky?" STICKY":"",
 		       readonly?" READONLY":"",

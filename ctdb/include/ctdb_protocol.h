@@ -767,15 +767,18 @@ struct ctdb_notify_data_old {
 
 /* table that contains a list of all dbids on a node
  */
-struct ctdb_dbid_map {
-	uint32_t num;
-	struct ctdb_dbid {
-		uint32_t dbid;
+
+struct ctdb_dbid {
+	uint32_t db_id;
 #define CTDB_DB_FLAGS_PERSISTENT	0x01
 #define CTDB_DB_FLAGS_READONLY		0x02
 #define CTDB_DB_FLAGS_STICKY		0x04
-		uint8_t flags;
-	} dbs[1];
+	uint8_t flags;
+};
+
+struct ctdb_dbid_map_old {
+	uint32_t num;
+	struct ctdb_dbid dbs[1];
 };
 
 #define CTDB_RECOVERY_NORMAL		0

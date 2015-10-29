@@ -203,7 +203,7 @@ int ctdb_ctrl_setrecmaster(struct ctdb_context *ctdb, struct timeval timeout,
 
 int ctdb_ctrl_getdbmap(struct ctdb_context *ctdb, struct timeval timeout,
 		       uint32_t destnode, TALLOC_CTX *mem_ctx,
-		       struct ctdb_dbid_map **dbmap);
+		       struct ctdb_dbid_map_old **dbmap);
 
 int ctdb_ctrl_getnodemap(struct ctdb_context *ctdb, struct timeval timeout,
 			 uint32_t destnode, TALLOC_CTX *mem_ctx,
