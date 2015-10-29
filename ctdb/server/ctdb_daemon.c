@@ -1440,17 +1440,17 @@ static void daemon_control_callback(struct ctdb_context *ctdb,
 	struct daemon_control_state *state = talloc_get_type(private_data, 
 							     struct daemon_control_state);
 	struct ctdb_client *client = state->client;
-	struct ctdb_reply_control *r;
+	struct ctdb_reply_control_old *r;
 	size_t len;
 	int ret;
 
 	/* construct a message to send to the client containing the data */
-	len = offsetof(struct ctdb_reply_control, data) + data.dsize;
+	len = offsetof(struct ctdb_reply_control_old, data) + data.dsize;
 	if (errormsg) {
 		len += strlen(errormsg);
 	}
 	r = ctdbd_allocate_pkt(ctdb, state, CTDB_REPLY_CONTROL, len, 
-			       struct ctdb_reply_control);
+			       struct ctdb_reply_control_old);
 	CTDB_NO_MEMORY_VOID(ctdb, r);
 
 	r->hdr.reqid     = state->reqid;

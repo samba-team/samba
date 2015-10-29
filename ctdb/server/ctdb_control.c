@@ -727,7 +727,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 void ctdb_request_control_reply(struct ctdb_context *ctdb, struct ctdb_req_control_old *c,
 				TDB_DATA *outdata, int32_t status, const char *errormsg)
 {
-	struct ctdb_reply_control *r;
+	struct ctdb_reply_control_old *r;
 	size_t len;
 	
 	/* some controls send no reply */
@@ -735,11 +735,11 @@ void ctdb_request_control_reply(struct ctdb_context *ctdb, struct ctdb_req_contr
 		return;
 	}
 
-	len = offsetof(struct ctdb_reply_control, data) + (outdata?outdata->dsize:0);
+	len = offsetof(struct ctdb_reply_control_old, data) + (outdata?outdata->dsize:0);
 	if (errormsg) {
 		len += strlen(errormsg);
 	}
-	r = ctdb_transport_allocate(ctdb, ctdb, CTDB_REPLY_CONTROL, len, struct ctdb_reply_control);
+	r = ctdb_transport_allocate(ctdb, ctdb, CTDB_REPLY_CONTROL, len, struct ctdb_reply_control_old);
 	if (r == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ "Unable to allocate transport - OOM or transport is down\n"));
 		return;
@@ -791,7 +791,7 @@ void ctdb_request_control(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 */
 void ctdb_reply_control(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 {
-	struct ctdb_reply_control *c = (struct ctdb_reply_control *)hdr;
+	struct ctdb_reply_control_old *c = (struct ctdb_reply_control_old *)hdr;
 	TDB_DATA data;
 	struct ctdb_control_state *state;
 	const char *errormsg = NULL;

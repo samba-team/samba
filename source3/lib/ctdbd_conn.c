@@ -642,7 +642,7 @@ static int ctdbd_control(struct ctdbd_connection *conn,
 {
 	struct ctdb_req_control_old req;
 	struct ctdb_req_header *hdr;
-	struct ctdb_reply_control *reply = NULL;
+	struct ctdb_reply_control_old *reply = NULL;
 	struct iovec iov[2];
 	ssize_t nwritten;
 	int ret;
@@ -691,7 +691,7 @@ static int ctdbd_control(struct ctdbd_connection *conn,
 		TALLOC_FREE(hdr);
 		return EIO;
 	}
-	reply = (struct ctdb_reply_control *)hdr;
+	reply = (struct ctdb_reply_control_old *)hdr;
 
 	if (outdata) {
 		if (!(outdata->dptr = (uint8_t *)talloc_memdup(
@@ -794,7 +794,7 @@ bool ctdb_processes_exist(struct ctdbd_connection *conn,
 
 	while (num_received < num_pids) {
 		struct ctdb_req_header *hdr;
-		struct ctdb_reply_control *reply;
+		struct ctdb_reply_control_old *reply;
 		uint32_t reqid;
 		int ret;
 
@@ -809,7 +809,7 @@ bool ctdb_processes_exist(struct ctdbd_connection *conn,
 			DEBUG(10, ("Received invalid reply\n"));
 			goto fail;
 		}
-		reply = (struct ctdb_reply_control *)hdr;
+		reply = (struct ctdb_reply_control_old *)hdr;
 
 		reqid = reply->hdr.reqid;
 

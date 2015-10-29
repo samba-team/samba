@@ -990,7 +990,7 @@ static void invoke_control_callback(struct tevent_context *ev,
 static void ctdb_client_reply_control(struct ctdb_context *ctdb, 
 				      struct ctdb_req_header *hdr)
 {
-	struct ctdb_reply_control *c = (struct ctdb_reply_control *)hdr;
+	struct ctdb_reply_control_old *c = (struct ctdb_reply_control_old *)hdr;
 	struct ctdb_client_control_state *state;
 
 	state = reqid_find(ctdb->idr, hdr->reqid, struct ctdb_client_control_state);

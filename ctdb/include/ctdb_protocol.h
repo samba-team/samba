@@ -493,7 +493,7 @@ struct ctdb_req_control_old {
 	uint8_t data[1];
 };
 
-struct ctdb_reply_control {
+struct ctdb_reply_control_old {
 	struct ctdb_req_header hdr;
 	int32_t  status;
 	uint32_t datalen;
