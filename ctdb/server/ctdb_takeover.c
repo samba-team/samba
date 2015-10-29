@@ -2813,7 +2813,7 @@ int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id,
 				TDB_DATA indata)
 {
 	struct ctdb_client *client = reqid_find(ctdb->idr, client_id, struct ctdb_client);
-	struct ctdb_control_tcp_addr *tcp_sock = NULL;
+	struct ctdb_connection *tcp_sock = NULL;
 	struct ctdb_tcp_list *tcp;
 	struct ctdb_tcp_connection t;
 	int ret;
@@ -2827,15 +2827,15 @@ int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id,
 		return 0;
 	}
 
-	tcp_sock = (struct ctdb_control_tcp_addr *)indata.dptr;
+	tcp_sock = (struct ctdb_connection *)indata.dptr;
 
 	addr = tcp_sock->src;
 	ctdb_canonicalize_ip(&addr,  &tcp_sock->src);
-	addr = tcp_sock->dest;
-	ctdb_canonicalize_ip(&addr, &tcp_sock->dest);
+	addr = tcp_sock->dst;
+	ctdb_canonicalize_ip(&addr, &tcp_sock->dst);
 
 	ZERO_STRUCT(addr);
-	memcpy(&addr, &tcp_sock->dest, sizeof(addr));
+	memcpy(&addr, &tcp_sock->dst, sizeof(addr));
 	vnn = find_public_ip_vnn(ctdb, &addr);
 	if (vnn == NULL) {
 		switch (addr.sa.sa_family) {
@@ -2877,12 +2877,12 @@ int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id,
 	CTDB_NO_MEMORY(ctdb, tcp);
 
 	tcp->connection.src_addr = tcp_sock->src;
-	tcp->connection.dst_addr = tcp_sock->dest;
+	tcp->connection.dst_addr = tcp_sock->dst;
 
 	DLIST_ADD(client->tcp_list, tcp);
 
 	t.src_addr = tcp_sock->src;
-	t.dst_addr = tcp_sock->dest;
+	t.dst_addr = tcp_sock->dst;
 
 	data.dptr = (uint8_t *)&t;
 	data.dsize = sizeof(t);
@@ -2890,13 +2890,13 @@ int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id,
 	switch (addr.sa.sa_family) {
 	case AF_INET:
 		DEBUG(DEBUG_INFO,("registered tcp client for %u->%s:%u (client_id %u pid %u)\n",
-			(unsigned)ntohs(tcp_sock->dest.ip.sin_port), 
+			(unsigned)ntohs(tcp_sock->dst.ip.sin_port),
 			ctdb_addr_to_str(&tcp_sock->src),
 			(unsigned)ntohs(tcp_sock->src.ip.sin_port), client_id, client->pid));
 		break;
 	case AF_INET6:
 		DEBUG(DEBUG_INFO,("registered tcp client for %u->%s:%u (client_id %u pid %u)\n",
-			(unsigned)ntohs(tcp_sock->dest.ip6.sin6_port), 
+			(unsigned)ntohs(tcp_sock->dst.ip6.sin6_port),
 			ctdb_addr_to_str(&tcp_sock->src),
 			(unsigned)ntohs(tcp_sock->src.ip6.sin6_port), client_id, client->pid));
 		break;

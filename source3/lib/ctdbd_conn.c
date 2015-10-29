@@ -1186,7 +1186,7 @@ int ctdbd_register_ips(struct ctdbd_connection *conn,
 				 void *private_data),
 		       void *private_data)
 {
-	struct ctdb_control_tcp_addr p;
+	struct ctdb_connection p;
 	TDB_DATA data = { .dptr = (uint8_t *)&p, .dsize = sizeof(p) };
 	int ret;
 	struct sockaddr_storage client;
@@ -1201,11 +1201,11 @@ int ctdbd_register_ips(struct ctdbd_connection *conn,
 
 	switch (client.ss_family) {
 	case AF_INET:
-		memcpy(&p.dest.ip, &server, sizeof(p.dest.ip));
+		memcpy(&p.dst.ip, &server, sizeof(p.dst.ip));
 		memcpy(&p.src.ip, &client, sizeof(p.src.ip));
 		break;
 	case AF_INET6:
-		memcpy(&p.dest.ip6, &server, sizeof(p.dest.ip6));
+		memcpy(&p.dst.ip6, &server, sizeof(p.dst.ip6));
 		memcpy(&p.src.ip6, &client, sizeof(p.src.ip6));
 		break;
 	default:

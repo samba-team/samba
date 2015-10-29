@@ -375,7 +375,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return ctdb_control_get_public_ips(ctdb, c, outdata);
 
 	case CTDB_CONTROL_TCP_CLIENT:
-		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_control_tcp_addr));
+		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_connection));
 		return ctdb_control_tcp_client(ctdb, client_id, indata);
 
 	case CTDB_CONTROL_STARTUP: 

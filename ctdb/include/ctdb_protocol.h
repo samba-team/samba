@@ -808,9 +808,9 @@ struct ctdb_uptime {
 	struct timeval last_recovery_finished;
 };
 
-struct ctdb_control_tcp_addr {
+struct ctdb_connection {
 	ctdb_sock_addr src;
-	ctdb_sock_addr dest;
+	ctdb_sock_addr dst;
 };
 
 struct ctdb_ban_time {
