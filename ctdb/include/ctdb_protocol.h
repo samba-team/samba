@@ -784,14 +784,14 @@ struct ctdb_dbid_map_old {
 #define CTDB_RECOVERY_NORMAL		0
 #define CTDB_RECOVERY_ACTIVE		1
 
-enum ctdb_server_id_type {
+enum ctdb_client_id_type {
 	SERVER_TYPE_SAMBA=1,
 	SERVER_TYPE_NFSD=2,
 	SERVER_TYPE_ISCSID=3
 };
 
 struct ctdb_server_id {
-	enum ctdb_server_id_type type;
+	enum ctdb_client_id_type type;
 	uint32_t pnn;
 	uint32_t server_id;
 };
