@@ -367,10 +367,6 @@ struct ctdb_context {
 	/* mapping from pid to ctdb_client * */
 	struct ctdb_client_pid_list *client_pids;
 
-	/* Temporarily used by IP takeover code to make changes easier
-	 * to review */
-	struct ipalloc_state *ipalloc_state;
-
 	/* used in the recovery daemon to remember the ip allocation */
 	struct trbt_tree *ip_tree;
 
