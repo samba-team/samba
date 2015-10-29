@@ -3133,22 +3133,20 @@ int ctdb_ctrl_killtcp(struct ctdb_context *ctdb,
 /*
   send a gratious arp
  */
-int ctdb_ctrl_gratious_arp(struct ctdb_context *ctdb, 
-		      struct timeval timeout, 
-		      uint32_t destnode,
-		      ctdb_sock_addr *addr,
-		      const char *ifname)
+int ctdb_ctrl_gratious_arp(struct ctdb_context *ctdb,
+			   struct timeval timeout, uint32_t destnode,
+			   ctdb_sock_addr *addr, const char *ifname)
 {
 	TDB_DATA data;
 	int32_t res;
 	int ret, len;
-	struct ctdb_control_gratious_arp *gratious_arp;
+	struct ctdb_addr_info_old *gratious_arp;
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 
 
 	len = strlen(ifname)+1;
-	gratious_arp = talloc_size(tmp_ctx, 
-		offsetof(struct ctdb_control_gratious_arp, iface) + len);
+	gratious_arp = talloc_size(tmp_ctx,
+		offsetof(struct ctdb_addr_info_old, iface) + len);
 	CTDB_NO_MEMORY(ctdb, gratious_arp);
 
 	gratious_arp->addr = *addr;
@@ -3156,7 +3154,7 @@ int ctdb_ctrl_gratious_arp(struct ctdb_context *ctdb,
 	memcpy(&gratious_arp->iface[0], ifname, len);
 
 
-	data.dsize = offsetof(struct ctdb_control_gratious_arp, iface) + len;
+	data.dsize = offsetof(struct ctdb_addr_info_old, iface) + len;
 	data.dptr  = (unsigned char *)gratious_arp;
 
 	ret = ctdb_control(ctdb, destnode, 0, CTDB_CONTROL_SEND_GRATIOUS_ARP, 0, data, NULL,

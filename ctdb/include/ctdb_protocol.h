@@ -921,20 +921,9 @@ enum ctdb_runstate {
 
 /*
   struct holding a ctdb_sock_addr and an interface name,
-  used to add/remove public addresses
+  used to add/remove public addresses and grat arp
  */
 struct ctdb_addr_info_old {
-	ctdb_sock_addr addr;
-	uint32_t mask;
-	uint32_t len;
-	char iface[1];
-};
-
-/*
-  struct holding a ctdb_sock_addr and an interface name,
-  used for send_gratious_arp
- */
-struct ctdb_control_gratious_arp {
 	ctdb_sock_addr addr;
 	uint32_t mask;
 	uint32_t len;

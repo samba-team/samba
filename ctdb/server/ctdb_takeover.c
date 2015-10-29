@@ -3981,24 +3981,24 @@ static void send_gratious_arp(struct tevent_context *ev,
  */
 int32_t ctdb_control_send_gratious_arp(struct ctdb_context *ctdb, TDB_DATA indata)
 {
-	struct ctdb_control_gratious_arp *gratious_arp = (struct ctdb_control_gratious_arp *)indata.dptr;
+	struct ctdb_addr_info_old *gratious_arp = (struct ctdb_addr_info_old *)indata.dptr;
 	struct control_gratious_arp *arp;
 
 	/* verify the size of indata */
-	if (indata.dsize < offsetof(struct ctdb_control_gratious_arp, iface)) {
+	if (indata.dsize < offsetof(struct ctdb_addr_info_old, iface)) {
 		DEBUG(DEBUG_ERR,(__location__ " Too small indata to hold a ctdb_control_gratious_arp structure. Got %u require %u bytes\n", 
 				 (unsigned)indata.dsize, 
-				 (unsigned)offsetof(struct ctdb_control_gratious_arp, iface)));
+				 (unsigned)offsetof(struct ctdb_addr_info_old, iface)));
 		return -1;
 	}
 	if (indata.dsize != 
-		( offsetof(struct ctdb_control_gratious_arp, iface)
+		( offsetof(struct ctdb_addr_info_old, iface)
 		+ gratious_arp->len ) ){
 
 		DEBUG(DEBUG_ERR,(__location__ " Wrong size of indata. Was %u bytes "
 			"but should be %u bytes\n", 
 			 (unsigned)indata.dsize, 
-			 (unsigned)(offsetof(struct ctdb_control_gratious_arp, iface)+gratious_arp->len)));
+			 (unsigned)(offsetof(struct ctdb_addr_info_old, iface)+gratious_arp->len)));
 		return -1;
 	}
 
