@@ -126,12 +126,6 @@ struct ctdb_node {
 	   if the node becomes disconnected */
 	struct daemon_control_state *pending_controls;
 
-	/* used by the recovery daemon when distributing ip addresses 
-	   across the nodes.  it needs to know which public ip's can be handled
-	   by each node.
-	*/
-	struct ctdb_public_ip_list_old *known_public_ips;
-	struct ctdb_public_ip_list_old *available_public_ips;
 	/* used by the recovery dameon to track when a node should be banned */
 	struct ctdb_banning_state *ban_state; 
 };
@@ -372,6 +366,10 @@ struct ctdb_context {
 
 	/* mapping from pid to ctdb_client * */
 	struct ctdb_client_pid_list *client_pids;
+
+	/* Temporarily used by IP takeover code to make changes easier
+	 * to review */
+	struct ipalloc_state *ipalloc_state;
 
 	/* used in the recovery daemon to remember the ip allocation */
 	struct trbt_tree *ip_tree;

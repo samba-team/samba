@@ -496,6 +496,8 @@ static void ctdb_test_init(const char nodestates[],
 
 	(*ctdb)->nodes = talloc_array(*ctdb, struct ctdb_node *, numnodes); // FIXME: bogus size, overkill
 
+	(*ctdb)->ipalloc_state = ipalloc_state_init(*ctdb, *ctdb);
+
 	for (i=0; i < numnodes; i++) {
 		nodemap->nodes[i].pnn = i;
 		nodemap->nodes[i].flags = nodeflags[i];
@@ -509,8 +511,9 @@ static void ctdb_test_init(const char nodestates[],
 		(*ctdb)->nodes[i] = talloc(*ctdb, struct ctdb_node);
 		(*ctdb)->nodes[i]->pnn = i;
 		(*ctdb)->nodes[i]->flags = nodeflags[i];
-		(*ctdb)->nodes[i]->available_public_ips = avail[i];
-		(*ctdb)->nodes[i]->known_public_ips = known[i];
+
+		(*ctdb)->ipalloc_state->available_public_ips[i] = avail[i];
+		(*ctdb)->ipalloc_state->known_public_ips[i] = known[i];
 	}
 
 	*ipflags = set_ipflags_internal(*ctdb, *ctdb, nodemap,

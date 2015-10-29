@@ -53,6 +53,14 @@ struct ctdb_ipflags {
 	bool noiphost;
 };
 
+struct ipalloc_state {
+	uint32_t num;
+
+	/* Arrays with data for each node */
+	struct ctdb_public_ip_list_old **known_public_ips;
+	struct ctdb_public_ip_list_old **available_public_ips;
+};
+
 struct ctdb_interface {
 	struct ctdb_interface *prev, *next;
 	const char *name;
@@ -1269,7 +1277,7 @@ static bool can_node_host_ip(struct ctdb_context *ctdb, int32_t pnn,
 		return false;
 	}
 
-	public_ips = ctdb->nodes[pnn]->available_public_ips;
+	public_ips = ctdb->ipalloc_state->available_public_ips[pnn];
 
 	if (public_ips == NULL) {
 		return false;
@@ -1397,25 +1405,21 @@ static int verify_remote_ip_allocation(struct ctdb_context *ctdb,
 				       uint32_t pnn);
 
 static int ctdb_reload_remote_public_ips(struct ctdb_context *ctdb,
+					 struct ipalloc_state *ipalloc_state,
 					 struct ctdb_node_map_old *nodemap)
 {
 	int j;
 	int ret;
 
-	if (ctdb->num_nodes != nodemap->num) {
-		DEBUG(DEBUG_ERR, (__location__ " ctdb->num_nodes (%d) != nodemap->num (%d) invalid param\n",
-				  ctdb->num_nodes, nodemap->num));
+	if (ipalloc_state->num != nodemap->num) {
+		DEBUG(DEBUG_ERR,
+		      (__location__
+		       " ipalloc_state->num (%d) != nodemap->num (%d) invalid param\n",
+		       ipalloc_state->num, nodemap->num));
 		return -1;
 	}
 
 	for (j=0; j<nodemap->num; j++) {
-		/* For readability */
-		struct ctdb_node *node = ctdb->nodes[j];
-
-		/* release any existing data */
-		TALLOC_FREE(node->known_public_ips);
-		TALLOC_FREE(node->available_public_ips);
-
 		if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
 			continue;
 		}
@@ -1423,34 +1427,34 @@ static int ctdb_reload_remote_public_ips(struct ctdb_context *ctdb,
 		/* Retrieve the list of known public IPs from the node */
 		ret = ctdb_ctrl_get_public_ips_flags(ctdb,
 					TAKEOVER_TIMEOUT(),
-					node->pnn,
+					j,
 					ctdb->nodes,
 					0,
-					&node->known_public_ips);
+					&ipalloc_state->known_public_ips[j]);
 		if (ret != 0) {
 			DEBUG(DEBUG_ERR,
 			      ("Failed to read known public IPs from node: %u\n",
-			       node->pnn));
+			       j));
 			return -1;
 		}
 
 		if (ctdb->do_checkpublicip) {
 			verify_remote_ip_allocation(ctdb,
-						    node->known_public_ips,
-						    node->pnn);
+						    ipalloc_state->known_public_ips[j],
+						    j);
 		}
 
 		/* Retrieve the list of available public IPs from the node */
 		ret = ctdb_ctrl_get_public_ips_flags(ctdb,
 					TAKEOVER_TIMEOUT(),
-					node->pnn,
+					j,
 					ctdb->nodes,
 					CTDB_PUBLIC_IP_FLAGS_ONLY_AVAILABLE,
-					&node->available_public_ips);
+					&ipalloc_state->available_public_ips[j]);
 		if (ret != 0) {
 			DEBUG(DEBUG_ERR,
 			      ("Failed to read available public IPs from node: %u\n",
-			       node->pnn));
+			       j));
 			return -1;
 		}
 	}
@@ -1472,7 +1476,7 @@ create_merged_ip_list(struct ctdb_context *ctdb)
 	ctdb->ip_tree = trbt_create(ctdb, 0);
 
 	for (i=0;i<ctdb->num_nodes;i++) {
-		public_ips = ctdb->nodes[i]->known_public_ips;
+		public_ips = ctdb->ipalloc_state->known_public_ips[i];
 
 		if (ctdb->nodes[i]->flags & NODE_FLAGS_DELETED) {
 			continue;
@@ -2428,6 +2432,39 @@ static struct ctdb_ipflags *set_ipflags(struct ctdb_context *ctdb,
 	return ipflags;
 }
 
+static struct ipalloc_state * ipalloc_state_init(struct ctdb_context *ctdb,
+						 TALLOC_CTX *mem_ctx)
+{
+	struct ipalloc_state *ipalloc_state =
+		talloc_zero(mem_ctx, struct ipalloc_state);
+	if (ipalloc_state == NULL) {
+		DEBUG(DEBUG_ERR, (__location__ " Out of memory\n"));
+		return NULL;
+	}
+
+	ipalloc_state->num = ctdb->num_nodes;
+	ipalloc_state->known_public_ips =
+		talloc_zero_array(ipalloc_state,
+				  struct ctdb_public_ip_list_old *,
+				  ipalloc_state->num);
+	if (ipalloc_state->known_public_ips == NULL) {
+		DEBUG(DEBUG_ERR, (__location__ " Out of memory\n"));
+		talloc_free(ipalloc_state);
+		return NULL;
+	}
+	ipalloc_state->available_public_ips =
+		talloc_zero_array(ipalloc_state,
+				  struct ctdb_public_ip_list_old *,
+				  ipalloc_state->num);
+	if (ipalloc_state->available_public_ips == NULL) {
+		DEBUG(DEBUG_ERR, (__location__ " Out of memory\n"));
+		talloc_free(ipalloc_state);
+		return NULL;
+	}
+
+	return ipalloc_state;
+}
+
 struct iprealloc_callback_data {
 	bool *retry_nodes;
 	int retry_count;
@@ -2541,6 +2578,7 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map_old *nodem
 	struct ctdb_client_control_state *state;
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 	struct ctdb_ipflags *ipflags;
+	struct ipalloc_state *ipalloc_state;
 	struct takeover_callback_data *takeover_data;
 	struct iprealloc_callback_data iprealloc_data;
 	bool *retry_data;
@@ -2554,6 +2592,13 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map_old *nodem
 		goto ipreallocated;
 	}
 
+	ipalloc_state = ipalloc_state_init(ctdb, tmp_ctx);
+	if (ipalloc_state == NULL) {
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+	ctdb->ipalloc_state = ipalloc_state;
+
 	ipflags = set_ipflags(ctdb, tmp_ctx, nodemap);
 	if (ipflags == NULL) {
 		DEBUG(DEBUG_ERR,("Failed to set IP flags - aborting takeover run\n"));
@@ -2562,7 +2607,7 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map_old *nodem
 	}
 
 	/* Fetch known/available public IPs from each active node */
-	ret = ctdb_reload_remote_public_ips(ctdb, nodemap);
+	ret = ctdb_reload_remote_public_ips(ctdb, ipalloc_state, nodemap);
 	if (ret != 0) {
 		talloc_free(tmp_ctx);
 		return -1;
@@ -2570,8 +2615,8 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map_old *nodem
 
 	/* Short-circuit IP allocation if no node has available IPs */
 	can_host_ips = false;
-	for (i=0; i < ctdb->num_nodes; i++) {
-		if (ctdb->nodes[i]->available_public_ips != NULL) {
+	for (i=0; i < ipalloc_state->num; i++) {
+		if (ipalloc_state->available_public_ips[i] != NULL) {
 			can_host_ips = true;
 		}
 	}
