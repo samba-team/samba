@@ -1106,8 +1106,10 @@ bool handle_include(struct loadparm_context *lp_ctx, struct loadparm_service *se
 	if (file_exist(fname))
 		return pm_process(fname, do_section, lpcfg_do_parameter, lp_ctx);
 
-	/* If the file doesn't exist, we check that it isn't due to variable
-	   substitution */
+	/*
+	 * If the file doesn't exist, we check that it isn't due to variable
+	 * substitution
+	 */
 	substitution_variable_substring = strchr(fname, '%');
 
 	if (substitution_variable_substring != NULL) {
