@@ -67,6 +67,7 @@ struct ipalloc_state {
 	struct ctdb_public_ip_list_old **available_public_ips;
 
 	enum ipalloc_algorithm algorithm;
+	uint32_t no_ip_failback;
 };
 
 struct ctdb_interface {
@@ -2107,7 +2108,7 @@ static void ip_alloc_deterministic_ips(struct ctdb_context *ctdb,
 	 * IPs, since the modulo step above implicitly fails
 	 * back IPs to their "home" node.
 	 */
-	if (1 == ctdb->tunable.no_ip_failback) {
+	if (1 == ctdb->ipalloc_state->no_ip_failback) {
 		DEBUG(DEBUG_WARNING, ("WARNING: 'NoIPFailback' set but ignored - incompatible with 'DeterministicIPs\n"));
 	}
 
@@ -2134,7 +2135,7 @@ static void ip_alloc_nondeterministic_ips(struct ctdb_context *ctdb,
 	basic_allocate_unassigned(ctdb, ipflags, all_ips);
 
 	/* If we don't want IPs to fail back then don't rebalance IPs. */
-	if (1 == ctdb->tunable.no_ip_failback) {
+	if (1 == ctdb->ipalloc_state->no_ip_failback) {
 		return;
 	}
 
@@ -2163,7 +2164,7 @@ static void ip_alloc_lcp2(struct ctdb_context *ctdb,
 	lcp2_allocate_unassigned(ctdb, ipflags, all_ips, lcp2_imbalances);
 
 	/* If we don't want IPs to fail back then don't rebalance IPs. */
-	if (1 == ctdb->tunable.no_ip_failback) {
+	if (1 == ctdb->ipalloc_state->no_ip_failback) {
 		goto finished;
 	}
 
@@ -2481,6 +2482,8 @@ static struct ipalloc_state * ipalloc_state_init(struct ctdb_context *ctdb,
 	} else {
 		ipalloc_state->algorithm = IPALLOC_NONDETERMINISTIC;
 	}
+
+	ipalloc_state->no_ip_failback = ctdb->tunable.no_ip_failback;
 
 	return ipalloc_state;
 }
