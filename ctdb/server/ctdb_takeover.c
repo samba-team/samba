@@ -1478,13 +1478,10 @@ create_merged_ip_list(struct ctdb_context *ctdb)
 	struct public_ip_list *ip_list;
 	struct ctdb_public_ip_list_old *public_ips;
 
-	if (ctdb->ip_tree != NULL) {
-		talloc_free(ctdb->ip_tree);
-		ctdb->ip_tree = NULL;
-	}
+	TALLOC_FREE(ctdb->ip_tree);
 	ctdb->ip_tree = trbt_create(ctdb, 0);
 
-	for (i=0;i<ctdb->num_nodes;i++) {
+	for (i=0; i < ctdb->num_nodes; i++) {
 		public_ips = ctdb->ipalloc_state->known_public_ips[i];
 
 		if (ctdb->nodes[i]->flags & NODE_FLAGS_DELETED) {
@@ -1494,9 +1491,9 @@ create_merged_ip_list(struct ctdb_context *ctdb)
 		/* there were no public ips for this node */
 		if (public_ips == NULL) {
 			continue;
-		}		
+		}
 
-		for (j=0;j<public_ips->num;j++) {
+		for (j=0; j < public_ips->num; j++) {
 			struct public_ip_list *tmp_ip;
 
 			tmp_ip = talloc_zero(ctdb->ip_tree, struct public_ip_list);
