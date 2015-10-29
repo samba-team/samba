@@ -53,12 +53,20 @@ struct ctdb_ipflags {
 	bool noiphost;
 };
 
+enum ipalloc_algorithm {
+	IPALLOC_DETERMINISTIC,
+	IPALLOC_NONDETERMINISTIC,
+	IPALLOC_LCP2,
+};
+
 struct ipalloc_state {
 	uint32_t num;
 
 	/* Arrays with data for each node */
 	struct ctdb_public_ip_list_old **known_public_ips;
 	struct ctdb_public_ip_list_old **available_public_ips;
+
+	enum ipalloc_algorithm algorithm;
 };
 
 struct ctdb_interface {
@@ -2214,12 +2222,16 @@ static void ctdb_takeover_run_core(struct ctdb_context *ctdb,
 	*/
 	*all_ips_p = create_merged_ip_list(ctdb);
 
-        if (1 == ctdb->tunable.lcp2_public_ip_assignment) {
+	switch (ctdb->ipalloc_state->algorithm) {
+	case IPALLOC_LCP2:
 		ip_alloc_lcp2(ctdb, ipflags, *all_ips_p, force_rebalance_nodes);
-	} else if (1 == ctdb->tunable.deterministic_public_ips) {
+		break;
+	case IPALLOC_DETERMINISTIC:
 		ip_alloc_deterministic_ips(ctdb, ipflags, *all_ips_p);
-	} else {
+		break;
+	case IPALLOC_NONDETERMINISTIC:
 		ip_alloc_nondeterministic_ips(ctdb, ipflags, *all_ips_p);
+               break;
 	}
 
 	/* at this point ->pnn is the node which will own each IP
@@ -2460,6 +2472,14 @@ static struct ipalloc_state * ipalloc_state_init(struct ctdb_context *ctdb,
 		DEBUG(DEBUG_ERR, (__location__ " Out of memory\n"));
 		talloc_free(ipalloc_state);
 		return NULL;
+	}
+
+	if (1 == ctdb->tunable.lcp2_public_ip_assignment) {
+		ipalloc_state->algorithm = IPALLOC_LCP2;
+	} else if (1 == ctdb->tunable.deterministic_public_ips) {
+		ipalloc_state->algorithm = IPALLOC_DETERMINISTIC;
+	} else {
+		ipalloc_state->algorithm = IPALLOC_NONDETERMINISTIC;
 	}
 
 	return ipalloc_state;
