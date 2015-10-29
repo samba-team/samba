@@ -431,7 +431,7 @@ int ctdb_ctrl_check_server_id(struct ctdb_context *ctdb,
 int ctdb_ctrl_get_server_id_list(struct ctdb_context *ctdb,
 				 TALLOC_CTX *mem_ctx,
 				 struct timeval timeout, uint32_t destnode,
-				 struct ctdb_server_id_list **svid_list);
+				 struct ctdb_client_id_list_old **svid_list);
 
 /*
   initialise ctdb subsystem

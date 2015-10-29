@@ -2869,7 +2869,7 @@ static int chksrvid(struct ctdb_context *ctdb, int argc, const char **argv)
 static int getsrvids(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	int i, ret;
-	struct ctdb_server_id_list *server_ids;
+	struct ctdb_client_id_list_old *server_ids;
 
 	ret = ctdb_ctrl_get_server_id_list(ctdb, ctdb, TIMELIMIT(), options.pnn, &server_ids);
 	if (ret != 0) {

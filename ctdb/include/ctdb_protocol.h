@@ -796,7 +796,7 @@ struct ctdb_client_id {
 	uint32_t server_id;
 };
 
-struct ctdb_server_id_list {
+struct ctdb_client_id_list_old {
 	uint32_t num;
 	struct ctdb_client_id server_ids[1];
 };

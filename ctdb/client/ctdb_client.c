@@ -3292,9 +3292,9 @@ int ctdb_ctrl_check_server_id(struct ctdb_context *ctdb,
    get the list of server ids that are registered on a node
 */
 int ctdb_ctrl_get_server_id_list(struct ctdb_context *ctdb,
-		TALLOC_CTX *mem_ctx,
-		struct timeval timeout, uint32_t destnode, 
-		struct ctdb_server_id_list **svid_list)
+				 TALLOC_CTX *mem_ctx,
+				 struct timeval timeout, uint32_t destnode,
+				 struct ctdb_client_id_list_old **svid_list)
 {
 	int ret;
 	TDB_DATA outdata;
@@ -3308,8 +3308,8 @@ int ctdb_ctrl_get_server_id_list(struct ctdb_context *ctdb,
 		return -1;
 	}
 
-	*svid_list = (struct ctdb_server_id_list *)talloc_steal(mem_ctx, outdata.dptr);
-		    
+	*svid_list = (struct ctdb_client_id_list_old *)talloc_steal(mem_ctx, outdata.dptr);
+
 	return 0;
 }
 

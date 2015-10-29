@@ -126,7 +126,7 @@ int32_t ctdb_control_unregister_server_id(struct ctdb_context *ctdb,
 
 struct count_server_ids {
 	int count;
-	struct ctdb_server_id_list *list;
+	struct ctdb_client_id_list_old *list;
 };
 
 static int server_id_count(void *param, void *data)
@@ -182,15 +182,14 @@ int32_t ctdb_control_get_server_id_list(struct ctdb_context *ctdb, TDB_DATA *out
 			server_id_count, svid);
 
 
-	outdata->dsize = offsetof(struct ctdb_server_id_list, 
-				server_ids)
+	outdata->dsize = offsetof(struct ctdb_client_id_list_old, server_ids)
 			+ sizeof(struct ctdb_client_id) * svid->count;
 	outdata->dptr  = talloc_size(outdata, outdata->dsize);
 	CTDB_NO_MEMORY(ctdb, outdata->dptr);
 
 
 	/* now fill the structure in */
-	svid->list = (struct ctdb_server_id_list *)(outdata->dptr);
+	svid->list = (struct ctdb_client_id_list_old *)(outdata->dptr);
 	svid->list->num = svid->count;
 	svid->count=0;
 	trbt_traversearray32(ctdb->server_ids, SERVER_ID_KEY_SIZE,
