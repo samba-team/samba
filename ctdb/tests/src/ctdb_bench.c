@@ -64,7 +64,7 @@ static int incr_func(struct ctdb_call_info *call)
 	if (call->record_data.dsize == 0) {
 		call->new_data = talloc(call, TDB_DATA);
 		if (call->new_data == NULL) {
-			return CTDB_ERR_NOMEM;
+			return ENOMEM;
 		}
 		call->new_data->dptr = talloc_size(call, 4);
 		call->new_data->dsize = 4;

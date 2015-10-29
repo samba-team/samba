@@ -59,9 +59,6 @@ struct ctdb_call_info {
 	uint32_t status;       /* optional reply status - defaults to zero */
 };
 
-#define CTDB_ERR_INVALID 1
-#define CTDB_ERR_NOMEM 2
-
 /*
   ctdb flags
 */
@@ -206,9 +203,6 @@ struct ctdb_call_info {
 #define CTDB_BROADCAST_CONNECTED 0xF0000004
 /* send a broadcast to selected connected nodes */
 #define CTDB_MULTICAST 0xF0000005
-
-/* the key used for transaction locking on persistent databases */
-#define CTDB_TRANSACTION_LOCK_KEY "__transaction_lock__"
 
 /* the key used to store persistent db sequence number */
 #define CTDB_DB_SEQNUM_KEY "__db_sequence_number__"
