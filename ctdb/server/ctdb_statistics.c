@@ -67,7 +67,7 @@ int ctdb_statistics_init(struct ctdb_context *ctdb)
 
 
 int32_t ctdb_control_get_stat_history(struct ctdb_context *ctdb, 
-				      struct ctdb_req_control *c,
+				      struct ctdb_req_control_old *c,
 				      TDB_DATA *outdata)
 {
 	int len;

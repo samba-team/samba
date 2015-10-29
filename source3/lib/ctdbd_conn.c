@@ -640,7 +640,7 @@ static int ctdbd_control(struct ctdbd_connection *conn,
 			 TALLOC_CTX *mem_ctx, TDB_DATA *outdata,
 			 int *cstatus)
 {
-	struct ctdb_req_control req;
+	struct ctdb_req_control_old req;
 	struct ctdb_req_header *hdr;
 	struct ctdb_reply_control *reply = NULL;
 	struct iovec iov[2];
@@ -648,7 +648,7 @@ static int ctdbd_control(struct ctdbd_connection *conn,
 	int ret;
 
 	ZERO_STRUCT(req);
-	req.hdr.length = offsetof(struct ctdb_req_control, data) + data.dsize;
+	req.hdr.length = offsetof(struct ctdb_req_control_old, data) + data.dsize;
 	req.hdr.ctdb_magic   = CTDB_MAGIC;
 	req.hdr.ctdb_version = CTDB_PROTOCOL;
 	req.hdr.operation    = CTDB_REQ_CONTROL;
@@ -663,7 +663,7 @@ static int ctdbd_control(struct ctdbd_connection *conn,
 	ctdb_packet_dump(&req.hdr);
 
 	iov[0].iov_base = &req;
-	iov[0].iov_len = offsetof(struct ctdb_req_control, data);
+	iov[0].iov_len = offsetof(struct ctdb_req_control_old, data);
 	iov[1].iov_base = data.dptr;
 	iov[1].iov_len = data.dsize;
 
@@ -742,7 +742,7 @@ bool ctdb_processes_exist(struct ctdbd_connection *conn,
 	}
 
 	for (i=0; i<num_pids; i++) {
-		struct ctdb_req_control req;
+		struct ctdb_req_control_old req;
 		pid_t pid;
 		struct iovec iov[2];
 		ssize_t nwritten;
@@ -762,7 +762,7 @@ bool ctdb_processes_exist(struct ctdbd_connection *conn,
 			   (int)pids[i].vnn, (int)pid,
 			   (int)reqids[i]));
 
-		req.hdr.length = offsetof(struct ctdb_req_control, data);
+		req.hdr.length = offsetof(struct ctdb_req_control_old, data);
 		req.hdr.length += sizeof(pid);
 		req.hdr.ctdb_magic   = CTDB_MAGIC;
 		req.hdr.ctdb_version = CTDB_PROTOCOL;
@@ -778,7 +778,7 @@ bool ctdb_processes_exist(struct ctdbd_connection *conn,
 		ctdb_packet_dump(&req.hdr);
 
 		iov[0].iov_base = &req;
-		iov[0].iov_len = offsetof(struct ctdb_req_control, data);
+		iov[0].iov_len = offsetof(struct ctdb_req_control_old, data);
 		iov[1].iov_base = &pid;
 		iov[1].iov_len = sizeof(pid);
 

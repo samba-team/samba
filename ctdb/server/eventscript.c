@@ -928,7 +928,7 @@ int ctdb_event_script(struct ctdb_context *ctdb, enum ctdb_event call)
 }
 
 struct eventscript_callback_state {
-	struct ctdb_req_control *c;
+	struct ctdb_req_control_old *c;
 };
 
 /*
@@ -985,7 +985,7 @@ static const char *get_call(const char *p, enum ctdb_event *call)
   A control to force running of the eventscripts from the ctdb client tool
 */
 int32_t ctdb_run_eventscripts(struct ctdb_context *ctdb,
-		struct ctdb_req_control *c,
+		struct ctdb_req_control_old *c,
 		TDB_DATA indata, bool *async_reply)
 {
 	int ret;

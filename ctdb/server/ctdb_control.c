@@ -91,7 +91,7 @@ static int32_t control_not_implemented(const char *unsupported,
   process a control request
  */
 static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb, 
-				     struct ctdb_req_control *c,
+				     struct ctdb_req_control_old *c,
 				     TDB_DATA indata,
 				     TDB_DATA *outdata, uint32_t srcnode,
 				     const char **errormsg,
@@ -724,7 +724,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 /*
   send a reply for a ctdb control
  */
-void ctdb_request_control_reply(struct ctdb_context *ctdb, struct ctdb_req_control *c,
+void ctdb_request_control_reply(struct ctdb_context *ctdb, struct ctdb_req_control_old *c,
 				TDB_DATA *outdata, int32_t status, const char *errormsg)
 {
 	struct ctdb_reply_control *r;
@@ -767,7 +767,7 @@ void ctdb_request_control_reply(struct ctdb_context *ctdb, struct ctdb_req_contr
 */
 void ctdb_request_control(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 {
-	struct ctdb_req_control *c = (struct ctdb_req_control *)hdr;
+	struct ctdb_req_control_old *c = (struct ctdb_req_control_old *)hdr;
 	TDB_DATA data, *outdata;
 	int32_t status;
 	bool async_reply = false;
@@ -860,7 +860,7 @@ int ctdb_daemon_send_control(struct ctdb_context *ctdb, uint32_t destnode,
 			     ctdb_control_callback_fn_t callback,
 			     void *private_data)
 {
-	struct ctdb_req_control *c;
+	struct ctdb_req_control_old *c;
 	struct ctdb_control_state *state;
 	size_t len;
 
@@ -901,9 +901,9 @@ int ctdb_daemon_send_control(struct ctdb_context *ctdb, uint32_t destnode,
 
 	talloc_set_destructor(state, ctdb_control_destructor);
 
-	len = offsetof(struct ctdb_req_control, data) + data.dsize;
+	len = offsetof(struct ctdb_req_control_old, data) + data.dsize;
 	c = ctdb_transport_allocate(ctdb, state, CTDB_REQ_CONTROL, len, 
-				    struct ctdb_req_control);
+				    struct ctdb_req_control_old);
 	CTDB_NO_MEMORY(ctdb, c);
 	talloc_set_name_const(c, "ctdb_req_control packet");
 

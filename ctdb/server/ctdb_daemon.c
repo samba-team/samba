@@ -811,7 +811,7 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 
 
 static void daemon_request_control_from_client(struct ctdb_client *client, 
-					       struct ctdb_req_control *c);
+					       struct ctdb_req_control_old *c);
 
 /* data contains a packet from the client */
 static void daemon_incoming_packet(void *p, struct ctdb_req_header *hdr)
@@ -850,7 +850,7 @@ static void daemon_incoming_packet(void *p, struct ctdb_req_header *hdr)
 
 	case CTDB_REQ_CONTROL:
 		CTDB_INCREMENT_STAT(ctdb, client.req_control);
-		daemon_request_control_from_client(client, (struct ctdb_req_control *)hdr);
+		daemon_request_control_from_client(client, (struct ctdb_req_control_old *)hdr);
 		break;
 
 	default:
@@ -1424,7 +1424,7 @@ struct ctdb_req_header *_ctdb_transport_allocate(struct ctdb_context *ctdb,
 struct daemon_control_state {
 	struct daemon_control_state *next, *prev;
 	struct ctdb_client *client;
-	struct ctdb_req_control *c;
+	struct ctdb_req_control_old *c;
 	uint32_t reqid;
 	struct ctdb_node *node;
 };
@@ -1498,7 +1498,7 @@ static int daemon_control_destructor(struct daemon_control_state *state)
   from a local client over the unix domain socket
  */
 static void daemon_request_control_from_client(struct ctdb_client *client, 
-					       struct ctdb_req_control *c)
+					       struct ctdb_req_control_old *c)
 {
 	TDB_DATA data;
 	int res;

@@ -37,7 +37,7 @@ struct ctdb_client_control_state {
 	TDB_DATA outdata;
 	enum control_state state;
 	char *errormsg;
-	struct ctdb_req_control *c;
+	struct ctdb_req_control_old *c;
 
 	/* if we have a callback registered for the completion (or failure) of
 	   this control

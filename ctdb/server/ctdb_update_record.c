@@ -39,7 +39,7 @@
 struct ctdb_persistent_write_state {
 	struct ctdb_db_context *ctdb_db;
 	struct ctdb_marshall_buffer *m;
-	struct ctdb_req_control *c;
+	struct ctdb_req_control_old *c;
 	uint32_t flags;
 };
 
@@ -309,7 +309,7 @@ static struct childwrite_handle *ctdb_childwrite(
    current record
  */
 int32_t ctdb_control_update_record(struct ctdb_context *ctdb,
-				   struct ctdb_req_control *c, TDB_DATA recdata,
+				   struct ctdb_req_control_old *c, TDB_DATA recdata,
 				   bool *async_reply)
 {
 	struct ctdb_db_context *ctdb_db;

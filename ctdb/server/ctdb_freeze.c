@@ -215,8 +215,8 @@ static void ctdb_start_db_freeze(struct ctdb_db_context *ctdb_db)
 static int ctdb_db_freeze_waiter_destructor(struct ctdb_db_freeze_waiter *w)
 {
 	/* 'c' pointer is talloc_memdup(), so cannot use talloc_get_type */
-	struct ctdb_req_control *c =
-		(struct ctdb_req_control *)w->private_data;
+	struct ctdb_req_control_old *c =
+		(struct ctdb_req_control_old *)w->private_data;
 
 	ctdb_request_control_reply(w->ctdb, c, NULL, w->status, NULL);
 	return 0;
@@ -226,7 +226,7 @@ static int ctdb_db_freeze_waiter_destructor(struct ctdb_db_freeze_waiter *w)
  * freeze a database
  */
 int32_t ctdb_control_db_freeze(struct ctdb_context *ctdb,
-			       struct ctdb_req_control *c,
+			       struct ctdb_req_control_old *c,
 			       uint32_t db_id,
 			       bool *async_reply)
 {
@@ -288,7 +288,7 @@ int32_t ctdb_control_db_thaw(struct ctdb_context *ctdb, uint32_t db_id)
 struct ctdb_freeze_waiter {
 	struct ctdb_freeze_waiter *next, *prev;
 	struct ctdb_context *ctdb;
-	struct ctdb_req_control *c;
+	struct ctdb_req_control_old *c;
 	uint32_t priority;
 	int32_t status;
 };
@@ -546,7 +546,7 @@ static int ctdb_freeze_waiter_destructor(struct ctdb_freeze_waiter *w)
 /*
   freeze the databases
  */
-int32_t ctdb_control_freeze(struct ctdb_context *ctdb, struct ctdb_req_control *c, bool *async_reply)
+int32_t ctdb_control_freeze(struct ctdb_context *ctdb, struct ctdb_req_control_old *c, bool *async_reply)
 {
 	struct ctdb_freeze_waiter *w;
 	uint32_t priority;

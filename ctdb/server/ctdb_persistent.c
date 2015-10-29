@@ -41,7 +41,7 @@ struct ctdb_persistent_state {
 	struct ctdb_context *ctdb;
 	struct ctdb_db_context *ctdb_db; /* used by trans3_commit */
 	struct ctdb_client *client; /* used by trans3_commit */
-	struct ctdb_req_control *c;
+	struct ctdb_req_control_old *c;
 	const char *errormsg;
 	uint32_t num_pending;
 	int32_t status;
@@ -173,7 +173,7 @@ static int ctdb_persistent_state_destructor(struct ctdb_persistent_state *state)
  * This is used to roll out a transaction to all nodes.
  */
 int32_t ctdb_control_trans3_commit(struct ctdb_context *ctdb,
-				   struct ctdb_req_control *c,
+				   struct ctdb_req_control_old *c,
 				   TDB_DATA recdata, bool *async_reply)
 {
 	struct ctdb_client *client;
@@ -287,7 +287,7 @@ int32_t ctdb_control_trans3_commit(struct ctdb_context *ctdb,
   for now we ignore the recdata that the client has passed to us.
  */
 int32_t ctdb_control_start_persistent_update(struct ctdb_context *ctdb, 
-				      struct ctdb_req_control *c,
+				      struct ctdb_req_control_old *c,
 				      TDB_DATA recdata)
 {
 	struct ctdb_client *client = reqid_find(ctdb->idr, c->client_id, struct ctdb_client);
@@ -308,7 +308,7 @@ int32_t ctdb_control_start_persistent_update(struct ctdb_context *ctdb,
   called to tell ctdbd that it is no longer doing a persistent update 
 */
 int32_t ctdb_control_cancel_persistent_update(struct ctdb_context *ctdb, 
-					      struct ctdb_req_control *c,
+					      struct ctdb_req_control_old *c,
 					      TDB_DATA recdata)
 {
 	struct ctdb_client *client = reqid_find(ctdb->idr, c->client_id, struct ctdb_client);

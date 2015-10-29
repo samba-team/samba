@@ -583,7 +583,7 @@ int ctdb_add_revoke_deferred_call(struct ctdb_context *ctdb,
 int32_t ctdb_dump_memory(struct ctdb_context *ctdb, TDB_DATA *outdata);
 
 void ctdb_request_control_reply(struct ctdb_context *ctdb,
-				struct ctdb_req_control *c,
+				struct ctdb_req_control_old *c,
 				TDB_DATA *outdata, int32_t status,
 				const char *errormsg);
 
@@ -647,12 +647,12 @@ void ctdb_shutdown_sequence(struct ctdb_context *ctdb, int exit_code);
 /* from server/ctdb_freeze.c */
 
 int32_t ctdb_control_db_freeze(struct ctdb_context *ctdb,
-			       struct ctdb_req_control *c,
+			       struct ctdb_req_control_old *c,
 			       uint32_t db_id, bool *async_reply);
 int32_t ctdb_control_db_thaw(struct ctdb_context *ctdb, uint32_t db_id);
 
 int32_t ctdb_control_freeze(struct ctdb_context *ctdb,
-			    struct ctdb_req_control *c, bool *async_reply);
+			    struct ctdb_req_control_old *c, bool *async_reply);
 int32_t ctdb_control_thaw(struct ctdb_context *ctdb, uint32_t priority,
 			  bool check_recmode);
 
@@ -789,7 +789,7 @@ int ctdb_process_deferred_attach(struct ctdb_context *ctdb);
 int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 			       TDB_DATA *outdata, uint64_t tdb_flags,
 			       bool persistent, uint32_t client_id,
-			       struct ctdb_req_control *c,
+			       struct ctdb_req_control_old *c,
 			       bool *async_reply);
 int32_t ctdb_control_db_detach(struct ctdb_context *ctdb, TDB_DATA indata,
 			       uint32_t client_id);
@@ -832,14 +832,14 @@ bool ctdb_stopped_monitoring(struct ctdb_context *ctdb);
 void ctdb_persistent_finish_trans3_commits(struct ctdb_context *ctdb);
 
 int32_t ctdb_control_trans3_commit(struct ctdb_context *ctdb,
-				   struct ctdb_req_control *c,
+				   struct ctdb_req_control_old *c,
 				   TDB_DATA recdata, bool *async_reply);
 
 int32_t ctdb_control_start_persistent_update(struct ctdb_context *ctdb,
-					     struct ctdb_req_control *c,
+					     struct ctdb_req_control_old *c,
 					     TDB_DATA recdata);
 int32_t ctdb_control_cancel_persistent_update(struct ctdb_context *ctdb,
-					      struct ctdb_req_control *c,
+					      struct ctdb_req_control_old *c,
 					      TDB_DATA recdata);
 
 int32_t ctdb_control_get_db_seqnum(struct ctdb_context *ctdb,
@@ -866,7 +866,7 @@ int32_t ctdb_control_push_db(struct ctdb_context *ctdb, TDB_DATA indata);
 int ctdb_deferred_drop_all_ips(struct ctdb_context *ctdb);
 
 int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
-				 struct ctdb_req_control *c,
+				 struct ctdb_req_control_old *c,
 				 TDB_DATA indata, bool *async_reply,
 				 const char **errormsg);
 
@@ -875,10 +875,10 @@ bool ctdb_recovery_lock(struct ctdb_context *ctdb);
 void ctdb_recovery_unlock(struct ctdb_context *ctdb);
 
 int32_t ctdb_control_end_recovery(struct ctdb_context *ctdb,
-				 struct ctdb_req_control *c,
+				 struct ctdb_req_control_old *c,
 				 bool *async_reply);
 int32_t ctdb_control_start_recovery(struct ctdb_context *ctdb,
-				 struct ctdb_req_control *c,
+				 struct ctdb_req_control_old *c,
 				 bool *async_reply);
 
 int32_t ctdb_control_try_delete_records(struct ctdb_context *ctdb,
@@ -940,21 +940,21 @@ int32_t ctdb_control_get_server_id_list(struct ctdb_context *ctdb,
 int ctdb_statistics_init(struct ctdb_context *ctdb);
 
 int32_t ctdb_control_get_stat_history(struct ctdb_context *ctdb,
-				      struct ctdb_req_control *c,
+				      struct ctdb_req_control_old *c,
 				      TDB_DATA *outdata);
 
 /* from ctdb_takeover.c */
 
 int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb,
-				 struct ctdb_req_control *c,
+				 struct ctdb_req_control_old *c,
 				 TDB_DATA indata,
 				 bool *async_reply);
 int32_t ctdb_control_release_ip(struct ctdb_context *ctdb,
-				 struct ctdb_req_control *c,
+				 struct ctdb_req_control_old *c,
 				 TDB_DATA indata,
 				 bool *async_reply);
 int32_t ctdb_control_ipreallocated(struct ctdb_context *ctdb,
-				 struct ctdb_req_control *c,
+				 struct ctdb_req_control_old *c,
 				 bool *async_reply);
 
 int ctdb_set_public_addresses(struct ctdb_context *ctdb, bool check_addresses);
@@ -977,17 +977,17 @@ void ctdb_takeover_client_destructor_hook(struct ctdb_client *client);
 void ctdb_release_all_ips(struct ctdb_context *ctdb);
 
 int32_t ctdb_control_get_public_ips(struct ctdb_context *ctdb,
-				    struct ctdb_req_control *c,
+				    struct ctdb_req_control_old *c,
 				    TDB_DATA *outdata);
 int32_t ctdb_control_get_public_ip_info(struct ctdb_context *ctdb,
-					struct ctdb_req_control *c,
+					struct ctdb_req_control_old *c,
 					TDB_DATA indata, TDB_DATA *outdata);
 
 int32_t ctdb_control_get_ifaces(struct ctdb_context *ctdb,
-				struct ctdb_req_control *c,
+				struct ctdb_req_control_old *c,
 				TDB_DATA *outdata);
 int32_t ctdb_control_set_iface_link(struct ctdb_context *ctdb,
-				    struct ctdb_req_control *c,
+				    struct ctdb_req_control_old *c,
 				    TDB_DATA indata);
 
 int32_t ctdb_control_kill_tcp(struct ctdb_context *ctdb, TDB_DATA indata);
@@ -1004,7 +1004,7 @@ int32_t ctdb_control_send_gratious_arp(struct ctdb_context *ctdb,
 int32_t ctdb_control_add_public_address(struct ctdb_context *ctdb,
 					TDB_DATA indata);
 int32_t ctdb_control_del_public_address(struct ctdb_context *ctdb,
-					struct ctdb_req_control *c,
+					struct ctdb_req_control_old *c,
 					TDB_DATA recdata, bool *async_reply);
 
 int verify_remote_ip_allocation(struct ctdb_context *ctdb,
@@ -1015,7 +1015,7 @@ int update_ip_assignment_tree(struct ctdb_context *ctdb,
 void clear_ip_assignment_tree(struct ctdb_context *ctdb);
 
 int32_t ctdb_control_reload_public_ips(struct ctdb_context *ctdb,
-				       struct ctdb_req_control *c,
+				       struct ctdb_req_control_old *c,
 				       bool *async_reply);
 
 /* from ctdb_traverse.c */
@@ -1049,7 +1049,7 @@ int32_t ctdb_control_list_tunables(struct ctdb_context *ctdb,
 /* from ctdb_update_record.c */
 
 int32_t ctdb_control_update_record(struct ctdb_context *ctdb,
-				   struct ctdb_req_control *c,
+				   struct ctdb_req_control_old *c,
 				   TDB_DATA recdata, bool *async_reply);
 
 /* from ctdb_uptime.c */
@@ -1093,7 +1093,7 @@ int ctdb_event_script(struct ctdb_context *ctdb,
 		      enum ctdb_event call);
 
 int32_t ctdb_run_eventscripts(struct ctdb_context *ctdb,
-			      struct ctdb_req_control *c,
+			      struct ctdb_req_control_old *c,
 			      TDB_DATA data, bool *async_reply);
 
 int32_t ctdb_control_enable_script(struct ctdb_context *ctdb, TDB_DATA indata);

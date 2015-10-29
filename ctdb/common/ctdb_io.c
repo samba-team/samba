@@ -359,7 +359,7 @@ int ctdb_queue_send(struct ctdb_queue *queue, uint8_t *data, uint32_t length)
 	if (queue->ctdb->tunable.verbose_memory_names != 0) {
 		switch (hdr->operation) {
 		case CTDB_REQ_CONTROL: {
-			struct ctdb_req_control *c = (struct ctdb_req_control *)hdr;
+			struct ctdb_req_control_old *c = (struct ctdb_req_control_old *)hdr;
 			talloc_set_name(pkt, "ctdb_queue_pkt: %s control opcode=%u srvid=%llu datalen=%u",
 					queue->name, (unsigned)c->opcode, (unsigned long long)c->srvid, (unsigned)c->datalen);
 			break;

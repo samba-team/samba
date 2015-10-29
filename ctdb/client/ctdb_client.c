@@ -1073,7 +1073,7 @@ struct ctdb_client_control_state *ctdb_control_send(struct ctdb_context *ctdb,
 {
 	struct ctdb_client_control_state *state;
 	size_t len;
-	struct ctdb_req_control *c;
+	struct ctdb_req_control_old *c;
 	int ret;
 
 	if (errormsg) {
@@ -1095,9 +1095,9 @@ struct ctdb_client_control_state *ctdb_control_send(struct ctdb_context *ctdb,
 
 	talloc_set_destructor(state, ctdb_client_control_destructor);
 
-	len = offsetof(struct ctdb_req_control, data) + data.dsize;
+	len = offsetof(struct ctdb_req_control_old, data) + data.dsize;
 	c = ctdbd_allocate_pkt(ctdb, state, CTDB_REQ_CONTROL, 
-			       len, struct ctdb_req_control);
+			       len, struct ctdb_req_control_old);
 	state->c            = c;	
 	CTDB_NO_MEMORY_NULL(ctdb, c);
 	c->hdr.reqid        = state->reqid;

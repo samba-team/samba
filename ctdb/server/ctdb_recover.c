@@ -408,7 +408,7 @@ failed:
 
 struct ctdb_set_recmode_state {
 	struct ctdb_context *ctdb;
-	struct ctdb_req_control *c;
+	struct ctdb_req_control_old *c;
 	uint32_t recmode;
 	int fd[2];
 	struct tevent_timer *te;
@@ -539,7 +539,7 @@ int ctdb_deferred_drop_all_ips(struct ctdb_context *ctdb)
   set the recovery mode
  */
 int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb, 
-				 struct ctdb_req_control *c,
+				 struct ctdb_req_control_old *c,
 				 TDB_DATA indata, bool *async_reply,
 				 const char **errormsg)
 {
@@ -858,7 +858,7 @@ static int delete_tdb_record(struct ctdb_context *ctdb, struct ctdb_db_context *
 
 
 struct recovery_callback_state {
-	struct ctdb_req_control *c;
+	struct ctdb_req_control_old *c;
 };
 
 
@@ -893,7 +893,7 @@ static void ctdb_end_recovery_callback(struct ctdb_context *ctdb, int status, vo
   recovery has finished
  */
 int32_t ctdb_control_end_recovery(struct ctdb_context *ctdb, 
-				struct ctdb_req_control *c,
+				struct ctdb_req_control_old *c,
 				bool *async_reply)
 {
 	int ret;
@@ -948,7 +948,7 @@ static void ctdb_start_recovery_callback(struct ctdb_context *ctdb, int status, 
   run the startrecovery eventscript
  */
 int32_t ctdb_control_start_recovery(struct ctdb_context *ctdb, 
-				struct ctdb_req_control *c,
+				struct ctdb_req_control_old *c,
 				bool *async_reply)
 {
 	int ret;

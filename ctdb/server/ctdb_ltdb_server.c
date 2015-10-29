@@ -1036,7 +1036,7 @@ again:
 struct ctdb_deferred_attach_context {
 	struct ctdb_deferred_attach_context *next, *prev;
 	struct ctdb_context *ctdb;
-	struct ctdb_req_control *c;
+	struct ctdb_req_control_old *c;
 };
 
 
@@ -1093,7 +1093,7 @@ int ctdb_process_deferred_attach(struct ctdb_context *ctdb)
 int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 			       TDB_DATA *outdata, uint64_t tdb_flags, 
 			       bool persistent, uint32_t client_id,
-			       struct ctdb_req_control *c,
+			       struct ctdb_req_control_old *c,
 			       bool *async_reply)
 {
 	const char *db_name = (const char *)indata.dptr;

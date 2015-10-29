@@ -404,13 +404,13 @@ static int32_t ctdb_announce_vnn_iface(struct ctdb_context *ctdb,
 }
 
 struct takeover_callback_state {
-	struct ctdb_req_control *c;
+	struct ctdb_req_control_old *c;
 	ctdb_sock_addr *addr;
 	struct ctdb_vnn *vnn;
 };
 
 struct ctdb_do_takeip_state {
-	struct ctdb_req_control *c;
+	struct ctdb_req_control_old *c;
 	struct ctdb_vnn *vnn;
 };
 
@@ -475,7 +475,7 @@ static int ctdb_takeip_destructor(struct ctdb_do_takeip_state *state)
   take over an ip address
  */
 static int32_t ctdb_do_takeip(struct ctdb_context *ctdb,
-			      struct ctdb_req_control *c,
+			      struct ctdb_req_control_old *c,
 			      struct ctdb_vnn *vnn)
 {
 	int ret;
@@ -534,7 +534,7 @@ static int32_t ctdb_do_takeip(struct ctdb_context *ctdb,
 }
 
 struct ctdb_do_updateip_state {
-	struct ctdb_req_control *c;
+	struct ctdb_req_control_old *c;
 	struct ctdb_iface *old;
 	struct ctdb_vnn *vnn;
 };
@@ -598,7 +598,7 @@ static int ctdb_updateip_destructor(struct ctdb_do_updateip_state *state)
   update (move) an ip address
  */
 static int32_t ctdb_do_updateip(struct ctdb_context *ctdb,
-				struct ctdb_req_control *c,
+				struct ctdb_req_control_old *c,
 				struct ctdb_vnn *vnn)
 {
 	int ret;
@@ -694,7 +694,7 @@ static struct ctdb_vnn *find_public_ip_vnn(struct ctdb_context *ctdb, ctdb_sock_
   take over an ip address
  */
 int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb,
-				 struct ctdb_req_control *c,
+				 struct ctdb_req_control_old *c,
 				 TDB_DATA indata,
 				 bool *async_reply)
 {
@@ -926,7 +926,7 @@ static int ctdb_releaseip_destructor(struct takeover_callback_state *state)
   release an ip address
  */
 int32_t ctdb_control_release_ip(struct ctdb_context *ctdb, 
-				struct ctdb_req_control *c,
+				struct ctdb_req_control_old *c,
 				TDB_DATA indata, 
 				bool *async_reply)
 {
@@ -3197,7 +3197,7 @@ void ctdb_release_all_ips(struct ctdb_context *ctdb)
   get list of public IPs
  */
 int32_t ctdb_control_get_public_ips(struct ctdb_context *ctdb, 
-				    struct ctdb_req_control *c, TDB_DATA *outdata)
+				    struct ctdb_req_control_old *c, TDB_DATA *outdata)
 {
 	int i, num, len;
 	struct ctdb_all_public_ips *ips;
@@ -3240,7 +3240,7 @@ int32_t ctdb_control_get_public_ips(struct ctdb_context *ctdb,
 
 
 int32_t ctdb_control_get_public_ip_info(struct ctdb_context *ctdb,
-					struct ctdb_req_control *c,
+					struct ctdb_req_control_old *c,
 					TDB_DATA indata,
 					TDB_DATA *outdata)
 {
@@ -3309,7 +3309,7 @@ int32_t ctdb_control_get_public_ip_info(struct ctdb_context *ctdb,
 }
 
 int32_t ctdb_control_get_ifaces(struct ctdb_context *ctdb,
-				struct ctdb_req_control *c,
+				struct ctdb_req_control_old *c,
 				TDB_DATA *outdata)
 {
 	int i, num, len;
@@ -3345,7 +3345,7 @@ int32_t ctdb_control_get_ifaces(struct ctdb_context *ctdb,
 }
 
 int32_t ctdb_control_set_iface_link(struct ctdb_context *ctdb,
-				    struct ctdb_req_control *c,
+				    struct ctdb_req_control_old *c,
 				    TDB_DATA indata)
 {
 	struct ctdb_control_iface_info *info;
@@ -4058,7 +4058,7 @@ int32_t ctdb_control_add_public_address(struct ctdb_context *ctdb, TDB_DATA inda
 }
 
 struct delete_ip_callback_state {
-	struct ctdb_req_control *c;
+	struct ctdb_req_control_old *c;
 };
 
 /*
@@ -4078,7 +4078,7 @@ static void delete_ip_callback(struct ctdb_context *ctdb,
 }
 
 int32_t ctdb_control_del_public_address(struct ctdb_context *ctdb,
-					struct ctdb_req_control *c,
+					struct ctdb_req_control_old *c,
 					TDB_DATA indata, bool *async_reply)
 {
 	struct ctdb_control_ip_iface *pub = (struct ctdb_control_ip_iface *)indata.dptr;
@@ -4167,7 +4167,7 @@ int32_t ctdb_control_del_public_address(struct ctdb_context *ctdb,
 
 
 struct ipreallocated_callback_state {
-	struct ctdb_req_control *c;
+	struct ctdb_req_control_old *c;
 };
 
 static void ctdb_ipreallocated_callback(struct ctdb_context *ctdb,
@@ -4191,7 +4191,7 @@ static void ctdb_ipreallocated_callback(struct ctdb_context *ctdb,
 
 /* A control to run the ipreallocated event */
 int32_t ctdb_control_ipreallocated(struct ctdb_context *ctdb,
-				   struct ctdb_req_control *c,
+				   struct ctdb_req_control_old *c,
 				   bool *async_reply)
 {
 	int ret;
@@ -4299,7 +4299,7 @@ void clear_ip_assignment_tree(struct ctdb_context *ctdb)
 
 struct ctdb_reloadips_handle {
 	struct ctdb_context *ctdb;
-	struct ctdb_req_control *c;
+	struct ctdb_req_control_old *c;
 	int status;
 	int fd[2];
 	pid_t child;
@@ -4525,7 +4525,7 @@ failed:
    and drop any addresses we should nnot longer host, and add new addresses
    that we are now able to host
 */
-int32_t ctdb_control_reload_public_ips(struct ctdb_context *ctdb, struct ctdb_req_control *c, bool *async_reply)
+int32_t ctdb_control_reload_public_ips(struct ctdb_context *ctdb, struct ctdb_req_control_old *c, bool *async_reply)
 {
 	struct ctdb_reloadips_handle *h;
 	pid_t parent = getpid();

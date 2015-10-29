@@ -540,7 +540,7 @@ ctdb_ctrl_getpnn_stub(struct ctdb_context *ctdb, struct timeval timeout,
 
 /* From ctdb_takeover.c */
 int32_t ctdb_control_get_ifaces(struct ctdb_context *ctdb,
-				struct ctdb_req_control *c,
+				struct ctdb_req_control_old *c,
 				TDB_DATA *outdata)
 {
 	int i, num, len;

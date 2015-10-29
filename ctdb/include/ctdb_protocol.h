@@ -480,7 +480,7 @@ struct ctdb_req_message_old {
 	uint8_t data[1];
 };
 
-struct ctdb_req_control {
+struct ctdb_req_control_old {
 	struct ctdb_req_header hdr;
 	uint32_t opcode;
 	uint32_t pad;
