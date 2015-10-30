@@ -1384,6 +1384,89 @@ static int uwrap_setresgid(gid_t rgid, gid_t egid, gid_t sgid)
 	return 0;
 }
 
+static int uwrap_setregid_args(gid_t rgid, gid_t egid,
+			       gid_t *_new_rgid,
+			       gid_t *_new_egid,
+			       gid_t *_new_sgid)
+{
+	struct uwrap_thread *id = uwrap_tls_id;
+	gid_t new_rgid = -1, new_egid = -1, new_sgid = -1;
+
+	UWRAP_LOG(UWRAP_LOG_TRACE,
+		  "rgid %d -> %d, egid %d -> %d",
+		  id->rgid, rgid, id->egid, egid);
+
+	if (rgid != (gid_t)-1) {
+		new_rgid = rgid;
+		if (rgid != id->rgid &&
+		    rgid != id->egid &&
+		    id->euid != 0) {
+			errno = EPERM;
+			return -1;
+		}
+	}
+
+	if (egid != (gid_t)-1) {
+		new_egid = egid;
+		if (egid != id->rgid &&
+		    egid != id->egid &&
+		    egid != id->sgid &&
+		    id->euid != 0) {
+			errno = EPERM;
+			return -1;
+		}
+	}
+
+	if (rgid != (gid_t) -1 ||
+	    (egid != (gid_t)-1 && id->rgid != egid)) {
+		new_sgid = new_egid;
+	}
+
+	*_new_rgid = new_rgid;
+	*_new_egid = new_egid;
+	*_new_sgid = new_sgid;
+
+	return 0;
+}
+
+static int uwrap_setregid_thread(gid_t rgid, gid_t egid)
+{
+	struct uwrap_thread *id = uwrap_tls_id;
+	gid_t new_rgid = -1, new_egid = -1, new_sgid = -1;
+	int rc;
+
+	UWRAP_LOG(UWRAP_LOG_TRACE,
+		  "rgid %d -> %d, egid %d -> %d",
+		  id->rgid, rgid, id->egid, egid);
+
+	rc = uwrap_setregid_args(rgid, egid, &new_rgid, &new_egid, &new_sgid);
+	if (rc != 0) {
+		return rc;
+	}
+
+	return uwrap_setresgid_thread(new_rgid, new_egid, new_sgid);
+}
+
+#ifdef HAVE_SETREGID
+static int uwrap_setregid(gid_t rgid, gid_t egid)
+{
+	struct uwrap_thread *id = uwrap_tls_id;
+	gid_t new_rgid = -1, new_egid = -1, new_sgid = -1;
+	int rc;
+
+	UWRAP_LOG(UWRAP_LOG_TRACE,
+		  "rgid %d -> %d, egid %d -> %d",
+		  id->rgid, rgid, id->egid, egid);
+
+	rc = uwrap_setregid_args(rgid, egid, &new_rgid, &new_egid, &new_sgid);
+	if (rc != 0) {
+		return rc;
+	}
+
+	return uwrap_setresgid(new_rgid, new_egid, new_sgid);
+}
+#endif
+
 /*
  * SETUID
  */
@@ -1540,7 +1623,7 @@ int setregid(gid_t rgid, gid_t egid)
 	}
 
 	uwrap_init();
-	return uwrap_setresgid(rgid, egid, -1);
+	return uwrap_setregid(rgid, egid);
 }
 #endif
 
@@ -1778,7 +1861,7 @@ static long int uwrap_syscall (long int sysno, va_list vp)
 				gid_t rgid = (gid_t) va_arg(vp, gid_t);
 				gid_t egid = (gid_t) va_arg(vp, gid_t);
 
-				rc = uwrap_setresgid_thread(rgid, egid, -1);
+				rc = uwrap_setregid_thread(rgid, egid);
 			}
 			break;
 #ifdef SYS_setresgid
