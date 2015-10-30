@@ -2361,8 +2361,7 @@ static uint32_t *get_tunable_from_nodes(struct ctdb_context *ctdb,
  *     Set NOIPHOST ip flags for disabled nodes
  */
 static struct ctdb_ipflags *
-set_ipflags_internal(struct ctdb_context *ctdb,
-		     TALLOC_CTX *tmp_ctx,
+set_ipflags_internal(TALLOC_CTX *tmp_ctx,
 		     struct ctdb_node_map_old *nodemap,
 		     uint32_t *tval_noiptakeover,
 		     uint32_t *tval_noiphostonalldisabled)
@@ -2372,7 +2371,10 @@ set_ipflags_internal(struct ctdb_context *ctdb,
 
 	/* Clear IP flags - implicit due to talloc_zero */
 	ipflags = talloc_zero_array(tmp_ctx, struct ctdb_ipflags, nodemap->num);
-	CTDB_NO_MEMORY_NULL(ctdb, ipflags);
+	if (ipflags == NULL) {
+		DEBUG(DEBUG_ERR, (__location__ " out of memory\n"));
+		return NULL;
+	}
 
 	for (i=0;i<nodemap->num;i++) {
 		/* Can not take IPs on node with NoIPTakeover set */
@@ -2432,7 +2434,7 @@ static struct ctdb_ipflags *set_ipflags(struct ctdb_context *ctdb,
 		return NULL;
 	}
 
-	ipflags = set_ipflags_internal(ctdb, tmp_ctx, nodemap,
+	ipflags = set_ipflags_internal(tmp_ctx, nodemap,
 				       tval_noiptakeover,
 				       tval_noiphostonalldisabled);
 

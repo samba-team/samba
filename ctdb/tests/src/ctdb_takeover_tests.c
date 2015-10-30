@@ -517,7 +517,7 @@ static void ctdb_test_init(const char nodestates[],
 		(*ipalloc_state)->known_public_ips[i] = known[i];
 	}
 
-	*ipflags = set_ipflags_internal(*ctdb, *ctdb, nodemap,
+	*ipflags = set_ipflags_internal(*ctdb, nodemap,
 					tval_noiptakeover,
 					tval_noiptakeoverondisabled);
 }
