@@ -1278,6 +1278,113 @@ static int uwrap_getresgid(gid_t *rgid, gid_t *egid, gid_t *sgid)
 #endif
 
 /*
+ * UWRAP_SETxGID FUNCTIONS
+ */
+
+static int uwrap_setresgid_args(gid_t rgid, gid_t egid, gid_t sgid)
+{
+	struct uwrap_thread *id = uwrap_tls_id;
+
+	UWRAP_LOG(UWRAP_LOG_TRACE,
+		  "rgid %d -> %d, egid %d -> %d, sgid %d -> %d",
+		  id->rgid, rgid, id->egid, egid, id->sgid, sgid);
+
+	if (id->euid != 0) {
+		if (rgid != (gid_t)-1 &&
+		    rgid != id->rgid &&
+		    rgid != id->egid &&
+		    rgid != id->sgid) {
+			errno = EPERM;
+			return -1;
+		}
+		if (egid != (gid_t)-1 &&
+		    egid != id->rgid &&
+		    egid != id->egid &&
+		    egid != id->sgid) {
+			errno = EPERM;
+			return -1;
+		}
+		if (sgid != (gid_t)-1 &&
+		    sgid != id->rgid &&
+		    sgid != id->egid &&
+		    sgid != id->sgid) {
+			errno = EPERM;
+			return -1;
+		}
+	}
+
+	return 0;
+}
+
+static int uwrap_setresgid_thread(gid_t rgid, gid_t egid, gid_t sgid)
+{
+	struct uwrap_thread *id = uwrap_tls_id;
+	int rc;
+
+	UWRAP_LOG(UWRAP_LOG_TRACE,
+		  "rgid %d -> %d, egid %d -> %d, sgid %d -> %d",
+		  id->rgid, rgid, id->egid, egid, id->sgid, sgid);
+
+	rc = uwrap_setresgid_args(rgid, egid, sgid);
+	if (rc != 0) {
+		return rc;
+	}
+
+	UWRAP_LOCK(uwrap_id);
+
+	if (rgid != (gid_t)-1) {
+		id->rgid = rgid;
+	}
+
+	if (egid != (gid_t)-1) {
+		id->egid = egid;
+	}
+
+	if (sgid != (gid_t)-1) {
+		id->sgid = sgid;
+	}
+
+	UWRAP_UNLOCK(uwrap_id);
+
+	return 0;
+}
+
+static int uwrap_setresgid(gid_t rgid, gid_t egid, gid_t sgid)
+{
+	struct uwrap_thread *id = uwrap_tls_id;
+	int rc;
+
+	UWRAP_LOG(UWRAP_LOG_TRACE,
+		  "rgid %d -> %d, egid %d -> %d, sgid %d -> %d",
+		  id->rgid, rgid, id->egid, egid, id->sgid, sgid);
+
+	rc = uwrap_setresgid_args(rgid, egid, sgid);
+	if (rc != 0) {
+		return rc;
+	}
+
+	UWRAP_LOCK(uwrap_id);
+
+	for (id = uwrap.ids; id; id = id->next) {
+		if (rgid != (gid_t)-1) {
+			id->rgid = rgid;
+		}
+
+		if (egid != (gid_t)-1) {
+			id->egid = egid;
+		}
+
+		if (sgid != (gid_t)-1) {
+			id->sgid = sgid;
+		}
+	}
+
+	UWRAP_UNLOCK(uwrap_id);
+
+	return 0;
+}
+
+/*
  * SETUID
  */
 int setuid(uid_t uid)
@@ -1398,61 +1505,6 @@ uid_t geteuid(void)
 
 	uwrap_init();
 	return uwrap_geteuid();
-}
-
-static int uwrap_setresgid_thread(gid_t rgid, gid_t egid, gid_t sgid)
-{
-	struct uwrap_thread *id = uwrap_tls_id;
-
-	if (rgid == (gid_t)-1 && egid == (gid_t)-1 && sgid == (gid_t)-1) {
-		errno = EINVAL;
-		return -1;
-	}
-
-	UWRAP_LOCK(uwrap_id);
-	if (rgid != (gid_t)-1) {
-		id->rgid = rgid;
-	}
-
-	if (egid != (gid_t)-1) {
-		id->egid = egid;
-	}
-
-	if (sgid != (gid_t)-1) {
-		id->sgid = sgid;
-	}
-
-	UWRAP_UNLOCK(uwrap_id);
-
-	return 0;
-}
-
-static int uwrap_setresgid(gid_t rgid, gid_t egid, gid_t sgid)
-{
-	struct uwrap_thread *id;
-
-	if (rgid == (gid_t)-1 && egid == (gid_t)-1 && sgid == (gid_t)-1) {
-		errno = EINVAL;
-		return -1;
-	}
-
-	UWRAP_LOCK(uwrap_id);
-	for (id = uwrap.ids; id; id = id->next) {
-		if (rgid != (gid_t)-1) {
-			id->rgid = rgid;
-		}
-
-		if (egid != (gid_t)-1) {
-			id->egid = egid;
-		}
-
-		if (sgid != (gid_t)-1) {
-			id->sgid = sgid;
-		}
-	}
-	UWRAP_UNLOCK(uwrap_id);
-
-	return 0;
 }
 
 /*
