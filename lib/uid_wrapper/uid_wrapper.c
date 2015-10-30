@@ -994,33 +994,61 @@ bool uid_wrapper_enabled(void)
 	return enabled;
 }
 
-#ifdef HAVE_GETRESUID
-static int uwrap_getresuid(uid_t *ruid, uid_t *euid, uid_t *suid)
+/*
+ * UWRAP_SETxUID FUNCTIONS
+ */
+
+static int uwrap_setresuid_args(uid_t ruid, uid_t euid, uid_t suid)
 {
 	struct uwrap_thread *id = uwrap_tls_id;
 
-	UWRAP_LOCK(uwrap_id);
+	UWRAP_LOG(UWRAP_LOG_TRACE,
+		  "ruid %d -> %d, euid %d -> %d, suid %d -> %d",
+		  id->ruid, ruid, id->euid, euid, id->suid, suid);
 
-	*ruid = id->ruid;
-	*euid = id->euid;
-	*suid = id->suid;
-
-	UWRAP_UNLOCK(uwrap_id);
+	if (id->euid != 0) {
+		if (ruid != (uid_t)-1 &&
+		    ruid != id->ruid &&
+		    ruid != id->euid &&
+		    ruid != id->suid) {
+			errno = EPERM;
+			return -1;
+		}
+		if (euid != (uid_t)-1 &&
+		    euid != id->ruid &&
+		    euid != id->euid &&
+		    euid != id->suid) {
+			errno = EPERM;
+			return -1;
+		}
+		if (suid != (uid_t)-1 &&
+		    suid != id->ruid &&
+		    suid != id->euid &&
+		    suid != id->suid) {
+			errno = EPERM;
+			return -1;
+		}
+	}
 
 	return 0;
 }
-#endif
 
 static int uwrap_setresuid_thread(uid_t ruid, uid_t euid, uid_t suid)
 {
 	struct uwrap_thread *id = uwrap_tls_id;
+	int rc;
 
-	if (ruid == (uid_t)-1 && euid == (uid_t)-1 && suid == (uid_t)-1) {
-		errno = EINVAL;
-		return -1;
+	UWRAP_LOG(UWRAP_LOG_TRACE,
+		  "ruid %d -> %d, euid %d -> %d, suid %d -> %d",
+		  id->ruid, ruid, id->euid, euid, id->suid, suid);
+
+	rc = uwrap_setresuid_args(ruid, euid, suid);
+	if (rc != 0) {
+		return rc;
 	}
 
 	UWRAP_LOCK(uwrap_id);
+
 	if (ruid != (uid_t)-1) {
 		id->ruid = ruid;
 	}
@@ -1038,33 +1066,22 @@ static int uwrap_setresuid_thread(uid_t ruid, uid_t euid, uid_t suid)
 	return 0;
 }
 
-#ifdef HAVE_GETRESGID
-static int uwrap_getresgid(gid_t *rgid, gid_t *egid, gid_t *sgid)
-{
-	struct uwrap_thread *id = uwrap_tls_id;
-
-	UWRAP_LOCK(uwrap_id);
-
-	*rgid = id->rgid;
-	*egid = id->egid;
-	*sgid = id->sgid;
-
-	UWRAP_UNLOCK(uwrap_id);
-
-	return 0;
-}
-#endif
-
 static int uwrap_setresuid(uid_t ruid, uid_t euid, uid_t suid)
 {
-	struct uwrap_thread *id;
+	struct uwrap_thread *id = uwrap_tls_id;
+	int rc;
 
-	if (ruid == (uid_t)-1 && euid == (uid_t)-1 && suid == (uid_t)-1) {
-		errno = EINVAL;
-		return -1;
+	UWRAP_LOG(UWRAP_LOG_TRACE,
+		  "ruid %d -> %d, euid %d -> %d, suid %d -> %d",
+		  id->ruid, ruid, id->euid, euid, id->suid, suid);
+
+	rc = uwrap_setresuid_args(ruid, euid, suid);
+	if (rc != 0) {
+		return rc;
 	}
 
 	UWRAP_LOCK(uwrap_id);
+
 	for (id = uwrap.ids; id; id = id->next) {
 		if (ruid != (uid_t)-1) {
 			id->ruid = ruid;
@@ -1083,6 +1100,45 @@ static int uwrap_setresuid(uid_t ruid, uid_t euid, uid_t suid)
 
 	return 0;
 }
+
+
+/*
+ * UWRAP_GETxUID FUNCTIONS
+ */
+
+#ifdef HAVE_GETRESUID
+static int uwrap_getresuid(uid_t *ruid, uid_t *euid, uid_t *suid)
+{
+	struct uwrap_thread *id = uwrap_tls_id;
+
+	UWRAP_LOCK(uwrap_id);
+
+	*ruid = id->ruid;
+	*euid = id->euid;
+	*suid = id->suid;
+
+	UWRAP_UNLOCK(uwrap_id);
+
+	return 0;
+}
+#endif
+
+#ifdef HAVE_GETRESGID
+static int uwrap_getresgid(gid_t *rgid, gid_t *egid, gid_t *sgid)
+{
+	struct uwrap_thread *id = uwrap_tls_id;
+
+	UWRAP_LOCK(uwrap_id);
+
+	*rgid = id->rgid;
+	*egid = id->egid;
+	*sgid = id->sgid;
+
+	UWRAP_UNLOCK(uwrap_id);
+
+	return 0;
+}
+#endif
 
 /*
  * SETUID
