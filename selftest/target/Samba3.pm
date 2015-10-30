@@ -869,6 +869,7 @@ sub check_or_start($$$$$) {
 		$ENV{NSS_WRAPPER_HOSTNAME} = $env_vars->{NSS_WRAPPER_HOSTNAME};
 		$ENV{NSS_WRAPPER_MODULE_SO_PATH} = $env_vars->{NSS_WRAPPER_MODULE_SO_PATH};
 		$ENV{NSS_WRAPPER_MODULE_FN_PREFIX} = $env_vars->{NSS_WRAPPER_MODULE_FN_PREFIX};
+		$ENV{UID_WRAPPER_ROOT} = "1";
 
 		$ENV{ENVNAME} = "$ENV{ENVNAME}.nmbd";
 
@@ -932,6 +933,7 @@ sub check_or_start($$$$$) {
 		} else {
 			$ENV{RESOLV_WRAPPER_HOSTS} = $env_vars->{RESOLV_WRAPPER_HOSTS};
 		}
+		$ENV{UID_WRAPPER_ROOT} = "1";
 
 		$ENV{ENVNAME} = "$ENV{ENVNAME}.winbindd";
 
@@ -995,6 +997,7 @@ sub check_or_start($$$$$) {
 		} else {
 			$ENV{RESOLV_WRAPPER_HOSTS} = $env_vars->{RESOLV_WRAPPER_HOSTS};
 		}
+		$ENV{UID_WRAPPER_ROOT} = "1";
 
 		$ENV{ENVNAME} = "$ENV{ENVNAME}.smbd";
 
