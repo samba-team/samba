@@ -42,6 +42,12 @@ wait_until_generation_has_changed ()
     wait_until 60 generation_has_changed
 }
 
+wait_until_recovered ()
+{
+    wait_until_generation_has_changed
+    wait_until_node_has_status all recovered
+}
+
 echo "Check that recovery lock is set the same on all nodes..."
 try_command_on_node -v -q all $CTDB getreclock
 n=$(echo "$out" | sort -u | wc -l)
@@ -68,7 +74,8 @@ echo "Remember original recovery lock file: \"${orig_reclock}\""
 
 echo
 echo "Unset and test the recovery lock on all nodes..."
-try_command_on_node -q all $CTDB setreclock
+try_command_on_node -pq all $CTDB setreclock
+wait_until_recovered
 try_command_on_node -v -q all $CTDB getreclock
 t=$(sort -u <<<"$out")
 if [ "$t" = "No reclock file used." ] ; then
@@ -85,7 +92,8 @@ echo "Current generation is ${generation}"
 alt="${orig_reclock}.test"
 echo
 echo "Set alternative recovery lock (${alt}) and test on all nodes..."
-try_command_on_node -q all $CTDB setreclock "$alt"
+try_command_on_node -pq all $CTDB setreclock "$alt"
+wait_until_recovered
 try_command_on_node -v -q all $CTDB getreclock
 t=$(echo "$out" | sed -e 's@^Reclock file:@@' | sort -u)
 if [ "$t" = "$alt" ] ; then
@@ -97,12 +105,12 @@ else
 fi
 
 # Setting or updating the recovery lock file must cause a recovery
-wait_until_generation_has_changed
 echo "Current generation is ${generation}"
 
 echo
 echo "Restore and test the recovery lock on all nodes..."
-try_command_on_node -q all $CTDB setreclock "$orig_reclock"
+try_command_on_node -pq all $CTDB setreclock "$orig_reclock"
+wait_until_recovered
 try_command_on_node -v all rm -vf "$alt"
 try_command_on_node -v -q all $CTDB getreclock
 t=$(echo "$out" | sed -e 's@^Reclock file:@@' | sort -u)
@@ -113,5 +121,4 @@ else
     exit 1
 fi
 
-wait_until_generation_has_changed
 echo "Current generation is ${generation}"
