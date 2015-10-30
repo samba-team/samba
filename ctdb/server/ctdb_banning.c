@@ -72,8 +72,9 @@ void ctdb_local_node_got_banned(struct ctdb_context *ctdb)
 		ctdb_db->generation = INVALID_GENERATION;
 	}
 
-	/* make sure we get frozen */
-	ctdb->recovery_mode = CTDB_RECOVERY_ACTIVE;
+	/* Recovery daemon will set the recovery mode ACTIVE and freeze
+	 * databases.
+	 */
 
 	ctdb_release_all_ips(ctdb);
 }
