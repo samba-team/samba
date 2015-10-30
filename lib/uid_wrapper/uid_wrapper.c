@@ -1293,13 +1293,14 @@ int setuid(uid_t uid)
 #ifdef HAVE_SETEUID
 int seteuid(uid_t euid)
 {
+	if (!uid_wrapper_enabled()) {
+		return libc_seteuid(euid);
+	}
+
+	/* On FreeBSD the uid_t -1 is set and doesn't produce and error */
 	if (euid == (uid_t)-1) {
 		errno = EINVAL;
 		return -1;
-	}
-
-	if (!uid_wrapper_enabled()) {
-		return libc_seteuid(euid);
 	}
 
 	uwrap_init();
