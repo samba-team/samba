@@ -812,6 +812,11 @@ static void uwrap_thread_prepare(void)
 {
 	struct uwrap_thread *id = uwrap_tls_id;
 
+	/* uid_wrapper is loaded but not enabled */
+	if (id == NULL) {
+		return;
+	}
+
 	UWRAP_LOCK_ALL;
 
 	/*
@@ -826,6 +831,12 @@ static void uwrap_thread_prepare(void)
 static void uwrap_thread_parent(void)
 {
 	struct uwrap_thread *id = uwrap_tls_id;
+
+	/* uid_wrapper is loaded but not enabled */
+	if (id == NULL) {
+		return;
+	}
+
 	id->enabled = true;
 
 	UWRAP_UNLOCK_ALL;
@@ -835,6 +846,11 @@ static void uwrap_thread_child(void)
 {
 	struct uwrap_thread *id = uwrap_tls_id;
 	struct uwrap_thread *u = uwrap.ids;
+
+	/* uid_wrapper is loaded but not enabled */
+	if (id == NULL) {
+		return;
+	}
 
 	/*
 	 * "Garbage collector" - Inspired by DESTRUCTOR.
