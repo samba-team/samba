@@ -1148,7 +1148,9 @@ static int uwrap_setreuid_args(uid_t ruid, uid_t euid,
 
 static int uwrap_setreuid_thread(uid_t ruid, uid_t euid)
 {
+#ifndef NDEBUG
 	struct uwrap_thread *id = uwrap_tls_id;
+#endif
 	uid_t new_ruid = -1, new_euid = -1, new_suid = -1;
 	int rc;
 
@@ -1167,7 +1169,9 @@ static int uwrap_setreuid_thread(uid_t ruid, uid_t euid)
 #ifdef HAVE_SETREUID
 static int uwrap_setreuid(uid_t ruid, uid_t euid)
 {
+#ifndef NDEBUG
 	struct uwrap_thread *id = uwrap_tls_id;
+#endif
 	uid_t new_ruid = -1, new_euid = -1, new_suid = -1;
 	int rc;
 
@@ -1431,7 +1435,9 @@ static int uwrap_setregid_args(gid_t rgid, gid_t egid,
 
 static int uwrap_setregid_thread(gid_t rgid, gid_t egid)
 {
+#ifndef NDEBUG
 	struct uwrap_thread *id = uwrap_tls_id;
+#endif
 	gid_t new_rgid = -1, new_egid = -1, new_sgid = -1;
 	int rc;
 
@@ -1450,7 +1456,9 @@ static int uwrap_setregid_thread(gid_t rgid, gid_t egid)
 #ifdef HAVE_SETREGID
 static int uwrap_setregid(gid_t rgid, gid_t egid)
 {
+#ifndef NDEBUG
 	struct uwrap_thread *id = uwrap_tls_id;
+#endif
 	gid_t new_rgid = -1, new_egid = -1, new_sgid = -1;
 	int rc;
 
