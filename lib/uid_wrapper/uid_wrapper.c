@@ -1467,6 +1467,61 @@ static int uwrap_setregid(gid_t rgid, gid_t egid)
 }
 #endif
 
+static int uwrap_setgid_args(gid_t gid,
+			     gid_t *new_rgid,
+			     gid_t *new_egid,
+			     gid_t *new_sgid)
+{
+	struct uwrap_thread *id = uwrap_tls_id;
+
+	UWRAP_LOG(UWRAP_LOG_TRACE,
+		  "gid %d -> %d",
+		  id->rgid, gid);
+
+	if (gid == (gid_t)-1) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	if (id->euid == 0) {
+		*new_sgid = *new_rgid = gid;
+	} else if (gid != id->rgid &&
+		   gid != id->sgid) {
+		errno = EPERM;
+		return -1;
+	}
+
+	*new_egid = gid;
+
+	return 0;
+}
+
+static int uwrap_setgid_thread(gid_t gid)
+{
+	gid_t new_rgid = -1, new_egid = -1, new_sgid = -1;
+	int rc;
+
+	rc = uwrap_setgid_args(gid, &new_rgid, &new_egid, &new_sgid);
+	if (rc != 0) {
+		return rc;
+	}
+
+	return uwrap_setresgid_thread(new_rgid, new_egid, new_sgid);
+}
+
+static int uwrap_setgid(gid_t gid)
+{
+	gid_t new_rgid = -1, new_egid = -1, new_sgid = -1;
+	int rc;
+
+	rc = uwrap_setgid_args(gid, &new_rgid, &new_egid, &new_sgid);
+	if (rc != 0) {
+		return rc;
+	}
+
+	return uwrap_setresgid(new_rgid, new_egid, new_sgid);
+}
+
 /*
  * SETUID
  */
@@ -1600,7 +1655,7 @@ int setgid(gid_t gid)
 	}
 
 	uwrap_init();
-	return uwrap_setresgid(gid, -1, -1);
+	return uwrap_setgid(gid);
 }
 
 #ifdef HAVE_SETEGID
@@ -1850,7 +1905,7 @@ static long int uwrap_syscall (long int sysno, va_list vp)
 			{
 				gid_t gid = (gid_t) va_arg(vp, gid_t);
 
-				rc = uwrap_setresgid_thread(gid, -1, -1);
+				rc = uwrap_setgid_thread(gid);
 			}
 			break;
 		case SYS_setregid:
