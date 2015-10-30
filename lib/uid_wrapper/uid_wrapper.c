@@ -952,8 +952,9 @@ static void uwrap_init(void)
 		id->enabled = true;
 
 		UWRAP_LOG(UWRAP_LOG_DEBUG,
-			  "Enabled uid_wrapper as %s",
-			  uwrap.myuid == 0 ? "root" : "user");
+			  "Enabled uid_wrapper as %s (real uid=%u)",
+			  id->ruid == 0 ? "root" : "user",
+			  (unsigned int)uwrap.myuid);
 	}
 
 	UWRAP_UNLOCK(uwrap_id);
