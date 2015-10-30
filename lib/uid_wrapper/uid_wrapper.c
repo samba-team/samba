@@ -136,10 +136,10 @@ enum uwrap_dbglvl_e {
 #ifdef NDEBUG
 # define UWRAP_LOG(...)
 #else /* NDEBUG */
-static void uwrap_log(enum uwrap_dbglvl_e dbglvl, const char *format, ...) PRINTF_ATTRIBUTE(2, 3);
-# define UWRAP_LOG(dbglvl, ...) uwrap_log((dbglvl), __VA_ARGS__)
+static void uwrap_log(enum uwrap_dbglvl_e dbglvl, const char *function, const char *format, ...) PRINTF_ATTRIBUTE(3, 4);
+# define UWRAP_LOG(dbglvl, ...) uwrap_log((dbglvl), __func__, __VA_ARGS__)
 
-static void uwrap_log(enum uwrap_dbglvl_e dbglvl, const char *format, ...)
+static void uwrap_log(enum uwrap_dbglvl_e dbglvl, const char *function, const char *format, ...)
 {
 	char buffer[1024];
 	va_list va;
@@ -156,28 +156,28 @@ static void uwrap_log(enum uwrap_dbglvl_e dbglvl, const char *format, ...)
 	va_end(va);
 
 	if (lvl >= dbglvl) {
+		const char *prefix;
 		switch (dbglvl) {
 			case UWRAP_LOG_ERROR:
-				fprintf(stderr,
-					"UWRAP_ERROR(%d): %s\n",
-					(int)getpid(), buffer);
+				prefix = "UWRAP_ERROR";
 				break;
 			case UWRAP_LOG_WARN:
-				fprintf(stderr,
-					"UWRAP_WARN(%d): %s\n",
-					(int)getpid(), buffer);
+				prefix = "UWRAP_WARN";
 				break;
 			case UWRAP_LOG_DEBUG:
-				fprintf(stderr,
-					"UWRAP_DEBUG(%d): %s\n",
-					(int)getpid(), buffer);
+				prefix = "UWRAP_DEBUG";
 				break;
 			case UWRAP_LOG_TRACE:
-				fprintf(stderr,
-					"UWRAP_TRACE(%d): %s\n",
-					(int)getpid(), buffer);
+				prefix = "UWRAP_TRACE";
 				break;
 		}
+
+		fprintf(stderr,
+			"%s(%d) - %s: %s\n",
+			prefix,
+			(int)getpid(),
+			function,
+			buffer);
 	}
 }
 #endif /* NDEBUG */
