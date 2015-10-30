@@ -1665,6 +1665,12 @@ int setegid(gid_t egid)
 		return libc_setegid(egid);
 	}
 
+	/* On FreeBSD the uid_t -1 is set and doesn't produce and error */
+	if (egid == (gid_t)-1) {
+		errno = EINVAL;
+		return -1;
+	}
+
 	uwrap_init();
 	return uwrap_setresgid(-1, egid, -1);
 }
