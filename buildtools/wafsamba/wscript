@@ -106,9 +106,9 @@ def set_options(opt):
     gr.add_option('--fatal-errors',
                    help=("Stop compilation on first error (enable -Wfatal-errors)"),
                    action="store_true", dest='fatal_errors', default=False)
-    gr.add_option('--enable-gccdeps',
-                   help=("Enable use of gcc -MD dependency module"),
-                   action="store_true", dest='enable_gccdeps', default=True)
+    gr.add_option('--disable-gccdeps',
+                   help="Disable use of gcc -MD dependency module",
+                   action="store_false", dest='enable_gccdeps', default=True)
     gr.add_option('--timestamp-dependencies',
                    help=("use file timestamps instead of content for build dependencies (BROKEN)"),
                    action="store_true", dest='timestamp_dependencies', default=False)
