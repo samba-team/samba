@@ -82,6 +82,10 @@ def parse_flags(line, uselib, env):
 		# RPATH later, and hence can potentially lead to linking
 		# in too old versions of our internal libs.
 		#
+		elif x == '-Wl,-rpath' or x == '-Wl,-R':
+			app('RPATH_' + uselib, lst.pop(0).lstrip('-Wl,'))
+		elif x.startswith('-Wl,-R,'):
+			app('RPATH_' + uselib, x[7:])
 		elif x.startswith('-Wl,-R'):
 			app('RPATH_' + uselib, x[6:])
 		elif x.startswith('-Wl,-rpath,'):
