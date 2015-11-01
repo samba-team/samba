@@ -434,10 +434,13 @@ static char *shadow_copy2_find_mount_point(TALLOC_CTX *mem_ctx,
  * Convert from a name as handed in via the SMB layer
  * and a timestamp into the local path of the snapshot
  * of the provided file at the provided time.
+ * Also return the path in the snapshot corresponding
+ * to the file's share root.
  */
-static char *shadow_copy2_convert(TALLOC_CTX *mem_ctx,
-				  struct vfs_handle_struct *handle,
-				  const char *name, time_t timestamp)
+static char *shadow_copy2_do_convert(TALLOC_CTX *mem_ctx,
+				     struct vfs_handle_struct *handle,
+				     const char *name, time_t timestamp,
+				     size_t *snaproot_len)
 {
 	struct smb_filename converted_fname;
 	char *result = NULL;
@@ -447,10 +450,11 @@ static char *shadow_copy2_convert(TALLOC_CTX *mem_ctx,
 	size_t pathlen;
 	char *insert = NULL;
 	char *converted = NULL;
-	size_t insertlen;
+	size_t insertlen, connectlen = 0;
 	int i, saved_errno;
 	size_t min_offset;
 	struct shadow_copy2_config *config;
+	size_t in_share_offset = 0;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, config, struct shadow_copy2_config,
 				return NULL);
@@ -492,6 +496,13 @@ static char *shadow_copy2_convert(TALLOC_CTX *mem_ctx,
 			DEBUG(10, ("Found %s\n", converted));
 			result = converted;
 			converted = NULL;
+			if (snaproot_len != NULL) {
+				*snaproot_len = strlen(snapshot_path);
+				if (config->rel_connectpath != NULL) {
+					*snaproot_len +=
+					    strlen(config->rel_connectpath) + 1;
+				}
+			}
 			goto fail;
 		} else {
 			errno = ENOENT;
@@ -500,6 +511,7 @@ static char *shadow_copy2_convert(TALLOC_CTX *mem_ctx,
 		/* never reached ... */
 	}
 
+	connectlen = strlen(handle->conn->connectpath);
 	if (name[0] == 0) {
 		path = talloc_strdup(mem_ctx, handle->conn->connectpath);
 	} else {
@@ -575,6 +587,10 @@ static char *shadow_copy2_convert(TALLOC_CTX *mem_ctx,
 			goto fail;
 		}
 
+		if (offset >= connectlen) {
+			in_share_offset = offset;
+		}
+
 		memcpy(converted+offset, insert, insertlen);
 
 		offset += insertlen;
@@ -588,6 +604,9 @@ static char *shadow_copy2_convert(TALLOC_CTX *mem_ctx,
 			   ret, ret == 0 ? "ok" : strerror(errno)));
 		if (ret == 0) {
 			/* success */
+			if (snaproot_len != NULL) {
+				*snaproot_len = in_share_offset + insertlen;
+			}
 			break;
 		}
 		if (errno == ENOTDIR) {
@@ -622,6 +641,18 @@ fail:
 	TALLOC_FREE(path);
 	errno = saved_errno;
 	return result;
+}
+
+/**
+ * Convert from a name as handed in via the SMB layer
+ * and a timestamp into the local path of the snapshot
+ * of the provided file at the provided time.
+ */
+static char *shadow_copy2_convert(TALLOC_CTX *mem_ctx,
+				  struct vfs_handle_struct *handle,
+				  const char *name, time_t timestamp)
+{
+	return shadow_copy2_do_convert(mem_ctx, handle, name, timestamp, NULL);
 }
 
 /*
