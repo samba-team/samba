@@ -65,6 +65,7 @@ struct ipalloc_state {
 	/* Arrays with data for each node */
 	struct ctdb_public_ip_list_old **known_public_ips;
 	struct ctdb_public_ip_list_old **available_public_ips;
+	struct ctdb_ipflags *ipflags;
 
 	enum ipalloc_algorithm algorithm;
 	uint32_t no_ip_failback;
@@ -1277,13 +1278,12 @@ static int node_ip_coverage(int32_t pnn, struct public_ip_list *ips)
 */
 static bool can_node_host_ip(struct ipalloc_state *ipalloc_state,
 			     int32_t pnn,
-			     struct ctdb_ipflags ipflags,
 			     struct public_ip_list *ip)
 {
 	struct ctdb_public_ip_list_old *public_ips;
 	int i;
 
-	if (ipflags.noiphost) {
+	if (ipalloc_state->ipflags[pnn].noiphost) {
 		return false;
 	}
 
@@ -1305,14 +1305,13 @@ static bool can_node_host_ip(struct ipalloc_state *ipalloc_state,
 
 static bool can_node_takeover_ip(struct ipalloc_state *ipalloc_state,
 				 int32_t pnn,
-				 struct ctdb_ipflags ipflags,
 				 struct public_ip_list *ip)
 {
-	if (ipflags.noiptakeover) {
+	if (ipalloc_state->ipflags[pnn].noiptakeover) {
 		return false;
 	}
 
-	return can_node_host_ip(ipalloc_state, pnn, ipflags, ip);
+	return can_node_host_ip(ipalloc_state, pnn, ip);
 }
 
 /* search the node lists list for a node to takeover this ip.
@@ -1320,7 +1319,6 @@ static bool can_node_takeover_ip(struct ipalloc_state *ipalloc_state,
    so that the ips get spread out evenly.
 */
 static int find_takeover_node(struct ipalloc_state *ipalloc_state,
-			      struct ctdb_ipflags *ipflags,
 			      struct public_ip_list *ip,
 			      struct public_ip_list *all_ips)
 {
@@ -1331,7 +1329,7 @@ static int find_takeover_node(struct ipalloc_state *ipalloc_state,
 	pnn    = -1;
 	for (i=0; i<numnodes; i++) {
 		/* verify that this node can serve this ip */
-		if (!can_node_takeover_ip(ipalloc_state, i, ipflags[i], ip)) {
+		if (!can_node_takeover_ip(ipalloc_state, i, ip)) {
 			/* no it couldnt   so skip to the next node */
 			continue;
 		}
@@ -1626,7 +1624,6 @@ static uint32_t lcp2_imbalance(struct public_ip_list * all_ips, int pnn)
  * finding the best node for each.
  */
 static void basic_allocate_unassigned(struct ipalloc_state *ipalloc_state,
-				      struct ctdb_ipflags *ipflags,
 				      struct public_ip_list *all_ips)
 {
 	struct public_ip_list *tmp_ip;
@@ -1636,7 +1633,7 @@ static void basic_allocate_unassigned(struct ipalloc_state *ipalloc_state,
 	*/
 	for (tmp_ip=all_ips;tmp_ip;tmp_ip=tmp_ip->next) {
 		if (tmp_ip->pnn == -1) {
-			if (find_takeover_node(ipalloc_state, ipflags,
+			if (find_takeover_node(ipalloc_state,
 					       tmp_ip, all_ips)) {
 				DEBUG(DEBUG_WARNING,
 				      ("Failed to find node to cover ip %s\n",
@@ -1649,7 +1646,6 @@ static void basic_allocate_unassigned(struct ipalloc_state *ipalloc_state,
 /* Basic non-deterministic rebalancing algorithm.
  */
 static void basic_failback(struct ipalloc_state *ipalloc_state,
-			   struct ctdb_ipflags *ipflags,
 			   struct public_ip_list *all_ips,
 			   int num_ips)
 {
@@ -1682,7 +1678,7 @@ try_again:
 		for (i=0; i<numnodes; i++) {
 			/* only check nodes that can actually serve this ip */
 			if (!can_node_takeover_ip(ipalloc_state, i,
-						  ipflags[i], tmp_ip)) {
+						  tmp_ip)) {
 				/* no it couldnt   so skip to the next node */
 				continue;
 			}
@@ -1728,7 +1724,6 @@ try_again:
 			for (tmp=all_ips;tmp;tmp=tmp->next) {
 				if (tmp->pnn == maxnode) {
 					(void)find_takeover_node(ipalloc_state,
-								 ipflags,
 								 tmp,
 								 all_ips);
 					retries++;
@@ -1740,7 +1735,6 @@ try_again:
 }
 
 static bool lcp2_init(struct ipalloc_state *ipalloc_state,
-		      struct ctdb_ipflags *ipflags,
 		      struct public_ip_list *all_ips,
 		      uint32_t *force_rebalance_nodes,
 		      uint32_t **lcp2_imbalances,
@@ -1806,7 +1800,6 @@ static bool lcp2_init(struct ipalloc_state *ipalloc_state,
  * the IP/node combination that will cost the least.
  */
 static void lcp2_allocate_unassigned(struct ipalloc_state *ipalloc_state,
-				     struct ctdb_ipflags *ipflags,
 				     struct public_ip_list *all_ips,
 				     uint32_t *lcp2_imbalances)
 {
@@ -1842,7 +1835,6 @@ static void lcp2_allocate_unassigned(struct ipalloc_state *ipalloc_state,
 				/* only check nodes that can actually takeover this ip */
 				if (!can_node_takeover_ip(ipalloc_state,
 							  dstnode,
-							  ipflags[dstnode],
 							  tmp_ip)) {
 					/* no it couldnt   so skip to the next node */
 					continue;
@@ -1905,7 +1897,6 @@ static void lcp2_allocate_unassigned(struct ipalloc_state *ipalloc_state,
  * combination to move from the source node.
  */
 static bool lcp2_failback_candidate(struct ipalloc_state *ipalloc_state,
-				    struct ctdb_ipflags *ipflags,
 				    struct public_ip_list *all_ips,
 				    int srcnode,
 				    uint32_t *lcp2_imbalances,
@@ -1953,7 +1944,7 @@ static bool lcp2_failback_candidate(struct ipalloc_state *ipalloc_state,
 
 			/* only check nodes that can actually takeover this ip */
 			if (!can_node_takeover_ip(ipalloc_state, dstnode,
-						  ipflags[dstnode], tmp_ip)) {
+						  tmp_ip)) {
 				/* no it couldnt   so skip to the next node */
 				continue;
 			}
@@ -2022,7 +2013,6 @@ static int lcp2_cmp_imbalance_pnn(const void * a, const void * b)
  * IP/destination node combination to move from the source node.
  */
 static void lcp2_failback(struct ipalloc_state *ipalloc_state,
-			  struct ctdb_ipflags *ipflags,
 			  struct public_ip_list *all_ips,
 			  uint32_t *lcp2_imbalances,
 			  bool *rebalance_candidates)
@@ -2059,7 +2049,6 @@ try_again:
 		}
 
 		if (lcp2_failback_candidate(ipalloc_state,
-					    ipflags,
 					    all_ips,
 					    lips[i].pnn,
 					    lcp2_imbalances,
@@ -2076,7 +2065,6 @@ try_again:
 }
 
 static void unassign_unsuitable_ips(struct ipalloc_state *ipalloc_state,
-				    struct ctdb_ipflags *ipflags,
 				    struct public_ip_list *all_ips)
 {
 	struct public_ip_list *tmp_ip;
@@ -2089,7 +2077,7 @@ static void unassign_unsuitable_ips(struct ipalloc_state *ipalloc_state,
 			continue;
 		}
 		if (!can_node_host_ip(ipalloc_state, tmp_ip->pnn,
-				      ipflags[tmp_ip->pnn], tmp_ip) != 0) {
+				      tmp_ip) != 0) {
 			/* this node can not serve this ip. */
 			DEBUG(DEBUG_DEBUG,("Unassign IP: %s from %d\n",
 					   ctdb_addr_to_str(&(tmp_ip->addr)),
@@ -2100,7 +2088,6 @@ static void unassign_unsuitable_ips(struct ipalloc_state *ipalloc_state,
 }
 
 static bool ip_alloc_deterministic_ips(struct ipalloc_state *ipalloc_state,
-				       struct ctdb_ipflags *ipflags,
 				       struct public_ip_list *all_ips)
 {
 	struct public_ip_list *tmp_ip;
@@ -2126,9 +2113,9 @@ static bool ip_alloc_deterministic_ips(struct ipalloc_state *ipalloc_state,
 		DEBUG(DEBUG_WARNING, ("WARNING: 'NoIPFailback' set but ignored - incompatible with 'DeterministicIPs\n"));
 	}
 
-	unassign_unsuitable_ips(ipalloc_state, ipflags, all_ips);
+	unassign_unsuitable_ips(ipalloc_state, all_ips);
 
-	basic_allocate_unassigned(ipalloc_state, ipflags, all_ips);
+	basic_allocate_unassigned(ipalloc_state, all_ips);
 
 	/* No failback here! */
 
@@ -2136,7 +2123,6 @@ static bool ip_alloc_deterministic_ips(struct ipalloc_state *ipalloc_state,
 }
 
 static bool ip_alloc_nondeterministic_ips(struct ipalloc_state *ipalloc_state,
-					  struct ctdb_ipflags *ipflags,
 					  struct public_ip_list *all_ips)
 {
 	/* This should be pushed down into basic_failback. */
@@ -2146,9 +2132,9 @@ static bool ip_alloc_nondeterministic_ips(struct ipalloc_state *ipalloc_state,
 		num_ips++;
 	}
 
-	unassign_unsuitable_ips(ipalloc_state, ipflags, all_ips);
+	unassign_unsuitable_ips(ipalloc_state, all_ips);
 
-	basic_allocate_unassigned(ipalloc_state, ipflags, all_ips);
+	basic_allocate_unassigned(ipalloc_state, all_ips);
 
 	/* If we don't want IPs to fail back then don't rebalance IPs. */
 	if (1 == ipalloc_state->no_ip_failback) {
@@ -2158,13 +2144,12 @@ static bool ip_alloc_nondeterministic_ips(struct ipalloc_state *ipalloc_state,
 	/* Now, try to make sure the ip adresses are evenly distributed
 	   across the nodes.
 	*/
-	basic_failback(ipalloc_state, ipflags, all_ips, num_ips);
+	basic_failback(ipalloc_state, all_ips, num_ips);
 
 	return true;
 }
 
 static bool ip_alloc_lcp2(struct ipalloc_state *ipalloc_state,
-			  struct ctdb_ipflags *ipflags,
 			  struct public_ip_list *all_ips,
 			  uint32_t *force_rebalance_nodes)
 {
@@ -2173,15 +2158,15 @@ static bool ip_alloc_lcp2(struct ipalloc_state *ipalloc_state,
 	int numnodes, num_rebalance_candidates, i;
 	bool ret = true;
 
-	unassign_unsuitable_ips(ipalloc_state, ipflags, all_ips);
+	unassign_unsuitable_ips(ipalloc_state, all_ips);
 
-	if (!lcp2_init(ipalloc_state, ipflags, all_ips,force_rebalance_nodes,
+	if (!lcp2_init(ipalloc_state, all_ips,force_rebalance_nodes,
 		       &lcp2_imbalances, &rebalance_candidates)) {
 		ret = false;
 		goto finished;
 	}
 
-	lcp2_allocate_unassigned(ipalloc_state, ipflags, all_ips, lcp2_imbalances);
+	lcp2_allocate_unassigned(ipalloc_state, all_ips, lcp2_imbalances);
 
 	/* If we don't want IPs to fail back then don't rebalance IPs. */
 	if (1 == ipalloc_state->no_ip_failback) {
@@ -2206,7 +2191,7 @@ static bool ip_alloc_lcp2(struct ipalloc_state *ipalloc_state,
 	/* Now, try to make sure the ip adresses are evenly distributed
 	   across the nodes.
 	*/
-	lcp2_failback(ipalloc_state, ipflags, all_ips,
+	lcp2_failback(ipalloc_state, all_ips,
 		      lcp2_imbalances, rebalance_candidates);
 
 finished:
@@ -2229,7 +2214,6 @@ static bool all_nodes_are_disabled(struct ctdb_node_map_old *nodemap)
 
 /* The calculation part of the IP allocation algorithm. */
 static bool ctdb_takeover_run_core(struct ipalloc_state *ipalloc_state,
-				   struct ctdb_ipflags *ipflags,
 				   struct public_ip_list *all_ips,
 				   uint32_t *force_rebalance_nodes)
 {
@@ -2237,14 +2221,14 @@ static bool ctdb_takeover_run_core(struct ipalloc_state *ipalloc_state,
 
 	switch (ipalloc_state->algorithm) {
 	case IPALLOC_LCP2:
-		ret = ip_alloc_lcp2(ipalloc_state, ipflags, all_ips,
+		ret = ip_alloc_lcp2(ipalloc_state, all_ips,
 				    force_rebalance_nodes);
 		break;
 	case IPALLOC_DETERMINISTIC:
-		ret = ip_alloc_deterministic_ips(ipalloc_state, ipflags, all_ips);
+		ret = ip_alloc_deterministic_ips(ipalloc_state, all_ips);
 		break;
 	case IPALLOC_NONDETERMINISTIC:
-		ret = ip_alloc_nondeterministic_ips(ipalloc_state, ipflags, all_ips);
+		ret = ip_alloc_nondeterministic_ips(ipalloc_state, all_ips);
                break;
 	}
 
@@ -2642,6 +2626,7 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map_old *nodem
 		talloc_free(tmp_ctx);
 		return -1;
 	}
+	ipalloc_state->ipflags= ipflags;
 
 	/* Fetch known/available public IPs from each active node */
 	ret = ctdb_reload_remote_public_ips(ctdb, ipalloc_state, nodemap);
@@ -2673,7 +2658,7 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map_old *nodem
 	all_ips = create_merged_ip_list(ctdb, ipalloc_state);
 
 	/* Do the IP reassignment calculations */
-	ctdb_takeover_run_core(ipalloc_state, ipflags,
+	ctdb_takeover_run_core(ipalloc_state,
 			       all_ips, force_rebalance_nodes);
 
 	/* Now tell all nodes to release any public IPs should not
