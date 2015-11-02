@@ -20,6 +20,8 @@
 #ifndef __CTDB_PROTOCOL_H__
 #define __CTDB_PROTOCOL_H__
 
+#include <tdb.h>
+
 #define CTDB_MAGIC	0x43544442 /* CTDB */
 #define CTDB_PROTOCOL	1
 

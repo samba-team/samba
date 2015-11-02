@@ -20,6 +20,8 @@
 #ifndef __CTDB_PROTOCOL_API_H__
 #define __CTDB_PROTOCOL_API_H__
 
+#include <talloc.h>
+
 #include "protocol/protocol.h"
 
 /* From protocol/protocol_types.c */
