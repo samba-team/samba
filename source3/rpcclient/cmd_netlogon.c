@@ -800,6 +800,11 @@ static NTSTATUS cmd_netlogon_sam_logon(struct rpc_pipe_client *cli,
 	if (argc == 6)
 		sscanf(argv[5], "%x", &logon_param);
 
+	if (rpcclient_netlogon_creds == NULL) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
 	/* Perform the sam logon */
 
 	result = rpccli_netlogon_password_logon(rpcclient_netlogon_creds,
