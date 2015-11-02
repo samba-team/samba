@@ -662,4 +662,6 @@ enum ctdb_runstate ctdb_runstate_from_string(const char *runstate_str);
 const char *ctdb_event_to_string(enum ctdb_event event);
 enum ctdb_event ctdb_event_from_string(const char *event_str);
 
+const char *ctdb_sock_addr_to_string(TALLOC_CTX *mem_ctx, ctdb_sock_addr *addr);
+
 #endif /* __CTDB_PROTOCOL_API_H__ */

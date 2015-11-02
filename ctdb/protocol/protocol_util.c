@@ -112,3 +112,31 @@ enum ctdb_event ctdb_event_from_string(const char *event_str)
 
 	return CTDB_EVENT_MAX;
 }
+
+const char *ctdb_sock_addr_to_string(TALLOC_CTX *mem_ctx, ctdb_sock_addr *addr)
+{
+	char *cip;
+
+	cip = talloc_size(mem_ctx, 128);
+	if (cip == NULL) {
+		return "Memory Error";
+	}
+
+	switch (addr->sa.sa_family) {
+	case AF_INET:
+		inet_ntop(addr->ip.sin_family, &addr->ip.sin_addr,
+			  cip, 128);
+		break;
+
+	case AF_INET6:
+		inet_ntop(addr->ip6.sin6_family, &addr->ip6.sin6_addr,
+			  cip, 128);
+		break;
+
+	default:
+		sprintf(cip, "Unknown family %u", addr->sa.sa_family);
+		break;
+	}
+
+	return cip;
+}
