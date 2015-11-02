@@ -1703,6 +1703,14 @@ static NTSTATUS smbd_smb2_request_process_cancel(struct smbd_smb2_request *req)
 	search_message_id = BVAL(inhdr, SMB2_HDR_MESSAGE_ID);
 	search_async_id = BVAL(inhdr, SMB2_HDR_PID);
 
+	/*
+	 * We don't need the request anymore cancel requests never
+	 * have a response.
+	 *
+	 * We defer the TALLOC_FREE(req) to the caller.
+	 */
+	DLIST_REMOVE(xconn->smb2.requests, req);
+
 	for (cur = xconn->smb2.requests; cur; cur = cur->next) {
 		const uint8_t *outhdr;
 		uint64_t message_id;
@@ -2347,8 +2355,10 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		/*
 		 * We don't need the request anymore cancel requests never
 		 * have a response.
+		 *
+		 * smbd_smb2_request_process_cancel() already called
+		 * DLIST_REMOVE(xconn->smb2.requests, req);
 		 */
-		DLIST_REMOVE(xconn->smb2.requests, req);
 		TALLOC_FREE(req);
 
 		break;
