@@ -20,6 +20,9 @@
 #ifndef __CTDB_CLIENT_H__
 #define __CTDB_CLIENT_H__
 
+#include <talloc.h>
+#include <tevent.h>
+
 #include "protocol/protocol.h"
 #include "common/srvid.h"
 
