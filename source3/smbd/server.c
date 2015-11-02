@@ -49,6 +49,8 @@
 #include "scavenger.h"
 #include "locking/leases_db.h"
 #include "smbd/notifyd/notifyd.h"
+#include "smbd/smbd_cleanupd.h"
+#include "lib/util/sys_rw.h"
 
 #ifdef CLUSTER_SUPPORT
 #include "ctdb_protocol.h"
@@ -69,6 +71,8 @@ struct smbd_parent_context {
 	/* the list of current child processes */
 	struct smbd_child_pid *children;
 	size_t num_children;
+
+	struct server_id cleanupd;
 
 	struct tevent_timer *cleanup_te;
 };
@@ -405,6 +409,118 @@ static bool smbd_notifyd_init(struct messaging_context *msg, bool interactive)
 	return tevent_req_poll(req, ev);
 }
 
+static void cleanupd_stopped(struct tevent_req *req);
+
+static bool cleanupd_init(struct messaging_context *msg, bool interactive,
+			  struct server_id *ppid)
+{
+	struct tevent_context *ev = messaging_tevent_context(msg);
+	struct server_id parent_id = messaging_server_id(msg);
+	struct tevent_req *req;
+	pid_t pid;
+	NTSTATUS status;
+	ssize_t rwret;
+	int ret;
+	bool ok;
+	char c;
+	int up_pipe[2];
+
+	if (interactive) {
+		req = smbd_cleanupd_send(msg, ev, msg, parent_id.pid);
+		*ppid = messaging_server_id(msg);
+		return (req != NULL);
+	}
+
+	ret = pipe(up_pipe);
+	if (ret == -1) {
+		DBG_WARNING("pipe failed: %s\n", strerror(errno));
+		return false;
+	}
+
+	pid = fork();
+	if (pid == -1) {
+		DBG_WARNING("fork failed: %s\n", strerror(errno));
+		close(up_pipe[0]);
+		close(up_pipe[1]);
+		return false;
+	}
+
+	if (pid != 0) {
+
+		close(up_pipe[1]);
+		rwret = sys_read(up_pipe[0], &c, 1);
+		close(up_pipe[0]);
+
+		if (rwret == -1) {
+			DBG_WARNING("sys_read failed: %s\n", strerror(errno));
+			return false;
+		}
+		if (rwret == 0) {
+			DBG_WARNING("cleanupd could not start\n");
+			return false;
+		}
+		if (c != 0) {
+			DBG_WARNING("cleanupd returned %d\n", (int)c);
+			return false;
+		}
+
+		DBG_DEBUG("Started cleanupd pid=%d\n", (int)pid);
+
+		*ppid = pid_to_procid(pid);
+		return true;
+	}
+
+	close(up_pipe[0]);
+
+	status = reinit_after_fork(msg, ev, true, "cleanupd");
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_WARNING("reinit_after_fork failed: %s\n",
+			    nt_errstr(status));
+		c = 1;
+		sys_write(up_pipe[1], &c, 1);
+
+		exit(1);
+	}
+
+	req = smbd_cleanupd_send(msg, ev, msg, parent_id.pid);
+	if (req == NULL) {
+		DBG_WARNING("smbd_cleanupd_send failed\n");
+		c = 2;
+		sys_write(up_pipe[1], &c, 1);
+
+		exit(1);
+	}
+
+	tevent_req_set_callback(req, cleanupd_stopped, msg);
+
+	c = 0;
+	rwret = sys_write(up_pipe[1], &c, 1);
+	close(up_pipe[1]);
+
+	if (rwret == -1) {
+		DBG_WARNING("sys_write failed: %s\n", strerror(errno));
+		exit(1);
+	}
+	if (rwret != 1) {
+		DBG_WARNING("sys_write could not write result\n");
+		exit(1);
+	}
+
+	ok = tevent_req_poll(req, ev);
+	if (!ok) {
+		DBG_WARNING("tevent_req_poll returned %s\n", strerror(errno));
+	}
+	exit(0);
+}
+
+static void cleanupd_stopped(struct tevent_req *req)
+{
+	NTSTATUS status;
+
+	status = smbd_cleanupd_recv(req);
+	DBG_WARNING("cleanupd stopped: %s\n", nt_errstr(status));
+}
+
 /*
   at most every smbd:cleanuptime seconds (default 20), we scan the BRL
   and locking database for entries to cleanup. As a side effect this
@@ -440,9 +556,21 @@ static void remove_child_pid(struct smbd_parent_context *parent,
 {
 	struct smbd_child_pid *child;
 	struct server_id child_id;
+	struct iovec iov[2];
+	NTSTATUS status;
 	int ret;
 
 	child_id = pid_to_procid(pid);
+
+	iov[0] = (struct iovec) { .iov_base = (uint8_t *)&pid,
+				  .iov_len = sizeof(pid) };
+	iov[1] = (struct iovec) { .iov_base = (uint8_t *)&unclean_shutdown,
+				  .iov_len = sizeof(bool) };
+
+	status = messaging_send_iov(parent->msg_ctx, parent->cleanupd,
+				    MSG_SMB_NOTIFY_CLEANUP,
+				    iov, ARRAY_SIZE(iov), NULL, 0);
+	DEBUG(10, ("messaging_send_iov returned %s\n", nt_errstr(status)));
 
 	ret = messaging_cleanup(parent->msg_ctx, pid);
 
@@ -1474,6 +1602,10 @@ extern void build_options(bool screen);
 
 	if (!smbd_notifyd_init(msg_ctx, interactive)) {
 		exit_daemon("Samba cannot init notification", EACCES);
+	}
+
+	if (!cleanupd_init(msg_ctx, interactive, &parent->cleanupd)) {
+		exit_daemon("Samba cannot init the cleanupd", EACCES);
 	}
 
 	if (!messaging_parent_dgm_cleanup_init(msg_ctx)) {
