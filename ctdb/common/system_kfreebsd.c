@@ -30,7 +30,7 @@
 
 #include "lib/util/debug.h"
 
-#include "ctdb_private.h"
+#include "protocol/protocol.h"
 
 #include <net/ethernet.h>
 #include <netinet/ip6.h>

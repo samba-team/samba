@@ -26,7 +26,7 @@
 
 #include "lib/util/debug.h"
 
-#include "ctdb_private.h"
+#include "protocol/protocol.h"
 
 #include <netinet/if_ether.h>
 #include <netinet/ip6.h>
