@@ -795,7 +795,7 @@ static struct functable net_func[] = {
 		{"port",	'p', POPT_ARG_INT,    &c->opt_port},
 		{"myname",	'n', POPT_ARG_STRING, &c->opt_requester_name},
 		{"server",	'S', POPT_ARG_STRING, &c->opt_host},
-		{"encrypt",	'e', POPT_ARG_NONE,   NULL, 'e', N_("Encrypt SMB transport (UNIX extended servers only)") },
+		{"encrypt",	'e', POPT_ARG_NONE,   NULL, 'e', N_("Encrypt SMB transport") },
 		{"container",	'c', POPT_ARG_STRING, &c->opt_container},
 		{"comment",	'C', POPT_ARG_STRING, &c->opt_comment},
 		{"maxusers",	'M', POPT_ARG_INT,    &c->opt_maxusers},

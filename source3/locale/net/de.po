@@ -495,8 +495,8 @@ msgid "  Use 'net help help' to list usage information for 'net' commands."
 msgstr ""
 
 #: ../../utils/net.c:759
-msgid "Encrypt SMB transport (UNIX extended servers only)"
-msgstr "SMB Übertragung verschlüsseln (nur UNIX erweiterte Server)"
+msgid "Encrypt SMB transport"
+msgstr "SMB Übertragung verschlüsseln"
 
 #: ../../utils/net.c:827
 msgid ""
@@ -3061,8 +3061,8 @@ msgid "\t-P or --machine-pass\t\tAuthenticate as machine account\n"
 msgstr "\t-P oder --machine-pass\t\tMit Rechnerkonto authentifizieren\n"
 
 #: ../../utils/net_help_common.c:52
-msgid "\t-e or --encrypt\t\t\tEncrypt SMB transport (UNIX extended servers only)\n"
-msgstr "\t-e oder --encrypt\t\t\tSMB Übertragung verschlüsseln  (nur UNIX erweiterte Server)\n"
+msgid "\t-e or --encrypt\t\t\tEncrypt SMB transport\n"
+msgstr "\t-e oder --encrypt\t\t\tSMB Übertragung verschlüsseln\n"
 
 #: ../../utils/net_help_common.c:54
 msgid "\t-k or --kerberos\t\tUse kerberos (active directory) authentication\n"

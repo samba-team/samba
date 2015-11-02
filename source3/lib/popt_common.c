@@ -508,7 +508,7 @@ struct poptOption popt_common_credentials[] = {
 	{ "authentication-file", 'A', POPT_ARG_STRING, NULL, 'A', "Get the credentials from a file", "FILE" },
 	{ "signing", 'S', POPT_ARG_STRING, NULL, 'S', "Set the client signing state", "on|off|required" },
 	{"machine-pass", 'P', POPT_ARG_NONE, NULL, 'P', "Use stored machine account password" },
-	{"encrypt", 'e', POPT_ARG_NONE, NULL, 'e', "Encrypt SMB transport (UNIX extended servers only)" },
+	{"encrypt", 'e', POPT_ARG_NONE, NULL, 'e', "Encrypt SMB transport" },
 	{"use-ccache", 'C', POPT_ARG_NONE, NULL, 'C',
 	 "Use the winbind ccache for authentication" },
 	{"pw-nt-hash", '\0', POPT_ARG_NONE, NULL, 'H',

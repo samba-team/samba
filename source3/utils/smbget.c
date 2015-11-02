@@ -597,7 +597,7 @@ int main(int argc, const char **argv)
 	int ret = 0;
 	struct poptOption long_options[] = {
 		{"guest", 'a', POPT_ARG_NONE, NULL, 'a', "Work as user guest" },	
-		{"encrypt", 'e', POPT_ARG_NONE, NULL, 'e', "Encrypt SMB transport (UNIX extended servers only)" },	
+		{"encrypt", 'e', POPT_ARG_NONE, NULL, 'e', "Encrypt SMB transport" },
 		{"resume", 'r', POPT_ARG_NONE, &resume, 0, "Automatically resume aborted files" },
 		{"update", 'U',  POPT_ARG_NONE, &update, 0, "Download only when remote file is newer than local file or local file is missing"},
 		{"recursive", 'R',  POPT_ARG_NONE, &recursive, 0, "Recursively download files" },
