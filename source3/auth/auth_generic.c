@@ -95,8 +95,8 @@ static NTSTATUS auth3_generate_session_info_pac(struct auth4_context *auth_ctx,
 					     &ntuser, &ntdomain,
 					     &username, &pw);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Failed to map kerberos principal to system user "
-			  "(%s)\n", nt_errstr(status)));
+		DBG_NOTICE("Failed to map kerberos principal to system user "
+			  "(%s)\n", nt_errstr(status));
 		status = NT_STATUS_ACCESS_DENIED;
 		goto done;
 	}
