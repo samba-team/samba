@@ -516,10 +516,9 @@ static void ctdb_test_init(const char nodestates[],
 		(*ipalloc_state)->known_public_ips[i] = known[i];
 	}
 
-	(*ipalloc_state)->ipflags =
-		set_ipflags_internal(*ipalloc_state, nodemap,
-				     tval_noiptakeover,
-				     tval_noiptakeoverondisabled);
+	set_ipflags_internal(*ipalloc_state, nodemap,
+			     tval_noiptakeover,
+			     tval_noiptakeoverondisabled);
 }
 
 /* IP layout is read from stdin. */

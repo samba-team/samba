@@ -2360,31 +2360,30 @@ static uint32_t *get_tunable_from_nodes(struct ctdb_context *ctdb,
  *   else
  *     Set NOIPHOST ip flags for disabled nodes
  */
-static struct ctdb_ipflags *
-set_ipflags_internal(struct ipalloc_state *ipalloc_state,
-		     struct ctdb_node_map_old *nodemap,
-		     uint32_t *tval_noiptakeover,
-		     uint32_t *tval_noiphostonalldisabled)
+static bool set_ipflags_internal(struct ipalloc_state *ipalloc_state,
+				 struct ctdb_node_map_old *nodemap,
+				 uint32_t *tval_noiptakeover,
+				 uint32_t *tval_noiphostonalldisabled)
 {
 	int i;
-	struct ctdb_ipflags *ipflags;
 
 	/* Clear IP flags - implicit due to talloc_zero */
-	ipflags = talloc_zero_array(ipalloc_state, struct ctdb_ipflags, nodemap->num);
-	if (ipflags == NULL) {
+	ipalloc_state->ipflags =
+		talloc_zero_array(ipalloc_state, struct ctdb_ipflags, nodemap->num);
+	if (ipalloc_state->ipflags == NULL) {
 		DEBUG(DEBUG_ERR, (__location__ " out of memory\n"));
-		return NULL;
+		return false;
 	}
 
 	for (i=0;i<nodemap->num;i++) {
 		/* Can not take IPs on node with NoIPTakeover set */
 		if (tval_noiptakeover[i] != 0) {
-			ipflags[i].noiptakeover = true;
+			ipalloc_state->ipflags[i].noiptakeover = true;
 		}
 
 		/* Can not host IPs on INACTIVE node */
 		if (nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE) {
-			ipflags[i].noiphost = true;
+			ipalloc_state->ipflags[i].noiphost = true;
 		}
 	}
 
@@ -2394,7 +2393,7 @@ set_ipflags_internal(struct ipalloc_state *ipalloc_state,
 		 */
 		for (i=0;i<nodemap->num;i++) {
 			if (tval_noiphostonalldisabled[i] != 0) {
-				ipflags[i].noiphost = true;
+				ipalloc_state->ipflags[i].noiphost = true;
 			}
 		}
 	} else {
@@ -2403,27 +2402,26 @@ set_ipflags_internal(struct ipalloc_state *ipalloc_state,
 		 */
 		for (i=0;i<nodemap->num;i++) {
 			if (nodemap->nodes[i].flags & NODE_FLAGS_DISABLED) {
-				ipflags[i].noiphost = true;
+				ipalloc_state->ipflags[i].noiphost = true;
 			}
 		}
 	}
 
-	return ipflags;
+	return true;
 }
 
-static struct ctdb_ipflags *set_ipflags(struct ctdb_context *ctdb,
-					struct ipalloc_state *ipalloc_state,
-					struct ctdb_node_map_old *nodemap)
+static bool set_ipflags(struct ctdb_context *ctdb,
+			struct ipalloc_state *ipalloc_state,
+			struct ctdb_node_map_old *nodemap)
 {
 	uint32_t *tval_noiptakeover;
 	uint32_t *tval_noiphostonalldisabled;
-	struct ctdb_ipflags *ipflags;
-
+	bool ret;
 
 	tval_noiptakeover = get_tunable_from_nodes(ctdb, ipalloc_state, nodemap,
 						   "NoIPTakeover", 0);
 	if (tval_noiptakeover == NULL) {
-		return NULL;
+		return false;
 	}
 
 	tval_noiphostonalldisabled =
@@ -2431,17 +2429,17 @@ static struct ctdb_ipflags *set_ipflags(struct ctdb_context *ctdb,
 				       "NoIPHostOnAllDisabled", 0);
 	if (tval_noiphostonalldisabled == NULL) {
 		/* Caller frees tmp_ctx */
-		return NULL;
+		return false;
 	}
 
-	ipflags = set_ipflags_internal(ipalloc_state, nodemap,
-				       tval_noiptakeover,
-				       tval_noiphostonalldisabled);
+	ret = set_ipflags_internal(ipalloc_state, nodemap,
+				   tval_noiptakeover,
+				   tval_noiphostonalldisabled);
 
 	talloc_free(tval_noiptakeover);
 	talloc_free(tval_noiphostonalldisabled);
 
-	return ipflags;
+	return ret;
 }
 
 static struct ipalloc_state * ipalloc_state_init(struct ctdb_context *ctdb,
@@ -2599,7 +2597,6 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map_old *nodem
 	struct client_async_data *async_data;
 	struct ctdb_client_control_state *state;
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
-	struct ctdb_ipflags *ipflags;
 	struct ipalloc_state *ipalloc_state;
 	struct takeover_callback_data *takeover_data;
 	struct iprealloc_callback_data iprealloc_data;
@@ -2620,13 +2617,11 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map_old *nodem
 		return -1;
 	}
 
-	ipflags = set_ipflags(ctdb, ipalloc_state, nodemap);
-	if (ipflags == NULL) {
+	if (!set_ipflags(ctdb, ipalloc_state, nodemap)) {
 		DEBUG(DEBUG_ERR,("Failed to set IP flags - aborting takeover run\n"));
 		talloc_free(tmp_ctx);
 		return -1;
 	}
-	ipalloc_state->ipflags= ipflags;
 
 	/* Fetch known/available public IPs from each active node */
 	ret = ctdb_reload_remote_public_ips(ctdb, ipalloc_state, nodemap);
