@@ -1739,7 +1739,7 @@ try_again:
 	}
 }
 
-static bool lcp2_init(TALLOC_CTX *tmp_ctx,
+static bool lcp2_init(struct ipalloc_state *ipalloc_state,
 		      struct ctdb_ipflags *ipflags,
 		      struct public_ip_list *all_ips,
 		      uint32_t *force_rebalance_nodes,
@@ -1751,12 +1751,12 @@ static bool lcp2_init(TALLOC_CTX *tmp_ctx,
 
 	numnodes = talloc_array_length(ipflags);
 
-	*rebalance_candidates = talloc_array(tmp_ctx, bool, numnodes);
+	*rebalance_candidates = talloc_array(ipalloc_state, bool, numnodes);
 	if (*rebalance_candidates == NULL) {
 		DEBUG(DEBUG_ERR, (__location__ " out of memory\n"));
 		return false;
 	}
-	*lcp2_imbalances = talloc_array(tmp_ctx, uint32_t, numnodes);
+	*lcp2_imbalances = talloc_array(ipalloc_state, uint32_t, numnodes);
 	if (*lcp2_imbalances == NULL) {
 		DEBUG(DEBUG_ERR, (__location__ " out of memory\n"));
 		return false;
@@ -2173,11 +2173,9 @@ static bool ip_alloc_lcp2(struct ipalloc_state *ipalloc_state,
 	int numnodes, num_rebalance_candidates, i;
 	bool ret = true;
 
-	TALLOC_CTX *tmp_ctx = talloc_new(ipalloc_state);
-
 	unassign_unsuitable_ips(ipalloc_state, ipflags, all_ips);
 
-	if (!lcp2_init(tmp_ctx, ipflags, all_ips,force_rebalance_nodes,
+	if (!lcp2_init(ipalloc_state, ipflags, all_ips,force_rebalance_nodes,
 		       &lcp2_imbalances, &rebalance_candidates)) {
 		ret = false;
 		goto finished;
@@ -2212,8 +2210,6 @@ static bool ip_alloc_lcp2(struct ipalloc_state *ipalloc_state,
 		      lcp2_imbalances, rebalance_candidates);
 
 finished:
-	talloc_free(tmp_ctx);
-
 	return ret;
 }
 
@@ -2381,7 +2377,7 @@ static uint32_t *get_tunable_from_nodes(struct ctdb_context *ctdb,
  *     Set NOIPHOST ip flags for disabled nodes
  */
 static struct ctdb_ipflags *
-set_ipflags_internal(TALLOC_CTX *tmp_ctx,
+set_ipflags_internal(struct ipalloc_state *ipalloc_state,
 		     struct ctdb_node_map_old *nodemap,
 		     uint32_t *tval_noiptakeover,
 		     uint32_t *tval_noiphostonalldisabled)
@@ -2390,7 +2386,7 @@ set_ipflags_internal(TALLOC_CTX *tmp_ctx,
 	struct ctdb_ipflags *ipflags;
 
 	/* Clear IP flags - implicit due to talloc_zero */
-	ipflags = talloc_zero_array(tmp_ctx, struct ctdb_ipflags, nodemap->num);
+	ipflags = talloc_zero_array(ipalloc_state, struct ctdb_ipflags, nodemap->num);
 	if (ipflags == NULL) {
 		DEBUG(DEBUG_ERR, (__location__ " out of memory\n"));
 		return NULL;
@@ -2432,7 +2428,7 @@ set_ipflags_internal(TALLOC_CTX *tmp_ctx,
 }
 
 static struct ctdb_ipflags *set_ipflags(struct ctdb_context *ctdb,
-					TALLOC_CTX *tmp_ctx,
+					struct ipalloc_state *ipalloc_state,
 					struct ctdb_node_map_old *nodemap)
 {
 	uint32_t *tval_noiptakeover;
@@ -2440,21 +2436,21 @@ static struct ctdb_ipflags *set_ipflags(struct ctdb_context *ctdb,
 	struct ctdb_ipflags *ipflags;
 
 
-	tval_noiptakeover = get_tunable_from_nodes(ctdb, tmp_ctx, nodemap,
+	tval_noiptakeover = get_tunable_from_nodes(ctdb, ipalloc_state, nodemap,
 						   "NoIPTakeover", 0);
 	if (tval_noiptakeover == NULL) {
 		return NULL;
 	}
 
 	tval_noiphostonalldisabled =
-		get_tunable_from_nodes(ctdb, tmp_ctx, nodemap,
+		get_tunable_from_nodes(ctdb, ipalloc_state, nodemap,
 				       "NoIPHostOnAllDisabled", 0);
 	if (tval_noiphostonalldisabled == NULL) {
 		/* Caller frees tmp_ctx */
 		return NULL;
 	}
 
-	ipflags = set_ipflags_internal(tmp_ctx, nodemap,
+	ipflags = set_ipflags_internal(ipalloc_state, nodemap,
 				       tval_noiptakeover,
 				       tval_noiphostonalldisabled);
 
@@ -2640,7 +2636,7 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map_old *nodem
 		return -1;
 	}
 
-	ipflags = set_ipflags(ctdb, tmp_ctx, nodemap);
+	ipflags = set_ipflags(ctdb, ipalloc_state, nodemap);
 	if (ipflags == NULL) {
 		DEBUG(DEBUG_ERR,("Failed to set IP flags - aborting takeover run\n"));
 		talloc_free(tmp_ctx);
