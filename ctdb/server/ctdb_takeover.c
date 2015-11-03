@@ -2360,20 +2360,14 @@ static uint32_t *get_tunable_from_nodes(struct ctdb_context *ctdb,
  *   else
  *     Set NOIPHOST ip flags for disabled nodes
  */
-static bool set_ipflags_internal(struct ipalloc_state *ipalloc_state,
+static void set_ipflags_internal(struct ipalloc_state *ipalloc_state,
 				 struct ctdb_node_map_old *nodemap,
 				 uint32_t *tval_noiptakeover,
 				 uint32_t *tval_noiphostonalldisabled)
 {
 	int i;
 
-	/* Clear IP flags - implicit due to talloc_zero */
-	ipalloc_state->ipflags =
-		talloc_zero_array(ipalloc_state, struct ctdb_ipflags, nodemap->num);
-	if (ipalloc_state->ipflags == NULL) {
-		DEBUG(DEBUG_ERR, (__location__ " out of memory\n"));
-		return false;
-	}
+	/* IP flags cleared at this point - implicit due to talloc_zero */
 
 	for (i=0;i<nodemap->num;i++) {
 		/* Can not take IPs on node with NoIPTakeover set */
@@ -2406,8 +2400,6 @@ static bool set_ipflags_internal(struct ipalloc_state *ipalloc_state,
 			}
 		}
 	}
-
-	return true;
 }
 
 static bool set_ipflags(struct ctdb_context *ctdb,
@@ -2416,7 +2408,6 @@ static bool set_ipflags(struct ctdb_context *ctdb,
 {
 	uint32_t *tval_noiptakeover;
 	uint32_t *tval_noiphostonalldisabled;
-	bool ret;
 
 	tval_noiptakeover = get_tunable_from_nodes(ctdb, ipalloc_state, nodemap,
 						   "NoIPTakeover", 0);
@@ -2432,14 +2423,14 @@ static bool set_ipflags(struct ctdb_context *ctdb,
 		return false;
 	}
 
-	ret = set_ipflags_internal(ipalloc_state, nodemap,
-				   tval_noiptakeover,
-				   tval_noiphostonalldisabled);
+	set_ipflags_internal(ipalloc_state, nodemap,
+			     tval_noiptakeover,
+			     tval_noiphostonalldisabled);
 
 	talloc_free(tval_noiptakeover);
 	talloc_free(tval_noiphostonalldisabled);
 
-	return ret;
+	return true;
 }
 
 static struct ipalloc_state * ipalloc_state_init(struct ctdb_context *ctdb,
@@ -2468,6 +2459,15 @@ static struct ipalloc_state * ipalloc_state_init(struct ctdb_context *ctdb,
 				  ipalloc_state->num);
 	if (ipalloc_state->available_public_ips == NULL) {
 		DEBUG(DEBUG_ERR, (__location__ " Out of memory\n"));
+		talloc_free(ipalloc_state);
+		return NULL;
+	}
+	ipalloc_state->ipflags =
+		talloc_zero_array(ipalloc_state,
+				  struct ctdb_ipflags,
+				  ipalloc_state->num);
+	if (ipalloc_state->ipflags == NULL) {
+		DEBUG(DEBUG_ERR, (__location__ " out of memory\n"));
 		talloc_free(ipalloc_state);
 		return NULL;
 	}
