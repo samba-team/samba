@@ -278,6 +278,7 @@ test_shadow_copy_fixed shadow3 mount/base share "sub volume snapshots mounted un
 test_shadow_copy_fixed shadow4 . share "sub volume snapshots mounted outside"
 test_shadow_copy_fixed shadow5 mount/base/share "" "full volume snapshots and share mounted under volume"
 test_shadow_copy_fixed shadow6 . "" "full volume snapshots and share mounted outside"
+test_shadow_copy_fixed shadow8 . share "logical snapshot layout"
 
 # tests for snapshot everywhere - one snapshot location
 test_shadow_copy_fixed shadow7 mount base/share "'everywhere' full volume snapshots"

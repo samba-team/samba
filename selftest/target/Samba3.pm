@@ -1616,6 +1616,14 @@ sub provision($$$$$$$$)
 	shadow:mountpoint = $shadow_mntdir
 	shadow:snapdirseverywhere = yes
 
+[shadow8]
+	path = $shadow_shrdir
+	comment = previous versions using snapsharepath
+	vfs objects = shadow_copy2
+	shadow:mountpoint = $shadow_mntdir
+	shadow:snapdir = $shadow_tstdir/.snapshots
+	shadow:snapsharepath = share
+
 [shadow_wl]
 	path = $shadow_shrdir
 	comment = previous versions with wide links allowed
