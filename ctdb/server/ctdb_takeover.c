@@ -1327,7 +1327,7 @@ static int find_takeover_node(struct ipalloc_state *ipalloc_state,
 	int pnn, min=0, num;
 	int i, numnodes;
 
-	numnodes = talloc_array_length(ipflags);
+	numnodes = ipalloc_state->num;
 	pnn    = -1;
 	for (i=0; i<numnodes; i++) {
 		/* verify that this node can serve this ip */
@@ -1657,7 +1657,7 @@ static void basic_failback(struct ipalloc_state *ipalloc_state,
 	int maxnode, maxnum, minnode, minnum, num, retries;
 	struct public_ip_list *tmp_ip;
 
-	numnodes = talloc_array_length(ipflags);
+	numnodes = ipalloc_state->num;
 	retries = 0;
 
 try_again:
@@ -1749,7 +1749,7 @@ static bool lcp2_init(struct ipalloc_state *ipalloc_state,
 	int i, numnodes;
 	struct public_ip_list *tmp_ip;
 
-	numnodes = talloc_array_length(ipflags);
+	numnodes = ipalloc_state->num;
 
 	*rebalance_candidates = talloc_array(ipalloc_state, bool, numnodes);
 	if (*rebalance_candidates == NULL) {
@@ -1820,7 +1820,7 @@ static void lcp2_allocate_unassigned(struct ipalloc_state *ipalloc_state,
 	bool should_loop = true;
 	bool have_unassigned = true;
 
-	numnodes = talloc_array_length(ipflags);
+	numnodes = ipalloc_state->num;
 
 	while (have_unassigned && should_loop) {
 		should_loop = false;
@@ -1924,7 +1924,7 @@ static bool lcp2_failback_candidate(struct ipalloc_state *ipalloc_state,
 	mindstnode = -1;
 	mindstimbl = 0;
 
-	numnodes = talloc_array_length(ipflags);
+	numnodes = ipalloc_state->num;
 
 	DEBUG(DEBUG_DEBUG,(" ----------------------------------------\n"));
 	DEBUG(DEBUG_DEBUG,(" CONSIDERING MOVES FROM %d [%d]\n",
@@ -2031,7 +2031,7 @@ static void lcp2_failback(struct ipalloc_state *ipalloc_state,
 	struct lcp2_imbalance_pnn * lips;
 	bool again;
 
-	numnodes = talloc_array_length(ipflags);
+	numnodes = ipalloc_state->num;
 
 try_again:
 	/* Put the imbalances and nodes into an array, sort them and
@@ -2106,7 +2106,7 @@ static bool ip_alloc_deterministic_ips(struct ipalloc_state *ipalloc_state,
 	struct public_ip_list *tmp_ip;
 	int i, numnodes;
 
-	numnodes = talloc_array_length(ipflags);
+	numnodes = ipalloc_state->num;
 
 	DEBUG(DEBUG_NOTICE,("Deterministic IPs enabled. Resetting all ip allocations\n"));
        /* Allocate IPs to nodes in a modulo fashion so that IPs will
@@ -2192,7 +2192,7 @@ static bool ip_alloc_lcp2(struct ipalloc_state *ipalloc_state,
 	 * nodes to transfer IPs to.  This check is much cheaper than
 	 * continuing on...
 	 */
-	numnodes = talloc_array_length(ipflags);
+	numnodes = ipalloc_state->num;
 	num_rebalance_candidates = 0;
 	for (i=0; i<numnodes; i++) {
 		if (rebalance_candidates[i]) {
