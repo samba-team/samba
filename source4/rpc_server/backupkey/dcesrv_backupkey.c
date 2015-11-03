@@ -312,6 +312,7 @@ static NTSTATUS get_pk_from_raw_keypair_params(TALLOC_CTX *ctx,
 	ops = hx509_find_private_alg(&_hx509_signature_rsa_with_var_num.algorithm);
 	if (ops == NULL) {
 		DEBUG(2, ("Not supported algorithm\n"));
+		hx509_context_free(&hctx);
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
