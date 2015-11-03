@@ -33,10 +33,13 @@
 #include "ctdbd_conn.h"
 #include "ctdb_srvids.h"
 #include "source3/smbd/proto.h"
-#include "ctdb/include/ctdb_protocol.h"
 #include "server_id_db_util.h"
 #include "lib/util/iov_buf.h"
 #include "messages_util.h"
+
+#ifdef CLUSTER_SUPPORT
+#include "ctdb_protocol.h"
+#endif
 
 struct notifyd_peer;
 
@@ -130,12 +133,16 @@ static bool notifyd_get_db(struct messaging_context *msg_ctx,
 static bool notifyd_got_db(struct messaging_context *msg_ctx,
 			   struct messaging_rec **prec,
 			   void *private_data);
+
+#ifdef CLUSTER_SUPPORT
 static void notifyd_broadcast_reclog(struct ctdbd_connection *ctdbd_conn,
 				     struct server_id src,
 				     struct messaging_reclog *log);
+#endif
 static void notifyd_sys_callback(struct sys_notify_context *ctx,
 				 void *private_data, struct notify_event *ev);
 
+#ifdef CLUSTER_SUPPORT
 static struct tevent_req *notifyd_broadcast_reclog_send(
 	TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	struct ctdbd_connection *ctdbd_conn, struct server_id src,
@@ -146,6 +153,7 @@ static struct tevent_req *notifyd_clean_peers_send(
 	TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	struct notifyd_state *notifyd);
 static int notifyd_clean_peers_recv(struct tevent_req *req);
+#endif
 
 static int sys_notify_watch_dummy(
 	TALLOC_CTX *mem_ctx,
@@ -165,12 +173,15 @@ static int sys_notify_watch_dummy(
 }
 
 static void notifyd_handler_done(struct tevent_req *subreq);
+
+#ifdef CLUSTER_SUPPORT
 static void notifyd_broadcast_reclog_finished(struct tevent_req *subreq);
 static void notifyd_clean_peers_finished(struct tevent_req *subreq);
 static int notifyd_snoop_broadcast(uint32_t src_vnn, uint32_t dst_vnn,
 				   uint64_t dst_srvid,
 				   const uint8_t *msg, size_t msglen,
 				   void *private_data);
+#endif
 
 struct tevent_req *notifyd_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 				struct messaging_context *msg_ctx,
@@ -253,6 +264,7 @@ struct tevent_req *notifyd_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 		return req;
 	}
 
+#ifdef CLUSTER_SUPPORT
 	state->log = talloc_zero(state, struct messaging_reclog);
 	if (tevent_req_nomem(state->log, req)) {
 		return tevent_req_post(req, ev);
@@ -280,6 +292,7 @@ struct tevent_req *notifyd_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 		tevent_req_error(req, ret);
 		return tevent_req_post(req, ev);
 	}
+#endif
 
 	return req;
 }
@@ -294,6 +307,8 @@ static void notifyd_handler_done(struct tevent_req *subreq)
 	TALLOC_FREE(subreq);
 	tevent_req_error(req, ret);
 }
+
+#ifdef CLUSTER_SUPPORT
 
 static void notifyd_broadcast_reclog_finished(struct tevent_req *subreq)
 {
@@ -316,6 +331,8 @@ static void notifyd_clean_peers_finished(struct tevent_req *subreq)
 	TALLOC_FREE(subreq);
 	tevent_req_error(req, ret);
 }
+
+#endif
 
 int notifyd_recv(struct tevent_req *req)
 {
@@ -552,8 +569,6 @@ static bool notifyd_rec_change(struct messaging_context *msg_ctx,
 		private_data, struct notifyd_state);
 	struct server_id_buf idbuf;
 	struct messaging_rec *rec = *prec;
-	struct messaging_rec **tmp;
-	struct messaging_reclog *log;
 	struct notify_rec_change_msg *msg;
 	size_t pathlen;
 	bool ok;
@@ -581,6 +596,13 @@ static bool notifyd_rec_change(struct messaging_context *msg_ctx,
 	if ((state->log == NULL) || (state->ctdbd_conn == NULL)) {
 		return true;
 	}
+
+#ifdef CLUSTER_SUPPORT
+	{
+
+	struct messaging_rec **tmp;
+	struct messaging_reclog *log;
+
 	log = state->log;
 
 	tmp = talloc_realloc(log, log->recs, struct messaging_rec *,
@@ -601,6 +623,9 @@ static bool notifyd_rec_change(struct messaging_context *msg_ctx,
 		notifyd_broadcast_reclog(state->ctdbd_conn,
 					 messaging_server_id(msg_ctx), log);
 	}
+
+	}
+#endif
 
 	return true;
 }
@@ -938,6 +963,8 @@ static bool notifyd_got_db(struct messaging_context *msg_ctx,
 	return true;
 }
 
+#ifdef CLUSTER_SUPPORT
+
 static void notifyd_broadcast_reclog(struct ctdbd_connection *ctdbd_conn,
 				     struct server_id src,
 				     struct messaging_reclog *log)
@@ -1139,6 +1166,8 @@ static int notifyd_clean_peers_recv(struct tevent_req *req)
 	return tevent_req_simple_recv_unix(req);
 }
 
+#endif
+
 static int notifyd_add_proxy_syswatches(struct db_record *rec,
 					void *private_data)
 {
@@ -1183,6 +1212,8 @@ static int notifyd_add_proxy_syswatches(struct db_record *rec,
 
 	return 0;
 }
+
+#ifdef CLUSTER_SUPPORT
 
 static int notifyd_db_del_syswatches(struct db_record *rec, void *private_data)
 {
@@ -1418,6 +1449,7 @@ static int notifyd_snoop_broadcast(uint32_t src_vnn, uint32_t dst_vnn,
 
 	return 0;
 }
+#endif
 
 struct notifyd_parse_db_state {
 	bool (*fn)(const char *path,
