@@ -45,9 +45,8 @@ struct shadow_copy2_config {
 	bool fixinodes;
 	char *sort_order;
 	bool snapdir_absolute;
-	char *basedir;
 	char *mount_point;
-	char *rel_connectpath; /* share root, relative to the basedir */
+	char *rel_connectpath; /* share root, relative to a snapshot root */
 	char *snapshot_basepath; /* the absolute version of snapdir */
 };
 
@@ -1873,7 +1872,7 @@ static int shadow_copy2_connect(struct vfs_handle_struct *handle,
 	const char *snapdir;
 	const char *gmt_format;
 	const char *sort_order;
-	const char *basedir;
+	const char *basedir = NULL;
 	const char *mount_point;
 
 	DEBUG(10, (__location__ ": cnum[%u], connectpath[%s]\n",
@@ -1996,6 +1995,7 @@ static int shadow_copy2_connect(struct vfs_handle_struct *handle,
 				  "relative ('%s'), but it has to be an "
 				  "absolute path. Disabling basedir.\n",
 				  basedir));
+			basedir = NULL;
 		} else {
 			char *p;
 			p = strstr(basedir, config->mount_point);
@@ -2005,31 +2005,24 @@ static int shadow_copy2_connect(struct vfs_handle_struct *handle,
 					  "mount point (%s). "
 					  "Disabling basedir\n",
 					  basedir, config->mount_point));
-			} else {
-				config->basedir = talloc_strdup(config,
-								basedir);
-				if (config->basedir == NULL) {
-					DEBUG(0, ("talloc_strdup() failed\n"));
-					errno = ENOMEM;
-					return -1;
-				}
+				basedir = NULL;
 			}
 		}
 	}
 
-	if (config->snapdirseverywhere && config->basedir != NULL) {
+	if (config->snapdirseverywhere && basedir != NULL) {
 		DEBUG(1, (__location__ " Warning: 'basedir' is incompatible "
 			  "with 'snapdirseverywhere'. Disabling basedir.\n"));
-		TALLOC_FREE(config->basedir);
+		basedir = NULL;
 	}
 
-	if (config->basedir == NULL) {
-		config->basedir = config->mount_point;
+	if (basedir == NULL) {
+		basedir = config->mount_point;
 	}
 
-	if (strlen(config->basedir) != strlen(handle->conn->connectpath)) {
+	if (strlen(basedir) != strlen(handle->conn->connectpath)) {
 		config->rel_connectpath = talloc_strdup(config,
-			handle->conn->connectpath + strlen(config->basedir));
+			handle->conn->connectpath + strlen(basedir));
 		if (config->rel_connectpath == NULL) {
 			DEBUG(0, ("talloc_strdup() failed\n"));
 			errno = ENOMEM;
@@ -2067,7 +2060,6 @@ static int shadow_copy2_connect(struct vfs_handle_struct *handle,
 
 	DEBUG(10, ("shadow_copy2_connect: configuration:\n"
 		   "  share root: '%s'\n"
-		   "  basedir: '%s'\n"
 		   "  mountpoint: '%s'\n"
 		   "  rel share root: '%s'\n"
 		   "  snapdir: '%s'\n"
@@ -2080,7 +2072,6 @@ static int shadow_copy2_connect(struct vfs_handle_struct *handle,
 		   "  sort order: %s\n"
 		   "",
 		   handle->conn->connectpath,
-		   config->basedir,
 		   config->mount_point,
 		   config->rel_connectpath,
 		   config->snapdir,
