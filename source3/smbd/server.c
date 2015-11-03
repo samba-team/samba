@@ -48,8 +48,11 @@
 #include "lib/smbd_shim.h"
 #include "scavenger.h"
 #include "locking/leases_db.h"
-#include "../../ctdb/include/ctdb_protocol.h"
 #include "smbd/notifyd/notifyd.h"
+
+#ifdef CLUSTER_SUPPORT
+#include "ctdb_protocol.h"
+#endif
 
 struct smbd_open_socket;
 struct smbd_child_pid;
@@ -265,6 +268,7 @@ static void smbd_parent_id_cache_delete(struct messaging_context *ctx,
 	messaging_send_to_children(ctx, msg_type, msg_data);
 }
 
+#ifdef CLUSTER_SUPPORT
 static int smbd_parent_ctdb_reconfigured(
 	uint32_t src_vnn, uint32_t dst_vnn, uint64_t dst_srvid,
 	const uint8_t *msg, size_t msglen, void *private_data)
@@ -284,6 +288,7 @@ static int smbd_parent_ctdb_reconfigured(
 
 	return 0;
 }
+#endif
 
 static void add_child_pid(struct smbd_parent_context *parent,
 			  pid_t pid)
@@ -906,6 +911,7 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 	messaging_register(msg_ctx, NULL,
 			   ID_CACHE_KILL, smbd_parent_id_cache_kill);
 
+#ifdef CLUSTER_SUPPORT
 	if (lp_clustering()) {
 		struct ctdbd_connection *conn = messaging_ctdbd_connection();
 
@@ -914,6 +920,7 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 		register_with_ctdbd(conn, CTDB_SRVID_SAMBA_NOTIFY,
 				    smbd_parent_ctdb_reconfigured, msg_ctx);
 	}
+#endif
 
 #ifdef DEVELOPER
 	messaging_register(msg_ctx, NULL, MSG_SMB_INJECT_FAULT,
