@@ -1928,6 +1928,11 @@ static int shadow_copy2_connect(struct vfs_handle_struct *handle,
 						"shadow", "crossmountpoints",
 						false);
 
+	if (config->crossmountpoints && !config->snapdirseverywhere) {
+		DBG_WARNING("Warning: 'crossmountpoints' depends on "
+			    "'snapdirseverywhere'. Disabling crossmountpoints.\n");
+	}
+
 	config->fixinodes = lp_parm_bool(SNUM(handle->conn),
 					 "shadow", "fixinodes",
 					 false);
@@ -2015,12 +2020,6 @@ static int shadow_copy2_connect(struct vfs_handle_struct *handle,
 	if (config->snapdirseverywhere && config->basedir != NULL) {
 		DEBUG(1, (__location__ " Warning: 'basedir' is incompatible "
 			  "with 'snapdirseverywhere'. Disabling basedir.\n"));
-		TALLOC_FREE(config->basedir);
-	}
-
-	if (config->crossmountpoints && config->basedir != NULL) {
-		DEBUG(1, (__location__ " Warning: 'basedir' is incompatible "
-			  "with 'crossmountpoints'. Disabling basedir.\n"));
 		TALLOC_FREE(config->basedir);
 	}
 
