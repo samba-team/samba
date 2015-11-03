@@ -1873,6 +1873,7 @@ static int shadow_copy2_connect(struct vfs_handle_struct *handle,
 	const char *gmt_format;
 	const char *sort_order;
 	const char *basedir = NULL;
+	const char *snapsharepath = NULL;
 	const char *mount_point;
 
 	DEBUG(10, (__location__ ": cnum[%u], connectpath[%s]\n",
@@ -2016,11 +2017,45 @@ static int shadow_copy2_connect(struct vfs_handle_struct *handle,
 		basedir = NULL;
 	}
 
+	snapsharepath = lp_parm_const_string(SNUM(handle->conn), "shadow",
+					     "snapsharepath", NULL);
+	if (snapsharepath != NULL) {
+		if (snapsharepath[0] == '/') {
+			DBG_WARNING("Warning: 'snapsharepath' is "
+				    "absolute ('%s'), but it has to be a "
+				    "relative path. Disabling snapsharepath.\n",
+				    snapsharepath);
+			snapsharepath = NULL;
+		}
+		if (config->snapdirseverywhere && snapsharepath != NULL) {
+			DBG_WARNING("Warning: 'snapsharepath' is incompatible "
+				    "with 'snapdirseverywhere'. Disabling "
+				    "snapsharepath.\n");
+			snapsharepath = NULL;
+		}
+	}
+
+	if (basedir != NULL && snapsharepath != NULL) {
+		DBG_WARNING("Warning: 'snapsharepath' is incompatible with "
+			    "'basedir'. Disabling snapsharepath\n");
+		snapsharepath = NULL;
+	}
+
+	if (snapsharepath != NULL) {
+		config->rel_connectpath = talloc_strdup(config, snapsharepath);
+		if (config->rel_connectpath == NULL) {
+			DBG_ERR("talloc_strdup() failed\n");
+			errno = ENOMEM;
+			return -1;
+		}
+	}
+
 	if (basedir == NULL) {
 		basedir = config->mount_point;
 	}
 
-	if (strlen(basedir) != strlen(handle->conn->connectpath)) {
+	if (config->rel_connectpath == NULL &&
+	    strlen(basedir) != strlen(handle->conn->connectpath)) {
 		config->rel_connectpath = talloc_strdup(config,
 			handle->conn->connectpath + strlen(basedir));
 		if (config->rel_connectpath == NULL) {
