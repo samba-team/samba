@@ -160,8 +160,8 @@ NTSTATUS get_user_from_kerberos_info(TALLOC_CTX *mem_ctx,
 
 		/* extra sanity check that the guest account is valid */
 		if (!pw) {
-			DEBUG(1, ("Username %s is invalid on this system\n",
-				  fuser));
+			DBG_NOTICE("Username %s is invalid on this system\n",
+				  fuser);
 			return NT_STATUS_LOGON_FAILURE;
 		}
 	}
