@@ -48,11 +48,6 @@
 #define CTDB_ARP_REPEAT   3
 
 /* Flags used in IP allocation algorithms. */
-struct ctdb_ipflags {
-	bool noiptakeover;
-	bool noiphost;
-};
-
 enum ipalloc_algorithm {
 	IPALLOC_DETERMINISTIC,
 	IPALLOC_NONDETERMINISTIC,
@@ -65,7 +60,8 @@ struct ipalloc_state {
 	/* Arrays with data for each node */
 	struct ctdb_public_ip_list_old **known_public_ips;
 	struct ctdb_public_ip_list_old **available_public_ips;
-	struct ctdb_ipflags *ipflags;
+	bool *noiptakeover;
+	bool *noiphost;
 
 	enum ipalloc_algorithm algorithm;
 	uint32_t no_ip_failback;
@@ -1283,7 +1279,7 @@ static bool can_node_host_ip(struct ipalloc_state *ipalloc_state,
 	struct ctdb_public_ip_list_old *public_ips;
 	int i;
 
-	if (ipalloc_state->ipflags[pnn].noiphost) {
+	if (ipalloc_state->noiphost[pnn]) {
 		return false;
 	}
 
@@ -1307,7 +1303,7 @@ static bool can_node_takeover_ip(struct ipalloc_state *ipalloc_state,
 				 int32_t pnn,
 				 struct public_ip_list *ip)
 {
-	if (ipalloc_state->ipflags[pnn].noiptakeover) {
+	if (ipalloc_state->noiptakeover[pnn]) {
 		return false;
 	}
 
@@ -2367,17 +2363,15 @@ static void set_ipflags_internal(struct ipalloc_state *ipalloc_state,
 {
 	int i;
 
-	/* IP flags cleared at this point - implicit due to talloc_zero */
-
 	for (i=0;i<nodemap->num;i++) {
 		/* Can not take IPs on node with NoIPTakeover set */
 		if (tval_noiptakeover[i] != 0) {
-			ipalloc_state->ipflags[i].noiptakeover = true;
+			ipalloc_state->noiptakeover[i] = true;
 		}
 
 		/* Can not host IPs on INACTIVE node */
 		if (nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE) {
-			ipalloc_state->ipflags[i].noiphost = true;
+			ipalloc_state->noiphost[i] = true;
 		}
 	}
 
@@ -2387,7 +2381,7 @@ static void set_ipflags_internal(struct ipalloc_state *ipalloc_state,
 		 */
 		for (i=0;i<nodemap->num;i++) {
 			if (tval_noiphostonalldisabled[i] != 0) {
-				ipalloc_state->ipflags[i].noiphost = true;
+				ipalloc_state->noiphost[i] = true;
 			}
 		}
 	} else {
@@ -2396,7 +2390,7 @@ static void set_ipflags_internal(struct ipalloc_state *ipalloc_state,
 		 */
 		for (i=0;i<nodemap->num;i++) {
 			if (nodemap->nodes[i].flags & NODE_FLAGS_DISABLED) {
-				ipalloc_state->ipflags[i].noiphost = true;
+				ipalloc_state->noiphost[i] = true;
 			}
 		}
 	}
@@ -2462,12 +2456,21 @@ static struct ipalloc_state * ipalloc_state_init(struct ctdb_context *ctdb,
 		talloc_free(ipalloc_state);
 		return NULL;
 	}
-	ipalloc_state->ipflags =
+	ipalloc_state->noiptakeover =
 		talloc_zero_array(ipalloc_state,
-				  struct ctdb_ipflags,
+				  bool,
 				  ipalloc_state->num);
-	if (ipalloc_state->ipflags == NULL) {
-		DEBUG(DEBUG_ERR, (__location__ " out of memory\n"));
+	if (ipalloc_state->noiptakeover == NULL) {
+		DEBUG(DEBUG_ERR, (__location__ " Out of memory\n"));
+		talloc_free(ipalloc_state);
+		return NULL;
+	}
+	ipalloc_state->noiphost =
+		talloc_zero_array(ipalloc_state,
+				  bool,
+				  ipalloc_state->num);
+	if (ipalloc_state->noiphost == NULL) {
+		DEBUG(DEBUG_ERR, (__location__ " Out of memory\n"));
 		talloc_free(ipalloc_state);
 		return NULL;
 	}
