@@ -226,6 +226,46 @@
                 </varlistentry>
 
 		<varlistentry>
+		<term>shadow:snapsharepath = SNAPSHAREPATH
+		</term>
+		<listitem>
+		<para>
+		With this parameter, one can specify the path of the share's
+		root directory in snapshots, relative to the snapshot's
+		root directory. It is an alternative method to
+		<command>shadow:basedir</command>, allowing greater control.
+		</para>
+		<para>
+		For example, if within each
+		snapshot the files of the share have a
+		<command>path/to/share/</command> prefix, then
+		<command>shadow:snapsharepath</command> can be
+		set to <command>path/to/share</command>.
+		</para>
+		<para>
+		With this parameter, it is no longer assumed that a
+		snapshot represents an image of the original file system or
+		a portion of it. For example, a system could perform
+		backups of only files contained in shares, and then
+		expose the backup files in a logical structure:
+		</para>
+		<itemizedlist>
+		<listitem><para>share1/</para></listitem>
+		<listitem><para>share2/</para></listitem>
+		<listitem><para>.../</para></listitem>
+		</itemizedlist>
+		<para>
+		Note that the <command>shadow:snapdirseverywhere</command>
+		and the <command>shadow:basedir</command> options
+		are incompatible with <command>shadow:snapsharepath</command>
+		and disable <command>shadow:snapsharepath</command> setting.
+		</para>
+		<para>Example: shadow:snapsharepath = path/to/share</para>
+		<para>Default: shadow:snapsharepath = NOT SPECIFIED</para>
+                </listitem>
+		</varlistentry>
+
+		<varlistentry>
                 <term>shadow:sort = asc/desc
                 </term>
                 <listitem>
