@@ -260,15 +260,10 @@ def add_init_functions(self):
 
 
 def check_duplicate_sources(bld, tgt_list):
-    '''see if we are compiling the same source file more than once
-       without an allow_duplicates attribute'''
+    '''see if we are compiling the same source file more than once'''
 
     debug('deps: checking for duplicate sources')
-
     targets = LOCAL_CACHE(bld, 'TARGET_TYPE')
-    ret = True
-
-    global tstart
 
     for t in tgt_list:
         source_list = TO_LIST(getattr(t, 'source', ''))
@@ -286,7 +281,6 @@ def check_duplicate_sources(bld, tgt_list):
 
     # build a list of targets that each source file is part of
     for t in tgt_list:
-        sources = []
         if not targets[t.sname] in [ 'LIBRARY', 'BINARY', 'PYTHON' ]:
             continue
         for obj in t.add_objects:
@@ -306,7 +300,7 @@ def check_duplicate_sources(bld, tgt_list):
             if len(subsystems[s][tname]) > 1:
                 raise Utils.WafError("ERROR: source %s is in more than one subsystem of target '%s': %s" % (s, tname, subsystems[s][tname]))
 
-    return ret
+    return True
 
 
 def check_orphaned_targets(bld, tgt_list):
