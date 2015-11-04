@@ -169,7 +169,6 @@ CFLAGS="$RPM_OPT_FLAGS $EXTRA -D_GNU_SOURCE" ./configure \
 	--with-ads \
 	--with-automount \
 	--enable-fhs \
-	--with-pam_smbpass \
 	--with-libsmbclient \
 	--without-smbwrapper \
 	--with-pam \
@@ -199,7 +198,7 @@ fi
 
 
 make -j %{numcpu} %{?_smp_mflags} \
-	everything modules pam_smbpass
+	everything modules
 
 # check that desired suppor has been compiled into smbd:
 export LD_LIBRARY_PATH=./bin
@@ -522,7 +521,6 @@ exit 0
 %attr(755,root,root) /%{_libarch}/libnss_winbind.so
 %attr(755,root,root) /%{_libarch}/libnss_winbind.so.2
 %attr(755,root,root) /%{_libarch}/security/pam_winbind.so
-%attr(755,root,root) /%{_libarch}/security/pam_smbpass.so
 /usr/share/locale/*/LC_MESSAGES/pam_winbind.mo
 /usr/share/locale/*/LC_MESSAGES/net.mo
 

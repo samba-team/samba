@@ -165,7 +165,6 @@ CC="$CC" CFLAGS="$RPM_OPT_FLAGS $EXTRA -D_GNU_SOURCE" ./configure \
 	--with-ads \
         --with-automount \
         --with-fhs \
-	--with-pam_smbpass \
 	--with-libsmbclient \
         --without-smbwrapper \
 	--with-pam \
@@ -188,7 +187,7 @@ if [ ${CC_MAJOR} -ge 3 ]; then
 fi
 
 
-make all modules pam_smbpass
+make all modules
 
 # Remove some permission bits to avoid to many dependencies
 cd ..
@@ -444,7 +443,6 @@ fi
 %attr(755,root,root) /%{_libarch}/libnss_wins.so*
 %attr(755,root,root) /%{_libarch}/libnss_winbind.so*
 %attr(755,root,root) /%{_libarch}/security/pam_winbind.so
-%attr(755,root,root) /%{_libarch}/security/pam_smbpass.so
 /usr/share/locale/de/LC_MESSAGES/net.mo
 /usr/share/locale/de/LC_MESSAGES/pam_winbind.mo
 /usr/share/locale/ar/LC_MESSAGES/pam_winbind.mo
