@@ -42,7 +42,6 @@ def set_options(opt):
     opt.SAMBA3_ADD_OPTION('cups', with_name="enable", without_name="disable")
     opt.SAMBA3_ADD_OPTION('iprint', with_name="enable", without_name="disable")
     opt.SAMBA3_ADD_OPTION('pam')
-    opt.SAMBA3_ADD_OPTION('pam_smbpass')
     opt.SAMBA3_ADD_OPTION('quotas')
     opt.SAMBA3_ADD_OPTION('sendfile-support')
     opt.SAMBA3_ADD_OPTION('utmp')
@@ -965,9 +964,6 @@ int i; i = PAM_RADIO_TYPE;
         if use_pam:
             conf.DEFINE('WITH_PAM', 1)
             conf.DEFINE('WITH_PAM_MODULES', 1)
-
-    if Options.options.with_pam_smbpass:
-        conf.env.with_pam_smbpass = True
 
     seteuid = False
 
