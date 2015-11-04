@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import string, Logs, Utils, Options, sys, Build, os, intltool, optparse, textwrap
+import string, Logs, Utils, Options, Build, os, optparse, textwrap
 from samba_utils import EXPAND_VARIABLES, os_path_relpath
 
 class SambaIndentedHelpFormatter (optparse.IndentedHelpFormatter):
