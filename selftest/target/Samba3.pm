@@ -594,6 +594,9 @@ sub setup_fileserver($$)
 	my $valid_users_sharedir="$share_dir/valid_users";
 	push(@dirs,$valid_users_sharedir);
 
+	my $offline_sharedir="$share_dir/offline";
+	push(@dirs,$offline_sharedir);
+
 	my $fileserver_options = "
 [lowercase]
 	path = $lower_case_share_dir
@@ -616,6 +619,9 @@ sub setup_fileserver($$)
 [valid-users-access]
 	path = $valid_users_sharedir
 	valid users = +userdup
+[offline]
+	path = $offline_sharedir
+	vfs objects = offline
 	";
 
 	my $vars = $self->provision($path,
