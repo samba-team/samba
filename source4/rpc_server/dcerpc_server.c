@@ -1230,7 +1230,15 @@ _PUBLIC_ NTSTATUS dcesrv_init_context(TALLOC_CTX *mem_ctx,
 
 	dce_ctx = talloc(mem_ctx, struct dcesrv_context);
 	NT_STATUS_HAVE_NO_MEMORY(dce_ctx);
+
+	if (uid_wrapper_enabled()) {
+		setenv("UID_WRAPPER_MYUID", "1", 1);
+	}
 	dce_ctx->initial_euid = geteuid();
+	if (uid_wrapper_enabled()) {
+		unsetenv("UID_WRAPPER_MYUID");
+	}
+
 	dce_ctx->endpoint_list	= NULL;
 	dce_ctx->lp_ctx = lp_ctx;
 	dce_ctx->assoc_groups_idr = idr_init(dce_ctx);
