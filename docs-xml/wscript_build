@@ -68,6 +68,7 @@ manpages='''
          manpages/vfs_linux_xfs_sgid.8
          manpages/vfs_media_harmony.8
          manpages/vfs_netatalk.8
+         manpages/vfs_offline.8
          manpages/vfs_prealloc.8
          manpages/vfs_preopen.8
          manpages/vfs_readahead.8
