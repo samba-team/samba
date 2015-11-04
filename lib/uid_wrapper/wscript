@@ -3,7 +3,7 @@
 import Options
 import os, sys
 
-VERSION="1.1.1"
+VERSION="1.2.0"
 
 def configure(conf):
     if conf.CHECK_BUNDLED_SYSTEM('uid_wrapper', minversion=VERSION, set_target=False):
