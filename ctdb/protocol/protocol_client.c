@@ -673,7 +673,7 @@ void ctdb_req_control_shutdown(struct ctdb_req_control *request)
 	request->pad = 0;
 	request->srvid = 0;
 	request->client_id = 0;
-	request->flags = 0;
+	request->flags = CTDB_CTRL_FLAG_NOREPLY;
 
 	request->rdata.opcode = CTDB_CONTROL_SHUTDOWN;
 }
