@@ -141,7 +141,6 @@ static void ctdb_client_control_done(struct tevent_req *subreq)
 
 	/* Daemon will not reply, so we set status to 0 */
 	if (state->flags & CTDB_CTRL_FLAG_NOREPLY) {
-		reqid_remove(state->client->idr, state->reqid);
 		state->reply->status = 0;
 		tevent_req_done(req);
 	}
