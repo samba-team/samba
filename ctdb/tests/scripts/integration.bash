@@ -320,7 +320,7 @@ _cluster_is_healthy ()
 
 _cluster_is_recovered ()
 {
-    node_has_status all recovered
+    node_has_status 0 recovered
 }
 
 _cluster_is_ready ()
