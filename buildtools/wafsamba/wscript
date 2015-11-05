@@ -216,6 +216,7 @@ def configure(conf):
     # load our local waf extensions
     conf.check_tool('gnu_dirs')
     conf.check_tool('wafsamba')
+    conf.check_tool('print_commands')
 
     conf.CHECK_CC_ENV()
 
