@@ -14,7 +14,7 @@ while not os.path.exists(srcdir+'/buildtools') and len(srcdir.split('/')) < 5:
 sys.path.insert(0, srcdir + '/buildtools/wafsamba')
 
 import wafsamba, samba_dist
-import Options
+import Options, Utils
 
 samba_dist.DIST_DIRS('lib/replace buildtools:buildtools third_party/waf:third_party/waf')
 
@@ -23,7 +23,7 @@ def set_options(opt):
     opt.PRIVATE_EXTENSION_DEFAULT('')
     opt.RECURSE('buildtools/wafsamba')
 
-@wafsamba.runonce
+@Utils.run_once
 def configure(conf):
     conf.RECURSE('buildtools/wafsamba')
 

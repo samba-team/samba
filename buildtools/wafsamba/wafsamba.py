@@ -674,7 +674,7 @@ Build.BuildContext.SAMBA_GENERATOR = SAMBA_GENERATOR
 
 
 
-@runonce
+@Utils.run_once
 def SETUP_BUILD_GROUPS(bld):
     '''setup build groups used to ensure that the different build
     phases happen consecutively'''
