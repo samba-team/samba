@@ -3,7 +3,7 @@
 import sys
 import Build, Options, Logs
 from Configure import conf
-from samba_utils import TO_LIST, runonce
+from samba_utils import TO_LIST
 
 def PRIVATE_NAME(bld, name, private_extension, private_library):
     '''possibly rename a library to include a bundled extension'''
@@ -108,7 +108,6 @@ def LIB_MUST_BE_PRIVATE(conf, libname):
     return ('ALL' in conf.env.PRIVATE_LIBS or
             libname in conf.env.PRIVATE_LIBS)
 
-@runonce
 @conf
 def CHECK_BUNDLED_SYSTEM_PKG(conf, libname, minversion='0.0.0',
         onlyif=None, implied_deps=None, pkg=None):
@@ -122,7 +121,6 @@ def CHECK_BUNDLED_SYSTEM_PKG(conf, libname, minversion='0.0.0',
                                      implied_deps=implied_deps,
                                      pkg=pkg)
 
-@runonce
 @conf
 def CHECK_BUNDLED_SYSTEM(conf, libname, minversion='0.0.0',
                          checkfunctions=None, headers=None, checkcode=None,
@@ -219,7 +217,6 @@ def CHECK_BUNDLED_SYSTEM(conf, libname, minversion='0.0.0',
 def tuplize_version(version):
     return tuple([int(x) for x in version.split(".")])
 
-@runonce
 @conf
 def CHECK_BUNDLED_SYSTEM_PYTHON(conf, libname, modulename, minversion='0.0.0'):
     '''check if a python module is available on the system and

@@ -5,12 +5,6 @@ done = {}
 
 @conf
 def SAMBA_CHECK_PERL(conf, mandatory=True, version=(5,0,0)):
-    #
-    # TODO: use the @runonce mechanism for this.
-    # The problem is that @runonce currently does
-    # not seem to work together with @conf...
-    # So @runonce (and/or) @conf needs fixing.
-    #
     if "done" in done:
         return
     done["done"] = True

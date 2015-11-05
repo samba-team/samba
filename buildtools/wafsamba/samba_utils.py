@@ -35,22 +35,6 @@ def GET_TARGET_TYPE(ctx, target):
     return cache[target]
 
 
-######################################################
-# this is used as a decorator to make functions only
-# run once. Based on the idea from
-# http://stackoverflow.com/questions/815110/is-there-a-decorator-to-simply-cache-function-return-values
-def runonce(function):
-    runonce_ret = {}
-    def runonce_wrapper(*args):
-        if args in runonce_ret:
-            return runonce_ret[args]
-        else:
-            ret = function(*args)
-            runonce_ret[args] = ret
-            return ret
-    return runonce_wrapper
-
-
 def ADD_LD_LIBRARY_PATH(path):
     '''add something to LD_LIBRARY_PATH'''
     if 'LD_LIBRARY_PATH' in os.environ:

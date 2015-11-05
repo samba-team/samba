@@ -4,7 +4,7 @@ import os, sys
 import Build, Options, preproc, Logs
 from Configure import conf
 from TaskGen import feature
-from samba_utils import TO_LIST, GET_TARGET_TYPE, SET_TARGET_TYPE, runonce, unique_list, mkdir_p
+from samba_utils import TO_LIST, GET_TARGET_TYPE, SET_TARGET_TYPE, unique_list, mkdir_p
 
 missing_headers = set()
 
@@ -13,7 +13,6 @@ missing_headers = set()
 # to waf a bit easier for those used to autoconf
 # m4 files
 
-@runonce
 @conf
 def DEFINE(conf, d, v, add_to_cflags=False, quote=False):
     '''define a config option'''
