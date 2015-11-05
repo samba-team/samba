@@ -135,27 +135,6 @@ def dict_concat(d1, d2):
         if t not in d1:
             d1[t] = d2[t]
 
-
-def exec_command(self, cmd, **kw):
-    '''this overrides the 'waf -v' debug output to be in a nice
-    unix like format instead of a python list.
-    Thanks to ita on #waf for this'''
-    _cmd = cmd
-    if isinstance(cmd, list):
-        _cmd = ' '.join(cmd)
-    debug('runner: %s' % _cmd)
-    if self.log:
-        self.log.write('%s\n' % cmd)
-        kw['log'] = self.log
-    try:
-        if not kw.get('cwd', None):
-            kw['cwd'] = self.cwd
-    except AttributeError:
-        self.cwd = kw['cwd'] = self.bldnode.abspath()
-    return Utils.exec_command(cmd, **kw)
-Build.BuildContext.exec_command = exec_command
-
-
 def ADD_COMMAND(opt, name, function):
     '''add a new top level command to waf'''
     Utils.g_module.__dict__[name] = function
