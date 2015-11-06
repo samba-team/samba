@@ -5129,23 +5129,9 @@ valid_port:
 	}
 
 	rc = -1;
-	if (addr.family == AF_INET) {
-		ai = nwrap_files_getaddrinfo(node, port, hints, &ai_tail);
-		if (ai != NULL) {
-			rc = 1;
-		}
-#ifdef HAVE_IPV6
-	} else if (addr.family == AF_INET6) {
-		ai = nwrap_files_getaddrinfo(node, port, hints, &ai_tail);
-		if (ai != NULL) {
-			rc = 1;
-		}
-#endif
-	} else {
-		ai = nwrap_files_getaddrinfo(node, port, hints, &ai_tail);
-		if (ai != NULL) {
-			rc = 1;
-		}
+	ai = nwrap_files_getaddrinfo(node, port, hints, &ai_tail);
+	if (ai != NULL) {
+		rc = 1;
 	}
 
 	if (rc < 0) {
