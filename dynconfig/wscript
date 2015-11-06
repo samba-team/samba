@@ -374,7 +374,7 @@ def dynconfig_cflags(bld, list=None):
         if list and not varname in list:
             continue
         value = bld.env[varname]
-        if not Options.is_install:
+        if not bld.is_install:
             override = get_override(bld)
             if varname in override:
                 value = os.path.join(bld.env.srcdir, override[varname])
@@ -399,7 +399,7 @@ def pathconfig_entities(bld, list=None):
         if list and not varname in list:
             continue
         value = bld.env[varname]
-        if not Options.is_install:
+        if not bld.is_install:
             override = get_override(bld)
             if varname in override:
                 value = os.path.join(bld.env.srcdir, override[varname])
