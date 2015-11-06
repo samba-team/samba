@@ -87,6 +87,7 @@ static void smbd_cleanupd_process_exited(struct messaging_context *msg,
 		req, struct smbd_cleanupd_state);
 	pid_t pid;
 	bool unclean_shutdown;
+	int ret;
 
 	if (data->length != (sizeof(pid) + sizeof(unclean_shutdown))) {
 		DBG_WARNING("Got invalid length: %zu\n", data->length);
@@ -101,6 +102,12 @@ static void smbd_cleanupd_process_exited(struct messaging_context *msg,
 		  unclean_shutdown ? "un" : "");
 
 	smbprofile_cleanup(pid, state->parent_pid);
+
+	ret = messaging_cleanup(msg, pid);
+
+	if ((ret != 0) && (ret != ENOENT)) {
+		DBG_DEBUG("messaging_cleanup returned %s\n", strerror(ret));
+	}
 }
 
 NTSTATUS smbd_cleanupd_recv(struct tevent_req *req)

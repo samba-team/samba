@@ -558,7 +558,6 @@ static void remove_child_pid(struct smbd_parent_context *parent,
 	struct server_id child_id;
 	struct iovec iov[2];
 	NTSTATUS status;
-	int ret;
 
 	child_id = pid_to_procid(pid);
 
@@ -571,13 +570,6 @@ static void remove_child_pid(struct smbd_parent_context *parent,
 				    MSG_SMB_NOTIFY_CLEANUP,
 				    iov, ARRAY_SIZE(iov), NULL, 0);
 	DEBUG(10, ("messaging_send_iov returned %s\n", nt_errstr(status)));
-
-	ret = messaging_cleanup(parent->msg_ctx, pid);
-
-	if ((ret != 0) && (ret != ENOENT)) {
-		DEBUG(10, ("%s: messaging_cleanup returned %s\n",
-			   __func__, strerror(ret)));
-	}
 
 	for (child = parent->children; child != NULL; child = child->next) {
 		if (child->pid == pid) {
