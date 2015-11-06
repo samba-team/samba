@@ -5048,7 +5048,6 @@ static int nwrap_getaddrinfo(const char *node,
 		.family = AF_UNSPEC,
 	};
 	int ret;
-	int rc;
 
 	if (node == NULL && service == NULL) {
 		return EAI_NONAME;
@@ -5112,20 +5111,20 @@ static int nwrap_getaddrinfo(const char *node,
 	}
 
 valid_port:
-	rc = 0;
 	if (hints->ai_family == AF_UNSPEC || hints->ai_family == AF_INET) {
-		rc = inet_pton(AF_INET, node, &addr.in.v4);
+		int rc = inet_pton(AF_INET, node, &addr.in.v4);
+		if (rc == 1) {
+			addr.family = AF_INET;
+		}
 	}
-	if (rc == 1) {
-		addr.family = AF_INET;
 #ifdef HAVE_IPV6
-	} else {
-		rc = inet_pton(AF_INET6, node, &addr.in.v6);
+	if (addr.family == AF_UNSPEC) {
+		int rc = inet_pton(AF_INET6, node, &addr.in.v6);
 		if (rc == 1) {
 			addr.family = AF_INET6;
 		}
-#endif
 	}
+#endif
 
 	ai = nwrap_files_getaddrinfo(node, port, hints, &ai_tail);
 	if (ai == NULL) {
