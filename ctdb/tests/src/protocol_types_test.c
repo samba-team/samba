@@ -556,7 +556,11 @@ static void fill_ctdb_addr_info(TALLOC_CTX *mem_ctx, struct ctdb_addr_info *p)
 {
 	fill_ctdb_sock_addr(mem_ctx, &p->addr);
 	p->mask = rand_int(33);
-	fill_ctdb_string(mem_ctx, &p->iface);
+	if (rand_int(2) == 0) {
+		p->iface = NULL;
+	} else {
+		fill_ctdb_string(mem_ctx, &p->iface);
+	}
 }
 
 static void verify_ctdb_addr_info(struct ctdb_addr_info *p1,

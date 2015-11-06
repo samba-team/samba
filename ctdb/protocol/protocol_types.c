@@ -1458,8 +1458,14 @@ struct ctdb_addr_info_wire {
 
 size_t ctdb_addr_info_len(struct ctdb_addr_info *arp)
 {
-	return offsetof(struct ctdb_addr_info_wire, iface) +
-	       strlen(arp->iface)+1;
+	uint32_t len;
+
+	len = offsetof(struct ctdb_addr_info_wire, iface);
+	if (arp->iface != NULL) {
+	       len += strlen(arp->iface)+1;
+	}
+
+	return len;
 }
 
 void ctdb_addr_info_push(struct ctdb_addr_info *addr_info, uint8_t *buf)
@@ -1468,8 +1474,12 @@ void ctdb_addr_info_push(struct ctdb_addr_info *addr_info, uint8_t *buf)
 
 	wire->addr = addr_info->addr;
 	wire->mask = addr_info->mask;
-	wire->len = strlen(addr_info->iface)+1;
-	memcpy(wire->iface, addr_info->iface, wire->len);
+	if (addr_info->iface == NULL) {
+		wire->len = 0;
+	} else {
+		wire->len = strlen(addr_info->iface)+1;
+		memcpy(wire->iface, addr_info->iface, wire->len);
+	}
 }
 
 int ctdb_addr_info_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
@@ -1493,10 +1503,15 @@ int ctdb_addr_info_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 	addr_info->addr = wire->addr;
 	addr_info->mask = wire->mask;
 
-	addr_info->iface = talloc_strndup(addr_info, wire->iface, wire->len);
-	if (addr_info->iface == NULL) {
-		talloc_free(addr_info);
-		return ENOMEM;
+	if (wire->len == 0) {
+		addr_info->iface = NULL;
+	} else {
+		addr_info->iface = talloc_strndup(addr_info, wire->iface,
+						  wire->len);
+		if (addr_info->iface == NULL) {
+			talloc_free(addr_info);
+			return ENOMEM;
+		}
 	}
 
 	*out = addr_info;
