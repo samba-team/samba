@@ -255,6 +255,7 @@ bld.SAMBA3_SUBSYSTEM('samba3util',
                    lib/util_sid.c
                    lib/util_file.c
                    lib/util.c
+                   lib/util_procid.c
                    lib/util_sock.c
                    lib/util_tsock.c
                    lib/util_transfer_file.c

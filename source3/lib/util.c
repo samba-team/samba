@@ -1942,52 +1942,9 @@ uint32_t map_share_mode_to_deny_mode(uint32_t share_access, uint32_t private_opt
 	return (uint32_t)-1;
 }
 
-pid_t procid_to_pid(const struct server_id *proc)
-{
-	return proc->pid;
-}
-
-static uint32_t my_vnn = NONCLUSTER_VNN;
-
-void set_my_vnn(uint32_t vnn)
-{
-	DEBUG(10, ("vnn pid %d = %u\n", (int)getpid(), (unsigned int)vnn));
-	my_vnn = vnn;
-}
-
-uint32_t get_my_vnn(void)
-{
-	return my_vnn;
-}
-
-struct server_id pid_to_procid(pid_t pid)
-{
-	uint64_t unique = 0;
-	int ret;
-
-	ret = messaging_dgm_get_unique(pid, &unique);
-	if (ret != 0) {
-		DBG_NOTICE("messaging_dgm_get_unique failed: %s\n",
-			   strerror(ret));
-	}
-
-	return (struct server_id) {
-		.pid = pid, .unique_id = unique, .vnn = my_vnn };
-}
-
 struct server_id interpret_pid(const char *pid_string)
 {
 	return server_id_from_string(get_my_vnn(), pid_string);
-}
-
-bool procid_valid(const struct server_id *pid)
-{
-	return (pid->pid != (uint64_t)-1);
-}
-
-bool procid_is_local(const struct server_id *pid)
-{
-	return pid->vnn == my_vnn;
 }
 
 /****************************************************************

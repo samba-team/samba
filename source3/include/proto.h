@@ -433,14 +433,11 @@ bool unix_wild_match(const char *pattern, const char *string);
 bool name_to_fqdn(fstring fqdn, const char *name);
 void *talloc_append_blob(TALLOC_CTX *mem_ctx, void *buf, DATA_BLOB blob);
 uint32_t map_share_mode_to_deny_mode(uint32_t share_access, uint32_t private_options);
-pid_t procid_to_pid(const struct server_id *proc);
-void set_my_vnn(uint32_t vnn);
-uint32_t get_my_vnn(void);
-struct server_id pid_to_procid(pid_t pid);
+
+#include "lib/util_procid.h"
+
 #define serverid_equal(p1, p2) server_id_equal(p1,p2)
 struct server_id interpret_pid(const char *pid_string);
-bool procid_valid(const struct server_id *pid);
-bool procid_is_local(const struct server_id *pid);
 bool is_offset_safe(const char *buf_base, size_t buf_len, char *ptr, size_t off);
 char *get_safe_ptr(const char *buf_base, size_t buf_len, char *ptr, size_t off);
 char *get_safe_str_ptr(const char *buf_base, size_t buf_len, char *ptr, size_t off);
