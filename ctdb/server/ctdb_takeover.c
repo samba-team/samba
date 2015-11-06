@@ -2206,7 +2206,7 @@ static bool all_nodes_are_disabled(struct ctdb_node_map_old *nodemap)
 }
 
 /* The calculation part of the IP allocation algorithm. */
-static bool ctdb_takeover_run_core(struct ipalloc_state *ipalloc_state)
+static bool ipalloc(struct ipalloc_state *ipalloc_state)
 {
 	bool ret;
 
@@ -2653,7 +2653,7 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map_old *nodem
 	ipalloc_state->force_rebalance_nodes = force_rebalance_nodes;
 
 	/* Do the IP reassignment calculations */
-	ctdb_takeover_run_core(ipalloc_state);
+	ipalloc(ipalloc_state);
 
 	/* Now tell all nodes to release any public IPs should not
 	 * host.  This will be a NOOP on nodes that don't currently

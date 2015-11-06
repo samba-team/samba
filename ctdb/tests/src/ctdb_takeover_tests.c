@@ -423,7 +423,7 @@ static enum ctdb_runstate *get_runstate(TALLOC_CTX *tmp_ctx,
  * by a blank line.  This mode is for testing weird behaviours where
  * the IP layouts differs across nodes and we want to improve
  * create_merged_ip_list(), so should only be used in tests of
- * ctdb_takeover_run_core().  Yes, it is a hack...  :-)
+ * ipalloc().  Yes, it is a hack...  :-)
  */
 static void ctdb_test_init(const char nodestates[],
 			   struct ctdb_context **ctdb,
@@ -589,8 +589,8 @@ static void ctdb_test_lcp2_failback_loop(const char nodestates[])
 /* IP layout is read from stdin.  See comment for ctdb_test_init() for
  * explanation of read_ips_for_multiple_nodes.
  */
-static void ctdb_test_ctdb_takeover_run_core(const char nodestates[],
-					     bool read_ips_for_multiple_nodes)
+static void ctdb_test_ipalloc(const char nodestates[],
+			      bool read_ips_for_multiple_nodes)
 {
 	struct ctdb_context *ctdb;
 	struct ipalloc_state *ipalloc_state;
@@ -598,7 +598,7 @@ static void ctdb_test_ctdb_takeover_run_core(const char nodestates[],
 	ctdb_test_init(nodestates, &ctdb, &ipalloc_state,
 		       read_ips_for_multiple_nodes);
 
-	ctdb_takeover_run_core(ipalloc_state);
+	ipalloc(ipalloc_state);
 
 	print_ctdb_public_ip_list(ipalloc_state->all_ips);
 
@@ -639,12 +639,12 @@ int main(int argc, const char *argv[])
 	} else if (argc == 3 && strcmp(argv[1], "lcp2_failback_loop") == 0) {
 		ctdb_test_lcp2_failback_loop(argv[2]);
 	} else if (argc == 3 &&
-		   strcmp(argv[1], "ctdb_takeover_run_core") == 0) {
-		ctdb_test_ctdb_takeover_run_core(argv[2], false);
+		   strcmp(argv[1], "ipalloc") == 0) {
+		ctdb_test_ipalloc(argv[2], false);
 	} else if (argc == 4 &&
-		   strcmp(argv[1], "ctdb_takeover_run_core") == 0 &&
+		   strcmp(argv[1], "ipalloc") == 0 &&
 		   strcmp(argv[3], "multi") == 0) {
-		ctdb_test_ctdb_takeover_run_core(argv[2], true);
+		ctdb_test_ipalloc(argv[2], true);
 	} else {
 		usage();
 	}
