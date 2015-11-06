@@ -5135,7 +5135,15 @@ valid_port:
 	}
 
 	if (rc < 0) {
-		return ret == 0 ? 0 : eai;
+		if (ret == 0) {
+			/*
+			 * nwrap_files_getaddrinfo failed, but libc was
+			 * successful -- use the result from libc.
+			 */
+			return 0;
+		}
+
+		return eai;
 	}
 
 	if (ret == 0) {
