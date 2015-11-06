@@ -1675,6 +1675,11 @@ int ctdb_public_ip_list_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 	}
 
 	pubip_list->num = wire->num;
+	if (wire->num == 0) {
+		pubip_list->ip = NULL;
+		*out = pubip_list;
+		return 0;
+	}
 	pubip_list->ip = talloc_array(pubip_list, struct ctdb_public_ip,
 				      wire->num);
 	if (pubip_list->ip == NULL) {

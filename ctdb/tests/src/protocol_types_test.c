@@ -611,7 +611,11 @@ static void fill_ctdb_public_ip_list(TALLOC_CTX *mem_ctx,
 {
 	int i;
 
-	p->num = rand_int(32) + 1;
+	p->num = rand_int(32);
+	if (p->num == 0) {
+		p->ip = NULL;
+		return;
+	}
 	p->ip = talloc_array(mem_ctx, struct ctdb_public_ip, p->num);
 	assert(p->ip != NULL);
 	for (i=0; i<p->num; i++) {
