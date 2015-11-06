@@ -66,6 +66,7 @@ struct ipalloc_state {
 	struct public_ip_list *all_ips;
 	enum ipalloc_algorithm algorithm;
 	uint32_t no_ip_failback;
+	uint32_t *force_rebalance_nodes;
 };
 
 struct ctdb_interface {
@@ -1728,7 +1729,6 @@ try_again:
 }
 
 static bool lcp2_init(struct ipalloc_state *ipalloc_state,
-		      uint32_t *force_rebalance_nodes,
 		      uint32_t **lcp2_imbalances,
 		      bool **rebalance_candidates)
 {
@@ -1770,11 +1770,13 @@ static bool lcp2_init(struct ipalloc_state *ipalloc_state,
 
 	/* 3rd step: if a node is forced to re-balance then
 	   we allow failback onto the node */
-	if (force_rebalance_nodes == NULL) {
+	if (ipalloc_state->force_rebalance_nodes == NULL) {
 		return true;
 	}
-	for (i = 0; i < talloc_array_length(force_rebalance_nodes); i++) {
-		uint32_t pnn = force_rebalance_nodes[i];
+	for (i = 0;
+	     i < talloc_array_length(ipalloc_state->force_rebalance_nodes);
+	     i++) {
+		uint32_t pnn = ipalloc_state->force_rebalance_nodes[i];
 		if (pnn >= numnodes) {
 			DEBUG(DEBUG_ERR,
 			      (__location__ "unknown node %u\n", pnn));
@@ -2143,8 +2145,7 @@ static bool ip_alloc_nondeterministic_ips(struct ipalloc_state *ipalloc_state)
 	return true;
 }
 
-static bool ip_alloc_lcp2(struct ipalloc_state *ipalloc_state,
-			  uint32_t *force_rebalance_nodes)
+static bool ip_alloc_lcp2(struct ipalloc_state *ipalloc_state)
 {
 	uint32_t *lcp2_imbalances;
 	bool *rebalance_candidates;
@@ -2153,7 +2154,7 @@ static bool ip_alloc_lcp2(struct ipalloc_state *ipalloc_state,
 
 	unassign_unsuitable_ips(ipalloc_state);
 
-	if (!lcp2_init(ipalloc_state, force_rebalance_nodes,
+	if (!lcp2_init(ipalloc_state,
 		       &lcp2_imbalances, &rebalance_candidates)) {
 		ret = false;
 		goto finished;
@@ -2205,14 +2206,13 @@ static bool all_nodes_are_disabled(struct ctdb_node_map_old *nodemap)
 }
 
 /* The calculation part of the IP allocation algorithm. */
-static bool ctdb_takeover_run_core(struct ipalloc_state *ipalloc_state,
-				   uint32_t *force_rebalance_nodes)
+static bool ctdb_takeover_run_core(struct ipalloc_state *ipalloc_state)
 {
 	bool ret;
 
 	switch (ipalloc_state->algorithm) {
 	case IPALLOC_LCP2:
-		ret = ip_alloc_lcp2(ipalloc_state, force_rebalance_nodes);
+		ret = ip_alloc_lcp2(ipalloc_state);
 		break;
 	case IPALLOC_DETERMINISTIC:
 		ret = ip_alloc_deterministic_ips(ipalloc_state);
@@ -2650,8 +2650,10 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map_old *nodem
 	all_ips = create_merged_ip_list(ctdb, ipalloc_state);
 	ipalloc_state->all_ips = all_ips;
 
+	ipalloc_state->force_rebalance_nodes = force_rebalance_nodes;
+
 	/* Do the IP reassignment calculations */
-	ctdb_takeover_run_core(ipalloc_state, force_rebalance_nodes);
+	ctdb_takeover_run_core(ipalloc_state);
 
 	/* Now tell all nodes to release any public IPs should not
 	 * host.  This will be a NOOP on nodes that don't currently

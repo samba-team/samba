@@ -522,6 +522,8 @@ static void ctdb_test_init(const char nodestates[],
 
 	(*ipalloc_state)->all_ips = create_merged_ip_list(*ctdb,
 							  *ipalloc_state);
+
+	(*ipalloc_state)->force_rebalance_nodes = NULL;
 }
 
 /* IP layout is read from stdin. */
@@ -535,7 +537,7 @@ static void ctdb_test_lcp2_allocate_unassigned(const char nodestates[])
 
 	ctdb_test_init(nodestates, &ctdb, &ipalloc_state, false);
 
-	lcp2_init(ipalloc_state, NULL, &lcp2_imbalances, &newly_healthy);
+	lcp2_init(ipalloc_state, &lcp2_imbalances, &newly_healthy);
 
 	lcp2_allocate_unassigned(ipalloc_state, lcp2_imbalances);
 
@@ -555,7 +557,7 @@ static void ctdb_test_lcp2_failback(const char nodestates[])
 
 	ctdb_test_init(nodestates, &ctdb, &ipalloc_state, false);
 
-	lcp2_init(ipalloc_state, NULL, &lcp2_imbalances, &newly_healthy);
+	lcp2_init(ipalloc_state, &lcp2_imbalances, &newly_healthy);
 
 	lcp2_failback(ipalloc_state, lcp2_imbalances, newly_healthy);
 
@@ -575,7 +577,7 @@ static void ctdb_test_lcp2_failback_loop(const char nodestates[])
 
 	ctdb_test_init(nodestates, &ctdb, &ipalloc_state, false);
 
-	lcp2_init(ipalloc_state, NULL, &lcp2_imbalances, &newly_healthy);
+	lcp2_init(ipalloc_state, &lcp2_imbalances, &newly_healthy);
 
 	lcp2_failback(ipalloc_state, lcp2_imbalances, newly_healthy);
 
@@ -596,7 +598,7 @@ static void ctdb_test_ctdb_takeover_run_core(const char nodestates[],
 	ctdb_test_init(nodestates, &ctdb, &ipalloc_state,
 		       read_ips_for_multiple_nodes);
 
-	ctdb_takeover_run_core(ipalloc_state, NULL);
+	ctdb_takeover_run_core(ipalloc_state);
 
 	print_ctdb_public_ip_list(ipalloc_state->all_ips);
 
