@@ -1942,8 +1942,10 @@ struct ctdb_transaction_commit_state {
 	uint64_t seqnum;
 };
 
-static void ctdb_transaction_commit_done(struct tevent_req *subreq);
+static void ctdb_transaction_commit_seqnum_done(struct tevent_req *subreq);
 static void ctdb_transaction_commit_try(struct tevent_req *subreq);
+static void ctdb_transaction_commit_done(struct tevent_req *subreq);
+static void ctdb_transaction_commit_seqnum2_done(struct tevent_req *subreq);
 
 struct tevent_req *ctdb_transaction_commit_send(
 					TALLOC_CTX *mem_ctx,
@@ -1952,7 +1954,7 @@ struct tevent_req *ctdb_transaction_commit_send(
 {
 	struct tevent_req *req, *subreq;
 	struct ctdb_transaction_commit_state *state;
-	int ret;
+	struct ctdb_req_control request;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct ctdb_transaction_commit_state);
@@ -1963,27 +1965,53 @@ struct tevent_req *ctdb_transaction_commit_send(
 	state->ev = ev;
 	state->h = h;
 
-	ret = ctdb_ctrl_get_db_seqnum(state, ev, h->client,
-				      h->client->pnn, tevent_timeval_zero(),
-				      h->db->db_id, &state->seqnum);
-	if (ret != 0) {
-		tevent_req_error(req, ret);
-		return tevent_req_post(req, ev);
-	}
-
-	ret = ctdb_transaction_store_db_seqnum(h, state->seqnum+1);
-	if (ret != 0) {
-		tevent_req_error(req, ret);
-		return tevent_req_post(req, ev);
-	}
-
-	subreq = ctdb_recovery_wait_send(state, ev, h->client);
+	ctdb_req_control_get_db_seqnum(&request, h->db->db_id);
+	subreq = ctdb_client_control_send(state, ev, h->client,
+					  h->client->pnn,
+					  tevent_timeval_zero(), &request);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
-	tevent_req_set_callback(subreq, ctdb_transaction_commit_try, req);
+	tevent_req_set_callback(subreq, ctdb_transaction_commit_seqnum_done,
+				req);
 
 	return req;
+}
+
+static void ctdb_transaction_commit_seqnum_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct ctdb_transaction_commit_state *state = tevent_req_data(
+		req, struct ctdb_transaction_commit_state);
+	struct ctdb_reply_control *reply;
+	int ret;
+	bool status;
+
+	status = ctdb_client_control_recv(subreq, &ret, state, &reply);
+	TALLOC_FREE(subreq);
+	if (! status) {
+		tevent_req_error(req, ret);
+		return;
+	}
+
+	ret = ctdb_reply_control_get_db_seqnum(reply, &state->seqnum);
+	if (ret != 0) {
+		tevent_req_error(req, ret);
+		return;
+	}
+
+	ret = ctdb_transaction_store_db_seqnum(state->h, state->seqnum+1);
+	if (ret != 0) {
+		tevent_req_error(req, ret);
+		return;
+	}
+
+	subreq = ctdb_recovery_wait_send(state, state->ev, state->h->client);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, ctdb_transaction_commit_try, req);
 }
 
 static void ctdb_transaction_commit_try(struct tevent_req *subreq)
@@ -2020,7 +2048,7 @@ static void ctdb_transaction_commit_done(struct tevent_req *subreq)
 	struct ctdb_transaction_commit_state *state = tevent_req_data(
 		req, struct ctdb_transaction_commit_state);
 	struct ctdb_reply_control *reply;
-	uint64_t seqnum;
+	struct ctdb_req_control request;
 	int ret;
 	bool status;
 
@@ -2044,10 +2072,36 @@ static void ctdb_transaction_commit_done(struct tevent_req *subreq)
 		return;
 	}
 
-	ret = ctdb_ctrl_get_db_seqnum(state, state->ev, state->h->client,
-				      state->h->client->pnn,
-				      tevent_timeval_zero(),
-				      state->h->db->db_id, &seqnum);
+	ctdb_req_control_get_db_seqnum(&request, state->h->db->db_id);
+	subreq = ctdb_client_control_send(state, state->ev, state->h->client,
+					  state->h->client->pnn,
+					  tevent_timeval_zero(), &request);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, ctdb_transaction_commit_seqnum2_done,
+				req);
+}
+
+static void ctdb_transaction_commit_seqnum2_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct ctdb_transaction_commit_state *state = tevent_req_data(
+		req, struct ctdb_transaction_commit_state);
+	struct ctdb_reply_control *reply;
+	uint64_t seqnum;
+	int ret;
+	bool status;
+
+	status = ctdb_client_control_recv(subreq, &ret, state, &reply);
+	TALLOC_FREE(subreq);
+	if (! status) {
+		tevent_req_error(req, ret);
+		return;
+	}
+
+	ret = ctdb_reply_control_get_db_seqnum(reply, &seqnum);
 	if (ret != 0) {
 		tevent_req_error(req, ret);
 		return;
@@ -2074,19 +2128,15 @@ static void ctdb_transaction_commit_done(struct tevent_req *subreq)
 
 bool ctdb_transaction_commit_recv(struct tevent_req *req, int *perr)
 {
-	struct ctdb_transaction_commit_state *state = tevent_req_data(
-		req, struct ctdb_transaction_commit_state);
 	int err;
 
 	if (tevent_req_is_unix_error(req, &err)) {
 		if (perr != NULL) {
 			*perr = err;
 		}
-		TALLOC_FREE(state->h);
 		return false;
 	}
 
-	TALLOC_FREE(state->h);
 	return true;
 }
 
