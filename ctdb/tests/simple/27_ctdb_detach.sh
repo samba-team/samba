@@ -157,3 +157,15 @@ echo "Re-attach test database"
 try_command_on_node all $CTDB setvar AllowClientDBAttach 1
 try_command_on_node 0 $CTDB attach $testdb1
 check_db "$testdb1"
+
+echo
+echo "Check if the database is empty"
+try_command_on_node 0 $CTDB catdb $testdb1
+num_keys=$(echo "$out" | sed -n -e 's/Dumped \([0-9]*\) records/\1/p') || true
+if [ -n "$num_keys" -a $num_keys -eq 0 ]; then
+    echo "GOOD: Database $testdb1 is empty"
+else
+    echo "BAD: Database $testdb1 is not empty"
+    echo "$out"
+    exit 1
+fi
