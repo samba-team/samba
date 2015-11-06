@@ -1610,6 +1610,7 @@ struct tevent_req *ctdb_transaction_start_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
+	h->ev = ev;
 	h->client = client;
 	h->db = db;
 	h->readonly = readonly;
