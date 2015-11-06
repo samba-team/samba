@@ -579,7 +579,7 @@ static void remove_child_pid(struct smbd_parent_context *parent,
 			   __func__, strerror(ret)));
 	}
 
-	smbprofile_cleanup(pid);
+	smbprofile_cleanup(pid, getpid());
 
 	for (child = parent->children; child != NULL; child = child->next) {
 		if (child->pid == pid) {

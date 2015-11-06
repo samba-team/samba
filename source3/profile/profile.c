@@ -312,7 +312,7 @@ void smbprofile_dump(void)
 	return;
 }
 
-void smbprofile_cleanup(pid_t pid)
+void smbprofile_cleanup(pid_t pid, pid_t dst)
 {
 	TDB_DATA key = { .dptr = (uint8_t *)&pid, .dsize = sizeof(pid) };
 	struct profile_stats s = {};
@@ -336,7 +336,7 @@ void smbprofile_cleanup(pid_t pid)
 	tdb_delete(smbprofile_state.internal.db->tdb, key);
 	tdb_chainunlock(smbprofile_state.internal.db->tdb, key);
 
-	pid = getpid();
+	pid = dst;
 	ret = tdb_chainlock(smbprofile_state.internal.db->tdb, key);
 	if (ret != 0) {
 		return;

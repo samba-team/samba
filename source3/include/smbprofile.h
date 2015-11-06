@@ -533,7 +533,7 @@ static inline bool smbprofile_dump_pending(void)
 
 void smbprofile_dump(void);
 
-void smbprofile_cleanup(pid_t pid);
+void smbprofile_cleanup(pid_t pid, pid_t dst);
 void smbprofile_stats_accumulate(struct profile_stats *acc,
 				 const struct profile_stats *add);
 void smbprofile_collect(struct profile_stats *stats);
@@ -610,7 +610,7 @@ static inline void smbprofile_dump(void)
 	return;
 }
 
-static inline void smbprofile_cleanup(pid_t pid)
+static inline void smbprofile_cleanup(pid_t pid, pid_t dst)
 {
 	return;
 }
