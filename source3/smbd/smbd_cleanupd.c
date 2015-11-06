@@ -21,6 +21,7 @@
 #include "smbd_cleanupd.h"
 #include "lib/util/tevent_ntstatus.h"
 #include "lib/util/debug.h"
+#include "smbprofile.h"
 
 struct smbd_cleanupd_state {
 	pid_t parent_pid;
@@ -98,6 +99,8 @@ static void smbd_cleanupd_process_exited(struct messaging_context *msg,
 
 	DBG_DEBUG("%d exited %sclean\n", (int)pid,
 		  unclean_shutdown ? "un" : "");
+
+	smbprofile_cleanup(pid, state->parent_pid);
 }
 
 NTSTATUS smbd_cleanupd_recv(struct tevent_req *req)
