@@ -555,11 +555,8 @@ static void remove_child_pid(struct smbd_parent_context *parent,
 			     bool unclean_shutdown)
 {
 	struct smbd_child_pid *child;
-	struct server_id child_id;
 	struct iovec iov[2];
 	NTSTATUS status;
-
-	child_id = pid_to_procid(pid);
 
 	iov[0] = (struct iovec) { .iov_base = (uint8_t *)&pid,
 				  .iov_len = sizeof(pid) };
@@ -604,11 +601,6 @@ static void remove_child_pid(struct smbd_parent_context *parent,
 						parent);
 			DEBUG(1,("Scheduled cleanup of brl and lock database after unclean shutdown\n"));
 		}
-	}
-
-	if (!serverid_deregister(child_id)) {
-		DEBUG(1, ("Could not remove pid %d from serverid.tdb\n",
-			  (int)pid));
 	}
 }
 

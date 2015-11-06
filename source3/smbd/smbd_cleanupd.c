@@ -19,9 +19,11 @@
 
 #include "replace.h"
 #include "smbd_cleanupd.h"
+#include "lib/util_procid.h"
 #include "lib/util/tevent_ntstatus.h"
 #include "lib/util/debug.h"
 #include "smbprofile.h"
+#include "serverid.h"
 
 struct smbd_cleanupd_state {
 	pid_t parent_pid;
@@ -86,6 +88,7 @@ static void smbd_cleanupd_process_exited(struct messaging_context *msg,
 	struct smbd_cleanupd_state *state = tevent_req_data(
 		req, struct smbd_cleanupd_state);
 	pid_t pid;
+	struct server_id child_id;
 	bool unclean_shutdown;
 	int ret;
 
@@ -101,12 +104,25 @@ static void smbd_cleanupd_process_exited(struct messaging_context *msg,
 	DBG_DEBUG("%d exited %sclean\n", (int)pid,
 		  unclean_shutdown ? "un" : "");
 
+	/*
+	 * Get child_id before messaging_cleanup which wipes the
+	 * unique_id. Not that it really matters here for functionality (the
+	 * child should have properly cleaned up :-)) though, but it looks
+	 * nicer.
+	 */
+	child_id = pid_to_procid(pid);
+
 	smbprofile_cleanup(pid, state->parent_pid);
 
 	ret = messaging_cleanup(msg, pid);
 
 	if ((ret != 0) && (ret != ENOENT)) {
 		DBG_DEBUG("messaging_cleanup returned %s\n", strerror(ret));
+	}
+
+	if (!serverid_deregister(child_id)) {
+		DEBUG(1, ("Could not remove pid %d from serverid.tdb\n",
+			  (int)pid));
 	}
 }
 
