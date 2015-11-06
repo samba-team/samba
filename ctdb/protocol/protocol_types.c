@@ -533,6 +533,9 @@ void ctdb_rec_data_push(struct ctdb_rec_data *rec, uint8_t *buf)
 	wire->reqid = rec->reqid;
 	wire->keylen = rec->key.dsize;
 	wire->datalen = rec->data.dsize;
+	if (rec->header != NULL) {
+		wire->datalen += sizeof(struct ctdb_ltdb_header);
+	}
 
 	memcpy(wire->data, rec->key.dptr, rec->key.dsize);
 	offset = rec->key.dsize;
@@ -570,12 +573,10 @@ static int ctdb_rec_data_pull_data(uint8_t *buf, size_t buflen,
 	key->dptr = wire->data;
 	offset = wire->keylen;
 
-	if (wire->length - n == sizeof(struct ctdb_ltdb_header)) {
-		*header = (struct ctdb_ltdb_header *)&wire->data[offset];
-		offset += sizeof(struct ctdb_ltdb_header);
-	} else {
-		*header = NULL;
-	}
+	/* Always set header to NULL.  If it is required, exact it using
+	 * ctdb_rec_data_extract_header()
+	 */
+	*header = NULL;
 
 	data->dsize = wire->datalen;
 	data->dptr = &wire->data[offset];
@@ -602,16 +603,7 @@ static int ctdb_rec_data_pull_elems(uint8_t *buf, size_t buflen,
 	}
 
 	out->reqid = reqid;
-
-	if (header != NULL) {
-		out->header = talloc_memdup(mem_ctx, header,
-					    sizeof(struct ctdb_ltdb_header));
-		if (out->header == NULL) {
-			return ENOMEM;
-		}
-	} else {
-		out->header = NULL;
-	}
+	out->header = NULL;
 
 	out->key.dsize = key.dsize;
 	if (key.dsize > 0) {

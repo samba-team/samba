@@ -215,11 +215,12 @@ static void fill_ctdb_rec_data(TALLOC_CTX *mem_ctx, struct ctdb_rec_data *p)
 static void verify_ctdb_rec_data(struct ctdb_rec_data *p1,
 				 struct ctdb_rec_data *p2)
 {
+	struct ctdb_ltdb_header header;
+
 	assert(p1->reqid == p2->reqid);
-	if (p1->header == NULL || p2->header == NULL) {
-		assert(p1->header == p2->header);
-	} else {
-		verify_ctdb_ltdb_header(p1->header, p2->header);
+	if (p1->header != NULL) {
+		assert(ctdb_ltdb_header_extract(&p2->data, &header) == 0);
+		verify_ctdb_ltdb_header(p1->header, &header);
 	}
 	verify_tdb_data(&p1->key, &p2->key);
 	verify_tdb_data(&p1->data, &p2->data);
