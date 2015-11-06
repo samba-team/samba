@@ -42,7 +42,7 @@ try_command_on_node 0 $CTDB wipedb $TESTDB
 
 echo "Adding 3 records"
 
-items='\
+items='
 "key1" "value1"
 "key2" "value1"
 "key3" "value1"'
@@ -65,7 +65,7 @@ fi
 
 echo "Deleting 1 record, updating 1, adding 1 new record, 1 bogus input line"
 
-items='\
+items='
 "key1" ""
 "key2" "value2"
 "key3"
@@ -107,7 +107,7 @@ EOF
 
 echo "Deleting all records"
 
-items='\
+items='
 "key2" ""
 "key3" ""
 "key4" ""'
