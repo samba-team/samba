@@ -5085,7 +5085,7 @@ static int nwrap_getaddrinfo(const char *node,
 		errno = 0;
 		sl = strtol(service, &end_ptr, 10);
 
-		if (*end_ptr == '\0' || end_ptr != service) {
+		if (*end_ptr == '\0') {
 			port = sl;
 			goto valid_port;
 		} else if (hints->ai_flags & AI_NUMERICSERV) {
