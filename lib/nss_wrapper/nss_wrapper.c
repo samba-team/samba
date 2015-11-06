@@ -5033,7 +5033,6 @@ static int nwrap_getaddrinfo(const char *node,
 			     struct addrinfo **res)
 {
 	struct addrinfo *ai = NULL;
-	struct addrinfo *p = NULL;
 	struct addrinfo *ai_tail;
 	unsigned short port = 0;
 	struct {
@@ -5047,7 +5046,6 @@ static int nwrap_getaddrinfo(const char *node,
 	} addr = {
 		.family = AF_UNSPEC,
 	};
-	int ret;
 
 	if (node == NULL && service == NULL) {
 		return EAI_NONAME;
@@ -5065,12 +5063,16 @@ static int nwrap_getaddrinfo(const char *node,
 		return EAI_BADFLAGS;
 	}
 
-	ret = libc_getaddrinfo(node, service, hints, &p);
-	if (ret == 0) {
-		*res = p;
-	}
 	/* If no node has been specified, let glibc deal with it */
 	if (node == NULL) {
+		int ret;
+		struct addrinfo *p = NULL;
+
+		ret = libc_getaddrinfo(node, service, hints, &p);
+
+		if (ret == 0) {
+			*res = p;
+		}
 		return ret;
 	}
 
@@ -5103,9 +5105,6 @@ static int nwrap_getaddrinfo(const char *node,
 		if (s != NULL) {
 			port = ntohs(s->s_port);
 		} else {
-			if (p != NULL) {
-				freeaddrinfo(p);
-			}
 			return EAI_NONAME;
 		}
 	}
@@ -5128,19 +5127,21 @@ valid_port:
 
 	ai = nwrap_files_getaddrinfo(node, port, hints, &ai_tail);
 	if (ai == NULL) {
+		int ret;
+		struct addrinfo *p = NULL;
+
+		ret = libc_getaddrinfo(node, service, hints, &p);
+
 		if (ret == 0) {
 			/*
 			 * nwrap_files_getaddrinfo failed, but libc was
 			 * successful -- use the result from libc.
 			 */
+			*res = p;
 			return 0;
 		}
 
 		return EAI_SYSTEM;
-	}
-
-	if (ret == 0) {
-		freeaddrinfo(p);
 	}
 
 	if (ai->ai_flags == 0) {
