@@ -1569,7 +1569,7 @@ static uint32_t ip_distance_2_sum(ctdb_sock_addr *ip,
 
 	uint32_t sum = 0;
 
-	for (t=ips; t != NULL; t=t->next) {
+	for (t = ips; t != NULL; t = t->next) {
 		if (t->pnn != pnn) {
 			continue;
 		}
@@ -1603,7 +1603,7 @@ static uint32_t lcp2_imbalance(struct public_ip_list * all_ips, int pnn)
 
 	uint32_t imbalance = 0;
 
-	for (t=all_ips; t!=NULL; t=t->next) {
+	for (t = all_ips; t != NULL; t = t->next) {
 		if (t->pnn != pnn) {
 			continue;
 		}
@@ -1622,18 +1622,18 @@ static uint32_t lcp2_imbalance(struct public_ip_list * all_ips, int pnn)
 static void basic_allocate_unassigned(struct ipalloc_state *ipalloc_state,
 				      struct public_ip_list *all_ips)
 {
-	struct public_ip_list *tmp_ip;
+	struct public_ip_list *t;
 
 	/* loop over all ip's and find a physical node to cover for
 	   each unassigned ip.
 	*/
-	for (tmp_ip=all_ips;tmp_ip;tmp_ip=tmp_ip->next) {
-		if (tmp_ip->pnn == -1) {
+	for (t = all_ips; t != NULL; t = t->next) {
+		if (t->pnn == -1) {
 			if (find_takeover_node(ipalloc_state,
-					       tmp_ip, all_ips)) {
+					       t, all_ips)) {
 				DEBUG(DEBUG_WARNING,
 				      ("Failed to find node to cover ip %s\n",
-				       ctdb_addr_to_str(&tmp_ip->addr)));
+				       ctdb_addr_to_str(&t->addr)));
 			}
 		}
 	}
@@ -1647,7 +1647,7 @@ static void basic_failback(struct ipalloc_state *ipalloc_state,
 {
 	int i, numnodes;
 	int maxnode, maxnum, minnode, minnum, num, retries;
-	struct public_ip_list *tmp_ip;
+	struct public_ip_list *t;
 
 	numnodes = ipalloc_state->num;
 	retries = 0;
@@ -1661,8 +1661,8 @@ try_again:
 	   serving the most and the node serving the least ip's are
 	   not greater than 1.
 	*/
-	for (tmp_ip=all_ips;tmp_ip;tmp_ip=tmp_ip->next) {
-		if (tmp_ip->pnn == -1) {
+	for (t = all_ips; t != NULL; t = t->next) {
+		if (t->pnn == -1) {
 			continue;
 		}
 
@@ -1674,7 +1674,7 @@ try_again:
 		for (i=0; i<numnodes; i++) {
 			/* only check nodes that can actually serve this ip */
 			if (!can_node_takeover_ip(ipalloc_state, i,
-						  tmp_ip)) {
+						  t)) {
 				/* no it couldnt   so skip to the next node */
 				continue;
 			}
@@ -1700,8 +1700,9 @@ try_again:
 			}
 		}
 		if (maxnode == -1) {
-			DEBUG(DEBUG_WARNING,(__location__ " Could not find maxnode. May not be able to serve ip '%s'\n",
-				ctdb_addr_to_str(&tmp_ip->addr)));
+			DEBUG(DEBUG_WARNING,
+			      (__location__ " Could not find maxnode. May not be able to serve ip '%s'\n",
+			       ctdb_addr_to_str(&t->addr)));
 
 			continue;
 		}
@@ -1712,15 +1713,15 @@ try_again:
 		   try to do this a limited number of times since we dont
 		   want to spend too much time balancing the ip coverage.
 		*/
-		if ( (maxnum > minnum+1)
-		     && (retries < (num_ips + 5)) ){
-			struct public_ip_list *tmp;
+		if ((maxnum > minnum+1) &&
+		    (retries < (num_ips + 5))){
+			struct public_ip_list *tt;
 
 			/* Reassign one of maxnode's VNNs */
-			for (tmp=all_ips;tmp;tmp=tmp->next) {
-				if (tmp->pnn == maxnode) {
+			for (tt = all_ips; tt != NULL; tt = tt->next) {
+				if (tt->pnn == maxnode) {
 					(void)find_takeover_node(ipalloc_state,
-								 tmp,
+								 tt,
 								 all_ips);
 					retries++;
 					goto try_again;;
@@ -1737,7 +1738,7 @@ static bool lcp2_init(struct ipalloc_state *ipalloc_state,
 		      bool **rebalance_candidates)
 {
 	int i, numnodes;
-	struct public_ip_list *tmp_ip;
+	struct public_ip_list *t;
 
 	numnodes = ipalloc_state->num;
 
@@ -1765,9 +1766,9 @@ static bool lcp2_init(struct ipalloc_state *ipalloc_state,
 	 * keep state and invalidate it every time the recovery master
 	 * changes.
 	 */
-	for (tmp_ip=all_ips;tmp_ip;tmp_ip=tmp_ip->next) {
-		if (tmp_ip->pnn != -1) {
-			(*rebalance_candidates)[tmp_ip->pnn] = false;
+	for (t = all_ips; t != NULL; t = t->next) {
+		if (t->pnn != -1) {
+			(*rebalance_candidates)[t->pnn] = false;
 		}
 	}
 
@@ -1799,7 +1800,7 @@ static void lcp2_allocate_unassigned(struct ipalloc_state *ipalloc_state,
 				     struct public_ip_list *all_ips,
 				     uint32_t *lcp2_imbalances)
 {
-	struct public_ip_list *tmp_ip;
+	struct public_ip_list *t;
 	int dstnode, numnodes;
 
 	int minnode;
@@ -1822,33 +1823,34 @@ static void lcp2_allocate_unassigned(struct ipalloc_state *ipalloc_state,
 		minip = NULL;
 
 		/* loop over each unassigned ip. */
-		for (tmp_ip=all_ips;tmp_ip;tmp_ip=tmp_ip->next) {
-			if (tmp_ip->pnn != -1) {
+		for (t = all_ips; t != NULL ; t = t->next) {
+			if (t->pnn != -1) {
 				continue;
 			}
 
-			for (dstnode=0; dstnode<numnodes; dstnode++) {
+			for (dstnode = 0; dstnode < numnodes; dstnode++) {
 				/* only check nodes that can actually takeover this ip */
 				if (!can_node_takeover_ip(ipalloc_state,
 							  dstnode,
-							  tmp_ip)) {
+							  t)) {
 					/* no it couldnt   so skip to the next node */
 					continue;
 				}
 
-				dstdsum = ip_distance_2_sum(&(tmp_ip->addr), all_ips, dstnode);
+				dstdsum = ip_distance_2_sum(&(t->addr), all_ips, dstnode);
 				dstimbl = lcp2_imbalances[dstnode] + dstdsum;
-				DEBUG(DEBUG_DEBUG,(" %s -> %d [+%d]\n",
-						   ctdb_addr_to_str(&(tmp_ip->addr)),
-						   dstnode,
-						   dstimbl - lcp2_imbalances[dstnode]));
+				DEBUG(DEBUG_DEBUG,
+				      (" %s -> %d [+%d]\n",
+				       ctdb_addr_to_str(&(t->addr)),
+				       dstnode,
+				       dstimbl - lcp2_imbalances[dstnode]));
 
 
 				if ((minnode == -1) || (dstdsum < mindsum)) {
 					minnode = dstnode;
 					minimbl = dstimbl;
 					mindsum = dstdsum;
-					minip = tmp_ip;
+					minip = t;
 					should_loop = true;
 				}
 			}
@@ -1868,8 +1870,8 @@ static void lcp2_allocate_unassigned(struct ipalloc_state *ipalloc_state,
 
 		/* There might be a better way but at least this is clear. */
 		have_unassigned = false;
-		for (tmp_ip=all_ips;tmp_ip;tmp_ip=tmp_ip->next) {
-			if (tmp_ip->pnn == -1) {
+		for (t = all_ips; t != NULL; t = t->next) {
+			if (t->pnn == -1) {
 				have_unassigned = true;
 			}
 		}
@@ -1879,10 +1881,11 @@ static void lcp2_allocate_unassigned(struct ipalloc_state *ipalloc_state,
 	 * well optimise.
 	 */
 	if (have_unassigned) {
-		for (tmp_ip=all_ips;tmp_ip;tmp_ip=tmp_ip->next) {
-			if (tmp_ip->pnn == -1) {
-				DEBUG(DEBUG_WARNING,("Failed to find node to cover ip %s\n",
-						     ctdb_addr_to_str(&tmp_ip->addr)));
+		for (t = all_ips; t != NULL; t = t->next) {
+			if (t->pnn == -1) {
+				DEBUG(DEBUG_WARNING,
+				      ("Failed to find node to cover ip %s\n",
+				       ctdb_addr_to_str(&t->addr)));
 			}
 		}
 	}
@@ -1902,7 +1905,7 @@ static bool lcp2_failback_candidate(struct ipalloc_state *ipalloc_state,
 	uint32_t srcimbl, srcdsum, dstimbl, dstdsum;
 	uint32_t minsrcimbl, mindstimbl;
 	struct public_ip_list *minip;
-	struct public_ip_list *tmp_ip;
+	struct public_ip_list *t;
 
 	/* Find an IP and destination node that best reduces imbalance. */
 	srcimbl = 0;
@@ -1917,14 +1920,14 @@ static bool lcp2_failback_candidate(struct ipalloc_state *ipalloc_state,
 	DEBUG(DEBUG_DEBUG,(" CONSIDERING MOVES FROM %d [%d]\n",
 			   srcnode, lcp2_imbalances[srcnode]));
 
-	for (tmp_ip=all_ips; tmp_ip; tmp_ip=tmp_ip->next) {
+	for (t = all_ips; t != NULL; t = t->next) {
 		/* Only consider addresses on srcnode. */
-		if (tmp_ip->pnn != srcnode) {
+		if (t->pnn != srcnode) {
 			continue;
 		}
 
 		/* What is this IP address costing the source node? */
-		srcdsum = ip_distance_2_sum(&(tmp_ip->addr), all_ips, srcnode);
+		srcdsum = ip_distance_2_sum(&(t->addr), all_ips, srcnode);
 		srcimbl = lcp2_imbalances[srcnode] - srcdsum;
 
 		/* Consider this IP address would cost each potential
@@ -1933,23 +1936,23 @@ static bool lcp2_failback_candidate(struct ipalloc_state *ipalloc_state,
 		 * to do gratuitous failover of IPs just to make minor
 		 * balance improvements.
 		 */
-		for (dstnode=0; dstnode<numnodes; dstnode++) {
+		for (dstnode = 0; dstnode < numnodes; dstnode++) {
 			if (!rebalance_candidates[dstnode]) {
 				continue;
 			}
 
 			/* only check nodes that can actually takeover this ip */
 			if (!can_node_takeover_ip(ipalloc_state, dstnode,
-						  tmp_ip)) {
+						  t)) {
 				/* no it couldnt   so skip to the next node */
 				continue;
 			}
 
-			dstdsum = ip_distance_2_sum(&(tmp_ip->addr), all_ips, dstnode);
+			dstdsum = ip_distance_2_sum(&(t->addr), all_ips, dstnode);
 			dstimbl = lcp2_imbalances[dstnode] + dstdsum;
 			DEBUG(DEBUG_DEBUG,(" %d [%d] -> %s -> %d [+%d]\n",
 					   srcnode, -srcdsum,
-					   ctdb_addr_to_str(&(tmp_ip->addr)),
+					   ctdb_addr_to_str(&(t->addr)),
 					   dstnode, dstdsum));
 
 			if ((dstimbl < lcp2_imbalances[srcnode]) &&
@@ -1957,7 +1960,7 @@ static bool lcp2_failback_candidate(struct ipalloc_state *ipalloc_state,
 			    ((mindstnode == -1) ||				\
 			     ((srcimbl + dstimbl) < (minsrcimbl + mindstimbl)))) {
 
-				minip = tmp_ip;
+				minip = t;
 				minsrcimbl = srcimbl;
 				mindstnode = dstnode;
 				mindstimbl = dstimbl;
@@ -1968,10 +1971,11 @@ static bool lcp2_failback_candidate(struct ipalloc_state *ipalloc_state,
 
         if (mindstnode != -1) {
 		/* We found a move that makes things better... */
-		DEBUG(DEBUG_INFO,("%d [%d] -> %s -> %d [+%d]\n",
-				  srcnode, minsrcimbl - lcp2_imbalances[srcnode],
-				  ctdb_addr_to_str(&(minip->addr)),
-				  mindstnode, mindstimbl - lcp2_imbalances[mindstnode]));
+		DEBUG(DEBUG_INFO,
+		      ("%d [%d] -> %s -> %d [+%d]\n",
+		       srcnode, minsrcimbl - lcp2_imbalances[srcnode],
+		       ctdb_addr_to_str(&(minip->addr)),
+		       mindstnode, mindstimbl - lcp2_imbalances[mindstnode]));
 
 
 		lcp2_imbalances[srcnode] = minsrcimbl;
@@ -2027,7 +2031,7 @@ try_again:
 	DEBUG(DEBUG_DEBUG,("+++++++++++++++++++++++++++++++++++++++++\n"));
 	DEBUG(DEBUG_DEBUG,("Selecting most imbalanced node from:\n"));
 	lips = talloc_array(ipalloc_state, struct lcp2_imbalance_pnn, numnodes);
-	for (i=0; i<numnodes; i++) {
+	for (i = 0; i < numnodes; i++) {
 		lips[i].imbalance = lcp2_imbalances[i];
 		lips[i].pnn = i;
 		DEBUG(DEBUG_DEBUG,(" %d [%d]\n", i, lcp2_imbalances[i]));
@@ -2036,7 +2040,7 @@ try_again:
 	      lcp2_cmp_imbalance_pnn);
 
 	again = false;
-	for (i=0; i<numnodes; i++) {
+	for (i = 0; i < numnodes; i++) {
 		/* This means that all nodes had 0 or 1 addresses, so
 		 * can't be imbalanced.
 		 */
@@ -2063,22 +2067,21 @@ try_again:
 static void unassign_unsuitable_ips(struct ipalloc_state *ipalloc_state,
 				    struct public_ip_list *all_ips)
 {
-	struct public_ip_list *tmp_ip;
+	struct public_ip_list *t;
 
 	/* verify that the assigned nodes can serve that public ip
 	   and set it to -1 if not
 	*/
-	for (tmp_ip=all_ips;tmp_ip;tmp_ip=tmp_ip->next) {
-		if (tmp_ip->pnn == -1) {
+	for (t = all_ips; t != NULL; t = t->next) {
+		if (t->pnn == -1) {
 			continue;
 		}
-		if (!can_node_host_ip(ipalloc_state, tmp_ip->pnn,
-				      tmp_ip) != 0) {
+		if (!can_node_host_ip(ipalloc_state, t->pnn, t) != 0) {
 			/* this node can not serve this ip. */
 			DEBUG(DEBUG_DEBUG,("Unassign IP: %s from %d\n",
-					   ctdb_addr_to_str(&(tmp_ip->addr)),
-					   tmp_ip->pnn));
-			tmp_ip->pnn = -1;
+					   ctdb_addr_to_str(&(t->addr)),
+					   t->pnn));
+			t->pnn = -1;
 		}
 	}
 }
@@ -2086,7 +2089,7 @@ static void unassign_unsuitable_ips(struct ipalloc_state *ipalloc_state,
 static bool ip_alloc_deterministic_ips(struct ipalloc_state *ipalloc_state,
 				       struct public_ip_list *all_ips)
 {
-	struct public_ip_list *tmp_ip;
+	struct public_ip_list *t;
 	int i, numnodes;
 
 	numnodes = ipalloc_state->num;
@@ -2097,8 +2100,8 @@ static bool ip_alloc_deterministic_ips(struct ipalloc_state *ipalloc_state,
         *  available/unavailable nodes.
 	*/
 
-	for (i=0,tmp_ip=all_ips;tmp_ip;tmp_ip=tmp_ip->next,i++) {
-		tmp_ip->pnn = i % numnodes;
+	for (i = 0, t = all_ips; t!= NULL; t = t->next, i++) {
+		t->pnn = i % numnodes;
 	}
 
 	/* IP failback doesn't make sense with deterministic
@@ -2122,9 +2125,9 @@ static bool ip_alloc_nondeterministic_ips(struct ipalloc_state *ipalloc_state,
 					  struct public_ip_list *all_ips)
 {
 	/* This should be pushed down into basic_failback. */
-	struct public_ip_list *tmp_ip;
+	struct public_ip_list *t;
 	int num_ips = 0;
-	for (tmp_ip=all_ips;tmp_ip;tmp_ip=tmp_ip->next) {
+	for (t = all_ips; t != NULL; t = t->next) {
 		num_ips++;
 	}
 
