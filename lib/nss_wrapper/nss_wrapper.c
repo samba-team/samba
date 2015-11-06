@@ -5047,7 +5047,6 @@ static int nwrap_getaddrinfo(const char *node,
 	} addr = {
 		.family = AF_UNSPEC,
 	};
-	int eai = EAI_SYSTEM;
 	int ret;
 	int rc;
 
@@ -5128,13 +5127,8 @@ valid_port:
 #endif
 	}
 
-	rc = -1;
 	ai = nwrap_files_getaddrinfo(node, port, hints, &ai_tail);
-	if (ai != NULL) {
-		rc = 1;
-	}
-
-	if (rc < 0) {
+	if (ai == NULL) {
 		if (ret == 0) {
 			/*
 			 * nwrap_files_getaddrinfo failed, but libc was
@@ -5143,7 +5137,7 @@ valid_port:
 			return 0;
 		}
 
-		return eai;
+		return EAI_SYSTEM;
 	}
 
 	if (ret == 0) {
