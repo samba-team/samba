@@ -4,7 +4,7 @@
 # library use
 
 import os
-import Options, Utils
+import Utils
 from TaskGen import feature, before, after
 from samba_utils import LIB_PATH, MODE_755, install_rpath, build_rpath
 
@@ -19,7 +19,7 @@ def install_binary(self):
     install_ldflags = install_rpath(self)
     build_ldflags   = build_rpath(bld)
 
-    if not Options.is_install:
+    if not self.bld.is_install:
         # just need to set rpath if we are not installing
         self.env.RPATH = build_ldflags
         return
@@ -68,7 +68,7 @@ def install_library(self):
         install_ldflags = install_rpath(self)
         build_ldflags   = build_rpath(bld)
 
-        if not Options.is_install or not getattr(self, 'samba_install', True):
+        if not self.bld.is_install or not getattr(self, 'samba_install', True):
             # just need to set the build rpath if we are not installing
             self.env.RPATH = build_ldflags
             return

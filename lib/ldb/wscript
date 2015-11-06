@@ -13,7 +13,7 @@ while not os.path.exists(srcdir+'/buildtools') and len(srcdir.split('/')) < 5:
     srcdir = srcdir + '/..'
 sys.path.insert(0, srcdir + '/buildtools/wafsamba')
 
-import wafsamba, samba_dist, Options, Utils
+import wafsamba, samba_dist, Utils
 
 samba_dist.DIST_DIRS('''lib/ldb:. lib/replace:lib/replace lib/talloc:lib/talloc
                         lib/tdb:lib/tdb lib/tdb:lib/tdb lib/tevent:lib/tevent
@@ -150,7 +150,7 @@ def build(bld):
             bld.INSTALL_FILES('${PYTHONARCHDIR}', '_ldb_text.py')
 
     if not bld.CONFIG_SET('USING_SYSTEM_LDB'):
-        if Options.is_install:
+        if bld.is_install:
             modules_dir = bld.EXPAND_VARIABLES('${LDB_MODULESDIR}')
         else:
             # when we run from the source directory, we want to use

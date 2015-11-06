@@ -130,7 +130,6 @@ def fake_build_environment(info=True, flush=False):
 
     Options.commands['install'] = False
     Options.commands['uninstall'] = False
-    Options.is_install = False
 
     bld.is_install = 0 # False
 
