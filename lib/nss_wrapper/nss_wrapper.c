@@ -5089,7 +5089,7 @@ static int nwrap_getaddrinfo(const char *node,
 			port = sl;
 			goto valid_port;
 		} else if (hints->ai_flags & AI_NUMERICSERV) {
-			return EAI_SERVICE;
+			return EAI_NONAME;
 		}
 
 		if (hints->ai_protocol != 0) {
