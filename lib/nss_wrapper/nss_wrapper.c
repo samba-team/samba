@@ -5108,7 +5108,7 @@ static int nwrap_getaddrinfo(const char *node,
 			if (p != NULL) {
 				freeaddrinfo(p);
 			}
-			return EAI_SERVICE;
+			return EAI_NONAME;
 		}
 	}
 
