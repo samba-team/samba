@@ -1624,7 +1624,7 @@ struct tevent_req *ctdb_transaction_start_send(TALLOC_CTX *mem_ctx,
 	h->sid.unique_id = h->sid.task_id;
 	h->sid.unique_id = (h->sid.unique_id << 32) | h->sid.pid;
 
-	h->recbuf = talloc_zero(h, struct ctdb_rec_buffer);
+	h->recbuf = ctdb_rec_buffer_init(h, db->db_id);
 	if (tevent_req_nomem(h->recbuf, req)) {
 		return tevent_req_post(req, ev);
 	}
