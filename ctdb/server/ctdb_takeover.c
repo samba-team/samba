@@ -2085,7 +2085,7 @@ static void unassign_unsuitable_ips(struct ipalloc_state *ipalloc_state)
 	}
 }
 
-static bool ip_alloc_deterministic_ips(struct ipalloc_state *ipalloc_state)
+static bool ipalloc_deterministic(struct ipalloc_state *ipalloc_state)
 {
 	struct public_ip_list *t;
 	int i, numnodes;
@@ -2119,7 +2119,7 @@ static bool ip_alloc_deterministic_ips(struct ipalloc_state *ipalloc_state)
 	return true;
 }
 
-static bool ip_alloc_nondeterministic_ips(struct ipalloc_state *ipalloc_state)
+static bool ipalloc_nondeterministic(struct ipalloc_state *ipalloc_state)
 {
 	/* This should be pushed down into basic_failback. */
 	struct public_ip_list *t;
@@ -2145,7 +2145,7 @@ static bool ip_alloc_nondeterministic_ips(struct ipalloc_state *ipalloc_state)
 	return true;
 }
 
-static bool ip_alloc_lcp2(struct ipalloc_state *ipalloc_state)
+static bool ipalloc_lcp2(struct ipalloc_state *ipalloc_state)
 {
 	uint32_t *lcp2_imbalances;
 	bool *rebalance_candidates;
@@ -2212,13 +2212,13 @@ static bool ipalloc(struct ipalloc_state *ipalloc_state)
 
 	switch (ipalloc_state->algorithm) {
 	case IPALLOC_LCP2:
-		ret = ip_alloc_lcp2(ipalloc_state);
+		ret = ipalloc_lcp2(ipalloc_state);
 		break;
 	case IPALLOC_DETERMINISTIC:
-		ret = ip_alloc_deterministic_ips(ipalloc_state);
+		ret = ipalloc_deterministic(ipalloc_state);
 		break;
 	case IPALLOC_NONDETERMINISTIC:
-		ret = ip_alloc_nondeterministic_ips(ipalloc_state);
+		ret = ipalloc_nondeterministic(ipalloc_state);
                break;
 	}
 
