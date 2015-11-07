@@ -1484,9 +1484,8 @@ main() {
         conf.env.with_ctdb = False
     else:
         Logs.info("building with cluster support")
-        conf.env['CTDB_CFLAGS'] = '-DCLUSTER_SUPPORT=1'
-        conf.env['CTDB_INCLUDE'] = conf.srcdir + '/ctdb/include'
         conf.env.with_ctdb = True
+        conf.DEFINE('CLUSTER_SUPPORT', 1)
 
     conf.CHECK_CODE('void seekdir(DIR *d, long loc) { return; }',
                     'SEEKDIR_RETURNS_VOID',
