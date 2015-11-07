@@ -17,13 +17,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "replace.h"
+#include "includes.h"
 #include "smbd_cleanupd.h"
 #include "lib/util_procid.h"
 #include "lib/util/tevent_ntstatus.h"
 #include "lib/util/debug.h"
 #include "smbprofile.h"
 #include "serverid.h"
+#include "locking/proto.h"
 
 struct smbd_cleanupd_state {
 	pid_t parent_pid;
@@ -61,6 +62,12 @@ struct tevent_req *smbd_cleanupd_send(TALLOC_CTX *mem_ctx,
 
 	status = messaging_register(msg, req, MSG_SMB_NOTIFY_CLEANUP,
 				    smbd_cleanupd_process_exited);
+	if (tevent_req_nterror(req, status)) {
+		return tevent_req_post(req, ev);
+	}
+
+	status = messaging_register(msg, NULL, MSG_SMB_BRL_VALIDATE,
+				    brl_revalidate);
 	if (tevent_req_nterror(req, status)) {
 		return tevent_req_post(req, ev);
 	}

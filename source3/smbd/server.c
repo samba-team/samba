@@ -283,8 +283,10 @@ static int smbd_parent_ctdb_reconfigured(
 	 * Someone from the family died, validate our locks
 	 */
 
-	messaging_send_buf(msg_ctx, messaging_server_id(msg_ctx),
-			   MSG_SMB_BRL_VALIDATE, NULL, 0);
+	if (am_parent) {
+		messaging_send_buf(msg_ctx, am_parent->cleanupd,
+				   MSG_SMB_BRL_VALIDATE, NULL, 0);
+	}
 
 	return 0;
 }
@@ -545,8 +547,8 @@ static void cleanup_timeout_fn(struct tevent_context *event_ctx,
 
 	DEBUG(1,("Cleaning up brl and lock database after unclean shutdown\n"));
 	message_send_all(parent->msg_ctx, MSG_SMB_UNLOCK, NULL, 0, NULL);
-	messaging_send_buf(parent->msg_ctx,
-			   messaging_server_id(parent->msg_ctx),
+
+	messaging_send_buf(parent->msg_ctx, parent->cleanupd,
 			   MSG_SMB_BRL_VALIDATE, NULL, 0);
 }
 
@@ -1003,8 +1005,6 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 	messaging_register(msg_ctx, NULL, MSG_SMB_STAT_CACHE_DELETE,
 			   smb_stat_cache_delete);
 	messaging_register(msg_ctx, NULL, MSG_DEBUG, smbd_msg_debug);
-	messaging_register(msg_ctx, NULL, MSG_SMB_BRL_VALIDATE,
-			   brl_revalidate);
 	messaging_register(msg_ctx, NULL, MSG_SMB_FORCE_TDIS,
 			   smb_parent_send_to_children);
 	messaging_register(msg_ctx, NULL, MSG_SMB_KILL_CLIENT_IP,
