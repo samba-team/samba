@@ -247,7 +247,8 @@ static void socket_process_client(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct socket_process_state *state = tevent_req_data(
 		req, struct socket_process_state);
-	int client_fd, err;
+	int client_fd;
+	int err = 0;
 
 	client_fd = accept_recv(subreq, &err);
 	TALLOC_FREE(subreq);

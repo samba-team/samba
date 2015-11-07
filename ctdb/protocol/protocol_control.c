@@ -800,7 +800,7 @@ static int ctdb_req_control_data_pull(uint8_t *buf, size_t buflen,
 				      struct ctdb_req_control_data *cd)
 {
 	int ret = 0;
-	uint64_t u64;
+	uint64_t u64 = 0;
 
 	cd->opcode = opcode;
 
