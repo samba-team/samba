@@ -1839,7 +1839,7 @@ static NTSTATUS check_aapl(vfs_handle_struct *handle,
 	}
 
 	if (aapl->data.length != 24) {
-		DEBUG(1, ("unexpected AAPL ctxt legnth: %ju\n",
+		DEBUG(1, ("unexpected AAPL ctxt length: %ju\n",
 			  (uintmax_t)aapl->data.length));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
