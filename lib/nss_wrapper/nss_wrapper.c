@@ -5252,9 +5252,12 @@ valid_port:
 	}
 #endif
 
-	if ((addr.family != AF_UNSPEC) &&
-	    (hints->ai_family != AF_UNSPEC) &&
-	    (hints->ai_family != addr.family))
+	if (addr.family == AF_UNSPEC) {
+	       if (hints->ai_flags & AI_NUMERICHOST) {
+			return EAI_NONAME;
+		}
+	} else if ((hints->ai_family != AF_UNSPEC) &&
+		   (hints->ai_family != addr.family))
 	{
 		return EAI_ADDRFAMILY;
 	}
