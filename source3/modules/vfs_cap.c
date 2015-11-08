@@ -73,13 +73,12 @@ static struct dirent *cap_readdir(vfs_handle_struct *handle,
 	}
 	DEBUG(3,("cap: cap_readdir: %s\n", newname));
 	newnamelen = strlen(newname)+1;
-	newdirent = (struct dirent *)talloc_array(talloc_tos(),
-			char,
-			sizeof(struct dirent)+
-				newnamelen);
+	newdirent = talloc_size(
+		talloc_tos(), sizeof(struct dirent) + newnamelen);
 	if (!newdirent) {
 		return NULL;
 	}
+	talloc_set_name_const(newdirent, "struct dirent");
 	memcpy(newdirent, result, sizeof(struct dirent));
 	memcpy(&newdirent->d_name, newname, newnamelen);
 	return newdirent;
