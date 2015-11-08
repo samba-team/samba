@@ -5102,11 +5102,10 @@ static int nwrap_getaddrinfo(const char *node,
 		}
 
 		s = getservbyname(service, proto);
-		if (s != NULL) {
-			port = ntohs(s->s_port);
-		} else {
+		if (s == NULL) {
 			return EAI_NONAME;
 		}
+		port = ntohs(s->s_port);
 	}
 
 valid_port:
