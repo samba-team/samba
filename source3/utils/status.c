@@ -302,6 +302,7 @@ static int traverse_connections(const struct connections_key *key,
 {
 	TALLOC_CTX *mem_ctx = (TALLOC_CTX *)private_data;
 	struct server_id_buf tmp;
+	char *timestr = NULL;
 
 	if (crec->cnum == TID_FIELD_INVALID)
 		return 0;
@@ -311,10 +312,16 @@ static int traverse_connections(const struct connections_key *key,
 		return 0;
 	}
 
-	d_printf("%-10s   %s   %-12s  %s",
+	timestr = timestring(mem_ctx, crec->start);
+	if (timestr == NULL) {
+		return -1;
+	}
+
+	d_printf("%-12s %-7s %-13s %-32s\n",
 		 crec->servicename, server_id_str_buf(crec->pid, &tmp),
-		 crec->machine,
-		 time_to_asc(crec->start));
+		 crec->machine, timestr);
+
+	TALLOC_FREE(timestr);
 
 	return 0;
 }
@@ -578,8 +585,8 @@ int main(int argc, const char *argv[])
 			goto done;
 		}
 
-		d_printf("\nService      pid     machine       Connected at\n");
-		d_printf("-------------------------------------------------------\n");
+		d_printf("\n%-12s %-7s %-13s %-32s\n", "Service", "pid", "machine", "Connected at");
+		d_printf("-------------------------------------------------------------\n");
 
 		connections_forall_read(traverse_connections, frame);
 
