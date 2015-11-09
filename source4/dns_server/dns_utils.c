@@ -193,7 +193,7 @@ WERROR dns_generate_options(struct dns_server *dns,
 	if (o == NULL) {
 		return WERR_NOMEM;
 	}
-	o->name = '\0';
+	o->name = NULL;
 	o->rr_type = DNS_QTYPE_OPT;
 	/* This is ugly, but RFC2671 wants the payload size in this field */
 	o->rr_class = (enum dns_qclass) dns->max_payload;
