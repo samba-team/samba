@@ -3202,25 +3202,18 @@ static int verify_local_ip_allocation(struct ctdb_context *ctdb, struct ctdb_rec
 	}
 
 	if (interfaces_have_changed(ctdb, rec)) {
-		DEBUG(DEBUG_NOTICE, ("The interfaces status has changed on "
-				     "local node %u - force takeover run\n",
-				     pnn));
 		need_takeover_run = true;
 	}
 
-	/* verify that we have the ip addresses we should have
-	   and we don't have ones we shouldnt have.
-	   if we find an inconsistency we set recmode to
-	   active on the local node and wait for the recmaster
-	   to do a full blown recovery.
-	   also if the pnn is -1 and we are healthy and can host the ip
-	   we also request a ip reallocation.
-	*/
+	/* If there are unhosted IPs but this node can host them then
+	 * trigger an IP reallocation */
 
-	/* read the *available* IPs from the local node */
-	ret = ctdb_ctrl_get_public_ips_flags(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, mem_ctx, CTDB_PUBLIC_IP_FLAGS_ONLY_AVAILABLE, &ips);
+	/* Read *available* IPs from local node */
+	ret = ctdb_ctrl_get_public_ips_flags(
+		ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, mem_ctx,
+		CTDB_PUBLIC_IP_FLAGS_ONLY_AVAILABLE, &ips);
 	if (ret != 0) {
-		DEBUG(DEBUG_ERR, ("Unable to get available public IPs from local node %u\n", pnn));
+		DEBUG(DEBUG_ERR, ("Unable to retrieve available public IPs\n"));
 		talloc_free(mem_ctx);
 		return -1;
 	}
@@ -3228,8 +3221,9 @@ static int verify_local_ip_allocation(struct ctdb_context *ctdb, struct ctdb_rec
 	for (j=0; j<ips->num; j++) {
 		if (ips->ips[j].pnn == -1 &&
 		    nodemap->nodes[pnn].flags == 0) {
-			DEBUG(DEBUG_CRIT,("Public IP '%s' is not assigned and we could serve it\n",
-					  ctdb_addr_to_str(&ips->ips[j].addr)));
+			DEBUG(DEBUG_WARNING,
+			      ("Unassigned IP %s can be served by this node\n",
+			       ctdb_addr_to_str(&ips->ips[j].addr)));
 			need_takeover_run = true;
 		}
 	}
@@ -3240,10 +3234,17 @@ static int verify_local_ip_allocation(struct ctdb_context *ctdb, struct ctdb_rec
 		goto done;
 	}
 
-	/* read the *known* IPs from the local node */
-	ret = ctdb_ctrl_get_public_ips_flags(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, mem_ctx, 0, &ips);
+	/* Validate the IP addresses that this node has on network
+	 * interfaces.  If there is an inconsistency between reality
+	 * and the state expected by CTDB then try to fix it by
+	 * triggering an IP reallocation or releasing extraneous IP
+	 * addresses. */
+
+	/* Read *known* IPs from local node */
+	ret = ctdb_ctrl_get_public_ips_flags(
+		ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, mem_ctx, 0, &ips);
 	if (ret != 0) {
-		DEBUG(DEBUG_ERR, ("Unable to get known public IPs from local node %u\n", pnn));
+		DEBUG(DEBUG_ERR, ("Unable to retrieve known public IPs\n"));
 		talloc_free(mem_ctx);
 		return -1;
 	}
@@ -3251,18 +3252,23 @@ static int verify_local_ip_allocation(struct ctdb_context *ctdb, struct ctdb_rec
 	for (j=0; j<ips->num; j++) {
 		if (ips->ips[j].pnn == pnn) {
 			if (!ctdb_sys_have_ip(&ips->ips[j].addr)) {
-				DEBUG(DEBUG_CRIT,("Public IP '%s' is assigned to us but not on an interface\n",
-						  ctdb_addr_to_str(&ips->ips[j].addr)));
+				DEBUG(DEBUG_ERR,
+				      ("Assigned IP %s not on an interface\n",
+				       ctdb_addr_to_str(&ips->ips[j].addr)));
 				need_takeover_run = true;
 			}
 		} else {
 			if (ctdb_sys_have_ip(&ips->ips[j].addr)) {
-
-				DEBUG(DEBUG_CRIT,("We are still serving a public IP '%s' that we should not be serving. Removing it\n",
-						  ctdb_addr_to_str(&ips->ips[j].addr)));
-
-				if (ctdb_ctrl_release_ip(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, &ips->ips[j]) != 0) {
-					DEBUG(DEBUG_ERR,("Failed to release local IP address\n"));
+				DEBUG(DEBUG_ERR,
+				      ("IP %s incorrectly on an interface - releasing\n",
+				       ctdb_addr_to_str(&ips->ips[j].addr)));
+				ret = ctdb_ctrl_release_ip(ctdb,
+							   CONTROL_TIMEOUT(),
+							   CTDB_CURRENT_NODE,
+							   &ips->ips[j]);
+				if (ret != 0) {
+					DEBUG(DEBUG_ERR,
+					      ("Failed to release IP address\n"));
 				}
 			}
 		}
@@ -3273,7 +3279,7 @@ done:
 		struct ctdb_srvid_message rd;
 		TDB_DATA data;
 
-		DEBUG(DEBUG_CRIT,("Trigger takeoverrun\n"));
+		DEBUG(DEBUG_NOTICE,("Trigger takeoverrun\n"));
 
 		ZERO_STRUCT(rd);
 		rd.pnn = ctdb->pnn;
@@ -3283,7 +3289,8 @@ done:
 
 		ret = ctdb_client_send_message(ctdb, rec->recmaster, CTDB_SRVID_TAKEOVER_RUN, data);
 		if (ret != 0) {
-			DEBUG(DEBUG_ERR,(__location__ " Failed to send ipreallocate to recmaster :%d\n", (int)rec->recmaster));
+			DEBUG(DEBUG_ERR,
+			      ("Failed to send takeover run request\n"));
 		}
 	}
 	talloc_free(mem_ctx);
