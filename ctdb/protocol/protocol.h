@@ -982,6 +982,8 @@ union ctdb_message_data {
 	struct ctdb_disable_message *disable;
 	/* SRVID_DISABLE_IP_CHECK */
 	uint32_t timeout;
+	/* Other */
+	TDB_DATA data;
 };
 
 struct ctdb_req_message {

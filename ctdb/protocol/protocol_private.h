@@ -265,6 +265,11 @@ void ctdb_srvid_message_push(struct ctdb_srvid_message *msg, uint8_t *buf);
 int ctdb_srvid_message_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 			    struct ctdb_srvid_message **out);
 
+size_t ctdb_tdb_data_len(TDB_DATA data);
+void ctdb_tdb_data_push(TDB_DATA data, uint8_t *buf);
+int ctdb_tdb_data_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
+		       TDB_DATA *out);
+
 size_t ctdb_disable_message_len(struct ctdb_disable_message *disable);
 void ctdb_disable_message_push(struct ctdb_disable_message *disable,
 			       uint8_t *buf);

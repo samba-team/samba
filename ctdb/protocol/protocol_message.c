@@ -101,6 +101,10 @@ static size_t ctdb_message_data_len(union ctdb_message_data *mdata,
 	case CTDB_SRVID_DISABLE_IP_CHECK:
 		len = ctdb_uint32_len(mdata->timeout);
 		break;
+
+	default:
+		len = ctdb_tdb_data_len(mdata->data);
+		break;
 	}
 
 	return len;
@@ -170,6 +174,10 @@ static void ctdb_message_data_push(union ctdb_message_data *mdata,
 
 	case CTDB_SRVID_DISABLE_IP_CHECK:
 		ctdb_uint32_push(mdata->timeout, buf);
+		break;
+
+	default:
+		ctdb_tdb_data_push(mdata->data, buf);
 		break;
 	}
 }
@@ -250,6 +258,10 @@ static int ctdb_message_data_pull(uint8_t *buf, size_t buflen,
 
 	case CTDB_SRVID_DISABLE_IP_CHECK:
 		ret = ctdb_uint32_pull(buf, buflen, mem_ctx, &mdata->timeout);
+		break;
+
+	default:
+		ret = ctdb_tdb_data_pull(buf, buflen, mem_ctx, &mdata->data);
 		break;
 	}
 
