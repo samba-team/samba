@@ -227,6 +227,19 @@ def configure(conf):
         conf.DEFINE('SAMBA_UTIL_CORE_ONLY', 1, add_to_cflags=True)
         conf.SAMBA_CONFIG_H()
 
+    if 'XSLTPROC_MANPAGES' in conf.env and conf.env['XSLTPROC_MANPAGES']:
+        conf.env.ctdb_generate_manpages = True
+    else:
+        conf.env.ctdb_generate_manpages = False
+
+        Logs.info("xsltproc unavailable, checking for pre-built manpages")
+        conf.env.ctdb_prebuilt_manpages = []
+        for m in manpages:
+            if os.path.exists(os.path.join("doc", m)):
+                Logs.info("  %s: yes" % (m))
+                conf.env.ctdb_prebuilt_manpages.append(m)
+            else:
+                Logs.info("  %s: no" % (m))
 
 def build(bld):
     if bld.env.standalone_ctdb:
@@ -493,12 +506,12 @@ def build(bld):
                             target=x,
                             rule='sed %s ${SRC} > ${TGT}' % (sed_cmdline))
 
-    if 'XSLTPROC_MANPAGES' in bld.env and bld.env['XSLTPROC_MANPAGES']:
+    if bld.env.ctdb_generate_manpages:
         bld.MANPAGES('''onnode.1 ctdbd_wrapper.1 ctdbd.conf.5
                         ctdb.7 ctdb-statistics.7 ctdb-tunables.7''',
                       True)
     else:
-        for m in manpages:
+        for m in bld.env.ctdb_prebuilt_manpages:
             bld.SAMBA_GENERATOR(m,
                                 source=os.path.join("doc", m),
                                 target=m,
