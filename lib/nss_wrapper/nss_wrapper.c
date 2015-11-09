@@ -2594,32 +2594,30 @@ static void nwrap_add_hname_add_to_existing(struct nwrap_entdata *const ed,
 	}
 }
 
-static bool nwrap_add_hname_alias(const char *const h_name_a,
+static bool nwrap_add_hname_alias(char *const h_name_a,
 				  struct nwrap_entdata *const ed)
 {
-	/* One of argument 'h_hame_a' are "optional" */
-	char *const h_name = (char *const) ((h_name_a == NULL) ? ed->ht.h_name : h_name_a);
 	ENTRY e;
 	ENTRY *p;
 
 	/* Maybe it's little bit late ... */
 	assert(ed != NULL);
-	assert(h_name != NULL);
+	assert(h_name_a != NULL);
 
-	e.key = h_name;
+	e.key = h_name_a;
 	e.data = NULL;
 	NWRAP_LOG(NWRAP_LOG_DEBUG, "Searching name: %s", e.key);
 	p = hsearch(e, FIND);
 	if (p == NULL) {
-		NWRAP_LOG(NWRAP_LOG_DEBUG, "Name %s not found. Adding...", h_name);
+		NWRAP_LOG(NWRAP_LOG_DEBUG, "Name %s not found. Adding...", h_name_a);
 		/* Just add alias and don't mess with metadata */
-		nwrap_add_hname_add_new(h_name, ed);
+		nwrap_add_hname_add_new(h_name_a, ed);
 	} else {
 		/* Element found. Add them to end of list */
 		struct nwrap_entdata *ed_dst = (struct nwrap_entdata *)p->data;
 
 		assert(p->data != NULL);
-		NWRAP_LOG(NWRAP_LOG_DEBUG, "Name %s found. Add record to list.", h_name);
+		NWRAP_LOG(NWRAP_LOG_DEBUG, "Name %s found. Add record to list.", h_name_a);
 		nwrap_add_hname_add_to_existing(ed, ed_dst);
 	}
 
