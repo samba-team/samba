@@ -3,7 +3,7 @@
 test_info()
 {
     cat <<EOF
-Verify that "ctdb setrecmaster" sets the recovery lock correctly.
+Verify that "ctdb setreclock" sets the recovery lock correctly.
 
 This test only does something when there is a recovery lock
 configured.
