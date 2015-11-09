@@ -2067,8 +2067,8 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 	x = req->session;
 	if (x != NULL) {
 		signing_required = x->global->signing_required;
-		encryption_desired = x->encryption_desired;
-		encryption_required = x->global->encryption_required;
+		encryption_desired = x->global->encryption_flags & SMBXSRV_ENCRYPTION_DESIRED;
+		encryption_required = x->global->encryption_flags & SMBXSRV_ENCRYPTION_REQUIRED;
 	}
 
 	req->do_signing = false;
@@ -2224,10 +2224,10 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		if (!NT_STATUS_IS_OK(status)) {
 			return smbd_smb2_request_error(req, status);
 		}
-		if (req->tcon->encryption_desired) {
+		if (req->tcon->global->encryption_flags & SMBXSRV_ENCRYPTION_DESIRED) {
 			encryption_desired = true;
 		}
-		if (req->tcon->global->encryption_required) {
+		if (req->tcon->global->encryption_flags & SMBXSRV_ENCRYPTION_REQUIRED) {
 			encryption_required = true;
 		}
 		if (encryption_required && !req->was_encrypted) {
@@ -2882,8 +2882,8 @@ static NTSTATUS smbd_smb2_send_break(struct smbXsrv_connection *xconn,
 
 	if (session != NULL) {
 		session_wire_id = session->global->session_wire_id;
-		do_encryption = session->encryption_desired;
-		if (tcon->encryption_desired) {
+		do_encryption = session->global->encryption_flags & SMBXSRV_ENCRYPTION_DESIRED;
+		if (tcon->global->encryption_flags & SMBXSRV_ENCRYPTION_DESIRED) {
 			do_encryption = true;
 		}
 	}

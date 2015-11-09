@@ -268,12 +268,12 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 
 	if ((lp_smb_encrypt(-1) >= SMB_SIGNING_DESIRED) &&
 	    (xconn->smb2.client.capabilities & SMB2_CAP_ENCRYPTION)) {
-		x->encryption_desired = true;
+		x->global->encryption_flags = SMBXSRV_ENCRYPTION_DESIRED;
 	}
 
 	if (lp_smb_encrypt(-1) == SMB_SIGNING_REQUIRED) {
-		x->encryption_desired = true;
-		x->global->encryption_required = true;
+		x->global->encryption_flags = SMBXSRV_ENCRYPTION_REQUIRED |
+			SMBXSRV_ENCRYPTION_DESIRED;
 	}
 
 	if (security_session_user_level(session_info, NULL) < SECURITY_USER) {
@@ -285,13 +285,13 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 		guest = true;
 	}
 
-	if (guest && x->global->encryption_required) {
+	if (guest && (x->global->encryption_flags & SMBXSRV_ENCRYPTION_REQUIRED)) {
 		DEBUG(1,("reject guest session as encryption is required\n"));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	if (xconn->smb2.server.cipher == 0) {
-		if (x->global->encryption_required) {
+		if (x->global->encryption_flags & SMBXSRV_ENCRYPTION_REQUIRED) {
 			DEBUG(1,("reject session with dialect[0x%04X] "
 				 "as encryption is required\n",
 				 xconn->smb2.server.dialect));
@@ -299,7 +299,7 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 		}
 	}
 
-	if (x->encryption_desired) {
+	if (x->global->encryption_flags & SMBXSRV_ENCRYPTION_DESIRED) {
 		*out_session_flags |= SMB2_SESSION_FLAG_ENCRYPT_DATA;
 	}
 
