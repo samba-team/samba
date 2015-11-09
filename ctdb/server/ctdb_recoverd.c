@@ -3310,57 +3310,14 @@ static bool interfaces_have_changed(struct ctdb_context *ctdb,
 static int verify_local_ip_allocation(struct ctdb_context *ctdb, struct ctdb_recoverd *rec, uint32_t pnn, struct ctdb_node_map_old *nodemap)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
-	struct ctdb_uptime *uptime1 = NULL;
-	struct ctdb_uptime *uptime2 = NULL;
 	int ret, j;
 	bool need_takeover_run = false;
-
-	ret = ctdb_ctrl_uptime(ctdb, mem_ctx, CONTROL_TIMEOUT(),
-				CTDB_CURRENT_NODE, &uptime1);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, ("Unable to get uptime from local node %u\n", pnn));
-		talloc_free(mem_ctx);
-		return -1;
-	}
 
 	if (interfaces_have_changed(ctdb, rec)) {
 		DEBUG(DEBUG_NOTICE, ("The interfaces status has changed on "
 				     "local node %u - force takeover run\n",
 				     pnn));
 		need_takeover_run = true;
-	}
-
-	ret = ctdb_ctrl_uptime(ctdb, mem_ctx, CONTROL_TIMEOUT(),
-				CTDB_CURRENT_NODE, &uptime2);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, ("Unable to get uptime from local node %u\n", pnn));
-		talloc_free(mem_ctx);
-		return -1;
-	}
-
-	/* skip the check if the startrecovery time has changed */
-	if (timeval_compare(&uptime1->last_recovery_started,
-			    &uptime2->last_recovery_started) != 0) {
-		DEBUG(DEBUG_NOTICE, (__location__ " last recovery time changed while we read the public ip list. skipping public ip address check\n"));
-		talloc_free(mem_ctx);
-		return 0;
-	}
-
-	/* skip the check if the endrecovery time has changed */
-	if (timeval_compare(&uptime1->last_recovery_finished,
-			    &uptime2->last_recovery_finished) != 0) {
-		DEBUG(DEBUG_NOTICE, (__location__ " last recovery time changed while we read the public ip list. skipping public ip address check\n"));
-		talloc_free(mem_ctx);
-		return 0;
-	}
-
-	/* skip the check if we have started but not finished recovery */
-	if (timeval_compare(&uptime1->last_recovery_finished,
-			    &uptime1->last_recovery_started) != 1) {
-		DEBUG(DEBUG_INFO, (__location__ " in the middle of recovery or ip reallocation. skipping public ip address check\n"));
-		talloc_free(mem_ctx);
-
-		return 0;
 	}
 
 	/* verify that we have the ip addresses we should have
