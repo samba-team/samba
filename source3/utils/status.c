@@ -324,6 +324,7 @@ static int traverse_sessionid(const char *key, struct sessionid *session,
 	TALLOC_CTX *mem_ctx = (TALLOC_CTX *)private_data;
 	fstring uid_str, gid_str;
 	struct server_id_buf tmp;
+	char *machine_hostname = NULL;
 
 	if (do_checks &&
 	    (!process_exists(session->pid) ||
@@ -353,11 +354,20 @@ static int traverse_sessionid(const char *key, struct sessionid *session,
 		}
 	}
 
-	d_printf("%-7s   %-12s  %-12s  %-12s (%s) %-12s\n",
+	machine_hostname = talloc_asprintf(mem_ctx, "%s (%s)",
+					   session->remote_machine,
+					   session->hostname);
+	if (machine_hostname == NULL) {
+		return -1;
+	}
+
+	d_printf("%-7s %-12s %-12s %-41s %-17s\n",
 		 server_id_str_buf(session->pid, &tmp),
 		 uid_str, gid_str,
-		 session->remote_machine, session->hostname,
+		 machine_hostname,
 		 session_dialect_str(session->connection_dialect));
+
+	TALLOC_FREE(machine_hostname);
 
 	return 0;
 }
@@ -521,8 +531,8 @@ int main(int argc, const char *argv[])
 
 	if ( show_processes ) {
 		d_printf("\nSamba version %s\n",samba_version_string());
-		d_printf("PID     Username      Group         Machine            Protocol Version       \n");
-		d_printf("------------------------------------------------------------------------------\n");
+		d_printf("%-7s %-12s %-12s %-41s %-17s\n", "PID", "Username", "Group", "Machine", "Protocol Version");
+		d_printf("--------------------------------------------------------------------------------------------\n");
 
 		sessionid_traverse_read(traverse_sessionid, frame);
 
