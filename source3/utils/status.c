@@ -303,6 +303,8 @@ static int traverse_connections(const struct connections_key *key,
 	TALLOC_CTX *mem_ctx = (TALLOC_CTX *)private_data;
 	struct server_id_buf tmp;
 	char *timestr = NULL;
+	int result = 0;
+	const char *encryption = "-";
 
 	if (crec->cnum == TID_FIELD_INVALID)
 		return 0;
@@ -317,13 +319,30 @@ static int traverse_connections(const struct connections_key *key,
 		return -1;
 	}
 
-	d_printf("%-12s %-7s %-13s %-32s\n",
+	if (smbXsrv_is_encrypted(crec->encryption_flags)) {
+		switch (crec->cipher) {
+		case SMB2_ENCRYPTION_AES128_CCM:
+			encryption = "AES-128-CCM";
+			break;
+		case SMB2_ENCRYPTION_AES128_GCM:
+			encryption = "AES-128-GCM";
+			break;
+		default:
+			encryption = "???";
+			result = -1;
+			break;
+		}
+	}
+
+	d_printf("%-12s %-7s %-13s %-32s %-10s\n",
 		 crec->servicename, server_id_str_buf(crec->pid, &tmp),
-		 crec->machine, timestr);
+		 crec->machine,
+		 timestr,
+		 encryption);
 
 	TALLOC_FREE(timestr);
 
-	return 0;
+	return result;
 }
 
 static int traverse_sessionid(const char *key, struct sessionid *session,
@@ -585,8 +604,8 @@ int main(int argc, const char *argv[])
 			goto done;
 		}
 
-		d_printf("\n%-12s %-7s %-13s %-32s\n", "Service", "pid", "machine", "Connected at");
-		d_printf("-------------------------------------------------------------\n");
+		d_printf("\n%-12s %-7s %-13s %-32s %-10s\n", "Service", "pid", "Machine", "Connected at", "Encryption");
+		d_printf("---------------------------------------------------------------------------------\n");
 
 		connections_forall_read(traverse_connections, frame);
 
