@@ -3193,6 +3193,13 @@ static int verify_local_ip_allocation(struct ctdb_context *ctdb, struct ctdb_rec
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	int ret, j;
 	bool need_takeover_run = false;
+	struct ctdb_public_ip_list_old *ips = NULL;
+
+	/* Return early if disabled... */
+	if (ctdb->tunable.disable_ip_failover != 0 ||
+	    ctdb_op_is_disabled(rec->takeover_run)) {
+		return  0;
+	}
 
 	if (interfaces_have_changed(ctdb, rec)) {
 		DEBUG(DEBUG_NOTICE, ("The interfaces status has changed on "
@@ -3209,53 +3216,50 @@ static int verify_local_ip_allocation(struct ctdb_context *ctdb, struct ctdb_rec
 	   also if the pnn is -1 and we are healthy and can host the ip
 	   we also request a ip reallocation.
 	*/
-	if (ctdb->tunable.disable_ip_failover == 0) {
-		struct ctdb_public_ip_list_old *ips = NULL;
 
-		/* read the *available* IPs from the local node */
-		ret = ctdb_ctrl_get_public_ips_flags(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, mem_ctx, CTDB_PUBLIC_IP_FLAGS_ONLY_AVAILABLE, &ips);
-		if (ret != 0) {
-			DEBUG(DEBUG_ERR, ("Unable to get available public IPs from local node %u\n", pnn));
-			talloc_free(mem_ctx);
-			return -1;
+	/* read the *available* IPs from the local node */
+	ret = ctdb_ctrl_get_public_ips_flags(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, mem_ctx, CTDB_PUBLIC_IP_FLAGS_ONLY_AVAILABLE, &ips);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to get available public IPs from local node %u\n", pnn));
+		talloc_free(mem_ctx);
+		return -1;
+	}
+
+	for (j=0; j<ips->num; j++) {
+		if (ips->ips[j].pnn == -1 &&
+		    nodemap->nodes[pnn].flags == 0) {
+			DEBUG(DEBUG_CRIT,("Public IP '%s' is not assigned and we could serve it\n",
+					  ctdb_addr_to_str(&ips->ips[j].addr)));
+			need_takeover_run = true;
 		}
+	}
 
-		for (j=0; j<ips->num; j++) {
-			if (ips->ips[j].pnn == -1 &&
-			    nodemap->nodes[pnn].flags == 0) {
-				DEBUG(DEBUG_CRIT,("Public IP '%s' is not assigned and we could serve it\n",
+	talloc_free(ips);
+
+	/* read the *known* IPs from the local node */
+	ret = ctdb_ctrl_get_public_ips_flags(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, mem_ctx, 0, &ips);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to get known public IPs from local node %u\n", pnn));
+		talloc_free(mem_ctx);
+		return -1;
+	}
+
+	for (j=0; j<ips->num; j++) {
+		if (ips->ips[j].pnn == pnn) {
+			if (ctdb->do_checkpublicip && !ctdb_sys_have_ip(&ips->ips[j].addr)) {
+				DEBUG(DEBUG_CRIT,("Public IP '%s' is assigned to us but not on an interface\n",
 						  ctdb_addr_to_str(&ips->ips[j].addr)));
 				need_takeover_run = true;
 			}
-		}
+		} else {
+			if (ctdb->do_checkpublicip &&
+			    ctdb_sys_have_ip(&ips->ips[j].addr)) {
 
-		talloc_free(ips);
+				DEBUG(DEBUG_CRIT,("We are still serving a public IP '%s' that we should not be serving. Removing it\n",
+						  ctdb_addr_to_str(&ips->ips[j].addr)));
 
-		/* read the *known* IPs from the local node */
-		ret = ctdb_ctrl_get_public_ips_flags(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, mem_ctx, 0, &ips);
-		if (ret != 0) {
-			DEBUG(DEBUG_ERR, ("Unable to get known public IPs from local node %u\n", pnn));
-			talloc_free(mem_ctx);
-			return -1;
-		}
-
-		for (j=0; j<ips->num; j++) {
-			if (ips->ips[j].pnn == pnn) {
-				if (ctdb->do_checkpublicip && !ctdb_sys_have_ip(&ips->ips[j].addr)) {
-					DEBUG(DEBUG_CRIT,("Public IP '%s' is assigned to us but not on an interface\n",
-						ctdb_addr_to_str(&ips->ips[j].addr)));
-					need_takeover_run = true;
-				}
-			} else {
-				if (ctdb->do_checkpublicip &&
-				    ctdb_sys_have_ip(&ips->ips[j].addr)) {
-
-					DEBUG(DEBUG_CRIT,("We are still serving a public IP '%s' that we should not be serving. Removing it\n", 
-						ctdb_addr_to_str(&ips->ips[j].addr)));
-
-					if (ctdb_ctrl_release_ip(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, &ips->ips[j]) != 0) {
-						DEBUG(DEBUG_ERR,("Failed to release local IP address\n"));
-					}
+				if (ctdb_ctrl_release_ip(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, &ips->ips[j]) != 0) {
+					DEBUG(DEBUG_ERR,("Failed to release local IP address\n"));
 				}
 			}
 		}
@@ -3598,16 +3602,9 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 		return;
 	}
 
-	/* verify that we have all ip addresses we should have and we dont
-	 * have addresses we shouldnt have.
-	 */ 
-	if (ctdb->tunable.disable_ip_failover == 0 &&
-	    !ctdb_op_is_disabled(rec->takeover_run)) {
-		if (verify_local_ip_allocation(ctdb, rec, pnn, nodemap) != 0) {
-			DEBUG(DEBUG_ERR, (__location__ " Public IPs were inconsistent.\n"));
-		}
-	}
-
+	/* Check if an IP takeover run is needed and trigger one if
+	 * necessary */
+	verify_local_ip_allocation(ctdb, rec, pnn, nodemap);
 
 	/* if we are not the recmaster then we do not need to check
 	   if recovery is needed
