@@ -2629,7 +2629,6 @@ static bool nwrap_add_hname(struct nwrap_entdata *const ed)
 	char *const h_name = (char *const)(ed->ht.h_name);
 	ENTRY e;
 	ENTRY *p;
-	char *h_name_alias;
 	unsigned i;
 
 	/* Maybe it's little bit late ... */
@@ -2664,6 +2663,8 @@ static bool nwrap_add_hname(struct nwrap_entdata *const ed)
 
 	/* Itemize aliases */
 	for (i = 0; ed->ht.h_aliases[i] != NULL; ++i) {
+		char *h_name_alias;
+
 		h_name_alias = ed->ht.h_aliases[i];
 		assert(h_name_alias != NULL);
 
