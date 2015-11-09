@@ -31,6 +31,7 @@
  */
 
 #include "includes.h"
+#include "smbd/globals.h"
 #include "system/filesys.h"
 #include "popt_common.h"
 #include "dbwrap/dbwrap.h"
@@ -325,6 +326,8 @@ static int traverse_sessionid(const char *key, struct sessionid *session,
 	fstring uid_str, gid_str;
 	struct server_id_buf tmp;
 	char *machine_hostname = NULL;
+	int result = 0;
+	const char *encryption = "-";
 
 	if (do_checks &&
 	    (!process_exists(session->pid) ||
@@ -361,15 +364,44 @@ static int traverse_sessionid(const char *key, struct sessionid *session,
 		return -1;
 	}
 
-	d_printf("%-7s %-12s %-12s %-41s %-17s\n",
+	if (smbXsrv_is_encrypted(session->encryption_flags)) {
+		switch (session->cipher) {
+		case SMB2_ENCRYPTION_AES128_CCM:
+			encryption = "AES-128-CCM";
+			break;
+		case SMB2_ENCRYPTION_AES128_GCM:
+			encryption = "AES-128-GCM";
+			break;
+		default:
+			encryption = "???";
+			result = -1;
+			break;
+		}
+	} else if (smbXsrv_is_partially_encrypted(session->encryption_flags)) {
+		switch (session->cipher) {
+		case SMB2_ENCRYPTION_AES128_CCM:
+			encryption = "partial(AES-128-CCM)";
+			break;
+		case SMB2_ENCRYPTION_AES128_GCM:
+			encryption = "partial(AES-128-GCM)";
+			break;
+		default:
+			encryption = "???";
+			result = -1;
+			break;
+		}
+	}
+
+	d_printf("%-7s %-12s %-12s %-41s %-17s %-20s\n",
 		 server_id_str_buf(session->pid, &tmp),
 		 uid_str, gid_str,
 		 machine_hostname,
-		 session_dialect_str(session->connection_dialect));
+		 session_dialect_str(session->connection_dialect),
+		 encryption);
 
 	TALLOC_FREE(machine_hostname);
 
-	return 0;
+	return result;
 }
 
 
@@ -531,8 +563,8 @@ int main(int argc, const char *argv[])
 
 	if ( show_processes ) {
 		d_printf("\nSamba version %s\n",samba_version_string());
-		d_printf("%-7s %-12s %-12s %-41s %-17s\n", "PID", "Username", "Group", "Machine", "Protocol Version");
-		d_printf("--------------------------------------------------------------------------------------------\n");
+		d_printf("%-7s %-12s %-12s %-41s %-17s %-20s\n", "PID", "Username", "Group", "Machine", "Protocol Version", "Encryption");
+		d_printf("------------------------------------------------------------------------------------------------------------------\n");
 
 		sessionid_traverse_read(traverse_sessionid, frame);
 

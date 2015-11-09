@@ -69,6 +69,9 @@ static int sessionid_traverse_read_fn(struct smbXsrv_session_global0 *global,
 		global->channels[0].remote_address,
 		sizeof(fstring)-1);
 
+	session.encryption_flags = global->encryption_flags;
+	session.cipher = global->channels[0].encryption_cipher;
+
 	return state->fn(NULL, &session, state->private_data);
 }
 
