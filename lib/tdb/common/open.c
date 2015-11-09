@@ -593,6 +593,13 @@ _PUBLIC_ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int td
 		errno = ENOSYS;
 		goto fail;
 	}
+
+	if (header.hash_size == 0) {
+		TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_open_ex: invalid database: 0 hash_size\n"));
+		errno = ENOSYS;
+		goto fail;
+	}
+
 	tdb->hash_size = header.hash_size;
 
 	if (header.rwlocks == TDB_FEATURE_FLAG_MAGIC) {
