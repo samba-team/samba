@@ -35,9 +35,6 @@ AES CFB8
  - SCHANNEL
  - NETLOGON SamLogon session keys
 
-AES 128
- - SMB VFS traffic analyzer
-
  # NETTLE (AES-NI available)
 
 AES128 CCM

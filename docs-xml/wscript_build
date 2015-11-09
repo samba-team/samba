@@ -39,7 +39,6 @@ manpages='''
          manpages/smbpasswd.8
          manpages/smbspool.8
          manpages/smbstatus.1
-         manpages/smbta-util.8
          manpages/smbtar.1
          manpages/smbtree.1
          manpages/testparm.1
@@ -77,7 +76,6 @@ manpages='''
          manpages/vfs_shadow_copy.8
          manpages/vfs_shadow_copy2.8
 	 manpages/vfs_shell_snap.8
-         manpages/vfs_smb_traffic_analyzer.8
 	 manpages/vfs_snapper.8
          manpages/vfs_streams_depot.8
          manpages/vfs_streams_xattr.8

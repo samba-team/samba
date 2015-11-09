@@ -1596,7 +1596,7 @@ main() {
                                       vfs_expand_msdfs vfs_shadow_copy vfs_shadow_copy2
                                       vfs_readahead vfs_xattr_tdb vfs_posix_eadb
                                       vfs_streams_xattr vfs_streams_depot vfs_acl_xattr vfs_acl_tdb
-                                      vfs_smb_traffic_analyzer vfs_preopen vfs_catia
+                                      vfs_preopen vfs_catia
                                       vfs_media_harmony vfs_unityed_media vfs_fruit vfs_shell_snap
                                       vfs_commit vfs_worm vfs_crossrename vfs_linux_xfs_sgid
                                       vfs_time_audit vfs_offline

@@ -1187,13 +1187,6 @@ bld.SAMBA3_BINARY('testparm',
                  param
                  popt_samba3''')
 
-bld.SAMBA3_BINARY('smbta-util',
-                 source='utils/smbta-util.c',
-                 deps='''
-                 talloc
-                 secrets3
-                 param''')
-
 smbstatus_source = 'utils/status.c smbd/notify_msg.c'
 
 if bld.CONFIG_GET("WITH_PROFILE"):

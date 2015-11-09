@@ -369,14 +369,6 @@ bld.SAMBA3_MODULE('vfs_acl_tdb',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_acl_tdb'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_acl_tdb'))
 
-bld.SAMBA3_MODULE('vfs_smb_traffic_analyzer',
-                 subsystem='vfs',
-                 source='vfs_smb_traffic_analyzer.c',
-                 deps='samba-util',
-                 init_function='',
-                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_smb_traffic_analyzer'),
-                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_smb_traffic_analyzer'))
-
 bld.SAMBA3_MODULE('vfs_dirsort',
                  subsystem='vfs',
                  source='vfs_dirsort.c',
