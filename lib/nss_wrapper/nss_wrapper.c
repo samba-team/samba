@@ -2624,11 +2624,9 @@ static bool nwrap_add_hname_alias(char *const h_name_a,
 	return true;
 }
 
-static bool nwrap_add_hname(const char *const h_name_a,
-			    struct nwrap_entdata *const ed)
+static bool nwrap_add_hname(struct nwrap_entdata *const ed)
 {
-	/* One of argument 'h_hame_a' are "optional" */
-	char *const h_name = (char *const) ((h_name_a == NULL) ? ed->ht.h_name : h_name_a);
+	char *const h_name = (char *const)(ed->ht.h_name);
 	ENTRY e;
 	ENTRY *p;
 	char *h_name_alias;
@@ -2838,7 +2836,7 @@ static bool nwrap_he_parse_line(struct nwrap_cache *nwrap, char *line)
 
 	ed->aliases_count = aliases_count;
 	/* Inventarize item */
-	nwrap_add_hname(NULL, ed);
+	nwrap_add_hname(ed);
 	nwrap_add_ai(ip, ed);
 
 	nwrap_he->num++;
