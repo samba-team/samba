@@ -3458,8 +3458,8 @@ static struct addrinfo *nwrap_files_getaddrinfo(const char *name,
 	size_t name_len;
 	char canon_name[DNS_NAME_MAX] = { 0 };
 	bool skip_canonname = false;
-	ENTRY e;
-	ENTRY *e_p;
+	ENTRY e = { 0 };
+	ENTRY *e_p = NULL;
 
 	nwrap_files_cache_reload(nwrap_he_global.cache);
 
