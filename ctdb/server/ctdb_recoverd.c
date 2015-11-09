@@ -3236,6 +3236,10 @@ static int verify_local_ip_allocation(struct ctdb_context *ctdb, struct ctdb_rec
 
 	talloc_free(ips);
 
+	if (!ctdb->do_checkpublicip) {
+		goto done;
+	}
+
 	/* read the *known* IPs from the local node */
 	ret = ctdb_ctrl_get_public_ips_flags(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, mem_ctx, 0, &ips);
 	if (ret != 0) {
@@ -3246,14 +3250,13 @@ static int verify_local_ip_allocation(struct ctdb_context *ctdb, struct ctdb_rec
 
 	for (j=0; j<ips->num; j++) {
 		if (ips->ips[j].pnn == pnn) {
-			if (ctdb->do_checkpublicip && !ctdb_sys_have_ip(&ips->ips[j].addr)) {
+			if (!ctdb_sys_have_ip(&ips->ips[j].addr)) {
 				DEBUG(DEBUG_CRIT,("Public IP '%s' is assigned to us but not on an interface\n",
 						  ctdb_addr_to_str(&ips->ips[j].addr)));
 				need_takeover_run = true;
 			}
 		} else {
-			if (ctdb->do_checkpublicip &&
-			    ctdb_sys_have_ip(&ips->ips[j].addr)) {
+			if (ctdb_sys_have_ip(&ips->ips[j].addr)) {
 
 				DEBUG(DEBUG_CRIT,("We are still serving a public IP '%s' that we should not be serving. Removing it\n",
 						  ctdb_addr_to_str(&ips->ips[j].addr)));
@@ -3265,6 +3268,7 @@ static int verify_local_ip_allocation(struct ctdb_context *ctdb, struct ctdb_rec
 		}
 	}
 
+done:
 	if (need_takeover_run) {
 		struct ctdb_srvid_message rd;
 		TDB_DATA data;
