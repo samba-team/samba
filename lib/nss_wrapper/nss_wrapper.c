@@ -2562,7 +2562,6 @@ static bool nwrap_add_ai(char *const ip_addr, struct nwrap_entdata *const ed)
 static bool nwrap_add_hname_add_new(char *const h_name,
 				    struct nwrap_entdata *const ed)
 {
-	/* No element found.. inventarize new item */
 	ENTRY e;
 	ENTRY *p;
 
