@@ -456,18 +456,15 @@ int main(int argc, const char *argv[])
 	}
 
 
-	if (lp_clustering()) {
-		/*
-		 * This implicitly initializes the global ctdbd
-		 * connection, usable by the db_open() calls further
-		 * down.
-		 */
-		msg_ctx = messaging_init(NULL, samba_tevent_context_init(NULL));
-		if (msg_ctx == NULL) {
-			fprintf(stderr, "messaging_init failed\n");
-			ret = -1;
-			goto done;
-		}
+	/*
+	 * This implicitly initializes the global ctdbd connection,
+	 * usable by the db_open() calls further down.
+	 */
+	msg_ctx = messaging_init(NULL, samba_tevent_context_init(NULL));
+	if (msg_ctx == NULL) {
+		fprintf(stderr, "messaging_init failed\n");
+		ret = -1;
+		goto done;
 	}
 
 	if (!lp_load_global(get_dyn_CONFIGFILE())) {
@@ -581,16 +578,6 @@ int main(int argc, const char *argv[])
 
 	if (show_notify) {
 		struct notify_context *n;
-
-		if (msg_ctx == NULL) {
-			msg_ctx = messaging_init(
-				NULL, samba_tevent_context_init(NULL));
-			if (msg_ctx == NULL) {
-				fprintf(stderr, "messaging_init failed\n");
-				ret = -1;
-				goto done;
-			}
-		}
 
 		n = notify_init(talloc_tos(), msg_ctx,
 				messaging_tevent_context(msg_ctx));
