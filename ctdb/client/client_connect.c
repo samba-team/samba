@@ -239,6 +239,49 @@ void ctdb_client_wait(struct tevent_context *ev, bool *done)
 	}
 }
 
+static void ctdb_client_wait_timeout_handler(struct tevent_context *ev,
+					     struct tevent_timer *te,
+					     struct timeval t,
+					     void *private_data)
+{
+	bool *timed_out = (bool *)private_data;
+
+	*timed_out = true;
+}
+
+int ctdb_client_wait_timeout(struct tevent_context *ev, bool *done,
+			     struct timeval timeout)
+{
+	TALLOC_CTX *mem_ctx;
+	struct tevent_timer *timer;
+	bool timed_out = false;
+
+	mem_ctx = talloc_new(ev);
+	if (mem_ctx == NULL) {
+		return ENOMEM;
+	}
+
+	timer = tevent_add_timer(ev, mem_ctx, timeout,
+				 ctdb_client_wait_timeout_handler,
+				 &timed_out);
+	if (timer == NULL) {
+		talloc_free(mem_ctx);
+		return ENOMEM;
+	}
+
+	while (! (*done) && ! timed_out) {
+		tevent_loop_once(ev);
+	}
+
+	talloc_free(mem_ctx);
+
+	if (timed_out) {
+		return ETIME;
+	}
+
+	return 0;
+}
+
 struct ctdb_recovery_wait_state {
 	struct tevent_context *ev;
 	struct ctdb_client_context *client;

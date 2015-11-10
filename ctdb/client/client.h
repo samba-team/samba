@@ -45,6 +45,9 @@ uint32_t ctdb_client_pnn(struct ctdb_client_context *client);
 
 void ctdb_client_wait(struct tevent_context *ev, bool *done);
 
+int ctdb_client_wait_timeout(struct tevent_context *ev, bool *done,
+			     struct timeval timeout);
+
 struct tevent_req *ctdb_recovery_wait_send(TALLOC_CTX *mem_ctx,
 					   struct tevent_context *ev,
 					   struct ctdb_client_context *client);
