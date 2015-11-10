@@ -591,18 +591,12 @@ static int ctdb_db_traverse_handler(struct tdb_context *tdb, TDB_DATA key,
 
 	if (state->extract_header) {
 		struct ctdb_ltdb_header header;
-		size_t len;
 
-		ret = ctdb_ltdb_header_pull(data.dptr, data.dsize, &header);
+		ret = ctdb_ltdb_header_extract(&data, &header);
 		if (ret != 0) {
 			state->error = ret;
 			return 1;
 		}
-
-		len = ctdb_ltdb_header_len(&header);
-
-		data.dptr += len;
-		data.dsize -= len;
 
 		ret = state->parser(0, &header, key, data, state->private_data);
 	} else {
