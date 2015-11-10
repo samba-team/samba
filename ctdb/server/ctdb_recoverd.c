@@ -3503,11 +3503,10 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 		TALLOC_FREE(rec->force_rebalance_nodes);
 	}
 
-	/* This is a special case.  When recovery daemon is started, recmaster
-	 * is set to -1.  If a node is not started in stopped state, then
-	 * start election to decide recovery master
+	/* When recovery daemon is started, recmaster is set to
+	 * "unknown" so it knows to start an election.
 	 */
-	if (rec->recmaster == (uint32_t)-1) {
+	if (rec->recmaster == CTDB_UNKNOWN_PNN) {
 		DEBUG(DEBUG_NOTICE,(__location__ " Initial recovery master set - forcing election\n"));
 		force_election(rec, pnn, nodemap);
 		return;
@@ -3918,6 +3917,7 @@ static void monitor_cluster(struct ctdb_context *ctdb)
 	CTDB_NO_MEMORY_FATAL(ctdb, rec);
 
 	rec->ctdb = ctdb;
+	rec->recmaster = CTDB_UNKNOWN_PNN;
 
 	rec->takeover_run = ctdb_op_init(rec, "takeover runs");
 	CTDB_NO_MEMORY_FATAL(ctdb, rec->takeover_run);
