@@ -274,7 +274,16 @@ static void pthreadpool_join_children(struct pthreadpool *pool)
 	int i;
 
 	for (i=0; i<pool->num_exited; i++) {
-		pthread_join(pool->exited[i], NULL);
+		int ret;
+
+		ret = pthread_join(pool->exited[i], NULL);
+		if (ret != 0) {
+			/*
+			 * Severe internal error, we can't do much but
+			 * abort here.
+			 */
+			abort();
+		}
 	}
 	pool->num_exited = 0;
 
