@@ -677,7 +677,6 @@ def build(bld):
     # Test binaries
     ctdb_tests = [
         'rb_test',
-        'ctdb_bench',
         'ctdb_fetch',
         'ctdb_fetch_one',
         'ctdb_fetch_readonly_once',
@@ -710,7 +709,8 @@ def build(bld):
                         deps='replace popt talloc tevent tdb')
 
     ctdb_tests = [
-        'g_lock_loop'
+        'g_lock_loop',
+        'message_ring'
     ]
 
     for target in ctdb_tests:
