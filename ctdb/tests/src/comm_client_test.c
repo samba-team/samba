@@ -156,7 +156,7 @@ static void writer_recv(struct tevent_req *req, int *perr)
 static int socket_init(char *sockpath)
 {
 	struct sockaddr_un addr;
-	int fd, ret;
+	int fd, ret, i;
 	size_t len;
 
 	memset(&addr, 0, sizeof(addr));
@@ -168,7 +168,13 @@ static int socket_init(char *sockpath)
 	fd = socket(AF_UNIX, SOCK_STREAM, 0);
 	assert(fd != -1);
 
-	ret = connect(fd, (struct sockaddr *)&addr, sizeof(addr));
+	for (i=0; i<5; i++) {
+		ret = connect(fd, (struct sockaddr *)&addr, sizeof(addr));
+		if (ret == 0) {
+			break;
+		}
+		sleep(1);
+	}
 	assert(ret != -1);
 
 	return fd;
