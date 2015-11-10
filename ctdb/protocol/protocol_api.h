@@ -31,6 +31,8 @@ void ctdb_ltdb_header_push(struct ctdb_ltdb_header *header, uint8_t *buf);
 int ctdb_ltdb_header_pull(uint8_t *buf, size_t buflen,
 			  struct ctdb_ltdb_header *header);
 
+int ctdb_ltdb_header_extract(TDB_DATA *data, struct ctdb_ltdb_header *header);
+
 size_t ctdb_rec_data_len(struct ctdb_rec_data *rec);
 void ctdb_rec_data_push(struct ctdb_rec_data *rec, uint8_t *buf);
 int ctdb_rec_data_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,

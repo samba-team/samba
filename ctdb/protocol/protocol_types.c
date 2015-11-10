@@ -494,6 +494,21 @@ int ctdb_ltdb_header_pull(uint8_t *buf, size_t buflen,
 	return 0;
 }
 
+int ctdb_ltdb_header_extract(TDB_DATA *data, struct ctdb_ltdb_header *header)
+{
+	int ret;
+
+	ret = ctdb_ltdb_header_pull(data->dptr, data->dsize, header);
+	if (ret != 0) {
+		return ret;
+	}
+
+	data->dptr += sizeof(struct ctdb_ltdb_header);
+	data->dsize -= sizeof(struct ctdb_ltdb_header);
+
+	return 0;
+}
+
 struct ctdb_rec_data_wire {
 	uint32_t length;
 	uint32_t reqid;
