@@ -86,6 +86,9 @@
 ^samba4.rpc.lsalookup with seal,padcheck
 ^samba4.rpc.lsalookup with validate
 ^samba4.rpc.lsalookup with bigendian
+^samba4.rpc.lsa on ncacn_np with seal # This gives NT_STATUS_LOCAL_USER_SESSION_KEY
+^samba4.rpc.lsa with seal # This gives NT_STATUS_LOCAL_USER_SESSION_KEY
+^samba4.rpc.lsa.secrets.*seal # This gives NT_STATUS_LOCAL_USER_SESSION_KEY
 ^samba4.rpc.netlogon.*.LogonUasLogon
 ^samba4.rpc.netlogon.*.LogonUasLogoff
 ^samba4.rpc.netlogon.*.DatabaseSync
@@ -211,6 +214,7 @@
 ^samba3.smb2.replay.replay4
 ^samba3.smb2.lock.*replay
 ^samba3.raw.session.*reauth2 # maybe fix this?
+^samba3.rpc.lsa.secrets.seal # This gives NT_STATUS_LOCAL_USER_SESSION_KEY
 ^samba3.rpc.samr.passwords.badpwdcount.samr.badPwdCount\(nt4_dc\) # We fail this test currently
 ^samba3.rpc.samr.passwords.lockout.*\(nt4_dc\)$ # We fail this test currently
 ^samba3.rpc.spoolss.printer.addprinter.driver_info_winreg # knownfail or flapping?
