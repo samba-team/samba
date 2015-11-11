@@ -2629,6 +2629,11 @@ static bool nwrap_add_hname_add_to_existing(struct nwrap_entdata *const ed,
 	struct nwrap_entlist *cursor;
 	struct nwrap_entlist *el_new;
 
+	if (el == NULL) {
+		NWRAP_LOG(NWRAP_LOG_ERROR, "list is NULL, can not add");
+		return false;
+	}
+
 	el_new = nwrap_entlist_init(ed);
 	if (el_new == NULL) {
 		return false;
