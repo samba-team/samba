@@ -2581,7 +2581,7 @@ static bool nwrap_add_ai(char *const ip_addr, struct nwrap_entdata *const ed)
 
 	p = hsearch(e, ENTER);
 	if (p == NULL) {
-		NWRAP_LOG(NWRAP_LOG_DEBUG, "Hash table is full");
+		NWRAP_LOG(NWRAP_LOG_ERROR, "Hash table is full");
 		return false;
 	}
 
@@ -2606,7 +2606,7 @@ static bool nwrap_add_hname_add_new(char *const h_name,
 
 	p = hsearch(e, ENTER);
 	if (p == NULL) {
-		NWRAP_LOG(NWRAP_LOG_DEBUG, "Hash table is full!");
+		NWRAP_LOG(NWRAP_LOG_ERROR, "Hash table is full!");
 		return false;
 	}
 
