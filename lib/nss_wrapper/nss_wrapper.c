@@ -2627,7 +2627,6 @@ static bool nwrap_add_hname(struct nwrap_entdata *const ed)
 	ENTRY *p;
 	unsigned i;
 
-	/* Maybe it's little bit late ... */
 	assert(ed != NULL);
 	assert(h_name != NULL);
 
@@ -2637,14 +2636,12 @@ static bool nwrap_add_hname(struct nwrap_entdata *const ed)
 	p = hsearch(e, FIND);
 	if (p == NULL) {
 		NWRAP_LOG(NWRAP_LOG_DEBUG, "Name %s not found. Adding...", h_name);
-		/* Just add alias and don't mess with metadata */
 		nwrap_add_hname_add_new(h_name, ed);
 
 		if (ed->ed_tail == NULL) {
 			ed->ed_tail = ed;
 		}
 	} else {
-		/* Element found. Add them to end of list */
 		struct nwrap_entdata *ed_dst = (struct nwrap_entdata *)p->data;
 
 		assert(p->data != NULL);
@@ -2652,7 +2649,6 @@ static bool nwrap_add_hname(struct nwrap_entdata *const ed)
 		nwrap_add_hname_add_to_existing(ed, ed_dst);
 	}
 
-	/* Return true when list of aliases is empty */
 	if (ed->ht.h_aliases == NULL) {
 		return true;
 	}
