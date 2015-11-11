@@ -30,7 +30,6 @@
 
 #include "lib/util/debug.h"
 
-#include "ctdb_logging.h"
 #include "ctdb_private.h"
 
 #include <net/ethernet.h>
@@ -38,6 +37,7 @@
 #include <net/if_arp.h>
 #include <pcap.h>
 
+#include "common/logging.h"
 #include "common/system.h"
 
 #ifndef ETHERTYPE_IP6

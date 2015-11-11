@@ -25,7 +25,6 @@
 
 #include "lib/util/debug.h"
 
-#include "ctdb_logging.h"
 #include "ctdb_private.h"
 
 #include <netinet/if_ether.h>
@@ -35,6 +34,7 @@
 #include <netpacket/packet.h>
 #include <sys/prctl.h>
 
+#include "common/logging.h"
 #include "common/system.h"
 
 #ifndef ETHERTYPE_IP6

@@ -27,9 +27,9 @@
 
 #include "lib/util/debug.h"
 
-#include "ctdb_logging.h"
 #include "ctdb_private.h"
 
+#include "common/logging.h"
 #include "common/system.h"
 
 #if HAVE_SCHED_H

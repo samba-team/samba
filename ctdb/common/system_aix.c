@@ -26,7 +26,6 @@
 
 #include "lib/util/debug.h"
 
-#include "ctdb_logging.h"
 #include "ctdb_private.h"
 
 #include <netinet/if_ether.h>
@@ -36,6 +35,7 @@
 #include <sys/kinfo.h>
 #include <pcap.h>
 
+#include "common/logging.h"
 #include "common/system.h"
 
 
