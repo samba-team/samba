@@ -18,6 +18,7 @@
 */
 
 #include <replace.h>
+#include <system/locale.h>
 
 #include "common/logging.h"
 
@@ -35,6 +36,16 @@ struct {
 bool debug_level_parse(const char *log_string, enum debug_level *log_level)
 {
 	int i;
+
+	if (isdigit(log_string[0])) {
+		int level = atoi(log_string);
+
+		if (level >= 0 && level < ARRAY_SIZE(log_string_map)) {
+			*log_level = debug_level_from_int(level);
+			return true;
+		}
+		return false;
+	}
 
 	for (i=0; i<ARRAY_SIZE(log_string_map); i++) {
 		if (strncasecmp(log_string_map[i].log_string,
