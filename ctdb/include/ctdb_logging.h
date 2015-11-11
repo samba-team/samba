@@ -25,17 +25,7 @@
 #include <stdio.h>
 #include <talloc.h>
 
-enum debug_level {
-	DEBUG_ERR     =  0,
-	DEBUG_WARNING =  1,
-	DEBUG_NOTICE  =  2,
-	DEBUG_INFO    =  3,
-	DEBUG_DEBUG   =  4,
-};
-
-/* These are used in many places, so define them here to avoid churn */
-#define DEBUG_ALERT DEBUG_ERR
-#define	DEBUG_CRIT  DEBUG_ERR
+#include "common/logging.h"
 
 const char *get_debug_by_level(int32_t level);
 bool parse_debug(const char *str, int32_t *level);
