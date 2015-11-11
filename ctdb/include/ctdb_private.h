@@ -647,6 +647,18 @@ void ctdb_shutdown_sequence(struct ctdb_context *ctdb, int exit_code);
 int switch_from_server_to_client(struct ctdb_context *ctdb,
 				 const char *fmt, ...);
 
+/* From server/ctdb_fork.c */
+
+void ctdb_set_child_info(TALLOC_CTX *mem_ctx, const char *child_name_fmt, ...);
+
+void ctdb_track_child(struct ctdb_context *ctdb, pid_t pid);
+
+pid_t ctdb_fork(struct ctdb_context *ctdb);
+
+struct tevent_signal *ctdb_init_sigchld(struct ctdb_context *ctdb);
+
+int ctdb_kill(struct ctdb_context *ctdb, pid_t pid, int signum);
+
 /* from server/ctdb_freeze.c */
 
 int32_t ctdb_control_db_freeze(struct ctdb_context *ctdb,

@@ -20,18 +20,6 @@
 #ifndef __CTDB_COMMON_H__
 #define __CTDB_COMMON_H__
 
-/* From common/ctdb_fork.c */
-
-void ctdb_set_child_info(TALLOC_CTX *mem_ctx, const char *child_name_fmt, ...);
-
-void ctdb_track_child(struct ctdb_context *ctdb, pid_t pid);
-
-pid_t ctdb_fork(struct ctdb_context *ctdb);
-
-struct tevent_signal *ctdb_init_sigchld(struct ctdb_context *ctdb);
-
-int ctdb_kill(struct ctdb_context *ctdb, pid_t pid, int signum);
-
 /* From common/ctdb_io.c */
 
 int ctdb_queue_length(struct ctdb_queue *queue);

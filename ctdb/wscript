@@ -332,8 +332,7 @@ def build(bld):
     bld.SAMBA_SUBSYSTEM('ctdb-common',
                         source=bld.SUBDIR('common',
                                           '''ctdb_io.c ctdb_util.c ctdb_ltdb.c
-                                             cmdline.c rb_tree.c
-                                             ctdb_fork.c'''),
+                                             cmdline.c rb_tree.c'''),
                         includes='include',
                         deps='replace popt talloc tevent tdb popt ctdb-system')
 
@@ -396,7 +395,7 @@ def build(bld):
                                              ctdb_vacuum.c ctdb_banning.c
                                              ctdb_statistics.c
                                              ctdb_update_record.c
-                                             ctdb_lock.c'''),
+                                             ctdb_lock.c ctdb_fork.c'''),
                         includes='include',
                         deps='replace popt talloc tevent tdb talloc_report')
 

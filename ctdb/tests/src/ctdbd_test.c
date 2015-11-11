@@ -46,7 +46,6 @@ bool fast_start;
 #include "common/cmdline.c"
 #include "common/rb_tree.c"
 #include "common/ctdb_logging.c"
-#include "common/ctdb_fork.c"
 #include "common/system_util.c"
 #include "common/reqid.c"
 
@@ -76,6 +75,7 @@ bool fast_start;
 #include "server/ctdb_statistics.c"
 #include "server/ctdb_update_record.c"
 #include "server/ctdb_lock.c"
+#include "server/ctdb_fork.c"
 
 /* CTDB_CLIENT_OBJ */
 #include "client/ctdb_client.c"
