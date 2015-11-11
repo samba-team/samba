@@ -475,8 +475,17 @@ static NTSTATUS gse_get_server_auth_token(TALLOC_CTX *mem_ctx,
 						GSS_C_NO_BUFFER);
 		}
 
-		status = NT_STATUS_LOGON_FAILURE;
-		goto done;
+		/*
+		 * If we got an output token, make Windows aware of it
+		 * by telling it that more processing is needed
+		 */
+		if (out_data.length > 0) {
+			status = NT_STATUS_MORE_PROCESSING_REQUIRED;
+			/* Fall through to handle the out token */
+		} else {
+			status = NT_STATUS_LOGON_FAILURE;
+			goto done;
+		}
 	}
 
 	/* we may be told to return nothing */
