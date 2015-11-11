@@ -758,9 +758,11 @@ struct nwrap_entdata {
 	struct nwrap_vector nwrap_addrdata;
 
 	ssize_t aliases_count;
+};
 
-	struct nwrap_entdata *ed_next;
-	struct nwrap_entdata *ed_tail;
+struct nwrap_entlist {
+	struct nwrap_entlist *next;
+	struct nwrap_entdata *ed;
 };
 
 struct nwrap_he {
@@ -2541,13 +2543,41 @@ static int nwrap_gr_copy_r(const struct group *src, struct group *dst,
 	return 0;
 }
 
+static struct nwrap_entlist *nwrap_entlist_init(struct nwrap_entdata *ed)
+{
+	struct nwrap_entlist *el;
+
+	if (ed == NULL) {
+		NWRAP_LOG(NWRAP_LOG_ERROR,
+			  "entry is NULL, can't create list item");
+		return NULL;
+	}
+
+	el = (struct nwrap_entlist *)malloc(sizeof(struct nwrap_entlist));
+	if (el == NULL) {
+		NWRAP_LOG(NWRAP_LOG_ERROR, "malloc failed");
+		return NULL;
+	}
+
+	el->next = NULL;
+	el->ed = ed;
+
+	return el;
+}
+
 static bool nwrap_add_ai(char *const ip_addr, struct nwrap_entdata *const ed)
 {
-	ENTRY e = {
-		.key = ip_addr,
-		.data = (void *)ed,
-	};
+	ENTRY e;
 	ENTRY *p;
+	struct nwrap_entlist *el;
+
+	el = nwrap_entlist_init(ed);
+	if (el == NULL) {
+		return false;
+	}
+
+	e.key = ip_addr;
+	e.data = el;
 
 	p = hsearch(e, ENTER);
 	if (p == NULL) {
@@ -2564,11 +2594,15 @@ static bool nwrap_add_hname_add_new(char *const h_name,
 {
 	ENTRY e;
 	ENTRY *p;
+	struct nwrap_entlist *el;
+
+	el = nwrap_entlist_init(ed);
+	if (el == NULL) {
+		return false;
+	}
 
 	e.key = h_name;
-	e.data = (void *)ed;
-	ed->ed_tail = NULL;
-	ed->ed_next = NULL;
+	e.data = (void *)el;
 
 	p = hsearch(e, ENTER);
 	if (p == NULL) {
@@ -2580,17 +2614,30 @@ static bool nwrap_add_hname_add_new(char *const h_name,
 }
 
 static void nwrap_add_hname_add_to_existing(struct nwrap_entdata *const ed,
-					    struct nwrap_entdata *const ed_dst)
+					    struct nwrap_entlist *const el)
 {
-	if (ed_dst->ed_tail != NULL) {
-		ed_dst->ed_tail->ed_next = ed;
-		if (ed_dst->ed_tail != ed) {
-			ed_dst->ed_tail = ed;
-			ed->ed_next = NULL;
-		}
-	} else {
-		ed_dst->ed_tail = ed;
+	struct nwrap_entlist *cursor;
+	struct nwrap_entlist *el_new;
+
+	el_new = nwrap_entlist_init(ed);
+	if (el_new == NULL) {
+		return;
 	}
+
+	for (cursor = el; cursor->next != NULL; cursor = cursor->next)
+	{
+		if (cursor->ed == ed) {
+			free(el_new);
+			return;
+		}
+	}
+
+	if (cursor->ed == ed) {
+		free(el_new);
+		return;
+	}
+
+	cursor->next = el_new;
 }
 
 static bool nwrap_add_hname_alias(char *const h_name_a,
@@ -2610,11 +2657,11 @@ static bool nwrap_add_hname_alias(char *const h_name_a,
 		NWRAP_LOG(NWRAP_LOG_DEBUG, "Name %s not found. Adding...", h_name_a);
 		nwrap_add_hname_add_new(h_name_a, ed);
 	} else {
-		struct nwrap_entdata *ed_dst = (struct nwrap_entdata *)p->data;
+		struct nwrap_entlist *el = (struct nwrap_entlist *)p->data;
 
 		assert(p->data != NULL);
 		NWRAP_LOG(NWRAP_LOG_DEBUG, "Name %s found. Add record to list.", h_name_a);
-		nwrap_add_hname_add_to_existing(ed, ed_dst);
+		nwrap_add_hname_add_to_existing(ed, el);
 	}
 
 	return true;
@@ -2637,16 +2684,12 @@ static bool nwrap_add_hname(struct nwrap_entdata *const ed)
 	if (p == NULL) {
 		NWRAP_LOG(NWRAP_LOG_DEBUG, "Name %s not found. Adding...", h_name);
 		nwrap_add_hname_add_new(h_name, ed);
-
-		if (ed->ed_tail == NULL) {
-			ed->ed_tail = ed;
-		}
 	} else {
-		struct nwrap_entdata *ed_dst = (struct nwrap_entdata *)p->data;
+		struct nwrap_entlist *el = (struct nwrap_entlist *)p->data;
 
 		assert(p->data != NULL);
 		NWRAP_LOG(NWRAP_LOG_DEBUG, "Name %s found. Add record to list.", h_name);
-		nwrap_add_hname_add_to_existing(ed, ed_dst);
+		nwrap_add_hname_add_to_existing(ed, el);
 	}
 
 	if (ed->ht.h_aliases == NULL) {
@@ -3277,8 +3320,8 @@ static int nwrap_files_gethostbyname(const char *name, int af,
 				     struct hostent *result,
 				     struct nwrap_vector *addr_list)
 {
-	struct nwrap_entdata *ed_head;
-	struct nwrap_entdata *ed_cur;
+	struct nwrap_entlist *el_head;
+	struct nwrap_entlist *el_cur;
 	struct hostent *he;
 	char *h_name_lower;
 	ENTRY e;
@@ -3327,9 +3370,9 @@ static int nwrap_files_gethostbyname(const char *name, int af,
 	}
 
 	/* Iterate through results */
-	ed_head = (struct nwrap_entdata *)e_p->data;
-	for (ed_cur = ed_head; ed_cur != NULL; ed_cur = ed_cur->ed_next) {
-		he = &(ed_cur->ht);
+	el_head = (struct nwrap_entlist *)e_p->data;
+	for (el_cur = el_head; el_cur != NULL; el_cur = el_cur->next) {
+		he = &(el_cur->ed->ht);
 
 		/* Filter by address familiy if provided */
 		if (af != AF_UNSPEC && he->h_addrtype != af) {
@@ -3351,7 +3394,7 @@ static int nwrap_files_gethostbyname(const char *name, int af,
 				  he->h_name);
 			he_found = true;
 		}
-		nwrap_vector_merge(addr_list, &ed_cur->nwrap_addrdata);
+		nwrap_vector_merge(addr_list, &el_cur->ed->nwrap_addrdata);
 		result->h_addr_list = nwrap_vector_head(addr_list);
 	}
 
@@ -3437,8 +3480,8 @@ static struct addrinfo *nwrap_files_getaddrinfo(const char *name,
 					        const struct addrinfo *hints,
 					        struct addrinfo **ai_tail)
 {
-	struct nwrap_entdata *ed_head;
-	struct nwrap_entdata *ed_cur;
+	struct nwrap_entlist *el_head;
+	struct nwrap_entlist *el_cur;
 	struct hostent *he;
 	struct addrinfo *ai = NULL;
 	struct addrinfo *ai_head = NULL;
@@ -3477,12 +3520,12 @@ static struct addrinfo *nwrap_files_getaddrinfo(const char *name,
 	NWRAP_LOG(NWRAP_LOG_DEBUG, "Name: %s found.", h_name_lower);
 	SAFE_FREE(h_name_lower);
 
-	ed_head = (struct nwrap_entdata *)e_p->data;
+	el_head = (struct nwrap_entlist *)e_p->data;
 
-	for (ed_cur = ed_head; ed_cur != NULL; ed_cur = ed_cur->ed_next) {
+	for (el_cur = el_head; el_cur != NULL; el_cur = el_cur->next) {
 		int rc;
 
-		he = &(ed_cur->ht);
+		he = &(el_cur->ed->ht);
 
 		if (hints->ai_family != AF_UNSPEC &&
 		    he->h_addrtype != hints->ai_family) {
