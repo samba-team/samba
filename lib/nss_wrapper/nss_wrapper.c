@@ -2686,9 +2686,7 @@ static bool nwrap_add_hname(struct nwrap_entdata *const ed)
 	ENTRY e;
 	ENTRY *p;
 	unsigned i;
-
-	assert(ed != NULL);
-	assert(h_name != NULL);
+	bool ok;
 
 	e.key = h_name;
 	e.data = NULL;
@@ -2696,13 +2694,16 @@ static bool nwrap_add_hname(struct nwrap_entdata *const ed)
 	p = hsearch(e, FIND);
 	if (p == NULL) {
 		NWRAP_LOG(NWRAP_LOG_DEBUG, "Name %s not found. Adding...", h_name);
-		nwrap_add_hname_add_new(h_name, ed);
+		ok = nwrap_add_hname_add_new(h_name, ed);
 	} else {
 		struct nwrap_entlist *el = (struct nwrap_entlist *)p->data;
 
-		assert(p->data != NULL);
 		NWRAP_LOG(NWRAP_LOG_DEBUG, "Name %s found. Add record to list.", h_name);
-		nwrap_add_hname_add_to_existing(ed, el);
+		ok = nwrap_add_hname_add_to_existing(ed, el);
+	}
+
+	if (!ok) {
+		return false;
 	}
 
 	if (ed->ht.h_aliases == NULL) {
@@ -2714,13 +2715,13 @@ static bool nwrap_add_hname(struct nwrap_entdata *const ed)
 		char *h_name_alias;
 
 		h_name_alias = ed->ht.h_aliases[i];
-		assert(h_name_alias != NULL);
 
 		NWRAP_LOG(NWRAP_LOG_DEBUG, "Add alias: %s", h_name_alias);
 
 		if (!nwrap_add_hname_alias(h_name_alias, ed)) {
 			NWRAP_LOG(NWRAP_LOG_DEBUG,
 				  "Unable to add alias: %s", h_name_alias);
+			return false;
 		}
 	}
 
