@@ -3479,8 +3479,7 @@ static struct addrinfo *nwrap_files_getaddrinfo(const char *name,
 					        const struct addrinfo *hints,
 					        struct addrinfo **ai_tail)
 {
-	struct nwrap_entlist *el_head;
-	struct nwrap_entlist *el_cur;
+	struct nwrap_entlist *el;
 	struct hostent *he;
 	struct addrinfo *ai = NULL;
 	struct addrinfo *ai_head = NULL;
@@ -3519,12 +3518,11 @@ static struct addrinfo *nwrap_files_getaddrinfo(const char *name,
 	NWRAP_LOG(NWRAP_LOG_DEBUG, "Name: %s found.", h_name_lower);
 	SAFE_FREE(h_name_lower);
 
-	el_head = (struct nwrap_entlist *)e_p->data;
-
-	for (el_cur = el_head; el_cur != NULL; el_cur = el_cur->next) {
+	for (el = (struct nwrap_entlist *)e_p->data; el != NULL; el = el->next)
+	{
 		int rc;
 
-		he = &(el_cur->ed->ht);
+		he = &(el->ed->ht);
 
 		if (hints->ai_family != AF_UNSPEC &&
 		    he->h_addrtype != hints->ai_family) {
