@@ -1761,7 +1761,7 @@ static void nwrap_files_cache_unload(struct nwrap_cache *nwrap)
 	nwrap_lines_unload(nwrap);
 }
 
-static void nwrap_files_cache_reload(struct nwrap_cache *nwrap)
+static bool nwrap_files_cache_reload(struct nwrap_cache *nwrap)
 {
 	struct stat st;
 	int ret;
@@ -1779,7 +1779,7 @@ reopen:
 				  "Unable to open '%s' readonly %d:%s",
 				  nwrap->path, nwrap->fd,
 				  strerror(errno));
-			return;
+			return false;
 
 		}
 		nwrap->fd = fileno(nwrap->fp);
@@ -1796,7 +1796,7 @@ reopen:
 		fclose(nwrap->fp);
 		nwrap->fp = NULL;
 		nwrap->fd = -1;
-		return;
+		return false;
 	}
 
 	if (retried == false && st.st_nlink == 0) {
@@ -1816,7 +1816,7 @@ reopen:
 		NWRAP_LOG(NWRAP_LOG_TRACE,
 			  "st_mtime[%u] hasn't changed, skip reload",
 			  (unsigned)st.st_mtime);
-		return;
+		return true;
 	}
 
 	NWRAP_LOG(NWRAP_LOG_TRACE,
@@ -1832,9 +1832,11 @@ reopen:
 	if (!ok) {
 		NWRAP_LOG(NWRAP_LOG_ERROR, "Failed to reload %s", nwrap->path);
 		nwrap_files_cache_unload(nwrap);
+		return false;
 	}
 
 	NWRAP_LOG(NWRAP_LOG_TRACE, "Reloaded %s", nwrap->path);
+	return true;
 }
 
 /*
