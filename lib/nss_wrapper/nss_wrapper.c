@@ -3545,14 +3545,15 @@ int gethostbyname_r(const char *name,
 }
 #endif
 
-static struct addrinfo *nwrap_files_getaddrinfo(const char *name,
-					        unsigned short port,
-					        const struct addrinfo *hints,
-					        struct addrinfo **ai_tail)
+static int nwrap_files_getaddrinfo(const char *name,
+				   unsigned short port,
+				   const struct addrinfo *hints,
+				   struct addrinfo **ai,
+				   struct addrinfo **ai_tail)
 {
 	struct nwrap_entlist *el;
 	struct hostent *he;
-	struct addrinfo *ai = NULL;
+	struct addrinfo *_ai = NULL;
 	struct addrinfo *ai_head = NULL;
 	struct addrinfo *ai_prev = NULL;
 	char *h_name_lower;
@@ -3566,7 +3567,7 @@ static struct addrinfo *nwrap_files_getaddrinfo(const char *name,
 	ok = nwrap_files_cache_reload(nwrap_he_global.cache);
 	if (!ok) {
 		NWRAP_LOG(NWRAP_LOG_ERROR, "error loading hosts file");
-		return NULL;
+		return EAI_SYSTEM;
 	}
 
 	name_len = strlen(name);
@@ -3578,7 +3579,7 @@ static struct addrinfo *nwrap_files_getaddrinfo(const char *name,
 	if (!str_tolower_copy(&h_name_lower, name)) {
 		NWRAP_LOG(NWRAP_LOG_DEBUG,
 			  "Out of memory while converting to lower case");
-		return NULL;
+		return EAI_MEMORY;
 	}
 
 	NWRAP_LOG(NWRAP_LOG_DEBUG, "Searching for name: %s", h_name_lower);
@@ -3589,7 +3590,7 @@ static struct addrinfo *nwrap_files_getaddrinfo(const char *name,
 		NWRAP_LOG(NWRAP_LOG_DEBUG, "Name %s not found.", h_name_lower);
 		SAFE_FREE(h_name_lower);
 		errno = ENOENT;
-		return NULL;
+		return EAI_NONAME;
 	}
 	NWRAP_LOG(NWRAP_LOG_DEBUG, "Name: %s found.", h_name_lower);
 	SAFE_FREE(h_name_lower);
@@ -3609,7 +3610,7 @@ static struct addrinfo *nwrap_files_getaddrinfo(const char *name,
 		rc = nwrap_convert_he_ai(he,
 					 port,
 					 hints,
-					 &ai,
+					 &_ai,
 					 skip_canonname);
 		if (rc != 0) {
 			/* FIXME: Investigate if this is nice to do... */
@@ -3620,16 +3621,17 @@ static struct addrinfo *nwrap_files_getaddrinfo(const char *name,
 		skip_canonname = true;
 
 		if (ai_head == NULL) {
-			ai_head = ai;
+			ai_head = _ai;
 		}
 		if (ai_prev != NULL) {
-			ai_prev->ai_next = ai;
+			ai_prev->ai_next = _ai;
 		}
-		ai_prev = ai;
+		ai_prev = _ai;
 	}
 
-	*ai_tail = ai;
-	return ai_head;
+	*ai = ai_head;
+	*ai_tail = _ai;
+	return 0;
 }
 
 static struct hostent *nwrap_files_gethostbyaddr(const void *addr,
@@ -5162,6 +5164,7 @@ static int nwrap_getaddrinfo(const char *node,
 	} addr = {
 		.family = AF_UNSPEC,
 	};
+	int rc;
 
 	if (node == NULL && service == NULL) {
 		return EAI_NONAME;
@@ -5226,22 +5229,22 @@ static int nwrap_getaddrinfo(const char *node,
 
 valid_port:
 	if (hints->ai_family == AF_UNSPEC || hints->ai_family == AF_INET) {
-		int rc = inet_pton(AF_INET, node, &addr.in.v4);
+		rc = inet_pton(AF_INET, node, &addr.in.v4);
 		if (rc == 1) {
 			addr.family = AF_INET;
 		}
 	}
 #ifdef HAVE_IPV6
 	if (addr.family == AF_UNSPEC) {
-		int rc = inet_pton(AF_INET6, node, &addr.in.v6);
+		rc = inet_pton(AF_INET6, node, &addr.in.v6);
 		if (rc == 1) {
 			addr.family = AF_INET6;
 		}
 	}
 #endif
 
-	ai = nwrap_files_getaddrinfo(node, port, hints, &ai_tail);
-	if (ai == NULL) {
+	rc = nwrap_files_getaddrinfo(node, port, hints, &ai, &ai_tail);
+	if (rc != 0) {
 		int ret;
 		struct addrinfo *p = NULL;
 
@@ -5256,7 +5259,7 @@ valid_port:
 			return 0;
 		}
 
-		return EAI_SYSTEM;
+		return rc;
 	}
 
 	if (ai->ai_flags == 0) {
