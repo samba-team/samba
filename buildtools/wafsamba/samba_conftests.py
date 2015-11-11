@@ -196,7 +196,7 @@ int foo(int v) {
     return v * 2;
 }
 '''
-    return conf.check(features='c cshlib',vnum="1",fragment=snip,msg=msg)
+    return conf.check(features='c cshlib',vnum="1",fragment=snip,msg=msg, mandatory=False)
 
 @conf
 def CHECK_NEED_LC(conf, msg):
@@ -258,7 +258,7 @@ int foo(int v) {
     ldb_module = PyImport_ImportModule("ldb");
     return v * 2;
 }'''
-    return conf.check(features='c cshlib',uselib='PYEMBED',fragment=snip,msg=msg)
+    return conf.check(features='c cshlib',uselib='PYEMBED',fragment=snip,msg=msg, mandatory=False)
 
 # this one is quite complex, and should probably be broken up
 # into several parts. I'd quite like to create a set of CHECK_COMPOUND()
