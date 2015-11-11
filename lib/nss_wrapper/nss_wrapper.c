@@ -2571,6 +2571,11 @@ static bool nwrap_add_ai(char *const ip_addr, struct nwrap_entdata *const ed)
 	ENTRY *p;
 	struct nwrap_entlist *el;
 
+	if (ip_addr == NULL) {
+		NWRAP_LOG(NWRAP_LOG_ERROR, "ip_addr NULL - can't add");
+		return false;
+	}
+
 	el = nwrap_entlist_init(ed);
 	if (el == NULL) {
 		return false;
