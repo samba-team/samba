@@ -2613,7 +2613,7 @@ static bool nwrap_add_hname_add_new(char *const h_name,
 	return true;
 }
 
-static void nwrap_add_hname_add_to_existing(struct nwrap_entdata *const ed,
+static bool nwrap_add_hname_add_to_existing(struct nwrap_entdata *const ed,
 					    struct nwrap_entlist *const el)
 {
 	struct nwrap_entlist *cursor;
@@ -2621,23 +2621,24 @@ static void nwrap_add_hname_add_to_existing(struct nwrap_entdata *const ed,
 
 	el_new = nwrap_entlist_init(ed);
 	if (el_new == NULL) {
-		return;
+		return false;
 	}
 
 	for (cursor = el; cursor->next != NULL; cursor = cursor->next)
 	{
 		if (cursor->ed == ed) {
 			free(el_new);
-			return;
+			return false;
 		}
 	}
 
 	if (cursor->ed == ed) {
 		free(el_new);
-		return;
+		return false;
 	}
 
 	cursor->next = el_new;
+	return true;
 }
 
 static bool nwrap_add_hname_alias(char *const h_name_a,
