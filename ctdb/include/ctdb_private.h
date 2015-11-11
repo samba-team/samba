@@ -741,6 +741,8 @@ struct lock_request *ctdb_lock_alldb(TALLOC_CTX *mem_ctx,
 
 /* from ctdb_logging.c */
 
+extern const char *debug_extra;
+
 typedef int (*ctdb_log_setup_fn_t)(TALLOC_CTX *mem_ctx,
 				   const char *logging,
 				   const char *app_name);

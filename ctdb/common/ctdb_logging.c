@@ -21,8 +21,6 @@
 #include "replace.h"
 #include "ctdb_logging.h"
 
-const char *debug_extra = "";
-
 struct debug_levels {
 	int32_t	level;
 	const char *description;

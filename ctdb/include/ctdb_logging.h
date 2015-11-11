@@ -25,8 +25,6 @@
 #include <stdio.h>
 #include <talloc.h>
 
-extern const char *debug_extra;
-
 enum debug_level {
 	DEBUG_ERR     =  0,
 	DEBUG_WARNING =  1,

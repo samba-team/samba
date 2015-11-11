@@ -36,6 +36,8 @@
 #include "common/system.h"
 #include "common/common.h"
 
+const char *debug_extra = "";
+
 struct ctdb_log_backend {
 	struct ctdb_log_backend *prev, *next;
 	const char *prefix;
