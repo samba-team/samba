@@ -1331,6 +1331,7 @@ sub provision($$$$$$$$)
 	create mask = 755
 	dos filemode = yes
 	strict rename = yes
+	strict sync = yes
 	vfs objects = acl_xattr fake_acls xattr_tdb streams_depot
 
 	printing = vlp
