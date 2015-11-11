@@ -28,12 +28,12 @@
 #include "lib/util/time.h"
 #include "lib/util/debug.h"
 
-#include "ctdb_logging.h"
 #include "ctdb_private.h"
 #include "ctdb_client.h"
 
 #include "common/cmdline.h"
 #include "common/common.h"
+#include "common/logging.h"
 
 static struct timeval tp1,tp2;
 
