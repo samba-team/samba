@@ -110,15 +110,18 @@ struct smbd_smb2_flush_state {
 	struct smbd_smb2_request *smb2req;
 };
 
+static void smbd_smb2_flush_done(struct tevent_req *subreq);
+
 static struct tevent_req *smbd_smb2_flush_send(TALLOC_CTX *mem_ctx,
 					       struct tevent_context *ev,
 					       struct smbd_smb2_request *smb2req,
 					       struct files_struct *fsp)
 {
 	struct tevent_req *req;
+	struct tevent_req *subreq;
 	struct smbd_smb2_flush_state *state;
-	NTSTATUS status;
 	struct smb_request *smbreq;
+	int ret;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct smbd_smb2_flush_state);
@@ -145,16 +148,73 @@ static struct tevent_req *smbd_smb2_flush_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	status = sync_file(smbreq->conn, fsp, true);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(5,("smbd_smb2_flush: sync_file for %s returned %s\n",
-			 fsp_str_dbg(fsp), nt_errstr(status)));
-		tevent_req_nterror(req, status);
+	if (fsp->fh->fd == -1) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_HANDLE);
 		return tevent_req_post(req, ev);
 	}
 
+	if (!lp_strict_sync(SNUM(smbreq->conn))) {
+		/*
+		 * No strict sync. Don't really do
+		 * anything here.
+		 */
+		tevent_req_done(req);
+		return tevent_req_post(req, ev);
+	}
+
+	if (get_outstanding_aio_calls() >= get_aio_pending_size()) {
+		/* No more allowed aio. Synchronous flush. */
+		NTSTATUS status = sync_file(smbreq->conn, fsp, true);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(5,("sync_file for %s returned %s\n",
+				fsp_str_dbg(fsp),
+				nt_errstr(status)));
+			tevent_req_nterror(req, status);
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_done(req);
+		return tevent_req_post(req, ev);
+	}
+
+	ret = flush_write_cache(fsp, SAMBA_SYNC_FLUSH);
+	if (ret == -1) {
+		tevent_req_nterror(req,  map_nt_error_from_unix(errno));
+		return tevent_req_post(req, ev);
+	}
+
+	subreq = SMB_VFS_FSYNC_SEND(state, ev, fsp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	tevent_req_set_callback(subreq, smbd_smb2_flush_done, req);
+
+	/* Ensure any close request knows about this outstanding IO. */
+	if (!aio_add_req_to_fsp(fsp, req)) {
+		tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
+		return tevent_req_post(req, ev);
+	}
+
+	increment_outstanding_aio_calls();
+	return req;
+
+}
+
+static void smbd_smb2_flush_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	int ret, err;
+
+	decrement_outstanding_aio_calls();
+
+	ret = SMB_VFS_FSYNC_RECV(subreq, &err);
+	TALLOC_FREE(subreq);
+	if (ret == -1) {
+		tevent_req_error(req, err);
+		return;
+	}
 	tevent_req_done(req);
-	return tevent_req_post(req, ev);
 }
 
 static NTSTATUS smbd_smb2_flush_recv(struct tevent_req *req)
