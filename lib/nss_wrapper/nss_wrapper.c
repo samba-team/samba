@@ -2601,6 +2601,11 @@ static bool nwrap_add_hname_add_new(char *const h_name,
 	ENTRY *p;
 	struct nwrap_entlist *el;
 
+	if (h_name == NULL) {
+		NWRAP_LOG(NWRAP_LOG_ERROR, "h_name NULL - can't add");
+		return false;
+	}
+
 	el = nwrap_entlist_init(ed);
 	if (el == NULL) {
 		return false;
