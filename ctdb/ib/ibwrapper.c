@@ -30,7 +30,7 @@
 #include "lib/util/dlinklist.h"
 #include "lib/util/debug.h"
 
-#include "ctdb_logging.h"
+#include "common/logging.h"
 
 #include <infiniband/kern-abi.h>
 #include <rdma/rdma_cma_abi.h>

@@ -24,10 +24,10 @@
 #include "lib/util/dlinklist.h"
 #include "lib/util/debug.h"
 
-#include "ctdb_logging.h"
 #include "ctdb_private.h"
 
 #include "common/common.h"
+#include "common/logging.h"
 
 #include "ctdb_tcp.h"
 

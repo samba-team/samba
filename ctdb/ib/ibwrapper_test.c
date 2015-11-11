@@ -31,7 +31,7 @@
 #include "lib/util/time.h"
 #include "lib/util/debug.h"
 
-#include "ctdb_logging.h"
+#include "common/logging.h"
 
 #include "ib/ibwrapper.h"
 
