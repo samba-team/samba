@@ -644,6 +644,9 @@ int ctdb_control_getnodesfile(struct ctdb_context *ctdb, uint32_t opcode,
 
 void ctdb_shutdown_sequence(struct ctdb_context *ctdb, int exit_code);
 
+int switch_from_server_to_client(struct ctdb_context *ctdb,
+				 const char *fmt, ...);
+
 /* from server/ctdb_freeze.c */
 
 int32_t ctdb_control_db_freeze(struct ctdb_context *ctdb,

@@ -1826,3 +1826,35 @@ void ctdb_shutdown_sequence(struct ctdb_context *ctdb, int exit_code)
 	DEBUG(DEBUG_NOTICE,("Shutdown sequence complete, exiting.\n"));
 	exit(exit_code);
 }
+
+/* When forking the main daemon and the child process needs to connect
+ * back to the daemon as a client process, this function can be used
+ * to change the ctdb context from daemon into client mode.  The child
+ * process must be created using ctdb_fork() and not fork() -
+ * ctdb_fork() does some necessary housekeeping.
+ */
+int switch_from_server_to_client(struct ctdb_context *ctdb, const char *fmt, ...)
+{
+	int ret;
+	va_list ap;
+
+	/* Add extra information so we can identify this in the logs */
+	va_start(ap, fmt);
+	debug_extra = talloc_strdup_append(talloc_vasprintf(NULL, fmt, ap), ":");
+	va_end(ap);
+
+	/* get a new event context */
+	ctdb->ev = tevent_context_init(ctdb);
+	tevent_loop_allow_nesting(ctdb->ev);
+
+	/* Connect to main CTDB daemon */
+	ret = ctdb_socket_connect(ctdb);
+	if (ret != 0) {
+		DEBUG(DEBUG_ALERT, (__location__ " Failed to init ctdb client\n"));
+		return -1;
+	}
+
+	ctdb->can_send_controls = true;
+
+	return 0;
+}
