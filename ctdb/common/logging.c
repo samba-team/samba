@@ -36,7 +36,7 @@ bool debug_level_parse(const char *log_string, enum debug_level *log_level)
 {
 	int i;
 
-	for (i=0; ARRAY_SIZE(log_string_map); i++) {
+	for (i=0; i<ARRAY_SIZE(log_string_map); i++) {
 		if (strcasecmp(log_string_map[i].log_string,
 			       log_string) == 0) {
 			*log_level = log_string_map[i].log_level;
