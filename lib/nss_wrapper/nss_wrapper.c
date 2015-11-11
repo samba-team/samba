@@ -2719,7 +2719,7 @@ static bool nwrap_add_hname(struct nwrap_entdata *const ed)
 		NWRAP_LOG(NWRAP_LOG_DEBUG, "Add alias: %s", h_name_alias);
 
 		if (!nwrap_add_hname_alias(h_name_alias, ed)) {
-			NWRAP_LOG(NWRAP_LOG_DEBUG,
+			NWRAP_LOG(NWRAP_LOG_ERROR,
 				  "Unable to add alias: %s", h_name_alias);
 			return false;
 		}
