@@ -2661,9 +2661,7 @@ static bool nwrap_add_hname_alias(char *const h_name_a,
 {
 	ENTRY e;
 	ENTRY *p;
-
-	assert(ed != NULL);
-	assert(h_name_a != NULL);
+	bool ok;
 
 	e.key = h_name_a;
 	e.data = NULL;
@@ -2671,16 +2669,15 @@ static bool nwrap_add_hname_alias(char *const h_name_a,
 	p = hsearch(e, FIND);
 	if (p == NULL) {
 		NWRAP_LOG(NWRAP_LOG_DEBUG, "Name %s not found. Adding...", h_name_a);
-		nwrap_add_hname_add_new(h_name_a, ed);
+		ok = nwrap_add_hname_add_new(h_name_a, ed);
 	} else {
 		struct nwrap_entlist *el = (struct nwrap_entlist *)p->data;
 
-		assert(p->data != NULL);
 		NWRAP_LOG(NWRAP_LOG_DEBUG, "Name %s found. Add record to list.", h_name_a);
-		nwrap_add_hname_add_to_existing(ed, el);
+		ok = nwrap_add_hname_add_to_existing(ed, el);
 	}
 
-	return true;
+	return ok;
 }
 
 static bool nwrap_add_hname(struct nwrap_entdata *const ed)
