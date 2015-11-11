@@ -178,6 +178,7 @@ ctdb_get_capabilities(struct ctdb_context *ctdb,
 #include "common/ctdb_logging.c"
 #include "common/system_util.c"
 #include "common/reqid.c"
+#include "common/logging.c"
 
 /* CTDB_CLIENT_OBJ */
 #include "client/ctdb_client.c"
