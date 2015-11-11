@@ -325,7 +325,9 @@ def build(bld):
         Logs.error("Platform %s not supported" % sys.platform)
 
     bld.SAMBA_SUBSYSTEM('ctdb-system',
-                        source='common/system_common.c ' + CTDB_SYSTEM_SRC,
+                        source=bld.SUBDIR('common',
+                                          'system_common.c system_util.c') +
+                               CTDB_SYSTEM_SRC,
                         includes='include',
                         deps='replace talloc tevent tdb pcap')
 
@@ -335,12 +337,6 @@ def build(bld):
                                              cmdline.c rb_tree.c'''),
                         includes='include',
                         deps='replace popt talloc tevent tdb popt ctdb-system')
-
-    bld.SAMBA_SUBSYSTEM('ctdb-common-util',
-                        source=bld.SUBDIR('common',
-                                          'system_util.c'),
-                        includes='include',
-                        deps='replace tevent tdb')
 
     bld.SAMBA_SUBSYSTEM('ctdb-util',
                         source=bld.SUBDIR('common',
@@ -402,15 +398,14 @@ def build(bld):
     bld.SAMBA_BINARY('ctdbd',
                      source='',
                      deps='''ctdb-server ctdb-client ctdb-common
-                             ctdb-common-util ctdb-tcp ctdb-util''' +
+                             ctdb-system ctdb-tcp ctdb-util''' +
                           ib_deps,
                      install_path='${SBINDIR}',
                      manpages='ctdbd.1')
 
     bld.SAMBA_BINARY('ctdb',
                      source='tools/ctdb.c',
-                     deps='''ctdb-client ctdb-common ctdb-common-util
-                             ctdb-util''',
+                     deps='ctdb-client ctdb-common ctdb-system ctdb-util',
                      includes='include',
                      install_path='${BINDIR}',
                      manpages='ctdb.1')
@@ -424,14 +419,14 @@ def build(bld):
 
     bld.SAMBA_BINARY('ctdb_lock_helper',
                      source='server/ctdb_lock_helper.c',
-                     deps='samba-util ctdb-common-util talloc tdb',
+                     deps='samba-util ctdb-system talloc tdb',
                      includes='include',
                      install_path='${BINDIR}')
 
     bld.SAMBA_BINARY('ctdb_event_helper',
                      source='server/ctdb_event_helper.c',
                      includes='include',
-                     deps='samba-util ctdb-common-util replace tdb',
+                     deps='samba-util ctdb-system replace tdb',
                      install_path='${BINDIR}')
 
     bld.SAMBA_BINARY('ctdb_recovery_helper',
@@ -474,8 +469,7 @@ def build(bld):
         bld.SAMBA_BINARY('pmdactdb',
                          source='utils/pmda/pmda_ctdb.c',
                          includes='include',
-                         deps='''ctdb-client ctdb-common
-                                 ctdb-common-util pcp_pmda pcp''',
+                         deps='ctdb-client ctdb-common pcp_pmda pcp',
                          install_path='${CTDB_PMDADIR}')
         bld.INSTALL_FILES('${CTDB_PMDADIR}', 'utils/pmda/Install',
                           destname='Install')
@@ -664,8 +658,7 @@ def build(bld):
         bld.SAMBA_BINARY(target,
                          source=src,
                          includes='include',
-                         deps='''ctdb-client ctdb-common ctdb-common-util
-                                 ctdb-util''',
+                         deps='ctdb-client ctdb-common ctdb-util',
                          install_path='${CTDB_TEST_LIBDIR}')
 
     bld.SAMBA_BINARY('ctdb_takeover_tests',
@@ -694,8 +687,7 @@ def build(bld):
         bld.SAMBA_BINARY('ibwrapper_test',
                          source='ib/ibwrapper_test.c',
                          includes='include',
-                         deps='''replace talloc ctdb-client ctdb-common
-                                 ctdb-common-util''' +
+                         deps='replace talloc ctdb-client ctdb-common' +
                               ib_deps,
                          install_path='${CTDB_TEST_LIBDIR}')
 

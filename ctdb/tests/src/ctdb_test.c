@@ -175,7 +175,6 @@ ctdb_get_capabilities(struct ctdb_context *ctdb,
 #include "common/db_hash.c"
 #include "common/srvid.c"
 #include "common/rb_tree.c"
-#include "common/system_util.c"
 #include "common/reqid.c"
 #include "common/logging.c"
 
