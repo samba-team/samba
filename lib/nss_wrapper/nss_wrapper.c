@@ -2738,6 +2738,7 @@ static bool nwrap_he_parse_line(struct nwrap_cache *nwrap, char *line)
 	char *n;
 
 	char *ip;
+	bool ok;
 
 	struct nwrap_entdata *ed = (struct nwrap_entdata *)
 				   malloc(sizeof(struct nwrap_entdata));
@@ -2886,8 +2887,15 @@ static bool nwrap_he_parse_line(struct nwrap_cache *nwrap, char *line)
 
 	ed->aliases_count = aliases_count;
 	/* Inventarize item */
-	nwrap_add_hname(ed);
-	nwrap_add_ai(ip, ed);
+	ok = nwrap_add_hname(ed);
+	if (!ok) {
+		return false;
+	}
+
+	ok = nwrap_add_ai(ip, ed);
+	if (!ok) {
+		return false;
+	}
 
 	nwrap_he->num++;
 	return true;
