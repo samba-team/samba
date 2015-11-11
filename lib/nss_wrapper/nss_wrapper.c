@@ -2929,12 +2929,17 @@ static struct passwd *nwrap_files_getpwnam(struct nwrap_backend *b,
 					   const char *name)
 {
 	int i;
+	bool ok;
 
 	(void) b; /* unused */
 
 	NWRAP_LOG(NWRAP_LOG_DEBUG, "Lookup user %s in files", name);
 
-	nwrap_files_cache_reload(nwrap_pw_global.cache);
+	ok = nwrap_files_cache_reload(nwrap_pw_global.cache);
+	if (!ok) {
+		NWRAP_LOG(NWRAP_LOG_ERROR, "Error loading passwd file");
+		return NULL;
+	}
 
 	for (i=0; i<nwrap_pw_global.num; i++) {
 		if (strcmp(nwrap_pw_global.list[i].pw_name, name) == 0) {
@@ -2974,10 +2979,15 @@ static struct passwd *nwrap_files_getpwuid(struct nwrap_backend *b,
 					   uid_t uid)
 {
 	int i;
+	bool ok;
 
 	(void) b; /* unused */
 
-	nwrap_files_cache_reload(nwrap_pw_global.cache);
+	ok = nwrap_files_cache_reload(nwrap_pw_global.cache);
+	if (!ok) {
+		NWRAP_LOG(NWRAP_LOG_ERROR, "Error loading passwd file");
+		return NULL;
+	}
 
 	for (i=0; i<nwrap_pw_global.num; i++) {
 		if (nwrap_pw_global.list[i].pw_uid == uid) {
@@ -3028,7 +3038,12 @@ static struct passwd *nwrap_files_getpwent(struct nwrap_backend *b)
 	(void) b; /* unused */
 
 	if (nwrap_pw_global.idx == 0) {
-		nwrap_files_cache_reload(nwrap_pw_global.cache);
+		bool ok;
+		ok = nwrap_files_cache_reload(nwrap_pw_global.cache);
+		if (!ok) {
+			NWRAP_LOG(NWRAP_LOG_ERROR, "Error loading passwd file");
+			return NULL;
+		}
 	}
 
 	if (nwrap_pw_global.idx >= nwrap_pw_global.num) {
@@ -3084,7 +3099,13 @@ static struct spwd *nwrap_files_getspent(void)
 	struct spwd *sp;
 
 	if (nwrap_sp_global.idx == 0) {
-		nwrap_files_cache_reload(nwrap_sp_global.cache);
+		bool ok;
+
+		ok = nwrap_files_cache_reload(nwrap_sp_global.cache);
+		if (!ok) {
+			NWRAP_LOG(NWRAP_LOG_ERROR, "Error loading shadow file");
+			return NULL;
+		}
 	}
 
 	if (nwrap_sp_global.idx >= nwrap_sp_global.num) {
@@ -3110,10 +3131,15 @@ static void nwrap_files_endspent(void)
 static struct spwd *nwrap_files_getspnam(const char *name)
 {
 	int i;
+	bool ok;
 
 	NWRAP_LOG(NWRAP_LOG_DEBUG, "Lookup user %s in files", name);
 
-	nwrap_files_cache_reload(nwrap_sp_global.cache);
+	ok = nwrap_files_cache_reload(nwrap_sp_global.cache);
+	if (!ok) {
+		NWRAP_LOG(NWRAP_LOG_ERROR, "Error loading shadow file");
+		return NULL;
+	}
 
 	for (i=0; i<nwrap_sp_global.num; i++) {
 		if (strcmp(nwrap_sp_global.list[i].sp_namp, name) == 0) {
@@ -3201,10 +3227,15 @@ static struct group *nwrap_files_getgrnam(struct nwrap_backend *b,
 					  const char *name)
 {
 	int i;
+	bool ok;
 
 	(void) b; /* unused */
 
-	nwrap_files_cache_reload(nwrap_gr_global.cache);
+	ok = nwrap_files_cache_reload(nwrap_gr_global.cache);
+	if (!ok) {
+		NWRAP_LOG(NWRAP_LOG_ERROR, "Error loading group file");
+		return NULL;
+	}
 
 	for (i=0; i<nwrap_gr_global.num; i++) {
 		if (strcmp(nwrap_gr_global.list[i].gr_name, name) == 0) {
@@ -3244,10 +3275,15 @@ static struct group *nwrap_files_getgrgid(struct nwrap_backend *b,
 					  gid_t gid)
 {
 	int i;
+	bool ok;
 
 	(void) b; /* unused */
 
-	nwrap_files_cache_reload(nwrap_gr_global.cache);
+	ok = nwrap_files_cache_reload(nwrap_gr_global.cache);
+	if (!ok) {
+		NWRAP_LOG(NWRAP_LOG_ERROR, "Error loading group file");
+		return NULL;
+	}
 
 	for (i=0; i<nwrap_gr_global.num; i++) {
 		if (nwrap_gr_global.list[i].gr_gid == gid) {
@@ -3298,7 +3334,13 @@ static struct group *nwrap_files_getgrent(struct nwrap_backend *b)
 	(void) b; /* unused */
 
 	if (nwrap_gr_global.idx == 0) {
-		nwrap_files_cache_reload(nwrap_gr_global.cache);
+		bool ok;
+
+		ok = nwrap_files_cache_reload(nwrap_gr_global.cache);
+		if (!ok) {
+			NWRAP_LOG(NWRAP_LOG_ERROR, "Error loading group file");
+			return NULL;
+		}
 	}
 
 	if (nwrap_gr_global.idx >= nwrap_gr_global.num) {
@@ -3352,8 +3394,13 @@ static int nwrap_files_gethostbyname(const char *name, int af,
 	char canon_name[DNS_NAME_MAX] = { 0 };
 	size_t name_len;
 	bool he_found = false;
+	bool ok;
 
-	nwrap_files_cache_reload(nwrap_he_global.cache);
+	ok = nwrap_files_cache_reload(nwrap_he_global.cache);
+	if (!ok) {
+		NWRAP_LOG(NWRAP_LOG_ERROR, "error loading hosts file");
+		goto no_ent;
+	}
 
 	name_len = strlen(name);
 	if (name_len < sizeof(canon_name) && name[name_len - 1] == '.') {
@@ -3514,8 +3561,13 @@ static struct addrinfo *nwrap_files_getaddrinfo(const char *name,
 	bool skip_canonname = false;
 	ENTRY e = { 0 };
 	ENTRY *e_p = NULL;
+	bool ok;
 
-	nwrap_files_cache_reload(nwrap_he_global.cache);
+	ok = nwrap_files_cache_reload(nwrap_he_global.cache);
+	if (!ok) {
+		NWRAP_LOG(NWRAP_LOG_ERROR, "error loading hosts file");
+		return NULL;
+	}
 
 	name_len = strlen(name);
 	if (name_len < DNS_NAME_MAX && name[name_len - 1] == '.') {
@@ -3588,10 +3640,15 @@ static struct hostent *nwrap_files_gethostbyaddr(const void *addr,
 	struct nwrap_entdata *ed;
 	const char *a;
 	size_t i;
+	bool ok;
 
 	(void) len; /* unused */
 
-	nwrap_files_cache_reload(nwrap_he_global.cache);
+	ok = nwrap_files_cache_reload(nwrap_he_global.cache);
+	if (!ok) {
+		NWRAP_LOG(NWRAP_LOG_ERROR, "error loading hosts file");
+		return NULL;
+	}
 
 	a = inet_ntop(type, addr, ip, sizeof(ip));
 	if (a == NULL) {
@@ -3663,7 +3720,13 @@ static struct hostent *nwrap_files_gethostent(void)
 	struct hostent *he;
 
 	if (nwrap_he_global.idx == 0) {
-		nwrap_files_cache_reload(nwrap_he_global.cache);
+		bool ok;
+
+		ok = nwrap_files_cache_reload(nwrap_he_global.cache);
+		if (!ok) {
+			NWRAP_LOG(NWRAP_LOG_ERROR, "Error loading hosts file");
+			return NULL;
+		}
 	}
 
 	if (nwrap_he_global.idx >= nwrap_he_global.num) {
