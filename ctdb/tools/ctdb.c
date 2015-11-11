@@ -37,7 +37,6 @@
 #include "lib/util/substitute.h"
 #include "lib/util/time.h"
 
-#include "ctdb_logging.h"
 #include "ctdb_version.h"
 #include "ctdb_private.h"
 #include "ctdb_client.h"
@@ -46,6 +45,7 @@
 #include "common/rb_tree.h"
 #include "common/system.h"
 #include "common/common.h"
+#include "common/logging.h"
 
 #define ERR_TIMEOUT	20	/* timed out trying to reach node */
 #define ERR_NONODE	21	/* node does not exist */
@@ -4883,7 +4883,8 @@ static int control_getdebug(struct ctdb_context *ctdb, int argc, const char **ar
 		DEBUG(DEBUG_ERR, ("Unable to get debuglevel response from node %u\n", options.pnn));
 		return ret;
 	} else {
-		const char *desc = get_debug_by_level(level);
+		enum debug_level log_level = debug_level_from_int(level);
+		const char *desc = debug_level_to_string(log_level);
 		if (desc == NULL) {
 			/* This should never happen */
 			desc = "Unknown";
@@ -5045,18 +5046,21 @@ static int control_setdebug(struct ctdb_context *ctdb, int argc, const char **ar
 {
 	int ret;
 	int32_t level;
+	enum debug_level log_level;
 
 	if (argc == 0) {
 		printf("You must specify the debug level. Valid levels are:\n");
-		print_debug_levels(stdout);
+		printf("\tERROR | WARNING | NOTICE | INFO | DEBUG\n");
 		return 0;
 	}
 
-	if (!parse_debug(argv[0], &level)) {
+	if (!debug_level_parse(argv[0], &log_level)) {
 		printf("Invalid debug level, must be one of\n");
-		print_debug_levels(stdout);
+		printf("\tERROR | WARNING | NOTICE | INFO | DEBUG\n");
 		return -1;
 	}
+
+	level = debug_level_to_int(log_level);
 
 	ret = ctdb_ctrl_set_debuglevel(ctdb, options.pnn, level);
 	if (ret != 0) {
