@@ -28,10 +28,10 @@
 #include "common/reqid.h"
 #include "common/srvid.h"
 #include "common/comm.h"
+#include "common/logging.h"
 
 #include "lib/util/tevent_unix.h"
 #include "lib/util/debug.h"
-#include "ctdb_logging.h"
 
 #include "protocol/protocol.h"
 #include "protocol/protocol_api.h"
