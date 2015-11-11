@@ -100,6 +100,7 @@ def CHECK_HEADER(conf, h, add_headers=False, lib=None):
                      type='nolink',
                      execute=0,
                      ccflags=ccflags,
+                     mandatory=False,
                      includes=cpppath,
                      uselib=lib.upper(),
                      msg="Checking for header %s" % h)
@@ -485,6 +486,7 @@ def CHECK_LDFLAGS(conf, ldflags):
     return conf.check(fragment='int main(void) { return 0; }\n',
                       execute=0,
                       ldflags=ldflags,
+                      mandatory=False,
                       msg="Checking linker accepts %s" % ldflags)
 
 
@@ -568,9 +570,9 @@ int foo()
 
         (ccflags, ldflags, cpppath) = library_flags(conf, lib)
         if shlib:
-            res = conf.check(features='c cshlib', fragment=fragment, lib=lib, uselib_store=lib, ccflags=ccflags, ldflags=ldflags, uselib=lib.upper())
+            res = conf.check(features='c cshlib', fragment=fragment, lib=lib, uselib_store=lib, ccflags=ccflags, ldflags=ldflags, uselib=lib.upper(), mandatory=False)
         else:
-            res = conf.check(lib=lib, uselib_store=lib, ccflags=ccflags, ldflags=ldflags, uselib=lib.upper())
+            res = conf.check(lib=lib, uselib_store=lib, ccflags=ccflags, ldflags=ldflags, uselib=lib.upper(), mandatory=False)
 
         if not res:
             if mandatory:
@@ -670,6 +672,7 @@ def SAMBA_CONFIG_H(conf, path=None):
         execute=0,
         ccflags='-fstack-protector',
         ldflags='-fstack-protector',
+        mandatory=False,
         msg='Checking if toolchain accepts -fstack-protector'):
             conf.ADD_CFLAGS('-fstack-protector')
             conf.ADD_LDFLAGS('-fstack-protector')

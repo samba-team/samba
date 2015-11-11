@@ -1,7 +1,7 @@
 # waf build tool for building IDL files with pidl
 
 import os
-import Build, Logs, Utils
+import Build, Logs, Utils, Configure
 from Configure import conf
 
 @conf
@@ -63,7 +63,12 @@ def SAMBA_CHECK_PYTHON_HEADERS(conf, mandatory=True):
     del(conf.env.defines['PYTHONARCHDIR'])
 
 def _check_python_headers(conf, mandatory):
-    conf.check_python_headers(mandatory=mandatory)
+    try:
+        Configure.ConfigurationError
+        conf.check_python_headers(mandatory=mandatory)
+    except Configure.ConfigurationError:
+        if mandatory:
+             raise
 
     if conf.env['PYTHON_VERSION'] > '3':
         abi_pattern = os.path.splitext(conf.env['pyext_PATTERN'])[0]
