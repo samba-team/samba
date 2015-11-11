@@ -35,5 +35,7 @@ enum debug_level {
 bool debug_level_parse(const char *log_string, enum debug_level *log_level);
 const char *debug_level_to_string(enum debug_level log_level);
 enum debug_level debug_level_from_string(const char *log_string);
+int debug_level_to_int(enum debug_level log_level);
+enum debug_level debug_level_from_int(int log_int);
 
 #endif /* __CTDB_LOGGING_H__ */

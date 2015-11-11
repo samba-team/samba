@@ -72,3 +72,21 @@ enum debug_level debug_level_from_string(const char *log_string)
 	/* Default debug level */
 	return DEBUG_ERR;
 }
+
+int debug_level_to_int(enum debug_level log_level)
+{
+	return (int)log_level;
+}
+
+enum debug_level debug_level_from_int(int level)
+{
+	enum debug_level log_level;
+
+	if (level >= 0 && level < ARRAY_SIZE(log_string_map)) {
+		log_level = log_string_map[level].log_level;
+	} else {
+		log_level = DEBUG_ERR;
+	}
+
+	return log_level;
+}
