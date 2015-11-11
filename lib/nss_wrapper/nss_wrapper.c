@@ -3613,10 +3613,9 @@ static int nwrap_files_getaddrinfo(const char *name,
 					 &_ai,
 					 skip_canonname);
 		if (rc != 0) {
-			/* FIXME: Investigate if this is nice to do... */
 			NWRAP_LOG(NWRAP_LOG_ERROR,
 				  "Error in converting he to ai! Skipping.");
-			continue;
+			return rc;
 		}
 		skip_canonname = true;
 
