@@ -3320,8 +3320,7 @@ static int nwrap_files_gethostbyname(const char *name, int af,
 				     struct hostent *result,
 				     struct nwrap_vector *addr_list)
 {
-	struct nwrap_entlist *el_head;
-	struct nwrap_entlist *el_cur;
+	struct nwrap_entlist *el;
 	struct hostent *he;
 	char *h_name_lower;
 	ENTRY e;
@@ -3370,9 +3369,9 @@ static int nwrap_files_gethostbyname(const char *name, int af,
 	}
 
 	/* Iterate through results */
-	el_head = (struct nwrap_entlist *)e_p->data;
-	for (el_cur = el_head; el_cur != NULL; el_cur = el_cur->next) {
-		he = &(el_cur->ed->ht);
+	for (el = (struct nwrap_entlist *)e_p->data; el != NULL; el = el->next)
+	{
+		he = &(el->ed->ht);
 
 		/* Filter by address familiy if provided */
 		if (af != AF_UNSPEC && he->h_addrtype != af) {
@@ -3394,7 +3393,7 @@ static int nwrap_files_gethostbyname(const char *name, int af,
 				  he->h_name);
 			he_found = true;
 		}
-		nwrap_vector_merge(addr_list, &el_cur->ed->nwrap_addrdata);
+		nwrap_vector_merge(addr_list, &el->ed->nwrap_addrdata);
 		result->h_addr_list = nwrap_vector_head(addr_list);
 	}
 
