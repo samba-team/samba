@@ -338,7 +338,7 @@ def build(bld):
 
     bld.SAMBA_SUBSYSTEM('ctdb-common-util',
                         source=bld.SUBDIR('common',
-                                          'system_util.c ctdb_logging.c'),
+                                          'system_util.c'),
                         includes='include',
                         deps='replace tevent tdb')
 

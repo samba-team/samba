@@ -45,7 +45,6 @@ bool fast_start;
 #include "common/srvid.c"
 #include "common/cmdline.c"
 #include "common/rb_tree.c"
-#include "common/ctdb_logging.c"
 #include "common/system_util.c"
 #include "common/reqid.c"
 #include "common/logging.c"
