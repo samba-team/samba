@@ -22,9 +22,9 @@
 #include <talloc.h>
 
 #include "lib/util/debug.h"
-#include "ctdb_logging.h"
 
-#include "rb_tree.h"
+#include "common/logging.h"
+#include "common/rb_tree.h"
 
 #define NO_MEMORY_FATAL(p) do { if (!(p)) { \
           DEBUG(DEBUG_CRIT,("Out of memory for %s at %s\n", #p, __location__)); \

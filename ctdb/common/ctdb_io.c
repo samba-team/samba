@@ -31,11 +31,11 @@
 #include "lib/util/dlinklist.h"
 #include "lib/util/debug.h"
 
-#include "ctdb_logging.h"
 #include "ctdb_private.h"
 #include "ctdb_client.h"
 
 #include "common/system.h"
+#include "common/logging.h"
 #include "common/common.h"
 
 #define QUEUE_BUFFER_SIZE	(16*1024)
