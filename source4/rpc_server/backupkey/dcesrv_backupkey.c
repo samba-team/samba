@@ -816,7 +816,7 @@ static WERROR create_heimdal_rsa_key(TALLOC_CTX *ctx, hx509_context *hctx,
 	size_t len;
 	int bits = 2048;
 	int RSA_returned_bits;
-	gnutls_x509_privkey gtls_key;
+	gnutls_x509_privkey_t gtls_key;
 	WERROR werr;
 
 	*rsa = NULL;
