@@ -31,10 +31,10 @@
 
 #include "ctdb_private.h"
 #include "ctdb_client.h"
-#include "ctdb_logging.h"
 
 #include "common/system.h"
 #include "common/common.h"
+#include "common/logging.h"
 
 const char *debug_extra = "";
 

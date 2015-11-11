@@ -35,11 +35,11 @@
 
 #include "ctdb_private.h"
 #include "ctdb_client.h"
-#include "ctdb_logging.h"
 
 #include "common/system.h"
 #include "common/cmdline.h"
 #include "common/common.h"
+#include "common/logging.h"
 
 
 /* List of SRVID requests that need to be processed */

@@ -33,12 +33,12 @@
 #include "lib/util/samba_util.h"
 
 #include "ctdb_private.h"
-#include "ctdb_logging.h"
 
 #include "common/reqid.h"
 #include "common/system.h"
 #include "common/cmdline.h"
 #include "common/common.h"
+#include "common/logging.h"
 
 static struct {
 	const char *nlist;

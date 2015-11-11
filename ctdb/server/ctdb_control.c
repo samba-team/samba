@@ -32,10 +32,10 @@
 
 #include "ctdb_private.h"
 #include "ctdb_client.h"
-#include "ctdb_logging.h"
 
 #include "common/reqid.h"
 #include "common/common.h"
+#include "common/logging.h"
 
 
 struct ctdb_control_state {

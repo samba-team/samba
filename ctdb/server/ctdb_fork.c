@@ -26,13 +26,13 @@
 
 #include "lib/util/debug.h"
 
-#include "ctdb_logging.h"
 #include "ctdb_private.h"
 #include "ctdb_client.h"
 
 #include "common/rb_tree.h"
 #include "common/system.h"
 #include "common/common.h"
+#include "common/logging.h"
 
 void ctdb_set_child_info(TALLOC_CTX *mem_ctx, const char *child_name_fmt, ...)
 {

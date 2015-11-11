@@ -28,7 +28,8 @@
 #include "lib/util/samba_util.h"
 
 #include "ctdb_private.h"
-#include "ctdb_logging.h"
+
+#include "common/logging.h"
 
 static void ctdb_statistics_update(struct tevent_context *ev,
 				   struct tevent_timer *te,

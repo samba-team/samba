@@ -29,9 +29,9 @@
 
 #include "ctdb_private.h"
 #include "ctdb_client.h"
-#include "ctdb_logging.h"
 
 #include "common/common.h"
+#include "common/logging.h"
 
 /* 
    returns the ctdb uptime

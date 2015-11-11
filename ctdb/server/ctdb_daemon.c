@@ -37,12 +37,12 @@
 #include "ctdb_version.h"
 #include "ctdb_private.h"
 #include "ctdb_client.h"
-#include "ctdb_logging.h"
 
 #include "common/rb_tree.h"
 #include "common/reqid.h"
 #include "common/system.h"
 #include "common/common.h"
+#include "common/logging.h"
 
 struct ctdb_client_pid_list {
 	struct ctdb_client_pid_list *next, *prev;

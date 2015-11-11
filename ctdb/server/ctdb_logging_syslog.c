@@ -28,7 +28,8 @@
 #include "lib/util/samba_util.h" /* get_myname */
 
 #include "ctdb_private.h"
-#include "ctdb_logging.h"
+
+#include "common/logging.h"
 
 /* Linux and FreeBSD define this appropriately - try good old /dev/log
  * for anything that doesn't... */

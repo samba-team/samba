@@ -24,11 +24,11 @@
 #include "lib/util/debug.h"
 
 #include "ctdb_private.h"
-#include "ctdb_logging.h"
 
 #include "common/rb_tree.h"
 #include "common/reqid.h"
 #include "common/common.h"
+#include "common/logging.h"
 
 
 #define SERVER_ID_KEY_SIZE 3
