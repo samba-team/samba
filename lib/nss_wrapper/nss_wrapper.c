@@ -5255,6 +5255,11 @@ valid_port:
 		return rc;
 	}
 
+	/*
+	 * If the socktype was not specified, duplicate
+	 * each ai returned, so that we have variants for
+	 * both UDP and TCP.
+	 */
 	if (hints->ai_socktype == 0) {
 		/* Add second ai */
 		struct addrinfo *ai_head = ai;
