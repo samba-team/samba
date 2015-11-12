@@ -77,12 +77,13 @@ class WerrorHtmlParser(object):
                 continue
             # now get the real data
             p_nodes = row_node.getElementsByTagName('p')
-            if len(p_nodes) != 2:   continue
-            if len(p_nodes[0].childNodes) != 3: continue
+            if len(p_nodes) != 3:   continue
+            if len(p_nodes[0].childNodes) != 1: continue
             if len(p_nodes[1].childNodes) != 1: continue
+            if len(p_nodes[2].childNodes) != 1: continue
             err_hex = str(p_nodes[0].childNodes[0].nodeValue)
-            err_name = str(p_nodes[0].childNodes[2].nodeValue)
-            err_desc = p_nodes[1].childNodes[0].nodeValue.encode('utf-8')
+            err_name = str(p_nodes[1].childNodes[0].nodeValue)
+            err_desc = p_nodes[2].childNodes[0].nodeValue.encode('utf-8')
             err_desc = err_desc.replace('"', '\\"').replace("\'", "\\'")
             # do some checking
             if not err_hex.startswith('0x'):    continue
@@ -345,7 +346,7 @@ if __name__ == '__main__':
                         action="store_true", dest="print_skipped", default=False,
                         help="print errors skipped during HTML parsing")
     opt_group.add_option("-q", "--quiet",
-                        action="store_false", dest="verbose", default=True,
+                        action="store_false", dest="verbose", default=False,
                         help="don't print warnings to stdout")
 
     opt_parser.add_option_group(opt_group)
