@@ -716,7 +716,7 @@ static bool vfswrap_init_asys_ctx(struct smbd_server_connection *conn)
 		return true;
 	}
 
-	ret = asys_context_init(&ctx, aio_pending_size);
+	ret = asys_context_init(&ctx, get_aio_pending_size());
 	if (ret != 0) {
 		DEBUG(1, ("asys_context_init failed: %s\n", strerror(ret)));
 		return false;

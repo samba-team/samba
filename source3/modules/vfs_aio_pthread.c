@@ -51,7 +51,7 @@ static bool init_aio_threadpool(struct tevent_context *ev_ctx,
 		return true;
 	}
 
-	ret = pthreadpool_init(aio_pending_size, pp_pool);
+	ret = pthreadpool_init(get_aio_pending_size(), pp_pool);
 	if (ret) {
 		errno = ret;
 		return false;
@@ -69,7 +69,7 @@ static bool init_aio_threadpool(struct tevent_context *ev_ctx,
 	}
 
 	DEBUG(10,("init_aio_threadpool: initialized with up to %d threads\n",
-		  aio_pending_size));
+		  get_aio_pending_size()));
 
 	return true;
 }

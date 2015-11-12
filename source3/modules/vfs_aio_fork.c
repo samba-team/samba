@@ -909,7 +909,7 @@ static int aio_fork_connect(vfs_handle_struct *handle, const char *service,
 	 * Essentially we want this to be unlimited unless smb.conf
 	 * says different.
 	 *********************************************************************/
-	aio_pending_size = 100;
+	set_aio_pending_size(100);
 	return 0;
 }
 

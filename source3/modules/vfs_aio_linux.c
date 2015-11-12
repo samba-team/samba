@@ -113,12 +113,12 @@ static bool init_aio_linux(struct vfs_handle_struct *handle)
 		goto fail;
 	}
 
-	if (io_queue_init(aio_pending_size, &io_ctx)) {
+	if (io_queue_init(get_aio_pending_size(), &io_ctx)) {
 		goto fail;
 	}
 
 	DEBUG(10,("init_aio_linux: initialized with up to %d events\n",
-		  aio_pending_size));
+		  get_aio_pending_size()));
 
 	return true;
 
@@ -333,8 +333,8 @@ static int aio_linux_connect(vfs_handle_struct *handle, const char *service,
 	 * Essentially we want this to be unlimited unless smb.conf
 	 * says different.
 	 *********************************************************************/
-	aio_pending_size = lp_parm_int(
-		SNUM(handle->conn), "aio_linux", "aio num events", 128);
+	set_aio_pending_size(lp_parm_int(
+		SNUM(handle->conn), "aio_linux", "aio num events", 128));
 	return SMB_VFS_NEXT_CONNECT(handle, service, user);
 }
 

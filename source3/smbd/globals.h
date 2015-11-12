@@ -22,7 +22,6 @@
 #include "librpc/gen_ndr/smbXsrv.h"
 #include "smbprofile.h"
 
-extern int aio_pending_size;
 extern int outstanding_aio_calls;
 
 #ifdef USE_DMAPI
