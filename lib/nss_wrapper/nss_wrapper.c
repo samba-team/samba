@@ -2567,35 +2567,6 @@ static struct nwrap_entlist *nwrap_entlist_init(struct nwrap_entdata *ed)
 	return el;
 }
 
-static bool nwrap_add_ai(char *const ip_addr, struct nwrap_entdata *const ed)
-{
-	ENTRY e;
-	ENTRY *p;
-	struct nwrap_entlist *el;
-
-	if (ip_addr == NULL) {
-		NWRAP_LOG(NWRAP_LOG_ERROR, "ip_addr NULL - can't add");
-		return false;
-	}
-
-	el = nwrap_entlist_init(ed);
-	if (el == NULL) {
-		return false;
-	}
-
-	e.key = ip_addr;
-	e.data = el;
-
-	p = hsearch(e, ENTER);
-	if (p == NULL) {
-		NWRAP_LOG(NWRAP_LOG_ERROR, "Hash table is full");
-		return false;
-	}
-
-	return true;
-}
-
-
 static bool nwrap_ed_inventarize_add_new(char *const h_name,
 					 struct nwrap_entdata *const ed)
 {
@@ -2881,7 +2852,7 @@ static bool nwrap_he_parse_line(struct nwrap_cache *nwrap, char *line)
 		return false;
 	}
 
-	ok = nwrap_add_ai(ip, ed);
+	ok = nwrap_ed_inventarize(ip, ed);
 	if (!ok) {
 		return false;
 	}
