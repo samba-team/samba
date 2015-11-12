@@ -3579,6 +3579,9 @@ static int nwrap_files_getaddrinfo(const char *name,
 					 skip_canonname);
 		if (rc2 != 0) {
 			NWRAP_LOG(NWRAP_LOG_ERROR, "Error converting he to ai");
+			if (ai_head != NULL) {
+				freeaddrinfo(ai_head);
+			}
 			return rc2;
 		}
 		skip_canonname = true;
