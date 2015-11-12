@@ -3562,6 +3562,7 @@ static int nwrap_files_getaddrinfo(const char *name,
 	bool skip_canonname = false;
 	ENTRY e = { 0 };
 	ENTRY *e_p = NULL;
+	int rc;
 	bool ok;
 
 	ok = nwrap_files_cache_reload(nwrap_he_global.cache);
@@ -3595,27 +3596,32 @@ static int nwrap_files_getaddrinfo(const char *name,
 	NWRAP_LOG(NWRAP_LOG_DEBUG, "Name: %s found.", h_name_lower);
 	SAFE_FREE(h_name_lower);
 
+	rc = EAI_NONAME;
 	for (el = (struct nwrap_entlist *)e_p->data; el != NULL; el = el->next)
 	{
-		int rc;
+		int rc2;
 
 		he = &(el->ed->ht);
 
 		if (hints->ai_family != AF_UNSPEC &&
-		    he->h_addrtype != hints->ai_family) {
+		    he->h_addrtype != hints->ai_family)
+		{
+			NWRAP_LOG(NWRAP_LOG_DEBUG,
+				  "Entry found but with wrong AF - "
+				  "remembering EAI_ADDRINFO.");
+			rc = EAI_ADDRFAMILY;
 			continue;
 		}
 
 		/* Function allocates memory and returns it in ai. */
-		rc = nwrap_convert_he_ai(he,
+		rc2 = nwrap_convert_he_ai(he,
 					 port,
 					 hints,
 					 &_ai,
 					 skip_canonname);
-		if (rc != 0) {
-			NWRAP_LOG(NWRAP_LOG_ERROR,
-				  "Error in converting he to ai! Skipping.");
-			return rc;
+		if (rc2 != 0) {
+			NWRAP_LOG(NWRAP_LOG_ERROR, "Error converting he to ai");
+			return rc2;
 		}
 		skip_canonname = true;
 
@@ -3628,9 +3634,14 @@ static int nwrap_files_getaddrinfo(const char *name,
 		ai_prev = _ai;
 	}
 
+	if (ai_head != NULL) {
+		rc = 0;
+	}
+
 	*ai = ai_head;
 	*ai_tail = _ai;
-	return 0;
+
+	return rc;
 }
 
 static struct hostent *nwrap_files_gethostbyaddr(const void *addr,
