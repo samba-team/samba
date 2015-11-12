@@ -52,7 +52,6 @@ def set_options(opt):
     opt.SAMBA3_ADD_OPTION('dnsupdate')
     opt.SAMBA3_ADD_OPTION('syslog')
     opt.SAMBA3_ADD_OPTION('automount')
-    opt.SAMBA3_ADD_OPTION('aio-support')
     opt.SAMBA3_ADD_OPTION('dmapi', default=None) # None means autodetection
     opt.SAMBA3_ADD_OPTION('fam', default=None) # None means autodetection
     opt.SAMBA3_ADD_OPTION('profiling-data', default=False)
@@ -546,27 +545,6 @@ return acl_get_perm_np(permset_d, perm);
 		'HAVE_OPENAT',
 		msg='Checking for openat',
 		headers='fcntl.h')
-
-    if Options.options.with_aio_support:
-        conf.CHECK_FUNCS_IN('aio_read', 'aio')
-        conf.CHECK_FUNCS_IN('aio_read', 'rt')
-        conf.CHECK_CODE('struct aiocb a; return aio_read(&a);',
-                        'HAVE_AIO',
-                        msg='Checking for asynchronous io support',
-                        headers='sys/types.h aio.h',
-                        lib='aio rt')
-        if conf.CONFIG_SET('HAVE_AIO'):
-            conf.CHECK_CODE('struct aiocb a; return aio_read(&a);', 'HAVE_AIO_READ', msg='Checking for aio_read', headers='aio.h', lib='aio rt')
-            conf.CHECK_CODE('struct aiocb a; return aio_write(&a);', 'HAVE_AIO_WRITE', msg='Checking for aio_write', headers='aio.h', lib='aio rt')
-            conf.CHECK_CODE('struct aiocb a; return aio_fsync(1, &a);', 'HAVE_AIO_FSYNC', msg='Checking for aio_fsync', headers='aio.h', lib='aio rt')
-            conf.CHECK_CODE('struct aiocb a; return aio_return(&a);', 'HAVE_AIO_RETURN', msg='Checking for aio_return', headers='aio.h', lib='aio rt')
-            conf.CHECK_CODE('struct aiocb a; return aio_error(&a);', 'HAVE_AIO_ERROR', msg='Checking for aio_error', headers='aio.h', lib='aio rt')
-            conf.CHECK_CODE('struct aiocb a; return aio_cancel(1, &a);', 'HAVE_AIO_CANCEL', msg='Checking for aio_cancel', headers='aio.h', lib='aio rt')
-            conf.CHECK_CODE('const struct aiocb * const a[1]; struct timespec t; return aio_suspend(a, 1, &t);', 'HAVE_AIO_SUSPEND', msg='Checking for aio_suspend', headers='aio.h', lib='aio rt')
-        if not conf.CONFIG_SET('HAVE_AIO'):
-            conf.DEFINE('HAVE_NO_AIO', '1')
-    else:
-        conf.DEFINE('HAVE_NO_AIO', '1')
 
     if host_os.rfind('linux') > -1:
 	conf.CHECK_FUNCS_IN('io_submit', 'aio')
@@ -1632,9 +1610,6 @@ main() {
 
     if Options.options.with_pthreadpool:
         default_shared_modules.extend(TO_LIST('vfs_aio_pthread'))
-
-    if conf.CONFIG_SET('HAVE_AIO'):
-        default_shared_modules.extend(TO_LIST('vfs_aio_posix'))
 
     if conf.CONFIG_SET('HAVE_LINUX_KERNEL_AIO'):
         default_shared_modules.extend(TO_LIST('vfs_aio_linux'))

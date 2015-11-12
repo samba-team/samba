@@ -62,7 +62,6 @@ CC="$CC" CFLAGS="-Wall -g -D_GNU_SOURCE -O3" ./configure -C \
 	--with-ctdb=/usr/include \
 	--without-ldb \
 	--without-dnsupdate \
-	--with-aio-support \
 	--disable-external-libtalloc \
 	--disable-external-libtdb \
 	$*
