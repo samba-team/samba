@@ -29,7 +29,7 @@
  Statics plus accessor functions.
 *****************************************************************************/
 
-static int aio_pending_size = 100;  /* tevent supports 100 signals SA_SIGINFO */
+static int aio_pending_size = 100; /* Current max threads. */
 static int outstanding_aio_calls;
 
 int get_aio_pending_size(void)
@@ -215,13 +215,6 @@ NTSTATUS schedule_aio_read_and_X(connection_struct *conn,
 	/* Only do this on non-chained and non-chaining reads not using the
 	 * write cache. */
         if (req_is_in_chain(smbreq) || (lp_write_cache_size(SNUM(conn)) != 0)) {
-		return NT_STATUS_RETRY;
-	}
-
-	if (get_outstanding_aio_calls() >= get_aio_pending_size()) {
-		DEBUG(10,("schedule_aio_read_and_X: Already have %d aio "
-			  "activities outstanding.\n",
-			  get_outstanding_aio_calls() ));
 		return NT_STATUS_RETRY;
 	}
 
@@ -484,19 +477,6 @@ NTSTATUS schedule_aio_write_and_X(connection_struct *conn,
 		return NT_STATUS_RETRY;
 	}
 
-	if (get_outstanding_aio_calls() >= get_aio_pending_size()) {
-		DEBUG(3,("schedule_aio_write_and_X: Already have %d aio "
-			 "activities outstanding.\n",
-			  get_outstanding_aio_calls() ));
-		DEBUG(10,("schedule_aio_write_and_X: failed to schedule "
-			  "aio_write for file %s, offset %.0f, len = %u "
-			  "(mid = %u)\n",
-			  fsp_str_dbg(fsp), (double)startpos,
-			  (unsigned int)numtowrite,
-			  (unsigned int)smbreq->mid ));
-		return NT_STATUS_RETRY;
-	}
-
 	bufsize = smb_size + 6*2;
 
 	if (!(aio_ex = create_aio_extra(NULL, fsp, bufsize))) {
@@ -744,13 +724,6 @@ NTSTATUS schedule_smb2_aio_read(connection_struct *conn,
 		return NT_STATUS_RETRY;
 	}
 
-	if (get_outstanding_aio_calls() >= get_aio_pending_size()) {
-		DEBUG(10,("smb2: Already have %d aio "
-			"activities outstanding.\n",
-			get_outstanding_aio_calls() ));
-		return NT_STATUS_RETRY;
-	}
-
 	/* Create the out buffer. */
 	*preadbuf = data_blob_talloc(ctx, NULL, smb_maxcnt);
 	if (preadbuf->data == NULL) {
@@ -897,13 +870,6 @@ NTSTATUS schedule_aio_smb2_write(connection_struct *conn,
 
 	/* Only do this on writes not using the write cache. */
 	if (lp_write_cache_size(SNUM(conn)) != 0) {
-		return NT_STATUS_RETRY;
-	}
-
-	if (get_outstanding_aio_calls() >= get_aio_pending_size()) {
-		DEBUG(3,("smb2: Already have %d aio "
-			"activities outstanding.\n",
-			get_outstanding_aio_calls() ));
 		return NT_STATUS_RETRY;
 	}
 

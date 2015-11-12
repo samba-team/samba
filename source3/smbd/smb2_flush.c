@@ -162,20 +162,6 @@ static struct tevent_req *smbd_smb2_flush_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	if (get_outstanding_aio_calls() >= get_aio_pending_size()) {
-		/* No more allowed aio. Synchronous flush. */
-		NTSTATUS status = sync_file(smbreq->conn, fsp, true);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(5,("sync_file for %s returned %s\n",
-				fsp_str_dbg(fsp),
-				nt_errstr(status)));
-			tevent_req_nterror(req, status);
-			return tevent_req_post(req, ev);
-		}
-		tevent_req_done(req);
-		return tevent_req_post(req, ev);
-	}
-
 	ret = flush_write_cache(fsp, SAMBA_SYNC_FLUSH);
 	if (ret == -1) {
 		tevent_req_nterror(req,  map_nt_error_from_unix(errno));
