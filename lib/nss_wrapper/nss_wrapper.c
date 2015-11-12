@@ -3513,7 +3513,7 @@ static int nwrap_files_getaddrinfo(const char *name,
 	struct hostent *he;
 	struct addrinfo *_ai = NULL;
 	struct addrinfo *ai_head = NULL;
-	struct addrinfo *ai_prev = NULL;
+	struct addrinfo *ai_cur = NULL;
 	char *h_name_lower;
 	size_t name_len;
 	char canon_name[DNS_NAME_MAX] = { 0 };
@@ -3586,10 +3586,10 @@ static int nwrap_files_getaddrinfo(const char *name,
 		if (ai_head == NULL) {
 			ai_head = _ai;
 		}
-		if (ai_prev != NULL) {
-			ai_prev->ai_next = _ai;
+		if (ai_cur != NULL) {
+			ai_cur->ai_next = _ai;
 		}
-		ai_prev = _ai;
+		ai_cur = _ai;
 	}
 
 	if (ai_head != NULL) {
