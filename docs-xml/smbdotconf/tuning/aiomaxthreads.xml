@@ -1,0 +1,19 @@
+<samba:parameter name="aio max threads"
+                 type="integer"
+                 context="G"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+  <para>
+    The integer parameter specifies the maximum number of
+    threads each smbd process will create when doing parallel asynchronous IO
+    calls. If the number of outstanding calls is greater than this
+    number the requests will not be refused but go onto a queue
+    and will be scheduled in turn as outstanding requests complete.
+  </para>
+
+  <related>aio read size</related>
+  <related>aio write size</related>
+</description>
+
+<value type="default">100</value>
+</samba:parameter>

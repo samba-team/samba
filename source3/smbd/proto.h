@@ -66,8 +66,6 @@ void srv_set_signing(struct smbXsrv_connection *conn,
 
 /* The following definitions come from smbd/aio.c  */
 
-int get_aio_pending_size(void);
-void set_aio_pending_size(int newsize);
 int get_outstanding_aio_calls(void);
 void increment_outstanding_aio_calls(void);
 void decrement_outstanding_aio_calls(void);

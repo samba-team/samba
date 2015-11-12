@@ -899,17 +899,6 @@ static int aio_fork_connect(vfs_handle_struct *handle, const char *service,
 				NULL, struct aio_fork_config,
 				return -1);
 
-	/*********************************************************************
-	 * How many threads to initialize ?
-	 * 100 per process seems insane as a default until you realize that
-	 * (a) Threads terminate after 1 second when idle.
-	 * (b) Throttling is done in SMB2 via the crediting algorithm.
-	 * (c) SMB1 clients are limited to max_mux (50) outstanding
-	 *     requests and Windows clients don't use this anyway.
-	 * Essentially we want this to be unlimited unless smb.conf
-	 * says different.
-	 *********************************************************************/
-	set_aio_pending_size(100);
 	return 0;
 }
 

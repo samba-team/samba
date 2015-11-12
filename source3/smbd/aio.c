@@ -29,18 +29,7 @@
  Statics plus accessor functions.
 *****************************************************************************/
 
-static int aio_pending_size = 100; /* Current max threads. */
 static int outstanding_aio_calls;
-
-int get_aio_pending_size(void)
-{
-	return aio_pending_size;
-}
-
-void set_aio_pending_size(int newsize)
-{
-	aio_pending_size = newsize;
-}
 
 int get_outstanding_aio_calls(void)
 {
