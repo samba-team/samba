@@ -5261,48 +5261,49 @@ valid_port:
 	 * both UDP and TCP.
 	 */
 	if (hints->ai_socktype == 0) {
-		/* Add second ai */
-		struct addrinfo *ai_head = ai;
-		struct addrinfo *ai_tmp;
-		struct addrinfo *ai_new_tail = ai_tail;
+		struct addrinfo *ai_cur;
 
-		/* Add at least one more struct */
-		do {
-			/* CHECKS! */
-			ai_tmp = malloc(sizeof(struct addrinfo));
-			memcpy(ai_tmp, ai_head, sizeof(struct addrinfo));
-			ai_tmp->ai_next = NULL;
+		/* freeaddrinfo() frees ai_canonname and ai so allocate them */
+		for (ai_cur = ai; ai_cur != NULL; ai_cur = ai_cur->ai_next) {
+			struct addrinfo *ai_new;
+
+			/* duplicate the current entry */
+
+			ai_new = malloc(sizeof(struct addrinfo));
+			if (ai_new == NULL) {
+				freeaddrinfo(ai);
+				return EAI_MEMORY;
+			}
+
+			memcpy(ai_new, ai_cur, sizeof(struct addrinfo));
+			ai_new->ai_next = NULL;
 
 			/* We need a deep copy or freeaddrinfo() will blow up */
-			if (ai_head->ai_canonname != NULL) {
-				ai_tmp->ai_canonname =
-					strdup(ai_head->ai_canonname);
-			}
-			/* ai_head should point inside hints. */
-			ai_tmp->ai_addr = ai_head->ai_addr;
-
-			if (ai_head->ai_flags == 0) {
-				ai_tmp->ai_flags = hints->ai_flags;
-			}
-			if (ai_head->ai_socktype == SOCK_DGRAM) {
-				ai_tmp->ai_socktype = SOCK_STREAM;
-			} else if (ai_head->ai_socktype == SOCK_STREAM) {
-				ai_tmp->ai_socktype = SOCK_DGRAM;
-			}
-			if (ai_head->ai_socktype == SOCK_DGRAM) {
-				ai_tmp->ai_protocol = IPPROTO_UDP;
-			} else if (ai_head->ai_socktype == SOCK_STREAM) {
-				ai_tmp->ai_protocol = IPPROTO_TCP;
+			if (ai_cur->ai_canonname != NULL) {
+				ai_new->ai_canonname =
+					strdup(ai_cur->ai_canonname);
 			}
 
-			ai_new_tail->ai_next = ai_tmp;
-			ai_new_tail = ai_tmp;
-
-			if (ai_head == ai_tail) {
-				break;
+			if (ai_cur->ai_socktype == SOCK_DGRAM) {
+				ai_new->ai_socktype = SOCK_STREAM;
+			} else if (ai_cur->ai_socktype == SOCK_STREAM) {
+				ai_new->ai_socktype = SOCK_DGRAM;
 			}
-			ai_head = ai_head->ai_next;
-		} while (1);
+			if (ai_cur->ai_protocol == IPPROTO_TCP) {
+				ai_new->ai_protocol = IPPROTO_UDP;
+			} else if (ai_cur->ai_protocol == IPPROTO_UDP) {
+				ai_new->ai_protocol = IPPROTO_TCP;
+			}
+
+			/* now insert the new entry */
+
+			ai_new->ai_next = ai_cur->ai_next;
+			ai_cur->ai_next = ai_new;
+
+			/* and move on (don't duplicate the new entry) */
+
+			ai_cur = ai_new;
+		}
 	}
 
 	*res = ai;
