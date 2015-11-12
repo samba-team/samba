@@ -52,6 +52,8 @@
 #include <unistd.h>
 #include <ctype.h>
 
+#include <netinet/in.h>
+
 #include <search.h>
 #include <assert.h>
 
@@ -5249,9 +5251,9 @@ valid_port:
 		ai->ai_socktype = SOCK_DGRAM;
 	}
 	if (ai->ai_protocol == 0 && ai->ai_socktype == SOCK_DGRAM) {
-		ai->ai_protocol = 17; /* UDP */
+		ai->ai_protocol = IPPROTO_UDP;
 	} else if (ai->ai_protocol == 0 && ai->ai_socktype == SOCK_STREAM) {
-		ai->ai_protocol = 6; /* TCP */
+		ai->ai_protocol = IPPROTO_TCP;
 	}
 
 	if (hints->ai_socktype == 0) {
@@ -5284,10 +5286,11 @@ valid_port:
 				ai_tmp->ai_socktype = SOCK_DGRAM;
 			}
 			if (ai_head->ai_socktype == SOCK_DGRAM) {
-				ai_tmp->ai_protocol = 17; /* UDP */
+				ai_tmp->ai_protocol = IPPROTO_UDP;
 			} else if (ai_head->ai_socktype == SOCK_STREAM) {
-				ai_tmp->ai_protocol = 6; /* TCP */
+				ai_tmp->ai_protocol = IPPROTO_TCP;
 			}
+
 			ai_new_tail->ai_next = ai_tmp;
 			ai_new_tail = ai_tmp;
 
