@@ -415,7 +415,7 @@ static struct GUID *get_cert_guid(struct torture_context *tctx,
 {
 	hx509_context hctx;
 	hx509_cert cert;
-	heim_bit_string subjectuniqid;
+	heim_bit_string issuer_unique_id;
 	DATA_BLOB data;
 	int hret;
 	uint32_t size;
@@ -430,7 +430,7 @@ static struct GUID *get_cert_guid(struct torture_context *tctx,
 		hx509_context_free(&hctx);
 		return NULL;
 	}
-	hret = hx509_cert_get_issuer_unique_id(hctx, cert, &subjectuniqid);
+	hret = hx509_cert_get_issuer_unique_id(hctx, cert, &issuer_unique_id);
 	if (hret) {
 		torture_comment(tctx, "error while getting the issuer_uniq_id\n");
 		hx509_cert_free(cert);
@@ -438,17 +438,17 @@ static struct GUID *get_cert_guid(struct torture_context *tctx,
 		return NULL;
 	}
 
-	/* The subjectuniqid is a bit string,
+	/* The issuer_unique_id is a bit string,
 	 * which means that the real size has to be divided by 8
 	 * to have the number of bytes
 	 */
 	hx509_cert_free(cert);
 	hx509_context_free(&hctx);
-	size = subjectuniqid.length / 8;
-	data = data_blob_const(subjectuniqid.data, size);
+	size = issuer_unique_id.length / 8;
+	data = data_blob_const(issuer_unique_id.data, size);
 
 	status = GUID_from_data_blob(&data, guid);
-	der_free_bit_string(&subjectuniqid);
+	der_free_bit_string(&issuer_unique_id);
 	if (!NT_STATUS_IS_OK(status)) {
 		return NULL;
 	}
