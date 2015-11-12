@@ -3511,7 +3511,7 @@ static int nwrap_files_getaddrinfo(const char *name,
 {
 	struct nwrap_entlist *el;
 	struct hostent *he;
-	struct addrinfo *_ai = NULL;
+	struct addrinfo *ai_new = NULL;
 	struct addrinfo *ai_head = NULL;
 	struct addrinfo *ai_cur = NULL;
 	char *h_name_lower;
@@ -3575,7 +3575,7 @@ static int nwrap_files_getaddrinfo(const char *name,
 		rc2 = nwrap_convert_he_ai(he,
 					 port,
 					 hints,
-					 &_ai,
+					 &ai_new,
 					 skip_canonname);
 		if (rc2 != 0) {
 			NWRAP_LOG(NWRAP_LOG_ERROR, "Error converting he to ai");
@@ -3587,12 +3587,12 @@ static int nwrap_files_getaddrinfo(const char *name,
 		skip_canonname = true;
 
 		if (ai_head == NULL) {
-			ai_head = _ai;
+			ai_head = ai_new;
 		}
 		if (ai_cur != NULL) {
-			ai_cur->ai_next = _ai;
+			ai_cur->ai_next = ai_new;
 		}
-		ai_cur = _ai;
+		ai_cur = ai_new;
 	}
 
 	if (ai_head != NULL) {
@@ -3600,7 +3600,7 @@ static int nwrap_files_getaddrinfo(const char *name,
 	}
 
 	*ai = ai_head;
-	*ai_tail = _ai;
+	*ai_tail = ai_new;
 
 	return rc;
 }
