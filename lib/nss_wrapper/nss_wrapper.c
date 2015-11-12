@@ -5238,11 +5238,10 @@ static int nwrap_getaddrinfo(const char *node,
 	}
 
 valid_port:
-	if (hints->ai_family == AF_UNSPEC || hints->ai_family == AF_INET) {
-		rc = inet_pton(AF_INET, node, &addr.in.v4);
-		if (rc == 1) {
-			addr.family = AF_INET;
-		}
+
+	rc = inet_pton(AF_INET, node, &addr.in.v4);
+	if (rc == 1) {
+		addr.family = AF_INET;
 	}
 #ifdef HAVE_IPV6
 	if (addr.family == AF_UNSPEC) {
@@ -5252,6 +5251,13 @@ valid_port:
 		}
 	}
 #endif
+
+	if ((addr.family != AF_UNSPEC) &&
+	    (hints->ai_family != AF_UNSPEC) &&
+	    (hints->ai_family != addr.family))
+	{
+		return EAI_ADDRFAMILY;
+	}
 
 	rc = nwrap_files_getaddrinfo(node, port, hints, &ai, &ai_tail);
 	if (rc != 0) {
