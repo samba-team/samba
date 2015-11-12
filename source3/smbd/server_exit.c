@@ -178,12 +178,6 @@ static void exit_server_common(enum server_exit_reason how,
 		serverid_deregister(messaging_server_id(msg_ctx));
 	}
 
-#ifdef WITH_DFS
-	if (dcelogin_atmost_once) {
-		dfs_unlogin();
-	}
-#endif
-
 #ifdef USE_DMAPI
 	/* Destroy Samba DMAPI session only if we are master smbd process */
 	if (am_parent) {

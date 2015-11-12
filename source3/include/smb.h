@@ -484,11 +484,6 @@ Offset  Data			length.
 
 #define SMB_SUCCESS 0  /* The request was successful. */
 
-#ifdef WITH_DFS
-void dfs_unlogin(void);
-extern int dcelogin_atmost_once;
-#endif
-
 #ifdef NOSTRDUP
 char *strdup(char *s);
 #endif
