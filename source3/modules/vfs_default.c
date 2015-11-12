@@ -866,14 +866,14 @@ static void vfswrap_asys_finished(struct tevent_context *ev,
 					uint16_t flags, void *p)
 {
 	struct asys_context *asys_ctx = (struct asys_context *)p;
-	struct asys_result results[outstanding_aio_calls];
+	struct asys_result results[get_outstanding_aio_calls()];
 	int i, ret;
 
 	if ((flags & TEVENT_FD_READ) == 0) {
 		return;
 	}
 
-	ret = asys_results(asys_ctx, results, outstanding_aio_calls);
+	ret = asys_results(asys_ctx, results, get_outstanding_aio_calls());
 	if (ret < 0) {
 		DEBUG(1, ("asys_results returned %s\n", strerror(-ret)));
 		return;

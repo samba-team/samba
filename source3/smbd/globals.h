@@ -22,8 +22,6 @@
 #include "librpc/gen_ndr/smbXsrv.h"
 #include "smbprofile.h"
 
-extern int outstanding_aio_calls;
-
 #ifdef USE_DMAPI
 struct smbd_dmapi_context;
 extern struct smbd_dmapi_context *dmapi_ctx;

@@ -24,8 +24,6 @@
 #include "messages.h"
 #include <tdb.h>
 
-int outstanding_aio_calls = 0;
-
 #ifdef USE_DMAPI
 struct smbd_dmapi_context *dmapi_ctx = NULL;
 #endif
