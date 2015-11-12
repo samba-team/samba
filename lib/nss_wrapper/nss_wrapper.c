@@ -3508,12 +3508,10 @@ int gethostbyname_r(const char *name,
 static int nwrap_files_getaddrinfo(const char *name,
 				   unsigned short port,
 				   const struct addrinfo *hints,
-				   struct addrinfo **ai,
-				   struct addrinfo **ai_tail)
+				   struct addrinfo **ai)
 {
 	struct nwrap_entlist *el;
 	struct hostent *he;
-	struct addrinfo *ai_new = NULL;
 	struct addrinfo *ai_head = NULL;
 	struct addrinfo *ai_cur = NULL;
 	char *h_name_lower;
@@ -3560,6 +3558,7 @@ static int nwrap_files_getaddrinfo(const char *name,
 	for (el = (struct nwrap_entlist *)e_p->data; el != NULL; el = el->next)
 	{
 		int rc2;
+		struct addrinfo *ai_new = NULL;
 
 		he = &(el->ed->ht);
 
@@ -3602,7 +3601,6 @@ static int nwrap_files_getaddrinfo(const char *name,
 	}
 
 	*ai = ai_head;
-	*ai_tail = ai_new;
 
 	return rc;
 }
@@ -5135,7 +5133,6 @@ static int nwrap_getaddrinfo(const char *node,
 			     struct addrinfo **res)
 {
 	struct addrinfo *ai = NULL;
-	struct addrinfo *ai_tail;
 	unsigned short port = 0;
 	struct {
 		int family;
@@ -5236,7 +5233,7 @@ valid_port:
 		return EAI_ADDRFAMILY;
 	}
 
-	rc = nwrap_files_getaddrinfo(node, port, hints, &ai, &ai_tail);
+	rc = nwrap_files_getaddrinfo(node, port, hints, &ai);
 	if (rc != 0) {
 		int ret;
 		struct addrinfo *p = NULL;
