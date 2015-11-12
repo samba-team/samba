@@ -5055,11 +5055,22 @@ static int nwrap_convert_he_ai(const struct hostent *he,
 		return EAI_MEMORY;
 	}
 
-	ai->ai_flags = 0;
+	ai->ai_flags = hints->ai_flags;
 	ai->ai_family = he->h_addrtype;
 	ai->ai_socktype = hints->ai_socktype;
 	ai->ai_protocol = hints->ai_protocol;
 	ai->ai_canonname = NULL;
+
+	if (ai->ai_socktype == 0) {
+		ai->ai_socktype = SOCK_DGRAM;
+	}
+	if (ai->ai_protocol == 0) {
+		if (ai->ai_socktype == SOCK_DGRAM) {
+			ai->ai_protocol = IPPROTO_UDP;
+		} else if (ai->ai_socktype == SOCK_STREAM) {
+			ai->ai_protocol = IPPROTO_TCP;
+		}
+	}
 
 	ai->ai_addrlen = socklen;
 	ai->ai_addr = (void *)(ai + 1);
@@ -5242,18 +5253,6 @@ valid_port:
 		}
 
 		return rc;
-	}
-
-	if (ai->ai_flags == 0) {
-		ai->ai_flags = hints->ai_flags;
-	}
-	if (ai->ai_socktype == 0) {
-		ai->ai_socktype = SOCK_DGRAM;
-	}
-	if (ai->ai_protocol == 0 && ai->ai_socktype == SOCK_DGRAM) {
-		ai->ai_protocol = IPPROTO_UDP;
-	} else if (ai->ai_protocol == 0 && ai->ai_socktype == SOCK_STREAM) {
-		ai->ai_protocol = IPPROTO_TCP;
 	}
 
 	if (hints->ai_socktype == 0) {
