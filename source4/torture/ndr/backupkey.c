@@ -154,7 +154,11 @@ struct torture_suite *ndr_backupkey_suite(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = torture_suite_create(ctx, "backupkey");
 
-	torture_suite_add_ndr_pull_fn_test(suite, bkrp_exported_RSA_key_pair, exported_rsa_ndr, NDR_BUFFERS|NDR_SCALARS, NULL);
+	torture_suite_add_ndr_pullpush_test(suite,
+					    bkrp_exported_RSA_key_pair,
+					    data_blob_const(exported_rsa_ndr,
+							    sizeof(exported_rsa_ndr)),
+					    NULL);
 
 	return suite;
 }
