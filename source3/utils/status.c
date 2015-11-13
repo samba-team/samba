@@ -500,17 +500,6 @@ int main(int argc, const char *argv[])
 	}
 
 	if ( show_shares ) {
-		if (verbose) {
-			db_path = lock_path("connections.tdb");
-			if (db_path == NULL) {
-				d_printf("Out of memory - exiting\n");
-				ret = -1;
-				goto done;
-			}
-			d_printf("Opened %s\n", db_path);
-			TALLOC_FREE(db_path);
-		}
-
 		if (brief) {
 			goto done;
 		}
