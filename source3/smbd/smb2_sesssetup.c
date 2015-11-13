@@ -297,6 +297,8 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 				 xconn->smb2.server.dialect));
 			return NT_STATUS_ACCESS_DENIED;
 		}
+	} else {
+		x->global->channels[0].encryption_cipher = xconn->smb2.server.cipher;
 	}
 
 	if (x->global->encryption_flags & SMBXSRV_ENCRYPTION_DESIRED) {
