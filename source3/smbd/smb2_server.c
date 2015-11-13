@@ -2004,6 +2004,65 @@ NTSTATUS smbd_smb2_request_verify_sizes(struct smbd_smb2_request *req,
 	return NT_STATUS_OK;
 }
 
+bool smbXsrv_is_encrypted(uint8_t encryption_flags)
+{
+	return (!(encryption_flags & SMBXSRV_PROCESSED_UNENCRYPTED_PACKET)
+		&&
+		(encryption_flags & (SMBXSRV_PROCESSED_ENCRYPTED_PACKET |
+				     SMBXSRV_ENCRYPTION_DESIRED |
+				     SMBXSRV_ENCRYPTION_REQUIRED)));
+}
+
+bool smbXsrv_is_partially_encrypted(uint8_t encryption_flags)
+{
+	return ((encryption_flags & SMBXSRV_PROCESSED_ENCRYPTED_PACKET) &&
+		(encryption_flags & SMBXSRV_PROCESSED_UNENCRYPTED_PACKET));
+}
+
+/* Set a flag if not already set, return true if set */
+bool smbXsrv_set_crypto_flag(uint8_t *flags, uint8_t flag)
+{
+	if ((flag == 0) || (*flags & flag)) {
+		return false;
+	}
+
+	*flags |= flag;
+	return true;
+}
+
+/*
+ * Update encryption state tracking flags, this can be used to
+ * determine whether whether the session or tcon is "encrypted".
+ */
+static void smb2srv_update_crypto_flags(struct smbd_smb2_request *req,
+					uint16_t opcode,
+					bool *update_session_globalp,
+					bool *update_tcon_globalp)
+{
+	/* Default: assume unecrypted */
+	struct smbXsrv_session *session = req->session;
+	struct smbXsrv_tcon *tcon = req->tcon;
+	uint8_t encrypt_flag = SMBXSRV_PROCESSED_UNENCRYPTED_PACKET;
+	bool update_session = false;
+	bool update_tcon = false;
+
+	if (req->was_encrypted && req->do_encryption) {
+		encrypt_flag = SMBXSRV_PROCESSED_ENCRYPTED_PACKET;
+	}
+
+	update_session |= smbXsrv_set_crypto_flag(
+		&session->global->encryption_flags, encrypt_flag);
+
+	if (tcon) {
+		update_tcon |= smbXsrv_set_crypto_flag(
+			&tcon->global->encryption_flags, encrypt_flag);
+	}
+
+	*update_session_globalp = update_session;
+	*update_tcon_globalp = update_tcon;
+	return;
+}
+
 NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 {
 	struct smbXsrv_connection *xconn = req->xconn;
@@ -2238,6 +2297,28 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 
 	if (req->was_encrypted || encryption_desired) {
 		req->do_encryption = true;
+	}
+
+	if (req->session) {
+		bool update_session_global = false;
+		bool update_tcon_global = false;
+
+		smb2srv_update_crypto_flags(req, opcode,
+					    &update_session_global,
+					    &update_tcon_global);
+
+		if (update_session_global) {
+			status = smbXsrv_session_update(x);
+			if (!NT_STATUS_IS_OK(status)) {
+				return smbd_smb2_request_error(req, status);
+			}
+		}
+		if (update_tcon_global) {
+			status = smbXsrv_tcon_update(req->tcon);
+			if (!NT_STATUS_IS_OK(status)) {
+				return smbd_smb2_request_error(req, status);
+			}
+		}
 	}
 
 	if (call->fileid_ofs != 0) {

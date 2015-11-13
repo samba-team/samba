@@ -636,6 +636,9 @@ NTSTATUS smbXsrv_open_global_traverse(
 	void *private_data);
 
 NTSTATUS smbXsrv_open_cleanup(uint64_t persistent_id);
+bool smbXsrv_is_encrypted(uint8_t encryption_flags);
+bool smbXsrv_is_partially_encrypted(uint8_t encryption_flags);
+bool smbXsrv_set_crypto_flag(uint8_t *flags, uint8_t flag);
 
 struct smbd_smb2_send_queue {
 	struct smbd_smb2_send_queue *prev, *next;

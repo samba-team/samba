@@ -118,7 +118,9 @@ interface smbXsrv
 
 	typedef [public,bitmap8bit] bitmap {
 		SMBXSRV_ENCRYPTION_REQUIRED		= 0x01,
-		SMBXSRV_ENCRYPTION_DESIRED		= 0x02
+		SMBXSRV_ENCRYPTION_DESIRED		= 0x02,
+		SMBXSRV_PROCESSED_ENCRYPTED_PACKET	= 0x04,
+		SMBXSRV_PROCESSED_UNENCRYPTED_PACKET	= 0x08
 	} smbXsrv_encrpytion_flags;
 
 	typedef struct {
