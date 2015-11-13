@@ -5,7 +5,7 @@
  <description>
     <para>Many Windows applications (including the Windows 98 explorer
     shell) seem to confuse flushing buffer contents to disk with doing
-    a sync to disk. Under UNIX, a sync call forces the process to be
+    a sync to disk. Under UNIX, a sync call forces the thread to be
     suspended until the kernel has ensured that all outstanding data in
     kernel disk buffers has been safely stored onto stable storage.
     This is very slow and should only be done rarely. Setting this
@@ -17,6 +17,10 @@
     on crashes, so there is little danger in this default setting. In
     addition, this fixes many performance problems that people have
     reported with the new Windows98 explorer shell file copies.</para>
+    <para>The flush request from SMB2/3 clients is handled
+    asynchronously, so for these clients setting the parameter
+    to <constant>yes</constant> does not block the processing of other
+    requests in the smbd process.</para>
 </description>
 
 <related>sync always</related>
