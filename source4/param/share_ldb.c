@@ -445,7 +445,7 @@ static NTSTATUS sldb_set(struct share_context *ctx, const char *name, struct sha
 	TALLOC_CTX *tmp_ctx;
 	NTSTATUS ret;
 	bool do_rename = false;
-	char *newname;
+	char *newname = NULL;
 	int err, i;
 
 	if (!name) {
