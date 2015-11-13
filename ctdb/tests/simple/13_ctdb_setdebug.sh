@@ -37,6 +37,7 @@ set_and_check_debug ()
 {
     local node="$1"
     local level="$2"
+    local levelstr="${3:-$level}"
 
     echo "Setting debug level on node ${node} to ${level}."
     try_command_on_node $node "$CTDB setdebug ${level}"
@@ -44,8 +45,8 @@ set_and_check_debug ()
     local check_debug
     get_debug $node
 
-    if [ "$level" != "$check_debug" ] ; then
-	echo "BAD: Debug level should have changed to \"$level\" but it is \"$check_debug\"."
+    if [ "$levelstr" != "$check_debug" ] ; then
+	echo "BAD: Debug level should have changed to \"$levelstr\" but it is \"$check_debug\"."
 	testfailures=1
     fi
 }
@@ -60,6 +61,15 @@ for new_debug in $levels ; do
 
     echo
     set_and_check_debug $test_node "$new_debug"
+done
+
+i=0
+for new_debug in $levels ; do
+    [ "$initial_debug" != "$i" ] || continue
+
+    echo
+    set_and_check_debug $test_node "$i" "$new_debug"
+    i=$[ $i + 1 ]
 done
 
 if [ "$testfailures" != 1 ] ; then
