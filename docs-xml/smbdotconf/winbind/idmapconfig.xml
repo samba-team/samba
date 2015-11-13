@@ -1,4 +1,4 @@
-<samba:parameter name="idmap config:OPTION"
+<samba:parameter name="idmap config DOMAIN : OPTION"
                  context="G"
                  type="string"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
