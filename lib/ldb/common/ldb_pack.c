@@ -77,7 +77,7 @@ int ldb_pack_data(struct ldb_context *ldb,
 		  struct ldb_val *data)
 {
 	unsigned int i, j, real_elements=0;
-	size_t size;
+	size_t size, dn_len, attr_len, value_len;
 	const char *dn;
 	uint8_t *p;
 	size_t len;
@@ -91,8 +91,19 @@ int ldb_pack_data(struct ldb_context *ldb,
 	/* work out how big it needs to be */
 	size = 8;
 
-	size += 1 + strlen(dn);
+	size += 1;
 
+	dn_len = strlen(dn);
+	if (size + dn_len < size) {
+		errno = ENOMEM;
+		return -1;
+	}
+	size += dn_len;
+
+	/*
+	 * First calcuate the buffer size we need, and check for
+	 * overflows
+	 */
 	for (i=0;i<message->num_elements;i++) {
 		if (attribute_storable_values(&message->elements[i]) == 0) {
 			continue;
@@ -100,9 +111,32 @@ int ldb_pack_data(struct ldb_context *ldb,
 
 		real_elements++;
 
-		size += 1 + strlen(message->elements[i].name) + 4;
+		if (size + 5 < size) {
+			errno = ENOMEM;
+			return -1;
+		}
+		size += 5;
+
+		attr_len = strlen(message->elements[i].name);
+		if (size + attr_len < size) {
+			errno = ENOMEM;
+			return -1;
+		}
+		size += attr_len;
+
 		for (j=0;j<message->elements[i].num_values;j++) {
-			size += 4 + message->elements[i].values[j].length + 1;
+			if (size + 5 < size) {
+				errno = ENOMEM;
+				return -1;
+			}
+			size += 5;
+
+			value_len = message->elements[i].values[j].length;
+			if (size + value_len < size) {
+				errno = ENOMEM;
+				return -1;
+			}
+			size += value_len;
 		}
 	}
 
@@ -121,7 +155,7 @@ int ldb_pack_data(struct ldb_context *ldb,
 
 	/* the dn needs to be packed so we can be case preserving
 	   while hashing on a case folded dn */
-	len = strlen(dn);
+	len = dn_len;
 	memcpy(p, dn, len+1);
 	p += len + 1;
 
@@ -146,7 +180,7 @@ int ldb_pack_data(struct ldb_context *ldb,
 	return 0;
 }
 
-static bool ldb_consume_element_data(uint8_t **pp, unsigned int *premaining)
+static bool ldb_consume_element_data(uint8_t **pp, size_t *premaining)
 {
 	unsigned int remaining = *premaining;
 	uint8_t *p = *pp;
@@ -155,13 +189,20 @@ static bool ldb_consume_element_data(uint8_t **pp, unsigned int *premaining)
 	int j;
 
 	p += 4;
+	if (remaining < 4) {
+		return false;
+	}
 	remaining -= 4;
 	for (j = 0; j < num_values; j++) {
 		len = pull_uint32(p, 0);
-		if (len > remaining - 5) {
+		if (remaining < 5) {
 			return false;
 		}
-		remaining -= len + 4 + 1;
+		remaining -= 5;
+		if (len > remaining) {
+			return false;
+		}
+		remaining -= len;
 		p += len + 4 + 1;
 	}
 
@@ -186,7 +227,8 @@ int ldb_unpack_data_only_attr_list(struct ldb_context *ldb,
 				   unsigned int *nb_elements_in_db)
 {
 	uint8_t *p;
-	unsigned int remaining;
+	size_t remaining;
+	size_t dn_len;
 	unsigned int i, j;
 	unsigned format;
 	unsigned int nelem = 0;
@@ -220,8 +262,12 @@ int ldb_unpack_data_only_attr_list(struct ldb_context *ldb,
 		break;
 
 	case LDB_PACKING_FORMAT:
-		len = strnlen((char *)p, remaining);
-		if (len == remaining) {
+		/*
+		 * With this check, we know that the DN at p is \0
+		 * terminated.
+		 */
+		dn_len = strnlen((char *)p, remaining);
+		if (dn_len == remaining) {
 			errno = EIO;
 			goto failed;
 		}
@@ -230,8 +276,17 @@ int ldb_unpack_data_only_attr_list(struct ldb_context *ldb,
 			errno = ENOMEM;
 			goto failed;
 		}
-		remaining -= len + 1;
-		p += len + 1;
+		/*
+		 * Redundant: by definition, remaining must be more
+		 * than one less than dn_len, as otherwise it would be
+		 * == dn_len
+		 */
+		if (remaining < dn_len + 1) {
+			errno = EIO;
+			goto failed;
+		}
+		remaining -= dn_len + 1;
+		p += dn_len + 1;
 		break;
 
 	default:
@@ -248,15 +303,12 @@ int ldb_unpack_data_only_attr_list(struct ldb_context *ldb,
 		goto failed;
 	}
 
-	message->elements = talloc_array(message, struct ldb_message_element,
-					 message->num_elements);
+	message->elements = talloc_zero_array(message, struct ldb_message_element,
+					      message->num_elements);
 	if (!message->elements) {
 		errno = ENOMEM;
 		goto failed;
 	}
-
-	memset(message->elements, 0,
-	       message->num_elements * sizeof(struct ldb_message_element));
 
 	for (i=0;i<message->num_elements;i++) {
 		const char *attr = NULL;
@@ -307,6 +359,10 @@ int ldb_unpack_data_only_attr_list(struct ldb_context *ldb,
 			}
 
 			if (!keep) {
+				if (remaining < (attr_len + 1)) {
+					errno = EIO;
+					goto failed;
+				}
 				remaining -= attr_len + 1;
 				p += attr_len + 1;
 				if (!ldb_consume_element_data(&p, &remaining)) {
@@ -323,6 +379,11 @@ int ldb_unpack_data_only_attr_list(struct ldb_context *ldb,
 			goto failed;
 		}
 		element->flags = 0;
+
+		if (remaining < (attr_len + 1)) {
+			errno = EIO;
+			goto failed;
+		}
 		remaining -= attr_len + 1;
 		p += attr_len + 1;
 		element->num_values = pull_uint32(p, 0);
@@ -337,10 +398,24 @@ int ldb_unpack_data_only_attr_list(struct ldb_context *ldb,
 			}
 		}
 		p += 4;
+		if (remaining < 4) {
+			errno = EIO;
+			goto failed;
+		}
 		remaining -= 4;
 		for (j = 0; j < element->num_values; j++) {
+			if (remaining < 5) {
+				errno = EIO;
+				goto failed;
+			}
+			remaining -= 5;
+
 			len = pull_uint32(p, 0);
-			if (len > remaining-5) {
+			if (remaining < len) {
+				errno = EIO;
+				goto failed;
+			}
+			if (len + 1 < len) {
 				errno = EIO;
 				goto failed;
 			}
@@ -355,21 +430,28 @@ int ldb_unpack_data_only_attr_list(struct ldb_context *ldb,
 			       len);
 			element->values[j].data[len] = 0;
 
-			remaining -= len+4+1;
+			remaining -= len;
 			p += len+4+1;
 		}
 		nelem++;
 	}
 	/*
 	 * Adapt the number of elements to the real number of unpacked elements,
-	 * it means that we overallocated elements array, I guess it's not that
-	 * bad.
+	 * it means that we overallocated elements array.
 	 */
 	message->num_elements = nelem;
 
+	/*
+	 * Shrink the allocated size.  On current talloc behaviour
+	 * this will help if we skipped 32 or more attributes.
+	 */
+	message->elements = talloc_realloc(message, message->elements,
+					   struct ldb_message_element,
+					   message->num_elements);
+
 	if (remaining != 0) {
 		ldb_debug(ldb, LDB_DEBUG_ERROR,
-			  "Error: %d bytes unread in ldb_unpack_data_only_attr_list",
+			  "Error: %zu bytes unread in ldb_unpack_data_only_attr_list",
 			  remaining);
 	}
 
