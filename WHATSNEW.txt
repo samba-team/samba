@@ -17,6 +17,11 @@ Nothing special.
 NEW FEATURES
 ============
 
+Flush requests from SMB2/3 clients are handled asynchronously and do
+not block the processing of other requests. Note that 'strict sync'
+has to be set to 'yes' for Samba to honor flush requests from SMB
+clients.
+
 WINS nsswitch module
 ====================
 
@@ -34,6 +39,7 @@ smb.conf changes
 
   Parameter Name		Description		Default
   --------------		-----------		-------
+  aio max threads               New                     100
 
 KNOWN ISSUES
 ============
