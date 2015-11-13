@@ -41,6 +41,17 @@ smb.conf changes
   --------------		-----------		-------
   aio max threads               New                     100
 
+CTDB changes
+------------
+
+* The CTDB tunable parameter EventScriptTimeoutCount has been renamed
+  to MonitorTimeoutCount
+
+  It has only ever been used to limit timed-out monitor events.
+
+  Configurations containing CTDB_SET_EventScriptTimeoutCount=<n> will
+  cause CTDB to fail at startup.  Useful messages will be logged.
+
 KNOWN ISSUES
 ============
 
