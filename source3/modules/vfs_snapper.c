@@ -1404,7 +1404,7 @@ static NTSTATUS snapper_create_snap_call(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	DBusMessage *req_msg;
 	DBusMessage *rsp_msg;
-	uint32_t snap_id;
+	uint32_t snap_id = 0;
 	char *snap_path;
 
 	status = snapper_create_snap_pack(mem_ctx,
