@@ -302,23 +302,6 @@ def check_duplicate_sources(bld, tgt_list):
 
     return True
 
-
-def check_orphaned_targets(bld, tgt_list):
-    '''check if any build targets are orphaned'''
-
-    target_dict = LOCAL_CACHE(bld, 'TARGET_TYPE')
-
-    debug('deps: checking for orphaned targets')
-
-    for t in tgt_list:
-        if getattr(t, 'samba_used', False):
-            continue
-        type = target_dict[t.sname]
-        if not type in ['BINARY', 'LIBRARY', 'MODULE', 'ET', 'PYTHON']:
-            if re.search('^PIDL_', t.sname) is None:
-                Logs.warn("Target %s of type %s is unused by any other target" % (t.sname, type))
-
-
 def check_group_ordering(bld, tgt_list):
     '''see if we have any dependencies that violate the group ordering
 
@@ -1150,8 +1133,6 @@ def check_project_rules(bld):
         debug("deps: %s: %f" % (f, time.clock() - tstart))
 
     debug('deps: project rules stage1 completed')
-
-    #check_orphaned_targets(bld, tgt_list)
 
     if not check_duplicate_sources(bld, tgt_list):
         Logs.error("Duplicate sources present - aborting")
