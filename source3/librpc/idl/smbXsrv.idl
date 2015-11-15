@@ -124,7 +124,9 @@ interface smbXsrv
 	} smbXsrv_encrpytion_flags;
 
 	typedef [public,bitmap8bit] bitmap {
-		SMBXSRV_SIGNING_REQUIRED		= 0x01
+		SMBXSRV_SIGNING_REQUIRED		= 0x01,
+		SMBXSRV_PROCESSED_SIGNED_PACKET		= 0x02,
+		SMBXSRV_PROCESSED_UNSIGNED_PACKET	= 0x04
 	} smbXsrv_signing_flags;
 
 	typedef struct {
@@ -275,6 +277,7 @@ interface smbXsrv
 		 * for SMB1 this is the session that the tcon was opened on
 		 */
 		uint32					session_global_id;
+		smbXsrv_signing_flags                   signing_flags;
 	} smbXsrv_tcon_global0;
 
 	typedef union {

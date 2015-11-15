@@ -2039,28 +2039,59 @@ static void smb2srv_update_crypto_flags(struct smbd_smb2_request *req,
 					bool *update_session_globalp,
 					bool *update_tcon_globalp)
 {
-	/* Default: assume unecrypted */
+	/* Default: assume unecrypted and unsigned */
 	struct smbXsrv_session *session = req->session;
 	struct smbXsrv_tcon *tcon = req->tcon;
 	uint8_t encrypt_flag = SMBXSRV_PROCESSED_UNENCRYPTED_PACKET;
+	uint8_t sign_flag = SMBXSRV_PROCESSED_UNSIGNED_PACKET;
 	bool update_session = false;
 	bool update_tcon = false;
 
 	if (req->was_encrypted && req->do_encryption) {
 		encrypt_flag = SMBXSRV_PROCESSED_ENCRYPTED_PACKET;
+		sign_flag = SMBXSRV_PROCESSED_SIGNED_PACKET;
+	} else {
+		/* Unencrypted packet, can be signed */
+		if (req->do_signing) {
+			sign_flag = SMBXSRV_PROCESSED_SIGNED_PACKET;
+		} else if (opcode == SMB2_OP_CANCEL) {
+			/* Cancel requests are allowed to skip signing */
+			sign_flag &= ~SMBXSRV_PROCESSED_UNSIGNED_PACKET;
+		}
 	}
 
 	update_session |= smbXsrv_set_crypto_flag(
 		&session->global->encryption_flags, encrypt_flag);
+	update_session |= smbXsrv_set_crypto_flag(
+		&session->global->signing_flags, sign_flag);
 
 	if (tcon) {
 		update_tcon |= smbXsrv_set_crypto_flag(
 			&tcon->global->encryption_flags, encrypt_flag);
+		update_tcon |= smbXsrv_set_crypto_flag(
+			&tcon->global->signing_flags, sign_flag);
 	}
 
 	*update_session_globalp = update_session;
 	*update_tcon_globalp = update_tcon;
 	return;
+}
+
+bool smbXsrv_is_signed(uint8_t signing_flags)
+{
+	/*
+	 * Signing is always enabled, so unless we got an unsigned
+	 * packet and at least one signed packet that was not
+	 * encrypted, the session or tcon is "signed".
+	 */
+	return (!(signing_flags & SMBXSRV_PROCESSED_UNSIGNED_PACKET) &&
+		(signing_flags & SMBXSRV_PROCESSED_SIGNED_PACKET));
+}
+
+bool smbXsrv_is_partially_signed(uint8_t signing_flags)
+{
+	return ((signing_flags & SMBXSRV_PROCESSED_UNSIGNED_PACKET) &&
+		(signing_flags & SMBXSRV_PROCESSED_SIGNED_PACKET));
 }
 
 NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
