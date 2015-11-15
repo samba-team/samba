@@ -2125,7 +2125,7 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 	session_status = smbd_smb2_request_check_session(req);
 	x = req->session;
 	if (x != NULL) {
-		signing_required = x->global->signing_required;
+		signing_required = x->global->signing_flags & SMBXSRV_SIGNING_REQUIRED;
 		encryption_desired = x->global->encryption_flags & SMBXSRV_ENCRYPTION_DESIRED;
 		encryption_required = x->global->encryption_flags & SMBXSRV_ENCRYPTION_REQUIRED;
 	}

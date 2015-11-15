@@ -123,6 +123,10 @@ interface smbXsrv
 		SMBXSRV_PROCESSED_UNENCRYPTED_PACKET	= 0x08
 	} smbXsrv_encrpytion_flags;
 
+	typedef [public,bitmap8bit] bitmap {
+		SMBXSRV_SIGNING_REQUIRED		= 0x01
+	} smbXsrv_signing_flags;
+
 	typedef struct {
 		server_id				server_id;
 		[charset(UTF8),string] char		local_address[];
@@ -148,7 +152,7 @@ interface smbXsrv
 		uint32					auth_session_info_seqnum;
 		auth_session_info			*auth_session_info;
 		uint16					connection_dialect;
-		boolean8				signing_required;
+		smbXsrv_signing_flags			signing_flags;
 		smbXsrv_encrpytion_flags		encryption_flags;
 		[noprint] DATA_BLOB			signing_key;
 		[noprint] DATA_BLOB			encryption_key;
