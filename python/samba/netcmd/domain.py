@@ -31,6 +31,7 @@ import ctypes
 import random
 import tempfile
 import logging
+import subprocess
 from getpass import getpass
 from samba.net import Net, LIBNET_JOIN_AUTOMATIC
 import samba.ntacls
@@ -87,9 +88,16 @@ from samba.provision.common import (
 )
 
 def get_testparm_var(testparm, smbconf, varname):
-    cmd = "%s -s -l --parameter-name='%s' %s 2>/dev/null" % (testparm, varname, smbconf)
-    output = os.popen(cmd, 'r').readline()
-    return output.strip()
+    errfile = open(os.devnull, 'w')
+    p = subprocess.Popen([testparm, '-s', '-l',
+                          '--parameter-name=%s' % varname, smbconf],
+                         stdout=subprocess.PIPE, stderr=errfile)
+    (out,err) = p.communicate()
+    errfile.close()
+    lines = out.split('\n')
+    if lines:
+        return lines[0].strip()
+    return ""
 
 try:
    import samba.dckeytab
