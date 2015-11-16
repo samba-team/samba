@@ -1566,14 +1566,15 @@ static void nwrap_init(void)
 				  "Error parsing NSS_WRAPPER_MAX_HOSTENTS "
 				  "value or value is too small. "
 				  "Using default value: %lu.",
-				  max_hostents);
+				  (unsigned long)max_hostents);
 		} else {
 			max_hostents = max_hostents_tmp;
 		}
 	}
 	/* Initialize hash table */
 	NWRAP_LOG(NWRAP_LOG_DEBUG,
-		  "Initializing hash table of size %lu items.", max_hostents);
+		  "Initializing hash table of size %lu items.",
+		  (unsigned long)max_hostents);
 	if (hcreate(max_hostents) == 0) {
 		NWRAP_LOG(NWRAP_LOG_ERROR,
 			  "Failed to initialize hash table");
