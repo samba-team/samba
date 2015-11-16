@@ -3518,7 +3518,9 @@ static int nwrap_files_getaddrinfo(const char *name,
 	size_t name_len;
 	char canon_name[DNS_NAME_MAX] = { 0 };
 	bool skip_canonname = false;
-	ENTRY e = { 0 };
+	ENTRY e = {
+		.key = NULL,
+	};
 	ENTRY *e_p = NULL;
 	int rc;
 	bool ok;
