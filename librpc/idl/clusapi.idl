@@ -2046,7 +2046,7 @@ import "winreg.idl", "misc.idl";
 #endif
 
 	typedef struct {
-		uint32 dwObjectType;	  // really of type CLUSTER_OBJECT_TYPE_RPC
+		uint32 dwObjectType;	  /* really of type CLUSTER_OBJECT_TYPE_RPC */
 		hyper FilterFlags;
 	} NOTIFY_FILTER_AND_TYPE_RPC;
 
@@ -2068,9 +2068,9 @@ import "winreg.idl", "misc.idl";
 	/*****************/
 	/* Function 0x89 */
 
-	//
-	// Notify interface V2 functions
-	//
+	/*
+	 * Notify interface V2 functions
+	 */
 #if 0
 	HNOTIFY_RPC
 	clusapi_CreateNotifyV2(
