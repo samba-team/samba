@@ -2610,21 +2610,20 @@ static bool nwrap_ed_inventarize_add_to_existing(struct nwrap_entdata *const ed,
 		return false;
 	}
 
-	el_new = nwrap_entlist_init(ed);
-	if (el_new == NULL) {
-		return false;
-	}
 
 	for (cursor = el; cursor->next != NULL; cursor = cursor->next)
 	{
 		if (cursor->ed == ed) {
-			free(el_new);
 			return false;
 		}
 	}
 
 	if (cursor->ed == ed) {
-		free(el_new);
+		return false;
+	}
+
+	el_new = nwrap_entlist_init(ed);
+	if (el_new == NULL) {
 		return false;
 	}
 
