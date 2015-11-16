@@ -38,6 +38,10 @@ static void smbd_cleanupd_process_exited(struct messaging_context *msg,
 					 void *private_data, uint32_t msg_type,
 					 struct server_id server_id,
 					 DATA_BLOB *data);
+static void smbd_cleanupd_unlock(struct messaging_context *msg,
+				 void *private_data, uint32_t msg_type,
+				 struct server_id server_id,
+				 DATA_BLOB *data);
 
 struct tevent_req *smbd_cleanupd_send(TALLOC_CTX *mem_ctx,
 				      struct tevent_context *ev,
@@ -66,8 +70,8 @@ struct tevent_req *smbd_cleanupd_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	status = messaging_register(msg, NULL, MSG_SMB_BRL_VALIDATE,
-				    brl_revalidate);
+	status = messaging_register(msg, NULL, MSG_SMB_UNLOCK,
+				    smbd_cleanupd_unlock);
 	if (tevent_req_nterror(req, status)) {
 		return tevent_req_post(req, ev);
 	}
@@ -83,6 +87,14 @@ static void smbd_cleanupd_shutdown(struct messaging_context *msg,
 	struct tevent_req *req = talloc_get_type_abort(
 		private_data, struct tevent_req);
 	tevent_req_done(req);
+}
+
+static void smbd_cleanupd_unlock(struct messaging_context *msg,
+				 void *private_data, uint32_t msg_type,
+				 struct server_id server_id,
+				 DATA_BLOB *data)
+{
+	brl_revalidate(msg, private_data, msg_type, server_id, data);
 }
 
 static void smbd_cleanupd_process_exited(struct messaging_context *msg,

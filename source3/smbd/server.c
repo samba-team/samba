@@ -549,7 +549,7 @@ static void cleanup_timeout_fn(struct tevent_context *event_ctx,
 	message_send_all(parent->msg_ctx, MSG_SMB_UNLOCK, NULL, 0, NULL);
 
 	messaging_send_buf(parent->msg_ctx, parent->cleanupd,
-			   MSG_SMB_BRL_VALIDATE, NULL, 0);
+			   MSG_SMB_UNLOCK, NULL, 0);
 }
 
 static void remove_child_pid(struct smbd_parent_context *parent,
