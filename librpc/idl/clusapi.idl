@@ -28,15 +28,15 @@ import "winreg.idl", "misc.idl";
 	typedef [context_handle] void *HNETINTERFACE_RPC;
 	typedef [context_handle] void *HBATCH_PORT_RPC;
 #else
-	#define HCLUSTER_RPC policy_handle
-	#define HNODE_RPC policy_handle
-	#define HGROUP_RPC policy_handle
-	#define HRES_RPC policy_handle
-	#define HKEY_RPC policy_handle
-	#define HNOTIFY_RPC policy_handle
-	#define HNETWORK_RPC policy_handle
-	#define HNETINTERFACE_RPC policy_handle
-	#define HBATCH_PORT_RPC policy_handle
+#define HCLUSTER_RPC policy_handle
+#define HNODE_RPC policy_handle
+#define HGROUP_RPC policy_handle
+#define HRES_RPC policy_handle
+#define HKEY_RPC policy_handle
+#define HNOTIFY_RPC policy_handle
+#define HNETWORK_RPC policy_handle
+#define HNETINTERFACE_RPC policy_handle
+#define HBATCH_PORT_RPC policy_handle
 #endif
 
 	typedef struct {
