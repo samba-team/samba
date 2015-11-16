@@ -94,6 +94,11 @@ static void smbd_cleanupd_unlock(struct messaging_context *msg,
 				 struct server_id server_id,
 				 DATA_BLOB *data)
 {
+	DBG_WARNING("Cleaning up brl and lock database after unclean "
+		    "shutdown\n");
+
+	message_send_all(msg, MSG_SMB_UNLOCK, NULL, 0, NULL);
+
 	brl_revalidate(msg, private_data, msg_type, server_id, data);
 }
 

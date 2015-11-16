@@ -545,9 +545,6 @@ static void cleanup_timeout_fn(struct tevent_context *event_ctx,
 
 	parent->cleanup_te = NULL;
 
-	DEBUG(1,("Cleaning up brl and lock database after unclean shutdown\n"));
-	message_send_all(parent->msg_ctx, MSG_SMB_UNLOCK, NULL, 0, NULL);
-
 	messaging_send_buf(parent->msg_ctx, parent->cleanupd,
 			   MSG_SMB_UNLOCK, NULL, 0);
 }
