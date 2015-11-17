@@ -67,6 +67,7 @@ NTSTATUS check_access(connection_struct *conn,
 		if (!(fsp->access_mask & access_mask)) {
 			return NT_STATUS_ACCESS_DENIED;
 		}
+		return NT_STATUS_OK;
 	} else {
 		NTSTATUS status = smbd_check_access_rights(conn,
 					smb_fname,
@@ -75,8 +76,8 @@ NTSTATUS check_access(connection_struct *conn,
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
+		return NT_STATUS_OK;
 	}
-	return NT_STATUS_OK;
 }
 
 /********************************************************************
