@@ -62,7 +62,8 @@ static void dos_mode_debug_print(const char *func, uint32_t mode)
 		fstrcat(modestr, "[compressed]");
 	}
 
-	DBG_INFO("%s returning %s\n", func, modestr);
+	DBG_INFO("%s returning (0x%x): \"%s\"\n", func, (unsigned)mode,
+		 modestr);
 }
 
 static uint32_t filter_mode_by_protocol(uint32_t mode)
