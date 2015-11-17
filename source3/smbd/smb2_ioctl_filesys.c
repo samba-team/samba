@@ -94,8 +94,7 @@ static NTSTATUS fsctl_set_cmprn(TALLOC_CTX *mem_ctx,
 	}
 
 	/* WRITE_DATA permission is required, WRITE_ATTRIBUTES is not */
-	status = check_access(fsp->conn, fsp, NULL,
-			      FILE_WRITE_DATA);
+	status = check_access_fsp(fsp, FILE_WRITE_DATA);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -141,7 +140,7 @@ static NTSTATUS fsctl_zero_data(TALLOC_CTX *mem_ctx,
 	}
 
 	/* WRITE_DATA permission is required */
-	status = check_access(fsp->conn, fsp, NULL, FILE_WRITE_DATA);
+	status = check_access_fsp(fsp, FILE_WRITE_DATA);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -333,7 +332,7 @@ static NTSTATUS fsctl_qar(TALLOC_CTX *mem_ctx,
 	}
 
 	/* READ_DATA permission is required */
-	status = check_access(fsp->conn, fsp, NULL, FILE_READ_DATA);
+	status = check_access_fsp(fsp, FILE_READ_DATA);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
